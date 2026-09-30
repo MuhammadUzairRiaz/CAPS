@@ -250,3 +250,19 @@ TEST(Pack, PerAtomRegionsAndEllipsoids) {
   EXPECT_THROW(parse_packmol_input("structure rod.xyz\n  constrain_rotation x 0. 20.\nend structure\n", dir.string(), o, nullptr, "t"), PackError);
   EXPECT_THROW(parse_packmol_input("structure rod.xyz\n  atoms 9\nend structure\n", dir.string(), o, nullptr, "t"), PackError);
 }
+
+// A structure file in a folder with a space ("/Applications/CAPS Studio.app/…"): the rest of the line is the file name,
+// with or without quotes
+TEST(Pack, StructurePathWithSpaces) {
+  const auto dir = std::filesystem::temp_directory_path() / "caps pack space";
+  std::filesystem::create_directories(dir);
+  std::filesystem::copy_file(std::string(CAPS_SAMPLES) + "/water.pdb", dir / "water.pdb", std::filesystem::copy_options::overwrite_existing);
+  for (const std::string q : {"", "\""}) {
+    caps::PackOptions o;
+    const std::string text = "tolerance 2\npbc 0 0 0 20 20 20\nstructure " + q + (dir / "water.pdb").string() + q + "\n  number 5\n  inside box 0 0 0 20 20 20\nend structure\n";
+    const auto items = caps::parse_packmol_input(text, "/", o, nullptr, "test.inp");
+    ASSERT_EQ(items.size(), 1u);
+    EXPECT_EQ(items[0].molecule.atoms.size(), 3u);
+  }
+  std::filesystem::remove_all(dir);
+}

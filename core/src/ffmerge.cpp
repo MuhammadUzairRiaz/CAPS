@@ -41,8 +41,14 @@ ForceField merge_forcefields(size_t natoms, const std::vector<FFPart>& parts, co
   }
   for (size_t i = 0; i < natoms; ++i)
     if (owner[i] < 0) throw FieldError("atom " + std::to_string(i + 1) + " is in no part: give every atom a force field");
+  // a part without 1-4 pairs (a water model: three bonds never separate two of its atoms) sets no 1-4 scaling
+  auto has14 = [](const ForceField& F) { return !F.dihedrals.empty() || !F.dihedrals2.empty() || !F.pairs14.empty() || !F.cbt.empty(); };
   size_t first = 0;   // the settings everybody shares come from the first part a force field types (not a many-body group)
-  while (first + 1 < parts.size() && parts[first].ff->manybody.on()) ++first;
+  while (first + 1 < parts.size() && (parts[first].ff->manybody.on() || !has14(*parts[first].ff))) ++first;
+  if (parts[first].ff->manybody.on() || !has14(*parts[first].ff)) {
+    first = 0;
+    while (first + 1 < parts.size() && parts[first].ff->manybody.on()) ++first;
+  }
   const ForceField& F0 = *parts[first].ff;
   // what one simulation holds for everybody
   bool mixed_forms = false;
@@ -52,7 +58,7 @@ ForceField merge_forcefields(size_t natoms, const std::vector<FFPart>& parts, co
       if (F.pair_form != F0.pair_form) mixed_forms = true;   // its cross Lennard-Jones is 12-6 (UFF)
       continue;
     }
-    if (!same(F.lj14, F0.lj14) || !same(F.coul14, F0.coul14) || F.keep13 != F0.keep13) {
+    if (has14(F) && (!same(F.lj14, F0.lj14) || !same(F.coul14, F0.coul14) || F.keep13 != F0.keep13)) {
       const std::string why = F.name + " scales 1-4 pairs by LJ " + fmt(F.lj14) + ", Coulomb " + fmt(F.coul14) + ", " + F0.name + " by LJ " + fmt(F0.lj14) +
                               ", Coulomb " + fmt(F0.coul14);
       if (o.scaling14 != "first")

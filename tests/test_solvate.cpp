@@ -1,10 +1,16 @@
 #include <gtest/gtest.h>
 
 #include <cmath>
+#include <filesystem>
+#include <fstream>
+#include <sstream>
 
 #include "caps/pack.hpp"
 #include "caps/peptide.hpp"
 #include "caps/solvate.hpp"
+#include "caps/io.hpp"
+#include "caps/relax.hpp"
+#include "caps/water.hpp"
 
 using namespace caps;
 
@@ -75,4 +81,62 @@ TEST(Solvate, WaterModelsAndErrors) {
   o.solvent = "water";
   o.shape = 2;
   EXPECT_THROW(solvate_plan(nullptr, o), std::invalid_argument);   // padding needs a solute
+}
+
+// Water models: every one neutral; TIP4P/2005 puts M 0.1546 Å from O on the bisector with the model's geometry, a
+// three-site model takes it away again; LAMMPS files leave M out with its charge on O and the tip4p style
+TEST(Water, ModelsGeometryAndSites) {
+  EXPECT_EQ(caps::water_models().size(), 11u);
+  for (const auto& m : caps::water_models()) EXPECT_NEAR(2 * m.q_h + m.q_neg, 0.0, 1e-9) << m.name;
+  caps::System s;
+  {
+    const caps::Trajectory w = caps::open_file(std::string(CAPS_SAMPLES) + "/water.pdb");
+    for (int k = 0; k < 3; ++k) {
+      caps::System one = w.frame(0);
+      for (auto& a : one.atoms) a.pos = a.pos + caps::Vec3{4.0 * k, 0, 0}, a.mol = k + 1;
+      const uint32_t base = uint32_t(s.atoms.size());
+      for (auto& a : one.atoms) s.atoms.push_back(a);
+      for (auto b : one.bonds) s.bonds.push_back({b.i + base, b.j + base, b.order});
+    }
+    s.has_mol = true;
+    s.cell.a = {12, 0, 0}, s.cell.b = {0, 12, 0}, s.cell.c = {0, 0, 12};
+  }
+  const auto& t = caps::water_model("TIP4P/2005");
+  ASSERT_EQ(caps::apply_water_model(s, t), 3u);
+  ASSERT_EQ(s.atoms.size(), 12u);
+  const auto ws = caps::find_waters(s);
+  ASSERT_EQ(ws.size(), 3u);
+  for (const auto& w : ws) {
+    ASSERT_GE(w[3], 0);
+    const auto O = s.atoms[size_t(w[0])].pos, H1 = s.atoms[size_t(w[1])].pos, H2 = s.atoms[size_t(w[2])].pos, M = s.atoms[size_t(w[3])].pos;
+    EXPECT_NEAR(caps::norm(H1 - O), 0.9572, 1e-9);
+    EXPECT_NEAR(std::acos(caps::dot(H1 - O, H2 - O) / (caps::norm(H1 - O) * caps::norm(H2 - O))) * 180 / M_PI, 104.52, 1e-7);
+    EXPECT_NEAR(caps::norm(M - O), 0.1546, 1e-9);
+    EXPECT_NEAR(s.atoms[size_t(w[3])].charge, -1.1128, 1e-12);
+    EXPECT_EQ(s.atoms[size_t(w[0])].charge, 0.0);
+  }
+  std::vector<uint32_t> all(s.atoms.size());
+  for (size_t i = 0; i < all.size(); ++i) all[i] = uint32_t(i);
+  const caps::ForceField F = caps::water_forcefield(s, t, all);
+  ASSERT_EQ(F.vsites.size(), 3u);
+  EXPECT_NEAR(F.vsites[0].w[0] + F.vsites[0].w[1] + F.vsites[0].w[2], 1.0, 1e-12);
+  // the LAMMPS files: 9 atoms, O with M's charge, the tip4p styles
+  const auto dir = std::filesystem::temp_directory_path() / "caps_water_lmp";
+  std::filesystem::create_directories(dir);
+  caps::EnergyOptions e;
+  e.electrostatics = caps::EnergyOptions::Electrostatics::PME;
+  caps::write_lammps_data_ff(s, F, e, (dir / "w.data").string(), false);
+  caps::write_lammps_input(s, F, e, "w.data", (dir / "w.in").string(), 0, true, {}, {}, nullptr);
+  std::ifstream dat(dir / "w.data"), inp(dir / "w.in");
+  std::stringstream ds, is;
+  ds << dat.rdbuf(), is << inp.rdbuf();
+  EXPECT_NE(ds.str().find("9 atoms"), std::string::npos);
+  EXPECT_NE(ds.str().find("-1.112800"), std::string::npos) << "M's charge on O";
+  EXPECT_NE(is.str().find("lj/cut/tip4p/long 1 2 1 1 0.154600"), std::string::npos) << is.str();
+  EXPECT_NE(is.str().find("pppm/tip4p"), std::string::npos);
+  std::filesystem::remove_all(dir);
+  // back to three sites: the M sites leave
+  ASSERT_EQ(caps::apply_water_model(s, caps::water_model("spce")), 3u);
+  EXPECT_EQ(s.atoms.size(), 9u);
+  EXPECT_NEAR(s.atoms[0].charge, -0.8476, 1e-12);
 }

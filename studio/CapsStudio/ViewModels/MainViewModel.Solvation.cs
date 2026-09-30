@@ -33,7 +33,8 @@ public sealed partial class MainViewModel
     public List<SolventItem> Solvents { get; } = new();
     public List<string> Salts { get; } = new();
     public static readonly string[] SolvShapes = ["Cubic", "Rectangular", "Padded"];   // padded: the solute's extent plus the padding
-    public static readonly string[] WaterModels = ["TIP4P/2005", "TIP3P", "SPC/E"];
+    /// <summary>Every water model CAPS has (caps/water.hpp), TIP4P/2005 first.</summary>
+    public static string[] WaterModels => FieldViewModel.Waters.Select(w => w.Name).OrderBy(n => n == "TIP4P/2005" ? 0 : 1).ToArray();
     public SolvStage[] SolvStages { get; } = [new("Random sequential insertion"), new("Overlap minimisation · L-BFGS"), new("Verify min. distance ≥ 2.0 Å")];
 
     public void OpenSolvation()

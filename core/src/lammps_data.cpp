@@ -15,6 +15,7 @@
 #include <sstream>
 
 #include "caps/manybody.hpp"
+#include "caps/water.hpp"
 #include "caps/io.hpp"
 #include "caps/relax.hpp"
 
@@ -861,8 +862,152 @@ std::string write_lammps_data_or_structure(const System& s, const ForceField& ff
   }
 }
 
+// Four-site water for LAMMPS: the M sites (virtual sites of O, H, H with weights 1 − α, α/2, α/2, no mass, no
+// Lennard-Jones) leave the system; their charge goes onto their O, and LAMMPS's tip4p styles put the charge back at
+// qdist = α r_OH cos(θ/2) from O. Returns false when the force field has other virtual sites (no LAMMPS form).
+static bool tip4p_reduce(const System& s, const ForceField& ff, System& rs, ForceField& rf, LammpsStyle& st) {
+  if (ff.vsites.empty()) return false;
+  const size_t n = s.atoms.size();
+  std::vector<char> gone(n, 0);
+  double qdist = -1;
+  std::vector<std::pair<uint32_t, uint32_t>> m_to_o;
+  for (const auto& v : ff.vsites) {
+    if (v.from.size() != 3 || v.site >= n || ff.mass[v.site] > 0) return false;
+    const uint32_t o = v.from[0], h1 = v.from[1], h2 = v.from[2];
+    if (s.atoms[o].element != 8 || s.atoms[h1].element != 1 || s.atoms[h2].element != 1) return false;
+    if (std::fabs(v.w[1] - v.w[2]) > 1e-9 || std::fabs(v.w[0] + v.w[1] + v.w[2] - 1) > 1e-9) return false;
+    const auto& lj = ff.lj[size_t(ff.type_index[v.site])];
+    if (lj.eps != 0) return false;
+    // r_OH and θ of this water's own terms
+    double r0 = 0, th = 0;
+    for (const auto& b : ff.bonds) if ((b.i == o && b.j == h1) || (b.j == o && b.i == h1)) r0 = b.r0;
+    for (const auto& a : ff.angles) if (a.j == o) th = a.theta0;
+    if (r0 <= 0 || th <= 0) return false;
+    const double q = 2 * v.w[1] * r0 * std::cos(th / 2);   // θ0 in radians
+    if (qdist >= 0 && std::fabs(q - qdist) > 1e-6) throw FieldError("four-site waters with different O–M distances in one system: LAMMPS's tip4p styles take one");
+    qdist = q;
+    gone[v.site] = 1;
+    m_to_o.push_back({v.site, o});
+  }
+  // atoms: kept in order
+  std::vector<int64_t> at(n, -1);
+  rs = s;
+  rs.atoms.clear();
+  rs.velocities.clear();
+  for (size_t i = 0; i < n; ++i)
+    if (!gone[i]) {
+      at[i] = int64_t(rs.atoms.size());
+      rs.atoms.push_back(s.atoms[i]);
+      if (s.velocities.size() == n) rs.velocities.push_back(s.velocities[i]);
+    }
+  rs.bonds.clear();
+  for (const auto& b : s.bonds) if (at[b.i] >= 0 && at[b.j] >= 0) rs.bonds.push_back({uint32_t(at[b.i]), uint32_t(at[b.j]), b.order});
+  // types: those only M sites had leave
+  std::vector<char> used(ff.type_names.size(), 0);
+  for (size_t i = 0; i < n; ++i) if (!gone[i]) used[size_t(ff.type_index[i])] = 1;
+  std::vector<int> tt(ff.type_names.size(), -1);
+  int nt = 0;
+  for (size_t t = 0; t < used.size(); ++t) if (used[t]) tt[t] = nt++;
+  rf = ff;
+  auto keep_per_type = [&](auto& v) {
+    if (v.size() != used.size()) return;
+    std::decay_t<decltype(v)> o;
+    for (size_t t = 0; t < v.size(); ++t) if (used[t]) o.push_back(v[t]);
+    v = std::move(o);
+  };
+  keep_per_type(rf.type_names), keep_per_type(rf.lj), keep_per_type(rf.lj14_types), keep_per_type(rf.manybody.element), keep_per_type(rf.manybody.entry);
+  auto remap_pairs = [&](auto& m) {
+    std::decay_t<decltype(m)> o;
+    for (const auto& [k, v] : m)
+      if (tt[size_t(k.first)] >= 0 && tt[size_t(k.second)] >= 0) {
+        int a = tt[size_t(k.first)], b = tt[size_t(k.second)];
+        o[{std::min(a, b), std::max(a, b)}] = v;
+      }
+    m = std::move(o);
+  };
+  remap_pairs(rf.pair_func), remap_pairs(rf.pair_override), remap_pairs(rf.hbond.param), remap_pairs(rf.hbond.htype);
+  {
+    std::set<std::pair<int, int>> o;
+    for (const auto& k : ff.excluded_type_pairs)
+      if (tt[size_t(k.first)] >= 0 && tt[size_t(k.second)] >= 0) o.insert({std::min(tt[size_t(k.first)], tt[size_t(k.second)]), std::max(tt[size_t(k.first)], tt[size_t(k.second)])});
+    rf.excluded_type_pairs = o;
+  }
+  // per atom
+  auto keep_per_atom = [&](auto& v) {
+    if (v.size() != n) return;
+    std::decay_t<decltype(v)> o;
+    for (size_t i = 0; i < n; ++i) if (!gone[i]) o.push_back(v[i]);
+    v = std::move(o);
+  };
+  for (const auto& [m, o] : m_to_o) rf.charge[o] += ff.charge[m];
+  for (size_t i = 0; i < n; ++i) if (!gone[i]) rs.atoms[size_t(at[i])].charge = rf.charge[i];
+  keep_per_atom(rf.atom_type), keep_per_atom(rf.why), keep_per_atom(rf.charge), keep_per_atom(rf.mass), keep_per_atom(rf.type_index);
+  for (auto& t : rf.type_index) t = tt[size_t(t)];
+  keep_per_atom(rf.sw.atom), keep_per_atom(rf.hbond.hyd), keep_per_atom(rf.hbond.acceptor);
+  for (auto& h : rf.hbond.hyd) for (auto& x : h) x = uint32_t(at[x]);
+  keep_per_atom(rf.excluded);
+  for (auto& ex : rf.excluded) {
+    std::vector<uint32_t> o;
+    for (auto x : ex) if (at[x] >= 0) o.push_back(uint32_t(at[x]));
+    ex = std::move(o);
+  }
+  // every term's atoms (none is an M site: they carry charge only)
+  auto R = [&](uint32_t& x) {
+    if (at[x] < 0) throw FieldError("a bonded term uses a TIP4P M site: no LAMMPS form");
+    x = uint32_t(at[x]);
+  };
+  for (auto& t : rf.bonds) R(t.i), R(t.j);
+  for (auto& t : rf.angles) R(t.i), R(t.j), R(t.k);
+  for (auto* v : {&rf.dihedrals, &rf.impropers, &rf.impropers_dlpoly}) for (auto& t : *v) R(t.i), R(t.j), R(t.k), R(t.l);
+  for (auto& t : rf.impropers_harmonic) R(t.i), R(t.j), R(t.k), R(t.l);
+  for (auto& t : rf.inversions) R(t.c), R(t.a), R(t.b), R(t.d);
+  for (auto& t : rf.bonds_x) R(t.i), R(t.j);
+  for (auto& t : rf.angles_x) R(t.i), R(t.j), R(t.k);
+  for (auto& t : rf.urey_bradley) R(t.i), R(t.k);
+  for (auto& t : rf.cbt) R(t.i), R(t.j), R(t.k), R(t.l);
+  for (auto& t : rf.lj_pairs) R(t.i), R(t.j);
+  for (auto& t : rf.bonds2) R(t.i), R(t.j);
+  for (auto& t : rf.angles2) R(t.i), R(t.j), R(t.k);
+  for (auto& t : rf.dihedrals2) R(t.i), R(t.j), R(t.k), R(t.l);
+  for (auto& t : rf.impropers2) R(t.i), R(t.j), R(t.k), R(t.l);
+  for (auto& p : rf.pairs14) R(p[0]), R(p[1]);
+  rf.vsites.clear();
+  for (auto& g : st.groups) {
+    std::vector<uint32_t> o;
+    for (auto x : g.atoms) if (x < n && at[x] >= 0) o.push_back(uint32_t(at[x]));
+    g.atoms = std::move(o);
+  }
+  st.tip4p_qdist = qdist;
+  return true;
+}
+
+// LAMMPS's tip4p numbers for the reduced system: O type, H type, O–H bond type, H–O–H angle type (1-based)
+static std::array<int, 4> tip4p_types(const System& s, const ForceField& ff, const Layout& L) {
+  std::array<int, 4> r{0, 0, 0, 0};
+  for (const auto& w : find_waters(s)) {
+    r[0] = ff.type_index[size_t(w[0])] + 1, r[1] = ff.type_index[size_t(w[1])] + 1;
+    for (size_t k = 0; k < L.bonds.term_atoms.size(); ++k) {
+      const auto& t = L.bonds.term_atoms[k];
+      if (t.size() == 2 && ((t[0] == w[0] && t[1] == w[1]) || (t[1] == w[0] && t[0] == w[1]))) r[2] = L.bonds.term_type[k];
+    }
+    for (size_t k = 0; k < L.angles.term_atoms.size(); ++k) {
+      const auto& t = L.angles.term_atoms[k];
+      if (t.size() == 3 && t[1] == w[0]) r[3] = L.angles.term_type[k];
+    }
+    break;
+  }
+  if (!r[0] || !r[1] || !r[2] || !r[3]) throw FieldError("TIP4P water: its O, H, O–H bond and H–O–H angle types were not found for LAMMPS's tip4p style");
+  return r;
+}
+
 void write_lammps_data_ff(const System& s, const ForceField& ff0, const EnergyOptions& e0, const std::string& path, bool pair_coeffs,
                           const LammpsStyle& st) {
+  if (!ff0.vsites.empty()) {   // four-site water: LAMMPS places the M sites itself
+    System rs;
+    ForceField rf;
+    LammpsStyle st2 = st;
+    if (tip4p_reduce(s, ff0, rs, rf, st2)) return write_lammps_data_ff(rs, rf, e0, path, pair_coeffs, st2);
+  }
   const bool metal = lammps_metal_units(ff0, st);
   const ForceField mff = metal ? forcefield_in_metal_units(ff0) : ForceField{};
   const ForceField& ff = metal ? mff : ff0;
@@ -1025,6 +1170,12 @@ std::string shake_fix(const System& s, const ForceField& ff, const Layout& L, Co
 
 std::string lammps_shake_fix(const System& s, const ForceField& ff0, const EnergyOptions& e0, ConstraintMode mode, const std::string& group,
                              const LammpsStyle& st) {
+  if (!ff0.vsites.empty()) {
+    System rs;
+    ForceField rf;
+    LammpsStyle st2 = st;
+    if (tip4p_reduce(s, ff0, rs, rf, st2)) return lammps_shake_fix(rs, rf, e0, mode, group, st2);
+  }
   const bool metal = lammps_metal_units(ff0, st);
   const ForceField mff = metal ? forcefield_in_metal_units(ff0) : ForceField{};
   const ForceField& ff = metal ? mff : ff0;
@@ -1100,6 +1251,12 @@ std::string lammps_group_lines(const System& s, const ForceField& ff, const std:
 
 void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOptions& e0, const std::string& data_path, const std::string& path,
                         int64_t held_mol, bool pair_coeffs, const LammpsRun& run, const LammpsStyle& st, std::vector<std::string>* notes) {
+  if (!ff0.vsites.empty()) {   // four-site water: LAMMPS places the M sites itself
+    System rs;
+    ForceField rf;
+    LammpsStyle st2 = st;
+    if (tip4p_reduce(s, ff0, rs, rf, st2)) return write_lammps_input(rs, rf, e0, data_path, path, held_mol, pair_coeffs, run, st2, notes);
+  }
   const bool metal = lammps_metal_units(ff0, st);
   const ForceField mff = metal ? forcefield_in_metal_units(ff0) : ForceField{};
   const ForceField& ff = metal ? mff : ff0;
@@ -1134,7 +1291,33 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
   // the long-range solver after read_data: LAMMPS sets PPPM up for the box it is defined with (a triclinic cell needs it
   // defined after the cell is read)
   std::vector<std::string> kspace;
-  for (const auto& l : style_lines(L, ff, e)) {
+  std::vector<std::string> styles = style_lines(L, ff, e);
+  std::string tip4p_args;   // "O H bond angle qdist": the M sites placed by LAMMPS
+  if (st.tip4p_qdist > 0) {
+    const auto T = tip4p_types(s, ff, L);
+    std::snprintf(b, sizeof b, "%d %d %d %d %.6f", T[0], T[1], T[2], T[3], st.tip4p_qdist);
+    tip4p_args = b;
+    bool done = false;
+    for (auto& l : styles) {
+      auto swap = [&](const std::string& from, const std::string& to) {
+        const auto p = l.find(from + " ");
+        if (p == std::string::npos) return false;
+        l = l.substr(0, p) + to + " " + tip4p_args + l.substr(p + from.size());
+        return true;
+      };
+      if (l.rfind("pair_style", 0) == 0) done = swap("lj/cut/coul/long", "lj/cut/tip4p/long") || swap("coul/long", "coul/tip4p/long");
+      else if (l.rfind("kspace_style", 0) == 0) {
+        const auto sp = l.find_first_of(' ', 13);
+        const std::string acc = sp == std::string::npos ? "1e-5" : l.substr(l.find_last_of(' ') + 1);
+        l = "kspace_style pppm/tip4p " + acc;
+      }
+    }
+    if (!done)
+      throw FieldError("four-site water in LAMMPS needs long-range electrostatics (lj/cut/tip4p/long or coul/tip4p/long with pppm/tip4p): choose PPPM / PME electrostatics");
+    out << "# four-site water (" << ff.name << "): LAMMPS puts each M site " << tip4p_args.substr(tip4p_args.find_last_of(' ') + 1)
+        << " Å from O on the H–O–H bisector (its charge is written on O); keep the water rigid (fix shake below)\n";
+  }
+  for (const auto& l : styles) {
     if (l.rfind("kspace_style", 0) == 0) kspace.push_back(l);
     else out << aligned(l) << "\n";
   }
@@ -1198,6 +1381,11 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
   }
   const bool npt = run.kind == K::NPT;
   out << "\n# 2. " << (npt ? "NPT" : "NVT") << " molecular dynamics (Nosé–Hoover)\n";
+  if (run.constraints == ConstraintMode::None && st.tip4p_qdist > 0) {   // a four-site water model is rigid
+    const auto T = tip4p_types(s, ff, L);
+    std::snprintf(b, sizeof b, "fix             rigid_water %s shake 1.0e-6 100 0 b %d a %d\n", mobile.c_str(), T[2], T[3]);
+    out << "# the four-site water held rigid (its O–H bonds and H–O–H angle), as the model is defined\n" << b;
+  }
   if (run.constraints != ConstraintMode::None) {
     const std::string line = shake_fix(s, ff, L, run.constraints, mobile);
     if (!line.empty())

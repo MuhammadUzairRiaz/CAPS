@@ -362,10 +362,53 @@ public sealed partial class FieldViewModel : ObservableObject
         await Assign();
     }
 
+    // Water: the force field's own water types, or a water model (SPC, TIP3P, TIP4P/2005 …) for every water molecule
+    private static List<(string Id, string Name, string Cite)>? _waters;
+    public static List<(string Id, string Name, string Cite)> Waters
+    {
+        get
+        {
+            if (_waters != null) return _waters;
+            _waters = new();
+            try
+            {
+                foreach (var w in System.Text.Json.Nodes.JsonNode.Parse(CapsDocument.WaterModelsJson())!.AsArray())
+                    _waters.Add(((string?)w!["id"] ?? "", (string?)w["name"] ?? "", (string?)w["citation"] ?? ""));
+            }
+            catch { }
+            return _waters;
+        }
+    }
+    public List<string> WaterChoices => new[] { "The force field's own" }.Concat(Waters.Select(w => w.Name)).ToList();
+    private int _waterModel;
+    public int WaterModelIndex { get => _waterModel; set { if (Set(ref _waterModel, Math.Clamp(value, 0, Waters.Count))) Raise(nameof(WaterTip)); } }
+    public string WaterTip => _waterModel == 0
+        ? "Water molecules are typed by the force field like everything else. Choose a water model to give them its own geometry, charges and Lennard-Jones (four-site models add their M site)"
+        : $"{Waters[_waterModel - 1].Name} for every water molecule ({Waters[_waterModel - 1].Cite}); the rest with the force field";
+    /// <summary>Puts the chosen water model on the structure (an edit: geometry, charges, M sites); false when it has no water.</summary>
+    public Func<string, bool>? ApplyWaterModel { get; set; }
+
     public Task Assign()
     {
         if (Selected is not { } e) { Log = "Choose a force field."; return Task.CompletedTask; }
         var mode = _chargeMode;
+        if (_waterModel > 0 && ApplyWaterModel is { } apply)
+        {
+            var id = Waters[_waterModel - 1].Id;
+            if (apply(id))   // the waters by the model, the rest by the force field
+            {
+                var spec = new System.Text.Json.Nodes.JsonObject
+                {
+                    ["groups"] = new System.Text.Json.Nodes.JsonArray(
+                        new System.Text.Json.Nodes.JsonObject { ["name"] = "water", ["molecules"] = "water", ["water"] = id },
+                        new System.Text.Json.Nodes.JsonObject { ["name"] = "rest", ["molecules"] = "rest", ["forcefield"] = e.File, ["charges"] = CoreCharges(mode) }),
+                };
+                Recorder?.Invoke($"doc.edit(op=\"water_model\", model=\"{id}\")");
+                Recorder?.Invoke($"doc.field.assign_groups([{{\"name\": \"water\", \"molecules\": \"water\", \"water\": \"{id}\"}}, {{\"name\": \"rest\", \"molecules\": \"rest\", \"forcefield\": \"{e.File.Replace("\\", "/")}\"}}])");
+                _assignedId = e.Id;
+                return Do("Assigned (water: " + Waters[_waterModel - 1].Name + ")", d => d.FieldAssignGroups(spec.ToJsonString()));
+            }
+        }
         Recorder?.Invoke($"doc.field.assign(\"{e.File.Replace("\\", "/")}\", charges=\"{(mode switch { 1 => "forcefield", 2 => "gasteiger", 3 => "keep", 4 => "qeq", 5 => "increments", _ => "auto" })}\")");
         _assignedId = e.Id;
         return Do("Assigned", d => d.FieldAssign(e.File, null, CoreCharges(mode)));

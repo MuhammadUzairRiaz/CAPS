@@ -1,5 +1,6 @@
 // CAPS solvation: solvent and ions packed around a solute (see caps/solvate.hpp).
 #include "caps/solvate.hpp"
+#include "caps/water.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -96,10 +97,10 @@ System solvent_molecule(const SolvateOptions& o, std::string* name) {
   const SolventInfo* sv = find_solvent(o.solvent);
   if (!sv) throw std::invalid_argument("unknown solvent '" + o.solvent + "'");
   if (sv->id == "water") {
-    double r = 0.9572, theta = 104.52, qo = -1.1128;
-    if (o.water_model == "TIP3P") qo = -0.834;
-    else if (o.water_model == "SPC/E") r = 1.0, theta = 109.47, qo = -0.8476;
-    else if (o.water_model != "TIP4P/2005") throw std::invalid_argument("water model TIP3P, SPC/E or TIP4P/2005, not '" + o.water_model + "'");
+    // the model's geometry and charges (caps/water.hpp); a four-site model's M charge sits on O until the model is
+    // applied with its M sites (the Field's water model, or the edit water_model)
+    const WaterModel& wm = water_model(o.water_model);
+    const double r = wm.r_oh, theta = wm.theta, qo = wm.q_neg;
     const double h = theta * 3.14159265358979323846 / 360.0;
     System w;
     const Vec3 p[3] = {{0, 0, 0}, {r * std::sin(h), r * std::cos(h), 0}, {-r * std::sin(h), r * std::cos(h), 0}};
@@ -112,7 +113,7 @@ System solvent_molecule(const SolvateOptions& o, std::string* name) {
     w.bonds = {{0, 1, 1}, {0, 2, 1}};
     w.has_mol = true;
     finish_types_by_element(w);
-    if (name) *name = "water (" + o.water_model + ")";
+    if (name) *name = "water (" + wm.name + ")";
     return w;
   }
   static std::map<std::string, System> cache;
