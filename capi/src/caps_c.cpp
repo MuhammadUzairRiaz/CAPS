@@ -232,6 +232,7 @@ struct caps_doc {
   } display;
   int vision = 0;                                  // caps_set_vision: the view as seen with a colour-vision deficiency
   double vision_severity = 1.0;
+  std::array<float, 9> scene_vision{};   // the scene's copy of the vision matrix (caps_scene.vision_matrix)
 };
 
 namespace {
@@ -3717,7 +3718,14 @@ int32_t caps_render_scene(caps_doc* d, const caps_render_opts* opt, caps_scene* 
     out->capsules = sc.capsules.data(), out->capsule_rgb = sc.capsule_rgb.data();
     out->n_lines = int32_t(sc.line_rgb.size());
     out->lines = sc.lines.data(), out->line_rgb = sc.line_rgb.data(), out->line_width = sc.line_width.data();
-    out->cpu_only = sc.has_meshes || d->vision ? 1 : 0;   // surfaces, polyhedra and the colour-vision preview are drawn on the CPU
+    out->cpu_only = 0;   // everything is drawn on the GPU (surfaces as triangles, the colour-vision preview per pixel)
+    if (const double* m = caps::vision_matrix(caps::Vision(d->vision)); m && d->vision) {
+      for (int k = 0; k < 9; ++k) d->scene_vision[size_t(k)] = float(m[k]);
+      out->vision_matrix = d->scene_vision.data();
+      out->vision_severity = d->vision_severity;
+    }
+    out->n_triangles = int32_t(sc.tri_rgb.size() / 3);
+    out->tri_xyz = sc.tri_xyz.data(), out->tri_normal = sc.tri_normal.data(), out->tri_rgb = sc.tri_rgb.data();
     out->background = sc.background;
     out->transparent = sc.transparent, out->dark = sc.dark, out->depth_cue = sc.depth_cue, out->outlines = sc.outlines;
     out->fit_cx = sc.fit_centre[0], out->fit_cy = sc.fit_centre[1], out->fit_cz = sc.fit_centre[2];

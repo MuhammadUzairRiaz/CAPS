@@ -100,7 +100,11 @@ struct Scene {
   std::vector<float> lines;            // ax ay az bx by bz per line
   std::vector<uint32_t> line_rgb;
   std::vector<float> line_width;       // pixels at 1×
-  bool has_meshes = false;             // surfaces or polyhedra: a view that needs them draws on the CPU
+  bool has_meshes = false;             // surfaces or polyhedra (drawn as the triangles below)
+  // Meshes as triangles: xyz of each corner (9 per triangle), its normal (9 per triangle), its colour 0xAARRGGBB with AA
+  // the opacity (255 opaque); drawn as the CPU renderer does: the nearest surface of each pixel, blended over the atoms.
+  std::vector<float> tri_xyz, tri_normal;
+  std::vector<uint32_t> tri_rgb;
   // What the camera fit uses (view_fit from these alone, without the structure): its centre, the cell corners when the
   // cell frames the view, the shown atoms' positions, the pad around them (Å), the perspective field of view.
   Vec3 fit_centre{0, 0, 0};
