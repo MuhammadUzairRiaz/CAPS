@@ -1,0 +1,28 @@
+# CAPS recipe: a natural-rubber (cis-1,4-polyisoprene) melt, built, minimised and equilibrated
+# run:   caps run nr_equilibrate.yaml --out out
+recipe: 1
+name: nr_melt
+
+# 1. build: 10 chains of 40 repeat units
+build:
+  polymer: { smiles: "[*]C/C=C(C)\\C[*]", dp: 40, chains: 10 }
+
+# 2. force field (every atom typed, charges from the force field)
+type: { forcefield: opls2005 }
+
+# 3. grow the chains into a periodic cell at low density
+grow: { density: 0.5, seed: 1 }
+
+# 4. energy minimisation: L-BFGS until the largest force is below 0.5 kcal/mol/Å
+relax: { method: lbfgs, fmax: 0.5, max_iterations: 5000 }
+
+# 5. equilibration: Larsen's 21-step NVT/NPT compression–decompression protocol
+#    (peak 600 K and 50 000 atm, ends at 300 K and 1 atm; time_scale 0.1 = a 10× shorter version for a quick test)
+equilibrate: { protocol: larsen21, t_max: 600, t_final: 300, p_max: 50000, time_scale: 0.1 }
+
+# 6. production NPT: 100 ps at 300 K and 1 atm, Nosé–Hoover chains + MTK barostat (as LAMMPS fix npt), 1 fs step
+md: { ps: 100, dt: 1.0, temperature: 300, pressure: 1.0, ensemble: npt, thermostat: nose-hoover, barostat: mtk, tau_t: 100, tau_p: 1000 }
+
+# 7. results and files for LAMMPS / GROMACS
+analyze: { properties: [density, rg] }
+export: [lammps, gromacs]
