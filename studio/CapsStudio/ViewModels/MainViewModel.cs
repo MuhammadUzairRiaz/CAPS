@@ -135,7 +135,12 @@ public sealed partial class MainViewModel : ObservableObject
         Field.ApplyWaterModel = id => RunEdit(new { op = "water_model", model = id }) != null;
         Analyze = new AnalyzeViewModel(() => _doc, s => Status = s, running => { _analyzing = running; RaiseBusy(); });
         Analyze.ViscosityComputed += eta => DfEta = (decimal)eta;   // the Yeh–Hummer correction takes the Green–Kubo η
-        Field.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(FieldViewModel.RunLine)) Raise(nameof(ForceFieldLine)); };
+        Field.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(FieldViewModel.RunLine)) Raise(nameof(ForceFieldLine));
+            // Pack and Grow follow the Field's force field until they are given their own: their boxes show it
+            if (e.PropertyName == nameof(FieldViewModel.FfIndex)) { if (_packFf < 0) Raise(nameof(PackFfIndex)); if (_growFf < 0) Raise(nameof(GrowFfIndex)); }
+        };
         Field.Recorder = Record;
     }
 
@@ -2064,7 +2069,7 @@ public sealed partial class MainViewModel : ObservableObject
     private int _packCount = 100, _packSeed = 1;
     private bool _packPeriodic = true, _packing;
     private string _packText = "", _packBaseDir = Environment.CurrentDirectory;
-    private string _packLog = "Write or open a packmol-style input. Every molecule is a rigid body; overlaps below the tolerance are " +
+    private string _packLog = "Add molecules (or open an input: CAPS or packmol syntax). Every molecule is a rigid body; overlaps closer than the distance are " +
                               "removed by minimisation, and a cell that misses the tolerance is never produced.";
     private CancellationTokenSource? _packCancel;
 
@@ -2086,6 +2091,20 @@ public sealed partial class MainViewModel : ObservableObject
     public bool HasPackItems => PackItems.Count > 0;
     private static readonly string[] PackColours = ["#F0A83C", "#6CC4D8", "#DE775D", "#9B7AD5", "#7DC884", "#D6AC5C", "#E9ECEF", "#2271DB"];
 
+    /// <summary>The CAPS form of Pack input (cell, distance, molecule … end); packmol's is read too.</summary>
+    public static bool IsCapsPack(string text)
+    {
+        foreach (var raw in text.Split('\n'))
+        {
+            var w = raw.Split('#')[0].Trim().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+            if (w.Length == 0) continue;
+            var k = w[0].ToLowerInvariant();
+            if (k is "cell" or "distance" or "molecule" or "compress" or "save" or "loops" or "iterations") return true;
+            if (k is "tolerance" or "structure" or "pbc" or "output" or "filetype" or "nloop" or "maxit") return false;
+        }
+        return true;
+    }
+
     private void ParsePackText()
     {
         PackItems.Clear();
@@ -2094,6 +2113,7 @@ public sealed partial class MainViewModel : ObservableObject
         var number = "1";
         var fixedMol = false;
         var constraints = new List<string>();
+        PackCellText = "no periodic cell";
         foreach (var raw in _packText.Split('\n'))
         {
             var line = raw.Split('#')[0].Trim();
@@ -2102,12 +2122,14 @@ public sealed partial class MainViewModel : ObservableObject
             var key = w[0].ToLowerInvariant();
             if (file == null)
             {
-                if (key == "tolerance" && w.Length > 1) PackTolText = w[1] + " Å";
+                if (key is "tolerance" or "distance" && w.Length > 1) PackTolText = w[1] + " Å";
                 else if (key == "pbc" && w.Length >= 7)
                     PackCellText = string.Format(inv, "{0} × {1} × {2} Å, periodic", w[4], w[5], w[6]);
-                else if (key == "structure" && w.Length > 1) { file = line[(line.IndexOf(' ') + 1)..].Trim(); number = "1"; fixedMol = false; constraints.Clear(); }
+                else if (key == "cell" && w.Length == 4) PackCellText = string.Format(inv, "{0} × {1} × {2} Å, periodic", w[1], w[2], w[3]);
+                else if (key == "cell" && w.Length == 8) PackCellText = string.Format(inv, "{0} × {1} × {2} Å, periodic", w[5], w[6], w[7]);
+                else if (key is "structure" or "molecule" && w.Length > 1) { file = line[(line.IndexOf(' ') + 1)..].Trim(); number = "1"; fixedMol = false; constraints.Clear(); }
             }
-            else if (key == "end") 
+            else if (key == "end" && !(w.Length > 1 && w[1].Equals("atoms", StringComparison.OrdinalIgnoreCase)))
             {
                 var name = Path.GetFileNameWithoutExtension(file);
                 var colour = PackColours[PackItems.Count % PackColours.Length];
@@ -2115,9 +2137,9 @@ public sealed partial class MainViewModel : ObservableObject
                     fixedMol ? "fixed" : $"× {number}", colour, file));
                 file = null;
             }
-            else if (key == "number" && w.Length > 1) number = w[1];
+            else if (key is "number" or "count" && w.Length > 1) number = w[1];
             else if (key == "fixed") fixedMol = true;
-            else if (key is "inside" or "outside" or "over" or "below" or "above") constraints.Add(line);
+            else if (key is "inside" or "outside" or "over" or "below" or "above" or "in" or "not" or "atoms") constraints.Add(line);
         }
         Raise(nameof(HasPackItems));
     }
@@ -2139,15 +2161,18 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>A new input with the cell, tolerance and seed from the fields.</summary>
     public void NewPackInput()
     {
-        PackText = string.Format(CultureInfo.InvariantCulture, "# CAPS Pack input (packmol syntax)\ntolerance {0:0.###}\nseed {1}\n", _packTol, _packSeed) +
-                   (_packPeriodic ? $"pbc {BoxText()}\n" : "") + "\n";
+        PackText = string.Format(CultureInfo.InvariantCulture, "# CAPS Pack\ndistance  {0:0.###}         # Å: no two molecules closer\nseed      {1}\n", _packTol, _packSeed) +
+                   (_packPeriodic ? string.Format(CultureInfo.InvariantCulture, "cell      {0:0.###} {1:0.###} {2:0.###}   # Å, periodic\n", _packX, _packY, _packZ) : "") + "\n";
     }
 
     /// <summary>Append a structure block for a molecule file, placed inside the whole cell.</summary>
     public void AddPackStructure(string path)
     {
         if (_packText.Trim().Length == 0) NewPackInput();
-        PackText = _packText.TrimEnd() + $"\n\nstructure {path}\n  number {_packCount}\n  inside box {BoxText()}\nend structure\n";
+        var inv = CultureInfo.InvariantCulture;
+        PackText = _packText.TrimEnd() + (IsCapsPack(_packText)
+            ? string.Format(inv, "\n\nmolecule  {0}\n  count   {1}\n  in      box from 0 0 0 to {2:0.###} {3:0.###} {4:0.###}\nend\n", path, _packCount, _packX, _packY, _packZ)
+            : $"\n\nstructure {path}\n  number {_packCount}\n  inside box {BoxText()}\nend structure\n");
     }
 
     public void AddPackExample(string samples)
@@ -2158,7 +2183,10 @@ public sealed partial class MainViewModel : ObservableObject
 
     public void LoadPackInput(string path)
     {
-        PackText = File.ReadAllText(path);
+        var text = File.ReadAllText(path);
+        // a packmol file shown in the CAPS form (it runs the same; Save writes it back in either form)
+        if (!IsCapsPack(text)) try { text = CapsDocument.PackConvert(text, true); } catch { }
+        PackText = text;
         PackBaseDir = Path.GetDirectoryName(path) ?? ".";
     }
 

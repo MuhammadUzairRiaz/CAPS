@@ -1545,6 +1545,19 @@ int32_t caps_gromacs(caps_doc* d, const char* stem, char* text, int32_t cap) {
 }
 
 // Export center (ABI 23): the simulation files for LAMMPS and GROMACS in one call, from a complete force field.
+extern "C" int32_t caps_pack_convert(const char* text, int32_t to_caps, char* out, int32_t cap) {
+  try {
+    const std::string t = text ? text : "";
+    std::string r;
+    if (to_caps) r = caps::is_caps_pack_input(t) ? t : caps::packmol_to_caps_pack(t);
+    else r = caps::is_caps_pack_input(t) ? caps::caps_pack_to_packmol(t) : t;
+    return report_out(r, out, cap);
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return -1;
+  }
+}
+
 extern "C" int32_t caps_water_models(char* json, int32_t cap) {
   try {
     caps::Json a = caps::Json::array();

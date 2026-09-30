@@ -1364,7 +1364,7 @@ internal static class SelfTest
             vm.AddPackStructure(w);
             vm.FillDensity = 0.6m;
             vm.FillToDensity();
-            Check(vm.PackText.Contains("number 257") && vm.FillText.StartsWith("257 ×"), $"fill to density: {vm.FillText}");
+            Check(vm.PackText.Contains("count 257") && vm.FillText.StartsWith("257 ×"), $"fill to density: {vm.FillText}");
             vm.PackStart = 0;
             // the Python console: doc = the open structure; a line runs; doc comes back as a new structure
             {

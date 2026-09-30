@@ -820,6 +820,201 @@ std::pair<double, int> intermolecular_contacts(const System& s, double tolerance
   return {std::sqrt(dmin2), close};
 }
 
+namespace {
+std::vector<std::string> pack_words(const std::string& line) {
+  std::istringstream ls(line);
+  std::vector<std::string> t;
+  for (std::string w; ls >> w;) t.push_back(w);
+  return t;
+}
+std::string pack_lower(std::string w) {
+  std::transform(w.begin(), w.end(), w.begin(), [](unsigned char c) { return char(std::tolower(c)); });
+  return w;
+}
+constexpr double kPi = 3.14159265358979323846;
+std::string pack_strip_comment(std::string line) {
+  if (auto h = line.find('#'); h != std::string::npos) line = line.substr(0, h);
+  return line;
+}
+}  // namespace
+
+bool is_caps_pack_input(const std::string& text) {
+  std::istringstream in(text);
+  for (std::string line; std::getline(in, line);) {
+    const auto t = pack_words(pack_strip_comment(line));
+    if (t.empty()) continue;
+    const std::string k = pack_lower(t[0]);
+    if (k == "cell" || k == "distance" || k == "molecule" || k == "compress" || k == "save" || k == "loops" || k == "iterations") return true;
+    if (k == "tolerance" || k == "structure" || k == "pbc" || k == "output" || k == "filetype" || k == "nloop" || k == "maxit") return false;
+  }
+  return false;
+}
+
+std::string caps_pack_to_packmol(const std::string& text) {
+  std::istringstream in(text);
+  std::ostringstream out;
+  int lineno = 0;
+  bool inside = false;
+  auto bad = [&](const std::string& why) { return PackError("line " + std::to_string(lineno) + ": " + why); };
+  // "box from x y z to X Y Z" and the other regions, as packmol's words after inside / outside / over / below
+  auto region = [&](const std::vector<std::string>& t, size_t i, bool plane_ok) -> std::string {
+    if (i >= t.size()) throw bad("which region? box, cube, sphere, ellipsoid, cylinder" + std::string(plane_ok ? ", plane" : ""));
+    const std::string r = pack_lower(t[i]);
+    auto nums = [&](size_t from, size_t n, const std::string& what) {
+      std::string o;
+      for (size_t q = 0; q < n; ++q) {
+        if (from + q >= t.size()) throw bad(what);
+        try { (void)std::stod(t[from + q]); } catch (...) { throw bad("'" + t[from + q] + "' is not a number (" + what + ")"); }
+        o += " " + t[from + q];
+      }
+      return o;
+    };
+    auto word = [&](size_t at, const char* w, const std::string& what) { if (at >= t.size() || pack_lower(t[at]) != w) throw bad(what); };
+    if (r == "box") {
+      const std::string what = "box from x y z to X Y Z";
+      word(i + 1, "from", what), word(i + 5, "to", what);
+      return "box" + nums(i + 2, 3, what) + nums(i + 6, 3, what);
+    }
+    if (r == "cube") {
+      const std::string what = "cube from x y z size d";
+      word(i + 1, "from", what), word(i + 5, "size", what);
+      return "cube" + nums(i + 2, 3, what) + nums(i + 6, 1, what);
+    }
+    if (r == "sphere") {
+      const std::string what = "sphere at x y z radius r";
+      word(i + 1, "at", what), word(i + 5, "radius", what);
+      return "sphere" + nums(i + 2, 3, what) + nums(i + 6, 1, what);
+    }
+    if (r == "ellipsoid") {
+      const std::string what = "ellipsoid at x y z axes a b c scale d";
+      word(i + 1, "at", what), word(i + 5, "axes", what), word(i + 9, "scale", what);
+      return "ellipsoid" + nums(i + 2, 3, what) + nums(i + 6, 3, what) + nums(i + 10, 1, what);
+    }
+    if (r == "cylinder") {
+      const std::string what = "cylinder from x y z along u v w radius r length l";
+      word(i + 1, "from", what), word(i + 5, "along", what), word(i + 9, "radius", what), word(i + 11, "length", what);
+      return "cylinder" + nums(i + 2, 3, what) + nums(i + 6, 3, what) + nums(i + 10, 1, what) + nums(i + 12, 1, what);
+    }
+    if (r == "plane" && plane_ok) {
+      const std::string what = "plane normal a b c at d";
+      word(i + 1, "normal", what), word(i + 5, "at", what);
+      return "plane" + nums(i + 2, 3, what) + nums(i + 6, 1, what);
+    }
+    throw bad("'" + t[i] + "' is not a region (box, cube, sphere, ellipsoid, cylinder" + std::string(plane_ok ? ", plane" : "") + ")");
+  };
+  // one constraint: in / not in / above / below; returns the packmol line
+  auto constraint = [&](const std::vector<std::string>& t, size_t i) -> std::string {
+    const std::string k = pack_lower(t[i]);
+    if (k == "in") return "inside " + region(t, i + 1, false);
+    if (k == "not" && i + 1 < t.size() && pack_lower(t[i + 1]) == "in") return "outside " + region(t, i + 2, false);
+    if (k == "above") { if (i + 1 >= t.size() || pack_lower(t[i + 1]) != "plane") throw bad("above plane normal a b c at d"); return "over " + region(t, i + 1, true); }
+    if (k == "below") { if (i + 1 >= t.size() || pack_lower(t[i + 1]) != "plane") throw bad("below plane normal a b c at d"); return "below " + region(t, i + 1, true); }
+    throw bad("'" + t[i] + "': in, not in, above or below");
+  };
+  for (std::string raw; std::getline(in, raw);) {
+    ++lineno;
+    const std::string line = pack_strip_comment(raw);
+    const auto t = pack_words(line);
+    if (t.empty()) { if (raw.find('#') != std::string::npos) out << raw << "\n"; continue; }
+    const std::string k = pack_lower(t[0]);
+    if (!inside) {
+      if (k == "cell") {
+        if (t.size() == 4) out << "pbc 0 0 0 " << t[1] << " " << t[2] << " " << t[3] << "\n";
+        else if (t.size() == 8 && pack_lower(t[4]) == "to") out << "pbc " << t[1] << " " << t[2] << " " << t[3] << " " << t[5] << " " << t[6] << " " << t[7] << "\n";
+        else throw bad("cell X Y Z (Å), or cell x y z to X Y Z");
+      } else if (k == "distance" && t.size() == 2) out << "tolerance " << t[1] << "\n";
+      else if (k == "seed" && t.size() == 2) out << "seed " << (pack_lower(t[1]) == "new" ? "-1" : t[1]) << "\n";
+      else if (k == "compress" && t.size() == 2) out << "compress " << t[1] << "\n";
+      else if (k == "loops" && t.size() == 2) out << "nloop " << t[1] << "\n";
+      else if (k == "iterations" && t.size() == 2) out << "maxit " << t[1] << "\n";
+      else if (k == "save" && t.size() >= 2) out << "output " << line.substr(line.find(t[0]) + t[0].size() + 1) << "\n";
+      else if (k == "molecule" && t.size() >= 2) { out << "\nstructure " << line.substr(line.find(t[0]) + t[0].size() + 1) << "\n"; inside = true; }
+      else throw bad("'" + t[0] + "': cell, distance, seed, compress, save, loops, iterations or molecule");
+      continue;
+    }
+    if (k == "end") { out << "end structure\n"; inside = false; }
+    else if (k == "count" && t.size() == 2) out << "  number " << t[1] << "\n";
+    else if (k == "centred" || k == "centered") out << "  center\n";
+    else if (k == "fixed") {
+      // fixed at x y z [rotated a b c degrees|radians]
+      if (t.size() < 5 || pack_lower(t[1]) != "at") throw bad("fixed at x y z [rotated a b c degrees]");
+      double a[3] = {0, 0, 0};
+      if (t.size() > 5) {
+        if (t.size() != 10 || pack_lower(t[5]) != "rotated") throw bad("fixed at x y z rotated a b c degrees");
+        const std::string u = pack_lower(t[9]);
+        const double f = u == "degrees" || u == "deg" ? kPi / 180 : u == "radians" || u == "rad" ? 1.0 : 0.0;
+        if (f == 0) throw bad("rotated a b c degrees (or radians)");
+        for (int q = 0; q < 3; ++q) a[q] = std::stod(t[size_t(6 + q)]) * f;
+      }
+      char b[160];
+      std::snprintf(b, sizeof b, "  fixed %s %s %s %.10g %.10g %.10g\n", t[2].c_str(), t[3].c_str(), t[4].c_str(), a[0], a[1], a[2]);
+      out << b;
+    } else if (k == "atoms") {
+      // atoms 1 2 3 in … : the constraint holds for those atoms
+      size_t q = 1;
+      std::string ids;
+      while (q < t.size() && std::all_of(t[q].begin(), t[q].end(), [](char c) { return std::isdigit(static_cast<unsigned char>(c)); })) ids += " " + t[q++];
+      if (ids.empty() || q >= t.size()) throw bad("atoms 1 2 3 in sphere at x y z radius r");
+      out << "  atoms" << ids << "\n    " << constraint(t, q) << "\n  end atoms\n";
+    } else out << "  " << constraint(t, 0) << "\n";
+  }
+  if (inside) throw bad("a molecule without its end");
+  return out.str();
+}
+
+std::string packmol_to_caps_pack(const std::string& text) {
+  std::istringstream in(text);
+  std::ostringstream out;
+  out << "# CAPS Pack (converted from packmol syntax)\n";
+  bool inside = false, atoms = false;
+  std::string atom_ids;
+  auto region = [](const std::vector<std::string>& t, size_t i) -> std::string {
+    const std::string r = pack_lower(t[i]);
+    auto at = [&](size_t q) { return q < t.size() ? t[q] : std::string("?"); };
+    if (r == "box") return "box from " + at(i + 1) + " " + at(i + 2) + " " + at(i + 3) + " to " + at(i + 4) + " " + at(i + 5) + " " + at(i + 6);
+    if (r == "cube") return "cube from " + at(i + 1) + " " + at(i + 2) + " " + at(i + 3) + " size " + at(i + 4);
+    if (r == "sphere") return "sphere at " + at(i + 1) + " " + at(i + 2) + " " + at(i + 3) + " radius " + at(i + 4);
+    if (r == "ellipsoid") return "ellipsoid at " + at(i + 1) + " " + at(i + 2) + " " + at(i + 3) + " axes " + at(i + 4) + " " + at(i + 5) + " " + at(i + 6) + " scale " + at(i + 7);
+    if (r == "cylinder") return "cylinder from " + at(i + 1) + " " + at(i + 2) + " " + at(i + 3) + " along " + at(i + 4) + " " + at(i + 5) + " " + at(i + 6) + " radius " + at(i + 7) + " length " + at(i + 8);
+    if (r == "plane") return "plane normal " + at(i + 1) + " " + at(i + 2) + " " + at(i + 3) + " at " + at(i + 4);
+    return t[i];
+  };
+  for (std::string raw; std::getline(in, raw);) {
+    const std::string line = pack_strip_comment(raw);
+    const auto t = pack_words(line);
+    if (t.empty()) { if (raw.find('#') != std::string::npos && raw.find("packmol syntax") == std::string::npos) out << raw << "\n"; continue; }
+    const std::string k = pack_lower(t[0]);
+    auto cons = [&](size_t i) -> std::string {
+      const std::string c = pack_lower(t[i]);
+      const std::string r = i + 1 < t.size() ? region(t, i + 1) : "";
+      return c == "inside" ? "in " + r : c == "outside" ? "not in " + r : c == "over" || c == "above" ? "above " + r : "below " + r;
+    };
+    if (!inside) {
+      if (k == "tolerance") out << "distance  " << t[1] << "\n";
+      else if (k == "seed") out << "seed      " << (t[1] == "-1" ? "new" : t[1]) << "\n";
+      else if (k == "pbc") out << (t.size() >= 7 ? "cell      " + t[1] + " " + t[2] + " " + t[3] + " to " + t[4] + " " + t[5] + " " + t[6] : "cell      " + t[1] + " " + t[2] + " " + t[3]) << "\n";
+      else if (k == "compress") out << "compress  " << t[1] << "\n";
+      else if (k == "nloop") out << "loops     " << t[1] << "\n";
+      else if (k == "maxit") out << "iterations " << t[1] << "\n";
+      else if (k == "output") out << "save      " << line.substr(line.find(t[0]) + t[0].size() + 1) << "\n";
+      else if (k == "structure") { out << "\nmolecule  " << line.substr(line.find(t[0]) + t[0].size() + 1) << "\n"; inside = true; }
+      continue;   // packmol's other settings have no effect in CAPS
+    }
+    if (k == "end" && t.size() > 1 && pack_lower(t[1]) == "atoms") { atoms = false; continue; }
+    if (k == "end") { out << "end\n"; inside = false; continue; }
+    if (k == "number") out << "  count   " << t[1] << "\n";
+    else if (k == "center" || k == "centerofmass") out << "  centred\n";
+    else if (k == "fixed" && t.size() >= 7) {
+      char b[200];
+      std::snprintf(b, sizeof b, "  fixed   at %s %s %s rotated %.10g %.10g %.10g degrees\n", t[1].c_str(), t[2].c_str(), t[3].c_str(), std::stod(t[4]) * 180 / kPi,
+                    std::stod(t[5]) * 180 / kPi, std::stod(t[6]) * 180 / kPi);
+      out << b;
+    } else if (k == "atoms") { atoms = true; atom_ids.clear(); for (size_t q = 1; q < t.size(); ++q) atom_ids += " " + t[q]; }
+    else if (k == "inside" || k == "outside" || k == "over" || k == "above" || k == "below") out << (atoms ? "  atoms" + atom_ids + " " : "  ") << cons(0) << "\n";
+  }
+  return out.str();
+}
+
 std::vector<PackItem> read_packmol_input(const std::string& path, PackOptions& o, std::string* output) {
   std::ifstream f(path);
   if (!f) throw PackError("cannot open " + path);
@@ -828,8 +1023,9 @@ std::vector<PackItem> read_packmol_input(const std::string& path, PackOptions& o
   return parse_packmol_input(ss.str(), std::filesystem::path(path).parent_path().string(), o, output, path);
 }
 
-std::vector<PackItem> parse_packmol_input(const std::string& text, const std::string& base_dir, PackOptions& o, std::string* output,
+std::vector<PackItem> parse_packmol_input(const std::string& text0, const std::string& base_dir, PackOptions& o, std::string* output,
                                           const std::string& name) {
+  const std::string text = is_caps_pack_input(text0) ? caps_pack_to_packmol(text0) : text0;   // the CAPS form, read through packmol's
   std::istringstream in(text);
   const std::filesystem::path base = base_dir;
   const std::string path = name;

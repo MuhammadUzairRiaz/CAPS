@@ -171,7 +171,7 @@
             <StackPanel>
               <Border Classes="phead">
                 <DockPanel>
-                  <Border DockPanel.Dock="Right" Classes="chip"><TextBlock Text="packmol syntax" Foreground="{DynamicResource MutedB}" /></Border>
+                  <Border DockPanel.Dock="Right" Classes="chip"><TextBlock Text="CAPS syntax · packmol files open too" Foreground="{DynamicResource MutedB}" ToolTip.Tip="cell X Y Z · distance d · seed n · molecule FILE / count n / in box from … to … · in sphere at … radius … · not in … · above plane normal … at … · fixed at x y z / end" /></Border>
                   <TextBlock Text="Input" Classes="h2" VerticalAlignment="Center" />
                 </DockPanel>
               </Border>
