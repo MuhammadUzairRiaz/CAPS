@@ -3512,6 +3512,22 @@ internal static class SelfTest
             Check(had > 0 && asked && vm.ProjectItems.Count == 0 && !vm.ShowPipelineStrip && vm.PipelineSteps.Count == 0,
                   $"clear: {had} structures · asked {asked} · left {vm.ProjectItems.Count} · strip {vm.ShowPipelineStrip}");
         }
+        // Pack › Add molecule › Sulfur (S8), built from its SMILES, 20 packed around the polymer cell
+        {
+            vm.Open(Path.Combine(dir, "ps_melt.data"));
+            vm.PackStart = 1;
+            vm.NewPackInput();
+            var s8 = vm.PackAdditives.First(f => f.Name.StartsWith("Sulfur", StringComparison.Ordinal));
+            vm.AddPackMolecule(s8.Smiles, s8.Name).GetAwaiter().GetResult();
+            var hasRow = vm.PackItems.Any(r => r.Name.Contains("Sulfur", StringComparison.Ordinal));
+            vm.PackText = System.Text.RegularExpressions.Regex.Replace(vm.PackText, @"count\s+\d+", "count   20");
+            vm.RunPack().GetAwaiter().GetResult();
+            var sum = vm.Document?.Summary();
+            Check(hasRow && vm.PackAdditives.Count >= 10 && sum?.Molecules == 30 && sum?.Atoms == 1300 + 160,
+                  $"pack curatives: {vm.PackAdditives.Count} additives · S8 row {hasRow} · {sum?.Molecules} molecules, {sum?.Atoms} atoms · d_min {vm.PackDmin}");
+            vm.PackStart = 0;
+        }
+
         // Water model on the Field page: a water with TIP4P/2005 gets its M site (4 atoms) and the model's force field
         {
             vm.Open(Path.Combine(dir, "water.pdb"));
