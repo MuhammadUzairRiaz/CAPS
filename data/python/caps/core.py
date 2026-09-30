@@ -779,15 +779,26 @@ class Document:
             raise _error()
 
     def render(self, path: str, width: int = 1280, height: int = 800, background: str = "white", style: str = "ball_and_stick",
-               colour: str = "molecule", yaw: float = 0.55, pitch: float = 0.40, zoom: float = 1.0) -> None:
-        """A PNG of the current frame."""
+               colour: str = "molecule", yaw: float = 0.55, pitch: float = 0.40, zoom: float = 1.0, engine: str = "raster",
+               bits: int = 8, samples: int = 64, shadows: bool = True, occlusion: bool = True, depth_of_field: float = 0.0,
+               outlines: bool = False, dpi: float = 0) -> None:
+        """A PNG of the current frame. engine="raytrace" traces it (CAPS's ray tracer: ambient occlusion, soft shadows,
+        depth of field as a fraction of the view's half-width, e.g. 0.012 soft, 0.035 strong); bits=16 keeps 16 bits."""
         style = style.replace("-", "_")
         cam = _Camera(yaw, pitch, zoom, 0, 0, 0)
         hl = (C.c_int32 * 4)(-1, -1, -1, -1)
         opt = _RenderOpts(width, height, 2, {"dark": 0, "white": 1, "transparent": 2}[background], 0,
                           {"element": 0, "molecule": 1, "type": 2}[colour],
                           {"ball_and_stick": 0, "space_filling": 1, "sticks": 2, "no_hydrogens": 3, "backbone": 4}[style], 1, 1, 1, hl, 0, 1)
-        if library().caps_export_png(self._h, C.byref(cam), C.byref(opt), _enc(str(path))) != 0:
+        if engine == "raster" and bits == 8 and not dpi:
+            if library().caps_export_png(self._h, C.byref(cam), C.byref(opt), _enc(str(path))) != 0:
+                raise _error()
+            return
+        options = {"engine": engine, "bits": bits, "dpi": dpi, "samples": samples, "shadows": shadows, "occlusion": occlusion,
+                   "aperture_fraction": depth_of_field, "outlines": outlines, "provenance": True}
+        f = library().caps_export_image
+        f.argtypes = [C.c_void_p, C.c_void_p, C.c_void_p, C.c_char_p, C.c_char_p, C.c_void_p]
+        if f(self._h, C.byref(cam), C.byref(opt), _enc(str(path)), _enc(json.dumps(options)), None) != 0:
             raise _error()
 
 
