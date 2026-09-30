@@ -41,7 +41,7 @@ namespace caps {
 
 namespace {
 
-const std::vector<std::string> kStages = {"build", "type", "grow", "react", "relax", "cbmc", "md", "equilibrate", "analyze", "export"};
+const std::vector<std::string> kStages = {"build", "type", "grow", "react", "relax", "cbmc", "equilibrate", "md", "analyze", "export"};   // equilibrated, then production MD
 const std::set<std::string> kTop = {"recipe", "name", "build", "type", "grow", "react", "relax", "cbmc", "md", "equilibrate", "analyze", "export", "electrostatics", "cutoff", "seed", "threads"};
 
 std::string g6(double x) { char b[32]; std::snprintf(b, sizeof b, "%.6g", x); return b; }
