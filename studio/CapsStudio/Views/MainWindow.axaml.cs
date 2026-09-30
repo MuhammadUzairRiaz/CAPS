@@ -1058,7 +1058,11 @@ public partial class MainWindow : Window
             _idle.Tick += async (_, _) =>
             {
                 _idle!.Stop();
-                if (_cpuStale && !_busy) await RefreshPickBuffer();
+                if (_cpuStale && !_busy)
+                {
+                    if (_vm.AnyLabels) await RefreshPickBuffer();   // labels hide behind atoms by the id buffer
+                    else if (_haveLast) UpdateOverlays(_lastCam, _lastOpt);   // monitors and the lens need only the camera
+                }
             };
         }
         _idle.Stop();
@@ -1078,6 +1082,17 @@ public partial class MainWindow : Window
         if (!ReferenceEquals(doc, _vm.Document) || !SameCamera(cam, _lastCam)) return;   // moved meanwhile: the next idle does it
         _cpuStale = false;
         UpdateOverlays(cam, opt);
+    }
+
+    /// <summary>The atom under a point of the main view: the view ray against the atoms for the camera shown (nothing is
+    /// rendered, so a click answers at once however large the system); the id buffer only before any view was drawn.</summary>
+    private int PickAtView(CapsStudio.Interop.CapsDocument doc, Point at)
+    {
+        var x = (int)(at.X * _scaling);
+        var y = (int)(at.Y * _scaling);
+        if (_haveLast) { try { return doc.PickAt(_lastCam, _lastOpt, x, y); } catch { } }
+        EnsurePickBuffer();
+        return doc.Pick(x, y);
     }
 
     /// <summary>Before a pick: the id buffer for what the GPU view shows now.</summary>
@@ -1347,8 +1362,7 @@ public partial class MainWindow : Window
             {
                 try
                 {
-                    EnsurePickBuffer();
-                    var hit = doc.Pick((int)(p.Position.X * _scaling), (int)(p.Position.Y * _scaling));
+                    var hit = PickAtView(doc, p.Position);
                     var set = _vm.MoveSet(hit);
                     if (set.Length > 0)
                     {
@@ -1386,8 +1400,7 @@ public partial class MainWindow : Window
         if (!_dragging && _vm.LensHold && _vm.Document != null && !_vm.Busy)   // L held: the lens follows the atom under the cursor
         {
             var at = e.GetPosition(_host);
-            EnsurePickBuffer();
-            var hit = _vm.Document.Pick((int)(at.X * _scaling), (int)(at.Y * _scaling));
+            var hit = PickAtView(_vm.Document, at);
             if (hit >= 0) { _vm.MoveLens(hit); RequestRender(); }
             return;
         }
@@ -1483,8 +1496,7 @@ public partial class MainWindow : Window
         if (_dragging && !_moved && _vm.Document != null && !_vm.Busy)
         {
             var pos = e.GetPosition(_host);
-            if (_host == ViewHost) EnsurePickBuffer();
-            var hit = _vm.Document.Pick((int)(pos.X * _scaling), (int)(pos.Y * _scaling));
+            var hit = _host == ViewHost ? PickAtView(_vm.Document, pos) : _vm.Document.Pick((int)(pos.X * _scaling), (int)(pos.Y * _scaling));
             if (!_vm.PickAllowed(hit)) hit = -1;   // "Measurements only inside" the lens
             if (_host == FieldViewHost) { if (hit >= 0) _vm.Field.SelectAtom(hit); }
             else if (_vm.EditTool != 0 && _vm.IsStudio) _vm.ToolClick(hit);

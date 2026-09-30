@@ -446,6 +446,54 @@ Prep prepare(const System& s, const RenderOptions& opt) {
 }  // namespace
 
 
+int Renderer::pick_ray(const System& s, const Camera& cam, const RenderOptions& opt, double x, double y) {
+  const size_t n = s.atoms.size();
+  if (!n) return -1;
+  const Prep P = prepare(s, opt);
+  const int ss = std::clamp(opt.supersample, 1, 4);
+  const View v = fit_view(s, cam, opt, P.show, opt.width * ss, opt.height * ss);
+  const double px = x * ss, py = y * ss;
+  // screen positions once; bonds as drawn (half-capsules; wireframe lines)
+  std::vector<double> sx(n), sy(n), sz(n), sk(n);
+  for (size_t i = 0; i < n; ++i) if (P.show[i]) v.project(s.atoms[i].pos, sx[i], sy[i], sz[i], sk[i]);
+  const bool bonds = opt.style != Style::SpaceFilling || P.mixed;
+  double half_cell = 1e300;
+  if (s.cell.valid()) half_cell = 0.5 * std::min({norm(s.cell.a), norm(s.cell.b), norm(s.cell.c)});
+  // pass 0: the surfaces exactly as drawn, the nearest wins; pass 1 (nothing under the pixel): anything within 3 px
+  for (int pass = 0; pass < 2; ++pass) {
+    const double rmin = pass ? 3.0 * ss : 0.0;
+    int best = -1;
+    double best_z = -1e300;
+    for (size_t i = 0; i < n; ++i) {
+      if (!P.show[i]) continue;
+      const double R = std::max(P.radius(i) * v.scale * sk[i], rmin);
+      const double dx = px - sx[i], dy = py - sy[i], d2 = dx * dx + dy * dy;
+      if (R <= 0 || d2 > R * R) continue;
+      const double front = sz[i] + std::sqrt(std::max(0.0, R * R - d2)) / (v.scale * sk[i]);
+      if (front > best_z) best_z = front, best = int(i);
+    }
+    if (bonds)
+      for (const auto& b : s.bonds) {
+        if (!P.show[b.i] || !P.show[b.j]) continue;
+        const Style si = P.style_of(b.i), sj = P.style_of(b.j);
+        if (si == Style::SpaceFilling || sj == Style::SpaceFilling) continue;
+        if (norm(s.atoms[b.i].pos - s.atoms[b.j].pos) > half_cell) continue;
+        const bool wire = si == Style::Wireframe || sj == Style::Wireframe;
+        const double br = si == Style::Backbone && sj == Style::Backbone ? opt.bond_radius * 2.2 : P.bond_r;
+        const double k = (sk[b.i] + sk[b.j]) / 2;
+        const double R = std::max(wire ? 0.7 * ss : br * v.scale * k, rmin);
+        const double ex = sx[b.j] - sx[b.i], ey = sy[b.j] - sy[b.i], len2 = ex * ex + ey * ey;
+        const double t = std::clamp(len2 > 1e-12 ? ((px - sx[b.i]) * ex + (py - sy[b.i]) * ey) / len2 : 0.0, 0.0, 1.0);
+        const double qx = sx[b.i] + ex * t - px, qy = sy[b.i] + ey * t - py, d2 = qx * qx + qy * qy;
+        if (d2 > R * R) continue;
+        const double front = sz[b.i] + (sz[b.j] - sz[b.i]) * t + (wire ? 0.0 : std::sqrt(std::max(0.0, R * R - d2)) / (v.scale * k));
+        if (front > best_z) best_z = front, best = int(t < 0.5 ? b.i : b.j);
+      }
+    if (best >= 0) return best;
+  }
+  return -1;
+}
+
 ViewFit view_fit(const System& s, const Camera& cam, const RenderOptions& opt) {
   const Prep P = prepare(s, opt);
   const int ss = std::clamp(opt.supersample, 1, 4);

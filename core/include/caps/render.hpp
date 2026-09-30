@@ -129,6 +129,10 @@ struct Renderer {
   Scene scene(const System& s, const RenderOptions& opt);
   // Picks the atom under a pixel of the last render (-1 if none).
   int pick(int x, int y) const;
+  // The atom under output pixel (x, y) for this camera, found by casting the view ray against every drawn atom's sphere
+  // (the render's projection, styles, radii and hidden atoms; a thin atom is at least 3 px wide) — no image is drawn,
+  // so a pick costs one pass over the atoms whatever the view's size. -1: none.
+  static int pick_ray(const System& s, const Camera& cam, const RenderOptions& opt, double x, double y);
   Image render(const System& s, const Camera& cam, const RenderOptions& opt);
   // For every atom: output-pixel x, y and 1 when the last render (same camera and options) shows it at its centre, else 0.
   std::vector<float> project(const System& s, const Camera& cam, const RenderOptions& opt) const;

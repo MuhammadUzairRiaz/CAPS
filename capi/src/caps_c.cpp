@@ -3743,6 +3743,21 @@ int32_t caps_view_fit(caps_doc* d, const caps_camera* cam, const caps_render_opt
   });
 }
 
+int32_t caps_pick_at(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt, int32_t x, int32_t y) {
+  int32_t out = -1;
+  guard([&] {
+    auto ro = opts_of(d, opt);
+    caps::System imaged;
+    const caps::System& sys = view_system(d, ro, imaged);
+    int k = caps::Renderer::pick_ray(sys, cam_of(cam), ro, x + 0.5, y + 0.5);   // the pixel's centre
+    if (k >= 0 && !d->pstate && !d->frame.atoms.empty()) k = int(size_t(k) % d->frame.atoms.size());   // an image atom picks its original
+    if (k >= 0 && d->pstate) k = size_t(k) < d->pstate->origin.size() ? d->pstate->origin[size_t(k)] : -1;
+    out = k;
+    return 0;
+  });
+  return out;
+}
+
 int32_t caps_pick(caps_doc* d, int32_t x, int32_t y) {
   int k = d->renderer.pick(x, y);
   if (k >= 0 && !d->pstate && !d->frame.atoms.empty()) k = int(size_t(k) % d->frame.atoms.size());   // an image atom picks its original
