@@ -523,4 +523,14 @@ _n = len(vs.atom_states())
 check(vs.hide(range(0, 130)) == 130 and vs.ghost([200, 201]) == 2 and vs.atom_states()[5] == 2 and vs.atom_states()[200] == 1,
       "hide and ghost atoms in the view")
 check(vs.show() == 132 and set(vs.atom_states()) == {0} and len(vs.atom_states()) == _n, "show every atom again; the structure is whole")
+_L = vs.layers()
+_k = _L["kinds"][0]
+check(len(_L["kinds"]) == 1 and len(_k["molecules"]) == 10 and _k["atoms"] == 1300 and _k["formula"] == "C64H66"
+      and all(max(m["z"]) == 1.0 for m in _k["molecules"]), f"layers: one kind, {_k['formula']} × {len(_k['molecules'])}")
+vs.hide(range(0, 130)); vs.lock(range(130, 260))
+_m = {m["id"]: m for m in vs.layers()["kinds"][0]["molecules"]}
+_ids = sorted(_m)
+check(_m[_ids[0]]["state"] == "hidden" and _m[_ids[1]]["locked"] and _m[_ids[1]]["state"] == "shown" and vs.atom_states()[130] == 4,
+      "layers: a hidden molecule, a locked one (still shown)")
+vs.show(); vs.lock(None, False)
 print("all python checks passed")

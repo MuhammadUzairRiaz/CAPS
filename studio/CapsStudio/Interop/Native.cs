@@ -604,6 +604,8 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_field_override")] public static extern int FieldOverride(IntPtr doc, int index, [MarshalAs(UnmanagedType.LPUTF8Str)] string? type);
     [DllImport(Lib, EntryPoint = "caps_field_type_by_example")] public static extern int FieldTypeByExample(IntPtr doc, IntPtr example, [MarshalAs(UnmanagedType.LPUTF8Str)] string types, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_set_atom_state")] public static extern int SetAtomState(IntPtr doc, int[]? atoms, int n, int state);
+    [DllImport(Lib, EntryPoint = "caps_set_atom_lock")] public static extern int SetAtomLock(IntPtr doc, int[]? atoms, int n, int locked);
+    [DllImport(Lib, EntryPoint = "caps_layers")] public static extern int Layers(IntPtr doc, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_atom_states")] public static extern int AtomStates(IntPtr doc, byte[]? states, int n);
     [DllImport(Lib, EntryPoint = "caps_project_indices")] public static extern int ProjectIndices(IntPtr doc, in CapsCamera cam, in CapsRenderOpts opt, int[] atoms, int n, float[] xy);
     [DllImport(Lib, EntryPoint = "caps_export_scene")] public static extern int ExportScene(IntPtr doc, in CapsCamera cam, in CapsRenderOpts opt, [MarshalAs(UnmanagedType.LPUTF8Str)] string path,
@@ -1531,7 +1533,11 @@ public sealed class CapsDocument : IDisposable
     }
     /// <summary>These atoms (null: all) shown (0), ghosted (1: faint, never picked) or hidden (2) in the view; how many changed.</summary>
     public int SetAtomState(int[]? atoms, int state) { using (Hold()) { Alive(); return Native.SetAtomState(H, atoms, atoms?.Length ?? 0, state); } }
-    /// <summary>Each atom's view state (0 shown, 1 ghost, 2 hidden).</summary>
+    /// <summary>These atoms (null: all) locked against picking and edits, or freed; how many changed.</summary>
+    public int SetAtomLock(int[]? atoms, bool locked) { using (Hold()) { Alive(); return Native.SetAtomLock(H, atoms, atoms?.Length ?? 0, locked ? 1 : 0); } }
+    /// <summary>The layers: molecules by kind with atom counts, z profiles, view states, locks and selected counts (JSON).</summary>
+    public string LayersJson() { using (Hold()) return JsonCallOnce((b, c) => Native.Layers(H, b, c)); }
+    /// <summary>Each atom's state: bits 0-1 the view (0 shown, 1 ghost, 2 hidden), bit 2 locked.</summary>
     public byte[] AtomStates()
     {
         using (Hold())

@@ -137,6 +137,7 @@ public sealed partial class MainViewModel
         GrownUnsaved = true;
         RefreshSummary();
         RefreshSelection();
+        RefreshLayers();
         RefreshHistory();
         if (_selOpen) RefreshStereo();
         if (_ixOpen && _ixLive) RunInteractions();
@@ -286,6 +287,8 @@ public sealed partial class MainViewModel
         var doc = _doc;
         var sel = SelectionAtoms();
         var atoms = sel.Length > 0 ? sel : null;
+        if (atoms == null && doc.AtomStates() is var st && st.Any(v => (v & 4) != 0))   // locked layers are held
+            atoms = Enumerable.Range(0, st.Length).Where(i => (st[i] & 4) == 0).ToArray();
         Status = "Cleaning up with UFF…";
         var text = await Task.Run(() => doc.Edit(atoms == null ? "{\"op\":\"clean\"}" : System.Text.Json.JsonSerializer.Serialize(new { op = "clean", atoms })));
         var r = JsonNode.Parse(text)!;
