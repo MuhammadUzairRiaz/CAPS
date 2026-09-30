@@ -7,6 +7,7 @@
 
 #include "caps/analysis.hpp"
 #include "caps/ffdef.hpp"
+#include "caps/ffio.hpp"
 #include "caps/ffmerge.hpp"
 #include "caps/io.hpp"
 #include "caps/json.hpp"
@@ -362,4 +363,28 @@ TEST(FFMerge, LammpsGroupsByType) {
   // filler types after the matrix's: said
   ff.type_index = {3, 3, 0, 1, 2, 1};
   EXPECT_NE(caps::lammps_group_lines(s, ff, g).find("not all numbered before"), std::string::npos);
+}
+
+// A force field written whole and read back (caps/ffio.hpp) gives the same energy, term by term, and writes the same
+// text again: a merged one (each part's own 1-4 scaling, pair by pair) and a class II one.
+TEST(FFMerge, AssignedForceFieldFileRoundTrip) {
+  System s = open_file(std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.data").frame(0);
+  make_molecules_whole(s);
+  const auto mol = s.molecules();
+  std::vector<uint32_t> a, b;
+  for (size_t i = 0; i < s.atoms.size(); ++i) (mol[i] < 5 ? a : b).push_back(uint32_t(i));
+  const FFDef gaff = load_forcefield(kFF + "gaff-amber25.json"), opls = load_forcefield(kFF + "opls2005.json");
+  const ForceField fa = typed(part_of(s, a), gaff), fb = typed(part_of(s, b), opls);
+  const ForceField merged = merge_forcefields(s.atoms.size(), {{&fa, a, "GAFF"}, {&fb, b, "OPLS"}}, MergeOptions{});
+  const ForceField pcff = typed(s, load_forcefield(kFF + "pcff.json"));
+  for (const ForceField* ff : {&merged, &pcff}) {
+    const std::string text = forcefield_to_json(*ff);
+    const ForceField back = forcefield_from_json(text);
+    EXPECT_EQ(forcefield_to_json(back), text);
+    EXPECT_EQ(back.per_pair14(), ff->per_pair14());
+    const auto e0 = energy(*ff, s), e1 = energy(back, s);
+    EXPECT_NEAR(e1.total(), e0.total(), 1e-9 * std::max(1.0, std::fabs(e0.total())));
+    EXPECT_NEAR(e1.bond + e1.angle + e1.dihedral + e1.improper, e0.bond + e0.angle + e0.dihedral + e0.improper, 1e-9 * std::max(1.0, std::fabs(e0.total())));
+  }
+  EXPECT_THROW(forcefield_from_json("{\"format\": \"something else\"}"), FieldError);
 }

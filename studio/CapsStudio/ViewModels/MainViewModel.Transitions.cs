@@ -94,7 +94,6 @@ public sealed partial class MainViewModel
         var runs = new List<(double Tg, double Err, double AlphaLow, double AlphaHigh, double Vtg, double SLow, double SHigh, double Rms, (double T, double V)[] Points)>();
         var seed0 = Analyze.MechSeed;
         var energy = Analyze.TgProperty == 1;
-        var unit = energy ? "kcal/mol" : "cm³/g";
         try
         {
             for (var r = 1; r <= _gtReplicas; ++r)
@@ -111,6 +110,14 @@ public sealed partial class MainViewModel
             }
         }
         finally { Analyze.MechSeed = seed0; }
+        PoolGlass(runs, energy, Analyze.TgFitRanges, GtRateText, Analyze.Log);
+    }
+
+    private void PoolGlass(List<(double Tg, double Err, double AlphaLow, double AlphaHigh, double Vtg, double SLow, double SHigh, double Rms, (double T, double V)[] Points)> runs,
+                           bool energy, bool fitRanges, string rateText, string log)
+    {
+        var inv = CultureInfo.InvariantCulture;
+        var unit = energy ? "kcal/mol" : "cm³/g";
         // the replicas pooled: the fitted property per temperature (mean ± SD), Tg and the slopes (mean ± SD, or the fit's
         // bootstrap for one)
         var temps = runs[0].Points.Select(p => p.T).ToArray();
@@ -118,7 +125,7 @@ public sealed partial class MainViewModel
         GtErrors = runs.Count > 1 ? temps.Select((_, i) => Sd(runs.Select(r => r.Points.Length > i ? r.Points[i].V : double.NaN).ToArray())).ToArray() : [];
         GtYLabel = energy ? "potential energy per atom (kcal/mol)" : "specific volume (cm³/g)";
         var ok = runs.Where(r => double.IsFinite(r.Tg)).ToList();
-        if (ok.Count == 0) { GtTg.Value = "—"; GtStatus = "No break found: widen the temperature range" + (Analyze.TgFitRanges ? " or move the ranges" : ""); Raise(nameof(GtHasPoints)); GtChanged?.Invoke(); return; }
+        if (ok.Count == 0) { GtTg.Value = "—"; GtTg.Caption = "no break in the scan"; GtFit = []; GtReplicaText = ""; GtStatus = $"{runs.Count} replica{(runs.Count == 1 ? "" : "s")} · no break found: widen the temperature range" + (fitRanges ? " or move the ranges" : "") + " · " + log; Raise(nameof(GtHasPoints)); GtChanged?.Invoke(); return; }
         var tg = ok.Average(r => r.Tg);
         var tgErr = ok.Count > 1 ? Sd(ok.Select(r => r.Tg).ToArray()) : ok[0].Err;
         var vtg = ok.Average(r => r.Vtg);
@@ -126,7 +133,7 @@ public sealed partial class MainViewModel
         var sHigh = ok.Average(r => r.SHigh);
         GtTg.Value = double.IsFinite(tgErr) ? $"{tg.ToString("0", inv)} ± {tgErr.ToString("0", inv)} K" : $"{tg.ToString("0", inv)} K (no error estimate)";
         GtTg.Caption = (ok.Count > 1 ? $"mean ± SD of {ok.Count} replicas" : "bootstrap of the fit") + $" · {(energy ? "potential energy" : "specific volume")}, " +
-                       (Analyze.TgFitRanges ? "two ranges" : "free break") + $" · at {GtRateText}";
+                       (fitRanges ? "two ranges" : "free break") + $" · at {rateText}";
         GtAlphaGlass.Label = energy ? "dE/dT glass" : "α glass";
         GtAlphaMelt.Label = energy ? "dE/dT melt" : "α melt";
         GtAlphaGlass.Caption = energy ? "potential energy per atom, slope below Tg" : "volumetric expansion below Tg";
@@ -147,7 +154,7 @@ public sealed partial class MainViewModel
         GtFit = Enumerable.Range(0, 101).Select(k => lo + (hi - lo) * k / 100.0)
                           .Select(T => (T, vtg + sLow * Math.Min(T - tg, 0) + sHigh * Math.Max(T - tg, 0))).ToArray();
         GtReplicaText = ok.Count > 1 ? "Replicas: " + string.Join(" · ", ok.Select(r => r.Tg.ToString("0", inv) + " K")) : "";
-        GtStatus = $"{runs.Count} replica{(runs.Count == 1 ? "" : "s")} · {temps.Length} temperatures · {Analyze.Log}";
+        GtStatus = $"{runs.Count} replica{(runs.Count == 1 ? "" : "s")} · {temps.Length} temperatures · {log}";
         Raise(nameof(GtHasPoints));
         Raise(nameof(GtYLabel));
         GtChanged?.Invoke();
@@ -171,14 +178,26 @@ public sealed partial class MainViewModel
         finally { foreach (var (c, on) in was) c.IsOn = on; }
     }
 
-    /// <summary>The cooling scan as a recipe (analyze: tg) for this structure, saved beside it or anywhere.</summary>
-    public string GlassRecipe(string structurePath)
+    /// <summary>The cooling scan as a recipe (analyze: tg) for this structure, saved beside it or anywhere. With a force
+    /// field assigned, its file (forceFieldFile, written by SaveGlassForceField) is the recipe's force field — the same
+    /// parameters, groups and water models as here; otherwise the host types the structure with the default.</summary>
+    public string GlassRecipe(string structurePath, string? forceFieldFile = null, ulong? seed = null, string? name = null)
     {
-        var inv = CultureInfo.InvariantCulture;
-        return "# Glass transition from CAPS Studio · run: caps run " + System.IO.Path.GetFileNameWithoutExtension(structurePath) + "_tg.yaml\n" +
-               "recipe: 1\nname: " + System.IO.Path.GetFileNameWithoutExtension(structurePath) + "_tg\n" +
-               "build: { file: \"" + structurePath.Replace("\\", "/") + "\" }\ntype: { forcefield: default }\n" +
-               string.Format(inv, "analyze:\n  properties: [tg]\n  tg: {{ t_start: {0}, t_end: {1}, t_step: {2}, ps_per_step: {3}, equilibrate_ps: {4}, seed: 1 }}\n",
-                             GtFrom, GtTo, GtStepK, GtHoldPs, GtAnnealPs > 0 ? GtAnnealPs : -1);
+        var stem = System.IO.Path.GetFileNameWithoutExtension(structurePath);
+        return "# Glass transition from CAPS Studio · run: caps run " + stem + "_tg.yaml\n" +
+               "recipe: 1\nname: " + (name ?? stem + "_tg") + "\n" +
+               "build: { file: \"" + structurePath.Replace("\\", "/") + "\" }\n" +
+               (forceFieldFile != null ? "type: { file: \"" + forceFieldFile.Replace("\\", "/") + "\" }\n" : "type: { forcefield: default }\n") +
+               "analyze:\n  properties: [tg]\n  tg: " + Analyze.TgRecipeKeys(seed ?? Analyze.MechSeed) + "\n";
+    }
+
+    /// <summary>The assigned force field written whole beside a recipe (NAME.ff.json); its file name, or null when none is
+    /// assigned or React is to change the structure.</summary>
+    public string? SaveGlassForceField(string recipePath)
+    {
+        if (!Field.Assigned || _doc == null) return null;
+        var name = System.IO.Path.GetFileNameWithoutExtension(recipePath) + ".ff.json";
+        _doc.FieldSave(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(recipePath) ?? ".", name));
+        return name;
     }
 }

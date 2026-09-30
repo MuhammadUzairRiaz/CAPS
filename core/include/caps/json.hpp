@@ -52,6 +52,8 @@ class Json {
 
   static Json parse(const std::string& text);
   std::string dump(int indent = 2) const;
+  // Numbers with 17 significant digits: read back exactly (a force field file); dump() keeps 10 for reports
+  std::string dump_exact(int indent = 0) const;
 
  private:
   Kind kind_ = Null;

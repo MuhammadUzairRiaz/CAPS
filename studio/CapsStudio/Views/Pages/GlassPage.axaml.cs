@@ -33,7 +33,7 @@ public partial class GlassPage : PageBase
     }
 
     private void OnPlan(object? s, NumericUpDownValueChangedEventArgs e) => Vm.RaiseGlassPlan();
-    private async void OnRun(object? s, RoutedEventArgs e) => await Vm.RunGlass();
+    private async void OnRun(object? s, RoutedEventArgs e) { if (Vm.RunsRemote) await Vm.SubmitGlassRemote(); else await Vm.RunGlass(); }
     private void OnCancel(object? s, RoutedEventArgs e) => Vm.Analyze.Cancel();
 
     private async void OnRecipe(object? s, RoutedEventArgs e)
@@ -47,8 +47,11 @@ public partial class GlassPage : PageBase
             FileTypeChoices = [new FilePickerFileType("CAPS recipe") { Patterns = ["*.yaml", "*.yml"] }],
         });
         if (file?.TryGetLocalPath() is not { } p) return;
-        System.IO.File.WriteAllText(p, Vm.GlassRecipe(src));
-        Vm.Status = $"Saved {System.IO.Path.GetFileName(p)} · caps run {System.IO.Path.GetFileName(p)}";
+        string? ff;
+        try { ff = Vm.SaveGlassForceField(p); }
+        catch (Exception ex) { Vm.Status = "The force field was not saved: " + ex.Message; return; }
+        System.IO.File.WriteAllText(p, Vm.GlassRecipe(src, ff));
+        Vm.Status = $"Saved {System.IO.Path.GetFileName(p)}{(ff != null ? " and " + ff : "")} · caps run {System.IO.Path.GetFileName(p)}";
     }
     private void OnQueue(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.QueueGlass();
 }

@@ -509,4 +509,12 @@ _in = open(os.path.join(_d, "mx.in")).read()
 _top = "".join(open(os.path.join(_d, f)).read() for f in os.listdir(_d) if f.endswith((".top", ".itp")))
 check("pair lj/cut 1 special lj 0.0 0.0 0.5" in _in and "special coul 0.0 0.0 0.8333333333" in _in and re.search(r"^\s*\d+\s+\d+\s+2\s+0\.5 ", _top, re.M) is not None,
       "own 1-4 scalings: LAMMPS per-part special weights, GROMACS function-2 pairs")
+# the assigned force field written whole and read back on the same structure: same energy, groups kept
+_ffp = os.path.join(_tf.mkdtemp(), "mx.ff.json")
+_e0 = mx.energy()["total"]
+mx.field.save(_ffp)
+mx2 = caps.pack(molecules=[("Cc1ccccc1", 4), ("C1CCCCC1", 4)], box=18.0, tolerance=2.0, seed=4)
+mx2.field.load(_ffp)
+_e1 = mx2.energy()["total"]
+check(abs(_e1 - _e0) <= 1e-8 * max(1.0, abs(_e0)), f"force-field file round trip: {_e0:.6f} / {_e1:.6f}")
 print("all python checks passed")
