@@ -33,7 +33,7 @@
       </StackPanel>
     </Grid>
 
-    <Grid Grid.Row="1" ColumnDefinitions="470,*,*" RowDefinitions="300,*" ColumnSpacing="16" RowSpacing="16">
+    <Grid v:Panes.Split="True" Grid.Row="1" ColumnDefinitions="470,*,*" RowDefinitions="300,*" ColumnSpacing="16" RowSpacing="16">
       <!-- left column: method, push-off and cell -->
       <ScrollViewer Grid.RowSpan="2">
         <StackPanel Spacing="16" IsEnabled="{Binding !Relaxing}">

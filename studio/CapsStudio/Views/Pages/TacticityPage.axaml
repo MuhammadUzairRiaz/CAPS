@@ -28,7 +28,7 @@
       </DockPanel>
     </Border>
     <ScrollViewer Margin="22,18">
-      <Grid ColumnDefinitions="400,*" ColumnSpacing="14">
+      <Grid v:Panes.Split="True" ColumnDefinitions="400,*" ColumnSpacing="14">
         <StackPanel Spacing="14">
           <Border Classes="pcard" Height="260">
             <DockPanel>

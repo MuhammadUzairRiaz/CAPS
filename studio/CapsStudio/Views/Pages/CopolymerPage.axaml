@@ -23,10 +23,10 @@
           </DockPanel>
         </Border>
         <Border DockPanel.Dock="Bottom" Padding="18,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
-          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+          <WrapPanel HorizontalAlignment="Right" ItemSpacing="8" LineSpacing="8">
             <Button Content="Redraw" Click="OnRedraw" ToolTip.Tip="Another chain from the same model (next seed)" />
             <Button Classes="primary" Content="{Binding CoBuildText}" Click="OnBuild" ToolTip.Tip="Grow builds its chains with this monomer pair and model, each chain its own sequence" />
-          </StackPanel>
+          </WrapPanel>
         </Border>
         <ScrollViewer>
           <StackPanel>

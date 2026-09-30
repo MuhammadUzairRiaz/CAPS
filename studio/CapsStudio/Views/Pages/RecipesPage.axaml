@@ -34,7 +34,7 @@
         <TextBlock Text="{Binding RecipePathText}" Classes="mono dim" VerticalAlignment="Center" />
       </DockPanel>
     </Border>
-    <Grid ColumnDefinitions="260,*,440" ColumnSpacing="14" Margin="22,18">
+    <Grid v:Panes.Split="True" ColumnDefinitions="260,*,440" ColumnSpacing="14" Margin="22,18">
       <Border Classes="pcard" Padding="10,12">
         <DockPanel>
           <TextBlock DockPanel.Dock="Top" Text="Recipes" FontSize="13.5" FontWeight="SemiBold" Margin="6,0,0,8" />

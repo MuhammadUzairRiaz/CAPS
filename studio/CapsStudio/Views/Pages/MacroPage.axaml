@@ -17,7 +17,7 @@
         <TextBlock Text="python3 · the caps package (data/python) · this Studio's libcaps" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
       </DockPanel>
     </Border>
-    <Grid ColumnDefinitions="*,380">
+    <Grid v:Panes.Split="True" ColumnDefinitions="*,380">
       <DockPanel>
         <Border DockPanel.Dock="Top" Height="44" Padding="12,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
           <DockPanel VerticalAlignment="Center">
@@ -55,11 +55,11 @@
             </DockPanel>
           </Border>
           <Border DockPanel.Dock="Bottom" Padding="14,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Background="{DynamicResource Bg1B}">
-            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+            <WrapPanel HorizontalAlignment="Right" ItemSpacing="8" LineSpacing="8">
               <Button Click="OnSave"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="save" Size="15" VerticalAlignment="Center" /><TextBlock Text="Save as tool" VerticalAlignment="Center" /></StackPanel></Button>
               <Button Content="Stop" Click="OnStop" IsVisible="{Binding MacroRunning}" />
               <Button Classes="primary" Click="OnRun" IsEnabled="{Binding MacroIdle}"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="play" Size="15" VerticalAlignment="Center" /><TextBlock Text="Run" VerticalAlignment="Center" /></StackPanel></Button>
-            </StackPanel>
+            </WrapPanel>
           </Border>
           <ScrollViewer>
             <StackPanel>

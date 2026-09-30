@@ -46,6 +46,10 @@ public sealed class AppSettings
     public bool TourDone { get; set; }
     /// <summary>Keys the user gave palette commands: command id → gesture ("Meta+Shift+G").</summary>
     public Dictionary<string, string> Shortcuts { get; set; } = new();
+    /// <summary>Pane sizes the user dragged or hid (Panes): grid key → each track's size ("300|*|child:230").</summary>
+    public Dictionary<string, string> PaneSizes { get; set; } = new();
+    /// <summary>Names the user gave projects: folder ("" for the session) → name shown in the project tree.</summary>
+    public Dictionary<string, string> ProjectNames { get; set; } = new();
     public string ReduceMotion { get; set; } = "system";   // system (follow the OS) | on | off
     public bool HighContrast { get; set; }                  // Accessibility: strong outlines in the view, firmer borders and secondary text
     public bool FocusRingsAlways { get; set; }              // Accessibility: a focus ring on every focused control, not only after Tab

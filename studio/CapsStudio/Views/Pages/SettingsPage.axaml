@@ -34,7 +34,7 @@
   </p:PageBase.Styles>
 
   <Grid RowDefinitions="*,32">
-    <Grid ColumnDefinitions="240,*,380">
+    <Grid v:Panes.Split="True" ColumnDefinitions="240,*,380">
       <!-- categories -->
       <Border Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,1,0" Padding="12,16">
         <ItemsControl x:Name="Nav">

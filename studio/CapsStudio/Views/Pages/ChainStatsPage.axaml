@@ -24,7 +24,7 @@
     <Border DockPanel.Dock="Bottom" Height="28" Padding="22,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
       <TextBlock Text="{Binding CsStatus}" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
     </Border>
-    <Grid ColumnDefinitions="360,*" ColumnSpacing="14" Margin="22,18">
+    <Grid v:Panes.Split="True" ColumnDefinitions="360,*" ColumnSpacing="14" Margin="22,18">
       <Border Classes="pcard" Padding="0">
         <DockPanel>
           <Border DockPanel.Dock="Top" Padding="16,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">

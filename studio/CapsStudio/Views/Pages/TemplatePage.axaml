@@ -31,7 +31,7 @@
         <TextBlock Text="{Binding TemplateFooter}" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
       </DockPanel>
     </Border>
-    <Grid ColumnDefinitions="*,400">
+    <Grid v:Panes.Split="True" ColumnDefinitions="*,400">
       <DockPanel Margin="22,18,0,18">
         <TabStrip DockPanel.Dock="Top" Classes="small" ItemsSource="{Binding TemplateTabs}" SelectedIndex="{Binding TemplateIndex}" Margin="0,0,0,10" />
         <Grid DockPanel.Dock="Top" ColumnDefinitions="*,40,*" Height="340">

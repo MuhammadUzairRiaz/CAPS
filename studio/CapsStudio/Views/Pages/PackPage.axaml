@@ -30,7 +30,7 @@
       </StackPanel>
     </Grid>
 
-    <Grid Grid.Row="1" ColumnDefinitions="560,*" ColumnSpacing="16">
+    <Grid v:Panes.Split="True" Grid.Row="1" ColumnDefinitions="560,*" ColumnSpacing="16">
       <ScrollViewer>
         <StackPanel Spacing="16">
           <!-- what comes after packing: straight to the engines, or minimise / run dynamics in CAPS first -->

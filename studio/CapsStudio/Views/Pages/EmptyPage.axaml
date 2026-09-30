@@ -21,7 +21,7 @@
       <Setter Property="Padding" Value="7,1" />
     </Style>
   </p:PageBase.Styles>
-  <Grid ColumnDefinitions="*,380" ColumnSpacing="18" Margin="22">
+  <Grid v:Panes.Split="True" ColumnDefinitions="*,380" ColumnSpacing="18" Margin="22">
     <!-- Drop zone -->
     <Panel>
       <Rectangle Stroke="{DynamicResource LineB}" StrokeThickness="2" StrokeDashArray="4,3" RadiusX="14" RadiusY="14" Fill="{DynamicResource Bg1B}" />
