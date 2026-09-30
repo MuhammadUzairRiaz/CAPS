@@ -6835,6 +6835,15 @@ extern "C" int32_t caps_label_kinds(char* json, int32_t cap) {
   return report_out(j.dump(0), json, cap);
 }
 
+extern "C" int32_t caps_project_indices(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt, const int32_t* atoms, int32_t n, float* xy) {
+  return guard([&] {
+    std::vector<int> idx(atoms, atoms + std::max(0, n));
+    const auto p = caps::Renderer::project_some(d->frame, cam_of(cam), opts_of(d, opt), idx);
+    std::memcpy(xy, p.data(), p.size() * sizeof(float));
+    return int32_t(idx.size());
+  });
+}
+
 extern "C" int32_t caps_project_atoms(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt, float* xyv, int32_t count) {
   return guard([&] {
     if (d->pstate) throw std::runtime_error("labels are drawn without a Visualize pipeline");
