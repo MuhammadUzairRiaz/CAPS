@@ -28,8 +28,12 @@ public sealed unsafe class GlMolView : OpenGlControlBase
     private delegate* unmanaged<int, float, float, float, void> _u3f;
     private delegate* unmanaged<int, float, float, float, float, void> _u4f;
 
-    private int _progSphere, _progCapsule, _progLine;
-    private int _vaoSphere, _vaoCapsule, _vaoLine;
+    private int _progSphere, _progCapsule, _progLine, _progTri;
+    private int _vaoSphere, _vaoCapsule, _vaoLine, _vaoTri;
+    private int _bufTri, _bufTriRgb, _nTriVerts;
+    private delegate* unmanaged<byte, byte, byte, byte, void> _colorMask;
+    private delegate* unmanaged<int, int, void> _blendFunc;
+    private delegate* unmanaged<int, int, int, void> _drawArrays;
     private int _cornerSphere, _cornerCapsule;
     private int _bufSphere, _bufSphereRgb, _bufSphereRing, _bufCapsule, _bufCapsuleRgb, _bufLine, _bufLineRgb;
     private int _nSphere, _nCapsule, _nLine;
@@ -84,12 +88,18 @@ public sealed unsafe class GlMolView : OpenGlControlBase
             _u2f = (delegate* unmanaged<int, float, float, void>)P("glUniform2f");
             _u3f = (delegate* unmanaged<int, float, float, float, void>)P("glUniform3f");
             _u4f = (delegate* unmanaged<int, float, float, float, float, void>)P("glUniform4f");
+            _colorMask = (delegate* unmanaged<byte, byte, byte, byte, void>)P("glColorMask");
+            _blendFunc = (delegate* unmanaged<int, int, void>)P("glBlendFunc");
+            _drawArrays = (delegate* unmanaged<int, int, int, void>)P("glDrawArrays");
             var ap = gl.GetProcAddress("glGetFramebufferAttachmentParameteriv");
             if (ap != IntPtr.Zero) _attachParam = (delegate* unmanaged<int, int, int, int*, void>)ap;
             var head = es ? "#version 300 es\nprecision highp float;\nprecision highp int;\n" : "#version 330 core\n";
             _progSphere = Program(gl, head + Common + SphereVs, head + Common + Shade + SphereFs);
             _progCapsule = Program(gl, head + Common + CapsuleVs, head + Common + Shade + CapsuleFs);
             _progLine = Program(gl, head + Common + LineVs, head + Common + LineFs);
+            _progTri = Program(gl, head + Common + TriVs, head + Common + Shade + TriFs);
+            _vaoTri = gl.GenVertexArray();
+            _bufTri = gl.GenBuffer(); _bufTriRgb = gl.GenBuffer();
             _cornerSphere = Buffer(gl, [-1f, -1f, 1f, -1f, -1f, 1f, 1f, 1f]);
             _cornerCapsule = Buffer(gl, [0f, -1f, 1f, -1f, 0f, 1f, 1f, 1f]);
             _vaoSphere = gl.GenVertexArray();
@@ -111,11 +121,13 @@ public sealed unsafe class GlMolView : OpenGlControlBase
 
     protected override void OnOpenGlDeinit(GlInterface gl)
     {
-        foreach (var p in new[] { _progSphere, _progCapsule, _progLine }) if (p != 0) gl.DeleteProgram(p);
+        foreach (var p in new[] { _progSphere, _progCapsule, _progLine, _progTri }) if (p != 0) gl.DeleteProgram(p);
+        foreach (var b in new[] { _bufTri, _bufTriRgb }) if (b != 0) gl.DeleteBuffer(b);
+        if (_vaoTri != 0) gl.DeleteVertexArray(_vaoTri);
         foreach (var b in new[] { _cornerSphere, _cornerCapsule, _bufSphere, _bufSphereRgb, _bufSphereRing, _bufCapsule, _bufCapsuleRgb, _bufLine, _bufLineRgb })
             if (b != 0) gl.DeleteBuffer(b);
         foreach (var a in new[] { _vaoSphere, _vaoCapsule, _vaoLine }) if (a != 0) gl.DeleteVertexArray(a);
-        _progSphere = _progCapsule = _progLine = 0;
+        _progSphere = _progCapsule = _progLine = _progTri = 0;
         Ready = false;
         base.OnOpenGlDeinit(gl);
     }
@@ -169,6 +181,7 @@ public sealed unsafe class GlMolView : OpenGlControlBase
         gl.Disable(GL_SCISSOR_TEST);
         var sc = _scene;
         var bg = sc?.Background ?? 0x0F1113u;
+        if (sc is { Vision.Length: 9 }) bg = SeenRgb(bg, sc.Vision, sc.VisionSeverity);
         if (sc?.Transparent == true) gl.ClearColor(0, 0, 0, 0);
         else gl.ClearColor(((bg >> 16) & 255) / 255f, ((bg >> 8) & 255) / 255f, (bg & 255) / 255f, 1);
         gl.ClearDepth(1);
@@ -207,6 +220,14 @@ public sealed unsafe class GlMolView : OpenGlControlBase
             gl.Uniform1f(gl.GetUniformLocationString(prog, "uPx"), ss);   // edge, ring and line widths in drawn pixels
             var ink = sc.Dark ? (0.04f, 0.045f, 0.05f) : (0.08f, 0.08f, 0.08f);
             _u3f(gl.GetUniformLocationString(prog, "uInk"), ink.Item1, ink.Item2, ink.Item3);
+            var vm = sc.Vision;
+            gl.Uniform1f(gl.GetUniformLocationString(prog, "uSev"), vm.Length == 9 ? (float)sc.VisionSeverity : 0f);
+            if (vm.Length == 9)
+            {
+                _u3f(gl.GetUniformLocationString(prog, "uV0"), vm[0], vm[1], vm[2]);
+                _u3f(gl.GetUniformLocationString(prog, "uV1"), vm[3], vm[4], vm[5]);
+                _u3f(gl.GetUniformLocationString(prog, "uV2"), vm[6], vm[7], vm[8]);
+            }
         }
         if (_nCapsule > 0)
         {
@@ -225,6 +246,26 @@ public sealed unsafe class GlMolView : OpenGlControlBase
             Common(_progLine);
             gl.BindVertexArray(_vaoLine);
             _drawInstanced(GL_TRIANGLE_STRIP, 0, 4, _nLine);
+        }
+        if (_nTriVerts > 0)
+        {
+            // surfaces and polyhedra, as the CPU renderer draws them: the nearest surface of each pixel (in front of the
+            // atoms) blended over what it covers, once — a depth pass, then colour where the depth matches
+            Common(_progTri);
+            gl.BindVertexArray(_vaoTri);
+            _colorMask(0, 0, 0, 0);
+            gl.DepthMask(1);
+            gl.DepthFunc(GL_LESS);
+            _drawArrays(0x0004, 0, _nTriVerts);   // GL_TRIANGLES
+            _colorMask(1, 1, 1, 1);
+            gl.DepthMask(0);
+            gl.DepthFunc(0x0203);   // GL_LEQUAL
+            gl.Enable(GL_BLEND);
+            _blendFunc(0x0302, 0x0303);   // SRC_ALPHA, ONE_MINUS_SRC_ALPHA
+            _drawArrays(0x0004, 0, _nTriVerts);
+            gl.Disable(GL_BLEND);
+            gl.DepthMask(1);
+            gl.DepthFunc(GL_LESS);
         }
         gl.BindVertexArray(0);
         gl.UseProgram(0);
@@ -263,6 +304,16 @@ public sealed unsafe class GlMolView : OpenGlControlBase
         gl.BindFramebuffer(GL_FRAMEBUFFER, to);
     }
 
+    /// <summary>A colour as the colour-vision preview shows it (the shader's seen(), for the background).</summary>
+    private static uint SeenRgb(uint rgb, float[] m, double sev)
+    {
+        static double Lin(double c) => c <= 0.04045 ? c / 12.92 : Math.Pow((c + 0.055) / 1.055, 2.4);
+        static uint Srgb(double c) { c = Math.Clamp(c, 0, 1); return (uint)Math.Round((c <= 0.0031308 ? 12.92 * c : 1.055 * Math.Pow(c, 1 / 2.4) - 0.055) * 255); }
+        double r = Lin(((rgb >> 16) & 255) / 255.0), g = Lin(((rgb >> 8) & 255) / 255.0), b = Lin((rgb & 255) / 255.0);
+        double O(int k, double l) => sev * (m[3 * k] * r + m[3 * k + 1] * g + m[3 * k + 2] * b) + (1 - sev) * l;
+        return (Srgb(O(0, r)) << 16) | (Srgb(O(1, g)) << 8) | Srgb(O(2, b));
+    }
+
     private static double RotZ(in CapsViewFit f, double x, double y, double z)
     {
         double dx = x - f.Cx, dy = y - f.Cy, dz = z - f.Cz;
@@ -278,6 +329,7 @@ public sealed unsafe class GlMolView : OpenGlControlBase
         for (var k = 0; k + 3 < d.Spheres.Length; k += 4) Grow(d.Spheres[k], d.Spheres[k + 1], d.Spheres[k + 2]);
         for (var k = 0; k + 6 < d.Capsules.Length; k += 7) { Grow(d.Capsules[k], d.Capsules[k + 1], d.Capsules[k + 2]); Grow(d.Capsules[k + 3], d.Capsules[k + 4], d.Capsules[k + 5]); }
         for (var k = 0; k + 5 < d.Lines.Length; k += 6) { Grow(d.Lines[k], d.Lines[k + 1], d.Lines[k + 2]); Grow(d.Lines[k + 3], d.Lines[k + 4], d.Lines[k + 5]); }
+        for (var k = 0; k + 2 < d.TriXyz.Length; k += 3) Grow(d.TriXyz[k], d.TriXyz[k + 1], d.TriXyz[k + 2]);
         if (lo0 > hi0) lo0 = lo1 = lo2 = hi0 = hi1 = hi2 = 0;
         _bounds = ((lo0 + hi0) / 2, (lo1 + hi1) / 2, (lo2 + hi2) / 2, 0.5 * Math.Sqrt((hi0 - lo0) * (hi0 - lo0) + (hi1 - lo1) * (hi1 - lo1) + (hi2 - lo2) * (hi2 - lo2)));
 
@@ -315,6 +367,20 @@ public sealed unsafe class GlMolView : OpenGlControlBase
         Attrib(gl, _bufLine, 2, 4, GL_FLOAT, false, 28, 12, 1);
         Data(gl, _bufLineRgb, d.LineRgb);
         Attrib(gl, _bufLineRgb, 3, 4, GL_UNSIGNED_BYTE, true, 4, 0, 1);
+        // triangles: position and normal interleaved per corner, colour per corner
+        _nTriVerts = d.TriRgb.Length;
+        var pn = new float[6 * _nTriVerts];
+        for (var k = 0; k < _nTriVerts; k++)
+        {
+            Array.Copy(d.TriXyz, 3 * k, pn, 6 * k, 3);
+            if (d.TriNormal.Length >= 3 * k + 3) Array.Copy(d.TriNormal, 3 * k, pn, 6 * k + 3, 3); else pn[6 * k + 5] = 1;
+        }
+        gl.BindVertexArray(_vaoTri);
+        Data(gl, _bufTri, pn);
+        Attrib(gl, _bufTri, 0, 3, GL_FLOAT, false, 24, 0, 0);
+        Attrib(gl, _bufTri, 1, 3, GL_FLOAT, false, 24, 12, 0);
+        Data(gl, _bufTriRgb, d.TriRgb);
+        Attrib(gl, _bufTriRgb, 2, 4, GL_UNSIGNED_BYTE, true, 4, 0, 0);
         gl.BindVertexArray(0);
         gl.BindBuffer(GL_ARRAY_BUFFER, 0);
     }
@@ -366,6 +432,16 @@ public sealed unsafe class GlMolView : OpenGlControlBase
         uniform vec3 uCentre; uniform vec4 uRot; uniform vec2 uPan; uniform float uScale; uniform vec2 uSize;
         uniform float uPersp; uniform float uDist; uniform vec2 uDepth; uniform vec2 uZ; uniform vec3 uBg;
         uniform float uCue; uniform float uTransparent; uniform float uOutline; uniform float uPx; uniform vec3 uInk;
+        uniform vec3 uV0; uniform vec3 uV1; uniform vec3 uV2; uniform float uSev;
+        // the colour-vision preview (colourvision.cpp): to linear light, the deficiency matrix mixed by the severity, back to sRGB
+        vec3 toLin(vec3 c) { return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(vec3(0.04045), c)); }
+        vec3 toSrgb(vec3 c) { c = clamp(c, 0.0, 1.0); return mix(12.92 * c, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), c)); }
+        vec3 seen(vec3 c) {
+          if (uSev <= 0.0) return c;
+          vec3 l = toLin(c);
+          vec3 m = vec3(dot(uV0, l), dot(uV1, l), dot(uV2, l));
+          return toSrgb(uSev * m + (1.0 - uSev) * l);
+        }
         vec3 rotv(vec3 p) {
           vec3 d = p - uCentre;
           float x = d.x * uRot.x + d.z * uRot.y;
@@ -438,7 +514,7 @@ public sealed unsafe class GlMolView : OpenGlControlBase
             if ((vRing & 1) != 0 && abs(d - (vR + 3.0 * uPx)) <= 1.2 * uPx) { on = true; rc = vec3(0.4235, 0.7686, 0.8471); }
             if ((vRing & 2) != 0 && abs(d - (vR + 6.5 * uPx)) <= 1.6 * uPx && abs(vOff.y / d) > 0.26) { on = true; rc = vec3(0.9608, 0.6471, 0.1412); }
             if (!on) discard;
-            frag = vec4(rc, 1.0);
+            frag = vec4(seen(rc), 1.0);
             gl_FragDepth = 0.0;
             return;
           }
@@ -447,7 +523,7 @@ public sealed unsafe class GlMolView : OpenGlControlBase
           float z = vZ + vRw * nz;
           vec3 c = cue(shade(vCol, n), z);
           if (uOutline > 0.5 && vR - d < uPx * uOutline) c = mix(c, uInk, uOutline > 1.5 ? 0.95 : 0.5);
-          frag = vec4(c, 1.0);
+          frag = vec4(seen(c), 1.0);
           gl_FragDepth = fragDepth(z);
         }
 
@@ -492,7 +568,7 @@ public sealed unsafe class GlMolView : OpenGlControlBase
           float z = vZab.x + t * (vZab.y - vZab.x) + vRw * nz;
           vec3 c = cue(shade(vCol, vec3(dv.x / vR, -dv.y / vR, nz)), z);
           if (uOutline > 0.5 && vR - sqrt(d2) < uPx * uOutline) c = mix(c, uInk, uOutline > 1.5 ? 0.95 : 0.5);
-          frag = vec4(c, 1.0);
+          frag = vec4(seen(c), 1.0);
           gl_FragDepth = fragDepth(z);
         }
 
@@ -520,10 +596,42 @@ public sealed unsafe class GlMolView : OpenGlControlBase
 
         """;
 
+    // Mesh triangles in the screen projection of the atoms (linear in screen space, as the CPU renderer interpolates),
+    // two-sided, the CPU material without the depth cue; the colour's top byte is the opacity.
+    private const string TriVs = """
+        layout(location = 0) in vec3 aPos;
+        layout(location = 1) in vec3 aNrm;
+        layout(location = 2) in vec4 aColour;
+        out vec3 vN; out vec3 vCol; out float vA; out float vZ;
+        vec3 rotd(vec3 n) {
+          float x = n.x * uRot.x + n.z * uRot.y;
+          float z = -n.x * uRot.y + n.z * uRot.x;
+          return vec3(x, n.y * uRot.z - z * uRot.w, n.y * uRot.w + z * uRot.z);
+        }
+        void main() {
+          vec3 r = rotv(aPos);
+          vN = rotd(aNrm); vCol = aColour.zyx; vA = aColour.w; vZ = r.z;
+          gl_Position = clipOf(screenOf(r, kOf(r.z)), r.z);
+        }
+
+        """;
+
+    private const string TriFs = """
+        in vec3 vN; in vec3 vCol; in float vA; in float vZ;
+        out vec4 frag;
+        void main() {
+          vec3 n = length(vN) > 1e-6 ? normalize(vN) : vec3(0.0, 0.0, 1.0);
+          if (n.z < 0.0) n = -n;   // two-sided
+          frag = vec4(seen(shade(vCol, n)), vA);
+          gl_FragDepth = fragDepth(vZ);
+        }
+
+        """;
+
     private const string LineFs = """
         flat in vec3 vCol;
         out vec4 frag;
-        void main() { frag = vec4(vCol, 1.0); }
+        void main() { frag = vec4(seen(vCol), 1.0); }
 
         """;
 }

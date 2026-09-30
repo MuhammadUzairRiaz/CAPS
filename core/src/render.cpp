@@ -649,6 +649,23 @@ Scene Renderer::scene(const System& s, const RenderOptions& opt) {
     if (super)
       for (auto& e : E) add(corner(e[0], 1.0 / rep[0], 1.0 / rep[1], 1.0 / rep[2]), corner(e[1], 1.0 / rep[0], 1.0 / rep[1], 1.0 / rep[2]), 0xF5A524, 2.0f);
   }
+  // meshes (surfaces, polyhedra): their triangles with per-corner normals and colours, opacity in the top byte
+  for (const auto& md : opt.meshes) {
+    if (!md.mesh) continue;
+    const Mesh& M = *md.mesh;
+    const bool per_vertex = M.colours.size() == M.vertices.size();
+    const uint32_t alpha = uint32_t(std::lround(std::clamp(double(md.opacity), 0.0, 1.0) * 255)) << 24;
+    for (const auto& t : M.triangles) {
+      if (t[0] >= M.vertices.size() || t[1] >= M.vertices.size() || t[2] >= M.vertices.size()) continue;
+      for (int c = 0; c < 3; ++c) {
+        const Vec3& p = M.vertices[t[size_t(c)]];
+        const Vec3 nrm = t[size_t(c)] < M.normals.size() ? M.normals[t[size_t(c)]] : Vec3{0, 0, 1};
+        sc.tri_xyz.insert(sc.tri_xyz.end(), {float(p[0]), float(p[1]), float(p[2])});
+        sc.tri_normal.insert(sc.tri_normal.end(), {float(nrm[0]), float(nrm[1]), float(nrm[2])});
+        sc.tri_rgb.push_back(((per_vertex ? M.colours[t[size_t(c)]] : md.rgb) & 0xFFFFFFu) | alpha);
+      }
+    }
+  }
   return sc;
 }
 

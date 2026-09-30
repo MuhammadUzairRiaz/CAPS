@@ -15,6 +15,9 @@ const char* to_string(Vision v);   // normal, protanopia, deuteranopia, tritanop
 
 unsigned simulate_vision(unsigned rgb, Vision v, double severity = 1.0);   // 0xRRGGBB
 void simulate_vision(Image& img, Vision v, double severity = 1.0);          // in place (alpha kept)
+// The linear-RGB matrix of a deficiency (row-major, Machado et al. 2009, severity 1), or nullptr for normal vision; the
+// preview mixes it with the identity by the severity, in linear light (a GPU view does the same per pixel).
+const double* vision_matrix(Vision v);
 double delta_e76(unsigned a, unsigned b);                                   // CIE L*a*b* (D65) distance
 
 struct NamedPalette {
