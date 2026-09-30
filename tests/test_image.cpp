@@ -1,3 +1,4 @@
+#include <set>
 #include <gtest/gtest.h>
 
 #include <filesystem>
@@ -131,6 +132,45 @@ TEST(Image, RayPickAgreesWithTheRenderedIds) {
   caps::RenderOptions opt;
   opt.width = 640, opt.height = 480;
   EXPECT_EQ(caps::Renderer::pick_ray(s, cam, opt, 2, 2), -1);   // a corner of empty space
+}
+
+// Ghosted atoms (unpickable) are seen through by the pick; hidden atoms (style Hidden) are neither drawn nor picked.
+TEST(Image, GhostedAndHiddenAtomsAreNotPicked) {
+  const caps::System s = caps::open_file(std::string(CAPS_SAMPLES) + "/ps_melt.data").frame(0);
+  caps::Camera cam;
+  cam.yaw = 0.7, cam.pitch = 0.35, cam.zoom = 1.3;
+  caps::RenderOptions opt;
+  opt.width = 640, opt.height = 480, opt.supersample = 1;
+  const size_t n = s.atoms.size();
+  // pixels whose nearest atom is known
+  caps::Renderer r;
+  r.render(s, cam, opt);
+  const auto p = r.project(s, cam, opt);
+  std::vector<std::pair<int, int>> px;
+  std::vector<int> who;
+  for (size_t i = 0; i < n && px.size() < 60; ++i) {
+    if (p[3 * i + 2] < 0.5f) continue;
+    const int x = int(p[3 * i]), y = int(p[3 * i + 1]);
+    if (x < 0 || y < 0 || x >= 640 || y >= 480) continue;
+    const int k = caps::Renderer::pick_ray(s, cam, opt, x + 0.5, y + 0.5);
+    if (k < 0) continue;
+    px.push_back({x, y}), who.push_back(k);
+  }
+  ASSERT_GE(px.size(), 30u);
+  caps::RenderOptions ghost = opt, hidden = opt;
+  ghost.unpickable.assign(n, 0);
+  hidden.atom_style.assign(n, uint8_t(caps::Style::BallAndStick));
+  for (int k : who) ghost.unpickable[size_t(k)] = 1, hidden.atom_style[size_t(k)] = uint8_t(caps::Style::Hidden);
+  for (size_t t = 0; t < px.size(); ++t) {
+    const double x = px[t].first + 0.5, y = px[t].second + 0.5;
+    const int g = caps::Renderer::pick_ray(s, cam, ghost, x, y), h = caps::Renderer::pick_ray(s, cam, hidden, x, y);
+    EXPECT_TRUE(g < 0 || !ghost.unpickable[size_t(g)]) << "ghost picked at " << x << "," << y;
+    EXPECT_TRUE(h < 0 || hidden.atom_style[size_t(h)] != uint8_t(caps::Style::Hidden)) << "hidden picked at " << x << "," << y;
+  }
+  // a hidden atom leaves the scene; a ghost stays in it
+  const caps::Scene all = r.scene(s, opt), without = r.scene(s, hidden), ghosted = r.scene(s, ghost);
+  EXPECT_EQ(without.spheres.size() / 4 + std::set<int>(who.begin(), who.end()).size(), all.spheres.size() / 4);
+  EXPECT_EQ(ghosted.spheres.size(), all.spheres.size());
 }
 
 // The ray tracer sees the same geometry through the same camera as the CPU renderer: their silhouettes (coverage on a

@@ -28,18 +28,21 @@ public sealed partial class MainViewModel
     public bool IsRotateTool => _editTool == 6;
 
     /// <summary>The atoms whose centres fall inside the lasso (visible ones) become the selection, or join it.</summary>
-    public void LassoSelect(IReadOnlyCollection<int> atoms, bool add)
+    public void LassoSelect(IReadOnlyCollection<int> atoms, bool add, string how = "lasso")
     {
         if (_doc == null) return;
-        if (atoms.Count == 0 && !add) { ClearDocSelection(); Status = "Lasso: nothing inside; the selection is cleared"; return; }
+        var st = _doc.AtomStates();   // ghosted and hidden atoms are not picked
+        if (st.Any(v => v != 0)) atoms = atoms.Where(i => i < st.Length && st[i] == 0).ToList();
+        if (!add) { _selection.Clear(); RefreshSelection(); }
+        if (atoms.Count == 0 && !add) { ClearDocSelection(); Status = $"{char.ToUpper(how[0])}{how[1..]}: nothing inside; the selection is cleared"; return; }
         var r = JsonNode.Parse(_doc.Select(new JsonObject
         {
             ["mode"] = "indices", ["atoms"] = new JsonArray(atoms.Select(a => (JsonNode)a).ToArray()), ["op"] = add ? "add" : "replace",
         }.ToJsonString()))!;
-        if (r["ok"]?.GetValue<bool>() != true) { Status = "Lasso: " + (r["error"]?.GetValue<string>() ?? "cannot select"); return; }
+        if (r["ok"]?.GetValue<bool>() != true) { Status = $"{how}: " + (r["error"]?.GetValue<string>() ?? "cannot select"); return; }
         SelectedCount = (int)r["count"]!.GetValue<double>();
-        SelectHud = "lasso";
-        Status = $"Lasso: {atoms.Count:N0} atoms {(add ? "added" : "selected")} · {SelectedCount:N0} selected";
+        SelectHud = how;
+        Status = $"{char.ToUpper(how[0])}{how[1..]}: {atoms.Count:N0} atoms {(add ? "added" : "selected")} · {SelectedCount:N0} selected";
         RenderRequested?.Invoke();
     }
 

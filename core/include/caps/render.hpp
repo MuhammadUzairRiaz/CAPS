@@ -68,6 +68,7 @@ struct RenderOptions {
   std::vector<unsigned> colours;       // per atom 0xRRGGBB overriding colour_by (a pipeline's colours); 0xFFFFFFFF keeps it
   std::vector<float> radius;           // per atom: drawn radius (Å) overriding the style's; 0 keeps it
   std::vector<float> transparency;     // per atom: 0 opaque … 1 invisible (a pipeline's Transparency)
+  std::vector<char> unpickable;        // per atom: drawn but never picked (ghosted atoms); picks see through them
   std::vector<Segment> segments;       // tubes and arrows drawn with the atoms
   std::vector<uint8_t> atom_style;     // per atom (Style values) overriding `style`: mixed styles; Ribbon and Hidden hide the atom
   Ramp ramp = Ramp::Viridis;           // ColourBy::Property

@@ -517,4 +517,10 @@ mx2 = caps.pack(molecules=[("Cc1ccccc1", 4), ("C1CCCCC1", 4)], box=18.0, toleran
 mx2.field.load(_ffp)
 _e1 = mx2.energy()["total"]
 check(abs(_e1 - _e0) <= 1e-8 * max(1.0, abs(_e0)), f"force-field file round trip: {_e0:.6f} / {_e1:.6f}")
+# view states: hidden and ghosted atoms leave the view only; the structure keeps them
+vs = caps.open(os.path.join(samples, "ps_melt.data"))
+_n = len(vs.atom_states())
+check(vs.hide(range(0, 130)) == 130 and vs.ghost([200, 201]) == 2 and vs.atom_states()[5] == 2 and vs.atom_states()[200] == 1,
+      "hide and ghost atoms in the view")
+check(vs.show() == 132 and set(vs.atom_states()) == {0} and len(vs.atom_states()) == _n, "show every atom again; the structure is whole")
 print("all python checks passed")

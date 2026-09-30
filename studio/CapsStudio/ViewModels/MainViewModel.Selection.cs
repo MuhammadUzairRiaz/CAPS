@@ -54,14 +54,14 @@ public sealed partial class MainViewModel
     };
 
     private int _selCount;
-    public int SelectedCount { get => _selCount; private set { if (Set(ref _selCount, value)) { Raise(nameof(SelectedChip)); Raise(nameof(SelectionStatus)); } } }
+    public int SelectedCount { get => _selCount; private set { if (Set(ref _selCount, value)) { Raise(nameof(SelectedChip)); Raise(nameof(SelectionStatus)); } QueueSelBar(); } }
     public string SelectedChip => $"{_selCount:N0} selected";
     public string SelectionStatus => $"{_doc?.Summary().Atoms ?? 0:N0} atoms · {_selCount:N0} selected";
     private string _selError = "";
     public string SelectError { get => _selError; private set { if (Set(ref _selError, value)) Raise(nameof(SelectHasError)); } }
     public bool SelectHasError => _selError.Length > 0;
     private string _selHud = "";
-    public string SelectHud { get => _selHud; private set => Set(ref _selHud, value); }
+    public string SelectHud { get => _selHud; private set { if (Set(ref _selHud, value)) QueueSelBar(); } }
 
     /// <summary>Runs the chosen mode: op replace | add | subtract | intersect | invert.</summary>
     public void RunSelect(string op)

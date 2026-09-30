@@ -12,7 +12,7 @@ internal static class SelfTest
         var fails = 0;
         void Check(bool ok, string what) { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {what}"); if (!ok) fails++; }
 
-        Check(Native.AbiVersion() == 56, "native ABI version 56");
+        Check(Native.AbiVersion() == 57, "native ABI version 57");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -2069,6 +2069,64 @@ internal static class SelfTest
             vm.SetModule(8);
             Check(dsOk && bbStatus && lensOk && ahOk && mOk && liveOk,
                   $"row 19: [{dsOk} {bbStatus} {lensOk} {ahOk} {mOk} {liveOk}] backbone '{vm.DsBackboneCaption}' · lens {vm.LensInsideCount} · H plan {plan["add"]} · UA sites {res["united_atom"]!["sites"]} · live snapshots {snaps}");
+        }
+
+        // A1 (design/boards/SelectionBar): one selection whatever made it; the bar's count, what and how; hide, ghost, show
+        // only and show all as view states (the structure keeps every atom); commands act on the whole selection
+        {
+            vm.Open(Path.Combine(dir, "ps_melt.data"));
+            var d = vm.Document!;
+            var n = (int)d.Summary().Atoms;
+            var mol = d.MoleculeIds();
+            var a0 = 5;
+            var molAtoms = mol.Count(m => m == mol[a0]);
+            vm.SelectLike(a0, false, false);
+            vm.RefreshSelBar();
+            var molOk = vm.SelBarCount == molAtoms && vm.SelBarWhat == $"molecule {mol[a0]}" && vm.SelBarHow == "double-click";
+            // a click adds a second molecule's atom: the bar counts both, made by double-click + click
+            var other = Enumerable.Range(0, n).First(i => mol[i] != mol[a0]);
+            vm.Pick(other, true);
+            vm.RefreshSelBar();
+            var unionOk = vm.SelBarCount == molAtoms + 1 && vm.SelBarHow == "double-click + click" && vm.SelectionAtoms().Contains(other);
+            // hide: out of the view (and the selection), still in the structure
+            vm.HideSelection();
+            var st = d.AtomStates();
+            var hideOk = vm.HiddenCount == molAtoms + 1 && st[a0] == 2 && st[other] == 2 && d.Summary().Atoms == n && vm.SelBarCount == 0 && vm.HasHiddenAtoms;
+            // a lasso over hidden atoms does not take them
+            vm.LassoSelect(new[] { a0, other, (a0 + 200) % n }, false);
+            vm.RefreshSelBar();
+            var lassoOk = !vm.SelectionAtoms().Contains(a0) && vm.SelBarHow == "lasso";
+            vm.ShowAllAtoms();
+            var showOk = vm.HiddenCount == 0 && d.AtomStates().All(v => v == 0);
+            // same type (⌥ double-click), ghost, show only
+            var t0 = d.Atom(a0).Type;
+            vm.SelectLike(a0, true, false);
+            vm.RefreshSelBar();
+            var typeCount = Enumerable.Range(0, n).Count(i => d.Atom(i).Type == t0);
+            var typeOk = vm.SelBarCount == typeCount && vm.SelBarHow.StartsWith($"type {t0}", StringComparison.Ordinal);
+            vm.GhostSelection();
+            var ghostOk = vm.GhostCount == typeCount;
+            vm.ShowAllAtoms();
+            vm.SelectLike(a0, false, false);
+            vm.ShowOnlySelection();
+            var onlyOk = vm.HiddenCount == n - molAtoms;
+            vm.ShowAllAtoms();
+            // delete acts on the whole selection (a molecule, not the four picks), undoably
+            vm.SelectLike(a0, false, false);
+            vm.DeleteSelection();
+            var delOk = vm.Document!.Summary().Atoms == n - molAtoms;
+            vm.UndoEdit(false);
+            delOk &= vm.Document!.Summary().Atoms == n;
+            var xyzOk = true;
+            vm.SelectLike(a0, false, false);
+            vm.RefreshSelBar();
+            var xyz = vm.SelectionXyz().Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            xyzOk = xyz.Length == molAtoms + 2 && xyz[0] == molAtoms.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            vm.ClearAllSelection();
+            vm.RefreshSelBar();
+            var clearOk = vm.SelBarCount == 0 && !vm.HasSelBar;
+            Check(molOk && unionOk && hideOk && lassoOk && showOk && typeOk && ghostOk && onlyOk && delOk && xyzOk && clearOk,
+                  $"A1 selection bar: [{molOk} {unionOk} {hideOk} {lassoOk} {showOk} {typeOk} {ghostOk} {onlyOk} {delOk} {xyzOk} {clearOk}] molecule {molAtoms} atoms · type {t0}: {typeCount} · '{vm.SelBarWhat}'");
         }
 
         // Row 21 steps: expression counts, vector expressions, bonds against the file, replicas made real

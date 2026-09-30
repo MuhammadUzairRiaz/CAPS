@@ -89,6 +89,7 @@ public partial class MainWindow : Window
         KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.S, KeyModifiers.Meta), Command = SaveCommand });
         KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.S, KeyModifiers.Control), Command = SaveCommand });
         _vm.RenderRequested += RequestRender;
+        InitSelectionBar();
         _vm.CompareStatesChanged += () =>
         {
             var sh = _vm.CompareShifts;
@@ -894,7 +895,11 @@ public partial class MainWindow : Window
             if (e.Key == Key.Z && e.KeyModifiers == (cmd | KeyModifiers.Shift)) { _vm.UndoEdit(true); e.Handled = true; return; }
             if (e.Key == Key.E && e.KeyModifiers == KeyModifiers.Shift) { OpenElementPicker(); e.Handled = true; return; }
             if (e.Key == Key.F && e.KeyModifiers == cmd && _vm.HasDocument) { OpenQuery(); e.Handled = true; return; }
-            if (e.Key is Key.Delete or Key.Back && e.KeyModifiers == KeyModifiers.None && _vm.HasPicked) { _vm.DeletePicked(); e.Handled = true; return; }
+            if (e.Key is Key.Delete or Key.Back && e.KeyModifiers == KeyModifiers.None && _vm.HasSelBar) { _vm.DeleteSelection(); e.Handled = true; return; }
+            if (e.Key == Key.Escape && Ring.IsVisible) { CloseRing(); e.Handled = true; return; }
+            if (e.Key == Key.H && e.KeyModifiers == KeyModifiers.None && _vm.HasSelBar) { _vm.HideSelection(); e.Handled = true; return; }
+            if (e.Key == Key.H && e.KeyModifiers == KeyModifiers.Alt) { _vm.ShowAllAtoms(); e.Handled = true; return; }
+            if (e.Key == Key.C && e.KeyModifiers == cmd && _vm.HasSelBar) { _ = RunSelAction("copy"); e.Handled = true; return; }
         }
         // the keyboard map (design/boards/InteractionMap)
         {
@@ -954,7 +959,7 @@ public partial class MainWindow : Window
             case Key.A when e.KeyModifiers == KeyModifiers.None: _vm.ToggleAutoClean(); e.Handled = true; break;
             case Key.F when e.KeyModifiers == KeyModifiers.None: _vm.FrameSelection(); e.Handled = true; break;
             case Key.L when e.KeyModifiers == KeyModifiers.None && _vm.LensOn: _vm.LensHold = true; e.Handled = true; break;
-            case Key.Escape: _vm.ClearSelection(); e.Handled = true; break;
+            case Key.Escape: _vm.ClearAllSelection(); e.Handled = true; break;
         }
     }
 
@@ -1027,6 +1032,8 @@ public partial class MainWindow : Window
     /// <summary>Only the camera moved (drag, wheel, flight): the GPU view turns the scene it has.</summary>
     private void RequestViewRender()
     {
+        var camNow = (_vm.Camera.Yaw, _vm.Camera.Pitch, _vm.Camera.Zoom, _vm.Camera.PanX, _vm.Camera.PanY, _vm.Camera.Perspective);
+        if (camNow != _barCam) { _barCam = camNow; SelBarOnViewMoved(); } else QueuePlaceSelBar(60);
         if (_vm.IsRender) RenderGuide.InvalidateVisual();
         _requested++;
         if (!_busy) _ = RenderLoop();
@@ -1353,16 +1360,34 @@ public partial class MainWindow : Window
         _vm.StopFly();   // the hand wins over a camera flight
         _hostField = sender as Control ?? ViewHost;
         var p = e.GetCurrentPoint(_host);
+        var right = p.Properties.IsRightButtonPressed;
+        var shift = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
+        var alt = e.KeyModifiers.HasFlag(KeyModifiers.Alt);
+        var studioView = _host == ViewHost && _vm.IsStudio && _vm.Document != null && !_vm.Busy;
+        if (Ring.IsVisible && !right) { RingClick(p.Position); e.Handled = true; return; }   // the open ring: this click is its action
+        // double-click: the atom's molecule; ⌥ double-click: every atom of its type (⇧ adds)
+        if (studioView && !right && e.ClickCount == 2 && _vm.EditTool == 0)
+        {
+            var hit = PickAtView(_vm.Document!, p.Position);
+            if (hit >= 0) { _vm.SelectLike(hit, alt, shift); RequestRender(); }
+            _dragging = false;
+            e.Handled = true;
+            return;
+        }
         _press = _last = p.Position;
         _dragging = true;
         _moved = false;
-        _pan = p.Properties.IsRightButtonPressed || e.KeyModifiers.HasFlag(KeyModifiers.Alt);
-        _addPick = e.KeyModifiers.HasFlag(KeyModifiers.Shift) || e.KeyModifiers.HasFlag(KeyModifiers.Meta) || _vm.MeasureTool;
+        // right drag pans (a still right press opens the ring); ⇧ drag pans; ⌥ drag draws a box in the Studio
+        _pan = right || (studioView ? shift && _vm.EditTool == 0 : alt);
+        _addPick = shift || e.KeyModifiers.HasFlag(KeyModifiers.Meta) || _vm.MeasureTool;
         _lassoPts = null;
         _moveAtoms = null;
+        _boxMode = false;
+        if (right && studioView) RingPressed(p.Position);
         if (_host == ViewHost && _vm.IsStudio && _vm.Document is { } doc && !_vm.Busy && !_pan)
         {
-            if (_vm.EditTool == 4) _lassoPts = new List<Point> { p.Position };
+            if (alt && _vm.EditTool == 0) { _boxMode = true; _lassoPts = new List<Point> { p.Position }; }
+            else if (_vm.EditTool == 4) _lassoPts = new List<Point> { p.Position };
             else if (_vm.EditTool is 5 or 6 && _haveLast)
             {
                 try
@@ -1420,6 +1445,7 @@ public partial class MainWindow : Window
 
     private void OnPointerMoved(object? sender, PointerEventArgs e)
     {
+        if (RingMoved(e.GetPosition(_host))) return;   // the ring owns the pointer while it is open
         if (_dragging) Interacting();
         if (!_dragging && _vm.LensHold && _vm.Document != null && !_vm.Busy)   // L held: the lens follows the atom under the cursor
         {
@@ -1433,7 +1459,8 @@ public partial class MainWindow : Window
         if (_lassoPts != null || _moveAtoms != null)   // the lasso or move tool owns the drag: the camera stays
         {
             if (Math.Abs(pos.X - _press.X) + Math.Abs(pos.Y - _press.Y) > 3) _moved = true;
-            if (_lassoPts != null)
+            if (_lassoPts != null && _boxMode) UpdateBox(pos);
+            else if (_lassoPts != null)
             {
                 if (_lassoPts.Count == 0 || Math.Abs(pos.X - _lassoPts[^1].X) + Math.Abs(pos.Y - _lassoPts[^1].Y) > 2) _lassoPts.Add(pos);
                 Labels.SetLasso(_lassoPts);
@@ -1474,6 +1501,7 @@ public partial class MainWindow : Window
     private void OnPointerReleased(object? sender, PointerReleasedEventArgs e)
     {
         e.Pointer.Capture(null);
+        if (RingReleased(e.GetPosition(_host), e.InitialPressMouseButton == MouseButton.Right && !_moved)) { _dragging = false; return; }
         if (_dragging && _moved && _lassoPts != null && _vm.Document is { } ldoc)
         {
             // the visible atoms whose centres are inside the lasso polygon
@@ -1487,8 +1515,9 @@ public partial class MainWindow : Window
                 for (var i = 0; i < n; ++i)
                     if (proj[3 * i + 2] > 0 && InPolygon(poly, proj[3 * i] / _scaling, proj[3 * i + 1] / _scaling)) inside.Add(i);
             }
-            _vm.LassoSelect(inside, e.KeyModifiers.HasFlag(KeyModifiers.Shift));
+            _vm.LassoSelect(inside, e.KeyModifiers.HasFlag(KeyModifiers.Shift), _boxMode ? "box" : "lasso");
             _lassoPts = null;
+            _boxMode = false;
             Labels.SetLasso(new List<Point>());
             _dragging = false;
             RequestRender();
@@ -1524,6 +1553,7 @@ public partial class MainWindow : Window
             if (!_vm.PickAllowed(hit)) hit = -1;   // "Measurements only inside" the lens
             if (_host == FieldViewHost) { if (hit >= 0) _vm.Field.SelectAtom(hit); }
             else if (_vm.EditTool != 0 && _vm.IsStudio) _vm.ToolClick(hit);
+            else if (!_addPick && _vm.IsStudio) _vm.StartSelection(hit, "click");   // a plain click starts a new selection
             else _vm.Pick(hit, _addPick);
             RequestRender();
         }
