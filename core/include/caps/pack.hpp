@@ -87,6 +87,25 @@ System pack(const std::vector<PackItem>& items, const PackOptions& o, PackReport
 // packmol input files (the common subset): tolerance, seed, output, filetype, pbc, structure … end structure with
 // number, inside / outside box, cube, sphere, cylinder, over / below plane, fixed, center. Relative structure paths
 // are resolved against `base_dir`. Returns the items and fills options (cell, tolerance, seed) and the output path.
+// CAPS Pack input, the readable form (the Studio writes it; packmol files are read too):
+//   cell      40 40 40                     Å, periodic (or: cell 0 0 0 to 40 40 40)
+//   distance  2.0                          Å: no two atoms of different molecules closer
+//   seed      1                            (or: seed new)
+//   compress  0.95                         g/cm³ after packing (optional) · save FILE · loops N · iterations N
+//   molecule  water.pdb                    a structure file (spaces allowed), then its lines, then `end`
+//     count   100
+//     in      box from 0 0 0 to 40 40 40   · cube from x y z size d · sphere at x y z radius r
+//             ellipsoid at x y z axes a b c scale d · cylinder from x y z along u v w radius r length l
+//     not in  (the same regions)           outside
+//     above   plane normal a b c at d      a·x ≥ d (below: a·x ≤ d)
+//     fixed   at x y z rotated a b c degrees     placed as given, never moved
+//     centred                              the fixed position is its centre
+//     atoms   1 2 3 in sphere at …         a region for some of its atoms only
+//   end
+bool is_caps_pack_input(const std::string& text);
+// The CAPS form as packmol's (throws PackError naming the line), and packmol's as the CAPS form.
+std::string caps_pack_to_packmol(const std::string& text);
+std::string packmol_to_caps_pack(const std::string& text);
 std::vector<PackItem> read_packmol_input(const std::string& path, PackOptions& o, std::string* output);
 // The same from text; `name` labels error messages.
 std::vector<PackItem> parse_packmol_input(const std::string& text, const std::string& base_dir, PackOptions& o, std::string* output,

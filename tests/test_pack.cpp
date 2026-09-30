@@ -266,3 +266,38 @@ TEST(Pack, StructurePathWithSpaces) {
   }
   std::filesystem::remove_all(dir);
 }
+
+// The CAPS Pack form: the same packing as its packmol form (same seed, same coordinates), both ways converted, and an
+// error named by its line
+TEST(Pack, CapsSyntaxSameAsPackmol) {
+  const std::string water = std::string(CAPS_SAMPLES) + "/water.pdb";
+  const std::string capsform = "# CAPS Pack\ncell 20 20 20\ndistance 2.0\nseed 7\n\nmolecule " + water +
+                               "\n  count 12\n  in box from 0 0 0 to 20 20 20\n  not in sphere at 10 10 10 radius 4\n  above plane normal 0 0 1 at 2\nend\n";
+  const std::string packmolform = "tolerance 2.0\nseed 7\npbc 0 0 0 20 20 20\nstructure " + water +
+                                  "\n  number 12\n  inside box 0 0 0 20 20 20\n  outside sphere 10 10 10 4\n  over plane 0 0 1 2\nend structure\n";
+  EXPECT_TRUE(caps::is_caps_pack_input(capsform));
+  EXPECT_FALSE(caps::is_caps_pack_input(packmolform));
+  caps::PackOptions oa, ob;
+  const auto ia = caps::parse_packmol_input(capsform, "/", oa, nullptr);
+  const auto ib = caps::parse_packmol_input(packmolform, "/", ob, nullptr);
+  ASSERT_EQ(ia.size(), 1u);
+  ASSERT_EQ(ia[0].regions.size(), 3u);
+  const caps::System a = caps::pack(ia, oa), b = caps::pack(ib, ob);
+  ASSERT_EQ(a.atoms.size(), 36u);
+  for (size_t i = 0; i < a.atoms.size(); ++i) EXPECT_NEAR(caps::norm(a.atoms[i].pos - b.atoms[i].pos), 0.0, 1e-9);
+  // packmol → CAPS → packmol reads back the same
+  caps::PackOptions oc;
+  const auto ic = caps::parse_packmol_input(caps::packmol_to_caps_pack(packmolform), "/", oc, nullptr);
+  ASSERT_EQ(ic.size(), 1u);
+  EXPECT_EQ(ic[0].count, 12);
+  EXPECT_EQ(ic[0].regions.size(), 3u);
+  EXPECT_DOUBLE_EQ(oc.tolerance, 2.0);
+  // fixed with degrees
+  const auto fx = caps::caps_pack_to_packmol("cell 10 10 10\nmolecule " + water + "\n  fixed at 5 5 5 rotated 90 0 0 degrees\nend\n");
+  EXPECT_NE(fx.find("fixed 5 5 5 1.570796327 0 0"), std::string::npos) << fx;
+  // a mistake: its line
+  try {
+    (void)caps::caps_pack_to_packmol("cell 10 10 10\nmolecule " + water + "\n  in sphere at 1 2 radius 3\nend\n");
+    ADD_FAILURE() << "should have thrown";
+  } catch (const caps::PackError& e) { EXPECT_NE(std::string(e.what()).find("line 3"), std::string::npos) << e.what(); }
+}

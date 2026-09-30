@@ -82,11 +82,15 @@ public partial class MainViewModel
         _doc.Save(host);
         var s = _doc.Summary();
         var inv = CultureInfo.InvariantCulture;
-        var pbc = string.Format(inv, "pbc 0. 0. 0. {0:0.####} {1:0.####} {2:0.####}", s.CellA, s.CellB, s.CellC);
-        var lines = _packText.Split('\n').Where(l => !l.TrimStart().StartsWith("pbc ", StringComparison.OrdinalIgnoreCase)).ToList();
-        var first = lines.FindIndex(l => l.TrimStart().StartsWith("structure ", StringComparison.OrdinalIgnoreCase));
+        var caps = IsCapsPack(_packText);
+        var cell = caps ? string.Format(inv, "cell      {0:0.####} {1:0.####} {2:0.####}", s.CellA, s.CellB, s.CellC)
+                        : string.Format(inv, "pbc 0. 0. 0. {0:0.####} {1:0.####} {2:0.####}", s.CellA, s.CellB, s.CellC);
+        var lines = _packText.Split('\n').Where(l => !l.TrimStart().StartsWith(caps ? "cell " : "pbc ", StringComparison.OrdinalIgnoreCase)).ToList();
+        var first = lines.FindIndex(l => l.TrimStart().StartsWith(caps ? "molecule " : "structure ", StringComparison.OrdinalIgnoreCase));
         if (first < 0) first = lines.Count;
-        lines.Insert(first, $"{pbc}\n\nstructure {host}   # {Title.Replace(" (unsaved)", "")}, kept where it is\n  number 1\n  fixed 0. 0. 0. 0. 0. 0.\nend structure\n");
+        var title = Title.Replace(" (unsaved)", "");
+        lines.Insert(first, caps ? $"{cell}\n\nmolecule  {host}   # {title}, kept where it is\n  count   1\n  fixed   at 0 0 0\nend\n"
+                                 : $"{cell}\n\nstructure {host}   # {title}, kept where it is\n  number 1\n  fixed 0. 0. 0. 0. 0. 0.\nend structure\n");
         return string.Join('\n', lines);
     }
 
@@ -102,9 +106,11 @@ public partial class MainViewModel
         var inv = CultureInfo.InvariantCulture;
         if (_doc == null || _packStart != 1) { FillText = "Pack around the current structure first (Pack into › Around the current structure)"; return; }
         var lines = _packText.Split('\n').ToList();
-        var k = lines.FindLastIndex(l => l.TrimStart().StartsWith("structure ", StringComparison.OrdinalIgnoreCase));
+        var caps = IsCapsPack(_packText);
+        string open = caps ? "molecule " : "structure ", countKey = caps ? "count " : "number ", endKey = caps ? "end" : "end structure";
+        var k = lines.FindLastIndex(l => l.TrimStart().StartsWith(open, StringComparison.OrdinalIgnoreCase));
         if (k < 0) { FillText = "Add the molecule to fill with first"; return; }
-        var path = lines[k].Trim()["structure ".Length..].Split('#')[0].Trim();
+        var path = lines[k].Trim()[open.Length..].Split('#')[0].Trim();
         if (!Path.IsPathRooted(path)) path = Path.Combine(_packBaseDir, path);
         double mMol;
         try { using var mol = Interop.CapsDocument.Open(path); mMol = mol.Summary().TotalMass; }
@@ -117,9 +123,9 @@ public partial class MainViewModel
         if (room < mMol) { FillText = string.Format(inv, "The cell is already at {0:0.000} g/cm³: nothing to add for {1:0.000}", s.Density, _fillDensity); return; }
         var n = (int)Math.Floor(room / mMol);
         var j = k + 1;
-        while (j < lines.Count && !lines[j].TrimStart().StartsWith("end structure", StringComparison.OrdinalIgnoreCase) && !lines[j].TrimStart().StartsWith("number ", StringComparison.OrdinalIgnoreCase)) ++j;
-        if (j < lines.Count && lines[j].TrimStart().StartsWith("number ", StringComparison.OrdinalIgnoreCase)) lines[j] = $"  number {n}";
-        else lines.Insert(k + 1, $"  number {n}");
+        while (j < lines.Count && !lines[j].TrimStart().StartsWith(endKey, StringComparison.OrdinalIgnoreCase) && !lines[j].TrimStart().StartsWith(countKey, StringComparison.OrdinalIgnoreCase)) ++j;
+        if (j < lines.Count && lines[j].TrimStart().StartsWith(countKey, StringComparison.OrdinalIgnoreCase)) lines[j] = $"  {countKey}{n}";
+        else lines.Insert(k + 1, $"  {countKey}{n}");
         PackText = string.Join('\n', lines);
         var reached = (s.TotalMass + n * mMol) / (s.Volume * avogadroPerA3);
         FillText = string.Format(inv, "{0} × {1} ({2:0.0} g/mol): {3:0.000} → {4:0.000} g/cm³ (target {5:0.000}; whole molecules)", n, Path.GetFileNameWithoutExtension(path), mMol, s.Density, reached, _fillDensity);

@@ -529,6 +529,9 @@ int32_t caps_gromacs(caps_doc* d, const char* stem, char* text, int32_t cap);
    [{id, name, citation, sites, r_oh, theta, q_h, q_neg, d_om, eps_o, sigma_o, eps_h, sigma_h, rigid, note}]. Apply one with caps_edit
    {"op":"water_model","model":"tip4p2005"}; type the waters with it by a field group {"molecules":"water","water":"tip4p2005"}. */
 int32_t caps_water_models(char* json, int32_t cap);
+/* v51 Pack input in the CAPS form (cell, distance, molecule … end; pack.hpp) or packmol's: to_caps 1 gives the CAPS form,
+   0 packmol's (either given). Returns the length needed with NUL, or -1 (the error names the line). */
+int32_t caps_pack_convert(const char* text, int32_t to_caps, char* out, int32_t cap);
 int32_t caps_export_engines(caps_doc* d, const char* dir, const char* options, char* out, int32_t cap);
 int32_t caps_summary_get(caps_doc* d, caps_summary* out);
 int32_t caps_set_frame(caps_doc* d, int64_t frame);
