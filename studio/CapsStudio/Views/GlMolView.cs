@@ -42,6 +42,12 @@ public sealed unsafe class GlMolView : OpenGlControlBase
     private bool _haveFit;
     private (double X, double Y, double Z, double R) _bounds;
 
+    /// <summary>The view is moving (turned, panned, zoomed): on a very large scene the supersampling pass is skipped until
+    /// it stops, so the frame rate holds (the idle frame after is full quality).</summary>
+    public bool Interacting { get; set; }
+    /// <summary>Spheres + capsules + triangles above which Interacting lightens the frame.</summary>
+    public const int LargeScene = 300_000;
+
     /// <summary>OpenGL came up and the shaders compiled: the view can draw.</summary>
     public bool Ready { get; private set; }
     /// <summary>Why the GPU view is not in use, when it is not (shown in Settings).</summary>
@@ -171,6 +177,7 @@ public sealed unsafe class GlMolView : OpenGlControlBase
         // standard-DPI screens: draw at twice the size into our own framebuffer and filter it down (the CPU view's
         // 2 × 2 supersampling); Retina screens already have two samples per point
         var ss = (scale < 1.5 || Environment.GetEnvironmentVariable("CAPS_GL_SS") == "2") && gl.IsBlitFramebufferAvailable ? 2 : 1;   // CAPS_GL_SS=2: also on Retina
+        if (Interacting && _nSphere + _nCapsule + _nTriVerts / 3 > LargeScene) ss = 1;   // a very large scene in motion: one sample a pixel
         var target = fb;
         if (ss > 1 && EnsureSupersample(gl, pw * ss, ph * ss)) target = _ssFbo;
         else ss = 1;
