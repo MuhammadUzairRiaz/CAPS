@@ -1754,7 +1754,12 @@ public partial class MainWindow : Window
         if (!_vm.ProjectDrawer) _vm.LeftTab = 0;
         _vm.ProjectDrawer = !_vm.ProjectDrawer;
     }
-    private void OnFragmentsDrawer(object? s, RoutedEventArgs e) => _vm.FragmentsDrawer = !_vm.FragmentsDrawer;
+    /// <summary>Fragments open from the toolbar's Fragments button (its panel), or the library page when that button is folded away.</summary>
+    private void OnFragmentsDrawer(object? s, RoutedEventArgs e)
+    {
+        if (FragmentsButton.IsEffectivelyVisible && FragmentsButton.GetVisualRoot() != null) FragmentsButton.Flyout?.ShowAt(FragmentsButton);
+        else _vm.OpenFragments();
+    }
     private void OnMonitorsDrawer(object? s, RoutedEventArgs e) => _vm.MonitorsShown = !_vm.MonitorsShown;
     private void OnDockToggle(object? s, RoutedEventArgs e) => _vm.DockOpen = !_vm.DockOpen;
 

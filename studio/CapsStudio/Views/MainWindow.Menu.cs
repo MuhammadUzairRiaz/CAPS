@@ -88,7 +88,7 @@ public partial class MainWindow
                 Item("Lock shelves in place", () => { _vm.Settings.ShelvesLocked = !_vm.Settings.ShelvesLocked; _vm.Settings.Save(); _vm.Status = _vm.Settings.ShelvesLocked ? "Shelves locked" : "Shelves unlocked"; }),
                 Item("Reset this workspace", ResetWorkspace)),
             Sub("Workspace",
-                Item("Sketch", () => UseWorkspace("Sketch")), Item("Build", () => UseWorkspace("Build")), Item("Analyse", () => UseWorkspace("Analyse")),
+                Item("Sketch", () => UseWorkspace("Sketch")), Item("Assemble", () => UseWorkspace("Assemble")), Item("Analyse", () => UseWorkspace("Analyse")),
                 Item("Present", () => UseWorkspace("Present")), Item("Mine", () => UseWorkspace("Mine"))),
             Sep(),
             Page("Display styles…", 65),

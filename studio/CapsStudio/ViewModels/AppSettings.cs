@@ -54,6 +54,7 @@ public sealed class AppSettings
     public Dictionary<string, List<ShelfState>> ShelfLayouts { get; set; } = new();
     public List<CustomShelf> CustomShelves { get; set; } = new();
     public bool ShelvesLocked { get; set; }
+    public bool ShelfHintShown { get; set; }                // the one-time hint about shelf tabs was shown
     /// <summary>Names the user gave projects: folder ("" for the session) → name shown in the project tree.</summary>
     public Dictionary<string, string> ProjectNames { get; set; } = new();
     public string ReduceMotion { get; set; } = "system";   // system (follow the OS) | on | off
