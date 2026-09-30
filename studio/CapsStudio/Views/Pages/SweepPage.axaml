@@ -31,7 +31,7 @@
         <TextBlock Text="{Binding SweepFolder}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
       </DockPanel>
     </Border>
-    <Grid ColumnDefinitions="*,400" ColumnSpacing="16" Margin="22,18">
+    <Grid v:Panes.Split="True" ColumnDefinitions="*,400" ColumnSpacing="16" Margin="22,18">
       <DockPanel>
         <Border DockPanel.Dock="Top" Classes="pcard" Margin="0,0,0,14">
           <StackPanel Spacing="12">

@@ -4,7 +4,7 @@
             xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
             x:Class="CapsStudio.Views.Pages.StartPage" x:DataType="vm:MainViewModel"
             Background="{DynamicResource Bg0B}" DragDrop.AllowDrop="True">
-  <Grid ColumnDefinitions="*,340" ColumnSpacing="28" Margin="40,34,40,24">
+  <Grid v:Panes.Split="True" ColumnDefinitions="*,340" ColumnSpacing="28" Margin="40,34,40,24">
 
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
       <StackPanel Spacing="22" Margin="0,0,4,0">

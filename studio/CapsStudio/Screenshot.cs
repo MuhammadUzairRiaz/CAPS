@@ -81,6 +81,10 @@ internal static class Screenshot
             if (kv[0] == "filter") w.ViewModel.InspectorFilter = kv[1];
             if (kv[0] == "steplib") w.ViewModel.StepLibraryOpen = true;
             if (kv[0] == "savepipeline") { w.ViewModel.PipelineName = kv[1]; w.ViewModel.OpenSavePipeline(); for (int k = 0; k < 20; ++k) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); } }
+            // pane=Body.0 / Centre.1 …: hide or show that pane (as its divider or the toggles do); hover=Body.1 shows a divider's buttons
+            if (kv[0] == "pane") { var pp = kv[1].Split('.'); var g = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(w).OfType<Avalonia.Controls.Grid>().First(x => x.Name == pp[0]); Views.Panes.Toggle(g, int.Parse(pp[1])); for (int k = 0; k < 6; ++k) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); }
+                if (Environment.GetEnvironmentVariable("CAPS_PANE_DEBUG") != null) Console.WriteLine(string.Join(" | ", g.RowDefinitions.Select(r => r.Height + "=" + r.ActualHeight)) + " · " + string.Join(", ", g.Children.Select(c => $"{c.GetType().Name}[{Avalonia.Controls.Grid.GetRow(c)}] h={c.Height} vis={c.IsVisible} b={c.Bounds.Height:F0}"))); }
+            if (kv[0] == "hoverdiv") { for (int k = 0; k < 6; ++k) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); } Views.Panes.HoverForShot(w, int.Parse(kv[1])); }
             if (kv[0] == "openpreview") { w.ViewModel.PreviewOpen(kv[1]); for (int k = 0; k < 80 && !w.ViewModel.OpenIdle || k < 10; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); } for (int k = 0; k < 10; ++k) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); } }
             if (kv[0] == "bundle") { w.ViewModel.OpenBundle(); w.ViewModel.BundleInput = kv[1] == "1"; for (int k = 0; k < 80; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); } }
             if (kv[0] == "viewports") { w.ViewModel.OpenViewports(); w.ViewModel.ViewportLayout = int.Parse(kv[1]); for (int k = 0; k < 80; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); } }

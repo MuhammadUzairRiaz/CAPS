@@ -68,7 +68,7 @@
       </DockPanel>
     </Border>
     <!-- the engines -->
-    <Grid DockPanel.Dock="Top" ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,0,0,12">
+    <Grid v:Panes.Split="True" DockPanel.Dock="Top" ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,0,0,12">
       <Border Classes="card" CornerRadius="10">
         <StackPanel>
           <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">

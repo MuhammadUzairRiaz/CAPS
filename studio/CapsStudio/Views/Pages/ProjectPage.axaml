@@ -34,7 +34,7 @@
         <TextBlock Text="{Binding ProjectFolderText}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
       </DockPanel>
     </Border>
-    <Grid ColumnDefinitions="*,470" ColumnSpacing="16" Margin="22,18">
+    <Grid v:Panes.Split="True" ColumnDefinitions="*,470" ColumnSpacing="16" Margin="22,18">
       <ScrollViewer>
         <StackPanel Spacing="14">
           <ItemsControl ItemsSource="{Binding ProjectDocs}">

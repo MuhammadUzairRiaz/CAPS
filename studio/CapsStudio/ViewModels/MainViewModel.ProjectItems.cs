@@ -37,6 +37,10 @@ public sealed class ProjectItem : ObservableObject
     public bool HasHistory => _history.Length > 0;
     /// <summary>Its job folders, newest first (Materials Studio's project tree).</summary>
     public ObservableCollection<Job> Jobs { get; } = new();
+    private bool _renaming;
+    /// <summary>The name is being edited in place (double click, or Rename in its menu).</summary>
+    public bool Renaming { get => _renaming; set { if (Set(ref _renaming, value)) Raise(nameof(NotRenaming)); } }
+    public bool NotRenaming => !_renaming;
     private bool _expanded = true;
     public bool Expanded { get => _expanded; set => Set(ref _expanded, value); }
     public string IconKind => _origin switch { "Polymer cell" or "Blend" => "grow", "Packing" or "Solvation" => "pack", "Molecule builder" => "atom", "File" => "file", _ => "cube" };
@@ -56,6 +60,23 @@ public sealed class ProjectItem : ObservableObject
 
 public sealed partial class MainViewModel
 {
+    /// <summary>Starts editing a structure's name in the project tree.</summary>
+    public void BeginRename(ProjectItem it)
+    {
+        foreach (var x in ProjectItems) x.Renaming = false;
+        it.Renaming = true;
+    }
+
+    /// <summary>A structure's new name (the tree, its tab and the title); empty keeps the old one.</summary>
+    public void CommitRename(ProjectItem it, string? name)
+    {
+        it.Renaming = false;
+        name = name?.Trim();
+        if (string.IsNullOrEmpty(name) || name == it.Name) return;
+        if (it == _activeItem) Title = name; else it.Name = name;
+        Status = $"Renamed to {name}";
+    }
+
     public ObservableCollection<ProjectItem> ProjectItems { get; } = new();
     private ProjectItem? _activeItem;
 

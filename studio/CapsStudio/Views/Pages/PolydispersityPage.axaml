@@ -29,7 +29,7 @@
       </DockPanel>
     </Border>
     <ScrollViewer Margin="22,18">
-      <Grid ColumnDefinitions="5*,6*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="14" RowSpacing="14">
+      <Grid v:Panes.Split="True" ColumnDefinitions="5*,6*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="14" RowSpacing="14">
         <!-- the grown cell, chains coloured short → long -->
         <Border Classes="pcard" Height="330">
           <DockPanel>

@@ -60,6 +60,8 @@ public partial class MainWindow : Window
     {
         if (!_namesInstalled) { AccessibleNames.Install(); _namesInstalled = true; }
         OpenCommand = new RelayCommand(OpenDialog);
+        Panes.Store = _vm.Settings.PaneSizes;   // the sizes of every divided layout, kept between sessions
+        Panes.Save = () => _vm.Settings.Save();
         InitializeComponent();
         DataContext = _vm;
         // Tab order follows the accessibility map: rail, tools, project, 3D view, inspector, dock
@@ -396,7 +398,10 @@ public partial class MainWindow : Window
     private void OnPickedRepeatUnit(object? s, RoutedEventArgs e) => _vm.UsePickedAsRepeatUnit();
     private void OnGeometry(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is string g) _vm.GeometryPicked(g); }
     /// <summary>The Project Explorer's right edge: drag to widen or narrow it.</summary>
-    private void OnExplorerGrip(object? s, Avalonia.Input.VectorEventArgs e) => _vm.ProjectWidth += e.Vector.X;
+    // the panes: the Project panel, the analysis dock and the Inspector shown or hidden (their dividers drag them)
+    private void OnPaneLeft(object? s, RoutedEventArgs e) => Panes.Toggle(Body, 0);
+    private void OnPaneBottom(object? s, RoutedEventArgs e) => Panes.Toggle(Centre, 2);
+    private void OnPaneRight(object? s, RoutedEventArgs e) => Panes.Toggle(Body, 2);
     private void OnModuleJobs(object? s, RoutedEventArgs e) => _vm.SetModule(11);
     private void OnModuleBench(object? s, RoutedEventArgs e) => _vm.SetModule(12);
     private void OnCloseDocument(object? s, RoutedEventArgs e) { e.Handled = true; _vm.CloseDocument(); }
@@ -410,6 +415,36 @@ public partial class MainWindow : Window
     }
     private void OnDuplicateStructure(object? s, RoutedEventArgs e) => _vm.DuplicateStructure();
     private void OnClearAll(object? s, RoutedEventArgs e) => _vm.ClearAll();
+    // renaming in the project tree: double click or Rename…; Enter keeps the name, Esc cancels, leaving the box keeps it
+    private void OnRenameProjectItem(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is ViewModels.ProjectItem it) _vm.BeginRename(it); }
+    private void OnProjectItemDoubleTap(object? s, Avalonia.Input.TappedEventArgs e) { if ((s as Control)?.Tag is ViewModels.ProjectItem it) { _vm.BeginRename(it); e.Handled = true; } }
+    private void OnItemNameVisible(object? s, AvaloniaPropertyChangedEventArgs e)
+    {
+        if (e.Property == IsVisibleProperty && e.NewValue is true && s is TextBox t)
+            Dispatcher.UIThread.Post(() => { t.Focus(); t.SelectAll(); });
+    }
+    private void OnItemNameKey(object? s, Avalonia.Input.KeyEventArgs e)
+    {
+        if (s is not TextBox { Tag: ViewModels.ProjectItem it } t) return;
+        if (e.Key == Avalonia.Input.Key.Enter) { _vm.CommitRename(it, t.Text); e.Handled = true; }
+        else if (e.Key == Avalonia.Input.Key.Escape) { it.Renaming = false; t.Text = it.Name; e.Handled = true; }
+    }
+    private void OnItemNameLost(object? s, RoutedEventArgs e) { if (s is TextBox { Tag: ViewModels.ProjectItem { Renaming: true } it } t) _vm.CommitRename(it, t.Text); }
+    private void OnRenameProject(object? s, RoutedEventArgs e) => BeginProjectRename();
+    private void OnProjectNameDoubleTap(object? s, Avalonia.Input.TappedEventArgs e) { BeginProjectRename(); e.Handled = true; }
+    private void BeginProjectRename()
+    {
+        ProjectNameBox.Text = _vm.ExplorerProjectName;
+        _vm.ProjectRenaming = true;
+        Dispatcher.UIThread.Post(() => { ProjectNameBox.Focus(); ProjectNameBox.SelectAll(); });
+    }
+    private void OnProjectNameKey(object? s, Avalonia.Input.KeyEventArgs e)
+    {
+        if (e.Key == Avalonia.Input.Key.Enter) { _vm.RenameProject(ProjectNameBox.Text); e.Handled = true; }
+        else if (e.Key == Avalonia.Input.Key.Escape) { _vm.ProjectRenaming = false; e.Handled = true; }
+    }
+    private void OnProjectNameLost(object? s, RoutedEventArgs e) { if (_vm.ProjectRenaming) _vm.RenameProject(ProjectNameBox.Text); }
+
     private void OnEditProjectItem(object? s, RoutedEventArgs e)
     {
         e.Handled = true;
@@ -480,7 +515,9 @@ public partial class MainWindow : Window
         // a view that follows the theme turns with the system's too (Settings › Theme: system)
         if (Application.Current is { } app) app.ActualThemeVariantChanged += (_, _) => _vm.UpdateViewBackground();
         ApplyViewHostBackground();
-        SizeChanged += (_, e) => { _vm.Compact = e.NewSize.Width < 1440; ToolbarRight.Classes.Set("narrow", e.NewSize.Width < 1700); };
+        ToolRow.SizeChanged += (_, _) => FitToolRow();
+        RailScroll.SizeChanged += (_, _) => FitRail();
+        SizeChanged += (_, e) => { _vm.Compact = e.NewSize.Width < 1180; ToolbarRight.Classes.Set("narrow", e.NewSize.Width < 1700); };
         // a folded dock opens when one of its tabs is chosen
         AnalysisTabs.AddHandler(PointerReleasedEvent, (_, _) => { if (_vm.Compact && !_vm.DockOpen) _vm.DockOpen = true; }, RoutingStrategies.Tunnel | RoutingStrategies.Bubble, true);
         _vm.TourChanged += UpdateTour;
@@ -807,6 +844,9 @@ public partial class MainWindow : Window
         {
             if (e.Key is Key.OemPlus or Key.Add) { _vm.StepScale(1); e.Handled = true; return; }
             if (e.Key is Key.OemMinus or Key.Subtract) { _vm.StepScale(-1); e.Handled = true; return; }
+            if (e.Key is Key.D1 or Key.NumPad1) { Panes.Toggle(Body, 0); e.Handled = true; return; }
+            if (e.Key is Key.D2 or Key.NumPad2) { Panes.Toggle(Centre, 2); e.Handled = true; return; }
+            if (e.Key is Key.D3 or Key.NumPad3) { Panes.Toggle(Body, 2); e.Handled = true; return; }
         }
         if (e.Key == Key.W && e.KeyModifiers is KeyModifiers.Meta or KeyModifiers.Control && _vm.Document != null) { _vm.CloseDocument(); e.Handled = true; return; }
         if (_vm.Document == null || _vm.Busy || FocusManager?.GetFocusedElement() is TextBox or ComboBox) return;
@@ -1565,29 +1605,73 @@ public partial class MainWindow : Window
         HintText.Foreground = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse(_vm.ViewIsLight ? "#5A6168" : "#7C838A"));
     }
 
+    /// <summary>The toolbar's view options: all on the right while they fit beside the tools; then icons only (tooltips
+    /// name them); then the last ones move into the » menu at the end of the row.</summary>
+    private readonly List<Control> _overflowed = new();
+    private void FitToolRow()
+    {
+        var w = ToolRow.Bounds.Width;
+        if (w < 1) return;
+        // the Modify row: its group names go when it does not fit on one line
+        ModifyRow.Classes.Set("compact", false);
+        ModifyRow.Measure(new Size(double.PositiveInfinity, 38));
+        ModifyRow.Classes.Set("compact", ModifyRow.DesiredSize.Width > w);
+        // everything back in the row first, in its order
+        foreach (var c in _overflowed) { ToolbarOverflow.Children.Remove(c); ToolbarRight.Children.Insert(ToolbarRight.Children.IndexOf(ToolbarMore), c); if (c is Avalonia.Controls.Shapes.Rectangle) c.IsVisible = true; }
+        _overflowed.Clear();
+        ToolbarMore.IsVisible = false;
+        bool Fits()
+        {
+            ToolbarLeft.Measure(new Size(double.PositiveInfinity, 48));
+            ToolbarRight.Measure(new Size(double.PositiveInfinity, 48));
+            return ToolbarLeft.DesiredSize.Width + ToolbarRight.DesiredSize.Width + 16 <= w;
+        }
+        ToolbarRight.Classes.Set("compact", false);
+        if (Fits()) return;
+        ToolbarRight.Classes.Set("compact", true);
+        if (Fits()) return;
+        ToolbarMore.IsVisible = true;
+        while (!Fits() && ToolbarRight.Children.IndexOf(ToolbarMore) > 1)
+        {
+            var c = ToolbarRight.Children[ToolbarRight.Children.IndexOf(ToolbarMore) - 1];
+            ToolbarRight.Children.Remove(c);
+            if (c is Avalonia.Controls.Shapes.Rectangle) c.IsVisible = false;   // no separators in the menu
+            _overflowed.Insert(0, c);
+            ToolbarOverflow.Children.Insert(0, c);
+        }
+    }
+
+    /// <summary>The module tabs keep their names while they fit; icons (with tooltips) only when they do not.</summary>
+    private void FitRail()
+    {
+        var w = RailScroll.Bounds.Width;
+        if (w < 1 || RailScroll.Content is not Control tabs) return;
+        Rail.Classes.Set("compact", false);
+        tabs.Measure(new Size(double.PositiveInfinity, 48));
+        Rail.Classes.Set("compact", tabs.DesiredSize.Width > w + 1);
+    }
+
+    private bool _wasCompact;
     private void ApplyCompact()
     {
         var c = _vm.Compact;
-        Rail.Classes.Set("compact", c);
-        ToolbarRight.Classes.Set("compact", c);
-        Body.ColumnDefinitions[0].Width = new GridLength(c ? 52 : 72);
-        Body.ColumnDefinitions[2].Width = new GridLength(c ? 40 : 330);
-        SideTabs.IsVisible = c;
-        // the inspector: its column, or a drawer over the right of the view
-        InspectorPanel.IsVisible = _vm.InspectorShown;
-        Grid.SetColumn(InspectorPanel, c ? 1 : 2);
-        InspectorPanel.Width = c ? 300 : double.NaN;
-        InspectorPanel.HorizontalAlignment = c ? Avalonia.Layout.HorizontalAlignment.Right : Avalonia.Layout.HorizontalAlignment.Stretch;
-        InspectorPanel.ZIndex = c ? 6 : 0;
-        InspectorPanel.BoxShadow = c ? Avalonia.Media.BoxShadows.Parse("-16 0 32 0 #70000000") : default;
-        // the project panel: a drawer over the left of the view
-        Grid.SetColumnSpan(ProjectPanel, c ? 2 : 1);
-        ProjectPanel.HorizontalAlignment = c ? Avalonia.Layout.HorizontalAlignment.Left : Avalonia.Layout.HorizontalAlignment.Stretch;
-        ProjectPanel.ZIndex = c ? 6 : 0;
-        ProjectPanel.BoxShadow = c ? Avalonia.Media.BoxShadows.Parse("16 0 32 0 #70000000") : default;
-        // the curves dock: its tabs only until opened
-        AnalysisDock.Height = !c || _vm.DockOpen ? 230 : 46;
+        SideTabs.IsVisible = false;   // hidden panes come back from their dividers or the toggles at the top right
+        // a narrow window shows one side panel at a time (the Inspector first); a wide one shows both again
+        if (c)
+        {
+            Pane(Body, 0, _vm.ProjectPanelShown);
+            Pane(Body, 2, _vm.InspectorShown);
+            Pane(Centre, 2, _vm.DockOpen);
+        }
+        else if (_wasCompact)
+        {
+            Pane(Body, 0, true);
+            Pane(Body, 2, true);
+            Pane(Centre, 2, true);
+        }
+        _wasCompact = c;
     }
+    private static void Pane(Grid g, int k, bool show) { if (show) Panes.Show(g, k, false); else Panes.Hide(g, k, false); }
 
     private void OnInspectorDrawer(object? s, RoutedEventArgs e) => _vm.InspectorDrawer = !_vm.InspectorDrawer;
     private void OnProjectDrawer(object? s, RoutedEventArgs e)

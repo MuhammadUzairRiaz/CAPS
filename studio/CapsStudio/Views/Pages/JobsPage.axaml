@@ -20,7 +20,7 @@
     <Style Selector="Ellipse.dot.failed"><Setter Property="Fill" Value="{DynamicResource ErrB}" /></Style>
   </p:PageBase.Styles>
 
-  <Grid ColumnDefinitions="300,*">
+  <Grid v:Panes.Split="True" ColumnDefinitions="300,*">
     <!-- job list -->
     <Border Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,1,0">
       <DockPanel>

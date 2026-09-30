@@ -7,7 +7,7 @@
     <Style Selector="Button.tile.picked:pointerover /template/ ContentPresenter"><Setter Property="BorderBrush" Value="{DynamicResource AccB}" /></Style>
     <Style Selector="TextBlock.sel"><Setter Property="Foreground" Value="{DynamicResource AccB}" /></Style>
   </p:PageBase.Styles>
-  <Grid ColumnDefinitions="*,330">
+  <Grid v:Panes.Split="True" ColumnDefinitions="*,330">
     <DockPanel>
       <!-- Three backgrounds, same frame -->
       <Border DockPanel.Dock="Top" Padding="14,14,14,14" Background="{DynamicResource Bg0B}">

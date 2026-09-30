@@ -2,7 +2,7 @@
 <p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
             xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
             x:Class="CapsStudio.Views.Pages.ViewportsPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}" Focusable="True">
-  <Grid ColumnDefinitions="*,330">
+  <Grid v:Panes.Split="True" ColumnDefinitions="*,330">
     <Canvas x:Name="Stage" Background="{DynamicResource Bg0B}" ClipToBounds="True" />
     <Border Grid.Column="1" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="1,0,0,0">
       <DockPanel>
