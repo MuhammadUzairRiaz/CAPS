@@ -40,7 +40,7 @@ public sealed record CriterionRow(string Title, string Rule, string Now, string 
     public string Icon => State == "pass" ? "check" : "alert";
     public Avalonia.Media.IBrush Brush => CapsStudio.Tokens.Brush(State == "pass" ? "OkB" : "WarnB");
 }
-public sealed record PackItem(string Name, string Detail, string Count, string Colour, string File)
+public sealed record PackItem(string Name, string Detail, string Count, string Colour, string File, int Row = 0, int FfChoice = 0)
 {
     public Avalonia.Media.IBrush Brush => Avalonia.Media.Brush.Parse(Colour);
 }
@@ -2112,6 +2112,7 @@ public sealed partial class MainViewModel : ObservableObject
         string? file = null;
         var number = "1";
         var fixedMol = false;
+        var ffChoice = 0;
         var constraints = new List<string>();
         PackCellText = "no periodic cell";
         foreach (var raw in _packText.Split('\n'))
@@ -2127,18 +2128,19 @@ public sealed partial class MainViewModel : ObservableObject
                     PackCellText = string.Format(inv, "{0} × {1} × {2} Å, periodic", w[4], w[5], w[6]);
                 else if (key == "cell" && w.Length == 4) PackCellText = string.Format(inv, "{0} × {1} × {2} Å, periodic", w[1], w[2], w[3]);
                 else if (key == "cell" && w.Length == 8) PackCellText = string.Format(inv, "{0} × {1} × {2} Å, periodic", w[5], w[6], w[7]);
-                else if (key is "structure" or "molecule" && w.Length > 1) { file = line[(line.IndexOf(' ') + 1)..].Trim(); number = "1"; fixedMol = false; constraints.Clear(); }
+                else if (key is "structure" or "molecule" && w.Length > 1) { file = line[(line.IndexOf(' ') + 1)..].Trim(); number = "1"; fixedMol = false; ffChoice = 0; constraints.Clear(); }
             }
             else if (key == "end" && !(w.Length > 1 && w[1].Equals("atoms", StringComparison.OrdinalIgnoreCase)))
             {
                 var name = Path.GetFileNameWithoutExtension(file);
                 var colour = PackColours[PackItems.Count % PackColours.Length];
                 PackItems.Add(new PackItem(name, constraints.Count > 0 ? string.Join(" · ", constraints) : "anywhere in the cell",
-                    fixedMol ? "fixed" : $"× {number}", colour, file));
+                    fixedMol ? "fixed" : $"× {number}", colour, file, PackItems.Count, ffChoice));
                 file = null;
             }
             else if (key is "number" or "count" && w.Length > 1) number = w[1];
             else if (key == "fixed") fixedMol = true;
+            else if (key is "forcefield" or "water" && w.Length > 1) ffChoice = PackFfChoiceOf(key, line[(line.IndexOf(' ') + 1)..].Trim());
             else if (key is "inside" or "outside" or "over" or "below" or "above" or "in" or "not" or "atoms") constraints.Add(line);
         }
         Raise(nameof(HasPackItems));

@@ -104,7 +104,12 @@
                             <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
                             <TextBlock Text="{Binding Detail}" Classes="mono" FontSize="11" Foreground="{DynamicResource DimB}" TextWrapping="Wrap" />
                           </StackPanel>
-                          <TextBlock Grid.Column="2" Text="{Binding Count}" Classes="mono" VerticalAlignment="Center" Foreground="{DynamicResource MutedB}" />
+                          <StackPanel Grid.Column="2" Spacing="4" VerticalAlignment="Center" HorizontalAlignment="Right">
+                            <TextBlock Text="{Binding Count}" Classes="mono" HorizontalAlignment="Right" Foreground="{DynamicResource MutedB}" />
+                            <ComboBox Width="210" FontSize="11.5" ItemsSource="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).PackFfChoices}"
+                                      SelectedIndex="{Binding FfChoice, Mode=OneWay}" Tag="{Binding}" SelectionChanged="OnRowForceField"
+                                      ToolTip.Tip="This molecule's own force field (or a water model); the cell's force field above covers the rest. Different force fields meet by the cross rule of Field › By group" />
+                          </StackPanel>
                         </Grid>
                       </Border>
                     </DataTemplate>

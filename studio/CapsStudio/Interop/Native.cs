@@ -361,6 +361,7 @@ internal static class Native
     public static string LastError() => Marshal.PtrToStringUTF8(LastErrorPtr()) ?? "";
 
     [DllImport(Lib, EntryPoint = "caps_water_models")] public static extern int WaterModels(byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_pack_items")] public static extern int PackItems(IntPtr doc, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_pack_convert")] public static extern int PackConvert([MarshalAs(UnmanagedType.LPUTF8Str)] string text, int toCaps, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_inspect_file")] public static extern int InspectFile([MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string? topology, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_open_frames")] public static extern IntPtr OpenFrames([MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string? topology, long first, long last, long stride, int maxFrames, CapsOpenProgress? progress, IntPtr user);
@@ -1462,6 +1463,8 @@ public sealed class CapsDocument : IDisposable
     /// <summary>The structure's own file carried a force field (an AMBER prmtop) that still fits it: FieldAssign("file", …) assigns it.</summary>
     public bool FieldFileAvailable { get { using (Hold()) { Alive(); return Native.FieldFileAvailable(H) == 1; } } }
     public bool FieldAssignGroups(string json) { using (Hold()) { Alive(); return CheckField(Native.FieldAssignGroups(H, json)); } }
+    /// <summary>The packing that made this document: per input molecule its name, molecule ids and own force field (JSON).</summary>
+    public string PackItemsJson() { using (Hold()) { Alive(); return Sized((b, c) => Native.PackItems(H, b, c)); } }
     public bool FieldOverride(int index, string? type) { using (Hold()) { Alive(); return CheckField(Native.FieldOverride(H, index, type)); } }
     /// <summary>Types learned from a typed example (head, body and tail units …) set on every atom with the same
     /// environment (caps_field_type_by_example). Returns (complete, report JSON).</summary>

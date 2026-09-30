@@ -156,6 +156,7 @@ struct caps_doc {
   std::vector<int64_t> react_chains;   // each atom's chain as the last caps_react left it (the next run starts from them)
   size_t react_bonds = 0;              // the bond count they belong to (an edit in between drops them)
   int64_t held_mol = 0;   // molecule held in place by caps_relax (0: none)
+  std::string pack_items; // v51 the packing that made it: per input molecule its name, molecule ids and own force field (JSON)
   std::vector<uint32_t> fixed_atoms;   // v36: atoms held in place besides the held molecule (frame indices)
   std::vector<caps::RelaxOptions::Restraint> restraints;   // distance restraints for caps_relax
   std::vector<caps::RelaxOptions::DihedralRestraint> dihedral_restraints;   // and dihedral ones
@@ -1545,6 +1546,11 @@ int32_t caps_gromacs(caps_doc* d, const char* stem, char* text, int32_t cap) {
 }
 
 // Export center (ABI 23): the simulation files for LAMMPS and GROMACS in one call, from a complete force field.
+extern "C" int32_t caps_pack_items(caps_doc* d, char* json, int32_t cap) {
+  if (!d) return -1;
+  return report_out(d->pack_items.empty() ? "[]" : d->pack_items, json, cap);
+}
+
 extern "C" int32_t caps_pack_convert(const char* text, int32_t to_caps, char* out, int32_t cap) {
   try {
     const std::string t = text ? text : "";
@@ -2568,6 +2574,15 @@ caps_doc* caps_pack(const char* text, const char* base_dir, int32_t threads, cap
     d->traj.cells.push_back(s.cell);
     d->traj.timesteps.push_back(0);
     d->traj.topology.notes = rep.notes;
+    {
+      caps::Json a = caps::Json::array();
+      for (const auto& it : rep.items) {
+        caps::Json o = caps::Json::object();
+        o["name"] = it.name, o["molecules"] = it.molecules, o["forcefield"] = it.forcefield;
+        a.push_back(o);
+      }
+      d->pack_items = a.dump(0);
+    }
     refresh(d);
     prov_step(d, "pack.lbfgs", std::to_string(rep.molecules) + " molecules packed without overlaps",
               {{"molecules", std::to_string(rep.molecules)}, {"atoms", std::to_string(rep.atoms)}, {"closest contact", g6(rep.dmin) + " Å"},
