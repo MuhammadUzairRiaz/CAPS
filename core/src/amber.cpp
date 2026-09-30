@@ -845,6 +845,7 @@ std::vector<std::string> write_amber(const System& s, const ForceField& ff, cons
   if (!ff.bonds2.empty() || !ff.angles2.empty() || !ff.dihedrals2.empty() || !ff.impropers2.empty()) refuse("class II cross terms have no AMBER form");
   if (!ff.pair_func.empty()) refuse("Buckingham / Morse pairs have no AMBER form");
   if (!ff.lj14_types.empty()) refuse("separate 1-4 Lennard-Jones parameters (CHARMM, GROMOS) need a chamber topology; export GROMACS or LAMMPS instead");
+  if (ff.per_pair14()) refuse("force fields with different 1-4 scalings (merged by group) share AMBER's per-dihedral-type scale factors; export GROMACS or LAMMPS, or take one scaling (scaling14: first)");
   if (!ff.lj_pairs.empty()) refuse("explicit Lennard-Jones atom pairs have no AMBER form");
   if (!ff.urey_bradley.empty()) refuse("Urey–Bradley terms need a chamber topology");
   if (!ff.impropers_harmonic.empty()) refuse("harmonic impropers need a chamber topology");

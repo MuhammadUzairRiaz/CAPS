@@ -3081,7 +3081,7 @@ int32_t caps_field_assign_groups(caps_doc* d, const char* json) {
                                                    ? g["potential"].text("style", "") + " potential " + std::filesystem::path(g["potential"].text("file", "")).filename().string()
                                                    : std::filesystem::path(g.text("forcefield", "")).filename().string()) + " · molecules " + g.text("molecules", "")});
     pr.push_back({"between groups", "ε " + G.text("eps_rule", "geometric") + ", σ " + G.text("sigma_rule", "arithmetic")});
-    if (G.text("scaling14", "refuse") == "first") pr.push_back({"1-4 scaling", "the first group's for all (asked)"});
+    if (G.text("scaling14", "own") == "first") pr.push_back({"1-4 scaling", "the first group's for all (asked)"});
     if (G.text("cross96", "refuse") == "rmin") pr.push_back({"9-6 sites in cross pairs", "12-6 with the same ε and r_min (asked)"});
     prov_step(d, "field.assign.groups", "force fields by group: " + d->field->ff->name, std::move(pr), "", {},
               {{"Cross interactions", "Lennard-Jones by the stated mixing rule between the groups' parameters"}});
