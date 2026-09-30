@@ -1149,7 +1149,7 @@ public partial class MainWindow : Window
                 var w = (int)Math.Max(16, host.Bounds.Width);
                 var h = (int)Math.Max(16, host.Bounds.Height);
                 _scaling = VisualRoot?.RenderScaling ?? 1;
-                if (doc == null) { image.Source = null; _rendered = ticket; break; }
+                if (doc == null) { image.Source = null; RenderStat.Text = ""; _rendered = ticket; break; }
                 // While a run holds the document: its live snapshots (MD, equilibration) are drawn instead, and the GPU
                 // view turns the scene it has; nothing here waits on the document.
                 var busy = _vm.Busy;
@@ -1193,7 +1193,9 @@ public partial class MainWindow : Window
                             RestartIdle();
                         }
                         else if (_haveLast) { _cpuStale = true; ClearOverlays(); }   // picks and labels wait for the run to end
-                        RenderStat.Text = $"{pw}×{ph} px · GPU{(busy ? src != null ? " · live" : " · run" : "")} · {gsw.Elapsed.TotalMilliseconds + ViewGl.LastFrameMs:0} ms";
+                        var frameMs = Math.Max(gsw.Elapsed.TotalMilliseconds + ViewGl.LastFrameMs, ViewGl.GpuFrameMs);   // CPU work or GPU drawing, whichever limits
+                        RenderStat.Text = $"{pw}×{ph} px · GPU{(busy ? src != null ? " · live" : " · run" : "")} · {frameMs:0} ms";
+                        _vm.ReportGpuFrame(frameMs);
                         _rendered = ticket;
                         continue;
                     }
