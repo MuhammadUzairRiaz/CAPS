@@ -106,6 +106,7 @@ struct FieldState {
   std::vector<std::string> types;
   caps::ParamReport rep;
   std::shared_ptr<const caps::ForceField> ff;   // null while atoms are untyped
+  std::vector<caps::LammpsStyle::Group> group_atoms;   // by-group force fields: each group's name and atoms (LAMMPS groups)
   bool complete = false;
   std::vector<std::string> prep_notes;       // what was done to the structure for the force field (united-atom sites)
   std::string report;                        // JSON, see caps_field_report
@@ -1614,6 +1615,16 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
     }
     if (lammps && !kg_model) try {
       std::vector<std::string> lnotes;
+      // groups in the input: the Field page's groups, else a composite's filler (the held molecule) and matrix
+      const auto& ga = d->field->group_atoms;
+      const bool groups_fit = !d->field->groups.empty() && ga.size() > 1 &&
+                              std::all_of(ga.begin(), ga.end(), [&](const auto& g) { return std::all_of(g.atoms.begin(), g.atoms.end(), [&](uint32_t i) { return i < s.atoms.size(); }); });
+      if (groups_fit) ls.groups = ga;
+      else if (d->held_mol > 0) {
+        caps::LammpsStyle::Group filler{"filler", {}}, matrix{"matrix", {}};
+        for (size_t i = 0; i < s.atoms.size(); ++i) (s.atoms[i].mol == d->held_mol ? filler : matrix).atoms.push_back(uint32_t(i));
+        if (!filler.atoms.empty() && !matrix.atoms.empty()) ls.groups = {filler, matrix};
+      }
       caps::write_lammps_data_ff(s, ff, e, base + ".data", false, ls);
       caps::write_lammps_input(s, ff, e, stem + ".data", base + ".in", d->held_mol, true, run, ls, &lnotes);
       for (const auto& n : lnotes) notes.push_back(caps::Json("LAMMPS: " + n));
@@ -4780,6 +4791,12 @@ void field_run_groups(caps_doc* d) {
       if (rest < 0) throw caps::FFError("atom " + std::to_string(i + 1) + " (molecule " + std::to_string(mol_of(i)) + ") is in no group: add it, or a group for the rest");
       owner[i] = rest;
     }
+  F.group_atoms.clear();
+  for (size_t g = 0; g < ng; ++g) {
+    caps::LammpsStyle::Group grp{G["groups"][g].text("name", "group" + std::to_string(g + 1)), {}};
+    for (size_t i = 0; i < n; ++i) if (owner[i] == int(g)) grp.atoms.push_back(uint32_t(i));
+    F.group_atoms.push_back(std::move(grp));
+  }
   std::vector<std::shared_ptr<const caps::ForceField>> keep;
   std::vector<caps::FFPart> parts;
   std::vector<caps::Json> reports;
