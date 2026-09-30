@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 
 namespace CapsStudio.Views;
 
@@ -121,6 +122,17 @@ public partial class MainWindow
     }
 
     private void OnShowAllAtoms(object? s, RoutedEventArgs e) { _vm.ShowAllAtoms(); ViewHost.Focus(); }
+
+    // ---------------------------------------------------------------- layers (design/boards/Layers)
+
+    private void OnLayerRow(object? s, TappedEventArgs e)
+    {
+        if ((s as Control)?.Tag is not ViewModels.LayerRow r || e.Source is Visual v && v.FindAncestorOfType<Button>() != null) return;
+        _vm.SelectLayer(r, e.KeyModifiers.HasFlag(KeyModifiers.Shift));
+    }
+    private void OnLayerExpand(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is ViewModels.LayerRow r) _vm.ToggleLayer(r); e.Handled = true; }
+    private void OnLayerEye(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is ViewModels.LayerRow r) _vm.CycleLayer(r); e.Handled = true; }
+    private void OnLayerLock(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is ViewModels.LayerRow r) _vm.LockLayer(r); e.Handled = true; }
 
     // ---------------------------------------------------------------- the ring
 

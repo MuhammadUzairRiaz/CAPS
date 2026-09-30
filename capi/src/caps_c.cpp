@@ -83,6 +83,7 @@
 #include "caps/lattice.hpp"
 
 #include <map>
+#include <unordered_map>
 #include <mutex>
 #include <chrono>
 #include <memory>
@@ -748,7 +749,8 @@ caps::RenderOptions opts_of(const caps_doc* d, const caps_render_opts* o) {
     if (r.atom_style.size() != n) r.atom_style.assign(n, uint8_t(r.style));
     r.unpickable.assign(n, 0);
     for (size_t i = 0; i < n; ++i) {
-      const uint8_t v = d->atom_state[i];
+      const uint8_t v = d->atom_state[i] & 3;
+      if (d->atom_state[i] & 4) r.unpickable[i] = 1;   // locked: drawn as it is, never picked
       if (v == 2) r.atom_style[i] = uint8_t(caps::Style::Hidden), r.unpickable[i] = 1;
       else if (v == 1) {
         if (r.transparency.size() != n) r.transparency.assign(n, 0.0f);
@@ -757,7 +759,7 @@ caps::RenderOptions opts_of(const caps_doc* d, const caps_render_opts* o) {
       }
     }
     r.highlight.erase(std::remove_if(r.highlight.begin(), r.highlight.end(),
-                                     [&](int i) { return i >= 0 && size_t(i) < n && d->atom_state[size_t(i)] != 0; }),
+                                     [&](int i) { return i >= 0 && size_t(i) < n && (d->atom_state[size_t(i)] & 3) != 0; }),
                       r.highlight.end());
   }
   return r;
@@ -3796,12 +3798,134 @@ int32_t caps_set_atom_state(caps_doc* d, const int32_t* atoms, int32_t n, int32_
     const size_t na = d->frame.atoms.size();
     const uint8_t v = uint8_t(std::clamp(state, 0, 2));
     if (d->atom_state.size() != na) d->atom_state.assign(na, 0);
-    auto set = [&](size_t i) { if (d->atom_state[i] != v) d->atom_state[i] = v, ++changed; };
+    auto set = [&](size_t i) { const uint8_t now = uint8_t((d->atom_state[i] & 4) | v); if (d->atom_state[i] != now) d->atom_state[i] = now, ++changed; };
     if (!atoms) for (size_t i = 0; i < na; ++i) set(i);
     else for (int32_t k = 0; k < n; ++k) if (atoms[k] >= 0 && size_t(atoms[k]) < na) set(size_t(atoms[k]));
     return 0;
   });
   return changed;
+}
+
+int32_t caps_set_atom_lock(caps_doc* d, const int32_t* atoms, int32_t n, int32_t locked) {
+  int32_t changed = 0;
+  guard([&] {
+    const size_t na = d->frame.atoms.size();
+    if (d->atom_state.size() != na) d->atom_state.assign(na, 0);
+    auto set = [&](size_t i) {
+      const uint8_t now = uint8_t(locked ? d->atom_state[i] | 4 : d->atom_state[i] & 3);
+      if (d->atom_state[i] != now) d->atom_state[i] = now, ++changed;
+    };
+    if (!atoms) for (size_t i = 0; i < na; ++i) set(i);
+    else for (int32_t k = 0; k < n; ++k) if (atoms[k] >= 0 && size_t(atoms[k]) < na) set(size_t(atoms[k]));
+    return 0;
+  });
+  return changed;
+}
+
+// Layers (design/boards/Layers): the structure's molecules grouped by kind (residue name and formula), each with its atom
+// count, a profile of its atoms along z (8 bins across the cell's c axis, else the structure's extent, peak 1), its view
+// state (shown, ghost, hidden or mixed), whether it is locked and how many of its atoms are selected.
+int32_t caps_layers(caps_doc* d, char* json, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  guard([&] {
+    const auto& S = d->frame;
+    const size_t n = S.atoms.size();
+    const auto ids = molecule_ids(S);
+    const bool st = d->atom_state.size() == n, sel = d->selection.size() == n;
+    // z of each atom as a fraction of the cell (or the extent)
+    double lo = 1e300, hi = -1e300;
+    if (!S.cell.valid()) for (const auto& a : S.atoms) lo = std::min(lo, a.pos[2]), hi = std::max(hi, a.pos[2]);
+    auto zfrac = [&](const caps::Atom& a) {
+      if (S.cell.valid()) { double f = S.cell.to_fractional(a.pos)[2]; return f - std::floor(f); }
+      return hi > lo ? (a.pos[2] - lo) / (hi - lo) : 0.5;
+    };
+    struct Mol { int64_t id = 0; size_t atoms = 0, sel = 0; std::array<double, 8> z{}; size_t shown = 0, ghost = 0, hidden = 0, locked = 0; std::vector<std::pair<int, int>> el; std::string res; };
+    std::vector<Mol> list;
+    std::unordered_map<int64_t, size_t> slot;
+    for (size_t i = 0; i < n; ++i) {
+      auto [it, fresh] = slot.try_emplace(ids[i], list.size());
+      if (fresh) list.emplace_back(), list.back().id = ids[i], list.back().res = S.atoms[i].resname;
+      auto& m = list[it->second];
+      ++m.atoms;
+      const int e = S.atoms[i].element;
+      auto el = std::find_if(m.el.begin(), m.el.end(), [e](const auto& p) { return p.first == e; });
+      if (el == m.el.end()) m.el.push_back({e, 1}); else ++el->second;
+      m.z[size_t(std::clamp(int(zfrac(S.atoms[i]) * 8), 0, 7))] += 1;
+      const uint8_t v = st ? d->atom_state[i] : 0;
+      ((v & 3) == 1 ? m.ghost : (v & 3) == 2 ? m.hidden : m.shown)++;
+      if (v & 4) ++m.locked;
+      if (sel && d->selection[i]) ++m.sel;
+    }
+    std::sort(list.begin(), list.end(), [](const Mol& a, const Mol& b) { return a.id < b.id; });
+    auto formula = [](const std::vector<std::pair<int, int>>& v) {
+      const std::map<int, int> el(v.begin(), v.end());
+      std::string f;
+      auto add = [&](int z, int c) { f += caps::element(z).symbol; if (c > 1) f += std::to_string(c); };
+      if (el.count(6)) { add(6, el.at(6)); if (el.count(1)) add(1, el.at(1)); }
+      std::vector<std::pair<std::string, int>> rest;
+      for (const auto& [z, c] : el) if (!(el.count(6) && (z == 6 || z == 1))) rest.push_back({caps::element(z).symbol, c});
+      std::sort(rest.begin(), rest.end());
+      for (const auto& [sym, c] : rest) { f += sym; if (c > 1) f += std::to_string(c); }
+      return f;
+    };
+    // kinds in order of first appearance
+    std::vector<std::string> order;
+    std::map<std::string, caps::Json> kinds;
+    std::map<std::string, size_t> kind_atoms;
+    for (const auto& m : list) {
+      const int64_t id = m.id;
+      const std::string f = formula(m.el);
+      const std::string key = m.res + "|" + f;
+      if (!kinds.count(key)) {
+        order.push_back(key);
+        caps::Json k = caps::Json::object();
+        k["name"] = m.res.empty() ? f : m.res;
+        k["formula"] = f;
+        k["elements"] = [&] {
+          std::vector<int> zs;
+          for (const auto& p : m.el) zs.push_back(p.first);
+          std::sort(zs.begin(), zs.end());
+          std::string e;
+          for (int z : zs) { if (!e.empty()) e += " "; e += caps::element(z).symbol; }
+          return e;
+        }();
+        k["molecules"] = caps::Json::array();
+        kinds[key] = k;
+      }
+      caps::Json x = caps::Json::object();
+      x["id"] = double(id);
+      x["atoms"] = double(m.atoms);
+      const double peak = *std::max_element(m.z.begin(), m.z.end());
+      caps::Json z = caps::Json::array();
+      for (double b : m.z) z.push_back(peak > 0 ? std::round(b / peak * 100) / 100 : 0.0);
+      x["z"] = z;
+      x["state"] = m.hidden == m.atoms ? "hidden" : m.ghost == m.atoms ? "ghost" : m.shown == m.atoms ? "shown" : "mixed";
+      x["locked"] = m.locked == m.atoms && m.atoms > 0;
+      x["selected"] = double(m.sel);
+      x["held"] = d->held_mol > 0 && id == d->held_mol;
+      kinds[key]["molecules"].push_back(x);
+      kind_atoms[key] += m.atoms;
+    }
+    // a residue name names its kind when it is specific (not a builder's placeholder) and names no other kind
+    std::map<std::string, int> res_uses;
+    for (const auto& key : order) ++res_uses[key.substr(0, key.find('|'))];
+    static const std::set<std::string> generic{"", "MOL", "UNK", "UNL", "LIG", "RES", "X", "SYS", "DUM"};
+    caps::Json arr = caps::Json::array();
+    for (const auto& key : order) {
+      const std::string res = key.substr(0, key.find('|')), f = key.substr(key.find('|') + 1);
+      std::string up = res;
+      for (auto& c : up) c = char(std::toupper(static_cast<unsigned char>(c)));
+      const bool water = f == "H2O" || up == "SOL" || up == "HOH" || up == "WAT" || up == "TIP3" || up == "SPC";
+      kinds[key]["name"] = water ? std::string("water") : !generic.count(up) && res_uses[res] == 1 ? res : f;
+      kinds[key]["atoms"] = double(kind_atoms[key]);
+      arr.push_back(kinds[key]);
+    }
+    r["kinds"] = arr;
+    r["atoms"] = double(n);
+    r["z_axis"] = S.cell.valid() ? "cell c" : "extent";
+    return 0;
+  });
+  return report_out(r.dump(0), json, cap);
 }
 
 int32_t caps_atom_states(caps_doc* d, uint8_t* out, int32_t n) {

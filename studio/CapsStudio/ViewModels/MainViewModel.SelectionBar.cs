@@ -68,13 +68,14 @@ public sealed partial class MainViewModel
     {
         _barAtoms = SelectionAtoms();
         SelBarCount = _barAtoms.Length;
-        if (_barAtoms.Length == 0) { SelBarWhat = SelBarHow = ""; SelectionBarChanged?.Invoke(); return; }
+        if (_barAtoms.Length == 0) { SelBarWhat = SelBarHow = ""; LightLayers(_barAtoms); SelectionBarChanged?.Invoke(); return; }
         SelBarWhat = DescribeAtoms(_barAtoms);
         var how = new List<string>();
         if (_selCount > 0 && _selHud.Length > 0) how.Add(_selHud);
         else if (_selCount > 0) how.Add("selection");
         if (_selection.Count > 0) how.Add(_pickHow);
         SelBarHow = string.Join(" + ", how.Distinct());
+        LightLayers(_barAtoms);
         SelectionBarChanged?.Invoke();
     }
 
@@ -162,8 +163,9 @@ public sealed partial class MainViewModel
     {
         if (_doc == null) { HiddenCount = GhostCount = 0; return; }
         var st = _doc.AtomStates();
-        HiddenCount = st.Count(v => v == 2);
-        GhostCount = st.Count(v => v == 1);
+        HiddenCount = st.Count(v => (v & 3) == 2);
+        GhostCount = st.Count(v => (v & 3) == 1);
+        Raise(nameof(LayerChip));
     }
 
     private void SetStates(int[]? atoms, int state, string what)
@@ -175,6 +177,8 @@ public sealed partial class MainViewModel
         RefreshSelection();
         if (_selCount > 0) ClearDocSelection();
         RefreshViewStates();
+        RefreshLayerStates();
+        Raise(nameof(LayerChip));
         RefreshSelBar();
         Status = what;
         RenderRequested?.Invoke();

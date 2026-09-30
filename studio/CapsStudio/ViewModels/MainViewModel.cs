@@ -421,6 +421,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         RefreshChains();
         MoleculeRows.Clear();
+        RefreshLayers();
         if (_doc == null) return;
         var inv = CultureInfo.InvariantCulture;
         var m = _doc.Molecules();

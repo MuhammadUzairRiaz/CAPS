@@ -41,6 +41,20 @@ internal static class Screenshot
         foreach (var kv in args.Skip(3).Select(a => a.Split('=', 2)).Where(p => p.Length == 2))
         {
             if (kv[0] == "pick") w.PickForTest(kv[1].Split(',').Select(int.Parse).ToArray());
+            // layers: layer=ROW:eye|lock|select|expand (ROW an index into the list)
+            if (kv[0] == "layer")
+            {
+                var f = kv[1].Split(':');
+                var row = w.ViewModel.LayerRows[int.Parse(f[0])];
+                switch (f[1])
+                {
+                    case "eye": w.ViewModel.CycleLayer(row); break;
+                    case "lock": w.ViewModel.LockLayer(row); break;
+                    case "select": w.ViewModel.SelectLayer(row, false); break;
+                    case "expand": w.ViewModel.ToggleLayer(row); break;
+                }
+                for (var i = 0; i < 20; i++) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+            }
             // shelves: workspace=NAME · shelf=ID:DOCK[:fold][:X:Y] (DOCK top-left|top-right|top-2|left|right|bottom|float|hidden) · makeshelf=NAME
             if (kv[0] == "workspace") w.UseWorkspace(kv[1]);
             if (kv[0] == "shelf")

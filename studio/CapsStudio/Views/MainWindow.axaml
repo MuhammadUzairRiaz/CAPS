@@ -430,17 +430,43 @@
                       ToolTip.Tip="A copy of the active structure, force field kept: try another protocol on it and keep the original">
                 <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="layers" Size="13" VerticalAlignment="Center" /><TextBlock Text="Copy structure" VerticalAlignment="Center" /></StackPanel>
               </Button>
-              <TextBlock Text="MOLECULES OF THE ACTIVE STRUCTURE" FontSize="10" FontWeight="SemiBold" LetterSpacing="0.6" Foreground="{DynamicResource DimB}" Margin="18,6,0,2" IsVisible="{Binding HasDocument}" />
-              <ItemsControl ItemsSource="{Binding MoleculeRows}" IsVisible="{Binding HasDocument}">
+              <!-- Layers (design/boards/Layers): kinds and their molecules, z profile, atoms, state; eye and pin -->
+              <Grid ColumnDefinitions="*,Auto" Margin="18,6,10,2" IsVisible="{Binding HasLayers}">
+                <TextBlock Text="LAYERS" FontSize="10" FontWeight="SemiBold" LetterSpacing="0.6" Foreground="{DynamicResource DimB}" />
+                <TextBlock Grid.Column="1" Text="{Binding LayerCaption}" FontSize="10" Foreground="{DynamicResource DimB}" />
+              </Grid>
+              <ItemsControl ItemsSource="{Binding LayerRows}" IsVisible="{Binding HasLayers}" Margin="6,0,6,4">
                 <ItemsControl.ItemTemplate>
-                  <DataTemplate x:DataType="vm:MoleculeRow">
-                    <Border Height="24" Padding="18,0,8,0">
-                      <StackPanel Orientation="Horizontal" Spacing="7">
-                        <local:Icon Kind="hex" Size="14" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
-                        <TextBlock FontSize="12.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center">
-                          <Run Text="Molecule " /><Run Text="{Binding Molecule}" /><Run Text=" · " /><Run Text="{Binding Atoms}" /><Run Text=" atoms" />
-                        </TextBlock>
-                      </StackPanel>
+                  <DataTemplate x:DataType="vm:LayerRow">
+                    <Border Classes="layer" Classes.lit="{Binding IsLit}" Classes.full="{Binding IsFullyLit}" Height="28" CornerRadius="6" Padding="{Binding Indent}"
+                            Opacity="{Binding RowOpacity}" Tag="{Binding}" Tapped="OnLayerRow" Background="Transparent"
+                            ToolTip.Tip="Click selects it in the view (⇧ adds)">
+                      <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto,Auto,Auto" VerticalAlignment="Center">
+                        <Button Classes="layerbtn" Width="16" IsVisible="{Binding HasChildren}" Tag="{Binding}" Click="OnLayerExpand" ToolTip.Tip="Show or fold its molecules">
+                          <local:Icon Kind="{Binding Chevron}" Size="12" />
+                        </Button>
+                        <Border Grid.Column="1" Width="10" Height="10" CornerRadius="3" Background="{Binding Brush}" Margin="4,0,7,0" VerticalAlignment="Center" IsVisible="{Binding !IsMore}" />
+                        <TextBlock Grid.Column="2" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" FontSize="12.5"
+                                   Foreground="{DynamicResource TextB}" Text="{Binding Name}" ToolTip.Tip="{Binding Sub}" />
+                        <Border Grid.Column="3" Classes="chip" Height="18" Padding="6,0" Margin="4,0" Background="#2E2618" IsVisible="{Binding GhostChip}">
+                          <TextBlock Text="ghost" FontSize="10.5" Foreground="{DynamicResource AccB}" />
+                        </Border>
+                        <Border Grid.Column="3" Classes="chip" Height="18" Padding="6,0" Margin="4,0" IsVisible="{Binding HiddenChip}">
+                          <TextBlock Text="hidden" FontSize="10.5" Foreground="{DynamicResource DimB}" />
+                        </Border>
+                        <local:Spark Grid.Column="4" Width="40" Height="14" Values="{Binding Z}" Stroke="{Binding Brush}" Margin="4,0" IsVisible="{Binding !IsMore}"
+                                     ToolTip.Tip="Its atoms along z" />
+                        <TextBlock Grid.Column="5" Text="{Binding AtomsText}" Classes="mono" FontSize="11" Foreground="{DynamicResource DimB}" Width="44" TextAlignment="Right"
+                                   VerticalAlignment="Center" IsVisible="{Binding !IsMore}" />
+                        <Button Grid.Column="6" Classes="layerbtn" Classes.on="{Binding IsGhost}" Tag="{Binding}" Click="OnLayerEye" IsVisible="{Binding !IsMore}"
+                                ToolTip.Tip="Shown → ghost (faint, not pickable) → hidden; it stays in the structure">
+                          <local:Icon Kind="eye" Size="14" />
+                        </Button>
+                        <Button Grid.Column="7" Classes="layerbtn" Classes.on="{Binding Locked}" Tag="{Binding}" Click="OnLayerLock" IsVisible="{Binding !IsMore}"
+                                ToolTip.Tip="Lock against picking and edits (clean-up holds it)">
+                          <local:Icon Kind="pin" Size="13" />
+                        </Button>
+                      </Grid>
                     </Border>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
@@ -901,7 +927,7 @@
                 </StackPanel>
               </Border>
               <Button Classes="chipbtn" IsVisible="{Binding HasHiddenAtoms}" Click="OnShowAllAtoms" ToolTip.Tip="Show every hidden and ghosted atom (⌥H)">
-                <TextBlock><Run Text="{Binding HiddenChip}" Foreground="{DynamicResource MutedB}" /><Run Text=" · " Foreground="{DynamicResource MutedB}" /><Run Text="show all" Foreground="{DynamicResource AccB}" /></TextBlock>
+                <TextBlock><Run Text="{Binding LayerChip}" Foreground="{DynamicResource MutedB}" /><Run Text=" · " Foreground="{DynamicResource MutedB}" /><Run Text="show everything" Foreground="{DynamicResource AccB}" /></TextBlock>
               </Button>
               <Border Classes="chip" Background="{DynamicResource HudB}">
                 <TextBlock Text="{Binding HudInfo}" Foreground="{DynamicResource MutedB}" />
