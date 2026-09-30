@@ -145,6 +145,11 @@ struct LammpsStyle {
   // factor), or auto: metal when the force field has a many-body potential LAMMPS reads in metal units only (AIREBO,
   // REBO), else real
   std::string units = "auto";
+  // Named atom sets written as LAMMPS groups (a composite's filler and matrix; the Field page's groups): by atom type
+  // when their types are their own (so per-group pair styles, fixes and computes can name them), else by molecule or
+  // atom id, said in a comment. The input says where the first group's types are numbered.
+  struct Group { std::string name; std::vector<uint32_t> atoms; };
+  std::vector<Group> groups;
 };
 
 // Whether a LAMMPS export of this force field is written in metal units (see LammpsStyle::units); throws when real units
@@ -154,6 +159,8 @@ bool lammps_metal_units(const ForceField& ff, const LammpsStyle& style = {});
 // bond, angle, torsion, improper and class II cross-term constants, DREIDING hydrogen bonds, Stillinger–Weber ε.
 ForceField forcefield_in_metal_units(const ForceField& ff);
 
+// The groups of LammpsStyle::groups as LAMMPS group commands, with the comment saying how the types are numbered.
+std::string lammps_group_lines(const System& s, const ForceField& ff, const std::vector<LammpsStyle::Group>& groups);
 void write_lammps_data_ff(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& path, bool pair_coeffs = true,
                           const LammpsStyle& style = {});
 // The numbering a LAMMPS data file of s would use (1-based): each atom's type, and every bond, angle, dihedral and

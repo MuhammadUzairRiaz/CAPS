@@ -325,3 +325,27 @@ TEST(FFMerge, MeamMapsLibraryEntries) {
   EXPECT_TRUE(fs::exists(dir / "library.meam") && fs::exists(dir / "SiC.meam"));
   fs::remove_all(dir);
 }
+
+// LAMMPS groups for a composite: types of their own → group by type (the filler's numbered first, said so); a type
+// shared between groups → by molecule
+TEST(FFMerge, LammpsGroupsByType) {
+  caps::System s;
+  s.has_mol = true;
+  for (int i = 0; i < 6; ++i) { caps::Atom a; a.mol = i < 2 ? 1 : 2 + (i - 2) / 2; s.atoms.push_back(a); }
+  caps::ForceField ff;
+  ff.type_names = {"C_rebo", "CG2R", "HGR", "CT"};
+  ff.type_index = {0, 0, 1, 2, 3, 2};
+  std::vector<caps::LammpsStyle::Group> g = {{"filler", {0, 1}}, {"matrix", {2, 3, 4, 5}}};
+  const auto t = caps::lammps_group_lines(s, ff, g);
+  EXPECT_NE(t.find("filler's atom types are numbered first (1)"), std::string::npos) << t;
+  EXPECT_NE(t.find("group           filler         type 1   # C_rebo"), std::string::npos) << t;
+  EXPECT_NE(t.find("group           matrix         type 2:4   # CG2R HGR CT"), std::string::npos) << t;
+  // the filler's carbon typed like a matrix carbon: grouped by molecule instead
+  ff.type_index = {1, 1, 1, 2, 3, 2};
+  const auto u = caps::lammps_group_lines(s, ff, g);
+  EXPECT_NE(u.find("group           filler         molecule 1   # shares atom types"), std::string::npos) << u;
+  EXPECT_NE(u.find("group           matrix         molecule 2:3   # shares atom types"), std::string::npos) << u;
+  // filler types after the matrix's: said
+  ff.type_index = {3, 3, 0, 1, 2, 1};
+  EXPECT_NE(caps::lammps_group_lines(s, ff, g).find("not all numbered before"), std::string::npos);
+}
