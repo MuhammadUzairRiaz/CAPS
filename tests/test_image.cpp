@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <fstream>
 
+#include "caps/io.hpp"
 #include "caps/render.hpp"
 
 using namespace caps;
@@ -96,4 +97,34 @@ TEST(Image, DeepRenderKeepsSixteenBits) {
     finer += img.rgba16[k] % 257 != 0;
   }
   EXPECT_GT(finer, 0);
+}
+
+// Picking by the view ray (no image) names the same atom as the rendered id buffer at each visible atom's centre.
+TEST(Image, RayPickAgreesWithTheRenderedIds) {
+  const caps::System s = caps::open_file(std::string(CAPS_SAMPLES) + "/ps_melt.data").frame(0);
+  caps::Renderer r;
+  caps::Camera cam;
+  cam.yaw = 0.7, cam.pitch = 0.35, cam.zoom = 1.3;
+  for (bool persp : {false, true}) {
+    cam.perspective = persp;
+    caps::RenderOptions opt;
+    opt.width = 640, opt.height = 480, opt.supersample = 2;
+    r.render(s, cam, opt);
+    const auto p = r.project(s, cam, opt);
+    size_t tested = 0, same = 0;
+    for (size_t i = 0; i < s.atoms.size(); ++i) {
+      if (p[3 * i + 2] < 0.5f) continue;   // hidden behind others
+      const int x = int(p[3 * i]), y = int(p[3 * i + 1]);
+      if (x < 0 || y < 0 || x >= 640 || y >= 480) continue;
+      const int buf = r.pick(x, y);
+      if (buf < 0) continue;
+      ++tested;
+      same += caps::Renderer::pick_ray(s, cam, opt, x + 0.75, y + 0.75) == buf;   // where the id buffer samples (the supersample right of centre)
+    }
+    EXPECT_GT(tested, 200u);
+    EXPECT_GE(double(same) / double(tested), 0.97) << (persp ? "perspective" : "orthographic") << ": " << same << " of " << tested;
+  }
+  caps::RenderOptions opt;
+  opt.width = 640, opt.height = 480;
+  EXPECT_EQ(caps::Renderer::pick_ray(s, cam, opt, 2, 2), -1);   // a corner of empty space
 }
