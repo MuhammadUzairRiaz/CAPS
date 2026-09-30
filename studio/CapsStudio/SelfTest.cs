@@ -12,7 +12,7 @@ internal static class SelfTest
         var fails = 0;
         void Check(bool ok, string what) { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {what}"); if (!ok) fails++; }
 
-        Check(Native.AbiVersion() == 57, "native ABI version 57");
+        Check(Native.AbiVersion() == 58, "native ABI version 58");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -2127,6 +2127,39 @@ internal static class SelfTest
             var clearOk = vm.SelBarCount == 0 && !vm.HasSelBar;
             Check(molOk && unionOk && hideOk && lassoOk && showOk && typeOk && ghostOk && onlyOk && delOk && xyzOk && clearOk,
                   $"A1 selection bar: [{molOk} {unionOk} {hideOk} {lassoOk} {showOk} {typeOk} {ghostOk} {onlyOk} {delOk} {xyzOk} {clearOk}] molecule {molAtoms} atoms · type {t0}: {typeCount} · '{vm.SelBarWhat}'");
+        }
+
+        // A2/A9 layers (design/boards/Layers): kinds and their molecules, the eye cycle, the lock, rows lit by the selection
+        {
+            vm.Open(Path.Combine(dir, "ps_melt.data"));
+            vm.RefreshLayers();
+            var kind = vm.LayerRows.FirstOrDefault();
+            var listOk = kind != null && kind.IsKind && kind.HasChildren && kind.Name == "10 × C64H66" && kind.Atoms == 1300 && vm.LayerRows.Count == 11
+                         && kind.Z.Max() == 1.0 && vm.LayerRows.Skip(1).All(r => r.Atoms == 130);
+            var m3 = vm.LayerRows[3];
+            vm.CycleLayer(m3);
+            var ghostOk = m3.State == "ghost" && kind!.State == "mixed" && vm.GhostCount == 130 && vm.LayerChip.Contains("ghosted", StringComparison.Ordinal);
+            vm.CycleLayer(m3);
+            var hiddenOk = m3.State == "hidden" && vm.HiddenCount == 130;
+            vm.CycleLayer(m3);
+            var backOk = m3.State == "shown" && vm.HiddenCount + vm.GhostCount == 0;
+            var m1 = vm.LayerRows[1];
+            vm.LockLayer(m1);
+            var d = vm.Document!;
+            var lockOk = m1.Locked && d.AtomStates().Take(1300).Count(v => (v & 4) != 0) == 130;
+            // a locked layer is not selected by its row, the whole kind selects the rest
+            vm.SelectLayer(m1, false);
+            var lockSelOk = vm.SelectedCount == 0;
+            vm.SelectLayer(kind!, false);
+            vm.RefreshSelBar();
+            var selOk = vm.SelectedCount == 1170 && kind.IsLit && !m1.IsLit && vm.LayerRows[2].IsFullyLit;
+            vm.LockLayer(m1);
+            vm.ToggleLayer(kind);
+            var foldOk = vm.LayerRows.Count == 1;
+            vm.ToggleLayer(kind);
+            vm.ClearAllSelection();
+            Check(listOk && ghostOk && hiddenOk && backOk && lockOk && lockSelOk && selOk && foldOk && !m1.Locked,
+                  $"A2 layers: [{listOk} {ghostOk} {hiddenOk} {backOk} {lockOk} {lockSelOk} {selOk} {foldOk}] {kind?.Name} · {vm.LayerRows.Count} rows · chip '{vm.LayerChip}'");
         }
 
         // Row 21 steps: expression counts, vector expressions, bonds against the file, replicas made real

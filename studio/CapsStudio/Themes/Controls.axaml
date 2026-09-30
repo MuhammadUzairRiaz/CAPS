@@ -402,6 +402,18 @@
     <Setter Property="FontSize" Value="11.5" /><Setter Property="VerticalContentAlignment" Value="Center" />
   </Style>
   <Style Selector="Button.chipbtn:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource Bg3B}" /></Style>
+  <!-- layers rows (design/boards/Layers) -->
+  <Style Selector="Border.layer:pointerover"><Setter Property="Background" Value="{DynamicResource Bg2B}" /></Style>
+  <Style Selector="Border.layer.lit"><Setter Property="Background" Value="{DynamicResource SelBgB}" /></Style>
+  <Style Selector="Border.layer.full"><Setter Property="Background" Value="{DynamicResource Bg3B}" /><Setter Property="BorderBrush" Value="{DynamicResource SelB}" /><Setter Property="BorderThickness" Value="1" /></Style>
+  <Style Selector="Button.layerbtn">
+    <Setter Property="Width" Value="22" /><Setter Property="Height" Value="22" /><Setter Property="MinHeight" Value="22" /><Setter Property="Padding" Value="0" />
+    <Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" /><Setter Property="CornerRadius" Value="5" />
+    <Setter Property="Foreground" Value="{DynamicResource DimB}" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" /><Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.layerbtn:pointerover"><Setter Property="Foreground" Value="{DynamicResource TextB}" /></Style>
+  <Style Selector="Button.layerbtn.on"><Setter Property="Foreground" Value="{DynamicResource AccB}" /></Style>
   <Style Selector="Border.chip">
     <Setter Property="Background" Value="{DynamicResource Bg2B}" />
     <Setter Property="CornerRadius" Value="11" />

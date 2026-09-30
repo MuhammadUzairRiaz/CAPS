@@ -861,6 +861,30 @@ def _atom_states(self) -> list:
     return list(buf[:n])
 
 
+def _lock(self, atoms=None, locked: bool = True) -> int:
+    """Lock these atoms (None: all) against picking and edits in the Studio, or free them (locked=False)."""
+    lib = library()
+    lib.caps_set_atom_lock.argtypes = [C.c_void_p, C.c_void_p, C.c_int32, C.c_int32]
+    lib.caps_set_atom_lock.restype = C.c_int32
+    if atoms is None:
+        return lib.caps_set_atom_lock(self._h, None, 0, 1 if locked else 0)
+    idx = [int(i) for i in atoms]
+    return lib.caps_set_atom_lock(self._h, (C.c_int32 * len(idx))(*idx), len(idx), 1 if locked else 0)
+
+
+def _layers(self) -> dict:
+    """The structure's layers: molecules grouped by kind (residue name and formula), each molecule with its atom count, a
+    profile along z (8 bins, peak 1), its view state (shown, ghost, hidden, mixed), lock and selected atoms."""
+    lib = library()
+    lib.caps_layers.argtypes = [C.c_void_p, C.c_char_p, C.c_int32]
+    n = lib.caps_layers(self._h, None, 0)
+    buf = C.create_string_buffer(n + 1)
+    lib.caps_layers(self._h, buf, n + 1)
+    return json.loads(buf.value.decode())
+
+
+Document.lock = _lock
+Document.layers = _layers
 Document.hide = _hide
 Document.ghost = _ghost
 Document.show = _show
