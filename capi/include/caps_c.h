@@ -535,6 +535,11 @@ int32_t caps_pack_convert(const char* text, int32_t to_caps, char* out, int32_t 
 /* v51 the packing that made a document: [{name, molecules: "11-110", forcefield: "" | library id | "water:MODEL"}] per input
    molecule, in the input's order ([] for a document not packed). For a force field per group of molecules. */
 int32_t caps_pack_items(caps_doc* d, char* json, int32_t cap);
+/* v51 the assigned force field written whole (every type, charge, term and setting, 17 digits; caps/ffio.hpp) and read
+   back onto the same structure exactly (its atom count checked): a remote job or a saved recipe takes it instead of typing
+   again — the same parameters, groups and water models kept. 0, or -1 (caps_last_error). */
+int32_t caps_field_save(caps_doc* d, const char* path);
+int32_t caps_field_load(caps_doc* d, const char* path);
 int32_t caps_export_engines(caps_doc* d, const char* dir, const char* options, char* out, int32_t cap);
 int32_t caps_summary_get(caps_doc* d, caps_summary* out);
 int32_t caps_set_frame(caps_doc* d, int64_t frame);

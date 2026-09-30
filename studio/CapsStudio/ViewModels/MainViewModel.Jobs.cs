@@ -18,18 +18,20 @@ public sealed class RemoteRun
     public string Local { get; set; } = "";
     public string Stem { get; set; } = "structure";
     public string LastState { get; set; } = "";
+    /// <summary>Jobs sent together (a Glass scan's replicas): pooled when they are back.</summary>
+    public string Batch { get; set; } = "";
     public bool Checking { get; set; }
     /// <summary>Outputs left on the host when the job came back (large trajectories): copied on request.</summary>
     public List<RemoteFile> OnHost { get; set; } = new();
     public JsonObject Json() => new()
     {
-        ["host"] = Host, ["scheduler"] = Scheduler, ["job_id"] = JobId, ["dir"] = Dir, ["local"] = Local, ["stem"] = Stem,
+        ["host"] = Host, ["scheduler"] = Scheduler, ["job_id"] = JobId, ["dir"] = Dir, ["local"] = Local, ["stem"] = Stem, ["batch"] = Batch,
         ["on_host"] = new JsonArray(OnHost.Select(f => (JsonNode)new JsonObject { ["name"] = f.Name, ["bytes"] = f.Bytes }).ToArray()),
     };
     public static RemoteRun From(JsonObject o) => new()
     {
         Host = (string?)o["host"] ?? "", Scheduler = (string?)o["scheduler"] ?? "SLURM", JobId = (string?)o["job_id"] ?? "", Dir = (string?)o["dir"] ?? "",
-        Local = (string?)o["local"] ?? "", Stem = (string?)o["stem"] ?? "structure",
+        Local = (string?)o["local"] ?? "", Stem = (string?)o["stem"] ?? "structure", Batch = (string?)o["batch"] ?? "",
         OnHost = o["on_host"] is JsonArray a ? a.OfType<JsonObject>().Select(f => new RemoteFile((string?)f["name"] ?? "", (long?)f["bytes"] ?? 0)).Where(f => f.Name.Length > 0).ToList() : new(),
     };
 }

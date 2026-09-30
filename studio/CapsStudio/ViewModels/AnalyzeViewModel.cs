@@ -281,6 +281,23 @@ public sealed class AnalyzeViewModel : ObservableObject
         };
     }
 
+    /// <summary>The cooling scan's settings as a recipe's tg keys (core/src/recipe.cpp), the same scan as Run gives.</summary>
+    public string TgRecipeKeys(ulong seed)
+    {
+        var inv = CultureInfo.InvariantCulture;
+        string G(double v) => v.ToString("R", inv);
+        var keys = new List<string>
+        {
+            "t_start: " + G(_tgFrom), "t_end: " + G(_tgTo), "t_step: " + G(_tgStep), "ps_per_step: " + G(_tgPs), "equilibrate_ps: " + G(_eqPs > 0 ? _eqPs : -1),
+            "pressure: " + G(_tgPressure), "barostat: " + (_tgBarostat == 1 ? "berendsen" : _tgBarostat == 2 ? "mtk" : "crescale"),
+            "tau_t: " + G(_tgTauT), "tau_p: " + G(_tgTauP), "average_from: " + G(Math.Max(1e-6, 1 - _tgAverage / 100.0)),
+            "property: " + (_tgProperty == 1 ? "energy" : "volume"), "fit: " + (_tgFit == 1 ? "ranges" : "hinge"),
+        };
+        if (_tgFit == 1) { keys.Add("glassy_max: " + G(_tgGlassy)); keys.Add("rubbery_min: " + G(_tgRubbery)); }
+        keys.Add("seed: " + seed.ToString(inv));
+        return "{ " + string.Join(", ", keys) + " }";
+    }
+
     public static readonly string[] Pairs = ["all – all", "C – C", "C – H", "H – H", "C – O", "C – N", "O – H"];
     private static readonly (int A, int B)[] PairElements = [(0, 0), (6, 6), (6, 1), (1, 1), (6, 8), (6, 7), (8, 1)];
 

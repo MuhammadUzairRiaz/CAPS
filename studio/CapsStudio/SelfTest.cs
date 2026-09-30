@@ -2956,6 +2956,41 @@ internal static class SelfTest
                                 (vm.GtTg.Value == "—" || vm.GtAlphaGlass.Label == "dE/dT glass") && tgCard != null && tgCard.Method.Contains("potential energy per atom") && tgCard.Method.Contains("glassy and the rubbery range") &&
                                 tgCard.Method.Contains("2 atm") && tgCard.Method.Contains("Berendsen", StringComparison.OrdinalIgnoreCase);
                 Check(energyRun, $"glass transition from the energy, two ranges: {vm.GtPoints.Length} points · {vm.GtTg.Value} · {tgCard?.Method}");
+                // the saved recipe: the force field as assigned here (its file beside the recipe) and every cooling setting
+                {
+                    var gdir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "caps_glass_recipe");
+                    System.IO.Directory.CreateDirectory(gdir);
+                    var noFf = vm.Field.Assigned ? null : vm.SaveGlassForceField(System.IO.Path.Combine(gdir, "none.yaml"));
+                    if (!vm.Field.Assigned) vm.Field.Assign().GetAwaiter().GetResult();
+                    var ffName = vm.SaveGlassForceField(System.IO.Path.Combine(gdir, "x_tg.yaml"));
+                    var grec = vm.GlassRecipe("/tmp/x.data", ffName);
+                    Check(noFf == null && vm.GlassRecipe("/tmp/y.data").Contains("type: { forcefield: default }") && ffName == "x_tg.ff.json" && System.IO.File.ReadAllText(System.IO.Path.Combine(gdir, ffName)).Contains("caps-assigned-forcefield") &&
+                          grec.Contains("type: { file: \"x_tg.ff.json\" }") && grec.Contains("barostat: berendsen") && grec.Contains("pressure: 2") &&
+                          grec.Contains("property: energy") && grec.Contains("fit: ranges") && grec.Contains("glassy_max:"),
+                          "glass recipe: " + grec.Split('\n').Last(l => l.Contains("tg:")).Trim());
+                    // replicas run elsewhere (here: the recipe engine into job folders as a host would leave them) pooled back
+                    var gjobs = new List<Job>();
+                    for (var rep = 1; rep <= 3; ++rep)
+                    {
+                        var rd = System.IO.Path.Combine(gdir, $"rep{rep}");
+                        System.IO.Directory.CreateDirectory(rd);
+                        var job = new Job { Id = $"glass-t{rep}", Kind = "Glass", Module = 47, Title = $"replica {rep}", Document = "test", Status = "done",
+                                            Remote = new RemoteRun { Host = "testhost", Local = rd, Stem = $"x_tg_r{rep}", Batch = "selftest-glass" } };
+                        gjobs.Add(job);
+                        if (rep == 3) continue;   // one that never came back
+                        vm.Document!.Save(System.IO.Path.Combine(rd, "structure.caps.data"));
+                        System.IO.File.Copy(System.IO.Path.Combine(gdir, ffName!), System.IO.Path.Combine(rd, "structure.ff.json"), true);
+                        var (_, glassRep) = CapsDocument.RunRecipe(vm.GlassRecipe("structure.caps.data", "structure.ff.json", (ulong)rep, $"x_tg_r{rep}"),
+                                                                $"{{\"base_dir\": \"{rd}\", \"out_dir\": \"{System.IO.Path.Combine(rd, "out")}\"}}", "replica", null);
+                        _ = glassRep;
+                    }
+                    foreach (var job in gjobs) vm.Jobs.Add(job);
+                    vm.CollectGlassReplicas("selftest-glass");
+                    Check(vm.GtPoints.Length == 5 && vm.GtStatus.StartsWith("2 replicas") && vm.GtStatus.Contains("x_tg_r3") && vm.GtYLabel.StartsWith("potential energy") &&
+                          (vm.GtTg.Value == "—" || vm.GtTg.Caption.Contains("two ranges")),
+                          $"glass replicas pooled from job folders: {vm.GtPoints.Length} points · {vm.GtTg.Value} ({vm.GtTg.Caption}) · {vm.GtStatus}");
+                    foreach (var job in gjobs) vm.Jobs.Remove(job);
+                }
                 vm.Analyze.TgProperty = 0; vm.Analyze.TgFit = 0; vm.Analyze.TgBarostat = 0; vm.Analyze.TgPressureD = 1;
                 (vm.Analyze.TgFromD, vm.Analyze.TgToD, vm.Analyze.TgStepD, vm.Analyze.TgPsD, vm.Analyze.EqPsD) = (gf0, gt0, gs0, gp0, ge0);
                 vm.GtReplicas = 1;

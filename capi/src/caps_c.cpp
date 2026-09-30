@@ -22,6 +22,7 @@
 #include "caps/layers.hpp"
 #include "caps/ffmerge.hpp"
 #include "caps/water.hpp"
+#include "caps/ffio.hpp"
 #include "caps/manybody.hpp"
 #include "caps/molecule.hpp"
 #include "caps/sorption.hpp"
@@ -1463,6 +1464,7 @@ int32_t save_frame(caps_doc* d, const std::string& p) {
     else if (ends(".sdf") || ends(".mol")) caps::write_sdf(d->frame, p);
     else if (ends(".cif")) caps::write_cif(d->frame, p);
     else if (ends(".vasp") || ends(".poscar") || is_poscar_name(p)) caps::write_poscar(d->frame, p, fixed_mask(d, d->frame));
+    else if (ends(".caps.data")) caps::write_lammps_data(d->frame, p);   // CAPS to CAPS: every atom (a four-site water's M), no coefficients
     else if (d->field) {   // the Field assignment: its coefficients when complete, else the structure alone
       if (d->field->complete) caps::write_lammps_data_or_structure(d->frame, *d->field->ff, elec(), p);
       else caps::write_lammps_data(d->frame, p);
@@ -1546,6 +1548,54 @@ int32_t caps_gromacs(caps_doc* d, const char* stem, char* text, int32_t cap) {
 }
 
 // Export center (ABI 23): the simulation files for LAMMPS and GROMACS in one call, from a complete force field.
+extern "C" int32_t caps_field_save(caps_doc* d, const char* path) {
+  return guard([&] {
+    if (!d || !d->field || !d->field->ff) throw caps::FFError("no force field assigned");
+    if (d->field->ff->type_index.size() != d->traj.topology.atoms.size()) throw caps::FFError("the force field is for another structure");
+    std::ofstream f(path ? path : "");
+    if (!f) throw std::runtime_error(std::string("cannot write ") + (path ? path : ""));
+    caps::Json j = caps::Json::parse(caps::forcefield_to_json(*d->field->ff));
+    caps::Json g = caps::Json::array();   // the groups it was assigned by (LAMMPS groups in the inputs)
+    for (const auto& grp : d->field->group_atoms) {
+      caps::Json o = caps::Json::object(), a = caps::Json::array();
+      for (auto i : grp.atoms) a.push_back(caps::Json(double(i)));
+      o["name"] = grp.name, o["atoms"] = a;
+      g.push_back(o);
+    }
+    j["groups"] = g;
+    f << j.dump_exact(0) << "\n";
+    return 0;
+  });
+}
+
+extern "C" int32_t caps_field_load(caps_doc* d, const char* path) {
+  return guard([&] {
+    std::ifstream f(path ? path : "");
+    if (!f) throw std::runtime_error(std::string("cannot open ") + (path ? path : ""));
+    std::stringstream ss;
+    ss << f.rdbuf();
+    auto ff = std::make_shared<caps::ForceField>(caps::forcefield_from_json(ss.str()));
+    if (ff->type_index.size() != d->traj.topology.atoms.size())
+      throw caps::FFError("the force field file is for " + std::to_string(ff->type_index.size()) + " atoms, the structure has " + std::to_string(d->traj.topology.atoms.size()));
+    d->traj.topology.forcefield = ff;
+    for (size_t i = 0; i < d->traj.topology.atoms.size(); ++i) d->traj.topology.atoms[i].charge = ff->charge[i];
+    d->traj.topology.has_charges = true;
+    install_file_field(d);
+    if (!d->field || !d->field->ff) throw caps::FFError("the force field file could not be installed");
+    {   // the groups it was assigned by
+      const caps::Json j = caps::Json::parse(ss.str());
+      if (j.has("groups") && j["groups"].is_array())
+        for (const auto& g : j["groups"].items()) {
+          caps::LammpsStyle::Group grp{g.text("name", "group"), {}};
+          for (const auto& a : g["atoms"].items()) grp.atoms.push_back(uint32_t(a.number()));
+          d->field->group_atoms.push_back(std::move(grp));
+        }
+    }
+    prov_step(d, "field.assign", ff->name, {{"force field", "read whole from " + std::filesystem::path(path).filename().string()}}, "", {}, {});
+    return 0;
+  });
+}
+
 extern "C" int32_t caps_pack_items(caps_doc* d, char* json, int32_t cap) {
   if (!d) return -1;
   return report_out(d->pack_items.empty() ? "[]" : d->pack_items, json, cap);
@@ -1664,7 +1714,7 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
       std::vector<std::string> lnotes;
       // groups in the input: the Field page's groups, else a composite's filler (the held molecule) and matrix
       const auto& ga = d->field->group_atoms;
-      const bool groups_fit = !d->field->groups.empty() && ga.size() > 1 &&
+      const bool groups_fit = ga.size() > 1 &&
                               std::all_of(ga.begin(), ga.end(), [&](const auto& g) { return std::all_of(g.atoms.begin(), g.atoms.end(), [&](uint32_t i) { return i < s.atoms.size(); }); });
       if (groups_fit) ls.groups = ga;
       else if (d->held_mol > 0) {

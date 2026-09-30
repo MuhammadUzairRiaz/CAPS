@@ -202,6 +202,8 @@ Json Json::parse(const std::string& text) {
   return v;
 }
 
+thread_local bool exact_dump = false;   // dump_exact: 17 significant digits
+
 void Json::dump_to(std::string& out, int indent, int depth) const {
   auto nl = [&](int d) {
     if (indent <= 0) return;
@@ -216,7 +218,7 @@ void Json::dump_to(std::string& out, int indent, int depth) const {
       // not a JSON number: NaN / Infinity as Python's json module (and this parser) read them (overlapping atoms, 0/0)
       if (!std::isfinite(d_)) { out += std::isnan(d_) ? "NaN" : d_ > 0 ? "Infinity" : "-Infinity"; break; }
       if (d_ == std::floor(d_) && std::fabs(d_) < 1e15) std::snprintf(b, sizeof b, "%.0f", d_);
-      else std::snprintf(b, sizeof b, "%.10g", d_);
+      else std::snprintf(b, sizeof b, exact_dump ? "%.17g" : "%.10g", d_);
       out += b;
       break;
     }
@@ -249,6 +251,14 @@ void Json::dump_to(std::string& out, int indent, int depth) const {
       break;
     }
   }
+}
+
+std::string Json::dump_exact(int indent) const {
+  exact_dump = true;
+  std::string s;
+  try { dump_to(s, indent, 0); } catch (...) { exact_dump = false; throw; }
+  exact_dump = false;
+  return s;
 }
 
 std::string Json::dump(int indent) const {
