@@ -16,8 +16,22 @@ public partial class MainWindow
     private bool _boxMode;
     private (double, double, double, double, double, int) _barCam;   // the camera the bar was placed for
 
+    /// <summary>The Force field page: its table and 3D view take the height left under the header and the controls (at least
+    /// 520 px); on a short window the page scrolls instead of squeezing them under the footer.</summary>
+    private void FitFieldBody()
+    {
+        var view = FieldScroll.Viewport.Height;
+        if (view <= 0) return;
+        var used = FieldHead.Bounds.Height + (FieldControls.IsVisible ? FieldControls.Bounds.Height : 0) + 16 + 12;
+        var h = Math.Max(520, Math.Floor(view - used));
+        if (Math.Abs(FieldBody.Height - h) > 0.5) FieldBody.Height = h;
+    }
+
     private void InitSelectionBar()
     {
+        FieldScroll.PropertyChanged += (_, e) => { if (e.Property == ScrollViewer.ViewportProperty) FitFieldBody(); };
+        FieldHead.SizeChanged += (_, _) => FitFieldBody();
+        FieldControls.SizeChanged += (_, _) => FitFieldBody();
         _vm.SelectionBarChanged += () => QueuePlaceSelBar(0);
         _vm.PropertyChanged += (_, e) => { if (e.PropertyName is nameof(_vm.HasSelBar)) QueuePlaceSelBar(0); };
         ViewHost.PropertyChanged += (_, e) => { if (e.Property == BoundsProperty) QueuePlaceSelBar(60); };

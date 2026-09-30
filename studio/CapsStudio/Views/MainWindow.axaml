@@ -209,10 +209,10 @@
               <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
                 <local:Icon Kind="tag" Size="16" VerticalAlignment="Center" />
                 <TextBlock Text="Force field" VerticalAlignment="Center" />
+                  <Ellipse Classes="pip" IsVisible="{Binding StepFieldDone}" VerticalAlignment="Center" ToolTip.Tip="Done on the active structure" />
+                  <Ellipse Classes="pip warn" IsVisible="{Binding StepFieldWarn}" VerticalAlignment="Center" ToolTip.Tip="Assigned, but incomplete" />
               </StackPanel>
               <Border Classes="bar" Height="2" CornerRadius="1" Background="{DynamicResource AccB}" VerticalAlignment="Bottom" Margin="4,0,4,-6" />
-                <Ellipse Classes="pip" IsVisible="{Binding StepFieldDone}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,-9,0" ToolTip.Tip="Done on the active structure" />
-                <Ellipse Classes="pip warn" IsVisible="{Binding StepFieldWarn}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,5,-4,0" ToolTip.Tip="Assigned, but incomplete" />
             </Panel>
           </Button>
           <Button Classes="modtab" Classes.on="{Binding IsRelax}" Click="OnModuleRelax" ToolTip.Tip="Energy minimisation (push-off, compression, cell relaxation)">
@@ -220,9 +220,9 @@
               <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
                 <local:Icon Kind="relax" Size="16" VerticalAlignment="Center" />
                 <TextBlock Text="Minimise" VerticalAlignment="Center" />
+                  <Ellipse Classes="pip" IsVisible="{Binding StepMinDone}" VerticalAlignment="Center" ToolTip.Tip="Done on the active structure" />
               </StackPanel>
               <Border Classes="bar" Height="2" CornerRadius="1" Background="{DynamicResource AccB}" VerticalAlignment="Bottom" Margin="4,0,4,-6" />
-                <Ellipse Classes="pip" IsVisible="{Binding StepMinDone}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,-9,0" ToolTip.Tip="Done on the active structure" />
             </Panel>
           </Button>
           <Button Classes="modtab" Classes.on="{Binding IsEquilibrate}" Click="OnModuleEquilibrate" ToolTip.Tip="Published equilibration protocols with convergence checks">
@@ -230,9 +230,9 @@
               <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
                 <local:Icon Kind="equil" Size="16" VerticalAlignment="Center" />
                 <TextBlock Text="Equilibrate" VerticalAlignment="Center" />
+                  <Ellipse Classes="pip" IsVisible="{Binding StepEqDone}" VerticalAlignment="Center" ToolTip.Tip="Done on the active structure" />
               </StackPanel>
               <Border Classes="bar" Height="2" CornerRadius="1" Background="{DynamicResource AccB}" VerticalAlignment="Bottom" Margin="4,0,4,-6" />
-                <Ellipse Classes="pip" IsVisible="{Binding StepEqDone}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,-9,0" ToolTip.Tip="Done on the active structure" />
             </Panel>
           </Button>
           <Button Classes="modtab" Classes.on="{Binding IsDynamics}" Click="OnModuleDynamics" ToolTip.Tip="Molecular dynamics (NVE, NVT, NPT)">
@@ -240,9 +240,9 @@
               <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
                 <local:Icon Kind="dyn" Size="16" VerticalAlignment="Center" />
                 <TextBlock Text="Dynamics" VerticalAlignment="Center" />
+                  <Ellipse Classes="pip" IsVisible="{Binding StepMdDone}" VerticalAlignment="Center" ToolTip.Tip="Done on the active structure" />
               </StackPanel>
               <Border Classes="bar" Height="2" CornerRadius="1" Background="{DynamicResource AccB}" VerticalAlignment="Bottom" Margin="4,0,4,-6" />
-                <Ellipse Classes="pip" IsVisible="{Binding StepMdDone}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,-9,0" ToolTip.Tip="Done on the active structure" />
             </Panel>
           </Button>
           <Button Classes="modtab" Classes.on="{Binding IsReact}" Click="OnModuleReact" ToolTip.Tip="Crosslinking and reactions from atom-mapped templates">
@@ -269,9 +269,9 @@
               <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
                 <local:Icon Kind="download" Size="16" VerticalAlignment="Center" />
                 <TextBlock Text="Export" VerticalAlignment="Center" />
+                  <Ellipse Classes="pip" IsVisible="{Binding StepExportDone}" VerticalAlignment="Center" ToolTip.Tip="Done on the active structure" />
               </StackPanel>
               <Border Classes="bar" Height="2" CornerRadius="1" Background="{DynamicResource AccB}" VerticalAlignment="Bottom" Margin="4,0,4,-6" />
-                <Ellipse Classes="pip" IsVisible="{Binding StepExportDone}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,-9,0" ToolTip.Tip="Done on the active structure" />
             </Panel>
           </Button>
           <Rectangle Classes="vsep" Margin="6,0" />
@@ -2965,9 +2965,12 @@
       </Border>
 
       <Border Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" Background="{DynamicResource Bg0B}" IsVisible="{Binding IsField}">
-        <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="22,16,22,0">
+        <Grid RowDefinitions="*,Auto">
+        <!-- the page scrolls when the window is short; the table keeps a working height (FitFieldBody) -->
+        <ScrollViewer x:Name="FieldScroll" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <Grid RowDefinitions="Auto,Auto,Auto" Margin="22,16,22,0">
           <!-- header -->
-          <Grid RowDefinitions="Auto,Auto" RowSpacing="10">
+          <Grid x:Name="FieldHead" RowDefinitions="Auto,Auto" RowSpacing="10">
             <StackPanel Spacing="3">
               <TextBlock Text="Force field · typing report" FontSize="20" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
               <TextBlock Classes="muted" Text="Explain every type, override with provenance, and block runs with missing parameters" TextTrimming="CharacterEllipsis" />
@@ -3009,7 +3012,7 @@
           </Grid>
 
           <!-- chips -->
-          <StackPanel Grid.Row="1">
+          <StackPanel Grid.Row="1" x:Name="FieldControls">
           <!-- force fields by group -->
           <Border IsVisible="{Binding Field.GroupMode}" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="10" Background="{DynamicResource Bg1B}"
                   Padding="14,12" Margin="0,14,0,0" IsEnabled="{Binding Field.NotWorking}">
@@ -3052,7 +3055,7 @@
                         <TextBox Grid.Column="1" Text="{Binding File}" Watermark="the potential file (Si.tersoff, CuNi.eam.alloy …)" />
                         <Button Grid.Column="2" Content="…" Click="OnFieldGroupBrowse" Tag="{Binding}" ToolTip.Tip="Choose the file: LAMMPS's potentials folder, the NIST Interatomic Potentials Repository, a paper's supplement" />
                         <ComboBox Grid.Column="3" ItemsSource="{x:Static vm:FieldViewModel.PotentialUnits}" SelectedIndex="{Binding Units}" HorizontalAlignment="Stretch"
-                                  ToolTip.Tip="What the file's energies are in: most published files say it on their first line (UNITS: metal); if yours does not, say it here" />
+                                  ToolTip.Tip="The units the potential FILE is written in (not the run's: that is 'LAMMPS run units' below). Most published files say it on their first line (UNITS: metal); if yours does not, say it here" />
                       </Grid>
                       <Grid ColumnDefinitions="*,Auto,220" ColumnSpacing="6" IsVisible="{Binding IsMeam}">
                         <TextBox Text="{Binding File2}" Watermark="MEAM alloy parameter file (SiC.meam) · empty: none" />
@@ -3085,6 +3088,11 @@
                   <TextBlock Text="9-6 with 12-6" Classes="dim" />
                   <ComboBox Width="250" ItemsSource="{x:Static vm:FieldViewModel.Cross96Modes}" SelectedIndex="{Binding Field.Cross96}"
                             ToolTip.Tip="A class II group (PCFF, COMPASS: Lennard-Jones 9-6) with a 12-6 group: the cross pairs need one form. 12-6 with the 9-6 site's own well depth and minimum, said in the notes" />
+                </StackPanel>
+                <StackPanel Spacing="3" Margin="0,0,10,6">
+                  <TextBlock Text="LAMMPS run units (the export)" Classes="dim" />
+                  <ComboBox Width="370" ItemsSource="{x:Static vm:MainViewModel.EngineUnitModes}" SelectedIndex="{Binding EngineUnits}"
+                            ToolTip.Tip="The units of the written data and input (the same choice as the Export page). real: kcal/mol, Å, fs, atm — a potential file in eV is converted into kcal/mol (AIREBO, REBO by CAPS, a copy beside the input; Tersoff, SW, EAM by LAMMPS). metal: eV, Å, ps, bar. Automatic: metal only when a potential is read in metal units only" />
                 </StackPanel>
               </WrapPanel>
               <StackPanel Spacing="3">
@@ -3125,7 +3133,7 @@
           </StackPanel>
 
           <!-- body -->
-          <Grid Grid.Row="2" ColumnDefinitions="*,440" ColumnSpacing="16" Margin="0,0,0,12">
+          <Grid Grid.Row="2" x:Name="FieldBody" ColumnDefinitions="*,440" ColumnSpacing="16" Margin="0,0,0,12" Height="560">
             <!-- no structure / not assigned -->
             <Border Grid.ColumnSpan="2" IsVisible="{Binding !Field.Assigned}" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="10"
                     Background="{DynamicResource Bg1B}" Margin="0,14,0,0" VerticalAlignment="Top">
@@ -3349,10 +3357,12 @@
               </Border>
             </Grid>
           </Grid>
+        </Grid>
+        </ScrollViewer>
 
           <!-- footer -->
-          <Border Grid.Row="3" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Padding="0,6" Margin="-22,0" >
-            <Grid ColumnDefinitions="*,Auto" Margin="22,0">
+          <Border Grid.Row="1" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Padding="0,6">
+            <Grid ColumnDefinitions="*,Auto" Margin="22,0" ColumnSpacing="16">
               <TextBlock Text="{Binding Field.FooterTyper}" Classes="mono" FontSize="11" Foreground="{DynamicResource DimB}" TextTrimming="CharacterEllipsis" />
               <TextBlock Grid.Column="1" Text="{Binding Field.FooterDb}" Classes="mono" FontSize="11" Foreground="{DynamicResource DimB}" TextTrimming="CharacterEllipsis" MaxWidth="700" />
             </Grid>
