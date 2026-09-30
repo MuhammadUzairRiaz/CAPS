@@ -241,7 +241,12 @@ public sealed partial class MainViewModel
             var json = await Task.Run(() => doc.ExportEngines(dir, o.ToJsonString()));
             var r = System.Text.Json.Nodes.JsonNode.Parse(json)?.AsObject();
             var files = (r?["files"] as System.Text.Json.Nodes.JsonArray)?.Select(f => (string?)f?["name"]).Where(n => n != null) ?? [];
-            Status = r?["ok"]?.GetValue<bool>() == true ? $"Wrote {string.Join(", ", files)} in {dir}" : "Export failed: " + ((string?)r?["error"] ?? (string?)r?["lammps_error"] ?? "unknown");
+            var units = "";
+            try { var inPath = System.IO.Path.Combine(dir, (string)o["stem"]! + ".in"); if (File.Exists(inPath)) units = File.ReadLines(inPath).FirstOrDefault(l => l.TrimStart().StartsWith("units ", StringComparison.Ordinal))?.Trim() ?? ""; } catch { }
+            var err = (string?)r?["lammps_error"];
+            Status = r?["ok"]?.GetValue<bool>() == true && string.IsNullOrEmpty(err)
+                ? $"Wrote {string.Join(", ", files)} in {dir}{(units.Length > 0 ? " · " + units : "")}"
+                : "Export failed: " + ((string?)r?["error"] ?? err ?? "unknown");
         }
         catch (Exception e) { Status = "Export failed: " + e.Message; }
     }

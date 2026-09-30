@@ -94,7 +94,7 @@ public sealed partial class FieldViewModel
         }
         catch { return "Give each element's library entry: Si=SiS C=C"; }
     }
-    public static readonly string[] PotentialUnits = ["as the file says", "metal (eV)", "real (kcal/mol)"];
+    public static readonly string[] PotentialUnits = ["file: as it says", "file in eV (metal)", "file in kcal/mol (real)"];
     public static readonly string[] EpsRules = ["geometric √(εᵢεⱼ)", "arithmetic (εᵢ+εⱼ)/2"];
     public static readonly string[] SigmaRules = ["arithmetic (σᵢ+σⱼ)/2", "geometric √(σᵢσⱼ)", "sixth power (class II)"];
     public static readonly string[] Scaling14Modes = ["each group's own (exact)", "the first group's for all", "refuse different scalings"];
