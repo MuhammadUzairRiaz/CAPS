@@ -60,6 +60,7 @@ public partial class MainWindow : Window
     {
         if (!_namesInstalled) { AccessibleNames.Install(); _namesInstalled = true; }
         OpenCommand = new RelayCommand(OpenDialog);
+        Accessibility.Init();   // screen-reader names for icon buttons (their label or tooltip)
         Panes.Store = _vm.Settings.PaneSizes;   // the sizes of every divided layout, kept between sessions
         Panes.Save = () => _vm.Settings.Save();
         InitializeComponent();
@@ -761,14 +762,34 @@ public partial class MainWindow : Window
     {
         var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title = "Open packmol input",
-            FileTypeFilter = [new FilePickerFileType("packmol input") { Patterns = ["*.inp", "*.txt"] }, new FilePickerFileType("All files") { Patterns = ["*"] }],
+            Title = "Open a Pack input (CAPS or packmol)",
+            FileTypeFilter = [new FilePickerFileType("Pack input") { Patterns = ["*.pack", "*.inp", "*.txt"] }, new FilePickerFileType("All files") { Patterns = ["*"] }],
         });
         if (files.Count > 0 && files[0].TryGetLocalPath() is string p)
         {
             try { _vm.LoadPackInput(p); }
             catch (Exception ex) { _vm.Status = "Could not open: " + ex.Message; }
         }
+    }
+    /// <summary>Pack › Save input: the CAPS form (.pack), or packmol's (.inp) for packmol itself.</summary>
+    public async Task PackSaveAsync()
+    {
+        if (_vm.PackText.Trim().Length == 0) { _vm.Status = "Nothing to save: add a molecule first"; return; }
+        var f = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = "Save the Pack input", DefaultExtension = "pack", SuggestedFileName = "pack.pack",
+            FileTypeChoices = [new FilePickerFileType("CAPS Pack input") { Patterns = ["*.pack"] }, new FilePickerFileType("packmol input") { Patterns = ["*.inp"] }],
+        });
+        if (f?.TryGetLocalPath() is not { } path) return;
+        try
+        {
+            var packmol = path.EndsWith(".inp", StringComparison.OrdinalIgnoreCase);
+            var text = packmol ? CapsStudio.Interop.CapsDocument.PackConvert(_vm.PackText, false) : _vm.PackText;
+            File.WriteAllText(path, text);
+            _vm.Status = packmol ? $"Saved {Path.GetFileName(path)} in packmol syntax (CAPS's own lines — forcefield, water, compress — packmol does not read)"
+                                 : $"Saved {Path.GetFileName(path)}";
+        }
+        catch (Exception ex) { _vm.Status = "Could not save: " + ex.Message; }
     }
     private async void OnEqRun(object? s, RoutedEventArgs e) => await _vm.RunEquilibrate();
     private void OnEqCancel(object? s, RoutedEventArgs e) => _vm.CancelEquilibrate();

@@ -218,6 +218,33 @@ public partial class MainViewModel
         PackText = string.Join('\n', lines);
     }
 
+    /// <summary>Row `row`'s number of copies (its count / number line; a fixed molecule keeps one).</summary>
+    public void SetPackRowCount(int row, int count)
+    {
+        if (count < 1) return;
+        var lines = _packText.Split('\n').ToList();
+        int seen = -1, head = -1;
+        for (int i = 0; i < lines.Count; ++i)
+        {
+            var w = lines[i].Split('#')[0].Trim().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+            if (w.Length == 0) continue;
+            var k = w[0].ToLowerInvariant();
+            if (head < 0)
+            {
+                if (k is "molecule" or "structure" && ++seen == row) head = i;
+                continue;
+            }
+            if (k is "count" or "number") { lines[i] = $"  {k,-7} {count}"; PackText = string.Join('\n', lines); return; }
+            if (k == "fixed") return;
+            if (k == "end" && !(w.Length > 1 && w[1].Equals("atoms", StringComparison.OrdinalIgnoreCase)))
+            {
+                lines.Insert(head + 1, IsCapsPack(_packText) ? $"  count   {count}" : $"  number {count}");
+                PackText = string.Join('\n', lines);
+                return;
+            }
+        }
+    }
+
     /// <summary>After packing: the groups by the rows' own force fields (null when no row has one).</summary>
     private string? PackGroupSpec(Interop.CapsDocument doc)
     {
