@@ -12,7 +12,7 @@ internal static class SelfTest
         var fails = 0;
         void Check(bool ok, string what) { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {what}"); if (!ok) fails++; }
 
-        Check(Native.AbiVersion() == 51, "native ABI version 51");
+        Check(Native.AbiVersion() == 52, "native ABI version 52");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -801,6 +801,37 @@ internal static class SelfTest
         var iface = vm.Document?.Summary();
         Check(iface is { } isum && isum.Molecules > 1 && vm.Title.Contains("film"), $"interface: {vm.Title} · {iface?.Atoms} atoms · {vm.SurfError} {vm.Status}");
         Check(vm.HoldOn && !vm.RelaxCompress, $"interface: the surface is held ({vm.HoldText}), no compression");
+        {   // Type by hand shows the film's polymer (from the structure's history), not the Polymer builder's
+            var own = vm.PolymerOfDocument();
+            var film = vm.SurfFilmItem?.Name ?? "";
+            Check(own != null && own.Contains("units") && film.Length > 0 && own.Contains(System.Text.Json.Nodes.JsonNode.Parse(vm.SurfFilmItem!.Spec)!["units"]![0]!["smiles"]!.GetValue<string>().Replace("\\", "\\\\")),
+                  $"the open structure's polymer: {film} · {own}");
+        }
+        {   // typing by hand inside a by-group assignment: the film's group typed from the example in OPLS-AA 2024, the
+            // surface keeps its own (UFF here), cross terms remade; the LAMMPS input lists each group's types with masses
+            var ffKeep = vm.Field.FfIndex;
+            var o24g = vm.Field.Library.ToList().FindIndex(x => x.Id == "oplsaa2024-moltemplate");
+            var uffg = vm.Field.Library.ToList().FindIndex(x => x.Id == "uff");
+            vm.Field.Groups.Clear();
+            var gSurf = vm.Field.AddGroup("surface", "1");
+            gSurf.FfIndex = uffg;
+            var gm = vm.Field.AddGroup("film", "rest");
+            gm.FfIndex = o24g;
+            vm.Field.FfIndex = o24g;
+            vm.OpenUnitTyping();
+            var exUntyped = vm.UtUntyped;
+            if (exUntyped == 0) vm.ApplyUnitTyping();
+            for (var k = 0; k < 400 && vm.Field.Working; ++k) { Avalonia.Threading.Dispatcher.UIThread.RunJobs(); Thread.Sleep(25); }
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            var deck = vm.Field.Assigned ? vm.Document!.LammpsInput("system.data") : "";
+            Check(exUntyped == 0 && vm.Field.Assigned && vm.UtStatus.Contains("film") && vm.UtStatus.Contains("typed from the example") &&
+                  deck.Contains("group           surface") && deck.Contains("group           film") && deck.Contains("# atom types by group") && deck.Contains("mass            1 "),
+                  $"hand typing by group: example untyped {exUntyped} · {vm.UtStatus} · {vm.Field.ForceFieldName}");
+            vm.Field.Clear().GetAwaiter().GetResult();
+            vm.Field.Groups.Clear();
+            vm.Field.FfIndex = ffKeep;
+            vm.SetModule(8);
+        }
         vm.RelaxFtolD = 5;
         vm.Relax().GetAwaiter().GetResult();
         Check(vm.RelaxLog.Contains("UFF"), "interface relaxed with UFF, the surface held: " + vm.RelaxLog.Split('\n')[0]);

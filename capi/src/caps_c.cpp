@@ -144,6 +144,12 @@ struct AppearanceState {
 };
 
 struct caps_doc {
+  // typing by hand learned for a by-group assignment (caps_field_groups_by_example): the example chain, its types and the
+  // force field they belong to; every group assigned with that force field is typed from it, again at each assignment
+  std::shared_ptr<caps::System> hand_example;
+  std::vector<std::string> hand_types;
+  std::string hand_ff;
+  caps::Json hand_report;
   caps::Trajectory traj;
   caps::System frame;
   caps::Renderer renderer;
@@ -1499,13 +1505,32 @@ int32_t caps_lammps_shake(caps_doc* d, int32_t mode, const char* group, char* te
   });
 }
 
+// The LAMMPS groups of an input: the Field page's groups (a force field per group), else a composite's filler (the held
+// molecule) and matrix; none otherwise.
+static std::vector<caps::LammpsStyle::Group> lammps_groups(const caps_doc* d, const caps::System& s) {
+  if (d->field) {
+    const auto& ga = d->field->group_atoms;
+    if (ga.size() > 1 && std::all_of(ga.begin(), ga.end(), [&](const auto& g) {
+          return std::all_of(g.atoms.begin(), g.atoms.end(), [&](uint32_t i) { return i < s.atoms.size(); }); }))
+      return ga;
+  }
+  if (d->held_mol > 0) {
+    caps::LammpsStyle::Group filler{"filler", {}}, matrix{"matrix", {}};
+    for (size_t i = 0; i < s.atoms.size(); ++i) (s.atoms[i].mol == d->held_mol ? filler : matrix).atoms.push_back(uint32_t(i));
+    if (!filler.atoms.empty() && !matrix.atoms.empty()) return {filler, matrix};
+  }
+  return {};
+}
+
 int32_t caps_lammps_input(caps_doc* d, const char* data_name, char* text, int32_t cap) {
   return guard([&] {
     caps::ForceField ff;
     if (d->field && d->field->complete) ff = *d->field->ff;
     else ff = default_ff(d->frame);
     const auto tmp = std::filesystem::temp_directory_path() / ("caps_input_" + std::to_string(reinterpret_cast<uintptr_t>(d)) + ".in");
-    caps::write_lammps_input(d->frame, ff, elec(), data_name && *data_name ? data_name : "system.data", tmp.string(), d->held_mol);
+    caps::LammpsStyle style;
+    style.groups = lammps_groups(d, d->frame);
+    caps::write_lammps_input(d->frame, ff, elec(), data_name && *data_name ? data_name : "system.data", tmp.string(), d->held_mol, false, {}, style);
     std::ifstream in(tmp);
     std::string s((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
     in.close();
@@ -1712,16 +1737,7 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
     }
     if (lammps && !kg_model) try {
       std::vector<std::string> lnotes;
-      // groups in the input: the Field page's groups, else a composite's filler (the held molecule) and matrix
-      const auto& ga = d->field->group_atoms;
-      const bool groups_fit = ga.size() > 1 &&
-                              std::all_of(ga.begin(), ga.end(), [&](const auto& g) { return std::all_of(g.atoms.begin(), g.atoms.end(), [&](uint32_t i) { return i < s.atoms.size(); }); });
-      if (groups_fit) ls.groups = ga;
-      else if (d->held_mol > 0) {
-        caps::LammpsStyle::Group filler{"filler", {}}, matrix{"matrix", {}};
-        for (size_t i = 0; i < s.atoms.size(); ++i) (s.atoms[i].mol == d->held_mol ? filler : matrix).atoms.push_back(uint32_t(i));
-        if (!filler.atoms.empty() && !matrix.atoms.empty()) ls.groups = {filler, matrix};
-      }
+      ls.groups = lammps_groups(d, s);
       caps::write_lammps_data_ff(s, ff, e, base + ".data", false, ls);
       caps::write_lammps_input(s, ff, e, stem + ".data", base + ".in", d->held_mol, true, run, ls, &lnotes);
       for (const auto& n : lnotes) notes.push_back(caps::Json("LAMMPS: " + n));
@@ -3358,6 +3374,37 @@ int32_t caps_field_type_by_example(caps_doc* d, caps_doc* example, const char* t
     r["unknown_types"] = unknown;
     report_out(r.dump(), report, cap);
     return d->field->complete ? 0 : 1;
+  });
+}
+
+int32_t caps_field_groups_by_example(caps_doc* d, caps_doc* example, const char* types_json, const char* ff_path, const char* groups_json, char* report,
+                                     int32_t cap) {
+  return guard([&] {
+    const bool given = groups_json && *groups_json;
+    if (!given && (!d->field || d->field->groups.empty() || d->field->groups == "{}")) throw caps::FFError("assign the force fields by group first");
+    const caps::Json tj = caps::Json::parse(types_json ? types_json : "[]");
+    std::vector<std::string> types;
+    if (example) {
+      for (const auto& x : tj.items()) types.push_back(x.is_string() ? x.str() : "");
+      if (types.size() != example->frame.atoms.size())
+        throw caps::FFError("one type per example atom (" + std::to_string(example->frame.atoms.size()) + "), " + std::to_string(types.size()) + " given");
+    }
+    const std::string groups = given ? std::string(groups_json) : d->field->groups;
+    auto keep_ex = d->hand_example;
+    auto keep_types = d->hand_types;
+    auto keep_ff = d->hand_ff;
+    if (example) d->hand_example = std::make_shared<caps::System>(example->frame), d->hand_types = types, d->hand_ff = ff_path ? ff_path : "";
+    else d->hand_example.reset(), d->hand_types.clear(), d->hand_ff.clear();   // forget what was taught
+    d->hand_report = caps::Json::object();
+    const int32_t rc = caps_field_assign_groups(d, groups.c_str());
+    if (rc < 0) {   // nothing changed: the previous teaching stays
+      const std::string err = g_error;
+      d->hand_example = keep_ex, d->hand_types = keep_types, d->hand_ff = keep_ff;
+      throw caps::FFError(err);
+    }
+    if (example && !d->hand_report.has("groups")) throw caps::FFError("no group is assigned with this force field: choose it for the polymer's group");
+    report_out(d->hand_report.dump(), report, cap);
+    return rc;
   });
 }
 
@@ -5009,6 +5056,32 @@ void field_run_groups(caps_doc* d) {
     std::unique_ptr<caps_doc> tmp(doc_of(sub));
     const int rc = caps_field_assign(tmp.get(), path.c_str(), nullptr, int32_t(J.num("charges", 4)));
     if (rc < 0) throw caps::FFError(name + ": " + g_error);
+    if (d->hand_example && path == d->hand_ff && tmp->field) {   // the types taught by hand, learned onto this group
+      std::vector<std::string> types = d->hand_types;
+      caps::Json unknown = caps::Json::array();
+      std::set<std::string> said;
+      for (auto& t : types)
+        if (!t.empty() && !tmp->field->base.type(t) && !tmp->field->extra.type(t)) {
+          if (said.insert(t).second) unknown.push_back(t);
+          t.clear();
+        }
+      const caps::ExampleTypes learned = caps::learn_types(*d->hand_example, types);
+      const caps::ExampleMatch m = caps::apply_types(tmp->frame, learned);
+      size_t set = 0;
+      for (size_t i = 0; i < m.types.size(); ++i)
+        if (!m.types[i].empty()) tmp->field->overrides[int32_t(i)] = m.types[i], ++set;
+      field_run(tmp.get());
+      caps::Json& H = d->hand_report;
+      if (!H.is_object()) H = caps::Json::object();
+      H["radius"] = double(learned.radius), H["environments"] = double(learned.environments);
+      H["set"] = H.num("set", 0) + double(set), H["unmatched"] = H.num("unmatched", 0) + double(m.unmatched);
+      caps::Json gl = H.has("groups") ? H["groups"] : caps::Json::array();
+      gl.push_back(name);
+      H["groups"] = gl;
+      caps::Json c = caps::Json::array();
+      for (const auto& x : learned.conflicts) c.push_back(x);
+      H["conflicts"] = c, H["unknown_types"] = unknown;
+    }
     if (!tmp->field->ff) throw caps::FFError(name + ": " + std::to_string(size_t(caps::Json::parse(tmp->field->report)["untyped"].number())) + " atoms untyped by " + tmp->field->base.name);
     complete = complete && tmp->field->complete;
     slot_ff[g] = tmp->field->ff, slot_atoms[g] = atoms;

@@ -14,6 +14,7 @@
 #include <set>
 #include <sstream>
 
+#include "caps/elements.hpp"
 #include "caps/manybody.hpp"
 #include "caps/water.hpp"
 #include "caps/io.hpp"
@@ -1252,6 +1253,32 @@ std::string lammps_group_lines(const System& s, const ForceField& ff, const std:
       std::sort(ids.begin(), ids.end());
       o << b << "id " << lammps_ranges(ids) << "   # shares atom types with another group (" << names << ")\n";
     }
+  }
+  // every atom type by group, with its element and mass (the data file's Masses, repeated here so the input says which
+  // numbers a per-group potential maps: pair_coeff * * STYLE FILE takes one element or NULL per type, in this order)
+  std::vector<int> elem(ff.type_names.size(), 0);
+  std::vector<double> mass(ff.type_names.size(), 0.0);
+  for (size_t i = 0; i < s.atoms.size() && i < ff.type_index.size(); ++i) {
+    const auto t = size_t(ff.type_index[i]);
+    if (t < elem.size() && elem[t] == 0) { elem[t] = s.atoms[i].element; mass[t] = i < ff.mass.size() ? ff.mass[i] : 0.0; }
+  }
+  o << "\n# atom types by group: type · force-field type · element · mass (g/mol)\n";
+  std::set<int64_t> done;
+  for (size_t g = 0; g < groups.size(); ++g) {
+    if (types[g].empty()) continue;
+    o << "# " << clean(groups[g].name) << ": types " << lammps_ranges({types[g].begin(), types[g].end()}) << "\n";
+    for (auto t : types[g]) {
+      if (!done.insert(t).second) continue;
+      char b[160];
+      std::snprintf(b, sizeof b, "mass            %-4lld %-12.6f # %-8s %-2s  %s", (long long)t, mass[size_t(t - 1)], ff.type_names[size_t(t - 1)].c_str(),
+                    element(elem[size_t(t - 1)]).symbol, clean(groups[g].name).c_str());
+      o << b << "\n";
+    }
+  }
+  if (ff.manybody.on() && ff.manybody.style != "meam") {   // the element (or NULL) per type in order, as a many-body pair_coeff needs it
+    std::string map;
+    for (size_t t = 0; t < ff.type_names.size(); ++t) map += std::string(map.empty() ? "" : " ") + (t < ff.manybody.element.size() && !ff.manybody.element[t].empty() ? ff.manybody.element[t] : std::string("NULL"));
+    o << "# element per type for a many-body potential (types 1…" << ff.type_names.size() << "): " << map << "\n";
   }
   return o.str();
 }

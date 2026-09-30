@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Text.Json.Nodes;
@@ -84,6 +85,61 @@ public sealed partial class MainViewModel
         BuildUnitExample();
     }
 
+    private static readonly string[] ChainSpecKeys = ["units", "sequence", "pattern", "tacticity", "linkage", "inversion", "head_cap", "tail_cap", "fractions", "blocks", "block_lengths"];
+
+    /// <summary>The chain the open structure was built from, as a polymer spec (JSON), read from its provenance: the latest
+    /// step that grew a chain ("units", or "chain units" for a film or a matrix); null when none did.</summary>
+    public string? PolymerOfDocument()
+    {
+        if (_doc == null) return null;
+        try
+        {
+            var steps = JsonNode.Parse(_doc.Provenance())?["steps"] as JsonArray;
+            if (steps == null) return null;
+            foreach (var st in steps.Reverse())
+            {
+                if (st?["params"] is not JsonObject p) continue;
+                var prefix = p.ContainsKey("units") ? "" : p.ContainsKey("chain units") ? "chain " : null;
+                if (prefix == null) continue;
+                var spec = new JsonObject();
+                foreach (var key in ChainSpecKeys)
+                {
+                    if (p[prefix + key] is not JsonValue v) continue;
+                    var text = v.ToString();
+                    JsonNode? val;
+                    try { val = JsonNode.Parse(text); } catch (System.Text.Json.JsonException) { val = text; }
+                    spec[key] = val is JsonArray or JsonObject || key != "units" ? val ?? text : null;
+                }
+                if (spec["units"] is JsonArray { Count: > 0 }) return spec.ToJsonString();
+            }
+        }
+        catch (Exception) { }
+        return null;
+    }
+
+    /// <summary>The structure is assigned by group (a filler under a potential, a matrix under a force field): the types
+    /// go to the polymer's group only, the rest keeps its own, the cross terms are made again, and CAPS keeps the teaching
+    /// for the next group assignment of this structure.</summary>
+    private async Task ApplyUnitTypingByGroup()
+    {
+        var types = new JsonArray(UtAtoms.OrderBy(a => a.Index).Select(a => (JsonNode)a.Type).ToArray()).ToJsonString();
+        try
+        {
+            var report = await Field.AssignGroupsByExample(_utDoc!, types, Field.FfIndex);
+            var r = JsonNode.Parse(report.Length > 0 ? report : "{}") as JsonObject;
+            var set = (int?)(double?)r?["set"] ?? 0;
+            var unmatched = (int?)(double?)r?["unmatched"] ?? 0;
+            var groups = (r?["groups"] as JsonArray)?.Select(g => (string?)g) ?? [];
+            RenderRequested?.Invoke();
+            UtStatus = $"{set:N0} atoms of {string.Join(", ", groups)} typed from the example in {Field.Library[Field.FfIndex].Label}; the other groups keep theirs, " +
+                       "cross terms from the group settings" +
+                       (unmatched > 0 ? $" · {unmatched:N0} atoms have surroundings the example lacks: type them in Field" : "") +
+                       (Field.Complete ? " · every parameter found" : " · some parameters are missing: see Field");
+        }
+        catch (Exception e) { UtStatus = "Could not apply: " + e.Message; }
+        Status = UtStatus;
+    }
+
     /// <summary>The example chain: head, body, tail of one unit; for several units a sequence holding every ordered pair
     /// of units once (a de Bruijn sequence), so every junction is in it.</summary>
     public void BuildUnitExample()
@@ -95,7 +151,10 @@ public sealed partial class MainViewModel
         if (ff == null || ff.Id == "uff") { UtStatus = "Choose a force field with named types in Field first (UFF types itself)"; return; }
         UtFfName = ff.Label;
         JsonObject spec;
-        try { spec = (JsonObject)JsonNode.Parse(_growSpec ?? PolySpecJson())!; }
+        // the polymer of the open structure (its history says which chain it was built from: Grow, a surface film, a
+        // nanostructure's matrix), else the one sent to Grow, else the Polymer builder's
+        var own = PolymerOfDocument();
+        try { spec = (JsonObject)JsonNode.Parse(own ?? _growSpec ?? PolySpecJson())!; }
         catch (Exception e) { UtStatus = "No polymer to build the example from: " + e.Message; return; }
         var units = spec["units"] as JsonArray;
         var n = units?.Count ?? 0;
@@ -250,6 +309,7 @@ public sealed partial class MainViewModel
         if (_doc == null || _utDoc == null) { UtStatus = "Open or grow the structure to type first"; return; }
         if (UtUntyped > 0) { UtStatus = $"{UtUntyped} atoms of the example have no type yet"; return; }
         var ff = Field.Library[Field.FfIndex];
+        if (Field.IsGrouped || Field.Groups.Count > 1) { _ = ApplyUnitTypingByGroup(); return; }
         try
         {
             // the structure in this force field (its rules first; what they leave is filled from the example)

@@ -822,6 +822,16 @@ public partial class MainWindow : Window
     private async void OnGrowBuild(object? s, RoutedEventArgs e) => await _vm.Grow();
     private void OnGrowCancel(object? s, RoutedEventArgs e) => _vm.CancelGrow();
     private async void OnSaveData(object? s, RoutedEventArgs e) => await SaveAs("data", "LAMMPS data");
+    private async void OnFieldExportLammps(object? s, RoutedEventArgs e)
+    {
+        if (_vm.Document == null) return;
+        var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = "LAMMPS data and input (the .in is written beside the .data)",
+            SuggestedFileName = Path.GetFileNameWithoutExtension(_vm.Document.Path) + ".data", DefaultExtension = "data",
+        });
+        if (file?.TryGetLocalPath() is { } path) await _vm.ExportFieldLammps(path);
+    }
     private async void OnSavePdb(object? s, RoutedEventArgs e) => await SaveAs("pdb", "PDB");
     private async void OnSaveXyz(object? s, RoutedEventArgs e) => await SaveAs("xyz", "Extended XYZ");
     private async void OnSaveCar(object? s, RoutedEventArgs e) => await SaveAs("car", "Materials Studio .car (with its .mdf)");
