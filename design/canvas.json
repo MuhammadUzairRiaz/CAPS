@@ -1148,6 +1148,83 @@
    "h": 900,
    "title": "Pipeline \u00b7 Grow with force field (Paper)",
    "is_interactive": true
+  },
+  "Shelves.dc.html": {
+   "h": 900,
+   "w": 1440,
+   "x": 0,
+   "y": 37940,
+   "title": "Tool shelves & workspaces"
+  },
+  "ShelfEditor.dc.html": {
+   "h": 900,
+   "w": 1440,
+   "x": 1520,
+   "y": 37940,
+   "title": "Make your own shelf"
+  },
+  "SelectionBar.dc.html": {
+   "h": 900,
+   "w": 1440,
+   "x": 3040,
+   "y": 37940,
+   "title": "Selection bar & ring menu (A1 A8 A11)"
+  },
+  "Layers.dc.html": {
+   "h": 900,
+   "w": 1440,
+   "x": 4560,
+   "y": 37940,
+   "title": "Layers: show, ghost, hide, lock (A2 A9)"
+  },
+  "Tags.dc.html": {
+   "h": 900,
+   "w": 1440,
+   "x": 6080,
+   "y": 37940,
+   "title": "Tags (A3)"
+  },
+  "BrushSelect.dc.html": {
+   "h": 900,
+   "w": 1440,
+   "x": 7600,
+   "y": 37940,
+   "title": "Brush to select (A4)"
+  },
+  "Stamp.dc.html": {
+   "h": 900,
+   "w": 1440,
+   "x": 0,
+   "y": 39260,
+   "title": "Clipboard tray, stamps, drop into (A5)"
+  },
+  "Look.dc.html": {
+   "h": 900,
+   "w": 1440,
+   "x": 1520,
+   "y": 39260,
+   "title": "Look: bond orders & sizes (A6 A15)"
+  },
+  "BondRules.dc.html": {
+   "h": 900,
+   "w": 1440,
+   "x": 3040,
+   "y": 39260,
+   "title": "Bond rules (A7)"
+  },
+  "Probes.dc.html": {
+   "h": 900,
+   "w": 1440,
+   "x": 4560,
+   "y": 39260,
+   "title": "Probes (A10)"
+  },
+  "AtomBubble.dc.html": {
+   "h": 900,
+   "w": 1440,
+   "x": 6080,
+   "y": 39260,
+   "title": "Atom bubble, H autopilot, orient puck (A12 A13 A14)"
   }
  },
  "createdOnFiles": {
@@ -1382,6 +1459,22 @@
    "w": 240,
    "x": 0,
    "y": 36320
+  },
+  "t29": {
+   "kind": "title1",
+   "maxW": 8000,
+   "text": "Editing, selection & shelves \u2014 CAPS's own: tool shelves and workspaces, selection bar, ring menu, layers, tags, brushing",
+   "w": 240,
+   "x": 0,
+   "y": 37640
+  },
+  "t30": {
+   "kind": "title1",
+   "maxW": 8000,
+   "text": "Editing, continued \u2014 clipboard stamps, Look, bond rules, probes, atom bubble (over the real Studio, h-BN + polyisoprene)",
+   "w": 240,
+   "x": 0,
+   "y": 38960
   }
  },
  "order": [
@@ -1529,7 +1622,18 @@
   "PipelineGrow.dc.html",
   "ForceFieldStep.dc.html",
   "ExportCenter.dc.html",
-  "PaperPipelineGrow.dc.html"
+  "PaperPipelineGrow.dc.html",
+  "Shelves.dc.html",
+  "ShelfEditor.dc.html",
+  "SelectionBar.dc.html",
+  "Layers.dc.html",
+  "Tags.dc.html",
+  "BrushSelect.dc.html",
+  "Stamp.dc.html",
+  "Look.dc.html",
+  "BondRules.dc.html",
+  "Probes.dc.html",
+  "AtomBubble.dc.html"
  ],
  "pages": [],
  "title": "CAPS Studio"
