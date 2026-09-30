@@ -502,20 +502,51 @@ System supercell(const System& s, int nx, int ny, int nz) {
   out.atoms.clear();
   out.bonds.clear();
   out.velocities.clear();
-  int64_t id = 0;
+  const size_t na = s.atoms.size();
+  int64_t max_mol = 0;
+  for (const auto& a : s.atoms) max_mol = std::max(max_mol, a.mol);
+  out.atoms.reserve(na * size_t(nx) * ny * nz);
+  int64_t id = 0, image = 0;
   for (int i = 0; i < nx; ++i)
     for (int j = 0; j < ny; ++j)
-      for (int k = 0; k < nz; ++k)
+      for (int k = 0; k < nz; ++k, ++image)
         for (const auto& a : s.atoms) {
           Atom b = a;
           b.pos = a.pos + s.cell.a * i + s.cell.b * j + s.cell.c * k;
           b.id = ++id;
+          if (a.mol > 0) b.mol = a.mol + image * max_mol;   // each copy its own molecules
           out.atoms.push_back(b);
         }
   out.cell.a = s.cell.a * nx;
   out.cell.b = s.cell.b * ny;
   out.cell.c = s.cell.c * nz;
-  out.bonds = crystal_bonds(out);
+  // bonds perceived from distances (a crystal, where a small cell can bond an atom to several images of one neighbour) are
+  // perceived again in the new cell; a topology (a file's, a builder's) is copied into every image
+  if (s.bonds.empty() || !s.bonds_from_file) {
+    out.bonds = crystal_bonds(out);
+    return out;
+  }
+  // the structure's own bonds, in every copy: a bond that crosses the cell's wall (its minimum image) joins the
+  // neighbouring copy (across the supercell's own wall, periodically), so chains and networks stay as they were
+  const int n[3] = {nx, ny, nz};
+  out.bonds.reserve(s.bonds.size() * size_t(nx) * ny * nz);
+  std::vector<std::array<int, 3>> shift(s.bonds.size());
+  for (size_t q = 0; q < s.bonds.size(); ++q) {
+    const Vec3 fi = s.cell.to_fractional(s.atoms[s.bonds[q].i].pos), fj = s.cell.to_fractional(s.atoms[s.bonds[q].j].pos);
+    for (int c = 0; c < 3; ++c) shift[q][size_t(c)] = int(std::lround(fj[size_t(c)] - fi[size_t(c)]));
+  }
+  for (int i = 0; i < nx; ++i)
+    for (int j = 0; j < ny; ++j)
+      for (int k = 0; k < nz; ++k) {
+        const int here[3] = {i, j, k};
+        const size_t base = size_t((i * ny + j) * nz + k) * na;
+        for (size_t q = 0; q < s.bonds.size(); ++q) {
+          int t[3];
+          for (int c = 0; c < 3; ++c) t[c] = ((here[c] - shift[q][size_t(c)]) % n[c] + n[c]) % n[c];   // the partner lies at j − shift·cell
+          const size_t other = size_t((t[0] * ny + t[1]) * nz + t[2]) * na;
+          out.bonds.push_back({uint32_t(base + s.bonds[q].i), uint32_t(other + s.bonds[q].j), s.bonds[q].order});
+        }
+      }
   return out;
 }
 

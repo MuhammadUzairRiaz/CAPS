@@ -340,3 +340,35 @@ TEST(Lattice, VacuumSlabAndNanowire) {
     EXPECT_LE(std::sqrt(dx * dx + dy * dy), 6 + 1e-9);
   }
 }
+
+// A supercell of a polymer melt keeps the melt's topology: every bond copied into every image (bonds that cross the cell's
+// wall join the neighbouring copy), each copy's chains their own molecules — with wrapped and with unwrapped coordinates.
+TEST(Crystal, SupercellCopiesBondsAndMolecules) {
+  caps::System s = caps::open_file(std::string(CAPS_SAMPLES) + "/ps_melt.data").frame(0);
+  for (bool wrapped : {false, true}) {
+    caps::System t = s;
+    if (wrapped)
+      for (auto& a : t.atoms) {
+        caps::Vec3 f = t.cell.to_fractional(a.pos);
+        for (auto& x : f) x -= std::floor(x);
+        a.pos = t.cell.to_cartesian(f);
+      }
+    const caps::System big = caps::supercell(t, 2, 2, 2);
+    ASSERT_EQ(big.atoms.size(), 8 * t.atoms.size());
+    ASSERT_EQ(big.bonds.size(), 8 * t.bonds.size());
+    // every bond a real bond: its minimum-image length in the supercell as in the melt
+    double worst = 0;
+    for (const auto& b : big.bonds) {
+      caps::Vec3 f = big.cell.to_fractional(big.atoms[b.j].pos);
+      const caps::Vec3 fi = big.cell.to_fractional(big.atoms[b.i].pos);
+      for (int c = 0; c < 3; ++c) f[size_t(c)] -= fi[size_t(c)] + std::round(f[size_t(c)] - fi[size_t(c)]);
+      const caps::Vec3 d = big.cell.to_cartesian(f) - big.cell.to_cartesian({0, 0, 0});
+      worst = std::max(worst, std::sqrt(caps::dot(d, d)));
+    }
+    EXPECT_LT(worst, 1.8) << (wrapped ? "wrapped" : "unwrapped");
+    int nmol = 0, nmol0 = 0;
+    big.molecules(&nmol);
+    t.molecules(&nmol0);
+    EXPECT_EQ(nmol, 8 * nmol0) << (wrapped ? "wrapped" : "unwrapped");
+  }
+}
