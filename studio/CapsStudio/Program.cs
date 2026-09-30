@@ -12,9 +12,10 @@ internal static partial class Program
         System.Globalization.CultureInfo.DefaultThreadCurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
         System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = System.Globalization.CultureInfo.InvariantCulture;
         System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
-        if (args.Length > 0 && args[0] is "--selftest" or "--screenshot") Environment.SetEnvironmentVariable("CAPS_NO_TOUR", "1");   // started explicitly there
+        if (args.Length > 0 && args[0] is "--selftest" or "--screenshot" or "--shelftest") Environment.SetEnvironmentVariable("CAPS_NO_TOUR", "1");   // started explicitly there
         if (args.Length > 0 && args[0] == "--selftest") return SelfTest.Run(args.Skip(1).ToArray());
         if (args.Length > 0 && args[0] == "--screenshot") return Screenshot.Run(args.Skip(1).ToArray());
+        if (args.Length > 0 && args[0] == "--shelftest") return ShelfTest.Run(args.Skip(1).ToArray());
         // CAPS_SETTINGS: another settings file (a second copy of the Studio for testing leaves the user's own untouched)
         if (Environment.GetEnvironmentVariable("CAPS_SETTINGS") is { Length: > 0 } sf) ViewModels.AppSettings.Override = sf;
         return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);

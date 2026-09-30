@@ -48,6 +48,12 @@ public sealed class AppSettings
     public Dictionary<string, string> Shortcuts { get; set; } = new();
     /// <summary>Pane sizes the user dragged or hid (Panes): grid key → each track's size ("300|*|child:230").</summary>
     public Dictionary<string, string> PaneSizes { get; set; } = new();
+    /// <summary>Tool shelves (design/boards/Shelves): the workspace in use, each workspace's layout, the shelves the user
+    /// made, and whether shelves are locked in place.</summary>
+    public string Workspace { get; set; } = "Sketch";
+    public Dictionary<string, List<ShelfState>> ShelfLayouts { get; set; } = new();
+    public List<CustomShelf> CustomShelves { get; set; } = new();
+    public bool ShelvesLocked { get; set; }
     /// <summary>Names the user gave projects: folder ("" for the session) → name shown in the project tree.</summary>
     public Dictionary<string, string> ProjectNames { get; set; } = new();
     public string ReduceMotion { get; set; } = "system";   // system (follow the OS) | on | off
@@ -144,4 +150,25 @@ public sealed class SavedQueryData
         new() { Name = "Near ring 1", Query = "within 5 of ring 1" },
         new() { Name = "… heavy only", Query = "within 5 of ring 1 and not element H" },
     ];
+}
+
+/// <summary>Where a shelf is: dock top-left | top-right | top-2 | left | right | bottom | float | window | hidden; its
+/// order in the dock; its place when floating (window coordinates, or screen for a popped-out one); folded to a puck.</summary>
+public sealed class ShelfState
+{
+    public string Id { get; set; } = "";
+    public string Dock { get; set; } = "top-left";
+    public int Order { get; set; }
+    public double X { get; set; }
+    public double Y { get; set; }
+    public bool Folded { get; set; }
+}
+
+/// <summary>A shelf the user made: a name, a glyph and the tools on it (ids of the built-in tools).</summary>
+public sealed class CustomShelf
+{
+    public string Id { get; set; } = "";
+    public string Name { get; set; } = "";
+    public string Glyph { get; set; } = "pin";
+    public List<string> Tools { get; set; } = new();
 }
