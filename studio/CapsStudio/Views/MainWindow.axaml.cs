@@ -70,6 +70,8 @@ public partial class MainWindow : Window
         for (var k = 0; k < order.Length; ++k) if (order[k] is { } c) KeyboardNavigation.SetTabIndex(c, k + 1);
         _vm.ScaleChanged += k => ScaleRoot.LayoutTransform = Math.Abs(k - 1) < 1e-9 ? null : new Avalonia.Media.ScaleTransform(k, k);
         _vm.LoadSettings();
+        Panes.Store = _vm.Settings.PaneSizes;   // the settings as loaded (LoadSettings reads the file again)
+        InitShelves();                          // after the settings: each workspace's shelf layout
         _vm.HookJobs();
         _vm.LoadRecent();
         _vm.LoadLastSession();
@@ -1646,19 +1648,30 @@ public partial class MainWindow : Window
     {
         var w = ToolRow.Bounds.Width;
         if (w < 1) return;
-        // the Modify row: its group names go when it does not fit on one line
-        ModifyRow.Classes.Set("compact", false);
-        ModifyRow.Measure(new Size(double.PositiveInfinity, 38));
-        ModifyRow.Classes.Set("compact", ModifyRow.DesiredSize.Width > w);
+        bool At(string id, string dock) => ShelfStateOf(id) is { } st && st.Dock == dock && !st.Folded;
+        // the Modify row: its group names go when it does not fit on one line (a vertical shelf is always compact)
+        if (At("modify", "top-2"))
+        {
+            ModifyRow.Classes.Set("compact", false);
+            ModifyRow.Measure(new Size(double.PositiveInfinity, 38));
+            var beside = SlotTop2.Children.Where(c => c is not Shelf { Id: "modify" }).Sum(c => { c.Measure(new Size(double.PositiveInfinity, 38)); return c.DesiredSize.Width + 8; });
+            ModifyRow.Classes.Set("compact", ModifyRow.DesiredSize.Width + 20 + beside > w);
+        }
         // everything back in the row first, in its order
         foreach (var c in _overflowed) { ToolbarOverflow.Children.Remove(c); ToolbarRight.Children.Insert(ToolbarRight.Children.IndexOf(ToolbarMore), c); if (c is Avalonia.Controls.Shapes.Rectangle) c.IsVisible = true; }
         _overflowed.Clear();
         ToolbarMore.IsVisible = false;
+        if (!At("view", "top-right") || ShelfStateOf("view") is { Dock: "left" or "right" }) { ToolbarRight.Classes.Set("compact", ShelfStateOf("view")?.Dock is "left" or "right"); return; }
+        // the rows themselves (their sizes follow what is in them), the shelf tabs, and any other shelf docked beside them
+        var others = 0.0;
+        foreach (var c in SlotTopLeft.Children.Concat(SlotTopRight.Children))
+            if (c is not Shelf { Id: "tools" or "view" }) { c.Measure(new Size(double.PositiveInfinity, 48)); others += c.DesiredSize.Width + 8; }
         bool Fits()
         {
             ToolbarLeft.Measure(new Size(double.PositiveInfinity, 48));
             ToolbarRight.Measure(new Size(double.PositiveInfinity, 48));
-            return ToolbarLeft.DesiredSize.Width + ToolbarRight.DesiredSize.Width + 16 <= w;
+            var left = At("tools", "top-left") ? ToolbarLeft.DesiredSize.Width + 20 : 0;
+            return left + ToolbarRight.DesiredSize.Width + 20 + others + 16 <= w;
         }
         ToolbarRight.Classes.Set("compact", false);
         if (Fits()) return;
