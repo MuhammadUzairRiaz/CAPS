@@ -218,17 +218,13 @@ public sealed partial class MainViewModel
             if (ticket != _surfTicket) { doc?.Dispose(); return; }
             if (err != null || doc == null) { SurfError = err ?? "cannot build the slab"; return; }
             SurfError = "";
-            var old = _surfDoc;
-            SurfDoc = doc;
-            old?.Dispose();
-            SurfLog = rep;
             var s = doc.Summary();
             if (_surfAutoCell && s.CellA > 0 && s.CellB > 0)
             {
                 var na = (decimal)Math.Max(1, Math.Ceiling(20.0 / (s.CellA / (double)_surfNa)));
                 var nb = (decimal)Math.Max(1, Math.Ceiling(20.0 / (s.CellB / (double)_surfNb)));
                 if (na != _surfNa || nb != _surfNb)
-                {
+                {   // a larger surface cell first: this slab is not shown (the preview keeps the last one until then)
                     _surfNa = na; _surfNb = nb;
                     Raise(nameof(SurfNa)); Raise(nameof(SurfNb));
                     doc.Dispose();
@@ -236,6 +232,10 @@ public sealed partial class MainViewModel
                     return;
                 }
             }
+            var old = _surfDoc;
+            SurfDoc = doc;
+            old?.Dispose();
+            SurfLog = rep;
             SurfSummary = string.Format(CultureInfo.InvariantCulture, "{0:N0} atoms · cell {1:F2} × {2:F2} × {3:F2} Å", s.Atoms, s.CellA, s.CellB, s.CellC);
             SurfMatchCell = $"{(int)_surfNa} × {(int)_surfNb}";
             var shear = rep.Split('\n').FirstOrDefault(l => l.Contains("sheared by"));

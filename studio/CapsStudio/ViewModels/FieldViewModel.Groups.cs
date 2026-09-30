@@ -1,3 +1,4 @@
+using CapsStudio.Interop;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Text.Json.Nodes;
@@ -257,6 +258,32 @@ public sealed partial class FieldViewModel
         _assignedId = "";
         var json = spec.ToJsonString();
         return AssignGroupsRun(json);
+    }
+
+    /// <summary>Typing by hand inside a by-group assignment: the groups with the chosen force field (or, when only one group
+    /// takes a force field, that group switched to it) are typed from the example; a potential or water group keeps its
+    /// own, and the cross terms follow the group settings. Returns the report (JSON) or throws with the reason.</summary>
+    public async Task<string> AssignGroupsByExample(CapsDocument example, string typesJson, int ffIndex)
+    {
+        if (ffIndex < 0 || ffIndex >= Library.Count) throw new InvalidOperationException("Choose a force field");
+        var ffRows = Groups.Where(g => g.IsForceField).ToList();
+        if (!ffRows.Any(g => g.FfIndex == ffIndex))
+        {
+            if (ffRows.Count == 1) ffRows[0].FfIndex = ffIndex;
+            else throw new InvalidOperationException($"Choose {Library[ffIndex].Label} for the polymer's group in Force fields by group");
+        }
+        var (spec, err) = GroupSpec();
+        if (spec == null) throw new InvalidOperationException(err);
+        var json = spec.ToJsonString();
+        var report = "";
+        Exception? failed = null;
+        await Do("Typed by hand, by group", d =>
+        {
+            try { var (complete, rep) = d.FieldGroupsByExample(example, typesJson, Library[ffIndex].File, json); report = rep; return complete; }
+            catch (Exception e) { failed = e; throw; }
+        });
+        if (failed != null) throw failed;
+        return report;
     }
 
     /// <summary>Groups given whole (Pack's rows): assigned, and the groups page shows the result.</summary>
