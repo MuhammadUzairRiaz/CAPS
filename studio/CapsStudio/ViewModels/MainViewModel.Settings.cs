@@ -271,11 +271,15 @@ public sealed partial class MainViewModel
         Status = "Recent files cleared";
     }
 
+    /// <summary>The settings object was replaced (reset, import): the window re-attaches what holds on to it (pane sizes, shelves).</summary>
+    public event Action? SettingsReplaced;
+
     public void ResetSettings()
     {
         _settings = new AppSettings();
         _settings.Save();
         ApplyAll();
+        SettingsReplaced?.Invoke();
         RaiseTheme();
         Status = $"Settings reset to the defaults · saved to {AppSettings.DisplayPath}";
     }
@@ -287,6 +291,7 @@ public sealed partial class MainViewModel
         _settings = AppSettings.Load(path);
         _settings.Save();
         ApplyAll();
+        SettingsReplaced?.Invoke();
         RaiseTheme();
         Status = $"Settings imported from {Path.GetFileName(path)}";
     }

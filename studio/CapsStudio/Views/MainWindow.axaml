@@ -121,6 +121,9 @@
           </Button>
         </StackPanel>
         <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="10" Margin="0,0,14,0" VerticalAlignment="Center">
+          <Border x:Name="WorkspaceSwitch" Classes="wsswitch" VerticalAlignment="Center" ToolTip.Tip="Workspace: which shelves are out and where (each keeps its own layout)">
+            <StackPanel x:Name="WorkspaceButtons" Orientation="Horizontal" Spacing="2" />
+          </Border>
           <Button Width="300" Height="30" MinHeight="30" Padding="10,0" HorizontalContentAlignment="Stretch" FontWeight="Normal" Click="OnCommandPalette"
                   ToolTip.Tip="Command palette (⌘K)">
             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
@@ -518,6 +521,8 @@
       <Border x:Name="Toolbar" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Classes="panel" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1" Padding="10,0">
         <StackPanel>
         <Grid x:Name="ToolRow" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+          <StackPanel x:Name="SlotTopRight" Grid.Column="1" Orientation="Horizontal" Spacing="8" />
+          <WrapPanel x:Name="SlotTopLeft" Orientation="Horizontal" ItemSpacing="8" />
           <StackPanel x:Name="ToolbarRight" Grid.Column="1" Orientation="Horizontal" Spacing="2" MinHeight="48">
             <Button Classes="tool" Click="OnExportDialog" IsEnabled="{Binding HasDocument}" IsVisible="{Binding IsStudio}" ToolTip.Tip="Export image or movie (⌘E)"><local:Icon Kind="download" Size="18" /></Button>
             <Button Classes="tool" Click="OnSplit" IsEnabled="{Binding HasDocument}" IsVisible="{Binding IsStudio}" ToolTip.Tip="Split view: this document beside another, cameras synced (design/boards/LightSplit)"><local:Icon Kind="layers" Size="18" /></Button>
@@ -631,11 +636,12 @@
           </WrapPanel>
         </Grid>
         <!-- Modify (the picked atoms): element, bond order, geometry -->
-        <Border BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" MinHeight="38" Padding="0,3" IsVisible="{Binding IsStudio}" IsEnabled="{Binding HasDocument}">
-          <WrapPanel x:Name="ModifyRow" Orientation="Horizontal" ItemSpacing="2" LineSpacing="2" VerticalAlignment="Center">
+        <Border x:Name="ModifyBar" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" MinHeight="38" Padding="0,3">
+          <WrapPanel x:Name="SlotTop2" Orientation="Horizontal" ItemSpacing="8">
+          <WrapPanel x:Name="ModifyRow" IsEnabled="{Binding HasDocument}" Orientation="Horizontal" ItemSpacing="2" LineSpacing="2" VerticalAlignment="Center">
             <TextBlock Text="MODIFY" Classes="h3" VerticalAlignment="Center" Margin="2,0,6,0" ToolTip.Tip="Acts on the picked atoms: click an atom, ⇧ click adds more" />
             <ItemsControl ItemsSource="{x:Static vm:MainViewModel.QuickElements}">
-              <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="2" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+              <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel Classes="shelfflow" Orientation="Horizontal" ItemSpacing="2" LineSpacing="2" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="x:String">
                   <Button Classes="tool" Width="27" MinWidth="27" Height="28" MinHeight="28" Padding="0" Click="OnModifyElement" Tag="{Binding}" ToolTip.Tip="{Binding StringFormat='The picked atoms become {0}'}">
@@ -677,6 +683,7 @@
             <ToggleButton Classes="tool" Height="28" MinHeight="28" Padding="6,0" IsChecked="{Binding LabelElement}" ToolTip.Tip="Element labels (more label kinds, fonts and colours: Appearance › Labels)"><TextBlock Text="Aa" FontSize="12" /></ToggleButton>
             <ToggleButton Classes="tool" Height="28" MinHeight="28" Padding="6,0" IsChecked="{Binding ShowCell}" ToolTip.Tip="The periodic cell"><local:Icon Kind="cube" Size="15" /></ToggleButton>
             <ToggleButton Classes="tool" Height="28" MinHeight="28" Padding="6,0" IsChecked="{Binding Wrap}" ToolTip.Tip="Wrapped: atoms folded into the cell · off: molecules whole"><TextBlock Text="wrap" FontSize="11.5" /></ToggleButton>
+          </WrapPanel>
           </WrapPanel>
         </Border>
         </StackPanel>
@@ -759,7 +766,12 @@
             </ScrollViewer>
           </DockPanel>
         </Border>
-        <Border Grid.Column="1" x:Name="ViewHost" Background="{DynamicResource Bg0B}" ClipToBounds="True" Focusable="True" IsTabStop="True"
+        <!-- the view with its shelf docks (design/boards/Shelves): shelves dragged to an edge of the view dock there -->
+        <DockPanel Grid.Column="1" x:Name="ViewDock">
+          <StackPanel x:Name="SlotLeft" DockPanel.Dock="Left" Orientation="Horizontal" Spacing="4" Margin="0" />
+          <StackPanel x:Name="SlotRight" DockPanel.Dock="Right" Orientation="Horizontal" Spacing="4" Margin="0" />
+          <WrapPanel x:Name="SlotBottom" DockPanel.Dock="Bottom" Orientation="Horizontal" ItemSpacing="8" />
+        <Border x:Name="ViewHost" Background="{DynamicResource Bg0B}" ClipToBounds="True" Focusable="True" IsTabStop="True"
                 AutomationProperties.Name="3D view · arrow keys walk the atoms, [ and ] the molecules, B the bonds">
           <Panel>
             <Image x:Name="ViewImage" Stretch="None" HorizontalAlignment="Left" VerticalAlignment="Top" />
@@ -1055,6 +1067,7 @@
             </Border>
           </Panel>
         </Border>
+        </DockPanel>
         </Grid>
 
         <!-- Visualize: data inspector (design/boards/DataInspector) -->
@@ -3375,6 +3388,8 @@
         </DockPanel>
       </Border>
     </Panel>
+    <!-- floating shelves and the dock guide (design/boards/Shelves); empty space lets clicks through -->
+    <Canvas x:Name="ShelfFloat" Grid.RowSpan="4" ZIndex="30" />
     <!-- First-run tour (design/boards/FirstRunTour) -->
     <local:TourOverlay x:Name="Tour" Grid.RowSpan="4" ZIndex="40" IsVisible="{Binding TourOpen}" />
   </Grid>

@@ -41,6 +41,27 @@ internal static class Screenshot
         foreach (var kv in args.Skip(3).Select(a => a.Split('=', 2)).Where(p => p.Length == 2))
         {
             if (kv[0] == "pick") w.PickForTest(kv[1].Split(',').Select(int.Parse).ToArray());
+            // shelves: workspace=NAME · shelf=ID:DOCK[:fold][:X:Y] (DOCK top-left|top-right|top-2|left|right|bottom|float|hidden) · makeshelf=NAME
+            if (kv[0] == "workspace") w.UseWorkspace(kv[1]);
+            if (kv[0] == "shelf")
+            {
+                var f = kv[1].Split(':');
+                if (w.ShelfStateOf(f[0]) is { } st && f.Length > 2 && f[2] != "fold" && double.TryParse(f[2], out var x) && double.TryParse(f[3], out var y)) { st.X = x; st.Y = y; }
+                w.MoveShelf(f[0], f[1]);
+                if (f.Length > 2 && f[2] == "fold") w.FoldShelf(f[0], true);
+            }
+            if (kv[0] == "makeshelf") w.MakeCustomShelf(kv[1], "pin", w.AllTools().Where(t => t.Id is "lasso_select" or "measure" or "pin_monitor" or "auto_clean" or "fragments").Select(t => t.Id));
+            // drag=X1,Y1,X2,Y2: a real left-button drag through the window (press, eight moves, release); click=X,Y
+            if (kv[0] is "drag" or "click")
+            {
+                var v = kv[1].Split(',').Select(double.Parse).ToArray();
+                var a = new Point(v[0], v[1]);
+                var b = v.Length > 3 ? new Point(v[2], v[3]) : a;
+                w.MouseDown(a, Avalonia.Input.MouseButton.Left);
+                for (var k = 1; k <= 8; ++k) { w.MouseMove(a + (b - a) * (k / 8.0)); Dispatcher.UIThread.RunJobs(); }
+                w.MouseUp(b, Avalonia.Input.MouseButton.Left);
+            }
+            if (kv[0] is "workspace" or "shelf" or "makeshelf" or "drag" or "click") for (int k = 0; k < 20; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
             if (kv[0] == "colour") w.ViewModel.ColourIndex = int.Parse(kv[1]);
             if (kv[0] == "style") w.ViewModel.StyleIndex = int.Parse(kv[1]);
             if (kv[0] == "module") w.ViewModel.SetModule(int.Parse(kv[1]));

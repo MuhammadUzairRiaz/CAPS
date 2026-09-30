@@ -626,4 +626,48 @@
     <Setter Property="MinHeight" Value="4" />
     <Setter Property="CornerRadius" Value="2" />
   </Style>
+
+  <!-- Tool shelves (design/boards/Shelves): flat in a toolbar row, a capsule when floating, popped out or peeking -->
+  <Style Selector="Border.shelf"><Setter Property="Background" Value="Transparent" /><Setter Property="CornerRadius" Value="16" /><Setter Property="Padding" Value="0" /></Style>
+  <Style Selector="Border.shelf.floating">
+    <Setter Property="Background" Value="{DynamicResource Bg1B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" /><Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Padding" Value="3" /><Setter Property="BoxShadow" Value="0 12 32 0 #70000000" />
+  </Style>
+  <Style Selector="Border.shelf.vertical"><Setter Property="Background" Value="{DynamicResource Bg1B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+    <Setter Property="BorderThickness" Value="1" /><Setter Property="Padding" Value="3" /><Setter Property="Margin" Value="4" /><Setter Property="VerticalAlignment" Value="Top" /></Style>
+  <Style Selector="Button.shelftab">
+    <Setter Property="Width" Value="14" /><Setter Property="MinWidth" Value="14" /><Setter Property="Height" Value="30" /><Setter Property="MinHeight" Value="30" />
+    <Setter Property="Padding" Value="0" /><Setter Property="Margin" Value="0,0,6,0" /><Setter Property="CornerRadius" Value="7" /><Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Background" Value="{DynamicResource Bg3B}" /><Setter Property="Foreground" Value="{DynamicResource DimB}" /><Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Cursor" Value="SizeAll" /><Setter Property="HorizontalContentAlignment" Value="Center" /><Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.shelftab:pointerover /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="{DynamicResource AccB}" /><Setter Property="Foreground" Value="{DynamicResource AccInkB}" /></Style>
+  <Style Selector="Border.shelf.floating Button.shelftab"><Setter Property="Width" Value="22" /><Setter Property="MinWidth" Value="22" /><Setter Property="Height" Value="34" /><Setter Property="MinHeight" Value="34" />
+    <Setter Property="CornerRadius" Value="14,4,4,14" /><Setter Property="Background" Value="{DynamicResource AccB}" /><Setter Property="Foreground" Value="{DynamicResource AccInkB}" /><Setter Property="Margin" Value="0,0,4,0" /></Style>
+  <Style Selector="Border.shelf.vertical Button.shelftab"><Setter Property="Width" Value="34" /><Setter Property="MinWidth" Value="34" /><Setter Property="Height" Value="16" /><Setter Property="MinHeight" Value="16" />
+    <Setter Property="Margin" Value="0,0,0,4" /><Setter Property="HorizontalAlignment" Value="Center" /><Setter Property="CornerRadius" Value="8" /></Style>
+  <Style Selector="Border.shelf.vertical Rectangle.vsep"><Setter Property="Width" Value="24" /><Setter Property="Height" Value="1" /><Setter Property="Margin" Value="0,4" /></Style>
+  <Style Selector="Border.shelf.vertical TextBlock.shelflabel"><Setter Property="IsVisible" Value="False" /></Style>
+  <Style Selector="Border.shelf.vertical TextBlock.h3"><Setter Property="IsVisible" Value="False" /></Style>
+  <Style Selector="Border.shelf .compact TextBlock.dim"><Setter Property="IsVisible" Value="False" /></Style>
+  <Style Selector="Border.shelf .compact TextBlock.lbl"><Setter Property="IsVisible" Value="False" /></Style>
+  <Style Selector="Button.puck">
+    <Setter Property="Width" Value="34" /><Setter Property="MinWidth" Value="34" /><Setter Property="Height" Value="34" /><Setter Property="MinHeight" Value="34" />
+    <Setter Property="Padding" Value="0" /><Setter Property="CornerRadius" Value="17" /><Setter Property="Margin" Value="4" /><Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Background" Value="{DynamicResource Bg1B}" /><Setter Property="BorderBrush" Value="{DynamicResource AccB}" /><Setter Property="BorderThickness" Value="1.5" />
+    <Setter Property="Foreground" Value="{DynamicResource AccB}" /><Setter Property="HorizontalContentAlignment" Value="Stretch" /><Setter Property="VerticalContentAlignment" Value="Stretch" />
+  </Style>
+  <Style Selector="Border.puckbadge"><Setter Property="MinWidth" Value="16" /><Setter Property="Height" Value="16" /><Setter Property="CornerRadius" Value="8" /><Setter Property="Padding" Value="4,0" />
+    <Setter Property="Background" Value="{DynamicResource Bg3B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" /><Setter Property="BorderThickness" Value="1" /></Style>
+  <Style Selector="Border.puckbadge TextBlock"><Setter Property="FontSize" Value="10" /><Setter Property="Foreground" Value="{DynamicResource MutedB}" /><Setter Property="HorizontalAlignment" Value="Center" /><Setter Property="VerticalAlignment" Value="Center" /></Style>
+  <Style Selector="Border.shelfguide"><Setter Property="Background" Value="{DynamicResource AccB}" /><Setter Property="CornerRadius" Value="2" /><Setter Property="BoxShadow" Value="0 0 14 0 #C0F0A83C" /></Style>
+  <Style Selector="Border.dropzone"><Setter Property="BorderBrush" Value="{DynamicResource AccB}" /><Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="10" /><Setter Property="MinHeight" Value="58" /></Style>
+  <!-- the workspace switch in the top bar -->
+  <Style Selector="Border.wsswitch"><Setter Property="Background" Value="{DynamicResource Bg0B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" /><Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="15" /><Setter Property="Padding" Value="2" /></Style>
+  <Style Selector="Button.ws"><Setter Property="Height" Value="24" /><Setter Property="MinHeight" Value="24" /><Setter Property="Padding" Value="10,0" /><Setter Property="CornerRadius" Value="12" />
+    <Setter Property="FontSize" Value="11.5" /><Setter Property="FontWeight" Value="Normal" /><Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Foreground" Value="{DynamicResource MutedB}" /></Style>
+  <Style Selector="Button.ws.on"><Setter Property="Background" Value="{DynamicResource AccB}" /><Setter Property="Foreground" Value="{DynamicResource AccInkB}" /><Setter Property="FontWeight" Value="SemiBold" /></Style>
+  <Style Selector="Button.ws.on:pointerover /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="{DynamicResource AccHoverB}" /><Setter Property="Foreground" Value="{DynamicResource AccInkB}" /></Style>
 </Styles>
