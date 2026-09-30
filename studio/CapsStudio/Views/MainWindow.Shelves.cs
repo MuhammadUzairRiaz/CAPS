@@ -16,7 +16,7 @@ namespace CapsStudio.Views;
 /// the built-in tools. Layouts are saved in the settings.</summary>
 public partial class MainWindow
 {
-    public static readonly string[] Workspaces = ["Sketch", "Build", "Analyse", "Present", "Mine"];
+    public static readonly string[] Workspaces = ["Sketch", "Assemble", "Analyse", "Present", "Mine"];
     private readonly Dictionary<string, Shelf> _shelves = new();
     private readonly Dictionary<string, ShelfState> _shelfState = new();
     private readonly Dictionary<string, Puck> _pucks = new();
@@ -62,6 +62,14 @@ public partial class MainWindow
         }
         _vm.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(MainViewModel.IsStudio)) UpdateModifyBar(); };
         _vm.SettingsReplaced += () => { Panes.Store = _vm.Settings.PaneSizes; ReloadShelves(); };
+        // the first structure opened after shelves arrived: say where they are, once
+        _vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName != nameof(MainViewModel.HasDocument) || !_vm.HasDocument || _vm.Settings.ShelfHintShown) return;
+            _vm.Settings.ShelfHintShown = true;
+            _vm.Settings.Save();
+            DispatcherTimer.RunOnce(() => _vm.Status = "Tool shelves: drag the small tab at the left of a toolbar to move it (dock on any edge of the view or float), click it to fold · workspaces at the top", TimeSpan.FromSeconds(1.5));
+        };
         _vm.AddCommand(new PaletteCommand { Title = "Make a shelf…", Id = "shelf.make", Icon = "pin", Section = "View", Keywords = "toolbar custom tools", Run = () => _ = MakeShelfDialog() });
         _vm.AddCommand(new PaletteCommand { Title = "Reset this workspace's shelves", Id = "shelf.reset", Icon = "layers", Section = "View", Keywords = "toolbar layout default", Run = ResetWorkspace });
         foreach (var (sid, title) in new[] { ("tools", "Sketch & edit"), ("view", "View & panels"), ("modify", "Modify") })
@@ -73,6 +81,9 @@ public partial class MainWindow
         }
         foreach (var ws in Workspaces)
             _vm.AddCommand(new PaletteCommand { Title = $"Workspace: {ws}", Id = "workspace." + ws.ToLowerInvariant(), Icon = "layers", Section = "View", Keywords = "shelves toolbar layout", Run = () => UseWorkspace(ws) });
+        // the workspace called Build before (it shared its name with the Build module) is Assemble
+        if (_vm.Settings.Workspace == "Build") _vm.Settings.Workspace = "Assemble";
+        if (_vm.Settings.ShelfLayouts.Remove("Build", out var old)) _vm.Settings.ShelfLayouts["Assemble"] = old;
         UseWorkspace(Workspaces.Contains(_vm.Settings.Workspace) ? _vm.Settings.Workspace : "Sketch", save: false);
     }
 
@@ -121,7 +132,7 @@ public partial class MainWindow
         ShelfState S(string id, string dock, int order, bool folded = false) => new() { Id = id, Dock = dock, Order = order, Folded = folded };
         return ws switch
         {
-            "Build" => [S("tools", "top-left", 0), S("view", "top-right", 0), S("modify", "top-2", 0, true)],
+            "Assemble" => [S("tools", "top-left", 0), S("view", "top-right", 0), S("modify", "top-2", 0, true)],
             "Analyse" => [S("tools", "top-left", 0, true), S("view", "top-right", 0), S("modify", "hidden", 0)],
             "Present" => [S("tools", "top-left", 0, true), S("view", "top-right", 0, true), S("modify", "hidden", 0)],
             _ => [S("tools", "top-left", 0), S("view", "top-right", 0), S("modify", "top-2", 0)],
