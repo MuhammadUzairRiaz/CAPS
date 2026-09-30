@@ -9,7 +9,7 @@
     <Grid ColumnDefinitions="*,Auto">
       <StackPanel Spacing="3">
         <TextBlock Text="Minimise · CAPS Relax" Classes="title" />
-        <TextBlock Classes="muted"><Run Text="Energy minimisation with the same force field as Dynamics · " /><Run Text="{Binding ForceFieldLine}" /></TextBlock>
+        <TextBlock Classes="muted" TextWrapping="Wrap"><Run Text="Energy minimisation with the same force field as Dynamics · " /><Run Text="{Binding ForceFieldLine}" /></TextBlock>
         <v:StructurePicker ShowResultOption="True" Margin="0,8,0,0" HorizontalAlignment="Left" />
       </StackPanel>
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">

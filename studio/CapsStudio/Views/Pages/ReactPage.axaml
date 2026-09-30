@@ -6,7 +6,7 @@
     <Grid ColumnDefinitions="*,Auto">
       <StackPanel Spacing="3">
         <TextBlock Text="React · crosslinking" Classes="title" />
-        <TextBlock Text="Form bonds by distance, retype, relax, and track the gel point" Classes="muted" />
+        <TextBlock Text="Form bonds by distance, retype, relax, and track the gel point" Classes="muted" TextWrapping="Wrap" />
         <v:StructurePicker ShowResultOption="False" Margin="0,8,0,0" HorizontalAlignment="Left" />
       </StackPanel>
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
