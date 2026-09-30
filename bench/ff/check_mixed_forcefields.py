@@ -102,3 +102,10 @@ check("B polystyrene PCFF + water TIP4P/2005 (cross 9-6 → 12-6 r_min)", b,
 c = caps.pack(molecules=[("Cc1ccccc1", 12), ("C1CCCCC1", 12)], box=22.0, tolerance=2.0, seed=4)
 check("C toluene OPLS-AA + cyclohexane GAFF (each its own 1-4 scaling)", c,
       [{"name": "toluene", "molecules": "1-12", "forcefield": "opls2005"}, {"name": "cyclohexane", "molecules": "13-24", "forcefield": "gaff"}])
+
+# D: 1-4 scalings that differ, with a four-site water
+dd = caps.pack(molecules=[("Cc1ccccc1", 8), ("C1CCCCC1", 8), (os.path.join(samples, "water.pdb"), 60)], box=22.0, tolerance=2.0, seed=6)
+dd.edit(op="water_model", model="tip4p2005")
+check("D toluene OPLS-AA + cyclohexane GAFF + water TIP4P/2005", dd,
+      [{"name": "toluene", "molecules": "1-8", "forcefield": "opls2005"}, {"name": "cyclohexane", "molecules": "9-16", "forcefield": "gaff"},
+       {"name": "water", "molecules": "water", "water": "tip4p2005"}])

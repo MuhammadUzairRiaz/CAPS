@@ -1328,14 +1328,15 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
   // its part's special weights (pair_modify special); cross pairs (never 1-4) go to the first
   std::vector<std::string> own14;
   if (ff.per_pair14()) {
-    if (st.tip4p_qdist > 0) throw FieldError("four-site water beside force fields with different 1-4 scalings has no LAMMPS form here: use a three-site water model, or one 1-4 scaling (scaling14: first)");
     if (L.pair_styles.size() != 1 || !ff.pair_func.empty() || L.hbond || !L.mb_types.empty() || L.charmm || !ff.lj14_types.empty() || L.coreshell || L.gromacs)
       throw FieldError("force fields with different 1-4 scalings are written for LAMMPS with plain Lennard-Jones pairs only (one form, no explicit pair forms, many-body or hydrogen-bond terms)");
     const std::string lj = ff.pair_form == "lj9-6" ? "lj/class2" : "lj/cut";   // Lennard-Jones alone: Coulomb has its own sub-styles
     const bool haveq = e.coulomb;
     std::string coul, cargs;
     char cb[96];
-    if (haveq && pme(e, L)) { coul = "coul/long"; std::snprintf(cb, sizeof cb, "%.6g", e.cutoff); cargs = cb; }
+    if (haveq && pme(e, L) && st.tip4p_qdist > 0) { coul = "tip4p/long"; cargs = tip4p_args; std::snprintf(cb, sizeof cb, " %.6g", e.cutoff); cargs += cb; }   // four-site water: the M sites placed in every part's Coulomb
+    else if (haveq && pme(e, L)) { coul = "coul/long"; std::snprintf(cb, sizeof cb, "%.6g", e.cutoff); cargs = cb; }
+    else if (haveq && st.tip4p_qdist > 0) throw FieldError("four-site water in LAMMPS needs long-range electrostatics (PPPM / PME)");
     else if (haveq) { coul = "coul/dsf"; std::snprintf(cb, sizeof cb, "%.6g %.6g", e.dsf_alpha, e.cutoff); cargs = cb; }
     const size_t P = ff.part14.size();
     std::snprintf(cb, sizeof cb, "%.6g", e.cutoff);
