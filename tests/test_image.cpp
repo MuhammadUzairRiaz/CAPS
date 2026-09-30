@@ -4,6 +4,7 @@
 #include <fstream>
 
 #include "caps/io.hpp"
+#include "caps/raytrace.hpp"
 #include "caps/render.hpp"
 
 using namespace caps;
@@ -127,4 +128,32 @@ TEST(Image, RayPickAgreesWithTheRenderedIds) {
   caps::RenderOptions opt;
   opt.width = 640, opt.height = 480;
   EXPECT_EQ(caps::Renderer::pick_ray(s, cam, opt, 2, 2), -1);   // a corner of empty space
+}
+
+// The ray tracer sees the same geometry through the same camera as the CPU renderer: their silhouettes (coverage on a
+// transparent background) agree, and the traced image keeps 16 bits.
+TEST(Image, RayTracedSilhouetteMatchesTheRender) {
+  const caps::System s = caps::open_file(std::string(CAPS_SAMPLES) + "/ps_melt.data").frame(0);
+  caps::Renderer r;
+  caps::Camera cam;
+  cam.yaw = 0.6, cam.pitch = 0.3;
+  for (bool persp : {false, true}) {
+    cam.perspective = persp;
+    caps::RenderOptions opt;
+    opt.width = 320, opt.height = 240, opt.supersample = 1, opt.background = caps::Background::Transparent, opt.show_cell = false;
+    const caps::Image cpu = r.render(s, cam, opt);
+    const caps::Scene sc = r.scene(s, opt);
+    const caps::ViewFit fit = caps::view_fit(s, cam, opt);
+    caps::TraceOptions to;
+    to.samples = 4;
+    const caps::Image rt = caps::raytrace(sc, fit, 320, 240, to);
+    ASSERT_EQ(rt.rgba16.size(), size_t(320 * 240 * 4));
+    size_t both = 0, either = 0;
+    for (size_t p = 0; p < size_t(320 * 240); ++p) {
+      const bool a = cpu.rgba[4 * p + 3] > 127, b = rt.rgba[4 * p + 3] > 127;
+      both += a && b, either += a || b;
+    }
+    ASSERT_GT(either, 2000u);
+    EXPECT_GT(double(both) / double(either), 0.88) << (persp ? "perspective" : "orthographic");   // edges of 1–2 px sticks sample differently
+  }
 }

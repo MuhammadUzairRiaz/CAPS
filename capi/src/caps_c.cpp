@@ -69,6 +69,7 @@
 #include "caps/provenance.hpp"
 #include "caps/recipe.hpp"
 #include "caps/colourvision.hpp"
+#include "caps/raytrace.hpp"
 #include "caps/query.hpp"
 #include "caps/charges.hpp"
 #include "caps/molinfo.hpp"
@@ -7824,7 +7825,29 @@ extern "C" int32_t caps_export_image(caps_doc* d, const caps_camera* cam, const 
     caps::RenderOptions ro = opts_of(d, opt);
     ro.deep = p.sixteen;
     caps::Renderer r;
-    caps::Image img = r.render(shown(d), cam_of(cam), ro);
+    caps::Image img;
+    if (o.text("engine", "raster") == "raytrace") {
+      // CAPS's ray tracer on the same scene and camera (raytrace.hpp): occlusion, soft shadows, depth of field
+      caps::RenderOptions rs = ro;
+      rs.supersample = 1;
+      const caps::System& sys = shown(d);
+      const caps::Scene sc = r.scene(sys, rs);
+      const caps::ViewFit fit = caps::view_fit(sys, cam_of(cam), rs);
+      caps::TraceOptions to;
+      to.samples = int(std::clamp(o.num("samples", 64), 1.0, 4096.0));
+      to.ambient_occlusion = flag("occlusion", true);
+      to.shadows = flag("shadows", true);
+      to.ao_strength = std::clamp(o.num("occlusion_strength", to.ao_strength), 0.0, 1.0);
+      to.aperture = std::max(0.0, o.num("aperture", 0.0));
+      // or relative to the view: a fraction of its half-width in Å (the same blur on a molecule or a large cell)
+      if (o.has("aperture_fraction")) to.aperture = std::max(0.0, o.num("aperture_fraction", 0.0)) * (rs.width * 0.5 / std::max(1e-9, fit.scale));
+      to.focus = o.num("focus", 0.0);
+      to.outlines = flag("outlines", false);
+      img = caps::raytrace(sc, fit, rs.width, rs.height, to);
+      if (!p.sixteen) img.rgba16.clear();
+    } else {
+      img = r.render(shown(d), cam_of(cam), ro);
+    }
     if (overlay) {
       // labels and measurements drawn by the caller (straight alpha), laid over the image at full precision
       for (size_t k = 0; k < size_t(img.width) * img.height; ++k) {

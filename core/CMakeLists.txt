@@ -35,6 +35,7 @@ add_library(caps_core STATIC
   src/typing.cpp
   src/example_typing.cpp
   src/render.cpp
+  src/raytrace.cpp
   src/image.cpp
   src/svg.cpp
   src/smiles.cpp
