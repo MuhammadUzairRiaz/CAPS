@@ -4,7 +4,10 @@
 #include <fstream>
 
 #include "caps/io.hpp"
+#include "caps/json.hpp"
 #include "caps/raytrace.hpp"
+#include "caps/scene_export.hpp"
+#include <cstring>
 #include "caps/render.hpp"
 
 using namespace caps;
@@ -156,4 +159,44 @@ TEST(Image, RayTracedSilhouetteMatchesTheRender) {
     ASSERT_GT(either, 2000u);
     EXPECT_GT(double(both) / double(either), 0.88) << (persp ? "perspective" : "orthographic");   // edges of 1–2 px sticks sample differently
   }
+}
+
+// The scene written for other tools: POV-Ray (a sphere per atom, a cylinder per half-bond), glTF binary (a valid
+// container whose JSON counts match its binary chunk) and OBJ (vertices with colours, triangles).
+TEST(Image, SceneExportsPovGltfObj) {
+  const caps::System s = caps::open_file(std::string(CAPS_SAMPLES) + "/ps_melt.data").frame(0);
+  caps::Renderer r;
+  caps::Camera cam;
+  caps::RenderOptions opt;
+  opt.width = 800, opt.height = 600, opt.supersample = 1, opt.show_cell = false;
+  const caps::Scene sc = r.scene(s, opt);
+  const caps::ViewFit fit = caps::view_fit(s, cam, opt);
+  const auto dir = std::filesystem::temp_directory_path();
+  const auto pov = caps::write_povray(sc, fit, 800, 600, (dir / "caps_scene.pov").string());
+  EXPECT_EQ(pov.spheres, sc.sphere_rgb.size());
+  EXPECT_EQ(pov.cylinders, sc.capsule_rgb.size());
+  std::ifstream pf(dir / "caps_scene.pov");
+  const std::string ptxt((std::istreambuf_iterator<char>(pf)), std::istreambuf_iterator<char>());
+  EXPECT_NE(ptxt.find("camera {"), std::string::npos);
+  EXPECT_NE(ptxt.find("light_source"), std::string::npos);
+  const auto glb = caps::write_gltf(sc, (dir / "caps_scene.glb").string());
+  std::ifstream gf(dir / "caps_scene.glb", std::ios::binary);
+  const std::string g((std::istreambuf_iterator<char>(gf)), std::istreambuf_iterator<char>());
+  ASSERT_GT(g.size(), 28u);
+  uint32_t magic, version, total, jlen, jtype;
+  std::memcpy(&magic, g.data(), 4); std::memcpy(&version, g.data() + 4, 4); std::memcpy(&total, g.data() + 8, 4);
+  std::memcpy(&jlen, g.data() + 12, 4); std::memcpy(&jtype, g.data() + 16, 4);
+  EXPECT_EQ(magic, 0x46546C67u); EXPECT_EQ(version, 2u); EXPECT_EQ(total, g.size()); EXPECT_EQ(jtype, 0x4E4F534Au);
+  const caps::Json j = caps::Json::parse(g.substr(20, jlen));
+  uint32_t blen;
+  std::memcpy(&blen, g.data() + 20 + jlen, 4);
+  EXPECT_EQ(size_t(j["buffers"][0]["byteLength"].number()), size_t(blen));
+  EXPECT_EQ(size_t(j["accessors"][3]["count"].number()), glb.triangles * 3);
+  EXPECT_EQ(glb.spheres, sc.sphere_rgb.size());
+  const auto obj = caps::write_obj(sc, (dir / "caps_scene.obj").string());
+  std::ifstream of(dir / "caps_scene.obj");
+  size_t nv = 0, nf = 0;
+  for (std::string line; std::getline(of, line);) { nv += line.rfind("v ", 0) == 0; nf += line.rfind("f ", 0) == 0; }
+  EXPECT_EQ(nf, obj.triangles);
+  EXPECT_GT(nv, sc.sphere_rgb.size() * 12);
 }

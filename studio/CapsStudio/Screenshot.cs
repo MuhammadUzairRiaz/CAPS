@@ -465,6 +465,8 @@ internal static class Screenshot
                 for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
             }
             if (kv[0] == "exportbg") w.ViewModel.ExportDlgBackground = int.Parse(kv[1]);
+            if (kv[0] == "exportengine") { w.ViewModel.ExportEngine = int.Parse(kv[1]); for (int k = 0; k < 10; ++k) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); } }
+            if (kv[0] == "exportformat") { w.ViewModel.ExportFormat = int.Parse(kv[1]); for (int k = 0; k < 10; ++k) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); } }
             if (kv[0] == "provenance")   // provenance=OTHER|-: the provenance page, compared with OTHER's
             {
                 w.ViewModel.OpenProvenance();

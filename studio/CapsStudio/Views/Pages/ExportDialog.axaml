@@ -97,7 +97,7 @@
                   </Grid>
                 </StackPanel>
               </Border>
-              <Border Classes="section" IsVisible="{Binding ExportIsImage}">
+              <Border Classes="section" IsVisible="{Binding ExportIsRaster}">
                 <StackPanel Spacing="10">
                   <TextBlock Text="RENDERER" Classes="h3" />
                   <ComboBox ItemsSource="{x:Static vm:MainViewModel.ExportEngines}" SelectedIndex="{Binding ExportEngine}" HorizontalAlignment="Stretch"

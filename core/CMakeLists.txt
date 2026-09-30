@@ -36,6 +36,7 @@ add_library(caps_core STATIC
   src/example_typing.cpp
   src/render.cpp
   src/raytrace.cpp
+  src/scene_export.cpp
   src/image.cpp
   src/svg.cpp
   src/smiles.cpp
