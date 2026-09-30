@@ -1395,8 +1395,26 @@ public partial class MainWindow : Window
         _host.Focus();
     }
 
+    private DispatcherTimer? _interactTimer;
+    /// <summary>The view is being turned, panned or zoomed: the GPU view may lighten its work on very large scenes until
+    /// the motion stops (then one full-quality frame).</summary>
+    private void Interacting()
+    {
+        if (!ViewGl.Ready) return;
+        ViewGl.Interacting = true;
+        _interactTimer ??= new DispatcherTimer(TimeSpan.FromMilliseconds(180), DispatcherPriority.Background, (_, _) =>
+        {
+            _interactTimer!.Stop();
+            ViewGl.Interacting = false;
+            ViewGl.RequestNextFrameRendering();
+        });
+        _interactTimer.Stop();
+        _interactTimer.Start();
+    }
+
     private void OnPointerMoved(object? sender, PointerEventArgs e)
     {
+        if (_dragging) Interacting();
         if (!_dragging && _vm.LensHold && _vm.Document != null && !_vm.Busy)   // L held: the lens follows the atom under the cursor
         {
             var at = e.GetPosition(_host);
@@ -1509,6 +1527,7 @@ public partial class MainWindow : Window
     private void OnWheel(object? sender, PointerWheelEventArgs e)
     {
         if (_vm.Document == null) return;
+        Interacting();
         _vm.StopFly();
         _vm.Camera.Zoom = Math.Clamp(_vm.Camera.Zoom * Math.Pow(1.12, e.Delta.Y), 0.1, 40);
         RequestViewRender();
