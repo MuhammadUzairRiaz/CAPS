@@ -259,6 +259,14 @@ public sealed partial class FieldViewModel
         return AssignGroupsRun(json);
     }
 
+    /// <summary>Groups given whole (Pack's rows): assigned, and the groups page shows the result.</summary>
+    public async Task AssignGroupsJson(string json, string what)
+    {
+        Recorder?.Invoke($"doc.field.assign_groups({json})");
+        _assignedId = "";
+        await Do(what, d => d.FieldAssignGroups(json));
+    }
+
     private async Task AssignGroupsRun(string json)
     {
         await Do("Assigned by group", d => d.FieldAssignGroups(json));

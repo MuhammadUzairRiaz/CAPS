@@ -38,6 +38,8 @@ struct PackItem {
   bool center = false;          // fixed: put the molecule's centre at `position`
   Vec3 position{0, 0, 0};
   Vec3 angles{0, 0, 0};         // fixed: rotations about x, y, z (radians, packmol convention)
+  // CAPS: this molecule's own force field (a library id or file), or "water:MODEL" (a water model); "" the cell's
+  std::string forcefield;
 };
 
 struct PackProgress {
@@ -71,6 +73,9 @@ struct PackReport {
   int close_pairs = 0;          // pairs closer than the tolerance
   double region_violation = 0;  // largest distance of an atom outside its regions, Å
   int molecules = 0, atoms = 0;
+  // per item (in the input's order): its name, the molecule ids its copies became ("11-110"), its own force field
+  struct ItemMolecules { std::string name, molecules, forcefield; };
+  std::vector<ItemMolecules> items;
   int loops = 0, iterations = 0, evaluations = 0, moved = 0;
   double seconds = 0;
   std::vector<std::string> notes;
@@ -101,6 +106,7 @@ System pack(const std::vector<PackItem>& items, const PackOptions& o, PackReport
 //     fixed   at x y z rotated a b c degrees     placed as given, never moved
 //     centred                              the fixed position is its centre
 //     atoms   1 2 3 in sphere at …         a region for some of its atoms only
+//     forcefield opls-aa                   its own force field (else the cell's) · water tip4p2005: a water model
 //   end
 bool is_caps_pack_input(const std::string& text);
 // The CAPS form as packmol's (throws PackError naming the line), and packmol's as the CAPS form.

@@ -138,6 +138,18 @@ public partial class MainViewModel
         if (pack ? !_packAssign : !_growAssignFf) return;
         var idx = pack ? PackFfIndex : GrowFfIndex;
         if (idx < 0 || idx >= Field.Library.Count) return;
+        if (pack && PackGroupSpec(_doc) is { } spec)   // rows with their own force fields: a group each, the rest by the Pack's
+        {
+            // a water model row: its geometry, charges and (four-site) M sites on the waters first
+            var wm = System.Text.RegularExpressions.Regex.Match(spec, "\"water\":\"([^\"]+)\"");
+            if (wm.Success) RunEdit(new { op = "water_model", model = wm.Groups[1].Value });
+            Field.FfIndex = idx;
+            await Field.AssignGroupsJson(spec, "Assigned by molecule (Pack)");
+            _pipeAutoFf = true;
+            RaiseGrowField();
+            RefreshSteps();
+            return;
+        }
         Field.FfIndex = idx;
         Field.ChargeMode = pack ? _packCharges : _growCharges;
         await Field.Assign();
@@ -161,6 +173,77 @@ public partial class MainViewModel
         await Field.Assign();
         RaiseGrowField();
         RefreshSteps();
+    }
+
+    // ---- a force field per molecule: each row may take its own (a library force field or a water model); the rest
+    // of the cell (a polymer packed around, the rows left to it) takes the Pack's force field above
+    public List<string> PackFfChoices => new[] { "The cell's force field (above)" }
+        .Concat(Field.Library.Select(e => e.Label))
+        .Concat(FieldViewModel.Waters.Select(w => "Water model · " + w.Name)).ToList();
+    private int PackFfChoiceOf(string key, string value)
+    {
+        if (key == "water")
+        {
+            var j = FieldViewModel.Waters.FindIndex(w => w.Id.Equals(value, StringComparison.OrdinalIgnoreCase) || w.Name.Equals(value, StringComparison.OrdinalIgnoreCase));
+            return j < 0 ? 0 : 1 + Field.Library.Count + j;
+        }
+        var lib = Field.Library.ToList();
+        var i = lib.FindIndex(e => e.Id.Equals(value, StringComparison.OrdinalIgnoreCase) || e.File == value);
+        return i < 0 ? 0 : 1 + i;
+    }
+    /// <summary>Row `row`'s force field: 0 the cell's, then the library's, then the water models (written into its block).</summary>
+    public void SetPackRowForceField(int row, int choice)
+    {
+        var lines = _packText.Split('\n').ToList();
+        int seen = -1, head = -1, end = -1;
+        for (int i = 0; i < lines.Count; ++i)
+        {
+            var w = lines[i].Split('#')[0].Trim().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+            if (w.Length == 0) continue;
+            var k = w[0].ToLowerInvariant();
+            if (head < 0 && k is "molecule" or "structure" && ++seen == row) head = i;
+            else if (head >= 0 && k == "end" && !(w.Length > 1 && w[1].Equals("atoms", StringComparison.OrdinalIgnoreCase))) { end = i; break; }
+        }
+        if (head < 0 || end < 0) return;
+        for (int i = end - 1; i > head; --i)
+        {
+            var k = lines[i].Split('#')[0].Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.ToLowerInvariant();
+            if (k is "forcefield" or "water") lines.RemoveAt(i);
+        }
+        var nl = Field.Library.Count;
+        string? add = choice <= 0 ? null
+            : choice <= nl ? $"  forcefield {Field.Library[choice - 1].Id}"
+            : choice - 1 - nl < FieldViewModel.Waters.Count ? $"  water      {FieldViewModel.Waters[choice - 1 - nl].Id}" : null;
+        if (add != null) lines.Insert(head + 1, add);
+        PackText = string.Join('\n', lines);
+    }
+
+    /// <summary>After packing: the groups by the rows' own force fields (null when no row has one).</summary>
+    private string? PackGroupSpec(Interop.CapsDocument doc)
+    {
+        System.Text.Json.Nodes.JsonArray items;
+        try { items = System.Text.Json.Nodes.JsonNode.Parse(doc.PackItemsJson())!.AsArray(); } catch { return null; }
+        var own = items.Where(i => ((string?)i!["forcefield"] ?? "").Length > 0 && ((string?)i["molecules"] ?? "").Length > 0).ToList();
+        if (own.Count == 0) return null;
+        var groups = new System.Text.Json.Nodes.JsonArray();
+        var charges = FieldViewModel.CoreChargesOf(_packCharges);
+        foreach (var i in own)
+        {
+            var ff = (string)i!["forcefield"]!;
+            var g = new System.Text.Json.Nodes.JsonObject { ["name"] = (string?)i["name"] ?? "group", ["molecules"] = (string)i["molecules"]! };
+            if (ff.StartsWith("water:", StringComparison.Ordinal)) g["water"] = ff[6..];
+            else
+            {
+                var e = Field.Library.FirstOrDefault(x => x.Id.Equals(ff, StringComparison.OrdinalIgnoreCase));
+                g["forcefield"] = e?.File ?? ff;
+                g["charges"] = charges;
+            }
+            groups.Add(g);
+        }
+        var idx = PackFfIndex;
+        if (idx >= 0 && idx < Field.Library.Count)
+            groups.Add(new System.Text.Json.Nodes.JsonObject { ["name"] = "rest", ["molecules"] = "rest", ["forcefield"] = Field.Library[idx].File, ["charges"] = charges });
+        return new System.Text.Json.Nodes.JsonObject { ["groups"] = groups }.ToJsonString();
     }
 
     // ---- molecules to pack from their SMILES: rubber curatives and additives, solvents, or any SMILES
