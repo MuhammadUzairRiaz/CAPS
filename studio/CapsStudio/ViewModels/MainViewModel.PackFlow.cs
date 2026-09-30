@@ -179,7 +179,7 @@ public partial class MainViewModel
         smiles = smiles.Trim();
         if (smiles.Length == 0) { Status = "Type a SMILES (S1SSSSSSS1 for sulfur S8) or pick a molecule"; return; }
         name = string.IsNullOrWhiteSpace(name) ? smiles : name!;
-        var safe = new string(name.Select(c => char.IsLetterOrDigit(c) || c is '-' or '_' ? c : '_').ToArray()).Trim('_');
+        var safe = System.Text.RegularExpressions.Regex.Replace(new string(name.Select(c => char.IsLetterOrDigit(c) || c is '-' or '_' ? c : '_').ToArray()), "_+", "_").Trim('_');
         if (safe.Length == 0) safe = "molecule";
         if (safe.Length > 40) safe = safe[..40];
         var dir = PackMoleculeFolder;
