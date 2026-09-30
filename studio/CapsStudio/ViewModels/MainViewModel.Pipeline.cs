@@ -225,6 +225,27 @@ public sealed partial class MainViewModel
         ["preview"] = preview, ["head_lines"] = preview ? 60 : 0,
     }.ToJsonString();
 
+    /// <summary>The Field page's LAMMPS export: the data file and its input beside it (NAME.data, NAME.in, a potential's
+    /// file), the input with every group by atom type, each type's element and mass, every pair coefficient and the cross
+    /// terms; the run is the Export page's.</summary>
+    public async Task ExportFieldLammps(string dataPath)
+    {
+        if (_doc == null) return;
+        var o = System.Text.Json.Nodes.JsonNode.Parse(EngineOptions(false))!.AsObject();
+        o["lammps"] = true; o["gromacs"] = false; o["moltemplate"] = false; o["dlpoly"] = false; o["amber"] = false;
+        o["stem"] = System.IO.Path.GetFileNameWithoutExtension(dataPath);
+        var dir = System.IO.Path.GetDirectoryName(dataPath) ?? ".";
+        var doc = _doc;
+        try
+        {
+            var json = await Task.Run(() => doc.ExportEngines(dir, o.ToJsonString()));
+            var r = System.Text.Json.Nodes.JsonNode.Parse(json)?.AsObject();
+            var files = (r?["files"] as System.Text.Json.Nodes.JsonArray)?.Select(f => (string?)f?["name"]).Where(n => n != null) ?? [];
+            Status = r?["ok"]?.GetValue<bool>() == true ? $"Wrote {string.Join(", ", files)} in {dir}" : "Export failed: " + ((string?)r?["error"] ?? (string?)r?["lammps_error"] ?? "unknown");
+        }
+        catch (Exception e) { Status = "Export failed: " + e.Message; }
+    }
+
     private int _engGen;
     /// <summary>Writes the files to a scratch folder off the UI thread: the list, each file's head and the checks.</summary>
     public void RefreshEngines()

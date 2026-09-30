@@ -2937,7 +2937,9 @@
               <Button Content="Export ▾" VerticalAlignment="Bottom" IsEnabled="{Binding Field.Assigned}">
                 <Button.Flyout>
                   <MenuFlyout>
-                    <MenuItem Header="LAMMPS data with this force field…" Click="OnSaveData" />
+                    <MenuItem Header="LAMMPS data + input (.data, .in with groups by atom type)…" Click="OnFieldExportLammps"
+                              ToolTip.Tip="The data file and its input: every group by atom type with each type's element and mass, every pair coefficient and cross term, a potential's file beside them" />
+                    <MenuItem Header="LAMMPS data only…" Click="OnSaveData" />
                     <MenuItem Header="Types file (caps ff apply --types)…" Click="OnFieldSaveTypes" />
                   </MenuFlyout>
                 </Button.Flyout>
