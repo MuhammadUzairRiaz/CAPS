@@ -9,6 +9,7 @@
 #include <map>
 #include <random>
 #include <stdexcept>
+#include <unordered_map>
 #include <unordered_set>
 
 #include "caps/analysis.hpp"
@@ -129,10 +130,15 @@ void cbmc_regrow(System& s, const ForceField& ff, const CbmcOptions& o, CbmcRepo
   const auto nb = s.neighbours();
   std::vector<std::vector<uint32_t>> excl(n);
   std::unordered_set<uint64_t> is14;
+  std::unordered_map<uint64_t, std::pair<double, double>> scale14;   // per pair (LJ, Coulomb) when parts keep their own
   auto key = [&](uint32_t a, uint32_t b) { return a < b ? uint64_t(a) * n + b : uint64_t(b) * n + a; };
   if (ff.excluded.size() == n) {
     excl = ff.excluded;
-    for (const auto& p : ff.pairs14) is14.insert(key(p[0], p[1]));
+    for (size_t k = 0; k < ff.pairs14.size(); ++k) {
+      const auto& p = ff.pairs14[k];
+      is14.insert(key(p[0], p[1]));
+      if (ff.per_pair14()) scale14[key(p[0], p[1])] = {ff.pairs14_lj[k], ff.pairs14_coul[k]};   // its part's (merged by group)
+    }
   } else {
     for (uint32_t a = 0; a < n; ++a) {
       std::map<uint32_t, int> d{{a, 0}};
@@ -161,6 +167,7 @@ void cbmc_regrow(System& s, const ForceField& ff, const CbmcOptions& o, CbmcRepo
     if (std::binary_search(excl[a].begin(), excl[a].end(), b)) {
       if (!is14.count(key(a, b))) return 0.0;
       fl = ff.lj14, fq = ff.coul14, p14 = true;
+      if (const auto it = scale14.find(key(a, b)); it != scale14.end()) fl = it->second.first, fq = it->second.second;
     }
     if (r2 < 1e-6) return std::numeric_limits<double>::infinity();
     const size_t tp = size_t(ff.type_index[a]) * nt + size_t(ff.type_index[b]);

@@ -173,7 +173,7 @@ internal static class SelfTest
             if (oplsIx >= 0)
             {
                 gb.FfIndex = oplsIx; gb.Charges = 0;
-                vm.Field.Scaling14 = 0;
+                vm.Field.Scaling14 = 2;   // refuse different 1-4 scalings (the default keeps each group's own)
                 vm.Field.AssignGroups().GetAwaiter().GetResult();
                 refused = vm.Field.Log.Contains("1-4", StringComparison.Ordinal);
                 vm.Field.Scaling14 = 1;
@@ -3526,6 +3526,23 @@ internal static class SelfTest
             Check(hasRow && vm.PackAdditives.Count >= 10 && sum?.Molecules == 30 && sum?.Atoms == 1300 + 160,
                   $"pack curatives: {vm.PackAdditives.Count} additives · S8 row {hasRow} · {sum?.Molecules} molecules, {sum?.Atoms} atoms · d_min {vm.PackDmin}");
             vm.PackStart = 0;
+        }
+
+        // Pack rows with their own force fields: toluene by GAFF, water as TIP3P; the cell assigned by groups
+        {
+            vm.PackStart = 0;
+            vm.PackAssignField = true;   // an earlier check turned it off
+            vm.NewPackInput();
+            vm.AddPackMolecule("Cc1ccccc1", "toluene").GetAwaiter().GetResult();
+            vm.AddPackMolecule("O", "water").GetAwaiter().GetResult();
+            vm.PackText = System.Text.RegularExpressions.Regex.Replace(vm.PackText, @"count\s+\d+", "count   6");
+            var gaffRow = vm.Field.Library.ToList().FindIndex(e => e.Id.StartsWith("gaff", StringComparison.Ordinal)) + 1;
+            vm.SetPackRowForceField(0, gaffRow);
+            vm.SetPackRowForceField(1, 1 + vm.Field.Library.Count + FieldViewModel.Waters.FindIndex(w => w.Id == "tip3p"));
+            var rowsText = vm.PackText;
+            vm.RunPack().GetAwaiter().GetResult();
+            Check(rowsText.Contains("forcefield gaff") && rowsText.Contains("water      tip3p") && vm.Field.ForceFieldName.Contains("TIP3P", StringComparison.Ordinal) && vm.Field.ForceFieldName.Contains("GAFF", StringComparison.Ordinal),
+                  $"pack rows' force fields: {vm.Field.ForceFieldName} · {vm.Field.Log}");
         }
 
         // Water model on the Field page: a water with TIP4P/2005 gets its M site (4 atoms) and the model's force field

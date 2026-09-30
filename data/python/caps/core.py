@@ -273,7 +273,7 @@ class _Field:
         rep["complete"] = rc == 0
         return rep
 
-    def assign_groups(self, groups, eps_rule: str = "geometric", sigma_rule: str = "arithmetic", scaling14: str = "refuse",
+    def assign_groups(self, groups, eps_rule: str = "geometric", sigma_rule: str = "arithmetic", scaling14: str = "own",
                       cross96: str = "refuse", pairs: Optional[list] = None) -> dict:
         """A force field per group of molecules: groups = [{"name": "filler", "molecules": "1", "forcefield": "iff-cvff"},
         {"name": "matrix", "molecules": "rest", "forcefield": "gaff2", "charges": "auto"}]. A crystal group may instead take
@@ -287,7 +287,7 @@ class _Field:
         atoms get one type per element, standard masses, no charge, UFF Lennard-Jones for the cross pairs, and CAPS runs
         need them held (LAMMPS evaluates the potential). Between groups the Lennard-Jones
         pairs follow eps_rule (geometric | arithmetic) and sigma_rule (arithmetic | geometric | sixthpower), or pairs =
-        [{"a": type, "b": type, "eps": kcal/mol, "sigma": Å}]. Different 1-4 scalings are refused unless scaling14="first";
+        [{"a": type, "b": type, "eps": kcal/mol, "sigma": Å}]. Groups with different 1-4 scalings (GAFF beside OPLS-AA) keep each its own (scaling14="own"; "first" takes the first group's for all, "refuse" stops);
         9-6 with 12-6 unless cross96="rmin" (the 9-6 sites keep ε and r_min)."""
         codes = {"forcefield": 0, "gasteiger": 1, "keep": 2, "qeq": 3, "auto": 4, "increments": 5}
         gs = []

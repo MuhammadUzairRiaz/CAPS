@@ -1018,6 +1018,8 @@ void write_lammps_data_ff(const System& s, const ForceField& ff0, const EnergyOp
   const ForceField& ff = metal ? mff : ff0;
   EnergyOptions e = e0;
   const Layout L = prepare(s, ff, e, st);
+  if (pair_coeffs && ff.per_pair14())
+    throw FieldError("force fields with different 1-4 scalings: the pair coefficients are per part in the input file (export for LAMMPS writes both), not in a data file alone");
   const size_t na = st.write_atoms > 0 && st.write_atoms < s.atoms.size() ? st.write_atoms : s.atoms.size();
   auto inside = [&](const std::vector<uint32_t>& t) { return std::all_of(t.begin(), t.end(), [&](uint32_t x) { return x < na; }); };
   auto count_in = [&](const Kind* k) { size_t c = 0; for (const auto& t : k->term_atoms) c += inside(t); return c; };
@@ -1322,13 +1324,65 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
     out << "# four-site water (" << ff.name << "): LAMMPS puts each M site " << tip4p_args.substr(tip4p_args.find_last_of(' ') + 1)
         << " Å from O on the H–O–H bisector (its charge is written on O); keep the water rigid (fix shake below)\n";
   }
+  // force fields with their own 1-4 scaling (merged by group): a Lennard-Jones and a Coulomb sub-style per part, each with
+  // its part's special weights (pair_modify special); cross pairs (never 1-4) go to the first
+  std::vector<std::string> own14;
+  if (ff.per_pair14()) {
+    if (st.tip4p_qdist > 0) throw FieldError("four-site water beside force fields with different 1-4 scalings has no LAMMPS form here: use a three-site water model, or one 1-4 scaling (scaling14: first)");
+    if (L.pair_styles.size() != 1 || !ff.pair_func.empty() || L.hbond || !L.mb_types.empty() || L.charmm || !ff.lj14_types.empty() || L.coreshell || L.gromacs)
+      throw FieldError("force fields with different 1-4 scalings are written for LAMMPS with plain Lennard-Jones pairs only (one form, no explicit pair forms, many-body or hydrogen-bond terms)");
+    const std::string lj = ff.pair_form == "lj9-6" ? "lj/class2" : "lj/cut";   // Lennard-Jones alone: Coulomb has its own sub-styles
+    const bool haveq = e.coulomb;
+    std::string coul, cargs;
+    char cb[96];
+    if (haveq && pme(e, L)) { coul = "coul/long"; std::snprintf(cb, sizeof cb, "%.6g", e.cutoff); cargs = cb; }
+    else if (haveq) { coul = "coul/dsf"; std::snprintf(cb, sizeof cb, "%.6g %.6g", e.dsf_alpha, e.cutoff); cargs = cb; }
+    const size_t P = ff.part14.size();
+    std::snprintf(cb, sizeof cb, "%.6g", e.cutoff);
+    std::string ps = "pair_style hybrid/overlay";
+    for (size_t k = 0; k < P; ++k) ps += " " + lj + " " + cb;
+    if (!coul.empty()) for (size_t k = 0; k < P; ++k) ps += " " + coul + " " + cargs;
+    std::vector<std::string> st2;
+    for (const auto& l : styles) {
+      if (l.rfind("pair_style", 0) == 0) {
+        st2.push_back(ps);
+        for (size_t k = 0; k < P; ++k) {
+          std::snprintf(b, sizeof b, "pair_modify pair %s %zu special lj 0.0 0.0 %.10g", lj.c_str(), k + 1, ff.part14[k][0]);
+          st2.push_back(b);
+          if (!coul.empty()) {
+            std::snprintf(b, sizeof b, "pair_modify pair %s %zu special coul 0.0 0.0 %.10g", coul.c_str(), k + 1, ff.part14[k][1]);
+            st2.push_back(b);
+          }
+        }
+      } else if (l.rfind("special_bonds", 0) == 0)
+        st2.push_back("special_bonds lj 0.0 0.0 0.5 coul 0.0 0.0 0.5   # 1-4 pairs flagged; each part's own weights above");
+      else st2.push_back(l);
+    }
+    styles = std::move(st2);
+    for (size_t a2 = 0; a2 < ff.type_names.size(); ++a2)
+      for (size_t b2 = a2; b2 < ff.type_names.size(); ++b2) {
+        const int pa = ff.type_part[a2], pb = ff.type_part[b2];
+        const size_t k = pa == pb ? size_t(pa) + 1 : 1;
+        const PairType pt = mixed_pair(ff, int(a2), int(b2));
+        std::snprintf(b, sizeof b, "%zu %zu %s %zu %s  # %s %s", a2 + 1, b2 + 1, lj.c_str(), k, num({pt.eps, pt.sigma}).c_str() + 1, ff.type_names[a2].c_str(), ff.type_names[b2].c_str());
+        own14.push_back(b);
+        if (!coul.empty()) {
+          std::snprintf(b, sizeof b, "%zu %zu %s %zu", a2 + 1, b2 + 1, coul.c_str(), k);
+          own14.push_back(b);
+        }
+      }
+    out << "# force fields with different 1-4 scalings: each part's Lennard-Jones and Coulomb in a sub-style of its own, with its own special weights\n";
+  }
   for (const auto& l : styles) {
     if (l.rfind("kspace_style", 0) == 0) kspace.push_back(l);
     else out << aligned(l) << "\n";
   }
   out << "\nread_data       " << data_path << "\n";
   for (const auto& l : kspace) out << aligned(l) << "\n";
-  if (pair_coeffs) {
+  if (!own14.empty()) {
+    out << "\n# pair coefficients: every type pair in its part's sub-style (1-4 scaling of that part), " << ff.mixing << " mixing applied by CAPS\n";
+    for (const auto& l : own14) out << "pair_coeff      " << l << "\n";
+  } else if (pair_coeffs) {
     out << "\n# pair coefficients: every type pair, " << ff.mixing << " mixing applied by CAPS (nothing left to LAMMPS's mixing)\n";
     for (const auto& l : pair_lines(L, ff)) out << "pair_coeff      " << l << "\n";
   }
@@ -1351,6 +1405,7 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
   if (!L.mb_types.empty() && !L.bonds.term_type.empty())
     out << "# (LAMMPS warns of a many-body potential beside bonds: its atoms have none, the special_bonds exclusions act on the other groups only)\n";
   for (auto l : after_read(L, e, data_path, ff.excluded_type_pairs, &ff, metal)) {
+    if (!own14.empty() && l.rfind("pair_coeff", 0) == 0 && (l.find("coul/long") != std::string::npos || l.find("coul/dsf") != std::string::npos)) continue;   // per part above
     if (st.tip4p_qdist > 0) {   // the overlay's Coulomb sub-style is tip4p/long
       const auto p = l.find(" coul/long");
       if (l.rfind("pair_coeff", 0) == 0 && p != std::string::npos) l.replace(p, 10, " tip4p/long");

@@ -100,5 +100,5 @@ check("B polystyrene PCFF + water TIP4P/2005 (cross 9-6 → 12-6 r_min)", b,
 
 # C: 1-4 scalings that differ
 c = caps.pack(molecules=[("Cc1ccccc1", 12), ("C1CCCCC1", 12)], box=22.0, tolerance=2.0, seed=4)
-check("C toluene OPLS-AA + cyclohexane GAFF (default: refused)", c,
+check("C toluene OPLS-AA + cyclohexane GAFF (each its own 1-4 scaling)", c,
       [{"name": "toluene", "molecules": "1-12", "forcefield": "opls2005"}, {"name": "cyclohexane", "molecules": "13-24", "forcefield": "gaff"}])

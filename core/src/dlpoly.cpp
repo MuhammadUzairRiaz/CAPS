@@ -102,14 +102,19 @@ std::vector<std::string> write_dlpoly(const System& s, const ForceField& ff, con
   }
 
   // dihedrals: the 1-4 scale factors go on one term per 1-4 pair
-  std::set<std::pair<uint32_t, uint32_t>> p14;
-  for (const auto& p : ff.pairs14) p14.insert({std::min(p[0], p[1]), std::max(p[0], p[1])});
+  // each 1-4 pair's scales (its own part's when force fields with different 1-4 scalings were merged by group)
+  std::map<std::pair<uint32_t, uint32_t>, std::pair<double, double>> p14;
+  for (size_t k = 0; k < ff.pairs14.size(); ++k) {
+    const auto& p = ff.pairs14[k];
+    p14[{std::min(p[0], p[1]), std::max(p[0], p[1])}] = {k < ff.pairs14_coul.size() ? ff.pairs14_coul[k] : ff.coul14, k < ff.pairs14_lj.size() ? ff.pairs14_lj[k] : ff.lj14};
+  }
   std::set<std::pair<uint32_t, uint32_t>> scaled;
   auto scale14 = [&](uint32_t i, uint32_t l) -> std::pair<double, double> {
     const auto key = std::make_pair(std::min(i, l), std::max(i, l));
-    if (!p14.count(key) || scaled.count(key)) return {0.0, 0.0};
+    const auto it = p14.find(key);
+    if (it == p14.end() || scaled.count(key)) return {0.0, 0.0};
     scaled.insert(key);
-    return {ff.coul14, ff.lj14};
+    return it->second;
   };
   // Fourier terms of one quadruple (same atom order): "cos3" when they are OPLS's three, else one "cos" line each
   auto write_torsions = [&](uint32_t i, uint32_t j, uint32_t k, uint32_t l, const std::vector<const TorsionTerm*>& ts, bool proper) {
@@ -186,7 +191,7 @@ std::vector<std::string> write_dlpoly(const System& s, const ForceField& ff, con
   // 1-4 pairs with no torsion term: a zero-amplitude dihedral carries their scale factors
   if (!p14.empty()) {
     const auto nb = s.neighbours();
-    for (const auto& pr : p14) {
+    for (const auto& [pr, sc] : p14) {
       if (scaled.count(pr)) continue;
       bool done = false;
       for (uint32_t j : nb[pr.first]) {

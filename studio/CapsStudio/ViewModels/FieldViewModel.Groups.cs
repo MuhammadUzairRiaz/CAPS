@@ -96,7 +96,7 @@ public sealed partial class FieldViewModel
     public static readonly string[] PotentialUnits = ["as the file says", "metal (eV)", "real (kcal/mol)"];
     public static readonly string[] EpsRules = ["geometric √(εᵢεⱼ)", "arithmetic (εᵢ+εⱼ)/2"];
     public static readonly string[] SigmaRules = ["arithmetic (σᵢ+σⱼ)/2", "geometric √(σᵢσⱼ)", "sixth power (class II)"];
-    public static readonly string[] Scaling14Modes = ["refuse different scalings", "the first group's for all"];
+    public static readonly string[] Scaling14Modes = ["each group's own (exact)", "the first group's for all", "refuse different scalings"];
     public static readonly string[] Cross96Modes = ["refuse 9-6 with 12-6", "12-6 with the 9-6 site's ε and r_min"];
 
     public ObservableCollection<FieldGroupRow> Groups { get; } = new();
@@ -243,7 +243,7 @@ public sealed partial class FieldViewModel
             ["groups"] = arr,
             ["eps_rule"] = _epsRule == 1 ? "arithmetic" : "geometric",
             ["sigma_rule"] = _sigmaRule switch { 1 => "geometric", 2 => "sixthpower", _ => "arithmetic" },
-            ["scaling14"] = _scaling14 == 1 ? "first" : "refuse",
+            ["scaling14"] = _scaling14 switch { 1 => "first", 2 => "refuse", _ => "own" },
             ["cross96"] = _cross96 == 1 ? "rmin" : "refuse",
             ["pairs"] = pairs,
         }, "");

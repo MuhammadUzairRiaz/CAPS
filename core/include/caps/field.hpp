@@ -161,6 +161,13 @@ struct ForceField {
   double native_timestep = 0;              // fs; 0: none declared (engine inputs use 0.5 fs)
   std::map<std::pair<int, int>, PairType> pair_override;   // explicit coefficients for type-index pairs (a ≤ b)
   std::vector<std::array<uint32_t, 2>> pairs14;
+  // Force fields merged by group with different 1-4 scalings (GAFF 0.5/0.8333 beside OPLS-AA 0.5/0.5): each 1-4 pair's
+  // own LJ and Coulomb scale (empty: lj14 / coul14 for every pair), each type's part and each part's scales (LAMMPS
+  // writes a sub-style per part with its own special weights, GROMACS each pair with its own fudge)
+  std::vector<double> pairs14_lj, pairs14_coul;
+  std::vector<int> type_part;
+  std::vector<std::array<double, 2>> part14;
+  bool per_pair14() const { return !pairs14_lj.empty(); }
   std::vector<std::vector<uint32_t>> excluded;   // per atom, sorted: 1-2, 1-3 and 1-4 partners, left out of the pair list
   StillingerWeber sw;                         // many-body term (mW water); counted in the vdW energy
   ManyBodyFile manybody;                      // a literature many-body potential for some types (LAMMPS only)

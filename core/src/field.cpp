@@ -247,11 +247,18 @@ Evaluator::Evaluator(const ForceField& ff, const EnergyOptions& o)
   qeff_ = ff.charge;
   if (ff.dielectric != 1)
     for (auto& c : qeff_) c /= std::sqrt(ff.dielectric);
-  std::set<std::pair<uint32_t, uint32_t>> p14;
-  for (const auto& p : ff.pairs14) p14.insert({p[0], p[1]});
+  std::map<std::pair<uint32_t, uint32_t>, double> p14;   // each 1-4 pair's Coulomb scale (its part's, when merged by group)
+  for (size_t k = 0; k < ff.pairs14.size(); ++k) {
+    const auto& p = ff.pairs14[k];
+    const double c = k < ff.pairs14_coul.size() ? ff.pairs14_coul[k] : ff.coul14;
+    p14[{std::min(p[0], p[1]), std::max(p[0], p[1])}] = c;
+  }
   for (uint32_t i = 0; i < ff.excluded.size(); ++i)
     for (uint32_t j : ff.excluded[i])
-      if (j > i) excl_.push_back({i, j, p14.count({i, j}) ? ff.coul14 : 0.0});
+      if (j > i) {
+        const auto it = p14.find({i, j});
+        excl_.push_back({i, j, it != p14.end() ? it->second : 0.0});
+      }
   const size_t nt = ff.lj.size();
   eps_.resize(nt * nt);
   s6_.resize(nt * nt);
@@ -1170,21 +1177,22 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
         const Vec3 d = mi(pos(j) - pos(i));
         const size_t tp = size_t(ff_.type_index[i]) * nt + ff_.type_index[j];
         double ev = 0, fr = 0;
+        const double lj14 = k - o4 < ff_.pairs14_lj.size() ? ff_.pairs14_lj[k - o4] : ff_.lj14;   // its part's scale (merged by group)
         if (!eps14_.empty()) {
           // separate 1-4 Lennard-Jones parameters (CHARMM, GROMOS)
           const double r2 = dot(d, d), qq = s614_[tp] / (r2 * r2 * r2), e14 = eps14_[tp];
-          ev = ff_.lj14 * 4 * e14 * (qq * qq - qq);
-          fr = ff_.lj14 * 24 * e14 * (2 * qq * qq - qq) / r2;
+          ev = lj14 * 4 * e14 * (qq * qq - qq);
+          fr = lj14 * 24 * e14 * (2 * qq * qq - qq) / r2;
           if (ff_.lj_fsw) {   // the force switch's constant below r_in (LAMMPS dihedral charmmfsw adds the same)
             const double ri3 = std::pow(ff_.lj_inner, 3), rc3 = rc2 * std::sqrt(rc2), s6 = s614_[tp];
-            ev -= ff_.lj14 * 4 * e14 * (s6 * s6 / (ri3 * ri3 * rc3 * rc3) - s6 / (ri3 * rc3));
+            ev -= lj14 * 4 * e14 * (s6 * s6 / (ri3 * ri3 * rc3 * rc3) - s6 / (ri3 * rc3));
           } else if (!opt_.tail) {
             const double qc = s614_[tp] / (rc2 * rc2 * rc2);
-            ev -= ff_.lj14 * 4 * e14 * (qc * qc - qc);
+            ev -= lj14 * 4 * e14 * (qc * qc - qc);
           }
         } else {
-          fr = lj(tp, dot(d, d), ff_.lj14, ev);
-          ev -= ff_.lj14 * lj_shift(tp);
+          fr = lj(tp, dot(d, d), lj14, ev);
+          ev -= lj14 * lj_shift(tp);
         }
         A[4] += ev;
         const Vec3 fj = d * fr;
@@ -1199,9 +1207,9 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
               const Vec3 d1 = mi(pos(D) - pos(h)), d2 = dDA + d1;
               HbOut o;
               if (!hb_one(it->second, d1, d2, o)) continue;
-              A[4] += ff_.lj14 * o.e;
-              add(D, o.fd * ff_.lj14); add(Aa, o.fa * ff_.lj14); add(h, o.fh * ff_.lj14);
-              V(d1, o.fd * ff_.lj14); V(d2, o.fa * ff_.lj14);
+              A[4] += lj14 * o.e;
+              add(D, o.fd * lj14); add(Aa, o.fa * lj14); add(h, o.fh * lj14);
+              V(d1, o.fd * lj14); V(d2, o.fa * lj14);
             }
           };
           if (!ff_.hbond.hyd[i].empty() && ff_.hbond.acceptor[j]) run(i, j, d);
