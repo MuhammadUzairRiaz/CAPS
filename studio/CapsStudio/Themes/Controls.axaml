@@ -603,6 +603,9 @@
   </Style>
 
   <!-- scroll bars, tooltips, progress -->
+  <!-- a disabled button still says what it is (why it is off is often the question) -->
+  <Style Selector="Button"><Setter Property="ToolTip.ShowOnDisabled" Value="True" /></Style>
+  <Style Selector="ToggleButton"><Setter Property="ToolTip.ShowOnDisabled" Value="True" /></Style>
   <Style Selector="ToolTip">
     <Setter Property="Background" Value="{DynamicResource Bg2B}" />
     <Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
