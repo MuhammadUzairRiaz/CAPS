@@ -234,17 +234,42 @@ public sealed partial class MainViewModel
     }
 
     /// <summary>The monitors as the overlay draws them, from the atoms' screen positions in this render.</summary>
+    /// <summary>The pinned monitors from the GPU view's camera fit (their atoms looked up one by one).</summary>
+    public List<MonitorMark> MonitorMarksFit(in CapsViewFit fit, double scaling)
+    {
+        var list = new List<MonitorMark>();
+        if (_doc == null || Monitors.Count == 0) return list;
+        RefreshMonitors();
+        var at = new Dictionary<int, (double X, double Y)>();
+        foreach (var a in Monitors.SelectMany(m => m.Atoms).Distinct())
+            if (AtomXyz(a) is { } p) { var q = ProjectFit(fit, p); at[a] = (q.X, q.Y); }
+        foreach (var m in Monitors)
+        {
+            if (m.Atoms.Any(a => !at.ContainsKey(a))) continue;
+            var xs = m.Atoms.Select(a => at[a].X / scaling).ToArray();
+            var ys = m.Atoms.Select(a => at[a].Y / scaling).ToArray();
+            if (m.Atoms.Length == 2) list.Add(new MonitorMark(xs[0], ys[0], xs[1], ys[1], true, m.Value));
+            else list.Add(new MonitorMark(xs.Average(), ys.Average(), 0, 0, false, $"{m.Kind} {m.Value}"));
+        }
+        return list;
+    }
+
     public List<MonitorMark> MonitorMarks(CapsCamera cam, CapsRenderOpts opt, double scaling)
     {
         var list = new List<MonitorMark>();
         if (_doc == null || Monitors.Count == 0) return list;
         RefreshMonitors();
-        var p = _doc.ProjectAtoms(cam, opt, (int)_doc.Summary().Atoms);
+        // only the monitors' atoms are projected (a pinned distance on a million-atom cell costs nothing per frame)
+        var n = (int)_doc.Summary().Atoms;
+        var ids = Monitors.SelectMany(m => m.Atoms).Where(a => a >= 0 && a < n).Distinct().ToArray();
+        var xy = _doc.ProjectIndices(cam, opt, ids);
+        var at = new Dictionary<int, (double X, double Y)>();
+        for (var k = 0; k < ids.Length; ++k) at[ids[k]] = (xy[2 * k], xy[2 * k + 1]);
         foreach (var m in Monitors)
         {
-            if (m.Atoms.Any(a => 3 * a + 2 >= p.Length)) continue;
-            var xs = m.Atoms.Select(a => p[3 * a] / scaling).ToArray();
-            var ys = m.Atoms.Select(a => p[3 * a + 1] / scaling).ToArray();
+            if (m.Atoms.Any(a => !at.ContainsKey(a))) continue;
+            var xs = m.Atoms.Select(a => at[a].X / scaling).ToArray();
+            var ys = m.Atoms.Select(a => at[a].Y / scaling).ToArray();
             if (m.Atoms.Length == 2) list.Add(new MonitorMark(xs[0], ys[0], xs[1], ys[1], true, m.Value));
             else list.Add(new MonitorMark(xs.Average(), ys.Average(), 0, 0, false, $"{m.Kind} {m.Value}"));
         }

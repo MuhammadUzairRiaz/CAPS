@@ -137,6 +137,9 @@ struct Renderer {
   // (the render's projection, styles, radii and hidden atoms; a thin atom is at least 3 px wide) — no image is drawn,
   // so a pick costs one pass over the atoms whatever the view's size. -1: none.
   static int pick_ray(const System& s, const Camera& cam, const RenderOptions& opt, double x, double y);
+  // Screen x, y (output pixels) of the listed atoms only, for this camera (the render's fit): overlays that follow a few
+  // atoms (the lens, pinned monitors) without projecting the whole structure. 2 floats per index.
+  static std::vector<float> project_some(const System& s, const Camera& cam, const RenderOptions& opt, const std::vector<int>& atoms);
   Image render(const System& s, const Camera& cam, const RenderOptions& opt);
   // For every atom: output-pixel x, y and 1 when the last render (same camera and options) shows it at its centre, else 0.
   std::vector<float> project(const System& s, const Camera& cam, const RenderOptions& opt) const;

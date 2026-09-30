@@ -1061,7 +1061,7 @@ public partial class MainWindow : Window
                 if (_cpuStale && !_busy)
                 {
                     if (_vm.AnyLabels) await RefreshPickBuffer();   // labels hide behind atoms by the id buffer
-                    else if (_haveLast) UpdateOverlays(_lastCam, _lastOpt);   // monitors and the lens need only the camera
+                    else if (_haveLast) UpdateOverlays(_lastCam, _lastOpt, _lastFit);   // monitors and the lens need only the camera
                 }
             };
         }
@@ -1118,12 +1118,14 @@ public partial class MainWindow : Window
     }
 
     /// <summary>Atom labels, the lens and pinned monitors over the view for this camera.</summary>
-    private void UpdateOverlays(CapsStudio.Interop.CapsCamera cam, CapsStudio.Interop.CapsRenderOpts opt)
+    private void UpdateOverlays(CapsStudio.Interop.CapsCamera cam, CapsStudio.Interop.CapsRenderOpts opt, CapsStudio.Interop.CapsViewFit? fit = null)
     {
         try { Labels.SetLabels(_vm.AnyLabels && !_vm.IsVisualize ? _vm.ViewLabels(cam, opt, _scaling) : new List<ViewModels.ViewLabel>(), _vm.LabelLook); }
         catch { Labels.SetLabels(new List<ViewModels.ViewLabel>()); }
-        Labels.SetLens(_vm.LensCircle(cam, opt, _scaling));
-        try { Labels.SetMonitors(_vm.MonitorMarks(cam, opt, _scaling)); } catch { Labels.SetMonitors(new List<ViewModels.MonitorMark>()); }
+        // the lens and monitors: from the GPU view's fit when there is one (no pass over the structure a frame)
+        Labels.SetLens(fit is { } f ? _vm.LensCircleFit(f, _scaling) : _vm.LensCircle(cam, opt, _scaling));
+        try { Labels.SetMonitors(fit is { } g ? _vm.MonitorMarksFit(g, _scaling) : _vm.MonitorMarks(cam, opt, _scaling)); }
+        catch { Labels.SetMonitors(new List<ViewModels.MonitorMark>()); }
     }
 
     private byte[] _frameBuf = [];
@@ -1186,7 +1188,8 @@ public partial class MainWindow : Window
                             _pixW = pw; _pixH = ph;
                             _lastCam = cam; _lastOpt = cpuOpt; _haveLast = true;
                             _cpuStale = true;
-                            UpdateOverlays(cam, cpuOpt);
+                            _lastFit = fit;
+                            UpdateOverlays(cam, cpuOpt, fit);
                             RestartIdle();
                         }
                         else if (_haveLast) { _cpuStale = true; ClearOverlays(); }   // picks and labels wait for the run to end
@@ -1237,7 +1240,7 @@ public partial class MainWindow : Window
                     catch { Labels.SetLabels(new List<ViewModels.ViewLabel>()); }
                     Labels.SetLens(_vm.LensCircle(cam, opt, _scaling));
                     try { Labels.SetMonitors(_vm.MonitorMarks(cam, opt, _scaling)); } catch { Labels.SetMonitors(new List<ViewModels.MonitorMark>()); }
-                    _lastCam = cam; _lastOpt = opt; _haveLast = true;
+                    _lastCam = cam; _lastOpt = opt; _haveLast = true; _lastFit = null;
                 }
                 _rendered = ticket;
             }
@@ -1396,6 +1399,7 @@ public partial class MainWindow : Window
     }
 
     private DispatcherTimer? _interactTimer;
+    private CapsStudio.Interop.CapsViewFit? _lastFit;   // the GPU view's last camera fit (overlays placed from it)
     /// <summary>The view is being turned, panned or zoomed: the GPU view may lighten its work on very large scenes until
     /// the motion stops (then one full-quality frame).</summary>
     private void Interacting()
