@@ -1556,7 +1556,17 @@ extern "C" int32_t caps_pack_convert(const char* text, int32_t to_caps, char* ou
     const std::string t = text ? text : "";
     std::string r;
     if (to_caps) r = caps::is_caps_pack_input(t) ? t : caps::packmol_to_caps_pack(t);
-    else r = caps::is_caps_pack_input(t) ? caps::caps_pack_to_packmol(t) : t;
+    else {   // for packmol itself: CAPS's own lines (a molecule's force field or water model) left as comments
+      r = caps::is_caps_pack_input(t) ? caps::caps_pack_to_packmol(t) : t;
+      std::istringstream in(r);
+      std::string out, line;
+      while (std::getline(in, line)) {
+        const auto p = line.find_first_not_of(" \t");
+        const std::string w = p == std::string::npos ? "" : line.substr(p, line.find_first_of(" \t", p) - p);
+        out += (w == "forcefield" || w == "water" || w == "compress" ? "# CAPS: " + line.substr(p) : line) + "\n";
+      }
+      r = out;
+    }
     return report_out(r, out, cap);
   } catch (const std::exception& e) {
     g_error = e.what();

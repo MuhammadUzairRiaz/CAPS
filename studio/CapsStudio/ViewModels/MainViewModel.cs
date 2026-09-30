@@ -42,6 +42,9 @@ public sealed record CriterionRow(string Title, string Rule, string Now, string 
 }
 public sealed record PackItem(string Name, string Detail, string Count, string Colour, string File, int Row = 0, int FfChoice = 0)
 {
+    /// <summary>The copies as a number (a fixed molecule: none to edit).</summary>
+    public decimal? CountValue => Count.StartsWith("× ", StringComparison.Ordinal) && int.TryParse(Count[2..], out var n) ? n : null;
+    public bool IsFixed => Count == "fixed";
     public Avalonia.Media.IBrush Brush => Avalonia.Media.Brush.Parse(Colour);
 }
 
