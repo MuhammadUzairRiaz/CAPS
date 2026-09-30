@@ -1,3 +1,4 @@
+using CapsStudio.ViewModels;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
@@ -23,6 +24,9 @@ public partial class PackPage : PageBase
     private void OnNew(object? s, RoutedEventArgs e) => Vm.NewPackInput();
     private void OnExample(object? s, RoutedEventArgs e) => Window?.PackExample();
     private async void OnAddMolecule(object? s, RoutedEventArgs e) { if (Window != null) await Window.PackAddAsync(); }
+    private async void OnAddFragment(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is FragmentItem f) await Vm.AddPackMolecule(f.Smiles, f.Name); }
+    private async void OnAddSmiles(object? s, RoutedEventArgs e) => await Vm.AddPackMolecule(Vm.PackSmiles);
+    private async void OnSmilesKey(object? s, Avalonia.Input.KeyEventArgs e) { if (e.Key == Avalonia.Input.Key.Enter) { e.Handled = true; await Vm.AddPackMolecule(Vm.PackSmiles); } }
     private async void OnOpenInput(object? s, RoutedEventArgs e) { if (Window != null) await Window.PackOpenAsync(); }
     private void OnExportEngines(object? s, RoutedEventArgs e) => Vm.PackExport();
     private void OnMinimise(object? s, RoutedEventArgs e) => Vm.SetModule(2);
