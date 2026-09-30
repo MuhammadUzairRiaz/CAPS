@@ -198,9 +198,11 @@ public sealed partial class MainViewModel
     private JsonObject RemoteRecipe(string kind, string stem)
     {
         var inv = CultureInfo.InvariantCulture;
-        var r = new JsonObject { ["recipe"] = 1, ["name"] = stem, ["build"] = new JsonObject { ["file"] = "structure.data" }, ["cutoff"] = _relaxCutoff, ["seed"] = _mdSeed };
+        var r = new JsonObject { ["recipe"] = 1, ["name"] = stem, ["build"] = new JsonObject { ["file"] = "structure.caps.data" }, ["cutoff"] = _relaxCutoff, ["seed"] = _mdSeed };
+        // the force field as assigned here, read whole on the host (groups, water models, every parameter kept); React
+        // changes the structure, so it types again from the library
         var ff = Field.Assigned && Field.FfIndex >= 0 && Field.FfIndex < Field.Library.Count ? Field.Library[Field.FfIndex].Id : "default";
-        r["type"] = new JsonObject { ["forcefield"] = ff };
+        r["type"] = Field.Assigned && kind != "React" ? new JsonObject { ["file"] = "structure.ff.json" } : new JsonObject { ["forcefield"] = ff };
         string[] th = ["bussi", "langevin", "nose-hoover"], ba = ["crescale", "berendsen", "mtk"], cons = ["none", "h-bonds", "all-bonds"], solver = ["shake", "lincs"];
         var common = new JsonObject
         {
@@ -282,11 +284,13 @@ public sealed partial class MainViewModel
             if (grow) File.WriteAllText(Path.Combine(local, recipeFile), growRecipe);
             else
             {
-                _doc!.Save(Path.Combine(local, "structure.data"));
+                _doc!.Save(Path.Combine(local, "structure.caps.data"));
                 File.WriteAllText(Path.Combine(local, recipeFile), RemoteRecipe(kind, stem).ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
             }
             if (!_relaxCoulomb && !grow) job.Add("Note: recipes always include Coulomb terms; the host's run has them although the page has them off");
-            await SendPrepared(job, h, id, grow ? new[] { recipeFile, "job.sh" } : new[] { "structure.data", recipeFile, "job.sh" }, recipeFile);
+            var files = grow ? new List<string> { recipeFile, "job.sh" } : new List<string> { "structure.caps.data", recipeFile, "job.sh" };
+            if (!grow && Field.Assigned && kind != "React") files.AddRange(SaveForceFieldForHost(local));
+            await SendPrepared(job, h, id, files.ToArray(), recipeFile);
             Status = $"{kind} sent to {h.Name} · {h.Scheduler} {job.Remote.JobId} · Jobs follows it";
             StartRemotePoll();
         }
@@ -302,6 +306,27 @@ public sealed partial class MainViewModel
         }
         SaveJobs();
         Raise(nameof(JobsSummary)); Raise(nameof(ComputeText));
+    }
+
+    /// <summary>The assigned force field written whole for a host (structure.ff.json), with a many-body potential's file
+    /// beside it (its path made local); the files to upload.</summary>
+    private List<string> SaveForceFieldForHost(string local)
+    {
+        var files = new List<string> { "structure.ff.json" };
+        var path = Path.Combine(local, "structure.ff.json");
+        _doc!.FieldSave(path);
+        var j = JsonNode.Parse(File.ReadAllText(path))!.AsObject();
+        if (j["manybody"] is JsonObject mb)
+            foreach (var key in new[] { "file", "file2" })
+                if ((string?)mb[key] is { Length: > 0 } f && File.Exists(f))
+                {
+                    var name = Path.GetFileName(f);
+                    File.Copy(f, Path.Combine(local, name), true);
+                    mb[key] = name;
+                    files.Add(name);
+                }
+        File.WriteAllText(path, j.ToJsonString());
+        return files;
     }
 
     /// <summary>The job folder prepared locally (the recipe, a structure) goes up to the host with job.sh and is submitted.</summary>
@@ -407,7 +432,8 @@ public sealed partial class MainViewModel
             await Tool("scp", ScpArgs(h, [$"{Target(h)}:{r.Dir}/*.log"], r.Local), 60000);
             var result = Path.Combine(outDir, r.Stem + ".data");
             j.Ended = DateTime.Now;
-            if (back.Code == 0 && File.Exists(result))
+            // a structure, or (a Glass replica: the scan runs on a copy) its properties
+            if (back.Code == 0 && (File.Exists(result) || File.Exists(Path.Combine(outDir, r.Stem + ".properties.json"))))
             {
                 j.Status = "done";
                 j.Progress = 1;
@@ -415,6 +441,7 @@ public sealed partial class MainViewModel
                 j.Add($"Finished on {r.Host}; {now.Count} file{(now.Count == 1 ? "" : "s")} brought back to {outDir}");
                 foreach (var f in later) j.Add($"{f.Name} ({f.Size}) left on {r.Host}: copy it back from the outputs, whole or every 10th / 100th frame");
                 RemoteOutputs(j);
+                if (r.Batch.Length > 0 && Jobs.Where(x => x.Remote?.Batch == r.Batch).All(x => !x.IsRunning)) CollectGlassReplicas(r.Batch);
             }
             else
             {
@@ -477,6 +504,8 @@ public sealed partial class MainViewModel
         var outDir = Path.Combine(r.Local, "out");
         var result = Path.Combine(outDir, r.Stem + ".data");
         if (File.Exists(result)) j.Outputs.Add(new JobOutput($"Result · {r.Stem}.data", "cube", () => Open(result)));
+        if (r.Batch.Length > 0 && File.Exists(Path.Combine(outDir, r.Stem + ".properties.json")))
+            j.Outputs.Add(new JobOutput("Glass transition · pool the replicas back", "chart", () => CollectGlassReplicas(r.Batch)));
         if (Directory.Exists(outDir))
             foreach (var t in Directory.GetFiles(outDir).Where(f => IsTrajectoryFile(f)).OrderBy(f => f))
             {

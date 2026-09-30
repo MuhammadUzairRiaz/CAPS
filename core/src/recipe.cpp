@@ -1,4 +1,6 @@
 #include "caps/recipe.hpp"
+#include "caps/ffio.hpp"
+#include "caps/properties.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -158,7 +160,8 @@ RecipeCheck check_recipe(const Json& r) {
           throw RecipeError(2, "build needs polymer, molecule, pack, file, crystal, surface, nano or solvate");
         }
       } else if (st == "type") {
-        info.summary = text(J, "forcefield", "default") + " · charges " + text(J, "charges", "auto");
+        if (J.has("file") && r.has("react")) throw RecipeError(2, "type: a force field file holds for the structure as it is; react changes it — give a library force field instead");
+        info.summary = J.has("file") ? "force field read whole from " + text(J, "file", "") : text(J, "forcefield", "default") + " · charges " + text(J, "charges", "auto");
       } else if (st == "grow") {
         info.summary = (J.has("box") ? "box " + g6(num(J, "box", 0)) + " Å" : "ρ " + g6(num(J, "density", 0.5)) + " g/cm³") + " · seed " + g6(num(J, "seed", 1)) +
                        " · best of " + g6(num(J, "trials", 120)) + " trials";
@@ -243,6 +246,23 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
   std::string borrowed;   // a library force field typed with its family's rules
   auto type_now = [&](System& sys) {
     const Json T = r.has("type") ? r["type"] : Json::object();
+    if (T.has("file")) {   // a force field written whole by CAPS (caps/ffio.hpp): used as it is, nothing typed again
+      const std::string fp = path_of(T["file"].str());
+      std::ifstream f(fp);
+      if (!f) throw RecipeError(2, "type: cannot open the force field file " + fp);
+      std::stringstream ss;
+      ss << f.rdbuf();
+      try {
+        auto F = std::make_shared<ForceField>(forcefield_from_json(ss.str()));
+        if (F->type_index.size() != sys.atoms.size())
+          throw RecipeError(2, "type: the force field file is for " + std::to_string(F->type_index.size()) + " atoms, the structure has " + std::to_string(sys.atoms.size()));
+        for (size_t i = 0; i < sys.atoms.size(); ++i) sys.atoms[i].charge = F->charge[i];
+        sys.has_charges = true;
+        ff = F;
+        ffname = F->name + " (read whole from " + std::filesystem::path(fp).filename().string() + ")";
+      } catch (const FieldError& e) { throw RecipeError(2, std::string("type: ") + e.what()); }
+      return;
+    }
     std::string name = text(T, "forcefield", "default");
     // library ids before the force fields got CAPS's own names ("opls2005-dlfield" is now "opls2005")
     if (name.size() > 8 && name.compare(name.size() - 8, 8, "-dlfield") == 0) name.resize(name.size() - 8);
@@ -997,6 +1017,17 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           co.t_step = num(T, "t_step", co.t_step);
           co.ps_per_step = num(T, "ps_per_step", co.ps_per_step);
           co.equilibrate_ps = num(T, "equilibrate_ps", co.equilibrate_ps);
+          // the rest of the Glass page's settings (a replica sent to another machine runs the same scan)
+          co.pressure = num(T, "pressure", co.pressure);
+          co.dt = num(T, "dt", co.dt);
+          co.tau_t = num(T, "tau_t", co.tau_t);
+          co.tau_p = num(T, "tau_p", co.tau_p);
+          co.average_from = num(T, "average_from", co.average_from);
+          if (T.has("barostat")) co.barostat = barostat_from_string(text(T, "barostat", "crescale"));
+          if (T.has("property")) co.property = text(T, "property", "volume") == "energy" ? 1 : 0;
+          if (T.has("fit")) co.fit = text(T, "fit", "hinge") == "ranges" ? 1 : 0;
+          co.glassy_max = num(T, "glassy_max", co.glassy_max);
+          co.rubbery_min = num(T, "rubbery_min", co.rubbery_min);
           co.seed = seed_of(T);
           co.new_velocities = true;
           const int steps = int(std::floor(std::fabs(co.t_start - co.t_end) / std::max(1e-9, co.t_step))) + 1;
@@ -1097,6 +1128,12 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
   res.field = ff;
   res.forcefield = ff ? ffname : "";
   res.manifest.generator = by;
+  if (!res.properties.empty() && !o.out_dir.empty()) {   // what was analysed, kept beside the other outputs (a remote run brings it back)
+    std::filesystem::create_directories(o.out_dir);
+    const std::string pf = (std::filesystem::path(o.out_dir) / (res.name + ".properties.json")).string();
+    std::ofstream f(pf);
+    if (f) { f << properties_json(res.properties) << "\n"; res.files.push_back(pf); }
+  }
   return res;
 }
 

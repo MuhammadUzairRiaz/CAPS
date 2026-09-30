@@ -418,11 +418,11 @@ void write_lammps_data(const System& s_in, const std::string& path) {
     c.a = {w[0], 0, 0}, c.b = {0, w[1], 0}, c.c = {0, 0, w[2]};
   }
   char buf[256];
-  std::snprintf(buf, sizeof buf, "%.6f %.6f xlo xhi\n%.6f %.6f ylo yhi\n%.6f %.6f zlo zhi\n", c.origin[0], c.origin[0] + c.a[0],
+  std::snprintf(buf, sizeof buf, "%.10f %.10f xlo xhi\n%.10f %.10f ylo yhi\n%.10f %.10f zlo zhi\n", c.origin[0], c.origin[0] + c.a[0],
                 c.origin[1], c.origin[1] + c.b[1], c.origin[2], c.origin[2] + c.c[2]);
   out << buf;
   if (std::fabs(c.b[0]) + std::fabs(c.c[0]) + std::fabs(c.c[1]) > 0) {
-    std::snprintf(buf, sizeof buf, "%.6f %.6f %.6f xy xz yz\n", c.b[0], c.c[0], c.c[1]);
+    std::snprintf(buf, sizeof buf, "%.10f %.10f %.10f xy xz yz\n", c.b[0], c.c[0], c.c[1]);
     out << buf;
   }
   out << "\nMasses\n\n";
@@ -441,7 +441,7 @@ void write_lammps_data(const System& s_in, const std::string& path) {
     int im[3] = {0, 0, 0};
     for (int k = 0; k < 3; ++k) im[k] = c.valid() && c.periodic[k] ? static_cast<int>(std::floor(f[k])) : 0;
     const Vec3 w = a.pos - (c.a * im[0] + c.b * im[1] + c.c * im[2]);
-    std::snprintf(buf, sizeof buf, "%lld %lld %d %.6f %.6f %.6f %.6f %d %d %d", static_cast<long long>(a.id), static_cast<long long>(a.mol), a.type,
+    std::snprintf(buf, sizeof buf, "%lld %lld %d %.8f %.10f %.10f %.10f %d %d %d", static_cast<long long>(a.id), static_cast<long long>(a.mol), a.type,
                   a.charge, w[0], w[1], w[2], im[0], im[1], im[2]);
     out << buf << residue_comment(a) << "\n";
   }

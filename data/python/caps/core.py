@@ -163,7 +163,7 @@ def _declare(L: C.CDLL) -> None:
         "caps_pack": ([S, S, I, P, P, B, I], P),
         "caps_set_held_molecule": ([P, C.c_int64], None), "caps_set_fixed_atoms": ([P, C.POINTER(C.c_int32), I], I),
         "caps_chi_md": ([C.c_char_p, P, P, B, I], I), "caps_chi_contacts": ([C.c_char_p, P, P, B, I], I),
-        "caps_open": ([S, S], P), "caps_water_models": ([B, I], I), "caps_open_frames": ([S, S, C.c_int64, C.c_int64, C.c_int64, I, P, P], P), "caps_close": ([P], None), "caps_import": ([S, S, S], P), "caps_provenance": ([P, B, I], I), "caps_provenance_file": ([S, B, I], I), "caps_provenance_compare": ([S, S, B, I], I), "caps_provenance_bibtex": ([S, B, I], I), "caps_methods_text": ([S, S, B, I], I), "caps_import_preview": ([S, S, B, I], I),
+        "caps_open": ([S, S], P), "caps_water_models": ([B, I], I), "caps_field_save": ([P, S], I), "caps_field_load": ([P, S], I), "caps_open_frames": ([S, S, C.c_int64, C.c_int64, C.c_int64, I, P, P], P), "caps_close": ([P], None), "caps_import": ([S, S, S], P), "caps_provenance": ([P, B, I], I), "caps_provenance_file": ([S, B, I], I), "caps_provenance_compare": ([S, S, B, I], I), "caps_provenance_bibtex": ([S, B, I], I), "caps_methods_text": ([S, S, B, I], I), "caps_import_preview": ([S, S, B, I], I),
         "caps_summary_get": ([P, C.POINTER(_Summary)], I), "caps_set_frame": ([P, C.c_int64], I),
         "caps_atom": ([P, I, C.POINTER(_Atom)], I), "caps_save": ([P, S], I), "caps_save_trajectory": ([P, S], I), "caps_gromacs": ([P, S, B, I], I), "caps_export_engines": ([P, S, S, B, I], I),
         "caps_export_png": ([P, C.POINTER(_Camera), C.POINTER(_RenderOpts), S], I),
@@ -236,6 +236,18 @@ def _report() -> C.Array:
 class _Field:
     def __init__(self, doc: "Document"):
         self._doc = doc
+
+    def save(self, path: str) -> None:
+        """The assigned force field written whole (every type, charge, term and setting, 17 digits): load() puts it back on
+        this structure exactly, and a recipe takes it as type: {file: PATH} — a remote run with the same parameters."""
+        if library().caps_field_save(self._doc._h, _enc(str(path))) < 0:
+            raise _error()
+
+    def load(self, path: str) -> dict:
+        """A force field saved by save() (or by the Studio for a remote job) on this structure, nothing typed again."""
+        if library().caps_field_load(self._doc._h, _enc(str(path))) < 0:
+            raise _error()
+        return self.report()
 
     def assign(self, forcefield: str = "uff", charges: str = "auto") -> dict:
         """Types every atom and looks up every parameter: a force-field id from the library (gaff2, opls2005 …), a path
