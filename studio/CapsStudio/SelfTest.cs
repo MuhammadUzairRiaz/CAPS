@@ -1249,6 +1249,32 @@ internal static class SelfTest
             vm.SetModule(8);
         }
 
+        // packing components each with their own types (as the blend's), the force field the Pack's: groups by type in the
+        // LAMMPS input, cross pairs by OPLS's own geometric rule, every number at six decimals
+        {
+            vm.Open(Path.Combine(dir, "ps_melt.data"));
+            vm.SetModule(5);
+            vm.PackStart = 1;
+            vm.NewPackInput();
+            vm.AddPackMolecule("O=C1OC(=O)C=C1", "MAH").GetAwaiter().GetResult();
+            vm.SetPackRowCount(vm.PackItems.Count - 1, 3);
+            vm.PackFfIndex = vm.Field.Library.ToList().FindIndex(e => e.Id == "opls2005");
+            vm.PackAssignField = true;
+            vm.RunPack().GetAwaiter().GetResult();
+            for (int k = 0; k < 400 && vm.Field.Working; ++k) Thread.Sleep(25);
+            var exDir = Path.Combine(outDir, "pack-groups");
+            Directory.CreateDirectory(exDir);
+            vm.ExportFieldLammps(Path.Combine(exDir, "packed.data")).GetAwaiter().GetResult();
+            var lin = File.Exists(Path.Combine(exDir, "packed.in")) ? File.ReadAllText(Path.Combine(exDir, "packed.in")) : "";
+            var groupLines = lin.Split('\n').Where(l => l.StartsWith("group ", StringComparison.Ordinal)).ToList();
+            var pairs = lin.Split('\n').Where(l => l.StartsWith("pair_coeff", StringComparison.Ordinal)).ToList();
+            var sixOk = pairs.Count > 0 && pairs.All(l => System.Text.RegularExpressions.Regex.IsMatch(l, @"^pair_coeff\s+\d+ \d+ \d+\.\d{6} \d+\.\d{6}\s"));
+            var grpOk = vm.Field.IsGrouped && groupLines.Count == 2 && groupLines.All(l => l.Contains(" type ", StringComparison.Ordinal)) && groupLines[1].Contains("MAH", StringComparison.Ordinal);
+            var mixOk = vm.Field.MixingRule.Contains("geometric", StringComparison.Ordinal) && !vm.Field.MixingRule.Contains("arithmetic", StringComparison.Ordinal);
+            Check(sixOk && grpOk && mixOk, $"packed components by group: [{sixOk} {grpOk} {mixOk}] {string.Join(" | ", groupLines)} · {vm.Field.MixingRule} · {pairs.FirstOrDefault()}");
+            vm.SetModule(8);
+        }
+
         // AMBER prmtop: opened with its restart beside it, its own force field assigned; another force field, then back
         {
             var amber = Path.GetFullPath(Path.Combine(dir, "..", "tests", "data", "amber", "phenol.prmtop"));

@@ -3183,7 +3183,7 @@ int32_t caps_field_assign_groups(caps_doc* d, const char* json) {
       pr.push_back({g.text("name", "group"), (g.has("potential") && g["potential"].is_object()
                                                    ? g["potential"].text("style", "") + " potential " + std::filesystem::path(g["potential"].text("file", "")).filename().string()
                                                    : std::filesystem::path(g.text("forcefield", "")).filename().string()) + " · molecules " + g.text("molecules", "")});
-    pr.push_back({"between groups", "ε " + G.text("eps_rule", "geometric") + ", σ " + G.text("sigma_rule", "arithmetic")});
+    pr.push_back({"between groups", "ε " + G.text("eps_rule", "auto") + ", σ " + G.text("sigma_rule", "auto")});
     if (G.text("scaling14", "own") == "first") pr.push_back({"1-4 scaling", "the first group's for all (asked)"});
     if (G.text("cross96", "refuse") == "rmin") pr.push_back({"9-6 sites in cross pairs", "12-6 with the same ε and r_min (asked)"});
     prov_step(d, "field.assign.groups", "force fields by group: " + d->field->ff->name, std::move(pr), "", {},
@@ -5325,7 +5325,15 @@ void field_run_groups(caps_doc* d) {
   // the report: the groups' joined
   caps::Json r = caps::Json::object();
   r["forcefield"] = M->name;
-  r["mixing"] = "by group · between groups ε " + (mo.sigma_rule == "sixthpower" ? std::string("and σ sixth-power") : mo.eps_rule + ", σ " + mo.sigma_rule);
+  // the rule actually used between groups (an "auto" rule resolved by the merge, said in its note)
+  std::string between = "ε " + (mo.sigma_rule == "sixthpower" ? std::string("and σ sixth-power") : mo.eps_rule + ", σ " + mo.sigma_rule);
+  for (const auto& nt : M->notes)
+    if (auto p = nt.find("cross type pairs by "); p != std::string::npos) {
+      between = nt.substr(p + 20);
+      if (auto q = between.find(", written out explicitly"); q != std::string::npos) between.erase(q, 24);
+      break;
+    }
+  r["mixing"] = "by group · within each group its own force field's rule · between groups " + between;
   r["version"] = std::string("");
   r["source"] = std::string("");
   r["file"] = F.ff_path;

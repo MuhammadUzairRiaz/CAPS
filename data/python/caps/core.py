@@ -285,7 +285,7 @@ class _Field:
         rep["complete"] = rc == 0
         return rep
 
-    def assign_groups(self, groups, eps_rule: str = "geometric", sigma_rule: str = "arithmetic", scaling14: str = "own",
+    def assign_groups(self, groups, eps_rule: str = "auto", sigma_rule: str = "auto", scaling14: str = "own",
                       cross96: str = "refuse", pairs: Optional[list] = None) -> dict:
         """A force field per group of molecules: groups = [{"name": "filler", "molecules": "1", "forcefield": "iff-cvff"},
         {"name": "matrix", "molecules": "rest", "forcefield": "gaff2", "charges": "auto"}]. A crystal group may instead take

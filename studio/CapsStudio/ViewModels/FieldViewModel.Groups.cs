@@ -95,8 +95,10 @@ public sealed partial class FieldViewModel
         catch { return "Give each element's library entry: Si=SiS C=C"; }
     }
     public static readonly string[] PotentialUnits = ["file: as it says", "file in eV (metal)", "file in kcal/mol (real)"];
-    public static readonly string[] EpsRules = ["geometric √(εᵢεⱼ)", "arithmetic (εᵢ+εⱼ)/2"];
-    public static readonly string[] SigmaRules = ["arithmetic (σᵢ+σⱼ)/2", "geometric √(σᵢσⱼ)", "sixth power (class II)"];
+    // 0: as the force fields mix (OPLS geometric, AMBER/GAFF/CHARMM Lorentz–Berthelot, class II sixth power; parts that mix
+    // differently: sixth power with a class II part, else Lorentz–Berthelot)
+    public static readonly string[] EpsRules = ["as the force fields mix", "geometric √(εᵢεⱼ)", "arithmetic (εᵢ+εⱼ)/2"];
+    public static readonly string[] SigmaRules = ["as the force fields mix", "arithmetic (σᵢ+σⱼ)/2", "geometric √(σᵢσⱼ)", "sixth power (class II)"];
     public static readonly string[] Scaling14Modes = ["each group's own (exact)", "the first group's for all", "refuse different scalings"];
     public static readonly string[] Cross96Modes = ["refuse 9-6 with 12-6", "12-6 with the 9-6 site's ε and r_min"];
 
@@ -143,7 +145,7 @@ public sealed partial class FieldViewModel
     private int _epsRule, _sigmaRule, _scaling14, _cross96;
     public int EpsRule { get => _epsRule; set => Set(ref _epsRule, value); }
     public int SigmaRule { get => _sigmaRule; set { if (Set(ref _sigmaRule, value)) Raise(nameof(EpsRuleEnabled)); } }
-    public bool EpsRuleEnabled => _sigmaRule != 2;   // the sixth-power rule sets ε too
+    public bool EpsRuleEnabled => _sigmaRule != 3;   // the sixth-power rule sets ε too
     public int Scaling14 { get => _scaling14; set => Set(ref _scaling14, value); }
     public int Cross96 { get => _cross96; set => Set(ref _cross96, value); }
     private string _pairsText = "";
@@ -162,8 +164,8 @@ public sealed partial class FieldViewModel
     /// unless another rule was chosen.</summary>
     internal void GroupForceFieldChosen(FfEntry? e)
     {
-        if (e != null && _sigmaRule == 0 && (e.Id.Contains("pcff", StringComparison.Ordinal) || e.Id.Contains("compass", StringComparison.Ordinal)))
-            SigmaRule = 2;
+        // "as the force fields mix" already takes a class II part's sixth-power rule; nothing to change here
+        _ = e;
     }
 
     public FieldGroupRow AddGroup(string name = "", string molecules = "rest", bool potential = false)
@@ -242,8 +244,8 @@ public sealed partial class FieldViewModel
         return (new JsonObject
         {
             ["groups"] = arr,
-            ["eps_rule"] = _epsRule == 1 ? "arithmetic" : "geometric",
-            ["sigma_rule"] = _sigmaRule switch { 1 => "geometric", 2 => "sixthpower", _ => "arithmetic" },
+            ["eps_rule"] = _epsRule switch { 1 => "geometric", 2 => "arithmetic", _ => "auto" },
+            ["sigma_rule"] = _sigmaRule switch { 1 => "arithmetic", 2 => "geometric", 3 => "sixthpower", _ => "auto" },
             ["scaling14"] = _scaling14 switch { 1 => "first", 2 => "refuse", _ => "own" },
             ["cross96"] = _cross96 == 1 ? "rmin" : "refuse",
             ["pairs"] = pairs,
