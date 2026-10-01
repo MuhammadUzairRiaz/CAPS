@@ -34,8 +34,10 @@ struct FFPart {
 struct CrossPair { std::string a, b; double eps = 0, sigma = 0; };   // merged type names (kcal/mol, Å)
 
 struct MergeOptions {
-  std::string eps_rule = "geometric";   // geometric | arithmetic
-  std::string sigma_rule = "arithmetic";   // arithmetic | geometric | sixthpower (ε then by the sixth-power rule too)
+  // auto: as the parts' force fields mix when they all mix alike (OPLS geometric ε and σ; AMBER/GAFF/CHARMM Lorentz–Berthelot;
+  // class II sixth power); parts that mix differently: sixth power with a class II part, else Lorentz–Berthelot
+  std::string eps_rule = "auto";     // auto | geometric | arithmetic
+  std::string sigma_rule = "auto";   // auto | arithmetic | geometric | sixthpower (ε then by the sixth-power rule too)
   std::string scaling14 = "own";        // own (each part's 1-4 pairs by its own scaling) | first | refuse
   std::string cross96 = "refuse";       // refuse | rmin
   std::vector<CrossPair> explicit_pairs;

@@ -291,31 +291,44 @@ public partial class MainViewModel
     }
 
     /// <summary>After packing: the groups by the rows' own force fields (null when no row has one).</summary>
+    /// <summary>The packed cell's components as groups (as the blend's): the structure packed around, then each molecule row,
+    /// in that order — each with its row's own force field or the Pack's, so every component has its own atom types and the
+    /// LAMMPS input names it (group NAME type …), the pairs between components by the force fields' own mixing rule.</summary>
     private string? PackGroupSpec(Interop.CapsDocument doc)
     {
         System.Text.Json.Nodes.JsonArray items;
         try { items = System.Text.Json.Nodes.JsonNode.Parse(doc.PackItemsJson())!.AsArray(); } catch { return null; }
-        var own = items.Where(i => ((string?)i!["forcefield"] ?? "").Length > 0 && ((string?)i["molecules"] ?? "").Length > 0).ToList();
-        if (own.Count == 0) return null;
+        var rows = items.Where(i => ((string?)i!["molecules"] ?? "").Length > 0).ToList();
+        if (rows.Count < 2 && !rows.Any(i => ((string?)i!["forcefield"] ?? "").Length > 0)) return null;   // one component: one force field
+        var idx = PackFfIndex;
+        var packFf = idx >= 0 && idx < Field.Library.Count ? Field.Library[idx].File : null;
         var groups = new System.Text.Json.Nodes.JsonArray();
         var charges = FieldViewModel.CoreChargesOf(_packCharges);
-        foreach (var i in own)
+        var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var i in rows)
         {
-            var ff = (string)i!["forcefield"]!;
-            var nm = Path.GetFileNameWithoutExtension(((string?)i["name"] ?? "group").Split('#')[0].Trim());   // water.mol2 → water
-            var g = new System.Text.Json.Nodes.JsonObject { ["name"] = nm.Length > 0 ? nm : "group", ["molecules"] = (string)i["molecules"]! };
+            var ff = (string?)i!["forcefield"] ?? "";
+            // the name: a row's comment (the structure packed around: "TITLE, kept where it is"), else its file's name
+            var raw = (string?)i["name"] ?? "group";
+            var hash = raw.IndexOf('#');
+            var nm = hash >= 0 && raw[(hash + 1)..].Trim() is { Length: > 0 } c ? c.Split(", kept")[0].Trim() : Path.GetFileNameWithoutExtension(raw.Trim());
+            if (nm.StartsWith("host_", StringComparison.Ordinal)) nm = _packHostTitle.Length > 0 ? _packHostTitle : "host";   // the structure packed around
+            if (nm.Length == 0) nm = "group";
+            var unique = nm;
+            for (var k = 2; !used.Add(unique); ++k) unique = $"{nm}_{k}";
+            var g = new System.Text.Json.Nodes.JsonObject { ["name"] = unique, ["molecules"] = (string)i["molecules"]! };
             if (ff.StartsWith("water:", StringComparison.Ordinal)) g["water"] = ff[6..];
             else
             {
-                var e = Field.Library.FirstOrDefault(x => x.Id.Equals(ff, StringComparison.OrdinalIgnoreCase));
-                g["forcefield"] = e?.File ?? ff;
+                var file = ff.Length > 0 ? Field.Library.FirstOrDefault(x => x.Id.Equals(ff, StringComparison.OrdinalIgnoreCase))?.File ?? ff : packFf;
+                if (file == null) return null;
+                g["forcefield"] = file;
                 g["charges"] = charges;
             }
             groups.Add(g);
         }
-        var idx = PackFfIndex;
-        if (idx >= 0 && idx < Field.Library.Count)
-            groups.Add(new System.Text.Json.Nodes.JsonObject { ["name"] = "rest", ["molecules"] = "rest", ["forcefield"] = Field.Library[idx].File, ["charges"] = charges });
+        if (packFf != null && rows.Count < items.Count)   // anything not in a row (should not happen): the Pack's force field
+            groups.Add(new System.Text.Json.Nodes.JsonObject { ["name"] = "rest", ["molecules"] = "rest", ["forcefield"] = packFf, ["charges"] = charges });
         return new System.Text.Json.Nodes.JsonObject { ["groups"] = groups }.ToJsonString();
     }
 

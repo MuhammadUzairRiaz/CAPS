@@ -21,8 +21,21 @@ std::string fmt(double x) {
 
 }  // namespace
 
-ForceField merge_forcefields(size_t natoms, const std::vector<FFPart>& parts, const MergeOptions& o, std::vector<std::string>* notes) {
+ForceField merge_forcefields(size_t natoms, const std::vector<FFPart>& parts, const MergeOptions& o_in, std::vector<std::string>* notes) {
   if (parts.empty()) throw FieldError("no parts to merge");
+  // the cross rule "auto": the parts' own rule when they agree
+  MergeOptions o = o_in;
+  std::string auto_note;
+  if (o.eps_rule == "auto" || o.sigma_rule == "auto") {
+    std::set<std::string> rules;
+    for (const auto& P : parts) if (P.ff) rules.insert(P.ff->mixing);
+    const std::string r = rules.size() == 1 ? *rules.begin() : rules.count("sixthpower") ? "sixthpower" : "arithmetic";
+    if (o.sigma_rule == "auto") o.sigma_rule = r == "geometric" ? "geometric" : r == "sixthpower" ? "sixthpower" : "arithmetic";
+    if (o.eps_rule == "auto") o.eps_rule = "geometric";   // ε geometric in all three (sixth power sets ε itself)
+    auto_note = rules.size() == 1 ? "the force fields' own mixing rule (" + r + ")"
+                                  : "the parts mix differently (" + [&] { std::string t; for (const auto& x : rules) t += (t.empty() ? "" : ", ") + x; return t; }() + "): " +
+                                        (r == "sixthpower" ? "the class II sixth-power rule" : "Lorentz–Berthelot");
+  }
   if (o.eps_rule != "geometric" && o.eps_rule != "arithmetic") throw FieldError("cross ε rule: geometric or arithmetic");
   if (o.sigma_rule != "arithmetic" && o.sigma_rule != "geometric" && o.sigma_rule != "sixthpower") throw FieldError("cross σ rule: arithmetic, geometric or sixthpower");
   std::vector<std::string> said;
@@ -241,7 +254,8 @@ ForceField merge_forcefields(size_t natoms, const std::vector<FFPart>& parts, co
   if (parts.size() > 1) {
     note(std::to_string(parts.size()) + " force fields by group; " + std::to_string(cross) + " cross type pairs by ε " +
          (o.sigma_rule == "sixthpower" ? std::string("and σ sixth-power") : o.eps_rule + ", σ " + o.sigma_rule) + " mixing" +
-         (given_used ? " (" + std::to_string(given_used) + " given explicitly)" : "") + ", written out explicitly");
+         (given_used ? " (" + std::to_string(given_used) + " given explicitly)" : "") + ", written out explicitly" +
+         (auto_note.empty() ? std::string() : " · " + auto_note));
     if (mixed_forms)
       note("9-6 and 12-6 parts: every pair with a 12-6 site is 4ε[(σ/r)¹² − (σ/r)⁶] (LAMMPS lj/sdk lj12_6 beside lj/class2); a 9-6 site enters a cross pair with its own ε and minimum r_min (σ₁₂ = r_min / 2^(1/6))");
   }

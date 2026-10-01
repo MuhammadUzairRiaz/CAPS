@@ -507,7 +507,7 @@ _d = _tf.mkdtemp()
 mx.export_engines(_d, stem="mx", run="check")
 _in = open(os.path.join(_d, "mx.in")).read()
 _top = "".join(open(os.path.join(_d, f)).read() for f in os.listdir(_d) if f.endswith((".top", ".itp")))
-check("pair lj/cut 1 special lj 0.0 0.0 0.5" in _in and "special coul 0.0 0.0 0.8333333333" in _in and re.search(r"^\s*\d+\s+\d+\s+2\s+0\.5 ", _top, re.M) is not None,
+check("pair lj/cut 1 special lj 0.0 0.0 0.500000" in _in and "special coul 0.0 0.0 0.833333" in _in and re.search(r"^\s*\d+\s+\d+\s+2\s+0\.5 ", _top, re.M) is not None,
       "own 1-4 scalings: LAMMPS per-part special weights, GROMACS function-2 pairs")
 # the assigned force field written whole and read back on the same structure: same energy, groups kept
 _ffp = os.path.join(_tf.mkdtemp(), "mx.ff.json")
