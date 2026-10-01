@@ -300,7 +300,7 @@ class _Field:
         need them held (LAMMPS evaluates the potential). Between groups the Lennard-Jones
         pairs follow eps_rule (geometric | arithmetic) and sigma_rule (arithmetic | geometric | sixthpower), or pairs =
         [{"a": type, "b": type, "eps": kcal/mol, "sigma": Å}]. Groups with different 1-4 scalings (GAFF beside OPLS-AA) keep each its own (scaling14="own"; "first" takes the first group's for all, "refuse" stops);
-        9-6 with 12-6 unless cross96="rmin" (the 9-6 sites keep ε and r_min)."""
+        9-6 with 12-6 unless cross96="rmin" (the 9-6 sites keep ε and r_min) or "area" (they keep r_min and take the 12-6 depth with the same ∫U r² dr to the cut-off)."""
         codes = {"forcefield": 0, "gasteiger": 1, "keep": 2, "qeq": 3, "auto": 4, "increments": 5}
         gs = []
         for g in groups:

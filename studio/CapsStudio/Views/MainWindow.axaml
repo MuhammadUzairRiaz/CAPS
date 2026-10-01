@@ -3086,8 +3086,8 @@
                 </StackPanel>
                 <StackPanel Spacing="3" Margin="0,0,10,6">
                   <TextBlock Text="9-6 with 12-6" Classes="dim" />
-                  <ComboBox Width="250" ItemsSource="{x:Static vm:FieldViewModel.Cross96Modes}" SelectedIndex="{Binding Field.Cross96}"
-                            ToolTip.Tip="A class II group (PCFF, COMPASS: Lennard-Jones 9-6) with a 12-6 group: the cross pairs need one form. 12-6 with the 9-6 site's own well depth and minimum, said in the notes" />
+                  <ComboBox Width="330" ItemsSource="{x:Static vm:FieldViewModel.Cross96Modes}" SelectedIndex="{Binding Field.Cross96}"
+                            ToolTip.Tip="A class II group (PCFF, COMPASS: Lennard-Jones 9-6) with a 12-6 group: the cross pairs need one form, 12-6. Same ε and r_min: the 9-6 site as it is. Refit: the 9-6 site keeps its minimum r_min and takes the 12-6 well depth whose ∫U(r) r² dr from r_min to the run cut-off equals its own (the attraction past the well that sets cohesion; closed form, said in the notes). The 9-6 pairs inside the class II group stay 9-6" />
                 </StackPanel>
                 <StackPanel Spacing="3" Margin="0,0,10,6">
                   <TextBlock Text="LAMMPS run units (the export)" Classes="dim" />
