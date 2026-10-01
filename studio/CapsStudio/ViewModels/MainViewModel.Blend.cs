@@ -28,6 +28,8 @@ public sealed class BlendRow : INotifyPropertyChanged
     /// <summary>The component's own force field (Field · by group after the build); the first entry: choose later.</summary>
     public FfEntry? ForceField { get => _ff; set { _ff = value; Raise(nameof(ForceField)); } }
     internal double Mass;   // g/mol of one chain
+    /// <summary>A chain made in the polymer builder (its units, sequence and shares), in place of a library entry's.</summary>
+    public JsonObject? Custom { get; set; }
 }
 
 /// <summary>Blend builder (design/boards/BlendBuilder): polymer blends such as NR/BR and SBR/BR tyre compounds, grown
@@ -39,14 +41,18 @@ public sealed partial class MainViewModel
     public List<LibraryEntry> BlendLibrary { get; private set; } = new();
     private static readonly string[] BlendDots = ["#F5A524", "#5B8DEF", "#E07A5F", "#9B7BD6", "#7DC884"];
 
+    private int _blendReturn = 13;
+    /// <summary>Cancel: back where the blend was opened from (the polymer builder), not out of the builders.</summary>
+    public void CancelBlend() => SetModule(_blendReturn is 16 or < 0 ? 13 : _blendReturn);
+
     public void OpenBlend()
     {
+        if (_module != 16) _blendReturn = _module == 8 ? 13 : _module;
         LoadPolymerLibrary();
-        if (BlendLibrary.Count == 0)
-        {
-            BlendLibrary = PolymerLibrary.Where(p => !p.Copolymer).ToList();
-            Raise(nameof(BlendLibrary));
-        }
+        // homopolymers, then copolymers (library and yours), then chains taken from the builder
+        var built = BlendLibrary.Where(e => e.Id.StartsWith("builder:", StringComparison.Ordinal)).ToList();
+        BlendLibrary = [.. PolymerLibrary.Where(p => !p.Copolymer), .. PolymerLibrary.Where(p => p.Copolymer && p.Preset != null), .. built];
+        Raise(nameof(BlendLibrary));
         if (BlendRows.Count == 0)
         {
             AddBlendRow(BlendLibrary.FirstOrDefault(p => p.Name.Contains("natural rubber", StringComparison.OrdinalIgnoreCase)), 70);
@@ -113,12 +119,54 @@ public sealed partial class MainViewModel
     public bool BlendBuilding { get => _blendBuilding; private set { if (Set(ref _blendBuilding, value)) Raise(nameof(BlendIdle)); } }
     public bool BlendIdle => !_blendBuilding;
 
-    private static string SpecOf(LibraryEntry p, int dp) => new JsonObject
+    private readonly Dictionary<string, JsonObject> _builtChains = new();
+
+    /// <summary>A component's chain for the core: a repeat unit as a homopolymer; a copolymer from its preset (units,
+    /// sequence, unit shares, blocks, pattern), as the polymer builder reads it; a chain made in the builder as made.</summary>
+    private string SpecOf(LibraryEntry p, int dp)
     {
-        ["units"] = new JsonArray(new JsonObject { ["name"] = p.Name, ["smiles"] = p.Smiles }),
-        ["sequence"] = "homopolymer",
-        ["dp"] = dp,
-    }.ToJsonString();
+        if (_builtChains.TryGetValue(p.Id, out var made))
+        {
+            var o = (JsonObject)made.DeepClone();
+            o["dp"] = dp;
+            return o.ToJsonString();
+        }
+        if (!p.Copolymer || p.Preset == null)
+            return new JsonObject
+            {
+                ["units"] = new JsonArray(new JsonObject { ["name"] = p.Name, ["smiles"] = p.Smiles }),
+                ["sequence"] = "homopolymer",
+                ["dp"] = dp,
+            }.ToJsonString();
+        var pr = p.Preset;
+        var ids = (pr["units"] as JsonArray ?? []).Select(x => (string?)x ?? "").ToList();
+        var names = (pr["unit_names"] as JsonArray)?.Select(x => (string?)x ?? "").ToList();
+        var units = new JsonArray();
+        for (var k = 0; k < ids.Count; ++k)
+        {
+            var (nm, smi) = _libById.TryGetValue(ids[k], out var lp) ? ((string?)lp["name"] ?? ids[k], (string?)lp["smiles"] ?? "") : (names != null && k < names.Count ? names[k] : ids[k], ids[k]);
+            units.Add(new JsonObject { ["name"] = nm, ["smiles"] = smi });
+        }
+        var spec = new JsonObject { ["units"] = units, ["sequence"] = (string?)pr["sequence"] ?? "random", ["dp"] = dp };
+        foreach (var key in new[] { "weights", "blocks", "pattern" }) if (pr[key] is { } v) spec[key] = v.DeepClone();
+        return spec.ToJsonString();
+    }
+
+    /// <summary>The polymer builder's chain as it stands (your own units, sequence and shares) becomes a blend component.</summary>
+    public void AddBuilderChainToBlend()
+    {
+        if (PolyUnits.Count == 0 || PolyUnits.Any(u => u.Smiles.Trim().Length == 0)) { BlendError = "Make the chain in the polymer builder first (its repeat units and sequence)"; return; }
+        var spec = JsonNode.Parse(PolySpecJson(20))!.AsObject();
+        spec.Remove("dp");
+        var name = (PolyName is { Length: > 0 } n ? n : string.Join("-", PolyUnits.Select(u => u.Name))) + " (builder)";
+        var id = $"builder:{_builtChains.Count + 1}";
+        _builtChains[id] = spec;
+        var entry = new LibraryEntry(id, name, PolyUnits[0].Smiles, false, PolyUnits.Count > 1, null, true);
+        BlendLibrary = [.. BlendLibrary, entry];
+        Raise(nameof(BlendLibrary));
+        if (BlendRows.Count >= 5) { BlendError = "A blend takes up to five components: remove one to add the builder's chain"; return; }
+        AddBlendRow(entry, 30);
+    }
 
     /// <summary>Chain counts from the weight shares and each chain's mass, the first component setting the scale.</summary>
     private void BlendRecount()
