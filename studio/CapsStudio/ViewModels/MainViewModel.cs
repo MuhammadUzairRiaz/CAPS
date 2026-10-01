@@ -163,6 +163,7 @@ public sealed partial class MainViewModel : ObservableObject
                 AppLayers.Clear(); _appColour = -1; _appSurface = 0; _labelTexts = null;
                 NamedSets.Clear(); _selCount = 0; Raise(nameof(SelectedCount)); Raise(nameof(SelectedChip)); Dyads.Clear();
                 QueueSelBar();   // the bar, and the hidden / ghosted counts, of the new document
+                PackDocumentChanged();   // Packing's last result belongs to the structure it made
                 if (_visionPreview != 0) try { value?.SetVision(_visionPreview); } catch { /* an older core */ }
                 foreach (var n in new[] { nameof(AppColour), nameof(AppSurface), nameof(AppHasSurface), nameof(AppChip), nameof(ShowAppLegend) }) Raise(n);
                 RaiseAppearanceVisibility();
@@ -2212,6 +2213,11 @@ public sealed partial class MainViewModel : ObservableObject
             if (presetText == null && PackSeedChoice.Fresh) text = WithSeedLine(text, _packSeed = PackSeedChoice.Take());
         }
         catch (Exception e) { PackLog = "Could not pack.\n" + e.Message; Status = "Could not pack — see the Pack panel"; return; }
+        // packing again from the last packed cell: the new cell replaces it (the same host, or the cell itself was open)
+        var replaces = presetText == null && _packResult != null && (ReferenceEquals(_doc, _packResult) || (_packRunHost != null && ReferenceEquals(_packRunHost, _packHost)))
+            ? _packResult : null;
+        var runHost = _packRunHost;
+        var runHostTitle = runHost == null ? "" : ReferenceEquals(runHost, _doc) ? Title.Replace(" (unsaved)", "") : _packHostTitle;
         // the macro line, from the input as it is before packing (the packed cell becomes the open structure)
         var packScript = Recording && presetText == null ? PackPython() : null;
         PackDone = false;
@@ -2255,14 +2261,25 @@ public sealed partial class MainViewModel : ObservableObject
                 return !token.IsCancellationRequested;
             }, "packed"));
             var s = doc.Summary();
-            Show(doc, $"packed_{s.Molecules}_molecules (unsaved)");
+            _packResult = doc;
+            _packHost = runHost;
+            _packHostTitle = runHostTitle;
+            var baseName = runHost != null && runHostTitle.Length > 0 ? runHostTitle + " + packed" : $"packed_{s.Molecules}_molecules";
+            Show(doc, $"{baseName} (unsaved)");
+            if (replaces != null && !ReferenceEquals(replaces, doc) && ProjectItems.FirstOrDefault(i => ReferenceEquals(i.Doc, replaces)) is { } oldItem)
+            {
+                ProjectItems.Remove(oldItem);   // the earlier packing: replaced, not kept beside the new one
+                if (!replaces.LongRunning) replaces.Dispose();
+                RaiseProject();
+            }
             GrownUnsaved = true;
             Packing = false;
             PackLog = report;
             PackBad = 0;
             var m = System.Text.RegularExpressions.Regex.Match(report, @"smallest distance between molecules ([0-9.]+) Å");
             if (m.Success) PackDmin = m.Groups[1].Value + " Å";
-            Status = $"Packed {s.Molecules:N0} molecules ({s.Atoms:N0} atoms) · export it to LAMMPS or GROMACS, or minimise / run dynamics first";
+            Status = $"Packed {s.Molecules:N0} molecules ({s.Atoms:N0} atoms){(replaces != null ? " · the earlier packed cell replaced" : "")} · export it to LAMMPS or GROMACS, or minimise / run dynamics first";
+            Raise(nameof(PackStartNote));
             MarkPipeline("Pack");
             if (packScript != null) RecordScript(packScript);
             packed = true;
