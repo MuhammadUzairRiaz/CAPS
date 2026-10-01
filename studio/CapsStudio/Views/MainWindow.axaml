@@ -3130,6 +3130,12 @@
               </StackPanel>
             </Border>
           </StackPanel>
+          <!-- the rule unlike Lennard-Jones pairs follow, as written in every engine file -->
+          <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,-4,0,12" IsVisible="{Binding Field.Assigned}">
+            <TextBlock Text="Unlike pairs:" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding Field.MixingRule}" FontSize="11.5" TextWrapping="Wrap" MaxWidth="1100" VerticalAlignment="Center"
+                       ToolTip.Tip="Within a force field: its own rule (OPLS geometric ε and σ; AMBER, GAFF, CHARMM Lorentz–Berthelot; PCFF, COMPASS sixth power). Between groups with different force fields: their common rule, else the class II sixth-power rule when a class II force field is in, else Lorentz–Berthelot; a rule chosen under Force fields by group wins. Every pair is written out explicitly in the LAMMPS input" />
+          </StackPanel>
           </StackPanel>
 
           <!-- body -->

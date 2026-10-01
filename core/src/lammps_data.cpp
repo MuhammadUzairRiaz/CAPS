@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <unordered_map>
 #include <fstream>
 #include <map>
 #include <set>
@@ -26,13 +27,52 @@ namespace {
 
 constexpr double R2D = 57.29577951308232;
 
+// A coefficient as the force-field tools write them: six fixed decimals ("0.044497", "3.500000"), so the same force
+// field reads the same in every file, engine and design tool. A nonzero value under 0.001 (an ε in eV for metal units)
+// keeps six significant digits instead, which six decimals would cut to three.
+void fmt_coef(char* b, size_t n, double x) {
+  if (x != 0 && std::fabs(x) < 1e-3) std::snprintf(b, n, " %.6e", x);
+  else std::snprintf(b, n, " %.6f", x == 0 ? 0.0 : x);   // no "-0.000000"
+}
+
+// The rule unlike pairs were mixed by, for the input's comment: a force field's own, or (by group) each group's own
+// inside it and the rule between groups the merge chose
+std::string mixing_said(const ForceField& ff) {
+  for (const auto& nt : ff.notes)
+    if (auto p = nt.find("cross type pairs by "); p != std::string::npos) {
+      std::string between = nt.substr(p + 20);
+      if (auto q = between.find(", written out explicitly"); q != std::string::npos) between.erase(q, 24);
+      return "each group's own rule inside it, between groups " + between;
+    }
+  return ff.mixing + " mixing";
+}
+
 std::string num(std::initializer_list<double> v) {
   std::string r;
   char b[40];
   for (double x : v) {
-    std::snprintf(b, sizeof b, " %.10g", x);
+    fmt_coef(b, sizeof b, x);
     r += b;
   }
+  return r;
+}
+
+// Charges at six decimals, each molecule's total kept: the rounding left over goes onto its atom of largest |q| (so a
+// neutral molecule stays neutral to 1e-6 e and the cell to the same, as PPPM needs)
+std::vector<double> charges_six_decimals(const std::vector<double>& q, const std::vector<int64_t>& mol) {
+  std::vector<double> r(q.size());
+  std::unordered_map<int64_t, std::pair<double, size_t>> left;   // molecule → (exact − rounded, atom of largest |q|)
+  for (size_t i = 0; i < q.size(); ++i) {
+    r[i] = std::round(q[i] * 1e6) / 1e6;
+    auto [it, fresh] = left.try_emplace(mol[i], 0.0, i);
+    it->second.first += q[i] - r[i];
+    if (std::fabs(q[i]) > std::fabs(q[it->second.second])) it->second.second = i;
+  }
+  for (const auto& [m, v] : left) {
+    const double fix = std::round(v.first * 1e6) / 1e6;
+    if (fix != 0) r[v.second] = std::round((r[v.second] + fix) * 1e6) / 1e6;
+  }
+  for (auto& x : r) if (x == 0) x = 0.0;
   return r;
 }
 
@@ -514,7 +554,7 @@ std::string fmt_accuracy(double x) {
 // the lower type index first, the flag i or j naming the donor, the hydrogen type, ε σ n.
 std::string hbond_style(const ForceField& ff) {
   char b[160];
-  std::snprintf(b, sizeof b, "hbond/dreiding/lj %d %.6g %.6g %.6g", ff.hbond.power, ff.hbond.inner, ff.hbond.outer, ff.hbond.angle_deg);
+  std::snprintf(b, sizeof b, "hbond/dreiding/lj %d %.6f %.6f %.6f", ff.hbond.power, ff.hbond.inner, ff.hbond.outer, ff.hbond.angle_deg);
   return b;
 }
 std::vector<std::string> hbond_lines(const ForceField& ff) {
@@ -522,7 +562,7 @@ std::vector<std::string> hbond_lines(const ForceField& ff) {
   char b[240];
   for (const auto& [key, p] : ff.hbond.param) {
     const int d = key.first, a = key.second, h = ff.hbond.htype.at(key);
-    std::snprintf(b, sizeof b, "%d %d hbond/dreiding/lj %d %s %.10g %.10g %d  # donor %s, acceptor %s, hydrogen %s", std::min(d, a) + 1,
+    std::snprintf(b, sizeof b, "%d %d hbond/dreiding/lj %d %s %.6f %.6f %d  # donor %s, acceptor %s, hydrogen %s", std::min(d, a) + 1,
                   std::max(d, a) + 1, h + 1, d <= a ? "i" : "j", p[0], p[1], int(p[2]), ff.type_names[size_t(d)].c_str(),
                   ff.type_names[size_t(a)].c_str(), ff.type_names[size_t(h)].c_str());
     r.push_back(b);
@@ -556,7 +596,7 @@ std::vector<std::string> style_lines(const Layout& L, const ForceField& ff, cons
       else if (!e.tail) r.push_back("pair_modify shift yes");
     }
     if (ff.dielectric != 1) {
-      std::snprintf(b, sizeof b, "dielectric %.10g", ff.dielectric);
+      std::snprintf(b, sizeof b, "dielectric %.6f", ff.dielectric);
       r.push_back(b);
     }
     for (const Kind* k : {&L.bonds, &L.angles, &L.dihedrals, &L.impropers}) {
@@ -581,31 +621,31 @@ std::vector<std::string> style_lines(const Layout& L, const ForceField& ff, cons
   }
   if (L.gromacs) {   // MARTINI: the GROMACS switch for LJ (and Coulomb), inner and outer radii
     if (e.coulomb && ff.coul_gromacs)
-      std::snprintf(b, sizeof b, "pair_style lj/gromacs/coul/gromacs %.6g %.6g %.6g %.6g", ff.lj_inner, e.cutoff, std::max(ff.coul_inner, 1e-6), e.cutoff);
+      std::snprintf(b, sizeof b, "pair_style lj/gromacs/coul/gromacs %.6f %.6f %.6f %.6f", ff.lj_inner, e.cutoff, std::max(ff.coul_inner, 1e-6), e.cutoff);
     else if (e.coulomb) throw FieldError("lj/gromacs needs the GROMACS Coulomb form");
-    else std::snprintf(b, sizeof b, "pair_style lj/gromacs %.6g %.6g", ff.lj_inner, e.cutoff);
+    else std::snprintf(b, sizeof b, "pair_style lj/gromacs %.6f %.6f", ff.lj_inner, e.cutoff);
     r.push_back(b);
   } else if (L.cs_buck) {   // a shell model (CORESHELL): Buckingham with its Coulomb, stable for a core on its shell
-    if (e.coulomb && pme(e, L)) std::snprintf(b, sizeof b, "pair_style buck/coul/long/cs %.6g", e.cutoff);
-    else std::snprintf(b, sizeof b, "pair_style born/coul/dsf/cs %.6g %.6g", e.dsf_alpha, e.cutoff);
+    if (e.coulomb && pme(e, L)) std::snprintf(b, sizeof b, "pair_style buck/coul/long/cs %.6f", e.cutoff);
+    else std::snprintf(b, sizeof b, "pair_style born/coul/dsf/cs %.6f %.6f", e.dsf_alpha, e.cutoff);
     r.push_back(b);
   } else if (!L.pair_hybrid) {
-    if (e.coulomb && pme(e, L)) std::snprintf(b, sizeof b, "pair_style lj/cut/coul/long %.6g", e.cutoff);
-    else if (e.coulomb) std::snprintf(b, sizeof b, "pair_style lj/cut/coul/dsf %.6g %.6g", e.dsf_alpha, e.cutoff);
-    else std::snprintf(b, sizeof b, "pair_style lj/cut %.6g", e.cutoff);
+    if (e.coulomb && pme(e, L)) std::snprintf(b, sizeof b, "pair_style lj/cut/coul/long %.6f", e.cutoff);
+    else if (e.coulomb) std::snprintf(b, sizeof b, "pair_style lj/cut/coul/dsf %.6f %.6f", e.dsf_alpha, e.cutoff);
+    else std::snprintf(b, sizeof b, "pair_style lj/cut %.6f", e.cutoff);
     r.push_back(b);
   } else {
     std::string p = "pair_style hybrid/overlay";
     if (L.hbond) p += " " + hbond_style(ff);
     for (const auto& st : L.pair_styles) {
-      std::snprintf(b, sizeof b, " %s %.6g", st.c_str(), e.cutoff);
+      std::snprintf(b, sizeof b, " %s %.6f", st.c_str(), e.cutoff);
       p += b;
     }
     if (e.coulomb && pme(e, L)) {
-      std::snprintf(b, sizeof b, L.coreshell ? " coul/long/cs %.6g" : " coul/long %.6g", e.cutoff);
+      std::snprintf(b, sizeof b, L.coreshell ? " coul/long/cs %.6f" : " coul/long %.6f", e.cutoff);
       p += b;
     } else if (e.coulomb) {
-      std::snprintf(b, sizeof b, " coul/dsf %.6g %.6g", e.dsf_alpha, e.cutoff);
+      std::snprintf(b, sizeof b, " coul/dsf %.6f %.6f", e.dsf_alpha, e.cutoff);
       p += b;
     }
     if (!L.sw_types.empty()) p += " sw";
@@ -626,7 +666,7 @@ std::vector<std::string> style_lines(const Layout& L, const ForceField& ff, cons
     if (L.pair_styles.size() > 1) throw FieldError("SDK pairs with other Lennard-Jones pairs and tail corrections have no LAMMPS form (lj/sdk has no tail)");
   } else if (L.periodic) r.push_back("pair_modify tail yes");
   if (ff.dielectric != 1) {
-    std::snprintf(b, sizeof b, "dielectric %.10g", ff.dielectric);
+    std::snprintf(b, sizeof b, "dielectric %.6f", ff.dielectric);
     r.push_back(b);
   }
   for (const Kind* k : {&L.bonds, &L.angles, &L.dihedrals, &L.impropers}) {
@@ -638,7 +678,7 @@ std::vector<std::string> style_lines(const Layout& L, const ForceField& ff, cons
   if (L.native)   // the force field's own form of the line (MARTINI: lj 0.0 1.0 1.0)
     std::snprintf(b, sizeof b, "special_bonds lj 0.0 %s %.6f coul 0.0 %s %.6f", ff.keep13 ? "1.0" : "0.0", ff.lj14, ff.keep13 ? "1.0" : "0.0", ff.coul14);
   else
-    std::snprintf(b, sizeof b, "special_bonds lj 0 %d %.10g coul 0 %d %.10g", ff.keep13 ? 1 : 0, ff.lj14, ff.keep13 ? 1 : 0, ff.coul14);
+    std::snprintf(b, sizeof b, "special_bonds lj 0 %d %.6f coul 0 %d %.6f", ff.keep13 ? 1 : 0, ff.lj14, ff.keep13 ? 1 : 0, ff.coul14);
   r.push_back(b);
   if (e.coulomb && pme(e, L)) {
     // CAPS's PME with its own β; LAMMPS's Ewald sum to the same accuracy reaches the same total electrostatics
@@ -1056,11 +1096,11 @@ void write_lammps_data_ff(const System& s, const ForceField& ff0, const EnergyOp
     }
     a = {w[0], 0, 0}, b = {0, w[1], 0}, cc = {0, 0, w[2]};
   }
-  std::snprintf(buf, sizeof buf, "%.8f %.8f xlo xhi\n%.8f %.8f ylo yhi\n%.8f %.8f zlo zhi\n", lo[0], lo[0] + a[0], lo[1], lo[1] + b[1], lo[2],
+  std::snprintf(buf, sizeof buf, "%.6f %.6f xlo xhi\n%.6f %.6f ylo yhi\n%.6f %.6f zlo zhi\n", lo[0], lo[0] + a[0], lo[1], lo[1] + b[1], lo[2],
                 lo[2] + cc[2]);
   out << buf;
   if (std::fabs(b[0]) + std::fabs(cc[0]) + std::fabs(cc[1]) > 0) {
-    std::snprintf(buf, sizeof buf, "%.8f %.8f %.8f xy xz yz\n", b[0], cc[0], cc[1]);
+    std::snprintf(buf, sizeof buf, "%.6f %.6f %.6f xy xz yz\n", b[0], cc[0], cc[1]);
     out << buf;
   }
   out << "\nMasses\n\n";
@@ -1096,14 +1136,17 @@ void write_lammps_data_ff(const System& s, const ForceField& ff0, const EnergyOp
   // molecule ids: the file's own, else the bonded fragments (a PDB's chain ids are not molecules)
   std::vector<int> frag;
   if (!s.has_mol) frag = s.molecules();
+  std::vector<int64_t> molid(na);
+  for (size_t i = 0; i < na; ++i) molid[i] = s.has_mol ? s.atoms[i].mol : int64_t(frag[i]) + 1;
+  const std::vector<double> q6 = charges_six_decimals(ff.charge, molid);
   for (size_t i = 0; i < na; ++i) {
     const auto& at = s.atoms[i];
     const Vec3 fr = c.valid() ? c.to_fractional(at.pos) : Vec3{0, 0, 0};
     int im[3] = {0, 0, 0};
     for (int k = 0; k < 3; ++k) im[k] = c.valid() && c.periodic[k] ? int(std::floor(fr[k])) : 0;
     const Vec3 w = at.pos - (c.a * im[0] + c.b * im[1] + c.c * im[2]);
-    std::snprintf(buf, sizeof buf, "%zu %lld %d %.8f %.10f %.10f %.10f %d %d %d", i + 1, static_cast<long long>(s.has_mol ? at.mol : int64_t(frag[i]) + 1), ff.type_index[i] + 1,
-                  ff.charge[i], w[0], w[1], w[2], im[0], im[1], im[2]);
+    std::snprintf(buf, sizeof buf, "%zu %lld %d %.6f %.6f %.6f %.6f %d %d %d", i + 1, static_cast<long long>(molid[i]), ff.type_index[i] + 1,
+                  q6[i], w[0], w[1], w[2], im[0], im[1], im[2]);
     out << buf << residue_comment(at) << "\n";
   }
   if (s.velocities.size() == s.atoms.size()) {
@@ -1361,12 +1404,12 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
     const bool haveq = e.coulomb;
     std::string coul, cargs;
     char cb[96];
-    if (haveq && pme(e, L) && st.tip4p_qdist > 0) { coul = "tip4p/long"; cargs = tip4p_args; std::snprintf(cb, sizeof cb, " %.6g", e.cutoff); cargs += cb; }   // four-site water: the M sites placed in every part's Coulomb
-    else if (haveq && pme(e, L)) { coul = "coul/long"; std::snprintf(cb, sizeof cb, "%.6g", e.cutoff); cargs = cb; }
+    if (haveq && pme(e, L) && st.tip4p_qdist > 0) { coul = "tip4p/long"; cargs = tip4p_args; std::snprintf(cb, sizeof cb, " %.6f", e.cutoff); cargs += cb; }   // four-site water: the M sites placed in every part's Coulomb
+    else if (haveq && pme(e, L)) { coul = "coul/long"; std::snprintf(cb, sizeof cb, "%.6f", e.cutoff); cargs = cb; }
     else if (haveq && st.tip4p_qdist > 0) throw FieldError("four-site water in LAMMPS needs long-range electrostatics (PPPM / PME)");
-    else if (haveq) { coul = "coul/dsf"; std::snprintf(cb, sizeof cb, "%.6g %.6g", e.dsf_alpha, e.cutoff); cargs = cb; }
+    else if (haveq) { coul = "coul/dsf"; std::snprintf(cb, sizeof cb, "%.6f %.6f", e.dsf_alpha, e.cutoff); cargs = cb; }
     const size_t P = ff.part14.size();
-    std::snprintf(cb, sizeof cb, "%.6g", e.cutoff);
+    std::snprintf(cb, sizeof cb, "%.6f", e.cutoff);
     std::string ps = "pair_style hybrid/overlay";
     for (size_t k = 0; k < P; ++k) ps += " " + lj + " " + cb;
     if (!coul.empty()) for (size_t k = 0; k < P; ++k) ps += " " + coul + " " + cargs;
@@ -1375,10 +1418,10 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
       if (l.rfind("pair_style", 0) == 0) {
         st2.push_back(ps);
         for (size_t k = 0; k < P; ++k) {
-          std::snprintf(b, sizeof b, "pair_modify pair %s %zu special lj 0.0 0.0 %.10g", lj.c_str(), k + 1, ff.part14[k][0]);
+          std::snprintf(b, sizeof b, "pair_modify pair %s %zu special lj 0.0 0.0 %.6f", lj.c_str(), k + 1, ff.part14[k][0]);
           st2.push_back(b);
           if (!coul.empty()) {
-            std::snprintf(b, sizeof b, "pair_modify pair %s %zu special coul 0.0 0.0 %.10g", coul.c_str(), k + 1, ff.part14[k][1]);
+            std::snprintf(b, sizeof b, "pair_modify pair %s %zu special coul 0.0 0.0 %.6f", coul.c_str(), k + 1, ff.part14[k][1]);
             st2.push_back(b);
           }
         }
@@ -1408,10 +1451,10 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
   out << "\nread_data       " << data_path << "\n";
   for (const auto& l : kspace) out << aligned(l) << "\n";
   if (!own14.empty()) {
-    out << "\n# pair coefficients: every type pair in its part's sub-style (1-4 scaling of that part), " << ff.mixing << " mixing applied by CAPS\n";
+    out << "\n# pair coefficients: every type pair in its part's sub-style (1-4 scaling of that part), " << mixing_said(ff) << ", applied by CAPS\n";
     for (const auto& l : own14) out << "pair_coeff      " << l << "\n";
   } else if (pair_coeffs) {
-    out << "\n# pair coefficients: every type pair, " << ff.mixing << " mixing applied by CAPS (nothing left to LAMMPS's mixing)\n";
+    out << "\n# pair coefficients: every type pair, " << mixing_said(ff) << ", applied by CAPS (nothing left to LAMMPS's mixing)\n";
     for (const auto& l : pair_lines(L, ff)) out << "pair_coeff      " << l << "\n";
   }
   if (L.hbond) {

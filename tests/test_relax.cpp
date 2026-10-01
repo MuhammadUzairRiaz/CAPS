@@ -298,14 +298,14 @@ TEST(LammpsData, MixedClassesBecomeHybridStylesWithSkipLines) {
   const std::string all((std::istreambuf_iterator<char>(f)), {});
   EXPECT_EQ(all.find("PairIJ Coeffs"), std::string::npos);
   EXPECT_NE(all.find("\nBondBond Coeffs\n\n1 skip"), std::string::npos);   // the harmonic angle type
-  EXPECT_NE(all.find("2 class2 1 1.5 1.5"), std::string::npos);
+  EXPECT_NE(all.find("2 class2 1.000000 1.500000 1.500000"), std::string::npos);
   EXPECT_EQ(all.find("BondBond13"), std::string::npos);                    // no class II dihedrals
   std::ifstream g(in);
   const std::string script((std::istreambuf_iterator<char>(g)), {});
   EXPECT_NE(script.find("angle_style     hybrid harmonic class2"), std::string::npos);
   EXPECT_NE(script.find("bond_style      class2"), std::string::npos);
   EXPECT_NE(script.find("read_data       caps_mixed.data"), std::string::npos);
-  EXPECT_NE(script.find("special_bonds   lj 0 0 0.5"), std::string::npos);
+  EXPECT_NE(script.find("special_bonds   lj 0 0 0.500000"), std::string::npos);
   EXPECT_NE(script.find("pair_coeff      1 1 "), std::string::npos);
   EXPECT_NE(script.find("run 0"), std::string::npos);   // the default run section: a single-point check
   // a protocol instead: minimisation then NPT, the final structure written
