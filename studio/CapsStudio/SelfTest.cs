@@ -1208,6 +1208,35 @@ internal static class SelfTest
             Check(enrOk && builderOk && cancelOk, $"blend with copolymers: [{enrOk} {builderOk} {cancelOk}] {vm.Title} · {oxygen} O · {vm.BlendError}");
         }
 
+        // Packing around a structure, then again with another count: it starts from the structure packed around (not the packed
+        // cell) and the new cell replaces the last; another structure opened clears the last result
+        {
+            vm.Open(Path.Combine(dir, "ps_melt.data"));
+            var host = vm.Document!;
+            var hostAtoms = (int)host.Summary().Atoms;
+            vm.SetModule(5);
+            vm.PackStart = 1;
+            vm.NewPackInput();
+            vm.AddPackMolecule("O=C1OC(=O)C=C1", "maleic anhydride").GetAwaiter().GetResult();
+            var row = vm.PackItems.Count - 1;
+            vm.SetPackRowCount(row, 4);
+            vm.PackAssignField = false;
+            vm.RunPack().GetAwaiter().GetResult();
+            var first = vm.Document!;
+            var firstOk = vm.PackDone && first.Summary().Atoms == hostAtoms + 4 * 9 && vm.PackRepacking && vm.PackStartNote.StartsWith("Packing again", StringComparison.Ordinal);
+            var itemsBefore = vm.ProjectItems.Count;
+            vm.SetPackRowCount(row, 7);
+            vm.RunPack().GetAwaiter().GetResult();
+            var second = vm.Document!;
+            var againOk = second.Summary().Atoms == hostAtoms + 7 * 9 && vm.ProjectItems.Count == itemsBefore && first.IsDisposed
+                          && vm.ProjectItems.Any(i => ReferenceEquals(i.Doc, host));
+            // another structure: the page starts fresh
+            vm.Open(Path.Combine(dir, "ps_melt.data"));
+            var freshOk = !vm.PackDone && vm.PackDmin == "—" && !vm.PackRepacking;
+            Check(firstOk && againOk && freshOk, $"pack again replaces the last packing: [{firstOk} {againOk} {freshOk}] {first.IsDisposed} · {second.Summary().Atoms} atoms · {vm.ProjectItems.Count} items · {vm.PackLog.Split('\n')[0]}");
+            vm.SetModule(8);
+        }
+
         // AMBER prmtop: opened with its restart beside it, its own force field assigned; another force field, then back
         {
             var amber = Path.GetFullPath(Path.Combine(dir, "..", "tests", "data", "amber", "phenol.prmtop"));

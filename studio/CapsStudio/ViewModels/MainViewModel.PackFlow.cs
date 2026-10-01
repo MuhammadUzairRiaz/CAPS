@@ -21,11 +21,11 @@ public partial class MainViewModel
         {
             var v = value == 1 && !PackCanUseCurrent ? 0 : Math.Clamp(value, 0, 1);
             if (!Set(ref _packStart, v)) return;
-            if (v == 1 && _doc != null)
+            if (v == 1 && PackHostDoc() is { } host)
             {
                 // the box is the structure's cell: new structure blocks go inside it
-                var s = _doc.Summary();
-                PackXD = (decimal)s.CellA; PackYD = (decimal)s.CellB; PackZD = (decimal)s.CellC;
+                var s = host.Summary();
+                SetPackBox(s.CellA, s.CellB, s.CellC);
             }
             Raise(nameof(PackStartNote));
             Raise(nameof(PackIntoCurrent));
@@ -42,9 +42,49 @@ public partial class MainViewModel
         }
     }
     public string PackStartNote => _packStart == 1 && _doc != null
-        ? string.Format(CultureInfo.InvariantCulture, "{0} stays where it is; the molecules below fill the free space of its {1:0.#} × {2:0.#} × {3:0.#} Å cell (periodic)",
-            Title.Replace(" (unsaved)", ""), _packX, _packY, _packZ)
+        ? PackRepacking
+            ? string.Format(CultureInfo.InvariantCulture, "Packing again starts from {0} (as before the last packing) and replaces the packed cell: change the molecules or counts below, then Pack",
+                _packHostTitle)
+            : string.Format(CultureInfo.InvariantCulture, "{0} stays where it is; the molecules below fill the free space of its {1:0.#} × {2:0.#} × {3:0.#} Å cell (periodic)",
+                Title.Replace(" (unsaved)", ""), _packX, _packY, _packZ)
         : "The molecules below are packed into the box of the input";
+
+    // ---- packing again: the structure packed around is remembered, and the new packed cell replaces the last one
+    private CapsStudio.Interop.CapsDocument? _packHost, _packResult, _packRunHost;
+    private string _packHostTitle = "";
+    /// <summary>The packed cell is open and its host still is: Pack starts from the host again.</summary>
+    public bool PackRepacking => _packResult != null && ReferenceEquals(_doc, _packResult) && _packHost is { IsDisposed: false };
+    /// <summary>What Pack packs around: the open structure, or (the last packed cell open) the structure it was packed around.</summary>
+    private CapsStudio.Interop.CapsDocument? PackHostDoc() => PackRepacking ? _packHost : _doc;
+
+    /// <summary>The box (and the molecule blocks that filled the old box) follow a new cell.</summary>
+    private void SetPackBox(double a, double b, double c)
+    {
+        var inv = CultureInfo.InvariantCulture;
+        var old = string.Format(inv, "{0:0.###} {1:0.###} {2:0.###}", _packX, _packY, _packZ);
+        PackXD = (decimal)a; PackYD = (decimal)b; PackZD = (decimal)c;
+        var now = string.Format(inv, "{0:0.###} {1:0.###} {2:0.###}", _packX, _packY, _packZ);
+        if (old != now && _packText.Contains(old, StringComparison.Ordinal))
+            PackText = _packText.Replace("to " + old, "to " + now).Replace("0. 0. 0. " + old, "0. 0. 0. " + now);
+    }
+
+    /// <summary>Another structure is open: the last run's result (banner, guarantee, convergence, log) is not its, so the
+    /// page starts fresh for it; packed around a structure, the box follows its cell. The packed cell itself keeps them.</summary>
+    private void PackDocumentChanged()
+    {
+        if (_doc != null && ReferenceEquals(_doc, _packResult)) { Raise(nameof(PackStartNote)); return; }
+        PackDone = false;
+        PackCurve.Clear();
+        PackCurveChanged?.Invoke();
+        PackLoop = 0; PackBad = 0; PackDmin = "—";
+        PackLog = "Add molecules (or open an input: CAPS or packmol syntax), then Pack.";
+        if (_packStart == 1)
+        {
+            if (!PackCanUseCurrent) PackStart = 0;
+            else if (_doc != null) { var s = _doc.Summary(); SetPackBox(s.CellA, s.CellB, s.CellC); }
+        }
+        Raise(nameof(PackStartNote));
+    }
 
     // ---- the Pack's own force field (Grow keeps its own too)
     private int _packFf = -1, _packCharges;
@@ -74,13 +114,18 @@ public partial class MainViewModel
     }
     private string PackTextToRunCore()
     {
+        _packRunHost = null;
         if (_packStart != 1 || _doc == null) return _packText;
-        if (!PackCanUseCurrent) throw new InvalidOperationException("the current structure has no orthorhombic cell to pack into");
+        var hostDoc = PackHostDoc()!;
+        var hs = hostDoc.Summary();
+        if (hs.CellValid == 0 || Math.Abs(hs.Volume - hs.CellA * hs.CellB * hs.CellC) > 1e-6 * hs.Volume)
+            throw new InvalidOperationException("the current structure has no orthorhombic cell to pack into");
+        _packRunHost = hostDoc;
         var dir = Path.Combine(Path.GetTempPath(), "caps-pack");
         Directory.CreateDirectory(dir);
         var host = Path.Combine(dir, "host_" + Environment.ProcessId + ".data");
-        _doc.Save(host);
-        var s = _doc.Summary();
+        hostDoc.Save(host);
+        var s = hs;
         var inv = CultureInfo.InvariantCulture;
         var caps = IsCapsPack(_packText);
         var cell = caps ? string.Format(inv, "cell      {0:0.####} {1:0.####} {2:0.####}", s.CellA, s.CellB, s.CellC)
@@ -88,7 +133,7 @@ public partial class MainViewModel
         var lines = _packText.Split('\n').Where(l => !l.TrimStart().StartsWith(caps ? "cell " : "pbc ", StringComparison.OrdinalIgnoreCase)).ToList();
         var first = lines.FindIndex(l => l.TrimStart().StartsWith(caps ? "molecule " : "structure ", StringComparison.OrdinalIgnoreCase));
         if (first < 0) first = lines.Count;
-        var title = Title.Replace(" (unsaved)", "");
+        var title = ReferenceEquals(hostDoc, _doc) ? Title.Replace(" (unsaved)", "") : _packHostTitle;
         lines.Insert(first, caps ? $"{cell}\n\nmolecule  {host}   # {title}, kept where it is\n  count   1\n  fixed   at 0 0 0\nend\n"
                                  : $"{cell}\n\nstructure {host}   # {title}, kept where it is\n  number 1\n  fixed 0. 0. 0. 0. 0. 0.\nend structure\n");
         return string.Join('\n', lines);
@@ -289,24 +334,38 @@ public partial class MainViewModel
     {
         smiles = smiles.Trim();
         if (smiles.Length == 0) { Status = "Type a SMILES (S1SSSSSSS1 for sulfur S8) or pick a molecule"; return; }
-        name = string.IsNullOrWhiteSpace(name) ? smiles : name!;
-        var safe = System.Text.RegularExpressions.Regex.Replace(new string(name.Select(c => char.IsLetterOrDigit(c) || c is '-' or '_' ? c : '_').ToArray()), "_+", "_").Trim('_');
-        if (safe.Length == 0) safe = "molecule";
-        if (safe.Length > 40) safe = safe[..40];
+        // a readable name: the library's for the same SMILES, else (after building) the formula — never the SMILES mangled
+        if (string.IsNullOrWhiteSpace(name)) name = Fragments.FirstOrDefault(f => f.Smiles == smiles)?.Name;
         var dir = PackMoleculeFolder;
         Directory.CreateDirectory(dir);
-        var path = Path.Combine(dir, safe + ".mol2");
         try
         {
-            var atoms = await Task.Run(() =>
+            var tmp = Path.Combine(dir, $"_building_{Environment.ProcessId}.mol2");
+            var (atoms, formula) = await Task.Run(() =>
             {
-                var (doc, _) = Interop.CapsDocument.BuildSmiles(smiles, "uff", 1, 1, name);
-                using (doc) { doc.Save(path); return doc.Summary().Atoms; }
+                var (doc, _) = Interop.CapsDocument.BuildSmiles(smiles, "uff", 1, 1, name ?? smiles);
+                using (doc)
+                {
+                    doc.Save(tmp);
+                    var n = (int)doc.Summary().Atoms;
+                    var el = new SortedDictionary<string, int>(StringComparer.Ordinal);
+                    for (var i = 0; i < n; ++i) { var e = doc.Atom(i).ElementSymbol; el[e] = el.GetValueOrDefault(e) + 1; }
+                    string Part(string e) => el.TryGetValue(e, out var c) ? e + (c > 1 ? c.ToString(CultureInfo.InvariantCulture) : "") : "";
+                    var f = el.ContainsKey("C") ? Part("C") + Part("H") + string.Concat(el.Keys.Where(k => k is not ("C" or "H")).Select(Part))
+                                                : string.Concat(el.Keys.Select(Part));   // Hill order
+                    return (n, f);
+                }
             });
+            name = string.IsNullOrWhiteSpace(name) ? formula : name!;
+            var safe = System.Text.RegularExpressions.Regex.Replace(new string(name.Select(c => char.IsLetterOrDigit(c) || c is '-' or '_' ? c : '_').ToArray()), "_+", "_").Trim('_');
+            if (safe.Length == 0) safe = "molecule";
+            if (safe.Length > 40) safe = safe[..40];
+            var path = Path.Combine(dir, safe + ".mol2");
+            File.Move(tmp, path, true);
             AddPackStructure(path);
-            Status = $"{name}: built from its SMILES ({atoms} atoms) and added — set its count and region below";
+            Status = $"{name} ({formula}): built from {smiles} ({atoms} atoms) and added — set its count and region below";
         }
-        catch (Exception e) { Status = $"Could not build {name}: {e.Message}"; }
+        catch (Exception e) { Status = $"Could not build {name ?? smiles}: {e.Message}"; }
     }
 
     /// <summary>Pack › Export: the packed cell to LAMMPS or GROMACS (the Export center, with its checks).</summary>
