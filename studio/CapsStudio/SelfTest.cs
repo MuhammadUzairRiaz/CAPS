@@ -1178,6 +1178,35 @@ internal static class SelfTest
         Check(counted == 5 && sameDensity.Contains("vol %") && vm.BlendRows[0].ChainsText.Contains("33.") && vm.BlendRows[1].ChainsText.Contains("66."),
               $"blend by chain count: {counted} chains · by volume: '{sameDensity}' then '{vm.BlendRows[0].ChainsText}' / '{vm.BlendRows[1].ChainsText}'");
         vm.BlendMode = 0;
+        // copolymer components: NR with ENR-50 from the library (its preset: isoprene and epoxidised units, 50 : 50), and the
+        // chain made in the polymer builder; each chain carries its own units. Cancel goes back to the polymer builder.
+        {
+            vm.LoadPolymerLibrary();
+            vm.SetModule(13);
+            vm.OpenBlend();
+            var enrEntry = vm.BlendLibrary.FirstOrDefault(e => e.Copolymer && e.Name.StartsWith("ENR-50", StringComparison.Ordinal));
+            vm.BlendRows[1].Polymer = enrEntry;
+            vm.BlendChains = 3;
+            foreach (var r in vm.BlendRows) r.Dp = 10;
+            vm.BuildBlend().GetAwaiter().GetResult();
+            var enrDoc = vm.Document;
+            var oxygen = 0;
+            if (enrDoc != null) for (var i = 0; i < (int)enrDoc.Summary().Atoms; ++i) if (enrDoc.Atom(i).ElementSymbol == "O") ++oxygen;
+            var enrOk = enrEntry != null && vm.BlendError.Length == 0 && enrDoc != null && oxygen > 0 && vm.Title.Contains("ENR-50", StringComparison.Ordinal);
+            // the builder's chain (an alternating A-B copolymer made there) as a third component
+            vm.LoadPolymerLibrary();
+            vm.SetModule(13);
+            vm.OpenBlend();
+            var rowsBefore = vm.BlendRows.Count;
+            vm.AddBuilderChainToBlend();
+            var builderOk = vm.BlendRows.Count == rowsBefore + 1 && vm.BlendRows[^1].Polymer?.Id.StartsWith("builder:", StringComparison.Ordinal) == true && vm.BlendRows[^1].ChainsText.Length > 0;
+            vm.RemoveBlendRow(vm.BlendRows[^1]);
+            vm.CancelBlend();
+            var cancelOk = vm.IsPolymer;
+            vm.BlendRows[1].Polymer = vm.BlendLibrary.FirstOrDefault(p => p.Name.StartsWith("Cis-1,4-Polybutadiene", StringComparison.OrdinalIgnoreCase));
+            vm.SetModule(8);
+            Check(enrOk && builderOk && cancelOk, $"blend with copolymers: [{enrOk} {builderOk} {cancelOk}] {vm.Title} · {oxygen} O · {vm.BlendError}");
+        }
 
         // AMBER prmtop: opened with its restart beside it, its own force field assigned; another force field, then back
         {
