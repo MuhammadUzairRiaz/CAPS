@@ -398,14 +398,24 @@ public partial class MainWindow : Window
     private void PlaceViewport()
     {
         Decorator? slot = _vm.IsGrow ? GrowPageView.Slot : _vm.IsPack ? PackPageView.Slot : null;
+        // the view goes to the page that shows it (Grow, Pack) or home; first out of wherever it is now (straight from
+        // Grow to Pack it is in Grow's slot, not at home)
+        void Detach()
+        {
+            switch (ViewHost.Parent)
+            {
+                case Decorator d: d.Child = null; break;
+                case Panel p: p.Children.Remove(ViewHost); break;
+            }
+        }
         if (slot != null && ViewHost.Parent != slot)
         {
-            _viewHome.Children.Remove(ViewHost);
+            Detach();
             slot.Child = ViewHost;
         }
-        else if (slot == null && ViewHost.Parent is Decorator d)
+        else if (slot == null && ViewHost.Parent != _viewHome)
         {
-            d.Child = null;
+            Detach();
             _viewHome.Children.Add(ViewHost);
         }
         RequestRender();

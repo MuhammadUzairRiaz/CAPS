@@ -18,6 +18,15 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            // an error in the interface is written down and reported, not the end of the session (the user's structures stay)
+            Avalonia.Threading.Dispatcher.UIThread.UnhandledException += (_, e) =>
+            {
+                var where = CrashLog.Write(e.Exception);
+                e.Handled = true;
+                if (_main is MainWindow mw) mw.ViewModel.Status = $"Something went wrong ({e.Exception.GetType().Name}: {e.Exception.Message}) · CAPS kept running · details in {where}";
+            };
+            AppDomain.CurrentDomain.UnhandledException += (_, e) => { if (e.ExceptionObject is Exception x) CrashLog.Write(x); };
+            TaskScheduler.UnobservedTaskException += (_, e) => { CrashLog.Write(e.Exception); e.SetObserved(); };
             var w = new MainWindow();
             desktop.MainWindow = w;
             _main = w;
@@ -25,5 +34,24 @@ public partial class App : Application
             if (args.Length > 0) w.OpenOnStart(args[0], args.Length > 1 ? args[1] : null);
         }
         base.OnFrameworkInitializationCompleted();
+    }
+}
+
+/// <summary>Errors CAPS could not handle, with their stack, in the user's application data (macOS ~/Library/Application
+/// Support/CAPS/logs, Windows %LOCALAPPDATA%\CAPS\logs, Linux ~/.local/share/CAPS/logs): crash.log, the newest last.</summary>
+public static class CrashLog
+{
+    public static string Write(Exception x)
+    {
+        try
+        {
+            var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CAPS", "logs");
+            Directory.CreateDirectory(dir);
+            var path = Path.Combine(dir, "crash.log");
+            if (File.Exists(path) && new FileInfo(path).Length > 2_000_000) File.Delete(path);
+            File.AppendAllText(path, $"---- {DateTime.Now:yyyy-MM-dd HH:mm:ss} · CAPS {typeof(CrashLog).Assembly.GetName().Version}\n{x}\n\n");
+            return path;
+        }
+        catch { return "(no log: the folder is not writable)"; }
     }
 }
