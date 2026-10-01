@@ -85,6 +85,17 @@ std::vector<Match> find_matches(const System& s, const ReactionTemplate& t, int 
                                 const std::function<bool(uint32_t, uint32_t)>& allow = {}, double capture = 0);
 // Number of distinct reactive groups (matches of the template's site atoms) in the structure, for conversion.
 int count_sites(const System& s, const ReactionTemplate& t);
+// The distinct reactive groups themselves (each the sorted atoms matching the template's site atoms).
+std::vector<std::vector<uint32_t>> site_groups(const System& s, const ReactionTemplate& t);
+
+// The reactive sites of each chain for a set of templates (the chains as a run takes them: molecules of 30 atoms or more
+// and a fifth of the largest): chain id (molecule, from 1) → sites, its repeat units (residues) and its mass (g/mol).
+struct ChainSites {
+  int64_t chain = 0;
+  int sites = 0, units = 0, atoms = 0;
+  double mass = 0;
+};
+std::vector<ChainSites> chain_sites(const System& s, const std::vector<ReactionTemplate>& templates);
 
 // Apply non-overlapping matches (each atom reacts at most once per call). Deleted atoms are removed and the
 // indices compacted; molecules are recomputed from bonds. Returns the number applied.
@@ -155,6 +166,9 @@ struct ReactOptions {
   // from; empty (or another atom count): the molecules of the structure as it is now
   std::vector<int64_t> chains;
   bool keep_byproducts = false; // byproduct atoms kept as molecules (else removed)
+  // at most this many of each chain's reactive sites react (a template's site atoms on that chain; 0: no limit) — e.g. 2 of
+  // the 5 epoxides of a 10-unit ENR-50 chain; a site reacting in the template's step on a small molecule is not counted
+  int sites_per_chain = 0;
   // several templates: 0 closest pairs first whatever the template (by distance); 1 by relative weights (weights[k], else
   // the template's weight) — each pick chooses a template in proportion to its weight, then its closest free pair
   int selection = 0;

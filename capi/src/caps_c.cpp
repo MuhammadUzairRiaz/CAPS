@@ -2870,6 +2870,31 @@ int32_t caps_bond_react_import(const char* pre, const char* post, const char* ma
   });
 }
 
+int32_t caps_react_sites(caps_doc* d, const char* templates_text, char* json, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  guard([&] {
+    const auto ts = caps::parse_templates(templates_text ? templates_text : "");
+    const auto cs = caps::chain_sites(d->frame, ts);
+    caps::Json a = caps::Json::array();
+    int total = 0, units = 0;
+    double mass = 0;
+    for (const auto& c : cs) {
+      caps::Json x = caps::Json::object();
+      x["chain"] = double(c.chain), x["sites"] = double(c.sites), x["units"] = double(c.units), x["atoms"] = double(c.atoms), x["mass"] = c.mass;
+      a.push_back(x);
+      total += c.sites, units += c.units, mass += c.mass;
+    }
+    r["chains"] = a;
+    r["chains_n"] = double(cs.size());
+    r["total_sites"] = double(total);
+    r["units"] = double(units);
+    r["mass"] = mass;
+    r["repeat_unit_mass"] = units > 0 ? mass / units : 0.0;
+    return 0;
+  });
+  return report_out(r.dump(0), json, cap);
+}
+
 int32_t caps_react(caps_doc* d, const char* templates, const caps_react_opts* o, caps_react_progress_fn progress, void* user, char* report,
                    int32_t cap) {
   return guard([&] {
@@ -2903,6 +2928,7 @@ int32_t caps_react(caps_doc* d, const char* templates, const caps_react_opts* o,
     if (o->target_kind < 0 || o->target_kind > 5) throw std::invalid_argument("target_kind: 0 conversion … 4 Mc, 5 degree of crosslinking %");
     r.target = caps::ReactTarget(o->target_kind);
     r.target_value = o->target_value;
+    r.sites_per_chain = std::max(0, o->sites_per_chain);
     // the user's force field for every state of the network (a complete assignment is needed from the start)
     const bool use_field = o->field_mode == 0 && d->field;
     if (use_field) {

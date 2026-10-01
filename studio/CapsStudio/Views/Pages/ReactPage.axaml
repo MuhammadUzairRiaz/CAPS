@@ -43,7 +43,24 @@
                 </DockPanel>
               </Border>
               <StackPanel Margin="16,12,16,16" Spacing="10">
-                <ComboBox ItemsSource="{x:Static vm:MainViewModel.ReactionSets}" SelectedIndex="{Binding RxSet}" HorizontalAlignment="Stretch" />
+                <!-- the reaction: a category (CAPS's cures first, then the library's classes), then the reaction by its short name -->
+                <Grid ColumnDefinitions="2*,3*" ColumnSpacing="6">
+                  <ComboBox ItemsSource="{Binding RxLibCategories}" SelectedIndex="{Binding RxLibCategory}" HorizontalAlignment="Stretch"
+                            ToolTip.Tip="Cures and crosslinks, or a class of the reaction library (atom-mapped SMILES schemes)" />
+                  <ComboBox Grid.Column="1" ItemsSource="{Binding RxLibItems}" SelectedItem="{Binding RxLibSelected}" HorizontalAlignment="Stretch"
+                            PlaceholderText="Choose a reaction">
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate x:DataType="vm:RxLibEntry"><TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" /></DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                </Grid>
+                <TextBlock Text="{Binding RxChoiceNote}" Classes="dim" TextWrapping="Wrap" />
+                <StackPanel Spacing="3" IsVisible="{Binding RxChoiceHasScheme}">
+                  <TextBlock Text="{Binding RxLibSelected.Scheme}" Classes="mono" FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource MutedB}" />
+                  <TextBlock Text="{Binding RxLibSelected.Roles}" Classes="dim" FontSize="11" TextWrapping="Wrap" />
+                </StackPanel>
+                <Button Classes="small" HorizontalAlignment="Left" Content="Add to the reactions" Click="OnLibAdd" IsEnabled="{Binding RxLibHasSelection}"
+                        ToolTip.Tip="Run the chosen reaction together with those already in the text (ENR–MAH–ENR with ENR–PBS …)" />
                 <!-- sulfur donors: H–Sx–H, x fixed or spread, dosed in phr (the cure then makes C–Sx–C bridges) -->
                 <Border Classes="inset" IsVisible="{Binding RxShowInsert}">
                   <StackPanel Spacing="6">
@@ -69,31 +86,6 @@
                   <Button Grid.Column="1" Classes="small" Content="Add reaction" Click="OnAddReaction" ToolTip.Tip="Run this reaction together with the others in the text" />
                   <Button Grid.Column="2" Classes="small" Content="Import LAMMPS…" Click="OnImportBondReact" ToolTip.Tip="A fix bond/react set (pre, post, map; the data file for the elements) as a CAPS reaction" />
                 </Grid>
-                <CheckBox Classes="toggle" Content="Browse the reaction library" IsChecked="{Binding RxLibOpen}" />
-                <Border Classes="inset" IsVisible="{Binding RxLibOpen}">
-                  <StackPanel Spacing="8">
-                    <ComboBox ItemsSource="{Binding RxLibCategories}" SelectedIndex="{Binding RxLibCategory}" HorizontalAlignment="Stretch" />
-                    <ListBox ItemsSource="{Binding RxLibItems}" SelectedItem="{Binding RxLibSelected}" MaxHeight="190">
-                      <ListBox.ItemTemplate>
-                        <DataTemplate x:DataType="vm:RxLibEntry">
-                          <StackPanel Spacing="1">
-                            <TextBlock Text="{Binding Name}" FontSize="12.5" />
-                            <TextBlock Text="{Binding Status}" Classes="dim" FontSize="11" TextTrimming="CharacterEllipsis" />
-                          </StackPanel>
-                        </DataTemplate>
-                      </ListBox.ItemTemplate>
-                    </ListBox>
-                    <StackPanel Spacing="4" IsVisible="{Binding RxLibHasSelection}">
-                      <TextBlock Text="{Binding RxLibSelected.Description}" TextWrapping="Wrap" FontSize="12" />
-                      <TextBlock Text="{Binding RxLibSelected.Scheme}" Classes="mono" FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource MutedB}" />
-                      <TextBlock Text="{Binding RxLibSelected.Roles}" Classes="dim" FontSize="11" TextWrapping="Wrap" />
-                      <StackPanel Orientation="Horizontal" Spacing="6">
-                        <Button Classes="small" Content="Use" Click="OnLibUse" ToolTip.Tip="This reaction in place of the text" />
-                        <Button Classes="small" Content="Add to the reactions" Click="OnLibAdd" ToolTip.Tip="Run it together with the reactions already in the text" />
-                      </StackPanel>
-                    </StackPanel>
-                  </StackPanel>
-                </Border>
                 <!-- several reactions: automatic by distance, or by relative weights -->
                 <StackPanel Spacing="6" IsVisible="{Binding RxSeveral}">
                   <TextBlock Text="SEVERAL REACTIONS" Classes="h3" />
@@ -131,8 +123,45 @@
                 </StackPanel>
                 <CheckBox Classes="toggle" Content="Keep byproducts (H₂, H₂O) as molecules in the cell" IsChecked="{Binding RxKeepByproducts}"
                           ToolTip.Tip="Off: the leaving atoms are removed; on: they stay as their own molecules (the force field must describe them)" />
-                <CheckBox Classes="toggle" Content="Crosslink with the assigned force field" IsChecked="{Binding RxUseField}" />
+                <CheckBox Classes="toggle" Content="Retype with a force field after every cycle" IsChecked="{Binding RxUseField}" />
+                <StackPanel Spacing="4" IsVisible="{Binding RxUseField}">
+                  <TextBlock Text="Force field for the reaction" Classes="label" />
+                  <ComboBox ItemsSource="{Binding RxForceFields}" SelectedIndex="{Binding RxFfChoice}" HorizontalAlignment="Stretch" />
+                  <TextBlock Text="{Binding RxFfNote}" Classes="dim" TextWrapping="Wrap" />
+                </StackPanel>
                 <TextBlock Text="{Binding RxFieldText}" Classes="dim" TextWrapping="Wrap" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <!-- reactive sites per chain and the crosslinking asked for, with what follows from it -->
+          <Border Classes="card">
+            <StackPanel>
+              <Border Classes="phead"><TextBlock Text="Reactive sites &amp; crosslinking" Classes="h2" VerticalAlignment="Center" /></Border>
+              <StackPanel Margin="16,12,16,16" Spacing="10">
+                <TextBlock Text="{Binding RxSitesText}" TextWrapping="Wrap" FontSize="12.5" />
+                <StackPanel Spacing="10" IsVisible="{Binding RxHasSites}">
+                  <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="4">
+                    <TextBlock Text="Sites per chain to use" Classes="label" />
+                    <TextBlock Grid.Column="1" Text="Crosslinking · %" Classes="label" />
+                    <TextBlock Grid.Column="2" Text="Crosslinker · phr" Classes="label" IsVisible="{Binding RxHasCrosslinker}" />
+                    <NumericUpDown Grid.Row="1" Value="{Binding RxSitesPerChainD}" Minimum="0" Maximum="{Binding RxSitesMax}" Increment="1" FormatString="0"
+                                   ToolTip.Tip="How many of each chain's reactive sites may react (0: all of them)" />
+                    <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding RxDcD}" Minimum="0" Maximum="100" Increment="1" FormatString="0.##"
+                                   ToolTip.Tip="Degree of crosslinking: the share of repeat units in a link (a link joins two)" />
+                    <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding RxPhrXD}" Minimum="0" Increment="0.5" FormatString="0.###" IsVisible="{Binding RxHasCrosslinker}"
+                                   ToolTip.Tip="Parts of crosslinker per hundred of rubber (the chains' mass): sets the crosslinking" />
+                  </Grid>
+                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                    <TextBlock Text="Crosslinker" Classes="label" VerticalAlignment="Center" />
+                    <TextBox Grid.Column="1" Text="{Binding RxCrosslinkerSmiles}" Classes="mono" Watermark="SMILES (none: the chains join directly)"
+                             ToolTip.Tip="The molecule each link uses (one per link: MAH bridging two epoxides); empty for C–C and peroxide links" />
+                  </Grid>
+                  <v:MathView Tex="{x:Static vm:MainViewModel.RxCalcTex}" FontSize="15" HorizontalAlignment="Left" />
+                  <TextBlock Text="{Binding RxCalcText}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" />
+                  <Button Classes="small" HorizontalAlignment="Left" Content="{Binding RxInsertXText}" Click="OnInsertCrosslinker" IsEnabled="{Binding RxCanInsertX}"
+                          ToolTip.Tip="These crosslinker molecules into the cell's free space (2 Å clear), then the force field is assigned again" />
+                </StackPanel>
               </StackPanel>
             </StackPanel>
           </Border>

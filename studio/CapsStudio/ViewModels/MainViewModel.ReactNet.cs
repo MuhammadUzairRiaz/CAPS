@@ -295,21 +295,36 @@ public sealed partial class MainViewModel
     private RxLibEntry? _rxLibSel;
     private bool _rxLibOpen;
     public bool RxLibOpen { get => _rxLibOpen; set { if (Set(ref _rxLibOpen, value) && value) LoadRxLib(); } }
-    public ObservableCollection<string> RxLibCategories { get; } = new();
+    private readonly ObservableCollection<string> _rxLibCats = new();
+    /// <summary>The reaction choice's categories (CAPS's cures first, then the library's classes); loaded on first use.</summary>
+    public ObservableCollection<string> RxLibCategories { get { LoadRxLib(); return _rxLibCats; } }
     public ObservableCollection<RxLibEntry> RxLibItems { get; } = new();
     public int RxLibCategory { get => _rxLibCat; set { if (Set(ref _rxLibCat, value)) FilterRxLib(); } }
-    public RxLibEntry? RxLibSelected { get => _rxLibSel; set { if (Set(ref _rxLibSel, value)) Raise(nameof(RxLibHasSelection)); } }
+    private bool _rxLibFiltering;
+    private string _rxTextBeforePick = "";   // the reactions before the last pick: Add puts the picked one beside them
+    /// <summary>The chosen reaction: picking one loads it in place of the text (Add keeps the others).</summary>
+    public RxLibEntry? RxLibSelected
+    {
+        get => _rxLibSel;
+        set
+        {
+            if (!Set(ref _rxLibSel, value)) return;
+            Raise(nameof(RxLibHasSelection)); Raise(nameof(RxChoiceNote)); Raise(nameof(RxChoiceHasScheme));
+            if (value != null && !_rxLibFiltering) { _rxTextBeforePick = _rxText; UseRxLib(false); }
+        }
+    }
     public bool RxLibHasSelection => _rxLibSel != null;
-    private const string CuresCategory = "Rubber cures & CAPS templates";
+    /// <summary>What the chosen reaction does (a cure's note, or a library reaction's description).</summary>
+    public string RxChoiceNote => _rxLibSel?.Description is { Length: > 0 } d ? d : RxSetNote;
+    public bool RxChoiceHasScheme => _rxLibSel?.Scheme is { Length: > 0 };
+    private const string CuresCategory = "Cures & crosslinks";
 
     private void LoadRxLib()
     {
         if (_rxLib != null) return;
         _rxLib = new List<RxLibEntry>();
-        foreach (var (name, label) in RxBuiltins)
-        {
-            try { _rxLib.Add(new RxLibEntry(name, label, CuresCategory, label, "", "", CapsDocument.ReactionTemplate(name), "", [])); } catch { }
-        }
+        for (var k = 0; k < ReactionSets.Length - 1; ++k)   // the cures (all but Custom), by their short names
+            _rxLib.Add(new RxLibEntry($"set:{k}", ReactionSets[k], CuresCategory, RxSetNotes[k], "", "", "set", "", []));
         try
         {
             if (Paths.Reactions is { } path)
@@ -328,29 +343,62 @@ public sealed partial class MainViewModel
             }
         }
         catch (Exception e) { RxLog = "Could not read the reaction library: " + e.Message; }
-        RxLibCategories.Clear();
-        foreach (var c in _rxLib.Select(x => x.Category).Distinct()) RxLibCategories.Add(c);
+        _rxLibCats.Clear();
+        foreach (var c in _rxLib.Select(x => x.Category).Distinct()) _rxLibCats.Add(c);
         _rxLibCat = 0;
         Raise(nameof(RxLibCategory));
         FilterRxLib();
     }
+    /// <summary>The pickers show the cure in use (chosen elsewhere: a guide, a script, a session).</summary>
+    private void SyncRxChoice()
+    {
+        if (_rxLib == null) return;
+        var id = $"set:{_rxSet}";
+        if (_rxLib.FirstOrDefault(x => x.Id == id) is not { } e) { Raise(nameof(RxChoiceNote)); return; }
+        var cat = _rxLibCats.IndexOf(e.Category);
+        if (cat >= 0 && cat != _rxLibCat) { _rxLibCat = cat; Raise(nameof(RxLibCategory)); FilterRxLib(); }
+        _rxLibFiltering = true;
+        RxLibSelected = RxLibItems.FirstOrDefault(x => x.Id == id);
+        _rxLibFiltering = false;
+        Raise(nameof(RxChoiceNote));
+    }
+
     private void FilterRxLib()
     {
+        _rxLibFiltering = true;
         RxLibItems.Clear();
-        if (_rxLib == null || _rxLibCat < 0 || _rxLibCat >= RxLibCategories.Count) return;
-        foreach (var e in _rxLib.Where(x => x.Category == RxLibCategories[_rxLibCat])) RxLibItems.Add(e);
-        RxLibSelected = RxLibItems.FirstOrDefault();
+        if (_rxLib != null && _rxLibCat >= 0 && _rxLibCat < _rxLibCats.Count)
+            foreach (var e in _rxLib.Where(x => x.Category == _rxLibCats[_rxLibCat])) RxLibItems.Add(e);
+        // the reaction in use stays shown when it is in this category; switching category loads nothing by itself
+        RxLibSelected = RxLibItems.FirstOrDefault(x => x.Id == $"set:{_rxSet}") ;
+        _rxLibFiltering = false;
     }
     /// <summary>The selected reaction's template(s): in place of the text, or added to it; a scheme of three molecules adds its steps.</summary>
     public void UseRxLib(bool add)
     {
         if (_rxLibSel is not { } e || _rxLib == null) return;
+        if (e.Id.StartsWith("set:", StringComparison.Ordinal) && int.TryParse(e.Id[4..], out var set))
+        {
+            if (!add) { RxSet = set; RxLog = e.Name + ": " + e.Description; return; }
+            var keep = _rxTextBeforePick.Trim().Length > 0 ? _rxTextBeforePick : _rxText;
+            var old = _rxSet;
+            _rxSet = set;
+            LoadReactionSet();   // the set's text …
+            var more = _rxText;
+            _rxSet = ReactionSets.Length - 1;
+            Raise(nameof(RxSet)); Raise(nameof(RxSetNote));
+            RxText = (keep.TrimEnd() + "\n\n" + more).Trim() + "\n";   // … added to what was there
+            RxLog = e.Name + " added: the reactions run together";
+            _ = old;
+            return;
+        }
         var texts = new List<string>();
         if (e.Runs) texts.Add(e.Template);
         else foreach (var id in e.Steps.Distinct()) if (_rxLib.FirstOrDefault(x => x.Id == id && x.Runs) is { } st) texts.Add(st.Template);
         if (texts.Count == 0) { RxLog = e.Name + ": " + e.Error; return; }
         _rxSet = ReactionSets.Length - 1;
-        Raise(nameof(RxSet));
+        Raise(nameof(RxSet)); Raise(nameof(RxSetNote));
+        if (add && _rxTextBeforePick.Trim().Length > 0) RxText = _rxTextBeforePick;   // beside the reactions there were before the pick
         var have = new HashSet<string>(RxReactions.Select(r => r.Name));
         var fresh = add ? texts.Where(t => !have.Contains(System.Text.RegularExpressions.Regex.Match(t, @"reaction\s+(\S+)").Groups[1].Value)).ToList() : texts;
         RxText = add ? (RxText.TrimEnd() + "\n\n" + string.Join("\n", fresh)).Trim() + "\n" : string.Join("\n", fresh);
