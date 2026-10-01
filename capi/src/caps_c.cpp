@@ -3839,7 +3839,7 @@ int32_t caps_layers(caps_doc* d, char* json, int32_t cap) {
       if (S.cell.valid()) { double f = S.cell.to_fractional(a.pos)[2]; return f - std::floor(f); }
       return hi > lo ? (a.pos[2] - lo) / (hi - lo) : 0.5;
     };
-    struct Mol { int64_t id = 0; size_t atoms = 0, sel = 0; std::array<double, 8> z{}; size_t shown = 0, ghost = 0, hidden = 0, locked = 0; std::vector<std::pair<int, int>> el; std::string res; };
+    struct Mol { int64_t id = 0; size_t atoms = 0, sel = 0; std::array<double, 8> z{}; size_t shown = 0, ghost = 0, hidden = 0, locked = 0; std::vector<std::pair<int, int>> el; std::string res; bool many_res = false; };
     std::vector<Mol> list;
     std::unordered_map<int64_t, size_t> slot;
     for (size_t i = 0; i < n; ++i) {
@@ -3847,6 +3847,7 @@ int32_t caps_layers(caps_doc* d, char* json, int32_t cap) {
       if (fresh) list.emplace_back(), list.back().id = ids[i], list.back().res = S.atoms[i].resname;
       auto& m = list[it->second];
       ++m.atoms;
+      if (!m.many_res && S.atoms[i].resname != m.res) m.many_res = true;   // a chain of several residues (a copolymer's units)
       const int e = S.atoms[i].element;
       auto el = std::find_if(m.el.begin(), m.el.end(), [e](const auto& p) { return p.first == e; });
       if (el == m.el.end()) m.el.push_back({e, 1}); else ++el->second;
@@ -3875,11 +3876,13 @@ int32_t caps_layers(caps_doc* d, char* json, int32_t cap) {
     for (const auto& m : list) {
       const int64_t id = m.id;
       const std::string f = formula(m.el);
-      const std::string key = m.res + "|" + f;
+      // a residue name names a molecule only when it is one residue: a chain of units is its formula
+      const std::string res = m.many_res ? std::string() : m.res;
+      const std::string key = res + "|" + f;
       if (!kinds.count(key)) {
         order.push_back(key);
         caps::Json k = caps::Json::object();
-        k["name"] = m.res.empty() ? f : m.res;
+        k["name"] = res.empty() ? f : res;
         k["formula"] = f;
         k["elements"] = [&] {
           std::vector<int> zs;

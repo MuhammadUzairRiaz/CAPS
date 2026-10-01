@@ -180,6 +180,7 @@ public sealed partial class MainViewModel
         it.DeleteArmed = false;
         if (!Idle || it.Doc.LongRunning) { Status = "A run is using this structure: delete it when the run finishes"; return; }
         if (it == _activeItem) { CloseDocument(); return; }
+        KeepBuiltCopy(it);
         ProjectItems.Remove(it);
         it.Doc.Dispose();
         RaiseProject();

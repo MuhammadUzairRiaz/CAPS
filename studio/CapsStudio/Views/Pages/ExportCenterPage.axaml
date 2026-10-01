@@ -67,8 +67,10 @@
         </DockPanel>
       </DockPanel>
     </Border>
-    <!-- the engines -->
-    <Grid v:Panes.Split="True" DockPanel.Dock="Top" ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,0,0,12">
+    <!-- the engines and the file preview scroll together on a short window (the cards never clip their options) -->
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" BringIntoViewOnFocusChange="False">
+    <StackPanel>
+    <Grid v:Panes.Split="True" ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,0,0,12">
       <Border Classes="card" CornerRadius="10">
         <StackPanel>
           <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
@@ -191,10 +193,10 @@
       </Border>
     </Grid>
     <!-- preview of each file -->
-    <Border Classes="card" CornerRadius="10">
+    <Border Classes="card" CornerRadius="10" Height="420">
       <DockPanel>
         <Border DockPanel.Dock="Top" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1" Padding="6,0">
-          <TabStrip Classes="small" ItemsSource="{Binding EngineFileNames}" SelectedItem="{Binding EnginePreviewName}" />
+          <TabStrip Classes="small" ItemsSource="{Binding EngineFileNames}" SelectedItem="{Binding EnginePreviewName}" AutoScrollToSelectedItem="False" />
         </Border>
         <ScrollViewer HorizontalScrollBarVisibility="Auto" Padding="0,6" Background="{DynamicResource Bg0B}">
           <ItemsControl ItemsSource="{Binding EnginePreviewLines}">
@@ -210,5 +212,7 @@
         </ScrollViewer>
       </DockPanel>
     </Border>
+    </StackPanel>
+    </ScrollViewer>
   </DockPanel>
 </p:PageBase>
