@@ -1228,12 +1228,24 @@ internal static class SelfTest
             vm.SetPackRowCount(row, 7);
             vm.RunPack().GetAwaiter().GetResult();
             var second = vm.Document!;
+            var secondAtoms = (int)second.Summary().Atoms;
             var againOk = second.Summary().Atoms == hostAtoms + 7 * 9 && vm.ProjectItems.Count == itemsBefore && first.IsDisposed
                           && vm.ProjectItems.Any(i => ReferenceEquals(i.Doc, host));
+            // the packed cell (made here, never saved) with a force field, deleted: kept, in Recent, opens with its force field
+            vm.Field.FfIndex = vm.Field.Library.ToList().FindIndex(e => e.Id == "gaff-amber25");
+            vm.Field.Assign().GetAwaiter().GetResult();
+            var packedItem = vm.ProjectItems.First(i => ReferenceEquals(i.Doc, second));
+            vm.Activate(vm.ProjectItems.First(i => ReferenceEquals(i.Doc, host)));
+            vm.DeleteProjectItem(packedItem);
+            vm.DeleteProjectItem(packedItem);
+            var kept = RecentFiles.Load().FirstOrDefault(r => r.Path.StartsWith(MainViewModel.KeptFolder, StringComparison.Ordinal));
+            var keptOk = kept != null && File.Exists(Path.ChangeExtension(kept.Path, ".ff.json"));
+            if (kept != null) vm.Open(kept.Path);
+            keptOk &= kept != null && vm.Document?.Summary().Atoms == hostAtoms + 7 * 9 && vm.Field.Assigned;
             // another structure: the page starts fresh
             vm.Open(Path.Combine(dir, "ps_melt.data"));
             var freshOk = !vm.PackDone && vm.PackDmin == "—" && !vm.PackRepacking;
-            Check(firstOk && againOk && freshOk, $"pack again replaces the last packing: [{firstOk} {againOk} {freshOk}] {first.IsDisposed} · {second.Summary().Atoms} atoms · {vm.ProjectItems.Count} items · {vm.PackLog.Split('\n')[0]}");
+            Check(firstOk && againOk && freshOk && keptOk, $"pack again replaces the last packing; a deleted packed cell kept in Recent: [{firstOk} {againOk} {freshOk} {keptOk}] {kept?.Path} {first.IsDisposed} · {secondAtoms} atoms · {vm.ProjectItems.Count} items · {vm.PackLog.Split('\n')[0]}");
             vm.SetModule(8);
         }
 
