@@ -3186,6 +3186,7 @@ int32_t caps_field_assign_groups(caps_doc* d, const char* json) {
     pr.push_back({"between groups", "ε " + G.text("eps_rule", "auto") + ", σ " + G.text("sigma_rule", "auto")});
     if (G.text("scaling14", "own") == "first") pr.push_back({"1-4 scaling", "the first group's for all (asked)"});
     if (G.text("cross96", "refuse") == "rmin") pr.push_back({"9-6 sites in cross pairs", "12-6 with the same ε and r_min (asked)"});
+    if (G.text("cross96", "refuse") == "area") pr.push_back({"9-6 sites in cross pairs", "12-6 with the same r_min, ε for the same ∫ U r² dr to the cut-off (asked)"});
     prov_step(d, "field.assign.groups", "force fields by group: " + d->field->ff->name, std::move(pr), "", {},
               {{"Cross interactions", "Lennard-Jones by the stated mixing rule between the groups' parameters"}});
     return d->field->complete ? 0 : 1;
@@ -5298,6 +5299,7 @@ void field_run_groups(caps_doc* d) {
   mo.sigma_rule = G.text("sigma_rule", mo.sigma_rule);
   mo.scaling14 = G.text("scaling14", mo.scaling14);
   mo.cross96 = G.text("cross96", mo.cross96);
+  mo.refit_cutoff = G.num("refit_cutoff", elec().cutoff > 0 ? elec().cutoff : mo.refit_cutoff);
   if (G.has("pairs") && G["pairs"].is_array())
     for (const auto& x : G["pairs"].items()) mo.explicit_pairs.push_back({x.text("a", ""), x.text("b", ""), x.num("eps", 0), x.num("sigma", 0)});
   std::vector<std::string> merge_notes;

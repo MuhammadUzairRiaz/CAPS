@@ -388,3 +388,23 @@ TEST(FFMerge, AssignedForceFieldFileRoundTrip) {
   }
   EXPECT_THROW(forcefield_from_json("{\"format\": \"something else\"}"), FieldError);
 }
+
+// cross96 "area": the 12-6 depth with the same minimum and the same ∫ U r² dr from r_min to the cut-off as the 9-6 site —
+// the closed form against a numerical integral, and larger than one (the 9-6 well is wider, so the 12-6 needs more depth)
+TEST(FFMerge, NineSixSiteRefitByMatchedIntegral) {
+  for (double r0 : {3.0, 4.01, 4.5}) {
+    const double rc = 12.0, k = caps::lj96_to_126_depth_ratio(r0, rc);
+    auto integral = [&](auto U) {   // Simpson on a fine grid
+      const int n = 200000;
+      const double h = (rc - r0) / n;
+      double s = U(r0) * r0 * r0 + U(rc) * rc * rc;
+      for (int i = 1; i < n; ++i) { const double r = r0 + i * h; s += (i % 2 ? 4 : 2) * U(r) * r * r; }
+      return s * h / 3;
+    };
+    const double i96 = integral([&](double r) { const double x = r0 / r; return 2 * std::pow(x, 9) - 3 * std::pow(x, 6); });
+    const double i126 = integral([&](double r) { const double x = r0 / r; return std::pow(x, 12) - 2 * std::pow(x, 6); });
+    EXPECT_NEAR(k, i96 / i126, 1e-9 * std::fabs(k));
+    EXPECT_GT(k, 1.0);
+  }
+  EXPECT_EQ(caps::lj96_to_126_depth_ratio(4.0, 3.0), 1.0);   // a cut-off inside the well: nothing to match
+}

@@ -21,6 +21,16 @@ std::string fmt(double x) {
 
 }  // namespace
 
+// A 9-6 site (ε, r₀) as 12-6 for cross pairs, "area": the 12-6 curve with the same minimum r₀ whose ∫ U(r) r² dr from r₀ to
+// the cut-off r_c (the pair's share of the cohesive energy past the well) equals the 9-6 one. With U₉₆ = ε[2(r₀/r)⁹ − 3(r₀/r)⁶]
+// and U₁₂₆ = ε′[(r₀/r)¹² − 2(r₀/r)⁶], and ∫ r²(r₀/r)ⁿ dr = r₀ⁿ (r_c^{3−n} − r₀^{3−n})/(3 − n), ε′/ε = I₉₆/I₁₂₆ in closed form.
+double lj96_to_126_depth_ratio(double r0, double rc) {
+  if (r0 <= 0 || rc <= r0) return 1.0;
+  auto J = [&](int n) { return std::pow(r0, n) * (std::pow(rc, 3.0 - n) - std::pow(r0, 3.0 - n)) / (3.0 - n); };
+  const double i96 = 2 * J(9) - 3 * J(6), i126 = J(12) - 2 * J(6);
+  return i126 != 0 ? i96 / i126 : 1.0;
+}
+
 ForceField merge_forcefields(size_t natoms, const std::vector<FFPart>& parts, const MergeOptions& o_in, std::vector<std::string>* notes) {
   if (parts.empty()) throw FieldError("no parts to merge");
   // the cross rule "auto": the parts' own rule when they agree
@@ -85,7 +95,7 @@ ForceField merge_forcefields(size_t natoms, const std::vector<FFPart>& parts, co
       throw FieldError(F.name + " and " + F0.name + " treat the non-bonded terms differently (dielectric, reaction field or switching): they cannot share one simulation");
     if (!F.lj14_types.empty() || F.hbond.on()) throw FieldError(F.name + ": separate 1-4 Lennard-Jones types (CHARMM) and DREIDING hydrogen bonds are not merged with other force fields");
   }
-  if (mixed_forms && o.cross96 != "rmin")
+  if (mixed_forms && o.cross96 != "rmin" && o.cross96 != "area")
     throw FieldError("one part uses Lennard-Jones 9-6 (class II) and another 12-6: the cross pairs need one form. Use force fields of one class (IFF-PCFF covers minerals with PCFF polymers), or give the 9-6 sites a 12-6 form with the same well depth and minimum (cross96: rmin)");
   int sw_parts = 0, mb_parts = 0;
   for (const auto& P : parts) sw_parts += P.ff->sw.on, mb_parts += P.ff->manybody.on();
@@ -222,7 +232,10 @@ ForceField merge_forcefields(size_t natoms, const std::vector<FFPart>& parts, co
       const std::pair<int, int> key{a, b};
       auto site = [&](int t) {   // the site as 12-6 when the cross pair is 12-6
         PairType s = M.lj[size_t(t)];
-        if (mixed_forms && type_is96[size_t(t)]) s.sigma /= std::pow(2.0, 1.0 / 6);   // 9-6 σ is r_min
+        if (mixed_forms && type_is96[size_t(t)]) {
+          if (o.cross96 == "area") s.eps *= lj96_to_126_depth_ratio(s.sigma, o.refit_cutoff);   // same r_min, same ∫ U r² dr
+          s.sigma /= std::pow(2.0, 1.0 / 6);   // 9-6 σ is r_min
+        }
         return s;
       };
       PairType pt;
@@ -257,7 +270,9 @@ ForceField merge_forcefields(size_t natoms, const std::vector<FFPart>& parts, co
          (given_used ? " (" + std::to_string(given_used) + " given explicitly)" : "") + ", written out explicitly" +
          (auto_note.empty() ? std::string() : " · " + auto_note));
     if (mixed_forms)
-      note("9-6 and 12-6 parts: every pair with a 12-6 site is 4ε[(σ/r)¹² − (σ/r)⁶] (LAMMPS lj/sdk lj12_6 beside lj/class2); a 9-6 site enters a cross pair with its own ε and minimum r_min (σ₁₂ = r_min / 2^(1/6))");
+      note(o.cross96 == "area"
+               ? "9-6 and 12-6 parts: every pair with a 12-6 site is 4ε[(σ/r)¹² − (σ/r)⁶] (LAMMPS lj/sdk lj12_6 beside lj/class2); a 9-6 site enters a cross pair as the 12-6 curve with its minimum r_min and the well depth that gives the same ∫ U r² dr from r_min to " + fmt(o.refit_cutoff) + " Å (σ₁₂ = r_min / 2^(1/6))"
+               : "9-6 and 12-6 parts: every pair with a 12-6 site is 4ε[(σ/r)¹² − (σ/r)⁶] (LAMMPS lj/sdk lj12_6 beside lj/class2); a 9-6 site enters a cross pair with its own ε and minimum r_min (σ₁₂ = r_min / 2^(1/6))");
   }
   for (auto& s : said) M.notes.push_back(s);
   if (notes) *notes = said;

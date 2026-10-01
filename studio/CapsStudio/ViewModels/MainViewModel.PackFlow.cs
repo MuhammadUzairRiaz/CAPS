@@ -190,6 +190,35 @@ public partial class MainViewModel
             if (wm.Success) RunEdit(new { op = "water_model", model = wm.Groups[1].Value });
             Field.FfIndex = idx;
             await Field.AssignGroupsJson(spec, "Assigned by molecule (Pack)");
+            if (!Field.Assigned && !spec.Contains("\"water\"", StringComparison.Ordinal))   // not by component (united-atom …): the whole cell
+            {
+                var why = Field.Log;
+                Field.ChargeMode = _packCharges;
+                await Field.Assign();
+                Status = $"Assigned to the whole cell (not by component: {why.Split('\n')[0]})";
+            }
+            _pipeAutoFf = true;
+            RaiseGrowField();
+            RefreshSteps();
+            return;
+        }
+        if (!pack && GrowGroupSpec(_doc) is { } gspec)   // chains and small molecules: a group each, Grow's force field
+        {
+            Field.FfIndex = idx;
+            await Field.AssignGroupsJson(gspec, "Assigned by component (Polymer cell)");
+            if (Field.Assigned)
+            {
+                _pipeAutoFf = true;
+                RaiseGrowField();
+                RefreshSteps();
+                return;
+            }
+            // a force field that cannot type the components apart (united-atom: CH groups become one site) — the whole
+            // cell as one, and why
+            var why = Field.Log;
+            Field.ChargeMode = _growCharges;
+            await Field.Assign();
+            Status = $"Assigned to the whole cell (not by component: {why.Split('\n')[0]})";
             _pipeAutoFf = true;
             RaiseGrowField();
             RefreshSteps();

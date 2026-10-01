@@ -60,17 +60,45 @@ public sealed partial class MainViewModel
 
     public void RemoveGrowSmall(GrowSmallRow r) { GrowSmall.Remove(r); Raise(nameof(GrowHasSmall)); }
 
+    /// <summary>The groups of a grown cell with small molecules: every component by Grow's force field (null: one component).</summary>
+    private string? GrowGroupSpec(CapsDocument doc)
+    {
+        if (!ReferenceEquals(_growParts.Doc, doc) || _growParts.Parts.Count < 2) return null;
+        var idx = GrowFfIndex;
+        if (idx < 0 || idx >= Field.Library.Count) return null;
+        var groups = new System.Text.Json.Nodes.JsonArray();
+        var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (name, mols) in _growParts.Parts)
+        {
+            var n = name;
+            for (var k = 2; !used.Add(n); ++k) n = $"{name}_{k}";
+            groups.Add(new System.Text.Json.Nodes.JsonObject { ["name"] = n, ["molecules"] = mols, ["forcefield"] = Field.Library[idx].File, ["charges"] = FieldViewModel.CoreChargesOf(_growCharges) });
+        }
+        return new System.Text.Json.Nodes.JsonObject { ["groups"] = groups }.ToJsonString();
+    }
+
     /// <summary>After the chains: each small molecule inserted into the free space (2 Å between molecules); the lines
     /// for the report. Throws when a count does not fit.</summary>
+    /// <summary>The grown cell's components (the chains, then each small molecule) and their molecules, for a force field
+    /// per component: each its own atom types, and the LAMMPS input groups them (as Packing and the blend do).</summary>
+    private (CapsDocument? Doc, List<(string Name, string Molecules)> Parts) _growParts = (null, new());
+
     private string InsertGrowSmall(CapsDocument doc, ulong seed)
     {
         var sb = new System.Text.StringBuilder();
         var k = 0UL;
+        var parts = new List<(string, string)>();
+        var before = (int)doc.Summary().Molecules;
+        if (before > 0) parts.Add(("chains", $"1-{before}"));
         foreach (var r in GrowSmall.ToList())
         {
             var rep = doc.InsertMolecules(r.Smiles, (int)r.CountD, 2.0, seed + 17 * ++k);
+            var now = (int)doc.Summary().Molecules;
+            if (now > before) parts.Add((r.Name, $"{before + 1}-{now}"));
+            before = now;
             sb.Append(CultureInfo.InvariantCulture, $"{r.CountD:0} × {r.Name}: ").Append(rep.Split('\n').FirstOrDefault() ?? "").Append('\n');
         }
+        _growParts = (doc, parts);
         return sb.ToString();
     }
 }

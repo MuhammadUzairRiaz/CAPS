@@ -100,7 +100,7 @@ public sealed partial class FieldViewModel
     public static readonly string[] EpsRules = ["as the force fields mix", "geometric √(εᵢεⱼ)", "arithmetic (εᵢ+εⱼ)/2"];
     public static readonly string[] SigmaRules = ["as the force fields mix", "arithmetic (σᵢ+σⱼ)/2", "geometric √(σᵢσⱼ)", "sixth power (class II)"];
     public static readonly string[] Scaling14Modes = ["each group's own (exact)", "the first group's for all", "refuse different scalings"];
-    public static readonly string[] Cross96Modes = ["refuse 9-6 with 12-6", "12-6 with the 9-6 site's ε and r_min"];
+    public static readonly string[] Cross96Modes = ["refuse 9-6 with 12-6", "12-6 with the 9-6 site's ε and r_min", "12-6 refit: same r_min and ∫U r² dr to the cut-off"];
 
     public ObservableCollection<FieldGroupRow> Groups { get; } = new();
     private List<PotentialEntry>? _potentials;
@@ -247,7 +247,7 @@ public sealed partial class FieldViewModel
             ["eps_rule"] = _epsRule switch { 1 => "geometric", 2 => "arithmetic", _ => "auto" },
             ["sigma_rule"] = _sigmaRule switch { 1 => "arithmetic", 2 => "geometric", 3 => "sixthpower", _ => "auto" },
             ["scaling14"] = _scaling14 switch { 1 => "first", 2 => "refuse", _ => "own" },
-            ["cross96"] = _cross96 == 1 ? "rmin" : "refuse",
+            ["cross96"] = _cross96 switch { 1 => "rmin", 2 => "area", _ => "refuse" },
             ["pairs"] = pairs,
         }, "");
     }
