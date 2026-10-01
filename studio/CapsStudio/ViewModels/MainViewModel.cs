@@ -439,7 +439,7 @@ public sealed partial class MainViewModel : ObservableObject
         _pendingFrames = null;
         if (OpensProgressively(path)) { _ = OpenProgressive(path, topology, frames); return; }
         Show(frames is { } f ? CapsDocument.OpenStaged(path, topology, 0, null, f) : CapsDocument.Open(path, topology), System.IO.Path.GetFileName(path));
-        if (_doc?.Path == path) { Remember(path, topology); RecordOpen(path, topology, frames); }
+        if (_doc?.Path == path) { Remember(path, topology); RecordOpen(path, topology, frames); LoadKeptForceField(path); }
     }
 
     /// <summary>Several trajectory files of one run (dumps written in parts, restarts) opened as one trajectory.</summary>

@@ -93,6 +93,48 @@ public sealed partial class MainViewModel
         });
     }
 
+    /// <summary>Where structures built in CAPS (grown, packed, reacted, never saved) are kept when they leave the project.</summary>
+    public static string KeptFolder => Path.Combine(AppSettings.Override != null ? Path.GetDirectoryName(AppSettings.Override)! : AppSettings.Folder, "kept");
+
+    /// <summary>A structure made in CAPS and never saved leaves the project: a copy is kept (with its force field when one is
+    /// assigned, as NAME.ff.json beside it) and it goes into Recent, so it can be found and opened again.</summary>
+    private void KeepBuiltCopy(ProjectItem it)
+    {
+        var doc = it.Doc;
+        if (doc.IsDisposed) return;
+        var onDisk = doc.Path is { Length: > 0 } p0 && File.Exists(p0) && !p0.StartsWith(Path.GetTempPath(), StringComparison.Ordinal);
+        if (onDisk && !it.Name.Contains("(unsaved)", StringComparison.Ordinal)) return;   // a file of the user's: Recent has it
+        try
+        {
+            Directory.CreateDirectory(KeptFolder);
+            var name = it.Name.Replace(" (unsaved)", "");
+            var safe = System.Text.RegularExpressions.Regex.Replace(new string(name.Select(c => char.IsLetterOrDigit(c) || c is '-' or '_' ? c : '_').ToArray()), "_+", "_").Trim('_');
+            if (safe.Length == 0) safe = "structure";
+            if (safe.Length > 60) safe = safe[..60];
+            var path = Path.Combine(KeptFolder, $"{safe}_{DateTime.Now:yyyyMMdd-HHmmss}.data");
+            doc.Save(path);
+            var withField = false;
+            try { doc.FieldSave(Path.ChangeExtension(path, ".ff.json")); withField = true; } catch { /* no force field assigned */ }
+            var s = doc.Summary();
+            var detail = string.Format(CultureInfo.InvariantCulture, "{0:N0} atoms · {1}{2}", s.Atoms, name, withField ? " · force field kept" : "");
+            var opt = new CapsRenderOpts { Width = 720, Height = 340, Supersample = 2, Background = 2, Style = 0, ColourBy = 1, Outlines = 1, DepthCue = 1, ShowCell = 1,
+                                           Highlight0 = -1, Highlight1 = -1, Highlight2 = -1, Highlight3 = -1 };
+            var cam = new CapsCamera { Yaw = 0.55, Pitch = 0.40, Zoom = 1.0 };
+            RecentFiles.Touch(path, null, detail, thumb => { try { doc.ExportPng(cam, opt, thumb); } catch { } });
+            LoadRecent();
+        }
+        catch (Exception e) { Status = $"Could not keep a copy of {it.Name}: {e.Message}"; }
+    }
+
+    /// <summary>A structure CAPS kept (or any file with NAME.ff.json beside it) opens with its force field.</summary>
+    private void LoadKeptForceField(string path)
+    {
+        var ff = Path.ChangeExtension(path, ".ff.json");
+        if (_doc == null || !File.Exists(ff)) return;
+        try { if (_doc.FieldLoad(ff)) { Field.LoadReport(_doc); Status = $"Opened {Path.GetFileName(path)} with its force field ({Path.GetFileName(ff)})"; } }
+        catch (Exception e) { Status = $"Opened {Path.GetFileName(path)}; its force field ({Path.GetFileName(ff)}) could not be read: {e.Message}"; }
+    }
+
     /// <summary>Closes the document and goes back to Start.</summary>
     public void CloseDocument()
     {
@@ -102,7 +144,7 @@ public sealed partial class MainViewModel
         ClearFocus();
         // the structure leaves the project; another one of it becomes active, or Start when it was the last
         var gone = _activeItem;
-        if (gone != null) ProjectItems.Remove(gone);
+        if (gone != null) { KeepBuiltCopy(gone); ProjectItems.Remove(gone); }
         _activeItem = null;
         if (ProjectItems.Count > 0)
         {
