@@ -17,6 +17,13 @@ public sealed class AppSettings
     public bool DepthCue { get; set; } = true;
     public bool AutoClean { get; set; }                     // a UFF clean-up of the edited atoms after every builder edit (A)
     public bool GpuView { get; set; } = true;             // the 3D view on the GPU (OpenGL) where available
+    // the main window as it was closed (device pixels); restored only onto a screen that is connected now
+    public int WindowX { get; set; }
+    public int WindowY { get; set; }
+    public double WindowW { get; set; }
+    public double WindowH { get; set; }
+    public bool WindowMax { get; set; }
+    public bool WindowSaved { get; set; }
     public int Style { get; set; }                        // ball & stick …
     public bool AutoStyle { get; set; } = true;           // display style by model size (design/boards/DisplayStyles)
     public long AutoNoH { get; set; } = 20_000;           // above this many atoms: No H

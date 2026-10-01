@@ -56,6 +56,47 @@ public partial class MainWindow : Window
 
     private static bool _namesInstalled;
 
+    /// <summary>The window where it was, when that place is on a screen connected now; otherwise centred on the main
+    /// display (a window left on a monitor that is gone, or above the screen, would open where nobody sees it).</summary>
+    private void PlaceWindow()
+    {
+        var st = _vm.Settings;
+        var screens = Screens.All;
+        if (screens.Count == 0) return;
+        var main = Screens.Primary ?? screens[0];
+        if (st.WindowSaved && st.WindowW > 200 && st.WindowH > 200)
+        {
+            // the title bar's middle must lie in some screen's working area
+            var probe = new PixelPoint(st.WindowX + (int)(st.WindowW * Scaling() / 2), st.WindowY + 20);
+            var on = screens.FirstOrDefault(sc => sc.WorkingArea.Contains(probe));
+            if (on != null)
+            {
+                Width = st.WindowW; Height = st.WindowH;
+                Position = new PixelPoint(st.WindowX, st.WindowY);
+                if (st.WindowMax) WindowState = WindowState.Maximized;
+                return;
+            }
+        }
+        // centred on the main display, no larger than it
+        var wa = main.WorkingArea;
+        var k = main.Scaling;
+        var w = Math.Min(Width, wa.Width / k - 40);
+        var h = Math.Min(Height, wa.Height / k - 40);
+        Width = w; Height = h;
+        Position = new PixelPoint(wa.X + (int)((wa.Width - w * k) / 2), wa.Y + (int)((wa.Height - h * k) / 2));
+    }
+
+    private double Scaling() => Screens.ScreenFromWindow(this)?.Scaling ?? 1;
+
+    private void SaveWindowPlace()
+    {
+        var st = _vm.Settings;
+        st.WindowMax = WindowState == WindowState.Maximized;
+        if (WindowState == WindowState.Normal) { st.WindowX = Position.X; st.WindowY = Position.Y; st.WindowW = Width; st.WindowH = Height; }
+        st.WindowSaved = true;
+        try { st.Save(); } catch { }
+    }
+
     public MainWindow()
     {
         if (!_namesInstalled) { AccessibleNames.Install(); _namesInstalled = true; }
@@ -75,7 +116,8 @@ public partial class MainWindow : Window
         _vm.HookJobs();
         _vm.LoadRecent();
         _vm.LoadLastSession();
-        Closing += (_, _) => _vm.SaveSession();   // the project tree comes back from Start next time
+        Closing += (_, _) => { _vm.SaveSession(); SaveWindowPlace(); };   // the project tree comes back from Start next time
+        Opened += (_, _) => PlaceWindow();
         AddWindowCommands();
         _vm.InitProtocol();
         _vm.LoadReactionSet();
