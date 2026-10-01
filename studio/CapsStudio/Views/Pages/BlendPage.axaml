@@ -88,7 +88,14 @@
                           <Grid ColumnDefinitions="Auto,*,64,56,Auto" ColumnSpacing="6">
                             <Border Width="10" Height="10" CornerRadius="5" Background="{Binding Dot}" VerticalAlignment="Center" />
                             <ComboBox Grid.Column="1" ItemsSource="{Binding $parent[p:BlendPage].((vm:MainViewModel)DataContext).BlendLibrary}" SelectedItem="{Binding Polymer}" HorizontalAlignment="Stretch">
-                              <ComboBox.ItemTemplate><DataTemplate x:DataType="vm:LibraryEntry"><TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" /></DataTemplate></ComboBox.ItemTemplate>
+                              <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="vm:LibraryEntry">
+                                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                    <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Grid.Column="1" Text="{Binding Kind}" FontSize="11" Foreground="{DynamicResource DimB}" IsVisible="{Binding HasKind}" VerticalAlignment="Center" />
+                                  </Grid>
+                                </DataTemplate>
+                              </ComboBox.ItemTemplate>
                             </ComboBox>
                             <NumericUpDown Grid.Column="2" Value="{Binding Weight}" Minimum="0" Maximum="100" Increment="5" FormatString="0.#" ShowButtonSpinner="False"
                                            IsVisible="{Binding $parent[p:BlendPage].((vm:MainViewModel)DataContext).BlendByShare}" />
@@ -110,9 +117,17 @@
                       </DataTemplate>
                     </ItemsControl.ItemTemplate>
                   </ItemsControl>
-                  <Button Classes="small" Click="OnAdd" HorizontalAlignment="Left">
-                    <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="plus" Size="13" VerticalAlignment="Center" /><TextBlock Text="Add component" VerticalAlignment="Center" /></StackPanel>
-                  </Button>
+                  <WrapPanel ItemSpacing="6" LineSpacing="6">
+                    <Button Classes="small" Click="OnAdd">
+                      <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="plus" Size="13" VerticalAlignment="Center" /><TextBlock Text="Add component" VerticalAlignment="Center" /></StackPanel>
+                    </Button>
+                    <Button Classes="small" Click="OnAddBuilderChain"
+                            ToolTip.Tip="The chain made in the polymer builder (its repeat units, sequence, shares, tacticity and ends) as a component: a copolymer of your own">
+                      <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="grow" Size="13" VerticalAlignment="Center" /><TextBlock Text="Builder's chain" VerticalAlignment="Center" /></StackPanel>
+                    </Button>
+                  </WrapPanel>
+                  <TextBlock Classes="dim" TextWrapping="Wrap" FontSize="11.5"
+                             Text="A component can be a repeat unit (a homopolymer), a copolymer from the library (ENR, SBR, NBR, EPDM …) or yours, or the chain made in the polymer builder." />
                 </StackPanel>
               </Border>
               <Border Classes="section" Padding="16,14">
