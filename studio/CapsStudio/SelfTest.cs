@@ -3384,7 +3384,33 @@ internal static class SelfTest
             vm.GrowSmall[0].CountD = 5;
             vm.Grow().GetAwaiter().GetResult();
             var mols = vm.Document?.Summary().Molecules ?? 0;
-            Check(mols == 3 + 5 && vm.GrowLog.Contains("5 × Toluene"), $"grow with solvent: {mols} molecules · {vm.GrowLog.Split('\n').FirstOrDefault(l => l.Contains("Toluene"))}");
+            for (int k = 0; k < 400 && vm.Field.Working; ++k) Thread.Sleep(25);
+            // chains and toluene each a component: a group each with Grow's force field (their own types, grouped in LAMMPS)
+            var gDir = Path.Combine(outDir, "grow-groups");
+            Directory.CreateDirectory(gDir);
+            vm.ExportFieldLammps(Path.Combine(gDir, "grown.data")).GetAwaiter().GetResult();
+            var gIn = File.Exists(Path.Combine(gDir, "grown.in")) ? File.ReadAllText(Path.Combine(gDir, "grown.in")) : "";
+            var gLines = gIn.Split('\n').Where(l => l.StartsWith("group ", StringComparison.Ordinal)).ToList();
+            var growGroups = string.Join(" | ", gLines) + $" · assign {vm.GrowAssignField} · grouped {vm.Field.IsGrouped} · assigned {vm.Field.Assigned} {vm.Field.ForceFieldName} · ff {vm.GrowFfIndex} {vm.Field.Library[vm.GrowFfIndex].Id} · log {vm.Field.Log}";
+            // a united-atom force field cannot type the components apart: the whole cell, assigned
+            var ua = vm.Field.Library[vm.GrowFfIndex].Id.Contains("-ua", StringComparison.Ordinal);
+            var grpOk = !vm.GrowAssignField || (ua ? vm.Field.Assigned && !vm.Field.IsGrouped
+                                                   : vm.Field.IsGrouped && gLines.Count == 2 && gLines[0].Contains("chains") && gLines[1].Contains("Toluene"));
+            // with an all-atom force field: by component
+            if (ua)
+            {
+                vm.GrowFfIndex = vm.Field.Library.ToList().FindIndex(e => e.Id == "opls2005");
+                vm.Grow().GetAwaiter().GetResult();
+                for (int k = 0; k < 400 && vm.Field.Working; ++k) Thread.Sleep(25);
+                vm.ExportFieldLammps(Path.Combine(gDir, "grown.data")).GetAwaiter().GetResult();
+                gLines = File.ReadAllText(Path.Combine(gDir, "grown.in")).Split('\n').Where(l => l.StartsWith("group ", StringComparison.Ordinal)).ToList();
+                grpOk &= vm.Field.IsGrouped && gLines.Count == 2 && gLines[0].Contains("chains") && gLines[1].Contains("Toluene");
+                growGroups += " · OPLS: " + string.Join(" | ", gLines);
+            }
+            Check(mols == 3 + 5 && vm.GrowLog.Contains("5 × Toluene") && grpOk, $"grow with solvent: {mols} molecules · groups {growGroups} · {vm.GrowLog.Split('\n').FirstOrDefault(l => l.Contains("Toluene"))}");
+            vm.Field.Clear().GetAwaiter().GetResult();
+            vm.Field.Groups.Clear();
+            vm.Field.GroupMode = false;
             vm.RemoveGrowSmall(vm.GrowSmall[0]);
             // oriented growth: chains drawn along z, the report gives their ⟨P₂⟩
             vm.GrowOrient = 3;

@@ -13,7 +13,8 @@
 //     the default): each 1-4 pair scaled by its part's force field — LAMMPS a pair sub-style per part with its own
 //     special weights, GROMACS each 1-4 pair with its own fudge; "first" takes the first part's for all, "refuse" stops
 //   · 9-6 (class II) and 12-6 parts: the cross pairs need one form; cross96 "rmin" gives the 9-6 site a 12-6 form with
-//     the same well depth ε and minimum r_min (said in the notes; DL_FIELD instead fits the area under the curve)
+//     the same well depth ε and minimum r_min; "area" keeps r_min and takes the 12-6 depth with the same ∫ U r² dr from
+//     r_min to the cut-off (both said in the notes)
 //   · coarse-grained settings (dielectric, reaction field, force switches), Stillinger–Weber in more than one part,
 //     DREIDING hydrogen bonds, CHARMM 1-4 types, virtual sites across parts
 #pragma once
@@ -39,9 +40,13 @@ struct MergeOptions {
   std::string eps_rule = "auto";     // auto | geometric | arithmetic
   std::string sigma_rule = "auto";   // auto | arithmetic | geometric | sixthpower (ε then by the sixth-power rule too)
   std::string scaling14 = "own";        // own (each part's 1-4 pairs by its own scaling) | first | refuse
-  std::string cross96 = "refuse";       // refuse | rmin
+  std::string cross96 = "refuse";       // refuse | rmin | area
+  double refit_cutoff = 12.0;           // Å, cross96 "area": the upper limit of the matched integral (the run's cut-off)
   std::vector<CrossPair> explicit_pairs;
 };
+
+// cross96 "area": the 12-6 well depth over the 9-6 one for a site of minimum r0 (Å), equal ∫ U r² dr from r0 to rc
+double lj96_to_126_depth_ratio(double r0, double rc);
 
 // Throws FieldError with the reason when the parts cannot share one simulation (above) or an atom is in no part / two.
 ForceField merge_forcefields(size_t natoms, const std::vector<FFPart>& parts, const MergeOptions& o, std::vector<std::string>* notes = nullptr);
