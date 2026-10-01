@@ -86,7 +86,11 @@ public sealed partial class MainViewModel
         var sb = PythonStart("React");
         sb.Append("templates = \"\"\"\n").Append(_rxText.Replace("\"\"\"", "\\\"\\\"\\\"").TrimEnd()).Append("\n\"\"\"\n");
         sb.Append($"report = doc.react(templates, cycles={_rxCycles}, per_cycle={_rxPerCycle}, target={Num(_rxTarget)}, capture={Num(_rxCapture)}, relax={Py(_rxRelax)}, " +
-                  $"relax_iterations={_rxRelaxIt}, md_ps={Num(_rxMdPs)}, temperature={Num(_rxTemp)}, cutoff={Num(_relaxCutoff)}, seed={_rxSeed})\n");
+                  $"relax_iterations={_rxRelaxIt}, md_ps={Num(_rxMdPs)}, temperature={Num(_rxTemp)}, cutoff={Num(_relaxCutoff)}, seed={_rxSeed}, " +
+                  $"during_md={Py(_rxDuringMd)}, between_chains={Py(_rxBetween)}, keep_byproducts={Py(_rxKeepBy)}, auto_capture={Py(_rxAutoCapture)}, " +
+                  $"capture_max={Num(_rxCaptureMax)}, sites_per_chain={(int)_rxSitesPer}, default_field={Py(!_rxUseField)}" +
+                  (RxSeveral && _rxByWeights ? ", weights=[" + string.Join(", ", RxReactions.Select(r => r.WeightD.ToString(System.Globalization.CultureInfo.InvariantCulture))) + "]" : "") +
+                  (_rxTargetKind is >= 1 and <= 5 ? $", crosslinks=(\"{new[] { "", "crosslinks", "per_chain", "density", "mc", "degree" }[_rxTargetKind]}\", {Num(_rxTargetValue)})" : "") + ")\n");
         sb.Append("print(report)\ndoc.save(\"network.data\")\n");
         return sb.ToString();
     }
