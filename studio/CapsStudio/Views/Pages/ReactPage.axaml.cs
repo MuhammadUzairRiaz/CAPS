@@ -76,4 +76,5 @@ public partial class ReactPage : PageBase
         Vm.Status = "Copied the crosslinking as Python (import caps; doc = caps.open(…))";
     }
     private void OnQueue(object? s, RoutedEventArgs e) => Vm.QueueReact();
+    private async void OnInsertCrosslinker(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => await Vm.InsertRxCrosslinker();
 }

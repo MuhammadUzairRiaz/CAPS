@@ -164,6 +164,7 @@ public sealed partial class MainViewModel : ObservableObject
                 NamedSets.Clear(); _selCount = 0; Raise(nameof(SelectedCount)); Raise(nameof(SelectedChip)); Dyads.Clear();
                 QueueSelBar();   // the bar, and the hidden / ghosted counts, of the new document
                 PackDocumentChanged();   // Packing's last result belongs to the structure it made
+                QueueRxSites();          // the chains' reactive sites of this structure
                 if (_visionPreview != 0) try { value?.SetVision(_visionPreview); } catch { /* an older core */ }
                 foreach (var n in new[] { nameof(AppColour), nameof(AppSurface), nameof(AppHasSurface), nameof(AppChip), nameof(ShowAppLegend) }) Raise(n);
                 RaiseAppearanceVisibility();
@@ -2302,12 +2303,23 @@ public sealed partial class MainViewModel : ObservableObject
     public void CancelPack() => _packCancel?.Cancel();
 
     // ---------------------------------------------------------------- React
-    public static readonly string[] ReactionSets = ["C–C crosslink (saturated carbons, H₂ leaves)", "Epoxy–amine (primary + secondary)",
-        "Sulfur cure of diene rubber (H–Sx–H donors → C–Sx–C)", "Peroxide cure of diene rubber (allylic C–C)",
-        "Silane coupling to diene rubber (TESPT / TESPD polysulfide → C–S)",
-        "ENR + carboxylic acid (PBS or maleic-acid COOH → β-hydroxy ester, no water)",
-        "ENR + MAH (anhydride opened by OH → half-ester acid, which opens an ENR epoxide: ENR–MAH–ENR, ENR–MAH–PBS)",
-        "Esterification (COOH + OH → ester + H₂O)", "Custom (edit the text)"];
+    // short names in the list; what each does in RxSetNotes, shown under the choice
+    public static readonly string[] ReactionSets = ["C–C crosslink (CH₂–CH₂)", "Epoxy–amine cure", "Sulfur vulcanization", "Peroxide cure (allylic)",
+        "Silane coupling", "ENR + carboxylic acid", "ENR + MAH", "Esterification", "C–C crosslink (any C–H)", "Custom"];
+    public static readonly string[] RxSetNotes =
+    [
+        "Two CH₂ sites become CH–CH; each CH₂ reacts once, two H leave (H₂ in radiation crosslinking, the peroxide's alcohols in a peroxide cure — the same network). PE, EPDM, the CH₂ of polydienes.",
+        "Epoxide ring opened by a primary, then a secondary amine (each N–H once): the cure of epoxy resins.",
+        "Accelerated sulfur cure of a diene rubber: H–Sx–H donors (inserted below, dosed in phr) bond to allylic C–H carbons; two in turn make C–Sx–C bridges.",
+        "Peroxide cure of a diene rubber: allylic carbons of two chains joined C–C.",
+        "Silane coupling agent (TESPT / TESPD) polysulfide to the allylic C–H of a diene rubber → C–S.",
+        "ENR epoxide opened by a carboxylic acid at its tertiary carbon → β-hydroxy ester, nothing leaves; a diacid (maleic acid) bridges two epoxides of two chains — one molecule per link.",
+        "MAH is opened by an OH (to a half-ester acid, which then opens an ENR epoxide): it needs OH groups — ring-opened ENR, an alcohol, PBS ends or moisture; a fresh ENR cell has none. For one molecule bridging two epoxides choose ENR + carboxylic acid with maleic acid (MAH once hydrolysed).",
+        "COOH + OH → ester + H₂O (polyesters, PBS chain extension).",
+        "C–C crosslink of any sp³ C–H carbons (CH₃, CH₂ or CH — polypropylene's tertiary CH); two H leave.",
+        "The reaction text as you write it (template syntax, or from the library and the editor).",
+    ];
+    public string RxSetNote => _rxSet >= 0 && _rxSet < RxSetNotes.Length ? RxSetNotes[_rxSet] : "";
     private int _rxSet, _rxCycles = 50, _rxPerCycle = 5, _rxSeed = 1, _rxRelaxIt = 500;
     private double _rxTarget = 1.0, _rxCapture, _rxMdPs = 2, _rxTemp = 500, _rxFa = 2, _rxFb = 4, _rxRatio = 1;
     private bool _rxRelax = true, _reacting;
@@ -2319,7 +2331,7 @@ public sealed partial class MainViewModel : ObservableObject
     public void RaiseGel() => Raise(nameof(RxGelText));
     public IReadOnlyList<CapsReactCycle> ReactRows => _rxRows;
 
-    public int RxSet { get => _rxSet; set { if (Set(ref _rxSet, value)) { LoadReactionSet(); Raise(nameof(RxShowInsert)); } } }
+    public int RxSet { get => _rxSet; set { if (Set(ref _rxSet, value)) { LoadReactionSet(); Raise(nameof(RxShowInsert)); Raise(nameof(RxSetNote)); RxCrosslinkerDefault(); SyncRxChoice(); } } }
     // curatives inserted into the cell before a cure (sulfur donors)
     public bool RxShowInsert => _rxSet == 2;
     private string _rxInsertSmiles = "SS";
@@ -2343,7 +2355,7 @@ public sealed partial class MainViewModel : ObservableObject
         }
         catch (Exception e) { RxLog = "Could not insert: " + e.Message; Status = "Could not insert the curative"; }
     }
-    public string RxText { get => _rxText; set { if (Set(ref _rxText, value)) RefreshRxReactions(); } }
+    public string RxText { get => _rxText; set { if (Set(ref _rxText, value)) { RefreshRxReactions(); QueueRxSites(); } } }
     public string RxLog { get => _rxLog; private set => Set(ref _rxLog, value); }
     public bool RxRelax { get => _rxRelax; set { if (Set(ref _rxRelax, value)) Raise(nameof(RxMdEnabled)); } }
     public bool Reacting { get => _reacting; private set { if (Set(ref _reacting, value)) RaiseBusy(); } }
@@ -2418,6 +2430,7 @@ public sealed partial class MainViewModel : ObservableObject
                 5 => CapsDocument.ReactionTemplate("enr_acid_ester"),
                 6 => CapsDocument.ReactionTemplate("anhydride_alcohol") + "\n" + CapsDocument.ReactionTemplate("enr_acid_ester"),
                 7 => CapsDocument.ReactionTemplate("ester_condensation"),
+                8 => CapsDocument.ReactionTemplate("cc_crosslink_any"),
                 _ => _rxText,
             };
         }
@@ -2435,6 +2448,7 @@ public sealed partial class MainViewModel : ObservableObject
         Weights = RxSeveral && _rxByWeights ? string.Join(",", RxReactions.Select(r => r.WeightD.ToString(CultureInfo.InvariantCulture))) : "",
         AutoCapture = _rxAutoCapture ? 1 : 0, CaptureMax = _rxCaptureMax, CaptureStep = 0.5,
         TargetKind = _rxTargetKind, TargetValue = _rxTargetKind == 0 ? 0 : _rxTargetValue,
+        SitesPerChain = (int)_rxSitesPer,
     };
 
     public async Task RunReact() => await RunReact(null, null);
@@ -2442,6 +2456,7 @@ public sealed partial class MainViewModel : ObservableObject
     private async Task RunReact(CapsReactOpts? preset, string? presetText)
     {
         if (_doc == null || !Idle || (presetText ?? _rxText).Trim().Length == 0) return;
+        if (preset == null && !await RxAssignField()) return;   // the reaction's force field, complete for the start
         var doc = _doc;
         Reacting = true;
         IsPlaying = false;
@@ -2494,6 +2509,7 @@ public sealed partial class MainViewModel : ObservableObject
         finally
         {
             Reacting = false;
+            QueueRxSites();
             ReactChanged?.Invoke();
         }
     }

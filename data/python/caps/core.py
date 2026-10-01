@@ -128,7 +128,7 @@ class _ReactOpts(C.Structure):
                 ("temperature", C.c_double), ("cutoff", C.c_double), ("coulomb", C.c_int32), ("during_md", C.c_int32),
                 ("field_mode", C.c_int32), ("between_chains", C.c_int32), ("keep_byproducts", C.c_int32), ("selection", C.c_int32),
                 ("weights", C.c_char_p), ("auto_capture", C.c_int32), ("capture_max", C.c_double), ("capture_step", C.c_double),
-                ("target_kind", C.c_int32), ("target_value", C.c_double)]
+                ("target_kind", C.c_int32), ("target_value", C.c_double), ("sites_per_chain", C.c_int32)]
 
 
 class _BuildOpts(C.Structure):
@@ -552,7 +552,7 @@ class Document:
               relax_iterations: int = 500, md_ps: float = 0.0, temperature: float = 500.0, cutoff: float = 10.0, seed: int = 1,
               during_md: bool = False, between_chains: bool = False, keep_byproducts: bool = False, weights=None,
               auto_capture: bool = False, capture_max: float = 0.0, capture_step: float = 0.0, crosslinks=None,
-              default_field: bool = False) -> str:
+              default_field: bool = False, sites_per_chain: int = 0) -> str:
         """Crosslinks the current frame cycle by cycle (Polymatic-style; REACTER-style capture and probability) with
         reaction templates: built-in names ("cc_crosslink", "sulfur_allylic", "peroxide_allylic", "polysulfide_allylic",
         "epoxy_amine_primary", "enr_acid_ester", "ester_condensation", "anhydride_alcohol", …; see reaction_templates()) or
@@ -561,19 +561,32 @@ class Document:
         between_chains: bonds only between different chains; keep_byproducts: H2 / H2O stay as molecules; weights: one
         relative rate per template (else the closest pairs first); auto_capture widens the capture when no pair is found.
         The assigned force field types and relaxes every cycle and is re-assigned to the product (default_field=True:
-        the built-in default, the assignment dropped). Returns the report; network numbers in react_summary()."""
+        the built-in default, the assignment dropped). sites_per_chain: at most this many of each chain's reactive sites react
+        (react_sites() counts them). Returns the report; network numbers in react_summary()."""
         names = [templates] if isinstance(templates, str) else list(templates)
         text = "\n".join(reaction_template(t) if "\n" not in t and t.strip() in reaction_templates() else t for t in names)
         kind, value = (0, 0.0) if crosslinks is None else (self._TARGETS[crosslinks[0]], float(crosslinks[1]))
         o = _ReactOpts(int(seed), int(cycles), int(per_cycle), float(target), float(capture), int(relax), int(relax_iterations),
                        float(md_ps), float(temperature), float(cutoff), 1, int(during_md), int(default_field), int(between_chains),
                        int(keep_byproducts), 1 if weights else 0, _enc(",".join(str(w) for w in weights) if weights else ""),
-                       int(auto_capture), float(capture_max), float(capture_step), kind, value)
+                       int(auto_capture), float(capture_max), float(capture_step), kind, value, int(sites_per_chain))
         rep = _report()
         if library().caps_react(self._h, _enc(text), C.byref(o), None, None, rep, len(rep)) < 0:
             raise _error()
         self.report = rep.value.decode()
         return self.report
+
+    def react_sites(self, templates) -> dict:
+        """Each chain's reactive sites for the templates (built-in names or text, as for react()): chains [{chain, sites,
+        units, atoms, mass}], total_sites, chains_n, units (repeat units), mass and repeat_unit_mass (g/mol)."""
+        names = [templates] if isinstance(templates, str) else list(templates)
+        text = "\n".join(reaction_template(t) if "\n" not in t and t.strip() in reaction_templates() else t for t in names)
+        lib = library()
+        lib.caps_react_sites.argtypes = [C.c_void_p, C.c_char_p, C.c_char_p, C.c_int32]
+        n = lib.caps_react_sites(self._h, _enc(text), None, 0)
+        buf = C.create_string_buffer(n + 1)
+        lib.caps_react_sites(self._h, _enc(text), buf, n + 1)
+        return json.loads(buf.value.decode())
 
     def bond_react(self, templates, directory: str, **options) -> dict:
         """The reactions as a LAMMPS fix bond/react set in directory (templates as for react()): STEM.data, STEM.in and

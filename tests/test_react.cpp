@@ -352,7 +352,7 @@ TEST(React, PolysulfideCouplesToNaturalRubber) {
 // run on ethane + ethane / propylene oxide + methylamine, gives butane and 1-(methylamino)propan-2-ol.
 TEST(React, TemplatesAsReactionSmarts) {
   const auto cc = parse_templates(builtin_template("cc_crosslink"));
-  EXPECT_EQ(reaction_smarts(cc[0]), "[#6;X4;!H0;A:1]~[#1:3].[#6;X4;!H0;A:2]~[#1:4]>>[#6:1]-[#6:2].[#1:3]-[#1:4]");
+  EXPECT_EQ(reaction_smarts(cc[0]), "[#6;X4;H2;A:1]~[#1:3].[#6;X4;H2;A:2]~[#1:4]>>[#6:1]-[#6:2].[#1:3]-[#1:4]");
   const auto ep = parse_templates(builtin_template("epoxy_amine_primary"));
   EXPECT_EQ(reaction_smarts(ep[0]), "[#6;H2;r3:1]~1~[#8;r3:2]~[#6;r3:3]~1.[#7;H2:4]~[#1:5]>>[#6:1](~[#6:3]~[#8:2]-[#1:5])-[#7:4]");
   // the editor's view carries it
@@ -795,4 +795,52 @@ TEST(React, RelaxLeavesAFlatSaddle) {
   bool noted = false;
   for (const auto& n : rep.notes) noted = noted || n.find("stuck at 180") != std::string::npos;
   EXPECT_TRUE(noted);
+}
+
+// Reactive sites per chain: counted for the templates, and capped during a run — every atom forming a bond on a chain uses
+// one of its sites (both carbons of a C–C link), so with 2 per chain no chain reacts more than twice
+TEST(React, SitesPerChainAreCountedAndCapped) {
+  caps::System s = caps::open_file(std::string(CAPS_SAMPLES) + "/ps_melt.data").frame(0);
+  const auto cc = caps::parse_templates(caps::builtin_template("cc_crosslink"));
+  const auto per = caps::chain_sites(s, cc);
+  ASSERT_EQ(per.size(), 10u);
+  for (const auto& c : per) {
+    int ch2 = 0;
+    // the chain's CH2 carbons, counted directly
+    caps::System t = s;
+    t.has_mol = false;
+    const auto mol = t.molecules();
+    std::vector<int> h(s.atoms.size(), 0);
+    for (const auto& b : s.bonds) { if (s.atoms[b.i].element == 1) ++h[b.j]; if (s.atoms[b.j].element == 1) ++h[b.i]; }
+    for (size_t i = 0; i < s.atoms.size(); ++i)
+      if (mol[i] + 1 == c.chain && s.atoms[i].element == 6 && h[i] == 2) {
+        int deg = 0;
+        for (const auto& b : s.bonds) deg += (b.i == i) + (b.j == i);
+        ch2 += deg == 4;
+      }
+    EXPECT_EQ(c.sites, ch2);
+  }
+  caps::ReactOptions o;
+  o.templates = cc;
+  o.relax = false;
+  o.max_cycles = 20;
+  o.max_per_cycle = 4;
+  o.between_chains = true;
+  o.auto_capture = true;
+  o.capture_max = 8;
+  o.sites_per_chain = 2;
+  o.target = caps::ReactTarget::Crosslinks;
+  o.target_value = 30;   // more than 10 chains × 2 ÷ 2 = 10 allow
+  caps::ReactReport rep;
+  caps::System r = s;
+  caps::react(r, o, &rep);
+  EXPECT_LE(rep.crosslinks, 10);
+  EXPECT_GT(rep.crosslinks, 0);
+  EXPECT_TRUE(std::any_of(rep.notes.begin(), rep.notes.end(), [](const std::string& n) { return n.find("at most 10 links") != std::string::npos; }));
+  // no chain lost more than 2 CH2 sites
+  const auto after = caps::chain_sites(r, cc);
+  int lost = 0;
+  for (const auto& c : per) lost += c.sites;
+  for (const auto& c : after) lost -= c.sites;
+  EXPECT_EQ(lost, 2 * rep.crosslinks);
 }

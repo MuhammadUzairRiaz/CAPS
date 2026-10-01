@@ -12,7 +12,7 @@ internal static class SelfTest
         var fails = 0;
         void Check(bool ok, string what) { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {what}"); if (!ok) fails++; }
 
-        Check(Native.AbiVersion() == 58, "native ABI version 58");
+        Check(Native.AbiVersion() == 59, "native ABI version 59");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -1272,6 +1272,45 @@ internal static class SelfTest
             var grpOk = vm.Field.IsGrouped && groupLines.Count == 2 && groupLines.All(l => l.Contains(" type ", StringComparison.Ordinal)) && groupLines[1].Contains("MAH", StringComparison.Ordinal);
             var mixOk = vm.Field.MixingRule.Contains("geometric", StringComparison.Ordinal) && !vm.Field.MixingRule.Contains("arithmetic", StringComparison.Ordinal);
             Check(sixOk && grpOk && mixOk, $"packed components by group: [{sixOk} {grpOk} {mixOk}] {string.Join(" | ", groupLines)} · {vm.Field.MixingRule} · {pairs.FirstOrDefault()}");
+            vm.SetModule(8);
+        }
+
+        // React › reactive sites & crosslinking: each chain's sites for the reaction, the links a degree of crosslinking asks
+        // for, the crosslinker and its phr (one molecule per link), and a cap on the sites per chain
+        {
+            // a grown cell: its chains carry repeat-unit numbers
+            vm.UsePolystyreneInGrow();
+            vm.GrowChainsD = 10;
+            vm.GrowDpD = 8;
+            vm.GrowDensityD = 0.3m;
+            vm.Grow().GetAwaiter().GetResult();
+            for (int k = 0; k < 400 && vm.Field.Working; ++k) Thread.Sleep(25);
+            vm.SetModule(6);
+            vm.RxSet = 5;   // ENR + acid: polystyrene has no epoxide — no sites
+            vm.RefreshRxSites();
+            var noneOk = vm.RxSitesText.Contains("0 reactive sites each", StringComparison.Ordinal) || vm.RxSitesMax == 0;
+            vm.RxSet = 0;   // C–C (CH2–CH2): polystyrene's backbone CH2
+            vm.RefreshRxSites();
+            var sitesOk = vm.RxHasSites && vm.RxSitesMax > 0 && vm.RxSitesText.StartsWith("10 chains", StringComparison.Ordinal);
+            vm.RxDcD = 25;
+            vm.RxDcD = 20;   // asked for here: the run aims at it
+            var calcOk = vm.RxCalcText.Contains("DC 20 %", StringComparison.Ordinal) && !vm.RxHasCrosslinker && vm.RxTargetKind == 5;
+            vm.RxSitesPerChainD = 1;
+            var capOk = vm.RxCalcText.Contains("allow at most 5 links", StringComparison.Ordinal) || vm.RxCalcText.Contains("up to 5 links", StringComparison.Ordinal);
+            var unitsOk = vm.RxCalcText.Contains("of 80 repeat units", StringComparison.Ordinal) && vm.RxCalcText.Contains("→ 8 in this cell", StringComparison.Ordinal);
+            // a crosslinker: maleic acid, 116.07 g/mol; phr = 100 N M / m_rubber
+            vm.RxCrosslinkerSmiles = "OC(=O)/C=C\\C(=O)O";
+            for (int k = 0; k < 200 && !vm.RxCalcText.Contains("maleic", StringComparison.OrdinalIgnoreCase) && !vm.RxCalcText.Contains("116.0", StringComparison.Ordinal); ++k)
+            { Avalonia.Threading.Dispatcher.UIThread.RunJobs(); Thread.Sleep(25); }
+            var phrOk = vm.RxCalcText.Contains("116.0", StringComparison.Ordinal) && vm.RxPhrXD > 0;
+            // phr back to the degree: the same numbers
+            var phr = vm.RxPhrXD;
+            vm.RxPhrXD = phr;
+            var backOk = Math.Abs((double)vm.RxDcD - 20) < 1.5;
+            vm.RxSitesPerChainD = 0;
+            vm.RxCrosslinkerSmiles = "";
+            vm.RxTargetKind = 0;
+            Check(noneOk && sitesOk && calcOk && capOk && unitsOk && phrOk && backOk, $"react sites & crosslinking: [{noneOk} {sitesOk} {calcOk} {capOk} {unitsOk} {phrOk} {backOk}] {vm.RxSitesText} · {vm.RxCalcText.Replace("\n", " / ")}");
             vm.SetModule(8);
         }
 
@@ -2727,7 +2766,7 @@ internal static class SelfTest
             var smartsPath = Path.Combine(MainViewModel.TemplateFolder, "cc_crosslink.smarts");
             var smarts = File.Exists(smartsPath) ? File.ReadAllText(smartsPath) : "";
             vm.TemplateCharges = 0;
-            Check(keptLine && !vm.TemplateText.Contains("charges keep") && smarts.StartsWith("[#6;X4;!H0;A:1]~[#1:3].[#6;X4;!H0;A:2]~[#1:4]>>[#6:1]-[#6:2]"),
+            Check(keptLine && !vm.TemplateText.Contains("charges keep") && smarts.StartsWith("[#6;X4;H2;A:1]~[#1:3].[#6;X4;H2;A:2]~[#1:4]>>[#6:1]-[#6:2]"),
                   $"template charges kept + SMARTS: kept {keptLine} · removed {!vm.TemplateText.Contains("charges keep")} · {smarts.Trim()} · {tplSaved} · {vm.TemplateError}");
             vm.SetModule(8);
         }

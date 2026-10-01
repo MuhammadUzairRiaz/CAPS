@@ -30,9 +30,10 @@ namespace {
 const std::map<std::string, std::string>& builtins() {
   static const std::map<std::string, std::string> m = {
       {"cc_crosslink",
-       "reaction cc_crosslink   # C–C crosslink between saturated carbons, H2 released (radiation crosslinking)\n"
-       "atom 1 C degree=4 H>=1 not_aromatic\n"
-       "atom 2 C degree=4 H>=1 not_aromatic\n"
+       "reaction cc_crosslink   # C–C crosslink of two CH2 sites (PE, EPDM, polyisoprene CH2): CH2–CH2 → CH–CH; each CH2 once\n"
+       "                        # two H leave (H2 in radiation crosslinking; the peroxide's alcohols in a peroxide cure — same network)\n"
+       "atom 1 C degree=4 H=2 not_aromatic\n"
+       "atom 2 C degree=4 H=2 not_aromatic\n"
        "atom 3 H bonded 1\n"
        "atom 4 H bonded 2\n"
        "initiators 3 4   # the leaving hydrogens: close H pairs mean C–H bonds pointing at each other\n"
@@ -41,6 +42,20 @@ const std::map<std::string, std::string>& builtins() {
        "min_path 6\n"
        "form 1 2\n"
        "form 3 4   # the two hydrogens leave together as H2\n"
+       "byproduct 3 4\n"
+       "sites 1\n"},
+      {"cc_crosslink_any",
+       "reaction cc_crosslink_any   # C–C crosslink of any two sp3 C–H carbons (CH3, CH2 or CH: PP's tertiary CH too); two H leave\n"
+       "atom 1 C degree=4 H>=1 not_aromatic\n"
+       "atom 2 C degree=4 H>=1 not_aromatic\n"
+       "atom 3 H bonded 1\n"
+       "atom 4 H bonded 2\n"
+       "initiators 3 4\n"
+       "capture 3.0\n"
+       "probability 1.0\n"
+       "min_path 6\n"
+       "form 1 2\n"
+       "form 3 4\n"
        "byproduct 3 4\n"
        "sites 1\n"},
       {"sulfur_allylic",
@@ -518,7 +533,38 @@ std::vector<Match> find_matches(const System& s, const ReactionTemplate& t, int 
   return out;
 }
 
-int count_sites(const System& s, const ReactionTemplate& t) {
+int count_sites(const System& s, const ReactionTemplate& t) { return int(site_groups(s, t).size()); }
+
+std::vector<ChainSites> chain_sites(const System& s0, const std::vector<ReactionTemplate>& templates) {
+  System s = s0;
+  s.has_mol = false;
+  const auto mol = s.molecules();
+  std::map<int64_t, ChainSites> by;
+  for (size_t i = 0; i < s.atoms.size(); ++i) {
+    auto& c = by[mol[i] + 1];
+    c.chain = mol[i] + 1;
+    ++c.atoms;
+    c.mass += s.mass_of(s.atoms[i]);
+  }
+  int largest = 0;
+  for (const auto& [m, c] : by) largest = std::max(largest, c.atoms);
+  std::map<int64_t, std::set<int64_t>> units;
+  for (size_t i = 0; i < s.atoms.size(); ++i) if (s.atoms[i].resid > 0) units[mol[i] + 1].insert(s.atoms[i].resid);
+  // each chain's sites: the groups of every template whose site atoms lie on it (a group counted once over templates)
+  std::map<int64_t, std::set<std::vector<uint32_t>>> groups;
+  for (const auto& t : templates)
+    for (const auto& g : site_groups(s, t)) groups[mol[g[0]] + 1].insert(g);
+  std::vector<ChainSites> r;
+  for (auto& [m, c] : by) {
+    if (c.atoms < 30 || c.atoms * 5 < largest) continue;
+    c.sites = int(groups[m].size());
+    c.units = int(units[m].size());
+    r.push_back(c);
+  }
+  return r;
+}
+
+std::vector<std::vector<uint32_t>> site_groups(const System& s, const ReactionTemplate& t) {
   const Chem c = chem_of(s);
   auto idx = [&](int map) {
     for (size_t q = 0; q < t.atoms.size(); ++q)
@@ -573,7 +619,7 @@ int count_sites(const System& s, const ReactionTemplate& t) {
     asg[order[0]] = -1;
     used[i] = 0;
   }
-  return int(groups.size());
+  return {groups.begin(), groups.end()};
 }
 
 int apply_matches(System& s, const std::vector<ReactionTemplate>& templates, const std::vector<Match>& matches, bool keep_byproducts,
@@ -820,7 +866,7 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
       return o.retype(s);
     } catch (const std::exception& e) {
       throw ReactError(rep.field + " cannot describe the structure after cycle " + std::to_string(cycle) + ": " + e.what() +
-                       " — add the missing parameters (Force field › Fill gaps from a file) or run with relaxation off (topology only)");
+                       " — add the missing parameters (Force field › Fill gaps from a file), choose a force field that has them for the reaction, or react without retyping (topology only; type the product afterwards)");
     }
   };
   auto name_types = [&](const std::shared_ptr<const ForceField>& ff) {
@@ -903,6 +949,19 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
   };
 
   std::vector<char> linked(s.atoms.size(), 0);   // atoms of the bonds that joined two chains
+  std::map<int64_t, int> site_used;                // each chain's sites that have reacted (sites_per_chain)
+  if (o.sites_per_chain > 0) {
+    char b[300];
+    std::snprintf(b, sizeof b, "at most %d reactive sites per chain react", o.sites_per_chain);
+    rep.notes.push_back(b);
+    // a link between chains uses one site on each of its two chains: at most chains × sites / 2 links
+    const int most = rep.chains * o.sites_per_chain / 2;
+    if (rep.target_crosslinks > most) {
+      std::snprintf(b, sizeof b, "the target (%d links) needs more sites than %d per chain allow: at most %d links (%d chains × %d sites ÷ 2) — the run stops there",
+                    rep.target_crosslinks, o.sites_per_chain, most, rep.chains, o.sites_per_chain);
+      rep.notes.push_back(b);
+    }
+  }
   // capture distances: the templates' own, raised together when auto capture finds no pair
   double extra = 0;
   auto capture_of = [&](size_t k) { return o.templates[k].capture + extra; };
@@ -916,6 +975,7 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
     // the checkpoint: this cycle failing gives back the structure as the last one left it
     const System keep = o.keep_on_failure && !rep.cycles.empty() ? s : System{};
     const std::vector<int64_t> keep_tag = tag;
+    const std::map<int64_t, int> keep_site_used = site_used;
     const std::vector<char> keep_linked = linked;
     const int reactions_before = rep.reactions, stall_before = stall, links_before = rep.crosslinks, intra_before = rep.intrachain,
               byproducts_before = rep.byproducts;
@@ -961,7 +1021,19 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
       if (o.between_chains && same) return false;
       const bool link = !oa.empty() && !ob.empty() && !same;
       if (link && rep.target_crosslinks > 0 && rep.crosslinks + links >= rep.target_crosslinks) return false;   // the target is met
+      // each chain's own sites: at most sites_per_chain react (the template's site atoms on a chain)
+      std::map<int64_t, int> uses;
+      if (o.sites_per_chain > 0) {
+        // every atom that forms a bond and stays in the network uses one of its chain's sites (both carbons of a C–C link)
+        std::set<int> ends;
+        for (auto [x, y] : t.form) ends.insert(x), ends.insert(y);
+        for (int mp : t.byproduct) ends.erase(mp);
+        for (int mp : t.remove) ends.erase(mp);
+        for (int mp : ends) { const uint32_t a = at(mp); if (polymer.count(tag[a])) ++uses[tag[a]]; }
+        for (const auto& [c, k] : uses) if (site_used[c] + k > o.sites_per_chain) return false;
+      }
       for (uint32_t a : m.atoms) busy.insert(a);
+      for (const auto& [c, k] : uses) site_used[c] += k;
       for (auto [x, y] : t.form) { formed.insert({at(x), at(y)}); formed.insert({at(y), at(x)}); }
       links += link;
       intra += same && !oa.empty();
@@ -1094,6 +1166,7 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
       if (!o.keep_on_failure || rep.cycles.empty()) throw;
       s = keep;
       tag = keep_tag;
+      site_used = keep_site_used;
       linked = keep_linked;
       rep.reactions = reactions_before;
       rep.crosslinks = links_before;

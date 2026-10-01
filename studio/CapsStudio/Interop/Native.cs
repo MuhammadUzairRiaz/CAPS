@@ -291,6 +291,8 @@ public struct CapsReactOpts
     public double CaptureMax, CaptureStep;
     public int TargetKind;        // 0 conversion, 1 links, 2 links per chain, 3 mol/m³, 4 Mc g/mol
     public double TargetValue;
+    // ABI 59
+    public int SitesPerChain;     // at most this many of each chain's reactive sites react (0: no limit)
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -593,6 +595,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_equilibrate_checks")] public static extern int EquilibrateChecks(IntPtr doc, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_analyze_report")] public static extern int AnalyzeReport(IntPtr doc, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_trajectory_columns")] public static extern int TrajectoryColumns(IntPtr doc, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_react_sites")] public static extern int ReactSites(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string text, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_reaction_library")] public static extern int ReactionLibrary([MarshalAs(UnmanagedType.LPUTF8Str)] string path, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_react_summary")] public static extern int ReactSummary(IntPtr doc, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_bond_react_export")] public static extern int BondReactExport(IntPtr doc, byte[] templates, [MarshalAs(UnmanagedType.LPUTF8Str)] string dir,
@@ -1466,6 +1469,10 @@ public sealed class CapsDocument : IDisposable
             return System.Text.Encoding.UTF8.GetString(buf, 0, n - 1);
         }
     }
+
+    /// <summary>Each chain's reactive sites for the templates (JSON {chains: [{chain, sites, units, atoms, mass}], total_sites,
+    /// chains_n, units, mass, repeat_unit_mass}).</summary>
+    public string ReactSites(string text) { using (Hold()) return JsonCallOnce((b, c) => Native.ReactSites(H, text, b, c)); }
 
     /// <summary>The reaction library with each scheme's CAPS template (JSON {reactions: [...]}).</summary>
     public static string ReactionLibrary(string path)
