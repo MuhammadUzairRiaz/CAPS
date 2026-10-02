@@ -83,6 +83,7 @@ public sealed partial class MainViewModel
         set
         {
             if (!Set(ref _rxTargetKind, Math.Clamp(value, 0, RxTargetKinds.Length - 1))) return;
+            RxTargetChosen(_rxTargetKind);
             _rxTargetValue = _rxTargetKind switch { 1 => 10, 2 => 1, 3 => 100, 4 => 5000, 5 => 5, _ => 1 };
             Raise(nameof(RxTargetValueD)); Raise(nameof(RxTargetIsConversion)); Raise(nameof(RxTargetHelp));
         }
