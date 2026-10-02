@@ -2,6 +2,7 @@ using System;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 
 namespace CapsStudio.ViewModels;
@@ -366,6 +367,50 @@ public partial class MainViewModel
     public List<FragmentItem> PackAdditives => Fragments.Where(f => f.Category == "Rubber additives" && !f.Smiles.Contains('*')
                                                                     && !f.Name.Contains("fragment", StringComparison.OrdinalIgnoreCase) && !f.Name.Contains(" unit", StringComparison.OrdinalIgnoreCase)).ToList();
     public List<FragmentItem> PackSolvents => Fragments.Where(f => f.Category == "Solvents" && !f.Smiles.Contains('*')).ToList();
+    // ---- your molecules: any whole molecule kept by name and SMILES, beside the library's additives and solvents
+    public System.Collections.ObjectModel.ObservableCollection<FragmentItem> PackMine { get; } = new();
+    public bool HasPackMine => PackMine.Count > 0;
+    private void LoadPackMine()
+    {
+        PackMine.Clear();
+        foreach (var m in _settings.PackMolecules) PackMine.Add(new FragmentItem("Your molecules", m.Name, m.Smiles, "yours"));
+        Raise(nameof(HasPackMine));
+    }
+    private string _packMolName = "";
+    /// <summary>The name the molecule from the SMILES box is added and saved under (empty: the library's name or the formula).</summary>
+    public string PackMolName { get => _packMolName; set => Set(ref _packMolName, value ?? ""); }
+
+    /// <summary>The SMILES box saved to your molecules (checked first: a whole molecule, no * attachment points). A name already
+    /// there is replaced.</summary>
+    public string SavePackMolecule()
+    {
+        var smiles = _packSmiles.Trim();
+        if (smiles.Length == 0) return "Type the molecule's SMILES first (e.g. O=C1OC(=O)C=C1 for maleic anhydride)";
+        if (smiles.Contains('*')) return "A packed molecule is whole: no * attachment points (those are repeat units and fragments)";
+        string formula;
+        try
+        {
+            var info = JsonNode.Parse(Interop.CapsDocument.SmilesInfo(smiles));
+            if ((bool?)info?["ok"] == false) return "Not saved, the SMILES does not read: " + ((string?)info?["error"] ?? "");
+            formula = (string?)info?["formula"] ?? "";
+        }
+        catch (Exception e) { return "Not saved: " + e.Message; }
+        var name = _packMolName.Trim().Length > 0 ? _packMolName.Trim() : formula.Length > 0 ? formula : smiles;
+        _settings.PackMolecules.RemoveAll(m => string.Equals(m.Name, name, StringComparison.OrdinalIgnoreCase));
+        _settings.PackMolecules.Add(new MyFragment { Name = name, Smiles = smiles });
+        _settings.Save();
+        LoadPackMine();
+        return $"Saved \"{name}\" ({formula}) to your molecules: it is under Add molecule › Your molecules from now on";
+    }
+
+    public string RemovePackMolecule(FragmentItem f)
+    {
+        _settings.PackMolecules.RemoveAll(m => m.Name == f.Name && m.Smiles == f.Smiles);
+        _settings.Save();
+        LoadPackMine();
+        return $"Removed \"{f.Name}\" from your molecules";
+    }
+
     private string _packSmiles = "";
     public string PackSmiles { get => _packSmiles; set => Set(ref _packSmiles, value ?? ""); }
     /// <summary>Where molecules built for Pack are kept (their inputs name them).</summary>
@@ -377,7 +422,8 @@ public partial class MainViewModel
         smiles = smiles.Trim();
         if (smiles.Length == 0) { Status = "Type a SMILES (S1SSSSSSS1 for sulfur S8) or pick a molecule"; return; }
         // a readable name: the library's for the same SMILES, else (after building) the formula — never the SMILES mangled
-        if (string.IsNullOrWhiteSpace(name)) name = Fragments.FirstOrDefault(f => f.Smiles == smiles)?.Name;
+        if (string.IsNullOrWhiteSpace(name) && smiles == _packSmiles.Trim() && _packMolName.Trim().Length > 0) name = _packMolName.Trim();
+        if (string.IsNullOrWhiteSpace(name)) name = PackMine.Concat(Fragments).FirstOrDefault(f => f.Smiles == smiles)?.Name;
         var dir = PackMoleculeFolder;
         Directory.CreateDirectory(dir);
         try

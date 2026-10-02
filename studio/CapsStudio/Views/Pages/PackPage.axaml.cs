@@ -25,6 +25,8 @@ public partial class PackPage : PageBase
     private void OnExample(object? s, RoutedEventArgs e) => Window?.PackExample();
     private async void OnAddMolecule(object? s, RoutedEventArgs e) { if (Window != null) await Window.PackAddAsync(); }
     private async void OnAddFragment(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is FragmentItem f) await Vm.AddPackMolecule(f.Smiles, f.Name); }
+    private void OnSavePackMolecule(object? s, RoutedEventArgs e) => Vm.Status = Vm.SavePackMolecule();
+    private void OnRemovePackMolecule(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is FragmentItem f) Vm.Status = Vm.RemovePackMolecule(f); }
     private async void OnAddSmiles(object? s, RoutedEventArgs e) => await Vm.AddPackMolecule(Vm.PackSmiles);
     private void OnRowCount(object? s, RoutedEventArgs e) => ApplyRowCount(s);
     private void OnRowCountKey(object? s, Avalonia.Input.KeyEventArgs e) { if (e.Key == Avalonia.Input.Key.Enter) ApplyRowCount(s); }
