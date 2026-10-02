@@ -75,7 +75,7 @@ public sealed partial class MainViewModel
         };
         foreach (var r in rows) PipelineSteps.Add(new PipelineStep(0, r.Name, r.Detail, r.State, r.Module, r.Current));
         if (_activeItem != null) UpdateItemInfo(_activeItem);
-        foreach (var n in new[] { nameof(StepFieldDone), nameof(StepFieldWarn), nameof(StepMinDone), nameof(StepEqDone), nameof(StepMdDone), nameof(StepExportDone) }) Raise(n);
+        RaiseStepDots();
         Raise(nameof(PipelineNextLabel));
         Raise(nameof(HasPipelineNext));
     }
@@ -87,6 +87,15 @@ public sealed partial class MainViewModel
     public bool StepEqDone => _doc != null && _pipeDone.Contains("Equilibrate");
     public bool StepMdDone => _doc != null && _pipeDone.Contains("Dynamics");
     public bool StepExportDone => _doc != null && _pipeDone.Contains("Export");
+    /// <summary>The Force field tab's dot, said: which force field the active structure has, complete or not.</summary>
+    public string StepFieldTip => _doc == null || !Field.Assigned ? "No force field assigned to the active structure"
+        : Field.Complete ? $"{Field.ForceFieldName} assigned to the active structure: every atom typed, every term found"
+        : $"{Field.ForceFieldName} assigned but incomplete: untyped atoms or missing terms (see the Force field step)";
+    /// <summary>The step dots follow the active structure (another opened, the last one closed).</summary>
+    private void RaiseStepDots()
+    {
+        foreach (var n in new[] { nameof(StepFieldDone), nameof(StepFieldWarn), nameof(StepFieldTip), nameof(StepMinDone), nameof(StepEqDone), nameof(StepMdDone), nameof(StepExportDone) }) Raise(n);
+    }
 
     private static string ShortFf(string name) => Shorten(name, 22);
     private static string Shorten(string s, int n) => s.Length <= n ? s : s[..(n - 1)] + "…";

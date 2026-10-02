@@ -165,6 +165,8 @@ public sealed partial class MainViewModel : ObservableObject
                 QueueSelBar();   // the bar, and the hidden / ghosted counts, of the new document
                 PackDocumentChanged();   // Packing's last result belongs to the structure it made
                 _rxAimDc = true;         // a new structure: the crosslinking panel sets the target again
+                if (value == null) RefreshLayers();   // no structure: no layers (a closed one's rows gone)
+                RaiseStepDots();                      // the tab dots are the active structure's
                 QueueRxSites();          // the chains' reactive sites of this structure
                 if (_visionPreview != 0) try { value?.SetVision(_visionPreview); } catch { /* an older core */ }
                 foreach (var n in new[] { nameof(AppColour), nameof(AppSurface), nameof(AppHasSurface), nameof(AppChip), nameof(ShowAppLegend) }) Raise(n);
