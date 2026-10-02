@@ -159,8 +159,12 @@
                   </Grid>
                   <v:MathView Tex="{x:Static vm:MainViewModel.RxCalcTex}" FontSize="15" HorizontalAlignment="Left" />
                   <TextBlock Text="{Binding RxCalcText}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" />
-                  <Button Classes="small" HorizontalAlignment="Left" Content="{Binding RxInsertXText}" Click="OnInsertCrosslinker" IsEnabled="{Binding RxCanInsertX}"
-                          ToolTip.Tip="These crosslinker molecules into the cell's free space (2 Å clear), then the force field is assigned again" />
+                  <StackPanel Orientation="Horizontal" Spacing="14" IsVisible="{Binding RxHasCrosslinker}">
+                    <Button Classes="small" Content="{Binding RxInsertXText}" Click="OnInsertCrosslinker" IsEnabled="{Binding RxCanInsertX}"
+                            ToolTip.Tip="The crosslinker molecules the cell lacks for this degree (those already there are counted) into its free space, 2 Å clear; the force field is assigned again" />
+                    <CheckBox Content="Top up on Crosslink" IsChecked="{Binding RxTopUp}" VerticalAlignment="Center"
+                              ToolTip.Tip="Crosslink first inserts the crosslinker molecules a raised degree needs (one per link) and the cell lacks; spare molecules are never removed" />
+                  </StackPanel>
                 </StackPanel>
               </StackPanel>
             </StackPanel>

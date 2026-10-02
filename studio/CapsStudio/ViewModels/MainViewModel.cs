@@ -2459,6 +2459,8 @@ public sealed partial class MainViewModel : ObservableObject
     private async Task RunReact(CapsReactOpts? preset, string? presetText)
     {
         if (_doc == null || !Idle || (presetText ?? _rxText).Trim().Length == 0) return;
+        // the crosslinker the asked-for degree still lacks goes in first (a higher degree, more molecules), then the force field
+        if (preset == null && RxTopUp && RxTargetKind == 5 && RxCanInsertX) await InsertRxCrosslinker();
         if (preset == null && !await RxAssignField()) return;   // the reaction's force field, complete for the start
         var doc = _doc;
         Reacting = true;
