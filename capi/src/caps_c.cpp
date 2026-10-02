@@ -3868,7 +3868,7 @@ int32_t caps_layers(caps_doc* d, char* json, int32_t cap) {
       if (S.cell.valid()) { double f = S.cell.to_fractional(a.pos)[2]; return f - std::floor(f); }
       return hi > lo ? (a.pos[2] - lo) / (hi - lo) : 0.5;
     };
-    struct Mol { int64_t id = 0; size_t atoms = 0, sel = 0; std::array<double, 8> z{}; size_t shown = 0, ghost = 0, hidden = 0, locked = 0; std::vector<std::pair<int, int>> el; std::string res; bool many_res = false; };
+    struct Mol { int64_t id = 0; size_t atoms = 0, sel = 0; std::array<double, 8> z{}; size_t shown = 0, ghost = 0, hidden = 0, locked = 0; std::vector<std::pair<int, int>> el; std::string res; bool many_res = false; int64_t resid0 = 0; bool many_units = false; };
     std::vector<Mol> list;
     std::unordered_map<int64_t, size_t> slot;
     for (size_t i = 0; i < n; ++i) {
@@ -3877,6 +3877,8 @@ int32_t caps_layers(caps_doc* d, char* json, int32_t cap) {
       auto& m = list[it->second];
       ++m.atoms;
       if (!m.many_res && S.atoms[i].resname != m.res) m.many_res = true;   // a chain of several residues (a copolymer's units)
+      if (m.atoms == 1) m.resid0 = S.atoms[i].resid;
+      else if (S.atoms[i].resid != m.resid0) m.many_units = true;            // several repeat units: a chain of them
       const int e = S.atoms[i].element;
       auto el = std::find_if(m.el.begin(), m.el.end(), [e](const auto& p) { return p.first == e; });
       if (el == m.el.end()) m.el.push_back({e, 1}); else ++el->second;
@@ -3906,7 +3908,8 @@ int32_t caps_layers(caps_doc* d, char* json, int32_t cap) {
       const int64_t id = m.id;
       const std::string f = formula(m.el);
       // a residue name names a molecule only when it is one residue: a chain of units is its formula
-      const std::string res = m.many_res ? std::string() : m.res;
+      // one unit name over several units: a homopolymer chain, poly(NAME) — PE's ETH units make poly(ETH)
+      const std::string res = m.many_res || m.res.empty() ? std::string() : m.many_units ? "poly(" + m.res + ")" : m.res;
       const std::string key = res + "|" + f;
       if (!kinds.count(key)) {
         order.push_back(key);
@@ -3945,10 +3948,12 @@ int32_t caps_layers(caps_doc* d, char* json, int32_t cap) {
     caps::Json arr = caps::Json::array();
     for (const auto& key : order) {
       const std::string res = key.substr(0, key.find('|')), f = key.substr(key.find('|') + 1);
-      std::string up = res;
+      // the unit's own name (poly(NAME) → NAME) for the placeholder and water checks
+      std::string up = res.rfind("poly(", 0) == 0 && res.size() > 6 ? res.substr(5, res.size() - 6) : res;
       for (auto& c : up) c = char(std::toupper(static_cast<unsigned char>(c)));
       const bool water = f == "H2O" || up == "SOL" || up == "HOH" || up == "WAT" || up == "TIP3" || up == "SPC";
-      kinds[key]["name"] = water ? std::string("water") : !generic.count(up) && res_uses[res] == 1 ? res : f;
+      const bool placeholder = generic.count(up) || up.size() <= 1;   // a builder's unit letter (A, B …) names nothing
+      kinds[key]["name"] = water ? std::string("water") : !placeholder && res_uses[res] == 1 ? res : f;
       kinds[key]["atoms"] = double(kind_atoms[key]);
       arr.push_back(kinds[key]);
     }

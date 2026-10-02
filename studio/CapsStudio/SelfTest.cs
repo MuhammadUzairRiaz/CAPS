@@ -1316,6 +1316,19 @@ internal static class SelfTest
             vm.SetModule(8);
         }
 
+        // the Force field tab's dot is the active structure's: on with a complete assignment, off once the last structure closes;
+        // layers empty with no structure; a homopolymer chain named poly(UNIT)
+        {
+            while (vm.Document != null) vm.CloseDocument();
+            vm.Open(Path.Combine(dir, "ps_melt.data"));
+            vm.Field.FfIndex = vm.Field.Library.ToList().FindIndex(e => e.Id == "gaff-amber25");
+            vm.Field.Assign().GetAwaiter().GetResult();
+            var on = vm.StepFieldDone && vm.StepFieldTip.Contains("every atom typed", StringComparison.Ordinal);
+            while (vm.Document != null) vm.CloseDocument();
+            var off = !vm.StepFieldDone && !vm.StepFieldWarn && !vm.HasLayers && vm.LayerRows.Count == 0;
+            Check(on && off, $"force-field dot and layers follow the structure: on {on} · off after closing {off} · {vm.StepFieldTip}");
+        }
+
         // AMBER prmtop: opened with its restart beside it, its own force field assigned; another force field, then back
         {
             var amber = Path.GetFullPath(Path.Combine(dir, "..", "tests", "data", "amber", "phenol.prmtop"));

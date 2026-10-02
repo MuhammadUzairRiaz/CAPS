@@ -209,8 +209,8 @@
               <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
                 <local:Icon Kind="tag" Size="16" VerticalAlignment="Center" />
                 <TextBlock Text="Force field" VerticalAlignment="Center" />
-                  <Ellipse Classes="pip" IsVisible="{Binding StepFieldDone}" VerticalAlignment="Center" ToolTip.Tip="Done on the active structure" />
-                  <Ellipse Classes="pip warn" IsVisible="{Binding StepFieldWarn}" VerticalAlignment="Center" ToolTip.Tip="Assigned, but incomplete" />
+                  <Ellipse Classes="pip" IsVisible="{Binding StepFieldDone}" VerticalAlignment="Center" ToolTip.Tip="{Binding StepFieldTip}" />
+                  <Ellipse Classes="pip warn" IsVisible="{Binding StepFieldWarn}" VerticalAlignment="Center" ToolTip.Tip="{Binding StepFieldTip}" />
               </StackPanel>
               <Border Classes="bar" Height="2" CornerRadius="1" Background="{DynamicResource AccB}" VerticalAlignment="Bottom" Margin="4,0,4,-6" />
             </Panel>
