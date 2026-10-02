@@ -237,7 +237,7 @@ public sealed partial class MainViewModel
             var target = slot ?? PolyUnits.FirstOrDefault();
             if (target == null) AddPolyUnit(e.Name, e.Smiles);
             else { target.Name = e.Name; target.Smiles = e.Smiles; }
-            if (PolyUnits.Count == 1) _polyName = e.Name;
+            if (PolyUnits.Count == 1) { _polyName = e.Name; _polyRubberSet = false; }
             Raise(nameof(PolyName));
             PolyChanged();
             return;
@@ -273,7 +273,10 @@ public sealed partial class MainViewModel
         Raise(nameof(PolyPattern));
         _polyName = e.Name;
         Raise(nameof(PolyName));
+        // a copolymer from the library is saved as what the library says it is (until you change it)
+        _polyRubberSet = false;
         PolyChanged();
+        if (e.Rubber && !_polyRubber) { _polyRubber = true; _polyRubberSet = true; Raise(nameof(PolySaveRubber)); Raise(nameof(PolyRubberTip)); }
     }
 
     private string _polyEndsText = "";
@@ -377,6 +380,7 @@ public sealed partial class MainViewModel
     private void PolyChanged()
     {
         CompRefresh();
+        GuessPolyRubber();
         if (PolyUnits.Count == 0) return;
         if (PolyUnits.FirstOrDefault(u => !u.Ok) is { } bad) { PolyError = $"{bad.Letter}: {(bad.HasError ? bad.Error : "no SMILES")}"; return; }
         try

@@ -694,6 +694,28 @@ internal static class SelfTest
             vm.PolyLinkage = 1;
             Check(vm.PolySpecJson().Contains("\"linkage\":\"head-to-head\"") && vm.PolyPreview.Contains(" reversed") && !vm.PolyHasError, $"head-to-head linkage: {vm.PolyPreview} {vm.PolyError}");
             vm.PolyLinkage = 0;
+            // your own ENR (the library's units, alternating): guessed a rubber, saved tagged, found at once under Rubbers + search
+            vm.PolySequence = 1;
+            vm.PolyName = "ENR-50 test alternate";
+            vm.LibraryRubberOnly = true;
+            vm.LibraryQuery = "ENR";
+            var guessed = vm.PolySaveRubber;
+            var savedEnr = vm.SavePolymerToLibrary();
+            var mineEnr = vm.LibraryShown.FirstOrDefault(e => e.User && e.Name == "ENR-50 test alternate");
+            Check(guessed && mineEnr is { Rubber: true } && File.ReadAllText(MainViewModel.UserPolymerFile).Contains("\"rubber\""), $"your ENR saved as a rubber and shown under Rubbers + ENR: {savedEnr}");
+            // polystyrene is no rubber: saved untagged it is shown by turning the Rubbers filter off
+            if (vm.PolymerLibrary.FirstOrDefault(e => !e.Copolymer && e.Smiles.Contains("c1ccccc1")) is { } ps)
+            {
+                vm.PolyUnits.Clear(); vm.AddPolyUnit(ps.Name, ps.Smiles);
+                vm.PolyName = "PS test";
+                var psRubber = vm.PolySaveRubber;
+                vm.SavePolymerToLibrary();
+                Check(!psRubber && !vm.LibraryRubberOnly && vm.LibraryShown.Any(e => e.User && e.Name == "PS test" && !e.Rubber), "your PS saved, not a rubber, and shown");
+                if (vm.PolymerLibrary.FirstOrDefault(e => e.User && e.Name == "PS test") is { } m2) vm.RemoveUserPolymer(m2);
+            }
+            if (mineEnr != null) vm.RemoveUserPolymer(mineEnr);
+            vm.LibraryRubberOnly = false; vm.LibraryQuery = ""; vm.PolyName = "";
+            vm.UseLibrary(enr, null);
             vm.GrowChainsD = 4;
             vm.GrowDensityD = 0.3m;
             vm.SendPolymerToGrow();

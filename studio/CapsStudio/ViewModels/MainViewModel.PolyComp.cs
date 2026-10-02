@@ -87,12 +87,54 @@ public sealed partial class MainViewModel
             {
                 var id = (string?)p["id"] ?? "";
                 _libById[id] = p;
-                PolymerLibrary.Add(new LibraryEntry(id, (string?)p["name"] ?? id, (string?)p["smiles"] ?? "", false, false, null, true));
+                PolymerLibrary.Add(new LibraryEntry(id, (string?)p["name"] ?? id, (string?)p["smiles"] ?? "", UserRubber(p, [(string?)p["smiles"] ?? ""]), false, null, true));
             }
             foreach (var c in (j?["copolymers"] as JsonArray ?? []).OfType<JsonObject>())
-                PolymerLibrary.Add(new LibraryEntry((string?)c["id"] ?? "", (string?)c["name"] ?? "", "", false, true, c, true));
+                PolymerLibrary.Add(new LibraryEntry((string?)c["id"] ?? "", (string?)c["name"] ?? "", "", UserRubber(c, UnitSmiles(c)), true, c, true));
         }
         catch (Exception e) { Status = "Your polymers (" + UserPolymerFile + "): " + e.Message; }
+    }
+
+    /// <summary>Your entry is a rubber when saved so (its "rubber" tag), not when saved as "not-rubber"; an entry saved
+    /// before the tag existed is judged from its units.</summary>
+    private bool UserRubber(JsonObject o, IEnumerable<string> units)
+    {
+        var tags = (o["tags"] as JsonArray)?.Select(x => (string?)x).ToList() ?? [];
+        if (tags.Contains("rubber")) return true;
+        if (tags.Contains("not-rubber")) return false;
+        return units.Any(IsRubberUnit);
+    }
+
+    private IEnumerable<string> UnitSmiles(JsonObject c) =>
+        (c["units"] as JsonArray ?? []).Select(x => (string?)x ?? "").Select(u => _libById.TryGetValue(u, out var p) ? (string?)p["smiles"] ?? "" : u);
+
+    /// <summary>The repeat units of the library's rubbers (each rubber homopolymer, and every unit of a rubber copolymer),
+    /// written alike: "[*]" as "*", cis/trans marks dropped (a unit drawn without them is still the same backbone).</summary>
+    private HashSet<string>? _rubberUnits;
+    internal static string UnitKey(string smiles) => smiles.Trim().Replace("[*]", "*").Replace("/", "").Replace("\\", "");
+    public bool IsRubberUnit(string smiles)
+    {
+        if (_rubberUnits == null && PolymerLibrary.Count > 0)
+        {
+            _rubberUnits = [];
+            foreach (var e in PolymerLibrary.Where(e => e.Rubber && !e.User))
+                foreach (var u in e.Copolymer && e.Preset != null ? UnitSmiles(e.Preset) : [e.Smiles])
+                    if (u.Length > 0) _rubberUnits.Add(UnitKey(u));
+        }
+        return smiles.Length > 0 && _rubberUnits != null && _rubberUnits.Contains(UnitKey(smiles));
+    }
+
+    /// <summary>Whether the polymer on the builder is saved as a rubber: guessed from its units (a unit of one of the
+    /// library's rubbers) until you set it.</summary>
+    private bool _polyRubber, _polyRubberSet;
+    public bool PolySaveRubber { get => _polyRubber; set { _polyRubberSet = true; Set(ref _polyRubber, value); } }
+    public string PolyRubberTip => _polyRubberSet ? "Set by you" : _polyRubber
+        ? "Guessed: a unit is a unit of one of the library's rubbers (" + string.Join(", ", PolyUnits.Where(u => u.Ok && IsRubberUnit(u.Smiles)).Select(u => u.Name.Length > 0 ? u.Name : u.Letter)) + ")"
+        : "Guessed: no unit is a unit of one of the library's rubbers; tick it when this is a rubber";
+    private void GuessPolyRubber()
+    {
+        if (!_polyRubberSet) Set(ref _polyRubber, PolyUnits.Any(u => u.Ok && IsRubberUnit(u.Smiles)), nameof(PolySaveRubber));
+        Raise(nameof(PolyRubberTip));
     }
 
     private JsonObject ReadUserFile()
@@ -120,8 +162,9 @@ public sealed partial class MainViewModel
         void Drop(JsonArray a) { foreach (var o in a.OfType<JsonObject>().Where(o => string.Equals((string?)o["name"], name, StringComparison.OrdinalIgnoreCase)).ToList()) a.Remove(o); }
         Drop(polys);
         Drop(copos);
+        JsonArray Tags() => new("user", _polyRubber ? "rubber" : "not-rubber");
         if (units.Count == 1)
-            polys.Add(new JsonObject { ["id"] = $"U{Next(polys, "U"):000}", ["name"] = name, ["smiles"] = units[0].Smiles, ["tags"] = new JsonArray("user") });
+            polys.Add(new JsonObject { ["id"] = $"U{Next(polys, "U"):000}", ["name"] = name, ["smiles"] = units[0].Smiles, ["tags"] = Tags() });
         else
         {
             // each unit saved with its SMILES (a unit also saved alone keeps its own entry)
@@ -130,7 +173,7 @@ public sealed partial class MainViewModel
                 ["id"] = $"UC{Next(copos, "UC"):000}", ["name"] = name,
                 ["units"] = new JsonArray(units.Select(u => (JsonNode)u.Smiles).ToArray()),
                 ["unit_names"] = new JsonArray(units.Select(u => (JsonNode)(u.Name.Length > 0 ? u.Name : u.Smiles)).ToArray()),
-                ["sequence"] = SequenceIds[Math.Clamp(_polySeq, 0, SequenceIds.Length - 1)], ["tags"] = new JsonArray("user"),
+                ["sequence"] = SequenceIds[Math.Clamp(_polySeq, 0, SequenceIds.Length - 1)], ["tags"] = Tags(),
             };
             if (_polySeq is 3 or 6) c["weights"] = new JsonArray(units.Select(u => (JsonNode)(double)u.Weight).ToArray());
             if (_polySeq == 2) c["blocks"] = new JsonArray(units.Select(u => (JsonNode)(double)u.Block).ToArray());
@@ -140,7 +183,10 @@ public sealed partial class MainViewModel
         Directory.CreateDirectory(Path.GetDirectoryName(UserPolymerFile)!);
         File.WriteAllText(UserPolymerFile, file.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
         ReloadPolymerLibrary();
-        return $"Saved \"{name}\" to your polymers ({UserPolymerFile})";
+        // shown at once: the search and the Rubbers filter let it through
+        if (_libRubber && !_polyRubber) LibraryRubberOnly = false;
+        if (_libQuery.Trim().Length > 0 && !name.Contains(_libQuery.Trim(), StringComparison.OrdinalIgnoreCase)) LibraryQuery = "";
+        return $"Saved \"{name}\" to your polymers{(_polyRubber ? " as a rubber" : "")} ({UserPolymerFile})";
     }
 
     /// <summary>One of your polymers removed from your library (the built-in ones stay).</summary>
@@ -159,6 +205,7 @@ public sealed partial class MainViewModel
     private void ReloadPolymerLibrary()
     {
         PolymerLibrary.Clear();
+        _rubberUnits = null;
         LoadPolymerLibrary();
     }
 }
