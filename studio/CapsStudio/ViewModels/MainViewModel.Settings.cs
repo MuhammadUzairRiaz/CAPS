@@ -60,6 +60,7 @@ public sealed partial class MainViewModel
         LoadHosts();
         _fragments = null;
         LoadQuickFragments();
+        LoadPackMine();
         Raise(nameof(JobTemplate));
         foreach (var n in new[] { nameof(SetTheme), nameof(SetScale), nameof(ScaleText), nameof(SetPalette), nameof(SetThreads), nameof(ThreadsText),
                                   nameof(SetBackground), nameof(SetOutlines), nameof(SetDepthCue), nameof(SetStyle), nameof(SetForceField),

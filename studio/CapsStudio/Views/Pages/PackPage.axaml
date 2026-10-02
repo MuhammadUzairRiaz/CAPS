@@ -134,6 +134,25 @@
                             <TextBox Text="{Binding PackSmiles}" Classes="mono" Watermark="S1SSSSSSS1 (sulfur S8), CCO …" KeyDown="OnSmilesKey" />
                             <Button Grid.Column="1" Classes="small" Content="Build &amp; add" Click="OnAddSmiles" />
                           </Grid>
+                          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                            <TextBox Text="{Binding PackMolName}" Watermark="Name (e.g. Maleic anhydride) — empty: the formula" KeyDown="OnSmilesKey" />
+                            <Button Grid.Column="1" Classes="small ghost" Content="Save to my molecules" Click="OnSavePackMolecule"
+                                    ToolTip.Tip="Keep this SMILES under its name in Your molecules, to add again in any packing (checked first; a name already there is replaced)" />
+                          </Grid>
+                          <StackPanel Spacing="6" IsVisible="{Binding HasPackMine}">
+                            <TextBlock Text="YOUR MOLECULES" Classes="h3" />
+                            <ItemsControl ItemsSource="{Binding PackMine}">
+                              <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemSpacing="6" LineSpacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                              <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:FragmentItem">
+                                  <StackPanel Orientation="Horizontal" Spacing="0">
+                                    <Button Classes="small" Content="{Binding Name}" Tag="{Binding}" Click="OnAddFragment" ToolTip.Tip="{Binding Smiles}" />
+                                    <Button Classes="small ghost" Content="×" Tag="{Binding}" Click="OnRemovePackMolecule" Padding="5,0" ToolTip.Tip="Remove from your molecules" />
+                                  </StackPanel>
+                                </DataTemplate>
+                              </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                          </StackPanel>
                           <TextBlock Text="RUBBER CURATIVES &amp; ADDITIVES" Classes="h3" />
                           <ItemsControl ItemsSource="{Binding PackAdditives}">
                             <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemSpacing="6" LineSpacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
