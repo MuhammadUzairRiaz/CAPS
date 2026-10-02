@@ -1292,6 +1292,8 @@ internal static class SelfTest
             vm.RxSet = 0;   // C–C (CH2–CH2): polystyrene's backbone CH2
             vm.RefreshRxSites();
             var sitesOk = vm.RxHasSites && vm.RxSitesMax > 0 && vm.RxSitesText.StartsWith("10 chains", StringComparison.Ordinal);
+            // the degree the panel shows is the run's target without touching it (the 20 % default)
+            sitesOk &= vm.RxTargetKind == 5 && Math.Abs((double)vm.RxTargetValueD - 20) < 1e-9;
             vm.RxDcD = 25;
             vm.RxDcD = 20;   // asked for here: the run aims at it
             var calcOk = vm.RxCalcText.Contains("DC 20 %", StringComparison.Ordinal) && !vm.RxHasCrosslinker && vm.RxTargetKind == 5;

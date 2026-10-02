@@ -32,7 +32,9 @@ public sealed partial class MainViewModel
     public int RxSitesMax => _rxSitesMin;
     /// <summary>Degree of crosslinking asked for, %.</summary>
     public decimal RxDcD { get => _rxDc; set { if (Set(ref _rxDc, Math.Clamp(value, 0, 100))) { _rxFromPhr = false; _rxAimDc = true; RxRecalc(); } } }
-    private bool _rxAimDc;   // the run aims at the degree asked for here (set when the degree or the phr is given, not by a recount)
+    // the run aims at the degree shown here whenever it can be counted; choosing another target under Network › Stop at
+    // takes over (giving a degree or phr here again hands it back)
+    private bool _rxAimDc = true, _rxTargetFromPanel;
     /// <summary>The crosslinker in phr (parts per hundred rubber): sets the degree of crosslinking.</summary>
     public decimal RxPhrXD { get => _rxPhrX; set { if (Set(ref _rxPhrX, Math.Max(0, value))) { _rxFromPhr = true; _rxAimDc = true; RxRecalc(); } } }
     private bool _rxFromPhr;
@@ -129,11 +131,12 @@ public sealed partial class MainViewModel
         try
         {
             var inv = CultureInfo.InvariantCulture;
-            if (_rxChains == 0) { RxCalcText = ""; _rxXNeeded = 0; return; }
+            if (_rxChains == 0) { RxCalcText = ""; _rxXNeeded = 0; RxPanelTargetOff(); return; }
             if (_rxUnits == 0)
             {
                 RxCalcText = "The chains carry no repeat-unit numbers (residues, as Polymer cell writes them): a degree of crosslinking cannot be counted here — stop at a number of links or links per chain instead (Network › Stop at)";
                 _rxXNeeded = 0;
+                RxPanelTargetOff();
                 return;
             }
             var x = RxHasCrosslinker && _rxXMass > 0;
@@ -164,7 +167,12 @@ public sealed partial class MainViewModel
             if (_rxLinksNeeded < 1) lines.Add("⚠ fewer than one link in this cell: grow more chains or ask for more");
             RxCalcText = string.Join("\n", lines);
             // the run aims at it: the degree of crosslinking
-            if (_rxAimDc && _rxLinksNeeded >= 1) { _rxTargetKind = 5; _rxTargetValue = (double)_rxDc; Raise(nameof(RxTargetKind)); Raise(nameof(RxTargetValueD)); }
+            if (_rxAimDc && _rxLinksNeeded >= 1)
+            {
+                _rxTargetKind = 5; _rxTargetValue = (double)_rxDc; _rxTargetFromPanel = true;
+                Raise(nameof(RxTargetKind)); Raise(nameof(RxTargetValueD)); Raise(nameof(RxTargetIsConversion)); Raise(nameof(RxTargetHelp));
+            }
+            else RxPanelTargetOff();
         }
         finally
         {
@@ -173,6 +181,18 @@ public sealed partial class MainViewModel
             Raise(nameof(RxInsertXText));
         }
     }
+
+    /// <summary>A degree the panel set as the target, taken back when it can no longer be counted (no chains, no repeat units).</summary>
+    private void RxPanelTargetOff()
+    {
+        if (!_rxTargetFromPanel) return;
+        _rxTargetFromPanel = false;
+        if (_rxTargetKind != 5) return;
+        _rxTargetKind = 0; _rxTargetValue = 1;
+        Raise(nameof(RxTargetKind)); Raise(nameof(RxTargetValueD)); Raise(nameof(RxTargetIsConversion)); Raise(nameof(RxTargetHelp));
+    }
+    /// <summary>Another target chosen under Network › Stop at: the panel no longer sets it.</summary>
+    internal void RxTargetChosen(int kind) { if (kind != 5) { _rxAimDc = false; _rxTargetFromPanel = false; } }
 
     /// <summary>The crosslinker molecules the calculation asks for, into the cell's free space.</summary>
     public async Task InsertRxCrosslinker()
