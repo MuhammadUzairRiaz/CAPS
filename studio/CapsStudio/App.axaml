@@ -39,5 +39,7 @@
       </FluentTheme.Palettes>
     </FluentTheme>
     <StyleInclude Source="avares://CapsStudio/Themes/Controls.axaml" />
+    <!-- every number box: a value typed beyond its range goes to the nearest end (App.GuardNumberBoxes restores an emptied box) -->
+    <Style Selector="NumericUpDown"><Setter Property="ClipValueToMinMax" Value="True" /></Style>
   </Application.Styles>
 </Application>
