@@ -95,7 +95,9 @@ struct ChainSites {
   int sites = 0, units = 0, atoms = 0;
   double mass = 0;
 };
-std::vector<ChainSites> chain_sites(const System& s, const std::vector<ReactionTemplate>& templates);
+// chains (optional, one per atom): the chains a reaction run started from (its chains_after), so chains joined by links are
+// still counted one by one; empty: the molecules of the structure as it is
+std::vector<ChainSites> chain_sites(const System& s, const std::vector<ReactionTemplate>& templates, const std::vector<int64_t>& chains = {});
 
 // Apply non-overlapping matches (each atom reacts at most once per call). Deleted atoms are removed and the
 // indices compacted; molecules are recomputed from bonds. Returns the number applied.

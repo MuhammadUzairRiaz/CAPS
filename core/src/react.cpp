@@ -535,12 +535,19 @@ std::vector<Match> find_matches(const System& s, const ReactionTemplate& t, int 
 
 int count_sites(const System& s, const ReactionTemplate& t) { return int(site_groups(s, t).size()); }
 
-std::vector<ChainSites> chain_sites(const System& s0, const std::vector<ReactionTemplate>& templates) {
+std::vector<ChainSites> chain_sites(const System& s0, const std::vector<ReactionTemplate>& templates, const std::vector<int64_t>& chains) {
   System s = s0;
   s.has_mol = false;
-  const auto mol = s.molecules();
+  std::vector<int64_t> mol(s.atoms.size());
+  if (chains.size() == s.atoms.size()) {
+    for (size_t i = 0; i < mol.size(); ++i) mol[i] = chains[i] - 1;   // the chains a run started from (byproducts negative: left out below)
+  } else {
+    const auto m = s.molecules();
+    for (size_t i = 0; i < mol.size(); ++i) mol[i] = m[i];
+  }
   std::map<int64_t, ChainSites> by;
   for (size_t i = 0; i < s.atoms.size(); ++i) {
+    if (mol[i] + 1 <= 0) continue;   // a byproduct of a run
     auto& c = by[mol[i] + 1];
     c.chain = mol[i] + 1;
     ++c.atoms;
@@ -549,11 +556,11 @@ std::vector<ChainSites> chain_sites(const System& s0, const std::vector<Reaction
   int largest = 0;
   for (const auto& [m, c] : by) largest = std::max(largest, c.atoms);
   std::map<int64_t, std::set<int64_t>> units;
-  for (size_t i = 0; i < s.atoms.size(); ++i) if (s.atoms[i].resid > 0) units[mol[i] + 1].insert(s.atoms[i].resid);
+  for (size_t i = 0; i < s.atoms.size(); ++i) if (s.atoms[i].resid > 0 && mol[i] + 1 > 0) units[mol[i] + 1].insert(s.atoms[i].resid);
   // each chain's sites: the groups of every template whose site atoms lie on it (a group counted once over templates)
   std::map<int64_t, std::set<std::vector<uint32_t>>> groups;
   for (const auto& t : templates)
-    for (const auto& g : site_groups(s, t)) groups[mol[g[0]] + 1].insert(g);
+    for (const auto& g : site_groups(s, t)) if (mol[g[0]] + 1 > 0) groups[mol[g[0]] + 1].insert(g);
   std::vector<ChainSites> r;
   for (auto& [m, c] : by) {
     if (c.atoms < 30 || c.atoms * 5 < largest) continue;
@@ -1111,6 +1118,9 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
       linked = std::move(next);
     }
     applied = chosen.empty() ? 0 : apply_matches(s, o.templates, chosen, o.keep_byproducts, &rep.byproducts, &tag);
+    // links join chains across the cell walls: every molecule (now the network) whole again, so each cycle's frame and the
+    // live view show the joined chains side by side and bonded atoms carry consistent images
+    if (applied > 0 && s.cell.valid()) make_molecules_whole(s);
     if (applied) {
       for (auto& lr : pending) rep.links.push_back(lr);
       for (const auto& [m, cu] : pending_attach) attached[m].push_back(cu);

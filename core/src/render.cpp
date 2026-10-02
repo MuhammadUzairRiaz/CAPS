@@ -597,12 +597,15 @@ Scene Renderer::scene(const System& s, const RenderOptions& opt) {
       const Style si = P.style_of(b.i), sj = P.style_of(b.j);
       if (si == Style::SpaceFilling || sj == Style::SpaceFilling) continue;
       const Vec3 a = s.atoms[b.i].pos, c = s.atoms[b.j].pos;
-      if (norm(a - c) > half_cell) continue;
-      const Vec3 m = (a + c) * 0.5;
+      // across a periodic wall: each half towards the partner's nearest image (stubs through the wall)
+      const Vec3 dmi = s.cell.valid() ? s.cell.minimum_image(c - a) : c - a;
+      const bool across = norm(c - a) > norm(dmi) + 1e-6;
+      if (!across && norm(a - c) > half_cell) continue;
+      const Vec3 ma = across ? a + dmi * 0.5 : (a + c) * 0.5, mc = across ? c - dmi * 0.5 : ma;
       if (si == Style::Wireframe || sj == Style::Wireframe) {
         for (int h = 0; h < 2; ++h) {
-          const Vec3& p0 = h ? m : a;
-          const Vec3& p1 = h ? c : m;
+          const Vec3& p0 = h ? mc : a;
+          const Vec3& p1 = h ? c : ma;
           sc.lines.insert(sc.lines.end(), {float(p0[0]), float(p0[1]), float(p0[2]), float(p1[0]), float(p1[1]), float(p1[2])});
           sc.line_rgb.push_back(pack(colour[h ? b.j : b.i]));
           sc.line_width.push_back(1.4f);
@@ -611,8 +614,8 @@ Scene Renderer::scene(const System& s, const RenderOptions& opt) {
       }
       const double br = si == Style::Backbone && sj == Style::Backbone ? opt.bond_radius * 2.2 : P.bond_r;
       for (int h = 0; h < 2; ++h) {
-        const Vec3& p0 = h ? m : a;
-        const Vec3& p1 = h ? c : m;
+        const Vec3& p0 = h ? mc : a;
+        const Vec3& p1 = h ? c : ma;
         sc.capsules.insert(sc.capsules.end(), {float(p0[0]), float(p0[1]), float(p0[2]), float(p1[0]), float(p1[1]), float(p1[2]), float(br)});
         sc.capsule_rgb.push_back(pack(colour[h ? b.j : b.i]) | tbyte(h ? b.j : b.i));
       }
@@ -745,17 +748,31 @@ Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& 
       ++stats.bonds;
       const Style si = style_of(b.i), sj = style_of(b.j);
       if (si == Style::SpaceFilling || sj == Style::SpaceFilling) continue;
-      if (norm(s.atoms[b.i].pos - s.atoms[b.j].pos) > half_cell) continue;
-      const double mx = (px[b.i] + px[b.j]) / 2, my = (py[b.i] + py[b.j]) / 2, mz = (pz[b.i] + pz[b.j]) / 2;
+      // a bond across a periodic wall (its atoms wrapped to opposite sides): each half drawn from its atom towards the
+      // partner's nearest image, a stub leaving through the wall — never a stick across the whole cell
+      double mxi, myi, mzi, mxj, myj, mzj;
+      {
+        const Vec3 a = s.atoms[b.i].pos, c = s.atoms[b.j].pos;
+        const double direct = norm(c - a);
+        const Vec3 d = s.cell.valid() ? s.cell.minimum_image(c - a) : c - a;
+        if (direct > norm(d) + 1e-6) {
+          double k;
+          v.project(a + d * 0.5, mxi, myi, mzi, k);
+          v.project(c - d * 0.5, mxj, myj, mzj, k);
+        } else {
+          if (direct > half_cell) continue;
+          mxi = mxj = (px[b.i] + px[b.j]) / 2, myi = myj = (py[b.i] + py[b.j]) / 2, mzi = mzj = (pz[b.i] + pz[b.j]) / 2;
+        }
+      }
       if (si == Style::Wireframe || sj == Style::Wireframe) {
-        line(B, px[b.i], py[b.i], pz[b.i], mx, my, mz, std::max(1.0, 1.4 * ss), colour[b.i], int32_t(b.i));
-        line(B, mx, my, mz, px[b.j], py[b.j], pz[b.j], std::max(1.0, 1.4 * ss), colour[b.j], int32_t(b.j));
+        line(B, px[b.i], py[b.i], pz[b.i], mxi, myi, mzi, std::max(1.0, 1.4 * ss), colour[b.i], int32_t(b.i));
+        line(B, mxj, myj, mzj, px[b.j], py[b.j], pz[b.j], std::max(1.0, 1.4 * ss), colour[b.j], int32_t(b.j));
         continue;
       }
       const double br = si == Style::Backbone && sj == Style::Backbone ? opt.bond_radius * 2.2 : bond_r;   // tubes between backbone atoms
       const double R = br * v.scale * (pk[b.i] + pk[b.j]) / 2;
-      capsule(layer(b.i), px[b.i], py[b.i], pz[b.i], mx, my, mz, R, br, colour[b.i], int32_t(b.i));
-      capsule(layer(b.j), mx, my, mz, px[b.j], py[b.j], pz[b.j], R, br, colour[b.j], int32_t(b.j));
+      capsule(layer(b.i), px[b.i], py[b.i], pz[b.i], mxi, myi, mzi, R, br, colour[b.i], int32_t(b.i));
+      capsule(layer(b.j), mxj, myj, mzj, px[b.j], py[b.j], pz[b.j], R, br, colour[b.j], int32_t(b.j));
     }
   }
   // Atoms.
