@@ -810,6 +810,21 @@ internal static class Screenshot
                 if (p.Length > 1) w.ViewModel.RxTargetValueD = decimal.Parse(p[1], System.Globalization.CultureInfo.InvariantCulture);
             }
             if (kv[0] == "rxset") w.ViewModel.RxSet = int.Parse(kv[1]);
+            if (kv[0] == "nudtext")   // nudtext=TIP|TEXT: the number box whose tooltip holds TIP gets TEXT typed, then leaves it (Tab)
+            {
+                for (int k = 0; k < 30; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+                var p = kv[1].Split('|');
+                var box = w.GetVisualDescendants().OfType<Avalonia.Controls.NumericUpDown>()
+                           .FirstOrDefault(b => (Avalonia.Controls.ToolTip.GetTip(b) as string ?? "").Contains(p[0], StringComparison.Ordinal));
+                if (box == null) Console.Error.WriteLine("nudtext: no number box with " + p[0]);
+                else
+                {
+                    var before = box.Value;
+                    box.Text = p.Length > 1 ? p[1] : "";
+                    for (int k = 0; k < 20; ++k) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(10); }
+                    Console.WriteLine($"nudtext: {before} → typed '{box.Text}' → value {box.Value?.ToString() ?? "null"} (max {box.Maximum}) · error {Avalonia.Controls.DataValidationErrors.GetHasErrors(box)}");
+                }
+            }
             if (kv[0] == "rxcapmax") w.ViewModel.RxCaptureMaxD = decimal.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture);
             if (kv[0] == "rxtemp") w.ViewModel.RxTempD = decimal.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture);
             if (kv[0] == "rxlib") { w.ViewModel.RxLibOpen = true; w.ViewModel.RxLibCategory = int.Parse(kv[1]); }
