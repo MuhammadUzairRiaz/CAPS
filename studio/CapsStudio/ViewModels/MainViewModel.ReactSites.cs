@@ -47,9 +47,36 @@ public sealed partial class MainViewModel
     public bool RxHasCrosslinker => _rxXSmiles.Length > 0;
     private string _rxCalcText = "";
     public string RxCalcText { get => _rxCalcText; private set => Set(ref _rxCalcText, value); }
-    private int _rxLinksNeeded, _rxXNeeded;
-    public bool RxCanInsertX => RxHasCrosslinker && _rxXNeeded > 0 && _doc != null && !Busy;
-    public string RxInsertXText => _rxXNeeded > 0 ? $"Insert {_rxXNeeded:N0} {(_rxXName.Length > 0 ? _rxXName : "crosslinker")}" : "Insert the crosslinker";
+    private int _rxLinksNeeded, _rxXNeeded, _rxXPresent;
+    private string _rxXFormula = "";
+    /// <summary>The crosslinker molecules still to insert: those the links need less those already in the cell (packed, or inserted before).</summary>
+    private int RxXShort => Math.Max(0, _rxXNeeded - _rxXPresent);
+    public bool RxCanInsertX => RxHasCrosslinker && RxXShort > 0 && _doc != null && !Busy;
+    public string RxInsertXText => RxXShort > 0 ? $"Insert {RxXShort:N0} {(_rxXPresent > 0 ? "more " : "")}{(_rxXName.Length > 0 ? _rxXName : "crosslinker")}"
+                                 : _rxXNeeded > 0 ? "Enough in the cell" : "Insert the crosslinker";
+
+    private bool _rxTopUp = true;
+    /// <summary>Crosslink inserts the crosslinker molecules the degree asks for and the cell lacks before it starts.</summary>
+    public bool RxTopUp { get => _rxTopUp; set => Set(ref _rxTopUp, value); }
+
+    /// <summary>Free crosslinker molecules in the cell: whole molecules with the crosslinker's formula.</summary>
+    private int CountRxCrosslinker()
+    {
+        if (_doc == null || _rxXFormula.Length == 0) return 0;
+        try
+        {
+            var want = FormulaCounts(_rxXFormula);
+            var j = JsonNode.Parse(_doc.LayersJson());
+            return (j?["kinds"] as JsonArray ?? []).OfType<JsonObject>()
+                .Where(k => FormulaCounts((string?)k["formula"] ?? "").SequenceEqual(want))
+                .Sum(k => (k["molecules"] as JsonArray)?.Count ?? 0);
+        }
+        catch { return 0; }
+    }
+    private static List<KeyValuePair<string, int>> FormulaCounts(string f) =>
+        System.Text.RegularExpressions.Regex.Matches(f, @"([A-Z][a-z]?)(\d*)")
+            .GroupBy(m => m.Groups[1].Value).Select(g => new KeyValuePair<string, int>(g.Key, g.Sum(m => m.Groups[2].Value.Length > 0 ? int.Parse(m.Groups[2].Value, CultureInfo.InvariantCulture) : 1)))
+            .OrderBy(kv => kv.Key, StringComparer.Ordinal).ToList();
     public const string RxCalcTex = @"\mathrm{DC}=\frac{2\,N_{\mathrm{links}}}{N_{\mathrm{units}}}\times 100\,\%\qquad \mathrm{phr}=\frac{100\,N_{x}\,M_{x}}{m_{\mathrm{rubber}}}";
 
     /// <summary>The crosslinker a cure brings (MAH for ENR + MAH; maleic acid for ENR + acid), else none.</summary>
@@ -70,6 +97,7 @@ public sealed partial class MainViewModel
     {
         _rxXMass = 0;
         var smi = _rxXSmiles;
+        try { _rxXFormula = smi.Length > 0 ? (string?)JsonNode.Parse(CapsDocument.SmilesInfo(smi))?["formula"] ?? "" : ""; } catch { _rxXFormula = ""; }
         if (smi.Length > 0)
             try
             {
@@ -152,6 +180,7 @@ public sealed partial class MainViewModel
             _rxLinksNeeded = (int)Math.Round(linksExact);
             var cap = _rxSitesPer > 0 ? _rxChains * (int)_rxSitesPer / 2 : int.MaxValue;
             _rxXNeeded = x ? _rxLinksNeeded : 0;
+            _rxXPresent = x ? CountRxCrosslinker() : 0;
             if (x && !_rxFromPhr) { _rxPhrX = (decimal)Math.Round(100 * _rxXNeeded * _rxXMass / _rxRubberMass, 3); Raise(nameof(RxPhrXD)); }
             var lines = new List<string>
             {
@@ -160,6 +189,9 @@ public sealed partial class MainViewModel
             if (x)
                 lines.Add(string.Format(inv, "{0:N0} {1} ({2:0.00} g/mol, one per link) = {3:0.###} phr", _rxXNeeded, _rxXName.Length > 0 ? _rxXName : "crosslinker", _rxXMass,
                                         100 * _rxXNeeded * _rxXMass / _rxRubberMass));
+            if (x && _rxXPresent > 0)
+                lines.Add(RxXShort > 0 ? string.Format(inv, "{0:N0} already in the cell: {1:N0} more to insert", _rxXPresent, RxXShort)
+                                       : string.Format(inv, "{0:N0} already in the cell: enough{1}", _rxXPresent, _rxXPresent > _rxXNeeded ? $" ({_rxXPresent - _rxXNeeded:N0} spare, left unreacted at this target)" : ""));
             if (_rxSitesPer > 0)
                 lines.Add(_rxLinksNeeded > cap
                     ? string.Format(inv, "⚠ {0} sites per chain allow at most {1:N0} links ({2} chains × {0} ÷ 2): raise it, or ask for less", _rxSitesPer, cap, _rxChains)
@@ -200,7 +232,7 @@ public sealed partial class MainViewModel
         if (_doc == null || !RxCanInsertX) return;
         var doc = _doc;
         var smi = _rxXSmiles;
-        var n = _rxXNeeded;
+        var n = RxXShort;
         try
         {
             Status = $"Inserting {n} {_rxXName}…";

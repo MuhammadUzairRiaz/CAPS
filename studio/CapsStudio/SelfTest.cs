@@ -1327,6 +1327,18 @@ internal static class SelfTest
             for (int k = 0; k < 200 && !vm.RxCalcText.Contains("maleic", StringComparison.OrdinalIgnoreCase) && !vm.RxCalcText.Contains("116.0", StringComparison.Ordinal); ++k)
             { Avalonia.Threading.Dispatcher.UIThread.RunJobs(); Thread.Sleep(25); }
             var phrOk = vm.RxCalcText.Contains("116.0", StringComparison.Ordinal) && vm.RxPhrXD > 0;
+            // the button inserts only what the cell lacks: after inserting, the maleic acid there is counted and nothing more is asked
+            var askText = vm.RxInsertXText;
+            vm.InsertRxCrosslinker().GetAwaiter().GetResult();
+            for (int k = 0; k < 200 && !vm.RxCalcText.Contains("already in the cell", StringComparison.Ordinal); ++k)
+            { Avalonia.Threading.Dispatcher.UIThread.RunJobs(); Thread.Sleep(25); }
+            Check(askText == "Insert 8 crosslinker" && vm.RxCalcText.Contains("8 already in the cell: enough", StringComparison.Ordinal) && !vm.RxCanInsertX && vm.RxInsertXText == "Enough in the cell",
+                  $"crosslinker already in the cell counted: {askText} → {vm.RxInsertXText} · {vm.RxCalcText.Replace("\n", " / ")}");
+            // a higher degree asks for more: 30 % of 80 units → 12 links, 8 there → 4 more
+            vm.RxDcD = 30;
+            Check(vm.RxInsertXText == "Insert 4 more crosslinker" && vm.RxCanInsertX && vm.RxTopUp && vm.RxCalcText.Contains("8 already in the cell: 4 more to insert", StringComparison.Ordinal),
+                  $"a higher degree tops up: {vm.RxInsertXText} · {vm.RxCalcText.Replace("\n", " / ")}");
+            vm.RxDcD = 20;
             // phr back to the degree: the same numbers
             var phr = vm.RxPhrXD;
             vm.RxPhrXD = phr;
