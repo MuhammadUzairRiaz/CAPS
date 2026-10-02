@@ -8,7 +8,26 @@ namespace CapsStudio;
 
 public partial class App : Application
 {
-    public override void Initialize() => AvaloniaXamlLoader.Load(this);
+    public override void Initialize()
+    {
+        AvaloniaXamlLoader.Load(this);
+        GuardNumberBoxes();
+    }
+
+    private static bool _numberGuard;
+    /// <summary>Every number box in CAPS: a value typed beyond its range is brought to the nearest end, and a box emptied
+    /// (or holding text that is no number) goes back to its last value — the page never receives "nothing" for a number.</summary>
+    public static void GuardNumberBoxes()
+    {
+        if (_numberGuard) return;
+        _numberGuard = true;
+        NumericUpDown.ValueProperty.Changed.AddClassHandler<NumericUpDown>((box, e) =>
+        {
+            if (e.NewValue is not null || e.OldValue is not decimal old) return;
+            var back = Math.Clamp(old, box.Minimum, Math.Max(box.Minimum, box.Maximum));
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (box.Value is null) box.Value = back; });
+        });
+    }
 
     private MainWindow? _main;
     private void OnAbout(object? s, System.EventArgs e) => _main?.ShowSettings();
