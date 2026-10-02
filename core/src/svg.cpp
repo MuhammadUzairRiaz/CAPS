@@ -104,11 +104,22 @@ std::string render_svg(const System& s, const Camera& cam, const RenderOptions& 
   if (opt.style != Style::SpaceFilling) {
     const double half_cell = s.cell.valid() ? 0.5 * std::min({norm(s.cell.a), norm(s.cell.b), norm(s.cell.c)}) : 1e300;
     for (const auto& b : s.bonds) {
-      if (!show[b.i] || !show[b.j] || norm(s.atoms[b.i].pos - s.atoms[b.j].pos) > half_cell) continue;
-      const double mx = (X[b.i] + X[b.j]) / 2, my = (Y[b.i] + Y[b.j]) / 2;
+      if (!show[b.i] || !show[b.j]) continue;
+      // across a periodic wall: each half towards the partner's nearest image (a stub through the wall)
+      const Vec3 pa = s.atoms[b.i].pos, pc = s.atoms[b.j].pos;
+      const Vec3 dmi = s.cell.valid() ? s.cell.minimum_image(pc - pa) : pc - pa;
+      const bool across = norm(pc - pa) > norm(dmi) + 1e-6;
+      if (!across && norm(pc - pa) > half_cell) continue;
+      double mxs[2], mys[2];
+      if (across) {
+        double z;
+        P(pa + dmi * 0.5, mxs[0], mys[0], z);
+        P(pc - dmi * 0.5, mxs[1], mys[1], z);
+      } else mxs[0] = mxs[1] = (X[b.i] + X[b.j]) / 2, mys[0] = mys[1] = (Y[b.i] + Y[b.j]) / 2;
       const double w = 2 * bond_r * scale;
       for (int h = 0; h < 2; ++h) {
         const uint32_t a = h ? b.j : b.i;
+        const double mx = mxs[h], my = mys[h];
         std::snprintf(buf, sizeof buf,
                       "<line x1=\"%.2f\" y1=\"%.2f\" x2=\"%.2f\" y2=\"%.2f\" stroke=\"%s\" stroke-width=\"%.2f\" stroke-linecap=\"round\"/>"
                       "<line x1=\"%.2f\" y1=\"%.2f\" x2=\"%.2f\" y2=\"%.2f\" stroke=\"%s\" stroke-width=\"%.2f\" stroke-linecap=\"round\"/>",

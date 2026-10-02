@@ -2874,7 +2874,9 @@ int32_t caps_react_sites(caps_doc* d, const char* templates_text, char* json, in
   caps::Json r = caps::Json::object();
   guard([&] {
     const auto ts = caps::parse_templates(templates_text ? templates_text : "");
-    const auto cs = caps::chain_sites(d->frame, ts);
+    // after a run: its chains (joined chains still counted one by one)
+    const bool runs = d->react_chains.size() == d->frame.atoms.size() && d->react_bonds == d->frame.bonds.size();
+    const auto cs = caps::chain_sites(d->frame, ts, runs ? d->react_chains : std::vector<int64_t>{});
     caps::Json a = caps::Json::array();
     int total = 0, units = 0;
     double mass = 0;
