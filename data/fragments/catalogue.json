@@ -785,6 +785,18 @@
    "name": "Hexamethoxymethylmelamine",
    "smiles": "COCN(COC)c1nc(N(COC)COC)nc(N(COC)COC)n1",
    "meta": "cord adhesion resin"
+  },
+  {
+   "category": "Rubber additives",
+   "name": "Maleic anhydride (MAH)",
+   "smiles": "O=C1OC(=O)C=C1",
+   "meta": "grafting / compatibiliser"
+  },
+  {
+   "category": "Rubber additives",
+   "name": "Maleic acid",
+   "smiles": "OC(=O)/C=C\\C(=O)O",
+   "meta": "epoxide crosslinker (cis diacid)"
   }
  ]
 }

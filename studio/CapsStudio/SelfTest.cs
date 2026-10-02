@@ -3867,6 +3867,29 @@ internal static class SelfTest
             Check(had > 0 && asked && vm.ProjectItems.Count == 0 && !vm.ShowPipelineStrip && vm.PipelineSteps.Count == 0,
                   $"clear: {had} structures · asked {asked} · left {vm.ProjectItems.Count} · strip {vm.ShowPipelineStrip}");
         }
+        // Pack › Add molecule › Your molecules: a SMILES saved under its name, checked, added by name, removed
+        {
+            var mahLib = vm.PackAdditives.Any(f => f.Smiles == "O=C1OC(=O)C=C1") && vm.PackAdditives.Any(f => f.Name == "Maleic acid");
+            vm.PackSmiles = "C1CC1C(";
+            var bad = vm.SavePackMolecule();
+            vm.PackSmiles = "*CC*";
+            var star = vm.SavePackMolecule();
+            vm.PackSmiles = "OCC(O)CO"; vm.PackMolName = "Glycerol test";
+            var savedMol = vm.SavePackMolecule();
+            vm.PackMolName = "";
+            var mineMol = vm.PackMine.FirstOrDefault(f => f.Name == "Glycerol test");
+            Check(mahLib && bad.StartsWith("Not saved") && star.Contains("no * ") && mineMol != null && savedMol.Contains("C3H8O3"), $"your molecules: MAH in the library {mahLib} · {bad} · {star} · {savedMol}");
+            if (mineMol != null)
+            {
+                vm.Open(Path.Combine(dir, "ps_melt.data"));
+                vm.PackStart = 1;
+                vm.NewPackInput();
+                vm.AddPackMolecule(mineMol.Smiles, mineMol.Name).GetAwaiter().GetResult();
+                var row = vm.PackItems.Any(r => r.Name.Contains("Glycerol", StringComparison.Ordinal));
+                vm.RemovePackMolecule(mineMol);
+                Check(row && !vm.PackMine.Any(f => f.Name == "Glycerol test"), $"your molecule added as a row ({row}) and removed: {vm.Status}");
+            }
+        }
         // Pack › Add molecule › Sulfur (S8), built from its SMILES, 20 packed around the polymer cell
         {
             vm.Open(Path.Combine(dir, "ps_melt.data"));
