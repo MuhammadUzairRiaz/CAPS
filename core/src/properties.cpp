@@ -1894,7 +1894,7 @@ FreeGrid free_grid(const System& s, double spacing, double search, const std::ve
   int nb[3];
   const double w[3] = {G.cell_volume / norm(cross(c.b, c.c)), G.cell_volume / norm(cross(c.c, c.a)), G.cell_volume / norm(cross(c.a, c.b))};
   for (int k = 0; k < 3; ++k) nb[k] = std::max(1, int(w[k] / search));
-  std::vector<std::vector<uint32_t>> bins(size_t(nb[0]) * nb[1] * nb[2]);
+  std::vector<std::vector<uint32_t>> bins(static_cast<size_t>(nb[0]) * nb[1] * nb[2]);
   std::vector<Vec3> frac(s.atoms.size());
   std::vector<double> rad(s.atoms.size());
   for (uint32_t i = 0; i < s.atoms.size(); ++i) {

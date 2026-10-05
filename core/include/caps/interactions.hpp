@@ -8,6 +8,7 @@
 //  Checks          clashes; molecules cut by the cell edge (wrap); atoms over their valence or lacking hydrogens; the
 //                  net charge.
 #pragma once
+#include <cstdint>
 #include <string>
 #include <vector>
 

@@ -64,6 +64,7 @@ std::string num(std::initializer_list<double> v) {
 // Charges at six decimals, each molecule's total kept: the rounding left over goes onto its atom of largest |q| (so a
 // neutral molecule stays neutral to 1e-6 e and the cell to the same, as PPPM needs)
 std::vector<double> charges_six_decimals(const std::vector<double>& q, const std::vector<int64_t>& mol) {
+  if (q.size() > mol.size()) throw std::invalid_argument("charges_six_decimals: more charges than atoms");
   std::vector<double> r(q.size());
   std::unordered_map<int64_t, std::pair<double, size_t>> left;   // molecule → (exact − rounded, atom of largest |q|)
   for (size_t i = 0; i < q.size(); ++i) {
@@ -1161,7 +1162,8 @@ void write_lammps_data_ff(const System& s, const ForceField& ff0, const EnergyOp
   if (!s.has_mol) frag = s.molecules();
   std::vector<int64_t> molid(na);
   for (size_t i = 0; i < na; ++i) molid[i] = s.has_mol ? s.atoms[i].mol : int64_t(frag[i]) + 1;
-  const std::vector<double> q6 = charges_six_decimals(ff.charge, molid);
+  // the written atoms' charges only (a bond/react union carries the reacted copies after them)
+  const std::vector<double> q6 = charges_six_decimals(std::vector<double>(ff.charge.begin(), ff.charge.begin() + long(std::min(na, ff.charge.size()))), molid);
   // image flags from whole molecules: atoms stored wrapped one by one would split bonds across the walls (LAMMPS:
   // "Inconsistent image flags")
   const std::vector<Vec3> whole = whole_positions(s);

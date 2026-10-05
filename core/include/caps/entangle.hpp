@@ -11,6 +11,7 @@
 // N_b is backbone bonds per chain. This is not Z1 (Kröger's geometric shortest-path reduction) and it counts no kinks.
 // The paths lose self-entanglements (a chain passes through itself and its own periodic images).
 #pragma once
+#include <cstdint>
 #include <functional>
 #include <string>
 #include <vector>

@@ -9,6 +9,7 @@
 //  Ions       none, neutralise the solute, a salt concentration (pairs = c · N_A · V_free, plus the neutralising ions),
 //             or custom counts; each ion in water takes the place of one water molecule.
 #pragma once
+#include <cstdint>
 #include <functional>
 #include <string>
 #include <vector>

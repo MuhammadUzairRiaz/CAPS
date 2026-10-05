@@ -11,6 +11,7 @@
 //   unpaired electrons the valence left open: the element's usual valence at its formal charge minus the bond-order
 //                      sum (a radical); main-group elements only
 #pragma once
+#include <cstdint>
 #include <string>
 #include <vector>
 

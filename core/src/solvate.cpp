@@ -226,7 +226,7 @@ System solvate(const System* solute, const SolvateOptions& o, SolvateReport* rep
   const SolvatePlan& P = R.plan;
   const bool has_solute = solute && !solute->atoms.empty();
   std::vector<PackItem> items;
-  const Region inside{Region::InsideBox, {0, 0, 0}, P.box};
+  const Region inside{Region::InsideBox, {0, 0, 0}, P.box, 0, 0, {}};
   if (has_solute) {
     PackItem s;
     s.name = "solute";

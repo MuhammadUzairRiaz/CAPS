@@ -1,5 +1,6 @@
 // CAPS Relax: energy minimisation, soft push-off, compression to a target density and box relaxation.
 #pragma once
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <string>

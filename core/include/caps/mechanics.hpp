@@ -3,6 +3,7 @@
 // Units: stresses and moduli in GPa (stress–strain curve in MPa), strains dimensionless, temperatures in K.
 // Voigt order 1 xx, 2 yy, 3 zz, 4 yz, 5 xz, 6 xy; shear strains are engineering strains (ε4 = 2ε_yz).
 #pragma once
+#include <cstdint>
 #include <array>
 #include <functional>
 #include <memory>

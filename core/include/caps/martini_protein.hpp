@@ -2,6 +2,7 @@
 // bench/ff/convert_vermouth_martini22.py): an all-atom protein mapped onto Martini beads with the model's explicit
 // topology, as martinize writes it; and DSSP secondary structure (Kabsch & Sander, Biopolymers 22, 2577 (1983)).
 #pragma once
+#include <cstdint>
 #include <functional>
 #include <string>
 #include <vector>

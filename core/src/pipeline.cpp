@@ -1173,7 +1173,7 @@ void step_orientation(PipelineState& st, const Json& p, StepStatus& out) {
     if (per) f -= std::floor(f);
     return std::clamp(int(f * nb[k]), 0, nb[k] - 1);
   };
-  std::vector<std::vector<uint32_t>> grid(size_t(nb[0]) * nb[1] * nb[2]);
+  std::vector<std::vector<uint32_t>> grid(static_cast<size_t>(nb[0]) * nb[1] * nb[2]);
   std::vector<std::array<int, 3>> where(u.size());
   for (size_t i = 0; i < u.size(); ++i) {
     where[i] = {bin(mid[i], 0), bin(mid[i], 1), bin(mid[i], 2)};
@@ -1293,7 +1293,7 @@ std::vector<std::vector<Vec3>> nearest_neighbours(const System& s, int k) {
     if (per) f -= std::floor(f);
     return std::clamp(int(f * nb[d]), 0, nb[d] - 1);
   };
-  std::vector<std::vector<uint32_t>> grid(size_t(nb[0]) * nb[1] * nb[2]);
+  std::vector<std::vector<uint32_t>> grid(static_cast<size_t>(nb[0]) * nb[1] * nb[2]);
   std::vector<std::array<int, 3>> where(n);
   for (size_t i = 0; i < n; ++i) {
     where[i] = {frac(s.atoms[i].pos, 0), frac(s.atoms[i].pos, 1), frac(s.atoms[i].pos, 2)};
@@ -1731,7 +1731,7 @@ void step_wigner_seitz(PipelineState& st, const Json& p, StepStatus& out) {
     }
     return b;
   };
-  std::vector<std::vector<uint32_t>> grid(size_t(nb[0]) * size_t(nb[1]) * size_t(nb[2]));
+  std::vector<std::vector<uint32_t>> grid(static_cast<size_t>(nb[0]) * size_t(nb[1]) * size_t(nb[2]));
   for (uint32_t k = 0; k < ns; ++k) {
     const auto b = bin_of(ref.atoms[k].pos);
     grid[(size_t(b[0]) * size_t(nb[1]) + size_t(b[1])) * size_t(nb[2]) + size_t(b[2])].push_back(k);

@@ -14,6 +14,7 @@
 //  embed_filler    The filler held fixed at the centre of a periodic cell (its periodic axes kept) while polymer chains
 //                  grow around it to the matrix density: filled rubber, CNT– or graphene–rubber composites.
 #pragma once
+#include <cstdint>
 #include <array>
 #include <string>
 #include <vector>
