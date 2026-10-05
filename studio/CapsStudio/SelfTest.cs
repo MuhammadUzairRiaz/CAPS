@@ -1186,6 +1186,21 @@ internal static class SelfTest
         vm.BuildBlend().GetAwaiter().GetResult();
         var bsum = vm.Document?.Summary();
         Check(vm.BlendRows.Count == 2 && bsum is { } blendSum && blendSum.Molecules >= 5 && vm.Title.Contains("blend"), $"blend: {vm.Title} · {bsum?.Molecules} chains · {vm.BlendError}");
+        // Edit in its builder: the Blend page as it was for this blend — kept with it, else read from its provenance
+        {
+            var blendItem = vm.ActiveItem!;
+            var rowsBefore = string.Join(" | ", vm.BlendRows.Select(r => $"{r.Polymer?.Name} {r.Weight} {r.Dp}"));
+            vm.BlendRows[0].Weight = 10; vm.BlendRows[0].Dp = 40; vm.BlendChains = 9; vm.BlendDensity = 0.9m;
+            vm.EditProjectItem(blendItem);
+            var kept = string.Join(" | ", vm.BlendRows.Select(r => $"{r.Polymer?.Name} {r.Weight} {r.Dp}"));
+            var keptCell = (vm.BlendChains, vm.BlendDensity);
+            blendItem.BuildSettings = null;
+            vm.BlendRows[0].Weight = 10; vm.BlendChains = 9;
+            vm.EditProjectItem(blendItem);
+            var prov = string.Join(" | ", vm.BlendRows.Select(r => $"{r.Weight} {r.Dp}"));
+            Check(vm.IsBlend && kept == rowsBefore && keptCell == (4m, 0.5m) && prov == "70 8 | 30 8" && vm.BlendChains == 4,
+                  $"edit a blend: kept {kept} (was {rowsBefore}) · cell {keptCell} · from provenance {prov}, {vm.BlendChains} chains");
+        }
         // the same blend grown by configurational bias (Rosenbluth with UFF Lennard-Jones), as Grow offers
         vm.OpenBlend();
         vm.BlendChains = 4;
@@ -4007,6 +4022,24 @@ internal static class SelfTest
             var sum = vm.Document?.Summary();
             Check(hasRow && vm.PackAdditives.Count >= 10 && sum?.Molecules == 30 && sum?.Atoms == 1300 + 160,
                   $"pack curatives: {vm.PackAdditives.Count} additives · S8 row {hasRow} · {sum?.Molecules} molecules, {sum?.Atoms} atoms · d_min {vm.PackDmin}");
+            // Edit in its builder: the Pack input as it was, packing around ps_melt again (the new cell replaces this one);
+            // from the provenance too (the run's input, without the fixed copy of the structure packed around)
+            {
+                var packedItem = vm.ActiveItem!;
+                var textBefore = vm.PackText;
+                vm.PackStart = 0;
+                vm.NewPackInput();
+                vm.EditProjectItem(packedItem);
+                var kept = vm.PackText == textBefore && vm.PackStart == 1 && vm.PackRepacking && vm.IsPack;
+                packedItem.BuildSettings = null;
+                vm.PackStart = 0;
+                vm.NewPackInput();
+                vm.EditProjectItem(packedItem);
+                var provRows = string.Join(", ", vm.PackItems.Select(r => r.Name + " " + r.Count));
+                Check(kept && vm.PackStart == 1 && vm.PackRepacking && vm.PackItems.Count == 1 && vm.PackItems[0].Name.Contains("Sulfur", StringComparison.Ordinal)
+                      && !vm.PackText.Contains("caps-pack", StringComparison.Ordinal),
+                      $"edit a packed cell: kept {kept} · from provenance: {provRows} · around the structure {vm.PackStart == 1} · {vm.Status}");
+            }
             vm.PackStart = 0;
         }
 
