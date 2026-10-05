@@ -593,4 +593,15 @@ check(_mr["charges"] == "mixed" and abs(_q["CO2C"] - 0.70) < 1e-12 and abs(_q["C
       f"TraPPE CO2 charges beside united-atom ethane: {_mr['charges']} · C {_q['CO2C']:+.2f} O {_q['CO2O']:+.2f} CH3 {_q['CH3']:+.4f}")
 _sb = _mix.sorption("O=C=O", pressures_kpa=[], insertions=2000)
 check(any("rigid sorbate set to TraPPE-UA" in n for n in _sb["notes"]), "TraPPE CO2 sorbate takes the rigid geometry")
+# TraPPE N2: its centre charge site added when typed (a virtual site), and in sorption / adsorption on a TraPPE-UA host
+_n2 = caps.pack(molecules=[("N#N", 3)], box=15, seed=1)
+_n2r = _n2.field.assign("trappe-ua")
+_n2q = sorted({(a["type"], a["q"]) for a in _n2r["atoms"]})
+check(_n2.summary()["atoms"] == 9 and _n2q == [("N2M", 0.964), ("N2N", -0.482)], f"TraPPE N2: {_n2.summary()['atoms']} sites, {_n2q}")
+_pe = caps.polymer("*CC*", dp=20, chains=3, density=0.85, seed=2)
+_pe.field.assign("trappe-ua")
+_ns = _pe.sorption("N#N", pressures_kpa=[], insertions=2000)
+_ad = _pe.adsorption([("N#N", 2), ("C", 1)], cycles=1, steps=500)
+check("sorbate 3 atoms" in _ns["notes"][0] and sorted(c["name"] for c in _ad["components"]) == ["C", "N2"] and _pe.summary()["atoms"] == 120 + 6 + 1,
+      f"TraPPE N2 / CH4 on TraPPE-UA PE: {_ns['notes'][0][-40:]} · adsorbates {[c['name'] for c in _ad['components']]} · {_pe.summary()['atoms']} sites")
 print("all python checks passed")
