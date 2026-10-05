@@ -281,6 +281,7 @@ public sealed partial class MainViewModel
         {
             var (doc, rep) = await Task.Run(() => CapsDocument.PeptideBuild(opts, title));
             Show(doc, title);
+            KeepPageSettings("bio");   // Edit brings the page back as it was for this structure
             Record($"doc = caps.build.peptide({PyStr(_bioSeq)}, structure={PyStr(BioStructure)}, n_term={PyStr(NTermCodes[_nTerm])}, c_term={PyStr(CTermCodes[_cTerm])}, ph={BioPhValues[_prot].ToString(CultureInfo.InvariantCulture)}, cleanup={(_cleanup == 0 ? "True" : "False")})");
             GrownUnsaved = true;
             BioLog = rep;

@@ -2988,7 +2988,9 @@ int32_t caps_react(caps_doc* d, const char* templates, const caps_react_opts* o,
       const double conv = rep.cycles.empty() ? 0 : rep.cycles.back().conversion;
       prov_step(d, "react.templates", std::to_string(rep.reactions) + " reactions · conversion " + g6(conv),
                 {{"templates", names}, {"target conversion", g6(r.target_conversion)}, {"cycles", std::to_string(rep.cycles.size())},
-                 {"relax between cycles", r.relax ? "yes" : "no"}, {"MD between cycles", g6(r.md_ps) + " ps"}},
+                 {"relax between cycles", r.relax ? "yes" : "no"}, {"MD between cycles", g6(r.md_ps) + " ps"},
+                 // the reaction templates as written: the reaction can be set up again from them
+                 {"input", std::string(templates ? templates : "").substr(0, 20000)}},
                 seeded(r.seed), {"matsumoto1998"},
                 rep.failed_cycle > 0 ? caps::KeyValues{{"Stopped", "cycle " + std::to_string(rep.failed_cycle) + " failed (" + rep.failure + "); the structure after cycle " +
                                                                    std::to_string(rep.failed_cycle - 1) + " is kept"}}

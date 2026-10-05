@@ -356,6 +356,7 @@ public sealed partial class MainViewModel
             {
                 var (doc, rep) = await Task.Run(() => CapsDocument.PoreBuild(opts, title));
                 Show(doc, title);
+                KeepPageSettings("nano");   // Edit brings the page back as it was for this structure
                 NanoLog = PoreReportText(rep);
                 HoldPick = 1;
                 HoldOn = true;   // the walls stay where they are
@@ -366,6 +367,7 @@ public sealed partial class MainViewModel
             {
                 var (doc, rep) = await Task.Run(() => CapsDocument.NanoBuild(opts, title));
                 Show(doc, title);
+                KeepPageSettings("nano");   // Edit brings the page back as it was for this structure
                 _nanoBuiltDoc = doc;
                 _nanoBuiltOpts = opts;
                 NanoError = "";
@@ -401,6 +403,7 @@ public sealed partial class MainViewModel
                     ? await Task.Run(() => shown.EmbedInMatrix(optsText, specText, g, Progress, fillerName + " composite"))
                     : await Task.Run(() => CapsDocument.NanoEmbed(optsText, specText, g, Progress, title + " composite"));
                 Show(doc, $"{fillerName} in {poly.Name.Split(" (")[0]}");
+                KeepPageSettings("nano");   // Edit brings the page back as it was for this structure
                 GrownUnsaved = true;
                 RelaxCompress = false;   // compression would scale the filler with the matrix
                 NanoLog = rep;

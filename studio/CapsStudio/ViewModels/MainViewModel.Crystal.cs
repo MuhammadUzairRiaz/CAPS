@@ -442,6 +442,7 @@ public sealed partial class MainViewModel
         {
             var (doc, rep) = await Task.Run(() => CapsDocument.CrystalBuild(spec, title));
             Show(doc, title);
+            KeepPageSettings("crystal");   // Edit brings the page back as it was for this structure
             GrownUnsaved = true;
             Status = "Built · " + (rep.Split('\n').FirstOrDefault() ?? "");
             SetModule(8);

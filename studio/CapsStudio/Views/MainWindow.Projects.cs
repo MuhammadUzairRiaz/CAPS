@@ -31,6 +31,7 @@ public partial class MainWindow
     }
 
     private void OnNewProjectButton(object? s, RoutedEventArgs e) => _vm.OpenNewProject();
+    private void OnEditReaction(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is ViewModels.ProjectItem it) _vm.EditReaction(it); }
     private async void OnOpenProjectButton(object? s, RoutedEventArgs e) => await OpenProjectFileDialog();
 
     // ---------------------------------------------------------------- the project switcher on the top bar

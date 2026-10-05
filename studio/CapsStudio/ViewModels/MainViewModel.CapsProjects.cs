@@ -215,6 +215,7 @@ public sealed partial class MainViewModel
             it.Origin = (string?)n["origin"] ?? "";
             it.History = (string?)n["history"] ?? "";
             if (n["builder"] is JsonObject bs) it.BuildSettings = (JsonObject)bs.DeepClone();
+            if (n["reaction"] is JsonObject rs) it.ReactSettings = (JsonObject)rs.DeepClone();
             it.ForceField = (string?)n["force_field"] ?? it.ForceField;
             if (n["done"] is JsonArray done) { it.Done = new HashSet<string>(done.Select(x => (string?)x ?? "")); _pipeDone.Clear(); foreach (var d in it.Done) _pipeDone.Add(d); RefreshSteps(); }
             var frame = (int?)n["frame"] ?? 0;
@@ -341,7 +342,7 @@ public sealed partial class MainViewModel
                     ["name"] = name, ["file"] = rel, ["topology"] = topology, ["origin"] = it.Origin, ["history"] = it.History, ["force_field"] = it.ForceField,
                     ["done"] = new JsonArray((it == _activeItem ? _pipeDone : it.Done).Select(d => (JsonNode)d).ToArray()),
                     ["frame"] = it.Frame, ["active"] = it == _activeItem, ["atoms"] = (double)s.Atoms,
-                    ["builder"] = it.BuildSettings?.DeepClone(),
+                    ["builder"] = it.BuildSettings?.DeepClone(), ["reaction"] = it.ReactSettings?.DeepClone(),
                     ["jobs"] = new JsonArray(it.Jobs.Select(j => (JsonNode)j.Id).ToArray()),
                 });
             }

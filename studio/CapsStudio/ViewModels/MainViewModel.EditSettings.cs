@@ -256,4 +256,143 @@ public sealed partial class MainViewModel
                                        .Select(x => new KeyValuePair<string, JsonNode?>((string?)x[0] ?? "", x[1]?.DeepClone())).DistinctBy(kv => kv.Key)),
         _ => null,
     };
+
+    // ---------------------------------------------------------------- the other builders and React: the page's own settings
+
+    private void KeepPageSettings(string page) { if (_activeItem != null) _activeItem.BuildSettings = PageSnapshot(page); }
+
+    /// <summary>Which settings belong to which page: its properties by name (Crystal…, Surf…, Rx…).</summary>
+    private static readonly Dictionary<string, string[]> PagePrefixes = new()
+    {
+        ["crystal"] = ["Crystal"], ["surface"] = ["Surf", "Film"], ["bio"] = ["Bio"], ["solvation"] = ["Solv"], ["cg"] = ["Cg", "Mp", "Mt"],
+        ["nano"] = ["Nano", "Tube", "Sheet", "Particle", "Fibre", "Matrix", "Fn", "Silane", "Thiolate"], ["react"] = ["Rx"],
+    };
+    // panels opened, runs going, searches typed: not settings
+    private static readonly string[] NotSettings = ["Open", "Shown", "Running", "Building", "Busy", "Armed", "Hover", "Query", "Working", "Expanded"];
+    private static readonly Type[] SettingTypes = [typeof(int), typeof(double), typeof(decimal), typeof(decimal?), typeof(bool), typeof(string)];
+
+    private static List<System.Reflection.PropertyInfo> PageProps(string page) =>
+        typeof(MainViewModel).GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
+            .Where(p => p.CanRead && p.SetMethod is { IsPublic: true } && p.GetIndexParameters().Length == 0 && SettingTypes.Contains(p.PropertyType)
+                        && PagePrefixes[page].Any(x => p.Name.StartsWith(x, StringComparison.Ordinal)) && !NotSettings.Any(x => p.Name.EndsWith(x, StringComparison.Ordinal))
+                        && !p.Name.StartsWith("RxLib", StringComparison.Ordinal))   // the library picker follows the reaction chosen
+            .OrderBy(p => p.MetadataToken).ToList();
+
+    /// <summary>A builder page's (or React's) settings as they are now: every setting of the page, and its lists.</summary>
+    private JsonObject PageSnapshot(string page)
+    {
+        var props = new JsonObject();
+        foreach (var p in PageProps(page))
+        {
+            object? v;
+            try { v = p.GetValue(this); } catch { continue; }
+            props[p.Name] = v switch
+            {
+                null => null, string s => s, bool b => b, int i => i, double d => double.IsFinite(d) ? d : null,
+                decimal m => m.ToString(CultureInfo.InvariantCulture), _ => null,
+            };
+        }
+        var o = new JsonObject { ["page"] = page, ["props"] = props };
+        switch (page)
+        {
+            case "crystal":
+                o["group"] = CrystalGroupPick?.Key;
+                o["sites"] = new JsonArray(CrystalSites.Select(r => (JsonNode)new JsonObject { ["label"] = r.Label, ["element"] = r.Element, ["x"] = r.X, ["y"] = r.Y, ["z"] = r.Z, ["occ"] = r.Occ }).ToArray());
+                break;
+            case "nano" when MatrixPolymer is { } mp:
+                o["matrix"] = new JsonObject { ["name"] = mp.Name, ["spec"] = mp.Spec };
+                break;
+            case "solvation" when SolvSolvent is { } sv:
+                o["solvent"] = sv.Id;
+                break;
+            case "react":
+                o["weights"] = new JsonObject(RxReactions.Select(r => new KeyValuePair<string, JsonNode?>(r.Name, (double)r.WeightD)).DistinctBy(kv => kv.Key));
+                break;
+        }
+        return o;
+    }
+
+    /// <summary>A page set from its snapshot. Applied twice: a choice that fills other settings (a preset, a crystal) is
+    /// set the first time, and the settings it filled are put back as they were the second (the choice, unchanged, does
+    /// nothing then).</summary>
+    private void ApplyPageSnapshot(JsonObject o)
+    {
+        var page = (string?)o["page"] ?? "";
+        if (!PagePrefixes.ContainsKey(page) || o["props"] is not JsonObject props) return;
+        var list = PageProps(page);
+        for (var pass = 0; pass < 2; ++pass)
+        {
+            if (pass == 1) ApplyPageLists(page, o);
+            foreach (var p in list)
+            {
+                if (!props.TryGetPropertyValue(p.Name, out var n)) continue;
+                try
+                {
+                    object? v = p.PropertyType == typeof(string) ? (string?)n
+                        : n is not JsonValue jv ? null
+                        : p.PropertyType == typeof(bool) ? jv.GetValue<bool>()
+                        : p.PropertyType == typeof(int) ? (jv.TryGetValue<int>(out var iv) ? iv : (int)jv.GetValue<double>())
+                        : p.PropertyType == typeof(double) ? (jv.TryGetValue<double>(out var dv) ? dv : jv.GetValue<int>())
+                        : decimal.Parse(jv.ToString().Trim('"'), CultureInfo.InvariantCulture);
+                    if (v == null && p.PropertyType != typeof(string) && p.PropertyType != typeof(decimal?)) continue;
+                    if (!Equals(p.GetValue(this), v)) p.SetValue(this, v);
+                }
+                catch { /* a setting this version no longer takes */ }
+            }
+        }
+    }
+
+    private void ApplyPageLists(string page, JsonObject o)
+    {
+        switch (page)
+        {
+            case "crystal":
+                if ((string?)o["group"] is { } key && CrystalGroups.FirstOrDefault(g => g.Key == key) is { } grp) CrystalGroupPick = grp;
+                if (o["sites"] is JsonArray sites && sites.Count > 0)
+                {
+                    CrystalSites.Clear();
+                    foreach (var r in sites.OfType<JsonObject>())
+                        CrystalSites.Add(new CrystalSiteRow(CrystalPreview, (string?)r["label"] ?? "", (string?)r["element"] ?? "C",
+                            CrystalSiteRow.Parse((string?)r["x"] ?? "0"), CrystalSiteRow.Parse((string?)r["y"] ?? "0"), CrystalSiteRow.Parse((string?)r["z"] ?? "0"),
+                            CrystalSiteRow.Parse((string?)r["occ"] ?? "1")));
+                    CrystalPreview();
+                }
+                break;
+            case "nano" when o["matrix"] is JsonObject m && (string?)m["name"] is { } mn:
+                MatrixPolymer = FilmPolymers.FirstOrDefault(f => f.Name == mn) ?? new FilmPolymer(mn, (string?)m["spec"] ?? "");
+                break;
+            case "solvation" when (string?)o["solvent"] is { } sid && Solvents.FirstOrDefault(x => x.Id == sid) is { } sv:
+                SolvSolvent = sv;
+                break;
+            case "react" when o["weights"] is JsonObject w:
+                foreach (var r in RxReactions) if (w[r.Name] is JsonValue v && v.TryGetValue<double>(out var x)) r.WeightD = (decimal)x;
+                break;
+        }
+    }
+
+    /// <summary>A reacted structure's reaction text from its provenance (CAPS records it from this version on).</summary>
+    private static JsonObject? ReactSettingsFromProvenance(CapsDocument doc)
+    {
+        JsonArray? steps;
+        try { steps = JsonNode.Parse(doc.Provenance())?["steps"] as JsonArray; } catch { return null; }
+        var p = StepParams(steps?.LastOrDefault(s => (string?)s?["engine"] == "react.templates"));
+        return p?["input"] is JsonValue v && v.TryGetValue<string>(out var text) && text.Length > 0
+            ? new JsonObject { ["page"] = "react", ["props"] = new JsonObject { ["RxText"] = text } } : null;
+    }
+
+    /// <summary>Whether the structure was reacted (its reaction can be edited).</summary>
+    public static bool WasReacted(ProjectItem it) => it.ReactSettings != null || it.History.Contains("reacted", StringComparison.Ordinal);
+
+    /// <summary>Edit its reaction (the project tree): React with the reaction that made this network, ready to run again.</summary>
+    public void EditReaction(ProjectItem it)
+    {
+        if (!Idle) { Status = "Wait for the run to finish before editing"; return; }
+        Activate(it);
+        var rs = it.ReactSettings ?? ReactSettingsFromProvenance(it.Doc);
+        SetModule(6);
+        if (rs == null) { Status = $"{it.Name} was reacted before CAPS kept the reaction: React shows the last reaction used"; return; }
+        ApplyPageSnapshot(rs);
+        it.ReactSettings ??= rs;
+        Status = $"React: the reaction that made {it.Name} · change it and crosslink again";
+    }
 }

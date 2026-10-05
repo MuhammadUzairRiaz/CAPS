@@ -769,6 +769,20 @@ internal static class SelfTest
             vm.RunReact().GetAwaiter().GetResult();
             var cured = System.Text.RegularExpressions.Regex.Match(vm.RxLog, @"^(\d+) reactions");
             Check(cured.Success && int.Parse(cured.Groups[1].Value) > 0, $"sulfur cure: {vm.RxLog.Split('\n')[0]}");
+            // Edit its reaction: the reaction that made this network back on React — kept with it, else from its provenance
+            {
+                var rxItem = vm.ActiveItem!;
+                var text0 = vm.RxText;
+                var menu = rxItem.Reacted;
+                vm.RxSet = 0; vm.RxCyclesD = 2;
+                vm.EditReaction(rxItem);
+                var kept = vm.RxText == text0 && vm.RxSet == 2 && vm.RxCyclesD == 6 && vm.IsReact;
+                var dbg = $"text {vm.RxText == text0} set {vm.RxSet} cycles {vm.RxCyclesD} react {vm.IsReact}";
+                rxItem.ReactSettings = null;
+                vm.RxSet = 0;
+                vm.EditReaction(rxItem);
+                Check(menu && kept && vm.RxText.Trim() == text0.Trim(), $"edit a reaction: kept {kept} [{dbg}] · from provenance {vm.RxText.Trim() == text0.Trim()} · {vm.Status}");
+            }
             // ENR crosslinked through a diacid (succinic acid, the PBS acid end's model): each COOH opens an epoxide at its
             // tertiary carbon, so a diacid reaching two chains is a link between them; links only between chains, to two links
             vm.RxSet = 5;
@@ -1451,6 +1465,13 @@ internal static class SelfTest
             vm.BuildCg();
             var kgAssigned = vm.Field.Assigned && vm.Field.Complete && vm.Field.ForceFieldName.StartsWith("Kremer–Grest", StringComparison.Ordinal);
             Check(kgAssigned, $"Kremer–Grest melt assigned on its own: {vm.Field.ForceFieldName} · {vm.Field.Log}");
+            {
+                var kgItem = vm.ActiveItem!;
+                var (c0, b0) = (vm.CgChains, vm.CgBeads);
+                vm.CgChains = c0 + 7; vm.CgBeads = b0 + 3;
+                vm.EditProjectItem(kgItem);
+                Check(vm.CgChains == c0 && vm.CgBeads == b0 && vm.IsCg, $"edit a CG melt: {vm.CgChains} chains × {vm.CgBeads} beads (were {c0} × {b0}) · {vm.Status}");
+            }
             // reduced units: backmapping is refused (no lengths in Å); mapped to styrene units: 16 atoms a bead, GAFF2 typed
             vm.CgBackmapUnit = vm.CgBackmapPolymers.FindIndex(p => p.Name == "Polystyrene");
             vm.BackmapCg().GetAwaiter().GetResult();
@@ -1523,6 +1544,16 @@ internal static class SelfTest
         vm.BuildCrystal().GetAwaiter().GetResult();
         var xsum = vm.Document?.Summary();
         Check(xsum is { } xs && xs.Atoms == 72 && xs.Bonds == 144, $"crystal: rutile 2 × 2 × 3 → {xsum?.Atoms} atoms · {xsum?.Bonds} bonds · {vm.CrystalError} {vm.Status}");
+        // Edit in its builder: the crystal page as it was for this crystal (space group, cell, sites, supercell)
+        {
+            var xItem = vm.ActiveItem!;
+            var a0 = vm.CrystalA;
+            vm.CrystalSupercell = "1 × 1 × 1";
+            vm.CrystalSites.Clear();
+            vm.EditProjectItem(xItem);
+            Check(vm.CrystalSupercell == "2 × 2 × 3" && vm.CrystalSites.Count == 2 && vm.CrystalGroup?.Number == 136 && vm.CrystalA == a0,
+                  $"edit a crystal: {vm.CrystalGroup?.Title} · {vm.CrystalSites.Count} sites · a {vm.CrystalA} · {vm.CrystalSupercell} · {vm.Status}");
+        }
         // the crystal saved for VASP (POSCAR, species grouped: 24 Ti then 48 O) and as a CIF, both read back
         {
             var vp = Path.Combine(outDir, "caps-selftest-rutile.vasp");
