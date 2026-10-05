@@ -2689,7 +2689,9 @@ caps_doc* caps_pack(const char* text, const char* base_dir, int32_t threads, cap
     refresh(d);
     prov_step(d, "pack.lbfgs", std::to_string(rep.molecules) + " molecules packed without overlaps",
               {{"molecules", std::to_string(rep.molecules)}, {"atoms", std::to_string(rep.atoms)}, {"closest contact", g6(rep.dmin) + " Å"},
-               {"input sha256", caps::sha256_hex(text ? text : "").substr(0, 12)}},
+               {"input sha256", caps::sha256_hex(text ? text : "").substr(0, 12)},
+               // the input itself (molecules, counts, regions, box): the packing can be set up again from it
+               {"input", std::string(text ? text : "").substr(0, 20000)}},
               "", {"martinez2009", "liu1989"});
     write_report();
     return d;

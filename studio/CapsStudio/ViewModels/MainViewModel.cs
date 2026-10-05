@@ -2273,6 +2273,7 @@ public sealed partial class MainViewModel : ObservableObject
             _packHostTitle = runHostTitle;
             var baseName = runHost != null && runHostTitle.Length > 0 ? runHostTitle + " + packed" : $"packed_{s.Molecules}_molecules";
             Show(doc, $"{baseName} (unsaved)");
+            if (_activeItem != null) _activeItem.BuildSettings = PackSettingsJson(runHost != null ? runHostTitle : "");   // Edit brings these back
             if (replaces != null && !ReferenceEquals(replaces, doc) && ProjectItems.FirstOrDefault(i => ReferenceEquals(i.Doc, replaces)) is { } oldItem)
             {
                 ProjectItems.Remove(oldItem);   // the earlier packing: replaced, not kept beside the new one
