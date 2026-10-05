@@ -90,6 +90,16 @@ public static class Panes
     private static double Size(Grid g, bool rows, int k) =>
         SizedChild(g, rows, k) is { } c ? (c.IsVisible ? (rows ? c.Height : c.Width) : 0) : Actual(g, rows, k);
 
+    /// <summary>Pane k is folded away: hidden by its divider, or set to no size (a saved 0) — read from its definition, so it
+    /// holds before the first layout too (a proportional or automatic pane counts as shown).</summary>
+    private static bool Folded(Grid g, bool rows, int k)
+    {
+        if (IsHidden(g, k)) return true;
+        if (SizedChild(g, rows, k) is { } c) return c.IsVisible && (rows ? c.Height : c.Width) < 1;
+        var d = Def(g, rows, k);
+        return d.IsAbsolute && d.Value < 1;
+    }
+
     private static string Describe(Grid g, bool rows, int k) =>
         SizedChild(g, rows, k) is { } c ? "child:" + (rows ? c.Height : c.Width).ToString("0", CultureInfo.InvariantCulture) : Def(g, rows, k).ToString();
 
@@ -216,6 +226,10 @@ public static class Panes
         Remember(g, st);
     }
 
+    /// <summary>The screenshots: the first shown tab of a hidden pane under root clicked.</summary>
+    internal static bool PeekForShot(Visual root) =>
+        root.GetVisualDescendants().OfType<PaneDivider>().FirstOrDefault(d => d.IsEffectivelyVisible && d.PeekShown)?.ClickPeek() ?? false;
+
     /// <summary>The screenshots: the n-th divider shown under root as if the pointer were on it.</summary>
     internal static void HoverForShot(Visual root, int n) =>
         root.GetVisualDescendants().OfType<PaneDivider>().Where(d => d.IsEffectivelyVisible).Skip(n).FirstOrDefault()?.ShowHover();
@@ -228,7 +242,7 @@ public static class Panes
         private readonly int _k;
         private readonly Border _line = new();
         private readonly Border _pill;
-        private readonly Button _back, _forward;
+        private readonly Button _back, _forward, _peek;
         private bool _dragging;
         private double _a, _b;   // the two panes' sizes at the start of the drag
         private double _moved;
@@ -276,6 +290,24 @@ public static class Panes
             _pill.Bind(Border.BackgroundProperty, _pill.GetResourceObservable("Bg2B"));
             _pill.Bind(Border.BorderBrushProperty, _pill.GetResourceObservable("AccB"));
             Children.Add(_pill);
+            // a hidden pane keeps a tab on its edge, always shown: the way back even where another divider shares the line
+            _peek = new Button
+            {
+                Width = 16, Height = 44, MinWidth = 0, MinHeight = 0, Padding = new Thickness(0), Cursor = new Cursor(StandardCursorType.Hand),
+                HorizontalAlignment = rows ? HorizontalAlignment.Center : HorizontalAlignment.Left,
+                VerticalAlignment = rows ? VerticalAlignment.Top : VerticalAlignment.Center, IsVisible = false,
+                CornerRadius = new CornerRadius(6), BorderThickness = new Thickness(1),
+            };
+            if (rows) { _peek.Width = 44; _peek.Height = 16; }
+            _peek.Classes.Add("tool");
+            _peek.Bind(Button.BackgroundProperty, _peek.GetResourceObservable("Bg2B"));
+            _peek.Bind(Button.BorderBrushProperty, _peek.GetResourceObservable("LineB"));
+            _peek.Click += (_, _) =>
+            {
+                if (Folded(_g, _st.Rows, _k)) Show(_g, _k); else Show(_g, _k + 1);
+                Refresh();
+            };
+            Children.Add(_peek);
 
             PointerEntered += (_, _) => Hover(true);
             PointerExited += (_, _) => { if (!_dragging) Hover(false); };
@@ -319,24 +351,37 @@ public static class Panes
             return b;
         }
 
+        public bool PeekShown => _peek.IsVisible;
+        public bool ClickPeek() { _peek.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent)); return true; }
         public void ShowHover() => Hover(true);
         private void Hover(bool on)
         {
             _pill.IsVisible = on;
             _line.Background = on && this.TryFindResource("AccB", ActualThemeVariant, out var acc) && acc is IBrush br ? br : Brushes.Transparent;
-            if (on) Refresh();
+            Refresh();
         }
 
         public void Refresh()
         {
             IsVisible = _left.Any(c => c.IsVisible) && _right.Any(c => c.IsVisible) && !_crossing.Any(c => c.IsVisible);
             var rows = _st.Rows;
-            var aHidden = IsHidden(_g, _k) || Size(_g, rows, _k) < 1;
-            var bHidden = IsHidden(_g, _k + 1) || Size(_g, rows, _k + 1) < 1;
+            var aHidden = Folded(_g, rows, _k);
+            var bHidden = Folded(_g, rows, _k + 1);
             string side(bool first) => rows ? (first ? "upper" : "lower") : (first ? "left" : "right");
             ToolTip.SetTip(_back, bHidden ? $"Show the {side(false)} pane" : $"Hide the {side(true)} pane");
             ToolTip.SetTip(_forward, aHidden ? $"Show the {side(true)} pane" : $"Hide the {side(false)} pane");
             ToolTip.SetTip(this, "Drag to resize · double-click for the first sizes");
+            // the tab sits just inside the shown pane, pointing at the hidden one
+            _peek.IsVisible = IsVisible && aHidden != bHidden;
+            if (_peek.IsVisible)
+            {
+                _peek.Content = new Icon { Kind = rows ? (aHidden ? "chev" : "chevu") : (aHidden ? "chevr" : "chevl"), Size = 11, StrokeWidth = 2,
+                                           HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+                // the divider is 10 px wide with the line at 5; the hover pill reaches 13 px either side: the tab sits past it, on the shown side
+                var at = aHidden ? 19 : -30;
+                _peek.Margin = rows ? new Thickness(0, at, 0, 0) : new Thickness(at, 0, 0, 0);
+                ToolTip.SetTip(_peek, $"Show the {side(aHidden)} pane");
+            }
         }
 
         private void Drag(double delta)
