@@ -617,6 +617,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_piece_file")] public static extern int PieceFile([MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string? name, byte[]? text, int cap);
     [DllImport(Lib, EntryPoint = "caps_pair_histograms")] public static extern int PairHistograms(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? text, int cap);
     [DllImport(Lib, EntryPoint = "caps_bond_rules_preview")] public static extern int BondRulesPreview(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? text, int cap);
+    [DllImport(Lib, EntryPoint = "caps_probe_geometry")] public static extern int ProbeGeometry(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? text, int cap);
     [DllImport(Lib, EntryPoint = "caps_set_probes")] public static extern int SetProbes(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json);
     [DllImport(Lib, EntryPoint = "caps_probe_series")] public static extern int ProbeSeries(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? text, int cap);
     [DllImport(Lib, EntryPoint = "caps_set_look")] public static extern int SetLook(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json);
@@ -1569,6 +1570,8 @@ public sealed class CapsDocument : IDisposable
             return k;
         }
     }
+    /// <summary>A probe's centre and principal directions in the frame shown (the orient puck).</summary>
+    public string ProbeGeometry(string json) { using (Hold()) { Alive(); var t = JsonCallOnce((b, c) => Native.ProbeGeometry(H, json, b, c)); if (t.Length == 0) throw new InvalidOperationException(Native.LastError()); return t; } }
     /// <summary>Probes drawn in the view.</summary>
     public void SetProbes(string json) { using (Hold()) { Alive(); if (Native.SetProbes(H, json) < 0) throw new InvalidOperationException(Native.LastError()); } }
     /// <summary>A probe measurement over every frame.</summary>
