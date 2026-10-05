@@ -17,6 +17,9 @@ std::vector<Bond> perceive_bonds(const System& s, const BondOptions& opt = {});
 
 // Unwrap each molecule so it is whole (follows bonds with minimum-image steps).
 void make_molecules_whole(System& s);
+/// The positions with every molecule whole (each bonded atom at its partner's nearest image, walked from the molecule's
+/// first atom); the structure is left as it is. Image flags written from these are consistent along every bond.
+std::vector<Vec3> whole_positions(const System& s);
 
 struct MoleculeShape {
   int molecule;

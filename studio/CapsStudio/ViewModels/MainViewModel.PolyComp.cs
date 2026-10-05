@@ -60,6 +60,38 @@ public sealed partial class MainViewModel
             dp, dp * mbar, mbar);
     }
 
+    private bool _balancing;
+    /// <summary>One unit's share or target typed: the others take up the difference in proportion to what they had (all
+    /// alike when they had none). Targets add up to 100 %; shares typed as a fraction (up to 1) add up to 1 — a share
+    /// above 1 is a ratio (3 : 1) and leaves the others as they are.</summary>
+    private void BalanceUnits(PolyUnit edited, bool target, decimal old)
+    {
+        if (_balancing || PolyUnits.Count < 2) return;
+        var others = PolyUnits.Where(u => !ReferenceEquals(u, edited)).ToList();
+        decimal Get(PolyUnit u) => target ? u.Target : u.Weight;
+        if (!target && edited.Weight > 1) return;   // a ratio, not a fraction
+        var total = target ? 100m : 1m;
+        _balancing = true;
+        try
+        {
+            var mine = Math.Min(Get(edited), total);
+            if (target) edited.Target = mine; else edited.Weight = mine;
+            var rest = total - mine;
+            var had = others.Sum(Get);
+            var digits = target ? 2 : 4;
+            var given = 0m;
+            for (var k = 0; k < others.Count; ++k)
+            {
+                var v = k == others.Count - 1 ? rest - given
+                      : Math.Round(had > 0 ? rest * Get(others[k]) / had : rest / others.Count, digits);
+                v = Math.Max(0, v);
+                given += v;
+                if (target) others[k].Target = v; else others[k].Weight = v;
+            }
+        }
+        finally { _balancing = false; }
+    }
+
     /// <summary>The unit shares from the calculator (mole fractions), and a random sequence when none is chosen.</summary>
     public void ApplyComposition(bool exact)
     {

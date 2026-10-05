@@ -10,6 +10,7 @@
 #include <numeric>
 #include <unordered_map>
 
+#include "caps/analysis.hpp"
 #include "caps/elements.hpp"
 #include "caps/io.hpp"
 #include "io_util.hpp"
@@ -436,11 +437,13 @@ void write_lammps_data(const System& s_in, const std::string& path) {
     out << buf << (label.empty() ? "" : "  # " + label) << "\n";
   }
   out << "\nAtoms  # full\n\n";
-  for (const auto& a : s.atoms) {
-    Vec3 f = c.valid() ? c.to_fractional(a.pos) : Vec3{0, 0, 0};
+  const std::vector<Vec3> whole = whole_positions(s);   // consistent image flags along every bond
+  for (size_t ai = 0; ai < s.atoms.size(); ++ai) {
+    const auto& a = s.atoms[ai];
+    Vec3 f = c.valid() ? c.to_fractional(whole[ai]) : Vec3{0, 0, 0};
     int im[3] = {0, 0, 0};
     for (int k = 0; k < 3; ++k) im[k] = c.valid() && c.periodic[k] ? static_cast<int>(std::floor(f[k])) : 0;
-    const Vec3 w = a.pos - (c.a * im[0] + c.b * im[1] + c.c * im[2]);
+    const Vec3 w = whole[ai] - (c.a * im[0] + c.b * im[1] + c.c * im[2]);
     std::snprintf(buf, sizeof buf, "%lld %lld %d %.8f %.10f %.10f %.10f %d %d %d", static_cast<long long>(a.id), static_cast<long long>(a.mol), a.type,
                   a.charge, w[0], w[1], w[2], im[0], im[1], im[2]);
     out << buf << residue_comment(a) << "\n";

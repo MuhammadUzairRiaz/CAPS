@@ -686,6 +686,21 @@ internal static class SelfTest
         {
             vm.UseLibrary(enr, null);
             Check(!vm.PolyHasError && vm.PolyUnits.Count == 2 && vm.PolyStripUnits.Length == vm.GrowDpD, $"ENR-50 chain: {vm.PolyPreview} {vm.PolyError}");
+            // a share or target typed: the other unit takes up the rest (shares add up to 1, targets to 100 %); 3 : 1 is a ratio
+            vm.PolyUnits[0].WeightInput = 0.7m;
+            var w2 = vm.PolyUnits[1].Weight;
+            vm.PolyUnits[1].TargetInput = 35;
+            var t2 = vm.PolyUnits[0].Target;
+            vm.PolyUnits[0].WeightInput = 3;
+            var ratio = vm.PolyUnits[1].Weight;
+            vm.AddPolyUnit("C", "*CC*");
+            vm.PolyUnits[0].Target = 50; vm.PolyUnits[1].Target = 30; vm.PolyUnits[2].Target = 20;
+            var three0 = (vm.PolyUnits[0].Target, vm.PolyUnits[1].Target, vm.PolyUnits[2].Target);
+            vm.PolyUnits[0].TargetInput = 60;   // B and C share 40 as 30 : 20 → 24 · 16
+            var three = (vm.PolyUnits[0].Target, vm.PolyUnits[1].Target, vm.PolyUnits[2].Target);
+            Check(w2 == 0.3m && t2 == 65 && ratio == 0.3m && three == (60m, 24m, 16m),
+                  $"shares and targets balance: B {w2} · A {t2} % · ratio keeps B {ratio} · {three0} → {three}");
+            vm.UseLibrary(enr, null);
             // end groups: a tert-butyl head (an initiator fragment) and a hydroxyl tail travel with the chain spec
             vm.HeadCap = 3; vm.TailCap = 6;
             var capped = vm.PolySpecJson();

@@ -116,11 +116,13 @@
                           <TextBlock Text="{Binding Error}" Classes="err" FontSize="11.5" TextWrapping="Wrap" IsVisible="{Binding HasError}" />
                           <Grid ColumnDefinitions="Auto,90,*" ColumnSpacing="8" IsVisible="{Binding $parent[p:PolymerPage].((vm:MainViewModel)DataContext).PolyShowWeights}">
                             <TextBlock Text="Share" Classes="label" VerticalAlignment="Center" />
-                            <NumericUpDown Grid.Column="1" Value="{Binding Weight}" Minimum="0" Maximum="100" Increment="0.05" FormatString="0.###" />
+                            <NumericUpDown Grid.Column="1" Value="{Binding WeightInput}" Minimum="0" Maximum="100" Increment="0.05" FormatString="0.###"
+                                           ToolTip.Tip="This unit's share as a fraction (0.55): the other units take up the rest, so the shares add up to 1. A share above 1 is a ratio (3 for 3 : 1) and leaves the others as they are" />
                           </Grid>
                           <Grid ColumnDefinitions="Auto,90,*" ColumnSpacing="8" IsVisible="{Binding $parent[p:PolymerPage].((vm:MainViewModel)DataContext).CompShown}">
                             <TextBlock Text="Target %" Classes="label" VerticalAlignment="Center" ToolTip.Tip="The ratio you want, by moles or by weight as the composition below is set" />
-                            <NumericUpDown Grid.Column="1" Value="{Binding Target}" Minimum="0" Maximum="100" Increment="5" FormatString="0.##" />
+                            <NumericUpDown Grid.Column="1" Value="{Binding TargetInput}" Minimum="0" Maximum="100" Increment="5" FormatString="0.##"
+                                           ToolTip.Tip="The % this unit should have; the other units take up the rest (the targets add up to 100 %)" />
                           </Grid>
                           <Grid ColumnDefinitions="Auto,90,*" ColumnSpacing="8" IsVisible="{Binding $parent[p:PolymerPage].((vm:MainViewModel)DataContext).PolyShowBlocks}">
                             <TextBlock Text="Block length" Classes="label" VerticalAlignment="Center" />

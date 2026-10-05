@@ -15,6 +15,7 @@
 #include <set>
 #include <sstream>
 
+#include "caps/analysis.hpp"
 #include "caps/elements.hpp"
 #include "caps/manybody.hpp"
 #include "caps/water.hpp"
@@ -1139,12 +1140,15 @@ void write_lammps_data_ff(const System& s, const ForceField& ff0, const EnergyOp
   std::vector<int64_t> molid(na);
   for (size_t i = 0; i < na; ++i) molid[i] = s.has_mol ? s.atoms[i].mol : int64_t(frag[i]) + 1;
   const std::vector<double> q6 = charges_six_decimals(ff.charge, molid);
+  // image flags from whole molecules: atoms stored wrapped one by one would split bonds across the walls (LAMMPS:
+  // "Inconsistent image flags")
+  const std::vector<Vec3> whole = whole_positions(s);
   for (size_t i = 0; i < na; ++i) {
     const auto& at = s.atoms[i];
-    const Vec3 fr = c.valid() ? c.to_fractional(at.pos) : Vec3{0, 0, 0};
+    const Vec3 fr = c.valid() ? c.to_fractional(whole[i]) : Vec3{0, 0, 0};
     int im[3] = {0, 0, 0};
     for (int k = 0; k < 3; ++k) im[k] = c.valid() && c.periodic[k] ? int(std::floor(fr[k])) : 0;
-    const Vec3 w = at.pos - (c.a * im[0] + c.b * im[1] + c.c * im[2]);
+    const Vec3 w = whole[i] - (c.a * im[0] + c.b * im[1] + c.c * im[2]);
     std::snprintf(buf, sizeof buf, "%zu %lld %d %.6f %.6f %.6f %.6f %d %d %d", i + 1, static_cast<long long>(molid[i]), ff.type_index[i] + 1,
                   q6[i], w[0], w[1], w[2], im[0], im[1], im[2]);
     out << buf << residue_comment(at) << "\n";
