@@ -55,15 +55,32 @@ void assign_elements(System& s) {
       if (t.type == at.type) {
         // A label such as "c3" or "CT" names the element first; the mass decides when it does not.
         int z = element_from_mass(t.mass);
+        int ua_h = 0;   // hydrogens a united-atom site holds (named for them: CH2, so typing knows its hydrogens)
         if (!z && !t.label.empty()) z = element_from_name(t.label);
+        // a labelled united-atom site whose mass falls near another element ("CH2" 14.027 reads as N by mass): the
+        // label's element when the mass is that element's plus 1–4 hydrogens
+        // without a label: a united-atom reading clearly closer than the plain element (CH2 14.027 against N 14.007)
+        if (z && (z == 7 || z == 8 || z == 16 || z == 9) && t.label.empty()) {
+          const double d0 = std::fabs(element(z).mass - t.mass);
+          for (int host : {6, 7, 8, 16})
+            for (int nh = 1; nh <= 4; ++nh)
+              if (std::fabs(element(host).mass + nh * 1.008 - t.mass) < d0 - 0.003) { z = host, ua_h = nh, ++sites; nh = 5; host = 99; }
+        }
+        if (z && !t.label.empty()) {
+          const int zl = element_from_name(t.label);
+          if (zl > 0 && zl != z && (zl == 6 || zl == 7 || zl == 8 || zl == 16))
+            for (int nh = 1; nh <= 4; ++nh)
+              if (std::fabs(element(zl).mass + nh * 1.008 - t.mass) < 0.02) { z = zl, ua_h = nh, ++sites; break; }
+        }
         // a united-atom site (mW water's 18.02, a CH2's 14.03 under another label): its heavy atom plus hydrogens
         // (C, N, O or S hosts only: a coarse-grained bead's 54 or 72 must not read as a metal hydride)
         for (int nh = 1; !z && nh <= 4 && t.mass > 1.5 + nh * 1.008; ++nh) {
           const int h = element_from_mass(t.mass - nh * 1.008, 0.02);
-          if (h == 6 || h == 7 || h == 8 || h == 16) z = h, ++sites;
+          if (h == 6 || h == 7 || h == 8 || h == 16) z = h, ua_h = nh, ++sites;
         }
         at.element = z;
         if (!at.name.size() && !t.label.empty()) at.name = t.label;
+        if (!at.name.size() && ua_h > 0) at.name = std::string(element(z).symbol) + "H" + (ua_h > 1 ? std::to_string(ua_h) : "");
         break;
       }
     if (at.element) ++guessed;

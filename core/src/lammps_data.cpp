@@ -1212,8 +1212,28 @@ LammpsTerms lammps_terms(const System& s, const ForceField& ff0, const EnergyOpt
 }
 
 // fix shake on the bonds CAPS constrains: to hydrogen by mass (and water's H–O–H angle by its type), or every bond type
+// LAMMPS's fix shake holds clusters of one central atom and at most three others bonded to it, each atom in one cluster:
+// the constrained bonds must fall apart into such stars (a polymer chain with every bond held does not)
+static bool shake_clusters_ok(const System& s, const ForceField& ff, ConstraintMode mode) {
+  const size_t n = s.atoms.size();
+  double mh = 0;
+  for (size_t i = 0; i < n; ++i) if (s.atoms[i].element == 1) mh = std::max(mh, ff.mass[i]);
+  std::vector<std::vector<uint32_t>> nb(n);
+  for (const auto& b : s.bonds) {
+    const bool held = mode == ConstraintMode::AllBonds || (mh > 0 && (ff.mass[b.i] <= mh + 0.05 || ff.mass[b.j] <= mh + 0.05));
+    if (held) nb[b.i].push_back(b.j), nb[b.j].push_back(b.i);
+  }
+  for (size_t i = 0; i < n; ++i) {
+    if (nb[i].size() <= 1) continue;   // a leaf (or alone): its centre is checked
+    if (nb[i].size() > 3) return false;
+    for (uint32_t j : nb[i]) if (nb[j].size() > 1) return false;   // two centres joined: clusters connected
+  }
+  return true;
+}
+
 std::string shake_fix(const System& s, const ForceField& ff, const Layout& L, ConstraintMode mode, const std::string& group) {
   if (mode == ConstraintMode::None || L.bonds.types.empty()) return {};
+  if (!shake_clusters_ok(s, ff, mode)) return {};
   char b[160];
   std::string what;
   if (mode == ConstraintMode::AllBonds) {
@@ -1351,7 +1371,11 @@ std::string lammps_group_lines(const System& s, const ForceField& ff, const std:
 }
 
 void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOptions& e0, const std::string& data_path, const std::string& path,
-                        int64_t held_mol, bool pair_coeffs, const LammpsRun& run, const LammpsStyle& st, std::vector<std::string>* notes) {
+                        int64_t held_mol, bool pair_coeffs, const LammpsRun& run_in, const LammpsStyle& st, std::vector<std::string>* notes) {
+  // constraints LAMMPS's SHAKE cannot hold (every bond of a chain): flexible bonds and the unconstrained time step, said
+  LammpsRun run = run_in;
+  const bool shake_dropped = run.constraints != ConstraintMode::None && !s.bonds.empty() && !shake_clusters_ok(s, ff0, run.constraints);
+  if (shake_dropped) run.constraints = ConstraintMode::None;
   if (!ff0.vsites.empty()) {   // four-site water: LAMMPS places the M sites itself
     System rs;
     ForceField rf;
@@ -1590,6 +1614,7 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
       const std::string line = shake_fix(s, ff, L, run.constraints, mobile);
       if (!line.empty()) out << line;
     }
+    if (shake_dropped) out << "# the held bonds join into clusters LAMMPS's SHAKE cannot hold: the bonds stay flexible, at the unconstrained time step\n";
     std::snprintf(b, sizeof b, "velocity        %s create %.6g %llu mom yes rot yes dist gaussian\n", vgroup.c_str(), run.temperature,
                   static_cast<unsigned long long>(run.seed));
     out << b;
@@ -1658,6 +1683,11 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
     const std::string line = shake_fix(s, ff, L, run.constraints, mobile);
     if (!line.empty())
       out << "# " << (run.constraints == ConstraintMode::AllBonds ? "every bond" : "bonds to hydrogen (and water's angle)") << " held at its length, as in CAPS (before the velocities: the temperature counts the constraints)\n" << line;
+  }
+  if (shake_dropped) {
+    const std::string why = "the held bonds join into clusters LAMMPS's SHAKE cannot hold (one centre and at most three atoms each; a chain with every bond held is one long cluster): the bonds stay flexible in LAMMPS, at the unconstrained time step";
+    out << "# " << why << "\n";
+    if (notes) notes->push_back("LAMMPS: " + why);
   }
   if (L.coreshell) {
     // a shell model (LAMMPS CORESHELL): the thermostat sees the ions' centre-of-mass motion, not the core-shell vibration
