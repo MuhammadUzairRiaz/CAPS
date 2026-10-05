@@ -55,6 +55,13 @@ struct RenderOptions {
   std::vector<double> property;        // per-atom values for ColourBy::Property
   double atom_scale = 0.28;            // × vdW radius for ball-and-stick
   double bond_radius = 0.14;           // Å
+  // Look (design/boards/Look): space-filling spheres × vdW, wireframe line width (px at supersample 1), bond orders drawn
+  // (double and triple as parallel sticks, aromatic with a dashed inner one), and a per-atom size factor (the selection's own
+  // look: its atoms' radii and the sticks between them; 0 or absent keeps 1)
+  double space_scale = 1.0;
+  double line_px = 1.4;
+  bool bond_orders = false;
+  std::vector<float> size_factor;
   bool outlines = true;
   int outline_strength = 1;            // 1 a light edge; 2 high contrast (twice as wide, near-black / near-white ink)
   bool depth_cue = true;

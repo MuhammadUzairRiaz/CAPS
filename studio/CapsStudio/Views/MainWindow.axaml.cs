@@ -1021,6 +1021,7 @@ public partial class MainWindow : Window
             case Key.A when e.KeyModifiers == KeyModifiers.None: _vm.ToggleAutoClean(); e.Handled = true; break;
             case Key.F when e.KeyModifiers == KeyModifiers.None: _vm.FrameSelection(); e.Handled = true; break;
             case Key.L when e.KeyModifiers == KeyModifiers.None && _vm.LensOn: _vm.LensHold = true; e.Handled = true; break;
+            case Key.Escape when _vm.StampArmed: _vm.DisarmStamp(); _vm.Status = "Stamp put away"; e.Handled = true; break;
             case Key.Escape: _vm.ClearAllSelection(); e.Handled = true; break;
         }
     }
@@ -1427,6 +1428,7 @@ public partial class MainWindow : Window
         var alt = e.KeyModifiers.HasFlag(KeyModifiers.Alt);
         var studioView = _host == ViewHost && _vm.IsStudio && _vm.Document != null && !_vm.Busy;
         if (Ring.IsVisible && !right) { RingClick(p.Position); e.Handled = true; return; }   // the open ring: this click is its action
+        if (studioView && !right && _vm.StampArmed) { PlaceStampAt(p.Position, alt); e.Handled = true; return; }   // a stamp under the pointer: placed
         // double-click: the atom's molecule; ⌥ double-click: every atom of its type (⇧ adds)
         if (studioView && !right && e.ClickCount == 2 && _vm.EditTool == 0)
         {
@@ -1625,6 +1627,7 @@ public partial class MainWindow : Window
     private void OnWheel(object? sender, PointerWheelEventArgs e)
     {
         if (_vm.Document == null) return;
+        if (_vm.StampArmed) { _vm.TurnStamp(e.Delta.Y > 0 ? 1 : -1); e.Handled = true; return; }   // the wheel turns the stamp
         Interacting();
         _vm.StopFly();
         _vm.Camera.Zoom = Math.Clamp(_vm.Camera.Zoom * Math.Pow(1.12, e.Delta.Y), 0.1, 40);

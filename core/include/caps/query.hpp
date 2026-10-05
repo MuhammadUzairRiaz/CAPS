@@ -7,6 +7,10 @@
 //   ring 5                     the atoms of the 5th ring (SSSR, in the order perception finds them)
 //   stereo R | S | *           tetrahedral stereocentres: CIP R, S, or all four-different centres
 //   within 5.0 of <query>      atoms within the distance (Å, minimum image) of the query's atoms
+//   x | y | z 7..11            by position (Å, as stored)       charge -0.2..0.1  partial charge (e)
+//   mass 12..14 · bonds 3      by mass (g/mol) and bonds per atom (a range A..B or one value)
+//   hybrid sp | sp2 | sp3      hybridisation from the bonds (orders when known, else the element's count of neighbours)
+//   tag NAME                   the atoms carrying a tag of the structure
 //   sel | selection | all | none
 //   and · or · not · ( )       combine (not binds tightest, then and, then or)
 //
@@ -26,6 +30,10 @@ struct QueryResult {
   int rings = 0;   // SSSR rings whose atoms are all selected
 };
 QueryResult select_query(const System& s, const std::string& query, const std::vector<char>& current = {});
+
+// A per-atom column the queries select on (and Brush to select draws as a histogram): "x", "y", "z", "charge", "mass",
+// "bonds", "hybrid" (1 sp, 2 sp2, 3 sp3, 0 none or unknown), "molecule" (1-based). Throws for another name.
+std::vector<double> atom_column(const System& s, const std::string& name);
 
 // CIP labels of the tetrahedral centres: 'R', 'S', '*' (four different neighbours but a tie), 0 elsewhere.
 std::vector<char> cip_labels(const System& s);

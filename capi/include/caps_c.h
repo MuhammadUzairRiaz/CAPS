@@ -651,6 +651,16 @@ int32_t caps_atom_states(caps_doc* d, uint8_t* out, int32_t n);
 int32_t caps_tags(caps_doc* d, char* json, int32_t cap);
 int32_t caps_tag_edit(caps_doc* d, const char* json);
 int32_t caps_tag_atoms(caps_doc* d, const char* name, int32_t* out, int32_t cap);
+/* v60 Brush to select: a per-atom column ("x", "y", "z", "charge", "mass", "bonds", "hybrid" 1 sp / 2 sp2 / 3 sp3 / 0,
+   "molecule", "distance:N" from atom N, "distance:tag:NAME" from a tag's nearest atom; Å, minimum image); returns the
+   atom count (-1 on error). The query words x | y | z | charge | mass | bonds A..B and hybrid sp2 select on the same values. */
+int32_t caps_atom_column(caps_doc* d, const char* name, double* out, int32_t cap);
+/* v60 clipboard pieces and stamps (design/boards/Stamp): caps_piece JSON {atoms: [0-based …] | "selection" | "all", name}
+   → a caps-piece document (atoms about their centre with element, charge, type label and mass, names, molecules; bonds);
+   caps_piece_file: a structure file as one; caps_edit op "stamp" {piece: that text, at: [x, y, z], axis, degrees, clear}
+   adds it there, turned, moved the least (≤ 12 Å) to keep every atom `clear` Å from the structure. -1 on error. */
+int32_t caps_piece(caps_doc* d, const char* json, char* out, int32_t cap);
+int32_t caps_piece_file(const char* path, const char* name, char* out, int32_t cap);
 int32_t caps_pick_at(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt, int32_t x, int32_t y);   /* atom index under pixel of last render, -1 none */
 /* v19: pixels per Å at the focal plane for a width × height image of the current frame (exact when orthographic). */
 double caps_view_scale(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt);

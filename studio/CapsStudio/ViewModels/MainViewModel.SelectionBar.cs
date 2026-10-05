@@ -67,6 +67,7 @@ public sealed partial class MainViewModel
     public void RefreshSelBar()
     {
         if (HasTags) RefreshTags();   // each chip's selected count
+        if (_brushOpen) RefillBrush();   // the histograms' selected share
         _barAtoms = SelectionAtoms();
         SelBarCount = _barAtoms.Length;
         if (_barAtoms.Length == 0) { SelBarWhat = SelBarHow = ""; LightLayers(_barAtoms); SelectionBarChanged?.Invoke(); return; }
@@ -253,7 +254,8 @@ public sealed partial class MainViewModel
             case "tag": TagSelection(); break;
             case "copy":
                 var t = SelectionXyz();
-                if (t.Length > 0) Status = $"{_barCount:N0} atoms copied as XYZ";
+                CopyToTray();   // the piece in the clipboard tray, to place as a stamp
+                if (t.Length > 0) Status = $"{_barCount:N0} atoms copied: in the clipboard tray (pick it to place it) and as XYZ text";
                 return t;
             case "clean": await AutoClean(); break;
             case "frame": FrameSelection(); break;

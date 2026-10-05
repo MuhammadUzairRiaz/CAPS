@@ -29,6 +29,7 @@
     <Style Selector="Button.treerow:pointerover /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="{DynamicResource Bg3B}" /></Style>
     <Style Selector="Ellipse.jobdot"><Setter Property="Fill" Value="{DynamicResource DimB}" /></Style>
     <Style Selector="Ellipse.sessdot"><Setter Property="Fill" Value="{DynamicResource DimB}" /></Style>
+    <Style Selector="Button.armed"><Setter Property="BorderBrush" Value="{DynamicResource AccB}" /><Setter Property="BorderThickness" Value="1.5" /></Style>
     <Style Selector="Button.chipbtn.lit"><Setter Property="BorderBrush" Value="{DynamicResource SelB}" /><Setter Property="BorderThickness" Value="1" /></Style>
     <Style Selector="Ellipse.sessdot.now"><Setter Property="Fill" Value="{DynamicResource AccB}" /></Style>
     <Style Selector="Ellipse.jobdot.running"><Setter Property="Fill" Value="{DynamicResource AccB}" /></Style>
@@ -986,6 +987,55 @@
                 </StackPanel>
               </Border>
             </StackPanel>
+            <!-- the stamp under the pointer (design/boards/Stamp) -->
+            <Border Classes="hud" Padding="10,5" Margin="14,14,14,82" HorizontalAlignment="Center" VerticalAlignment="Bottom" IsVisible="{Binding StampArmed}" ZIndex="6">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <local:Icon Kind="copy" Size="14" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding StampHint}" FontSize="12" VerticalAlignment="Center" />
+              </StackPanel>
+            </Border>
+            <!-- the clipboard tray (design/boards/Stamp): Copy keeps the last pieces; pick one to place it as a stamp -->
+            <Border Classes="hud" Padding="8,6" Margin="14,14,14,14" HorizontalAlignment="Center" VerticalAlignment="Bottom" IsVisible="{Binding ShowTray}" MaxWidth="760" ZIndex="4">
+              <DockPanel>
+                <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center" Margin="2,0,10,0" Spacing="2">
+                  <TextBlock Text="CLIPBOARD" FontSize="10" FontWeight="SemiBold" LetterSpacing="0.6" Foreground="{DynamicResource DimB}" />
+                  <Button Classes="layerbtn" Click="OnTrayHide" ToolTip.Tip="Hide the tray (Copy shows it again)" HorizontalAlignment="Left"><local:Icon Kind="close" Size="11" /></Button>
+                </StackPanel>
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                  <ItemsControl ItemsSource="{Binding Tray}">
+                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:TrayPiece">
+                        <Button Classes="small" Classes.armed="{Binding Armed}" Tag="{Binding}" Click="OnTrayPiece" Padding="10,5" MaxWidth="200" Height="NaN" MinHeight="40"
+                                ToolTip.Tip="Pick it: a stamp under the pointer · click places it, the wheel turns it, ⌥ click places many">
+                          <Button.ContextMenu><ContextMenu><MenuItem Header="Remove from the tray" Click="OnTrayRemove" Tag="{Binding}" /></ContextMenu></Button.ContextMenu>
+                          <StackPanel Spacing="1">
+                            <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{Binding Detail}" FontSize="10.5" Foreground="{DynamicResource DimB}" TextTrimming="CharacterEllipsis" />
+                          </StackPanel>
+                        </Button>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </ScrollViewer>
+              </DockPanel>
+            </Border>
+            <!-- a file dragged over the window: into this structure as a stamp, or open as a new structure -->
+            <Grid RowDefinitions="*,*" Margin="0" Background="#B307080A" IsVisible="{Binding DropTargets}" ZIndex="12">
+              <Border x:Name="DropInto" Margin="40,40,40,10" CornerRadius="14" BorderThickness="2" BorderBrush="{DynamicResource AccB}" Background="#2E2618">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="6">
+                  <local:Icon Kind="download" Size="26" Foreground="{DynamicResource AccB}" HorizontalAlignment="Center" />
+                  <TextBlock Text="{Binding DropIntoText}" FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                  <TextBlock Text="as a stamp to place · undoable" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Center" />
+                </StackPanel>
+              </Border>
+              <Border x:Name="DropNew" Grid.Row="1" Margin="40,10,40,40" CornerRadius="14" BorderThickness="2" BorderBrush="{DynamicResource LineB}" Background="{DynamicResource Bg1B}">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="6">
+                  <local:Icon Kind="file" Size="24" Foreground="{DynamicResource MutedB}" HorizontalAlignment="Center" />
+                  <TextBlock Text="Open as a new structure" FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                </StackPanel>
+              </Border>
+            </Grid>
             <!-- Tags (design/boards/Tags): click selects a tag, ⇧ click adds it, ⌥ click shows only it; right click: rename, colour, add / take out the selection, delete -->
             <Border x:Name="TagStrip" Classes="hud" Padding="8,5" Margin="14,46,14,14" HorizontalAlignment="Left" VerticalAlignment="Top" IsVisible="{Binding HasTags}" MaxWidth="760">
               <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="4">
@@ -1861,6 +1911,59 @@
           </ScrollViewer>
         </DockPanel>
         <!-- Performance (design/boards/MillionAtoms): level of detail, memory, quality -->
+        <!-- Brush to select (design/boards/BrushSelect): drag across a histogram to select that range; several intersect -->
+        <DockPanel IsVisible="{Binding ShowBrushPanel}">
+          <Border DockPanel.Dock="Top" Classes="phead">
+            <DockPanel>
+              <Button DockPanel.Dock="Right" Classes="tool" Width="30" MinWidth="30" Height="30" MinHeight="30" Click="OnBrushClose" ToolTip.Tip="Close">
+                <local:Icon Kind="close" Size="14" />
+              </Button>
+              <TextBlock DockPanel.Dock="Right" Text="{Binding BrushCount}" Classes="mono" FontSize="12" Foreground="{DynamicResource SelB}" VerticalAlignment="Center" Margin="0,0,8,0" />
+              <TextBlock Text="Brush to select" Classes="h2" VerticalAlignment="Center" />
+            </DockPanel>
+          </Border>
+          <Border DockPanel.Dock="Bottom" Padding="12,10" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Background="{DynamicResource Bg1B}">
+            <StackPanel Spacing="8">
+              <TextBox Text="{Binding BrushQuery}" Classes="mono" FontSize="12" Watermark="z 7..11 and not tag slab" KeyDown="OnBrushQueryKey"
+                       ToolTip.Tip="The same selection as a query (the query bar, macros and recipes take it): edit it and press Enter" />
+              <TextBlock Text="{Binding BrushError}" Foreground="{DynamicResource ErrB}" FontSize="11.5" TextWrapping="Wrap" IsVisible="{Binding HasBrushError}" />
+              <WrapPanel ItemSpacing="6" LineSpacing="6">
+                <Button Classes="small primary" Click="OnBrushTag" IsEnabled="{Binding HasSelBar}" ToolTip.Tip="The selection as a tag (a group in LAMMPS, GROMACS and Analyze)">
+                  <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="tag" Size="13" VerticalAlignment="Center" /><TextBlock Text="Tag it" VerticalAlignment="Center" /></StackPanel>
+                </Button>
+                <Button Classes="small" Click="OnBrushAdd" ToolTip.Tip="Another property as a histogram">
+                  <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="plus" Size="13" VerticalAlignment="Center" /><TextBlock Text="Add more" VerticalAlignment="Center" /></StackPanel>
+                </Button>
+                <Button Classes="small" Click="OnBrushDistance" ToolTip.Tip="A histogram of distance (Å, minimum image) from the picked atom or a tag: rubber within 6 Å of the filler">
+                  <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="ruler" Size="13" VerticalAlignment="Center" /><TextBlock Text="Distance to…" VerticalAlignment="Center" /></StackPanel>
+                </Button>
+                <Button Classes="small ghost" Content="Clear" Click="OnBrushClear" ToolTip.Tip="Every brush and the selection cleared" />
+              </WrapPanel>
+            </StackPanel>
+          </Border>
+          <ScrollViewer>
+            <ItemsControl ItemsSource="{Binding BrushHists}" Margin="12,8">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:BrushHist">
+                  <StackPanel Spacing="4" Margin="0,4,0,10">
+                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                      <TextBlock Text="{Binding Title}" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                      <TextBlock Grid.Column="1" Text="{Binding RangeText}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+                      <Button Grid.Column="2" Classes="layerbtn" Tag="{Binding}" Click="OnBrushRemove" ToolTip.Tip="Remove this histogram"><local:Icon Kind="close" Size="11" /></Button>
+                    </Grid>
+                    <Border Background="{DynamicResource Bg0B}" CornerRadius="5" Padding="4" Height="64">
+                      <local:BrushHistogram Hist="{Binding}" Cursor="Cross" ToolTip.Tip="Drag across the bars to select that range · a click clears it" />
+                    </Border>
+                    <ItemsControl ItemsSource="{Binding Categories}" IsVisible="{Binding Categorical}">
+                      <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate><DataTemplate><TextBlock Text="{Binding}" FontSize="11" Foreground="{DynamicResource DimB}" HorizontalAlignment="Center" /></DataTemplate></ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </DockPanel>
         <DockPanel IsVisible="{Binding ShowLodPanel}">
           <Border DockPanel.Dock="Top" Classes="phead">
             <DockPanel>
