@@ -127,7 +127,7 @@ public sealed class AnalyzeViewModel : ObservableObject
             new("Structure", [Chip("density", "Density", on: true), Chip("rdf", "RDF", on: true), Chip("sq", "S(q)"), Chip("xray", "X-ray"), Chip("electron", "Electron"), Chip("neutron", "Neutron")]),
             new("Chains", [Chip("rg", "Rg", on: true), Chip("ree", "Ree"), Chip("cn", "Cn, C∞"), Chip("persistence", "Persistence"), Chip("orientation", "Orientation"),
                 Chip("entanglements", "Entanglements"), Chip("conformation", "Torsions"), Chip("p2r", "P₂(r)")]),
-            new("Thermo", [Chip("ced", "CED"), Chip("delta", "δ"), Chip("dielectric", "ε dielectric"), Chip("fluct", "Cp·κT·α"), Chip("modes", "Normal modes"), ConfChip, TgChip]),
+            new("Thermo", [Chip("ced", "CED"), Chip("delta", "δ"), Chip("dielectric", "ε dielectric"), Chip("fluct", "Cp·κT·α"), Chip("modes", "Normal modes"), ConfChip, SolvChip, TgChip]),
             new("Mechanics", [StrainChip, FluctChip, TensileChip, CreepChip]),
             new("Dynamics", [Chip("msd", "MSD"), Chip("diffusion", "D"), Chip("relaxation", "Relaxation"), Chip("vacf", "VACF · VDOS"), Chip("vanhove", "van Hove · α₂"), ViscChip, NemdChip]),
             new("Free volume", [Chip("ffv", "Probe insertion"), Chip("psd", "Pore size")]),
@@ -165,6 +165,17 @@ public sealed class AnalyzeViewModel : ObservableObject
         ["trials"] = _confTrials, ["method"] = _confMethod == 1 ? "anneal" : "torsions", ["selection"] = _confSel, ["window"] = _confWindow,
         ["rmsd"] = _confRmsd, ["temperature"] = temperature, ["seed"] = (long)MechSeed,
     }.ToJsonString();
+    public CalcChip SolvChip { get; } = Chip("solvation", "ΔG solvation", tip: "Solvation free energy of one molecule (or the selected atoms) in the rest of the frame by thermodynamic integration on a copy: its charges then its soft-core Lennard-Jones switched off in windows");
+    private int _solvMol, _solvCoul = 5, _solvLj = 13;
+    private double _solvPs = 20, _solvEq = 5, _solvT = 300;
+    public decimal SolvMolD { get => _solvMol; set => Set(ref _solvMol, (int)Math.Max(0, value), nameof(SolvMolD)); }
+    public decimal SolvCoulD { get => _solvCoul; set { Set(ref _solvCoul, (int)Math.Clamp(value, 2, 60), nameof(SolvCoulD)); Raise(nameof(SolvText)); } }
+    public decimal SolvLjD { get => _solvLj; set { Set(ref _solvLj, (int)Math.Clamp(value, 2, 60), nameof(SolvLjD)); Raise(nameof(SolvText)); } }
+    public decimal SolvPsD { get => (decimal)_solvPs; set { Set(ref _solvPs, Math.Max(0.1, (double)value), nameof(SolvPsD)); Raise(nameof(SolvText)); } }
+    public decimal SolvEqD { get => (decimal)_solvEq; set { Set(ref _solvEq, Math.Max(0, (double)value), nameof(SolvEqD)); Raise(nameof(SolvText)); } }
+    public decimal SolvTD { get => (decimal)_solvT; set => Set(ref _solvT, Math.Max(1, (double)value), nameof(SolvTD)); }
+    public string SolvText => string.Format(CultureInfo.InvariantCulture, "{0} windows · {1:0.#} ps of MD in all (charges first, skipped for a neutral solute)",
+        _solvCoul + _solvLj, (_solvCoul + _solvLj) * (_solvPs + _solvEq));
     public CalcChip FrictionChip { get; } = Chip("friction", "Sliding friction", tip: "One wall molecule slid over the film at a fixed gap on a copy of the current frame: the friction force, the shear stress at the wall and μ = −F_x/F_z");
     private int _frMoving = 2, _frFixed = 1;
     private double _frSpeed = 10, _frPs = 50, _frEq = 10, _frT = 300;   // m/s, ps, ps, K
@@ -354,6 +365,7 @@ public sealed class AnalyzeViewModel : ObservableObject
             Pressure = _tgPressure, Barostat = _tgBarostat, TauT = _tgTauT, TauP = _tgTauP, AverageFrom = Math.Max(1e-6, 1 - _tgAverage / 100.0),
             TgProperty = _tgProperty, TgFit = _tgFit, GlassyMax = _tgGlassy, RubberyMin = _tgRubbery,
             FrMoving = _frMoving, FrFixed = _frFixed, FrVelocity = _frSpeed / 100, FrPs = _frPs, FrEqPs = _frEq > 0 ? _frEq : -1, FrT = _frT,
+            SolvMol = _solvMol, SolvCoulWindows = _solvCoul, SolvLjWindows = _solvLj, SolvPs = _solvPs, SolvEqPs = _solvEq > 0 ? _solvEq : -1, SolvT = _solvT,
             CreepStress = _crStress, CreepT = _crT, CreepPs = _crPs, CreepEqPs = _crEq > 0 ? _crEq : -1, CreepAxis = _crAxis,
             ConfTrials = _confTrials, ConfMethod = _confMethod, ConfSelection = _confSel ? 1 : 0, ConfWindow = _confWindow, ConfRmsd = _confRmsd,
             ShearLo = _shLo, ShearHi = _shHi, ShearPoints = _shPoints, ShearPs = _shPs, ShearEqPs = _shEq > 0 ? _shEq : -1,

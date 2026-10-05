@@ -573,4 +573,8 @@ with tempfile.TemporaryDirectory() as _tmp:
     _rbr = _rb.export_engines(_tmp, gromacs=False, run="nvt", steps=100)
     _rbin = open(os.path.join(_tmp, "system.in")).read()
 check(_rbn == 2 and "rigid/nvt/small molecule" in _rbin and "group           rigid molecule 1:2" in _rbin, f"rigid bodies: {_rbn} molecules in the LAMMPS input")
+_mx = caps.open(os.path.join(samples, "ps_melt.data")).sorption(pressures_kpa=[1000], insertions=2000, steps=8000, mixture=[("O=C=O", 0.15), ("N#N", 0.85)])
+_mp = _mx["isotherm"][0]
+check(len(_mx["species"]) == 2 and len(_mp["species_loading"]) == 2 and abs(sum(_mp["species_loading"]) - _mp["loading"]) < 1e-6 and _mp["selectivity"][0] == 1,
+      f"mixture sorption: CO2 {_mp['species_loading'][0]:.2f} + N2 {_mp['species_loading'][1]:.2f} per cell, S(N2/CO2) {_mp['selectivity'][1]:.2f}")
 print("all python checks passed")

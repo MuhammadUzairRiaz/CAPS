@@ -11,6 +11,10 @@
 //   min(1, βfV/(N+1) e^(−βΔU)) and min(1, N/(βfV) e^(−βΔU)), translations and rotations with min(1, e^(−βΔU)); the
 //   loading is the average N over the production steps, its error from ten blocks, and the isosteric heat from the
 //   fluctuations Q_st = kT − (⟨UN⟩ − ⟨U⟩⟨N⟩) / (⟨N²⟩ − ⟨N⟩²).
+//   Mixtures (C6): several sorbate templates one after the other, gas mole fractions y_i, each species' fugacity y_i p
+//   (ideal reservoir); an insertion or deletion picks a species at random and is accepted with that species' f_i and N_i;
+//   per species loadings, Widom terms and isosteric heats q_i = kT − Σ_j cov(U, N_j) [cov(N, N)⁻¹]_ji (the
+//   multicomponent fluctuation formula); the adsorption selectivity S_i/0 = (x_i / x_0) / (y_i / y_0).
 #pragma once
 
 #include <cstdint>
@@ -36,6 +40,10 @@ struct SorptionOptions {
   // a density map of the sorbate in the host (C7): its molecules' centres sampled over the production steps of each
   // pressure on a grid of map_grid points along each cell edge (0: no map)
   int map_grid = 0;
+  // mixtures: the first atom of each species' template (ascending; each runs to the next or to the end; empty: one
+  // species from template_first_atom) and their gas mole fractions (normalised; empty: equal)
+  std::vector<int> species_first_atom;
+  std::vector<double> mole_fractions;
   std::function<bool(const std::string& stage, double fraction)> progress;   // false stops
 };
 
@@ -50,6 +58,13 @@ struct IsothermPoint {
   // the density map (map_grid > 0): sorbate centres per Å³, averaged over the samples, index (i·g + j)·g + k along a, b, c
   std::vector<float> density;
   int grid = 0;
+  // per species (one entry for a pure gas): molecules per cell, errors, mol/kg, isosteric heats, selectivity over species 0
+  std::vector<double> species_loading, species_error, species_mol_per_kg, species_heat, selectivity;
+};
+
+struct SpeciesWidom {
+  double fraction = 1;                     // gas mole fraction
+  double widom_w = 0, widom_error = 0, mu_ex = 0, henry_mol_kg_kpa = 0, solubility = 0;
 };
 
 struct SorptionReport {
@@ -60,6 +75,7 @@ struct SorptionReport {
   double host_mass = 0;                    // g/mol (of the cell's host)
   double volume = 0;                       // Å³
   std::vector<IsothermPoint> isotherm;
+  std::vector<SpeciesWidom> species;       // per species (the top-level Widom values are species 0's)
   double seconds = 0;
   std::vector<std::string> notes;
 };

@@ -123,3 +123,59 @@ TEST(Sorption, DensityMapOfAnIdealGas) {
   EXPECT_NEAR(tot, pt.loading, 0.05 * pt.loading);
   EXPECT_LT(mx, 2.0 * pt.loading / 1728.0);   // no corner fills up: an even gas
 }
+
+// Mixtures: in an ideal gas each species takes y_i βpV exactly; in a host at low loading each follows its own Henry
+// law, N_i = y_i p V ⟨W_i⟩ / kT, so the adsorption selectivity is the ratio of the Widom factors
+TEST(Sorption, BinaryMixtureIdealAndHenry) {
+  auto two = [](double eps_host, double eps_a, double eps_b) {
+    Host h = make_host(eps_host, eps_a);
+    Atom g;
+    g.element = 18;
+    g.pos = {6, 6, 6};
+    h.s.atoms.push_back(g);
+    h.ff.type_index.push_back(2);
+    h.ff.lj.push_back({eps_b, 3.4});
+    h.ff.type_names.push_back("Ar2");
+    h.ff.charge.push_back(0.0);
+    h.ff.mass.push_back(39.948);
+    return h;
+  };
+  const double V = 1728e-30, kT = 1.380649e-23 * 300;
+  const double p = 20 * kT / V / 1000;   // kPa for ⟨N⟩ = 20 in total
+  SorptionOptions o;
+  o.template_first_atom = 27;
+  o.species_first_atom = {27, 28};
+  o.mole_fractions = {0.3, 0.7};
+  o.insertions = 0;
+  o.coulomb = false;
+  o.cutoff = 5.9;
+  o.pressures_kpa = {p};
+  o.steps = 300000;
+  const auto ideal = sorption(two(0, 0, 0).s, two(0, 0, 0).ff, o);
+  const auto& q = ideal.isotherm.at(0);
+  ASSERT_EQ(q.species_loading.size(), 2u);
+  std::printf("ideal mixture N %.2f + %.2f (6 + 14), total %.2f\n", q.species_loading[0], q.species_loading[1], q.loading);
+  EXPECT_NEAR(q.species_loading[0], 6.0, 0.4);
+  EXPECT_NEAR(q.species_loading[1], 14.0, 0.6);
+  EXPECT_NEAR(q.loading, q.species_loading[0] + q.species_loading[1], 1e-9);
+  EXPECT_NEAR(q.selectivity[1], 1.0, 0.1);
+
+  Host h = two(0.1, 0.24, 0.12);
+  SorptionOptions w = o;
+  w.mole_fractions = {0.5, 0.5};
+  w.insertions = 200000;
+  w.pressures_kpa = {p};   // under one molecule in all: the Henry regime
+  w.steps = 600000;
+  const auto r = sorption(h.s, h.ff, w);
+  ASSERT_EQ(r.species.size(), 2u);
+  const auto& pt = r.isotherm.at(0);
+  for (int i = 0; i < 2; ++i) {
+    const double henry = 0.5 * p * 1000 * V / kT * r.species[size_t(i)].widom_w;
+    std::printf("species %d: N %.3f ± %.3f vs Henry %.3f\n", i, pt.species_loading[size_t(i)], pt.species_error[size_t(i)], henry);
+    EXPECT_NEAR(pt.species_loading[size_t(i)], henry, 0.08 * henry);   // ~5 % high: the sorbates attract each other
+  }
+  const double s_widom = r.species[1].widom_w / r.species[0].widom_w;
+  std::printf("selectivity %.3f vs Widom ratio %.3f\n", pt.selectivity[1], s_widom);
+  EXPECT_NEAR(pt.selectivity[1], s_widom, 0.08 * s_widom);
+  EXPECT_DOUBLE_EQ(r.widom_w, r.species[0].widom_w);
+}

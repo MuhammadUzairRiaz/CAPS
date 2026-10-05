@@ -43,6 +43,7 @@ public partial class MainWindow
             Cmd("Open…", "document.open"),
             Cmd("Open with preview…", "document.open preview"),
             Item("Open most recent", OpenMostRecent),
+            Item("Read a log or table…", () => _ = ReadTextDialog()),
             Page("Project home…", 42),
             Item("Open in Jupyter notebook…", () => _vm.OpenInNotebook()),
             Sep(),

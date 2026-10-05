@@ -126,7 +126,7 @@ std::vector<std::string> gromacs_notes(const System& s, const ForceField& ff, co
   // lj/gromacs (MARTINI 2's shifted Lennard-Jones) is GROMACS's own force switch; the other pair forms have no Verlet form
   for (const auto& [k, p] : ff.pair_func)
     if (p.form != kPairGromacs)
-      throw FieldError(ff.name + ": " + (p.form == 1 ? std::string("Buckingham") : p.form == 2 ? std::string("Morse") : p.form >= kPairSdk96 && p.form <= kPairSdk125 ? std::string("SDK / SPICA") : std::string("cosine-squared")) +
+      throw FieldError(ff.name + ": " + (p.form == 1 ? std::string("Buckingham") : p.form == 2 ? std::string("Morse") : p.form >= kPairSdk96 && p.form <= kPairSdk125 ? std::string("SDK / SPICA") : p.form == kPairTable ? std::string("tabulated") : std::string("cosine-squared")) +
                        " pairs have no GROMACS form in the Verlet scheme; export to LAMMPS instead");
   if (gromacs_switch(ff)) {
     bool charged = false;

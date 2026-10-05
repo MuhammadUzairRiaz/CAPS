@@ -36,6 +36,11 @@
                 <TextBox Text="{Binding Sorbate}" Classes="mono" Watermark="SMILES" />
                 <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:MainViewModel.SorbPresets}" SelectedItem="{Binding SorbPreset}" PlaceholderText="Common gases" HorizontalAlignment="Stretch" />
               </Grid>
+              <CheckBox Content="A gas mixture" IsChecked="{Binding SorbMix}" ToolTip.Tip="Several gases at once, each at its share of the pressure (ideal gas): co-adsorption, competition and selectivity" />
+              <StackPanel Spacing="4" IsVisible="{Binding SorbMix}">
+                <TextBox Text="{Binding SorbMixText}" Classes="mono" AcceptsReturn="True" MinHeight="64" Watermark="one gas per line: SMILES  mole fraction" />
+                <TextBlock Text="{Binding SorbMixHint}" Classes="mono" FontSize="11" TextWrapping="Wrap" />
+              </StackPanel>
               <TextBlock Classes="dim" TextWrapping="Wrap" Text="A rigid molecule typed with the structure's force field (the Field assignment, else the built-in one). The structure is the host: a polymer or rubber cell, a filler, a porous crystal — held fixed." />
             </StackPanel>
           </Border>
@@ -94,6 +99,27 @@
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
               <TextBlock Text="{Binding SorbNote}" Classes="dim" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard" IsVisible="{Binding SorbHasSpecies}">
+            <StackPanel Spacing="8">
+              <TextBlock Text="{Binding SorbSpeciesTitle}" FontSize="13.5" FontWeight="SemiBold" />
+              <Grid ColumnDefinitions="1.6*,*,*,1.3*,*,*">
+                <TextBlock Text="GAS" Classes="h3" /><TextBlock Grid.Column="1" Text="Y" Classes="h3" /><TextBlock Grid.Column="2" Text="S (WIDOM)" Classes="h3" />
+                <TextBlock Grid.Column="3" Text="PER CELL" Classes="h3" /><TextBlock Grid.Column="4" Text="SELECTIVITY" Classes="h3" /><TextBlock Grid.Column="5" Text="Q_ST" Classes="h3" />
+              </Grid>
+              <ItemsControl ItemsSource="{Binding SorbSpeciesRows}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:SorbSpeciesRow">
+                    <Grid ColumnDefinitions="1.6*,*,*,1.3*,*,*" Margin="0,2">
+                      <TextBlock Text="{Binding Smiles}" Classes="mono" TextTrimming="CharacterEllipsis" /><TextBlock Grid.Column="1" Text="{Binding Y}" Classes="mono" />
+                      <TextBlock Grid.Column="2" Text="{Binding S}" Classes="mono" /><TextBlock Grid.Column="3" Text="{Binding Loading}" Classes="mono" />
+                      <TextBlock Grid.Column="4" Text="{Binding Selectivity}" Classes="mono" /><TextBlock Grid.Column="5" Text="{Binding Heat}" Classes="mono" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock Classes="dim" TextWrapping="Wrap" Text="Selectivity (x_i/x_1)/(y_i/y_1): the adsorbed phase's share against the gas's. S from Widom is each gas alone at infinite dilution; the loadings are the competition at that pressure. Q_st per gas from the multicomponent fluctuations (kcal/mol). The isotherm plot draws the gases' mol/kg." />
             </StackPanel>
           </Border>
           <Border Classes="pcard" IsVisible="{Binding SorbHasMap}">
