@@ -1,0 +1,63 @@
+<!-- New project (design/boards/NewProject): a name and a folder anywhere; CAPS makes NAME/NAME.capsproj beside
+     structures/, runs/ and exports/, and can bring the structures open now into it. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.NewProjectDialog" x:DataType="vm:MainViewModel">
+  <Panel>
+    <Border Background="#B307080A" PointerPressed="OnBackdrop" />
+    <Border Width="600" CornerRadius="12" BorderThickness="1" BorderBrush="{DynamicResource LineB}" Background="{DynamicResource Bg1B}"
+            HorizontalAlignment="Center" VerticalAlignment="Center" BoxShadow="0 20 60 0 #60000000" Padding="22,18">
+      <StackPanel Spacing="14">
+        <DockPanel>
+          <Button DockPanel.Dock="Right" Classes="tool" Width="30" MinWidth="30" Height="30" MinHeight="30" Click="OnCancel" ToolTip.Tip="Close">
+            <v:Icon Kind="close" Size="15" />
+          </Button>
+          <TextBlock Text="New project" FontSize="17" FontWeight="SemiBold" VerticalAlignment="Center" />
+        </DockPanel>
+        <StackPanel Spacing="5">
+          <TextBlock Text="Name" Classes="label" />
+          <TextBox x:Name="NameBox" Text="{Binding NewProjectName}" KeyDown="OnNameKey" />
+        </StackPanel>
+        <StackPanel Spacing="5">
+          <TextBlock Text="Where" Classes="label" />
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+            <Border Background="{DynamicResource Bg0B}" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="5" Padding="9,0" Height="32">
+              <TextBlock Text="{Binding NewProjectParentText}" Classes="mono" FontSize="12.5" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                         ToolTip.Tip="{Binding NewProjectParent}" />
+            </Border>
+            <Button Grid.Column="1" Classes="small" Click="OnChoose">
+              <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="folder" Size="14" VerticalAlignment="Center" /><TextBlock Text="Choose folder…" VerticalAlignment="Center" /></StackPanel>
+            </Button>
+          </Grid>
+        </StackPanel>
+        <TextBlock Text="CAPS WILL MAKE" Classes="h3" Margin="0,2,0,0" />
+        <Border Background="{DynamicResource Bg0B}" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="6" Padding="10,8">
+          <Grid ColumnDefinitions="Auto,260,*" RowDefinitions="24,24,24,24,24" ColumnSpacing="8">
+            <v:Icon Kind="folder" Size="14" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="1" Text="{Binding NewProjectFolderName}" Classes="mono" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+            <TextBlock Grid.Column="2" Text="the project folder" Classes="dim" FontSize="11.5" VerticalAlignment="Center" />
+            <v:Icon Grid.Row="1" Kind="file" Size="14" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding NewProjectFileName}" Classes="mono" FontSize="12" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+            <TextBlock Grid.Row="1" Grid.Column="2" Text="the project file: open this one" Classes="dim" FontSize="11.5" VerticalAlignment="Center" />
+            <v:Icon Grid.Row="2" Kind="folder" Size="14" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="2" Grid.Column="1" Text="  structures/" Classes="mono" FontSize="12" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="2" Grid.Column="2" Text="every structure, saved as you work" Classes="dim" FontSize="11.5" VerticalAlignment="Center" />
+            <v:Icon Grid.Row="3" Kind="folder" Size="14" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="3" Grid.Column="1" Text="  runs/" Classes="mono" FontSize="12" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="3" Grid.Column="2" Text="Minimise, Equilibrate, Dynamics and React runs" Classes="dim" FontSize="11.5" VerticalAlignment="Center" />
+            <v:Icon Grid.Row="4" Kind="folder" Size="14" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="4" Grid.Column="1" Text="  exports/" Classes="mono" FontSize="12" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="4" Grid.Column="2" Text="LAMMPS and GROMACS files you export" Classes="dim" FontSize="11.5" VerticalAlignment="Center" />
+          </Grid>
+        </Border>
+        <CheckBox IsChecked="{Binding NewProjectBring}" IsVisible="{Binding NewProjectCanBring}" Content="{Binding NewProjectBringText}" />
+        <TextBlock Text="{Binding NewProjectSaveNote}" Classes="muted" FontSize="12" />
+        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+          <TextBlock Text="{Binding NewProjectNote}" Classes="dim" FontSize="11.5" TextWrapping="Wrap" VerticalAlignment="Center" />
+          <Button Grid.Column="1" Content="Cancel" Click="OnCancel" />
+          <Button Grid.Column="2" Classes="primary" Content="Create project" Click="OnCreate" IsEnabled="{Binding NewProjectReady}" />
+        </Grid>
+      </StackPanel>
+    </Border>
+  </Panel>
+</p:PageBase>

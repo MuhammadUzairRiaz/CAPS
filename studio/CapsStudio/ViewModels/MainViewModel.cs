@@ -123,6 +123,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     public MainViewModel()
     {
+        ProjectItems.CollectionChanged += OnProjectItemsChanged;   // an open project is saved as its structures change
         Field = new FieldViewModel(() => _doc, s => Status = s, () =>
         {
             // types and charges in the document changed: summary, inspector and viewer follow
@@ -747,6 +748,7 @@ public sealed partial class MainViewModel : ObservableObject
     private bool _analyzing;
     private void RaiseBusy()
     {
+        if (!Busy) QueueProjectSave();   // a run ended: the project is saved once the work is still
         Raise(nameof(Idle));
         Raise(nameof(Busy));
         Raise(nameof(CanRelax));

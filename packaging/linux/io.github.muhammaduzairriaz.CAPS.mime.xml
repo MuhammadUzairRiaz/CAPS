@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- A CAPS project file: CAPS Studio opens it with its structures and sessions -->
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/x-caps-project">
+    <comment>CAPS project</comment>
+    <sub-class-of type="application/json"/>
+    <glob pattern="*.capsproj"/>
+    <icon name="io.github.muhammaduzairriaz.CAPS"/>
+  </mime-type>
+</mime-info>
