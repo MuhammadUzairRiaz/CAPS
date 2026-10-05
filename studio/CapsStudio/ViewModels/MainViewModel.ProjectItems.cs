@@ -33,10 +33,14 @@ public sealed class ProjectItem : ObservableObject
     public bool HasForceField => _forceField.Length > 0;
     private string _history = "";
     /// <summary>What has been done to it: "minimised · equilibrated · MD".</summary>
-    public string History { get => _history; set { if (Set(ref _history, value)) Raise(nameof(HasHistory)); } }
+    public string History { get => _history; set { if (Set(ref _history, value)) { Raise(nameof(HasHistory)); Raise(nameof(Reacted)); } } }
     public bool HasHistory => _history.Length > 0;
     /// <summary>The builder page's settings that made it (Grow: chains, DP, density, polymer …), for Edit in its builder.</summary>
     public System.Text.Json.Nodes.JsonObject? BuildSettings { get; set; }
+    private System.Text.Json.Nodes.JsonObject? _reactSettings;
+    /// <summary>The React page's settings of the last reaction run on it, for Edit its reaction.</summary>
+    public System.Text.Json.Nodes.JsonObject? ReactSettings { get => _reactSettings; set { _reactSettings = value; Raise(nameof(Reacted)); } }
+    public bool Reacted => _reactSettings != null || _history.Contains("reacted", StringComparison.Ordinal);
     /// <summary>Its job folders, newest first (Materials Studio's project tree).</summary>
     public ObservableCollection<Job> Jobs { get; } = new();
     private bool _renaming;
@@ -172,12 +176,13 @@ public sealed partial class MainViewModel
                 if (bs != null) { ApplyBlendSettings(bs); it.BuildSettings ??= bs; } else OpenBlend();
                 if (bs == null) { Status = $"{it.Name} records no blend settings: the page shows the last ones used"; return; }
                 break;
-            case 29: OpenCrystal(); break;
-            case 15: OpenNano(); break;
-            case 14: OpenSurface(); break;
-            case 30: OpenBio(); break;
-            case 31: OpenSolvation(); break;
-            case 44: OpenCg(); break;
+            case 29 or 15 or 14 or 30 or 31 or 44:
+                if (module == 29) OpenCrystal(); else if (module == 15) OpenNano(); else if (module == 14) OpenSurface();
+                else if (module == 30) OpenBio(); else if (module == 31) OpenSolvation(); else OpenCg();
+                var page = module switch { 29 => "crystal", 15 => "nano", 14 => "surface", 30 => "bio", 31 => "solvation", _ => "cg" };
+                if (it.BuildSettings is { } snap && (string?)snap["page"] == page) ApplyPageSnapshot(snap);
+                else { Status = $"{label}: {it.Name} was built before CAPS kept the builder's settings — the page shows the last ones used"; return; }
+                break;
             default:
                 SetModule(8);
                 Status = $"Editing {it.Name} with the builder tools (place, bond, delete, +H, fragments; ⌘Z undoes)";
@@ -352,6 +357,7 @@ public sealed partial class MainViewModel
         // the copy keeps what was done to the original and its force field
         foreach (var d in src.Done) _pipeDone.Add(d);
         if (_activeItem != null && src.BuildSettings != null) _activeItem.BuildSettings = (System.Text.Json.Nodes.JsonObject)src.BuildSettings.DeepClone();
+        if (_activeItem != null && src.ReactSettings != null) _activeItem.ReactSettings = (System.Text.Json.Nodes.JsonObject)src.ReactSettings.DeepClone();
         _pipeBuild = src.Build;
         if (_activeItem != null) _activeItem.Origin = src.Origin;
         try { Field.LoadReport(copy); } catch { }

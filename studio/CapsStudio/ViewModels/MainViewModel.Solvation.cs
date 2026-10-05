@@ -230,6 +230,7 @@ public sealed partial class MainViewModel
             SolvStageChip = "done";
             SolvLog = rep;
             Show(doc, title);
+            KeepPageSettings("solvation");   // Edit brings the page back as it was for this structure
             Record($"doc = caps.build.solvate({(solute != null ? "doc" : "None")}, **{opts})");
             GrownUnsaved = true;
             Status = "Solvated · " + (rep.Split('\n').FirstOrDefault() ?? "");
