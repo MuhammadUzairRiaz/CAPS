@@ -28,6 +28,8 @@
       <Setter Property="CornerRadius" Value="5" /><Setter Property="HorizontalAlignment" Value="Stretch" /><Setter Property="HorizontalContentAlignment" Value="Stretch" /><Setter Property="MinHeight" Value="22" /></Style>
     <Style Selector="Button.treerow:pointerover /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="{DynamicResource Bg3B}" /></Style>
     <Style Selector="Ellipse.jobdot"><Setter Property="Fill" Value="{DynamicResource DimB}" /></Style>
+    <Style Selector="Ellipse.sessdot"><Setter Property="Fill" Value="{DynamicResource DimB}" /></Style>
+    <Style Selector="Ellipse.sessdot.now"><Setter Property="Fill" Value="{DynamicResource AccB}" /></Style>
     <Style Selector="Ellipse.jobdot.running"><Setter Property="Fill" Value="{DynamicResource AccB}" /></Style>
     <Style Selector="Ellipse.jobdot.done"><Setter Property="Fill" Value="{DynamicResource OkB}" /></Style>
     <Style Selector="Ellipse.jobdot.failed"><Setter Property="Fill" Value="{DynamicResource ErrB}" /></Style>
@@ -89,7 +91,19 @@
             <Ellipse Canvas.Left="6.5" Canvas.Top="16.8" Width="4" Height="4" Fill="{DynamicResource TextB}" />
           </Canvas>
         </Viewbox>
-        <TextBlock Grid.Column="1" Text="{Binding Crumb}" Classes="muted" FontSize="12.5" VerticalAlignment="Center" Margin="4,0,18,0" />
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" Margin="4,0,18,0">
+          <!-- the open project (design/boards/ProjectOpen): its name, when it was saved, and the switcher -->
+          <Button Classes="projchip" IsVisible="{Binding HasCapsProject}" Click="OnProjectChip" Padding="9,0,8,0" Height="30" CornerRadius="7"
+                  BorderBrush="{DynamicResource AccB}" BorderThickness="1" Background="{DynamicResource Bg2B}"
+                  ToolTip.Tip="{Binding CapsProjectChipTip}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <local:Icon Kind="folder" Size="15" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding CapsProjectName}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" MaxWidth="170" TextTrimming="CharacterEllipsis" />
+              <local:Icon Kind="chev" Size="12" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <TextBlock Text="{Binding Crumb}" Classes="muted" FontSize="12.5" VerticalAlignment="Center" IsVisible="{Binding NoCapsProject}" />
+        </StackPanel>
         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2" VerticalAlignment="Bottom">
           <Button Classes="doctab on" IsVisible="{Binding NoDocument}" Click="OnModuleStudio" ToolTip.Tip="Start">
             <StackPanel Orientation="Horizontal" Spacing="8">
@@ -426,6 +440,26 @@
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
+              <!-- the project's sessions, newest first (design/boards/ProjectOpen) -->
+              <TextBlock Text="{Binding ProjectSessionsTitle}" FontSize="10" FontWeight="SemiBold" LetterSpacing="0.6" Foreground="{DynamicResource DimB}"
+                         Margin="18,10,10,4" IsVisible="{Binding HasCapsProject}" />
+              <ItemsControl ItemsSource="{Binding ProjectSessions}" IsVisible="{Binding HasCapsProject}" Margin="14,0,10,6">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:ProjectSession">
+                    <Grid ColumnDefinitions="14,*" ColumnSpacing="6">
+                      <Ellipse Width="7" Height="7" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Center"
+                               Classes="sessdot" Classes.now="{Binding Now}" />
+                      <StackPanel Grid.Column="1" Spacing="1" Margin="0,0,0,8">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                          <TextBlock Text="{Binding When}" FontSize="12" FontWeight="SemiBold" />
+                          <TextBlock Text="{Binding Span}" FontSize="11.5" Foreground="{DynamicResource DimB}" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding What}" FontSize="11.5" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
+                      </StackPanel>
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
               <Button Classes="small ghost" HorizontalAlignment="Left" Margin="18,4,0,6" Click="OnDuplicateStructure" IsVisible="{Binding HasDocument}"
                       ToolTip.Tip="A copy of the active structure, force field kept: try another protocol on it and keep the original">
                 <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="layers" Size="13" VerticalAlignment="Center" /><TextBlock Text="Copy structure" VerticalAlignment="Center" /></StackPanel>
@@ -471,6 +505,17 @@
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
+              <Border Margin="12,10,10,6" Padding="10,8" CornerRadius="7" BorderBrush="{DynamicResource LineB}" BorderThickness="1" IsVisible="{Binding NoCapsProject}">
+                <StackPanel Spacing="6">
+                  <TextBlock Text="No project open" FontSize="12" />
+                  <TextBlock Text="What you build now is kept for this session only. Put it in a project to keep it with its history." Foreground="{DynamicResource MutedB}"
+                             FontSize="11.5" TextWrapping="Wrap" />
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <Button Classes="small primary" Content="New project" Click="OnNewProjectButton" />
+                    <Button Classes="small" Content="Open…" Click="OnOpenProjectButton" />
+                  </StackPanel>
+                </StackPanel>
+              </Border>
             </StackPanel>
           </ScrollViewer>
           <Grid Grid.Row="1" MinHeight="0">
@@ -3453,6 +3498,8 @@
     </Panel>
     <!-- floating shelves and the dock guide (design/boards/Shelves); empty space lets clicks through -->
     <Canvas x:Name="ShelfFloat" Grid.RowSpan="4" ZIndex="30" />
+    <!-- New project (design/boards/NewProject) -->
+    <pages:NewProjectDialog Grid.RowSpan="4" ZIndex="35" IsVisible="{Binding NewProjectOpen}" />
     <!-- First-run tour (design/boards/FirstRunTour) -->
     <local:TourOverlay x:Name="Tour" Grid.RowSpan="4" ZIndex="40" IsVisible="{Binding TourOpen}" />
   </Grid>

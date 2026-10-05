@@ -73,9 +73,79 @@
           </Grid>
         </Border>
 
+        <!-- Projects (design/boards/ProjectsStart): every project CAPS knows, wherever its folder is -->
+        <StackPanel Spacing="10">
+          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+            <TextBlock Text="Projects" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="1" Text="{Binding KnownProjectsText}" Classes="dim" FontSize="12" VerticalAlignment="Center" IsVisible="{Binding HasKnownProjects}" />
+            <Button Grid.Column="2" Classes="small" Click="OnOpenProjectFile" ToolTip.Tip="A .capsproj file anywhere: CAPS opens the project and adds it to this list">
+              <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="folder" Size="14" VerticalAlignment="Center" /><TextBlock Text="Open project file…" VerticalAlignment="Center" /></StackPanel>
+            </Button>
+          </Grid>
+          <Grid ColumnDefinitions="128,*" ColumnSpacing="12">
+            <Button Classes="ghost" Click="OnNewProject" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" MinHeight="120" Padding="8"
+                    BorderBrush="{DynamicResource AccB}" BorderThickness="1" CornerRadius="10" Background="Transparent"
+                    ToolTip.Tip="A folder anywhere with NAME.capsproj, structures/, runs/ and exports/">
+              <StackPanel Spacing="8" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <v:Icon Kind="plus" Size="22" Foreground="{DynamicResource AccB}" HorizontalAlignment="Center" />
+                <TextBlock Text="New project" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource AccB}" HorizontalAlignment="Center" />
+                <TextBlock Text="a folder anywhere" Classes="muted" FontSize="11.5" HorizontalAlignment="Center" />
+              </StackPanel>
+            </Button>
+            <ItemsControl Grid.Column="1" ItemsSource="{Binding KnownProjects}" Margin="-6" IsVisible="{Binding HasKnownProjects}">
+              <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="3" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:KnownProject">
+                  <Button Classes="tile thumb" Margin="6" Click="OnKnownProject" Tag="{Binding}" ToolTip.Tip="{Binding File}" Classes.current="{Binding Current}">
+                    <Button.ContextMenu>
+                      <ContextMenu>
+                        <MenuItem Header="Open" Click="OnKnownProject" Tag="{Binding}" IsEnabled="{Binding Found}" />
+                        <MenuItem Header="Show the folder" Click="OnShowProjectFolder" Tag="{Binding}" IsEnabled="{Binding Found}" />
+                        <MenuItem Header="Locate…" Click="OnLocateProject" Tag="{Binding}" />
+                        <MenuItem Header="Forget (the files stay)" Click="OnForgetProject" Tag="{Binding}" />
+                      </ContextMenu>
+                    </Button.ContextMenu>
+                    <StackPanel>
+                      <Border Height="96" Background="{DynamicResource Bg0B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1" CornerRadius="10,10,0,0" ClipToBounds="True">
+                        <Panel>
+                          <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" IsVisible="{Binding HasThumbnail}" />
+                          <v:Icon Kind="folder" Size="26" Foreground="{DynamicResource DimB}" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <v:Icon.IsVisible>
+                              <MultiBinding Converter="{x:Static BoolConverters.And}"><Binding Path="!HasThumbnail" /><Binding Path="Found" /></MultiBinding>
+                            </v:Icon.IsVisible>
+                          </v:Icon>
+                          <StackPanel Spacing="6" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding Missing}">
+                            <v:Icon Kind="alert" Size="20" Foreground="{DynamicResource WarnB}" HorizontalAlignment="Center" />
+                            <TextBlock Text="Folder not found" FontSize="12" Foreground="{DynamicResource WarnB}" HorizontalAlignment="Center" />
+                          </StackPanel>
+                        </Panel>
+                      </Border>
+                      <StackPanel Margin="12,9" Spacing="3">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                          <v:Icon Kind="folder" Size="14" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" />
+                          <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding FolderText}" Classes="mono" FontSize="11" Foreground="{DynamicResource DimB}" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="{Binding Counts}" Classes="muted" FontSize="11.5" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="{Binding When}" Classes="dim" FontSize="11.5" IsVisible="{Binding Found}" />
+                        <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding Missing}" Margin="0,3,0,0">
+                          <Button Classes="small" Content="Locate…" Click="OnLocateProject" Tag="{Binding}" ToolTip.Tip="Find its .capsproj file in the new place" />
+                          <Button Classes="small" Content="Forget" Click="OnForgetProject" Tag="{Binding}" ToolTip.Tip="Drop it from the list; its files are left as they are" />
+                        </StackPanel>
+                      </StackPanel>
+                    </StackPanel>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Grid.Column="1" IsVisible="{Binding !HasKnownProjects}" Classes="muted" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Center"
+                       Text="A project keeps its structures, their force fields and runs, and the history of every session in one folder you choose. Projects you make or open are listed here, wherever they are saved." />
+          </Grid>
+        </StackPanel>
+
         <!-- Recent work, or the samples when nothing has been opened yet -->
         <StackPanel Spacing="10" IsVisible="{Binding HasRecent}">
-          <TextBlock Text="Recent" FontSize="13" FontWeight="SemiBold" />
+          <TextBlock Text="Recent files" FontSize="13" FontWeight="SemiBold" />
           <ItemsControl ItemsSource="{Binding Recent}" Margin="-6">
             <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="3" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>

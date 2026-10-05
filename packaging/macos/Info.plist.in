@@ -17,11 +17,30 @@
   <key>CFBundleDocumentTypes</key>
   <array>
     <dict>
+      <key>CFBundleTypeName</key><string>CAPS project</string>
+      <key>CFBundleTypeRole</key><string>Editor</string>
+      <key>LSHandlerRank</key><string>Owner</string>
+      <key>CFBundleTypeIconFile</key><string>caps.icns</string>
+      <key>LSItemContentTypes</key><array><string>io.github.muhammaduzairriaz.caps.project</string></array>
+      <key>CFBundleTypeExtensions</key><array><string>capsproj</string></array>
+    </dict>
+    <dict>
       <key>CFBundleTypeName</key><string>Molecular structure or trajectory</string>
       <key>CFBundleTypeRole</key><string>Viewer</string>
       <key>LSHandlerRank</key><string>Alternate</string>
       <key>CFBundleTypeExtensions</key>
       <array><string>data</string><string>lammpstrj</string><string>dump</string><string>pdb</string><string>xyz</string><string>gro</string><string>mol2</string></array>
+    </dict>
+  </array>
+  <key>UTExportedTypeDeclarations</key>
+  <array>
+    <dict>
+      <key>UTTypeIdentifier</key><string>io.github.muhammaduzairriaz.caps.project</string>
+      <key>UTTypeDescription</key><string>CAPS project</string>
+      <key>UTTypeIconFile</key><string>caps.icns</string>
+      <key>UTTypeConformsTo</key><array><string>public.json</string><string>public.data</string></array>
+      <key>UTTypeTagSpecification</key>
+      <dict><key>public.filename-extension</key><array><string>capsproj</string></array></dict>
     </dict>
   </array>
 </dict>

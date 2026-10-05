@@ -115,8 +115,9 @@ public partial class MainWindow : Window
         InitShelves();                          // after the settings: each workspace's shelf layout
         _vm.HookJobs();
         _vm.LoadRecent();
+        _vm.LoadKnownProjects();
         _vm.LoadLastSession();
-        Closing += (_, _) => { _vm.SaveSession(); SaveWindowPlace(); };   // the project tree comes back from Start next time
+        Closing += (_, _) => { _vm.SaveOnClose(); SaveWindowPlace(); };   // the project (or the session's tree) comes back next time
         Opened += (_, _) => PlaceWindow();
         AddWindowCommands();
         _vm.InitProtocol();
@@ -127,7 +128,12 @@ public partial class MainWindow : Window
         var recentCommand = new RelayCommand(() => { if (_vm.Idle) OpenMostRecent(); return Task.CompletedTask; });
         KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.O, KeyModifiers.Meta | KeyModifiers.Shift), Command = recentCommand });
         KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.O, KeyModifiers.Control | KeyModifiers.Shift), Command = recentCommand });
-        SaveCommand = new RelayCommand(() => _vm.HasDocument && _vm.Idle ? SaveAs("data", "LAMMPS data") : Task.CompletedTask);
+        // ⌘S: the open project saved at once; without a project, the structure as a file
+        SaveCommand = new RelayCommand(() =>
+        {
+            if (_vm.HasCapsProject) { if (_vm.Idle) _vm.Status = _vm.SaveCapsProject(); return Task.CompletedTask; }
+            return _vm.HasDocument && _vm.Idle ? SaveAs("data", "LAMMPS data") : Task.CompletedTask;
+        });
         KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.S, KeyModifiers.Meta), Command = SaveCommand });
         KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.S, KeyModifiers.Control), Command = SaveCommand });
         _vm.RenderRequested += RequestRender;
@@ -272,6 +278,7 @@ public partial class MainWindow : Window
 
     private void TryOpen(string path, string? topology = null)
     {
+        if (path.EndsWith(ViewModels.CapsProjectFile.Extension, StringComparison.OrdinalIgnoreCase)) { _vm.Status = _vm.OpenCapsProject(path); return; }
         try
         {
             // A dump opened on its own picks up a data file with the same stem, for types, masses and bonds.
@@ -296,7 +303,7 @@ public partial class MainWindow : Window
             Title = "Open a structure or trajectory", AllowMultiple = false,
             FileTypeFilter =
             [
-                new FilePickerFileType("Structures and trajectories") { Patterns = ["*.data", "*.lmp", "*.lammpstrj", "*.dump", "*.dcd", "*.gro", "*.xtc", "*.trr", "*.prmtop", "*.parm7", "*.inpcrd", "*.rst7", "*.restrt", "*.ncrst", "*.nc", "*.mdcrd", "*.pdb", "*.ent", "*.xyz", "*.extxyz", "*.mol2", "*.sdf", "*.mol", "*.cif", "*.car", "*.vasp", "POSCAR*", "CONTCAR*", "*.gz"] },
+                new FilePickerFileType("Structures, trajectories and CAPS projects") { Patterns = ["*.capsproj", "*.data", "*.lmp", "*.lammpstrj", "*.dump", "*.dcd", "*.gro", "*.xtc", "*.trr", "*.prmtop", "*.parm7", "*.inpcrd", "*.rst7", "*.restrt", "*.ncrst", "*.nc", "*.mdcrd", "*.pdb", "*.ent", "*.xyz", "*.extxyz", "*.mol2", "*.sdf", "*.mol", "*.cif", "*.car", "*.vasp", "POSCAR*", "CONTCAR*", "*.gz"] },
                 new FilePickerFileType("All files") { Patterns = ["*"] },
             ],
         });
@@ -334,6 +341,8 @@ public partial class MainWindow : Window
             return;
         }
         if (trajs.Count == 1) { TryOpen(trajs[0], topo); return; }
+        // a project file opens the project (the first one, when several are chosen)
+        if (paths.FirstOrDefault(p => Ext(p) == ViewModels.CapsProjectFile.Extension) is { } proj) { _vm.Status = _vm.OpenCapsProject(proj); return; }
         foreach (var p in paths) TryOpen(p);
     }
 

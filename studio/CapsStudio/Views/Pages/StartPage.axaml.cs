@@ -40,6 +40,19 @@ public partial class StartPage : PageBase
         }
     }
 
+    // ---- projects
+    private void OnNewProject(object? s, RoutedEventArgs e) => Vm.OpenNewProject();
+    private async void OnOpenProjectFile(object? s, RoutedEventArgs e) { if (Window is { } w) await w.OpenProjectFileDialog(); }
+    private async void OnKnownProject(object? s, RoutedEventArgs e)
+    {
+        if ((s as Control)?.Tag is not KnownProject k) return;
+        if (k.Missing) { if (Window is { } w) await w.LocateProjectDialog(k); return; }
+        Vm.Status = Vm.OpenCapsProject(k.File);
+    }
+    private async void OnLocateProject(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is KnownProject k && Window is { } w) await w.LocateProjectDialog(k); }
+    private void OnForgetProject(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is KnownProject k) Vm.Status = Vm.ForgetProject(k); }
+    private async void OnShowProjectFolder(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is KnownProject k && Window is { } w) await w.ShowFolder(k.Folder); }
+
     private void OnRestoreSession(object? s, RoutedEventArgs e) => Vm.RestoreSession();
     private void OnForgetSession(object? s, RoutedEventArgs e) => Vm.ForgetSession();
 

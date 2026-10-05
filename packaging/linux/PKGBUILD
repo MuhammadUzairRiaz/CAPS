@@ -39,6 +39,7 @@ package() {
   local id=io.github.muhammaduzairriaz.CAPS
   install -Dm644 "packaging/linux/$id.desktop" "$pkgdir/usr/share/applications/$id.desktop"
   install -Dm644 "packaging/linux/$id.metainfo.xml" "$pkgdir/usr/share/metainfo/$id.metainfo.xml"
+  install -Dm644 "packaging/linux/$id.mime.xml" "$pkgdir/usr/share/mime/packages/$id.xml"   # .capsproj: a CAPS project
   for s in 16 32 48 64 128 256 512; do
     install -Dm644 "packaging/icon/caps_$s.png" "$pkgdir/usr/share/icons/hicolor/${s}x${s}/apps/$id.png"
   done

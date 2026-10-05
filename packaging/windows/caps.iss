@@ -13,6 +13,7 @@
 [Setup]
 AppId={{6E4B7B2E-0B7C-4C8A-9E0A-CA95C0A5F001}
 AppName=CAPS Studio
+ChangesAssociations=yes
 AppVersion={#Version}
 AppVerName=CAPS Studio {#Version}
 AppPublisher=CAPS
@@ -47,6 +48,11 @@ Name: "{group}\Uninstall CAPS"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\CAPS Studio"; Filename: "{app}\CapsStudio.exe"; Tasks: desktopicon
 
 [Registry]
+; .capsproj opens in CAPS Studio (a CAPS project: its structures and sessions)
+Root: HKA; Subkey: "Software\Classes\.capsproj"; ValueType: string; ValueName: ""; ValueData: "CAPS.Project"; Flags: uninsdeletevalue
+Root: HKA; Subkey: "Software\Classes\CAPS.Project"; ValueType: string; ValueName: ""; ValueData: "CAPS project"; Flags: uninsdeletekey
+Root: HKA; Subkey: "Software\Classes\CAPS.Project\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\CapsStudio.exe,0"
+Root: HKA; Subkey: "Software\Classes\CAPS.Project\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\CapsStudio.exe"" ""%1"""
 Root: HKA; Subkey: "Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}"; Tasks: addtopath; Check: NeedsAddPath(ExpandConstant('{app}'))
 
 [Run]

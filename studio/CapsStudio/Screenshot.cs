@@ -810,6 +810,9 @@ internal static class Screenshot
                 if (p.Length > 1) w.ViewModel.RxTargetValueD = decimal.Parse(p[1], System.Globalization.CultureInfo.InvariantCulture);
             }
             if (kv[0] == "rxset") w.ViewModel.RxSet = int.Parse(kv[1]);
+            if (kv[0] == "capsproj") Console.WriteLine("project: " + w.ViewModel.OpenCapsProject(kv[1]));   // capsproj=PATH: that project open
+            if (kv[0] == "newproject") w.ViewModel.OpenNewProject();                                          // newproject=1: the New project sheet
+            if (kv[0] == "projmenu") w.OpenProjectMenuForShot();                                              // projmenu=1: the project switcher
             if (kv[0] == "peek")   // peek=1: the tab of the first hidden pane clicked (the pane comes back)
             {
                 for (int k = 0; k < 30; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
