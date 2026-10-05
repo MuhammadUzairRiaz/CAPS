@@ -1,6 +1,8 @@
 // CAPS peptide builder: sequence and secondary structure to an all-atom peptide (see caps/peptide.hpp).
+#include "caps/rng.hpp"
 #include "caps/peptide.hpp"
 
+#include <cstdio>
 #include <algorithm>
 #include <cctype>
 #include <cmath>
@@ -221,8 +223,8 @@ System build_peptide(const PeptideOptions& o, PeptideReport* report) {
 
   // backbone torsions: coil residues drawn from the αR, β and PPII basins; proline keeps φ −65°
   std::mt19937_64 rng(o.seed);
-  std::normal_distribution<double> jitter(0.0, 12.0);
-  std::uniform_real_distribution<double> pick(0.0, 1.0);
+  caps::Normal<double> jitter(0.0, 12.0);
+  caps::UniformReal<double> pick(0.0, 1.0);
   auto torsions_of = [&](size_t i) {
     std::array<double, 3> t = structure_torsions(o, ss[i]);
     if (ss[i] == 'C') {

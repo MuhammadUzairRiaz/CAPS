@@ -1,6 +1,8 @@
 // CAPS literature many-body potentials for a group of atoms (see manybody.hpp).
 #include "caps/manybody.hpp"
 
+#include <cstdio>
+#include <cstdlib>
 #include <algorithm>
 #include <cmath>
 #include <filesystem>

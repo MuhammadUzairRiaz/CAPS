@@ -8,6 +8,7 @@
 #include <random>
 #include <set>
 
+#include "caps/rng.hpp"
 #include "caps/elements.hpp"
 #include "caps/ffdef.hpp"
 #include "caps/molecule.hpp"
@@ -545,7 +546,7 @@ std::vector<Vec3> depict(const MolGraph& g0, uint64_t seed) {
   // several starts; the lowest error wins
   std::mt19937_64 rng(seed * 0x9E3779B97F4A7C15ull + 777);
   const double side_len = 2.0 * std::max(2.0, std::sqrt(double(n)) * 1.2);
-  std::uniform_real_distribution<double> U(-side_len / 2, side_len / 2);
+  caps::UniformReal<double> U(-side_len / 2, side_len / 2);
   std::vector<double> best;
   double best_e = std::numeric_limits<double>::infinity();
   for (int attempt = 0; attempt < 8; ++attempt) {
@@ -592,7 +593,7 @@ std::vector<Vec3> embed(const MolGraph& g, const EmbedOptions& o) {
   const size_t n = size_t(M.n);
   std::mt19937_64 rng(o.seed * 0x9E3779B97F4A7C15ull + 12345);
   const double side = 2.0 * std::max(3.0, 2.5 * std::cbrt(double(n)));
-  std::uniform_real_distribution<double> U(-side / 2, side / 2);
+  caps::UniformReal<double> U(-side / 2, side / 2);
   std::vector<Vec3> best;
   double best_err = std::numeric_limits<double>::infinity();
   for (int attempt = 0; attempt < std::max(1, o.attempts); ++attempt) {

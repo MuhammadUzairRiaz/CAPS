@@ -5,6 +5,7 @@
 // FIRE: Bitzek, Koskinen, Gähler, Moseler and Gumbsch, Phys. Rev. Lett. 97, 170201 (2006), standard parameters.
 // Push-off: Auhl, Everaers, Grest, Kremer and Plimpton, J. Chem. Phys. 119, 12718 (2003), here as capped-force
 // minimisation stages rather than capped-force dynamics.
+#include "caps/rng.hpp"
 #include "caps/uff.hpp"
 #include "caps/relax.hpp"
 #include "caps/dynamics.hpp"
@@ -291,7 +292,7 @@ int kick_linear_angles(System& s, const ForceField& ff, uint64_t seed, double mi
   for (const auto& a : ff.angles_x)
     if (a.form != 2) look(a.i, a.j, a.k, a.b);   // every form but the linear one carries θ0 in b
   std::mt19937_64 rng(seed);
-  std::normal_distribution<double> g(0, 1);
+  caps::Normal<double> g(0, 1);
   for (uint32_t j : centres) {
     const auto [i, k] = ends[j];
     Vec3 axis = vec(k, i);

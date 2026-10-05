@@ -1,4 +1,5 @@
 // CAPS functionalisation of fillers (see functionalize.hpp).
+#include "caps/rng.hpp"
 #include "caps/functionalize.hpp"
 
 #include <algorithm>
@@ -90,7 +91,7 @@ FunctionalizeReport functionalize(System& s, const FunctionalizeOptions& o) {
   int axis = 2;   // band / helix: the longest direction (z on ties)
   for (int k = 0; k < 3; ++k) if (hi[size_t(k)] - lo[size_t(k)] > hi[size_t(axis)] - lo[size_t(axis)] + 0.5) axis = k;
   std::mt19937_64 rng(o.seed);
-  std::uniform_real_distribution<double> U(0.0, 1.0);
+  caps::UniformReal<double> U(0.0, 1.0);
   // the outward normal of a three-connected site
   auto normal_of = [&](uint32_t i) {
     std::vector<Vec3> b;
@@ -136,7 +137,7 @@ FunctionalizeReport functionalize(System& s, const FunctionalizeOptions& o) {
   }
   rep.eligible = cand.size();
   if (cand.empty()) throw std::invalid_argument("no site fits the pattern (sidewall sites have three bonds and no hydrogen)");
-  if (pat == "random" || pat == "band") std::shuffle(cand.begin(), cand.end(), rng);
+  if (pat == "random" || pat == "band") caps::shuffle(cand.begin(), cand.end(), rng);
   if (pat == "helix" || pat == "all") std::stable_sort(cand.begin(), cand.end(), [&](uint32_t a, uint32_t b) { return s.atoms[a].pos[size_t(axis)] < s.atoms[b].pos[size_t(axis)]; });
   size_t want = cand.size();
   if (o.count > 0) want = size_t(o.count);

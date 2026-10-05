@@ -1,4 +1,5 @@
 // χ from pair contacts (Fan, Olafson, Blanco & Hsu 1992); see chipair.hpp.
+#include "caps/rng.hpp"
 #include "caps/chipair.hpp"
 
 #include <algorithm>
@@ -72,7 +73,7 @@ Vec3 rotate(const double q[4], const Vec3& v) {   // unit quaternion (w, x, y, z
 
 struct Rng {
   std::mt19937_64 g;
-  std::uniform_real_distribution<double> u{0.0, 1.0};
+  caps::UniformReal<double> u{0.0, 1.0};
   explicit Rng(uint64_t s) : g(s) {}
   double operator()() { return u(g); }
   void quaternion(double q[4]) {   // uniform random rotation (Shoemake 1992)

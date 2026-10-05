@@ -1,4 +1,5 @@
 // CAPS adsorption locator (see adsorption.hpp).
+#include "caps/rng.hpp"
 #include "caps/adsorption.hpp"
 
 #include <algorithm>
@@ -207,7 +208,7 @@ void locate_adsorption(System& s, const ForceField& ff, const AdsorptionOptions&
   if (M.fixed.empty()) rep.notes.push_back("no substrate: every molecule moves (a cluster search)");
 
   std::mt19937_64 rng(o.seed);
-  std::uniform_real_distribution<double> U(0.0, 1.0);
+  caps::UniformReal<double> U(0.0, 1.0);
   std::vector<std::vector<Vec3>> P(nm);
   for (size_t m = 0; m < nm; ++m) for (uint32_t a : M.mol[m]) P[m].push_back(s.atoms[a].pos);
   const bool zband = o.z_hi > o.z_lo;

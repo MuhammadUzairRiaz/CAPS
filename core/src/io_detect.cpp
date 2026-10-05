@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cctype>
 #include <cstdio>
 #include <filesystem>

@@ -4,6 +4,9 @@
 // Lennard-Jones A/r¹² − B/r⁶ per type pair.
 #include "caps/amber.hpp"
 
+#include <cctype>
+#include <tuple>
+#include <cstdlib>
 #include <algorithm>
 #include <cmath>
 #include <cstring>

@@ -733,14 +733,22 @@ TEST(React, ReactionLibraryRunsOnItsModelCompounds) {
     o.capture_max = 10;
     o.max_cycles = 6;
     o.max_per_cycle = 1;
+    // the formulas seen after every cycle: a product may react on later (a hemiacetal's OH is an alcohol too, a
+    // methylol bridge links again), so the scheme's product must appear at some point, not survive to the end
+    std::map<std::string, int> f;
+    o.frame = [&](const System& sys, int) { for (const auto& [h, c] : formulas(sys)) f[h] = std::max(f[h], c); };
     ReactReport rep;
     try { react(s, o, &rep); } catch (const std::exception& x) { failures.push_back(id + ": react: " + x.what()); continue; }
     if (rep.reactions == 0) { failures.push_back(id + ": no reaction"); continue; }
-    const auto f = formulas(s);
+    for (const auto& [h, c] : formulas(s)) f[h] = std::max(f[h], c);
     for (const auto& p : ps) {
       const auto want = formulas(build_molecule(p).system);
       for (const auto& [formula, k] : want)
-        if (!f.count(formula)) failures.push_back(id + ": no " + formula + " among the products");
+        if (!f.count(formula)) {
+          std::string have;
+          for (const auto& [h, c] : f) have += " " + h + "×" + std::to_string(c);
+          failures.push_back(id + ": no " + formula + " among the products (" + std::to_string(rep.reactions) + " reactions:" + have + ")");
+        }
     }
     ++ran;
   }

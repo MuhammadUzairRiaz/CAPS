@@ -5,6 +5,7 @@
 // vermouth's DoLinks matches them (node-induced subgraph isomorphism of the link graph, with the node attributes, the
 // residue order, non-edges, patterns and the molecule's meta), their interactions added or replaced and removed in file
 // order, parameters measured from the beads (the side-chain fix dihedrals), and the rubber-band elastic network.
+#include <tuple>
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

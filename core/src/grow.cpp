@@ -7,6 +7,7 @@
 // Margins are distance minus a contact limit (C–C 3.0, C–H 2.45, H–H 2.0 Å) against every atom already in the
 // cell, other chains included, using the minimum image; pairs within three bonds are exempt. Poor steps back
 // track a few units; a chain that cannot continue restarts elsewhere.
+#include "caps/rng.hpp"
 #include "caps/grow.hpp"
 
 #include <cstdio>
@@ -159,11 +160,11 @@ struct Cell3 {
 struct Rng {
   std::mt19937_64 g;
   explicit Rng(uint64_t s) : g(s) {}
-  double uniform(double a, double b) { return std::uniform_real_distribution<double>(a, b)(g); }
-  bool coin() { return std::uniform_int_distribution<int>(0, 1)(g) == 1; }
-  int below(int n) { return std::uniform_int_distribution<int>(0, n - 1)(g); }
+  double uniform(double a, double b) { return caps::UniformReal<double>(a, b)(g); }
+  bool coin() { return caps::UniformInt<int>(0, 1)(g) == 1; }
+  int below(int n) { return caps::UniformInt<int>(0, n - 1)(g); }
   Vec3 direction() {
-    std::normal_distribution<double> N(0, 1);
+    caps::Normal<double> N(0, 1);
     return unit(Vec3{N(g), N(g), N(g)});
   }
 };

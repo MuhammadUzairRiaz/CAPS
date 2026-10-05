@@ -3,6 +3,7 @@
 // dihedrals, virtual sites and exclusions, repeated as [ molecules ] lists them. The non-bonded terms are not read:
 // they come from the CAPS force field the structure is typed with (atom types by name). Coordinates come from a
 // separate file (.gro, .pdb, a data file) with the same atoms in the same order.
+#include <cctype>
 #include <algorithm>
 #include <cmath>
 #include <filesystem>

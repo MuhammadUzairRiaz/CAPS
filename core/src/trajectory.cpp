@@ -1,6 +1,7 @@
 // CAPS trajectory player data: LAMMPS logs, per-frame series, chain ends, smoothing (see caps/trajectory.hpp).
 #include "caps/trajectory.hpp"
 
+#include <cstdlib>
 #include <algorithm>
 #include <cmath>
 #include <fstream>
