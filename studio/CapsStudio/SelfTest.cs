@@ -4031,6 +4031,51 @@ internal static class SelfTest
                   $"tags: {selAtoms} selected → {chip?.Name} {chip?.Count} · click {selected} · only {onlyShown} · sidecar {side.Length > 0} · LAMMPS {input.Contains("chain_ends_test")} · ndx {ndx.Contains("chain_ends_test")} · reopened {back?.Name} {back?.Count}");
             vm.CloseAllStructures();
         }
+        // Bond rules: the melt's pairs; C–H never bonded counted (–660) and applied as one undoable step
+        {
+            vm.Open(Path.Combine(dir, "ps_melt.data"));
+            vm.OpenRules();
+            var cc = vm.RulePairs.FirstOrDefault(p => p.Name == "C – C");
+            var same = vm.RulesSummary;
+            var ch = vm.RulePairs.FirstOrDefault(p => p.Name == "C – H" || p.Name == "H – C");
+            if (ch != null) ch.Never = true;
+            var never = vm.RulesSummary;
+            vm.ApplyBondRules();
+            var bonds = (int)vm.Document!.Summary().Bonds;
+            vm.UndoEdit(false);
+            var back = (int)vm.Document.Summary().Bonds;
+            vm.RulesOpen = false;
+            Check(cc != null && cc.Cutoff > 1.6 && cc.Cutoff < 2.4 && same == "1,370 bonds → 1,370" && never == "1,370 bonds → 710" && bonds == 710 && back == 1370,
+                  $"bond rules: C–C cut-off {cc?.Cutoff} · {same} · C–H never: {never} · applied {bonds}, undone {back}");
+            vm.CloseAllStructures();
+        }
+        // Look: bond orders and sizes change the picture (a molecule with double and triple bonds); Reset brings it back
+        {
+            var bo = Path.Combine(outDir, "caps-selftest-orders.mol2");
+            var (mdoc, _) = CapsStudio.Interop.CapsDocument.BuildSmiles("C=Cc1ccc(C#N)cc1", "uff", 1, 1, "orders");
+            using (mdoc) mdoc.Save(bo);
+            vm.Open(bo);
+            byte[] Shot()
+            {
+                var opt = vm.ViewOptions(240, 160, 1);
+                var buf = new byte[240 * 160 * 4];
+                vm.Document!.Render(new CapsStudio.Interop.CapsCamera { Yaw = 0.4, Pitch = 0.3, Zoom = 1 }, opt, buf);
+                return buf;
+            }
+            vm.ResetLook();
+            var plain = Shot();
+            vm.LookOrders = true;
+            var orders = Shot();
+            vm.LookOrders = false;
+            vm.LookAtom = 0.5;
+            var big = Shot();
+            vm.ResetLook();
+            var back = Shot();
+            static int Diff(byte[] a, byte[] b) => a.Zip(b).Count(p => p.First != p.Second);
+            Check(Diff(plain, orders) > 200 && Diff(plain, big) > 200 && Diff(plain, back) == 0,
+                  $"look: bond orders change {Diff(plain, orders)} bytes, bigger atoms {Diff(plain, big)}, reset back {Diff(plain, back)}");
+            vm.CloseAllStructures();
+        }
         // CAPS projects (design/boards/ProjectsStart, NewProject, ProjectOpen): a project made with the open structure, saved with
         // its force field, closed, listed on Start, opened again with its structures and sessions; renamed; moved and found again
         {

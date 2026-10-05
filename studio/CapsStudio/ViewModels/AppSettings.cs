@@ -49,7 +49,9 @@ public sealed class AppSettings
     public string JobTemplate { get; set; } = RemoteHost.DefaultTemplate;
     public List<MyFragment> MyFragments { get; set; } = new();   // the fragment library's "My fragments"
     public List<MyFragment> PackMolecules { get; set; } = new();
-    public string ProjectParent { get; set; } = "";   // where the last new project was made (New project starts there)   // Pack › Add molecule: "Your molecules" (whole molecules by SMILES)
+    public string ProjectParent { get; set; } = "";
+    public LookSettings Look { get; set; } = new();   // Look: Keep as my look
+    public List<BondRuleSet> BondRuleSets { get; set; } = new();   // Bond rules: rule sets kept by name   // where the last new project was made (New project starts there)   // Pack › Add molecule: "Your molecules" (whole molecules by SMILES)
     public List<SavedQueryData> SavedQueries { get; set; } = SavedQueryData.Defaults();   // Select by query (SmartSelect)
     /// <summary>The first-run tour was finished or skipped.</summary>
     public bool TourDone { get; set; }
@@ -140,6 +142,17 @@ public sealed class RemoteHost
 }
 
 /// <summary>A fragment the user saved: a name and SMILES with * attachment points.</summary>
+/// <summary>The view's sizes kept as the user's own look (design/boards/Look).</summary>
+public sealed class LookSettings
+{
+    public double AtomScale { get; set; } = 0.28;
+    public double Stick { get; set; } = 0.14;
+    public double Space { get; set; } = 1.0;
+    public double Line { get; set; } = 1.4;
+    public bool Orders { get; set; }
+    public bool Arcs { get; set; }
+}
+
 public sealed class MyFragment
 {
     public string Name { get; set; } = "";

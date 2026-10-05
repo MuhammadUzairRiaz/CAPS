@@ -824,6 +824,15 @@ internal static class Screenshot
                 }
                 Console.WriteLine($"brush: {w.ViewModel.BrushQuery} → {w.ViewModel.BrushCount} {w.ViewModel.BrushError}");
             }
+            if (kv[0] == "look")   // look=orders[,arcs][,big]: Look with bond orders (arcs on monitors, larger atoms)
+            {
+                var o = kv[1].Split(',');
+                w.ViewModel.LookOrders = o.Contains("orders");
+                w.ViewModel.LookArcs = o.Contains("arcs");
+                if (o.Contains("big")) w.ViewModel.LookAtom = 0.45;
+                if (o.Contains("small")) w.ViewModel.LookAtom = 0.12;
+            }
+            if (kv[0] == "rules") { w.ViewModel.OpenRules(); if (kv[1].Contains(':')) { var q = kv[1].Split(':'); if (w.ViewModel.RulePairs.FirstOrDefault(p => p.Name == q[0]) is { } rp) { rp.Cutoff = double.Parse(q[1], System.Globalization.CultureInfo.InvariantCulture); w.ViewModel.PreviewRules(); } } }
             if (kv[0] == "tray")   // tray=ATOM: that atom's molecule copied to the tray and picked as a stamp
             {
                 w.ViewModel.SelectLike(int.Parse(kv[1]), false, false);

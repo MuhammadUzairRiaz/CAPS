@@ -12,6 +12,8 @@
 #include <fstream>
 #include <string>
 
+#include "caps/probe.hpp"
+#include "caps/bondrules.hpp"
 #include "caps/piece.hpp"
 #include "caps/tags.hpp"
 #include "caps/amber.hpp"
@@ -235,6 +237,15 @@ struct caps_doc {
     double clip_from = 0.0, clip_to = 0.5;
     bool clip_invert = false;
   } display;
+  // Look (design/boards/Look): sizes for the view, and the selection's own size factor
+  struct Sizes {
+    double atom_scale = 0.28, bond_radius = 0.14, space_scale = 1.0, line_px = 1.4;
+    bool bond_orders = false;
+    std::vector<float> factor;   // per atom (empty: 1)
+  } sizes;
+  // Probes (design/boards/Probes): drawn in the view from their atoms in the frame shown
+  struct ProbeDef { caps::ProbeKind kind; std::vector<size_t> atoms; unsigned rgb; };
+  std::vector<ProbeDef> probes;
   // caps_set_atom_state (design/boards/SelectionBar, Layers): per atom 0 shown, 1 ghost (faint, not pickable), 2 hidden. View
   // only: the structure, its exports and calculations keep every atom. Ignored once the atom count no longer matches.
   std::vector<uint8_t> atom_state;
@@ -623,10 +634,39 @@ caps::RenderOptions opts_of(const caps_doc* d, const caps_render_opts* o) {
   r.ambient_occlusion = o->ambient_occlusion != 0;
   r.lod_near = o->lod_near > 0 ? o->lod_near : 0;
   r.lod_far = o->lod_far > 0 ? o->lod_far : 0;
+  r.atom_scale = d->sizes.atom_scale, r.bond_radius = d->sizes.bond_radius, r.space_scale = d->sizes.space_scale, r.line_px = d->sizes.line_px;
+  r.bond_orders = d->sizes.bond_orders;
+  if (!d->pstate && d->sizes.factor.size() == d->frame.atoms.size()) r.size_factor = d->sizes.factor;
   if (!d->pstate && d->selection.size() == d->frame.atoms.size()) {   // the selection ringed (up to 50 000 atoms)
     for (size_t i = 0; i < d->selection.size() && r.highlight.size() < 50000; ++i) if (d->selection[i]) r.highlight.push_back(int(i));
   }
   if (!d->pstate) { r.segments = d->overlay; r.segments.insert(r.segments.end(), d->checks.begin(), d->checks.end()); }
+  if (!d->pstate) for (const auto& pd : d->probes) {
+      caps::Probe p;
+      try { p = caps::make_probe(d->frame, pd.atoms, pd.kind); } catch (...) { continue; }
+      auto tube = [&](const caps::Vec3& a, const caps::Vec3& b, double rad, bool arrow = false) { r.segments.push_back({a, b, pd.rgb, rad, arrow}); };
+      const caps::Vec3 c = p.centre, e0 = p.axes[0], e1 = p.axes[1], e2 = p.axes[2];
+      if (pd.kind == caps::ProbeKind::Point) {
+        for (const auto& e : p.axes) tube(c - e * 0.7, c + e * 0.7, 0.1);
+      } else if (pd.kind == caps::ProbeKind::Axis) {
+        tube(c - e0 * (p.semi[0] + 1.0), c + e0 * (p.semi[0] + 1.0), 0.09, true);
+      } else if (pd.kind == caps::ProbeKind::Plane) {
+        const double u = p.semi[0] + 1.0, v = p.semi[1] + 1.0;
+        const caps::Vec3 q[4] = {c + e0 * u + e1 * v, c - e0 * u + e1 * v, c - e0 * u - e1 * v, c + e0 * u - e1 * v};
+        for (int k = 0; k < 4; ++k) tube(q[k], q[(k + 1) % 4], 0.06);
+        tube(c, c + e2 * 3.0, 0.08, true);   // its normal: "above"
+      } else {
+        const caps::Vec3* ax[3] = {&e0, &e1, &e2};
+        for (int k = 0; k < 3; ++k) {   // three great circles in the principal planes
+          const int i = k, j = (k + 1) % 3;
+          const double ai = p.semi[size_t(i)], aj = p.semi[size_t(j)];
+          for (int t = 0; t < 36; ++t) {
+            const double t0 = 2 * M_PI * t / 36, t1 = 2 * M_PI * (t + 1) / 36;
+            tube(c + *ax[i] * (ai * std::cos(t0)) + *ax[j] * (aj * std::sin(t0)), c + *ax[i] * (ai * std::cos(t1)) + *ax[j] * (aj * std::sin(t1)), 0.05);
+          }
+        }
+      }
+    }
   if (d->void_mesh) r.meshes.push_back({d->void_mesh.get(), 0x4FB3D9, 0.32f});
   if (d->pstate && r.style == caps::Style::Backbone) {   // tubes through the pipeline's chains too
     const auto& m = backbone_mask_pipeline(d);
@@ -4067,6 +4107,154 @@ int32_t caps_piece_file(const char* path, const char* name, char* out, int32_t c
   });
   if (rc < 0) return -1;
   return report_out(text, out, cap);
+}
+
+// Look (design/boards/Look): {atom_scale (× vdW, ball and stick), bond_radius (Å), space_scale (× vdW), line_px, bond_orders,
+// factor: {atoms: [0-based …] | "selection", value} (those atoms' size, 1 back to the rest), clear_factors}.
+int32_t caps_set_look(caps_doc* d, const char* json) {
+  return guard([&] {
+    const auto j = caps::Json::parse(json ? json : "{}");
+    auto& z = d->sizes;
+    z.atom_scale = std::clamp(j.num("atom_scale", z.atom_scale), 0.05, 1.5);
+    z.bond_radius = std::clamp(j.num("bond_radius", z.bond_radius), 0.02, 0.6);
+    z.space_scale = std::clamp(j.num("space_scale", z.space_scale), 0.3, 1.5);
+    z.line_px = std::clamp(j.num("line_px", z.line_px), 0.5, 6.0);
+    if (j.has("bond_orders")) z.bond_orders = j["bond_orders"].boolean();
+    if (j.has("clear_factors") && j["clear_factors"].boolean()) z.factor.clear();
+    if (j.has("factor") && j["factor"].is_object()) {
+      const auto& f = j["factor"];
+      const size_t n = d->frame.atoms.size();
+      if (z.factor.size() != n) z.factor.assign(n, 1.0f);
+      const float v = float(std::clamp(f.num("value", 1.0), 0.1, 4.0));
+      if (f.has("atoms") && f["atoms"].is_array()) { for (const auto& x : f["atoms"].items()) if (size_t(x.number()) < n) z.factor[size_t(x.number())] = v; }
+      else for (size_t i = 0; i < n && i < d->selection.size(); ++i) if (d->selection[i]) z.factor[i] = v;
+    }
+    return 0;
+  });
+}
+
+// Bond rules (design/boards/BondRules): rules from JSON [{a, b, max, never}] (element symbols)
+std::vector<caps::BondRule> rules_of(const caps::Json& j) {
+  std::vector<caps::BondRule> r;
+  if (!j.has("rules") || !j["rules"].is_array()) return r;
+  for (const auto& x : j["rules"].items()) {
+    caps::BondRule b;
+    b.za = caps::element_from_symbol(x.text("a")), b.zb = caps::element_from_symbol(x.text("b"));
+    b.max = x.num("max", 0);
+    b.never = x.has("never") && x["never"].boolean();
+    if (b.za > 0 && b.zb > 0) r.push_back(b);
+  }
+  return r;
+}
+
+// {pairs: [{a, b, counts, lo, bin, bonded, covalent, suggested, ionic}], bonds}
+int32_t caps_pair_histograms(caps_doc* d, const char* json, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  const int32_t rc = guard([&] {
+    const auto j = caps::Json::parse(json && *json ? json : "{}");
+    const auto hs = caps::pair_histograms(d->frame, j.num("lo", 0.8), j.num("hi", 3.2), j.num("bin", 0.04));
+    caps::Json a = caps::Json::array();
+    for (const auto& h : hs) {
+      caps::Json o = caps::Json::object();
+      o["a"] = caps::element(h.za).symbol, o["b"] = caps::element(h.zb).symbol;
+      caps::Json c = caps::Json::array();
+      for (int v : h.counts) c.push_back(double(v));
+      o["counts"] = c;
+      o["lo"] = h.lo, o["bin"] = h.bin, o["bonded"] = double(h.bonded), o["covalent"] = h.covalent, o["suggested"] = h.suggested, o["ionic"] = h.ionic;
+      a.push_back(o);
+    }
+    r["pairs"] = a;
+    r["bonds"] = double(d->frame.bonds.size());
+    return 0;
+  });
+  if (rc < 0) return -1;
+  return report_out(r.dump(0), out, cap);
+}
+
+// The rules' bonds compared with the structure's: {bonds, after, added, removed, pairs: {"B–N": +33}}; preview: the new
+// bonds drawn in the view (thin accent sticks), else that preview cleared.
+int32_t caps_bond_rules_preview(caps_doc* d, const char* json, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  const int32_t rc = guard([&] {
+    const auto j = caps::Json::parse(json && *json ? json : "{}");
+    d->overlay.clear();
+    if (!j.has("rules")) return 0;
+    const auto& S = d->frame;
+    const auto nb = caps::bonds_by_rules(S, rules_of(j));
+    auto pk = [](uint32_t a, uint32_t b) { return a < b ? (uint64_t(a) << 32) | b : (uint64_t(b) << 32) | a; };
+    std::set<uint64_t> now, after;
+    for (const auto& b : S.bonds) now.insert(pk(b.i, b.j));
+    for (const auto& b : nb) after.insert(pk(b.i, b.j));
+    std::map<std::string, long> per;
+    size_t added = 0, removed = 0;
+    auto name = [&](uint32_t i, uint32_t k) {
+      std::string a = caps::element(S.atoms[i].element).symbol, b = caps::element(S.atoms[k].element).symbol;
+      if (S.atoms[i].element > S.atoms[k].element) std::swap(a, b);
+      return a + "–" + b;
+    };
+    for (const auto& b : nb)
+      if (!now.count(pk(b.i, b.j))) {
+        ++added, ++per[name(b.i, b.j)];
+        if (j.has("preview") && j["preview"].boolean() && d->overlay.size() < 20000) {
+          const caps::Vec3 a = S.atoms[b.i].pos, dv = S.cell.valid() ? S.cell.minimum_image(S.atoms[b.j].pos - a) : S.atoms[b.j].pos - a;
+          d->overlay.push_back({a, a + dv, 0xF0A83C, 0.07, false});
+        }
+      }
+    for (const auto& b : S.bonds)
+      if (!after.count(pk(b.i, b.j))) ++removed, --per[name(b.i, b.j)];
+    r["bonds"] = double(S.bonds.size()), r["after"] = double(nb.size()), r["added"] = double(added), r["removed"] = double(removed);
+    caps::Json p = caps::Json::object();
+    for (const auto& [k, v] : per) if (v != 0) p[k] = double(v);
+    r["pairs"] = p;
+    return 0;
+  });
+  if (rc < 0) return -1;
+  return report_out(r.dump(0), out, cap);
+}
+
+// Probes (design/boards/Probes): [{kind, atoms: [0-based …], rgb}] drawn in the view (replacing those set before).
+int32_t caps_set_probes(caps_doc* d, const char* json) {
+  return guard([&] {
+    const auto j = caps::Json::parse(json && *json ? json : "[]");
+    std::vector<caps_doc::ProbeDef> list;
+    for (const auto& x : j.is_array() ? j.items() : std::vector<caps::Json>{}) {
+      caps_doc::ProbeDef p;
+      p.kind = caps::probe_kind(x.text("kind", "point"));
+      if (x.has("atoms")) for (const auto& a : x["atoms"].items()) p.atoms.push_back(size_t(a.number()));
+      p.rgb = unsigned(x.num("rgb", 0x6CC4D8));
+      list.push_back(std::move(p));
+    }
+    d->probes = std::move(list);
+    return 0;
+  });
+}
+
+// A measurement between probes over every frame: {a: {kind, atoms}, b: {kind, atoms} | absent, measure} → {values}.
+int32_t caps_probe_series(caps_doc* d, const char* json, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  const int32_t rc = guard([&] {
+    const auto j = caps::Json::parse(json ? json : "{}");
+    auto atoms_of = [](const caps::Json& x) { std::vector<size_t> a; if (x.has("atoms")) for (const auto& v : x["atoms"].items()) a.push_back(size_t(v.number())); return a; };
+    const auto ka = caps::probe_kind(j["a"].text("kind", "point"));
+    const auto aa = atoms_of(j["a"]);
+    const bool hasb = j.has("b") && j["b"].is_object();
+    const auto kb = hasb ? caps::probe_kind(j["b"].text("kind", "point")) : caps::ProbeKind::Point;
+    const auto ab = hasb ? atoms_of(j["b"]) : std::vector<size_t>{};
+    const std::string what = j.text("measure", "distance");
+    caps::Json v = caps::Json::array();
+    const size_t nf = std::max<size_t>(1, d->traj.frames());
+    for (size_t f = 0; f < nf; ++f) {
+      const caps::System s = d->traj.frames() > 0 ? d->traj.frame(f) : d->frame;
+      const auto pa = caps::make_probe(s, aa, ka);
+      const caps::Probe pb = hasb ? caps::make_probe(s, ab, kb) : caps::Probe{};
+      v.push_back(caps::probe_measure(s, pa, hasb ? &pb : nullptr, what));
+    }
+    r["values"] = v;
+    r["unit"] = what == "angle" ? "°" : "Å";
+    return 0;
+  });
+  if (rc < 0) return -1;
+  return report_out(r.dump(0), out, cap);
 }
 
 // Brush to select (design/boards/BrushSelect): a per-atom column for a histogram — atom_column's names, and
@@ -7689,6 +7877,21 @@ extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t c
       }
       d->selection.assign(s.atoms.size(), 0);
       what = "Fuse a benzene ring onto " + std::to_string(a + 1) + "–" + std::to_string(b + 1);
+    } else if (op == "bond_rules") {   // {rules: [{a, b, max, never}]}: the bonds from the rules (orders of kept bonds kept)
+      const auto nb = caps::bonds_by_rules(s, rules_of(j));
+      std::map<uint64_t, int> order;
+      for (const auto& b : s.bonds) order[b.i < b.j ? (uint64_t(b.i) << 32) | b.j : (uint64_t(b.j) << 32) | b.i] = b.order;
+      std::vector<caps::Bond> next;
+      for (auto b : nb) {
+        const auto it = order.find((uint64_t(b.i) << 32) | b.j);
+        if (it != order.end()) b.order = it->second;
+        next.push_back(b);
+      }
+      const long delta = long(next.size()) - long(s.bonds.size());
+      s.bonds = std::move(next);
+      s.bonds_from_file = false;
+      d->overlay.clear();
+      what = "Bond rules · " + std::to_string(s.bonds.size()) + " bonds (" + (delta >= 0 ? "+" : "") + std::to_string(delta) + ")";
     } else if (op == "stamp") {   // {piece: caps-piece JSON text, at: [x, y, z], axis, degrees, clear: Å} (design/boards/Stamp)
       caps::Vec3 at{0, 0, 0}, ax{0, 0, 1};
       if (j.has("at") && j["at"].size() == 3) at = {j["at"][0].number(), j["at"][1].number(), j["at"][2].number()};

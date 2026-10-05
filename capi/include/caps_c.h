@@ -660,6 +660,22 @@ int32_t caps_atom_column(caps_doc* d, const char* name, double* out, int32_t cap
    caps_piece_file: a structure file as one; caps_edit op "stamp" {piece: that text, at: [x, y, z], axis, degrees, clear}
    adds it there, turned, moved the least (≤ 12 Å) to keep every atom `clear` Å from the structure. -1 on error. */
 int32_t caps_piece(caps_doc* d, const char* json, char* out, int32_t cap);
+/* v60 Look (design/boards/Look): the view's sizes — JSON {atom_scale (× vdW radius, ball and stick; 0.28), bond_radius (Å,
+   0.14), space_scale (× vdW, space filling; 1), line_px (wireframe; 1.4), bond_orders (double and triple bonds as parallel
+   sticks, aromatic with a dashed inner one), factor: {atoms: [0-based …] | "selection" when absent, value} the size of those
+   atoms and the sticks between them, clear_factors}; 0 or -1. */
+int32_t caps_set_look(caps_doc* d, const char* json);
+/* v60 Bond rules (design/boards/BondRules): caps_pair_histograms JSON {lo, hi, bin} → {pairs: [{a, b, counts, lo, bin,
+   bonded, covalent, suggested (Å, the gap after the bonded peak), ionic (Pauling difference ≥ 1.7)}], bonds};
+   caps_bond_rules_preview JSON {rules: [{a, b, max, never}], preview} → {bonds, after, added, removed, pairs: {"B–N": n}}
+   (preview: the new bonds drawn in the view; no rules: cleared); caps_edit op "bond_rules" {rules} sets the bonds (undoable). */
+int32_t caps_pair_histograms(caps_doc* d, const char* json, char* out, int32_t cap);
+/* v60 Probes (design/boards/Probes): caps_set_probes JSON [{kind: point | plane | axis | ellipsoid, atoms: [0-based …],
+   rgb}] drawn in the view from their atoms in the frame shown; caps_probe_series JSON {a: {kind, atoms}, b: {kind, atoms}
+   (optional), measure: distance | angle | rms | size} → {values: [one per frame], unit}. */
+int32_t caps_set_probes(caps_doc* d, const char* json);
+int32_t caps_probe_series(caps_doc* d, const char* json, char* out, int32_t cap);
+int32_t caps_bond_rules_preview(caps_doc* d, const char* json, char* out, int32_t cap);
 int32_t caps_piece_file(const char* path, const char* name, char* out, int32_t cap);
 int32_t caps_pick_at(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt, int32_t x, int32_t y);   /* atom index under pixel of last render, -1 none */
 /* v19: pixels per Å at the focal plane for a width × height image of the current frame (exact when orthographic). */

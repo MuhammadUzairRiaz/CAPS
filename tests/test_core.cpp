@@ -11,6 +11,8 @@
 
 #include "caps/analysis.hpp"
 #include "caps/tags.hpp"
+#include "caps/probe.hpp"
+#include "caps/bondrules.hpp"
 #include "caps/piece.hpp"
 #include "caps/query.hpp"
 #include "caps/appearance.hpp"
@@ -1397,4 +1399,59 @@ TEST(Piece, CopyAndStampClear) {
   EXPECT_GE(dmin, 1.5 - 1e-9);
   EXPECT_NEAR(dmin, r.closest, 1e-6);
   EXPECT_THROW(stamp_piece(s, "{}", mid, {0, 0, 1}, 0, 1.5), std::runtime_error);
+}
+
+// Bond rules (design/boards/BondRules): the melt's pairs as distance histograms, the C–C cut-off in the gap after the
+// bonded peak; the default rules give the file's bonds; C–C never bonded takes them away; Na–Cl starts ionic
+TEST(BondRules, HistogramsAndRules) {
+  System s = read_lammps_data(S + "/ps_melt.data");
+  const auto hs = pair_histograms(s);
+  const PairHistogram* cc = nullptr;
+  for (const auto& h : hs) if (h.za == 6 && h.zb == 6) cc = &h;
+  ASSERT_NE(cc, nullptr);
+  EXPECT_EQ(cc->bonded, 710u);   // 640 C: 80 rings × 6 + backbone and side bonds
+  EXPECT_GT(cc->suggested, 1.6);
+  EXPECT_LT(cc->suggested, 2.4);
+  EXPECT_FALSE(cc->ionic);
+  const auto same = bonds_by_rules(s, {});
+  EXPECT_EQ(same.size(), s.bonds.size());
+  const auto none = bonds_by_rules(s, {{6, 6, 0, true}});
+  EXPECT_EQ(none.size(), s.bonds.size() - cc->bonded);
+  const auto tight = bonds_by_rules(s, {{6, 1, 1.0, false}});
+  EXPECT_EQ(tight.size(), s.bonds.size() - 660);   // C–H are 1.08–1.1 Å: none within 1.0
+  System nacl;
+  nacl.atoms.resize(2);
+  nacl.atoms[0].element = 11, nacl.atoms[1].element = 17, nacl.atoms[1].pos = {2.8, 0, 0};
+  bool ionic = false;
+  for (const auto& h : pair_histograms(nacl)) if (h.za == 11 && h.zb == 17) ionic = h.ionic;
+  EXPECT_TRUE(ionic);
+}
+
+// Probes (design/boards/Probes): a square of carbons at z = 5 is a plane (normal +z, flat); an atom 3 Å above it; a row
+// along x is an axis lying in the plane (0°) and across a row along y (90°); the ellipsoid holds every atom
+TEST(Probe, PlaneAxisPointEllipsoid) {
+  System s;
+  auto add = [&](double x, double y, double z) { Atom a; a.element = 6; a.pos = {x, y, z}; s.atoms.push_back(a); };
+  add(0, 0, 5); add(4, 0, 5); add(4, 4, 5); add(0, 4, 5);      // 0-3 the slab
+  add(2, 2, 8);                                                  // 4 above it
+  for (int k = 0; k < 6; ++k) add(10 + 1.5 * k, 1, 5);           // 5-10 a row along x
+  for (int k = 0; k < 6; ++k) add(30, 1.5 * k, 2);               // 11-16 a row along y
+  const auto slab = make_probe(s, {0, 1, 2, 3}, ProbeKind::Plane);
+  EXPECT_NEAR(slab.axes[2][2], 1.0, 1e-9);
+  EXPECT_NEAR(slab.rms, 0.0, 1e-9);
+  const auto top = make_probe(s, {4}, ProbeKind::Point);
+  EXPECT_NEAR(probe_measure(s, top, &slab, "distance"), 3.0, 1e-9);
+  const auto ax = make_probe(s, {5, 6, 7, 8, 9, 10}, ProbeKind::Axis), ay = make_probe(s, {11, 12, 13, 14, 15, 16}, ProbeKind::Axis);
+  EXPECT_NEAR(ax.direction()[0], 1.0, 1e-9);
+  EXPECT_NEAR(probe_measure(s, ax, &slab, "angle"), 0.0, 1e-6);
+  EXPECT_NEAR(probe_measure(s, ax, &ay, "angle"), 90.0, 1e-6);
+  EXPECT_NEAR(probe_measure(s, ay, &slab, "angle"), 0.0, 1e-6);   // a line in a parallel plane
+  const auto el = make_probe(s, {0, 1, 2, 3, 4}, ProbeKind::Ellipsoid);
+  for (size_t i = 0; i <= 4; ++i) {
+    double t = 0;
+    for (size_t k = 0; k < 3; ++k) { const double x = dot(s.atoms[i].pos - el.centre, el.axes[k]); t += x * x / (el.semi[k] * el.semi[k]); }
+    EXPECT_LE(t, 1.0 + 1e-9);
+  }
+  EXPECT_THROW(probe_kind("cone"), std::invalid_argument);
+  EXPECT_THROW(probe_measure(s, top, nullptr, "distance"), std::invalid_argument);
 }
