@@ -172,6 +172,7 @@ public sealed partial class MainViewModel : ObservableObject
                 PackDocumentChanged();   // Packing's last result belongs to the structure it made
                 _rxAimDc = true;         // a new structure: the crosslinking panel sets the target again
                 _tagOnly = null;
+                Probes.Clear(); ProbeCards.Clear(); Raise(nameof(HasProbes)); Raise(nameof(HasProbeCards));   // probes are a structure's atoms
                 if (value == null) RefreshLayers();   // no structure: no layers (a closed one's rows gone)
                 RaiseStepDots();                      // the tab dots are the active structure's
                 QueueRxSites();          // the chains' reactive sites of this structure

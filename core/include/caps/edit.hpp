@@ -38,6 +38,9 @@ bool remove_bond(System& s, uint32_t i, uint32_t j);
 void delete_atoms(System& s, const std::vector<char>& remove);
 // Adds the hydrogens the flagged atoms (empty: all) lack; returns how many.
 int add_hydrogens(System& s, const std::vector<char>& atoms = {});
+// H autopilot (design/boards/AtomBubble): on the marked heavy atoms, hydrogens beyond the valence removed (formal
+// charge counted, as add_hydrogens counts it) and the missing ones added. Returns {added, removed}.
+std::pair<int, int> fix_hydrogens(System& s, const std::vector<char>& atoms);
 // What add_hydrogens would do, by kind of atom ("aromatic C with 2 C neighbours": atoms, H to add).
 struct HydrogenPlanRow {
   std::string label;

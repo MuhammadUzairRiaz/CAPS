@@ -4229,6 +4229,26 @@ int32_t caps_set_probes(caps_doc* d, const char* json) {
   });
 }
 
+// A probe's geometry in the frame shown: {kind, atoms} → {centre, axes: [[…] largest first], semi, rms}.
+int32_t caps_probe_geometry(caps_doc* d, const char* json, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  const int32_t rc = guard([&] {
+    const auto j = caps::Json::parse(json ? json : "{}");
+    std::vector<size_t> at;
+    if (j.has("atoms") && j["atoms"].is_array()) for (const auto& v : j["atoms"].items()) at.push_back(size_t(v.number()));
+    else for (size_t i = 0; i < d->selection.size(); ++i) if (d->selection[i]) at.push_back(i);
+    const auto p = caps::make_probe(d->frame, at, caps::probe_kind(j.text("kind", "ellipsoid")));
+    auto vec = [](const caps::Vec3& v) { caps::Json a = caps::Json::array(); a.push_back(v[0]), a.push_back(v[1]), a.push_back(v[2]); return a; };
+    r["centre"] = vec(p.centre);
+    caps::Json ax = caps::Json::array(), se = caps::Json::array();
+    for (int k = 0; k < 3; ++k) ax.push_back(vec(p.axes[size_t(k)])), se.push_back(p.semi[size_t(k)]);
+    r["axes"] = ax, r["semi"] = se, r["rms"] = p.rms;
+    return 0;
+  });
+  if (rc < 0) return -1;
+  return report_out(r.dump(0), out, cap);
+}
+
 // A measurement between probes over every frame: {a: {kind, atoms}, b: {kind, atoms} | absent, measure} → {values}.
 int32_t caps_probe_series(caps_doc* d, const char* json, char* out, int32_t cap) {
   caps::Json r = caps::Json::object();
@@ -7684,6 +7704,15 @@ extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t c
       caps::delete_atoms(s, m);
       d->selection.assign(s.atoms.size(), 0);
       what = "Delete " + std::to_string(at.size()) + " atom(s)";
+    } else if (op == "fix_h") {   // H autopilot: surplus hydrogens of the atoms removed, missing ones added
+      const auto at = atoms_of(d, j);
+      std::vector<char> m;
+      if (!at.empty()) { m.assign(s.atoms.size(), 0); for (uint32_t a : at) m[a] = 1; }
+      if (needs_geometry_orders(s)) geometry_orders(s);
+      const auto [added_h, removed_h] = caps::fix_hydrogens(s, m);
+      if (added_h == 0 && removed_h == 0) throw std::invalid_argument("the hydrogens are right");
+      r["h_added"] = double(added_h), r["h_removed"] = double(removed_h);
+      what = "H autopilot · +" + std::to_string(added_h) + " H, −" + std::to_string(removed_h) + " H";
     } else if (op == "add_h") {
       const auto at = atoms_of(d, j);
       std::vector<char> m;
