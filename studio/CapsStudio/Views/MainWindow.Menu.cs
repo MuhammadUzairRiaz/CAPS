@@ -171,6 +171,7 @@ public partial class MainWindow
             Sep(),
             Sub("Analysis",
                 Page("Properties…", 1),
+                Page("Study table…", 74),
                 Page("Mechanics…", 38),
                 Page("Glass transition…", 47),
                 Page("Diffusion…", 49),

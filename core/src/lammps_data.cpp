@@ -1487,6 +1487,8 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
     else out << aligned(l) << "\n";
   }
   out << "\nread_data       " << data_path << "\n";
+  if (run.kind == LammpsRun::Kind::Shear)   // before the long-range solver, which LAMMPS sets up for the box's shape
+    out << "# planar shear needs a triclinic box (the xy tilt grows with the flow)\nchange_box      all triclinic\n";
   for (const auto& l : kspace) out << aligned(l) << "\n";
   if (!own14.empty()) {
     out << "\n# pair coefficients: every type pair in its part's sub-style (1-4 scaling of that part), " << mixing_said(ff) << ", applied by CAPS\n";
@@ -1567,6 +1569,83 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
     return;
   }
   const bool npt = run.kind == K::NPT;
+  const bool tensile = run.kind == K::Tensile, creep = run.kind == K::Creep, shear = run.kind == K::Shear;
+  const char* ax = run.axis == 1 ? "y" : run.axis == 2 ? "z" : "x";
+  const char* others[2] = {run.axis == 0 ? "y" : "x", run.axis == 2 ? "y" : "z"};
+  const double mpa_per_p = metal ? 0.1 : 0.101325;   // the pressure unit (bar or atm) in MPa
+  if (tensile && !(run.strain_rate > 0)) throw std::invalid_argument("tensile: the strain rate must be positive");
+  if (shear && !(run.shear_rate > 0)) throw std::invalid_argument("shear: the shear rate must be positive");
+  if (shear && !s.cell.valid()) throw std::invalid_argument("shear: a periodic cell is needed");
+  if (tensile || creep || shear) {
+    int64_t steps = run.steps;
+    if (tensile && run.max_strain > 0) {
+      const double dt_ps = lammps_timestep(run, ff) * 1e-3;
+      steps = int64_t(std::ceil(run.max_strain / (run.strain_rate * dt_ps)));
+    }
+    const int rec = int(std::clamp<int64_t>(std::min<int64_t>(run.thermo_every, steps / 100), 1, std::max(1, run.thermo_every)));   // ≥ 100 records
+    out << "\n# 2. " << (tensile ? "uniaxial tension" : creep ? "creep at constant stress" : "planar shear (NEMD, SLLOD)") << "\n";
+    if (run.constraints != ConstraintMode::None) {
+      const std::string line = shake_fix(s, ff, L, run.constraints, mobile);
+      if (!line.empty()) out << line;
+    }
+    std::snprintf(b, sizeof b, "velocity        %s create %.6g %llu mom yes rot yes dist gaussian\n", vgroup.c_str(), run.temperature,
+                  static_cast<unsigned long long>(run.seed));
+    out << b;
+    if (!rigid.empty()) {
+      std::snprintf(b, sizeof b, "fix             rigid_bodies rigid rigid/nvt/small molecule temp %.6g %.6g %.6g\n", run.temperature, run.temperature, run.tdamp * tu);
+      out << b;
+    }
+    const double T = run.temperature, P = run.pressure * pu;
+    if (tensile || creep) {
+      std::snprintf(b, sizeof b, "variable        len0 equal l%s\nvariable        L0 equal ${len0}\nvariable        strain equal (l%s-v_L0)/v_L0\n", ax, ax);
+      out << b;
+    }
+    if (tensile) {
+      const double erate = run.strain_rate * 1e-3 / tu;   // 1/ps → 1/(time unit)
+      std::snprintf(b, sizeof b,
+                    "variable        stress equal -p%s%s*%.8g\n"
+                    "fix             integrate %s npt temp %.6g %.6g %.6g %s %.6g %.6g %.6g %s %.6g %.6g %.6g%s\n"
+                    "fix             pull all deform 1 %s erate %.8g remap x\n",
+                    ax, ax, mpa_per_p, mobile.c_str(), T, T, run.tdamp * tu, others[0], P, P, run.pdamp * tu, others[1], P, P, run.pdamp * tu,
+                    rigid.empty() ? "" : " dilate mobile", ax, erate);
+      out << "# engineering strain rate " << run.strain_rate << " /ps along " << ax << "; the lateral axes at " << run.pressure << " atm\n" << b;
+      std::snprintf(b, sizeof b, "thermo_style    custom step temp v_strain v_stress p%s%s p%s%s pe density\nthermo          %d\n"
+                    "fix             record all print %d \"${strain} ${stress}\" file stress_strain.dat screen no title \"# engineering strain, tensile stress (MPa)\"\n",
+                    others[0], others[0], others[1], others[1], std::max(1, run.thermo_every), rec);
+      out << b;
+    } else if (creep) {
+      const double Pax = -run.stress_mpa / mpa_per_p;   // a tensile stress is a negative pressure on that axis
+      std::snprintf(b, sizeof b, "fix             integrate %s npt temp %.6g %.6g %.6g %s %.6g %.6g %.6g %s %.6g %.6g %.6g %s %.6g %.6g %.6g couple none%s\n",
+                    mobile.c_str(), T, T, run.tdamp * tu, ax, Pax, Pax, run.pdamp * tu, others[0], P, P, run.pdamp * tu, others[1], P, P, run.pdamp * tu,
+                    rigid.empty() ? "" : " dilate mobile");
+      out << "# true tensile stress " << run.stress_mpa << " MPa along " << ax << " (its pressure " << Pax << (metal ? " bar" : " atm") << "), the others at "
+          << run.pressure << " atm\n" << b;
+      std::snprintf(b, sizeof b, "variable        t_ps equal step*dt*%.6g\nthermo_style    custom step temp v_strain p%s%s pe density\nthermo          %d\n"
+                    "fix             record all print %d \"${t_ps} ${strain}\" file creep.dat screen no title \"# time (ps), strain\"\n",
+                    metal ? 1.0 : 1e-3, ax, ax, std::max(1, run.thermo_every), rec);
+      out << b;
+    } else {
+      const double erate = run.shear_rate * 1e-3 / tu;
+      // η = −P_xy / γ̇: P in atm (bar) → Pa, γ̇ in 1/s, Pa·s → mPa·s
+      const double pa = metal ? 1e5 : 101325.0;
+      std::snprintf(b, sizeof b,
+                    "fix             integrate %s nvt/sllod temp %.6g %.6g %.6g\n"
+                    "fix             flow all deform 1 xy erate %.8g remap v\n"
+                    "variable        eta equal -pxy*%.8g\n",
+                    mobile.c_str(), T, T, run.tdamp * tu, erate, pa / (run.shear_rate * 1e12) * 1e3);
+      out << "# shear rate " << run.shear_rate << " /ps; SLLOD equations with the thermostat on the peculiar velocities (temp/deform)\n" << b;
+      const int every = std::max(1, run.thermo_every / 100);
+      std::snprintf(b, sizeof b, "thermo_style    custom step temp pxy v_eta pe density\nthermo          %d\n"
+                    "fix             viscosity all ave/time %d %d %d v_eta file viscosity.dat\n",
+                    std::max(1, run.thermo_every), every, std::max(1, run.thermo_every / every), every * std::max(1, run.thermo_every / every));
+      out << "# viscosity.dat: η (mPa·s) averaged over blocks; leave out the start-up and average the steady part\n" << b;
+    }
+    std::snprintf(b, sizeof b, "dump            traj all custom %d traj.lammpstrj id mol type q xu yu zu\ndump_modify     traj sort id\nrun             %lld\n",
+                  std::max(1, run.dump_every), static_cast<long long>(steps));
+    out << b;
+    out << "\nwrite_data      final.data\nwrite_restart   final.restart\n";
+    return;
+  }
   out << "\n# 2. " << (npt ? "NPT" : "NVT") << " molecular dynamics (Nosé–Hoover)\n";
   if (run.constraints == ConstraintMode::None && st.tip4p_qdist > 0) {   // a four-site water model is rigid
     const auto T = tip4p_types(s, ff, L);

@@ -466,3 +466,46 @@ TEST(LammpsData, RigidBodiesBeforeTheBarostat) {
   EXPECT_NE(sh.find("group           rigid molecule 2"), std::string::npos);
   EXPECT_NE(sh.find("velocity        moving create"), std::string::npos);
 }
+
+// Mechanical protocols in the LAMMPS input (each run in LAMMPS on a melt when written): tension by fix deform at an
+// engineering strain rate with the lateral axes barostatted and the run long enough for the strain; creep with the
+// stressed axis at −σ; shear by SLLOD with the box made triclinic before the long-range solver and η = −P_xy/γ̇
+TEST(LammpsData, TensileCreepAndShearProtocols) {
+  System s = small_cell(2, 3, 0.3);
+  ForceField ff = assign_gaff(s);
+  const auto in = (std::filesystem::temp_directory_path() / "caps_mech.in").string();
+  auto script = [&](const LammpsRun& run) {
+    write_lammps_input(s, ff, EnergyOptions{}, "caps_mech.data", in, 0, true, run);
+    std::ifstream g(in);
+    return std::string((std::istreambuf_iterator<char>(g)), {});
+  };
+  LammpsRun t;
+  t.kind = LammpsRun::Kind::Tensile;
+  t.axis = 2;
+  t.strain_rate = 0.5;   // /ps
+  t.max_strain = 0.1;
+  t.dt = 1.0;            // fs: 0.1 / (0.5 /ps × 0.001 ps) = 200 steps
+  const auto a = script(t);
+  EXPECT_NE(a.find("fix             pull all deform 1 z erate 0.0005 remap x"), std::string::npos);
+  EXPECT_NE(a.find("npt temp 300 300 100 x 1 1 1000 y 1 1 1000"), std::string::npos);
+  EXPECT_NE(a.find("variable        stress equal -pzz*0.101325"), std::string::npos);   // atm → MPa
+  EXPECT_NE(a.find("run             200\n"), std::string::npos);
+  LammpsRun c;
+  c.kind = LammpsRun::Kind::Creep;
+  c.stress_mpa = 10.1325;   // −100 atm on x
+  const auto b = script(c);
+  EXPECT_NE(b.find("x -100 -100 1000 y 1 1 1000 z 1 1 1000 couple none"), std::string::npos);
+  EXPECT_NE(b.find("file creep.dat"), std::string::npos);
+  LammpsRun sh;
+  sh.kind = LammpsRun::Kind::Shear;
+  sh.shear_rate = 0.1;
+  const auto d = script(sh);
+  const auto tri = d.find("change_box      all triclinic"), rd = d.find("read_data"), ks = d.find("kspace_style");
+  ASSERT_NE(tri, std::string::npos);
+  EXPECT_GT(tri, rd);
+  if (ks != std::string::npos) EXPECT_LT(tri, ks);
+  EXPECT_NE(d.find("nvt/sllod temp 300 300 100"), std::string::npos);
+  EXPECT_NE(d.find("fix             flow all deform 1 xy erate 0.0001 remap v"), std::string::npos);
+  // η (mPa·s) = −P_xy (atm) × 101325 Pa/atm / (0.1e12 /s) × 1000
+  EXPECT_NE(d.find("variable        eta equal -pxy*0.00101325"), std::string::npos);
+}
