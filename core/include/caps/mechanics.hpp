@@ -25,6 +25,8 @@ struct ElasticResult {
   std::array<double, 6> prestress{};   // stress of the unstrained state (σ = −P), GPa
   // isotropic averages (GPa, ν dimensionless): Voigt (uniform strain), Reuss (uniform stress), Hill (their mean)
   double K_voigt = 0, G_voigt = 0, K_reuss = 0, G_reuss = 0, K_hill = 0, G_hill = 0, E_hill = 0, nu_hill = 0, lambda_hill = 0;
+  Mat6 S{};                      // compliance C⁻¹, 1/GPa (zero when C is singular)
+  double density = 0;            // g/cm³ of the cell the constants are for (sound speeds); 0: unknown
   double asymmetry = 0;          // max |C_IJ − C_JI| / max |C|, before symmetrising (static method)
   int configurations = 0;
   std::string method;

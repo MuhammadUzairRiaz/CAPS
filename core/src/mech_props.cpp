@@ -51,6 +51,26 @@ std::vector<Property> elastic_properties(const ElasticResult& r, const std::stri
       c.extra["fluctuation C" + std::to_string(I + 1) + std::to_string(I + 1) + " (GPa)"] = r.fluct[I][I];
     }
   c.extra["configurations"] = r.configurations;
+  // the compliance and what it gives along the cell axes: E_i = 1/S_ii, ν_ij = −S_ij/S_ii (strain along j over strain
+  // along i, stretched along i), G_yz = 1/S44 …; the universal anisotropy index A^U = 5 G_V/G_R + K_V/K_R − 6 (0: isotropic;
+  // Ranganathan & Ostoja-Starzewski 2008)
+  const bool hasS = r.S[0][0] != 0;
+  if (hasS) {
+    for (int I = 0; I < 6; ++I)
+      for (int J = I; J < 6; ++J) {
+        char k[48];
+        std::snprintf(k, sizeof k, "S%d%d (1/GPa)", I + 1, J + 1);
+        c.extra[k] = r.S[I][J];
+      }
+    const char* ax[3] = {"x", "y", "z"};
+    for (int i = 0; i < 3; ++i) c.extra[std::string("E") + ax[i] + " = 1/S" + std::to_string(i + 1) + std::to_string(i + 1) + " (GPa)"] = 1 / r.S[i][i];
+    for (int i = 0; i < 3; ++i)
+      for (int j = 0; j < 3; ++j)
+        if (i != j) c.extra[std::string("ν") + ax[i] + ax[j] + " = −S" + std::to_string(i + 1) + std::to_string(j + 1) + "/S" + std::to_string(i + 1) + std::to_string(i + 1)] = -r.S[i][j] / r.S[i][i];
+    const char* sh[3] = {"yz", "xz", "xy"};
+    for (int i = 0; i < 3; ++i) c.extra[std::string("G") + sh[i] + " = 1/S" + std::to_string(i + 4) + std::to_string(i + 4) + " (GPa)"] = 1 / r.S[i + 3][i + 3];
+    if (r.G_reuss > 0 && r.K_reuss > 0) c.extra["anisotropy index A^U"] = 5 * r.G_voigt / r.G_reuss + r.K_voigt / r.K_reuss - 6;
+  }
   c.notes = r.notes;
   out.push_back(c);
   const std::string avg = "Hill average (mean of Voigt and Reuss) of the elastic constants" + how;
@@ -65,7 +85,20 @@ std::vector<Property> elastic_properties(const ElasticResult& r, const std::stri
   out.push_back(G);
   Property nu = prop("poisson" + suffix, "Poisson's ratio" + how, "", avg, r.nu_hill);
   nu.extra["Lamé λ (GPa)"] = r.lambda_hill;
+  nu.extra["Lamé μ = G (GPa)"] = r.G_hill;
   out.push_back(nu);
+  // sound speeds of the isotropic (Hill) solid: v_L = √((K + 4G/3)/ρ), v_T = √(G/ρ), and the Debye mean
+  // v_m = [(2/v_T³ + 1/v_L³)/3]^(−1/3) (Anderson 1963); GPa over g/cm³ is 10⁶ m²/s²
+  if (r.density > 0 && r.K_hill > 0 && r.G_hill > 0) {
+    const double vl = 1000 * std::sqrt((r.K_hill + 4 * r.G_hill / 3) / r.density), vt = 1000 * std::sqrt(r.G_hill / r.density);
+    Property v = prop("sound" + suffix, "Sound speeds" + how, "m/s", "longitudinal v_L = √((K + 4G/3)/ρ) from the Hill K and G" + how, vl);
+    v.extra["v_L longitudinal (m/s)"] = vl;
+    v.extra["v_T transverse (m/s)"] = vt;
+    v.extra["v_m Debye mean (m/s)"] = std::pow((2 / (vt * vt * vt) + 1 / (vl * vl * vl)) / 3, -1.0 / 3);
+    v.extra["ρ (g/cm³)"] = r.density;
+    v.extra["P-wave modulus M = K + 4G/3 (GPa)"] = r.K_hill + 4 * r.G_hill / 3;
+    out.push_back(v);
+  }
   return out;
 }
 

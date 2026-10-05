@@ -1,5 +1,6 @@
 // CAPS Analyze: properties from trajectories (see caps/properties.hpp).
 #include "caps/properties.hpp"
+#include "caps/normal_modes.hpp"
 #include "caps/uff.hpp"
 #include "caps/typing.hpp"
 
@@ -1482,6 +1483,184 @@ Property p2r_prop(const ChainFrames& c, const System& top, const AnalyzeOptions&
 
 // ---------------------------------------------------------------- total dipole: dielectric constant and dipole autocorrelation
 
+// ---------------------------------------------------------------- normal modes
+
+// The harmonic vibrations of the last chosen frame (normal_modes.hpp): the IR spectrum of the fixed charges (each mode a
+// Lorentzian of 10 cm⁻¹ FWHM), the density of vibrational states, and the quantum harmonic ZPE, S, Cv at o.temperature.
+Property modes_prop(const Trajectory& t, const std::vector<size_t>& fr, const AnalyzeOptions& o) {
+  Property p{"modes", "Normal modes", "kcal/mol", "", NaN, NaN, {}, {}, {}};
+  if (fr.empty()) return p;
+  System s = t.frame(fr.back());
+  if (!s.unwrapped) make_molecules_whole(s);
+  NormalModesOptions no;
+  if (o.ff) no.field = std::shared_ptr<const ForceField>(o.ff, [](const ForceField*) {});
+  no.energy = o.energy;
+  if (o.temperature > 0) no.temperature = o.temperature;
+  no.progress = [&](double f) { return !cancelled(o, "normal modes", f); };
+  NormalModesResult r;
+  try {
+    r = normal_modes(s, no);
+  } catch (const std::invalid_argument& e) {
+    p.notes.push_back(e.what());
+    return p;
+  } catch (const std::runtime_error&) {
+    throw Cancel();
+  }
+  p.value = r.zpe;
+  p.name = "Normal modes (zero-point energy)";
+  p.method = "Hessian by central differences of the forces (±0.005 Å, " + r.field + "), mass-weighted, " + std::to_string(r.projected) +
+             " rigid motions projected out; quantum harmonic oscillators at " + std::to_string(int(std::lround(no.temperature))) + " K";
+  p.extra["modes"] = double(r.wavenumber.size());
+  p.extra["imaginary modes"] = r.imaginary;
+  p.extra["largest force at the structure (kcal/mol/Å)"] = r.max_force;
+  if (!r.wavenumber.empty()) {
+    p.extra["lowest mode (cm⁻¹)"] = r.wavenumber.front();
+    p.extra["highest mode (cm⁻¹)"] = r.wavenumber.back();
+  }
+  p.extra["E_vib incl. ZPE (kcal/mol)"] = r.e_vib;
+  p.extra["S_vib (cal/(mol·K))"] = r.s_vib;
+  p.extra["Cv_vib (cal/(mol·K))"] = r.cv_vib;
+  p.notes = r.notes;
+  // the IR spectrum and the density of states, 0–4000 cm⁻¹
+  Series ir{"IR (fixed charges)", "wavenumber (cm⁻¹)", "intensity (relative)", {}, {}}, dos{"vibrational density of states", "wavenumber (cm⁻¹)", "modes per cm⁻¹", {}, {}};
+  const double top = std::max(4000.0, r.wavenumber.empty() ? 0.0 : r.wavenumber.back() + 200), g = 5.0;   // half width
+  for (double nu = 0; nu <= top; nu += 2) {
+    double a = 0, b = 0;
+    for (size_t k = 0; k < r.wavenumber.size(); ++k) {
+      const double l = g / M_PI / ((nu - r.wavenumber[k]) * (nu - r.wavenumber[k]) + g * g);
+      a += r.ir[k] * l, b += l;
+    }
+    ir.x.push_back(nu), ir.y.push_back(a), dos.x.push_back(nu), dos.y.push_back(b);
+  }
+  Series list{"mode wavenumbers", "mode", "wavenumber (cm⁻¹)", {}, {}};
+  for (size_t k = 0; k < r.wavenumber.size(); ++k) list.x.push_back(double(k + 1)), list.y.push_back(r.wavenumber[k]);
+  bool charged = false;
+  for (double x : r.ir) charged = charged || x > 0;
+  if (charged) p.series.push_back(std::move(ir));
+  else p.notes.push_back("no partial charges: no IR intensities (assign a force field with charges)");
+  p.series.push_back(std::move(dos));
+  p.series.push_back(std::move(list));
+  return p;
+}
+
+// ---------------------------------------------------------------- response functions from fluctuations
+
+// Heat capacity, isothermal compressibility, bulk modulus and thermal expansion from the fluctuations of an equilibrium
+// run (Allen & Tildesley 2017, §2.5): NPT frames (the volume varies) give
+//   Cp = 3N k_B / 2 + ⟨δ(U + PV)²⟩ / k_B T²,  κ_T = ⟨δV²⟩ / k_B T ⟨V⟩,  α_P = ⟨δV δ(U + PV)⟩ / k_B T² ⟨V⟩;
+// NVT frames give Cv = 3N k_B / 2 + ⟨δU²⟩ / k_B T². The kinetic energy is not stored with the frames; its part is exact in
+// classical statistics (⟨δK²⟩ = 3N (k_B T)² / 2, uncorrelated with the configuration).
+Property fluct_prop(const Trajectory& t, const std::vector<size_t>& fr, const std::vector<double>& times, const AnalyzeOptions& o) {
+  Property p{"fluct", "Heat capacity, compressibility and expansion from fluctuations", "J/(g·K)", "", NaN, NaN, {}, {}, {}};
+  if (!o.ff) { p.notes.push_back("needs a force field (assign one in Field, or --ff)"); return p; }
+  if (!t.topology.cell.valid()) { p.notes.push_back("needs a periodic cell"); return p; }
+  if (o.temperature <= 0) { p.notes.push_back("give the temperature of the run the frames come from"); return p; }
+  if (fr.size() < 10) { p.notes.push_back("needs many frames of an equilibrium run (hundreds, spaced beyond the energy's correlation time)"); return p; }
+  const ForceField& ff = *o.ff;
+  Evaluator ev(ff, o.energy);
+  constexpr double kB = 0.0019872043;                       // kcal/mol/K
+  const double pv = o.pressure * 101325.0 * 1e-30 * kNA / 4184.0;   // kcal/mol per atm·Å³
+  const double T = o.temperature;
+  std::vector<double> U, V, H;
+  for (size_t q = 0; q < fr.size(); ++q) {
+    if (cancelled(o, "fluctuations", double(q) / fr.size())) throw Cancel();
+    System f = t.frame(fr[q]);
+    if (!f.unwrapped) make_molecules_whole(f);
+    std::vector<double> x, g;
+    for (const auto& a : f.atoms) x.insert(x.end(), a.pos.begin(), a.pos.end());
+    const double u = ev.compute(x, f.cell, g).total(), v = f.cell.volume();
+    U.push_back(u), V.push_back(v), H.push_back(u + pv * v);
+  }
+  const double N = double(t.topology.atoms.size());
+  double mass = 0;
+  for (double m : ff.mass) mass += m;
+  double vbar = 0, vvar = 0;
+  for (double v : V) vbar += v;
+  vbar /= V.size();
+  for (double v : V) vvar += (v - vbar) * (v - vbar);
+  const bool npt = std::sqrt(vvar / V.size()) > 1e-6 * vbar;
+  const auto& E = npt ? H : U;
+  const double ckin = 1.5 * N * kB;                                // kcal/mol/K per cell
+  // the three response functions over frames [a, b)
+  auto stats = [&](size_t a, size_t b, double& c, double& kap, double& al) {
+    double eb = 0, vb = 0;
+    for (size_t k = a; k < b; ++k) eb += E[k], vb += V[k];
+    eb /= double(b - a), vb /= double(b - a);
+    double ee = 0, vv = 0, ve = 0;
+    for (size_t k = a; k < b; ++k) ee += (E[k] - eb) * (E[k] - eb), vv += (V[k] - vb) * (V[k] - vb), ve += (V[k] - vb) * (E[k] - eb);
+    ee /= double(b - a), vv /= double(b - a), ve /= double(b - a);
+    c = (ckin + ee / (kB * T * T)) * 4184.0 / mass;                 // J/(g·K)
+    kap = vv / (kB * T * vb) / (4184.0 / kNA * 1e30 * 1e-9);      // Å³/(kcal/mol) → 1/GPa (1 kcal/mol/Å³ = 6.9477 GPa)
+    al = ve / (kB * T * T * vb);                                    // 1/K
+  };
+  double c, kap, al;
+  stats(0, E.size(), c, kap, al);
+  // block errors
+  const int nb = std::clamp(o.blocks, 2, int(E.size() / 5));
+  std::vector<double> bc, bk, ba;
+  for (int b = 0; b < nb; ++b) {
+    double x1, x2, x3;
+    stats(E.size() * b / nb, E.size() * (b + 1) / nb, x1, x2, x3);
+    bc.push_back(x1), bk.push_back(x2), ba.push_back(x3);
+  }
+  auto sem = [](const std::vector<double>& v) {
+    double m = std::accumulate(v.begin(), v.end(), 0.0) / v.size(), s = 0;
+    for (double x : v) s += (x - m) * (x - m);
+    return std::sqrt(s / (v.size() - 1) / v.size());
+  };
+  p.value = c;
+  p.error = sem(bc);
+  p.name = npt ? "Heat capacity Cp, compressibility and expansion from fluctuations" : "Heat capacity Cv from energy fluctuations";
+  p.method = npt ? "NPT: Cp = 3Nk_B/2 + ⟨δ(U+PV)²⟩/k_BT², κ_T = ⟨δV²⟩/k_BT⟨V⟩, α_P = ⟨δVδ(U+PV)⟩/k_BT²⟨V⟩ (Allen & Tildesley 2017) with " + ff.name
+                 : "NVT: Cv = 3Nk_B/2 + ⟨δU²⟩/k_BT² (Allen & Tildesley 2017) with " + ff.name;
+  p.method += ", " + std::to_string(fr.size()) + " frames at " + std::to_string(int(std::lround(T))) + " K";
+  p.extra[npt ? "Cp per mole of cells (J/(mol·K))" : "Cv per mole of cells (J/(mol·K))"] = c * mass;
+  p.extra["kinetic part (J/(g·K))"] = ckin * 4184.0 / mass;
+  p.extra["configurational part (J/(g·K))"] = c - ckin * 4184.0 / mass;
+  if (npt) {
+    p.extra["κ_T isothermal compressibility (1/GPa)"] = kap;
+    p.extra["κ_T error (1/GPa)"] = sem(bk);
+    p.extra["B bulk modulus (GPa)"] = kap > 0 ? 1 / kap : NaN;
+    p.extra["α_P thermal expansion (1e-4/K)"] = al * 1e4;
+    p.extra["α_P error (1e-4/K)"] = sem(ba) * 1e4;
+    p.extra["⟨V⟩ (Å³)"] = vbar;
+  } else {
+    p.notes.push_back("the volume is fixed (NVT): Cv only; an NPT run also gives Cp, κ_T, B and α_P");
+  }
+  // equilibrium: a trend through the run (still compressing, still cooling) shows up as a huge "fluctuation"
+  auto drift = [&](const std::vector<double>& y) {   // the straight line's change over the run against the rms about it
+    const double n = double(y.size());
+    double tb = (n - 1) / 2, yb = std::accumulate(y.begin(), y.end(), 0.0) / n, stt = 0, sty = 0;
+    for (size_t k = 0; k < y.size(); ++k) stt += (k - tb) * (k - tb), sty += (k - tb) * (y[k] - yb);
+    const double b = sty / stt;
+    double r = 0;
+    for (size_t k = 0; k < y.size(); ++k) r += std::pow(y[k] - yb - b * (k - tb), 2);
+    r = std::sqrt(r / n);
+    return r > 0 ? std::fabs(b) * (n - 1) / r : 0.0;
+  };
+  const double dE = drift(E), dV = npt ? drift(V) : 0;
+  p.extra["drift of the energy over the run / its rms fluctuation"] = dE;
+  if (npt) p.extra["drift of the volume over the run / its rms fluctuation"] = dV;
+  if (dE > 1 || dV > 1)
+    p.notes.insert(p.notes.begin(), std::string("not at equilibrium: the ") + (dE > 1 && dV > 1 ? "energy and the volume drift" : dE > 1 ? "energy drifts" : "volume drifts") +
+                   " over the run by more than their fluctuations, and the drift counts as fluctuation — equilibrate first, then analyse a later window");
+  p.notes.push_back("classical: every vibration holds k_BT, so C exceeds experiment where high-frequency modes (C–H stretches) are frozen out quantum mechanically");
+  p.notes.push_back("fluctuations converge slowly: compare the blocks (± is their spread) and use frames spaced beyond the energy's correlation time");
+  // running values, for convergence
+  Series sc{npt ? "running Cp" : "running Cv", "time (ps)", "C (J/(g·K))", {}, {}}, sk{"running κ_T", "time (ps)", "κ_T (1/GPa)", {}, {}};
+  const size_t step = std::max<size_t>(1, E.size() / 100);
+  for (size_t k = 10; k <= E.size(); k += step) {
+    double x1, x2, x3;
+    stats(0, k, x1, x2, x3);
+    const double tt = times[k - 1] - times[0];
+    sc.x.push_back(tt), sc.y.push_back(x1);
+    if (npt) sk.x.push_back(tt), sk.y.push_back(x2);
+  }
+  p.series.push_back(std::move(sc));
+  if (npt) p.series.push_back(std::move(sk));
+  return p;
+}
+
 Property dielectric_prop(const Trajectory& t, const std::vector<size_t>& fr, const std::vector<double>& times, const AnalyzeOptions& o) {
   Property p{"dielectric", "Static dielectric constant", "",
              "ε = 1 + (⟨M²⟩ − ⟨M⟩²) / (3ε₀ V k_B T) with M = Σ q_i r_i over molecules made whole (conducting boundary, Neumann 1983); "
@@ -2097,7 +2276,7 @@ std::vector<double> frame_times(const Trajectory& t, const AnalyzeOptions& o) {
 std::vector<Property> analyze(const Trajectory& t, const std::vector<std::string>& ids, const AnalyzeOptions& o) {
   static const std::set<std::string> known = {"density", "rdf", "sq", "xray", "electron", "neutron", "rg", "ree", "cn", "persistence", "msd", "diffusion",
                                               "relaxation", "ced", "delta", "ffv", "psd", "cij_fluct", "zprofile", "adhesion", "interaction", "orientation", "crosslinks",
-                                              "entanglements", "conformation", "vacf", "hbonds", "vanhove", "p2r", "dielectric"};
+                                              "entanglements", "conformation", "vacf", "hbonds", "vanhove", "p2r", "dielectric", "fluct", "modes"};
   for (const auto& id : ids)
     if (!known.count(id)) throw std::invalid_argument("unknown property '" + id + "'");
   const auto fr = analysis_frames(t, o);
@@ -2141,6 +2320,8 @@ std::vector<Property> analyze(const Trajectory& t, const std::vector<std::string
     if (want("vacf")) out.push_back(vacf_prop(t, fr, times, o));
     if (want("hbonds")) out.push_back(hbond_prop(t, fr, times, o));
     if (want("dielectric")) out.push_back(dielectric_prop(t, fr, times, o));
+    if (want("fluct")) out.push_back(fluct_prop(t, fr, times, o));
+    if (want("modes")) out.push_back(modes_prop(t, fr, o));
     if (want("ree") || want("cn") || want("persistence") || want("orientation")) {
       const ChainFrames c = chain_frames(t, fr);
       if (want("orientation")) out.push_back(orientation_prop(t, fr, o, c));

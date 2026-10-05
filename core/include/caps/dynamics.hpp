@@ -78,6 +78,14 @@ struct DynamicsOptions {
   Vec3 pull_dir{1, 0, 0};
   double pull_k = 10.0;             // kcal/mol/Å²
   double pull_rate = 0.0;           // Å/ps
+  // A uniform external electric field, V/Å (LAMMPS fix efield, real units): each atom feels q·E, 23.0605 kcal/mol/Å per
+  // e·V/Å. Under periodic boundaries the field does work that no potential accounts for, so the conserved quantity drifts.
+  Vec3 efield{0, 0, 0};
+  // Planar Couette shear by SLLOD (Evans & Morriss 1984): the x velocity of the flow grows along y at shear_rate (1/ps);
+  // the cell tilts with it (Lees–Edwards boundaries: b_x grows at shear_rate · b_y, flipped by a when it passes a_x/2),
+  // velocities are peculiar (the flow taken off) and the thermostat acts on them. NVT only; the stress P_xy of the thermo
+  // rows gives the viscosity η = −⟨P_xy⟩ / shear_rate.
+  double shear_rate = 0;
   uint64_t seed = 1;
   int thermo_every = 100;           // steps between thermo rows
   int64_t step_offset = 0;          // added to reported steps and times (runs chained into a protocol)

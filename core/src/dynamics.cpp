@@ -87,6 +87,12 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
   if (o.respa > 1 && o.constraints != ConstraintMode::None) throw std::invalid_argument("r-RESPA and bond constraints are alternatives: choose one");
   const bool nhc = o.thermostat == Thermostat::NoseHoover, mtk = o.barostat == Barostat::MTK;
   if ((nhc || mtk) && o.respa > 1) throw std::invalid_argument("r-RESPA runs with the Bussi thermostat or none");
+  if (o.shear_rate != 0) {
+    if (!s.cell.valid()) throw std::invalid_argument("shear needs a periodic cell");
+    if (o.barostat != Barostat::None || o.deform_axis >= 0) throw std::invalid_argument("shear (SLLOD) runs at constant volume: no barostat, no deformation");
+    if (o.constraints != ConstraintMode::None) throw std::invalid_argument("shear (SLLOD) runs without bond constraints");
+    if (o.thermostat == Thermostat::None) throw std::invalid_argument("shear heats the system: it needs a thermostat");
+  }
   if (mtk && (o.anisotropic || o.deform_axis >= 0)) throw std::invalid_argument("the MTK barostat couples the volume isotropically; per-axis coupling and deformation use Berendsen");
   if (mtk && o.constraints != ConstraintMode::None) throw std::invalid_argument("the MTK barostat runs without bond constraints; use the stochastic cell rescaling barostat with constraints");
   if (mtk && !(o.thermostat == Thermostat::NoseHoover || o.thermostat == Thermostat::None))
@@ -203,6 +209,11 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
     et_fast = ev_fast->compute(x, cell, f_fast);
     hold(f_fast);
   };
+  constexpr double kEVtoKcal = 23.060548;   // kcal/mol per eV
+  const bool field_on = o.efield[0] != 0 || o.efield[1] != 0 || o.efield[2] != 0;
+  if (field_on)
+    rep.notes.push_back("Electric field (" + std::to_string(o.efield[0]) + ", " + std::to_string(o.efield[1]) + ", " + std::to_string(o.efield[2]) +
+                        ") V/Å on the partial charges: the field does work, so the conserved quantity is not conserved");
   auto compute = [&] {
     EnergyTerms t = ev.compute(x, cell, respa > 1 ? f_slow : f);
     auto& F = respa > 1 ? f_slow : f;
@@ -214,6 +225,10 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
       for (uint32_t i : pulled)
         for (int k = 0; k < 3; ++k) F[3 * i + k] += pdir[k] * pull_f * m[i] / mpull;
     }
+    if (field_on)
+      for (size_t i = 0; i < n; ++i)
+        if (!held[i] && ff.charge.size() == n)
+          for (int k = 0; k < 3; ++k) F[3 * i + k] += kEVtoKcal * ff.charge[i] * o.efield[k];
     if (respa > 1) {   // both parts, for the energies, the virial and anyone reading f
       compute_fast();
       t.bond = et_fast.bond, t.angle = et_fast.angle, t.dihedral = et_fast.dihedral, t.improper = et_fast.improper;
@@ -296,17 +311,28 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
   double kt_target = 0.5 * ndof * kB * o.temperature;
   double t_now = o.temperature;
 
+  const double gdot = o.shear_rate * 1e-3;   // 1/fs
   auto kick_with = [&](const std::vector<double>& F, double h) {
     for (size_t i = 0; i < n; ++i) {
       const double a = h * kAcc / m[i];
       v[3 * i] += a * F[3 * i];
       v[3 * i + 1] += a * F[3 * i + 1];
       v[3 * i + 2] += a * F[3 * i + 2];
+      if (gdot != 0) v[3 * i] -= gdot * h * v[3 * i + 1];   // SLLOD: −p·∇u
     }
   };
   auto kick = [&](double h) { kick_with(f, h); };
   auto drift = [&](double h) {
     if (ncons) cons.reference(x, cell);
+    if (gdot != 0) {   // the streaming velocity γ̇ (y − y0) at the step's middle height, and the cell tilting with it
+      for (size_t i = 0; i < n; ++i)
+        if (!held[i]) x[3 * i] += h * gdot * (x[3 * i + 1] + 0.5 * h * v[3 * i + 1] - cell.origin[1]);
+      cell.a[0] += h * gdot * cell.a[1];
+      cell.b[0] += h * gdot * cell.b[1];
+      cell.c[0] += h * gdot * cell.c[1];
+      if (cell.b[0] > 0.5 * cell.a[0]) cell.b = cell.b - cell.a;   // the same lattice, the tilt back in range
+      else if (cell.b[0] < -0.5 * cell.a[0]) cell.b = cell.b + cell.a;
+    }
     for (size_t k = 0; k < x.size(); ++k) x[k] += h * v[k];
     if (ncons) cons.shake(x, &v, h);
   };

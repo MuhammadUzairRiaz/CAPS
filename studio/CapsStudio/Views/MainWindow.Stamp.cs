@@ -43,6 +43,10 @@ public partial class MainWindow
     private void OnTrayPiece(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is TrayPiece p) _vm.ArmStamp(p); ViewHost.Focus(); }
     private void OnTrayRemove(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is TrayPiece p) _vm.RemoveFromTray(p); }
     private void OnTrayHide(object? s, RoutedEventArgs e) { _vm.TrayShown = false; _vm.DisarmStamp(); }
+    private async void OnPlayMode(object? s, RoutedEventArgs e)
+    {
+        if ((s as Control)?.DataContext is ResultCard c) await _vm.PlayMode((int)c.PickMode);
+    }
 
     // ---- Probes (design/boards/Probes)
     private void OnProbeChip(object? s, RoutedEventArgs e)
