@@ -3314,6 +3314,12 @@
                             <TextBlock Text="{Binding Verdict}" Foreground="{Binding VerdictBrush}" FontSize="11" TextWrapping="Wrap" />
                           </StackPanel>
                           <TextBlock Text="{Binding ExtraText}" IsVisible="{Binding HasExtra}" Classes="mono" FontSize="10.5" TextWrapping="Wrap" Foreground="{DynamicResource MutedB}" />
+                          <Grid ColumnDefinitions="Auto,80,*" ColumnSpacing="8" IsVisible="{Binding IsModes}">
+                            <TextBlock Text="mode" Classes="dim" VerticalAlignment="Center" />
+                            <NumericUpDown Grid.Column="1" Value="{Binding PickMode}" Minimum="1" Maximum="{Binding ModeCount}" Increment="1" FormatString="0" />
+                            <Button Grid.Column="2" Classes="small" Content="Play in a copy" Click="OnPlayMode" HorizontalAlignment="Left"
+                                    ToolTip.Tip="One period of this mode in the view (1 = the lowest wavenumber), in a copy of the structure" />
+                          </Grid>
                           <TextBlock Text="{Binding NotesText}" IsVisible="{Binding HasNotes}" FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource WarnB}" />
                           <TextBlock Text="{Binding Method}" Classes="dim" FontSize="10.5" TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
                         </StackPanel>

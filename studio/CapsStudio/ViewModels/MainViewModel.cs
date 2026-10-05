@@ -1512,6 +1512,7 @@ public sealed partial class MainViewModel : ObservableObject
                (_mdNewVelocities ? string.Format(inv, "velocity all create {0:0.##} {1} mom yes rot yes dist gaussian\n", _mdTemp, _mdSeed) : "") +
                (RespaSteps > 1 ? $"run_style respa 2 {RespaSteps} bond 1 angle 1 dihedral 1 improper 1 pair 2 kspace 2\n" : "") +
                (_mdConstraints > 0 ? doc.LammpsShake(_mdConstraints) : "") +
+               (_mdFieldOn ? string.Format(inv, "fix efield all efield {0:0.######} {1:0.######} {2:0.######}\n", _mdEx, _mdEy, _mdEz) : "") +
                string.Format(inv, "timestep {0:0.###}\n{1}\nthermo {2}\ndump d all custom {3} traj.lammpstrj id mol type xu yu zu\nrun {4}\n",
                    _mdDt, ens, Math.Max(1, _mdFrameEvery / 10), _mdFrameEvery, steps);
     }
@@ -1565,10 +1566,28 @@ public sealed partial class MainViewModel : ObservableObject
     public int MdCoupling { get => _mdCoupling; set => Set(ref _mdCoupling, Math.Clamp(value, 0, 3)); }
     public decimal MdCheckpointPsD { get => (decimal)_mdCheckpointPs; set { _mdCheckpointPs = Math.Max(0, (double)value); Raise(); } }
 
+    // an external electric field (V/Å) on the partial charges: poling, field-driven ion transport, dielectric response
+    private bool _mdFieldOn;
+    private double _mdEx, _mdEy, _mdEz = 0.1;
+    public bool MdFieldOn { get => _mdFieldOn; set { if (Set(ref _mdFieldOn, value)) Raise(nameof(MdFieldText)); } }
+    public decimal MdExD { get => (decimal)_mdEx; set { _mdEx = (double)value; Raise(); Raise(nameof(MdFieldText)); } }
+    public decimal MdEyD { get => (decimal)_mdEy; set { _mdEy = (double)value; Raise(); Raise(nameof(MdFieldText)); } }
+    public decimal MdEzD { get => (decimal)_mdEz; set { _mdEz = (double)value; Raise(); Raise(nameof(MdFieldText)); } }
+    /// <summary>|E| in V/Å and V/m, and the force it puts on one elementary charge.</summary>
+    public string MdFieldText
+    {
+        get
+        {
+            var e = Math.Sqrt(_mdEx * _mdEx + _mdEy * _mdEy + _mdEz * _mdEz);
+            return string.Format(CultureInfo.InvariantCulture, "|E| {0:0.###} V/Å = {1:0.##E+0} V/m · {2:0.##} kcal/mol/Å on a charge of 1 e", e, e * 1e10, e * 23.0605);
+        }
+    }
+
     /// <summary>The Dynamics settings as the core takes them (also captured when a run is queued).</summary>
     private CapsMdOpts MdOptions((long Offset, long Steps)? resume) => new()
     {
         BoxAnisotropic = _mdCoupling > 0 ? 1 : 0, BoxAxes = _mdCoupling switch { 2 => 4, 3 => 3, _ => 7 },
+        EfieldX = _mdFieldOn ? _mdEx : 0, EfieldY = _mdFieldOn ? _mdEy : 0, EfieldZ = _mdFieldOn ? _mdEz : 0,
         CheckpointEvery = _mdCheckpointPs > 0 ? Math.Max(1, (long)Math.Round(_mdCheckpointPs * 1000 / Math.Max(0.01, _mdDt))) : 0,
         Dt = _mdDt, Steps = resume?.Steps ?? _mdSteps, Temperature = _mdTemp, StepOffset = resume?.Offset ?? 0,
         Thermostat = _mdEnsemble is 1 or 2 ? _mdThermostat + 1 : 0, TauT = _mdTauT,

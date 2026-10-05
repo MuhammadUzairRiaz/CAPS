@@ -165,6 +165,9 @@ public sealed partial class MainViewModel
                                                : "constraint-algorithm     = shake       ; as this run (GROMACS allows it without domain decomposition)\n");
         }
         sb.Append(nb);
+        if (_mdFieldOn)   // E0 (V/nm) omega t0 sigma: a static field when omega and sigma are 0; 1 V/Å = 10 V/nm
+            foreach (var (ax, e) in new[] { ("x", _mdEx), ("y", _mdEy), ("z", _mdEz) })
+                if (e != 0) sb.Append(string.Format(inv, "electric-field-{0}         = {1:0.######} 0 0 0   ; V/nm, static, as this run\n", ax, e * 10));
         // coupling: τ in ps, pressure in bar
         if (MdHasThermostat)
         {

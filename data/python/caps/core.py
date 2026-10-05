@@ -104,7 +104,8 @@ class _MdOpts(C.Structure):
                 ("seed", C.c_uint64), ("thermo_every", C.c_int32), ("frame_every", C.c_int32), ("cutoff", C.c_double),
                 ("coulomb", C.c_int32), ("tail", C.c_int32), ("threads", C.c_int32), ("respa", C.c_int32), ("constraints", C.c_int32),
                 ("step_offset", C.c_int64), ("checkpoint_every", C.c_int64), ("constraint_algorithm", C.c_int32),
-                ("box_anisotropic", C.c_int32), ("box_axes", C.c_int32)]
+                ("box_anisotropic", C.c_int32), ("box_axes", C.c_int32),
+                ("efield", C.c_double * 3)]
 
 
 class _EquilOpts(C.Structure):
@@ -493,7 +494,8 @@ class Document:
 
     def md(self, steps: int = 10000, dt: float = 1.0, temperature: float = 300.0, thermostat: str = "bussi", barostat: str = "none",
            pressure: float = 1.0, seed: int = 1, frame_every: int = 1000, thermo_every: int = 100, cutoff: float = 10.0,
-           respa: int = 1, constraints: str = "none", constraint_solver: str = "shake", couple_axes: str = "") -> str:
+           respa: int = 1, constraints: str = "none", constraint_solver: str = "shake", couple_axes: str = "",
+           efield: tuple = (0.0, 0.0, 0.0)) -> str:
         """Molecular dynamics from the current frame; the frames recorded become the document's frames. respa > 1: r-RESPA,
         the bonded forces every dt / respa (e.g. dt=2, respa=4 with hydrogens). constraints "h-bonds" (bonds to hydrogen,
         rigid water) or "all-bonds": SHAKE/RATTLE, for dt=2 (the alternative to respa). thermostat "nose-hoover" with
@@ -503,6 +505,7 @@ class Document:
                     {"none": 0, "crescale": 1, "berendsen": 2, "mtk": 3}[barostat], pressure, 1000.0, 0, seed, thermo_every, frame_every,
                     cutoff, 1, 1, 0, respa, {"none": 0, "h-bonds": 1, "all-bonds": 2}[constraints], 0, 0,
                     {"shake": 0, "lincs": 1}[constraint_solver])
+        o.efield[:] = [float(e) for e in efield]   # V/Å on the partial charges (LAMMPS fix efield)
         if couple_axes:   # "z", "xy" …: those axes coupled on their own to the pressure (Berendsen), the others fixed
             o.box_anisotropic, o.box_axes = 1, sum({"x": 1, "y": 2, "z": 4}[a] for a in set(couple_axes))
         rep = _report()
@@ -696,7 +699,7 @@ class Document:
                          float(options.pop("zbin", 0)),    # interfaces: profile bin (Å)
                          {"": 0, "x": 1, "a": 1, "y": 2, "b": 2, "z": 3, "c": 3}[str(options.pop("axis", "")).lower()],
                          _enc(str(options.pop("surface", ""))))   # the surface / filler molecule ids, "1-3,7"
-        if "tg" in ids.split(","):
+        if "tg" in ids.split(",") or options:   # the run's settings: tg's scan, the temperature of fluct / dielectric / cij_fluct
             m = _MechOpts()
             for k, v in options.items():
                 setattr(m, k, v)
@@ -977,6 +980,21 @@ def _probe_series(self, a: tuple, b: Optional[tuple] = None, measure: str = "dis
     return _doc_json(self, "caps_probe_series", q)["values"]
 
 
+def _normal_modes(self, temperature: float = 298.15) -> dict:
+    """The harmonic vibrations of the frame shown (minimise it tightly first): {value: ZPE kcal/mol, extra: {modes, imaginary
+    modes, S_vib, Cv_vib …}, series: [IR spectrum (fixed charges), density of states, mode wavenumbers]}."""
+    return self.analyze("modes", first=max(0, self.frames - 1), temperature=temperature)[0]
+
+
+def _animate_mode(self, mode: int, amplitude: float = 0.3, frames: int = 20, selection: bool = False) -> dict:
+    """The document's frames become one period of normal mode `mode` (1 = the lowest), the largest atom displacement
+    `amplitude` Å. Returns {wavenumber, modes, reduced_mass, ir, frames, notes}."""
+    return _doc_json(self, "caps_mode_animate", {"mode": int(mode), "amplitude": float(amplitude), "frames": int(frames),
+                                                  "atoms": "selection" if selection else "all"})
+
+
+Document.normal_modes = _normal_modes
+Document.animate_mode = _animate_mode
 Document.pair_histograms = _pair_histograms
 Document.bond_rules = _bond_rules
 Document.probe = _probe

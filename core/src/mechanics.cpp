@@ -20,6 +20,7 @@ namespace caps {
 namespace {
 
 constexpr double kGPa = 4184.0 / 6.02214076e23 / 1e-30 / 1e9;   // kcal/(mol·Å³) → GPa
+constexpr double kNAvo = 6.02214076e23;
 constexpr double kB = 0.0019872041;                              // kcal/(mol·K)
 constexpr double kAtmMPa = 0.101325;                             // atm → MPa
 constexpr double NaN = std::numeric_limits<double>::quiet_NaN();
@@ -168,6 +169,8 @@ void isotropic_averages(ElasticResult& r) {
     r.K_reuss = r.G_reuss = NaN;
   } else {
     auto S = [&](int i, int j) { return a[i][j + 6]; };
+    for (int i = 0; i < 6; ++i)
+      for (int j = 0; j < 6; ++j) r.S[i][j] = S(i, j);
     r.K_reuss = 1 / ((S(0, 0) + S(1, 1) + S(2, 2)) + 2 * (S(0, 1) + S(0, 2) + S(1, 2)));
     r.G_reuss = 15 / (4 * (S(0, 0) + S(1, 1) + S(2, 2)) - 4 * (S(0, 1) + S(0, 2) + S(1, 2)) + 3 * (S(3, 3) + S(4, 4) + S(5, 5)));
   }
@@ -297,6 +300,7 @@ ElasticResult static_elastic(const std::vector<System>& configs, const StaticEla
   res.prestress = pre;
   res.asymmetry = asym;
   res.configurations = int(n);
+  res.density = configs[0].total_mass() / kNAvo / (configs[0].cell.volume() * 1e-24);
   isotropic_averages(res);
   res.method = "static strain (Theodorou & Suter 1986): each configuration minimised at fixed cell (L-BFGS, |F| < " + fmt(o.ftol, 2) +
                " kcal/mol/Å, pair set frozen at the minimum), ±" + fmt(o.strain, 2) + " pure strain in each Voigt component, atoms re-minimised, C_IJ = Δσ_I/Δε_J; " +
@@ -394,6 +398,7 @@ ElasticResult fluctuation_elastic(const Trajectory& t, const std::vector<size_t>
     res.prestress[v] = m * kGPa - (v < 3 ? natoms * kT / vmean * kGPa : 0.0);   // total stress: virial minus kinetic pressure
   }
   res.configurations = int(n);
+  res.density = t.topology.total_mass() / kNAvo / (vmean * 1e-24);
   isotropic_averages(res);
   res.method = "stress fluctuations at constant volume (Lutsko 1989): ⟨Born⟩ − (V/kT) cov(σ) + NkT/V over " + std::to_string(n) +
                " frames at " + fmt(o.temperature, 4) + " K; Born term by central differences (±" + fmt(o.strain, 2) +
@@ -642,6 +647,7 @@ ElasticResult fluctuation_run(System& s, const FluctuationRunOptions& o) {
     res.prestress[v] = m / n * kGPa - (v < 3 ? kin : 0.0);
   }
   res.configurations = static_cast<int>(n);
+  res.density = s.cell.valid() ? s.total_mass() / kNAvo / (s.cell.volume() * 1e-24) : 0;
   isotropic_averages(res);
   res.method = "stress fluctuations on the fly (Lutsko 1989; Clavier et al. 2017): NVT at " + fmt(o.temperature, 4) + " K (" + to_string(o.thermostat) +
                "), " + fmt(o.equilibrate_ps, 4) + " ps equilibration, " + fmt(o.ps, 5) + " ps sampled with the virial stress at every step and the Born term every " +

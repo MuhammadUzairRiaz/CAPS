@@ -72,6 +72,8 @@ struct AnalyzeOptions {
   EnergyOptions energy;
   // elastic constants from stress fluctuations (cij_fluct): the temperature of the NVT run the frames come from
   double temperature = 0;       // K
+  // response functions from fluctuations (fluct): the pressure of the NPT run the frames come from
+  double pressure = 1.0;        // atm
   // interfaces: bin width of the density profile along z (Å); a molecule left out of the chain analyses (the substrate)
   double zbin = 0.5;
   int64_t exclude_mol = 0;

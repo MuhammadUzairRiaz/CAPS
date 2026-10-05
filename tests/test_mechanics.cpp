@@ -312,3 +312,28 @@ TEST(Mechanics, TgFromTwoRanges) {
   for (double t : T) flat.push_back(t < 300 ? 1.0 + 2e-4 * t : 1.01 + 2.001e-4 * t);   // cross at −10⁵ K
   EXPECT_FALSE(fit_two_ranges(T, flat, 260, 340).ok);
 }
+
+// Compliance, directional moduli, anisotropy and sound speeds of an isotropic solid with K = 4, G = 1.5 GPa at
+// 1.05 g/cm³: E_x = 9KG/(3K+G), ν_xy = (3K−2G)/(2(3K+G)), A^U = 0, v_L = √((K+4G/3)/ρ), v_T = √(G/ρ).
+TEST(Mechanics, ComplianceAndSoundSpeeds) {
+  const double K = 4, G = 1.5, rho = 1.05, lam = K - 2 * G / 3;
+  ElasticResult r;
+  for (int i = 0; i < 3; ++i)
+    for (int j = 0; j < 3; ++j) r.C[i][j] = lam + (i == j ? 2 * G : 0);
+  for (int i = 3; i < 6; ++i) r.C[i][i] = G;
+  for (auto& row : r.err) row.fill(std::nan(""));
+  r.density = rho;
+  isotropic_averages(r);
+  const auto props = elastic_properties(r, "");
+  auto find = [&](const std::string& id) { return *std::find_if(props.begin(), props.end(), [&](const Property& p) { return p.id == id; }); };
+  const auto c = find("cij");
+  const double E = 9 * K * G / (3 * K + G), nu = (3 * K - 2 * G) / (2 * (3 * K + G));
+  EXPECT_NEAR(c.extra.at("Ex = 1/S11 (GPa)"), E, 1e-9);
+  EXPECT_NEAR(c.extra.at("νxy = −S12/S11"), nu, 1e-9);
+  EXPECT_NEAR(c.extra.at("Gyz = 1/S44 (GPa)"), G, 1e-9);
+  EXPECT_NEAR(c.extra.at("anisotropy index A^U"), 0, 1e-9);
+  const auto v = find("sound");
+  EXPECT_NEAR(v.extra.at("v_L longitudinal (m/s)"), 1000 * std::sqrt((K + 4 * G / 3) / rho), 1e-6);
+  EXPECT_NEAR(v.extra.at("v_T transverse (m/s)"), 1000 * std::sqrt(G / rho), 1e-6);
+  EXPECT_NEAR(v.extra.at("v_T transverse (m/s)"), 1195.2, 0.1);
+}

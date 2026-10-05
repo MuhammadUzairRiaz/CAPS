@@ -81,6 +81,7 @@ add_library(caps_core STATIC
   src/appearance.cpp
   src/trajectory.cpp
   src/torsion.cpp
+  src/normal_modes.cpp
   src/edit.cpp
   src/edit_script.cpp
   src/interactions.cpp

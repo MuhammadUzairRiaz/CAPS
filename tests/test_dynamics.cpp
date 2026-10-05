@@ -10,6 +10,7 @@
 #include "caps/grow.hpp"
 #include "caps/io.hpp"
 #include "caps/relax.hpp"
+#include "caps/uff.hpp"
 
 using namespace caps;
 
@@ -386,4 +387,94 @@ TEST(Dynamics, LincsMatchesShake) {
   EXPECT_LT(worst, 1e-4);
   EXPECT_NEAR(rl.thermo.back().total, rs.thermo.back().total, 1e-3 * std::fabs(rs.thermo.back().kinetic));
   EXPECT_TRUE(std::any_of(rl.notes.begin(), rl.notes.end(), [](const std::string& n) { return n.find("LINCS") != std::string::npos; }));
+}
+
+// An electric field: two +1 e argon atoms at rest, 15 Å apart (beyond the cut-off, Coulomb off), nothing else acting, moves ½ a t² along E with
+// a = q E · 23.0605 kcal/mol/Å per e·V/Å over its mass; a neutral atom does not move.
+TEST(Dynamics, ElectricFieldAcceleratesACharge) {
+  for (double q : {1.0, 0.0}) {
+    System s;
+    Atom a;
+    a.element = 18;
+    a.pos = {10, 10, 10};
+    s.atoms.push_back(a);
+    a.pos = {25, 10, 10};
+    s.atoms.push_back(a);
+    s.cell.a = {40, 0, 0}, s.cell.b = {0, 40, 0}, s.cell.c = {0, 0, 40};
+    s.velocities = {Vec3{0, 0, 0}, Vec3{0, 0, 0}};
+    auto ff = std::make_shared<ForceField>(default_forcefield(s));
+    ff->charge = {q, q};
+    DynamicsOptions o;
+    o.field = ff;
+    o.thermostat = Thermostat::None;
+    o.steps = 100;
+    o.dt = 1;
+    o.frame_every = 0;
+    o.energy.coulomb = false;
+    o.energy.cutoff = 10;
+    o.efield = {0, 0, 0.1};
+    DynamicsReport rep;
+    run_dynamics(s, o, &rep);
+    const double acc = q * 0.1 * 23.060548 * 4.184e-4 / 39.948;   // Å/fs²
+    for (const auto& at : s.atoms) EXPECT_NEAR(at.pos[2] - 10, 0.5 * acc * 100 * 100, 1e-6);
+    EXPECT_NEAR(s.atoms[0].pos[0] - 10, 0, 1e-9);
+  }
+}
+
+// SLLOD shear of the Lennard-Jones liquid near its triple point (ρ* = 0.844, T* = 0.722, argon units ε/k_B = 119.8 K,
+// σ = 3.405 Å): at γ̇* = 1 the viscosity η* = −⟨P_xy⟩/γ̇ in units of √(mε)/σ² is shear-thinned to about 2.0–2.4 (Evans &
+// Morriss; zero-shear ≈ 3.2). 256 atoms, 2,000 steps to melt and 3,000 sheared: the range allows for the noise. The cell
+// tilts at γ̇ L_y and is flipped back.
+TEST(Dynamics, SllodShearViscosityOfTheLjLiquid) {
+  const double sigma = 3.405, eps = 119.8 * 0.0019872043, rho = 0.844;
+  const double a = std::cbrt(4 / rho) * sigma;
+  System s;
+  for (int i = 0; i < 4; ++i)
+    for (int j = 0; j < 4; ++j)
+      for (int k = 0; k < 4; ++k)
+        for (const auto& b : std::vector<Vec3>{{0, 0, 0}, {0.5, 0.5, 0}, {0.5, 0, 0.5}, {0, 0.5, 0.5}}) {
+          Atom at;
+          at.element = 18;
+          at.mol = int64_t(s.atoms.size() + 1);
+          at.pos = {(i + b[0]) * a, (j + b[1]) * a, (k + b[2]) * a};
+          s.atoms.push_back(at);
+        }
+  s.cell.a = {4 * a, 0, 0}, s.cell.b = {0, 4 * a, 0}, s.cell.c = {0, 0, 4 * a};
+  auto ff = std::make_shared<ForceField>(default_forcefield(s));
+  for (auto& t : ff->lj) t = {eps, sigma};
+  std::fill(ff->charge.begin(), ff->charge.end(), 0.0);
+  DynamicsOptions o;
+  o.field = ff;
+  o.temperature = 0.722 * 119.8;
+  o.thermostat = Thermostat::Bussi;
+  o.tau_t = 100;
+  o.dt = 5;
+  o.energy.cutoff = 2.5 * sigma;
+  o.energy.coulomb = false;
+  o.energy.tail = false;
+  o.frame_every = 0;
+  o.steps = 2000;
+  run_dynamics(s, o);
+  const double tau = sigma * 1e-10 * std::sqrt(39.948e-3 / 6.02214076e23 / (119.8 * 1.380649e-23));   // s
+  o.shear_rate = 1.0 / tau * 1e-12;   // γ̇* = 1, in 1/ps
+  o.tau_t = 10;                        // the viscous heat (~80 K/ps here) leaves T above the target by about heat rate × τ
+  o.steps = 3000;
+  o.thermo_every = 10;
+  DynamicsReport rep;
+  run_dynamics(s, o, &rep);
+  double pxy = 0;
+  size_t np = 0;
+  for (size_t k = rep.thermo.size() / 4; k < rep.thermo.size(); ++k) pxy += rep.thermo[k].p[3], ++np;
+  pxy /= double(np);
+  const double eta = -pxy * 101325 / (o.shear_rate * 1e12);                     // Pa·s
+  const double eta_star = eta / (std::sqrt(39.948e-3 / 6.02214076e23 * 119.8 * 1.380649e-23) / std::pow(sigma * 1e-10, 2));
+  EXPECT_GT(eta_star, 1.5);
+  EXPECT_LT(eta_star, 3.0);
+  // the tilt: γ̇ t L_y, wrapped into ±L_x/2
+  const double L = 4 * a, tilt = std::fmod(o.shear_rate * 1e-3 * o.steps * o.dt * L + 0.5 * L, L) - 0.5 * L;
+  EXPECT_NEAR(s.cell.b[0], tilt, 1e-6 * L);
+  double tm = 0;
+  for (size_t k = rep.thermo.size() / 4; k < rep.thermo.size(); ++k) tm += rep.thermo[k].temperature / double(np);
+  EXPECT_NEAR(tm, o.temperature, 0.03 * o.temperature);   // the thermostat takes the viscous heat out of the peculiar motion
+  std::printf("SLLOD LJ liquid: eta* = %.3f at gamma* = 1 (<T> %.1f K)\n", eta_star, tm);
 }

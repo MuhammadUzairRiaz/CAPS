@@ -13,6 +13,7 @@
 #include <string>
 
 #include "caps/probe.hpp"
+#include "caps/normal_modes.hpp"
 #include "caps/bondrules.hpp"
 #include "caps/piece.hpp"
 #include "caps/tags.hpp"
@@ -2401,6 +2402,7 @@ int32_t caps_md(caps_doc* d, const caps_md_opts* o, caps_md_progress_fn progress
     }
     if (o->tau_p > 0) m.tau_p = o->tau_p;
     m.new_velocities = o->new_velocities != 0;
+    m.efield = {o->efield[0], o->efield[1], o->efield[2]};
     m.seed = o->seed;
     if (o->thermo_every > 0) m.thermo_every = o->thermo_every;
     m.frame_every = std::max(0, o->frame_every);
@@ -4277,6 +4279,50 @@ int32_t caps_probe_series(caps_doc* d, const char* json, char* out, int32_t cap)
   return report_out(r.dump(0), out, cap);
 }
 
+// Normal modes (C20): mode k of the frame shown as frames for the player — one period, the largest atom displacement
+// `amplitude` Å. The document's frames become the animation (the structure itself is its first frame).
+int32_t caps_mode_animate(caps_doc* d, const char* json, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  const int32_t rc = guard([&] {
+    const auto j = caps::Json::parse(json ? json : "{}");
+    caps::System s = d->traj.frames() > 0 ? d->traj.frame(d->current) : d->frame;
+    if (!s.unwrapped) caps::make_molecules_whole(s);
+    caps::NormalModesOptions no;
+    no.field = field_for_run(d);
+    no.energy = elec(caps::EnergyOptions{});
+    if (j.has("cutoff")) no.energy.cutoff = j.num("cutoff", 10);
+    if (j.text("atoms", "") == "selection" && d->selection.size() == s.atoms.size()) no.moving.assign(d->selection.begin(), d->selection.end());
+    const auto res = caps::normal_modes(s, no);
+    const int k = int(j.num("mode", 1)) - 1;
+    if (k < 0 || size_t(k) >= res.mode.size()) throw std::invalid_argument("mode " + std::to_string(k + 1) + " of " + std::to_string(res.mode.size()));
+    const double amp = std::clamp(j.num("amplitude", 0.3), 0.01, 2.0);
+    const int nfr = std::clamp(int(j.num("frames", 20)), 4, 200);
+    caps::Trajectory t;
+    t.topology = s;
+    t.topology.velocities.clear();
+    t.topology.unwrapped = true;
+    for (const auto& p : caps::mode_frames(s, res, size_t(k), amp, nfr))
+      t.positions.push_back(p), t.cells.push_back(s.cell), t.timesteps.push_back(int64_t(t.timesteps.size()));
+    prov_step(d, "modes.animate", "Normal mode animation", {{"mode", std::to_string(k + 1) + " of " + std::to_string(res.mode.size())},
+              {"wavenumber", g6(res.wavenumber[k]) + " cm⁻¹"}, {"amplitude", g6(amp) + " Å, " + std::to_string(nfr) + " frames per period"},
+              {"force field", ff_label(d)}}, "", {"miller1980"});
+    d->traj = std::move(t);
+    d->current = 0;
+    refresh(d);
+    r["wavenumber"] = res.wavenumber[k];
+    r["modes"] = double(res.mode.size());
+    r["reduced_mass"] = res.reduced_mass[k];
+    r["ir"] = res.ir[k];
+    r["frames"] = double(nfr);
+    caps::Json nt = caps::Json::array();
+    for (const auto& x : res.notes) nt.push_back(x);
+    r["notes"] = std::move(nt);
+    return 0;
+  });
+  if (rc < 0) return -1;
+  return report_out(r.dump(0), out, cap);
+}
+
 // Brush to select (design/boards/BrushSelect): a per-atom column for a histogram — atom_column's names, and
 // "distance:N" (Å, minimum image, from atom N, 0-based) or "distance:tag:NAME" (from the nearest atom of a tag).
 int32_t caps_atom_column(caps_doc* d, const char* name, double* out, int32_t cap) {
@@ -4435,7 +4481,7 @@ int32_t caps_analyze_ex(caps_doc* d, const char* props, const caps_analyze_opts*
     // force field: the Field assignment (must be complete), else GAFF of C and H
     std::shared_ptr<const caps::ForceField> ff = field_for_run(d);
     std::vector<std::string> extra_notes;
-    if (!ff && (has("ced") || has("delta") || has("cij_fluct") || has("adhesion") || !protocols.empty())) {
+    if (!ff && (has("ced") || has("delta") || has("cij_fluct") || has("fluct") || has("modes") || has("adhesion") || !protocols.empty())) {
       caps::System s0 = d->traj.frame(0);
       if (!s0.unwrapped) caps::make_molecules_whole(s0);
       ff = std::make_shared<caps::ForceField>(default_ff(s0));

@@ -1603,3 +1603,53 @@ TEST(Analyze, DielectricFromDipoleFluctuations) {
   EXPECT_NEAR(p.value, expect, 1e-6 * expect) << (p.notes.empty() ? "" : p.notes[0]);
   EXPECT_NEAR(expect, 3.332, 0.01);
 }
+
+// Response functions from fluctuations, checked where they are known exactly: two argon atoms beyond the cut-off (U = 0)
+// in frames of chosen volumes, so H = PV and Cp = 3Nk_B/2 + P²⟨δV²⟩/k_BT², κ_T = ⟨δV²⟩/k_BT⟨V⟩, α = P⟨δV²⟩/k_BT²⟨V⟩;
+// with the volume fixed only Cv = 3Nk_B/2 = 3R/M per gram of argon.
+TEST(Analyze, ResponseFunctionsFromFluctuations) {
+  Trajectory t;
+  Atom a; a.element = 18; a.mol = 1; a.pos = {2, 2, 2};
+  Atom b = a; b.mol = 2; b.pos = {12, 12, 12};
+  t.topology.atoms = {a, b};
+  t.topology.has_mol = true;
+  t.topology.cell.a = {25, 0, 0}, t.topology.cell.b = {0, 25, 0}, t.topology.cell.c = {0, 0, 25};
+  t.topology.cell.periodic = {true, true, true};
+  const ForceField ff = default_forcefield(t.topology);
+  AnalyzeOptions o;
+  o.temperature = 300;
+  o.frame_ps = 1;
+  o.ff = &ff;
+  o.energy.coulomb = false;
+  o.energy.tail = false;
+  o.energy.cutoff = 9;
+  const double kB = 1.380649e-23, NA = 6.02214076e23, P = 101325, T = 300, M = 2 * ff.mass[0];
+  for (bool npt : {true, false}) {
+    t.positions.clear(), t.cells.clear(), t.timesteps.clear();
+    std::vector<double> V;
+    for (int f = 0; f < 40; ++f) {
+      const double L = npt ? 24 + 0.5 * (f % 5) : 25;
+      Cell c = t.topology.cell;
+      c.a = {L, 0, 0}, c.b = {0, L, 0}, c.c = {0, 0, L};
+      t.positions.push_back({a.pos, b.pos});
+      t.cells.push_back(c);
+      t.timesteps.push_back(f);
+      V.push_back(L * L * L * 1e-30);
+    }
+    const double vb = std::accumulate(V.begin(), V.end(), 0.0) / V.size();
+    double vv = 0;
+    for (double v : V) vv += (v - vb) * (v - vb);
+    vv /= V.size();
+    const auto p = analyze(t, {"fluct"}, o)[0];
+    const double ckin = 1.5 * 2 * kB * NA / (M * 1e-3) * 1e-3;   // J/(g·K)
+    const double cp = ckin + P * P * vv / (kB * T * T) * NA / M;
+    EXPECT_NEAR(p.value, cp, 1e-6 * cp) << (p.notes.empty() ? "" : p.notes[0]);
+    if (npt) {
+      EXPECT_NEAR(p.extra.at("κ_T isothermal compressibility (1/GPa)"), vv / (kB * T * vb) * 1e9, 1e-6 * vv / (kB * T * vb) * 1e9);
+      EXPECT_NEAR(p.extra.at("α_P thermal expansion (1e-4/K)"), P * vv / (kB * T * T * vb) * 1e4, 1e-6 * P * vv / (kB * T * T * vb) * 1e4);
+    } else {
+      EXPECT_NEAR(p.value, 1.5 * 8.314462618 / 39.948, 1e-3);   // 3R/2 per gram of argon
+      EXPECT_EQ(p.extra.count("κ_T isothermal compressibility (1/GPa)"), 0u);
+    }
+  }
+}

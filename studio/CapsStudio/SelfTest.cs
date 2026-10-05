@@ -12,7 +12,7 @@ internal static class SelfTest
         var fails = 0;
         void Check(bool ok, string what) { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {what}"); if (!ok) fails++; }
 
-        Check(Native.AbiVersion() == 60, "native ABI version 60");
+        Check(Native.AbiVersion() == 61, "native ABI version 61");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -3485,6 +3485,32 @@ internal static class SelfTest
             vm.MdBarostat = 0;
             vm.MdThermostat = 0;
             vm.MdEnsemble = 1;
+            // an electric field: the LAMMPS deck carries fix efield in V/Å, the GROMACS one electric-field-z in V/nm
+            vm.MdFieldOn = true;
+            vm.MdExD = 0; vm.MdEyD = 0; vm.MdEzD = 0.05m;
+            vm.PreflightNow().GetAwaiter().GetResult();
+            var efL = vm.MdDeck;
+            vm.MdGromacs = true;
+            vm.PreflightNow().GetAwaiter().GetResult();
+            var efG = vm.MdDeck;
+            vm.MdGromacs = false;
+            vm.MdFieldOn = false;
+            vm.PreflightNow().GetAwaiter().GetResult();
+            Check(efL.Contains("fix efield all efield 0 0 0.05") && efG.Contains("electric-field-z         = 0.5 0 0 0") && !vm.MdDeck.Contains("efield"),
+                  $"electric field: LAMMPS {efL.Split('\n').FirstOrDefault(l => l.Contains("efield"))} · GROMACS {efG.Split('\n').FirstOrDefault(l => l.Contains("electric-field"))}");
+        }
+
+        // Normal modes: the fragment's modes (3N − 6), and one played in a copy (one period of frames, the original kept)
+        {
+            vm.Open(Path.Combine(dir, "ps_frag.pdb"));
+            var title = vm.Title;
+            var n = vm.Document!.Summary().Atoms;
+            var props = System.Text.Json.Nodes.JsonNode.Parse(vm.Document!.Analyze("modes", new CapsAnalyzeOpts { Last = -1, Stride = 1, Blocks = 5, Grid = 0.4, Qmax = 25, Dq = 0.02, FitFrom = 0.2, FitTo = 0.5, TimestepFs = 1 }, null))!;
+            var modes = (double?)props["properties"]?[0]?["extra"]?["modes"] ?? 0;
+            vm.PlayMode(2).GetAwaiter().GetResult();
+            Check(modes == 3 * n - 6 && vm.Frames == 24 && vm.Title.Contains("mode 2") && vm.IsPlaying,
+                  $"normal modes: {modes} of 3N − 6 = {3 * n - 6} · played in '{vm.Title}' ({vm.Frames} frames, from '{title}') · {vm.Status}");
+            vm.IsPlaying = false;
         }
 
         // View tools: the view-plane fit behind Move, lasso selection, a move with undo, a pinned distance
