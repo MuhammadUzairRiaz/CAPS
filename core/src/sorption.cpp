@@ -190,6 +190,10 @@ SorptionReport sorption(const System& s, const ForceField& ff, const SorptionOpt
     const int nblk = 10;
     std::vector<double> blkN(nblk, 0.0), blkC(nblk, 0.0);
     const int report_every = std::max(1, o.steps / 50);
+    const int g = std::clamp(o.map_grid, 0, 96);
+    std::vector<double> dens(size_t(g) * g * g, 0.0);
+    long map_samples = 0;
+    const int map_every = std::max(1, (o.steps - equil) / 2000);
     for (int step = 0; step < o.steps && !stopped; ++step) {
       const double r = U(rng);
       const size_t N = mols.size();
@@ -228,6 +232,17 @@ SorptionReport sorption(const System& s, const ForceField& ff, const SorptionOpt
         sN += Nn, sN2 += Nn * Nn, sU += Ucur, sUN += Ucur * Nn, ++samples;
         const int b = std::min(nblk - 1, int(double(step - equil) / double(o.steps - equil) * nblk));
         blkN[size_t(b)] += Nn, blkC[size_t(b)] += 1;
+        if (g > 0 && (step - equil) % map_every == 0) {   // the molecules' centres on the map
+          for (const auto& mol : mols) {
+            Vec3 cc{0, 0, 0};
+            for (const auto& q : mol) cc = cc + q;
+            Vec3 fr = s.cell.to_fractional(cc * (1.0 / double(mol.size())));
+            int ix[3];
+            for (int k = 0; k < 3; ++k) ix[k] = std::clamp(int(std::floor((fr[k] - std::floor(fr[k])) * g)), 0, g - 1);
+            dens[(size_t(ix[0]) * g + size_t(ix[1])) * g + size_t(ix[2])] += 1;
+          }
+          ++map_samples;
+        }
       }
       if (o.progress && (step + 1) % report_every == 0) {
         char st[80];
@@ -255,6 +270,12 @@ SorptionReport sorption(const System& s, const ForceField& ff, const SorptionOpt
     pt.acceptance_insert = ins_try ? double(ins_ok) / ins_try : 0;
     pt.acceptance_delete = del_try ? double(del_ok) / del_try : 0;
     pt.molecules = mols;
+    if (g > 0 && map_samples > 0) {   // per Å³: counts over the samples and the voxel's volume
+      const double vox = V / (double(g) * g * g);
+      pt.grid = g;
+      pt.density.resize(dens.size());
+      for (size_t k = 0; k < dens.size(); ++k) pt.density[k] = float(dens[k] / (double(map_samples) * vox));
+    }
     rep.isotherm.push_back(std::move(pt));
   }
   if (stopped) rep.notes.push_back("stopped before the end");

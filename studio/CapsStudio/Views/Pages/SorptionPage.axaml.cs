@@ -22,6 +22,14 @@ public partial class SorptionPage : PageBase
                 p.RefY = null;
                 p.SetData(vm.SorbIsotherm);
             };
+            vm.SorptionMapChanged += () =>
+            {
+                var m = this.FindControl<LinePlot>("Map")!;
+                var (x, y, z, xl, yl) = vm.SorbMapProjection();
+                m.XLabel = xl;
+                m.YLabel = yl;
+                m.SetHeat(x, y, z);
+            };
         };
     }
 

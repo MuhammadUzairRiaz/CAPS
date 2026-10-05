@@ -6,7 +6,8 @@
 // first layer sets the lateral cell: the others are repeated na × nb times to come closest to it and then stretched
 // (x and y scaled, positions affinely) to fit exactly; the strains are reported. With match "both", the first layer is
 // repeated too (up to max_repeat) where that brings the others' strains lower. Crystals should come first: an amorphous
-// polymer cell takes a few per cent of lateral strain and relaxes it away; a crystal does not.
+// polymer cell takes a few per cent of lateral strain and relaxes it away; a crystal does not. With match "average" the
+// strain is shared (two crystals of similar spacing). A layer can be flipped (180° about x) and shifted in the plane.
 //
 // Inside each layer, molecules are made whole along z (bonds followed by minimum image) and put back by their centres,
 // so a polymer cell's chains stay intact and stick out of its box a little; the layer's thickness is then its atoms'
@@ -28,12 +29,15 @@ namespace caps {
 struct StackLayerInput {
   std::string name;                // for the report
   const System* system = nullptr;  // a rectangular periodic cell
+  bool flip = false;               // turned upside down (180° about x: the other face down, handedness kept)
+  double shift_x = 0, shift_y = 0; // Å, moved in the plane (registry against the layer below)
 };
 
 struct StackOptions {
   double gap = 2.0;                // Å between one layer's top atom and the next one's lowest
   double vacuum = 0.0;             // Å above the stack; 0: periodic in z
-  std::string match = "both";      // first: the first layer's cell as it is; both: it may be repeated too
+  std::string match = "both";      // first: the first layer's cell as it is; both: it may be repeated too; average: the
+                                   // lateral cell the mean of the layers' (repeated) cells, every layer strained a little
   int max_repeat = 6;              // repeats per direction considered
   double max_cell = 150.0;         // Å, the largest lateral edge considered
 };

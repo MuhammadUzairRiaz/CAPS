@@ -33,6 +33,9 @@ struct SorptionOptions {
   bool coulomb = true;
   double dsf_alpha = 0.2;
   uint64_t seed = 1;
+  // a density map of the sorbate in the host (C7): its molecules' centres sampled over the production steps of each
+  // pressure on a grid of map_grid points along each cell edge (0: no map)
+  int map_grid = 0;
   std::function<bool(const std::string& stage, double fraction)> progress;   // false stops
 };
 
@@ -44,6 +47,9 @@ struct IsothermPoint {
   double heat = 0;                         // isosteric heat, kcal/mol (positive: exothermic)
   double acceptance_insert = 0, acceptance_delete = 0;
   std::vector<std::vector<Vec3>> molecules;   // the sorbate molecules at the end of the run
+  // the density map (map_grid > 0): sorbate centres per Å³, averaged over the samples, index (i·g + j)·g + k along a, b, c
+  std::vector<float> density;
+  int grid = 0;
 };
 
 struct SorptionReport {

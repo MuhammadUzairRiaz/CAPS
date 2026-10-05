@@ -1019,7 +1019,8 @@ caps_doc* caps_embed_document(caps_doc* filler, const char* options_json, const 
 caps_doc* caps_nano_embed(const char* options_json, const char* spec_json, const caps_grow_opts* o, caps_progress_fn progress, void* user, char* report,
                           int32_t cap);
 /* Layer stacks (v35, layers.hpp): the documents' shown frames piled along z, the first at the bottom; options {names:
-   [...], gap (Å), vacuum (Å, 0: periodic in z), match: "both" | "first", max_repeat}. Every cell rectangular. The report
+   [...], gap (Å), vacuum (Å, 0: periodic in z), match: "both" | "first" | "average" (v62: the strain shared), max_repeat,
+   flips: [bool per layer] (v62: 180° about x), shifts: [[dx, dy] per layer] (v62: Å in the plane)}. Every cell rectangular. The report
    is JSON {ok, a, b, c, layers: [{name, na, nb, strain_a, strain_b, z_lo, z_hi, atoms}], notes: [...]}; the first
    layer is molecule 1 … and is held when it is one molecule (a slab). */
 caps_doc* caps_stack_documents(caps_doc* const* docs, int32_t n, const char* options_json, char* report, int32_t cap);

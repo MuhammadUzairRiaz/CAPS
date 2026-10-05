@@ -47,9 +47,12 @@
                 <NumericUpDown Grid.Row="1" Value="{Binding SorbTD}" Minimum="1" Increment="10" FormatString="0" />
                 <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding SorbInsertD}" Minimum="0" Increment="50000" FormatString="0" />
                 <TextBlock Grid.Row="2" Text="GCMC pressures (kPa)" Classes="label" /><TextBlock Grid.Row="2" Grid.Column="1" Text="Steps per pressure" Classes="label" />
-                <TextBox Grid.Row="3" Text="{Binding SorbPressures}" Classes="mono" Watermark="blank: Widom only" />
+                <TextBox Grid.Row="3" Text="{Binding SorbPressures}" Classes="mono" Watermark="blank: Widom only"
+                         ToolTip.Tip="kPa: a list (10, 50, 100) or a log sweep: 0.1..1000 x8 gives 8 pressures evenly spaced in log p" />
                 <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding SorbStepsD}" Minimum="1000" Increment="100000" FormatString="0" />
               </Grid>
+              <CheckBox Content="Density map of the sorbate (where it sits in the host)" IsChecked="{Binding SorbMapOn}"
+                        ToolTip.Tip="The sorbed molecules' centres over each pressure's production steps, on a 24 × 24 × 24 grid of the cell" />
               <TextBlock Classes="dim" TextWrapping="Wrap" Text="Widom: random places and orientations of one molecule, ⟨e^(−βΔU)⟩ (Widom 1963). GCMC: insertions, deletions, moves and rotations at an ideal-gas reservoir's pressure (Frenkel &amp; Smit 2002); the first quarter of each run equilibrates." />
             </StackPanel>
           </Border>
@@ -91,6 +94,17 @@
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
               <TextBlock Text="{Binding SorbNote}" Classes="dim" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard" IsVisible="{Binding SorbHasMap}">
+            <StackPanel Spacing="8">
+              <TextBlock Text="Where the sorbate sits" FontSize="13.5" FontWeight="SemiBold" />
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                <ComboBox ItemsSource="{Binding SorbMapPressures}" SelectedIndex="{Binding SorbMapIndex}" HorizontalAlignment="Stretch" />
+                <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:MainViewModel.SorbMapFaces}" SelectedIndex="{Binding SorbMapFace}" HorizontalAlignment="Stretch" />
+              </Grid>
+              <v:LinePlot x:Name="Map" Height="260" ZLabel="molecules/nm²" />
+              <TextBlock Text="{Binding SorbMapText}" Classes="dim" TextWrapping="Wrap" />
             </StackPanel>
           </Border>
         </StackPanel>

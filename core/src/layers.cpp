@@ -91,15 +91,25 @@ System stack_layers(const std::vector<StackLayerInput>& layers, const StackOptio
       if (worst < best_cost - 1e-4) best_cost = worst, n0[dir] = k;   // the smallest repeat that does as well
     }
   }
-  const double A = n0[0] * c0.a[0], B = n0[1] * c0.b[1];
+  double A = n0[0] * c0.a[0], B = n0[1] * c0.b[1];
+  if (o.match == "average") {   // every layer's repeats to that cell, then the mean of their own lengths
+    double sa = n0[0] * c0.a[0], sb = n0[1] * c0.b[1];
+    for (size_t li = 1; li < layers.size(); ++li) {
+      const double La = layers[li].system->cell.a[0], Lb = layers[li].system->cell.b[1];
+      sa += best_repeat(La, A, int(max_rep)) * La, sb += best_repeat(Lb, B, int(max_rep)) * Lb;
+    }
+    A = sa / double(layers.size()), B = sb / double(layers.size());
+  }
   System out;
   out.title = "layer stack";
   std::map<std::pair<std::string, long long>, int> type_of;   // (label, mass × 1e4) → merged type
   int64_t mol_off = 0, id = 0;
   double z = o.vacuum > 0 ? 0.0 : 0.5 * o.gap;
   for (size_t li = 0; li < layers.size(); ++li) {
-    const System s = prepared(*layers[li].system);
+    System s = prepared(*layers[li].system);
     const double La = s.cell.a[0], Lb = s.cell.b[1];
+    if (layers[li].flip)   // 180° about x through the cell's middle: y → b − y, z → −z
+      for (auto& a : s.atoms) a.pos[1] = 2 * s.cell.origin[1] + Lb - a.pos[1], a.pos[2] = -a.pos[2];
     const int na = li == 0 ? n0[0] : best_repeat(La, A, int(max_rep));
     const int nb = li == 0 ? n0[1] : best_repeat(Lb, B, int(max_rep));
     const double fa = A / (na * La), fb = B / (nb * Lb);
@@ -129,7 +139,7 @@ System stack_layers(const std::vector<StackLayerInput>& layers, const StackOptio
         const uint32_t base = uint32_t(out.atoms.size());
         for (size_t i = 0; i < s.atoms.size(); ++i) {
           Atom a = s.atoms[i];
-          const double x = (a.pos[0] - org[0] + ia * La) * fa, y = (a.pos[1] - org[1] + ib * Lb) * fb;
+          const double x = (a.pos[0] - org[0] + ia * La) * fa + layers[li].shift_x, y = (a.pos[1] - org[1] + ib * Lb) * fb + layers[li].shift_y;
           a.pos = {x, y, a.pos[2] + dz};
           a.image = {0, 0, 0};
           a.mol = mol_off + int64_t(molidx[i]) + 1;
@@ -141,7 +151,7 @@ System stack_layers(const std::vector<StackLayerInput>& layers, const StackOptio
         mol_off += nmol;
       }
     StackLayerReport lr;
-    lr.name = layers[li].name.empty() ? "layer " + std::to_string(li + 1) : layers[li].name;
+    lr.name = (layers[li].name.empty() ? "layer " + std::to_string(li + 1) : layers[li].name) + (layers[li].flip ? " (flipped)" : "");
     lr.na = na, lr.nb = nb;
     lr.strain_a = fa - 1, lr.strain_b = fb - 1;
     lr.z_lo = z, lr.z_hi = z + (zhi - zlo);

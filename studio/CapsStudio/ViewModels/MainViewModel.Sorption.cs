@@ -46,14 +46,15 @@ public sealed partial class MainViewModel
         if (_doc == null || !Idle || BlockedByField("Sorption")) return;
         var inv = CultureInfo.InvariantCulture;
         var pressures = new JsonArray();
-        foreach (var t in _sorbPressures.Split([',', ' ', ';'], StringSplitOptions.RemoveEmptyEntries))
-            if (double.TryParse(t, NumberStyles.Float, inv, out var p) && p > 0) pressures.Add(p);
+        foreach (var p in SorbPressureList(_sorbPressures)) pressures.Add(p);
         var json = new JsonObject
         {
             ["sorbate"] = _sorbate.Trim(), ["temperature"] = _sorbT, ["insertions"] = _sorbInsert, ["pressures_kpa"] = pressures,
             ["steps"] = _sorbSteps, ["cutoff"] = Math.Min(12.0, _relaxCutoff), ["coulomb"] = _relaxCoulomb, ["seed"] = SorbSeed.Take(),
+            ["map_grid"] = _sorbMapOn ? 24 : 0,
         }.ToJsonString();
         var doc = _doc!;
+        var cellA = doc.Summary();
         SorbRunning = true;
         SorbError = "";
         _sorbCts = new CancellationTokenSource();
@@ -74,6 +75,7 @@ public sealed partial class MainViewModel
             SorbHenry = D("henry_mol_kg_kpa").ToString("0.###E+0", inv) + " mol/(kg·kPa)";
             SorbS = D("solubility").ToString("0.###", inv) + " cm³(STP)/(cm³·atm)";
             SorbRows.Clear();
+            _sorbMaps.Clear();
             var pts = new List<(double, double)>();
             foreach (var p in (JsonArray)r["isotherm"]!)
             {
@@ -81,7 +83,15 @@ public sealed partial class MainViewModel
                 SorbRows.Add(new SorbRow(P("pressure_kpa").ToString("0.##", inv), $"{P("loading").ToString("0.##", inv)} ± {P("loading_error").ToString("0.##", inv)}",
                     P("mol_per_kg").ToString("0.###", inv), P("cm3stp_per_cm3").ToString("0.##", inv), P("heat").ToString("0.0", inv)));
                 pts.Add((P("pressure_kpa"), P("mol_per_kg")));
+                if (p!["map"] is JsonObject mp && mp["density"] is JsonArray da)
+                    _sorbMaps.Add((P("pressure_kpa"), (int)((double?)mp["grid"] ?? 0), da.Select(v => (double?)v ?? 0).ToArray()));
             }
+            _sorbCell = (cellA.CellA, cellA.CellB, cellA.CellC);
+            SorbMapPressures.Clear();
+            foreach (var m in _sorbMaps) SorbMapPressures.Add(m.P.ToString("0.##", inv) + " kPa");
+            _sorbMapIndex = Math.Max(0, _sorbMaps.Count - 1);
+            Raise(nameof(SorbMapIndex)); Raise(nameof(SorbHasMap));
+            SorptionMapChanged?.Invoke();
             SorbIsotherm = pts.ToArray();
             SorbNote = string.Join(" · ", ((JsonArray)r["notes"]!).Select(x => (string?)x ?? "")) + " · " + ((string?)r["forcefield"] ?? "");
             Status = $"Sorption of {_sorbate}: S {SorbS}" + (SorbRows.Count > 0 ? $" · {SorbRows.Count} isotherm points" : "");
@@ -89,5 +99,67 @@ public sealed partial class MainViewModel
         }
         catch (Exception e) { SorbError = e.Message; }
         finally { SorbRunning = false; SorbProgress = ""; }
+    }
+
+    // ---- the sorbate's density map (C7): per pressure, the 3D grid projected onto a cell face as molecules per nm²
+    private bool _sorbMapOn = true;
+    private readonly List<(double P, int Grid, double[] Density)> _sorbMaps = new();
+    private (double A, double B, double C) _sorbCell;
+    private int _sorbMapIndex, _sorbMapFace;
+    public bool SorbMapOn { get => _sorbMapOn; set => Set(ref _sorbMapOn, value); }
+    public System.Collections.ObjectModel.ObservableCollection<string> SorbMapPressures { get; } = new();
+    public static readonly string[] SorbMapFaces = ["Onto the a–b face (along c)", "Onto the a–c face (along b)", "Onto the b–c face (along a)"];
+    public bool SorbHasMap => _sorbMaps.Count > 0;
+    public int SorbMapIndex { get => _sorbMapIndex; set { if (Set(ref _sorbMapIndex, Math.Clamp(value, 0, Math.Max(0, _sorbMaps.Count - 1)))) SorptionMapChanged?.Invoke(); } }
+    public int SorbMapFace { get => _sorbMapFace; set { if (Set(ref _sorbMapFace, Math.Clamp(value, 0, 2))) SorptionMapChanged?.Invoke(); } }
+    public event Action? SorptionMapChanged;
+    private string _sorbMapText = "";
+    public string SorbMapText { get => _sorbMapText; private set => Set(ref _sorbMapText, value); }
+    /// <summary>The chosen pressure's map summed along one cell edge: (x, y, areal density per nm²) for the heat plot.</summary>
+    public (double[] X, double[] Y, double[] Z, string XLabel, string YLabel) SorbMapProjection()
+    {
+        if (_sorbMapIndex < 0 || _sorbMapIndex >= _sorbMaps.Count) return ([], [], [], "", "");
+        var (p, g, d) = _sorbMaps[_sorbMapIndex];
+        if (g <= 0 || d.Length != g * g * g) return ([], [], [], "", "");
+        var L = new[] { _sorbCell.A, _sorbCell.B, _sorbCell.C };
+        var (u, v, w) = _sorbMapFace switch { 1 => (0, 2, 1), 2 => (1, 2, 0), _ => (0, 1, 2) };
+        var xs = new List<double>(); var ys = new List<double>(); var zs = new List<double>();
+        var peak = 0.0;
+        for (var a = 0; a < g; ++a)
+            for (var b = 0; b < g; ++b)
+            {
+                var sum = 0.0;
+                for (var c = 0; c < g; ++c)
+                {
+                    var ix = new int[3];
+                    ix[u] = a; ix[v] = b; ix[w] = c;
+                    sum += d[(ix[0] * g + ix[1]) * g + ix[2]];
+                }
+                var areal = sum * L[w] / g * 100;   // per Å³ × Å along the edge → per Å² → per nm²
+                xs.Add((a + 0.5) * L[u] / g); ys.Add((b + 0.5) * L[v] / g); zs.Add(areal);
+                peak = Math.Max(peak, areal);
+            }
+        var names = new[] { "a", "b", "c" };
+        SorbMapText = string.Format(CultureInfo.InvariantCulture, "{0:0.##} kPa · summed along {1} · up to {2:0.###} molecules/nm² · {3} × {3} × {3} grid; empty regions are where the host leaves no room",
+            p, names[w], peak, g);
+        return (xs.ToArray(), ys.ToArray(), zs.ToArray(), names[u] + " (Å)", names[v] + " (Å)");
+    }
+
+    /// <summary>The GCMC pressures: a list ("10, 50, 100") and/or log-spaced sweeps "a..b xN" (N points from a to b, evenly in
+    /// log p — isotherms span decades).</summary>
+    public static List<double> SorbPressureList(string text)
+    {
+        var inv = CultureInfo.InvariantCulture;
+        var outp = new List<double>();
+        var rest = System.Text.RegularExpressions.Regex.Replace(text, @"([0-9.eE+-]+)\s*\.\.\s*([0-9.eE+-]+)\s*[xX×]\s*(\d+)", m =>
+        {
+            if (double.TryParse(m.Groups[1].Value, NumberStyles.Float, inv, out var a) && double.TryParse(m.Groups[2].Value, NumberStyles.Float, inv, out var b) &&
+                int.TryParse(m.Groups[3].Value, out var n) && a > 0 && b > 0 && n >= 2)
+                for (var k = 0; k < Math.Min(n, 50); ++k) outp.Add(a * Math.Pow(b / a, k / (double)(n - 1)));
+            return " ";
+        });
+        foreach (var t in rest.Split([',', ' ', ';'], StringSplitOptions.RemoveEmptyEntries))
+            if (double.TryParse(t, NumberStyles.Float, inv, out var p) && p > 0) outp.Add(p);
+        return outp.Distinct().OrderBy(v => v).ToList();
     }
 }

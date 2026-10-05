@@ -3349,7 +3349,7 @@
             </Border>
 
             <!-- results -->
-            <Grid Grid.Column="1" RowDefinitions="Auto,*,280" RowSpacing="12">
+            <Grid Grid.Column="1" RowDefinitions="Auto,*,340" RowSpacing="12">
               <StackPanel Spacing="6">
                 <TextBlock Text="{Binding Analyze.Log}" Classes="muted" TextWrapping="Wrap" />
                 <ProgressBar Value="{Binding Analyze.Progress}" Minimum="0" Maximum="1" Height="4" IsVisible="{Binding Analyze.Working}" />
@@ -3392,12 +3392,27 @@
               </ScrollViewer>
               <Border Grid.Row="2" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="10" Background="{DynamicResource Bg1B}" Padding="14,10"
                       IsVisible="{Binding Analyze.HasResults}">
-                <Grid RowDefinitions="Auto,*" RowSpacing="6">
+                <Grid RowDefinitions="Auto,*,Auto" RowSpacing="6">
                   <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                     <TextBlock Text="CURVE" Classes="h3" VerticalAlignment="Center" />
                     <ComboBox Grid.Column="1" ItemsSource="{Binding Analyze.Curves}" SelectedIndex="{Binding Analyze.CurveIndex}" MinWidth="320" HorizontalAlignment="Left" />
                   </Grid>
                   <local:LinePlot Grid.Row="1" x:Name="PropPlot" AutoRange="True" />
+                  <StackPanel Grid.Row="2" Spacing="4" Margin="0,6,0,0">
+                    <Grid ColumnDefinitions="*,70,70,70" ColumnSpacing="6">
+                      <ComboBox ItemsSource="{x:Static vm:AnalyzeViewModel.FitModels}" SelectedIndex="{Binding Analyze.FitModel}" HorizontalAlignment="Stretch"
+                                ToolTip.Tip="Fit the curve shown (Levenberg–Marquardt; ± from the covariance at the minimum)" />
+                      <TextBox Grid.Column="1" Text="{Binding Analyze.CurveFitFrom}" Watermark="x from" ToolTip.Tip="Fit range: from this x (empty: the first point)" />
+                      <TextBox Grid.Column="2" Text="{Binding Analyze.CurveFitTo}" Watermark="x to" ToolTip.Tip="Fit range: to this x (empty: the last point)" />
+                      <NumericUpDown Grid.Column="3" Value="{Binding Analyze.FitPeaksD}" Minimum="1" Maximum="8" Increment="1" FormatString="0 'peaks'" IsVisible="{Binding Analyze.FitIsPeaks}" ShowButtonSpinner="False" />
+                    </Grid>
+                    <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding Analyze.FitIsDiffraction}">
+                      <TextBlock Text="halo: peaks with σ ≥" Classes="dim" VerticalAlignment="Center" />
+                      <NumericUpDown Value="{Binding Analyze.HaloSigmaD}" Minimum="0.01" Maximum="2" Increment="0.01" FormatString="0.00 'Å⁻¹'" Width="110" ShowButtonSpinner="False"
+                                     ToolTip.Tip="A fitted Gaussian this wide or wider is the amorphous halo; narrower ones are crystalline reflections (a small cell broadens them: about 2π/L)" />
+                    </StackPanel>
+                    <TextBlock Text="{Binding Analyze.FitText}" Classes="mono" FontSize="10.5" TextWrapping="Wrap" IsVisible="{Binding Analyze.FitText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                  </StackPanel>
                 </Grid>
               </Border>
             </Grid>

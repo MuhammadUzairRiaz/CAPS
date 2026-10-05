@@ -2259,6 +2259,7 @@ extern "C" int32_t caps_sorption(caps_doc* d, const char* json, caps_stage_fn pr
     o.cutoff = j.num("cutoff", 12.0);
     o.coulomb = !(j.has("coulomb") && j["coulomb"].kind() == caps::Json::Bool && !j["coulomb"].boolean());
     o.seed = uint64_t(j.num("seed", 1));
+    o.map_grid = int(j.num("map_grid", 0));   // v62: sorbate density maps (C7)
     bool cancelled = false;
     if (progress) o.progress = [&](const std::string& st, double f) { cancelled = progress(st.c_str(), f, user) != 0; return !cancelled; };
     const auto rep = caps::sorption(s, ff, o);
@@ -2278,6 +2279,13 @@ extern "C" int32_t caps_sorption(caps_doc* d, const char* json, caps_stage_fn pr
       caps::Json x = caps::Json::object();
       x["pressure_kpa"] = p.pressure_kpa, x["loading"] = p.loading, x["loading_error"] = p.loading_error, x["mol_per_kg"] = p.mol_per_kg;
       x["cm3stp_per_cm3"] = p.cm3stp_per_cm3, x["heat"] = p.heat, x["acceptance_insert"] = p.acceptance_insert, x["acceptance_delete"] = p.acceptance_delete;
+      if (!p.density.empty()) {   // the density map: grid points along a, b, c and the values (per Å³), a slowest
+        caps::Json m = caps::Json::object(), v = caps::Json::array();
+        for (float q : p.density) v.push_back(double(q));
+        m["grid"] = double(p.grid);
+        m["density"] = std::move(v);
+        x["map"] = std::move(m);
+      }
       iso.push_back(std::move(x));
     }
     r["isotherm"] = std::move(iso);
@@ -6363,7 +6371,12 @@ extern "C" caps_doc* caps_stack_documents(caps_doc* const* docs, int32_t n, cons
     for (int k = 0; k < n; ++k) {
       std::string name = "layer " + std::to_string(k + 1);
       if (j.has("names") && j["names"].is_array() && size_t(k) < j["names"].size() && j["names"][size_t(k)].is_string()) name = j["names"][size_t(k)].str();
-      in.push_back({name, &frames[size_t(k)]});
+      caps::StackLayerInput li{name, &frames[size_t(k)]};
+      // v62: per layer, flips: [bool] (180° about x) and shifts: [[dx, dy]] (Å in the plane)
+      if (j.has("flips") && j["flips"].is_array() && size_t(k) < j["flips"].size()) li.flip = j["flips"][size_t(k)].kind() == caps::Json::Bool && j["flips"][size_t(k)].boolean();
+      if (j.has("shifts") && j["shifts"].is_array() && size_t(k) < j["shifts"].size() && j["shifts"][size_t(k)].is_array() && j["shifts"][size_t(k)].size() == 2)
+        li.shift_x = j["shifts"][size_t(k)][0].number(), li.shift_y = j["shifts"][size_t(k)][1].number();
+      in.push_back(li);
     }
     caps::StackOptions so;
     so.gap = j.num("gap", so.gap);
@@ -6435,6 +6448,7 @@ extern "C" caps_doc* caps_dpd(const char* json, caps_stage_fn progress, void* us
     o.gamma = j.num("gamma", 4.5);
     o.dt = j.num("dt", 0.04);
     o.bond_k = j.num("bond_k", 4.0);
+    o.angle_k = j.num("angle_k", 0.0);   // v62: chain stiffness k_θ (1 + cos θ)
     o.steps = long(j.num("steps", 20000));
     o.equilibration = long(j.num("equilibration", double(o.steps) / 4));
     o.frame_every = int(j.num("frame_every", std::max(1.0, double(o.steps) / 40)));
@@ -6463,6 +6477,8 @@ extern "C" caps_doc* caps_dpd(const char* json, caps_stage_fn progress, void* us
     r["beads"] = double(rep.beads), r["molecules"] = double(rep.molecules), r["box"] = rep.box;
     r["kT"] = rep.kT, r["kT_error"] = rep.kT_error, r["pressure"] = rep.pressure, r["pressure_error"] = rep.pressure_error;
     r["order"] = rep.order, r["q_peak"] = rep.q_peak, r["spacing"] = rep.spacing, r["seconds"] = rep.seconds;
+    r["domains_a"] = double(rep.domains_a), r["domains_b"] = double(rep.domains_b), r["domain_a_size"] = rep.domain_a_size, r["domain_b_size"] = rep.domain_b_size;
+    r["largest_a"] = rep.largest_a, r["largest_b"] = rep.largest_b;
     caps::Json q = caps::Json::array(), sq = caps::Json::array(), os = caps::Json::array();
     for (double x : rep.q) q.push_back(x);
     for (double x : rep.sq) sq.push_back(x);

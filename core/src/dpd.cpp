@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <numeric>
+#include <array>
 #include <complex>
 #include <cstdio>
 #include <random>
@@ -52,6 +54,7 @@ DpdReport run_dpd(const DpdOptions& o) {
   std::vector<char> type;
   std::vector<int> mol;
   std::vector<std::pair<int, int>> bonds;
+  std::vector<std::array<int, 3>> angles;
   std::set<char> used;
   for (const auto& sp : o.species) {
     if (sp.sequence.empty() || sp.count <= 0) continue;
@@ -63,6 +66,7 @@ DpdReport run_dpd(const DpdOptions& o) {
         mol.push_back(rep.molecules);
         used.insert(sp.sequence[b]);
         if (b > 0) bonds.push_back({first + int(b) - 1, first + int(b)});
+        if (b > 1 && o.angle_k != 0) angles.push_back({first + int(b) - 2, first + int(b) - 1, first + int(b)});
       }
       ++rep.molecules;
     }
@@ -155,6 +159,20 @@ DpdReport run_dpd(const DpdOptions& o) {
       f[size_t(j)] = f[size_t(j)] - F;
       virial += fb * rr;
     }
+    // stiffness: E = k (1 + cos θ), θ at the middle bead (LAMMPS angle_style cosine); F_i = −k ∂cos θ/∂r_i (the middle
+    // bead takes the rest)
+    for (const auto& [i, j, k] : angles) {
+      const Vec3 a = wrapd(r[size_t(i)] - r[size_t(j)]), b = wrapd(r[size_t(k)] - r[size_t(j)]);
+      const double la = norm(a), lb = norm(b);
+      if (la < 1e-12 || lb < 1e-12) continue;
+      const double c = dot(a, b) / (la * lb);
+      const Vec3 Fi = (b * (1 / (la * lb)) - a * (c / (la * la))) * -o.angle_k;
+      const Vec3 Fk = (a * (1 / (la * lb)) - b * (c / (lb * lb))) * -o.angle_k;
+      f[size_t(i)] = f[size_t(i)] + Fi;
+      f[size_t(k)] = f[size_t(k)] + Fk;
+      f[size_t(j)] = f[size_t(j)] - Fi - Fk;
+      virial += dot(Fi, a) + dot(Fk, b);
+    }
   };
   // segregation of the first two types over cells of about 2 r_c
   const char ta = rep.types.empty() ? 'A' : rep.types[0], tb = rep.types.size() > 1 ? rep.types[1] : ta;
@@ -229,6 +247,52 @@ DpdReport run_dpd(const DpdOptions& o) {
   block(kts, rep.kT, rep.kT_error);
   block(ps, rep.pressure, rep.pressure_error);
   rep.order = order_now();
+  // domains of the first two types: cells about r_c wide, connected through faces (periodic)
+  if (ta != tb) {
+    const int g = std::max(2, int(std::floor(L)));
+    const size_t nc = size_t(g) * g * g;
+    std::vector<int> na(nc, 0), nb(nc, 0);
+    for (int i = 0; i < n; ++i) {
+      int c[3];
+      for (int k = 0; k < 3; ++k) c[k] = std::min(g - 1, int((r[size_t(i)][size_t(k)] - L * std::floor(r[size_t(i)][size_t(k)] / L)) / L * g));
+      const size_t id = size_t((c[0] * g + c[1]) * g + c[2]);
+      if (type[size_t(i)] == ta) ++na[id];
+      else if (type[size_t(i)] == tb) ++nb[id];
+    }
+    auto clusters = [&](bool first, int& count, double& mean_beads, double& largest) {
+      std::vector<int> lab(nc, -1);
+      std::vector<int> sizes, beads;
+      size_t mine = 0;
+      for (size_t s0 = 0; s0 < nc; ++s0) {
+        const bool in = first ? na[s0] > nb[s0] : nb[s0] > na[s0];
+        if (!in) continue;
+        ++mine;
+        if (lab[s0] >= 0) continue;
+        const int L0 = int(sizes.size());
+        sizes.push_back(0), beads.push_back(0);
+        std::vector<size_t> st{s0};
+        lab[s0] = L0;
+        while (!st.empty()) {
+          const size_t c = st.back();
+          st.pop_back();
+          ++sizes[size_t(L0)];
+          beads[size_t(L0)] += first ? na[c] : nb[c];
+          const int x = int(c / (size_t(g) * g)), y = int((c / size_t(g)) % size_t(g)), z = int(c % size_t(g));
+          const int nbx[6][3] = {{1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
+          for (const auto& d : nbx) {
+            const size_t q = size_t((((x + d[0] + g) % g) * g + (y + d[1] + g) % g) * g + (z + d[2] + g) % g);
+            const bool qin = first ? na[q] > nb[q] : nb[q] > na[q];
+            if (qin && lab[q] < 0) lab[q] = L0, st.push_back(q);
+          }
+        }
+      }
+      count = int(sizes.size());
+      mean_beads = count > 0 ? double(std::accumulate(beads.begin(), beads.end(), 0)) / count : 0;
+      largest = mine > 0 && count > 0 ? double(*std::max_element(sizes.begin(), sizes.end())) / double(mine) : 0;
+    };
+    clusters(true, rep.domains_a, rep.domain_a_size, rep.largest_a);
+    clusters(false, rep.domains_b, rep.domain_b_size, rep.largest_b);
+  }
   // S(q) of the first type: q = 2π n / L, radially averaged over shells of unit width in |n|
   {
     std::vector<Vec3> ra;
