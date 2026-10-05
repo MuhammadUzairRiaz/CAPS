@@ -1779,7 +1779,17 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
     caps::LammpsRun run;
     const std::string kind = o.text("run", "check");
     run.kind = kind == "none" ? caps::LammpsRun::Kind::None : kind == "minimize" ? caps::LammpsRun::Kind::Minimize
-             : kind == "nvt" ? caps::LammpsRun::Kind::NVT : kind == "npt" ? caps::LammpsRun::Kind::NPT : caps::LammpsRun::Kind::Check;
+             : kind == "nvt" ? caps::LammpsRun::Kind::NVT : kind == "npt" ? caps::LammpsRun::Kind::NPT
+             : kind == "tensile" ? caps::LammpsRun::Kind::Tensile : kind == "creep" ? caps::LammpsRun::Kind::Creep
+             : kind == "shear" ? caps::LammpsRun::Kind::Shear : caps::LammpsRun::Kind::Check;
+    {   // tensile / creep / shear (LAMMPS)
+      const std::string a = o.text("axis", "x");
+      run.axis = a == "y" ? 1 : a == "z" ? 2 : 0;
+      run.strain_rate = o.num("strain_rate", 1e-3);
+      run.max_strain = o.num("max_strain", 0);
+      run.stress_mpa = o.num("stress_mpa", 50);
+      run.shear_rate = o.num("shear_rate", 0.01);
+    }
     run.minimize_first = flag("minimize_first", true);
     run.temperature = o.num("temperature", 300);
     run.pressure = o.num("pressure", 1.0);
@@ -1796,6 +1806,8 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
     fs::create_directories(folder);
     const auto base = (folder / stem).string();
     caps::Json files = caps::Json::array(), notes = caps::Json::array();
+    if (gromacs && (kind == "tensile" || kind == "creep" || kind == "shear"))
+      notes.push_back("the " + kind + " protocol is written for LAMMPS; the GROMACS files are a single point of the same system");
     std::vector<std::pair<std::string, std::string>> written;   // name, what
     const caps::EnergyOptions e = elec();
     // LAMMPS styles: the force field's own (default) or CAPS-exact; hybrid; long-range sum; cut-off

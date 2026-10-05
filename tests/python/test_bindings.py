@@ -577,4 +577,11 @@ _mx = caps.open(os.path.join(samples, "ps_melt.data")).sorption(pressures_kpa=[1
 _mp = _mx["isotherm"][0]
 check(len(_mx["species"]) == 2 and len(_mp["species_loading"]) == 2 and abs(sum(_mp["species_loading"]) - _mp["loading"]) < 1e-6 and _mp["selectivity"][0] == 1,
       f"mixture sorption: CO2 {_mp['species_loading'][0]:.2f} + N2 {_mp['species_loading'][1]:.2f} per cell, S(N2/CO2) {_mp['selectivity'][1]:.2f}")
+with tempfile.TemporaryDirectory() as _tmp:
+    _te = caps.open(os.path.join(samples, "ps_melt.data"))
+    _te.field.assign("gaff2")
+    _ter = _te.export_engines(_tmp, run="tensile", axis="y", strain_rate=0.5, max_strain=0.1, dt=1.0)
+    _tin = open(os.path.join(_tmp, "system.in")).read()
+    check("deform 1 y erate 0.0005" in _tin and "run             200" in _tin and any("single point" in n for n in _ter["notes"]),
+          "tensile protocol exported for LAMMPS (fix deform, 200 steps to 10 % strain)")
 print("all python checks passed")

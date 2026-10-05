@@ -791,7 +791,8 @@ class Document:
     def export_engines(self, folder: str, stem: str = "system", lammps: bool = True, gromacs: bool = True, run: str = "check", **opts) -> dict:
         """The simulation files for LAMMPS (stem.data, stem.in with every pair_coeff and the run) and GROMACS (stem.top,
         stem.itp, stem.gro, stem.mdp; stem_em.mdp when a run minimises first) from the assigned force field, which must be
-        complete. run: check | none | minimize | nvt | npt; opts: minimize_first, temperature (K), pressure (atm), dt (fs),
+        complete. run: check | none | minimize | nvt | npt | tensile | creep | shear (LAMMPS: axis "x"/"y"/"z", strain_rate 1/ps
+        and max_strain; stress_mpa; shear_rate 1/ps — stress_strain.dat, creep.dat, viscosity.dat); opts: minimize_first, temperature (K), pressure (atm), dt (fs),
         steps, thermo_every, dump_every, seed, units (auto | real | metal: LAMMPS in eV, ps, bar — automatic for AIREBO /
         REBO, which LAMMPS reads in metal units only), amber=True (stem.prmtop and stem.inpcrd for AMBER / OpenMM / ParmEd;
         a force field AMBER cannot hold gives amber_error), dlpoly=True. Returns {folder, files, notes, checks}; raises

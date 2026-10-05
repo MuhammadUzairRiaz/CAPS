@@ -4047,6 +4047,52 @@ internal static class SelfTest
                       $"reader: log {logOk} ({vm.ReaderTables.Count} tables) · stats {statsOk} · find {findOk} · xvg {xvgOk} · csv {csvOk} · {vm.ReaderStats}");
                 vm.SetModule(mod0);
             }
+            // Analyze › Study table: formula columns, an exact regression, PCA of two proportional columns, the Reader's table as rows,
+            // an edit recomputing the formulas, save and open as .capstable
+            {
+                var mod1 = vm.Module;
+                vm.OpenStudy();
+                var st = vm.Study;
+                var f = Formula.Parse("sqrt([a b]^2 + c^2) * 2 - max(1, -3) + ln(e)");
+                var fOk = Math.Abs(f.Eval(n => n == "a b" ? 3 : n == "c" ? 4 : double.NaN) - 10) < 1e-12 && f.Names.SequenceEqual(new[] { "a b", "c" });
+                var bad = ""; try { Formula.Parse("2 * (x + 1"); } catch (FormatException ex) { bad = ex.Message; }
+                st.AddCsv("name,x1,x2,noise\nA,1,2,0.3\nB,2,1,-0.2\nC,3,5,0.1\nD,4,3,0.5\nE,5,8,-0.4\nF,6,2,0.2\n", "t");
+                vm.StudyNewName = "y"; vm.StudyNewFormula = "1 + 2*x1 - 3*x2";
+                vm.StudyAddColumn();
+                vm.StudyNewName = "x1b"; vm.StudyNewFormula = "2 * x1";
+                vm.StudyAddColumn();
+                var csvOk = st.Rows.Count == 6 && st.Rows[0].Label == "A" && st.Columns.Count == 5 && st.Columns[3].Error == "" && st.Rows[2].Cells[3].Number == 1 + 6 - 15;
+                var y = st.Values(st.Columns[3]);
+                var reg = StudyStats.Fit(y, [st.Values(st.Columns[0]), st.Values(st.Columns[1])], ["x1", "x2"]);
+                var regOk = Math.Abs(reg.Coef[0] - 1) < 1e-9 && Math.Abs(reg.Coef[1] - 2) < 1e-9 && Math.Abs(reg.Coef[2] + 3) < 1e-9 && reg.R2 > 1 - 1e-12;
+                // a noisy fit against a direct normal-equation solution (two predictors)
+                var yn = y.Zip(st.Values(st.Columns[2]), (a, b) => a + b).ToArray();
+                var rn = StudyStats.Fit(yn, [st.Values(st.Columns[0]), st.Values(st.Columns[1])], ["x1", "x2"]);
+                var noisyOk = rn.R2 < 1 && rn.R2 > 0.9 && rn.Se.All(e => e > 0) && Math.Abs(rn.Fitted.Zip(yn, (a, b) => b - a).Sum()) < 1e-9;   // residuals sum to zero with an intercept
+                var pca = StudyStats.Components([st.Values(st.Columns[0]), st.Values(st.Columns[4])], ["x1", "x1b"]);
+                var pcaOk = Math.Abs(pca.Explained[0] - 1) < 1e-9 && Math.Abs(Math.Abs(pca.Loadings[0, 0]) - Math.Sqrt(0.5)) < 1e-9;
+                var r = StudyStats.Pearson(st.Values(st.Columns[0]), st.Values(st.Columns[4]));
+                foreach (var pk in vm.StudyPicks) pk.On = pk.Name is "x1" or "x2";
+                vm.StudyY = 3;
+                vm.StudyMode = 2;
+                var statsOk = vm.StudyStatsText.Contains("intercept") && vm.StudyStatsText.Contains("R² 1");
+                st.Rows[0].Cells[0].Text = "10";   // an edit: the formula column follows
+                var editOk = st.Rows[0].Cells[3].Number == 1 + 20 - 6;
+                var tp = Path.Combine(outDir, "study.capstable");
+                vm.StudySave(tp);
+                st.Rows.Clear(); st.Columns.Clear();
+                vm.StudyLoad(tp);
+                var loadOk = st.Rows.Count == 6 && st.Columns.Count == 5 && st.Columns[3].Formula == "1 + 2*x1 - 3*x2" && st.Rows[0].Cells[3].Number == 15;
+                vm.OpenReader(Path.Combine(outDir, "log.lammps"));
+                vm.ReaderTable = 1;
+                vm.OpenStudy();
+                var nRows0 = st.Rows.Count;
+                vm.StudyAddReader();
+                var readerOk = st.Rows.Count == nRows0 + 4 && st.Columns.Any(c => c.Name == "PotEng");
+                Check(fOk && bad.Contains("')'") && csvOk && regOk && noisyOk && pcaOk && Math.Abs(r - 1) < 1e-12 && statsOk && editOk && loadOk && readerOk,
+                      $"study table: formula {fOk} ({bad}) · csv {csvOk} · exact fit {regOk} · noisy R² {rn.R2:0.####} {noisyOk} · PCA {pcaOk} · stats {statsOk} · edit {editOk} · save/open {loadOk} · reader {readerOk} · {vm.StudyError}");
+                vm.SetModule(mod1);
+            }
             // Equilibrate › Chain ends: CBMC regrowth with the built-in force field; a new frame, the provenance step
             vm.CbMovesD = 60;
             var framesBefore = vm.Frames;

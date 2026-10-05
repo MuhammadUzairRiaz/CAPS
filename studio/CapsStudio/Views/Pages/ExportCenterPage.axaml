@@ -136,8 +136,21 @@
               <StackPanel Spacing="4"><TextBlock Text="T (K)" Classes="muted" FontSize="11.5" /><NumericUpDown Value="{Binding EngineTemperatureD}" Minimum="1" Maximum="5000" Increment="10" FormatString="0.#" /></StackPanel>
               <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="P (atm)" Classes="muted" FontSize="11.5" /><NumericUpDown Value="{Binding EnginePressureD}" Minimum="0" Increment="1" FormatString="0.##" /></StackPanel>
               <StackPanel Grid.Column="2" Spacing="4"><TextBlock Text="dt (fs, 0 = own)" Classes="muted" FontSize="11.5" /><NumericUpDown Value="{Binding EngineDtD}" Minimum="0" Maximum="50" Increment="0.5" FormatString="0.##" ToolTip.Tip="0: the force field's own time step (Martini 20 fs; all-atom 0.5 fs, 2 fs with bond constraints)" /></StackPanel>
-              <StackPanel Grid.Column="3" Spacing="4"><TextBlock Text="Steps" Classes="muted" FontSize="11.5" /><NumericUpDown Value="{Binding EngineStepsD}" Minimum="0" Increment="10000" FormatString="0" /></StackPanel>
+              <StackPanel Grid.Column="3" Spacing="4" IsVisible="{Binding EngineHasSteps}"><TextBlock Text="Steps" Classes="muted" FontSize="11.5" /><NumericUpDown Value="{Binding EngineStepsD}" Minimum="0" Increment="10000" FormatString="0" /></StackPanel>
             </Grid>
+            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8" IsVisible="{Binding EngineIsMech}">
+              <StackPanel Spacing="4" IsVisible="{Binding !EngineIsShear}"><TextBlock Text="Axis" Classes="muted" FontSize="11.5" />
+                <ComboBox ItemsSource="{x:Static vm:MainViewModel.EngineAxes}" SelectedIndex="{Binding EngineAxis}" HorizontalAlignment="Stretch" /></StackPanel>
+              <StackPanel Grid.Column="1" Spacing="4" IsVisible="{Binding EngineIsTensile}"><TextBlock Text="Strain rate (/ps)" Classes="muted" FontSize="11.5" />
+                <NumericUpDown Value="{Binding EngineRateD}" Minimum="0.0000001" Increment="0.0005" FormatString="0.#######" /></StackPanel>
+              <StackPanel Grid.Column="2" Spacing="4" IsVisible="{Binding EngineIsTensile}"><TextBlock Text="To strain" Classes="muted" FontSize="11.5" />
+                <NumericUpDown Value="{Binding EngineMaxStrainD}" Minimum="0.001" Increment="0.05" FormatString="0.###" /></StackPanel>
+              <StackPanel Grid.Column="1" Spacing="4" IsVisible="{Binding EngineIsCreep}"><TextBlock Text="Stress (MPa, tension +)" Classes="muted" FontSize="11.5" />
+                <NumericUpDown Value="{Binding EngineStressD}" Minimum="-5000" Maximum="5000" Increment="5" FormatString="0.##" /></StackPanel>
+              <StackPanel Spacing="4" IsVisible="{Binding EngineIsShear}"><TextBlock Text="Shear rate (/ps)" Classes="muted" FontSize="11.5" />
+                <NumericUpDown Value="{Binding EngineShearD}" Minimum="0.000001" Increment="0.005" FormatString="0.######" /></StackPanel>
+            </Grid>
+            <TextBlock Text="{Binding EngineMechText}" Classes="muted" FontSize="11" TextWrapping="Wrap" IsVisible="{Binding EngineIsMech}" />
             <StackPanel Spacing="4" IsVisible="{Binding EngineIsMd}">
               <TextBlock Text="Bond constraints" Classes="muted" FontSize="11.5" />
               <ComboBox ItemsSource="{x:Static vm:MainViewModel.ConstraintChoices}" SelectedIndex="{Binding EngineConstraints}" HorizontalAlignment="Stretch"

@@ -186,7 +186,17 @@ std::string write_lammps_data_or_structure(const System& s, const ForceField& ff
 // protocol: an optional conjugate-gradient minimisation, then NVT or NPT (Nosé–Hoover, LAMMPS's standard; CAPS's own
 // runs use Bussi and stochastic cell rescaling), with thermo output, a dump and the final structure written.
 struct LammpsRun {
-  enum class Kind { Check, None, Minimize, NVT, NPT } kind = Kind::Check;
+  // Tensile: the box stretched along axis at a constant engineering strain rate (fix deform erate), the other two axes
+  // at pressure (Nosé–Hoover), stress_strain.dat with the engineering strain and the tensile stress −P_axis (MPa).
+  // Creep: a constant true tensile stress stress_mpa along axis (its pressure −σ, the others at pressure; NPT, axes
+  // uncoupled), creep.dat with time (ps) and strain. Shear: planar Couette flow by SLLOD (fix nvt/sllod, the xy tilt at
+  // shear_rate, remap v), viscosity.dat with η = −⟨P_xy⟩/γ̇ (mPa·s) averaged in blocks.
+  enum class Kind { Check, None, Minimize, NVT, NPT, Tensile, Creep, Shear } kind = Kind::Check;
+  int axis = 0;                    // 0 x, 1 y, 2 z (tensile, creep)
+  double strain_rate = 1e-3;       // 1/ps, engineering (tensile)
+  double max_strain = 0;           // > 0: the tensile run's steps from it (strain / (rate·dt))
+  double stress_mpa = 50;          // MPa, tension positive (creep)
+  double shear_rate = 0.01;        // 1/ps (shear)
   bool minimize_first = true;
   double temperature = 300, pressure = 1.0;   // K, atm
   double dt = 0;                               // fs; 0: the force field's own (lammps_timestep)
