@@ -43,7 +43,7 @@
                   <DataTemplate x:DataType="vm:DpdSpeciesRow">
                     <Grid ColumnDefinitions="*,120,80,Auto" ColumnSpacing="8" Margin="0,0,0,6">
                       <TextBox Text="{Binding Name}" />
-                      <TextBox Grid.Column="1" Text="{Binding Sequence}" Classes="mono" Watermark="A5B5" ToolTip.Tip="One letter per bead type (A–Z); A5B5 = five A then five B" />
+                      <TextBox Grid.Column="1" Text="{Binding Sequence}" Classes="mono" Watermark="A5B5" ToolTip.Tip="One letter per bead type (A–Z); A5B5 = five A then five B; a branch in parentheses hangs off the bead before it: A10(B4)A10 a graft, A(B3)(B3)(B3) a star" />
                       <NumericUpDown Grid.Column="2" Value="{Binding Count}" Minimum="1" FormatString="0" />
                       <Button Grid.Column="3" Classes="small" Content="×" Click="OnRemoveSpecies" />
                     </Grid>
@@ -80,6 +80,12 @@
                 <NumericUpDown Grid.Row="1" Value="{Binding DpdSteps}" Minimum="100" Increment="5000" FormatString="0" />
                 <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding DpdDensity}" Minimum="1" Maximum="10" Increment="1" FormatString="0.#" />
                 <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding DpdRc}" Minimum="1" Maximum="50" Increment="0.5" FormatString="0.00" ToolTip.Tip="The length a bead's cut-off stands for, for the view (6.46 Å: three waters per bead)" />
+              </Grid>
+              <Grid ColumnDefinitions="*,120" ColumnSpacing="10">
+                <ComboBox ItemsSource="{x:Static vm:MainViewModel.DpdStarts}" SelectedIndex="{Binding DpdStart}" HorizontalAlignment="Stretch"
+                          ToolTip.Tip="Start from a random mix, or with the first bead type already in lamellae, cylinders or spheres (its volume share sets their size)" />
+                <NumericUpDown Grid.Column="1" Value="{Binding DpdPeriods}" Minimum="1" Maximum="8" Increment="1" FormatString="0 'period(s)'" IsVisible="{Binding DpdTemplated}"
+                               ToolTip.Tip="Repeats of the template across the box" />
               </Grid>
               <Grid ColumnDefinitions="*,120" ColumnSpacing="10">
                 <TextBlock Text="Chain stiffness k_θ (kT) · k_θ (1 + cos θ) at each middle bead" Classes="label" VerticalAlignment="Center" TextWrapping="Wrap" />

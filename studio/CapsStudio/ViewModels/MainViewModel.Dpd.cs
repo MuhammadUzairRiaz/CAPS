@@ -67,6 +67,7 @@ public sealed partial class MainViewModel
         for (var i = 0; i < s.Length;)
         {
             var c = s[i++];
+            if (c is '(' or ')') { sb.Append(c); continue; }   // a branch off the bead before it
             if (c < 'A' || c > 'Z') throw new FormatException($"'{c}' is not a bead type (A–Z)");
             var j = i;
             while (j < s.Length && char.IsDigit(s[j])) ++j;
@@ -96,6 +97,7 @@ public sealed partial class MainViewModel
         {
             ["species"] = species, ["chi"] = chi, ["density"] = (double)_dpdDensity, ["steps"] = (long)_dpdSteps,
             ["rc_angstrom"] = (double)_dpdRc, ["seed"] = DpdSeed.Take(), ["angle_k"] = (double)_dpdAngleK,
+            ["start"] = DpdStartIds[_dpdStart], ["start_periods"] = (int)_dpdPeriods,
         }.ToJsonString();
         DpdRunning = true;
         DpdError = "";
@@ -141,4 +143,13 @@ public sealed partial class MainViewModel
     /// <summary>The first two bead letters of the run (the domain statistics are of them).</summary>
     private (string, string) _dpdTypesFirst => DpdSpecies.SelectMany(r => { try { return ExpandSequence(r.Sequence); } catch { return ""; } }).Distinct().OrderBy(c => c)
         .Select(c => c.ToString()).ToList() is { Count: > 1 } l ? (l[0], l[1]) : ("A", "B");
+
+    // the start: random, or a mesostructure template of the first bead type (B12)
+    public static readonly string[] DpdStarts = ["Random mix", "Lamellae (normal to x)", "Cylinders (along z)", "Spheres"];
+    private static readonly string[] DpdStartIds = ["random", "lamellar", "cylinders", "spheres"];
+    private int _dpdStart;
+    private decimal _dpdPeriods = 1;
+    public int DpdStart { get => _dpdStart; set { if (Set(ref _dpdStart, Math.Clamp(value, 0, 3))) Raise(nameof(DpdTemplated)); } }
+    public bool DpdTemplated => _dpdStart > 0;
+    public decimal DpdPeriods { get => _dpdPeriods; set => Set(ref _dpdPeriods, Math.Clamp(Math.Round(value), 1, 8)); }
 }
