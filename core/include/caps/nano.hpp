@@ -56,6 +56,15 @@ struct NanotubeOptions {
   // multi-walled: concentric armchair or zigzag walls about wall_spacing apart ((5,5)@(10,10)@(15,15) at 3.4 Å)
   int walls = 1;
   double wall_spacing = 3.4;      // Å, the target; whole (n, m) steps give 3.39 Å (armchair) or 3.52 Å (zigzag)
+  // each wall its own (n, m), innermost first (overrides n, m and walls): a periodic tube needs one length for every wall,
+  // so each is stretched or compressed along the axis to it (at most 2 %, else refused: make it longer or finite)
+  std::vector<std::array<int, 2>> wall_chiralities;
+  // a rope (bundle) of identical tubes, each its own molecule, wall to wall tube_gap apart: 7, 19 or 37 tubes in
+  // hexagonal rings about one, or bundle_lattice: the periodic triangular lattice (two tubes per rectangular cell, no
+  // vacuum in the plane — an infinite rope)
+  int bundle = 1;
+  bool bundle_lattice = false;
+  double tube_gap = 3.4;          // Å, wall to wall (the graphite interlayer spacing)
 };
 System nanotube(const NanotubeOptions& o, NanoReport* rep = nullptr);
 // Diameter (Å), chiral angle (degrees) and period |T| (Å) of an (n, m) tube.

@@ -1320,4 +1320,48 @@ int hydroxylate_phosphorus(System& s) {
   return changed;
 }
 
+
+int point_defects(System& s, const DefectOptions& o, std::vector<std::string>* notes) {
+  if (o.from <= 0) throw std::invalid_argument("give the element the defects replace");
+  if (o.to == o.from) throw std::invalid_argument("a substitution needs another element");
+  std::vector<uint32_t> cand;
+  for (uint32_t i = 0; i < s.atoms.size(); ++i)
+    if (s.atoms[i].element == o.from && (o.region.empty() || (i < o.region.size() && o.region[i]))) cand.push_back(i);
+  if (cand.empty()) throw std::invalid_argument(std::string("no ") + element(o.from).symbol + " atoms to pick");
+  const size_t want = o.count > 0 ? size_t(o.count) : size_t(std::lround(o.fraction * double(cand.size())));
+  std::mt19937_64 rng(o.seed);
+  std::shuffle(cand.begin(), cand.end(), rng);
+  std::vector<uint32_t> pick;
+  for (uint32_t i : cand) {
+    if (pick.size() >= want) break;
+    bool ok = true;
+    for (uint32_t p : pick) {
+      const Vec3 d = s.cell.valid() ? s.cell.minimum_image(s.atoms[i].pos - s.atoms[p].pos) : s.atoms[i].pos - s.atoms[p].pos;
+      if (norm(d) < o.min_spacing) { ok = false; break; }
+    }
+    if (ok) pick.push_back(i);
+  }
+  double q = 0;
+  for (uint32_t i : pick) q += s.atoms[i].charge;
+  const std::string sym = element(o.from).symbol;
+  if (o.to == 0) {
+    std::vector<char> rm(s.atoms.size(), 0);
+    for (uint32_t i : pick) rm[i] = 1;
+    delete_atoms(s, rm);
+    if (notes) {
+      notes->push_back(std::to_string(pick.size()) + " " + sym + " vacancies (of " + std::to_string(cand.size()) + " " + sym + ")");
+      if (std::fabs(q) > 1e-6) notes->push_back("the removed atoms carried " + std::to_string(q).substr(0, 7) + " e: the structure is no longer neutral (compensate, or reassign the charges)");
+    }
+  } else {
+    for (uint32_t i : pick) {
+      s.atoms[i].element = o.to;
+      s.atoms[i].name = element(o.to).symbol;
+    }
+    if (notes) notes->push_back(std::to_string(pick.size()) + " " + sym + " → " + element(o.to).symbol + " (of " + std::to_string(cand.size()) + " " + sym +
+                                "); types and charges to be assigned again");
+  }
+  if (pick.size() < want && notes) notes->push_back("only " + std::to_string(pick.size()) + " of " + std::to_string(want) + " sites at " + std::to_string(o.min_spacing).substr(0, 4) + " Å spacing");
+  return int(pick.size());
+}
+
 }  // namespace caps

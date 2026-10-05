@@ -1176,6 +1176,9 @@ public sealed partial class MainViewModel : ObservableObject
     }
     private void SyncFixed()
     {
+        try { _mdRigid = _doc?.RigidMolecules() ?? ""; } catch { _mdRigid = ""; }
+        Raise(nameof(MdRigid));
+        MdRigidNote = _mdRigid.Length == 0 ? "" : "rigid in LAMMPS (fix rigid/nvt/small); CAPS's own run moves their atoms freely";
         _fixedCount = _doc?.FixedAtoms().Length ?? 0;
         Raise(nameof(HasFixedAtoms)); Raise(nameof(FixedAtomsText)); Raise(nameof(FixedX)); Raise(nameof(FixedY)); Raise(nameof(FixedZ));
     }
@@ -1541,6 +1544,11 @@ public sealed partial class MainViewModel : ObservableObject
                   : string.Format(inv, "fix 1 all nve\nfix 2 all temp/csvr {0:0.##} {0:0.##} {1:0.##} {2}", _mdTemp, _mdTauT, _mdSeed + 1)) +
                  string.Format(inv, "\nfix 3 all press/berendsen {0} modulus 22222", BerendsenCoupling(inv)),   // modulus 1/β for β = 4.5e-5 atm⁻¹, as CAPS's barostat
         };
+        if (_mdRigid.Length > 0 && setup.Contains("group           rigid molecule"))
+        {   // the bodies first (LAMMPS wants rigid fixes before any box-changing fix), the rest integrated on their own
+            var body = _mdEnsemble == 0 ? "rigid/small molecule" : string.Format(inv, "rigid/nvt/small molecule temp {0:0.##} {0:0.##} {1:0.##}", _mdTemp, _mdTauT);
+            ens = "group mobile subtract all rigid\nfix 0 rigid " + body + "\n" + ens.Replace("fix 1 all ", "fix 1 mobile ").Replace("fix 2 all ", "fix 2 mobile ");
+        }
         return "# LAMMPS input written by CAPS Studio: the same force field and settings as this Dynamics run\n" + setup +
                (_mdNewVelocities ? string.Format(inv, "velocity all create {0:0.##} {1} mom yes rot yes dist gaussian\n", _mdTemp, _mdSeed) : "") +
                (RespaSteps > 1 ? $"run_style respa 2 {RespaSteps} bond 1 angle 1 dihedral 1 improper 1 pair 2 kspace 2\n" : "") +
@@ -1598,6 +1606,21 @@ public sealed partial class MainViewModel : ObservableObject
     private double _mdCheckpointPs;
     public int MdCoupling { get => _mdCoupling; set => Set(ref _mdCoupling, Math.Clamp(value, 0, 4)); }
     public decimal MdCheckpointPsD { get => (decimal)_mdCheckpointPs; set { _mdCheckpointPs = Math.Max(0, (double)value); Raise(); } }
+
+    // rigid bodies in the LAMMPS deck (filler particles): molecule ranges, kept by the document for every LAMMPS export
+    private string _mdRigid = "", _mdRigidNote = "";
+    public string MdRigid
+    {
+        get => _mdRigid;
+        set
+        {
+            if (!Set(ref _mdRigid, (value ?? "").Trim())) return;
+            try { var n = _doc?.SetRigidMolecules(_mdRigid) ?? 0; MdRigidNote = n == 0 ? "" : $"{n} molecule{(n == 1 ? "" : "s")} rigid in LAMMPS (fix rigid/nvt/small); CAPS's own run moves their atoms freely"; }
+            catch (Exception e) { MdRigidNote = e.Message; }
+            RefreshPreflight();
+        }
+    }
+    public string MdRigidNote { get => _mdRigidNote; private set => Set(ref _mdRigidNote, value); }
 
     // an external electric field (V/Å) on the partial charges: poling, field-driven ion transport, dielectric response
     private bool _mdFieldOn;

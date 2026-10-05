@@ -431,3 +431,49 @@ TEST(Lattice, ClusterFromAPeriodicMelt) {
   for (int k = 0; k < nm; ++k) EXPECT_LE(norm(cen[size_t(k)] * (1.0 / cnt[size_t(k)]) - c), 12.0 + 1e-9);
   for (const auto& b : cl.bonds) EXPECT_LT(norm(cl.atoms[b.j].pos - cl.atoms[b.i].pos), 2.0);
 }
+
+// A polyisoprene brush on hydroxylated quartz (001): chains grafted to silanol oxygens (their H taken off), each head
+// bonded to its oxygen at a C–O length, the oxygens two-coordinate (Si–O–C), σ as asked within the sites, every
+// chain above the surface.
+TEST(Crystal, PolymerBrushOnSilanols) {
+  const System q = read_cif(kCrystals + "alpha-quartz.cif");
+  SlabOptions so;
+  so.layers = 1;
+  so.na = 3, so.nb = 2;
+  so.passivate = true;
+  const System slab = cleave(q, so);
+  ChainSpec spec;
+  spec.units = {{"cis-1,4-isoprene", "*C/C=C(/C)C*"}};
+  spec.dp = 5;
+  BrushOptions bo;
+  bo.density = 1.0;
+  bo.min_spacing = 4.5;
+  bo.film = 30;
+  BrushReport rep;
+  const System s = build_brush(slab, spec, bo, &rep);
+  ASSERT_GT(rep.grafted, 0);
+  EXPECT_LE(rep.grafted, rep.sites);
+  EXPECT_NEAR(rep.sigma, double(rep.grafted) / rep.area, 1e-12);
+  // the substrate first (one H fewer per graft), then the chains
+  size_t nsub = 0;
+  for (const auto& a : s.atoms) nsub += a.mol == 1;
+  EXPECT_EQ(nsub, slab.atoms.size() - size_t(rep.grafted));
+  int grafts = 0;
+  for (const auto& b : s.bonds) {
+    const auto &a = s.atoms[b.i], &c = s.atoms[b.j];
+    if ((a.mol == 1) != (c.mol == 1)) {
+      ++grafts;
+      const Atom& o = a.mol == 1 ? a : c;
+      EXPECT_EQ(o.element, 8);
+      EXPECT_NEAR(norm(s.cell.minimum_image(a.pos - c.pos)), 1.45, 0.2);
+    }
+  }
+  EXPECT_EQ(grafts, rep.grafted);
+  const auto cn = coordination(s);
+  for (size_t i = 0; i < s.atoms.size(); ++i)
+    if (s.atoms[i].mol == 1 && s.atoms[i].element == 8) EXPECT_EQ(cn[i], 2) << "O " << i;
+  double top = -1e300;
+  for (const auto& a : s.atoms) if (a.mol == 1) top = std::max(top, a.pos[2]);
+  for (const auto& a : s.atoms) if (a.mol != 1 && a.element == 6) EXPECT_GT(a.pos[2], top - 1.0);
+  std::printf("brush: %d of %d sites grafted, sigma %.2f /nm2 on %.1f nm2\n", rep.grafted, rep.sites, rep.sigma, rep.area);
+}

@@ -450,4 +450,43 @@ public sealed partial class MainViewModel
         catch (Exception e) { CrystalError = e.Message; Status = "Could not build: " + e.Message; }
         finally { CrystalBusy = false; }
     }
+
+    /// <summary>The open structure's atoms as the asymmetric unit (B4: a crystal of the current molecule): Cartesian
+    /// positions about their centre put into this cell's fractional coordinates at ¼ ¼ ¼, away from the common special
+    /// positions; the space group places its copies. The cell and group are the user's (from the published structure).</summary>
+    public void SitesFromOpenMolecule()
+    {
+        if (_doc == null) { CrystalError = "Open or build the molecule first (the structure in the Studio becomes the asymmetric unit)"; return; }
+        var n = (int)_doc.Summary().Atoms;
+        if (n == 0 || n > 2000) { CrystalError = n == 0 ? "The open structure has no atoms" : $"{n} atoms: the asymmetric unit is one molecule (or a few)"; return; }
+        var at = Enumerable.Range(0, n).Select(i => _doc.Atom(i)).ToArray();
+        double cx = at.Average(a => a.X), cy = at.Average(a => a.Y), cz = at.Average(a => a.Z);
+        // the cell as cell_parameters builds it: a along x, b in the xy plane
+        double A = (double)_cA, B = (double)_cB, Cc = (double)_cC, d2r = Math.PI / 180;
+        double ca = Math.Cos((double)_cAlpha * d2r), cb = Math.Cos((double)_cBeta * d2r), cg = Math.Cos((double)_cGamma * d2r), sg = Math.Sin((double)_cGamma * d2r);
+        double cyc = (ca - cb * cg) / sg, czc = Math.Sqrt(Math.Max(1e-12, 1 - cb * cb - cyc * cyc));
+        double[,] m = { { A, B * cg, Cc * cb }, { 0, B * sg, Cc * cyc }, { 0, 0, Cc * czc } };   // columns a, b, c
+        // upper triangular: back substitution for the fractional coordinates
+        (double, double, double) Frac(double x, double y, double z)
+        {
+            var fz = z / m[2, 2];
+            var fy = (y - m[1, 2] * fz) / m[1, 1];
+            var fx = (x - m[0, 1] * fy - m[0, 2] * fz) / m[0, 0];
+            return (fx, fy, fz);
+        }
+        _quiet = true;
+        CrystalSites.Clear();
+        var count = new Dictionary<string, int>();
+        foreach (var a in at)
+        {
+            var el = string.IsNullOrWhiteSpace(a.ElementSymbol) ? "C" : a.ElementSymbol.Trim();
+            count[el] = count.GetValueOrDefault(el) + 1;
+            var (fx, fy, fz) = Frac(a.X - cx, a.Y - cy, a.Z - cz);
+            CrystalSites.Add(new CrystalSiteRow(CrystalPreview, el + count[el], el, fx + 0.25, fy + 0.25, fz + 0.25));
+        }
+        CrystalTitle = Title.Replace(" (unsaved)", "").Replace(' ', '_') + "_crystal";
+        CrystalCite = $"asymmetric unit: the open molecule ({n} atoms), centred at ¼ ¼ ¼ of this cell — give the cell and space group of the published structure";
+        _quiet = false;
+        CrystalPreview();
+    }
 }

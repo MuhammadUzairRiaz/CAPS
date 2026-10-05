@@ -145,6 +145,28 @@ public sealed partial class MainViewModel
                                                          : "Zigzag edges along x; layers AB-stacked 3.35 Å apart (graphite)";
     // bond length (sheets and tubes) and concentric walls (armchair or zigzag tubes)
     private decimal _nanoCc = 1.42m, _tubeWalls = 1;
+    // walls of any chirality, and ropes of tubes (core nano.hpp NanotubeOptions wall_chiralities, bundle)
+    private string _tubeWallList = "";
+    private int _tubeRope;
+    private decimal _tubeGap = 3.4m;
+    public static readonly string[] TubeRopes = ["One tube", "Rope of 7", "Rope of 19", "Rope of 37", "Periodic rope lattice"];
+    public string TubeWallList { get => _tubeWallList; set { if (Set(ref _tubeWallList, value ?? "")) { RaiseNano(); NanoPreview(); } } }
+    public int TubeRope { get => _tubeRope; set { if (Set(ref _tubeRope, Math.Clamp(value, 0, 4))) { Raise(nameof(TubeIsRope)); RaiseNano(); NanoPreview(); } } }
+    public bool TubeIsRope => _tubeRope > 0;
+    public decimal TubeGap { get => _tubeGap; set { if (Set(ref _tubeGap, Math.Clamp(value, 2.5m, 10m))) NanoPreview(); } }
+    /// <summary>"5,5 10,10 26,0" as [[5,5],[10,10],[26,0]]; null when empty or not pairs.</summary>
+    private JsonArray? TubeWallPairs()
+    {
+        var nums = _tubeWallList.Split([' ', ',', ';', '@', '(', ')'], StringSplitOptions.RemoveEmptyEntries);
+        if (nums.Length < 2 || nums.Length % 2 != 0) return null;
+        var a = new JsonArray();
+        for (var k = 0; k < nums.Length; k += 2)
+        {
+            if (!int.TryParse(nums[k], out var n) || !int.TryParse(nums[k + 1], out var m)) return null;
+            a.Add(new JsonArray(n, m));
+        }
+        return a;
+    }
     public decimal NanoCc { get => _nanoCc; set { if (Set(ref _nanoCc, Math.Clamp(value, 1.30m, 1.60m))) { RaiseNano(); NanoPreview(); } } }
     public bool TubeMultiWalled
     {
@@ -252,8 +274,10 @@ public sealed partial class MainViewModel
     {
         3 => PoreTitle,
         0 => $"{(_nanoMaterial == 1 ? "h-BN" : "Graphene")} · {_sheetLayers} layer{(_sheetLayers > 1 ? "s" : "")}",
-        1 => TubeWallsAllowed && _tubeWalls > 1 ? TubeWallsTitle()
-                                                : $"({_tubeN},{_tubeM}) {(TubeKind == 0 ? "armchair" : TubeKind == 1 ? "zigzag" : "chiral")}{(_nanoMaterial == 1 ? " BN" : "")} · d = {TubeGeometry()[0]:F2} Å",
+        1 => (TubeWallPairs() is { } wl ? string.Join("@", wl.Select(p => $"({p![0]},{p[1]})")) + " nanotube"
+              : TubeWallsAllowed && _tubeWalls > 1 ? TubeWallsTitle()
+                                                : $"({_tubeN},{_tubeM}) {(TubeKind == 0 ? "armchair" : TubeKind == 1 ? "zigzag" : "chiral")}{(_nanoMaterial == 1 ? " BN" : "")} · d = {TubeGeometry()[0]:F2} Å")
+             + (_tubeRope switch { 0 => "", 4 => " · rope lattice", _ => $" · rope of {(_tubeRope == 1 ? 7 : _tubeRope == 2 ? 19 : 37)}" }),
         _ => $"{(_particleCrystal < Crystals.Count ? Crystals[_particleCrystal].Name : "crystal")} {ParticleShapes[_particleShape].ToLowerInvariant()} · r = {_particleRadius:0.#} Å",
     };
     public string NanoAxisText => _nanoKind == 3 ? (_poreType == 0 ? (_poreVacuum ? "vacuum above the walls" : "periodic in x, y, z") : "periodic in x, y, z") : _nanoKind == 1 ? (_nanoPeriodic ? "periodic along z" : "capped ends") : _nanoKind == 0 ? (_nanoPeriodic ? "periodic in the plane" : "flake")
@@ -278,6 +302,10 @@ public sealed partial class MainViewModel
             case 1:
                 o["n"] = (int)_tubeN; o["m"] = (int)_tubeM; o["length"] = (double)_tubeLength; o["cc"] = (double)_nanoCc; o["material"] = NanoMaterialIds[_nanoMaterial];
                 o["walls"] = TubeWallsAllowed ? (int)_tubeWalls : 1;
+                if (TubeWallPairs() is { } wl) o["wall_chiralities"] = wl;
+                if (_tubeRope is >= 1 and <= 3) o["bundle"] = _tubeRope switch { 1 => 7, 2 => 19, _ => 37 };
+                if (_tubeRope == 4) o["bundle_lattice"] = 1;
+                if (_tubeRope > 0) o["tube_gap"] = (double)_tubeGap;
                 break;
             default:
                 o["crystal"] = _particleCrystal < Crystals.Count ? Crystals[_particleCrystal].File : "";

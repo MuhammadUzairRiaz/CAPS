@@ -124,6 +124,20 @@
                               ToolTip.Tip="Concentric walls about 3.4 Å apart: armchair (n,n)@(n+5,n+5) or zigzag (n,0)@(n+9,0); chiral walls do not share a period along the axis" />
                     <NumericUpDown Grid.Column="1" Value="{Binding TubeWalls}" Minimum="2" Maximum="6" Increment="1" FormatString="0" IsVisible="{Binding TubeMultiWalled}" />
                   </Grid>
+                  <StackPanel Spacing="4">
+                    <TextBlock Text="Walls by (n, m), innermost first (any chirality)" Classes="label" />
+                    <TextBox Text="{Binding TubeWallList}" Watermark="5,5  10,10  26,0" FontFamily="{DynamicResource Mono}"
+                             ToolTip.Tip="Each wall its own chirality; a periodic tube is made long enough for every wall's period (stretched at most 2 %). Empty: the walls above" />
+                  </StackPanel>
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                    <ComboBox ItemsSource="{x:Static vm:MainViewModel.TubeRopes}" SelectedIndex="{Binding TubeRope}" HorizontalAlignment="Stretch"
+                              ToolTip.Tip="A rope (bundle) of identical tubes, each its own molecule" />
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" IsVisible="{Binding TubeIsRope}">
+                      <TextBlock Text="gap Å" Classes="label" VerticalAlignment="Center" />
+                      <NumericUpDown Value="{Binding TubeGap}" Minimum="2.5" Maximum="10" Increment="0.1" FormatString="0.00" Width="90"
+                                     ToolTip.Tip="Wall to wall between neighbouring tubes (3.4 Å: the graphite interlayer spacing)" />
+                    </StackPanel>
+                  </Grid>
                 </StackPanel>
               </Border>
 

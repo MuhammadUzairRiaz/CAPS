@@ -70,6 +70,21 @@ public sealed partial class MainViewModel
     public bool SlabCentre { get => _slabCentre; set => Set(ref _slabCentre, value); }
     public void MakeVacuumSlab() => CellEdit(new { op = "vacuum_slab", vacuum = (double)_slabVac, centre = _slabCentre });
 
+    // point defects (core edit.hpp point_defects): vacancies or substitutions on a share of one element's sites
+    private string _defFrom = "Si", _defTo = "";
+    private decimal _defPct = 5, _defSpacing = 0;
+    private bool _defSel;
+    public string DefectFrom { get => _defFrom; set => Set(ref _defFrom, (value ?? "").Trim()); }
+    public string DefectTo { get => _defTo; set => Set(ref _defTo, (value ?? "").Trim()); }
+    public decimal? DefectPercent { get => _defPct; set { if (value != null) Set(ref _defPct, Math.Clamp(value.Value, 0.1m, 100m)); } }
+    public decimal? DefectSpacing { get => _defSpacing; set { if (value != null) Set(ref _defSpacing, Math.Clamp(value.Value, 0m, 50m)); } }
+    public bool DefectInSelection { get => _defSel; set => Set(ref _defSel, value); }
+    public void MakeDefects()
+    {
+        if (_defSel) CellEdit(new { op = "defects", from = _defFrom, to = _defTo, fraction = (double)_defPct / 100, min_spacing = (double)_defSpacing, atoms = SelectionAtoms() });
+        else CellEdit(new { op = "defects", from = _defFrom, to = _defTo, fraction = (double)_defPct / 100, min_spacing = (double)_defSpacing });
+    }
+
     // a cluster from the periodic structure (core lattice.hpp cut_cluster): whole molecules about a centre, no cell
     private decimal _clusterR = 12;
     private bool _clusterSel, _clusterAny;

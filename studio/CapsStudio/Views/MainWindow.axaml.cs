@@ -159,6 +159,16 @@ public partial class MainWindow : Window
         RenderGuide.Vm = _vm;
         PipeTablePlot.Brushable = true;
         PipeTablePlot.Brushed += (x0, x1, y0, y1) => _vm.ApplyBrush(x0, x1, y0, y1);
+        // a click on an Analyze curve over the trajectory shows that frame (log–log curves are not over frames)
+        PropPlot.Clicked += x =>
+        {
+            var c = _vm.Analyze.CurveIndex >= 0 && _vm.Analyze.CurveIndex < _vm.Analyze.Curves.Count ? _vm.Analyze.Curves[_vm.Analyze.CurveIndex] : null;
+            if (c == null || c.LogLog) return;
+            var f = _vm.Analyze.FrameOfCurveX(x);
+            if (f < 0) return;
+            _vm.Frame = f;
+            _vm.Status = $"Frame {f} · {c.Label} at {x.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)} {c.XLabel}";
+        };
         _vm.FullViewRequested += live => OpenFullView(live);
         _vm.PipeTableChanged += () =>
         {

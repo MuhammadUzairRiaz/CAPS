@@ -3,8 +3,10 @@
 #include <array>
 #include <cmath>
 #include <cstdio>
+#include <random>
 
 #include "caps/polymer.hpp"
+#include "caps/elements.hpp"
 
 namespace caps {
 
@@ -52,6 +54,95 @@ System build_interface(const System& slab, const ChainSpec& spec, const Interfac
   rep.notes.insert(rep.notes.begin(), b);
   s.notes = rep.notes;
   if (report) *report = rep;
+  return s;
+}
+
+System build_brush(const System& slab, const ChainSpec& spec, const BrushOptions& o, BrushReport* report) {
+  if (!slab.cell.valid() || slab.atoms.empty()) throw GrowError("the slab has no atoms or no cell");
+  const Cell& c = slab.cell;
+  if (std::fabs(c.a[1]) > 1e-6 || std::fabs(c.a[2]) > 1e-6 || std::fabs(c.b[0]) > 1e-6 || std::fabs(c.b[2]) > 1e-6 || std::fabs(c.c[0]) > 1e-6 ||
+      std::fabs(c.c[1]) > 1e-6)
+    throw GrowError("the slab's surface cell is not rectangular; cleave it with the orthogonal option");
+  if (o.film <= 5) throw GrowError("give the brush more than 5 Å to grow into");
+  BrushReport R;
+  const double Lx = c.a[0], Ly = c.b[1];
+  R.area = Lx * Ly / 100.0;
+  const int zs = element_from_symbol(o.site);
+  if (zs <= 0) throw GrowError("unknown site element '" + o.site + "'");
+  double ztop = -1e300;
+  for (const auto& a : slab.atoms) ztop = std::max(ztop, a.pos[2]);
+  // sites: the element near the top with a hydrogen pointing up
+  const auto nb = slab.neighbours();
+  struct Site { uint32_t atom, h; Vec3 dir; };
+  std::vector<Site> sites;
+  for (uint32_t i = 0; i < slab.atoms.size(); ++i) {
+    if (slab.atoms[i].element != zs || slab.atoms[i].pos[2] < ztop - 2.5) continue;
+    for (uint32_t h : nb[i])
+      if (slab.atoms[h].element == 1) {
+        const Vec3 d = slab.cell.minimum_image(slab.atoms[h].pos - slab.atoms[i].pos);
+        if (d[2] > 0.3 * norm(d)) { sites.push_back({i, h, d * (1.0 / norm(d))}); break; }
+      }
+  }
+  R.sites = int(sites.size());
+  if (sites.empty()) throw GrowError("no graft sites: no " + o.site + " near the top face carries a hydrogen pointing up (hydroxylate the surface first)");
+  const int want = o.chains > 0 ? o.chains : std::max(1, int(std::lround(o.density * R.area)));
+  // drawn at random, at least min_spacing apart in the surface plane
+  std::mt19937_64 rng(o.grow.seed);
+  std::shuffle(sites.begin(), sites.end(), rng);
+  std::vector<Site> pick;
+  for (const auto& s : sites) {
+    if (int(pick.size()) >= want) break;
+    bool ok = true;
+    for (const auto& p : pick) {
+      double dx = slab.atoms[s.atom].pos[0] - slab.atoms[p.atom].pos[0], dy = slab.atoms[s.atom].pos[1] - slab.atoms[p.atom].pos[1];
+      dx -= Lx * std::round(dx / Lx), dy -= Ly * std::round(dy / Ly);
+      if (dx * dx + dy * dy < o.min_spacing * o.min_spacing) { ok = false; break; }
+    }
+    if (ok) pick.push_back(s);
+  }
+  if (int(pick.size()) < want)
+    R.notes.push_back("only " + std::to_string(pick.size()) + " of " + std::to_string(want) + " chains: the sites run out at " + std::to_string(o.min_spacing).substr(0, 4) +
+                      " Å spacing (" + std::to_string(sites.size()) + " sites)");
+  // the slab without the sites' hydrogens, at the bottom of the cell
+  std::vector<char> drop(slab.atoms.size(), 0);
+  for (const auto& p : pick) drop[p.h] = 1;
+  std::vector<int64_t> newi(slab.atoms.size(), -1);
+  System sub = slab;
+  sub.atoms.clear(), sub.bonds.clear(), sub.velocities.clear();
+  double zmin = 1e300;
+  for (const auto& a : slab.atoms) zmin = std::min(zmin, a.pos[2]);
+  for (size_t i = 0; i < slab.atoms.size(); ++i)
+    if (!drop[i]) {
+      newi[i] = int64_t(sub.atoms.size());
+      Atom a = slab.atoms[i];
+      a.pos[0] -= c.origin[0] + Lx * std::floor((a.pos[0] - c.origin[0]) / Lx);
+      a.pos[1] -= c.origin[1] + Ly * std::floor((a.pos[1] - c.origin[1]) / Ly);
+      a.pos[2] += 0.5 - zmin;
+      sub.atoms.push_back(a);
+    }
+  for (const auto& b : slab.bonds)
+    if (newi[b.i] >= 0 && newi[b.j] >= 0) sub.bonds.push_back({uint32_t(newi[b.i]), uint32_t(newi[b.j]), b.order});
+  const double top = ztop - zmin + 0.5;
+  GrowOptions g = o.grow;
+  g.cell = {Lx, Ly, top + o.film + o.vacuum};
+  g.z_lo = top - 4.0, g.z_hi = top + o.film;   // the heads sit at their sites, below the top hydrogens; the substrate contacts keep the chains out of the slab
+  g.substrate = &sub;
+  g.chains = int(pick.size());
+  g.anchors.clear();
+  for (const auto& p : pick) g.anchors.push_back({uint32_t(newi[p.atom]), {p.dir[0], p.dir[1], p.dir[2]}});
+  g.auto_scale = true;
+  GrowReport rep;
+  System s = grow_chains(spec, g, &rep);
+  R.grafted = int(pick.size());
+  R.sigma = R.grafted / R.area;
+  s.title = "CAPS brush: " + std::to_string(R.grafted) + " chains on " + (slab.title.empty() ? std::string("a surface") : slab.title);
+  char b[220];
+  std::snprintf(b, sizeof b, "brush: %d chains grafted to %s sites (%d found) · σ = %.3f chains/nm² on %.1f nm² · film %.0f Å, %.0f Å vacuum", R.grafted,
+                o.site.c_str(), R.sites, R.sigma, R.area, o.film, o.vacuum);
+  R.notes.insert(R.notes.begin(), b);
+  for (const auto& n : rep.notes) R.notes.push_back(n);
+  s.notes = R.notes;
+  if (report) *report = R;
   return s;
 }
 

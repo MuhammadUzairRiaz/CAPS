@@ -3273,6 +3273,22 @@
                       <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding Analyze.CijConfigsD}" Minimum="1" Maximum="50" Increment="1" FormatString="0" />
                     </Grid>
                   </StackPanel>
+                  <StackPanel Spacing="6" IsVisible="{Binding Analyze.FrictionChip.IsOn}">
+                    <TextBlock Text="SLIDING FRICTION" Classes="h3" Margin="0,6,0,0" />
+                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6" RowDefinitions="Auto,Auto,Auto,Auto">
+                      <TextBlock Text="Slid molecule" Classes="dim" /><TextBlock Grid.Column="1" Text="Held (0 none)" Classes="dim" /><TextBlock Grid.Column="2" Text="Speed (m/s)" Classes="dim" />
+                      <NumericUpDown Grid.Row="1" Value="{Binding Analyze.FrMovingD}" Minimum="1" Increment="1" FormatString="0" />
+                      <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding Analyze.FrFixedD}" Minimum="0" Increment="1" FormatString="0" />
+                      <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding Analyze.FrSpeedD}" Minimum="0.1" Maximum="2000" Increment="5" FormatString="0.#" />
+                      <TextBlock Grid.Row="2" Text="Slid for (ps)" Classes="dim" Margin="0,4,0,0" /><TextBlock Grid.Row="2" Grid.Column="1" Text="Settle first (ps)" Classes="dim" Margin="0,4,0,0" />
+                      <TextBlock Grid.Row="2" Grid.Column="2" Text="T (K)" Classes="dim" Margin="0,4,0,0" />
+                      <NumericUpDown Grid.Row="3" Value="{Binding Analyze.FrPsD}" Minimum="0.1" Increment="10" FormatString="0.#" />
+                      <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding Analyze.FrEqD}" Minimum="0" Increment="5" FormatString="0.#" />
+                      <NumericUpDown Grid.Row="3" Grid.Column="2" Value="{Binding Analyze.FrTD}" Minimum="1" Increment="10" FormatString="0" />
+                    </Grid>
+                    <TextBlock Text="{Binding Analyze.FrText}" Classes="mono" FontSize="11" />
+                    <TextBlock Classes="dim" TextWrapping="Wrap" Text="Along x, at the gap the structure has (a film between two wall molecules, e.g. two fibre or filler slabs). MD sliding speeds are metres per second and up: far faster than a test rig." />
+                  </StackPanel>
                   <StackPanel Spacing="6" IsVisible="{Binding Analyze.CreepChip.IsOn}">
                     <TextBlock Text="CREEP (constant stress)" Classes="h3" Margin="0,6,0,0" />
                     <Grid ColumnDefinitions="*,*" ColumnSpacing="6" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">

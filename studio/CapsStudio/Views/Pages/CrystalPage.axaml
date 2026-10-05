@@ -178,6 +178,9 @@
                     <Button Classes="small" Click="OnAddSite">
                       <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="plus" Size="13" VerticalAlignment="Center" /><TextBlock Text="Add site" VerticalAlignment="Center" /></StackPanel>
                     </Button>
+                    <Button Classes="small" Click="OnSitesFromMolecule" ToolTip.Tip="The open structure's atoms as the asymmetric unit in this cell, its centre at ¼ ¼ ¼; the space group places its copies (give the cell and group of the published structure)">
+                      <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="atom" Size="13" VerticalAlignment="Center" /><TextBlock Text="From the open molecule" VerticalAlignment="Center" /></StackPanel>
+                    </Button>
                     <Button Classes="small" Click="OnImportCif">
                       <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="file" Size="13" VerticalAlignment="Center" /><TextBlock Text="Import CIF" VerticalAlignment="Center" /></StackPanel>
                     </Button>
@@ -241,6 +244,15 @@
                     <CheckBox Content="Any atom inside" IsChecked="{Binding ClusterAnyAtom}" ToolTip.Tip="Keep a molecule when any of its atoms is within R (else its centroid)" />
                     <Button Classes="small" Content="Cut cluster" Click="OnCluster" />
                   </StackPanel>
+                  <TextBlock Text="Point defects · vacancies, or another element on some sites (doping)" Classes="label" TextWrapping="Wrap" />
+                  <Grid ColumnDefinitions="60,60,80,80,*" ColumnSpacing="6">
+                    <TextBox Text="{Binding DefectFrom}" Watermark="from" ToolTip.Tip="The element whose sites are picked" />
+                    <TextBox Grid.Column="1" Text="{Binding DefectTo}" Watermark="to" ToolTip.Tip="The element put on them; empty: vacancies (the atoms removed)" />
+                    <NumericUpDown Grid.Column="2" Value="{Binding DefectPercent}" Minimum="0.1" Maximum="100" Increment="1" FormatString="0.# '%'" ShowButtonSpinner="False" ToolTip.Tip="Share of the sites" />
+                    <NumericUpDown Grid.Column="3" Value="{Binding DefectSpacing}" Minimum="0" Maximum="50" Increment="0.5" FormatString="≥ 0.# Å" ShowButtonSpinner="False" ToolTip.Tip="Least distance between two picked sites" />
+                    <Button Grid.Column="4" Classes="small" Content="Make defects" Click="OnDefects" HorizontalAlignment="Stretch" />
+                  </Grid>
+                  <CheckBox Content="Only among the selected atoms" IsChecked="{Binding DefectInSelection}" />
                   <TextBlock Text="Nanowire · cut along a lattice direction [uvw], periodic along it" Classes="label" />
                   <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6" RowDefinitions="Auto,Auto" RowSpacing="6">
                     <TextBox Text="{Binding WireUvw}" Watermark="u v w" FontFamily="{DynamicResource Mono}" ToolTip.Tip="The wire's axis as a lattice direction, e.g. 1 1 0" />

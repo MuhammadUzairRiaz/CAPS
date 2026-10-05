@@ -155,7 +155,8 @@ class _MechOpts(C.Structure):
                 ("shear_lo", C.c_double), ("shear_hi", C.c_double), ("shear_points", C.c_int32),
                 ("shear_ps", C.c_double), ("shear_eq_ps", C.c_double),
                 ("conf_trials", C.c_int32), ("conf_method", C.c_int32), ("conf_selection", C.c_int32), ("conf_window", C.c_double), ("conf_rmsd", C.c_double),
-                ("creep_stress", C.c_double), ("creep_t", C.c_double), ("creep_ps", C.c_double), ("creep_eq_ps", C.c_double), ("creep_axis", C.c_int32)]
+                ("creep_stress", C.c_double), ("creep_t", C.c_double), ("creep_ps", C.c_double), ("creep_eq_ps", C.c_double), ("creep_axis", C.c_int32),
+                ("fr_moving", C.c_int32), ("fr_fixed", C.c_int32), ("fr_velocity", C.c_double), ("fr_ps", C.c_double), ("fr_eq_ps", C.c_double), ("fr_t", C.c_double)]
 
 
 _RecipeProgress = C.CFUNCTYPE(C.c_int32, C.c_int32, C.c_int32, C.c_char_p, C.c_char_p, C.c_char_p, C.c_double, C.c_void_p)
@@ -1008,6 +1009,18 @@ def _conformers(self, trials: int = 50, method: str = "torsions", selection: boo
                                                       "rmsd": float(rmsd), "temperature": float(temperature), "seed": int(seed)})
 
 
+def _rigid(self, molecules: str = "") -> int:
+    """Molecules ("1-3,7"; "" none) that move as rigid bodies in the LAMMPS inputs written by export_engines (fix
+    rigid/nvt/small; pairs inside a body excluded). CAPS's own runs have no rigid bodies. Returns how many."""
+    f = library().caps_set_rigid_molecules
+    f.argtypes, f.restype = [C.c_void_p, C.c_char_p], C.c_int32
+    n = f(self._h, _enc(molecules))
+    if n < 0:
+        raise _error()
+    return n
+
+
+Document.rigid = _rigid
 Document.conformers = _conformers
 Document.normal_modes = _normal_modes
 Document.animate_mode = _animate_mode

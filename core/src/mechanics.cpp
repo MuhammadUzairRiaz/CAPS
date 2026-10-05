@@ -538,6 +538,106 @@ std::vector<Property> viscosity_properties(const ViscosityResult& r) {
   return {q};
 }
 
+FrictionResult run_friction(System& s, const FrictionOptions& o) {
+  if (!s.cell.valid()) throw std::invalid_argument("friction needs a periodic cell");
+  // molecule ids: as the file gives them, else the bonded fragments numbered from 1
+  std::vector<int64_t> mol(s.atoms.size());
+  if (s.has_mol) for (size_t i = 0; i < s.atoms.size(); ++i) mol[i] = s.atoms[i].mol;
+  else { const auto frag = s.molecules(); for (size_t i = 0; i < s.atoms.size(); ++i) mol[i] = frag[i] + 1; }
+  std::vector<char> mv(s.atoms.size(), 0), fx(s.atoms.size(), 0);
+  size_t nm = 0, nf = 0;
+  for (size_t i = 0; i < s.atoms.size(); ++i) {
+    if (mol[i] == o.moving_mol) mv[i] = 1, ++nm;
+    if (o.fixed_mol > 0 && mol[i] == o.fixed_mol) fx[i] = 1, ++nf;
+  }
+  if (nm == 0) throw std::invalid_argument("no molecule " + std::to_string(o.moving_mol) + " to slide");
+  if (o.fixed_mol > 0 && nf == 0) throw std::invalid_argument("no molecule " + std::to_string(o.fixed_mol) + " to hold");
+  if (o.moving_mol == o.fixed_mol) throw std::invalid_argument("the sliding and the held molecule must differ");
+  DynamicsOptions d;
+  d.field = o.field ? o.field : std::make_shared<const ForceField>(default_forcefield(s));
+  d.energy = o.energy;
+  d.dt = o.dt;
+  d.temperature = o.temperature;
+  d.thermostat = Thermostat::Bussi;
+  d.tau_t = o.tau_t;
+  d.seed = o.seed;
+  d.frame_every = 0;
+  d.fixed = fx;
+  d.move_group = mv;
+  d.new_velocities = o.new_velocities || s.velocities.size() != s.atoms.size();
+  const int64_t neq = std::llround(o.equilibrate_ps * 1000 / o.dt), nrun = std::llround(o.ps * 1000 / o.dt);
+  if (neq > 0) {   // both walls still: the film settles between them
+    d.steps = neq;
+    d.thermo_every = 1000;
+    d.progress = [&](const ThermoRow& r) { return !cancelled(o.progress, "settling between the walls", double(r.step) / double(neq + nrun)); };
+    run_dynamics(s, d);
+    d.new_velocities = false;
+  }
+  FrictionResult R;
+  d.move_velocity = {o.velocity, 0, 0};
+  d.steps = nrun;
+  d.thermo_every = std::max(1, o.sample_every);
+  const int64_t skip = std::llround(o.transient * double(nrun));
+  std::vector<double> sx, sz;
+  d.progress = [&](const ThermoRow& r) {
+    R.t_ps.push_back(r.time_ps), R.fx.push_back(r.wall_force[0]), R.fz.push_back(r.wall_force[2]), R.temperature.push_back(r.temperature);
+    if (r.step > skip) sx.push_back(r.wall_force[0]), sz.push_back(r.wall_force[2]);
+    return !cancelled(o.progress, "sliding at " + fmt(o.velocity, 4) + " Å/ps", double(neq + r.step) / double(neq + nrun));
+  };
+  run_dynamics(s, d);
+  if (sx.size() < 2) throw std::invalid_argument("the run is too short for the samples");
+  auto blocked = [&](const std::vector<double>& v, double& mean, double& err) {
+    const int nb = std::clamp(o.blocks, 2, int(v.size()));
+    std::vector<double> bm;
+    for (int b = 0; b < nb; ++b) {
+      const size_t a = v.size() * b / nb, e = v.size() * (b + 1) / nb;
+      bm.push_back(std::accumulate(v.begin() + a, v.begin() + e, 0.0) / double(e - a));
+    }
+    mean = std::accumulate(bm.begin(), bm.end(), 0.0) / nb;
+    double q = 0;
+    for (double x : bm) q += (x - mean) * (x - mean);
+    err = std::sqrt(q / (nb - 1) / nb);
+  };
+  double mx, ex, mz, ez;
+  blocked(sx, mx, ex);
+  blocked(sz, mz, ez);
+  R.friction = -mx, R.friction_err = ex, R.normal = mz, R.normal_err = ez;
+  R.area = norm(cross(s.cell.a, s.cell.b));
+  const double to_mpa = 4184.0 / kNAvo * 1e10 / (R.area * 1e-20) * 1e-6;   // kcal/mol/Å over Å² → MPa
+  R.shear_stress = R.friction * to_mpa;
+  R.normal_stress = R.normal * to_mpa;
+  R.mu = std::fabs(R.normal) > 1e-12 ? R.friction / R.normal : 0;
+  R.method = "molecule " + std::to_string(o.moving_mol) + " slid along x at " + fmt(o.velocity, 4) + " Å/ps (" + fmt(o.velocity * 100, 4) + " m/s), molecule " +
+             (o.fixed_mol > 0 ? std::to_string(o.fixed_mol) + " held" : std::string("none held")) + ", the rest at " + fmt(o.temperature, 4) + " K (Bussi) for " +
+             fmt(o.ps, 4) + " ps after " + fmt(o.equilibrate_ps, 4) + " ps; the first " + fmt(100 * o.transient, 3) + " % left out";
+  R.notes.push_back("constant gap (the moving wall's height is fixed): F_z is the load the film carries at that gap, μ = −F_x/F_z");
+  R.notes.push_back("the thermostat acts on every velocity component of the film, including the flow along x: shear heating is taken out, the flow profile is the thermostat's as well as the walls'");
+  if (R.friction_err > 0.5 * std::fabs(R.friction)) R.notes.push_back("the friction force is mostly noise: run longer or slide faster");
+  return R;
+}
+
+std::vector<Property> friction_properties(const FrictionResult& r) {
+  Property q;
+  q.id = "friction";
+  q.name = "Sliding friction (shear stress at the wall)";
+  q.unit = "MPa";
+  q.value = r.shear_stress;
+  q.error = r.area > 0 ? r.friction_err * r.shear_stress / std::max(1e-300, std::fabs(r.friction)) : NaN;
+  q.method = r.method;
+  q.extra["friction force −F_x (kcal/mol/Å)"] = r.friction;
+  q.extra["friction force error (kcal/mol/Å)"] = r.friction_err;
+  q.extra["normal force F_z (kcal/mol/Å)"] = r.normal;
+  q.extra["normal stress (MPa)"] = r.normal_stress;
+  q.extra["friction coefficient μ = −F_x/F_z"] = r.mu;
+  q.extra["wall area (Å²)"] = r.area;
+  std::vector<double> t0, ffx, ffz;
+  for (size_t k = 0; k < r.t_ps.size(); ++k) t0.push_back(r.t_ps[k] - r.t_ps.front()), ffx.push_back(-r.fx[k]), ffz.push_back(r.fz[k]);
+  q.series = {Series{"friction force", "t (ps)", "−F_x (kcal/mol/Å)", t0, ffx}, Series{"normal force", "t (ps)", "F_z (kcal/mol/Å)", t0, ffz},
+              Series{"temperature", "t (ps)", "T (K)", t0, r.temperature}};
+  q.notes = r.notes;
+  return {q};
+}
+
 CreepResult run_creep(System& s, const CreepOptions& o) {
   if (!s.cell.valid()) throw std::invalid_argument("a creep test needs a periodic cell");
   if (o.axis < 0 || o.axis > 2) throw std::invalid_argument("axis must be 0 (x), 1 (y) or 2 (z)");

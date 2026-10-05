@@ -50,7 +50,17 @@
             <TextBlock Text="{Binding JobsSummary}" Classes="dim" VerticalAlignment="Center" />
           </DockPanel>
         </Border>
-        <ListBox x:Name="JobList" ItemsSource="{Binding Jobs}" SelectedItem="{Binding SelectedJob}" Background="Transparent" Padding="10">
+        <Border DockPanel.Dock="Top" Padding="12,8" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1" IsVisible="{Binding HasJobs}">
+          <StackPanel Spacing="6">
+            <TextBox Text="{Binding JobQuery}" Watermark="Search jobs: title, kind, structure, host" />
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
+              <ComboBox ItemsSource="{x:Static vm:MainViewModel.JobStates}" SelectedIndex="{Binding JobState}" HorizontalAlignment="Stretch" />
+              <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:MainViewModel.JobSorts}" SelectedIndex="{Binding JobSort}" HorizontalAlignment="Stretch" />
+            </Grid>
+            <TextBlock Text="{Binding JobsShownText}" Classes="dim" FontSize="11" IsVisible="{Binding JobsShownText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+          </StackPanel>
+        </Border>
+        <ListBox x:Name="JobList" ItemsSource="{Binding JobsShown}" SelectedItem="{Binding SelectedJob}" Background="Transparent" Padding="10">
           <ListBox.ItemTemplate>
             <DataTemplate x:DataType="vm:Job">
               <StackPanel Margin="12,10" Spacing="4">

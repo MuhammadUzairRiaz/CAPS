@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <numeric>
 
 #include "caps/crystal.hpp"
 #include "caps/mechanics.hpp"
@@ -323,4 +324,76 @@ TEST(Nano, MoreParticleShapesFollowTheirVolumes) {
     EXPECT_NEAR(double(p.atoms.size()), expect, 0.15 * expect) << c.name;
     EXPECT_STREQ(to_string(o.shape), c.name);
   }
+}
+
+// Each wall its own (n, m): (5,5)@(10,10)@(26,0), 3.39 and 3.40 Å apart — the zigzag outer wall's period (√3 a) differs
+// from the armchair walls' (a), so the periodic tube is made long enough for both within 2 % — and ropes: 7 tubes about one, and the periodic triangular
+// lattice, axes 2R + 3.4 Å apart, each tube its own molecule.
+TEST(Nano, WallChiralitiesAndRopes) {
+  NanotubeOptions o;
+  o.wall_chiralities = {{5, 5}, {10, 10}, {26, 0}};
+  o.length = 60;
+  NanoReport r;
+  const System t = nanotube(o, &r);
+  const double ar = 1.42 * std::sqrt(3.0);
+  const auto atoms_per = [&](int n, int m) { const int d = std::gcd(2 * m + n, 2 * n + m); return 4 * (n * n + n * m + m * m) / d; };
+  EXPECT_EQ(r.atoms_per_period, atoms_per(5, 5) + atoms_per(10, 10) + atoms_per(26, 0));
+  // every atom on one of the three radii
+  for (const auto& a : t.atoms) {
+    const double rr = std::hypot(a.pos[0] - t.cell.a[0] / 2, a.pos[1] - t.cell.b[1] / 2);
+    const double r5 = ar * std::sqrt(75.0) / (2 * M_PI), r10 = ar * std::sqrt(300.0) / (2 * M_PI), r26 = ar * 26 / (2 * M_PI);
+    EXPECT_LT(std::min({std::fabs(rr - r5), std::fabs(rr - r10), std::fabs(rr - r26)}), 1e-6);
+  }
+  // too close walls are refused, and walls whose periods cannot share a short length
+  o.wall_chiralities = {{5, 5}, {6, 6}};
+  EXPECT_THROW(nanotube(o), std::invalid_argument);
+  o.wall_chiralities = {{5, 5}, {10, 10}, {26, 0}};
+  o.length = 12;
+  EXPECT_THROW(nanotube(o), std::invalid_argument);
+  // a rope of seven (5,5) tubes, each its own molecule, neighbours 2R + 3.4 Å apart
+  NanotubeOptions b;
+  b.n = 5, b.m = 5, b.length = 10, b.bundle = 7;
+  NanoReport br;
+  const System rope = nanotube(b, &br);
+  int64_t top = 0;
+  for (const auto& a : rope.atoms) top = std::max(top, a.mol);
+  EXPECT_EQ(top, 7);
+  EXPECT_EQ(rope.atoms.size() % 7, 0u);
+  // the periodic lattice: two tubes per cell, the cell a = D, b = D√3
+  b.bundle_lattice = true;
+  const System lat = nanotube(b);
+  const double D = 2 * ar * std::sqrt(75.0) / (2 * M_PI) + 3.4;
+  EXPECT_NEAR(lat.cell.a[0], D, 1e-9);
+  EXPECT_NEAR(lat.cell.b[1], D * std::sqrt(3.0), 1e-9);
+  int64_t ltop = 0;
+  for (const auto& a : lat.atoms) ltop = std::max(ltop, a.mol);
+  EXPECT_EQ(ltop, 2);
+}
+
+// Point defects in an aluminium nanoparticle: 10 % vacancies (that many atoms fewer), then copper on 5 Al sites at least
+// 5 Å apart (the count kept, the spacing held).
+TEST(Nano, VacanciesAndDoping) {
+  const System al = read_cif(std::string(CAPS_SOURCE_DIR) + "/data/crystals/aluminium.cif");
+  ParticleOptions po;
+  po.radius = 10;
+  System p = nanoparticle(al, po);
+  const size_t n0 = p.atoms.size();
+  DefectOptions v;
+  v.from = 13;
+  v.fraction = 0.1;
+  std::vector<std::string> notes;
+  const int nv = point_defects(p, v, &notes);
+  EXPECT_EQ(nv, int(std::lround(0.1 * double(n0))));
+  EXPECT_EQ(p.atoms.size(), n0 - size_t(nv));
+  DefectOptions d;
+  d.from = 13, d.to = 29, d.count = 5, d.min_spacing = 5.0, d.seed = 3;
+  EXPECT_EQ(point_defects(p, d), 5);
+  std::vector<Vec3> cu;
+  for (const auto& a : p.atoms) if (a.element == 29) cu.push_back(a.pos);
+  ASSERT_EQ(cu.size(), 5u);
+  for (size_t i = 0; i < cu.size(); ++i)
+    for (size_t j = i + 1; j < cu.size(); ++j) EXPECT_GE(norm(p.cell.valid() ? p.cell.minimum_image(cu[i] - cu[j]) : cu[i] - cu[j]), 5.0 - 1e-9);
+  d.to = 13;
+  d.from = 13;
+  EXPECT_THROW(point_defects(p, d), std::invalid_argument);
 }

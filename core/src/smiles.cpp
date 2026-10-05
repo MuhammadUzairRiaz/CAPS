@@ -513,4 +513,53 @@ System molecule_system(const MolGraph& g, const std::vector<Vec3>& pos) {
   return s;
 }
 
+
+std::vector<Analog> enumerate_analogs(const std::string& core, const std::vector<std::pair<int, std::vector<std::string>>>& groups, size_t max) {
+  if (groups.empty()) throw std::invalid_argument("give the substituents of at least one R group");
+  for (const auto& [k, subs] : groups) {
+    if (k < 1 || k > 9) throw std::invalid_argument("R groups are numbered 1 to 9");
+    if (core.find("[*:" + std::to_string(k) + "]") == std::string::npos) throw std::invalid_argument("the core has no [*:" + std::to_string(k) + "]");
+    if (subs.empty()) throw std::invalid_argument("R" + std::to_string(k) + " has no substituents");
+  }
+  // a substituent with the closure digits right after its first atom (the attachment)
+  auto attach = [](std::string sub, const std::string& closure) {
+    while (!sub.empty() && sub.front() == ' ') sub.erase(sub.begin());
+    if (!sub.empty() && sub.front() == '*') sub.erase(sub.begin());
+    if (sub.empty()) throw std::invalid_argument("an empty substituent");
+    size_t end = 1;
+    if (sub[0] == '[') {
+      end = sub.find(']');
+      if (end == std::string::npos) throw std::invalid_argument("an unclosed bracket in " + sub);
+      ++end;
+    } else if (sub.size() > 1 && ((sub[0] == 'C' && sub[1] == 'l') || (sub[0] == 'B' && sub[1] == 'r'))) {
+      end = 2;
+    }
+    return sub.substr(0, end) + closure + sub.substr(end);
+  };
+  std::vector<Analog> out;
+  std::vector<size_t> idx(groups.size(), 0);
+  while (out.size() < max) {
+    std::string smi = core, tail, name;
+    for (size_t g = 0; g < groups.size(); ++g) {
+      const int k = groups[g].first;
+      const std::string& sub = groups[g].second[idx[g]];
+      const std::string mark = "[*:" + std::to_string(k) + "]", closure = "%9" + std::to_string(k);
+      const bool hydrogen = sub == "H" || sub == "[H]";
+      // the marker becomes the closure (or, for hydrogen, nothing: the core atom's own hydrogen)
+      for (size_t p; (p = smi.find(mark)) != std::string::npos;) {
+        // a marker in a branch "(…)" alone disappears with its parentheses when it is hydrogen
+        if (hydrogen && p > 0 && smi[p - 1] == '(' && p + mark.size() < smi.size() && smi[p + mark.size()] == ')') smi.erase(p - 1, mark.size() + 2);
+        else smi.replace(p, mark.size(), hydrogen ? "" : closure);
+      }
+      if (!hydrogen) tail += "." + attach(sub, closure);
+      name += (name.empty() ? "" : ", ") + std::string("R") + std::to_string(k) + "=" + sub;
+    }
+    out.push_back({smi + tail, name});
+    size_t g = 0;
+    while (g < idx.size() && ++idx[g] == groups[g].second.size()) idx[g++] = 0;
+    if (g == idx.size()) break;
+  }
+  return out;
+}
+
 }  // namespace caps

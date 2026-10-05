@@ -2106,6 +2106,200 @@
    "tested": "tests/test_torsion.cpp Torsion.BackboneTorsionPatterns (decane all-trans: every dihedral 180°; TG: alternately 180° and 60°)",
    "deviation": "bond lengths and angles are kept as they are: minimise afterwards to settle them and remove clashes",
    "tex": "\\phi_k \\leftarrow p_{\\,k \\bmod n}"
+  },
+  {
+   "group": "Growth",
+   "source": "core/src/interface.cpp",
+   "engines": [],
+   "cites": [],
+   "id": "brush",
+   "title": "Polymer brushes on surfaces",
+   "summary": "Chains grafted by one end to sites on a fibre or filler surface: a site atom near the top face with a hydrogen pointing up (a silanol's O) loses that hydrogen and the chain's head bonds in its place, leaving along it. Sites are drawn at random at least a spacing apart, at a grafting density σ; the chains grow upward with the same contact rules as any growth.",
+   "equation": "N = round(σ A),  A = L_x L_y,  σ_achieved = N / A",
+   "equation_note": "the head–site bond and the atoms within three bonds of it are bonded neighbours, not contacts; the first unit's torsions are referenced to the site's own neighbours (Si–O–C)",
+   "symbols": [
+    [
+     "σ",
+     "grafting density",
+     "chains/nm²"
+    ],
+    [
+     "A",
+     "surface area of the cell",
+     "nm²"
+    ],
+    [
+     "N",
+     "chains grafted",
+     "—"
+    ]
+   ],
+   "when": "Silane-coupled or polymer-grafted silica in rubber, sized fibre surfaces, brushes between a filler and the matrix: the grafted layer before the matrix is added (stack a melt on it) or relaxed on its own.",
+   "tested": "tests/test_crystal.cpp Crystal.PolymerBrushOnSilanols (polyisoprene on hydroxylated quartz: one H fewer per graft, each head bonded to an O at a C–O length, every O two-coordinate, σ = N/A)",
+   "deviation": "the chains start stretched from the surface as grown: equilibrate before reading the brush height",
+   "tex": "N = \\operatorname{round}(\\sigma A),\\qquad \\sigma_{\\mathrm{achieved}} = \\frac{N}{A}"
+  },
+  {
+   "group": "Integrators",
+   "source": "core/src/lammps_data.cpp",
+   "engines": [
+    "LAMMPS"
+   ],
+   "cites": [],
+   "id": "rigid-bodies",
+   "title": "Rigid bodies in LAMMPS runs",
+   "summary": "Chosen molecules — filler particles, a rigid additive — move as rigid bodies in the LAMMPS files: their atoms keep their relative positions, the pairs inside a body are not computed, and the bodies have their own thermostat; the other atoms integrate as usual and an NPT barostat dilates only them.",
+   "equation": "M Ṙ̇ = Σ_i F_i,  dL/dt = Σ_i (r_i − R) × F_i,  N_dof = 3N_free + 6N_bodies − 3",
+   "equation_note": "LAMMPS fix rigid/nvt/small molecule (each molecule one body, Nosé–Hoover chains on the bodies; LAMMPS takes the bodies' constrained degrees of freedom out of the temperature); neigh_modify exclude molecule/intra; fix npt … dilate mobile",
+   "symbols": [
+    [
+     "R, M",
+     "centre of mass and mass of a body",
+     "Å, g/mol"
+    ],
+    [
+     "L",
+     "its angular momentum",
+     "—"
+    ],
+    [
+     "N_bodies",
+     "rigid bodies",
+     "—"
+    ]
+   ],
+   "when": "Silica or carbon-black particles in a rubber matrix whose internal vibrations do not matter: longer time steps for the matrix are not affected, but the filler's thousands of internal bonds and pairs drop out of the cost.",
+   "tested": "tests/test_relax.cpp LammpsData.RigidBodiesBeforeTheBarostat (the group, the exclusion, the rigid fix before the barostat, velocities for the bodies; a held molecule never rigid); run in LAMMPS: 2 bodies of the polystyrene sample, 200 NPT steps",
+   "deviation": "CAPS's own runs have no rigid-body integrator: there the molecules move as atoms (or hold them)",
+   "tex": "M\\,\\ddot{\\mathbf R} = \\sum_i \\mathbf F_i,\\qquad \\frac{d\\mathbf L}{dt} = \\sum_i (\\mathbf r_i - \\mathbf R)\\times \\mathbf F_i"
+  },
+  {
+   "group": "Growth",
+   "source": "core/src/nano.cpp",
+   "engines": [],
+   "cites": [],
+   "id": "tube-ropes",
+   "title": "Nanotube ropes and walls of any chirality",
+   "summary": "Multi-walled tubes with each wall's own (n, m) — a periodic tube is made long enough for every wall's period, each wall stretched to the common length by at most 2 % — and ropes of identical tubes: 7, 19 or 37 in hexagonal rings, or the periodic triangular lattice of an endless rope, each tube its own molecule.",
+   "equation": "R = a√(n² + nm + m²)/2π,  D = 2R_out + g,  ε_wall = L/(k T) − 1, |ε| ≤ 2 %",
+   "equation_note": "a = √3 a_CC; T the wall's period along the axis, k its whole periods in the length L; neighbouring axes D apart (g wall to wall, 3.4 Å by default); the rope lattice's cell D × D√3 with two tubes",
+   "symbols": [
+    [
+     "R",
+     "wall radius",
+     "Å"
+    ],
+    [
+     "D",
+     "axis-to-axis distance",
+     "Å"
+    ],
+    [
+     "g",
+     "wall-to-wall gap",
+     "Å"
+    ],
+    [
+     "T",
+     "period along the axis",
+     "Å"
+    ]
+   ],
+   "when": "Carbon-nanotube bundles in rubber (aggregated filler), double- and triple-walled tubes with mixed chiralities as grown, the inter-tube gap's effect on load transfer.",
+   "tested": "tests/test_nano.cpp Nano.WallChiralitiesAndRopes ((5,5)@(10,10)@(26,0): atoms per period and every atom on its wall's radius; walls too close and lengths too short refused; seven tubes as seven molecules; the lattice cell D × D√3)",
+   "deviation": "the walls of a periodic mixed-chirality tube carry a small axial strain (stated); the rope's tubes are identical and in register",
+   "tex": "R = \\frac{a\\sqrt{n^2 + nm + m^2}}{2\\pi},\\qquad D = 2R_{\\mathrm{out}} + g,\\qquad \\varepsilon_{\\mathrm{wall}} = \\frac{L}{kT} - 1"
+  },
+  {
+   "group": "Growth",
+   "source": "core/src/edit.cpp",
+   "engines": [],
+   "cites": [],
+   "id": "point-defects",
+   "title": "Point defects: vacancies and doping",
+   "summary": "A share (or a count) of one element's sites — in the whole structure or the selection — picked at random, at least a spacing apart, and either emptied (vacancies) or given another element (substitutional doping). The charge the removed atoms carried is reported.",
+   "equation": "N = round(f N_X)  (or the count),  |r_i − r_j| ≥ d_min for picked i ≠ j",
+   "equation_note": "distances by the minimum image in a periodic cell; picked in a random order (seeded), skipped when too close to one already picked",
+   "symbols": [
+    [
+     "f",
+     "share of the element's sites",
+     "—"
+    ],
+    [
+     "N_X",
+     "atoms of the element",
+     "—"
+    ],
+    [
+     "d_min",
+     "least spacing",
+     "Å"
+    ]
+   ],
+   "when": "Defective fillers (oxygen vacancies in silica or titania, missing atoms in a metal nanoparticle), doped particles (Cu in Al, Zn in a sulphide), a carbon lattice with nitrogen in it.",
+   "tested": "tests/test_nano.cpp Nano.VacanciesAndDoping (an Al particle: 10 % vacancies exactly; Cu on five sites at least 5 Å apart)",
+   "deviation": "no relaxation and no charge compensation: minimise afterwards and assign the charges again",
+   "tex": "N = \\operatorname{round}(f\\,N_X),\\qquad |\\mathbf r_i - \\mathbf r_j| \\ge d_{\\min}"
+  },
+  {
+   "group": "Growth",
+   "source": "core/src/smiles.cpp",
+   "engines": [],
+   "cites": [],
+   "id": "analogs",
+   "title": "Analogs from R groups",
+   "summary": "A core SMILES with numbered attachment points [*:1] … [*:9] and, for each, a list of substituents: every combination built as its own structure (the 3D embedding and clean-up as for one molecule). A substituent's first atom bonds to the core (or a leading * marks the atom that does); H leaves the core atom's own hydrogen.",
+   "equation": "N = ∏_k n_k  (at most 50 built at once)",
+   "equation_note": "each joined by a ring-closure bond across '.' (%9k), so any substituent SMILES works as written",
+   "symbols": [
+    [
+     "n_k",
+     "substituents of R group k",
+     "—"
+    ]
+   ],
+   "when": "A family of curatives, antioxidants or coupling agents (different alkyl chains, leaving groups), plasticiser series, monomers with different side groups — built side by side and run through the same steps.",
+   "tested": "tests/test_molecule.cpp Molecule.AnalogsFromRGroups (benzene with two R groups: six analogs, each one molecule, toluene and anisic acid among them)",
+   "deviation": "the substituents are joined as written: stereochemistry at the attachment is not enumerated",
+   "tex": "N = \\prod_k n_k"
+  },
+  {
+   "group": "Analysis",
+   "source": "core/src/mechanics.cpp",
+   "engines": [],
+   "cites": [],
+   "id": "friction",
+   "title": "Sliding friction between walls",
+   "summary": "One wall molecule slid along x at a set speed over the film between it and a held wall, at the gap the structure has: the force the film puts on the moving wall gives the friction force, the shear stress at the wall and the friction coefficient at that load.",
+   "equation": "F_f = −⟨F_x⟩,  τ_w = F_f / A,  σ_n = ⟨F_z⟩ / A,  μ = F_f / ⟨F_z⟩",
+   "equation_note": "F the summed force of the other atoms on the moving wall's atoms, averaged over the steady part (block errors); A the cell's xy area; the moving wall's height fixed (constant gap)",
+   "symbols": [
+    [
+     "F_f",
+     "friction force",
+     "kcal/mol/Å"
+    ],
+    [
+     "τ_w",
+     "shear stress at the wall",
+     "MPa"
+    ],
+    [
+     "σ_n",
+     "normal stress the film carries",
+     "MPa"
+    ],
+    [
+     "μ",
+     "friction coefficient",
+     "—"
+    ]
+   ],
+   "when": "Rubber against a fibre or filler surface, a lubricant or processing aid between surfaces: the stress to slide at a given gap, compared across surface treatments (silane, sizing) at one speed and temperature.",
+   "tested": "tests/test_mechanics.cpp Mechanics.SlidingFrictionOfALjFilm (an argon liquid between argon walls at γ̇* ≈ 0.5: 47 MPa against the no-slip estimate η γ̇ ≈ 50 MPa, the temperature held)",
+   "deviation": "MD speeds (m/s and up) far exceed a tribometer's; the thermostat acts on the flow direction too; constant gap, not constant load",
+   "tex": "F_f = -\\langle F_x\\rangle,\\qquad \\tau_w = \\frac{F_f}{A},\\qquad \\mu = \\frac{F_f}{\\langle F_z\\rangle}"
   }
  ]
 }
