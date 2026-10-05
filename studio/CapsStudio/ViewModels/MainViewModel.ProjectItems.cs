@@ -161,8 +161,17 @@ public sealed partial class MainViewModel
                 SetModule(0);
                 if (gs == null) { Status = $"{it.Name} records no Grow settings: the page shows the last ones used"; return; }
                 break;
-            case 5: SetModule(5); break;
-            case 16: OpenBlend(); break;
+            case 5:
+                var ps = it.BuildSettings is { } pb && (string?)pb["page"] == "pack" ? pb : PackSettingsFromProvenance(it.Doc);
+                if (ps != null) { ApplyPackSettings(ps, it); it.BuildSettings ??= ps; }
+                SetModule(5);
+                if (ps == null) { Status = $"{it.Name} was packed before CAPS kept the packing input: the page shows the last input used"; return; }
+                break;
+            case 16:
+                var bs = it.BuildSettings is { } bb && (string?)bb["page"] == "blend" ? bb : BlendSettingsFromProvenance(it.Doc);
+                if (bs != null) { ApplyBlendSettings(bs); it.BuildSettings ??= bs; } else OpenBlend();
+                if (bs == null) { Status = $"{it.Name} records no blend settings: the page shows the last ones used"; return; }
+                break;
             case 29: OpenCrystal(); break;
             case 15: OpenNano(); break;
             case 14: OpenSurface(); break;
@@ -174,7 +183,9 @@ public sealed partial class MainViewModel
                 Status = $"Editing {it.Name} with the builder tools (place, bond, delete, +H, fragments; ⌘Z undoes)";
                 return;
         }
-        Status = $"{label}: change the settings and build again — the new structure joins the project beside {it.Name}";
+        Status = module == 5 && PackRepacking
+            ? $"Packing: change the molecules or counts, then Pack — it starts from {_packHostTitle} again and the new packing replaces {it.Name}"
+            : $"{label}: change the settings and build again — the new structure joins the project beside {it.Name}";
     }
 
     /// <summary>Delete (the project tree), asked twice: the structure leaves the project (a saved file stays on disk).</summary>

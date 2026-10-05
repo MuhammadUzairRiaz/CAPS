@@ -267,6 +267,7 @@ public sealed partial class MainViewModel
             }
             _blendGroups = (doc, parts);
             Show(doc, name + " blend");
+            if (_activeItem != null) _activeItem.BuildSettings = BlendSettingsJson();   // Edit brings these back
             GrownUnsaved = true;
             BlendLog = rep;
             Status = "Blend built · compress it in Relax (target density), then equilibrate";
