@@ -3379,6 +3379,20 @@ int32_t caps_field_assign(caps_doc* d, const char* ff_path, const char* rules_pa
     d->field = std::move(F);
     refresh(d);
     field_run(d);
+    // rigid models (TraPPE's CO2, N2: bond and angle constants 0) take their force field's own lengths and angles,
+    // in a one-frame structure (an edit: undoable)
+    if (d->field->ff && d->traj.frames() == 1) {
+      caps::System s = d->frame;
+      const int k = caps::apply_rigid_geometry(s, *d->field->ff, 0, s.atoms.size());
+      if (k > 0) {
+        push_undo(d, "Rigid geometry of " + d->field->base.name);
+        std::vector<caps::Vec3> pos;
+        for (const auto& a : s.atoms) pos.push_back(a.pos);
+        d->traj.positions = {pos};
+        refresh(d);
+        d->field->rep.notes.push_back(std::to_string(k) + " bond lengths and angles of rigid molecules set to " + d->field->base.name + "'s own");
+      }
+    }
     {
       const std::string ffp = d->field->ff_path;
       const bool uff = caps::is_uff(ffp);
