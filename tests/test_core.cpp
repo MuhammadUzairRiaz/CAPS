@@ -11,6 +11,8 @@
 
 #include "caps/analysis.hpp"
 #include "caps/tags.hpp"
+#include "caps/piece.hpp"
+#include "caps/query.hpp"
 #include "caps/appearance.hpp"
 #include "caps/checks.hpp"
 #include "caps/elements.hpp"
@@ -1330,4 +1332,69 @@ TEST(Tags, EditDeleteSaveAndGroups) {
   s.tags.clear();
   write_tags(s, p);
   EXPECT_FALSE(std::filesystem::exists(tags_sidecar(p)));
+}
+
+// Brush to select's columns and the query words on them: polystyrene's ring carbons sp2 (3 neighbours), backbone sp3
+TEST(Query, RangesAndHybridisation) {
+  System s = read_lammps_data(S + "/ps_melt.data");
+  const auto hyb = atom_column(s, "hybrid");
+  size_t sp2 = 0, sp3 = 0;
+  for (size_t i = 0; i < s.atoms.size(); ++i)
+    if (s.atoms[i].element == 6) sp2 += hyb[i] == 2, sp3 += hyb[i] == 3;
+  EXPECT_EQ(sp2, 480u);
+  EXPECT_EQ(sp3, 160u);
+  const auto h2 = select_query(s, "hybrid sp2").atoms, b1 = select_query(s, "bonds 1").atoms;
+  EXPECT_EQ(std::count(h2.begin(), h2.end(), 1), 480);
+  EXPECT_EQ(std::count(b1.begin(), b1.end(), 1), 660);   // every H
+  const auto z = atom_column(s, "z");
+  size_t want = 0;
+  for (double v : z) want += v >= 7 - 1e-9 && v <= 11 + 1e-9;
+  const auto q = select_query(s, "z 7..11 and element C").atoms;
+  size_t got = 0, wantC = 0;
+  for (size_t i = 0; i < s.atoms.size(); ++i) { got += q[i]; wantC += s.atoms[i].element == 6 && z[i] >= 7 - 1e-9 && z[i] <= 11 + 1e-9; }
+  EXPECT_GT(want, 0u);
+  EXPECT_EQ(got, wantC);
+  EXPECT_THROW(select_query(s, "z seven"), std::invalid_argument);
+  EXPECT_THROW(atom_column(s, "spin"), std::invalid_argument);
+}
+
+// Stamps (design/boards/Stamp): a chain copied out as a piece and stamped into the middle of the melt, turned; pushed the
+// least distance that keeps every atom 1.5 Å from the melt; its bonds, charges, types and a molecule id of its own
+TEST(Piece, CopyAndStampClear) {
+  System s = read_lammps_data(S + "/ps_melt.data");
+  std::vector<size_t> chain, unit;
+  for (size_t i = 0; i < 130; ++i) chain.push_back(i);
+  for (size_t i = 0; i < 16; ++i) unit.push_back(i);
+  const std::string piece = piece_json(s, chain, "PS chain");
+  EXPECT_NE(piece.find("\"formula\":\"C64H66\""), std::string::npos);
+  const size_t n0 = s.atoms.size(), b0 = s.bonds.size(), t0 = s.types.size();
+  int64_t mol0 = 0;
+  for (const auto& a : s.atoms) mol0 = std::max(mol0, a.mol);
+  const Vec3 mid = (s.cell.a + s.cell.b + s.cell.c) * 0.5;
+  // a whole rigid chain has no 1.5 Å room in the melt: the roomiest place, its contacts said
+  System big = s;
+  const auto rb = stamp_piece(big, piece, mid, {0, 0, 1}, 90, 1.5);
+  EXPECT_EQ(rb.added.size(), 130u);
+  EXPECT_LT(rb.closest, 1.5);
+  EXPECT_GT(rb.closest, 0.0);
+  // a piece of 16 atoms finds room
+  const std::string small = piece_json(s, unit, "end unit");
+  const auto r = stamp_piece(s, small, mid, {0, 0, 1}, 90, 1.5);
+  ASSERT_EQ(r.added.size(), 16u);
+  EXPECT_EQ(s.atoms.size(), n0 + 16);
+  size_t inside = 0;
+  for (const auto& b : s.bonds) inside += b.i < 16 && b.j < 16;
+  EXPECT_EQ(s.bonds.size(), b0 + inside);   // the unit's own bonds
+  EXPECT_EQ(s.types.size(), t0);         // its types matched by label
+  EXPECT_EQ(s.atoms[n0].mol, mol0 + 1);
+  EXPECT_NEAR(s.atoms[n0].charge, s.atoms[0].charge, 1e-12);
+  double dmin = 1e300;
+  for (size_t i = n0; i < s.atoms.size(); ++i)
+    for (size_t k = 0; k < n0; ++k) {
+      const Vec3 d = s.cell.minimum_image(s.atoms[i].pos - s.atoms[k].pos);
+      dmin = std::min(dmin, std::sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]));
+    }
+  EXPECT_GE(dmin, 1.5 - 1e-9);
+  EXPECT_NEAR(dmin, r.closest, 1e-6);
+  EXPECT_THROW(stamp_piece(s, "{}", mid, {0, 0, 1}, 0, 1.5), std::runtime_error);
 }

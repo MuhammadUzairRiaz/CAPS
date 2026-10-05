@@ -48,7 +48,7 @@ public sealed partial class MainViewModel
     private bool _appOpen;
     /// <summary>The Appearance panel in place of the Studio inspector.</summary>
     public bool AppearanceOpen { get => _appOpen; set { if (Set(ref _appOpen, value)) { if (value) { SelectionOpen = false; InteractionsOpen = false; LodOpen = false; HistoryOpen = false; StatesOpen = false; LensOpen = false; } RaiseAppearanceVisibility(); if (value) AppRefreshInfo(); } } }
-    public bool ShowStudioTabs => IsStudio && !_appOpen && !_selOpen && !_ixOpen && !_lodOpen && !_histOpen && !_lensOpen && !_stOpen;
+    public bool ShowStudioTabs => IsStudio && !_appOpen && !_selOpen && !_ixOpen && !_lodOpen && !_histOpen && !_lensOpen && !_stOpen && !_brushOpen;
     public bool ShowAppearance => IsStudio && _appOpen && _doc != null;
     private void RaiseAppearanceVisibility() { Raise(nameof(ShowStudioTabs)); Raise(nameof(ShowAppearance)); Raise(nameof(ShowAppLegend)); Raise(nameof(ShowSelectionPanel)); Raise(nameof(ShowInteractionsPanel)); }
 

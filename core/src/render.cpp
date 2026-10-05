@@ -389,17 +389,50 @@ struct Prep {
   bool dark_bg = true;
   double bond_r = 0.14;
   Style style_of(size_t i) const { return mixed ? Style(opt->atom_style[i]) : opt->style; }
+  double factor(size_t i) const { return opt->size_factor.size() == s->atoms.size() && opt->size_factor[i] > 0 ? opt->size_factor[i] : 1.0; }
   double radius(size_t i) const {
     if (opt->radius.size() == s->atoms.size() && opt->radius[i] > 0) return opt->radius[i];
-    const double vdw = element(s->atoms[i].element).vdw;
+    const double vdw = element(s->atoms[i].element).vdw, f = factor(i);
     switch (style_of(i)) {
-      case Style::SpaceFilling: return vdw;
-      case Style::Sticks: return opt->bond_radius;
-      case Style::Backbone: return opt->bond_radius * 2.2;
+      case Style::SpaceFilling: return vdw * opt->space_scale * f;
+      case Style::Sticks: return opt->bond_radius * f;
+      case Style::Backbone: return opt->bond_radius * 2.2 * f;
       case Style::Wireframe: return 0.0;
-      case Style::Polyhedra: return std::max(opt->bond_radius * 1.1, vdw * opt->atom_scale * 0.7);
-      default: return std::max(opt->bond_radius * 1.25, vdw * opt->atom_scale);
+      case Style::Polyhedra: return std::max(opt->bond_radius * 1.1, vdw * opt->atom_scale * 0.7) * f;
+      default: return std::max(opt->bond_radius * 1.25, vdw * opt->atom_scale) * f;
     }
+  }
+  // Bond orders (Look): a bond as parallel strands — offsets (Å, world) across the bond in the plane of a neighbouring atom
+  // (so a ring's aromatic dash lies inside the ring), each with its radius and whether it is dashed
+  struct Strand { Vec3 off; double r; bool dashed; };
+  std::vector<std::vector<uint32_t>> nb;   // filled when bond orders are drawn
+  std::vector<Strand> strands(const Bond& b, double br) const {
+    if (!opt->bond_orders || (b.order != 2 && b.order != 3 && b.order != 4)) return {{{0, 0, 0}, br, false}};
+    const Vec3 pi = s->atoms[b.i].pos;
+    Vec3 ax = s->cell.valid() ? s->cell.minimum_image(s->atoms[b.j].pos - pi) : s->atoms[b.j].pos - pi;
+    const double L = norm(ax);
+    if (L < 1e-9) return {{{0, 0, 0}, br, false}};
+    ax = ax * (1.0 / L);
+    Vec3 perp{0, 0, 0};
+    for (int side = 0; side < 2 && norm(perp) < 1e-6; ++side) {
+      const uint32_t at = side ? b.j : b.i, other = side ? b.i : b.j;
+      if (at >= nb.size()) continue;
+      for (uint32_t k : nb[at]) {
+        if (k == other) continue;
+        Vec3 q = s->atoms[k].pos - s->atoms[at].pos;
+        if (s->cell.valid()) q = s->cell.minimum_image(q);
+        const Vec3 p = q - ax * dot(q, ax);
+        if (norm(p) > 1e-6) { perp = p * (1.0 / norm(p)); break; }
+      }
+    }
+    if (norm(perp) < 1e-6) {   // no neighbour: any direction across the bond
+      const Vec3 t = std::abs(ax[0]) < 0.9 ? Vec3{1, 0, 0} : Vec3{0, 1, 0};
+      perp = cross(ax, t);
+      perp = perp * (1.0 / norm(perp));
+    }
+    if (b.order == 2) return {{perp * (1.1 * br), 0.6 * br, false}, {perp * (-1.1 * br), 0.6 * br, false}};
+    if (b.order == 3) return {{{0, 0, 0}, 0.5 * br, false}, {perp * (1.5 * br), 0.5 * br, false}, {perp * (-1.5 * br), 0.5 * br, false}};
+    return {{{0, 0, 0}, br, false}, {perp * (2.0 * br), 0.45 * br, true}};   // aromatic: the dash on the neighbour's side
   }
 };
 
@@ -463,6 +496,10 @@ Prep prepare(const System& s, const RenderOptions& opt) {
 
 
   P.bond_r = opt.style == Style::Backbone && !mixed ? opt.bond_radius * 2.2 : opt.bond_radius;
+  if (opt.bond_orders) {
+    P.nb.assign(n, {});
+    for (const auto& b : s.bonds) if (b.i < n && b.j < n) P.nb[b.i].push_back(b.j), P.nb[b.j].push_back(b.i);
+  }
   return P;
 }
 }  // namespace
@@ -608,17 +645,22 @@ Scene Renderer::scene(const System& s, const RenderOptions& opt) {
           const Vec3& p1 = h ? c : ma;
           sc.lines.insert(sc.lines.end(), {float(p0[0]), float(p0[1]), float(p0[2]), float(p1[0]), float(p1[1]), float(p1[2])});
           sc.line_rgb.push_back(pack(colour[h ? b.j : b.i]));
-          sc.line_width.push_back(1.4f);
+          sc.line_width.push_back(float(opt.line_px));
         }
         continue;
       }
-      const double br = si == Style::Backbone && sj == Style::Backbone ? opt.bond_radius * 2.2 : P.bond_r;
-      for (int h = 0; h < 2; ++h) {
-        const Vec3& p0 = h ? mc : a;
-        const Vec3& p1 = h ? c : ma;
-        sc.capsules.insert(sc.capsules.end(), {float(p0[0]), float(p0[1]), float(p0[2]), float(p1[0]), float(p1[1]), float(p1[2]), float(br)});
-        sc.capsule_rgb.push_back(pack(colour[h ? b.j : b.i]) | tbyte(h ? b.j : b.i));
-      }
+      const double br = (si == Style::Backbone && sj == Style::Backbone ? opt.bond_radius * 2.2 : P.bond_r) * std::min(P.factor(b.i), P.factor(b.j));
+      for (const auto& st : across ? std::vector<Prep::Strand>{{{0, 0, 0}, br, false}} : P.strands(b, br))
+        for (int h = 0; h < 2; ++h) {
+          const Vec3 p0 = (h ? mc : a) + st.off, p1 = (h ? c : ma) + st.off;
+          // a dashed strand: two dashes in each half
+          const double cuts[2][2] = {{0.12, 0.42}, {0.58, 0.88}};
+          for (int dsh = 0; dsh < (st.dashed ? 2 : 1); ++dsh) {
+            const Vec3 q0 = st.dashed ? p0 + (p1 - p0) * cuts[dsh][0] : p0, q1 = st.dashed ? p0 + (p1 - p0) * cuts[dsh][1] : p1;
+            sc.capsules.insert(sc.capsules.end(), {float(q0[0]), float(q0[1]), float(q0[2]), float(q1[0]), float(q1[1]), float(q1[2]), float(st.r)});
+            sc.capsule_rgb.push_back(pack(colour[h ? b.j : b.i]) | tbyte(h ? b.j : b.i));
+          }
+        }
     }
   }
   // atoms
@@ -765,14 +807,34 @@ Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& 
         }
       }
       if (si == Style::Wireframe || sj == Style::Wireframe) {
-        line(B, px[b.i], py[b.i], pz[b.i], mxi, myi, mzi, std::max(1.0, 1.4 * ss), colour[b.i], int32_t(b.i));
-        line(B, mxj, myj, mzj, px[b.j], py[b.j], pz[b.j], std::max(1.0, 1.4 * ss), colour[b.j], int32_t(b.j));
+        line(B, px[b.i], py[b.i], pz[b.i], mxi, myi, mzi, std::max(1.0, opt.line_px * ss), colour[b.i], int32_t(b.i));
+        line(B, mxj, myj, mzj, px[b.j], py[b.j], pz[b.j], std::max(1.0, opt.line_px * ss), colour[b.j], int32_t(b.j));
         continue;
       }
-      const double br = si == Style::Backbone && sj == Style::Backbone ? opt.bond_radius * 2.2 : bond_r;   // tubes between backbone atoms
-      const double R = br * v.scale * (pk[b.i] + pk[b.j]) / 2;
-      capsule(layer(b.i), px[b.i], py[b.i], pz[b.i], mxi, myi, mzi, R, br, colour[b.i], int32_t(b.i));
-      capsule(layer(b.j), mxj, myj, mzj, px[b.j], py[b.j], pz[b.j], R, br, colour[b.j], int32_t(b.j));
+      const double fac = std::min(P.factor(b.i), P.factor(b.j));
+      const double br = (si == Style::Backbone && sj == Style::Backbone ? opt.bond_radius * 2.2 : bond_r) * fac;   // tubes between backbone atoms
+      const auto st = P.strands(b, br);
+      if (st.size() == 1 || std::abs(mxi - mxj) + std::abs(myi - myj) > 1e-9) {   // a single stick (or a stub through a wall)
+        const double R = br * v.scale * (pk[b.i] + pk[b.j]) / 2;
+        capsule(layer(b.i), px[b.i], py[b.i], pz[b.i], mxi, myi, mzi, R, br, colour[b.i], int32_t(b.i));
+        capsule(layer(b.j), mxj, myj, mzj, px[b.j], py[b.j], pz[b.j], R, br, colour[b.j], int32_t(b.j));
+        continue;
+      }
+      // bond orders: each strand projected from its world offset
+      const Vec3 wa = s.atoms[b.i].pos, wc = s.atoms[b.j].pos, wm = (wa + wc) * 0.5;
+      for (const auto& sd : st)
+        for (int h = 0; h < 2; ++h) {
+          const Vec3 p0 = (h ? wm : wa) + sd.off, p1 = (h ? wc : wm) + sd.off;
+          const double cuts[2][2] = {{0.12, 0.42}, {0.58, 0.88}};
+          for (int dsh = 0; dsh < (sd.dashed ? 2 : 1); ++dsh) {
+            const Vec3 q0 = sd.dashed ? p0 + (p1 - p0) * cuts[dsh][0] : p0, q1 = sd.dashed ? p0 + (p1 - p0) * cuts[dsh][1] : p1;
+            double x0, y0, z0, k0, x1, y1, z1, k1;
+            v.project(q0, x0, y0, z0, k0);
+            v.project(q1, x1, y1, z1, k1);
+            const size_t at = h ? b.j : b.i;
+            capsule(layer(at), x0, y0, z0, x1, y1, z1, sd.r * v.scale * (k0 + k1) / 2, sd.r, colour[at], int32_t(at));
+          }
+        }
     }
   }
   // Atoms.

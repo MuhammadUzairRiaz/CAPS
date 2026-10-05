@@ -12,6 +12,7 @@
 #include <fstream>
 #include <string>
 
+#include "caps/piece.hpp"
 #include "caps/tags.hpp"
 #include "caps/amber.hpp"
 #include "caps/cg_map.hpp"
@@ -4037,6 +4038,69 @@ int32_t caps_tag_edit(caps_doc* d, const char* json) {
   });
 }
 
+// Clipboard pieces (design/boards/Stamp): {atoms: [0-based …] | "selection" | "all", name} → caps-piece JSON.
+int32_t caps_piece(caps_doc* d, const char* json, char* out, int32_t cap) {
+  std::string text;
+  const int32_t rc = guard([&] {
+    const auto j = caps::Json::parse(json ? json : "{}");
+    std::vector<size_t> atoms;
+    const auto& S = d->frame;
+    if (j.has("atoms") && j["atoms"].is_array()) for (const auto& x : j["atoms"].items()) atoms.push_back(size_t(x.number()));
+    else if (j.text("atoms") == "selection") { for (size_t i = 0; i < d->selection.size(); ++i) if (d->selection[i]) atoms.push_back(i); }
+    else for (size_t i = 0; i < S.atoms.size(); ++i) atoms.push_back(i);
+    text = caps::piece_json(S, atoms, j.text("name"));
+    return 0;
+  });
+  if (rc < 0) return -1;
+  return report_out(text, out, cap);
+}
+
+// A structure file as a piece (every atom): a drop into the open structure.
+int32_t caps_piece_file(const char* path, const char* name, char* out, int32_t cap) {
+  std::string text;
+  const int32_t rc = guard([&] {
+    const auto t = caps::open_file(path ? path : "", "");
+    std::vector<size_t> all(t.topology.atoms.size());
+    for (size_t i = 0; i < all.size(); ++i) all[i] = i;
+    text = caps::piece_json(t.frames() > 0 ? t.frame(0) : t.topology, all, name && *name ? name : std::filesystem::path(path ? path : "").stem().string());
+    return 0;
+  });
+  if (rc < 0) return -1;
+  return report_out(text, out, cap);
+}
+
+// Brush to select (design/boards/BrushSelect): a per-atom column for a histogram — atom_column's names, and
+// "distance:N" (Å, minimum image, from atom N, 0-based) or "distance:tag:NAME" (from the nearest atom of a tag).
+int32_t caps_atom_column(caps_doc* d, const char* name, double* out, int32_t cap) {
+  return guard([&] {
+    const auto& S = d->frame;
+    const std::string w = name ? name : "";
+    std::vector<double> v;
+    if (w.rfind("distance:", 0) == 0) {
+      std::vector<size_t> from;
+      const std::string what = w.substr(9);
+      if (what.rfind("tag:", 0) == 0) {
+        from = caps::tag_atoms(S, caps::tag_index(S, what.substr(4)));
+        if (from.empty()) throw std::invalid_argument("no atoms in tag " + what.substr(4));
+      } else {
+        const long k = std::stol(what);
+        if (k < 0 || size_t(k) >= S.atoms.size()) throw std::invalid_argument("no atom " + what);
+        from.push_back(size_t(k));
+      }
+      v.assign(S.atoms.size(), 1e300);
+      for (size_t i = 0; i < S.atoms.size(); ++i)
+        for (size_t f : from) {
+          const caps::Vec3 dv = S.cell.valid() ? S.cell.minimum_image(S.atoms[i].pos - S.atoms[f].pos) : S.atoms[i].pos - S.atoms[f].pos;
+          v[i] = std::min(v[i], std::sqrt(dv[0] * dv[0] + dv[1] * dv[1] + dv[2] * dv[2]));
+        }
+    } else {
+      v = caps::atom_column(S, w);
+    }
+    if (out) for (size_t i = 0; i < v.size() && int32_t(i) < cap; ++i) out[i] = v[i];
+    return int32_t(v.size());
+  });
+}
+
 int32_t caps_tag_atoms(caps_doc* d, const char* name, int32_t* out, int32_t cap) {
   const auto atoms = caps::tag_atoms(d->frame, caps::tag_index(d->frame, name ? name : ""));
   if (out) for (size_t k = 0; k < atoms.size() && int32_t(k) < cap; ++k) out[k] = int32_t(atoms[k]);
@@ -7625,6 +7689,17 @@ extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t c
       }
       d->selection.assign(s.atoms.size(), 0);
       what = "Fuse a benzene ring onto " + std::to_string(a + 1) + "–" + std::to_string(b + 1);
+    } else if (op == "stamp") {   // {piece: caps-piece JSON text, at: [x, y, z], axis, degrees, clear: Å} (design/boards/Stamp)
+      caps::Vec3 at{0, 0, 0}, ax{0, 0, 1};
+      if (j.has("at") && j["at"].size() == 3) at = {j["at"][0].number(), j["at"][1].number(), j["at"][2].number()};
+      if (j.has("axis") && j["axis"].size() == 3) ax = {j["axis"][0].number(), j["axis"][1].number(), j["axis"][2].number()};
+      const auto r = caps::stamp_piece(s, j.text("piece"), at, ax, j.num("degrees", 0), j.num("clear", 1.5));
+      for (size_t i : r.added) added.push_back(double(i));
+      char b[160];
+      const double want = j.num("clear", 1.5);
+      std::snprintf(b, sizeof b, " · %zu atoms%s%s", r.added.size(), r.shift > 0 ? (", moved " + std::to_string(r.shift).substr(0, 4) + " Å").c_str() : "",
+                    r.closest < want && r.closest > 0 ? (" · closest contact " + std::to_string(r.closest).substr(0, 4) + " Å: no room for " + std::to_string(want).substr(0, 3) + " Å here, Minimise clears it").c_str() : "");
+      what = "Stamp " + j.text("name", "piece") + b;
     } else if (op == "place") {
       caps::BuildOptions bo;
       bo.forcefield = "uff";

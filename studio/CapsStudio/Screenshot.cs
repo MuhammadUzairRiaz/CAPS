@@ -812,6 +812,25 @@ internal static class Screenshot
             if (kv[0] == "rxset") w.ViewModel.RxSet = int.Parse(kv[1]);
             if (kv[0] == "capsproj") Console.WriteLine("project: " + w.ViewModel.OpenCapsProject(kv[1]));   // capsproj=PATH: that project open
             if (kv[0] == "newproject") w.ViewModel.OpenNewProject();
+            if (kv[0] == "brush")   // brush=KEY:LO:HI[,KEY:LO:HI] — Brush to select open with those ranges brushed
+            {
+                w.ViewModel.OpenBrush();
+                foreach (var part in kv[1].Split(',', StringSplitOptions.RemoveEmptyEntries))
+                {
+                    var p = part.Split(':');
+                    w.ViewModel.AddBrushHist(p[0]);
+                    var h = w.ViewModel.BrushHists.First(x => x.Key == p[0]);
+                    h.SetBrush(double.Parse(p[1], System.Globalization.CultureInfo.InvariantCulture), double.Parse(p[2], System.Globalization.CultureInfo.InvariantCulture));
+                }
+                Console.WriteLine($"brush: {w.ViewModel.BrushQuery} → {w.ViewModel.BrushCount} {w.ViewModel.BrushError}");
+            }
+            if (kv[0] == "tray")   // tray=ATOM: that atom's molecule copied to the tray and picked as a stamp
+            {
+                w.ViewModel.SelectLike(int.Parse(kv[1]), false, false);
+                w.ViewModel.CopyToTray();
+                w.ViewModel.ClearAllSelection();
+                if (w.ViewModel.Tray.FirstOrDefault() is { } tp) w.ViewModel.ArmStamp(tp);
+            }
             if (kv[0] == "tagmol")   // tagmol=ATOM:NAME — the molecule of ATOM tagged NAME (the selection kept)
             {
                 var p = kv[1].Split(':', 2);

@@ -147,6 +147,8 @@ public sealed partial class MainViewModel
             Enabled = () => _doc != null, Run = ResetView });
         AddCommand(new PaletteCommand { Title = "Check for updates", Id = "app.update", Icon = "download", Section = "Settings",
             Keywords = "update new version release download changelog upgrade", Run = () => _ = CheckForUpdates() });
+        AddCommand(new PaletteCommand { Title = "Brush to select", Id = "select.brush", Icon = "chart", Section = "Selection",
+                                        Keywords = "histogram range height charge hybridisation distance select brush", Run = OpenBrush });
         AddCommand(new PaletteCommand { Title = "Select by query", Id = "select.query", Icon = "search", Shortcut = "⌘F", Section = "Selection",
             Keywords = "select query smarts element chain within ring stereo and or not find", Enabled = () => _doc != null, Run = () => { SetModule(8); QueryOpen = true; } });
         AddCommand(new PaletteCommand { Title = "Frame selection", Id = "view.frame", Icon = "cube", Shortcut = "F", Section = "View",
