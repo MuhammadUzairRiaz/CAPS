@@ -164,6 +164,7 @@ std::string forcefield_to_json(const ForceField& ff) {
   j["vsites"] = rows(ff.vsites, [](const VirtualSite& v) {
     Json o = Json::object();
     o["site"] = Json(double(v.site)), o["from"] = numbers(v.from), o["w"] = numbers(v.w);
+    if (v.c != 0) o["c"] = Json(v.c);
     return o;
   });
   j["notes"] = strings(ff.notes);
@@ -283,6 +284,7 @@ ForceField forcefield_from_json(const std::string& text) {
     v.site = uint32_t(r["site"].number());
     for (const auto& x : r["from"].items()) v.from.push_back(uint32_t(x.number()));
     for (const auto& x : r["w"].items()) v.w.push_back(x.number());
+    v.c = r.num("c", 0.0);
     return v;
   });
   f.notes = read_strings(j, "notes");

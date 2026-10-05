@@ -295,6 +295,11 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
       wt += v.w[k];
     }
     if (wt > 0) pos[v.site] = c * (1 / wt);
+    if (v.c != 0 && v.from.size() == 3) {
+      const Vec3 u = s.cell.valid() ? s.cell.minimum_image(pos[v.from[1]] - ref) : pos[v.from[1]] - ref;
+      const Vec3 w = s.cell.valid() ? s.cell.minimum_image(pos[v.from[2]] - ref) : pos[v.from[2]] - ref;
+      pos[v.site] = pos[v.site] + cross(u, w) * v.c;
+    }
   }
   int nmol = 0;
   const auto mol = s.molecules(&nmol);
@@ -377,6 +382,11 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
     at.insert(at.end(), v.from.begin(), v.from.end());
     double sum = 0, lo = 0;
     for (double x : v.w) sum += x, lo = std::min(lo, x);
+    if (v.c != 0) {   // out of the plane: virtual_sites3 function 4 (3out), a b and c in 1/nm
+      if (v.from.size() != 3 || std::fabs(sum - 1) > 1e-9) throw FieldError("an out-of-plane virtual site needs three atoms and weights summing to 1");
+      add(VSITES3, at, " 4 " + fmt("%.12g", v.w[1]) + " " + fmt("%.12g", v.w[2]) + " " + fmt("%.12g", v.c * 10));
+      continue;
+    }
     // a linear combination of two or three atoms (weights summing to 1, perhaps negative: a site outside its atoms)
     // as GROMACS's own linear sites; virtual_sitesn takes positive weights only
     // (two atoms always so: a site built on it may be a virtual_sites3, which GROMACS allows only on lower functions)

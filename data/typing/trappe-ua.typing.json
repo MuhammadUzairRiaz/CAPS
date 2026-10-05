@@ -142,6 +142,18 @@
    "smarts": "[NX1]#[CX2]",
    "priority": 2,
    "description": "nitrile nitrogen"
+  },
+  {
+   "type": "CO2C",
+   "smarts": "[CX2](=[OX1])=[OX1]",
+   "priority": 3,
+   "description": "carbon dioxide carbon"
+  },
+  {
+   "type": "CO2O",
+   "smarts": "[OX1]=[CX2]=[OX1]",
+   "priority": 3,
+   "description": "carbon dioxide oxygen"
   }
  ],
  "united_atom": true,

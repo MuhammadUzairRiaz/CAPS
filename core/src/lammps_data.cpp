@@ -144,6 +144,8 @@ struct Layout {
 };
 
 Layout build(const System& s, const ForceField& ff, const LammpsStyle& st = {}) {
+  if (std::any_of(ff.vsites.begin(), ff.vsites.end(), [](const VirtualSite& v) { return v.c != 0; }))
+    throw FieldError(ff.name + ": out-of-plane virtual sites (TIP5P's lone pairs) have no LAMMPS form; export to GROMACS instead");
   if (!ff.vsites.empty())
     throw FieldError(ff.name + ": virtual sites (Martini 3's tryptophan, ...) have no LAMMPS form; export to GROMACS instead");
   if (!ff.cbt.empty())
@@ -937,7 +939,7 @@ static bool tip4p_reduce(const System& s, const ForceField& ff, System& rs, Forc
   double qdist = -1;
   std::vector<std::pair<uint32_t, uint32_t>> m_to_o;
   for (const auto& v : ff.vsites) {
-    if (v.from.size() != 3 || v.site >= n || ff.mass[v.site] > 0) return false;
+    if (v.from.size() != 3 || v.site >= n || ff.mass[v.site] > 0 || v.c != 0) return false;
     const uint32_t o = v.from[0], h1 = v.from[1], h2 = v.from[2];
     if (s.atoms[o].element != 8 || s.atoms[h1].element != 1 || s.atoms[h2].element != 1) return false;
     if (std::fabs(v.w[1] - v.w[2]) > 1e-9 || std::fabs(v.w[0] + v.w[1] + v.w[2] - 1) > 1e-9) return false;

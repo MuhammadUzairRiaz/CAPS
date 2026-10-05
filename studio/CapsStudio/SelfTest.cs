@@ -4677,7 +4677,7 @@ internal static class SelfTest
             vm.Field.WaterModelIndex = FieldViewModel.Waters.FindIndex(w => w.Id == "tip4p2005") + 1;
             vm.Field.Assign().GetAwaiter().GetResult();
             var atoms = vm.Document?.Summary().Atoms ?? 0;
-            Check(atoms == 4 && vm.Field.ForceFieldName.Contains("TIP4P/2005", StringComparison.Ordinal) && FieldViewModel.Waters.Count == 11,
+            Check(atoms == 4 && vm.Field.ForceFieldName.Contains("TIP4P/2005", StringComparison.Ordinal) && FieldViewModel.Waters.Count == 12,
                   $"water model: {atoms} atoms · {vm.Field.ForceFieldName} · {FieldViewModel.Waters.Count} models · {vm.Field.Log}");
             vm.Field.WaterModelIndex = 0;
         }

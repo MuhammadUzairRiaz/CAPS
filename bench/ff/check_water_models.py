@@ -18,7 +18,7 @@ L.caps_set_electrostatics.argtypes = [C.c_int32, C.c_double, C.c_double, C.c_int
 L.caps_set_electrostatics(1, 1e-6, 0.6, 6)   # PME, tight
 samples = os.environ.get("CAPS_SAMPLES", "samples")
 worst = 0.0
-for model in sys.argv[1:] or [m["id"] for m in caps.water_models()]:
+for model in sys.argv[1:] or [m["id"] for m in caps.water_models() if m["sites"] < 5]:   # TIP5P: GROMACS only (Water.Tip5p* test)
     d = caps.pack(molecules=[(os.path.join(samples, "water.pdb"), 64)], box=12.42, tolerance=2.0, seed=4)
     d.edit(op="water_model", model=model)
     d.field.assign_groups([{"name": "water", "molecules": "water", "water": model}])

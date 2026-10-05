@@ -4,7 +4,8 @@
  "name": "TraPPE-UA",
  "source": "TRAPPE_UA.par",
  "references": [
-  "M. G. Martin, J. I. Siepmann, J. Phys. Chem. B 102, 2569 (1998)"
+  "M. G. Martin, J. I. Siepmann, J. Phys. Chem. B 102, 2569 (1998)",
+  "J. J. Potoff, J. I. Siepmann, AIChE J. 47, 1676 (2001) (carbon dioxide)"
  ],
  "units": "real",
  "styles": {
@@ -365,6 +366,26 @@
    "aliases": [
     "dummy_atom4"
    ]
+  },
+  {
+   "name": "CO2C",
+   "element": "C",
+   "mass": 12.011,
+   "aliases": [
+    "C_CO2"
+   ],
+   "charge": 0.7,
+   "description": "carbon dioxide carbon (Potoff & Siepmann 2001)"
+  },
+  {
+   "name": "CO2O",
+   "element": "O",
+   "mass": 15.9994,
+   "aliases": [
+    "O_CO2"
+   ],
+   "charge": -0.35,
+   "description": "carbon dioxide oxygen (Potoff & Siepmann 2001)"
   }
  ],
  "pairs": [
@@ -637,6 +658,28 @@
     0,
     0
    ]
+  },
+  {
+   "name": "CO2C",
+   "match": [
+    "CO2C"
+   ],
+   "params": [
+    0.0536544972,
+    2.8
+   ],
+   "comment": "ε/k_B 27.0 K, σ 2.80 Å"
+  },
+  {
+   "name": "CO2O",
+   "match": [
+    "CO2O"
+   ],
+   "params": [
+    0.1569890844,
+    3.05
+   ],
+   "comment": "ε/k_B 79.0 K, σ 3.05 Å"
   }
  ],
  "bonds": [
@@ -1299,6 +1342,19 @@
     499.9998705,
     1.54
    ]
+  },
+  {
+   "name": "CO2C-CO2O",
+   "match": [
+    "CO2C",
+    "CO2O"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    1.16
+   ],
+   "comment": "rigid C=O 1.16 Å (run CO2 as a rigid body)"
   }
  ],
  "angles": [
@@ -2230,6 +2286,20 @@
     114
    ],
    "comment": "CHx-(CH2)-CH3y, TraPPE-UA."
+  },
+  {
+   "name": "CO2O-CO2C-CO2O",
+   "match": [
+    "CO2O",
+    "CO2C",
+    "CO2O"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    180
+   ],
+   "comment": "rigid, linear"
   }
  ],
  "dihedrals": [
@@ -3502,7 +3572,8 @@
  "notes": [
   "library slip: torsion CH2-CH2-OA-HA continued by CH3-CH2-OA-HA (line 253); taken as one torsion, as the original parameter set does",
   "library slip: torsion CH2-CH2-OA-HA continued by CH3-CH2-OA-HA (line 254); taken as one torsion, as the original parameter set does",
-  "converted by CAPS (TraPPE_UA, unit K); equivalences replace the type name for each kind of parameter"
+  "converted by CAPS (TraPPE_UA, unit K); equivalences replace the type name for each kind of parameter",
+  "carbon dioxide (CO2C, CO2O) added by CAPS from Potoff & Siepmann 2001 — σ, ε and charges checked against the TraPPE CO2 file of gmso (trappe_5site_co2.xml: 0.280/0.305 nm, 0.224490/0.656842 kJ/mol, +0.70/−0.35 e); the molecule is rigid and linear (bond and angle constants 0): run it as a rigid body (sorption and adsorption, LAMMPS fix rigid)"
  ],
  "version": "1998",
  "status": "validated",
