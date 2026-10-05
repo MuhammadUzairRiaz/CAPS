@@ -1,3 +1,4 @@
+#include <cstdio>
 #include <gtest/gtest.h>
 
 #include <algorithm>
@@ -526,14 +527,22 @@ TEST(Polymer, DeeperLookAheadGrows) {
   o.density = 0.6;
   o.seed = 4;
   const ChainSpec c = spec({"*CC(*)c1ccccc1"}, Sequence::Homopolymer, 12);
-  GrowReport r1, r3;
-  const System a = grow_chains(c, o, &r1);
-  o.lookahead = 3;
-  const System b = grow_chains(c, o, &r3);
-  EXPECT_EQ(a.atoms.size(), b.atoms.size());
-  EXPECT_GE(r3.worst_margin, o.accept);
-  EXPECT_LT(r3.backtracks, r1.backtracks);   // seeing further, fewer dead ends
-  std::printf("look-ahead 1: %d backtracks, %d restarts · look-ahead 3: %d backtracks, %d restarts\n", r1.backtracks, r1.restarts, r3.backtracks, r3.restarts);
+  // seeing further, fewer dead ends: summed over four seeds (one growth path is chaotic: it differs between math
+  // libraries in the last bits)
+  int b1 = 0, b3 = 0;
+  for (uint64_t seed : {4, 5, 6, 7}) {
+    GrowReport r1, r3;
+    o.seed = seed;
+    o.lookahead = 1;
+    const System a = grow_chains(c, o, &r1);
+    o.lookahead = 3;
+    const System b = grow_chains(c, o, &r3);
+    EXPECT_EQ(a.atoms.size(), b.atoms.size());
+    EXPECT_GE(r3.worst_margin, o.accept);
+    b1 += r1.backtracks, b3 += r3.backtracks;
+  }
+  EXPECT_LT(b3, b1);
+  std::printf("look-ahead 1: %d backtracks · look-ahead 3: %d backtracks (four seeds)\n", b1, b3);
 }
 
 TEST(Polymer, LogNormalAndHistogramChainLengths) {

@@ -1,3 +1,4 @@
+#include "caps/rng.hpp"
 #include "caps/conformers.hpp"
 
 #include <algorithm>
@@ -55,8 +56,8 @@ ConformerSearchResult conformer_search(const System& s0, const ConformerSearchOp
   ro.ftol = o.ftol;
   ro.max_iterations = 5000;
   std::mt19937_64 rng(o.seed);
-  std::normal_distribution<double> jitter(0.0, 15.0);
-  std::uniform_int_distribution<int> pick(0, 2);
+  caps::Normal<double> jitter(0.0, 15.0);
+  caps::UniformInt<int> pick(0, 2);
   struct Min { std::vector<Vec3> pos; double e; };
   std::vector<Min> mins;
   auto minimise = [&](System& t) {

@@ -1,5 +1,6 @@
 #include "caps/ibi.hpp"
 
+#include <cstdio>
 #include <algorithm>
 #include <cmath>
 #include <set>

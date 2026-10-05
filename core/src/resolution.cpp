@@ -1,6 +1,7 @@
 // CAPS model resolution: see caps/resolution.hpp.
 #include "caps/resolution.hpp"
 
+#include <cstdio>
 #include <algorithm>
 #include <cmath>
 #include <map>

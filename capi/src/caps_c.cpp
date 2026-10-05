@@ -1,5 +1,6 @@
 #include "caps_c.h"
 
+#include <cctype>
 #include <cstdio>
 #include <algorithm>
 #include <deque>

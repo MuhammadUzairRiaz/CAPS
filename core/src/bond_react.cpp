@@ -1,6 +1,8 @@
 // CAPS reactions as LAMMPS fix bond/react templates: see caps/bond_react.hpp.
 #include "caps/bond_react.hpp"
 
+#include <cctype>
+#include <cstdlib>
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

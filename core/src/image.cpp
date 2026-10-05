@@ -1,5 +1,6 @@
 // PNG encoder (RGBA 8- or 16-bit, zlib via the system library), with dpi, sRGB and text chunks, and a streaming
 // animated-PNG writer. Keeps the alpha channel for transparent figures.
+#include <cstdio>
 #include <zlib.h>
 
 #include <cmath>

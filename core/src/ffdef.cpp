@@ -6,6 +6,7 @@
 #include "caps/typing.hpp"
 #include "caps/qeq.hpp"
 
+#include <cstdio>
 #include <filesystem>
 #include <memory>
 #include <tuple>

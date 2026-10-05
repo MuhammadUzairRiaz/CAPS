@@ -1,4 +1,6 @@
 // caps — command-line front end over the same core the Studio uses.
+#include <cstdlib>
+#include <cctype>
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -47,7 +49,13 @@
 #include "caps/provenance.hpp"
 #include "caps/recipe.hpp"
 #include "caps/yaml.hpp"
+#ifdef _WIN32
+#include <io.h>
+#define isatty _isatty
+#define fileno _fileno
+#else
 #include <unistd.h>
+#endif
 
 using namespace caps;
 

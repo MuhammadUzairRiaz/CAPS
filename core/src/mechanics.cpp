@@ -1,4 +1,5 @@
 // CAPS mechanics and thermal transitions (see mechanics.hpp for the methods and references).
+#include "caps/rng.hpp"
 #include "caps/uff.hpp"
 #include "caps/mechanics.hpp"
 
@@ -1189,7 +1190,7 @@ BilinearFit fit_bilinear(const std::vector<double>& T0, const std::vector<double
     res[i] = Y[i] - fitted[i];
   }
   std::mt19937_64 rng(12345);
-  std::uniform_int_distribution<size_t> pick(0, n - 1);
+  caps::UniformInt<size_t> pick(0, n - 1);
   std::vector<double> hs;
   for (int b = 0; b < 200; ++b) {
     std::vector<double> yb(n);
@@ -1251,7 +1252,7 @@ BilinearFit fit_two_ranges(const std::vector<double>& T, const std::vector<doubl
   std::vector<size_t> used(lo);
   used.insert(used.end(), hi.begin(), hi.end());
   std::mt19937_64 rng(12345);
-  std::uniform_int_distribution<size_t> pick(0, used.size() - 1);
+  caps::UniformInt<size_t> pick(0, used.size() - 1);
   std::vector<double> tgs;
   for (int b = 0; b < 400; ++b) {
     std::vector<double> yb = y;

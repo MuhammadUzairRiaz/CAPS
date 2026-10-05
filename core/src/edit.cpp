@@ -1,6 +1,9 @@
 // CAPS structure editing (see caps/edit.hpp).
+#include "caps/rng.hpp"
 #include "caps/edit.hpp"
 
+#include <cctype>
+#include <tuple>
 #include <algorithm>
 #include <random>
 #include <cmath>
@@ -502,13 +505,14 @@ GraftReport graft_silanes(System& s, const GraftOptions& o) {
   if (sites.empty()) throw EditError("no surface silanols (Si–O–H): build the silica passivated (Nanostructure or Surface builder)");
   const size_t want = o.count > 0 ? size_t(o.count) : size_t(std::lround(o.fraction * double(sites.size())));
   if (want == 0) throw EditError("nothing to graft: a count or a fraction above zero");
-  // random order, then greedy: each accepted site at least min_spacing from those before it
+  // random order, then greedy: each accepted site at least min_spacing from those before it, and its silane clear of
+  // every atom already there (a site in a hollow, or beside a graft, is passed over: tried on a copy first)
   std::mt19937_64 rng(o.seed);
-  std::shuffle(sites.begin(), sites.end(), rng);
+  caps::shuffle(sites.begin(), sites.end(), rng);
   std::vector<Vec3> kept;
-  std::vector<uint32_t> chosen;
-  for (uint32_t site : sites) {
-    if (chosen.size() >= want) break;
+  size_t clashed = 0;
+  for (size_t k = 0; k < sites.size() && rep.grafted < want; ++k) {
+    const uint32_t site = sites[k];
     bool ok = true;
     for (const auto& p : kept) {
       Vec3 d = s.atoms[site].pos - p;
@@ -516,18 +520,36 @@ GraftReport graft_silanes(System& s, const GraftOptions& o) {
       if (norm(d) < o.min_spacing) { ok = false; break; }
     }
     if (!ok) continue;
-    kept.push_back(s.atoms[site].pos);
-    chosen.push_back(site);
-  }
-  // attach from the highest index down: deleting each replaced hydrogen shifts only the indices above it
-  std::sort(chosen.rbegin(), chosen.rend());
-  for (uint32_t site : chosen) {
-    rep.added_atoms += attach_fragment(s, site, o.smiles, 0, true).size();
+    int64_t h = -1;   // the silanol hydrogen the silane replaces (removing it shifts the indices above it)
+    const auto snb = neighbours(s);   // kept: a range-for over neighbours(s)[site] would read a destroyed temporary
+    for (uint32_t q : snb[site]) if (s.atoms[q].element == 1) { h = q; break; }
+    System trial = s;
+    const auto added = attach_fragment(trial, site, o.smiles, 0, true);
+    std::vector<char> is_new(trial.atoms.size(), 0);
+    for (uint32_t a : added) is_new[a] = 1;
+    const auto tnb = neighbours(trial);
+    double dmin = 1e300;
+    for (uint32_t a : added)
+      for (uint32_t b = 0; b < trial.atoms.size(); ++b) {
+        if (is_new[b] || std::find(tnb[a].begin(), tnb[a].end(), b) != tnb[a].end()) continue;
+        Vec3 d = trial.atoms[a].pos - trial.atoms[b].pos;
+        if (trial.cell.valid()) d = trial.cell.minimum_image(d);
+        dmin = std::min(dmin, norm(d));
+      }
+    if (dmin < 1.2) { ++clashed; continue; }   // closer than any non-bonded contact should be
+    const Vec3 at = s.atoms[site].pos;
+    s = std::move(trial);
+    kept.push_back(at);
+    rep.added_atoms += added.size();
     ++rep.grafted;
+    if (h >= 0)
+      for (size_t r = k + 1; r < sites.size(); ++r) if (sites[r] > uint32_t(h)) --sites[r];
   }
   if (rep.grafted < want)
     rep.notes.push_back(std::to_string(want - rep.grafted) + " fewer than asked: silanols closer than " + std::to_string(o.min_spacing).substr(0, 4) +
-                        " Å to a grafted one were passed over");
+                        " Å to a grafted one" + (clashed ? ", or with no room for the silane (" + std::to_string(clashed) + ")," : std::string()) + " were passed over");
+  else if (clashed)
+    rep.notes.push_back(std::to_string(clashed) + " silanols passed over: no room for the silane there");
   rep.notes.push_back(o.name + " grafted on " + std::to_string(rep.grafted) + " of " + std::to_string(rep.silanols) + " silanols (" +
                       std::to_string(rep.added_atoms) + " atoms added; one ethanol released per graft); relax before dynamics");
   return rep;
@@ -785,8 +807,8 @@ ThiolateReport cap_thiolates(System& s, const ThiolateOptions& o) {
   // greedy in random order, hollows first: each S at least the spacing from those before, and clear of the metal
   const double spacing = o.min_spacing > 0 ? o.min_spacing : std::sqrt(3.0) * dnn;
   std::mt19937_64 rng(o.seed);
-  std::shuffle(sites.begin(), sites.begin() + std::ptrdiff_t(hollows), rng);
-  std::shuffle(sites.begin() + std::ptrdiff_t(hollows), sites.end(), rng);
+  caps::shuffle(sites.begin(), sites.begin() + std::ptrdiff_t(hollows), rng);
+  caps::shuffle(sites.begin() + std::ptrdiff_t(hollows), sites.end(), rng);
   std::vector<Site> chosen;
   for (const auto& st : sites) {
     bool ok = true;
@@ -799,7 +821,7 @@ ThiolateReport cap_thiolates(System& s, const ThiolateOptions& o) {
   }
   const size_t want = size_t(std::lround(std::clamp(o.fraction, 0.0, 1.0) * double(chosen.size())));
   if (want == 0) throw EditError("no site for a thiolate at this spacing");
-  std::shuffle(chosen.begin(), chosen.end(), rng);
+  caps::shuffle(chosen.begin(), chosen.end(), rng);
   chosen.resize(want);
   // each ligand: its S on the site, the tail's heavy-atom centre along the surface normal, rolled clear of the others
   const auto& F = fragment_3d(o.smiles);
@@ -843,10 +865,11 @@ ThiolateReport cap_thiolates(System& s, const ThiolateOptions& o) {
   int next_mol = mol + 1;
   constexpr double kPi = 3.14159265358979323846;
   for (const auto& st : chosen) {
-    // the atoms a ligand here could touch
+    // the atoms a ligand here could touch, and whether each is metal
     std::vector<Vec3> near;
+    std::vector<char> near_metal;
     for (const auto& a : s.atoms)
-      if (norm(rel(st.p, a.pos)) < reach + 4) near.push_back(st.p + rel(st.p, a.pos));
+      if (norm(rel(st.p, a.pos)) < reach + 4) near.push_back(st.p + rel(st.p, a.pos)), near_metal.push_back(metal(a.element));
     std::vector<Vec3> axes{st.n};
     const Vec3 t1 = perpendicular(st.n), t2 = cross(st.n, t1);
     for (double tilt : {15.0, 30.0})
@@ -854,7 +877,7 @@ ThiolateReport cap_thiolates(System& s, const ThiolateOptions& o) {
         const double th = tilt * kPi / 180, ph = az * kPi / 3;
         axes.push_back(unitv(st.n * std::cos(th) + (t1 * std::cos(ph) + t2 * std::sin(ph)) * std::sin(th)));
       }
-    double best = -1;
+    double best = -1e300;
     std::vector<Vec3> placed;
     for (const Vec3& ax : axes) {
       const Vec3 axis0 = cross(v, ax);
@@ -866,15 +889,17 @@ ThiolateReport cap_thiolates(System& s, const ThiolateOptions& o) {
       for (int k = 0; k < 24; ++k) {
         const double ang = 2 * kPi * k / 24;
         std::vector<Vec3> trial(L.atoms.size());
-        double dmin = 1e300;
+        // the margin over the contacts a ligand needs: 3.0 Å from the metal, 2.5 Å from other ligands
+        double score = 1e300;
         for (size_t i = 0; i < L.atoms.size(); ++i) {
           trial[i] = st.p + rotate(align(L.atoms[i].pos - L.atoms[X].pos), ax, std::cos(ang), std::sin(ang));
           if (i == D || i == X) continue;
-          for (const auto& q : near) dmin = std::min(dmin, norm(trial[i] - q));
+          for (size_t q = 0; q < near.size(); ++q) score = std::min(score, norm(trial[i] - near[q]) - (near_metal[q] ? 3.0 : 2.5));
         }
-        if (dmin > best) best = dmin, placed = trial;
+        if (score > best) best = score, placed = trial;
       }
     }
+    if (best < 0) { ++rep.crowded; continue; }   // no orientation clears the metal and the ligands already there
     std::vector<int64_t> map(L.atoms.size(), -1);
     for (size_t i = 0; i < L.atoms.size(); ++i) {
       if (i == D) continue;
@@ -902,6 +927,7 @@ ThiolateReport cap_thiolates(System& s, const ThiolateOptions& o) {
                 "no metal–S bonds written — relax with a force field that has metal–S terms before dynamics",
                 rep.ligands, o.name.c_str(), rep.surface_atoms, rep.hollow, rep.on_top, spacing, rep.added_atoms);
   rep.notes.push_back(b);
+  if (rep.crowded) rep.notes.push_back(std::to_string(rep.crowded) + " sites passed over: no orientation keeps the tail 3 Å from the metal and 2.5 Å from the other ligands");
   return rep;
 }
 
@@ -1330,7 +1356,7 @@ int point_defects(System& s, const DefectOptions& o, std::vector<std::string>* n
   if (cand.empty()) throw std::invalid_argument(std::string("no ") + element(o.from).symbol + " atoms to pick");
   const size_t want = o.count > 0 ? size_t(o.count) : size_t(std::lround(o.fraction * double(cand.size())));
   std::mt19937_64 rng(o.seed);
-  std::shuffle(cand.begin(), cand.end(), rng);
+  caps::shuffle(cand.begin(), cand.end(), rng);
   std::vector<uint32_t> pick;
   for (uint32_t i : cand) {
     if (pick.size() >= want) break;

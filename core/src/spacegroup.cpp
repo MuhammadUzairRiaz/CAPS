@@ -1,6 +1,7 @@
 // CAPS space groups (see caps/spacegroup.hpp).
 #include "caps/spacegroup.hpp"
 
+#include <cstdlib>
 #include <algorithm>
 #include <cctype>
 #include <cmath>

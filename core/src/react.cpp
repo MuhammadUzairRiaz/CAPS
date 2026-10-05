@@ -1,7 +1,9 @@
 // CAPS React: template matching, bond edits, Polymatic-style cycles and network analysis.
+#include "caps/rng.hpp"
 #include "caps/uff.hpp"
 #include "caps/react.hpp"
 
+#include <tuple>
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -792,7 +794,7 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
   ReactReport rep;
   if (o.templates.empty()) throw ReactError("no reaction templates");
   std::mt19937_64 rng(o.seed);
-  std::uniform_real_distribution<double> uni(0, 1);
+  caps::UniformReal<double> uni(0, 1);
   for (const auto& t : o.templates) rep.initial_sites = std::max(rep.initial_sites, count_sites(s, t));
   if (rep.initial_sites == 0) throw ReactError("no atom matches the counted site of any template; check the templates against the structure");
   if (s.cell.valid() && !s.unwrapped) make_molecules_whole(s);

@@ -1,5 +1,6 @@
 #include "caps/free_energy.hpp"
 
+#include <cstdio>
 #include <algorithm>
 #include <cmath>
 #include <numeric>

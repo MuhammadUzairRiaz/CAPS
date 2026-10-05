@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <random>
 
+#include "caps/rng.hpp"
 #include "caps/polymer.hpp"
 #include "caps/elements.hpp"
 
@@ -88,7 +89,7 @@ System build_brush(const System& slab, const ChainSpec& spec, const BrushOptions
   const int want = o.chains > 0 ? o.chains : std::max(1, int(std::lround(o.density * R.area)));
   // drawn at random, at least min_spacing apart in the surface plane
   std::mt19937_64 rng(o.grow.seed);
-  std::shuffle(sites.begin(), sites.end(), rng);
+  caps::shuffle(sites.begin(), sites.end(), rng);
   std::vector<Site> pick;
   for (const auto& s : sites) {
     if (int(pick.size()) >= want) break;

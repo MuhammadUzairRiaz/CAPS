@@ -1,4 +1,6 @@
 // LAMMPS data (atom_style full / molecular / charge / atomic) and text dump readers, data writer.
+#include <cctype>
+#include <cstdlib>
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

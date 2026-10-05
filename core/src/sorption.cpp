@@ -1,4 +1,5 @@
 // CAPS sorption: Widom insertion and grand-canonical Monte Carlo in a fixed host (see sorption.hpp).
+#include "caps/rng.hpp"
 #include "caps/sorption.hpp"
 
 #include <algorithm>
@@ -149,7 +150,7 @@ SorptionReport sorption(const System& s, const ForceField& ff, const SorptionOpt
   rep.volume = V;
   for (size_t i = 0; i < nh; ++i) rep.host_mass += i < ff.mass.size() ? ff.mass[i] : s.mass_of(s.atoms[i]);
   std::mt19937_64 rng(o.seed);
-  std::uniform_real_distribution<double> U(0.0, 1.0);
+  caps::UniformReal<double> U(0.0, 1.0);
   auto random_quat = [&] {   // uniform on SO(3) (Shoemake 1992)
     const double u1 = U(rng), u2 = 2 * kPi * U(rng), u3 = 2 * kPi * U(rng);
     return Quat{std::sqrt(u1) * std::cos(u3), std::sqrt(1 - u1) * std::sin(u2), std::sqrt(1 - u1) * std::cos(u2), std::sqrt(u1) * std::sin(u3)};

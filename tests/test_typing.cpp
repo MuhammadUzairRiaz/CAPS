@@ -1,3 +1,5 @@
+#include <algorithm>
+#include <cmath>
 #include <gtest/gtest.h>
 
 #include <string>

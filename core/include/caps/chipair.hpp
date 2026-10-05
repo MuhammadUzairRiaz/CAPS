@@ -24,6 +24,7 @@
 // Force field: one for both molecules — a library force field with typing rules (the Studio uses GAFF2), else GAFF's
 // built-in C and H subset when it types both, else UFF; charges Gasteiger–Marsili (QEq with UFF where Gasteiger has none).
 #pragma once
+#include <stdexcept>
 #include <functional>
 #include <string>
 #include <vector>

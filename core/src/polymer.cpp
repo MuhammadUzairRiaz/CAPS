@@ -1,8 +1,10 @@
 // CAPS polymer builder: chains of any repeat unit grown into a periodic cell (see polymer.hpp).
+#include "caps/rng.hpp"
 #include "caps/polymer.hpp"
 #include "caps/edit.hpp"
 #include "caps/uff.hpp"
 
+#include <cctype>
 #include <algorithm>
 #include <chrono>
 #include <cstdio>
@@ -527,7 +529,7 @@ std::vector<int> chain_sequence(const ChainSpec& spec, uint64_t seed) {
       std::vector<double> w = spec.weights;
       w.resize(size_t(nu), w.empty() ? 1.0 : 0.0);
       if (std::accumulate(w.begin(), w.end(), 0.0) <= 0) w.assign(size_t(nu), 1.0);
-      std::discrete_distribution<int> D(w.begin(), w.end());
+      caps::Discrete<int> D(w.begin(), w.end());
       for (int i = 0; i < n; ++i) s[size_t(i)] = D(rng);
       break;
     }
@@ -552,11 +554,11 @@ std::vector<int> chain_sequence(const ChainSpec& spec, uint64_t seed) {
       int i = 0;
       for (int k = 0; k < nu; ++k)
         for (int c = 0; c < cnt[size_t(k)]; ++c) s[size_t(i++)] = k;
-      std::shuffle(s.begin(), s.end(), rng);
+      caps::shuffle(s.begin(), s.end(), rng);
       break;
     }
     case Sequence::Gradient: {
-      std::uniform_real_distribution<double> U(0, 1);
+      caps::UniformReal<double> U(0, 1);
       for (int i = 0; i < n; ++i) {
         const double f = n > 1 ? double(i) / (n - 1) : 0.0;   // 0 at the head, 1 at the tail
         s[size_t(i)] = U(rng) < f ? nu - 1 : 0;
@@ -615,7 +617,7 @@ std::vector<char> chain_inversions(const ChainSpec& spec, size_t n, uint64_t see
     return inv;
   }
   std::mt19937_64 rng(seed * 0x2545F4914F6CDD1Dull + 13);
-  std::uniform_real_distribution<double> U(0, 1);
+  caps::UniformReal<double> U(0, 1);
   const double p = std::clamp(spec.inversion, 0.0, 1.0);
   for (size_t k = 1; k < n; ++k) inv[k] = U(rng) < p;   // the first unit sets the direction
   return inv;
@@ -712,8 +714,8 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
   size_t n_inverted = 0, n_linked = 0;
   const int nchains = std::max(1, o.chains);
   std::mt19937_64 rng(o.seed * 0x9E3779B97F4A7C15ull + 7);
-  std::uniform_real_distribution<double> U(0, 1);
-  std::normal_distribution<double> Nd(0, 1);
+  caps::UniformReal<double> U(0, 1);
+  caps::Normal<double> Nd(0, 1);
 
   // sequences, tacticity, box
   std::vector<ChainState> C(static_cast<size_t>(nchains));
@@ -814,7 +816,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
         for (int u = std::max(1, spec.spacing) - 1; u < len; u += std::max(1, spec.spacing)) prev = add_arm(m, u, false, std::max(1, spec.arm_dp), prev);
       else if (arch == Architecture::Branched)
         for (int u = 1; u + 1 < len; ++u)
-          if (std::uniform_real_distribution<double>(0, 1)(brng) < spec.branch_probability) prev = add_arm(m, u, false, std::max(1, spec.arm_dp), prev);
+          if (caps::UniformReal<double>(0, 1)(brng) < spec.branch_probability) prev = add_arm(m, u, false, std::max(1, spec.arm_dp), prev);
     }
   }
   bool ortho = o.cell[0] > 0 && o.cell[1] > 0 && o.cell[2] > 0;

@@ -9,6 +9,7 @@
 #include <set>
 #include <stdexcept>
 
+#include "caps/rng.hpp"
 #include "caps/resolution.hpp"
 #include "caps/typing.hpp"
 
@@ -137,7 +138,7 @@ System build_bead_graph(const BeadMolecule& m, const std::vector<double>& bond_l
   }
   // placement: breadth first, each bead at its parent's bond length in a random direction away from the others
   std::mt19937_64 rng(o.seed);
-  std::normal_distribution<double> nd(0, 1);
+  caps::Normal<double> nd(0, 1);
   std::vector<Vec3> x(size_t(n), Vec3{0, 0, 0});
   std::vector<char> placed(size_t(n), 0);
   for (int root = 0; root < n; ++root) {
@@ -197,7 +198,7 @@ System build_bead_graph(const BeadMolecule& m, const std::vector<double>& bond_l
   }
   // a small jitter: the spring model leaves chains exactly straight, where an angle's force needs 1/sin θ (LAMMPS clamps
   // sin θ at 0.001 and so computes a different force there)
-  std::normal_distribution<double> jit(0, 0.05);
+  caps::Normal<double> jit(0, 0.05);
   for (auto& p : x) p = p + Vec3{jit(rng), jit(rng), jit(rng)};
   System s;
   s.title = "beads";
