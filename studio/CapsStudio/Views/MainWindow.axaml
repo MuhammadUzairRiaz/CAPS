@@ -987,6 +987,57 @@
                 </StackPanel>
               </Border>
             </StackPanel>
+            <!-- Look (design/boards/Look): the sizes, bond orders and monitor arcs, for everything or the selection -->
+            <Button Classes="chipbtn" Margin="14,12" HorizontalAlignment="Right" VerticalAlignment="Top" IsVisible="{Binding HasDocument}" ZIndex="5" Padding="9,3"
+                    ToolTip.Tip="Look: atom and stick sizes, bond orders, arcs on angle monitors — for everything or the selection">
+              <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="eye" Size="13" VerticalAlignment="Center" /><TextBlock Text="Look" FontSize="12" VerticalAlignment="Center" /></StackPanel>
+              <Button.Flyout>
+                <Flyout Placement="BottomEdgeAlignedRight">
+                  <StackPanel Width="300" Spacing="10" Margin="4">
+                    <DockPanel>
+                      <TextBlock Text="Look" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" />
+                      <StackPanel Orientation="Horizontal" Spacing="2" HorizontalAlignment="Right">
+                        <ToggleButton Classes="chip" Content="All" IsChecked="{Binding LookAll, Mode=OneWay}" Click="OnLookAll" />
+                        <ToggleButton Classes="chip" Content="Selection" IsChecked="{Binding LookSelection, Mode=OneWay}" Click="OnLookSelection" IsEnabled="{Binding HasSelBar}" />
+                      </StackPanel>
+                    </DockPanel>
+                    <StackPanel Spacing="10" IsVisible="{Binding LookAll}">
+                      <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                        <TextBlock Text="Atoms (ball and stick)" FontSize="12" />
+                        <TextBlock Grid.Column="1" Text="{Binding LookAtomText}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" />
+                        <Slider Grid.Row="1" Grid.ColumnSpan="2" Minimum="0.10" Maximum="0.80" Value="{Binding LookAtom}" />
+                      </Grid>
+                      <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                        <TextBlock Text="Sticks" FontSize="12" />
+                        <TextBlock Grid.Column="1" Text="{Binding LookStickText}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" />
+                        <Slider Grid.Row="1" Grid.ColumnSpan="2" Minimum="0.04" Maximum="0.40" Value="{Binding LookStick}" />
+                      </Grid>
+                      <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                        <TextBlock Text="Spheres (space filling)" FontSize="12" />
+                        <TextBlock Grid.Column="1" Text="{Binding LookSpaceText}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" />
+                        <Slider Grid.Row="1" Grid.ColumnSpan="2" Minimum="0.40" Maximum="1.20" Value="{Binding LookSpace}" />
+                      </Grid>
+                      <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                        <TextBlock Text="Lines (wireframe)" FontSize="12" />
+                        <TextBlock Grid.Column="1" Text="{Binding LookLineText}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" />
+                        <Slider Grid.Row="1" Grid.ColumnSpan="2" Minimum="0.5" Maximum="5" Value="{Binding LookLine}" />
+                      </Grid>
+                    </StackPanel>
+                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" IsVisible="{Binding LookSelection}">
+                      <TextBlock Text="The selection's size" FontSize="12" />
+                      <TextBlock Grid.Column="1" Text="{Binding LookSelText}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" />
+                      <Slider Grid.Row="1" Grid.ColumnSpan="2" Minimum="0.3" Maximum="3" Value="{Binding LookSel}" />
+                    </Grid>
+                    <CheckBox IsChecked="{Binding LookOrders}" Content="Bond orders: double, triple, aromatic" ToolTip.Tip="Double and triple bonds as parallel sticks, aromatic with a dashed inner one (from the bond orders the structure carries)" />
+                    <CheckBox IsChecked="{Binding LookArcs}" Content="Arcs on angle and torsion monitors" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <Button Classes="small primary" Content="Keep as my look" Click="OnLookKeep" ToolTip.Tip="These sizes for every structure from now on" />
+                      <Button Classes="small" Content="Reset" Click="OnLookReset" />
+                    </StackPanel>
+                  </StackPanel>
+                </Flyout>
+              </Button.Flyout>
+            </Button>
             <!-- the stamp under the pointer (design/boards/Stamp) -->
             <Border Classes="hud" Padding="10,5" Margin="14,14,14,82" HorizontalAlignment="Center" VerticalAlignment="Bottom" IsVisible="{Binding StampArmed}" ZIndex="6">
               <StackPanel Orientation="Horizontal" Spacing="8">
@@ -1911,6 +1962,56 @@
           </ScrollViewer>
         </DockPanel>
         <!-- Performance (design/boards/MillionAtoms): level of detail, memory, quality -->
+        <!-- Bond rules (design/boards/BondRules): per element pair a histogram of distances with its cut-off -->
+        <DockPanel IsVisible="{Binding ShowRulesPanel}">
+          <Border DockPanel.Dock="Top" Classes="phead">
+            <DockPanel>
+              <Button DockPanel.Dock="Right" Classes="tool" Width="30" MinWidth="30" Height="30" MinHeight="30" Click="OnRulesClose" ToolTip.Tip="Close (the preview goes)">
+                <local:Icon Kind="close" Size="14" />
+              </Button>
+              <TextBlock Text="{Binding RulesTitle}" Classes="h2" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+            </DockPanel>
+          </Border>
+          <Border DockPanel.Dock="Bottom" Padding="12,10" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Background="{DynamicResource Bg1B}">
+            <StackPanel Spacing="8">
+              <TextBlock Text="{Binding RulesSummary}" Classes="mono" FontSize="13" FontWeight="SemiBold" />
+              <TextBlock Text="{Binding RulesNote}" FontSize="11.5" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                <ComboBox ItemsSource="{Binding RuleSetNames}" SelectedIndex="{Binding RuleSetIndex}" HorizontalAlignment="Stretch" ToolTip.Tip="A rule set kept earlier, or each pair's gap in this structure" />
+              </Grid>
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                <TextBox Text="{Binding RuleSetName}" Watermark="Rubber + oxide fillers" FontSize="12" />
+                <Button Grid.Column="1" Classes="small" Content="Save rule set" Click="OnRulesSave" />
+              </Grid>
+              <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                <Button Classes="small" Content="Close" Click="OnRulesClose" />
+                <Button Classes="small primary" Content="Bond it · undoable" Click="OnRulesApply" ToolTip.Tip="The structure's bonds from these rules (⌘Z undoes); its force field is assigned again" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+          <ScrollViewer>
+            <StackPanel Margin="12,8" Spacing="4">
+              <TextBlock Text="Every pair of elements in the structure, with how many atom pairs sit at each distance (0.8 – 3.2 Å). Drag the white handle to set the bond cut-off; the count updates live."
+                         FontSize="11.5" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" Margin="0,0,0,6" />
+              <ItemsControl ItemsSource="{Binding RulePairs}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:RulePair">
+                    <StackPanel Spacing="3" Margin="0,4,0,10">
+                      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                        <TextBlock Text="{Binding Name}" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1" Text="{Binding Label}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" HorizontalAlignment="Right" />
+                        <CheckBox Grid.Column="2" Content="never" IsChecked="{Binding Never}" FontSize="11.5" ToolTip.Tip="Never bond this pair (ionic pairs start so)" />
+                      </Grid>
+                      <Border Background="{DynamicResource Bg0B}" CornerRadius="5" Padding="4" Height="54">
+                        <local:RuleHistogram Pair="{Binding}" Cursor="SizeWestEast" ToolTip.Tip="Drag to set the cut-off: pairs to its left bond" />
+                      </Border>
+                    </StackPanel>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </ScrollViewer>
+        </DockPanel>
         <!-- Brush to select (design/boards/BrushSelect): drag across a histogram to select that range; several intersect -->
         <DockPanel IsVisible="{Binding ShowBrushPanel}">
           <Border DockPanel.Dock="Top" Classes="phead">

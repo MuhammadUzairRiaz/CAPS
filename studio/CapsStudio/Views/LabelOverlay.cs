@@ -40,6 +40,32 @@ public sealed class LabelOverlay : Control
     public void SetArrow((Point A, Point B)? a) { _arrow = a; InvalidateVisual(); }
     /// <summary>Pinned measurements: a dashed line and label for each distance, a label for angles and dihedrals.</summary>
     public void SetMonitors(List<MonitorMark> m) { _monitors = m; InvalidateVisual(); }
+    /// <summary>Look: angle and torsion monitors drawn with their arcs.</summary>
+    public bool Arcs { get; set; }
+
+    /// <summary>An angle's arc at the vertex v between the directions to a and c (the short way), with short legs.</summary>
+    private static void DrawArc(DrawingContext ctx, IPen pen, IPen legs, Point v, Point a, Point c, double r)
+    {
+        double a0 = Math.Atan2(a.Y - v.Y, a.X - v.X), a1 = Math.Atan2(c.Y - v.Y, c.X - v.X);
+        var sweep = a1 - a0;
+        while (sweep > Math.PI) sweep -= 2 * Math.PI;
+        while (sweep < -Math.PI) sweep += 2 * Math.PI;
+        ctx.DrawLine(legs, v, new Point(v.X + Math.Cos(a0) * r * 1.6, v.Y + Math.Sin(a0) * r * 1.6));
+        ctx.DrawLine(legs, v, new Point(v.X + Math.Cos(a1) * r * 1.6, v.Y + Math.Sin(a1) * r * 1.6));
+        var geo = new StreamGeometry();
+        using (var g = geo.Open())
+        {
+            g.BeginFigure(new Point(v.X + Math.Cos(a0) * r, v.Y + Math.Sin(a0) * r), false);
+            const int steps = 24;
+            for (var k = 1; k <= steps; ++k)
+            {
+                var t = a0 + sweep * k / steps;
+                g.LineTo(new Point(v.X + Math.Cos(t) * r, v.Y + Math.Sin(t) * r));
+            }
+            g.EndFigure(false);
+        }
+        ctx.DrawGeometry(null, pen, geo);
+    }
 
     public override void Render(DrawingContext ctx)
     {
@@ -70,6 +96,20 @@ public sealed class LabelOverlay : Control
                 ctx.DrawLine(new Pen(acc, 1.4, new DashStyle([5, 4], 0)), new Point(m.X0, m.Y0), new Point(m.X1, m.Y1));
                 ctx.DrawEllipse(acc, null, new Point(m.X0, m.Y0), 3, 3);
                 ctx.DrawEllipse(acc, null, new Point(m.X1, m.Y1), 3, 3);
+            }
+            if (Arcs && m.Xs is { } xs && m.Ys is { } ys)
+            {
+                var arcPen = new Pen(acc, 1.6);
+                var legPen = new Pen(acc, 1, new DashStyle([3, 3], 0));
+                if (xs.Length == 3) DrawArc(ctx, arcPen, legPen, new Point(xs[1], ys[1]), new Point(xs[0], ys[0]), new Point(xs[2], ys[2]), 16);
+                else if (xs.Length == 4)
+                {
+                    // a torsion: the central bond, and the arc between the two outer bonds seen down it
+                    var b = new Point(xs[1], ys[1]); var c = new Point(xs[2], ys[2]);
+                    ctx.DrawLine(legPen, b, c);
+                    var mid = new Point((b.X + c.X) / 2, (b.Y + c.Y) / 2);
+                    DrawArc(ctx, arcPen, legPen, mid, new Point(mid.X + xs[0] - b.X, mid.Y + ys[0] - b.Y), new Point(mid.X + xs[3] - c.X, mid.Y + ys[3] - c.Y), 18);
+                }
             }
             var ft = new FormattedText(m.Text, System.Globalization.CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Face, 11, acc);
             var r = new Rect(at.X + 8, at.Y - ft.Height / 2 - 3, ft.Width + 12, ft.Height + 6);

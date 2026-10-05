@@ -105,7 +105,7 @@ public sealed partial class MainViewModel
         set
         {
             if (!Set(ref _brushOpen, value)) return;
-            if (value) { AppearanceOpen = false; SelectionOpen = false; InteractionsOpen = false; HistoryOpen = false; StatesOpen = false; LensOpen = false; LodOpen = false; OpenBrushDefaults(); }
+            if (value) { RulesOpen = false; AppearanceOpen = false; SelectionOpen = false; InteractionsOpen = false; HistoryOpen = false; StatesOpen = false; LensOpen = false; LodOpen = false; OpenBrushDefaults(); }
             Raise(nameof(ShowBrushPanel));
             Raise(nameof(ShowStudioTabs));
         }

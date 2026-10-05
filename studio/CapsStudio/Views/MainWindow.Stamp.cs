@@ -44,6 +44,12 @@ public partial class MainWindow
     private void OnTrayRemove(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is TrayPiece p) _vm.RemoveFromTray(p); }
     private void OnTrayHide(object? s, RoutedEventArgs e) { _vm.TrayShown = false; _vm.DisarmStamp(); }
 
+    // ---- Look (design/boards/Look)
+    private void OnLookAll(object? s, RoutedEventArgs e) => _vm.LookScope = 0;
+    private void OnLookSelection(object? s, RoutedEventArgs e) => _vm.LookScope = 1;
+    private void OnLookKeep(object? s, RoutedEventArgs e) => _vm.KeepLook();
+    private void OnLookReset(object? s, RoutedEventArgs e) => _vm.ResetLook();
+
     // ---- dragging a file over the window: two targets, into this structure (a stamp) or open it new
     private void InitDropTargets()
     {
