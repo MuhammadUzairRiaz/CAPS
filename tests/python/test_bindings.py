@@ -604,4 +604,11 @@ _ns = _pe.sorption("N#N", pressures_kpa=[], insertions=2000)
 _ad = _pe.adsorption([("N#N", 2), ("C", 1)], cycles=1, steps=500)
 check("sorbate 3 atoms" in _ns["notes"][0] and sorted(c["name"] for c in _ad["components"]) == ["C", "N2"] and _pe.summary()["atoms"] == 120 + 6 + 1,
       f"TraPPE N2 / CH4 on TraPPE-UA PE: {_ns['notes'][0][-40:]} · adsorbates {[c['name'] for c in _ad['components']]} · {_pe.summary()['atoms']} sites")
+# one CO2 built and typed by TraPPE-UA: its rigid geometry (C=O 1.16 Å, linear) and charges set by the assignment
+import math as _m
+_c = caps.build.smiles("O=C=O")
+_cr = _c.field.assign("trappe-ua")
+_cp = [_c.atom(i)["position"] for i in range(3)]
+check(abs(_m.dist(_cp[0], _cp[1]) - 1.16) < 1e-9 and abs(_m.dist(_cp[0], _cp[2]) - 2.32) < 1e-9 and [a["q"] for a in _cr["atoms"]] == [-0.35, 0.7, -0.35],
+      f"one TraPPE CO2: C=O {_m.dist(_cp[0], _cp[1]):.4f} Å, O…O {_m.dist(_cp[0], _cp[2]):.4f} Å, charges {[a['q'] for a in _cr['atoms']]}")
 print("all python checks passed")
