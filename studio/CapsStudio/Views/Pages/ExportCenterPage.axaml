@@ -151,6 +151,15 @@
                 <NumericUpDown Value="{Binding EngineShearD}" Minimum="0.000001" Increment="0.005" FormatString="0.######" /></StackPanel>
             </Grid>
             <TextBlock Text="{Binding EngineMechText}" Classes="muted" FontSize="11" TextWrapping="Wrap" IsVisible="{Binding EngineIsMech}" />
+            <Grid ColumnDefinitions="2*,*,*" ColumnSpacing="8" IsVisible="{Binding EngineIsProtocol}">
+              <StackPanel Spacing="4"><TextBlock Text="Protocol" Classes="muted" FontSize="11.5" />
+                <ComboBox ItemsSource="{x:Static vm:MainViewModel.EngineProtocols}" SelectedIndex="{Binding EngineProtocol}" HorizontalAlignment="Stretch" /></StackPanel>
+              <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="T max (K)" Classes="muted" FontSize="11.5" />
+                <NumericUpDown Value="{Binding EngineTmaxD}" Minimum="1" Increment="25" FormatString="0" ToolTip.Tip="The heating stages' temperature: about Tg + 200–300 K" /></StackPanel>
+              <StackPanel Grid.Column="2" Spacing="4"><TextBlock Text="Production (ps)" Classes="muted" FontSize="11.5" />
+                <NumericUpDown Value="{Binding EngineProdPsD}" Minimum="0" Increment="1000" FormatString="0" /></StackPanel>
+            </Grid>
+            <TextBlock Text="{Binding EngineMechText}" Classes="muted" FontSize="11" TextWrapping="Wrap" IsVisible="{Binding EngineIsProtocol}" />
             <StackPanel Spacing="4" IsVisible="{Binding EngineIsMd}">
               <TextBlock Text="Bond constraints" Classes="muted" FontSize="11.5" />
               <ComboBox ItemsSource="{x:Static vm:MainViewModel.ConstraintChoices}" SelectedIndex="{Binding EngineConstraints}" HorizontalAlignment="Stretch"

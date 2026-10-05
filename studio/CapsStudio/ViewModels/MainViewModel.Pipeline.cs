@@ -132,8 +132,17 @@ public sealed partial class MainViewModel
 
     // ---------------------------------------------------------------- Export center (module 68)
     public bool IsExportCenter => _module == 68;
-    public static readonly string[] EngineRuns = ["Check (single point)", "Minimise", "NVT", "NPT", "Tensile test (LAMMPS)", "Creep at constant stress (LAMMPS)", "Shear viscosity, NEMD (LAMMPS)"];
-    private static readonly string[] EngineRunIds = ["check", "minimize", "nvt", "npt", "tensile", "creep", "shear"];
+    public static readonly string[] EngineRuns = ["Check (single point)", "Minimise", "NVT", "NPT", "Tensile test (LAMMPS)", "Creep at constant stress (LAMMPS)", "Shear viscosity, NEMD (LAMMPS)", "Equilibration protocol (LAMMPS)"];
+    private static readonly string[] EngineRunIds = ["check", "minimize", "nvt", "npt", "tensile", "creep", "shear", "protocol"];
+    // the protocol run: one of CAPS's protocols as LAMMPS stages, its top temperature, and NPT production after it
+    public static readonly string[] EngineProtocols = ["21-step compression / decompression", "Annealing cycles", "Push-off then NPT"];
+    private static readonly string[] EngineProtocolIds = ["larsen21", "annealing", "pushoff"];
+    private int _engProtocol;
+    private double _engTmax = 600, _engProdPs = 5000;
+    public int EngineProtocol { get => _engProtocol; set { if (Set(ref _engProtocol, Math.Clamp(value, 0, 2))) { Raise(nameof(EngineMechText)); RefreshEngines(); } } }
+    public decimal? EngineTmaxD { get => (decimal)_engTmax; set { var v = Math.Clamp((double)(value ?? 600m), 1, 3000); if (Set(ref _engTmax, v, nameof(EngineTmaxD))) RefreshEngines(); } }
+    public decimal? EngineProdPsD { get => (decimal)_engProdPs; set { var v = Math.Clamp((double)(value ?? 0m), 0, 1e6); if (Set(ref _engProdPs, v, nameof(EngineProdPsD))) { Raise(nameof(EngineMechText)); RefreshEngines(); } } }
+    public bool EngineIsProtocol => _engRun == 7;
     // tensile / creep / shear: the axis, rates, the target strain and the stress
     public static readonly string[] EngineAxes = ["x", "y", "z"];
     private int _engAxis;
@@ -146,13 +155,14 @@ public sealed partial class MainViewModel
     public bool EngineIsTensile => _engRun == 4;
     public bool EngineIsCreep => _engRun == 5;
     public bool EngineIsShear => _engRun == 6;
-    public bool EngineIsMech => _engRun >= 4;
-    public bool EngineHasSteps => _engRun is >= 2 and not 4;
+    public bool EngineIsMech => _engRun is >= 4 and <= 6;
+    public bool EngineHasSteps => _engRun is >= 2 and not 4 and not 7;
     public string EngineMechText => _engRun switch
     {
         4 => string.Format(CultureInfo.InvariantCulture, "{0:0.###} strain at {1:0.#####} /ps = {2:0.##} ns ({3:0.###E+0} /s); the steps follow from the time step", _engMaxStrain, _engRate, _engMaxStrain / _engRate / 1000, _engRate * 1e12),
         5 => "creep.dat: time (ps) and strain along the axis; the other axes at P",
         6 => string.Format(CultureInfo.InvariantCulture, "γ̇ = {0:0.###E+0} /s; viscosity.dat holds η (mPa·s) in blocks: average the steady part, and repeat at several rates for η(γ̇)", _engShear * 1e12),
+        7 => string.Format(CultureInfo.InvariantCulture, "the stages as CAPS runs them (Equilibrate page), each its own fix and run, then {0:0.#} ps NPT with density.dat; lmp -var scale 0.001 checks the input in seconds", _engProdPs),
         _ => "",
     };
     private bool _engLammps = true, _engGromacs = true, _engMinFirst = true, _engBusy, _engMoltemplate, _engDlpoly, _engAmber;
@@ -182,7 +192,7 @@ public sealed partial class MainViewModel
         set
         {
             if (!Set(ref _engRun, Math.Clamp(value, 0, EngineRuns.Length - 1))) return;
-            foreach (var n in new[] { nameof(EngineIsMd), nameof(EngineIsTensile), nameof(EngineIsCreep), nameof(EngineIsShear), nameof(EngineIsMech), nameof(EngineHasSteps), nameof(EngineMechText) }) Raise(n);
+            foreach (var n in new[] { nameof(EngineIsMd), nameof(EngineIsTensile), nameof(EngineIsCreep), nameof(EngineIsShear), nameof(EngineIsMech), nameof(EngineHasSteps), nameof(EngineMechText), nameof(EngineIsProtocol) }) Raise(n);
             RefreshEngines();
         }
     }
@@ -261,6 +271,7 @@ public sealed partial class MainViewModel
         ["minimize_first"] = _engMinFirst, ["temperature"] = _engTemp, ["pressure"] = _engPress, ["dt"] = _engDt, ["steps"] = _engSteps, ["constraints"] = _engConstraints switch { 1 => "h-bonds", 2 => "all-bonds", _ => "none" },
         ["lammps_styles"] = _engStyle == 0 ? "native" : "exact", ["hybrid"] = _engHybrid, ["coulomb"] = EngineCoulombIds[_engCoulomb],
         ["cutoff"] = _engCutoff, ["kspace_accuracy"] = _engKspace, ["units"] = _engUnits switch { 1 => "real", 2 => "metal", _ => "auto" },
+        ["protocol"] = EngineProtocolIds[_engProtocol], ["t_max"] = _engTmax, ["production_ps"] = _engProdPs,
         ["axis"] = EngineAxes[_engAxis], ["strain_rate"] = _engRate, ["max_strain"] = _engMaxStrain, ["stress_mpa"] = _engStress, ["shear_rate"] = _engShear,
         ["preview"] = preview, ["head_lines"] = preview ? 60 : 0,
     }.ToJsonString();
