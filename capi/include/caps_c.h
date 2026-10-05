@@ -674,6 +674,9 @@ int32_t caps_pair_histograms(caps_doc* d, const char* json, char* out, int32_t c
    rgb}] drawn in the view from their atoms in the frame shown; caps_probe_series JSON {a: {kind, atoms}, b: {kind, atoms}
    (optional), measure: distance | angle | rms | size} → {values: [one per frame], unit}. */
 int32_t caps_set_probes(caps_doc* d, const char* json);
+/* v60: a probe's geometry in the frame shown — JSON {kind, atoms (absent: the selection)} → {centre, axes (unit, the
+   largest principal direction first), semi, rms}; the orient puck turns the view along, onto or beside them. */
+int32_t caps_probe_geometry(caps_doc* d, const char* json, char* out, int32_t cap);
 int32_t caps_probe_series(caps_doc* d, const char* json, char* out, int32_t cap);
 int32_t caps_bond_rules_preview(caps_doc* d, const char* json, char* out, int32_t cap);
 int32_t caps_piece_file(const char* path, const char* name, char* out, int32_t cap);

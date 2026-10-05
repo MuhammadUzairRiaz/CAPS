@@ -134,6 +134,15 @@ public partial class MainWindow
         var grow = new MenuItem { Header = "Grow along bonds" };
         grow.Click += (_, _) => { _vm.GrowSelectionKey(); ViewHost.Focus(); };
         items.Add(grow);
+        var probe = new MenuItem { Header = "Probe from the selection" };
+        foreach (var (label, kind) in new[] { ("Centre (mass-weighted)", "point"), ("Best-fit plane", "plane"), ("Long axis", "axis"), ("Enclosing ellipsoid", "ellipsoid") })
+        {
+            var k = kind;
+            var it = new MenuItem { Header = label };
+            it.Click += (_, _) => { _vm.MakeProbe(k); RequestRender(); };
+            probe.Items.Add(it);
+        }
+        items.Add(probe);
         var brush = new MenuItem { Header = "Brush to select…" };
         brush.Click += (_, _) => _vm.OpenBrush();
         items.Add(brush);

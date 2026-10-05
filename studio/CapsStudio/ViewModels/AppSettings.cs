@@ -16,6 +16,7 @@ public sealed class AppSettings
     public bool Outlines { get; set; } = true;
     public bool DepthCue { get; set; } = true;
     public bool AutoClean { get; set; }                     // a UFF clean-up of the edited atoms after every builder edit (A)
+    public bool HAutopilot { get; set; }                    // after every sketch edit: missing hydrogens added, surplus ones removed
     public bool GpuView { get; set; } = true;             // the 3D view on the GPU (OpenGL) where available
     // the main window as it was closed (device pixels); restored only onto a screen that is connected now
     public int WindowX { get; set; }

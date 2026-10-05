@@ -88,6 +88,18 @@ public sealed partial class MainViewModel
         EditError = "";
         RecordEdit(json);
         var what = r["what"]?.GetValue<string>() ?? "Edit";
+        // H autopilot: the edited atoms' hydrogens put right (missing added, surplus removed), its own undo step
+        if (_settings.HAutopilot && HFixAfter(json, r) is { Length: > 0 } hreg)
+        {
+            var h = JsonNode.Parse(_doc.Edit(System.Text.Json.JsonSerializer.Serialize(new { op = "fix_h", atoms = hreg })))!;
+            if (h["ok"]?.GetValue<bool>() == true)
+            {
+                int ha = (int)((double?)h["h_added"] ?? 0), hr = (int)((double?)h["h_removed"] ?? 0);
+                HAutoText = $"+{ha} H, −{hr} H after the last edit";
+                what += $" · H autopilot +{ha} H, −{hr} H";
+            }
+            else HAutoText = "H autopilot · the hydrogens were right";
+        }
         if (_settings.AutoClean && CleanAfter(json, r) is { Length: > 0 } region)
         {
             // auto-clean (A): the edited atoms and their nearest neighbours relaxed with UFF, as its own undo step
@@ -96,6 +108,35 @@ public sealed partial class MainViewModel
         }
         AfterEdit(what);
         return r;
+    }
+
+    // the sketch edits whose hydrogens the autopilot puts right: their atoms and the atoms bonded to them
+    private static readonly HashSet<string> HFixedOps = ["add_atom", "bond", "unbond", "element", "charge", "attach", "fuse_ring", "delete"];
+    private int[] HFixAfter(string json, JsonNode reply)
+    {
+        if (_doc == null || JsonNode.Parse(json) is not JsonObject spec || !HFixedOps.Contains((string?)spec["op"] ?? "")) return [];
+        var core = new HashSet<int>();
+        foreach (var x in reply["added"] as JsonArray ?? []) core.Add((int)(double)x!);
+        foreach (var k in new[] { "to", "i", "j", "target" })
+            if (spec[k] is JsonValue v && v.TryGetValue<int>(out var a) && a >= 0) core.Add(a);
+        if ((string?)spec["op"] != "delete" && spec["atoms"] is JsonArray aa) foreach (var x in aa) if (x is JsonValue v && v.TryGetValue<int>(out var a)) core.Add(a);
+        var n = (int)_doc.Summary().Atoms;
+        core.RemoveWhere(a => a >= n);
+        if (core.Count == 0 && (string?)spec["op"] == "add_atom") core.Add(n - 1);
+        var region = new HashSet<int>(core);
+        foreach (var a in core) foreach (var (i, d) in _doc.Neighbours(a, 4)) if (d < 1.9) region.Add(i);   // its bonded neighbours
+        return region.Where(a => a < n).OrderBy(a => a).ToArray();
+    }
+    private string _hAutoText = "";
+    public string HAutoText { get => _hAutoText; private set => Set(ref _hAutoText, value); }
+    public bool HAutopilotOn => _settings.HAutopilot;
+    public void ToggleHAutopilot()
+    {
+        _settings.HAutopilot = !_settings.HAutopilot;
+        _settings.Save();
+        Raise(nameof(HAutopilotOn));
+        HAutoText = _settings.HAutopilot ? "H autopilot on" : "";
+        Status = _settings.HAutopilot ? "H autopilot on: after each sketch edit, missing hydrogens are added and surplus ones removed" : "H autopilot off";
     }
 
     // the builder edits that change bonding: their atoms (and new ones) with the six nearest atoms of each

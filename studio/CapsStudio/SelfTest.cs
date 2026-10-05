@@ -4031,6 +4031,29 @@ internal static class SelfTest
                   $"tags: {selAtoms} selected → {chip?.Name} {chip?.Count} · click {selected} · only {onlyShown} · sidecar {side.Length > 0} · LAMMPS {input.Contains("chain_ends_test")} · ndx {ndx.Contains("chain_ends_test")} · reopened {back?.Name} {back?.Count}");
             vm.CloseAllStructures();
         }
+        // Probes: chain 1 as a plane, chain 4's centre as a point; its height above the plane over the trajectory's frames, a card
+        // with a sparkline, to Analyze as a curve; the flatness of the plane
+        {
+            vm.Open(Path.Combine(dir, "ps_melt.lammpstrj"), Path.Combine(dir, "ps_melt.data"));
+            vm.SelectLike(0, false, false);
+            vm.MakeProbe("plane");
+            vm.SelectLike(390, false, false);
+            vm.MakeProbe("point");
+            vm.ClearAllSelection();
+            var measures = vm.Probes.Count == 2 ? vm.ProbeMeasures(vm.Probes[1]) : [];
+            var height = measures.FirstOrDefault(m => m.Measure == "distance");
+            if (height.Other != null) vm.PinProbeMeasure(vm.Probes[1], "distance", height.Other);
+            vm.PinProbeMeasure(vm.Probes[0], "rms", null);
+            var frames = vm.Frames;
+            var card = vm.ProbeCards.FirstOrDefault();
+            var curves = vm.Analyze.Curves.Count;
+            if (card != null) vm.ProbeCardToAnalyze(card);
+            Check(vm.Probes.Count == 2 && vm.ProbeCards.Count == 2 && card != null && card.Values.Length == frames && frames > 1 && card.HasSpark
+                  && vm.ProbeCards[1].Values.All(v => v > 0) && vm.Analyze.Curves.Count == curves + 1 && vm.IsAnalyze,
+                  $"probes: {string.Join(" · ", vm.Probes.Select(p => p.Name))} · cards {string.Join(" | ", vm.ProbeCards.Select(c => $"{c.Title} {c.ValueText} ({c.Values.Length} frames)"))}");
+            vm.SetModule(8);
+            vm.CloseAllStructures();
+        }
         // Bond rules: the melt's pairs; C–H never bonded counted (–660) and applied as one undoable step
         {
             vm.Open(Path.Combine(dir, "ps_melt.data"));
