@@ -51,6 +51,16 @@ struct SlabResult {
 };
 System vacuum_slab(const System& s, double vacuum, bool centre = true, SlabResult* result = nullptr);
 
+// A cluster from a periodic structure (the periodicity removed): every molecule made whole and moved by lattice vectors
+// to the image whose centroid is nearest `centre`; kept when its centroid (or, any_atom, any of its atoms) lies within
+// `radius` Å of it (radius ≤ 0: every molecule). No cell. An infinite network (a crystal, a gel) is one molecule: its
+// atoms are kept by their own nearest images instead.
+struct ClusterResult {
+  size_t molecules = 0, atoms = 0, dropped = 0;
+  double radius = 0;   // of the kept atoms about the centre, Å
+};
+System cut_cluster(const System& s, const Vec3& centre, double radius, bool any_atom = false, ClusterResult* result = nullptr);
+
 struct WireOptions {
   std::array<int, 3> uvw{0, 0, 1};
   double radius = 10;          // Å (a prism: its inscribed radius)

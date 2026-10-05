@@ -130,6 +130,9 @@ public sealed partial class MainViewModel
     public int SurfTermination { get => _surfTermination; set { if (value < 0) return; if (Set(ref _surfTermination, value)) { RaiseStack(); SurfPreview(); } } }
     private bool _surfPassivate = true, _surfOrthogonal = true;
     public bool SurfPassivate { get => _surfPassivate; set { if (Set(ref _surfPassivate, value)) SurfPreview(); } }
+    // molecular crystals (polymer crystals, cellulose, organic solids): the surfaces made of whole molecules
+    private bool _surfWhole;
+    public bool SurfWhole { get => _surfWhole; set { if (Set(ref _surfWhole, value)) SurfPreview(); } }
     public bool SurfOrthogonal { get => _surfOrthogonal; set { if (Set(ref _surfOrthogonal, value)) SurfPreview(); } }
     private double _surfD;
     private string _surfBulk = "", _surfError = "", _surfLog = "", _surfMatch = "";
@@ -185,7 +188,7 @@ public sealed partial class MainViewModel
     {
         ["h"] = (int)_surfH, ["k"] = (int)_surfK, ["l"] = (int)_surfL, ["layers"] = (int)_surfLayers, ["termination"] = Math.Max(0, _surfTermination),
         ["vacuum"] = forInterface ? 10 : (double)_surfVacuum, ["orthogonal"] = forInterface || _surfOrthogonal ? 1 : 0, ["max_strain"] = (double)_surfMaxStrain / 100,
-        ["na"] = (int)_surfNa, ["nb"] = (int)_surfNb, ["passivate"] = _surfPassivate ? 1 : 0,
+        ["na"] = (int)_surfNa, ["nb"] = (int)_surfNb, ["passivate"] = _surfPassivate ? 1 : 0, ["whole_molecules"] = _surfWhole ? 1 : 0,
     }.ToJsonString();
 
     // ---------------------------------------------------------------- the slab preview

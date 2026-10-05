@@ -100,6 +100,8 @@
                     </StackPanel>
                   </Grid>
                   <CheckBox Content="{Binding SurfPassivateText}" IsChecked="{Binding SurfPassivate}" />
+                  <CheckBox Content="Keep molecules whole (molecular crystals)" IsChecked="{Binding SurfWhole}"
+                            ToolTip.Tip="Each molecule goes into the layer of its centroid, whole: polymer crystals, cellulose and organic solids get surfaces of whole molecules, no broken bonds" />
                   <CheckBox Content="Rectangular surface cell (needed for a film)" IsChecked="{Binding SurfOrthogonal}" IsEnabled="{Binding !SurfFilm}" />
                   <TextBlock Text="{Binding SurfBulkText}" Classes="dim" TextWrapping="Wrap" />
                 </StackPanel>

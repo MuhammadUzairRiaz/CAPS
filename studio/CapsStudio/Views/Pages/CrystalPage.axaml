@@ -233,6 +233,14 @@
                     <CheckBox Content="Centre the slab" IsChecked="{Binding SlabCentre}" />
                     <Button Classes="small" Content="Build vacuum slab" Click="OnVacuumSlab" />
                   </StackPanel>
+                  <TextBlock Text="Cluster · the periodicity removed: whole molecules about a centre, no cell" Classes="label" TextWrapping="Wrap" />
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <NumericUpDown Value="{Binding ClusterRadius}" Minimum="0" Maximum="500" Increment="2" FormatString="R 0.# Å" Width="110" ShowButtonSpinner="False"
+                                   ToolTip.Tip="Molecules whose centroid lies within R of the centre; 0: every molecule" />
+                    <CheckBox Content="About the selection" IsChecked="{Binding ClusterOnSelection}" ToolTip.Tip="Centred on the selected atoms (else the cell centre)" />
+                    <CheckBox Content="Any atom inside" IsChecked="{Binding ClusterAnyAtom}" ToolTip.Tip="Keep a molecule when any of its atoms is within R (else its centroid)" />
+                    <Button Classes="small" Content="Cut cluster" Click="OnCluster" />
+                  </StackPanel>
                   <TextBlock Text="Nanowire · cut along a lattice direction [uvw], periodic along it" Classes="label" />
                   <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6" RowDefinitions="Auto,Auto" RowSpacing="6">
                     <TextBox Text="{Binding WireUvw}" Watermark="u v w" FontFamily="{DynamicResource Mono}" ToolTip.Tip="The wire's axis as a lattice direction, e.g. 1 1 0" />

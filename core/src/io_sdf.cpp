@@ -266,7 +266,10 @@ void write_poscar(const System& s, const std::string& path, const std::vector<ch
     }
     std::snprintf(b, sizeof b, "  %19.16f %19.16f %19.16f", f[0], f[1], f[2]);
     out << b;
-    if (sel) out << (i < fixed.size() && fixed[i] ? "   F   F   F" : "   T   T   T");
+    if (sel) {   // per coordinate: F where it is held
+      const char f = i < fixed.size() ? fixed[i] : 0;
+      for (int k = 0; k < 3; ++k) out << (f && holds_axis(f, k) ? "   F" : "   T");
+    }
     out << "\n";
   }
   if (order) *order = ord;

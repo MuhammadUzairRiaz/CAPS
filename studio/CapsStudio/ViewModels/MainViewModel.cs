@@ -1135,7 +1135,21 @@ public sealed partial class MainViewModel : ObservableObject
     // atoms held in place besides the held molecule (Relax board: Fixed atoms · Add from selection)
     private int _fixedCount;
     public bool HasFixedAtoms => _fixedCount > 0;
-    public string FixedAtomsText => _fixedCount == 0 ? "Fixed atoms: none (besides a held molecule)" : $"Fixed atoms: {_fixedCount:N0} held in place";
+    public string FixedAtomsText => _fixedCount == 0 ? "Fixed atoms: none (besides a held molecule)"
+        : $"Fixed atoms: {_fixedCount:N0} held " + (FixedAxes == 7 ? "in place" : "along " + string.Join(", ", new[] { "x", "y", "z" }.Where((_, k) => (FixedAxes >> k & 1) == 1)) + " only");
+    // which coordinates of the fixed atoms are held (x 1, y 2, z 4): a substrate that slides in its plane holds z only
+    private int FixedAxes => _doc?.FixedAxes() ?? 7;
+    private void SetFixedAxis(int bit, bool on)
+    {
+        if (_doc == null) return;
+        var a = on ? FixedAxes | bit : FixedAxes & ~bit;
+        if (a == 0) { Status = "At least one axis stays held (free the atoms instead)"; Raise(nameof(FixedX)); Raise(nameof(FixedY)); Raise(nameof(FixedZ)); return; }
+        _doc.SetFixedAxes(a);
+        Raise(nameof(FixedX)); Raise(nameof(FixedY)); Raise(nameof(FixedZ)); Raise(nameof(FixedAtomsText));
+    }
+    public bool FixedX { get => (FixedAxes & 1) != 0; set => SetFixedAxis(1, value); }
+    public bool FixedY { get => (FixedAxes & 2) != 0; set => SetFixedAxis(2, value); }
+    public bool FixedZ { get => (FixedAxes & 4) != 0; set => SetFixedAxis(4, value); }
     public void HoldSelection()
     {
         if (_doc == null) return;
@@ -1160,7 +1174,11 @@ public sealed partial class MainViewModel : ObservableObject
         Raise(nameof(HasFixedAtoms)); Raise(nameof(FixedAtomsText));
         Status = "No atoms fixed (a held molecule stays held)";
     }
-    private void SyncFixed() { _fixedCount = _doc?.FixedAtoms().Length ?? 0; Raise(nameof(HasFixedAtoms)); Raise(nameof(FixedAtomsText)); }
+    private void SyncFixed()
+    {
+        _fixedCount = _doc?.FixedAtoms().Length ?? 0;
+        Raise(nameof(HasFixedAtoms)); Raise(nameof(FixedAtomsText)); Raise(nameof(FixedX)); Raise(nameof(FixedY)); Raise(nameof(FixedZ));
+    }
 
     /// <summary>The Relax settings as the core takes them (also captured when a run is queued).</summary>
     private CapsRelaxOpts RelaxOptions() => new()
@@ -1399,6 +1417,21 @@ public sealed partial class MainViewModel : ObservableObject
     public ObservableCollection<CheckRow> MdPreflight { get; } = new();
     private string _mdPreflightSummary = "", _mdDeck = "";
     public string MdPreflightSummary { get => _mdPreflightSummary; private set => Set(ref _mdPreflightSummary, value); }
+    /// <summary>fix press/berendsen's coupling as this run's: iso, aniso, one axis or two (the others fixed). LAMMPS has no
+    /// Berendsen for the tilts: the full shape writes aniso and says how fix npt tri would do it.</summary>
+    private string BerendsenCoupling(IFormatProvider inv)
+    {
+        string Ax(string a) => string.Format(inv, "{0} {1:0.##} {1:0.##} {2:0.##}", a, _mdPressure, _mdTauP);
+        return _mdCoupling switch
+        {
+            1 => Ax("aniso"),
+            2 => Ax("z"),
+            3 => Ax("x") + " " + Ax("y") + " couple none",
+            4 => Ax("aniso") + string.Format(inv, "\n# full shape: CAPS also relaxes the tilts (Berendsen); in LAMMPS, fix npt ... tri {0:0.##} {0:0.##} {1:0.##} (Nosé–Hoover) does", _mdPressure, _mdTauP),
+            _ => Ax("iso"),
+        };
+    }
+
     /// <summary>The LAMMPS input for this run (setup from the core, ensemble lines from the settings).</summary>
     public string MdDeck { get => _mdDeck; private set => Set(ref _mdDeck, value); }
 
@@ -1502,11 +1535,11 @@ public sealed partial class MainViewModel : ObservableObject
                : _mdThermostat == 2 ? string.Format(inv, "fix 1 all nvt temp {0:0.##} {0:0.##} {1:0.##}", _mdTemp, _mdTauT)
                                      : string.Format(inv, "fix 1 all nve\nfix 2 all temp/csvr {0:0.##} {0:0.##} {1:0.##} {2}", _mdTemp, _mdTauT, _mdSeed + 1),
             2 when _mdBarostat == 2 => string.Format(inv, "fix 1 all npt temp {0:0.##} {0:0.##} {1:0.##} iso {2:0.##} {2:0.##} {3:0.##}", _mdTemp, _mdTauT, _mdPressure, _mdTauP),
-            3 => string.Format(inv, "fix 1 all nve\nfix 3 all press/berendsen iso {0:0.##} {0:0.##} {1:0.##} modulus 22222", _mdPressure, _mdTauP),
+            3 => string.Format(inv, "fix 1 all nve\nfix 3 all press/berendsen {0} modulus 22222", BerendsenCoupling(inv)),
             _ => (_mdThermostat == 2 ? string.Format(inv, "fix 1 all nvt temp {0:0.##} {0:0.##} {1:0.##}", _mdTemp, _mdTauT)
                   : _mdThermostat == 1 ? string.Format(inv, "fix 1 all nve\nfix 2 all langevin {0:0.##} {0:0.##} {1:0.##} {2}", _mdTemp, _mdTauT, _mdSeed + 1)
                   : string.Format(inv, "fix 1 all nve\nfix 2 all temp/csvr {0:0.##} {0:0.##} {1:0.##} {2}", _mdTemp, _mdTauT, _mdSeed + 1)) +
-                 string.Format(inv, "\nfix 3 all press/berendsen iso {0:0.##} {0:0.##} {1:0.##} modulus 22222", _mdPressure, _mdTauP),   // modulus 1/β for β = 4.5e-5 atm⁻¹, as CAPS's barostat
+                 string.Format(inv, "\nfix 3 all press/berendsen {0} modulus 22222", BerendsenCoupling(inv)),   // modulus 1/β for β = 4.5e-5 atm⁻¹, as CAPS's barostat
         };
         return "# LAMMPS input written by CAPS Studio: the same force field and settings as this Dynamics run\n" + setup +
                (_mdNewVelocities ? string.Format(inv, "velocity all create {0:0.##} {1} mom yes rot yes dist gaussian\n", _mdTemp, _mdSeed) : "") +
@@ -1560,10 +1593,10 @@ public sealed partial class MainViewModel : ObservableObject
 
     // pressure coupling per axis (Berendsen: each axis from its own diagonal pressure) and the checkpoint interval
     public string MdIntegratorText => (MdHasThermostat && _mdThermostat == 1 ? "BAOAB (Langevin)" : "Velocity Verlet") + (RespaSteps > 1 ? " · r-RESPA" : "");
-    public static readonly string[] MdCouplings = ["Isotropic", "Each axis on its own (Berendsen)", "Only z (Berendsen)", "Only x and y (Berendsen)"];
+    public static readonly string[] MdCouplings = ["Isotropic", "Each axis on its own (Berendsen)", "Only z (Berendsen)", "Only x and y (Berendsen)", "Full shape: lengths and tilts (Berendsen)"];
     private int _mdCoupling;
     private double _mdCheckpointPs;
-    public int MdCoupling { get => _mdCoupling; set => Set(ref _mdCoupling, Math.Clamp(value, 0, 3)); }
+    public int MdCoupling { get => _mdCoupling; set => Set(ref _mdCoupling, Math.Clamp(value, 0, 4)); }
     public decimal MdCheckpointPsD { get => (decimal)_mdCheckpointPs; set { _mdCheckpointPs = Math.Max(0, (double)value); Raise(); } }
 
     // an external electric field (V/Å) on the partial charges: poling, field-driven ion transport, dielectric response
@@ -1586,7 +1619,7 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>The Dynamics settings as the core takes them (also captured when a run is queued).</summary>
     private CapsMdOpts MdOptions((long Offset, long Steps)? resume) => new()
     {
-        BoxAnisotropic = _mdCoupling > 0 ? 1 : 0, BoxAxes = _mdCoupling switch { 2 => 4, 3 => 3, _ => 7 },
+        BoxAnisotropic = _mdCoupling > 0 ? 1 : 0, BoxAxes = _mdCoupling switch { 2 => 4, 3 => 3, _ => 7 }, FullShape = _mdCoupling == 4 ? 1 : 0,
         EfieldX = _mdFieldOn ? _mdEx : 0, EfieldY = _mdFieldOn ? _mdEy : 0, EfieldZ = _mdFieldOn ? _mdEz : 0,
         CheckpointEvery = _mdCheckpointPs > 0 ? Math.Max(1, (long)Math.Round(_mdCheckpointPs * 1000 / Math.Max(0.01, _mdDt))) : 0,
         Dt = _mdDt, Steps = resume?.Steps ?? _mdSteps, Temperature = _mdTemp, StepOffset = resume?.Offset ?? 0,

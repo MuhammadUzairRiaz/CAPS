@@ -70,6 +70,18 @@ public sealed partial class MainViewModel
     public bool SlabCentre { get => _slabCentre; set => Set(ref _slabCentre, value); }
     public void MakeVacuumSlab() => CellEdit(new { op = "vacuum_slab", vacuum = (double)_slabVac, centre = _slabCentre });
 
+    // a cluster from the periodic structure (core lattice.hpp cut_cluster): whole molecules about a centre, no cell
+    private decimal _clusterR = 12;
+    private bool _clusterSel, _clusterAny;
+    public decimal? ClusterRadius { get => _clusterR; set { if (value != null) Set(ref _clusterR, Math.Clamp(value.Value, 0, 500)); } }
+    public bool ClusterOnSelection { get => _clusterSel; set => Set(ref _clusterSel, value); }
+    public bool ClusterAnyAtom { get => _clusterAny; set => Set(ref _clusterAny, value); }
+    public void CutCluster()
+    {
+        if (_clusterSel) CellEdit(new { op = "cluster", radius = (double)_clusterR, centre = "selection", any_atom = _clusterAny, atoms = SelectionAtoms() });
+        else CellEdit(new { op = "cluster", radius = (double)_clusterR, any_atom = _clusterAny });
+    }
+
     public static readonly string[] WireShapes = ["Cylinder", "Hexagonal prism", "Square prism"];
     private static readonly string[] WireShapeIds = ["cylinder", "hexagonal", "square"];
     private string _wireUvw = "0 0 1";

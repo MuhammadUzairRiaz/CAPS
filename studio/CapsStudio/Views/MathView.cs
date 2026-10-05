@@ -131,6 +131,7 @@ public sealed class MathView : Control
             ["dots"] = ("…", SymKind.Upright), ["ldots"] = ("…", SymKind.Upright), ["cdots"] = ("⋯", SymKind.Upright),
             ["circ"] = ("∘", SymKind.Upright), ["prime"] = ("′", SymKind.Upright), ["#"] = ("#", SymKind.Upright), ["%"] = ("%", SymKind.Upright),
             ["{"] = ("{", SymKind.Open), ["}"] = ("}", SymKind.Close), ["langle"] = ("⟨", SymKind.Open), ["rangle"] = ("⟩", SymKind.Close),
+            ["lfloor"] = ("⌊", SymKind.Open), ["rfloor"] = ("⌋", SymKind.Close), ["lceil"] = ("⌈", SymKind.Open), ["rceil"] = ("⌉", SymKind.Close),
             ["|"] = ("‖", SymKind.Upright), ["AA"] = ("Å", SymKind.Upright), ["angle"] = ("∠", SymKind.Upright),
         };
         private static readonly HashSet<string> Funcs = ["exp", "ln", "log", "cos", "sin", "tan", "erfc", "erf", "sign", "tr", "dev", "det", "arccos"];
@@ -289,6 +290,7 @@ public sealed class MathView : Control
                     return new Sym(g, char.IsUpper(g[0]) && name != "ell" ? SymKind.Upright : SymKind.Italic);
                 if (Symbols.TryGetValue(name, out var sy)) return new Sym(sy.Item1, sy.Item2);
                 if (Funcs.Contains(name)) return new Sym(name, SymKind.Func);
+                if (name is "bmod" or "mod") return new Sym("mod", SymKind.Func);   // a mod b
                 if (Limits.Contains(name)) return new LimFunc(name == "argmax" ? "arg max" : name == "argmin" ? "arg min" : name);
                 switch (name)
                 {
@@ -303,7 +305,8 @@ public sealed class MathView : Control
                     case "operatorname": return new Sym(Flatten(Arg(inText: true)), SymKind.Func);
                     case "mathbf": case "boldsymbol": return Bold(Upright(Arg()));   // vectors and tensors: bold upright
                     case "big": case "Big": case "bigg": case "Bigg": case "bigl": case "bigr": case "Bigl": case "Bigr":
-                        return new Space(0, false);   // a sized delimiter: the delimiter that follows is drawn at the formula's size
+                    case "displaystyle": case "textstyle": case "scriptstyle":
+                        return new Space(0, false);   // a sized delimiter (the one that follows is drawn at the formula's size) or a style switch: nothing of its own
                     case "sum": return new BigOp("∑", false);
                     case "prod": return new BigOp("∏", false);
                     case "int": return new BigOp("∫", true);
@@ -333,7 +336,8 @@ public sealed class MathView : Control
                     if (j == I) j = I + 1;
                     var n = s[I..j];
                     I = j;
-                    return n switch { "langle" => "⟨", "rangle" => "⟩", "{" => "{", "}" => "}", "|" => "‖", "lbrace" => "{", "rbrace" => "}", _ => throw new FormatException($"unknown delimiter \\{n}") };
+                    return n switch { "langle" => "⟨", "rangle" => "⟩", "{" => "{", "}" => "}", "|" => "‖", "lbrace" => "{", "rbrace" => "}",
+                        "lfloor" => "⌊", "rfloor" => "⌋", "lceil" => "⌈", "rceil" => "⌉", _ => throw new FormatException($"unknown delimiter \\{n}") };
                 }
                 var d = s[I++];
                 return d == '.' ? "" : d.ToString();

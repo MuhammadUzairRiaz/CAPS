@@ -12,7 +12,7 @@ internal static class SelfTest
         var fails = 0;
         void Check(bool ok, string what) { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {what}"); if (!ok) fails++; }
 
-        Check(Native.AbiVersion() == 61, "native ABI version 61");
+        Check(Native.AbiVersion() == 62, "native ABI version 62");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -2100,9 +2100,19 @@ internal static class SelfTest
             var q1 = vm.Document!.Atom(0).Charge;
             vm.UndoEdit(false);
             var q2 = vm.Document!.Atom(0).Charge;
+            // adjust: equivalent atoms averaged and the total set to +0.5 e (evenly), then back as computed
+            vm.ChargeAverage = true;
+            vm.ChargeTotal = 1;
+            vm.ChargeTotalTargetD = 0.5m;
+            var adjNet = vm.ChargeNet;
+            var adjNote = vm.ChargeNote;
+            vm.ChargeTotal = 0;
+            vm.ChargeAverage = false;
+            var adjusted = adjNet.StartsWith("+0.500000") && adjNote.Contains("equivalent") && vm.ChargeNet.Contains("0.000000");
             vm.ChargeMethod = 2;
             var refused = vm.ChargeHasError && vm.ChargeError.Contains("Field");
             vm.ChargeMethod = 0;
+            Check(adjusted, $"charges adjusted: net {adjNet} · {adjNote}");
             Check(ok && Math.Abs(q1 - q0) > 1e-6 && Math.Abs(q2 - q0) < 1e-12 && refused,
                   $"charges: {vm.ChargeNet} · largest {vm.ChargeMax} · {string.Join(", ", groups)} · applied {q0:0.000}→{q1:0.000}, undone {q2:0.000} · no field: {refused}");
             vm.AppColour = 0;
@@ -3485,6 +3495,20 @@ internal static class SelfTest
             vm.MdBarostat = 0;
             vm.MdThermostat = 0;
             vm.MdEnsemble = 1;
+            // pressure coupling in the deck as the run's: per axis aniso, the full shape with its fix npt tri note
+            vm.MdEnsemble = 2;
+            vm.MdBarostat = 1;
+            vm.MdCoupling = 4;
+            vm.PreflightNow().GetAwaiter().GetResult();
+            var fsDeck = vm.MdDeck;
+            vm.MdCoupling = 2;
+            vm.PreflightNow().GetAwaiter().GetResult();
+            var zDeck = vm.MdDeck;
+            vm.MdCoupling = 0;
+            vm.MdBarostat = 0;
+            vm.MdEnsemble = 1;
+            Check(fsDeck.Contains("press/berendsen aniso 1 1 1000") && fsDeck.Contains("tri") && zDeck.Contains("press/berendsen z 1 1 1000"),
+                  $"coupling in the LAMMPS deck: {fsDeck.Split('\n').FirstOrDefault(l => l.Contains("press/berendsen"))} · {zDeck.Split('\n').FirstOrDefault(l => l.Contains("press/berendsen"))}");
             // an electric field: the LAMMPS deck carries fix efield in V/Å, the GROMACS one electric-field-z in V/nm
             vm.MdFieldOn = true;
             vm.MdExD = 0; vm.MdEyD = 0; vm.MdEzD = 0.05m;
@@ -3498,6 +3522,75 @@ internal static class SelfTest
             vm.PreflightNow().GetAwaiter().GetResult();
             Check(efL.Contains("fix efield all efield 0 0 0.05") && efG.Contains("electric-field-z         = 0.5 0 0 0") && !vm.MdDeck.Contains("efield"),
                   $"electric field: LAMMPS {efL.Split('\n').FirstOrDefault(l => l.Contains("efield"))} · GROMACS {efG.Split('\n').FirstOrDefault(l => l.Contains("electric-field"))}");
+        }
+
+        // NEMD: one short shear of the melt through the Analyze protocol (the cell tilts, η comes back with its rate)
+        {
+            using var nd = CapsDocument.Open(Path.Combine(dir, "ps_melt.data"));
+            var nj = System.Text.Json.Nodes.JsonNode.Parse(nd.Analyze("nemd", new CapsAnalyzeOpts { Last = -1, Stride = 1, Blocks = 5, Grid = 0.4, Qmax = 25, Dq = 0.02, FitFrom = 0.2, FitTo = 0.5, TimestepFs = 1 },
+                new CapsMechOpts { Temperature = 500, ShearLo = 0.2, ShearHi = 0.2, ShearPoints = 1, ShearPs = 0.4, ShearEqPs = -1 }, null))!;
+            var np = nj["properties"]?[0];
+            var neta = (double?)np?["value"] ?? double.NaN;
+            Check((string?)np?["id"] == "nemd" && double.IsFinite(neta) && (double?)np?["extra"]?["rates"] == 1,
+                  $"NEMD: η {neta:0.###} mPa·s at 0.2 /ps · {(np?["notes"] as System.Text.Json.Nodes.JsonArray)?.Count ?? 0} notes");
+        }
+
+        // Atoms held along z only: the axes kept by the document, the GROMACS freeze group with freezedim N N Y
+        {
+            vm.Open(Path.Combine(dir, "ps_melt.data"));
+            vm.Document!.SetFixedAtoms(Enumerable.Range(0, 10).ToArray());
+            vm.FixedX = false;
+            vm.FixedY = false;
+            var axes = vm.Document!.FixedAxes();
+            var gdir = Path.Combine(outDir, "gmx-freeze");
+            Directory.CreateDirectory(gdir);
+            vm.MdGromacs = true;
+            vm.SaveGromacs(gdir);
+            vm.MdGromacs = false;
+            var mdp = File.ReadAllText(Path.Combine(gdir, "system.mdp"));
+            var ndx = File.Exists(Path.Combine(gdir, "system.ndx")) ? File.ReadAllText(Path.Combine(gdir, "system.ndx")) : "";
+            Check(axes == 4 && mdp.Contains("freezegrps = FrozenAxes") && mdp.Contains("freezedim = N N Y") && ndx.Contains("[ FrozenAxes ]"),
+                  $"held along z: axes {axes} · {mdp.Split('\n').FirstOrDefault(l => l.StartsWith("freezedim"))} · ndx group {ndx.Contains("[ FrozenAxes ]")}");
+            vm.FixedX = true; vm.FixedY = true;
+            vm.Document!.SetFixedAtoms(Array.Empty<int>());
+        }
+
+        // Cluster: 12 Å of whole molecules about the cell centre, the cell gone (undoable)
+        {
+            vm.Open(Path.Combine(dir, "ps_melt.data"));
+            vm.ClusterRadius = 12;
+            vm.CutCluster();
+            var clu = vm.Document!.Summary();
+            var cut = clu.CellValid == 0 && clu.Atoms > 0 && clu.Atoms < 1300 && clu.Atoms % 130 == 0;
+            vm.UndoEdit(false);
+            var back = vm.Document!.Summary();
+            Check(cut && back.CellValid == 1 && back.Atoms == 1300, $"cluster: {clu.Atoms} atoms ({clu.Atoms / 130} whole chains), cell {clu.CellValid} · undone {back.Atoms} atoms · {vm.CellToolText}");
+        }
+
+        // Chain shape: the fragment's backbone all-trans (undoable), the pattern's text kept with the preset
+        {
+            vm.Open(Path.Combine(dir, "ps_frag.pdb"));
+            vm.ChainShape = 1;
+            var tg = vm.ChainPattern;
+            vm.ChainShape = 0;
+            vm.SetChainShape();
+            var said = vm.ChainShapeText;
+            vm.UndoEdit(false);
+            Check(tg == "180 60" && said.Contains("backbone dihedrals set on 1 chain"), $"chain shape: TG = '{tg}' · {said}");
+        }
+
+        // Conformers: the fragment searched (the card), then opened as frames in a copy (lowest first)
+        {
+            vm.Open(Path.Combine(dir, "ps_frag.pdb"));
+            var title = vm.Title;
+            var cj = System.Text.Json.Nodes.JsonNode.Parse(vm.Document!.Analyze("conformers", new CapsAnalyzeOpts { Last = -1, Stride = 1, Blocks = 5, Grid = 0.4, Qmax = 25, Dq = 0.02, FitFrom = 0.2, FitTo = 0.5, TimestepFs = 1 },
+                new CapsMechOpts { Temperature = 300, ConfTrials = 8, Seed = 1 }, null))!;
+            var nconf = (double?)cj["properties"]?[0]?["value"] ?? 0;
+            vm.Analyze.ConfTrialsD = 8;
+            vm.Analyze.FluctTD = 300;
+            vm.OpenConformers().GetAwaiter().GetResult();
+            Check(nconf >= 1 && vm.Frames == (int)nconf && vm.Title.Contains("conformers") && vm.Frame == 0,
+                  $"conformers: {nconf} from 8 starts · opened as {vm.Frames} frames in '{vm.Title}' (from '{title}') · {vm.Status}");
         }
 
         // Normal modes: the fragment's modes (3N − 6), and one played in a copy (one period of frames, the original kept)

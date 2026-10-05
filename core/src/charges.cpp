@@ -126,4 +126,61 @@ ChargeReport compute_charges(const System& s, const std::string& method, const s
   return r;
 }
 
+
+std::vector<int> equivalent_atoms(const System& s) {
+  const size_t n = s.atoms.size();
+  const auto nb = s.neighbours();
+  std::vector<int64_t> lab(n);
+  for (size_t i = 0; i < n; ++i) lab[i] = s.atoms[i].element;
+  size_t classes = 0;
+  for (int it = 0; it < 64; ++it) {   // refine: a label is the old label and the sorted labels of the neighbours
+    std::map<std::pair<int64_t, std::vector<int64_t>>, int64_t> ids;
+    std::vector<int64_t> nl(n);
+    for (size_t i = 0; i < n; ++i) {
+      std::vector<int64_t> ns;
+      for (uint32_t k : nb[i]) ns.push_back(lab[k]);
+      std::sort(ns.begin(), ns.end());
+      auto key = std::make_pair(lab[i], ns);
+      auto f = ids.find(key);
+      nl[i] = f != ids.end() ? f->second : (ids[key] = int64_t(ids.size()));
+    }
+    lab.swap(nl);
+    if (ids.size() == classes) break;
+    classes = ids.size();
+  }
+  return std::vector<int>(lab.begin(), lab.end());
+}
+
+void adjust_charges(const System& s, std::vector<double>& q, const ChargeAdjust& a, int formal, std::vector<std::string>* notes) {
+  const size_t n = std::min(q.size(), s.atoms.size());
+  if (a.average) {
+    const auto cls = equivalent_atoms(s);
+    std::map<int, std::pair<double, int>> sum;
+    for (size_t i = 0; i < n; ++i) sum[cls[i]].first += q[i], sum[cls[i]].second += 1;
+    size_t shared = 0;
+    for (size_t i = 0; i < n; ++i) {
+      const auto& p = sum[cls[i]];
+      if (p.second > 1) ++shared;
+      q[i] = p.first / p.second;
+    }
+    if (notes) notes->push_back("averaged over " + std::to_string(sum.size()) + " classes of equivalent atoms (" + std::to_string(shared) + " atoms share a class)");
+  }
+  if (a.scale != 1.0) {
+    for (size_t i = 0; i < n; ++i) q[i] *= a.scale;
+    if (notes) notes->push_back("scaled × " + std::to_string(a.scale).substr(0, 6));
+  }
+  if (a.neutralise == "even" || a.neutralise == "proportional") {
+    const double target = std::isnan(a.target) ? formal * a.scale : a.target;
+    double tot = 0, wsum = 0;
+    for (size_t i = 0; i < n; ++i) tot += q[i], wsum += std::fabs(q[i]);
+    const double dq = target - tot;
+    if (a.neutralise == "proportional" && wsum > 0)
+      for (size_t i = 0; i < n; ++i) q[i] += dq * std::fabs(q[i]) / wsum;
+    else
+      for (size_t i = 0; i < n; ++i) q[i] += dq / double(n);
+    if (notes) notes->push_back("total brought to " + std::to_string(target).substr(0, 7) + " e (" + a.neutralise + ", a shift of " +
+                                std::to_string(dq).substr(0, 9) + " e in all)");
+  }
+}
+
 }  // namespace caps

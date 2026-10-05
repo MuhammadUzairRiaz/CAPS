@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define CAPS_ABI_VERSION 61  /* v61 caps_md_opts.efield (electric field MD), caps_mode_animate and analyze "modes" (normal modes); v60 tags: caps_tags, caps_tag_edit, caps_tag_atoms; v59 caps_react_opts.sites_per_chain, caps_react_sites; v58 layers: caps_layers, caps_set_atom_lock (atom state bit 4); v57 caps_set_atom_state, caps_atom_states (hide and ghost atoms in the view); v56 caps_project_indices; v55 caps_export_scene (POV-Ray, glTF, OBJ), caps_export_image engine raytrace; v54 caps_scene triangles (surfaces and polyhedra on the GPU; cpu_only only for the colour-vision preview); v53 caps_pick_at (picking by the view ray, no render); v52 caps_field_groups_by_example (typing by hand inside a by-group assignment), LAMMPS inputs list each group's types with element and mass; v51 water models (caps_water_models; edit op water_model; field groups "molecules": "water" and "water": model); v50 caps_open_frames (read a frame selection); v49 caps_camera.fov_deg; v48 labels: caps_atom_labels kinds of caps_label_kinds, caps_bond_labels; v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation, appearance, trajectory player, torsion scan, editing, selections; v21 r-RESPA (caps_md_opts.respa), reactions during MD (caps_react_opts.during_md), restraints; v22 GROMACS export (caps_gromacs), χ from pair contacts (caps_chi_contacts); v23 export center (caps_export_engines); v24 coarse-grained beads (caps_build_beads, caps_bead_templates); v25 live view of MD and equilibration (caps_set_live); v26 GPU view (caps_render_scene, caps_view_fit); v27 the scene carries its camera-fit inputs (a view turns while a run holds the document); v28 caps_shadow (a copy of the shown frame the window reads while a run holds the document); v29 bond constraints (caps_md_opts / caps_equil_opts .constraints: SHAKE/RATTLE), typing by example; v30 relax push-off by MD with a ramped force cap (caps_relax_opts.pushoff_ramp_ps …); v31 caps_equil_opts.tol_internal (the internal-distance convergence check), caps_pipeline_export_grid; v32 LINCS (caps_md_opts / caps_equil_opts .constraint_algorithm), an internal-distance target curve (caps_equil_opts.internal_target); v33 CBMC regrowth (caps_cbmc); v34 adsorption locator (caps_adsorption), sorption (caps_sorption); v35 layer stacks (caps_stack_documents), caps_frame_copy, pipeline outputs (caps_pipeline_write_outputs); v36 relax etol / pressure_tol, MD per-axis pressure coupling, fixed atoms (caps_set_fixed_atoms), caps_energy_terms, caps_analyze_opts.group, caps_field_assign_groups; v37 caps_molecule_ids; v38 caps_analyze_opts.radii, electron scattering (analyze id electron); v39 caps_martini_melt, Kremer–Grest melts carry their force field; v40 caps_build_opts.rotor_search, heavy_only; v41 AMBER prmtop topologies carry their force field (caps_field_assign "file", caps_field_file_available); v42 caps_react_cycle.max_force, caps_react returns 2 when a failed cycle kept the completed ones, caps_kg_backmap; v43 caps_cg_map, caps_cg_from_polymer (structure-based CG); v44 caps_analyze_opts.zbin, axis, surface; v47 caps_field_set_mixing; v46 caps_mech_opts tg barostat, tau_t / tau_p, average_from, tg_property, tg_fit, glassy_max, rubbery_min; v45 React with the assigned force field, between chains, crosslink targets, byproducts, weights, auto capture (caps_react_opts), caps_react_summary */
+#define CAPS_ABI_VERSION 62  /* v62 caps_set_fixed_axes / caps_fixed_axes (atoms held along some axes), caps_md_opts.full_shape, caps_mech_opts creep_* and conf_*, protocols creep and conformers, caps_conformer_frames; caps_mech_opts.shear_lo/shear_hi/shear_points, analyze_ex protocol nemd (SLLOD η(γ̇)); v61 caps_md_opts.efield (electric field MD), caps_mode_animate and analyze "modes" (normal modes); v60 tags: caps_tags, caps_tag_edit, caps_tag_atoms; v59 caps_react_opts.sites_per_chain, caps_react_sites; v58 layers: caps_layers, caps_set_atom_lock (atom state bit 4); v57 caps_set_atom_state, caps_atom_states (hide and ghost atoms in the view); v56 caps_project_indices; v55 caps_export_scene (POV-Ray, glTF, OBJ), caps_export_image engine raytrace; v54 caps_scene triangles (surfaces and polyhedra on the GPU; cpu_only only for the colour-vision preview); v53 caps_pick_at (picking by the view ray, no render); v52 caps_field_groups_by_example (typing by hand inside a by-group assignment), LAMMPS inputs list each group's types with element and mass; v51 water models (caps_water_models; edit op water_model; field groups "molecules": "water" and "water": model); v50 caps_open_frames (read a frame selection); v49 caps_camera.fov_deg; v48 labels: caps_atom_labels kinds of caps_label_kinds, caps_bond_labels; v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation, appearance, trajectory player, torsion scan, editing, selections; v21 r-RESPA (caps_md_opts.respa), reactions during MD (caps_react_opts.during_md), restraints; v22 GROMACS export (caps_gromacs), χ from pair contacts (caps_chi_contacts); v23 export center (caps_export_engines); v24 coarse-grained beads (caps_build_beads, caps_bead_templates); v25 live view of MD and equilibration (caps_set_live); v26 GPU view (caps_render_scene, caps_view_fit); v27 the scene carries its camera-fit inputs (a view turns while a run holds the document); v28 caps_shadow (a copy of the shown frame the window reads while a run holds the document); v29 bond constraints (caps_md_opts / caps_equil_opts .constraints: SHAKE/RATTLE), typing by example; v30 relax push-off by MD with a ramped force cap (caps_relax_opts.pushoff_ramp_ps …); v31 caps_equil_opts.tol_internal (the internal-distance convergence check), caps_pipeline_export_grid; v32 LINCS (caps_md_opts / caps_equil_opts .constraint_algorithm), an internal-distance target curve (caps_equil_opts.internal_target); v33 CBMC regrowth (caps_cbmc); v34 adsorption locator (caps_adsorption), sorption (caps_sorption); v35 layer stacks (caps_stack_documents), caps_frame_copy, pipeline outputs (caps_pipeline_write_outputs); v36 relax etol / pressure_tol, MD per-axis pressure coupling, fixed atoms (caps_set_fixed_atoms), caps_energy_terms, caps_analyze_opts.group, caps_field_assign_groups; v37 caps_molecule_ids; v38 caps_analyze_opts.radii, electron scattering (analyze id electron); v39 caps_martini_melt, Kremer–Grest melts carry their force field; v40 caps_build_opts.rotor_search, heavy_only; v41 AMBER prmtop topologies carry their force field (caps_field_assign "file", caps_field_file_available); v42 caps_react_cycle.max_force, caps_react returns 2 when a failed cycle kept the completed ones, caps_kg_backmap; v43 caps_cg_map, caps_cg_from_polymer (structure-based CG); v44 caps_analyze_opts.zbin, axis, surface; v47 caps_field_set_mixing; v46 caps_mech_opts tg barostat, tau_t / tau_p, average_from, tg_property, tg_fit, glassy_max, rubbery_min; v45 React with the assigned force field, between chains, crosslink targets, byproducts, weights, auto capture (caps_react_opts), caps_react_summary */
 
 typedef struct caps_doc caps_doc;   /* an opened file: trajectory + current frame + renderer */
 
@@ -166,6 +166,7 @@ typedef struct {
   int32_t box_anisotropic;         /* ABI 36: 1 each axis in box_axes scaled on its own from P_kk (Berendsen barostat) */
   int32_t box_axes;                /* ABI 36: bits 1 x, 2 y, 4 z (0 = all) */
   double efield[3];                /* ABI 61: a uniform electric field on the partial charges, V/Å (LAMMPS fix efield) */
+  int32_t full_shape;              /* ABI 62: with box_anisotropic, the tilts follow the shear stresses toward zero (a triclinic cell relaxes) */
 } caps_md_opts;
 
 typedef struct {
@@ -485,6 +486,9 @@ int32_t caps_analyze(caps_doc* d, const char* props, const caps_analyze_opts* o,
      tensile     uniaxial deformation MD of a copy of the current frame (axis, rate 1/ps, max_strain, temperature,
                  lateral_fixed: 0 lateral faces at `pressure`, 1 fixed)
      tg          stepwise cooling of a copy of the current frame (t_start → t_end by t_step K, ps_per_step each)
+     creep       v62: constant-stress creep of a copy of the current frame: ε(t), J(t) = ε/σ, the creep rate
+     conformers  v62: conformer search of the current frame (or the selection) in vacuum, minima clustered by heavy-atom RMSD
+     nemd        v62: shear viscosity η(γ̇) by SLLOD shear of a copy of the current frame at several rates (shear_lo …)
    The document is never changed; zero fields take the defaults. m may be NULL. */
 typedef struct {
   int32_t configurations;
@@ -505,6 +509,20 @@ typedef struct {
   int32_t tg_property;               /* 0 specific volume, 1 potential energy per atom */
   int32_t tg_fit;                    /* 0 continuous two-line fit, hinge free; 1 two separate lines through glassy and rubbery ranges */
   double glassy_max, rubbery_min;    /* K, for tg_fit 1 (0: the lowest and highest third of the scan) */
+  /* v62 nemd: shear rates from shear_lo to shear_hi (1/ps) at shear_points rates spaced evenly in log γ̇ (1 point: shear_lo);
+     each rate shear_ps (0: 50) after shear_eq_ps NVT (0: 10; < 0: none), at temperature */
+  double shear_lo, shear_hi;
+  int32_t shear_points;
+  double shear_ps, shear_eq_ps;
+  /* v62 conformers: conf_trials minimised starts (0: 50), conf_method 0 random staggered torsions, 1 anneal (NVT at 1000 K,
+     snapshots quenched); conf_selection 1: the selected atoms only; conf_window kcal/mol (0: 10), conf_rmsd Å (0: 0.5);
+     populations at temperature */
+  int32_t conf_trials, conf_method, conf_selection;
+  double conf_window, conf_rmsd;
+  /* v62 creep: constant true stress creep_stress MPa (tensile positive) along creep_axis (0 x, 1 y, 2 z) at creep_t K for
+     creep_ps (0: 200) after creep_eq_ps NPT (0: 20; < 0 none), the lateral axes at `pressure` (0: 1 atm) */
+  double creep_stress, creep_t, creep_ps, creep_eq_ps;
+  int32_t creep_axis;
 } caps_mech_opts;
 int32_t caps_analyze_ex(caps_doc* d, const char* props, const caps_analyze_opts* o, const caps_mech_opts* m, caps_analyze_progress_fn progress,
                         void* user);
@@ -683,6 +701,10 @@ int32_t caps_probe_series(caps_doc* d, const char* json, char* out, int32_t cap)
    amplitude (Å, the largest atom displacement), frames (per period), atoms: "all" | "selection" (the rest held)} → the
    document's frames become one period of that mode; returns {wavenumber, modes, reduced_mass, ir, frames, notes}. */
 int32_t caps_mode_animate(caps_doc* d, const char* json, char* out, int32_t cap);
+/* v62 Conformers: the search of the conformers protocol (JSON {trials, method: "torsions" | "anneal", selection: bool, window,
+   rmsd, temperature, seed}) and the document's frames become the conformers, lowest first (the structure keeps only the
+   searched atoms when selection is set). Returns {conformers: [{energy, relative, population, found}], rotors, notes}. */
+int32_t caps_conformer_frames(caps_doc* d, const char* json, char* out, int32_t cap);
 int32_t caps_bond_rules_preview(caps_doc* d, const char* json, char* out, int32_t cap);
 int32_t caps_piece_file(const char* path, const char* name, char* out, int32_t cap);
 int32_t caps_pick_at(caps_doc* d, const caps_camera* cam, const caps_render_opts* opt, int32_t x, int32_t y);   /* atom index under pixel of last render, -1 none */
@@ -969,7 +991,7 @@ caps_doc* caps_grow_chains_live(const char* spec_json, const caps_grow_opts* o, 
 /* Surfaces and interfaces (v17). caps_surface_terminations: {ok, error, d, formula, atoms, density, cell: [a, b, c,
    alpha, beta, gamma], notes, terminations: [{label, top, bottom, gap, bonds_per_nm2}]} for (hkl) of a CIF file, fewest
    bonds cut first. caps_surface_build: a slab document; options JSON {h, k, l, layers, termination (0-based), vacuum,
-   orthogonal, max_strain, na, nb, passivate}. caps_interface_build: a slab with a polymer film grown on it; options JSON
+   orthogonal, max_strain, na, nb, passivate, whole_molecules (v62: molecular crystals cut between whole molecules)}. caps_interface_build: a slab with a polymer film grown on it; options JSON
    {crystal: CIF path, slab: {as caps_surface_build}, film: {thickness, density, chains, gap, vacuum}}, the chain spec as
    caps_grow_chains, grow options (seed, contact_scale; chains and density come from film). The slab is molecule 1. */
 int32_t caps_surface_terminations(const char* cif_path, int32_t h, int32_t k, int32_t l, char* json, int32_t cap);
@@ -1039,6 +1061,10 @@ int64_t caps_held_molecule(const caps_doc* d);
    Dynamics and Equilibrate, a freeze group in the GROMACS files. n = 0 clears them. Returns the number set, -1 on error.
    caps_fixed_atoms copies up to cap indices and returns how many there are. */
 int32_t caps_set_fixed_atoms(caps_doc* d, const int32_t* atoms, int32_t n);
+/* v62: the coordinates of the fixed atoms that are held — bits x 1, y 2, z 4 (7 every one, the default; 4: slide in the
+   xy plane, not along z). The held molecule always holds every coordinate. */
+int32_t caps_set_fixed_axes(caps_doc* d, int32_t axes);
+int32_t caps_fixed_axes(const caps_doc* d);
 int32_t caps_fixed_atoms(const caps_doc* d, int32_t* atoms, int32_t cap);
 
 /* Crystals from space groups (v20, design/boards/CrystalBuilder). A spec is JSON {space_group (key "227:2", number or

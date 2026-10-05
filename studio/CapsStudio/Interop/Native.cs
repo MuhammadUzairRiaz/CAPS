@@ -231,6 +231,7 @@ public struct CapsMdOpts
     public int BoxAnisotropic;    // ABI 36: each axis in BoxAxes scaled on its own (Berendsen)
     public int BoxAxes;           // ABI 36: bits 1 x, 2 y, 4 z (0 = all)
     public double EfieldX, EfieldY, EfieldZ;   // ABI 61: a uniform electric field on the partial charges, V/Å
+    public int FullShape;                      // ABI 62: with BoxAnisotropic, the tilts relax too
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -349,6 +350,16 @@ public struct CapsMechOpts
     public int TgProperty;          // 0 specific volume, 1 potential energy per atom
     public int TgFit;               // 0 continuous two-line, hinge free; 1 two ranges
     public double GlassyMax, RubberyMin;   // K
+    // ABI 62: NEMD shear rates (1/ps), spaced evenly in log γ̇
+    public double ShearLo, ShearHi;
+    public int ShearPoints;
+    public double ShearPs, ShearEqPs;   // per rate; NVT first
+    // ABI 62: conformer search
+    public int ConfTrials, ConfMethod, ConfSelection;   // method 0 torsions, 1 anneal
+    public double ConfWindow, ConfRmsd;                 // kcal/mol, Å
+    // ABI 62: creep
+    public double CreepStress, CreepT, CreepPs, CreepEqPs;   // MPa (tensile +), K, ps, ps
+    public int CreepAxis;
 }
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -526,6 +537,8 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_set_restraints")] public static extern int SetRestraints(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json);
     [DllImport(Lib, EntryPoint = "caps_held_molecule")] public static extern long HeldMolecule(IntPtr doc);
     [DllImport(Lib, EntryPoint = "caps_set_fixed_atoms")] public static extern int SetFixedAtoms(IntPtr doc, int[]? atoms, int n);
+    [DllImport(Lib, EntryPoint = "caps_set_fixed_axes")] public static extern int SetFixedAxes(IntPtr doc, int axes);
+    [DllImport(Lib, EntryPoint = "caps_fixed_axes")] public static extern int FixedAxes(IntPtr doc);
     [DllImport(Lib, EntryPoint = "caps_fixed_atoms")] public static extern int FixedAtoms(IntPtr doc, int[]? atoms, int cap);
     [DllImport(Lib, EntryPoint = "caps_peptide_info")] public static extern int PeptideInfo([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_peptide_build")] public static extern IntPtr PeptideBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
@@ -620,6 +633,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_bond_rules_preview")] public static extern int BondRulesPreview(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? text, int cap);
     [DllImport(Lib, EntryPoint = "caps_probe_geometry")] public static extern int ProbeGeometry(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? text, int cap);
     [DllImport(Lib, EntryPoint = "caps_set_probes")] public static extern int SetProbes(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json);
+    [DllImport(Lib, EntryPoint = "caps_conformer_frames")] public static extern int ConformerFrames(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? text, int cap);
     [DllImport(Lib, EntryPoint = "caps_mode_animate")] public static extern int ModeAnimate(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? text, int cap);
     [DllImport(Lib, EntryPoint = "caps_probe_series")] public static extern int ProbeSeries(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? text, int cap);
     [DllImport(Lib, EntryPoint = "caps_set_look")] public static extern int SetLook(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json);
@@ -1179,6 +1193,8 @@ public sealed class CapsDocument : IDisposable
     public long HeldMolecule() { using (Hold()) return Native.HeldMolecule(H); }
     /// <summary>Atoms held in place besides the held molecule (frame indices); an empty list clears them.</summary>
     public int SetFixedAtoms(IReadOnlyCollection<int> atoms) { using (Hold()) { var a = atoms.ToArray(); return Native.SetFixedAtoms(H, a, a.Length); } }
+    public int SetFixedAxes(int axes) { using (Hold()) return Native.SetFixedAxes(H, axes); }
+    public int FixedAxes() { using (Hold()) return Native.FixedAxes(H); }
     public int[] FixedAtoms() { using (Hold()) { var n = Native.FixedAtoms(H, null, 0); var a = new int[Math.Max(0, n)]; if (n > 0) Native.FixedAtoms(H, a, n); return a; } }
 
     /// <summary>The file checks of this document as JSON (caps_file_checks).</summary>
@@ -1577,6 +1593,7 @@ public sealed class CapsDocument : IDisposable
     /// <summary>Probes drawn in the view.</summary>
     public void SetProbes(string json) { using (Hold()) { Alive(); if (Native.SetProbes(H, json) < 0) throw new InvalidOperationException(Native.LastError()); } }
     /// <summary>A probe measurement over every frame.</summary>
+    public string ConformerFrames(string json) { using (Hold()) { Alive(); var t = JsonCallOnce((b, c) => Native.ConformerFrames(H, json, b, c)); if (t.Length == 0) throw new InvalidOperationException(Native.LastError()); return t; } }
     public string ModeAnimate(string json) { using (Hold()) { Alive(); var t = JsonCallOnce((b, c) => Native.ModeAnimate(H, json, b, c)); if (t.Length == 0) throw new InvalidOperationException(Native.LastError()); return t; } }
     public string ProbeSeries(string json) { using (Hold()) { Alive(); var t = JsonCallOnce((b, c) => Native.ProbeSeries(H, json, b, c)); if (t.Length == 0) throw new InvalidOperationException(Native.LastError()); return t; } }
     /// <summary>Bond rules: per element pair, the distances as a histogram.</summary>

@@ -111,6 +111,64 @@ ViscosityResult green_kubo_viscosity(const std::vector<std::array<double, 6>>& p
                                      double corr_ps, int blocks);
 std::vector<Property> viscosity_properties(const ViscosityResult& r);
 
+// Creep: a constant true stress along one axis (the per-axis Berendsen barostat holding P_kk = −σ, the lateral axes at
+// `pressure`) after an NPT start; the strain ε(t) = L(t)/L0 − 1 and the creep compliance J(t) = ε(t)/σ. The barostat's
+// τ sets how fast the cell answers, so ε over the first few τ_p is the barostat's, not the material's; the later creep
+// (and its rate) is the polymer's at these short times.
+struct CreepOptions {
+  std::shared_ptr<const ForceField> field;
+  EnergyOptions energy;
+  int axis = 2;                  // 0 x, 1 y, 2 z
+  double stress = 50.0;          // MPa, tensile positive
+  double temperature = 300.0, pressure = 1.0, dt = 1.0, tau_t = 100.0, tau_p = 1000.0, compressibility = 4.5e-5;
+  double ps = 200.0, equilibrate_ps = 20.0;
+  int sample_every = 100;
+  uint64_t seed = 1;
+  bool new_velocities = false;
+  std::function<bool(const std::string& what, double fraction)> progress;
+};
+struct CreepResult {
+  std::vector<double> t_ps, strain, lateral1, lateral2, temperature;
+  double final_strain = 0, compliance = 0;   // compliance at the end, 1/GPa
+  double creep_rate = 0;                     // 1/s, the slope of ε over the last third
+  double poisson = 0;                        // −lateral/axial strain at the end
+  std::string method;
+  std::vector<std::string> notes;
+};
+CreepResult run_creep(System& s, const CreepOptions& o);
+std::vector<Property> creep_properties(const CreepResult& r, double stress);
+
+// Shear viscosity by non-equilibrium MD (SLLOD planar Couette flow, Evans & Morriss 1984): from one NVT-equilibrated
+// start, each shear rate runs on its own; the first `transient` fraction is left out (start-up), then
+// η = −⟨P_xy⟩/γ̇ with block errors, the first normal-stress difference N1 = −(P_xx − P_yy) and the mean temperature. The
+// shear-thinning index n from the slope of log η against log γ̇ (η ∝ γ̇^(n−1)) over the rates given.
+struct NemdOptions {
+  std::shared_ptr<const ForceField> field;
+  EnergyOptions energy;
+  std::vector<double> rates{0.01, 0.0316, 0.1};   // 1/ps
+  double temperature = 300.0, ps = 50.0, equilibrate_ps = 10.0, dt = 1.0;
+  double tau_t = 20.0;            // fs: tight, the viscous heat goes out of the peculiar motion (offset ≈ heating rate × τ)
+  double transient = 0.25;        // fraction of each run left out
+  int sample_every = 10;
+  int blocks = 5;
+  uint64_t seed = 1;
+  bool new_velocities = false;
+  std::function<bool(const std::string& what, double fraction)> progress;
+};
+struct NemdPoint {
+  double rate = 0;                // 1/ps
+  double eta = 0, error = 0;      // mPa·s
+  double n1 = 0, n1_error = 0;    // MPa
+  double temperature = 0;         // K, mean over the sampled part
+};
+struct NemdResult {
+  std::vector<NemdPoint> points;
+  double index = 1;               // shear-thinning index n (1: Newtonian)
+  std::vector<std::string> notes;
+};
+NemdResult nemd_viscosity(const System& start, const NemdOptions& o);
+std::vector<Property> nemd_properties(const NemdResult& r);
+
 // Born matrix of one configuration (GPa), as fluctuation_elastic computes it (tests and benches).
 Mat6 born_matrix(Evaluator& ev, const std::vector<double>& x, const Cell& cell, double strain);
 // Virial stress σ = −W / V of one configuration, Voigt, kcal/mol/Å³.

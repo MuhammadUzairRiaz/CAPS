@@ -538,6 +538,181 @@ std::vector<Property> viscosity_properties(const ViscosityResult& r) {
   return {q};
 }
 
+CreepResult run_creep(System& s, const CreepOptions& o) {
+  if (!s.cell.valid()) throw std::invalid_argument("a creep test needs a periodic cell");
+  if (o.axis < 0 || o.axis > 2) throw std::invalid_argument("axis must be 0 (x), 1 (y) or 2 (z)");
+  DynamicsOptions d;
+  d.field = o.field ? o.field : std::make_shared<const ForceField>(default_forcefield(s));
+  d.energy = o.energy;
+  d.dt = o.dt;
+  d.temperature = o.temperature;
+  d.thermostat = Thermostat::Bussi;
+  d.tau_t = o.tau_t;
+  d.barostat = Barostat::Berendsen;
+  d.anisotropic = true;
+  d.pressure = o.pressure;
+  d.tau_p = o.tau_p;
+  d.compressibility = o.compressibility;
+  d.seed = o.seed;
+  d.frame_every = 0;
+  d.new_velocities = o.new_velocities || s.velocities.size() != s.atoms.size();
+  const int64_t neq = std::llround(o.equilibrate_ps * 1000 / o.dt), nrun = std::llround(o.ps * 1000 / o.dt);
+  if (neq > 0) {
+    d.steps = neq;
+    d.thermo_every = 1000;
+    d.progress = [&](const ThermoRow& r) { return !cancelled(o.progress, "NPT at " + fmt(o.pressure, 3) + " atm", double(r.step) / double(neq + nrun)); };
+    run_dynamics(s, d);
+    d.new_velocities = false;
+  }
+  CreepResult res;
+  const double L0[3] = {norm(s.cell.a), norm(s.cell.b), norm(s.cell.c)};
+  d.axis_pressure[o.axis] = -o.stress / kAtmMPa;   // tensile: negative pressure along the axis
+  d.steps = nrun;
+  d.step_offset = 0;
+  d.thermo_every = std::max(1, o.sample_every);
+  const int a1 = (o.axis + 1) % 3, a2 = (o.axis + 2) % 3;
+  d.progress = [&](const ThermoRow& r) {
+    const double L[3] = {r.lx, r.ly, r.lz};
+    res.t_ps.push_back(r.time_ps);
+    res.strain.push_back(L[o.axis] / L0[o.axis] - 1);
+    res.lateral1.push_back(L[a1] / L0[a1] - 1);
+    res.lateral2.push_back(L[a2] / L0[a2] - 1);
+    res.temperature.push_back(r.temperature);
+    return !cancelled(o.progress, "creep under " + fmt(o.stress, 3) + " MPa", double(neq + r.step) / double(neq + nrun));
+  };
+  run_dynamics(s, d);
+  if (res.strain.size() < 3) throw std::invalid_argument("the run is too short");
+  res.final_strain = res.strain.back();
+  res.compliance = o.stress != 0 ? res.final_strain / (o.stress * 1e-3) : 0;   // 1/GPa
+  const size_t a = 2 * res.strain.size() / 3;
+  double mt = 0, ms = 0, stt = 0, sts = 0;
+  const double nn = double(res.strain.size() - a);
+  for (size_t k = a; k < res.strain.size(); ++k) mt += res.t_ps[k] / nn, ms += res.strain[k] / nn;
+  for (size_t k = a; k < res.strain.size(); ++k) stt += (res.t_ps[k] - mt) * (res.t_ps[k] - mt), sts += (res.t_ps[k] - mt) * (res.strain[k] - ms);
+  res.creep_rate = stt > 0 ? sts / stt * 1e12 : 0;   // per ps → per s
+  res.poisson = res.final_strain != 0 ? -0.5 * (res.lateral1.back() + res.lateral2.back()) / res.final_strain : 0;
+  const char* ax = o.axis == 0 ? "x" : o.axis == 1 ? "y" : "z";
+  res.method = "constant true stress " + fmt(o.stress, 4) + " MPa along " + ax + " (Berendsen per axis, τ_p " + fmt(o.tau_p, 4) + " fs; lateral axes at " +
+               fmt(o.pressure, 3) + " atm), " + fmt(o.temperature, 4) + " K (Bussi) for " + fmt(o.ps, 4) + " ps after " + fmt(o.equilibrate_ps, 4) + " ps NPT";
+  res.notes.push_back("the barostat sets how fast the cell answers: strain over the first few τ_p (" + fmt(3 * o.tau_p / 1000, 3) +
+                      " ps) is its response, not the material's; the later creep is the polymer's at these short times");
+  if (std::fabs(res.final_strain) > 0.3) res.notes.push_back("strain beyond 30 %: the stress is held as a true stress (force over the current area)");
+  return res;
+}
+
+std::vector<Property> creep_properties(const CreepResult& r, double stress) {
+  Property q;
+  q.id = "creep";
+  q.name = "Creep under constant stress";
+  q.unit = "%";
+  q.value = 100 * r.final_strain;
+  q.method = r.method;
+  q.extra["stress (MPa)"] = stress;
+  q.extra["creep compliance J at the end (1/GPa)"] = r.compliance;
+  q.extra["creep rate over the last third (1/s)"] = r.creep_rate;
+  q.extra["lateral contraction ratio at the end"] = r.poisson;
+  q.extra["run (ps)"] = r.t_ps.empty() ? 0 : r.t_ps.back() - r.t_ps.front();
+  std::vector<double> pct, J;
+  for (double e : r.strain) pct.push_back(100 * e), J.push_back(stress != 0 ? e / (stress * 1e-3) : 0);
+  std::vector<double> t0;
+  for (double t : r.t_ps) t0.push_back(t - r.t_ps.front());
+  q.series = {Series{"strain", "t (ps)", "ε (%)", t0, pct}, Series{"creep compliance", "t (ps)", "J (1/GPa)", t0, J},
+              Series{"temperature", "t (ps)", "T (K)", t0, r.temperature}};
+  q.notes = r.notes;
+  return {q};
+}
+
+NemdResult nemd_viscosity(const System& start, const NemdOptions& o) {
+  if (!start.cell.valid()) throw std::invalid_argument("NEMD shear needs a periodic cell");
+  if (o.rates.empty()) throw std::invalid_argument("give at least one shear rate");
+  for (double g : o.rates)
+    if (!(g > 0)) throw std::invalid_argument("shear rates must be positive (1/ps)");
+  const ForceField ff = o.field ? *o.field : default_forcefield(start);
+  System s = start;
+  DynamicsOptions d;
+  d.field = std::make_shared<const ForceField>(ff);
+  d.energy = o.energy;
+  d.dt = o.dt;
+  d.temperature = o.temperature;
+  d.thermostat = Thermostat::Bussi;
+  d.tau_t = o.tau_t;
+  d.seed = o.seed;
+  d.frame_every = 0;
+  d.new_velocities = o.new_velocities || s.velocities.size() != s.atoms.size();
+  const int64_t neq = std::llround(o.equilibrate_ps * 1000 / o.dt), nrun = std::llround(o.ps * 1000 / o.dt);
+  const double total = double(neq + nrun * int64_t(o.rates.size()));
+  if (neq > 0) {
+    d.steps = neq;
+    d.thermo_every = 1000;
+    d.progress = [&](const ThermoRow& r) { return !cancelled(o.progress, "equilibrating at " + fmt(o.temperature, 4) + " K (NVT)", double(r.step) / total); };
+    run_dynamics(s, d);
+    d.new_velocities = false;
+  }
+  NemdResult res;
+  for (size_t k = 0; k < o.rates.size(); ++k) {
+    System run = s;   // every rate from the same equilibrated start
+    std::vector<double> pxy, n1, temp;
+    const int64_t skip = std::llround(o.transient * double(nrun));
+    d.shear_rate = o.rates[k];
+    d.steps = nrun;
+    d.thermo_every = std::max(1, o.sample_every);
+    const double done0 = double(neq + nrun * int64_t(k));
+    const std::string what = "shearing at " + fmt(o.rates[k], 4) + " /ps (" + std::to_string(k + 1) + " of " + std::to_string(o.rates.size()) + ")";
+    d.progress = [&](const ThermoRow& r) {
+      if (r.step > skip) pxy.push_back(r.p[3]), n1.push_back(-(r.p[0] - r.p[1])), temp.push_back(r.temperature);
+      return !cancelled(o.progress, what, (done0 + double(r.step)) / total);
+    };
+    run_dynamics(run, d);
+    if (pxy.size() < 2) throw std::invalid_argument("the run is too short for the samples: lengthen it or sample more often");
+    // block averages of the steady state
+    const int nb = std::clamp(o.blocks, 2, int(pxy.size()));
+    auto blocked = [&](const std::vector<double>& v, double& mean, double& err) {
+      std::vector<double> bm;
+      for (int b = 0; b < nb; ++b) {
+        const size_t a = v.size() * b / nb, e = v.size() * (b + 1) / nb;
+        bm.push_back(std::accumulate(v.begin() + a, v.begin() + e, 0.0) / double(e - a));
+      }
+      mean = std::accumulate(bm.begin(), bm.end(), 0.0) / nb;
+      double q = 0;
+      for (double x : bm) q += (x - mean) * (x - mean);
+      err = std::sqrt(q / (nb - 1) / nb);
+    };
+    NemdPoint p;
+    p.rate = o.rates[k];
+    double m, e;
+    blocked(pxy, m, e);
+    // η = −P_xy/γ̇: atm → Pa, 1/ps → 1/s, Pa·s → mPa·s
+    p.eta = -m * 101325.0 / (p.rate * 1e12) * 1e3;
+    p.error = e * 101325.0 / (p.rate * 1e12) * 1e3;
+    blocked(n1, m, e);
+    p.n1 = m * 0.101325, p.n1_error = e * 0.101325;   // atm → MPa
+    p.temperature = std::accumulate(temp.begin(), temp.end(), 0.0) / double(temp.size());
+    res.points.push_back(p);
+    if (std::fabs(p.temperature - o.temperature) > 0.03 * o.temperature)
+      res.notes.push_back("at " + fmt(p.rate, 4) + " /ps the mean temperature is " + fmt(p.temperature, 4) +
+                          " K: the viscous heat outruns the thermostat — shorten its τ or lower the rate");
+    if (p.error > 0.5 * std::fabs(p.eta))
+      res.notes.push_back("at " + fmt(p.rate, 4) + " /ps the stress is mostly noise (η " + fmt(p.eta, 3) + " ± " + fmt(p.error, 3) +
+                          " mPa·s): low rates need much longer runs (the signal falls with γ̇, the noise does not)");
+  }
+  // shear-thinning index from log η against log γ̇ (positive η only)
+  std::vector<double> lx, ly;
+  for (const auto& p : res.points)
+    if (p.eta > 0) lx.push_back(std::log10(p.rate)), ly.push_back(std::log10(p.eta));
+  if (lx.size() >= 2) {
+    const double mx = std::accumulate(lx.begin(), lx.end(), 0.0) / lx.size(), my = std::accumulate(ly.begin(), ly.end(), 0.0) / ly.size();
+    double sxx = 0, sxy = 0;
+    for (size_t k = 0; k < lx.size(); ++k) sxx += (lx[k] - mx) * (lx[k] - mx), sxy += (lx[k] - mx) * (ly[k] - my);
+    if (sxx > 0) res.index = 1 + sxy / sxx;
+  }
+  res.notes.insert(res.notes.begin(), "SLLOD planar Couette flow (flow along x, gradient along y; Lees–Edwards by cell tilt), Bussi thermostat τ " + fmt(o.tau_t, 3) +
+                                          " fs on the peculiar velocities, " + fmt(o.ps, 4) + " ps per rate (the first " + fmt(100 * o.transient, 3) +
+                                          " % left out) after " + fmt(o.equilibrate_ps, 4) + " ps NVT");
+  res.notes.push_back("simulated shear rates are 10⁹–10¹¹ s⁻¹: an entangled melt is shear-thinned there; its zero-shear η lies far below these rates "
+                      "(compare Green–Kubo, or extrapolate the plateau)");
+  return res;
+}
+
 ElasticResult fluctuation_run(System& s, const FluctuationRunOptions& o) {
   ElasticResult res;
   if (!s.cell.valid()) throw std::invalid_argument("elastic constants need a periodic cell");
