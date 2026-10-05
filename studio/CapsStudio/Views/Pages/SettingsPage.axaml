@@ -366,6 +366,8 @@
               <TextBlock Grid.Row="1" Grid.Column="1" Classes="muted" TextWrapping="Wrap" FontSize="12"
                          Text="0 uses one thread per core, up to 16. Each worker owns a fixed share of the work, so a run gives the same numbers for the same thread count." />
             </Grid>
+            <CheckBox Classes="toggle" IsChecked="{Binding SetNotifyRuns}" Content="Tell me when a run of a minute or more ends (a system notification)" MaxWidth="620" HorizontalAlignment="Left"
+                      ToolTip.Tip="macOS Notification Centre, or notify-send on Linux; Windows shows it in the Studio's status bar only" />
             <StackPanel Spacing="10">
               <DockPanel>
                 <Button DockPanel.Dock="Right" Classes="small" Click="OnAddHost"><StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="plus" Size="13" VerticalAlignment="Center" /><TextBlock Text="Add host" VerticalAlignment="Center" /></StackPanel></Button>

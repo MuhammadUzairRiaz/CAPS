@@ -648,6 +648,8 @@ public partial class MainWindow : Window
         }
         if (c.Markers && c.OverlayX != null && c.OverlayY != null)
             PropPlot.SetData(pts.ToArray(), Enumerable.Range(0, c.OverlayX.Length).Select(k => (c.OverlayX[k], c.OverlayY[k])).ToArray());
+        else if (_vm.Analyze.CurrentFit is { } fit)
+            PropPlot.SetWithFit(pts.ToArray(), fit.Line);   // the fitted model over the curve
         else
             PropPlot.SetData(pts.ToArray());
     }

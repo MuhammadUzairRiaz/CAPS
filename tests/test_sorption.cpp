@@ -99,3 +99,27 @@ TEST(Sorption, GcmcIdealGasAndHenryLimit) {
   std::printf("ideal N %.3f (20) · henry N %.3f vs %.3f\n", r.isotherm[0].loading, rh.isotherm[0].loading, henry);
   EXPECT_NEAR(rh.isotherm[0].loading, henry, 0.08 * henry) << "Widom W " << rh.widom_w;
 }
+
+// The density map: for the ideal gas the sorbate fills the cell evenly — the map summed over the cell (density × voxel
+// volume) is the mean loading, and every voxel holds about ⟨N⟩/V.
+TEST(Sorption, DensityMapOfAnIdealGas) {
+  Host ideal = make_host(0.0, 0.0);
+  SorptionOptions o;
+  o.template_first_atom = 27;
+  o.insertions = 0;
+  o.coulomb = false;
+  o.cutoff = 5.9;
+  o.map_grid = 6;
+  const double V = 1728e-30, kT = 1.380649e-23 * 300;
+  o.pressures_kpa = {20 * kT / V / 1000};
+  o.steps = 200000;
+  const auto r = sorption(ideal.s, ideal.ff, o);
+  const auto& pt = r.isotherm[0];
+  ASSERT_EQ(pt.grid, 6);
+  ASSERT_EQ(pt.density.size(), 216u);
+  const double vox = 1728.0 / 216;
+  double tot = 0, mx = 0;
+  for (float d : pt.density) tot += d * vox, mx = std::max(mx, double(d));
+  EXPECT_NEAR(tot, pt.loading, 0.05 * pt.loading);
+  EXPECT_LT(mx, 2.0 * pt.loading / 1728.0);   // no corner fills up: an even gas
+}

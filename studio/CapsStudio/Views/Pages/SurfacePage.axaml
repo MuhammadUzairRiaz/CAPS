@@ -158,6 +158,8 @@
                             <TextBlock Grid.Column="2" Text="{Binding Title}" FontSize="12.5" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                             <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                               <TextBlock Text="{Binding Height}" Classes="mono" FontSize="12" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+                              <ToggleButton Classes="small" Content="⇅" Padding="6,0" IsVisible="{Binding Removable}" IsChecked="{Binding Ops.Flip}" ToolTip.Tip="Upside down (180° about x): the other face meets the layer below" />
+                              <TextBox Width="70" Classes="mono" FontSize="11" IsVisible="{Binding Removable}" Text="{Binding Ops.Shift}" Watermark="dx dy" ToolTip.Tip="Shift in the plane, Å (the registry against the layer below)" />
                               <Button Classes="small ghost" Content="×" Padding="6,0" IsVisible="{Binding Removable}" Click="OnRemoveLayer" Tag="{Binding Extra}" ToolTip.Tip="Remove this layer" />
                             </StackPanel>
                           </Grid>
@@ -183,6 +185,8 @@
                     <TextBlock Text="Gap between layers (Å)" Classes="label" VerticalAlignment="Center" />
                     <NumericUpDown Grid.Column="1" Value="{Binding SurfStackGap}" Minimum="0" Maximum="20" Increment="0.5" FormatString="0.0" />
                   </Grid>
+                  <CheckBox Content="Share the lattice mismatch between the layers" IsChecked="{Binding SurfShareStrain}" IsVisible="{Binding SurfHasExtra}"
+                            ToolTip.Tip="The cell the mean of the layers' (two crystals of similar spacing); else the slab's cell, the other layers stretched to it" />
                 </StackPanel>
               </Border>
 

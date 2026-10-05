@@ -38,6 +38,7 @@ struct DpdOptions {
   std::map<std::string, double> a;                // "AB" → a_ij directly (wins over χ); "AA" → a_ii
   double gamma = 4.5, dt = 0.04;
   double bond_k = 4.0, bond_r0 = 0.0;             // springs −C (r − r₀)
+  double angle_k = 0.0;                           // chain stiffness: k_θ (1 + cos θ), θ at the middle of three bonded beads (kT; straight: θ = 180°, E = 0)
   long steps = 20000, equilibration = 5000;       // the first `equilibration` steps are not sampled
   int frame_every = 500;
   double rc_angstrom = 6.46;                      // r_c in Å for the frames (Groot & Rabone: 3 waters per bead)
@@ -52,6 +53,11 @@ struct DpdReport {
   double order = 0;                                // ψ at the end
   std::vector<double> q, sq;                       // S(q) of type A, radially averaged
   double q_peak = 0, spacing = 0;                  // 2π/q* (r_c)
+  // domains at the end: connected cells (about r_c wide, periodic) where the first type outnumbers the second, and the
+  // other way round — how many, their mean size, and the largest one's share (≥ ½ and spanning: a continuous phase)
+  int domains_a = 0, domains_b = 0;
+  double domain_a_size = 0, domain_b_size = 0;    // beads per domain, mean
+  double largest_a = 0, largest_b = 0;            // the largest domain's share of that type's cells
   std::vector<std::pair<double, double>> order_series;   // (step, ψ)
   std::string types;                               // bead letters in use
   Trajectory frames;                               // beads as atoms (A → C, B → O, C → N, D → S, others → P), Å

@@ -261,6 +261,20 @@ public sealed partial class MainViewModel
             else if (IsSmiles(t) && FindModule(t) == null)
                 Put("From what you typed", new PaletteCommand { Title = "Build 3D from SMILES " + t, Id = "builder.molecule.open", Icon = "hex", Run = () => OpenBuilder(t) }, 1000);
         }
+        // the saved macros, each a command that opens it with its argument form (D11)
+        try
+        {
+            if (Directory.Exists(MacroFolder))
+                foreach (var f in Directory.EnumerateFiles(MacroFolder, "*.py").OrderBy(f => f))
+                {
+                    var name = Path.GetFileName(f);
+                    var c = new PaletteCommand { Title = "Macro · " + Path.GetFileNameWithoutExtension(name), Id = "macro.open", Icon = "terminal", Section = "Macros",
+                                                 Keywords = "macro script python run", Run = () => { OpenMacro(); MacroName = name; } };
+                    var score = q.Length == 0 ? 0 : Score(q, c.Title + " " + c.Keywords, c.Id);
+                    if (score > 0) Put("Macros", c, score);
+                }
+        }
+        catch { /* an unreadable folder offers no macros */ }
         foreach (var c in _commands)
         {
             if (!c.Enabled()) continue;

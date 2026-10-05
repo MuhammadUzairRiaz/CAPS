@@ -2300,6 +2300,159 @@
    "tested": "tests/test_mechanics.cpp Mechanics.SlidingFrictionOfALjFilm (an argon liquid between argon walls at γ̇* ≈ 0.5: 47 MPa against the no-slip estimate η γ̇ ≈ 50 MPa, the temperature held)",
    "deviation": "MD speeds (m/s and up) far exceed a tribometer's; the thermostat acts on the flow direction too; constant gap, not constant load",
    "tex": "F_f = -\\langle F_x\\rangle,\\qquad \\tau_w = \\frac{F_f}{A},\\qquad \\mu = \\frac{F_f}{\\langle F_z\\rangle}"
+  },
+  {
+   "group": "Analysis",
+   "source": "studio/CapsStudio/ViewModels/CurveFit.cs",
+   "engines": [],
+   "cites": [],
+   "id": "curve-fit",
+   "title": "Fitting a curve",
+   "summary": "Any curve in Analyze fitted over a chosen x range: a line or quadratic (solved directly), a power law, an exponential decay, a stretched exponential (KWW), an Arrhenius law, or Gaussian peaks on a baseline (Levenberg–Marquardt). Each parameter with its standard error, R², and the fitted line drawn over the curve.",
+   "equation": "min_p Σ_i (y_i − f(x_i; p))²,  σ_p² = s² [(JᵀJ)⁻¹]_pp,  s² = SSR/(n − k)",
+   "equation_note": "J the Jacobian at the minimum (central differences); log–log curves are fitted on the logarithms of both axes",
+   "symbols": [
+    [
+     "J",
+     "∂f/∂p at the points",
+     "—"
+    ],
+    [
+     "SSR",
+     "sum of squared residuals",
+     "—"
+    ],
+    [
+     "n, k",
+     "points and parameters",
+     "—"
+    ]
+   ],
+   "when": "The power-law exponent of an MSD, a KWW relaxation time and β of a stress or bond autocorrelation, an activation energy from rates against temperature, peak positions and widths of a scattering curve.",
+   "tested": "the Studio self-test fits back an exponential decay (a, τ, c to 10⁻⁴) and two Gaussians (centres to 10⁻³)",
+   "deviation": "the errors assume independent points with equal variance: points of a time correlation are not independent, so treat the ± as a lower bound",
+   "tex": "\\min_{\\mathbf p} \\sum_i \\big(y_i - f(x_i;\\mathbf p)\\big)^2,\\qquad \\sigma_{p_k}^2 = s^2\\left[(J^{\\mathsf T}J)^{-1}\\right]_{kk},\\qquad s^2 = \\frac{\\mathrm{SSR}}{n-k}"
+  },
+  {
+   "group": "Analysis",
+   "source": "studio/CapsStudio/ViewModels/AnalyzeViewModel.cs",
+   "engines": [],
+   "cites": [
+    "ruland1961",
+    "hermans1948"
+   ],
+   "id": "crystallinity",
+   "title": "Crystallinity index from a diffraction curve",
+   "summary": "A simulated (or imported) WAXS curve over q fitted with Gaussian peaks on a baseline: peaks at least as wide as the halo width are the amorphous halo, narrower ones crystalline reflections, and the crystallinity index is the crystalline share of the peak area.",
+   "equation": "X_c = Σ_cryst A_k / (Σ_cryst A_k + Σ_halo A_k),  A_k = √(2π) h_k σ_k",
+   "equation_note": "σ ≥ the halo width (0.12 Å⁻¹ by default) → amorphous; a finite cell broadens crystalline peaks by about 2π/L, so a small cell needs a wider threshold",
+   "symbols": [
+    [
+     "A_k",
+     "area of fitted peak k",
+     "—"
+    ],
+    [
+     "h_k, σ_k",
+     "its height and width",
+     "—, Å⁻¹"
+    ],
+    [
+     "X_c",
+     "crystallinity index",
+     "%"
+    ]
+   ],
+   "when": "Strain-induced crystallisation of natural rubber, semicrystalline fibres (PET, PA, cellulose) in a composite: the crystalline share of a simulated cell, or of a measured pattern for comparison.",
+   "tested": "the Studio self-test: a narrow and a wide Gaussian of known areas give X_c to 0.1 %",
+   "deviation": "no Lorentz or polarisation corrections and no diffuse disorder term (Ruland's k): an index for comparison, not an absolute crystallinity",
+   "tex": "X_c = \\frac{\\sum_{\\mathrm{cryst}} A_k}{\\sum_{\\mathrm{cryst}} A_k + \\sum_{\\mathrm{halo}} A_k},\\qquad A_k = \\sqrt{2\\pi}\\,h_k\\,\\sigma_k"
+  },
+  {
+   "group": "Analysis",
+   "source": "core/src/sorption.cpp",
+   "engines": [],
+   "cites": [],
+   "id": "sorbate-map",
+   "title": "Where a sorbate sits: density maps",
+   "summary": "During each GCMC pressure's production steps the sorbed molecules' centres are counted on a grid over the cell; the map shows, projected onto a cell face, where in the host the gas or small molecule actually resides — free-volume pockets, filler surfaces, the interphase.",
+   "equation": "ρ(r) = ⟨Σ_m δ(r − r_m)⟩,  ρ_face(u, v) = ∫ ρ dw  (molecules/nm²)",
+   "equation_note": "about 2,000 samples per pressure; the map summed over the cell is the mean loading",
+   "symbols": [
+    [
+     "r_m",
+     "centre of sorbed molecule m",
+     "Å"
+    ],
+    [
+     "ρ",
+     "number density",
+     "1/Å³"
+    ]
+   ],
+   "when": "Gas barrier of rubbers and composites: whether CO₂, O₂ or water gathers at a filler surface or in the matrix's free volume, and how that changes with pressure.",
+   "tested": "tests/test_sorption.cpp Sorption.DensityMapOfAnIdealGas (the map sums to the loading and stays even for an ideal gas)",
+   "deviation": "the host is fixed (no swelling); centres only, not the molecules' orientation",
+   "tex": "\\rho(\\mathbf r) = \\Big\\langle \\sum_m \\delta(\\mathbf r - \\mathbf r_m)\\Big\\rangle,\\qquad \\rho_{\\mathrm{face}}(u,v) = \\int \\rho\\,dw"
+  },
+  {
+   "group": "Coarse-grained",
+   "source": "core/src/dpd.cpp",
+   "engines": [],
+   "cites": [],
+   "id": "dpd-stiffness-domains",
+   "title": "DPD chain stiffness and domains",
+   "summary": "Semiflexible DPD chains through a bending energy at every middle bead, and the morphology at the end of a run counted: the domains of the first two bead types (connected cells where one type outnumbers the other), their mean size and the largest one's share — a single domain holding nearly all of its type's cells is a continuous phase.",
+   "equation": "E_θ = k_θ (1 + cos θ),  θ the angle at the middle bead (180° straight: E = 0)",
+   "equation_note": "forces F_i = −k_θ ∂cos θ/∂r_i on the end beads, the middle bead the opposite of their sum (LAMMPS angle_style cosine); domains on cells about r_c wide joined through faces, periodic",
+   "symbols": [
+    [
+     "k_θ",
+     "bending stiffness",
+     "kT"
+    ],
+    [
+     "θ",
+     "bond angle at the middle bead",
+     "°"
+    ]
+   ],
+   "when": "Rod–coil and liquid-crystalline blocks, stiff fibre-forming polymers in a soft matrix, and telling a co-continuous blend from dispersed droplets.",
+   "tested": "tests/test_dpd.cpp Dpd.StiffnessAndDomains (k_θ = 5 kT moves ⟨cos θ⟩ from −0.06 to −0.79; a strongly segregated A10/B10 blend ends as one A and one B domain)",
+   "deviation": "the domain count depends on the cell size used (about r_c): very small domains merge with their neighbours' cells",
+   "tex": "E_\\theta = k_\\theta\\,(1 + \\cos\\theta)"
+  },
+  {
+   "group": "Growth",
+   "source": "core/src/layers.cpp",
+   "engines": [],
+   "cites": [],
+   "id": "stack-ops",
+   "title": "Layer stacks: flip, shift, shared strain",
+   "summary": "Each added layer can be turned upside down (180° about x, so its other face meets the layer below and its handedness is kept) and shifted in the plane to set its registry; the lateral mismatch can be shared by every layer instead of taken by the upper ones alone.",
+   "equation": "(x, y, z) → (x, b − y, −z) (flip),  (x, y) → (x + Δx, y + Δy) (shift),  A = (1/N) Σ_l n_l a_l (shared)",
+   "equation_note": "n_l the repeats that bring layer l nearest the cell; each layer then strained by A/(n_l a_l) − 1 (and the same along b)",
+   "symbols": [
+    [
+     "a_l",
+     "layer l's own cell edge",
+     "Å"
+    ],
+    [
+     "n_l",
+     "its repeats",
+     "—"
+    ],
+    [
+     "A",
+     "the stack's edge",
+     "Å"
+    ]
+   ],
+   "when": "A film between two identical fibre or filler surfaces facing it with the same face; two crystals of close spacing (e.g. bilayers of 2D fillers) without putting all the strain on one; stacking registry (AB against AA).",
+   "tested": "tests/test_layers.cpp Layers.AverageFlipAndShift (20 and 21 Å cells meet at 20.5 Å, ±2.5 % each; a flipped layer's top face at its bottom; a 1.5 Å shift exact)",
+   "deviation": "a shared strain strains a crystal too: check its stress after relaxing",
+   "tex": "(x, y, z) \\to (x,\\, b - y,\\, -z),\\qquad A = \\frac{1}{N}\\sum_l n_l a_l"
   }
  ]
 }

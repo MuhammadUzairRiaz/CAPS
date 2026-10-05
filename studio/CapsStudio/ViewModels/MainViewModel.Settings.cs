@@ -190,6 +190,7 @@ public sealed partial class MainViewModel
     /// always rendered on the CPU.</summary>
     public bool SetGpuView { get => _settings.GpuView; set { if (_settings.GpuView == value) return; _settings.GpuView = value; Raise(); Raise(nameof(GpuView)); Changed("GPU view"); RenderRequested?.Invoke(); } }
     public bool GpuView => _settings.GpuView;
+    public bool SetNotifyRuns { get => _settings.NotifyRuns; set { if (_settings.NotifyRuns == value) return; _settings.NotifyRuns = value; Raise(); Changed("run notifications"); } }
     private string _gpuStatus = "not started yet";
     /// <summary>What the GPU view runs on, or why it is not in use.</summary>
     public string GpuStatus { get => _gpuStatus; set => Set(ref _gpuStatus, value); }
