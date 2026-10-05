@@ -35,6 +35,8 @@ public sealed class ProjectItem : ObservableObject
     /// <summary>What has been done to it: "minimised · equilibrated · MD".</summary>
     public string History { get => _history; set { if (Set(ref _history, value)) Raise(nameof(HasHistory)); } }
     public bool HasHistory => _history.Length > 0;
+    /// <summary>The builder page's settings that made it (Grow: chains, DP, density, polymer …), for Edit in its builder.</summary>
+    public System.Text.Json.Nodes.JsonObject? BuildSettings { get; set; }
     /// <summary>Its job folders, newest first (Materials Studio's project tree).</summary>
     public ObservableCollection<Job> Jobs { get; } = new();
     private bool _renaming;
@@ -150,7 +152,15 @@ public sealed partial class MainViewModel
                           ?? (step?["params"] as System.Text.Json.Nodes.JsonArray)?.FirstOrDefault(p => p?[0]?.GetValue<string>() == "smiles")?[1]?.GetValue<string>();
                 OpenBuilder(smi);
                 break;
-            case 0: SetModule(0); break;
+            case 0:
+                // the Grow page as it was for this structure: kept with it, else read from its provenance
+                var gs = it.BuildSettings is { } b && (string?)b["page"] == "grow" ? b : GrowSettingsFromProvenance(it.Doc, CleanName(it.Name), Field.Library.ToList());
+                if (gs != null) { ApplyGrowSettings(gs); it.BuildSettings ??= gs; }
+                // the force field the structure has (assigned after growing) is the one shown
+                if (it.ForceField.Replace(" (incomplete)", "") is { Length: > 0 } has && Field.Library.ToList().FindIndex(e => e.Name == has) is var fk and >= 0) GrowFfIndex = fk;
+                SetModule(0);
+                if (gs == null) { Status = $"{it.Name} records no Grow settings: the page shows the last ones used"; return; }
+                break;
             case 5: SetModule(5); break;
             case 16: OpenBlend(); break;
             case 29: OpenCrystal(); break;
@@ -330,6 +340,7 @@ public sealed partial class MainViewModel
         Show(copy, name + " (unsaved)");
         // the copy keeps what was done to the original and its force field
         foreach (var d in src.Done) _pipeDone.Add(d);
+        if (_activeItem != null && src.BuildSettings != null) _activeItem.BuildSettings = (System.Text.Json.Nodes.JsonObject)src.BuildSettings.DeepClone();
         _pipeBuild = src.Build;
         if (_activeItem != null) _activeItem.Origin = src.Origin;
         try { Field.LoadReport(copy); } catch { }

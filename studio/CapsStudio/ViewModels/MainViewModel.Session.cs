@@ -87,7 +87,7 @@ public sealed partial class MainViewModel
                 items.Add(new JsonObject
                 {
                     ["name"] = it.Name.Replace(" (unsaved)", ""), ["origin"] = it.Origin, ["history"] = it.History, ["force_field"] = it.ForceField,
-                    ["file"] = file, ["topology"] = topology, ["frame"] = it.Frame, ["active"] = it == _activeItem,
+                    ["file"] = file, ["topology"] = topology, ["frame"] = it.Frame, ["active"] = it == _activeItem, ["builder"] = it.BuildSettings?.DeepClone(),
                     ["jobs"] = new JsonArray(it.Jobs.Select(j => (JsonNode)j.Id).ToArray()),
                 });
             }
@@ -119,6 +119,7 @@ public sealed partial class MainViewModel
             if (it == null) continue;
             it.Origin = (string?)n["origin"] ?? "";
             it.History = (string?)n["history"] ?? "";
+            if (n["builder"] is JsonObject bs) it.BuildSettings = (JsonObject)bs.DeepClone();
             if (it.ForceField.Length == 0) it.ForceField = (string?)n["force_field"] ?? "";
             var frame = (int?)n["frame"] ?? 0;
             if (frame > 0 && frame < Frames) { it.Frame = frame; Frame = frame; }

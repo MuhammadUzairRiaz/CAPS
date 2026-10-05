@@ -1008,6 +1008,7 @@ public sealed partial class MainViewModel : ObservableObject
             }
             var name = label.Replace($"seed{_growSeed}", $"seed{used}");
             Show(doc, name + " (unsaved)");
+            if (_activeItem != null) _activeItem.BuildSettings = GrowSettingsJson();   // Edit brings these back
             ShowGrownWrap();   // the grown cell as the live view showed it
             MarkPipeline("Grow", spec == null ? "polystyrene" : _growSpecName);
             if (growScript != null) RecordScript(growScript);
