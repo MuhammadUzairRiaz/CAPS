@@ -5,7 +5,8 @@
  "source": "TRAPPE_UA.par",
  "references": [
   "M. G. Martin, J. I. Siepmann, J. Phys. Chem. B 102, 2569 (1998)",
-  "J. J. Potoff, J. I. Siepmann, AIChE J. 47, 1676 (2001) (carbon dioxide)"
+  "J. J. Potoff, J. I. Siepmann, AIChE J. 47, 1676 (2001) (carbon dioxide)",
+  "J. J. Potoff, J. I. Siepmann, AIChE J. 47, 1676 (2001) (nitrogen)"
  ],
  "units": "real",
  "styles": {
@@ -386,6 +387,26 @@
    ],
    "charge": -0.35,
    "description": "carbon dioxide oxygen (Potoff & Siepmann 2001)"
+  },
+  {
+   "name": "N2N",
+   "element": "N",
+   "mass": 14.007,
+   "aliases": [
+    "N_N2"
+   ],
+   "charge": -0.482,
+   "description": "nitrogen (N2) atom (Potoff & Siepmann 2001)"
+  },
+  {
+   "name": "N2M",
+   "element": "",
+   "mass": 0,
+   "aliases": [
+    "M_N2"
+   ],
+   "charge": 0.964,
+   "description": "nitrogen (N2) centre: massless charge site"
   }
  ],
  "pairs": [
@@ -680,6 +701,27 @@
     3.05
    ],
    "comment": "ε/k_B 79.0 K, σ 3.05 Å"
+  },
+  {
+   "name": "N2N",
+   "match": [
+    "N2N"
+   ],
+   "params": [
+    0.0715393296,
+    3.31
+   ],
+   "comment": "ε/k_B 36.0 K, σ 3.31 Å"
+  },
+  {
+   "name": "N2M",
+   "match": [
+    "N2M"
+   ],
+   "params": [
+    0,
+    0
+   ]
   }
  ],
  "bonds": [
@@ -1355,6 +1397,19 @@
     1.16
    ],
    "comment": "rigid C=O 1.16 Å (run CO2 as a rigid body)"
+  },
+  {
+   "name": "N2N-N2N",
+   "match": [
+    "N2N",
+    "N2N"
+   ],
+   "style": "harmonic",
+   "params": [
+    0,
+    1.1
+   ],
+   "comment": "rigid N–N 1.10 Å"
   }
  ],
  "angles": [
@@ -3573,10 +3628,26 @@
   "library slip: torsion CH2-CH2-OA-HA continued by CH3-CH2-OA-HA (line 253); taken as one torsion, as the original parameter set does",
   "library slip: torsion CH2-CH2-OA-HA continued by CH3-CH2-OA-HA (line 254); taken as one torsion, as the original parameter set does",
   "converted by CAPS (TraPPE_UA, unit K); equivalences replace the type name for each kind of parameter",
-  "carbon dioxide (CO2C, CO2O) added by CAPS from Potoff & Siepmann 2001 — σ, ε and charges checked against the TraPPE CO2 file of gmso (trappe_5site_co2.xml: 0.280/0.305 nm, 0.224490/0.656842 kJ/mol, +0.70/−0.35 e); the molecule is rigid and linear (bond and angle constants 0): run it as a rigid body (sorption and adsorption, LAMMPS fix rigid)"
+  "carbon dioxide (CO2C, CO2O) added by CAPS from Potoff & Siepmann 2001 — σ, ε and charges checked against the TraPPE CO2 file of gmso (trappe_5site_co2.xml: 0.280/0.305 nm, 0.224490/0.656842 kJ/mol, +0.70/−0.35 e); the molecule is rigid and linear (bond and angle constants 0): run it as a rigid body (sorption and adsorption, LAMMPS fix rigid)",
+  "nitrogen (N2N, N2M) added by CAPS from Potoff & Siepmann 2001 as NIST's TraPPE nitrogen benchmark gives it (σ 3.31 Å, ε/k_B 36.0 K, −0.482 e on each N, +0.964 e at the centre, N–N 1.10 Å, rigid); the centre is a virtual site CAPS adds when the force field is assigned"
  ],
  "version": "1998",
  "status": "validated",
  "validation": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): 23 of 25 identical; the other two are the original C-C-O-H torsion, which takes terms from the O-C-C-O entry - CAPS keeps the published TraPPE alcohol torsion.",
- "typing": "../typing/trappe-ua.typing.json"
+ "typing": "../typing/trappe-ua.typing.json",
+ "virtual_sites": [
+  {
+   "smarts": "[NX1]#[NX1]",
+   "type": "N2M",
+   "from": [
+    0,
+    1
+   ],
+   "w": [
+    0.5,
+    0.5
+   ],
+   "comment": "N2's centre charge, midway between the atoms"
+  }
+ ]
 }

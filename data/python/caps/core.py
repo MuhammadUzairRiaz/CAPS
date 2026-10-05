@@ -1052,6 +1052,28 @@ def _sorption(self, sorbate: str = "O=C=O", pressures_kpa=(), temperature: float
 
 
 Document.sorption = _sorption
+
+
+def _adsorption(self, adsorbates, cycles: int = 3, steps: int = 20000, t_high: float = 1e4, t_low: float = 100.0, region: str = "cell",
+                cutoff: float = 12.0, coulomb: bool = True, keep: int = 10, seed: int = 1) -> dict:
+    """Adsorption locator: adsorbates [(smiles, count), …] added after the structure and placed by Monte Carlo simulated
+    annealing as rigid bodies on the fixed structure (region "cell" or "above" its top face). The document's frames
+    become the configurations kept, the lowest last. Returns {adsorption_energy, adsorbate_substrate,
+    adsorbate_adsorbate, components: [{name, molecules, de_dn}], configs, notes}."""
+    o = {"adsorbates": [{"smiles": m, "count": int(c)} for m, c in adsorbates], "cycles": int(cycles), "steps": int(steps), "t_high": float(t_high),
+         "t_low": float(t_low), "region": region, "cutoff": float(cutoff), "coulomb": bool(coulomb), "keep": int(keep), "seed": int(seed)}
+    f = library().caps_adsorption
+    f.argtypes = [C.c_void_p, C.c_char_p, C.c_void_p, C.c_void_p, C.c_char_p, C.c_int32]
+    f.restype = C.c_int32
+    buf = C.create_string_buffer(1 << 22)
+    f(self._h, _enc(json.dumps(o)), None, None, buf, len(buf))
+    r = json.loads(buf.value.decode())
+    if not r.get("ok"):
+        raise CapsError(r.get("error", "adsorption failed"))
+    return r
+
+
+Document.adsorption = _adsorption
 Document.normal_modes = _normal_modes
 Document.animate_mode = _animate_mode
 Document.pair_histograms = _pair_histograms

@@ -154,6 +154,19 @@
    "smarts": "[OX1]=[CX2]=[OX1]",
    "priority": 3,
    "description": "carbon dioxide oxygen"
+  },
+  {
+   "type": "N2N",
+   "smarts": "[NX1]#[NX1]",
+   "priority": 3,
+   "description": "nitrogen (N2) atom"
+  },
+  {
+   "type": "N2M",
+   "smarts": "[#0]",
+   "atom_name": "N2M",
+   "priority": 3,
+   "description": "nitrogen (N2) centre site"
   }
  ],
  "united_atom": true,

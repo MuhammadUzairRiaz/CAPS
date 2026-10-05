@@ -535,6 +535,17 @@ FFDef load_forcefield(const std::string& path) {
     for (const auto& t : h["terms"].items())
       ff.hbonds.terms.push_back({t.text("donor"), t.text("acceptor"), t.text("hydrogen"), t.num("eps", 0), t.num("sigma", 0), int(t.num("n", 4))});
   }
+  if (j.has("virtual_sites"))
+    for (const auto& o : j["virtual_sites"].items()) {
+      FFDef::SiteRule r;
+      r.smarts = o.text("smarts"), r.type = o.text("type");
+      for (const auto& x : o["from"].items()) r.from.push_back(int(x.number()));
+      for (const auto& x : o["w"].items()) r.w.push_back(x.number());
+      if (r.smarts.empty() || r.type.empty() || r.from.empty() || r.from.size() != r.w.size())
+        throw FFError("a virtual site needs smarts, type, and as many weights as atoms in from");
+      Smarts check(r.smarts);
+      ff.site_rules.push_back(r);
+    }
   for (const auto& o : j["atom_types"].items()) {
     FFType t;
     t.name = o["name"].str();
@@ -1271,6 +1282,11 @@ System build_bead_molecule(const std::string& text, const FFDef& ff, uint64_t se
   s.title = it != ff.bead_templates.end() ? text + " (" + ff.name + " template)" : "beads";
   return s;
 }
+
+namespace {
+std::vector<std::pair<size_t, std::vector<uint32_t>>> site_matches(const System& s, const FFDef& ff);
+Vec3 site_position(const System& s, const FFDef::SiteRule& r, const std::vector<uint32_t>& e);
+}  // namespace
 
 ForceField parameterize(const System& s, const FFDef& def, const std::vector<std::string>& types_in, const std::string& charges,
                         ParamReport* rep_out, bool allow_missing) {
@@ -2347,6 +2363,30 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
       ff.vsites = std::move(sorted);
     }
   }
+  // the model's massless sites (TraPPE N2's centre): virtual sites of the atoms their rule matched, excluded from
+  // every atom of their molecule
+  if (!def.site_rules.empty()) {
+    std::vector<char> used(n, 0);
+    for (const auto& [k, e] : site_matches(s, def)) {
+      const auto& r = def.site_rules[k];
+      const Vec3 pos = site_position(s, r, e);
+      for (uint32_t i = 0; i < n; ++i) {
+        if (used[i] || types_in[i] != r.type || s.atoms[i].element != 0) continue;
+        if (norm(s.cell.valid() ? s.cell.minimum_image(s.atoms[i].pos - pos) : s.atoms[i].pos - pos) > 0.05) continue;
+        VirtualSite vs{i, {}, r.w, 0};
+        for (int q : r.from) vs.from.push_back(e[size_t(q)]);
+        ff.vsites.push_back(vs);
+        ff.mass[i] = 0;
+        used[i] = 1;
+        for (uint32_t j = 0; j < n; ++j)
+          if (j != i && s.atoms[j].mol == s.atoms[i].mol) add_ex(i, j);
+        break;
+      }
+    }
+    for (uint32_t i = 0; i < n; ++i)
+      if (!used[i] && s.atoms[i].element == 0 && std::any_of(def.site_rules.begin(), def.site_rules.end(), [&](const FFDef::SiteRule& r) { return r.type == types_in[i]; }))
+        throw FFError(def.name + ": site " + std::to_string(i + 1) + " (" + types_in[i] + ") is not where its molecule puts it");
+  }
   if (!ff.keep13)
     for (const auto& p : ex13) if (!ex12.count(p)) add_ex(p.first, p.second);
   for (const auto& p : p14) add_ex(p.first, p.second);
@@ -2383,7 +2423,105 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
   return ff;
 }
 
+namespace {
+// every embedding of each site rule, as (rule, the structure's atoms) — one per set of atoms
+std::vector<std::pair<size_t, std::vector<uint32_t>>> site_matches(const System& s, const FFDef& ff) {
+  std::vector<std::pair<size_t, std::vector<uint32_t>>> out;
+  if (ff.site_rules.empty()) return out;
+  const Perception p = perceive(s);
+  for (size_t k = 0; k < ff.site_rules.size(); ++k) {
+    const Smarts sm(ff.site_rules[k].smarts);
+    std::set<std::vector<uint32_t>> seen;
+    for (uint32_t a = 0; a < s.atoms.size(); ++a)
+      for (auto& e : sm.embeddings(s, p, a)) {
+        std::vector<uint32_t> key = e;
+        std::sort(key.begin(), key.end());
+        if (seen.insert(key).second) out.push_back({k, e});
+      }
+  }
+  return out;
+}
+Vec3 site_position(const System& s, const FFDef::SiteRule& r, const std::vector<uint32_t>& e) {
+  const Vec3 ref = s.atoms[e[size_t(r.from[0])]].pos;
+  Vec3 c{0, 0, 0};
+  for (size_t q = 0; q < r.from.size(); ++q) {
+    Vec3 d = s.atoms[e[size_t(r.from[q])]].pos - ref;
+    if (s.cell.valid()) d = s.cell.minimum_image(d);
+    c = c + (ref + d) * r.w[q];
+  }
+  return c;
+}
+std::string prepare_core(System& s, const FFDef& ff, std::string& charges);
+}  // namespace
+
 std::string prepare_for_forcefield(System& s, const FFDef& ff, std::string& charges) {
+  std::string note = prepare_core(s, ff, charges);
+  if (ff.site_rules.empty()) return note;
+  // the model's massless sites, each right after the last atom of its molecule (a molecule stays contiguous), unless
+  // already there
+  int added = 0;
+  std::vector<std::vector<Atom>> after(s.atoms.size());   // sites to insert after atom i
+  int nm = 0;
+  const auto comp = s.molecules(&nm);
+  {
+    std::vector<uint32_t> last(size_t(std::max(nm, 0)), 0);
+    for (uint32_t i = 0; i < s.atoms.size(); ++i) if (comp[i] >= 0) last[size_t(comp[i])] = std::max(last[size_t(comp[i])], i);
+    for (const auto& [k, e] : site_matches(s, ff)) {
+      const auto& r = ff.site_rules[k];
+      if (e.size() < r.from.size()) continue;
+      const Vec3 pos = site_position(s, r, e);
+      bool there = false;
+      for (const auto& a : s.atoms)
+        if (a.element == 0 && a.name == r.type && norm(s.cell.valid() ? s.cell.minimum_image(a.pos - pos) : a.pos - pos) < 0.05) there = true;
+      if (there) continue;
+      Atom a = s.atoms[e[0]];
+      a.element = 0, a.name = r.type, a.charge = 0, a.pos = pos, a.type = 0;
+      if (!s.has_mol) a.mol = int64_t(comp[e[0]]) + 1;   // molecule ids from the bonds: the unbonded site stays in its molecule
+      after[comp[e[0]] >= 0 ? last[size_t(comp[e[0]])] : e[0]].push_back(a);
+      ++added;
+    }
+  }
+  if (added) {
+    std::vector<Atom> atoms;
+    std::vector<Vec3> vel;
+    const bool hv = s.velocities.size() == s.atoms.size();
+    std::vector<uint32_t> map(s.atoms.size());
+    for (uint32_t i = 0; i < s.atoms.size(); ++i) {
+      map[i] = uint32_t(atoms.size());
+      atoms.push_back(s.atoms[i]);
+      if (hv) vel.push_back(s.velocities[i]);
+      for (const auto& a : after[i]) {
+        atoms.push_back(a);
+        if (hv) vel.push_back(s.velocities[i]);
+      }
+    }
+    for (auto& b : s.bonds) b.i = map[b.i], b.j = map[b.j];
+    if (!s.has_mol) {
+      for (uint32_t i = 0; i < map.size(); ++i) atoms[map[i]].mol = int64_t(comp[i]) + 1;
+      s.has_mol = true;
+    }
+    s.atoms = std::move(atoms);
+    if (hv) s.velocities = std::move(vel);
+    for (size_t i = 0; i < s.atoms.size(); ++i) s.atoms[i].id = int64_t(i) + 1;
+    if (!s.types.empty()) {
+      int t = 0;
+      for (const auto& x : s.types) t = std::max(t, x.type);
+      std::map<std::string, int> made;
+      for (auto& a : s.atoms)
+        if (a.element == 0 && a.type == 0) {
+          auto it = made.find(a.name);
+          if (it == made.end()) { s.types.push_back({++t, 0.0, a.name}); it = made.emplace(a.name, t).first; }
+          a.type = it->second;
+        }
+    }
+    note += std::string(note.empty() ? "" : "; ") + std::to_string(added) + " massless sites of " + ff.name + " added (" + ff.site_rules[0].type +
+            (ff.site_rules.size() > 1 ? ", …" : "") + ")";
+  }
+  return note;
+}
+
+namespace {
+std::string prepare_core(System& s, const FFDef& ff, std::string& charges) {
   std::string note;
   if (ff.coarse_grained && !s.atoms.empty()) {
     // sites all named by the force field's bead types (short or full names, as a data file CAPS wrote labels them) are
@@ -2567,6 +2705,7 @@ std::string prepare_for_forcefield(System& s, const FFDef& ff, std::string& char
          (ff.united_atom_hosts == std::vector<int>{6} ? std::string("carbons") : std::string("host atoms")) + " (" +
          std::to_string(s.atoms.size()) + " sites)" + (how.empty() ? "" : "; " + how + " charges computed on the all-atom structure and summed into each site");
 }
+}  // namespace
 
 std::vector<std::string> ring_angle_notes(const System& s, const ForceField& ff) {
   const size_t n = s.atoms.size();
