@@ -896,6 +896,45 @@ def _layers(self) -> dict:
     return json.loads(buf.value.decode())
 
 
+def _tags(self) -> dict:
+    """The structure's tags: name -> list of atom indices (0-based). Tags are saved beside the structure (NAME.tags.json)
+    and written as groups in LAMMPS inputs and GROMACS index files; analyze(group="tag:NAME") analyses one."""
+    lib = library()
+    lib.caps_tags.argtypes = [C.c_void_p, C.c_char_p, C.c_int32]
+    lib.caps_tag_atoms.argtypes = [C.c_void_p, C.c_char_p, C.c_void_p, C.c_int32]
+    lib.caps_tag_atoms.restype = C.c_int32
+    n = lib.caps_tags(self._h, None, 0)
+    buf = C.create_string_buffer(n + 1)
+    lib.caps_tags(self._h, buf, n + 1)
+    out = {}
+    for t in json.loads(buf.value.decode())["tags"]:
+        name = t["name"].encode()
+        k = lib.caps_tag_atoms(self._h, name, None, 0)
+        idx = (C.c_int32 * max(k, 1))()
+        lib.caps_tag_atoms(self._h, name, idx, k)
+        out[t["name"]] = list(idx[:k])
+    return out
+
+
+def _tag(self, name: str, atoms=None, colour: str = "", op: str = "set") -> int:
+    """Tag these atoms (0-based; None: the selection) with NAME. op: "set" (exactly these), "add", "remove", "delete" (the
+    tag itself), "rename" (atoms is then the new name) or "colour". Returns the tag's index."""
+    lib = library()
+    lib.caps_tag_edit.argtypes = [C.c_void_p, C.c_char_p]
+    lib.caps_tag_edit.restype = C.c_int32
+    j = {"op": op, "name": name, "colour": colour}
+    if op == "rename":
+        j["new_name"] = str(atoms)
+    elif op not in ("delete", "colour"):
+        j["atoms"] = "selection" if atoms is None else [int(i) for i in atoms]
+    k = lib.caps_tag_edit(self._h, json.dumps(j).encode())
+    if k < 0 and op not in ("remove",):
+        raise _error()
+    return k
+
+
+Document.tags = property(_tags)
+Document.tag = _tag
 Document.lock = _lock
 Document.layers = _layers
 Document.hide = _hide

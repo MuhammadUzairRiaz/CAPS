@@ -10,6 +10,7 @@
 #include <set>
 
 #include "caps/analysis.hpp"
+#include "caps/tags.hpp"
 #include "caps/appearance.hpp"
 #include "caps/checks.hpp"
 #include "caps/elements.hpp"
@@ -1286,4 +1287,47 @@ TEST(LammpsData, ImageFlagsConsistentForWrappedAtoms) {
     const Vec3 d = s.cell.minimum_image(r.atoms[i].pos - s.atoms[i].pos);
     EXPECT_LT(norm(d), 1e-5);
   }
+}
+
+// Tags (design/boards/Tags): an atom carries several; deleting one moves the later ones down; saved beside the file and read
+// back for the same atoms; written as LAMMPS groups with id ranges
+TEST(Tags, EditDeleteSaveAndGroups) {
+  System s = read_lammps_data(S + "/ps_melt.data");
+  std::vector<size_t> slab, film, ends;
+  for (size_t i = 0; i < 20; ++i) slab.push_back(i);
+  for (size_t i = 10; i < 30; ++i) film.push_back(i);
+  ends = {5, 25, 400};
+  EXPECT_EQ(tag_edit(s, "slab", "#5B8DEF", slab, "set"), 0);
+  EXPECT_EQ(tag_edit(s, "interphase", "", film, "set"), 1);
+  EXPECT_EQ(tag_edit(s, "chain ends", "#E07A5F", ends, "add"), 2);
+  EXPECT_EQ(tag_atoms(s, 1).size(), 20u);
+  EXPECT_EQ(s.atoms[15].tags, 3u);   // slab and interphase
+  tag_edit(s, "interphase", "", {10, 11}, "remove");
+  EXPECT_EQ(tag_atoms(s, 1).size(), 18u);
+  EXPECT_EQ(id_ranges(tag_atoms(s, 1)), "13:30");
+  EXPECT_EQ(id_ranges({0, 1, 2, 7, 9, 10}), "1:3 8 10:11");
+  const auto groups = lammps_tag_groups(s);
+  EXPECT_NE(groups.find("group           slab id 1:20"), std::string::npos) << groups;
+  EXPECT_NE(groups.find("group           chain_ends id 6 26 401"), std::string::npos) << groups;
+  // deleting interphase: chain ends moves to bit 1 and keeps its atoms
+  tag_delete(s, 1);
+  ASSERT_EQ(s.tags.size(), 2u);
+  EXPECT_EQ(s.tags[1].name, "chain ends");
+  EXPECT_EQ(tag_atoms(s, 1), (std::vector<size_t>{5, 25, 400}));
+  EXPECT_EQ(s.atoms[15].tags, 1u);
+  // saved and read back; another atom count reads none
+  const std::string p = tmp("caps_tags.data");
+  write_lammps_data(s, p);
+  write_tags(s, p);
+  System r = read_lammps_data(p);
+  ASSERT_TRUE(read_tags(r, p));
+  EXPECT_EQ(r.tags.size(), 2u);
+  EXPECT_EQ(r.tags[1].colour, "#E07A5F");
+  EXPECT_EQ(tag_atoms(r, 0).size(), 20u);
+  r.atoms.pop_back();
+  EXPECT_FALSE(read_tags(r, p));
+  EXPECT_EQ(tag_group_name("2nd shell"), "t_2nd_shell");
+  s.tags.clear();
+  write_tags(s, p);
+  EXPECT_FALSE(std::filesystem::exists(tags_sidecar(p)));
 }

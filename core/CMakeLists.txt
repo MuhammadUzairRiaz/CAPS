@@ -3,6 +3,7 @@ add_library(caps_core STATIC
   src/labels.cpp
   src/lattice.cpp
   src/system.cpp
+  src/tags.cpp
   src/io_lammps.cpp
   src/io_gro.cpp
   src/io_pdb.cpp

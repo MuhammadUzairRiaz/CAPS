@@ -812,6 +812,13 @@ internal static class Screenshot
             if (kv[0] == "rxset") w.ViewModel.RxSet = int.Parse(kv[1]);
             if (kv[0] == "capsproj") Console.WriteLine("project: " + w.ViewModel.OpenCapsProject(kv[1]));   // capsproj=PATH: that project open
             if (kv[0] == "newproject") w.ViewModel.OpenNewProject();
+            if (kv[0] == "tagmol")   // tagmol=ATOM:NAME — the molecule of ATOM tagged NAME (the selection kept)
+            {
+                var p = kv[1].Split(':', 2);
+                w.ViewModel.SelectLike(int.Parse(p[0]), false, false);
+                w.ViewModel.TagSelection();
+                if (w.ViewModel.TagChips.LastOrDefault() is { } chip && p.Length > 1) w.ViewModel.RenameTag(chip, p[1]);
+            }
             if (kv[0] == "edititem" && w.ViewModel.ProjectItems.ElementAtOrDefault(int.Parse(kv[1])) is { } ei) { w.ViewModel.EditProjectItem(ei); Console.WriteLine($"edit: ff {w.ViewModel.GrowFfIndex} {w.ViewModel.Field.Library[w.ViewModel.GrowFfIndex].Id}"); }   // edititem=N: Edit on the N-th structure                                          // newproject=1: the New project sheet
             if (kv[0] == "projmenu") w.OpenProjectMenuForShot();                                              // projmenu=1: the project switcher
             if (kv[0] == "peek")   // peek=1: the tab of the first hidden pane clicked (the pane comes back)
