@@ -1,4 +1,5 @@
 // Polymer statistics: chain-length draws, the terminal copolymer model, stereo sequences, Flory–Huggins, Ewald sizes.
+#include <algorithm>
 #include <gtest/gtest.h>
 
 #include <cmath>

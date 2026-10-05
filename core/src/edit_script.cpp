@@ -1,4 +1,5 @@
 // Written edits (caps edit, Document.edit): one operation per ';' or line, applied in order.
+#include <cstdio>
 #include <algorithm>
 #include <cmath>
 #include <sstream>

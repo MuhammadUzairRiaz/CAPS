@@ -1,6 +1,8 @@
 // CAPS Pack: rigid-body overlap minimisation with region constraints.
+#include "caps/rng.hpp"
 #include "caps/pack.hpp"
 
+#include <cctype>
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -63,7 +65,7 @@ Mat3 left_jacobian(const Vec3& w) {
 
 Mat3 random_rotation(std::mt19937_64& rng) {
   // uniform unit quaternion (Shoemake)
-  std::uniform_real_distribution<double> u(0, 1);
+  caps::UniformReal<double> u(0, 1);
   const double u1 = u(rng), u2 = 2 * M_PI * u(rng), u3 = 2 * M_PI * u(rng);
   const double a = std::sqrt(1 - u1), b = std::sqrt(u1);
   const double x = a * std::sin(u2), y = a * std::cos(u2), z = b * std::sin(u3), w = b * std::cos(u3);
@@ -324,7 +326,7 @@ System pack(const std::vector<PackItem>& items, const PackOptions& o, PackReport
 
   // Instances: fixed first (kept in item order in the output), each molecule a rigid body.
   std::mt19937_64 rng(o.seed);
-  std::uniform_real_distribution<double> uni(0, 1);
+  caps::UniformReal<double> uni(0, 1);
   std::vector<Instance> inst;
   std::vector<int> first_atom;
   int natoms = 0;

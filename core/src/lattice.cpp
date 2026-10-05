@@ -1,5 +1,6 @@
 #include "caps/lattice.hpp"
 
+#include <cstdio>
 #include <algorithm>
 #include <cmath>
 #include <map>

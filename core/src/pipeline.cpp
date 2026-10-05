@@ -1,6 +1,7 @@
 // CAPS visualize pipeline (see caps/pipeline.hpp).
 #include "caps/pipeline.hpp"
 
+#include <unordered_map>
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

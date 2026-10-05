@@ -3,6 +3,7 @@
 // Kabsch & Sander (1983) as DSSP 2.0 (CMBI) implements it, the version vermouth's reference outputs were made with.
 #include "caps/martini_protein.hpp"
 
+#include <cstdio>
 #include <algorithm>
 #include <array>
 #include <cmath>

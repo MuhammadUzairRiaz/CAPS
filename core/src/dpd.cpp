@@ -1,4 +1,5 @@
 // CAPS DPD (see dpd.hpp): Groot–Warren dissipative particle dynamics in a cubic periodic box, reduced units.
+#include "caps/rng.hpp"
 #include "caps/dpd.hpp"
 
 #include <algorithm>
@@ -109,8 +110,8 @@ DpdReport run_dpd(const DpdOptions& o) {
   for (const auto& [k, v] : A) aij[size_t(k.first - 'A') * 26 + size_t(k.second - 'A')] = v;
   // start: chains as random walks of 0.7 r_c steps from random places; Maxwell velocities at kT = 1, no net momentum
   std::mt19937_64 rng(o.seed);
-  std::uniform_real_distribution<double> U(0.0, 1.0);
-  std::normal_distribution<double> G(0.0, 1.0);
+  caps::UniformReal<double> U(0.0, 1.0);
+  caps::Normal<double> G(0.0, 1.0);
   const size_t nn = static_cast<size_t>(n);
   std::vector<Vec3> r(nn), v(nn), f(nn), fold(nn);
   // the template: whether a point belongs to the first type's region (lamellae, cylinders, spheres)

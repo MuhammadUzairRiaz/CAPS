@@ -4684,6 +4684,7 @@ internal static class SelfTest
 
         // Remote copy-back: the out folder listed on the host (run here with sh), the result and small files now, a large
         // trajectory left with copy actions (whole, every 10th / 100th frame thinned on the host by caps frames)
+        if (!OperatingSystem.IsWindows())   // the listing runs in sh, as on a cluster host
         {
             var od = Path.Combine(Path.GetTempPath(), "caps-remote-out-test");
             Directory.CreateDirectory(Path.Combine(od, "out"));

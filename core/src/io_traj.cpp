@@ -1,4 +1,5 @@
 // Trajectories in the common formats: see caps/io.hpp (write_trajectory).
+#include <cctype>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>

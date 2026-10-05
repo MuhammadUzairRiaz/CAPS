@@ -2,6 +2,7 @@
 #include "caps/solvate.hpp"
 #include "caps/water.hpp"
 
+#include <cctype>
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

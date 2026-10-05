@@ -1,3 +1,4 @@
+#include <numeric>
 #include <gtest/gtest.h>
 
 #include <algorithm>

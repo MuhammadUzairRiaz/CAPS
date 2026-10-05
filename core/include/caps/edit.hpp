@@ -132,7 +132,7 @@ struct ThiolateOptions {
   double min_spacing = 0.0;          // Å between S atoms, 0 = √3 · d(M–M)
   uint64_t seed = 1;
 };
-struct ThiolateReport { size_t surface_atoms = 0, ligands = 0, hollow = 0, on_top = 0, added_atoms = 0; std::vector<std::string> notes; };
+struct ThiolateReport { size_t surface_atoms = 0, ligands = 0, hollow = 0, on_top = 0, added_atoms = 0, crowded = 0; std::vector<std::string> notes; };
 // the preset ligands by name: C6 (hexanethiolate), C12 (dodecanethiolate), C18, MPA (3-mercaptopropionate, acid form),
 // MUA (11-mercaptoundecanoic acid), MHA (6-mercaptohexanol)
 std::string thiolate_smiles(const std::string& name);

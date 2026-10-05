@@ -2,6 +2,7 @@
 // rescaling (J. Chem. Phys. 126, 014101 (2007)); Langevin dynamics with the BAOAB splitting (Leimkuhler and Matthews,
 // Appl. Math. Res. Express 2013, 34); stochastic cell rescaling (Bernetti and Bussi, J. Chem. Phys. 153, 114107
 // (2020)) and Berendsen coupling (J. Chem. Phys. 81, 3684 (1984)) for isotropic pressure control.
+#include "caps/rng.hpp"
 #include "caps/uff.hpp"
 #include "caps/dynamics.hpp"
 
@@ -175,7 +176,7 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
   project();
 
   std::mt19937_64 rng(o.seed);
-  std::normal_distribution<double> gauss(0.0, 1.0);
+  caps::Normal<double> gauss(0.0, 1.0);
 
   // Velocities: from the system, or Maxwell–Boltzmann at the target temperature without centre-of-mass motion.
   if (s.velocities.size() == n && !o.new_velocities) {
@@ -396,7 +397,7 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
     if (k <= 0) return;
     const double c = std::exp(-h / o.tau_t);
     const double r1 = gauss(rng);
-    std::gamma_distribution<double> chi((ndof - 1) / 2, 2.0);   // Σ_{i≥2} R_i², chi-squared with ndof − 1
+    caps::Gamma<double> chi((ndof - 1) / 2, 2.0);   // Σ_{i≥2} R_i², chi-squared with ndof − 1
     const double sum = ndof > 1 ? chi(rng) : 0.0;
     const double knew = k + (1 - c) * (kt_target * (r1 * r1 + sum) / ndof - k) + 2 * r1 * std::sqrt(c * (1 - c) * kt_target * k / ndof);
     const double alpha = std::sqrt(std::max(knew, 0.0) / k);

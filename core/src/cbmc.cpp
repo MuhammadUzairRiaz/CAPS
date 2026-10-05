@@ -1,4 +1,5 @@
 // CAPS CBMC: configurational-bias regrowth of chain ends (see cbmc.hpp).
+#include "caps/rng.hpp"
 #include "caps/cbmc.hpp"
 
 #include <algorithm>
@@ -296,7 +297,7 @@ void cbmc_regrow(System& s, const ForceField& ff, const CbmcOptions& o, CbmcRepo
 
   // ---- moves
   std::mt19937_64 rng(o.seed);
-  std::uniform_real_distribution<double> U(0.0, 1.0);
+  caps::UniformReal<double> U(0.0, 1.0);
   const double beta = 1 / (kB * o.temperature);
   const int k = o.trials;
   std::vector<int> mark(n, -1);          // growth step of each moved atom this move; −1 fixed

@@ -1,3 +1,4 @@
+#include "caps/rng.hpp"
 #include "caps/kremer_grest.hpp"
 
 #include <algorithm>
@@ -20,8 +21,8 @@ System kremer_grest(const KgOptions& o, KgReport* rep) {
   s.cell.c = {0, 0, L};
   s.types.push_back({1, 1.0, "B1"});
   std::mt19937_64 rng(o.seed);
-  std::uniform_real_distribution<double> U(0, 1);
-  std::normal_distribution<double> G(0, 1);
+  caps::UniformReal<double> U(0, 1);
+  caps::Normal<double> G(0, 1);
   auto unit = [&]() {
     Vec3 v{G(rng), G(rng), G(rng)};
     const double n = std::sqrt(dot(v, v));
