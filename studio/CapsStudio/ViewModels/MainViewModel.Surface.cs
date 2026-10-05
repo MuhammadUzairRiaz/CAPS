@@ -20,9 +20,25 @@ public sealed record FilmPolymer(string Name, string Spec)
 
 /// <summary>One layer of the interface stack (top → bottom), as the Surface board shows it; Extra ≥ 0: an added layer
 /// (removable).</summary>
-public sealed record StackLayer(string Number, string Title, string Height, string Colour, int Extra = -1)
+public sealed record StackLayer(string Number, string Title, string Height, string Colour, int Extra = -1, LayerOps? Ops = null)
 {
     public bool Removable => Extra >= 0;
+}
+
+/// <summary>What is done to an added layer before it goes on the stack (B9): turned upside down, shifted in the plane.</summary>
+public sealed class LayerOps : ObservableObject
+{
+    private bool _flip;
+    private string _shift = "";
+    public bool Flip { get => _flip; set => Set(ref _flip, value); }
+    /// <summary>"dx dy" in Å.</summary>
+    public string Shift { get => _shift; set => Set(ref _shift, value ?? ""); }
+    public (double X, double Y) ShiftXY()
+    {
+        var p = _shift.Split([' ', ',', ';'], StringSplitOptions.RemoveEmptyEntries);
+        double V(int k) => k < p.Length && double.TryParse(p[k], NumberStyles.Float, CultureInfo.InvariantCulture, out var v) ? v : 0;
+        return (V(0), V(1));
+    }
 }
 
 /// <summary>A row of the lattice-matching table: a layer, its repeats, and the strain it takes to fit the slab's cell.</summary>
@@ -338,7 +354,7 @@ public sealed partial class MainViewModel
         for (var k = _surfExtra.Count - 1; k >= 0; --k)
         {
             var e = _surfExtra[k];
-            SurfStack.Add(new StackLayer($"{(_surfFilm ? 3 : 2) + k}", e.Name, e.Height, e.Colour, k));
+            SurfStack.Add(new StackLayer($"{(_surfFilm ? 3 : 2) + k}", e.Name, e.Height, e.Colour, k, e.Ops));
         }
         if (_surfFilm) SurfStack.Add(new StackLayer("2", $"{ShortName(FilmName)} film · amorphous (CAPS Grow)", $"{_filmThickness:0.0} Å", "#B9BEC4"));
         SurfStack.Add(new StackLayer("1", $"{SurfTitle} · {term}", string.Format(CultureInfo.InvariantCulture, "{0:F1} Å", slabH), "#D6A45E"));
@@ -347,7 +363,14 @@ public sealed partial class MainViewModel
     }
 
     // ---------------------------------------------------------------- added layers (design/boards/SurfaceBuilder "Add layer")
-    private sealed record ExtraLayer(string Name, CapsDocument Doc, string Height, string Colour);
+    private sealed record ExtraLayer(string Name, CapsDocument Doc, string Height, string Colour)
+    {
+        public LayerOps Ops { get; } = new();
+    }
+    private bool _surfShareStrain;
+    /// <summary>The lateral cell the mean of the layers' (match "average"), every layer strained a little; else the
+    /// first layer's (the slab's) and the others stretched to it.</summary>
+    public bool SurfShareStrain { get => _surfShareStrain; set => Set(ref _surfShareStrain, value); }
     private readonly List<ExtraLayer> _surfExtra = new();
     public bool SurfHasExtra => _surfExtra.Count > 0;
     private decimal _surfStackGap = 2.5m;
@@ -408,7 +431,10 @@ public sealed partial class MainViewModel
         var docs = new List<CapsDocument> { baseDoc };
         docs.AddRange(_surfExtra.Select(e => e.Doc));
         var names = new JsonArray(new[] { (JsonNode)title }.Concat(_surfExtra.Select(e => (JsonNode)e.Name)).ToArray());
-        var opts = new JsonObject { ["names"] = names, ["gap"] = (double)_surfStackGap, ["vacuum"] = (double)(_surfFilm ? _filmVacuum : _surfVacuum), ["match"] = "both" }.ToJsonString();
+        var flips = new JsonArray(new[] { (JsonNode)false }.Concat(_surfExtra.Select(e => (JsonNode)e.Ops.Flip)).ToArray());
+        var shifts = new JsonArray(new[] { (JsonNode)new JsonArray(0.0, 0.0) }.Concat(_surfExtra.Select(e => { var (x, y) = e.Ops.ShiftXY(); return (JsonNode)new JsonArray(x, y); })).ToArray());
+        var opts = new JsonObject { ["names"] = names, ["gap"] = (double)_surfStackGap, ["vacuum"] = (double)(_surfFilm ? _filmVacuum : _surfVacuum),
+                                    ["match"] = _surfShareStrain ? "average" : "both", ["flips"] = flips, ["shifts"] = shifts }.ToJsonString();
         var (doc, rep) = CapsDocument.Stack(docs, opts, title + " stack");
         var r = JsonNode.Parse(rep);
         if (doc == null) throw new InvalidOperationException((string?)r?["error"] ?? "cannot stack the layers");

@@ -328,6 +328,8 @@ public sealed partial class MainViewModel
             AttachJob(job, _activeItem);   // Grow and Pack: the cell they made
             BuildJobOutputs(job);
             SaveJobs();
+            if (_settings.NotifyRuns && job.Ended is { } end && end - job.Started >= TimeSpan.FromMinutes(1))
+                SystemNotify("CAPS · " + job.Title + " " + (job.Status == "done" ? "finished" : job.Status), last.Length > 0 ? last : job.Duration);
             if (_live.Count == 0) { ResumeRun(); Avalonia.Threading.Dispatcher.UIThread.Post(() => _ = StartNextQueued()); }
         }
         Raise(nameof(HasJobs));
@@ -637,4 +639,29 @@ public sealed partial class MainViewModel
 
     public string JobJson(Job j) => j.ToJson(true).ToJsonString(JsonOut);
     private static readonly JsonSerializerOptions JsonOut = new() { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+
+    /// <summary>A system notification (D13): macOS Notification Centre through osascript, notify-send on Linux; nothing on
+    /// Windows (the status bar says it). Never blocks and never fails the run.</summary>
+    internal static void SystemNotify(string title, string text)
+    {
+        try
+        {
+            static string Esc(string s) => s.Replace("\\", "\\\\").Replace("\"", "\\\"");
+            System.Diagnostics.ProcessStartInfo? psi = null;
+            if (OperatingSystem.IsMacOS())
+            {
+                psi = new System.Diagnostics.ProcessStartInfo("osascript") { UseShellExecute = false, CreateNoWindow = true };
+                psi.ArgumentList.Add("-e");
+                psi.ArgumentList.Add($"display notification \"{Esc(text)}\" with title \"{Esc(title)}\"");
+            }
+            else if (OperatingSystem.IsLinux())
+            {
+                psi = new System.Diagnostics.ProcessStartInfo("notify-send") { UseShellExecute = false, CreateNoWindow = true };
+                psi.ArgumentList.Add(title);
+                psi.ArgumentList.Add(text);
+            }
+            if (psi != null) System.Diagnostics.Process.Start(psi)?.Dispose();
+        }
+        catch { /* no notifier on this system */ }
+    }
 }

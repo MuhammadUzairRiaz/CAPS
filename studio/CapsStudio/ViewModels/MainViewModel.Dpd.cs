@@ -95,7 +95,7 @@ public sealed partial class MainViewModel
         var json = new JsonObject
         {
             ["species"] = species, ["chi"] = chi, ["density"] = (double)_dpdDensity, ["steps"] = (long)_dpdSteps,
-            ["rc_angstrom"] = (double)_dpdRc, ["seed"] = DpdSeed.Take(),
+            ["rc_angstrom"] = (double)_dpdRc, ["seed"] = DpdSeed.Take(), ["angle_k"] = (double)_dpdAngleK,
         }.ToJsonString();
         DpdRunning = true;
         DpdError = "";
@@ -114,6 +114,8 @@ public sealed partial class MainViewModel
             if (doc == null || r["ok"]?.GetValue<bool>() != true) { DpdError = (string?)r["error"] ?? "the run failed"; Status = "DPD: " + DpdError; return; }
             double D(string k) => r[k]?.GetValue<double>() ?? 0;
             DpdOrder = D("order").ToString("0.00", inv);
+            DpdDomains = r["domains_a"] is null ? "" : string.Format(inv, "{0}: {1:0} domain(s), {2:0} beads each on average, the largest {3:0} % of its cells · {4}: {5:0}, {6:0} beads, {7:0} %",
+                _dpdTypesFirst.Item1, D("domains_a"), D("domain_a_size"), 100 * D("largest_a"), _dpdTypesFirst.Item2, D("domains_b"), D("domain_b_size"), 100 * D("largest_b"));
             DpdSpacing = D("spacing") > 0 ? $"{D("spacing").ToString("0.0", inv)} r_c · {(D("spacing") * (double)_dpdRc).ToString("0", inv)} Å" : "—";
             DpdKt = $"{D("kT").ToString("0.000", inv)} ± {D("kT_error").ToString("0.000", inv)}";
             var q = ((JsonArray)r["q"]!).Select(x => x!.GetValue<double>()).ToArray();
@@ -131,4 +133,12 @@ public sealed partial class MainViewModel
         catch (Exception e) { DpdError = e.Message; }
         finally { DpdRunning = false; DpdProgress = ""; }
     }
+
+    private decimal _dpdAngleK;
+    public decimal DpdAngleK { get => _dpdAngleK; set => Set(ref _dpdAngleK, Math.Clamp(value, 0m, 50m)); }
+    private string _dpdDomains = "";
+    public string DpdDomains { get => _dpdDomains; private set => Set(ref _dpdDomains, value); }
+    /// <summary>The first two bead letters of the run (the domain statistics are of them).</summary>
+    private (string, string) _dpdTypesFirst => DpdSpecies.SelectMany(r => { try { return ExpandSequence(r.Sequence); } catch { return ""; } }).Distinct().OrderBy(c => c)
+        .Select(c => c.ToString()).ToList() is { Count: > 1 } l ? (l[0], l[1]) : ("A", "B");
 }

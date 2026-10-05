@@ -952,6 +952,18 @@ internal static class SelfTest
             Check(br is { } bs && bs.Molecules > 1 && vm.Title.Contains("brush") && vm.Document!.Provenance().Contains("brush.build") && vm.SurfLog.Contains("grafted"),
                   $"brush: {vm.Title} · {br?.Molecules} molecules · {vm.SurfLog.Split('\n').FirstOrDefault(l => l.StartsWith("brush"))} {vm.SurfError}");
             vm.FilmKind = 0;
+            // the slab again on top, flipped (a sandwich with the same face inward) and the mismatch shared
+            vm.OpenSurface();
+            vm.SurfFilm = false;
+            vm.SurfLayers = 1;
+            vm.AddSlabLayer();
+            vm.SurfStack.First(r => r.Removable).Ops!.Flip = true;
+            vm.SurfShareStrain = true;
+            vm.BuildSurface().GetAwaiter().GetResult();
+            Check(vm.SurfLog.Contains("(flipped)") && vm.Document!.Summary().Molecules >= 2, $"flipped layer: {vm.SurfLog.Split('\n').FirstOrDefault(l => l.Contains("flipped"))} {vm.SurfError}");
+            while (vm.SurfHasExtra) vm.RemoveSurfLayer(0);
+            vm.SurfShareStrain = false;
+            vm.SurfFilm = true;
             vm.SetModule(8);
         }
 
@@ -1223,6 +1235,7 @@ internal static class SelfTest
             Check(!vm.DpdHasError && vm.IsDpd && vm.DpdOrder != "—" && vm.Document!.Summary().Atoms == 800 && vm.DpdSq.Length > 0
                   && MainViewModel.ExpandSequence("A2B3") == "AABBB" && vm.Document!.Provenance().Contains("dpd.run"),
                   $"DPD: ψ {vm.DpdOrder} · spacing {vm.DpdSpacing} · kT {vm.DpdKt} · {vm.DpdError}");
+            Check(vm.DpdDomains.Contains("domain"), $"DPD domains: {vm.DpdDomains}");
             vm.SetModule(8);
         }
 
@@ -2549,6 +2562,15 @@ internal static class SelfTest
             Check(vm.MacroOutput.Contains($"atoms {macroAtoms}") && vm.MacroOutput.Contains("the result is open") && vm.Title.Contains("result"),
                   $"macro on the open structure: {vm.MacroOutput.Replace('\n', ' ').Trim()} · {vm.Title}");
             vm.MacroTarget = 0;
+            // the run form: the parameters' values for this run reach macro(…) (a script whose own main uses the defaults)
+            vm.NewMacro();
+            vm.MacroText = "import caps\n\n\ndef macro(n: int = 2, word: str = \"a\"):\n    print(\"value\", n * 21, word)\n\n\nif __name__ == \"__main__\":\n    macro()\n";
+            var form = vm.MacroArgs.Count;
+            vm.MacroArgs[0].Value = "3";
+            vm.MacroArgs[1].Value = "rubber";
+            vm.RunMacro().GetAwaiter().GetResult();
+            for (var i = 0; i < 20; i++) { Avalonia.Threading.Dispatcher.UIThread.RunJobs(); Thread.Sleep(25); }
+            Check(form == 2 && vm.MacroOutput.Contains("value 63 rubber"), $"macro form: {form} arguments · {vm.MacroOutput.Replace('\n', ' ').Trim()}");
             vm.SetModule(8);
         }
         vm.Open(Path.Combine(dir, "ps_melt.lammpstrj"), Path.Combine(dir, "ps_melt.data"));
@@ -3659,6 +3681,32 @@ internal static class SelfTest
             vm.CloseAllStructures();
         }
 
+        // Curve fitting: an exponential decay and two Gaussians on a baseline, fitted back to their parameters
+        {
+            var fxs = Enumerable.Range(0, 200).Select(i => i * 0.05).ToArray();
+            vm.Analyze.Curves.Add(new SeriesItem("Test", "decay", "t (ps)", "y", fxs, fxs.Select(t => 3 * Math.Exp(-t / 2) + 0.5).ToArray(), false, null));
+            vm.Analyze.CurveIndex = vm.Analyze.Curves.Count - 1;
+            vm.Analyze.FitModel = 4;
+            var ex = vm.Analyze.CurrentFit;
+            vm.Analyze.Curves.Add(new SeriesItem("Test", "peaks", "q (1/Å)", "I", fxs, fxs.Select(t => 0.2 + 5 * Math.Exp(-0.5 * Math.Pow((t - 3) / 0.3, 2)) + 2 * Math.Exp(-0.5 * Math.Pow((t - 7) / 0.6, 2))).ToArray(), false, null));
+            vm.Analyze.CurveIndex = vm.Analyze.Curves.Count - 1;
+            vm.Analyze.FitModel = 7;
+            vm.Analyze.FitPeaksD = 2;
+            var pk = vm.Analyze.CurrentFit;
+            var pcs = pk?.P.Skip(1).Chunk(3).Select(g => g[1]).OrderBy(v => v).ToArray() ?? [];
+            Check(ex != null && Math.Abs(ex.P[0] - 3) < 1e-4 && Math.Abs(ex.P[1] - 2) < 1e-4 && Math.Abs(ex.P[2] - 0.5) < 1e-4 && ex.R2 > 0.999999
+                  && pcs.Length == 2 && Math.Abs(pcs[0] - 3) < 1e-3 && Math.Abs(pcs[1] - 7) < 1e-3,
+                  $"curve fit: decay {ex?.Text} · peaks at {string.Join(", ", pcs.Select(c => c.ToString("0.####")))}");
+            // over q: the narrow peak crystalline, the wide one the halo — X_c = its area share
+            vm.Analyze.Curves.Add(new SeriesItem("Test", "xray", "q (Å⁻¹)", "I", fxs, fxs.Select(t => 5 * Math.Exp(-0.5 * Math.Pow((t - 1.5) / 0.05, 2)) + 2 * Math.Exp(-0.5 * Math.Pow((t - 1.4) / 0.4, 2))).ToArray(), false, null));
+            vm.Analyze.CurveIndex = vm.Analyze.Curves.Count - 1;
+            vm.Analyze.FitModel = 7;
+            vm.Analyze.FitPeaksD = 2;
+            var expectXc = 100 * 5 * 0.05 / (5 * 0.05 + 2 * 0.4);
+            Check(vm.Analyze.FitIsDiffraction && vm.Analyze.FitText.Contains($"X_c = {expectXc:0.0} %"), $"crystallinity: expected {expectXc:0.0} % · {vm.Analyze.FitText}");
+            vm.Analyze.FitModel = 0;
+        }
+
         // Conformers: the fragment searched (the card), then opened as frames in a copy (lowest first)
         {
             vm.Open(Path.Combine(dir, "ps_frag.pdb"));
@@ -3671,6 +3719,16 @@ internal static class SelfTest
             vm.OpenConformers().GetAwaiter().GetResult();
             Check(nconf >= 1 && vm.Frames == (int)nconf && vm.Title.Contains("conformers") && vm.Frame == 0,
                   $"conformers: {nconf} from 8 starts · opened as {vm.Frames} frames in '{vm.Title}' (from '{title}') · {vm.Status}");
+        }
+
+        // Sliding friction through the Analyze protocol: chain 2 of the melt slid with chain 1 held, a short run
+        {
+            using var fd = CapsDocument.Open(Path.Combine(dir, "ps_melt.data"));
+            var fj = System.Text.Json.Nodes.JsonNode.Parse(fd.Analyze("friction", new CapsAnalyzeOpts { Last = -1, Stride = 1, Blocks = 5, Grid = 0.4, Qmax = 25, Dq = 0.02, FitFrom = 0.2, FitTo = 0.5, TimestepFs = 1 },
+                new CapsMechOpts { Temperature = 300, FrMoving = 2, FrFixed = 1, FrVelocity = 1, FrPs = 0.3, FrEqPs = -1 }, null))!;
+            var fp = fj["properties"]?[0];
+            Check((string?)fp?["id"] == "friction" && double.IsFinite((double?)fp?["value"] ?? double.NaN) && ((string?)fp?["method"] ?? "").Contains("molecule 2 slid"),
+                  $"friction protocol: τ_w {(double?)fp?["value"]:0.##} MPa · {(string?)fp?["method"]}");
         }
 
         // Normal modes: the fragment's modes (3N − 6), and one played in a copy (one period of frames, the original kept)
@@ -3918,6 +3976,12 @@ internal static class SelfTest
                 Check(vm.IsSorption && !vm.SorbHasError && vm.SorbS.Contains("cm³") && vm.SorbRows.Count == 2 && vm.Document!.Summary().Atoms == atomsS
                       && vm.Document!.Provenance().Contains("sorption.widom_gcmc"),
                       $"sorption: S {vm.SorbS} · K_H {vm.SorbHenry} · μex {vm.SorbMu} · {vm.SorbRows.Count} points · {vm.SorbError}");
+                var sweep = MainViewModel.SorbPressureList("1..1000 x4, 5");
+                Check(sweep.Count == 5 && Math.Abs(sweep[0] - 1) < 1e-9 && Math.Abs(sweep[1] - 5) < 1e-9 && Math.Abs(sweep[2] - 10) < 1e-6 && Math.Abs(sweep[^1] - 1000) < 1e-6,
+                      $"pressure sweep: {string.Join(", ", sweep.Select(v => v.ToString("0.###")))}");
+                var proj = vm.SorbMapProjection();
+                Check(vm.SorbHasMap && vm.SorbMapPressures.Count == 2 && proj.Z.Length == 24 * 24 && proj.Z.All(z => z >= 0) && vm.SorbMapText.Contains("molecules/nm²"),
+                      $"sorbate density map: {vm.SorbMapPressures.Count} maps · {proj.Z.Length} cells · {vm.SorbMapText}");
                 vm.SetModule(4);
             }
             // Equilibrate › Chain ends: CBMC regrowth with the built-in force field; a new frame, the provenance step

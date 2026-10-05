@@ -81,6 +81,11 @@
                 <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding DpdDensity}" Minimum="1" Maximum="10" Increment="1" FormatString="0.#" />
                 <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding DpdRc}" Minimum="1" Maximum="50" Increment="0.5" FormatString="0.00" ToolTip.Tip="The length a bead's cut-off stands for, for the view (6.46 Å: three waters per bead)" />
               </Grid>
+              <Grid ColumnDefinitions="*,120" ColumnSpacing="10">
+                <TextBlock Text="Chain stiffness k_θ (kT) · k_θ (1 + cos θ) at each middle bead" Classes="label" VerticalAlignment="Center" TextWrapping="Wrap" />
+                <NumericUpDown Grid.Column="1" Value="{Binding DpdAngleK}" Minimum="0" Maximum="50" Increment="1" FormatString="0.#"
+                               ToolTip.Tip="0: flexible chains; a few kT: semiflexible (rigid rods, liquid-crystalline blocks)" />
+              </Grid>
             </StackPanel>
           </Border>
           <Border Classes="pcard" IsVisible="{Binding DpdHasError}">
@@ -97,6 +102,13 @@
               <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding DpdSpacing}" Classes="mono" FontSize="18" />
               <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding DpdKt}" Classes="mono" FontSize="18" />
             </Grid>
+          </Border>
+          <Border Classes="pcard" IsVisible="{Binding DpdDomains, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+            <StackPanel Spacing="4">
+              <TextBlock Text="Domains at the end" FontSize="13.5" FontWeight="SemiBold" />
+              <TextBlock Text="{Binding DpdDomains}" Classes="mono" TextWrapping="Wrap" />
+              <TextBlock Classes="dim" TextWrapping="Wrap" Text="Cells about r_c wide where one type outnumbers the other, joined through their faces (periodic): one domain holding nearly all of its type's cells is a continuous phase." />
+            </StackPanel>
           </Border>
           <Border Classes="pcard">
             <StackPanel Spacing="8">

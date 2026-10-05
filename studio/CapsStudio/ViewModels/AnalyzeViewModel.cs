@@ -448,7 +448,51 @@ public sealed class AnalyzeViewModel : ObservableObject
     public ObservableCollection<ResultCard> Results { get; } = new();
     public ObservableCollection<SeriesItem> Curves { get; } = new();
     private int _curveIndex = -1;
-    public int CurveIndex { get => _curveIndex; set { if (Set(ref _curveIndex, value)) Raise(nameof(Curve)); } }
+    public int CurveIndex { get => _curveIndex; set { if (Set(ref _curveIndex, value)) { Refit(); Raise(nameof(Curve)); } } }
+
+    // ---- fitting the shown curve (D6; CurveFit): a model over an x range, the parameters with their errors
+    private int _fitModel, _fitPeaks = 2;
+    private string _cfFrom = "", _cfTo = "", _fitText = "";
+    public static string[] FitModels => CurveFit.Models;
+    public int FitModel { get => _fitModel; set { if (Set(ref _fitModel, Math.Clamp(value, 0, CurveFit.Models.Length - 1))) { Raise(nameof(FitIsPeaks)); Refit(); Raise(nameof(Curve)); } } }
+    public bool FitIsPeaks => _fitModel == 7;
+    public decimal FitPeaksD { get => _fitPeaks; set { if (Set(ref _fitPeaks, (int)Math.Clamp(value, 1, 8), nameof(FitPeaksD))) { Refit(); Raise(nameof(Curve)); } } }
+    public string CurveFitFrom { get => _cfFrom; set { if (Set(ref _cfFrom, value ?? "")) { Refit(); Raise(nameof(Curve)); } } }
+    public string CurveFitTo { get => _cfTo; set { if (Set(ref _cfTo, value ?? "")) { Refit(); Raise(nameof(Curve)); } } }
+    public string FitText { get => _fitText; private set => Set(ref _fitText, value); }
+    public CurveFit.Result? CurrentFit { get; private set; }
+    private void Refit()
+    {
+        CurrentFit = null;
+        var c = Curve;
+        if (c == null || _fitModel == 0) { FitText = ""; return; }
+        var x = c.LogLog ? c.X.Select(v => v > 0 ? Math.Log10(v) : double.NaN).ToArray() : c.X;
+        var y = c.LogLog ? c.Y.Select(v => v > 0 ? Math.Log10(v) : double.NaN).ToArray() : c.Y;
+        static double Bound(string t, double d) => double.TryParse(t, NumberStyles.Float, CultureInfo.InvariantCulture, out var v) ? v : d;
+        try { CurrentFit = CurveFit.Fit(_fitModel, x, y, Bound(_cfFrom, double.NegativeInfinity), Bound(_cfTo, double.PositiveInfinity), _fitPeaks); }
+        catch (Exception e) { FitText = "Could not fit: " + e.Message; return; }
+        FitText = CurrentFit == null ? "Too few points in the range for this model" : (c.LogLog ? "on log₁₀ of both axes · " : "") + CurrentFit.Text;
+        // a diffraction curve over q (WAXS, C22): the peaks wider than the halo width are the amorphous halo, the narrower
+        // ones crystalline; the crystallinity index is the crystalline peaks' share of the area (Ruland / Hermans–Weidinger)
+        if (CurrentFit != null && _fitModel == 7 && IsOverQ(c))
+        {
+            double cr = 0, am = 0;
+            var p = CurrentFit.P;
+            for (var q = 0; q < (p.Length - 1) / 3; ++q)
+            {
+                var area = Math.Sqrt(2 * Math.PI) * p[1 + 3 * q] * Math.Abs(p[3 + 3 * q]);
+                if (Math.Abs(p[3 + 3 * q]) >= (double)_haloSigma) am += area; else cr += area;
+            }
+            FitText += cr + am > 0
+                ? string.Format(CultureInfo.InvariantCulture, " · crystallinity index X_c = {0:0.0} % (peaks narrower than σ = {1:0.###} Å⁻¹ crystalline, the rest the amorphous halo)", 100 * cr / (cr + am), _haloSigma)
+                : "";
+        }
+        Raise(nameof(FitIsDiffraction));
+    }
+    private static bool IsOverQ(SeriesItem c) => c.XLabel.StartsWith("q", StringComparison.Ordinal) && !c.LogLog;
+    public bool FitIsDiffraction => _fitModel == 7 && Curve is { } c && IsOverQ(c);
+    private decimal _haloSigma = 0.12m;
+    public decimal HaloSigmaD { get => _haloSigma; set { if (Set(ref _haloSigma, Math.Clamp(value, 0.01m, 2m), nameof(HaloSigmaD))) { Refit(); Raise(nameof(Curve)); } } }
     public SeriesItem? Curve => _curveIndex >= 0 && _curveIndex < Curves.Count ? Curves[_curveIndex] : null;
     public bool HasResults => Results.Count > 0;
     private string _runInfo = "";

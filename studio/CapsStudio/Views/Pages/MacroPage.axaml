@@ -97,6 +97,20 @@
                   </ItemsControl>
                   <Button Classes="small" HorizontalAlignment="Left" Content="Promote to parameter" Click="OnPromote" ToolTip.Tip="Select a literal (a number or a quoted string) in the script first" />
                   <TextBlock x:Name="PromoteNote" Classes="dim" FontSize="12" TextWrapping="Wrap" Text="Select a literal in the editor and choose Promote to parameter." />
+                  <StackPanel Spacing="4" IsVisible="{Binding HasMacroArgs}" Margin="0,6,0,0">
+                    <TextBlock Text="THIS RUN" Classes="h3" />
+                    <ItemsControl ItemsSource="{Binding MacroArgs}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:MacroArg">
+                          <Grid ColumnDefinitions="*,*" ColumnSpacing="8" Margin="0,0,0,4">
+                            <TextBlock Text="{Binding Label}" Classes="mono" FontSize="12" VerticalAlignment="Center" />
+                            <TextBox Grid.Column="1" Text="{Binding Value}" Classes="mono" ToolTip.Tip="The value this run passes to macro()" />
+                          </Grid>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Classes="dim" FontSize="11.5" TextWrapping="Wrap" Text="Run passes these to macro(…); saved macros also appear in the command palette (⌘K) by name." />
+                  </StackPanel>
                 </StackPanel>
               </Border>
               <Border Classes="section">

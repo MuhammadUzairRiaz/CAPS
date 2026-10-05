@@ -13,6 +13,26 @@ public sealed record RecordedCommand(int Number, string Text);
 /// <summary>A parameter of a macro: name, type, default (promoted from a literal in the script).</summary>
 public sealed record MacroParameter(string Name, string Type, string Default);
 
+/// <summary>A macro's argument in the run form (D11): its value for this run, typed as the parameter says.</summary>
+public sealed class MacroArg : ObservableObject
+{
+    public string Name { get; init; } = "";
+    public string Type { get; init; } = "";
+    private string _value = "";
+    public string Value { get => _value; set => Set(ref _value, value ?? ""); }
+    public string Label => Type.Length > 0 ? $"{Name} ({Type})" : Name;
+    /// <summary>The value as JSON for the call: numbers as numbers, True/False as booleans, the rest as text.</summary>
+    public System.Text.Json.Nodes.JsonNode? Json()
+    {
+        var v = _value.Trim();
+        if (Type is "int" && long.TryParse(v, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i)) return i;
+        if (Type is "float" or "int" && double.TryParse(v, NumberStyles.Float, CultureInfo.InvariantCulture, out var d)) return d;
+        if (Type is "bool" || v is "True" or "False") return v is "True" or "true" or "1";
+        if (Type.Length == 0 && double.TryParse(v, NumberStyles.Float, CultureInfo.InvariantCulture, out var d2)) return d2;
+        return v.Length >= 2 && (v[0] == '"' || v[0] == '\'') && v[^1] == v[0] ? v[1..^1] : v;
+    }
+}
+
 /// <summary>Macro recorder (design/boards/MacroRecorder): every Studio action records as one line of Python using the
 /// caps package; the script is edited, literals are promoted to parameters, and it runs with python3 on this machine
 /// with its output streamed. Scripts live in ~/.caps/macros.</summary>
@@ -21,6 +41,9 @@ public sealed partial class MainViewModel
     public bool IsMacro => _module == 36;
     public ObservableCollection<RecordedCommand> RecordedCommands { get; } = new();
     public ObservableCollection<MacroParameter> MacroParameters { get; } = new();
+    /// <summary>The run form: one value per parameter, starting at its default.</summary>
+    public ObservableCollection<MacroArg> MacroArgs { get; } = new();
+    public bool HasMacroArgs => MacroArgs.Count > 0;
     public ObservableCollection<string> MacroFiles { get; } = new();
     public static string? MacroFolderOverride { get; set; }
     public static string MacroFolder => MacroFolderOverride ?? Path.Combine(AppSettings.Folder, "macros");
@@ -94,7 +117,7 @@ public sealed partial class MainViewModel
     public void RecordEdit(string json) => Record($"doc.edit({PyJsonArgs(json)})");
 
     private string _macroText = "# Recorded in CAPS Studio · replayable with python3\nimport caps\n\n\ndef macro():\n    doc = None\n    return doc\n\n\nif __name__ == \"__main__\":\n    macro()\n";
-    public string MacroText { get => _macroText; set => Set(ref _macroText, value ?? ""); }
+    public string MacroText { get => _macroText; set { if (Set(ref _macroText, value ?? "")) RefreshParameters(); } }
     private string _macroName = "macro.py";
     public string MacroName { get => _macroName; set { if (value != null && Set(ref _macroName, value)) { LoadMacro(value); Raise(nameof(MacroFileIndex)); } } }
     public int MacroFileIndex { get => MacroFiles.IndexOf(_macroName); set { if (value >= 0 && value < MacroFiles.Count) MacroName = MacroFiles[value]; } }
@@ -178,7 +201,17 @@ public sealed partial class MainViewModel
             var pm = Regex.Match(a, @"^(\w+)\s*(?::\s*(\w+))?\s*(?:=\s*(.+))?$");
             if (pm.Success) MacroParameters.Add(new MacroParameter(pm.Groups[1].Value, pm.Groups[2].Value, pm.Groups[3].Value));
         }
+        var keep = MacroArgs.ToDictionary(a => a.Name, a => a.Value);
+        MacroArgs.Clear();
+        foreach (var p in MacroParameters) MacroArgs.Add(new MacroArg { Name = p.Name, Type = p.Type, Value = keep.GetValueOrDefault(p.Name, p.Default) });
+        Raise(nameof(HasMacroArgs));
     }
+
+    /// <summary>The call with the form's values: the script imported (its own __main__ block skipped) and macro(**args)
+    /// called — for any saved macro, recorded before the form existed or not.</summary>
+    private const string MacroLauncher = "import json, os, runpy, sys\nscript = sys.argv[1]\nsys.argv = [script]\n" +
+        "ns = runpy.run_path(script, run_name=\"caps_macro\")\nns[\"macro\"](**json.loads(os.environ.get(\"CAPS_ARGS\", \"{}\")))\n";
+    private string MacroArgsJson() => new System.Text.Json.Nodes.JsonObject(MacroArgs.Select(a => new KeyValuePair<string, System.Text.Json.Nodes.JsonNode?>(a.Name, a.Json()))).ToJsonString();
 
     private string _macroOutput = "";
     public string MacroOutput { get => _macroOutput; private set => Set(ref _macroOutput, value); }
@@ -226,6 +259,13 @@ public sealed partial class MainViewModel
                 psi = new ProcessStartInfo(python) { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, WorkingDirectory = MacroFolder };
                 psi.ArgumentList.Add("-u");
                 if (_stopOnError) { psi.ArgumentList.Add("-X"); psi.ArgumentList.Add("faulthandler"); }
+                if (MacroArgs.Count > 0)
+                {   // the form's values: through the launcher
+                    var launch = Path.Combine(runDir, "launch.py");
+                    File.WriteAllText(launch, MacroLauncher);
+                    psi.ArgumentList.Add(launch);
+                    psi.Environment["CAPS_ARGS"] = MacroArgsJson();
+                }
                 psi.ArgumentList.Add(script);
                 if (Paths.Python is { } pkg) psi.Environment["PYTHONPATH"] = pkg + (Environment.GetEnvironmentVariable("PYTHONPATH") is { Length: > 0 } pp ? Path.PathSeparator + pp : "");
                 psi.Environment["CAPS_LIB"] = NativeLibraryPath;
@@ -240,12 +280,14 @@ public sealed partial class MainViewModel
                 remoteDir = mk.Out.Split('\n').Last().Trim();
                 var up = new List<string> { script };
                 if (_macroTarget == 1) up.Add(Path.Combine(runDir, "current.data"));
+                if (MacroArgs.Count > 0) { File.WriteAllText(Path.Combine(runDir, "launch.py"), MacroLauncher); up.Add(Path.Combine(runDir, "launch.py")); }
                 var sent = await Tool("scp", ScpArgs(host, up, $"{Target(host)}:{remoteDir}/"), 120000);
                 if (sent.Code != 0) throw new InvalidOperationException("scp: " + (sent.Err.Length > 0 ? sent.Err.Split('\n')[0] : $"exit {sent.Code}"));
                 MacroOutput += $"sent to {host.Name}:{remoteDir}\n";
-                var env = (_macroTarget == 1 ? "CAPS_DOC=current.data " : "") + "CAPS_OUT=result.data";
+                var env = (_macroTarget == 1 ? "CAPS_DOC=current.data " : "") + "CAPS_OUT=result.data" + (MacroArgs.Count > 0 ? " CAPS_ARGS=" + Q(MacroArgsJson()) : "");
+                var run = MacroArgs.Count > 0 ? $"launch.py {Q(Path.GetFileName(script))}" : Q(Path.GetFileName(script));
                 psi = new ProcessStartInfo("ssh") { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false };
-                foreach (var a2 in SshArgs(host, $"cd {Q(remoteDir)} && {env} python3 -u {Q(Path.GetFileName(script))}")) psi.ArgumentList.Add(a2);
+                foreach (var a2 in SshArgs(host, $"cd {Q(remoteDir)} && {env} python3 -u {run}")) psi.ArgumentList.Add(a2);
             }
             using var proc = Process.Start(psi) ?? throw new InvalidOperationException("cannot start " + psi.FileName);
             _macroProc = proc;
