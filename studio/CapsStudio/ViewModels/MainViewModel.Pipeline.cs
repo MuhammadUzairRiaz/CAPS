@@ -132,8 +132,29 @@ public sealed partial class MainViewModel
 
     // ---------------------------------------------------------------- Export center (module 68)
     public bool IsExportCenter => _module == 68;
-    public static readonly string[] EngineRuns = ["Check (single point)", "Minimise", "NVT", "NPT"];
-    private static readonly string[] EngineRunIds = ["check", "minimize", "nvt", "npt"];
+    public static readonly string[] EngineRuns = ["Check (single point)", "Minimise", "NVT", "NPT", "Tensile test (LAMMPS)", "Creep at constant stress (LAMMPS)", "Shear viscosity, NEMD (LAMMPS)"];
+    private static readonly string[] EngineRunIds = ["check", "minimize", "nvt", "npt", "tensile", "creep", "shear"];
+    // tensile / creep / shear: the axis, rates, the target strain and the stress
+    public static readonly string[] EngineAxes = ["x", "y", "z"];
+    private int _engAxis;
+    private double _engRate = 0.001, _engMaxStrain = 0.2, _engStress = 50, _engShear = 0.01;
+    public int EngineAxis { get => _engAxis; set { if (Set(ref _engAxis, Math.Clamp(value, 0, 2))) RefreshEngines(); } }
+    public decimal? EngineRateD { get => (decimal)_engRate; set { var v = Math.Clamp((double)(value ?? 0.001m), 1e-7, 10); if (Set(ref _engRate, v, nameof(EngineRateD))) { Raise(nameof(EngineMechText)); RefreshEngines(); } } }
+    public decimal? EngineMaxStrainD { get => (decimal)_engMaxStrain; set { var v = Math.Clamp((double)(value ?? 0.2m), 0.001, 5); if (Set(ref _engMaxStrain, v, nameof(EngineMaxStrainD))) { Raise(nameof(EngineMechText)); RefreshEngines(); } } }
+    public decimal? EngineStressD { get => (decimal)_engStress; set { var v = Math.Clamp((double)(value ?? 50m), -5000, 5000); if (Set(ref _engStress, v, nameof(EngineStressD))) RefreshEngines(); } }
+    public decimal? EngineShearD { get => (decimal)_engShear; set { var v = Math.Clamp((double)(value ?? 0.01m), 1e-6, 10); if (Set(ref _engShear, v, nameof(EngineShearD))) { Raise(nameof(EngineMechText)); RefreshEngines(); } } }
+    public bool EngineIsTensile => _engRun == 4;
+    public bool EngineIsCreep => _engRun == 5;
+    public bool EngineIsShear => _engRun == 6;
+    public bool EngineIsMech => _engRun >= 4;
+    public bool EngineHasSteps => _engRun is >= 2 and not 4;
+    public string EngineMechText => _engRun switch
+    {
+        4 => string.Format(CultureInfo.InvariantCulture, "{0:0.###} strain at {1:0.#####} /ps = {2:0.##} ns ({3:0.###E+0} /s); the steps follow from the time step", _engMaxStrain, _engRate, _engMaxStrain / _engRate / 1000, _engRate * 1e12),
+        5 => "creep.dat: time (ps) and strain along the axis; the other axes at P",
+        6 => string.Format(CultureInfo.InvariantCulture, "γ̇ = {0:0.###E+0} /s; viscosity.dat holds η (mPa·s) in blocks: average the steady part, and repeat at several rates for η(γ̇)", _engShear * 1e12),
+        _ => "",
+    };
     private bool _engLammps = true, _engGromacs = true, _engMinFirst = true, _engBusy, _engMoltemplate, _engDlpoly, _engAmber;
     /// <summary>Also DL_POLY 4 input (STEM_dlpoly/FIELD, CONFIG, CONTROL) in the conventions of the DL_POLY force-field tools.</summary>
     public bool EngineDlpoly { get => _engDlpoly; set { if (Set(ref _engDlpoly, value)) RefreshEngines(); } }
@@ -155,7 +176,16 @@ public sealed partial class MainViewModel
 
     public bool EngineLammps { get => _engLammps; set { if (Set(ref _engLammps, value)) { Raise(nameof(EngineLammpsRefused)); RefreshEngines(); } } }
     public bool EngineGromacs { get => _engGromacs; set { if (Set(ref _engGromacs, value)) { Raise(nameof(EngineGromacsRefused)); RefreshEngines(); } } }
-    public int EngineRun { get => _engRun; set { if (Set(ref _engRun, Math.Clamp(value, 0, 3))) { Raise(nameof(EngineIsMd)); RefreshEngines(); } } }
+    public int EngineRun
+    {
+        get => _engRun;
+        set
+        {
+            if (!Set(ref _engRun, Math.Clamp(value, 0, EngineRuns.Length - 1))) return;
+            foreach (var n in new[] { nameof(EngineIsMd), nameof(EngineIsTensile), nameof(EngineIsCreep), nameof(EngineIsShear), nameof(EngineIsMech), nameof(EngineHasSteps), nameof(EngineMechText) }) Raise(n);
+            RefreshEngines();
+        }
+    }
     public bool EngineIsMd => _engRun >= 2;
     public bool EngineMinimiseFirst { get => _engMinFirst; set { if (Set(ref _engMinFirst, value)) RefreshEngines(); } }
     private int _engConstraints;
@@ -231,6 +261,7 @@ public sealed partial class MainViewModel
         ["minimize_first"] = _engMinFirst, ["temperature"] = _engTemp, ["pressure"] = _engPress, ["dt"] = _engDt, ["steps"] = _engSteps, ["constraints"] = _engConstraints switch { 1 => "h-bonds", 2 => "all-bonds", _ => "none" },
         ["lammps_styles"] = _engStyle == 0 ? "native" : "exact", ["hybrid"] = _engHybrid, ["coulomb"] = EngineCoulombIds[_engCoulomb],
         ["cutoff"] = _engCutoff, ["kspace_accuracy"] = _engKspace, ["units"] = _engUnits switch { 1 => "real", 2 => "metal", _ => "auto" },
+        ["axis"] = EngineAxes[_engAxis], ["strain_rate"] = _engRate, ["max_strain"] = _engMaxStrain, ["stress_mpa"] = _engStress, ["shear_rate"] = _engShear,
         ["preview"] = preview, ["head_lines"] = preview ? 60 : 0,
     }.ToJsonString();
 

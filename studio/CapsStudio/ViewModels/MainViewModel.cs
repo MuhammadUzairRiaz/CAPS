@@ -448,6 +448,7 @@ public sealed partial class MainViewModel : ObservableObject
     public void Open(string path, string? topology = null)
     {
         if (IsReaderFile(path)) { OpenReader(path); return; }   // a log, input or table: read, not opened as a structure
+        if (path.EndsWith(".capstable", StringComparison.OrdinalIgnoreCase)) { Status = StudyLoad(path); return; }
         var frames = _pendingFrames;   // a frame selection from the Open page, for this open only
         _pendingFrames = null;
         if (OpensProgressively(path)) { _ = OpenProgressive(path, topology, frames); return; }
@@ -479,7 +480,7 @@ public sealed partial class MainViewModel : ObservableObject
     private static readonly string[] Crumbs = ["Polymer cell › Amorphous cell", "Analyze › Properties", "Minimise", "Dynamics › Run",
         "Equilibrate › Protocol", "Packing › Molecules & regions", "React › Crosslinking", "Force field › Typing report", "Studio", "Studio › Molecule", "Settings", "Jobs", "Bench", "Builders › Polymer", "Builders › Surface", "Builders › Nanostructure", "Builders › Polymer › Blend", "Studio › File checks", "Export › Figure", "Studio › Render", "Analyze › Visualize", "Export › Data", "Analyze › Batch", "Analyze › Compare", "Analyze › Visualize › Colour by", "Studio › Viewports", "Export › Figure bundle", "Open file", "Analyze › Visualize › Save pipeline", "Builders › Crystal", "Builders › Biomolecule", "Builders › Solvation", "Studio › Trajectory", "Studio › Torsion scan", "Studio › Split view", "Studio › Fragment library", "Studio › Macro recorder", "Jobs › Provenance", "Analyze › Mechanics", "Analyze › Scattering", "Analyze › Free volume", "Theory manual", "Project", "Jobs › Sweep", "Builders › Coarse-grained", "React › Template editor", "Settings › Colour vision", "Analyze › Glass transition", "Analyze › Interface", "Analyze › Diffusion", "Studio › Charges", "Studio › Periodic box", "Analyze › Orientation", "Jobs › Recipes", "Export › Figure composer", "Analyze › Chains", "Packing › Density calculator", "Analyze › Surface area", "Studio › Unit cell",
         "Polymer cell › Polydispersity", "Builders › Copolymer", "Analyze › Solvent screen", "Builders › Polymer › Tacticity", "Analyze › Blend phase diagram", "Dynamics › Electrostatics",
-        "Studio › Display styles", "Studio › Add hydrogens", "Studio › Model resolution", "Export", "Force field › Type by hand", "Analyze › Adsorption locator", "Analyze › Sorption", "Polymer cell › Mesoscale (DPD)", "Studio › Reader"];
+        "Studio › Display styles", "Studio › Add hydrogens", "Studio › Model resolution", "Export", "Force field › Type by hand", "Analyze › Adsorption locator", "Analyze › Sorption", "Polymer cell › Mesoscale (DPD)", "Studio › Reader", "Analyze › Study table"];
     /// <summary>Where the user is (top bar).</summary>
     public string Crumb => _module == 8 ? "" : Crumbs[_module];
     /// <summary>Where calculations run (top bar).</summary>
@@ -564,6 +565,7 @@ public sealed partial class MainViewModel : ObservableObject
         [71] = v => v.OpenSorption(),
         [72] = v => v.OpenDpd(),
         [73] = v => { if (v.ReaderPath.Length > 0) v.SetModule(73); },
+        [74] = v => v.OpenStudy(),
     };
 
     public void SetModule(int m, [System.Runtime.CompilerServices.CallerMemberName] string caller = "")
@@ -635,6 +637,7 @@ public sealed partial class MainViewModel : ObservableObject
         Raise(nameof(IsSorption));
         Raise(nameof(IsDpd));
         Raise(nameof(IsReader));
+        Raise(nameof(IsStudy));
         Raise(nameof(IsPeriodic));
         Raise(nameof(IsOrientation));
         Raise(nameof(IsRecipes));

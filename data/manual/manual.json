@@ -1865,7 +1865,7 @@
      "MPa"
     ]
    ],
-   "when": "Melt viscosity and shear thinning of rubber compounds and oils at processing-like (but far higher) rates; the power-law index n for flow models; N₁ > 0 shows the chains orienting in the flow.",
+   "when": "Melt viscosity and shear thinning of rubber compounds and oils at processing-like (but far higher) rates; the power-law index n for flow models; N₁ > 0 shows the chains orienting in the flow. For long runs on a cluster, Export writes the same flow for LAMMPS (protocol Shear viscosity, NEMD): the box made triclinic, fix nvt/sllod with fix deform xy erate remap v, and η = −P_xy/γ̇ in mPa·s averaged in blocks into viscosity.dat; one file per rate.",
    "tested": "tests/test_dynamics.cpp Dynamics.SllodShearViscosityOfTheLjLiquid and tests/test_mechanics.cpp Mechanics.NemdShearThinningOfTheLjLiquid (the Lennard-Jones triple point: η* ≈ 2.1 at γ̇* = 1, lower at 2, ⟨T⟩ held)",
    "deviation": "simulated rates are 10⁹–10¹¹ s⁻¹; viscous heat leaves T above the target by about the heating rate × τ (τ 20 fs by default; the mean T is reported per rate)",
    "tex": "\\dot{\\mathbf r}_i = \\frac{\\mathbf p_i}{m_i} + \\dot\\gamma\\, y_i\\,\\hat{\\mathbf x},\\qquad \\dot{\\mathbf p}_i = \\mathbf F_i - \\dot\\gamma\\, p_{y,i}\\,\\hat{\\mathbf x},\\qquad \\eta(\\dot\\gamma) = -\\frac{\\langle P_{xy}\\rangle}{\\dot\\gamma}"
@@ -1931,7 +1931,7 @@
      "—"
     ]
    ],
-   "when": "Rubber and fibre–matrix composites under a dead load: the elastic part, the early creep and how much the lateral faces contract; compare compounds at one stress and temperature.",
+   "when": "Rubber and fibre–matrix composites under a dead load: the elastic part, the early creep and how much the lateral faces contract; compare compounds at one stress and temperature. Export writes it for LAMMPS too (protocol Creep at constant stress): fix npt with the stressed axis at −σ and the others at P, axes uncoupled, strain against time in creep.dat.",
    "tested": "tests/test_mechanics.cpp Mechanics.StressControlAndCreep (an argon crystal: P_zz held at −50 MPa, the lateral axes at 1 atm, strain and lateral contraction positive)",
    "deviation": "nanosecond times only: the long-time creep of a polymer is far beyond MD; the barostat (not the inertia of the sample) sets the first response",
    "tex": "J(t) = \\frac{\\varepsilon(t)}{\\sigma},\\qquad \\varepsilon(t) = \\frac{L(t)}{L_0} - 1,\\qquad P_{kk} \\to -\\sigma"

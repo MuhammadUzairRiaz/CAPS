@@ -82,6 +82,7 @@ public sealed partial class MainViewModel
     public void PreviewOpen(string path, string? topology = null)
     {
         if (IsReaderFile(path)) { OpenReader(path); return; }
+        if (path.EndsWith(".capstable", StringComparison.OrdinalIgnoreCase)) { Status = StudyLoad(path); return; }
         if (topology == null && NeedsImport(path)) { ShowImport(path); return; }
         if (_module != 27) _returnModule = _module;
         _openPath = path;
