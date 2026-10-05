@@ -51,8 +51,10 @@ std::vector<Bond> perceive_bonds(const System& s, const BondOptions& opt) {
   return kept;
 }
 
-void make_molecules_whole(System& s) {
-  if (!s.cell.valid() || s.bonds.empty()) return;
+std::vector<Vec3> whole_positions(const System& s) {
+  std::vector<Vec3> p(s.atoms.size());
+  for (size_t i = 0; i < s.atoms.size(); ++i) p[i] = s.atoms[i].pos;
+  if (!s.cell.valid() || s.bonds.empty()) return p;
   const auto nb = s.neighbours();
   std::vector<char> done(s.atoms.size(), 0);
   std::vector<uint32_t> stack;
@@ -65,12 +67,19 @@ void make_molecules_whole(System& s) {
       stack.pop_back();
       for (uint32_t j : nb[i]) {
         if (done[j]) continue;
-        s.atoms[j].pos = s.atoms[i].pos + s.cell.minimum_image(s.atoms[j].pos - s.atoms[i].pos);
+        p[j] = p[i] + s.cell.minimum_image(p[j] - p[i]);
         done[j] = 1;
         stack.push_back(j);
       }
     }
   }
+  return p;
+}
+
+void make_molecules_whole(System& s) {
+  if (!s.cell.valid() || s.bonds.empty()) return;
+  const auto p = whole_positions(s);
+  for (size_t i = 0; i < s.atoms.size(); ++i) s.atoms[i].pos = p[i];
   s.unwrapped = true;
 }
 
