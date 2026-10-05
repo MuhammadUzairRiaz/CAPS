@@ -58,6 +58,16 @@ public static class CapsProjectFile
     }
 
     public static string FolderOf(string file) => Path.GetDirectoryName(Path.GetFullPath(file))!;
+
+    /// <summary>A project chosen as its folder: the .capsproj inside it (the one named as the folder first). A file is
+    /// itself; a folder without one is null.</summary>
+    public static string? Resolve(string path)
+    {
+        if (!Directory.Exists(path)) return path;
+        var files = Directory.GetFiles(path, "*" + Extension);
+        var own = Path.Combine(path, Path.GetFileName(Path.TrimEndingDirectorySeparator(path)) + Extension);
+        return files.FirstOrDefault(f => string.Equals(f, own, StringComparison.OrdinalIgnoreCase)) ?? files.OrderBy(f => f, StringComparer.OrdinalIgnoreCase).FirstOrDefault();
+    }
 }
 
 /// <summary>A project CAPS knows (made or opened here), wherever its folder is.</summary>

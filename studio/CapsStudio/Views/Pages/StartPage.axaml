@@ -78,8 +78,8 @@
           <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
             <TextBlock Text="Projects" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
             <TextBlock Grid.Column="1" Text="{Binding KnownProjectsText}" Classes="dim" FontSize="12" VerticalAlignment="Center" IsVisible="{Binding HasKnownProjects}" />
-            <Button Grid.Column="2" Classes="small" Click="OnOpenProjectFile" ToolTip.Tip="A .capsproj file anywhere: CAPS opens the project and adds it to this list">
-              <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="folder" Size="14" VerticalAlignment="Center" /><TextBlock Text="Open project file…" VerticalAlignment="Center" /></StackPanel>
+            <Button Grid.Column="2" Classes="small" Click="OnOpenProjectFile" ToolTip.Tip="Choose a project's folder (or drop it here): CAPS opens the .capsproj inside and adds the project to this list">
+              <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="folder" Size="14" VerticalAlignment="Center" /><TextBlock Text="Open project…" VerticalAlignment="Center" /></StackPanel>
             </Button>
           </Grid>
           <Grid ColumnDefinitions="128,*" ColumnSpacing="12">
