@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <cstdio>
+#include <random>
 
 #include "caps/pairmodel.hpp"
 #include "caps/sorption.hpp"
@@ -178,4 +179,91 @@ TEST(Sorption, BinaryMixtureIdealAndHenry) {
   std::printf("selectivity %.3f vs Widom ratio %.3f\n", pt.selectivity[1], s_widom);
   EXPECT_NEAR(pt.selectivity[1], s_widom, 0.08 * s_widom);
   EXPECT_DOUBLE_EQ(r.widom_w, r.species[0].widom_w);
+}
+
+// TraPPE CO2 (Potoff & Siepmann, AIChE J. 47, 1676 (2001)): rigid, linear, C=O 1.16 Å; C σ 2.80 Å ε/k 27.0 K q +0.70,
+// O σ 3.05 Å ε/k 79.0 K q −0.35, Lorentz–Berthelot. Molecules m = 0, 1, … along x at the origin, atoms O C O.
+namespace {
+struct Co2 {
+  System s;
+  ForceField ff;
+};
+Co2 trappe_co2(int molecules, double box) {
+  Co2 c;
+  if (box > 0) c.s.cell.a = {box, 0, 0}, c.s.cell.b = {0, box, 0}, c.s.cell.c = {0, 0, box};
+  const double kB = 0.0019872036;
+  c.ff.lj = {{27.0 * kB, 2.80}, {79.0 * kB, 3.05}};
+  c.ff.type_names = {"CO2C", "CO2O"};
+  c.ff.mixing = "arithmetic";
+  c.ff.name = "TraPPE CO2";
+  for (int m = 0; m < molecules; ++m)
+    for (int k = 0; k < 3; ++k) {
+      Atom a;
+      a.element = k == 1 ? 6 : 8;
+      a.pos = {(k - 1) * 1.16, 0, 0};
+      a.mol = m + 1;
+      c.s.atoms.push_back(a);
+      c.ff.type_index.push_back(k == 1 ? 0 : 1);
+      c.ff.charge.push_back(k == 1 ? 0.70 : -0.35);
+      c.ff.mass.push_back(k == 1 ? 12.011 : 15.9994);
+    }
+  return c;
+}
+// B2(T) = −2π N_A ∫ ⟨e^(−βu) − 1⟩_Ω r² dr over the centre–centre distance, orientations uniform (cm³/mol)
+double b2_co2(const PairModel& pm, double T, double rmax, int nr, int norient, uint64_t seed) {
+  std::mt19937_64 rng(seed);
+  std::normal_distribution<double> g(0, 1);
+  const double beta = 1 / (0.0019872043 * T);
+  auto axis = [&] { Vec3 v{g(rng), g(rng), g(rng)}; return v * (1 / norm(v)); };
+  double integral = 0;
+  const double dr = rmax / nr;
+  for (int i = 0; i < nr; ++i) {
+    const double r = (i + 0.5) * dr;
+    double f = 0;
+    for (int k = 0; k < norient; ++k) {
+      const Vec3 a = axis(), b = axis();
+      const Vec3 pa[3] = {a * -1.16, {0, 0, 0}, a * 1.16}, pb[3] = {Vec3{r, 0, 0} - b * 1.16, {r, 0, 0}, Vec3{r, 0, 0} + b * 1.16};
+      double u = 0;
+      for (int p = 0; p < 3; ++p)
+        for (int q = 0; q < 3; ++q) {
+          const Vec3 d = pb[q] - pa[p];
+          u += pm.energy(uint32_t(p), uint32_t(3 + q), dot(d, d));
+        }
+      f += std::isfinite(u) ? std::exp(-beta * u) - 1 : -1;
+    }
+    integral += f / norient * r * r * dr;
+  }
+  return -2 * 3.14159265358979323846 * 6.02214076e23 * integral * 1e-24;   // Å³ → cm³
+}
+}  // namespace
+
+// The model's second virial coefficient at 300 K against experiment (−121 cm³/mol, Span & Wagner's equation of state),
+// and GCMC of the pure gas at 10 bar against the virial expansion of the same (truncated) model: βf = ρ e^(2 B2 ρ)
+TEST(Sorption, TrappeCo2VirialAndGcmc) {
+  Co2 two = trappe_co2(2, 0);
+  const PairModel full(two.ff, 40.0, true, 0.0);   // the whole potential (shifted at 40 Å: negligible for these multipoles)
+  const double b2 = b2_co2(full, 300, 30.0, 300, 3000, 7);
+  std::printf("TraPPE CO2 B2(300 K) = %.1f cm3/mol (experiment −121)\n", b2);
+  EXPECT_NEAR(b2, -121.0, 0.15 * 121.0);
+  // GCMC in an empty 60 Å box at f = 10 bar, 300 K, the sorption engine's own model (12 Å, DSF α 0.2)
+  Co2 gas = trappe_co2(1, 60.0);
+  const PairModel trunc(two.ff, 12.0, true, 0.2);
+  const double b2t = b2_co2(trunc, 300, 12.0, 240, 3000, 9);
+  SorptionOptions o;
+  o.template_first_atom = 0;
+  o.insertions = 0;
+  o.cutoff = 12.0;
+  o.pressures_kpa = {1000};
+  o.steps = 400000;
+  o.temperature = 300;
+  const auto r = sorption(gas.s, gas.ff, o);
+  const double V = 216000e-24;                                // cm³
+  const double bf = 1000e3 / (1.380649e-23 * 300) * 1e-6;    // βf, molecules/cm³
+  double rho = bf;
+  for (int it = 0; it < 50; ++it) rho = bf * std::exp(-2 * b2t / 6.02214076e23 * rho);
+  const double expect = rho * V, ideal = bf * V;
+  std::printf("GCMC N %.2f ± %.2f · virial %.2f (B2 %.1f cm3/mol with the 12 Å model) · ideal gas %.2f\n", r.isotherm[0].loading,
+              r.isotherm[0].loading_error, expect, b2t, ideal);
+  EXPECT_NEAR(r.isotherm[0].loading, expect, std::max(3 * r.isotherm[0].loading_error, 0.02 * expect));
+  EXPECT_GT(r.isotherm[0].loading, ideal);   // attraction: more than the ideal gas
 }

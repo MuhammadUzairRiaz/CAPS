@@ -53,7 +53,9 @@ struct CbtTorsion { uint32_t i, j, k, l; double a[5]; };
 struct PairLJ { uint32_t i, j; double eps, sigma; };
 // A virtual site (GROMACS virtual_sitesn): its position is Σ w_k x_k over its constructing atoms (w: their masses, summing
 // to 1 — the centre of mass); the force on it goes back to them in the same proportions. It has no mass of its own.
-struct VirtualSite { uint32_t site; std::vector<uint32_t> from; std::vector<double> w; };
+// A massless site placed from atoms: Σ w_k x_k, plus c (r_ij × r_ik) with from = {i, j, k} (c in 1/Å; GROMACS's 3out,
+// TIP5P's lone pairs out of the molecule's plane). Its force goes back to the atoms by the chain rule.
+struct VirtualSite { uint32_t site; std::vector<uint32_t> from; std::vector<double> w; double c = 0; };
 
 // Pair forms other than Lennard-Jones, per type pair: 1 Buckingham A e^(−r/ρ) − C/r⁶ (a = A, b = ρ, c = C);
 // 2 Morse D0 [e^(−2α(r − r0)) − 2 e^(−α(r − r0))] (a = D0, b = α, c = r0);
@@ -305,6 +307,12 @@ class Evaluator {
 
 // Puts every virtual site at the weighted centre of its constructing atoms (minimum image about the first in a cell).
 void place_virtual_sites(const ForceField& ff, std::vector<double>& x, const Cell& cell);
+
+// Rigid molecules (TraPPE's CO2, N2, O2: bond and angle constants 0) take the force field's own bond lengths and angles:
+// for the atoms [first, last), every rigid bond is set to r0 by moving the side of its second atom along it, every rigid
+// angle to θ0 by turning the side of its third atom about the normal through the vertex (bonds in rings are left).
+// Returns the number of bonds and angles changed by more than 1e-6.
+int apply_rigid_geometry(System& s, const ForceField& ff, size_t first, size_t last);
 
 // The energy of chosen proper-torsion terms (indices into ff.dihedrals, ff.dihedrals2 — with their class II cross terms —
 // and ff.cbt), as the Evaluator computes them, at the positions pos gives (bond vectors by minimum image in a valid cell).

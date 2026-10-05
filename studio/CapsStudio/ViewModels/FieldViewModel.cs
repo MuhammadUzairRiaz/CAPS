@@ -384,7 +384,7 @@ public sealed partial class FieldViewModel : ObservableObject
     private int _waterModel;
     public int WaterModelIndex { get => _waterModel; set { if (Set(ref _waterModel, Math.Clamp(value, 0, Waters.Count))) Raise(nameof(WaterTip)); } }
     public string WaterTip => _waterModel == 0
-        ? "Water molecules are typed by the force field like everything else. Choose a water model to give them its own geometry, charges and Lennard-Jones (four-site models add their M site)"
+        ? "Water molecules are typed by the force field like everything else. Choose a water model to give them its own geometry, charges and Lennard-Jones (four-site models add their M site, TIP5P its two lone pairs)"
         : $"{Waters[_waterModel - 1].Name} for every water molecule ({Waters[_waterModel - 1].Cite}); the rest with the force field";
     /// <summary>Puts the chosen water model on the structure (an edit: geometry, charges, M sites); false when it has no water.</summary>
     public Func<string, bool>? ApplyWaterModel { get; set; }

@@ -584,4 +584,13 @@ with tempfile.TemporaryDirectory() as _tmp:
     _tin = open(os.path.join(_tmp, "system.in")).read()
     check("deform 1 y erate 0.0005" in _tin and "run             200" in _tin and any("single point" in n for n in _ter["notes"]),
           "tensile protocol exported for LAMMPS (fix deform, 200 steps to 10 % strain)")
+# TraPPE CO2: typed by TraPPE-UA with its own charges beside united-atom ethane (Gasteiger there), and the rigid
+# geometry (C=O 1.16 Å) taken in sorption
+_mix = caps.pack(molecules=[("CC", 3), ("O=C=O", 2)], box=20, seed=1)
+_mr = _mix.field.assign("trappe-ua")
+_q = {a["type"]: a["q"] for a in _mr["atoms"]}
+check(_mr["charges"] == "mixed" and abs(_q["CO2C"] - 0.70) < 1e-12 and abs(_q["CO2O"] + 0.35) < 1e-12 and abs(_q["CH3"]) < 0.01,
+      f"TraPPE CO2 charges beside united-atom ethane: {_mr['charges']} · C {_q['CO2C']:+.2f} O {_q['CO2O']:+.2f} CH3 {_q['CH3']:+.4f}")
+_sb = _mix.sorption("O=C=O", pressures_kpa=[], insertions=2000)
+check(any("rigid sorbate set to TraPPE-UA" in n for n in _sb["notes"]), "TraPPE CO2 sorbate takes the rigid geometry")
 print("all python checks passed")

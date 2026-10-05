@@ -84,7 +84,7 @@ struct ExplicitTopology {
   std::vector<Dihedral> dihedrals;
   std::vector<std::pair<uint32_t, uint32_t>> exclusions;
   std::vector<Pair> pairs;
-  struct VSite { uint32_t site; std::vector<uint32_t> from; std::vector<double> w; };   // w empty: the centre of mass
+  struct VSite { uint32_t site; std::vector<uint32_t> from; std::vector<double> w; double c = 0; };   // w empty: the centre of mass; c: out of plane (1/Å)
   std::vector<VSite> vsites;
   std::vector<double> masses;   // per atom when the molecule sets them (NaN: the type's), else empty
   std::string source;   // "Martini 2.2 protein (martinize rules)"

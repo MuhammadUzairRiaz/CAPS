@@ -115,6 +115,7 @@ struct FieldState {
   std::map<int32_t, std::string> overrides;  // atom → type set by hand
   std::string charges = "types";             // types (force field), gasteiger, keep (from the file)
   bool auto_charges = false;                 // automatic: the force field's charges, Gasteiger when its types carry none
+  bool ua_summed = false;                    // automatic on a united-atom structure: the fallback is the Gasteiger charges summed into its sites
   caps::TypingResult typing;
   std::vector<std::string> types;
   caps::ParamReport rep;
@@ -985,8 +986,34 @@ void field_run(caps_doc* d) {
         F.rep = caps::ParamReport{};
         const std::string why = std::string(e.what()).substr(std::string(e.what()).find("type"));
         try {
-          F.ff = std::make_shared<caps::ForceField>(caps::parameterize(s, def, F.types, "gasteiger", &F.rep, true));
-          F.charges = "gasteiger";
+          F.ff = std::make_shared<caps::ForceField>(caps::parameterize(s, def, F.types, F.ua_summed ? "keep" : "gasteiger", &F.rep, true));
+          F.charges = F.ua_summed ? "keep" : "gasteiger";
+          // molecules whose types all carry charges (TraPPE's CO2 beside its united-atom alkanes) keep the force field's own
+          int nm = 0;
+          const auto mol = s.molecules(&nm);
+          std::vector<char> full(size_t(std::max(nm, 0)), 1);
+          std::vector<double> qt(n, 0.0);
+          for (size_t i = 0; i < n; ++i) {
+            if (mol[i] < 0) continue;
+            const caps::FFType* t = i < F.types.size() && !F.types[i].empty() ? def.type(F.types[i]) : nullptr;
+            if (!t) continue;   // a hydrogen folded into its carbon (united atom): no site of its own
+            if (std::isnan(t->charge)) full[size_t(mol[i])] = 0;
+            else qt[i] = t->charge;
+          }
+          int own = 0;
+          for (char f : full) own += f;
+          if (own > 0) {
+            caps::System sq = s;
+            for (size_t i = 0; i < n; ++i) sq.atoms[i].charge = mol[i] >= 0 && full[size_t(mol[i])] ? qt[i] : F.ff->charge[i];
+            sq.has_charges = true;
+            caps::ParamReport rep2;
+            F.ff = std::make_shared<caps::ForceField>(caps::parameterize(sq, def, F.types, "keep", &rep2, true));
+            F.rep = std::move(rep2);
+            F.charges = "mixed";
+            F.rep.notes.push_back(def.name + "'s own charges on " + std::to_string(own) + " of " + std::to_string(nm) +
+                                  " molecules (every type of theirs carries one); " + (F.ua_summed ? "Gasteiger–Marsili summed into the sites" : "Gasteiger–Marsili") +
+                                  " on the others, whose types carry none (" + why.substr(0, why.find(';')) + ") (charges: automatic)");
+          } else
           F.rep.notes.push_back(def.name + " carries no charges on its atom types (" + why + "): Gasteiger–Marsili charges were used instead (charges: automatic)" +
                                 opls_hint(def.name));
         } catch (const std::exception& g) {   // Gasteiger–Marsili has no parameters for some groups (S=O, most metals): QEq
@@ -1753,7 +1780,7 @@ extern "C" int32_t caps_water_models(char* json, int32_t cap) {
     for (const auto& m : caps::water_models()) {
       caps::Json o = caps::Json::object();
       o["id"] = m.id, o["name"] = m.name, o["citation"] = m.citation, o["sites"] = double(m.sites), o["r_oh"] = m.r_oh, o["theta"] = m.theta;
-      o["q_h"] = m.q_h, o["q_neg"] = m.q_neg, o["d_om"] = m.d_om, o["eps_o"] = m.eps_o, o["sigma_o"] = m.sigma_o, o["eps_h"] = m.eps_h, o["sigma_h"] = m.sigma_h;
+      o["q_h"] = m.q_h, o["q_neg"] = m.q_neg, o["d_om"] = m.d_om, o["d_ol"] = m.d_ol, o["theta_l"] = m.theta_l, o["eps_o"] = m.eps_o, o["sigma_o"] = m.sigma_o, o["eps_h"] = m.eps_h, o["sigma_h"] = m.sigma_h;
       o["rigid"] = m.rigid, o["note"] = m.note;
       a.push_back(o);
     }
@@ -2167,6 +2194,7 @@ extern "C" int32_t caps_adsorption(caps_doc* d, const char* json, caps_stage_fn 
     }
     if (j.has("first_atom")) first = int(j.num("first_atom", -1));
     const caps::ForceField ff = added ? field_for_extended(d, s) : [&] { const auto fp = field_for_run(d); return fp ? *fp : default_ff(s); }();
+    if (added) caps::apply_rigid_geometry(s, ff, substrate_atoms, s.atoms.size());   // rigid models: the force field's geometry
     caps::AdsorptionOptions o;
     o.first_mobile_atom = first;
     o.cycles = int(j.num("cycles", 3));
@@ -2278,6 +2306,8 @@ extern "C" int32_t caps_sorption(caps_doc* d, const char* json, caps_stage_fn pr
       starts.push_back(first);
     }
     const caps::ForceField ff = field_for_extended(d, s);
+    // rigid models (TraPPE CO2, N2, O2) take their force field's bond lengths and angles
+    const int reshaped = caps::apply_rigid_geometry(s, ff, host.atoms.size(), s.atoms.size());
     caps::SorptionOptions o;
     o.template_first_atom = int(host.atoms.size());
     if (smiles.size() > 1) o.species_first_atom = starts, o.mole_fractions = fractions;
@@ -2292,8 +2322,9 @@ extern "C" int32_t caps_sorption(caps_doc* d, const char* json, caps_stage_fn pr
     o.map_grid = int(j.num("map_grid", 0));   // v62: sorbate density maps (C7)
     bool cancelled = false;
     if (progress) o.progress = [&](const std::string& st, double f) { cancelled = progress(st.c_str(), f, user) != 0; return !cancelled; };
-    const auto rep = caps::sorption(s, ff, o);
+    auto rep = caps::sorption(s, ff, o);
     if (cancelled) throw std::runtime_error("sorption cancelled");
+    if (reshaped) rep.notes.push_back(std::to_string(reshaped) + " bond lengths and angles of the rigid sorbate set to " + ff.name + "'s own");
     std::string sorbates;
     for (size_t k = 0; k < smiles.size(); ++k)
       sorbates += (k ? " + " : "") + smiles[k] + (smiles.size() > 1 ? " (y " + g6(o.mole_fractions.empty() ? 1.0 : rep.species[k].fraction) + ")" : "");
@@ -3282,7 +3313,8 @@ int32_t caps_field_assign(caps_doc* d, const char* ff_path, const char* rules_pa
         F->prep_notes.push_back(note);
       }
       // the model's own charges (a Martini protein's, a molecule template's), whether or not the structure changed
-      if (ch == "keep") F->charges = "keep", F->auto_charges = false;
+      if (ch == "keep" && F->auto_charges && F->base.united_atom) F->ua_summed = true;   // still automatic: types' own charges where they carry them
+      else if (ch == "keep") F->charges = "keep", F->auto_charges = false;
     }
     if (F->charges == "keep" && !d->traj.topology.has_charges && !F->file_has_charges)
       throw caps::FFError("the structure has no charges to keep; use the force field's or Gasteiger charges");
@@ -8213,7 +8245,7 @@ extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t c
       std::vector<std::string> wn;
       const size_t nw = caps::apply_water_model(s, wm, &wn);
       if (nw == 0) throw std::invalid_argument("no water molecules (an O bonded to two H) in this structure");
-      what = std::to_string(nw) + " waters as " + wm.name + (wm.sites == 4 ? " (with their M sites)" : "");
+      what = std::to_string(nw) + " waters as " + wm.name + (wm.sites == 4 ? " (with their M sites)" : wm.sites == 5 ? " (with their lone pairs)" : "");
     } else if (op == "niggli") {
       caps::NiggliResult r;
       s = caps::niggli_cell(s, &r);
