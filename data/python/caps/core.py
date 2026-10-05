@@ -933,6 +933,54 @@ def _tag(self, name: str, atoms=None, colour: str = "", op: str = "set") -> int:
     return k
 
 
+def _doc_json(self, fn: str, payload: dict) -> dict:
+    lib = library()
+    f = getattr(lib, fn)
+    f.argtypes = [C.c_void_p, C.c_char_p, C.c_char_p, C.c_int32]
+    f.restype = C.c_int32
+    arg = json.dumps(payload).encode()
+    n = f(self._h, arg, None, 0)
+    if n < 0:
+        raise _error()
+    buf = C.create_string_buffer(n + 1)
+    f(self._h, arg, buf, n + 1)
+    return json.loads(buf.value.decode())
+
+
+def _pair_histograms(self, lo: float = 0.8, hi: float = 3.2, bin: float = 0.04) -> list:
+    """Bond rules: per pair of elements, the distances between their atoms as a histogram (counts from lo in steps of
+    bin), the bonds the structure has between them, and the suggested cut-off (the first gap after the bonded peak)."""
+    return _doc_json(self, "caps_pair_histograms", {"lo": lo, "hi": hi, "bin": bin})["pairs"]
+
+
+def _bond_rules(self, rules: list, apply: bool = False) -> dict:
+    """Bonds from rules [{"a": "C", "b": "C", "max": 1.68}, {"a": "Zn", "b": "O", "never": True}]: what they would give
+    (bonds now and after, added, removed); apply=True sets them (one undoable edit)."""
+    r = _doc_json(self, "caps_bond_rules_preview", {"rules": rules})
+    if apply:
+        self.edit(op="bond_rules", rules=rules)
+    return r
+
+
+def _probe(self, kind: str, atoms) -> dict:
+    """A probe from atoms (0-based) in the frame shown: "point" (mass-weighted centre), "plane", "axis" or "ellipsoid" —
+    its centre, principal directions (largest first), semi-axes and rms (a plane's flatness)."""
+    return _doc_json(self, "caps_probe_geometry", {"kind": kind, "atoms": [int(i) for i in atoms]})
+
+
+def _probe_series(self, a: tuple, b: Optional[tuple] = None, measure: str = "distance") -> list:
+    """A probe measured against another over every frame: a, b as (kind, atoms); measure "distance" (Å; above a plane along
+    its normal), "angle" (degrees), "rms" or "size". One value per frame."""
+    q = {"a": {"kind": a[0], "atoms": [int(i) for i in a[1]]}, "measure": measure}
+    if b is not None:
+        q["b"] = {"kind": b[0], "atoms": [int(i) for i in b[1]]}
+    return _doc_json(self, "caps_probe_series", q)["values"]
+
+
+Document.pair_histograms = _pair_histograms
+Document.bond_rules = _bond_rules
+Document.probe = _probe
+Document.probe_series = _probe_series
 Document.tags = property(_tags)
 Document.tag = _tag
 Document.lock = _lock

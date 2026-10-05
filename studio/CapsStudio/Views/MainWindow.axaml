@@ -861,7 +861,47 @@
                 <Button Classes="selact" Tag="hide" Click="OnSelBarAction" ToolTip.Tip="Hide (H): out of the view; the structure keeps them"><local:Icon Kind="eye" Size="15" /></Button>
                 <Button Classes="selact" Tag="ghost" Click="OnSelBarAction" ToolTip.Tip="Ghost: faint in the view, clicks go through them"><local:Icon Kind="layers" Size="15" /></Button>
                 <Button Classes="selact" Tag="tag" Click="OnSelBarAction" ToolTip.Tip="Keep as a named set (a group for exports and analysis)"><local:Icon Kind="tag" Size="15" /></Button>
-                <Button Classes="selact" Tag="copy" Click="OnSelBarAction" ToolTip.Tip="Copy as XYZ (⌘C)"><local:Icon Kind="copy" Size="15" /></Button>
+                <Button Classes="selact" Tag="copy" Click="OnSelBarAction" ToolTip.Tip="Copy: into the clipboard tray (a stamp to place) and as XYZ (⌘C)"><local:Icon Kind="copy" Size="15" /></Button>
+                <!-- Atom bubble (design/boards/AtomBubble): element, type, charge, formal charge, nudge -->
+                <Button Classes="selact" ToolTip.Tip="Edit the atoms: element, charge, formal charge, nudge">
+                  <local:Icon Kind="atom" Size="15" />
+                  <Button.Flyout>
+                    <Flyout Placement="Bottom" Opening="OnBubbleOpening">
+                      <StackPanel Width="290" Spacing="9" Margin="2">
+                        <TextBlock Text="{Binding BubbleTitle}" FontSize="12.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                        <ItemsControl ItemsSource="{x:Static vm:MainViewModel.BubbleElements}">
+                          <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="8" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                              <Button Classes="small" Content="{Binding}" Tag="{Binding}" Click="OnBubbleElement" Padding="0" MinWidth="30" Margin="1" HorizontalContentAlignment="Center" />
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <Grid ColumnDefinitions="70,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="6">
+                          <TextBlock Text="Element" Classes="label" VerticalAlignment="Center" />
+                          <TextBlock Grid.Column="1" Text="{Binding BubbleElement}" Classes="mono" VerticalAlignment="Center" />
+                          <TextBlock Grid.Row="1" Text="Type" Classes="label" VerticalAlignment="Center" />
+                          <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding BubbleType}" Classes="mono" VerticalAlignment="Center" ToolTip.Tip="The force-field type (Field types them)" />
+                          <TextBlock Grid.Row="2" Text="Charge" Classes="label" VerticalAlignment="Center" />
+                          <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding BubbleCharge}" Classes="mono" KeyDown="OnBubbleChargeKey" ToolTip.Tip="Partial charge (e); Enter sets it on every atom of the bubble" />
+                          <TextBlock Grid.Row="3" Text="Formal" Classes="label" VerticalAlignment="Center" />
+                          <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding BubbleFormal}" Classes="mono" KeyDown="OnBubbleFormalKey" ToolTip.Tip="Formal charge (+1 for N⁺): hydrogens and valence follow it; Enter sets it" />
+                        </Grid>
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                          <TextBlock Text="Nudge 0.1 Å" Classes="label" VerticalAlignment="Center" Margin="0,0,4,0" />
+                          <Button Classes="small" Content="x−" Tag="0-" Click="OnBubbleNudge" Padding="6,0" />
+                          <Button Classes="small" Content="x+" Tag="0+" Click="OnBubbleNudge" Padding="6,0" />
+                          <Button Classes="small" Content="y−" Tag="1-" Click="OnBubbleNudge" Padding="6,0" />
+                          <Button Classes="small" Content="y+" Tag="1+" Click="OnBubbleNudge" Padding="6,0" />
+                          <Button Classes="small" Content="z−" Tag="2-" Click="OnBubbleNudge" Padding="6,0" />
+                          <Button Classes="small" Content="z+" Tag="2+" Click="OnBubbleNudge" Padding="6,0" />
+                        </StackPanel>
+                        <CheckBox IsChecked="{Binding HAutopilotOn, Mode=OneWay}" Click="OnHAutopilot" Content="H autopilot: hydrogens put right after each sketch edit" />
+                        <TextBlock Text="Enter applies · each change one undo step" FontSize="11" Foreground="{DynamicResource DimB}" />
+                      </StackPanel>
+                    </Flyout>
+                  </Button.Flyout>
+                </Button>
                 <Button Classes="selact" Tag="clean" Click="OnSelBarAction" ToolTip.Tip="Clean up the geometry with UFF (the rest held)"><local:Icon Kind="wand" Size="15" /></Button>
                 <Button Classes="selact" Tag="delete" Click="OnSelBarAction" ToolTip.Tip="Delete (⌫, undoable)"><local:Icon Kind="xcircle" Size="15" /></Button>
                 <Button Classes="selact" Tag="more" Click="OnSelBarAction" ToolTip.Tip="More: frame, show only, invert, grow"><local:Icon Kind="dots" Size="15" /></Button>
@@ -1078,6 +1118,15 @@
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
             </ScrollViewer>
+            <!-- the orient puck (design/boards/AtomBubble): the view along, onto or beside the selection -->
+            <Border Classes="hud" Padding="6,4" Margin="14" HorizontalAlignment="Right" VerticalAlignment="Bottom" IsVisible="{Binding HasSelBar}" ZIndex="4">
+              <StackPanel Orientation="Horizontal" Spacing="4">
+                <local:Icon Kind="rotate" Size="13" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" Margin="2,0,4,0" />
+                <Button Classes="chipbtn" Content="along" Tag="along" Click="OnOrient" Padding="7,1" ToolTip.Tip="Look along the selection's long axis" />
+                <Button Classes="chipbtn" Content="onto" Tag="onto" Click="OnOrient" Padding="7,1" ToolTip.Tip="Look down onto the selection's plane" />
+                <Button Classes="chipbtn" Content="side" Tag="side" Click="OnOrient" Padding="7,1" ToolTip.Tip="The selection side-on" />
+              </StackPanel>
+            </Border>
             <!-- the stamp under the pointer (design/boards/Stamp) -->
             <Border Classes="hud" Padding="10,5" Margin="14,14,14,82" HorizontalAlignment="Center" VerticalAlignment="Bottom" IsVisible="{Binding StampArmed}" ZIndex="6">
               <StackPanel Orientation="Horizontal" Spacing="8">
@@ -3718,6 +3767,7 @@
                    Margin="18,0" TextTrimming="CharacterEllipsis" />
         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="18" VerticalAlignment="Center">
           <TextBlock Text="{Binding AutoCleanText}" IsVisible="{Binding AutoCleanOn}" Classes="mono" FontSize="11" Foreground="{DynamicResource AccB}" />
+          <TextBlock Text="{Binding HAutoText}" IsVisible="{Binding HAutopilotOn}" Classes="mono" FontSize="11" Foreground="{DynamicResource AccB}" ToolTip.Tip="H autopilot: after each sketch edit hydrogens are added where missing and removed where surplus" />
           <TextBlock Text="double-click molecule · ⌥ drag box · hold right: ring · ⇧ drag pans" ToolTip.Tip="Click picks (⇧ click adds) · double-click: the molecule · ⌥ double-click: the same type · ⌥ drag: a box · drag turns · ⇧ or right drag pans · hold the right button: the ring · H hides · ⌥H shows all · Esc clears" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" />
           <TextBlock Text="Double precision" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" />
           <TextBlock x:Name="RenderStat" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" />

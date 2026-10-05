@@ -540,4 +540,11 @@ _t = vs.tags
 vs.tag("first", op="delete")
 check(_t["chain ends"] == [0, 1, 129] and len(_t["first"]) == 130 and list(vs.tags) == ["chain ends"], f"tags: {list(_t)} · after delete {list(vs.tags)}")
 vs.tag("chain ends", op="delete")
+# bond rules and probes
+_cc = [p for p in vs.pair_histograms() if p["a"] == "C" and p["b"] == "C"][0]
+_never = vs.bond_rules([{"a": "C", "b": "H", "never": True}])
+_plane = vs.probe("plane", range(130))
+_h = vs.probe_series(("point", range(390, 520)), ("plane", range(130)))
+check(1.6 < _cc["suggested"] < 2.4 and _never["after"] == 710 and len(_plane["axes"]) == 3 and len(_h) >= 1,
+      f"bond rules and probes: C–C cut-off {_cc['suggested']:.2f} · C–H never → {_never['after']} bonds · height {_h[0]:.2f} Å")
 print("all python checks passed")
