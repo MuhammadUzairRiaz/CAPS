@@ -9,26 +9,18 @@ namespace CapsStudio.Views;
 /// the project switcher and Start share.</summary>
 public partial class MainWindow
 {
-    private static readonly FilePickerFileType ProjectFileType = new("CAPS project") { Patterns = ["*" + ViewModels.CapsProjectFile.Extension] };
-
-    /// <summary>Open project file…: a .capsproj anywhere.</summary>
+    /// <summary>Open project…: the project's folder (its .capsproj is found inside; no need to go into the folder).</summary>
     public async Task OpenProjectFileDialog()
     {
-        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
-        {
-            Title = "Open a CAPS project", AllowMultiple = false, FileTypeFilter = [ProjectFileType, new FilePickerFileType("All files") { Patterns = ["*"] }],
-        });
-        if (files.Count > 0 && files[0].TryGetLocalPath() is { } p) _vm.Status = _vm.OpenCapsProject(p);
+        var picked = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions { Title = "Open a CAPS project: choose its folder", AllowMultiple = false });
+        if (picked.Count > 0 && picked[0].TryGetLocalPath() is { } p) _vm.Status = _vm.OpenCapsProject(p);
     }
 
     /// <summary>A project whose folder moved: its .capsproj in the new place.</summary>
     public async Task LocateProjectDialog(ViewModels.KnownProject k)
     {
-        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
-        {
-            Title = $"Where is {k.Name}? Choose its .capsproj file", AllowMultiple = false, FileTypeFilter = [ProjectFileType],
-        });
-        if (files.Count > 0 && files[0].TryGetLocalPath() is { } p) _vm.Status = _vm.LocateProject(k, p);
+        var picked = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions { Title = $"Where is {k.Name}? Choose its folder", AllowMultiple = false });
+        if (picked.Count > 0 && picked[0].TryGetLocalPath() is { } p) _vm.Status = _vm.LocateProject(k, p);
     }
 
     /// <summary>The folder in Finder, Explorer or the Linux file manager.</summary>
@@ -83,7 +75,7 @@ public partial class MainWindow
         var has = _vm.HasCapsProject;
         items.Add(M(has ? $"Save · {_vm.CapsProjectSavedText}" : "Save", "save", () => { _vm.Status = _vm.SaveCapsProject(); return Task.CompletedTask; }, OperatingSystem.IsMacOS() ? "Cmd+S" : "Ctrl+S", has));
         items.Add(M("New project…", "plus", () => { _vm.OpenNewProject(); return Task.CompletedTask; }));
-        items.Add(M("Open project file…", "folder", OpenProjectFileDialog));
+        items.Add(M("Open project…", "folder", OpenProjectFileDialog));
         items.Add(M("Show the folder", "file", () => ShowFolder(Path.GetDirectoryName(_vm.CapsProjectPath) ?? ""), "", has));
         if (has)
         {
