@@ -11,6 +11,8 @@
 
 #include "caps/analysis.hpp"
 #include "caps/tags.hpp"
+#include "caps/uff.hpp"
+#include "caps/properties.hpp"
 #include "caps/probe.hpp"
 #include "caps/bondrules.hpp"
 #include "caps/piece.hpp"
@@ -1454,4 +1456,150 @@ TEST(Probe, PlaneAxisPointEllipsoid) {
   }
   EXPECT_THROW(probe_kind("cone"), std::invalid_argument);
   EXPECT_THROW(probe_measure(s, top, nullptr, "distance"), std::invalid_argument);
+}
+
+namespace {
+Trajectory one_frame(const System& s) { Trajectory t; t.topology = s; t.positions.push_back({}); for (const auto& a : s.atoms) t.positions.back().push_back(a.pos); t.timesteps.push_back(0); return t; }
+// An all-trans zigzag of n carbons (1.54 Å bonds, 112° angles) in the xy plane; `gauche`: the 5th torsion turned to +60°
+System zigzag(int n, bool gauche) {
+  System s;
+  const double th = 112.0 * M_PI / 180.0, b = 1.54;
+  for (int k = 0; k < n; ++k) {
+    Atom a;
+    a.element = 6;
+    a.mol = 1;
+    a.pos = {k * b * std::sin(th / 2), (k % 2) * b * std::cos(th / 2), 0};
+    s.atoms.push_back(a);
+  }
+  s.has_mol = true;
+  for (int k = 0; k + 1 < n; ++k) s.bonds.push_back({uint32_t(k), uint32_t(k + 1)});
+  if (gauche) {
+    // rotate every atom past bond 4–5 about that bond by 120°: torsion 3-4-5-6 goes from 180° to −60° / +60°
+    const Vec3 o = s.atoms[4].pos, ax = (s.atoms[5].pos - o) * (1.0 / norm(s.atoms[5].pos - o));
+    const double c = std::cos(2 * M_PI / 3), sn = std::sin(2 * M_PI / 3);
+    for (int k = 6; k < n; ++k) {
+      const Vec3 v = s.atoms[size_t(k)].pos - o;
+      s.atoms[size_t(k)].pos = o + v * c + cross(ax, v) * sn + ax * (dot(ax, v) * (1 - c));
+    }
+  }
+  return s;
+}
+}  // namespace
+
+// C16 backbone conformation: an all-trans chain 100 % trans; one torsion turned gauche of 7 → 6/7 trans
+TEST(Analyze, BackboneConformation) {
+  const auto p = analyze(one_frame(zigzag(10, false)), {"conformation"}, {})[0];
+  EXPECT_NEAR(p.value, 100.0, 1e-6);
+  EXPECT_NEAR(p.extra.at("mean backbone angle (°)"), 112.0, 1e-6);
+  EXPECT_NEAR(p.extra.at("mean backbone bond (Å)"), 1.54, 1e-9);
+  const auto g = analyze(one_frame(zigzag(10, true)), {"conformation"}, {})[0];
+  EXPECT_NEAR(g.value, 100.0 * 6 / 7, 1e-6);
+  EXPECT_NEAR(g.extra.at("gauche+ (%)") + g.extra.at("gauche− (%)"), 100.0 / 7, 1e-6);
+}
+
+// C17 hydrogen bonds: two waters, O···O 2.8 Å, one H on the line between them: one bond; turned away: none
+TEST(Analyze, HydrogenBonds) {
+  System s;
+  auto add = [&](int z, Vec3 p, int64_t mol) { Atom a; a.element = z; a.pos = p; a.mol = mol; s.atoms.push_back(a); };
+  add(8, {0, 0, 0}, 1); add(1, {0.96, 0, 0}, 1); add(1, {-0.24, 0.93, 0}, 1);
+  add(8, {2.8, 0, 0}, 2); add(1, {3.04, 0.93, 0}, 2); add(1, {3.04, -0.93, 0}, 2);
+  s.has_mol = true;
+  s.bonds = {{0, 1}, {0, 2}, {3, 4}, {3, 5}};
+  auto p = analyze(one_frame(s), {"hbonds"}, {})[0];
+  EXPECT_NEAR(p.value, 1.0, 1e-9) << (p.notes.empty() ? "" : p.notes[0]);
+  s.atoms[1].pos = {-0.24, -0.93, 0};   // the H turned away
+  p = analyze(one_frame(s), {"hbonds"}, {})[0];
+  EXPECT_NEAR(p.value, 0.0, 1e-9);
+}
+
+// C9 VACF and VDOS: every atom's velocity a cosine at 1000 cm⁻¹, frames 1 fs apart: the spectrum peaks at 1000 cm⁻¹
+TEST(Analyze, VacfSpectrumPeak) {
+  Trajectory t;
+  for (int k = 0; k < 4; ++k) { Atom a; a.element = 6; a.pos = {double(k) * 3, 0, 0}; t.topology.atoms.push_back(a); }
+  const double nu = 1000.0, c = 2.99792458e10, w = 2 * M_PI * c * nu * 1e-15;   // rad per fs
+  for (int f = 0; f < 400; ++f) {
+    t.positions.push_back({});
+    t.velocities.push_back({});
+    for (int k = 0; k < 4; ++k) { t.positions.back().push_back(t.topology.atoms[size_t(k)].pos); t.velocities.back().push_back({0.01 * std::cos(w * f), 0, 0}); }
+    t.timesteps.push_back(f);
+  }
+  AnalyzeOptions o;
+  o.timestep_fs = 1.0;
+  const auto p = analyze(t, {"vacf"}, o)[0];
+  ASSERT_EQ(p.series.size(), 2u) << (p.notes.empty() ? "" : p.notes[0]);
+  const auto& d = p.series[1];
+  const size_t peak = size_t(std::max_element(d.y.begin(), d.y.end()) - d.y.begin());
+  EXPECT_NEAR(d.x[peak], 1000.0, 60.0);
+}
+
+// C18 CED split: the van der Waals and electrostatic parts add up to the whole (the bonded terms cancel)
+TEST(Analyze, CedSplit) {
+  System s = read_lammps_data(S + "/ps_melt.data");
+  const ForceField ff = default_forcefield(s);
+  AnalyzeOptions o;
+  o.ff = &ff;
+  const auto p = analyze(one_frame(s), {"ced"}, o)[0];
+  ASSERT_FALSE(std::isnan(p.value)) << (p.notes.empty() ? "" : p.notes[0]);
+  EXPECT_NEAR(p.value, p.extra.at("CED van der Waals (J/cm³)") + p.extra.at("CED electrostatic (J/cm³)"), 1e-6 * std::fabs(p.value));
+}
+
+// C14 van Hove: every atom moving by Gaussian steps gives α₂ ≈ 0; half the atoms frozen gives α₂ > 0 (heterogeneous)
+// C15 P2(r): parallel all-trans chains side by side are ordered (P₂ near 1 at 4–5 Å)
+TEST(Analyze, VanHoveAndP2) {
+  Trajectory t;
+  std::mt19937 rng(7);
+  std::normal_distribution<double> g(0.0, 0.3);
+  const int n = 400, nf = 40;
+  for (int k = 0; k < n; ++k) { Atom a; a.element = 6; a.mol = k + 1; a.pos = {double(k % 20) * 3, double(k / 20) * 3, 0}; t.topology.atoms.push_back(a); }
+  t.topology.has_mol = true;
+  std::vector<Vec3> cur;
+  for (const auto& a : t.topology.atoms) cur.push_back(a.pos);
+  for (int f = 0; f < nf; ++f) {
+    t.positions.push_back(cur);
+    t.timesteps.push_back(f * 1000);
+    for (auto& p : cur) p = p + Vec3{g(rng), g(rng), g(rng)};
+  }
+  AnalyzeOptions o;
+  o.frame_ps = 1.0;
+  const auto free = analyze(t, {"vanhove"}, o)[0];
+  EXPECT_LT(std::fabs(free.series[0].y[0]), 0.15) << free.series[0].y[0];
+  // half frozen
+  for (auto& fr : t.positions) for (int k = 0; k < n; k += 2) fr[size_t(k)] = t.topology.atoms[size_t(k)].pos;
+  const auto het = analyze(t, {"vanhove"}, o)[0];
+  EXPECT_GT(het.value, 0.4);
+  // P2(r): eight parallel all-trans chains 4.5 Å apart
+  System s;
+  for (int c = 0; c < 8; ++c) {
+    const System z = zigzag(20, false);
+    for (auto a : z.atoms) { a.pos = a.pos + Vec3{0, 0, 4.5 * c}; a.mol = c + 1; s.atoms.push_back(a); }
+    for (auto b : z.bonds) s.bonds.push_back({b.i + uint32_t(20 * c), b.j + uint32_t(20 * c)});
+  }
+  s.has_mol = true;
+  const auto p2 = analyze(one_frame(s), {"p2r"}, {})[0];
+  EXPECT_GT(p2.value, 0.95) << (p2.notes.empty() ? "" : p2.notes[0]);
+}
+
+// C8 dielectric constant: a ±1 e pair 1 Å apart flipping between frames in a 10 Å cell at 300 K: ⟨M⟩ = 0, ⟨M²⟩ = (1 e·Å)²,
+// ε = 1 + (1.602176634e-29 C·m)² / (3 ε₀ · 1e-27 m³ · k_B · 300 K) = 3.332
+TEST(Analyze, DielectricFromDipoleFluctuations) {
+  Trajectory t;
+  Atom a; a.element = 11; a.charge = 1; a.mol = 1; a.pos = {5, 5, 5};
+  Atom b; b.element = 17; b.charge = -1; b.mol = 1; b.pos = {6, 5, 5};
+  t.topology.atoms = {a, b};
+  t.topology.bonds = {{0, 1}};
+  t.topology.has_mol = true;
+  t.topology.cell.a = {10, 0, 0}, t.topology.cell.b = {0, 10, 0}, t.topology.cell.c = {0, 0, 10};
+  t.topology.cell.periodic = {true, true, true};
+  for (int f = 0; f < 2; ++f) {
+    t.positions.push_back({{5, 5, 5}, {f ? 4.0 : 6.0, 5, 5}});
+    t.cells.push_back(t.topology.cell);
+    t.timesteps.push_back(f);
+  }
+  AnalyzeOptions o;
+  o.temperature = 300;
+  o.frame_ps = 1;
+  const auto p = analyze(t, {"dielectric"}, o)[0];
+  const double e = 1.602176634e-29, expect = 1 + e * e / (3 * 8.8541878128e-12 * 1e-27 * 1.380649e-23 * 300);
+  EXPECT_NEAR(p.value, expect, 1e-6 * expect) << (p.notes.empty() ? "" : p.notes[0]);
+  EXPECT_NEAR(expect, 3.332, 0.01);
 }
