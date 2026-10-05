@@ -10,6 +10,7 @@
 //             than `window` kcal/mol are dropped. Populations are Boltzmann weights of the minimised energies (no
 //             vibrational entropy) at `temperature`.
 #pragma once
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <string>

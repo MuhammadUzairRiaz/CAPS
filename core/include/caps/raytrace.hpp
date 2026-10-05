@@ -4,6 +4,7 @@
 // the image is traced in tiles on every core and kept at 16 bits per channel. The camera is the views' own (view_fit),
 // so a traced image lines up with what the view shows.
 #pragma once
+#include <cstdint>
 
 #include <atomic>
 #include <functional>

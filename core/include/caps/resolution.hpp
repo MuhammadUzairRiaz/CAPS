@@ -9,6 +9,7 @@
 // Both return new structures (the original is untouched). Going back up: united-atom → all-atom is add_hydrogens then
 // a relax; coarse-grained → all-atom is backmap onto the all-atom structure the beads came from.
 #pragma once
+#include <cstdint>
 #include <functional>
 #include <map>
 #include <string>

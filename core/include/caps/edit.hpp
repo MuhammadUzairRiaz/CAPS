@@ -12,6 +12,7 @@
 //  selections      by SMARTS (the pattern's first atom), element, type, charge range, distance from a set, or grown
 //                  along bonds.
 #pragma once
+#include <cstdint>
 #include <stdexcept>
 #include <string>
 #include <vector>

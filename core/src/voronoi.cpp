@@ -159,7 +159,7 @@ std::vector<VoronoiCell> voronoi_cells(const System& s, const VoronoiOptions& o)
     }
   }
   auto bin = [&](const Vec3& f, int d) { return std::clamp(int(f[size_t(d)] * nb[d]), 0, nb[d] - 1); };
-  std::vector<std::vector<uint32_t>> grid(size_t(nb[0]) * size_t(nb[1]) * size_t(nb[2]));
+  std::vector<std::vector<uint32_t>> grid(static_cast<size_t>(nb[0]) * size_t(nb[1]) * size_t(nb[2]));
   for (uint32_t i = 0; i < n; ++i) grid[(size_t(bin(frac[i], 0)) * size_t(nb[1]) + size_t(bin(frac[i], 1))) * size_t(nb[2]) + size_t(bin(frac[i], 2))].push_back(i);
   double binw = 1e300;
   for (int d = 0; d < 3; ++d) binw = std::min(binw, width[d] / nb[d]);

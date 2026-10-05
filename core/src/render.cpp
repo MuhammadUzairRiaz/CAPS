@@ -277,7 +277,7 @@ std::vector<float> ambient_accessibility(const System& s, const std::vector<doub
   const double bin = kShell + 2 * rmax;
   int nb[3];
   for (int k = 0; k < 3; ++k) nb[k] = std::clamp(int((hi[k] - lo[k]) / bin) + 1, 1, 256);
-  std::vector<std::vector<uint32_t>> bins(size_t(nb[0]) * nb[1] * nb[2]);
+  std::vector<std::vector<uint32_t>> bins(static_cast<size_t>(nb[0]) * nb[1] * nb[2]);
   auto bidx = [&](const Vec3& p, int k) { return std::clamp(int((p[k] - lo[k]) / bin), 0, nb[k] - 1); };
   for (size_t i = 0; i < n; ++i)
     if (show[i]) bins[(size_t(bidx(s.atoms[i].pos, 0)) * nb[1] + bidx(s.atoms[i].pos, 1)) * nb[2] + bidx(s.atoms[i].pos, 2)].push_back(uint32_t(i));

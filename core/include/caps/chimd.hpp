@@ -15,6 +15,7 @@
 // 0.01–1, so the Studio does not offer this; use it from Python or C with long runs and larger cells, and run the
 // self-mixing control beside it.
 #pragma once
+#include <cstdint>
 #include <functional>
 #include <string>
 #include <vector>

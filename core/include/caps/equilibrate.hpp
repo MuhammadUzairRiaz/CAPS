@@ -1,5 +1,6 @@
 // CAPS Equilibrate: published equilibration protocols run as chained Dynamics stages, with convergence checks.
 #pragma once
+#include <cstdint>
 #include <functional>
 #include <string>
 #include <vector>

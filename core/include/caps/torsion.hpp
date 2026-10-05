@@ -7,6 +7,7 @@
 //  Conformers  local minima of the scanned curve (the full turn is periodic), refined by a parabola through the three
 //              lowest points; named trans (|φ| ≥ 150°), anticlinal± (90–150°), gauche± (30–90°) or cis (< 30°).
 #pragma once
+#include <cstdint>
 #include <array>
 #include <functional>
 #include <memory>

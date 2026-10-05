@@ -30,7 +30,7 @@ void pairs_within(const System& s, double rc, F&& visit) {
   int nb[3];
   for (int k = 0; k < 3; ++k) nb[k] = std::clamp(int((hi[k] - lo[k]) / rc), 1, 200);
   auto bin_of = [&](const Vec3& q, int k) { return std::clamp(int((q[k] - lo[k]) / ((hi[k] - lo[k]) / nb[k] + 1e-12)), 0, nb[k] - 1); };
-  std::vector<std::vector<uint32_t>> bins(size_t(nb[0]) * nb[1] * nb[2]);
+  std::vector<std::vector<uint32_t>> bins(static_cast<size_t>(nb[0]) * nb[1] * nb[2]);
   for (size_t i = 0; i < n; ++i) bins[(size_t(bin_of(p[i], 0)) * nb[1] + bin_of(p[i], 1)) * nb[2] + bin_of(p[i], 2)].push_back(uint32_t(i));
   const double rc2 = rc * rc;
   for (int x = 0; x < nb[0]; ++x)

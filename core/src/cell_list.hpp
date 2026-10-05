@@ -1,5 +1,6 @@
 // Internal: periodic cell list over fractional coordinates, shared by bonds and pair analyses.
 #pragma once
+#include <cstdint>
 #include <algorithm>
 #include <cmath>
 #include <vector>

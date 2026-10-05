@@ -23,6 +23,7 @@
 //   cij_fluct    elastic constants from stress fluctuations of an NVT trajectory (needs ff and temperature); adds
 //                youngs_fluct, bulk_fluct, shear_fluct, poisson_fluct (see mechanics.hpp)   GPa
 #pragma once
+#include <cstdint>
 #include <algorithm>
 #include <functional>
 #include <limits>

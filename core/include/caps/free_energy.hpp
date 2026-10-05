@@ -6,6 +6,7 @@
 // on in both states, so no gas-phase leg is needed). Pairwise electrostatics (DSF) and no tail correction, as the
 // soft-core pairs need.
 #pragma once
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <string>

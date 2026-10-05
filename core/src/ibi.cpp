@@ -44,7 +44,8 @@ std::vector<double> nonbonded_gr(const System& top, const std::vector<std::vecto
         if (mol[a] == mol[b] && near[a].count(uint32_t(b))) continue;
         pairs += 1;
         const double d = norm(c.minimum_image(x[b] - x[a]));
-        if (d < rmax) h[size_t(d / dr)] += 1;
+        const size_t k = size_t(d / dr);   // d just under rmax can round to nbin
+        if (d < rmax && k < nbin) h[k] += 1;
       }
   }
   std::vector<double> g(nbin, 0.0);

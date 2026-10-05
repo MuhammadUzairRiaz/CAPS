@@ -16,6 +16,7 @@
 // Rigid models are run with their bonds and angle constrained (SHAKE / RATTLE, as LAMMPS fix shake and GROMACS settles):
 // their bond and angle constants here serve a flexible run only. SPC/Fw is flexible by design.
 #pragma once
+#include <cstdint>
 
 #include <array>
 #include <string>
