@@ -96,11 +96,22 @@ public sealed partial class MainViewModel
     public decimal MpDensity { get => _mpDensity; set => Set(ref _mpDensity, Math.Clamp(value, 0.3m, 3m)); }
     public decimal MpTemp { get => _mpTemp; set => Set(ref _mpTemp, Math.Clamp(value, 50m, 2000m)); }
     public string MpLog { get => _mpLog; private set => Set(ref _mpLog, value); }
-    private string MpOptions() => new JsonObject
+    private string MpOptions()
     {
-        ["scheme"] = MpSchemeIds[_mpScheme], ["per_bead"] = (int)_mpPerBead, ["temperature"] = (double)_mpTemp,
-        ["chains"] = (int)_mpChains, ["dp"] = (int)_mpDp, ["density"] = (double)_mpDensity, ["seed"] = MtSeedChoice.Take(),
-    }.ToJsonString();
+        var o = new JsonObject
+        {
+            ["scheme"] = MpSchemeIds[_mpScheme], ["per_bead"] = (int)_mpPerBead, ["temperature"] = (double)_mpTemp,
+            ["chains"] = (int)_mpChains, ["dp"] = (int)_mpDp, ["density"] = (double)_mpDensity, ["seed"] = MtSeedChoice.Take(),
+        };
+        if (_mpIbi) o["ibi"] = new JsonObject { ["iterations"] = (int)_mpIbiIter, ["run_ps"] = (double)_mpIbiPs };
+        return o.ToJsonString();
+    }
+    // the non-bonded pair refined by iterative Boltzmann inversion (C10)
+    private bool _mpIbi;
+    private decimal _mpIbiIter = 6, _mpIbiPs = 20;
+    public bool MpIbi { get => _mpIbi; set => Set(ref _mpIbi, value); }
+    public decimal MpIbiIterations { get => _mpIbiIter; set => Set(ref _mpIbiIter, Math.Clamp(Math.Round(value), 1, 50)); }
+    public decimal MpIbiPs { get => _mpIbiPs; set => Set(ref _mpIbiPs, Math.Clamp(value, 1, 500)); }
 
     /// <summary>The report as text: the notes, then each bond and angle type with its inverted parameters.</summary>
     private static string MpReportText(string json)

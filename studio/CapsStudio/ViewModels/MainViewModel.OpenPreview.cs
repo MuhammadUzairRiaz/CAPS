@@ -81,6 +81,7 @@ public sealed partial class MainViewModel
     /// <summary>Shows what the file holds (read off the UI thread); a dump picks up a data file beside it as its topology.</summary>
     public void PreviewOpen(string path, string? topology = null)
     {
+        if (IsReaderFile(path)) { OpenReader(path); return; }
         if (topology == null && NeedsImport(path)) { ShowImport(path); return; }
         if (_module != 27) _returnModule = _module;
         _openPath = path;

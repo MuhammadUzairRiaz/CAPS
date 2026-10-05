@@ -64,6 +64,10 @@ struct PairFunc { int form; double a, b, c; };
 // 31 / 32 cosine-squared attraction (LAMMPS cosine/squared; Cooke–Deserno): −ε below σ, −ε cos²(π(r − σ) / 2(rc − σ)) up to
 // the pair's cut-off rc (a = ε, b = σ, c = rc), 32 with WCA ε[(σ/r)¹² − 2(σ/r)⁶ + 1] below σ; rc = σ: WCA only.
 constexpr int kPairSdk96 = 11, kPairSdk124 = 12, kPairSdk126 = 13, kPairSdk125 = 14, kPairGromacs = 20, kPairCos2 = 31, kPairCos2Wca = 32;
+// 40 a tabulated pair (iterative Boltzmann inversion, numerical potentials): ForceField::tables[a], E and F = −dE/dr on an
+// even grid from r0 by dr, linearly interpolated; zero beyond the last point, a straight wall (the first force) below r0.
+constexpr int kPairTable = 40;
+struct TabulatedPair { double r0 = 0, dr = 0.01; std::vector<double> e, f; };
 
 // Class II forms (COMPASS, PCFF), as LAMMPS bond / angle / dihedral / improper_style class2. Angles in radians.
 struct Class2Bond { uint32_t i, j; double r0, k2, k3, k4; };               // K2 Δr² + K3 Δr³ + K4 Δr⁴
@@ -137,6 +141,7 @@ struct ForceField {
   std::vector<CbtTorsion> cbt;             // combined bending–torsion (counted with the torsions)
   std::vector<PairLJ> lj_pairs;            // explicit LJ pairs (counted with van der Waals)
   std::map<std::pair<int, int>, PairFunc> pair_func;       // non-LJ pair forms for type-index pairs (a ≤ b)
+  std::vector<TabulatedPair> tables;                       // the tabulated pairs (pair_func form kPairTable, a = index)
   // Separate 1-4 Lennard-Jones parameters per type (CHARMM ε14 / Rmin14, GROMOS C6/C12 1-4); empty: the normal
   // parameters scaled by lj14.
   std::vector<PairType> lj14_types;
@@ -222,6 +227,12 @@ struct EnergyOptions {
   double force_cap = 0.0;        // > 0: LJ becomes linear inside the radius where |F| reaches the cap (push-off)
   int threads = 0;               // worker threads for pair terms; 0 = one per hardware thread (at most 16)
   bool tail = true;              // LJ long-range tail corrections to energy and pressure (homogeneous fluid beyond rc)
+  // Alchemical decoupling (free energies by TI): the pairs between the atoms marked here and the rest have soft-core
+  // Lennard-Jones (Beutler et al. 1994: r_sc⁶ = α σ⁶ (1 − λ_lj) + r⁶, U = λ_lj 4ε[(σ⁶/r_sc⁶)² − σ⁶/r_sc⁶]) and Coulomb ×
+  // λ_coul; the marked atoms keep their own interactions in full. ∂U/∂λ of both parts come back in EnergyTerms. Plain
+  // 12-6 pairs and pairwise electrostatics (DSF, reaction field) only, no tail correction.
+  const std::vector<char>* alchemical = nullptr;
+  double lambda_lj = 1.0, lambda_coul = 1.0, sc_alpha = 0.5;
   // Which terms (r-RESPA splits them): 1 bonded (bonds, angles, torsions, impropers, cross terms), 2 non-bonded (pairs,
   // 1-4 pairs, electrostatics of bonded partners, k-space, self and tail terms), 3 both
   int parts = 3;
@@ -231,6 +242,7 @@ struct EnergyTerms {
   double bond = 0, angle = 0, dihedral = 0, improper = 0, vdw = 0, coulomb = 0;   // vdw includes the tail term
   double virial = 0;             // Σ r·f, kcal/mol
   double w[6] = {0, 0, 0, 0, 0, 0};   // virial tensor Σ r_a f_b (symmetrised), xx yy zz xy xz yz; trace = virial
+  double dudl_lj = 0, dudl_coul = 0;  // ∂U/∂λ of the alchemical pairs (EnergyOptions::alchemical), kcal/mol
   double total() const { return bond + angle + dihedral + improper + vdw + coulomb; }
 };
 

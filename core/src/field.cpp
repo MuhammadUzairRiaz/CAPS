@@ -275,6 +275,7 @@ Evaluator::Evaluator(const ForceField& ff, const EnergyOptions& o)
   pb_.assign(nt * nt, 0.0);
   pc_.assign(nt * nt, 0.0);
   for (const auto& [ab, pf] : ff.pair_func) {
+    if (pf.form == kPairTable && (pf.a < 0 || size_t(pf.a) >= ff.tables.size())) throw FieldError("a tabulated pair refers to a table that is not there");
     for (const size_t tp : {size_t(ab.first) * nt + ab.second, size_t(ab.second) * nt + ab.first}) {
       form_[tp] = uint8_t(pf.form);
       pa_[tp] = pf.a;
@@ -857,6 +858,21 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
       en += scale * ev;
       return -scale * dEdr / r;
     }
+    if (form_[tp] == kPairTable) {   // tabulated: E and F = −dE/dr linearly interpolated
+      const auto& tb = ff_.tables[size_t(pa_[tp])];
+      const double r = std::sqrt(r2);
+      const size_t m = tb.e.size();
+      if (m < 2 || r >= tb.r0 + tb.dr * double(m - 1)) return 0.0;
+      if (r < tb.r0) {   // below the table: a straight wall at the first force
+        en += scale * (tb.e[0] + tb.f[0] * (tb.r0 - r));
+        return scale * tb.f[0] / r;
+      }
+      const double u = (r - tb.r0) / tb.dr;
+      const size_t k = std::min(m - 2, size_t(u));
+      const double w = u - double(k);
+      en += scale * (tb.e[k] * (1 - w) + tb.e[k + 1] * w);
+      return scale * (tb.f[k] * (1 - w) + tb.f[k + 1] * w) / r;
+    }
     if (form_[tp] == kPairGromacs) {   // LJ with GROMACS's force switch (lj/gromacs)
       const double e = pa_[tp], s6 = std::pow(pb_[tp], 6), r2i = 1 / r2, r6i = r2i * r2i * r2i;
       const double* g = &gsw_[5 * tp];
@@ -909,7 +925,7 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
   // Energy shift so that LJ is zero at the cut-off.
   // With the tail correction the LJ energy is truncated, not shifted (the tail term assumes the plain potential).
   auto lj_shift = [&](size_t tp) {
-    if (opt_.tail || ff_.lj_fsw || form_[tp] == kPairGromacs || form_[tp] == kPairCos2 || form_[tp] == kPairCos2Wca) return 0.0;   // zero at their cut-offs by construction
+    if (opt_.tail || ff_.lj_fsw || form_[tp] == kPairGromacs || form_[tp] == kPairCos2 || form_[tp] == kPairCos2Wca || form_[tp] == kPairTable) return 0.0;   // zero at their cut-offs by construction
     if (form_[tp] != 0) {
       double e0 = 0;
       lj(tp, rc2, 1.0, e0);
@@ -961,7 +977,28 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
   const int nth = pool_->size();
   tf_.resize(nth);
   // per worker: bond, angle, dihedral, improper, vdW, Coulomb, virial, virial tensor (xx yy zz xy xz yz)
-  std::vector<std::array<double, 13>> acc(nth);
+  std::vector<std::array<double, 15>> acc(nth);   // + ∂U/∂λ of the alchemical pairs (LJ, Coulomb)
+  // alchemical pairs: plain 12-6 for every type an alchemical atom has, pairwise electrostatics, no tail
+  const std::vector<char>* alch = opt_.alchemical && opt_.alchemical->size() == n ? opt_.alchemical : nullptr;
+  if (alch && nonb) {
+    if (pme) throw FieldError("alchemical pairs need pairwise electrostatics (DSF or reaction field), not PME");
+    if (opt_.tail) throw FieldError("alchemical pairs need the tail correction off");
+    if (opt_.force_cap > 0 || ff_.lj_fsw || lj96_) throw FieldError("alchemical pairs take the plain 12-6 Lennard-Jones only");
+    std::vector<char> at(nt, 0);
+    for (size_t i = 0; i < n; ++i) if ((*alch)[i]) at[size_t(ff_.type_index[i])] = 1;
+    for (size_t a = 0; a < nt; ++a)
+      if (at[a])
+        for (size_t b = 0; b < nt; ++b)
+          if (form_[a * nt + b] != 0) throw FieldError("alchemical pairs take the plain 12-6 Lennard-Jones only (" + ff_.type_names[a] + " has another pair form)");
+  }
+  const double lam_lj = opt_.lambda_lj, lam_c = opt_.lambda_coul, sca = opt_.sc_alpha;
+  // the soft-core pair: energy, −(dU/dr)/r and ∂U/∂λ at r² (σ⁶ = s6, ε)
+  auto softcore = [&](double r2, double s6, double eps, double& u, double& fr_out, double& dudl) {
+    const double r6 = r2 * r2 * r2, rs6 = sca * s6 * (1 - lam_lj) + r6, x = s6 / rs6;
+    u = lam_lj * 4 * eps * (x * x - x);
+    fr_out = 24 * eps * lam_lj * (2 * x - 1) * x * r6 / (rs6 * r2);   // −(dU/dr)/r with dr_sc⁶/dr = 6r⁵
+    dudl = 4 * eps * (x * x - x) + lam_lj * 4 * eps * (2 * x - 1) * x * sca * s6 / rs6;
+  };
   for (auto& v : acc) v.fill(0.0);
 
   const bool frozen = frozen_;
@@ -969,7 +1006,7 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
   pool_->run(nonb ? pi_.size() : 0, [&](int t, size_t b, size_t en) {
     std::vector<double>& ft = tf_[t];
     ft.assign(x.size(), 0.0);
-    double evdw = 0, ecoul = 0, vir = 0, wv[6] = {0, 0, 0, 0, 0, 0};
+    double evdw = 0, ecoul = 0, vir = 0, wv[6] = {0, 0, 0, 0, 0, 0}, dl_lj = 0, dl_c = 0;
     for (size_t p = b; p < en; ++p) {
       const uint32_t i = pi_[p], j = pj_[p];
       const double dx = x[3 * j] - x[3 * i] + shift_[3 * p], dy = x[3 * j + 1] - x[3 * i + 1] + shift_[3 * p + 1],
@@ -979,10 +1016,23 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
       // a self image is listed once for each ±shift pair (the pair list keeps one), so it counts in full, as in LAMMPS
       const double w = 1.0;
       const size_t tp = size_t(ff_.type_index[i]) * nt + ff_.type_index[j];
-      double ev = 0;
-      double fr = lj(tp, r2, 1.0, ev);
-      ev -= lj_shift(tp);
+      const bool ab = alch && (*alch)[i] != (*alch)[j];   // an alchemical pair: soft-core, scaled
+      double ev = 0, fr = 0;
+      if (ab) {
+        if (eps_[tp] > 0) {
+          double u, fsc, dl, uc, fcc, dlc;
+          softcore(r2, s6_[tp], eps_[tp], u, fsc, dl);
+          softcore(rc2, s6_[tp], eps_[tp], uc, fcc, dlc);   // shifted to zero at the cut-off, as the plain pairs
+          ev = u - uc;
+          fr = fsc;
+          dl_lj += dl - dlc;
+        }
+      } else {
+        fr = lj(tp, r2, 1.0, ev);
+        ev -= lj_shift(tp);
+      }
       evdw += w * ev;
+      const double ecoul0 = ecoul, fr0 = fr;
       if (coul && q[i] != 0 && q[j] != 0) {
         const double r = std::sqrt(r2), qq = kCoulomb * q[i] * q[j];
         double ex2;
@@ -1008,6 +1058,12 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
           ecoul += w * qq * (er / r - dsf_e0 + dsf_f0 * (r - rc));
           fr += qq * (er / r2 + a2pi * ex2 / r - dsf_f0) / r;
         }
+      }
+      if (ab && ecoul != ecoul0) {   // the pair's electrostatics × λ_coul, its full value is ∂U/∂λ_coul
+        const double de = ecoul - ecoul0;
+        dl_c += de;
+        ecoul = ecoul0 + lam_c * de;
+        fr = fr0 + lam_c * (fr - fr0);
       }
       if (hbon && i != j && r2 < hro2) {   // hydrogen bonds, either atom the donor
         auto run = [&](uint32_t D, uint32_t Aa, const Vec3& dDA) {
@@ -1041,6 +1097,8 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
     acc[t][5] += ecoul;
     acc[t][6] += vir;
     for (int c = 0; c < 6; ++c) acc[t][7 + c] += wv[c];
+    acc[t][13] += dl_lj;
+    acc[t][14] += dl_c;
   });
 
   // Phase 2: bonded terms, 1-4 pairs and the electrostatics of bonded partners, as one index space split over workers.
@@ -1436,6 +1494,8 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
     e.coulomb += acc[t][5];
     e.virial += acc[t][6];
     for (int c = 0; c < 6; ++c) e.w[c] += acc[t][7 + c];
+    e.dudl_lj += acc[t][13];
+    e.dudl_coul += acc[t][14];
   }
   if (!nonb) return e;   // r-RESPA inner step: bonded terms only
   if (ff_.sw.on) {   // Stillinger–Weber: pairs and triplets within aσ, from the pair list (its shifts carry the images)

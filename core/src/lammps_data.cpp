@@ -127,6 +127,7 @@ struct Layout {
   bool sdk = false;                        // SDK / SPICA pairs (lj/sdk): no tail correction in LAMMPS
   bool gromacs = false;                    // MARTINI: lj/gromacs(/coul/gromacs), one style for every pair
   bool cos2 = false;                       // cosine/squared pairs (Cooke–Deserno): no shift, no tail
+  bool table_only = false;                 // every pair tabulated (an IBI model): pair_style table, the tables in caps_pairs.table
   bool charmm = false;                     // CHARMM (native): lj/charmmfsw, 1-4 pairs through dihedral charmmfsw weights
   bool hbond = false;                      // DREIDING hydrogen bonds: hbond/dreiding/lj overlaid on the pair style
   bool coreshell = false;                  // core-shell pairs (a shell on its core): the long-range Coulomb as .../cs
@@ -428,12 +429,17 @@ Layout build(const System& s, const ForceField& ff, const LammpsStyle& st = {}) 
       const int f = it == ff.pair_func.end() ? 0 : it->second.form;
       // a 12-6 pair in a 9-6 system (another force field's group beside class II): lj/cut, with its own tail
       if (f == kPairSdk126 && L.pair_base == "lj/class2") { L.pair_styles.insert("lj/cut"); continue; }
-      L.pair_styles.insert(f == 0 ? L.pair_base : f == 1 ? "buck" : f == 2 ? "morse" : f >= kPairSdk96 && f <= kPairSdk125 ? "lj/sdk" : f == kPairGromacs ? "lj/gromacs" : f == kPairCos2 || f == kPairCos2Wca ? "cosine/squared" : "?");
+      L.pair_styles.insert(f == 0 ? L.pair_base : f == 1 ? "buck" : f == 2 ? "morse" : f >= kPairSdk96 && f <= kPairSdk125 ? "lj/sdk" : f == kPairGromacs ? "lj/gromacs" : f == kPairCos2 || f == kPairCos2Wca ? "cosine/squared" : f == kPairTable ? "table" : "?");
     }
   if (L.pair_styles.count("?")) throw FieldError("a pair form has no LAMMPS style");
   L.pair_hybrid = ff.pair_form == "lj9-6" || !ff.pair_func.empty();
   L.sdk = L.pair_styles.count("lj/sdk") > 0;
   L.cos2 = L.pair_styles.count("cosine/squared") > 0;
+  if (L.pair_styles.count("table")) {
+    if (L.pair_styles.size() > 1) throw FieldError("tabulated pairs beside other pair forms are not written for LAMMPS yet (every pair tabulated is)");
+    L.table_only = true;
+    L.pair_hybrid = false;
+  }
   if (L.pair_styles.count("lj/gromacs")) {
     if (L.pair_styles.size() > 1) throw FieldError("lj/gromacs with other pair forms has no LAMMPS style");
     L.gromacs = true;
@@ -621,7 +627,14 @@ std::vector<std::string> style_lines(const Layout& L, const ForceField& ff, cons
     if (L.coul == "long") r.push_back("kspace_style " + L.kspace + " " + fmt_accuracy(L.kspace_accuracy));
     return r;
   }
-  if (L.gromacs) {   // MARTINI: the GROMACS switch for LJ (and Coulomb), inner and outer radii
+  if (L.table_only) {   // an IBI model: the tables, linearly interpolated as CAPS does
+    if (e.coulomb) throw FieldError("a tabulated model with charges is not written for LAMMPS yet (turn electrostatics off)");
+    // as many internal points as the file's own (one even grid): LAMMPS then takes the values as they are instead of
+    // re-sampling them by spline, and interpolates linearly as CAPS does
+    size_t npt = 0;
+    for (const auto& tb : ff.tables) npt = std::max(npt, tb.e.size());
+    r.push_back("pair_style table linear " + std::to_string(npt));
+  } else if (L.gromacs) {   // MARTINI: the GROMACS switch for LJ (and Coulomb), inner and outer radii
     if (e.coulomb && ff.coul_gromacs)
       std::snprintf(b, sizeof b, "pair_style lj/gromacs/coul/gromacs %.6f %.6f %.6f %.6f", ff.lj_inner, e.cutoff, std::max(ff.coul_inner, 1e-6), e.cutoff);
     else if (e.coulomb) throw FieldError("lj/gromacs needs the GROMACS Coulomb form");
@@ -657,7 +670,7 @@ std::vector<std::string> style_lines(const Layout& L, const ForceField& ff, cons
   // CAPS: with tail corrections the potentials are truncated at the cut-off (plus the tail when there is a cell);
   // without, they are shifted to zero there
   // lj/gromacs is zero at the cut-off by itself; lj/sdk has no tail correction (CAPS adds none for it either)
-  if (L.gromacs || (L.cos2 && L.pair_styles.size() == 1)) {
+  if (L.gromacs || L.table_only || (L.cos2 && L.pair_styles.size() == 1)) {   // zero at the cut-off by construction
   } else if (L.cs_buck && L.pair_combined.find("dsf") != std::string::npos) {   // born/coul/dsf/cs: no tail correction in LAMMPS
     if (!e.tail) r.push_back("pair_modify shift yes");
   } else if (L.hbond) {   // the tail or shift for the Lennard-Jones sub-style only
@@ -710,6 +723,10 @@ std::vector<std::string> pair_lines(const Layout& L, const ForceField& ff) {
         coef = std::string(" ") + nm[f - kPairSdk96] + num({it->second.a, it->second.b});
       } else if (f == kPairGromacs) {
         coef = num({it->second.a, it->second.b});
+      } else if (f == kPairTable) {   // the table file next to the input, the section T<index>, its last point the cut-off
+        const auto& tb = ff.tables.at(size_t(it->second.a));
+        style = "table";
+        coef = " caps_pairs.table T" + std::to_string(int(it->second.a)) + num({tb.r0 + tb.dr * double(tb.e.size() - 1)});
       } else if (f == kPairCos2 || f == kPairCos2Wca) {
         style = "cosine/squared";
         coef = num({it->second.a, it->second.b, it->second.c}) + (f == kPairCos2Wca ? " wca" : "");
@@ -1344,6 +1361,22 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
   const ForceField& ff = metal ? mff : ff0;
   const double tu = metal ? 1e-3 : 1.0;          // fs → ps
   const double pu = metal ? 1.01325 : 1.0;       // atm → bar
+  if (!ff.tables.empty()) {   // tabulated pairs: caps_pairs.table beside the input, one section per table (r, E, F = −dE/dr)
+    const size_t slash = path.find_last_of('/');
+    std::ofstream tf((slash == std::string::npos ? std::string() : path.substr(0, slash + 1)) + "caps_pairs.table");
+    tf << "# tabulated pair potentials written by CAPS (r in Å, E in kcal/mol, F = -dE/dr in kcal/mol/Å)\n";
+    for (size_t k = 0; k < ff.tables.size(); ++k) {
+      const auto& tb = ff.tables[k];
+      char hb[160];
+      std::snprintf(hb, sizeof hb, "\nT%zu\nN %zu R %.10g %.10g\n\n", k, tb.e.size(), tb.r0, tb.r0 + tb.dr * double(tb.e.size() - 1));
+      tf << hb;
+      for (size_t i = 0; i < tb.e.size(); ++i) {
+        char lb[160];
+        std::snprintf(lb, sizeof lb, "%zu %.10g %.12g %.12g\n", i + 1, tb.r0 + tb.dr * double(i), tb.e[i], tb.f[i]);
+        tf << lb;
+      }
+    }
+  }
   EnergyOptions e = e0;
   const Layout L = prepare(s, ff, e, st);
   if (notes) notes->insert(notes->end(), L.notes.begin(), L.notes.end());

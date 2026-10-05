@@ -156,7 +156,9 @@ class _MechOpts(C.Structure):
                 ("shear_ps", C.c_double), ("shear_eq_ps", C.c_double),
                 ("conf_trials", C.c_int32), ("conf_method", C.c_int32), ("conf_selection", C.c_int32), ("conf_window", C.c_double), ("conf_rmsd", C.c_double),
                 ("creep_stress", C.c_double), ("creep_t", C.c_double), ("creep_ps", C.c_double), ("creep_eq_ps", C.c_double), ("creep_axis", C.c_int32),
-                ("fr_moving", C.c_int32), ("fr_fixed", C.c_int32), ("fr_velocity", C.c_double), ("fr_ps", C.c_double), ("fr_eq_ps", C.c_double), ("fr_t", C.c_double)]
+                ("fr_moving", C.c_int32), ("fr_fixed", C.c_int32), ("fr_velocity", C.c_double), ("fr_ps", C.c_double), ("fr_eq_ps", C.c_double), ("fr_t", C.c_double),
+                ("solv_mol", C.c_int32), ("solv_coul_windows", C.c_int32), ("solv_lj_windows", C.c_int32), ("solv_ps", C.c_double), ("solv_eq_ps", C.c_double),
+                ("solv_t", C.c_double)]
 
 
 _RecipeProgress = C.CFUNCTYPE(C.c_int32, C.c_int32, C.c_int32, C.c_char_p, C.c_char_p, C.c_char_p, C.c_double, C.c_void_p)
@@ -758,12 +760,15 @@ class Document:
             raise _error()
         return buf.value.decode()
 
-    def cg_map(self, scheme: str = "unit", per_bead: int = 3, temperature: float = 300.0) -> "Document":
+    def cg_map(self, scheme: str = "unit", per_bead: int = 3, temperature: float = 300.0, ibi: Optional[dict] = None) -> "Document":
         """This all-atom structure (every frame) mapped to beads — scheme unit | backbone_side | backbone_n — with a bead
         model: Boltzmann-inverted harmonic bonds and angles, a repulsive WCA from the non-bonded bead g(r). A new Document
         (its model assigned); .report holds the inverted parameters (JSON)."""
         rep = C.create_string_buffer(1 << 20)
-        h = library().caps_cg_map(self._h, _enc(json.dumps({"scheme": scheme, "per_bead": per_bead, "temperature": temperature})), rep, len(rep))
+        o = {"scheme": scheme, "per_bead": per_bead, "temperature": temperature}
+        if ibi:   # {"iterations": 6, "run_ps": 20}: the non-bonded pair refined by iterative Boltzmann inversion
+            o["ibi"] = ibi
+        h = library().caps_cg_map(self._h, _enc(json.dumps(o)), rep, len(rep))
         if not h:
             raise _error()
         d = Document(h, "coarse-grained")
@@ -1022,6 +1027,30 @@ def _rigid(self, molecules: str = "") -> int:
 
 Document.rigid = _rigid
 Document.conformers = _conformers
+
+
+def _sorption(self, sorbate: str = "O=C=O", pressures_kpa=(), temperature: float = 300.0, insertions: int = 100000, steps: int = 200000,
+              mixture=None, map_grid: int = 0, cutoff: float = 12.0, coulomb: bool = True, seed: int = 1) -> dict:
+    """Sorption of a gas in the frame held fixed: Widom insertion (excess chemical potential, Henry constant, solubility)
+    and GCMC at each pressure (kPa). mixture: [(smiles, mole fraction), …] for an ideal gas mixture (each species at
+    y_i p; per-species loadings, isosteric heats and selectivities over the first). Returns {widom_w, mu_ex, henry_mol_kg_kpa,
+    solubility, species: [...], isotherm: [{pressure_kpa, loading, species_loading, selectivity, heat, ...}], notes}."""
+    o = {"sorbate": sorbate, "pressures_kpa": [float(x) for x in pressures_kpa], "temperature": float(temperature), "insertions": int(insertions),
+         "steps": int(steps), "map_grid": int(map_grid), "cutoff": float(cutoff), "coulomb": bool(coulomb), "seed": int(seed)}
+    if mixture:
+        o["mixture"] = [{"smiles": m, "fraction": float(y)} for m, y in mixture]
+    f = library().caps_sorption
+    f.argtypes = [C.c_void_p, C.c_char_p, C.c_void_p, C.c_void_p, C.c_char_p, C.c_int32]
+    f.restype = C.c_int32
+    buf = C.create_string_buffer((1 << 22) + len(o["pressures_kpa"]) * int(map_grid) ** 3 * 24)
+    f(self._h, _enc(json.dumps(o)), None, None, buf, len(buf))
+    r = json.loads(buf.value.decode())
+    if not r.get("ok"):
+        raise CapsError(r.get("error", "sorption failed"))
+    return r
+
+
+Document.sorption = _sorption
 Document.normal_modes = _normal_modes
 Document.animate_mode = _animate_mode
 Document.pair_histograms = _pair_histograms
@@ -1445,12 +1474,15 @@ class build:
 
     @staticmethod
     def cg_from_polymer(unit: str, name: str = "unit", scheme: str = "unit", chains: int = 10, dp: int = 20, density: float = 1.0,
-                        temperature: float = 300.0, per_bead: int = 3, seed: int = 1) -> Document:
+                        temperature: float = 300.0, per_bead: int = 3, seed: int = 1, ibi: Optional[dict] = None) -> Document:
         """A polymer (repeat-unit SMILES with two *) coarse-grained from an all-atom reference melt: chains × dp grown,
-        compressed to density (g/cm³) and mapped (see Document.cg_map). .report holds the inverted parameters."""
+        compressed to density (g/cm³) and mapped (see Document.cg_map). .report holds the inverted parameters. ibi:
+        {"iterations": 6, "run_ps": 20} refines the non-bonded pair by iterative Boltzmann inversion (a table)."""
         rep = C.create_string_buffer(1 << 20)
         spec = {"units": [{"name": name, "smiles": unit}]}
         o = {"scheme": scheme, "chains": chains, "dp": dp, "density": density, "temperature": temperature, "per_bead": per_bead, "seed": seed}
+        if ibi:
+            o["ibi"] = ibi
         h = library().caps_cg_from_polymer(_enc(json.dumps(spec)), _enc(json.dumps(o)), None, None, rep, len(rep))
         if not h:
             raise _error()
