@@ -61,6 +61,20 @@ public partial class MainWindow
     private void OnProbeCardRemove(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is ProbeCard c) _vm.RemoveProbeCard(c); }
     private void OnProbeCardAnalyze(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is ProbeCard c) _vm.ProbeCardToAnalyze(c); }
 
+    // ---- Atom bubble and the orient puck (design/boards/AtomBubble)
+    private void OnBubbleOpening(object? s, EventArgs e) { if (!_vm.OpenBubble() && s is Avalonia.Controls.Primitives.FlyoutBase f) f.Hide(); }
+    private void OnBubbleElement(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is string el) { _vm.BubbleSetElement(el); RequestRender(); } }
+    private void OnBubbleChargeKey(object? s, KeyEventArgs e) { if (e.Key == Key.Enter) { e.Handled = true; _vm.BubbleApplyCharge(); RequestRender(); } }
+    private void OnBubbleFormalKey(object? s, KeyEventArgs e) { if (e.Key == Key.Enter) { e.Handled = true; _vm.BubbleApplyFormal(); RequestRender(); } }
+    private void OnBubbleNudge(object? s, RoutedEventArgs e)
+    {
+        if ((s as Control)?.Tag is not string t || t.Length != 2) return;
+        _vm.BubbleNudge(t[0] - '0', t[1] == '+' ? 1 : -1);
+        RequestRender();
+    }
+    private void OnHAutopilot(object? s, RoutedEventArgs e) => _vm.ToggleHAutopilot();
+    private void OnOrient(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is string how) { _vm.OrientView(how); RequestViewRender(); } }
+
     // ---- Look (design/boards/Look)
     private void OnLookAll(object? s, RoutedEventArgs e) => _vm.LookScope = 0;
     private void OnLookSelection(object? s, RoutedEventArgs e) => _vm.LookScope = 1;

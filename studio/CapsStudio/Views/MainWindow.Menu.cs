@@ -72,6 +72,7 @@ public partial class MainWindow
             Item("Selection & stereo…", () => { _vm.SetModule(8); _vm.SelectionOpen = true; }),
             Item("Brush to select…", () => _vm.OpenBrush()),
             Item("Bond rules…", () => _vm.OpenRules()),
+            Item("H autopilot (on / off)", () => _vm.ToggleHAutopilot()),
             Item("History & snapshots…", () => { _vm.SetModule(8); _vm.HistoryOpen = true; }),
             Item("Compare states…", () => { _vm.SetModule(8); _vm.StatesOpen = true; }),
             Sep(),

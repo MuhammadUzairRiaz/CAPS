@@ -4054,6 +4054,43 @@ internal static class SelfTest
             vm.SetModule(8);
             vm.CloseAllStructures();
         }
+        // Atom bubble, H autopilot, orient puck: ethane's carbon made O with the autopilot on (its two surplus H go); a formal
+        // charge; the view turned onto a ring's plane
+        {
+            var eth = Path.Combine(outDir, "caps-selftest-ethane.mol2");
+            var (edoc, _) = CapsStudio.Interop.CapsDocument.BuildSmiles("CC", "uff", 1, 1, "ethane");
+            using (edoc) edoc.Save(eth);
+            vm.Open(eth);
+            vm.BrushQuery = "index 1";
+            vm.RunBrushQuery();
+            var opened = vm.OpenBubble();
+            var title = vm.BubbleTitle;
+            var wasOn = vm.HAutopilotOn;
+            if (!wasOn) vm.ToggleHAutopilot();
+            vm.BubbleSetElement("O");
+            var atoms = (int)vm.Document!.Summary().Atoms;
+            var hText = vm.HAutoText;
+            vm.BubbleFormal = "+1";
+            vm.BubbleApplyFormal();
+            var q = vm.Document.Atom(0).Charge;
+            if (!wasOn) vm.ToggleHAutopilot();
+            Check(opened && title.StartsWith("C1", StringComparison.Ordinal) && vm.BubbleElement == "O" && atoms == 6 && hText.Contains("−2 H") && Math.Abs(q - 1) < 1e-9,
+                  $"atom bubble: {title} → {vm.BubbleElement} · {atoms} atoms · {hText} · formal {q}");
+            // the orient puck: a benzene ring looked onto (its normal at the viewer after the turn)
+            var bz = Path.Combine(outDir, "caps-selftest-benzene.mol2");
+            var (bdoc, _) = CapsStudio.Interop.CapsDocument.BuildSmiles("c1ccccc1", "uff", 1, 1, "benzene");
+            using (bdoc) bdoc.Save(bz);
+            vm.Open(bz);
+            vm.BrushQuery = "element C";
+            vm.RunBrushQuery();
+            vm.OrientView("onto");
+            var yaw = vm.Camera.Yaw; var pitch = vm.Camera.Pitch;
+            // the ring's carbons all at the same view depth once the normal faces the viewer
+            double Depth(int i) { var a = vm.Document!.Atom(i); double x = a.X * Math.Cos(yaw) + a.Z * Math.Sin(yaw), z = -a.X * Math.Sin(yaw) + a.Z * Math.Cos(yaw); return a.Y * Math.Sin(pitch) + z * Math.Cos(pitch); }
+            var depths = Enumerable.Range(0, 12).Where(i => vm.Document!.Atom(i).ElementSymbol == "C").Select(Depth).ToArray();
+            Check(depths.Length == 6 && depths.Max() - depths.Min() < 0.05, $"orient puck onto the ring: depth spread {depths.Max() - depths.Min():0.000} Å · {vm.Status}");
+            vm.CloseAllStructures();
+        }
         // Bond rules: the melt's pairs; C–H never bonded counted (–660) and applied as one undoable step
         {
             vm.Open(Path.Combine(dir, "ps_melt.data"));
