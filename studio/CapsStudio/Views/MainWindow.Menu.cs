@@ -36,7 +36,7 @@ public partial class MainWindow
         var menu = new NativeMenu();
         menu.Add(Top("File",
             Item("New project…", () => _vm.OpenNewProject()),
-            Item("Open project…", () => _ = OpenProjectFileDialog()),
+            Item("Open project…", () => _ = OpenProjectFileDialog()),   // its folder
             Item("Save project", () => _vm.Status = _vm.HasCapsProject ? _vm.SaveCapsProject() : "No project is open: New project… makes one"),
             Item("Close project", () => _vm.Status = _vm.HasCapsProject ? _vm.CloseCapsProject() : "No project is open"),
             Sep(),

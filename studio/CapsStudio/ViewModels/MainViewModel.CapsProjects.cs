@@ -88,6 +88,8 @@ public sealed partial class MainViewModel
     /// <summary>A project whose folder moved: its .capsproj in the new place.</summary>
     public string LocateProject(KnownProject k, string newFile)
     {
+        if (CapsProjectFile.Resolve(newFile) is not { } resolved) return $"{Path.GetFileName(newFile)} holds no CAPS project (no .capsproj file in it)";
+        newFile = resolved;
         try
         {
             var m = CapsProjectFile.Read(newFile);
@@ -181,6 +183,8 @@ public sealed partial class MainViewModel
     /// kept as the last session.</summary>
     public string OpenCapsProject(string file)
     {
+        if (CapsProjectFile.Resolve(file) is not { } resolved) return $"{Path.GetFileName(file)} holds no CAPS project (no .capsproj file in it)";
+        file = resolved;
         if (_projFile != null && SameFile(file, _projFile)) { SetModule(8); return $"{CapsProjectName} is open"; }
         if (Busy) return "Wait for the run to finish before opening another project";
         JsonObject m;

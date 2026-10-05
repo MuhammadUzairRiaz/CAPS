@@ -3964,9 +3964,11 @@ internal static class SelfTest
             var found = vm.KnownProjects.Count == 1 && vm.KnownProjects[0].Found && vm.KnownProjects[0].File == newFile;
             vm.ForgetProject(vm.KnownProjects[0]);
             Check(renamed && lost && found && !vm.HasKnownProjects && File.Exists(newFile), $"project renamed {renamed} · moved: missing {lost} · {located} · forgotten, files kept");
-            // a .capsproj chosen in Open opens the project
-            vm.Status = vm.OpenCapsProject(newFile);
-            Check(vm.HasCapsProject && vm.ProjectItems.Count == 2 && vm.KnownProjects.Count == 1, "project file opened again: " + vm.Status);
+            // Open project…: the project's folder is enough (its .capsproj is found inside); a folder without one says so
+            var notProj = vm.OpenCapsProject(Path.Combine(moved, "exports"));
+            vm.Status = vm.OpenCapsProject(moved);
+            Check(vm.HasCapsProject && vm.ProjectItems.Count == 2 && vm.KnownProjects.Count == 1 && vm.CapsProjectPath == newFile && notProj.Contains("no .capsproj"),
+                  $"project opened from its folder: {vm.Status} · a folder without one: {notProj}");
             vm.CloseCapsProject();
         }
         // Pack › Add molecule › Your molecules: a SMILES saved under its name, checked, added by name, removed

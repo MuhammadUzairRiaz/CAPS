@@ -278,7 +278,7 @@ public partial class MainWindow : Window
 
     private void TryOpen(string path, string? topology = null)
     {
-        if (path.EndsWith(ViewModels.CapsProjectFile.Extension, StringComparison.OrdinalIgnoreCase)) { _vm.Status = _vm.OpenCapsProject(path); return; }
+        if (path.EndsWith(ViewModels.CapsProjectFile.Extension, StringComparison.OrdinalIgnoreCase) || Directory.Exists(path)) { _vm.Status = _vm.OpenCapsProject(path); return; }
         try
         {
             // A dump opened on its own picks up a data file with the same stem, for types, masses and bonds.
@@ -341,8 +341,9 @@ public partial class MainWindow : Window
             return;
         }
         if (trajs.Count == 1) { TryOpen(trajs[0], topo); return; }
-        // a project file opens the project (the first one, when several are chosen)
-        if (paths.FirstOrDefault(p => Ext(p) == ViewModels.CapsProjectFile.Extension) is { } proj) { _vm.Status = _vm.OpenCapsProject(proj); return; }
+        // a project file, or a project's folder dropped whole, opens the project (the first one, when several are chosen)
+        if (paths.FirstOrDefault(p => Ext(p) == ViewModels.CapsProjectFile.Extension || Directory.Exists(p) && ViewModels.CapsProjectFile.Resolve(p) != null) is { } proj)
+        { _vm.Status = _vm.OpenCapsProject(proj); return; }
         foreach (var p in paths) TryOpen(p);
     }
 
