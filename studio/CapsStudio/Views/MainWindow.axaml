@@ -3273,6 +3273,50 @@
                       <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding Analyze.CijConfigsD}" Minimum="1" Maximum="50" Increment="1" FormatString="0" />
                     </Grid>
                   </StackPanel>
+                  <StackPanel Spacing="6" IsVisible="{Binding Analyze.CreepChip.IsOn}">
+                    <TextBlock Text="CREEP (constant stress)" Classes="h3" Margin="0,6,0,0" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="6" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
+                      <TextBlock Text="Stress (MPa, tension +)" Classes="dim" /><TextBlock Grid.Column="1" Text="Axis" Classes="dim" />
+                      <NumericUpDown Grid.Row="1" Value="{Binding Analyze.CreepStressD}" Minimum="-2000" Maximum="2000" Increment="5" FormatString="0.##" />
+                      <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{x:Static vm:AnalyzeViewModel.CreepAxes}" SelectedIndex="{Binding Analyze.CreepAxis}" HorizontalAlignment="Stretch" />
+                      <TextBlock Grid.Row="2" Text="Temperature (K)" Classes="dim" Margin="0,4,0,0" /><TextBlock Grid.Row="2" Grid.Column="1" Text="Held for (ps)" Classes="dim" Margin="0,4,0,0" />
+                      <NumericUpDown Grid.Row="3" Value="{Binding Analyze.CreepTD}" Minimum="1" Increment="10" FormatString="0" />
+                      <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding Analyze.CreepPsD}" Minimum="1" Increment="50" FormatString="0.#" />
+                      <TextBlock Grid.Row="4" Text="NPT first (ps)" Classes="dim" Margin="0,4,0,0" />
+                      <NumericUpDown Grid.Row="5" Value="{Binding Analyze.CreepEqD}" Minimum="0" Increment="10" FormatString="0.#" />
+                    </Grid>
+                    <TextBlock Text="{Binding Analyze.CreepText}" Classes="mono" FontSize="11" />
+                    <TextBlock Classes="dim" TextWrapping="Wrap" Text="The stressed axis holds −σ as its pressure, the others 1 atm (Berendsen per axis): over the first few τ_p the cell follows the barostat, after that the polymer creeps — at nanosecond times, so far less than in a test." />
+                  </StackPanel>
+                  <StackPanel Spacing="6" IsVisible="{Binding Analyze.ConfChip.IsOn}">
+                    <TextBlock Text="CONFORMER SEARCH" Classes="h3" Margin="0,6,0,0" />
+                    <ComboBox ItemsSource="{x:Static vm:AnalyzeViewModel.ConfMethods}" SelectedIndex="{Binding Analyze.ConfMethod}" HorizontalAlignment="Stretch" />
+                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6" RowDefinitions="Auto,Auto">
+                      <TextBlock Text="Starts" Classes="dim" /><TextBlock Grid.Column="1" Text="Window (kcal/mol)" Classes="dim" /><TextBlock Grid.Column="2" Text="Same if RMSD &lt; (Å)" Classes="dim" />
+                      <NumericUpDown Grid.Row="1" Value="{Binding Analyze.ConfTrialsD}" Minimum="1" Maximum="5000" Increment="10" FormatString="0" />
+                      <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding Analyze.ConfWindowD}" Minimum="0.1" Increment="1" FormatString="0.#" />
+                      <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding Analyze.ConfRmsdD}" Minimum="0.05" Increment="0.05" FormatString="0.##" />
+                    </Grid>
+                    <CheckBox Content="Only the selected atoms (else the whole frame)" IsChecked="{Binding Analyze.ConfSelection}" />
+                    <TextBlock Classes="dim" TextWrapping="Wrap" Text="In vacuum, with the assigned force field. Rings are not sampled; mirror-image conformers count as different only when their heavy atoms do not superpose. Populations at the NVT temperature, from energies alone." />
+                  </StackPanel>
+                  <StackPanel Spacing="6" IsVisible="{Binding Analyze.NemdChip.IsOn}">
+                    <TextBlock Text="SHEAR FLOW · η(γ̇)" Classes="h3" Margin="0,6,0,0" />
+                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6" RowDefinitions="Auto,Auto,Auto,Auto">
+                      <TextBlock Text="Lowest γ̇ (1/ps)" Classes="dim" /><TextBlock Grid.Column="1" Text="Highest" Classes="dim" /><TextBlock Grid.Column="2" Text="Rates" Classes="dim" />
+                      <NumericUpDown Grid.Row="1" Value="{Binding Analyze.ShearLoD}" Minimum="0.000001" Increment="0.005" FormatString="0.####" />
+                      <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding Analyze.ShearHiD}" Minimum="0.000001" Increment="0.05" FormatString="0.####" />
+                      <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding Analyze.ShearPointsD}" Minimum="1" Maximum="12" Increment="1" FormatString="0" />
+                      <TextBlock Grid.Row="2" Text="Per rate (ps)" Classes="dim" Margin="0,4,0,0" /><TextBlock Grid.Row="2" Grid.Column="1" Text="NVT first (ps)" Classes="dim" Margin="0,4,0,0" />
+                      <TextBlock Grid.Row="2" Grid.Column="2" Text="T (K)" Classes="dim" Margin="0,4,0,0" />
+                      <NumericUpDown Grid.Row="3" Value="{Binding Analyze.ShearPsD}" Minimum="0.1" Increment="10" FormatString="0.#" />
+                      <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding Analyze.ShearEqD}" Minimum="0" Increment="5" FormatString="0.#" />
+                      <NumericUpDown Grid.Row="3" Grid.Column="2" Value="{Binding Analyze.ShearTD}" Minimum="1" Increment="10" FormatString="0" IsEnabled="{Binding Analyze.ShearOwnT}"
+                                     ToolTip.Tip="With another protocol on, the shear takes that protocol's temperature" />
+                    </Grid>
+                    <TextBlock Text="{Binding Analyze.ShearRatesText}" Classes="mono" FontSize="11" TextWrapping="Wrap" />
+                    <TextBlock Classes="dim" TextWrapping="Wrap" Text="Flow along x, gradient along y; the cell tilts with the flow. The stress signal falls with γ̇ while its noise does not: low rates need long runs. Each rate runs on a copy of the current frame." />
+                  </StackPanel>
                   <StackPanel Spacing="6" IsVisible="{Binding Analyze.NvtRunOn}">
                     <TextBlock Text="NVT RUN · STRESS FLUCTUATIONS, VISCOSITY" Classes="h3" Margin="0,6,0,0" />
                     <Grid ColumnDefinitions="*,*" ColumnSpacing="6" RowDefinitions="Auto,Auto">
@@ -3314,6 +3358,8 @@
                             <TextBlock Text="{Binding Verdict}" Foreground="{Binding VerdictBrush}" FontSize="11" TextWrapping="Wrap" />
                           </StackPanel>
                           <TextBlock Text="{Binding ExtraText}" IsVisible="{Binding HasExtra}" Classes="mono" FontSize="10.5" TextWrapping="Wrap" Foreground="{DynamicResource MutedB}" />
+                          <Button Classes="small" Content="Open them as frames in a copy" Click="OnOpenConformers" HorizontalAlignment="Left" IsVisible="{Binding IsConformers}"
+                                  ToolTip.Tip="The same search again on a copy of the structure, whose frames become the conformers, lowest first" />
                           <Grid ColumnDefinitions="Auto,80,*" ColumnSpacing="8" IsVisible="{Binding IsModes}">
                             <TextBlock Text="mode" Classes="dim" VerticalAlignment="Center" />
                             <NumericUpDown Grid.Column="1" Value="{Binding PickMode}" Minimum="1" Maximum="{Binding ModeCount}" Increment="1" FormatString="0" />

@@ -193,4 +193,35 @@ std::vector<Property> cooling_properties(const CoolingResult& r) {
   return out;
 }
 
+
+std::vector<Property> nemd_properties(const NemdResult& r) {
+  Property q = prop("nemd", "Shear viscosity η(γ̇) (NEMD)", "mPa·s",
+                    "SLLOD planar Couette flow (Evans & Morriss 1984), η = −⟨P_xy⟩/γ̇ in the steady state; the value at the lowest rate", NaN);
+  q.extra["rates"] = double(r.points.size());
+  if (!r.points.empty()) {
+    q.value = r.points.front().eta;
+    q.error = r.points.front().error;
+  }
+  Series eta{"η(γ̇)", "γ̇ (1/ps)", "η (mPa·s)", {}, {}}, logeta{"log₁₀ η against log₁₀ γ̇", "log₁₀ γ̇ (1/s)", "log₁₀ η (mPa·s)", {}, {}},
+         n1{"first normal-stress difference", "γ̇ (1/ps)", "N₁ (MPa)", {}, {}};
+  for (const auto& p : r.points) {
+    char k[96];
+    std::snprintf(k, sizeof k, "η at %g /ps (mPa·s)", p.rate);
+    q.extra[k] = p.eta;
+    std::snprintf(k, sizeof k, "η error at %g /ps (mPa·s)", p.rate);
+    q.extra[k] = p.error;
+    std::snprintf(k, sizeof k, "N₁ at %g /ps (MPa)", p.rate);
+    q.extra[k] = p.n1;
+    std::snprintf(k, sizeof k, "⟨T⟩ at %g /ps (K)", p.rate);
+    q.extra[k] = p.temperature;
+    eta.x.push_back(p.rate), eta.y.push_back(p.eta);
+    if (p.eta > 0) logeta.x.push_back(std::log10(p.rate * 1e12)), logeta.y.push_back(std::log10(p.eta));
+    n1.x.push_back(p.rate), n1.y.push_back(p.n1);
+  }
+  if (r.points.size() >= 2) q.extra["shear-thinning index n (η ∝ γ̇^(n−1))"] = r.index;
+  q.notes = r.notes;
+  q.series = {eta, logeta, n1};
+  return {q};
+}
+
 }  // namespace caps

@@ -11,7 +11,8 @@
 //                        z along the surface normal; optionally made orthogonal (a rectangular supercell, sheared to 90°
 //                        when the nearest one is within the strain limit), repeated na × nb, with vacuum above and below,
 //                        and with the dangling bonds passivated (O–H on oxygens, M–OH on cations bonded to oxygen, H on
-//                        others) up to the bulk coordination of each element.
+//                        others) up to the bulk coordination of each element. Molecular crystals: whole_molecules puts
+//                        each molecule by its centroid, so the surfaces are made of whole molecules (no broken bonds).
 #pragma once
 #include <functional>
 #include <stdexcept>
@@ -47,6 +48,9 @@ struct SlabOptions {
   double max_strain = 0.02;  // shear allowed to make the surface cell rectangular
   int na = 1, nb = 1;        // surface supercell
   bool passivate = false;    // O–H / M–OH / H on dangling bonds (hydroxylated oxide surfaces)
+  // molecular crystals (polymer crystals, cellulose, organic solids): each molecule goes into the layer of its centroid,
+  // whole, instead of being cut at the atomic planes; a molecule endless along the normal is cut as the atoms are
+  bool whole_molecules = false;
 };
 
 struct SlabReport {

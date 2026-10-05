@@ -2,6 +2,7 @@
 #pragma once
 #include <cstdint>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
@@ -64,6 +65,11 @@ struct DynamicsOptions {
   // uniaxial tests, where the lateral axes follow the target pressure while the pulled axis is deformed.
   bool anisotropic = false;
   bool couple_axis[3] = {true, true, true};
+  // Stress control (per-axis coupling): each coupled axis's own target pressure P_kk in atm (NaN: `pressure`); a tensile
+  // stress σ is a target of −σ. full_shape: the cell's tilts also follow the shear components P_xy, P_xz, P_yz toward
+  // zero (Berendsen), so a triclinic cell relaxes its shape as well as its lengths.
+  double axis_pressure[3] = {std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN()};
+  bool full_shape = false;
   // Deformation at a constant engineering strain rate (as LAMMPS fix deform erate, remap x): the cell length along
   // deform_axis (0 x, 1 y, 2 z) is L0 (1 + deform_rate t), with t in ps from the start of this run.
   int deform_axis = -1;

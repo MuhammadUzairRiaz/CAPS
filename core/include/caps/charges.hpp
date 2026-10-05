@@ -3,6 +3,7 @@
 // element), file (a .chg file: one charge per atom per line, or "index charge"; # comments), keep (the charges the
 // structure carries). AM1-BCC and RESP need external programs and are not computed here.
 #pragma once
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -27,6 +28,22 @@ struct ChargeReport {
 
 ChargeReport compute_charges(const System& s, const std::string& method, const std::string& path = "");
 ChargeReport describe_charges(const System& s, const std::vector<double>& q, const std::string& method);
+
+// Adjustments of computed charges, in this order:
+//  average     atoms equivalent in the bond graph (element and neighbours refined until stable, as Morgan's extended
+//              connectivity) share their mean charge: the three hydrogens of a methyl, the two oxygens of a carboxylate
+//  scale       every charge × scale (e.g. 0.75–0.8 for the electronic continuum correction of ions, or a model's own factor)
+//  neutralise  the total brought to `target` (the formal charge × scale by default): "even" the same shift on every atom,
+//              "proportional" a shift ∝ |q_i| (small charges barely move)
+struct ChargeAdjust {
+  bool average = false;
+  double scale = 1.0;
+  std::string neutralise = "none";   // none | even | proportional
+  double target = std::numeric_limits<double>::quiet_NaN();   // e; NaN: the formal charge × scale
+};
+// Equivalence classes of the atoms in the bond graph (same class: same element and equivalent neighbours).
+std::vector<int> equivalent_atoms(const System& s);
+void adjust_charges(const System& s, std::vector<double>& q, const ChargeAdjust& a, int formal, std::vector<std::string>* notes = nullptr);
 std::vector<double> read_charge_file(const std::string& path, size_t atoms);
 
 }  // namespace caps

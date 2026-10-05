@@ -57,5 +57,6 @@ public partial class CrystalPage : PageBase
     private void OnCellEditor(object? s, RoutedEventArgs e) => Vm.OpenCellEditor();
     private void OnRedefine(object? s, RoutedEventArgs e) => Vm.RedefineLattice();
     private void OnVacuumSlab(object? s, RoutedEventArgs e) => Vm.MakeVacuumSlab();
+    private void OnCluster(object? s, RoutedEventArgs e) => Vm.CutCluster();
     private void OnNanowire(object? s, RoutedEventArgs e) => Vm.MakeNanowire();
 }

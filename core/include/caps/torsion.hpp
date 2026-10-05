@@ -58,6 +58,13 @@ std::string torsion_state(double phi);
 
 TorsionScanResult torsion_scan(const System& s, const ForceField& ff, const TorsionScanOptions& o);
 
+// A chain's backbone dihedrals set in turn from its first end to a repeating pattern (degrees): {180} all-trans (the
+// planar zig-zag), {180, 60} TG (a 3₁ helix, as isotactic polypropylene's), {180, 180, 60, 60} TTGG (syndiotactic
+// polypropylene's helix). Each bond's far side turns about it; bonds in rings are left. Only the molecules with an atom
+// in `molecules` (empty: every chain). Returns the dihedrals set. Clashes are not resolved: minimise afterwards.
+int set_backbone_torsions(System& s, const std::vector<double>& pattern, const std::vector<uint32_t>& molecules_of_atoms = {},
+                          std::vector<std::string>* notes = nullptr);
+
 // A torsion to scan when none is chosen: heavy atoms around the middle bond of the longest backbone that is not in a
 // ring ({-1, …} when there is none).
 std::array<int, 4> default_torsion(const System& s);

@@ -150,4 +150,9 @@ struct Trajectory {
   void select(const FrameSelection& sel);
 };
 
+// Held atoms (RelaxOptions::fixed, DynamicsOptions::fixed): 1 holds every coordinate; otherwise bits 2, 4, 8 hold x, y, z
+// on their own (a substrate free to slide in its plane but not to leave it: 8).
+inline bool holds_axis(char f, int k) { return f == 1 || ((f >> (k + 1)) & 1); }
+inline bool holds_all(char f) { return f == 1 || (f & 14) == 14; }
+
 }  // namespace caps

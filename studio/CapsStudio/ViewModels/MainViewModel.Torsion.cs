@@ -181,4 +181,37 @@ public sealed partial class MainViewModel
                     .Select(k => x![k]!.GetValue<double>().ToString("0.#####", CultureInfo.InvariantCulture))));
         return sb.ToString();
     }
+
+    // chain shape (core torsion.hpp set_backbone_torsions): the backbone dihedrals to a repeating pattern, undoable
+    public static readonly string[] ChainShapes = ["All-trans · 180 (zig-zag)", "TG · 180 60 (3₁ helix)", "TTGG · 180 180 60 60", "Custom pattern"];
+    private static readonly string[] ChainPatterns = ["180", "180 60", "180 180 60 60"];
+    private int _chainShape;
+    private string _chainPattern = "180", _chainShapeText = "";
+    private bool _chainSel;
+    public int ChainShape
+    {
+        get => _chainShape;
+        set { if (Set(ref _chainShape, Math.Clamp(value, 0, 3)) && value < 3) { _chainPattern = ChainPatterns[value]; Raise(nameof(ChainPattern)); } }
+    }
+    public string ChainPattern
+    {
+        get => _chainPattern;
+        set { if (Set(ref _chainPattern, value ?? "")) { var k = Array.IndexOf(ChainPatterns, _chainPattern.Trim()); _chainShape = k >= 0 ? k : 3; Raise(nameof(ChainShape)); } }
+    }
+    public bool ChainSelected { get => _chainSel; set => Set(ref _chainSel, value); }
+    public string ChainShapeText { get => _chainShapeText; private set => Set(ref _chainShapeText, value); }
+    public void SetChainShape()
+    {
+        if (_doc == null) return;
+        var parts = _chainPattern.Split([' ', ',', ';'], StringSplitOptions.RemoveEmptyEntries);
+        var pat = new List<double>();
+        foreach (var p in parts)
+        {
+            if (!double.TryParse(p, NumberStyles.Float, CultureInfo.InvariantCulture, out var v)) { ChainShapeText = $"Not a number: {p}"; return; }
+            pat.Add(v);
+        }
+        if (pat.Count == 0) { ChainShapeText = "Give at least one dihedral (degrees)"; return; }
+        var r = _chainSel ? RunEdit(new { op = "backbone_torsions", pattern = pat, atoms = SelectionAtoms() }) : RunEdit(new { op = "backbone_torsions", pattern = pat });
+        ChainShapeText = r == null ? EditError : (r["what"]?.GetValue<string>() ?? "Done") + " · minimise to remove clashes (undo with ⌘Z)";
+    }
 }

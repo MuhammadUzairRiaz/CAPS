@@ -8,6 +8,7 @@
 #include "caps/mechanics.hpp"
 #include "caps/grow.hpp"
 #include "caps/relax.hpp"
+#include "caps/uff.hpp"
 
 using namespace caps;
 
@@ -336,4 +337,137 @@ TEST(Mechanics, ComplianceAndSoundSpeeds) {
   EXPECT_NEAR(v.extra.at("v_L longitudinal (m/s)"), 1000 * std::sqrt((K + 4 * G / 3) / rho), 1e-6);
   EXPECT_NEAR(v.extra.at("v_T transverse (m/s)"), 1000 * std::sqrt(G / rho), 1e-6);
   EXPECT_NEAR(v.extra.at("v_T transverse (m/s)"), 1195.2, 0.1);
+}
+
+// NEMD: the Lennard-Jones liquid near its triple point sheared at γ̇* = 1 and 2 — η* ≈ 2 at the first and lower at the
+// second (shear thinning, index n < 1), the thermostat holding the mean temperature (argon units).
+TEST(Mechanics, NemdShearThinningOfTheLjLiquid) {
+  const double sigma = 3.405, eps = 119.8 * 0.0019872043, rho = 0.844, a = std::cbrt(4 / rho) * sigma;
+  System s;
+  for (int i = 0; i < 4; ++i)
+    for (int j = 0; j < 4; ++j)
+      for (int k = 0; k < 4; ++k)
+        for (const auto& b : std::vector<Vec3>{{0, 0, 0}, {0.5, 0.5, 0}, {0.5, 0, 0.5}, {0, 0.5, 0.5}}) {
+          Atom at;
+          at.element = 18;
+          at.mol = int64_t(s.atoms.size() + 1);
+          at.pos = {(i + b[0]) * a, (j + b[1]) * a, (k + b[2]) * a};
+          s.atoms.push_back(at);
+        }
+  s.cell.a = {4 * a, 0, 0}, s.cell.b = {0, 4 * a, 0}, s.cell.c = {0, 0, 4 * a};
+  auto ff = std::make_shared<ForceField>(default_forcefield(s));
+  for (auto& t : ff->lj) t = {eps, sigma};
+  std::fill(ff->charge.begin(), ff->charge.end(), 0.0);
+  const double tau_ps = sigma * 1e-10 * std::sqrt(39.948e-3 / 6.02214076e23 / (119.8 * 1.380649e-23)) * 1e12;
+  const double eta_unit = std::sqrt(39.948e-3 / 6.02214076e23 * 119.8 * 1.380649e-23) / std::pow(sigma * 1e-10, 2) * 1e3;   // mPa·s
+  NemdOptions o;
+  o.field = ff;
+  o.energy.cutoff = 2.5 * sigma;
+  o.energy.coulomb = false;
+  o.energy.tail = false;
+  o.temperature = 0.722 * 119.8;
+  o.dt = 5;
+  o.tau_t = 10;
+  o.equilibrate_ps = 10;
+  o.ps = 15;
+  o.rates = {1 / tau_ps, 2 / tau_ps};
+  const auto r = nemd_viscosity(s, o);
+  ASSERT_EQ(r.points.size(), 2u);
+  const double e1 = r.points[0].eta / eta_unit, e2 = r.points[1].eta / eta_unit;
+  EXPECT_GT(e1, 1.5);
+  EXPECT_LT(e1, 3.0);
+  EXPECT_LT(e2, e1);
+  EXPECT_LT(r.index, 1.0);
+  for (const auto& p : r.points) EXPECT_NEAR(p.temperature, o.temperature, 0.03 * o.temperature);
+  const auto props = nemd_properties(r);
+  EXPECT_EQ(props[0].id, "nemd");
+  EXPECT_EQ(props[0].series.size(), 3u);
+  std::printf("NEMD LJ liquid: eta* %.2f at gamma* 1, %.2f at 2, n %.2f\n", e1, e2, r.index);
+}
+
+namespace {
+// An argon FCC crystal, Lennard-Jones (ε/k_B 119.8 K, σ 3.405 Å), 4 × 4 × 4 cells near its 0 K lattice constant.
+System argon_crystal(std::shared_ptr<ForceField>& ff) {
+  const double sigma = 3.405, eps = 119.8 * 0.0019872043, a = 1.5496 * sigma;
+  System s;
+  for (int i = 0; i < 4; ++i)
+    for (int j = 0; j < 4; ++j)
+      for (int k = 0; k < 4; ++k)
+        for (const auto& b : std::vector<Vec3>{{0, 0, 0}, {0.5, 0.5, 0}, {0.5, 0, 0.5}, {0, 0.5, 0.5}}) {
+          Atom at;
+          at.element = 18;
+          at.mol = int64_t(s.atoms.size() + 1);
+          at.pos = {(i + b[0]) * a, (j + b[1]) * a, (k + b[2]) * a};
+          s.atoms.push_back(at);
+        }
+  s.cell.a = {4 * a, 0, 0}, s.cell.b = {0, 4 * a, 0}, s.cell.c = {0, 0, 4 * a};
+  ff = std::make_shared<ForceField>(default_forcefield(s));
+  for (auto& t : ff->lj) t = {eps, sigma};
+  std::fill(ff->charge.begin(), ff->charge.end(), 0.0);
+  return s;
+}
+}  // namespace
+
+// Stress control: the per-axis barostat holds P_zz at −σ (a tensile 50 MPa) and the lateral axes at 1 atm; the crystal
+// stretches along z and contracts across it (creep protocol); a full-shape run of a tilted start brings P_xy to zero.
+TEST(Mechanics, StressControlAndCreep) {
+  std::shared_ptr<ForceField> ff;
+  System s = argon_crystal(ff);
+  DynamicsOptions d;
+  d.field = ff;
+  d.energy.cutoff = 2.5 * 3.405, d.energy.coulomb = false;
+  d.temperature = 40;
+  d.dt = 5;
+  d.thermostat = Thermostat::Bussi;
+  d.barostat = Barostat::Berendsen;
+  d.anisotropic = true;
+  d.tau_p = 500;
+  d.axis_pressure[2] = -50 / 0.101325;
+  d.steps = 4000;
+  d.thermo_every = 10;
+  d.frame_every = 0;
+  DynamicsReport rep;
+  System t = s;
+  run_dynamics(t, d, &rep);
+  double pz = 0, px = 0;
+  size_t n = 0;
+  for (size_t k = rep.thermo.size() / 2; k < rep.thermo.size(); ++k) pz += rep.thermo[k].p[2], px += rep.thermo[k].p[0], ++n;
+  pz /= n, px /= n;
+  EXPECT_NEAR(pz * 0.101325, -50, 10);   // MPa
+  EXPECT_NEAR(px * 0.101325, 0, 10);
+  CreepOptions c;
+  c.field = ff;
+  c.energy = d.energy;
+  c.temperature = 40;
+  c.dt = 5;
+  c.tau_p = 500;
+  c.stress = 50;
+  c.ps = 10;
+  c.equilibrate_ps = 5;
+  c.sample_every = 20;
+  System u = s;
+  const auto cr = run_creep(u, c);
+  EXPECT_GT(cr.final_strain, 0.002);
+  EXPECT_LT(cr.final_strain, 0.1);
+  EXPECT_GT(cr.poisson, 0.05);
+  const auto props = creep_properties(cr, 50);
+  EXPECT_EQ(props[0].id, "creep");
+  // full shape: a sheared start relaxes its tilt toward zero shear stress
+  System w = s;
+  const double tilt = 0.03 * w.cell.b[1];
+  for (auto& at : w.atoms) at.pos[0] += 0.03 * at.pos[1];
+  w.cell.b[0] = tilt;
+  DynamicsOptions f = d;
+  f.axis_pressure[2] = std::numeric_limits<double>::quiet_NaN();
+  f.full_shape = true;
+  f.steps = 3000;
+  DynamicsReport fr;
+  run_dynamics(w, f, &fr);
+  double pxy = 0;
+  n = 0;
+  for (size_t k = fr.thermo.size() / 2; k < fr.thermo.size(); ++k) pxy += fr.thermo[k].p[3], ++n;
+  EXPECT_NEAR(pxy / n * 0.101325, 0, 10);
+  EXPECT_LT(std::fabs(w.cell.b[0]), 0.5 * tilt);
+  std::printf("stress control: Pzz %.1f MPa (target -50), creep strain %.2f %%, lateral ratio %.2f, tilt %.3f -> %.3f A\n", pz * 0.101325,
+              100 * cr.final_strain, cr.poisson, tilt, w.cell.b[0]);
 }

@@ -14,6 +14,7 @@
 
 #include "caps/probe.hpp"
 #include "caps/normal_modes.hpp"
+#include "caps/conformers.hpp"
 #include "caps/bondrules.hpp"
 #include "caps/piece.hpp"
 #include "caps/tags.hpp"
@@ -173,6 +174,7 @@ struct caps_doc {
   int64_t held_mol = 0;   // molecule held in place by caps_relax (0: none)
   std::string pack_items; // v51 the packing that made it: per input molecule its name, molecule ids and own force field (JSON)
   std::vector<uint32_t> fixed_atoms;   // v36: atoms held in place besides the held molecule (frame indices)
+  int fixed_axes = 7;                  // v62: which coordinates of the fixed atoms are held (bits x 1, y 2, z 4)
   std::vector<caps::RelaxOptions::Restraint> restraints;   // distance restraints for caps_relax
   std::vector<caps::RelaxOptions::DihedralRestraint> dihedral_restraints;   // and dihedral ones
   double ph = -1;         // Add hydrogens: residues protonated at this pH (< 0: neutral valences)
@@ -332,7 +334,9 @@ std::vector<char> fixed_mask(const caps_doc* d, const caps::System& s) {
     const auto ids = molecule_ids(s);
     for (size_t i = 0; i < s.atoms.size(); ++i) m[i] = ids[i] == d->held_mol;
   }
-  for (uint32_t i : d->fixed_atoms) if (i < m.size()) m[i] = 1;
+  // the fixed atoms: every coordinate, or only some (bits 2, 4, 8 of the mask: x, y, z)
+  const char code = d->fixed_axes == 7 ? 1 : char((d->fixed_axes & 7) << 1);
+  for (uint32_t i : d->fixed_atoms) if (i < m.size() && m[i] != 1) m[i] = code;
   return m;
 }
 
@@ -343,7 +347,7 @@ void require_manybody_held(const caps_doc* d, const std::vector<char>& m) {
   size_t loose = 0;
   for (size_t i = 0; i < ff.type_index.size(); ++i) {
     const size_t t = size_t(ff.type_index[i]);
-    if (t < ff.manybody.element.size() && !ff.manybody.element[t].empty() && (i >= m.size() || !m[i])) ++loose;
+    if (t < ff.manybody.element.size() && !ff.manybody.element[t].empty() && (i >= m.size() || !caps::holds_all(m[i]))) ++loose;
   }
   if (loose)
     throw std::runtime_error(std::to_string(loose) + " atoms are under the " + ff.manybody.style + " potential, which CAPS does not evaluate (LAMMPS does): hold them "
@@ -368,12 +372,18 @@ std::string write_gromacs_freeze(const caps_doc* d, const caps::System& s, const
     ndx << "\n";
   };
   group("System", [](size_t) { return true; });
-  if (n > 0) group("Frozen", [&](size_t i) { return m[i] != 0; });
+  size_t nfull = 0, npart = 0;
+  for (char c : m) nfull += c == 1, npart += c != 0 && c != 1;
+  if (nfull > 0) group("Frozen", [&](size_t i) { return m[i] == 1; });
+  if (npart > 0) group("FrozenAxes", [&](size_t i) { return m[i] != 0 && m[i] != 1; });
   // the tags as index groups (gmx select / grompp -n)
   for (size_t k = 0; k < s.tags.size(); ++k) group(caps::tag_group_name(s.tags[k].name), [&](size_t i) { return (s.atoms[i].tags >> k) & 1u; });
   if (n == 0) return tagged;
   std::ofstream mdp(stem + ".mdp", std::ios::app);
-  mdp << "\n; atoms held in place in CAPS (index group in " << std::filesystem::path(stem).filename().string() << ".ndx: grompp -n)\nfreezegrps = Frozen\nfreezedim = Y Y Y\n";
+  const std::string axes = std::string(d->fixed_axes & 1 ? "Y" : "N") + " " + (d->fixed_axes & 2 ? "Y" : "N") + " " + (d->fixed_axes & 4 ? "Y" : "N");
+  mdp << "\n; atoms held in place in CAPS (index groups in " << std::filesystem::path(stem).filename().string() << ".ndx: grompp -n)\nfreezegrps = "
+      << (nfull ? "Frozen" : "") << (nfull && npart ? " " : "") << (npart ? "FrozenAxes" : "") << "\nfreezedim = " << (nfull ? "Y Y Y" : "")
+      << (nfull && npart ? " " : "") << (npart ? axes : "") << "\n";
   return "the held atoms are a freeze group: " + file + " and freezegrps in the .mdp (grompp -n)" + (tagged.empty() ? "" : "; " + tagged);
 }
 
@@ -1438,6 +1448,7 @@ caps_doc* caps_shadow(caps_doc* d) {
     sd->ph = d->ph;
     sd->held_mol = d->held_mol;
     sd->fixed_atoms = d->fixed_atoms;
+    sd->fixed_axes = d->fixed_axes;
     sd->restraints = d->restraints;
     sd->dihedral_restraints = d->dihedral_restraints;
     sd->analysis = d->analysis;
@@ -2403,6 +2414,7 @@ int32_t caps_md(caps_doc* d, const caps_md_opts* o, caps_md_progress_fn progress
     if (o->tau_p > 0) m.tau_p = o->tau_p;
     m.new_velocities = o->new_velocities != 0;
     m.efield = {o->efield[0], o->efield[1], o->efield[2]};
+    m.full_shape = o->full_shape != 0 && m.anisotropic;
     m.seed = o->seed;
     if (o->thermo_every > 0) m.thermo_every = o->thermo_every;
     m.frame_every = std::max(0, o->frame_every);
@@ -4279,6 +4291,79 @@ int32_t caps_probe_series(caps_doc* d, const char* json, char* out, int32_t cap)
   return report_out(r.dump(0), out, cap);
 }
 
+// Conformers (C12, C13): the frame shown, or only its selected atoms (with their own share of the force field), in vacuum
+std::pair<caps::System, std::shared_ptr<const caps::ForceField>> conformer_input(caps_doc* d, bool selection) {
+  caps::System s = d->traj.frames() > 0 ? d->traj.frame(d->current) : d->frame;
+  if (!s.unwrapped) caps::make_molecules_whole(s);
+  auto ff = field_for_run(d);
+  if (!ff) ff = std::make_shared<caps::ForceField>(default_ff(s));
+  std::vector<uint32_t> keep;
+  if (selection)
+    for (size_t i = 0; i < s.atoms.size() && i < d->selection.size(); ++i)
+      if (d->selection[i]) keep.push_back(uint32_t(i));
+  if (!keep.empty()) {   // nothing selected: the whole frame
+    std::vector<int64_t> newi(s.atoms.size(), -1);
+    for (size_t k = 0; k < keep.size(); ++k) newi[keep[k]] = int64_t(k);
+    caps::System t = s;
+    t.atoms.clear(), t.bonds.clear(), t.velocities.clear();
+    for (uint32_t i : keep) t.atoms.push_back(s.atoms[i]);
+    for (const auto& b : s.bonds)
+      if (newi[b.i] >= 0 && newi[b.j] >= 0) t.bonds.push_back({uint32_t(newi[b.i]), uint32_t(newi[b.j]), b.order});
+    ff = std::make_shared<caps::ForceField>(caps::subset_forcefield(*ff, keep));
+    s = std::move(t);
+  }
+  if (s.atoms.size() > 400) throw std::invalid_argument(std::to_string(s.atoms.size()) + " atoms: a conformer search is for one molecule — select it");
+  s.cell = caps::Cell{};
+  return {s, ff};
+}
+
+caps::Json conformers_json(const caps::ConformerSearchResult& r) {
+  caps::Json j = caps::Json::object(), cs = caps::Json::array(), nt = caps::Json::array();
+  for (const auto& c : r.conformers) {
+    caps::Json x = caps::Json::object();
+    x["energy"] = c.energy, x["relative"] = c.relative, x["population"] = c.population, x["found"] = double(c.found);
+    cs.push_back(std::move(x));
+  }
+  for (const auto& n : r.notes) nt.push_back(n);
+  j["conformers"] = std::move(cs);
+  j["rotors"] = double(r.rotors);
+  j["trials"] = double(r.minima.size());
+  j["notes"] = std::move(nt);
+  return j;
+}
+
+int32_t caps_conformer_frames(caps_doc* d, const char* json, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  const int32_t rc = guard([&] {
+    const auto j = caps::Json::parse(json ? json : "{}");
+    auto [s, ff] = conformer_input(d, j.has("selection") && j["selection"].boolean());
+    caps::ConformerSearchOptions co;
+    co.field = ff;
+    co.energy = elec(caps::EnergyOptions{});
+    co.method = j.text("method", "torsions");
+    co.trials = std::clamp(int(j.num("trials", 50)), 1, 5000);
+    co.window = j.num("window", 10);
+    co.rmsd = j.num("rmsd", 0.5);
+    co.temperature = j.num("temperature", 298.15);
+    co.seed = uint64_t(j.num("seed", 1));
+    const auto res = caps::conformer_search(s, co);
+    caps::Trajectory t;
+    t.topology = s;
+    t.topology.unwrapped = true;
+    for (const auto& c : res.conformers) t.positions.push_back(c.pos), t.cells.push_back(caps::Cell{}), t.timesteps.push_back(int64_t(t.timesteps.size()));
+    prov_step(d, "conformers", "Conformer search", {{"method", co.method + ", " + std::to_string(res.minima.size()) + " minimised starts"},
+              {"rotatable bonds", std::to_string(res.rotors)}, {"kept", std::to_string(res.conformers.size()) + " within " + g6(co.window) + " kcal/mol, " + g6(co.rmsd) + " Å heavy-atom RMSD"},
+              {"force field", ff->name}}, seeded(co.seed), {"horn1987"});
+    d->traj = std::move(t);
+    d->current = 0;
+    refresh(d);
+    r = conformers_json(res);
+    return 0;
+  });
+  if (rc < 0) return -1;
+  return report_out(r.dump(0), out, cap);
+}
+
 // Normal modes (C20): mode k of the frame shown as frames for the player — one period, the largest atom displacement
 // `amplitude` Å. The document's frames become the animation (the structure itself is its first frame).
 int32_t caps_mode_animate(caps_doc* d, const char* json, char* out, int32_t cap) {
@@ -4436,7 +4521,7 @@ int32_t caps_analyze_ex(caps_doc* d, const char* props, const caps_analyze_opts*
       std::string cur;
       for (const char* c = props ? props : ""; ; ++c) {
         if (*c == ',' || *c == 0) {
-          if (!cur.empty()) (cur == "cij_strain" || cur == "cij_run" || cur == "viscosity" || cur == "tensile" || cur == "tg" || cur == "pull_shear" || cur == "pull_normal" ? protocols : ids).push_back(cur);
+          if (!cur.empty()) (cur == "cij_strain" || cur == "cij_run" || cur == "viscosity" || cur == "nemd" || cur == "conformers" || cur == "creep" || cur == "tensile" || cur == "tg" || cur == "pull_shear" || cur == "pull_normal" ? protocols : ids).push_back(cur);
           cur.clear();
           if (*c == 0) break;
         } else if (*c != ' ') cur += *c;
@@ -4588,6 +4673,73 @@ int32_t caps_analyze_ex(caps_doc* d, const char* props, const caps_analyze_opts*
         if (mo.seed) vo.seed = mo.seed;
         vo.progress = [&](const std::string& w, double f) { return !cancelled(w, f); };
         for (auto& q : caps::viscosity_properties(caps::viscosity_green_kubo(s, vo))) res.push_back(std::move(q));
+      } else if (id == "creep") {
+        caps::System s = frame_copy();
+        caps::CreepOptions co;
+        co.field = ff;
+        co.energy = o.energy;
+        co.axis = std::clamp(mo.creep_axis, 0, 2);
+        if (mo.creep_stress != 0) co.stress = mo.creep_stress;
+        if (mo.creep_t > 0) co.temperature = mo.creep_t;
+        if (mo.creep_ps > 0) co.ps = mo.creep_ps;
+        if (mo.creep_eq_ps != 0) co.equilibrate_ps = std::max(0.0, mo.creep_eq_ps);
+        if (mo.pressure > 0) co.pressure = mo.pressure;
+        if (mo.dt > 0) co.dt = mo.dt;
+        if (mo.seed) co.seed = mo.seed;
+        co.progress = [&](const std::string& w, double f) { return !cancelled(w, f); };
+        for (auto& q : caps::creep_properties(caps::run_creep(s, co), co.stress)) res.push_back(std::move(q));
+      } else if (id == "conformers") {
+        auto [cs, cff] = conformer_input(d, mo.conf_selection != 0);
+        caps::ConformerSearchOptions co;
+        co.field = cff;
+        co.energy = o.energy;
+        co.method = mo.conf_method == 1 ? "anneal" : "torsions";
+        if (mo.conf_trials > 0) co.trials = mo.conf_trials;
+        if (mo.conf_window > 0) co.window = mo.conf_window;
+        if (mo.conf_rmsd > 0) co.rmsd = mo.conf_rmsd;
+        if (mo.temperature > 0) co.temperature = mo.temperature;
+        if (mo.seed) co.seed = mo.seed;
+        co.progress = [&](double f) { return !cancelled("conformer search", f); };
+        const auto cr = caps::conformer_search(cs, co);
+        caps::Property q;
+        q.id = "conformers";
+        q.name = "Conformers";
+        q.unit = "";
+        q.value = double(cr.conformers.size());
+        q.method = (co.method == "anneal" ? "NVT at 1000 K, snapshots quenched" : "random staggered torsions") + std::string(", ") + std::to_string(cr.minima.size()) +
+                   " minimised (" + cr.field + ", vacuum); clustered by heavy-atom RMSD < " + g6(co.rmsd) + " Å after superposition";
+        q.extra["rotatable bonds"] = cr.rotors;
+        q.extra["minimised starts"] = double(cr.minima.size());
+        for (size_t k = 0; k < cr.conformers.size() && k < 12; ++k) {
+          char key[80];
+          std::snprintf(key, sizeof key, "#%zu ΔE (kcal/mol)", k + 1);
+          q.extra[key] = cr.conformers[k].relative;
+          std::snprintf(key, sizeof key, "#%zu population", k + 1);
+          q.extra[key] = cr.conformers[k].population;
+        }
+        caps::Series se{"conformer energies", "conformer", "ΔE (kcal/mol)", {}, {}}, sm{"minima found", "start", "E (kcal/mol)", {}, {}};
+        for (size_t k = 0; k < cr.conformers.size(); ++k) se.x.push_back(double(k + 1)), se.y.push_back(cr.conformers[k].relative);
+        for (size_t k = 0; k < cr.minima.size(); ++k) sm.x.push_back(double(k + 1)), sm.y.push_back(cr.minima[k]);
+        q.series = {se, sm};
+        q.notes = cr.notes;
+        res.push_back(std::move(q));
+      } else if (id == "nemd") {
+        caps::NemdOptions no;
+        no.field = ff;
+        no.energy = o.energy;
+        if (mo.temperature > 0) no.temperature = mo.temperature;
+        if (mo.shear_ps > 0) no.ps = mo.shear_ps;
+        if (mo.shear_eq_ps != 0) no.equilibrate_ps = std::max(0.0, mo.shear_eq_ps);
+        if (mo.dt > 0) no.dt = mo.dt;
+        if (mo.seed) no.seed = mo.seed;
+        if (mo.shear_lo > 0) {
+          const double lo = mo.shear_lo, hi = std::max(mo.shear_hi, lo);
+          const int np = hi > lo ? std::clamp(mo.shear_points, 2, 12) : 1;
+          no.rates.clear();
+          for (int k = 0; k < np; ++k) no.rates.push_back(np == 1 ? lo : lo * std::pow(hi / lo, double(k) / (np - 1)));
+        }
+        no.progress = [&](const std::string& w, double f) { return !cancelled(w, f); };
+        for (auto& q : caps::nemd_properties(caps::nemd_viscosity(frame_copy(), no))) res.push_back(std::move(q));
       } else if (id == "tensile") {
         caps::System s = frame_copy();
         caps::TensileOptions to;
@@ -5356,6 +5508,7 @@ caps::SlabOptions slab_from(const caps::Json& j) {
   o.max_strain = j.num("max_strain", 0.02);
   o.na = int(j.num("na", 1)), o.nb = int(j.num("nb", 1));
   o.passivate = j.num("passivate", 0) != 0;
+  o.whole_molecules = j.num("whole_molecules", 0) != 0;
   return o;
 }
 
@@ -6215,6 +6368,7 @@ extern "C" caps_doc* caps_frame_copy(caps_doc* d) {
     c->prov = d->prov;
     c->held_mol = d->held_mol;
     c->fixed_atoms = d->fixed_atoms;
+    c->fixed_axes = d->fixed_axes;
     return c;
   } catch (const std::exception& e) {
     g_error = e.what();
@@ -6482,7 +6636,7 @@ void export_write(caps_doc* d, const std::string& fmt, const caps::Json& o, cons
     caps::write_poscar(s, path, held);
     notes.push_back("VASP 5 POSCAR: species and counts lines, Direct (fractional) coordinates in the cell");
     notes.push_back("atoms grouped by element in the order each first appears (VASP needs them grouped); no bonds, charges or types");
-    if (std::any_of(held.begin(), held.end(), [](char f) { return f != 0; })) notes.push_back("Selective dynamics: the held atoms F F F, the rest T T T");
+    if (std::any_of(held.begin(), held.end(), [](char f) { return f != 0; })) notes.push_back("Selective dynamics: F on the held coordinates, T on the rest");
     notes.push_back("name it POSCAR for VASP; the POTCAR must list the same species in the same order");
   } else if (fmt == "dcd") {
     caps::write_dcd(d->traj, path);
@@ -6849,6 +7003,13 @@ extern "C" int32_t caps_set_fixed_atoms(caps_doc* d, const int32_t* atoms, int32
     return int32_t(d->fixed_atoms.size());
   });
 }
+
+// v62: which coordinates of the fixed atoms are held: bits x 1, y 2, z 4 (7: all, the default). Returns the axes set.
+extern "C" int32_t caps_set_fixed_axes(caps_doc* d, int32_t axes) {
+  d->fixed_axes = (axes & 7) ? (axes & 7) : 7;
+  return d->fixed_axes;
+}
+extern "C" int32_t caps_fixed_axes(const caps_doc* d) { return d->fixed_axes; }
 
 extern "C" int32_t caps_fixed_atoms(const caps_doc* d, int32_t* atoms, int32_t cap) {
   if (!d) return 0;
@@ -7874,6 +8035,34 @@ extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t c
       s = caps::vacuum_slab(s, j.num("vacuum", 15), !(j.has("centre") && j["centre"].kind() == caps::Json::Bool && !j["centre"].boolean()), &r);
       char b[128];
       std::snprintf(b, sizeof b, "Vacuum slab: %.2f Å slab, %.2f Å vacuum", r.thickness, r.vacuum);
+      what = b;
+    } else if (op == "backbone_torsions") {   // {pattern: [deg …], atoms: [...] (their chains; none: every chain)}
+      std::vector<double> pat;
+      if (j.has("pattern") && j["pattern"].is_array())
+        for (const auto& x : j["pattern"].items()) pat.push_back(x.number());
+      std::vector<uint32_t> at;
+      if (j.has("atoms")) at = atoms_of(d, j);
+      std::vector<std::string> nt;
+      const int k = caps::set_backbone_torsions(s, pat, at, &nt);
+      if (k == 0) throw std::invalid_argument("no backbone dihedral to set (a chain needs four backbone atoms)");
+      what = "Backbone torsions: " + nt.front();
+    } else if (op == "cluster") {   // {radius (≤ 0: all), centre: [x, y, z] | "selection" | "cell", any_atom: bool}
+      caps::Vec3 c = s.cell.valid() ? s.cell.origin + (s.cell.a + s.cell.b + s.cell.c) * 0.5 : caps::Vec3{0, 0, 0};
+      if (j.has("centre") && j["centre"].is_array() && j["centre"].size() == 3) c = {j["centre"][0].number(), j["centre"][1].number(), j["centre"][2].number()};
+      else if (j.text("centre", "") == "selection") {
+        const auto at = atoms_of(d, j);
+        if (at.empty()) throw std::invalid_argument("select the atoms to centre the cluster on");
+        caps::Vec3 m{0, 0, 0};
+        for (uint32_t a : at) m = m + s.atoms[a].pos;
+        c = m * (1.0 / double(at.size()));
+      }
+      caps::ClusterResult cr;
+      s = caps::cut_cluster(s, c, j.num("radius", 0), j.has("any_atom") && j["any_atom"].boolean(), &cr);
+      char b[200];
+      if (j.num("radius", 0) > 0)
+        std::snprintf(b, sizeof b, "Cluster: %zu whole molecules within %.1f Å (%zu atoms, %zu molecules left out), no cell", cr.molecules, j.num("radius", 0), cr.atoms, cr.dropped);
+      else
+        std::snprintf(b, sizeof b, "Periodicity removed: %zu whole molecules, %zu atoms, no cell", cr.molecules, cr.atoms);
       what = b;
     } else if (op == "nanowire") {   // {uvw: [u, v, w], radius, repeats, shape, vacuum}
       caps::WireOptions o;
@@ -9678,6 +9867,20 @@ extern "C" int32_t caps_charges(caps_doc* d, const char* json, char* out, int32_
     } else {
       rep = caps::compute_charges(s, method, j.text("path"));
     }
+    if (j.has("adjust") && j["adjust"].is_object()) {   // average equivalent atoms, scale, neutralise
+      const auto& a = j["adjust"];
+      caps::ChargeAdjust ad;
+      ad.average = a.has("average") && a["average"].boolean();
+      ad.scale = a.num("scale", 1.0);
+      ad.neutralise = a.text("neutralise", "none");
+      if (a.has("target") && a["target"].kind() == caps::Json::Number) ad.target = a.num("target", 0);
+      std::vector<std::string> adj;
+      caps::adjust_charges(s, rep.q, ad, rep.formal, &adj);
+      auto notes = rep.notes;
+      rep = caps::describe_charges(s, rep.q, rep.method);
+      rep.notes = notes;
+      for (auto& x : adj) rep.notes.push_back(x);
+    }
     if (j.has("apply") && j["apply"].kind() == caps::Json::Bool && j["apply"].boolean()) {
       push_undo(d, "Charges · " + method);
       for (size_t i = 0; i < d->traj.topology.atoms.size() && i < rep.q.size(); ++i) d->traj.topology.atoms[i].charge = rep.q[i];
@@ -10439,6 +10642,7 @@ extern "C" caps_doc* caps_doc_copy(caps_doc* src) {
     if (src->field) d->field = std::make_unique<FieldState>(*src->field);
     d->held_mol = src->held_mol;
     d->fixed_atoms = src->fixed_atoms;
+    d->fixed_axes = src->fixed_axes;
     return d;
   } catch (const std::exception& e) {
     g_error = e.what();

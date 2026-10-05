@@ -57,7 +57,28 @@ public partial class MainViewModel
     private JsonObject ChargeRequest(bool apply) => new()
     {
         ["method"] = ChargeMethods[_chgMethod], ["path"] = _chgFile, ["apply"] = apply,
+        ["adjust"] = new JsonObject
+        {
+            ["average"] = _chgAverage, ["scale"] = _chgScale, ["neutralise"] = _chgTotal switch { 1 => "even", 2 => "proportional", _ => "none" },
+            ["target"] = _chgTotalTarget ?? (double)_chgFormal * _chgScale,
+        },
     };
+
+    // adjustments of the computed charges (core charges.hpp adjust_charges): equivalent atoms averaged, scaled, the total set
+    private bool _chgAverage;
+    private double _chgScale = 1.0;
+    private int _chgTotal;
+    private double? _chgTotalTarget;
+    public static readonly string[] ChargeTotals = ["Total as computed", "Total set: the same shift on every atom", "Total set: shift ∝ |q|"];
+    public bool ChargeAverage { get => _chgAverage; set { if (Set(ref _chgAverage, value)) ComputeCharges(); } }
+    public decimal ChargeScaleD { get => (decimal)_chgScale; set { _chgScale = Math.Clamp((double)value, 0.1, 3); Raise(); Raise(nameof(ChargeTotalTargetD)); ComputeCharges(); } }
+    public int ChargeTotal { get => _chgTotal; set { if (Set(ref _chgTotal, Math.Clamp(value, 0, 2))) { Raise(nameof(ChargeTotalOn)); ComputeCharges(); } } }
+    public bool ChargeTotalOn => _chgTotal > 0;
+    public decimal ChargeTotalTargetD
+    {
+        get => (decimal)(_chgTotalTarget ?? _chgFormal * _chgScale);
+        set { _chgTotalTarget = (double)value; Raise(); if (_chgTotal > 0) ComputeCharges(); }
+    }
 
     public void ComputeCharges()
     {
@@ -91,7 +112,7 @@ public partial class MainViewModel
         ChargeNote = string.Join(" · ", ((JsonArray)r["notes"]!).Select(x => (string?)x ?? ""));
         ChargeStatus = $"{_doc.Summary().Atoms:N0} atoms · net {net.ToString("0.0e0", inv)} e · {MethodName(_chgMethod)} · shown in the view, not applied";
         if (IsCharges && r["q"] is JsonArray qa) SetChargePreview(qa.Select(x => x!.GetValue<double>()).ToArray());
-        Raise(nameof(ChargeTarget)); Raise(nameof(ChargeRange));
+        Raise(nameof(ChargeTarget)); Raise(nameof(ChargeRange)); Raise(nameof(ChargeTotalTargetD));
         ChargesChanged?.Invoke();
     }
 

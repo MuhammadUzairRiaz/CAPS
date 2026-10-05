@@ -2,6 +2,7 @@
 
 #include <cmath>
 
+#include "caps/analysis.hpp"
 #include "caps/molecule.hpp"
 #include "caps/torsion.hpp"
 #include "caps/uff.hpp"
@@ -73,4 +74,23 @@ TEST(Torsion, RingBondsAreRefused) {
   EXPECT_EQ(torsion_state(-60), "gauche−");
   EXPECT_EQ(torsion_state(120), "anticlinal+");
   EXPECT_EQ(torsion_state(5), "cis");
+}
+
+// Backbone torsions of decane set to all-trans (the zig-zag: every dihedral 180°) and to TG (alternately 180° and 60°).
+TEST(Torsion, BackboneTorsionPatterns) {
+  BuildOptions b;
+  b.forcefield = "uff";
+  System s = build_molecule("CCCCCCCCCC", b).system;
+  const auto bb = backbones(s);
+  ASSERT_EQ(bb.size(), 1u);
+  ASSERT_EQ(bb[0].size(), 10u);
+  std::vector<std::string> notes;
+  EXPECT_EQ(set_backbone_torsions(s, {180}, {}, &notes), 7);
+  for (size_t k = 0; k + 3 < bb[0].size(); ++k)
+    EXPECT_NEAR(std::fabs(dihedral_angle(s, {int(bb[0][k]), int(bb[0][k + 1]), int(bb[0][k + 2]), int(bb[0][k + 3])})), 180.0, 1e-6);
+  set_backbone_torsions(s, {180, 60});
+  for (size_t k = 0; k + 3 < bb[0].size(); ++k) {
+    const double phi = dihedral_angle(s, {int(bb[0][k]), int(bb[0][k + 1]), int(bb[0][k + 2]), int(bb[0][k + 3])});
+    EXPECT_NEAR(k % 2 == 0 ? std::fabs(phi) : phi, k % 2 == 0 ? 180.0 : 60.0, 1e-6);
+  }
 }

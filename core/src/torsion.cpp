@@ -172,4 +172,41 @@ std::array<int, 4> default_torsion(const System& s) {
   return {-1, -1, -1, -1};
 }
 
+
+int set_backbone_torsions(System& s, const std::vector<double>& pattern, const std::vector<uint32_t>& sel, std::vector<std::string>* notes) {
+  if (pattern.empty()) throw std::invalid_argument("give the torsions to repeat along the chain");
+  std::vector<char> want;
+  if (!sel.empty()) {
+    const auto mol = s.molecules();
+    want.assign(s.atoms.size(), 0);
+    std::vector<char> m(s.atoms.size() + 1, 0);
+    for (uint32_t a : sel) if (a < mol.size()) m[size_t(mol[a])] = 1;
+    for (size_t i = 0; i < s.atoms.size(); ++i) want[i] = m[size_t(mol[i])];
+  }
+  int set = 0, rings = 0, chains = 0;
+  for (const auto& bb : backbones(s)) {
+    if (bb.size() < 4 || (!want.empty() && !want[bb[0]])) continue;
+    ++chains;
+    for (size_t k = 0; k + 3 < bb.size(); ++k) {
+      std::vector<uint32_t> mv;
+      try {
+        mv = moving_side(s, int(bb[k + 1]), int(bb[k + 2]));
+      } catch (const std::exception&) {
+        ++rings;
+        continue;
+      }
+      const std::array<int, 4> d{int(bb[k]), int(bb[k + 1]), int(bb[k + 2]), int(bb[k + 3])};
+      double phi = pattern[k % pattern.size()];
+      phi = std::remainder(phi, 360.0);
+      set_dihedral(s, d, phi, mv);
+      ++set;
+    }
+  }
+  if (notes) {
+    notes->push_back(std::to_string(set) + " backbone dihedrals set on " + std::to_string(chains) + " chain(s)");
+    if (rings) notes->push_back(std::to_string(rings) + " backbone bonds in rings left as they were");
+  }
+  return set;
+}
+
 }  // namespace caps
