@@ -267,3 +267,73 @@ TEST(Sorption, TrappeCo2VirialAndGcmc) {
   EXPECT_NEAR(r.isotherm[0].loading, expect, std::max(3 * r.isotherm[0].loading_error, 0.02 * expect));
   EXPECT_GT(r.isotherm[0].loading, ideal);   // attraction: more than the ideal gas
 }
+
+// TraPPE N2 against NIST's benchmark simulations of the same model (1000 rigid molecules, LJ 15 Å + tail, PPPM): the gas
+// at 110 K and 1.0 mol/L has p = 7.925 ± 0.006 atm, Z = 0.8780 ± 0.0007, so B2 + B3 ρ = (Z − 1)/ρ = −122.0 cm³/mol;
+// B3 ρ is a few cm³/mol here. The model: σ 3.31 Å, ε/k 36.0 K on each N (−0.482 e), +0.964 e at the centre, N–N 1.10 Å.
+TEST(Sorption, TrappeN2AgainstNistBenchmark) {
+  ForceField ff;
+  const double kB = 0.0019872036;
+  ff.lj = {{36.0 * kB, 3.31}, {0, 0}};
+  ff.type_names = {"N2N", "N2M"};
+  ff.mixing = "arithmetic";
+  const double off[3] = {-0.55, 0.0, 0.55};
+  for (int m = 0; m < 2; ++m)
+    for (int k = 0; k < 3; ++k) {
+      ff.type_index.push_back(k == 1 ? 1 : 0);
+      ff.charge.push_back(k == 1 ? 0.964 : -0.482);
+      ff.mass.push_back(k == 1 ? 0 : 14.007);
+    }
+  const PairModel pm(ff, 40.0, true, 0.0);
+  std::mt19937_64 rng(11);
+  std::normal_distribution<double> g(0, 1);
+  auto axis = [&] { Vec3 v{g(rng), g(rng), g(rng)}; return v * (1 / norm(v)); };
+  const double T = 110, beta = 1 / (0.0019872043 * T), rmax = 30, nr = 300, dr = rmax / nr;
+  double integral = 0;
+  for (int i = 0; i < nr; ++i) {
+    const double r = (i + 0.5) * dr;
+    double f = 0;
+    const int no = 4000;
+    for (int k = 0; k < no; ++k) {
+      const Vec3 a = axis(), b = axis();
+      double u = 0;
+      for (int p = 0; p < 3; ++p)
+        for (int q = 0; q < 3; ++q) {
+          const Vec3 d = Vec3{r, 0, 0} + b * off[q] - a * off[p];
+          u += pm.energy(uint32_t(p), uint32_t(3 + q), dot(d, d));
+        }
+      f += std::isfinite(u) ? std::exp(-beta * u) - 1 : -1;
+    }
+    integral += f / no * r * r * dr;
+  }
+  const double b2 = -2 * 3.14159265358979323846 * 6.02214076e23 * integral * 1e-24;
+  const double p_ideal = 1000 * 8.314462618 * T / 101325;   // atm at 1.0 mol/L
+  const double nist = (7.925 / p_ideal - 1) / 1e-3;           // cm³/mol
+  std::printf("TraPPE N2 B2(110 K) = %.1f cm3/mol · NIST (Z − 1)/ρ at 1 mol/L = %.1f (B2 + B3 ρ)\n", b2, nist);
+  EXPECT_NEAR(b2, nist, 6.0);
+  // GCMC of the gas at the fugacity of NIST's state, f = ρRT exp(βμ_ex), βμ_ex = 2 B2 ρ + 1.5 B3 ρ² with B3 ρ = nist − b2, in a 60 Å box:
+  // the density comes back at 1.0 mol/L (the engine's 12 Å, DSF, no tail: within a few per cent)
+  const double rho = 1e-3, b3rho = nist - b2;
+  const double f_kpa = p_ideal * 101.325 * std::exp(2 * b2 * rho + 1.5 * b3rho * rho);
+  System s;
+  s.cell.a = {60, 0, 0}, s.cell.b = {0, 60, 0}, s.cell.c = {0, 0, 60};
+  ForceField one = ff;
+  one.type_index.resize(3), one.charge.resize(3), one.mass.resize(3);
+  for (int k = 0; k < 3; ++k) {
+    Atom a;
+    a.element = k == 1 ? 0 : 7;
+    a.pos = {off[k], 0, 0};
+    s.atoms.push_back(a);
+  }
+  SorptionOptions o;
+  o.template_first_atom = 0;
+  o.insertions = 0;
+  o.temperature = T;
+  o.cutoff = 12.0;
+  o.pressures_kpa = {f_kpa};
+  o.steps = 300000;
+  const auto r = sorption(s, one, o);
+  const double got = r.isotherm.at(0).loading / 216000.0 / 6.02214076e23 * 1e27;   // mol/L
+  std::printf("GCMC at f = %.1f kPa: %.4f ± %.4f mol/L (NIST 1.0)\n", f_kpa, got, r.isotherm[0].loading_error / 216000.0 / 6.02214076e23 * 1e27);
+  EXPECT_NEAR(got, 1.0, 0.03);
+}

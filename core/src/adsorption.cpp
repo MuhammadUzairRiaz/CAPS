@@ -123,7 +123,9 @@ struct Model {
 
 std::string formula(const System& s, const std::vector<uint32_t>& atoms) {   // Hill order
   std::map<std::string, int> n;
-  for (uint32_t a : atoms) ++n[element(s.atoms[a].element).symbol];
+  const bool real = std::any_of(atoms.begin(), atoms.end(), [&](uint32_t a) { return s.atoms[a].element > 0; });
+  for (uint32_t a : atoms)
+    if (!real || s.atoms[a].element > 0) ++n[element(s.atoms[a].element).symbol];   // a model's massless sites are not in the formula
   std::string f;
   auto put = [&](const std::string& el) {
     const auto it = n.find(el);
@@ -176,8 +178,12 @@ void locate_adsorption(System& s, const ForceField& ff, const AdsorptionOptions&
   AdsorptionReport rep;
   const size_t n = s.atoms.size();
   if (ff.type_index.size() != n || ff.charge.size() != n) throw std::invalid_argument("adsorption: the force field was assigned to another structure");
-  if (!ff.pair_func.empty() || ff.hbond.on() || ff.sw.on || !ff.vsites.empty())
-    throw std::invalid_argument("adsorption: the energies need Lennard-Jones pairs (no other pair forms, hydrogen bonds or virtual sites)");
+  if (!ff.pair_func.empty() || ff.hbond.on() || ff.sw.on)
+    throw std::invalid_argument("adsorption: the energies need Lennard-Jones pairs (no other pair forms or hydrogen bonds)");
+  // massless sites move with their rigid adsorbate (TraPPE N2's centre); on the fixed substrate they have no place
+  for (const auto& v : ff.vsites)
+    if (o.first_mobile_atom >= 0 && v.site < uint32_t(o.first_mobile_atom))
+      throw std::invalid_argument("adsorption: virtual sites on the substrate are not handled");
   if (o.steps < 10 || o.cycles < 1 || o.t_high <= 0 || o.t_low <= 0 || o.t_low > o.t_high) throw std::invalid_argument("adsorption: at least 10 steps and one cycle, 0 < t_low ≤ t_high");
   const auto mobile = o.mobile.empty() ? adsorbate_molecules(s, o.first_mobile_atom) : o.mobile;
   if (mobile.empty()) throw std::invalid_argument("adsorption: no adsorbate molecule (the structure is one molecule)");

@@ -198,6 +198,11 @@ struct FFDef {
   // Coarse-grained force fields (typing file "coarse_grained": true): sites are beads, typed by name. "beads" and
   // "bead_groups" map an all-atom structure onto beads first (map_to_beads; SDK). bead_templates: named bead SMILES
   // from the force field's sources (force-field file "bead_templates"), for build_beads.
+  // Massless charge sites a model adds to a molecule (TraPPE N2's centre: force-field file "virtual_sites": smarts, type,
+  // from = pattern atoms, w = weights): added by prepare_for_forcefield as atoms of element 0 named by the type, typed by
+  // a rule on that name, and made virtual sites Σ w x_from by parameterize (excluded from their molecule).
+  struct SiteRule { std::string smarts, type; std::vector<int> from; std::vector<double> w; };
+  std::vector<SiteRule> site_rules;
   bool coarse_grained = false;
   std::vector<BeadRule> bead_rules;
   std::vector<BeadGroup> bead_groups;
@@ -300,7 +305,7 @@ std::string prepare_for_forcefield(System& s, const FFDef& ff, std::string& char
 // Does the force field change the structure before typing (united atom, shells, ionic bonds)?
 inline bool needs_prepare(const FFDef& ff) {
   return ff.united_atom || !ff.shells.empty() || ff.keep_defined_bonds || !ff.unbonded_types.empty() || ff.coarse_grained || !ff.bead_rules.empty() || !ff.bead_groups.empty() ||
-         !ff.martini_protein.empty();
+         !ff.martini_protein.empty() || !ff.site_rules.empty();
 }
 
 // "N atoms match no typing rule of FF", or for a coarse-grained force field that maps atoms onto beads, that they are in

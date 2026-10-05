@@ -2156,6 +2156,33 @@ caps::ForceField field_for_extended(caps_doc* d, const caps::System& s) {
   return *t->field->ff;
 }
 
+// Molecules added after a prepared structure (sorbates, adsorbates) get the force field's own preparation (united-atom
+// folding, a model's massless sites) on their own: the structure's atoms are prepared already, and folding them again
+// would lose their sites' hydrogens.
+void prepare_added(caps_doc* d, caps::System& s, size_t nh) {
+  if (!d->field || !caps::needs_prepare(d->field->base) || nh >= s.atoms.size()) return;
+  if (!s.has_mol) {   // molecule ids from the bonds first: an added site (unbonded) stays in its molecule
+    int nm = 0;
+    const auto comp = s.molecules(&nm);
+    for (size_t i = 0; i < s.atoms.size(); ++i) s.atoms[i].mol = int64_t(comp[i]) + 1;
+    s.has_mol = true;
+  }
+  caps::System sorb;
+  sorb.cell = s.cell, sorb.has_mol = true;
+  sorb.atoms.assign(s.atoms.begin() + long(nh), s.atoms.end());
+  for (const auto& b : s.bonds)
+    if (b.i >= nh && b.j >= nh) sorb.bonds.push_back({uint32_t(b.i - nh), uint32_t(b.j - nh), b.order});
+  std::string ch = "keep";
+  caps::prepare_for_forcefield(sorb, d->field->base, ch);
+  s.atoms.resize(nh);
+  std::vector<caps::Bond> hb;
+  for (const auto& b : s.bonds) if (b.i < nh && b.j < nh) hb.push_back(b);
+  s.bonds = std::move(hb);
+  for (const auto& a : sorb.atoms) s.atoms.push_back(a);
+  for (const auto& b : sorb.bonds) s.bonds.push_back({uint32_t(b.i + nh), uint32_t(b.j + nh), b.order});
+  for (size_t i = 0; i < s.atoms.size(); ++i) s.atoms[i].id = int64_t(i) + 1;
+}
+
 // the structure's molecules from SMILES, count copies of each, added after its atoms (positions as built)
 caps::System with_molecules(caps::System s, const caps::Json& list, int* added) {
   int64_t next_mol = 0;
@@ -2193,6 +2220,7 @@ extern "C" int32_t caps_adsorption(caps_doc* d, const char* json, caps_stage_fn 
       if (added) first = int(substrate_atoms);
     }
     if (j.has("first_atom")) first = int(j.num("first_atom", -1));
+    if (added) prepare_added(d, s, substrate_atoms);   // the force field's own preparation of the adsorbates (sites, united atom)
     const caps::ForceField ff = added ? field_for_extended(d, s) : [&] { const auto fp = field_for_run(d); return fp ? *fp : default_ff(s); }();
     if (added) caps::apply_rigid_geometry(s, ff, substrate_atoms, s.atoms.size());   // rigid models: the force field's geometry
     caps::AdsorptionOptions o;
@@ -2304,6 +2332,20 @@ extern "C" int32_t caps_sorption(caps_doc* d, const char* json, caps_stage_fn pr
       s = with_molecules(std::move(s), one, &added);
       if (!added) throw std::invalid_argument("could not build the sorbate " + smi);
       starts.push_back(first);
+    }
+    if (d->field && caps::needs_prepare(d->field->base)) {   // the model's own preparation on the sorbates too
+      if (!s.has_mol) {
+        int nm = 0;
+        const auto comp = s.molecules(&nm);
+        for (size_t i = 0; i < s.atoms.size(); ++i) s.atoms[i].mol = int64_t(comp[i]) + 1;
+        s.has_mol = true;
+      }
+      std::vector<int64_t> mols;
+      for (int st : starts) mols.push_back(s.atoms[size_t(st)].mol);
+      prepare_added(d, s, host.atoms.size());
+      for (size_t k = 0; k < starts.size(); ++k)
+        for (size_t i = host.atoms.size(); i < s.atoms.size(); ++i)
+          if (s.atoms[i].mol == mols[k]) { starts[k] = int(i); break; }
     }
     const caps::ForceField ff = field_for_extended(d, s);
     // rigid models (TraPPE CO2, N2, O2) take their force field's bond lengths and angles
