@@ -55,19 +55,42 @@ DpdReport run_dpd(const DpdOptions& o) {
   std::vector<int> mol;
   std::vector<std::pair<int, int>> bonds;
   std::vector<std::array<int, 3>> angles;
+  std::vector<int> parent;   // the bead each bead is bonded to when placed (−1: a molecule's first)
   std::set<char> used;
   for (const auto& sp : o.species) {
     if (sp.sequence.empty() || sp.count <= 0) continue;
-    for (char c : sp.sequence) if (c < 'A' || c > 'Z') throw std::invalid_argument("DPD: bead types are the letters A–Z ('" + sp.sequence + "')");
+    // the sequence's beads with their parents: a branch "(…)" hangs off the bead before it
+    std::vector<char> beads;
+    std::vector<int> par;
+    {
+      std::vector<int> stack;
+      int prev = -1;
+      for (char c : sp.sequence) {
+        if (c == '(') { if (prev < 0) throw std::invalid_argument("DPD: a branch needs a bead before it ('" + sp.sequence + "')"); stack.push_back(prev); continue; }
+        if (c == ')') { if (stack.empty()) throw std::invalid_argument("DPD: unbalanced ')' in '" + sp.sequence + "'"); prev = stack.back(); stack.pop_back(); continue; }
+        if (c < 'A' || c > 'Z') throw std::invalid_argument("DPD: bead types are the letters A–Z, branches in parentheses ('" + sp.sequence + "')");
+        beads.push_back(c);
+        par.push_back(prev);
+        prev = int(beads.size()) - 1;
+      }
+      if (!stack.empty()) throw std::invalid_argument("DPD: unbalanced '(' in '" + sp.sequence + "'");
+    }
+    std::vector<std::vector<int>> nbr(beads.size());
+    for (size_t b = 0; b < beads.size(); ++b) if (par[b] >= 0) nbr[size_t(par[b])].push_back(int(b)), nbr[b].push_back(par[b]);
     for (int k = 0; k < sp.count; ++k) {
       const int first = int(type.size());
-      for (size_t b = 0; b < sp.sequence.size(); ++b) {
-        type.push_back(sp.sequence[b]);
+      for (size_t b = 0; b < beads.size(); ++b) {
+        type.push_back(beads[b]);
         mol.push_back(rep.molecules);
-        used.insert(sp.sequence[b]);
-        if (b > 0) bonds.push_back({first + int(b) - 1, first + int(b)});
-        if (b > 1 && o.angle_k != 0) angles.push_back({first + int(b) - 2, first + int(b) - 1, first + int(b)});
+        used.insert(beads[b]);
+        parent.push_back(par[b] < 0 ? -1 : first + par[b]);
+        if (par[b] >= 0) bonds.push_back({first + par[b], first + int(b)});
       }
+      // every bonded triple, the middle bead at the vertex
+      if (o.angle_k != 0)
+        for (size_t j = 0; j < beads.size(); ++j)
+          for (size_t x = 0; x < nbr[j].size(); ++x)
+            for (size_t y = x + 1; y < nbr[j].size(); ++y) angles.push_back({first + nbr[j][x], first + int(j), first + nbr[j][y]});
       ++rep.molecules;
     }
   }
@@ -90,14 +113,43 @@ DpdReport run_dpd(const DpdOptions& o) {
   std::normal_distribution<double> G(0.0, 1.0);
   const size_t nn = static_cast<size_t>(n);
   std::vector<Vec3> r(nn), v(nn), f(nn), fold(nn);
+  // the template: whether a point belongs to the first type's region (lamellae, cylinders, spheres)
+  const char first_type = rep.types.empty() ? 'A' : rep.types[0];
+  const bool templ = o.start == "lamellar" || o.start == "cylinders" || o.start == "spheres";
+  if (!templ && o.start != "random") throw std::invalid_argument("DPD: start is random, lamellar, cylinders or spheres");
+  double phiA = 0;
+  for (char t : type) phiA += t == first_type;
+  phiA /= double(n);
+  const int per = std::max(1, o.start_periods);
+  const double P = L / per;   // the template's period
+  auto in_first = [&](const Vec3& x) {
+    auto fr = [&](double u) { u = u / P; return u - std::floor(u); };
+    if (o.start == "lamellar") return fr(x[0]) < phiA;
+    if (o.start == "cylinders") {   // radius from the area share: π R² = φ P²
+      const double R = std::sqrt(phiA / kPi) * P, dx = (fr(x[0]) - 0.5) * P, dy = (fr(x[1]) - 0.5) * P;
+      return dx * dx + dy * dy < R * R;
+    }
+    const double R = std::cbrt(3 * phiA / (4 * kPi)) * P, dx = (fr(x[0]) - 0.5) * P, dy = (fr(x[1]) - 0.5) * P, dz = (fr(x[2]) - 0.5) * P;
+    return dx * dx + dy * dy + dz * dz < R * R;
+  };
+  auto wants = [&](int i, const Vec3& x) { return !templ || (type[size_t(i)] == first_type) == in_first(x); };
   for (int i = 0; i < n; ++i) {
-    if (i > 0 && mol[size_t(i)] == mol[size_t(i - 1)]) {
-      const double z = 2 * U(rng) - 1, ph = 2 * kPi * U(rng), s = std::sqrt(1 - z * z);
-      r[size_t(i)] = r[size_t(i - 1)] + Vec3{s * std::cos(ph), s * std::sin(ph), z} * 0.7;
-    } else {
-      r[size_t(i)] = {L * U(rng), L * U(rng), L * U(rng)};
+    const int pa = parent[size_t(i)];
+    for (int t = 0; t < (templ ? 60 : 1); ++t) {   // the template: tries until the bead lands in its type's region
+      if (pa >= 0) {
+        const double z = 2 * U(rng) - 1, ph = 2 * kPi * U(rng), s = std::sqrt(1 - z * z);
+        r[size_t(i)] = r[size_t(pa)] + Vec3{s * std::cos(ph), s * std::sin(ph), z} * 0.7;
+      } else {
+        r[size_t(i)] = {L * U(rng), L * U(rng), L * U(rng)};
+      }
+      if (wants(i, r[size_t(i)])) break;
     }
     v[size_t(i)] = {G(rng), G(rng), G(rng)};
+  }
+  if (templ) {
+    char b[160];
+    std::snprintf(b, sizeof b, "started from %s of %c (volume share %.2f), %d period(s) across the box", o.start.c_str(), first_type, phiA, per);
+    rep.notes.push_back(b);
   }
   Vec3 p{0, 0, 0};
   for (const auto& x : v) p = p + x;

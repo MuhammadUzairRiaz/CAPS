@@ -27,7 +27,9 @@ namespace caps {
 
 struct DpdSpecies {
   std::string name;       // "PS-b-PMMA", "solvent"
-  std::string sequence;   // one letter per bead, A–Z: "AAAAABBBBB" (a diblock), "A" (a monomer)
+  // one letter per bead, A–Z: "AAAAABBBBB" (a diblock), "A" (a monomer); a branch in parentheses hangs off the bead
+  // before it — "AAAA(BBB)AAAA" a graft, "A(B)(B)(B)" a star of three B arms on A
+  std::string sequence;
   int count = 0;          // molecules
 };
 
@@ -38,6 +40,11 @@ struct DpdOptions {
   std::map<std::string, double> a;                // "AB" → a_ij directly (wins over χ); "AA" → a_ii
   double gamma = 4.5, dt = 0.04;
   double bond_k = 4.0, bond_r0 = 0.0;             // springs −C (r − r₀)
+  // the start: random (chains as random walks from random places) or a mesostructure of the first type in the others
+  // (lamellae normal to x, cylinders along z on a square lattice, spheres on a cubic one), start_periods across the box,
+  // the first type's volume share setting the slabs' thickness and the cylinders' and spheres' radii
+  std::string start = "random";
+  int start_periods = 1;
   double angle_k = 0.0;                           // chain stiffness: k_θ (1 + cos θ), θ at the middle of three bonded beads (kT; straight: θ = 180°, E = 0)
   long steps = 20000, equilibration = 5000;       // the first `equilibration` steps are not sampled
   int frame_every = 500;

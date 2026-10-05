@@ -1235,7 +1235,7 @@ internal static class SelfTest
             Check(!vm.DpdHasError && vm.IsDpd && vm.DpdOrder != "—" && vm.Document!.Summary().Atoms == 800 && vm.DpdSq.Length > 0
                   && MainViewModel.ExpandSequence("A2B3") == "AABBB" && vm.Document!.Provenance().Contains("dpd.run"),
                   $"DPD: ψ {vm.DpdOrder} · spacing {vm.DpdSpacing} · kT {vm.DpdKt} · {vm.DpdError}");
-            Check(vm.DpdDomains.Contains("domain"), $"DPD domains: {vm.DpdDomains}");
+            Check(vm.DpdDomains.Contains("domain") && MainViewModel.ExpandSequence("A5(B3)A5") == "AAAAA(BBB)AAAAA", $"DPD domains: {vm.DpdDomains} · branched {MainViewModel.ExpandSequence("A5(B3)A5")}");
             vm.SetModule(8);
         }
 

@@ -93,3 +93,30 @@ TEST(Dpd, StiffnessAndDomains) {
   std::printf("DPD: <cos> %.2f flexible, %.2f stiff · blend psi %.2f, A domains %d (largest %.2f), B %d (%.2f)\n", mean_cos(flex), mean_cos(stiff), seg.order,
               seg.domains_a, seg.largest_a, seg.domains_b, seg.largest_b);
 }
+
+// Branched bead molecules and a templated start: a graft AAAA(BBB)AAAA (11 beads, 10 bonds, the B arm on the fourth A)
+// and a three-armed star; a symmetric blend started from lamellae is segregated at once, a random start is not.
+TEST(Dpd, BranchesAndTemplates) {
+  DpdOptions g;
+  g.species = {{"graft", "AAAA(BBB)AAAA", 20}, {"star", "A(B)(B)(B)", 20}};
+  g.steps = 10, g.equilibration = 0, g.frame_every = 10;
+  const auto r = run_dpd(g);
+  const auto& top = r.frames.topology;
+  EXPECT_EQ(r.beads, 20 * 11 + 20 * 4);
+  EXPECT_EQ(top.bonds.size(), size_t(20 * 10 + 20 * 3));
+  const auto nb = top.neighbours();
+  EXPECT_EQ(nb[3].size(), 3u);            // the graft's fourth bead: two backbone neighbours and the arm
+  EXPECT_EQ(nb[220].size(), 3u);          // the first star's core
+  DpdOptions bad;
+  bad.species.push_back({"bad", "AA(B", 1});
+  EXPECT_THROW(run_dpd(bad), std::invalid_argument);
+  DpdOptions l;
+  l.species = {{"A", "AAAAA", 60}, {"B", "BBBBB", 60}};
+  l.chi["AB"] = 6;
+  l.steps = 20, l.equilibration = 0, l.frame_every = 0;
+  const auto rnd = run_dpd(l);
+  l.start = "lamellar";
+  const auto lam = run_dpd(l);
+  EXPECT_GT(lam.order_series.front().second, rnd.order_series.front().second + 0.3);
+  std::printf("DPD start: psi random %.2f, lamellar %.2f\n", rnd.order_series.front().second, lam.order_series.front().second);
+}
