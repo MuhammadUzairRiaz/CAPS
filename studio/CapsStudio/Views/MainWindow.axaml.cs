@@ -335,6 +335,21 @@ public partial class MainWindow : Window
         OpenMany(files.Select(f => f.TryGetLocalPath()).OfType<string>().ToList());
     }
 
+    /// <summary>File › Read a log or table: a text output in the Reader (LAMMPS logs, GROMACS xvg, CSV …).</summary>
+    public async Task ReadTextDialog()
+    {
+        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Read a log or table", AllowMultiple = false,
+            FileTypeFilter =
+            [
+                new FilePickerFileType("Logs, inputs and tables") { Patterns = ["*.log", "log.*", "*.in", "in.*", "*.mdp", "*.xvg", "*.csv", "*.tsv", "*.txt", "*.md", "*.out"] },
+                new FilePickerFileType("All files") { Patterns = ["*"] },
+            ],
+        });
+        if (files.Count > 0 && files[0].TryGetLocalPath() is { } p) _vm.OpenReader(p);
+    }
+
     public void OpenMany(List<string> paths)
     {
         if (paths.Count == 0) return;

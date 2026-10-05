@@ -363,6 +363,9 @@ public struct CapsMechOpts
     // ABI 62: sliding friction
     public int FrMoving, FrFixed;
     public double FrVelocity, FrPs, FrEqPs, FrT;   // Å/ps, ps, ps, K
+    // ABI 63: solvation free energy (TI)
+    public int SolvMol, SolvCoulWindows, SolvLjWindows;
+    public double SolvPs, SolvEqPs, SolvT;
 }
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]

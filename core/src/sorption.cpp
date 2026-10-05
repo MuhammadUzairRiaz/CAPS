@@ -84,12 +84,12 @@ struct Host {
     }
     return e;
   }
-  double between(const std::vector<uint32_t>& tpl, const std::vector<Vec3>& P, const std::vector<Vec3>& Q) const {
+  double between(const std::vector<uint32_t>& tp, const std::vector<Vec3>& P, const std::vector<uint32_t>& tq, const std::vector<Vec3>& Q) const {
     double e = 0;
-    for (size_t k = 0; k < tpl.size(); ++k)
-      for (size_t q = 0; q < tpl.size(); ++q) {
+    for (size_t k = 0; k < tp.size(); ++k)
+      for (size_t q = 0; q < tq.size(); ++q) {
         const Vec3 d = mi(Q[q] - P[k]);
-        e += pm.energy(tpl[k], tpl[q], dot(d, d));
+        e += pm.energy(tp[k], tq[q], dot(d, d));
       }
     return e;
   }
@@ -120,12 +120,30 @@ SorptionReport sorption(const System& s, const ForceField& ff, const SorptionOpt
   }
   const PairModel pm(ff, rc, o.coulomb, o.dsf_alpha);
   const Host H(s, pm, nh);
-  std::vector<uint32_t> tpl;
-  Vec3 c0{0, 0, 0};
-  for (size_t i = nh; i < n; ++i) tpl.push_back(uint32_t(i)), c0 = c0 + s.atoms[i].pos;
-  c0 = c0 * (1.0 / double(tpl.size()));
-  std::vector<Vec3> shape;   // the template about its centre
-  for (uint32_t i : tpl) shape.push_back(s.atoms[i].pos - c0);
+  // the species: each template's atoms and its shape about its centre
+  std::vector<int> starts = o.species_first_atom.empty() ? std::vector<int>{o.template_first_atom} : o.species_first_atom;
+  for (size_t k = 0; k < starts.size(); ++k)
+    if (starts[k] < int(nh) || size_t(starts[k]) >= n || (k > 0 && starts[k] <= starts[k - 1]))
+      throw std::invalid_argument("sorption: the species' templates must follow the host in order");
+  const size_t ns = starts.size();
+  std::vector<std::vector<uint32_t>> tpls(ns);
+  std::vector<std::vector<Vec3>> shapes(ns);
+  for (size_t k = 0; k < ns; ++k) {
+    const size_t a = size_t(starts[k]), b = k + 1 < ns ? size_t(starts[k + 1]) : n;
+    Vec3 c0{0, 0, 0};
+    for (size_t i = a; i < b; ++i) tpls[k].push_back(uint32_t(i)), c0 = c0 + s.atoms[i].pos;
+    c0 = c0 * (1.0 / double(b - a));
+    for (size_t i = a; i < b; ++i) shapes[k].push_back(s.atoms[i].pos - c0);
+  }
+  std::vector<double> y(ns, 1.0 / double(ns));
+  if (!o.mole_fractions.empty()) {
+    if (o.mole_fractions.size() != ns) throw std::invalid_argument("sorption: one mole fraction per species");
+    double t = 0;
+    for (double v : o.mole_fractions) { if (v < 0) throw std::invalid_argument("sorption: mole fractions ≥ 0"); t += v; }
+    if (t <= 0) throw std::invalid_argument("sorption: the mole fractions add up to zero");
+    for (size_t k = 0; k < ns; ++k) y[k] = o.mole_fractions[k] / t;
+  }
+  const auto& tpl = tpls[0];
   const double beta = 1 / (kB * o.temperature);
   const double V = s.cell.volume();
   rep.volume = V;
@@ -136,59 +154,84 @@ SorptionReport sorption(const System& s, const ForceField& ff, const SorptionOpt
     const double u1 = U(rng), u2 = 2 * kPi * U(rng), u3 = 2 * kPi * U(rng);
     return Quat{std::sqrt(u1) * std::cos(u3), std::sqrt(1 - u1) * std::sin(u2), std::sqrt(1 - u1) * std::cos(u2), std::sqrt(u1) * std::sin(u3)};
   };
-  auto place = [&](const Vec3& c, const Quat& q) {
-    std::vector<Vec3> P(shape.size());
-    for (size_t k = 0; k < shape.size(); ++k) P[k] = c + rotate(q, shape[k]);
+  auto place = [&](size_t sp, const Vec3& c, const Quat& q) {
+    std::vector<Vec3> P(shapes[sp].size());
+    for (size_t k = 0; k < P.size(); ++k) P[k] = c + rotate(q, shapes[sp][k]);
     return P;
   };
   auto random_point = [&] { return s.cell.to_cartesian(Vec3{U(rng), U(rng), U(rng)}); };
   bool stopped = false;
 
-  // ---- Widom
-  if (o.insertions > 0) {
+  // ---- Widom, per species
+  const double Vm3 = V * 1e-30, mkg = rep.host_mass / kAvogadro * 1e-3;
+  for (size_t sp = 0; sp < ns && o.insertions > 0; ++sp) {
     const int nblk = 10;
     const int per = std::max(1, o.insertions / nblk);
     std::vector<double> blk(nblk, 0.0);
     for (int b = 0; b < nblk && !stopped; ++b) {
       double sum = 0;
       for (int i = 0; i < per; ++i) {
-        const auto P = place(random_point(), random_quat());
-        const double e = H.energy(tpl, P);
+        const auto P = place(sp, random_point(), random_quat());
+        const double e = H.energy(tpls[sp], P);
         sum += std::isfinite(e) ? std::exp(-beta * e) : 0.0;
       }
       blk[size_t(b)] = sum / per;
-      if (o.progress && !o.progress("Widom insertion", double(b + 1) / nblk)) stopped = true;
+      if (o.progress && !o.progress(ns > 1 ? "Widom insertion, species " + std::to_string(sp + 1) : std::string("Widom insertion"), (double(sp) + double(b + 1) / nblk) / double(ns)))
+        stopped = true;
     }
     double m = 0, v = 0;
     for (double x : blk) m += x;
     m /= nblk;
     for (double x : blk) v += (x - m) * (x - m);
-    rep.widom_w = m;
-    rep.widom_error = std::sqrt(v / (nblk - 1) / nblk);
-    rep.mu_ex = m > 0 ? -std::log(m) / beta : std::numeric_limits<double>::infinity();
-    const double Vm3 = V * 1e-30, mkg = rep.host_mass / kAvogadro * 1e-3;
-    rep.henry_mol_kg_kpa = mkg > 0 ? m * Vm3 / (kBoltzmannJ * kAvogadro * o.temperature) / mkg * 1000.0 : 0.0;
-    rep.solubility = m * 273.15 / o.temperature;
+    SpeciesWidom sw;
+    sw.fraction = y[sp];
+    sw.widom_w = m;
+    sw.widom_error = std::sqrt(v / (nblk - 1) / nblk);
+    sw.mu_ex = m > 0 ? -std::log(m) / beta : std::numeric_limits<double>::infinity();
+    sw.henry_mol_kg_kpa = mkg > 0 ? m * Vm3 / (kBoltzmannJ * kAvogadro * o.temperature) / mkg * 1000.0 : 0.0;
+    sw.solubility = m * 273.15 / o.temperature;
+    rep.species.push_back(sw);
   }
+  if (!rep.species.empty()) {
+    const auto& f = rep.species.front();
+    rep.widom_w = f.widom_w, rep.widom_error = f.widom_error, rep.mu_ex = f.mu_ex, rep.henry_mol_kg_kpa = f.henry_mol_kg_kpa, rep.solubility = f.solubility;
+  } else
+    for (size_t sp = 0; sp < ns; ++sp) rep.species.push_back(SpeciesWidom{y[sp]});
 
   // ---- GCMC at each pressure
+  struct Mol { size_t sp; std::vector<Vec3> P; };
   for (size_t pi = 0; pi < o.pressures_kpa.size() && !stopped; ++pi) {
     const double p = o.pressures_kpa[pi];
-    const double bfV = p * 1000.0 * V * 1e-30 / (kBoltzmannJ * o.temperature);   // β f V, ideal-gas fugacity
-    std::vector<std::vector<Vec3>> mols;
-    auto e_of = [&](const std::vector<Vec3>& P, size_t skip) {
-      double e = H.energy(tpl, P);
+    std::vector<double> bfV(ns);   // β f_i V per species, ideal-gas fugacity y_i p
+    for (size_t k = 0; k < ns; ++k) bfV[k] = y[k] * p * 1000.0 * V * 1e-30 / (kBoltzmannJ * o.temperature);
+    std::vector<Mol> mols;
+    std::vector<std::vector<size_t>> of(ns);   // the molecules of each species (indices into mols)
+    auto e_of = [&](size_t sp, const std::vector<Vec3>& P, size_t skip) {
+      double e = H.energy(tpls[sp], P);
       if (!std::isfinite(e)) return e;
-      for (size_t j = 0; j < mols.size(); ++j) if (j != skip) e += H.between(tpl, P, mols[j]);
+      for (size_t j = 0; j < mols.size(); ++j) if (j != skip) e += H.between(tpls[sp], P, tpls[mols[j].sp], mols[j].P);
       return e;
+    };
+    auto remove = [&](size_t m) {   // mols[m] out: the last takes its place
+      const size_t last = mols.size() - 1;
+      auto& a = of[mols[m].sp];
+      a.erase(std::find(a.begin(), a.end(), m));
+      if (m != last) {
+        auto& b = of[mols[last].sp];
+        *std::find(b.begin(), b.end(), last) = m;
+        mols[m] = std::move(mols[last]);
+      }
+      mols.pop_back();
     };
     double Ucur = 0;
     long ins_try = 0, ins_ok = 0, del_try = 0, del_ok = 0;
     const int equil = o.steps / 4;
-    double sN = 0, sN2 = 0, sU = 0, sUN = 0;
+    // sums for the averages and the fluctuations: N_i, N_i N_j, U, U N_i
+    std::vector<double> sN(ns, 0.0), sUN(ns, 0.0), sNN(ns * ns, 0.0);
+    double sU = 0;
     long samples = 0;
     const int nblk = 10;
-    std::vector<double> blkN(nblk, 0.0), blkC(nblk, 0.0);
+    std::vector<double> blkC(nblk, 0.0), blkN(size_t(nblk) * ns, 0.0);
     const int report_every = std::max(1, o.steps / 50);
     const int g = std::clamp(o.map_grid, 0, 96);
     std::vector<double> dens(size_t(g) * g * g, 0.0);
@@ -197,21 +240,30 @@ SorptionReport sorption(const System& s, const ForceField& ff, const SorptionOpt
     for (int step = 0; step < o.steps && !stopped; ++step) {
       const double r = U(rng);
       const size_t N = mols.size();
-      if (r < 0.25) {   // insert
+      if (r < 0.25) {   // insert one molecule of a species picked at random
         ++ins_try;
-        auto P = place(random_point(), random_quat());
-        const double dU = e_of(P, size_t(-1));
-        if (std::isfinite(dU) && U(rng) < bfV / double(N + 1) * std::exp(-beta * dU)) { mols.push_back(std::move(P)); Ucur += dU; ++ins_ok; }
-      } else if (r < 0.5) {   // delete
-        if (N > 0) {
+        const size_t sp = std::min(ns - 1, size_t(U(rng) * double(ns)));
+        auto P = place(sp, random_point(), random_quat());
+        const double dU = e_of(sp, P, size_t(-1));
+        if (std::isfinite(dU) && U(rng) < bfV[sp] / double(of[sp].size() + 1) * std::exp(-beta * dU)) {
+          of[sp].push_back(mols.size());
+          mols.push_back({sp, std::move(P)});
+          Ucur += dU;
+          ++ins_ok;
+        }
+      } else if (r < 0.5) {   // delete one of a species picked at random
+        const size_t sp = std::min(ns - 1, size_t(U(rng) * double(ns)));
+        const size_t Ns = of[sp].size();
+        if (Ns > 0) {
           ++del_try;
-          const size_t m = size_t(U(rng) * double(N)) % N;
-          const double dU = -e_of(mols[m], m);
-          if (U(rng) < double(N) / bfV * std::exp(-beta * dU)) { mols[m] = std::move(mols.back()); mols.pop_back(); Ucur += dU; ++del_ok; }
+          const size_t m = of[sp][size_t(U(rng) * double(Ns)) % Ns];
+          const double dU = -e_of(sp, mols[m].P, m);
+          if (bfV[sp] <= 0 || U(rng) < double(Ns) / bfV[sp] * std::exp(-beta * dU)) { remove(m); Ucur += dU; ++del_ok; }
         }
       } else if (N > 0) {   // translate or rotate one molecule
         const size_t m = size_t(U(rng) * double(N)) % N;
-        std::vector<Vec3> Q = mols[m];
+        const size_t sp = mols[m].sp;
+        std::vector<Vec3> Q = mols[m].P;
         if (r < 0.75) {
           const Vec3 d{(2 * U(rng) - 1) * 1.0, (2 * U(rng) - 1) * 1.0, (2 * U(rng) - 1) * 1.0};
           for (auto& q : Q) q = q + d;
@@ -224,19 +276,23 @@ SorptionReport sorption(const System& s, const ForceField& ff, const SorptionOpt
           const Quat q{std::cos(a / 2), ax[0] * std::sin(a / 2), ax[1] * std::sin(a / 2), ax[2] * std::sin(a / 2)};
           for (auto& x : Q) x = c + rotate(q, x - c);
         }
-        const double e_old = e_of(mols[m], m), e_new = e_of(Q, m);
-        if (std::isfinite(e_new) && (e_new <= e_old || U(rng) < std::exp(-beta * (e_new - e_old)))) { mols[m] = std::move(Q); Ucur += e_new - e_old; }
+        const double e_old = e_of(sp, mols[m].P, m), e_new = e_of(sp, Q, m);
+        if (std::isfinite(e_new) && (e_new <= e_old || U(rng) < std::exp(-beta * (e_new - e_old)))) { mols[m].P = std::move(Q); Ucur += e_new - e_old; }
       }
       if (step >= equil) {
-        const double Nn = double(mols.size());
-        sN += Nn, sN2 += Nn * Nn, sU += Ucur, sUN += Ucur * Nn, ++samples;
+        sU += Ucur, ++samples;
         const int b = std::min(nblk - 1, int(double(step - equil) / double(o.steps - equil) * nblk));
-        blkN[size_t(b)] += Nn, blkC[size_t(b)] += 1;
-        if (g > 0 && (step - equil) % map_every == 0) {   // the molecules' centres on the map
+        blkC[size_t(b)] += 1;
+        for (size_t i = 0; i < ns; ++i) {
+          const double Ni = double(of[i].size());
+          sN[i] += Ni, sUN[i] += Ucur * Ni, blkN[size_t(b) * ns + i] += Ni;
+          for (size_t j = 0; j < ns; ++j) sNN[i * ns + j] += Ni * double(of[j].size());
+        }
+        if (g > 0 && (step - equil) % map_every == 0) {   // the molecules' centres on the map (every species)
           for (const auto& mol : mols) {
             Vec3 cc{0, 0, 0};
-            for (const auto& q : mol) cc = cc + q;
-            Vec3 fr = s.cell.to_fractional(cc * (1.0 / double(mol.size())));
+            for (const auto& q : mol.P) cc = cc + q;
+            Vec3 fr = s.cell.to_fractional(cc * (1.0 / double(mol.P.size())));
             int ix[3];
             for (int k = 0; k < 3; ++k) ix[k] = std::clamp(int(std::floor((fr[k] - std::floor(fr[k])) * g)), 0, g - 1);
             dens[(size_t(ix[0]) * g + size_t(ix[1])) * g + size_t(ix[2])] += 1;
@@ -253,23 +309,73 @@ SorptionReport sorption(const System& s, const ForceField& ff, const SorptionOpt
     IsothermPoint pt;
     pt.pressure_kpa = p;
     if (samples > 0) {
-      const double mN = sN / samples, mN2 = sN2 / samples, mU = sU / samples, mUN = sUN / samples;
-      pt.loading = mN;
-      double bm = 0, bv = 0;
-      int nbk = 0;
-      for (int b = 0; b < nblk; ++b) if (blkC[size_t(b)] > 0) bm += blkN[size_t(b)] / blkC[size_t(b)], ++nbk;
-      bm /= std::max(1, nbk);
-      for (int b = 0; b < nblk; ++b) if (blkC[size_t(b)] > 0) { const double x = blkN[size_t(b)] / blkC[size_t(b)] - bm; bv += x * x; }
-      pt.loading_error = nbk > 1 ? std::sqrt(bv / (nbk - 1) / nbk) : 0;
-      const double varN = mN2 - mN * mN;
-      pt.heat = varN > 1e-9 ? 1 / beta - (mUN - mU * mN) / varN : 0;
-      const double mkg = rep.host_mass / kAvogadro * 1e-3;
-      pt.mol_per_kg = mkg > 0 ? mN / kAvogadro / mkg : 0;
-      pt.cm3stp_per_cm3 = mN / (V * 1e-24) * 22413.969 / kAvogadro;   // molecules per cm³ → cm³(STP) per cm³
+      const double inv = 1.0 / double(samples), mU = sU * inv;
+      std::vector<double> mN(ns), cUN(ns), cNN(ns * ns);
+      for (size_t i = 0; i < ns; ++i) mN[i] = sN[i] * inv;
+      for (size_t i = 0; i < ns; ++i) {
+        cUN[i] = sUN[i] * inv - mU * mN[i];
+        for (size_t j = 0; j < ns; ++j) cNN[i * ns + j] = sNN[i * ns + j] * inv - mN[i] * mN[j];
+      }
+      pt.species_heat.assign(ns, 0.0);
+      {   // q_i = kT − Σ_j cov(U, N_j) [cov(N, N)⁻¹]_ji: solve cov(N, N) z = cov(U, N) (symmetric), Gauss with pivoting; species never adsorbed left out
+        std::vector<size_t> act;
+        for (size_t i = 0; i < ns; ++i) if (cNN[i * ns + i] > 1e-9) act.push_back(i);
+        const size_t m = act.size();
+        std::vector<double> A(m * m), z(m);
+        for (size_t a = 0; a < m; ++a) {
+          z[a] = cUN[act[a]];
+          for (size_t b = 0; b < m; ++b) A[a * m + b] = cNN[act[a] * ns + act[b]];
+        }
+        bool ok = true;
+        for (size_t c = 0; c < m && ok; ++c) {
+          size_t piv = c;
+          for (size_t r2 = c + 1; r2 < m; ++r2) if (std::fabs(A[r2 * m + c]) > std::fabs(A[piv * m + c])) piv = r2;
+          if (std::fabs(A[piv * m + c]) < 1e-12) { ok = false; break; }
+          for (size_t k = 0; k < m; ++k) std::swap(A[c * m + k], A[piv * m + k]);
+          std::swap(z[c], z[piv]);
+          for (size_t r2 = 0; r2 < m; ++r2)
+            if (r2 != c) {
+              const double f = A[r2 * m + c] / A[c * m + c];
+              for (size_t k = 0; k < m; ++k) A[r2 * m + k] -= f * A[c * m + k];
+              z[r2] -= f * z[c];
+            }
+        }
+        if (ok)
+          for (size_t a = 0; a < m; ++a) pt.species_heat[act[a]] = 1 / beta - z[a] / A[a * m + a];
+      }
+      double tot = 0;
+      for (double v : mN) tot += v;
+      pt.loading = tot;
+      pt.species_loading = mN;
+      pt.species_error.assign(ns, 0.0);
+      // the error of the total and of each species: ten blocks
+      auto blk_err = [&](auto value) {
+        double bm = 0, bv = 0;
+        int nbk = 0;
+        for (int b = 0; b < nblk; ++b) if (blkC[size_t(b)] > 0) bm += value(b), ++nbk;
+        bm /= std::max(1, nbk);
+        for (int b = 0; b < nblk; ++b) if (blkC[size_t(b)] > 0) { const double x = value(b) - bm; bv += x * x; }
+        return nbk > 1 ? std::sqrt(bv / (nbk - 1) / nbk) : 0.0;
+      };
+      pt.loading_error = blk_err([&](int b) { double t = 0; for (size_t i = 0; i < ns; ++i) t += blkN[size_t(b) * ns + i]; return t / blkC[size_t(b)]; });
+      for (size_t i = 0; i < ns; ++i) pt.species_error[i] = blk_err([&](int b) { return blkN[size_t(b) * ns + i] / blkC[size_t(b)]; });
+      if (ns == 1) {   // one species: the single-component formula, as before
+        pt.heat = pt.species_heat[0];
+      } else {         // the adsorbed phase's mean: Σ x_i q_i
+        pt.heat = 0;
+        if (tot > 0) for (size_t i = 0; i < ns; ++i) pt.heat += mN[i] / tot * pt.species_heat[i];
+      }
+      pt.mol_per_kg = mkg > 0 ? tot / kAvogadro / mkg : 0;
+      pt.species_mol_per_kg.resize(ns);
+      for (size_t i = 0; i < ns; ++i) pt.species_mol_per_kg[i] = mkg > 0 ? mN[i] / kAvogadro / mkg : 0;
+      pt.cm3stp_per_cm3 = tot / (V * 1e-24) * 22413.969 / kAvogadro;   // molecules per cm³ → cm³(STP) per cm³
+      pt.selectivity.assign(ns, 0.0);
+      for (size_t i = 0; i < ns; ++i)   // (x_i / x_0) / (y_i / y_0)
+        if (mN[0] > 0 && y[i] > 0) pt.selectivity[i] = (mN[i] / mN[0]) / (y[i] / y[0]);
     }
     pt.acceptance_insert = ins_try ? double(ins_ok) / ins_try : 0;
     pt.acceptance_delete = del_try ? double(del_ok) / del_try : 0;
-    pt.molecules = mols;
+    for (const auto& mol : mols) pt.molecules.push_back(mol.P);
     if (g > 0 && map_samples > 0) {   // per Å³: counts over the samples and the voxel's volume
       const double vox = V / (double(g) * g * g);
       pt.grid = g;
@@ -281,10 +387,13 @@ SorptionReport sorption(const System& s, const ForceField& ff, const SorptionOpt
   if (stopped) rep.notes.push_back("stopped before the end");
   {
     char b[240];
-    std::snprintf(b, sizeof b, "host %zu atoms (%.0f g/mol per cell), cell %.0f Å³ · sorbate %zu atoms, rigid · %.0f K", nh, rep.host_mass, V, tpl.size(), o.temperature);
+    if (ns == 1)
+      std::snprintf(b, sizeof b, "host %zu atoms (%.0f g/mol per cell), cell %.0f Å³ · sorbate %zu atoms, rigid · %.0f K", nh, rep.host_mass, V, tpl.size(), o.temperature);
+    else
+      std::snprintf(b, sizeof b, "host %zu atoms (%.0f g/mol per cell), cell %.0f Å³ · %zu sorbates, rigid, ideal gas mixture · %.0f K", nh, rep.host_mass, V, ns, o.temperature);
     rep.notes.insert(rep.notes.begin(), b);
     rep.notes.push_back(std::string("energies: the force field's van der Waals") + (pm.coulomb() ? " and damped shifted force electrostatics" : "") +
-                        "; the host is held fixed; ideal-gas reservoir (fugacity = pressure)");
+                        "; the host is held fixed; ideal-gas reservoir (fugacity = " + std::string(ns > 1 ? "y_i × pressure)" : "pressure)"));
   }
   rep.seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
   return rep;

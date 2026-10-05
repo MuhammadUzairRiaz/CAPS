@@ -5,6 +5,8 @@ using System.Text.Json.Nodes;
 namespace CapsStudio.ViewModels;
 
 public sealed record SorbRow(string Pressure, string Loading, string MolKg, string Cm3, string Heat);
+/// <summary>One gas of a mixture: its Widom solubility and, at the highest pressure, its loading, selectivity and heat.</summary>
+public sealed record SorbSpeciesRow(string Smiles, string Y, string S, string Loading, string Selectivity, string Heat);
 
 /// <summary>Analyze › Sorption: how much of a gas or small molecule the open structure takes up (core sorption.hpp):
 /// Widom insertion (excess chemical potential, Henry constant, solubility coefficient) and grand-canonical Monte Carlo
@@ -20,6 +22,43 @@ public sealed partial class MainViewModel
     private CancellationTokenSource? _sorbCts;
     public static readonly string[] SorbPresets = ["O=C=O · CO₂", "C · CH₄", "N#N · N₂", "O=O · O₂", "O · H₂O", "[He] · He", "[H][H] · H₂"];
     public ObservableCollection<SorbRow> SorbRows { get; } = new();
+    // ---- gas mixtures (C6): one "SMILES fraction" per line, each gas at y_i p
+    private bool _sorbMix;
+    private string _sorbMixText = "O=C=O 0.15\nN#N 0.85";
+    public bool SorbMix { get => _sorbMix; set => Set(ref _sorbMix, value); }
+    public string SorbMixText { get => _sorbMixText; set { Set(ref _sorbMixText, value ?? ""); Raise(nameof(SorbMixHint)); } }
+    public ObservableCollection<SorbSpeciesRow> SorbSpeciesRows { get; } = new();
+    public bool SorbHasSpecies => SorbSpeciesRows.Count > 1;
+    public string SorbSpeciesTitle { get; private set; } = "";
+    /// <summary>Per species' isotherms (mol/kg against kPa) for the plot, in the mixture's order.</summary>
+    public List<(double X, double Y)[]> SorbSpeciesIsotherms { get; } = new();
+    /// <summary>The mixture lines as (SMILES, fraction); an error text when a line does not read.</summary>
+    public static (List<(string Smiles, double Y)> Gases, string Error) ParseSorbMixture(string text)
+    {
+        var list = new List<(string, double)>();
+        foreach (var raw in (text ?? "").Split(['\n', ';'], StringSplitOptions.RemoveEmptyEntries))
+        {
+            var line = raw.Trim();
+            if (line.Length == 0 || line.StartsWith('#')) continue;
+            var parts = line.Split([' ', '\t', ','], StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length != 2 || !double.TryParse(parts[1].TrimEnd('%'), NumberStyles.Float, CultureInfo.InvariantCulture, out var y) || y < 0)
+                return (list, $"'{line}': write a SMILES and its mole fraction, e.g. O=C=O 0.15");
+            list.Add((parts[0], parts[1].EndsWith('%') ? y / 100 : y));
+        }
+        if (list.Count < 2) return (list, "a mixture needs two gases or more");
+        if (list.Sum(g => g.Item2) <= 0) return (list, "the mole fractions add up to zero");
+        return (list, "");
+    }
+    public string SorbMixHint
+    {
+        get
+        {
+            var (g, err) = ParseSorbMixture(_sorbMixText);
+            if (err.Length > 0) return err;
+            var t = g.Sum(x => x.Y);
+            return string.Join(" · ", g.Select(x => $"{x.Smiles} y = {(x.Y / t).ToString("0.###", CultureInfo.InvariantCulture)}")) + (Math.Abs(t - 1) > 1e-6 ? " (normalised)" : "");
+        }
+    }
     public (double X, double Y)[] SorbIsotherm { get; private set; } = [];
     public string Sorbate { get => _sorbate; set => Set(ref _sorbate, value ?? ""); }
     public string SorbPreset { get => ""; set { if (value?.Split(" · ")[0] is { Length: > 0 } smi) Sorbate = smi; } }
@@ -47,12 +86,21 @@ public sealed partial class MainViewModel
         var inv = CultureInfo.InvariantCulture;
         var pressures = new JsonArray();
         foreach (var p in SorbPressureList(_sorbPressures)) pressures.Add(p);
-        var json = new JsonObject
+        var jo = new JsonObject
         {
             ["sorbate"] = _sorbate.Trim(), ["temperature"] = _sorbT, ["insertions"] = _sorbInsert, ["pressures_kpa"] = pressures,
             ["steps"] = _sorbSteps, ["cutoff"] = Math.Min(12.0, _relaxCutoff), ["coulomb"] = _relaxCoulomb, ["seed"] = SorbSeed.Take(),
             ["map_grid"] = _sorbMapOn ? 24 : 0,
-        }.ToJsonString();
+        };
+        if (_sorbMix)
+        {
+            var (gases, err) = ParseSorbMixture(_sorbMixText);
+            if (err.Length > 0) { SorbError = err; return; }
+            var mix = new JsonArray();
+            foreach (var (smi, y) in gases) mix.Add(new JsonObject { ["smiles"] = smi, ["fraction"] = y });
+            jo["mixture"] = mix;
+        }
+        var json = jo.ToJsonString();
         var doc = _doc!;
         var cellA = doc.Summary();
         SorbRunning = true;
@@ -93,8 +141,27 @@ public sealed partial class MainViewModel
             Raise(nameof(SorbMapIndex)); Raise(nameof(SorbHasMap));
             SorptionMapChanged?.Invoke();
             SorbIsotherm = pts.ToArray();
+            SorbSpeciesRows.Clear();
+            SorbSpeciesIsotherms.Clear();
+            if (r["species"] is JsonArray spj && spj.Count > 1 && r["isotherm"] is JsonArray isoj)
+            {
+                var lastPt = isoj.Count > 0 ? isoj[^1] : null;
+                double At(JsonNode? p, string k, int i) => p?[k] is JsonArray a && i < a.Count ? (double?)a[i] ?? double.NaN : double.NaN;
+                for (var i = 0; i < spj.Count; ++i)
+                {
+                    var sp = spj[i]!;
+                    SorbSpeciesRows.Add(new SorbSpeciesRow((string?)sp["smiles"] ?? "", ((double?)sp["fraction"] ?? 0).ToString("0.###", inv),
+                        ((double?)sp["solubility"] ?? 0).ToString("0.###", inv),
+                        lastPt == null ? "—" : $"{At(lastPt, "species_loading", i).ToString("0.##", inv)} ± {At(lastPt, "species_error", i).ToString("0.##", inv)}",
+                        lastPt == null ? "—" : At(lastPt, "selectivity", i).ToString("0.###", inv),
+                        lastPt == null ? "—" : At(lastPt, "species_heat", i).ToString("0.0", inv)));
+                    SorbSpeciesIsotherms.Add(isoj.Select(p => ((double?)p!["pressure_kpa"] ?? 0, At(p, "species_mol_per_kg", i))).Where(q => double.IsFinite(q.Item2)).ToArray());
+                }
+                SorbSpeciesTitle = lastPt == null ? "Gases (Widom)" : $"Gases at {((double?)lastPt["pressure_kpa"] ?? 0).ToString("0.##", inv)} kPa · selectivity over {(string?)spj[0]!["smiles"]}";
+            }
+            Raise(nameof(SorbHasSpecies)); Raise(nameof(SorbSpeciesTitle));
             SorbNote = string.Join(" · ", ((JsonArray)r["notes"]!).Select(x => (string?)x ?? "")) + " · " + ((string?)r["forcefield"] ?? "");
-            Status = $"Sorption of {_sorbate}: S {SorbS}" + (SorbRows.Count > 0 ? $" · {SorbRows.Count} isotherm points" : "");
+            Status = $"Sorption of {(_sorbMix ? "the mixture" : _sorbate)}: S {SorbS}" + (SorbRows.Count > 0 ? $" · {SorbRows.Count} isotherm points" : "");
             SorptionChanged?.Invoke();
         }
         catch (Exception e) { SorbError = e.Message; }

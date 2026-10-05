@@ -12,7 +12,7 @@ internal static class SelfTest
         var fails = 0;
         void Check(bool ok, string what) { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {what}"); if (!ok) fails++; }
 
-        Check(Native.AbiVersion() == 62, "native ABI version 62");
+        Check(Native.AbiVersion() == 63, "native ABI version 63");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -1551,6 +1551,14 @@ internal static class SelfTest
             var mp = vm.Document?.Summary();
             Check(mp is { } mps && mps.Atoms == 6 * 12 * 2 && vm.Field.Complete && vm.MpLog.Contains("bond STY_B–STY_S") && vm.Field.ForceFieldName.StartsWith("Structure-based CG"),
                   $"CG from a polymer: {mp?.Atoms} beads · complete {vm.Field.Complete} · log {vm.MpLog.Split((char)10).LastOrDefault()} · {vm.Field.ForceFieldName} · {vm.CgError}");
+            // the same, the pair refined by iterative Boltzmann inversion (two short iterations)
+            vm.MpScheme = 0;
+            vm.MpIbi = true;
+            vm.MpIbiIterations = 2;
+            vm.MpIbiPs = 2;
+            vm.BuildMappedCg().GetAwaiter().GetResult();
+            Check(vm.Field.ForceFieldName.Contains("IBI") && vm.MpLog.Contains("IBI residual"), $"CG with IBI: {vm.Field.ForceFieldName} · {vm.MpLog.Split((char)10).FirstOrDefault(l => l.Contains("IBI"))} · {vm.CgError}");
+            vm.MpIbi = false;
             vm.CgModel = 0;
             vm.SetModule(8);
         }
@@ -3731,6 +3739,17 @@ internal static class SelfTest
                   $"friction protocol: τ_w {(double?)fp?["value"]:0.##} MPa · {(string?)fp?["method"]}");
         }
 
+        // Solvation free energy through the Analyze protocol: chain 1 of the melt decoupled in a few very short windows
+        {
+            using var sd = CapsDocument.Open(Path.Combine(dir, "ps_melt.data"));
+            var sj = System.Text.Json.Nodes.JsonNode.Parse(sd.Analyze("solvation", new CapsAnalyzeOpts { Last = -1, Stride = 1, Blocks = 5, Grid = 0.4, Qmax = 25, Dq = 0.02, FitFrom = 0.2, FitTo = 0.5, TimestepFs = 1 },
+                new CapsMechOpts { Temperature = 300, SolvMol = 1, SolvCoulWindows = 2, SolvLjWindows = 3, SolvPs = 0.05, SolvEqPs = -1 }, null))!;
+            var sp = sj["properties"]?[0];
+            var lj = (double?)sp?["extra"]?["Lennard-Jones part (kcal/mol)"] ?? double.NaN;
+            Check((string?)sp?["id"] == "solvation" && double.IsFinite((double?)sp?["value"] ?? double.NaN) && lj < 0,
+                  $"solvation protocol: ΔG {(double?)sp?["value"]:0.#} kcal/mol (LJ part {lj:0.#}) · {(string?)sp?["notes"]?[0]}");
+        }
+
         // Normal modes: the fragment's modes (3N − 6), and one played in a copy (one period of frames, the original kept)
         {
             vm.Open(Path.Combine(dir, "ps_frag.pdb"));
@@ -3982,7 +4001,51 @@ internal static class SelfTest
                 var proj = vm.SorbMapProjection();
                 Check(vm.SorbHasMap && vm.SorbMapPressures.Count == 2 && proj.Z.Length == 24 * 24 && proj.Z.All(z => z >= 0) && vm.SorbMapText.Contains("molecules/nm²"),
                       $"sorbate density map: {vm.SorbMapPressures.Count} maps · {proj.Z.Length} cells · {vm.SorbMapText}");
+                // a CO₂/N₂ mixture: per-gas rows, the first gas's selectivity 1; a bad line is refused before running
+                vm.SorbMix = true;
+                vm.SorbMixText = "O=C=O 15%\nN#N";
+                var badMix = vm.SorbMixHint;
+                vm.SorbMixText = "O=C=O 15%\nN#N 85%";
+                vm.SorbPressures = "1000";
+                vm.SorbMapOn = false;
+                vm.RunSorption().GetAwaiter().GetResult();
+                Check(!vm.SorbHasError && vm.SorbHasSpecies && vm.SorbSpeciesRows.Count == 2 && vm.SorbSpeciesRows[0].Selectivity == "1" && vm.SorbSpeciesIsotherms.Count == 2
+                      && badMix.Contains("mole fraction") && vm.SorbMixHint.Contains("y = 0.15"),
+                      $"sorption mixture: {vm.SorbSpeciesTitle} · " + string.Join(" · ", vm.SorbSpeciesRows.Select(r => $"{r.Smiles} {r.Loading} S {r.Selectivity}")) + $" · {vm.SorbError}");
+                vm.SorbMix = false;
+                vm.SorbMapOn = true;
                 vm.SetModule(4);
+            }
+            // Studio › Reader: a LAMMPS log of two runs (a warning inside one), a GROMACS xvg and a CSV read as tables; the mean of the tail
+            {
+                var logp = Path.Combine(outDir, "log.lammps");
+                File.WriteAllText(logp, "LAMMPS (2 Aug 2023)\nunits real\nStep Temp PotEng Press\n0 300 -100 1\n10 310 -101 2\nWARNING: something (src/x.cpp:1)\n20 305 -102 3\n" +
+                    "Loop time of 1.0 on 1 procs\nrun 30\n   Step          Temp          PotEng   Press   \n20 305 -102 3\n30 302 -103 4\n40 298 -104 5\n50 300 -105 6\nLoop time of 2\n");
+                var mod0 = vm.Module;
+                vm.Open(logp);   // routed to the Reader, not opened as a structure
+                var logOk = vm.IsReader && vm.ReaderTables.Count == 2 && vm.ReaderTables[0].Rows.Count == 3 && vm.ReaderTables[1].Rows.Count == 4
+                            && vm.ReaderColumns.Count == 4 && vm.ReaderColumns[1] == "Temp" && vm.ReaderCurve.Length == 3 && vm.ReaderInfo.StartsWith("LAMMPS log");
+                vm.ReaderTable = 1;
+                vm.ReaderY = 2;
+                vm.ReaderFromD = 50;
+                var statsOk = vm.ReaderStats.Contains("mean -104.5") && vm.ReaderStats.Contains("last -105");
+                vm.ReaderFind = "loop time";
+                var findOk = vm.ReaderFindText == "1 of 2";
+                var xvgp = Path.Combine(outDir, "energy.xvg");
+                File.WriteAllText(xvgp, "# GROMACS\n@    title \"Energies\"\n@    xaxis  label \"Time (ps)\"\n@ s0 legend \"Potential\"\n@ s1 legend \"Pressure\"\n0.0 -5.0 1.0\n1.0 -5.5 2.0\n2.0 -6.0 3.0\n");
+                vm.OpenReader(xvgp);
+                var xvgOk = vm.ReaderTables.Count == 1 && vm.ReaderColumns.SequenceEqual(new[] { "Time (ps)", "Potential", "Pressure" }) && vm.ReaderTables[0].Title == "Energies";
+                var csvp = Path.Combine(outDir, "isotherm.csv");
+                File.WriteAllText(csvp, "p_kPa,loading\n10,0.5\n100,2.0\n1000,4.1\n");
+                vm.OpenReader(csvp);
+                vm.ReaderFit = 1;   // a straight line through three points
+                var fitOk = vm.ReaderFitLine.Length > 0 && vm.ReaderFitText.Length > 0;
+                vm.ReaderFit = 0;
+                var csv = vm.ReaderTableCsv();
+                var csvOk = vm.ReaderColumns.SequenceEqual(new[] { "p_kPa", "loading" }) && csv.StartsWith("p_kPa,loading") && csv.Contains("1000,4.1") && fitOk;
+                Check(logOk && statsOk && findOk && xvgOk && csvOk && MainViewModel.IsReaderFile("run.mdp") && !MainViewModel.IsReaderFile("melt.data"),
+                      $"reader: log {logOk} ({vm.ReaderTables.Count} tables) · stats {statsOk} · find {findOk} · xvg {xvgOk} · csv {csvOk} · {vm.ReaderStats}");
+                vm.SetModule(mod0);
             }
             // Equilibrate › Chain ends: CBMC regrowth with the built-in force field; a new frame, the provenance step
             vm.CbMovesD = 60;

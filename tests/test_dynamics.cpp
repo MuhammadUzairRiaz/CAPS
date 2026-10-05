@@ -5,11 +5,14 @@
 #include <filesystem>
 #include <map>
 #include <numeric>
+#include <random>
 
 #include "caps/dynamics.hpp"
 #include "caps/grow.hpp"
 #include "caps/io.hpp"
 #include "caps/relax.hpp"
+#include "caps/ibi.hpp"
+#include "caps/free_energy.hpp"
 #include "caps/uff.hpp"
 
 using namespace caps;
@@ -510,4 +513,218 @@ TEST(Dynamics, PartlyHeldAtoms) {
   relax(u, r);
   for (size_t i = 0; i < k; ++i) EXPECT_DOUBLE_EQ(u.atoms[i].pos[0], t.atoms[i].pos[0]);
   EXPECT_TRUE(holds_axis(1, 0) && holds_axis(8, 2) && !holds_axis(8, 0) && holds_all(14) && !holds_all(12));
+}
+
+// A tabulated pair: the Lennard-Jones potential written into a table (0.005 Å grid) gives the analytic energy and
+// forces to the interpolation error.
+TEST(Dynamics, TabulatedPairMatchesLennardJones) {
+  System s = relaxed_cell();
+  ForceField ff = default_forcefield(s);
+  std::fill(ff.charge.begin(), ff.charge.end(), 0.0);
+  EnergyOptions e;
+  e.coulomb = false, e.tail = false, e.cutoff = 9;
+  std::vector<double> x, fa, ft;
+  for (const auto& a : s.atoms) x.insert(x.end(), a.pos.begin(), a.pos.end());
+  Evaluator ea(ff, e);
+  const auto Ea = ea.compute(x, s.cell, fa);
+  // every type pair as a table of its mixed LJ, shifted to zero at the cut-off as the plain pairs are
+  ForceField ft_ff = ff;
+  const int nt = int(ff.type_names.size());
+  for (int a = 0; a < nt; ++a)
+    for (int b = a; b < nt; ++b) {
+      const PairType p = mixed_pair(ff, a, b);
+      TabulatedPair tb;
+      tb.r0 = 1.0, tb.dr = 0.005;
+      auto V = [&](double r) { const double q = std::pow(p.sigma / r, 6); return 4 * p.eps * (q * q - q); };
+      for (double r = tb.r0; r <= 9.0 + 1e-9; r += tb.dr) {
+        const double q = std::pow(p.sigma / r, 6);
+        tb.e.push_back(V(r) - V(9.0));
+        tb.f.push_back(24 * p.eps * (2 * q * q - q) / r);
+      }
+      ft_ff.tables.push_back(tb);
+      ft_ff.pair_func[{a, b}] = {kPairTable, double(ft_ff.tables.size() - 1), 0, 0};
+    }
+  Evaluator et(ft_ff, e);
+  const auto Et = et.compute(x, s.cell, ft);
+  EXPECT_NEAR(Et.vdw, Ea.vdw, 1e-3 * std::fabs(Ea.vdw) + 0.05);
+  double worst = 0;
+  for (size_t k = 0; k < fa.size(); ++k) worst = std::max(worst, std::fabs(ft[k] - fa[k]));
+  EXPECT_LT(worst, 0.05);
+}
+
+// Iterative Boltzmann inversion: the Lennard-Jones liquid's own g(r) as the target, started from −k_B T ln g (which
+// over-structures a dense liquid); the iterations bring the model's g(r) back toward the target.
+TEST(Dynamics, IbiRecoversTheLjLiquidStructure) {
+  const double sigma = 3.405, eps = 119.8 * 0.0019872043, rho = 0.844, a = std::cbrt(4 / rho) * sigma;
+  System s;
+  for (int i = 0; i < 4; ++i)
+    for (int j = 0; j < 4; ++j)
+      for (int k = 0; k < 4; ++k)
+        for (const auto& b : std::vector<Vec3>{{0, 0, 0}, {0.5, 0.5, 0}, {0.5, 0, 0.5}, {0, 0.5, 0.5}}) {
+          Atom at;
+          at.element = 18;
+          at.mol = int64_t(s.atoms.size() + 1);
+          at.pos = {(i + b[0]) * a, (j + b[1]) * a, (k + b[2]) * a};
+          s.atoms.push_back(at);
+        }
+  s.has_mol = true;
+  s.cell.a = {4 * a, 0, 0}, s.cell.b = {0, 4 * a, 0}, s.cell.c = {0, 0, 4 * a};
+  auto ff = std::make_shared<ForceField>(default_forcefield(s));
+  for (auto& t : ff->lj) t = {eps, sigma};
+  std::fill(ff->charge.begin(), ff->charge.end(), 0.0);
+  // the target: the LJ liquid's g(r) at T* = 0.722
+  DynamicsOptions d;
+  d.field = ff;
+  d.temperature = 0.722 * 119.8, d.dt = 5, d.tau_t = 100;
+  d.energy.cutoff = 2.5 * sigma, d.energy.coulomb = false, d.energy.tail = false;
+  d.steps = 2000, d.frame_every = 0;
+  run_dynamics(s, d);
+  std::vector<std::vector<Vec3>> frames;
+  std::vector<Cell> cells;
+  d.steps = 2000, d.frame_every = 20;
+  d.frame = [&](const std::vector<double>& x, const Cell& c, int64_t step) {
+    if (step == 0) return;
+    std::vector<Vec3> p(x.size() / 3);
+    for (size_t i = 0; i < p.size(); ++i) p[i] = {x[3 * i], x[3 * i + 1], x[3 * i + 2]};
+    frames.push_back(p), cells.push_back(c);
+  };
+  run_dynamics(s, d);
+  const double dr = 0.1;
+  const size_t nbin = size_t(2.5 * sigma / dr);
+  const auto g = nonbonded_gr(s, frames, cells, dr, nbin);
+  std::vector<double> r(nbin);
+  for (size_t k = 0; k < nbin; ++k) r[k] = (double(k) + 0.5) * dr;
+  IbiOptions o;
+  o.temperature = 0.722 * 119.8;
+  o.iterations = 4;
+  o.run_ps = 8, o.first_equilibrate_ps = 4, o.dt = 5;
+  o.frame_every = 20;
+  const auto res = run_ibi(s, *ff, r, g, o);
+  ASSERT_EQ(res.history.size(), 5u);
+  EXPECT_LT(res.history.back().residual, res.history.front().residual);
+  EXPECT_LT(res.history.back().residual, 0.02);
+  std::printf("IBI: residual %.4f -> %.4f\n", res.history.front().residual, res.history.back().residual);
+}
+
+// Alchemical pairs: at λ = 1 the soft-core Lennard-Jones and scaled Coulomb are the plain pairs; the ∂U/∂λ the kernel
+// reports is the numerical derivative of the energy in λ (LJ at λ_lj = 0.5, Coulomb at λ_coul = 0.3).
+TEST(Dynamics, AlchemicalPairsAndTheirDerivatives) {
+  System s = relaxed_cell();
+  ForceField ff = default_forcefield(s);
+  for (size_t i = 0; i < ff.charge.size(); ++i) ff.charge[i] = (i % 2 ? 0.1 : -0.1);   // some charges
+  std::vector<char> al(s.atoms.size(), 0);
+  const auto mol = s.molecules();
+  for (size_t i = 0; i < al.size(); ++i) al[i] = mol[i] == 0;   // the first chain is the solute
+  std::vector<double> x, f;
+  for (const auto& a : s.atoms) x.insert(x.end(), a.pos.begin(), a.pos.end());
+  EnergyOptions e;
+  e.tail = false;
+  Evaluator plain(ff, e);
+  const auto E0 = plain.compute(x, s.cell, f);
+  EnergyOptions ea = e;
+  ea.alchemical = &al;
+  auto at = [&](double ll, double lc) {
+    EnergyOptions o = ea;
+    o.lambda_lj = ll, o.lambda_coul = lc;
+    Evaluator ev(ff, o);
+    std::vector<double> g;
+    return ev.compute(x, s.cell, g);
+  };
+  const auto E1 = at(1, 1);
+  EXPECT_NEAR(E1.vdw, E0.vdw, 1e-8 * std::fabs(E0.vdw) + 1e-8);
+  EXPECT_NEAR(E1.coulomb, E0.coulomb, 1e-8 * std::fabs(E0.coulomb) + 1e-8);
+  const double h = 1e-5;
+  const auto Em = at(0.5, 0.3);
+  const double num_lj = (at(0.5 + h, 0.3).vdw - at(0.5 - h, 0.3).vdw) / (2 * h);
+  const double num_c = (at(0.5, 0.3 + h).coulomb - at(0.5, 0.3 - h).coulomb) / (2 * h);
+  EXPECT_NEAR(Em.dudl_lj, num_lj, 1e-4 * std::fabs(num_lj) + 1e-6);
+  EXPECT_NEAR(Em.dudl_coul, num_c, 1e-4 * std::fabs(num_c) + 1e-6);
+  // λ = 0: the solute does not see the rest (its pairs with it carry nothing)
+  const auto E00 = at(0, 0);
+  EXPECT_NE(E00.vdw, E0.vdw);
+  // the soft-core forces are −∇U: a solute atom moved by ±h along x
+  EnergyOptions o = ea;
+  o.lambda_lj = 0.4, o.lambda_coul = 0.6;
+  Evaluator ev(ff, o);
+  std::vector<double> g;
+  ev.compute(x, s.cell, g);
+  size_t k = 0;
+  while (!al[k]) ++k;
+  auto U = [&](double dx) {
+    auto y = x;
+    y[3 * k] += dx;
+    Evaluator e2(ff, o);
+    std::vector<double> gg;
+    return e2.compute(y, s.cell, gg).total();
+  };
+  const double fnum = -(U(1e-5) - U(-1e-5)) / 2e-5;
+  EXPECT_NEAR(g[3 * k], fnum, 1e-4 * std::fabs(fnum) + 1e-4);
+}
+
+// Solvation free energy by TI against Widom's test-particle insertion: the excess chemical potential of a Lennard-Jones
+// fluid (ρ* = 0.5, T* = 2, the same shifted potential at 2.5 σ) — decoupling one particle by soft-core TI gives μ_ex.
+TEST(Dynamics, SolvationTiMatchesWidomInsertion) {
+  const double sigma = 3.405, eps = 119.8 * 0.0019872043, T = 2.0 * 119.8, rho = 0.5;
+  const double a = std::cbrt(4 / rho) * sigma, L = 4 * a, rc = 2.5 * sigma;
+  System s;
+  for (int i = 0; i < 4; ++i)
+    for (int j = 0; j < 4; ++j)
+      for (int k = 0; k < 4; ++k)
+        for (const auto& b : std::vector<Vec3>{{0, 0, 0}, {0.5, 0.5, 0}, {0.5, 0, 0.5}, {0, 0.5, 0.5}}) {
+          Atom at;
+          at.element = 18;
+          at.mol = int64_t(s.atoms.size() + 1);
+          at.pos = {(i + b[0]) * a, (j + b[1]) * a, (k + b[2]) * a};
+          s.atoms.push_back(at);
+        }
+  s.has_mol = true;
+  s.cell.a = {L, 0, 0}, s.cell.b = {0, L, 0}, s.cell.c = {0, 0, L};
+  auto ff = std::make_shared<ForceField>(default_forcefield(s));
+  for (auto& t : ff->lj) t = {eps, sigma};
+  std::fill(ff->charge.begin(), ff->charge.end(), 0.0);
+  // Widom: random insertions into frames of the fluid
+  DynamicsOptions d;
+  d.field = ff, d.temperature = T, d.dt = 5, d.tau_t = 100;
+  d.energy.cutoff = rc, d.energy.coulomb = false, d.energy.tail = false;
+  d.steps = 2000, d.frame_every = 0;
+  System w = s;
+  run_dynamics(w, d);
+  std::vector<std::vector<Vec3>> frames;
+  d.steps = 6000, d.frame_every = 30;
+  d.frame = [&](const std::vector<double>& x, const Cell&, int64_t step) {
+    if (step == 0) return;
+    std::vector<Vec3> p(x.size() / 3);
+    for (size_t i = 0; i < p.size(); ++i) p[i] = {x[3 * i], x[3 * i + 1], x[3 * i + 2]};
+    frames.push_back(p);
+  };
+  run_dynamics(w, d);
+  const double s6 = std::pow(sigma, 6), vc = 4 * eps * (s6 * s6 / std::pow(rc, 12) - s6 / std::pow(rc, 6)), kT = 0.0019872043 * T;
+  std::mt19937 rng(3);
+  std::uniform_real_distribution<double> U(0, L);
+  double wsum = 0;
+  long nins = 0;
+  for (const auto& f : frames)
+    for (int t = 0; t < 400; ++t) {
+      const Vec3 p{U(rng), U(rng), U(rng)};
+      double du = 0;
+      for (const auto& q : f) {
+        Vec3 dd = q - p;
+        for (int c = 0; c < 3; ++c) dd[c] -= L * std::round(dd[c] / L);
+        const double r2 = dd[0] * dd[0] + dd[1] * dd[1] + dd[2] * dd[2];
+        if (r2 < rc * rc) { const double x6 = s6 / (r2 * r2 * r2); du += 4 * eps * (x6 * x6 - x6) - vc; }
+      }
+      wsum += std::exp(-du / kT), ++nins;
+    }
+  const double mu_widom = -kT * std::log(wsum / double(nins));
+  // TI: one particle decoupled
+  SolvationOptions o;
+  o.field = ff;
+  o.energy.cutoff = rc, o.energy.coulomb = false;
+  o.solute.assign(s.atoms.size(), 0);
+  o.solute[0] = 1;
+  o.temperature = T, o.dt = 5, o.tau_t = 100;
+  o.ps = 10, o.equilibrate_ps = 2;
+  const auto r = solvation_free_energy(w, o);
+  std::printf("mu_ex: Widom %.3f kcal/mol, TI %.3f +- %.3f (kT %.3f)\n", mu_widom, r.dg, r.dg_err, kT);
+  EXPECT_NEAR(r.dg, mu_widom, 0.3 * kT);
 }

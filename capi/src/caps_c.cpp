@@ -15,6 +15,8 @@
 #include "caps/probe.hpp"
 #include "caps/normal_modes.hpp"
 #include "caps/conformers.hpp"
+#include "caps/ibi.hpp"
+#include "caps/free_energy.hpp"
 #include "caps/bondrules.hpp"
 #include "caps/piece.hpp"
 #include "caps/tags.hpp"
@@ -2240,17 +2242,33 @@ extern "C" int32_t caps_sorption(caps_doc* d, const char* json, caps_stage_fn pr
     if (!d) throw std::invalid_argument("no document");
     const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
     const caps::System host = d->traj.frame(d->current);
-    caps::Json one = caps::Json::array();
-    caps::Json sb = caps::Json::object();
-    sb["smiles"] = j.text("sorbate", "C");
-    sb["count"] = 1.0;
-    one.push_back(std::move(sb));
-    int added = 0;
-    const caps::System s = with_molecules(host, one, &added);   // the host, then one sorbate as the template
-    if (!added) throw std::invalid_argument("give the sorbate as SMILES");
+    // the sorbates: "sorbate" (one gas) or v63 "mixture": [{"smiles", "fraction"}, …] (an ideal gas mixture), one
+    // template each after the host
+    std::vector<std::string> smiles;
+    std::vector<double> fractions;
+    if (j.has("mixture") && j["mixture"].is_array() && !j["mixture"].items().empty()) {
+      for (const auto& m : j["mixture"].items()) smiles.push_back(m.text("smiles", "")), fractions.push_back(m.num("fraction", 1.0));
+    } else
+      smiles.push_back(j.text("sorbate", "C"));
+    caps::System s = host;
+    std::vector<int> starts;
+    for (const auto& smi : smiles) {
+      if (smi.empty()) throw std::invalid_argument("give each sorbate as SMILES");
+      caps::Json one = caps::Json::array();
+      caps::Json sb = caps::Json::object();
+      sb["smiles"] = smi;
+      sb["count"] = 1.0;
+      one.push_back(std::move(sb));
+      int added = 0;
+      const int first = int(s.atoms.size());
+      s = with_molecules(std::move(s), one, &added);
+      if (!added) throw std::invalid_argument("could not build the sorbate " + smi);
+      starts.push_back(first);
+    }
     const caps::ForceField ff = field_for_extended(d, s);
     caps::SorptionOptions o;
     o.template_first_atom = int(host.atoms.size());
+    if (smiles.size() > 1) o.species_first_atom = starts, o.mole_fractions = fractions;
     o.temperature = j.num("temperature", 300);
     o.insertions = int(j.num("insertions", 100000));
     if (j.has("pressures_kpa") && j["pressures_kpa"].is_array())
@@ -2264,7 +2282,10 @@ extern "C" int32_t caps_sorption(caps_doc* d, const char* json, caps_stage_fn pr
     if (progress) o.progress = [&](const std::string& st, double f) { cancelled = progress(st.c_str(), f, user) != 0; return !cancelled; };
     const auto rep = caps::sorption(s, ff, o);
     if (cancelled) throw std::runtime_error("sorption cancelled");
-    caps::KeyValues pr = {{"sorbate", sb.text("smiles")}, {"temperature", g6(o.temperature) + " K"},
+    std::string sorbates;
+    for (size_t k = 0; k < smiles.size(); ++k)
+      sorbates += (k ? " + " : "") + smiles[k] + (smiles.size() > 1 ? " (y " + g6(o.mole_fractions.empty() ? 1.0 : rep.species[k].fraction) + ")" : "");
+    caps::KeyValues pr = {{"sorbate", sorbates}, {"temperature", g6(o.temperature) + " K"},
                           {"Widom", std::to_string(o.insertions) + " insertions · S " + g6(rep.solubility) + " cm³(STP)/(cm³ atm)"},
                           {"GCMC", std::to_string(o.pressures_kpa.size()) + " pressures × " + std::to_string(o.steps) + " steps"},
                           {"force field", ff.name}};
@@ -2279,6 +2300,9 @@ extern "C" int32_t caps_sorption(caps_doc* d, const char* json, caps_stage_fn pr
       caps::Json x = caps::Json::object();
       x["pressure_kpa"] = p.pressure_kpa, x["loading"] = p.loading, x["loading_error"] = p.loading_error, x["mol_per_kg"] = p.mol_per_kg;
       x["cm3stp_per_cm3"] = p.cm3stp_per_cm3, x["heat"] = p.heat, x["acceptance_insert"] = p.acceptance_insert, x["acceptance_delete"] = p.acceptance_delete;
+      auto arr = [](const std::vector<double>& v) { caps::Json a = caps::Json::array(); for (double q : v) a.push_back(q); return a; };
+      x["species_loading"] = arr(p.species_loading), x["species_error"] = arr(p.species_error), x["species_mol_per_kg"] = arr(p.species_mol_per_kg);
+      x["species_heat"] = arr(p.species_heat), x["selectivity"] = arr(p.selectivity);
       if (!p.density.empty()) {   // the density map: grid points along a, b, c and the values (per Å³), a slowest
         caps::Json m = caps::Json::object(), v = caps::Json::array();
         for (float q : p.density) v.push_back(double(q));
@@ -2289,6 +2313,16 @@ extern "C" int32_t caps_sorption(caps_doc* d, const char* json, caps_stage_fn pr
       iso.push_back(std::move(x));
     }
     r["isotherm"] = std::move(iso);
+    caps::Json sp = caps::Json::array();
+    for (size_t k = 0; k < rep.species.size(); ++k) {
+      const auto& w = rep.species[k];
+      caps::Json x = caps::Json::object();
+      x["smiles"] = k < smiles.size() ? smiles[k] : std::string();
+      x["fraction"] = w.fraction, x["widom_w"] = w.widom_w, x["widom_error"] = w.widom_error, x["mu_ex"] = w.mu_ex;
+      x["henry_mol_kg_kpa"] = w.henry_mol_kg_kpa, x["solubility"] = w.solubility;
+      sp.push_back(std::move(x));
+    }
+    r["species"] = std::move(sp);
     caps::Json nt = caps::Json::array();
     for (const auto& x : rep.notes) nt.push_back(x);
     r["notes"] = std::move(nt);
@@ -4534,7 +4568,7 @@ int32_t caps_analyze_ex(caps_doc* d, const char* props, const caps_analyze_opts*
       std::string cur;
       for (const char* c = props ? props : ""; ; ++c) {
         if (*c == ',' || *c == 0) {
-          if (!cur.empty()) (cur == "cij_strain" || cur == "cij_run" || cur == "viscosity" || cur == "nemd" || cur == "conformers" || cur == "creep" || cur == "friction" || cur == "tensile" || cur == "tg" || cur == "pull_shear" || cur == "pull_normal" ? protocols : ids).push_back(cur);
+          if (!cur.empty()) (cur == "cij_strain" || cur == "cij_run" || cur == "viscosity" || cur == "nemd" || cur == "conformers" || cur == "creep" || cur == "friction" || cur == "solvation" || cur == "tensile" || cur == "tg" || cur == "pull_shear" || cur == "pull_normal" ? protocols : ids).push_back(cur);
           cur.clear();
           if (*c == 0) break;
         } else if (*c != ' ') cur += *c;
@@ -4686,6 +4720,47 @@ int32_t caps_analyze_ex(caps_doc* d, const char* props, const caps_analyze_opts*
         if (mo.seed) vo.seed = mo.seed;
         vo.progress = [&](const std::string& w, double f) { return !cancelled(w, f); };
         for (auto& q : caps::viscosity_properties(caps::viscosity_green_kubo(s, vo))) res.push_back(std::move(q));
+      } else if (id == "solvation") {
+        caps::System s = frame_copy();
+        caps::SolvationOptions so;
+        so.field = ff;
+        so.energy = o.energy;
+        so.solute.assign(s.atoms.size(), 0);
+        if (mo.solv_mol > 0) {
+          const auto ids = molecule_ids(s);
+          for (size_t i = 0; i < s.atoms.size(); ++i) so.solute[i] = ids[i] == mo.solv_mol;
+        } else {
+          for (size_t i = 0; i < s.atoms.size() && i < d->selection.size(); ++i) so.solute[i] = d->selection[i] ? 1 : 0;
+        }
+        auto spaced = [](int k) { std::vector<double> v; for (int i = 0; i < k; ++i) v.push_back(1.0 - double(i) / (k - 1)); return v; };
+        if (mo.solv_coul_windows >= 2) so.coul_windows = spaced(mo.solv_coul_windows);
+        if (mo.solv_lj_windows >= 2) {   // denser towards λ = 0, where the soft-core ⟨∂U/∂λ⟩ turns fastest
+          so.lj_windows = spaced(mo.solv_lj_windows);
+          for (auto& l : so.lj_windows) l = std::pow(l, 1.5);
+        }
+        if (mo.solv_ps > 0) so.ps = mo.solv_ps;
+        if (mo.solv_eq_ps != 0) so.equilibrate_ps = std::max(0.0, mo.solv_eq_ps);
+        so.temperature = mo.solv_t > 0 ? mo.solv_t : mo.temperature > 0 ? mo.temperature : 300;
+        if (mo.dt > 0) so.dt = mo.dt;
+        if (mo.seed) so.seed = mo.seed;
+        so.progress = [&](const std::string& w, double f) { return !cancelled(w, f); };
+        const auto sr = caps::solvation_free_energy(s, so);
+        caps::Property q;
+        q.id = "solvation";
+        q.name = "Solvation free energy (TI)";
+        q.unit = "kcal/mol";
+        q.value = sr.dg, q.error = sr.dg_err;
+        q.method = "thermodynamic integration: electrostatics then soft-core Lennard-Jones (Beutler et al. 1994) of the solute decoupled from the rest, trapezoid rule";
+        q.extra["electrostatic part (kcal/mol)"] = sr.dg_coul;
+        q.extra["Lennard-Jones part (kcal/mol)"] = sr.dg_lj;
+        q.extra["ΔG (kJ/mol)"] = sr.dg * 4.184;
+        q.extra["solute atoms"] = double(std::count(so.solute.begin(), so.solute.end(), 1));
+        caps::Series sc{"⟨∂U/∂λ⟩ electrostatics", "λ_coul", "⟨∂U/∂λ⟩ (kcal/mol)", {}, {}}, sl{"⟨∂U/∂λ⟩ Lennard-Jones", "λ_lj", "⟨∂U/∂λ⟩ (kcal/mol)", {}, {}};
+        for (const auto& w : sr.windows) (w.leg == "coulomb" ? sc : sl).x.push_back(w.lambda), (w.leg == "coulomb" ? sc : sl).y.push_back(w.dudl);
+        if (!sc.x.empty()) q.series.push_back(sc);
+        q.series.push_back(sl);
+        q.notes = sr.notes;
+        res.push_back(std::move(q));
       } else if (id == "friction") {
         caps::System s = frame_copy();
         caps::FrictionOptions fo;
@@ -11026,12 +11101,37 @@ caps_doc* cg_doc(caps::CgMapResult& r, const caps_doc* from, const std::string& 
 }
 }  // namespace
 
+// v62: the bead model's non-bonded part refined by iterative Boltzmann inversion against the mapped g(r) (options "ibi":
+// {iterations, run_ps, temperature, pressure_correction}); the table replaces the WCA, the bonded terms stay
+void apply_ibi(caps::CgMapResult& r, const caps::Json& j, double temperature) {
+  if (!j.has("ibi") || !j["ibi"].is_object()) return;
+  const auto& b = j["ibi"];
+  if (r.gr.size() < 10) throw std::invalid_argument("IBI needs the mapped g(r) (a periodic cell of several chains)");
+  std::vector<double> rr, gg;
+  for (const auto& [x, y] : r.gr) rr.push_back(x), gg.push_back(y);
+  caps::IbiOptions io;
+  io.temperature = b.num("temperature", temperature);
+  io.iterations = std::clamp(int(b.num("iterations", 6)), 1, 50);
+  io.run_ps = b.num("run_ps", 20);
+  io.first_equilibrate_ps = b.num("equilibrate_ps", 5);
+  io.pressure_correction = b.has("pressure_correction") && b["pressure_correction"].boolean();
+  io.seed = uint64_t(b.num("seed", 1));
+  const auto res = caps::run_ibi(r.beads, *r.ff, rr, gg, io);
+  r.ff = res.ff;
+  r.beads.forcefield = res.ff;   // the document's model is the structure's own
+  for (const auto& n : res.notes) r.notes.push_back(n);
+  std::string hist;
+  for (const auto& h : res.history) hist += (hist.empty() ? "" : ", ") + std::string(std::to_string(h.residual).substr(0, 6));
+  r.notes.push_back("IBI residual per iteration: " + hist + " (one table for every bead pair; LAMMPS: pair_style table, caps_pairs.table)");
+}
+
 extern "C" caps_doc* caps_cg_map(caps_doc* d, const char* options_json, char* report, int32_t cap) {
   try {
     const caps::Json j = caps::Json::parse(options_json && *options_json ? options_json : "{}");
     const caps::CgMapOptions o = cg_map_options(j);
     caps::System aa = d->traj.topology;
     caps::CgMapResult r = caps::cg_map(aa, o, d->traj.positions, d->traj.cells);
+    apply_ibi(r, j, o.temperature);
     report_out(cg_map_report(r), report, cap);
     return cg_doc(r, d, "all-atom structure mapped to beads (" + o.scheme + ")",
                   {{"scheme", o.scheme}, {"per_bead", std::to_string(o.per_bead)}, {"temperature", g6(o.temperature)}, {"frames", std::to_string(r.frames.size())}});
@@ -11066,6 +11166,7 @@ extern "C" caps_doc* caps_cg_from_polymer(const char* spec_json, const char* opt
     caps::relax(aa, ro, &rr);
     caps::make_molecules_whole(aa);
     caps::CgMapResult r = caps::cg_map(aa, cg_map_options(j));
+    apply_ibi(r, j, cg_map_options(j).temperature);
     r.notes.insert(r.notes.begin(), "reference: " + std::to_string(g.chains) + " chains × " + std::to_string(c.dp) + " units grown and compressed to " +
                                         g6(aa.density()) + " g/cm³ (" + rr.field + ")");
     report_out(cg_map_report(r), report, cap);

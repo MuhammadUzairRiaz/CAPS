@@ -20,7 +20,13 @@ public partial class SorptionPage : PageBase
             {
                 var p = this.FindControl<LinePlot>("Iso")!;
                 p.RefY = null;
-                p.SetData(vm.SorbIsotherm);
+                var sp = vm.SorbSpeciesIsotherms;
+                if (sp.Count >= 2)   // a mixture: the gases' own isotherms (up to three)
+                {
+                    p.SetCompare(sp[0], sp[1]);
+                    if (sp.Count >= 3) p.SetThird(sp[2]);
+                }
+                else p.SetData(vm.SorbIsotherm);
             };
             vm.SorptionMapChanged += () =>
             {

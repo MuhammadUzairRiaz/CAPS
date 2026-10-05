@@ -2875,6 +2875,7 @@
       <pages:AdsorptionPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsAdsorption}" />
       <pages:SorptionPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsSorption}" />
       <pages:DpdPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsDpd}" />
+      <pages:ReaderPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsReader}" />
       <pages:PeriodicPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsPeriodic}" />
       <pages:OrientationPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsOrientation}" />
       <pages:RecipesPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsRecipes}" />
@@ -3272,6 +3273,22 @@
                       <NumericUpDown Grid.Row="1" Value="{Binding Analyze.CijStrainD}" Minimum="0.000001" Maximum="0.01" Increment="0.0001" FormatString="0.######" />
                       <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding Analyze.CijConfigsD}" Minimum="1" Maximum="50" Increment="1" FormatString="0" />
                     </Grid>
+                  </StackPanel>
+                  <StackPanel Spacing="6" IsVisible="{Binding Analyze.SolvChip.IsOn}">
+                    <TextBlock Text="SOLVATION FREE ENERGY" Classes="h3" Margin="0,6,0,0" />
+                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6" RowDefinitions="Auto,Auto,Auto,Auto">
+                      <TextBlock Text="Molecule (0 selection)" Classes="dim" /><TextBlock Grid.Column="1" Text="Charge windows" Classes="dim" /><TextBlock Grid.Column="2" Text="LJ windows" Classes="dim" />
+                      <NumericUpDown Grid.Row="1" Value="{Binding Analyze.SolvMolD}" Minimum="0" Increment="1" FormatString="0" />
+                      <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding Analyze.SolvCoulD}" Minimum="2" Maximum="60" Increment="1" FormatString="0" />
+                      <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding Analyze.SolvLjD}" Minimum="2" Maximum="60" Increment="1" FormatString="0" />
+                      <TextBlock Grid.Row="2" Text="Sampled per window (ps)" Classes="dim" Margin="0,4,0,0" /><TextBlock Grid.Row="2" Grid.Column="1" Text="Settle per window (ps)" Classes="dim" Margin="0,4,0,0" />
+                      <TextBlock Grid.Row="2" Grid.Column="2" Text="T (K)" Classes="dim" Margin="0,4,0,0" />
+                      <NumericUpDown Grid.Row="3" Value="{Binding Analyze.SolvPsD}" Minimum="0.1" Increment="5" FormatString="0.#" />
+                      <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding Analyze.SolvEqD}" Minimum="0" Increment="1" FormatString="0.#" />
+                      <NumericUpDown Grid.Row="3" Grid.Column="2" Value="{Binding Analyze.SolvTD}" Minimum="1" Increment="10" FormatString="0" />
+                    </Grid>
+                    <TextBlock Text="{Binding Analyze.SolvText}" Classes="mono" FontSize="11" />
+                    <TextBlock Classes="dim" TextWrapping="Wrap" Text="ΔG of moving the molecule from the gas into the rest of the frame (negative: it dissolves). NVT at the frame's density, pairwise (DSF) electrostatics, soft-core LJ windows denser near λ = 0. A rubber's solubility of a plasticiser, curative or water: compare ΔG across matrices." />
                   </StackPanel>
                   <StackPanel Spacing="6" IsVisible="{Binding Analyze.FrictionChip.IsOn}">
                     <TextBlock Text="SLIDING FRICTION" Classes="h3" Margin="0,6,0,0" />

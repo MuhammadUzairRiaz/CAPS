@@ -83,6 +83,8 @@ add_library(caps_core STATIC
   src/torsion.cpp
   src/normal_modes.cpp
   src/conformers.cpp
+  src/ibi.cpp
+  src/free_energy.cpp
   src/edit.cpp
   src/edit_script.cpp
   src/interactions.cpp
