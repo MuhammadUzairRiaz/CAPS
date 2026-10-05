@@ -736,6 +736,20 @@ internal static class SelfTest
             vm.SendPolymerToGrow();
             vm.Grow().GetAwaiter().GetResult();
             Check(vm.Document != null && vm.Document.Summary().Molecules == 4 && vm.GrowComponentName.StartsWith("ENR"), $"grown ENR-50 cell: {vm.Status}");
+            // Edit in its builder: the Grow page comes back as it was for this cell — kept with it, else read from its provenance
+            {
+                var grownItem = vm.ActiveItem!;
+                vm.UsePolystyreneInGrow(); vm.GrowChainsD = 9; vm.GrowDpD = 30; vm.GrowDensityD = 0.7m;
+                vm.EditProjectItem(grownItem);
+                var kept = (vm.GrowChains, vm.GrowDensity, vm.GrowComponentName);
+                grownItem.BuildSettings = null;
+                vm.UsePolystyreneInGrow(); vm.GrowChainsD = 9; vm.GrowDensityD = 0.7m;
+                vm.EditProjectItem(grownItem);
+                var fromProv = (vm.GrowChains, vm.GrowDensity, vm.GrowComponentName, vm.GrowHasSpec);
+                Check(vm.IsGrow && kept == (4, 0.3, kept.GrowComponentName) && kept.GrowComponentName.StartsWith("ENR") && fromProv.GrowChains == 4
+                      && Math.Abs(fromProv.GrowDensity - 0.3) < 1e-9 && fromProv.GrowHasSpec && grownItem.BuildSettings != null,
+                      $"edit a grown cell: kept {kept} · from provenance {fromProv} · {vm.Status}");
+            }
             // the grown cell shows as the live view did (wrapped by default), and the switch changes it both ways
             {
                 var wrappedAfterGrow = vm.Wrap == vm.GrowWrap;
