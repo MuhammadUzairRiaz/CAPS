@@ -22,6 +22,7 @@
 #include "caps/water.hpp"
 #include "caps/io.hpp"
 #include "caps/relax.hpp"
+#include "caps/equilibrate.hpp"
 
 namespace caps {
 
@@ -1592,6 +1593,72 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
   }
   if (run.kind == K::Minimize) {
     out << "\nwrite_data      minimized.data\n";
+    return;
+  }
+  if (run.kind == K::Protocol) {
+    auto fmt_g = [](double v) { char t[32]; std::snprintf(t, sizeof t, "%g", v); return std::string(t); };
+    const auto stages = parse_protocol(run.protocol);
+    if (stages.empty()) throw std::invalid_argument("protocol: no stages");
+    if (!rigid.empty()) throw std::invalid_argument("protocol: rigid bodies are not written into protocol stages; export NVT or NPT runs instead");
+    const double dt_fs = lammps_timestep(run, ff);
+    out << "\n# 2. CAPS equilibration protocol: " << stages.size() << " stages, " << protocol_ps(stages) << " ps"
+        << (run.production_ps > 0 ? ", then " + fmt_g(run.production_ps) + " ps NPT production" : std::string()) << "\n"
+        << "# every stage length is multiplied by ${scale}: lmp -var scale 0.001 -in this file checks the input in seconds\n"
+        << "variable        scale index 1.0\n";
+    if (run.constraints != ConstraintMode::None) {
+      const std::string line = shake_fix(s, ff, L, run.constraints, mobile);
+      if (!line.empty()) out << line;
+    }
+    if (shake_dropped) out << "# the held bonds join into clusters LAMMPS's SHAKE cannot hold: the bonds stay flexible, at the unconstrained time step\n";
+    std::snprintf(b, sizeof b, "velocity        %s create %.6g %llu mom yes rot yes dist gaussian\nrestart         %lld restart.a restart.b\n", vgroup.c_str(),
+                  stages.front().t_start, static_cast<unsigned long long>(run.seed), static_cast<long long>(std::max<int64_t>(1000, std::llround(100000.0 / dt_fs) * 5)));
+    out << b;
+    bool capped = false;
+    const std::string dil = held_mol > 0 ? " dilate mobile" : "";
+    for (size_t k = 0; k < stages.size(); ++k) {
+      const auto& st = stages[k];
+      const double t0 = st.t_start, t1 = st.t_end >= 0 ? st.t_end : st.t_start;
+      std::string lab = st.label;   // "3 · compress 0.02 Pmax" → "compress 0.02 Pmax"
+      if (const auto dot = lab.find(" · "); dot != std::string::npos && dot > 0 && std::all_of(lab.begin(), lab.begin() + long(dot), ::isdigit)) lab = lab.substr(dot + 4);
+      out << "\n# stage " << k + 1 << (lab.empty() ? "" : ": " + lab) << "\n";
+      std::snprintf(b, sizeof b, "variable        n equal ceil(%.10g*${scale})\n", st.ps * 1000.0 / dt_fs);
+      out << b;
+      if (st.force_cap > 0) {   // LAMMPS caps no pair force: steps limited to 0.1 Å, temperature by Langevin
+        capped = true;
+        std::snprintf(b, sizeof b, "fix             stage %s nve/limit 0.1\nfix             stage_t %s langevin %.6g %.6g %.6g %llu\n", mobile.c_str(), mobile.c_str(),
+                      t0, t1, run.tdamp * tu, static_cast<unsigned long long>(run.seed + k));
+        out << "# push-off (CAPS caps the Lennard-Jones force at " << fmt_g(st.force_cap) << " kcal/mol/Å): each step limited to 0.1 Å instead\n" << b;
+        out << "run             ${n}\nunfix           stage\nunfix           stage_t\n";
+        continue;
+      }
+      if (st.ensemble == Ensemble::NPT)
+        std::snprintf(b, sizeof b, "fix             stage %s npt temp %.6g %.6g %.6g iso %.6g %.6g %.6g%s\n", mobile.c_str(), t0, t1, run.tdamp * tu,
+                      st.pressure * pu, st.pressure * pu, run.pdamp * tu, dil.c_str());
+      else if (st.ensemble == Ensemble::NVT)
+        std::snprintf(b, sizeof b, "fix             stage %s nvt temp %.6g %.6g %.6g\n", mobile.c_str(), t0, t1, run.tdamp * tu);
+      else
+        std::snprintf(b, sizeof b, "fix             stage %s nve\n", mobile.c_str());
+      out << b << "run             ${n}\nunfix           stage\n";
+    }
+    if (capped && notes) notes->push_back("the push-off stages limit each step to 0.1 Å (fix nve/limit) with a Langevin thermostat; CAPS caps the Lennard-Jones force instead");
+    out << "\nwrite_data      after_protocol.data\nwrite_restart   after_protocol.restart\n";
+    if (run.production_ps > 0) {
+      const auto& last = stages.back();
+      const double T = last.t_end >= 0 ? last.t_end : last.t_start, P = last.ensemble == Ensemble::NPT ? last.pressure : run.pressure;
+      const int64_t every = std::max<int64_t>(1, std::llround(100.0 / dt_fs));   // a sample each 100 fs, blocks of 10 ps
+      out << "\n# production: " << fmt_g(run.production_ps) << " ps NPT at " << fmt_g(T) << " K, " << fmt_g(P)
+          << " atm; the density averaged over 10 ps blocks into density.dat\nreset_timestep  0\nvariable        rho equal density\n";
+      std::snprintf(b, sizeof b, "fix             stage %s npt temp %.6g %.6g %.6g iso %.6g %.6g %.6g%s\n", mobile.c_str(), T, T, run.tdamp * tu, P * pu, P * pu,
+                    run.pdamp * tu, dil.c_str());
+      out << b;
+      std::snprintf(b, sizeof b, "fix             dens all ave/time %lld 100 %lld v_rho file density.dat\n", static_cast<long long>(every), static_cast<long long>(every * 100));
+      out << b;
+      std::snprintf(b, sizeof b, "dump            traj all custom %d traj.lammpstrj id mol type q xu yu zu\ndump_modify     traj sort id\n", std::max(1, run.dump_every));
+      out << b;
+      std::snprintf(b, sizeof b, "variable        n equal ceil(%.10g*${scale})\nrun             ${n}\n", run.production_ps * 1000.0 / dt_fs);
+      out << b;
+    }
+    out << "\nwrite_data      final.data\nwrite_restart   final.restart\n";
     return;
   }
   const bool npt = run.kind == K::NPT;
