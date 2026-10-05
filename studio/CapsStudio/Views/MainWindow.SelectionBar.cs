@@ -29,6 +29,7 @@ public partial class MainWindow
 
     private void InitSelectionBar()
     {
+        InitTags();
         FieldScroll.PropertyChanged += (_, e) => { if (e.Property == ScrollViewer.ViewportProperty) FitFieldBody(); };
         FieldHead.SizeChanged += (_, _) => FitFieldBody();
         FieldControls.SizeChanged += (_, _) => FitFieldBody();
@@ -93,10 +94,11 @@ public partial class MainWindow
         var bw = SelBar.DesiredSize.Width - SelBar.Margin.Left - SelBar.Margin.Right;   // the desired size carries the margin
         var bh = SelBar.DesiredSize.Height - SelBar.Margin.Top - SelBar.Margin.Bottom;
         var cx = (x0 + x1) / 2;
-        // above the selection, else below it; always inside the view, clear of the HUD row at the top
+        // above the selection, else below it; always inside the view, clear of the HUD row (and the tag strip) at the top
+        var clear = TagStrip.IsVisible ? Math.Max(44, TagStrip.Bounds.Bottom + 8) : 44;
         var top = y0 - bh - 16;
-        if (top < 44) top = y1 + 16;
-        if (top + bh > h - 8) top = Math.Max(44, Math.Min(h - bh - 8, y0 - bh - 16));
+        if (top < clear) top = y1 + 16;
+        if (top + bh > h - 8) top = Math.Max(clear, Math.Min(h - bh - 8, y0 - bh - 16));
         var left = Math.Clamp(cx - bw / 2, 8, Math.Max(8, w - bw - 8));
         SelBar.Margin = new Thickness(left, top, 0, 0);
     }

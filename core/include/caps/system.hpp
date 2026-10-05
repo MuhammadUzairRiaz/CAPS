@@ -47,6 +47,7 @@ struct Atom {
   double charge = 0.0;
   Vec3 pos{0, 0, 0};     // Å, as read (may be unwrapped)
   std::array<int, 3> image{0, 0, 0};
+  uint32_t tags = 0;     // the System's tags this atom carries (bit k: tags[k]); see caps/tags.hpp
 };
 
 struct Bond {
@@ -105,6 +106,8 @@ struct System {
   std::vector<std::string> notes;  // what the reader inferred or skipped
   std::shared_ptr<const ExplicitTopology> topology;   // bonded terms given term by term, or null
   std::shared_ptr<const ForceField> forcefield;       // the force field the file carries for these atoms (AMBER prmtop), or null
+  struct Tag { std::string name, colour; };           // named atom sets (design/boards/Tags): bit k of Atom::tags
+  std::vector<Tag> tags;
 
   double mass_of(const Atom& a) const;
   double total_mass() const;          // g/mol

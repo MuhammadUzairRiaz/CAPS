@@ -29,6 +29,7 @@
     <Style Selector="Button.treerow:pointerover /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="{DynamicResource Bg3B}" /></Style>
     <Style Selector="Ellipse.jobdot"><Setter Property="Fill" Value="{DynamicResource DimB}" /></Style>
     <Style Selector="Ellipse.sessdot"><Setter Property="Fill" Value="{DynamicResource DimB}" /></Style>
+    <Style Selector="Button.chipbtn.lit"><Setter Property="BorderBrush" Value="{DynamicResource SelB}" /><Setter Property="BorderThickness" Value="1" /></Style>
     <Style Selector="Ellipse.sessdot.now"><Setter Property="Fill" Value="{DynamicResource AccB}" /></Style>
     <Style Selector="Ellipse.jobdot.running"><Setter Property="Fill" Value="{DynamicResource AccB}" /></Style>
     <Style Selector="Ellipse.jobdot.done"><Setter Property="Fill" Value="{DynamicResource OkB}" /></Style>
@@ -985,6 +986,43 @@
                 </StackPanel>
               </Border>
             </StackPanel>
+            <!-- Tags (design/boards/Tags): click selects a tag, ⇧ click adds it, ⌥ click shows only it; right click: rename, colour, add / take out the selection, delete -->
+            <Border x:Name="TagStrip" Classes="hud" Padding="8,5" Margin="14,46,14,14" HorizontalAlignment="Left" VerticalAlignment="Top" IsVisible="{Binding HasTags}" MaxWidth="760">
+              <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="4">
+                <TextBlock Text="TAGS" FontSize="10" FontWeight="SemiBold" LetterSpacing="0.6" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" Margin="2,0,4,0" />
+                <ItemsControl ItemsSource="{Binding TagChips}">
+                  <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemSpacing="6" LineSpacing="4" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:TagChip">
+                      <Panel>
+                        <Button Classes="chipbtn" Classes.lit="{Binding Lit}" Tag="{Binding}" Click="OnTagChip" ToolTip.Tip="{Binding Tip}" IsVisible="{Binding NotRenaming}" Padding="8,2">
+                          <Button.ContextMenu>
+                            <ContextMenu>
+                              <MenuItem Header="Rename…" Click="OnTagRename" Tag="{Binding}" />
+                              <MenuItem Header="Add the selection to it" Click="OnTagAddSel" Tag="{Binding}" />
+                              <MenuItem Header="Take the selection out of it" Click="OnTagRemoveSel" Tag="{Binding}" />
+                              <MenuItem Header="Colour" x:Name="TagColourMenu" Tag="{Binding}" Loaded="OnTagColourMenu" />
+                              <Separator />
+                              <MenuItem Header="Delete the tag (its atoms stay)" Click="OnTagDelete" Tag="{Binding}" />
+                            </ContextMenu>
+                          </Button.ContextMenu>
+                          <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Ellipse Width="9" Height="9" Fill="{Binding Brush}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding Name}" FontSize="12" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding CountText}" Classes="mono" FontSize="11" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" />
+                          </StackPanel>
+                        </Button>
+                        <TextBox Text="{Binding Name, Mode=OneWay}" IsVisible="{Binding Renaming}" Tag="{Binding}" MinWidth="120" FontSize="12" Padding="6,2" MinHeight="24"
+                                 KeyDown="OnTagNameKey" LostFocus="OnTagNameLost" AttachedToVisualTree="OnTagNameShown" />
+                      </Panel>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Button Classes="chipbtn" Click="OnTagNew" IsEnabled="{Binding HasSelBar}" Padding="8,2" ToolTip.Tip="The selection as a new tag (a group in LAMMPS, GROMACS and Analyze)">
+                  <TextBlock Text="+ new tag" FontSize="12" Foreground="{DynamicResource AccB}" />
+                </Button>
+              </WrapPanel>
+            </Border>
             <Border Classes="hud" Padding="10,8" Margin="14,12" HorizontalAlignment="Center" VerticalAlignment="Top" IsVisible="{Binding IsBondTool}">
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <TextBlock Text="BOND" Classes="h3" VerticalAlignment="Center" />

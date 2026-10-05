@@ -24,7 +24,7 @@ public sealed partial class MainViewModel
     private DateTime _projOpened, _projSavedAt;
     private int _projSession = -1;   // the index of this session in the manifest's sessions
     // the structures as they were when the project opened (name → history): what this session did is measured from it
-    private Dictionary<string, string> _projStart = new();
+    private Dictionary<ProjectItem, (string Name, string History)> _projStart = new();
     private readonly Dictionary<ProjectItem, string> _projFiles = new();   // each structure's file under structures/
     private bool _projClosing;
 
@@ -250,7 +250,7 @@ public sealed partial class MainViewModel
         m["sessions"] = sessions;
         sessions.Add(new JsonObject { ["opened"] = _projOpened.ToString("o", CultureInfo.InvariantCulture), ["closed"] = null, ["did"] = new JsonArray() });
         _projSession = sessions.Count - 1;
-        _projStart = ProjectItems.ToDictionary(it => CleanName(it.Name), it => it.History);
+        _projStart = ProjectItems.ToDictionary(it => it, it => (CleanName(it.Name), it.History));   // by structure: two may share a name
         ProjectFolder = Path.Combine(CapsProjectFile.FolderOf(file), "structures");   // the Project home page shows its structures
         ProjectRegistry.Touch(_projFile, CapsProjectName);
         RaiseCapsProject();
@@ -348,7 +348,7 @@ public sealed partial class MainViewModel
             }
             // structures taken out of the project: their files go too
             foreach (var gone in before.Where(f => !used.Contains(f)))
-                foreach (var f in new[] { gone, Path.ChangeExtension(gone, ".ff.json"), gone + ".provenance.json" })
+                foreach (var f in new[] { gone, Path.ChangeExtension(gone, ".ff.json"), gone + ".provenance.json", gone + ".tags.json" })
                     try { var p = Path.Combine(folder, f); if (File.Exists(p)) File.Delete(p); } catch { }
             _projManifest["structures"] = items;
             _projManifest["saved"] = DateTime.Now.ToString("o", CultureInfo.InvariantCulture);
@@ -381,15 +381,20 @@ public sealed partial class MainViewModel
         {
             var name = CleanName(it.Name);
             var how = it.Origin.Length == 0 || it.Origin.Equals("file", StringComparison.OrdinalIgnoreCase) ? "opened" : it.Origin.ToLowerInvariant();
-            if (!_projStart.TryGetValue(name, out var h0))
+            if (!_projStart.TryGetValue(it, out var was))
                 did.Add(it.History.Length > 0 ? $"{name}: {how} · {it.History}" : $"{name}: {how}");
-            else if (it.History != h0 && it.History.Length > 0)
+            else
             {
-                var grew = it.History.StartsWith(h0, StringComparison.Ordinal) && h0.Length > 0 ? it.History[h0.Length..].TrimStart(' ', '·') : it.History;
-                did.Add($"{name}: {grew}");
+                if (was.Name != name) did.Add($"{was.Name} renamed {name}");
+                if (it.History != was.History && it.History.Length > 0)
+                {
+                    var h0 = was.History;
+                    var grew = it.History.StartsWith(h0, StringComparison.Ordinal) && h0.Length > 0 ? it.History[h0.Length..].TrimStart(' ', '·') : it.History;
+                    did.Add($"{name}: {grew}");
+                }
             }
         }
-        foreach (var gone in _projStart.Keys.Where(k => now.All(it => CleanName(it.Name) != k))) did.Add($"{gone}: taken out");
+        foreach (var (it, was) in _projStart) if (!now.Contains(it)) did.Add($"{was.Name}: taken out");
         return did;
     }
 

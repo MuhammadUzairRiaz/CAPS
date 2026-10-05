@@ -67,6 +67,7 @@ public sealed partial class MainViewModel
     /// <summary>The layers of the document, rebuilt (states and selections are refreshed in place by RefreshLayerStates).</summary>
     public void RefreshLayers()
     {
+        RefreshTags();   // the structure changed (another one, an edit): its tags with it
         LayerRows.Clear();
         _layerKinds.Clear();
         _layerChildren.Clear();
