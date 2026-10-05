@@ -245,6 +245,23 @@ TEST(Sorption, TrappeCo2VirialAndGcmc) {
   const double b2 = b2_co2(full, 300, 30.0, 300, 3000, 7);
   std::printf("TraPPE CO2 B2(300 K) = %.1f cm3/mol (experiment −121)\n", b2);
   EXPECT_NEAR(b2, -121.0, 0.15 * 121.0);
+  // NIST's benchmark simulations of the same model (1000 rigid molecules, LJ 15 Å + tail, PPPM), 300 K: 0.1 mol/L at
+  // 2.435 ± 0.0003 atm, 0.5 mol/L at 11.65 ± 0.0074 atm; (Z − 1)/ρ = B2 + B3 ρ
+  const double RT = 0.0820573661 * 300;   // L atm / mol
+  const double nist01 = (2.435 / (0.1 * RT) - 1) / 1e-4, nist05 = (11.65 / (0.5 * RT) - 1) / 5e-4;
+  std::printf("NIST (Z − 1)/ρ: %.1f at 0.1 mol/L, %.1f at 0.5 mol/L\n", nist01, nist05);
+  EXPECT_NEAR(b2, nist01, 4.0);
+  {   // GCMC at the fugacity of NIST's 0.5 mol/L state: βμ_ex = 2 B2 ρ + 1.5 B3 ρ², B3 from the two NIST points
+    const double b3 = (nist05 - nist01) / 4e-4, rho = 5e-4;
+    const double f_kpa = 0.5 * RT * 101.325 * std::exp(2 * b2 * rho + 1.5 * b3 * rho * rho);
+    Co2 g = trappe_co2(1, 60.0);
+    SorptionOptions so;
+    so.template_first_atom = 0, so.insertions = 0, so.cutoff = 12.0, so.temperature = 300, so.pressures_kpa = {f_kpa}, so.steps = 300000;
+    const auto r5 = sorption(g.s, g.ff, so);
+    const double got = r5.isotherm.at(0).loading / 216000.0 / 6.02214076e23 * 1e27;
+    std::printf("GCMC at f = %.1f kPa: %.4f ± %.4f mol/L (NIST 0.5)\n", f_kpa, got, r5.isotherm[0].loading_error / 216000.0 / 6.02214076e23 * 1e27);
+    EXPECT_NEAR(got, 0.5, 0.02);
+  }
   // GCMC in an empty 60 Å box at f = 10 bar, 300 K, the sorption engine's own model (12 Å, DSF α 0.2)
   Co2 gas = trappe_co2(1, 60.0);
   const PairModel trunc(two.ff, 12.0, true, 0.2);
