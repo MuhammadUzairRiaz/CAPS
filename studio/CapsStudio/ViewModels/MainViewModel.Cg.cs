@@ -137,6 +137,7 @@ public sealed partial class MainViewModel
             var (spec, opts) = (poly.Spec, MpOptions());
             var (d, rep) = await Task.Run(() => CapsDocument.CgFromPolymer(spec, opts, name));
             Show(d, name);
+            KeepPageSettings("cg");   // Edit brings the page back as it was for this structure
             GrownUnsaved = true;
             MpLog = MpReportText(rep);
             Status = "Mapped CG melt built · its bead model is assigned (Field shows it); relax, then run or export it";
@@ -156,6 +157,7 @@ public sealed partial class MainViewModel
             var opts = MpOptions();
             var (d, rep) = await Task.Run(() => doc.CgMap(opts, name));
             Show(d, name);
+            KeepPageSettings("cg");   // Edit brings the page back as it was for this structure
             GrownUnsaved = true;
             MpLog = MpReportText(rep);
             Status = "Mapped to beads with their model · the all-atom structure stays open in the project";
@@ -219,6 +221,7 @@ public sealed partial class MainViewModel
         {
             var (doc, rep) = await Task.Run(() => CapsDocument.MartiniMelt(opts, "MARTINI melt"));
             Show(doc, $"MARTINI_{_mtRepeat.Trim().Trim('[', ']')}_{_mtChains:0}x{_mtRepeats:0}");
+            KeepPageSettings("cg");   // Edit brings the page back as it was for this structure
             GrownUnsaved = true;
             var j = JsonNode.Parse(rep)!;
             Status = string.Format(CultureInfo.InvariantCulture, "MARTINI melt built · {0} beads at {1:0.000} g/cm³ with {2} · export it from Export (GROMACS or LAMMPS)",
@@ -268,6 +271,7 @@ public sealed partial class MainViewModel
         {
             var (doc, _) = CapsDocument.KgBuild(CgOptions(), "Kremer–Grest melt");
             Show(doc, $"KG_melt_{_cgChains:0}x{_cgBeads:0}");
+            KeepPageSettings("cg");   // Edit brings the page back as it was for this structure
             GrownUnsaved = true;
             Status = "Kremer–Grest melt built · export it for LAMMPS from Builders › Coarse-grained (σ = 1 Å in CAPS files)";
             SetModule(8);
@@ -311,6 +315,7 @@ public sealed partial class MainViewModel
         {
             var (d, report) = await Task.Run(() => doc.KgBackmap(poly.Spec, "{}", name));
             Show(d, name);
+            KeepPageSettings("cg");   // Edit brings the page back as it was for this structure
             GrownUnsaved = true;
             CgBackmapLog = report;
             var ff = Field.Library.ToList().FindIndex(x => x.Id == "gaff2-moltemplate");

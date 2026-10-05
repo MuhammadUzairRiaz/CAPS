@@ -2467,6 +2467,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (preset == null && RxTopUp && RxTargetKind == 5 && RxCanInsertX) await InsertRxCrosslinker();
         if (preset == null && !await RxAssignField()) return;   // the reaction's force field, complete for the start
         var doc = _doc;
+        var rxSnap = preset == null ? PageSnapshot("react") : null;   // the reaction as set on the page, kept with the network
         Reacting = true;
         IsPlaying = false;
         _rxCancel = new CancellationTokenSource();
@@ -2502,6 +2503,7 @@ public sealed partial class MainViewModel : ObservableObject
             var failedAt = System.Text.RegularExpressions.Regex.Match(report, @"failed at cycle (\d+)");
             RxLog = report + "\n" + FloryText;
             AfterRun(doc, " · reacted");
+            if (rxSnap != null && _activeItem != null && ReferenceEquals(_activeItem.Doc, doc)) _activeItem.ReactSettings = rxSnap;
             LoadReactSummary(doc);
             Raise(nameof(RxFieldText));
             Status = failedAt.Success

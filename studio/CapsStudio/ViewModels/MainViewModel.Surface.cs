@@ -440,6 +440,7 @@ public sealed partial class MainViewModel
                     var (stacked, log) = await Task.Run(() => { try { return StackOnto(doc, title); } finally { doc.Dispose(); } });
                     SurfLog = log;
                     Show(stacked, $"{title} + {string.Join(" + ", _surfExtra.Select(e => ShortName(e.Name.Split(" · ")[0])))}");
+                    KeepPageSettings("surface");   // Edit brings the page back as it was for this structure
                     GrownUnsaved = true;
                     RelaxCompress = false;
                     Status = "Layers stacked · " + (SurfLog.Split('\n').FirstOrDefault() ?? "");
@@ -447,6 +448,7 @@ public sealed partial class MainViewModel
                 else
                 {
                     Show(doc, $"{title} slab · {(int)_surfLayers} layers");
+                    KeepPageSettings("surface");   // Edit brings the page back as it was for this structure
                     Status = "Slab built · " + (rep.Split('\n').FirstOrDefault() ?? "");
                 }
             }
@@ -476,6 +478,7 @@ public sealed partial class MainViewModel
                     SurfLog = rep + "\n" + log;
                 }
                 Show(doc, $"{title} + {ShortName(name)} film" + (_surfExtra.Count > 0 ? $" + {_surfExtra.Count} layer{(_surfExtra.Count == 1 ? "" : "s")}" : ""));
+                KeepPageSettings("surface");   // Edit brings the page back as it was for this structure
                 GrownUnsaved = true;
                 RelaxCompress = false;   // compression would scale the crystal with the film
                 Status = "Interface built · the surface (molecule 1) is held in place in Relax";

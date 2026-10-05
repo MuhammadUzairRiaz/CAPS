@@ -374,6 +374,7 @@
                             <ContextMenu>
                               <MenuItem Header="Rename…" Click="OnRenameProjectItem" Tag="{Binding}" />
                               <MenuItem Header="Edit in its builder" Click="OnEditProjectItem" Tag="{Binding}" />
+                              <MenuItem Header="Edit its reaction" Click="OnEditReaction" Tag="{Binding}" IsVisible="{Binding Reacted}" />
                               <MenuItem Header="Delete from the project" Click="OnDeleteProjectItem" Tag="{Binding}" />
                             </ContextMenu>
                           </Button.ContextMenu>
