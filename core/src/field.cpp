@@ -690,6 +690,66 @@ void Evaluator::build(const std::vector<double>& x, const Cell& cell_in) {
   ++builds_;
 }
 
+int apply_rigid_geometry(System& s, const ForceField& ff, size_t first, size_t last) {
+  last = std::min(last, s.atoms.size());
+  std::vector<std::vector<uint32_t>> nb(s.atoms.size());
+  for (const auto& b : s.bonds)
+    if (b.i >= first && b.i < last && b.j >= first && b.j < last) nb[b.i].push_back(b.j), nb[b.j].push_back(b.i);
+  // the atoms reached from `from` without crossing the bond from–across; empty when the bond is in a ring
+  auto side = [&](uint32_t from, uint32_t across) {
+    std::vector<uint32_t> out{from}, todo{from};
+    std::vector<char> seen(s.atoms.size(), 0);
+    seen[from] = 1;
+    while (!todo.empty()) {
+      const uint32_t a = todo.back();
+      todo.pop_back();
+      for (uint32_t c : nb[a]) {
+        if (a == from && c == across) continue;
+        if (c == across) return std::vector<uint32_t>{};
+        if (!seen[c]) seen[c] = 1, out.push_back(c), todo.push_back(c);
+      }
+    }
+    return out;
+  };
+  auto in = [&](uint32_t a) { return a >= first && a < last; };
+  int changed = 0;
+  for (const auto& b : ff.bonds) {
+    if (b.k != 0 || b.r0 <= 0 || !in(b.i) || !in(b.j)) continue;
+    const Vec3 d = s.atoms[b.j].pos - s.atoms[b.i].pos;
+    const double r = norm(d);
+    if (r < 1e-9 || std::fabs(r - b.r0) < 1e-6) continue;
+    const auto mv = side(b.j, b.i);
+    if (mv.empty()) continue;
+    const Vec3 shift = d * ((b.r0 - r) / r);
+    for (uint32_t a : mv) s.atoms[a].pos = s.atoms[a].pos + shift;
+    ++changed;
+  }
+  for (const auto& a : ff.angles) {
+    if (a.kt != 0 || !in(a.i) || !in(a.j) || !in(a.k)) continue;
+    const Vec3 u = s.atoms[a.i].pos - s.atoms[a.j].pos, w = s.atoms[a.k].pos - s.atoms[a.j].pos;
+    const double nu = norm(u), nw = norm(w);
+    if (nu < 1e-9 || nw < 1e-9) continue;
+    const double th = std::acos(std::clamp(dot(u, w) / (nu * nw), -1.0, 1.0)), dth = a.theta0 - th;
+    if (std::fabs(dth) < 1e-6) continue;
+    Vec3 n = cross(u, w);
+    if (norm(n) < 1e-9) {   // collinear now: any normal to the line
+      n = cross(u, std::fabs(u[0]) < 0.9 * nu ? Vec3{1, 0, 0} : Vec3{0, 1, 0});
+    }
+    n = n * (1.0 / norm(n));
+    const auto mv = side(a.k, a.j);
+    if (mv.empty()) continue;
+    // Rodrigues: turn by dth about n through the vertex (positive dth opens the angle)
+    const double c = std::cos(dth), sn = std::sin(dth);
+    const Vec3 o = s.atoms[a.j].pos;
+    for (uint32_t m : mv) {
+      const Vec3 v = s.atoms[m].pos - o;
+      s.atoms[m].pos = o + v * c + cross(n, v) * sn + n * (dot(n, v) * (1 - c));
+    }
+    ++changed;
+  }
+  return changed;
+}
+
 void place_virtual_sites(const ForceField& ff, std::vector<double>& x, const Cell& cell) {
   for (const auto& v : ff.vsites) {
     const Vec3 ref{x[3 * v.from[0]], x[3 * v.from[0] + 1], x[3 * v.from[0] + 2]};
@@ -698,6 +758,12 @@ void place_virtual_sites(const ForceField& ff, std::vector<double>& x, const Cel
       Vec3 d = Vec3{x[3 * v.from[k]], x[3 * v.from[k] + 1], x[3 * v.from[k] + 2]} - ref;
       if (cell.valid()) d = cell.minimum_image(d);
       c = c + (ref + d) * v.w[k];
+    }
+    if (v.c != 0 && v.from.size() == 3) {   // out of the plane: c (r_ij × r_ik)
+      Vec3 u = Vec3{x[3 * v.from[1]], x[3 * v.from[1] + 1], x[3 * v.from[1] + 2]} - ref;
+      Vec3 w = Vec3{x[3 * v.from[2]], x[3 * v.from[2] + 1], x[3 * v.from[2] + 2]} - ref;
+      if (cell.valid()) u = cell.minimum_image(u), w = cell.minimum_image(w);
+      c = c + cross(u, w) * v.c;
     }
     for (int k = 0; k < 3; ++k) x[3 * v.site + k] = c[k];
   }
@@ -708,12 +774,26 @@ EnergyTerms Evaluator::compute(const std::vector<double>& x, const Cell& cell, s
   xv_ = x;
   place_virtual_sites(ff_, xv_, cell);
   EnergyTerms e = compute_placed(xv_, cell, f);
-  // the site's force goes back to its constructing atoms (the virial is unchanged: the site is a linear combination);
+  // the site's force goes back to its constructing atoms (the virial is unchanged by a linear combination);
   // in reverse order, so a site built on other sites hands its force to them before they hand theirs on
   for (auto it = ff_.vsites.rbegin(); it != ff_.vsites.rend(); ++it) {
     const auto& v = *it;
+    const Vec3 F{f[3 * v.site], f[3 * v.site + 1], f[3 * v.site + 2]};
     for (size_t k = 0; k < v.from.size(); ++k)
-      for (int c = 0; c < 3; ++c) f[3 * v.from[k] + c] += v.w[k] * f[3 * v.site + c];
+      for (int c = 0; c < 3; ++c) f[3 * v.from[k] + c] += v.w[k] * F[c];
+    if (v.c != 0 && v.from.size() == 3) {
+      // s = c (u × w), u = x_j − x_i, w = x_k − x_i: F_u = c (w × F), F_w = c (F × u), and −(F_u + F_w) on i
+      const auto at = [&](uint32_t a) { return Vec3{xv_[3 * a], xv_[3 * a + 1], xv_[3 * a + 2]}; };
+      Vec3 u = at(v.from[1]) - at(v.from[0]), w = at(v.from[2]) - at(v.from[0]);
+      if (cell.valid()) u = cell.minimum_image(u), w = cell.minimum_image(w);
+      const Vec3 fu = cross(w, F) * v.c, fw = cross(F, u) * v.c;
+      for (int c = 0; c < 3; ++c) f[3 * v.from[1] + c] += fu[c], f[3 * v.from[2] + c] += fw[c], f[3 * v.from[0] + c] -= fu[c] + fw[c];
+      // the cross part grows as λ² when the atoms are scaled by λ: one more s ⊗ F in the virial than the placed site counted
+      const Vec3 s = cross(u, w) * v.c;
+      e.virial += dot(s, F);
+      e.w[0] += s[0] * F[0], e.w[1] += s[1] * F[1], e.w[2] += s[2] * F[2];
+      e.w[3] += 0.5 * (s[0] * F[1] + s[1] * F[0]), e.w[4] += 0.5 * (s[0] * F[2] + s[2] * F[0]), e.w[5] += 0.5 * (s[1] * F[2] + s[2] * F[1]);
+    }
     for (int c = 0; c < 3; ++c) f[3 * v.site + c] = 0;
   }
   return e;

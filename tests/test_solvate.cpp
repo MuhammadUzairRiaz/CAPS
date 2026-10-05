@@ -73,7 +73,11 @@ TEST(Solvate, WaterModelsAndErrors) {
   ASSERT_EQ(w.atoms.size(), 3u);
   EXPECT_NEAR(norm(w.atoms[1].pos - w.atoms[0].pos), 1.0, 1e-9);
   EXPECT_NEAR(w.atoms[0].charge, -0.8476, 1e-9);
-  o.water_model = "TIP5P";
+  o.water_model = "TIP5P";   // the lone pairs' charge on O until the model is applied
+  const System w5 = solvent_molecule(o);
+  EXPECT_NEAR(w5.atoms[0].charge, -0.482, 1e-12);
+  EXPECT_NEAR(w5.atoms[1].charge, 0.241, 1e-12);
+  o.water_model = "nonsense";
   EXPECT_THROW(solvent_molecule(o), std::invalid_argument);
   o.water_model = "TIP3P";
   o.solvent = "mercury";
@@ -86,8 +90,8 @@ TEST(Solvate, WaterModelsAndErrors) {
 // Water models: every one neutral; TIP4P/2005 puts M 0.1546 Å from O on the bisector with the model's geometry, a
 // three-site model takes it away again; LAMMPS files leave M out with its charge on O and the tip4p style
 TEST(Water, ModelsGeometryAndSites) {
-  EXPECT_EQ(caps::water_models().size(), 11u);
-  for (const auto& m : caps::water_models()) EXPECT_NEAR(2 * m.q_h + m.q_neg, 0.0, 1e-9) << m.name;
+  EXPECT_EQ(caps::water_models().size(), 12u);
+  for (const auto& m : caps::water_models()) EXPECT_NEAR(2 * m.q_h + (m.sites == 5 ? 2 : 1) * m.q_neg, 0.0, 1e-9) << m.name;
   caps::System s;
   {
     const caps::Trajectory w = caps::open_file(std::string(CAPS_SAMPLES) + "/water.pdb");
@@ -139,4 +143,78 @@ TEST(Water, ModelsGeometryAndSites) {
   ASSERT_EQ(caps::apply_water_model(s, caps::water_model("spce")), 3u);
   EXPECT_EQ(s.atoms.size(), 9u);
   EXPECT_NEAR(s.atoms[0].charge, -0.8476, 1e-12);
+}
+
+// TIP5P: two lone pairs 0.70 Å from O at 109.47°, symmetric about the molecular plane and away from the hydrogens (GROMACS's
+// 3out constants a = −0.344908, c = 6.4437 /nm); the forces handed back through the cross product match the energy's
+// finite differences, and the virial matches dE/dλ for the atoms scaled by λ (the sites placed from them)
+TEST(Water, Tip5pLonePairsForcesAndVirial) {
+  caps::System s;
+  {
+    const caps::Trajectory w = caps::open_file(std::string(CAPS_SAMPLES) + "/water.pdb");
+    const caps::Vec3 shift[2] = {{0, 0, 0}, {2.4, 1.3, 1.1}};
+    for (int k = 0; k < 2; ++k) {
+      caps::System one = w.frame(0);
+      for (auto& a : one.atoms) {
+        a.pos = a.pos + shift[k], a.mol = k + 1;
+        if (k == 1) a.pos = caps::Vec3{a.pos[0], -a.pos[2] + 2.6, a.pos[1]};   // turned, so the pairs are not symmetric
+      }
+      const uint32_t base = uint32_t(s.atoms.size());
+      for (auto& a : one.atoms) s.atoms.push_back(a);
+      for (auto b : one.bonds) s.bonds.push_back({b.i + base, b.j + base, b.order});
+    }
+    s.has_mol = true;
+  }
+  const auto& m = caps::water_model("TIP5P");
+  ASSERT_EQ(caps::apply_water_model(s, m), 2u);
+  ASSERT_EQ(s.atoms.size(), 10u);
+  const auto lp = caps::water_lp_coefficients(m);
+  EXPECT_NEAR(lp[0], -0.344908, 2e-6);
+  EXPECT_NEAR(lp[1] * 10, 6.4437, 1e-3);
+  for (const auto& w : caps::find_waters(s)) {
+    ASSERT_GE(w[4], 0);
+    const auto O = s.atoms[size_t(w[0])].pos, H1 = s.atoms[size_t(w[1])].pos, H2 = s.atoms[size_t(w[2])].pos;
+    const auto L1 = s.atoms[size_t(w[3])].pos, L2 = s.atoms[size_t(w[4])].pos;
+    EXPECT_NEAR(caps::norm(L1 - O), 0.70, 1e-9);
+    EXPECT_NEAR(caps::norm(L2 - O), 0.70, 1e-9);
+    EXPECT_NEAR(std::acos(caps::dot(L1 - O, L2 - O) / 0.49) * 180 / M_PI, 109.47, 1e-6);
+    EXPECT_LT(caps::dot(L1 + L2 - O * 2.0, H1 + H2 - O * 2.0), 0);   // the side away from the hydrogens
+    EXPECT_NEAR(s.atoms[size_t(w[3])].charge, -0.241, 1e-12);
+  }
+  std::vector<uint32_t> all(s.atoms.size());
+  for (size_t i = 0; i < all.size(); ++i) all[i] = uint32_t(i);
+  const caps::ForceField F = caps::water_forcefield(s, m, all);
+  ASSERT_EQ(F.vsites.size(), 4u);
+  caps::EnergyOptions eo;
+  eo.cutoff = 9.0;
+  eo.electrostatics = caps::EnergyOptions::Electrostatics::DSF;
+  caps::Evaluator ev(F, eo);
+  std::vector<double> x(3 * s.atoms.size()), f;
+  for (size_t i = 0; i < s.atoms.size(); ++i) for (int c = 0; c < 3; ++c) x[3 * i + c] = s.atoms[i].pos[c];
+  const caps::Cell none;
+  const auto e0 = ev.compute(x, none, f);
+  const double h = 1e-5;
+  double worst = 0;
+  for (size_t i = 0; i < s.atoms.size(); ++i) {
+    if (F.mass[i] == 0) continue;   // the sites carry no force of their own
+    for (int c = 0; c < 3; ++c) {
+      auto xp = x, xm = x;
+      xp[3 * i + c] += h, xm[3 * i + c] -= h;
+      std::vector<double> g;
+      const double fd = -(ev.compute(xp, none, g).total() - ev.compute(xm, none, g).total()) / (2 * h);
+      worst = std::max(worst, std::fabs(fd - f[3 * i + c]));
+    }
+  }
+  // DSF's erfc is Abramowitz–Stegun 7.1.26 (|error| < 1.5e-7, as LAMMPS coul/dsf): energy and force agree to ~1e-5
+  // (TIP4P/2005's linear sites in the same setup: 7.8e-5), independent of the step
+  EXPECT_LT(worst, 5e-5) << "forces against finite differences";
+  // virial: −dE/dλ at λ = 1 for every real atom scaled by λ (intramolecular terms included, as in Σ r·f)
+  auto scaled = [&](double l) {
+    auto y = x;
+    for (auto& v : y) v *= l;
+    std::vector<double> g;
+    return ev.compute(y, none, g).total();
+  };
+  const double dEdl = (scaled(1 + h) - scaled(1 - h)) / (2 * h);
+  EXPECT_NEAR(e0.virial, -dEdl, 1e-4 * std::max(1.0, std::fabs(dEdl)));   // without the λ² term: off by s·F
 }

@@ -25,7 +25,7 @@ Built by `bench/ff/build_library.py` from the published parameter files. Status:
 | charmm36-prot | CHARMM36 proteins | 2012 | converted: CHARMM36_prot.par | validated | |
 | dreiding | DREIDING | 1990 | converted: DREIDING.par | validated | |
 | gromos-54a7 | GROMOS 54A7 | 2011 | converted: GROMOS_G54A7.par | validated | |
-| trappe-ua | TraPPE-UA | 1998 | converted: TRAPPE_UA.par | validated | |
+| trappe-ua | TraPPE-UA | 1998 | converted: TRAPPE_UA.par; CO2 added from Potoff & Siepmann 2001 (checked against gmso's TraPPE CO2 file, bench/ff/check_trappe_co2.py) | validated | |
 | trappe-eh | TraPPE-EH | 2007 | converted: TRAPPE_EH.par | validated | |
 | misc | Miscellaneous | | converted: MISC_FF.par | converted | |
 | inorganic-binary-halides | Inorganic: binary halides | | converted: INORGANIC_binary_halides.par | validated | |

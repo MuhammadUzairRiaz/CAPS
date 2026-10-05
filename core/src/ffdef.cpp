@@ -1223,7 +1223,7 @@ int recognise_molecule_templates(System& s, const FFDef& ff, std::vector<std::st
     for (const auto& d : hit->dihedrals) topo->dihedrals.push_back({g(d.i), g(d.j), g(d.k), g(d.l), d.form, d.kd, d.phi0, d.n, d.group});
     for (const auto& e : hit->exclusions) topo->exclusions.push_back({g(e.first), g(e.second)});
     for (const auto& v : hit->vsites) {
-      ExplicitTopology::VSite w{g(v.site), {}, v.w};
+      ExplicitTopology::VSite w{g(v.site), {}, v.w, v.c};
       for (uint32_t a : v.from) w.from.push_back(g(a));
       topo->vsites.push_back(w);
     }
@@ -2320,7 +2320,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
     for (size_t i = 0; i < tm.size() && i < ff.mass.size(); ++i)
       if (!std::isnan(tm[i])) ff.mass[i] = tm[i];
     for (const auto& v : s.topology->vsites) {
-      VirtualSite vs{v.site, v.from, v.w};
+      VirtualSite vs{v.site, v.from, v.w, v.c};
       if (vs.w.empty()) {   // the centre of mass
         double mt = 0;
         for (uint32_t a : v.from) mt += ff.mass[a];

@@ -97,10 +97,10 @@ System solvent_molecule(const SolvateOptions& o, std::string* name) {
   const SolventInfo* sv = find_solvent(o.solvent);
   if (!sv) throw std::invalid_argument("unknown solvent '" + o.solvent + "'");
   if (sv->id == "water") {
-    // the model's geometry and charges (caps/water.hpp); a four-site model's M charge sits on O until the model is
-    // applied with its M sites (the Field's water model, or the edit water_model)
+    // the model's geometry and charges (caps/water.hpp); a four- or five-site model's negative charge sits on O until
+    // the model is applied with its extra sites (the Field's water model, or the edit water_model)
     const WaterModel& wm = water_model(o.water_model);
-    const double r = wm.r_oh, theta = wm.theta, qo = wm.q_neg;
+    const double r = wm.r_oh, theta = wm.theta, qo = wm.sites == 5 ? 2 * wm.q_neg : wm.q_neg;   // TIP5P: both lone pairs' charge
     const double h = theta * 3.14159265358979323846 / 360.0;
     System w;
     const Vec3 p[3] = {{0, 0, 0}, {r * std::sin(h), r * std::cos(h), 0}, {-r * std::sin(h), r * std::cos(h), 0}};

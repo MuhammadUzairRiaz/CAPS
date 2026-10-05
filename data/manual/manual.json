@@ -1040,10 +1040,52 @@
    "tex": "E_\\mathrm{ads} = \\sum_\\text{adsorbates} E(\\text{adsorbate, substrate}) + \\sum_\\text{pairs} E(\\text{adsorbate, adsorbate}) \\\\ \\frac{\\mathrm{d}E}{\\mathrm{d}N_i} = \\left\\langle E(\\text{one molecule of } i, \\text{ everything else})\\right\\rangle, \\qquad P_\\mathrm{acc} = \\min\\left(1,\\, e^{-\\Delta E/kT}\\right)"
   },
   {
+   "group": "Force fields",
+   "source": "core/src/water.cpp (water_models, apply_water_model, water_forcefield), core/src/field.cpp (virtual sites)",
+   "engines": [],
+   "cites": [
+    "berendsen1987",
+    "jorgensen1983",
+    "abascal2005",
+    "mahoney2000"
+   ],
+   "id": "water-models",
+   "title": "Water models and their massless sites",
+   "summary": "Three-site models (SPC, SPC/E, SPC/Fw, TIP3P and its variants) carry their charges on O and H. Four-site models (TIP4P, TIP4P-Ew, TIP4P/2005, TIP4P/Ice, OPC) move the negative charge to a massless site M on the H–O–H bisector. TIP5P puts it on two massless lone pairs L out of the molecular plane, on the side away from the hydrogens. The sites are placed from O and H at every evaluation and their forces handed back to them by the chain rule; for the out-of-plane lone pairs the cross product adds one more term to the virial.",
+   "equation": "M = (1 − α) O + α/2 (H₁ + H₂), α = d_OM / (r_OH cos(θ/2));  L± = O + a (r₁ + r₂) ± c (r₁ × r₂), a = −d_OL cos(φ/2) / (2 r_OH cos(θ/2)), c = d_OL sin(φ/2) / (r_OH² sin θ);  W gains Σ s·F_L with s = c (r₁ × r₂)",
+   "equation_note": "r₁, r₂ the O–H vectors, θ the H–O–H angle, φ the L–O–L angle; for TIP5P (r_OH 0.9572 Å, θ 104.52°, d_OL 0.70 Å, φ 109.47°) a = −0.344908 and c = 0.64438 Å⁻¹, GROMACS's virtual_sites3 function 4 (c in nm⁻¹ = 6.4438); the cross part scales as λ² when the atoms are scaled by λ, hence the extra virial term",
+   "symbols": [
+    [
+     "d_OM",
+     "O–M distance",
+     "Å"
+    ],
+    [
+     "d_OL",
+     "O–lone pair distance",
+     "Å"
+    ],
+    [
+     "φ",
+     "L–O–L angle",
+     "°"
+    ],
+    [
+     "a, c",
+     "out-of-plane site constants",
+     "—, 1/Å"
+    ]
+   ],
+   "when": "Solvating rubbers, fillers or biomolecules, water uptake and sorption, hydrated interfaces. TIP5P reproduces water's density maximum near 4 °C; it exports to GROMACS only (LAMMPS has no five-site water). Four-site models export to LAMMPS with the tip4p pair styles (M left out, its charge on O) and to GROMACS with M as a virtual site.",
+   "tested": "tests/test_solvate.cpp Water.ModelsGeometryAndSites (TIP4P/2005's M 0.1546 Å from O, LAMMPS tip4p styles); Water.Tip5pLonePairsForcesAndVirial (lone pairs at 0.70 Å and 109.47° away from the hydrogens, GROMACS's a and c, forces against finite differences, the virial against −dE/dλ: 0.98082 with the λ² term, 0.634 without); TIP5P in GROMACS on 512 waters: Coulomb 34.371 against CAPS's 34.382 kcal/mol (PME), Lennard-Jones with its tail 6162.68 against 6162.69",
+   "deviation": "rigid models are run with SHAKE/RATTLE on CAPS's side (GROMACS uses SETTLE); bond and angle constants are given only for flexible runs",
+   "tex": "M = (1-\\alpha)\\,O + \\tfrac{\\alpha}{2}(H_1 + H_2), \\qquad \\alpha = \\frac{d_{OM}}{r_{OH}\\cos(\\theta/2)} \\\\ L_\\pm = O + a\\,(\\mathbf{r}_1 + \\mathbf{r}_2) \\pm c\\,(\\mathbf{r}_1 \\times \\mathbf{r}_2), \\qquad a = -\\frac{d_{OL}\\cos(\\phi/2)}{2 r_{OH}\\cos(\\theta/2)}, \\qquad c = \\frac{d_{OL}\\sin(\\phi/2)}{r_{OH}^2 \\sin\\theta}"
+  },
+  {
    "id": "sorption",
    "group": "Analysis",
    "title": "Sorption: Widom insertion and grand-canonical Monte Carlo",
-   "summary": "How much of a gas or small molecule a fixed host takes up — a polymer or rubber cell, a filler, a porous crystal — as Materials Studio's Sorption computes it. The sorbate is a rigid molecule typed with the host's force field. Widom test-particle insertion averages the Boltzmann factor of one molecule placed at random places and orientations: the excess chemical potential, the Henry constant and the solubility coefficient follow. Grand-canonical Monte Carlo at each pressure (insertions, deletions, translations and rotations; an ideal-gas reservoir, fugacity = pressure) gives the loading, its error from ten blocks, and the isosteric heat from the fluctuations of energy and number. A gas mixture is several rigid sorbates at once, each at its share of the pressure (f_i = y_i p): insertions and deletions pick a gas at random, and each gas gets its loading, its Widom terms alone, its isosteric heat from the multicomponent fluctuations, and the adsorption selectivity over the first gas.",
+   "summary": "How much of a gas or small molecule a fixed host takes up — a polymer or rubber cell, a filler, a porous crystal — as Materials Studio's Sorption computes it. The sorbate is a rigid molecule typed with the host's force field. Widom test-particle insertion averages the Boltzmann factor of one molecule placed at random places and orientations: the excess chemical potential, the Henry constant and the solubility coefficient follow. Grand-canonical Monte Carlo at each pressure (insertions, deletions, translations and rotations; an ideal-gas reservoir, fugacity = pressure) gives the loading, its error from ten blocks, and the isosteric heat from the fluctuations of energy and number. A gas mixture is several rigid sorbates at once, each at its share of the pressure (f_i = y_i p): insertions and deletions pick a gas at random, and each gas gets its loading, its Widom terms alone, its isosteric heat from the multicomponent fluctuations, and the adsorption selectivity over the first gas. A rigid model (TraPPE's CO₂, N₂, O₂: bond and angle constants 0) takes its force field's own bond lengths and angles before the run (TraPPE CO₂: C=O 1.16 Å, linear); with a united-atom host the sorbate keeps its types' own charges (TraPPE CO₂ +0.70/−0.35 e).",
    "equation": "μ_ex = −kT ln⟨e^(−βΔU)⟩,   K_H = ⟨W⟩ V / (R T m_host),   S = ⟨W⟩ T₀/(p₀ T),   P_ins = min(1, βfV/(N+1) e^(−βΔU)),   Q_st = kT − (⟨UN⟩ − ⟨U⟩⟨N⟩)/(⟨N²⟩ − ⟨N⟩²),   mixtures: f_i = y_i p,   S_i/1 = (x_i/x_1)/(y_i/y_1),   q_i = kT − Σ_j cov(U, N_j) [cov(N, N)⁻¹]_ji",
    "equation_note": "Widom 1963; Frenkel & Smit 2002",
    "symbols": [
@@ -1085,11 +1127,12 @@
    ],
    "when": "Gas solubility in rubbers and polymers (CO₂, CH₄, N₂, O₂, water) for barrier and permeability estimates (P = D·S with D from Diffusion), uptake of fillers and porous crystals. The host is rigid: swelling and the host's relaxation around the gas are not included; equilibrated, full-density cells are needed for polymer solubilities. Mixtures: CO₂/N₂ or CO₂/CH₄ selectivity of a membrane polymer, water against a gas in a rubber, competing curative fragments.",
    "cites": [
-    "widom1963",
-    "frenkel2002"
+    "frenkel2002",
+    "potoff2001",
+    "widom1963"
    ],
    "source": "core/src/sorption.cpp (sorption)",
-   "tested": "Sorption.WidomEqualsTheGridIntegral (⟨e^(−βU)⟩ 0.03985 ± 0.00055 against the exact grid average 0.03995); Sorption.GcmcIdealGasAndHenryLimit (⟨N⟩ = βpV for an ideal gas; the Henry regime equals Widom's); Sorption.BinaryMixtureIdealAndHenry (an ideal binary gas takes y_i βpV of each, 6.02 + 13.91 for 6 + 14; in a host at low loading each gas follows its own Henry law and the selectivity 0.886 equals the Widom ratio 0.879)",
+   "tested": "Sorption.WidomEqualsTheGridIntegral (⟨e^(−βU)⟩ 0.03985 ± 0.00055 against the exact grid average 0.03995); Sorption.GcmcIdealGasAndHenryLimit (⟨N⟩ = βpV for an ideal gas; the Henry regime equals Widom's); Sorption.BinaryMixtureIdealAndHenry (an ideal binary gas takes y_i βpV of each, 6.02 + 13.91 for 6 + 14; in a host at low loading each gas follows its own Henry law and the selectivity 0.886 equals the Widom ratio 0.879); Sorption.TrappeCo2VirialAndGcmc (TraPPE CO₂: B₂(300 K) −111 cm³/mol against −121 measured; GCMC of the pure gas at 10 bar 56.6 ± 0.5 molecules against 57.1 from the model's virial expansion); bench/ff/check_trappe_co2.py (CO₂ σ, ε, charges as gmso's TraPPE file; 100 CO₂ CAPS against LAMMPS −31.3923 / −31.3921 kcal/mol)",
    "deviation": "ideal-gas fugacity (no equation of state); rigid host and sorbate; damped shifted force electrostatics",
    "engines": [
     "sorption.widom_gcmc"

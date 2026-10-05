@@ -177,7 +177,15 @@ System read_gromacs_topology(const std::string& path, std::vector<std::string>* 
       v.site = idx(0);
       const bool three = sec == "virtual_sites3";
       const int f = int(num(w, three ? 4 : 3, where));
-      if (f != 1) throw ReadError(where + ": only linear virtual sites (function 1) are handled");
+      if (three && f == 4) {   // 3out: x_i + a r_ij + b r_ik + c (r_ij × r_ik), c in 1/nm
+        const double a = num(w, 5, where), b = num(w, 6, where), c = num(w, 7, where);
+        v.from = {idx(1), idx(2), idx(3)};
+        v.w = {1 - a - b, a, b};
+        v.c = c / 10;
+        cur->topo.vsites.push_back(v);
+        continue;
+      }
+      if (f != 1) throw ReadError(where + ": only linear (function 1) and out-of-plane (virtual_sites3 function 4) sites are handled");
       if (three) {
         const double a = num(w, 5, where), b = num(w, 6, where);
         v.from = {idx(1), idx(2), idx(3)};
