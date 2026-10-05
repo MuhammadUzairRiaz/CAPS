@@ -1480,6 +1480,187 @@
     "field.assign.groups"
    ],
    "tex": "\\epsilon_{ab} = \\sqrt{\\epsilon_a\\epsilon_b}\\ \\text{ or }\\ \\frac{\\epsilon_a + \\epsilon_b}{2}, \\qquad \\sigma_{ab} = \\frac{\\sigma_a + \\sigma_b}{2}\\ \\text{ or }\\ \\sqrt{\\sigma_a\\sigma_b} \\\\ \\text{sixth power:}\\ \\ \\sigma_{ab} = \\left(\\frac{\\sigma_a^6 + \\sigma_b^6}{2}\\right)^{1/6}, \\qquad \\epsilon_{ab} = \\frac{2\\sqrt{\\epsilon_a\\epsilon_b}\\,\\sigma_a^3\\sigma_b^3}{\\sigma_a^6 + \\sigma_b^6}"
+  },
+  {
+   "group": "Analysis",
+   "source": "core/src/properties.cpp",
+   "engines": [],
+   "id": "torsions",
+   "title": "Backbone conformation: torsions, angles, bonds",
+   "summary": "The dihedral angle of every four consecutive backbone atoms of every chain and frame, as a distribution with the trans and gauche fractions; the backbone bond angles and lengths with it.",
+   "equation": "φ = atan2( (n₁ × n₂)·b̂₂ , n₁·n₂ ),  n₁ = b₁ × b₂, n₂ = b₂ × b₃;  trans |φ| > 120°, gauche± 0 < ±φ ≤ 120°",
+   "equation_note": "IUPAC sign convention (cis 0°, trans ±180°); the trans/gauche boundaries of the rotational isomeric state model",
+   "symbols": [
+    [
+     "b₁, b₂, b₃",
+     "consecutive backbone bond vectors",
+     "Å"
+    ],
+    [
+     "φ",
+     "torsion angle",
+     "°"
+    ]
+   ],
+   "when": "Chain stiffness and packing: a melt's t/g ratio against the isolated chain's, the effect of a filler surface or of strain on conformations.",
+   "cites": [],
+   "tested": "tests/test_core.cpp Analyze.BackboneConformation (an all-trans zigzag and one gauche torsion)",
+   "deviation": "every backbone torsion counts alike (ester and amide torsions with C–C ones)",
+   "tex": "\\phi = \\operatorname{atan2}\\!\\left((\\mathbf n_1\\times\\mathbf n_2)\\cdot\\hat{\\mathbf b}_2,\\; \\mathbf n_1\\cdot\\mathbf n_2\\right),\\quad \\mathbf n_1 = \\mathbf b_1\\times\\mathbf b_2,\\ \\mathbf n_2 = \\mathbf b_2\\times\\mathbf b_3;\\qquad \\text{trans } |\\phi| > 120^\\circ"
+  },
+  {
+   "group": "Analysis",
+   "source": "core/src/properties.cpp",
+   "engines": [],
+   "id": "vacf-vdos",
+   "title": "Velocity autocorrelation and vibrational density of states",
+   "summary": "The velocity autocorrelation over every frame as a time origin; its integral gives the Green–Kubo diffusion coefficient and its cosine transform (mass-weighted, Hann window) the vibrational density of states.",
+   "equation": "C(τ) = ⟨v(0)·v(τ)⟩;  D = ⅓ ∫₀^∞ C(τ) dτ;  g(ν̃) ∝ ∫ w(τ) C_m(τ)/C_m(0) cos(2π c ν̃ τ) dτ",
+   "equation_note": "Dickey & Paskin 1969; the spectrum reaches the Nyquist wavenumber 1/(2cΔt)",
+   "symbols": [
+    [
+     "v",
+     "atom velocity",
+     "Å/fs"
+    ],
+    [
+     "C_m",
+     "mass-weighted VACF",
+     "amu Å²/fs²"
+    ],
+    [
+     "w",
+     "Hann window",
+     ""
+    ],
+    [
+     "ν̃",
+     "wavenumber",
+     "cm⁻¹"
+    ]
+   ],
+   "when": "Vibrational spectra of a cell (needs frames a few fs apart: C–H stretches at 3000 cm⁻¹ need ≤ 5 fs); D of small molecules as a check on the MSD.",
+   "cites": [
+    "dickey1969"
+   ],
+   "tested": "tests/test_core.cpp Analyze.VacfSpectrumPeak (a 1000 cm⁻¹ oscillation peaks at 1000 cm⁻¹)",
+   "deviation": "no quantum correction of the classical spectrum",
+   "tex": "C(\\tau) = \\langle \\mathbf v(0)\\cdot\\mathbf v(\\tau)\\rangle,\\qquad D = \\tfrac13\\int_0^\\infty C(\\tau)\\,d\\tau,\\qquad g(\\tilde\\nu) \\propto \\int w(\\tau)\\,\\frac{C_m(\\tau)}{C_m(0)}\\cos(2\\pi c\\tilde\\nu\\tau)\\,d\\tau"
+  },
+  {
+   "group": "Analysis",
+   "source": "core/src/properties.cpp",
+   "engines": [],
+   "id": "hydrogen-bonds",
+   "title": "Hydrogen bonds",
+   "summary": "Donor–hydrogen···acceptor contacts between N, O and F by distance and angle, counted per frame; the lifetime from the intermittent correlation of each bond's existence.",
+   "equation": "r(D···A) ≤ 3.5 Å and ∠(H–D···A) ≤ 30°;  C(t) = ⟨h(0)h(t)⟩/⟨h⟩,  τ = ∫ C(t) dt",
+   "equation_note": "Luzar & Chandler 1996",
+   "symbols": [
+    [
+     "h(t)",
+     "1 while a given D–H···A bond exists, else 0",
+     ""
+    ],
+    [
+     "τ",
+     "hydrogen-bond lifetime",
+     "ps"
+    ]
+   ],
+   "when": "Epoxidised and hydroxylated rubbers, maleic acid and PBS ends, water: how many hydrogen bonds hold the network and how long they last.",
+   "cites": [
+    "luzar1996"
+   ],
+   "tested": "tests/test_core.cpp Analyze.HydrogenBonds (two waters, one bond; turned away, none)",
+   "deviation": "the lifetime is a lower bound when C(t) has not decayed over the trajectory",
+   "tex": "r_{\\mathrm{D\\cdots A}} \\le 3.5\\ \\text{Å},\\ \\angle(\\mathrm{H{-}D\\cdots A}) \\le 30^\\circ;\\qquad C(t) = \\frac{\\langle h(0)\\,h(t)\\rangle}{\\langle h\\rangle},\\quad \\tau = \\int_0^\\infty C(t)\\,dt"
+  },
+  {
+   "group": "Analysis",
+   "source": "core/src/properties.cpp",
+   "engines": [],
+   "cites": [],
+   "id": "van-hove",
+   "title": "van Hove self-correlation and the non-Gaussian parameter",
+   "summary": "How far atoms move in a time t: the distribution of their displacements over every time origin, and how far it is from a Gaussian.",
+   "equation": "G_s(r, t) = ⟨δ(r − |r_i(t) − r_i(0)|)⟩;  α₂(t) = 3⟨Δr⁴⟩ / (5⟨Δr²⟩²) − 1",
+   "equation_note": "α₂ = 0 for Gaussian (free, Fickian) displacements; a maximum marks heterogeneous dynamics near the glass transition",
+   "symbols": [
+    [
+     "Δr",
+     "displacement of an atom over t (drift removed)",
+     "Å"
+    ],
+    [
+     "α₂",
+     "non-Gaussian parameter",
+     ""
+    ]
+   ],
+   "when": "Polymer melts and rubbers near Tg; diffusing small molecules in a matrix (hopping shows as a second peak of 4πr²G_s).",
+   "tested": "tests/test_core.cpp Analyze.VanHoveAndP2 (Gaussian steps: α₂ ≈ 0; half the atoms frozen: α₂ > 0.4)",
+   "deviation": "",
+   "tex": "G_s(r,t) = \\Big\\langle \\delta\\big(r - |\\mathbf r_i(t) - \\mathbf r_i(0)|\\big)\\Big\\rangle,\\qquad \\alpha_2(t) = \\frac{3\\langle \\Delta r^4\\rangle}{5\\langle \\Delta r^2\\rangle^2} - 1"
+  },
+  {
+   "group": "Analysis",
+   "source": "core/src/properties.cpp",
+   "engines": [],
+   "cites": [],
+   "id": "p2-r",
+   "title": "Orientational correlation P₂(r)",
+   "summary": "Whether backbone segments near each other point the same way: the second Legendre polynomial of the angle between two chords, against the distance between their centres.",
+   "equation": "P₂(r) = ⟨(3cos²θ_ij − 1)/2⟩ over chord pairs with |c_i − c_j| ≈ r",
+   "equation_note": "1 parallel, 0 random, −½ perpendicular",
+   "symbols": [
+    [
+     "θ_ij",
+     "angle between chords i and j",
+     ""
+    ],
+    [
+     "c_i",
+     "centre of chord i (backbone atom k, chord k−1 → k+1)",
+     "Å"
+    ]
+   ],
+   "when": "Local alignment in a stretched rubber, chain order next to a fibre or filler surface, the onset of crystallisation (PBS, PE).",
+   "tested": "tests/test_core.cpp Analyze.VanHoveAndP2 (parallel all-trans chains: P₂ > 0.95)",
+   "deviation": "at most 4000 chords a frame (every n-th)",
+   "tex": "P_2(r) = \\left\\langle \\tfrac12\\left(3\\cos^2\\theta_{ij} - 1\\right)\\right\\rangle_{|\\mathbf c_i - \\mathbf c_j| \\approx r}"
+  },
+  {
+   "group": "Analysis",
+   "source": "core/src/properties.cpp",
+   "engines": [],
+   "cites": [],
+   "id": "dielectric",
+   "title": "Static dielectric constant from dipole fluctuations",
+   "summary": "The fluctuations of the cell's total dipole moment over an equilibrium trajectory give its static dielectric constant (conducting surroundings, as Ewald sums with tin-foil boundaries assume).",
+   "equation": "ε = 1 + (⟨M²⟩ − ⟨M⟩²) / (3 ε₀ V k_B T),  M = Σ q_i r_i",
+   "equation_note": "Neumann 1983; molecules made whole across the cell walls before M is summed",
+   "symbols": [
+    [
+     "M",
+     "total dipole moment of the cell",
+     "e·Å"
+    ],
+    [
+     "V",
+     "cell volume",
+     "Å³"
+    ],
+    [
+     "T",
+     "temperature of the run",
+     "K"
+    ]
+   ],
+   "when": "Insulating rubbers and fillers for cables, dielectric elastomers: ε of the matrix and of composites (with long NVT or NPT runs; the running ε shows convergence).",
+   "tested": "tests/test_core.cpp Analyze.DielectricFromDipoleFluctuations (a flipping ±1 e pair in a 10 Å cell at 300 K: 3.332)",
+   "deviation": "no electronic polarisability: ε∞ = 1 (add it for a comparison with experiment)",
+   "tex": "\\varepsilon = 1 + \\frac{\\langle M^2\\rangle - \\langle M\\rangle^2}{3\\,\\varepsilon_0 V k_B T},\\qquad \\mathbf M = \\sum_i q_i\\,\\mathbf r_i"
   }
  ]
 }
