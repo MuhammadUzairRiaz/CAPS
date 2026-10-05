@@ -758,7 +758,7 @@ Property ced_prop(const Trajectory& t, const std::vector<size_t>& fr, const Anal
   iso_ff.reserve(nm);
   for (int k = 0; k < nm; ++k) iso_ff.push_back(subset_forcefield(ff, members[k]));
   for (int k = 0; k < nm; ++k) iso.push_back(std::make_unique<Evaluator>(iso_ff[k], iso_e));
-  std::vector<double> ced, coh;
+  std::vector<double> ced, coh, ced_vdw, ced_coul;
   Series s{"CED", "time (ps)", "CED (J/cm³)", {}, {}};
   const auto times = frame_times(t, o);
   for (size_t q = 0; q < fr.size(); ++q) {
@@ -767,16 +767,21 @@ Property ced_prop(const Trajectory& t, const std::vector<size_t>& fr, const Anal
     if (!f.unwrapped) make_molecules_whole(f);
     std::vector<double> x, g;
     for (const auto& a : f.atoms) x.insert(x.end(), a.pos.begin(), a.pos.end());
-    const double eb = bulk.compute(x, f.cell, g).total();
-    double ei = 0;
+    const auto Eb = bulk.compute(x, f.cell, g);
+    const double eb = Eb.total();
+    double ei = 0, ei_vdw = 0, ei_coul = 0;
     for (int k = 0; k < nm; ++k) {
       std::vector<double> xm;
       for (uint32_t i : members[k]) xm.insert(xm.end(), f.atoms[i].pos.begin(), f.atoms[i].pos.end());
-      ei += iso[k]->compute(xm, Cell{}, g).total();
+      const auto Ei = iso[k]->compute(xm, Cell{}, g);
+      ei += Ei.total(), ei_vdw += Ei.vdw, ei_coul += Ei.coulomb;
     }
     const double ecoh = ei - eb;   // kcal/mol per cell, positive when the bulk is bound
     const double v = f.cell.volume();
     const double c = ecoh * 4184.0 / kNA / (v * 1e-24);
+    // its parts: van der Waals and electrostatic (the bonded terms are the same in the bulk and the isolated molecules)
+    ced_vdw.push_back((ei_vdw - Eb.vdw) * 4184.0 / kNA / (v * 1e-24));
+    ced_coul.push_back((ei_coul - Eb.coulomb) * 4184.0 / kNA / (v * 1e-24));
     ced.push_back(c);
     coh.push_back(ecoh);
     s.x.push_back(times[fr[q]] - times[fr[0]]);
@@ -784,6 +789,11 @@ Property ced_prop(const Trajectory& t, const std::vector<size_t>& fr, const Anal
   }
   std::tie(p.value, p.error) = block_mean(ced, o.blocks);
   p.extra["cohesive energy per molecule (kcal/mol)"] = std::accumulate(coh.begin(), coh.end(), 0.0) / coh.size() / nm;
+  const double cv = std::accumulate(ced_vdw.begin(), ced_vdw.end(), 0.0) / ced_vdw.size(), cc = std::accumulate(ced_coul.begin(), ced_coul.end(), 0.0) / ced_coul.size();
+  p.extra["CED van der Waals (J/cm³)"] = cv;
+  p.extra["CED electrostatic (J/cm³)"] = cc;
+  p.extra["δ van der Waals (MPa^½)"] = cv > 0 ? std::sqrt(cv) : NaN;
+  p.extra["δ electrostatic (MPa^½)"] = cc > 0 ? std::sqrt(cc) : NaN;
   p.method = "(Σ E_isolated molecule − E_bulk) / V with " + ff.name + " (same cut-off and electrostatics; molecules in vacuum), averaged over " +
              std::to_string(fr.size()) + " frames";
   p.series.push_back(std::move(s));
@@ -1320,6 +1330,343 @@ struct FreeGrid {
 // or half the Lennard-Jones minimum of the assigned force field (2^(1/6) σ for 12-6, σ itself for class II 9-6).
 std::vector<double> free_radii(const System& s, const AnalyzeOptions& o) { return free_volume_radii(s, o.radii, o.ff); }
 
+
+// ---------------------------------------------------------------- backbone conformation (bond, angle, torsion distributions)
+
+// Dihedral angle i-j-k-l in degrees, IUPAC sign (cis 0, trans ±180)
+double dihedral_deg(const Vec3& a, const Vec3& b, const Vec3& c, const Vec3& d) {
+  const Vec3 b1 = b - a, b2 = c - b, b3 = d - c;
+  const Vec3 n1 = cross(b1, b2), n2 = cross(b2, b3);
+  const double x = dot(n1, n2), y = dot(cross(n1, n2), b2) / std::max(norm(b2), 1e-12);
+  return std::atan2(y, x) * 180.0 / kPi;
+}
+
+Property conformation_prop(const ChainFrames& c, const AnalyzeOptions& o) {
+  Property p{"conformation", "Backbone conformation", "% trans",
+             "backbone torsions of every chain and frame: trans |φ| > 120°, gauche± 0 < ±φ ≤ 120° (IUPAC sign, cis 0°); angles and bonds "
+             "of consecutive backbone atoms",
+             NaN, NaN, {}, {}, {}};
+  std::vector<double> tor(72, 0.0), ang(120, 0.0);   // 5° bins over [-180, 180); 1° bins over [60, 180)
+  std::vector<double> trans_frame;
+  double gp = 0, gm = 0, tt = 0, nang = 0, sang = 0, nbond = 0, sbond = 0;
+  for (const auto& pos : c.pos) {
+    double ft = 0, fn = 0;
+    for (const auto& b : c.bb) {
+      for (size_t k = 0; k + 1 < b.size(); ++k) { sbond += norm(pos[b[k + 1]] - pos[b[k]]); ++nbond; }
+      for (size_t k = 0; k + 2 < b.size(); ++k) {
+        const Vec3 u = pos[b[k]] - pos[b[k + 1]], v = pos[b[k + 2]] - pos[b[k + 1]];
+        const double th = std::acos(std::clamp(dot(u, v) / std::max(norm(u) * norm(v), 1e-12), -1.0, 1.0)) * 180.0 / kPi;
+        sang += th, ++nang;
+        if (th >= 60) ang[std::min<size_t>(119, size_t(th - 60))] += 1;
+      }
+      for (size_t k = 0; k + 3 < b.size(); ++k) {
+        const double phi = dihedral_deg(pos[b[k]], pos[b[k + 1]], pos[b[k + 2]], pos[b[k + 3]]);
+        tor[std::min<size_t>(71, size_t((phi + 180.0) / 5.0))] += 1;
+        if (std::fabs(phi) > 120) ++tt, ++ft;
+        else if (phi > 0) ++gp;
+        else ++gm;
+        ++fn;
+      }
+    }
+    if (fn > 0) trans_frame.push_back(100.0 * ft / fn);
+  }
+  const double n = tt + gp + gm;
+  if (n == 0) { p.notes.push_back("needs chains of at least four backbone atoms"); return p; }
+  const auto [m, e] = block_mean(trans_frame, o.blocks);
+  p.value = m, p.error = e;
+  p.extra["gauche+ (%)"] = 100 * gp / n;
+  p.extra["gauche− (%)"] = 100 * gm / n;
+  p.extra["t/g ratio"] = gp + gm > 0 ? tt / (gp + gm) : NaN;
+  p.extra["mean backbone angle (°)"] = sang / std::max(1.0, nang);
+  p.extra["mean backbone bond (Å)"] = sbond / std::max(1.0, nbond);
+  p.extra["torsions counted"] = n;
+  Series st{"backbone torsion φ", "φ (°)", "P(φ) (per °)", {}, {}};
+  for (size_t k = 0; k < tor.size(); ++k) { st.x.push_back(-180 + 5 * (k + 0.5)); st.y.push_back(tor[k] / (n * 5.0)); }
+  Series sa{"backbone angle θ", "θ (°)", "P(θ) (per °)", {}, {}};
+  for (size_t k = 0; k < ang.size(); ++k) { sa.x.push_back(60 + k + 0.5); sa.y.push_back(nang > 0 ? ang[k] / nang : 0); }
+  p.series.push_back(st);
+  p.series.push_back(sa);
+  return p;
+}
+
+// ---------------------------------------------------------------- van Hove self-correlation and the non-Gaussian parameter
+
+Property vanhove_prop(const Dyn& d, const AnalyzeOptions& o) {
+  Property p{"vanhove", "van Hove self-correlation", "",
+             "G_s(r, t) = ⟨δ(r − |r_i(t) − r_i(0)|)⟩ over atoms and time origins (drift removed), as 4πr²G_s per Å; the non-Gaussian "
+             "parameter α₂(t) = 3⟨Δr⁴⟩ / (5⟨Δr²⟩²) − 1 (0 for Gaussian displacements)",
+             NaN, NaN, {}, {}, {}};
+  const size_t nf = d.x.size();
+  if (nf < 3) { p.notes.push_back("needs a trajectory of at least 3 frames"); return p; }
+  const size_t n = d.x[0].size(), lags = nf / 2;
+  Series sa{"α₂(t)", "t (ps)", "α₂", {}, {}};
+  double best = -1e300, at = NaN;
+  std::vector<size_t> shown;
+  for (size_t l = 1; l <= lags; l *= 2) shown.push_back(l);
+  for (size_t l = 1; l <= lags; ++l) {
+    double s2 = 0, s4 = 0, cnt = 0;
+    std::vector<double> disp;
+    const bool keep = std::find(shown.begin(), shown.end(), l) != shown.end();
+    for (size_t a = 0; a + l < nf; ++a)
+      for (size_t i = 0; i < n; ++i) {
+        const Vec3 dv = d.x[a + l][i] - d.x[a][i];
+        const double r2 = dot(dv, dv);
+        s2 += r2, s4 += r2 * r2, ++cnt;
+        if (keep) disp.push_back(std::sqrt(r2));
+      }
+    const double m2 = s2 / cnt, m4 = s4 / cnt;
+    const double a2 = m2 > 0 ? 3.0 * m4 / (5.0 * m2 * m2) - 1.0 : NaN;
+    const double tl = d.t[l] - d.t[0];
+    sa.x.push_back(tl), sa.y.push_back(a2);
+    if (a2 > best) best = a2, at = tl;
+    if (keep && !disp.empty()) {
+      const double rmax = *std::max_element(disp.begin(), disp.end());
+      const double bin = std::max(0.02, rmax / 60.0);
+      std::vector<double> h(size_t(rmax / bin) + 1, 0.0);
+      for (double r : disp) h[std::min(h.size() - 1, size_t(r / bin))] += 1;
+      Series g{"4πr²G_s(r, " + std::to_string(tl).substr(0, 6) + " ps)", "r (Å)", "4πr²G_s (per Å)", {}, {}};
+      for (size_t k = 0; k < h.size(); ++k) { g.x.push_back((k + 0.5) * bin); g.y.push_back(h[k] / (double(disp.size()) * bin)); }
+      p.series.push_back(std::move(g));
+    }
+  }
+  p.series.insert(p.series.begin(), sa);
+  p.value = best;
+  p.unit = "α₂ max";
+  p.extra["t at the α₂ maximum (ps)"] = at;
+  return p;
+}
+
+// ---------------------------------------------------------------- P2(r): orientational correlation of backbone segments
+
+Property p2r_prop(const ChainFrames& c, const System& top, const AnalyzeOptions& o) {
+  Property p{"p2r", "Orientational correlation P₂(r)", "",
+             "P₂(r) = ⟨(3cos²θ − 1)/2⟩ over pairs of backbone chords (atom k−1 to k+1, centred on atom k) whose centres are r apart "
+             "(minimum image; at most 4000 chords a frame, every n-th); 1 parallel, 0 random, −½ perpendicular",
+             NaN, NaN, {}, {}, {}};
+  const double rmax = 15.0, bin = 0.25;
+  std::vector<double> sum(size_t(rmax / bin), 0.0), cnt(sum.size(), 0.0);
+  for (const auto& pos : c.pos) {
+    std::vector<Vec3> mid, dir;
+    for (const auto& b : c.bb)
+      for (size_t k = 1; k + 1 < b.size(); ++k) {
+        const Vec3 u = pos[b[k + 1]] - pos[b[k - 1]];
+        const double l = norm(u);
+        if (l < 1e-9) continue;
+        mid.push_back(pos[b[k]]), dir.push_back(u * (1.0 / l));
+      }
+    const size_t step = std::max<size_t>(1, mid.size() / 4000);
+    for (size_t i = 0; i < mid.size(); i += step)
+      for (size_t j = i + step; j < mid.size(); j += step) {
+        Vec3 dv = mid[j] - mid[i];
+        if (top.cell.valid()) dv = top.cell.minimum_image(dv);
+        const double r = norm(dv);
+        if (r >= rmax || r < 1e-9) continue;
+        const double cs = dot(dir[i], dir[j]);
+        const size_t k = size_t(r / bin);
+        sum[k] += 1.5 * cs * cs - 0.5, cnt[k] += 1;
+      }
+  }
+  Series s{"P₂(r)", "r (Å)", "P₂", {}, {}};
+  double near = 0, ncount = 0;
+  for (size_t k = 0; k < sum.size(); ++k) {
+    if (cnt[k] == 0) continue;
+    s.x.push_back((k + 0.5) * bin), s.y.push_back(sum[k] / cnt[k]);
+    if ((k + 0.5) * bin >= 3.5 && (k + 0.5) * bin <= 6.0) near += sum[k], ncount += cnt[k];
+  }
+  if (s.x.empty()) { p.notes.push_back("needs chains with backbones of at least three atoms"); return p; }
+  p.value = ncount > 0 ? near / ncount : NaN;
+  p.unit = "P₂ at 3.5–6 Å";
+  p.series.push_back(std::move(s));
+  return p;
+}
+
+// ---------------------------------------------------------------- total dipole: dielectric constant and dipole autocorrelation
+
+Property dielectric_prop(const Trajectory& t, const std::vector<size_t>& fr, const std::vector<double>& times, const AnalyzeOptions& o) {
+  Property p{"dielectric", "Static dielectric constant", "",
+             "ε = 1 + (⟨M²⟩ − ⟨M⟩²) / (3ε₀ V k_B T) with M = Σ q_i r_i over molecules made whole (conducting boundary, Neumann 1983); "
+             "the dipole autocorrelation ⟨M(0)·M(t)⟩ / ⟨M²⟩",
+             NaN, NaN, {}, {}, {}};
+  const System& top = t.topology;
+  bool charged = false;
+  for (const auto& a : top.atoms) charged = charged || std::fabs(a.charge) > 1e-9;
+  if (!charged) { p.notes.push_back("needs partial charges (assign a force field in Field)"); return p; }
+  if (!top.cell.valid()) { p.notes.push_back("needs a periodic cell"); return p; }
+  if (o.temperature <= 0) { p.notes.push_back("give the temperature of the run the frames come from"); return p; }
+  if (fr.size() < 2) { p.notes.push_back("needs many frames of an equilibrium run"); return p; }
+  std::vector<Vec3> M;
+  double vsum = 0;
+  for (size_t k : fr) {
+    System s = t.frame(k);
+    if (!s.unwrapped) make_molecules_whole(s);
+    Vec3 m{0, 0, 0};
+    for (const auto& a : s.atoms) m = m + a.pos * a.charge;   // e·Å
+    M.push_back(m);
+    vsum += s.cell.volume();
+  }
+  const double V = vsum / double(fr.size()) * 1e-30;   // m³
+  Vec3 mean{0, 0, 0};
+  double m2 = 0;
+  for (const auto& m : M) mean = mean + m, m2 += dot(m, m);
+  mean = mean * (1.0 / double(M.size()));
+  m2 /= double(M.size());
+  constexpr double kE = 1.602176634e-19, kEps0 = 8.8541878128e-12, kKB = 1.380649e-23;
+  const double fluct = (m2 - dot(mean, mean)) * (kE * 1e-10) * (kE * 1e-10);   // C²·m²
+  p.value = 1.0 + fluct / (3.0 * kEps0 * V * kKB * o.temperature);
+  p.extra["⟨M²⟩ (D²)"] = m2 * 4.80320471 * 4.80320471;   // 1 e·Å = 4.80320471 debye
+  p.extra["frames"] = double(M.size());
+  // running ε: how far it has converged
+  Series sr{"ε running", "t (ps)", "ε", {}, {}};
+  Vec3 rm{0, 0, 0};
+  double r2 = 0;
+  for (size_t k = 0; k < M.size(); ++k) {
+    rm = rm + M[k], r2 += dot(M[k], M[k]);
+    const double n = double(k + 1);
+    const double f = (r2 / n - dot(rm * (1 / n), rm * (1 / n))) * (kE * 1e-10) * (kE * 1e-10);
+    sr.x.push_back(times[k] - times[0]), sr.y.push_back(1.0 + f / (3.0 * kEps0 * V * kKB * o.temperature));
+  }
+  p.series.push_back(sr);
+  if (M.size() >= 4) {
+    Series sa{"⟨M(0)·M(t)⟩ / ⟨M²⟩", "t (ps)", "C_M(t)", {}, {}};
+    const size_t lags = M.size() / 2;
+    for (size_t l = 0; l < lags; ++l) {
+      double c = 0, n = 0;
+      for (size_t a = 0; a + l < M.size(); ++a) c += dot(M[a], M[a + l]), ++n;
+      sa.x.push_back(times[l] - times[0]), sa.y.push_back(m2 > 0 ? c / n / m2 : 0);
+    }
+    p.series.push_back(sa);
+  }
+  p.notes.push_back("ε converges slowly: use a long equilibrium (NVT or NPT) trajectory; the running ε shows how far it has settled");
+  return p;
+}
+
+// ---------------------------------------------------------------- velocity autocorrelation and vibrational density of states
+
+Property vacf_prop(const Trajectory& t, const std::vector<size_t>& fr, const std::vector<double>& times, const AnalyzeOptions& o) {
+  Property p{"vacf", "Velocity autocorrelation · VDOS", "cm²/s",
+             "C(τ) = ⟨v(0)·v(τ)⟩ over every frame as a time origin and every atom (mass-weighted for the spectrum); D = ⅓∫⟨v(0)·v(τ)⟩dτ "
+             "(Green–Kubo); VDOS the cosine transform of the normalised mass-weighted C(τ) with a Hann window",
+             NaN, NaN, {}, {}, {}};
+  std::vector<size_t> have;
+  for (size_t k : fr) if (k < t.velocities.size() && t.velocities[k].size() == t.topology.atoms.size()) have.push_back(k);
+  if (have.size() < 4) { p.notes.push_back("needs the velocities in at least 4 frames (a LAMMPS dump with vx vy vz, or a CAPS run's trajectory)"); return p; }
+  std::vector<double> tm;
+  for (size_t q = 0; q < fr.size(); ++q) if (std::find(have.begin(), have.end(), fr[q]) != have.end()) tm.push_back(times[q]);
+  const double dt = (tm.back() - tm.front()) / double(tm.size() - 1);   // ps
+  const size_t n = t.topology.atoms.size(), nf = have.size(), lags = nf / 2;
+  std::vector<double> mass(n);
+  for (size_t i = 0; i < n; ++i) mass[i] = t.topology.mass_of(t.topology.atoms[i]);
+  std::vector<double> c(lags, 0.0), cm(lags, 0.0);
+  std::vector<double> cnt(lags, 0.0);
+  for (size_t a = 0; a < nf; ++a)
+    for (size_t l = 0; l < lags && a + l < nf; ++l) {
+      const auto& v0 = t.velocities[have[a]];
+      const auto& v1 = t.velocities[have[a + l]];
+      double sum = 0, msum = 0;
+      for (size_t i = 0; i < n; ++i) { const double d = dot(v0[i], v1[i]); sum += d; msum += mass[i] * d; }
+      c[l] += sum / double(n), cm[l] += msum / double(n), cnt[l] += 1;
+    }
+  for (size_t l = 0; l < lags; ++l) c[l] /= cnt[l], cm[l] /= cnt[l];
+  // D = ⅓ ∫ C dτ (trapezoid; v in Å/fs, τ in ps → Å²/fs · ps = 1000 Å²/fs·fs; 1 Å²/fs = 0.1 cm²/s)
+  double integral = 0;
+  for (size_t l = 1; l < lags; ++l) integral += 0.5 * (c[l] + c[l - 1]) * dt * 1000.0;   // Å² / fs
+  p.value = integral / 3.0 * 0.1;   // cm²/s
+  Series sv{"VACF", "τ (ps)", "C(τ)/C(0)", {}, {}};
+  for (size_t l = 0; l < lags; ++l) { sv.x.push_back(l * dt); sv.y.push_back(c[0] != 0 ? c[l] / c[0] : 0); }
+  p.series.push_back(sv);
+  // VDOS(ν̃) = 2 Σ w(τ) C(τ)/C(0) cos(2π c ν̃ τ) Δτ; up to the Nyquist wavenumber 1/(2 c Δt)
+  constexpr double kC = 2.99792458e10;   // cm/s
+  const double nyq = 1.0 / (2.0 * kC * dt * 1e-12);
+  Series sd{"VDOS (mass-weighted)", "ν̃ (cm⁻¹)", "g(ν̃) (arb.)", {}, {}};
+  const int nw = 400;
+  for (int k = 0; k <= nw; ++k) {
+    const double nu = nyq * k / nw;
+    double g = 0;
+    for (size_t l = 0; l < lags; ++l) {
+      const double w = 0.5 * (1 + std::cos(kPi * double(l) / double(lags)));
+      g += (l == 0 ? 1.0 : 2.0) * w * (cm[0] != 0 ? cm[l] / cm[0] : 0) * std::cos(2 * kPi * kC * nu * l * dt * 1e-12);
+    }
+    sd.x.push_back(nu);
+    sd.y.push_back(g * dt);
+  }
+  p.series.push_back(sd);
+  p.extra["frame spacing (fs)"] = dt * 1000.0;
+  p.extra["highest wavenumber (cm⁻¹)"] = nyq;
+  if (dt * 1000.0 > 5.0) p.notes.push_back("frames " + std::to_string(int(dt * 1000.0)) + " fs apart: bond vibrations (C–H ≈ 3000 cm⁻¹ needs ≤ 5 fs) are beyond the spectrum");
+  return p;
+}
+
+// ---------------------------------------------------------------- hydrogen bonds
+
+Property hbond_prop(const Trajectory& t, const std::vector<size_t>& fr, const std::vector<double>& times, const AnalyzeOptions& o) {
+  Property p{"hbonds", "Hydrogen bonds", "per frame",
+             "D–H···A with D, A ∈ {N, O, F}, r(D···A) ≤ 3.5 Å and ∠(H–D···A) ≤ 30° (Luzar & Chandler 1996); lifetime from the "
+             "intermittent correlation C(t) = ⟨h(0)h(t)⟩/⟨h⟩, τ = ∫C dt",
+             NaN, NaN, {}, {}, {}};
+  const System& s0 = t.topology;
+  const size_t n = s0.atoms.size();
+  auto polar = [&](size_t i) { const int z = s0.atoms[i].element; return z == 7 || z == 8 || z == 9; };
+  std::vector<std::pair<uint32_t, uint32_t>> dh;   // donor, its hydrogen
+  for (const auto& b : s0.bonds) {
+    if (s0.atoms[b.i].element == 1 && polar(b.j)) dh.push_back({b.j, b.i});
+    if (s0.atoms[b.j].element == 1 && polar(b.i)) dh.push_back({b.i, b.j});
+  }
+  std::vector<uint32_t> acc;
+  for (size_t i = 0; i < n; ++i) if (polar(i)) acc.push_back(uint32_t(i));
+  if (dh.empty() || acc.empty()) { p.notes.push_back("no N–H, O–H or F–H donors (or no N, O, F acceptors) in the structure"); return p; }
+  std::map<std::pair<uint32_t, uint32_t>, std::vector<char>> exists;   // (donor H index in dh, acceptor) → per frame
+  std::vector<double> count;
+  for (size_t q = 0; q < fr.size(); ++q) {
+    const System s = t.frame(fr[q]);
+    double c = 0;
+    for (size_t d = 0; d < dh.size(); ++d) {
+      const auto [D, H] = dh[d];
+      const Vec3 dhv = s.cell.valid() ? s.cell.minimum_image(s.atoms[H].pos - s.atoms[D].pos) : s.atoms[H].pos - s.atoms[D].pos;
+      for (uint32_t A : acc) {
+        if (A == D) continue;
+        const Vec3 da = s.cell.valid() ? s.cell.minimum_image(s.atoms[A].pos - s.atoms[D].pos) : s.atoms[A].pos - s.atoms[D].pos;
+        const double r = norm(da);
+        if (r > 3.5 || r < 1e-6) continue;
+        const double cosang = dot(dhv, da) / std::max(norm(dhv) * r, 1e-12);
+        if (cosang < std::cos(30.0 * kPi / 180.0)) continue;
+        auto& e = exists[{uint32_t(d), A}];
+        e.resize(fr.size(), 0);
+        e[q] = 1;
+        ++c;
+      }
+    }
+    count.push_back(c);
+  }
+  const auto [m, e] = block_mean(count, o.blocks);
+  p.value = m, p.error = e;
+  p.extra["per donor H"] = m / double(dh.size());
+  p.extra["donor hydrogens"] = double(dh.size());
+  p.extra["acceptors"] = double(acc.size());
+  Series sc{"hydrogen bonds", "t (ps)", "count", {}, {}};
+  for (size_t q = 0; q < fr.size(); ++q) { sc.x.push_back(times[q] - times[0]); sc.y.push_back(count[q]); }
+  p.series.push_back(sc);
+  if (fr.size() >= 3 && !exists.empty()) {
+    const size_t lags = fr.size() / 2;
+    std::vector<double> cor(lags, 0.0), norm0(lags, 0.0);
+    for (const auto& [k, h] : exists)
+      for (size_t a = 0; a < fr.size(); ++a) {
+        if (!h[a]) continue;
+        for (size_t l = 0; l < lags && a + l < fr.size(); ++l) { cor[l] += h[a + l]; norm0[l] += 1; }
+      }
+    Series sl{"C(t) intermittent", "t (ps)", "C(t)", {}, {}};
+    double tau = 0;
+    for (size_t l = 0; l < lags; ++l) {
+      const double cl = norm0[l] > 0 ? cor[l] / norm0[l] : 0;
+      sl.x.push_back(times[l] - times[0]);
+      sl.y.push_back(cl);
+      if (l > 0) tau += 0.5 * (cl + sl.y[l - 1]) * (times[l] - times[l - 1]);
+    }
+    p.series.push_back(sl);
+    p.extra["lifetime τ (ps, ∫C over the frames)"] = tau;
+    if (!sl.y.empty() && sl.y.back() > 0.2) p.notes.push_back("C(t) has not decayed over the trajectory: τ is a lower bound");
+  }
+  return p;
+}
 }  // namespace
 
 std::vector<double> free_volume_radii(const System& s, const std::string& kind, const ForceField* ff) {
@@ -1750,7 +2097,7 @@ std::vector<double> frame_times(const Trajectory& t, const AnalyzeOptions& o) {
 std::vector<Property> analyze(const Trajectory& t, const std::vector<std::string>& ids, const AnalyzeOptions& o) {
   static const std::set<std::string> known = {"density", "rdf", "sq", "xray", "electron", "neutron", "rg", "ree", "cn", "persistence", "msd", "diffusion",
                                               "relaxation", "ced", "delta", "ffv", "psd", "cij_fluct", "zprofile", "adhesion", "interaction", "orientation", "crosslinks",
-                                              "entanglements"};
+                                              "entanglements", "conformation", "vacf", "hbonds", "vanhove", "p2r", "dielectric"};
   for (const auto& id : ids)
     if (!known.count(id)) throw std::invalid_argument("unknown property '" + id + "'");
   const auto fr = analysis_frames(t, o);
@@ -1786,6 +2133,14 @@ std::vector<Property> analyze(const Trajectory& t, const std::vector<std::string
       }
     }
     if (want("rg")) out.push_back(rg_prop(t, fr, o));
+    if (want("conformation") || want("p2r")) {
+      const ChainFrames cf = chain_frames(t, fr);
+      if (want("conformation")) out.push_back(conformation_prop(cf, o));
+      if (want("p2r")) out.push_back(p2r_prop(cf, t.topology, o));
+    }
+    if (want("vacf")) out.push_back(vacf_prop(t, fr, times, o));
+    if (want("hbonds")) out.push_back(hbond_prop(t, fr, times, o));
+    if (want("dielectric")) out.push_back(dielectric_prop(t, fr, times, o));
     if (want("ree") || want("cn") || want("persistence") || want("orientation")) {
       const ChainFrames c = chain_frames(t, fr);
       if (want("orientation")) out.push_back(orientation_prop(t, fr, o, c));
@@ -1793,10 +2148,10 @@ std::vector<Property> analyze(const Trajectory& t, const std::vector<std::string
       if (want("cn")) out.push_back(cn_prop(o, c));
       if (want("persistence")) out.push_back(persistence_prop(o, c));
     }
-    if (want("msd") || want("diffusion") || want("relaxation")) {
+    if (want("msd") || want("diffusion") || want("relaxation") || want("vanhove")) {
       std::vector<std::string> notes;
       if (fr.size() < 3) {
-        for (const char* k : {"msd", "diffusion", "relaxation"})
+        for (const char* k : {"msd", "diffusion", "relaxation", "vanhove"})
           if (want(k)) {
             Property p;
             p.id = k;
@@ -1814,6 +2169,7 @@ std::vector<Property> analyze(const Trajectory& t, const std::vector<std::string
           if (want("diffusion")) out.push_back(D);
         }
         if (want("relaxation")) out.push_back(relaxation_prop(t, fr, d, o));
+        if (want("vanhove")) out.push_back(vanhove_prop(d, o));
       }
     }
     if (want("ced") || want("delta")) {

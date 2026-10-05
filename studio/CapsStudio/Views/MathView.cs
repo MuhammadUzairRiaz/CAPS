@@ -97,7 +97,7 @@ public sealed class MathView : Control
     public enum SymKind { Italic, Upright, Number, Bin, Rel, Punct, Open, Close, Func, Text }
     public abstract record Node;
     public sealed record Seq(List<Node> Items) : Node;
-    public sealed record Sym(string Text, SymKind Kind) : Node;
+    public sealed record Sym(string Text, SymKind Kind, bool Bold = false) : Node;
     public sealed record Frac(Node Num, Node Den, bool Small) : Node;
     public sealed record Sqrt(Node Body) : Node;
     public sealed record Scripts(Node Base, Node? Sup, Node? Sub) : Node;
@@ -131,7 +131,7 @@ public sealed class MathView : Control
             ["dots"] = ("…", SymKind.Upright), ["ldots"] = ("…", SymKind.Upright), ["cdots"] = ("⋯", SymKind.Upright),
             ["circ"] = ("∘", SymKind.Upright), ["prime"] = ("′", SymKind.Upright), ["#"] = ("#", SymKind.Upright), ["%"] = ("%", SymKind.Upright),
             ["{"] = ("{", SymKind.Open), ["}"] = ("}", SymKind.Close), ["langle"] = ("⟨", SymKind.Open), ["rangle"] = ("⟩", SymKind.Close),
-            ["|"] = ("‖", SymKind.Upright), ["AA"] = ("Å", SymKind.Upright),
+            ["|"] = ("‖", SymKind.Upright), ["AA"] = ("Å", SymKind.Upright), ["angle"] = ("∠", SymKind.Upright),
         };
         private static readonly HashSet<string> Funcs = ["exp", "ln", "log", "cos", "sin", "tan", "erfc", "erf", "sign", "tr", "dev", "det", "arccos"];
         private static readonly HashSet<string> Limits = ["lim", "min", "max", "argmax", "argmin", "sup", "inf"];
@@ -301,6 +301,9 @@ public sealed class MathView : Control
                             return name == "text" ? n : Upright(n);
                         }
                     case "operatorname": return new Sym(Flatten(Arg(inText: true)), SymKind.Func);
+                    case "mathbf": case "boldsymbol": return Bold(Upright(Arg()));   // vectors and tensors: bold upright
+                    case "big": case "Big": case "bigg": case "Bigg": case "bigl": case "bigr": case "Bigl": case "Bigr":
+                        return new Space(0, false);   // a sized delimiter: the delimiter that follows is drawn at the formula's size
                     case "sum": return new BigOp("∑", false);
                     case "prod": return new BigOp("∏", false);
                     case "int": return new BigOp("∫", true);
@@ -335,6 +338,15 @@ public sealed class MathView : Control
                 var d = s[I++];
                 return d == '.' ? "" : d.ToString();
             }
+
+            private static Node Bold(Node n) => n switch
+            {
+                Sym y => y with { Bold = true },
+                Seq q => new Seq(q.Items.Select(Bold).ToList()),
+                Scripts sc => new Scripts(Bold(sc.Base), sc.Sup, sc.Sub),
+                Accent ac => ac with { Body = Bold(ac.Body) },
+                _ => n,
+            };
 
             private static Node Upright(Node n) => n switch
             {
@@ -419,6 +431,7 @@ public sealed class MathView : Control
     {
         private readonly Typeface _up = new(fam);
         private readonly Typeface _it = new(fam, FontStyle.Italic);
+        private readonly Typeface _bold = new(fam, FontStyle.Normal, FontWeight.Bold);
 
         private FormattedText Text(string t, double size, bool italic) =>
             new(t, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, italic ? _it : _up, size, brush);
@@ -452,10 +465,10 @@ public sealed class MathView : Control
             return (a * s, d * s);
         }
 
-        private Box Glyph(string t, double s, bool italic, double padL = 0, double padR = 0)
+        private Box Glyph(string t, double s, bool italic, double padL = 0, double padR = 0, bool bold = false)
         {
             if (t == "∘") s *= 1.6;   // the ring operator is drawn small in text fonts: P° needs a visible ring
-            var ft = Text(t, s, italic);
+            var ft = bold ? new FormattedText(t, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, _bold, s, brush) : Text(t, s, italic);
             var (a, d) = Metrics(t, s);
             var w = ft.WidthIncludingTrailingWhitespace + padL + padR;
             var g = new GlyphBox(ft, w, a, d);
@@ -558,6 +571,7 @@ public sealed class MathView : Control
             switch (n)
             {
                 case Sym y:
+                    if (y.Bold) return Glyph(y.Text, s, false, bold: true);
                     return y.Kind switch
                     {
                         SymKind.Italic => Glyph(y.Text, s, true),
