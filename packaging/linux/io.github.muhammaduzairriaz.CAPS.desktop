@@ -8,5 +8,5 @@ Icon=io.github.muhammaduzairriaz.CAPS
 Terminal=false
 Categories=Science;Chemistry;Education;
 Keywords=polymer;molecular dynamics;LAMMPS;force field;chemistry;
-MimeType=chemical/x-pdb;chemical/x-xyz;
+MimeType=application/x-caps-project;chemical/x-pdb;chemical/x-xyz;
 StartupWMClass=CapsStudio

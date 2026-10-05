@@ -53,6 +53,7 @@ ln -s ../lib/caps/CapsStudio "$AD/usr/bin/caps-studio"
 ln -s ../lib/caps/caps "$AD/usr/bin/caps"
 cp "$ROOT/packaging/linux/$ID.desktop" "$AD/usr/share/applications/"
 cp "$ROOT/packaging/linux/$ID.metainfo.xml" "$AD/usr/share/metainfo/$ID.appdata.xml"
+install -Dm644 "$ROOT/packaging/linux/$ID.mime.xml" "$AD/usr/share/mime/packages/$ID.xml"
 icons "$AD/usr"
 cp "$ROOT/packaging/linux/$ID.desktop" "$AD/"
 cp "$ROOT/packaging/icon/caps_256.png" "$AD/$ID.png"
@@ -79,6 +80,7 @@ ln -s /opt/caps/CapsStudio "$DEB/usr/bin/caps-studio"
 ln -s /opt/caps/caps "$DEB/usr/bin/caps"
 cp "$ROOT/packaging/linux/$ID.desktop" "$DEB/usr/share/applications/"
 cp "$ROOT/packaging/linux/$ID.metainfo.xml" "$DEB/usr/share/metainfo/"
+install -Dm644 "$ROOT/packaging/linux/$ID.mime.xml" "$DEB/usr/share/mime/packages/$ID.xml"   # .capsproj: a CAPS project
 icons "$DEB/usr"
 cat > "$DEB/DEBIAN/control" <<CTL
 Package: caps-studio

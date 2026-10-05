@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Platform.Storage;
 using CapsStudio.Views;
 
 namespace CapsStudio;
@@ -51,6 +52,13 @@ public partial class App : Application
             _main = w;
             var args = desktop.Args ?? [];
             if (args.Length > 0) w.OpenOnStart(args[0], args.Length > 1 ? args[1] : null);
+            // macOS hands a double-clicked file (a .capsproj, a structure) to the running app, not as an argument
+            if (TryGetFeature(typeof(IActivatableLifetime)) is IActivatableLifetime act)
+                act.Activated += (_, e) =>
+                {
+                    if (e is FileActivatedEventArgs f)
+                        foreach (var p in f.Files.Select(x => x.TryGetLocalPath()).OfType<string>().Take(1)) w.OpenOnStart(p, null);
+                };
         }
         base.OnFrameworkInitializationCompleted();
     }

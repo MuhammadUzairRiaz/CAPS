@@ -48,7 +48,8 @@ public sealed class AppSettings
     public List<RemoteHost> Hosts { get; set; } = new();   // Compute & remote: SSH hosts (no credentials: the SSH agent holds them)
     public string JobTemplate { get; set; } = RemoteHost.DefaultTemplate;
     public List<MyFragment> MyFragments { get; set; } = new();   // the fragment library's "My fragments"
-    public List<MyFragment> PackMolecules { get; set; } = new();   // Pack › Add molecule: "Your molecules" (whole molecules by SMILES)
+    public List<MyFragment> PackMolecules { get; set; } = new();
+    public string ProjectParent { get; set; } = "";   // where the last new project was made (New project starts there)   // Pack › Add molecule: "Your molecules" (whole molecules by SMILES)
     public List<SavedQueryData> SavedQueries { get; set; } = SavedQueryData.Defaults();   // Select by query (SmartSelect)
     /// <summary>The first-run tour was finished or skipped.</summary>
     public bool TourDone { get; set; }

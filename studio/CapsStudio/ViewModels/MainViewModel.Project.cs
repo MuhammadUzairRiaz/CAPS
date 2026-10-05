@@ -80,7 +80,8 @@ public sealed partial class MainViewModel
     /// <summary>The explorer's root: the project folder's name, or this session's structures.</summary>
     /// <summary>The project's name in the tree: the one the user gave it (kept per folder in the settings; the folder on
     /// disk is not renamed), else the folder's name, or "This session".</summary>
-    public string ExplorerProjectName => _settings.ProjectNames.TryGetValue(_projectFolder, out var n) && n.Length > 0 ? n
+    public string ExplorerProjectName => _projFile != null ? CapsProjectName
+                                       : _settings.ProjectNames.TryGetValue(_projectFolder, out var n) && n.Length > 0 ? n
                                        : _projectFolder.Length == 0 ? "This session" : ProjectName;
     private bool _projectRenaming;
     public bool ProjectRenaming { get => _projectRenaming; set { if (Set(ref _projectRenaming, value)) Raise(nameof(ProjectNotRenaming)); } }
@@ -90,6 +91,7 @@ public sealed partial class MainViewModel
         ProjectRenaming = false;
         name = name?.Trim() ?? "";
         if (name == ExplorerProjectName) return;
+        if (_projFile != null) { RenameCapsProject(name); return; }
         if (name.Length == 0) _settings.ProjectNames.Remove(_projectFolder); else _settings.ProjectNames[_projectFolder] = name;
         _settings.Save();
         Raise(nameof(ExplorerProjectName));

@@ -3894,6 +3894,67 @@ internal static class SelfTest
             Check(had > 0 && asked && vm.ProjectItems.Count == 0 && !vm.ShowPipelineStrip && vm.PipelineSteps.Count == 0,
                   $"clear: {had} structures · asked {asked} · left {vm.ProjectItems.Count} · strip {vm.ShowPipelineStrip}");
         }
+        // CAPS projects (design/boards/ProjectsStart, NewProject, ProjectOpen): a project made with the open structure, saved with
+        // its force field, closed, listed on Start, opened again with its structures and sessions; renamed; moved and found again
+        {
+            var pdir = Path.Combine(outDir, "caps-selftest-projects");
+            if (Directory.Exists(pdir)) Directory.Delete(pdir, true);
+            Directory.CreateDirectory(pdir);
+            if (File.Exists(ProjectRegistry.File)) File.Delete(ProjectRegistry.File);
+            vm.LoadKnownProjects();
+            var none = !vm.HasKnownProjects;
+            vm.Open(Path.Combine(dir, "ps_melt.data"));
+            var gaffP = vm.Field.Library.ToList().FindIndex(x => x.Id == "gaff-amber25");
+            if (gaffP >= 0) { vm.Field.FfIndex = gaffP; vm.Field.Assign().GetAwaiter().GetResult(); }
+            var typed = vm.Field.Assigned;
+            vm.OpenNewProject();
+            vm.NewProjectName = "ENR/MAH: test";   // characters a disk cannot hold become "-"
+            vm.NewProjectParent = pdir;
+            var tree = vm.NewProjectFileName.Trim();
+            vm.CreateNewProject();
+            var pfile = vm.CapsProjectPath;
+            var pfolder = Path.GetDirectoryName(pfile)!;
+            var made = vm.HasCapsProject && File.Exists(pfile) && Path.GetFileName(pfolder) == "ENR-MAH- test" && tree == "ENR-MAH- test.capsproj"
+                       && Directory.Exists(Path.Combine(pfolder, "runs")) && Directory.Exists(Path.Combine(pfolder, "exports"))
+                       && File.Exists(Path.Combine(pfolder, "structures", "ps_melt.data")) && (!typed || File.Exists(Path.Combine(pfolder, "structures", "ps_melt.ff.json")))
+                       && vm.ProjectItems.Count == 1 && vm.ExplorerProjectName == "ENR/MAH: test";
+            Check(none && made, $"new project: {vm.Status} · {pfile} · tree {tree} · typed {typed}");
+            // a second structure: saved with it, and this session says so
+            vm.DuplicateStructure(" copy");
+            vm.Status = vm.SaveCapsProject();
+            var m1 = CapsProjectFile.Read(pfile);
+            var did = string.Join(" | ", ((m1["sessions"] as System.Text.Json.Nodes.JsonArray)![0]!["did"] as System.Text.Json.Nodes.JsonArray)!.Select(x => (string?)x));
+            Check((m1["structures"] as System.Text.Json.Nodes.JsonArray)!.Count == 2 && did.Contains("ps_melt.data copy", StringComparison.Ordinal) && vm.CapsProjectSavedText.StartsWith("saved "),
+                  $"project saved: {vm.Status} · this session: {did}");
+            // closed: Start lists it; opened again: both structures, the force field, a second session
+            vm.Status = vm.CloseCapsProject();
+            var closed = !vm.HasCapsProject && vm.ProjectItems.Count == 0 && vm.KnownProjects.Count == 1 && vm.KnownProjects[0].Counts == "2 structures · 1 session"
+                         && vm.KnownProjects[0].Found && vm.KnownProjects[0].Name == "ENR/MAH: test";
+            vm.Status = vm.OpenCapsProject(pfile);
+            var back = vm.ProjectItems.Select(p => p.Name).OrderBy(x => x).ToList();
+            var ffBack = !typed || vm.ProjectItems.Any(p => p.Name == "ps_melt.data" && p.Doc.FieldReport().Length > 100);
+            Check(closed && back.SequenceEqual(["ps_melt.data", "ps_melt.data copy"]) && ffBack && vm.ProjectSessions.Count == 2 && vm.ProjectSessions[0].Now
+                  && vm.ProjectSessions[1].What.Contains("ps_melt.data copy", StringComparison.Ordinal),
+                  $"project reopened: {vm.Status} · {string.Join(", ", back)} · force field {ffBack} · sessions {vm.ProjectSessions.Count}: {string.Join(" / ", vm.ProjectSessions.Select(x => x.When + " " + x.What))}");
+            // renamed: the file says so, the folder keeps its name
+            vm.RenameProject("ENR–MAH crosslinking");
+            var renamed = (string?)CapsProjectFile.Read(pfile)["name"] == "ENR–MAH crosslinking" && vm.KnownProjects[0].Name == "ENR–MAH crosslinking";
+            vm.Status = vm.CloseCapsProject();
+            // the folder moved: not found, then located; forgotten: the list is empty and the files stay
+            var moved = Path.Combine(pdir, "moved");
+            Directory.Move(pfolder, moved);
+            vm.LoadKnownProjects();
+            var lost = vm.KnownProjects.Count == 1 && vm.KnownProjects[0].Missing;
+            var newFile = Path.Combine(moved, Path.GetFileName(pfile));
+            var located = vm.LocateProject(vm.KnownProjects[0], newFile);
+            var found = vm.KnownProjects.Count == 1 && vm.KnownProjects[0].Found && vm.KnownProjects[0].File == newFile;
+            vm.ForgetProject(vm.KnownProjects[0]);
+            Check(renamed && lost && found && !vm.HasKnownProjects && File.Exists(newFile), $"project renamed {renamed} · moved: missing {lost} · {located} · forgotten, files kept");
+            // a .capsproj chosen in Open opens the project
+            vm.Status = vm.OpenCapsProject(newFile);
+            Check(vm.HasCapsProject && vm.ProjectItems.Count == 2 && vm.KnownProjects.Count == 1, "project file opened again: " + vm.Status);
+            vm.CloseCapsProject();
+        }
         // Pack › Add molecule › Your molecules: a SMILES saved under its name, checked, added by name, removed
         {
             var mahLib = vm.PackAdditives.Any(f => f.Smiles == "O=C1OC(=O)C=C1") && vm.PackAdditives.Any(f => f.Name == "Maleic acid");

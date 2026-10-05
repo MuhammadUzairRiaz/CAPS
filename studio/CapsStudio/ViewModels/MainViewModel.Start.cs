@@ -144,7 +144,7 @@ public sealed partial class MainViewModel
         ClearFocus();
         // the structure leaves the project; another one of it becomes active, or Start when it was the last
         var gone = _activeItem;
-        if (gone != null) { KeepBuiltCopy(gone); ProjectItems.Remove(gone); }
+        if (gone != null) { if (!_projClosing) KeepBuiltCopy(gone); ProjectItems.Remove(gone); }
         _activeItem = null;
         if (ProjectItems.Count > 0)
         {
