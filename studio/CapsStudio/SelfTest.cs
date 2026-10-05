@@ -940,6 +940,18 @@ internal static class SelfTest
                   $"layer stack: {chip} · {st?.Atoms} atoms, {st?.Molecules} molecules · {vm.SurfLog.Split('\n').FirstOrDefault()} {vm.SurfError}");
             while (vm.SurfHasExtra) vm.RemoveSurfLayer(0);
             vm.SurfFilm = true;
+            // a brush: chains grafted to the hydroxylated quartz's silanols
+            vm.OpenSurface();
+            vm.SurfLayers = 1;
+            vm.FilmKind = 1;
+            vm.BrushSigma = 1.0m;
+            vm.FilmThickness = 20;
+            vm.FilmDp = 4;
+            vm.BuildSurface().GetAwaiter().GetResult();
+            var br = vm.Document?.Summary();
+            Check(br is { } bs && bs.Molecules > 1 && vm.Title.Contains("brush") && vm.Document!.Provenance().Contains("brush.build") && vm.SurfLog.Contains("grafted"),
+                  $"brush: {vm.Title} · {br?.Molecules} molecules · {vm.SurfLog.Split('\n').FirstOrDefault(l => l.StartsWith("brush"))} {vm.SurfError}");
+            vm.FilmKind = 0;
             vm.SetModule(8);
         }
 
@@ -1096,6 +1108,27 @@ internal static class SelfTest
         vm.BuildNano().GetAwaiter().GetResult();
         var comp = vm.Document?.Summary();
         Check(comp is { } csum && csum.Molecules == 5 && vm.HoldOn, $"nanotube composite: {vm.Title} · {comp?.Atoms} atoms · {vm.NanoError} {vm.Status}");
+
+        // Nanostructure › a rope of seven (5,5) tubes, then a tube with walls of its own chiralities
+        {
+            vm.OpenNano();
+            vm.NanoKind = 1;
+            vm.NanoMaterial = 0;
+            vm.TubeN = 5;
+            vm.TubeM = 5;
+            vm.TubeLength = 10;
+            vm.NanoMatrix = false;
+            vm.TubeRope = 1;
+            vm.BuildNano().GetAwaiter().GetResult();
+            var rope = vm.Document!.Summary();
+            vm.TubeRope = 0;
+            vm.TubeWallList = "5,5 10,10 26,0";
+            vm.TubeLength = 60;
+            vm.BuildNano().GetAwaiter().GetResult();
+            var mw = vm.Document!.Summary();
+            vm.TubeWallList = "";
+            Check(rope.Molecules == 7 && mw.Atoms > 0 && vm.Title.Contains("(5,5)@(10,10)@(26,0)"), $"rope: {rope.Molecules} tubes, {rope.Atoms} atoms · walls: {vm.Title}, {mw.Atoms} atoms · {vm.NanoError}");
+        }
 
         // Nanostructure › Functional groups: a bare (8,8) boron nitride tube, then carboxyls on 4 % of its borons (undoable)
         {
@@ -3509,6 +3542,16 @@ internal static class SelfTest
             vm.MdEnsemble = 1;
             Check(fsDeck.Contains("press/berendsen aniso 1 1 1000") && fsDeck.Contains("tri") && zDeck.Contains("press/berendsen z 1 1 1000"),
                   $"coupling in the LAMMPS deck: {fsDeck.Split('\n').FirstOrDefault(l => l.Contains("press/berendsen"))} · {zDeck.Split('\n').FirstOrDefault(l => l.Contains("press/berendsen"))}");
+            // rigid bodies: the group from the document, the rigid fix before the others, the rest integrated as mobile
+            vm.MdRigid = "1-2";
+            vm.PreflightNow().GetAwaiter().GetResult();
+            var rgDeck = vm.MdDeck;
+            vm.MdRigid = "";
+            vm.PreflightNow().GetAwaiter().GetResult();
+            var rgAt = rgDeck.IndexOf("fix 0 rigid rigid/nvt/small molecule", StringComparison.Ordinal);
+            var mobAt = rgDeck.IndexOf("fix 1 mobile", StringComparison.Ordinal);
+            Check(rgDeck.Contains("group           rigid molecule 1:2") && rgAt >= 0 && mobAt > rgAt && !vm.MdDeck.Contains("rigid"),
+                  $"rigid bodies in the deck: {rgDeck.Split('\n').FirstOrDefault(l => l.StartsWith("fix 0"))} · {rgDeck.Split('\n').FirstOrDefault(l => l.StartsWith("fix 1"))}");
             // an electric field: the LAMMPS deck carries fix efield in V/Å, the GROMACS one electric-field-z in V/nm
             vm.MdFieldOn = true;
             vm.MdExD = 0; vm.MdEyD = 0; vm.MdEzD = 0.05m;
@@ -3577,6 +3620,43 @@ internal static class SelfTest
             var said = vm.ChainShapeText;
             vm.UndoEdit(false);
             Check(tg == "180 60" && said.Contains("backbone dihedrals set on 1 chain"), $"chain shape: TG = '{tg}' · {said}");
+        }
+
+        // Crystal from the open molecule: its atoms become the asymmetric unit (centred at ¼ ¼ ¼), P 1 keeps one copy
+        {
+            vm.Open(Path.Combine(dir, "ps_frag.pdb"));
+            var nfrag = vm.Document!.Summary().Atoms;
+            vm.OpenCrystal();
+            vm.SitesFromOpenMolecule();
+            double Mean(Func<CrystalSiteRow, string> f) => vm.CrystalSites.Average(r => CrystalSiteRow.Parse(f(r)));
+            var centred = Math.Abs(Mean(r => r.X) - 0.25) < 1e-3 && Math.Abs(Mean(r => r.Y) - 0.25) < 1e-3 && Math.Abs(Mean(r => r.Z) - 0.25) < 1e-3;
+            Check(vm.CrystalSites.Count == nfrag && centred && vm.CrystalCite.Contains("open molecule"),
+                  $"crystal from the molecule: {vm.CrystalSites.Count} of {nfrag} atoms as sites, centred {centred} · {vm.CrystalError}");
+        }
+
+        // Point defects: 10 % of the melt's hydrogens removed, then undone
+        {
+            vm.Open(Path.Combine(dir, "ps_melt.data"));
+            vm.DefectFrom = "H";
+            vm.DefectTo = "";
+            vm.DefectPercent = 10;
+            vm.MakeDefects();
+            var dn = vm.Document!.Summary().Atoms;
+            var said = vm.CellToolText;
+            vm.UndoEdit(false);
+            Check(dn == 1300 - 66 && said.Contains("vacancies") && vm.Document!.Summary().Atoms == 1300, $"point defects: {dn} atoms · {said}");
+        }
+
+        // Analogs: a benzene core with two R groups, 3 × 2 = 6 structures built
+        {
+                        var anBefore = vm.ProjectItems.Count;
+            vm.AnalogCore = "c1cc([*:1])ccc1[*:2]";
+            vm.AnalogGroups = "1: H, Cl, C(=O)O\n2: C, *OC";
+            var count = vm.AnalogButton;
+            vm.BuildAnalogs().GetAwaiter().GetResult();
+            Check(count == "Build 6" && vm.ProjectItems.Count == anBefore + 6 && vm.ProjectItems.Last().Name.Contains("R1=C(=O)O"),
+                  $"analogs: {count} · {vm.ProjectItems.Count - anBefore} structures · last '{vm.ProjectItems.Last().Name}' · {vm.Status}");
+            vm.CloseAllStructures();
         }
 
         // Conformers: the fragment searched (the card), then opened as frames in a copy (lowest first)
@@ -4050,7 +4130,26 @@ internal static class SelfTest
         var keptItems = vm.ProjectItems.Select(p => p.Name.Replace(" (unsaved)", "")).ToList();
         var keptJobs = vm.ProjectItems.Sum(p => p.Jobs.Count);
         var keptActive = vm.ActiveItem?.Name.Replace(" (unsaved)", "");
+        // Jobs filtered and sorted: finished ones only, then a search; the list follows the full one back
+        {
+            vm.JobState = 2;
+            var onlyDone = vm.JobsShown.Count > 0 && vm.JobsShown.All(j => j.IsDone);
+            vm.JobState = 0;
+            vm.JobQuery = "Dynamics";
+            var found = vm.JobsShown.All(j => j.Title.Contains("Dynamics", StringComparison.OrdinalIgnoreCase) || j.Kind.Contains("Dynamics") || j.Where.Contains("Dynamics") || j.Document.Contains("Dynamics"));
+            vm.JobQuery = "";
+            vm.JobSort = 1;
+            var oldest = vm.JobsShown.Count < 2 || vm.JobsShown[0].Started <= vm.JobsShown[^1].Started;
+            vm.JobSort = 0;
+            Check(onlyDone && found && oldest && vm.JobsShown.Count == vm.Jobs.Count, $"jobs filter: done only {onlyDone}, search {found}, oldest first {oldest}, all back {vm.JobsShown.Count}/{vm.Jobs.Count}");
+        }
+        // a session kept automatically says so when CAPS did not close normally; quitting writes it clean
+        vm.SaveSession(autosave: true);
+        vm.LoadLastSession();
+        var crashed = vm.LastSessionWhen;
         vm.SaveSession();
+        vm.LoadLastSession();
+        Check(crashed.Contains("did not close normally") && vm.LastSessionWhen.StartsWith("closed"), $"session autosave: '{crashed}' · then '{vm.LastSessionWhen}'");
 
         // Close goes back to Start
         vm.SetModule(1);
@@ -4170,6 +4269,9 @@ internal static class SelfTest
             Check(vm.Probes.Count == 2 && vm.ProbeCards.Count == 2 && card != null && card.Values.Length == frames && frames > 1 && card.HasSpark
                   && vm.ProbeCards[1].Values.All(v => v > 0) && vm.Analyze.Curves.Count == curves + 1 && vm.IsAnalyze,
                   $"probes: {string.Join(" · ", vm.Probes.Select(p => p.Name))} · cards {string.Join(" | ", vm.ProbeCards.Select(c => $"{c.Title} {c.ValueText} ({c.Values.Length} frames)"))}");
+            // a click on the curve's last point shows that frame (the curve runs over frames)
+            var lastFrame = vm.Analyze.FrameOfCurveX(frames - 1 + 0.2);
+            Check(lastFrame == frames - 1 && vm.Analyze.FrameOfCurveX(0.4) == 0, $"chart point → frame: x {frames - 1.0 + 0.2:0.0} → frame {lastFrame} of {frames}");
             vm.SetModule(8);
             vm.CloseAllStructures();
         }

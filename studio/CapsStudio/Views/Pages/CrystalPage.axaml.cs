@@ -27,6 +27,7 @@ public partial class CrystalPage : PageBase
     private void OnCancel(object? s, RoutedEventArgs e) => Vm.SetModule(8);
     private async void OnBuild(object? s, RoutedEventArgs e) => await Vm.BuildCrystal();
     private void OnAddSite(object? s, RoutedEventArgs e) => Vm.AddCrystalSite();
+    private void OnSitesFromMolecule(object? s, RoutedEventArgs e) => Vm.SitesFromOpenMolecule();
     private void OnRemoveSite(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is CrystalSiteRow r) Vm.RemoveCrystalSite(r); }
     private void OnApplySymmetry(object? s, RoutedEventArgs e) => Vm.CrystalApplySymmetry();
     private async void OnFindSymmetry(object? s, RoutedEventArgs e) => await Vm.CrystalFindSymmetry();
@@ -58,5 +59,6 @@ public partial class CrystalPage : PageBase
     private void OnRedefine(object? s, RoutedEventArgs e) => Vm.RedefineLattice();
     private void OnVacuumSlab(object? s, RoutedEventArgs e) => Vm.MakeVacuumSlab();
     private void OnCluster(object? s, RoutedEventArgs e) => Vm.CutCluster();
+    private void OnDefects(object? s, RoutedEventArgs e) => Vm.MakeDefects();
     private void OnNanowire(object? s, RoutedEventArgs e) => Vm.MakeNanowire();
 }

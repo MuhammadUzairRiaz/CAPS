@@ -123,6 +123,14 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
   double mtot = 0;
   for (size_t i = 0; i < n; ++i) mtot += held[i] == 2 ? 0.0 : m[i];
   size_t nheld = 0, nvs = ff.vsites.size();
+  // a moved group (a sliding wall): held as far as the integration goes, moved at move_velocity
+  std::vector<uint32_t> movers;
+  for (size_t i = 0; i < n && i < o.move_group.size(); ++i)
+    if (o.move_group[i]) {
+      movers.push_back(uint32_t(i));
+      if (!held[i]) held[i] = 1, ++nheld;
+    }
+  if (!movers.empty() && o.respa > 1) throw std::invalid_argument("a moved group runs without r-RESPA");
   // partly held atoms: single coordinates (bits 2, 4, 8 of fixed: x, y, z) with no force and no velocity
   std::vector<char> hc;
   size_t npart = 0;
@@ -232,9 +240,15 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
   if (field_on)
     rep.notes.push_back("Electric field (" + std::to_string(o.efield[0]) + ", " + std::to_string(o.efield[1]) + ", " + std::to_string(o.efield[2]) +
                         ") V/Å on the partial charges: the field does work, so the conserved quantity is not conserved");
+  Vec3 wall_f{0, 0, 0};
   auto compute = [&] {
     EnergyTerms t = ev.compute(x, cell, respa > 1 ? f_slow : f);
     auto& F = respa > 1 ? f_slow : f;
+    if (!movers.empty()) {   // the force on the moved group, before it is held
+      wall_f = {0, 0, 0};
+      for (uint32_t i : movers)
+        for (int k = 0; k < 3; ++k) wall_f[k] += F[3 * i + k];
+    }
     hold(F);
     if (!pulled.empty()) {
       pull_x = pull_com() - com0;
@@ -314,6 +328,7 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
       r.conserved = r.total + bath + (o.barostat != Barostat::None ? o.pressure * r.volume / kAtm : 0.0);
     r.pull_force = pull_f;
     r.pull_disp = pull_x;
+    for (int k = 0; k < 3; ++k) r.wall_force[k] = wall_f[k];
     return r;
   };
   auto emit = [&](int64_t step) {
@@ -353,6 +368,8 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
       else if (cell.b[0] < -0.5 * cell.a[0]) cell.b = cell.b + cell.a;
     }
     for (size_t k = 0; k < x.size(); ++k) x[k] += h * v[k];
+    for (uint32_t i : movers)   // the moved group at its own velocity (Å/ps → Å/fs)
+      for (int k = 0; k < 3; ++k) x[3 * i + k] += h * o.move_velocity[k] * 1e-3;
     if (ncons) cons.shake(x, &v, h);
   };
   // RATTLE's velocity half after the closing half kick: its impulse is the constraint force at the new positions,

@@ -175,6 +175,12 @@
                   <NumericUpDown Grid.Column="2" Value="{Binding HoldPick}" Minimum="1" Increment="1" FormatString="0" ShowButtonSpinner="False" />
                 </Grid>
                 <StackPanel Spacing="4" IsEnabled="{Binding !MdRunning}">
+                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                    <TextBlock Text="Rigid in LAMMPS" Classes="label" VerticalAlignment="Center" />
+                    <TextBox Grid.Column="1" Text="{Binding MdRigid}" Watermark="molecules, e.g. 1-4" FontFamily="{DynamicResource Mono}"
+                             ToolTip.Tip="These molecules (filler particles) move as rigid bodies in the LAMMPS files: fix rigid/nvt/small, pairs inside a body skipped. CAPS's own run has no rigid bodies" />
+                  </Grid>
+                  <TextBlock Text="{Binding MdRigidNote}" Classes="dim" TextWrapping="Wrap" IsVisible="{Binding MdRigidNote, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                   <CheckBox Classes="toggle" Content="Electric field on the charges" IsChecked="{Binding MdFieldOn}"
                             ToolTip.Tip="A uniform field E (V/Å): each atom feels qE (LAMMPS fix efield). The field does work, so the conserved energy drifts; with a thermostat the run reaches a field-driven steady state" />
                   <Grid ColumnDefinitions="Auto,*,Auto,*,Auto,*" ColumnSpacing="6" IsVisible="{Binding MdFieldOn}">

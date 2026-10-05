@@ -221,6 +221,7 @@ public sealed partial class MainViewModel
                 if (int.TryParse(j.Id.Split('-').LastOrDefault(), out var k)) _jobCounters[j.Kind] = Math.Max(_jobCounters.GetValueOrDefault(j.Kind), k);
         }
         catch { /* a broken history is left behind */ }
+        RefreshJobsShown();
         foreach (var j in Jobs.Where(j => j.IsRemote && j.Status == "done")) RemoteOutputs(j);   // results brought back, files left on the host
         if (Jobs.Any(j => j.IsRemote && j.IsRunning)) Avalonia.Threading.Dispatcher.UIThread.Post(StartRemotePoll);   // remote jobs sent before
         PropertyChanged += OnRunProperty;

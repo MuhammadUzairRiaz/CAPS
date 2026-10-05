@@ -486,6 +486,7 @@ int32_t caps_analyze(caps_doc* d, const char* props, const caps_analyze_opts* o,
      tensile     uniaxial deformation MD of a copy of the current frame (axis, rate 1/ps, max_strain, temperature,
                  lateral_fixed: 0 lateral faces at `pressure`, 1 fixed)
      tg          stepwise cooling of a copy of the current frame (t_start → t_end by t_step K, ps_per_step each)
+     friction    v62: one wall slid over a film at a fixed gap: friction force, shear stress, μ
      creep       v62: constant-stress creep of a copy of the current frame: ε(t), J(t) = ε/σ, the creep rate
      conformers  v62: conformer search of the current frame (or the selection) in vacuum, minima clustered by heavy-atom RMSD
      nemd        v62: shear viscosity η(γ̇) by SLLOD shear of a copy of the current frame at several rates (shear_lo …)
@@ -523,6 +524,10 @@ typedef struct {
      creep_ps (0: 200) after creep_eq_ps NPT (0: 20; < 0 none), the lateral axes at `pressure` (0: 1 atm) */
   double creep_stress, creep_t, creep_ps, creep_eq_ps;
   int32_t creep_axis;
+  /* v62 friction: molecule fr_moving slid along x at fr_velocity Å/ps, fr_fixed held (0 none), fr_ps (0: 50) after
+     fr_eq_ps (0: 10; < 0 none), at fr_t K (0: temperature) */
+  int32_t fr_moving, fr_fixed;
+  double fr_velocity, fr_ps, fr_eq_ps, fr_t;
 } caps_mech_opts;
 int32_t caps_analyze_ex(caps_doc* d, const char* props, const caps_analyze_opts* o, const caps_mech_opts* m, caps_analyze_progress_fn progress,
                         void* user);
@@ -996,6 +1001,9 @@ caps_doc* caps_grow_chains_live(const char* spec_json, const caps_grow_opts* o, 
    caps_grow_chains, grow options (seed, contact_scale; chains and density come from film). The slab is molecule 1. */
 int32_t caps_surface_terminations(const char* cif_path, int32_t h, int32_t k, int32_t l, char* json, int32_t cap);
 caps_doc* caps_surface_build(const char* cif_path, const char* options_json, char* report, int32_t cap);
+/* v62: options "brush": {density (chains/nm²) | chains, site (element, default "O": a silanol's O, its H replaced),
+   min_spacing Å} grafts the chains by one end to surface sites instead of growing a free film; film.thickness is the
+   height they may use, film.vacuum the vacuum above. */
 caps_doc* caps_interface_build(const char* options_json, const char* spec_json, const caps_grow_opts* o, caps_progress_fn progress, void* user, char* report,
                                int32_t cap);
 /* Nanostructures (v17). Options JSON {kind: "tube" | "sheet" | "particle"; tube: n, m, length, periodic; sheet: lx, ly,
@@ -1064,6 +1072,16 @@ int32_t caps_set_fixed_atoms(caps_doc* d, const int32_t* atoms, int32_t n);
 /* v62: the coordinates of the fixed atoms that are held — bits x 1, y 2, z 4 (7 every one, the default; 4: slide in the
    xy plane, not along z). The held molecule always holds every coordinate. */
 int32_t caps_set_fixed_axes(caps_doc* d, int32_t axes);
+/* v62: molecules ("1-3,7", "" none) that move as rigid bodies in the LAMMPS inputs (group rigid, intra-body pairs
+   excluded, fix rigid/nvt/small molecule; an NPT barostat dilates only the other atoms). CAPS's own runs have no rigid
+   bodies. Returns how many molecules. */
+int32_t caps_set_rigid_molecules(caps_doc* d, const char* ranges);
+int32_t caps_rigid_molecules(caps_doc* d, char* out, int32_t cap);
+/* v62: every frame's timestep (as the file gives it; the frame index when it gives none); returns the frame count. */
+int32_t caps_frame_timesteps(caps_doc* d, int64_t* out, int32_t cap);
+/* v62 analogs from R groups: JSON {core (SMILES with [*:1] … [*:9]), groups: [{r, subs: [SMILES, "H", "*OC" …]}], max}
+   → {analogs: [{smiles, name}]} (every combination, up to max). */
+int32_t caps_enumerate_analogs(const char* json, char* out, int32_t cap);
 int32_t caps_fixed_axes(const caps_doc* d);
 int32_t caps_fixed_atoms(const caps_doc* d, int32_t* atoms, int32_t cap);
 

@@ -360,6 +360,9 @@ public struct CapsMechOpts
     // ABI 62: creep
     public double CreepStress, CreepT, CreepPs, CreepEqPs;   // MPa (tensile +), K, ps, ps
     public int CreepAxis;
+    // ABI 62: sliding friction
+    public int FrMoving, FrFixed;
+    public double FrVelocity, FrPs, FrEqPs, FrT;   // Å/ps, ps, ps, K
 }
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -537,6 +540,10 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_set_restraints")] public static extern int SetRestraints(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json);
     [DllImport(Lib, EntryPoint = "caps_held_molecule")] public static extern long HeldMolecule(IntPtr doc);
     [DllImport(Lib, EntryPoint = "caps_set_fixed_atoms")] public static extern int SetFixedAtoms(IntPtr doc, int[]? atoms, int n);
+    [DllImport(Lib, EntryPoint = "caps_set_rigid_molecules")] public static extern int SetRigidMolecules(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string ranges);
+    [DllImport(Lib, EntryPoint = "caps_enumerate_analogs")] public static extern int EnumerateAnalogs([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? text, int cap);
+    [DllImport(Lib, EntryPoint = "caps_frame_timesteps")] public static extern int FrameTimesteps(IntPtr doc, long[]? steps, int cap);
+    [DllImport(Lib, EntryPoint = "caps_rigid_molecules")] public static extern int RigidMolecules(IntPtr doc, byte[]? text, int cap);
     [DllImport(Lib, EntryPoint = "caps_set_fixed_axes")] public static extern int SetFixedAxes(IntPtr doc, int axes);
     [DllImport(Lib, EntryPoint = "caps_fixed_axes")] public static extern int FixedAxes(IntPtr doc);
     [DllImport(Lib, EntryPoint = "caps_fixed_atoms")] public static extern int FixedAtoms(IntPtr doc, int[]? atoms, int cap);
@@ -936,6 +943,7 @@ public sealed class CapsDocument : IDisposable
         return System.Text.Encoding.UTF8.GetString(buf, 0, Math.Max(0, Math.Min(n, buf.Length) - 1));
     }
     /// <summary>Polymer statistics (caps_chain_lengths, caps_copolymer, caps_stereo, caps_blend_phase, caps_solvent_chi).</summary>
+    public static string EnumerateAnalogs(string json) { var t = JsonCallOnce((b, c) => Native.EnumerateAnalogs(json, b, c)); if (t.Length == 0) throw new InvalidOperationException(Native.LastError()); return t; }
     public static string ChainLengths(string json) => JsonCallOnce((b, c) => Native.ChainLengths(json, b, c));
     public static string Copolymer(string json) => JsonCallOnce((b, c) => Native.Copolymer(json, b, c));
     public static string Stereo(string json) => JsonCallOnce((b, c) => Native.Stereo(json, b, c));
@@ -1193,6 +1201,9 @@ public sealed class CapsDocument : IDisposable
     public long HeldMolecule() { using (Hold()) return Native.HeldMolecule(H); }
     /// <summary>Atoms held in place besides the held molecule (frame indices); an empty list clears them.</summary>
     public int SetFixedAtoms(IReadOnlyCollection<int> atoms) { using (Hold()) { var a = atoms.ToArray(); return Native.SetFixedAtoms(H, a, a.Length); } }
+    public int SetRigidMolecules(string ranges) { using (Hold()) { var n = Native.SetRigidMolecules(H, ranges); if (n < 0) throw new InvalidOperationException(Native.LastError()); return n; } }
+    public long[] FrameTimesteps() { using (Hold()) { var n = Native.FrameTimesteps(H, null, 0); var a = new long[Math.Max(0, n)]; if (n > 0) Native.FrameTimesteps(H, a, n); return a; } }
+    public string RigidMolecules() { using (Hold()) { Alive(); return JsonCallOnce((b, c) => Native.RigidMolecules(H, b, c)); } }
     public int SetFixedAxes(int axes) { using (Hold()) return Native.SetFixedAxes(H, axes); }
     public int FixedAxes() { using (Hold()) return Native.FixedAxes(H); }
     public int[] FixedAtoms() { using (Hold()) { var n = Native.FixedAtoms(H, null, 0); var a = new int[Math.Max(0, n)]; if (n > 0) Native.FixedAtoms(H, a, n); return a; } }

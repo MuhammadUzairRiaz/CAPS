@@ -152,6 +152,28 @@ struct InterfaceOptions {
 };
 System build_interface(const System& slab, const ChainSpec& spec, const InterfaceOptions& o, GrowReport* report = nullptr);
 
+// A polymer brush: chains grafted by one end to sites on the top face of a slab (a fibre or filler surface, rectangular
+// surface cell), at a grafting density σ (chains per nm²) or a count. A site is an atom of `site` element within 2.5 Å
+// of the top with a hydrogen pointing up (a silanol's O, a hydroxyl's O, a C–H): the hydrogen goes and the chain's head
+// bonds in its place, leaving along it. Sites are drawn at random at least min_spacing apart; the chains grow upward
+// into the film above (they may also spread sideways), then vacuum. The slab is molecule 1.
+struct BrushOptions {
+  double density = 0.3;      // σ, chains per nm²
+  int chains = 0;            // > 0: exactly this many (else from σ and the surface area)
+  std::string site = "O";    // element of the graft sites
+  double min_spacing = 4.0;  // Å between sites (in the surface plane)
+  double film = 40.0;        // Å above the surface the chains may use
+  double vacuum = 20.0;      // Å above the film
+  GrowOptions grow;          // seed, contact scale, method …
+};
+struct BrushReport {
+  int sites = 0, grafted = 0;   // sites found, chains grafted
+  double sigma = 0;             // achieved grafting density, chains/nm²
+  double area = 0;              // surface area, nm²
+  std::vector<std::string> notes;
+};
+System build_brush(const System& slab, const ChainSpec& spec, const BrushOptions& o, BrushReport* report = nullptr);
+
 // Polymer blends (tyre compounds: NR/BR, SBR/BR …): components grown one after another, each around the chains already
 // placed, in one periodic cell. Chain counts come from the weight fractions and each component's chain mass, scaled
 // so the first component has `chains` chains (or give a component's chains directly).

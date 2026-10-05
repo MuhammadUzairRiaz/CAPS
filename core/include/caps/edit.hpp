@@ -36,6 +36,19 @@ void add_bond(System& s, uint32_t i, uint32_t j, int order = 1);
 bool remove_bond(System& s, uint32_t i, uint32_t j);
 // Removes the flagged atoms and their bonds; the rest keep their order.
 void delete_atoms(System& s, const std::vector<char>& remove);
+
+// Point defects (nanoclusters, crystals, fillers): atoms of element `from` (among `region` when given) picked at random —
+// count of them, else a fraction — either removed (vacancies, to == 0) or turned into element `to` (substitutional
+// doping), at least min_spacing Å apart (minimum image). Returns how many; notes says what changed and the charge left.
+struct DefectOptions {
+  int from = 0, to = 0;           // to 0: vacancies
+  double fraction = 0.05;
+  int count = 0;                  // > 0: exactly this many
+  double min_spacing = 0.0;       // Å between the picked sites
+  uint64_t seed = 1;
+  std::vector<char> region;       // per atom: may be picked (empty: every atom)
+};
+int point_defects(System& s, const DefectOptions& o, std::vector<std::string>* notes = nullptr);
 // Adds the hydrogens the flagged atoms (empty: all) lack; returns how many.
 int add_hydrogens(System& s, const std::vector<char>& atoms = {});
 // H autopilot (design/boards/AtomBubble): on the marked heavy atoms, hydrogens beyond the valence removed (formal

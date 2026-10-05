@@ -435,3 +435,34 @@ TEST(Relax, PushoffByMdRampsTheCap) {
   EXPECT_TRUE(s.velocities.empty());
   EXPECT_TRUE(std::any_of(r.notes.begin(), r.notes.end(), [](const std::string& n) { return n.rfind("push-off MD", 0) == 0; }));
 }
+
+// Rigid bodies in the LAMMPS input: the group and the intra-body exclusion in the setup, the rigid fix before the
+// barostat (LAMMPS refuses it after a box-changing fix), the barostat on the other atoms dilating only them, and
+// velocities for everything that moves.
+TEST(LammpsData, RigidBodiesBeforeTheBarostat) {
+  System s = small_cell(3, 3, 0.3);
+  ForceField ff = assign_gaff(s);
+  const auto in = (std::filesystem::temp_directory_path() / "caps_rigid.in").string();
+  LammpsRun run;
+  run.kind = LammpsRun::Kind::NPT;
+  LammpsStyle st;
+  st.rigid_mols = {1, 2};
+  write_lammps_input(s, ff, EnergyOptions{}, "caps_rigid.data", in, 0, true, run, st);
+  std::ifstream g(in);
+  const std::string sc((std::istreambuf_iterator<char>(g)), {});
+  EXPECT_NE(sc.find("group           rigid molecule 1:2"), std::string::npos);
+  EXPECT_NE(sc.find("neigh_modify    exclude molecule/intra rigid"), std::string::npos);
+  EXPECT_NE(sc.find("group           mobile subtract all rigid"), std::string::npos);
+  EXPECT_NE(sc.find("velocity        all create"), std::string::npos);
+  const auto rig = sc.find("rigid/nvt/small molecule"), npt = sc.find("fix             integrate mobile npt");
+  ASSERT_NE(rig, std::string::npos);
+  ASSERT_NE(npt, std::string::npos);
+  EXPECT_LT(rig, npt);
+  EXPECT_NE(sc.find("dilate mobile"), std::string::npos);
+  // a held molecule is never a rigid body, and gets no velocity
+  write_lammps_input(s, ff, EnergyOptions{}, "caps_rigid.data", in, 1, true, run, st);
+  std::ifstream h(in);
+  const std::string sh((std::istreambuf_iterator<char>(h)), {});
+  EXPECT_NE(sh.find("group           rigid molecule 2"), std::string::npos);
+  EXPECT_NE(sh.find("velocity        moving create"), std::string::npos);
+}

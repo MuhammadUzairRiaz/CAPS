@@ -264,7 +264,7 @@ public sealed partial class MainViewModel
     /// <summary>Which settings belong to which page: its properties by name (Crystal…, Surf…, Rx…).</summary>
     private static readonly Dictionary<string, string[]> PagePrefixes = new()
     {
-        ["crystal"] = ["Crystal"], ["surface"] = ["Surf", "Film"], ["bio"] = ["Bio"], ["solvation"] = ["Solv"], ["cg"] = ["Cg", "Mp", "Mt"],
+        ["crystal"] = ["Crystal"], ["surface"] = ["Surf", "Film", "Brush"], ["bio"] = ["Bio"], ["solvation"] = ["Solv"], ["cg"] = ["Cg", "Mp", "Mt"],
         ["nano"] = ["Nano", "Tube", "Sheet", "Particle", "Fibre", "Matrix", "Fn", "Silane", "Thiolate"], ["react"] = ["Rx"],
     };
     // panels opened, runs going, searches typed: not settings
