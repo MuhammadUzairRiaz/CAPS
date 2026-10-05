@@ -35,6 +35,7 @@ public partial class TorsionPage : PageBase
 
     private void OnBack(object? s, RoutedEventArgs e) => Vm.SetModule(8);
     private async void OnRun(object? s, RoutedEventArgs e) => await Vm.RunTorsionScan();
+    private void OnChainShape(object? s, RoutedEventArgs e) => Vm.SetChainShape();
     private void OnRow(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is TorsionRow r) Vm.ShowTorsionRow(r); }
 
     private async void OnCsv(object? s, RoutedEventArgs e)

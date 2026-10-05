@@ -87,6 +87,8 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
   if (o.respa > 1 && o.constraints != ConstraintMode::None) throw std::invalid_argument("r-RESPA and bond constraints are alternatives: choose one");
   const bool nhc = o.thermostat == Thermostat::NoseHoover, mtk = o.barostat == Barostat::MTK;
   if ((nhc || mtk) && o.respa > 1) throw std::invalid_argument("r-RESPA runs with the Bussi thermostat or none");
+  if (o.full_shape && !(o.anisotropic && o.barostat == Barostat::Berendsen))
+    throw std::invalid_argument("the full-shape cell (tilts too) runs with the per-axis Berendsen barostat");
   if (o.shear_rate != 0) {
     if (!s.cell.valid()) throw std::invalid_argument("shear needs a periodic cell");
     if (o.barostat != Barostat::None || o.deform_axis >= 0) throw std::invalid_argument("shear (SLLOD) runs at constant volume: no barostat, no deformation");
@@ -121,8 +123,16 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
   double mtot = 0;
   for (size_t i = 0; i < n; ++i) mtot += held[i] == 2 ? 0.0 : m[i];
   size_t nheld = 0, nvs = ff.vsites.size();
-  for (size_t i = 0; i < n && i < o.fixed.size(); ++i)
-    if (o.fixed[i] && !held[i]) held[i] = 1, ++nheld;
+  // partly held atoms: single coordinates (bits 2, 4, 8 of fixed: x, y, z) with no force and no velocity
+  std::vector<char> hc;
+  size_t npart = 0;
+  for (size_t i = 0; i < n && i < o.fixed.size(); ++i) {
+    if (!o.fixed[i] || held[i]) continue;
+    if (holds_all(o.fixed[i])) { held[i] = 1, ++nheld; continue; }
+    if (hc.empty()) hc.assign(3 * n, 0);
+    for (int k = 0; k < 3; ++k)
+      if (holds_axis(o.fixed[i], k)) hc[3 * i + k] = 1, ++npart;
+  }
   nheld += nvs;
   if (nheld + 1 >= n) throw std::invalid_argument("dynamics needs at least two atoms that move");
   // bond constraints (SHAKE/RATTLE), one degree of freedom each
@@ -133,9 +143,15 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
   const size_t ncons = cset.c.size();
   ConstraintSolver cons(std::move(cset), m, s.cell, 1e-8, 1000, o.constraint_algorithm);
   // with held atoms momentum is not conserved: every free coordinate counts
-  const double ndof = (nheld ? 3.0 * double(n - nheld) : 3.0 * n - 3.0) - double(ncons);
+  const double ndof = (nheld || npart ? 3.0 * double(n - nheld) - double(npart) : 3.0 * n - 3.0) - double(ncons);
   if (ndof < 1) throw std::invalid_argument("the constraints leave no degree of freedom");
   if (nheld > nvs) rep.notes.push_back(std::to_string(nheld - nvs) + " atoms held in place");
+  if (npart) rep.notes.push_back(std::to_string(npart) + " single coordinates held (atoms held along some axes only)");
+  auto zero_partial = [&](std::vector<double>& w) {
+    if (npart)
+      for (size_t k = 0; k < w.size() && k < hc.size(); ++k)
+        if (hc[k]) w[k] = 0;
+  };
   if (nvs) rep.notes.push_back(std::to_string(nvs) + " virtual sites placed from their atoms each step");
 
   Cell cell = s.cell;
@@ -183,6 +199,7 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
   if (nheld)
     for (size_t i = 0; i < n; ++i)
       if (held[i]) v[3 * i] = v[3 * i + 1] = v[3 * i + 2] = 0;
+  zero_partial(v);
   if (ncons) cons.rattle(x, v, cell);
   // steered pulling: the group, its mass, and where its centre starts along the pull direction
   std::vector<uint32_t> pulled;
@@ -203,6 +220,7 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
     if (nheld)
       for (size_t i = 0; i < n; ++i)
         if (held[i]) F[3 * i] = F[3 * i + 1] = F[3 * i + 2] = 0;
+    zero_partial(F);
   };
   EnergyTerms et_fast;
   auto compute_fast = [&] {   // r-RESPA inner step: bonded forces only
@@ -320,6 +338,7 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
       v[3 * i + 2] += a * F[3 * i + 2];
       if (gdot != 0) v[3 * i] -= gdot * h * v[3 * i + 1];   // SLLOD: −p·∇u
     }
+    zero_partial(v);
   };
   auto kick = [&](double h) { kick_with(f, h); };
   auto drift = [&](double h) {
@@ -485,6 +504,7 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
       const double k0 = kinetic_energy(v, m);
       for (size_t i = 0; i < n; ++i)
         for (int k = 0; k < 3; ++k) v[3 * i + k] = held[i] ? 0.0 : c1 * v[3 * i + k] + c2 * sdv[i] * gauss(rng);
+      zero_partial(v);
       if (ncons) cons.rattle(x, v, cell);   // the noise has no part along a constraint
       bath -= kinetic_energy(v, m) - k0;
       drift(0.5 * dt);
@@ -539,8 +559,27 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
       const ThermoRow r = row(step);
       for (int k = 0; k < 3; ++k) {
         if (!o.couple_axis[k]) continue;
-        const double deps = std::clamp(-o.compressibility / o.tau_p * (o.pressure - r.p[k]) * hp / 3, -0.0033, 0.0033);
+        const double target = std::isnan(o.axis_pressure[k]) ? o.pressure : o.axis_pressure[k];
+        const double deps = std::clamp(-o.compressibility / o.tau_p * (target - r.p[k]) * hp / 3, -0.0033, 0.0033);
         scale_axis(k, std::exp(deps));
+      }
+      if (o.full_shape) {   // simple shears toward zero shear stress: x by y (xy), x by z (xz), y by z (yz)
+        static const int moved[3] = {0, 0, 1}, along[3] = {1, 2, 2}, comp[3] = {3, 4, 5};
+        for (int q = 0; q < 3; ++q) {
+          const double g = std::clamp(o.compressibility / o.tau_p * r.p[comp[q]] * hp / 3, -0.0033, 0.0033);
+          const int a = moved[q], b = along[q];
+          for (size_t i = 0; i < n; ++i) x[3 * i + a] += g * (x[3 * i + b] - cell.origin[b]);
+          cell.a[a] += g * cell.a[b];
+          cell.b[a] += g * cell.b[b];
+          cell.c[a] += g * cell.c[b];
+        }
+        // the tilts back in range (the same lattice): b_x within ±a_x/2, c_x within ±a_x/2, c_y within ±b_y/2
+        if (cell.c[1] > 0.5 * cell.b[1]) cell.c = cell.c - cell.b;
+        else if (cell.c[1] < -0.5 * cell.b[1]) cell.c = cell.c + cell.b;
+        if (cell.b[0] > 0.5 * cell.a[0]) cell.b = cell.b - cell.a;
+        else if (cell.b[0] < -0.5 * cell.a[0]) cell.b = cell.b + cell.a;
+        if (cell.c[0] > 0.5 * cell.a[0]) cell.c = cell.c - cell.a;
+        else if (cell.c[0] < -0.5 * cell.a[0]) cell.c = cell.c + cell.a;
       }
       reproject();
       et = compute();

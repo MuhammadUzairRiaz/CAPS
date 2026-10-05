@@ -554,4 +554,14 @@ _nm = _et.normal_modes()
 _an = _et.animate_mode(21, amplitude=0.2, frames=12)
 check(_nm["extra"]["modes"] == 21 and _nm["extra"]["imaginary modes"] == 0 and _an["wavenumber"] > 3000 and _et.frames == 12,
       f"normal modes: {_nm['extra']['modes']:.0f} modes, highest {_an['wavenumber']:.0f} cm⁻¹, ZPE {_nm['value']:.1f} kcal/mol, {_et.frames} frames")
+# conformers of butane: anti lowest, the frames are the conformers
+_bu = caps.build.smiles("CCCC")
+_cf = _bu.conformers(trials=12)
+check(len(_cf["conformers"]) >= 2 and _cf["rotors"] == 1 and _bu.frames == len(_cf["conformers"]) and _cf["conformers"][1]["relative"] > 0.2,
+      f"conformers: {len(_cf['conformers'])} of butane, gauche +{_cf['conformers'][1]['relative']:.2f} kcal/mol, {_bu.frames} frames")
+# a cluster of whole chains from the melt (the periodicity removed)
+_cl = caps.open(os.path.join(samples, "ps_melt.data"))
+_cl.edit(op="cluster", radius=12)
+_cs = _cl.summary()
+check(_cs["atoms"] % 130 == 0 and 0 < _cs["atoms"] < 1300, f"cluster: {_cs['atoms']} atoms of whole chains")
 print("all python checks passed")

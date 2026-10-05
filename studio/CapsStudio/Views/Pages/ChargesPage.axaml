@@ -90,6 +90,23 @@
           </Border>
           <Border Classes="pcard">
             <StackPanel Spacing="6">
+              <TextBlock Text="Adjust" FontSize="13.5" FontWeight="SemiBold" />
+              <CheckBox Content="Equivalent atoms share one charge" IsChecked="{Binding ChargeAverage}"
+                        ToolTip.Tip="Atoms alike in the bond graph (a methyl's three hydrogens, a carboxylate's oxygens) take their mean" />
+              <Grid ColumnDefinitions="Auto,90,*" ColumnSpacing="8">
+                <TextBlock Text="Scale ×" Classes="dim" VerticalAlignment="Center" />
+                <NumericUpDown Grid.Column="1" Value="{Binding ChargeScaleD}" Minimum="0.1" Maximum="3" Increment="0.05" FormatString="0.###" />
+                <TextBlock Grid.Column="2" Text="0.75–0.8: the electronic continuum correction of ions" Classes="dim" VerticalAlignment="Center" TextWrapping="Wrap" />
+              </Grid>
+              <Grid ColumnDefinitions="*,90" ColumnSpacing="8">
+                <ComboBox ItemsSource="{x:Static vm:MainViewModel.ChargeTotals}" SelectedIndex="{Binding ChargeTotal}" HorizontalAlignment="Stretch" />
+                <NumericUpDown Grid.Column="1" Value="{Binding ChargeTotalTargetD}" Increment="1" FormatString="0.###" IsEnabled="{Binding ChargeTotalOn}"
+                               ToolTip.Tip="The total the charges are brought to (e); starts at the formal charge × the scale" />
+              </Grid>
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="6">
               <TextBlock Text="By group" FontSize="13.5" FontWeight="SemiBold" />
               <Grid ColumnDefinitions="*,50,90,140">
                 <TextBlock Text="GROUP" Classes="h3" /><TextBlock Grid.Column="1" Text="N" Classes="h3" HorizontalAlignment="Right" />

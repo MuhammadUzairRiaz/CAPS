@@ -5,6 +5,7 @@
 #include <map>
 #include <stdexcept>
 
+#include "caps/analysis.hpp"
 #include "caps/crystal.hpp"
 #include "caps/spacegroup.hpp"
 
@@ -422,6 +423,61 @@ System nanowire(const System& bulk, const WireOptions& o, WireResult* result) {
   std::snprintf(b, sizeof b, "%s nanowire along [%d %d %d] (period %.3f Å × %d), radius %.1f Å, %.1f Å vacuum around", o.shape.c_str(), o.uvw[0], o.uvw[1], o.uvw[2],
                 period, o.repeats, R, o.vacuum);
   out.notes.push_back(b);
+  return out;
+}
+
+
+System cut_cluster(const System& s0, const Vec3& centre, double radius, bool any_atom, ClusterResult* result) {
+  if (!s0.cell.valid()) throw std::invalid_argument("the structure has no periodic cell");
+  System s = s0;
+  if (!s.unwrapped) make_molecules_whole(s);
+  int nm = 0;
+  const auto mol = s.molecules(&nm);
+  std::vector<std::vector<uint32_t>> members(size_t(std::max(nm, 0)));
+  for (uint32_t i = 0; i < mol.size(); ++i) members[size_t(mol[i])].push_back(i);
+  const double big = std::cbrt(s.cell.volume());
+  std::vector<char> keep(s.atoms.size(), 0);
+  ClusterResult R;
+  for (const auto& m : members) {
+    Vec3 c{0, 0, 0};
+    for (uint32_t i : m) c = c + s.atoms[i].pos;
+    c = c * (1.0 / double(m.size()));
+    double ext = 0;   // the molecule's own size: one larger than the cell is a network
+    for (uint32_t i : m) ext = std::max(ext, norm(s.atoms[i].pos - c));
+    if (ext > big) {   // a network: each atom to its own nearest image
+      for (uint32_t i : m) {
+        const Vec3 d = s.cell.minimum_image(s.atoms[i].pos - centre);
+        s.atoms[i].pos = centre + d;
+        if (radius <= 0 || norm(d) <= radius) keep[i] = 1;
+      }
+      continue;
+    }
+    const Vec3 shift = s.cell.minimum_image(c - centre) - (c - centre);
+    bool in = radius <= 0 || norm(c + shift - centre) <= radius;
+    for (uint32_t i : m) {
+      s.atoms[i].pos = s.atoms[i].pos + shift;
+      if (any_atom && norm(s.atoms[i].pos - centre) <= radius) in = true;
+    }
+    if (in) {
+      for (uint32_t i : m) keep[i] = 1;
+      ++R.molecules;
+    } else {
+      ++R.dropped;
+    }
+  }
+  // the kept atoms, the bonds among them
+  std::vector<int64_t> newi(s.atoms.size(), -1);
+  System out = s;
+  out.atoms.clear(), out.bonds.clear(), out.velocities.clear();
+  for (size_t i = 0; i < s.atoms.size(); ++i)
+    if (keep[i]) newi[i] = int64_t(out.atoms.size()), out.atoms.push_back(s.atoms[i]);
+  for (const auto& b : s.bonds)
+    if (newi[b.i] >= 0 && newi[b.j] >= 0) out.bonds.push_back({uint32_t(newi[b.i]), uint32_t(newi[b.j]), b.order});
+  out.cell = Cell{};
+  out.unwrapped = true;
+  for (const auto& a : out.atoms) R.radius = std::max(R.radius, norm(a.pos - centre));
+  R.atoms = out.atoms.size();
+  if (result) *result = R;
   return out;
 }
 

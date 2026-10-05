@@ -45,6 +45,7 @@ public sealed class ResultCard
     public RefValue? Ref { get; set; }
     // normal modes: the card plays one (1 = the lowest) in a copy of the structure
     public bool IsModes => Id == "modes" && HasValue;
+    public bool IsConformers => Id == "conformers" && HasValue;
     public decimal PickMode { get; set; } = 1;
     public decimal ModeCount => (decimal)Math.Max(1, Extra.FirstOrDefault(e => e.Key == "modes").Value);
 
@@ -126,9 +127,9 @@ public sealed class AnalyzeViewModel : ObservableObject
             new("Structure", [Chip("density", "Density", on: true), Chip("rdf", "RDF", on: true), Chip("sq", "S(q)"), Chip("xray", "X-ray"), Chip("electron", "Electron"), Chip("neutron", "Neutron")]),
             new("Chains", [Chip("rg", "Rg", on: true), Chip("ree", "Ree"), Chip("cn", "Cn, C∞"), Chip("persistence", "Persistence"), Chip("orientation", "Orientation"),
                 Chip("entanglements", "Entanglements"), Chip("conformation", "Torsions"), Chip("p2r", "P₂(r)")]),
-            new("Thermo", [Chip("ced", "CED"), Chip("delta", "δ"), Chip("dielectric", "ε dielectric"), Chip("fluct", "Cp·κT·α"), Chip("modes", "Normal modes"), TgChip]),
-            new("Mechanics", [StrainChip, FluctChip, TensileChip]),
-            new("Dynamics", [Chip("msd", "MSD"), Chip("diffusion", "D"), Chip("relaxation", "Relaxation"), Chip("vacf", "VACF · VDOS"), Chip("vanhove", "van Hove · α₂"), ViscChip]),
+            new("Thermo", [Chip("ced", "CED"), Chip("delta", "δ"), Chip("dielectric", "ε dielectric"), Chip("fluct", "Cp·κT·α"), Chip("modes", "Normal modes"), ConfChip, TgChip]),
+            new("Mechanics", [StrainChip, FluctChip, TensileChip, CreepChip]),
+            new("Dynamics", [Chip("msd", "MSD"), Chip("diffusion", "D"), Chip("relaxation", "Relaxation"), Chip("vacf", "VACF · VDOS"), Chip("vanhove", "van Hove · α₂"), ViscChip, NemdChip]),
             new("Free volume", [Chip("ffv", "Probe insertion"), Chip("psd", "Pore size")]),
             new("Interface", [Chip("zprofile", "z profile"), Chip("adhesion", "Adhesion"), Chip("interaction", "Filler–matrix"), PullShearChip, PullNormalChip]),
             new("Rubber network", [Chip("crosslinks", "Crosslink density"), Chip("hbonds", "H-bonds")]),
@@ -138,6 +139,7 @@ public sealed class AnalyzeViewModel : ObservableObject
         FluctChip.PropertyChanged += (_, _) => Raise(nameof(NvtRunOn));
         ViscChip.PropertyChanged += (_, _) => Raise(nameof(NvtRunOn));
         PullNormalChip.PropertyChanged += (_, _) => Raise(nameof(PullOn));
+        foreach (var c in new[] { FluctChip, ViscChip, TensileChip, PullShearChip, PullNormalChip }) c.PropertyChanged += (_, _) => Raise(nameof(ShearOwnT));
     }
 
     // protocols (their settings show when switched on)
@@ -147,6 +149,57 @@ public sealed class AnalyzeViewModel : ObservableObject
     public event Action<double>? ViscosityComputed;
     public CalcChip ViscChip { get; } = Chip("viscosity", "Viscosity", tip: "Shear viscosity by Green–Kubo: an NVT run of the current frame (Nosé–Hoover), the pressure tensor's autocorrelation integrated (Daivis & Evans); melts need long runs");
     public bool NvtRunOn => FluctChip.IsOn || ViscChip.IsOn;
+    public CalcChip ConfChip { get; } = Chip("conformers", "Conformers", tip: "Conformer search of the frame shown or the selected molecule, in vacuum: minimised starts clustered by heavy-atom RMSD, energies and Boltzmann populations; open them as frames from the card");
+    private int _confTrials = 50, _confMethod;
+    private double _confWindow = 10, _confRmsd = 0.5;
+    private bool _confSel = true;
+    public decimal ConfTrialsD { get => _confTrials; set => Set(ref _confTrials, (int)Math.Clamp(value, 1, 5000), nameof(ConfTrialsD)); }
+    public int ConfMethod { get => _confMethod; set => Set(ref _confMethod, Math.Clamp(value, 0, 1)); }
+    public static readonly string[] ConfMethods = ["Random staggered torsions", "Anneal: 1000 K snapshots quenched"];
+    public decimal ConfWindowD { get => (decimal)_confWindow; set => Set(ref _confWindow, Math.Max(0.1, (double)value), nameof(ConfWindowD)); }
+    public decimal ConfRmsdD { get => (decimal)_confRmsd; set => Set(ref _confRmsd, Math.Max(0.05, (double)value), nameof(ConfRmsdD)); }
+    public bool ConfSelection { get => _confSel; set => Set(ref _confSel, value); }
+    /// <summary>The search as the frames call takes it (the same settings and seed as the protocol: the same conformers).</summary>
+    public string ConfJson(double temperature) => new System.Text.Json.Nodes.JsonObject
+    {
+        ["trials"] = _confTrials, ["method"] = _confMethod == 1 ? "anneal" : "torsions", ["selection"] = _confSel, ["window"] = _confWindow,
+        ["rmsd"] = _confRmsd, ["temperature"] = temperature, ["seed"] = (long)MechSeed,
+    }.ToJsonString();
+    public CalcChip CreepChip { get; } = Chip("creep", "Creep", tip: "Constant true stress along one axis on a copy of the current frame: strain and creep compliance against time, the creep rate and the lateral contraction");
+    private double _crStress = 50, _crT = 300, _crPs = 200, _crEq = 20;
+    private int _crAxis = 2;
+    public decimal CreepStressD { get => (decimal)_crStress; set { Set(ref _crStress, (double)value, nameof(CreepStressD)); Raise(nameof(CreepText)); } }
+    public decimal CreepTD { get => (decimal)_crT; set => Set(ref _crT, Math.Max(1, (double)value), nameof(CreepTD)); }
+    public decimal CreepPsD { get => (decimal)_crPs; set { Set(ref _crPs, Math.Max(1, (double)value), nameof(CreepPsD)); Raise(nameof(CreepText)); } }
+    public decimal CreepEqD { get => (decimal)_crEq; set => Set(ref _crEq, Math.Max(0, (double)value), nameof(CreepEqD)); }
+    public int CreepAxis { get => _crAxis; set => Set(ref _crAxis, Math.Clamp(value, 0, 2)); }
+    public static readonly string[] CreepAxes = ["x", "y", "z"];
+    public string CreepText => string.Format(CultureInfo.InvariantCulture, "{0} {1:0.##} MPa for {2:0.#} ps ({3:N0} steps at 1 fs)",
+        _crStress >= 0 ? "tension" : "compression", Math.Abs(_crStress), _crPs, _crPs * 1000);
+    public CalcChip NemdChip { get; } = Chip("nemd", "η(γ̇) shear", tip: "Shear viscosity at imposed shear rates (SLLOD, non-equilibrium MD): η(γ̇), shear thinning and the first normal-stress difference, each rate on a copy of the current frame");
+    // NEMD: rates spaced evenly in log γ̇, each its own run from one NVT-equilibrated start
+    private double _shLo = 0.01, _shHi = 0.1, _shPs = 50, _shEq = 10, _shT = 300;
+    private int _shPoints = 3;
+    public decimal ShearLoD { get => (decimal)_shLo; set { Set(ref _shLo, Math.Max(1e-6, (double)value), nameof(ShearLoD)); Raise(nameof(ShearRatesText)); } }
+    public decimal ShearHiD { get => (decimal)_shHi; set { Set(ref _shHi, Math.Max(1e-6, (double)value), nameof(ShearHiD)); Raise(nameof(ShearRatesText)); } }
+    public decimal ShearPointsD { get => _shPoints; set { Set(ref _shPoints, (int)Math.Clamp(value, 1, 12), nameof(ShearPointsD)); Raise(nameof(ShearRatesText)); } }
+    public decimal ShearPsD { get => (decimal)_shPs; set { Set(ref _shPs, Math.Max(0.1, (double)value), nameof(ShearPsD)); Raise(nameof(ShearRatesText)); } }
+    public decimal ShearEqD { get => (decimal)_shEq; set => Set(ref _shEq, Math.Max(0, (double)value), nameof(ShearEqD)); }
+    public decimal ShearTD { get => (decimal)_shT; set => Set(ref _shT, Math.Max(1, (double)value), nameof(ShearTD)); }
+    /// <summary>One temperature goes to every protocol of a run: another protocol's, when one is on with the shear.</summary>
+    public bool ShearOwnT => !(PullOn || NvtRunOn || TensileChip.IsOn);
+    /// <summary>The rates the sweep runs, in 1/ps and 1/s, and the strain each reaches.</summary>
+    public string ShearRatesText
+    {
+        get
+        {
+            var inv = CultureInfo.InvariantCulture;
+            var n = _shHi > _shLo ? Math.Max(2, _shPoints) : 1;
+            var rates = Enumerable.Range(0, n).Select(k => n == 1 ? _shLo : _shLo * Math.Pow(_shHi / _shLo, k / (double)(n - 1))).ToArray();
+            return string.Join(" · ", rates.Select(r => r.ToString("0.####", inv))) + " /ps  (" + (rates[0] * 1e12).ToString("0.#E+0", inv) + "–" +
+                   (rates[^1] * 1e12).ToString("0.#E+0", inv) + " s⁻¹) · strain " + (rates[0] * _shPs).ToString("0.##", inv) + "–" + (rates[^1] * _shPs).ToString("0.##", inv);
+        }
+    }
     public CalcChip FluctChip { get; } = Chip("cij_run", "Cij fluct.", tip: "Elastic constants from stress fluctuations: an NVT run of the current frame, the stress sampled at every step (Lutsko; Clavier et al.)");
     public CalcChip PullShearChip { get; } = Chip("pull_shear", "Pull · shear", tip: "Steered MD: the film dragged along x over the held surface (molecule 1); interfacial shear strength and work");
     public CalcChip PullNormalChip { get; } = Chip("pull_normal", "Pull · normal", tip: "Steered MD: the film pulled off the held surface along +z (needs vacuum above the film); peak normal stress and work of separation");
@@ -283,13 +336,16 @@ public sealed class AnalyzeViewModel : ObservableObject
         return new CapsMechOpts
         {
             Configurations = _cijConfigs, Strain = _cijStrain,
-            Temperature = pull ? _pullT : NvtRunOn && !TensileChip.IsOn ? _fluctT : TensileChip.IsOn ? _tensT : _fluctT,
+            Temperature = pull ? _pullT : NvtRunOn && !TensileChip.IsOn ? _fluctT : TensileChip.IsOn ? _tensT : NemdChip.IsOn ? _shT : _fluctT,
             Axis = pull ? _pullAxis : _tensAxis, Rate = pull ? _pullRate : _tensRate, MaxStrain = pull ? _pullDist : _tensMax, LateralFixed = _tensFixed ? 1 : 0,
             TStart = _tgFrom, TEnd = _tgTo, TStep = _tgStep, PsPerStep = _tgPs, RunPs = _fluctPs,
             EquilibratePs = pull ? (_pullEq > 0 ? _pullEq : -1) : _eqPs > 0 ? _eqPs : -1,
             Seed = MechSeed,
             Pressure = _tgPressure, Barostat = _tgBarostat, TauT = _tgTauT, TauP = _tgTauP, AverageFrom = Math.Max(1e-6, 1 - _tgAverage / 100.0),
             TgProperty = _tgProperty, TgFit = _tgFit, GlassyMax = _tgGlassy, RubberyMin = _tgRubbery,
+            CreepStress = _crStress, CreepT = _crT, CreepPs = _crPs, CreepEqPs = _crEq > 0 ? _crEq : -1, CreepAxis = _crAxis,
+            ConfTrials = _confTrials, ConfMethod = _confMethod, ConfSelection = _confSel ? 1 : 0, ConfWindow = _confWindow, ConfRmsd = _confRmsd,
+            ShearLo = _shLo, ShearHi = _shHi, ShearPoints = _shPoints, ShearPs = _shPs, ShearEqPs = _shEq > 0 ? _shEq : -1,
         };
     }
 

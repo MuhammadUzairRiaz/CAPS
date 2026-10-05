@@ -200,6 +200,13 @@
                 <Button Classes="small ghost" Content="Free" Click="OnFreeAtoms" IsVisible="{Binding HasFixedAtoms}" />
               </StackPanel>
             </Grid>
+            <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding HasFixedAtoms}"
+                        ToolTip.Tip="The held coordinates: z alone lets a substrate slide in its plane but not leave it (GROMACS freezedim, VASP selective dynamics)">
+              <TextBlock Text="held along" VerticalAlignment="Center" Foreground="{DynamicResource MutedB}" />
+              <CheckBox Content="x" IsChecked="{Binding FixedX}" />
+              <CheckBox Content="y" IsChecked="{Binding FixedY}" />
+              <CheckBox Content="z" IsChecked="{Binding FixedZ}" />
+            </StackPanel>
             <TextBlock Text="The criterion that stopped each stage goes into the report." Classes="dim" TextWrapping="Wrap" />
           </StackPanel>
         </Grid>

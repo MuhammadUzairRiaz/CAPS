@@ -107,6 +107,22 @@
                   <TextBlock Text="{Binding TorsionLog}" Classes="dim" TextWrapping="Wrap" />
                 </StackPanel>
               </Border>
+              <Border Classes="section" Padding="16,14" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+                <StackPanel Spacing="8">
+                  <TextBlock Text="Chain shape" FontSize="13.5" FontWeight="SemiBold" />
+                  <TextBlock Text="Every backbone dihedral set in turn from the chain's first end, the pattern repeated" Classes="dim" TextWrapping="Wrap" />
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                    <ComboBox ItemsSource="{x:Static vm:MainViewModel.ChainShapes}" SelectedIndex="{Binding ChainShape}" HorizontalAlignment="Stretch" />
+                    <TextBox Grid.Column="1" Text="{Binding ChainPattern}" FontFamily="{DynamicResource Mono}" Watermark="180 60 …"
+                             ToolTip.Tip="Degrees, repeated along the backbone (a custom pattern)" />
+                  </Grid>
+                  <DockPanel>
+                    <Button DockPanel.Dock="Right" Classes="small" Content="Set the backbone" Click="OnChainShape" />
+                    <CheckBox Content="Only the selected chains" IsChecked="{Binding ChainSelected}" />
+                  </DockPanel>
+                  <TextBlock Text="{Binding ChainShapeText}" Classes="dim" TextWrapping="Wrap" />
+                </StackPanel>
+              </Border>
             </StackPanel>
           </ScrollViewer>
         </DockPanel>

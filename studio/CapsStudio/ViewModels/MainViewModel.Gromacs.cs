@@ -196,6 +196,9 @@ public sealed partial class MainViewModel
     {
         var stem = System.IO.Path.Combine(dir, "system");
         _doc!.Gromacs(stem);
-        System.IO.File.WriteAllText(stem + ".mdp", GromacsDeck(_doc!));
+        // the core's .mdp ends with the freeze groups of the held atoms (freezegrps, freezedim): kept under this run's deck
+        var core = System.IO.File.Exists(stem + ".mdp") ? System.IO.File.ReadAllText(stem + ".mdp") : "";
+        var at = core.IndexOf("; atoms held in place", StringComparison.Ordinal);
+        System.IO.File.WriteAllText(stem + ".mdp", GromacsDeck(_doc!) + (at >= 0 ? "\n" + core[at..] : ""));
     }
 }

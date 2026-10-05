@@ -105,7 +105,7 @@ class _MdOpts(C.Structure):
                 ("coulomb", C.c_int32), ("tail", C.c_int32), ("threads", C.c_int32), ("respa", C.c_int32), ("constraints", C.c_int32),
                 ("step_offset", C.c_int64), ("checkpoint_every", C.c_int64), ("constraint_algorithm", C.c_int32),
                 ("box_anisotropic", C.c_int32), ("box_axes", C.c_int32),
-                ("efield", C.c_double * 3)]
+                ("efield", C.c_double * 3), ("full_shape", C.c_int32)]
 
 
 class _EquilOpts(C.Structure):
@@ -151,7 +151,11 @@ class _MechOpts(C.Structure):
                 ("t_start", C.c_double), ("t_end", C.c_double), ("t_step", C.c_double), ("ps_per_step", C.c_double),
                 ("dt", C.c_double), ("pressure", C.c_double), ("seed", C.c_uint64), ("run_ps", C.c_double), ("equilibrate_ps", C.c_double),
                 ("barostat", C.c_int32), ("tau_t", C.c_double), ("tau_p", C.c_double), ("average_from", C.c_double),
-                ("tg_property", C.c_int32), ("tg_fit", C.c_int32), ("glassy_max", C.c_double), ("rubbery_min", C.c_double)]
+                ("tg_property", C.c_int32), ("tg_fit", C.c_int32), ("glassy_max", C.c_double), ("rubbery_min", C.c_double),
+                ("shear_lo", C.c_double), ("shear_hi", C.c_double), ("shear_points", C.c_int32),
+                ("shear_ps", C.c_double), ("shear_eq_ps", C.c_double),
+                ("conf_trials", C.c_int32), ("conf_method", C.c_int32), ("conf_selection", C.c_int32), ("conf_window", C.c_double), ("conf_rmsd", C.c_double),
+                ("creep_stress", C.c_double), ("creep_t", C.c_double), ("creep_ps", C.c_double), ("creep_eq_ps", C.c_double), ("creep_axis", C.c_int32)]
 
 
 _RecipeProgress = C.CFUNCTYPE(C.c_int32, C.c_int32, C.c_int32, C.c_char_p, C.c_char_p, C.c_char_p, C.c_double, C.c_void_p)
@@ -495,7 +499,7 @@ class Document:
     def md(self, steps: int = 10000, dt: float = 1.0, temperature: float = 300.0, thermostat: str = "bussi", barostat: str = "none",
            pressure: float = 1.0, seed: int = 1, frame_every: int = 1000, thermo_every: int = 100, cutoff: float = 10.0,
            respa: int = 1, constraints: str = "none", constraint_solver: str = "shake", couple_axes: str = "",
-           efield: tuple = (0.0, 0.0, 0.0)) -> str:
+           efield: tuple = (0.0, 0.0, 0.0), full_shape: bool = False) -> str:
         """Molecular dynamics from the current frame; the frames recorded become the document's frames. respa > 1: r-RESPA,
         the bonded forces every dt / respa (e.g. dt=2, respa=4 with hydrogens). constraints "h-bonds" (bonds to hydrogen,
         rigid water) or "all-bonds": SHAKE/RATTLE, for dt=2 (the alternative to respa). thermostat "nose-hoover" with
@@ -508,6 +512,8 @@ class Document:
         o.efield[:] = [float(e) for e in efield]   # V/Å on the partial charges (LAMMPS fix efield)
         if couple_axes:   # "z", "xy" …: those axes coupled on their own to the pressure (Berendsen), the others fixed
             o.box_anisotropic, o.box_axes = 1, sum({"x": 1, "y": 2, "z": 4}[a] for a in set(couple_axes))
+        if full_shape:   # every axis on its own and the tilts toward zero shear stress (Berendsen)
+            o.box_anisotropic, o.box_axes, o.full_shape = 1, o.box_axes or 7, 1
         rep = _report()
         if library().caps_md(self._h, C.byref(o), None, None, rep, len(rep)) < 0:
             raise _error()
@@ -993,6 +999,16 @@ def _animate_mode(self, mode: int, amplitude: float = 0.3, frames: int = 20, sel
                                                   "atoms": "selection" if selection else "all"})
 
 
+def _conformers(self, trials: int = 50, method: str = "torsions", selection: bool = False, window: float = 10.0, rmsd: float = 0.5,
+                temperature: float = 298.15, seed: int = 1) -> dict:
+    """Conformer search (in vacuum) of the frame shown or of the selected atoms: random staggered torsions ("torsions") or
+    quenched snapshots of a 1000 K run ("anneal"), minimised and clustered by heavy-atom RMSD. The document's frames become
+    the conformers, lowest first. Returns {conformers: [{energy, relative, population, found}], rotors, trials, notes}."""
+    return _doc_json(self, "caps_conformer_frames", {"trials": int(trials), "method": method, "selection": bool(selection), "window": float(window),
+                                                      "rmsd": float(rmsd), "temperature": float(temperature), "seed": int(seed)})
+
+
+Document.conformers = _conformers
 Document.normal_modes = _normal_modes
 Document.animate_mode = _animate_mode
 Document.pair_histograms = _pair_histograms

@@ -654,9 +654,46 @@ System cleave(const System& bulk, const SlabOptions& o, SlabReport* rep) {
   double Ax = norm(P.s1), Bx = dot(P.s2, ex), By = dot(P.s2, ey);
   struct Site { int z; Vec3 p; std::string name; };
   std::vector<Site> sites;
+  // whole molecules: each atom's unwrapped stacking coordinate within its molecule, and the molecule's centroid's
+  std::vector<double> f3(bulk.atoms.size()), c3(bulk.atoms.size());
+  for (size_t i = 0; i < bulk.atoms.size(); ++i) f3[i] = c3[i] = P.f[i][2];
+  if (o.whole_molecules) {
+    const auto ib = image_bonds(bulk);
+    std::vector<std::vector<std::pair<uint32_t, Vec3>>> adj(bulk.atoms.size());
+    for (const auto& b : ib) adj[b.i].push_back({b.j, b.d}), adj[b.j].push_back({b.i, b.d * -1.0});
+    const auto inv = inverse_cols(P.s1, P.s2, P.s3);
+    std::vector<char> seen(bulk.atoms.size(), 0);
+    std::vector<Vec3> up(bulk.atoms.size());
+    int endless = 0;
+    for (size_t r = 0; r < bulk.atoms.size(); ++r) {
+      if (seen[r]) continue;
+      std::vector<uint32_t> mol{uint32_t(r)}, stack{uint32_t(r)};
+      seen[r] = 1;
+      up[r] = bulk.atoms[r].pos;
+      bool loops = false;
+      while (!stack.empty()) {
+        const uint32_t a = stack.back();
+        stack.pop_back();
+        for (const auto& [b, d] : adj[a]) {
+          const Vec3 pb = up[a] + d;
+          if (!seen[b]) { seen[b] = 1, up[b] = pb, mol.push_back(b), stack.push_back(b); }
+          else if (std::fabs(solve(inv, pb - up[b])[2]) > 0.5) loops = true;   // reaches its own image along the normal
+        }
+      }
+      if (loops) { ++endless; continue; }   // endless along the normal: cut as the atoms are
+      double c = 0;
+      for (uint32_t a : mol) f3[a] = solve(inv, up[a] - bulk.cell.origin)[2], c += f3[a];
+      c /= double(mol.size());
+      // the molecule's centroid into [0, 1) and its atoms with it
+      const double sh = -std::floor(c);
+      for (uint32_t a : mol) f3[a] += sh, c3[a] = c + sh;
+    }
+    if (endless) R.notes.push_back(std::to_string(endless) + " molecule(s) endless along the surface normal: cut at the atomic planes");
+    else R.notes.push_back("whole molecules: each placed by its centroid");
+  }
   for (size_t i = 0; i < bulk.atoms.size(); ++i) {
-    const Vec3 f = P.f[i];
-    double g = f[2] - T.cut / P.d;
+    const Vec3 f{P.f[i][0], P.f[i][1], f3[i]};
+    double g = c3[i] - T.cut / P.d;
     const double m = -std::floor(g);
     for (int L = 0; L < N; ++L) {
       const double gam = f[2] + m + L;

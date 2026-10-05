@@ -478,3 +478,36 @@ TEST(Dynamics, SllodShearViscosityOfTheLjLiquid) {
   EXPECT_NEAR(tm, o.temperature, 0.03 * o.temperature);   // the thermostat takes the viscous heat out of the peculiar motion
   std::printf("SLLOD LJ liquid: eta* = %.3f at gamma* = 1 (<T> %.1f K)\n", eta_star, tm);
 }
+
+// Atoms held along some axes only (fixed bits 2 x, 4 y, 8 z): in MD their z stays exactly while x and y move, the
+// temperature counts one coordinate fewer each; in a minimisation the held x stays.
+TEST(Dynamics, PartlyHeldAtoms) {
+  System s = relaxed_cell();
+  const size_t n = s.atoms.size(), k = 20;
+  DynamicsOptions o;
+  o.fixed.assign(n, 0);
+  for (size_t i = 0; i < k; ++i) o.fixed[i] = 8;
+  o.steps = 300;
+  o.frame_every = 0;
+  o.temperature = 300;
+  System t = s;
+  DynamicsReport rep;
+  run_dynamics(t, o, &rep);
+  double moved_xy = 0;
+  for (size_t i = 0; i < k; ++i) {
+    EXPECT_DOUBLE_EQ(t.atoms[i].pos[2], s.atoms[i].pos[2]);
+    moved_xy += std::fabs(t.atoms[i].pos[0] - s.atoms[i].pos[0]) + std::fabs(t.atoms[i].pos[1] - s.atoms[i].pos[1]);
+  }
+  EXPECT_GT(moved_xy, 0.1);
+  bool noted = false;
+  for (const auto& note : rep.notes) noted = noted || note.find("20 single coordinates held") != std::string::npos;
+  EXPECT_TRUE(noted);
+  RelaxOptions r;
+  r.fixed.assign(n, 0);
+  for (size_t i = 0; i < k; ++i) r.fixed[i] = 2;
+  r.ftol = 2.0;
+  System u = t;
+  relax(u, r);
+  for (size_t i = 0; i < k; ++i) EXPECT_DOUBLE_EQ(u.atoms[i].pos[0], t.atoms[i].pos[0]);
+  EXPECT_TRUE(holds_axis(1, 0) && holds_axis(8, 2) && !holds_axis(8, 0) && holds_all(14) && !holds_all(12));
+}

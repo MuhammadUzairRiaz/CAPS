@@ -372,3 +372,62 @@ TEST(Crystal, SupercellCopiesBondsAndMolecules) {
     EXPECT_EQ(nmol, 8 * nmol0) << (wrapped ? "wrapped" : "unwrapped");
   }
 }
+
+// Cleaving a molecular crystal: a nitrogen molecule across the cell's z boundary. Cut at the atomic planes its two atoms
+// end up at opposite faces of the slab; with whole molecules it stays one molecule, bonded, 1.1 Å long.
+TEST(Crystal, CleaveKeepsMoleculesWhole) {
+  System bulk;
+  bulk.cell.a = {6, 0, 0}, bulk.cell.b = {0, 6, 0}, bulk.cell.c = {0, 0, 6};
+  Atom a;
+  a.element = 7;
+  a.pos = {3, 3, 0.4};
+  bulk.atoms.push_back(a);
+  a.pos = {3, 3, 5.3};
+  bulk.atoms.push_back(a);
+  SlabOptions o;
+  o.h = 0, o.k = 0, o.l = 1;
+  o.layers = 2;
+  o.vacuum = 15;
+  o.termination = 1;   // the cut through the N–N bond (the first, fewest bonds cut, falls in the empty gap)
+  auto apart = [](const System& s) {
+    double zmin = 1e300, zmax = -1e300;
+    for (const auto& at : s.atoms) zmin = std::min(zmin, at.pos[2]), zmax = std::max(zmax, at.pos[2]);
+    return zmax - zmin;
+  };
+  const System cut = cleave(bulk, o);
+  o.whole_molecules = true;
+  SlabReport rep;
+  const System whole = cleave(bulk, o, &rep);
+  ASSERT_EQ(whole.atoms.size(), 4u);
+  EXPECT_EQ(whole.bonds.size(), 2u);   // two molecules, one bond each
+  for (const auto& b : whole.bonds) EXPECT_NEAR(norm(whole.atoms[b.j].pos - whole.atoms[b.i].pos), 1.1, 1e-6);
+  EXPECT_NEAR(apart(whole), 6 + 1.1, 1e-6);   // two layers of whole molecules
+  EXPECT_LT(cut.bonds.size(), 2u);   // cut at the atomic planes, a molecule is broken
+  bool noted = false;
+  for (const auto& n : rep.notes) noted = noted || n.find("whole molecules") != std::string::npos;
+  EXPECT_TRUE(noted);
+}
+
+// A cluster from the periodic melt: every molecule whole (no bond longer than 2 Å once the cell is gone), the kept
+// centroids within the radius; radius 0 keeps them all, gathered about the centre.
+TEST(Lattice, ClusterFromAPeriodicMelt) {
+  const System melt = open_file(std::string(CAPS_SAMPLES) + "/ps_melt.data").topology;
+  const Vec3 c = melt.cell.origin + (melt.cell.a + melt.cell.b + melt.cell.c) * 0.5;
+  ClusterResult all;
+  const System everything = cut_cluster(melt, c, 0, false, &all);
+  EXPECT_EQ(everything.atoms.size(), melt.atoms.size());
+  EXPECT_FALSE(everything.cell.valid());
+  for (const auto& b : everything.bonds) EXPECT_LT(norm(everything.atoms[b.j].pos - everything.atoms[b.i].pos), 2.0);
+  ClusterResult part;
+  const System cl = cut_cluster(melt, c, 12, false, &part);
+  EXPECT_GT(part.molecules, 0u);
+  EXPECT_GT(part.dropped, 0u);
+  EXPECT_EQ(part.molecules + part.dropped, all.molecules);
+  int nm = 0;
+  const auto mol = cl.molecules(&nm);
+  std::vector<Vec3> cen(size_t(nm), Vec3{0, 0, 0});
+  std::vector<int> cnt(size_t(nm), 0);
+  for (size_t i = 0; i < cl.atoms.size(); ++i) cen[size_t(mol[i])] = cen[size_t(mol[i])] + cl.atoms[i].pos, cnt[size_t(mol[i])]++;
+  for (int k = 0; k < nm; ++k) EXPECT_LE(norm(cen[size_t(k)] * (1.0 / cnt[size_t(k)]) - c), 12.0 + 1e-9);
+  for (const auto& b : cl.bonds) EXPECT_LT(norm(cl.atoms[b.j].pos - cl.atoms[b.i].pos), 2.0);
+}

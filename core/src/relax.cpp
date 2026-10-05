@@ -103,8 +103,10 @@ RelaxStage minimise(Evaluator& ev, std::vector<double>& x, const Cell& cell, con
         out[3 * dr.l + c] -= dE * gl[c];
       }
     }
-    for (size_t i = 0; i < o.fixed.size() && 3 * i + 2 < out.size(); ++i)
-      if (o.fixed[i]) out[3 * i] = out[3 * i + 1] = out[3 * i + 2] = 0;   // held atoms feel no force and do not move
+    for (size_t i = 0; i < o.fixed.size() && 3 * i + 2 < out.size(); ++i)   // held atoms (or coordinates) feel no force and do not move
+      if (o.fixed[i])
+        for (int k = 0; k < 3; ++k)
+          if (holds_axis(o.fixed[i], k)) out[3 * i + k] = 0;
     return en;
   };
 
@@ -427,7 +429,9 @@ void relax_once(System& s, const RelaxOptions& o, RelaxReport* rep_out) {
   // the largest force on the atoms that may move (held atoms feel their neighbours but stay where they are)
   auto free_fmax = [&](std::vector<double> g) {
     for (size_t i = 0; i < o.fixed.size() && 3 * i + 2 < g.size(); ++i)
-      if (o.fixed[i]) g[3 * i] = g[3 * i + 1] = g[3 * i + 2] = 0;
+      if (o.fixed[i])
+        for (int k = 0; k < 3; ++k)
+          if (holds_axis(o.fixed[i], k)) g[3 * i + k] = 0;
     return max_force(g);
   };
   rep.initial = ev.compute(x, cell, f);
