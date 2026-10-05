@@ -3978,6 +3978,51 @@ internal static class SelfTest
             var input = vm.Document!.LammpsInput("caps-selftest-tags.data");
             var gro = vm.Document.Gromacs(Path.Combine(outDir, "caps-selftest-tags"));
             var ndx = File.Exists(Path.Combine(outDir, "caps-selftest-tags.ndx")) ? File.ReadAllText(Path.Combine(outDir, "caps-selftest-tags.ndx")) : "";
+            // Brush to select: z and hybridisation brushed → the query line and the selection; distance to the tag
+            {
+                vm.OpenBrush();
+                var zh = vm.BrushHists.First(h => h.Key == "z");
+                zh.SetBrush(10, 20);
+                vm.BrushHists.First(h => h.Key == "hybrid").SetBrush(1, 1);
+                var q = vm.BrushQuery;
+                var count = vm.SelectedCount;
+                vm.AddBrushDistance("chain ends test");
+                var dh = vm.BrushHists.First(h => h.Key == "distance:tag:chain ends test");
+                vm.ClearBrushes();
+                dh.SetBrush(0, 0.001);
+                var inTag = vm.SelectedCount;
+                vm.BrushQuery = "bonds 4";
+                vm.RunBrushQuery();
+                var four = vm.SelectedCount;
+                vm.ClearBrushes();
+                vm.BrushOpen = false;
+                Check(q == "z 10..20 and hybrid sp2" && count == 155 && dh.Bins.Sum() == 1300 && inTag == 130 && four == 160 && vm.BrushError == "",
+                      $"brush to select: {q} → {count} · distance to the tag ≤ 0.001 Å → {inTag} · bonds 4 → {four} {vm.BrushError}");
+            }
+            // the clipboard tray and a stamp: 16 atoms copied, picked, placed in the middle of the cell (pushed clear), undone;
+            // a file dropped into the structure becomes the stamp
+            {
+                vm.ClearAllSelection();
+                vm.BrushQuery = "index 1-16";
+                vm.RunBrushQuery();
+                var trayBefore = vm.Tray.Count;
+                vm.CopyToTray();
+                var piece = vm.Tray.FirstOrDefault();
+                if (piece != null) vm.ArmStamp(piece);
+                var armed = vm.StampArmed;
+                var atoms0 = (int)vm.Document.Summary().Atoms;
+                vm.PlaceStamp([16.5, 16.5, 16.5], [0, 0, 1], false);
+                var after = (int)vm.Document.Summary().Atoms;
+                var stampStatus = vm.Status;
+                vm.UndoEdit(false);
+                var undone = (int)vm.Document.Summary().Atoms;
+                vm.DropIntoStructure(Path.Combine(dir, "water.pdb"));
+                var dropped = vm.StampArmed && vm.Tray.FirstOrDefault()?.Name == "water";
+                vm.DisarmStamp();
+                Check(vm.Tray.Count == trayBefore + 2 && piece?.Detail.StartsWith("16 atoms") == true && armed && after == atoms0 + 16 && !vm.StampArmed && undone == atoms0 && dropped,
+                      $"tray and stamp: {piece?.Name} ({piece?.Detail}) · {atoms0} → {after} atoms, undone {undone} · {stampStatus} · water dropped {dropped}");
+                while (vm.Tray.Count > trayBefore) vm.RemoveFromTray(vm.Tray[0]);
+            }
             vm.Open(tp);
             var back = vm.TagChips.FirstOrDefault();
             Check(selAtoms == 130 && renaming && chip?.Name == "chain ends test" && chip.Count == 130 && selected == 130 && onlyShown && !vm.HasHiddenAtoms

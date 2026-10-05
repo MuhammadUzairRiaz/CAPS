@@ -70,6 +70,7 @@ public partial class MainWindow
             Sep(),
             Cmd("Select by query…", "select.query"),
             Item("Selection & stereo…", () => { _vm.SetModule(8); _vm.SelectionOpen = true; }),
+            Item("Brush to select…", () => _vm.OpenBrush()),
             Item("History & snapshots…", () => { _vm.SetModule(8); _vm.HistoryOpen = true; }),
             Item("Compare states…", () => { _vm.SetModule(8); _vm.StatesOpen = true; }),
             Sep(),

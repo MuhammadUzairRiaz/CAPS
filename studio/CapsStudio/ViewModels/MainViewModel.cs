@@ -124,6 +124,11 @@ public sealed partial class MainViewModel : ObservableObject
     public MainViewModel()
     {
         ProjectItems.CollectionChanged += OnProjectItemsChanged;   // an open project is saved as its structures change
+        PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(ShowStudioTabs) || e.PropertyName == nameof(IsStudio)) Raise(nameof(ShowBrushPanel));   // the inspector's panels take turns
+            else if (e.PropertyName == nameof(Document) && _brushOpen) RefillBrush();
+        };
         Field = new FieldViewModel(() => _doc, s => Status = s, () =>
         {
             // types and charges in the document changed: summary, inspector and viewer follow

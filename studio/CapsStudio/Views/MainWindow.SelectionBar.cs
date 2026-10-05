@@ -30,6 +30,8 @@ public partial class MainWindow
     private void InitSelectionBar()
     {
         InitTags();
+        InitDropTargets();
+        _vm.LoadTray();
         FieldScroll.PropertyChanged += (_, e) => { if (e.Property == ScrollViewer.ViewportProperty) FitFieldBody(); };
         FieldHead.SizeChanged += (_, _) => FitFieldBody();
         FieldControls.SizeChanged += (_, _) => FitFieldBody();
@@ -132,6 +134,9 @@ public partial class MainWindow
         var grow = new MenuItem { Header = "Grow along bonds" };
         grow.Click += (_, _) => { _vm.GrowSelectionKey(); ViewHost.Focus(); };
         items.Add(grow);
+        var brush = new MenuItem { Header = "Brush to select…" };
+        brush.Click += (_, _) => _vm.OpenBrush();
+        items.Add(brush);
         if (_vm.HasHiddenAtoms) items.Add(M("Show all atoms", "showall"));
         var menu = new ContextMenu { ItemsSource = items };
         menu.Open(anchor ?? SelBar);

@@ -613,6 +613,9 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_tags")] public static extern int Tags(IntPtr doc, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_tag_edit")] public static extern int TagEdit(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json);
     [DllImport(Lib, EntryPoint = "caps_tag_atoms")] public static extern int TagAtoms(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string name, int[]? atoms, int cap);
+    [DllImport(Lib, EntryPoint = "caps_piece")] public static extern int Piece(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? text, int cap);
+    [DllImport(Lib, EntryPoint = "caps_piece_file")] public static extern int PieceFile([MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string? name, byte[]? text, int cap);
+    [DllImport(Lib, EntryPoint = "caps_atom_column")] public static extern int AtomColumn(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string name, double[]? values, int cap);
     [DllImport(Lib, EntryPoint = "caps_atom_states")] public static extern int AtomStates(IntPtr doc, byte[]? states, int n);
     [DllImport(Lib, EntryPoint = "caps_project_indices")] public static extern int ProjectIndices(IntPtr doc, in CapsCamera cam, in CapsRenderOpts opt, int[] atoms, int n, float[] xy);
     [DllImport(Lib, EntryPoint = "caps_export_scene")] public static extern int ExportScene(IntPtr doc, in CapsCamera cam, in CapsRenderOpts opt, [MarshalAs(UnmanagedType.LPUTF8Str)] string path,
@@ -1559,6 +1562,39 @@ public sealed class CapsDocument : IDisposable
             var k = Native.TagEdit(H, json);
             if (k < 0 && !json.Contains("\"remove\"", StringComparison.Ordinal)) throw new InvalidOperationException(Native.LastError());
             return k;
+        }
+    }
+    /// <summary>Atoms copied out as a caps-piece document (the clipboard tray).</summary>
+    public string Piece(string json)
+    {
+        using (Hold())
+        {
+            var n = Native.Piece(H, json, null, 0);
+            if (n < 0) throw new InvalidOperationException(Native.LastError());
+            var b = new byte[n + 1];
+            Native.Piece(H, json, b, b.Length);
+            return System.Text.Encoding.UTF8.GetString(b, 0, n).TrimEnd('\0');
+        }
+    }
+    /// <summary>A structure file as a piece (a file dropped into the open structure).</summary>
+    public static string PieceFromFile(string path, string? name = null)
+    {
+        var n = Native.PieceFile(path, name, null, 0);
+        if (n < 0) throw new InvalidOperationException(Native.LastError());
+        var b = new byte[n + 1];
+        Native.PieceFile(path, name, b, b.Length);
+        return System.Text.Encoding.UTF8.GetString(b, 0, n).TrimEnd('\0');
+    }
+    /// <summary>A per-atom column (x, z, charge, bonds, hybrid, distance:tag:NAME …) for Brush to select.</summary>
+    public double[] AtomColumn(string name)
+    {
+        using (Hold())
+        {
+            var n = Native.AtomColumn(H, name, null, 0);
+            if (n < 0) throw new InvalidOperationException(Native.LastError());
+            var v = new double[n];
+            if (n > 0) Native.AtomColumn(H, name, v, n);
+            return v;
         }
     }
     public int[] TagAtoms(string name)

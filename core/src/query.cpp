@@ -50,7 +50,7 @@ std::string lower(std::string s) { for (auto& c : s) c = char(std::tolower((unsi
 
 bool keyword(const std::string& w) {
   static const std::set<std::string> k = {"and", "or", "not", "smarts", "element", "type", "chain", "molecule", "index", "ring", "stereo",
-                                          "within", "of", "sel", "selection", "all", "none"};
+                                          "within", "of", "sel", "selection", "all", "none", "x", "y", "z", "charge", "mass", "bonds", "hybrid", "tag"};
   return k.count(lower(w)) > 0;
 }
 
@@ -187,6 +187,31 @@ struct Parser {
       const auto from = factor();
       return select_within(s, from, d);
     }
+    if (w == "x" || w == "y" || w == "z" || w == "charge" || w == "mass" || w == "bonds") {   // a range A..B, or one value
+      if (t[p].kind != Tok::Number) throw std::invalid_argument(w + " needs a range, e.g. " + w + " 7..11");
+      const std::string r = t[p++].text;
+      double lo, hi;
+      try {
+        const auto dd = r.find("..", 1);
+        lo = std::stod(r.substr(0, dd));
+        hi = dd == std::string::npos ? lo : std::stod(r.substr(dd + 2));
+      } catch (...) { throw std::invalid_argument("'" + r + "' is not a range (A..B)"); }
+      if (hi < lo) std::swap(lo, hi);
+      const auto col = atom_column(s, w);
+      const double eps = w == "bonds" ? 0.5 : 1e-9;
+      auto out = none();
+      for (size_t i = 0; i < n; ++i) out[i] = col[i] >= lo - eps && col[i] <= hi + eps;
+      return out;
+    }
+    if (w == "hybrid") {
+      const std::string v = lower(t[p].kind == Tok::End ? "" : t[p++].text);
+      const int want = v == "sp" ? 1 : v == "sp2" ? 2 : v == "sp3" ? 3 : -1;
+      if (want < 0) throw std::invalid_argument("hybrid takes sp, sp2 or sp3");
+      const auto col = atom_column(s, "hybrid");
+      auto out = none();
+      for (size_t i = 0; i < n; ++i) out[i] = int(col[i]) == want;
+      return out;
+    }
     if (w == "tag") {   // tag NAME: the atoms carrying that tag
       const std::string name = t[p++].text;
       int k = -1;
@@ -307,6 +332,46 @@ std::vector<char> cip_labels(const System& s) {
     out[c] = chir < 0 ? 'R' : 'S';
   }
   return out;
+}
+
+std::vector<double> atom_column(const System& s, const std::string& name) {
+  const size_t n = s.atoms.size();
+  std::vector<double> v(n, 0.0);
+  if (name == "x" || name == "y" || name == "z") {
+    const int k = name == "x" ? 0 : name == "y" ? 1 : 2;
+    for (size_t i = 0; i < n; ++i) v[i] = s.atoms[i].pos[k];
+  } else if (name == "charge") {
+    for (size_t i = 0; i < n; ++i) v[i] = s.atoms[i].charge;
+  } else if (name == "mass") {
+    for (size_t i = 0; i < n; ++i) v[i] = s.mass_of(s.atoms[i]);
+  } else if (name == "molecule") {
+    const auto mol = s.molecules();
+    for (size_t i = 0; i < n; ++i) v[i] = s.has_mol ? double(s.atoms[i].mol) : double(mol[i] + 1);
+  } else if (name == "bonds" || name == "hybrid") {
+    std::vector<int> deg(n, 0), doubles(n, 0), triples(n, 0), aromatic(n, 0);
+    for (const auto& b : s.bonds) {
+      if (b.i >= n || b.j >= n) continue;
+      ++deg[b.i], ++deg[b.j];
+      if (b.order == 2) ++doubles[b.i], ++doubles[b.j];
+      if (b.order == 3) ++triples[b.i], ++triples[b.j];
+      if (b.order == 4) ++aromatic[b.i], ++aromatic[b.j];
+    }
+    for (size_t i = 0; i < n; ++i) {
+      if (name == "bonds") { v[i] = deg[i]; continue; }
+      const int z = s.atoms[i].element, d = deg[i];
+      int h = 0;
+      if (triples[i] > 0 || doubles[i] >= 2) h = 1;
+      else if (doubles[i] > 0 || aromatic[i] > 0) h = 2;
+      else if (z == 6 || z == 14 || z == 32) h = d == 4 ? 3 : d == 3 ? 2 : d == 2 ? 1 : 0;   // carbon group: 4 σ bonds sp3
+      else if (z == 7 || z == 15) h = d == 3 || d == 4 ? 3 : d == 2 ? 2 : d == 1 ? 1 : 0;
+      else if (z == 8 || z == 16) h = d == 2 ? 3 : d == 1 ? 2 : 0;
+      else if (z == 5) h = d == 3 ? 2 : d == 4 ? 3 : 0;
+      v[i] = h;
+    }
+  } else {
+    throw std::invalid_argument("no atom column '" + name + "' (x, y, z, charge, mass, bonds, hybrid, molecule)");
+  }
+  return v;
 }
 
 }  // namespace caps
