@@ -1227,6 +1227,35 @@ int protonate_residues(System& s, double ph, std::vector<std::string>* notes) {
   return sites;
 }
 
+std::pair<int, int> fix_hydrogens(System& s, const std::vector<char>& atoms) {
+  // surplus first: a heavy atom with more bonds than its valence loses its extra hydrogens (the last bonded first)
+  const auto sums = order_sums(s);
+  const auto nb = neighbours(s);
+  std::vector<char> drop(s.atoms.size(), 0);
+  int removed = 0;
+  for (uint32_t i = 0; i < s.atoms.size(); ++i) {
+    if ((!atoms.empty() && (i >= atoms.size() || !atoms[i])) || s.atoms[i].element == 1) continue;
+    const int charge = int(std::lround(s.atoms[i].charge));
+    const int val = default_valence(s.atoms[i].element, std::fabs(s.atoms[i].charge - charge) < 0.05 ? charge : 0);
+    if (val == 0) continue;
+    int extra = int(std::lround(sums[i] - 1e-9)) - val;
+    for (auto it = nb[i].rbegin(); it != nb[i].rend() && extra > 0; ++it)
+      if (s.atoms[*it].element == 1 && !drop[*it] && nb[*it].size() == 1) { drop[*it] = 1; --extra; ++removed; }
+  }
+  std::vector<char> keep_marks = atoms;
+  if (removed > 0) {
+    // the marks follow the atoms that stay
+    if (!atoms.empty()) {
+      std::vector<char> m;
+      for (size_t i = 0; i < s.atoms.size(); ++i) if (!drop[i]) m.push_back(i < atoms.size() ? atoms[i] : 0);
+      keep_marks = m;
+    }
+    delete_atoms(s, drop);
+  }
+  const int added = add_hydrogens(s, keep_marks);
+  return {added, removed};
+}
+
 int add_hydrogens_at_ph(System& s, double ph, const std::vector<char>& atoms, std::vector<std::string>* notes) {
   protonate_residues(s, ph, notes);
   int added = add_hydrogens(s, atoms);

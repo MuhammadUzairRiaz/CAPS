@@ -1038,6 +1038,46 @@
                 </Flyout>
               </Button.Flyout>
             </Button>
+            <!-- Probes (design/boards/Probes): their chips (click: measure), and the measurements pinned as cards -->
+            <Border Classes="hud" Padding="8,5" Margin="14,86,14,14" HorizontalAlignment="Left" VerticalAlignment="Top" IsVisible="{Binding HasProbes}" MaxWidth="760" ZIndex="4">
+              <WrapPanel ItemSpacing="6" LineSpacing="4">
+                <TextBlock Text="PROBES" FontSize="10" FontWeight="SemiBold" LetterSpacing="0.6" Foreground="{DynamicResource DimB}" VerticalAlignment="Center" Margin="2,0,4,0" />
+                <ItemsControl ItemsSource="{Binding Probes}">
+                  <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemSpacing="6" LineSpacing="4" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:ProbeItem">
+                      <Button Classes="chipbtn" Tag="{Binding}" Click="OnProbeChip" Padding="8,2" ToolTip.Tip="Measure it against another probe (or its flatness, its size); right click: remove">
+                        <Button.ContextMenu><ContextMenu><MenuItem Header="Remove the probe" Click="OnProbeRemove" Tag="{Binding}" /></ContextMenu></Button.ContextMenu>
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                          <Ellipse Width="9" Height="9" Fill="{Binding Brush}" VerticalAlignment="Center" />
+                          <TextBlock Text="{Binding Name}" FontSize="12" VerticalAlignment="Center" MaxWidth="220" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                      </Button>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </WrapPanel>
+            </Border>
+            <ScrollViewer Margin="14,48,14,14" HorizontalAlignment="Right" VerticalAlignment="Top" Width="230" MaxHeight="420" IsVisible="{Binding HasProbeCards}" ZIndex="4">
+              <ItemsControl ItemsSource="{Binding ProbeCards}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:ProbeCard">
+                    <Border Classes="hud" Padding="10,8" Margin="0,0,0,8">
+                      <StackPanel Spacing="3">
+                        <Grid ColumnDefinitions="*,Auto">
+                          <TextBlock Text="{Binding Title}" FontSize="11.5" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
+                          <Button Grid.Column="1" Classes="layerbtn" Tag="{Binding}" Click="OnProbeCardRemove" ToolTip.Tip="Unpin"><local:Icon Kind="close" Size="11" /></Button>
+                        </Grid>
+                        <TextBlock Text="{Binding ValueText}" Classes="mono" FontSize="20" FontWeight="SemiBold" Foreground="{DynamicResource AccB}" />
+                        <local:Spark Height="26" Values="{Binding Spark}" Stroke="{DynamicResource AccB}" IsVisible="{Binding HasSpark}" />
+                        <TextBlock Text="{Binding Sub}" FontSize="10.5" Foreground="{DynamicResource DimB}" TextWrapping="Wrap" />
+                        <Button Classes="small ghost" Content="To Analyze" Tag="{Binding}" Click="OnProbeCardAnalyze" HorizontalAlignment="Left" ToolTip.Tip="This measurement as a curve over the frames in Analyze" />
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
             <!-- the stamp under the pointer (design/boards/Stamp) -->
             <Border Classes="hud" Padding="10,5" Margin="14,14,14,82" HorizontalAlignment="Center" VerticalAlignment="Bottom" IsVisible="{Binding StampArmed}" ZIndex="6">
               <StackPanel Orientation="Horizontal" Spacing="8">

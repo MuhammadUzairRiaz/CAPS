@@ -833,6 +833,21 @@ internal static class Screenshot
                 if (o.Contains("small")) w.ViewModel.LookAtom = 0.12;
             }
             if (kv[0] == "rules") { w.ViewModel.OpenRules(); if (kv[1].Contains(':')) { var q = kv[1].Split(':'); if (w.ViewModel.RulePairs.FirstOrDefault(p => p.Name == q[0]) is { } rp) { rp.Cutoff = double.Parse(q[1], System.Globalization.CultureInfo.InvariantCulture); w.ViewModel.PreviewRules(); } } }
+            if (kv[0] == "probe")   // probe=ATOM:KIND — that atom's molecule as a probe
+            {
+                var p = kv[1].Split(':');
+                w.ViewModel.SelectLike(int.Parse(p[0]), false, false);
+                w.ViewModel.MakeProbe(p[1]);
+                w.ViewModel.ClearAllSelection();
+            }
+            if (kv[0] == "probemeasure")   // probemeasure=A:B:MEASURE (probe indices; B -1 for none)
+            {
+                var p = kv[1].Split(':');
+                var a = w.ViewModel.Probes[int.Parse(p[0])];
+                var b = int.Parse(p[1]) >= 0 ? w.ViewModel.Probes[int.Parse(p[1])] : null;
+                w.ViewModel.PinProbeMeasure(a, p[2], b);
+                Console.WriteLine("probe card: " + string.Join(" | ", w.ViewModel.ProbeCards.Select(c => c.Title + " " + c.ValueText + " " + c.Values.Length)));
+            }
             if (kv[0] == "tray")   // tray=ATOM: that atom's molecule copied to the tray and picked as a stamp
             {
                 w.ViewModel.SelectLike(int.Parse(kv[1]), false, false);

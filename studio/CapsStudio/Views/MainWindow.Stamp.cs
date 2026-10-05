@@ -44,6 +44,23 @@ public partial class MainWindow
     private void OnTrayRemove(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is TrayPiece p) _vm.RemoveFromTray(p); }
     private void OnTrayHide(object? s, RoutedEventArgs e) { _vm.TrayShown = false; _vm.DisarmStamp(); }
 
+    // ---- Probes (design/boards/Probes)
+    private void OnProbeChip(object? s, RoutedEventArgs e)
+    {
+        if ((s as Control)?.Tag is not ProbeItem p) return;
+        var items = _vm.ProbeMeasures(p).Select(m =>
+        {
+            var it = new MenuItem { Header = m.Label };
+            it.Click += (_, _) => _vm.PinProbeMeasure(p, m.Measure, m.Other);
+            return it;
+        }).ToList();
+        if (items.Count == 0) { _vm.Status = "Make a second probe (a plane, an axis …) to measure this one against"; return; }
+        new ContextMenu { ItemsSource = items }.Open(s as Control);
+    }
+    private void OnProbeRemove(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is ProbeItem p) _vm.RemoveProbe(p); }
+    private void OnProbeCardRemove(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is ProbeCard c) _vm.RemoveProbeCard(c); }
+    private void OnProbeCardAnalyze(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is ProbeCard c) _vm.ProbeCardToAnalyze(c); }
+
     // ---- Look (design/boards/Look)
     private void OnLookAll(object? s, RoutedEventArgs e) => _vm.LookScope = 0;
     private void OnLookSelection(object? s, RoutedEventArgs e) => _vm.LookScope = 1;
