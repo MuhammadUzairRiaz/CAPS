@@ -1264,3 +1264,26 @@ TEST(Io, DumpKeepsVelocitiesAndColumns) {
   EXPECT_FLOAT_EQ(t.columns.at("|f|")[0][0], 5.0f);     // (3, 4, 0)
   EXPECT_FLOAT_EQ(t.columns.at("|f|")[0][2], 4.0f);
 }
+
+// atoms stored wrapped one by one (chains split at the walls): the data file's image flags still join every bond —
+// LAMMPS reads no "Inconsistent image flags"
+TEST(LammpsData, ImageFlagsConsistentForWrappedAtoms) {
+  System s = read_lammps_data(S + "/ps_melt.data");
+  ASSERT_TRUE(s.cell.valid());
+  size_t split = 0;
+  for (auto& a : s.atoms) a.pos = s.cell.wrap(a.pos);
+  s.unwrapped = false;
+  const double half = 0.5 * std::min({norm(s.cell.a), norm(s.cell.b), norm(s.cell.c)});
+  for (const auto& b : s.bonds) split += norm(s.atoms[b.j].pos - s.atoms[b.i].pos) > half;
+  ASSERT_GT(split, 0u);   // the test makes bonds that cross the walls
+  const std::string p = tmp("caps_imageflags.data");
+  write_lammps_data(s, p);
+  System r = read_lammps_data(p);   // positions unwrapped with the file's image flags, as LAMMPS does
+  ASSERT_EQ(r.bonds.size(), s.bonds.size());
+  for (const auto& b : r.bonds) EXPECT_LT(norm(r.atoms[b.j].pos - r.atoms[b.i].pos), 2.0);
+  // every written position stays the same atom: its wrapped place unchanged
+  for (size_t i = 0; i < s.atoms.size(); ++i) {
+    const Vec3 d = s.cell.minimum_image(r.atoms[i].pos - s.atoms[i].pos);
+    EXPECT_LT(norm(d), 1e-5);
+  }
+}

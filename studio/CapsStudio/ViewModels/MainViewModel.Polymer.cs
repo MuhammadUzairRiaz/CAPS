@@ -56,10 +56,16 @@ public sealed class PolyUnit : INotifyPropertyChanged
     }
     private decimal _target = 50;
     /// <summary>The share this unit should have (mole or weight %, as the composition calculator is set).</summary>
-    public decimal Target { get => _target; set { _target = Math.Max(0, value); Raise(nameof(Target)); TargetChanged?.Invoke(); } }
+    public decimal Target { get => _target; set { _target = Math.Max(0, value); Raise(nameof(Target)); Raise(nameof(TargetInput)); TargetChanged?.Invoke(); } }
     public Action? TargetChanged;
-    public decimal Weight { get => _weight; set { _weight = Math.Max(0, value); Raise(nameof(Weight)); Changed?.Invoke(); } }
+    public decimal Weight { get => _weight; set { _weight = Math.Max(0, value); Raise(nameof(Weight)); Raise(nameof(WeightInput)); Changed?.Invoke(); } }
     public decimal Block { get => _block; set { _block = Math.Max(1, value); Raise(nameof(Block)); Changed?.Invoke(); } }
+    /// <summary>The share and target as typed on the page: the other units take up the difference (Balance), so the
+    /// shares keep their total and the targets add up to 100 %.</summary>
+    public decimal WeightInput { get => _weight; set { var old = _weight; Weight = value; Raise(nameof(WeightInput)); Balance?.Invoke(this, false, old); } }
+    public decimal TargetInput { get => _target; set { var old = _target; Target = Math.Min(100, value); Raise(nameof(TargetInput)); Balance?.Invoke(this, true, old); } }
+    public Action<PolyUnit, bool, decimal>? Balance;
+    internal void RaiseInputs() { Raise(nameof(WeightInput)); Raise(nameof(TargetInput)); }
 
     private void Describe()
     {
@@ -212,7 +218,7 @@ public sealed partial class MainViewModel
     public void AddPolyUnit(string name = "", string smiles = "*CC*")
     {
         if (PolyUnits.Count >= 8) return;
-        var u = new PolyUnit { Letter = ((char)('A' + PolyUnits.Count)).ToString(), Changed = PolyChanged, TargetChanged = CompRefresh };
+        var u = new PolyUnit { Letter = ((char)('A' + PolyUnits.Count)).ToString(), Changed = PolyChanged, TargetChanged = CompRefresh, Balance = BalanceUnits };
         u.Name = name;
         u.Smiles = smiles;
         PolyUnits.Add(u);
