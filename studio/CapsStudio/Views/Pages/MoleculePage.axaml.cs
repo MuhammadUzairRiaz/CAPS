@@ -107,4 +107,5 @@ public partial class MoleculePage : PageBase
         _preview.Document = null;
         Vm.OpenMoleculeInStudio();
     }
+    private async void OnAnalogs(object? s, RoutedEventArgs e) => await Vm.BuildAnalogs();
 }

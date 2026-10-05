@@ -471,3 +471,62 @@ TEST(Mechanics, StressControlAndCreep) {
   std::printf("stress control: Pzz %.1f MPa (target -50), creep strain %.2f %%, lateral ratio %.2f, tilt %.3f -> %.3f A\n", pz * 0.101325,
               100 * cr.final_strain, cr.poisson, tilt, w.cell.b[0]);
 }
+
+// Sliding friction: a Lennard-Jones argon liquid between two argon walls (FCC, ε/k_B 119.8 K, σ 3.405 Å), the top wall
+// slid along x at a shear rate of about 0.5/τ. The film drags the wall back (−F_x > 0), the shear stress is of the order
+// of η γ̇ for the liquid (~50 MPa without slip, less with it), and the thermostat holds the film's temperature.
+TEST(Mechanics, SlidingFrictionOfALjFilm) {
+  const double sigma = 3.405, eps = 119.8 * 0.0019872043, a = 1.5496 * sigma;
+  System s;
+  std::mt19937 rng(11);
+  std::uniform_real_distribution<double> u(0, 1);
+  int64_t next = 3;
+  const int nz = 12;   // FCC half-layers along z: 4 bottom wall, 4 film (thinned to liquid density) … 
+  const std::vector<Vec3> basis{{0, 0, 0}, {0.5, 0.5, 0}, {0.5, 0, 0.5}, {0, 0.5, 0.5}};
+  for (int i = 0; i < 4; ++i)
+    for (int j = 0; j < 4; ++j)
+      for (int k = 0; k < nz / 2 + 2; ++k)
+        for (const auto& b : basis) {
+          const double z = (k + b[2]) * a;
+          const int layer = int(std::lround(2 * (k + b[2])));
+          Atom at;
+          at.element = 18;
+          at.pos = {(i + b[0]) * a, (j + b[1]) * a, z};
+          if (layer < 4) at.mol = 1;                      // bottom wall
+          else if (layer >= nz + 0) at.mol = 2;           // top wall
+          else {
+            if (u(rng) < 0.23) continue;                   // the film at about the liquid's density
+            at.mol = next++;
+          }
+          s.atoms.push_back(at);
+        }
+  s.has_mol = true;
+  double ztop = 0;
+  for (const auto& at : s.atoms) ztop = std::max(ztop, at.pos[2]);
+  s.cell.a = {4 * a, 0, 0}, s.cell.b = {0, 4 * a, 0}, s.cell.c = {0, 0, ztop + 15};
+  auto ff = std::make_shared<ForceField>(default_forcefield(s));
+  for (auto& t : ff->lj) t = {eps, sigma};
+  std::fill(ff->charge.begin(), ff->charge.end(), 0.0);
+  const double tau_ps = sigma * 1e-10 * std::sqrt(39.948e-3 / 6.02214076e23 / (119.8 * 1.380649e-23)) * 1e12;
+  const double gap = (nz - 4) * a / 2;
+  FrictionOptions o;
+  o.field = ff;
+  o.energy.cutoff = 2.5 * sigma, o.energy.coulomb = false, o.energy.tail = false;
+  o.temperature = 0.722 * 119.8;
+  o.dt = 5, o.tau_t = 10;
+  o.equilibrate_ps = 5, o.ps = 15;
+  o.velocity = 0.5 * gap / tau_ps;
+  System w = s;
+  const auto r = run_friction(w, o);
+  EXPECT_GT(r.friction, 0);
+  EXPECT_GT(r.shear_stress, 2);
+  EXPECT_LT(r.shear_stress, 200);
+  double tm = 0;
+  for (size_t k = r.temperature.size() / 4; k < r.temperature.size(); ++k) tm += r.temperature[k];
+  tm /= double(r.temperature.size() - r.temperature.size() / 4);
+  EXPECT_NEAR(tm, o.temperature, 0.1 * o.temperature);
+  // the top wall moved by v t exactly, the bottom one stayed
+  const auto props = friction_properties(r);
+  EXPECT_EQ(props[0].id, "friction");
+  std::printf("friction: shear stress %.1f MPa (no-slip estimate ~50), normal %.1f MPa, mu %.2f, <T> %.1f K\n", r.shear_stress, r.normal_stress, r.mu, tm);
+}

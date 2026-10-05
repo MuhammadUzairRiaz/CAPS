@@ -1492,6 +1492,13 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
   out << b;
   if (!st.groups.empty()) out << lammps_group_lines(s, ff, st.groups);
   out << lammps_tag_groups(s);   // the structure's tags, each a group
+  std::vector<int64_t> rigid;
+  for (int64_t m : st.rigid_mols)
+    if (m > 0 && m != held_mol) rigid.push_back(m);
+  if (!rigid.empty())
+    out << "\n# rigid bodies: each of these molecules moves as one body (fix rigid below); pairs inside a body are not computed\n"
+        << "group           rigid molecule " << lammps_ranges(rigid) << "\n"
+        << "neigh_modify    exclude molecule/intra rigid\n";
   if (held_mol > 0)
     out << "\n# molecule " << held_mol << " (the surface or filler) held in place, as in CAPS: no velocity, no force\n"
         << "group           held molecule " << held_mol << "\n"
@@ -1509,8 +1516,12 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
     default:
       break;
   }
-  const std::string mobile = held_mol > 0 ? "mobile" : "all";
-  if (held_mol > 0) out << "group           mobile subtract all held\n";
+  const std::string mobile = held_mol > 0 || !rigid.empty() ? "mobile" : "all";
+  if (held_mol > 0 || !rigid.empty())
+    out << "group           mobile subtract all" << (held_mol > 0 ? " held" : "") << (rigid.empty() ? "" : " rigid") << "\n";
+  // velocities for everything that moves (the rigid bodies too)
+  const std::string vgroup = rigid.empty() ? mobile : held_mol > 0 ? "moving" : "all";
+  if (!rigid.empty() && held_mol > 0) out << "group           moving subtract all held\n";
   std::snprintf(b, sizeof b, "\nthermo          %d\nthermo_style    custom step temp press pe ke etotal density vol\n", std::max(1, run.thermo_every));
   out << b;
   if (run.minimize_first || run.kind == K::Minimize)
@@ -1549,16 +1560,22 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
     for (int t : shells) gs += " " + std::to_string(t);
     out << "group           cores type" << gc << "\ngroup           shells type" << gs << "\n"
         << "comm_modify     vel yes\ncompute         CSequ all temp/cs cores shells\nthermo_modify   temp CSequ\n";
-    std::snprintf(b, sizeof b, "velocity        %s create %.6g %llu dist gaussian mom yes rot no bias yes temp CSequ\n", mobile.c_str(), run.temperature,
+    std::snprintf(b, sizeof b, "velocity        %s create %.6g %llu dist gaussian mom yes rot no bias yes temp CSequ\n", vgroup.c_str(), run.temperature,
                   static_cast<unsigned long long>(run.seed));
   } else {
-    std::snprintf(b, sizeof b, "velocity        %s create %.6g %llu mom yes rot yes dist gaussian\n", mobile.c_str(), run.temperature,
+    std::snprintf(b, sizeof b, "velocity        %s create %.6g %llu mom yes rot yes dist gaussian\n", vgroup.c_str(), run.temperature,
                   static_cast<unsigned long long>(run.seed));
   }
   out << b;
+  if (!rigid.empty()) {   // the bodies under their own Nosé–Hoover thermostat (LAMMPS removes their constrained degrees of freedom);
+    // LAMMPS wants rigid fixes before any fix that changes the box
+    char r[200];
+    std::snprintf(r, sizeof r, "fix             rigid_bodies rigid rigid/nvt/small molecule temp %.6g %.6g %.6g\n", run.temperature, run.temperature, run.tdamp * tu);
+    out << r;
+  }
   if (npt)
-    std::snprintf(b, sizeof b, "fix             integrate %s npt temp %.6g %.6g %.6g iso %.6g %.6g %.6g\n", mobile.c_str(), run.temperature, run.temperature,
-                  run.tdamp * tu, run.pressure * pu, run.pressure * pu, run.pdamp * tu);
+    std::snprintf(b, sizeof b, "fix             integrate %s npt temp %.6g %.6g %.6g iso %.6g %.6g %.6g%s\n", mobile.c_str(), run.temperature, run.temperature,
+                  run.tdamp * tu, run.pressure * pu, run.pressure * pu, run.pdamp * tu, rigid.empty() ? "" : " dilate mobile");
   else
     std::snprintf(b, sizeof b, "fix             integrate %s nvt temp %.6g %.6g %.6g\n", mobile.c_str(), run.temperature, run.temperature, run.tdamp * tu);
   out << b;

@@ -37,6 +37,7 @@ struct ThermoRow {
   double lx = 0, ly = 0, lz = 0;      // cell edge lengths, Å
   double pull_force = 0;              // spring force along the pull direction, kcal/mol/Å
   double pull_disp = 0;               // displacement of the pulled group's centre along it, Å
+  double wall_force[3] = {0, 0, 0};   // force of the other atoms on the moved group (move_group), kcal/mol/Å
 };
 
 struct DynamicsOptions {
@@ -81,6 +82,10 @@ struct DynamicsOptions {
   // its anchor moving along pull_dir at pull_rate from where the centre starts; the spring force is shared over the
   // group by mass. The force and the centre's displacement along pull_dir go into each thermo row.
   std::vector<char> pull_group;
+  // A moved group (a sliding wall): these atoms move rigidly at move_velocity (Å/ps) whatever the forces on them (LAMMPS
+  // fix move linear); the force the other atoms put on them goes into each thermo row (wall_force). No r-RESPA.
+  std::vector<char> move_group;
+  Vec3 move_velocity{0, 0, 0};
   Vec3 pull_dir{1, 0, 0};
   double pull_k = 10.0;             // kcal/mol/Å²
   double pull_rate = 0.0;           // Å/ps

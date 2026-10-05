@@ -117,6 +117,12 @@ struct BuildResult {
 };
 
 BuildResult build_molecule(const std::string& smiles, const BuildOptions& o = {});
+
+// Analogs from R groups: a core SMILES with numbered attachment points [*:1], [*:2] … and, for each, the substituents
+// (SMILES whose first atom bonds to the core, or with a leading * marking it; "H" for none). Every combination, up to
+// `max`, as a whole SMILES (the bond made by a ring closure across '.') and a name "R1=…, R2=…".
+struct Analog { std::string smiles, name; };
+std::vector<Analog> enumerate_analogs(const std::string& core, const std::vector<std::pair<int, std::vector<std::string>>>& groups, size_t max = 200);
 // A force field for a molecule (hydrogens added) from a caps-forcefield JSON with typing rules, or UFF when path is
 // "uff" (then pos, an embedding, sets the axial pairs of five-coordinate centres); null (with the reason in notes)
 // when it cannot type or parameterise every atom.

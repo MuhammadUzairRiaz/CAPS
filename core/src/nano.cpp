@@ -258,9 +258,10 @@ System nanotube(const NanotubeOptions& o, NanoReport* rep) {
   if (n < 1 || m < 0 || m > n) throw std::invalid_argument("chirality (n, m) needs n ≥ 1 and 0 ≤ m ≤ n");
   const Honeycomb H = honeycomb(o.material);
   const double cc = o.cc > 0 ? o.cc : H.cc, a = std::sqrt(3.0) * cc;
-  const int walls = std::max(1, o.walls);
-  if (walls > 1 && m != n && m != 0)
-    throw std::invalid_argument("multi-walled tubes need armchair (n,n) or zigzag (n,0) walls, whose periods along the axis match");
+  const bool listed = !o.wall_chiralities.empty();
+  const int walls = listed ? int(o.wall_chiralities.size()) : std::max(1, o.walls);
+  if (!listed && walls > 1 && m != n && m != 0)
+    throw std::invalid_argument("multi-walled tubes need armchair (n,n) or zigzag (n,0) walls, whose periods along the axis match (or give each wall's (n, m))");
   // walls about 2 × spacing wider each: Δd = a√3 Δn / π (armchair) or a Δn / π (zigzag)
   const double spacing = o.wall_spacing > 0 ? o.wall_spacing : 3.4;
   const int dn = walls == 1 ? 0 : std::max(1, int(std::lround(2 * spacing * kPi / (m == n ? a * std::sqrt(3.0) : a))));
@@ -290,26 +291,73 @@ System nanotube(const NanotubeOptions& o, NanoReport* rep) {
     return w;
   };
   std::vector<Wall> W;
-  for (int k = 0; k < walls; ++k) W.push_back(roll(n + k * dn, m == 0 ? 0 : m + k * dn));
+  if (listed) {
+    for (const auto& c : o.wall_chiralities) {
+      if (c[0] < 1 || c[1] < 0 || c[1] > c[0]) throw std::invalid_argument("each wall's (n, m) needs n ≥ 1 and 0 ≤ m ≤ n");
+      W.push_back(roll(c[0], c[1]));
+    }
+    for (size_t k = 1; k < W.size(); ++k)
+      if (W[k].R - W[k - 1].R < 2.5)
+        throw std::invalid_argument("walls " + std::to_string(k) + " and " + std::to_string(k + 1) + " are only " + std::to_string(W[k].R - W[k - 1].R).substr(0, 4) +
+                                    " Å apart: give the outer wall a larger (n, m) (about 3.4 Å between walls)");
+  } else {
+    for (int k = 0; k < walls; ++k) W.push_back(roll(n + k * dn, m == 0 ? 0 : m + k * dn));
+  }
   const double lt = W.front().lt, Rout = W.back().R;
   int periods = std::max(1, int(std::lround(o.length / lt)));
   if (o.periodic) periods = std::max(periods, int(std::ceil(6.0 / lt)));   // at least 6 Å along the axis
   const double Lz = periods * lt, vac = std::max(0.0, o.vacuum);
-  System s;
-  const double box = 2 * Rout + 2 * vac;
-  s.cell.a = {box, 0, 0};
-  s.cell.b = {0, box, 0};
-  s.cell.c = {0, 0, o.periodic ? Lz : Lz + 2 * vac};
-  const double zoff = o.periodic ? 0 : vac;
+  // each wall's own whole periods; periodic walls stretched to the common length
+  std::vector<int> wper(W.size());
+  std::vector<double> wscale(W.size(), 1.0);
+  double worst_strain = 0;
+  for (size_t k = 0; k < W.size(); ++k) {
+    wper[k] = std::max(1, int(std::lround(Lz / W[k].lt)));
+    if (o.periodic) {
+      wscale[k] = Lz / (wper[k] * W[k].lt);
+      worst_strain = std::max(worst_strain, std::fabs(wscale[k] - 1));
+    }
+  }
+  if (worst_strain > 0.02)
+    throw std::invalid_argument("the walls' periods along the axis do not fit one length within 2 % (" + std::to_string(100 * worst_strain).substr(0, 4) +
+                                " %): make the tube longer, or finite");
+  // the tube about its own axis (x, y about 0), z from 0
+  std::vector<std::pair<int, Vec3>> tube;
   int per_period = 0;
-  for (const auto& w : W) {
+  for (size_t q = 0; q < W.size(); ++q) {
+    const auto& w = W[q];
     per_period += w.expect;
-    for (int p = 0; p < periods; ++p)
+    for (int p = 0; p < wper[q]; ++p)
       for (const auto& [u, v, k] : w.uv) {
         const double th = 2 * kPi * u;
-        add(s, k < 0.5 ? H.za : H.zb, {box / 2 + w.R * std::cos(th), box / 2 + w.R * std::sin(th), zoff + (v + p) * lt});
+        tube.push_back({k < 0.5 ? H.za : H.zb, {w.R * std::cos(th), w.R * std::sin(th), (v + p) * w.lt * wscale[q]}});
       }
   }
+  // the tubes' axes: one, hexagonal rings about one, or the periodic triangular lattice
+  const double D = 2 * Rout + std::max(0.0, o.tube_gap);
+  std::vector<std::array<double, 2>> axes{{0, 0}};
+  double ax_box = 0, ay_box = 0;
+  if (o.bundle_lattice) {
+    axes = {{0, 0}, {D / 2, D * std::sqrt(3.0) / 2}};
+    ax_box = D, ay_box = D * std::sqrt(3.0);
+  } else if (o.bundle > 1) {
+    const int rings = o.bundle <= 7 ? 1 : o.bundle <= 19 ? 2 : 3;
+    if (o.bundle != 7 && o.bundle != 19 && o.bundle != 37) throw std::invalid_argument("a rope of 7, 19 or 37 tubes (hexagonal rings about one), or the periodic lattice");
+    for (int i = -rings; i <= rings; ++i)
+      for (int j = -rings; j <= rings; ++j)
+        if (std::abs(i) + std::abs(j) + std::abs(i + j) <= 2 * rings && !(i == 0 && j == 0)) axes.push_back({D * (i + 0.5 * j), D * std::sqrt(3.0) / 2 * j});
+  }
+  double ext = 0;
+  for (const auto& a : axes) ext = std::max(ext, std::hypot(a[0], a[1]));
+  System s;
+  const double box = o.bundle_lattice ? 0 : 2 * (ext + Rout) + 2 * vac;
+  s.cell.a = {o.bundle_lattice ? ax_box : box, 0, 0};
+  s.cell.b = {0, o.bundle_lattice ? ay_box : box, 0};
+  s.cell.c = {0, 0, o.periodic ? Lz : Lz + 2 * vac};
+  const double zoff = o.periodic ? 0 : vac;
+  const double cx = o.bundle_lattice ? ax_box / 4 : box / 2, cy = o.bundle_lattice ? ay_box / 4 : box / 2;
+  for (size_t t = 0; t < axes.size(); ++t)
+    for (const auto& [z, p] : tube) add(s, z, {cx + axes[t][0] + p[0], cy + axes[t][1] + p[1], zoff + p[2]}, int64_t(t + 1));
   NanoReport r;
   const auto g = nanotube_geometry(n, m, cc);
   r.diameter = 2 * Rout, r.chiral_angle = g[1], r.translation = g[2], r.atoms_per_period = per_period;
@@ -326,6 +374,14 @@ System nanotube(const NanotubeOptions& o, NanoReport* rep) {
     std::snprintf(b, sizeof b, "%s %d-walled %s nanotube · outer d = %.2f Å · walls %.2f Å apart · |T| = %.3f Å · %d atoms per period × %d · %s", name.c_str(), walls,
                   kind, r.diameter, W[1].R - W[0].R, r.translation, per_period, periods, o.periodic ? "periodic along z" : "finite, ends capped with H");
   r.notes.push_back(b);
+  if (listed && o.periodic && worst_strain > 1e-9)
+    r.notes.push_back("walls stretched along the axis to one length: at most " + std::to_string(100 * worst_strain).substr(0, 4) + " %");
+  if (axes.size() > 1 || o.bundle_lattice) {
+    char q[200];
+    std::snprintf(q, sizeof q, "%s of %zu tubes · axes %.2f Å apart (%.2f Å wall to wall) · each tube its own molecule", o.bundle_lattice ? "periodic triangular rope lattice" : "rope",
+                  axes.size(), D, o.tube_gap);
+    r.notes.push_back(q);
+  }
   s.notes = r.notes;
   if (rep) *rep = r;
   return s;

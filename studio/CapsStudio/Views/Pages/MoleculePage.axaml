@@ -160,6 +160,18 @@
               </StackPanel>
             </Border>
             <Border Classes="section" Padding="16,14">
+              <StackPanel Spacing="8">
+                <TextBlock Text="ANALOGS (R GROUPS)" Classes="h3" />
+                <TextBox Text="{Binding AnalogCore}" Classes="mono" Watermark="core with [*:1], [*:2] … e.g. c1cc([*:1])ccc1[*:2]" TextWrapping="Wrap" />
+                <TextBox Text="{Binding AnalogGroups}" Classes="mono" AcceptsReturn="True" Height="64" Watermark="1: H, Cl, C(=O)O&#x0a;2: C, *OC"
+                         ToolTip.Tip="One line per R group: its number, then the substituents (SMILES whose first atom bonds to the core, or a leading * marking it; H for none)" />
+                <DockPanel>
+                  <Button DockPanel.Dock="Right" Classes="small" Content="{Binding AnalogButton}" Click="OnAnalogs" IsEnabled="{Binding AnalogReady}" />
+                  <TextBlock Text="{Binding AnalogText}" Classes="dim" TextWrapping="Wrap" VerticalAlignment="Center" />
+                </DockPanel>
+              </StackPanel>
+            </Border>
+            <Border Classes="section" Padding="16,14">
               <StackPanel Spacing="10">
                 <TextBlock Text="PROPERTIES" Classes="h3" />
                 <Grid ColumnDefinitions="*,Auto" RowDefinitions="24,24,24,24,24" >

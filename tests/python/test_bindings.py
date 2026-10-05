@@ -564,4 +564,13 @@ _cl = caps.open(os.path.join(samples, "ps_melt.data"))
 _cl.edit(op="cluster", radius=12)
 _cs = _cl.summary()
 check(_cs["atoms"] % 130 == 0 and 0 < _cs["atoms"] < 1300, f"cluster: {_cs['atoms']} atoms of whole chains")
+# rigid bodies in the LAMMPS files
+import tempfile
+_rb = caps.open(os.path.join(samples, "ps_melt.data"))
+_rb.field.assign("uff")
+_rbn = _rb.rigid("1-2")
+with tempfile.TemporaryDirectory() as _tmp:
+    _rbr = _rb.export_engines(_tmp, gromacs=False, run="nvt", steps=100)
+    _rbin = open(os.path.join(_tmp, "system.in")).read()
+check(_rbn == 2 and "rigid/nvt/small molecule" in _rbin and "group           rigid molecule 1:2" in _rbin, f"rigid bodies: {_rbn} molecules in the LAMMPS input")
 print("all python checks passed")

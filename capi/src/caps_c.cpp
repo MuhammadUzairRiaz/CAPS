@@ -175,6 +175,7 @@ struct caps_doc {
   std::string pack_items; // v51 the packing that made it: per input molecule its name, molecule ids and own force field (JSON)
   std::vector<uint32_t> fixed_atoms;   // v36: atoms held in place besides the held molecule (frame indices)
   int fixed_axes = 7;                  // v62: which coordinates of the fixed atoms are held (bits x 1, y 2, z 4)
+  std::vector<int64_t> rigid_mols;     // v62: molecules written as rigid bodies in LAMMPS inputs
   std::vector<caps::RelaxOptions::Restraint> restraints;   // distance restraints for caps_relax
   std::vector<caps::RelaxOptions::DihedralRestraint> dihedral_restraints;   // and dihedral ones
   double ph = -1;         // Add hydrogens: residues protonated at this pH (< 0: neutral valences)
@@ -1449,6 +1450,7 @@ caps_doc* caps_shadow(caps_doc* d) {
     sd->held_mol = d->held_mol;
     sd->fixed_atoms = d->fixed_atoms;
     sd->fixed_axes = d->fixed_axes;
+    sd->rigid_mols = d->rigid_mols;
     sd->restraints = d->restraints;
     sd->dihedral_restraints = d->dihedral_restraints;
     sd->analysis = d->analysis;
@@ -1623,6 +1625,7 @@ int32_t caps_lammps_input(caps_doc* d, const char* data_name, char* text, int32_
     const auto tmp = std::filesystem::temp_directory_path() / ("caps_input_" + std::to_string(reinterpret_cast<uintptr_t>(d)) + ".in");
     caps::LammpsStyle style;
     style.groups = lammps_groups(d, d->frame);
+    style.rigid_mols = d->rigid_mols;
     caps::write_lammps_input(d->frame, ff, elec(), data_name && *data_name ? data_name : "system.data", tmp.string(), d->held_mol, false, {}, style);
     std::ifstream in(tmp);
     std::string s((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
@@ -1831,6 +1834,8 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
     if (lammps && !kg_model) try {
       std::vector<std::string> lnotes;
       ls.groups = lammps_groups(d, s);
+      ls.rigid_mols = d->rigid_mols;
+      if (!d->rigid_mols.empty()) notes.push_back(caps::Json("LAMMPS: " + std::to_string(d->rigid_mols.size()) + " molecule(s) move as rigid bodies (fix rigid/nvt/small)"));
       caps::write_lammps_data_ff(s, ff, e, base + ".data", false, ls);
       caps::write_lammps_input(s, ff, e, stem + ".data", base + ".in", d->held_mol, true, run, ls, &lnotes);
       for (const auto& n : lnotes) notes.push_back(caps::Json("LAMMPS: " + n));
@@ -4521,7 +4526,7 @@ int32_t caps_analyze_ex(caps_doc* d, const char* props, const caps_analyze_opts*
       std::string cur;
       for (const char* c = props ? props : ""; ; ++c) {
         if (*c == ',' || *c == 0) {
-          if (!cur.empty()) (cur == "cij_strain" || cur == "cij_run" || cur == "viscosity" || cur == "nemd" || cur == "conformers" || cur == "creep" || cur == "tensile" || cur == "tg" || cur == "pull_shear" || cur == "pull_normal" ? protocols : ids).push_back(cur);
+          if (!cur.empty()) (cur == "cij_strain" || cur == "cij_run" || cur == "viscosity" || cur == "nemd" || cur == "conformers" || cur == "creep" || cur == "friction" || cur == "tensile" || cur == "tg" || cur == "pull_shear" || cur == "pull_normal" ? protocols : ids).push_back(cur);
           cur.clear();
           if (*c == 0) break;
         } else if (*c != ' ') cur += *c;
@@ -4673,6 +4678,21 @@ int32_t caps_analyze_ex(caps_doc* d, const char* props, const caps_analyze_opts*
         if (mo.seed) vo.seed = mo.seed;
         vo.progress = [&](const std::string& w, double f) { return !cancelled(w, f); };
         for (auto& q : caps::viscosity_properties(caps::viscosity_green_kubo(s, vo))) res.push_back(std::move(q));
+      } else if (id == "friction") {
+        caps::System s = frame_copy();
+        caps::FrictionOptions fo;
+        fo.field = ff;
+        fo.energy = o.energy;
+        if (mo.fr_moving > 0) fo.moving_mol = mo.fr_moving;
+        fo.fixed_mol = std::max(0, mo.fr_fixed);
+        if (mo.fr_velocity != 0) fo.velocity = mo.fr_velocity;
+        if (mo.fr_ps > 0) fo.ps = mo.fr_ps;
+        if (mo.fr_eq_ps != 0) fo.equilibrate_ps = std::max(0.0, mo.fr_eq_ps);
+        fo.temperature = mo.fr_t > 0 ? mo.fr_t : mo.temperature > 0 ? mo.temperature : 300;
+        if (mo.dt > 0) fo.dt = mo.dt;
+        if (mo.seed) fo.seed = mo.seed;
+        fo.progress = [&](const std::string& w, double f) { return !cancelled(w, f); };
+        for (auto& q : caps::friction_properties(caps::run_friction(s, fo))) res.push_back(std::move(q));
       } else if (id == "creep") {
         caps::System s = frame_copy();
         caps::CreepOptions co;
@@ -6082,16 +6102,33 @@ extern "C" caps_doc* caps_interface_build(const char* options_json, const char* 
     }
     if (progress) io.grow.progress = [&](int done, int total, int restarts) { return progress(done, total, restarts, user) == 0; };
     caps::GrowReport rep;
-    const caps::System s = caps::build_interface(slab, c, io, &rep);
+    caps::BrushReport brep;
+    const bool brush = j.has("brush") && j["brush"].is_object();
+    caps::System s;
+    if (brush) {   // v62: chains grafted by one end to surface sites (a brush) instead of a free film
+      const auto& b = j["brush"];
+      caps::BrushOptions bo;
+      bo.density = b.num("density", 0.3);
+      bo.chains = int(b.num("chains", 0));
+      bo.site = b.text("site", "O");
+      bo.min_spacing = b.num("min_spacing", 4.0);
+      bo.film = f.num("thickness", 40);
+      bo.vacuum = std::max(5.0, f.num("vacuum", 20));
+      bo.grow = io.grow;
+      s = caps::build_brush(slab, c, bo, &brep);
+    } else {
+      s = caps::build_interface(slab, c, io, &rep);
+    }
     std::string t;
     for (const auto& n : sr.notes) t += n + "\n";
-    for (const auto& n : rep.notes) t += n + "\n";
+    for (const auto& n : brush ? brep.notes : rep.notes) t += n + "\n";
     report_out(t, report, cap);
     caps_doc* d = doc_of(s);
     {
       caps::KeyValues pr = json_params(options_json);
       for (auto& kv : json_params(spec_json)) pr.push_back({"chain " + kv.first, kv.second});
-      prov_step(d, "interface.build", "polymer grown against a surface", std::move(pr), seeded(o ? o->seed : 0), {"matsumoto1998"});
+      if (brush) prov_step(d, "brush.build", "polymer chains grafted to surface sites", std::move(pr), seeded(o ? o->seed : 0), {});
+      else prov_step(d, "interface.build", "polymer grown against a surface", std::move(pr), seeded(o ? o->seed : 0), {"matsumoto1998"});
     }
     d->held_mol = 1;
     return d;
@@ -6115,8 +6152,14 @@ caps::System nano_from(const caps::Json& j, std::array<bool, 3>& keep, std::stri
     t.material = j.text("material", "graphene");
     t.cc = j.num("cc", 0);
     t.walls = int(j.num("walls", 1));
+    if (j.has("wall_chiralities") && j["wall_chiralities"].is_array())   // v62: each wall its own [n, m], innermost first
+      for (const auto& w : j["wall_chiralities"].items())
+        if (w.is_array() && w.size() == 2) t.wall_chiralities.push_back({int(w[0].number()), int(w[1].number())});
+    t.bundle = int(j.num("bundle", 1));                                  // v62: ropes of 7, 19, 37 tubes
+    t.bundle_lattice = j.num("bundle_lattice", 0) != 0;                 //      or the periodic triangular lattice
+    t.tube_gap = j.num("tube_gap", 3.4);
     f = caps::nanotube(t, &r);
-    keep = {false, false, t.periodic};
+    keep = {t.bundle_lattice, t.bundle_lattice, t.periodic};
   } else if (kind == "sheet") {
     caps::SheetOptions sh;
     sh.lx = j.num("lx", 20), sh.ly = j.num("ly", 20);
@@ -6369,6 +6412,7 @@ extern "C" caps_doc* caps_frame_copy(caps_doc* d) {
     c->held_mol = d->held_mol;
     c->fixed_atoms = d->fixed_atoms;
     c->fixed_axes = d->fixed_axes;
+    c->rigid_mols = d->rigid_mols;
     return c;
   } catch (const std::exception& e) {
     g_error = e.what();
@@ -7002,6 +7046,64 @@ extern "C" int32_t caps_set_fixed_atoms(caps_doc* d, const int32_t* atoms, int32
     d->fixed_atoms.erase(std::unique(d->fixed_atoms.begin(), d->fixed_atoms.end()), d->fixed_atoms.end());
     return int32_t(d->fixed_atoms.size());
   });
+}
+
+// v62: molecules written as rigid bodies in the LAMMPS inputs ("1-3,7"; "" none). Returns how many.
+extern "C" int32_t caps_set_rigid_molecules(caps_doc* d, const char* ranges) {
+  return guard([&] {
+    d->rigid_mols = ranges && *ranges ? parse_mol_ranges(ranges) : std::vector<int64_t>{};
+    std::sort(d->rigid_mols.begin(), d->rigid_mols.end());
+    d->rigid_mols.erase(std::unique(d->rigid_mols.begin(), d->rigid_mols.end()), d->rigid_mols.end());
+    return int32_t(d->rigid_mols.size());
+  });
+}
+
+// v62 analogs (R groups): JSON {core, groups: [{r, subs: [smiles …]}], max} → {analogs: [{smiles, name}]}.
+extern "C" int32_t caps_enumerate_analogs(const char* json, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  const int32_t rc = guard([&] {
+    const auto j = caps::Json::parse(json ? json : "{}");
+    std::vector<std::pair<int, std::vector<std::string>>> groups;
+    if (j.has("groups"))
+      for (const auto& g : j["groups"].items()) {
+        std::vector<std::string> subs;
+        if (g.has("subs")) for (const auto& x : g["subs"].items()) subs.push_back(x.str());
+        groups.push_back({int(g.num("r", 1)), subs});
+      }
+    const auto an = caps::enumerate_analogs(j.text("core", ""), groups, size_t(std::clamp(j.num("max", 200), 1.0, 5000.0)));
+    caps::Json a = caps::Json::array();
+    for (const auto& x : an) {
+      caps::Json o = caps::Json::object();
+      o["smiles"] = x.smiles, o["name"] = x.name;
+      a.push_back(std::move(o));
+    }
+    r["analogs"] = std::move(a);
+    return 0;
+  });
+  if (rc < 0) return -1;
+  return report_out(r.dump(0), out, cap);
+}
+
+// v62: every frame's timestep (as the file gives it); returns the frame count.
+extern "C" int32_t caps_frame_timesteps(caps_doc* d, int64_t* out, int32_t cap) {
+  const auto& t = d->traj.timesteps;
+  const int32_t n = int32_t(d->traj.frames());
+  for (int32_t k = 0; k < cap && k < n; ++k) out[k] = size_t(k) < t.size() ? t[size_t(k)] : int64_t(k);
+  return n;
+}
+
+// v62: the rigid molecules as ranges ("1-3,7"), "" none.
+extern "C" int32_t caps_rigid_molecules(caps_doc* d, char* out, int32_t cap) {
+  std::string t;
+  const auto& m = d->rigid_mols;
+  for (size_t k = 0; k < m.size();) {
+    size_t e = k;
+    while (e + 1 < m.size() && m[e + 1] == m[e] + 1) ++e;
+    if (!t.empty()) t += ",";
+    t += std::to_string(m[k]) + (e > k ? "-" + std::to_string(m[e]) : "");
+    k = e + 1;
+  }
+  return report_out(t, out, cap);
 }
 
 // v62: which coordinates of the fixed atoms are held: bits x 1, y 2, z 4 (7: all, the default). Returns the axes set.
@@ -8036,6 +8138,23 @@ extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t c
       char b[128];
       std::snprintf(b, sizeof b, "Vacuum slab: %.2f Å slab, %.2f Å vacuum", r.thickness, r.vacuum);
       what = b;
+    } else if (op == "defects") {   // {from, to ("" vacancies), fraction | count, min_spacing, seed, atoms (the region)}
+      caps::DefectOptions o;
+      o.from = element_of(j.text("from", "C"));
+      const std::string to = j.text("to", "");
+      o.to = to.empty() ? 0 : element_of(to);
+      o.fraction = j.num("fraction", 0.05);
+      o.count = int(j.num("count", 0));
+      o.min_spacing = j.num("min_spacing", 0);
+      o.seed = uint64_t(j.num("seed", 1));
+      if (j.has("atoms")) {
+        o.region.assign(s.atoms.size(), 0);
+        for (uint32_t a : atoms_of(d, j)) o.region[a] = 1;
+      }
+      std::vector<std::string> nt;
+      caps::point_defects(s, o, &nt);
+      what = nt.front();
+      for (size_t k = 1; k < nt.size(); ++k) what += " · " + nt[k];
     } else if (op == "backbone_torsions") {   // {pattern: [deg …], atoms: [...] (their chains; none: every chain)}
       std::vector<double> pat;
       if (j.has("pattern") && j["pattern"].is_array())
@@ -10643,6 +10762,7 @@ extern "C" caps_doc* caps_doc_copy(caps_doc* src) {
     d->held_mol = src->held_mol;
     d->fixed_atoms = src->fixed_atoms;
     d->fixed_axes = src->fixed_axes;
+    d->rigid_mols = src->rigid_mols;
     return d;
   } catch (const std::exception& e) {
     g_error = e.what();

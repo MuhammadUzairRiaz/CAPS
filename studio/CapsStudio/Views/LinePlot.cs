@@ -25,6 +25,8 @@ public sealed class LinePlot : Control
     /// <summary>Allow a drag box; Brushed gets (x0, x1, y0, y1) in data units, NaN when cleared by a click.</summary>
     public bool Brushable { get; set; }
     public event Action<double, double, double, double>? Brushed;
+    /// <summary>A click in the plot (not a drag), with the x it lands on in data units (a curve's point → its frame).</summary>
+    public event Action<double>? Clicked;
     private Rect _plot;
     private double _xmin, _xmax, _ymin, _ymax;
     private Point? _b0, _b1;
@@ -32,8 +34,12 @@ public sealed class LinePlot : Control
     protected override void OnPointerPressed(Avalonia.Input.PointerPressedEventArgs e)
     {
         base.OnPointerPressed(e);
-        if (!Brushable) return;
         var p = e.GetPosition(this);
+        if (!Brushable)
+        {
+            if (_plot.Contains(p) && _plot.Width > 0 && Clicked != null) Clicked(_xmin + (p.X - _plot.Left) / _plot.Width * (_xmax - _xmin));
+            return;
+        }
         if (!_plot.Contains(p)) return;
         _b0 = _b1 = p;
         e.Pointer.Capture(this);

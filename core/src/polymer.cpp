@@ -362,6 +362,7 @@ struct ChainState {
   int drop_h = -1;                     // the parent's hydrogen this arm replaced (−1: the head cap's valence)
   std::set<int> tried;                 // hydrogens given back after the arm found no room there
   int reserve = -1;                    // cell id of a stand-in carbon keeping the head's place until the arm starts
+  int ext_anchor = -1;                 // a grafted chain: the substrate atom its head bonds to (GrowOptions::anchors)
   std::set<int> dropped;               // local hydrogens replaced by arms
   std::map<int, int> pdist;            // cell id → bond distance from the anchor, for the molecule's atoms near it
 };
@@ -751,6 +752,29 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     C[size_t(c)].mol = c;
     make_sequence(C[size_t(c)], c, size_t(c) < spec.chain_dp.size() ? spec.chain_dp[size_t(c)] : 0);
   }
+  if (!o.anchors.empty()) {
+    if (!o.substrate) throw GrowError("grafted chains need the substrate they are grafted to");
+    for (size_t k = 0; k < o.anchors.size() && k < size_t(nchains); ++k) {
+      if (o.anchors[k].atom >= o.substrate->atoms.size()) throw GrowError("a graft site is not a substrate atom");
+      C[k].ext_anchor = int(o.anchors[k].atom);
+    }
+  }
+  // a grafted chain's substrate neighbours: cell id (= substrate index) → bonds from the anchor, up to three
+  std::vector<std::map<int, int>> sub_near;
+  std::vector<std::vector<uint32_t>> sadj;
+  if (!o.anchors.empty()) {
+    sadj.assign(o.substrate->atoms.size(), {});
+    for (const auto& b : o.substrate->bonds) sadj[b.i].push_back(b.j), sadj[b.j].push_back(b.i);
+    for (size_t k = 0; k < o.anchors.size() && k < size_t(nchains); ++k) {
+      std::map<int, int> d{{int(o.anchors[k].atom), 0}};
+      std::vector<uint32_t> q{o.anchors[k].atom};
+      for (size_t h = 0; h < q.size(); ++h)
+        if (d[int(q[h])] < 3)
+          for (uint32_t w : sadj[q[h]])
+            if (!d.count(int(w))) d[int(w)] = d[int(q[h])] + 1, q.push_back(w);
+      sub_near.push_back(std::move(d));
+    }
+  }
   // arms of branched molecules: each replaces a hydrogen (or the head cap) of its parent and loses its own head cap
   const Architecture arch = spec.architecture;
   int n_arms = 0;
@@ -1073,6 +1097,38 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
       ch.backtracks = 0;
       return;
     }
+    if (ch.ext_anchor >= 0) {   // grafted: ghost 2 is the substrate site, ghost 1 behind it, ghost 0 off to the side
+      const auto& an = o.anchors[size_t(ci)];
+      const auto& sa = o.substrate->atoms;
+      const Vec3 P = sa[size_t(ch.ext_anchor)].pos;
+      Vec3 d{an.dir[0], an.dir[1], an.dir[2]};
+      d = norm(d) > 1e-9 ? unitv(d) : Vec3{0, 0, 1};
+      // the torsion references: the site's heavy neighbour (Si of a silanol) and one of that atom's, as in the substrate;
+      // else along the outward direction
+      int a1 = -1, a0 = -1;
+      for (uint32_t w : sadj[size_t(ch.ext_anchor)])
+        if (sa[w].element != 1) { a1 = int(w); break; }
+      if (a1 >= 0)
+        for (uint32_t w : sadj[size_t(a1)])
+          if (int(w) != ch.ext_anchor && sa[w].element != 1) { a0 = int(w); break; }
+      const Vec3 g1 = a1 >= 0 ? P + cell.mi(sa[size_t(a1)].pos - P) : P - d * 1.53;
+      Vec3 g0;
+      if (a0 >= 0) g0 = g1 + cell.mi(sa[size_t(a0)].pos - sa[size_t(a1)].pos);
+      else {
+        Vec3 w{Nd(rng), Nd(rng), Nd(rng)};
+        const Vec3 u = unitv(P - g1);
+        g0 = g1 + unitv(w - u * dot(w, u)) * 1.53;
+      }
+      for (const Vec3& p : {g0, g1, P}) {
+        ch.pos.push_back(p), ch.z.push_back(6), ch.gid.push_back(-1), ch.unit_of.push_back(-1), ch.sp2.push_back(0), ch.donor.push_back(0), ch.backbone.push_back(1), ch.adj.push_back({});
+      }
+      ch.pdist = sub_near[size_t(ci)];
+      ch.tparent = {-1, 0, 1};
+      ++ch.starts;
+      ch.fails = 0;
+      ch.backtracks = 0;
+      return;
+    }
     // three ghosts: a start point and a random frame (the head bonds to ghost 2)
     Vec3 s{U(rng) * Lv[0], U(rng) * Lv[1], film ? z_lo + 1 + U(rng) * std::max(0.0, z_hi - z_lo - 2) : U(rng) * Lv[2]};
     for (int tries = 0; (sphere || cyl) && region(s) < 1.0 && tries < 1000; ++tries)   // a start inside the allowed region
@@ -1210,10 +1266,11 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     for (const auto& [w, d] : near_tail)
       if (w >= 0 && size_t(w) < nloc) ntl[size_t(w)] = uint8_t(d + 1);
     auto lut = [](const std::vector<uint8_t>& v, int loc) { return loc >= 0 && size_t(loc) < v.size() ? int(v[size_t(loc)]) : 0; };
-    // an arm: bond distance from each new atom to the arm's head (then + 1 to the anchor), for the parent's atoms nearby
+    // an arm or a grafted chain: bond distance from each new atom to the chain's head (then + 1 to the anchor), for the
+    // parent's or substrate's atoms nearby
     std::vector<int> dhead(size_t(t.n), 99);
     int dhead_next = 99;
-    if (ch.parent >= 0) {
+    if (ch.parent >= 0 || ch.ext_anchor >= 0) {
       for (int a = 0; a < t.n; ++a)
         if (auto it = excl[size_t(a)].find(3); it != excl[size_t(a)].end()) dhead[size_t(a)] = it->second;
       if (auto it = near_tail.find(3); it != near_tail.end()) dhead_next = it->second;
@@ -1342,7 +1399,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
             worst = std::min(worst, region(q));
             cell.near(q, [&](int id) {
               if (cell.chain[size_t(id)] == ci && cell.local[size_t(id)] >= recent) return;
-              if (ch.parent >= 0 && ch.pdist.count(id)) return;   // an arm's junction
+              if ((ch.parent >= 0 || ch.ext_anchor >= 0) && ch.pdist.count(id)) return;   // an arm's junction, a graft site
               const double m = norm(cell.mi(q - cell.x[size_t(id)])) - 0.8 * limitc(6, cell.z[size_t(id)]);
               if (m < worst) worst = m;
             });
@@ -1719,6 +1776,8 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     const int head = ch.unit_start.front();
     if (ch.parent >= 0) {
       s.bonds.push_back({maps[size_t(ch.parent)][size_t(ch.anchor)], map[size_t(head)], 1});
+    } else if (ch.ext_anchor >= 0) {   // grafted: bonded to its substrate site (the substrate atoms come first)
+      s.bonds.push_back({uint32_t(ch.ext_anchor), map[size_t(head)], 1});
     } else if (!ch.cap_taken) {
       const Vec3 hp = ch.pos[size_t(head)] + unitv(ch.pos[2] - ch.pos[size_t(head)]) * 1.09;
       s.bonds.push_back({map[size_t(head)], add(1, hp, molid), 1});

@@ -138,6 +138,35 @@ struct CreepResult {
 CreepResult run_creep(System& s, const CreepOptions& o);
 std::vector<Property> creep_properties(const CreepResult& r, double stress);
 
+// Sliding friction at a fixed gap: one wall molecule moves rigidly along x at `velocity` while another is held, the
+// rest (a polymer film, a lubricant, a rubber layer) under the thermostat. The force of the rest on the moving wall,
+// averaged over the steady part (blocks for the errors): the friction force −F_x, the normal force F_z, the shear
+// stress −F_x/A and the friction coefficient μ = −F_x/F_z (A the cell's xy area).
+struct FrictionOptions {
+  std::shared_ptr<const ForceField> field;
+  EnergyOptions energy;
+  int64_t moving_mol = 2, fixed_mol = 1;   // molecule ids (fixed 0: none held)
+  double velocity = 0.1;                   // Å/ps along x (10 m/s)
+  double temperature = 300.0, dt = 1.0, tau_t = 100.0;
+  double ps = 50.0, equilibrate_ps = 10.0, transient = 0.25;
+  int sample_every = 10, blocks = 5;
+  uint64_t seed = 1;
+  bool new_velocities = false;
+  std::function<bool(const std::string& what, double fraction)> progress;
+};
+struct FrictionResult {
+  std::vector<double> t_ps, fx, fz, temperature;
+  double friction = 0, friction_err = 0;   // −⟨F_x⟩, kcal/mol/Å
+  double normal = 0, normal_err = 0;       // ⟨F_z⟩, kcal/mol/Å (positive: the rest pushes the wall up, away)
+  double shear_stress = 0, normal_stress = 0;   // MPa
+  double mu = 0;
+  double area = 0;                         // Å²
+  std::string method;
+  std::vector<std::string> notes;
+};
+FrictionResult run_friction(System& s, const FrictionOptions& o);
+std::vector<Property> friction_properties(const FrictionResult& r);
+
 // Shear viscosity by non-equilibrium MD (SLLOD planar Couette flow, Evans & Morriss 1984): from one NVT-equilibrated
 // start, each shear rate runs on its own; the first `transient` fraction is left out (start-up), then
 // η = −⟨P_xy⟩/γ̇ with block errors, the first normal-stress difference N1 = −(P_xx − P_yy) and the mean temperature. The

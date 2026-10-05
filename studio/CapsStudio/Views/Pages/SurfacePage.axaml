@@ -119,6 +119,13 @@
                       <TextBlock Text="Polymer" Classes="label" />
                       <ComboBox ItemsSource="{Binding FilmPolymers}" SelectedItem="{Binding SurfFilmItem}" HorizontalAlignment="Stretch" />
                     </StackPanel>
+                    <ComboBox ItemsSource="{x:Static vm:MainViewModel.FilmKinds}" SelectedIndex="{Binding FilmKind}" HorizontalAlignment="Stretch"
+                              ToolTip.Tip="A free film grown against the surface, or chains grafted by one end to surface sites (a brush)" />
+                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10" IsVisible="{Binding FilmIsBrush}">
+                      <StackPanel Spacing="6"><TextBlock Text="σ · chains/nm²" Classes="label" /><NumericUpDown Value="{Binding BrushSigma}" Minimum="0.01" Maximum="10" Increment="0.05" FormatString="0.00" /></StackPanel>
+                      <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Graft site" Classes="label" /><TextBox Text="{Binding BrushSite}" ToolTip.Tip="Element of the sites: O for silanols (their H is replaced), C for C–H sites" /></StackPanel>
+                      <StackPanel Grid.Column="2" Spacing="6"><TextBlock Text="Spacing ≥ · Å" Classes="label" /><NumericUpDown Value="{Binding BrushSpacing}" Minimum="1" Maximum="30" Increment="0.5" FormatString="0.0" /></StackPanel>
+                    </Grid>
                     <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
                       <StackPanel Spacing="6"><TextBlock Text="Thickness · Å" Classes="label" /><NumericUpDown Value="{Binding FilmThickness}" Minimum="5" Maximum="200" Increment="1" FormatString="0.0" /></StackPanel>
                       <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Density · g/cm³" Classes="label" /><NumericUpDown Value="{Binding FilmDensity}" Minimum="0.1" Maximum="2" Increment="0.05" FormatString="0.00" /></StackPanel>
@@ -128,7 +135,7 @@
                       <StackPanel Spacing="6"><TextBlock Text="Gap to the surface · Å" Classes="label" /><NumericUpDown Value="{Binding FilmGap}" Minimum="0" Maximum="10" Increment="0.5" FormatString="0.0" /></StackPanel>
                       <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Vacuum above · Å (0 = periodic)" Classes="label" /><NumericUpDown Value="{Binding FilmVacuum}" Minimum="0" Maximum="200" Increment="1" FormatString="0.0" /></StackPanel>
                     </Grid>
-                    <TextBlock Classes="dim" TextWrapping="Wrap" Text="Chains grow into the film region avoiding the surface atoms; a dense film steps the contact scale down and needs Relax with push-off. The surface is molecule 1 and stays fixed in Relax." />
+                    <TextBlock Classes="dim" TextWrapping="Wrap" Text="Chains grow into the film region avoiding the surface atoms; a dense film steps the contact scale down and needs Relax with push-off. The surface is molecule 1 and stays fixed in Relax. A brush grafts each chain's head to a site (a silanol's O–H becomes Si–O–C); the thickness is the height the chains may use." />
                   </StackPanel>
                 </StackPanel>
               </Border>

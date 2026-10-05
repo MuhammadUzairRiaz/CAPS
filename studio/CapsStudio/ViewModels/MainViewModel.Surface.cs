@@ -270,6 +270,16 @@ public sealed partial class MainViewModel
     private bool _surfFilm = true;
     public bool SurfFilm { get => _surfFilm; set { if (Set(ref _surfFilm, value)) { RaiseStack(); Raise(nameof(SurfBuildText)); } } }
     private decimal _filmThickness = 25, _filmDensity = 0.9m, _filmVacuum, _filmGap = 1, _filmDp = 12;
+    // a grafted brush in place of the free film (core polymer.hpp build_brush)
+    public static readonly string[] FilmKinds = ["Free film grown against the surface", "Brush: chains grafted to surface sites"];
+    private int _filmKind;
+    private decimal _brushSigma = 0.3m, _brushSpacing = 4m;
+    private string _brushSite = "O";
+    public int FilmKind { get => _filmKind; set { if (Set(ref _filmKind, Math.Clamp(value, 0, 1))) Raise(nameof(FilmIsBrush)); } }
+    public bool FilmIsBrush => _filmKind == 1;
+    public decimal BrushSigma { get => _brushSigma; set => Set(ref _brushSigma, Math.Clamp(value, 0.01m, 10m)); }
+    public decimal BrushSpacing { get => _brushSpacing; set => Set(ref _brushSpacing, Math.Clamp(value, 1m, 30m)); }
+    public string BrushSite { get => _brushSite; set => Set(ref _brushSite, (value ?? "O").Trim()); }
     public decimal FilmThickness { get => _filmThickness; set { if (Set(ref _filmThickness, Math.Clamp(value, 5, 200))) RaiseStack(); } }
     public decimal FilmDensity { get => _filmDensity; set { if (Set(ref _filmDensity, Math.Clamp(value, 0.1m, 2.0m))) RaiseStack(); } }
     public decimal FilmVacuum { get => _filmVacuum; set { if (Set(ref _filmVacuum, Math.Clamp(value, 0, 200))) RaiseStack(); } }
@@ -463,12 +473,15 @@ public sealed partial class MainViewModel
                 {
                     ["crystal"] = cif,
                     ["slab"] = JsonNode.Parse(SurfOptions(true)),
-                    ["film"] = new JsonObject { ["thickness"] = (double)_filmThickness, ["density"] = (double)_filmDensity, ["gap"] = (double)_filmGap, ["vacuum"] = (double)_filmVacuum },
-                }.ToJsonString();
+                    ["film"] = new JsonObject { ["thickness"] = (double)_filmThickness, ["density"] = (double)_filmDensity, ["gap"] = (double)_filmGap,
+                                                ["vacuum"] = _filmKind == 1 ? Math.Max(10.0, (double)_filmVacuum) : (double)_filmVacuum },
+                };
+                if (_filmKind == 1) options["brush"] = new JsonObject { ["density"] = (double)_brushSigma, ["site"] = _brushSite, ["min_spacing"] = (double)_brushSpacing };
+                var optionsText = options.ToJsonString();
                 var name = FilmName;
                 var specText = spec.ToJsonString();
                 var o = new CapsGrowOpts { Chains = 0, Dp = (int)_filmDp, Tacticity = 0, Seed = (ulong)FilmSeed.Take(), Density = 0, ContactScale = 1.0, Curve = 1 };
-                var (doc, rep) = await Task.Run(() => CapsDocument.InterfaceBuild(options, specText, o, (d, t, r) =>
+                var (doc, rep) = await Task.Run(() => CapsDocument.InterfaceBuild(optionsText, specText, o, (d, t, r) =>
                 {
                     Avalonia.Threading.Dispatcher.UIThread.Post(() => Status = $"Growing the film · {d} of {t} chains · {r} restarts");
                     return true;
@@ -480,7 +493,7 @@ public sealed partial class MainViewModel
                     (doc, var log) = await Task.Run(() => { try { return StackOnto(built, $"{title} + {ShortName(name)} film"); } finally { built.Dispose(); } });
                     SurfLog = rep + "\n" + log;
                 }
-                Show(doc, $"{title} + {ShortName(name)} film" + (_surfExtra.Count > 0 ? $" + {_surfExtra.Count} layer{(_surfExtra.Count == 1 ? "" : "s")}" : ""));
+                Show(doc, $"{title} + {ShortName(name)} {(_filmKind == 1 ? "brush" : "film")}" + (_surfExtra.Count > 0 ? $" + {_surfExtra.Count} layer{(_surfExtra.Count == 1 ? "" : "s")}" : ""));
                 KeepPageSettings("surface");   // Edit brings the page back as it was for this structure
                 GrownUnsaved = true;
                 RelaxCompress = false;   // compression would scale the crystal with the film

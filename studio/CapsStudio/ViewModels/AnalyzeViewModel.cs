@@ -131,7 +131,7 @@ public sealed class AnalyzeViewModel : ObservableObject
             new("Mechanics", [StrainChip, FluctChip, TensileChip, CreepChip]),
             new("Dynamics", [Chip("msd", "MSD"), Chip("diffusion", "D"), Chip("relaxation", "Relaxation"), Chip("vacf", "VACF · VDOS"), Chip("vanhove", "van Hove · α₂"), ViscChip, NemdChip]),
             new("Free volume", [Chip("ffv", "Probe insertion"), Chip("psd", "Pore size")]),
-            new("Interface", [Chip("zprofile", "z profile"), Chip("adhesion", "Adhesion"), Chip("interaction", "Filler–matrix"), PullShearChip, PullNormalChip]),
+            new("Interface", [Chip("zprofile", "z profile"), Chip("adhesion", "Adhesion"), Chip("interaction", "Filler–matrix"), PullShearChip, PullNormalChip, FrictionChip]),
             new("Rubber network", [Chip("crosslinks", "Crosslink density"), Chip("hbonds", "H-bonds")]),
         ];
         LoadReferences();
@@ -165,6 +165,16 @@ public sealed class AnalyzeViewModel : ObservableObject
         ["trials"] = _confTrials, ["method"] = _confMethod == 1 ? "anneal" : "torsions", ["selection"] = _confSel, ["window"] = _confWindow,
         ["rmsd"] = _confRmsd, ["temperature"] = temperature, ["seed"] = (long)MechSeed,
     }.ToJsonString();
+    public CalcChip FrictionChip { get; } = Chip("friction", "Sliding friction", tip: "One wall molecule slid over the film at a fixed gap on a copy of the current frame: the friction force, the shear stress at the wall and μ = −F_x/F_z");
+    private int _frMoving = 2, _frFixed = 1;
+    private double _frSpeed = 10, _frPs = 50, _frEq = 10, _frT = 300;   // m/s, ps, ps, K
+    public decimal FrMovingD { get => _frMoving; set => Set(ref _frMoving, (int)Math.Max(1, value), nameof(FrMovingD)); }
+    public decimal FrFixedD { get => _frFixed; set => Set(ref _frFixed, (int)Math.Max(0, value), nameof(FrFixedD)); }
+    public decimal FrSpeedD { get => (decimal)_frSpeed; set { Set(ref _frSpeed, (double)value, nameof(FrSpeedD)); Raise(nameof(FrText)); } }
+    public decimal FrPsD { get => (decimal)_frPs; set { Set(ref _frPs, Math.Max(0.1, (double)value), nameof(FrPsD)); Raise(nameof(FrText)); } }
+    public decimal FrEqD { get => (decimal)_frEq; set => Set(ref _frEq, Math.Max(0, (double)value), nameof(FrEqD)); }
+    public decimal FrTD { get => (decimal)_frT; set => Set(ref _frT, Math.Max(1, (double)value), nameof(FrTD)); }
+    public string FrText => string.Format(CultureInfo.InvariantCulture, "{0:0.###} Å/ps · the wall moves {1:0.#} Å in {2:0.#} ps", _frSpeed / 100, _frSpeed / 100 * _frPs, _frPs);
     public CalcChip CreepChip { get; } = Chip("creep", "Creep", tip: "Constant true stress along one axis on a copy of the current frame: strain and creep compliance against time, the creep rate and the lateral contraction");
     private double _crStress = 50, _crT = 300, _crPs = 200, _crEq = 20;
     private int _crAxis = 2;
@@ -343,6 +353,7 @@ public sealed class AnalyzeViewModel : ObservableObject
             Seed = MechSeed,
             Pressure = _tgPressure, Barostat = _tgBarostat, TauT = _tgTauT, TauP = _tgTauP, AverageFrom = Math.Max(1e-6, 1 - _tgAverage / 100.0),
             TgProperty = _tgProperty, TgFit = _tgFit, GlassyMax = _tgGlassy, RubberyMin = _tgRubbery,
+            FrMoving = _frMoving, FrFixed = _frFixed, FrVelocity = _frSpeed / 100, FrPs = _frPs, FrEqPs = _frEq > 0 ? _frEq : -1, FrT = _frT,
             CreepStress = _crStress, CreepT = _crT, CreepPs = _crPs, CreepEqPs = _crEq > 0 ? _crEq : -1, CreepAxis = _crAxis,
             ConfTrials = _confTrials, ConfMethod = _confMethod, ConfSelection = _confSel ? 1 : 0, ConfWindow = _confWindow, ConfRmsd = _confRmsd,
             ShearLo = _shLo, ShearHi = _shHi, ShearPoints = _shPoints, ShearPs = _shPs, ShearEqPs = _shEq > 0 ? _shEq : -1,
@@ -636,4 +647,31 @@ public sealed class AnalyzeViewModel : ObservableObject
         .Replace("#", "\\#").Replace("^", "\\^{}").Replace("³", "$^3$").Replace("²", "$^2$").Replace("⁻¹", "$^{-1}$").Replace("⁻⁵", "$^{-5}$")
         .Replace("½", "$^{1/2}$").Replace("√", "$\\sqrt{}$").Replace("⟨", "$\\langle$").Replace("⟩", "$\\rangle$").Replace("Å", "\\AA{}")
         .Replace("δ", "$\\delta$").Replace("∞", "$_\\infty$").Replace("τ", "$\\tau$");
+
+    /// <summary>The frame a point of the shown curve belongs to (D9: click a chart point → that frame): curves over
+    /// "frame" map directly; curves over time map through the analysis's frame times (frame_ps, or the timesteps × the
+    /// time step) from the first analysed frame, as the core lays them out. −1 when the curve is not over the trajectory.</summary>
+    public int FrameOfCurveX(double x)
+    {
+        if (_curveIndex < 0 || _curveIndex >= Curves.Count) return -1;
+        var c = Curves[_curveIndex];
+        var lbl = c.XLabel.ToLowerInvariant();
+        var doc = _doc();
+        if (doc == null) return -1;
+        var steps = doc.FrameTimesteps();
+        if (steps.Length == 0) return -1;
+        if (lbl.StartsWith("frame")) return Math.Clamp((int)Math.Round(x), 0, steps.Length - 1);
+        if (!lbl.Contains("ps")) return -1;
+        double T(int k) => _framePs > 0 ? k * _framePs : steps[k] * _timestepFs * 1e-3;
+        var first = Math.Clamp(_first, 0, steps.Length - 1);
+        var t = x + T(first);
+        int best = -1;
+        var bd = double.MaxValue;
+        for (var k = first; k < steps.Length; ++k)
+        {
+            var d = Math.Abs(T(k) - t);
+            if (d < bd) { bd = d; best = k; }
+        }
+        return best;
+    }
 }

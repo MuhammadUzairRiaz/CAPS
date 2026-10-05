@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Avalonia.Threading;
 using CapsStudio.Interop;
 
@@ -368,5 +369,61 @@ public sealed partial class MainViewModel
         if (_molDoc == null) return;
         _molDoc.Save(path);
         Status = $"Saved conformer {Math.Max(0, _molConf) + 1} to {path}";
+    }
+
+    // ---------------------------------------------------------------- analogs from R groups (core molecule.hpp enumerate_analogs)
+    private string _anCore = "", _anGroups = "", _anText = "";
+    private List<(string Smiles, string Name)> _analogs = new();
+    public string AnalogCore { get => _anCore; set { if (Set(ref _anCore, value ?? "")) EnumerateAnalogs(); } }
+    public string AnalogGroups { get => _anGroups; set { if (Set(ref _anGroups, value ?? "")) EnumerateAnalogs(); } }
+    public string AnalogText { get => _anText; private set => Set(ref _anText, value); }
+    public bool AnalogReady => _analogs.Count > 0 && !_molBuilding;
+    public string AnalogButton => _analogs.Count > 0 ? $"Build {_analogs.Count}" : "Build";
+    private void EnumerateAnalogs()
+    {
+        _analogs.Clear();
+        try
+        {
+            var groups = new JsonArray();
+            foreach (var line in _anGroups.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                var colon = line.IndexOf(':');
+                if (colon < 1 || !int.TryParse(line[..colon].Trim().TrimStart('R', 'r'), out var r)) continue;
+                var subs = line[(colon + 1)..].Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                groups.Add(new JsonObject { ["r"] = r, ["subs"] = new JsonArray(subs.Select(x => (JsonNode)x).ToArray()) });
+            }
+            if (_anCore.Trim().Length == 0 || groups.Count == 0) { AnalogText = "a core with [*:1] … and one line per R group"; }
+            else
+            {
+                var j = JsonNode.Parse(CapsDocument.EnumerateAnalogs(new JsonObject { ["core"] = _anCore.Trim(), ["groups"] = groups, ["max"] = 50 }.ToJsonString()))!;
+                foreach (var a in j["analogs"] as JsonArray ?? []) _analogs.Add(((string?)a?["smiles"] ?? "", (string?)a?["name"] ?? ""));
+                AnalogText = $"{_analogs.Count} analog{(_analogs.Count == 1 ? "" : "s")}" + (_analogs.Count == 50 ? " (the first 50)" : "") + " · each a structure of its own";
+            }
+        }
+        catch (Exception e) { AnalogText = e.Message; }
+        Raise(nameof(AnalogReady)); Raise(nameof(AnalogButton));
+    }
+    /// <summary>Every analog built (the clean-up force field and hydrogens as set above) as a structure of the project.</summary>
+    public async Task BuildAnalogs()
+    {
+        if (_analogs.Count == 0) return;
+        var ff = _molClean >= 0 && _molClean < CleanChoices.Length ? CleanChoices[_molClean].File : null;
+        var (rotor, heavy) = (_molMethod == 1, _molHydrogens == 1);
+        var built = 0;
+        var failed = new List<string>();
+        foreach (var (smiles, name) in _analogs.ToList())
+        {
+            Status = $"Building analog {built + failed.Count + 1} of {_analogs.Count}: {name}";
+            try
+            {
+                var (doc, _) = await Task.Run(() => CapsDocument.BuildSmiles(smiles, ff, 1, 1, name, rotor, heavy));
+                Show(doc, name);
+                if (_activeItem != null) _activeItem.Origin = "Analog";
+                ++built;
+            }
+            catch (Exception e) { failed.Add($"{name} ({e.Message})"); }
+        }
+        SetModule(8);
+        Status = $"{built} analog{(built == 1 ? "" : "s")} built" + (failed.Count > 0 ? $"; could not build {string.Join("; ", failed)}" : "");
     }
 }

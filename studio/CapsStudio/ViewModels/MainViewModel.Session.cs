@@ -28,8 +28,24 @@ public sealed partial class MainViewModel
                    string.Join(", ", names.Take(3)) + (names.Count > 3 ? $" and {names.Count - 3} more" : "");
         }
     }
-    public string LastSessionWhen => _lastSessionTime is { } t ? "closed " + t.ToString("d MMM, HH:mm", CultureInfo.InvariantCulture) : "";
+    public string LastSessionWhen => _lastSessionTime is { } t
+        ? (_lastSessionClean ? "closed " : "kept automatically at ") + t.ToString("d MMM, HH:mm", CultureInfo.InvariantCulture) + (_lastSessionClean ? "" : " · CAPS did not close normally")
+        : "";
     private DateTime? _lastSessionTime;
+    private bool _lastSessionClean = true;
+
+    // crash recovery outside a project (a project saves itself as the work goes): the open structures kept every three
+    // minutes while nothing runs, so a session that ends without quitting comes back from Start
+    private Avalonia.Threading.DispatcherTimer? _autoSessionTimer;
+    private void StartSessionAutosave()
+    {
+        if (_autoSessionTimer != null || AppSettings.Override != null) return;   // not for the self-test's own settings
+        _autoSessionTimer = new Avalonia.Threading.DispatcherTimer(TimeSpan.FromMinutes(3), Avalonia.Threading.DispatcherPriority.Background, (_, _) =>
+        {
+            if (_projFile == null && !Busy && ProjectItems.Count > 0) SaveSession(autosave: true);
+        });
+        _autoSessionTimer.Start();
+    }
 
     /// <summary>Reads the last session's list (Start shows it while nothing is open).</summary>
     public void LoadLastSession()
@@ -42,10 +58,12 @@ public sealed partial class MainViewModel
             {
                 _lastSession = o["items"] as JsonArray;
                 if (DateTime.TryParse((string?)o["saved"], CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var t)) _lastSessionTime = t;
+                _lastSessionClean = (bool?)o["clean"] ?? true;
             }
         }
         catch { _lastSession = null; }
         RaiseSession();
+        StartSessionAutosave();
     }
 
     private void RaiseSession()
@@ -56,7 +74,7 @@ public sealed partial class MainViewModel
     }
 
     /// <summary>Writes the project tree to the session folder (on quitting). Nothing open: the last session is kept.</summary>
-    public void SaveSession()
+    public void SaveSession(bool autosave = false)
     {
         if (ProjectItems.Count == 0) return;
         try
@@ -91,7 +109,7 @@ public sealed partial class MainViewModel
                     ["jobs"] = new JsonArray(it.Jobs.Select(j => (JsonNode)j.Id).ToArray()),
                 });
             }
-            File.WriteAllText(SessionFile, new JsonObject { ["saved"] = DateTime.Now.ToString("o"), ["items"] = items }.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+            File.WriteAllText(SessionFile, new JsonObject { ["saved"] = DateTime.Now.ToString("o"), ["clean"] = !autosave, ["items"] = items }.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
             SaveJobs();
         }
         catch (Exception e) { Status = "Could not keep the session: " + e.Message; }

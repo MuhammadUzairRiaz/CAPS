@@ -41,6 +41,12 @@ struct GrowOptions {
   std::array<double, 3> cell{0, 0, 0};   // edges x, y, z (Å), used when all three are > 0 (box and density are then ignored)
   double z_lo = 0, z_hi = 0;             // when z_hi > z_lo, every chain atom stays between these heights
   const System* substrate = nullptr;     // fixed atoms (a slab) the chains avoid; they come first in the result
+  // grafted chains (brushes): chain k < anchors.size() starts bonded to substrate atom anchors[k].atom, its first unit's
+  // head leaving along anchors[k].dir (the site's outward direction); that head takes no end cap. The atoms within three
+  // bonds of the anchor count as bonded neighbours, not contacts. The substrate must have the site's own valence free
+  // (a silanol's H already taken off).
+  struct Anchor { uint32_t atom = 0; std::array<double, 3> dir{0, 0, 1}; };
+  std::vector<Anchor> anchors;
   // a spherical region (blend droplets): when sphere_radius > 0 every chain atom stays inside the sphere about
   // sphere_centre, or outside it with sphere_outside (minimum image in the periodic cell)
   double sphere_radius = 0;

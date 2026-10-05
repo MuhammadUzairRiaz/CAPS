@@ -150,6 +150,10 @@ struct LammpsStyle {
   // atom id, said in a comment. The input says where the first group's types are numbered.
   struct Group { std::string name; std::vector<uint32_t> atoms; };
   std::vector<Group> groups;
+  // Rigid bodies (filler particles, rigid molecules): these molecule ids move as rigid bodies in the LAMMPS run (group
+  // rigid, pairs inside a body excluded, fix rigid/nvt/small molecule; the others integrate on their own, and an NPT
+  // barostat dilates only them). CAPS's own runs have no rigid bodies.
+  std::vector<int64_t> rigid_mols;
   // Four-site water (TIP4P family): set by the writers when they leave the M sites out; LAMMPS's tip4p styles place
   // them d_OM (qdist, Å) along the bisector from the O of type o_type, with its H type, O–H bond and H–O–H angle types
   double tip4p_qdist = 0;

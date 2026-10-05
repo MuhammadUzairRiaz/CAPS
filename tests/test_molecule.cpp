@@ -290,3 +290,24 @@ TEST(Molecule, RotorSearchAndHydrogensAsWritten) {
   const BuildResult h = build_molecule("CCCC", ua);
   EXPECT_EQ(h.system.atoms.size(), 4u);
 }
+
+// Analogs from R groups: a benzene core with two attachment points, three substituents on one and two on the other —
+// six whole molecules, each built (one molecule, the right formula), hydrogen leaving the core atom's own H.
+TEST(Molecule, AnalogsFromRGroups) {
+  const auto an = enumerate_analogs("c1cc([*:1])ccc1[*:2]", {{1, {"H", "Cl", "C(=O)O"}}, {2, {"C", "*OC"}}});
+  ASSERT_EQ(an.size(), 6u);
+  std::set<std::string> formulas;
+  for (const auto& a : an) {
+    BuildOptions b;
+    const auto r = build_molecule(a.smiles, b);
+    int nm = 0;
+    r.system.molecules(&nm);
+    EXPECT_EQ(nm, 1) << a.smiles;
+    formulas.insert(r.info.formula);
+  }
+  EXPECT_EQ(formulas.size(), 6u);
+  EXPECT_TRUE(formulas.count("C7H8"));      // R1 = H, R2 = methyl: toluene
+  EXPECT_TRUE(formulas.count("C8H8O3"));    // R1 = COOH, R2 = OMe: anisic acid
+  EXPECT_EQ(an[0].name, "R1=H, R2=C");
+  EXPECT_THROW(enumerate_analogs("c1ccccc1", {{1, {"C"}}}), std::invalid_argument);
+}
