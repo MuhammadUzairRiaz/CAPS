@@ -43,6 +43,10 @@ public sealed class ResultCard
     public string[] Notes { get; init; } = [];
     public (string Key, double Value)[] Extra { get; init; } = [];
     public RefValue? Ref { get; set; }
+    // normal modes: the card plays one (1 = the lowest) in a copy of the structure
+    public bool IsModes => Id == "modes" && HasValue;
+    public decimal PickMode { get; set; } = 1;
+    public decimal ModeCount => (decimal)Math.Max(1, Extra.FirstOrDefault(e => e.Key == "modes").Value);
 
     private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
     public bool HasValue => !double.IsNaN(Value);
@@ -122,7 +126,7 @@ public sealed class AnalyzeViewModel : ObservableObject
             new("Structure", [Chip("density", "Density", on: true), Chip("rdf", "RDF", on: true), Chip("sq", "S(q)"), Chip("xray", "X-ray"), Chip("electron", "Electron"), Chip("neutron", "Neutron")]),
             new("Chains", [Chip("rg", "Rg", on: true), Chip("ree", "Ree"), Chip("cn", "Cn, C∞"), Chip("persistence", "Persistence"), Chip("orientation", "Orientation"),
                 Chip("entanglements", "Entanglements"), Chip("conformation", "Torsions"), Chip("p2r", "P₂(r)")]),
-            new("Thermo", [Chip("ced", "CED"), Chip("delta", "δ"), Chip("dielectric", "ε dielectric"), TgChip]),
+            new("Thermo", [Chip("ced", "CED"), Chip("delta", "δ"), Chip("dielectric", "ε dielectric"), Chip("fluct", "Cp·κT·α"), Chip("modes", "Normal modes"), TgChip]),
             new("Mechanics", [StrainChip, FluctChip, TensileChip]),
             new("Dynamics", [Chip("msd", "MSD"), Chip("diffusion", "D"), Chip("relaxation", "Relaxation"), Chip("vacf", "VACF · VDOS"), Chip("vanhove", "van Hove · α₂"), ViscChip]),
             new("Free volume", [Chip("ffv", "Probe insertion"), Chip("psd", "Pore size")]),
@@ -175,6 +179,8 @@ public sealed class AnalyzeViewModel : ObservableObject
         ["entanglements"] = "Primitive-path analysis (Everaers 2004): chain ends fixed, chains pulled tight without crossing; entanglement length N_e (modified S-coil), M_e, tube step and plateau modulus G_N⁰ at the temperature set for Tg / Cij",
         ["conformation"] = "Backbone torsion distribution: trans (|φ| > 120°) and gauche± fractions, t/g ratio, with the backbone angle and bond distributions",
         ["vacf"] = "Velocity autocorrelation (all time origins), Green–Kubo D, and the vibrational density of states (needs velocities in the frames)",
+        ["modes"] = "Harmonic vibrations of the last chosen frame (minimise it tightly first; at most 600 atoms, or a group): wavenumbers, the IR spectrum of the fixed charges, the vibrational density of states, ZPE, S and Cv; play a mode from its card",
+        ["fluct"] = "Heat capacity, isothermal compressibility, bulk modulus and thermal expansion from the fluctuations of an equilibrium run (NPT: Cp, κT, B, α; NVT: Cv). Needs the force field and the run's temperature; hundreds of well-spaced frames",
         ["dielectric"] = "Static dielectric constant from the fluctuations of the cell's total dipole (needs charges, the run's temperature and a long equilibrium trajectory), with the dipole autocorrelation",
         ["vanhove"] = "Self part of the van Hove function G_s(r, t) at log-spaced times and the non-Gaussian parameter α₂(t): heterogeneous, glassy dynamics",
         ["p2r"] = "Orientational correlation of backbone chords against their distance: local chain alignment, order near a surface or in a stretched sample",

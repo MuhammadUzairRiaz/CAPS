@@ -547,4 +547,11 @@ _plane = vs.probe("plane", range(130))
 _h = vs.probe_series(("point", range(390, 520)), ("plane", range(130)))
 check(1.6 < _cc["suggested"] < 2.4 and _never["after"] == 710 and len(_plane["axes"]) == 3 and len(_h) >= 1,
       f"bond rules and probes: C–C cut-off {_cc['suggested']:.2f} · C–H never → {_never['after']} bonds · height {_h[0]:.2f} Å")
+# normal modes (3N − 6 for ethanol, all real at a tight minimum) and one played as frames; the run's temperature reaches fluct
+_et = caps.build.smiles("CCO")
+_et.relax(ftol=0.001)
+_nm = _et.normal_modes()
+_an = _et.animate_mode(21, amplitude=0.2, frames=12)
+check(_nm["extra"]["modes"] == 21 and _nm["extra"]["imaginary modes"] == 0 and _an["wavenumber"] > 3000 and _et.frames == 12,
+      f"normal modes: {_nm['extra']['modes']:.0f} modes, highest {_an['wavenumber']:.0f} cm⁻¹, ZPE {_nm['value']:.1f} kcal/mol, {_et.frames} frames")
 print("all python checks passed")

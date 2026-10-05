@@ -1634,7 +1634,9 @@
    "group": "Analysis",
    "source": "core/src/properties.cpp",
    "engines": [],
-   "cites": [],
+   "cites": [
+    "neumann1983"
+   ],
    "id": "dielectric",
    "title": "Static dielectric constant from dipole fluctuations",
    "summary": "The fluctuations of the cell's total dipole moment over an equilibrium trajectory give its static dielectric constant (conducting surroundings, as Ewald sums with tin-foil boundaries assume).",
@@ -1661,6 +1663,158 @@
    "tested": "tests/test_core.cpp Analyze.DielectricFromDipoleFluctuations (a flipping ±1 e pair in a 10 Å cell at 300 K: 3.332)",
    "deviation": "no electronic polarisability: ε∞ = 1 (add it for a comparison with experiment)",
    "tex": "\\varepsilon = 1 + \\frac{\\langle M^2\\rangle - \\langle M\\rangle^2}{3\\,\\varepsilon_0 V k_B T},\\qquad \\mathbf M = \\sum_i q_i\\,\\mathbf r_i"
+  },
+  {
+   "group": "Integrators",
+   "source": "core/src/dynamics.cpp",
+   "engines": [
+    "LAMMPS"
+   ],
+   "cites": [],
+   "id": "electric-field",
+   "title": "Electric field during MD",
+   "summary": "A uniform external field on the partial charges during Dynamics: poling of polar rubbers, field-driven ion drift, the dielectric response at finite field. The LAMMPS input carries the same field (fix efield).",
+   "equation": "F_i = F_i(U) + q_i E,  1 e·V/Å = 23.0605 kcal/mol/Å",
+   "equation_note": "E in V/Å as LAMMPS real units; under periodic boundaries the field does work no potential accounts for, so the conserved energy drifts; a thermostat takes the heat out",
+   "symbols": [
+    [
+     "q_i",
+     "partial charge of atom i",
+     "e"
+    ],
+    [
+     "E",
+     "field",
+     "V/Å"
+    ],
+    [
+     "F_i(U)",
+     "force from the force field",
+     "kcal/mol/Å"
+    ]
+   ],
+   "when": "Strong fields, 0.01–1 V/Å (10⁸–10¹⁰ V/m), so the response shows above the thermal noise in nanoseconds; follow the cell dipole with the dielectric analysis (linear response: ⟨M⟩ = ε₀ V (ε − 1) E).",
+   "tested": "tests/test_dynamics.cpp Dynamics.ElectricFieldAcceleratesACharge (a +1 e atom at rest moves ½at² along E; a neutral one stays)",
+   "deviation": "no electronic polarisation (fixed charges)",
+   "tex": "\\mathbf F_i = -\\nabla_i U + q_i\\,\\mathbf E,\\qquad 1\\ e\\cdot\\mathrm{V/\\AA} = 23.0605\\ \\mathrm{kcal\\,mol^{-1}\\,\\AA^{-1}}"
+  },
+  {
+   "group": "Analysis",
+   "source": "core/src/properties.cpp",
+   "engines": [],
+   "cites": [
+    "allen2017"
+   ],
+   "id": "fluctuation-response",
+   "title": "Heat capacity, compressibility and expansion from fluctuations",
+   "summary": "An equilibrium NPT run gives Cp, the isothermal compressibility κ_T (and the bulk modulus B = 1/κ_T) and the thermal expansion α_P from the fluctuations of the enthalpy and the volume; an NVT run gives Cv. One run, no finite differences.",
+   "equation": "Cp = 3Nk_B/2 + ⟨δ(U+PV)²⟩/k_BT²,  κ_T = ⟨δV²⟩/(k_BT⟨V⟩),  α_P = ⟨δV δ(U+PV)⟩/(k_BT²⟨V⟩)",
+   "equation_note": "the frames carry no velocities: the kinetic part is exact in classical statistics, ⟨δK²⟩ = 3N(k_BT)²/2, uncorrelated with the configuration",
+   "symbols": [
+    [
+     "U",
+     "potential energy of the frame (the assigned force field)",
+     "kcal/mol"
+    ],
+    [
+     "V",
+     "cell volume",
+     "Å³"
+    ],
+    [
+     "N",
+     "atoms",
+     "—"
+    ],
+    [
+     "T, P",
+     "temperature and pressure of the run",
+     "K, atm"
+    ]
+   ],
+   "when": "Rubber compounds and glassy polymers: κ_T and B for the bulk response, α_P below and above Tg (compare with the slope of V(T) from the Tg scan), Cp for thermal modelling.",
+   "tested": "tests/test_core.cpp Analyze.ResponseFunctionsFromFluctuations (argon beyond the cut-off: U = 0, the volume's variance alone; NVT gives 3R/2M)",
+   "deviation": "classical heat capacity: every vibration holds k_BT, so Cp exceeds experiment where high-frequency modes are frozen out; fluctuations converge slowly (the ± is the spread of the blocks)",
+   "tex": "C_P = \\tfrac{3}{2}Nk_B + \\frac{\\langle\\delta H^2\\rangle}{k_B T^2},\\qquad \\kappa_T = \\frac{\\langle\\delta V^2\\rangle}{k_B T\\langle V\\rangle},\\qquad \\alpha_P = \\frac{\\langle\\delta V\\,\\delta H\\rangle}{k_B T^2\\langle V\\rangle},\\qquad H = U + PV"
+  },
+  {
+   "group": "Analysis",
+   "source": "core/src/mech_props.cpp",
+   "engines": [],
+   "cites": [
+    "ranganathan2008",
+    "anderson1963"
+   ],
+   "id": "compliance-sound",
+   "title": "Compliance, directional moduli and sound speeds",
+   "summary": "From the elastic constants: the compliance S = C⁻¹, Young's moduli and Poisson's ratios along the cell axes, the shear moduli, how far from isotropic the solid is, and its longitudinal, transverse and Debye-mean sound speeds.",
+   "equation": "E_i = 1/S_ii,  ν_ij = −S_ij/S_ii,  A^U = 5G_V/G_R + K_V/K_R − 6,  v_L = √((K + 4G/3)/ρ),  v_T = √(G/ρ)",
+   "equation_note": "K and G are the Hill averages; ν_ij is the strain along j over the strain along i when stretched along i; v_m = [(2/v_T³ + 1/v_L³)/3]^(−1/3)",
+   "symbols": [
+    [
+     "S",
+     "compliance, C⁻¹",
+     "1/GPa"
+    ],
+    [
+     "K, G",
+     "bulk and shear modulus (Hill)",
+     "GPa"
+    ],
+    [
+     "ρ",
+     "density of the cell",
+     "g/cm³"
+    ],
+    [
+     "A^U",
+     "universal anisotropy index (0 isotropic)",
+     "—"
+    ]
+   ],
+   "when": "Oriented or filled rubbers and fibre composites: E along and across the fibres, the anisotropy of a stretched network; sound speeds for acoustic and damping comparisons (ultrasonic measurements).",
+   "tested": "tests/test_mechanics.cpp Mechanics.ComplianceAndSoundSpeeds (an isotropic tensor: E_x, ν_xy, G, A^U = 0 and both sound speeds as the formulas)",
+   "deviation": "the speeds are of the isotropic average; along a direction of an anisotropic solid they follow from the Christoffel equation",
+   "tex": "E_i = \\frac{1}{S_{ii}},\\qquad \\nu_{ij} = -\\frac{S_{ij}}{S_{ii}},\\qquad A^U = 5\\frac{G_V}{G_R} + \\frac{K_V}{K_R} - 6,\\qquad v_L = \\sqrt{\\frac{K + \\tfrac{4}{3} G}{\\rho}},\\qquad v_T = \\sqrt{\\frac{G}{\\rho}}"
+  },
+  {
+   "group": "Analysis",
+   "source": "core/src/normal_modes.cpp",
+   "engines": [],
+   "cites": [
+    "miller1980"
+   ],
+   "id": "normal-modes",
+   "title": "Normal modes",
+   "summary": "The harmonic vibrations of a structure at a minimum of its force field: wavenumbers, the IR spectrum of the fixed charges, the vibrational density of states and the quantum harmonic zero-point energy, entropy and heat capacity. A mode plays in the view from its card.",
+   "equation": "H̃_ij = H_ij/√(m_i m_j),  H̃ l_k = λ_k l_k,  ν̃_k = √λ_k / 2πc  (108.59 √λ cm⁻¹),  I_k ∝ |Σ_i q_i l_ik/√m_i|²",
+   "equation_note": "H by central differences of the forces (±0.005 Å, the pair list frozen); the rigid translations and rotations projected out (Miller, Handy & Adams 1980); λ < 0 shown as a negative (imaginary) wavenumber",
+   "symbols": [
+    [
+     "H",
+     "Hessian, second derivatives of the energy",
+     "kcal/mol/Å²"
+    ],
+    [
+     "m_i",
+     "atomic masses",
+     "g/mol"
+    ],
+    [
+     "l_k",
+     "mass-weighted mode k",
+     "—"
+    ],
+    [
+     "q_i",
+     "partial charges",
+     "e"
+    ]
+   ],
+   "when": "Checking a force field's bonded terms against IR/Raman bands (C=C of a diene, C=O of an ester, S–S of a crosslink), the vibrational entropy of a conformer, and whether a minimised structure is really a minimum (no imaginary modes).",
+   "tested": "tests/test_normal_modes.cpp (the eigen-solver on a random matrix; a harmonic diatomic gives √(2k/μ)/2πc with five rigid motions projected; water has three real modes)",
+   "deviation": "harmonic, fixed charges: no anharmonicity, no polarisation in the intensities; ZPE and S from the force field's frequencies",
+   "tex": "\\tilde H_{ij} = \\frac{H_{ij}}{\\sqrt{m_i m_j}},\\qquad \\tilde H\\,\\mathbf l_k = \\lambda_k \\mathbf l_k,\\qquad \\tilde\\nu_k = \\frac{\\sqrt{\\lambda_k}}{2\\pi c},\\qquad I_k \\propto \\Big|\\sum_i \\frac{q_i\\,\\mathbf l_{ik}}{\\sqrt{m_i}}\\Big|^2"
   }
  ]
 }

@@ -230,6 +230,7 @@ public struct CapsMdOpts
     public int ConstraintAlgorithm;   // 0 SHAKE, 1 LINCS (positions; RATTLE for the velocities)
     public int BoxAnisotropic;    // ABI 36: each axis in BoxAxes scaled on its own (Berendsen)
     public int BoxAxes;           // ABI 36: bits 1 x, 2 y, 4 z (0 = all)
+    public double EfieldX, EfieldY, EfieldZ;   // ABI 61: a uniform electric field on the partial charges, V/Å
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -619,6 +620,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_bond_rules_preview")] public static extern int BondRulesPreview(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? text, int cap);
     [DllImport(Lib, EntryPoint = "caps_probe_geometry")] public static extern int ProbeGeometry(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? text, int cap);
     [DllImport(Lib, EntryPoint = "caps_set_probes")] public static extern int SetProbes(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json);
+    [DllImport(Lib, EntryPoint = "caps_mode_animate")] public static extern int ModeAnimate(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? text, int cap);
     [DllImport(Lib, EntryPoint = "caps_probe_series")] public static extern int ProbeSeries(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? text, int cap);
     [DllImport(Lib, EntryPoint = "caps_set_look")] public static extern int SetLook(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json);
     [DllImport(Lib, EntryPoint = "caps_atom_column")] public static extern int AtomColumn(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string name, double[]? values, int cap);
@@ -1575,6 +1577,7 @@ public sealed class CapsDocument : IDisposable
     /// <summary>Probes drawn in the view.</summary>
     public void SetProbes(string json) { using (Hold()) { Alive(); if (Native.SetProbes(H, json) < 0) throw new InvalidOperationException(Native.LastError()); } }
     /// <summary>A probe measurement over every frame.</summary>
+    public string ModeAnimate(string json) { using (Hold()) { Alive(); var t = JsonCallOnce((b, c) => Native.ModeAnimate(H, json, b, c)); if (t.Length == 0) throw new InvalidOperationException(Native.LastError()); return t; } }
     public string ProbeSeries(string json) { using (Hold()) { Alive(); var t = JsonCallOnce((b, c) => Native.ProbeSeries(H, json, b, c)); if (t.Length == 0) throw new InvalidOperationException(Native.LastError()); return t; } }
     /// <summary>Bond rules: per element pair, the distances as a histogram.</summary>
     public string PairHistograms(string json) { using (Hold()) { Alive(); return JsonCallOnce((b, c) => Native.PairHistograms(H, json, b, c)); } }
