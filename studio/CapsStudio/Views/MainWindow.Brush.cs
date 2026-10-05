@@ -9,6 +9,10 @@ namespace CapsStudio.Views;
 public partial class MainWindow
 {
     private void OnBrushClose(object? s, RoutedEventArgs e) => _vm.BrushOpen = false;
+    // Bond rules (design/boards/BondRules)
+    private void OnRulesClose(object? s, RoutedEventArgs e) => _vm.RulesOpen = false;
+    private void OnRulesApply(object? s, RoutedEventArgs e) { _vm.ApplyBondRules(); RequestRender(); }
+    private void OnRulesSave(object? s, RoutedEventArgs e) => _vm.SaveRuleSet();
     private void OnBrushTag(object? s, RoutedEventArgs e) => _vm.TagSelection();
     private void OnBrushClear(object? s, RoutedEventArgs e) => _vm.ClearBrushes();
     private void OnBrushRemove(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is BrushHist h) _vm.RemoveBrushHist(h); }

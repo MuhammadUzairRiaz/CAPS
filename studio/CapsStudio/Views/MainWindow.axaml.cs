@@ -1194,6 +1194,7 @@ public partial class MainWindow : Window
         catch { Labels.SetLabels(new List<ViewModels.ViewLabel>()); }
         // the lens and monitors: from the GPU view's fit when there is one (no pass over the structure a frame)
         Labels.SetLens(fit is { } f ? _vm.LensCircleFit(f, _scaling) : _vm.LensCircle(cam, opt, _scaling));
+        Labels.Arcs = _vm.LookArcs;
         try { Labels.SetMonitors(fit is { } g ? _vm.MonitorMarksFit(g, _scaling) : _vm.MonitorMarks(cam, opt, _scaling)); }
         catch { Labels.SetMonitors(new List<ViewModels.MonitorMark>()); }
     }

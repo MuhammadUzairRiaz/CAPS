@@ -615,6 +615,11 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_tag_atoms")] public static extern int TagAtoms(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string name, int[]? atoms, int cap);
     [DllImport(Lib, EntryPoint = "caps_piece")] public static extern int Piece(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? text, int cap);
     [DllImport(Lib, EntryPoint = "caps_piece_file")] public static extern int PieceFile([MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string? name, byte[]? text, int cap);
+    [DllImport(Lib, EntryPoint = "caps_pair_histograms")] public static extern int PairHistograms(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? text, int cap);
+    [DllImport(Lib, EntryPoint = "caps_bond_rules_preview")] public static extern int BondRulesPreview(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? text, int cap);
+    [DllImport(Lib, EntryPoint = "caps_set_probes")] public static extern int SetProbes(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json);
+    [DllImport(Lib, EntryPoint = "caps_probe_series")] public static extern int ProbeSeries(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? text, int cap);
+    [DllImport(Lib, EntryPoint = "caps_set_look")] public static extern int SetLook(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json);
     [DllImport(Lib, EntryPoint = "caps_atom_column")] public static extern int AtomColumn(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string name, double[]? values, int cap);
     [DllImport(Lib, EntryPoint = "caps_atom_states")] public static extern int AtomStates(IntPtr doc, byte[]? states, int n);
     [DllImport(Lib, EntryPoint = "caps_project_indices")] public static extern int ProjectIndices(IntPtr doc, in CapsCamera cam, in CapsRenderOpts opt, int[] atoms, int n, float[] xy);
@@ -1564,6 +1569,16 @@ public sealed class CapsDocument : IDisposable
             return k;
         }
     }
+    /// <summary>Probes drawn in the view.</summary>
+    public void SetProbes(string json) { using (Hold()) { Alive(); if (Native.SetProbes(H, json) < 0) throw new InvalidOperationException(Native.LastError()); } }
+    /// <summary>A probe measurement over every frame.</summary>
+    public string ProbeSeries(string json) { using (Hold()) { Alive(); var t = JsonCallOnce((b, c) => Native.ProbeSeries(H, json, b, c)); if (t.Length == 0) throw new InvalidOperationException(Native.LastError()); return t; } }
+    /// <summary>Bond rules: per element pair, the distances as a histogram.</summary>
+    public string PairHistograms(string json) { using (Hold()) { Alive(); return JsonCallOnce((b, c) => Native.PairHistograms(H, json, b, c)); } }
+    /// <summary>Bond rules: the bonds the rules make, counted (preview: the new ones lit in the view).</summary>
+    public string BondRulesPreview(string json) { using (Hold()) { Alive(); return JsonCallOnce((b, c) => Native.BondRulesPreview(H, json, b, c)); } }
+    /// <summary>Look: the view's sizes and bond orders (and a size factor for chosen atoms).</summary>
+    public void SetLook(string json) { using (Hold()) { Alive(); if (Native.SetLook(H, json) < 0) throw new InvalidOperationException(Native.LastError()); } }
     /// <summary>Atoms copied out as a caps-piece document (the clipboard tray).</summary>
     public string Piece(string json)
     {

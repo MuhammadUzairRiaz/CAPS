@@ -5,6 +5,8 @@ add_library(caps_core STATIC
   src/system.cpp
   src/tags.cpp
   src/piece.cpp
+  src/bondrules.cpp
+  src/probe.cpp
   src/io_lammps.cpp
   src/io_gro.cpp
   src/io_pdb.cpp

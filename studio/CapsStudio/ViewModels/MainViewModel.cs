@@ -126,8 +126,8 @@ public sealed partial class MainViewModel : ObservableObject
         ProjectItems.CollectionChanged += OnProjectItemsChanged;   // an open project is saved as its structures change
         PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName == nameof(ShowStudioTabs) || e.PropertyName == nameof(IsStudio)) Raise(nameof(ShowBrushPanel));   // the inspector's panels take turns
-            else if (e.PropertyName == nameof(Document) && _brushOpen) RefillBrush();
+            if (e.PropertyName == nameof(ShowStudioTabs) || e.PropertyName == nameof(IsStudio)) { Raise(nameof(ShowBrushPanel)); Raise(nameof(ShowRulesPanel)); }   // the inspector's panels take turns
+            else if (e.PropertyName == nameof(Document)) { if (_brushOpen) RefillBrush(); if (_rulesOpen) LoadRulePairs(); ApplyLook(); }   // each structure in the user's look
         };
         Field = new FieldViewModel(() => _doc, s => Status = s, () =>
         {

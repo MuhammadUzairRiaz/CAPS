@@ -17,7 +17,7 @@ public sealed class MonitorRow : ObservableObject
 }
 
 /// <summary>A pinned measurement as the overlay draws it: a dashed line for a distance, the label at the atoms' middle.</summary>
-public readonly record struct MonitorMark(double X0, double Y0, double X1, double Y1, bool Line, string Text);
+public readonly record struct MonitorMark(double X0, double Y0, double X1, double Y1, bool Line, string Text, double[]? Xs = null, double[]? Ys = null);
 
 /// <summary>The Studio view's lasso, translate and pin-monitor tools (the Main board's toolbar).</summary>
 public sealed partial class MainViewModel
@@ -252,7 +252,7 @@ public sealed partial class MainViewModel
             var xs = m.Atoms.Select(a => at[a].X / scaling).ToArray();
             var ys = m.Atoms.Select(a => at[a].Y / scaling).ToArray();
             if (m.Atoms.Length == 2) list.Add(new MonitorMark(xs[0], ys[0], xs[1], ys[1], true, m.Value));
-            else list.Add(new MonitorMark(xs.Average(), ys.Average(), 0, 0, false, $"{m.Kind} {m.Value}"));
+            else list.Add(new MonitorMark(xs.Average(), ys.Average(), 0, 0, false, $"{m.Kind} {m.Value}", xs, ys));
         }
         return list;
     }
@@ -274,7 +274,7 @@ public sealed partial class MainViewModel
             var xs = m.Atoms.Select(a => at[a].X / scaling).ToArray();
             var ys = m.Atoms.Select(a => at[a].Y / scaling).ToArray();
             if (m.Atoms.Length == 2) list.Add(new MonitorMark(xs[0], ys[0], xs[1], ys[1], true, m.Value));
-            else list.Add(new MonitorMark(xs.Average(), ys.Average(), 0, 0, false, $"{m.Kind} {m.Value}"));
+            else list.Add(new MonitorMark(xs.Average(), ys.Average(), 0, 0, false, $"{m.Kind} {m.Value}", xs, ys));
         }
         return list;
     }
