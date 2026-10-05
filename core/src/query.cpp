@@ -187,6 +187,15 @@ struct Parser {
       const auto from = factor();
       return select_within(s, from, d);
     }
+    if (w == "tag") {   // tag NAME: the atoms carrying that tag
+      const std::string name = t[p++].text;
+      int k = -1;
+      for (size_t q = 0; q < s.tags.size(); ++q) if (s.tags[q].name == name) k = int(q);
+      if (k < 0) throw std::invalid_argument("no tag '" + name + "' in this structure");
+      auto out = none();
+      for (size_t i = 0; i < n; ++i) out[i] = (s.atoms[i].tags >> k) & 1u;
+      return out;
+    }
     if (w == "sel" || w == "selection") {
       auto out = none();
       for (size_t i = 0; i < n && i < current.size(); ++i) out[i] = current[i];
@@ -194,7 +203,7 @@ struct Parser {
     }
     if (w == "all") return std::vector<char>(n, 1);
     if (w == "none") return none();
-    throw std::invalid_argument("unknown word '" + t[p - 1].text + "' (smarts, element, type, chain, index, ring, stereo, within, sel, and, or, not)");
+    throw std::invalid_argument("unknown word '" + t[p - 1].text + "' (smarts, element, type, chain, index, ring, stereo, within, tag, sel, and, or, not)");
   }
 };
 

@@ -66,6 +66,7 @@ public sealed partial class MainViewModel
     /// <summary>The bar's count, description and origin, after any change of the selection.</summary>
     public void RefreshSelBar()
     {
+        if (HasTags) RefreshTags();   // each chip's selected count
         _barAtoms = SelectionAtoms();
         SelBarCount = _barAtoms.Length;
         if (_barAtoms.Length == 0) { SelBarWhat = SelBarHow = ""; LightLayers(_barAtoms); SelectionBarChanged?.Invoke(); return; }
@@ -211,16 +212,6 @@ public sealed partial class MainViewModel
     {
         if (!HasHiddenAtoms) { Status = "Every atom is shown"; return; }
         SetStates(null, 0, "Every atom shown");
-    }
-
-    public void TagSelection()
-    {
-        var a = SelectionAtoms();
-        if (a.Length == 0) { Status = "Select atoms to tag"; return; }
-        var name = $"set-{NamedSets.Count + 1}";
-        foreach (var old in NamedSets.Where(s => s.Name == name).ToList()) NamedSets.Remove(old);
-        NamedSets.Add(new NamedSet(name, a, SetColours[NamedSets.Count % SetColours.Length]));
-        Status = $"{a.Length:N0} atoms saved as “{name}” (Selection panel: rename, reuse, export as a group)";
     }
 
     /// <summary>The selected atoms as XYZ text (element and Å), for the clipboard.</summary>

@@ -533,4 +533,11 @@ _ids = sorted(_m)
 check(_m[_ids[0]]["state"] == "hidden" and _m[_ids[1]]["locked"] and _m[_ids[1]]["state"] == "shown" and vs.atom_states()[130] == 4,
       "layers: a hidden molecule, a locked one (still shown)")
 vs.show(); vs.lock(None, False)
+# tags: two tags on the first molecule's atoms, read back; one removed
+vs.tag("chain ends", [0, 1, 129], "#E07A5F")
+vs.tag("first", range(130))
+_t = vs.tags
+vs.tag("first", op="delete")
+check(_t["chain ends"] == [0, 1, 129] and len(_t["first"]) == 130 and list(vs.tags) == ["chain ends"], f"tags: {list(_t)} · after delete {list(vs.tags)}")
+vs.tag("chain ends", op="delete")
 print("all python checks passed")

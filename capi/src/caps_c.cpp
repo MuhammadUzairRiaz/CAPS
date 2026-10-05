@@ -12,6 +12,7 @@
 #include <fstream>
 #include <string>
 
+#include "caps/tags.hpp"
 #include "caps/amber.hpp"
 #include "caps/cg_map.hpp"
 #include "caps/analysis.hpp"
@@ -337,24 +338,30 @@ void require_manybody_held(const caps_doc* d, const std::vector<char>& m) {
 }
 
 // GROMACS: the held atoms as an index group (STEM.ndx: System and Frozen) and freezegrps / freezedim in STEM.mdp
-bool write_gromacs_freeze(const caps_doc* d, const caps::System& s, const std::string& stem) {
+// Returns what was written ("" nothing): the held atoms as a freeze group, the tags as index groups.
+std::string write_gromacs_freeze(const caps_doc* d, const caps::System& s, const std::string& stem) {
   const auto m = fixed_mask(d, s);
   size_t n = 0;
   for (char c : m) n += c != 0;
-  if (n == 0) return false;
+  if (n == 0 && s.tags.empty()) return "";
+  const std::string file = std::filesystem::path(stem).filename().string() + ".ndx";
+  const std::string tagged = s.tags.empty() ? "" : std::to_string(s.tags.size()) + " tag" + (s.tags.size() == 1 ? "" : "s") + " as index groups in " + file + " (gmx select, grompp -n)";
   std::ofstream ndx(stem + ".ndx");
-  auto group = [&](const char* name, bool frozen_only) {
+  auto group = [&](const std::string& name, auto in) {
     ndx << "[ " << name << " ]\n";
     int col = 0;
     for (size_t i = 0; i < s.atoms.size(); ++i)
-      if (!frozen_only || m[i]) { ndx << (i + 1) << (++col % 15 == 0 ? "\n" : " "); }
+      if (in(i)) { ndx << (i + 1) << (++col % 15 == 0 ? "\n" : " "); }
     ndx << "\n";
   };
-  group("System", false);
-  group("Frozen", true);
+  group("System", [](size_t) { return true; });
+  if (n > 0) group("Frozen", [&](size_t i) { return m[i] != 0; });
+  // the tags as index groups (gmx select / grompp -n)
+  for (size_t k = 0; k < s.tags.size(); ++k) group(caps::tag_group_name(s.tags[k].name), [&](size_t i) { return (s.atoms[i].tags >> k) & 1u; });
+  if (n == 0) return tagged;
   std::ofstream mdp(stem + ".mdp", std::ios::app);
   mdp << "\n; atoms held in place in CAPS (index group in " << std::filesystem::path(stem).filename().string() << ".ndx: grompp -n)\nfreezegrps = Frozen\nfreezedim = Y Y Y\n";
-  return true;
+  return "the held atoms are a freeze group: " + file + " and freezegrps in the .mdp (grompp -n)" + (tagged.empty() ? "" : "; " + tagged);
 }
 
 void run_doc_pipeline(caps_doc* d) {
@@ -1241,6 +1248,11 @@ std::string ff_label(const caps_doc* d) {
 
 void prov_opened(caps_doc* d, const std::string& path, const std::string& topology, const std::string& how, caps::KeyValues params = {},
                  std::vector<std::string> cites = {}) {
+  // the structure's tags, saved beside it (NAME.tags.json), for the same atoms
+  if (caps::read_tags(d->traj.topology, path) && d->frame.atoms.size() == d->traj.topology.atoms.size()) {
+    d->frame.tags = d->traj.topology.tags;
+    for (size_t i = 0; i < d->frame.atoms.size(); ++i) d->frame.atoms[i].tags = d->traj.topology.atoms[i].tags;
+  }
   if (auto m = caps::read_manifest(path)) {
     d->prov = std::move(*m);
     return;
@@ -1511,6 +1523,7 @@ int32_t save_frame(caps_doc* d, const std::string& p) {
     if (!d->prov.steps.empty()) {
       try { caps::write_manifest(d->prov, p); } catch (...) {}   // the structure is written; the sidecar is a bonus
     }
+    try { caps::write_tags(d->frame, p); } catch (...) {}   // the tags beside it (NAME.tags.json), as the provenance
     return 0;
   });
 }
@@ -1585,7 +1598,7 @@ int32_t caps_gromacs(caps_doc* d, const char* stem, char* text, int32_t cap) {
     std::string out;
     std::vector<std::string> notes;
     notes = stem && *stem ? caps::write_gromacs(d->frame, ff, elec(), stem) : caps::gromacs_notes(d->frame, ff, elec());
-    if (stem && *stem && write_gromacs_freeze(d, d->frame, stem)) notes.push_back("the held atoms are a freeze group: " + std::string(stem) + ".ndx and freezegrps in the .mdp (grompp -n)");
+    if (stem && *stem) { if (auto w = write_gromacs_freeze(d, d->frame, stem); !w.empty()) notes.push_back(w); }
     else if (!(stem && *stem) && !fixed_mask(d, d->frame).empty()) notes.push_back("the held atoms go into STEM.ndx as a freeze group when the files are written");
     for (const auto& n : notes) out += "; note: " + n + "\n";
     out += caps::gromacs_mdp(d->frame, ff, elec());
@@ -1802,7 +1815,7 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
     if (gromacs && kg_model) gromacs_error = "Kremer–Grest's FENE bond with its WCA core has no GROMACS form (GROMACS's FENE bond carries no repulsive core, and a bonded pair's WCA cannot be cut off in [ pairs ]): export to LAMMPS";
     else if (gromacs) try {
       for (const auto& n : caps::write_gromacs(s, ff, e, base)) notes.push_back("GROMACS: " + n);
-      if (write_gromacs_freeze(d, s, base)) notes.push_back("GROMACS: the held atoms are a freeze group (" + std::filesystem::path(base).filename().string() + ".ndx, freezegrps in the .mdp; grompp -n)");
+      if (auto w = write_gromacs_freeze(d, s, base); !w.empty()) notes.push_back("GROMACS: " + w);
       if (run.constraints == caps::ConstraintMode::HBonds && (run.kind == caps::LammpsRun::Kind::NVT || run.kind == caps::LammpsRun::Kind::NPT)) {
         const auto nb = s.neighbours();
         size_t waters = 0;
@@ -3969,6 +3982,67 @@ int32_t caps_layers(caps_doc* d, char* json, int32_t cap) {
   return report_out(r.dump(0), json, cap);
 }
 
+// Tags (design/boards/Tags): named, coloured atom sets kept in the structure (and its topology, so every frame has them).
+int32_t caps_tags(caps_doc* d, char* json, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  guard([&] {
+    caps::Json a = caps::Json::array();
+    const auto& S = d->frame;
+    for (size_t k = 0; k < S.tags.size(); ++k) {
+      caps::Json t = caps::Json::object();
+      const auto atoms = caps::tag_atoms(S, int(k));
+      size_t sel = 0;
+      for (size_t i : atoms) sel += i < d->selection.size() && d->selection[i];
+      t["name"] = S.tags[k].name;
+      t["colour"] = S.tags[k].colour;
+      t["count"] = double(atoms.size());
+      t["selected"] = double(sel);
+      t["group"] = caps::tag_group_name(S.tags[k].name);
+      a.push_back(t);
+    }
+    r["tags"] = a;
+    return 0;
+  });
+  return report_out(r.dump(0), json, cap);
+}
+
+int32_t caps_tag_edit(caps_doc* d, const char* json) {
+  return guard([&] {
+    const auto j = caps::Json::parse(json ? json : "{}");
+    const std::string op = j.text("op", "set"), name = j.text("name"), colour = j.text("colour");
+    std::vector<size_t> atoms;
+    if (j.has("atoms") && j["atoms"].is_array())
+      for (const auto& x : j["atoms"].items()) atoms.push_back(size_t(x.number()));
+    else if (j.text("atoms") == "selection")
+      for (size_t i = 0; i < d->selection.size(); ++i) if (d->selection[i]) atoms.push_back(i);
+    int result = -1;
+    auto apply = [&](caps::System& s) {
+      const int k = caps::tag_index(s, name);
+      if (op == "delete") { caps::tag_delete(s, k); result = k; }
+      else if (op == "rename") {
+        const std::string to = j.text("new_name");
+        if (k < 0 || to.empty()) throw std::runtime_error("no tag " + name + " to rename");
+        if (caps::tag_index(s, to) >= 0 && to != name) throw std::runtime_error("a tag " + to + " is there already");
+        s.tags[size_t(k)].name = to;
+        result = k;
+      } else if (op == "colour") {
+        if (k < 0) throw std::runtime_error("no tag " + name);
+        s.tags[size_t(k)].colour = colour;
+        result = k;
+      } else result = caps::tag_edit(s, name, colour, atoms, op);
+    };
+    apply(d->frame);
+    if (d->traj.topology.atoms.size() == d->frame.atoms.size()) apply(d->traj.topology);
+    return result;
+  });
+}
+
+int32_t caps_tag_atoms(caps_doc* d, const char* name, int32_t* out, int32_t cap) {
+  const auto atoms = caps::tag_atoms(d->frame, caps::tag_index(d->frame, name ? name : ""));
+  if (out) for (size_t k = 0; k < atoms.size() && int32_t(k) < cap; ++k) out[k] = int32_t(atoms[k]);
+  return int32_t(atoms.size());
+}
+
 int32_t caps_atom_states(caps_doc* d, uint8_t* out, int32_t n) {
   const size_t na = d->frame.atoms.size();
   if (out && n >= int32_t(na)) {
@@ -4112,8 +4186,12 @@ int32_t caps_analyze_ex(caps_doc* d, const char* props, const caps_analyze_opts*
         const std::set<int64_t> want(ids.begin(), ids.end());
         const auto mol = top.molecules();
         for (size_t i = 0; i < n; ++i) in[i] = want.count(top.has_mol ? top.atoms[i].mol : int64_t(mol[i]) + 1) > 0;
+      } else if (group.rfind("tag:", 0) == 0) {   // a tag of the structure
+        const int k = caps::tag_index(top, group.substr(4));
+        if (k < 0) throw std::invalid_argument("no tag " + group.substr(4) + " in this structure");
+        for (size_t i = 0; i < n; ++i) in[i] = (top.atoms[i].tags >> k) & 1u;
       } else {
-        throw std::invalid_argument("group: \"selection\", \"molecules:1-4,7\" or \"exclude-held\"");
+        throw std::invalid_argument("group: \"selection\", \"molecules:1-4,7\", \"tag:NAME\" or \"exclude-held\"");
       }
       std::vector<uint32_t> keep;
       for (size_t i = 0; i < n; ++i) if (in[i]) keep.push_back(uint32_t(i));

@@ -609,6 +609,10 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_set_atom_state")] public static extern int SetAtomState(IntPtr doc, int[]? atoms, int n, int state);
     [DllImport(Lib, EntryPoint = "caps_set_atom_lock")] public static extern int SetAtomLock(IntPtr doc, int[]? atoms, int n, int locked);
     [DllImport(Lib, EntryPoint = "caps_layers")] public static extern int Layers(IntPtr doc, byte[]? json, int cap);
+    // ABI 60: tags
+    [DllImport(Lib, EntryPoint = "caps_tags")] public static extern int Tags(IntPtr doc, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_tag_edit")] public static extern int TagEdit(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json);
+    [DllImport(Lib, EntryPoint = "caps_tag_atoms")] public static extern int TagAtoms(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string name, int[]? atoms, int cap);
     [DllImport(Lib, EntryPoint = "caps_atom_states")] public static extern int AtomStates(IntPtr doc, byte[]? states, int n);
     [DllImport(Lib, EntryPoint = "caps_project_indices")] public static extern int ProjectIndices(IntPtr doc, in CapsCamera cam, in CapsRenderOpts opt, int[] atoms, int n, float[] xy);
     [DllImport(Lib, EntryPoint = "caps_export_scene")] public static extern int ExportScene(IntPtr doc, in CapsCamera cam, in CapsRenderOpts opt, [MarshalAs(UnmanagedType.LPUTF8Str)] string path,
@@ -1544,6 +1548,29 @@ public sealed class CapsDocument : IDisposable
     public int SetAtomLock(int[]? atoms, bool locked) { using (Hold()) { Alive(); return Native.SetAtomLock(H, atoms, atoms?.Length ?? 0, locked ? 1 : 0); } }
     /// <summary>The layers: molecules by kind with atom counts, z profiles, view states, locks and selected counts (JSON).</summary>
     public string LayersJson() { using (Hold()) return JsonCallOnce((b, c) => Native.Layers(H, b, c)); }
+    /// <summary>{tags: [{name, colour, count, selected, group}]}.</summary>
+    public string TagsJson() { using (Hold()) return JsonCallOnce((b, c) => Native.Tags(H, b, c)); }
+    /// <summary>A tag edit ({op, name, colour, new_name, atoms}); the tag's index, or an exception with the core's reason.</summary>
+    public int TagEdit(string json)
+    {
+        using (Hold())
+        {
+            Alive();
+            var k = Native.TagEdit(H, json);
+            if (k < 0 && !json.Contains("\"remove\"", StringComparison.Ordinal)) throw new InvalidOperationException(Native.LastError());
+            return k;
+        }
+    }
+    public int[] TagAtoms(string name)
+    {
+        using (Hold())
+        {
+            var n = Native.TagAtoms(H, name, null, 0);
+            var a = new int[Math.Max(0, n)];
+            if (n > 0) Native.TagAtoms(H, name, a, n);
+            return a;
+        }
+    }
     /// <summary>Each atom's state: bits 0-1 the view (0 shown, 1 ghost, 2 hidden), bit 2 locked.</summary>
     public byte[] AtomStates()
     {

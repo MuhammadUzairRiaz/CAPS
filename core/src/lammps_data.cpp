@@ -15,6 +15,7 @@
 #include <set>
 #include <sstream>
 
+#include "caps/tags.hpp"
 #include "caps/analysis.hpp"
 #include "caps/elements.hpp"
 #include "caps/manybody.hpp"
@@ -1490,6 +1491,7 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
   std::snprintf(b, sizeof b, "\nneighbor        %.3g bin\nneigh_modify    delay 0 every 1 check yes\ncomm_modify     cutoff %.3g\n", e.skin, e.cutoff + e.skin + 2.0);
   out << b;
   if (!st.groups.empty()) out << lammps_group_lines(s, ff, st.groups);
+  out << lammps_tag_groups(s);   // the structure's tags, each a group
   if (held_mol > 0)
     out << "\n# molecule " << held_mol << " (the surface or filler) held in place, as in CAPS: no velocity, no force\n"
         << "group           held molecule " << held_mol << "\n"

@@ -12,7 +12,7 @@ internal static class SelfTest
         var fails = 0;
         void Check(bool ok, string what) { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {what}"); if (!ok) fails++; }
 
-        Check(Native.AbiVersion() == 59, "native ABI version 59");
+        Check(Native.AbiVersion() == 60, "native ABI version 60");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -3953,6 +3953,38 @@ internal static class SelfTest
             vm.ClearAll();
             Check(had > 0 && asked && vm.ProjectItems.Count == 0 && !vm.ShowPipelineStrip && vm.PipelineSteps.Count == 0,
                   $"clear: {had} structures · asked {asked} · left {vm.ProjectItems.Count} · strip {vm.ShowPipelineStrip}");
+        }
+        // Tags (design/boards/Tags): the selection tagged and named in the strip; click selects it, ⌥ click shows only it; saved
+        // beside the structure and read back; a LAMMPS group and a GROMACS index group
+        {
+            vm.Open(Path.Combine(dir, "ps_melt.data"));
+            vm.SelectLike(0, false, false);   // the first chain
+            vm.RefreshSelBar();
+            var selAtoms = vm.SelectionAtoms().Length;
+            vm.TagSelection();
+            var chip = vm.TagChips.FirstOrDefault();
+            var renaming = chip?.Renaming == true;
+            if (chip != null) vm.RenameTag(chip, "chain ends test");
+            chip = vm.TagChips.FirstOrDefault();
+            vm.ClearAllSelection();
+            if (chip != null) vm.UseTag(chip, false, false);
+            var selected = vm.SelectedCount;
+            if (chip != null) vm.UseTag(chip, false, true);
+            var onlyShown = vm.HasHiddenAtoms;
+            if (chip != null) vm.UseTag(chip, false, true);
+            var tp = Path.Combine(outDir, "caps-selftest-tags.data");
+            vm.SaveDocument(tp);
+            var side = File.Exists(tp + ".tags.json") ? File.ReadAllText(tp + ".tags.json") : "";
+            var input = vm.Document!.LammpsInput("caps-selftest-tags.data");
+            var gro = vm.Document.Gromacs(Path.Combine(outDir, "caps-selftest-tags"));
+            var ndx = File.Exists(Path.Combine(outDir, "caps-selftest-tags.ndx")) ? File.ReadAllText(Path.Combine(outDir, "caps-selftest-tags.ndx")) : "";
+            vm.Open(tp);
+            var back = vm.TagChips.FirstOrDefault();
+            Check(selAtoms == 130 && renaming && chip?.Name == "chain ends test" && chip.Count == 130 && selected == 130 && onlyShown && !vm.HasHiddenAtoms
+                  && side.Contains("\"chain ends test\"") && input.Contains("group           chain_ends_test id 1:130") && ndx.Contains("[ chain_ends_test ]")
+                  && back is { Name: "chain ends test", Count: 130 },
+                  $"tags: {selAtoms} selected → {chip?.Name} {chip?.Count} · click {selected} · only {onlyShown} · sidecar {side.Length > 0} · LAMMPS {input.Contains("chain_ends_test")} · ndx {ndx.Contains("chain_ends_test")} · reopened {back?.Name} {back?.Count}");
+            vm.CloseAllStructures();
         }
         // CAPS projects (design/boards/ProjectsStart, NewProject, ProjectOpen): a project made with the open structure, saved with
         // its force field, closed, listed on Start, opened again with its structures and sessions; renamed; moved and found again
