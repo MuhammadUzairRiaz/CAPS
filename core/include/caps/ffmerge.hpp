@@ -18,6 +18,7 @@
 //   · coarse-grained settings (dielectric, reaction field, force switches), Stillinger–Weber in more than one part,
 //     DREIDING hydrogen bonds, CHARMM 1-4 types, virtual sites across parts
 #pragma once
+#include <cstdint>
 
 #include <string>
 #include <vector>

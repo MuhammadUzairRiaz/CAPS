@@ -7,6 +7,7 @@
 //  solvent     the Hildebrand estimate χ ≈ V (δs − δp)² / RT + 0.34
 //  ewald       the splitting parameter from a tolerance and FFT-friendly mesh sizes
 #pragma once
+#include <cstdint>
 #include <array>
 #include <string>
 #include <vector>

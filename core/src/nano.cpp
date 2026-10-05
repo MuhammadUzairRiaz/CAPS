@@ -560,7 +560,7 @@ double occupied_volume(const System& s) {
   const double g = 0.4;
   int n[3];
   for (int k = 0; k < 3; ++k) n[k] = std::max(1, int(std::ceil((hi[k] - lo[k]) / g)));
-  std::vector<char> in(size_t(n[0]) * n[1] * n[2], 0);
+  std::vector<char> in(static_cast<size_t>(n[0]) * n[1] * n[2], 0);
   for (const auto& a : s.atoms) {
     const double r = element(a.element).vdw;
     int b0[3], b1[3];

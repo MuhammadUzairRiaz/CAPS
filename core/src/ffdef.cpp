@@ -60,12 +60,14 @@ std::vector<TypingRule> typing_from(const Json& a, const std::string& where) {
     if (o.has("overrides"))
       for (const auto& x : o["overrides"].items()) r.overrides.push_back(x.str());
     for (auto [key, vec] : {std::make_pair("requires", &r.needs_elements), std::make_pair("excludes", &r.no_elements)})
-      if (o.has(key))
-        for (const auto& x : o[key].items()) {
+      if (o.has(key)) {
+        const Json& list = o[std::string(key)];   // a reference into o (bound first: no temporary in the range-for)
+        for (const auto& x : list.items()) {
           const int z = element_from_symbol(x.str());
           if (z <= 0) throw FFError(where + ": " + key + ": unknown element " + x.str());
           vec->push_back(z);
         }
+      }
     r.atom_name = o.text("atom_name");
     out.push_back(std::move(r));
   }

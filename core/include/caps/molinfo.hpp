@@ -1,6 +1,7 @@
 // One molecule described (design/boards/MoleculeInspector) and solvent-accessible surface areas
 // (design/boards/SurfaceArea).
 #pragma once
+#include <cstdint>
 #include <string>
 #include <vector>
 

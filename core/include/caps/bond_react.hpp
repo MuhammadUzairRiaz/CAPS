@@ -7,6 +7,7 @@
 // chemical environment of a reactive site (a chain end nearby, a different neighbour type) needs its own template: the
 // most frequent ones are written, and the report says how many of the candidate sites they cover.
 #pragma once
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <string>

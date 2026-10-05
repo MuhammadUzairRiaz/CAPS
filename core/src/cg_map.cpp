@@ -192,7 +192,8 @@ CgMapResult cg_map(const System& aa, const CgMapOptions& o, const std::vector<st
           if (e.first.empty()) e.first.assign(nbin, 0.0);
           e.second += 1;
           const double d = norm(dist(f, uint32_t(x), uint32_t(y)));
-          if (d < rmax) h[size_t(d / dr)] += 1, e.first[size_t(d / dr)] += 1;
+          const size_t k = size_t(d / dr);   // d just under rmax can round to nbin
+          if (d < rmax && k < nbin) h[k] += 1, e.first[k] += 1;
         }
       vol += V;
     }

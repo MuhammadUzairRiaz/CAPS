@@ -11,6 +11,7 @@
 //   residual   ∫ (g_i − g_target)² dr / ∫ g_target² dr per iteration
 // One table for every bead pair (the pooled g(r) of cg_map); the bonded terms stay as given.
 #pragma once
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <string>

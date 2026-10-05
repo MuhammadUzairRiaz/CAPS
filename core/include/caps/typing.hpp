@@ -15,6 +15,7 @@
 // type at the lowest-numbered atom of each conjugated system, as antechamber does. With pair_mode "double_same"
 // (CGenFF's CG2DC1 / CG2DC2) a double bond keeps the type and a conjugated single bond switches it.
 #pragma once
+#include <cstdint>
 #include <string>
 #include <vector>
 

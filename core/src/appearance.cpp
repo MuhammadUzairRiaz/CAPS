@@ -338,7 +338,7 @@ Mesh surface_mesh(const System& s, const SurfaceOptions& o) {
   const double bin = std::max(3.0, rmax + 2 * h);
   int nb[3];
   for (int k = 0; k < 3; ++k) nb[k] = std::max(1, int((hi[k] - lo[k]) / bin) + 1);
-  std::vector<std::vector<uint32_t>> bins(size_t(nb[0]) * nb[1] * nb[2]);
+  std::vector<std::vector<uint32_t>> bins(static_cast<size_t>(nb[0]) * nb[1] * nb[2]);
   auto bi = [&](const Vec3& p, int k) { return std::clamp(int((p[k] - lo[k]) / bin), 0, nb[k] - 1); };
   for (size_t i : use) bins[(size_t(bi(s.atoms[i].pos, 2)) * nb[1] + bi(s.atoms[i].pos, 1)) * nb[0] + bi(s.atoms[i].pos, 0)].push_back(uint32_t(i));
   for (size_t v = 0; v < m.vertices.size(); ++v) {

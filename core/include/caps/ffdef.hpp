@@ -5,6 +5,7 @@
 // (* and ?). Within a section the LAST matching rule wins, as in moltemplate's "By Type" sections, so a converted
 // moltemplate force field assigns exactly what moltemplate assigns; user overlays appended later win over the base.
 #pragma once
+#include <cstdint>
 #include <limits>
 #include <map>
 #include <memory>
