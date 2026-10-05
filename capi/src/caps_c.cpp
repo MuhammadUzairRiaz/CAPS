@@ -1808,7 +1808,7 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
     run.kind = kind == "none" ? caps::LammpsRun::Kind::None : kind == "minimize" ? caps::LammpsRun::Kind::Minimize
              : kind == "nvt" ? caps::LammpsRun::Kind::NVT : kind == "npt" ? caps::LammpsRun::Kind::NPT
              : kind == "tensile" ? caps::LammpsRun::Kind::Tensile : kind == "creep" ? caps::LammpsRun::Kind::Creep
-             : kind == "shear" ? caps::LammpsRun::Kind::Shear : caps::LammpsRun::Kind::Check;
+             : kind == "shear" ? caps::LammpsRun::Kind::Shear : kind == "protocol" ? caps::LammpsRun::Kind::Protocol : caps::LammpsRun::Kind::Check;
     {   // tensile / creep / shear (LAMMPS)
       const std::string a = o.text("axis", "x");
       run.axis = a == "y" ? 1 : a == "z" ? 2 : 0;
@@ -1816,6 +1816,20 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
       run.max_strain = o.num("max_strain", 0);
       run.stress_mpa = o.num("stress_mpa", 50);
       run.shear_rate = o.num("shear_rate", 0.01);
+    }
+    if (kind == "protocol") {   // a CAPS protocol by name (with this run's temperature and pressure) or as text
+      const std::string p = o.text("protocol", "larsen21");
+      if (p == "larsen21" || p == "annealing" || p == "pushoff") {
+        caps::ProtocolParams pp;
+        pp.t_final = o.num("temperature", 300), pp.p_final = o.num("pressure", 1.0);
+        if (o.has("t_max")) pp.t_max = o.num("t_max", pp.t_max);
+        if (o.has("p_max")) pp.p_max = o.num("p_max", pp.p_max);
+        if (o.has("time_scale")) pp.time_scale = o.num("time_scale", 1.0);
+        run.protocol = caps::protocol_text(caps::protocol_by_name(p, pp));
+      } else
+        run.protocol = p;
+      run.production_ps = o.num("production_ps", 0);
+      if (caps::parse_protocol(run.protocol).empty()) throw std::runtime_error("the protocol has no stages");
     }
     run.minimize_first = flag("minimize_first", true);
     run.temperature = o.num("temperature", 300);

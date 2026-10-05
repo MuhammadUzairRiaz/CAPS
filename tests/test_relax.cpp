@@ -535,3 +535,27 @@ TEST(LammpsData, ShakeOnlyWhereLammpsCanHoldIt) {
   EXPECT_NE(b.find("fix             hold_bonds all shake"), std::string::npos);
   EXPECT_NE(b.find("timestep        2\n"), std::string::npos);
 }
+
+// A CAPS protocol in LAMMPS (each stage run in LAMMPS on the PS melt when written): one fix and run per stage, lengths
+// in steps of the time step and scaled by ${scale}, the push-off's force cap replaced by a limited step, production after
+TEST(LammpsData, ProtocolStages) {
+  System s = small_cell(2, 3, 0.3);
+  ForceField ff = assign_gaff(s);
+  const auto in = (std::filesystem::temp_directory_path() / "caps_protocol.in").string();
+  LammpsRun run;
+  run.kind = LammpsRun::Kind::Protocol;
+  run.dt = 1.0;
+  run.protocol = "nvt 50 ps T 600 # heat\nnpt 10 ps T 600 to 300 P 1000 atm # cool and compress\nnvt 5 ps T 300 cap 50 # push\n";
+  run.production_ps = 20;
+  std::vector<std::string> notes;
+  write_lammps_input(s, ff, EnergyOptions{}, "caps_protocol.data", in, 0, true, run, {}, &notes);
+  std::ifstream g(in);
+  const std::string a((std::istreambuf_iterator<char>(g)), {});
+  EXPECT_NE(a.find("variable        scale index 1.0"), std::string::npos);
+  EXPECT_NE(a.find("variable        n equal ceil(50000*${scale})\nfix             stage all nvt temp 600 600 100"), std::string::npos);
+  EXPECT_NE(a.find("fix             stage all npt temp 600 300 100 iso 1000 1000 1000"), std::string::npos);
+  EXPECT_NE(a.find("nve/limit 0.1"), std::string::npos);
+  EXPECT_NE(a.find("# production: 20 ps NPT at 300 K, 1 atm"), std::string::npos);
+  EXPECT_NE(a.find("variable        n equal ceil(20000*${scale})"), std::string::npos);
+  EXPECT_EQ(notes.size(), 1u);
+}

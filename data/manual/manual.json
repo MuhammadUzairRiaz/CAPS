@@ -885,12 +885,12 @@
      "1 (shortened runs are labelled)"
     ]
    ],
-   "when": "Glassy polymer cells before property calculations. Rubbers far above Tg equilibrate with plain NPT.",
+   "when": "Glassy polymer cells before property calculations. Rubbers far above Tg equilibrate with plain NPT. For long runs on a cluster, Export writes any CAPS protocol for LAMMPS (protocol Equilibration protocol): each stage its own fix and run in the same ensembles, temperatures and pressures (Nosé–Hoover), every length scaled by -var scale for a quick check, then NPT production with density.dat; the push-off stages limit each step to 0.1 Å instead of capping the Lennard-Jones force.",
    "cites": [
     "larsen2011"
    ],
    "source": "core/src/equilibrate.cpp",
-   "tested": "Protocol.Larsen21MatchesThePublishedSchedule · Equilibrate.RunsStagesContinuously",
+   "tested": "Protocol.Larsen21MatchesThePublishedSchedule · Equilibrate.RunsStagesContinuously; tests/test_relax.cpp LammpsData.ProtocolStages (the stages, their lengths in steps, the push-off substitute, production); the 21-step, annealing and push-off protocols written for the PS melt run through LAMMPS (shortened by -var scale)",
    "deviation": "none",
    "engines": [
     "equilibrate.larsen21"

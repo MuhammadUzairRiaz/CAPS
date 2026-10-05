@@ -191,7 +191,12 @@ struct LammpsRun {
   // Creep: a constant true tensile stress stress_mpa along axis (its pressure −σ, the others at pressure; NPT, axes
   // uncoupled), creep.dat with time (ps) and strain. Shear: planar Couette flow by SLLOD (fix nvt/sllod, the xy tilt at
   // shear_rate, remap v), viscosity.dat with η = −⟨P_xy⟩/γ̇ (mPa·s) averaged in blocks.
-  enum class Kind { Check, None, Minimize, NVT, NPT, Tensile, Creep, Shear } kind = Kind::Check;
+  // Protocol: a CAPS equilibration protocol (protocol: its text, as protocol_text writes it) as LAMMPS stages, each
+  // its own fix and run, every length scaled by the input's ${scale} (default 1), then production_ps of NPT at the last
+  // stage's temperature and pressure with the density averaged (density.dat).
+  enum class Kind { Check, None, Minimize, NVT, NPT, Tensile, Creep, Shear, Protocol } kind = Kind::Check;
+  std::string protocol;            // Protocol: the stages' text
+  double production_ps = 0;        // Protocol: NPT after the stages (0: none)
   int axis = 0;                    // 0 x, 1 y, 2 z (tensile, creep)
   double strain_rate = 1e-3;       // 1/ps, engineering (tensile)
   double max_strain = 0;           // > 0: the tensile run's steps from it (strain / (rate·dt))
