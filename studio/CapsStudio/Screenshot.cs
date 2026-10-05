@@ -810,6 +810,11 @@ internal static class Screenshot
                 if (p.Length > 1) w.ViewModel.RxTargetValueD = decimal.Parse(p[1], System.Globalization.CultureInfo.InvariantCulture);
             }
             if (kv[0] == "rxset") w.ViewModel.RxSet = int.Parse(kv[1]);
+            if (kv[0] == "peek")   // peek=1: the tab of the first hidden pane clicked (the pane comes back)
+            {
+                for (int k = 0; k < 30; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+                Console.WriteLine("peek: " + (Panes.PeekForShot(w) ? "clicked" : "no hidden pane"));
+            }
             if (kv[0] == "nudtext")   // nudtext=TIP|TEXT: the number box whose tooltip holds TIP gets TEXT typed, then leaves it (Tab)
             {
                 for (int k = 0; k < 30; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
