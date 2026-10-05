@@ -509,3 +509,29 @@ TEST(LammpsData, TensileCreepAndShearProtocols) {
   // η (mPa·s) = −P_xy (atm) × 101325 Pa/atm / (0.1e12 /s) × 1000
   EXPECT_NE(d.find("variable        eta equal -pxy*0.00101325"), std::string::npos);
 }
+
+// LAMMPS's SHAKE holds clusters of a centre and at most three atoms: a chain with every bond held cannot be (LAMMPS stops
+// with "Shake clusters are connected"), so the input leaves the bonds flexible, says why, and takes the unconstrained step
+TEST(LammpsData, ShakeOnlyWhereLammpsCanHoldIt) {
+  System s = small_cell(2, 3, 0.3);
+  ForceField ff = assign_gaff(s);
+  const auto in = (std::filesystem::temp_directory_path() / "caps_shake.in").string();
+  LammpsRun run;
+  run.kind = LammpsRun::Kind::NVT;
+  run.constraints = ConstraintMode::AllBonds;
+  std::vector<std::string> notes;
+  write_lammps_input(s, ff, EnergyOptions{}, "caps_shake.data", in, 0, true, run, {}, &notes);
+  std::ifstream g(in);
+  const std::string a((std::istreambuf_iterator<char>(g)), {});
+  EXPECT_EQ(a.find("hold_bonds"), std::string::npos);
+  EXPECT_NE(a.find("SHAKE cannot hold"), std::string::npos);
+  EXPECT_NE(a.find("timestep        0.5\n"), std::string::npos);
+  EXPECT_TRUE(std::any_of(notes.begin(), notes.end(), [](const std::string& n) { return n.find("SHAKE cannot hold") != std::string::npos; }));
+  // bonds to hydrogen: CH3 and CH2 centres with their hydrogens are separate stars: held
+  run.constraints = ConstraintMode::HBonds;
+  write_lammps_input(s, ff, EnergyOptions{}, "caps_shake.data", in, 0, true, run, {}, &notes);
+  std::ifstream h(in);
+  const std::string b((std::istreambuf_iterator<char>(h)), {});
+  EXPECT_NE(b.find("fix             hold_bonds all shake"), std::string::npos);
+  EXPECT_NE(b.find("timestep        2\n"), std::string::npos);
+}

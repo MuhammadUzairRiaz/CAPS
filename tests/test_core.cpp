@@ -1653,3 +1653,25 @@ TEST(Analyze, ResponseFunctionsFromFluctuations) {
     }
   }
 }
+
+// A LAMMPS data file as LAMMPS writes it (masses, no type labels): united-atom CH3 / CH2 sites read as carbon named for
+// their hydrogens (CH2's 14.027 is not nitrogen's 14.007), so a united-atom force field types them; a nitrogen stays one
+TEST(LammpsData, UnitedAtomSitesFromUnlabelledMasses) {
+  const auto path = (std::filesystem::temp_directory_path() / "caps_ua_masses.data").string();
+  {
+    std::ofstream f(path);
+    f << "LAMMPS data file via write_data\n\n4 atoms\n3 atom types\n2 bonds\n1 bond types\n\n0 20 xlo xhi\n0 20 ylo yhi\n0 20 zlo zhi\n\n"
+         "Masses\n\n1 15.0354\n2 14.0274\n3 14.0067\n\n"
+         "Atoms # full\n\n1 1 1 0 1 1 1\n2 1 2 0 2.5 1 1\n3 1 1 0 3.5 2 1\n4 2 3 0 10 10 10\n\n"
+         "Bonds\n\n1 1 1 2\n2 1 2 3\n";
+  }
+  const caps::Trajectory t = caps::open_file(path);
+  const caps::System s = t.frame(0);
+  ASSERT_EQ(s.atoms.size(), 4u);
+  EXPECT_EQ(s.atoms[0].element, 6);
+  EXPECT_EQ(s.atoms[0].name, "CH3");
+  EXPECT_EQ(s.atoms[1].element, 6);
+  EXPECT_EQ(s.atoms[1].name, "CH2");
+  EXPECT_EQ(s.atoms[3].element, 7);   // 14.0067: nitrogen itself
+  std::filesystem::remove(path);
+}
