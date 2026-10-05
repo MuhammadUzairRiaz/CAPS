@@ -2453,6 +2453,38 @@
    "tested": "tests/test_layers.cpp Layers.AverageFlipAndShift (20 and 21 Å cells meet at 20.5 Å, ±2.5 % each; a flipped layer's top face at its bottom; a 1.5 Å shift exact)",
    "deviation": "a shared strain strains a crystal too: check its stress after relaxing",
    "tex": "(x, y, z) \\to (x,\\, b - y,\\, -z),\\qquad A = \\frac{1}{N}\\sum_l n_l a_l"
+  },
+  {
+   "group": "Coarse-grained",
+   "source": "core/src/dpd.cpp",
+   "engines": [],
+   "cites": [],
+   "id": "dpd-branches-templates",
+   "title": "DPD branched molecules and templated starts",
+   "summary": "Bead sequences with branches — a side chain in parentheses hangs off the bead before it (grafts, stars, combs) — and starts from a mesostructure of the first bead type (lamellae normal to x, cylinders along z, spheres on a cubic lattice) instead of a random mix, to test whether a morphology is stable or to reach it sooner.",
+   "equation": "lamellae: thickness φ_A P,  cylinders: π R² = φ_A P²,  spheres: (4/3) π R³ = φ_A P³",
+   "equation_note": "P the template's period (the box over the periods), φ_A the first type's bead share; each bead placed near the bead it is bonded to, in its type's region",
+   "symbols": [
+    [
+     "φ_A",
+     "first type's volume (bead) share",
+     "—"
+    ],
+    [
+     "P",
+     "template period",
+     "r_c"
+    ],
+    [
+     "R",
+     "cylinder or sphere radius",
+     "r_c"
+    ]
+   ],
+   "when": "Grafted rubbers (silane- or polymer-grafted), star and comb architectures, and checking a block copolymer's morphology against the one it is started in (a stable structure stays; an unstable one rearranges).",
+   "tested": "tests/test_dpd.cpp Dpd.BranchesAndTemplates (a graft's branch point has three neighbours, a star's core three; a lamellar start of a blend begins at ψ ≈ 1, a random one near 0)",
+   "deviation": "the template sets the start only: the dynamics decides what survives",
+   "tex": "\\pi R^2 = \\varphi_A P^2,\\qquad \\tfrac{4}{3}\\pi R^3 = \\varphi_A P^3"
   }
  ]
 }
