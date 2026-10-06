@@ -1371,6 +1371,126 @@
    "smarts": "[H][c;$(c1ccncc1)]",
    "priority": 4,
    "description": "H on pyridine C3"
+  },
+  {
+   "type": "711",
+   "smarts": "[CX4H2;r3;!$(*~[!#6;!#1])]",
+   "priority": 1,
+   "description": "cyclopropane C (CH2)"
+  },
+  {
+   "type": "712",
+   "smarts": "[CX4H1;r3;!$(*~[!#6;!#1])]",
+   "priority": 1,
+   "description": "cyclopropane C (CH)"
+  },
+  {
+   "type": "713",
+   "smarts": "[CX4H0;r3;!$(*~[!#6;!#1])]",
+   "priority": 1,
+   "description": "cyclopropane C (C)"
+  },
+  {
+   "type": "714",
+   "smarts": "[CX4H2;r4;!$(*~[!#6;!#1])]",
+   "priority": 1,
+   "description": "cyclobutane C (CH2)"
+  },
+  {
+   "type": "715",
+   "smarts": "[CX4H1;r4;!$(*~[!#6;!#1])]",
+   "priority": 1,
+   "description": "cyclobutane C (CH)"
+  },
+  {
+   "type": "716",
+   "smarts": "[CX4H0;r4;!$(*~[!#6;!#1])]",
+   "priority": 1,
+   "description": "cyclobutane C (C)"
+  },
+  {
+   "type": "189",
+   "smarts": "[CX4H2;$(*([OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc)])[OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc)])]",
+   "priority": 7,
+   "description": "acetal C (CH2)"
+  },
+  {
+   "type": "193",
+   "smarts": "[CX4H1;$(*([OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc)])[OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc)])]",
+   "priority": 7,
+   "description": "acetal C (CH)"
+  },
+  {
+   "type": "197",
+   "smarts": "[CX4H0;$(*([OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc)])[OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc)])]",
+   "priority": 7,
+   "description": "acetal C (C)"
+  },
+  {
+   "type": "190",
+   "smarts": "[H][CX4H2;$(*([OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc)])[OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc)])]",
+   "priority": 7,
+   "description": "H on acetal C (OCH2O)"
+  },
+  {
+   "type": "194",
+   "smarts": "[H][CX4H1;$(*([OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc)])[OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc)])]",
+   "priority": 7,
+   "description": "H on acetal C (OCHRO)"
+  },
+  {
+   "type": "191",
+   "smarts": "[CX4H2;$(*([OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc)])[OX2H1])]",
+   "priority": 7,
+   "description": "hemiacetal C (CH2)"
+  },
+  {
+   "type": "195",
+   "smarts": "[CX4H1;$(*([OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc)])[OX2H1])]",
+   "priority": 7,
+   "description": "hemiacetal C (CH)"
+  },
+  {
+   "type": "198",
+   "smarts": "[CX4H0;$(*([OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc)])[OX2H1])]",
+   "priority": 7,
+   "description": "hemiacetal C (C)"
+  },
+  {
+   "type": "192",
+   "smarts": "[H][CX4H2;$(*([OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc)])[OX2H1])]",
+   "priority": 7,
+   "description": "H on hemiacetal C (OCH2OH)"
+  },
+  {
+   "type": "196",
+   "smarts": "[H][CX4H1;$(*([OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc)])[OX2H1])]",
+   "priority": 7,
+   "description": "H on hemiacetal C (OCHROH)"
+  },
+  {
+   "type": "186",
+   "smarts": "[OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc);$(O[CX4][OX2])]",
+   "priority": 7,
+   "description": "acetal / hemiacetal ether O"
+  },
+  {
+   "type": "187",
+   "smarts": "[OX2H1;$(O[CX4][OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc)])]",
+   "priority": 7,
+   "description": "hemiacetal O(H)"
+  },
+  {
+   "type": "188",
+   "smarts": "[H][OX2H1;$(O[CX4][OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc)])]",
+   "priority": 7,
+   "description": "hemiacetal H(O)"
+  },
+  {
+   "type": "282",
+   "smarts": "[H][CX4][CX3](=[OX1])[OX2H0]",
+   "priority": 4,
+   "description": "H on C alpha to an ester carbonyl (acyl side)"
   }
  ]
 }

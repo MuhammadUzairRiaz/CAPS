@@ -334,7 +334,7 @@
   {
    "id": "P065",
    "name": "Poly(vinyl benzoate)",
-   "smiles": "[*]C(OCOc1ccccc1)C[*]"
+   "smiles": "[*]C(OC(=O)c1ccccc1)C[*]"
   },
   {
    "id": "P066",

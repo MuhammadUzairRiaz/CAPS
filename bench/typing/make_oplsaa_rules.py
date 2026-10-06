@@ -51,6 +51,9 @@ add(146, 1, "[H]c", "aromatic H")
 add(147, 2, "[c;R2;$(c(:c)(:c):c)]", "fused aromatic C (naphthalene C9)")
 add(519, 3, "[c;$(c-!@c)]", "biphenyl junction C")
 by_h((148, 149, 515, 516), 2, f"$(*c);{HC_ONLY}", "benzylic C")
+# small rings (OPLS-2020): cyclopropane and cyclobutane carbons have their own CY types; their H stay 140
+by_h((None, 711, 712, 713), 1, f"r3;{HC_ONLY}", "cyclopropane C")
+by_h((None, 714, 715, 716), 1, f"r4;{HC_ONLY}", "cyclobutane C")
 
 # ---------------------------------------------------------------- alcohols and phenols
 ALC = "$(*[OX2H1])"
@@ -71,6 +74,22 @@ by_h((181, 182, 183, 184), 5, f"$(*{ETHO[:-1]};$(O([CX4])[CX4,c])])", "ether alp
 add(185, 5, f"[H][CX4]{ETHO[:-1]};$(O([CX4])[CX4,c])]", "H on ether alpha C")
 add(199, 5, f"c{ETHO[:-1]};$(O(c)[CX4,c])]", "aryl ether C(O)")
 
+# ---------------------------------------------------------------- acetals and hemiacetals (OPLS/2020): an sp3 C bearing two O
+# (OCH2O in poly(methylene oxide), a 1,3-dioxolane, a hemiacetal end) takes the acetal types, its O the acetal O 186;
+# the carbons on the other side of that O stay ether alpha C (181-185), as in dimethoxymethane
+ACO = "[OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc)]"
+ACET = f"$(*({ACO}){ACO})"
+HEMI = f"$(*({ACO})[OX2H1])"
+by_h((None, 189, 193, 197), 7, ACET, "acetal C")
+add(190, 7, f"[H][CX4H2;{ACET}]", "H on acetal C (OCH2O)")
+add(194, 7, f"[H][CX4H1;{ACET}]", "H on acetal C (OCHRO)")
+by_h((None, 191, 195, 198), 7, HEMI, "hemiacetal C")
+add(192, 7, f"[H][CX4H2;{HEMI}]", "H on hemiacetal C (OCH2OH)")
+add(196, 7, f"[H][CX4H1;{HEMI}]", "H on hemiacetal C (OCHROH)")
+add(186, 7, f"{ACO[:-1]};$(O[CX4][OX2])]", "acetal / hemiacetal ether O")
+add(187, 7, f"[OX2H1;$(O[CX4]{ACO})]", "hemiacetal O(H)")
+add(188, 7, f"[H][OX2H1;$(O[CX4]{ACO})]", "hemiacetal H(O)")
+
 # ---------------------------------------------------------------- carbonyls: aldehydes, ketones
 add(277, 5, "[CX3H1](=[OX1])[#6]", "aldehyde C")
 add(278, 5, "[OX1]=[CX3H1][#6]", "aldehyde O")
@@ -78,6 +97,9 @@ add(279, 5, "[H][CX3]=[OX1]", "aldehyde H")
 add(280, 5, "[CX3H0](=[OX1])([#6])[#6]", "ketone C")
 add(281, 5, "[OX1]=[CX3H0]([#6])[#6]", "ketone O")
 add(282, 4, "[H][CX4][CX3](=[OX1])[#6,#1]", "H on C alpha to a ketone / aldehyde")
+# esters take the ketone's alpha parameters on the acyl side (the table: "=O: esters ketone params (see 280-282)"); an
+# acid's alpha H stays 140
+add(282, 4, "[H][CX4][CX3](=[OX1])[OX2H0]", "H on C alpha to an ester carbonyl (acyl side)")
 # on an aromatic ring the ipso C keeps -0.115: the carbonyl C carries +0.115 more
 add(232, 6, "[CX3H1](=[OX1])c", "aryl aldehyde C (benzaldehyde)")
 add(233, 6, "[CX3H0](=[OX1])(c)[CX4]", "alkyl aryl ketone C (acetophenone)")
