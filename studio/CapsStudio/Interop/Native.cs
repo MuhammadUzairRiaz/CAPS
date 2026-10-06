@@ -752,28 +752,20 @@ public sealed class CapsDocument : IDisposable
             Monitor.Enter(t_shadow!._lock);   // a call within a call on the shadow
             return new Held(t_shadow, Held.Kind.Nested);
         }
-        if (!exclusive && _longRun && _longOwner != Environment.CurrentManagedThreadId && t_shadowOf == null && _shadow is { } sh)
+        if (TryShadow(exclusive) is { } onShadow) return onShadow;
+        // a caller that arrives while a long run is taking the lock (copying its shadow) must not wait out the whole run:
+        // it waits in short slices and moves to the shadow as soon as there is one
+        var waited = System.Diagnostics.Stopwatch.StartNew();
+        var traced = false;
+        while (!Monitor.TryEnter(_lock, 20))
         {
-            if (TraceLock && !Monitor.TryEnter(sh._lock, 200))
+            if (TryShadow(exclusive) is { } late) return late;
+            if (TraceLock && !traced && waited.ElapsedMilliseconds > 200)
             {
-                Console.Error.WriteLine($"[lock] thread {Environment.CurrentManagedThreadId} waits on the shadow of {Path}:\n{Environment.StackTrace}");
-                Monitor.Enter(sh._lock);
+                traced = true;
+                Console.Error.WriteLine($"[lock] thread {Environment.CurrentManagedThreadId} waits on {Path}:\n{Environment.StackTrace}");
             }
-            else if (!TraceLock) Monitor.Enter(sh._lock);
-            if (sh._h != IntPtr.Zero)
-            {
-                t_shadowOf = this;
-                t_shadow = sh;
-                return new Held(sh, Held.Kind.Shadow);
-            }
-            Monitor.Exit(sh._lock);   // the run ended and its shadow went: the document itself
         }
-        if (TraceLock && !Monitor.TryEnter(_lock, 200))
-        {
-            Console.Error.WriteLine($"[lock] thread {Environment.CurrentManagedThreadId} waits on {Path}:\n{Environment.StackTrace}");
-            Monitor.Enter(_lock);
-        }
-        else if (!TraceLock) Monitor.Enter(_lock);
         if (longRun && !_longRun && _h != IntPtr.Zero)
         {
             var copy = Native.Shadow(_h);
@@ -783,6 +775,26 @@ public sealed class CapsDocument : IDisposable
             return new Held(this, Held.Kind.Long);
         }
         return new Held(this, Held.Kind.Plain);
+    }
+
+    /// <summary>The shadow of a long run held by another thread (its lock taken), or null when there is none.</summary>
+    private Held? TryShadow(bool exclusive)
+    {
+        if (exclusive || !_longRun || _longOwner == Environment.CurrentManagedThreadId || t_shadowOf != null || _shadow is not { } sh) return null;
+        if (TraceLock && !Monitor.TryEnter(sh._lock, 200))
+        {
+            Console.Error.WriteLine($"[lock] thread {Environment.CurrentManagedThreadId} waits on the shadow of {Path}:\n{Environment.StackTrace}");
+            Monitor.Enter(sh._lock);
+        }
+        else if (!TraceLock) Monitor.Enter(sh._lock);
+        if (sh._h != IntPtr.Zero)
+        {
+            t_shadowOf = this;
+            t_shadow = sh;
+            return new Held(sh, Held.Kind.Shadow);
+        }
+        Monitor.Exit(sh._lock);   // the run ended and its shadow went: the document itself
+        return null;
     }
 
     private readonly struct Held : IDisposable
