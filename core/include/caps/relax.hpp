@@ -151,6 +151,9 @@ struct LammpsStyle {
   // atom id, said in a comment. The input says where the first group's types are numbered.
   struct Group { std::string name; std::vector<uint32_t> atoms; };
   std::vector<Group> groups;
+  // the groups are the components of a structure whose types are split by component (type groups): written right
+  // after read_data, under "Define Group-ID for atoms from the respective components"
+  bool component_groups = false;
   // Rigid bodies (filler particles, rigid molecules): these molecule ids move as rigid bodies in the LAMMPS run (group
   // rigid, pairs inside a body excluded, fix rigid/nvt/small molecule; the others integrate on their own, and an NPT
   // barostat dilates only them). CAPS's own runs have no rigid bodies.
