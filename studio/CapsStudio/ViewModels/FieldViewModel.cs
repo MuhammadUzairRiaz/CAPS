@@ -164,6 +164,19 @@ public sealed partial class FieldViewModel : ObservableObject
             _ = Do(key.Length == 0 ? "Mixing: the force field's own" : $"Mixing: {key} in place of the force field's own", d => d.FieldSetMixing(key));
         }
     }
+    // opt-in: dihedrals with no parameters across a three-membered ring (epoxide, aziridine, cyclopropane) are zero (what
+    // LAMMPS does with a moltemplate file that has no rule for them); the report says so
+    private bool _zeroRing3, _loadingZeroRing3;
+    public bool ZeroRing3Torsions
+    {
+        get => _zeroRing3;
+        set
+        {
+            if (!Set(ref _zeroRing3, value) || _loadingZeroRing3) return;
+            _ = Do(value ? "Torsions across three-membered rings with no parameters: zero" : "Torsions across three-membered rings: as the force field gives them",
+                   d => d.FieldSetOptions(value ? "{\"zero_ring3_torsions\":true}" : "{\"zero_ring3_torsions\":false}"));
+        }
+    }
     public string TypedText { get => _typedText; private set => Set(ref _typedText, value); }
     public string UntypedText { get => _untypedText; private set => Set(ref _untypedText, value); }
     public string MissingText { get => _missingText; private set => Set(ref _missingText, value); }
@@ -541,6 +554,9 @@ public sealed partial class FieldViewModel : ObservableObject
         _loadingMixing = true;
         MixingIndex = Math.Max(0, Array.IndexOf(MixingKeys, Str(r, "mixing_override")));
         _loadingMixing = false;
+        _loadingZeroRing3 = true;
+        ZeroRing3Torsions = r.TryGetProperty("zero_ring3_torsions", out var z3) && z3.ValueKind == JsonValueKind.True;
+        _loadingZeroRing3 = false;
         MixingRule = Str(r, "mixing") switch
         {
             "arithmetic" => "Lorentz–Berthelot (arithmetic σ)", "geometric" => "geometric σ and ε (OPLS)", "sixthpower" => "sixth power (class II)",

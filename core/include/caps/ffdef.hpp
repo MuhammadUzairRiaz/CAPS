@@ -95,6 +95,10 @@ struct FFDef {
   // Torsions only where the file defines them ("torsion_terms": "if_defined"; MARTINI, SDK: TORSION IGNORE in their
   // sources): a dihedral with no term is not missing
   bool torsions_if_defined = false;
+  // Opt-in (the Field step, caps_field_set_options): a dihedral with no parameters whose four atoms close a three-membered
+  // ring (i bonded to k, or j to l: an epoxide, aziridine or cyclopropane) is a zero term and counted, not missing. What
+  // LAMMPS does with a moltemplate file that has no rule for it; a modelling choice, said in the report.
+  bool zero_ring3_torsions = false;
   bool angles_if_defined = false;   // "angle_terms": "if_defined" (MARTINI's ANGLE WARN): a missing angle is a note, not an error
   // How improper quadruples are formed and ordered (moltemplate symmetry plugins):
   //   "center3_sorted"  centre in position 3, the others sorted by atom index (AMBER / GAFF, gaff_imp.py)
