@@ -59,6 +59,15 @@ def library() -> C.CDLL:
     for p in _candidates():
         tried.append(str(p))
         if p.exists():
+            if sys.platform == "win32":
+                # Python 3.8+ no longer looks on PATH for a DLL's own dependencies (the MinGW runtime, gfortran): the
+                # library's folder and PATH's folders are added to the search
+                for d in [str(p.parent)] + os.environ.get("PATH", "").split(os.pathsep):
+                    if d and os.path.isdir(d):
+                        try:
+                            os.add_dll_directory(d)
+                        except OSError:
+                            pass
             _lib = C.CDLL(str(p))
             _declare(_lib)
             return _lib

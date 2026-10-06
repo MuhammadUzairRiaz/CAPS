@@ -71,5 +71,6 @@ TEST(Dlpoly, FieldConfigControl) {
   EXPECT_EQ(imcon, 1);
   EXPECT_EQ(natms, s.atoms.size());
   EXPECT_TRUE(std::filesystem::exists(dir / "CONTROL"));
+  f.close(); cf.close();   // Windows will not remove a file still open
   std::filesystem::remove_all(dir);
 }

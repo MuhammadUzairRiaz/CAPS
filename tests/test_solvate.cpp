@@ -138,6 +138,7 @@ TEST(Water, ModelsGeometryAndSites) {
   EXPECT_NE(ds.str().find("-1.112800"), std::string::npos) << "M's charge on O";
   EXPECT_NE(is.str().find("lj/cut/tip4p/long 1 2 1 1 0.154600"), std::string::npos) << is.str();
   EXPECT_NE(is.str().find("pppm/tip4p"), std::string::npos);
+  dat.close(); inp.close();   // Windows will not remove a file still open
   std::filesystem::remove_all(dir);
   // back to three sites: the M sites leave
   ASSERT_EQ(caps::apply_water_model(s, caps::water_model("spce")), 3u);
