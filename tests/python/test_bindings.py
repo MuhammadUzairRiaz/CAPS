@@ -1,5 +1,8 @@
 import re
 """The Python bindings (data/python/caps/core.py) against the built library: run by ctest as python_bindings."""
+import sys as _sys
+if hasattr(_sys.stdout, "reconfigure"):   # the checks print χ, Å …: a Windows console's code page cannot
+    _sys.stdout.reconfigure(encoding="utf-8")
 import json
 import os
 import sys

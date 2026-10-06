@@ -193,6 +193,22 @@ TEST(FFMerge, ManyBodyGroup) {
   EXPECT_EQ(c.str().rfind("# Tersoff silicon UNITS: metal\n", 0), 0u);
   EXPECT_THROW(write_gromacs(s, m, e, (dir / "sys").string()), FieldError);
   in.close(); data.close(); copy.close();   // Windows will not remove a file still open
+  {   // a file with Windows line ends (\r\n), read on any platform: its units found, the units added before the \r
+    { std::ofstream(dir / "crlf_tagged.tersoff", std::ios::binary) << "# DATE: 2007 UNITS: metal\r\n" << entry; }
+    { std::ofstream(dir / "crlf.tersoff", std::ios::binary) << "# Tersoff silicon\r\n" << entry; }
+    EXPECT_NO_THROW(manybody_part(part_of(s, si), {"tersoff", (dir / "crlf_tagged.tersoff").string(), "metal"}));   // "metal", not "metal\r"
+    const ForceField fc = manybody_part(part_of(s, si), {"tersoff", (dir / "crlf.tersoff").string(), "metal"});
+    const ForceField mc = merge_forcefields(s.atoms.size(), {{&fc, si, "Si"}, {&fm, me, "methane"}}, MergeOptions{});
+    const auto sub = dir / "crlf_out";
+    fs::create_directories(sub);
+    write_lammps_data_ff(s, mc, e, (sub / "sys.data").string(), false);
+    write_lammps_input(s, mc, e, "sys.data", (sub / "sys.in").string());
+    std::ifstream cc(sub / "crlf-metal.tersoff", std::ios::binary);
+    std::stringstream t;
+    t << cc.rdbuf();
+    cc.close();
+    EXPECT_EQ(t.str().rfind("# Tersoff silicon UNITS: metal\r\n", 0), 0u) << t.str().substr(0, 40);
+  }
   fs::remove_all(dir);
 }
 
