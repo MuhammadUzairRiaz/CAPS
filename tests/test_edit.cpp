@@ -299,7 +299,8 @@ TEST(Edit, CoordinationGeometryAndDativeBonds) {
     for (size_t b = a + 1; b < lig.size(); ++b) {
       const Vec3 u = s.atoms[lig[a]].pos - s.atoms[fe].pos, v = s.atoms[lig[b]].pos - s.atoms[fe].pos;
       const double ang = std::acos(std::clamp(dot(u, v) / (norm(u) * norm(v)), -1.0, 1.0)) * 180 / M_PI;
-      EXPECT_TRUE(std::fabs(ang - 90) < 1e-6 || std::fabs(ang - 180) < 1e-6) << a << " " << b << " " << ang;
+      // 1e-5°: acos near ±1 turns a 1e-16 rounding of the cosine into ~1e-6°
+      EXPECT_TRUE(std::fabs(ang - 90) < 1e-5 || std::fabs(ang - 180) < 1e-5) << a << " " << b << " " << ang;
     }
   }
   EXPECT_NEAR(norm(s.atoms[h].pos - s.atoms[lig[0]].pos), oh, 1e-9);   // the hydroxo's H came with its O
@@ -319,7 +320,7 @@ TEST(Edit, CoordinationGeometryAndDativeBonds) {
       const Vec3 u = p.atoms[a].pos - p.atoms[0].pos, v = p.atoms[b].pos - p.atoms[0].pos;
       sum += std::acos(std::clamp(dot(u, v) / (norm(u) * norm(v)), -1.0, 1.0)) * 180 / M_PI;
     }
-  EXPECT_NEAR(sum, 4 * 90 + 2 * 180, 1e-6);
+  EXPECT_NEAR(sum, 4 * 90 + 2 * 180, 1e-5);
   // a water on a metal: dative, no formal charge on O; a plain single bond would make it +1
   System w;
   auto addw = [&](int z, Vec3 q) { Atom a; a.element = z; a.pos = q; w.atoms.push_back(a); };
