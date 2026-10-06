@@ -15,7 +15,19 @@ per-particle properties, which CAPS shows in the data inspector and passes to th
         pos = data.particles.positions_unwrapped
         data.attributes["MeanZ"] = float(np.mean(pos[:, 2]))
 """
-from . import geometry, pipeline  # noqa: F401
+import sys as _sys
+
+if _sys.platform == "win32":
+    # CAPS's reports carry Å, χ, →, τ: printed to a redirected Windows stream (cp1252) they would stop the script; there
+    # they come out as ? instead (a console, and PYTHONUTF8=1, print them as they are)
+    for _s in (_sys.stdout, _sys.stderr):
+        try:
+            if _s is not None and (_s.encoding or "").lower().replace("-", "") != "utf8":
+                _s.reconfigure(errors="replace")
+        except (AttributeError, ValueError):
+            pass
+
+from . import geometry, pipeline  # noqa: F401,E402
 from .core import (CapsError, Document, Provenance, abi_version, bibtex, build, label_kinds, protocol_text, water_models, compare_provenance, current, hand_back, import_file, import_preview, library, methods,  # noqa: F401
                    open, pack, polymer, potentials, provenance_file, run, space_groups, chain_lengths, bead_templates, copolymer_model, stereo, blend_phase, solvent_chi,
                    ewald_params, chi_by_md, chi_by_contacts, reaction_templates, reaction_template, bond_react_template, reaction_library)
