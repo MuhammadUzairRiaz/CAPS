@@ -73,7 +73,7 @@ def run(polymer, tacticities: Iterable[str] = ("isotactic", "syndiotactic", "ata
 
 
 def _write(folder: Path, units, runs) -> None:
-    (folder / "results.json").write_text(json.dumps({"format": "caps-sweep/1", "units": units, "runs": runs}, indent=1))
+    (folder / "results.json").write_text(json.dumps({"format": "caps-sweep/1", "units": units, "runs": runs}, indent=1), encoding="utf-8")
 
 
 def latest(root: Optional[str] = None) -> Path:
@@ -95,7 +95,7 @@ class Sweep:
     def runs(self) -> list:
         f = self.folder / "results.json"
         if f.exists():
-            return json.loads(f.read_text())["runs"]
+            return json.loads(f.read_text(encoding="utf-8"))["runs"]
         runs = []   # a folder without results.json (an older Studio sweep): the files' names
         for p in sorted(self.folder.glob("*_dp*_seed*.data")):
             m = re.match(r"(.+)_dp(\d+)_seed(\d+)\.data$", p.name)

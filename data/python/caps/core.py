@@ -383,7 +383,7 @@ def potentials() -> list:
     citation, units}], file as an absolute path. A group of Field.assign_groups takes one by its id."""
     lib = Path(__file__).resolve().parents[1].parent / "potentials"
     try:
-        cat = json.loads((lib / "catalogue.json").read_text())
+        cat = json.loads((lib / "catalogue.json").read_text(encoding="utf-8"))
     except OSError:
         return []
     return [dict(p, file=str(lib / p["file"]), **({"file2": str(lib / p["file2"])} if p.get("file2") else {})) for p in cat.get("potentials", [])]
@@ -1259,7 +1259,7 @@ def run(recipe, out_dir: str = ".", seed: Optional[int] = None, threads: int = 0
         if "\n" not in text and os.path.exists(text):
             base_dir = base_dir or str(Path(text).resolve().parent)
             label = Path(text).stem
-            text = Path(text).read_text()
+            text = Path(text).read_text(encoding="utf-8")
     opts = {"base_dir": base_dir or os.getcwd(), "out_dir": str(out_dir), "forcefield_dir": str(_data_dir() / "forcefields"),
             "seed": -1 if seed is None else int(seed), "threads": threads}
 
