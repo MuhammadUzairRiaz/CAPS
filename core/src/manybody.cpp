@@ -46,6 +46,7 @@ std::string first_line(const std::string& path) {
   std::ifstream f(path);
   std::string l;
   std::getline(f, l);
+  if (!l.empty() && l.back() == '\r') l.pop_back();   // a file with Windows line ends, read anywhere
   return l;
 }
 
@@ -121,11 +122,13 @@ std::string brenner_to_real(const std::string& text, const std::string& style) {
   char b[64];
   while (std::getline(is, l)) {
     ++line;
-    if (line == 1) {   // the units LAMMPS looks for on the first line
+    if (line == 1) {   // the units LAMMPS looks for on the first line (its line end, \r\n or \n, kept)
+      const bool cr = !l.empty() && l.back() == '\r';
+      if (cr) l.pop_back();
       const size_t u = l.find("UNITS: metal");
       if (u != std::string::npos) l.replace(u, 12, "UNITS: real");
       else l += " UNITS: real";
-      out += l + " (converted by CAPS: A, B and the ε's × 23.060549; the splines are dimensionless)\n";
+      out += l + " (converted by CAPS: A, B and the ε's × 23.060549; the splines are dimensionless)" + (cr ? "\r\n" : "\n");
       continue;
     }
     std::string head = l.substr(0, l.find('#'));
@@ -373,7 +376,8 @@ std::string write_manybody_file(const ManyBodyFile& mb, const std::string& dir, 
   std::string text = ss.str();
   if (units == "real" && kBrenner.count(mb.style)) text = brenner_to_real(text, mb.style);
   else if (!mb.tagged) {   // LAMMPS looks for the units on the first line only
-    const size_t eol = text.find('\n');
+    size_t eol = text.find('\n');
+    if (eol != std::string::npos && eol > 0 && text[eol - 1] == '\r') --eol;   // before a Windows line end's \r
     std::string first = text.substr(0, eol);
     const std::string add = "UNITS: " + mb.units;
     const bool comment_line = kSetfl.count(mb.style) || (!first.empty() && first.find_first_not_of(" \t") != std::string::npos && first[first.find_first_not_of(" \t")] == '#');
