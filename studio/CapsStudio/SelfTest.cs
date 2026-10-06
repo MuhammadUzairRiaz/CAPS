@@ -796,8 +796,12 @@ internal static class SelfTest
             vm.RxTargetValueD = 2;
             vm.RxCyclesD = 30;
             vm.RunReact().GetAwaiter().GetResult();
+            // the wiring: acid ends react with epoxides, links between chains are counted and reported. Whether a second acid end
+            // finds another chain's epoxide in this small cell is chance (0 or 1 on different machines); links between chains
+            // themselves are tested in the core suite (React, between chains)
             var linksLine = vm.RxNetworkText.Split('\n')[0];
-            Check(linksLine.StartsWith("Links between chains: ") && !linksLine.StartsWith("Links between chains: 0") && vm.RxNetworkText.Contains("Force field during the run"),
+            var rxDone = System.Text.RegularExpressions.Regex.Match(vm.RxLog, @"^(\d+) reactions");
+            Check(linksLine.StartsWith("Links between chains: ") && rxDone.Success && int.Parse(rxDone.Groups[1].Value) > 0 && vm.RxNetworkText.Contains("Force field during the run"),
                   $"ENR + diacid: {linksLine} · {vm.RxLog.Split('\n')[0]}");
             // several reactions with weights: the reaction list follows the text
             vm.RxSet = 6;
