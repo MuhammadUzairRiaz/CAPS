@@ -1,12 +1,21 @@
-# Build and test CAPS on Linux, Windows and macOS; package the installers; publish them on a release tag (v*).
+# Build and test CAPS on Linux, Windows and macOS on every push; package the installers and publish them only on a
+# release tag (v*), or when a manual run asks for them (Actions › build › Run workflow › package) — the installers cost
+# more runner minutes than the tests (macOS minutes count ten times on a private repository).
 name: build
 
 on:
   push:
     branches: [main]
     tags: ['v*']
+    paths-ignore: ['**.md', 'docs/**', 'site/**', 'design/**', 'LICENSE', 'licenses/**']   # documentation only: no run
   pull_request:
+    paths-ignore: ['**.md', 'docs/**', 'site/**', 'design/**', 'LICENSE', 'licenses/**']
   workflow_dispatch:
+    inputs:
+      package:
+        description: Build the installers too
+        type: boolean
+        default: false
 
 # a newer push to the same branch replaces a run still in progress (release tags always finish)
 concurrency:
@@ -25,6 +34,7 @@ jobs:
       matrix:
         os: [ubuntu-22.04, windows-2022, macos-14]
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -72,6 +82,8 @@ jobs:
 
   package-linux:
     needs: test
+    if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.package)
+    timeout-minutes: 90
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -87,6 +99,8 @@ jobs:
 
   package-windows:
     needs: test
+    if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.package)
+    timeout-minutes: 90
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
@@ -112,6 +126,8 @@ jobs:
 
   package-macos:
     needs: test
+    if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.package)
+    timeout-minutes: 90
     strategy:
       matrix:
         include:
