@@ -94,6 +94,7 @@
 #include <map>
 #include <unordered_map>
 #include <mutex>
+#include <optional>
 #include <chrono>
 #include <memory>
 #include <set>
@@ -1632,6 +1633,100 @@ int32_t caps_lammps_shake(caps_doc* d, int32_t mode, const char* group, char* te
 
 // The LAMMPS groups of an input: the Field page's groups (a force field per group), else a composite's filler (the held
 // molecule) and matrix; none otherwise.
+// LAMMPS styles as the export center takes them: lammps_styles native (the force field's own: OPLS's dihedral opls, class
+// II's class2 styles, PPPM for a long-range force field) | exact (CAPS's own forms), coulomb (or kspace) auto | pppm | ewald
+// | dsf | cut, kspace_accuracy, cutoff (or lammps_cutoff, Å; 0 the force field's), hybrid, tail, units
+static caps::LammpsStyle lammps_style_from(const caps::Json& o) {
+  auto flag = [&](const char* k, bool def) { return o.has(k) && o[k].kind() == caps::Json::Bool ? o[k].boolean() : def; };
+  caps::LammpsStyle ls;
+  const std::string styles = o.text("lammps_styles", "native");
+  if (styles != "native" && styles != "exact") throw std::runtime_error("lammps_styles: native or exact");
+  ls.native = styles == "native";
+  ls.hybrid = flag("hybrid", false);
+  ls.coulomb = o.text("coulomb", o.text("kspace", "auto"));
+  if (ls.coulomb != "auto" && ls.coulomb != "pppm" && ls.coulomb != "ewald" && ls.coulomb != "dsf" && ls.coulomb != "cut")
+    throw std::runtime_error("kspace: auto, pppm, ewald, dsf or cut");
+  ls.kspace_accuracy = o.num("kspace_accuracy", 1e-4);
+  ls.cutoff = o.num("cutoff", o.num("lammps_cutoff", 0));
+  if (o.has("tail") && o["tail"].kind() == caps::Json::Bool) ls.tail = o["tail"].boolean() ? 1 : 0;
+  ls.units = o.text("units", "auto");
+  if (ls.kspace_accuracy <= 0 || ls.cutoff < 0) throw std::runtime_error("the k-space accuracy and the cut-off must be positive");
+  return ls;
+}
+
+// "1-32, 51-61": the numbers listed
+static std::set<int64_t> number_ranges(std::string m) {
+  for (auto& c : m) if (c == ',' || c == ';') c = ' ';
+  std::istringstream is(m);
+  std::set<int64_t> want;
+  for (std::string w; is >> w;) {
+    const auto dash = w.find('-', 1);
+    try {
+      const int64_t a = std::stoll(w.substr(0, dash)), b = dash == std::string::npos ? a : std::stoll(w.substr(dash + 1));
+      if (b < a || b - a > 100000000) throw std::invalid_argument("range");
+      for (int64_t k = a; k <= b; ++k) want.insert(k);
+    } catch (const std::exception&) {
+      throw std::runtime_error("'" + w + "' is not a number or a range (1-32)");
+    }
+  }
+  return want;
+}
+
+// type_groups: [{name, molecules: "33-50" | "rest"} | {name, atoms: "1-407"} | {name, tag: "filler"}] — one group per atom
+// (−1 none), the names in the order their types are numbered
+static void type_groups_from(const caps::Json& o, const caps::System& s, std::vector<int>& g, std::vector<std::string>& names) {
+  g.clear(), names.clear();
+  if (!o.has("type_groups")) return;
+  const caps::Json& G = o["type_groups"];
+  if (!G.is_array() || G.size() == 0) throw std::runtime_error("type_groups: [{\"name\": \"PBS\", \"molecules\": \"33-50\"}, …]");
+  const size_t n = s.atoms.size();
+  const auto molx = s.molecules();
+  auto mol_of = [&](size_t i) { return s.has_mol ? s.atoms[i].mol : int64_t(molx[i]) + 1; };
+  g.assign(n, -1);
+  int rest = -1;
+  for (size_t k = 0; k < G.size(); ++k) {
+    const caps::Json& J = G[k];
+    std::string name = J.text("name", "group" + std::to_string(k + 1));
+    for (auto& c : name) if (!std::isalnum(static_cast<unsigned char>(c)) && c != '_') c = '_';
+    names.push_back(name);
+    auto take = [&](size_t i) {
+      if (g[i] >= 0 && g[i] != int(k)) throw std::runtime_error("type groups: atom " + std::to_string(i + 1) + " is in " + names[size_t(g[i])] + " and " + name);
+      g[i] = int(k);
+    };
+    if (J.has("molecules")) {
+      const std::string m = J.text("molecules", "");
+      if (m == "rest" || m == "*") { rest = int(k); continue; }
+      const auto want = number_ranges(m);
+      for (size_t i = 0; i < n; ++i) if (want.count(mol_of(i))) take(i);
+    } else if (J.has("atoms")) {
+      for (int64_t a : number_ranges(J.text("atoms", "")))
+        if (a >= 1 && size_t(a) <= n) take(size_t(a - 1));
+    } else if (J.has("tag")) {
+      const std::string t = J.text("tag", "");
+      size_t bit = s.tags.size();
+      for (size_t b = 0; b < s.tags.size(); ++b) if (s.tags[b].name == t) bit = b;
+      if (bit == s.tags.size()) throw std::runtime_error("type groups: no tag named " + t);
+      for (size_t i = 0; i < n; ++i) if (s.atoms[i].tags >> bit & 1u) take(i);
+    } else
+      throw std::runtime_error("type group " + name + ": give its molecules, atoms or tag");
+  }
+  for (size_t i = 0; i < n; ++i)
+    if (g[i] < 0 && rest >= 0) g[i] = rest;
+  for (size_t k = 0; k < names.size(); ++k)
+    if (std::find(g.begin(), g.end(), int(k)) == g.end()) throw std::runtime_error("type group " + names[k] + " holds no atom");
+}
+
+// the LAMMPS groups of type groups (the atoms of each)
+static std::vector<caps::LammpsStyle::Group> type_group_list(const std::vector<int>& g, const std::vector<std::string>& names) {
+  std::vector<caps::LammpsStyle::Group> r;
+  for (size_t k = 0; k < names.size(); ++k) {
+    caps::LammpsStyle::Group grp{names[k], {}};
+    for (size_t i = 0; i < g.size(); ++i) if (g[i] == int(k)) grp.atoms.push_back(uint32_t(i));
+    r.push_back(std::move(grp));
+  }
+  return r;
+}
+
 static std::vector<caps::LammpsStyle::Group> lammps_groups(const caps_doc* d, const caps::System& s) {
   if (d->field) {
     const auto& ga = d->field->group_atoms;
@@ -1853,15 +1948,14 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
     std::vector<std::pair<std::string, std::string>> written;   // name, what
     const caps::EnergyOptions e = elec();
     // LAMMPS styles: the force field's own (default) or CAPS-exact; hybrid; long-range sum; cut-off
-    caps::LammpsStyle ls;
-    ls.native = o.text("lammps_styles", "native") != "exact";
-    ls.hybrid = flag("hybrid", false);
-    ls.coulomb = o.text("coulomb", "auto");
-    ls.kspace_accuracy = o.num("kspace_accuracy", 1e-4);
-    ls.cutoff = o.num("cutoff", 0);
-    if (o.has("tail") && o["tail"].kind() == caps::Json::Bool) ls.tail = o["tail"].boolean() ? 1 : 0;
-    ls.units = o.text("units", "auto");   // real | metal | auto (metal when a potential is read in metal units only)
-    if (ls.kspace_accuracy <= 0 || ls.cutoff < 0) throw std::runtime_error("the k-space accuracy and the cut-off must be positive");
+    caps::LammpsStyle ls = lammps_style_from(o);
+    // atom types split by component (type_groups): the LAMMPS files only, each group's types numbered in the order given
+    std::vector<int> tgroup;
+    std::vector<std::string> tnames;
+    type_groups_from(o, s, tgroup, tnames);
+    std::optional<caps::ForceField> split;
+    if (!tnames.empty()) split = caps::split_types_by_group(ff, tgroup, tnames);
+    const caps::ForceField& lff = split ? *split : ff;
     // a force field LAMMPS cannot express (GROMOS's reaction field …) refuses the LAMMPS files only: the GROMACS files
     // are still written, and the reason goes back as lammps_error
     std::string lammps_error;
@@ -1889,11 +1983,12 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
     }
     if (lammps && !kg_model) try {
       std::vector<std::string> lnotes;
-      ls.groups = lammps_groups(d, s);
+      ls.groups = tnames.empty() ? lammps_groups(d, s) : type_group_list(tgroup, tnames);
+      if (!tnames.empty()) notes.push_back(caps::Json("LAMMPS: atom types split by component (" + std::to_string(tnames.size()) + " groups, numbered in their order), each group a LAMMPS group by type"));
       ls.rigid_mols = d->rigid_mols;
       if (!d->rigid_mols.empty()) notes.push_back(caps::Json("LAMMPS: " + std::to_string(d->rigid_mols.size()) + " molecule(s) move as rigid bodies (fix rigid/nvt/small)"));
-      caps::write_lammps_data_ff(s, ff, e, base + ".data", false, ls);
-      caps::write_lammps_input(s, ff, e, stem + ".data", base + ".in", d->held_mol, true, run, ls, &lnotes);
+      caps::write_lammps_data_ff(s, lff, e, base + ".data", false, ls);
+      caps::write_lammps_input(s, lff, e, stem + ".data", base + ".in", d->held_mol, true, run, ls, &lnotes);
       for (const auto& n : lnotes) notes.push_back(caps::Json("LAMMPS: " + n));
       if (!d->fixed_atoms.empty()) notes.push_back(caps::Json("LAMMPS: the " + std::to_string(d->fixed_atoms.size()) + " fixed atoms besides the held molecule are not held in this input (the GROMACS files freeze them)"));
       written.push_back({stem + ".data", "atoms, bonds, masses and bonded coefficients"});
@@ -2941,7 +3036,10 @@ namespace {
 // The Field assignment of d re-run on another structure (a reaction's product): the same force field, typing rules,
 // imported parameters and charge choice; types set by hand are dropped (the atoms are renumbered). Throws with what is
 // untyped or missing when the force field cannot describe the product.
-std::unique_ptr<FieldState> field_on(const caps_doc* d, const caps::System& s) {
+std::unique_ptr<FieldState> field_on_state(const FieldState& state, const caps::System& s);
+std::unique_ptr<FieldState> field_on(const caps_doc* d, const caps::System& s) { return field_on_state(*d->field, s); }
+// the assignment of state re-run on another structure (a reaction's product)
+std::unique_ptr<FieldState> field_on_state(const FieldState& state, const caps::System& s) {
   caps_doc t;
   t.traj.topology = s;
   t.traj.topology.source_format.clear();
@@ -2951,7 +3049,7 @@ std::unique_ptr<FieldState> field_on(const caps_doc* d, const caps::System& s) {
   t.traj.cells.push_back(s.cell);
   t.traj.timesteps.push_back(0);
   t.frame = s;
-  t.field = std::make_unique<FieldState>(*d->field);
+  t.field = std::make_unique<FieldState>(state);
   t.field->overrides.clear();
   t.field->file_types.clear();
   t.field->file_charges.clear();
@@ -2959,8 +3057,10 @@ std::unique_ptr<FieldState> field_on(const caps_doc* d, const caps::System& s) {
   return std::move(t.field);
 }
 
-std::shared_ptr<const caps::ForceField> field_for_product(const caps_doc* d, const caps::System& s) {
-  const auto F = field_on(d, s);
+std::shared_ptr<const caps::ForceField> field_for_state(const FieldState& state, const caps::System& s);
+std::shared_ptr<const caps::ForceField> field_for_product(const caps_doc* d, const caps::System& s) { return field_for_state(*d->field, s); }
+std::shared_ptr<const caps::ForceField> field_for_state(const FieldState& state, const caps::System& s) {
+  const auto F = field_on_state(state, s);
   if (!F->complete) {
     std::map<std::string, int> untyped;
     for (size_t i = 0; i < F->types.size() && i < s.atoms.size(); ++i)
@@ -2999,10 +3099,28 @@ int32_t caps_react_summary(caps_doc* d, char* json, int32_t cap) {
 
 int32_t caps_bond_react_export(caps_doc* d, const char* templates, const char* dir, const char* options, char* report, int32_t cap) {
   return guard([&] {
-    if (!d->field || !d->field->ff) throw std::runtime_error("assign a force field first (Force field step): the templates are typed with it");
-    if (!d->field->complete) throw std::runtime_error("the force field is incomplete for this structure: complete it in the Force field step");
     const caps::Json o = caps::Json::parse(options && *options ? options : "{}");
     auto flag = [&](const char* k, bool def) { return o.has(k) && o[k].kind() == caps::Json::Bool ? o[k].boolean() : def; };
+    // the force field the reactions are typed with: the structure's assignment, or another library force field
+    // (forcefield: a caps-forcefield path, with charges auto | forcefield | gasteiger | qeq) — re-run on every product
+    std::shared_ptr<FieldState> state;
+    const std::string ffpath = o.text("forcefield", "");
+    if (!ffpath.empty()) {
+      auto F = std::make_shared<FieldState>(d->field ? *d->field : FieldState{});
+      F->ff_path = ffpath;
+      F->base = caps::is_uff(ffpath) ? caps::uff_definition() : caps::load_forcefield(ffpath);
+      F->extra = {}, F->fill = {}, F->imported.clear(), F->groups.clear(), F->model.clear(), F->mixing.clear();
+      const std::string ch = o.text("charges", "auto");
+      if (ch != "auto" && ch != "forcefield" && ch != "gasteiger" && ch != "qeq") throw std::runtime_error("charges: auto, forcefield, gasteiger or qeq");
+      F->auto_charges = ch == "auto";
+      F->charges = ch == "gasteiger" ? "gasteiger" : ch == "qeq" ? "qeq" : "types";
+      if (caps::needs_prepare(F->base)) throw std::runtime_error("a united-atom force field changes the structure: assign it in the Force field step first");
+      state = F;
+    } else {
+      if (!d->field || !d->field->ff) throw std::runtime_error("assign a force field first (Force field step): the templates are typed with it");
+      if (!d->field->complete) throw std::runtime_error("the force field is incomplete for this structure: complete it in the Force field step");
+      state = std::make_shared<FieldState>(*d->field);
+    }
     const std::string stem = o.text("stem", "react");
     if (stem.empty() || stem.find('/') != std::string::npos || stem.find('\\') != std::string::npos) throw std::runtime_error("the file stem must be a plain name");
     caps::BondReactOptions b;
@@ -3016,28 +3134,80 @@ int32_t caps_bond_react_export(caps_doc* d, const char* templates, const char* d
     b.rmax = std::max(0.0, o.num("rmax", 3.5));
     b.temperature = o.num("temperature", 300);
     b.steps = std::max<int64_t>(1, int64_t(o.num("steps", 100000)));
+    b.timestep = std::max(0.0, o.num("dt", o.num("timestep", 0)));
     b.seed = uint64_t(std::max(1.0, o.num("seed", 12345)));
+    b.survey_capture = std::max(0.0, o.num("survey_capture", 0));
     b.energy = elec(caps::EnergyOptions{});
+    // the same LAMMPS styles as the engine export (a pristine deck and a crosslinking deck are one model)
+    b.style = lammps_style_from(o);
+    // F2: templates also from virtual-cure copies
+    if (o.has("survey_after")) {
+      if (o["survey_after"].is_array()) for (const auto& x : o["survey_after"].items()) b.survey_after.push_back(x.number());
+      else b.survey_after.push_back(o.num("survey_after", 0));
+    }
+    if (o.has("virtual_cure")) b.survey_after.push_back(o.num("virtual_cure", 0));
+    b.survey_relax = flag("survey_relax", true);
+    // F3: types by component
     caps::System s = d->frame;
+    type_groups_from(o, s, b.type_group, b.type_group_names);
+    // F4: crosslink-density targets
+    if (o.has("targets") && o["targets"].is_array())
+      for (const auto& x : o["targets"].items()) b.targets.push_back(x.number());
+    b.limiting = o.num("limiting", 0);
+    if (o.has("link_reactions")) {
+      if (o["link_reactions"].is_array()) for (const auto& x : o["link_reactions"].items()) b.link_reactions.push_back(x.str());
+      else b.link_reactions.push_back(o.text("link_reactions", ""));
+    }
+    b.check_every = std::max<int64_t>(1, int64_t(o.num("check_every", 1000)));
+    b.max_steps = std::max<int64_t>(b.check_every, int64_t(o.num("max_steps", 2000000)));
+    b.stall_chunks = std::max(0, int(o.num("stall_chunks", 0)));
+    b.rmax_step = std::max(0.01, o.num("rmax_step", 0.5));
+    b.rmax_limit = std::max(0.0, o.num("rmax_limit", 0));
+    // F5: molecule ids during the cure
+    b.mol_ids = o.text("mol_ids", flag("keep_chain_ids", false) ? "molmap" : "reset");
+    if (b.mol_ids == "no") b.mol_ids = "keep";
     const auto t = caps::parse_templates(templates ? templates : "");
-    const auto r = caps::write_bond_react(s, t, [d](const caps::System& x) { return field_for_product(d, x); }, dir ? dir : ".", stem, b);
+    const auto r = caps::write_bond_react(s, t, [state](const caps::System& x) { return field_for_state(*state, x); }, dir ? dir : ".", stem, b);
     caps::Json j = caps::Json::object();
-    caps::Json files = caps::Json::array(), notes = caps::Json::array(), vars = caps::Json::array();
+    caps::Json files = caps::Json::array(), notes = caps::Json::array(), vars = caps::Json::array(), steps = caps::Json::array(), frames = caps::Json::array(),
+               links = caps::Json::array();
     for (const auto& f : r.files) files.push_back(f);
     for (const auto& n : r.notes) notes.push_back(n);
     for (const auto& v : r.variants) {
       caps::Json x = caps::Json::object();
       x["reaction"] = v.reaction;
       x["name"] = v.name;
+      x["step"] = v.step;
       x["sites"] = double(v.sites);
       x["pre_atoms"] = double(v.pre_atoms);
       x["edge"] = double(v.edge);
       x["deleted"] = double(v.deleted);
       vars.push_back(x);
     }
+    for (const auto& v : r.steps) {
+      caps::Json x = caps::Json::object();
+      x["reaction"] = v.reaction;
+      x["step"] = v.step;
+      x["candidates"] = double(v.candidates);
+      x["covered"] = double(v.covered);
+      x["coverage"] = v.candidates ? double(v.covered) / v.candidates : 0.0;
+      x["variants"] = double(v.variants);
+      steps.push_back(x);
+    }
+    for (const auto& f : r.frames) {
+      caps::Json x = caps::Json::object();
+      x["conversion"] = f.conversion;
+      x["reactions"] = double(f.reactions);
+      x["atoms"] = double(f.atoms);
+      frames.push_back(x);
+    }
+    for (const auto& l : r.link_reactions) links.push_back(l);
     j["files"] = files;
     j["notes"] = notes;
     j["variants"] = vars;
+    j["steps"] = steps;
+    j["frames"] = frames;
+    j["link_reactions"] = links;
     j["candidates"] = double(r.candidates);
     j["covered"] = double(r.covered);
     return report_out(j.dump(), report, cap);

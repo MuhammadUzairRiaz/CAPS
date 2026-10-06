@@ -803,6 +803,24 @@ internal static class SelfTest
             var rxDone = System.Text.RegularExpressions.Regex.Match(vm.RxLog, @"^(\d+) reactions");
             Check(linksLine.StartsWith("Links between chains: ") && rxDone.Success && int.Parse(rxDone.Groups[1].Value) > 0 && vm.RxNetworkText.Contains("Force field during the run"),
                   $"ENR + diacid: {linksLine} · {vm.RxLog.Split('\n')[0]}");
+            // the same network as a LAMMPS fix bond/react set with the cure options: molecule ids by molmap, crosslink targets
+            // in the input (the wiring: a cell where every acid end has reacted has no pair left, and OPLS-AA 2005 has no
+            // C–S–S terms for the sulfur bridges cured above — the export says either; the deck itself is checked in the core suite)
+            {
+                var brDir = Path.Combine(outDir, "bond-react");
+                vm.RxBrTargets = "50, 100";
+                vm.RxBrLimitingD = 2;
+                vm.RxBrMolIdsIndex = 2;
+                // typed with a library force field chosen on the page (OPLS-AA 2005), not the structure's assignment
+                vm.RxBrFfIndex = 1 + vm.Field.Library.Where(e => e.AutoTyping).ToList().FindIndex(e => e.Id == "opls2005");
+                var okBr = vm.ExportBondReact(brDir).GetAwaiter().GetResult();
+                var deck = okBr ? File.ReadAllText(Path.Combine(brDir, vm.RxBrStem + ".in")) : "";
+                Check(okBr ? deck.Contains("reset_mol_ids molmap") && deck.Contains("variable        tgt index 50 100") && deck.Contains("crosslink_progress.dat")
+                           : vm.RxBrText.Contains("no reactive pair") || vm.RxBrText.Contains("missing "), $"fix bond/react set with targets: {vm.RxBrText.Split('\n')[0]}");
+                vm.RxBrTargets = "";
+                vm.RxBrMolIdsIndex = 0;
+                vm.RxBrFfIndex = 0;
+            }
             // several reactions with weights: the reaction list follows the text
             vm.RxSet = 6;
             var several = vm.RxReactions.Count == 2 && vm.RxSeveral;

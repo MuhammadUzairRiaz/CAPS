@@ -655,6 +655,66 @@ TEST(React, BondReactExportAndImport) {
   std::filesystem::remove_all(dir);
 }
 
+// fix bond/react with the cure options: types split by component (a renamed copy: the energy unchanged; each group's types
+// numbered in the given order, a LAMMPS group), a virtual-cure survey, molecule ids kept by molmap (templates with a
+// Molecules section) and crosslink-density targets in the input
+TEST(React, BondReactCureOptions) {
+  System s = pe_cell(6, 10, 13);
+  auto gaff = [](const System& x) { return std::make_shared<const ForceField>(assign_gaff(x)); };
+  // split types: same energy
+  {
+    const ForceField ff = assign_gaff(s);
+    std::vector<int> g(s.atoms.size());
+    for (size_t i = 0; i < s.atoms.size(); ++i) g[i] = s.atoms[i].mol <= 3 ? 1 : 0;
+    const ForceField sp = split_types_by_group(ff, g, {"B", "A"});
+    EXPECT_EQ(sp.type_names.size(), 2 * ff.type_names.size());
+    EXPECT_EQ(sp.type_index[0], int(ff.type_names.size()) + ff.type_index[0]);   // molecule 1 is in A, numbered after B's
+    EnergyOptions eo;
+    std::vector<double> x, f1, f2;
+    for (const auto& a : s.atoms) x.insert(x.end(), a.pos.begin(), a.pos.end());
+    Evaluator e1(ff, eo), e2(sp, eo);
+    const auto t1 = e1.compute(x, s.cell, f1), t2 = e2.compute(x, s.cell, f2);
+    EXPECT_NEAR(t1.vdw, t2.vdw, 1e-9);
+    EXPECT_NEAR(t1.bond + t1.angle + t1.dihedral, t2.bond + t2.angle + t2.dihedral, 1e-9);
+  }
+  const auto dir = (std::filesystem::temp_directory_path() / "caps_bond_react_cure").string();
+  std::filesystem::remove_all(dir);
+  BondReactOptions bo;
+  bo.max_variants = 2;
+  bo.between_chains = true;
+  bo.survey_after = {0.5};
+  bo.survey_relax = false;
+  bo.mol_ids = "molmap";
+  bo.targets = {0.5, 1.0};
+  bo.limiting = 2;
+  bo.check_every = 500;
+  bo.max_steps = 5000;
+  for (const auto& a : s.atoms) bo.type_group.push_back(a.mol <= 3 ? 0 : 1);
+  bo.type_group_names = {"first", "second"};
+  const auto rep = write_bond_react(s, parse_templates(builtin_template("cc_crosslink")), gaff, dir, "cure", bo);
+  ASSERT_GE(rep.variants.size(), 1u);
+  ASSERT_EQ(rep.frames.size(), 1u);
+  EXPECT_GT(rep.frames[0].reactions, 0);
+  ASSERT_FALSE(rep.steps.empty());
+  EXPECT_EQ(rep.steps[0].covered, std::min(rep.steps[0].candidates, rep.steps[0].covered));
+  EXPECT_FALSE(rep.link_reactions.empty());   // a C–C link between two chains
+  auto text = [](const std::string& path) {
+    std::ifstream in(path);
+    std::stringstream ss;
+    ss << in.rdbuf();
+    return ss.str();
+  };
+  const std::string in = text(dir + "/cure.in");
+  EXPECT_NE(in.find("reset_mol_ids molmap"), std::string::npos);
+  EXPECT_NE(in.find("group           first          type"), std::string::npos);
+  EXPECT_NE(in.find("group           second         type"), std::string::npos);
+  EXPECT_NE(in.find("variable        tgt index 50 100"), std::string::npos);
+  EXPECT_NE(in.find("write_data      cure_XL${tgt}.data"), std::string::npos);
+  EXPECT_NE(in.find("crosslink_progress.dat"), std::string::npos);
+  EXPECT_NE(text(dir + "/cure_" + rep.variants[0].name + "_pre.mol").find("Molecules"), std::string::npos);
+  std::filesystem::remove_all(dir);
+}
+
 // Polybutadiene vulcanised with trisulfide donors (H–S3–H) between chains to a degree of crosslinking DC = 2 links / monomers
 // of 10 % (the definition of Vasilev et al. 2021 and Alamfard et al. 2023): C–S3–C bridges form, one link per donor that
 // reached two chains, and the run stops at the target

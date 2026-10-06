@@ -45,6 +45,14 @@ public partial class ReactPage : PageBase
         var dirs = await top.StorageProvider.OpenFolderPickerAsync(new Avalonia.Platform.Storage.FolderPickerOpenOptions { Title = "Folder for the fix bond/react files", AllowMultiple = false });
         if (dirs.Count > 0 && dirs[0].TryGetLocalPath() is { } path) await Vm.ExportBondReact(path);
     }
+    private async void OnRunBondReact(object? s, RoutedEventArgs e)
+    {
+        var top = TopLevel.GetTopLevel(this);
+        if (top == null) return;
+        var dirs = await top.StorageProvider.OpenFolderPickerAsync(new Avalonia.Platform.Storage.FolderPickerOpenOptions { Title = "Folder for the fix bond/react run", AllowMultiple = false });
+        if (dirs.Count > 0 && dirs[0].TryGetLocalPath() is { } path) await Vm.RunBondReact(path);
+    }
+    private void OnStopBondReact(object? s, RoutedEventArgs e) => Vm.StopBondReact();
     private async void OnImportBondReact(object? s, RoutedEventArgs e)
     {
         var top = TopLevel.GetTopLevel(this);
