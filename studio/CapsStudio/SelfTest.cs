@@ -787,8 +787,9 @@ internal static class SelfTest
             // tertiary carbon, so a diacid reaching two chains is a link between them; links only between chains, to two links
             vm.RxSet = 5;
             vm.RxInsertSmiles = "OC(=O)CCC(=O)O";
-            vm.RxInsertCount = 8;
+            vm.RxInsertCount = 4;   // fewer diacids than the 13 epoxides: second ends find epoxides left
             vm.InsertCurative().GetAwaiter().GetResult();
+            vm.RxRelax = true;   // the cure relaxes between cycles, so a diacid's second end can find another chain (as a real run does)
             vm.RxBetweenChains = true;
             vm.RxAutoCapture = true;
             vm.RxTargetKind = 1;
