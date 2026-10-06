@@ -120,7 +120,7 @@
    "list": {
     "label": "INTERFACE (IFF, PCFF)",
     "key": "iff_pcff",
-    "order": 33
+    "order": 34
    }
   },
   {
@@ -150,7 +150,7 @@
    "list": {
     "label": "INTERFACE (IFF, CVFF)",
     "key": "iff_cvff",
-    "order": 34
+    "order": 35
    }
   },
   {
@@ -284,7 +284,7 @@
    "list": {
     "label": "OPLS-2020",
     "key": "opls2020",
-    "order": 9
+    "order": 10
    }
   },
   {
@@ -314,7 +314,7 @@
    "list": {
     "label": "OPLS-AA/M",
     "key": "opls_aam",
-    "order": 10
+    "order": 11
    }
   },
   {
@@ -344,7 +344,7 @@
    "list": {
     "label": "OPLS ionic liquids",
     "key": "opls_cl_p",
-    "order": 11
+    "order": 12
    }
   },
   {
@@ -374,7 +374,7 @@
    "list": {
     "label": "OPLS deep-eutectic solvents",
     "key": "opls_des",
-    "order": 12
+    "order": 13
    }
   },
   {
@@ -404,7 +404,7 @@
    "list": {
     "label": "AMBER",
     "key": "amber",
-    "order": 16
+    "order": 17
    }
   },
   {
@@ -434,7 +434,7 @@
    "list": {
     "label": "AMBER GAFF",
     "key": "amber_gaff",
-    "order": 7
+    "order": 8
    }
   },
   {
@@ -464,7 +464,7 @@
    "list": {
     "label": "GAFF / AMBER25",
     "key": "amber25_gaff",
-    "order": 17
+    "order": 18
    }
   },
   {
@@ -494,7 +494,7 @@
    "list": {
     "label": "CHARMM",
     "key": "charmm",
-    "order": 18
+    "order": 19
    }
   },
   {
@@ -524,7 +524,7 @@
    "list": {
     "label": "CHARMM19",
     "key": "charmm19",
-    "order": 19
+    "order": 20
    }
   },
   {
@@ -554,7 +554,7 @@
    "list": {
     "label": "CHARMM22 protein",
     "key": "charmm22_prot",
-    "order": 20
+    "order": 21
    }
   },
   {
@@ -584,7 +584,7 @@
    "list": {
     "label": "CHARMM36 carbohydrate",
     "key": "charmm36_carb",
-    "order": 21
+    "order": 22
    }
   },
   {
@@ -614,7 +614,7 @@
    "list": {
     "label": "CHARMM36 CGenFF",
     "key": "charmm36_cgenff",
-    "order": 22
+    "order": 23
    }
   },
   {
@@ -644,7 +644,7 @@
    "list": {
     "label": "CHARMM36 lipid",
     "key": "charmm36_lipid",
-    "order": 23
+    "order": 24
    }
   },
   {
@@ -674,7 +674,7 @@
    "list": {
     "label": "CHARMM36 nucleic acid",
     "key": "charmm36_nucl",
-    "order": 24
+    "order": 25
    }
   },
   {
@@ -704,7 +704,7 @@
    "list": {
     "label": "CHARMM36",
     "key": "charmm36",
-    "order": 6
+    "order": 7
    }
   },
   {
@@ -734,7 +734,7 @@
    "list": {
     "label": "DREIDING",
     "key": "dreiding",
-    "order": 13
+    "order": 14
    }
   },
   {
@@ -764,7 +764,7 @@
    "list": {
     "label": "GROMOS 54A7",
     "key": "gromos_54a7",
-    "order": 8
+    "order": 9
    }
   },
   {
@@ -794,7 +794,7 @@
    "list": {
     "label": "TraPPE united-atom",
     "key": "trappe_ua",
-    "order": 15
+    "order": 16
    }
   },
   {
@@ -824,7 +824,7 @@
    "list": {
     "label": "TraPPE-EH",
     "key": "trappe_eh",
-    "order": 5
+    "order": 6
    }
   },
   {
@@ -857,7 +857,7 @@
    "list": {
     "label": "Miscellaneous",
     "key": "misc_ff",
-    "order": 14
+    "order": 15
    }
   },
   {
@@ -885,7 +885,7 @@
    "list": {
     "label": "Binary halides",
     "key": "inorganic_binary_halide",
-    "order": 25
+    "order": 26
    }
   },
   {
@@ -913,7 +913,7 @@
    "list": {
     "label": "Binary miscellaneous",
     "key": "inorganic_binary_misc",
-    "order": 26
+    "order": 27
    }
   },
   {
@@ -941,7 +941,7 @@
    "list": {
     "label": "Binary oxides",
     "key": "inorganic_binary_oxide",
-    "order": 27
+    "order": 28
    }
   },
   {
@@ -971,7 +971,7 @@
    "list": {
     "label": "Clay",
     "key": "inorganic_clay",
-    "order": 28
+    "order": 29
    }
   },
   {
@@ -999,7 +999,7 @@
    "list": {
     "label": "Glass",
     "key": "inorganic_glass",
-    "order": 29
+    "order": 30
    }
   },
   {
@@ -1027,7 +1027,7 @@
    "list": {
     "label": "Ternary oxides",
     "key": "inorganic_ternary_oxide",
-    "order": 30
+    "order": 31
    }
   },
   {
@@ -1055,7 +1055,7 @@
    "list": {
     "label": "Zeolite",
     "key": "inorganic_zeolite",
-    "order": 31
+    "order": 32
    }
   },
   {
@@ -1083,7 +1083,7 @@
    "list": {
     "label": "Zeolite Hill-Sauer",
     "key": "inorganic_zeolite_hs",
-    "order": 32
+    "order": 33
    }
   },
   {
@@ -1189,6 +1189,32 @@
     "label": "OPLS-AA 2024",
     "key": "oplsaa2024",
     "order": 4
+   }
+  },
+  {
+   "id": "oplsua2024",
+   "name": "OPLS-UA (2024 parameter file)",
+   "version": "2024",
+   "references": [
+    "W. L. Jorgensen et al., J. Phys. Chem. B (2024), doi:10.1021/acs.jpcb.3c06602 (the parameter file)",
+    "W. L. Jorgensen, J. D. Madura, C. J. Swenson, J. Am. Chem. Soc. 106, 6638 (1984)"
+   ],
+   "origin": "converted",
+   "source_file": "the united-atom types of the 2024 OPLS parameter file (on oplsaa2024-moltemplate.json)",
+   "status": "converted",
+   "notes": "united atom: hydrogens on carbon fold into their carbons when it is assigned. The table parameterises the united-atom alkanes, alkenes, aromatic CH, alcohols, ethers, sulfur groups, nitriles and chloromethanes; bonded terms of branched or substituted chains it never gave (CH-CH2-CH torsions, C-CH2-C angles, an alkene CH next to CH2-CH2) are reported as missing, not invented.",
+   "file": "oplsua2024.json",
+   "counts": {
+    "atom_types": 29
+   },
+   "typing": {
+    "rules": "typing/oplsua2024.typing.json",
+    "evidence": "CAPS united-atom rules (bench/ff/make_oplsua2024.py): CH3 typed by the carbons on its neighbour as the 1984 paper defines it; polyethylene and n-alkanes complete; substituted aromatic C, esters and epoxides have no united-atom type in the table (left untyped)."
+   },
+   "list": {
+    "label": "OPLS-UA 2024",
+    "key": "oplsua2024",
+    "order": 5
    }
   },
   {
@@ -1447,7 +1473,7 @@
    "list": {
     "label": "Martini 3",
     "key": "martini3",
-    "order": 35
+    "order": 36
    }
   },
   {
