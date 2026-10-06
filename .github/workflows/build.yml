@@ -49,14 +49,14 @@ jobs:
         shell: msys2 {0}
         run: |
           cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-          cmake --build build --parallel
+          cmake --build build --parallel 4
           ctest --test-dir build --output-on-failure
       - name: Configure
         if: runner.os != 'Windows'
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
       - name: Build
         if: runner.os != 'Windows'
-        run: cmake --build build --config Release --parallel
+        run: cmake --build build --config Release --parallel 4   # a bare --parallel runs every compile at once and the runner runs out of memory
       - name: Core tests
         if: runner.os != 'Windows'
         run: ctest --test-dir build -C Release --output-on-failure
@@ -101,7 +101,7 @@ jobs:
         shell: msys2 {0}
         run: |
           cmake -S . -B build-pkg/native -G Ninja -DCMAKE_BUILD_TYPE=Release -DCAPS_BUILD_TESTS=OFF
-          cmake --build build-pkg/native --parallel
+          cmake --build build-pkg/native --parallel 4
       - name: Inno Setup
         run: choco install innosetup -y --no-progress
       - run: pwsh packaging/windows/build.ps1 -Native build-pkg/native
