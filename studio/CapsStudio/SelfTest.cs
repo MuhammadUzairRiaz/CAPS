@@ -988,9 +988,12 @@ internal static class SelfTest
             vm.SetModule(3);
             var steps = vm.MdStepsD;
             vm.MdStepsD = 5_000_000;
+            var jobsClock = System.Diagnostics.Stopwatch.StartNew();
             var run = vm.RunMd();
+            var tReturn = jobsClock.Elapsed.TotalSeconds;   // RunMd hands back at its first await: a long wait here means it ran in this thread
+            ThreadPool.GetAvailableThreads(out var poolFree, out _);
             var started = Until(() => vm.MdRunning && vm.MdLog.StartsWith("step"), 120000);   // a slow CI runner's first steps
-            var startLog = vm.MdLog.Split('\n')[0];
+            var startLog = $"{vm.MdLog.Split('\n')[0]}' · RunMd returned after {tReturn:F1} s, started at {jobsClock.Elapsed.TotalSeconds:F1} s, running {vm.MdRunning}, {poolFree} pool threads free";
             vm.PauseRun();
             Until(() => false, 500);
             var held = vm.MdLog;
@@ -1007,7 +1010,7 @@ internal static class SelfTest
             vm.CancelMd();
             Until(() => !vm.MdRunning, 30000);
             Check(started && still && queued && moved && second && !vm.RunPaused,
-                  $"jobs: started {started} ('{startLog}') · paused and held {still} · queued {queued} · resumed {moved} · queued run started {second} · {vm.JobsSummary}");
+                  $"jobs: started {started} ('{startLog}) · paused and held {still} · queued {queued} · resumed {moved} · queued run started {second} · {vm.JobsSummary}");
             vm.MdStepsD = steps;
 
             // a remote job, end to end against stand-ins on this machine: ssh runs the command in a shell, scp copies, the
@@ -1074,6 +1077,7 @@ internal static class SelfTest
                     psi.ArgumentList.Add(file);
                     if (Paths.Python is { } pkg) psi.Environment["PYTHONPATH"] = pkg;
                     psi.Environment["CAPS_LIB"] = MainViewModel.NativeLibraryPath;
+                    PythonProcess.Utf8Io(psi);   // the scripts carry →, τ: Windows reads them as cp1252 otherwise
                     using var proc = System.Diagnostics.Process.Start(psi)!;
                     var err = proc.StandardError.ReadToEndAsync();
                     proc.StandardOutput.ReadToEnd();
