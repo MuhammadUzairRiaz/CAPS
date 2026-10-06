@@ -36,7 +36,7 @@ strip "$APP/caps" "$APP/libcaps.so" 2>/dev/null || true
 
 echo "== self-test of the staged app"
 "$APP/CapsStudio" --selftest "$APP/samples" "$WORK" | tee "$WORK/selftest.log" | tail -1
-grep -q "all checks passed" "$WORK/selftest.log"
+grep -q "all checks passed" "$WORK/selftest.log" || { grep "^FAIL" "$WORK/selftest.log"; exit 1; }
 
 icons() {   # hicolor icons into $1/share/icons
   for s in 16 32 48 64 128 256 512; do

@@ -1514,7 +1514,8 @@ internal static class SelfTest
                 Check(own && amberOffered && vm.Field.ForceFieldName.Contains("phenol.prmtop", StringComparison.Ordinal) && !vm.Field.CanUseFileForceField,
                       $"AMBER prmtop opens with its own force field, offered back after GAFF: own {own}, offered {amberOffered} · {vm.Field.ForceFieldName} · {vm.Field.Log}");
             }
-            else Check(false, "AMBER test topology missing: " + amber);
+            else if (Directory.Exists(Path.GetFullPath(Path.Combine(dir, "..", "tests")))) Check(false, "AMBER test topology missing: " + amber);
+            // (an installed app carries no test data: nothing to open)
         }
 
         // Coarse-grained Kremer–Grest melt: reduced units, then mapped to real units by σ, T and the bead mass
