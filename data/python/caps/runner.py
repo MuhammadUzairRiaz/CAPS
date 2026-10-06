@@ -39,7 +39,7 @@ def main():
     script, src, dst = sys.argv[1:4]
     from caps import pipeline
     from caps.pipeline import Data
-    with open(src) as f:
+    with open(src, encoding="utf-8") as f:
         raw = json.load(f)
     out = {"ok": False, "log": []}
     try:
@@ -58,7 +58,7 @@ def main():
     except Exception as e:  # reported on the step, with the line
         out["error"] = f"{type(e).__name__}: {e}"
         out["trace"] = traceback.format_exc()
-    with open(dst, "w") as f:
+    with open(dst, "w", encoding="utf-8") as f:
         json.dump(out, f)
 
 

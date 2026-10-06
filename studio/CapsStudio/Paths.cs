@@ -52,3 +52,19 @@ public static class Paths
     /// <summary>The caps Python package that Python pipeline steps import (data/python/caps).</summary>
     public static string? Python => Find(Path.Combine("data", "python"), Path.Combine("caps", "runner.py"));
 }
+
+/// <summary>Python processes the Studio starts talk UTF-8 both ways (frames, scripts and their output carry Å, χ …): on
+/// Windows both Python's console streams and .NET's redirected ones would otherwise use the console code page.</summary>
+public static class PythonProcess
+{
+    private static readonly System.Text.Encoding Utf8 = new System.Text.UTF8Encoding(false);
+    public static System.Diagnostics.ProcessStartInfo Utf8Io(System.Diagnostics.ProcessStartInfo psi)
+    {
+        psi.Environment["PYTHONUTF8"] = "1";
+        psi.Environment["PYTHONIOENCODING"] = "utf-8";
+        if (psi.RedirectStandardOutput) psi.StandardOutputEncoding = Utf8;
+        if (psi.RedirectStandardError) psi.StandardErrorEncoding = Utf8;
+        if (psi.RedirectStandardInput) psi.StandardInputEncoding = Utf8;
+        return psi;
+    }
+}
