@@ -32,7 +32,9 @@ Copy-Item -Recurse "$Root\samples" $App
 Get-ChildItem $App -Filter *.pdb -File | Remove-Item   # debug symbols (the samples folder keeps its .pdb structures)
 
 Write-Host "== self-test of the staged app"
-& "$App\CapsStudio.exe" --selftest "$App\samples" $env:TEMP | Tee-Object -Variable log | Out-Null
+# a scratch folder by its long name: the runner's TEMP is an 8.3 short path (RUNNER~1), and the app records the long one
+$Scratch = if ($env:RUNNER_TEMP) { $env:RUNNER_TEMP } else { (Get-Item -LiteralPath $env:TEMP).FullName }
+& "$App\CapsStudio.exe" --selftest "$App\samples" $Scratch | Tee-Object -Variable log | Out-Null
 if (-not ($log -match "all checks passed")) { $log; throw "self-test failed" }
 
 Write-Host "== installer"
