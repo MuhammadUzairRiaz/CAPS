@@ -1,0 +1,225 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "OPLS-UA (2024 parameter file)",
+ "source": "the united-atom types of the 2024 OPLS parameter file",
+ "references": [
+  "W. L. Jorgensen et al., J. Phys. Chem. B (2024), doi:10.1021/acs.jpcb.3c06602 (the parameter file)",
+  "W. L. Jorgensen, J. D. Madura, C. J. Swenson, J. Am. Chem. Soc. 106, 6638 (1984)",
+  "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986)",
+  "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986)",
+  "J. M. Briggs, T. Matsui, W. L. Jorgensen, J. Comput. Chem. 11, 958 (1990)"
+ ],
+ "extends": "oplsaa2024-moltemplate.json",
+ "atom_types": [
+  {
+   "name": "66_bC4_aC4_dC4_iC4",
+   "element": "C",
+   "mass": 16.043,
+   "charge": 0,
+   "description": "moltemplate @atom:66 · C  - C4   | CH4 66-77: JACS,106,6638 (1984)"
+  },
+  {
+   "name": "67_bC3_aC3_dC3_iC3",
+   "element": "C",
+   "mass": 15.035,
+   "charge": 0,
+   "description": "moltemplate @atom:67 · C  - C3   | CH3 (C1) ETHANE"
+  },
+  {
+   "name": "68_bC3_aC3_dC3_iC3",
+   "element": "C",
+   "mass": 15.035,
+   "charge": 0,
+   "description": "moltemplate @atom:68 · C  - C3   | CH3 (C2) N-ALKANES"
+  },
+  {
+   "name": "69_bC3_aC3_dC3_iC3",
+   "element": "C",
+   "mass": 15.035,
+   "charge": 0,
+   "description": "moltemplate @atom:69 · C  - C3   | CH3 (C3) ISOBUTANE"
+  },
+  {
+   "name": "70_bC3_aC3_dC3_iC3",
+   "element": "C",
+   "mass": 15.035,
+   "charge": 0,
+   "description": "moltemplate @atom:70 · C  - C3   | CH3 (C4) NEOPENTANE"
+  },
+  {
+   "name": "71_bC2_aC2_dC2_iC2",
+   "element": "C",
+   "mass": 14.027,
+   "charge": 0,
+   "description": "moltemplate @atom:71 · C  - C2   | CH2 (SP3) ALKANES"
+  },
+  {
+   "name": "72_bC9_aC9_dC9_iC9",
+   "element": "C",
+   "mass": 14.027,
+   "charge": 0,
+   "description": "moltemplate @atom:72 · C  - C9   | CH2 (SP2) 1-ALKENES"
+  },
+  {
+   "name": "73_bCH_aCH_dCH_iCH",
+   "element": "C",
+   "mass": 13.019,
+   "charge": 0,
+   "description": "moltemplate @atom:73 · C  - CH   | CH (SP3) ISOBUTANE"
+  },
+  {
+   "name": "74_bC8_aC8_dC8_iC8",
+   "element": "C",
+   "mass": 13.019,
+   "charge": 0,
+   "description": "moltemplate @atom:74 · C  - C8   | CH (SP2) 2-ALKENES"
+  },
+  {
+   "name": "75_bCD_aCD_dCD_iCD",
+   "element": "C",
+   "mass": 13.019,
+   "charge": 0,
+   "description": "moltemplate @atom:75 · C  - CD   | CH (AROM) BENZENOID united atom"
+  },
+  {
+   "name": "76_bCT_aCT_dCT_iCT",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0,
+   "description": "moltemplate @atom:76 · C  - CT   | C (SP3) NEOPENTANE"
+  },
+  {
+   "name": "77_bC7_aC7_dC7_iC7",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0,
+   "description": "moltemplate @atom:77 · C  - C7   | C (SP2) ISOBUTENE"
+  },
+  {
+   "name": "80_bC3_aC3_dC3_iC3",
+   "element": "C",
+   "mass": 15.035,
+   "charge": 0.265,
+   "description": "moltemplate @atom:80 · C  - C3   | CH3 IN METHANOL \""
+  },
+  {
+   "name": "81_bC2_aC2_dC2_iC2",
+   "element": "C",
+   "mass": 14.027,
+   "charge": 0.265,
+   "description": "moltemplate @atom:81 · C  - C2   | CH2 IN ETHANOL \""
+  },
+  {
+   "name": "88_bC3_aC3_dC3_iC3",
+   "element": "C",
+   "mass": 15.035,
+   "charge": 0.18,
+   "description": "moltemplate @atom:88 · C  - C3   | CH3 IN CH3SH \""
+  },
+  {
+   "name": "89_bC2_aC2_dC2_iC2",
+   "element": "C",
+   "mass": 14.027,
+   "charge": 0.18,
+   "description": "moltemplate @atom:89 · C  - C2   | CH2 IN CH3CH2SH \""
+  },
+  {
+   "name": "90_bC3_aC3_dC3_iC3",
+   "element": "C",
+   "mass": 15.035,
+   "charge": 0.235,
+   "description": "moltemplate @atom:90 · C  - C3   | CH3 IN CH3SR \""
+  },
+  {
+   "name": "91_bC2_aC2_dC2_iC2",
+   "element": "C",
+   "mass": 14.027,
+   "charge": 0.235,
+   "description": "moltemplate @atom:91 · C  - C2   | CH2 IN RCH2SR \""
+  },
+  {
+   "name": "92_bC3_aC3_dC3_iC3",
+   "element": "C",
+   "mass": 15.035,
+   "charge": 0.3,
+   "description": "moltemplate @atom:92 · C  - C3   | CH3 IN CH3SSR \""
+  },
+  {
+   "name": "93_bC2_aC2_dC2_iC2",
+   "element": "C",
+   "mass": 14.027,
+   "charge": 0.3,
+   "description": "moltemplate @atom:93 · C  - C2   | CH2 IN RCH2SSR \""
+  },
+  {
+   "name": "96_bC3_aC3_dC3_iC3",
+   "element": "C",
+   "mass": 15.035,
+   "charge": 0.15,
+   "description": "moltemplate @atom:96 · C  - C3   | CH3 IN CH3CN united atom \""
+  },
+  {
+   "name": "106_bCH_aCH_dCH_iCH",
+   "element": "C",
+   "mass": 13.019,
+   "charge": 0.265,
+   "description": "moltemplate @atom:106 · C  - CH   | CH (SP3) ISOPROPANOL"
+  },
+  {
+   "name": "107_bCT_aCT_dCT_iCT",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.265,
+   "description": "moltemplate @atom:107 · C  - CT   | C (SP3) T-BUTANOL"
+  },
+  {
+   "name": "109_bC3_aC3_dC3_iC3",
+   "element": "C",
+   "mass": 15.035,
+   "charge": 0.25,
+   "description": "moltemplate @atom:109 · C  - C3   | ETHER CH3 (-O) \""
+  },
+  {
+   "name": "110_bC2_aC2_dC2_iC2",
+   "element": "C",
+   "mass": 14.027,
+   "charge": 0.25,
+   "description": "moltemplate @atom:110 · C  - C2   | ETHER CH2 (-O) \""
+  },
+  {
+   "name": "118_bC2_aC2_dC2_iC2",
+   "element": "C",
+   "mass": 14.027,
+   "charge": 0.5,
+   "description": "moltemplate @atom:118 · C  - C2   | CH2 Methylenechloride C-Cl=1.772"
+  },
+  {
+   "name": "120_bCH_aCH_dCH_iCH",
+   "element": "C",
+   "mass": 13.019,
+   "charge": 0.42,
+   "description": "moltemplate @atom:120 · C  - CH   | CH Chloroform JPC,94,1683 (1990)"
+  },
+  {
+   "name": "122_bCT_aCT_dCT_iCT",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.248,
+   "description": "moltemplate @atom:122 · C  - CT   | C CCl4"
+  },
+  {
+   "name": "723_bC2_aC2_dC2_iC2",
+   "element": "C",
+   "mass": 14.027,
+   "charge": 0.22,
+   "description": "moltemplate @atom:723 · C  - C2   | CH2 alkyl bromide (UA)"
+  }
+ ],
+ "version": "2024",
+ "status": "converted",
+ "notes": [
+  "the united-atom carbon sites carry their hydrogens' mass (CH4 16.043, CH3 15.035, CH2 14.027, CH 13.019)"
+ ],
+ "typing": "../typing/oplsua2024.typing.json"
+}
