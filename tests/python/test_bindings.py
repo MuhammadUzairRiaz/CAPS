@@ -622,4 +622,16 @@ _cr = _c.field.assign("trappe-ua")
 _cp = [_c.atom(i)["position"] for i in range(3)]
 check(abs(_m.dist(_cp[0], _cp[1]) - 1.16) < 1e-9 and abs(_m.dist(_cp[0], _cp[2]) - 2.32) < 1e-9 and [a["q"] for a in _cr["atoms"]] == [-0.35, 0.7, -0.35],
       f"one TraPPE CO2: C=O {_m.dist(_cp[0], _cp[1]):.4f} Å, O…O {_m.dist(_cp[0], _cp[2]):.4f} Å, charges {[a['q'] for a in _cr['atoms']]}")
+# OPLS-AA 2024 on an epoxide: no torsion through the epoxide O in the table — missing, or zero when asked (reported)
+_ep = caps.build.smiles("CC1(C)OC1C")
+_epr = _ep.field.assign("oplsaa2024-moltemplate", "forcefield")
+_epz = _ep.field.set_options(zero_ring3_torsions=True)
+_epo = _ep.field.set_options(zero_ring3_torsions=False)
+check(not _epr["complete"] and _epz["complete"] and any("three-membered rings" in n and "zero" in n for n in _epz["notes"]) and not _epo["complete"],
+      f"epoxide ring torsions: missing {len(_epr['missing'])} · zero when asked {_epz['complete']} · back {not _epo['complete']}")
+# OPLS-UA (2024 file): polyethylene folds to CH3 / CH2 sites with their hydrogens' mass, complete and neutral
+_ua = caps.polymer("[*]CC[*]", dp=10)
+_uar = _ua.field.assign("oplsua2024")
+check(_uar["complete"] and _ua.summary()["atoms"] == 20 and abs(_ua.summary()["total_mass"] - 282.556) < 0.01,
+      f"OPLS-UA 2024 PE: {_ua.summary()['atoms']} sites, {_ua.summary()['total_mass']:.3f} g/mol")
 print("all python checks passed")

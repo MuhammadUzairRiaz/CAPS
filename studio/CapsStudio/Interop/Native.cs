@@ -657,6 +657,7 @@ internal static class Native
         [MarshalAs(UnmanagedType.LPUTF8Str)] string ffPath, [MarshalAs(UnmanagedType.LPUTF8Str)] string groups, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_equivalent_atoms")] public static extern int EquivalentAtoms(IntPtr doc, int atom, int radius, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_field_set_mixing")] public static extern int FieldSetMixing(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string rule);
+    [DllImport(Lib, EntryPoint = "caps_field_set_options")] public static extern int FieldSetOptions(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string options);
     [DllImport(Lib, EntryPoint = "caps_field_add_rule")] public static extern int FieldAddRule(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string kind, [MarshalAs(UnmanagedType.LPUTF8Str)] string types,
         [MarshalAs(UnmanagedType.LPUTF8Str)] string style, [MarshalAs(UnmanagedType.LPUTF8Str)] string pars);
     [DllImport(Lib, EntryPoint = "caps_field_import")] public static extern int FieldImport(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string path);
@@ -1736,6 +1737,7 @@ public sealed class CapsDocument : IDisposable
         }
     }
     public bool FieldSetMixing(string rule) { using (Hold()) { Alive(); return CheckField(Native.FieldSetMixing(H, rule)); } }
+    public bool FieldSetOptions(string json) { using (Hold()) { Alive(); return CheckField(Native.FieldSetOptions(H, json)); } }
     public bool FieldAddRule(string kind, string types, string style, string pars) { using (Hold()) { Alive(); return CheckField(Native.FieldAddRule(H, kind, types, style, pars)); } }
     public bool FieldImport(string path) { using (Hold()) { Alive(); return CheckField(Native.FieldImport(H, path)); } }
     /// <summary>Borrows another file's bonds, angles and torsions only where the assigned force field defines none.</summary>
