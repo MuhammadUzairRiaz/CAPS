@@ -167,6 +167,14 @@ bool lammps_metal_units(const ForceField& ff, const LammpsStyle& style = {});
 // bond, angle, torsion, improper and class II cross-term constants, DREIDING hydrogen bonds, Stillinger–Weber ε.
 ForceField forcefield_in_metal_units(const ForceField& ff);
 
+// Atom types split by component: group (one per atom; −1 none) and the groups' names in their order. Every type a group
+// uses becomes a type of its own for that group — the same mass, charge, pair and bonded coefficients, a renamed copy —
+// numbered group by group in the given order (each group's types in the force field's order), the atoms in no group last.
+// A type used by more than one group is named type_group; the energy is unchanged. Throws when a many-body potential
+// (whose file maps types to elements) is part of the force field.
+// primary > 0: the types of atoms [0, primary) come first (group by group), the others' after them (group by group) — a
+// structure with reacted copies appended keeps the numbering the structure alone gets.
+ForceField split_types_by_group(const ForceField& ff, const std::vector<int>& group, const std::vector<std::string>& names, size_t primary = 0);
 // The groups of LammpsStyle::groups as LAMMPS group commands, with the comment saying how the types are numbered.
 std::string lammps_group_lines(const System& s, const ForceField& ff, const std::vector<LammpsStyle::Group>& groups);
 void write_lammps_data_ff(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& path, bool pair_coeffs = true,

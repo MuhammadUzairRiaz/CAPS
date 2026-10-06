@@ -103,8 +103,9 @@ std::vector<ChainSites> chain_sites(const System& s, const std::vector<ReactionT
 // indices compacted; molecules are recomputed from bonds. Returns the number applied.
 // keep_byproducts: a template's byproduct atoms stay as their own molecule (else removed); byproducts counts those kept or
 // removed; tag (optional): a per-atom label carried through the compaction (the run's original chain of each atom).
+// carry (optional): another per-atom label carried through the compaction unchanged (an atom's index in an earlier structure).
 int apply_matches(System& s, const std::vector<ReactionTemplate>& t, const std::vector<Match>& m, bool keep_byproducts = false,
-                  int* byproducts = nullptr, std::vector<int64_t>* tag = nullptr);
+                  int* byproducts = nullptr, std::vector<int64_t>* tag = nullptr, std::vector<int64_t>* carry = nullptr);
 
 struct ClusterStats {
   int clusters = 0;
@@ -167,6 +168,9 @@ struct ReactOptions {
   // each atom's chain from an earlier run (the report's chains_after), so a cure in several runs keeps the chains it started
   // from; empty (or another atom count): the molecules of the structure as it is now
   std::vector<int64_t> chains;
+  // a label per atom carried through the run unchanged (e.g. each atom's index in the structure the run started from);
+  // the report's carry_after holds it for the atoms at the end. Empty: nothing carried
+  std::vector<int64_t> carry;
   bool keep_byproducts = false; // byproduct atoms kept as molecules (else removed)
   // at most this many of each chain's reactive sites react (a template's site atoms on that chain; 0: no limit) — e.g. 2 of
   // the 5 epoxides of a 10-unit ENR-50 chain; a site reacting in the template's step on a small molecule is not counted
@@ -215,6 +219,7 @@ struct ReactReport {
   double degree = 0;            // DC = 2 × links / monomers × 100 %
   std::string field;            // the force field that relaxed the network
   std::vector<int64_t> chains_after;   // each atom's chain at the end (for the next run's ReactOptions::chains)
+  std::vector<int64_t> carry_after;    // ReactOptions::carry for the atoms at the end
   std::vector<LinkRecord> links;       // every link between chains, in the order they formed
 };
 

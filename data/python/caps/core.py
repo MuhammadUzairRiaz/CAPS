@@ -99,6 +99,11 @@ class _RenderOpts(C.Structure):
                 ("ambient_occlusion", C.c_int32), ("lod_near", C.c_double), ("lod_far", C.c_double)]
 
 
+class _GrowOpts(C.Structure):
+    _fields_ = [("chains", C.c_int32), ("dp", C.c_int32), ("tacticity", C.c_int32), ("seed", C.c_uint64), ("box", C.c_double),
+                ("density", C.c_double), ("contact_scale", C.c_double), ("curve", C.c_int32)]
+
+
 class _RelaxOpts(C.Structure):
     _fields_ = [("method", C.c_int32), ("ftol", C.c_double), ("max_iterations", C.c_int32), ("target_density", C.c_double),
                 ("compress_step", C.c_double), ("pushoff", C.c_int32), ("relax_box", C.c_int32), ("pressure", C.c_double),
@@ -177,7 +182,7 @@ def _declare(L: C.CDLL) -> None:
     P, S, I, D, B = C.c_void_p, C.c_char_p, C.c_int32, C.c_double, C.c_char_p
     sig = {
         "caps_abi_version": ([], I), "caps_last_error": ([], S), "caps_set_restraints": ([P, C.c_char_p], I),
-        "caps_pack": ([S, S, I, P, P, B, I], P),
+        "caps_pack": ([S, S, I, P, P, B, I], P), "caps_grow_blend": ([S, C.POINTER(_GrowOpts), P, P, B, I], P),
         "caps_set_held_molecule": ([P, C.c_int64], None), "caps_set_fixed_atoms": ([P, C.POINTER(C.c_int32), I], I),
         "caps_chi_md": ([C.c_char_p, P, P, B, I], I), "caps_chi_contacts": ([C.c_char_p, P, P, B, I], I),
         "caps_open": ([S, S], P), "caps_water_models": ([B, I], I), "caps_field_save": ([P, S], I), "caps_field_load": ([P, S], I), "caps_open_frames": ([S, S, C.c_int64, C.c_int64, C.c_int64, I, P, P], P), "caps_close": ([P], None), "caps_import": ([S, S, S], P), "caps_provenance": ([P, B, I], I), "caps_provenance_file": ([S, B, I], I), "caps_provenance_compare": ([S, S, B, I], I), "caps_provenance_bibtex": ([S, B, I], I), "caps_methods_text": ([S, S, B, I], I), "caps_import_preview": ([S, S, B, I], I),
@@ -611,11 +616,28 @@ class Document:
 
     def bond_react(self, templates, directory: str, **options) -> dict:
         """The reactions as a LAMMPS fix bond/react set in directory (templates as for react()): STEM.data, STEM.in and
-        per template and environment _pre.mol, _post.mol, _map.txt, typed with the assigned force field before and after
-        the reaction. options: stem, radius, variants, keep_byproducts, between_chains, weights, nevery, temperature,
-        steps, seed. Returns {files, notes, variants, candidates, covered}."""
+        per template and environment _pre.mol, _post.mol, _map.txt, typed with the force field before and after the
+        reaction. Options:
+          stem, radius, variants, keep_byproducts, between_chains, weights, nevery, rmax, temperature, steps, dt, seed;
+          forcefield: type the reactions with this force field (a library id such as opls2005, pcff, compass, or a path)
+            instead of the assigned one, charges: auto | forcefield | gasteiger | qeq;
+          lammps_styles (native: the force field's own styles, as export_engines | exact), kspace (auto | pppm | ewald |
+            dsf | cut), kspace_accuracy, lammps_cutoff — the same force-field part as export_engines writes;
+          survey_after: [0.25, 0.5] — templates also cut from copies cured by CAPS React to these conversions (steps whose
+            groups appear only as the cure goes on; "first" / "second" variants of a two-step crosslinker), survey_relax;
+          type_groups: [{"name": "PBS", "molecules": "33-50"}, …] (or "atoms": "1-407", "tag": name) — atom types split
+            by component, numbered in that order, in the data file and every template, each a LAMMPS group;
+          targets: [0.2, 0.4, …], limiting, link_reactions: ["enr_acid_ester_*"], check_every, max_steps — the input runs
+            to each crosslink density, writes crosslink_progress.dat and STEM_XL20.data …; stall_chunks, rmax_step,
+            rmax_limit raise Rmax when no reaction happens;
+          mol_ids: reset | keep | molmap (keep_chain_ids=True: molmap — chains keep their ids, a crosslinker takes the
+            id of the chain it first bonds to; LAMMPS 2 Apr 2025 or later).
+        Returns {files, notes, variants, steps (coverage per reaction step), frames, link_reactions, candidates, covered}."""
         names = [templates] if isinstance(templates, str) else list(templates)
         text = "\n".join(reaction_template(t) if "\n" not in t and t.strip() in reaction_templates() else t for t in names)
+        options = dict(options)
+        if options.get("forcefield"):
+            options["forcefield"] = _forcefield_path(str(options["forcefield"]))
         return _json_call(lambda h, buf, n: library().caps_bond_react_export(h, _enc(text), _enc(directory), _enc(json.dumps(options)), buf, n), self._h)
 
     def energy(self) -> dict:
@@ -805,7 +827,9 @@ class Document:
         "annealing", "pushoff" or a protocol's text, t_max, p_max, production_ps: CAPS's stages in LAMMPS, -var scale shortens them); opts: minimize_first, temperature (K), pressure (atm), dt (fs),
         steps, thermo_every, dump_every, seed, units (auto | real | metal: LAMMPS in eV, ps, bar — automatic for AIREBO /
         REBO, which LAMMPS reads in metal units only), amber=True (stem.prmtop and stem.inpcrd for AMBER / OpenMM / ParmEd;
-        a force field AMBER cannot hold gives amber_error), dlpoly=True. Returns {folder, files, notes, checks}; raises
+        a force field AMBER cannot hold gives amber_error), dlpoly=True; type_groups=[{"name": "PBS", "molecules": "7-10"}, …]
+        ("atoms": "1-407" or "tag": name) splits the LAMMPS files' atom types by component (each group's types numbered in
+        that order, the same coefficients; each a LAMMPS group by type). Returns {folder, files, notes, checks}; raises
         CapsError when refused."""
         o = dict(opts, stem=stem, lammps=lammps, gromacs=gromacs, run=run)
         r = _json_call(library().caps_export_engines, self._h, _enc(str(folder)), _enc(json.dumps(o)))
@@ -1354,6 +1378,64 @@ def polymer(smiles, dp: int = 20, chains: int = 1, tacticity: str = "atactic", s
         r["relax"] = {"method": "lbfgs", "fmax": 1.0}
     d = run(r)
     d.label = units[0] if len(units) == 1 else "copolymer"
+    return d
+
+
+def _chain_spec(c: dict) -> dict:
+    """A component of blend() as Grow's chain spec: smiles (or units), dp, sequence, tacticity, end caps …"""
+    if "spec" in c:
+        return dict(c["spec"])
+    units = c.get("units", c.get("smiles"))
+    if units is None:
+        raise ValueError("a blend component needs smiles (or units, or spec)")
+    units = [units] if isinstance(units, str) else list(units)
+    spec = {"units": [u if isinstance(u, dict) else {"name": f"unit{k + 1}", "smiles": u} for k, u in enumerate(units)],
+            "dp": int(c.get("dp", 20)), "tacticity": c.get("tacticity", "atactic")}
+    seq = c.get("sequence")
+    if not seq:
+        seq = "pattern" if c.get("pattern") else "block" if c.get("blocks") else "random" if c.get("weights") else "homopolymer"
+        if seq == "homopolymer" and len(units) > 1:
+            raise ValueError("several repeat units: give sequence ('alternating', 'random' with weights, 'block' with blocks) or a pattern")
+    spec["sequence"] = seq
+    for k in ("pattern", "blocks", "weights", "head_cap", "tail_cap", "pm", "linkage", "chain_dp", "architecture", "arms", "arm_dp"):
+        if k in c:
+            spec[k] = c[k]
+    return spec
+
+
+def blend(components, density: float = 0.5, seed: int = 1, morphology: str = "mixed", method: str = "trials",
+          contact_scale: float = 1.0, forcefield: Optional[str] = None, charges: str = "auto", relax: bool = False) -> Document:
+    """Two or more polymers grown into one periodic cell (caps_grow_blend): components = [{"smiles": "*CC(*)c1ccccc1",
+    "dp": 30, "chains": 6}, {"units": ["[*]C/C=C(C)\\C[*]", "[*]CC1(C)OC1C[*]"], "sequence": "alternating", "dp": 30,
+    "chains": 4, "tail_cap": "hydroxyl"} …] — each with its chain count (or a "weight" fraction) and Grow's chain options
+    (sequence, pattern, tacticity, head_cap, tail_cap …), or a ready "spec". The components' molecules come in their order
+    (doc.components: [(first, last)] molecule ids). morphology: mixed | slabs | droplet; method: trials | rosenbluth |
+    rosenbluth_lj. forcefield types the cell (charges as Field.assign), relax minimises it."""
+    comps = []
+    for c in components:
+        comp = {"spec": _chain_spec(c), "weight": float(c.get("weight", 1.0))}
+        if c.get("chains"):
+            comp["chains"] = int(c["chains"])
+        comps.append(comp)
+    opts = {"components": comps, "density": float(density), "morphology": morphology, "method": method}
+    if comps and comps[0].get("chains"):
+        opts["chains"] = comps[0]["chains"]
+    g = _GrowOpts(0, 0, 0, int(seed), 0.0, float(density), float(contact_scale), 1)
+    rep = C.create_string_buffer(1 << 16)
+    h = library().caps_grow_blend(_enc(json.dumps(opts)), C.byref(g), None, None, rep, len(rep))
+    if not h:
+        raise _error()
+    d = Document(h, "blend")
+    d.report = rep.value.decode()
+    d.components = []
+    for line in d.report.splitlines():
+        if line.startswith("component ") and "molecules" in line:
+            a, b = line.split("molecules", 1)[1].strip().split("-")
+            d.components.append((int(a), int(b)))
+    if forcefield:
+        d.field.assign(forcefield, charges)
+    if relax:
+        d.relax()
     return d
 
 

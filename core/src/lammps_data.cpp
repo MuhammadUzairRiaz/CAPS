@@ -1295,6 +1295,58 @@ static std::string lammps_ranges(const std::vector<int64_t>& v) {
   return r;
 }
 
+ForceField split_types_by_group(const ForceField& ff, const std::vector<int>& group, const std::vector<std::string>& names, size_t primary) {
+  const size_t n = ff.type_index.size(), nt = ff.type_names.size(), ng = names.size();
+  if (group.size() != n) throw std::invalid_argument("type groups: one group per atom");
+  if (ff.manybody.on() || ff.sw.on)
+    throw std::invalid_argument("type groups: a many-body potential maps the types to its elements; split types are not supported with it");
+  if (ff.hbond.on()) throw std::invalid_argument("type groups: the force field's hydrogen-bond term names donor, hydrogen and acceptor types; split types are not supported with it");
+  // (group, old type) → new type: groups in order, then the atoms in no group; each group's types in the old order
+  std::vector<std::vector<int>> nt_of(ng + 1, std::vector<int>(nt, -1));
+  std::vector<std::set<size_t>> used(ng + 1), first(ng + 1);
+  auto slot = [&](size_t i) { return group[i] >= 0 && size_t(group[i]) < ng ? size_t(group[i]) : ng; };
+  const size_t np = primary > 0 && primary <= n ? primary : n;
+  for (size_t i = 0; i < n; ++i) (i < np ? first : used)[slot(i)].insert(size_t(ff.type_index[i]));
+  std::vector<std::pair<size_t, size_t>> origin;   // new type → (group slot, old type)
+  for (const auto* sets : {&first, &used})
+    for (size_t g = 0; g <= ng; ++g)
+      for (size_t t : (*sets)[g])
+        if (nt_of[g][t] < 0) { nt_of[g][t] = int(origin.size()); origin.push_back({g, t}); }
+  std::vector<int> users(nt, 0);
+  for (const auto& [g, t] : origin) ++users[t];
+  ForceField r = ff;
+  for (size_t i = 0; i < n; ++i) r.type_index[i] = nt_of[slot(i)][size_t(ff.type_index[i])];
+  auto per_type = [&](auto& v) {
+    if (v.size() != nt) return;
+    std::decay_t<decltype(v)> o;
+    for (const auto& [g, t] : origin) o.push_back(v[t]);
+    v = std::move(o);
+  };
+  r.type_names.clear();
+  for (const auto& [g, t] : origin)
+    r.type_names.push_back(users[t] > 1 ? ff.type_names[t] + "_" + (g < ng ? names[g] : std::string("other")) : ff.type_names[t]);
+  per_type(r.lj), per_type(r.lj14_types), per_type(r.type_part), per_type(r.manybody.element), per_type(r.manybody.entry);
+  // pair tables keyed by type pairs: every copy of a with every copy of b
+  std::vector<std::vector<int>> copies(nt);
+  for (size_t k = 0; k < origin.size(); ++k) copies[origin[k].second].push_back(int(k));
+  auto pairs = [&](auto& m) {
+    std::decay_t<decltype(m)> o;
+    for (const auto& [key, v] : m)
+      for (int a : copies[size_t(key.first)])
+        for (int b : copies[size_t(key.second)]) o[{std::min(a, b), std::max(a, b)}] = v;
+    m = std::move(o);
+  };
+  pairs(r.pair_func), pairs(r.pair_override);
+  {
+    std::set<std::pair<int, int>> o;
+    for (const auto& key : ff.excluded_type_pairs)
+      for (int a : copies[size_t(key.first)])
+        for (int b : copies[size_t(key.second)]) o.insert({std::min(a, b), std::max(a, b)});
+    r.excluded_type_pairs = o;
+  }
+  return r;
+}
+
 std::string lammps_group_lines(const System& s, const ForceField& ff, const std::vector<LammpsStyle::Group>& groups) {
   // each group's types, and which types more than one group uses
   std::vector<std::set<int64_t>> types(groups.size());

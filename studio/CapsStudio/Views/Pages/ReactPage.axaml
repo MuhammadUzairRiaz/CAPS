@@ -288,7 +288,43 @@
                                  ToolTip.Tip="LAMMPS matches by atom type: one template per chemical environment of the reactive sites, the most frequent first" />
                   <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding RxBrStepsD}" Minimum="1" Increment="10000" FormatString="0" ShowButtonSpinner="False" />
                 </Grid>
-                <Button Content="Write fix bond/react files…" Click="OnExportBondReact" IsEnabled="{Binding CanReact}" HorizontalAlignment="Stretch" />
+                <TextBlock Text="Force field" Classes="label" />
+                <ComboBox ItemsSource="{Binding RxBrFfChoices}" SelectedIndex="{Binding RxBrFfIndex}" HorizontalAlignment="Stretch"
+                          ToolTip.Tip="The templates and the data file are typed with this force field before and after each reaction: the one assigned in the Force field step, or another of the library re-run on every product" />
+                <Grid ColumnDefinitions="2*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="4">
+                  <TextBlock Text="LAMMPS styles" Classes="label" /><TextBlock Grid.Column="1" Text="Long-range" Classes="label" />
+                  <ComboBox Grid.Row="1" ItemsSource="{Binding RxBrStyleChoices}" SelectedIndex="{Binding RxBrStylesIndex}" HorizontalAlignment="Stretch"
+                            ToolTip.Tip="The force field's own styles (OPLS: dihedral opls; PCFF / COMPASS: class2; PPPM) — the same force-field part as the engine export — or CAPS's exact forms" />
+                  <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding RxBrKspaceChoices}" SelectedIndex="{Binding RxBrKspaceIndex}" HorizontalAlignment="Stretch" />
+                </Grid>
+                <TextBlock Text="Molecule ids during the cure" Classes="label" />
+                <ComboBox ItemsSource="{Binding RxBrMolIdChoices}" SelectedIndex="{Binding RxBrMolIdsIndex}" HorizontalAlignment="Stretch"
+                          ToolTip.Tip="molmap (LAMMPS 2 Apr 2025 or later): each chain keeps its id and a crosslinker takes the id of the chain it first bonds to, so links between chains already joined still form and a crosslinker cannot close back on its own chain" />
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="4">
+                  <TextBlock Text="Survey after conversions" Classes="label" /><TextBlock Grid.Column="1" Text="Types by component" Classes="label" />
+                  <TextBox Grid.Row="1" Text="{Binding RxBrSurvey}" Classes="mono" Watermark="0.25, 0.5"
+                           ToolTip.Tip="Templates also cut from copies cured by CAPS React to these fractions of the possible reactions: steps whose groups appear only as the cure goes on (a half-ester's acid, a crosslinker's second end)" />
+                  <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding RxBrGroups}" Classes="mono" Watermark="PBS: 7-10; ENR50: 1-6"
+                           ToolTip.Tip="Atom types split by component (molecule ids), numbered in this order, each a LAMMPS group" />
+                </Grid>
+                <Grid ColumnDefinitions="2*,*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="4">
+                  <TextBlock Text="Crosslink targets (%)" Classes="label" /><TextBlock Grid.Column="1" Text="Limiting groups" Classes="label" /><TextBlock Grid.Column="2" Text="Max steps" Classes="label" />
+                  <TextBox Grid.Row="1" Text="{Binding RxBrTargets}" Classes="mono" Watermark="20, 40, 60, 80"
+                           ToolTip.Tip="The run writes STEM_XL20.data … as each crosslink density (links / limiting groups) is reached, and crosslink_progress.dat" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding RxBrLimitingD}" Minimum="0" Increment="1" FormatString="0" ShowButtonSpinner="False" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding RxBrMaxStepsD}" Minimum="1" Increment="100000" FormatString="0" ShowButtonSpinner="False" />
+                </Grid>
+                <Grid ColumnDefinitions="2*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="4">
+                  <TextBlock Text="Reactions counted as links" Classes="label" /><TextBlock Grid.Column="1" Text="Check every" Classes="label" />
+                  <TextBox Grid.Row="1" Text="{Binding RxBrLinks}" Classes="mono" Watermark="(those joining two chains)" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding RxBrCheckD}" Minimum="1" Increment="1000" FormatString="0" ShowButtonSpinner="False" />
+                </Grid>
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                  <Button Content="Write files…" Click="OnExportBondReact" IsEnabled="{Binding CanReact}" HorizontalAlignment="Stretch" />
+                  <Button Grid.Column="1" Content="Write and run in LAMMPS…" Click="OnRunBondReact" IsEnabled="{Binding RxLmpIdle}" HorizontalAlignment="Stretch" />
+                </Grid>
+                <Button Content="Stop LAMMPS" Click="OnStopBondReact" IsVisible="{Binding RxLmpRunning}" HorizontalAlignment="Stretch" />
+                <TextBlock Text="{Binding RxLmpText}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" IsVisible="{Binding RxLmpText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                 <TextBlock Text="{Binding RxBrText}" Classes="dim" TextWrapping="Wrap" />
               </StackPanel>
             </StackPanel>
