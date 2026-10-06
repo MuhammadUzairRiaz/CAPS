@@ -494,6 +494,7 @@ BondReactReport write_bond_react(const System& s0, const std::vector<ReactionTem
       if (u_origin[i] >= 0) g[i] = o.type_group[size_t(u_origin[i])];
     ffu = std::make_shared<const ForceField>(split_types_by_group(*ffu, g, o.type_group_names, n));
     st.groups.clear();
+    st.component_groups = true;
     for (size_t k = 0; k < o.type_group_names.size(); ++k) {
       LammpsStyle::Group grp{o.type_group_names[k], {}};
       for (size_t i = 0; i < u.atoms.size(); ++i)

@@ -1569,6 +1569,12 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
     else out << aligned(l) << "\n";
   }
   out << "\nread_data       " << data_path << "\n";
+  if (st.component_groups && !st.groups.empty()) {
+    out << "\n# Define Group-ID for atoms from the respective components.";
+    std::string g = lammps_group_lines(s, ff, st.groups);
+    g = g.substr(g.find('\n', 1) + 1);   // its own heading line left out
+    out << "\n" << g << "\n";
+  }
   if (run.kind == LammpsRun::Kind::Shear)   // before the long-range solver, which LAMMPS sets up for the box's shape
     out << "# planar shear needs a triclinic box (the xy tilt grows with the flow)\nchange_box      all triclinic\n";
   for (const auto& l : kspace) out << aligned(l) << "\n";
@@ -1607,7 +1613,7 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
   }
   std::snprintf(b, sizeof b, "\nneighbor        %.3g bin\nneigh_modify    delay 0 every 1 check yes\ncomm_modify     cutoff %.3g\n", e.skin, e.cutoff + e.skin + 2.0);
   out << b;
-  if (!st.groups.empty()) out << lammps_group_lines(s, ff, st.groups);
+  if (!st.groups.empty() && !st.component_groups) out << lammps_group_lines(s, ff, st.groups);
   out << lammps_tag_groups(s);   // the structure's tags, each a group
   std::vector<int64_t> rigid;
   for (int64_t m : st.rigid_mols)
