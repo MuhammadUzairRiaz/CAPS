@@ -192,7 +192,7 @@ def _declare(L: C.CDLL) -> None:
         "caps_relax": ([P, C.POINTER(_RelaxOpts), P, P, B, I], I), "caps_md": ([P, C.POINTER(_MdOpts), P, P, B, I], I),
         "caps_equilibrate": ([P, S, C.POINTER(_EquilOpts), P, P, B, I], I), "caps_equilibrate_checks": ([P, B, I], I),
         "caps_protocol_text": ([S, C.POINTER(_ProtocolParams), B, I], I),
-        "caps_field_assign": ([P, S, S, I], I), "caps_field_assign_groups": ([P, S], I), "caps_field_file_available": ([P], I), "caps_kg_backmap": ([P, S, S, B, I], P), "caps_cg_map": ([P, S, B, I], P), "caps_cg_from_polymer": ([S, S, P, P, B, I], P), "caps_field_report": ([P, B, I], I), "caps_field_import": ([P, S], I), "caps_field_import_ex": ([P, S, S], I),
+        "caps_field_assign": ([P, S, S, I], I), "caps_field_assign_groups": ([P, S], I), "caps_field_file_available": ([P], I), "caps_kg_backmap": ([P, S, S, B, I], P), "caps_cg_map": ([P, S, B, I], P), "caps_cg_from_polymer": ([S, S, P, P, B, I], P), "caps_field_report": ([P, B, I], I), "caps_field_import": ([P, S], I), "caps_field_import_ex": ([P, S, S], I), "caps_field_set_options": ([P, S], I),
         "caps_build_smiles": ([S, S, C.POINTER(_BuildOpts), B, I], P),
         "caps_build_beads": ([S, S, C.c_uint64, B, I], P), "caps_bead_templates": ([S, B, I], I),
         "caps_peptide_build": ([S, B, I], P), "caps_crystal_build": ([S, B, I], P), "caps_nano_build": ([S, B, I], P),
@@ -278,6 +278,20 @@ class _Field:
         path = "file" if forcefield == "file" else _forcefield_path(forcefield)
         code = {"forcefield": 0, "gasteiger": 1, "keep": 2, "qeq": 3, "auto": 4, "increments": 5}[charges]
         rc = library().caps_field_assign(self._doc._h, _enc(path), None, code)
+        if rc < 0:
+            raise _error()
+        rep = _json_call(library().caps_field_report, self._doc._h)
+        rep["complete"] = rc == 0
+        return rep
+
+    def set_options(self, zero_ring3_torsions: Optional[bool] = None) -> dict:
+        """Options of the assignment, kept with it: zero_ring3_torsions=True makes a dihedral with no parameters whose atoms
+        close a three-membered ring (an epoxide, aziridine or cyclopropane) a zero term, reported as such instead of missing —
+        what LAMMPS does with a moltemplate file that has no rule for it (OPLS-AA 2024 gives none through an epoxide O)."""
+        o = {}
+        if zero_ring3_torsions is not None:
+            o["zero_ring3_torsions"] = bool(zero_ring3_torsions)
+        rc = library().caps_field_set_options(self._doc._h, _enc(json.dumps(o)))
         if rc < 0:
             raise _error()
         rep = _json_call(library().caps_field_report, self._doc._h)

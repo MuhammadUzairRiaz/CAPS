@@ -134,6 +134,7 @@ struct FieldState {
   std::string groups;                        // v36: a force field per group (caps_field_assign_groups), as JSON; "" one for all
   std::string model;                         // a model's own force field built with the structure (Kremer–Grest), as JSON
   std::string mixing;                        // v47: the mixing rule for unlike Lennard-Jones pairs in place of the force field's ("" its own)
+  bool zero_ring3_torsions = false;          // v64: dihedrals with no parameters across a three-membered ring are zero (opt-in)
 };
 
 // Styles, colours, surfaces and polyhedra of the Studio view (caps_set_appearance), prepared for the current frame.
@@ -894,6 +895,7 @@ void field_run(caps_doc* d) {
   if (!d->field->model.empty()) { field_run_model(d); return; }
   FieldState& F = *d->field;
   caps::FFDef def = F.base;
+  def.zero_ring3_torsions = F.zero_ring3_torsions;
   // gap fillers first: the last matching rule wins, so the force field's own rules (and the imported ones) come later
   caps::prepend_fill(def, F.fill);
   caps::merge_forcefield(def, F.extra);
@@ -1094,6 +1096,7 @@ void field_run(caps_doc* d) {
   r["mixing"] = def.pair_table.empty() ? (F.ff ? F.ff->mixing : def.mixing) : std::string("none: every pair from its table");
   r["mixing_own"] = def.mixing;
   r["mixing_override"] = F.mixing;
+  r["zero_ring3_torsions"] = F.zero_ring3_torsions;
   r["version"] = def.version;
   r["source"] = def.source;
   r["file"] = F.ff_path;
@@ -3509,6 +3512,7 @@ int32_t caps_field_assign(caps_doc* d, const char* ff_path, const char* rules_pa
       F->file_charges = d->field->file_charges;
       F->file_has_charges = d->field->file_has_charges;
       F->extra = d->field->extra.name.empty() && d->field->base.name == F->base.name ? d->field->extra : caps::FFDef{};
+      F->zero_ring3_torsions = d->field->zero_ring3_torsions;   // the structure's choice stays with it
     } else {
       for (const auto& a : d->traj.topology.atoms) {
         F->file_types.push_back({a.type, a.name});
@@ -3888,6 +3892,17 @@ int32_t caps_field_set_mixing(caps_doc* d, const char* rule) {
     if (!r.empty() && r != "arithmetic" && r != "geometric" && r != "sixthpower")
       throw caps::FFError("mixing rule: arithmetic (Lorentz–Berthelot), geometric or sixthpower (Waldman–Hagler); empty for the force field's own");
     d->field->mixing = r;
+    field_run(d);
+    refresh(d);
+    return d->field->complete ? 0 : 1;
+  });
+}
+
+int32_t caps_field_set_options(caps_doc* d, const char* options) {
+  return guard([&] {
+    if (!d->field) throw caps::FFError("assign a force field first");
+    const caps::Json o = caps::Json::parse(options && *options ? options : "{}");
+    if (o.has("zero_ring3_torsions") && o["zero_ring3_torsions"].kind() == caps::Json::Bool) d->field->zero_ring3_torsions = o["zero_ring3_torsions"].boolean();
     field_run(d);
     refresh(d);
     return d->field->complete ? 0 : 1;

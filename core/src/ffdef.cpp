@@ -1903,6 +1903,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
     V = 5; nn = 2; phi0 = 180; return 'e';                          // (e) single bond between sp2 atoms
   };
   int n_dreiding = 0;
+  int ring3_zero = 0;
   // dihedrals (one per i-j-k-l with i < l, as moltemplate's canonical order)
   std::set<std::pair<uint32_t, uint32_t>> p14;
   for (const auto& b : rule_bonds)
@@ -1927,6 +1928,11 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
             if (V != 0) ff.dihedrals.push_back({i, j, k, l, 0.5 * V / mult, nn, std::fmod(nn * phi0 + 180.0, 360.0) * kDeg});
             rep.used[std::string("dihedral DREIDING rule (") + rule + ")"]++;
             ++n_dreiding;
+            continue;
+          }
+          if (!r && def.zero_ring3_torsions && (std::find(nb[i].begin(), nb[i].end(), k) != nb[i].end() || std::find(nb[j].begin(), nb[j].end(), l) != nb[j].end())) {
+            ++ring3_zero;
+            rep.used["dihedral zero across a three-membered ring (" + shown(Nd, {i, j, k, l}) + ")"]++;
             continue;
           }
           if (!r) {
@@ -2407,6 +2413,9 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
                           : std::string()));
   if (no_angle) rep.notes.push_back(std::to_string(no_angle) + " angles have no term in " + def.name + " (its angles apply only where defined)");
   if (trans_skipped) rep.notes.push_back(std::to_string(trans_skipped) + " trans angles (≈180°) at centres with 90° rules carry no angle term");
+  if (ring3_zero)
+    rep.notes.push_back(std::to_string(ring3_zero) + " dihedrals across three-membered rings (epoxide, aziridine, cyclopropane) have no parameters in " + def.name +
+                        " and are zero, as asked (torsions across three-membered rings: zero) — a modelling choice, not the force field's");
   if (n_auto) rep.notes.push_back(std::to_string(n_auto) + " interactions use automatic (auto-equivalence) parameters");
   if (rep.estimated_terms)
     rep.notes.push_back(std::to_string(rep.estimated_terms) + " interactions (" + std::to_string(rep.estimated.size()) + " kinds) have no entry in " + def.name +
