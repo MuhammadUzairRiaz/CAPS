@@ -1,6 +1,7 @@
 #include "caps/provenance.hpp"
 
 #include <algorithm>
+#include <sstream>
 #include <ctime>
 #include <fstream>
 #include <cstring>
@@ -325,16 +326,16 @@ std::string param(const ProvStep& s, const std::string& key) {
 }  // namespace
 
 std::string methods_text(const Manifest& m, std::vector<std::string>* refs, const std::vector<Manifest>& replicas) {
+  // a citation is a marker here, numbered after the whole text is put together: in the order the references appear in
+  // the text, whatever order the compiler evaluates a sentence's pieces in (operands of + are unsequenced)
   std::vector<std::string> order;
   auto cite = [&](const std::vector<std::string>& keys) {
     std::string out;
     for (const auto& k : keys) {
       if (!known_citation(k) || k == "matsumoto1998") continue;   // the generator is named, not cited
-      auto it = std::find(order.begin(), order.end(), k);
-      if (it == order.end()) { order.push_back(k); it = order.end() - 1; }
-      out += (out.empty() ? "" : ", ") + std::to_string(it - order.begin() + 1);
+      out += std::string(out.empty() ? "" : ",") + k;
     }
-    return out.empty() ? std::string() : " [" + out + "]";
+    return out.empty() ? std::string() : std::string("\x01") + out + "\x02";
   };
   auto has = [](const ProvStep& s, const char* key) { return std::find(s.cites.begin(), s.cites.end(), std::string(key)) != s.cites.end(); };
   auto only = [&](const ProvStep& s, std::initializer_list<const char*> keys) {
@@ -455,8 +456,23 @@ std::string methods_text(const Manifest& m, std::vector<std::string>* refs, cons
   }
   if (!replicas.empty())
     sentences.push_back(std::to_string(replicas.size() + 1) + " independent replicas were prepared the same way with different random seeds.");
+  std::string joined;
+  for (const auto& s : sentences) joined += (joined.empty() ? "" : " ") + s;
+  // the markers numbered left to right
   std::string out;
-  for (const auto& s : sentences) out += (out.empty() ? "" : " ") + s;
+  for (size_t i = 0; i < joined.size();) {
+    if (joined[i] != '\x01') { out += joined[i++]; continue; }
+    const size_t end = joined.find('\x02', i);
+    std::string nums;
+    std::stringstream keys(joined.substr(i + 1, end - i - 1));
+    for (std::string k; std::getline(keys, k, ',');) {
+      auto it = std::find(order.begin(), order.end(), k);
+      if (it == order.end()) { order.push_back(k); it = order.end() - 1; }
+      nums += (nums.empty() ? "" : ", ") + std::to_string(it - order.begin() + 1);
+    }
+    out += " [" + nums + "]";
+    i = end + 1;
+  }
   if (refs) {
     refs->clear();
     for (const auto& k : order) refs->push_back(citation_text(k));
