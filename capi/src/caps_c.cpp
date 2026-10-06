@@ -6966,11 +6966,12 @@ extern "C" int32_t caps_export_preview(caps_doc* d, const char* format, const ch
     caps::Json j = caps::Json::object();
     j["bytes"] = double(std::filesystem::file_size(tmp));
     caps::Json out = caps::Json::array();
-    std::ifstream in(tmp);
+    std::ifstream in(tmp, std::ios::binary);   // binary: a DCD's 0x1A would end a Windows text-mode read
     std::string line;
     std::map<std::string, double> counts;
     int k = 0;
     while (std::getline(in, line)) {
+      if (!line.empty() && line.back() == '\r') line.pop_back();   // a text file written on Windows
       if (k < lines) out.push_back(line);
       ++k;
       if (fmt == "lammps-data" && k < 40) {   // header counts: "1300 atoms", "4 atom types"

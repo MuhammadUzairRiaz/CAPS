@@ -989,7 +989,8 @@ internal static class SelfTest
             var steps = vm.MdStepsD;
             vm.MdStepsD = 5_000_000;
             var run = vm.RunMd();
-            var started = Until(() => vm.MdRunning && vm.MdLog.StartsWith("step"), 30000);
+            var started = Until(() => vm.MdRunning && vm.MdLog.StartsWith("step"), 120000);   // a slow CI runner's first steps
+            var startLog = vm.MdLog.Split('\n')[0];
             vm.PauseRun();
             Until(() => false, 500);
             var held = vm.MdLog;
@@ -1006,7 +1007,7 @@ internal static class SelfTest
             vm.CancelMd();
             Until(() => !vm.MdRunning, 30000);
             Check(started && still && queued && moved && second && !vm.RunPaused,
-                  $"jobs: started {started} · paused and held {still} · queued {queued} · resumed {moved} · queued run started {second} · {vm.JobsSummary}");
+                  $"jobs: started {started} ('{startLog}') · paused and held {still} · queued {queued} · resumed {moved} · queued run started {second} · {vm.JobsSummary}");
             vm.MdStepsD = steps;
 
             // a remote job, end to end against stand-ins on this machine: ssh runs the command in a shell, scp copies, the
@@ -1066,7 +1067,7 @@ internal static class SelfTest
                 foreach (var (name, text) in scripts)
                 {
                     var file = Path.Combine(outDir, $"caps-selftest-{name}.py");
-                    var body = System.Text.RegularExpressions.Regex.Replace(text, @"caps\.open\([^\n]*\)", $"caps.open(\"{pySaved}\")");
+                    var body = System.Text.RegularExpressions.Regex.Replace(text, @"caps\.open\([^\n]*\)", $"caps.open(\"{pySaved.Replace('\\', '/')}\")");   // forward slashes: a Windows backslash is an escape in Python
                     File.WriteAllText(file, body);
                     var psi = new System.Diagnostics.ProcessStartInfo("python3") { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, WorkingDirectory = outDir };
                     if (name is "react" or "pack") { psi.ArgumentList.Add("-m"); psi.ArgumentList.Add("py_compile"); }
@@ -3440,7 +3441,7 @@ internal static class SelfTest
                         vm.Document!.Save(System.IO.Path.Combine(rd, "structure.caps.data"));
                         System.IO.File.Copy(System.IO.Path.Combine(gdir, ffName!), System.IO.Path.Combine(rd, "structure.ff.json"), true);
                         var (_, glassRep) = CapsDocument.RunRecipe(vm.GlassRecipe("structure.caps.data", "structure.ff.json", (ulong)rep, $"x_tg_r{rep}"),
-                                                                $"{{\"base_dir\": \"{rd}\", \"out_dir\": \"{System.IO.Path.Combine(rd, "out")}\"}}", "replica", null);
+                                                                new System.Text.Json.Nodes.JsonObject { ["base_dir"] = rd, ["out_dir"] = System.IO.Path.Combine(rd, "out") }.ToJsonString(), "replica", null);   // escaped: Windows paths
                         _ = glassRep;
                     }
                     foreach (var job in gjobs) vm.Jobs.Add(job);
