@@ -256,7 +256,7 @@ public sealed partial class MainViewModel
             ProcessStartInfo psi;
             if (host == null)
             {
-                psi = new ProcessStartInfo(python) { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, WorkingDirectory = MacroFolder };
+                psi = PythonProcess.Utf8Io(new ProcessStartInfo(python) { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, WorkingDirectory = MacroFolder });
                 psi.ArgumentList.Add("-u");
                 if (_stopOnError) { psi.ArgumentList.Add("-X"); psi.ArgumentList.Add("faulthandler"); }
                 if (MacroArgs.Count > 0)

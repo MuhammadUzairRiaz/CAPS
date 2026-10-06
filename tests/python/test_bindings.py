@@ -3,6 +3,13 @@ import re
 import sys as _sys
 if hasattr(_sys.stdout, "reconfigure"):   # the checks print χ, Å …: a Windows console's code page cannot
     _sys.stdout.reconfigure(encoding="utf-8")
+import builtins as _bi
+
+
+def open(file, mode="r", *args, **kw):   # noqa: A001 — CAPS writes UTF-8 (Å, χ in comments); Windows reads cp1252 unless told
+    if "b" not in mode and "encoding" not in kw and len(args) < 2:
+        kw["encoding"] = "utf-8"
+    return _bi.open(file, mode, *args, **kw)
 import json
 import os
 import sys
@@ -267,7 +274,8 @@ with _tf.TemporaryDirectory() as tmp:
                 "    canvas.plot(t.column(0), t.column('g'), box=(100, 100, 300, 200), title='g(r)')\n")
     frame = {"width": 800, "height": 600, "frame": 4, "attributes": {"Density": 1.05},
              "tables": {"rdf": {"columns": ["r", "g"], "rows": [[1, 0], [2, 2.5], [3, 1.0]]}}}
-    out = _sp.run([_sys.executable, "-m", "caps.overlay", script], input=_json.dumps(frame), capture_output=True, text=True, env=dict(_os.environ))
+    out = _sp.run([_sys.executable, "-m", "caps.overlay", script], input=_json.dumps(frame), capture_output=True, text=True, encoding="utf-8",
+                  env=dict(_os.environ, PYTHONUTF8="1"))
     cmds = _json.loads(out.stdout)["commands"] if out.returncode == 0 else []
     ops = [c["op"] for c in cmds]
     check(out.returncode == 0 and cmds[0]["s"] == "rho = 1.05" and "polyline" in ops and ops.count("rect") == 2 and "frame 4" in out.stderr,

@@ -222,6 +222,7 @@ public sealed partial class MainViewModel
                 RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false,
                 WorkingDirectory = System.IO.Path.GetDirectoryName(script) ?? ".",
             };
+            PythonProcess.Utf8Io(psi);
             psi.ArgumentList.Add("-m");
             psi.ArgumentList.Add("caps.overlay");
             psi.ArgumentList.Add(script);

@@ -51,7 +51,7 @@ public sealed partial class MainViewModel
                        "import caps\nprint('caps package: ABI %d · %s' % (caps.abi_version(), caps.__file__))\n";
             var (ok, text) = await Task.Run(() =>
             {
-                var psi = new ProcessStartInfo(exe) { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false };
+                var psi = PythonProcess.Utf8Io(new ProcessStartInfo(exe) { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false });
                 psi.ArgumentList.Add("-c");
                 psi.ArgumentList.Add(code);
                 if (Paths.Python is { } pkg) psi.Environment["PYTHONPATH"] = pkg + (Environment.GetEnvironmentVariable("PYTHONPATH") is { Length: > 0 } pp ? Path.PathSeparator + pp : "");

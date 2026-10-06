@@ -41,6 +41,7 @@ public sealed partial class MainViewModel
         var hasDoc = false;
         if (_doc != null) { try { _doc.Save(cur); hasDoc = true; } catch { } }
         var psi = new ProcessStartInfo(PythonExe) { RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, WorkingDirectory = _pyDir };
+        PythonProcess.Utf8Io(psi);
         foreach (var a in new[] { "-u", "-i", "-q" }) psi.ArgumentList.Add(a);
         if (Paths.Python is { } pkg) psi.Environment["PYTHONPATH"] = pkg + (Environment.GetEnvironmentVariable("PYTHONPATH") is { Length: > 0 } pp ? Path.PathSeparator + pp : "");
         if (Native.LibraryPath is { } lib) psi.Environment["CAPS_LIB"] = lib;
