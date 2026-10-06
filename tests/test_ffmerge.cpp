@@ -192,6 +192,7 @@ TEST(FFMerge, ManyBodyGroup) {
   EXPECT_NE(b.str().find("4 bonds"), std::string::npos);
   EXPECT_EQ(c.str().rfind("# Tersoff silicon UNITS: metal\n", 0), 0u);
   EXPECT_THROW(write_gromacs(s, m, e, (dir / "sys").string()), FieldError);
+  in.close(); data.close(); copy.close();   // Windows will not remove a file still open
   fs::remove_all(dir);
 }
 
@@ -282,6 +283,7 @@ TEST(FFMerge, AireboWritesMetalUnits) {
   EXPECT_NE(rc.str().find("UNITS: real"), std::string::npos);
   EXPECT_NE(rc.str().find("252594.7418753"), std::string::npos);   // A_CC 10953.54416216992 eV × 23.060549
   EXPECT_NE(rc.str().find("1.7\t     rcmin_CC"), std::string::npos);   // a distance as it was
+  in.close(); rin.close(); conv.close();   // Windows will not remove a file still open
   fs::remove_all(dir);
 }
 
@@ -339,6 +341,7 @@ TEST(FFMerge, MeamMapsLibraryEntries) {
   EXPECT_NE(a.str().find("units           metal"), std::string::npos);
   EXPECT_NE(a.str().find("* * meam library.meam Si C SiC.meam Si C NULL NULL"), std::string::npos) << a.str();
   EXPECT_TRUE(fs::exists(dir / "library.meam") && fs::exists(dir / "SiC.meam"));
+  in.close();   // Windows will not remove a file still open
   fs::remove_all(dir);
 }
 

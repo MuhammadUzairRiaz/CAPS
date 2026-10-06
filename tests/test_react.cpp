@@ -651,6 +651,7 @@ TEST(React, BondReactExportAndImport) {
   ReactReport r;
   react(s2, o, &r);
   EXPECT_GT(r.reactions, 0);
+  map.close();   // Windows will not remove a file still open
   std::filesystem::remove_all(dir);
 }
 
