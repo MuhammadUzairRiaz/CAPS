@@ -946,6 +946,7 @@ TEST(Pipeline, OutputsBlock) {
   const std::string sv((std::istreambuf_iterator<char>(svg)), {});
   EXPECT_NE(sv.find("<path d=\"M"), std::string::npos);
   EXPECT_TRUE(std::filesystem::file_size(dir / "view.png") > 1000);
+  svg.close();   // Windows will not remove a file still open
   std::filesystem::remove_all(dir);
   EXPECT_THROW(pipeline_from_yaml("caps_pipeline: 1\noutputs:\n  - table: rdf\n"), std::invalid_argument);
 }

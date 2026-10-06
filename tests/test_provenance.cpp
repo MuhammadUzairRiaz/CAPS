@@ -751,7 +751,8 @@ TEST(Structure, PolyhedralTemplateMatching) {
   EXPECT_EQ(st.props.at("Structure Type")[0], 4.0);
   EXPECT_LT(st.props.at("RMSD")[0], 1e-6);
   // Combine datasets: a second file's particles appended
-  const std::string f2 = (std::filesystem::temp_directory_path() / "caps_combine.xyz").string();
+  // forward slashes: the path goes into a JSON string, where a Windows backslash is an escape
+  const std::string f2 = (std::filesystem::temp_directory_path() / "caps_combine.xyz").generic_string();
   caps::write_xyz(ico, f2);
   st = run(au, R"([{"type":"combine","path":")" + f2 + R"("}])");
   EXPECT_EQ(st.system.atoms.size(), au.atoms.size() + 13);
@@ -767,7 +768,7 @@ TEST(Structure, WignerSeitzDefects) {
   spec.sites = {{"Au", 79, {0, 0, 0}}};
   spec.supercell = {4, 4, 4};
   const caps::System au = caps::build_crystal(spec);
-  const std::string ref = (std::filesystem::temp_directory_path() / "caps_ws_ref.xyz").string();
+  const std::string ref = (std::filesystem::temp_directory_path() / "caps_ws_ref.xyz").generic_string();   // into JSON: no backslashes
   caps::write_xyz(au, ref);
   caps::System d = au;
   // the atom nearest the cell centre goes to the octahedral hole half a lattice constant along x from a corner atom
