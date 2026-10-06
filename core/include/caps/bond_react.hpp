@@ -39,14 +39,48 @@ struct BondReactOptions {
   uint64_t seed = 12345;
   EnergyOptions energy;
   LammpsStyle style;
+  // Survey after a virtual cure: CAPS React runs on scratch copies of the structure to these conversions (the same
+  // templates, between_chains and weights; relaxed after each cycle when survey_relax), and the candidate sites of every
+  // template are surveyed in the structure and in each copy — so a step whose groups appear only as the cure goes on (a
+  // half-ester's acid, a maleate's second acid) gets its templates. The data file stays the unreacted structure.
+  std::vector<double> survey_after;
+  bool survey_relax = true;
+  // Atom types split by component (type_group: one per atom of the structure, −1 none; names in the order their types are
+  // numbered): in the data file, every template and the input's groups (split_types_by_group)
+  std::vector<int> type_group;
+  std::vector<std::string> type_group_names;
+  // Crosslink-density targets: the input runs in chunks of check_every steps, sums the reactions of link_reactions (globs
+  // over the reaction names written: "enr_acid_ester_*"; empty: the second steps where a template has two, else every
+  // reaction), writes crosslink_progress.dat (step, time, each reaction, links, crosslink density = links / limiting,
+  // ν) and stem_XL<target>.data (and a restart) when each target is reached; stops at the last target or max_steps.
+  // targets as fractions (0.2) or percent (20).
+  std::vector<double> targets;
+  double limiting = 0;
+  std::vector<std::string> link_reactions;
+  int64_t check_every = 1000, max_steps = 2000000;
+  // no reaction for stall_chunks chunks: every Rmax grows by rmax_step, up to rmax_limit (0: never)
+  int stall_chunks = 0;
+  double rmax_step = 0.5, rmax_limit = 0;
+  // molecule ids during the cure: "reset" (LAMMPS's default: the bonded pieces after each reaction), "keep"
+  // (reset_mol_ids no: the data file's molecules stay), "molmap" (reset_mol_ids molmap, LAMMPS 2 Apr 2025 or later: the
+  // chains keep their ids and a small molecule takes the id of the chain it first bonds to — so molecule inter means
+  // different original chains, and a crosslinker cannot close back on the chain it hangs from)
+  std::string mol_ids = "reset";
 };
 
 struct BondReactReport {
   std::vector<std::string> files;
   std::vector<std::string> notes;
-  struct Variant { std::string reaction, name; int sites = 0, pre_atoms = 0, edge = 0, deleted = 0; };
+  struct Variant { std::string reaction, name, step; int sites = 0, pre_atoms = 0, edge = 0, deleted = 0; };
   std::vector<Variant> variants;
   int candidates = 0, covered = 0;
+  // coverage per reaction step ("first": on a small molecule not yet bonded; "second": on one bonded at its other end; ""
+  // when a reaction has one step), over the structure and every surveyed copy
+  struct Step { std::string reaction, step; int candidates = 0, covered = 0, variants = 0; };
+  std::vector<Step> steps;
+  struct Frame { double conversion = 0; int reactions = 0, atoms = 0; };   // the virtual-cure copies surveyed
+  std::vector<Frame> frames;
+  std::vector<std::string> link_reactions;   // the reactions counted as links in the input (targets)
 };
 
 // field: the force field of a structure (the user's assignment re-run on it); required. The files are written to

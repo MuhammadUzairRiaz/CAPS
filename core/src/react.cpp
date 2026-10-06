@@ -632,7 +632,7 @@ std::vector<std::vector<uint32_t>> site_groups(const System& s, const ReactionTe
 }
 
 int apply_matches(System& s, const std::vector<ReactionTemplate>& templates, const std::vector<Match>& matches, bool keep_byproducts,
-                  int* byproducts, std::vector<int64_t>* tag) {
+                  int* byproducts, std::vector<int64_t>* tag, std::vector<int64_t>* carry) {
   const size_t n = s.atoms.size();
   std::set<std::pair<uint32_t, uint32_t>> bonds;
   for (const auto& b : s.bonds) bonds.insert({std::min(b.i, b.j), std::max(b.i, b.j)});
@@ -716,6 +716,11 @@ int apply_matches(System& s, const std::vector<ReactionTemplate>& templates, con
     std::vector<int64_t> kept;
     for (size_t i = 0; i < n; ++i) if (!dead[i]) kept.push_back((*tag)[i]);
     *tag = std::move(kept);
+  }
+  if (carry && carry->size() == n) {
+    std::vector<int64_t> kept;
+    for (size_t i = 0; i < n; ++i) if (!dead[i]) kept.push_back((*carry)[i]);
+    *carry = std::move(kept);
   }
   for (size_t i = 0; i < s.atoms.size(); ++i) s.atoms[i].id = int64_t(i + 1);
   s.velocities.clear();
@@ -802,6 +807,7 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
 
   // the chains of the start: molecules of at least 30 atoms and a fifth of the largest (curatives, crosslinkers, solvent
   // and fillers' small molecules are not chains)
+  std::vector<int64_t> carry = o.carry.size() == s.atoms.size() ? o.carry : std::vector<int64_t>{};
   std::vector<int64_t> tag(s.atoms.size());
   std::set<int64_t> polymer;
   {
@@ -984,6 +990,7 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
     // the checkpoint: this cycle failing gives back the structure as the last one left it
     const System keep = o.keep_on_failure && !rep.cycles.empty() ? s : System{};
     const std::vector<int64_t> keep_tag = tag;
+    const std::vector<int64_t> keep_carry = carry;
     const std::map<int64_t, int> keep_site_used = site_used;
     const std::vector<char> keep_linked = linked;
     const int reactions_before = rep.reactions, stall_before = stall, links_before = rep.crosslinks, intra_before = rep.intrachain,
@@ -1119,7 +1126,7 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
       for (size_t i = 0; i < linked.size(); ++i) if (!gone[i]) next.push_back(linked[i]);
       linked = std::move(next);
     }
-    applied = chosen.empty() ? 0 : apply_matches(s, o.templates, chosen, o.keep_byproducts, &rep.byproducts, &tag);
+    applied = chosen.empty() ? 0 : apply_matches(s, o.templates, chosen, o.keep_byproducts, &rep.byproducts, &tag, &carry);
     // links join chains across the cell walls: every molecule (now the network) whole again, so each cycle's frame and the
     // live view show the joined chains side by side and bonded atoms carry consistent images
     if (applied > 0 && s.cell.valid()) make_molecules_whole(s);
@@ -1178,6 +1185,7 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
       if (!o.keep_on_failure || rep.cycles.empty()) throw;
       s = keep;
       tag = keep_tag;
+      carry = keep_carry;
       site_used = keep_site_used;
       linked = keep_linked;
       rep.reactions = reactions_before;
@@ -1257,6 +1265,7 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
     rep.notes.push_back(std::to_string(rep.byproducts) + (o.keep_byproducts ? " byproduct molecules kept in the cell" : " byproduct molecules removed"));
   rep.notes.push_back("force field during the run: " + rep.field);
   rep.chains_after = tag;
+  rep.carry_after = carry;
   // new bonds join molecules across the cell: every molecule whole again, so bonded atoms carry consistent image flags
   if (s.cell.valid()) make_molecules_whole(s);
   s.unwrapped = true;

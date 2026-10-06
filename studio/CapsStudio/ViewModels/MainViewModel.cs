@@ -2594,6 +2594,7 @@ public sealed partial class MainViewModel : ObservableObject
             if (rxSnap != null && _activeItem != null && ReferenceEquals(_activeItem.Doc, doc)) _activeItem.ReactSettings = rxSnap;
             LoadReactSummary(doc);
             Raise(nameof(RxFieldText));
+            Raise(nameof(RxBrFfChoices));
             Status = failedAt.Success
                 ? $"React failed at cycle {failedAt.Groups[1].Value}; the structure after cycle {int.Parse(failedAt.Groups[1].Value, inv) - 1} is kept — React again to continue from it"
                 : "Reaction run finished · save the network (LAMMPS data carries the force field when every atom is typed)";

@@ -241,16 +241,80 @@ public sealed partial class MainViewModel
     private string _rxBrText = "Writes pre- and post-reaction templates and map files cut from reaction sites of this structure, typed with its force field, " +
                                "a data file holding every type the reactions create, and an input with fix bond/react.";
     public string RxBrText { get => _rxBrText; private set => Set(ref _rxBrText, value); }
-    public async Task ExportBondReact(string dir)
+    // the force field the reactions are typed with (the assigned one, or a library force field with automatic typing),
+    // the LAMMPS styles (the force field's own, as the engine export writes them, or CAPS-exact), and the cure options
+    public List<string> RxBrFfChoices => new[] { "The assigned force field" + (Field.Assigned ? $" ({Field.ForceFieldName})" : "") }
+        .Concat(Field.Library.Where(e => e.AutoTyping).Select(e => e.Label)).ToList();
+    private int _rxBrFf, _rxBrStyles, _rxBrKspace, _rxBrMolIds;
+    public int RxBrFfIndex { get => _rxBrFf; set => Set(ref _rxBrFf, Math.Max(0, value)); }
+    public static string[] RxBrStyleChoices => ["The force field's own (as the engine export)", "CAPS-exact forms"];
+    public int RxBrStylesIndex { get => _rxBrStyles; set => Set(ref _rxBrStyles, Math.Clamp(value, 0, 1)); }
+    public static string[] RxBrKspaceChoices => ["auto", "pppm", "ewald", "dsf", "cut"];
+    public int RxBrKspaceIndex { get => _rxBrKspace; set => Set(ref _rxBrKspace, Math.Clamp(value, 0, 4)); }
+    public static string[] RxBrMolIdChoices => ["Reset to the bonded pieces (LAMMPS default)", "Keep the data file's (reset_mol_ids no)", "Chains keep their ids (molmap)"];
+    public int RxBrMolIdsIndex { get => _rxBrMolIds; set => Set(ref _rxBrMolIds, Math.Clamp(value, 0, 2)); }
+    private string _rxBrSurvey = "", _rxBrGroups = "", _rxBrTargets = "", _rxBrLinks = "";
+    public string RxBrSurvey { get => _rxBrSurvey; set => Set(ref _rxBrSurvey, value ?? ""); }
+    public string RxBrGroups { get => _rxBrGroups; set => Set(ref _rxBrGroups, value ?? ""); }
+    public string RxBrTargets { get => _rxBrTargets; set => Set(ref _rxBrTargets, value ?? ""); }
+    public string RxBrLinks { get => _rxBrLinks; set => Set(ref _rxBrLinks, value ?? ""); }
+    private double _rxBrLimiting, _rxBrCheck = 1000, _rxBrMax = 2000000;
+    public decimal RxBrLimitingD { get => (decimal)_rxBrLimiting; set => Set(ref _rxBrLimiting, (double)Math.Clamp(value, 0m, 1e9m), nameof(RxBrLimitingD)); }
+    public decimal RxBrCheckD { get => (decimal)_rxBrCheck; set => Set(ref _rxBrCheck, (double)Math.Clamp(value, 1m, 1e9m), nameof(RxBrCheckD)); }
+    public decimal RxBrMaxStepsD { get => (decimal)_rxBrMax; set => Set(ref _rxBrMax, (double)Math.Clamp(value, 1m, 1e12m), nameof(RxBrMaxStepsD)); }
+
+    private static JsonArray NumberList(string text)
     {
-        if (_doc == null || !Idle) return;
+        var a = new JsonArray();
+        foreach (var w in text.Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries))
+            a.Add(double.Parse(w.TrimEnd('%'), NumberStyles.Float, CultureInfo.InvariantCulture));
+        return a;
+    }
+    /// <summary>The options JSON of the fix bond/react export from the page.</summary>
+    public string BondReactOptions()
+    {
+        var o = new JsonObject
+        {
+            ["stem"] = _rxBrStem, ["variants"] = _rxVariants, ["keep_byproducts"] = _rxKeepBy, ["between_chains"] = _rxBetween,
+            ["nevery"] = 100, ["temperature"] = _rxTemp, ["steps"] = _rxBrSteps, ["seed"] = Math.Max(1, _rxSeed),
+            ["lammps_styles"] = _rxBrStyles == 0 ? "native" : "exact", ["kspace"] = RxBrKspaceChoices[_rxBrKspace],
+            ["mol_ids"] = _rxBrMolIds switch { 1 => "keep", 2 => "molmap", _ => "reset" },
+        };
+        if (RxSeveral && _rxByWeights) o["weights"] = new JsonArray(RxReactions.Select(r => (JsonNode)(double)r.WeightD).ToArray());
+        var choices = Field.Library.Where(e => e.AutoTyping).ToList();
+        if (_rxBrFf > 0 && _rxBrFf - 1 < choices.Count) o["forcefield"] = choices[_rxBrFf - 1].File;
+        if (_rxBrSurvey.Trim().Length > 0) o["survey_after"] = NumberList(_rxBrSurvey);
+        // "PBS: 7-10; ENR50: 1-6; MAH: 11-13" → type groups by molecule
+        if (_rxBrGroups.Trim().Length > 0)
+        {
+            var g = new JsonArray();
+            foreach (var part in _rxBrGroups.Split(';', StringSplitOptions.RemoveEmptyEntries))
+            {
+                var kv = part.Split(':', 2);
+                if (kv.Length != 2) throw new FormatException("type groups: name: molecules; … (PBS: 7-10; ENR50: 1-6)");
+                g.Add(new JsonObject { ["name"] = kv[0].Trim(), ["molecules"] = kv[1].Trim() });
+            }
+            o["type_groups"] = g;
+        }
+        if (_rxBrTargets.Trim().Length > 0)
+        {
+            o["targets"] = NumberList(_rxBrTargets);
+            o["limiting"] = _rxBrLimiting;
+            o["check_every"] = _rxBrCheck;
+            o["max_steps"] = _rxBrMax;
+            if (_rxBrLinks.Trim().Length > 0)
+                o["link_reactions"] = new JsonArray(_rxBrLinks.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries).Select(x => (JsonNode)x).ToArray());
+        }
+        return o.ToJsonString();
+    }
+
+    public async Task<bool> ExportBondReact(string dir)
+    {
+        if (_doc == null || !Idle) return false;
         var doc = _doc;
-        var inv = CultureInfo.InvariantCulture;
-        var weights = RxSeveral && _rxByWeights ? "[" + string.Join(",", RxReactions.Select(r => r.WeightD.ToString(inv))) + "]" : "[]";
-        var opts = string.Format(inv, "{{\"stem\":{0},\"variants\":{1},\"keep_byproducts\":{2},\"between_chains\":{3},\"weights\":{4},\"nevery\":100,\"temperature\":{5},\"steps\":{6},\"seed\":{7}}}",
-            JsonSerializer.Serialize(_rxBrStem), _rxVariants, _rxKeepBy ? "true" : "false", _rxBetween ? "true" : "false", weights, _rxTemp, _rxBrSteps, Math.Max(1, _rxSeed));
         try
         {
+            var opts = BondReactOptions();
             Status = "Writing the fix bond/react set…";
             var text = _rxText;
             var rep = await Task.Run(() => doc.BondReactExport(text, dir, opts));
@@ -258,11 +322,92 @@ public sealed partial class MainViewModel
             var files = j?["files"]?.AsArray().Count ?? 0;
             var notes = string.Join("\n", j?["notes"]?.AsArray().Select(n => (string?)n ?? "") ?? []);
             var variants = string.Join("\n", j?["variants"]?.AsArray().Select(v => $"{(string?)v?["name"]}: {(int?)v?["sites"]} pairs · {(int?)v?["pre_atoms"]} atoms, {(int?)v?["edge"]} edge, {(int?)v?["deleted"]} deleted") ?? []);
-            RxBrText = $"{files} files in {dir}\n{notes}\n{variants}\nRun: lmp -in {_rxBrStem}.in";
+            var steps = string.Join("\n", j?["steps"]?.AsArray().Select(v => $"{(string?)v?["reaction"]}{((string?)v?["step"] is { Length: > 0 } st ? " (" + st + " step)" : "")}: " +
+                                                                              $"{(int?)v?["covered"]} of {(int?)v?["candidates"]} sites covered by {(int?)v?["variants"]} templates") ?? []);
+            var links = j?["link_reactions"]?.AsArray() is { Count: > 0 } la ? "\nLinks counted: " + string.Join(", ", la.Select(x => (string?)x)) : "";
+            RxBrText = $"{files} files in {dir}\n{notes}\n{steps}\n{variants}{links}\nRun: lmp -in {_rxBrStem}.in (in that folder)";
             Status = $"Wrote the fix bond/react set to {dir}";
+            return true;
         }
-        catch (Exception e) { RxBrText = "Could not write: " + e.Message; Status = "Could not write the fix bond/react set"; }
+        catch (Exception e) { RxBrText = "Could not write: " + e.Message; Status = "Could not write the fix bond/react set"; return false; }
     }
+
+    // ---- the set run in LAMMPS (fix bond/react) from the page: the progress read from its log and crosslink_progress.dat
+    private System.Diagnostics.Process? _rxLmp;
+    private bool _rxLmpRunning;
+    public bool RxLmpRunning { get => _rxLmpRunning; private set { if (Set(ref _rxLmpRunning, value)) Raise(nameof(RxLmpIdle)); } }
+    public bool RxLmpIdle => !_rxLmpRunning;
+    private string _rxLmpText = "";
+    public string RxLmpText { get => _rxLmpText; private set => Set(ref _rxLmpText, value); }
+    public async Task RunBondReact(string dir)
+    {
+        if (_rxLmpRunning) return;
+        var lmp = FindLammps();
+        if (lmp == null) { RxLmpText = "LAMMPS was not found (lmp on the PATH, or set LAMMPS_EXE): the files are written, run them where LAMMPS is."; }
+        if (!await ExportBondReact(dir) || lmp == null) return;
+        var stem = _rxBrStem;
+        try
+        {
+            // the packages the deck needs: REACTION always, CLASS2 for class II styles (PCFF, COMPASS), KSPACE for PPPM / Ewald
+            var deck = await System.IO.File.ReadAllTextAsync(System.IO.Path.Combine(dir, stem + ".in"));
+            var need = new List<string> { "REACTION", "MOLECULE" };
+            if (deck.Contains("class2")) need.Add("CLASS2");
+            if (deck.Contains("kspace_style")) need.Add("KSPACE");
+            var help = new System.Diagnostics.ProcessStartInfo(lmp, "-h") { UseShellExecute = false, RedirectStandardOutput = true, CreateNoWindow = true };
+            using (var h = System.Diagnostics.Process.Start(help))
+            {
+                var text = h == null ? "" : await h.StandardOutput.ReadToEndAsync();
+                if (h != null) await h.WaitForExitAsync();
+                var at = text.IndexOf("Installed packages", StringComparison.Ordinal);
+                var end = at < 0 ? -1 : text.IndexOf("List of individual", at, StringComparison.Ordinal);
+                var pk = at < 0 ? "" : text[at..(end < 0 ? text.Length : end)];
+                var words = pk.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).ToHashSet();
+                var missing = need.Where(n => !words.Contains(n)).ToList();
+                if (at >= 0 && missing.Count > 0)
+                {
+                    RxLmpText = $"{lmp} was built without {string.Join(", ", missing)}: point LAMMPS_EXE at a LAMMPS built with them " +
+                                "(cmake -D PKG_" + string.Join("=on -D PKG_", missing) + "=on). The files are written; nothing was run.";
+                    return;
+                }
+            }
+            var psi = new System.Diagnostics.ProcessStartInfo(lmp) { WorkingDirectory = dir, UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true, CreateNoWindow = true };
+            foreach (var a in new[] { "-in", stem + ".in", "-log", "log.lammps" }) psi.ArgumentList.Add(a);
+            var p = System.Diagnostics.Process.Start(psi) ?? throw new InvalidOperationException("LAMMPS did not start");
+            _rxLmp = p;
+            RxLmpRunning = true;
+            var lastLine = "";
+            p.OutputDataReceived += (_, e) => { if (e.Data is { Length: > 0 } l) lastLine = l; };
+            p.ErrorDataReceived += (_, e) => { if (e.Data is { Length: > 0 } l) lastLine = l; };
+            p.BeginOutputReadLine();
+            p.BeginErrorReadLine();
+            Status = $"LAMMPS is running {stem}.in in {dir}";
+            var progress = System.IO.Path.Combine(dir, "crosslink_progress.dat");
+            while (!p.HasExited)
+            {
+                await Task.Delay(2000);
+                var row = "";
+                try
+                {
+                    if (System.IO.File.Exists(progress))
+                        row = System.IO.File.ReadLines(progress).LastOrDefault(l => !l.StartsWith('#')) ?? "";
+                }
+                catch (System.IO.IOException) { }
+                RxLmpText = "LAMMPS running · " + (row.Length > 0 ? "step, time (ps), reactions…, links, crosslink density (%), ν, bonds: " + row : lastLine);
+            }
+            var ok = p.ExitCode == 0;
+            var xl = System.IO.Directory.GetFiles(dir, stem + "_XL*.data").Select(System.IO.Path.GetFileName).ToList();
+            RxLmpText = (ok ? "LAMMPS finished" : $"LAMMPS stopped (exit {p.ExitCode}): {lastLine}") +
+                        (xl.Count > 0 ? "\nWritten at the targets: " + string.Join(", ", xl) : "") + $"\nLog: {System.IO.Path.Combine(dir, "log.lammps")}";
+            Status = ok ? "LAMMPS fix bond/react run finished" : "LAMMPS stopped";
+        }
+        catch (Exception e) { RxLmpText = "Could not run LAMMPS: " + e.Message; }
+        finally { RxLmpRunning = false; _rxLmp = null; }
+    }
+    public void StopBondReact()
+    {
+        try { if (_rxLmp is { HasExited: false } p) p.Kill(true); } catch (Exception) { }
+    }
+
     /// <summary>A pre / post / map set (and the data file whose Masses name the types) read back into the React text.</summary>
     public void ImportBondReact(string pre, string post, string map, string masses)
     {

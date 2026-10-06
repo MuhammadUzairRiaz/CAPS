@@ -322,7 +322,16 @@ int32_t caps_react_summary(caps_doc* d, char* json, int32_t cap);
    reaction (a complete assignment is needed). options JSON: {stem, radius (3 bonds), variants (6), keep_byproducts,
    between_chains (molecule inter), weights [..], nevery (100), rmax (3.5 Å; 0: the template's capture), temperature (300), steps (100000), seed}. Report JSON
    {files[], notes[], variants[{reaction, name, sites, pre_atoms, edge, deleted}], candidates, covered}. Returns the
-   length needed or -1. */
+   length needed or -1.
+   Also (no ABI change): forcefield (a caps-forcefield path or "uff": the reactions typed with it instead of the assigned
+   one) with charges auto | forcefield | gasteiger | qeq; the engine export's LAMMPS styles (lammps_styles native | exact,
+   kspace / coulomb, kspace_accuracy, lammps_cutoff / cutoff, tail, units: native by default, so the force-field part equals
+   caps_export_engines'); survey_after [conversions] and survey_relax (templates also from copies cured by React: "first" /
+   "second" steps); type_groups [{name, molecules | atoms | tag}] (types split by component, each a LAMMPS group);
+   targets [..], limiting, link_reactions [globs], check_every, max_steps, stall_chunks, rmax_step, rmax_limit (the input
+   runs to each crosslink density, writing crosslink_progress.dat and STEM_XL<t>.data); mol_ids reset | keep | molmap
+   (keep_chain_ids true: molmap). The report adds steps[{reaction, step, candidates, covered, coverage, variants}],
+   frames[{conversion, reactions, atoms}], link_reactions[]. */
 int32_t caps_bond_react_export(caps_doc* d, const char* templates, const char* dir, const char* options, char* report, int32_t cap);
 /* v45: a LAMMPS fix bond/react set read back as a CAPS reaction template: pre- and post-reaction molecule files and the
    map file (CAPS's or anyone's); masses_from: a data file whose Masses give the elements of numbered types (NULL when
@@ -584,6 +593,9 @@ int32_t caps_pack_items(caps_doc* d, char* json, int32_t cap);
    again — the same parameters, groups and water models kept. 0, or -1 (caps_last_error). */
 int32_t caps_field_save(caps_doc* d, const char* path);
 int32_t caps_field_load(caps_doc* d, const char* path);
+/* options also take type_groups [{name, molecules | atoms | tag}]: the LAMMPS files' atom types split by component
+   (renamed copies, numbered group by group in that order), each component a LAMMPS group; and kspace / lammps_cutoff as
+   other names of coulomb / cutoff. */
 int32_t caps_export_engines(caps_doc* d, const char* dir, const char* options, char* out, int32_t cap);
 int32_t caps_summary_get(caps_doc* d, caps_summary* out);
 int32_t caps_set_frame(caps_doc* d, int64_t frame);
