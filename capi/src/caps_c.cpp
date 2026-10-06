@@ -1984,6 +1984,7 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
     if (lammps && !kg_model) try {
       std::vector<std::string> lnotes;
       ls.groups = tnames.empty() ? lammps_groups(d, s) : type_group_list(tgroup, tnames);
+      ls.component_groups = !tnames.empty();
       if (!tnames.empty()) notes.push_back(caps::Json("LAMMPS: atom types split by component (" + std::to_string(tnames.size()) + " groups, numbered in their order), each group a LAMMPS group by type"));
       ls.rigid_mols = d->rigid_mols;
       if (!d->rigid_mols.empty()) notes.push_back(caps::Json("LAMMPS: " + std::to_string(d->rigid_mols.size()) + " molecule(s) move as rigid bodies (fix rigid/nvt/small)"));
