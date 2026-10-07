@@ -206,7 +206,8 @@ dialog img{max-width:96vw;max-height:94vh;display:block;border-radius:6px;cursor
     <li><div>For a sulfur cure, use <b>Sulfur donors</b>: H–Sₓ–H with x fixed or spread over 1–8, dosed in phr. Each donor that reaches two chains becomes a C–Sₓ–C bridge.</div></li>
     <li><div><b>Network.</b>
       <ul>
-        <li><span class="ui">Links only between different chains</span>: a crosslinker cannot close back onto the chain it is already on.</li>
+        <li><span class="ui">Links only between different chains</span>: the <i>original</i> chains, the ones the run started from. A crosslinker cannot close back onto the chain it is already on, but chains already joined in one network still take further links. A network opened from a file that does not record its chains has them recovered by cutting the bonds the templates form (C–S for a sulfur cure); the report says so.</li>
+        <li>A template's "different molecules" rule (<code>min_path 0</code>) also means the original molecules. Before 7 Oct 2026 it used the molecules as joined so far, so crosslinking stopped once every chain was in one network (about one link per chain, whatever the target).</li>
         <li><b>Stop at</b>: a conversion, a number of links, links per chain, ν (mol/m³), Mc (g/mol) or DC % (2 × links / monomers).</li>
         <li><b>Byproducts</b> (H₂, H₂O): keep them in the cell or remove them.</li>
       </ul></div></li>

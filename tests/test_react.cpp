@@ -757,6 +757,102 @@ TEST(React, SulfurBridgesToADegreeOfCrosslinking) {
   EXPECT_GE(ends_on_carbon, 2 * rep.crosslinks);   // each link: both ends of its S3 on carbon
 }
 
+// Crosslinking goes on once every chain is in one network: "different molecules" (a template's min_path 0) are the
+// molecules the run started from, not the connected pieces now — so a donor hanging from chain A still meets chain B after
+// the network percolates. 16 cis-PB chains of 200 units at 1.0 g/cm³ with 227 H2S donors reach 197 links between chains
+// (it stopped at about 17 before); the network written and read back (its chains no longer recorded) has its 16 chains
+// recovered, its pendant S–H ends go on reacting, and its sites are counted on the original chains and repeat units
+TEST(React, CrosslinkingContinuesAfterPercolation) {
+  ChainSpec spec;
+  spec.units = {{"cis-1,4-butadiene", "[*]C/C=C\\C[*]"}};
+  spec.dp = 200;
+  GrowOptions g;
+  g.chains = 16;
+  g.density = 1.0;
+  g.seed = 1;
+  g.auto_scale = true;   // as caps.polymer grows: contact limits stepped down only where a chain cannot be placed
+  System s = grow_chains(spec, g);
+  PackOptions po;
+  po.tolerance = 2.0;
+  po.seed = 1;
+  PackReport pr;
+  s = insert_molecules(s, build_molecule("S").system, 227, po, &pr);
+  const auto templates = parse_templates(builtin_template("sulfur_allylic"));
+  ReactOptions r;
+  r.templates = templates;
+  r.relax = false;
+  r.between_chains = true;
+  r.target = ReactTarget::Crosslinks;
+  r.target_value = 197;
+  r.auto_capture = true;
+  r.capture_max = 8;
+  r.capture_step = 0.5;
+  r.max_cycles = 600;
+  r.max_per_cycle = 20;
+  r.seed = 1;
+  ReactReport rep;
+  react(s, r, &rep);
+  EXPECT_EQ(rep.chains, 16);
+  EXPECT_EQ(rep.monomers, 3200);
+  EXPECT_GE(rep.crosslinks, 190);
+  EXPECT_EQ(rep.intrachain, 0);
+  EXPECT_NEAR(rep.degree, 200.0 * rep.crosslinks / 3200, 1e-9);
+  EXPECT_GT(cluster_stats(s).largest_fraction, 0.99);   // one network
+  // written and read back: one molecule, its chains recovered from the C–S bonds the template forms
+  const auto path = (std::filesystem::temp_directory_path() / "caps_percolated.data").string();
+  write_lammps_data(s, path);
+  System back = read_lammps_data(path);
+  std::filesystem::remove(path);
+  const auto cs = chain_sites(back, templates);
+  ASSERT_EQ(cs.size(), 16u);
+  int units = 0, pendants = 0;
+  double mass = 0;
+  for (const auto& c : cs) units += c.units, pendants += c.sites, mass += c.mass;
+  EXPECT_EQ(units, 3200);
+  EXPECT_NEAR(mass / units, 54.09, 0.2);   // C4H6, less the hydrogens the links took
+  ASSERT_GT(pendants, 0);
+  ReactOptions more = r;
+  more.target = ReactTarget::Conversion;
+  more.target_conversion = 1.0;
+  more.between_chains = false;
+  more.max_cycles = 50;
+  ReactReport rep2;
+  react(back, more, &rep2);
+  EXPECT_EQ(rep2.chains, 16);
+  EXPECT_TRUE(std::any_of(rep2.notes.begin(), rep2.notes.end(), [](const std::string& n) { return n.find("16 chains recovered") != std::string::npos; }));
+  EXPECT_GE(rep2.reactions, pendants * 9 / 10);   // most pendant S–H ends react
+}
+
+// Two chains already joined by one link take a second when links between chains are asked for: the pendant donor on one
+// chain bonds to the other although the two are one molecule now
+TEST(React, SecondLinkBetweenJoinedChains) {
+  ChainSpec spec;
+  spec.units = {{"cis-1,4-butadiene", "[*]C/C=C\\C[*]"}};
+  spec.dp = 30;
+  GrowOptions g;
+  g.chains = 2;
+  g.density = 0.6;
+  g.seed = 4;
+  System s = grow_chains(spec, g);
+  PackReport pr;
+  s = insert_molecules(s, build_molecule("S").system, 6, PackOptions{}, &pr);
+  ReactOptions r;
+  r.templates = parse_templates(builtin_template("sulfur_allylic"));
+  r.relax = false;
+  r.between_chains = true;
+  r.target = ReactTarget::Crosslinks;
+  r.target_value = 2;
+  r.auto_capture = true;
+  r.capture_max = 12;
+  r.max_cycles = 80;
+  r.max_per_cycle = 1;
+  ReactReport rep;
+  react(s, r, &rep);
+  EXPECT_EQ(rep.chains, 2);
+  EXPECT_EQ(rep.crosslinks, 2);
+  EXPECT_EQ(rep.intrachain, 0);
+}
+
 // The reaction library (data/reactions): every scheme of two molecules becomes a template, and run on its own model
 // compounds it makes the scheme's products — the main product's formula, and the byproducts' when they are kept
 TEST(React, ReactionLibraryRunsOnItsModelCompounds) {

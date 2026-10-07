@@ -36,7 +36,8 @@ struct TemplateAtom {
 //   initiators 4 1                   # the pair whose distance is tested
 //   capture 4.5                      # Å
 //   probability 1.0
-//   min_path 4                       # initiators ≥ 4 bonds apart, or in different molecules (0: different molecules only)
+//   min_path 4                       # initiators ≥ 4 bonds apart, or in different molecules (0: different molecules only — in a run,
+//                                    # the molecules it started from, so joined chains still react)
 //   form 4 1 · break 1 2 · delete 3 · move 5 2   (move: the atom leaves its partners and bonds to the second atom)
 //   sites 1 2 3                      # the group counted for conversion: distinct matches of these map atoms (default: first initiator)
 //   charges keep                     # after the reaction: charges kept, a deleted atom's to its partner (default: forcefield)
@@ -81,8 +82,18 @@ struct Match {
 // All sites where a template's pattern matches with its initiators closer than the capture distance
 // (minimum image). Sorted by distance.
 // allow (optional): whether initiators a and b may react (a run's chain rule); capture > 0 replaces the template's.
+// origin (optional, one per atom): the molecule each atom started in (a run's chains, carried through its reactions). With it,
+// "different molecules" (min_path 0) means different original molecules — a crosslinker hanging from chain A still meets
+// chain B when A and B are already joined in one network; a pair the network already connects must then be at least 3
+// bonds apart (no rings of three or four). Without it: the molecules of the structure as it is.
 std::vector<Match> find_matches(const System& s, const ReactionTemplate& t, int reaction_index = 0,
-                                const std::function<bool(uint32_t, uint32_t)>& allow = {}, double capture = 0);
+                                const std::function<bool(uint32_t, uint32_t)>& allow = {}, double capture = 0,
+                                const std::vector<int64_t>* origin = nullptr);
+// The molecules a structure was made from, one id per atom (from 1): its molecules as they are — unless one molecule holds
+// most of it and nothing recorded its chains (a network read back from a file): then the molecules once the heavy-atom
+// bonds the templates form (C–S for a sulfur cure, O–C for an epoxide opened by an acid) are cut, when that gives two or more
+// chains. note (optional) says when the chains were recovered that way.
+std::vector<int64_t> original_chains(const System& s, const std::vector<ReactionTemplate>& templates, std::string* note = nullptr);
 // Number of distinct reactive groups (matches of the template's site atoms) in the structure, for conversion.
 int count_sites(const System& s, const ReactionTemplate& t);
 // The distinct reactive groups themselves (each the sorted atoms matching the template's site atoms).
