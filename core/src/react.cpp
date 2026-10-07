@@ -485,7 +485,8 @@ bool within_path(const Chem& c, uint32_t a, uint32_t b, int limit) {
 }  // namespace
 
 std::vector<Match> find_matches(const System& s, const ReactionTemplate& t, int reaction_index, const std::function<bool(uint32_t, uint32_t)>& allow,
-                                double capture) {
+                                double capture, const std::vector<int64_t>* origin) {
+  if (origin && origin->size() != s.atoms.size()) origin = nullptr;
   const double cap = capture > 0 ? capture : t.capture;
   const Chem c = chem_of(s);
   const size_t n = s.atoms.size();
@@ -513,7 +514,12 @@ std::vector<Match> find_matches(const System& s, const ReactionTemplate& t, int 
         const Vec3 d = g.sep(a, b);
         const double r2 = dot(d, d);
         if (r2 > cap2) continue;
-        if (c.mol[a] == c.mol[b] && (t.min_path <= 0 || within_path(c, a, b, t.min_path))) continue;
+        if (origin && t.min_path <= 0) {
+          // different original molecules; joined in the network since, at least 3 bonds apart
+          if ((*origin)[a] == (*origin)[b]) continue;
+          if (c.mol[a] == c.mol[b] && within_path(c, a, b, 3)) continue;
+        } else if (c.mol[a] == c.mol[b] && (t.min_path <= 0 || within_path(c, a, b, t.min_path)))
+          continue;
         if (allow && !allow(a, b)) continue;
         std::vector<int64_t> asg(t.atoms.size(), -1);
         std::vector<char> used(n, 0);
@@ -537,6 +543,69 @@ std::vector<Match> find_matches(const System& s, const ReactionTemplate& t, int 
 
 int count_sites(const System& s, const ReactionTemplate& t) { return int(site_groups(s, t).size()); }
 
+std::vector<int64_t> original_chains(const System& s0, const std::vector<ReactionTemplate>& templates, std::string* note) {
+  System s = s0;
+  s.has_mol = false;
+  const size_t n = s.atoms.size();
+  const auto mol = s.molecules();
+  std::vector<int64_t> out(n);
+  for (size_t i = 0; i < n; ++i) out[i] = mol[i] + 1;
+  if (n == 0) return out;
+  std::map<int, size_t> size;
+  for (int m : mol) ++size[m];
+  size_t largest = 0;
+  for (const auto& [m, k] : size) largest = std::max(largest, k);
+  if (2 * largest < n) return out;   // no network holds most of the structure: its molecules are its chains
+  // the heavy-atom bonds the templates form (not those among byproduct atoms)
+  std::set<std::pair<int, int>> formed;
+  for (const auto& t : templates) {
+    auto el = [&](int map) {
+      for (const auto& a : t.atoms) if (a.map == map) return a.element;
+      return 0;
+    };
+    const std::set<int> by(t.byproduct.begin(), t.byproduct.end());
+    for (auto [a, b] : t.form) {
+      if (by.count(a) && by.count(b)) continue;
+      const int ea = el(a), eb = el(b);
+      if (ea <= 1 || eb <= 1) continue;
+      formed.insert({std::min(ea, eb), std::max(ea, eb)});
+    }
+  }
+  if (formed.empty()) return out;
+  std::vector<int> parent(n);
+  for (size_t i = 0; i < n; ++i) parent[i] = int(i);
+  std::function<int(int)> root = [&](int x) { return parent[size_t(x)] == x ? x : parent[size_t(x)] = root(parent[size_t(x)]); };
+  size_t cut = 0;
+  std::string kinds;
+  std::set<std::pair<int, int>> cut_kinds;
+  for (const auto& b : s.bonds) {
+    const int ea = s.atoms[b.i].element, eb = s.atoms[b.j].element;
+    const std::pair<int, int> k{std::min(ea, eb), std::max(ea, eb)};
+    if (formed.count(k)) { ++cut; cut_kinds.insert(k); continue; }
+    parent[size_t(root(int(b.i)))] = root(int(b.j));
+  }
+  if (!cut) return out;
+  std::map<int, size_t> part;
+  for (size_t i = 0; i < n; ++i) ++part[root(int(i))];
+  size_t big = 0;
+  for (const auto& [r, k] : part) big = std::max(big, k);
+  int chains = 0;
+  for (const auto& [r, k] : part) if (k >= 30 && 5 * k >= big) ++chains;
+  if (chains < 2) return out;   // cutting gives no chains: the network is one molecule as made
+  std::map<int, int64_t> id;
+  for (size_t i = 0; i < n; ++i) {
+    const int r = root(int(i));
+    if (!id.count(r)) id[r] = int64_t(id.size()) + 1;
+    out[i] = id[r];
+  }
+  if (note) {
+    for (const auto& [a, b] : cut_kinds) kinds += (kinds.empty() ? "" : ", ") + std::string(element(a).symbol) + "–" + element(b).symbol;
+    *note = std::to_string(chains) + " chains recovered from the network (no record of the chains it was made from): " + std::to_string(cut) + " " + kinds +
+            " bonds the templates form were cut";
+  }
+  return out;
+}
+
 std::vector<ChainSites> chain_sites(const System& s0, const std::vector<ReactionTemplate>& templates, const std::vector<int64_t>& chains) {
   System s = s0;
   s.has_mol = false;
@@ -544,8 +613,8 @@ std::vector<ChainSites> chain_sites(const System& s0, const std::vector<Reaction
   if (chains.size() == s.atoms.size()) {
     for (size_t i = 0; i < mol.size(); ++i) mol[i] = chains[i] - 1;   // the chains a run started from (byproducts negative: left out below)
   } else {
-    const auto m = s.molecules();
-    for (size_t i = 0; i < mol.size(); ++i) mol[i] = m[i];
+    const auto m = original_chains(s0, templates);   // a network read back: the chains it was made from
+    for (size_t i = 0; i < mol.size(); ++i) mol[i] = m[i] - 1;
   }
   std::map<int64_t, ChainSites> by;
   for (size_t i = 0; i < s.atoms.size(); ++i) {
@@ -559,10 +628,24 @@ std::vector<ChainSites> chain_sites(const System& s0, const std::vector<Reaction
   for (const auto& [m, c] : by) largest = std::max(largest, c.atoms);
   std::map<int64_t, std::set<int64_t>> units;
   for (size_t i = 0; i < s.atoms.size(); ++i) if (s.atoms[i].resid > 0 && mol[i] + 1 > 0) units[mol[i] + 1].insert(s.atoms[i].resid);
-  // each chain's sites: the groups of every template whose site atoms lie on it (a group counted once over templates)
+  // each chain's sites: the groups of every template whose site atoms lie on it (a group counted once over templates); a
+  // crosslinker hanging from a chain (a pendant C–S–H) counts with the chain it is bonded to
+  std::set<int64_t> chain_ids;
+  for (const auto& [m, c] : by) if (c.atoms >= 30 && c.atoms * 5 >= largest) chain_ids.insert(m);
+  std::map<int64_t, int64_t> hangs;
+  for (const auto& b : s.bonds) {
+    const int64_t a = mol[b.i] + 1, c = mol[b.j] + 1;
+    if (a == c || a <= 0 || c <= 0) continue;
+    if (chain_ids.count(a) && !chain_ids.count(c) && !hangs.count(c)) hangs[c] = a;
+    if (chain_ids.count(c) && !chain_ids.count(a) && !hangs.count(a)) hangs[a] = c;
+  }
   std::map<int64_t, std::set<std::vector<uint32_t>>> groups;
   for (const auto& t : templates)
-    for (const auto& g : site_groups(s, t)) if (mol[g[0]] + 1 > 0) groups[mol[g[0]] + 1].insert(g);
+    for (const auto& g : site_groups(s, t)) {
+      int64_t id = mol[g[0]] + 1;
+      if (id > 0 && !chain_ids.count(id) && hangs.count(id)) id = hangs[id];
+      if (id > 0) groups[id].insert(g);
+    }
   std::vector<ChainSites> r;
   for (auto& [m, c] : by) {
     if (c.atoms < 30 || c.atoms * 5 < largest) continue;
@@ -815,10 +898,9 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
       tag = o.chains;   // the chains an earlier run started from
       rep.notes.push_back("chains as the earlier reaction run left them (the molecules it started from)");
     } else {
-      System t = s;
-      t.has_mol = false;
-      const auto mol = t.molecules();
-      for (size_t i = 0; i < s.atoms.size(); ++i) tag[i] = mol[i] + 1;
+      std::string note;
+      tag = original_chains(s, o.templates, &note);   // the molecules of the start (a network read back: its chains recovered)
+      if (!note.empty()) rep.notes.push_back(note);
     }
     std::map<int64_t, int> count;
     std::map<int64_t, double> mass;
@@ -1008,7 +1090,7 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
     for (;;) {
       found = 0;
       for (size_t k = 0; k < o.templates.size(); ++k) {
-        per[k] = find_matches(s, o.templates[k], int(k), allow, capture_of(k));
+        per[k] = find_matches(s, o.templates[k], int(k), allow, capture_of(k), &tag);   // different molecules: the original ones
         found += per[k].size();
       }
       if (found || !o.auto_capture || top_capture + extra + o.capture_step > o.capture_max + 1e-9) break;
