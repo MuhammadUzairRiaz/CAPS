@@ -222,6 +222,7 @@
                   <StackPanel Orientation="Horizontal">
                     <RadioButton Classes="seg" GroupName="eng" Content="LAMMPS" IsChecked="{Binding MdLammps}" ToolTip.Tip="system.data and system.in" />
                     <RadioButton Classes="seg" GroupName="eng" Content="GROMACS" IsChecked="{Binding MdGromacs}" ToolTip.Tip="system.top, system.gro and system.mdp; not for class II, DREIDING or UFF (no GROMACS functions for their terms)" />
+                    <RadioButton Classes="seg" GroupName="eng" Content="Both" IsChecked="{Binding MdBoth}" ToolTip.Tip="The LAMMPS and the GROMACS files into one folder (the preview shows the LAMMPS input)" />
                   </StackPanel>
                 </Border>
                 <TextBlock Text="{Binding ParityDetail}" Classes="dim" FontSize="11.5" TextWrapping="Wrap" IsVisible="{Binding ParityDetail, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />

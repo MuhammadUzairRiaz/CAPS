@@ -13,6 +13,11 @@ public sealed class PaletteCommand
     public string Keywords { get; init; } = "";
     public Func<bool> Enabled { get; init; } = () => true;
     public required Action Run { get; init; }
+    // a command that takes an argument: Tab writes its id into the box, the rest of the line is the argument (ArgHint
+    // says what), Enter runs RunArg with it
+    public Action<string>? RunArg { get; init; }
+    public string ArgHint { get; init; } = "";
+    public string Python { get; init; } = "";   // the same in Python (the footer shows it)
 }
 
 /// <summary>A row of the palette: a section header or a command.</summary>
@@ -34,8 +39,29 @@ public sealed partial class MainViewModel
     public string PaletteQuery { get => _paletteQuery; set { if (Set(ref _paletteQuery, value)) FilterPalette(); } }
     private int _paletteIndex = -1;
     public int PaletteIndex { get => _paletteIndex; set { if (Set(ref _paletteIndex, value)) Raise(nameof(PaletteHint)); } }
-    /// <summary>The footer: the id of the command under the cursor.</summary>
-    public string PaletteHint => _paletteIndex >= 0 && _paletteIndex < PaletteRows.Count && PaletteRows[_paletteIndex].Command is { } c ? "command: " + c.Id : "";
+    /// <summary>The footer: the id of the command under the cursor, its Python equivalent, and Tab when it takes an argument
+    /// (in argument mode: what to type).</summary>
+    public string PaletteHint
+    {
+        get
+        {
+            if (_paletteArg != null) return $"argument: {_paletteArg.ArgHint} · ↵ run" + (_paletteArg.Python.Length > 0 ? " · Python: " + _paletteArg.Python : "");
+            if (!(_paletteIndex >= 0 && _paletteIndex < PaletteRows.Count && PaletteRows[_paletteIndex].Command is { } c)) return "";
+            return "command: " + c.Id + (c.Python.Length > 0 ? " · Python: " + c.Python : "") + (c.RunArg != null ? " · ⇥ fill arguments" : "");
+        }
+    }
+    private PaletteCommand? _paletteArg;   // the command whose argument is being typed
+
+    /// <summary>Tab: a command that takes an argument puts its id in the box (type the argument, Enter runs it); another
+    /// command completes the box to its title.</summary>
+    public bool PaletteFill()
+    {
+        if (!(_paletteIndex >= 0 && _paletteIndex < PaletteRows.Count && PaletteRows[_paletteIndex].Command is { } c)) return false;
+        if (c.RunArg != null) { _paletteArg = c; PaletteQuery = c.Id + " "; }
+        else PaletteQuery = c.Title;
+        Raise(nameof(PaletteHint));
+        return true;
+    }
 
     public void AddCommand(PaletteCommand c) => _commands.Add(c);
 
@@ -155,6 +181,34 @@ public sealed partial class MainViewModel
                                         Keywords = "histogram range height charge hybridisation distance select brush", Run = OpenBrush });
         AddCommand(new PaletteCommand { Title = "Select by query", Id = "select.query", Icon = "search", Shortcut = "⌘F", Section = "Selection",
             Keywords = "select query smarts element chain within ring stereo and or not find", Enabled = () => _doc != null, Run = () => { SetModule(8); QueryOpen = true; } });
+        // commands that take an argument (Tab, then type it)
+        AddCommand(new PaletteCommand { Title = "Select by query…", Id = "select.where", Icon = "search", Section = "Selection",
+            Keywords = "select query where smarts element chain within ring", ArgHint = "a query (element C and within 5 of ring 1)",
+            Python = "doc.query(\"…\")", Enabled = () => _doc != null, Run = () => { SetModule(8); QueryOpen = true; },
+            RunArg = a => { QueryText = a; ApplyQuery(); } });
+        AddCommand(new PaletteCommand { Title = "Set tacticity…", Id = "stereo.tacticity", Icon = "hex", Section = "Edit",
+            Keywords = "tacticity isotactic syndiotactic stereo set chain", ArgHint = "iso or syndio",
+            Python = "doc.edit(op=\"tacticity\", to=\"isotactic\")", Enabled = () => _doc != null, Run = () => GoModule(62),
+            RunArg = a =>
+            {
+                var iso = a.StartsWith("iso", StringComparison.OrdinalIgnoreCase);
+                if (!iso && !a.StartsWith("syn", StringComparison.OrdinalIgnoreCase)) { Status = "Tacticity: iso or syndio"; return; }
+                RunEdit(new { op = "tacticity", to = iso ? "isotactic" : "syndiotactic" });
+            } });
+        AddCommand(new PaletteCommand { Title = "Make the picked atoms…", Id = "modify.element to", Icon = "atom", Section = "Modify",
+            Keywords = "element change modify atom symbol", ArgHint = "an element symbol (Si)", Python = "doc.edit(op=\"element\", atoms=[…], element=\"Si\")",
+            Enabled = () => _doc != null && _selection.Count > 0, Run = () => { }, RunArg = a => ModifyElementPicked(char.ToUpperInvariant(a[0]) + a[1..].ToLowerInvariant()) });
+        AddCommand(new PaletteCommand { Title = "Rotate selection…", Id = "edit.rotate by", Icon = "rotate", Section = "Edit",
+            Keywords = "rotate turn selection axis degrees angle", ArgHint = "an axis and degrees (z 45)",
+            Enabled = () => _doc != null, Run = () => { },
+            RunArg = a =>
+            {
+                var w = a.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                var ax = w.Length > 0 ? "xyz".IndexOf(char.ToLowerInvariant(w[0][0])) : -1;
+                if (ax < 0 || w.Length < 2 || !double.TryParse(w[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var deg))
+                { Status = "Rotate: an axis (x, y or z) and degrees, e.g. z 45"; return; }
+                RotateSelection(ax, deg);
+            } });
         AddCommand(new PaletteCommand { Title = "Frame selection", Id = "view.frame", Icon = "cube", Shortcut = "F", Section = "View",
             Keywords = "focus fit zoom to selection centre camera fly", Enabled = () => _doc != null, Run = FrameSelection });
         for (var ax = 0; ax < 3; ++ax)
@@ -246,6 +300,17 @@ public sealed partial class MainViewModel
     {
         if (!_modelCommands) { _modelCommands = true; AddModelCommands(); }
         PaletteRows.Clear();
+        // argument mode: the command alone while its id leads the box
+        if (_paletteArg != null && _paletteQuery.StartsWith(_paletteArg.Id, StringComparison.Ordinal))
+        {
+            PaletteRows.Add(new PaletteRow("ARGUMENT", "", "", "", true, null));
+            PaletteRows.Add(new PaletteRow(_paletteArg.Title, _paletteArg.Id, _paletteArg.Icon, ShortcutShown(_paletteArg), false, _paletteArg));
+            _paletteIndex = -1;
+            PaletteIndex = 1;
+            Raise(nameof(PaletteHint));
+            return;
+        }
+        _paletteArg = null;
         var q = _paletteQuery.Trim();
         var sections = new List<(string Section, List<(PaletteCommand C, int Score)> Items)>();
         void Put(string section, PaletteCommand c, int score)
@@ -356,6 +421,16 @@ public sealed partial class MainViewModel
     {
         row ??= _paletteIndex >= 0 && _paletteIndex < PaletteRows.Count ? PaletteRows[_paletteIndex] : null;
         if (row?.Command is not { } c) return;
+        if (c.RunArg != null && ReferenceEquals(c, _paletteArg))
+        {
+            var arg = _paletteQuery.Length > c.Id.Length ? _paletteQuery[c.Id.Length..].Trim() : "";
+            if (arg.Length == 0) { Status = $"{c.Title}: type {c.ArgHint}"; return; }
+            PaletteOpen = false;
+            _paletteArg = null;
+            try { c.RunArg(arg); }
+            catch (Exception ex) { Status = $"{c.Title}: {ex.Message}"; }
+            return;
+        }
         PaletteOpen = false;
         try { c.Run(); }
         catch (Exception ex) { Status = $"{c.Title}: {ex.Message}"; }
