@@ -6,6 +6,7 @@
 #include <map>
 #include <stdexcept>
 
+#include "caps/analysis.hpp"
 #include "caps/appearance.hpp"
 #include "caps/elements.hpp"
 #include "caps/field.hpp"
@@ -19,6 +20,7 @@ const std::vector<LabelKind>& atom_label_kinds() {
       {"index", "Index", "Identity"}, {"id", "File id", "Identity"}, {"name", "Atom name", "Identity"},
       {"type", "Force-field type", "Identity"}, {"type_number", "Type number", "Identity"},
       {"molecule", "Molecule", "Identity"}, {"molecule_formula", "Molecule composition (on its first atom)", "Identity"},
+      {"chain_end", "Chain ends (the molecule's number at both ends of its backbone)", "Identity"},
       {"residue", "Residue", "Identity"}, {"colour", "Display colour", "Identity"},
       {"charge", "Partial charge", "Chemistry"}, {"formal_charge", "Formal charge", "Chemistry"},
       {"oxidation_state", "Oxidation state", "Chemistry"}, {"hybridisation", "Hybridisation", "Chemistry"},
@@ -127,6 +129,16 @@ std::vector<std::string> atom_labels(const System& s, const std::string& kind, c
     return each([&](uint32_t, const Atom& a) { const Vec3 f = s.cell.to_fractional(a.pos); char b[96]; std::snprintf(b, sizeof b, "(%.3f, %.3f, %.3f)", f[0], f[1], f[2]); return std::string(b); });
   }
   if (kind == "image") return each([](uint32_t, const Atom& a) { char b[64]; std::snprintf(b, sizeof b, "%d %d %d", a.image[0], a.image[1], a.image[2]); return std::string(b); });
+  if (kind == "chain_end") {
+    // colour is never the only cue (design/boards/ColourVision): each chain's number at both ends of its backbone
+    const auto m = molecules(s);
+    for (const auto& b : backbones(s, 3)) {
+      if (b.empty()) continue;
+      out[b.front()] = std::to_string(m[b.front()]);
+      out[b.back()] = std::to_string(m[b.back()]);
+    }
+    return out;
+  }
   if (kind == "molecule" || kind == "molecule_formula") {
     const auto m = molecules(s);
     if (kind == "molecule") return each([&](uint32_t i, const Atom&) { return std::to_string(m[i]); });

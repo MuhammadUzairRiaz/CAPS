@@ -406,7 +406,18 @@ struct Prep {
   // (so a ring's aromatic dash lies inside the ring), each with its radius and whether it is dashed
   struct Strand { Vec3 off; double r; bool dashed; };
   std::vector<std::vector<uint32_t>> nb;   // filled when bond orders are drawn
+  std::vector<int> chain;   // molecule of each atom (from 0, as the colours), for chain dashes
+  bool chain_dashed(const Bond& b) const {
+    if (chain.empty() || b.i >= chain.size() || b.j >= chain.size() || chain[b.i] != chain[b.j]) return false;
+    const int k = chain[b.i];   // the palette repeats every ten
+    return (k + k / 10) % 2 == 1;
+  }
   std::vector<Strand> strands(const Bond& b, double br) const {
+    auto v = strands_of(b, br);
+    if (chain_dashed(b)) for (auto& st : v) st.dashed = true;
+    return v;
+  }
+  std::vector<Strand> strands_of(const Bond& b, double br) const {
     if (!opt->bond_orders || (b.order != 2 && b.order != 3 && b.order != 4)) return {{{0, 0, 0}, br, false}};
     const Vec3 pi = s->atoms[b.i].pos;
     Vec3 ax = s->cell.valid() ? s->cell.minimum_image(s->atoms[b.j].pos - pi) : s->atoms[b.j].pos - pi;
@@ -462,6 +473,7 @@ Prep prepare(const System& s, const RenderOptions& opt) {
   // Colours.
   int nmol = 0;
   const auto mol = s.molecules(&nmol);
+  if (opt.chain_dashes && opt.colour_by == ColourBy::Molecule) P.chain = mol;
   double pmin = 0, pmax = 1;
   if (opt.colour_by == ColourBy::Property && opt.property.size() == n && n) {
     pmin = *std::min_element(opt.property.begin(), opt.property.end());
@@ -816,7 +828,7 @@ Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& 
       const double fac = std::min(P.factor(b.i), P.factor(b.j));
       const double br = (si == Style::Backbone && sj == Style::Backbone ? opt.bond_radius * 2.2 : bond_r) * fac;   // tubes between backbone atoms
       const auto st = P.strands(b, br);
-      if (st.size() == 1 || std::abs(mxi - mxj) + std::abs(myi - myj) > 1e-9) {   // a single stick (or a stub through a wall)
+      if ((st.size() == 1 && !st[0].dashed) || std::abs(mxi - mxj) + std::abs(myi - myj) > 1e-9) {   // a single stick (or a stub through a wall)
         const double R = br * v.scale * (pk[b.i] + pk[b.j]) / 2;
         capsule(layer(b.i), px[b.i], py[b.i], pz[b.i], mxi, myi, mzi, R, br, colour[b.i], int32_t(b.i));
         capsule(layer(b.j), mxj, myj, mzj, px[b.j], py[b.j], pz[b.j], R, br, colour[b.j], int32_t(b.j));

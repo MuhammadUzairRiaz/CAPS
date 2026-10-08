@@ -4875,6 +4875,23 @@ internal static class SelfTest
                 Check(vm.GmxSet.Count == 5 && vm.GmxSet.Count(r => r.Found) == 3 && vm.CanOpenGmxSet && vm.GmxSetTitle.EndsWith("2 of 3 found"),
                       $"GROMACS set: {string.Join(", ", vm.GmxSet.Select(r => $"{r.Name.Trim()} {(r.Found ? "found" : "missing")}"))} · {vm.GmxSetTitle}");
             }
+            // chain cues: both ends of each chain's backbone carry its number, and every other chain's bonds are dashed
+            {
+                vm.Open(Path.Combine(dir, "ps_melt.data"));
+                var cueEnds = System.Text.Json.Nodes.JsonNode.Parse(vm.Document!.AtomLabels("chain_end"))!.AsArray().Count(x => ((string?)x ?? "").Length > 0);
+                var colourWas = vm.ColourIndex;
+                vm.ColourIndex = 1;   // by molecule
+                var cueOpt = vm.FigureOptions(0, 240, 160, 1);
+                var cueOff = new byte[240 * 160 * 4];
+                vm.Document.Render(vm.Camera, cueOpt, cueOff);
+                vm.ChainCues = true;
+                var cueOn = new byte[240 * 160 * 4];
+                vm.Document.Render(vm.Camera, cueOpt, cueOn);
+                vm.ChainCues = false;
+                vm.ColourIndex = colourWas;
+                var cueDiffer = cueOff.Zip(cueOn).Count(p => p.First != p.Second);
+                Check(cueEnds == 20 && cueDiffer > 0, $"chain cues: {cueEnds} chain-end labels on 10 chains · {cueDiffer} bytes changed by the dashes");
+            }
             // the Start page's sample pipeline: four steps on the polystyrene cell
             vm.Open(Path.Combine(dir, "ps_melt.lammpstrj"), Path.Combine(dir, "ps_melt.data"));
             vm.LoadPipeline(Path.Combine(dir, "structure_report.json"));

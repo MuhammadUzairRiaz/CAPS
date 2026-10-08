@@ -97,6 +97,22 @@ public partial class MainViewModel
     public bool ShowParticles { get => _showParticles; set { if (Set(ref _showParticles, value)) ApplyDisplay(); } }
     public bool ShowBonds { get => _showBonds; set { if (Set(ref _showBonds, value)) ApplyDisplay(); } }
 
+    /// <summary>Chain cues (design/boards/ColourVision "colour is never the only cue"): with colour by molecule, every other
+    /// chain's bonds are dashed (alternating along the palette and flipped where its ten colours repeat) and each chain's
+    /// number is written at both ends of its backbone.</summary>
+    public bool ChainCues
+    {
+        get => _settings.ChainCues;
+        set
+        {
+            if (_settings.ChainCues == value) return;
+            _settings.ChainCues = value;
+            SetKind("chain_end", value);
+            Raise(); Changed("Chain cues");
+            ApplyDisplay();
+        }
+    }
+
     private void ApplyDisplay()
     {
         if (_doc == null) return;
@@ -109,7 +125,7 @@ public partial class MainViewModel
             if (_lensCentre >= 0) lens["centre"] = _lensCentre;
             var clip = new JsonObject { ["on"] = _clipOn, ["axis"] = _clipAxis, ["from"] = (double)_clipFrom, ["to"] = (double)_clipTo, ["invert"] = _clipInvert };
             _doc.SetDisplay(new JsonObject { ["polar_h_only"] = _dsPolarOnly, ["selection_full"] = _dsSelectionFull, ["lens"] = lens, ["clip"] = clip,
-                                             ["show_particles"] = _showParticles, ["show_bonds"] = _showBonds }.ToJsonString());
+                                             ["show_particles"] = _showParticles, ["show_bonds"] = _showBonds, ["chain_dashes"] = _settings.ChainCues }.ToJsonString());
             if (_lensOn) RefreshLensCounts();
         }
         catch (Exception e) { Status = "Display: " + e.Message; }
