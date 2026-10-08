@@ -594,6 +594,9 @@ public sealed partial class MainViewModel
                 Add(new StepField { Key = "file", Label = "Script (.py with an @step function)", Kind = "file", Hint = "blank: the step typed below", Text = S("file") });
                 var code = S("code", PythonStepTemplate);
                 Add(new StepField { Key = "code", Label = "Or type the step (Run sends it; a file above takes precedence)", Kind = "code", Text = code, Draft = code, Output = _pipeSel.Output.TrimEnd() });
+                Text("inputs", "Inputs (properties it reads, comma-separated)", "text", "blank: every property; ids and positions always");
+                Bool("rerun", "Re-run on frame change (off: the first frame's result on every frame)", true);
+                Note("Writes: the attributes, properties and tables it makes are named in its summary");
                 break;
             case "msd":
                 Bool("heavy_only", "Heavy atoms only"); Text("every", "Every n-th atom", "number"); Text("max_lag", "Longest lag (frames)", "number", "blank: half the frames");
