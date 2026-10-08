@@ -144,7 +144,7 @@
           <Border Classes="card">
             <StackPanel>
               <Border Classes="phead"><TextBlock Text="Cell" Classes="h2" VerticalAlignment="Center" /></Border>
-              <Grid Margin="16,12,16,16" ColumnDefinitions="*,*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="4">
+              <Grid Margin="16,12,16,16" ColumnDefinitions="*,*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="4">
                 <TextBlock Text="Size from" Classes="label" />
                 <TextBlock Grid.Column="1" Text="{Binding GrowSizeLabel}" Classes="label" />
                 <TextBlock Grid.Column="2" Text="Shape" Classes="label" />
@@ -167,8 +167,14 @@
                 <v:SeedPicker Grid.Row="3" Grid.Column="1" DataContext="{Binding GrowSeedChoice}" ShowLabel="False" ToolTip.Tip="Chain k is drawn with seed + 101 k: the same seed grows the same cell" />
                 <NumericUpDown Grid.Row="3" Grid.Column="2" Value="{Binding GrowScaleD}" Minimum="0.5" Maximum="1.2" Increment="0.05" FormatString="0.00"
                                ToolTip.Tip="Contacts closer than this fraction of the van der Waals sum are rejected; below 1 needs a push-off in Relax" />
-                <TextBlock Grid.Row="4" Grid.ColumnSpan="3" Text="{Binding GrowEstimate}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource DimB}" Margin="0,8,0,0" TextWrapping="Wrap" />
-                <CheckBox Grid.Row="5" Grid.ColumnSpan="3" Content="Lower the contact scale when a chain cannot be placed (repeat-unit chains)" IsChecked="{Binding GrowAutoScale}" Margin="0,6,0,0"
+                <StackPanel Grid.Row="4" Grid.ColumnSpan="3" Orientation="Horizontal" Spacing="10" Margin="0,8,0,0" IsVisible="{Binding GrowUseDensity}">
+                  <TextBlock Text="Initial density" Classes="label" VerticalAlignment="Center" />
+                  <NumericUpDown Width="130" Value="{Binding GrowStartDensityD}" Minimum="0" Maximum="2" Increment="0.05" FormatString="0.000"
+                                 ToolTip.Tip="Grow sparse, then compress: the chains grown at this density, then Relax compresses the cell to the target in stages (0: grow at the target)" />
+                  <TextBlock Text="{Binding GrowCompressNote}" Classes="dim" FontSize="11.5" VerticalAlignment="Center" TextWrapping="Wrap" />
+                </StackPanel>
+                <TextBlock Grid.Row="5" Grid.ColumnSpan="3" Text="{Binding GrowEstimate}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource DimB}" Margin="0,8,0,0" TextWrapping="Wrap" />
+                <CheckBox Grid.Row="6" Grid.ColumnSpan="3" Content="Lower the contact scale when a chain cannot be placed (repeat-unit chains)" IsChecked="{Binding GrowAutoScale}" Margin="0,6,0,0"
                           ToolTip.Tip="Steps 0.85, 0.75, 0.7, 0.6 for crowded backbones (polyisobutylene, methacrylates); relax with push-off afterwards" />
               </Grid>
               <Grid Margin="16,0,16,16" ColumnDefinitions="*,*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto" RowSpacing="4">
@@ -310,6 +316,12 @@
           </Border>
           <Border Classes="card" Margin="6,6,0,6" Padding="14,10">
             <StackPanel Spacing="3"><TextBlock Text="Elapsed" Classes="label" /><TextBlock Text="{Binding GrowElapsedText}" Classes="mono" FontSize="18" /></StackPanel>
+          </Border>
+          <Border Classes="card" Margin="0,6,6,6" Padding="14,10" ToolTip.Tip="Growth steps placed at the first attempt over all attempts (a step undone by a backtrack counts as a failed one)">
+            <StackPanel Spacing="3"><TextBlock Text="Step acceptance" Classes="label" /><TextBlock Text="{Binding GrowAcceptText}" Classes="mono" FontSize="18" /></StackPanel>
+          </Border>
+          <Border Classes="card" Margin="6,6,6,6" Padding="14,10" ToolTip.Tip="Rosenbluth growth: the mean ln W of the chains finished so far (W = Π over steps of Σ w / k)">
+            <StackPanel Spacing="3"><TextBlock Text="Rosenbluth ln W" Classes="label" /><TextBlock Text="{Binding GrowLnWText}" Classes="mono" FontSize="18" /></StackPanel>
           </Border>
         </UniformGrid>
         <StackPanel Grid.Row="2" Spacing="6">

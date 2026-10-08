@@ -2,6 +2,7 @@
 #pragma once
 #include <array>
 #include <cstdint>
+#include <cmath>
 #include <functional>
 #include <stdexcept>
 #include <string>
@@ -84,6 +85,8 @@ struct GrowOptions {
     int restarts = 0;
     double worst_margin = 0;   // smallest (distance − limit) over accepted pairs so far, Å
     double density = 0;        // of the atoms placed so far, g/cm³
+    double acceptance = 1;     // growth steps placed at the first attempt / all attempts (a backtrack counts as a failed one)
+    double ln_w = std::nan(""); // Rosenbluth methods: mean ln W of the chains finished so far
   };
   std::function<void(const System&, const Live&)> snapshot;
   double snapshot_seconds = 0.25;
