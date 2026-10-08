@@ -137,6 +137,12 @@ void step_select_expression(PipelineState& st, const Json& p, StepStatus& out) {
   }
   if (k == 0) out.level = "warning";
   st.set_attribute("ExpressionSelection.count", double(k));
+  // the count in the view's legend (design/boards/ExpressionSelect): a categorical entry in the selection colour
+  if (flag(p, "legend", false)) {
+    if (!st.has_legend) { st.legend = PipelineLegend{}; st.legend.property = "Selection"; st.has_legend = true; }
+    std::string label = e.size() > 40 ? e.substr(0, 39) + "…" : e;
+    st.legend.entries.push_back({label + " · " + std::to_string(k) + " selected", 0xE5484Du});
+  }
 }
 
 void step_expand_selection(PipelineState& st, const Json& p, StepStatus& out) {
@@ -690,6 +696,10 @@ void step_replicate(PipelineState& st, const Json& p, StepStatus& out) {
   const auto sel0 = st.selected;
   const auto col0 = st.colour;
   const auto props0 = st.props;
+  // Unique IDs: the copies' identifiers and molecules continue after the original's; Operate on: bonds, and the arrows /
+  // paths (vectors, trajectory lines) and glyphs below, copied with the particles
+  const bool unique_ids = flag(p, "unique_ids", true), copy_bonds = flag(p, "bonds", true), copy_segments = flag(p, "vectors", true);
+  const size_t segs0 = st.segments.size();
   s.atoms.clear(); s.bonds.clear(); st.origin.clear(); st.selected.clear(); st.colour.clear();
   for (auto& [k, v] : st.props) v.clear();
   size_t img = 0;
@@ -701,15 +711,23 @@ void step_replicate(PipelineState& st, const Json& p, StepStatus& out) {
         for (size_t q = 0; q < n; ++q) {
           Atom a = atoms0[q];
           a.pos = a.pos + shift;
-          a.id += int64_t(img) * maxid;
-          if (a.mol) a.mol += int64_t(img) * maxmol;
+          if (unique_ids) {   // off: every copy keeps the original identifiers (and molecules)
+            a.id += int64_t(img) * maxid;
+            if (a.mol) a.mol += int64_t(img) * maxmol;
+          }
           s.atoms.push_back(a);
           st.origin.push_back(origin0[q]);
           st.selected.push_back(sel0[q]);
           st.colour.push_back(col0[q]);
           for (auto& [name, v] : st.props) v.push_back(props0.at(name)[q]);
         }
-        for (const auto& b : bonds0) s.bonds.push_back({base + b.i, base + b.j, b.order});
+        if (copy_bonds) for (const auto& b : bonds0) s.bonds.push_back({base + b.i, base + b.j, b.order});
+        if (img > 0 && copy_segments)   // the arrows and paths steps below drew, in each copy
+          for (size_t q = 0; q < segs0; ++q) {
+            auto seg = st.segments[q];
+            seg.a = seg.a + shift, seg.b = seg.b + shift;
+            st.segments.push_back(seg);
+          }
       }
   if (flag(p, "adjust_cell", true)) { s.cell.a = s.cell.a * nx; s.cell.b = s.cell.b * ny; s.cell.c = s.cell.c * nz; }
   s.velocities.clear();
@@ -1874,6 +1892,72 @@ void step_centrosymmetry(PipelineState& st, const Json& p, StepStatus& out) {
 void step_molecule_shape(PipelineState& st, const Json& p, StepStatus& out) {
   System whole = st.system;
   if (!whole.unwrapped && whole.cell.valid()) make_molecules_whole(whole);
+  // group by: each molecule (default) or each repeat unit (Monomer); atoms: all (mass-weighted), heavy atoms or the backbone
+  const std::string group_by = p.text("group_by", "molecule"), atoms_used = p.text("atoms", "all");
+  const bool dim = flag(p, "dim", false);
+  const bool glyphs_on = flag(p, "glyphs", true);
+  auto dim_all = [&] { if (dim) for (auto& c : st.colour) c = 0x4A4F56; };   // the chains muted under the glyphs
+  if (group_by != "molecule" || atoms_used != "all") {
+    const auto molx = whole.molecules();
+    const size_t n = whole.atoms.size();
+    std::vector<char> use(n, 1);
+    if (atoms_used == "heavy") for (size_t i = 0; i < n; ++i) use[i] = whole.atoms[i].element > 1;
+    else if (atoms_used == "backbone") {
+      use.assign(n, 0);
+      for (const auto& path : backbones(whole, 2)) for (uint32_t a : path) use[a] = 1;
+    }
+    std::map<std::pair<int, int64_t>, std::vector<uint32_t>> groups;
+    for (uint32_t i = 0; i < n; ++i)
+      if (use[i]) groups[{molx[i], group_by == "unit" ? whole.atoms[i].resid : 0}].push_back(i);
+    DataTable t;
+    t.name = "molecules";
+    t.title = group_by == "unit" ? "Repeat-unit shape" : "Molecule shape";
+    t.columns = {"Molecule", group_by == "unit" ? "Unit" : "Group", "Atoms", "Mass (g/mol)", "Rg (Å)", "b (Å²)", "c (Å²)", "κ²", "λ₁", "λ₂", "λ₃", "COM.X", "COM.Y", "COM.Z"};
+    auto& rg = st.props["MoleculeRg"];
+    auto& k2 = st.props["MoleculeKappa2"];
+    rg.assign(n, 0), k2.assign(n, 0);
+    double mrg = 0, mk2 = 0;
+    for (const auto& [key, idx] : groups) {
+      double m = 0;
+      Vec3 com{0, 0, 0};
+      for (uint32_t i : idx) { const double w = whole.mass_of(whole.atoms[i]); m += w; com = com + whole.atoms[i].pos * w; }
+      if (m <= 0) continue;
+      com = com * (1.0 / m);
+      double G[6] = {0, 0, 0, 0, 0, 0};
+      for (uint32_t i : idx) {
+        const double w = whole.mass_of(whole.atoms[i]);
+        const Vec3 d = whole.atoms[i].pos - com;
+        G[0] += w * d[0] * d[0], G[1] += w * d[1] * d[1], G[2] += w * d[2] * d[2], G[3] += w * d[0] * d[1], G[4] += w * d[0] * d[2], G[5] += w * d[1] * d[2];
+      }
+      const double A[3][3] = {{G[0] / m, G[3] / m, G[4] / m}, {G[3] / m, G[1] / m, G[5] / m}, {G[4] / m, G[5] / m, G[2] / m}};
+      double w[3], V[3][3];
+      symmetric_eigen3(A, w, V);
+      const double tr = w[0] + w[1] + w[2], r = std::sqrt(std::max(0.0, tr));
+      const double kap = tr > 0 ? 1 - 3 * (w[0] * w[1] + w[1] * w[2] + w[2] * w[0]) / (tr * tr) : 0;
+      t.rows.push_back({double(key.first + 1), double(key.second), double(idx.size()), m, r, w[2] - 0.5 * (w[0] + w[1]), w[1] - w[0], kap, w[0], w[1], w[2], com[0], com[1], com[2]});
+      mrg += r, mk2 += kap;
+      for (uint32_t i : idx) rg[i] = r, k2[i] = kap;
+      if (glyphs_on && idx.size() > 2)
+        for (int k = 0; k < 3; ++k) {
+          const double half = std::sqrt(3 * std::max(0.0, w[k]));
+          if (half < 0.05) continue;
+          const Vec3 ax{V[0][k], V[1][k], V[2][k]};
+          st.segments.push_back({com - ax * half, com + ax * half, k == 2 ? 0xF0A83Cu : 0x6CC4D8u, k == 2 ? 0.28 : 0.14, false});
+        }
+    }
+    st.tables.push_back(std::move(t));
+    const double ng = std::max<size_t>(1, groups.size());
+    st.set_attribute("MoleculeShape.mean_rg", mrg / ng);
+    st.set_attribute("MoleculeShape.mean_kappa2", mk2 / ng);
+    out.summary = std::to_string(groups.size()) + (group_by == "unit" ? " repeat units" : " molecules") + (atoms_used == "all" ? "" : " (" + atoms_used + " atoms)") +
+                  " · mean Rg " + fmt("%.2f Å", mrg / ng) + " · κ² " + fmt("%.3f", mk2 / ng);
+    if (group_by == "unit" && std::all_of(whole.atoms.begin(), whole.atoms.end(), [](const Atom& a) { return a.resid <= 0; })) {
+      out.level = "warning";
+      out.summary += " · no repeat units recorded (Grow numbers them)";
+    }
+    dim_all();
+    return;
+  }
   const auto shapes = molecule_shapes(whole);
   const auto mol = whole.molecules();
   const size_t n = whole.atoms.size();
@@ -1889,7 +1973,7 @@ void step_molecule_shape(PipelineState& st, const Json& p, StepStatus& out) {
   t.title = "Molecule shape";
   t.columns = {"Molecule", "Atoms", "Mass (g/mol)", "Rg (Å)", "Ree (Å)", "Ree²/Rg²", "b (Å²)", "c (Å²)", "κ²", "λ₁", "λ₂", "λ₃", "COM.X", "COM.Y", "COM.Z"};
   double mrg = 0, mk2 = 0;
-  const bool glyphs = flag(p, "glyphs", true);
+  const bool glyphs = glyphs_on;
   for (size_t m = 0; m < shapes.size(); ++m) {
     const auto& sh = shapes[m];
     const double b = sh.lambda[2] - 0.5 * (sh.lambda[0] + sh.lambda[1]);   // asphericity
@@ -1916,6 +2000,7 @@ void step_molecule_shape(PipelineState& st, const Json& p, StepStatus& out) {
   st.set_attribute("MoleculeShape.mean_rg", mrg / nm);
   st.set_attribute("MoleculeShape.mean_kappa2", mk2 / nm);
   out.summary = std::to_string(shapes.size()) + " molecules · mean Rg " + fmt("%.2f Å", mrg / nm) + " · κ² " + fmt("%.3f", mk2 / nm);
+  dim_all();
 }
 
 void step_topology(PipelineState& st, const Json& p, StepStatus& out) {
@@ -1923,23 +2008,36 @@ void step_topology(PipelineState& st, const Json& p, StepStatus& out) {
   const int bins = std::clamp(int(p.num("bins", 60)), 5, 2000);
   const auto adj = adjacency(s);
   auto sep = [&](uint32_t a, uint32_t b) { const Vec3 d = s.atoms[b].pos - s.atoms[a].pos; return s.cell.valid() ? s.cell.minimum_image(d) : d; };
+  // terms: which distributions to make; dihedrals: every proper dihedral, or the backbones' (C–C–C–C along each chain);
+  // trans: |φ| above this is trans (°)
+  const bool do_b = flag(p, "bonds", true), do_a = flag(p, "angles", true), do_d = flag(p, "dihedrals", true);
+  const bool backbone_only = p.text("dihedral_set", "all") == "backbone";
+  const double trans = std::clamp(p.num("trans", 120.0), 90.0, 179.0);
+  auto phi_of = [&](uint32_t a, uint32_t b, uint32_t c2, uint32_t d) {
+    const Vec3 b1 = sep(a, b), b2 = sep(b, c2), b3 = sep(c2, d);
+    const Vec3 n1 = cross(b1, b2), n2 = cross(b2, b3);
+    // IUPAC sign: φ = atan2(b̂₂·(n₁×n₂), n₁·n₂)
+    return std::atan2(dot(cross(n1, n2), b2 * (1.0 / std::max(1e-12, norm(b2)))), dot(n1, n2)) * 180 / M_PI;
+  };
   std::vector<double> len, ang, dih;
-  for (const auto& b : s.bonds) len.push_back(norm(sep(b.i, b.j)));
-  for (uint32_t j = 0; j < adj.size(); ++j)
-    for (size_t x = 0; x < adj[j].size(); ++x)
-      for (size_t y = x + 1; y < adj[j].size(); ++y) {
-        const Vec3 u = sep(j, adj[j][x]), v = sep(j, adj[j][y]);
-        ang.push_back(std::acos(std::clamp(dot(u, v) / (norm(u) * norm(v)), -1.0, 1.0)) * 180 / M_PI);
-      }
-  for (const auto& b : s.bonds)
-    for (uint32_t a : adj[b.i])
-      for (uint32_t d : adj[b.j]) {
-        if (a == b.j || d == b.i || a == d) continue;
-        const Vec3 b1 = sep(a, b.i), b2 = sep(b.i, b.j), b3 = sep(b.j, d);
-        const Vec3 n1 = cross(b1, b2), n2 = cross(b2, b3);
-        // IUPAC sign: φ = atan2(b̂₂·(n₁×n₂), n₁·n₂)
-        dih.push_back(std::atan2(dot(cross(n1, n2), b2 * (1.0 / std::max(1e-12, norm(b2)))), dot(n1, n2)) * 180 / M_PI);
-      }
+  if (do_b) for (const auto& b : s.bonds) len.push_back(norm(sep(b.i, b.j)));
+  if (do_a)
+    for (uint32_t j = 0; j < adj.size(); ++j)
+      for (size_t x = 0; x < adj[j].size(); ++x)
+        for (size_t y = x + 1; y < adj[j].size(); ++y) {
+          const Vec3 u = sep(j, adj[j][x]), v = sep(j, adj[j][y]);
+          ang.push_back(std::acos(std::clamp(dot(u, v) / (norm(u) * norm(v)), -1.0, 1.0)) * 180 / M_PI);
+        }
+  if (do_d && backbone_only) {
+    for (const auto& path : backbones(s, 4))
+      for (size_t k = 0; k + 3 < path.size(); ++k) dih.push_back(phi_of(path[k], path[k + 1], path[k + 2], path[k + 3]));
+  } else if (do_d)
+    for (const auto& b : s.bonds)
+      for (uint32_t a : adj[b.i])
+        for (uint32_t d : adj[b.j]) {
+          if (a == b.j || d == b.i || a == d) continue;
+          dih.push_back(phi_of(a, b.i, b.j, d));
+        }
   auto hist = [&](const std::vector<double>& v, const char* name, const char* title, const char* col, double lo, double hi) {
     DataTable t;
     t.name = name;
@@ -1957,9 +2055,9 @@ void step_topology(PipelineState& st, const Json& p, StepStatus& out) {
     for (int k = 0; k < bins; ++k) t.rows.push_back({lo + (k + 0.5) * w, h[size_t(k)]});
     st.tables.push_back(std::move(t));
   };
-  hist(len, "bonds", "Bond lengths", "Length (Å)", 0, 0);
-  hist(ang, "angles", "Bond angles", "Angle (°)", 0, 180);
-  hist(dih, "dihedrals", "Dihedral angles", "Dihedral (°)", -180, 180);
+  if (do_b) hist(len, "bonds", "Bond lengths", "Length (Å)", 0, 0);
+  if (do_a) hist(ang, "angles", "Bond angles", "Angle (°)", 0, 180);
+  if (do_d) hist(dih, "dihedrals", backbone_only ? "Backbone dihedral angles" : "Dihedral angles", "Dihedral (°)", -180, 180);
   // ranges by kind of bond (C–C, C–H …) and of angle (C–C–C …)
   std::map<std::string, std::pair<double, double>> brange, arange;
   auto sym = [&](uint32_t i) { return std::string(element(s.atoms[i].element).symbol); };
@@ -1997,7 +2095,7 @@ void step_topology(PipelineState& st, const Json& p, StepStatus& out) {
       const Vec3 b1 = sep(path[k], path[k + 1]), b2 = sep(path[k + 1], path[k + 2]), b3 = sep(path[k + 2], path[k + 3]);
       const Vec3 n1 = cross(b1, b2), n2 = cross(b2, b3);
       const double phi = std::atan2(dot(cross(n1, n2), b2 * (1.0 / std::max(1e-12, norm(b2)))), dot(n1, n2)) * 180 / M_PI;
-      const int state = std::fabs(phi) > 120 ? 0 : phi > 0 ? 1 : 2;
+      const int state = std::fabs(phi) > trans ? 0 : phi > 0 ? 1 : 2;
       (state == 0 ? nt : state == 1 ? ngp : ngm)++;
       if (colour) {
         const unsigned c = state == 0 ? 0xF0A83Cu : state == 1 ? 0x6CC4D8u : 0x9B7AD5u;
@@ -2201,6 +2299,11 @@ void step_smooth(PipelineState& st, const Json& p, StepStatus& out) {
 void step_vectors(PipelineState& st, const Json& p, StepStatus& out) {
   const std::string what = p.text("property", "end_to_end");
   const double scale = p.num("scale", 1.0), radius = std::max(0.02, p.num("radius", 0.3));
+  // the arrows: with heads or plain, the particle at the tail, middle or head, coloured per molecule / particle, by length, or one colour
+  const bool heads = flag(p, "arrowheads", true);
+  const std::string anchor = p.text("anchor", "tail"), colour_by = p.text("colour_by", "auto");
+  const unsigned fixed_rgb = unsigned(std::clamp(p.num("rgb", double(0xF5A524)), 0.0, double(0xFFFFFF)));
+  std::vector<std::pair<std::pair<Vec3, Vec3>, unsigned>> pending;   // drawn after the lengths are known (colour by length)
   System whole = st.system;
   if (!whole.unwrapped && whole.cell.valid()) make_molecules_whole(whole);
   const auto mol = whole.molecules();
@@ -2208,9 +2311,12 @@ void step_vectors(PipelineState& st, const Json& p, StepStatus& out) {
   t.name = "vectors";
   size_t count = 0;
   double sum = 0, sum2 = 0;
-  auto add = [&](const Vec3& a, const Vec3& b, unsigned rgb) {
-    st.segments.push_back({a, b, rgb, radius, true});
-    const double l = norm(b - a);
+  auto add = [&](const Vec3& a0, const Vec3& b0, unsigned rgb) {
+    // the arrow drawn from a0 to b0; the anchor moves it so the particle (a0) sits at its middle or head
+    const Vec3 d = b0 - a0;
+    const Vec3 a = anchor == "head" ? a0 - d : anchor == "middle" ? a0 - d * 0.5 : a0;
+    pending.push_back({{a, a + d}, colour_by == "fixed" ? fixed_rgb : rgb});
+    const double l = norm(d);
     sum += l;
     sum2 += l * l;
     ++count;
@@ -2275,8 +2381,34 @@ void step_vectors(PipelineState& st, const Json& p, StepStatus& out) {
       add(disp ? r - d * scale : r, disp ? r : r + d * scale, st.colour[i] != kNoColour ? st.colour[i] : 0xF5A524);
     }
     out.summary = std::to_string(count) + " arrows" + (only_sel ? " (selected)" : "") + " · mean " + fmt("%.3g", count ? sum / count / std::max(1e-12, scale) : 0) + (disp ? " Å" : " Å/ps");
+  } else if (what == "force" || what == "columns") {
+    // three per-atom columns of the dump: fx fy fz (forces, kcal/mol/Å), or any x/y/z columns named
+    const std::string cx = what == "force" ? "fx" : p.text("x", ""), cy = what == "force" ? "fy" : p.text("y", ""), cz = what == "force" ? "fz" : p.text("z", "");
+    std::vector<double> vx, vy, vz;
+    if (cx.empty() || !st.props.count(cx) || !st.props.count(cy) || !st.props.count(cz))
+      throw std::invalid_argument(what == "force" ? "the dump has no fx fy fz columns (dump … fx fy fz)" : "name three per-atom columns of the dump (x, y, z)");
+    property_values(st, cx, vx), property_values(st, cy, vy), property_values(st, cz, vz);
+    const bool only_sel = st.selected_count() > 0;
+    for (size_t i = 0; i < st.system.atoms.size() && count < 50000; ++i) {
+      if (only_sel && !st.selected[i]) continue;
+      const Vec3 d{vx[i], vy[i], vz[i]};
+      if (norm(d) < 1e-12) continue;
+      const Vec3 r = st.system.atoms[i].pos;
+      add(r, r + d * scale, st.colour[i] != kNoColour ? st.colour[i] : 0xF5A524);
+    }
+    out.summary = std::to_string(count) + " arrows from " + cx + " " + cy + " " + cz + (only_sel ? " (selected)" : "") + " · mean |v| " +
+                  fmt("%.3g", count ? sum / count / std::max(1e-12, scale) : 0);
   } else {
-    throw std::invalid_argument("unknown vector " + what + " (end_to_end, dipole, displacement, velocity)");
+    throw std::invalid_argument("unknown vector " + what + " (end_to_end, dipole, displacement, velocity, force, columns)");
+  }
+  // colour by length: viridis over the arrows' range
+  double lo = 1e300, hi = -1e300;
+  if (colour_by == "length")
+    for (const auto& [ab, c] : pending) { const double l = norm(ab.second - ab.first); lo = std::min(lo, l), hi = std::max(hi, l); }
+  for (const auto& [ab, c] : pending) {
+    unsigned rgb = c;
+    if (colour_by == "length") rgb = viridis(hi > lo ? (norm(ab.second - ab.first) - lo) / (hi - lo) : 0.5);
+    st.segments.push_back({ab.first, ab.second, rgb, radius, heads});
   }
   if (!t.rows.empty()) st.tables.push_back(std::move(t));
 }
@@ -2543,6 +2675,7 @@ void step_voronoi(PipelineState& st, const Json& p, StepStatus& out) {
     vo.face_area_min = std::max(0.0, p.num("face_area_min", 0.0));
     vo.edge_min = std::max(1e-9, p.num("edge_min", 1e-6));
     if (flag(p, "only_selected", false)) vo.only.assign(st.selected.begin(), st.selected.end());
+    vo.periodic[0] = flag(p, "periodic_x", true), vo.periodic[1] = flag(p, "periodic_y", true), vo.periodic[2] = flag(p, "periodic_z", true);
     const auto cells = voronoi_cells(s, vo);
     auto& vol = st.props["AtomicVolume"];
     auto& coord = st.props["Coordination"];
@@ -3285,6 +3418,11 @@ PipelineState pipeline_begin(const System& frame, const Pipeline& p, int frame_i
   st.frame = frame_index;
   st.timestep = timestep;
   st.steps.resize(p.steps.size());
+  // a dump's extra per-atom columns (fx, fy, fz, c_pe …) of this frame: particle properties of the pipeline
+  if (traj && frame_index >= 0)
+    for (const auto& [name, frames] : traj->columns)
+      if (size_t(frame_index) < frames.size() && frames[size_t(frame_index)].size() == n)
+        st.props[name] = std::vector<double>(frames[size_t(frame_index)].begin(), frames[size_t(frame_index)].end());
   return st;
 }
 

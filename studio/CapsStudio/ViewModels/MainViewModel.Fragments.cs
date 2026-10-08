@@ -127,8 +127,11 @@ public sealed partial class MainViewModel
     {
         FragmentTiles.Clear();
         var q = _fragQuery.Trim();
+        // a query that reads as SMARTS ([OX2H], C(=O)O, c1ccccc1 …) also finds the fragments that contain it
+        var smarts = q.Length > 1 && q.IndexOfAny(['[', '=', '#', '(', '~', '@', ':']) >= 0 || (q.Length > 2 && q.Any(char.IsDigit) && q.Any(char.IsLetter));
         IEnumerable<FragmentItem> hits = q.Length > 0
-            ? Fragments.Where(f => f.Name.Contains(q, StringComparison.OrdinalIgnoreCase) || f.Smiles.Contains(q, StringComparison.Ordinal) || f.Meta.Contains(q, StringComparison.OrdinalIgnoreCase))
+            ? Fragments.Where(f => f.Name.Contains(q, StringComparison.OrdinalIgnoreCase) || f.Smiles.Contains(q, StringComparison.Ordinal) || f.Meta.Contains(q, StringComparison.OrdinalIgnoreCase)
+                                   || (smarts && SmartsHit(f.Smiles, q)))
             : _fragCategory == "All" ? Fragments : Fragments.Where(f => f.Category == _fragCategory);
         foreach (var f in hits) FragmentTiles.Add(f);
         Raise(nameof(FragmentTitle));
@@ -136,6 +139,25 @@ public sealed partial class MainViewModel
         Raise(nameof(FragmentStatus));
         if (_fragSel == null || !FragmentTiles.Contains(_fragSel)) SelectedFragment = FragmentTiles.FirstOrDefault();
         FragmentChanged?.Invoke();
+    }
+
+    private static bool SmartsHit(string smiles, string smarts)
+    {
+        try { return CapsDocument.SmartsCount(smiles, smarts) > 0; } catch { return false; }
+    }
+
+    /// <summary>The selection (its atoms and hydrogens; each bond leaving it an attachment point *) into My fragments.</summary>
+    public void SaveSelectionAsFragment()
+    {
+        if (_doc == null) return;
+        try
+        {
+            var smiles = _doc.FragmentSmiles([]);
+            var name = SelectionAtoms().Length > 0 ? DescribeAtoms(SelectionAtoms()) : smiles;
+            AddMyFragment(name, smiles);
+            Status = $"Saved {smiles} to My fragments";
+        }
+        catch (Exception e) { Status = "Could not save the selection: " + e.Message; }
     }
 
     private FragmentItem? _fragSel;

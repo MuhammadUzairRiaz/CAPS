@@ -3905,6 +3905,38 @@ int32_t caps_field_set_mixing(caps_doc* d, const char* rule) {
   });
 }
 
+// v64 the atoms of a SMILES (hydrogens added) where a SMARTS pattern matches with its first atom: the count, or -1 (the
+// fragment library's substructure search)
+// v64 a fragment's SMILES from atoms of the frame (JSON [0-based indices]; [] the selection): those atoms and their
+// hydrogens, each bond leaving them a * (the fragment library's "save the selection as a fragment")
+int32_t caps_fragment_smiles(caps_doc* d, const char* atoms_json, char* out, int32_t cap) {
+  return guard([&] {
+    std::vector<uint32_t> atoms;
+    const caps::Json j = caps::Json::parse(atoms_json && *atoms_json ? atoms_json : "[]");
+    for (const auto& x : j.items()) if (x.number() >= 0) atoms.push_back(uint32_t(x.number()));
+    if (atoms.empty())
+      for (size_t i = 0; i < d->selection.size(); ++i) if (d->selection[i]) atoms.push_back(uint32_t(i));
+    if (atoms.empty()) throw std::invalid_argument("select the atoms of the fragment first");
+    return report_out(caps::fragment_smiles(d->frame, atoms), out, cap);
+  });
+}
+
+int32_t caps_smarts_count(const char* smiles, const char* smarts) {
+  try {
+    caps::MolGraph g = caps::parse_smiles(smiles ? smiles : "");
+    caps::add_hydrogens(g);
+    const caps::System sys = caps::molecule_system(g, std::vector<caps::Vec3>(g.atoms.size(), caps::Vec3{0, 0, 0}));
+    const caps::Perception per = caps::perceive(sys);
+    const caps::Smarts pat(smarts ? smarts : "");
+    int n = 0;
+    for (uint32_t i = 0; i < sys.atoms.size(); ++i) n += pat.matches(sys, per, i, {}) ? 1 : 0;
+    return n;
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return -1;
+  }
+}
+
 int32_t caps_field_set_options(caps_doc* d, const char* options) {
   return guard([&] {
     if (!d->field) throw caps::FFError("assign a force field first");

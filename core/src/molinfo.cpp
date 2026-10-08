@@ -286,4 +286,69 @@ std::string repeat_unit_smiles(const System& s0, uint32_t head, uint32_t tail) {
   return write_smiles(g);
 }
 
+std::string fragment_smiles(const System& s0, const std::vector<uint32_t>& atoms) {
+  System s = s0;
+  if (s.cell.valid() && !s.unwrapped) make_molecules_whole(s);
+  const size_t n = s.atoms.size();
+  std::vector<std::vector<uint32_t>> nb(n);
+  for (const auto& b : s.bonds) if (b.i < n && b.j < n) nb[b.i].push_back(b.j), nb[b.j].push_back(b.i);
+  std::vector<char> in(n, 0);
+  for (uint32_t a : atoms) if (a < n) in[a] = 1;
+  // the hydrogens of the atoms chosen come with them
+  for (uint32_t a : atoms)
+    if (a < n && s.atoms[a].element != 1)
+      for (uint32_t w : nb[a]) if (s.atoms[w].element == 1) in[w] = 1;
+  std::vector<int> local(n, -1);
+  System m;
+  for (uint32_t i = 0; i < n; ++i)
+    if (in[i]) { local[i] = int(m.atoms.size()); m.atoms.push_back(s.atoms[i]); }
+  if (std::none_of(m.atoms.begin(), m.atoms.end(), [](const Atom& a) { return a.element > 1; })) throw std::invalid_argument("choose at least one heavy atom");
+  for (const auto& b : s.bonds)
+    if (b.i < n && b.j < n && local[b.i] >= 0 && local[b.j] >= 0) m.bonds.push_back({uint32_t(local[b.i]), uint32_t(local[b.j]), b.order});
+  // a bond leaving the atoms: a hydrogen stand-in for perception, written as *
+  std::set<uint32_t> dummy;
+  for (uint32_t i = 0; i < n; ++i) {
+    if (!in[i]) continue;
+    for (uint32_t w : nb[i]) {
+      if (in[w]) continue;
+      Atom h = s.atoms[w];
+      h.element = 1;
+      const uint32_t k = uint32_t(m.atoms.size());
+      m.atoms.push_back(h);
+      m.bonds.push_back({uint32_t(local[i]), k, 1});
+      dummy.insert(k);
+    }
+  }
+  const Perception p = perceive(m);
+  MolGraph g;
+  std::vector<int> gi(m.atoms.size(), -1);
+  for (uint32_t i = 0; i < m.atoms.size(); ++i) {
+    const bool star = dummy.count(i) > 0;
+    if (!star && m.atoms[i].element == 1 && p.nb[i].size() == 1 && m.atoms[p.nb[i][0]].element != 1 && !dummy.count(p.nb[i][0])) continue;   // implicit H
+    MolAtom a;
+    a.element = star ? 0 : m.atoms[i].element;
+    a.aromatic = !star && p.aromatic[i];
+    a.charge = star ? 0 : p.charge[i];
+    const int z = a.element;
+    const bool organic = z == 0 || z == 5 || z == 6 || z == 7 || z == 8 || z == 9 || z == 15 || z == 16 || z == 17 || z == 35 || z == 53;
+    a.bracket = !organic || a.charge != 0;
+    int h = star ? 0 : p.hcount[i];
+    if (!star) for (uint32_t w : p.nb[i]) if (dummy.count(w)) --h;
+    a.hcount = a.bracket ? std::max(0, h) : -1;
+    gi[i] = int(g.atoms.size());
+    g.atoms.push_back(a);
+  }
+  for (uint32_t i = 0; i < m.atoms.size(); ++i)
+    for (size_t k = 0; k < p.nb[i].size(); ++k) {
+      const uint32_t j = p.nb[i][k];
+      if (j <= i || gi[i] < 0 || gi[j] < 0) continue;
+      MolBond b;
+      b.a = gi[i], b.b = gi[j];
+      b.order = p.arom_bond[i][k] ? 4 : p.order[i][k];
+      g.bonds.push_back(b);
+    }
+  g.heavy = int(g.atoms.size());
+  return write_smiles(g);
+}
+
 }  // namespace caps

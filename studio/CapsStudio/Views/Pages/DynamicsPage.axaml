@@ -136,6 +136,8 @@
               <Border Classes="phead">
                 <DockPanel>
                   <Border DockPanel.Dock="Right" Classes="chip"><TextBlock Text="{Binding MdPreflightSummary}" Classes="mono" Foreground="{DynamicResource MutedB}" /></Border>
+                  <Button DockPanel.Dock="Right" Classes="small" Content="Probe" Click="OnNveProbe" IsEnabled="{Binding NveProbeIdle}" Margin="0,0,8,0"
+                          ToolTip.Tip="About 1 ps of NVE (velocity Verlet, no thermostat) on a copy with these settings: the energy drift against GROMACS's default tolerance" />
                   <TextBlock Text="Pre-flight" Classes="h2" VerticalAlignment="Center" />
                 </DockPanel>
               </Border>

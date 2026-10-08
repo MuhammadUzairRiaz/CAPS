@@ -825,6 +825,31 @@ TEST(Structure, ExactVoronoiCells) {
   for (int s1 : {-1, 1})
     for (int s2 : {-1, 1}) v.push_back({0, s1 * r, s2 * g * r}), v.push_back({s1 * r, s2 * g * r, 0}), v.push_back({s2 * g * r, 0, s1 * r});
   for (const auto& x : v) { caps::Atom a; a.element = 79; a.pos = x; a.id = int64_t(ico.atoms.size() + 1); ico.atoms.push_back(a); }
+  // z not periodic (a slab): the cells clipped by the cell's z faces still fill the box; the top and bottom layers lose
+  // the face across z (a wall, not counted)
+  {
+    caps::System sc;
+    const double a = 3.0;
+    sc.cell.a = {4 * a, 0, 0}, sc.cell.b = {0, 4 * a, 0}, sc.cell.c = {0, 0, 4 * a};
+    for (int x = 0; x < 4; ++x)
+      for (int y = 0; y < 4; ++y)
+        for (int z = 0; z < 4; ++z) {
+          caps::Atom at;
+          at.element = 6, at.pos = {(x + 0.5) * a, (y + 0.5) * a, (z + 0.5) * a}, at.id = int64_t(sc.atoms.size() + 1);
+          sc.atoms.push_back(at);
+        }
+    const auto per = run(sc, R"([{"type":"voronoi","method":"exact"}])");
+    const auto slab = run(sc, R"([{"type":"voronoi","method":"exact","periodic_z":false}])");
+    double vol = 0;
+    for (size_t i = 0; i < sc.atoms.size(); ++i) {
+      EXPECT_NEAR(per.props.at("AtomicVolume")[i], a * a * a, 1e-6);
+      EXPECT_EQ(per.props.at("Coordination")[i], 6.0);
+      vol += slab.props.at("AtomicVolume")[i];
+      const bool face = sc.atoms[i].pos[2] < a || sc.atoms[i].pos[2] > 3 * a;
+      EXPECT_EQ(slab.props.at("Coordination")[i], face ? 5.0 : 6.0);
+    }
+    EXPECT_NEAR(vol, sc.cell.volume(), 1e-6);
+  }
   st = run(ico, R"([{"type":"voronoi","method":"exact"}])");
   EXPECT_EQ(st.props.at("Voronoi Index.5")[0], 12.0);
   EXPECT_EQ(st.props.at("Coordination")[0], 12.0);

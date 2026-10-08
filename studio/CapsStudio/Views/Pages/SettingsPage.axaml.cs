@@ -78,6 +78,20 @@ public partial class SettingsPage : PageBase
     private void OnRecordShortcut(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is ShortcutRow r) Vm.BeginRecordShortcut(r); }
     private void OnClearShortcut(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is ShortcutRow r) Vm.ClearShortcut(r); }
     private void OnResetShortcuts(object? s, RoutedEventArgs e) => Vm.ResetShortcuts();
+    private async void OnExportShortcuts(object? s, RoutedEventArgs e)
+    {
+        var top = TopLevel.GetTopLevel(this);
+        if (top == null) return;
+        var f = await top.StorageProvider.SaveFilePickerAsync(new Avalonia.Platform.Storage.FilePickerSaveOptions { Title = "Export your shortcuts", SuggestedFileName = "caps-shortcuts.json", DefaultExtension = "json" });
+        if (f?.TryGetLocalPath() is { } p) Vm.Status = Vm.ExportShortcuts(p);
+    }
+    private async void OnImportShortcuts(object? s, RoutedEventArgs e)
+    {
+        var top = TopLevel.GetTopLevel(this);
+        if (top == null) return;
+        var f = await top.StorageProvider.OpenFilePickerAsync(new Avalonia.Platform.Storage.FilePickerOpenOptions { Title = "Import shortcuts (caps-shortcuts JSON)", AllowMultiple = false });
+        if (f.Count > 0 && f[0].TryGetLocalPath() is { } p) Vm.Status = Vm.ImportShortcuts(p);
+    }
     private void OnResolveConflict(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is ShortcutConflict c) Vm.ResolveShortcutConflict(c); }
     private void OnOpenShortcuts(object? s, RoutedEventArgs e) => Vm.SettingsTab = 4;   // Files: your shortcuts
     private async void OnCheckPython(object? s, RoutedEventArgs e) => await Vm.CheckPython();

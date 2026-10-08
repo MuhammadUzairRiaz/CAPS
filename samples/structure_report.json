@@ -1,0 +1,11 @@
+{
+  "caps_pipeline": 1,
+  "name": "Structure report",
+  "description": "A first look at a polymer cell: chain size and shape, bond lengths, angles and dihedrals, the C–C g(r) and the volume per atom.",
+  "steps": [
+    { "type": "molecule_shape", "enabled": true },
+    { "type": "topology", "enabled": true },
+    { "type": "coordination", "enabled": true, "cutoff": 3.5 },
+    { "type": "voronoi", "enabled": true }
+  ]
+}
