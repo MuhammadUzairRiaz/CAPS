@@ -74,6 +74,7 @@ struct RenderOptions {
   int focus = -1;                      // atom drawn with the keyboard-focus ring (accent, outside any selection ring)
   bool ambient_occlusion = false;      // darken atoms by how little open sky they see (object space, per atom)
   std::vector<unsigned> colours;       // per atom 0xRRGGBB overriding colour_by (a pipeline's colours); 0xFFFFFFFF keeps it
+  bool chain_dashes = false;           // colour-vision cue: bonds of every other chain (alternating along the palette, flipped where it repeats) dashed
   std::vector<float> radius;           // per atom: drawn radius (Å) overriding the style's; 0 keeps it
   std::vector<float> transparency;     // per atom: 0 opaque … 1 invisible (a pipeline's Transparency)
   std::vector<char> unpickable;        // per atom: drawn but never picked (ghosted atoms); picks see through them

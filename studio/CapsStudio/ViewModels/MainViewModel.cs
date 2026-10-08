@@ -2808,6 +2808,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (IsProvenance) LoadProvenance();
         AutoLod(doc);
         AutoStyle(doc);
+        if (_settings.ChainCues) { SetKind("chain_end", true); ApplyDisplay(); }   // the cues follow every structure opened
         LoadFileChecks();
         UpdateItemInfo(item);
         var look = FileChecks.Count(c => c.NeedsLook);
