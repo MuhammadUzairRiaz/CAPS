@@ -11,6 +11,7 @@ public partial class OpenPage : PageBase
 
     private void OnCancel(object? s, RoutedEventArgs e) => Vm.CancelOpen();
     private void OnOpen(object? s, RoutedEventArgs e) => Vm.ConfirmOpen();
+    private void OnOpenGmxSet(object? s, RoutedEventArgs e) => Vm.OpenGmxSet();
 
     private async void OnTopology(object? s, RoutedEventArgs e)
     {
