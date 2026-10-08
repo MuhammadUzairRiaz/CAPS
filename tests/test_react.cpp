@@ -798,11 +798,22 @@ TEST(React, CrosslinkingContinuesAfterPercolation) {
   EXPECT_EQ(rep.intrachain, 0);
   EXPECT_NEAR(rep.degree, 200.0 * rep.crosslinks / 3200, 1e-9);
   EXPECT_GT(cluster_stats(s).largest_fraction, 0.99);   // one network
-  // written and read back: one molecule, its chains recovered from the C–S bonds the template forms
+  // written and read back: the chains it started from recorded on the atoms ("# chain N")
   const auto path = (std::filesystem::temp_directory_path() / "caps_percolated.data").string();
   write_lammps_data(s, path);
   System back = read_lammps_data(path);
   std::filesystem::remove(path);
+  {
+    std::set<int64_t> chains;
+    for (const auto& a : back.atoms) chains.insert(a.chain);
+    EXPECT_FALSE(chains.count(0));
+    std::string note;
+    const auto oc = original_chains(back, templates, &note);
+    EXPECT_NE(note.find("records"), std::string::npos);
+    EXPECT_EQ(std::set<int64_t>(oc.begin(), oc.end()).size(), chains.size());
+  }
+  // without the record (a file another program wrote): the chains recovered from the C–S bonds the template forms
+  for (auto& a : back.atoms) a.chain = 0;
   const auto cs = chain_sites(back, templates);
   ASSERT_EQ(cs.size(), 16u);
   int units = 0, pendants = 0;
@@ -820,6 +831,7 @@ TEST(React, CrosslinkingContinuesAfterPercolation) {
   react(back, more, &rep2);
   EXPECT_EQ(rep2.chains, 16);
   EXPECT_TRUE(std::any_of(rep2.notes.begin(), rep2.notes.end(), [](const std::string& n) { return n.find("16 chains recovered") != std::string::npos; }));
+  for (const auto& a : back.atoms) EXPECT_GT(a.chain, 0);   // the run records them in turn
   EXPECT_GE(rep2.reactions, pendants * 9 / 10);   // most pendant S–H ends react
 }
 
