@@ -43,6 +43,8 @@ public sealed partial class MainViewModel
         ("Escape", "Clear the selection"), ("OemCloseBrackets", "Grow the selection"), ("Delete", "Delete the picked atoms"), ("Back", "Delete the picked atoms"),
         ("Meta+D1", "Studio"), ("Meta+D2", "Build"), ("Meta+D3", "Polymer cell"), ("Meta+D4", "Force field"), ("Meta+D5", "Packing"), ("Meta+D6", "Minimise"),
         ("Meta+D7", "Equilibrate"), ("Meta+D8", "Dynamics"), ("Meta+D9", "Analyze"), ("Meta+OemPlus", "Interface scale"), ("Meta+OemMinus", "Interface scale"),
+        ("S", "the Select tool"), ("B", "the Build tool"), ("L", "Lasso select"), ("G", "Move the selection"), ("M", "Measure"), ("P", "Pin the measurement"),
+        ("Meta+Shift+S", "Save a copy of the project"),
         ("Meta+OemComma", "Settings"), ("Meta+C", "Copy"), ("Meta+V", "Paste"), ("Meta+X", "Cut"), ("Meta+A", "Select all in text"), ("Meta+Q", "Quit"),
     ];
 
@@ -103,6 +105,47 @@ public sealed partial class MainViewModel
         if (_settings.Shortcuts.Remove(row.Id)) _settings.Save();
         row.Gesture = "";
         ShortcutNote = "";
+    }
+
+    /// <summary>Your shortcuts as a JSON file (design/boards/InteractionMap "Remap · export as JSON"): {format, shortcuts:
+    /// {command id: keys}}, to carry to another machine or share.</summary>
+    public string ExportShortcuts(string path)
+    {
+        try
+        {
+            var map = new System.Text.Json.Nodes.JsonObject();
+            foreach (var (id, g) in _settings.Shortcuts.OrderBy(kv => kv.Key)) map[id] = g;
+            File.WriteAllText(path, new System.Text.Json.Nodes.JsonObject { ["format"] = "caps-shortcuts", ["version"] = 1, ["shortcuts"] = map }
+                .ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping }));
+            return $"Wrote {_settings.Shortcuts.Count} shortcut{(_settings.Shortcuts.Count == 1 ? "" : "s")} to {Path.GetFileName(path)}";
+        }
+        catch (Exception e) { return "Could not write the shortcuts: " + e.Message; }
+    }
+
+    /// <summary>A caps-shortcuts file read in: its keys join yours (a key given to another command moves to this one);
+    /// commands this Studio does not have are left out and counted.</summary>
+    public string ImportShortcuts(string path)
+    {
+        try
+        {
+            var j = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(path)) as System.Text.Json.Nodes.JsonObject;
+            if ((string?)j?["format"] != "caps-shortcuts" || j["shortcuts"] is not System.Text.Json.Nodes.JsonObject map) return $"{Path.GetFileName(path)} is not a CAPS shortcuts file";
+            if (!_modelCommands) { _modelCommands = true; AddModelCommands(); }
+            int taken = 0, unknown = 0;
+            foreach (var (id, node) in map)
+            {
+                var g = (string?)node ?? "";
+                if (g.Length == 0) continue;
+                if (_commands.All(c => c.Id != id)) { ++unknown; continue; }
+                foreach (var other in _settings.Shortcuts.Where(kv => kv.Value == g && kv.Key != id).Select(kv => kv.Key).ToList()) _settings.Shortcuts.Remove(other);
+                _settings.Shortcuts[id] = g;
+                ++taken;
+            }
+            _settings.Save();
+            FillShortcutRows();
+            return $"Read {taken} shortcut{(taken == 1 ? "" : "s")} from {Path.GetFileName(path)}" + (unknown > 0 ? $" · {unknown} for commands this Studio does not have, left out" : "");
+        }
+        catch (Exception e) { return "Could not read the shortcuts: " + e.Message; }
     }
 
     public void ResetShortcuts()

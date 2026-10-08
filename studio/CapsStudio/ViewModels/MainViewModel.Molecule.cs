@@ -364,6 +364,27 @@ public sealed partial class MainViewModel
         SetModule(8);
     }
 
+    /// <summary>Insert into document (design/boards/Sketch): the chosen conformer goes into the structure open in Studio as a
+    /// stamp — it joins the clipboard tray and follows the pointer; a click places it (the wheel turns it). With no structure
+    /// open it becomes the Studio document instead.</summary>
+    public void InsertMoleculeIntoDocument()
+    {
+        if (_molDoc == null) return;
+        if (_doc == null) { OpenMoleculeInStudio(); return; }
+        if (Busy) { Status = "Wait for the run to finish (or cancel it) first"; return; }
+        try
+        {
+            _molDoc.SetFrame(Math.Max(0, _molConf));
+            var name = _molFormula.Length > 0 ? _molFormula : "molecule";
+            var json = _molDoc.Piece(new JsonObject { ["atoms"] = "all", ["name"] = name }.ToJsonString());
+            AddToTray(json, "molecule builder");
+            SetModule(8);
+            ArmStamp(Tray[0]);
+            Status = $"{name}: click in the view where it goes (the wheel turns it, Esc stops)";
+        }
+        catch (Exception e) { Status = "Could not insert: " + e.Message; }
+    }
+
     public void SaveMolecule(string path)
     {
         if (_molDoc == null) return;

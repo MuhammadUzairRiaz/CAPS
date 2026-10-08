@@ -69,6 +69,7 @@ public sealed partial class MainViewModel
     /// is not available now.</summary>
     public bool RunCommand(string id)
     {
+        if (!_modelCommands) { _modelCommands = true; AddModelCommands(); }
         var c = _commands.FirstOrDefault(x => x.Id == id);
         if (c == null || !c.Enabled()) return false;
         c.Run();
@@ -181,6 +182,21 @@ public sealed partial class MainViewModel
                                         Keywords = "histogram range height charge hybridisation distance select brush", Run = OpenBrush });
         AddCommand(new PaletteCommand { Title = "Select by query", Id = "select.query", Icon = "search", Shortcut = "⌘F", Section = "Selection",
             Keywords = "select query smarts element chain within ring stereo and or not find", Enabled = () => _doc != null, Run = () => { SetModule(8); QueryOpen = true; } });
+        AddCommand(new PaletteCommand { Title = "Save the selection as a fragment", Id = "fragment.save selection", Icon = "fragment", Section = "Build",
+            Keywords = "fragment library save selection my fragments attachment", Python = "doc.fragment_smiles()",
+            Enabled = () => _doc != null && _selection.Count > 0, Run = SaveSelectionAsFragment });
+        // the Studio tools by their single keys (design/boards/InteractionMap)
+        foreach (var (title, id, icon, key, run) in new (string, string, string, string, Action)[]
+        {
+            ("Select tool", "tool.select", "cursor", "S", () => { EditTool = 0; MeasureTool = false; }),
+            ("Build tool: place atoms", "tool.build", "atom", "B", () => EditTool = 1),
+            ("Lasso select", "tool.lasso", "lasso", "L", () => EditTool = 4),
+            ("Move (translate) the selection", "tool.move", "move", "G", () => EditTool = 5),
+            ("Measure: click up to four atoms", "tool.measure", "ruler", "M", () => { EditTool = 0; MeasureTool = true; }),
+            ("Pin the measurement as a monitor", "tool.pin", "pin", "P", PinMeasurement),
+        })
+            AddCommand(new PaletteCommand { Title = title, Id = id, Icon = icon, Shortcut = key, Section = "Tools", Keywords = "tool key " + title.ToLowerInvariant(),
+                                            Enabled = () => _doc != null, Run = run });
         // commands that take an argument (Tab, then type it)
         AddCommand(new PaletteCommand { Title = "Select by query…", Id = "select.where", Icon = "search", Section = "Selection",
             Keywords = "select query where smarts element chain within ring", ArgHint = "a query (element C and within 5 of ring 1)",

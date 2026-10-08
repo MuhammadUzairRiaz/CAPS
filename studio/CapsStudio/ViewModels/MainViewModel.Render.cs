@@ -8,7 +8,8 @@ namespace CapsStudio.ViewModels;
 /// attributes), a vertical colour legend, a true scale bar and an axis tripod.</summary>
 public sealed record RenderSpec(string[] Lines, bool LabelBox, bool Legend, string LegendLo, string LegendHi, string LegendName,
                                 double BarAngstrom, double BarPx, bool Tripod, double Yaw, double Pitch, uint Ink, bool Dark, double Width, double Height,
-                                System.Text.Json.Nodes.JsonArray? Custom = null)   // a Python overlay's drawing (caps.overlay commands)
+                                System.Text.Json.Nodes.JsonArray? Custom = null,   // a Python overlay's drawing (caps.overlay commands)
+                                (string Label, uint Rgb)[]? LegendEntries = null)   // a categorical legend (the pipeline's colour coding)
 {
     public double Unit => Width / 900.0;                         // the board draws a 1920-wide frame about 900 px across
     public string BarLabel => BarAngstrom.ToString("0.##", CultureInfo.InvariantCulture) + " Å";
@@ -57,7 +58,8 @@ public sealed partial class MainViewModel
     public bool OvLegend { get => _ovLegend; set { if (Set(ref _ovLegend, value)) RenderChanged(); } }
     public bool OvBar { get => _ovBar; set { if (Set(ref _ovBar, value)) RenderChanged(); } }
     public bool OvTripod { get => _ovTripod; set { if (Set(ref _ovTripod, value)) RenderChanged(); } }
-    public string OvLegendNote => _colour == 3 ? "distance to molecule centre · viridis" : "shown when colouring by a property";
+    public string OvLegendNote => _pipeHasLegend && PipelineRows.Count > 0 ? $"the Visualize colour coding · {_pipeLegendTitle}"
+        : _colour == 3 ? "distance to molecule centre · viridis" : "shown when colouring by a property or by a Visualize colour coding";
     public string OvBarNote => _perspective ? "true only at the cell centre in perspective" : "true length · orthographic";
     public string OvLabelNote => ResolveTokens(_ovText, _frame);
     public bool Rendering { get => _rendering; private set { if (Set(ref _rendering, value)) Raise(nameof(RenderIdle)); } }
@@ -121,6 +123,16 @@ public sealed partial class MainViewModel
             barA = new[] { 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000.0 }.LastOrDefault(x => x <= target);
             if (barA <= 0) barA = 1;
             barPx = barA * pxPerAngstrom;
+        }
+        // the legend: the Visualize pipeline's colour coding when it has one (its property and range, or its categories),
+        // else the view's distance-to-centre colouring
+        if (_pipeHasLegend && PipelineRows.Count > 0)
+        {
+            (string, uint)[]? cats = null;
+            if (!_pipeLegendContinuous)
+                cats = PipeLegendEntries.Select(e => (e.Label, e.Brush is Avalonia.Media.ISolidColorBrush b ? (uint)(b.Color.ToUInt32() & 0xFFFFFF) : 0x888888u)).Take(12).ToArray();
+            return new RenderSpec(lines, dark, _ovLegend, _pipeLegendLo, _pipeLegendHi, _pipeLegendTitle, barA, barPx, _ovTripod,
+                                  Camera.Yaw, Camera.Pitch, dark ? 0xE9ECEFu : 0x141413u, dark, w, h, custom ?? OverlayForGuide(frame, w, h, dark), cats);
         }
         return new RenderSpec(lines, dark, _ovLegend && _colour == 3, LegendLo, LegendHi, "DistanceToCOM", barA, barPx, _ovTripod,
                               Camera.Yaw, Camera.Pitch, dark ? 0xE9ECEFu : 0x141413u, dark, w, h, custom ?? OverlayForGuide(frame, w, h, dark));

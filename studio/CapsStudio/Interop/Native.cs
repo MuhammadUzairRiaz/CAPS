@@ -532,6 +532,8 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_kg_lammps")] public static extern int KgLammps(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, [MarshalAs(UnmanagedType.LPUTF8Str)] string stem, double pushoff, double run);
     [DllImport(Lib, EntryPoint = "caps_nano_build")] public static extern IntPtr NanoBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_frame_copy")] public static extern IntPtr FrameCopy(IntPtr doc);
+    [DllImport(Lib, EntryPoint = "caps_smarts_count")] public static extern int SmartsCount([MarshalAs(UnmanagedType.LPUTF8Str)] string smiles, [MarshalAs(UnmanagedType.LPUTF8Str)] string smarts);
+    [DllImport(Lib, EntryPoint = "caps_fragment_smiles")] public static extern int FragmentSmiles(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string atoms, byte[]? text, int cap);
     [DllImport(Lib, EntryPoint = "caps_stack_documents")] public static extern IntPtr StackDocuments(IntPtr[] docs, int n, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_embed_document")] public static extern IntPtr EmbedDocument(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, [MarshalAs(UnmanagedType.LPUTF8Str)] string spec, in CapsGrowOpts o, CapsProgress? progress, IntPtr user, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_nano_embed")] public static extern IntPtr NanoEmbed([MarshalAs(UnmanagedType.LPUTF8Str)] string options, [MarshalAs(UnmanagedType.LPUTF8Str)] string spec, in CapsGrowOpts o, CapsProgress? progress, IntPtr user, byte[] report, int cap);
@@ -1482,6 +1484,24 @@ public sealed class CapsDocument : IDisposable
             var m = Native.InternalDistances(H, n, r, n.Length, out var chains, out var b2);
             Check(m);
             return (n[..m], r[..m], chains, b2);
+        }
+    }
+
+    /// <summary>Atoms of a SMILES where a SMARTS matches (-1: either cannot be read).</summary>
+    public static int SmartsCount(string smiles, string smarts) => Native.SmartsCount(smiles, smarts);
+
+    /// <summary>A fragment SMILES (bonds leaving the atoms as *) from atoms of the frame; empty: the selection.</summary>
+    public string FragmentSmiles(int[] atoms)
+    {
+        using (Hold())
+        {
+            Alive();
+            var json = "[" + string.Join(",", atoms) + "]";
+            var n = Native.FragmentSmiles(H, json, null, 0);
+            if (n < 0) throw new InvalidOperationException(Native.LastError());
+            var buf = new byte[n + 1];
+            Check(Native.FragmentSmiles(H, json, buf, buf.Length) < 0 ? -1 : 0);
+            return System.Text.Encoding.UTF8.GetString(buf).TrimEnd('\0');
         }
     }
 

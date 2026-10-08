@@ -236,10 +236,13 @@ public sealed partial class MainViewModel
         LoadKnownProjects();
         if (ProjectItems.Count == 0) SetModule(8);
         return $"Opened {CapsProjectName}: {ProjectItems.Count} structure{(ProjectItems.Count == 1 ? "" : "s")}" +
-               (missing.Count > 0 ? $"; not found: {string.Join(", ", missing)}" : "");
+               (missing.Count > 0 ? $"; not found: {string.Join(", ", missing)}" : "") + _engineNote;
     }
 
     /// <summary>The project file becomes the open project and a new session starts.</summary>
+    private string _engineNote = "";
+    public bool EngineNotice { get => _settings.EngineNotice; set { if (_settings.EngineNotice == value) return; _settings.EngineNotice = value; Raise(); _settings.Save(); } }
+
     private void Attach(string file, JsonObject m)
     {
         _projFile = Path.GetFullPath(file);
@@ -248,7 +251,12 @@ public sealed partial class MainViewModel
         _projSavedAt = default;
         var sessions = m["sessions"] as JsonArray ?? new JsonArray();
         m["sessions"] = sessions;
-        sessions.Add(new JsonObject { ["opened"] = _projOpened.ToString("o", CultureInfo.InvariantCulture), ["closed"] = null, ["did"] = new JsonArray() });
+        // the engine each session ran with: a project last worked on with another CAPS version is said so on opening
+        var lastEngine = sessions.OfType<JsonObject>().Select(x => (string?)x["engine"]).LastOrDefault(e => e is { Length: > 0 });
+        _engineNote = lastEngine != null && lastEngine != ProvGenerator && _settings.EngineNotice
+            ? $" · last saved with {lastEngine}, this is {ProvGenerator}: re-run and compare the provenance manifests (Jobs › Provenance) before quoting new numbers"
+            : "";
+        sessions.Add(new JsonObject { ["opened"] = _projOpened.ToString("o", CultureInfo.InvariantCulture), ["closed"] = null, ["did"] = new JsonArray(), ["engine"] = ProvGenerator });
         _projSession = sessions.Count - 1;
         _projStart = ProjectItems.ToDictionary(it => it, it => (CleanName(it.Name), it.History));   // by structure: two may share a name
         ProjectFolder = Path.Combine(CapsProjectFile.FolderOf(file), "structures");   // the Project home page shows its structures
@@ -291,6 +299,44 @@ public sealed partial class MainViewModel
     /// <summary>Writes every structure into structures/ (a trajectory stays where it is, by its path) with its force field
     /// and provenance, then the project file with this session's line. Nothing open: only the project file.</summary>
     public string SaveCapsProject() => SaveCapsProject(false);
+
+    /// <summary>Save a copy as… (design/boards/ProjectOpen, ⇧⌘S): the project saved, then its whole folder (structures,
+    /// runs, exports, the session history) copied to PARENT/NAME with the project file renamed after it; the project open
+    /// now stays open, and the copy joins the projects Start lists.</summary>
+    public string SaveCapsProjectCopy(string parent, string name)
+    {
+        if (_projFile == null) return "No project is open";
+        if (Busy) return "Wait for the run to finish before copying the project";
+        if (string.IsNullOrWhiteSpace(parent) || !Directory.Exists(parent)) return "Choose the folder the copy goes in";
+        SaveCapsProject();
+        var src = CapsProjectFile.FolderOf(_projFile);
+        var safe = CapsProjectFile.SafeName(name);
+        var dest = Path.Combine(parent, safe);
+        if (Path.GetFullPath(dest).StartsWith(Path.GetFullPath(src) + Path.DirectorySeparatorChar, StringComparison.Ordinal) || SameFile(dest, src))
+            return "The copy cannot go inside the project itself";
+        if (Directory.Exists(dest) || File.Exists(dest)) return $"{RecentFiles.Tilde(dest)} exists already: choose another name";
+        try
+        {
+            foreach (var dir in Directory.EnumerateDirectories(src, "*", SearchOption.AllDirectories))
+                Directory.CreateDirectory(Path.Combine(dest, Path.GetRelativePath(src, dir)));
+            Directory.CreateDirectory(dest);
+            foreach (var f in Directory.EnumerateFiles(src, "*", SearchOption.AllDirectories))
+            {
+                if (f.EndsWith(".saving", StringComparison.Ordinal)) continue;
+                File.Copy(f, Path.Combine(dest, Path.GetRelativePath(src, f)));
+            }
+            var oldFile = Path.Combine(dest, Path.GetFileName(_projFile));
+            var newFile = Path.Combine(dest, safe + CapsProjectFile.Extension);
+            var m = CapsProjectFile.Read(oldFile);
+            m["name"] = name.Trim().Length > 0 ? name.Trim() : safe;
+            CapsProjectFile.Write(newFile, m);
+            if (!SameFile(oldFile, newFile)) File.Delete(oldFile);
+            ProjectRegistry.Touch(newFile, (string?)m["name"] ?? safe);
+            LoadKnownProjects();
+            return $"Saved a copy of {CapsProjectName} as {RecentFiles.Tilde(newFile)} (this project stays open)";
+        }
+        catch (Exception e) { return "Could not copy the project: " + e.Message; }
+    }
 
     /// <summary>closing: a session in which nothing was built, run or changed is left out of the history.</summary>
     private string SaveCapsProject(bool closing)

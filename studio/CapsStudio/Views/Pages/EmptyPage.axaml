@@ -115,6 +115,15 @@
                 </StackPanel>
                 <Button Grid.Column="2" Classes="small" Content="Open" Click="OnSample" Tag="water" VerticalAlignment="Center" />
               </Grid>
+              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" Margin="0,6">
+                <v:Icon Kind="sliders" Size="15" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+                <StackPanel Grid.Column="1" Spacing="2">
+                  <TextBlock Text="Pipeline · structure report · 4 steps" FontSize="12.5" />
+                  <TextBlock Text="chain shape, bonds and dihedrals, g(r), Voronoi volumes · on the polystyrene cell" FontSize="11" Foreground="{DynamicResource DimB}" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+                <Button Grid.Column="2" Classes="small" Content="Apply" Click="OnSample" Tag="pipeline" VerticalAlignment="Center"
+                        ToolTip.Tip="Opens the polystyrene cell and loads samples/structure_report.json in Visualize" />
+              </Grid>
             </StackPanel>
           </StackPanel>
         </Border>

@@ -1523,6 +1523,10 @@ public sealed partial class MainViewModel : ObservableObject
                     ? string.Format(inv, "Δt {0:0.##} fs, bonded forces every {1:0.###} fs (r-RESPA), no bond constraints", _mdDt, inner)
                     : string.Format(inv, "Δt {0:0.##} fs with hydrogens, no bond constraints", _mdDt),
                 inner <= 1.0 && _mdDt <= 4.0 ? "ok" : inner <= 2.0 ? "check" : "fail"));
+        // the NVE probe (on demand: Probe in the card): its drift for this structure, time step and constraints
+        if (_nveProbe is { } pr && ReferenceEquals(pr.Doc, doc) && pr.Key == NveProbeKey())
+            MdPreflight.Add(new CheckRow(pr.Text, pr.State));
+        else MdPreflight.Add(new CheckRow("NVE probe: not run for these settings (Probe runs 1 ps on a copy)", "check"));
         // velocities
         MdPreflight.Add(new CheckRow(_mdNewVelocities ? string.Format(inv, "New velocities at {0:0} K (seed {1})", _mdTemp, _mdSeed) : "Velocities from the structure, or drawn at the target if it has none", "ok"));
         var fails = MdPreflight.Count(r => r.State == "fail");
@@ -1646,6 +1650,54 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     /// <summary>The Dynamics settings as the core takes them (also captured when a run is queued).</summary>
+    // ---- NVE probe (design/boards/Dynamics pre-flight): about 1 ps of velocity Verlet without a thermostat on a copy, from
+    // velocities at the run's temperature; the drift is the slope of a straight-line fit to the conserved energy, in kT per ns
+    // per atom (as Bench T5), passing below GROMACS's default verlet-buffer-tolerance (0.005 kJ/mol/ps per atom = 2.0 kT/ns/atom
+    // at 300 K)
+    private sealed record NveProbe(CapsDocument Doc, string Key, string Text, string State);
+    private NveProbe? _nveProbe;
+    private bool _nveProbing;
+    public bool NveProbing { get => _nveProbing; private set { if (Set(ref _nveProbing, value)) Raise(nameof(NveProbeIdle)); } }
+    public bool NveProbeIdle => !_nveProbing;
+    private string NveProbeKey() => string.Format(CultureInfo.InvariantCulture, "{0}|{1}|{2}|{3}|{4}|{5}", _mdDt, RespaSteps, _mdConstraints, _mdConstraintSolver, _relaxCutoff, _mdTemp);
+    public async Task RunNveProbe()
+    {
+        if (_doc == null) { Status = "NVE probe: open a structure first"; return; }
+        if (_nveProbing) return;
+        if (Busy) { Status = "NVE probe: wait for the run to finish"; return; }
+        var doc = _doc;
+        var key = NveProbeKey();
+        NveProbing = true;
+        Status = "NVE probe: 1 ps on a copy…";
+        try
+        {
+            var o = MdOptions(null);
+            o.Thermostat = 0; o.Barostat = 0; o.BoxAnisotropic = 0; o.FullShape = 0; o.EfieldX = o.EfieldY = o.EfieldZ = 0;
+            o.Steps = Math.Min(1000, Math.Max(100, (long)Math.Round(1000.0 / Math.Max(0.1, _mdDt))));
+            o.NewVelocities = 1; o.ThermoEvery = 10; o.FrameEvery = 0; o.CheckpointEvery = -1;
+            var temp = _mdTemp;
+            var (drift, atoms, ps) = await Task.Run(() =>
+            {
+                using var copy = doc.Copy("NVE probe");
+                var rows = new List<CapsThermo>();
+                copy.Md(o, (r, n) => { rows.Add(r); return true; });
+                var m = rows.Count;
+                double sx = 0, sy = 0, sxx = 0, sxy = 0;
+                foreach (var r in rows) { sx += r.TimePs; sy += r.Conserved; sxx += r.TimePs * r.TimePs; sxy += r.TimePs * r.Conserved; }
+                var slope = (m * sxy - sx * sy) / Math.Max(1e-30, m * sxx - sx * sx);   // kcal/mol/ps
+                var n = copy.Summary().Atoms;
+                return (slope * 1000.0 / Math.Max(1, n) / (0.0019872043 * temp), n, rows.Count > 0 ? rows[^1].TimePs - rows[0].TimePs : 0);
+            });
+            var limit = 0.005 / 4.184 * 1000.0 / (0.0019872043 * temp);
+            var ok = Math.Abs(drift) < limit;
+            _nveProbe = new NveProbe(doc, key, string.Format(CultureInfo.InvariantCulture,
+                "NVE probe drift {0:+0.000;−0.000} kT/ns/atom over {1:0.##} ps ({2} under {3:0.0})", drift, ps, ok ? "is" : "is not", limit), ok ? "ok" : "fail");
+            Status = _nveProbe.Text;
+        }
+        catch (Exception e) { _nveProbe = new NveProbe(doc, key, "NVE probe could not run: " + e.Message, "fail"); Status = _nveProbe.Text; }
+        finally { NveProbing = false; RefreshPreflight(); }
+    }
+
     private CapsMdOpts MdOptions((long Offset, long Steps)? resume) => new()
     {
         BoxAnisotropic = _mdCoupling > 0 ? 1 : 0, BoxAxes = _mdCoupling switch { 2 => 4, 3 => 3, _ => 7 }, FullShape = _mdCoupling == 4 ? 1 : 0,
@@ -2753,6 +2805,7 @@ public sealed partial class MainViewModel : ObservableObject
             {
                 _selection.Add(index);
                 if (_selection.Count > 4) _selection.RemoveAt(0);
+                if (_settings.SelectionSound) SoundCue.Selection();
             }
         }
         RefreshSelection();

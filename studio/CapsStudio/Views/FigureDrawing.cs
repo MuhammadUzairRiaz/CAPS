@@ -71,7 +71,24 @@ public static class FigureDrawing
             ctx.DrawText(head, new Point(18 * u, 17 * u));
             if (sub != null) ctx.DrawText(sub, new Point(18 * u, 17 * u + head.Height + 2 * u));
         }
-        if (o.Legend)
+        if (o.Legend && o.LegendEntries is { Length: > 0 } cats)
+        {
+            // a categorical legend: a swatch and a label per category, top right
+            var rows = cats.Select(c => (c.Rgb, T: Text(c.Label, Sans, FontWeight.Normal, 11 * u, ink))).ToList();
+            var title = Text(o.LegendName, Sans, FontWeight.SemiBold, 11 * u, muted);
+            var wmax = Math.Max(title.Width, rows.Max(r => r.T.Width) + 18 * u);
+            var x = o.Width - 16 * u - wmax;
+            var y = 22 * u;
+            ctx.DrawText(title, new Point(x, y));
+            y += title.Height + 4 * u;
+            foreach (var (rgb, t) in rows)
+            {
+                ctx.DrawRectangle(new SolidColorBrush(C(rgb)), null, new Rect(x, y + t.Height / 2 - 5 * u, 10 * u, 10 * u), 2 * u, 2 * u);
+                ctx.DrawText(t, new Point(x + 16 * u, y));
+                y += t.Height + 3 * u;
+            }
+        }
+        else if (o.Legend)
         {
             var x = o.Width - 46 * u;
             var y = 24 * u;
