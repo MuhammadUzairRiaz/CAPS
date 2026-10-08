@@ -690,6 +690,7 @@ int replace_end_caps(System& s, const std::vector<uint32_t>& heads, const std::s
 System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport* report) {
   if (spec.units.empty()) throw GrowError("no repeat unit");
   GrowReport rep;
+  long steps_placed = 0;   // growth steps placed (the live view's acceptance)
   std::vector<Template> T;
   for (size_t k = 0; k < spec.units.size(); ++k) {
     try {
@@ -1607,6 +1608,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
       return;
     }
     ch.fails = std::max(0, ch.fails - 1);
+    ++steps_placed;
     rep.worst_margin = std::min(rep.worst_margin, best_m);
     ch.unit_start.push_back(base);
     ch.unit_lnw.push_back(step_lnw);
@@ -1666,6 +1668,20 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     }
     p.bonds_from_file = true;
     live.density = placed / (6.02214076e23 * vol * 1e-24);
+    live.acceptance = steps_placed + rep.backtracks > 0 ? double(steps_placed) / double(steps_placed + rep.backtracks) : 1.0;
+    if (o.method > 0) {   // ln W of each finished molecule: the sum over its chains' steps
+      std::map<int, double> lw;
+      std::set<int> open;
+      for (int c = 0; c < nstates; ++c) {
+        const auto& ch = C[size_t(c)];
+        if (!ch.done) open.insert(ch.mol);
+        for (double x : ch.unit_lnw) lw[ch.mol] += x;
+      }
+      double sum = 0;
+      int k = 0;
+      for (const auto& [mol, v] : lw) if (!open.count(mol)) sum += v, ++k;
+      if (k > 0) live.ln_w = sum / k;
+    }
     o.snapshot(p, live);
   };
   while (finished < nstates) {

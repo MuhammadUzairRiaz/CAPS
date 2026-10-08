@@ -877,6 +877,16 @@ public sealed partial class MainViewModel : ObservableObject
     public decimal? GrowDpD { get => _growDp; set { if (value == null) return; var before = _growDp; GrowDp = (int)value; Raise(); if (_growDp != before) PolyChanged(); } }   // an emptied box keeps the DP; the sequence strip and composition follow at once   // the sequence strip and composition follow at once
     public decimal? GrowSeedD { get => _growSeed; set { if (value == null) return; GrowSeed = (int)value; Raise(); } }
     public decimal? GrowDensityD { get => (decimal)_growDensity; set { GrowDensity = (double)(value ?? 0.4m); Raise(); } }
+    // grow sparse, then compress (design/boards/Grow "Initial density"): the chains grown at this density (0: at the target),
+    // then the cell compressed to the target by Relax's staged affine compression, minimising after each stage
+    private double _growStartDensity;
+    public decimal? GrowStartDensityD { get => (decimal)_growStartDensity; set { _growStartDensity = Math.Clamp((double)(value ?? 0m), 0, 2); Raise(); Raise(nameof(GrowCompressNote)); } }
+    private bool GrowCompresses => _growStartDensity > 0 && _growStartDensity < _growDensity && !_growUseBox && _growShape == 0;
+    public string GrowCompressNote => _growStartDensity <= 0 ? "0: grow at the target density" : _growStartDensity >= _growDensity ? "at or above the target: grown there, no compression"
+        : string.Format(CultureInfo.InvariantCulture, "grown at {0:0.###}, compressed to {1:0.###} g/cm³ (Relax, stages of {2:0.##})", _growStartDensity, _growDensity, _relaxStep);
+    private string _growAccept = "—", _growLnW = "—";
+    public string GrowAcceptText { get => _growAccept; private set => Set(ref _growAccept, value); }
+    public string GrowLnWText { get => _growLnW; private set => Set(ref _growLnW, value); }
     public decimal? GrowBoxD { get => (decimal)_growBox; set { GrowBox = (double)(value ?? 0m); Raise(); } }
     public decimal? GrowScaleD { get => (decimal)_growScale; set { GrowScale = (double)(value ?? 1m); Raise(); } }
     private bool _growAutoScale = true;
@@ -932,8 +942,9 @@ public sealed partial class MainViewModel : ObservableObject
         var o = new CapsGrowOpts
         {
             Chains = _growChains, Dp = _growDp, Tacticity = _growTact, Seed = (ulong)_growSeed,
-            Box = _growUseBox ? _growBox : 0, Density = _growUseBox ? 0 : _growDensity, ContactScale = _growScale, Curve = _growCurve ? 1 : 0,
+            Box = _growUseBox ? _growBox : 0, Density = _growUseBox ? 0 : GrowCompresses ? _growStartDensity : _growDensity, ContactScale = _growScale, Curve = _growCurve ? 1 : 0,
         };
+        var compressTo = GrowCompresses ? _growDensity : 0;
         // every cell goes through the repeat-unit grower (polystyrene as a styrene unit), so the live view and the
         // per-chain lengths (Polydispersity) and stereo model (Tacticity) apply to all of them
         string? spec = GrowSpecWithStatistics(_growSpec) ?? GrowSpecObject().ToJsonString();
@@ -953,7 +964,7 @@ public sealed partial class MainViewModel : ObservableObject
         var dpTag = _growChainDp != null && _growChainDp.Length == _growChains ? $"Nn{_growChainDp.Average():0}" : _growDp.ToString(CultureInfo.InvariantCulture);
         var label = $"{stem}_{_growChains}x{dpTag}_{Tacticities[_growTact].ToLowerInvariant()}_seed{_growSeed}";
         GrowLog = "Growing…";
-        GrowUnitsText = GrowMarginText = GrowDensityNowText = "—";
+        GrowUnitsText = GrowMarginText = GrowDensityNowText = GrowAcceptText = GrowLnWText = "—";
         GrowUnitFraction = 0;
         GrowDone = 0;
         GrowRestarts = 0;
@@ -1051,6 +1062,17 @@ public sealed partial class MainViewModel : ObservableObject
             old?.Dispose();
         }
         if (grown) await AssignForBuilder(pack: false);
+        if (grown && compressTo > 0 && _doc != null)
+        {
+            // then compress: Relax's staged affine compression to the target, minimising after each stage
+            var (wasCompress, wasDensity) = (_relaxCompress, _relaxDensity);
+            _relaxCompress = true;
+            _relaxDensity = compressTo;
+            Status = string.Format(CultureInfo.InvariantCulture, "Compressing the grown cell to {0:0.###} g/cm³…", compressTo);
+            try { await Relax(null); }
+            finally { _relaxCompress = wasCompress; _relaxDensity = wasDensity; }
+            if (_doc != null) GrowDensityNowText = _doc.Summary().Density.ToString("0.00", CultureInfo.InvariantCulture) + " g/cm³ (compressed)";
+        }
     }
 
     public void CancelGrow() => _growCancel?.Cancel();
