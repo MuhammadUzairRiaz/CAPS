@@ -101,8 +101,12 @@
               </Border>
               <Grid ColumnDefinitions="90,*" RowDefinitions="Auto,Auto,Auto" Margin="16,12,16,14" RowSpacing="10">
                 <TextBlock Text="Chains" Classes="muted" />
-                <TextBlock Grid.Column="1" TextWrapping="Wrap" FontSize="12.5"
-                           Text="Hover and the inspector name the molecule under the pointer; the Okabe–Ito palette (Settings › Appearance) separates the eight chain colours for all three deficiencies." />
+                <StackPanel Grid.Column="1" Spacing="6">
+                  <TextBlock TextWrapping="Wrap" FontSize="12.5"
+                             Text="Hover and the inspector name the molecule under the pointer; the Okabe–Ito palette (Settings › Appearance) separates the eight chain colours for all three deficiencies." />
+                  <CheckBox Classes="toggle" Content="Chain cues: dash every other chain's bonds and label chain ends" IsChecked="{Binding ChainCues}"
+                            ToolTip.Tip="With colour by molecule: bonds dashed on alternate chains (flipped where the palette repeats), each chain's number at both ends of its backbone" />
+                </StackPanel>
                 <TextBlock Grid.Row="1" Text="Status" Classes="muted" />
                 <TextBlock Grid.Row="1" Grid.Column="1" TextWrapping="Wrap" FontSize="12.5"
                            Text="Every status also has a word (done, running, failed) and, in checks, an icon — colour is never the only cue." />

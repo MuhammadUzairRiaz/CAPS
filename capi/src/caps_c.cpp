@@ -247,6 +247,7 @@ struct caps_doc {
     double clip_from = 0.0, clip_to = 0.5;
     bool clip_invert = false;
     bool show_particles = true, show_bonds = true;   // Visual elements (design/boards/VisPipeline): particles drawn as joints only, bonds off
+    bool chain_dashes = false;                       // colour-vision cue (design/boards/ColourVision): every other chain's bonds dashed
   } display;
   // Look (design/boards/Look): sizes for the view, and the selection's own size factor
   struct Sizes {
@@ -656,6 +657,7 @@ caps::RenderOptions opts_of(const caps_doc* d, const caps_render_opts* o) {
   r.atom_scale = d->sizes.atom_scale, r.bond_radius = d->sizes.bond_radius, r.space_scale = d->sizes.space_scale, r.line_px = d->sizes.line_px;
   r.bond_orders = d->sizes.bond_orders;
   r.show_bonds = d->display.show_bonds;
+  r.chain_dashes = d->display.chain_dashes;
   if (!d->pstate && d->sizes.factor.size() == d->frame.atoms.size()) r.size_factor = d->sizes.factor;
   if (!d->pstate && d->selection.size() == d->frame.atoms.size()) {   // the selection ringed (up to 50 000 atoms)
     for (size_t i = 0; i < d->selection.size() && r.highlight.size() < 50000; ++i) if (d->selection[i]) r.highlight.push_back(int(i));
@@ -11259,6 +11261,7 @@ extern "C" int32_t caps_set_display(caps_doc* d, const char* json) {
     D.polar_h_only = flag(j, "polar_h_only", D.polar_h_only);
     D.show_particles = flag(j, "show_particles", D.show_particles);
     D.show_bonds = flag(j, "show_bonds", D.show_bonds);
+    D.chain_dashes = flag(j, "chain_dashes", D.chain_dashes);
     D.selection_full = flag(j, "selection_full", D.selection_full);
     if (j.has("clip")) {
       const caps::Json& C = j["clip"];

@@ -51,6 +51,8 @@ public sealed class AppSettings
     public bool SelectionSound { get; set; }
     /// <summary>Visualize: steps slower than SlowStepMs (and Python steps) wait while the frame slider is dragged.</summary>
     public bool PauseSlowSteps { get; set; } = true;
+    /// <summary>Colour-vision cues for chains: every other chain's bonds dashed and chain ends labelled with their number.</summary>
+    public bool ChainCues { get; set; }
     public bool EngineNotice { get; set; } = true;   // say when a project was last saved with another CAPS version   // a short system sound when atoms are picked or selected
     public bool ShowAnnouncement { get; set; } = true;    // the announcement bar in the view, for sighted keyboard users
     public List<RemoteHost> Hosts { get; set; } = new();   // Compute & remote: SSH hosts (no credentials: the SSH agent holds them)
