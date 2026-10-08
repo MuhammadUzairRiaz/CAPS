@@ -1,4 +1,8 @@
 using System;
+using System.Collections.ObjectModel;
+using System.IO;
+using System.Text.Json.Nodes;
+using CapsStudio.Interop;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
@@ -55,6 +59,67 @@ public sealed partial class MainViewModel
         }
     }
 
+    // ---- replicas (design/boards/Diffusion "Replicas · spread"): other runs of the same system, each fitted as this one,
+    // D given as mean ± standard deviation over all runs
+    public ObservableCollection<DfReplica> DfReplicas { get; } = new();
+    public ResultCell DfSpread { get; } = new("Replicas · spread", "add other runs of the same system");
+    public bool HasDfReplicas => DfReplicas.Count > 0;
+    public void AddDfReplicas(IEnumerable<string> paths)
+    {
+        foreach (var p in paths)
+            if (File.Exists(p) && DfReplicas.All(r => r.Path != p)) DfReplicas.Add(new DfReplica(p, TopologyFor(p)));
+        Raise(nameof(HasDfReplicas));
+        DfSpread.Caption = $"{DfReplicas.Count + 1} runs · Run to fit them all";
+    }
+    public void RemoveDfReplica(DfReplica r) { DfReplicas.Remove(r); Raise(nameof(HasDfReplicas)); DfSpreadUpdate(); }
+
+    /// <summary>D of one run (m²/s): its file opened on its own and fitted with this page's options.</summary>
+    internal static double DiffusionOf(string path, string topology, CapsAnalyzeOpts o)
+    {
+        using var doc = CapsDocument.Open(path, topology.Length > 0 ? topology : null);
+        var j = JsonNode.Parse(doc.Analyze("diffusion", o, null))!;
+        var p = (j["properties"] as JsonArray)?.OfType<JsonObject>().FirstOrDefault(x => (string?)x["id"] == "diffusion");
+        if (p?["extra"] is JsonObject ex)
+            foreach (var kv in ex)
+                if (kv.Key.StartsWith("D (m²/s)", StringComparison.Ordinal) && kv.Value is JsonValue v && v.TryGetValue<double>(out var dv)) return dv;
+        return double.NaN;
+    }
+
+    private async Task RunDfReplicas()
+    {
+        var o = Analyze.Options();
+        var inv = CultureInfo.InvariantCulture;
+        foreach (var r in DfReplicas.ToList())
+        {
+            DfStatus = $"Replica {r.Name}…";
+            try { r.D = await Task.Run(() => DiffusionOf(r.Path, r.Topology, o)); r.Fitted = true; }
+            catch (Exception e) { r.D = double.NaN; r.Note = e.Message; }
+        }
+        DfSpreadUpdate();
+    }
+
+    private void DfSpreadUpdate()
+    {
+        var inv = CultureInfo.InvariantCulture;
+        var (mean, sd, n) = Spread(new[] { _dfPbc }.Concat(DfReplicas.Select(r => r.D)));
+        if (n < 2)
+        {
+            DfSpread.Value = "—";
+            DfSpread.Caption = DfReplicas.Count == 0 ? "add other runs of the same system" : $"needs two fitted runs ({n} fitted: a run too short for its fit window has no D)";
+            return;
+        }
+        DfSpread.Value = $"{mean.ToString("0.00e0", inv)} ± {sd.ToString("0.0e0", inv)} m²/s";
+        DfSpread.Caption = $"mean ± s.d. of {n} runs ({(sd / mean * 100).ToString("0", inv)} %); standard error {(sd / Math.Sqrt(n)).ToString("0.0e0", inv)} m²/s";
+    }
+    /// <summary>Mean and sample standard deviation of the finite values, and how many there were.</summary>
+    public static (double Mean, double Sd, int N) Spread(IEnumerable<double> values)
+    {
+        var ds = values.Where(double.IsFinite).ToList();
+        if (ds.Count == 0) return (double.NaN, double.NaN, 0);
+        var mean = ds.Average();
+        return (mean, ds.Count > 1 ? Math.Sqrt(ds.Sum(x => (x - mean) * (x - mean)) / (ds.Count - 1)) : double.NaN, ds.Count);
+    }
+
     public async Task RunDiffusion()
     {
         if (_doc == null || Analyze.Working) return;
@@ -81,7 +146,25 @@ public sealed partial class MainViewModel
                   : "";
         if (!double.IsFinite(_dfPbc)) DfInf.Value = "—";
         DfCorrect();
+        if (DfReplicas.Count > 0) await RunDfReplicas();
         DfStatus = Analyze.Log;
         DfChanged?.Invoke();
     }
+}
+
+/// <summary>Another run of the same system (Diffusion replicas): its file, topology and fitted D.</summary>
+public sealed class DfReplica : ObservableObject
+{
+    public DfReplica(string path, string topology) { Path = path; Topology = topology; }
+    public string Path { get; }
+    public string Topology { get; }
+    public string Name => System.IO.Path.GetFileName(Path);
+    private double _d = double.NaN;
+    public double D { get => _d; set { if (Set(ref _d, value)) Raise(nameof(DText)); } }
+    private string _note = "";
+    public string Note { get => _note; set { if (Set(ref _note, value)) Raise(nameof(DText)); } }
+    /// <summary>Its analysis ran (D may still be NaN: a run too short for the fit window).</summary>
+    private bool _fitted;
+    public bool Fitted { get => _fitted; set { if (Set(ref _fitted, value)) Raise(nameof(DText)); } }
+    public string DText => double.IsFinite(_d) ? _d.ToString("0.00e0", CultureInfo.InvariantCulture) + " m²/s" : _note.Length > 0 ? "could not open" : Fitted ? "no D (too short)" : "not run";
 }

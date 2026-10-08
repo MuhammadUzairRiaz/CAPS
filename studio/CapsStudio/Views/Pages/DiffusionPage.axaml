@@ -83,6 +83,27 @@
               <StackPanel Spacing="3"><TextBlock Text="{Binding DfPbc.Label}" Classes="label" /><TextBlock Text="{Binding DfPbc.Value}" Classes="mono" FontSize="18" /><TextBlock Text="{Binding DfPbc.Caption}" Classes="dim" TextWrapping="Wrap" /></StackPanel>
               <StackPanel Spacing="3"><TextBlock Text="{Binding DfInf.Label}" Classes="label" /><TextBlock Text="{Binding DfInf.Value}" Classes="mono" FontSize="18" /><TextBlock Text="{Binding DfInf.Caption}" Classes="dim" TextWrapping="Wrap" /></StackPanel>
               <StackPanel Spacing="3"><TextBlock Text="{Binding DfSlope.Label}" Classes="label" /><TextBlock Text="{Binding DfSlope.Value}" Classes="mono" FontSize="15" /><TextBlock Text="{Binding DfSlope.Caption}" Classes="dim" /></StackPanel>
+              <StackPanel Spacing="4">
+                <DockPanel>
+                  <Button DockPanel.Dock="Right" Classes="small ghost" Click="OnAddReplicas" ToolTip.Tip="Other trajectories of the same system (different seeds): each is fitted as this one">
+                    <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="plus" Size="13" VerticalAlignment="Center" /><TextBlock Text="Add runs…" VerticalAlignment="Center" /></StackPanel>
+                  </Button>
+                  <TextBlock Text="{Binding DfSpread.Label}" Classes="label" VerticalAlignment="Center" />
+                </DockPanel>
+                <TextBlock Text="{Binding DfSpread.Value}" Classes="mono" FontSize="15" />
+                <TextBlock Text="{Binding DfSpread.Caption}" Classes="dim" TextWrapping="Wrap" />
+                <ItemsControl ItemsSource="{Binding DfReplicas}" IsVisible="{Binding HasDfReplicas}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:DfReplica">
+                      <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8" Margin="0,2">
+                        <TextBlock Text="{Binding Name}" Classes="mono" FontSize="11.5" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Path}" />
+                        <TextBlock Grid.Column="1" Text="{Binding DText}" Classes="mono" FontSize="11.5" ToolTip.Tip="{Binding Note}" />
+                        <Button Grid.Column="2" Classes="small ghost" Content="×" Padding="5,0" Tag="{Binding}" Click="OnRemoveReplica" ToolTip.Tip="Leave this run out" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
             </StackPanel>
           </Border>
         </StackPanel>
