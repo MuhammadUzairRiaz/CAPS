@@ -115,6 +115,7 @@ public partial class JobsPage : PageBase
 
     private void OnOpenStudio(object? s, RoutedEventArgs e) => Vm.SetModule(8);
     private void OnGoModule(object? s, RoutedEventArgs e) { if (Vm.SelectedJob is { } j) Vm.SetModule(j.Module); }
+    private async void OnRestartFix(object? s, RoutedEventArgs e) { if (Vm.SelectedJob is { } j) await Vm.RestartWithFix(j); }
     private void OnSuggest(object? s, RoutedEventArgs e) { if (Vm.SelectedJob is { SuggestModule: >= 0 } j) Vm.SetModule(j.SuggestModule); }
     private void OnCancel(object? s, RoutedEventArgs e) => Vm.CancelJob(Vm.SelectedJob);
     private void OnPause(object? s, RoutedEventArgs e) => Vm.TogglePause();
