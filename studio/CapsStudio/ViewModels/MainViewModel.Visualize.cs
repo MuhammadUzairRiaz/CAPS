@@ -64,6 +64,10 @@ public sealed class PipelineRow : INotifyPropertyChanged
     /// <summary>What the step printed (a Python step's console).</summary>
     public string Output { get; set; } = "";
     public string Level { get => _level; set { _level = value; Raise(nameof(Level)); Raise(nameof(SummaryBrush)); } }
+    /// <summary>How long the step took on the last frame it ran on (ms).</summary>
+    public double Ms { get; set; }
+    /// <summary>Held back while the frame slider is dragged (design/boards/Timeline "pause slow steps while scrubbing").</summary>
+    public bool Paused { get; set; }
     public IBrush SummaryBrush => Tokens.Brush(_level switch { "error" => "ErrB", "warning" => "WarnB", _ => "DimB" });
 
     // groups (design/boards/PipelineGroups): a "group" parameter the core ignores; consecutive steps of one group
@@ -259,6 +263,29 @@ public sealed partial class MainViewModel
     private int _pipeYCol = 1;
     /// <summary>Which column the plot shows against the first (index into PipeYColumns + 1).</summary>
     public int PipeYColumn { get => _pipeYCol - 1; set { if (value >= 0 && value + 1 != _pipeYCol) { _pipeYCol = value + 1; Raise(); Raise(nameof(PipeYColumnName)); LoadPipeTable(); } } }
+    // several series (design/boards/TimeSeries): a second column drawn under the first, and a running mean over a window
+    public ObservableCollection<string> PipeY2Columns { get; } = new();
+    private string _pipeY2 = "none";
+    /// <summary>The second series ("none": one plot).</summary>
+    public string? PipeY2ColumnName { get => _pipeY2; set { if (value != null && Set(ref _pipeY2, value)) { Raise(nameof(HasPipeSeries2)); LoadPipeTable(); } } }
+    public bool HasPipeSeries2 => _pipeY2 != "none" && InspectorShowsTables;
+    public double[] PipeTableY2 { get; private set; } = [];
+    public string PipeTableY2Label { get; private set; } = "";
+    /// <summary>A centred running mean over `w` points (the window shrinks at the ends); NaNs are left out.</summary>
+    public static (double X, double Y)[] RunningMean((double X, double Y)[] pts, int w)
+    {
+        if (w < 2 || pts.Length < 2) return [];
+        var h = w / 2;
+        var o = new (double X, double Y)[pts.Length];
+        for (var i = 0; i < pts.Length; ++i)
+        {
+            int a = Math.Max(0, i - h), b = Math.Min(pts.Length - 1, i + h);
+            double sum = 0; var n = 0;
+            for (var k = a; k <= b; ++k) if (double.IsFinite(pts[k].Y)) { sum += pts[k].Y; ++n; }
+            o[i] = (pts[i].X, n > 0 ? sum / n : double.NaN);
+        }
+        return o;
+    }
     private JsonObject? _series;
     private bool _seriesRunning;
     public bool SeriesRunning { get => _seriesRunning; private set { if (Set(ref _seriesRunning, value)) Raise(nameof(SeriesIdle)); } }
@@ -461,7 +488,7 @@ public sealed partial class MainViewModel
         "combine" => new JsonObject { ["path"] = "", ["frame"] = 0 },
         "wigner_seitz" => new JsonObject { ["reference"] = "frame", ["frame"] = 0, ["path"] = "", ["output"] = "particles" },
         "centrosymmetry" => new JsonObject { ["neighbours"] = 12 },
-        "orientation" => new JsonObject { ["axis"] = "director", ["radius"] = 5.0, ["angle"] = 10.0, ["neighbours"] = 8 },
+        "orientation" => new JsonObject { ["axis"] = "director", ["radius"] = 5.0, ["angle"] = 10.0, ["neighbours"] = 8, ["arrow"] = true },
         "affine_transform" => new JsonObject { ["strain"] = new JsonArray(0.1, 0.0, 0.0), ["target"] = "all" },
         "unwrap" => new JsonObject { ["method"] = "bonds" },
         "replicate" => new JsonObject { ["nx"] = 2, ["ny"] = 2, ["nz"] = 1, ["adjust_cell"] = true },
@@ -646,7 +673,7 @@ public sealed partial class MainViewModel
             case "centrosymmetry": Text("neighbours", "Nearest neighbours (12 FCC, 8 BCC)", "number"); Note("Adds Centrosymmetry (Å²): zero in a perfect lattice, large at surfaces and defects"); break;
             case "orientation":
                 Choice("axis", "P₂ against", ["director", "x", "y", "z"]); Text("radius", "Neighbour radius (Å)", "number"); Text("angle", "Aligned within (°)", "number");
-                Text("neighbours", "Aligned neighbours for crystalline", "number");
+                Text("neighbours", "Aligned neighbours for crystalline", "number"); Bool("arrow", "Director arrow in the view (length ∝ S)", true);
                 Note("Adds Orientation (P₂ of the backbone chord through each atom) and Crystalline (1/0) — colour by either"); break;
             case "affine_transform":
                 Add(new StepField { Key = "strain", Label = "Strain (εxx εyy εzz)", Kind = "vector", Hint = "0.1 0 0", Text = p["strain"] is JsonArray st ? string.Join(" ", st.Select(x => x?.ToString())) : "" });
@@ -793,12 +820,63 @@ public sealed partial class MainViewModel
         {
             var o = (JsonObject)JsonNode.Parse(r.Params.ToJsonString())!;
             o["type"] = r.Type;
-            o["enabled"] = r.Enabled;
+            o["enabled"] = r.Enabled && !(_scrubbing && r.Paused);
             return (JsonNode)o;
         }).ToArray()),
         ["outputs"] = PipelineOutputsJson(),
         ["branch"] = _pipeBranch,
     }.ToJsonString();
+
+    // ---- pause slow steps while scrubbing (design/boards/Timeline): frames that follow each other within 350 ms are a
+    // drag of the slider; steps that took longer than SlowStepMs on the last frame, and Python steps, are held back
+    // until the slider rests for 400 ms, then the whole pipeline runs on the frame it rests on
+    public const double SlowStepMs = 120;
+    public bool PauseSlowSteps { get => _settings.PauseSlowSteps; set { if (_settings.PauseSlowSteps == value) return; _settings.PauseSlowSteps = value; Raise(); Changed("Pause slow steps while scrubbing"); } }
+    private bool _scrubbing;
+    private long _lastFrameTick;
+    private Avalonia.Threading.DispatcherTimer? _scrubTimer;
+    /// <summary>Called on every frame change in Visualize; true when slow steps are being held back.</summary>
+    private bool ScrubFrame()
+    {
+        var now = Environment.TickCount64;
+        var quick = now - _lastFrameTick < 350;
+        _lastFrameTick = now;
+        if (!PauseSlowSteps || _playing || PipelineRows.Count == 0) return false;
+        if (_scrubTimer == null)
+        {
+            try
+            {
+                _scrubTimer = new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
+                _scrubTimer.Tick += (_, _) => { _scrubTimer!.Stop(); EndScrub(); };
+            }
+            catch { return false; }   // no UI loop (the self-test, scripts): every frame runs every step
+        }
+        if (!_scrubbing)
+        {
+            if (!quick) return false;
+            var slow = PipelineRows.Where(r => r.Enabled && (r.Type == "python" || r.Ms > SlowStepMs)).ToList();
+            if (slow.Count == 0) return false;
+            foreach (var r in PipelineRows) r.Paused = slow.Contains(r);
+            _scrubbing = true;
+            try { _doc?.SetPipeline(PipelineJson()); } catch { }
+            ScrubNote = $"{slow.Count} slow step{(slow.Count == 1 ? "" : "s")} paused while scrubbing";
+        }
+        try { _scrubTimer.Stop(); _scrubTimer.Start(); }
+        catch { EndScrub(); return false; }
+        return true;
+    }
+    /// <summary>The slider rests: every step runs again on this frame.</summary>
+    public void EndScrub()
+    {
+        if (!_scrubbing) return;
+        _scrubbing = false;
+        foreach (var r in PipelineRows) r.Paused = false;
+        ScrubNote = "";
+        if (IsVisualize) ApplyPipeline();
+    }
+    private string _scrubNote = "";
+    public string ScrubNote { get => _scrubNote; private set { if (Set(ref _scrubNote, value)) Raise(nameof(HasScrubNote)); } }
+    public bool HasScrubNote => _scrubNote.Length > 0;
 
     /// <summary>Sends the steps to the core, which runs them on the shown frame; then the list, legend and inspector refresh.</summary>
     public void ApplyPipeline()
@@ -847,8 +925,16 @@ public sealed partial class MainViewModel
         if (_pipeResult?["steps"] is JsonArray steps)
             for (int k = 0; k < steps.Count && k < PipelineRows.Count; ++k)
             {
-                PipelineRows[k].Summary = (string?)steps[k]?["summary"] ?? "";
-                PipelineRows[k].Level = (string?)steps[k]?["level"] ?? "ok";
+                var row = PipelineRows[k];
+                if (_scrubbing && row.Paused)
+                {
+                    row.Summary = string.Format(inv, "paused while scrubbing · {0:0} ms a frame", row.Ms);
+                    row.Level = "off";
+                    continue;
+                }
+                row.Summary = (string?)steps[k]?["summary"] ?? "";
+                row.Level = (string?)steps[k]?["level"] ?? "ok";
+                if (row.Level != "off") row.Ms = (double?)steps[k]?["ms"] ?? 0;
                 PipelineRows[k].Output = (string?)steps[k]?["output"] ?? "";
             }
         if (_pipeSel != null)
@@ -911,7 +997,7 @@ public sealed partial class MainViewModel
 
     private void LoadPipeTable()
     {
-        PipeTableX = []; PipeTableY = []; PipeTableHeat = null;
+        PipeTableX = []; PipeTableY = []; PipeTableY2 = []; PipeTableHeat = null;
         var coreTables = _pipeResult?["tables"] as JsonArray;
         var ncore = coreTables?.Count ?? 0;
         var t = _pipeTable < ncore ? coreTables![_pipeTable] as JsonObject : _pipeTable == ncore ? _series : null;
@@ -924,6 +1010,17 @@ public sealed partial class MainViewModel
                 foreach (var y in ys) PipeYColumns.Add(y);
                 Avalonia.Threading.Dispatcher.UIThread.Post(() => { Raise(nameof(PipeYColumn)); Raise(nameof(PipeYColumnName)); });
             }
+            if (!new[] { "none" }.Concat(ys).SequenceEqual(PipeY2Columns))
+            {
+                PipeY2Columns.Clear();
+                PipeY2Columns.Add("none");
+                foreach (var y in ys) PipeY2Columns.Add(y);
+                if (!PipeY2Columns.Contains(_pipeY2)) _pipeY2 = "none";
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => { Raise(nameof(PipeY2ColumnName)); Raise(nameof(HasPipeSeries2)); });
+            }
+            var y2 = _pipeY2 == "none" ? -1 : cols.Select(c => (string?)c).ToList().IndexOf(_pipeY2);
+            PipeTableY2 = y2 >= 1 ? rows.Select(r => (double?)r?[y2] ?? double.NaN).ToArray() : [];
+            PipeTableY2Label = y2 >= 1 ? _pipeY2 : "";
             var yc = Math.Clamp(_pipeYCol, 1, cols.Count - 1);
             PipeTableX = rows.Select(r => (double?)r?[0] ?? 0).ToArray();
             PipeTableY = rows.Select(r => (double?)r?[yc] ?? double.NaN).ToArray();
@@ -1022,7 +1119,7 @@ public sealed partial class MainViewModel
     /// <summary>The data inspector's current tab: particles (filtered), bonds, attributes or a data table.</summary>
     public void LoadInspector()
     {
-        Raise(nameof(InspectorShowsTable)); Raise(nameof(InspectorShowsAttributes)); Raise(nameof(InspectorShowsTables)); Raise(nameof(IsParticlesTab));
+        Raise(nameof(InspectorShowsTable)); Raise(nameof(InspectorShowsAttributes)); Raise(nameof(InspectorShowsTables)); Raise(nameof(IsParticlesTab)); Raise(nameof(HasPipeSeries2));
         if (_doc == null || !IsVisualize) return;
         if (_inspectorTab == 3) { LoadPipeTable(); return; }
         if (_inspectorTab == 2) { InspectorNote = $"{PipeAttributes.Count} attributes of frame {_frame}"; return; }

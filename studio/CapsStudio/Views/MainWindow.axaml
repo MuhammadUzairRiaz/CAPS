@@ -1407,6 +1407,7 @@
                   <TextBox Width="260" Classes="mono" Watermark="Filter: Molecule == 1" Text="{Binding InspectorFilter}" IsVisible="{Binding IsParticlesTab}" FontSize="12" />
                   <ComboBox Width="240" ItemsSource="{Binding PipeTables}" SelectedItem="{Binding PipeTableName}" IsVisible="{Binding InspectorShowsTables}" />
                   <ComboBox Width="200" ItemsSource="{Binding PipeYColumns}" SelectedItem="{Binding PipeYColumnName}" IsVisible="{Binding InspectorShowsTables}" ToolTip.Tip="Column plotted" />
+                  <ComboBox Width="150" ItemsSource="{Binding PipeY2Columns}" SelectedItem="{Binding PipeY2ColumnName}" IsVisible="{Binding InspectorShowsTables}" ToolTip.Tip="Series 2: another column, drawn in its own plot under the first" />
                   <Button Classes="small" Click="OnSeries" IsEnabled="{Binding SeriesIdle}" IsVisible="{Binding InspectorShowsTables}"
                           ToolTip.Tip="Run the pipeline on every frame and tabulate its attributes (cluster count, MSD, density …)">
                     <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="history" Size="13" VerticalAlignment="Center" /><TextBlock Text="Over all frames" VerticalAlignment="Center" /></StackPanel>
@@ -1463,7 +1464,10 @@
                     </ItemsControl>
                   </StackPanel>
                 </ScrollViewer>
-                <local:LinePlot Grid.Column="1" Width="360" Margin="8,4,12,4" x:Name="PipeTablePlot" AutoRange="True" IsVisible="{Binding InspectorShowsTables}" />
+                <Grid Grid.Column="1" Width="360" Margin="8,4,12,4" RowDefinitions="*,Auto" IsVisible="{Binding InspectorShowsTables}">
+                  <local:LinePlot x:Name="PipeTablePlot" AutoRange="True" />
+                  <local:LinePlot Grid.Row="1" Height="110" x:Name="PipeTablePlot2" AutoRange="True" IsVisible="{Binding HasPipeSeries2}" />
+                </Grid>
               </Grid>
               <ScrollViewer IsVisible="{Binding InspectorShowsAttributes}">
                 <ItemsControl ItemsSource="{Binding PipeAttributes}" Margin="14,6" MaxWidth="520" HorizontalAlignment="Left">
@@ -1655,6 +1659,11 @@
             <Slider Grid.Column="2" Minimum="0" Maximum="{Binding FrameMax}" Value="{Binding Frame}" TickFrequency="1" IsSnapToTickEnabled="True" />
             <TextBlock Grid.Column="3" Text="{Binding FrameLabel}" Classes="mono" VerticalAlignment="Center" Margin="12,0,0,0" />
           </Grid>
+          <StackPanel Orientation="Horizontal" Spacing="12" IsVisible="{Binding IsVisualize}">
+            <CheckBox Classes="toggle" Content="Pause slow steps while scrubbing" IsChecked="{Binding PauseSlowSteps}" FontSize="11.5"
+                      ToolTip.Tip="While the frame slider is dragged, steps that took over 120 ms a frame (and Python steps) wait; the whole pipeline runs when the slider rests" />
+            <TextBlock Text="{Binding ScrubNote}" IsVisible="{Binding HasScrubNote}" FontSize="11" Foreground="{DynamicResource WarnB}" VerticalAlignment="Center" />
+          </StackPanel>
           </StackPanel>
         </Border>
       </Grid>
