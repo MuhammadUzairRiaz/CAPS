@@ -15,6 +15,15 @@ public sealed record RecipeItem(string Name, string Detail, string? Path, string
 }
 public sealed record RecipeStageChip(string Name, string Summary, bool Ok);
 public sealed record ScheduleRow(string Number, string Ensemble, string T, string P, string Ps);
+/// <summary>One setting of a recipe step in the per-step form: its dotted key (polymer.dp) and value as YAML writes it.</summary>
+public sealed class RecipeField : ObservableObject
+{
+    public RecipeField(string key, string value) { Key = key; _value = value; Original = value; }
+    public string Key { get; }
+    public string Original { get; set; }
+    private string _value;
+    public string Value { get => _value; set => Set(ref _value, value ?? ""); }
+}
 
 /// <summary>Jobs › Recipes (design/boards/RecipeEditor): reusable chains of steps as plain YAML — the same files `caps run`
 /// reads — checked as they are edited, the equilibration schedule drawn from the protocol, saved with their SHA-256 (which
@@ -127,11 +136,117 @@ public partial class MainViewModel
         }
         RecipeT = t.ToArray();
         RecipeP = p.ToArray();
+        if (_recipeStep.Length > 0) SelectRecipeStep(_recipeStep);   // the form follows the text
         Raise(nameof(RecipePathText));
         RecipeChanged?.Invoke();
     }
 
     private static string Cap(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];
+
+    // ---- the per-step form (design/boards/RecipeEditor "Step 3 · Equilibrate"): a step's settings as fields; an edit
+    // rewrites only that step's block of the YAML (the rest of the text, comments included, stays as written)
+    public ObservableCollection<RecipeField> RecipeFields { get; } = new();
+    private string _recipeStep = "";
+    public string RecipeStepTitle => _recipeStep.Length == 0 ? "" : $"Step · {Cap(_recipeStep)}";
+    public bool HasRecipeStep => _recipeStep.Length > 0 && RecipeFields.Count > 0;
+
+    public void SelectRecipeStep(string name)
+    {
+        RecipeFields.Clear();
+        _recipeStep = "";
+        try
+        {
+            var j = JsonNode.Parse(CapsDocument.YamlToJson(_recipeText)) as JsonObject;
+            var key = name.ToLowerInvariant();
+            if (j?[key] is JsonNode node)
+            {
+                _recipeStep = key;
+                void Walk(string prefix, JsonNode? n)
+                {
+                    if (n is JsonObject o) foreach (var kv in o) Walk(prefix.Length == 0 ? kv.Key : prefix + "." + kv.Key, kv.Value);
+                    else RecipeFields.Add(new RecipeField(prefix.Length == 0 ? key : prefix, YamlFlow(n)));
+                }
+                Walk("", node);
+            }
+        }
+        catch (Exception e) { Status = "Recipe step: " + e.Message; }
+        Raise(nameof(RecipeStepTitle)); Raise(nameof(HasRecipeStep));
+    }
+
+    /// <summary>Sets one field of the selected step and writes the step's block back into the YAML.</summary>
+    public bool SetRecipeField(RecipeField f)
+    {
+        if (_recipeStep.Length == 0 || f.Value == f.Original) return false;
+        try
+        {
+            var j = (JsonObject)JsonNode.Parse(CapsDocument.YamlToJson(_recipeText))!;
+            var value = ParseYamlValue(f.Value);
+            if (f.Key == _recipeStep) j[_recipeStep] = value;
+            else
+            {
+                var parts = f.Key.Split('.');
+                var o = j[_recipeStep] as JsonObject ?? throw new InvalidOperationException("not a map");
+                for (var i = 0; i < parts.Length - 1; ++i) o = o[parts[i]] as JsonObject ?? throw new InvalidOperationException(parts[i] + " is not a map");
+                o[parts[^1]] = value;
+            }
+            var text = ReplaceYamlBlock(_recipeText, _recipeStep, YamlBlock(_recipeStep, j[_recipeStep]));
+            var check = JsonNode.Parse(CapsDocument.YamlToJson(text));   // it must read back
+            if (check == null) throw new InvalidOperationException("the edit does not read back");
+            f.Original = f.Value;
+            RecipeText = text;
+            Status = $"{Cap(_recipeStep)} · {f.Key} = {f.Value}";
+            return true;
+        }
+        catch (Exception e) { Status = $"Could not set {f.Key}: {e.Message}"; f.Value = f.Original; return false; }
+    }
+
+    private static JsonNode? ParseYamlValue(string v)
+    {
+        var t = v.Trim();
+        if (t is "true" or "false") return JsonValue.Create(t == "true");
+        if (double.TryParse(t, NumberStyles.Float, CultureInfo.InvariantCulture, out var d)) return JsonValue.Create(d);
+        if (t.StartsWith('[') || t.StartsWith('{'))
+            try { return JsonNode.Parse(CapsDocument.YamlToJson("x: " + t))!["x"]?.DeepClone(); } catch { }
+        if (t.Length >= 2 && t[0] == '"' && t[^1] == '"') return JsonValue.Create(System.Text.Json.JsonSerializer.Deserialize<string>(t));
+        return JsonValue.Create(t);
+    }
+
+    /// <summary>A value in YAML flow style: maps { k: v }, lists [a, b], strings quoted when they need it.</summary>
+    internal static string YamlFlow(JsonNode? n)
+    {
+        switch (n)
+        {
+            case null: return "null";
+            case JsonObject o: return "{ " + string.Join(", ", o.Select(kv => kv.Key + ": " + YamlFlow(kv.Value))) + " }";
+            case JsonArray a: return "[" + string.Join(", ", a.Select(YamlFlow)) + "]";
+            case JsonValue v when v.TryGetValue<bool>(out var b): return b ? "true" : "false";
+            case JsonValue v when v.TryGetValue<double>(out var d): return d.ToString("R", CultureInfo.InvariantCulture);
+            default:
+                var s = n.GetValue<string>();
+                var plain = s.Length > 0 && !char.IsWhiteSpace(s[0]) && !char.IsWhiteSpace(s[^1]) && s.IndexOfAny([':', '#', '{', '}', '[', ']', ',', '*', '&', '!', '|', '>', '\'', '"', '%', '@', '`', '\\']) < 0
+                            && !double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out _) && s is not ("true" or "false" or "null" or "~");
+                return plain ? s : System.Text.Json.JsonSerializer.Serialize(s, new System.Text.Json.JsonSerializerOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+        }
+    }
+
+    /// <summary>A top-level step as YAML: one flow line, or a block of flow lines when it holds maps.</summary>
+    internal static string YamlBlock(string key, JsonNode? n) =>
+        n is JsonObject o && o.Any(kv => kv.Value is JsonObject)
+            ? key + ":\n" + string.Join("\n", o.Select(kv => "  " + kv.Key + ": " + YamlFlow(kv.Value)))
+            : key + ": " + YamlFlow(n);
+
+    /// <summary>The text with the top-level block `key:` (its line and the indented lines under it) replaced.</summary>
+    internal static string ReplaceYamlBlock(string text, string key, string block)
+    {
+        var lines = text.Replace("\r\n", "\n").Split('\n').ToList();
+        var at = lines.FindIndex(l => l.StartsWith(key + ":", StringComparison.Ordinal));
+        if (at < 0) return text.TrimEnd() + "\n" + block + "\n";
+        var end = at + 1;
+        while (end < lines.Count && (lines[end].StartsWith(' ') || lines[end].StartsWith('\t') || (lines[end].Trim().Length == 0 && end + 1 < lines.Count && lines[end + 1].StartsWith(' ')))) ++end;
+        lines.RemoveRange(at, end - at);
+        lines.InsertRange(at, block.Split('\n'));
+        return string.Join("\n", lines);
+    }
 
     /// <summary>Writes the recipe (a template is saved as a new file in the recipes folder).</summary>
     public void SaveRecipe()

@@ -4902,6 +4902,21 @@ internal static class SelfTest
                 var cueDiffer = cueOff.Zip(cueOn).Count(p => p.First != p.Second);
                 Check(cueEnds == 20 && cueDiffer > 0, $"chain cues: {cueEnds} chain-end labels on 10 chains · {cueDiffer} bytes changed by the dashes");
             }
+            // recipe per-step form: Build's polymer.dp set to 30 rewrites only the build block; the comment line stays
+            {
+                vm.OpenRecipes();
+                vm.SelectedRecipe = vm.Recipes.First(r => r.Name.StartsWith("Amorphous polymer"));
+                vm.SelectRecipeStep("Build");
+                var dpField = vm.RecipeFields.FirstOrDefault(f => f.Key == "polymer.dp");
+                if (dpField != null) { dpField.Value = "30"; vm.SetRecipeField(dpField); }
+                vm.SelectRecipeStep("Md");
+                var tField = vm.RecipeFields.FirstOrDefault(f => f.Key == "temperature");
+                if (tField != null) { tField.Value = "350"; vm.SetRecipeField(tField); }
+                var rt = vm.RecipeText;
+                Check(dpField != null && tField != null && rt.Contains("dp: 30") && rt.Contains("temperature: 350") && rt.StartsWith("# A polystyrene melt") && rt.Contains("smiles: \"*CC(*)c1ccccc1\"") && vm.RecipeOk,
+                      $"recipe step form: {vm.RecipeFields.Count} fields · ok {vm.RecipeOk} {vm.RecipeValid} · " + rt.Replace("\n", " ⏎ ")[..Math.Min(260, rt.Length)]);
+                vm.SetModule(8);
+            }
             // the Start page's sample pipeline: four steps on the polystyrene cell
             vm.Open(Path.Combine(dir, "ps_melt.lammpstrj"), Path.Combine(dir, "ps_melt.data"));
             vm.LoadPipeline(Path.Combine(dir, "structure_report.json"));
