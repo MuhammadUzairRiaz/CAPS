@@ -244,6 +244,8 @@ public sealed partial class MainViewModel
         var host = MacroWhere > 0 ? _settings.Hosts[MacroWhere - 1] : null;
         MacroRunning = true;
         MacroOutput = $">>> run {_macroName}{(host != null ? " on " + host.Name : "")}\n";
+        SetMacroProblems([]);
+        MacroOutTab = 0;
         var runDir = Path.Combine(MacroFolder, ".run", Path.GetFileNameWithoutExtension(_macroName));
         var result = Path.Combine(runDir, "result.data");
         string remoteDir = "";
@@ -318,6 +320,8 @@ public sealed partial class MainViewModel
                 sb.AppendLine(code == 0 ? (opened ? "done · the result is open" : "done") : $"exit code {code}");
                 MacroOutput = sb.ToString();
             });
+            var problems = ParseMacroProblems(sb.ToString(), _macroName);
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => SetMacroProblems(problems));
             Status = code == 0 ? $"{_macroName} finished{(opened ? " · its result is open" : "")}" : $"{_macroName} stopped with exit code {code}";
         }
         catch (Exception e) { MacroOutput += e.Message + "\n(choose a Python 3 interpreter in Settings › Python & scripting; hosts: Settings › Compute & remote)\n"; }
@@ -325,4 +329,85 @@ public sealed partial class MainViewModel
     }
 
     public void StopMacro() { try { _macroProc?.Kill(true); } catch { } }
+
+    // ---- Problems (design/boards/MacroRecorder): the macro's errors and warnings with the line they point at, from the
+    // run's traceback and warnings, or from Check (Python parses the file without running it)
+    public ObservableCollection<MacroProblem> MacroProblems { get; } = new();
+    public string MacroProblemsTitle => MacroProblems.Count == 0 ? "Problems" : $"Problems · {MacroProblems.Count}";
+    public bool MacroNoProblems => MacroProblems.Count == 0;
+    private int _macroOutTab;
+    /// <summary>0 Output, 1 Problems.</summary>
+    public int MacroOutTab { get => _macroOutTab; set { if (Set(ref _macroOutTab, Math.Clamp(value, 0, 1))) { Raise(nameof(MacroShowsOutput)); Raise(nameof(MacroShowsProblems)); } } }
+    public bool MacroShowsOutput => _macroOutTab == 0;
+    public bool MacroShowsProblems => _macroOutTab == 1;
+    /// <summary>The editor goes to this line (1-based) when a problem is clicked.</summary>
+    public event Action<int>? MacroGoToLine;
+    public void GoToProblem(MacroProblem p) { if (p.Line > 0) MacroGoToLine?.Invoke(p.Line); }
+
+    /// <summary>Problems in a Python run's output: the innermost frame of the macro in each traceback with the exception
+    /// line under it, and "file:line: XWarning: …" warnings.</summary>
+    public static List<MacroProblem> ParseMacroProblems(string output, string scriptName)
+    {
+        var list = new List<MacroProblem>();
+        var lines = output.Replace("\r\n", "\n").Split('\n');
+        var frame = new System.Text.RegularExpressions.Regex(@"^\s*File ""(.+?)"", line (\d+)");
+        var warn = new System.Text.RegularExpressions.Regex(@"^(.+?):(\d+): (\w*Warning): (.*)$");
+        var exc = new System.Text.RegularExpressions.Regex(@"^(\w+(?:\.\w+)*(?:Error|Exception|Exit|Interrupt)|Error)(?:: (.*))?$");
+        var ours = 0;
+        for (var i = 0; i < lines.Length; ++i)
+        {
+            var l = lines[i];
+            if (frame.Match(l) is { Success: true } f && Path.GetFileName(f.Groups[1].Value) == scriptName) ours = int.Parse(f.Groups[2].Value, CultureInfo.InvariantCulture);
+            else if (warn.Match(l) is { Success: true } w && Path.GetFileName(w.Groups[1].Value) == scriptName)
+                list.Add(new MacroProblem(int.Parse(w.Groups[2].Value, CultureInfo.InvariantCulture), "warning", $"{w.Groups[3].Value}: {w.Groups[4].Value}"));
+            else if (!l.StartsWith(' ') && exc.Match(l.Trim()) is { Success: true } e && (ours > 0 || l.Contains("Error")) && i > 0)
+            {
+                list.Add(new MacroProblem(ours, "error", l.Trim()));
+                ours = 0;
+            }
+        }
+        return list;
+    }
+    private void SetMacroProblems(IEnumerable<MacroProblem> ps)
+    {
+        MacroProblems.Clear();
+        foreach (var p in ps) MacroProblems.Add(p);
+        Raise(nameof(MacroProblemsTitle)); Raise(nameof(MacroNoProblems));
+        if (MacroProblems.Count > 0) MacroOutTab = 1;
+    }
+
+    /// <summary>Check: Python compiles the macro without running it; a syntax error lands in Problems with its line.</summary>
+    public async Task CheckMacro()
+    {
+        SaveMacro();
+        var script = Path.Combine(MacroFolder, _macroName);
+        var psi = PythonProcess.Utf8Io(new ProcessStartInfo(PythonExe) { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, WorkingDirectory = MacroFolder });
+        psi.ArgumentList.Add("-W"); psi.ArgumentList.Add("always");
+        psi.ArgumentList.Add("-c");
+        psi.ArgumentList.Add("import sys, warnings\nsrc = open(sys.argv[1], encoding='utf-8').read()\n" +
+                             "try:\n    compile(src, sys.argv[1], 'exec')\nexcept SyntaxError as e:\n" +
+                             "    print(f'{e.lineno}\\t{type(e).__name__}: {e.msg}')\n");
+        psi.ArgumentList.Add(script);
+        try
+        {
+            using var proc = Process.Start(psi) ?? throw new InvalidOperationException("cannot start " + psi.FileName);
+            var outText = await proc.StandardOutput.ReadToEndAsync();
+            var errText = await proc.StandardError.ReadToEndAsync();
+            await proc.WaitForExitAsync();
+            var ps = new List<MacroProblem>();
+            foreach (var l in outText.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+                if (l.Split('\t', 2) is [var n, var m] && int.TryParse(n, out var ln)) ps.Add(new MacroProblem(ln, "error", m.Trim()));
+            ps.AddRange(ParseMacroProblems(errText, _macroName));   // compile-time warnings (invalid escapes …)
+            SetMacroProblems(ps);
+            Status = ps.Count == 0 ? $"{_macroName}: no problems found" : $"{_macroName}: {ps.Count} problem{(ps.Count == 1 ? "" : "s")}";
+        }
+        catch (Exception e) { Status = "Check: " + e.Message; }
+    }
+}
+
+/// <summary>A problem in a macro (design/boards/MacroRecorder Problems): its line (0: none), error or warning, the message.</summary>
+public sealed record MacroProblem(int Line, string Kind, string Message)
+{
+    public string Where => Line > 0 ? $"line {Line}" : "";
+    public Avalonia.Media.IBrush Brush => Tokens.Brush(Kind == "warning" ? "WarnB" : "ErrB");
 }

@@ -33,12 +33,41 @@
         </Border>
         <Border DockPanel.Dock="Bottom" Height="170" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
           <DockPanel>
-            <Border DockPanel.Dock="Top" Height="32" Padding="14,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
-              <TextBlock Text="Output" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
+            <Border DockPanel.Dock="Top" Height="32" Padding="8,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+              <DockPanel>
+                <Button DockPanel.Dock="Right" Classes="small ghost" Click="OnCheck" IsEnabled="{Binding MacroIdle}" VerticalAlignment="Center"
+                        ToolTip.Tip="Python compiles the macro without running it: syntax errors and warnings go to Problems with their line">
+                  <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="check" Size="13" VerticalAlignment="Center" /><TextBlock Text="Check" VerticalAlignment="Center" /></StackPanel>
+                </Button>
+                <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                  <RadioButton Classes="seg" GroupName="macroout" Content="Output" IsChecked="{Binding MacroShowsOutput, Mode=OneWay}" Click="OnOutTab" Tag="0" FontSize="12" />
+                  <RadioButton Classes="seg" GroupName="macroout" Content="{Binding MacroProblemsTitle}" IsChecked="{Binding MacroShowsProblems, Mode=OneWay}" Click="OnOutTab" Tag="1" FontSize="12" />
+                </StackPanel>
+              </DockPanel>
             </Border>
-            <ScrollViewer x:Name="OutScroll">
-              <SelectableTextBlock Text="{Binding MacroOutput}" FontFamily="{DynamicResource Mono}" FontSize="12" Margin="14,10" TextWrapping="Wrap" />
-            </ScrollViewer>
+            <Panel>
+              <ScrollViewer x:Name="OutScroll" IsVisible="{Binding MacroShowsOutput}">
+                <SelectableTextBlock Text="{Binding MacroOutput}" FontFamily="{DynamicResource Mono}" FontSize="12" Margin="14,10" TextWrapping="Wrap" />
+              </ScrollViewer>
+              <ScrollViewer IsVisible="{Binding MacroShowsProblems}">
+                <StackPanel Margin="8,6">
+                  <TextBlock Text="No problems: run the macro or press Check." Classes="dim" Margin="6,4" IsVisible="{Binding MacroNoProblems}" />
+                  <ItemsControl ItemsSource="{Binding MacroProblems}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:MacroProblem">
+                        <Button Classes="row" Click="OnProblem" Tag="{Binding}" Padding="6,4" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" ToolTip.Tip="Go to this line">
+                          <Grid ColumnDefinitions="Auto,64,*" ColumnSpacing="8">
+                            <Ellipse Width="7" Height="7" Fill="{Binding Brush}" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" Text="{Binding Where}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource MutedB}" />
+                            <TextBlock Grid.Column="2" Text="{Binding Message}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" />
+                          </Grid>
+                        </Button>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </ScrollViewer>
+            </Panel>
           </DockPanel>
         </Border>
         <TextBox x:Name="Code" Classes="code" Text="{Binding MacroText}" />

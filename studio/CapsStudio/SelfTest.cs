@@ -4825,6 +4825,15 @@ internal static class SelfTest
             vm.RunNveProbe().GetAwaiter().GetResult();
             var probe = vm.Status;   // the probe's line, the one the pre-flight list shows
             Check(probe.StartsWith("NVE probe drift") && probe.Contains("kT/ns/atom"), $"NVE probe: {probe}");
+            // macro Problems: the innermost frame of the macro in a traceback, with the exception under it; warnings with their line
+            {
+                var tb = ">>> run m.py\nTraceback (most recent call last):\n  File \"/x/m.py\", line 9, in <module>\n    main()\n  File \"/x/m.py\", line 4, in main\n" +
+                         "    doc.field.assign(ff)\n  File \"/lib/caps/core.py\", line 300, in assign\n    raise ValueError(\"no such force field\")\nValueError: no such force field\n" +
+                         "/x/m.py:2: DeprecationWarning: invalid escape sequence '\\d'\n";
+                var mps = MainViewModel.ParseMacroProblems(tb, "m.py");
+                Check(mps.Count == 2 && mps.Any(p => p.Line == 4 && p.Kind == "error" && p.Message == "ValueError: no such force field") && mps.Any(p => p.Line == 2 && p.Kind == "warning"),
+                      "macro problems: " + string.Join(" · ", mps.Select(p => $"{p.Where} {p.Kind} {p.Message}")));
+            }
             // Pack: Add region puts a sphere on the last molecule; the stages end done when the cell meets the tolerance
             vm.SetModule(5);
             vm.PackStart = 0;
