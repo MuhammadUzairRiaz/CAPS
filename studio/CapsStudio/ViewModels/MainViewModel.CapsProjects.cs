@@ -43,7 +43,7 @@ public sealed partial class MainViewModel
     private void RaiseCapsProject()
     {
         foreach (var n in new[] { nameof(HasCapsProject), nameof(NoCapsProject), nameof(CapsProjectPath), nameof(CapsProjectName), nameof(CapsProjectFolderText),
-                                  nameof(CapsProjectSavedText), nameof(CapsProjectChipTip), nameof(ExplorerProjectName), nameof(ProjectSessionsTitle) }) Raise(n);
+                                  nameof(CapsProjectSavedText), nameof(CapsProjectChipTip), nameof(ExplorerProjectName), nameof(ProjectSessionsTitle), nameof(FigPerProjectAvailable) }) Raise(n);
         foreach (var k in KnownProjects) k.Current = _projFile != null && SameFile(k.File, _projFile);
     }
 
