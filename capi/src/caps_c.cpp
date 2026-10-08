@@ -5619,6 +5619,7 @@ caps::Json bench_json(const caps::BenchTable& t) {
     for (const auto& c : r.cells) cells.push_back(c);
     row["cells"] = cells;
     row["status"] = r.status;
+    if (!r.file.empty()) row["file"] = r.file;
     rows.push_back(row);
   }
   j["rows"] = rows;
@@ -5641,6 +5642,7 @@ caps::BenchTable bench_from(const caps::Json& j) {
     for (const auto& r : j["rows"].items()) {
       caps::BenchRow row;
       row.status = r.text("status");
+      row.file = r.text("file", "");
       for (const auto& c : r["cells"].items()) row.cells.push_back(c.str());
       t.rows.push_back(row);
     }

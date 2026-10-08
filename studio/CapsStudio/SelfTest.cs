@@ -4855,6 +4855,15 @@ internal static class SelfTest
                 Check(fix == "pack-box" && Math.Abs((double)((vm.PackXD ?? 0) - x0 * 1.1m)) < 0.01 && vm.PackDone && cellLine.Contains(((double)(vm.PackXD ?? 0)).ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)),
                       $"restart with fix: {fixText} · '{cellLine.Trim()}' · {vm.Status}");
             }
+            // Bench failing row: its cells by column (without Status) and the structure it ran on, for Open run
+            {
+                var bi = new BenchItem { Id = "T7", Title = "Chain statistics" };
+                bi.Json = (System.Text.Json.Nodes.JsonObject)System.Text.Json.Nodes.JsonNode.Parse(
+                    "{\"columns\":[\"System\",\"C∞\",\"Reference\",\"Status\"],\"status\":\"fail\",\"rows\":[{\"cells\":[\"PE\",\"6.8\",\"6.7 – 7.0\",\"pass\"],\"status\":\"pass\"}," +
+                    "{\"cells\":[\"PP isotactic\",\"4.1\",\"5.5 – 6.2\",\"fail\"],\"status\":\"fail\",\"file\":" + System.Text.Json.JsonSerializer.Serialize(Path.Combine(dir, "ps_melt.data")) + "}]}")!;
+                Check(bi.HasFailingRow && bi.FailingFacts.Count == 3 && bi.FailingFacts[0].Value == "PP isotactic" && bi.CanOpenFailing && bi.FailingTitle == "T7 · failing row",
+                      $"bench failing row: {string.Join(", ", bi.FailingFacts.Select(f => f.Key + " " + f.Value))} · open {bi.CanOpenFailing}");
+            }
             // the Start page's sample pipeline: four steps on the polystyrene cell
             vm.Open(Path.Combine(dir, "ps_melt.lammpstrj"), Path.Combine(dir, "ps_melt.data"));
             vm.LoadPipeline(Path.Combine(dir, "structure_report.json"));

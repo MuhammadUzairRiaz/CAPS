@@ -22,6 +22,7 @@ namespace caps {
 struct BenchRow {
   std::vector<std::string> cells;
   std::string status;           // pass | fail | info
+  std::string file;             // the structure the row was measured on (Open run), when there is one
 };
 
 struct BenchTable {
