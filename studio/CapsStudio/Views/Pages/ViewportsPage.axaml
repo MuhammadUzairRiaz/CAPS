@@ -30,6 +30,7 @@
                 <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Perspective view" Classes="muted" FontSize="12.5" /><TextBlock Grid.Column="1" Text="drag orbits · wheel zooms" Classes="mono" FontSize="11.5" /></Grid>
                 <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Ortho views" Classes="muted" FontSize="12.5" /><TextBlock Grid.Column="1" Text="drag pans · wheel zooms" Classes="mono" FontSize="11.5" /></Grid>
                 <CheckBox Classes="toggle" Content="Show cell" IsChecked="{Binding ShowCell}" />
+                <CheckBox Classes="toggle" Content="Show axis tripod" IsChecked="{Binding ViewportTripod}" />
               </StackPanel>
             </Border>
             <Border Classes="section">
@@ -38,6 +39,7 @@
                 <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Active view" Classes="muted" FontSize="12.5" /><TextBlock Grid.Column="1" Text="Enter" Classes="mono" FontSize="12" /></Grid>
                 <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Cycle views" Classes="muted" FontSize="12.5" /><TextBlock Grid.Column="1" Text="Tab" Classes="mono" FontSize="12" /></Grid>
                 <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Make active" Classes="muted" FontSize="12.5" /><TextBlock Grid.Column="1" Text="click its title" Classes="mono" FontSize="12" /></Grid>
+                <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Swap view" Classes="muted" FontSize="12.5" /><TextBlock Grid.Column="1" Text="right-click its title" Classes="mono" FontSize="12" /></Grid>
               </StackPanel>
             </Border>
           </StackPanel>

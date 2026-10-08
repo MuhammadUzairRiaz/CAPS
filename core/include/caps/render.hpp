@@ -66,6 +66,7 @@ struct RenderOptions {
   int outline_strength = 1;            // 1 a light edge; 2 high contrast (twice as wide, near-black / near-white ink)
   bool depth_cue = true;
   bool show_cell = true;
+  bool show_bonds = true;              // Visual elements · Bonds (the view; files keep them)
   std::array<int, 3> cell_repeats{1, 1, 1};   // the cell is a supercell of these unit cells: its box dashed, one unit cell in the accent
   std::vector<char> faded;             // per atom: drawn faded toward the background (periodic images)
   float fade = 0.7f;                   // how far faded atoms move toward the background colour (0 … 1)

@@ -565,6 +565,9 @@ public partial class MainWindow : Window
             case Key.Down: _vm.PaletteMove(1); PaletteList.ScrollIntoView(_vm.PaletteIndex); e.Handled = true; break;
             case Key.Up: _vm.PaletteMove(-1); PaletteList.ScrollIntoView(_vm.PaletteIndex); e.Handled = true; break;
             case Key.Enter: _vm.PaletteRun(); e.Handled = true; break;
+            case Key.Tab:
+                if (_vm.PaletteFill()) { PaletteBox.CaretIndex = PaletteBox.Text?.Length ?? 0; e.Handled = true; }
+                break;
             case Key.Escape: _vm.PaletteOpen = false; e.Handled = true; break;
         }
     }

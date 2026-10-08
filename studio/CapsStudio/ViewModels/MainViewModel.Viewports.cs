@@ -10,8 +10,10 @@ public sealed class ViewportTile : INotifyPropertyChanged
 {
     public event PropertyChangedEventHandler? PropertyChanged;
     private void Raise(string n) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(n));
-    public string Name { get; init; } = "";
-    public bool Ortho { get; init; }
+    private string _name = "";
+    private bool _ortho;
+    public string Name { get => _name; set { _name = value; Raise(nameof(Name)); Raise(nameof(Label)); } }
+    public bool Ortho { get => _ortho; set { _ortho = value; Raise(nameof(Ortho)); Raise(nameof(Label)); } }
     public double Yaw { get; set; }
     public double Pitch { get; set; }
     private Bitmap? _image;
@@ -54,6 +56,26 @@ public sealed partial class MainViewModel
         ArrangeViewports();
         RenderViewports();
     }
+
+    // the views a pane can show (right-click its title): the six ortho directions and the perspective camera
+    public static readonly (string Name, bool Ortho, double Yaw, double Pitch)[] ViewportViews =
+    [
+        ("Top", true, 0, Math.PI / 2), ("Bottom", true, 0, -Math.PI / 2), ("Front", true, 0, 0), ("Back", true, Math.PI, 0),
+        ("Left", true, Math.PI / 2, 0), ("Right", true, -Math.PI / 2, 0), ("Perspective", false, 0, 0),
+    ];
+    /// <summary>The pane shows another view (its title's menu).</summary>
+    public void SwapViewport(ViewportTile t, int view)
+    {
+        if (view < 0 || view >= ViewportViews.Length) return;
+        var v = ViewportViews[view];
+        t.Name = v.Name;
+        t.Ortho = v.Ortho;
+        if (v.Ortho) { t.Yaw = v.Yaw; t.Pitch = v.Pitch; }
+        Raise(nameof(ViewportActiveName));
+        RenderViewport(t);
+    }
+    private bool _vpTripod = true;
+    public bool ViewportTripod { get => _vpTripod; set => Set(ref _vpTripod, value); }
 
     public int ViewportLayout { get => _vpLayout; set { if (Set(ref _vpLayout, Math.Clamp(value, 0, 3))) { ArrangeViewports(); RenderViewports(); } } }
     public bool ViewportLinkZoom { get => _vpLinkZoom; set => Set(ref _vpLinkZoom, value); }
