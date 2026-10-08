@@ -82,7 +82,7 @@ public sealed class Job : INotifyPropertyChanged
         {
             _status = value;
             foreach (var n in new[] { nameof(Status), nameof(IsRunning), nameof(IsQueued), nameof(IsFailed), nameof(IsDone), nameof(IsQuiet), nameof(StatusText), nameof(ShowPause), nameof(CanCancel),
-                                      nameof(CanCheckRemote), nameof(CanOpenRemote), nameof(Where) }) Raise(n);
+                                      nameof(CanCheckRemote), nameof(CanOpenRemote), nameof(Where), nameof(HasFix) }) Raise(n);
         }
     }
     public bool IsRunning => _status == "running";
@@ -114,6 +114,12 @@ public sealed class Job : INotifyPropertyChanged
     public int SuggestModule { get; set; } = -1;
     public bool HasSuggestion => Suggestion.Length > 0;
     public string SuggestButton => SuggestModule switch { 7 => "Open Field", 2 => "Open Relax", 3 => "Open Dynamics", 5 => "Open Pack", _ => "Open" };
+    /// <summary>Restart with fix (design/boards/FailedJob): a change the Studio makes and runs again — md-dt (half the time
+    /// step, continue from the checkpoint), rx-gentle (fewer reactions a cycle, longer MD after each, capture ≤ 4 Å),
+    /// pack-box (every edge 10 % longer); "" when there is none. FixText says what it changes.</summary>
+    public string Fix { get; set; } = "";
+    public string FixText { get; set; } = "";
+    public bool HasFix => Fix.Length > 0 && Status == "failed";
     public string Subtitle => $"{Document} · {Atoms.ToString("N0", CultureInfo.InvariantCulture)} atoms · started {Started:HH:mm}";
     public string Where => Remote is { } r ? $"{Id} · {r.Host} · {(r.Scheduler == "none" ? "process" : r.Scheduler)} {r.JobId}" : $"{Id} · Local · {Environment.ProcessorCount} threads";
     /// <summary>A job sent to a host (Settings › Compute &amp; remote); null for this machine.</summary>
@@ -315,6 +321,7 @@ public sealed partial class MainViewModel
                 job.Error = string.Join("\n", job.Log.SkipWhile(l => !l.Text.StartsWith("Could not")).Select(l => l.Text));
                 if (job.Error.Length == 0) job.Error = job.Log.LastOrDefault(l => l.Text.Contains("failed"))?.Text ?? last;
                 (job.Suggestion, job.SuggestModule) = Suggest(kind, job.Error);
+                (job.Fix, job.FixText) = FixFor(kind, job.Error);
                 if (kind == "Dynamics" && MdCanContinue)   // FailedJob: nothing is lost — the checkpoint is intact
                     (job.Suggestion, job.SuggestModule) = ($"{MdCheckpointText}. {MdContinueLabel} on the Dynamics page" +
                         (job.Suggestion.Length > 0 ? " — " + char.ToLowerInvariant(job.Suggestion[0]) + job.Suggestion[1..] : "."), 3);
@@ -337,6 +344,58 @@ public sealed partial class MainViewModel
     }
 
     /// <summary>Recovery for the failures CAPS explains in its messages.</summary>
+    internal (string Fix, string Text) FixFor(string kind, string error)
+    {
+        var e = error.ToLowerInvariant();
+        var inv = CultureInfo.InvariantCulture;
+        if (kind == "Dynamics" && (e.Contains("nan") || e.Contains("blew up") || e.Contains("moved") || e.Contains("unstable")) && _mdDt > 0.25)
+            return ("md-dt", string.Format(inv, "Δt {0:0.##} → {1:0.##} fs, {2}", _mdDt, Math.Max(0.25, _mdDt / 2), MdCanContinue ? "from the last checkpoint" : "from the start"));
+        if (kind == "React" && (e.Contains("failed at cycle") || e.Contains("force") || e.Contains("moved")))
+        {
+            var md = Math.Max(_rxMdPs * 4, 5);
+            return ("rx-gentle", string.Format(inv, "{0} → {1} reactions a cycle, MD after each {2:0.#} → {3:0.#} ps{4}, from the structure kept after the last completed cycle",
+                _rxPerCycle, Math.Max(1, _rxPerCycle / 2), _rxMdPs, md, _rxCapture > 4 ? string.Format(inv, ", capture {0:0.#} → 4 Å", _rxCapture) : ""));
+        }
+        if (kind == "Pack" && (e.Contains("could not pack") || e.Contains("tolerance")) && IsCapsPack(_packText))
+            return ("pack-box", string.Format(inv, "box {0:0.#} × {1:0.#} × {2:0.#} → {3:0.#} × {4:0.#} × {5:0.#} Å (regions keep their numbers)", _packX, _packY, _packZ, _packX * 1.1, _packY * 1.1, _packZ * 1.1));
+        return ("", "");
+    }
+
+    /// <summary>Restart with fix: makes the job's change and runs it again (the new run is a new job).</summary>
+    public async Task RestartWithFix(Job job)
+    {
+        if (!job.HasFix || !Idle) { Status = job.HasFix ? "Wait for the running job to finish" : "This failure has no automatic fix"; return; }
+        var inv = CultureInfo.InvariantCulture;
+        switch (job.Fix)
+        {
+            case "md-dt":
+                MdDtD = (decimal)Math.Max(0.25, _mdDt / 2);
+                Status = $"Restarting Dynamics with Δt {_mdDt.ToString("0.##", inv)} fs";
+                if (MdCanContinue) await ContinueMd(); else await RunMd();
+                break;
+            case "rx-gentle":
+                RxPerCycleD = Math.Max(1, _rxPerCycle / 2);
+                RxMdPsD = (decimal)Math.Max(_rxMdPs * 4, 5);
+                RxRelax = true;
+                if (_rxCapture > 4) RxCaptureD = 4;
+                Status = $"Restarting React: {_rxPerCycle} reactions a cycle, {_rxMdPs.ToString("0.#", inv)} ps after each";
+                await RunReact();
+                break;
+            case "pack-box":
+                var (x0, y0, z0) = (_packX, _packY, _packZ);
+                PackXD = (decimal)(x0 * 1.1); PackYD = (decimal)(y0 * 1.1); PackZD = (decimal)(z0 * 1.1);
+                string F(double v) => v.ToString("0.###", inv);
+                var text = _packText;
+                // the cell line and every whole-cell box take the new edges
+                text = System.Text.RegularExpressions.Regex.Replace(text, @"^(\s*cell\s+)\S+\s+\S+\s+\S+", m => m.Groups[1].Value + $"{F(_packX)} {F(_packY)} {F(_packZ)}", System.Text.RegularExpressions.RegexOptions.Multiline);
+                text = text.Replace($"to {F(x0)} {F(y0)} {F(z0)}", $"to {F(_packX)} {F(_packY)} {F(_packZ)}");
+                PackText = text;
+                Status = $"Restarting Pack in a {F(_packX)} × {F(_packY)} × {F(_packZ)} Å box";
+                await RunPack();
+                break;
+        }
+    }
+
     private static (string, int) Suggest(string kind, string error)
     {
         var e = error.ToLowerInvariant();
