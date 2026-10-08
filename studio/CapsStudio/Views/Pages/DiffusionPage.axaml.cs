@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Platform.Storage;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using CapsStudio.ViewModels;
@@ -33,4 +34,16 @@ public partial class DiffusionPage : PageBase
     private async void OnRun(object? s, RoutedEventArgs e) => await Vm.RunDiffusion();
     private void OnCancel(object? s, RoutedEventArgs e) => Vm.Analyze.Cancel();
     private void OnExport(object? s, RoutedEventArgs e) => Window?.ExportAnalysis();
+    private void OnRemoveReplica(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is DfReplica r) Vm.RemoveDfReplica(r); }
+    private async void OnAddReplicas(object? s, RoutedEventArgs e)
+    {
+        if (TopLevel.GetTopLevel(this) is not { } top) return;
+        var files = await top.StorageProvider.OpenFilePickerAsync(new Avalonia.Platform.Storage.FilePickerOpenOptions
+        {
+            Title = "Other runs of the same system", AllowMultiple = true,
+            FileTypeFilter = [new Avalonia.Platform.Storage.FilePickerFileType("Trajectories") { Patterns = ["*.lammpstrj", "*.dump", "*.dcd", "*.xtc", "*.trr", "*.nc", "*.mdcrd", "*.gro", "*.pdb", "*.xyz"] },
+                              new Avalonia.Platform.Storage.FilePickerFileType("All files") { Patterns = ["*"] }],
+        });
+        Vm.AddDfReplicas(files.Select(f => f.TryGetLocalPath()).OfType<string>());
+    }
 }
