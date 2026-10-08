@@ -15,6 +15,9 @@ struct VoronoiOptions {
   double edge_min = 1e-6;        // Å: shorter edges are not counted in a face's edge count
   std::vector<char> only;        // the atoms whose cells to build (empty: every atom); all atoms still bound them
   int threads = 0;               // 0: automatic
+  // a periodic cell's axes that are periodic (a slab: z off). Along an axis that is not, no images: the cells are clipped by
+  // the cell's faces on that axis (walls, not counted as faces or neighbours)
+  bool periodic[3] = {true, true, true};
 };
 
 struct VoronoiCell {

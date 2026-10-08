@@ -54,7 +54,15 @@ public sealed partial class MainViewModel
     };
 
     private int _selCount;
-    public int SelectedCount { get => _selCount; private set { if (Set(ref _selCount, value)) { Raise(nameof(SelectedChip)); Raise(nameof(SelectionStatus)); } QueueSelBar(); } }
+    public int SelectedCount
+    {
+        get => _selCount;
+        private set
+        {
+            if (Set(ref _selCount, value)) { Raise(nameof(SelectedChip)); Raise(nameof(SelectionStatus)); if (value > 0 && _settings.SelectionSound) SoundCue.Selection(); }
+            QueueSelBar();
+        }
+    }
     public string SelectedChip => $"{_selCount:N0} selected";
     public string SelectionStatus => $"{_doc?.Summary().Atoms ?? 0:N0} atoms · {_selCount:N0} selected";
     private string _selError = "";

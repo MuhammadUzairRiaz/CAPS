@@ -46,6 +46,8 @@ public sealed class AppSettings
     public int FigurePreset { get; set; }                 // journal single column …
     public int ReaderVerbosity { get; set; } = 1;         // keyboard walk: 0 brief, 1 full
     public bool AnnounceFrames { get; set; }
+    public bool SelectionSound { get; set; }
+    public bool EngineNotice { get; set; } = true;   // say when a project was last saved with another CAPS version   // a short system sound when atoms are picked or selected
     public bool ShowAnnouncement { get; set; } = true;    // the announcement bar in the view, for sighted keyboard users
     public List<RemoteHost> Hosts { get; set; } = new();   // Compute & remote: SSH hosts (no credentials: the SSH agent holds them)
     public string JobTemplate { get; set; } = RemoteHost.DefaultTemplate;

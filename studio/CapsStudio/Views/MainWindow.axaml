@@ -2456,6 +2456,7 @@
                     <StackPanel Orientation="Horizontal" Spacing="8">
                       <Button Classes="small" Content="Copy table" Click="OnCopyMolTable" />
                       <Button Classes="small" Content="Add to library" Click="OnAddMolLibrary" ToolTip.Tip="The molecule's SMILES into the fragment library's My fragments" />
+                      <Button Classes="small" Content="Conformers · scan →" Click="OnMolConformers" ToolTip.Tip="The conformer search for this structure (rotors, minimised, clustered by RMSD)" />
                     </StackPanel>
                   </StackPanel>
                 </Border>
@@ -2502,6 +2503,7 @@
                       <ComboBox ItemsSource="{x:Static vm:MainViewModel.Verbosities}" SelectedIndex="{Binding ReaderVerbosity}" HorizontalAlignment="Stretch" />
                     </StackPanel>
                     <CheckBox Classes="toggle" Content="Announce frame changes" IsChecked="{Binding AnnounceFrames}" />
+                    <CheckBox Classes="toggle" Content="Sound on selection" IsChecked="{Binding SelectionSound}" ToolTip.Tip="A short system sound when atoms are picked or selected" />
                     <CheckBox Classes="toggle" Content="Show announcements in the view" IsChecked="{Binding ShowAnnouncement}" />
                   </StackPanel>
                 </Border>

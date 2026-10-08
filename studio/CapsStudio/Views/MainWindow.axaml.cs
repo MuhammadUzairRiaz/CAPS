@@ -136,6 +136,9 @@ public partial class MainWindow : Window
         });
         KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.S, KeyModifiers.Meta), Command = SaveCommand });
         KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.S, KeyModifiers.Control), Command = SaveCommand });
+        var copyCommand = new RelayCommand(() => _vm.HasCapsProject && _vm.Idle ? SaveProjectCopyDialog() : Task.CompletedTask);
+        KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.S, KeyModifiers.Meta | KeyModifiers.Shift), Command = copyCommand });
+        KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.S, KeyModifiers.Control | KeyModifiers.Shift), Command = copyCommand });
         _vm.RenderRequested += RequestRender;
         InitSelectionBar();
         _vm.CompareStatesChanged += () =>
@@ -387,6 +390,14 @@ public partial class MainWindow : Window
     public void OpenSample(string which)
     {
         if (_samples == null) return;
+        if (which == "pipeline")
+        {
+            // the sample pipeline on the polystyrene cell, shown in Visualize
+            TryOpen(Path.Combine(_samples, "ps_melt.lammpstrj"), Path.Combine(_samples, "ps_melt.data"));
+            var steps = Path.Combine(_samples, "structure_report.json");
+            if (_vm.HasDocument && File.Exists(steps)) { _vm.SetModule(20); _vm.LoadPipeline(steps); }
+            return;
+        }
         if (which == "gro") TryOpen(Path.Combine(_samples, "ps_melt.gro"));
         else if (which == "water") TryOpen(Path.Combine(_samples, "water.pdb"));
         else TryOpen(Path.Combine(_samples, "ps_melt.lammpstrj"), Path.Combine(_samples, "ps_melt.data"));
@@ -1051,6 +1062,13 @@ public partial class MainWindow : Window
             case Key.A when e.KeyModifiers == KeyModifiers.None: _vm.ToggleAutoClean(); e.Handled = true; break;
             case Key.F when e.KeyModifiers == KeyModifiers.None: _vm.FrameSelection(); e.Handled = true; break;
             case Key.L when e.KeyModifiers == KeyModifiers.None && _vm.LensOn: _vm.LensHold = true; e.Handled = true; break;
+            // the tools by their keys (design/boards/InteractionMap); R stays Reset view
+            case Key.S when e.KeyModifiers == KeyModifiers.None && _vm.IsStudio && _vm.HasDocument: _vm.RunCommand("tool.select"); e.Handled = true; break;
+            case Key.B when e.KeyModifiers == KeyModifiers.None && _vm.IsStudio && _vm.HasDocument: _vm.RunCommand("tool.build"); e.Handled = true; break;
+            case Key.L when e.KeyModifiers == KeyModifiers.None && _vm.IsStudio && _vm.HasDocument: _vm.RunCommand("tool.lasso"); e.Handled = true; break;
+            case Key.G when e.KeyModifiers == KeyModifiers.None && _vm.IsStudio && _vm.HasDocument: _vm.RunCommand("tool.move"); e.Handled = true; break;
+            case Key.M when e.KeyModifiers == KeyModifiers.None && _vm.IsStudio && _vm.HasDocument: _vm.RunCommand("tool.measure"); e.Handled = true; break;
+            case Key.P when e.KeyModifiers == KeyModifiers.None && _vm.IsStudio && _vm.HasDocument: _vm.RunCommand("tool.pin"); e.Handled = true; break;
             case Key.Escape when _vm.StampArmed: _vm.DisarmStamp(); _vm.Status = "Stamp put away"; e.Handled = true; break;
             case Key.Escape: _vm.ClearAllSelection(); e.Handled = true; break;
         }
@@ -1067,6 +1085,7 @@ public partial class MainWindow : Window
         _vm.Status = "Copied the molecule's table";
     }
     private void OnAddMolLibrary(object? s, RoutedEventArgs e) => _vm.AddMoleculeToLibrary();
+    private async void OnMolConformers(object? s, RoutedEventArgs e) => await _vm.OpenConformers();
     private void OnHistoryStep(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is HistoryRow r) _vm.JumpToStep(r.Step); }
     private void OnTakeSnapshot(object? s, RoutedEventArgs e) => _vm.TakeSnapshot();
     private void OnSnapshotCompare(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is SnapshotRow r) _vm.CompareWithSnapshot(r); }

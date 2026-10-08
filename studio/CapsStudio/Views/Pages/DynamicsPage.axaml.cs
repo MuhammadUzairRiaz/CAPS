@@ -72,4 +72,5 @@ public partial class DynamicsPage : PageBase
         Vm.Status = "Copied the dynamics run as Python (import caps; doc = caps.open(…))";
     }
     private async void OnCompareEnergies(object? s, RoutedEventArgs e) => await Vm.CompareEnergies();
+    private async void OnNveProbe(object? s, RoutedEventArgs e) => await Vm.RunNveProbe();
 }

@@ -173,6 +173,16 @@ std::vector<VoronoiCell> voronoi_cells(const System& s, const VoronoiOptions& o)
     if (!o.only.empty() && !o.only[i]) continue;
     Poly P(L);
     const int b0[3] = {bin(frac[i], 0), bin(frac[i], 1), bin(frac[i], 2)};
+    if (per)   // an axis that is not periodic: the cell's two faces on it are walls
+      for (int d = 0; d < 3; ++d) {
+        if (o.periodic[d]) continue;
+        const Vec3 nrm = d == 0 ? cross(c.b, c.c) : d == 1 ? cross(c.c, c.a) : cross(c.a, c.b);
+        const Vec3 u = nrm * (1.0 / norm(nrm));
+        const Vec3 axis = d == 0 ? c.a : d == 1 ? c.b : c.c;
+        const double sgn = dot(u, axis) >= 0 ? 1.0 : -1.0;
+        P.clip(u * sgn, std::max(1e-6, (1.0 - frac[i][size_t(d)]) * width[d]), -2);
+        P.clip(u * -sgn, std::max(1e-6, frac[i][size_t(d)] * width[d]), -2);
+      }
     for (int reach = 0; reach <= maxreach; ++reach) {
       // the shell of bins at Chebyshev distance `reach`, with the periodic image each one stands for
       std::vector<std::pair<double, std::pair<Vec3, uint32_t>>> cand;
@@ -184,7 +194,7 @@ std::vector<VoronoiCell> voronoi_cells(const System& s, const VoronoiOptions& o)
             int wrap[3] = {0, 0, 0};
             bool skip = false;
             for (int d = 0; d < 3; ++d) {
-              if (per) {
+              if (per && o.periodic[d]) {
                 wrap[d] = int(std::floor(double(b[d]) / nb[d]));
                 b[d] -= wrap[d] * nb[d];
               } else if (b[d] < 0 || b[d] >= nb[d]) skip = true;
@@ -221,6 +231,7 @@ std::vector<VoronoiCell> voronoi_cells(const System& s, const VoronoiOptions& o)
       const double a = loop_area(P.v, P.f[q]);
       cell.volume += a * P.h[q] / 3;
       cell.area += a;
+      if (P.nb[q] == -2) continue;   // a wall of an axis that is not periodic
       if (P.nb[q] < 0) { cell.bounded = false; continue; }
       if (a < o.face_area_min || a <= 0) continue;
       int edges = 0;

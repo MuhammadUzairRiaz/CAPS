@@ -22,7 +22,7 @@
         <DockPanel>
           <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,0,0,8">
             <Button Classes="small" HorizontalAlignment="Left" Click="OnBack"><StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="undo" Size="13" VerticalAlignment="Center" /><TextBlock Text="Studio" VerticalAlignment="Center" /></StackPanel></Button>
-            <TextBox Text="{Binding FragmentQuery}" Watermark="Search name, SMILES or use" FontSize="12" />
+            <TextBox Text="{Binding FragmentQuery}" Watermark="Search name, SMILES, use or SMARTS ([OX2H], C(=O)O)" FontSize="12" />
           </StackPanel>
           <ListBox Classes="cats" ItemsSource="{Binding FragmentCategories}" Background="Transparent" SelectionChanged="OnCategory" x:Name="Cats">
             <ListBox.ItemTemplate>
@@ -45,6 +45,7 @@
           <TextBox x:Name="NewName" Width="160" Watermark="Name" FontSize="12" />
           <TextBox x:Name="NewSmiles" Width="260" Watermark="SMILES with * points, e.g. *C(=O)O*" FontSize="12" FontFamily="{DynamicResource Mono}" />
           <Button Classes="small" Content="Add to My fragments" Click="OnAddMine" />
+          <Button Classes="small" Content="From the selection" Click="OnFromSelection" ToolTip.Tip="The atoms selected in Studio and their hydrogens, each bond leaving them an attachment point *" />
         </StackPanel>
         <ListBox Classes="tiles" ItemsSource="{Binding FragmentTiles}" SelectedItem="{Binding SelectedFragment}" Background="Transparent" DoubleTapped="OnTileDouble">
           <ListBox.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="4" /></ItemsPanelTemplate></ListBox.ItemsPanel>

@@ -102,6 +102,7 @@ public partial class MoleculePage : PageBase
     }
 
     private async void OnBuildBeads(object? sender, Avalonia.Interactivity.RoutedEventArgs e) { if (DataContext is MainViewModel vm) await vm.BuildBeadsMolecule(); }
+    void OnInsertIntoDocument(object? s, RoutedEventArgs e) => Vm.InsertMoleculeIntoDocument();
     void OnOpenInStudio(object? s, RoutedEventArgs e)
     {
         _preview.Document = null;

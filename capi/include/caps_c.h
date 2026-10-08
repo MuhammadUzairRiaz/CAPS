@@ -442,6 +442,12 @@ int32_t caps_equivalent_atoms(caps_doc* d, int32_t atom, int32_t radius, char* j
    parameters whose atoms close a three-membered ring (epoxide, aziridine, cyclopropane) is zero and reported as such,
    not missing. Returns 0 complete, 1 incomplete, -1 error. */
 int32_t caps_field_set_options(caps_doc* d, const char* options);
+/* v64 the atoms of a SMILES (hydrogens added) where a SMARTS pattern matches with its first atom: the count, -1 on error
+   (an unreadable SMILES or SMARTS). */
+int32_t caps_smarts_count(const char* smiles, const char* smarts);
+/* v64 a fragment's SMILES from atoms of the frame (JSON array of 0-based indices; [] the selection): the atoms and their
+   hydrogens, each bond leaving them an attachment point *. Returns the length needed or -1. */
+int32_t caps_fragment_smiles(caps_doc* d, const char* atoms_json, char* out, int32_t cap);
 int32_t caps_field_add_rule(caps_doc* d, const char* kind, const char* types, const char* style, const char* params);
 /* Merges parameters from another file over the force field: caps-forcefield .json, moltemplate .lt, AMBER frcmod (any
    name containing frcmod, or .dat) or the [ *types ] sections of a GROMACS .itp / .top. */

@@ -43,6 +43,7 @@ public sealed partial class MainViewModel
         get => _settings.ReaderVerbosity;
         set { if (_settings.ReaderVerbosity == value) return; _settings.ReaderVerbosity = Math.Clamp(value, 0, 1); Raise(); Changed("Reader verbosity"); if (HasFocusAtom) AnnounceFocus(); }
     }
+    public bool SelectionSound { get => _settings.SelectionSound; set { if (_settings.SelectionSound == value) return; _settings.SelectionSound = value; Raise(); Changed("Sound on selection"); if (value) SoundCue.Selection(); } }
     public bool AnnounceFrames { get => _settings.AnnounceFrames; set { if (_settings.AnnounceFrames == value) return; _settings.AnnounceFrames = value; Raise(); Changed("Announce frame changes"); } }
     public bool ShowAnnouncement
     {

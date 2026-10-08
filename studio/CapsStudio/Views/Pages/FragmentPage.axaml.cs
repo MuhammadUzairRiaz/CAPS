@@ -38,4 +38,5 @@ public partial class FragmentPage : PageBase
         var smiles = this.FindControl<TextBox>("NewSmiles")!.Text ?? "";
         Vm.AddMyFragment(name, smiles);
     }
+    private void OnFromSelection(object? s, RoutedEventArgs e) => Vm.SaveSelectionAsFragment();
 }

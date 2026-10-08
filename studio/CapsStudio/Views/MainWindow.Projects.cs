@@ -16,6 +16,19 @@ public partial class MainWindow
         if (picked.Count > 0 && picked[0].TryGetLocalPath() is { } p) _vm.Status = _vm.OpenCapsProject(p);
     }
 
+    /// <summary>Save a copy as…: where the copy goes and its name (a folder of that name is made there).</summary>
+    public async Task SaveProjectCopyDialog()
+    {
+        if (!_vm.HasCapsProject) { _vm.Status = "No project is open"; return; }
+        var f = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = "Save a copy of the project as", SuggestedFileName = _vm.CapsProjectName + " copy",
+        });
+        if (f?.TryGetLocalPath() is not { } p) return;
+        var name = Path.GetFileNameWithoutExtension(p);
+        _vm.Status = _vm.SaveCapsProjectCopy(Path.GetDirectoryName(p) ?? "", name);
+    }
+
     /// <summary>A project whose folder moved: its .capsproj in the new place.</summary>
     public async Task LocateProjectDialog(ViewModels.KnownProject k)
     {
@@ -75,6 +88,7 @@ public partial class MainWindow
         }
         var has = _vm.HasCapsProject;
         items.Add(M(has ? $"Save · {_vm.CapsProjectSavedText}" : "Save", "save", () => { _vm.Status = _vm.SaveCapsProject(); return Task.CompletedTask; }, OperatingSystem.IsMacOS() ? "Cmd+S" : "Ctrl+S", has));
+        items.Add(M("Save a copy as…", "copy", SaveProjectCopyDialog, OperatingSystem.IsMacOS() ? "Cmd+Shift+S" : "Ctrl+Shift+S", has));
         items.Add(M("New project…", "plus", () => { _vm.OpenNewProject(); return Task.CompletedTask; }));
         items.Add(M("Open project…", "folder", OpenProjectFileDialog));
         items.Add(M("Show the folder", "file", () => ShowFolder(Path.GetDirectoryName(_vm.CapsProjectPath) ?? ""), "", has));

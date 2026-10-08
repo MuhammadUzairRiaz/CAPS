@@ -524,7 +524,7 @@ public sealed partial class MainViewModel
         }
         switch (_pipeSel.Type)
         {
-            case "select_expression": Text("expression", "Expression", "expression", "Type == 2 && Position.Z > 13 · Element == \"O\""); break;
+            case "select_expression": Text("expression", "Expression", "expression", "Type == 2 && Position.Z > 13 · Element == \"O\""); Bool("legend", "Show the selection count in the legend"); break;
             case "expand_selection": Choice("mode", "Across", ["bonds", "cutoff"]); Text("iterations", "Steps", "number"); Text("cutoff", "Cutoff (Å)", "number"); break;
             case "slice":
                 Add(new StepField { Key = "normal", Label = "Normal", Kind = "vector", Hint = "x y z", Text = p["normal"] is JsonArray a ? string.Join(" ", a.Select(x => x?.ToString())) : "0 0 1" });
@@ -543,7 +543,10 @@ public sealed partial class MainViewModel
                 Text("element_a", "A · element number (0: any)", "number"); Text("element_b", "B · element number (0: any)", "number"); Bool("inter_only", "Only different molecules");
                 Text("rmax", "g(r) out to r max (Å)", "number"); Text("bins", "Bins", "number"); Text("cutoff", "Coordination cutoff (Å)", "number");
                 Bool("average_frames", "Average g(r) over the frames"); Text("every", "Every n-th frame", "number"); Bool("only_selected", "Only selected"); break;
-            case "topology": Text("bins", "Bins", "number"); Bool("colour_states", "Colour the backbone by dihedral state (t · g+ · g−)"); break;
+            case "topology": Text("bins", "Bins", "number");
+                Bool("bonds", "Bonds", true); Bool("angles", "Angles", true); Bool("dihedrals", "Dihedrals", true);
+                Choice("dihedral_set", "Dihedrals over", ["all", "backbone"]); Text("trans", "Trans when |φ| above (°)", "number", "blank: 120");
+                Bool("colour_states", "Colour the backbone by dihedral state (t · g+ · g−)"); break;
             case "displacements": Choice("reference", "Reference", ["first", "previous", "frame"]); Text("frame", "Reference frame", "number"); Bool("subtract_drift", "Subtract system drift"); break;
             case "manual_selection":
                 Text("atoms", "Atoms (indices in the frame: 0 5 12-40)", "text", "click, ⇧-click or lasso atoms in the view");
@@ -577,6 +580,7 @@ public sealed partial class MainViewModel
                 Text("face_area_min", "Smallest face counted (Å²)", "number", "exact: faces below this stay in the volume, not in the index");
                 Text("grid", "Grid (Å)", "number", "grid methods only");
                 Bool("only_selected", "Only selected (exact)");
+                Bool("periodic_x", "Periodic x (exact)", true); Bool("periodic_y", "Periodic y (exact)", true); Bool("periodic_z", "Periodic z (exact)", true);
                 Note("Exact: each atom's cell clipped by the bisecting planes of its neighbours (radical: the power planes weighted by van der Waals radii, Gellatly & Finney 1982) — AtomicVolume, Coordination (faces), Max Face Order, Cell Surface Area and Voronoi Index.3–6; the cells tile the box exactly. Grid: voxels to the nearest atom");
                 break;
             case "density_field":
@@ -587,8 +591,12 @@ public sealed partial class MainViewModel
                 Note("Above the level: the volume share, area and specific area are global attributes; a low level traces the free-volume network, the mean one a blend's domains.");
                 break;
             case "vectors":
-                Choice("property", "Vector", ["end_to_end", "dipole", "displacement", "velocity"]); Text("scale", "Scale (dipole, displacement, velocity)", "number");
-                Text("radius", "Arrow radius (Å)", "number"); Bool("flip", "Flip direction (end-to-end)"); break;
+                Choice("property", "Vector", ["end_to_end", "dipole", "displacement", "velocity", "force", "columns"]); Text("scale", "Scale (dipole, displacement, velocity, force)", "number");
+                Text("x", "Columns: x", "text", "the dump's per-atom columns (Vector: columns)"); Text("y", "Columns: y", "text"); Text("z", "Columns: z", "text");
+                Text("radius", "Arrow radius (Å)", "number"); Bool("arrowheads", "Arrowheads", true);
+                Choice("anchor", "The particle at the arrow's", ["tail", "middle", "head"]);
+                Choice("colour_by", "Colour by", ["auto", "length", "fixed"]); Bool("flip", "Flip direction (end-to-end)");
+                Note("Force: the dump's fx fy fz columns (dump … fx fy fz), kcal/mol/Å × scale; auto colour: per molecule, or the particle's colour coding"); break;
             case "trajectory_lines":
                 Choice("particles", "Trace", ["centres", "selected"]); Text("from", "From frame", "number"); Text("to", "To frame", "number", "blank: the last");
                 Text("stride", "Every n-th frame", "number", "blank: about 200 steps"); Text("radius", "Line radius (Å)", "number");
@@ -649,9 +657,10 @@ public sealed partial class MainViewModel
             case "unwrap":
                 Choice("method", "Method", ["bonds", "images", "nojump"]);
                 Note("bonds: molecules whole along their bonds · images: the file's image flags · nojump: each atom followed through the frames (MSD, diffusion)"); break;
-            case "replicate": Text("nx", "Images along a", "number"); Text("ny", "Images along b", "number"); Text("nz", "Images along c", "number"); Bool("adjust_cell", "Enlarge the cell"); break;
+            case "replicate": Text("nx", "Images along a", "number"); Text("ny", "Images along b", "number"); Text("nz", "Images along c", "number"); Bool("adjust_cell", "Enlarge the cell"); Bool("unique_ids", "Unique IDs (the copies numbered after the original)", true); Bool("bonds", "Operate on bonds", true); Bool("vectors", "Operate on arrows, paths and glyphs", true); break;
             case "primitive_paths": Bool("show_chains", "Show the chains too"); Text("radius", "Line radius (Å)", "number"); Text("max_steps", "Minimisation steps at most", "number", "blank: 200 000"); break;
-            case "molecule_shape": Bool("glyphs", "Principal-axis glyphs (±√(3λ))"); break;
+            case "molecule_shape": Choice("group_by", "Group by", ["molecule", "unit"]); Choice("atoms", "Atoms", ["all", "heavy", "backbone"]);
+                Bool("glyphs", "Principal-axis glyphs", true); Bool("dim", "Dim chains (the glyphs stand out)"); break;
             case "histogram": Choice("property", "Property", props); Text("bins", "Bins", "number"); Choice("stack_by", "Stack by", ["none", "Type", "Element", "Molecule"]); Bool("only_selected", "Only selected"); break;
             case "binning":
                 Choice("property", "Property", props); Choice("axis", "Along (0 x, 1 y, 2 z)", ["0", "1", "2"]); Text("bins", "Bins", "number"); Choice("reduction", "Reduction", ["density", "mean", "sum"]);

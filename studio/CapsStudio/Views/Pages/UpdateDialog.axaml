@@ -59,6 +59,8 @@
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
+            <CheckBox Classes="toggle" Content="Tell me when a project was last saved with another CAPS version (recommended)" IsChecked="{Binding EngineNotice}"
+                      ToolTip.Tip="Each project session records the CAPS version and ABI it ran with; opening a project last saved with another version says so" />
             <Border Padding="14,10" CornerRadius="8" Background="{DynamicResource Bg2B}">
               <TextBlock TextWrapping="Wrap" FontSize="12" LineHeight="18" Foreground="{DynamicResource MutedB}"
                          Text="Every saved structure carries its provenance, including the CAPS version and engine settings. After updating, re-run a project and compare the two manifests side by side in Jobs › Provenance before quoting new numbers." />

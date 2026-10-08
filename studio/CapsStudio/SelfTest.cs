@@ -4749,6 +4749,80 @@ internal static class SelfTest
             Check(button == "Open 2 frames" && vm.Frames == 2 && line.Contains("first=1") && vm.Notes.Any(n => n.Contains("2 kept of 3 read")),
                   $"open a frame selection: {button} · {vm.Frames} frames · {line}");
         }
+        // Board audit (2026-10-08): palette arguments, SMARTS fragment search, a fragment from the selection, shortcuts as JSON,
+        // Dynamics export to both engines, a viewport showing another view, visual elements, export data options
+        {
+            vm.Open(Path.Combine(dir, "ps_frag.pdb"));
+            vm.PaletteOpen = true;
+            vm.PaletteQuery = "select.where";
+            var filled = vm.PaletteFill();
+            vm.PaletteQuery = "select.where element O";
+            var hint = vm.PaletteHint;
+            vm.PaletteRun();
+            var oCount = vm.SelectedCount;
+            vm.PaletteQuery = "select.where";   // a fresh query leaves argument mode
+            vm.PaletteOpen = false;
+            Check(filled && hint.StartsWith("argument:") && oCount >= 0 && vm.Status.Contains("Selected"),
+                  $"palette argument: filled {filled} · {hint} · {vm.Status}");
+            vm.QueryText = "index 1-4";
+            vm.ApplyQuery();
+            vm.SaveSelectionAsFragment();
+            var fragSaved = vm.Status;
+            vm.OpenFragments();
+            vm.FragmentQuery = "[OX2H]";
+            var oh = vm.FragmentTiles.Count;
+            var allOh = vm.FragmentTiles.All(f => CapsDocument.SmartsCount(f.Smiles, "[OX2H]") > 0 || f.Name.Contains("[OX2H]") || f.Smiles.Contains("[OX2H]"));
+            vm.FragmentQuery = "";
+            Check(fragSaved.Contains('*') && oh > 0 && allOh, $"fragments: {fragSaved} · SMARTS [OX2H] finds {oh}");
+            var sc = Path.Combine(outDir, "caps-shortcuts.json");
+            File.WriteAllText(sc, "{\"format\": \"caps-shortcuts\", \"version\": 1, \"shortcuts\": {\"view.frame\": \"Meta+Shift+J\", \"no.such\": \"Meta+J\"}}");
+            var imp = vm.ImportShortcuts(sc);
+            var exp = vm.ExportShortcuts(sc);
+            var text = File.ReadAllText(sc);
+            Check(imp.Contains("Read 1 shortcut") && imp.Contains("left out") && text.Contains("\"view.frame\": \"Meta+Shift+J\""), $"shortcuts as JSON: {imp} · {exp}");
+            vm.SetModule(8);
+            var toolKeys = vm.RunCommand("tool.lasso") && vm.EditTool == 4 && vm.RunCommand("tool.select") && vm.EditTool == 0;
+            Check(toolKeys, $"tool commands by key: lasso and select ({vm.EditTool})");
+            vm.MdBoth = true;
+            var both = vm.MdBoth && !vm.MdGromacs && !vm.MdLammps && vm.MdDeckFiles.Contains("one folder");
+            vm.MdLammps = true;
+            Check(both && vm.MdLammps && !vm.MdBoth, $"Dynamics export engines: both {both} · back to LAMMPS {vm.MdLammps}");
+            vm.OpenViewports();
+            var tile = vm.ViewportTiles[0];
+            vm.SwapViewport(tile, 1);
+            var swapped = tile.Name == "Bottom" && tile.Ortho && tile.Label == "Bottom · ortho";
+            vm.SwapViewport(tile, 0);
+            Check(swapped && tile.Name == "Top", $"viewport swap: {tile.Label}");
+            vm.SetModule(8);
+            vm.ShowBonds = false;
+            vm.ShowParticles = false;
+            var display = vm.Status;
+            vm.ShowBonds = true;
+            vm.ShowParticles = true;
+            Check(!display.StartsWith("Display:"), "visual elements: particles and bonds off · " + display);
+            // the NVE probe: 1 ps on a copy, its drift in the pre-flight list
+            vm.SetModule(3);
+            vm.RunNveProbe().GetAwaiter().GetResult();
+            var probe = vm.Status;   // the probe's line, the one the pre-flight list shows
+            Check(probe.StartsWith("NVE probe drift") && probe.Contains("kT/ns/atom"), $"NVE probe: {probe}");
+            // the Start page's sample pipeline: four steps on the polystyrene cell
+            vm.Open(Path.Combine(dir, "ps_melt.lammpstrj"), Path.Combine(dir, "ps_melt.data"));
+            vm.LoadPipeline(Path.Combine(dir, "structure_report.json"));
+            Check(vm.PipelineRows.Count == 4 && vm.Status.StartsWith("Loaded 4 steps"), "sample pipeline: " + vm.Status);
+            // Save a copy as: the project's folder copied under another name, the open project unchanged
+            var pparent = Path.Combine(outDir, "caps-selftest-projcopy");
+            if (Directory.Exists(pparent)) Directory.Delete(pparent, true);
+            Directory.CreateDirectory(pparent);
+            vm.NewCapsProject("Copy source", pparent, true);
+            var srcFile = vm.CapsProjectPath;
+            var copyMsg = vm.SaveCapsProjectCopy(pparent, "Copy target");
+            var copied = Path.Combine(pparent, "Copy target", "Copy target.capsproj");
+            var copyOk = File.Exists(copied) && (string?)CapsProjectFile.Read(copied)["name"] == "Copy target" && vm.CapsProjectPath == srcFile
+                         && Directory.Exists(Path.Combine(pparent, "Copy target", "structures"));
+            vm.CloseCapsProject();
+            Check(copyOk, $"project: save a copy as · {copyMsg}");
+            vm.CloseAllStructures();
+        }
         vm.CloseAllStructures();
 
         Console.WriteLine(fails == 0 ? "all checks passed" : $"{fails} check(s) failed");
