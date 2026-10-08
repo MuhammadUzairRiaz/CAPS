@@ -920,6 +920,23 @@ TEST(Pipeline, BranchesShareTheTrunk) {
   EXPECT_EQ(pipeline_to_json(pipeline_from_yaml(pipeline_to_yaml(p))).dump(0), pipeline_to_json(p).dump(0));
 }
 
+TEST(Pipeline, MultiLineCodeInYaml) {
+  // a Python step typed in the Studio: its code (newlines, tabs, quotes, a backslash) read back from the saved YAML
+  const std::string code = "from caps.pipeline import step\n\n@step(name=\"Heavy\")\ndef modify(frame, data):\n\tprint('a\\nb')\n";
+  Json steps = Json::array(), st = Json::object();
+  st["type"] = std::string("python");
+  st["code"] = code;
+  st["enabled"] = false;
+  steps.push_back(st);
+  Json j = Json::object();
+  j["steps"] = steps;
+  const Pipeline p = pipeline_from_json(j);
+  const Pipeline back = pipeline_from_yaml(pipeline_to_yaml(p));
+  ASSERT_EQ(back.steps.size(), 1u);
+  EXPECT_EQ(back.steps[0].params.text("code", ""), code);
+  EXPECT_FALSE(back.steps[0].enabled);
+}
+
 TEST(Pipeline, OutputsBlock) {
   // the outputs: block survives YAML and JSON, and writes the files it names
   const std::string y = "caps_pipeline: 1\nsteps:\n  - coordination: {cutoff: 3.0, rmax: 8}\noutputs:\n  - table: rdf -> rdf.csv\n"

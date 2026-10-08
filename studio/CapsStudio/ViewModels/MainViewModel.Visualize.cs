@@ -437,6 +437,8 @@ public sealed partial class MainViewModel
             var steps = j is JsonArray a ? a : (JsonArray)j["steps"]!;
             PipelineRows.Clear();
             var held = 0;
+            // the file said not to ask (Save pipeline), and it is your own: its Python steps stay as saved
+            var keepPython = j is JsonObject jroot && (bool?)jroot["ask_before_python"] == false && IsOwnPipelineFile(path);
             foreach (var st in steps)
             {
                 if (st is not JsonObject o) continue;
@@ -445,7 +447,7 @@ public sealed partial class MainViewModel
                 var prm = (JsonObject)JsonNode.Parse(o.ToJsonString())!;
                 var enabled = (bool?)prm["enabled"] ?? true;
                 // a Python step runs the file's code (or a .py it names): it arrives switched off until you turn it on
-                if (type == "python" && enabled) { enabled = false; ++held; }
+                if (type == "python" && enabled && !keepPython) { enabled = false; ++held; }
                 prm.Remove("type");
                 prm.Remove("enabled");
                 var row = new PipelineRow { Type = type, Title = kind?.Title ?? type, Icon = kind?.Icon ?? "sliders", Params = prm };

@@ -68,14 +68,59 @@ public sealed partial class MainViewModel
         return t.Length == 0 ? "pipeline" : t;
     }
 
+    // scope (design/boards/SavePipeline): this project's pipelines/ folder, or the shared library in ~/CAPS/pipelines
+    public static readonly string[] PipelineScopes = ["This project", "Shared library"];
+    public static string PipelineLibrary => Environment.GetEnvironmentVariable("CAPS_PIPELINES") is { Length: > 0 } d ? d
+        : System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "CAPS", "pipelines");
+    private int _pipeScope = 1;
+    public int PipelineScope { get => _projFile == null ? 1 : _pipeScope; set { if (Set(ref _pipeScope, Math.Clamp(value, 0, 1))) Raise(nameof(PipelineScopeFolder)); } }
+    public string PipelineScopeFolder => PipelineScope == 0 && _projFile != null ? System.IO.Path.Combine(CapsProjectFile.FolderOf(_projFile), "pipelines") : PipelineLibrary;
+    public string PipelineScopeNote => _projFile == null ? "no project open: the shared library" : RecentFiles.Tilde(PipelineScopeFolder);
+    public bool PipelineStoreWithResults { get => _settings.PipelineStoreWithResults; set { if (_settings.PipelineStoreWithResults == value) return; _settings.PipelineStoreWithResults = value; Raise(); Changed("Store the pipeline with its results"); } }
+    public bool PipelineAskPython { get => _settings.PipelineAskPython; set { if (_settings.PipelineAskPython == value) return; _settings.PipelineAskPython = value; Raise(); Changed("Ask before running a Python file"); RefreshPipelineYaml(); } }
+
+    /// <summary>Save into the scope's folder under the pipeline's file name (no picker).</summary>
+    public string? SavePipelineToScope()
+    {
+        try
+        {
+            var dir = PipelineScopeFolder;
+            Directory.CreateDirectory(dir);
+            var path = System.IO.Path.Combine(dir, PipelineFileName);
+            SavePipelineYaml(path);
+            return path;
+        }
+        catch (Exception e) { Status = "Could not save the pipeline: " + e.Message; return null; }
+    }
+
+    /// <summary>A pipeline file in your own library or the open project's pipelines/ folder (it may keep its Python steps on).</summary>
+    private bool IsOwnPipelineFile(string path)
+    {
+        var full = System.IO.Path.GetFullPath(path);
+        bool Under(string dir) => full.StartsWith(System.IO.Path.GetFullPath(dir) + System.IO.Path.DirectorySeparatorChar, OperatingSystem.IsLinux() ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase);
+        return Under(PipelineLibrary) || (_projFile != null && Under(System.IO.Path.Combine(CapsProjectFile.FolderOf(_projFile), "pipelines")));
+    }
+
     private void RefreshPipelineYaml()
     {
         var file = _pipeWithSource && _doc?.Path is { Length: > 0 } p ? System.IO.Path.GetFileName(p) : null;
         var topo = file != null ? TopologyFor(_doc!.Path) : "";
-        try { PipelineYaml = CapsDocument.PipelineToYaml(PipelineJson(), _pipeName, file, topo.Length > 0 ? System.IO.Path.GetFileName(topo) : null); }
+        try
+        {
+            PipelineYaml = CapsDocument.PipelineToYaml(PipelineJson(), _pipeName, file, topo.Length > 0 ? System.IO.Path.GetFileName(topo) : null);
+            // Ask before running a Python file off: said in the file (honoured only for your own library and project)
+            if (!_settings.PipelineAskPython && PipelineRows.Any(r => r.Type == "python"))
+            {
+                var lines = _pipeYaml.Split('\n').ToList();
+                var at = lines.FindIndex(l => l.StartsWith("name:", StringComparison.Ordinal));
+                lines.Insert(at >= 0 ? at + 1 : Math.Min(1, lines.Count), "ask_before_python: false");
+                PipelineYaml = string.Join("\n", lines);
+            }
+        }
         catch (Exception e) { PipelineYaml = "# " + e.Message; }
         PipelineYamlHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(_pipeYaml))).ToLowerInvariant();
         Raise(nameof(PipelineFileName)); Raise(nameof(PipelineRunCommand)); Raise(nameof(PipelineStepsText)); Raise(nameof(PipelineTableNames));
+        Raise(nameof(PipelineScope)); Raise(nameof(PipelineScopeFolder)); Raise(nameof(PipelineScopeNote));
     }
 
     // ---------------------------------------------------------------- outputs (the YAML's outputs: block)
@@ -121,6 +166,14 @@ public sealed partial class MainViewModel
             var r = System.Text.Json.Nodes.JsonNode.Parse(_doc.PipelineWriteOutputs(PipelineJson(), dir));
             var lines = (r?["lines"] as System.Text.Json.Nodes.JsonArray ?? []).Select(x => (string?)x ?? "").ToList();
             var wrote = lines.Count(l => l.StartsWith("wrote"));
+            if (_settings.PipelineStoreWithResults && (string?)r?["error"] == null)
+            {
+                // the pipeline beside its results, so they say how they were made
+                RefreshPipelineYaml();
+                File.WriteAllText(System.IO.Path.Combine(dir, PipelineFileName), _pipeYaml);
+                lines.Add("wrote " + PipelineFileName);
+                ++wrote;
+            }
             Status = (string?)r?["error"] ?? $"Wrote {wrote} of {lines.Count} outputs to {dir}" + (wrote < lines.Count ? " · " + lines.First(l => !l.StartsWith("wrote")) : "");
         }
         catch (Exception e) { Status = "Could not write the outputs: " + e.Message; }
