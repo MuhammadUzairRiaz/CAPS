@@ -24,7 +24,8 @@ public sealed class BenchItem : INotifyPropertyChanged
         set
         {
             _json = value;
-            foreach (var n in new[] { nameof(Status), nameof(RowsText), nameof(IsPass), nameof(IsFail), nameof(IsRunning), nameof(Note), nameof(Columns), nameof(Rows), nameof(SecondsText) }) Raise(n);
+            foreach (var n in new[] { nameof(Status), nameof(RowsText), nameof(IsPass), nameof(IsFail), nameof(IsRunning), nameof(Note), nameof(Columns), nameof(Rows), nameof(SecondsText),
+                                      nameof(HasFailingRow), nameof(FailingTitle), nameof(FailingFacts), nameof(FailingFile), nameof(CanOpenFailing) }) Raise(n);
         }
     }
     private bool _running;
@@ -38,6 +39,29 @@ public sealed class BenchItem : INotifyPropertyChanged
     public string[] Columns => _json["columns"] is JsonArray a ? a.Select(x => (string?)x ?? "").ToArray() : [];
     public List<(string[] Cells, string Status)> Rows =>
         _json["rows"] is JsonArray a ? a.Select(r => (((JsonArray)r!["cells"]!).Select(c => (string?)c ?? "").ToArray(), (string?)r["status"] ?? "")).ToList() : [];
+    // the failing row (design/boards/Bench "Table 7 · failing row"): its cells by column and the run it came from
+    private JsonObject? FirstFail => _json["rows"] is JsonArray a ? a.OfType<JsonObject>().FirstOrDefault(r => (string?)r["status"] == "fail") : null;
+    public bool HasFailingRow => !_running && FirstFail != null;
+    public string FailingTitle
+    {
+        get
+        {
+            var n = _json["rows"] is JsonArray a ? a.OfType<JsonObject>().Count(r => (string?)r["status"] == "fail") : 0;
+            return $"{Id} · failing row" + (n > 1 ? $" (1 of {n})" : "");
+        }
+    }
+    public List<JobFact> FailingFacts
+    {
+        get
+        {
+            if (FirstFail is not { } r || r["cells"] is not JsonArray cells) return [];
+            var cols = Columns;
+            return cells.Select((c, i) => new JobFact(i < cols.Length ? cols[i] : $"column {i + 1}", (string?)c ?? ""))
+                        .Where(f => f.Key != "Status").ToList();
+        }
+    }
+    public string FailingFile => (string?)FirstFail?["file"] ?? "";
+    public bool CanOpenFailing => FailingFile.Length > 0 && File.Exists(FailingFile);
     public string RowsText
     {
         get

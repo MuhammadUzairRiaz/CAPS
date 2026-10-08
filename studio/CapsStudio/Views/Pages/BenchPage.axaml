@@ -95,6 +95,32 @@
                 <TextBlock x:Name="DetailTitle" Classes="h2" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
               </DockPanel>
             </Border>
+            <Border DockPanel.Dock="Bottom" Margin="16,0,16,10" Padding="12,10" CornerRadius="8" BorderBrush="{DynamicResource ErrB}" BorderThickness="1"
+                    DataContext="{Binding SelectedBench}" IsVisible="{Binding HasFailingRow, FallbackValue=False}">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                <StackPanel Spacing="6">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <v:Icon Kind="xcircle" Size="14" Foreground="{DynamicResource ErrB}" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding FailingTitle}" Classes="h3" VerticalAlignment="Center" />
+                  </StackPanel>
+                  <ItemsControl ItemsSource="{Binding FailingFacts}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:JobFact">
+                        <Grid ColumnDefinitions="170,*" Margin="0,1">
+                          <TextBlock Text="{Binding Key}" Classes="muted" FontSize="12" TextTrimming="CharacterEllipsis" />
+                          <TextBlock Grid.Column="1" Text="{Binding Value}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" />
+                        </Grid>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <TextBlock Text="Rows outside tolerance are kept as measured, not hidden or re-run until they pass." Classes="dim" FontSize="11.5" TextWrapping="Wrap" />
+                </StackPanel>
+                <Button Grid.Column="1" Classes="small" Click="OnOpenFailing" IsEnabled="{Binding CanOpenFailing, FallbackValue=False}" VerticalAlignment="Top"
+                        ToolTip.Tip="Opens the structure this row was measured on in Studio">
+                  <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="folder" Size="13" VerticalAlignment="Center" /><TextBlock Text="Open run" VerticalAlignment="Center" /></StackPanel>
+                </Button>
+              </Grid>
+            </Border>
             <Border DockPanel.Dock="Bottom" Margin="16,0,16,14" Padding="12,10" CornerRadius="8" Background="{DynamicResource Bg2B}" x:Name="NoteBox">
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <v:Icon Kind="alert" Size="14" Foreground="{DynamicResource AccB}" VerticalAlignment="Top" Margin="0,2,0,0" />
