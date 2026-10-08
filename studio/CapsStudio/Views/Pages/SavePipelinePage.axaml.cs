@@ -10,6 +10,7 @@ public partial class SavePipelinePage : PageBase
     public SavePipelinePage() => AvaloniaXamlLoader.Load(this);
 
     private void OnBack(object? s, RoutedEventArgs e) => Vm.SetModule(20);
+    private void OnSaveScope(object? s, RoutedEventArgs e) { if (Vm.SavePipelineToScope() != null) Vm.SetModule(20); }
     private void OnAddOutput(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is string kind) Vm.AddPipelineOutput(kind); }
     private void OnRemoveOutput(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is CapsStudio.ViewModels.PipelineOutputRow row) Vm.RemovePipelineOutput(row); }
     private async void OnWriteOutputs(object? s, RoutedEventArgs e)

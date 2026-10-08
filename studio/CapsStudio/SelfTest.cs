@@ -4917,6 +4917,31 @@ internal static class SelfTest
                       $"recipe step form: {vm.RecipeFields.Count} fields · ok {vm.RecipeOk} {vm.RecipeValid} · " + rt.Replace("\n", " ⏎ ")[..Math.Min(260, rt.Length)]);
                 vm.SetModule(8);
             }
+            // Save pipeline: saved to the shared library (CAPS_PIPELINES), the "don't ask" flag written for a Python step, and a copy
+            // of the file outside your library still arrives with its Python step off
+            {
+                var lib = Path.Combine(outDir, "pipelines-lib");
+                Environment.SetEnvironmentVariable("CAPS_PIPELINES", lib);
+                vm.Open(Path.Combine(dir, "ps_melt.lammpstrj"), Path.Combine(dir, "ps_melt.data"));
+                vm.LoadPipeline(Path.Combine(dir, "structure_report.json"));
+                vm.AddStep("python");
+                var py = vm.PipelineRows.First(r => r.Type == "python");
+                py.Enabled = false;
+                vm.PipelineAskPython = false;
+                vm.PipelineName = "selftest report";
+                var pipeSaved = vm.SavePipelineToScope();
+                var savedText = pipeSaved != null && File.Exists(pipeSaved) ? File.ReadAllText(pipeSaved) : "";
+                var elsewhere = Path.Combine(outDir, "elsewhere.caps-pipeline.yaml");
+                File.WriteAllText(elsewhere, savedText.Replace("enabled: false", "enabled: true"));
+                vm.LoadPipeline(elsewhere);
+                var heldOff = vm.PipelineRows.FirstOrDefault(r => r.Type == "python") is { Enabled: false } && vm.PipelineHeldPython == 1;
+                var loadStatus = vm.Status;
+                vm.PipelineAskPython = true;
+                Check(pipeSaved != null && pipeSaved.StartsWith(lib) && savedText.Contains("ask_before_python: false") && heldOff,
+                      $"save pipeline scope: {pipeSaved} · flag {savedText.Contains("ask_before_python: false")} · outside the library held off {heldOff} · {loadStatus} · rows {vm.PipelineRows.Count}");
+                vm.ClearPipeline();
+                Environment.SetEnvironmentVariable("CAPS_PIPELINES", null);
+            }
             // the Start page's sample pipeline: four steps on the polystyrene cell
             vm.Open(Path.Combine(dir, "ps_melt.lammpstrj"), Path.Combine(dir, "ps_melt.data"));
             vm.LoadPipeline(Path.Combine(dir, "structure_report.json"));
