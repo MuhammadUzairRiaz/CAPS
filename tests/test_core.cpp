@@ -1030,6 +1030,31 @@ TEST(Pipeline, PythonStep) {
   EXPECT_EQ(f.steps[0].level, "error");
   EXPECT_NE(f.steps[0].output.find("hello from the step"), std::string::npos) << f.steps[0].output;
   EXPECT_NE(f.steps[0].output.find("KeyError"), std::string::npos) << f.steps[0].output;
+  // Inputs: only the properties named (Charge here) reach the script, ids and positions always; Writes named in the summary
+  typed["code"] = std::string("from caps.pipeline import step\n\n@step(name=\"Keys\")\ndef modify(frame, data):\n"
+                              "    data.attributes[\"Columns\"] = len(data.particles.keys())\n    data.attributes[\"Frame\"] = frame + 0.5\n");
+  typed["inputs"] = std::string("Charge");
+  Json arr4 = Json::array();
+  arr4.push_back(typed);
+  const auto k = run_pipeline(t.frame(0), pipeline_from_json(arr4), 0, 0, &t);
+  ASSERT_EQ(k.steps[0].level, "ok") << k.steps[0].summary;
+  EXPECT_EQ(k.attribute("Columns"), 3.0);   // Particle Identifier, Charge, Position
+  EXPECT_NE(k.steps[0].summary.find("writes Columns, Frame"), std::string::npos) << k.steps[0].summary;
+  typed["inputs"] = std::string("NoSuchProperty");
+  Json arr5 = Json::array();
+  arr5.push_back(typed);
+  EXPECT_EQ(run_pipeline(t.frame(0), pipeline_from_json(arr5), 0, 0, &t).steps[0].level, "error");
+  // Re-run on frame change off: frame 1 gets frame 0's result, not run again
+  typed["inputs"] = std::string("");
+  typed["rerun"] = false;
+  Json arr6 = Json::array();
+  arr6.push_back(typed);
+  const Pipeline once = pipeline_from_json(arr6);
+  const auto r0 = run_pipeline(t.frame(0), once, 0, 0, &t);
+  const auto r1 = run_pipeline(t.frame(1), once, 1, 0, &t);
+  EXPECT_EQ(r0.attribute("Frame"), 0.5);
+  EXPECT_EQ(r1.attribute("Frame"), 0.5);
+  EXPECT_NE(r1.steps[0].summary.find("from frame 0, not re-run"), std::string::npos) << r1.steps[0].summary;
 }
 
 TEST(Io, FileWithoutAtomsIsAnError) {

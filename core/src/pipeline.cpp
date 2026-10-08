@@ -11,6 +11,7 @@
 #include <cstdlib>
 #include <functional>
 #include <map>
+#include <mutex>
 #include <numeric>
 #include <set>
 #include <sstream>
@@ -3126,6 +3127,26 @@ void step_python(PipelineState& st, const Json& p, StepStatus& out) {
   }
   if (script.empty()) throw std::invalid_argument("choose a Python file with an @step function, or type the step");
   if (!std::filesystem::exists(script)) throw std::invalid_argument("no file " + script);
+  // Re-run on frame change off (design/boards/PythonStep): the result of the first frame it ran on, applied to every frame
+  // (properties only where the particle count matches); the cache is keyed by the script's text and its inputs
+  const bool rerun = flag(p, "rerun", true);
+  const std::string inputs_text = p.text("inputs", "");
+  std::string cache_key;
+  if (!rerun) {
+    std::ifstream f(script);
+    cache_key = sha256_hex(std::string((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>()) + "|" + inputs_text);
+  }
+  static std::mutex cache_mu;
+  static std::map<std::string, std::pair<int, Json>> cache;   // key → (frame it ran on, its result)
+  Json res;
+  int from_frame = -1;
+  std::string log;
+  const size_t n = st.system.atoms.size();
+  if (!rerun) {
+    std::lock_guard<std::mutex> lock(cache_mu);
+    if (auto it = cache.find(cache_key); it != cache.end()) from_frame = it->second.first, res = it->second.second;
+  }
+  if (from_frame < 0) {
   const std::string pkg = python_package_dir(p);
   if (pkg.empty()) throw std::runtime_error("the caps Python package was not found (set CAPS_PYTHON_PATH to data/python)");
   const char* py_env = std::getenv("CAPS_PYTHON");
@@ -3137,13 +3158,26 @@ void step_python(PipelineState& st, const Json& p, StepStatus& out) {
   // the frame, molecules whole, as the script sees it
   System whole = st.system;
   if (!whole.unwrapped && whole.cell.valid()) make_molecules_whole(whole);
-  const size_t n = whole.atoms.size();
   std::vector<double> backbone(n, 0);
   for (const auto& bb : backbones(whole)) for (uint32_t i : bb) backbone[i] = 1;
   std::vector<double> mol;
   property_values(st, "Molecule", mol);
   Json parts = Json::object();
+  // Inputs: the properties the step reads (blank: all); identifiers and positions always go
+  std::set<std::string> wanted;
+  {
+    std::istringstream is(inputs_text);
+    for (std::string t; std::getline(is, t, ',');) {
+      while (!t.empty() && std::isspace(static_cast<unsigned char>(t.front()))) t.erase(t.begin());
+      while (!t.empty() && std::isspace(static_cast<unsigned char>(t.back()))) t.pop_back();
+      if (!t.empty()) wanted.insert(t);
+    }
+  }
+  const std::set<std::string> builtin = {"Particle Identifier", "Molecule Identifier", "Particle Type", "Element", "Charge", "Selection", "Backbone", "Position"};
+  for (const auto& w : wanted)
+    if (!builtin.count(w) && !st.props.count(w)) throw std::invalid_argument("input " + w + " is not a property here");
   auto column = [&](const std::string& name, auto&& f) {
+    if (!wanted.empty() && !wanted.count(name) && name != "Particle Identifier" && name != "Position") return;
     Json a = Json::array();
     for (size_t i = 0; i < n; ++i) a.push_back(f(i));
     parts[name] = std::move(a);
@@ -3192,7 +3226,6 @@ void step_python(PipelineState& st, const Json& p, StepStatus& out) {
   const std::string cmd = "'" + python + "' -m caps.runner '" + script + "' '" + fin.string() + "' '" + fout.string() + "' 2>&1";
   FILE* pipe = popen(cmd.c_str(), "r");
 #endif
-  std::string log;
   if (pipe) {
     char buf[512];
     while (std::fgets(buf, sizeof buf, pipe)) log += buf;
@@ -3215,7 +3248,6 @@ void step_python(PipelineState& st, const Json& p, StepStatus& out) {
     if (const auto nl = last.rfind('\n'); nl != std::string::npos) last = last.substr(nl + 1);
     throw std::runtime_error("Python did not run" + (log.empty() ? std::string(" (is ") + python + " installed?)" : ": " + last.substr(0, 300)));
   }
-  Json res;
   { std::ifstream f(fout); res = Json::parse(std::string((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>())); }
   std::filesystem::remove(fout);
   if (!res.has("ok") || !res["ok"].boolean()) {
@@ -3228,12 +3260,15 @@ void step_python(PipelineState& st, const Json& p, StepStatus& out) {
     }
     throw std::runtime_error(res.text("error", "the step failed") + where);
   }
+  if (!rerun) { std::lock_guard<std::mutex> lock(cache_mu); cache[cache_key] = {st.frame, res}; }
+  }   // ran Python
   size_t na = 0, np = 0, nt = 0;
+  std::vector<std::string> wrote;
   if (res.has("attributes"))
     for (const auto& [k, v] : res["attributes"].members())
       if (v.is_number()) {   // new or changed ones (values that went through JSON unchanged are not counted)
         const double before = st.attribute(k, std::nan(""));
-        if (!(std::fabs(before - v.number()) <= 1e-9 * std::max(1.0, std::fabs(before)))) { st.set_attribute(k, v.number()); ++na; }
+        if (!(std::fabs(before - v.number()) <= 1e-9 * std::max(1.0, std::fabs(before)))) { st.set_attribute(k, v.number()); ++na; wrote.push_back(k); }
       }
   if (res.has("properties"))
     for (const auto& [k, v] : res["properties"].members()) {
@@ -3242,6 +3277,7 @@ void step_python(PipelineState& st, const Json& p, StepStatus& out) {
       dst.resize(n);
       for (size_t i = 0; i < n; ++i) dst[i] = v[i].number();
       ++np;
+      wrote.push_back(k);
     }
   if (res.has("tables"))
     for (const auto& t : res["tables"].items()) {
@@ -3254,6 +3290,7 @@ void step_python(PipelineState& st, const Json& p, StepStatus& out) {
         for (const auto& x : r.items()) row.push_back(x.number());
         d.rows.push_back(std::move(row));
       }
+      wrote.push_back(d.name);
       st.tables.push_back(std::move(d));
       ++nt;
     }
@@ -3262,6 +3299,13 @@ void step_python(PipelineState& st, const Json& p, StepStatus& out) {
   out.title = res.text("name", "Python step");
   out.summary = std::to_string(na) + " attribute" + (na == 1 ? "" : "s") + ", " + std::to_string(np) + " propert" + (np == 1 ? "y" : "ies") + ", " +
                 std::to_string(nt) + " table" + (nt == 1 ? "" : "s") + (log.empty() ? "" : [&] { const auto nl = std::count(log.begin(), log.end(), '\n'); return " · printed " + std::to_string(nl) + (nl == 1 ? " line" : " lines"); }());
+  // Writes: what the step made, by name (the PythonStep board's Inputs / Writes)
+  if (!wrote.empty()) {
+    std::string w;
+    for (size_t k = 0; k < wrote.size() && k < 5; ++k) w += (k ? ", " : "") + wrote[k];
+    out.summary += " · writes " + w + (wrote.size() > 5 ? " …" : "");
+  }
+  if (from_frame >= 0) out.summary += " · from frame " + std::to_string(from_frame) + ", not re-run";
 }
 
 struct StepDef {
