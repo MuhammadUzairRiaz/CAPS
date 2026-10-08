@@ -2079,6 +2079,16 @@ internal static class SelfTest
             vm.RunDiffusion().GetAwaiter().GetResult();
             Check(vm.IsDiffusion && Math.Abs(yh - 2.32e-10) < 0.01e-10 && vm.DfMsd.Length >= 2 && vm.DfL > 0 && vm.DfCorrectionText.EndsWith("m²/s"),
                   $"diffusion: Yeh–Hummer {yh:0.000e0} m²/s · MSD {vm.DfMsd.Length} lags · L {vm.DfL} nm · {vm.DfStatus} {vm.DfWarning}");
+            // replicas: the same run added as a second one gives the same D, so a spread of zero
+            vm.AddDfReplicas([Path.Combine(dir, "ps_melt.lammpstrj")]);
+            vm.RunDiffusion().GetAwaiter().GetResult();
+            var rep = vm.DfReplicas.FirstOrDefault();
+            // (the three-frame sample is too short for a fit window: no D for either run, said so)
+            var spread = MainViewModel.Spread([2.0e-9, 2.2e-9, double.NaN, 2.4e-9]);
+            Check(rep != null && rep.Note.Length == 0 && vm.DfSpread.Caption.StartsWith("needs two fitted runs")
+                  && spread.N == 3 && Math.Abs(spread.Mean - 2.2e-9) < 1e-15 && Math.Abs(spread.Sd - 0.2e-9) < 1e-15,
+                  $"diffusion replicas: {rep?.DText} {rep?.Note} · {vm.DfSpread.Caption} · spread {spread.Mean:0.00e0} ± {spread.Sd:0.0e0} of {spread.N}");
+            if (rep != null) vm.RemoveDfReplica(rep);
             vm.SetModule(8);
         }
 
