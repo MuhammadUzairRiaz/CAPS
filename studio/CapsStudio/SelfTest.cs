@@ -4942,6 +4942,17 @@ internal static class SelfTest
                 vm.ClearPipeline();
                 Environment.SetEnvironmentVariable("CAPS_PIPELINES", null);
             }
+            // Grow sparse, then compress: 4 PS chains grown at 0.3 g/cm³ and compressed by Relax to 0.6
+            {
+                vm.UsePolystyreneInGrow();
+                vm.GrowChainsD = 4; vm.GrowDpD = 8; vm.GrowDensityD = 0.6m; vm.GrowStartDensityD = 0.3m;
+                var note = vm.GrowCompressNote;
+                vm.Grow().GetAwaiter().GetResult();
+                for (int k = 0; k < 400 && vm.Relaxing; ++k) Thread.Sleep(25);
+                var rho = vm.Document?.Summary().Density ?? 0;
+                vm.GrowStartDensityD = 0;
+                Check(Math.Abs(rho - 0.6) < 0.01 && note.StartsWith("grown at 0.3, compressed to 0.6"), $"grow then compress: {rho:0.000} g/cm³ · {note} · {vm.Status}");
+            }
             // the Start page's sample pipeline: four steps on the polystyrene cell
             vm.Open(Path.Combine(dir, "ps_melt.lammpstrj"), Path.Combine(dir, "ps_melt.data"));
             vm.LoadPipeline(Path.Combine(dir, "structure_report.json"));

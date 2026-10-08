@@ -5913,6 +5913,8 @@ caps_doc* grow_chains_impl(const char* spec_json, const caps_grow_opts* o, caps_
         caps::Json j = caps::Json::object();
         j["chains_done"] = double(L.chains_done), j["chains"] = double(L.chains), j["units"] = double(L.units), j["units_total"] = double(L.units_total);
         j["restarts"] = double(L.restarts), j["worst_margin"] = L.worst_margin, j["density"] = L.density, j["atoms"] = double(part.atoms.size());
+        j["acceptance"] = L.acceptance;
+        if (std::isfinite(L.ln_w)) j["ln_w"] = L.ln_w;
         live(sd, j.dump(0).c_str(), user);
       };
     caps::GrowReport rep;

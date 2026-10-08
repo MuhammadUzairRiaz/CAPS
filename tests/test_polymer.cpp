@@ -521,6 +521,27 @@ TEST(Polymer, OrientedGrowthAlignsTheBackbone) {
   std::printf("orientation: isotropic %.3f · best-of-k %.3f · Rosenbluth %.3f\n", iso.orientation, best.orientation, ros.orientation);
 }
 
+// the live view's numbers (design/boards/Grow): step acceptance in (0, 1], and with Rosenbluth growth the running mean ln W
+// of the chains finished, the last snapshot's equal to the report's once every chain is done
+TEST(Polymer, LiveAcceptanceAndRosenbluthWeight) {
+  GrowOptions o;
+  o.chains = 4;
+  o.density = 0.4;
+  o.seed = 3;
+  o.method = 1;
+  o.snapshot_seconds = 0;
+  double acc = -1, lnw = std::nan("");
+  int done = 0;
+  o.snapshot = [&](const System&, const GrowOptions::Live& L) { acc = L.acceptance, lnw = L.ln_w, done = L.chains_done; };
+  GrowReport r;
+  grow_chains(spec({"*CC*"}, Sequence::Homopolymer, 20), o, &r);
+  EXPECT_GT(acc, 0.0);
+  EXPECT_LE(acc, 1.0);
+  if (done == o.chains) EXPECT_NEAR(lnw, r.ln_rosenbluth, 1e-6);
+  else if (done > 0) EXPECT_TRUE(std::isfinite(lnw));
+  std::printf("live: acceptance %.3f · ln W %.2f (%d chains done) · report %.2f\n", acc, lnw, done, r.ln_rosenbluth);
+}
+
 TEST(Polymer, DeeperLookAheadGrows) {
   GrowOptions o;
   o.chains = 6;

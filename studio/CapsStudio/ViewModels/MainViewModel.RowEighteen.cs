@@ -835,6 +835,8 @@ public partial class MainViewModel
             GrowMarginText = double.IsFinite(D("worst_margin")) ? D("worst_margin").ToString("+0.00;−0.00", Inv) + " Å" : "—";
             GrowDensityNowText = D("density").ToString("0.00", Inv) + " g/cm³";
             GrowLiveAtoms = $"{D("atoms"):N0} atoms placed · colour: molecule";
+            GrowAcceptText = double.IsFinite(D("acceptance")) ? D("acceptance").ToString("0.00", Inv) : "—";
+            GrowLnWText = double.IsFinite(D("ln_w")) ? D("ln_w").ToString("0.0", Inv) : _growMethod > 0 ? "no chain done" : "—";
         }
         catch { }
     }
