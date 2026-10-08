@@ -19,23 +19,35 @@
 
 namespace caps {
 
+// "# res 12 BD chain 3": the repeat unit and its name, and the chain the atom started in before a reaction run joined
+// chains (so a network read back keeps its chains)
 std::string residue_comment(const Atom& a) {
-  if (a.resid <= 0) return "";
-  std::string name = a.resname;
-  for (auto& c : name) if (std::isspace(static_cast<unsigned char>(c))) c = '_';
-  return "  # res " + std::to_string(a.resid) + (name.empty() ? "" : " " + name);
+  std::string out;
+  if (a.resid > 0) {
+    std::string name = a.resname;
+    for (auto& c : name) if (std::isspace(static_cast<unsigned char>(c))) c = '_';
+    if (name == "chain") name = "chain_";
+    out = " res " + std::to_string(a.resid) + (name.empty() ? "" : " " + name);
+  }
+  if (a.chain > 0) out += " chain " + std::to_string(a.chain);
+  return out.empty() ? "" : "  #" + out;
 }
 
 void read_residue_comment(const std::string& comment, Atom& a) {
   std::istringstream is(comment);
-  std::string w;
-  is >> w;
-  if (w != "res") return;
-  long long r = 0;
-  if (!(is >> r) || r <= 0) return;
-  a.resid = r;
-  std::string name;
-  if (is >> name) a.resname = name;
+  std::vector<std::string> w;
+  for (std::string x; is >> x;) w.push_back(x);
+  for (size_t k = 0; k < w.size(); ++k) {
+    if (w[k] == "res" && k + 1 < w.size()) {
+      long long r = 0;
+      try { r = std::stoll(w[k + 1]); } catch (const std::exception&) { continue; }
+      if (r <= 0) continue;
+      a.resid = r;
+      if (k + 2 < w.size() && w[k + 2] != "chain") a.resname = w[k + 2];
+    } else if (w[k] == "chain" && k + 1 < w.size()) {
+      try { a.chain = std::max(0LL, std::stoll(w[k + 1])); } catch (const std::exception&) {}
+    }
+  }
 }
 
 namespace {

@@ -551,6 +551,16 @@ std::vector<int64_t> original_chains(const System& s0, const std::vector<Reactio
   std::vector<int64_t> out(n);
   for (size_t i = 0; i < n; ++i) out[i] = mol[i] + 1;
   if (n == 0) return out;
+  // chains a reaction run recorded on the atoms (a network written and read back by CAPS): those
+  if (std::any_of(s.atoms.begin(), s.atoms.end(), [](const Atom& a) { return a.chain > 0; })) {
+    // atoms added since (molecules inserted after the run) take their molecule, numbered after the recorded ones
+    int64_t top = 0;
+    for (const auto& a : s.atoms) top = std::max(top, a.chain);
+    std::set<int64_t> ids;
+    for (size_t i = 0; i < n; ++i) out[i] = s.atoms[i].chain > 0 ? s.atoms[i].chain : top + 1 + mol[i], ids.insert(out[i]);
+    if (note) *note = std::to_string(ids.size()) + " molecules as the structure records them (the chains a reaction run started from)";
+    return out;
+  }
   std::map<int, size_t> size;
   for (int m : mol) ++size[m];
   size_t largest = 0;
@@ -1347,6 +1357,18 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
     rep.notes.push_back(std::to_string(rep.byproducts) + (o.keep_byproducts ? " byproduct molecules kept in the cell" : " byproduct molecules removed"));
   rep.notes.push_back("force field during the run: " + rep.field);
   rep.chains_after = tag;
+  // each atom keeps the molecule it started in (a byproduct kept as a molecule: a new id), so a network written and read
+  // back still knows its chains
+  {
+    int64_t top = 0;
+    for (int64_t t : tag) top = std::max(top, t);
+    std::map<int64_t, int64_t> fresh;
+    for (size_t i = 0; i < s.atoms.size() && i < tag.size(); ++i) {
+      int64_t c = tag[i];
+      if (c <= 0) { if (!fresh.count(c)) fresh[c] = ++top; c = fresh[c]; }
+      s.atoms[i].chain = c;
+    }
+  }
   rep.carry_after = carry;
   // new bonds join molecules across the cell: every molecule whole again, so bonded atoms carry consistent image flags
   if (s.cell.valid()) make_molecules_whole(s);

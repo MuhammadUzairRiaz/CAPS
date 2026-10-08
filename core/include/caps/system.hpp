@@ -48,6 +48,7 @@ struct Atom {
   Vec3 pos{0, 0, 0};     // Å, as read (may be unwrapped)
   std::array<int, 3> image{0, 0, 0};
   uint32_t tags = 0;     // the System's tags this atom carries (bit k: tags[k]); see caps/tags.hpp
+  int64_t chain = 0;     // the molecule it started in before reactions joined molecules (React sets it; 0: not recorded)
 };
 
 struct Bond {
