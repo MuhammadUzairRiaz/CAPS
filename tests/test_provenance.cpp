@@ -795,6 +795,26 @@ TEST(Structure, WignerSeitzDefects) {
 
 // Exact Voronoi cells: FCC's rhombic dodecahedra (a³/4, twelve four-edged faces), BCC's truncated octahedra (a³/2,
 // ⟨0 6 0 8⟩), the icosahedron's centre ⟨0 0 12 0⟩ (its surface atoms open), and a polymer melt's cells filling the box
+// the chain orientation step draws its director: an all-trans zigzag along x gives S = 1 and one arrow along x
+TEST(Structure, OrientationDirectorArrow) {
+  caps::System s;
+  for (int i = 0; i < 20; ++i) {
+    caps::Atom a;
+    a.element = 6;
+    a.id = i + 1;
+    a.pos = {1.27 * i, (i % 2) * 0.88, 0};
+    s.atoms.push_back(a);
+    if (i > 0) s.bonds.push_back({uint32_t(i - 1), uint32_t(i), 1});
+  }
+  auto st = caps::run_pipeline(s, caps::pipeline_from_json(caps::Json::parse(R"([{"type":"orientation"}])")), 0, 0);
+  ASSERT_EQ(st.segments.size(), 1u);
+  const auto d = st.segments[0].b - st.segments[0].a;
+  EXPECT_TRUE(st.segments[0].arrow);
+  EXPECT_GT(std::fabs(d[0]), 0.99 * caps::norm(d));
+  st = caps::run_pipeline(s, caps::pipeline_from_json(caps::Json::parse(R"([{"type":"orientation","arrow":false}])")), 0, 0);
+  EXPECT_TRUE(st.segments.empty());
+}
+
 TEST(Structure, ExactVoronoiCells) {
   auto crystal = [](const std::string& sg, double a, std::vector<caps::CrystalSite> sites, std::array<int, 3> sc) {
     caps::CrystalSpec spec;
