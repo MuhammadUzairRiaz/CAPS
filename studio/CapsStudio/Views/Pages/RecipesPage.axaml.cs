@@ -32,4 +32,13 @@ public partial class RecipesPage : PageBase
     private void OnDuplicate(object? s, RoutedEventArgs e) => Vm.DuplicateRecipe();
     private async void OnRun(object? s, RoutedEventArgs e) => await Vm.RunSelectedRecipe();
     private async void OnRunOnDoc(object? s, RoutedEventArgs e) => await Vm.RunRecipeOnDocument();
+
+    private void OnStage(object? s, Avalonia.Interactivity.RoutedEventArgs e) { if ((s as Control)?.Tag is string n) Vm.SelectRecipeStep(n); }
+    private void OnFieldCommit(object? s, Avalonia.Interactivity.RoutedEventArgs e) { if ((s as Control)?.Tag is RecipeField f) Vm.SetRecipeField(f); }
+    private void OnFieldKey(object? s, Avalonia.Input.KeyEventArgs e)
+    {
+        if (e.Key != Avalonia.Input.Key.Enter || (s as Control)?.Tag is not RecipeField f) return;
+        Vm.SetRecipeField(f);
+        e.Handled = true;
+    }
 }

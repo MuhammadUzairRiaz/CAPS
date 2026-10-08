@@ -64,15 +64,33 @@
                 <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:RecipeStageChip">
-                    <Border Classes="stage" Classes.bad="{Binding !Ok}">
-                      <StackPanel Spacing="2">
-                        <TextBlock Text="{Binding Name}" FontSize="12.5" FontWeight="SemiBold" />
-                        <TextBlock Text="{Binding Summary}" Classes="dim" TextWrapping="Wrap" />
-                      </StackPanel>
-                    </Border>
+                    <Button Classes="ghost" Padding="0" Click="OnStage" Tag="{Binding Name}" ToolTip.Tip="Edit this step's settings">
+                      <Border Classes="stage" Classes.bad="{Binding !Ok}">
+                        <StackPanel Spacing="2">
+                          <TextBlock Text="{Binding Name}" FontSize="12.5" FontWeight="SemiBold" />
+                          <TextBlock Text="{Binding Summary}" Classes="dim" TextWrapping="Wrap" />
+                        </StackPanel>
+                      </Border>
+                    </Button>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard" IsVisible="{Binding HasRecipeStep}">
+            <StackPanel Spacing="8">
+              <TextBlock Text="{Binding RecipeStepTitle}" FontSize="13.5" FontWeight="SemiBold" />
+              <ItemsControl ItemsSource="{Binding RecipeFields}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:RecipeField">
+                    <Grid ColumnDefinitions="170,*" ColumnSpacing="10" Margin="0,2">
+                      <TextBlock Text="{Binding Key}" Classes="mono muted" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                      <TextBox Grid.Column="1" Text="{Binding Value}" Classes="mono" FontSize="12" Tag="{Binding}" LostFocus="OnFieldCommit" KeyDown="OnFieldKey" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock Classes="dim" TextWrapping="Wrap" Text="Enter or leaving a field writes it into the YAML (only this step's lines change); the YAML on the right stays the recipe." />
             </StackPanel>
           </Border>
           <Border Classes="pcard" IsVisible="{Binding RecipeHasSchedule}">
