@@ -3105,6 +3105,15 @@ internal static class SelfTest
                 Check(tifOk && pdfOk, $"figure TIFF {tif.Length} bytes ok {tifOk} · PDF ok {pdfOk} ({inches * 72:0} pt wide)");
             }
             vm.FigFormat = 0;
+            // 16-bit PNG: IHDR bit depth 16, colour type 6 (RGBA)
+            {
+                var png16 = Path.Combine(outDir, "caps-selftest-figure16.png");
+                vm.FigBitsIndex = 1;
+                vm.ExportFigure(png16, (_, _, _, _, _, _) => { }, (_, _) => { }, (px, _, _, _) => px).GetAwaiter().GetResult();
+                vm.FigBitsIndex = 0;
+                var head = File.Exists(png16) ? File.ReadAllBytes(png16).Take(32).ToArray() : [];
+                Check(head.Length == 32 && head[24] == 16 && head[25] == 6, $"figure 16-bit PNG: depth {(head.Length > 25 ? head[24] : 0)} · colour type {(head.Length > 25 ? head[25] : 0)}");
+            }
             vm.SetModule(8);
         }
 

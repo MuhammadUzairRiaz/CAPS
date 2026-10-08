@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Text.Json.Nodes;
 using Avalonia;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
@@ -105,6 +106,12 @@ public sealed partial class MainViewModel
         _figWidthMm = p.Mm > 0 ? (decimal)p.Mm : 325;
         _figDpi = p.Dpi > 0 ? p.Dpi : 150;
         if (_figTitleText.Length == 0) _figTitleText = FigureDefaultTitle();
+        // a project remembers its figure's background (and custom colour): it comes back when the project is open
+        if (_settings.FigurePerProject && _projManifest?["figure"] is JsonObject pf)
+        {
+            if ((int?)pf["background"] is int pb) _settings.FigureBackground = Math.Clamp(pb, 0, 2);
+            _figCustom = (string?)pf["custom"] ?? "";
+        }
         foreach (var t in FigureTiles) t.Selected = t.Background == FigBackground;
         Raise(nameof(FigBackground)); Raise(nameof(FigBgDark)); Raise(nameof(FigBgWhite)); Raise(nameof(FigBgTransparent));   // the saved choice
         RaiseFigure();
@@ -129,14 +136,28 @@ public sealed partial class MainViewModel
             Raise();
             Raise(nameof(FigBgDark)); Raise(nameof(FigBgWhite)); Raise(nameof(FigBgTransparent));
             Changed("Figure background");
+            RememberFigureInProject();
         }
     }
+    /// <summary>Remember per project (design/boards/FigureBackground): the background and custom colour go into the open
+    /// project's file when it is next saved.</summary>
+    public bool FigPerProject { get => _settings.FigurePerProject; set { if (_settings.FigurePerProject == value) return; _settings.FigurePerProject = value; Raise(); Changed("Figure background per project"); RememberFigureInProject(); } }
+    public bool FigPerProjectAvailable => _projManifest != null;
+    private void RememberFigureInProject()
+    {
+        if (!_settings.FigurePerProject || _projManifest == null) return;
+        _projManifest["figure"] = new JsonObject { ["background"] = _settings.FigureBackground, ["custom"] = _figCustom };
+    }
+    public static readonly string[] FigureBitDepths = ["8-bit", "16-bit"];
+    /// <summary>PNG bit depth: 16 keeps the supersampled average's 16-bit channels (smooth gradients for print).</summary>
+    public int FigBitsIndex { get => _settings.FigureBits >= 16 ? 1 : 0; set { var b = value == 1 ? 16 : 8; if (_settings.FigureBits == b) return; _settings.FigureBits = b; Raise(); RaiseFigure(); Changed("Figure bit depth"); } }
+    public bool FigIsPng => _figFormat == 0;
     public bool FigBgDark { get => FigBackground == 0; set { if (value) FigBackground = 0; } }
     public bool FigBgWhite { get => FigBackground == 1; set { if (value) FigBackground = 1; } }
     public bool FigBgTransparent { get => FigBackground == 2; set { if (value) FigBackground = 2; } }
 
     /// <summary>A custom background colour (#RRGGBB) replaces the choice above; "none" keeps it.</summary>
-    public string FigCustom { get => _figCustom; set { if (Set(ref _figCustom, value.Trim())) { RaiseFigure(); RefreshFigure(); } } }
+    public string FigCustom { get => _figCustom; set { if (Set(ref _figCustom, value.Trim())) { RaiseFigure(); RefreshFigure(); RememberFigureInProject(); } } }
     private uint? FigCustomRgb
     {
         get
@@ -161,7 +182,7 @@ public sealed partial class MainViewModel
             RefreshFigure();
         }
     }
-    public int FigFormat { get => _figFormat; set { if (Set(ref _figFormat, value)) RaiseFigure(); } }
+    public int FigFormat { get => _figFormat; set { if (Set(ref _figFormat, value)) { RaiseFigure(); Raise(nameof(FigIsPng)); } } }
     public int FigAspect { get => _figAspect; set { if (Set(ref _figAspect, value)) { RaiseFigure(); RefreshFigure(); } } }
     public decimal FigWidthMm { get => _figWidthMm; set { if (Set(ref _figWidthMm, Math.Clamp(value, 10, 2000))) RaiseFigure(); } }
     public decimal FigDpi { get => _figDpi; set { if (Set(ref _figDpi, Math.Clamp(Math.Round(value), 72, 2400))) RaiseFigure(); } }
@@ -304,9 +325,16 @@ public sealed partial class MainViewModel
                 }
                 else await Task.Run(() => Views.FigureFiles.WritePdf(path, pix, w, h, w / d * 72.0, h / d * 72.0));
             }
+            else if (_settings.FigureBits >= 16 && compose != null)
+            {
+                // 16-bit PNG: the core renders with 16-bit channels and lays the overlay (drawn on a clear layer) over them
+                var layer = compose(new byte[w * h * 4], w, h, overlay);
+                var options = System.Text.Json.JsonSerializer.Serialize(new { bits = 16, dpi, provenance = true, source = doc.Path });
+                await Task.Run(() => doc.ExportImage(cam, opt, path, options, layer));
+            }
             else composePng(rgba, w, h, overlay, dpi, path);
         }
-        var what = $"{w} × {h}" + (dpi > 0 ? $" · {dpi:0} dpi" : "") + $" · {FigureTiles[bg].Name.ToLowerInvariant()}" + (overlay.BarPx > 0 ? $" · scale bar {overlay.BarLabel}" : "");
+        var what = $"{w} × {h}" + (dpi > 0 ? $" · {dpi:0} dpi" : "") + (!svg && _figFormat == 0 && _settings.FigureBits >= 16 ? " · 16-bit" : "") + $" · {FigureTiles[bg].Name.ToLowerInvariant()}" + (overlay.BarPx > 0 ? $" · scale bar {overlay.BarLabel}" : "");
         Status = $"Wrote {path} · {what}";
         return what;
     }

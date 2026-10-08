@@ -43,6 +43,8 @@ public sealed class AppSettings
     public double PmeSpacing { get; set; } = 1.0;
     public int PmeOrder { get; set; } = 5;
     public int FigureBackground { get; set; } = 1;        // export figure: 0 dark, 1 white, 2 transparent
+    public bool FigurePerProject { get; set; } = true;    // export figure: the background kept with the open project
+    public int FigureBits { get; set; } = 8;              // export figure: PNG bit depth (8 or 16)
     public int FigurePreset { get; set; }                 // journal single column …
     public int ReaderVerbosity { get; set; } = 1;         // keyboard walk: 0 brief, 1 full
     public bool AnnounceFrames { get; set; }
