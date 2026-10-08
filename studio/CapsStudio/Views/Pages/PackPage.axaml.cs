@@ -22,6 +22,7 @@ public partial class PackPage : PageBase
     private async void OnPack(object? s, RoutedEventArgs e) => await Vm.RunPack();
     private void OnCancel(object? s, RoutedEventArgs e) => Vm.CancelPack();
     private void OnNew(object? s, RoutedEventArgs e) => Vm.NewPackInput();
+    private void OnAddRegion(object? s, RoutedEventArgs e) => Vm.AddPackRegion((s as Control)?.Tag as string ?? "box");
     private void OnExample(object? s, RoutedEventArgs e) => Window?.PackExample();
     private async void OnAddMolecule(object? s, RoutedEventArgs e) { if (Window != null) await Window.PackAddAsync(); }
     private async void OnAddFragment(object? s, RoutedEventArgs e) { if ((s as Control)?.Tag is FragmentItem f) await Vm.AddPackMolecule(f.Smiles, f.Name); }

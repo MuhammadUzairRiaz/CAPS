@@ -184,7 +184,17 @@
                   <Button Classes="small" Margin="0,0,8,6" Click="OnNew">
                     <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="file" Size="14" VerticalAlignment="Center" /><TextBlock Text="New input" VerticalAlignment="Center" /></StackPanel>
                   </Button>
-                  <Border Classes="chip" Margin="0,4,0,6" VerticalAlignment="Top"><TextBlock Text="box · cube · sphere · cylinder · plane" Foreground="{DynamicResource MutedB}" /></Border>
+                  <Button Classes="small" Margin="0,0,8,6" ToolTip.Tip="A region for the last molecule in the input, sized from the cell: edit its numbers in the input">
+                    <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="cube" Size="14" VerticalAlignment="Center" /><TextBlock Text="Add region" VerticalAlignment="Center" /><v:Icon Kind="chev" Size="11" VerticalAlignment="Center" /></StackPanel>
+                    <Button.Flyout>
+                      <MenuFlyout Placement="BottomEdgeAlignedLeft">
+                        <MenuItem Header="Box · the lower half of the cell" Tag="box" Click="OnAddRegion" />
+                        <MenuItem Header="Slab · between two planes across z" Tag="slab" Click="OnAddRegion" />
+                        <MenuItem Header="Sphere · centred" Tag="sphere" Click="OnAddRegion" />
+                        <MenuItem Header="Cylinder · centred, along z" Tag="cylinder" Click="OnAddRegion" />
+                      </MenuFlyout>
+                    </Button.Flyout>
+                  </Button>
                 </WrapPanel>
               </StackPanel>
             </StackPanel>
@@ -288,6 +298,18 @@
                   <Border Classes="inset" Margin="5,5,0,0"><StackPanel Spacing="2"><TextBlock Text="round" Classes="label" /><TextBlock Text="{Binding PackLoop}" Classes="mono" FontSize="16" /></StackPanel></Border>
                 </UniformGrid>
                 <TextBlock Text="Fails loudly if d_min is not met: a cell below tolerance is never written." Classes="dim" TextWrapping="Wrap" />
+                <TextBlock Text="STAGES" Classes="h3" Margin="0,4,0,0" />
+                <ItemsControl ItemsSource="{Binding PackStages}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:PackStageRow">
+                      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" Margin="0,2">
+                        <Ellipse Width="7" Height="7" Fill="{Binding Brush}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1" Text="{Binding Title}" FontSize="12" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="2" Text="{Binding State}" Classes="mono" FontSize="11" Foreground="{Binding Brush}" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
               </StackPanel>
             </Grid>
           </Border>

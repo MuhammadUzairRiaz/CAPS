@@ -200,4 +200,8 @@ public sealed class CustomShelf
     public string Name { get; set; } = "";
     public string Glyph { get; set; } = "pin";
     public List<string> Tools { get; set; } = new();
+    /// <summary>Tool size in px: 28 small, 36 medium, 44 large (design/boards/ShelfEditor).</summary>
+    public int Size { get; set; } = 36;
+    /// <summary>Names in a tooltip on hover (true) or written under each tool (false).</summary>
+    public bool LabelsOnHover { get; set; } = true;
 }
