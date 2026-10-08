@@ -122,7 +122,11 @@ public partial class MainWindow
             Item("Pop out into a window", () => MoveShelf(s.Id, "window")), dock, new Separator(),
             Item("Hide", () => MoveShelf(s.Id, "hidden")), Item("Reset this workspace", ResetWorkspace),
         };
-        if (s.Id.StartsWith("my-", StringComparison.Ordinal)) items.Add(Item("Delete this shelf", () => DeleteCustomShelf(s.Id)));
+        if (s.Id.StartsWith("my-", StringComparison.Ordinal))
+        {
+            items.Add(Item("Edit this shelf…", () => _ = MakeShelfDialog(s.Id)));
+            items.Add(Item("Delete this shelf", () => DeleteCustomShelf(s.Id)));
+        }
         return new ContextMenu { ItemsSource = items };
     }
 
@@ -489,15 +493,38 @@ public partial class MainWindow
     {
         var tools = AllTools().ToDictionary(t => t.Id, t => t.Tool);
         var panel = new WrapPanel { Orientation = Orientation.Horizontal, ItemSpacing = 2, LineSpacing = 2, MinHeight = 40, VerticalAlignment = VerticalAlignment.Center };
-        foreach (var id in c.Tools) if (tools.TryGetValue(id, out var t)) panel.Children.Add(new ProxyTool(id, t));
+        foreach (var id in c.Tools)
+            if (tools.TryGetValue(id, out var t))
+            {
+                var px = new ProxyTool(id, t, c.Size, !c.LabelsOnHover);
+                if (!c.LabelsOnHover) ToolTip.SetTip(px, null);   // the name is written under it
+                panel.Children.Add(px);
+            }
         Add(new Shelf(c.Id, c.Name, c.Glyph, panel));
     }
 
+    /// <summary>A shelf the user made, changed in place: its name, glyph, tools, size and labels; it keeps its place.</summary>
+    public void UpdateCustomShelf(string id, string name, string glyph, IEnumerable<string> toolIds, int size, bool labelsOnHover)
+    {
+        var c = _vm.Settings.CustomShelves.FirstOrDefault(x => x.Id == id);
+        if (c == null || !_shelves.Remove(id, out var old)) return;
+        c.Name = name.Trim().Length > 0 ? name.Trim() : c.Name;
+        c.Glyph = glyph;
+        c.Tools = toolIds.ToList();
+        c.Size = size;
+        c.LabelsOnHover = labelsOnHover;
+        Detach(old);
+        if (_pucks.Remove(id, out var p)) Detach(p);
+        AddCustom(c);
+        Place(id);
+        SaveShelfLayout();
+    }
+
     /// <summary>A new shelf with these tools, floating over the view.</summary>
-    public string MakeCustomShelf(string name, string glyph, IEnumerable<string> toolIds)
+    public string MakeCustomShelf(string name, string glyph, IEnumerable<string> toolIds, int size = 36, bool labelsOnHover = true)
     {
         var id = "my-" + Guid.NewGuid().ToString("N")[..8];
-        var c = new CustomShelf { Id = id, Name = name.Trim().Length > 0 ? name.Trim() : "My shelf", Glyph = glyph, Tools = toolIds.ToList() };
+        var c = new CustomShelf { Id = id, Name = name.Trim().Length > 0 ? name.Trim() : "My shelf", Glyph = glyph, Tools = toolIds.ToList(), Size = size, LabelsOnHover = labelsOnHover };
         _vm.Settings.CustomShelves.Add(c);
         AddCustom(c);
         _shelfState[id] = new ShelfState { Id = id, Dock = "float", X = 360, Y = 160 };
@@ -516,13 +543,20 @@ public partial class MainWindow
 
     /// <summary>Make a shelf (design/boards/ShelfEditor): click tools to put them on the shelf (click one on the shelf to take
     /// it off), name it, pick its glyph; it appears floating over the view.</summary>
-    public async Task MakeShelfDialog()
+    public static readonly string[] ShelfSizes = ["Small · 28 px", "Medium · 36 px", "Large · 44 px"];
+    private static readonly int[] ShelfSizePx = [28, 36, 44];
+
+    public async Task MakeShelfDialog(string? editId = null)
     {
-        var chosen = new List<string>();
+        var editing = editId == null ? null : _vm.Settings.CustomShelves.FirstOrDefault(c => c.Id == editId);
+        var chosen = editing?.Tools.ToList() ?? new List<string>();
         var tools = AllTools();
         var preview = new WrapPanel { Orientation = Orientation.Horizontal, ItemSpacing = 2, LineSpacing = 2, MinHeight = 40 };
-        var name = new TextBox { Text = "My shelf", Width = 240 };
-        var glyph = new ComboBox { ItemsSource = ShelfGlyphs, SelectedIndex = 0, Width = 120 };
+        var name = new TextBox { Text = editing?.Name ?? "My shelf", Width = 240 };
+        var glyph = new ComboBox { ItemsSource = ShelfGlyphs, SelectedIndex = Math.Max(0, Array.IndexOf(ShelfGlyphs, editing?.Glyph ?? "pin")), Width = 120 };
+        var size = new ComboBox { ItemsSource = ShelfSizes, SelectedIndex = Math.Max(0, Array.IndexOf(ShelfSizePx, editing?.Size ?? 36)), Width = 150 };
+        var hover = new CheckBox { Classes = { "toggle" }, Content = "Labels on hover", IsChecked = editing?.LabelsOnHover ?? true,
+                                   [ToolTip.TipProperty] = "On: each tool's name in a tooltip. Off: the name written under the tool" };
         var hint = new TextBlock { Classes = { "dim" }, Text = "drop tools here: click them above", VerticalAlignment = VerticalAlignment.Center };
         void Refresh()
         {
@@ -546,23 +580,24 @@ public partial class MainWindow
             b.Click += (_, _) => { if (!chosen.Contains(id)) { chosen.Add(id); Refresh(); } };
             grid.Children.Add(b);
         }
-        var done = new Button { Classes = { "primary" }, Content = "Make the shelf" };
+        var done = new Button { Classes = { "primary" }, Content = editing != null ? "Save the shelf" : "Make the shelf" };
         var cancel = new Button { Content = "Cancel" };
         var dlg = new Window
         {
-            Title = "Make a shelf", SizeToContent = SizeToContent.WidthAndHeight, CanResize = false, ShowInTaskbar = false, WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Title = editing != null ? "Edit a shelf" : "Make a shelf", SizeToContent = SizeToContent.WidthAndHeight, CanResize = false, ShowInTaskbar = false, WindowStartupLocation = WindowStartupLocation.CenterOwner,
             Background = (IBrush?)this.FindResource("Bg1B") ?? Brushes.Black,
             Content = new StackPanel
             {
                 Margin = new Thickness(18), Spacing = 12, Width = 660,
                 Children =
                 {
-                    new TextBlock { Text = "Make a shelf", Classes = { "h2" } },
+                    new TextBlock { Text = editing != null ? "Edit " + editing.Name : "Make a shelf", Classes = { "h2" } },
                     new TextBlock { Text = "Click tools to put them on the shelf below; click one on the shelf to take it off. It appears floating over the view: drag its tab to dock it.", TextWrapping = TextWrapping.Wrap, Classes = { "muted" } },
                     new ScrollViewer { MaxHeight = 330, Content = grid },
                     new Border { Classes = { "dropzone" }, Padding = new Thickness(10), Child = new Panel { Children = { hint, preview } } },
                     new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10, Children = { new TextBlock { Text = "Name", VerticalAlignment = VerticalAlignment.Center }, name,
                         new TextBlock { Text = "Glyph", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0) }, glyph } },
+                    new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10, Children = { new TextBlock { Text = "Size", VerticalAlignment = VerticalAlignment.Center }, size, hover } },
                     new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right, Children = { cancel, done } },
                 },
             },
@@ -570,8 +605,12 @@ public partial class MainWindow
         var ok = false;
         done.Click += (_, _) => { if (chosen.Count == 0) { hint.Text = "Put at least one tool on the shelf"; return; } ok = true; dlg.Close(); };
         cancel.Click += (_, _) => dlg.Close();
+        Refresh();
         await dlg.ShowDialog(this);
-        if (ok) { MakeCustomShelf(name.Text ?? "", (string?)glyph.SelectedItem ?? "pin", chosen); _vm.Status = $"Shelf '{name.Text}' made · drag its tab to dock it"; }
+        if (!ok) return;
+        var px = ShelfSizePx[Math.Clamp(size.SelectedIndex, 0, 2)];
+        if (editing != null) { UpdateCustomShelf(editing.Id, name.Text ?? "", (string?)glyph.SelectedItem ?? "pin", chosen, px, hover.IsChecked == true); _vm.Status = $"Shelf '{name.Text}' saved"; }
+        else { MakeCustomShelf(name.Text ?? "", (string?)glyph.SelectedItem ?? "pin", chosen, px, hover.IsChecked == true); _vm.Status = $"Shelf '{name.Text}' made · drag its tab to dock it"; }
     }
 
     public void DeleteCustomShelf(string id)

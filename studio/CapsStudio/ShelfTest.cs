@@ -116,6 +116,14 @@ internal static class ShelfTest
         lasso?.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Avalonia.Controls.Button.ClickEvent, lasso));
         Pump();
         Check(w.ViewModel.IsLassoTool, "the shelf's Lasso turns the lasso tool on");
+        // edit it: large tools with their names written under them, one tool fewer; it stays where it floats
+        w.UpdateCustomShelf(id, "Interface", "ruler", pick.Take(2), 44, false);
+        Pump();
+        var edited = w.Shelves[id].Tools.Children.OfType<ProxyTool>().ToList();
+        Check(edited.Count == 2 && edited.All(p => p.MinHeight == 44 && p.Content is Avalonia.Controls.StackPanel) && Where(w, id) == "float" && w.Shelves[id].Glyph == "ruler",
+              $"edited the shelf: {edited.Count} tools, {edited.FirstOrDefault()?.MinHeight} px, labels under, {Where(w, id)}");
+        w.UpdateCustomShelf(id, "Interface", "pin", pick, 36, true);
+        Pump();
 
         // locked shelves do not move
         w.ViewModel.Settings.ShelvesLocked = true;
