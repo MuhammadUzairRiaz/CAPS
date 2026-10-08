@@ -2331,6 +2331,49 @@ public sealed partial class MainViewModel : ObservableObject
             : $"\n\nstructure {path}\n  number {_packCount}\n  inside box {BoxText()}\nend structure\n");
     }
 
+    /// <summary>Add region (design/boards/Pack): a constraint for the last molecule in the input, sized from the cell —
+    /// box (the lower half), slab (the middle half along z, between two planes), sphere and cylinder (centred, a quarter of
+    /// the smallest edge across), in the input's own syntax (CAPS or packmol). The numbers are a start to edit.</summary>
+    public void AddPackRegion(string kind)
+    {
+        var inv = CultureInfo.InvariantCulture;
+        string F(double v) => v.ToString("0.###", inv);
+        var caps = IsCapsPack(_packText);
+        var lines = _packText.Replace("\r\n", "\n").Split('\n').ToList();
+        var end = lines.FindLastIndex(l => caps ? l.Trim() == "end" : l.Trim().StartsWith("end structure"));
+        if (end < 0) { Status = "Add region: add a molecule first — the region applies to the last one"; return; }
+        double x = _packX, y = _packY, z = _packZ, r = Math.Min(x, Math.Min(y, z)) / 4;
+        var add = (kind, caps) switch
+        {
+            ("box", true) => [$"  in      box from 0 0 0 to {F(x)} {F(y)} {F(z / 2)}"],
+            ("box", false) => [$"  inside box 0. 0. 0. {F(x)} {F(y)} {F(z / 2)}"],
+            ("slab", true) => [$"  above   plane normal 0 0 1 at {F(z / 4)}", $"  below   plane normal 0 0 1 at {F(3 * z / 4)}"],
+            ("slab", false) => [$"  over plane 0. 0. 1. {F(z / 4)}", $"  below plane 0. 0. 1. {F(3 * z / 4)}"],
+            ("sphere", true) => [$"  in      sphere at {F(x / 2)} {F(y / 2)} {F(z / 2)} radius {F(r)}"],
+            ("sphere", false) => [$"  inside sphere {F(x / 2)} {F(y / 2)} {F(z / 2)} {F(r)}"],
+            ("cylinder", true) => [$"  in      cylinder from {F(x / 2)} {F(y / 2)} 0 along 0 0 1 radius {F(r)} length {F(z)}"],
+            ("cylinder", false) => [$"  inside cylinder {F(x / 2)} {F(y / 2)} 0. 0. 0. 1. {F(r)} {F(z)}"],
+            _ => new string[0],
+        };
+        if (add.Length == 0) return;
+        lines.InsertRange(end, add);
+        PackText = string.Join("\n", lines);
+        Status = $"Added a {kind} region to the last molecule: edit its numbers in the input";
+    }
+
+    // stages of a packing (design/boards/Pack): placement, overlap minimisation, the d_min check
+    public ObservableCollection<PackStageRow> PackStages { get; } =
+    [
+        new() { Title = "1 · Random sequential insertion" },
+        new() { Title = "2 · Overlap minimisation (L-BFGS)" },
+        new() { Title = "3 · Verify d_min ≥ tolerance" },
+    ];
+    private void SetPackStage(int running, bool failed = false)
+    {
+        for (var i = 0; i < PackStages.Count; ++i)
+            PackStages[i].State = i < running ? "done" : i == running ? (failed ? "failed" : "running") : "pending";
+    }
+
     public void AddPackExample(string samples)
     {
         NewPackInput();
@@ -2380,6 +2423,8 @@ public sealed partial class MainViewModel : ObservableObject
         PackLoop = 0;
         PackBad = 0;
         PackDmin = "—";
+        SetPackStage(0);
+        var packStage = 0;
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var inv = CultureInfo.InvariantCulture;
         var lastUi = 0L;
@@ -2396,6 +2441,7 @@ public sealed partial class MainViewModel : ObservableObject
                     {
                         if (!_packing) return;
                         PackLog = line;
+                        if (loop > 0 && packStage == 0) SetPackStage(packStage = 1);
                         if (loop > 0)
                         {
                             PackLoop = loop;
@@ -2407,6 +2453,7 @@ public sealed partial class MainViewModel : ObservableObject
                 }
                 return !token.IsCancellationRequested;
             }, "packed"));
+            SetPackStage(3);   // every stage done: the cell met the tolerance
             var s = doc.Summary();
             _packResult = doc;
             _packHost = runHost;
@@ -2438,6 +2485,9 @@ public sealed partial class MainViewModel : ObservableObject
             Packing = false;
             var cancelled = e.Message.Contains("cancelled");
             PackLog = cancelled ? "Cancelled." : "Could not pack.\n" + e.Message;
+            // a placement that never finished, a minimisation that ran out of rounds, or a cell below tolerance
+            SetPackStage(e.Message.Contains("tolerance") || e.Message.Contains("d_min") ? 2 : packStage, failed: !cancelled);
+            if (cancelled) foreach (var st in PackStages.Where(x => x.State == "running")) st.State = "pending";
             Status = cancelled ? "Packing cancelled" : "Could not pack — see the Pack panel";
         }
         finally

@@ -4816,6 +4816,17 @@ internal static class SelfTest
             vm.RunNveProbe().GetAwaiter().GetResult();
             var probe = vm.Status;   // the probe's line, the one the pre-flight list shows
             Check(probe.StartsWith("NVE probe drift") && probe.Contains("kT/ns/atom"), $"NVE probe: {probe}");
+            // Pack: Add region puts a sphere on the last molecule; the stages end done when the cell meets the tolerance
+            vm.SetModule(5);
+            vm.PackStart = 0;
+            vm.NewPackInput();
+            vm.AddPackMolecule("O", "water").GetAwaiter().GetResult();
+            vm.SetPackRowCount(vm.PackItems.Count - 1, 12);
+            vm.AddPackRegion("sphere");
+            var sphereLine = vm.PackText.Split('\n').FirstOrDefault(l => l.Contains("sphere at")) ?? "";
+            vm.RunPack().GetAwaiter().GetResult();
+            Check(sphereLine.Length > 0 && vm.PackDone && vm.PackStages.All(st => st.State == "done"),
+                  $"pack region and stages: '{sphereLine.Trim()}' · {string.Join(", ", vm.PackStages.Select(st => st.State))} · {vm.Status}");
             // the Start page's sample pipeline: four steps on the polystyrene cell
             vm.Open(Path.Combine(dir, "ps_melt.lammpstrj"), Path.Combine(dir, "ps_melt.data"));
             vm.LoadPipeline(Path.Combine(dir, "structure_report.json"));

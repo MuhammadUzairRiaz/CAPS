@@ -110,11 +110,19 @@ public sealed class ProxyTool : Button
 {
     protected override Type StyleKeyOverride => typeof(Button);
     public string ToolId { get; }
-    public ProxyTool(string id, Control original)
+    public ProxyTool(string id, Control original, int size = 0, bool labelBelow = false)
     {
         ToolId = id;
         Classes.Add("tool");
         Content = ShelfTools.Face(original);
+        if (size > 0) { MinWidth = size; MinHeight = size; }
+        if (labelBelow)
+            Content = new StackPanel
+            {
+                Spacing = 2, Width = Math.Max(size, 56),
+                Children = { new Border { Child = ShelfTools.Face(original), HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center },
+                             new TextBlock { Text = ShelfTools.Label(original), FontSize = 9.5, TextAlignment = TextAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis } },
+            };
         ToolTip.SetTip(this, ToolTip.GetTip(original));
         Avalonia.Automation.AutomationProperties.SetName(this, ShelfTools.Label(original));
         IsEnabled = original.IsEnabled;
