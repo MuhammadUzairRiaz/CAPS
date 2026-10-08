@@ -87,6 +87,7 @@ public sealed partial class MainViewModel
         if (_module != 27) _returnModule = _module;
         _openPath = path;
         _openTopo = topology ?? TopologyFor(path);
+        FindGmxSet(path);
         Raise(nameof(OpenPath)); Raise(nameof(OpenTopology)); Raise(nameof(OpenFileName));
         SetModule(27);
         var gen = ++_openGen;
@@ -149,6 +150,68 @@ public sealed partial class MainViewModel
         Raise(nameof(OpenButton));
     }
 
+    // ---- GROMACS set (design/boards/OpenGromacs): coordinates, topology with its includes, and trajectory found together
+    // by name next to whichever one was dropped, opened as one document
+    public ObservableCollection<GmxSetRow> GmxSet { get; } = new();
+    private string _gmxGro = "", _gmxTop = "", _gmxTraj = "";
+    public bool HasGmxSet => GmxSet.Count > 0;
+    public string GmxSetTitle => $"Files in this set · {GmxSet.Count(r => r.Found && r.Role != "include")} of 3 found";
+    public bool CanOpenGmxSet => _gmxGro.Length > 0 && (_gmxTop.Length > 0 || _gmxTraj.Length > 0) || _gmxTraj.Length > 0 && _gmxTop.Length > 0;
+
+    internal void FindGmxSet(string path)
+    {
+        GmxSet.Clear();
+        _gmxGro = _gmxTop = _gmxTraj = "";
+        var ext = Path.GetExtension(path).ToLowerInvariant();
+        if (ext is not (".gro" or ".top" or ".xtc" or ".trr")) { RaiseGmx(); return; }
+        var dir = Path.GetDirectoryName(Path.GetFullPath(path)) ?? ".";
+        string Find(params string[] exts)
+        {
+            foreach (var e in exts) { var same = Path.ChangeExtension(path, e); if (File.Exists(same)) return same; }
+            foreach (var e in exts)
+            {
+                try { var m = Directory.GetFiles(dir, "*" + e); if (m.Length == 1) return m[0]; } catch { }
+            }
+            foreach (var n in new[] { "topol.top", "conf.gro", "confout.gro", "traj_comp.xtc", "traj.xtc", "traj.trr" })
+                if (exts.Contains(Path.GetExtension(n)) && File.Exists(Path.Combine(dir, n))) return Path.Combine(dir, n);
+            return "";
+        }
+        _gmxGro = ext == ".gro" ? path : Find(".gro");
+        _gmxTop = ext == ".top" ? path : Find(".top");
+        _gmxTraj = ext is ".xtc" or ".trr" ? path : Find(".xtc", ".trr");
+        string Size(string f) { try { var b = new FileInfo(f).Length; return b > 1 << 20 ? $"{b / 1048576.0:0.#} MB" : $"{b / 1024.0:0} KB"; } catch { return ""; } }
+        GmxSet.Add(new GmxSetRow("coordinates", _gmxGro.Length > 0 ? Path.GetFileName(_gmxGro) : "no .gro", _gmxGro.Length > 0, _gmxGro.Length > 0 ? "coordinates · box · " + Size(_gmxGro) : "the first trajectory frame stands in"));
+        GmxSet.Add(new GmxSetRow("topology", _gmxTop.Length > 0 ? Path.GetFileName(_gmxTop) : "no .top", _gmxTop.Length > 0, _gmxTop.Length > 0 ? "bonds, types, charges" : "bonds are perceived from distances"));
+        if (_gmxTop.Length > 0)
+            try
+            {
+                // its #include files: found beside it (force-field includes from the GROMACS share are listed as not here)
+                foreach (var l in File.ReadLines(_gmxTop).Take(4000))
+                {
+                    var t = l.Trim();
+                    if (!t.StartsWith("#include")) continue;
+                    var inc = t[8..].Trim().Trim('"', '<', '>');
+                    var at = Path.Combine(Path.GetDirectoryName(_gmxTop) ?? ".", inc);
+                    GmxSet.Add(new GmxSetRow("include", "  + " + inc, File.Exists(at), File.Exists(at) ? "included by the topology" : "not beside the topology (a GROMACS share file is not read)"));
+                }
+            }
+            catch { }
+        GmxSet.Add(new GmxSetRow("trajectory", _gmxTraj.Length > 0 ? Path.GetFileName(_gmxTraj) : "no .xtc / .trr", _gmxTraj.Length > 0, _gmxTraj.Length > 0 ? "frames · " + Size(_gmxTraj) : "one frame"));
+        RaiseGmx();
+    }
+    private void RaiseGmx() { Raise(nameof(HasGmxSet)); Raise(nameof(GmxSetTitle)); Raise(nameof(CanOpenGmxSet)); }
+
+    /// <summary>Open set: the trajectory with the topology (or the coordinates), else the coordinates with the topology.</summary>
+    public void OpenGmxSet()
+    {
+        if (!CanOpenGmxSet) return;
+        var main = _gmxTraj.Length > 0 ? _gmxTraj : _gmxGro;
+        var topo = _gmxTop.Length > 0 ? _gmxTop : _gmxGro;
+        if (main == topo) topo = "";
+        SetModule(_returnModule is 27 ? 8 : _returnModule);
+        OpenRequested?.Invoke(main + (topo.Length > 0 ? "\n" + topo : ""));
+    }
+
     public void SetOpenTopology(string? topology)
     {
         PreviewOpen(_openPath, topology ?? "");
@@ -169,4 +232,10 @@ public sealed partial class MainViewModel
         SetModule(back);
         OpenRequested?.Invoke(_openPath + (_openTopo.Length > 0 ? "\n" + _openTopo : ""));
     }
+}
+
+/// <summary>A file of a GROMACS set (design/boards/OpenGromacs): its role, name, whether it is there, what it carries.</summary>
+public sealed record GmxSetRow(string Role, string Name, bool Found, string Detail)
+{
+    public Avalonia.Media.IBrush Brush => Tokens.Brush(Found ? "OkB" : "DimB");
 }

@@ -131,6 +131,25 @@
                 <TextBox Text="{Binding OpenTopology, Mode=OneWay}" IsReadOnly="True" Classes="mono" FontSize="11.5" Watermark="no topology: bonds from distances" />
                 <Button Grid.Column="1" Classes="small" Content="Topology…" Click="OnTopology" />
               </Grid>
+              <StackPanel Spacing="6" IsVisible="{Binding HasGmxSet}">
+                <DockPanel>
+                  <Button DockPanel.Dock="Right" Classes="small primary" Content="Open set" Click="OnOpenGmxSet" IsEnabled="{Binding CanOpenGmxSet}"
+                          ToolTip.Tip="Opens the trajectory (or the coordinates) with the topology as one document" />
+                  <TextBlock Text="{Binding GmxSetTitle}" Classes="h3" VerticalAlignment="Center" />
+                </DockPanel>
+                <ItemsControl ItemsSource="{Binding GmxSet}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:GmxSetRow">
+                      <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="8" Margin="0,2">
+                        <Ellipse Width="7" Height="7" Fill="{Binding Brush}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1" Text="{Binding Name}" Classes="mono" FontSize="11.5" />
+                        <TextBlock Grid.Column="2" Text="{Binding Detail}" Classes="dim" FontSize="11.5" TextAlignment="Right" TextTrimming="CharacterEllipsis" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Text="Dropping any one file finds the others by name. GROMACS units convert on read: nm → Å, ps stays ps." Classes="dim" FontSize="11.5" TextWrapping="Wrap" />
+              </StackPanel>
               <ItemsControl ItemsSource="{Binding OpenNotes}">
                 <ItemsControl.ItemTemplate><DataTemplate x:DataType="x:String"><TextBlock Text="{Binding}" Classes="dim" FontSize="11.5" TextWrapping="Wrap" Margin="0,2" /></DataTemplate></ItemsControl.ItemTemplate>
               </ItemsControl>

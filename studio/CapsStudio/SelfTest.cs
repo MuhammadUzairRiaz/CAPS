@@ -4864,6 +4864,17 @@ internal static class SelfTest
                 Check(bi.HasFailingRow && bi.FailingFacts.Count == 3 && bi.FailingFacts[0].Value == "PP isotactic" && bi.CanOpenFailing && bi.FailingTitle == "T7 · failing row",
                       $"bench failing row: {string.Join(", ", bi.FailingFacts.Select(f => f.Key + " " + f.Value))} · open {bi.CanOpenFailing}");
             }
+            // GROMACS set: dropping the .gro finds the .top beside it and the topology's include; no trajectory
+            {
+                var gd = Path.Combine(outDir, "gmx-set");
+                Directory.CreateDirectory(gd);
+                File.Copy(Path.Combine(dir, "ps_melt.gro"), Path.Combine(gd, "ps.gro"), true);
+                File.WriteAllText(Path.Combine(gd, "ps.top"), "#include \"ps.itp\"\n#include \"oplsaa.ff/forcefield.itp\"\n[ system ]\nPS\n");
+                File.WriteAllText(Path.Combine(gd, "ps.itp"), "; molecule\n");
+                vm.FindGmxSet(Path.Combine(gd, "ps.gro"));
+                Check(vm.GmxSet.Count == 5 && vm.GmxSet.Count(r => r.Found) == 3 && vm.CanOpenGmxSet && vm.GmxSetTitle.EndsWith("2 of 3 found"),
+                      $"GROMACS set: {string.Join(", ", vm.GmxSet.Select(r => $"{r.Name.Trim()} {(r.Found ? "found" : "missing")}"))} · {vm.GmxSetTitle}");
+            }
             // the Start page's sample pipeline: four steps on the polystyrene cell
             vm.Open(Path.Combine(dir, "ps_melt.lammpstrj"), Path.Combine(dir, "ps_melt.data"));
             vm.LoadPipeline(Path.Combine(dir, "structure_report.json"));
