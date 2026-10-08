@@ -3,6 +3,7 @@
 
 #include <unordered_map>
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <fstream>
@@ -1243,6 +1244,21 @@ void step_orientation(PipelineState& st, const Json& p, StepStatus& out) {
   st.set_attribute("Orientation.director_y", director[1]);
   st.set_attribute("Orientation.director_z", director[2]);
   st.set_attribute("Crystallinity.fraction", frac);
+  // the director as an arrow through the centre of the cell (or of the chords), its length the cell's smallest width
+  // (or the chords' extent) times S (design/boards/Orientation "shown as an arrow in Studio")
+  if (flag(p, "arrow", true)) {
+    Vec3 centre{0, 0, 0};
+    double len = 0;
+    if (per) {
+      centre = (c.a + c.b + c.c) * 0.5 + c.origin;
+      len = 1.0 / std::max({width[0], width[1], width[2]});
+    } else {
+      for (const Vec3& m : mid) centre = centre + m * (1.0 / double(mid.size()));
+      len = std::min({hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]});
+    }
+    const Vec3 half = director * (0.5 * std::max(2.0, len * std::clamp(S, 0.15, 1.0)));
+    st.segments.push_back({centre - half, centre + half, 0xF0A83Cu, 0.45, true});
+  }
   char buf[200];
   std::snprintf(buf, sizeof buf, "S %.3f · ⟨P₂⟩ along %s %.3f · %.1f %% of %zu chords crystalline", S, axis.c_str(), f_axis / double(u.size()), 100 * frac, u.size());
   out.summary = buf;
@@ -3446,12 +3462,14 @@ void pipeline_run_steps(PipelineState& st, const Pipeline& p, size_t hi, size_t 
     const StepDef* def = nullptr;
     for (const auto& d : kSteps) if (step.type == d.type) def = &d;
     if (!def) { out.level = "error"; out.summary = "unknown step " + step.type; continue; }
+    const auto t0 = std::chrono::steady_clock::now();
     try {
       def->run(st, step.params, out);
     } catch (const std::exception& e) {
       out.level = "error";
       out.summary = e.what();
     }
+    out.ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
   }
 }
 
@@ -3579,6 +3597,7 @@ Json pipeline_result_json(const PipelineState& st) {
     o["summary"] = s.summary;
     if (!s.output.empty()) o["output"] = s.output;
     o["level"] = s.level;
+    o["ms"] = std::round(s.ms * 10) / 10;
     steps.push_back(std::move(o));
   }
   j["steps"] = std::move(steps);

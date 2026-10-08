@@ -105,6 +105,7 @@ struct StepStatus {
   std::string type, title, summary;
   std::string level = "ok";   // ok | warning | error | off
   std::string output;         // what the step printed (a Python step's console)
+  double ms = 0;              // how long the step took on this frame (wall clock)
 };
 
 // A scalar field on a grid spanning the cell (the density field step's): values[(i·n1 + j)·n2 + k] at the voxel centre

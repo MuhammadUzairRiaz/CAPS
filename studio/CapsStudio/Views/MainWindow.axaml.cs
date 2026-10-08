@@ -179,8 +179,18 @@ public partial class MainWindow : Window
             PipeTablePlot.YLabel = _vm.PipeTableYLabel;
             if (_vm.PipeTableHeat is { } heat) { PipeTablePlot.ZLabel = _vm.PipeTableZLabel; PipeTablePlot.SetHeat(heat.X, heat.Y, heat.Z); return; }
             var pts = _vm.PipeTableX.Zip(_vm.PipeTableY).Where(p => double.IsFinite(p.Second)).ToArray();
+            var w = _vm.PipeTableName?.StartsWith("Time series") == true ? _vm.SeriesWindow : 1;   // the timeline's running mean
             if (_vm.PipeTableScatter) { PipeTablePlot.RefY = null; PipeTablePlot.SetData(pts, []); }
+            else if (w >= 2) { PipeTablePlot.RefY = null; PipeTablePlot.SetWithFit(pts, MainViewModel.RunningMean(pts, w)); }
             else { PipeTablePlot.RefY = 1.0; PipeTablePlot.Markers = false; PipeTablePlot.SetData(pts); }
+            // series 2: its own plot under the first (the two seldom share a scale)
+            var pts2 = _vm.PipeTableX.Zip(_vm.PipeTableY2).Where(p => double.IsFinite(p.Second)).ToArray();
+            PipeTablePlot2.XLabel = _vm.PipeTableXLabel;
+            PipeTablePlot2.YLabel = _vm.PipeTableY2Label;
+            PipeTablePlot2.RefY = null;
+            PipeTablePlot2.LineBrush = Tokens.Brush("SelB");
+            if (w >= 2) PipeTablePlot2.SetWithFit(pts2, MainViewModel.RunningMean(pts2, w));
+            else { PipeTablePlot2.Markers = false; PipeTablePlot2.SetData(pts2); }
         };
         _vm.RenderOverlayChanged += () => RenderGuide.InvalidateVisual();
         _vm.PropertyChanged += (_, e) =>

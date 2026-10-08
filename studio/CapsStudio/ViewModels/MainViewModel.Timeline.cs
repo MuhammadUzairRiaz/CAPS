@@ -56,7 +56,7 @@ public sealed partial class MainViewModel
     private int _seriesWindow = 1;
     public static readonly int[] SeriesWindows = [1, 3, 5, 9, 15, 25, 51];
     /// <summary>Running mean over this many computed frames, centred (1: off), drawn over the sparkline.</summary>
-    public int SeriesWindow { get => _seriesWindow; set { if (Set(ref _seriesWindow, Math.Max(1, value))) TimelineChanged?.Invoke(); } }
+    public int SeriesWindow { get => _seriesWindow; set { if (Set(ref _seriesWindow, Math.Max(1, value))) { TimelineChanged?.Invoke(); if (_series != null) LoadPipeTable(); } } }
 
     /// <summary>The sparkline's centred running mean over SeriesWindow points (shorter at the ends); empty when off.</summary>
     public (double X, double Y)[] SparklineMean()

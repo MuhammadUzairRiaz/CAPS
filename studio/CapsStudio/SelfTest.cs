@@ -2095,6 +2095,17 @@ internal static class SelfTest
             Check(vm.HasTimeline && spark.Length == 3 && mean.Length == 3 && inRange && Math.Abs(mean[1].Y - spark.Average(p => p.Y)) < 1e-9,
                   $"timeline running mean: {spark.Length} frames of {vm.SparkAttribute}, mean {mean.Length}");
             vm.SeriesWindow = 1;
+            // several series: the time series table with a second column under the first; the steps' timings
+            var seriesTable = vm.PipeTables.FirstOrDefault(t => t.StartsWith("Time series"));
+            if (seriesTable != null) vm.PipeTableName = seriesTable;
+            var second = vm.PipeY2Columns.Skip(1).FirstOrDefault(c => c != vm.PipeYColumnName);
+            if (second != null) vm.PipeY2ColumnName = second;
+            Check(second != null && vm.PipeTableY2.Length == 3 && vm.PipeTableY2Label == second,
+                  $"time series: series 2 {second} · {vm.PipeTableY2.Length} rows");
+            vm.PipeY2ColumnName = "none";
+            var rm = MainViewModel.RunningMean([(0, 1), (1, 2), (2, 6)], 3);
+            Check(rm.Length == 3 && rm[0].Y == 1.5 && rm[1].Y == 3 && rm[2].Y == 4, "running mean: centred, shrinking at the ends");
+            Check(vm.PipelineRows.All(r => r.Ms >= 0) && vm.PauseSlowSteps, $"step timings: {string.Join(", ", vm.PipelineRows.Select(r => $"{r.Type} {r.Ms:0.#} ms"))}");
             // manual selection: the lassoed atoms go into the step as ranges, and select the same atoms in the result
             vm.LassoSelect([3, 4, 5, 9], false);
             vm.AddStep("manual_selection");

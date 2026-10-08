@@ -339,7 +339,7 @@ public sealed partial class MainViewModel : ObservableObject
             RefreshMolecules();
             RefreshLegend();
             FocusOnFrame();
-            if (IsVisualize) RefreshPipeline();
+            if (IsVisualize) { ScrubFrame(); RefreshPipeline(); }
             if (IsViewports) RenderViewports();
             RenderRequested?.Invoke();
         }
