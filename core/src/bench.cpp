@@ -496,7 +496,7 @@ void t67(BenchTable& t, const BenchOptions& o, bool chains) {
     const std::string val = std::isfinite(p.value) ? num(p.value, 4) + (std::isfinite(p.error) && p.error > 0 ? " ± " + num(p.error, 2) : "") : "—";
     t.rows.push_back({{c.name, std::filesystem::path(c.file).filename().string(), counted, val, num(lo, 4) + " – " + num(hi, 4) + " (" + rv.text("source", "") + ")",
                        std::isfinite(p.value) ? (ok ? "pass" : "fail") : "info"},
-                      std::isfinite(p.value) ? (ok ? "pass" : "fail") : "info"});
+                      std::isfinite(p.value) ? (ok ? "pass" : "fail") : "info", c.file});
   }
   for (const auto& m : missing) t.rows.push_back({{m, "no cell", "—", "—", "—", "info"}, "info"});
   if (cells.empty()) {
@@ -692,6 +692,10 @@ BenchTable run_bench(const std::string& id, const BenchOptions& o) {
     return t;
   }
   t.seconds = since(t0);
+  // the structure each row ran on, for Open run: the PS melt sample, or the water box for packing (T6/T7 name their cells)
+  const std::string sample = id == "T2" ? o.samples + "/water.pdb" : id == "T12" ? "" : o.samples + "/ps_melt.data";
+  for (auto& r : t.rows)
+    if (r.file.empty() && !sample.empty() && !o.samples.empty() && std::filesystem::exists(sample)) r.file = sample;
   bool any_fail = false, any_pass = false;
   for (const auto& r : t.rows) any_fail |= r.status == "fail", any_pass |= r.status == "pass";
   t.status = any_fail ? "fail" : any_pass ? "pass" : "info";

@@ -109,4 +109,11 @@ public partial class BenchPage : PageBase
         try { Vm.ExportBench(dir); }
         catch (Exception ex) { Vm.Status = "Could not export: " + ex.Message; }
     }
+
+    private void OnOpenFailing(object? s, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (Vm.SelectedBench is not { CanOpenFailing: true } b) return;
+        try { Vm.Open(b.FailingFile, null); Vm.SetModule(8); }
+        catch (Exception ex) { Vm.Status = $"Could not open {System.IO.Path.GetFileName(b.FailingFile)}: {ex.Message}"; }
+    }
 }
