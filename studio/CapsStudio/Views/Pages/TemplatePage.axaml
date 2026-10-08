@@ -38,7 +38,10 @@
           <Border Classes="pane">
             <DockPanel>
               <Border DockPanel.Dock="Top" Height="38" Padding="12,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
-                <TextBlock Text="Pre-reaction" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                <DockPanel>
+                  <TextBlock DockPanel.Dock="Right" Text="drag atom to atom: form or break" Classes="dim" FontSize="11" VerticalAlignment="Center" />
+                  <TextBlock Text="Pre-reaction" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                </DockPanel>
               </Border>
               <v:TemplateDrawing x:Name="Pre" />
             </DockPanel>
@@ -47,7 +50,10 @@
           <Border Grid.Column="2" Classes="pane">
             <DockPanel>
               <Border DockPanel.Dock="Top" Height="38" Padding="12,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
-                <TextBlock Text="Post-reaction" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                <DockPanel>
+                  <TextBlock DockPanel.Dock="Right" Text="hover: the same atom in both" Classes="dim" FontSize="11" VerticalAlignment="Center" />
+                  <TextBlock Text="Post-reaction" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                </DockPanel>
               </Border>
               <v:TemplateDrawing x:Name="Post" />
             </DockPanel>
