@@ -4845,6 +4845,16 @@ internal static class SelfTest
             vm.RunPack().GetAwaiter().GetResult();
             Check(sphereLine.Length > 0 && vm.PackDone && vm.PackStages.All(st => st.State == "done"),
                   $"pack region and stages: '{sphereLine.Trim()}' · {string.Join(", ", vm.PackStages.Select(st => st.State))} · {vm.Status}");
+            // Restart with fix: a Pack that failed on its tolerance runs again in a box 10 % larger
+            {
+                var x0 = vm.PackXD ?? 0;
+                var (fix, fixText) = vm.FixFor("Pack", "Could not pack. 3 molecules closer than the tolerance");
+                var failed = new Job { Id = "pack-x", Kind = "Pack", Title = "Pack", Fix = fix, FixText = fixText, Status = "failed" };
+                vm.RestartWithFix(failed).GetAwaiter().GetResult();
+                var cellLine = vm.PackText.Split('\n').FirstOrDefault(l => l.TrimStart().StartsWith("cell")) ?? "";
+                Check(fix == "pack-box" && Math.Abs((double)((vm.PackXD ?? 0) - x0 * 1.1m)) < 0.01 && vm.PackDone && cellLine.Contains(((double)(vm.PackXD ?? 0)).ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)),
+                      $"restart with fix: {fixText} · '{cellLine.Trim()}' · {vm.Status}");
+            }
             // the Start page's sample pipeline: four steps on the polystyrene cell
             vm.Open(Path.Combine(dir, "ps_melt.lammpstrj"), Path.Combine(dir, "ps_melt.data"));
             vm.LoadPipeline(Path.Combine(dir, "structure_report.json"));

@@ -146,7 +146,18 @@
                   <TextBlock Text="Suggested recovery" Classes="h3" />
                   <TextBlock Text="{Binding Suggestion}" TextWrapping="Wrap" FontSize="12.5" />
                 </StackPanel>
-                <Button Grid.Column="2" Classes="primary small" Content="{Binding SuggestButton}" Click="OnSuggest" VerticalAlignment="Center" />
+                <Button Grid.Column="2" Classes="small" Content="{Binding SuggestButton}" Click="OnSuggest" VerticalAlignment="Center" />
+              </Grid>
+            </Border>
+            <Border BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Padding="16,12" IsVisible="{Binding HasFix}">
+              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                <v:Icon Kind="history" Size="15" Foreground="{DynamicResource AccB}" VerticalAlignment="Top" Margin="0,1,0,0" />
+                <StackPanel Grid.Column="1" Spacing="3">
+                  <TextBlock Text="Restart with fix" Classes="h3" />
+                  <TextBlock Text="{Binding FixText}" TextWrapping="Wrap" FontSize="12.5" />
+                </StackPanel>
+                <Button Grid.Column="2" Classes="primary small" Content="Restart with fix" Click="OnRestartFix" VerticalAlignment="Center"
+                        ToolTip.Tip="Makes this change on its page and runs the job again (a new job; this one stays in the list)" />
               </Grid>
             </Border>
           </StackPanel>
