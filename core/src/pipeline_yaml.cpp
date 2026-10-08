@@ -33,7 +33,14 @@ std::string yaml_scalar(const Json& v) {
                         s != "true" && s != "false" && !(std::isdigit(static_cast<unsigned char>(s[0])) || s[0] == '-' || s[0] == '.');
       if (bare) return s;
       std::string q = "\"";
-      for (char c : s) { if (c == '"' || c == '\\') q += '\\'; q += c; }
+      for (char c : s) {
+        // a multi-line value (a Python step's code) stays on one line: \n, \t and \r escaped as YAML's double quotes read them
+        if (c == '\n') { q += "\\n"; continue; }
+        if (c == '\t') { q += "\\t"; continue; }
+        if (c == '\r') { q += "\\r"; continue; }
+        if (c == '"' || c == '\\') q += '\\';
+        q += c;
+      }
       return q + "\"";
     }
     case Json::Array: {
@@ -71,7 +78,10 @@ struct Flow {
       const char q = s[p++];
       std::string out;
       while (p < s.size() && s[p] != q) {
-        if (s[p] == '\\' && p + 1 < s.size()) ++p;
+        if (s[p] == '\\' && p + 1 < s.size()) {
+          ++p;
+          if (q == '"' && (s[p] == 'n' || s[p] == 't' || s[p] == 'r')) { out += s[p] == 'n' ? '\n' : s[p] == 't' ? '\t' : '\r'; ++p; continue; }
+        }
         out += s[p++];
       }
       if (p >= s.size()) fail("unterminated string");

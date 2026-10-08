@@ -53,6 +53,10 @@ public sealed class AppSettings
     public bool PauseSlowSteps { get; set; } = true;
     /// <summary>Colour-vision cues for chains: every other chain's bonds dashed and chain ends labelled with their number.</summary>
     public bool ChainCues { get; set; }
+    /// <summary>Save pipeline: a copy of the pipeline's YAML written beside every set of outputs it makes.</summary>
+    public bool PipelineStoreWithResults { get; set; } = true;
+    /// <summary>Save pipeline: Python steps arrive switched off when the file is loaded again (false: kept on, for files in your own library or project).</summary>
+    public bool PipelineAskPython { get; set; } = true;
     public bool EngineNotice { get; set; } = true;   // say when a project was last saved with another CAPS version   // a short system sound when atoms are picked or selected
     public bool ShowAnnouncement { get; set; } = true;    // the announcement bar in the view, for sighted keyboard users
     public List<RemoteHost> Hosts { get; set; } = new();   // Compute & remote: SSH hosts (no credentials: the SSH agent holds them)

@@ -48,6 +48,16 @@
             <StackPanel Margin="16,12" Spacing="10">
               <StackPanel Spacing="4"><TextBlock Text="Name" Classes="label" /><TextBox Text="{Binding PipelineName}" /></StackPanel>
               <CheckBox Classes="toggle" Content="Record the source file" IsChecked="{Binding PipelineWithSource}" />
+              <StackPanel Spacing="4"><TextBlock Text="Scope" Classes="label" />
+                <ComboBox ItemsSource="{x:Static vm:MainViewModel.PipelineScopes}" SelectedIndex="{Binding PipelineScope}" IsEnabled="{Binding HasCapsProject}" HorizontalAlignment="Stretch" />
+                <TextBlock Text="{Binding PipelineScopeNote}" Classes="mono dim" FontSize="11" TextTrimming="CharacterEllipsis" /></StackPanel>
+              <CheckBox Classes="toggle" Content="Store with every result it makes" IsChecked="{Binding PipelineStoreWithResults}"
+                        ToolTip.Tip="Writing the outputs also writes this pipeline's YAML beside them" />
+              <CheckBox Classes="toggle" Content="Ask before running a Python file" IsChecked="{Binding PipelineAskPython}"
+                        ToolTip.Tip="On: Python steps arrive switched off when the file is loaded. Off: they stay on, but only for files in your own library or this project's pipelines folder" />
+              <Button Classes="small" Click="OnSaveScope" HorizontalAlignment="Left">
+                <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="save" Size="13" VerticalAlignment="Center" /><TextBlock Text="Save to scope" VerticalAlignment="Center" /></StackPanel>
+              </Button>
             </StackPanel>
           </StackPanel>
         </Border>
