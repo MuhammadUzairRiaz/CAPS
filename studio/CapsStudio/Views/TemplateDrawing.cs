@@ -69,6 +69,7 @@ public sealed class TemplateDrawing : Control
         {
             var p = pos[a.Map];
             if (a.Reacting) ctx.DrawEllipse(null, new Pen(Tokens.Brush("SelB"), 2), p, 16, 16);
+            if (_lit == a.Map) ctx.DrawEllipse(null, new Pen(Tokens.Brush("AccB"), 3), p, 20, 20);   // the same mapped atom in both panes
             var ft = new FormattedText(a.Symbol, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, face, 17, new SolidColorBrush(ElementColour(a.Symbol)));
             ctx.DrawText(ft, new Point(p.X - ft.Width / 2, p.Y - ft.Height / 2));
             var badge = new Point(p.X + 16, p.Y - 15);
@@ -86,6 +87,12 @@ public sealed class TemplateDrawing : Control
     private int? _dragFrom;
     private Point _dragTo;
     public event Action<int, int>? Linked;
+    // the mapping across panes: hovering an atom rings it here and (through Hovered) the atom of the same map number in the
+    // other pane, so before and after are read atom by atom
+    private int? _lit;
+    public int? Lit { get => _lit; set { if (_lit == value) return; _lit = value; InvalidateVisual(); } }
+    public event Action<int?>? Hovered;
+    protected override void OnPointerExited(Avalonia.Input.PointerEventArgs e) { base.OnPointerExited(e); Lit = null; Hovered?.Invoke(null); }
     private int? AtomAt(Point p)
     {
         foreach (var (m, q) in _screen)
@@ -102,6 +109,8 @@ public sealed class TemplateDrawing : Control
     protected override void OnPointerMoved(Avalonia.Input.PointerEventArgs e)
     {
         base.OnPointerMoved(e);
+        var over = AtomAt(e.GetPosition(this));
+        if (over != _lit) { Lit = over; Hovered?.Invoke(over); }
         if (_dragFrom == null) return;
         _dragTo = e.GetPosition(this);
         InvalidateVisual();
