@@ -54,8 +54,8 @@ public partial class DynamicsPage : PageBase
         if (dir == null) return;
         try
         {
-            if (Vm.MdGromacs) Vm.SaveGromacs(dir);
-            else
+            if (Vm.MdGromacs || Vm.MdBoth) Vm.SaveGromacs(dir);
+            if (!Vm.MdGromacs)
             {
                 Vm.Document!.Save(System.IO.Path.Combine(dir, "system.data"));
                 await System.IO.File.WriteAllTextAsync(System.IO.Path.Combine(dir, "system.in"), Vm.MdDeck);

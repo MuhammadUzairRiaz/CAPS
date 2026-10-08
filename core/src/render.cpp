@@ -532,7 +532,7 @@ int Renderer::pick_ray(const System& s, const Camera& cam, const RenderOptions& 
       const double front = sz[i] + std::sqrt(std::max(0.0, R * R - d2)) / (v.scale * sk[i]);
       if (front > best_z) best_z = front, best = int(i);
     }
-    if (bonds)
+    if (bonds && opt.show_bonds)
       for (const auto& b : s.bonds) {
         if (!P.show[b.i] || !P.show[b.j]) continue;
         const Style si = P.style_of(b.i), sj = P.style_of(b.j);
@@ -630,6 +630,7 @@ Scene Renderer::scene(const System& s, const RenderOptions& opt) {
     double half_cell = 1e300;
     if (s.cell.valid()) half_cell = 0.5 * std::min({norm(s.cell.a), norm(s.cell.b), norm(s.cell.c)});
     for (const auto& b : s.bonds) {
+      if (!opt.show_bonds) break;   // Visual elements · Bonds off
       if (!P.show[b.i] || !P.show[b.j]) continue;
       const Style si = P.style_of(b.i), sj = P.style_of(b.j);
       if (si == Style::SpaceFilling || sj == Style::SpaceFilling) continue;
@@ -786,6 +787,7 @@ Image Renderer::render(const System& s, const Camera& cam, const RenderOptions& 
     double half_cell = 1e300;
     if (s.cell.valid()) half_cell = 0.5 * std::min({norm(s.cell.a), norm(s.cell.b), norm(s.cell.c)});
     for (const auto& b : s.bonds) {
+      if (!opt.show_bonds) break;   // Visual elements · Bonds off
       if (!show[b.i] || !show[b.j] || tier[b.i] || tier[b.j]) continue;
       ++stats.bonds;
       const Style si = style_of(b.i), sj = style_of(b.j);

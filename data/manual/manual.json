@@ -40,6 +40,54 @@
    "tex": "v(t+\\tfrac{1}{2}\\Delta t) = v(t) + \\frac{\\Delta t}{2}\\,\\frac{F(t)}{m} \\\\ x(t+\\Delta t) = x(t) + \\Delta t\\,v(t+\\tfrac{1}{2}\\Delta t) \\\\ v(t+\\Delta t) = v(t+\\tfrac{1}{2}\\Delta t) + \\frac{\\Delta t}{2}\\,\\frac{F(t+\\Delta t)}{m}"
   },
   {
+   "id": "r-respa",
+   "group": "Integrators",
+   "title": "Multiple time steps (r-RESPA)",
+   "summary": "The forces are split into fast bonded terms and slow non-bonded ones. Each outer step kicks the velocities with half the slow force, then advances n inner velocity-Verlet steps with the bonded force alone, and closes with the second half kick of the slow force. The propagator is a symmetric Trotter factorisation, so the scheme stays time-reversible and symplectic while the costly non-bonded forces are evaluated n times less often.",
+   "equation": "e^{iLΔt} ≈ e^{iL_slow Δt/2} [e^{iL_fast δt}]^n e^{iL_slow Δt/2},  δt = Δt/n",
+   "equation_note": "Tuckerman, Berne & Martyna 1992",
+   "symbols": [
+    [
+     "Δt",
+     "outer time step",
+     "Dynamics · Δt"
+    ],
+    [
+     "n",
+     "inner steps per outer step",
+     "Dynamics · r-RESPA (1 … 16)"
+    ],
+    [
+     "δt",
+     "inner time step the bonded forces see",
+     "Δt / n"
+    ],
+    [
+     "L_fast",
+     "Liouvillian of the bonded forces (bonds, angles, torsions, impropers)",
+     "the force field's bonded terms"
+    ],
+    [
+     "L_slow",
+     "Liouvillian of the non-bonded forces (Lennard-Jones, Coulomb)",
+     "the force field's pair terms"
+    ]
+   ],
+   "when": "Long runs of all-atom models without bond constraints: a 2–4 fs outer step with a 0.5–1 fs inner step keeps the fast C–H stretches resolved. It is an alternative to constraining the bonds (SHAKE/RATTLE, LINCS), not used together with them; it runs with the Bussi thermostat or none, the barostats acting on the outer step.",
+   "cites": [
+    "tuckerman1992"
+   ],
+   "source": "core/src/dynamics.cpp",
+   "tested": "Dynamics.RespaConservesEnergyWithLongOuterSteps",
+   "deviation": "none",
+   "engines": [
+    "dynamics.nve",
+    "dynamics.nvt",
+    "dynamics.npt"
+   ],
+   "tex": "e^{iL\\Delta t} \\approx e^{iL_{\\mathrm{slow}}\\,\\Delta t/2}\\,\\left[e^{iL_{\\mathrm{fast}}\\,\\delta t}\\right]^{n}\\,e^{iL_{\\mathrm{slow}}\\,\\Delta t/2}, \\qquad \\delta t = \\frac{\\Delta t}{n}"
+  },
+  {
    "id": "csvr",
    "group": "Thermostats",
    "title": "Stochastic velocity rescaling (CSVR)",

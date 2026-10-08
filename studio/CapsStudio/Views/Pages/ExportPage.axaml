@@ -44,6 +44,13 @@
             </Border>
             <StackPanel Margin="16,12" Spacing="10">
               <CheckBox Classes="toggle" Content="Force-field sections (Coeffs)" IsChecked="{Binding ExportCoeffs}" IsVisible="{Binding ExportIsData}" />
+              <StackPanel Spacing="4" IsVisible="{Binding ExportIsData}">
+                <TextBlock Text="Charges" Classes="label" />
+                <ComboBox ItemsSource="{x:Static vm:MainViewModel.ExportChargeChoices}" SelectedIndex="{Binding ExportChargesIndex}" HorizontalAlignment="Stretch"
+                          ToolTip.Tip="The charges written in the Atoms section: the assigned force field's, the structure's own (as read), Gasteiger–Marsili, or zero" />
+              </StackPanel>
+              <CheckBox Classes="toggle" Content="Write type labels (# c3)" IsChecked="{Binding ExportTypeLabels}" IsVisible="{Binding ExportIsData}"
+                        ToolTip.Tip="Each type's name after its mass and coefficients, as a comment" />
               <CheckBox Classes="toggle" Content="Wrap positions into the cell" IsChecked="{Binding ExportWrap}" IsVisible="{Binding !ExportIsData}" />
               <CheckBox Classes="toggle" Content="The Visualize result" IsChecked="{Binding ExportPipeline}" IsEnabled="{Binding ExportPipelineAvailable}"
                         ToolTip.Tip="The particles after the pipeline's steps (slices, deletions, replicas) instead of the frame" ToolTip.ShowOnDisabled="True" />

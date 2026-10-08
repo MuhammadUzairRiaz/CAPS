@@ -778,6 +778,8 @@
             </Border>
             <StackPanel DockPanel.Dock="Bottom" Margin="8,0,8,10" Spacing="2">
               <TextBlock Text="VISUAL ELEMENTS" FontSize="11" LetterSpacing="0.6" Foreground="{DynamicResource DimB}" Margin="10,6,0,4" />
+              <CheckBox Classes="toggle" Content="Particles" IsChecked="{Binding ShowParticles}" Margin="10,2" ToolTip.Tip="Off: the atoms only where bonds meet (the view; files and calculations keep them)" />
+              <CheckBox Classes="toggle" Content="Bonds" IsChecked="{Binding ShowBonds}" Margin="10,2" ToolTip.Tip="Off: no bonds drawn (the view only)" />
               <CheckBox Classes="toggle" Content="Simulation cell" IsChecked="{Binding ShowCell}" Margin="10,2" />
               <CheckBox Classes="toggle" Content="Colour legend" IsChecked="{Binding PipeLegendVisible}" Margin="10,2" />
               <CheckBox Classes="toggle" Content="Outlines" IsChecked="{Binding Outlines}" Margin="10,2" />
@@ -3897,6 +3899,7 @@
             <Grid ColumnDefinitions="Auto,*">
               <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
                 <TextBlock Text="↑ ↓ move" Classes="dim" />
+                <TextBlock Text="⇥ fill arguments" Classes="dim" />
                 <TextBlock Text="↵ run" Classes="dim" />
                 <TextBlock Text="esc close" Classes="dim" />
               </StackPanel>

@@ -246,6 +246,7 @@ struct caps_doc {
     int clip_axis = 2;
     double clip_from = 0.0, clip_to = 0.5;
     bool clip_invert = false;
+    bool show_particles = true, show_bonds = true;   // Visual elements (design/boards/VisPipeline): particles drawn as joints only, bonds off
   } display;
   // Look (design/boards/Look): sizes for the view, and the selection's own size factor
   struct Sizes {
@@ -654,6 +655,7 @@ caps::RenderOptions opts_of(const caps_doc* d, const caps_render_opts* o) {
   r.lod_far = o->lod_far > 0 ? o->lod_far : 0;
   r.atom_scale = d->sizes.atom_scale, r.bond_radius = d->sizes.bond_radius, r.space_scale = d->sizes.space_scale, r.line_px = d->sizes.line_px;
   r.bond_orders = d->sizes.bond_orders;
+  r.show_bonds = d->display.show_bonds;
   if (!d->pstate && d->sizes.factor.size() == d->frame.atoms.size()) r.size_factor = d->sizes.factor;
   if (!d->pstate && d->selection.size() == d->frame.atoms.size()) {   // the selection ringed (up to 50 000 atoms)
     for (size_t i = 0; i < d->selection.size() && r.highlight.size() < 50000; ++i) if (d->selection[i]) r.highlight.push_back(int(i));
@@ -807,6 +809,11 @@ caps::RenderOptions opts_of(const caps_doc* d, const caps_render_opts* o) {
       const bool in = f >= D.clip_from && f <= D.clip_to;
       if (in == D.clip_invert) r.atom_style[i] = uint8_t(caps::Style::Hidden);
     }
+  }
+  if (!D.show_particles) {   // Visual elements · Particles off: atoms only as joints where bonds meet (hidden stays hidden)
+    const size_t n = d->pstate ? d->pstate->system.atoms.size() : d->frame.atoms.size();
+    if (r.atom_style.size() != n) r.atom_style.assign(n, uint8_t(caps::Style::Sticks));
+    else for (auto& x : r.atom_style) if (x != uint8_t(caps::Style::Hidden)) x = uint8_t(caps::Style::Sticks);
   }
   // hidden and ghosted atoms (after every style: they win)
   if (!d->pstate && d->atom_state.size() == d->frame.atoms.size() &&
@@ -7085,7 +7092,31 @@ void export_write(caps_doc* d, const std::string& fmt, const caps::Json& o, cons
   } else if (fmt == "lammps-data") {
     notes.push_back("wrapped coordinates with image flags");
     const bool same = s.atoms.size() == d->frame.atoms.size() && !use_pipeline;
-    if (coeffs && d->field && d->field->complete && same) {
+    // charges written (Export data › Charges): the force field's (default), the structure's own, Gasteiger, or none
+    const std::string qmode = o.text("charges", "field");
+    std::optional<std::vector<double>> qset;
+    if (qmode == "gasteiger") {
+      qset = caps::compute_charges(s, "gasteiger").q;
+      notes.push_back("Gasteiger–Marsili charges");
+    } else if (qmode == "none") {
+      qset = std::vector<double>(s.atoms.size(), 0.0);
+      notes.push_back("charges zero");
+    } else if (qmode == "structure") {
+      std::vector<double> q;
+      for (const auto& a : s.atoms) q.push_back(a.charge);
+      qset = q;
+      notes.push_back(s.has_charges ? "the structure's own charges" : "the structure carries no charges: zero");
+    }
+    if (qset) {
+      for (size_t i = 0; i < s.atoms.size() && i < qset->size(); ++i) s.atoms[i].charge = (*qset)[i];
+      s.has_charges = true;
+    }
+    if (coeffs && d->field && d->field->complete && same && qset) {
+      caps::ForceField ff = *d->field->ff;
+      for (size_t i = 0; i < ff.charge.size() && i < qset->size(); ++i) ff.charge[i] = (*qset)[i];
+      const std::string why = caps::write_lammps_data_or_structure(s, ff, elec(), path);
+      notes.push_back(why.empty() ? "coefficients from Field: " + ff.name : why);
+    } else if (coeffs && d->field && d->field->complete && same) {
       const std::string why = caps::write_lammps_data_or_structure(s, *d->field->ff, elec(), path);
       notes.push_back(why.empty() ? "coefficients from Field: " + d->field->ff->name : why);
     } else if (coeffs) {
@@ -7099,6 +7130,27 @@ void export_write(caps_doc* d, const std::string& fmt, const caps::Json& o, cons
     } else {
       caps::write_lammps_data(s, path);
       notes.push_back("structure only: no Coeffs sections");
+    }
+    // Export data › Write type labels: off, the "# c3" labels after the types and coefficients are left out
+    if (o.has("type_labels") && o["type_labels"].kind() == caps::Json::Bool && !o["type_labels"].boolean()) {
+      std::ifstream in(path, std::ios::binary);
+      std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>()), out, section;
+      in.close();
+      std::istringstream ls(text);
+      for (std::string line; std::getline(ls, line);) {
+        std::string t = line;
+        if (!t.empty() && t.back() == '\r') t.pop_back();
+        const auto first = t.find_first_not_of(' ');
+        if (first != std::string::npos && std::isalpha(static_cast<unsigned char>(t[first]))) section = t.substr(first, t.find(" #") == std::string::npos ? std::string::npos : t.find(" #") - first);
+        const bool labelled = section == "Masses" || section.find("Coeffs") != std::string::npos;
+        if (labelled && first != std::string::npos && std::isdigit(static_cast<unsigned char>(t[first]))) {
+          const auto h = line.find('#');
+          if (h != std::string::npos) { line.erase(h); while (!line.empty() && line.back() == ' ') line.pop_back(); }
+        }
+        out += line + "\n";
+      }
+      std::ofstream(path, std::ios::binary) << out;
+      notes.push_back("no type labels after the types and coefficients");
     }
   } else {
     throw std::invalid_argument("unknown format " + fmt);
@@ -11171,6 +11223,8 @@ extern "C" int32_t caps_set_display(caps_doc* d, const char* json) {
     auto flag = [&](const caps::Json& o, const char* k, bool def) { return o.has(k) && o[k].kind() == caps::Json::Bool ? o[k].boolean() : def; };
     auto& D = d->display;
     D.polar_h_only = flag(j, "polar_h_only", D.polar_h_only);
+    D.show_particles = flag(j, "show_particles", D.show_particles);
+    D.show_bonds = flag(j, "show_bonds", D.show_bonds);
     D.selection_full = flag(j, "selection_full", D.selection_full);
     if (j.has("clip")) {
       const caps::Json& C = j["clip"];

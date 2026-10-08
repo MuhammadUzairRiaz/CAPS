@@ -7,14 +7,22 @@ namespace CapsStudio.ViewModels;
 /// and forces: bench/ff/check_gromacs.py); the run section is written here from the Dynamics settings.</summary>
 public sealed partial class MainViewModel
 {
-    private bool _mdGromacs;
+    // the engine the deck is written for: LAMMPS, GROMACS, or both into one folder (the preview shows the LAMMPS input)
+    private bool _mdGromacs, _mdBoth;
     public bool MdGromacs
     {
-        get => _mdGromacs;
-        set { if (Set(ref _mdGromacs, value)) { Raise(nameof(MdLammps)); Raise(nameof(MdDeckFiles)); Raise(nameof(MdParityTip)); RefreshPreflight(); } }
+        get => _mdGromacs && !_mdBoth;
+        set { if (value) { _mdBoth = false; } if (Set(ref _mdGromacs, value) || value) RaiseEngine(); }
     }
-    public bool MdLammps { get => !_mdGromacs; set => MdGromacs = !value; }
-    public string MdDeckFiles => _mdGromacs ? "system.top, system.gro and system.mdp (gmx grompp, then gmx mdrun)" : "system.data and system.in (lmp -in system.in)";
+    public bool MdLammps { get => !_mdGromacs && !_mdBoth; set { if (value) { _mdBoth = false; _mdGromacs = false; RaiseEngine(); } } }
+    public bool MdBoth { get => _mdBoth; set { if (Set(ref _mdBoth, value) && value) { _mdGromacs = false; RaiseEngine(); } } }
+    private void RaiseEngine()
+    {
+        Raise(nameof(MdGromacs)); Raise(nameof(MdLammps)); Raise(nameof(MdBoth)); Raise(nameof(MdDeckFiles)); Raise(nameof(MdParityTip));
+        RefreshPreflight();
+    }
+    public string MdDeckFiles => _mdBoth ? "system.data and system.in for LAMMPS, system.top, system.gro and system.mdp for GROMACS (one folder)"
+        : _mdGromacs ? "system.top, system.gro and system.mdp (gmx grompp, then gmx mdrun)" : "system.data and system.in (lmp -in system.in)";
     public string MdParityTip => _mdGromacs
         ? "Energies and forces of the topology match CAPS in GROMACS 2026 (bench/ff/check_gromacs.py): bonded terms, Lennard-Jones and PME Coulomb; the tail correction differs by definition"
         : "Energies and forces of the data file match CAPS in LAMMPS (bench/ff/check_data_lammps.py)";

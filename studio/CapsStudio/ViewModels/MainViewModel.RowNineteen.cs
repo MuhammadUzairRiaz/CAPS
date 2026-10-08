@@ -92,6 +92,11 @@ public partial class MainViewModel
     private static string Short(long n) => n >= 1_000_000 ? $"{n / 1_000_000.0:0.#} M" : n >= 1000 ? $"{n / 1000.0:0.#} k" : n.ToString(CultureInfo.InvariantCulture);
 
     /// <summary>The display options on the document (view only).</summary>
+    // Visualize › Visual elements: particles (drawn only as joints when off) and bonds, view only
+    private bool _showParticles = true, _showBonds = true;
+    public bool ShowParticles { get => _showParticles; set { if (Set(ref _showParticles, value)) ApplyDisplay(); } }
+    public bool ShowBonds { get => _showBonds; set { if (Set(ref _showBonds, value)) ApplyDisplay(); } }
+
     private void ApplyDisplay()
     {
         if (_doc == null) return;
@@ -103,7 +108,8 @@ public partial class MainViewModel
             };
             if (_lensCentre >= 0) lens["centre"] = _lensCentre;
             var clip = new JsonObject { ["on"] = _clipOn, ["axis"] = _clipAxis, ["from"] = (double)_clipFrom, ["to"] = (double)_clipTo, ["invert"] = _clipInvert };
-            _doc.SetDisplay(new JsonObject { ["polar_h_only"] = _dsPolarOnly, ["selection_full"] = _dsSelectionFull, ["lens"] = lens, ["clip"] = clip }.ToJsonString());
+            _doc.SetDisplay(new JsonObject { ["polar_h_only"] = _dsPolarOnly, ["selection_full"] = _dsSelectionFull, ["lens"] = lens, ["clip"] = clip,
+                                             ["show_particles"] = _showParticles, ["show_bonds"] = _showBonds }.ToJsonString());
             if (_lensOn) RefreshLensCounts();
         }
         catch (Exception e) { Status = "Display: " + e.Message; }

@@ -40,11 +40,26 @@ public partial class ViewportsPage : PageBase
         var title = new Border
         {
             Classes = { "chip" }, Margin = new Thickness(10), HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top,
-            Child = new TextBlock { Text = t.Label }, Cursor = new Cursor(StandardCursorType.Hand),
+            Cursor = new Cursor(StandardCursorType.Hand),
         };
+        var label = new TextBlock();
+        label.Bind(TextBlock.TextProperty, new Avalonia.Data.Binding(nameof(ViewportTile.Label)) { Source = t });
+        title.Child = label;
+        // right-click the title: the view this pane shows
+        var menu = new ContextMenu();
+        for (var k = 0; k < MainViewModel.ViewportViews.Length; ++k)
+        {
+            var view = k;
+            var item = new MenuItem { Header = MainViewModel.ViewportViews[k].Name + (MainViewModel.ViewportViews[k].Ortho ? " · ortho" : "") };
+            item.Click += (_, _) => Vm.SwapViewport(t, view);
+            menu.Items.Add(item);
+        }
+        title.ContextMenu = menu;
+        ToolTip.SetTip(title, "Click: make active · right-click: show another view");
         title.Bind(Border.BackgroundProperty, new Avalonia.Data.Binding(nameof(ViewportTile.Active))
             { Source = t, Converter = new Avalonia.Data.Converters.FuncValueConverter<bool, IBrush>(a => Tokens.Brush(a ? "Bg3B" : "HudB")) });
         var tripod = new TripodView { Width = 56, Height = 56, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(6) };
+        tripod.Bind(IsVisibleProperty, new Avalonia.Data.Binding(nameof(MainViewModel.ViewportTripod)) { Source = DataContext });
         var panel = new Panel { Children = { image, title, tripod } };
         var border = new Border { Child = panel, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(4), ClipToBounds = true, Background = Tokens.Brush("Bg0B") };
         border.Bind(Border.BorderBrushProperty, new Avalonia.Data.Binding(nameof(ViewportTile.Active))

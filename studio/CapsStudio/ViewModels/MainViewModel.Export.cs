@@ -59,7 +59,15 @@ public sealed partial class MainViewModel
     public bool ExportBusy { get => _exportBusy; private set { if (Set(ref _exportBusy, value)) Raise(nameof(ExportIdle)); } }
     public bool ExportIdle => !_exportBusy;
 
-    private string ExportOptionsJson() => new JsonObject { ["pipeline"] = _exportPipeline, ["wrap"] = _exportWrap, ["coeffs"] = _exportCoeffs }.ToJsonString();
+    // LAMMPS data: which charges go in, and whether the type labels (# c3) follow the types and coefficients
+    public static readonly string[] ExportChargeChoices = ["The force field's (Field)", "The structure's own", "Gasteiger–Marsili", "None (zero)"];
+    private static readonly string[] ExportChargeKeys = ["field", "structure", "gasteiger", "none"];
+    private int _exportCharges;
+    private bool _exportLabels = true;
+    public int ExportChargesIndex { get => _exportCharges; set { if (Set(ref _exportCharges, Math.Clamp(value, 0, 3))) RefreshExport(); } }
+    public bool ExportTypeLabels { get => _exportLabels; set { if (Set(ref _exportLabels, value)) RefreshExport(); } }
+    private string ExportOptionsJson() => new JsonObject { ["pipeline"] = _exportPipeline, ["wrap"] = _exportWrap, ["coeffs"] = _exportCoeffs,
+                                                          ["charges"] = ExportChargeKeys[_exportCharges], ["type_labels"] = _exportLabels }.ToJsonString();
     public string ExportSuggestedName => $"{System.IO.Path.GetFileNameWithoutExtension(_doc?.Path ?? "structure")}.{ExportFormats[_exportFormat].Extension}";
 
     // the core keeps the pipeline only while Visualize is open; exporting its result sets it again
