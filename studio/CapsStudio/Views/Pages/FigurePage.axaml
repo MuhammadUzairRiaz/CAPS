@@ -118,6 +118,8 @@
                   <TextBlock Text="Custom colour (#RRGGBB)" Classes="label" />
                   <TextBox Text="{Binding FigCustom}" Classes="mono" Watermark="none" />
                 </StackPanel>
+                <CheckBox Classes="toggle" Content="Remember per project" IsChecked="{Binding FigPerProject}" IsEnabled="{Binding FigPerProjectAvailable}"
+                          ToolTip.Tip="The background and custom colour are kept in the open project's file and come back with it (needs a project open)" />
               </StackPanel>
             </Border>
             <Border Classes="section">
@@ -129,6 +131,9 @@
                   <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="Aspect" Classes="label" />
                     <ComboBox ItemsSource="{x:Static vm:MainViewModel.FigureAspects}" SelectedIndex="{Binding FigAspect}" HorizontalAlignment="Stretch" /></StackPanel>
                 </Grid>
+                <StackPanel Spacing="4" IsVisible="{Binding FigIsPng}"><TextBlock Text="Bit depth" Classes="label" />
+                  <ComboBox ItemsSource="{x:Static vm:MainViewModel.FigureBitDepths}" SelectedIndex="{Binding FigBitsIndex}" HorizontalAlignment="Stretch"
+                            ToolTip.Tip="16-bit keeps the 16-bit channels of the supersampled average: smooth gradients and fog for print" /></StackPanel>
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
                   <StackPanel Spacing="4"><TextBlock Text="Width (mm)" Classes="label" />
                     <NumericUpDown Value="{Binding FigWidthMm}" Minimum="10" Maximum="2000" Increment="5" FormatString="0.#" /></StackPanel>
