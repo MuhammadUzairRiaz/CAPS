@@ -14,6 +14,8 @@ namespace caps {
 const std::vector<std::string>& cg_commands();
 bool is_cg_command(const std::string& cmd);
 bool cg_is_switch(const std::string& cmd, std::string name);
+// whether the command takes this option (--name, -name; - and _ alike)
+bool cg_is_option(const std::string& cmd, std::string name);
 std::string cg_help(const std::string& cmd);
 // Throws std::invalid_argument / std::runtime_error with a message for the user on failure.
 Json cg_run(const std::string& cmd, const Json& args, const std::string& data_dir);
