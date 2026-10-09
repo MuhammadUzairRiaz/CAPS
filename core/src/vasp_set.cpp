@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
@@ -63,9 +64,21 @@ std::vector<std::string> species_of(const System& s) {
 }  // namespace
 
 // ---------------------------------------------------------------- profiles
+// data/dft/clusters.json (generic starting points), then the user's own ~/CAPS/dft-clusters.json (kept on their machine):
+// a profile there replaces one of the same name
+std::string user_clusters_file() {
+  const char* home = std::getenv("HOME");
+#ifdef _WIN32
+  if (!home) home = std::getenv("USERPROFILE");
+#endif
+  return home ? std::string(home) + "/CAPS/dft-clusters.json" : std::string();
+}
 std::vector<ClusterProfile> cluster_profiles(const std::string& data_dir) {
   std::vector<ClusterProfile> out;
-  const Json j = read_json_file(data_dir + "/dft/clusters.json");
+  std::vector<Json> files = {read_json_file(data_dir + "/dft/clusters.json")};
+  if (const std::string u = user_clusters_file(); !u.empty() && std::filesystem::exists(u)) files.push_back(read_json_file(u));
+  for (const Json& j : files) {
+  if (!j.has("profiles")) continue;
   for (const auto& e : j["profiles"].items()) {
     ClusterProfile p;
     p.name = e.text("name"), p.about = e.text("about"), p.scheduler = e.text("scheduler", "slurm"), p.account = e.text("account");
@@ -75,13 +88,16 @@ std::vector<ClusterProfile> cluster_profiles(const std::string& data_dir) {
     for (const auto& r : e["parallel"].items()) p.parallel.push_back({int(r.num("max_atoms", 0)), int(r.num("ranks", 1)), int(r.num("kpar", 1)), int(r.num("ncore", 1)), r.text("time", "24:00:00")});
     if (e.has("gamma")) { const Json& g = e["gamma"]; p.gamma = {0, int(g.num("ranks", 1)), int(g.num("kpar", 1)), int(g.num("ncore", 1)), g.text("time", "24:00:00")}; }
     if (e.has("hang")) for (const auto& h : e["hang"].items()) p.hang.push_back({int(h.num("max_atoms", 0)), int(h.num("seconds", 1800))});
-    out.push_back(p);
+    const auto same = std::find_if(out.begin(), out.end(), [&](const ClusterProfile& q) { return q.name == p.name; });
+    if (same != out.end()) *same = p;
+    else out.push_back(p);
+  }
   }
   return out;
 }
 ClusterProfile cluster_profile(const std::string& data_dir, const std::string& name) {
   for (const auto& p : cluster_profiles(data_dir)) if (p.name == name) return p;
-  throw std::invalid_argument("no cluster profile " + name + " (data/dft/clusters.json)");
+  throw std::invalid_argument("no cluster profile " + name + " (data/dft/clusters.json, ~/CAPS/dft-clusters.json)");
 }
 ClusterRule parallel_rule(const ClusterProfile& p, int atoms, bool gamma_only) {
   if (gamma_only && p.gamma.ranks > 0) return p.gamma;

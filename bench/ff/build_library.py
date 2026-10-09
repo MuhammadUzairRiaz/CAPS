@@ -15,7 +15,7 @@ ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 CAPS = os.path.join(ROOT, "build", "cli", "caps")
 arg = lambda k, d: sys.argv[sys.argv.index(k) + 1] if k in sys.argv else d
 MT = arg("--moltemplate", os.path.expanduser("~/moltemplate/moltemplate/force_fields"))
-DLF = arg("--reftool", "reference-tool/lib")
+DLF = arg("--reftool", os.path.expanduser("reference-tool/lib"))
 OUT = arg("--out", os.path.join(ROOT, "data", "forcefields"))
 
 V = "validated"

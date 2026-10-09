@@ -18,7 +18,7 @@ ROOT = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, HERE)
 import template_pdb
 
-LIB = os.environ.get("REFTOOL", "reference-tool") + "/lib"
+LIB = os.environ.get("REFTOOL", os.path.expanduser("reference-tool")) + "/lib"
 CAPS = os.path.join(ROOT, "build", "cli", "caps")
 lib, ffjson, rules = sys.argv[1], sys.argv[2], sys.argv[3]
 arg = lambda k, d: sys.argv[sys.argv.index(k) + 1] if k in sys.argv else d
