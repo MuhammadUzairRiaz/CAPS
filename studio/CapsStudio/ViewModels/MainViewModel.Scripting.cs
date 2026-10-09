@@ -12,8 +12,11 @@ public sealed partial class MainViewModel
 {
     // ---------------------------------------------------------------- Python & scripting
     /// <summary>The interpreter macros, render overlays and Python pipeline steps run with: the one set here, else
-    /// CAPS_PYTHON, else python3 on the PATH.</summary>
-    public static string PythonExe => _pythonSetting is { Length: > 0 } p ? p : Environment.GetEnvironmentVariable("CAPS_PYTHON") is { Length: > 0 } e ? e : "python3";
+    /// CAPS_PYTHON, else the one this machine has (PythonLocator: the PATH without the Store placeholders, the py launcher,
+    /// the registry, conda / python.org / Homebrew folders), else python3.</summary>
+    public static string PythonExe => _pythonSetting is { Length: > 0 } p ? p : Environment.GetEnvironmentVariable("CAPS_PYTHON") is { Length: > 0 } e ? e : PythonLocator.Detect() ?? "python3";
+    /// <summary>Whether any interpreter is set or was found.</summary>
+    public static bool PythonAvailable => _pythonSetting.Length > 0 || Environment.GetEnvironmentVariable("CAPS_PYTHON") is { Length: > 0 } || PythonLocator.Detect() != null;
     private static string _pythonSetting = "";
     public string SetPythonExe
     {
@@ -27,7 +30,8 @@ public sealed partial class MainViewModel
             PythonCheck = "";
         }
     }
-    public string PythonSource => _settings.PythonExe.Length > 0 ? "set here" : Environment.GetEnvironmentVariable("CAPS_PYTHON") is { Length: > 0 } ? "from CAPS_PYTHON" : "python3 on the PATH";
+    public string PythonSource => _settings.PythonExe.Length > 0 ? "set here" : Environment.GetEnvironmentVariable("CAPS_PYTHON") is { Length: > 0 } ? "from CAPS_PYTHON"
+        : PythonLocator.Detect() is { } found ? "found: " + found : "none found on this machine — install Python 3 or choose one here";
     /// <summary>The core runs Python pipeline steps with the same interpreter.</summary>
     private void ApplyPython()
     {
