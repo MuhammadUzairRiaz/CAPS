@@ -1,0 +1,6 @@
+{
+ "format": "caps-potcar-map",
+ "version": 1,
+ "about": "PAW datasets (VASP potpaw_PBE folder names) per element, as used by the reference Ti3C2Tx workflow. CAPS never ships POTCAR files: they are read from your licensed directory. Elements not listed use the plain element name; add your choices here (check VASP's recommended-PAW list).",
+ "map": {"Ti": "Ti_pv", "C": "C", "N": "N", "O": "O", "F": "F", "H": "H"}
+}

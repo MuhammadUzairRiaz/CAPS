@@ -1,0 +1,24 @@
+ vasp.6.5.1 (synthetic fixture for CAPS tests)
+   number of dos      NEDOS =   3001   number of ions     NIONS =      3
+   ENCUT  =  520.0 eV  38.22 Ry    6.18 a.u.
+   NELM   =    120;   NELMIN=  2; NELMDL= -5     # of ELM steps
+   NSW    =      0    number of steps for IOM
+   IBRION =     -1    ionic relax: 0-MD 1-quasi-New 2-CG
+ E-fermi :  -1.2345     XC(G=0):  -9.0000     alpha+bet : -5.0000
+ number of electron      40.0000000 magnetization       0.0000000
+ ------------------------ aborting loop because EDIFF is reached ----------------------------------------
+  FREE ENERGIE OF THE ION-ELECTRON SYSTEM (eV)
+  ---------------------------------------------------
+  free  energy   TOTEN  =       -51.23456789 eV
+
+  energy  without entropy=      -51.23000000  energy(sigma->0) =      -51.23200000
+  in kB       1.10000     1.30000    -0.20000     0.00000     0.00000     0.00000
+ POSITION                                       TOTAL-FORCE (eV/Angst)
+ -----------------------------------------------------------------------------------
+      0.00000      0.00000     10.00000         0.000000      0.000000      0.003000
+      1.54068      0.88951     11.07376         0.000000      0.000000     -0.004000
+      0.00000      1.77903     12.36762         0.003000      0.004000      0.000000
+ -----------------------------------------------------------------------------------
+ dipolmoment           0.000000      0.000000     -0.012345 electrons x Angstroem
+ General timing and accounting informations for this job:
+                            Elapsed time (sec):      123.456

@@ -61,6 +61,9 @@ add_library(caps_core STATIC
   src/adsorption.cpp
   src/slab2d.cpp
   src/adsorb_dft.cpp
+  src/vasp_set.cpp
+  src/vasp_out.cpp
+  src/dft_analysis.cpp
   src/sorption.cpp
   src/functionalize.cpp
   src/layers.cpp
