@@ -693,6 +693,19 @@ with tempfile.TemporaryDirectory() as _td:
     check(len(_pp["systems"]) == 1 and _pp["systems"][0]["lpp"] > 0, "ppa (CAPS's PPA)")
     _md = caps.cg("mech", "decks", rates="1e-6", mode="both", o=os.path.join(_td, "tension"))
     check(any("in.cg_tensile_stress_1e-6" in f for f in _md["files"]) and any("in.cg_tensile_volume_1e-6" in f for f in _md["files"]), "mech decks")
+    # backmapping onto the beads of the cell itself: every term comes back with its type, the charge with it
+    _aa = caps.polymer("[*]OCCCCOC(=O)CCC(=O)[*]", dp=5, chains=4, density=0.4, forcefield="opls2005", seed=6)
+    _aa.export_engines(os.path.join(_td, "aa"), run="none", gromacs=False)
+    caps.cg("cgmap", os.path.join(_td, "aa", "system.data"), preset="ester-cut", o=os.path.join(_td, "aacg"))
+    _m = [f for f in os.listdir(os.path.join(_td, "aacg")) if f.endswith(".map.json")][0]
+    _bm = caps.cg("backmap", os.path.join(_td, "aacg", _m), os.path.join(_td, "aa", "system.data"), cg=os.path.join(_td, "aacg", _m),
+                  frame=os.path.join(_td, "aacg", _m.replace(".map.json", ".cg.data")), input=os.path.join(_td, "aa", "system.in"), o=os.path.join(_td, "bm"))
+    def _counts(p):
+        txt = open(p).read().split("\n")[:12]
+        return {w: int(l.split()[0]) for l in txt for w in ("atoms", "bonds", "angles", "dihedrals", "impropers") if l.strip().endswith(" " + w)}
+    _c0, _c1 = _counts(os.path.join(_td, "aa", "system.data")), _counts(os.path.join(_td, "bm", "backmapped.data"))
+    check(_c0 == _c1 and _bm["unmatched"] == 0 and abs(_bm["charge"]) < 1e-6, f"backmap: {_c1} (reference {_c0}), charge {_bm['charge']:.2e}")
+    check("pair_coeff" in open(os.path.join(_td, "bm", "pair_coeffs.in")).read() and "kspace_style" in open(os.path.join(_td, "bm", "in.backmap")).read(), "backmap deck")
 print("ok   coarse-graining: cg_map(rules=…), caps.cg('cgmap')")
 
 print("all python checks passed")

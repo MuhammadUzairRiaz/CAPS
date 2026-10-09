@@ -16,6 +16,7 @@
 
 #include "caps/bundle.hpp"
 #include "caps/cg_analysis.hpp"
+#include "caps/cg_backmap.hpp"
 #include "caps/cg_bonded.hpp"
 #include "caps/cg_build.hpp"
 #include "caps/cg_nonbonded.hpp"
@@ -185,6 +186,22 @@ const std::vector<Cmd>& table() {
         {"o", "dynamics", "the output folder"}},
        {"caps cgdyn cg/DP25.map.json aa_mapped/DP25.cg.lammpstrj --dt 1 -o dyn_aa", "caps cgdyn cg/DP25.map.json cgrun/DP25.lammpstrj --dt 10 -o dyn_cg",
         "caps cgdyn timemap dyn_aa/dynamics.csv dyn_cg/dynamics.csv"}},
+      {"backmap", "caps backmap REF_MAP REF_DATA --cg CG_MAP --frame CG_FRAME [--input REF.in] -o DIR  |  caps backmap check DATA",
+       "Coarse-grained beads back to all atoms, fragment per bead: a library from a reference all-atom cell (LAMMPS data with its "
+       "force field) and its map.json — each bead class (kind and place: head, inner, tail) with conformers, and every bond, angle, "
+       "dihedral and improper as a template over the classes of the beads it spans — placed on a CG configuration (each fragment's "
+       "centre of mass on its bead, turned to its two chain neighbours), the cut bonds and the terms across them restored with their "
+       "types and charges; writes the all-atom data, pair_coeffs.in and in.backmap (bonded only, soft-core push-off, the full force "
+       "field from the reference input's style lines, a short NPT). check: bond lengths and angles against harmonic r0 and θ0.",
+       {{"cg", "", "the CG system's map.json (from cgmap or cgbuild)"},
+        {"frame", "", "its positions: STEM.cg.data, a LAMMPS data file written by a CG run, or a dump (the last frame)"},
+        {"input", "", "the reference LAMMPS input (its pair_style, kspace_style, special_bonds, bond/angle/dihedral/improper_style lines)"},
+        {"conformers", "20", "instances of each bead class drawn from"},
+        {"seed", "1", "random choice of conformers"},
+        {"T", "300", "in.backmap: temperature (K)"},
+        {"o", "backmap", "the output folder"}},
+       {"caps backmap cg/PBSA_DP-25-40.map.json PBSA/DP-25-40/system.data --cg melt/melt.map.json --frame melt/equil.data --input PBSA/DP-25-40/system.in -o backmap",
+        "caps backmap check backmap/relaxed.data"}},
   };
   return t;
 }
@@ -1483,6 +1500,94 @@ Json cg_run(const std::string& c, const Json& a, const std::string& data_dir) {
       r["D"] = D.D, r["tau_R"] = D.tau_R, r["tau_e"] = D.tau_e;
       r["text"] = text + "wrote " + (fs::path(dir) / "dynamics.csv").string() + "\n" + r.text("command") + "\n";
     }
+  }
+  if (c == "backmap") {
+    std::ostringstream t;
+    char b[512];
+    if (!in.empty() && in[0] == "check") {
+      if (in.size() < 2) throw std::invalid_argument("backmap check: give the all-atom data file");
+      const LammpsFull d = read_lammps_full(in[1]);
+      Json rows = Json::array();
+      t << "kind  type  count  reference  mean |Δ|  largest |Δ|\n";
+      for (const auto& row : backmap_check(d)) {
+        if (std::isnan(row.ref)) std::snprintf(b, sizeof b, "%-5s %4d %6d  (not harmonic: not checked)\n", row.kind.c_str(), row.type, row.count);
+        else std::snprintf(b, sizeof b, "%-5s %4d %6d  %9.3f  %8.3f  %10.3f %s\n", row.kind.c_str(), row.type, row.count, row.ref, row.mean_dev, row.max_dev, row.kind == "bond" ? "Å" : "°");
+        t << b;
+        Json e = Json::object();
+        e["kind"] = row.kind, e["type"] = row.type, e["count"] = row.count, e["ref"] = std::isnan(row.ref) ? Json() : Json(row.ref), e["mean_dev"] = row.mean_dev, e["max_dev"] = row.max_dev;
+        rows.push_back(e);
+      }
+      r["rows"] = rows;
+    } else {
+      if (in.size() < 2) throw std::invalid_argument("backmap: give the reference map.json and its all-atom data file");
+      if (S(a, "cg").empty() || S(a, "frame").empty()) throw std::invalid_argument("backmap: give --cg (the CG map.json) and --frame (its positions)");
+      const LammpsFull ref = read_lammps_full(in[1]);
+      const BackmapLibrary lib = backmap_library(ref, read_json_file(in[0]), int(N(a, "conformers", 20)));
+      CgSysIn x;
+      x.map = S(a, "cg");
+      x.mj = read_json_file(x.map);
+      x.t = cg_topology_from_map(x.mj);
+      x.frames = {S(a, "frame")};
+      std::vector<Vec3> pos;
+      Cell cell;
+      cg_frames(x, 1, [&](const std::vector<Vec3>& q, const Cell& c2) { pos = q, cell = c2; });
+      const BackmapResult res = backmap_fragments(lib, x.t, pos, cell, uint64_t(N(a, "seed", 1)));
+      const std::string dir = S(a, "o", "backmap");
+      fs::create_directories(dir);
+      const std::string data = (fs::path(dir) / "backmapped.data").string();
+      write_lammps_full(res.data, data, false);
+      files.push_back(data);
+      // the pair coefficients as an include (the deck switches pair styles)
+      {
+        std::ofstream f((fs::path(dir) / "pair_coeffs.in").string());
+        f << "# pair coefficients of the reference force field\n";
+        for (const auto& [h, lines] : ref.coeffs) {
+          const bool ij = h.rfind("PairIJ Coeffs", 0) == 0;
+          if (!ij && h.rfind("Pair Coeffs", 0) != 0) continue;
+          for (const auto& l : lines) {
+            std::istringstream ss(l.substr(0, l.find('#')));
+            std::string i1, j1, rest, w;
+            ss >> i1;
+            if (ij) ss >> j1; else j1 = i1;
+            while (ss >> w) rest += " " + w;
+            if (!i1.empty()) f << "pair_coeff " << i1 << " " << j1 << rest << "\n";
+          }
+        }
+        // a data file without pair coefficients (CAPS writes them into the input as pair_coeff lines): from the input
+        const bool none = std::none_of(ref.coeffs.begin(), ref.coeffs.end(), [](const auto& c2) { return c2.first.rfind("Pair Coeffs", 0) == 0 || c2.first.rfind("PairIJ Coeffs", 0) == 0; });
+        if (none && !S(a, "input").empty()) {
+          std::ifstream in2(S(a, "input"));
+          int n = 0;
+          for (std::string l; std::getline(in2, l);) {
+            const auto p0 = l.find_first_not_of(" \t");
+            if (p0 != std::string::npos && l.compare(p0, 11, "pair_coeff ") == 0) f << l.substr(p0) << "\n", ++n;
+          }
+          if (!n) t << "note: neither the data file nor the input has pair coefficients: fill pair_coeffs.in\n";
+        }
+        files.push_back((fs::path(dir) / "pair_coeffs.in").string());
+      }
+      std::vector<std::string> style;
+      if (!S(a, "input").empty()) style = style_lines_of(S(a, "input"));
+      else t << "note: no --input: in.backmap has no pair or kspace style for stage 3 — add the reference's lines there\n";
+      BackmapDeckOptions dop;
+      dop.T = N(a, "T", 300);
+      write_text((fs::path(dir) / "in.backmap").string(), backmap_deck(style, dop));
+      files.push_back((fs::path(dir) / "in.backmap").string());
+      std::snprintf(b, sizeof b, "%d beads → %zu atoms · %zu bonds, %zu angles, %zu dihedrals, %zu impropers · net charge %.4f e\n", res.beads, res.data.atoms.size(), res.data.bonds.size(),
+                    res.data.angles.size(), res.data.dihedrals.size(), res.data.impropers.size(), res.charge);
+      t << b;
+      std::snprintf(b, sizeof b, "  library: %zu fragment classes, %zu term templates · restored cut bonds before relaxation: %.2f–%.2f Å (mean %.2f)\n", lib.classes.size(), lib.templates.size(),
+                    res.cut_min, res.cut_max, res.cut_mean);
+      t << b;
+      for (const auto& n : res.notes) t << "  note: " << n << "\n";
+      t << "next: lmp -in " << dir << "/in.backmap -var DATA backmapped.data -var OUT relaxed (from " << dir << "), then caps backmap check " << dir << "/relaxed.data\n";
+      r["atoms"] = double(res.data.atoms.size()), r["charge"] = res.charge, r["cut_mean"] = res.cut_mean, r["unmatched"] = res.terms_unmatched;
+      provenance(data, "cg.backmap", "fragments placed on " + std::to_string(res.beads) + " beads", {{"reference", fs::path(in[1]).filename().string()}, {"conformers", S(a, "conformers", "20")}},
+                 {{fs::path(in[0]).filename().string(), sha_of(in[0])}, {fs::path(in[1]).filename().string(), sha_of(in[1])}, {fs::path(x.map).filename().string(), sha_of(x.map)}}, {"horn1987"},
+                 {{"structure", "fragments placed rigidly: relax (in.backmap) before use"}});
+    }
+    t << r.text("command") << "\n";
+    r["text"] = t.str();
   }
   r["files"] = files;
   return r;
