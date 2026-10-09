@@ -35,7 +35,7 @@ from . import sweep  # noqa: F401,E402
 from .table import Table, table  # noqa: F401,E402
 from .view import View  # noqa: F401,E402
 
-__version__ = "0.2.0"
+__version__ = "0.1.0"
 __all__ = ["geometry", "pipeline", "sweep", "label_kinds", "protocol_text", "water_models", "Document", "Provenance", "View", "Table", "open", "pack", "potentials", "current", "hand_back", "import_file", "import_preview", "build", "run", "polymer",
            "table", "library", "abi_version", "space_groups", "provenance_file", "compare_provenance", "bibtex", "methods", "CapsError",
            "chain_lengths", "bead_templates", "copolymer_model", "stereo", "blend_phase", "solvent_chi", "ewald_params", "chi_by_md", "chi_by_contacts", "reaction_templates", "reaction_template", "bond_react_template", "reaction_library"]
