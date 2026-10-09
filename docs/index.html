@@ -7,13 +7,16 @@
 <meta name="description" content="CAPS: build, type, run and analyse polymers and materials from the Studio, the command line or Python.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="icon" type="image/svg+xml" href="assets/caps.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/caps_32.png">
+<link rel="apple-touch-icon" href="assets/caps_256.png">
 <link rel="stylesheet" href="assets/site.css">
 
 <script defer src="assets/site.js"></script>
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>CAPS</a>
+  <a class="brand" href="index.html" title="CAPS · Chain Assembly and Packing Suite"><svg class="mark" viewBox="0 0 30 30" aria-hidden="true"><path d="M15 2 L26.3 8.5 L26.3 21.5 L15 28 L3.7 21.5 L3.7 8.5 Z" fill="none" stroke="var(--accent)" stroke-width="2"/><path d="M15 9.5 V11.7 M19.8 17.8 L17.9 16.7 M10.2 17.8 L12.1 16.7" stroke="currentColor" stroke-width="1.4"/><circle cx="15" cy="15" r="3.4" fill="var(--accent)"/><circle cx="15" cy="7.5" r="2" fill="currentColor"/><circle cx="21.5" cy="18.8" r="2" fill="currentColor"/><circle cx="8.5" cy="18.8" r="2" fill="currentColor"/></svg>CAPS</a>
   <button class="menu" aria-expanded="false" aria-controls="nav">Menu</button>
   <nav id="nav" class="links"><a href="index.html" aria-current="page">Home</a><a href="modules/index.html">Modules</a><a href="cli/index.html">CLI guide</a><a href="cli/reference.html">Command reference</a><a href="tutorials/index.html">Tutorials</a><a href="theory/index.html">Theory</a><a href="python.html">Python</a><a href="manual/index.html">Studio tour</a><a href="https://github.com/MuhammadUzairRiaz/CAPS">GitHub</a></nav>
 </header>
@@ -38,7 +41,7 @@
   </figure>
   <div class="stats" style="justify-content:center">
     <div><b>25</b><span>Studio modules</span></div>
-    <div><b>62</b><span>commands</span></div>
+    <div><b>63</b><span>commands</span></div>
     <div><b>63</b><span>force-field libraries</span></div>
     <div><b>88</b><span>documented methods</span></div>
   </div>
@@ -103,7 +106,7 @@ folder (see <a href="python.html#setup">Python setup</a>).</p>
   <a class="card" href="modules/index.html"><b>Module guides</b><span>Every Studio page, step by step, with its screenshot and the same step as a command and in Python.</span><span class="meta">25 modules</span></a>
   <a class="card" href="tutorials/index.html"><b>Tutorials</b><span>Amorphous cells, force-field export, recipes and provenance, crosslinking, coarse-graining, DFT surfaces and analysis.</span><span class="meta">7 tutorials · run as written</span></a>
   <a class="card" href="cli/index.html"><b>CLI guide</b><span>Conventions, the command for each task, the scripts CAPS writes for you to run, and how commands chain into a project.</span><span class="meta">start here for the command line</span></a>
-  <a class="card" href="cli/reference.html"><b>Command reference</b><span>Every command's synopsis, and for the newer workflows every option with its default and the reason for it.</span><span class="meta">62 commands · filterable</span></a>
+  <a class="card" href="cli/reference.html"><b>Command reference</b><span>Every command's synopsis, and for the newer workflows every option with its default and the reason for it.</span><span class="meta">63 commands · filterable</span></a>
   <a class="card" href="theory/index.html"><b>Theory</b><span>The equations CAPS solves, with symbols, defaults, when to use each method, the tests that check it and the papers it follows.</span><span class="meta">88 methods · typeset</span></a>
   <a class="card" href="python.html"><b>Python API</b><span><code>import caps</code>: open and build structures, assign force fields, run, crosslink, analyse and write pipeline steps.</span><span class="meta">generated from the docstrings</span></a>
 </div>

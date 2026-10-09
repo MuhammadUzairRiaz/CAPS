@@ -29,7 +29,7 @@ code,kbd{font-family:var(--mono);font-size:.86em}
 header.top{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:20px;padding:12px max(16px,env(safe-area-inset-left,0px));
   padding-top:calc(12px + env(safe-area-inset-top,0px));background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
 .brand{display:flex;align-items:center;gap:9px;font:700 18px/1 var(--display);letter-spacing:.02em;color:var(--ink);text-decoration:none}
-.mark{width:18px;height:18px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff6 0 18%,transparent 19%),var(--accent);box-shadow:10px 4px 0 -5px var(--ink),-6px 9px 0 -6px var(--ink)}
+.mark{width:26px;height:26px;flex:none;color:var(--ink)}
 .links{display:flex;flex-wrap:wrap;gap:2px 4px;margin-left:auto}
 .links a{color:var(--muted);text-decoration:none;font-size:14px;padding:6px 10px;border-radius:6px}
 .links a:hover,.links a:focus-visible{color:var(--ink);background:var(--chip);outline:none}
