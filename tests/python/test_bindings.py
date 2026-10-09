@@ -676,6 +676,16 @@ with tempfile.TemporaryDirectory() as _td:
     _keys = {(t["kind"], t["key"]) for t in _b["tables"] if t["sampled"]}
     check(("bond", "B-S") in _keys and ("angle", "S-B-S") in _keys, f"cgfit bonded: {sorted(_keys)}")
     check(os.path.exists(os.path.join(_td, "bonded", "bonded.in")) and os.path.exists(os.path.join(_td, "bonded", "bonds.table")), "cgfit bonded files")
+    _melt = caps.polymer("[*]OCCCCOC(=O)CCC(=O)[*]", dp=6, chains=12, density=0.6, seed=4)
+    _melt.save(os.path.join(_td, "melt.data"))
+    caps.cg("cgmap", os.path.join(_td, "melt.data"), preset="ester-cut", o=_td)
+    _t = caps.cg("cgfit", "targets", os.path.join(_td, "melt.map.json"), os.path.join(_td, "melt.cg.data"), rmax=10, o=os.path.join(_td, "ibi"))
+    _s = caps.cg("cgfit", "ibi-start", targets=os.path.join(_td, "ibi", "targets.json"), bonded=os.path.join(_td, "bonded"), rc=10, o=os.path.join(_td, "ibi"))
+    _pin = open(os.path.join(_td, "ibi", "it000", "pair.in")).read()
+    check("pair_style table linear" in _pin and "pair_coeff 1 1 ${PAIR}/pairs.table B-B" in _pin, "ibi-start pair.in")
+    check(os.path.exists(os.path.join(_td, "ibi", "run_ibi.sh")) and os.path.exists(os.path.join(_td, "ibi", "in.cg_run")), "ibi-start decks")
+    _f = caps.cg("cgfit", "fit", pairs=os.path.join(_td, "ibi", "it000", "pairs.json"), form="lj126", o=os.path.join(_td, "lj"))
+    check("pair_style lj/cut" in open(os.path.join(_td, "lj", "pair.in")).read(), "cgfit fit")
 print("ok   coarse-graining: cg_map(rules=…), caps.cg('cgmap')")
 
 print("all python checks passed")

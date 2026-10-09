@@ -376,7 +376,8 @@ CgPairSet ibi_start(const CgTargets& t, const CgIbiOptions& o) {
   p.temperature = t.temperature;
   p.dr = o.table_dr;
   p.rc = std::min(o.rc, t.r.back());
-  p.r0 = std::max(0.5, p.dr);
+  p.r0 = p.dr;   // from close to zero: LAMMPS stops on any pair below a table's start
+  p.rc = p.r0 + std::floor((p.rc - p.r0) / p.dr + 1e-9) * p.dr;   // on the table's grid (LAMMPS: the cut-off may not pass the table's end)
   p.source = "IBI";
   const double kT = kB * t.temperature;
   for (const auto& R0 : t.rdf.front()) {
@@ -395,7 +396,12 @@ CgPairSet ibi_start(const CgTargets& t, const CgIbiOptions& o) {
     bool any = false;
     for (size_t b = 0; b < g.size(); ++b) if (w[b] > 0) g[b] /= w[b], any = true;
     if (!any) continue;   // a pair no system has: no table (said by the caller)
-    const auto U = potential_of(t.r, g, kT, p.rc, nullptr);
+    size_t k0 = 0;
+    auto U = potential_of(t.r, g, kT, p.rc, &k0);
+    // smoothed where resolved (as each update is), the wall below kept straight
+    std::vector<double> part(U.begin() + long(k0), U.end());
+    part = smooth_open(part, o.smooth);
+    std::copy(part.begin(), part.end(), U.begin() + long(k0));
     p.pairs.push_back(to_table(key, t.r, U, p));
   }
   return p;
@@ -490,6 +496,17 @@ std::vector<std::string> write_pairs(const CgPairSet& p, const CgTypes& types, c
         f << line;
       }
     }
+    // pairs no system has (S–T between PBS and PBAT): LAMMPS needs every coefficient, so a zero table — never used by these
+    // systems, said in pair.in
+    for (size_t i = 0; i < types.beads.size(); ++i)
+      for (size_t j = i; j < types.beads.size(); ++j) {
+        const std::string key = cg_key({types.beads[i], types.beads[j]});
+        if (std::any_of(p.pairs.begin(), p.pairs.end(), [&](const CgPairTable& t) { return t.key == key; })) continue;
+        const size_t n = std::max<size_t>(2, p.points());
+        std::snprintf(line, sizeof line, "\nZERO_%s\nN %zu R %.6f %.6f\n\n", key.c_str(), n, p.r0, p.r0 + double(n - 1) * p.dr);
+        f << line;
+        for (size_t k = 0; k < n; ++k) { std::snprintf(line, sizeof line, "%zu %.6f 0 0\n", k + 1, p.r0 + double(k) * p.dr); f << line; }
+      }
     files.push_back(path);
   }
   {
@@ -502,8 +519,13 @@ std::vector<std::string> write_pairs(const CgPairSet& p, const CgTypes& types, c
       for (size_t j = i; j < types.beads.size(); ++j) {
         const std::string key = cg_key({types.beads[i], types.beads[j]});
         const bool have = std::any_of(p.pairs.begin(), p.pairs.end(), [&](const CgPairTable& t) { return t.key == key; });
-        if (!have) { f << "# no table for " << key << " (no system has both types): give it a potential before a run\n"; continue; }
-        std::snprintf(line, sizeof line, "pair_coeff %zu %zu ${PAIR}/pairs.table %s %.4f\n", i + 1, j + 1, key.c_str(), p.rc);
+        if (!have) {
+          std::snprintf(line, sizeof line, "pair_coeff %zu %zu ${PAIR}/pairs.table ZERO_%s %.6f  # no system has both types: zero, unused here — give it a potential before mixing them\n",
+                        i + 1, j + 1, key.c_str(), p.r0 + double(std::max<size_t>(2, p.points()) - 1) * p.dr);
+          f << line;
+          continue;
+        }
+        std::snprintf(line, sizeof line, "pair_coeff %zu %zu ${PAIR}/pairs.table %s %.6f\n", i + 1, j + 1, key.c_str(), p.r0 + double(p.points() - 1) * p.dr);
         f << line;
       }
     files.push_back(path);
