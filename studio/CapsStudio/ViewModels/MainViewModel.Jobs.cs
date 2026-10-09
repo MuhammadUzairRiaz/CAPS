@@ -23,15 +23,33 @@ public sealed class RemoteRun
     public bool Checking { get; set; }
     /// <summary>Outputs left on the host when the job came back (large trajectories): copied on request.</summary>
     public List<RemoteFile> OnHost { get; set; } = new();
+    /// <summary>"job": made and followed with caps job on the host (caps-job.json, poll); "" the earlier plain script.</summary>
+    public string Mode { get; set; } = "";
+    // where the last poll left off (the next reads only what is new) and what it said
+    public long LogOffset { get; set; }
+    public long ProgressOffset { get; set; }
+    public long ErrOffset { get; set; }
+    public long LastFrameOffset { get; set; } = -1;
+    public string LiveDir { get; set; } = "";
+    public string QueueState { get; set; } = "";
+    public string Reason { get; set; } = "";
+    public string Node { get; set; } = "";
+    public string Elapsed { get; set; } = "";
+    public string Limit { get; set; } = "";
+    public string Acct { get; set; } = "";
+    public double Eta { get; set; } = -1;
+    public DateTime LastPoll { get; set; } = DateTime.MinValue;
     public JsonObject Json() => new()
     {
-        ["host"] = Host, ["scheduler"] = Scheduler, ["job_id"] = JobId, ["dir"] = Dir, ["local"] = Local, ["stem"] = Stem, ["batch"] = Batch,
+        ["host"] = Host, ["scheduler"] = Scheduler, ["job_id"] = JobId, ["dir"] = Dir, ["local"] = Local, ["stem"] = Stem, ["batch"] = Batch, ["mode"] = Mode,
+        ["log_offset"] = LogOffset, ["progress_offset"] = ProgressOffset, ["err_offset"] = ErrOffset, ["live_dir"] = LiveDir,
         ["on_host"] = new JsonArray(OnHost.Select(f => (JsonNode)new JsonObject { ["name"] = f.Name, ["bytes"] = f.Bytes }).ToArray()),
     };
     public static RemoteRun From(JsonObject o) => new()
     {
         Host = (string?)o["host"] ?? "", Scheduler = (string?)o["scheduler"] ?? "SLURM", JobId = (string?)o["job_id"] ?? "", Dir = (string?)o["dir"] ?? "",
-        Local = (string?)o["local"] ?? "", Stem = (string?)o["stem"] ?? "structure", Batch = (string?)o["batch"] ?? "",
+        Local = (string?)o["local"] ?? "", Stem = (string?)o["stem"] ?? "structure", Batch = (string?)o["batch"] ?? "", Mode = (string?)o["mode"] ?? "",
+        LogOffset = (long?)o["log_offset"] ?? 0, ProgressOffset = (long?)o["progress_offset"] ?? 0, ErrOffset = (long?)o["err_offset"] ?? 0, LiveDir = (string?)o["live_dir"] ?? "",
         OnHost = o["on_host"] is JsonArray a ? a.OfType<JsonObject>().Select(f => new RemoteFile((string?)f["name"] ?? "", (long?)f["bytes"] ?? 0)).Where(f => f.Name.Length > 0).ToList() : new(),
     };
 }
@@ -82,7 +100,7 @@ public sealed class Job : INotifyPropertyChanged
         {
             _status = value;
             foreach (var n in new[] { nameof(Status), nameof(IsRunning), nameof(IsQueued), nameof(IsFailed), nameof(IsDone), nameof(IsQuiet), nameof(StatusText), nameof(ShowPause), nameof(CanCancel),
-                                      nameof(CanCheckRemote), nameof(CanOpenRemote), nameof(Where), nameof(HasFix) }) Raise(n);
+                                      nameof(CanCheckRemote), nameof(CanOpenRemote), nameof(Where), nameof(HasFix), nameof(CanCancelRemote) }) Raise(n);
         }
     }
     public bool IsRunning => _status == "running";
@@ -92,6 +110,7 @@ public sealed class Job : INotifyPropertyChanged
     public bool Paused { get => _paused; set { _paused = value; Raise(nameof(Paused)); Raise(nameof(StatusText)); Raise(nameof(ShowPause)); } }
     public bool ShowPause => IsRunning && !_paused && Kind is "Dynamics" or "Equilibrate" or "Relax";
     public bool CanCancel => (IsRunning || IsQueued) && !IsRemote;
+    public bool CanCancelRemote => (IsRunning || IsQueued) && IsClusterJob;
     public bool IsFailed => _status == "failed";
     public bool IsDone => _status == "done";
     public bool IsQuiet => _status is "cancelled" or "stopped";
@@ -125,7 +144,26 @@ public sealed class Job : INotifyPropertyChanged
     /// <summary>A job sent to a host (Settings › Compute &amp; remote); null for this machine.</summary>
     public RemoteRun? Remote { get; set; }
     public bool IsRemote => Remote != null;
-    public bool CanCheckRemote => IsRemote && IsRunning;
+    public bool CanCheckRemote => IsRemote && (IsRunning || IsQueued);
+    /// <summary>A job followed with caps job on a cluster (the Queue, Log and Structure panels).</summary>
+    public bool IsClusterJob => Remote?.Mode == "job";
+    private readonly System.Text.StringBuilder _live = new();
+    /// <summary>The job's own log (run.log on the host), as it grows.</summary>
+    public string LiveLog => _live.ToString();
+    public string ErrLog { get; private set; } = "";
+    public void AppendLive(string text, string err)
+    {
+        if (text.Length > 0)
+        {
+            _live.Append(text);
+            if (_live.Length > 400_000) _live.Remove(0, _live.Length - 300_000);   // the newest part
+            Raise(nameof(LiveLog));
+        }
+        if (err.Length > 0) { ErrLog = (ErrLog + err) is { Length: > 100_000 } e ? e[^80_000..] : ErrLog + err; Raise(nameof(ErrLog)); Raise(nameof(HasErr)); }
+    }
+    public bool HasErr => ErrLog.Length > 0;
+    public string QueueText { get; private set; } = "";
+    public void SetQueue(string text) { QueueText = text; Raise(nameof(QueueText)); }
     public bool CanOpenRemote => IsRemote && IsDone;
     public string Duration => Ended is { } e ? Seconds(e - Started) : Seconds(DateTime.Now - Started) + " so far";
 
@@ -178,7 +216,7 @@ public sealed class Job : INotifyPropertyChanged
         if (DateTime.TryParse((string?)n["ended"], CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var e)) j.Ended = e;
         var st = (string?)n["status"] ?? "done";
         if (n["remote"] is JsonObject ro) j.Remote = RemoteRun.From(ro);
-        j.Status = st == "running" && j.Remote == null ? "stopped" : st;   // a local job running when the Studio closed did not finish; a remote one goes on
+        j.Status = (st == "running" || st == "queued") && j.Remote == null ? "stopped" : st;   // a local job running when the Studio closed did not finish; a remote one goes on
         if (n["provenance"] is JsonObject p) foreach (var kv in p) j.Provenance.Add(new JobFact(kv.Key, (string?)kv.Value ?? ""));
         if (n["log"] is JsonArray log) foreach (var l in log) if (l != null) j.Log.Add(new JobLine((string?)l["t"] ?? "", (string?)l["text"] ?? ""));
         j.Progress = st == "done" ? 1 : 0;
@@ -229,7 +267,7 @@ public sealed partial class MainViewModel
         catch { /* a broken history is left behind */ }
         RefreshJobsShown();
         foreach (var j in Jobs.Where(j => j.IsRemote && j.Status == "done")) RemoteOutputs(j);   // results brought back, files left on the host
-        if (Jobs.Any(j => j.IsRemote && j.IsRunning)) Avalonia.Threading.Dispatcher.UIThread.Post(StartRemotePoll);   // remote jobs sent before
+        if (Jobs.Any(j => j.IsRemote && (j.IsRunning || j.IsQueued))) Avalonia.Threading.Dispatcher.UIThread.Post(StartRemotePoll);   // remote jobs sent before
         PropertyChanged += OnRunProperty;
         Analyze.PropertyChanged += (_, e) =>
         {

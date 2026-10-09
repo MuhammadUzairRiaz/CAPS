@@ -45,6 +45,7 @@
               <StackPanel Spacing="6" IsVisible="{Binding HasHosts}"><TextBlock Text="Run on" Classes="label" />
                 <ComboBox ItemsSource="{Binding RunWhereChoices}" SelectedIndex="{Binding RunWhereIndex}" HorizontalAlignment="Stretch"
                           ToolTip.Tip="This machine, or a host from Settings › Compute &amp; remote: one job per replica (the structure, its force field as assigned here and a recipe of these settings go up); the replicas are pooled here when all are back" /></StackPanel>
+              <v:RemoteRunPanel IsVisible="{Binding RunsRemote}" />
               <TextBlock Text="ENSEMBLE" Classes="h3" Margin="0,6,0,0" />
               <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
                 <StackPanel Spacing="6"><TextBlock Text="Pressure · atm" Classes="label" /><NumericUpDown Value="{Binding Analyze.TgPressureD}" Minimum="0.001" Increment="1" FormatString="0.###" /></StackPanel>

@@ -19,7 +19,7 @@ internal static class SelfTest
         }
         Console.WriteLine($"info Python: {(MainViewModel.PythonAvailable ? MainViewModel.PythonExe : "none")}");
 
-        Check(Native.AbiVersion() == 66, "native ABI version 66");
+        Check(Native.AbiVersion() == 67, "native ABI version 67");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -1071,31 +1071,57 @@ internal static class SelfTest
                 foreach (var f in new[] { "ssh", "scp", "caps" }) File.SetUnixFileMode(Path.Combine(shim, f), (UnixFileMode)0b111_101_101);
                 var path = Environment.GetEnvironmentVariable("PATH") ?? "";
                 Environment.SetEnvironmentVariable("PATH", shim + ":" + path);
+                // the host's CAPS folder: bin/caps is this build's command line (Install / update caps puts it there)
+                Directory.CreateDirectory(Path.Combine(work, "bin"));
+                File.CreateSymbolicLink(Path.Combine(work, "bin", "caps"), cli);
                 vm.AddHost();
                 vm.HostName = "stand-in";
                 vm.HostHostname = "localhost";
                 vm.HostScheduler = "none";
-                vm.HostWorkDir = work;
+                vm.HostRoot = work;
                 vm.RunWhereIndex = vm.RunWhereChoices.Count - 1;
                 vm.MdStepsD = 200;
+                vm.RemoteFramePs = 0.05m;
+                vm.RemoteThermoPs = 0.01m;
                 vm.SubmitRemote("Dynamics").GetAwaiter().GetResult();
                 var rj = vm.Jobs.FirstOrDefault(j => j.IsRemote);
-                var sent = rj is { IsRunning: true } && rj.Where.Contains("stand-in");
-                var back = Until(() => { if (rj is { IsRunning: true }) vm.CheckRemote(rj).GetAwaiter().GetResult(); return rj is { IsRunning: false }; }, 120000);
+                var sent = rj is { IsRunning: true } or { IsQueued: true } && rj.Where.Contains("stand-in") && rj.IsClusterJob;
+                var back = Until(() => { if (rj is { IsRunning: true } or { IsQueued: true }) vm.RefreshJob(rj).GetAwaiter().GetResult(); return rj is { IsRunning: false, IsQueued: false }; }, 120000);
                 var result = rj?.Remote is { } rr ? Path.Combine(rr.Local, "out", rr.Stem + ".data") : "";
-                Check(sent && back && rj!.IsDone && File.Exists(result) && File.Exists(result + ".provenance.json") && rj.CanOpenRemote,
-                      $"remote job: sent {sent} · {rj?.Status} · {rj?.Where} · {string.Join(" | ", rj?.Log.Select(l => l.Text) ?? [])}");
-                // the same for Relax (the open structure) and Grow (a new cell from its recipe)
+                Check(sent && back && rj!.IsDone && File.Exists(result) && File.Exists(result + ".provenance.json") && rj.CanOpenRemote && rj.LiveLog.Contains("[") && rj.HasCurves,
+                      $"remote job (caps job, no queue): sent {sent} · {rj?.Status} · {rj?.Where} · curves {rj?.HasCurves} · {string.Join(" | ", rj?.Log.Select(l => l.Text) ?? [])}\n{rj?.LiveLog}");
+                // a SLURM cluster with workspaces (stand-in sbatch, squeue, sacct, ws_allocate, ws_release): Relax and Grow
+                var stubs = Path.GetFullPath(Path.Combine(dir, "..", "tests", "fake_cluster", "bin"));
+                var fakeState = Path.Combine(outDir, "fake-slurm-state");
+                var fakeWs = Path.Combine(outDir, "fake-slurm-ws");
+                foreach (var d2 in new[] { fakeState, fakeWs }) { if (Directory.Exists(d2)) Directory.Delete(d2, true); Directory.CreateDirectory(d2); }
+                Environment.SetEnvironmentVariable("PATH", shim + ":" + stubs + ":" + path);
+                Environment.SetEnvironmentVariable("FAKE_STATE", fakeState);
+                Environment.SetEnvironmentVariable("FAKE_WS", fakeWs);
+                vm.HostScheduler = "SLURM";
+                vm.HostScratchIndex = 0;   // workspace
+                vm.HostCpus = 2;
+                vm.HostTime = "00:10:00";
                 var others = new List<string>();
                 foreach (var kind in new[] { "Relax", "Grow" })
                 {
                     vm.GrowChainsD = 1; vm.GrowDpD = 3; vm.GrowDensityD = 0.3m;
                     vm.SubmitRemote(kind).GetAwaiter().GetResult();
                     var job = vm.Jobs.FirstOrDefault(j => j.IsRemote && j.Kind == kind);
-                    Until(() => { if (job is { IsRunning: true }) vm.CheckRemote(job).GetAwaiter().GetResult(); return job is { IsRunning: false }; }, 120000);
-                    others.Add($"{kind} {job?.Status}");
+                    Until(() => { if (job is { IsRunning: true } or { IsQueued: true }) vm.RefreshJob(job).GetAwaiter().GetResult(); return job is { IsRunning: false, IsQueued: false }; }, 120000);
+                    others.Add($"{kind} {job?.Status} ({job?.Remote?.JobId}{(job?.QueueText.Contains("fake-slurm-ws") == true || job?.Log.Any(l => l.Text.Contains("Finished")) == true ? "" : " no workspace seen")})");
                 }
-                Check(others.All(o => o.EndsWith("done")), "remote relax and grow: " + string.Join(" · ", others));
+                var released = Directory.GetDirectories(fakeWs).Length == 0;
+                Check(others.All(o => o.Contains(" done ")) && released, "remote relax and grow on a SLURM stand-in with workspaces: " + string.Join(" · ", others) + $" · workspaces released {released}");
+                // the install script and the profile the host reads
+                var buildSh = Path.Combine(outDir, "build-caps.sh");
+                File.WriteAllText(buildSh, MainViewModel.BuildScript(new RemoteHost { Root = work, BuildModules = "module load GCC" }, "abc123"));
+                var syntax = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("bash", ["-n", buildSh]) { UseShellExecute = false })!;
+                syntax.WaitForExit();
+                var profile = File.Exists(Path.Combine(work, "host.json")) && File.ReadAllText(Path.Combine(work, "host.json")).Contains("\"scheduler\": \"slurm\"");
+                Check(syntax.ExitCode == 0 && profile, $"install script (bash -n {syntax.ExitCode}) · the host's profile written ({profile})");
+                Environment.SetEnvironmentVariable("FAKE_STATE", null);
+                Environment.SetEnvironmentVariable("FAKE_WS", null);
                 vm.RunWhereIndex = 0;
                 vm.RemoveHost();
                 Environment.SetEnvironmentVariable("PATH", path);
