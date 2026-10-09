@@ -32278,7 +32278,7 @@
   "type hn: the source entries give different masses; 1.007970 is used",
   "type o': the source entries give different masses; 15.999400 is used",
   "type s: the source entries give different masses; 32.061000 is used",
-  "automatic parameters from ~/project/dl_f_4.13/lib/supplementary/cvff_*_auto: 632 bonds, 329 angles, 216 torsions",
+  "automatic parameters from the supplementary cvff_*_auto tables: 632 bonds, 329 angles, 216 torsions",
   "converted by CAPS (CVFF, unit kcal/mol); equivalences replace the type name for each kind of parameter"
  ],
  "version": "1988",

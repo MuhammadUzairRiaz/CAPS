@@ -8,7 +8,7 @@ usage: validate_family.py DLFIELD_KEYWORD LIBRARY FF.json [--max N] [--only a,b]
 import os, subprocess, sys, tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-LIB = os.environ.get("DLFIELD", "~/project/dl_f_4.13") + "/lib"
+LIB = os.environ.get("DLFIELD", os.path.expanduser("~/project/dl_f_4.13")) + "/lib"
 kw, lib, ffjson = sys.argv[1], sys.argv[2], sys.argv[3]
 arg = lambda k, d: sys.argv[sys.argv.index(k) + 1] if k in sys.argv else d
 nmax = int(arg("--max", "12"))

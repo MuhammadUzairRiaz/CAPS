@@ -44,7 +44,8 @@ struct ClusterProfile {
   ClusterRule gamma;
   std::vector<std::pair<int, int>> hang;   // (max_atoms or 0, seconds)
 };
-std::vector<ClusterProfile> cluster_profiles(const std::string& data_dir);
+std::vector<ClusterProfile> cluster_profiles(const std::string& data_dir);   // the shipped ones, then ~/CAPS/dft-clusters.json
+std::string user_clusters_file();
 ClusterProfile cluster_profile(const std::string& data_dir, const std::string& name);
 ClusterRule parallel_rule(const ClusterProfile& p, int atoms, bool gamma_only);
 int hang_seconds(const ClusterProfile& p, int atoms);

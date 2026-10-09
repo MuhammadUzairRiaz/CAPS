@@ -18,7 +18,7 @@ import collections, glob, json, os, re, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 FF = os.path.join(ROOT, "data", "forcefields")
-SRC = sys.argv[1] if len(sys.argv) > 1 else "~/project/dl_f_4.13/lib"
+SRC = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser("~/project/dl_f_4.13/lib")
 MASS = {"H": 1.008, "Li": 6.94, "Na": 22.99, "K": 39.098, "Rb": 85.468, "Cs": 132.905, "Mg": 24.305, "Ca": 40.078, "Sr": 87.62, "Ba": 137.327,
         "Al": 26.982, "Ga": 69.723, "Si": 28.085, "Ti": 47.867, "Zr": 91.224, "Fe": 55.845, "Cr": 51.996, "Mn": 54.938, "Co": 58.933, "Ni": 58.693,
         "Nb": 92.906, "Ta": 180.948, "Pb": 207.2, "U": 238.029, "La": 138.905, "Pr": 140.908, "Nd": 144.242, "Gd": 157.25, "Eu": 151.964,

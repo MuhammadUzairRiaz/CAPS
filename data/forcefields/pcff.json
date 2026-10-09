@@ -46001,7 +46001,7 @@
   "type cl: the source entries give different masses; 35.453000 is used",
   "type hn: the source entries give different masses; 1.007970 is used",
   "type sc: the source entries give different masses; 32.059000 is used",
-  "automatic parameters from ~/project/dl_f_4.13/lib/supplementary/pcff_*_auto: 627 bonds, 329 angles, 216 torsions",
+  "automatic parameters from the supplementary pcff_*_auto tables: 627 bonds, 329 angles, 216 torsions",
   "converted by CAPS (PCFF, unit kcal/mol); equivalences replace the type name for each kind of parameter"
  ],
  "version": "cff91 family, 1994",

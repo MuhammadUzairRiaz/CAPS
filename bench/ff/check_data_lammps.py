@@ -23,7 +23,7 @@ import template_pdb, ionic_pdb
 
 CAPS = os.path.join(ROOT, "build", "cli", "caps")
 LMP = os.environ.get("LMP", os.path.expanduser("~/lammps/build-class2/lmp"))
-LIB = os.environ.get("DLFIELD", "~/project/dl_f_4.13") + "/lib"
+LIB = os.environ.get("DLFIELD", os.path.expanduser("~/project/dl_f_4.13")) + "/lib"
 FF = os.path.join(ROOT, "data", "forcefields")
 arg = lambda k, d: sys.argv[sys.argv.index(k) + 1] if k in sys.argv else d
 only = arg("--only", "")

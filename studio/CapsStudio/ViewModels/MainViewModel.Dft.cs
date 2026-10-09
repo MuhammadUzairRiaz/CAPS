@@ -398,10 +398,22 @@ public partial class MainViewModel
     public string JobStore { get => _jobStore; set => Set(ref _jobStore, value ?? ""); }
     private string _jobPreviewDir = "";
 
+    // the shipped profiles (data/dft/clusters.json), then the user's own (~/CAPS/dft-clusters.json, a later one of the
+    // same name wins): the same order as the core's cluster_profiles
+    private static string UserClustersFile => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "CAPS", "dft-clusters.json");
+    private List<JsonObject> ClusterProfileNodes()
+    {
+        var all = new List<JsonObject>();
+        foreach (var f in new[] { Path.Combine(DftDataDir, "dft", "clusters.json"), UserClustersFile })
+            try { if (File.Exists(f)) all.AddRange(JsonNode.Parse(File.ReadAllText(f))!["profiles"]!.AsArray().OfType<JsonObject>()); } catch { }
+        return all;
+    }
+
     public void OpenDftJob()
     {
         if (DftProfiles.Count == 0 && DftDataDir.Length > 0)
-            try { foreach (var p in JsonNode.Parse(File.ReadAllText(Path.Combine(DftDataDir, "dft", "clusters.json")))!["profiles"]!.AsArray()) DftProfiles.Add((string?)p!["name"] ?? ""); } catch { }
+            foreach (var p in ClusterProfileNodes())
+                if ((string?)p["name"] is { Length: > 0 } n && !DftProfiles.Contains(n)) DftProfiles.Add(n);
         if (_jobStructure.Length == 0 && HasSlab) JobStructure = SlabPath;
         if (_jobOut.Length == 0) JobOut = Path.Combine(DftRoot, "structures", "case");
         LoadProfileText();
@@ -413,11 +425,11 @@ public partial class MainViewModel
     {
         try
         {
-            var p = JsonNode.Parse(File.ReadAllText(Path.Combine(DftDataDir, "dft", "clusters.json")))!["profiles"]!.AsArray().OfType<JsonObject>().FirstOrDefault(x => (string?)x["name"] == DftProfile);
+            var p = ClusterProfileNodes().LastOrDefault(x => (string?)x["name"] == DftProfile);
             if (p == null) { JobProfileText = ""; return; }
             var rules = string.Join("\n", (p["parallel"] as JsonArray ?? []).OfType<JsonObject>().Select(r =>
                 $"  {((int)DNum(r["max_atoms"], 0) == 0 ? "larger" : "≤ " + (int)DNum(r["max_atoms"], 0) + " atoms")}: {(int)DNum(r["ranks"], 0)} ranks · KPAR {(int)DNum(r["kpar"], 0)} · NCORE {(int)DNum(r["ncore"], 0)} · {(string?)r["time"]}"));
-            JobProfileText = $"{(string?)p["about"]}\naccount {(string?)p["account"]} · modules {(string?)p["modules"]}\n{rules}\nno e-mail lines are written; edit data/dft/clusters.json for your cluster";
+            JobProfileText = $"{(string?)p["about"]}\naccount {(string?)p["account"]} · modules {(string?)p["modules"]}\n{rules}\nno e-mail lines are written; your own profiles go in {UserClustersFile}";
         }
         catch (Exception e) { JobProfileText = e.Message; }
     }

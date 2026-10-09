@@ -10,7 +10,7 @@ Environment: DLFIELD (default ~/project/dl_f_4.13).
 """
 import os, shutil, subprocess, sys
 
-src = os.environ.get("DLFIELD", "~/project/dl_f_4.13")
+src = os.environ.get("DLFIELD", os.path.expanduser("~/project/dl_f_4.13"))
 here = os.path.dirname(os.path.abspath(__file__))
 work = os.path.join(here, "..", "..", "build", "dlfield_work")
 ff, structure, outdir = sys.argv[1], os.path.abspath(sys.argv[2]), os.path.abspath(sys.argv[3])

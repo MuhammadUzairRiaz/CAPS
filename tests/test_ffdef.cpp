@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <cstdlib>
 #include <tuple>
 #include <array>
 #include <cmath>
@@ -234,11 +235,18 @@ TEST(IO, Mol2RoundTripKeepsTypesChargesAndBondOrders) {
   std::filesystem::remove(path);
 }
 
+// the reference library's folder: $DLF_HOME/lib, else ~/project/dl_f_4.13/lib (tests skip when it is not there)
+static std::string dlf_lib() {
+  if (const char* d = std::getenv("DLF_HOME")) return std::string(d) + "/lib";
+  const char* h = std::getenv("HOME");
+  return std::string(h ? h : ".") + "/project/dl_f_4.13/lib";
+}
+
 // DL_FIELD's PCFF converts with equivalences, bond increments and the cff91_auto tables.
 TEST(FFDef, ImportsDlfieldPcff) {
-  const std::string par = "~/project/dl_f_4.13/lib/PCFF.par";
+  const std::string par = dlf_lib() + "/PCFF.par";
   if (!std::filesystem::exists(par)) GTEST_SKIP() << "DL_FIELD not installed";
-  const FFDef ff = import_dlfield(par, "~/project/dl_f_4.13/lib/PCFF.sf", "~/project/dl_f_4.13/lib/PCFF.bci");
+  const FFDef ff = import_dlfield(par, dlf_lib() + "/PCFF.sf", dlf_lib() + "/PCFF.bci");
   EXPECT_EQ(ff.mixing, "sixthpower");
   EXPECT_FALSE(ff.auto_dihedrals.empty());
   EXPECT_FALSE(ff.bond_increments.empty());
@@ -561,9 +569,9 @@ TEST(FieldForms, VacuumPairsMatchALargePeriodicBox) {
 
 // CHARMM libraries keep their separate 1-4 van der Waals and Urey–Bradley terms through save / load.
 TEST(FFDef, DlfieldCharmmKeepsOneFourAndUreyBradley) {
-  const std::string par = "~/project/dl_f_4.13/lib/CHARMM36_cgenff.par";
+  const std::string par = dlf_lib() + "/CHARMM36_cgenff.par";
   if (!std::filesystem::exists(par)) GTEST_SKIP() << "DL_FIELD not installed";
-  const FFDef ff = import_dlfield(par, "~/project/dl_f_4.13/lib/CHARMM36_cgenff.sf");
+  const FFDef ff = import_dlfield(par, dlf_lib() + "/CHARMM36_cgenff.sf");
   const std::string path = (std::filesystem::temp_directory_path() / "caps_cgenff_test.json").string();
   save_forcefield(ff, path);
   const FFDef back = load_forcefield(path);
