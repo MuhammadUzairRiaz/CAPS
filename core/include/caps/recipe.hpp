@@ -33,6 +33,8 @@
 
 namespace caps {
 
+class LiveOutput;
+
 struct RecipeError : std::runtime_error {
   int code;
   RecipeError(int c, const std::string& what) : std::runtime_error(what), code(c) {}
@@ -54,6 +56,11 @@ struct RecipeOptions {
   int threads = 0;                   // 0: automatic
   std::string sha256;                // of the recipe's text: recorded as the manifest's first step, so every run names its recipe
   std::function<void(const RecipeEvent&)> progress;
+  // live output while the stages run (caps/live.hpp; a cluster job): thermo rows and progress lines of md and equilibrate
+  // into what live has open; frames, when a stage asks for them (md: frame_every steps or frame_ps; equilibrate:
+  // frame_ps), into frames_path (opened at the first frame, appended by every later stage)
+  LiveOutput* live = nullptr;
+  std::string frames_path;
 };
 
 struct RecipeResult {

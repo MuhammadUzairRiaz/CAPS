@@ -75,11 +75,15 @@ class ThreadPool {
   bool stop_ = false;
 };
 
-// Default worker count: performance cores where the OS says, otherwise hardware threads, at most 16.
+// Default worker count: set_max_threads, else a cluster job's CAPS_THREADS or SLURM_CPUS_PER_TASK, else performance cores
+// where the OS says, otherwise hardware threads, at most 16.
 int max_threads();   // caps/config.hpp: 0 = automatic
+
+int env_threads();   // caps/live.hpp: CAPS_THREADS, then SLURM_CPUS_PER_TASK (0: neither)
 
 inline int default_threads() {
   if (const int n = max_threads(); n > 0) return n;
+  if (const int n = env_threads(); n > 0) return n;   // a cluster job's cores (not capped: a node has many)
   const unsigned h = std::thread::hardware_concurrency();
   return static_cast<int>(std::clamp(h == 0 ? 1u : h, 1u, 16u));
 }

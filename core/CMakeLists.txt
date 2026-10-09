@@ -1,4 +1,5 @@
 add_library(caps_core STATIC
+  src/live.cpp
   src/elements.cpp
   src/labels.cpp
   src/lattice.cpp
@@ -128,7 +129,25 @@ add_library(caps_core STATIC
 )
 target_include_directories(caps_core PUBLIC include)
 target_link_libraries(caps_core PUBLIC ZLIB::ZLIB Threads::Threads)
-target_compile_definitions(caps_core PRIVATE CAPS_VERSION_STRING="${PROJECT_VERSION}")
+# the commit the build came from (caps --version, the Studio's check of a cluster's caps): -DCAPS_COMMIT=… for a source
+# archive, else git; a new commit re-runs the configure step through the files git updates
+if(NOT CAPS_COMMIT)
+  execute_process(COMMAND git rev-parse --short=10 HEAD WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+                  OUTPUT_VARIABLE CAPS_GIT_COMMIT OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET RESULT_VARIABLE CAPS_GIT_RESULT)
+  if(CAPS_GIT_RESULT EQUAL 0 AND CAPS_GIT_COMMIT)
+    set(CAPS_COMMIT_VALUE ${CAPS_GIT_COMMIT})
+    foreach(f HEAD logs/HEAD)
+      if(EXISTS ${PROJECT_SOURCE_DIR}/.git/${f})
+        set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${PROJECT_SOURCE_DIR}/.git/${f})
+      endif()
+    endforeach()
+  else()
+    set(CAPS_COMMIT_VALUE unknown)
+  endif()
+else()
+  set(CAPS_COMMIT_VALUE ${CAPS_COMMIT})
+endif()
+target_compile_definitions(caps_core PRIVATE CAPS_VERSION_STRING="${PROJECT_VERSION}" CAPS_COMMIT_STRING="${CAPS_COMMIT_VALUE}")
 if(NOT MSVC)
   target_compile_options(caps_core PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wall -Wextra -Wpedantic>)
 endif()
