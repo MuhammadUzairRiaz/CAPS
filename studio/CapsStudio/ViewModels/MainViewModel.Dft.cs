@@ -284,6 +284,9 @@ public partial class MainViewModel
     public bool AdsParallel { get => _adsParallel; set => Set(ref _adsParallel, value); }
     public bool AdsUpright { get => _adsUpright; set => Set(ref _adsUpright, value); }
     public bool AdsSkipEquivalent { get => _adsSkipEq; set => Set(ref _adsSkipEq, value); }
+    private int _adsPrescreen;
+    /// <summary>Also the N lowest configurations of the force-field Adsorption Locator (UFF annealing) as complexes.</summary>
+    public int AdsPrescreen { get => _adsPrescreen; set => Set(ref _adsPrescreen, Math.Clamp(value, 0, 20)); }
     public decimal AdsDmin { get => _adsDmin; set => Set(ref _adsDmin, Math.Clamp(value, 0.5m, 10)); }
     public decimal AdsDheavy { get => _adsDheavy; set => Set(ref _adsDheavy, Math.Clamp(value, 0.5m, 10)); }
     public string AdsOut { get => _adsOut; set => Set(ref _adsOut, value ?? ""); }
@@ -314,6 +317,7 @@ public partial class MainViewModel
         };
         if (_adsFromRelaxed) a["from_relaxed"] = true;
         if (_adsSkipEq) a["skip_equivalent"] = true;
+        if (_adsPrescreen > 0) a["prescreen"] = _adsPrescreen;
         if (_adsMolFile.Length > 0) a["molecule"] = _adsMolFile; else a["smiles"] = _adsSmiles;
         if (_settings.PotcarDir.Length > 0) a["pp_dir"] = _settings.PotcarDir;
         if (AdsAnchors.Count > 0)
@@ -335,7 +339,7 @@ public partial class MainViewModel
         foreach (var c in (r["complexes"] as JsonArray ?? []).OfType<JsonObject>())
             AdsComplexes.Add(new DftComplexRow((string?)c["name"] ?? "", (string?)c["mode"] ?? "", DNum(c["azimuth"]), DNum(c["any"]), DNum(c["heavy"]), DNum(c["image"]), (string?)c["status"] ?? "",
                 (string?)c["equivalent_to"] ?? "", string.Join("\n", (c["issues"] as JsonArray ?? []).Select(i => $"[{(string?)i?["level"]}] {(string?)i?["text"]}")), (int)DNum(c["suggested_supercell"], 0)));
-        AdsSymmetry = string.Join(" ", (r["notes"] as JsonArray ?? []).Select(n => (string?)n ?? ""));
+        AdsSymmetry = string.Join(" ", (r["notes"] as JsonArray ?? []).Select(n => (string?)n ?? "")) + (r["prescreen_note"] is JsonNode pn ? " Pre-screen: " + (string?)pn + "." : "");
         AdsAudit.Clear();
         foreach (var x in (r["audit"] as JsonArray ?? []).OfType<JsonObject>())
             AdsAudit.Add(new Row(((string?)x["name"] ?? "").Replace("complex_", ""), $"{(int)DNum(x["n_mol"], 0)} atoms · any {F(DNum(x["any"]), "0.00")} · heavy {F(DNum(x["heavy"]), "0.00")} · image {F(DNum(x["image"]), "0.00")} · {((bool?)x["intact"] == true ? "intact" : "BROKEN")} · {((bool?)x["ok"] == true ? "ok" : "FAIL")}"));

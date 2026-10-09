@@ -77,6 +77,8 @@ const std::vector<Cmd>& table() {
         {"modes", "", "anchor:nitrile,anchor:vinyl,parallel,upright (default: every anchor found + parallel)"},
         {"azimuths", "0,90,180,270", "degrees about z"},
         {"skip_equivalent", "false", "leave out azimuths the outer layer's symmetry makes equivalent"},
+        {"prescreen", "0", "also the N lowest configurations of the force-field Adsorption Locator (UFF, simulated annealing) as complexes"},
+        {"prescreen_steps", "20000", "Monte Carlo steps per annealing cycle"}, {"prescreen_cycles", "3", "annealing cycles"},
         {"dmin", "2.3", "Å, closest molecule–slab contact (any atoms)"},
         {"dheavy", "3.0", "Å, closest heavy-atom contact"},
         {"vacuum", "20", "Å"},
@@ -481,7 +483,21 @@ Json dft_run(const std::string& c, const Json& a, const std::string& data_dir) {
     ao.vacuum = N(a, "vacuum", 20);
     ao.skip_equivalent = B(a, "skip_equivalent");
     ao.order = order_of(a);
-    const auto set = build_adsorption_set(slab, mol, anchors, ao);
+    auto set = build_adsorption_set(slab, mol, anchors, ao);
+    if (N(a, "prescreen", 0) > 0) {
+      // the force-field Adsorption Locator's lowest configurations as further complexes
+      PrescreenOptions po;
+      po.keep = int(N(a, "prescreen", 0));
+      po.cycles = int(N(a, "prescreen_cycles", 3));
+      po.steps = int(N(a, "prescreen_steps", 20000));
+      po.seed = uint64_t(N(a, "seed", 1));
+      std::vector<double> e;
+      auto more = prescreen_complexes(set.slab, mol, ao, po, &e);
+      Json pe = Json::array();
+      for (size_t k = 0; k < more.size(); ++k) { pe.push_back(e[k]); set.complexes.push_back(std::move(more[k])); }
+      r["prescreen_energies_kcal"] = pe;
+      r["prescreen_note"] = std::to_string(e.size()) + " distinct minimum" + (e.size() == 1 ? "" : "s") + " of the " + std::to_string(po.keep) + " asked (configurations within 0.5 Å RMS of a kept one are the same minimum)";
+    }
     Json cx = Json::array();
     for (const auto& c2 : set.complexes) {
       Json j = Json::object();
