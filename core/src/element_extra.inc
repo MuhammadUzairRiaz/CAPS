@@ -1,5 +1,9 @@
 // Element data for labels (generated; do not edit by hand):
-//   names and most common isotope (mass number): RDKit 2026.03.3 periodic table (BSD; licenses/RDKit-periodic-table.txt)
+//   names: IUPAC (CIAAW, Standard Atomic Weights, ciaaw.org/atomic-weights.htm, 2024).
+//   mass number: the most abundant isotope in IUPAC's Isotopic Compositions of the Elements 2024 (CIAAW; the midpoint
+//   of an interval) for the 84 elements it lists; for the others the longest-lived isotope: the bracketed value of
+//   NIST's Atomic Weights and Isotopic Compositions (Tc, Pm, Po-Ac, Np, Pu), else the longest measured half-life of
+//   NUBASE2020 (Kondev et al., Chin. Phys. C 45, 030001 (2021); Am-Og).
 //   Pauling electronegativity and ground-state electron configuration: Blue Obelisk Data Repository via VTK 9.6.1 (MIT);
 //   0 = not tabulated. Indexed by atomic number (0 unused).
 struct ElementExtra { const char* name; double pauling; int mass_number; const char* configuration; };
@@ -47,7 +51,7 @@ static const ElementExtra kElementExtra[] = {
     {"Zirconium", 1.33, 90, "[Kr] 4d2 5s2"},   // 40 Zr
     {"Niobium", 1.60, 93, "[Kr] 4d4"},   // 41 Nb
     {"Molybdenum", 2.16, 98, "[Kr] 4d5 5s1"},   // 42 Mo
-    {"Technetium", 1.90, 97, "[Kr] 4d6 5s1"},   // 43 Tc
+    {"Technetium", 1.90, 98, "[Kr] 4d6 5s1"},   // 43 Tc
     {"Ruthenium", 2.20, 102, "[Kr] 4d7 5s1"},   // 44 Ru
     {"Rhodium", 2.28, 103, "[Kr] 4d8 5s1"},   // 45 Rh
     {"Palladium", 2.20, 106, "[Kr] 4d10"},   // 46 Pd
@@ -97,30 +101,30 @@ static const ElementExtra kElementExtra[] = {
     {"Thorium", 1.30, 232, "[Rn] 6d2 7s2"},   // 90 Th
     {"Protactinium", 1.50, 231, "[Rn] 5f2 6d1 7s2"},   // 91 Pa
     {"Uranium", 1.38, 238, "[Rn] 5f3 6d1 7s2"},   // 92 U
-    {"Neptunium", 1.36, 236, "[Rn] 5f4 6d1 7s2"},   // 93 Np
-    {"Plutonium", 1.28, 238, "[Rn] 5f6 7s2"},   // 94 Pu
-    {"Americium", 1.30, 241, "[Rn] 5f7 7s2"},   // 95 Am
-    {"Curium", 1.30, 243, "[Rn] 5f7 6d1 7s2"},   // 96 Cm
+    {"Neptunium", 1.36, 237, "[Rn] 5f4 6d1 7s2"},   // 93 Np
+    {"Plutonium", 1.28, 244, "[Rn] 5f6 7s2"},   // 94 Pu
+    {"Americium", 1.30, 243, "[Rn] 5f7 7s2"},   // 95 Am
+    {"Curium", 1.30, 247, "[Rn] 5f7 6d1 7s2"},   // 96 Cm
     {"Berkelium", 1.30, 247, "[Rn] 5f9 7s2"},   // 97 Bk
-    {"Californium", 1.30, 249, "[Rn] 5f10 7s2"},   // 98 Cf
+    {"Californium", 1.30, 251, "[Rn] 5f10 7s2"},   // 98 Cf
     {"Einsteinium", 1.30, 252, "[Rn] 5f11 7s2"},   // 99 Es
     {"Fermium", 1.30, 257, "[Rn] 5f12 7s2"},   // 100 Fm
     {"Mendelevium", 1.30, 258, "[Rn] 5f13 7s2"},   // 101 Md
     {"Nobelium", 1.30, 259, "[Rn] 5f14 7s2"},   // 102 No
-    {"Lawrencium", 0.00, 262, "[Rn] 5f14 7s2 7p1"},   // 103 Lr
+    {"Lawrencium", 0.00, 266, "[Rn] 5f14 7s2 7p1"},   // 103 Lr
     {"Rutherfordium", 0.00, 267, "[Rn] 5f14 6d2 7s2"},   // 104 Rf
     {"Dubnium", 0.00, 268, "[Rn] 5f14 6d3 7s2"},   // 105 Db
-    {"Seaborgium", 0.00, 271, ""},   // 106 Sg
+    {"Seaborgium", 0.00, 269, ""},   // 106 Sg
     {"Bohrium", 0.00, 270, ""},   // 107 Bh
     {"Hassium", 0.00, 269, ""},   // 108 Hs
-    {"Meitnerium", 0.00, 278, ""},   // 109 Mt
-    {"Darmstadtium", 0.00, 281, ""},   // 110 Ds
-    {"Roentgenium", 0.00, 281, ""},   // 111 Rg
+    {"Meitnerium", 0.00, 277, ""},   // 109 Mt
+    {"Darmstadtium", 0.00, 282, ""},   // 110 Ds
+    {"Roentgenium", 0.00, 282, ""},   // 111 Rg
     {"Copernicium", 0.00, 285, ""},   // 112 Cn
-    {"Nihonium", 0.00, 284, ""},   // 113 Nh
-    {"Flerovium", 0.00, 289, ""},   // 114 Fl
-    {"Moscovium", 0.00, 288, ""},   // 115 Mc
+    {"Nihonium", 0.00, 286, ""},   // 113 Nh
+    {"Flerovium", 0.00, 290, ""},   // 114 Fl
+    {"Moscovium", 0.00, 290, ""},   // 115 Mc
     {"Livermorium", 0.00, 293, ""},   // 116 Lv
-    {"Tennessine", 0.00, 292, ""},   // 117 Ts
-    {"Oganesson", 0.00, 294, ""},   // 118 Og
+    {"Tennessine", 0.00, 294, ""},   // 117 Ts
+    {"Oganesson", 0.00, 295, ""},   // 118 Og
 };
