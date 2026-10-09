@@ -53,7 +53,10 @@ Root: HKA; Subkey: "Software\Classes\.capsproj"; ValueType: string; ValueName: "
 Root: HKA; Subkey: "Software\Classes\CAPS.Project"; ValueType: string; ValueName: ""; ValueData: "CAPS project"; Flags: uninsdeletekey
 Root: HKA; Subkey: "Software\Classes\CAPS.Project\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\CapsStudio.exe,0"
 Root: HKA; Subkey: "Software\Classes\CAPS.Project\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\CapsStudio.exe"" ""%1"""
-Root: HKA; Subkey: "Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}"; Tasks: addtopath; Check: NeedsAddPath(ExpandConstant('{app}'))
+; PATH: the user's (HKCU\Environment) for a per-user install, the machine's for an install for all users — HKLM has no
+; "Environment" key of its own (writing there fails with code 87)
+Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}"; Tasks: addtopath; Check: (not IsAdminInstallMode) and NeedsAddPath(ExpandConstant('{app}'))
+Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}"; Tasks: addtopath; Check: IsAdminInstallMode and NeedsAddPath(ExpandConstant('{app}'))
 
 [Run]
 Filename: "{app}\CapsStudio.exe"; Description: "Start CAPS Studio"; Flags: nowait postinstall skipifsilent
@@ -62,6 +65,9 @@ Filename: "{app}\CapsStudio.exe"; Description: "Start CAPS Studio"; Flags: nowai
 function NeedsAddPath(Dir: string): boolean;
 var Paths: string;
 begin
-  if not RegQueryStringValue(HKEY_CURRENT_USER, 'Environment', 'Path', Paths) then begin Result := True; exit; end;
+  if IsAdminInstallMode then begin
+    if not RegQueryStringValue(HKEY_LOCAL_MACHINE, 'SYSTEM\CurrentControlSet\Control\Session Manager\Environment', 'Path', Paths) then begin Result := True; exit; end;
+  end else
+    if not RegQueryStringValue(HKEY_CURRENT_USER, 'Environment', 'Path', Paths) then begin Result := True; exit; end;
   Result := Pos(';' + Uppercase(Dir) + ';', ';' + Uppercase(Paths) + ';') = 0;
 end;
