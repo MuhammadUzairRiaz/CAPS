@@ -7,13 +7,18 @@
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <map>
 #include <memory>
 #include <mutex>
 #include <numeric>
+#include <random>
 #include <sstream>
 #include <thread>
 
+#include "caps/cg_bonded.hpp"
+#include "caps/cg_nonbonded.hpp"
+#include "caps/cg_rules.hpp"
 #include "caps/config.hpp"
 #include "caps/dynamics.hpp"
 #include "caps/field.hpp"
@@ -24,7 +29,10 @@
 #include "caps/molecule.hpp"
 #include "caps/pack.hpp"
 #include "caps/relax.hpp"
+#include "caps/polymer.hpp"
+#include "caps/recipe.hpp"
 #include "caps/render.hpp"
+#include "caps/typing.hpp"
 
 namespace caps {
 namespace {
@@ -77,6 +85,14 @@ const std::vector<Meta>& metas() {
       {"T10", "Builder feature coverage", "against vendor documentation", {}, "a written comparison, not a measurement"},
       {"T11", "Rendering", "CPU renderer, 1920 × 1080", {"System", "Atoms", "Supersampling", "ms / frame"}, nullptr},
       {"T12", "Molecule builder", "stereochemistry, round trips, embedding", {"Check", "Cases", "Correct", "Status"}, nullptr},
+      {"T13", "Coarse-grained mapping", "ester-cut beads of grown PBS, PBSA, PBAT", {"System", "Beads", "Beads / unit", "Composition", "Mass error (g/mol)", "Status"}, nullptr},
+      {"T14", "Bonded Boltzmann inversion", "an ideal chain drawn from known potentials, inverted", {"Term", "Samples", "Largest |ΔU| (kT)", "Status"}, nullptr},
+      {"T15", "IBI self-consistency", "a two-type Lennard-Jones fluid's g(r) as the target, from −kT ln g", {"Iteration", "RDF error (%)", "|ΔP| (atm)", "Status"}, nullptr},
+      {"T16", "Entanglement length of a Kremer–Grest melt", "PPA, N = 500, ρ = 0.85, k_θ = 0: N_e ≈ 85 ± 10 beads (Everaers 2004, Hoy 2009)", {},
+       "needs an equilibrated Kremer–Grest melt (millions of τ): build it with caps.build.kremer_grest, equilibrate on a cluster, then caps ppa --method caps|lammps"},
+      {"T17", "Strain hardening of a Kremer–Grest glass", "T = 0.2: G_R rises with N and saturates for N ≳ 10 N_e (Hoy & Robbins 2006)", {},
+       "needs equilibrated glasses of several chain lengths and their tension runs: caps mech decks, then caps mech analyze on each"},
+      {"T18", "API regressions", "polymer(forcefield=…) then export; one set of charges by both routes", {"Check", "Result", "Status"}, nullptr},
   };
   return m;
 }
@@ -643,6 +659,217 @@ void t12(BenchTable& t, const BenchOptions& o) {
   t.note = "Configurations are checked geometrically from the built coordinates (no CIP code involved), dihedrals within 10° of 0 or 180°.";
 }
 
+
+// ---- T13: chemistry-aware mapping of grown copolyesters (ester cut: diol B, diacid S, A, T)
+CgRules ester_cut_rules() {
+  CgRules r;
+  r.cut = {"[CX3](=O)-[OX2;!H1]"};
+  r.names = {{"T", "[CX3](=O)c1ccc(cc1)[CX3]=O"}, {"A", "[CX3](=O)[CH2][CH2][CH2][CH2][CX3]=O"}, {"S", "[CX3](=O)[CH2][CH2][CX3]=O"}, {"B", "[OX2][CH2][CH2][CH2][CH2][OX2]"}};
+  return r;
+}
+void t13(BenchTable& t, const BenchOptions& o) {
+  struct Case { const char* name; std::vector<std::string> units; Sequence seq; std::string pattern; std::vector<double> w; };
+  const std::vector<Case> cases = {{"PBS", {"[*]OCCCCOC(=O)CCC(=O)[*]"}, Sequence::Homopolymer, "", {}},
+                                   {"PBSA 80/20", {"[*]OCCCCOC(=O)CCC(=O)[*]", "[*]OCCCCOC(=O)CCCCC(=O)[*]"}, Sequence::Pattern, "AAAAB", {}},
+                                   {"PBAT 56/44", {"[*]OCCCCOC(=O)CCCCC(=O)[*]", "[*]OCCCCOC(=O)c1ccc(cc1)C(=O)[*]"}, Sequence::Random, "", {0.56, 0.44}}};
+  int k = 0;
+  for (const auto& c : cases) {
+    step(o, "T13", c.name, double(k++) / cases.size());
+    ChainSpec spec;
+    for (const auto& u : c.units) spec.units.push_back({u, u});
+    spec.sequence = c.seq, spec.pattern = c.pattern, spec.weights = c.w, spec.dp = o.quick ? 10 : 25, spec.tail_cap = "hydroxyl";
+    GrowOptions g;
+    g.chains = o.quick ? 4 : 10, g.density = 0.1, g.seed = 11, g.auto_scale = true;
+    const System aa = grow_chains(spec, g);
+    const CgMapping m = cg_mapping(aa, ester_cut_rules());
+    const auto sum = cg_mapping_summary(m);
+    const double per_unit = double(m.beads()) / double(spec.dp * g.chains);
+    std::string comp;
+    for (const auto& [kk, f] : sum.fraction) { char b[40]; std::snprintf(b, sizeof b, "%s%s %.1f%%", comp.empty() ? "" : " ", kk.c_str(), 100 * f); comp += b; }
+    // the composition the chains were grown with: units counted from the structure (aromatic rings, adipate beads)
+    bool comp_ok = true;
+    if (std::string(c.name).rfind("PBSA", 0) == 0) comp_ok = sum.kinds.at("S") * 1 == 4 * sum.kinds.at("A");
+    if (std::string(c.name).rfind("PBAT", 0) == 0) {
+      const Perception p = perceive(aa);
+      int ring = 0;
+      for (size_t i = 0; i < aa.atoms.size(); ++i) ring += p.aromatic[i] ? 1 : 0;
+      comp_ok = sum.kinds.count("T") && sum.kinds.at("T") * 6 == ring;
+    }
+    const bool ok = std::fabs(per_unit - 2) < 1e-9 && sum.mass_error < 1e-6 && comp_ok;
+    char me[32];
+    std::snprintf(me, sizeof me, "%.1e", sum.mass_error);
+    t.rows.push_back({{c.name, std::to_string(m.beads()), std::to_string(per_unit).substr(0, 4), comp, me, ok ? "pass" : "fail"}, ok ? "pass" : "fail"});
+  }
+  t.note = "Grown with CAPS Grow (acid ends), mapped by the ester-cut rules (data/cg/mapping_rules.json): two beads per repeat unit, mass conserved, PBSA's AAAAB pattern 80/20 S/A exactly, PBAT's T beads one per terephthalate ring.";
+}
+
+// ---- T14: Boltzmann inversion of an ideal chain drawn exactly from known potentials
+void t14(BenchTable& t, const BenchOptions& o) {
+  constexpr double kB = 0.0019872067, T = 300, kT = kB * T, kPi = 3.14159265358979323846;
+  auto Ub = [](double r) { return 3.0 * (r - 5) * (r - 5) + 0.6 * (r - 5) * (r - 5) * (r - 5); };
+  auto Ua = [](double a) { return 0.0012 * (a - 130) * (a - 130); };
+  auto Ud = [](double p) { const double x = p * kPi / 180; return 0.8 * (1 + std::cos(x)) + 0.35 * (1 - std::cos(2 * x)) + 0.15 * std::sin(x); };
+  std::mt19937_64 g(11);
+  auto unit = [&]() { return double(g() >> 11) * (1.0 / 9007199254740992.0); };
+  struct Draw { std::vector<double> x, c; };
+  auto make = [&](const std::function<double(double)>& w, double lo, double hi) {
+    Draw d;
+    const int n = 200000;
+    double c = 0;
+    for (int i = 0; i < n; ++i) { const double x = lo + (hi - lo) * (i + 0.5) / n; c += w(x); d.x.push_back(x), d.c.push_back(c); }
+    for (auto& v : d.c) v /= c;
+    return d;
+  };
+  auto draw = [&](const Draw& d) {
+    const size_t i = std::min(d.x.size() - 1, size_t(std::lower_bound(d.c.begin(), d.c.end(), unit()) - d.c.begin()));
+    return d.x[i] + (unit() - 0.5) * (d.x[1] - d.x[0]);
+  };
+  const Draw rb = make([&](double r) { return r * r * std::exp(-Ub(r) / kT); }, 2, 8), ta = make([&](double a) { return std::sin(a * kPi / 180) * std::exp(-Ua(a) / kT); }, 0, 180),
+             pd = make([&](double p) { return std::exp(-Ud(p) / kT); }, -180, 180);
+  auto place = [](const Vec3& a, const Vec3& b, const Vec3& c, double r, double th, double ph) {
+    const double tt = th * kPi / 180, pp = ph * kPi / 180;
+    Vec3 bc = c - b;
+    bc = bc * (1.0 / norm(bc));
+    Vec3 n = cross(b - a, bc);
+    n = n * (1.0 / norm(n));
+    const Vec3 m = cross(n, bc);
+    return c + bc * (-r * std::cos(tt)) + m * (r * std::sin(tt) * std::cos(pp)) + n * (r * std::sin(tt) * std::sin(pp));
+  };
+  CgTopology top;
+  const int mols = 400, frames = o.quick ? 200 : 1000;
+  for (int m = 0; m < mols; ++m) {
+    const int b = 4 * m;
+    for (int k = 0; k < 4; ++k) top.kind.push_back(k % 2 ? "B" : "A"), top.mol.push_back(m);
+    top.bonds.push_back({b, b + 1}), top.bonds.push_back({b + 1, b + 2}), top.bonds.push_back({b + 2, b + 3});
+    top.angles.push_back({b, b + 1, b + 2}), top.angles.push_back({b + 1, b + 2, b + 3});
+    top.dihedrals.push_back({b, b + 1, b + 2, b + 3});
+  }
+  const CgTypes types{{"A", "B"}, {"A-B"}, {"A-B-A", "B-A-B"}, {"A-B-A-B"}};
+  CgBondedOptions bo;
+  CgBondedAccumulator acc(types, bo);
+  const int si = acc.add_system(top);
+  for (int f = 0; f < frames; ++f) {
+    if (f % 50 == 0) step(o, "T14", "drawing the chains", double(f) / frames);
+    std::vector<Vec3> pos;
+    for (int m = 0; m < mols; ++m) {
+      const double r1 = draw(rb), r2 = draw(rb), r3 = draw(rb), t1 = draw(ta), t2 = draw(ta), ph = draw(pd);
+      const Vec3 a{0, 0, 0}, b{r1, 0, 0};
+      const Vec3 c = b + Vec3{-r2 * std::cos(t1 * kPi / 180), r2 * std::sin(t1 * kPi / 180), 0};
+      const Vec3 d = place(a, b, c, r3, t2, ph);
+      const Vec3 off{double(m % 20) * 30.0, double(m / 20) * 30.0, 0};
+      pos.push_back(a + off), pos.push_back(b + off), pos.push_back(c + off), pos.push_back(d + off);
+    }
+    acc.add_frame(si, pos, Cell{});
+  }
+  const CgBondedResult r = invert_bonded(acc);
+  auto worst = [&](const CgBondedTable& tb, const std::function<double(double)>& U) {
+    double umin = 1e300;
+    for (double x : tb.x) umin = std::min(umin, U(x));
+    std::vector<std::pair<double, double>> v;
+    for (size_t i = 0; i < tb.x.size(); ++i)
+      if (U(tb.x[i]) - umin < 2.5 * kT && tb.x[i] >= tb.lo && tb.x[i] <= tb.hi) v.push_back({tb.U[i], U(tb.x[i])});
+    double mean = 0;
+    for (const auto& [a, b] : v) mean += a - b;
+    mean /= double(v.size());
+    double w = 0;
+    for (const auto& [a, b] : v) w = std::max(w, std::fabs(a - b - mean) / kT);
+    return w;
+  };
+  auto row = [&](const std::string& name, const CgBondedTable& tb, const std::function<double(double)>& U) {
+    const double w = worst(tb, U);
+    char b[32];
+    std::snprintf(b, sizeof b, "%.3f", w);
+    t.rows.push_back({{name, std::to_string(tb.count), b, w < 0.1 ? "pass" : "fail"}, w < 0.1 ? "pass" : "fail"});
+  };
+  row("bond A-B", r.bonds[0], Ub);
+  row("angle A-B-A", r.angles[0], Ua);
+  row("angle B-A-B", r.angles[1], Ua);
+  row("dihedral A-B-A-B", r.dihedrals[0], Ud);
+  t.note = "Internal coordinates drawn independently from r² e^(−U/kT), sin θ e^(−U/kT) and e^(−U/kT) (an ideal chain without non-bonded terms), inverted by caps cgfit bonded; compared where U < 2.5 kT above its minimum. Pass: within 0.1 kT.";
+}
+
+// ---- T15: IBI self-consistency on a two-type Lennard-Jones fluid with CAPS's engine
+void t15(BenchTable& t, const BenchOptions& o) {
+  const CgTypes types{{"A", "B"}, {}, {}, {}};
+  CgTopology top;
+  System s;
+  const int n = o.quick ? 500 : 1000;
+  const double L = std::cbrt(double(n) * 42.0 * 42.0 * 42.0 / 500.0);
+  s.cell.a = {L, 0, 0}, s.cell.b = {0, L, 0}, s.cell.c = {0, 0, L};
+  const int m = int(std::ceil(std::cbrt(double(n))));
+  for (int i = 0; i < n; ++i) {
+    Atom a;
+    a.id = i + 1, a.mol = i + 1, a.name = i % 2 ? "B" : "A", a.type = i % 2 + 1;
+    a.pos = {(i % m + 0.5) * L / m, ((i / m) % m + 0.5) * L / m, (i / (m * m) + 0.5) * L / m};
+    s.atoms.push_back(a);
+    top.kind.push_back(a.name), top.mol.push_back(i);
+  }
+  s.types = {{1, 50, "A"}, {2, 60, "B"}};
+  const std::map<std::string, double> mass = {{"A", 50}, {"B", 60}};
+  CgPairSet grid;
+  grid.r0 = 1.0, grid.dr = 0.05, grid.rc = 11.0, grid.temperature = 300;
+  const CgPairSet ref = tables_of_fits({{"A-A", "lj126", 0.45, 4.2}, {"A-B", "lj126", 0.50, 4.4}, {"B-B", "lj126", 0.55, 4.6}}, grid);
+  CgEngineOptions eo;
+  eo.steps = o.quick ? 2000 : 10000, eo.equilibrate = o.quick ? 1000 : 4000, eo.frame_every = 50, eo.seed = 7;
+  step(o, "T15", "the reference fluid", 0);
+  const CgEngineRun r0 = run_cg_engine(s, cg_forcefield(top, types, mass, ref), eo);
+  CgPairOptions po;
+  po.rmax = 11.0;
+  CgRdfAccumulator acc(types, po);
+  const int si = acc.add_system(top);
+  for (size_t f = 0; f < r0.frames.size(); ++f) acc.add_frame(si, r0.frames[f], r0.cells[f]);
+  const CgTargets tg = cg_targets(acc, 300, {r0.pressure});
+  CgIbiOptions io;
+  io.rc = 11.0, io.alpha = 0.3;
+  CgPairSet p = ibi_start(tg, io);
+  System cur = r0.last;
+  const int iters = o.quick ? 4 : 20;
+  CgEngineOptions it = eo;
+  it.new_velocities = false, it.steps = o.quick ? 1000 : 5000, it.equilibrate = o.quick ? 500 : 1000;
+  double err = 0, dp = 0;
+  for (int k = 0; k < iters; ++k) {
+    step(o, "T15", "IBI iteration " + std::to_string(k + 1), double(k + 1) / (iters + 1));
+    const CgEngineRun run = run_cg_engine(cur, cg_forcefield(top, types, mass, p), it);
+    CgRdfAccumulator a2(types, po);
+    const int s2 = a2.add_system(top);
+    for (size_t f = 0; f < run.frames.size(); ++f) a2.add_frame(s2, run.frames[f], run.cells[f]);
+    CgIbiStepReport rep;
+    p = ibi_step(p, tg, {a2.rdf(s2)}, {run.pressure}, io, &rep);
+    err = 100 * std::sqrt(rep.residual), dp = std::fabs(run.pressure - r0.pressure);
+    char e[32], d[32];
+    std::snprintf(e, sizeof e, "%.2f", err), std::snprintf(d, sizeof d, "%.0f", dp);
+    const bool last = k + 1 == iters;
+    const bool ok = err < 1.0 && dp < 50;
+    t.rows.push_back({{std::to_string(k + 1), e, d, last ? (ok ? "pass" : o.quick ? "info" : "fail") : "info"}, last ? (ok ? "pass" : o.quick ? "info" : "fail") : "info"});
+    cur = run.last;
+  }
+  t.note = "Target: the per-pair g(r) of a fluid with known Lennard-Jones pairs (" + std::to_string(n) + " beads, 300 K, CAPS's engine); IBI from −kT ln g with the pressure ramp; RDF error = √(∫(g − g_t)² dr / ∫ g_t² dr), the largest over the pairs. Pass: below 1 % with |ΔP| < 50 atm at the last iteration" +
+           std::string(o.quick ? " (quick: 4 short iterations, informative only)" : "") + ".";
+}
+
+// ---- T18: API regressions (polymer with a force field, then export; one set of charges)
+void t18(BenchTable& t, const BenchOptions& o) {
+  step(o, "T18", "recipe", 0);
+  Json r = Json::parse(R"({"recipe": 1, "name": "pbs", "build": {"polymer": {"units": ["[*]OCCCCOC(=O)CCC(=O)[*]"], "dp": 3, "chains": 1, "tacticity": "atactic", "sequence": "homopolymer"}},
+                         "grow": {"density": 0.1, "seed": 1}, "type": {"forcefield": "opls2005"}})");
+  RecipeOptions ro;
+  ro.forcefield_dir = o.forcefields;
+  const auto res = run_recipe(r, ro);
+  const bool has_ff = res.field && res.field->charge.size() == res.system.atoms.size();
+  t.rows.push_back({{"polymer(forcefield = opls2005) keeps its force field", has_ff ? res.forcefield : "none", has_ff ? "pass" : "fail"}, has_ff ? "pass" : "fail"});
+  double dq = has_ff ? 0 : 1;
+  if (has_ff)
+    for (size_t i = 0; i < res.system.atoms.size(); ++i) dq = std::max(dq, std::fabs(res.system.atoms[i].charge - res.field->charge[i]));
+  char b[48];
+  std::snprintf(b, sizeof b, "max |Δq| %.1e e", dq);
+  t.rows.push_back({{"the structure carries the force field's charges", b, dq < 1e-9 ? "pass" : "fail"}, dq < 1e-9 ? "pass" : "fail"});
+  std::string label;
+  for (const auto& st : res.manifest.steps)
+    if (st.engine == "field.assign") label = st.summary;
+  const bool named = label.find("bond increments") != std::string::npos;
+  t.rows.push_back({{"OPLS 2005 charges named as bond increments", label, named ? "pass" : "fail"}, named ? "pass" : "fail"});
+  t.note = "The issues reported with the PBS/PBSA/PBAT cells: export after polymer(forcefield=…) asked for a force field; the recipe and Field described one set of charges in two ways.";
+}
 }  // namespace
 
 std::vector<std::string> bench_ids() {
@@ -680,6 +907,10 @@ BenchTable run_bench(const std::string& id, const BenchOptions& o) {
     else if (id == "T9") t9(t, o);
     else if (id == "T11") t11(t, o);
     else if (id == "T12") t12(t, o);
+    else if (id == "T13") t13(t, o);
+    else if (id == "T14") t14(t, o);
+    else if (id == "T15") t15(t, o);
+    else if (id == "T18") t18(t, o);
   } catch (const Cancelled&) {
     t.rows.clear();
     t.status = "not run";
@@ -693,7 +924,8 @@ BenchTable run_bench(const std::string& id, const BenchOptions& o) {
   }
   t.seconds = since(t0);
   // the structure each row ran on, for Open run: the PS melt sample, or the water box for packing (T6/T7 name their cells)
-  const std::string sample = id == "T2" ? o.samples + "/water.pdb" : id == "T12" ? "" : o.samples + "/ps_melt.data";
+  const bool own = id == "T12" || id == "T13" || id == "T14" || id == "T15" || id == "T18";   // tables that build their own systems
+  const std::string sample = id == "T2" ? o.samples + "/water.pdb" : own ? "" : o.samples + "/ps_melt.data";
   for (auto& r : t.rows)
     if (r.file.empty() && !sample.empty() && !o.samples.empty() && std::filesystem::exists(sample)) r.file = sample;
   bool any_fail = false, any_pass = false;
