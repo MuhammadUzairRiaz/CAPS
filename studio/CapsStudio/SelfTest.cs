@@ -824,6 +824,14 @@ internal static class SelfTest
                 var deck = okBr ? File.ReadAllText(Path.Combine(brDir, vm.RxBrStem + ".in")) : "";
                 Check(okBr ? deck.Contains("reset_mol_ids molmap") && deck.Contains("variable        tgt index 50 100") && deck.Contains("crosslink_progress.dat")
                            : vm.RxBrText.Contains("no reactive pair") || vm.RxBrText.Contains("missing "), $"fix bond/react set with targets: {vm.RxBrText.Split('\n')[0]}");
+                // the page's stabilize steps and hydrogen-transfer distance reach the export
+                vm.RxBrStabilizeD = 150;
+                vm.RxBrHTransferD = 3.25m;
+                var bo = System.Text.Json.Nodes.JsonNode.Parse(vm.BondReactOptions())!;
+                Check((int)bo["stabilize_steps"]! == 150 && Math.Abs((double)bo["h_transfer_max"]! - 3.25) < 1e-9 && (!okBr || deck.Contains("stabilize_steps 200")),
+                      $"fix bond/react: stabilize_steps and h_transfer_max from the page ({bo["stabilize_steps"]}, {bo["h_transfer_max"]})");
+                vm.RxBrStabilizeD = 200;
+                vm.RxBrHTransferD = 3.5m;
                 vm.RxBrTargets = "";
                 vm.RxBrMolIdsIndex = 0;
                 vm.RxBrFfIndex = 0;
