@@ -47,6 +47,8 @@ public static class Paths
     /// <summary>The theory manual (data/manual/manual.json).</summary>
     public static string? Manual => Find(Path.Combine("data", "manual"), "manual.json") is { } d ? Path.Combine(d, "manual.json") : null;
     public static string? Fragments => Find(Path.Combine("data", "fragments"), "catalogue.json") is { } d ? Path.Combine(d, "catalogue.json") : null;
+    /// <summary>The data directory (data/: sheets, terminations, anchors, DFT cluster profiles …), or null.</summary>
+    public static string? Data => Find("data", Path.Combine("sheets", "sheets.json"));
     /// <summary>The samples directory, or null.</summary>
     public static string? Samples => Find("samples", "ps_melt.data");
     /// <summary>The caps Python package that Python pipeline steps import (data/python/caps).</summary>

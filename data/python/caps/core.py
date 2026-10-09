@@ -23,7 +23,7 @@ import sys
 from pathlib import Path
 from typing import Any, Iterable, Optional
 
-__all__ = ["Document", "Provenance", "open", "build", "run", "polymer", "library", "abi_version", "CapsError"]
+__all__ = ["Document", "Provenance", "open", "build", "run", "polymer", "library", "abi_version", "CapsError", "dft", "dft_help"]
 
 
 class CapsError(RuntimeError):
@@ -192,7 +192,7 @@ def _declare(L: C.CDLL) -> None:
         "caps_relax": ([P, C.POINTER(_RelaxOpts), P, P, B, I], I), "caps_md": ([P, C.POINTER(_MdOpts), P, P, B, I], I),
         "caps_equilibrate": ([P, S, C.POINTER(_EquilOpts), P, P, B, I], I), "caps_equilibrate_checks": ([P, B, I], I),
         "caps_protocol_text": ([S, C.POINTER(_ProtocolParams), B, I], I),
-        "caps_field_assign": ([P, S, S, I], I), "caps_field_assign_groups": ([P, S], I), "caps_field_file_available": ([P], I), "caps_kg_backmap": ([P, S, S, B, I], P), "caps_cg_map": ([P, S, B, I], P), "caps_cg_from_polymer": ([S, S, P, P, B, I], P), "caps_field_report": ([P, B, I], I), "caps_field_import": ([P, S], I), "caps_field_import_ex": ([P, S, S], I), "caps_field_set_options": ([P, S], I), "caps_fragment_smiles": ([P, S, B, I], I), "caps_smarts_count": ([S, S], I),
+        "caps_field_assign": ([P, S, S, I], I), "caps_field_assign_groups": ([P, S], I), "caps_field_file_available": ([P], I), "caps_kg_backmap": ([P, S, S, B, I], P), "caps_cg_map": ([P, S, B, I], P), "caps_cg_from_polymer": ([S, S, P, P, B, I], P), "caps_field_report": ([P, B, I], I), "caps_field_import": ([P, S], I), "caps_field_import_ex": ([P, S, S], I), "caps_field_set_options": ([P, S], I), "caps_fragment_smiles": ([P, S, B, I], I), "caps_dft_run": ([S, S, S, B, I], I), "caps_dft_help": ([S, B, I], I), "caps_smarts_count": ([S, S], I),
         "caps_build_smiles": ([S, S, C.POINTER(_BuildOpts), B, I], P),
         "caps_build_beads": ([S, S, C.c_uint64, B, I], P), "caps_bead_templates": ([S, B, I], I),
         "caps_peptide_build": ([S, B, I], P), "caps_crystal_build": ([S, B, I], P), "caps_nano_build": ([S, B, I], P),
@@ -1163,6 +1163,31 @@ def water_models() -> list:
     TIP4P/Ice, OPC): id, name, citation, sites, geometry, charges and Lennard-Jones. Apply one with
     doc.edit(op="water_model", model=id) and type the waters with it by a group {"molecules": "water", "water": id}."""
     return _json_call(library().caps_water_models)
+
+
+def dft(command: str, *inputs: str, **options) -> dict:
+    """The DFT surface & adsorption workbench, the same commands as `caps <command>` and the Studio's DFT pages:
+    sheet, sites, terminate, validate, adsorb-dft, vasp-set, vasp-conv, vasp-scan, vasp-derived, vasp-jobs, vasp-check,
+    vasp-progress, vasp-health, vasp-bind, vasp-analyze. Positional arguments are the command's inputs, keyword options
+    its --flags (supercell="5x5", from_relaxed=True, o="slab.vasp"). Returns the JSON report (with "command", the
+    equivalent command line). dft_help(command) has every option, its default and why.
+
+        caps.dft("sheet", preset="Ti3C2", o="Ti3C2.vasp")
+        caps.dft("terminate", "Ti3C2.vasp", top="O:0.5,OH:0.25,F:0.25", supercell="3x3", seed=1, o="mixed.vasp")
+        caps.dft("adsorb-dft", "CONTCAR", from_relaxed=True, supercell="5x5", out="adsorption/Ti3C2_OH_NBR")"""
+    args = dict(options)
+    args["inputs"] = [str(x) for x in inputs]
+    return _json_call(library().caps_dft_run, _enc(command), _enc(json.dumps(args)), _enc(str(_data_dir())))
+
+
+def dft_help(command: str) -> str:
+    """--help of a DFT workbench command: what it does, every option with its default and the reason, examples."""
+    cap = 1 << 16
+    buf = C.create_string_buffer(cap)
+    n = library().caps_dft_help(_enc(command), buf, cap)
+    if n < 0:
+        raise _error()
+    return buf.value.decode()
 
 
 def label_kinds() -> dict:

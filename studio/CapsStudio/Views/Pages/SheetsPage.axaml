@@ -1,0 +1,172 @@
+<!-- CAPS Studio › DFT › 2D sheets & terminations: a sheet from a preset (layer lists in data/sheets) or cut out of a
+     structure, its surface sites from above (fcc / hcp / top / bridge, the height a termination takes on each), the faces
+     terminated by fractions with a seed, the slab validated (findings light their atoms), exported as POSCAR, CIF or a
+     VASP set. Every action is a `caps` command, shown at the bottom to copy. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.SheetsPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="Border.pcard"><Setter Property="Background" Value="{DynamicResource Bg1B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+      <Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="10" /><Setter Property="Padding" Value="16,14" /></Style>
+  </p:PageBase.Styles>
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Button Click="OnExportPoscar" IsEnabled="{Binding HasSlab}" ToolTip.Tip="The slab as a VASP POSCAR (species grouped in the order below)">POSCAR…</Button>
+          <Button Click="OnExportCif" IsEnabled="{Binding HasSlab}">CIF…</Button>
+          <Button Click="OnExportSet" IsEnabled="{Binding HasSlab}" ToolTip.Tip="A VASP case folder: 01_cell 02_cell2 03_relax 04_static, KPOINTS, job.slurm, make_potcar.sh (and POTCAR with your PAW folder) — settings on the VASP set page">
+            <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="server" Size="14" VerticalAlignment="Center" /><TextBlock Text="VASP set…" VerticalAlignment="Center" /></StackPanel>
+          </Button>
+          <Button Click="OnOpenInStudio" IsEnabled="{Binding HasSlab}" ToolTip.Tip="Open the slab as the Studio's structure">Open in Studio</Button>
+          <Button Classes="primary" Click="OnBuild" IsEnabled="{Binding DftIdle}">
+            <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="cube" Size="14" VerticalAlignment="Center" /><TextBlock Text="Build &amp; validate" VerticalAlignment="Center" /></StackPanel>
+          </Button>
+        </StackPanel>
+        <StackPanel Spacing="3">
+          <TextBlock Text="2D sheets &amp; terminations" FontSize="19" FontWeight="SemiBold" />
+          <TextBlock Text="Layered sheets for DFT: one layer, its surface sites, the faces terminated, the slab checked" FontSize="12.5" Foreground="{DynamicResource MutedB}" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+    <Border DockPanel.Dock="Bottom" Padding="22,6" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+      <DockPanel>
+        <Button DockPanel.Dock="Right" Classes="small ghost" Content="Copy" Click="OnCopyCli" IsVisible="{Binding HasDftCli}" ToolTip.Tip="The same from a terminal" />
+        <StackPanel Spacing="2">
+          <SelectableTextBlock Text="{Binding DftCli}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding DftStatus}" FontSize="11.5" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+    <Grid v:Panes.Split="True" ColumnDefinitions="*,460" ColumnSpacing="14" Margin="22,18">
+      <Grid RowDefinitions="*,260" RowSpacing="12">
+        <Border Classes="pcard" Padding="0">
+          <DockPanel>
+            <Border DockPanel.Dock="Top" Padding="16,10" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+              <DockPanel>
+                <Border DockPanel.Dock="Right" Classes="chip" Background="{Binding SheetBadge}"><TextBlock Text="{Binding SheetValidation}" Foreground="{DynamicResource Bg0B}" FontWeight="SemiBold" /></Border>
+                <TextBlock Text="Slab" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+              </DockPanel>
+            </Border>
+            <Panel Background="{DynamicResource Bg0B}"><v:MolView x:Name="View" /></Panel>
+          </DockPanel>
+        </Border>
+        <Border Grid.Row="1" Classes="pcard" Padding="0">
+          <DockPanel>
+            <Border DockPanel.Dock="Top" Padding="16,8" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+              <StackPanel Spacing="2">
+                <TextBlock Text="Surface sites of the top face (the sheet's cell, from above)" FontSize="12.5" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding SitesNote}" Classes="dim" FontSize="11" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+            <v:SiteMap x:Name="Sites" />
+          </DockPanel>
+        </Border>
+      </Grid>
+      <ScrollViewer Grid.Column="1">
+        <StackPanel Spacing="14">
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <TextBlock Text="Sheet" FontSize="13.5" FontWeight="SemiBold" />
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="10" IsVisible="{Binding SheetFromPreset}">
+                <StackPanel Spacing="3"><TextBlock Text="Preset" Classes="label" /><ComboBox ItemsSource="{Binding SheetPresets}" SelectedItem="{Binding SheetPreset}" HorizontalAlignment="Stretch" ToolTip.Tip="Layer lists in data/sheets/sheets.json (add your own there)" /></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="3"><TextBlock Text="a (Å) · 0 = the preset's" Classes="label" /><NumericUpDown Value="{Binding SheetA}" Minimum="0" Maximum="100" Increment="0.01" FormatString="0.0000" ToolTip.Tip="Heights scale with a: a start for the DFT cell relaxation" /></StackPanel>
+              </Grid>
+              <DockPanel>
+                <Button DockPanel.Dock="Right" Classes="small" Content="From a structure…" Click="OnFrom" ToolTip.Tip="Cut ONE complete layer out of a bulk, stacked or MAX-type structure (CIF, POSCAR …)" />
+                <Button DockPanel.Dock="Right" Classes="small ghost" Content="×" Click="OnFromClear" IsVisible="{Binding !SheetFromPreset}" Margin="0,0,6,0" />
+                <TextBlock Text="{Binding SheetFrom}" Classes="mono dim" FontSize="11" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+              </DockPanel>
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="10" IsVisible="{Binding !SheetFromPreset}">
+                <StackPanel Spacing="3"><TextBlock Text="Layer formula" Classes="label" /><TextBox Text="{Binding SheetFormula}" Watermark="Ti3C2" ToolTip.Tip="Incomplete layers are skipped" /></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="3"><TextBlock Text="Remove first" Classes="label" /><TextBox Text="{Binding SheetRemove}" Watermark="Al (a MAX phase)" /></StackPanel>
+              </Grid>
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <DockPanel>
+                <Button DockPanel.Dock="Right" Classes="small" Content="Add" Click="OnAddTop" />
+                <TextBlock Text="Top face" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+              </DockPanel>
+              <ItemsControl ItemsSource="{Binding TopTerms}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:TermRow">
+                    <Grid ColumnDefinitions="*,110,Auto" ColumnSpacing="8" Margin="0,0,0,6">
+                      <ComboBox ItemsSource="{Binding $parent[p:SheetsPage].((vm:MainViewModel)DataContext).TermSpecies}" SelectedItem="{Binding Species}" HorizontalAlignment="Stretch" />
+                      <NumericUpDown Grid.Column="1" Value="{Binding Fraction}" Minimum="0" Maximum="1000" Increment="0.05" FormatString="0.###" ToolTip.Tip="Fraction (normalised over the face); counts by largest remainder" />
+                      <Button Grid.Column="2" Classes="small" Content="×" Click="OnRemoveTerm" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="Site" Classes="label" VerticalAlignment="Center" />
+                <ComboBox ItemsSource="{x:Static vm:MainViewModel.SiteKinds}" SelectedItem="{Binding SiteTop}" Width="110" ToolTip.Tip="fcc: above the third layer · hcp: above the second · top · bridge" />
+                <CheckBox Classes="toggle" Content="Janus (different bottom)" IsChecked="{Binding SheetJanus}" ToolTip.Tip="Off: the bottom face takes the top's species and counts (no net dipole). On: the faces differ and the dipole correction is used" />
+              </StackPanel>
+              <StackPanel Spacing="6" IsVisible="{Binding SheetJanus}">
+                <DockPanel>
+                  <Button DockPanel.Dock="Right" Classes="small" Content="Add" Click="OnAddBottom" />
+                  <TextBlock Text="Bottom face" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                </DockPanel>
+                <ItemsControl ItemsSource="{Binding BottomTerms}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:TermRow">
+                      <Grid ColumnDefinitions="*,110,Auto" ColumnSpacing="8" Margin="0,0,0,6">
+                        <ComboBox ItemsSource="{Binding $parent[p:SheetsPage].((vm:MainViewModel)DataContext).TermSpecies}" SelectedItem="{Binding Species}" HorizontalAlignment="Stretch" />
+                        <NumericUpDown Grid.Column="1" Value="{Binding Fraction}" Minimum="0" Maximum="1000" Increment="0.05" FormatString="0.###" />
+                        <Button Grid.Column="2" Classes="small" Content="×" Click="OnRemoveTerm" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <StackPanel Orientation="Horizontal" Spacing="8"><TextBlock Text="Site" Classes="label" VerticalAlignment="Center" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.SiteKinds}" SelectedItem="{Binding SiteBottom}" Width="110" /></StackPanel>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <TextBlock Text="Cell" FontSize="13.5" FontWeight="SemiBold" />
+              <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="8">
+                <StackPanel Spacing="3"><TextBlock Text="Repeat a" Classes="label" /><NumericUpDown Value="{Binding SheetNa}" Minimum="1" Maximum="20" FormatString="0" /></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="3"><TextBlock Text="Repeat b" Classes="label" /><NumericUpDown Value="{Binding SheetNb}" Minimum="1" Maximum="20" FormatString="0" /></StackPanel>
+                <StackPanel Grid.Column="2" Spacing="3"><TextBlock Text="Vacuum (Å)" Classes="label" /><NumericUpDown Value="{Binding SheetVacuum}" Minimum="0" Maximum="200" Increment="1" FormatString="0.#" ToolTip.Tip="Centred along z; under 15 Å warns, under 10 Å fails" /></StackPanel>
+                <StackPanel Grid.Column="3" Spacing="3"><TextBlock Text="Seed" Classes="label" /><NumericUpDown Value="{Binding SheetSeed}" Minimum="0" Increment="1" FormatString="0" ToolTip.Tip="The arrangement of a mixed face: the same on every platform for the same seed" /></StackPanel>
+              </Grid>
+              <StackPanel Spacing="3"><TextBlock Text="Species order (POSCAR and POTCAR)" Classes="label" /><TextBox Text="{Binding SheetOrder}" Classes="mono" /></StackPanel>
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <TextBlock Text="Validation" FontSize="13.5" FontWeight="SemiBold" />
+              <ItemsControl ItemsSource="{Binding SheetInfo}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:Row">
+                    <Grid ColumnDefinitions="150,*" Margin="0,1"><TextBlock Text="{Binding Key}" Classes="muted" FontSize="12" /><TextBlock Grid.Column="1" Text="{Binding Value}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" /></Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock Text="No findings." Classes="dim" IsVisible="{Binding SheetPass}" />
+              <ItemsControl ItemsSource="{Binding SheetFindings}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:DftFinding">
+                    <Button Classes="row" Click="OnFinding" Tag="{Binding}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="4,3" ToolTip.Tip="Light its atoms in the view">
+                      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                        <Border Classes="chip" Background="{Binding Brush}" VerticalAlignment="Top"><TextBlock Text="{Binding Level}" FontSize="10" Foreground="{DynamicResource Bg0B}" /></Border>
+                        <TextBlock Grid.Column="1" Text="{Binding Text}" FontSize="12" TextWrapping="Wrap" />
+                      </Grid>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <Expander Header="Full report">
+                <SelectableTextBlock Text="{Binding SheetReport}" Classes="mono" FontSize="11" TextWrapping="Wrap" />
+              </Expander>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+  </DockPanel>
+</p:PageBase>

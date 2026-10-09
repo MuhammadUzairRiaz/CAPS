@@ -79,6 +79,18 @@ internal static class Screenshot
             if (kv[0] == "colour") w.ViewModel.ColourIndex = int.Parse(kv[1]);
             if (kv[0] == "style") w.ViewModel.StyleIndex = int.Parse(kv[1]);
             if (kv[0] == "module") w.ViewModel.SetModule(int.Parse(kv[1]));
+            if (kv[0] == "dft")   // dft=sheets|ads|job: the DFT pages with the Ti3C2 OH slab built (and its 5 × 5 set, its VASP set)
+            {
+                var vm = w.ViewModel;
+                vm.DftRoot = Path.Combine(Path.GetTempPath(), "caps-shot-dft");
+                vm.OpenSheets();
+                vm.TopTerms.Clear();
+                vm.TopTerms.Add(new ViewModels.TermRow { Species = "OH", Fraction = 1 });
+                void Wait(Task t) { while (!t.IsCompleted) { Avalonia.Threading.Dispatcher.UIThread.RunJobs(); Thread.Sleep(10); } }
+                Wait(vm.BuildSlab());
+                if (kv[1] == "ads") { vm.OpenAdsorbDft(); vm.AdsSlab = vm.SlabPath; Wait(vm.BuildAdsorptionSet()); }
+                if (kv[1] == "job") { vm.OpenDftJob(); vm.JobStructure = vm.SlabPath; Wait(vm.PreviewJob()); }
+            }
             if (kv[0] == "figure")   // figure=BG: Export › Figure with that background selected
             {
                 w.ViewModel.OpenFigure();

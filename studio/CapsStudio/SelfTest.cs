@@ -12,7 +12,7 @@ internal static class SelfTest
         var fails = 0;
         void Check(bool ok, string what) { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {what}"); if (!ok) fails++; }
 
-        Check(Native.AbiVersion() == 64, "native ABI version 64");
+        Check(Native.AbiVersion() == 65, "native ABI version 65");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -3528,7 +3528,7 @@ internal static class SelfTest
                 vm.SelectedRecipe = vm.Recipes.First(r => r.Name == "Quick molecule");
                 vm.RunSelectedRecipe().GetAwaiter().GetResult();
                 var prov = vm.Document?.Provenance() ?? "";
-                Check(templates == 5 && first != null && valid && flagged && files == 2 && vm.Document?.Summary().Atoms == 9 && prov.Contains("recipe.run") && prov.Contains(vm.RecipeSha),
+                Check(templates == 6 && first != null && valid && flagged && files == 2 && vm.Document?.Summary().Atoms == 9 && prov.Contains("recipe.run") && prov.Contains(vm.RecipeSha),
                       $"recipes: {templates} · valid {valid} · flagged {flagged} · {files} files · {vm.Status}");
                 vm.SelectedRecipe = vm.Recipes.First(r => r.Name.StartsWith("Sulfur-cured"));
                 var cureOk = vm.RecipeOk && vm.RecipeStages.Any(st => st.Name == "React" && st.Ok);
@@ -4952,6 +4952,59 @@ internal static class SelfTest
                 var rho = vm.Document?.Summary().Density ?? 0;
                 vm.GrowStartDensityD = 0;
                 Check(Math.Abs(rho - 0.6) < 0.01 && note.StartsWith("grown at 0.3, compressed to 0.6"), $"grow then compress: {rho:0.000} g/cm³ · {note} · {vm.Status}");
+            }
+            // DFT workbench: 2D sheet → terminated slab (validated) → VASP set → adsorption set → run monitor → results
+            {
+                var dftRoot = Path.Combine(outDir, "dft");
+                vm.DftRoot = dftRoot;
+                vm.OpenSheets();
+                vm.SheetPreset = "Ti3C2";
+                vm.TopTerms.Clear();
+                vm.TopTerms.Add(new TermRow { Species = "OH", Fraction = 1 });
+                vm.SheetNa = vm.SheetNb = 1;
+                vm.BuildSlab().GetAwaiter().GetResult();
+                var ohSlab = vm.SlabPath;
+                var fcc = vm.SheetSites.Count(x => x.Face == "top" && x.Kind == "fcc");
+                Check(vm.SheetValidation == "PASS" && File.Exists(ohSlab) && fcc == 1 && vm.SheetSites.Any(x => x.Kind == "fcc" && Math.Abs(x.H - 1.2942) < 0.001) && vm.DftCli.StartsWith("caps terminate"),
+                      $"2D sheet: OH slab {vm.SheetValidation} · {vm.SheetSites.Count} sites · {vm.SitesNote} · {vm.DftStatus}");
+                vm.TopTerms.Clear();
+                vm.TopTerms.Add(new TermRow { Species = "O", Fraction = 0.5m });
+                vm.TopTerms.Add(new TermRow { Species = "OH", Fraction = 0.25m });
+                vm.TopTerms.Add(new TermRow { Species = "F", Fraction = 0.25m });
+                vm.SheetNa = vm.SheetNb = 3;
+                vm.BuildSlab().GetAwaiter().GetResult();
+                var formula = vm.SheetInfo.FirstOrDefault(r => r.Key == "Formula")?.Value ?? "";
+                var setDir = Path.Combine(outDir, "dft-set", "Ti3C2_mixed");
+                vm.ExportSlab(setDir, true).GetAwaiter().GetResult();
+                Check(vm.SheetValidation == "PASS" && formula == "Ti27C18O14F4H4" && File.Exists(Path.Combine(setDir, "INCAR.cell")) && File.Exists(Path.Combine(setDir, "job.slurm")),
+                      $"2D sheet: mixed 3x3 {formula} {vm.SheetValidation} · VASP set {File.Exists(Path.Combine(setDir, "INCAR.cell"))}");
+                // the VASP set designer on the OH slab
+                vm.OpenDftJob();
+                vm.JobStructure = ohSlab;
+                vm.JobOut = Path.Combine(dftRoot, "structures", "Ti3C2_OH");
+                vm.PreviewJob().GetAwaiter().GetResult();
+                var lc = vm.JobIncar.FirstOrDefault(r => r.Key == "LATTICE_CONSTRAINTS");
+                vm.WriteJob().GetAwaiter().GetResult();
+                Check(lc != null && lc.Why.Contains("vacuum") && vm.JobMesh.StartsWith("15 × 15 × 1") && File.Exists(Path.Combine(vm.JobOut, "job.slurm")) && vm.JobFiles.Contains("KPOINTS"),
+                      $"VASP set designer: {vm.JobIncar.Count} INCAR lines · mesh {vm.JobMesh} · {vm.DftStatus}");
+                // the adsorption set: 5 × 5, the default oligomer
+                vm.OpenAdsorbDft();
+                vm.AdsSlab = ohSlab;
+                vm.AdsNa = vm.AdsNb = 5;
+                vm.AdsOut = Path.Combine(dftRoot, "adsorption", "Ti3C2_OH_NBR");
+                vm.BuildAdsorptionSet().GetAwaiter().GetResult();
+                Check(vm.AdsComplexes.Count == 12 && vm.AdsComplexes.All(c => c.Status == "ok") && vm.AdsAnchors.Count >= 2 && vm.HasAdsAudit && vm.AdsComplexes.Count(c => c.Equivalent) == 6,
+                      $"DFT adsorption set: {vm.AdsSummary}");
+                // the run monitor sees the cases (none started), the results page says what is missing
+                vm.OpenDftRuns();
+                vm.RunsRoot = dftRoot;
+                vm.RefreshRuns().GetAwaiter().GetResult();
+                vm.OpenDftResults();
+                vm.ResultsSet = vm.AdsOut;
+                vm.RefreshResults().GetAwaiter().GetResult();
+                Check(vm.DftRuns.Count == 15 && vm.DftRuns.All(r => r.State.StartsWith("not started")) && vm.GeomRows.Count == 12 && vm.ResultsNote.Contains("no finished OUTCAR"),
+                      $"DFT runs and results: {vm.DftRuns.Count} cases · {vm.GeomRows.Count} geometries · {vm.ResultsNote.Split('\n').FirstOrDefault()}");
+                vm.SetModule(8);
             }
             // the Start page's sample pipeline: four steps on the polystyrene cell
             vm.Open(Path.Combine(dir, "ps_melt.lammpstrj"), Path.Combine(dir, "ps_melt.data"));
