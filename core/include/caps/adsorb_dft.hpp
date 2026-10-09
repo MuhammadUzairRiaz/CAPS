@@ -52,6 +52,13 @@ struct AdsorbSet {
 };
 AdsorbSet build_adsorption_set(const System& slab, const System& molecule, const std::map<std::string, std::vector<int>>& anchors, const AdsorbSetOptions& o);
 
+// Pre-screen (the force-field Adsorption Locator, caps/adsorption.hpp): UFF on slab + molecule, the molecule annealed as
+// a rigid body above the top face (Monte Carlo simulated annealing), the lowest `keep` configurations turned into DFT
+// complexes (complex_ff1 …, mode "prescreen") with the same checks. `energies` gets their UFF interaction (kcal/mol).
+struct PrescreenOptions { int keep = 3; int cycles = 3; int steps = 20000; uint64_t seed = 1; double window = 10.0; };
+std::vector<AdsorbComplex> prescreen_complexes(const System& slab, const System& molecule, const AdsorbSetOptions& o, const PrescreenOptions& p,
+                                               std::vector<double>* energies = nullptr);
+
 // The rotations (multiples of 30°, 0 < θ < 360) about the in-plane point c that map the outer layer of the top face
 // (atoms within 0.5 Å of the highest heavy atom, by element) onto itself with the cell's periodicity.
 std::vector<double> outer_layer_rotations(const System& slab, const Vec3& centre, double tol = 0.15);
