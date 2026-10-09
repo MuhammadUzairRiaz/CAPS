@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Coarse-grained · CAPS Studio</title>
+<meta name="description" content="Reach long times and large cells with bead models: a generic Kremer–Grest melt, MARTINI with published bead types, or a model derived from an all-atom melt of your own polymer.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/site.css">
+
+<script defer src="../assets/site.js"></script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="../index.html"><span class="mark" aria-hidden="true"></span>CAPS</a>
+  <button class="menu" aria-expanded="false" aria-controls="nav">Menu</button>
+  <nav id="nav" class="links"><a href="../index.html">Home</a><a href="../modules/index.html" aria-current="page">Modules</a><a href="../cli/index.html">CLI guide</a><a href="../cli/reference.html">Command reference</a><a href="../tutorials/index.html">Tutorials</a><a href="../theory/index.html">Theory</a><a href="../python.html">Python</a><a href="../manual/index.html">Studio tour</a><a href="https://github.com/MuhammadUzairRiaz/CAPS">GitHub</a></nav>
+</header>
+<div class="doc">
+<nav class="toc" aria-label="On this page"><h2>Modules</h2><h3 class="stage-h"><i class="dot st-start"></i>Get started</h3><a href="start.html">Start</a><a href="studio.html">Studio</a><h3 class="stage-h"><i class="dot st-build"></i>Build</h3><a href="molecule.html">Molecule builder</a><a href="polymer.html">Polymer builder</a><a href="polymer-cell.html">Polymer cell</a><a href="blend.html">Blend</a><a href="packing.html">Packing</a><a href="solvation.html">Solvation</a><a href="crystal.html">Crystal</a><a href="surface.html">Surface &amp; interface</a><a href="nanostructure.html">Nanostructure</a><a href="biomolecule.html">Biomolecule</a><h3 class="stage-h"><i class="dot st-prepare"></i>Prepare</h3><a href="force-field.html">Force field</a><a href="minimise.html">Minimise</a><a href="equilibrate.html">Equilibrate</a><h3 class="stage-h"><i class="dot st-run"></i>Run</h3><a href="dynamics.html">Dynamics</a><a href="coarse-grained.html" aria-current="page" class="on">Coarse-grained</a><a href="dpd.html">DPD</a><a href="adsorption.html">Adsorption &amp; sorption</a><a href="dft.html">DFT workbench</a><h3 class="stage-h"><i class="dot st-react"></i>React</h3><a href="react.html">React</a><h3 class="stage-h"><i class="dot st-out"></i>Analyse &amp; export</h3><a href="analyze.html">Analyze</a><a href="export.html">Export</a><a href="jobs.html">Jobs</a><a href="project.html">Project &amp; methods</a></nav>
+<main>
+<header class="mod-hero"><p class="eyebrow"><i class="dot st-run"></i>Run · module 17</p><h1>Coarse-grained</h1><p class="lede">Reach long times and large cells with bead models: a generic Kremer–Grest melt, MARTINI with published bead types, or a model derived from an all-atom melt of your own polymer.</p><p class="where"><b>Open it</b> <span class="ui">Build</span><i>›</i><span class="ui">Coarse-grained melt…</span></p><dl class="io"><div><dt>You start with</dt><dd>A polymer from the library, or an all-atom cell (and its trajectory) already open.</dd></div><div><dt>You get</dt><dd>A coarse-grained melt with its bonded and pair potentials, a LAMMPS deck, and a backmapped all-atom cell.</dd></div></dl></header>
+<figure class="shot"><button type="button" class="zoom" aria-label="Show full size"><img src="../manual/img/17_cg.jpg" alt="Build › Coarse-grained with the three models and the page&#x27;s own guide to which model to use." width="1440" height="900" loading="eager" decoding="async"></button><figcaption><strong>Build › Coarse-grained</strong> with the three models and the page's own guide to which model to use.</figcaption></figure>
+<h2 id="steps">Step by step</h2><ol class="stepper"><li><div><h3>Pick the model</h3><p><strong>Kremer–Grest</strong>: generic FENE + WCA beads for polymer physics. <strong>MARTINI</strong>: about four heavy atoms per bead, published types. <strong>From a polymer</strong>: your polymer's own beads.</p></div></li><li><div><h3>From a polymer: choose the mapping</h3><p>One bead per repeat unit (the common 1:1 model), two beads per unit (backbone + side group), or n backbone atoms per bead (for example 3:1 for polyethylene).</p></div></li><li><div><h3>Let CAPS derive the beads</h3><p>CAPS grows an all-atom reference melt, maps every frame to beads, and fits harmonic bonds and angles by Boltzmann inversion and a repulsive WCA with σ from the bead g(r).</p><p>Already have an all-atom run? <span class="ui">Map the open all-atom structure (every frame)</span> uses it instead.</p></div></li><li><div><h3>Run or export</h3><p>Run the melt in CAPS or write the LAMMPS deck. The model is repulsive only: a starting point for iterative Boltzmann inversion (IBI), which adds the attractions.</p></div></li><li><div><h3>Back to atoms</h3><p><span class="ui">Backmap the open melt</span> rebuilds an all-atom cell when you need atomistic detail.</p></div></li></ol>
+<h2 id="scripted">The same without the Studio</h2><p class="muted">Every Studio page calls the same core as the <code>caps</code> command and the <code>caps</code> Python package, so a step you clicked can be repeated in a script.</p>
+<div class="tabs" role="tablist"><button role="tab" type="button" aria-selected="true" data-tab="0">Command line</button><button role="tab" type="button" aria-selected="false" data-tab="1">Python</button></div>
+<div class="tabpanel" data-panel="0"><div class="code" data-lang="shell"><pre><code># chemistry-aware mapping, bonded fits, a CG melt, then back to atoms
+caps cgmap aa.data --preset ester-cut -o cg/ --dump aa.lammpstrj
+caps cgfit bonded --help
+caps cgbuild --units BS=B+S --dp 100 --chains 50 --bonded cg/ --maps cg/map.json -o melt/
+caps backmap cg/map.json aa.data --cg melt/map.json --frame melt/last.data -o back/</code></pre></div></div><div class="tabpanel" data-panel="1" hidden><div class="code" data-lang="Python"><pre><code>from caps import build
+
+kg = build.kremer_grest(chains=50, beads=100, density=0.85)
+kg.export_engines(&quot;kg&quot;, stem=&quot;melt&quot;, gromacs=False)
+
+ps = build.cg_from_polymer(&quot;*CC(*)c1ccccc1&quot;, name=&quot;PS&quot;, scheme=&quot;unit&quot;, chains=10, dp=20)</code></pre></div></div>
+<h2 id="next">Where to go next</h2><div class="cards next"><a class="card shot-card" href="dpd.html"><img src="../manual/img/24_dpd.jpg" alt="" loading="lazy" width="1440" height="900"><span class="num"><i class="dot st-run"></i>Run</span><b>DPD</b><span>Dissipative particle dynamics for phase separation, lamellae and domains in blends and block copolymers.</span></a><a class="card shot-card" href="analyze.html"><img src="../manual/img/18_analyze.jpg" alt="" loading="lazy" width="1440" height="900"><span class="num"><i class="dot st-out"></i>Analyse &amp; export</span><b>Analyze</b><span>Density, g(r), chain statistics, Tg, moduli, diffusion, free volume, interfaces and crosslink density — each with CSV.</span></a></div>
+<h2 id="read">Read more</h2><div class="cards minis"><a class="card mini" href="../tutorials/coarse-graining.html"><span class="num">Tutorial</span><b>Coarse-graining a polymer</b></a><a class="card mini" href="../theory/coarse-grained.html"><span class="num">Theory</span><b>Coarse-grained models</b></a></div>
+<nav class="pager"><a href="dynamics.html"><small>Previous</small>Dynamics</a><a class="next" href="dpd.html"><small>Next</small>DPD</a></nav>
+</main>
+</div>
+<footer class="foot"><span>CAPS 0.1.0 · generated by <code>tools/docs/build_site.py</code> from the program itself</span><a href="https://github.com/MuhammadUzairRiaz/CAPS">github.com/MuhammadUzairRiaz/CAPS</a></footer>
+</body>
+</html>

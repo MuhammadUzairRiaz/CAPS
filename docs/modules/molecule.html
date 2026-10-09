@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Molecule builder · CAPS Studio</title>
+<meta name="description" content="Sketch a molecule or type its SMILES and CAPS builds 3D coordinates and conformers, cleaned up with a force field. Use it for monomers, curatives, solvents, plasticisers and small additives.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/site.css">
+
+<script defer src="../assets/site.js"></script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="../index.html"><span class="mark" aria-hidden="true"></span>CAPS</a>
+  <button class="menu" aria-expanded="false" aria-controls="nav">Menu</button>
+  <nav id="nav" class="links"><a href="../index.html">Home</a><a href="../modules/index.html" aria-current="page">Modules</a><a href="../cli/index.html">CLI guide</a><a href="../cli/reference.html">Command reference</a><a href="../tutorials/index.html">Tutorials</a><a href="../theory/index.html">Theory</a><a href="../python.html">Python</a><a href="../manual/index.html">Studio tour</a><a href="https://github.com/MuhammadUzairRiaz/CAPS">GitHub</a></nav>
+</header>
+<div class="doc">
+<nav class="toc" aria-label="On this page"><h2>Modules</h2><h3 class="stage-h"><i class="dot st-start"></i>Get started</h3><a href="start.html">Start</a><a href="studio.html">Studio</a><h3 class="stage-h"><i class="dot st-build"></i>Build</h3><a href="molecule.html" aria-current="page" class="on">Molecule builder</a><a href="polymer.html">Polymer builder</a><a href="polymer-cell.html">Polymer cell</a><a href="blend.html">Blend</a><a href="packing.html">Packing</a><a href="solvation.html">Solvation</a><a href="crystal.html">Crystal</a><a href="surface.html">Surface &amp; interface</a><a href="nanostructure.html">Nanostructure</a><a href="biomolecule.html">Biomolecule</a><h3 class="stage-h"><i class="dot st-prepare"></i>Prepare</h3><a href="force-field.html">Force field</a><a href="minimise.html">Minimise</a><a href="equilibrate.html">Equilibrate</a><h3 class="stage-h"><i class="dot st-run"></i>Run</h3><a href="dynamics.html">Dynamics</a><a href="coarse-grained.html">Coarse-grained</a><a href="dpd.html">DPD</a><a href="adsorption.html">Adsorption &amp; sorption</a><a href="dft.html">DFT workbench</a><h3 class="stage-h"><i class="dot st-react"></i>React</h3><a href="react.html">React</a><h3 class="stage-h"><i class="dot st-out"></i>Analyse &amp; export</h3><a href="analyze.html">Analyze</a><a href="export.html">Export</a><a href="jobs.html">Jobs</a><a href="project.html">Project &amp; methods</a></nav>
+<main>
+<header class="mod-hero"><p class="eyebrow"><i class="dot st-build"></i>Build · module 03</p><h1>Molecule builder</h1><p class="lede">Sketch a molecule or type its SMILES and CAPS builds 3D coordinates and conformers, cleaned up with a force field. Use it for monomers, curatives, solvents, plasticisers and small additives.</p><p class="where"><b>Open it</b> <span class="ui">Build</span><i>›</i><span class="ui">Molecule builder…</span></p><dl class="io"><div><dt>You start with</dt><dd>A SMILES string or a 2D sketch.</dd></div><div><dt>You get</dt><dd>A 3D molecule (several conformers if you ask), ready for Packing, the Polymer builder or the Studio.</dd></div></dl></header>
+<figure class="shot"><button type="button" class="zoom" aria-label="Show full size"><img src="../manual/img/03_molecule.jpg" alt="Molecule builder: the 2D sketch, the live 3D preview and the conformers table." width="1440" height="900" loading="eager" decoding="async"></button><figcaption><strong>Molecule builder</strong>: the 2D sketch, the live 3D preview and the conformers table.</figcaption></figure>
+<h2 id="steps">Step by step</h2><ol class="stepper"><li><div><h3>Draw or type</h3><p>Sketch with the draw, ring and charge tools and the element buttons (C, N, O, S, F, Cl, Br, P, I, Si), or type the SMILES under <strong>Identifiers</strong>. Properties update: formula, molecular weight, stereocentres and a valence check.</p></div></li><li><div><h3>Set the 3D embedding</h3><p>Method <span class="ui">Distance bounds</span> (default) or with a rotor search; conformers 1–50 (default 5); clean up with GAFF2 or UFF (every element); hydrogens added from valences, or as written for united-atom models.</p></div></li><li><div><h3>Pick a conformer</h3><p>The <strong>Conformers</strong> table lists each one by relative energy, lowest first.</p></div></li><li><div><h3>Send it on</h3><p><span class="ui">Open in Studio</span>; <span class="ui">Use in Pack</span> to fill a box with it; <span class="ui">Use as repeat unit</span> when the SMILES has two <code>*</code> (it becomes unit A of the Polymer builder); or <span class="ui">Insert into document</span>.</p></div></li></ol>
+<h2 id="scripted">The same without the Studio</h2><p class="muted">Every Studio page calls the same core as the <code>caps</code> command and the <code>caps</code> Python package, so a step you clicked can be repeated in a script.</p>
+<div class="tabs" role="tablist"><button role="tab" type="button" aria-selected="true" data-tab="0">Command line</button><button role="tab" type="button" aria-selected="false" data-tab="1">Python</button></div>
+<div class="tabpanel" data-panel="0"><div class="code" data-lang="shell"><pre><code>caps build &#x27;C=Cc1ccccc1&#x27; -o styrene.mol2 --conformers 5 --ff uff</code></pre></div></div><div class="tabpanel" data-panel="1" hidden><div class="code" data-lang="Python"><pre><code>from caps import build
+
+m = build.smiles(&quot;C=Cc1ccccc1&quot;, forcefield=&quot;uff&quot;, conformers=5)
+m.save(&quot;styrene.mol2&quot;)</code></pre></div></div>
+<h2 id="next">Where to go next</h2><div class="cards next"><a class="card shot-card" href="packing.html"><img src="../manual/img/10_pack.jpg" alt="" loading="lazy" width="1440" height="900"><span class="num"><i class="dot st-build"></i>Build</span><b>Packing</b><span>Fill a box — or the space around a structure — with molecules, with no two closer than a tolerance.</span></a><a class="card shot-card" href="polymer.html"><img src="../manual/img/04_polymer.jpg" alt="" loading="lazy" width="1440" height="900"><span class="num"><i class="dot st-build"></i>Build</span><b>Polymer builder</b><span>114 repeat units and 21 copolymers, or your own SMILES; architecture, sequence, composition, tacticity and end groups.</span></a></div>
+<nav class="pager"><a href="studio.html"><small>Previous</small>Studio</a><a class="next" href="polymer.html"><small>Next</small>Polymer builder</a></nav>
+</main>
+</div>
+<footer class="foot"><span>CAPS 0.1.0 · generated by <code>tools/docs/build_site.py</code> from the program itself</span><a href="https://github.com/MuhammadUzairRiaz/CAPS">github.com/MuhammadUzairRiaz/CAPS</a></footer>
+</body>
+</html>

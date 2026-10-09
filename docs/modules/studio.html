@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Studio · CAPS Studio</title>
+<meta name="description" content="Where every structure opens: a 3D view with editing tools, the project tree, the inspector, file checks and quick analysis of the frame shown. The module bar along the top takes you to every other page.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/site.css">
+
+<script defer src="../assets/site.js"></script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="../index.html"><span class="mark" aria-hidden="true"></span>CAPS</a>
+  <button class="menu" aria-expanded="false" aria-controls="nav">Menu</button>
+  <nav id="nav" class="links"><a href="../index.html">Home</a><a href="../modules/index.html" aria-current="page">Modules</a><a href="../cli/index.html">CLI guide</a><a href="../cli/reference.html">Command reference</a><a href="../tutorials/index.html">Tutorials</a><a href="../theory/index.html">Theory</a><a href="../python.html">Python</a><a href="../manual/index.html">Studio tour</a><a href="https://github.com/MuhammadUzairRiaz/CAPS">GitHub</a></nav>
+</header>
+<div class="doc">
+<nav class="toc" aria-label="On this page"><h2>Modules</h2><h3 class="stage-h"><i class="dot st-start"></i>Get started</h3><a href="start.html">Start</a><a href="studio.html" aria-current="page" class="on">Studio</a><h3 class="stage-h"><i class="dot st-build"></i>Build</h3><a href="molecule.html">Molecule builder</a><a href="polymer.html">Polymer builder</a><a href="polymer-cell.html">Polymer cell</a><a href="blend.html">Blend</a><a href="packing.html">Packing</a><a href="solvation.html">Solvation</a><a href="crystal.html">Crystal</a><a href="surface.html">Surface &amp; interface</a><a href="nanostructure.html">Nanostructure</a><a href="biomolecule.html">Biomolecule</a><h3 class="stage-h"><i class="dot st-prepare"></i>Prepare</h3><a href="force-field.html">Force field</a><a href="minimise.html">Minimise</a><a href="equilibrate.html">Equilibrate</a><h3 class="stage-h"><i class="dot st-run"></i>Run</h3><a href="dynamics.html">Dynamics</a><a href="coarse-grained.html">Coarse-grained</a><a href="dpd.html">DPD</a><a href="adsorption.html">Adsorption &amp; sorption</a><a href="dft.html">DFT workbench</a><h3 class="stage-h"><i class="dot st-react"></i>React</h3><a href="react.html">React</a><h3 class="stage-h"><i class="dot st-out"></i>Analyse &amp; export</h3><a href="analyze.html">Analyze</a><a href="export.html">Export</a><a href="jobs.html">Jobs</a><a href="project.html">Project &amp; methods</a></nav>
+<main>
+<header class="mod-hero"><p class="eyebrow"><i class="dot st-start"></i>Get started · module 02</p><h1>Studio</h1><p class="lede">Where every structure opens: a 3D view with editing tools, the project tree, the inspector, file checks and quick analysis of the frame shown. The module bar along the top takes you to every other page.</p><p class="where"><b>Open it</b> <span class="ui">Top bar</span><i>›</i><span class="ui">Studio</span></p><dl class="io"><div><dt>You start with</dt><dd>Any structure you built or opened.</dd></div><div><dt>You get</dt><dd>Edits, selections, measurements, saved files and figures.</dd></div></dl></header>
+<figure class="shot"><button type="button" class="zoom" aria-label="Show full size"><img src="../manual/img/02_studio.jpg" alt="Studio: 3D view, project tree, properties, inspector and the analysis tabs along the bottom." width="1440" height="900" loading="eager" decoding="async"></button><figcaption><strong>Studio</strong>: 3D view, project tree, properties, inspector and the analysis tabs along the bottom.</figcaption></figure>
+<h2 id="steps">Step by step</h2><ol class="stepper"><li><div><h3>Find your way</h3><p>The <strong>module bar</strong> along the top runs in working order: Studio · Build, Polymer cell, Packing · Force field, Minimise, Equilibrate, Dynamics, React · Analyze, Export · Jobs, Bench. The gear opens Settings.</p><p>Press <strong>⌘K</strong> (Ctrl+K) to find any page, builder or command by name.</p></div></li><li><div><h3>Follow the pipeline strip</h3><p>Structure → Made by → Force field → Minimise → Equilibrate → Dynamics → Export. A step turns green when done; click any step to go to its page. Minimise, Equilibrate and Dynamics are optional.</p></div></li><li><div><h3>Look and edit</h3><p>Click an atom to pick it, drag to rotate, ⇧-drag to pan. The toolbar selects, moves, rotates, draws bonds, adds hydrogens and rings, measures and colours.</p><p>Each open structure has its own tab; <span class="ui">+</span> opens another.</p></div></li><li><div><h3>Use the project tree</h3><p>Every structure in the project, with <strong>Edit</strong> (reopens the builder that made it, with its settings), <strong>Delete</strong> (twice to confirm; files on disk stay) and <strong>Copy structure</strong> to try a change on a duplicate.</p></div></li><li><div><h3>Check and save</h3><p><strong>Validation</strong> › <span class="ui">All checks…</span> lists every file check. The <strong>File</strong> tab saves as LAMMPS data, PDB, XYZ, mol2, CIF or a VASP POSCAR.</p></div></li><li><div><h3>Quick analysis</h3><p>The bottom tabs analyse the frame shown: g(r), Minimisation, Thermo, Molecules, Network, Around atom, Chains.</p></div></li></ol>
+<h2 id="scripted">The same without the Studio</h2><p class="muted">Every Studio page calls the same core as the <code>caps</code> command and the <code>caps</code> Python package, so a step you clicked can be repeated in a script.</p>
+<div class="tabs" role="tablist"><button role="tab" type="button" aria-selected="true" data-tab="0">Command line</button><button role="tab" type="button" aria-selected="false" data-tab="1">Python</button></div>
+<div class="tabpanel" data-panel="0"><div class="code" data-lang="shell"><pre><code>caps check cell.data --report checks.md
+caps render cell.data -o cell.png --style ball --colour molecule
+caps convert cell.data cell.pdb</code></pre></div></div><div class="tabpanel" data-panel="1" hidden><div class="code" data-lang="Python"><pre><code>import caps
+
+d = caps.open(&quot;cell.data&quot;)
+print(d.checks())
+d.render(&quot;cell.png&quot;, style=&quot;ball_and_stick&quot;)
+d.save(&quot;cell.pdb&quot;)</code></pre></div></div>
+<h2 id="next">Where to go next</h2><div class="cards next"><a class="card shot-card" href="polymer.html"><img src="../manual/img/04_polymer.jpg" alt="" loading="lazy" width="1440" height="900"><span class="num"><i class="dot st-build"></i>Build</span><b>Polymer builder</b><span>114 repeat units and 21 copolymers, or your own SMILES; architecture, sequence, composition, tacticity and end groups.</span></a><a class="card shot-card" href="force-field.html"><img src="../manual/img/06_field.jpg" alt="" loading="lazy" width="1440" height="900"><span class="num"><i class="dot st-prepare"></i>Prepare</span><b>Force field</b><span>Type every atom from SMARTS rules, set charges, fill any missing term and give each part of a composite its own force field.</span></a></div>
+<nav class="pager"><a href="start.html"><small>Previous</small>Start</a><a class="next" href="molecule.html"><small>Next</small>Molecule builder</a></nav>
+</main>
+</div>
+<footer class="foot"><span>CAPS 0.1.0 · generated by <code>tools/docs/build_site.py</code> from the program itself</span><a href="https://github.com/MuhammadUzairRiaz/CAPS">github.com/MuhammadUzairRiaz/CAPS</a></footer>
+</body>
+</html>

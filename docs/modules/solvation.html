@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Solvation · CAPS Studio</title>
+<meta name="description" content="Put a solute in a box of solvent with ions: the box from an edge, a padding or a, b, c; a solvent and its model; and salt at a concentration, or just enough to neutralise.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/site.css">
+
+<script defer src="../assets/site.js"></script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="../index.html"><span class="mark" aria-hidden="true"></span>CAPS</a>
+  <button class="menu" aria-expanded="false" aria-controls="nav">Menu</button>
+  <nav id="nav" class="links"><a href="../index.html">Home</a><a href="../modules/index.html" aria-current="page">Modules</a><a href="../cli/index.html">CLI guide</a><a href="../cli/reference.html">Command reference</a><a href="../tutorials/index.html">Tutorials</a><a href="../theory/index.html">Theory</a><a href="../python.html">Python</a><a href="../manual/index.html">Studio tour</a><a href="https://github.com/MuhammadUzairRiaz/CAPS">GitHub</a></nav>
+</header>
+<div class="doc">
+<nav class="toc" aria-label="On this page"><h2>Modules</h2><h3 class="stage-h"><i class="dot st-start"></i>Get started</h3><a href="start.html">Start</a><a href="studio.html">Studio</a><h3 class="stage-h"><i class="dot st-build"></i>Build</h3><a href="molecule.html">Molecule builder</a><a href="polymer.html">Polymer builder</a><a href="polymer-cell.html">Polymer cell</a><a href="blend.html">Blend</a><a href="packing.html">Packing</a><a href="solvation.html" aria-current="page" class="on">Solvation</a><a href="crystal.html">Crystal</a><a href="surface.html">Surface &amp; interface</a><a href="nanostructure.html">Nanostructure</a><a href="biomolecule.html">Biomolecule</a><h3 class="stage-h"><i class="dot st-prepare"></i>Prepare</h3><a href="force-field.html">Force field</a><a href="minimise.html">Minimise</a><a href="equilibrate.html">Equilibrate</a><h3 class="stage-h"><i class="dot st-run"></i>Run</h3><a href="dynamics.html">Dynamics</a><a href="coarse-grained.html">Coarse-grained</a><a href="dpd.html">DPD</a><a href="adsorption.html">Adsorption &amp; sorption</a><a href="dft.html">DFT workbench</a><h3 class="stage-h"><i class="dot st-react"></i>React</h3><a href="react.html">React</a><h3 class="stage-h"><i class="dot st-out"></i>Analyse &amp; export</h3><a href="analyze.html">Analyze</a><a href="export.html">Export</a><a href="jobs.html">Jobs</a><a href="project.html">Project &amp; methods</a></nav>
+<main>
+<header class="mod-hero"><p class="eyebrow"><i class="dot st-build"></i>Build · module 08</p><h1>Solvation</h1><p class="lede">Put a solute in a box of solvent with ions: the box from an edge, a padding or a, b, c; a solvent and its model; and salt at a concentration, or just enough to neutralise.</p><p class="where"><b>Open it</b> <span class="ui">Build</span><i>›</i><span class="ui">Solvation…</span></p><dl class="io"><div><dt>You start with</dt><dd>A solute (the open structure), or nothing for a box of pure solvent.</dd></div><div><dt>You get</dt><dd>A solvated, neutral or salted system packed by CAPS Pack.</dd></div></dl></header>
+<figure class="shot"><button type="button" class="zoom" aria-label="Show full size"><img src="../manual/img/21_solvation.jpg" alt="Solvation &amp; ions: box, solvent model and ions." width="1440" height="900" loading="eager" decoding="async"></button><figcaption><strong>Solvation &amp; ions</strong>: box, solvent model and ions.</figcaption></figure>
+<h2 id="steps">Step by step</h2><ol class="stepper"><li><div><h3>Set the box</h3><p>Cubic (edge 30 Å), rectangular, or padded (10 Å around the solute; chosen automatically when a structure is open). Minimum distance 2.0 Å.</p></div></li><li><div><h3>Choose the solvent</h3><p>The solvent and its model (TIP4P/2005 first for water), its density, or a number of molecules.</p></div></li><li><div><h3>Add ions</h3><p>None, Neutralise, a <strong>Concentration</strong> (default; salt and mol/L) or Custom counts of cations and anions.</p></div></li><li><div><h3>Press Solvate</h3><p>Packing progress is shown; the result opens as a new structure.</p></div></li></ol>
+<h2 id="scripted">The same without the Studio</h2><p class="muted">Every Studio page calls the same core as the <code>caps</code> command and the <code>caps</code> Python package, so a step you clicked can be repeated in a script.</p>
+<div class="tabs" role="tablist"><button role="tab" type="button" aria-selected="true" data-tab="0">Command line</button><button role="tab" type="button" aria-selected="false" data-tab="1">Python</button></div>
+<div class="tabpanel" data-panel="0"><div class="code" data-lang="shell"><pre><code>caps solvate solute.pdb -o solvated.data --padding 10 --solvent water \
+    --model TIP4P/2005 --salt NaCl --conc 0.15</code></pre></div></div><div class="tabpanel" data-panel="1" hidden><div class="code" data-lang="Python"><pre><code>import caps
+from caps import build
+
+solute = caps.open(&quot;solute.pdb&quot;)
+box = build.solvate(solute, padding=10, solvent=&quot;water&quot;, salt=&quot;NaCl&quot;, concentration=0.15)
+box.save(&quot;solvated.data&quot;)</code></pre></div></div>
+<h2 id="next">Where to go next</h2><div class="cards next"><a class="card shot-card" href="force-field.html"><img src="../manual/img/06_field.jpg" alt="" loading="lazy" width="1440" height="900"><span class="num"><i class="dot st-prepare"></i>Prepare</span><b>Force field</b><span>Type every atom from SMARTS rules, set charges, fill any missing term and give each part of a composite its own force field.</span></a><a class="card shot-card" href="minimise.html"><img src="../manual/img/07_relax.jpg" alt="" loading="lazy" width="1440" height="900"><span class="num"><i class="dot st-prepare"></i>Prepare</span><b>Minimise</b><span>Remove close contacts, compress a low-density cell to its target and relax the box.</span></a></div>
+<nav class="pager"><a href="packing.html"><small>Previous</small>Packing</a><a class="next" href="crystal.html"><small>Next</small>Crystal</a></nav>
+</main>
+</div>
+<footer class="foot"><span>CAPS 0.1.0 · generated by <code>tools/docs/build_site.py</code> from the program itself</span><a href="https://github.com/MuhammadUzairRiaz/CAPS">github.com/MuhammadUzairRiaz/CAPS</a></footer>
+</body>
+</html>

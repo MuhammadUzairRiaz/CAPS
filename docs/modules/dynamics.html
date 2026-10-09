@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dynamics · CAPS Studio</title>
+<meta name="description" content="Run molecular dynamics directly in CAPS with modern thermostats and barostats, bond constraints and multiple time steps — or write the same run as a deck for LAMMPS or GROMACS.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/site.css">
+
+<script defer src="../assets/site.js"></script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="../index.html"><span class="mark" aria-hidden="true"></span>CAPS</a>
+  <button class="menu" aria-expanded="false" aria-controls="nav">Menu</button>
+  <nav id="nav" class="links"><a href="../index.html">Home</a><a href="../modules/index.html" aria-current="page">Modules</a><a href="../cli/index.html">CLI guide</a><a href="../cli/reference.html">Command reference</a><a href="../tutorials/index.html">Tutorials</a><a href="../theory/index.html">Theory</a><a href="../python.html">Python</a><a href="../manual/index.html">Studio tour</a><a href="https://github.com/MuhammadUzairRiaz/CAPS">GitHub</a></nav>
+</header>
+<div class="doc">
+<nav class="toc" aria-label="On this page"><h2>Modules</h2><h3 class="stage-h"><i class="dot st-start"></i>Get started</h3><a href="start.html">Start</a><a href="studio.html">Studio</a><h3 class="stage-h"><i class="dot st-build"></i>Build</h3><a href="molecule.html">Molecule builder</a><a href="polymer.html">Polymer builder</a><a href="polymer-cell.html">Polymer cell</a><a href="blend.html">Blend</a><a href="packing.html">Packing</a><a href="solvation.html">Solvation</a><a href="crystal.html">Crystal</a><a href="surface.html">Surface &amp; interface</a><a href="nanostructure.html">Nanostructure</a><a href="biomolecule.html">Biomolecule</a><h3 class="stage-h"><i class="dot st-prepare"></i>Prepare</h3><a href="force-field.html">Force field</a><a href="minimise.html">Minimise</a><a href="equilibrate.html">Equilibrate</a><h3 class="stage-h"><i class="dot st-run"></i>Run</h3><a href="dynamics.html" aria-current="page" class="on">Dynamics</a><a href="coarse-grained.html">Coarse-grained</a><a href="dpd.html">DPD</a><a href="adsorption.html">Adsorption &amp; sorption</a><a href="dft.html">DFT workbench</a><h3 class="stage-h"><i class="dot st-react"></i>React</h3><a href="react.html">React</a><h3 class="stage-h"><i class="dot st-out"></i>Analyse &amp; export</h3><a href="analyze.html">Analyze</a><a href="export.html">Export</a><a href="jobs.html">Jobs</a><a href="project.html">Project &amp; methods</a></nav>
+<main>
+<header class="mod-hero"><p class="eyebrow"><i class="dot st-run"></i>Run · module 16</p><h1>Dynamics</h1><p class="lede">Run molecular dynamics directly in CAPS with modern thermostats and barostats, bond constraints and multiple time steps — or write the same run as a deck for LAMMPS or GROMACS.</p><p class="where"><b>Open it</b> <span class="ui">Top bar</span><i>›</i><span class="ui">Dynamics</span></p><dl class="io"><div><dt>You start with</dt><dd>A structure with a force field, usually minimised or equilibrated.</dd></div><div><dt>You get</dt><dd>A trajectory, thermodynamic log and the final state; or input decks for another engine.</dd></div></dl></header>
+<figure class="shot"><button type="button" class="zoom" aria-label="Show full size"><img src="../manual/img/08_dynamics.jpg" alt="Dynamics · CAPS Dynamics with the ensemble, thermostat and barostat settings and live snapshots." width="1440" height="900" loading="eager" decoding="async"></button><figcaption><strong>Dynamics · CAPS Dynamics</strong> with the ensemble, thermostat and barostat settings and live snapshots.</figcaption></figure>
+<h2 id="steps">Step by step</h2><ol class="stepper"><li><div><h3>Choose the ensemble and time step</h3><p><span class="ui">NVE</span>, <span class="ui">NVT</span> (default), <span class="ui">NPT</span> or <span class="ui">NPH</span>; Δt 1 fs. For 2 fs, constrain bonds to hydrogen (<span class="ui">SHAKE</span>, <span class="ui">RATTLE (as LAMMPS)</span> or <span class="ui">LINCS (as GROMACS)</span>) or use r-RESPA.</p></div></li><li><div><h3>Set the thermostat and barostat</h3><p>Thermostat: <span class="ui">Bussi velocity rescaling</span> (default), Langevin (BAOAB) or Nosé–Hoover chain; T 300 K, τ_T 100 fs.</p><p>Barostat: <span class="ui">Stochastic cell rescaling</span> (default), Berendsen (early relaxation only) or MTK; P 1 atm, τ_P 1000 fs; coupling isotropic, per axis, only z, only x and y, or full shape.</p></div></li><li><div><h3>Check the interactions</h3><p>Electrostatics by damped shifted force or particle-mesh Ewald, the cut-off, and the mixing rule (the force field's own by default).</p></div></li><li><div><h3>Set the length and the output</h3><p>Steps 20 000, a frame every 1000 steps, a checkpoint interval, and <span class="ui">Run on</span>: this machine or a host from Settings.</p></div></li><li><div><h3>Press Run</h3><p>Snapshots and thermodynamics update live; <span class="ui">Stop</span> or pause at any time and continue later.</p><p>Prefer another engine? Under <strong>Export to other engines</strong> pick LAMMPS, GROMACS or both and press <span class="ui">Save input deck…</span>.</p></div></li></ol>
+<h2 id="scripted">The same without the Studio</h2><p class="muted">Every Studio page calls the same core as the <code>caps</code> command and the <code>caps</code> Python package, so a step you clicked can be repeated in a script.</p>
+<div class="tabs" role="tablist"><button role="tab" type="button" aria-selected="true" data-tab="0">Command line</button><button role="tab" type="button" aria-selected="false" data-tab="1">Python</button></div>
+<div class="tabpanel" data-panel="0"><div class="code" data-lang="shell"><pre><code>caps md cell_eq.data -o cell_md.data --steps 20000 --dt 1 --temp 300 \
+    --thermostat bussi --barostat crescale --pressure 1 \
+    --dump traj.lammpstrj --every 1000 --log thermo.csv</code></pre></div></div><div class="tabpanel" data-panel="1" hidden><div class="code" data-lang="Python"><pre><code>import caps
+
+d = caps.open(&quot;cell_eq.data&quot;)
+d.md(steps=20000, dt=1.0, temperature=300, thermostat=&quot;bussi&quot;,
+     barostat=&quot;crescale&quot;, pressure=1.0, frame_every=1000)
+d.save_trajectory(&quot;traj.lammpstrj&quot;)</code></pre></div></div>
+<h2 id="next">Where to go next</h2><div class="cards next"><a class="card shot-card" href="analyze.html"><img src="../manual/img/18_analyze.jpg" alt="" loading="lazy" width="1440" height="900"><span class="num"><i class="dot st-out"></i>Analyse &amp; export</span><b>Analyze</b><span>Density, g(r), chain statistics, Tg, moduli, diffusion, free volume, interfaces and crosslink density — each with CSV.</span></a><a class="card shot-card" href="export.html"><img src="../manual/img/19_export.jpg" alt="" loading="lazy" width="1440" height="900"><span class="num"><i class="dot st-out"></i>Analyse &amp; export</span><b>Export</b><span>LAMMPS, GROMACS, DL_POLY 4, AMBER/OpenMM and moltemplate decks, checked before they are written.</span></a></div>
+<h2 id="read">Read more</h2><div class="cards minis"><a class="card mini" href="../theory/integrators.html"><span class="num">Theory</span><b>Integrators</b></a><a class="card mini" href="../theory/thermostats.html"><span class="num">Theory</span><b>Thermostats</b></a><a class="card mini" href="../theory/barostats.html"><span class="num">Theory</span><b>Barostats</b></a></div>
+<nav class="pager"><a href="equilibrate.html"><small>Previous</small>Equilibrate</a><a class="next" href="coarse-grained.html"><small>Next</small>Coarse-grained</a></nav>
+</main>
+</div>
+<footer class="foot"><span>CAPS 0.1.0 · generated by <code>tools/docs/build_site.py</code> from the program itself</span><a href="https://github.com/MuhammadUzairRiaz/CAPS">github.com/MuhammadUzairRiaz/CAPS</a></footer>
+</body>
+</html>

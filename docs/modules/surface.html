@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Surface &amp; interface · CAPS Studio</title>
+<meta name="description" content="Cleave a slab from a crystal, choose its termination and vacuum, and build interfaces: a polymer film grown against the surface, a grafted brush, or a stack of layers with the lattice mismatch shared between them.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/site.css">
+
+<script defer src="../assets/site.js"></script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="../index.html"><span class="mark" aria-hidden="true"></span>CAPS</a>
+  <button class="menu" aria-expanded="false" aria-controls="nav">Menu</button>
+  <nav id="nav" class="links"><a href="../index.html">Home</a><a href="../modules/index.html" aria-current="page">Modules</a><a href="../cli/index.html">CLI guide</a><a href="../cli/reference.html">Command reference</a><a href="../tutorials/index.html">Tutorials</a><a href="../theory/index.html">Theory</a><a href="../python.html">Python</a><a href="../manual/index.html">Studio tour</a><a href="https://github.com/MuhammadUzairRiaz/CAPS">GitHub</a></nav>
+</header>
+<div class="doc">
+<nav class="toc" aria-label="On this page"><h2>Modules</h2><h3 class="stage-h"><i class="dot st-start"></i>Get started</h3><a href="start.html">Start</a><a href="studio.html">Studio</a><h3 class="stage-h"><i class="dot st-build"></i>Build</h3><a href="molecule.html">Molecule builder</a><a href="polymer.html">Polymer builder</a><a href="polymer-cell.html">Polymer cell</a><a href="blend.html">Blend</a><a href="packing.html">Packing</a><a href="solvation.html">Solvation</a><a href="crystal.html">Crystal</a><a href="surface.html" aria-current="page" class="on">Surface &amp; interface</a><a href="nanostructure.html">Nanostructure</a><a href="biomolecule.html">Biomolecule</a><h3 class="stage-h"><i class="dot st-prepare"></i>Prepare</h3><a href="force-field.html">Force field</a><a href="minimise.html">Minimise</a><a href="equilibrate.html">Equilibrate</a><h3 class="stage-h"><i class="dot st-run"></i>Run</h3><a href="dynamics.html">Dynamics</a><a href="coarse-grained.html">Coarse-grained</a><a href="dpd.html">DPD</a><a href="adsorption.html">Adsorption &amp; sorption</a><a href="dft.html">DFT workbench</a><h3 class="stage-h"><i class="dot st-react"></i>React</h3><a href="react.html">React</a><h3 class="stage-h"><i class="dot st-out"></i>Analyse &amp; export</h3><a href="analyze.html">Analyze</a><a href="export.html">Export</a><a href="jobs.html">Jobs</a><a href="project.html">Project &amp; methods</a></nav>
+<main>
+<header class="mod-hero"><p class="eyebrow"><i class="dot st-build"></i>Build · module 10</p><h1>Surface &amp; interface</h1><p class="lede">Cleave a slab from a crystal, choose its termination and vacuum, and build interfaces: a polymer film grown against the surface, a grafted brush, or a stack of layers with the lattice mismatch shared between them.</p><p class="where"><b>Open it</b> <span class="ui">Build</span><i>›</i><span class="ui">Surface / slab…</span></p><dl class="io"><div><dt>You start with</dt><dd>A crystal (the open one, or a CIF).</dd></div><div><dt>You get</dt><dd>A slab, or a slab with a polymer film — the surface held in place for Minimise.</dd></div></dl></header>
+<figure class="shot"><button type="button" class="zoom" aria-label="Show full size"><img src="../manual/img/15_surface.jpg" alt="Surface &amp; interface builder: cleave, polymer film and the layer stack." width="1440" height="900" loading="eager" decoding="async"></button><figcaption><strong>Surface &amp; interface builder</strong>: cleave, polymer film and the layer stack.</figcaption></figure>
+<h2 id="steps">Step by step</h2><ol class="stepper"><li><div><h3>Cleave</h3><p>Miller indices h k l (default 0 0 1), the source crystal or <span class="ui">Open CIF…</span>, the thickness in layers (3), vacuum (15 Å), the termination and a surface supercell. Tick <span class="ui">Rectangular surface cell (needed for a film)</span> for a film.</p></div></li><li><div><h3>Add a polymer film (optional)</h3><p>Switch on <strong>Polymer film</strong>: a free film grown against the surface, or a brush grafted to surface sites (σ in chains/nm²). Thickness 25 Å, density 0.9 g/cm³, units per chain and the gap to the surface.</p></div></li><li><div><h3>Stack layers (optional)</h3><p><span class="ui">Add layer</span>: this slab again (a sandwich) or a structure file; or a Polymer cell. <strong>Lattice matching</strong> shows the strain per layer, which can be shared between them.</p></div></li><li><div><h3>Build</h3><p><span class="ui">Build slab</span>, or <span class="ui">Build interface</span> with a film or layers. The surface is molecule 1 and is held in place in Minimise.</p></div></li><li><div><h3>Type each part</h3><p>Force field › <strong>By group</strong>: an inorganic model for the slab (for example IFF, clay or glass sets) and the polymer's own force field for the film. Then Analyze gives the interface density profile, adhesion and pull-out.</p></div></li></ol>
+<h2 id="scripted">The same without the Studio</h2><p class="muted">Every Studio page calls the same core as the <code>caps</code> command and the <code>caps</code> Python package, so a step you clicked can be repeated in a script.</p>
+<div class="tabs" role="tablist"><button role="tab" type="button" aria-selected="true" data-tab="0">Command line</button></div>
+<div class="tabpanel" data-panel="0"><div class="code" data-lang="shell"><pre><code>caps surface quartz.cif -o slab.data --hkl 0,0,1 --layers 3 --vacuum 15 --list
+caps interface quartz.cif -o film.data --units &#x27;*CC(C)=CC*&#x27; --film 30 \
+    --film-density 0.9 --chains 8 --dp 10</code></pre></div></div>
+<h2 id="next">Where to go next</h2><div class="cards next"><a class="card shot-card" href="force-field.html"><img src="../manual/img/06_field.jpg" alt="" loading="lazy" width="1440" height="900"><span class="num"><i class="dot st-prepare"></i>Prepare</span><b>Force field</b><span>Type every atom from SMARTS rules, set charges, fill any missing term and give each part of a composite its own force field.</span></a><a class="card shot-card" href="minimise.html"><img src="../manual/img/07_relax.jpg" alt="" loading="lazy" width="1440" height="900"><span class="num"><i class="dot st-prepare"></i>Prepare</span><b>Minimise</b><span>Remove close contacts, compress a low-density cell to its target and relax the box.</span></a></div>
+<h2 id="read">Read more</h2><div class="cards minis"><a class="card mini" href="../tutorials/dft-surfaces.html"><span class="num">Tutorial</span><b>DFT surfaces</b></a></div>
+<nav class="pager"><a href="crystal.html"><small>Previous</small>Crystal</a><a class="next" href="nanostructure.html"><small>Next</small>Nanostructure</a></nav>
+</main>
+</div>
+<footer class="foot"><span>CAPS 0.1.0 · generated by <code>tools/docs/build_site.py</code> from the program itself</span><a href="https://github.com/MuhammadUzairRiaz/CAPS">github.com/MuhammadUzairRiaz/CAPS</a></footer>
+</body>
+</html>
