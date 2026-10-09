@@ -453,11 +453,14 @@
                 <Button Classes="small" Click="OnTestHost" IsEnabled="{Binding HostIdle}" Margin="0,0,8,6"><StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="link" Size="13" VerticalAlignment="Center" /><TextBlock Text="Test connection" VerticalAlignment="Center" /></StackPanel></Button>
                 <Button Classes="small" Click="OnInstallCaps" IsEnabled="{Binding HostInstallIdle}" Margin="0,0,8,6"
                         ToolTip.Tip="Builds the caps command line on the host at this Studio's version, as a short job (never on the login node when there is a queue)"><StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="download" Size="13" VerticalAlignment="Center" /><TextBlock Text="Install / update caps" VerticalAlignment="Center" /></StackPanel></Button>
+                <Button Classes="small" Click="OnScalingTest" IsEnabled="{Binding HostIdle}" Margin="0,0,8,6"
+                        ToolTip.Tip="The same short MD at 1, 2, 4 … threads up to a whole node (one array job): ns/day, speedup and efficiency, so you can choose the cores per run"><StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="chart" Size="13" VerticalAlignment="Center" /><TextBlock Text="Scaling test" VerticalAlignment="Center" /></StackPanel></Button>
                 <Button Classes="small" Click="OnFindHostJobs" IsEnabled="{Binding HostIdle}" Margin="0,0,8,6"
                         ToolTip.Tip="Jobs started on the host with caps job new appear in Jobs and are followed like the Studio's own"><StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="search" Size="13" VerticalAlignment="Center" /><TextBlock Text="Find my jobs" VerticalAlignment="Center" /></StackPanel></Button>
               </WrapPanel>
               <TextBlock Text="{Binding HostTestText}" Classes="muted" FontSize="12" TextWrapping="Wrap" MaxWidth="620" HorizontalAlignment="Left" />
               <TextBlock Text="{Binding HostInstallText}" Classes="muted" FontSize="12" TextWrapping="Wrap" MaxWidth="620" HorizontalAlignment="Left" />
+              <SelectableTextBlock Text="{Binding HostScalingText}" FontFamily="{DynamicResource Mono}" FontSize="11.5" IsVisible="{Binding HostScalingText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
             </StackPanel>
             <StackPanel Spacing="10">
               <DockPanel>

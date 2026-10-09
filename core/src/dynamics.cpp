@@ -654,6 +654,7 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
   rep.steps = o.steps;
   rep.ns_per_day = rep.seconds > 0 ? o.steps * dt * 1e-6 / rep.seconds * 86400 : 0;
   rep.list_builds = ev.list_builds();
+  rep.threads = ev.threads();
   char b[256];
   std::snprintf(b, sizeof b, "%lld steps of %.2f fs (%.1f ps) in %.1f s · %.2f ns/day · %d neighbour-list builds · %d threads",
                 static_cast<long long>(o.steps), dt, o.steps * dt * 1e-3, rep.seconds, rep.ns_per_day, rep.list_builds, ev.threads());

@@ -308,7 +308,7 @@ const std::set<std::string>& known_options() {
     "--molecules", "--n", "--n-term", "--names", "--neutral", "--neutralise", "--new-velocities", "--no-cell",
     "--no-cleanup", "--no-coulomb", "--no-ions", "--no-orthogonal", "--no-pbc", "--no-pushoff", "--no-relax",
     "--no-tail", "--normal", "--noscfix", "--nt", "--out", "--overlay", "--padding", "--pair", "--particles",
-    "--ops", "--ops-file", "--checkpoint-every", "--checkpoint", "--resume", "--resume-at", "--resume-points", "--resume-curve", "--height", "--top-ratio", "--passivate", "--pattern", "--per-cycle", "--perspective", "--pfinal", "--ph", "--pitch", "--pmax", "--pme",
+    "--ops", "--ops-file", "--checkpoint-every", "--checkpoint", "--resume", "--resume-at", "--bench-json", "--resume-points", "--resume-curve", "--height", "--top-ratio", "--passivate", "--pattern", "--per-cycle", "--perspective", "--pfinal", "--ph", "--pitch", "--pmax", "--pme",
     "--pme-order", "--pme-spacing", "--ppii", "--press", "--pressure", "--primitive", "--print-protocol", "--probe", "--progress-file",
     "--props", "--protocol", "--ps", "--qdirect", "--qmax", "--quick", "--quiet", "--radius", "--ramp", "--rate",
     "--ratio", "--repeats", "--report", "--rmax", "--salt", "--samples", "--scale", "--seed", "--sequence", "--sf",
@@ -700,6 +700,8 @@ int job_usage() {
                "  caps job resume DIR [--submit] [--time …]   a job stopped near its time limit, again from its checkpoint\n"
                "  caps job list [--json]       every job folder under the root (the Studio's Find my jobs)\n"
                "  caps job cancel DIR          scancel / qdel / kill\n"
+               "  caps job scaling --input STRUCTURE [--threads 1,8,32,full] [--steps 2000] [--submit]   threads vs ns/day on one node\n"
+               "  caps job collect-bench DIR   the scaling check's table (ns/day, speedup, efficiency, a suggested thread count)\n"
                "  caps job template            the built-in job script ({placeholders})\n");
   return 2;
 }
@@ -977,6 +979,73 @@ int job_main(int argc, char** argv) {
       if (a.opt.count("--json")) std::printf("%s\n", out.dump(0).c_str());
       else std::printf("%s\n%s\n", f.dir.c_str(), out.has("id") ? ("submitted: " + out["id"].str()).c_str() : ("next: caps job submit " + f.dir).c_str());
       return out.has("submitted") && !out["submitted"].boolean() ? 1 : 0;
+    }
+    if (a.sub == "scaling") {   // the same short MD at several thread counts, one array task each, on one node shape
+      HostProfile h = job_profile(a);
+      if (a.inputs.empty()) throw std::invalid_argument("--input STRUCTURE (a cell of the size you will run)");
+      std::vector<std::string> tlist;
+      if (a.opt.count("--threads")) {
+        std::stringstream ss(a.opt.at("--threads"));
+        std::string x;
+        while (std::getline(ss, x, ',')) if (!x.empty()) tlist.push_back(x);
+      } else {
+        for (int t : scaling_threads(h.node_cores)) tlist.push_back(std::to_string(t));
+      }
+      int most = 1;
+      for (const auto& t : tlist) if (t != "full") most = std::max(most, std::stoi(t));
+      const int cores = h.node_cores > 0 ? h.node_cores : most;
+      const std::string steps = a.opt.count("--steps") ? a.opt.at("--steps") : "2000";
+      const std::string input = std::filesystem::path(a.inputs[0]).filename().string();
+      std::vector<ArrayTask> tasks;
+      for (const auto& t : tlist) {
+        const std::string th = t == "full" ? std::to_string(cores) : t;
+        tasks.push_back({"scaling", "caps md " + input + " -o bench.data --steps " + steps + " --threads " + th + " --thermo 1000 --quiet --bench-json bench.json"});
+      }
+      JobRequest r;
+      r.kind = "bench";
+      r.inputs = a.inputs;
+      r.cpus = std::max(most, cores);   // every task gets the whole node: the measurement is not crowded
+      if (a.opt.count("--time")) r.time = a.opt.at("--time");
+      else r.time = "01:00:00";
+      JobFolder f = make_array_job(h, r, tasks);
+      Json out = Json::object();
+      out["dir"] = f.dir, out["job"] = f.job;
+      Json td = Json::array();
+      for (const auto& d : f.task_dirs) td.push_back(d);
+      out["tasks"] = td;
+      if (a.opt.count("--submit")) {
+        std::string msg;
+        mark_submitting(h, f);
+        const std::string id = submit_script(h, f, int(tasks.size()), &msg);
+        if (id.empty()) out["submitted"] = false, out["error"] = msg;
+        else mark_submitted(h, f, id), out["submitted"] = true, out["id"] = id;
+      }
+      if (a.opt.count("--json")) std::printf("%s\n", out.dump(0).c_str());
+      else std::printf("%s\n%s · then: caps job collect-bench %s\n", f.dir.c_str(), out.has("id") ? ("submitted: " + out["id"].str()).c_str() : "not submitted", f.dir.c_str());
+      return 0;
+    }
+    if (a.sub == "collect-bench") {   // the scaling check's table from each task's bench.json
+      const std::string dir = a.pos.empty() ? std::string(".") : a.pos[0];
+      std::ifstream tl(std::filesystem::path(dir) / "tasks.txt");
+      if (!tl) throw std::invalid_argument(dir + " is not a scaling job (no tasks.txt)");
+      std::vector<Json> bench;
+      int waiting = 0;
+      for (std::string line; std::getline(tl, line);) {
+        if (line.empty()) continue;
+        const Json st = read_job_state(line);
+        const auto b = std::filesystem::path(job_live_dir(line, st)) / "bench.json";
+        if (!std::filesystem::exists(b)) { ++waiting; continue; }
+        std::ifstream bf(b);
+        std::stringstream ss;
+        ss << bf.rdbuf();
+        try { bench.push_back(Json::parse(ss.str())); } catch (const std::exception&) { ++waiting; }
+      }
+      Json t = scaling_table(bench);
+      t["waiting"] = double(waiting);
+      std::ofstream(std::filesystem::path(dir) / "scaling.json") << t.dump(1) << "\n";
+      if (a.opt.count("--json")) std::printf("%s\n", t.dump(0).c_str());
+      else std::printf("%s%s", scaling_text(t).c_str(), waiting ? (std::to_string(waiting) + " task(s) not finished yet\n").c_str() : "");
+      return 0;
     }
     if (a.sub == "submit") {
       const HostProfile h = job_profile(a);
@@ -3188,6 +3257,7 @@ int main(int argc, char** argv) {
     }
     if (cmd == "md") {
       if (!o.count("-o")) return usage();
+      const auto md_clock = std::chrono::steady_clock::now();   // setup + run, for --bench-json
       DynamicsOptions d;
       if (o.count("--steps")) d.steps = std::stoll(o["--steps"]);
       if (o.count("--dt")) d.dt = std::stod(o["--dt"]);
@@ -3291,6 +3361,19 @@ int main(int argc, char** argv) {
       }
       std::filesystem::remove("resume.txt");   // finished: nothing to continue
       live.done(true);
+      if (o.count("--bench-json")) {   // a scaling check's measurement (caps job scaling)
+        const double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - md_clock).count();
+        Json b = Json::object();
+        b["version"] = std::string(version_string()), b["commit"] = std::string(commit_string());
+        const char* node = std::getenv("SLURMD_NODENAME");
+        if (!node) node = std::getenv("HOSTNAME");
+        b["node"] = std::string(node ? node : "");
+        b["threads"] = double(rep.threads), b["atoms"] = double(s.atoms.size()), b["steps"] = double(rep.steps);
+        b["wall_s"] = wall, b["loop_s"] = rep.seconds, b["setup_s"] = std::max(0.0, wall - rep.seconds);
+        b["steps_per_s"] = rep.seconds > 0 ? double(rep.steps) / rep.seconds : 0.0;
+        b["ns_per_day"] = rep.ns_per_day;
+        std::ofstream(o["--bench-json"]) << b.dump(1) << "\n";
+      }
       const std::string out = o["-o"];
       auto ends = [&](const char* e) { return out.size() > 4 && out.substr(out.size() - 4) == e; };
       if (ends(".pdb")) write_pdb(s, out);

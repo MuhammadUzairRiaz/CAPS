@@ -115,6 +115,14 @@ int64_t last_frame_offset(const std::string& path);
 double eta_seconds(double fraction, double elapsed_s);
 double slurm_duration_seconds(const std::string& s);   // "1-02:03:04", "02:03:04", "03:04" → seconds; -1 unknown
 
+// A thread-scaling check (caps job scaling): the same short MD at several thread counts on one node. The counts to try
+// on a node of `cores`: powers of two below it, half the node and the whole node (0 cores: 1 … 32). The table from the
+// measurements (each task's bench.json): threads, ns/day, the speedup over the fewest threads and the parallel
+// efficiency (speedup / thread ratio), sorted by threads.
+std::vector<int> scaling_threads(int cores);
+Json scaling_table(const std::vector<Json>& bench);
+std::string scaling_text(const Json& table);
+
 // Everything a viewer needs since its last look, as JSON (caps job poll; the Studio parses this one object)
 struct PollRequest { std::string dir; int64_t log_offset = 0, progress_offset = 0, err_offset = 0; size_t max_bytes = 262144; };
 Json job_poll(const PollRequest& p, const std::string& squeue_line, const std::string& sacct_text);

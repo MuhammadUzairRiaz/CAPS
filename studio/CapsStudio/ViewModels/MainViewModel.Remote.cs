@@ -441,6 +441,7 @@ public sealed partial class MainViewModel
         if (h == null) { j.Add($"The host {r.Host} is no longer in Settings"); return; }
         if (r.Mode == "job") { await PollJob(j, h, r); return; }
         if (r.Mode == "install") { await PollInstall(j, h, r); return; }
+        if (r.Mode == "scaling") { await PollScaling(j, h, r); return; }
         r.Checking = true;
         try
         {

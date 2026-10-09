@@ -146,6 +146,7 @@ public partial class SettingsPage : PageBase
     private void OnResetTemplate(object? s, RoutedEventArgs e) => Vm.ResetHostJobScript();
     private async void OnInstallCaps(object? s, RoutedEventArgs e) => await Vm.InstallCapsOnHost();
     private async void OnFindHostJobs(object? s, RoutedEventArgs e) => await Vm.FindHostJobs();
+    private async void OnScalingTest(object? s, RoutedEventArgs e) => await Vm.ScalingTest();
     private void OnHostPreset(object? s, SelectionChangedEventArgs e)
     {
         if (s is ComboBox c && c.SelectedIndex >= 0) { Vm.ApplyHostPreset(c.SelectedIndex); c.SelectedIndex = -1; }
