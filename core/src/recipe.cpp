@@ -313,6 +313,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
     if (name.size() > 8 && name.compare(name.size() - 8, 8, "-dlfield") == 0) name.resize(name.size() - 8);
     std::string charges = text(T, "charges", "auto");
     std::string companion_note;   // charges "increments": whose charges they are
+    bool increments = false;      // the force field's own charges are bond increments (OPLS 2005, PCFF, COMPASS)
     ff.reset();
     try {
       if (name == "default") {
@@ -455,6 +456,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
             } catch (const FFError&) {}
           }
         }
+        increments = charges == "types" && !def.bond_increments.empty();
         if (!rep.missing.empty()) throw RecipeError(3, std::to_string(rep.missing.size()) + " parameters missing in " + def.name + " (first: " + rep.missing.front() + ")");
         ffname = def.name + (ua.empty() ? "" : " (united-atom: hydrogens on carbon folded into their carbons)");
         filled_terms = 0;
@@ -463,7 +465,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
         if (!filled_from.empty()) ffname += " (gaps filled from " + filled_from + ": " + std::to_string(filled_terms) + " terms)";
       }
     } catch (const RecipeError&) { throw; } catch (const std::exception& e) { throw RecipeError(3, e.what()); }
-    const std::string ch = !companion_note.empty() ? companion_note.substr(9) : charges == "qeq" ? "QEq" : charges == "gasteiger" ? "Gasteiger" : charges == "keep" ? "the file's" : charges == "auto" && ffname == "UFF" ? "no" : "from the force field";
+    const std::string ch = !companion_note.empty() ? companion_note.substr(9) : charges == "qeq" ? "QEq" : charges == "gasteiger" ? "Gasteiger" : charges == "keep" ? "the file's" : charges == "auto" && ffname == "UFF" ? "no" : increments ? "from the force field's bond increments" : "from the force field";
     std::vector<std::string> c;
     if (ffname == "UFF") c.push_back("rappe1992");
     else if (ffname.find("GAFF") != std::string::npos) c.push_back("wang2004");
@@ -476,6 +478,11 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
     for (auto& ps : res.manifest.steps)
       if (ps.engine == "field.assign") { ps = step("field.assign", ffname + " · charges " + ch, kv, "", c); found = true; }
     if (!found) res.manifest.steps.push_back(step("field.assign", ffname + " · charges " + ch, kv, "", c));
+    // the structure carries the charges the force field gives (what the engine files hold)
+    if (ff && ff->charge.size() == sys.atoms.size()) {
+      for (size_t i = 0; i < sys.atoms.size(); ++i) sys.atoms[i].charge = ff->charge[i];
+      sys.has_charges = true;
+    }
   };
   for (int k = 0; k < n; ++k) {
     const std::string& st = stages[size_t(k)];
@@ -1168,6 +1175,10 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
       for (int w = k + 1; w < n; ++w) report(w, stages[size_t(w)], "", "waiting", 0);
       throw RecipeError(4, st + ": " + e.what());
     }
+  }
+  // a polymer typed on one probe chain: the grown cell itself in the recipe's force field when no later stage typed it
+  if (!ff && r.has("type") && !s.atoms.empty()) {
+    try { type_now(s); } catch (const RecipeError&) { throw; } catch (const std::exception& e) { throw RecipeError(3, std::string("type: ") + e.what()); }
   }
   res.system = s;
   res.field = ff;
