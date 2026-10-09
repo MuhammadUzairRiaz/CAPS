@@ -1,0 +1,4 @@
+#!/bin/bash
+# A stand-in for ws_release [-F FS] NAME (tests only)
+[ "$1" = -F ] && shift 2
+rm -rf "$FAKE_WS/$1"

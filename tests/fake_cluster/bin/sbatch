@@ -1,0 +1,15 @@
+#!/bin/bash
+# A stand-in for SLURM's sbatch (tests only): sbatch --parsable SCRIPT runs the script in the background with the
+# variables SLURM sets (job id, cores, array task) and prints the id; one background run per array task.
+script="${@: -1}"
+id=$(( $(cat "$FAKE_STATE/next" 2>/dev/null || echo 1000) + 1 )); echo $id > "$FAKE_STATE/next"
+cpus=$(grep -m1 -- '--cpus-per-task=' "$script" | sed 's/.*=//')
+dir=$(grep -m1 -- '--chdir=' "$script" | sed 's/.*=//')
+arr=$(grep -m1 -- '--array=0-' "$script" | sed 's/.*=0-//')
+run() {
+  ( cd "$dir" && env SLURM_JOB_ID="$1" SLURM_CPUS_PER_TASK="$cpus" SLURM_ARRAY_TASK_ID="${2:-}" bash "$script" > "$dir/slurm-$1.out" 2> "$dir/slurm-$1.err"
+    echo done > "$FAKE_STATE/$1" ) > /dev/null 2>&1 &
+  echo $! > "$FAKE_STATE/$1.pid"
+}
+if [ -n "$arr" ]; then for i in $(seq 0 "$arr"); do run "${id}_$i" "$i"; done; else run "$id"; fi
+echo "$id"

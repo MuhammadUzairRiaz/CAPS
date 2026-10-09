@@ -1,0 +1,5 @@
+#!/bin/bash
+# A stand-in for squeue -h -j ID -o FORMAT (tests only): RUNNING while the background run lives
+while [ $# -gt 0 ]; do case "$1" in -j) id=$2; shift ;; esac; shift; done
+[ -f "$FAKE_STATE/$id.pid" ] && [ ! -f "$FAKE_STATE/$id" ] && echo "RUNNING|None|0:42|1:00:00|node001"
+exit 0
