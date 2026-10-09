@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>React · CAPS Studio</title>
+<meta name="description" content="Build crosslinked networks — sulfur-cured or peroxide-cured rubber, epoxy–amine, ENR with acids or MAH, esterification — with your own force field re-applied after every cycle.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/site.css">
+
+<script defer src="../assets/site.js"></script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="../index.html"><span class="mark" aria-hidden="true"></span>CAPS</a>
+  <button class="menu" aria-expanded="false" aria-controls="nav">Menu</button>
+  <nav id="nav" class="links"><a href="../index.html">Home</a><a href="../modules/index.html" aria-current="page">Modules</a><a href="../cli/index.html">CLI guide</a><a href="../cli/reference.html">Command reference</a><a href="../tutorials/index.html">Tutorials</a><a href="../theory/index.html">Theory</a><a href="../python.html">Python</a><a href="../manual/index.html">Studio tour</a><a href="https://github.com/MuhammadUzairRiaz/CAPS">GitHub</a></nav>
+</header>
+<div class="doc">
+<nav class="toc" aria-label="On this page"><h2>Modules</h2><h3 class="stage-h"><i class="dot st-start"></i>Get started</h3><a href="start.html">Start</a><a href="studio.html">Studio</a><h3 class="stage-h"><i class="dot st-build"></i>Build</h3><a href="molecule.html">Molecule builder</a><a href="polymer.html">Polymer builder</a><a href="polymer-cell.html">Polymer cell</a><a href="blend.html">Blend</a><a href="packing.html">Packing</a><a href="solvation.html">Solvation</a><a href="crystal.html">Crystal</a><a href="surface.html">Surface &amp; interface</a><a href="nanostructure.html">Nanostructure</a><a href="biomolecule.html">Biomolecule</a><h3 class="stage-h"><i class="dot st-prepare"></i>Prepare</h3><a href="force-field.html">Force field</a><a href="minimise.html">Minimise</a><a href="equilibrate.html">Equilibrate</a><h3 class="stage-h"><i class="dot st-run"></i>Run</h3><a href="dynamics.html">Dynamics</a><a href="coarse-grained.html">Coarse-grained</a><a href="dpd.html">DPD</a><a href="adsorption.html">Adsorption &amp; sorption</a><a href="dft.html">DFT workbench</a><h3 class="stage-h"><i class="dot st-react"></i>React</h3><a href="react.html" aria-current="page" class="on">React</a><h3 class="stage-h"><i class="dot st-out"></i>Analyse &amp; export</h3><a href="analyze.html">Analyze</a><a href="export.html">Export</a><a href="jobs.html">Jobs</a><a href="project.html">Project &amp; methods</a></nav>
+<main>
+<header class="mod-hero"><p class="eyebrow"><i class="dot st-react"></i>React · module 21</p><h1>React</h1><p class="lede">Build crosslinked networks — sulfur-cured or peroxide-cured rubber, epoxy–amine, ENR with acids or MAH, esterification — with your own force field re-applied after every cycle.</p><p class="where"><b>Open it</b> <span class="ui">Top bar</span><i>›</i><span class="ui">React</span></p><dl class="io"><div><dt>You start with</dt><dd>A cell with a force field (React re-types the network with it after each cycle).</dd></div><div><dt>You get</dt><dd>The network, a link map, gel point, ν, Mc, DC and a report; or LAMMPS fix bond/react templates.</dd></div></dl></header>
+<figure class="shot"><button type="button" class="zoom" aria-label="Show full size"><img src="../manual/img/16_react.jpg" alt="React · crosslinking: ten PCFF polyethylene chains crosslinked between chains, each chain in its own colour with the links circled." width="1440" height="900" loading="eager" decoding="async"></button><figcaption><strong>React · crosslinking</strong>: ten PCFF polyethylene chains crosslinked between chains, each chain in its own colour with the links circled.</figcaption></figure>
+<h2 id="steps">Step by step</h2><ol class="stepper"><li><div><h3>Assign the force field first</h3><p>Do the Force field step on the cell. React types, charges and parameterises the network with it after every cycle.</p></div></li><li><div><h3>Choose the reaction</h3><p>Under <strong>Reaction templates</strong> pick a category and a reaction — C–C crosslink, sulfur donor, peroxide (allylic C–C), ENR epoxide + COOH, epoxide + primary amine, anhydride + alcohol … — then <span class="ui">Add to the reactions</span>. <span class="ui">Editor…</span> shows and edits the template; <span class="ui">Import LAMMPS…</span> reads any fix bond/react pre/post/map set.</p></div></li><li><div><h3>Sulfur cure: add the donors</h3><p>Under <strong>Sulfur donors</strong> set the Sₓ range and the dose in phr (2.5 by default) and press <span class="ui">Insert</span>. A donor that reaches two chains becomes a C–Sₓ–C bridge.</p></div></li><li><div><h3>Set the network target</h3><p>Keep <span class="ui">Links only between different chains</span> on. <span class="ui">Stop at</span> a conversion, a number of links, links per chain, crosslink density ν, Mc or DC %.</p><p>Choose whether byproducts (H₂, H₂O) stay in the cell.</p></div></li><li><div><h3>Choose the protocol</h3><p><span class="ui">Polymatic cycle</span> (react, relax, repeat) or <span class="ui">REACTER-style during MD</span>. Capture distance (0 = the template's), cycles, reactions per cycle and T. <span class="ui">Auto capture</span> widens the search when no pair is found.</p></div></li><li><div><h3>Press Crosslink</h3><p>The live view colours each chain and highlights new links; the plots show links between chains, the gel point and the network against your target.</p></div></li><li><div><h3>Save, or run it in LAMMPS</h3><p><span class="ui">Save network…</span> writes the result. Under <strong>LAMMPS fix bond/react</strong>, <span class="ui">Write files…</span> writes pre/post templates, map files, a data file with every type the reaction creates and an input; run <code>lmp -in react.in</code>.</p></div></li></ol>
+<aside>PCFF gives epoxide ring angles general values, about 108 kcal/mol of strain per ENR epoxide; the Force field step says so. For epoxidised rubber, GAFF or OPLS 2005 describe the ring properly.</aside>
+<div class="shots2"><figure class="shot"><button type="button" class="zoom" aria-label="Show full size"><img src="../manual/img/enr_mah_react.png" alt="ENR-50 chains linked through maleic anhydride: every link between chains, with the units it joins." width="1440" height="900" loading="lazy" decoding="async"></button><figcaption>ENR-50 chains linked through maleic anhydride: every link between chains, with the units it joins.</figcaption></figure></div>
+<h2 id="scripted">The same without the Studio</h2><p class="muted">Every Studio page calls the same core as the <code>caps</code> command and the <code>caps</code> Python package, so a step you clicked can be repeated in a script.</p>
+<div class="tabs" role="tablist"><button role="tab" type="button" aria-selected="true" data-tab="0">Command line</button><button role="tab" type="button" aria-selected="false" data-tab="1">Python</button></div>
+<div class="tabpanel" data-panel="0"><div class="code" data-lang="shell"><pre><code>caps react --list-templates
+caps react cell.data -o network.data --template cc_crosslink \
+    --cycles 50 --per-cycle 5 --target 0.3 --temp 500 --seed 1</code></pre></div></div><div class="tabpanel" data-panel="1" hidden><div class="code" data-lang="Python"><pre><code>import caps
+
+d = caps.polymer(&quot;*CC(C)=CC*&quot;, dp=10, chains=6, density=0.6, seed=1)  # cis-1,4-polyisoprene
+d.relax(max_iterations=300)
+d.field.assign(&quot;opls2005&quot;)
+print(d.react(&quot;peroxide_allylic&quot;, cycles=5, per_cycle=4, target=0.3, seed=1))
+d.save(&quot;nr_xl.data&quot;)</code></pre></div></div>
+<h2 id="next">Where to go next</h2><div class="cards next"><a class="card shot-card" href="analyze.html"><img src="../manual/img/18_analyze.jpg" alt="" loading="lazy" width="1440" height="900"><span class="num"><i class="dot st-out"></i>Analyse &amp; export</span><b>Analyze</b><span>Density, g(r), chain statistics, Tg, moduli, diffusion, free volume, interfaces and crosslink density — each with CSV.</span></a><a class="card shot-card" href="export.html"><img src="../manual/img/19_export.jpg" alt="" loading="lazy" width="1440" height="900"><span class="num"><i class="dot st-out"></i>Analyse &amp; export</span><b>Export</b><span>LAMMPS, GROMACS, DL_POLY 4, AMBER/OpenMM and moltemplate decks, checked before they are written.</span></a></div>
+<h2 id="read">Read more</h2><div class="cards minis"><a class="card mini" href="../tutorials/crosslinking.html"><span class="num">Tutorial</span><b>Crosslinking and fix bond/react</b></a></div>
+<nav class="pager"><a href="dft.html"><small>Previous</small>DFT workbench</a><a class="next" href="analyze.html"><small>Next</small>Analyze</a></nav>
+</main>
+</div>
+<footer class="foot"><span>CAPS 0.1.0 · generated by <code>tools/docs/build_site.py</code> from the program itself</span><a href="https://github.com/MuhammadUzairRiaz/CAPS">github.com/MuhammadUzairRiaz/CAPS</a></footer>
+</body>
+</html>

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Polymer cell · CAPS Studio</title>
+<meta name="description" content="CAPS Grow builds an amorphous periodic cell: chains grown one unit at a time without overlaps, at the density, shape and tacticity you set, with the force field assigned the moment growth finishes.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/site.css">
+
+<script defer src="../assets/site.js"></script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="../index.html"><span class="mark" aria-hidden="true"></span>CAPS</a>
+  <button class="menu" aria-expanded="false" aria-controls="nav">Menu</button>
+  <nav id="nav" class="links"><a href="../index.html">Home</a><a href="../modules/index.html" aria-current="page">Modules</a><a href="../cli/index.html">CLI guide</a><a href="../cli/reference.html">Command reference</a><a href="../tutorials/index.html">Tutorials</a><a href="../theory/index.html">Theory</a><a href="../python.html">Python</a><a href="../manual/index.html">Studio tour</a><a href="https://github.com/MuhammadUzairRiaz/CAPS">GitHub</a></nav>
+</header>
+<div class="doc">
+<nav class="toc" aria-label="On this page"><h2>Modules</h2><h3 class="stage-h"><i class="dot st-start"></i>Get started</h3><a href="start.html">Start</a><a href="studio.html">Studio</a><h3 class="stage-h"><i class="dot st-build"></i>Build</h3><a href="molecule.html">Molecule builder</a><a href="polymer.html">Polymer builder</a><a href="polymer-cell.html" aria-current="page" class="on">Polymer cell</a><a href="blend.html">Blend</a><a href="packing.html">Packing</a><a href="solvation.html">Solvation</a><a href="crystal.html">Crystal</a><a href="surface.html">Surface &amp; interface</a><a href="nanostructure.html">Nanostructure</a><a href="biomolecule.html">Biomolecule</a><h3 class="stage-h"><i class="dot st-prepare"></i>Prepare</h3><a href="force-field.html">Force field</a><a href="minimise.html">Minimise</a><a href="equilibrate.html">Equilibrate</a><h3 class="stage-h"><i class="dot st-run"></i>Run</h3><a href="dynamics.html">Dynamics</a><a href="coarse-grained.html">Coarse-grained</a><a href="dpd.html">DPD</a><a href="adsorption.html">Adsorption &amp; sorption</a><a href="dft.html">DFT workbench</a><h3 class="stage-h"><i class="dot st-react"></i>React</h3><a href="react.html">React</a><h3 class="stage-h"><i class="dot st-out"></i>Analyse &amp; export</h3><a href="analyze.html">Analyze</a><a href="export.html">Export</a><a href="jobs.html">Jobs</a><a href="project.html">Project &amp; methods</a></nav>
+<main>
+<header class="mod-hero"><p class="eyebrow"><i class="dot st-build"></i>Build · module 05</p><h1>Polymer cell</h1><p class="lede">CAPS Grow builds an amorphous periodic cell: chains grown one unit at a time without overlaps, at the density, shape and tacticity you set, with the force field assigned the moment growth finishes.</p><p class="where"><b>Open it</b> <span class="ui">Top bar</span><i>›</i><span class="ui">Polymer cell</span></p><dl class="io"><div><dt>You start with</dt><dd>A polymer from the Polymer builder (polystyrene by default).</dd></div><div><dt>You get</dt><dd>A periodic cell (LAMMPS data, PDB or XYZ), typed if you chose a force field.</dd></div></dl></header>
+<figure class="shot"><button type="button" class="zoom" aria-label="Show full size"><img src="../manual/img/05_grow.jpg" alt="Polymer cell · CAPS Grow: 10 chains × 30 units, 4,820 atoms at 0.60 g/cm³, with the live growth counters." width="1440" height="900" loading="eager" decoding="async"></button><figcaption><strong>Polymer cell · CAPS Grow</strong>: 10 chains × 30 units, 4,820 atoms at 0.60 g/cm³, with the live growth counters.</figcaption></figure>
+<h2 id="steps">Step by step</h2><ol class="stepper"><li><div><h3>Set the components</h3><p>Each polymer with its number of chains (10), DP (8) and dispersity Đ. <span class="ui">Choose polymer…</span> opens the Polymer builder to add or change one.</p></div></li><li><div><h3>Choose the force field</h3><p>Pick it under <strong>Force field</strong> and keep <span class="ui">Assign when growing finishes</span> on. <span class="ui">Compare all force fields</span> shows which force fields cover the polymer.</p></div></li><li><div><h3>Set the cell</h3><p>Size from a <strong>density</strong> (0.4–0.6 g/cm³ grows easily; compress it later in Minimise) or a box. Shape: cubic periodic, a slab with vacuum, a cylinder pore, or around a fibre. Tacticity, seed and contact scale.</p></div></li><li><div><h3>Choose the growth method</h3><p>Self-avoiding growth (the roomiest trial), Rosenbluth with soft spheres, or configurational-bias growth with Lennard-Jones.</p></div></li><li><div><h3>Press Grow cell</h3><p>The live counters show chains grown, units placed, restarts, the closest contact margin, the density and the elapsed time.</p></div></li><li><div><h3>Keep the recipe</h3><p><span class="ui">Save recipe</span> writes a YAML you can rerun with <code>caps run</code>; <span class="ui">Copy as Python</span> (or <strong>Copy caps command</strong>) gives the same build as a script. <span class="ui">Save cell…</span> writes the cell.</p></div></li></ol>
+<aside>Solvent, gas or fillers in the grown cell: Packing › Pack into › Around the current structure.</aside>
+<h2 id="scripted">The same without the Studio</h2><p class="muted">Every Studio page calls the same core as the <code>caps</code> command and the <code>caps</code> Python package, so a step you clicked can be repeated in a script.</p>
+<div class="tabs" role="tablist"><button role="tab" type="button" aria-selected="true" data-tab="0">Command line</button><button role="tab" type="button" aria-selected="false" data-tab="1">Python</button></div>
+<div class="tabpanel" data-panel="0"><div class="code" data-lang="shell"><pre><code>caps grow -o ps.data --chains 10 --dp 30 --density 0.6 \
+    --units &#x27;*CC(*)c1ccccc1&#x27; --tacticity atactic --seed 1</code></pre></div></div><div class="tabpanel" data-panel="1" hidden><div class="code" data-lang="Python"><pre><code>import caps
+
+d = caps.polymer(&quot;*CC(*)c1ccccc1&quot;, dp=30, chains=10, density=0.6, seed=1)
+d.field.assign(&quot;pcff&quot;)
+d.save(&quot;ps.data&quot;)</code></pre></div></div>
+<h2 id="next">Where to go next</h2><div class="cards next"><a class="card shot-card" href="force-field.html"><img src="../manual/img/06_field.jpg" alt="" loading="lazy" width="1440" height="900"><span class="num"><i class="dot st-prepare"></i>Prepare</span><b>Force field</b><span>Type every atom from SMARTS rules, set charges, fill any missing term and give each part of a composite its own force field.</span></a><a class="card shot-card" href="minimise.html"><img src="../manual/img/07_relax.jpg" alt="" loading="lazy" width="1440" height="900"><span class="num"><i class="dot st-prepare"></i>Prepare</span><b>Minimise</b><span>Remove close contacts, compress a low-density cell to its target and relax the box.</span></a></div>
+<h2 id="read">Read more</h2><div class="cards minis"><a class="card mini" href="../tutorials/first-cell.html"><span class="num">Tutorial</span><b>Your first polymer cell</b></a><a class="card mini" href="../theory/growth.html"><span class="num">Theory</span><b>Chain growth</b></a></div>
+<nav class="pager"><a href="polymer.html"><small>Previous</small>Polymer builder</a><a class="next" href="blend.html"><small>Next</small>Blend</a></nav>
+</main>
+</div>
+<footer class="foot"><span>CAPS 0.1.0 · generated by <code>tools/docs/build_site.py</code> from the program itself</span><a href="https://github.com/MuhammadUzairRiaz/CAPS">github.com/MuhammadUzairRiaz/CAPS</a></footer>
+</body>
+</html>

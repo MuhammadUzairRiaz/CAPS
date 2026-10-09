@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Export · CAPS Studio</title>
+<meta name="description" content="Write the simulation files for the engine you run on — in the force field&#x27;s own style — with a run protocol, after CAPS has checked that the deck would run.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/site.css">
+
+<script defer src="../assets/site.js"></script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="../index.html"><span class="mark" aria-hidden="true"></span>CAPS</a>
+  <button class="menu" aria-expanded="false" aria-controls="nav">Menu</button>
+  <nav id="nav" class="links"><a href="../index.html">Home</a><a href="../modules/index.html" aria-current="page">Modules</a><a href="../cli/index.html">CLI guide</a><a href="../cli/reference.html">Command reference</a><a href="../tutorials/index.html">Tutorials</a><a href="../theory/index.html">Theory</a><a href="../python.html">Python</a><a href="../manual/index.html">Studio tour</a><a href="https://github.com/MuhammadUzairRiaz/CAPS">GitHub</a></nav>
+</header>
+<div class="doc">
+<nav class="toc" aria-label="On this page"><h2>Modules</h2><h3 class="stage-h"><i class="dot st-start"></i>Get started</h3><a href="start.html">Start</a><a href="studio.html">Studio</a><h3 class="stage-h"><i class="dot st-build"></i>Build</h3><a href="molecule.html">Molecule builder</a><a href="polymer.html">Polymer builder</a><a href="polymer-cell.html">Polymer cell</a><a href="blend.html">Blend</a><a href="packing.html">Packing</a><a href="solvation.html">Solvation</a><a href="crystal.html">Crystal</a><a href="surface.html">Surface &amp; interface</a><a href="nanostructure.html">Nanostructure</a><a href="biomolecule.html">Biomolecule</a><h3 class="stage-h"><i class="dot st-prepare"></i>Prepare</h3><a href="force-field.html">Force field</a><a href="minimise.html">Minimise</a><a href="equilibrate.html">Equilibrate</a><h3 class="stage-h"><i class="dot st-run"></i>Run</h3><a href="dynamics.html">Dynamics</a><a href="coarse-grained.html">Coarse-grained</a><a href="dpd.html">DPD</a><a href="adsorption.html">Adsorption &amp; sorption</a><a href="dft.html">DFT workbench</a><h3 class="stage-h"><i class="dot st-react"></i>React</h3><a href="react.html">React</a><h3 class="stage-h"><i class="dot st-out"></i>Analyse &amp; export</h3><a href="analyze.html">Analyze</a><a href="export.html" aria-current="page" class="on">Export</a><a href="jobs.html">Jobs</a><a href="project.html">Project &amp; methods</a></nav>
+<main>
+<header class="mod-hero"><p class="eyebrow"><i class="dot st-out"></i>Analyse &amp; export · module 23</p><h1>Export</h1><p class="lede">Write the simulation files for the engine you run on — in the force field's own style — with a run protocol, after CAPS has checked that the deck would run.</p><p class="where"><b>Open it</b> <span class="ui">Top bar</span><i>›</i><span class="ui">Export</span></p><dl class="io"><div><dt>You start with</dt><dd>A structure with a complete force field.</dd></div><div><dt>You get</dt><dd>LAMMPS data + input, GROMACS top/itp/gro/mdp, DL_POLY 4, AMBER prmtop/inpcrd, moltemplate .lt.</dd></div></dl></header>
+<figure class="shot"><button type="button" class="zoom" aria-label="Show full size"><img src="../manual/img/19_export.jpg" alt="Export for the PCFF polystyrene cell: every check green, LAMMPS ready, GROMACS refused for class II with the reason shown." width="1440" height="900" loading="eager" decoding="async"></button><figcaption><strong>Export</strong> for the PCFF polystyrene cell: every check green, LAMMPS ready, GROMACS refused for class II with the reason shown.</figcaption></figure>
+<h2 id="steps">Step by step</h2><ol class="stepper"><li><div><h3>Check the list</h3><p><strong>Checked before writing</strong> lists anything that would stop the deck running. With no force field you get <span class="ui">Open the Force field step</span>.</p></div></li><li><div><h3>Choose the folder and name</h3><p>Under <strong>Write to</strong>: <span class="ui">Choose…</span> a folder and a file name (default <code>system</code>).</p></div></li><li><div><h3>LAMMPS styles</h3><p>The force field's own styles, or CAPS-exact for verification; <span class="ui">Hybrid</span> when needed. Electrostatics automatic, PPPM, Ewald, damped shifted force or plain cut-off; the cut-off, k-space accuracy and units.</p></div></li><li><div><h3>Pick the run</h3><p><span class="ui">Check (single point)</span>, Minimise, NVT, NPT, a tensile test, creep, shear viscosity (NEMD) or a full equilibration protocol in LAMMPS — with T, P, dt and steps.</p></div></li><li><div><h3>Add other engines</h3><p><span class="ui">Write for GROMACS</span>, and optionally DL_POLY 4 (FIELD, CONFIG, CONTROL) and AMBER / OpenMM (prmtop, inpcrd).</p></div></li><li><div><h3>Press Write</h3><p>The file list and a preview appear. Run LAMMPS with <code>lmp -in STEM.in</code>, GROMACS from the top, gro and mdp.</p></div></li></ol>
+<h2 id="scripted">The same without the Studio</h2><p class="muted">Every Studio page calls the same core as the <code>caps</code> command and the <code>caps</code> Python package, so a step you clicked can be repeated in a script.</p>
+<div class="tabs" role="tablist"><button role="tab" type="button" aria-selected="true" data-tab="0">Command line</button><button role="tab" type="button" aria-selected="false" data-tab="1">Python</button></div>
+<div class="tabpanel" data-panel="0"><div class="code" data-lang="shell"><pre><code>caps ff apply cell.data --ff pcff -o cell.data --lammps-input cell.in \
+    --lammps-run npt --temp 300 --press 1 --steps 100000</code></pre></div></div><div class="tabpanel" data-panel="1" hidden><div class="code" data-lang="Python"><pre><code>import caps
+
+d = caps.open(&quot;cell.data&quot;)
+d.field.assign(&quot;opls2005&quot;)
+d.export_engines(&quot;engines&quot;, stem=&quot;cell&quot;, run=&quot;npt&quot;, temperature=300, steps=100000)</code></pre></div></div>
+<h2 id="next">Where to go next</h2><div class="cards next"><a class="card shot-card" href="jobs.html"><img src="../manual/img/23_jobs.jpg" alt="" loading="lazy" width="1440" height="900"><span class="num"><i class="dot st-out"></i>Analyse &amp; export</span><b>Jobs</b><span>Every run, local or on a SLURM / PBS cluster, with live progress, logs and recovery hints.</span></a><a class="card shot-card" href="project.html"><img src="../manual/img/20_project.jpg" alt="" loading="lazy" width="1440" height="900"><span class="num"><i class="dot st-out"></i>Analyse &amp; export</span><b>Project &amp; methods</b><span>A results table for every structure and a methods section with BibTeX, written from provenance.</span></a></div>
+<h2 id="read">Read more</h2><div class="cards minis"><a class="card mini" href="../tutorials/force-fields.html"><span class="num">Tutorial</span><b>Force fields and export</b></a></div>
+<nav class="pager"><a href="analyze.html"><small>Previous</small>Analyze</a><a class="next" href="jobs.html"><small>Next</small>Jobs</a></nav>
+</main>
+</div>
+<footer class="foot"><span>CAPS 0.1.0 · generated by <code>tools/docs/build_site.py</code> from the program itself</span><a href="https://github.com/MuhammadUzairRiaz/CAPS">github.com/MuhammadUzairRiaz/CAPS</a></footer>
+</body>
+</html>

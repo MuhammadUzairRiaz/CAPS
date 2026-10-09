@@ -67,3 +67,34 @@
     });
   });
 })();
+// modules: the CLI / Python tabs and full-size screenshots
+(function () {
+  "use strict";
+  function ready(f) { if (document.readyState !== "loading") f(); else document.addEventListener("DOMContentLoaded", f); }
+  ready(function () {
+    document.querySelectorAll(".tabs").forEach(function (bar) {
+      var panels = [], n = bar.nextElementSibling;
+      while (n && n.classList.contains("tabpanel")) { panels.push(n); n = n.nextElementSibling; }
+      bar.querySelectorAll("button").forEach(function (b, i) {
+        b.addEventListener("click", function () {
+          bar.querySelectorAll("button").forEach(function (x, k) { x.setAttribute("aria-selected", k === i ? "true" : "false"); });
+          panels.forEach(function (p, k) { p.hidden = k !== i; });
+        });
+      });
+    });
+    var zooms = document.querySelectorAll("figure.shot .zoom");
+    if (!zooms.length || typeof HTMLDialogElement === "undefined") return;
+    var dlg = document.createElement("dialog");
+    dlg.className = "lightbox";
+    dlg.innerHTML = '<img alt="">';
+    document.body.appendChild(dlg);
+    dlg.addEventListener("click", function () { dlg.close(); });
+    zooms.forEach(function (z) {
+      z.addEventListener("click", function () {
+        var img = z.querySelector("img"), big = dlg.querySelector("img");
+        big.src = img.src; big.alt = img.alt;
+        dlg.showModal();
+      });
+    });
+  });
+})();

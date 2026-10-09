@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Adsorption &amp; sorption · CAPS Studio</title>
+<meta name="description" content="Two Monte Carlo tools on a fixed substrate: the adsorption locator places molecules on a surface or in a pore by simulated annealing; sorption computes solubility, Henry constants and isotherms.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/site.css">
+
+<script defer src="../assets/site.js"></script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="../index.html"><span class="mark" aria-hidden="true"></span>CAPS</a>
+  <button class="menu" aria-expanded="false" aria-controls="nav">Menu</button>
+  <nav id="nav" class="links"><a href="../index.html">Home</a><a href="../modules/index.html" aria-current="page">Modules</a><a href="../cli/index.html">CLI guide</a><a href="../cli/reference.html">Command reference</a><a href="../tutorials/index.html">Tutorials</a><a href="../theory/index.html">Theory</a><a href="../python.html">Python</a><a href="../manual/index.html">Studio tour</a><a href="https://github.com/MuhammadUzairRiaz/CAPS">GitHub</a></nav>
+</header>
+<div class="doc">
+<nav class="toc" aria-label="On this page"><h2>Modules</h2><h3 class="stage-h"><i class="dot st-start"></i>Get started</h3><a href="start.html">Start</a><a href="studio.html">Studio</a><h3 class="stage-h"><i class="dot st-build"></i>Build</h3><a href="molecule.html">Molecule builder</a><a href="polymer.html">Polymer builder</a><a href="polymer-cell.html">Polymer cell</a><a href="blend.html">Blend</a><a href="packing.html">Packing</a><a href="solvation.html">Solvation</a><a href="crystal.html">Crystal</a><a href="surface.html">Surface &amp; interface</a><a href="nanostructure.html">Nanostructure</a><a href="biomolecule.html">Biomolecule</a><h3 class="stage-h"><i class="dot st-prepare"></i>Prepare</h3><a href="force-field.html">Force field</a><a href="minimise.html">Minimise</a><a href="equilibrate.html">Equilibrate</a><h3 class="stage-h"><i class="dot st-run"></i>Run</h3><a href="dynamics.html">Dynamics</a><a href="coarse-grained.html">Coarse-grained</a><a href="dpd.html">DPD</a><a href="adsorption.html" aria-current="page" class="on">Adsorption &amp; sorption</a><a href="dft.html">DFT workbench</a><h3 class="stage-h"><i class="dot st-react"></i>React</h3><a href="react.html">React</a><h3 class="stage-h"><i class="dot st-out"></i>Analyse &amp; export</h3><a href="analyze.html">Analyze</a><a href="export.html">Export</a><a href="jobs.html">Jobs</a><a href="project.html">Project &amp; methods</a></nav>
+<main>
+<header class="mod-hero"><p class="eyebrow"><i class="dot st-run"></i>Run · module 19</p><h1>Adsorption &amp; sorption</h1><p class="lede">Two Monte Carlo tools on a fixed substrate: the adsorption locator places molecules on a surface or in a pore by simulated annealing; sorption computes solubility, Henry constants and isotherms.</p><p class="where"><b>Open it</b> <span class="ui">Modules</span><i>›</i><span class="ui">Analysis</span><i>›</i><span class="ui">Adsorption locator…</span></p><dl class="io"><div><dt>You start with</dt><dd>A substrate (slab, crystal, pore or polymer cell) with a force field, and the adsorbate as SMILES.</dd></div><div><dt>You get</dt><dd>Adsorption energies and the lowest configurations; or Widom solubility and a GCMC isotherm.</dd></div></dl></header>
+<figure class="shot"><button type="button" class="zoom" aria-label="Show full size"><img src="../manual/img/25_adsorption.jpg" alt="Adsorption locator: the adsorbates, the search region and the lowest configurations found." width="1440" height="900" loading="eager" decoding="async"></button><figcaption><strong>Adsorption locator</strong>: the adsorbates, the search region and the lowest configurations found.</figcaption></figure>
+<h2 id="steps">Step by step</h2><ol class="stepper"><li><div><h3>Open the substrate and assign its force field</h3><p>The substrate is held fixed; only the adsorbates move.</p></div></li><li><div><h3>Adsorption locator: add the adsorbates</h3><p>Under <strong>Adsorbates</strong>, <span class="ui">Add</span> each as SMILES (for example <code>O=C=O</code>) with its count.</p></div></li><li><div><h3>Choose where to search</h3><p><span class="ui">Above the substrate&#x27;s top face</span> (default) or <span class="ui">Anywhere in the cell</span>. Cycles 3, steps per cycle 20 000, annealing from 10⁴ K to 100 K.</p></div></li><li><div><h3>Press Locate</h3><p>The <strong>Adsorption energy</strong> table gives dE/dN per component; the lowest configurations become frames you can step through.</p></div></li><li><div><h3>Gas uptake: open Sorption</h3><p><strong>Modules › Analysis › Sorption (gas uptake)…</strong>: pick the sorbate (CO₂, CH₄, N₂, O₂, H₂O, He, H₂ or a SMILES) or a mixture, T, Widom insertions and the GCMC pressures, then <span class="ui">Compute</span>.</p><p>You get the solubility coefficient, Henry constant, the isotherm (mol/kg, cm³(STP)/cm³, q_st), selectivities for a mixture, and a map of where the sorbate sits.</p></div></li></ol>
+<h2 id="scripted">The same without the Studio</h2><p class="muted">Every Studio page calls the same core as the <code>caps</code> command and the <code>caps</code> Python package, so a step you clicked can be repeated in a script.</p>
+<div class="tabs" role="tablist"><button role="tab" type="button" aria-selected="true" data-tab="0">Python</button></div>
+<div class="tabpanel" data-panel="0"><div class="code" data-lang="Python"><pre><code>import caps
+
+slab = caps.open(&quot;slab.data&quot;)
+slab.field.assign(&quot;pcff&quot;)
+res = slab.adsorption([(&quot;O=C=O&quot;, 4)], region=&quot;above&quot;)
+print(res[&quot;adsorption_energy&quot;])
+
+cell = caps.open(&quot;polymer.data&quot;)
+cell.field.assign(&quot;pcff&quot;)
+iso = cell.sorption(&quot;O=C=O&quot;, pressures_kpa=(10, 100, 1000))</code></pre></div></div>
+<h2 id="next">Where to go next</h2><div class="cards next"><a class="card shot-card" href="analyze.html"><img src="../manual/img/18_analyze.jpg" alt="" loading="lazy" width="1440" height="900"><span class="num"><i class="dot st-out"></i>Analyse &amp; export</span><b>Analyze</b><span>Density, g(r), chain statistics, Tg, moduli, diffusion, free volume, interfaces and crosslink density — each with CSV.</span></a></div>
+<nav class="pager"><a href="dpd.html"><small>Previous</small>DPD</a><a class="next" href="dft.html"><small>Next</small>DFT workbench</a></nav>
+</main>
+</div>
+<footer class="foot"><span>CAPS 0.1.0 · generated by <code>tools/docs/build_site.py</code> from the program itself</span><a href="https://github.com/MuhammadUzairRiaz/CAPS">github.com/MuhammadUzairRiaz/CAPS</a></footer>
+</body>
+</html>

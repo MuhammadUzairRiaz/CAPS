@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Blend · CAPS Studio</title>
+<meta name="description" content="Grow two or more polymers together in one cell, by weight, volume or chain count, starting mixed, as two slabs or as a droplet.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/site.css">
+
+<script defer src="../assets/site.js"></script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="../index.html"><span class="mark" aria-hidden="true"></span>CAPS</a>
+  <button class="menu" aria-expanded="false" aria-controls="nav">Menu</button>
+  <nav id="nav" class="links"><a href="../index.html">Home</a><a href="../modules/index.html" aria-current="page">Modules</a><a href="../cli/index.html">CLI guide</a><a href="../cli/reference.html">Command reference</a><a href="../tutorials/index.html">Tutorials</a><a href="../theory/index.html">Theory</a><a href="../python.html">Python</a><a href="../manual/index.html">Studio tour</a><a href="https://github.com/MuhammadUzairRiaz/CAPS">GitHub</a></nav>
+</header>
+<div class="doc">
+<nav class="toc" aria-label="On this page"><h2>Modules</h2><h3 class="stage-h"><i class="dot st-start"></i>Get started</h3><a href="start.html">Start</a><a href="studio.html">Studio</a><h3 class="stage-h"><i class="dot st-build"></i>Build</h3><a href="molecule.html">Molecule builder</a><a href="polymer.html">Polymer builder</a><a href="polymer-cell.html">Polymer cell</a><a href="blend.html" aria-current="page" class="on">Blend</a><a href="packing.html">Packing</a><a href="solvation.html">Solvation</a><a href="crystal.html">Crystal</a><a href="surface.html">Surface &amp; interface</a><a href="nanostructure.html">Nanostructure</a><a href="biomolecule.html">Biomolecule</a><h3 class="stage-h"><i class="dot st-prepare"></i>Prepare</h3><a href="force-field.html">Force field</a><a href="minimise.html">Minimise</a><a href="equilibrate.html">Equilibrate</a><h3 class="stage-h"><i class="dot st-run"></i>Run</h3><a href="dynamics.html">Dynamics</a><a href="coarse-grained.html">Coarse-grained</a><a href="dpd.html">DPD</a><a href="adsorption.html">Adsorption &amp; sorption</a><a href="dft.html">DFT workbench</a><h3 class="stage-h"><i class="dot st-react"></i>React</h3><a href="react.html">React</a><h3 class="stage-h"><i class="dot st-out"></i>Analyse &amp; export</h3><a href="analyze.html">Analyze</a><a href="export.html">Export</a><a href="jobs.html">Jobs</a><a href="project.html">Project &amp; methods</a></nav>
+<main>
+<header class="mod-hero"><p class="eyebrow"><i class="dot st-build"></i>Build · module 06</p><h1>Blend</h1><p class="lede">Grow two or more polymers together in one cell, by weight, volume or chain count, starting mixed, as two slabs or as a droplet.</p><p class="where"><b>Open it</b> <span class="ui">Build</span><i>›</i><span class="ui">Blend builder…</span></p><dl class="io"><div><dt>You start with</dt><dd>Two or more polymers (from the library or the Polymer builder).</dd></div><div><dt>You get</dt><dd>A blend cell; if every component has a force field, it goes straight to the Force field step by group.</dd></div></dl></header>
+<figure class="shot"><button type="button" class="zoom" aria-label="Show full size"><img src="../manual/img/11_blend.jpg" alt="Blend builder: components with chains, DP and density, the starting morphology and the cell." width="1440" height="900" loading="eager" decoding="async"></button><figcaption><strong>Blend builder</strong>: components with chains, DP and density, the starting morphology and the cell.</figcaption></figure>
+<h2 id="steps">Step by step</h2><ol class="stepper"><li><div><h3>Add the components</h3><p><span class="ui">Add component</span> for each polymer with its chains, DP and density; <span class="ui">Builder&#x27;s chain</span> takes the Polymer builder's polymer. Give the composition by weight %, volume % or chain count.</p></div></li><li><div><h3>Choose the starting morphology</h3><p><span class="ui">Mixed</span> (default), <span class="ui">Two slabs</span> or <span class="ui">Droplet</span>.</p></div></li><li><div><h3>Set the cell</h3><p>Growth density 0.5 g/cm³, and the growth method (best of k trials or Rosenbluth).</p></div></li><li><div><h3>Press Build blend</h3><p>Then compress it in Minimise (target density) and equilibrate. Give each component its own force field with <strong>Force field › By group</strong>.</p></div></li></ol>
+<h2 id="scripted">The same without the Studio</h2><p class="muted">Every Studio page calls the same core as the <code>caps</code> command and the <code>caps</code> Python package, so a step you clicked can be repeated in a script.</p>
+<div class="tabs" role="tablist"><button role="tab" type="button" aria-selected="true" data-tab="0">Command line</button></div>
+<div class="tabpanel" data-panel="0"><div class="code" data-lang="shell"><pre><code>caps blend --components &#x27;*CC(*)c1ccccc1,*CC(*)(C)C(=O)OC&#x27; --weights 0.5,0.5 \
+    --chains 8 --dp 20 --density 0.5 -o blend.data</code></pre></div></div>
+<h2 id="next">Where to go next</h2><div class="cards next"><a class="card shot-card" href="force-field.html"><img src="../manual/img/06_field.jpg" alt="" loading="lazy" width="1440" height="900"><span class="num"><i class="dot st-prepare"></i>Prepare</span><b>Force field</b><span>Type every atom from SMARTS rules, set charges, fill any missing term and give each part of a composite its own force field.</span></a><a class="card shot-card" href="minimise.html"><img src="../manual/img/07_relax.jpg" alt="" loading="lazy" width="1440" height="900"><span class="num"><i class="dot st-prepare"></i>Prepare</span><b>Minimise</b><span>Remove close contacts, compress a low-density cell to its target and relax the box.</span></a></div>
+<nav class="pager"><a href="polymer-cell.html"><small>Previous</small>Polymer cell</a><a class="next" href="packing.html"><small>Next</small>Packing</a></nav>
+</main>
+</div>
+<footer class="foot"><span>CAPS 0.1.0 · generated by <code>tools/docs/build_site.py</code> from the program itself</span><a href="https://github.com/MuhammadUzairRiaz/CAPS">github.com/MuhammadUzairRiaz/CAPS</a></footer>
+</body>
+</html>

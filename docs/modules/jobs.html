@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Jobs · CAPS Studio</title>
+<meta name="description" content="Follow every run in one place — on this machine, a workstation over SSH, or a SLURM or PBS cluster — with live progress, logs, provenance and help when something fails.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/site.css">
+
+<script defer src="../assets/site.js"></script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="../index.html"><span class="mark" aria-hidden="true"></span>CAPS</a>
+  <button class="menu" aria-expanded="false" aria-controls="nav">Menu</button>
+  <nav id="nav" class="links"><a href="../index.html">Home</a><a href="../modules/index.html" aria-current="page">Modules</a><a href="../cli/index.html">CLI guide</a><a href="../cli/reference.html">Command reference</a><a href="../tutorials/index.html">Tutorials</a><a href="../theory/index.html">Theory</a><a href="../python.html">Python</a><a href="../manual/index.html">Studio tour</a><a href="https://github.com/MuhammadUzairRiaz/CAPS">GitHub</a></nav>
+</header>
+<div class="doc">
+<nav class="toc" aria-label="On this page"><h2>Modules</h2><h3 class="stage-h"><i class="dot st-start"></i>Get started</h3><a href="start.html">Start</a><a href="studio.html">Studio</a><h3 class="stage-h"><i class="dot st-build"></i>Build</h3><a href="molecule.html">Molecule builder</a><a href="polymer.html">Polymer builder</a><a href="polymer-cell.html">Polymer cell</a><a href="blend.html">Blend</a><a href="packing.html">Packing</a><a href="solvation.html">Solvation</a><a href="crystal.html">Crystal</a><a href="surface.html">Surface &amp; interface</a><a href="nanostructure.html">Nanostructure</a><a href="biomolecule.html">Biomolecule</a><h3 class="stage-h"><i class="dot st-prepare"></i>Prepare</h3><a href="force-field.html">Force field</a><a href="minimise.html">Minimise</a><a href="equilibrate.html">Equilibrate</a><h3 class="stage-h"><i class="dot st-run"></i>Run</h3><a href="dynamics.html">Dynamics</a><a href="coarse-grained.html">Coarse-grained</a><a href="dpd.html">DPD</a><a href="adsorption.html">Adsorption &amp; sorption</a><a href="dft.html">DFT workbench</a><h3 class="stage-h"><i class="dot st-react"></i>React</h3><a href="react.html">React</a><h3 class="stage-h"><i class="dot st-out"></i>Analyse &amp; export</h3><a href="analyze.html">Analyze</a><a href="export.html">Export</a><a href="jobs.html" aria-current="page" class="on">Jobs</a><a href="project.html">Project &amp; methods</a></nav>
+<main>
+<header class="mod-hero"><p class="eyebrow"><i class="dot st-out"></i>Analyse &amp; export · module 24</p><h1>Jobs</h1><p class="lede">Follow every run in one place — on this machine, a workstation over SSH, or a SLURM or PBS cluster — with live progress, logs, provenance and help when something fails.</p><p class="where"><b>Open it</b> <span class="ui">Top bar</span><i>›</i><span class="ui">Jobs</span></p><dl class="io"><div><dt>You start with</dt><dd>Any run page's <span class="ui">Queue</span> button, or <span class="ui">New</span> here.</dd></div><div><dt>You get</dt><dd>Running and finished jobs, their logs, results and provenance.</dd></div></dl></header>
+<figure class="shot"><button type="button" class="zoom" aria-label="Show full size"><img src="../manual/img/23_jobs.jpg" alt="Jobs: running and finished runs with progress, log and provenance." width="1440" height="900" loading="eager" decoding="async"></button><figcaption><strong>Jobs</strong>: running and finished runs with progress, log and provenance.</figcaption></figure>
+<h2 id="steps">Step by step</h2><ol class="stepper"><li><div><h3>Add a host (once)</h3><p><strong>Settings › Compute &amp; remote › Add host</strong>: name, hostname, port, user; scheduler SLURM, PBS or none; partition and remote work directory. <span class="ui">Test connection</span> checks it (SSH agent).</p></div></li><li><div><h3>Send a run</h3><p>On any run page set <span class="ui">Run on</span> to this machine or a host and press <span class="ui">Queue</span>, or start one here with <span class="ui">New</span> (grow, pack, relax, dynamics, equilibrate, react, analyze, parameter sweep).</p></div></li><li><div><h3>Follow it</h3><p>Filter by state, search by title, kind, structure or host. Each job shows <strong>Progress</strong> live and its <strong>Log</strong>; <span class="ui">Check now</span> polls a remote job.</p></div></li><li><div><h3>Get the result</h3><p><span class="ui">Open result</span> or <span class="ui">Open in Studio</span>. The <strong>Provenance manifest</strong> records every step.</p></div></li><li><div><h3>When a run fails</h3><p><strong>What happened</strong> and <strong>Suggested recovery</strong> explain it; <span class="ui">Restart with fix</span> runs again with the fix applied; <span class="ui">Copy diagnostics</span> for a bug report.</p></div></li></ol>
+<h2 id="next">Where to go next</h2><div class="cards next"><a class="card shot-card" href="project.html"><img src="../manual/img/20_project.jpg" alt="" loading="lazy" width="1440" height="900"><span class="num"><i class="dot st-out"></i>Analyse &amp; export</span><b>Project &amp; methods</b><span>A results table for every structure and a methods section with BibTeX, written from provenance.</span></a></div>
+<nav class="pager"><a href="export.html"><small>Previous</small>Export</a><a class="next" href="project.html"><small>Next</small>Project &amp; methods</a></nav>
+</main>
+</div>
+<footer class="foot"><span>CAPS 0.1.0 · generated by <code>tools/docs/build_site.py</code> from the program itself</span><a href="https://github.com/MuhammadUzairRiaz/CAPS">github.com/MuhammadUzairRiaz/CAPS</a></footer>
+</body>
+</html>

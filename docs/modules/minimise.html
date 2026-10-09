@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Minimise · CAPS Studio</title>
+<meta name="description" content="Energy minimisation with CAPS Relax: L-BFGS, conjugate gradient, steepest descent or FIRE, with a soft-core push-off for freshly built cells and optional compression to a target density.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/site.css">
+
+<script defer src="../assets/site.js"></script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="../index.html"><span class="mark" aria-hidden="true"></span>CAPS</a>
+  <button class="menu" aria-expanded="false" aria-controls="nav">Menu</button>
+  <nav id="nav" class="links"><a href="../index.html">Home</a><a href="../modules/index.html" aria-current="page">Modules</a><a href="../cli/index.html">CLI guide</a><a href="../cli/reference.html">Command reference</a><a href="../tutorials/index.html">Tutorials</a><a href="../theory/index.html">Theory</a><a href="../python.html">Python</a><a href="../manual/index.html">Studio tour</a><a href="https://github.com/MuhammadUzairRiaz/CAPS">GitHub</a></nav>
+</header>
+<div class="doc">
+<nav class="toc" aria-label="On this page"><h2>Modules</h2><h3 class="stage-h"><i class="dot st-start"></i>Get started</h3><a href="start.html">Start</a><a href="studio.html">Studio</a><h3 class="stage-h"><i class="dot st-build"></i>Build</h3><a href="molecule.html">Molecule builder</a><a href="polymer.html">Polymer builder</a><a href="polymer-cell.html">Polymer cell</a><a href="blend.html">Blend</a><a href="packing.html">Packing</a><a href="solvation.html">Solvation</a><a href="crystal.html">Crystal</a><a href="surface.html">Surface &amp; interface</a><a href="nanostructure.html">Nanostructure</a><a href="biomolecule.html">Biomolecule</a><h3 class="stage-h"><i class="dot st-prepare"></i>Prepare</h3><a href="force-field.html">Force field</a><a href="minimise.html" aria-current="page" class="on">Minimise</a><a href="equilibrate.html">Equilibrate</a><h3 class="stage-h"><i class="dot st-run"></i>Run</h3><a href="dynamics.html">Dynamics</a><a href="coarse-grained.html">Coarse-grained</a><a href="dpd.html">DPD</a><a href="adsorption.html">Adsorption &amp; sorption</a><a href="dft.html">DFT workbench</a><h3 class="stage-h"><i class="dot st-react"></i>React</h3><a href="react.html">React</a><h3 class="stage-h"><i class="dot st-out"></i>Analyse &amp; export</h3><a href="analyze.html">Analyze</a><a href="export.html">Export</a><a href="jobs.html">Jobs</a><a href="project.html">Project &amp; methods</a></nav>
+<main>
+<header class="mod-hero"><p class="eyebrow"><i class="dot st-prepare"></i>Prepare · module 14</p><h1>Minimise</h1><p class="lede">Energy minimisation with CAPS Relax: L-BFGS, conjugate gradient, steepest descent or FIRE, with a soft-core push-off for freshly built cells and optional compression to a target density.</p><p class="where"><b>Open it</b> <span class="ui">Top bar</span><i>›</i><span class="ui">Minimise</span></p><dl class="io"><div><dt>You start with</dt><dd>A structure with a force field assigned (otherwise the built-in GAFF).</dd></div><div><dt>You get</dt><dd>A relaxed structure, energy and max-force curves, and the criterion that stopped each stage in the report.</dd></div></dl></header>
+<figure class="shot"><button type="button" class="zoom" aria-label="Show full size"><img src="../manual/img/07_relax.jpg" alt="Minimise · CAPS Relax with the live energy and max-force plots." width="1440" height="900" loading="eager" decoding="async"></button><figcaption><strong>Minimise · CAPS Relax</strong> with the live energy and max-force plots.</figcaption></figure>
+<h2 id="steps">Step by step</h2><ol class="stepper"><li><div><h3>Choose the method</h3><p><span class="ui">L-BFGS</span> is the default and the fastest in most cases; <span class="ui">FIRE</span> is robust for very strained cells.</p></div></li><li><div><h3>Set the push-off and the cell</h3><p>Keep <span class="ui">Soft-core push-off before minimising</span> on for a grown or packed cell: it caps the force (500 kcal/mol/Å) while overlaps separate.</p><p><span class="ui">Compress to a target density</span> brings a 0.6 g/cm³ grown cell up to, for example, 1.05 g/cm³ in steps of 0.06.</p><p><span class="ui">Relax the box towards a pressure</span>: isotropic, each axis, only z (a film or slab) or only x and y.</p></div></li><li><div><h3>Hold what must not move</h3><p>Under <strong>Constraints &amp; restraints</strong>: <span class="ui">Hold a molecule in place</span> (a substrate), <span class="ui">Hold selection</span> along x, y or z, or restraints between atoms with <span class="ui">Add measured</span>.</p></div></li><li><div><h3>Set when to stop</h3><p>Any of: |F|max below 0.5 kcal/mol/Å, 5000 iterations per stage, a relative ΔE per step, or a box stress below 100 atm.</p></div></li><li><div><h3>Press Minimise</h3><p>Energy and max force are plotted live. <span class="ui">Cancel</span> stops it; <span class="ui">Queue</span> runs it as a job; <span class="ui">Copy as Python</span> gives the same call as a script.</p></div></li></ol>
+<aside>The reported |F|max counts free atoms only; atoms you held are not included.</aside>
+<h2 id="scripted">The same without the Studio</h2><p class="muted">Every Studio page calls the same core as the <code>caps</code> command and the <code>caps</code> Python package, so a step you clicked can be repeated in a script.</p>
+<div class="tabs" role="tablist"><button role="tab" type="button" aria-selected="true" data-tab="0">Command line</button><button role="tab" type="button" aria-selected="false" data-tab="1">Python</button></div>
+<div class="tabpanel" data-panel="0"><div class="code" data-lang="shell"><pre><code>caps relax cell.data -o cell_min.data --method lbfgs --ftol 0.5 \
+    --density 1.05 --step 0.06</code></pre></div></div><div class="tabpanel" data-panel="1" hidden><div class="code" data-lang="Python"><pre><code>import caps
+
+d = caps.open(&quot;cell.data&quot;)
+d.relax(ftol=0.5, method=&quot;lbfgs&quot;, density=1.05)
+d.save(&quot;cell_min.data&quot;)</code></pre></div></div>
+<h2 id="next">Where to go next</h2><div class="cards next"><a class="card shot-card" href="equilibrate.html"><img src="../manual/img/09_equilibrate.jpg" alt="" loading="lazy" width="1440" height="900"><span class="num"><i class="dot st-prepare"></i>Prepare</span><b>Equilibrate</b><span>Run a published protocol such as Larsen's 21 steps, then production blocks until density, energy and Rg stop drifting.</span></a><a class="card shot-card" href="dynamics.html"><img src="../manual/img/08_dynamics.jpg" alt="" loading="lazy" width="1440" height="900"><span class="num"><i class="dot st-run"></i>Run</span><b>Dynamics</b><span>NVE, NVT, NPT or NPH molecular dynamics in CAPS, with live snapshots, or a LAMMPS / GROMACS deck.</span></a></div>
+<h2 id="read">Read more</h2><div class="cards minis"><a class="card mini" href="../theory/minimisers.html"><span class="num">Theory</span><b>Minimisers</b></a></div>
+<nav class="pager"><a href="force-field.html"><small>Previous</small>Force field</a><a class="next" href="equilibrate.html"><small>Next</small>Equilibrate</a></nav>
+</main>
+</div>
+<footer class="foot"><span>CAPS 0.1.0 · generated by <code>tools/docs/build_site.py</code> from the program itself</span><a href="https://github.com/MuhammadUzairRiaz/CAPS">github.com/MuhammadUzairRiaz/CAPS</a></footer>
+</body>
+</html>
