@@ -70,7 +70,12 @@ if [ ! -x "$TOOL" ]; then
   curl -sSfL -o "$TOOL" "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-$ARCH.AppImage"
   chmod +x "$TOOL"
 fi
-ARCH="$ARCH" "$TOOL" --appimage-extract-and-run "$AD" "$OUT/CAPS-$VERSION-linux-$ARCH.AppImage" > "$WORK/appimage.log" 2>&1 || { tail -20 "$WORK/appimage.log"; exit 1; }
+# the AppStream metadata checked here without the network (the homepage cannot be reached while the repository is
+# private), then appimagetool told not to check it again online
+if command -v appstreamcli > /dev/null; then
+  appstreamcli validate --no-net "$ROOT/packaging/linux/$ID.metainfo.xml" > "$WORK/appstream.log" 2>&1 || { cat "$WORK/appstream.log"; exit 1; }
+fi
+ARCH="$ARCH" "$TOOL" --appimage-extract-and-run -n "$AD" "$OUT/CAPS-$VERSION-linux-$ARCH.AppImage" > "$WORK/appimage.log" 2>&1 || { tail -20 "$WORK/appimage.log"; exit 1; }
 
 echo "== deb"
 DEB="$WORK/deb"
