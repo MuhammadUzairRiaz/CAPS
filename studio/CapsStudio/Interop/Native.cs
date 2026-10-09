@@ -438,6 +438,9 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_neutron_b")] public static extern double NeutronB(int z);
     [DllImport(Lib, EntryPoint = "caps_voids")] public static extern int Voids(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_voids_pdb")] public static extern int VoidsPdb(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string path);
+    [DllImport(Lib, EntryPoint = "caps_build_info")] public static extern int BuildInfo(byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_job_template")] public static extern int JobTemplate([MarshalAs(UnmanagedType.LPUTF8Str)] string scheduler, byte[]? text, int cap);
+    [DllImport(Lib, EntryPoint = "caps_host_presets")] public static extern int HostPresets(byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_citation_text")] public static extern int CitationText([MarshalAs(UnmanagedType.LPUTF8Str)] string key, byte[]? text, int cap);
     [DllImport(Lib, EntryPoint = "caps_methods_text")] public static extern int MethodsText([MarshalAs(UnmanagedType.LPUTF8Str)] string manifest, [MarshalAs(UnmanagedType.LPUTF8Str)] string? replicas, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_template_view")] public static extern int TemplateView([MarshalAs(UnmanagedType.LPUTF8Str)] string text, byte[]? json, int cap);
@@ -1021,6 +1024,12 @@ public sealed class CapsDocument : IDisposable
     }
     /// <summary>The 530 space-group settings (caps_space_groups).</summary>
     public static string SpaceGroups() => JsonCall(Native.SpaceGroups);
+    /// <summary>{"version", "commit"} of the native library (the Studio compares a host's caps with it).</summary>
+    public static string BuildInfo() => JsonCall(Native.BuildInfo);
+    /// <summary>The built-in job script for "slurm", "pbs" or "direct", with its {placeholders}.</summary>
+    public static string JobTemplate(string scheduler) => JsonCall((b, c) => Native.JobTemplate(scheduler, b, c));
+    /// <summary>The generic host presets: [{key, profile}].</summary>
+    public static string HostPresets() => JsonCall(Native.HostPresets);
     /// <summary>What a crystal spec builds (caps_crystal_info).</summary>
     public static string CrystalInfo(string spec) => JsonCallOnce((b, c) => Native.CrystalInfo(spec, b, c));
     /// <summary>The spec with its sites on their special positions (caps_crystal_symmetrize).</summary>

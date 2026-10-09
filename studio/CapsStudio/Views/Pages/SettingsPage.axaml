@@ -407,22 +407,67 @@
                 <StackPanel Grid.Column="2" Spacing="6"><TextBlock Text="Default partition" Classes="label" /><TextBox Text="{Binding HostPartition}" Watermark="gpu" /></StackPanel>
               </Grid>
               <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
-                <StackPanel Spacing="6"><TextBlock Text="Remote work directory" Classes="label" /><TextBox Text="{Binding HostWorkDir}" FontFamily="{DynamicResource Mono}" /></StackPanel>
+                <StackPanel Spacing="6"><TextBlock Text="CAPS folder on the host" Classes="label" /><TextBox Text="{Binding HostRoot}" FontFamily="{DynamicResource Mono}" Watermark="~/CAPS"
+                            ToolTip.Tip="Job folders (TITLE/KIND-N), bin/caps and the source live here; ~ is your home on the host" /></StackPanel>
                 <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Authentication" Classes="label" /><TextBox Text="SSH agent (no passwords stored)" IsReadOnly="True" Foreground="{DynamicResource MutedB}" /></StackPanel>
               </Grid>
-              <StackPanel Orientation="Horizontal" Spacing="10">
-                <Button Classes="small" Click="OnTestHost" IsEnabled="{Binding HostIdle}"><StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="link" Size="13" VerticalAlignment="Center" /><TextBlock Text="Test connection" VerticalAlignment="Center" /></StackPanel></Button>
-                <TextBlock Text="{Binding HostTestText}" Classes="muted" FontSize="12" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="480" />
-              </StackPanel>
+              <!-- cluster jobs: what caps job writes into each job script (the host's ~/CAPS/host.json) -->
+              <Border Classes="card" Padding="16" CornerRadius="10">
+                <StackPanel Spacing="12">
+                  <DockPanel>
+                    <ComboBox DockPanel.Dock="Right" ItemsSource="{Binding HostPresetNames}" PlaceholderText="Start from…" MinWidth="200" SelectionChanged="OnHostPreset"
+                              ToolTip.Tip="Generic starting points: they fill the scheduler, scratch and defaults; your account and modules are yours to add" />
+                    <StackPanel Spacing="2">
+                      <TextBlock Text="Jobs on this host" FontSize="14" FontWeight="SemiBold" />
+                      <TextBlock Text="What each job asks the scheduler for. CAPS runs threads, not MPI ranks: one node, one task, this many cores." Classes="muted" FontSize="12" TextWrapping="Wrap" />
+                    </StackPanel>
+                  </DockPanel>
+                  <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="10" IsVisible="{Binding HostIsQueue}">
+                    <StackPanel Spacing="6"><TextBlock Text="Account / project" Classes="label" /><TextBox Text="{Binding HostAccount}" Watermark="(none)" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Cores per job" Classes="label" /><NumericUpDown Value="{Binding HostCpus}" Minimum="1" Maximum="4096" FormatString="0" /></StackPanel>
+                    <StackPanel Grid.Column="2" Spacing="6"><TextBlock Text="Memory per core" Classes="label" /><TextBox Text="{Binding HostMem}" Watermark="2G" FontFamily="{DynamicResource Mono}" /></StackPanel>
+                    <StackPanel Grid.Column="3" Spacing="6"><TextBlock Text="Time limit" Classes="label" /><TextBox Text="{Binding HostTime}" Watermark="24:00:00" FontFamily="{DynamicResource Mono}" /></StackPanel>
+                  </Grid>
+                  <NumericUpDown Value="{Binding HostCpus}" Minimum="1" Maximum="4096" FormatString="0" IsVisible="{Binding !HostIsQueue}" HorizontalAlignment="Left" Width="160" ToolTip.Tip="Threads per run on the workstation" />
+                  <TextBlock Text="{Binding HostNodeText}" Classes="muted" FontSize="12" />
+                  <Grid ColumnDefinitions="*,*,90" ColumnSpacing="10">
+                    <StackPanel Spacing="6"><TextBlock Text="Scratch" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.ScratchKinds}" SelectedIndex="{Binding HostScratchIndex}" HorizontalAlignment="Stretch" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6" IsVisible="{Binding HostUsesWorkspace}"><TextBlock Text="Workspace file system (-F)" Classes="label" /><TextBox Text="{Binding HostWsFilesystem}" Watermark="(the site's default)" FontFamily="{DynamicResource Mono}" /></StackPanel>
+                    <StackPanel Grid.Column="2" Spacing="6" IsVisible="{Binding HostUsesWorkspace}"><TextBlock Text="Days" Classes="label" /><NumericUpDown Value="{Binding HostWsDays}" Minimum="1" Maximum="365" FormatString="0" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6" IsVisible="{Binding HostUsesScratchVar}"><TextBlock Text="Scratch variable or path" Classes="label" /><TextBox Text="{Binding HostScratchVar}" Watermark="$SCRATCH" FontFamily="{DynamicResource Mono}" /></StackPanel>
+                  </Grid>
+                  <CheckBox Content="Keep the workspace after a job (it is released only after the results were copied back)" IsChecked="{Binding HostKeepWorkspace}" IsVisible="{Binding HostUsesWorkspace}" />
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                    <StackPanel Spacing="6"><TextBlock Text="Modules for jobs" Classes="label" />
+                      <TextBox Text="{Binding HostModules}" AcceptsReturn="True" MinHeight="54" FontFamily="{DynamicResource Mono}" FontSize="12" Watermark="module purge&#10;module load GCC" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Modules for building caps" Classes="label" />
+                      <TextBox Text="{Binding HostBuildModules}" AcceptsReturn="True" MinHeight="54" FontFamily="{DynamicResource Mono}" FontSize="12" Watermark="module purge&#10;module load GCC CMake" /></StackPanel>
+                  </Grid>
+                  <Grid ColumnDefinitions="*,2*" ColumnSpacing="10" IsVisible="{Binding HostIsQueue}">
+                    <StackPanel Spacing="6"><TextBlock Text="Mail (optional)" Classes="label" /><TextBox Text="{Binding HostMailType}" Watermark="END,FAIL" FontFamily="{DynamicResource Mono}" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Mail address (optional)" Classes="label" /><TextBox Text="{Binding HostMailUser}" Watermark="(no mail)" /></StackPanel>
+                  </Grid>
+                </StackPanel>
+              </Border>
+              <WrapPanel Orientation="Horizontal">
+                <Button Classes="small" Click="OnTestHost" IsEnabled="{Binding HostIdle}" Margin="0,0,8,6"><StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="link" Size="13" VerticalAlignment="Center" /><TextBlock Text="Test connection" VerticalAlignment="Center" /></StackPanel></Button>
+                <Button Classes="small" Click="OnInstallCaps" IsEnabled="{Binding HostInstallIdle}" Margin="0,0,8,6"
+                        ToolTip.Tip="Builds the caps command line on the host at this Studio's version, as a short job (never on the login node when there is a queue)"><StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="download" Size="13" VerticalAlignment="Center" /><TextBlock Text="Install / update caps" VerticalAlignment="Center" /></StackPanel></Button>
+                <Button Classes="small" Click="OnFindHostJobs" IsEnabled="{Binding HostIdle}" Margin="0,0,8,6"
+                        ToolTip.Tip="Jobs started on the host with caps job new appear in Jobs and are followed like the Studio's own"><StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="search" Size="13" VerticalAlignment="Center" /><TextBlock Text="Find my jobs" VerticalAlignment="Center" /></StackPanel></Button>
+              </WrapPanel>
+              <TextBlock Text="{Binding HostTestText}" Classes="muted" FontSize="12" TextWrapping="Wrap" MaxWidth="620" HorizontalAlignment="Left" />
+              <TextBlock Text="{Binding HostInstallText}" Classes="muted" FontSize="12" TextWrapping="Wrap" MaxWidth="620" HorizontalAlignment="Left" />
             </StackPanel>
             <StackPanel Spacing="10">
               <DockPanel>
-                <Button DockPanel.Dock="Right" Classes="small ghost" Content="Reset" Click="OnResetTemplate" />
+                <Button DockPanel.Dock="Right" Classes="small ghost" Content="Reset" Click="OnResetTemplate" IsEnabled="{Binding HostEditable}" />
                 <Border DockPanel.Dock="Right" Classes="chip" Margin="0,0,8,0" VerticalAlignment="Center"><TextBlock Text="editable" Foreground="{DynamicResource MutedB}" /></Border>
-                <TextBlock Text="Job template" Classes="h2" VerticalAlignment="Center" />
+                <TextBlock Text="Job script" Classes="h2" VerticalAlignment="Center" />
               </DockPanel>
-              <TextBox Text="{Binding JobTemplate}" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="{DynamicResource Mono}" FontSize="11.5" MinHeight="170" />
-              <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap" Text="{}{job}, {partition}, {workdir} and {recipe} are filled for each job." />
+              <TextBox Text="{Binding HostJobScript}" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="{DynamicResource Mono}" FontSize="11.5" MinHeight="220" MaxHeight="420" IsEnabled="{Binding HostEditable}" />
+              <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap" MaxWidth="700" HorizontalAlignment="Left"
+                         Text="{}The selected host's job script. {title} {job} {jobdir} {account} {partition} {cpus} {mem} {time} {mail_lines} {modules} {scratch_setup} {command} {keep_workspace} {array} {caps} are filled for each job; a #SBATCH or #PBS line whose value is empty is left out. Reset returns to the built-in script for the host's scheduler." />
             </StackPanel>
             <StackPanel Spacing="8">
               <TextBlock Text="Transfers" Classes="h2" />

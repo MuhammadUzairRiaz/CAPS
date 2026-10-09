@@ -108,8 +108,11 @@
             <Button Click="OnGoModule" ToolTip.Tip="The page this job runs from">
               <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="sliders" Size="15" VerticalAlignment="Center" /><TextBlock Text="Settings" VerticalAlignment="Center" /></StackPanel>
             </Button>
-            <Button Click="OnCheckRemote" IsVisible="{Binding CanCheckRemote}" ToolTip.Tip="Ask the host now (it is asked every minute)">
-              <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="server" Size="15" VerticalAlignment="Center" /><TextBlock Text="Check now" VerticalAlignment="Center" /></StackPanel>
+            <Button Click="OnCheckRemote" IsVisible="{Binding CanCheckRemote}" ToolTip.Tip="Ask the host now (every 30 s while this job is shown, every 5 min otherwise)">
+              <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="server" Size="15" VerticalAlignment="Center" /><TextBlock Text="Refresh now" VerticalAlignment="Center" /></StackPanel>
+            </Button>
+            <Button x:Name="CancelHost" Click="OnCancelRemote" IsVisible="{Binding CanCancelRemote}" ToolTip.Tip="scancel / qdel on the host: the results so far come back">
+              <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="stop" Size="15" VerticalAlignment="Center" /><TextBlock x:Name="CancelHostText" Text="Cancel on host" VerticalAlignment="Center" /></StackPanel>
             </Button>
             <Button Classes="primary" Click="OnOpenRemote" IsVisible="{Binding CanOpenRemote}" ToolTip.Tip="Open the structure the host sent back">
               <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="cube" Size="15" VerticalAlignment="Center" /><TextBlock Text="Open result" VerticalAlignment="Center" /></StackPanel>
@@ -124,6 +127,48 @@
               <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="stop" Size="15" VerticalAlignment="Center" /><TextBlock Text="Cancel" VerticalAlignment="Center" /></StackPanel>
             </Button>
           </StackPanel>
+        </Grid>
+
+        <!-- a cluster job: the queue, the run's own log, the scheduler's errors, the latest frame -->
+        <Grid ColumnDefinitions="380,*" ColumnSpacing="16" IsVisible="{Binding IsClusterJob}">
+          <Border Classes="card" CornerRadius="10" VerticalAlignment="Top">
+            <StackPanel>
+              <Border Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+                <TextBlock Text="Queue" Classes="h2" VerticalAlignment="Center" />
+              </Border>
+              <SelectableTextBlock Text="{Binding QueueText}" FontFamily="{DynamicResource Mono}" FontSize="11.5" Margin="16,10,16,12" TextWrapping="Wrap" />
+              <WrapPanel Margin="12,0,12,12">
+                <Button Classes="small" Click="OnLatestFrame" Margin="0,0,6,6" ToolTip.Tip="The run's newest frame (only that frame comes over), opened over the structure that went up">
+                  <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="cube" Size="13" VerticalAlignment="Center" /><TextBlock Text="Latest frame" VerticalAlignment="Center" /></StackPanel>
+                </Button>
+                <Button Classes="small" Click="OnCopyTerminal" Margin="0,0,6,6" ToolTip.Tip="ssh, then caps job status and caps job tail -f: the same view in a terminal">
+                  <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="copy" Size="13" VerticalAlignment="Center" /><TextBlock Text="Copy terminal commands" VerticalAlignment="Center" /></StackPanel>
+                </Button>
+              </WrapPanel>
+            </StackPanel>
+          </Border>
+          <Border Grid.Column="1" Classes="card" CornerRadius="10">
+            <DockPanel>
+              <Border DockPanel.Dock="Top" Height="42" Padding="16,0" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+                <DockPanel>
+                  <CheckBox x:Name="FollowLog" DockPanel.Dock="Right" Content="Follow" IsChecked="True" FontSize="12" VerticalAlignment="Center" />
+                  <TextBox x:Name="LogSearch" DockPanel.Dock="Right" Width="160" Watermark="search the log" FontSize="12" Margin="0,0,10,0" VerticalAlignment="Center" />
+                  <TextBlock Text="Run log" Classes="h2" VerticalAlignment="Center" />
+                </DockPanel>
+              </Border>
+              <StackPanel>
+                <ScrollViewer x:Name="LiveScroll" MaxHeight="360" Margin="16,8,8,8">
+                  <SelectableTextBlock x:Name="LiveText" FontFamily="{DynamicResource Mono}" FontSize="11.5" TextWrapping="NoWrap" />
+                </ScrollViewer>
+                <Border IsVisible="{Binding HasErr}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Padding="16,8">
+                  <StackPanel Spacing="4">
+                    <TextBlock Text="The scheduler's error file" Classes="label" Foreground="{DynamicResource ErrB}" />
+                    <ScrollViewer MaxHeight="140"><SelectableTextBlock Text="{Binding ErrLog}" FontFamily="{DynamicResource Mono}" FontSize="11.5" /></ScrollViewer>
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+            </DockPanel>
+          </Border>
         </Grid>
 
         <!-- what happened (failed) -->

@@ -67,6 +67,8 @@
 #include "caps/bundle.hpp"
 #include "caps/crystal.hpp"
 #include "caps/cg_commands.hpp"
+#include "caps/cluster_job.hpp"
+#include "caps/config.hpp"
 #include "caps/cg_rules.hpp"
 #include "caps/dft_commands.hpp"
 #include "caps/spacegroup.hpp"
@@ -11753,4 +11755,25 @@ extern "C" int32_t caps_dft_help(const char* command, char* out, int32_t cap) {
     g_error = e.what();
     return -1;
   }
+}
+
+// ---------------------------------------------------------------- cluster jobs (ABI 67)
+extern "C" int32_t caps_build_info(char* json, int32_t cap) {
+  caps::Json j = caps::Json::object();
+  j["version"] = std::string(caps::version_string());
+  j["commit"] = std::string(caps::commit_string());
+  return report_out(j.dump(0), json, cap);
+}
+extern "C" int32_t caps_job_template(const char* scheduler, char* text, int32_t cap) {
+  return report_out(caps::job_template_for(scheduler ? scheduler : "slurm"), text, cap);
+}
+extern "C" int32_t caps_host_presets(char* json, int32_t cap) {
+  caps::Json a = caps::Json::array();
+  for (const auto& [key, p] : caps::host_presets()) {
+    caps::Json e = caps::Json::object();
+    e["key"] = key;
+    e["profile"] = caps::host_profile_json(p);
+    a.push_back(e);
+  }
+  return report_out(a.dump(0), json, cap);
 }

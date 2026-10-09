@@ -49,6 +49,7 @@ public sealed partial class MainViewModel
             if (!Set(ref _host, value)) return;
             foreach (var n in new[] { nameof(HostEditable), nameof(HostName), nameof(HostHostname), nameof(HostUser), nameof(HostPort), nameof(HostScheduler),
                                       nameof(HostPartition), nameof(HostWorkDir), nameof(HostTitle), nameof(HostTestText) }) Raise(n);
+            RaiseClusterFields();
         }
     }
     public bool HostEditable => _host?.Host != null;
@@ -113,7 +114,7 @@ public sealed partial class MainViewModel
         {
             var psi = new ProcessStartInfo("ssh") { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false };
             foreach (var a in new[] { "-o", "BatchMode=yes", "-o", "ConnectTimeout=8", "-p", h.Port.ToString(CultureInfo.InvariantCulture),
-                                      h.User.Length > 0 ? $"{h.User}@{h.Hostname}" : h.Hostname, "caps --version || echo caps-not-found" })
+                                      h.User.Length > 0 ? $"{h.User}@{h.Hostname}" : h.Hostname, HostProbeCommand(h) })
                 psi.ArgumentList.Add(a);
             using var p = Process.Start(psi) ?? throw new InvalidOperationException("cannot start ssh");
             var outTask = p.StandardOutput.ReadToEndAsync();
@@ -122,17 +123,37 @@ public sealed partial class MainViewModel
             if (!done) { try { p.Kill(); } catch { } throw new TimeoutException("no answer in 15 s"); }
             var output = (await outTask).Trim();
             var error = (await errTask).Trim();
-            if (p.ExitCode == 0 && output.StartsWith("caps "))
+            var probe = ParseProbe(output);
+            if (probe.TryGetValue("node", out var node) && node.Split(' ', StringSplitOptions.RemoveEmptyEntries) is { Length: >= 1 } nf && int.TryParse(nf[0].TrimEnd('+'), out var cores))
             {
-                row.State = "connected";
-                row.Level = 1;
-                HostTestText = $"Reachable · {output} on the host";
+                h.NodeCores = cores;
+                h.NodeMem = nf.Length > 1 ? nf[1].TrimEnd('+') : "";
+                RaiseClusterFields();
+            }
+            var version = probe.GetValueOrDefault("version", "none");
+            var extras = new List<string>();
+            if (h.NodeCores > 0) extras.Add($"{h.NodeCores} cores per node");
+            if (probe.ContainsKey("sched:slurm")) extras.Add("SLURM");
+            else if (probe.ContainsKey("sched:pbs")) extras.Add("PBS");
+            else extras.Add("no queue found");
+            if (probe.ContainsKey("ws")) extras.Add("workspaces (ws_allocate)");
+            if (p.ExitCode == 0 && version.StartsWith("caps "))
+            {
+                h.CapsVersion = version;
+                var mine = StudioBuild().Commit;
+                var theirs = CommitOf(version);
+                var same = theirs.Length == 0 || mine == "unknown" || theirs == "unknown" || mine.StartsWith(theirs, StringComparison.Ordinal) || theirs.StartsWith(mine, StringComparison.Ordinal);
+                row.State = same ? "connected" : "caps differs";
+                row.Level = same ? 1 : 2;
+                HostTestText = $"Reachable · {version} on the host · {string.Join(" · ", extras)}" +
+                               (same ? "" : $". The Studio is {mine}: Install / update caps builds the same one there");
             }
             else if (p.ExitCode == 0)
             {
                 row.State = "no caps";
                 row.Level = 2;
-                HostTestText = "Reachable, but caps is not on the host's PATH: install the CAPS command-line tools there";
+                HostTestText = $"Reachable · {string.Join(" · ", extras)} · caps is not installed there yet: Install / update caps builds it in {h.Root}/bin" +
+                               (probe.ContainsKey("git") && probe.ContainsKey("cmake") ? "" : " (it needs git and cmake: load them with the build modules)");
             }
             else
             {
@@ -169,7 +190,7 @@ public sealed partial class MainViewModel
     // with its provenance. Keys stay in the SSH agent; nothing is stored but the host's name and the job's folder.
     public List<string> RunWhereChoices => new[] { "This machine" }.Concat(_settings.Hosts.Select(h => h.Name.Length > 0 ? h.Name : h.Hostname)).ToList();
     private int _runWhere;
-    public int RunWhereIndex { get => Math.Min(_runWhere, _settings.Hosts.Count); set { if (Set(ref _runWhere, Math.Clamp(value, 0, _settings.Hosts.Count))) Raise(nameof(RunsRemote)); } }
+    public int RunWhereIndex { get => Math.Min(_runWhere, _settings.Hosts.Count); set { if (Set(ref _runWhere, Math.Clamp(value, 0, _settings.Hosts.Count))) { Raise(nameof(RunsRemote)); _rCpus = 0; _rMem = _rTime = ""; _rKeep = null; RaiseRemoteRun(); } } }
     public bool RunsRemote => RunWhereIndex > 0;
     public bool HasHosts => _settings.Hosts.Count > 0;
     public static string RemoteFolder => AppSettings.Override != null ? Path.Combine(Path.GetDirectoryName(AppSettings.Override)!, "caps-remote") : Path.Combine(AppSettings.Folder, "remote");
@@ -285,13 +306,15 @@ public sealed partial class MainViewModel
             else
             {
                 _doc!.Save(Path.Combine(local, "structure.caps.data"));
-                File.WriteAllText(Path.Combine(local, recipeFile), RemoteRecipe(kind, stem).ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+                var recipe = RemoteRecipe(kind, stem);
+                AddLiveOutput(recipe);
+                File.WriteAllText(Path.Combine(local, recipeFile), recipe.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
             }
             if (!_relaxCoulomb && !grow) job.Add("Note: recipes always include Coulomb terms; the host's run has them although the page has them off");
-            var files = grow ? new List<string> { recipeFile, "job.sh" } : new List<string> { "structure.caps.data", recipeFile, "job.sh" };
+            var files = grow ? new List<string> { recipeFile } : new List<string> { "structure.caps.data", recipeFile };
             if (!grow && Field.Assigned && kind != "React") files.AddRange(SaveForceFieldForHost(local));
-            await SendPrepared(job, h, id, files.ToArray(), recipeFile);
-            Status = $"{kind} sent to {h.Name} · {h.Scheduler} {job.Remote.JobId} · Jobs follows it";
+            await SendJob(job, h, kind, files.ToArray(), $"caps run {recipeFile} --out .");
+            Status = $"{kind} sent to {h.Name} · {(h.Scheduler == "none" ? "process" : h.Scheduler)} {job.Remote.JobId} · Jobs follows it";
             StartRemotePoll();
         }
         catch (Exception e)
@@ -299,7 +322,7 @@ public sealed partial class MainViewModel
             job.Status = "failed";
             job.Error = e.Message;
             job.Add("Could not send the job: " + e.Message);
-            job.Suggestion = "Test the host in Settings › Compute & remote (keys come from your SSH agent; caps must be on the host's PATH).";
+            job.Suggestion = "Test the host in Settings › Compute & remote (keys come from your SSH agent; Install / update caps puts caps on the host).";
             job.SuggestModule = 10;
             job.Ended = DateTime.Now;
             Status = "Could not send the job: " + e.Message;
@@ -373,7 +396,10 @@ public sealed partial class MainViewModel
         {
             Directory.CreateDirectory(job.Remote.Local);
             File.WriteAllText(Path.Combine(job.Remote.Local, "recipe.json"), recipeJson);
-            await SendPrepared(job, h, id, ["recipe.json", "job.sh"], "recipe.json");
+            var keep = _rTitle;
+            _rTitle = stem;
+            try { await SendJob(job, h, kind, ["recipe.json"], "caps run recipe.json --out ."); }
+            finally { _rTitle = keep; }
             StartRemotePoll();
         }
         catch (Exception e)
@@ -381,7 +407,7 @@ public sealed partial class MainViewModel
             job.Status = "failed";
             job.Error = e.Message;
             job.Add("Could not send the job: " + e.Message);
-            job.Suggestion = "Test the host in Settings › Compute & remote (keys come from your SSH agent; caps must be on the host's PATH).";
+            job.Suggestion = "Test the host in Settings › Compute & remote (keys come from your SSH agent; Install / update caps puts caps on the host).";
             job.SuggestModule = 10;
             job.Ended = DateTime.Now;
         }
@@ -393,17 +419,28 @@ public sealed partial class MainViewModel
     private void StartRemotePoll()
     {
         if (_remotePoll != null) return;
-        _remotePoll = new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(60) };
-        _remotePoll.Tick += (_, _) => { foreach (var j in Jobs.Where(j => j.IsRemote && j.IsRunning).ToList()) _ = CheckRemote(j); };
+        // every 30 s for the job shown in Jobs, every 5 min for the others (PollDue); the earlier plain scripts every minute
+        _remotePoll = new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(30) };
+        _remotePoll.Tick += (_, _) =>
+        {
+            foreach (var j in Jobs.Where(j => j.IsRemote && (j.IsRunning || j.IsQueued)).ToList())
+                if (j.Remote!.Mode.Length == 0 ? (DateTime.Now - j.Remote.LastPoll).TotalSeconds >= 55 : PollDue(j))
+                {
+                    if (j.Remote.Mode.Length == 0) j.Remote.LastPoll = DateTime.Now;
+                    _ = RefreshJob(j);
+                }
+        };
         _remotePoll.Start();
     }
 
     /// <summary>Asks the host where the job stands; when it has ended, brings the result and its log back.</summary>
     public async Task CheckRemote(Job? j)
     {
-        if (j?.Remote is not { } r || !j.IsRunning || r.Checking) return;
+        if (j?.Remote is not { } r || !(j.IsRunning || j.IsQueued) || r.Checking) return;
         var h = _settings.Hosts.FirstOrDefault(x => x.Name == r.Host);
         if (h == null) { j.Add($"The host {r.Host} is no longer in Settings"); return; }
+        if (r.Mode == "job") { await PollJob(j, h, r); return; }
+        if (r.Mode == "install") { await PollInstall(j, h, r); return; }
         r.Checking = true;
         try
         {
@@ -421,7 +458,17 @@ public sealed partial class MainViewModel
                 r.LastState = state;
                 return;
             }
-            // ended: the result, the log and the small outputs come back; a large trajectory stays on the host until asked for
+            await BringBack(j, h, r);
+        }
+        catch (Exception e) { j.Add($"{r.Host} not reached: {e.Message} (the job keeps running there; checked again in a minute)"); }
+        finally { r.Checking = false; }
+    }
+
+    /// <summary>A job that has ended: the result, the log and the small outputs come back; a large trajectory stays on
+    /// the host until asked for.</summary>
+    private async Task BringBack(Job j, RemoteHost h, RemoteRun r, bool finished = false)
+    {
+        {
             var outDir = Path.Combine(r.Local, "out");
             Directory.CreateDirectory(outDir);
             var ls = await Tool("ssh", SshArgs(h, ListOutCommand(r.Dir)), 60000);
@@ -429,11 +476,11 @@ public sealed partial class MainViewModel
             var back = (Code: 0, Out: "", Err: "");
             if (now.Count > 0)
                 back = await Tool("scp", ScpArgs(h, now.Select(f => $"{Target(h)}:{r.Dir}/out/{f.Name}"), outDir + "/"), CopyTimeoutMs(now.Sum(f => f.Bytes)));
-            await Tool("scp", ScpArgs(h, [$"{Target(h)}:{r.Dir}/*.log"], r.Local), 60000);
+            await Tool("scp", ScpArgs(h, [$"{Target(h)}:{r.Dir}/{(r.Mode == "job" ? "slurm-*" : "*.log")}"], r.Local), 60000);
             var result = Path.Combine(outDir, r.Stem + ".data");
             j.Ended = DateTime.Now;
             // a structure, or (a Glass replica: the scan runs on a copy) its properties
-            if (back.Code == 0 && (File.Exists(result) || File.Exists(Path.Combine(outDir, r.Stem + ".properties.json"))))
+            if (back.Code == 0 && (File.Exists(result) || File.Exists(Path.Combine(outDir, r.Stem + ".properties.json")) || finished))
             {
                 j.Status = "done";
                 j.Progress = 1;
@@ -445,7 +492,8 @@ public sealed partial class MainViewModel
             }
             else
             {
-                var log = Directory.Exists(r.Local) ? Directory.GetFiles(r.Local, "*.log").Select(File.ReadAllText).FirstOrDefault() ?? "" : "";
+                var log = File.Exists(Path.Combine(outDir, "run.log")) ? File.ReadAllText(Path.Combine(outDir, "run.log"))
+                        : Directory.Exists(r.Local) ? Directory.GetFiles(r.Local, "*.log").Select(File.ReadAllText).FirstOrDefault() ?? "" : "";
                 j.Status = "failed";
                 j.Error = "No result came back" + (log.Length > 0 ? ":\n" + string.Join("\n", log.Split('\n').TakeLast(8)) : $" ({(back.Err.Length > 0 ? back.Err.Split('\n')[0] : ls.Code != 0 ? "no out folder on the host" : "no " + r.Stem + ".data in out")})");
                 j.Add(j.Error);
@@ -453,8 +501,6 @@ public sealed partial class MainViewModel
             SaveJobs();
             Raise(nameof(JobsSummary)); Raise(nameof(ComputeText));
         }
-        catch (Exception e) { j.Add($"{r.Host} not reached: {e.Message} (the job keeps running there; checked again in a minute)"); }
-        finally { r.Checking = false; }
     }
 
     // ---------------------------------------------------------------- copying results back
