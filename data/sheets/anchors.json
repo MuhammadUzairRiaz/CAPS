@@ -1,0 +1,14 @@
+{
+ "format": "caps-anchors",
+ "version": 1,
+ "about": "Groups a molecule can bind to a surface through, as SMARTS; the anchor is the atoms of the first match. Add your own.",
+ "anchors": [
+  {"name": "nitrile",   "smarts": "[N;$(N#C)]"},
+  {"name": "vinyl",     "smarts": "C=C"},
+  {"name": "carbonyl",  "smarts": "[O;$(O=[#6])]"},
+  {"name": "hydroxyl",  "smarts": "[OX2H]"},
+  {"name": "amine",     "smarts": "[NX3;H2]"},
+  {"name": "thiol",     "smarts": "[SX2H]"},
+  {"name": "aromatic",  "smarts": "a"}
+ ]
+}

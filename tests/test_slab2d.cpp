@@ -162,3 +162,45 @@ TEST(Slab2D, SitesAndIsolate) {
   io.remove = {"Al"};
   EXPECT_EQ(isolate_layer(max, io).atoms.size(), 5u);
 }
+
+#include "caps/adsorb_dft.hpp"
+#include "caps/molecule.hpp"
+
+TEST(Slab2D, AdsorptionSetOnOH5x5) {
+  // the default NBR oligomer (C11H17N) on the ideal OH sheet, 5 × 5: nitrile-down, vinyl-down and parallel at four azimuths
+  BuildOptions bo;
+  bo.forcefield = "uff";
+  bo.seed = 7;
+  const System mol = build_molecule("C/C=C/CCC(C#N)C/C=C/C", bo).system;
+  ASSERT_EQ(mol.atoms.size(), 29u);
+  const auto anchors = find_anchors(mol, anchor_library(kData));
+  ASSERT_TRUE(anchors.count("nitrile") && anchors.count("vinyl"));
+  auto slab_of = [&](int n) {
+    TerminateOptions o;
+    o.top.fractions = parse_fractions("OH");
+    o.na = o.nb = n;
+    o.data_dir = kData;
+    return terminate_slab(sheet_from_layers(sheet_preset(kData, "Ti3C2")), o);
+  };
+  AdsorbSetOptions ao;
+  const auto set = build_adsorption_set(slab_of(5), mol, anchors, ao);
+  ASSERT_EQ(set.complexes.size(), 12u);
+  std::vector<std::pair<std::string, System>> written;
+  for (const auto& c : set.complexes) {
+    EXPECT_EQ(c.status, "ok") << c.name << " " << (c.issues.empty() ? "" : c.issues[0].text);
+    EXPECT_EQ(c.molecule.size(), 29u);
+    EXPECT_GE(c.any, 2.30 - 1e-9) << c.name;
+    EXPECT_LE(c.any, 2.35 + 1e-9) << c.name;
+    EXPECT_GE(c.heavy, 3.0 - 0.1) << c.name;
+    EXPECT_GE(c.image, 5.0) << c.name;
+    written.push_back({c.name, c.system});
+  }
+  for (const auto& r : audit_complexes(set.slab, set.molecule, written)) EXPECT_TRUE(r.ok && r.intact && r.n_mol == 29) << r.name << " any " << r.any << " heavy " << r.heavy << " image " << r.image;
+  // 4 × 4: the flat (parallel) chain comes within 4 Å of its own image (CAPS's UFF conformer: 3.2 Å, a WARN; an
+  // extended conformer overlaps it, an ERROR) and the larger cell that passes is suggested
+  const auto small = build_adsorption_set(slab_of(4), mol, anchors, ao);
+  bool flagged = false;
+  for (const auto& c : small.complexes)
+    if (c.mode == "parallel") for (const auto& f : c.issues) flagged |= f.text.find("periodic image") != std::string::npos && c.suggested_supercell > 0;
+  EXPECT_TRUE(flagged);
+}
