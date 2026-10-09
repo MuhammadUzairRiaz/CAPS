@@ -57,6 +57,9 @@ public sealed class AppSettings
     public string DftRoot { get; set; } = "";
     public string DftProfile { get; set; } = "";
     public string PotcarDir { get; set; } = "";
+    /// <summary>Coarse-grain workflow: the working folder (cg/, bonded/, ibi/, melt/ … inside) and the last folder files were picked from.</summary>
+    public string CgwRoot { get; set; } = "";
+    public string CgwPickDir { get; set; } = "";
     /// <summary>Save pipeline: a copy of the pipeline's YAML written beside every set of outputs it makes.</summary>
     public bool PipelineStoreWithResults { get; set; } = true;
     /// <summary>Save pipeline: Python steps arrive switched off when the file is loaded again (false: kept on, for files in your own library or project).</summary>

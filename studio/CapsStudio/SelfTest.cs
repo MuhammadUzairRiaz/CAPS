@@ -5022,6 +5022,7 @@ internal static class SelfTest
                       $"DFT runs and results: {vm.DftRuns.Count} cases · {vm.GeomRows.Count} geometries · {vm.ResultsNote.Split('\n').FirstOrDefault()}");
                 vm.SetModule(8);
             }
+            CoarseGrainChecks(vm, outDir, Check);
             // the Start page's sample pipeline: four steps on the polystyrene cell
             vm.Open(Path.Combine(dir, "ps_melt.lammpstrj"), Path.Combine(dir, "ps_melt.data"));
             vm.LoadPipeline(Path.Combine(dir, "structure_report.json"));
@@ -5044,5 +5045,58 @@ internal static class SelfTest
 
         Console.WriteLine(fails == 0 ? "all checks passed" : $"{fails} check(s) failed");
         return fails == 0 ? 0 : 1;
+    }
+
+    /// <summary>The coarse-grain workflow page (module 80) through its view-model: a small PBS cell grown, mapped by the
+    /// ester cuts, bonded tables inverted, g(r) targets and the IBI start, a CG melt built, tension decks, entanglements.</summary>
+    private static void CoarseGrainChecks(MainViewModel vm, string outDir, Action<bool, string> Check)
+    {
+        var cgRoot = Path.Combine(outDir, "cgw");
+        if (Directory.Exists(cgRoot)) Directory.Delete(cgRoot, true);
+        vm.CgwRoot = cgRoot;
+        vm.OpenCgw();
+        var (pbs, _) = CapsDocument.GrowChains("{\"units\":[{\"name\":\"butylene succinate\",\"smiles\":\"[*]OCCCCOC(=O)CCC(=O)[*]\"}],\"dp\":6}",
+            new CapsGrowOpts { Chains = 4, Dp = 0, Seed = 1, Density = 0.3, ContactScale = 0.8, Curve = 1 }, null, "pbs");
+        var pbsFile = Path.Combine(outDir, "pbs_cg.data");
+        pbs.Save(pbsFile);
+        pbs.Dispose();
+        vm.CgwInputs.Clear();
+        vm.CgwAddInputs([pbsFile]);
+        vm.CgwPreset = "ester-cut";
+        vm.CgwRunMap().GetAwaiter().GetResult();
+        var mapRow = vm.CgwMapRows.FirstOrDefault()?.Cells ?? [];
+        Check(vm.CgwMapRows.Count == 1 && mapRow[2] == "48" && mapRow[3] == "4" && mapRow[5] == "2" && vm.CgwKindCats.SequenceEqual(["B", "S"]) && vm.CgwKindBars.Count == 1
+              && vm.CgwSequence.StartsWith("B") && vm.CgwSystems.Count == 1 && File.Exists(vm.CgwTypes) && vm.CgwCli.StartsWith("caps cgmap") && vm.CgwStages[0].Done,
+              $"coarse-grain map: {string.Join(" | ", mapRow)} · kinds {string.Join(",", vm.CgwKindCats)} · {vm.CgwSequence[..Math.Min(24, vm.CgwSequence.Length)]} · {vm.CgwStatus}");
+        vm.CgwStage = 1;
+        vm.CgwRunBonded().GetAwaiter().GetResult();
+        Check(vm.CgwBondedRows.Count >= 3 && vm.CgwBondedRows.Any(r => r.Kind == "bond" && r.Key == "B-S") && vm.CgwPlotP.Length > 10 && vm.CgwPlotU.Length > 10
+              && vm.CgwTimestep.StartsWith("Suggested time step") && vm.CgwCli.StartsWith("caps cgfit bonded"),
+              $"coarse-grain bonded: {vm.CgwBondedRows.Count} tables · plot {vm.CgwPlotP.Length}/{vm.CgwPlotU.Length} points · {vm.CgwTimestep} · not converged {vm.HasCgwNotConverged} · {vm.CgwStatus}");
+        vm.CgwStage = 2;
+        vm.CgwRmax = 10;
+        vm.CgwRunTargets().GetAwaiter().GetResult();
+        var grPts = vm.CgwGr.Values.FirstOrDefault()?.GetValueOrDefault(vm.CgwPairKey)?.Length ?? 0;
+        vm.CgwIbiStart().GetAwaiter().GetResult();
+        Check(vm.CgwPairKeys.Count >= 2 && grPts > 50 && File.Exists(vm.CgwTargets) && vm.CgwIbiLoop.Contains("run_ibi.sh") && vm.CgwPairU.Length > 50 && vm.CgwStepOut.EndsWith("it001"),
+              $"coarse-grain IBI: {vm.CgwPairKeys.Count} pairs · g(r) {grPts} points · loop '{vm.CgwIbiLoop}' · table {vm.CgwPairU.Length} points · {vm.CgwStatus}");
+        vm.CgwStage = 3;
+        vm.CgwUnits = "BS=B+S";
+        vm.CgwDp = 10; vm.CgwChains = 6; vm.CgwBuildDensity = 1.2m;
+        vm.CgwBuildRef = true;
+        vm.CgwBuild().GetAwaiter().GetResult();
+        Check(vm.CgwBuildFacts.Count == 5 && vm.CgwBuildFacts[0].Value == "120" && vm.CgwR2Built.Length >= 19 && vm.CgwR2Aa.Length > 5 && vm.HasCgwEquil
+              && vm.CgwEquilCommand.Contains("lmp -in in.cg_equil") && vm.CgwPpaRows.Count == 1 && vm.CgwCli.StartsWith("caps cgbuild"),
+              $"coarse-grain melt: {string.Join(" · ", vm.CgwBuildFacts.Select(f => f.Key + " " + f.Value))} · ⟨R²(n)⟩/n {vm.CgwR2Built.Length} built, {vm.CgwR2Aa.Length} AA · warning {vm.HasCgwBuildWarning}");
+        vm.CgwStage = 5;
+        vm.CgwMechDecks().GetAwaiter().GetResult();
+        Check(vm.CgwMechFiles.Contains("in.cg_tensile_stress_1e-6") && vm.CgwMechFiles.Contains("in.cg_tensile_volume_1e-7") && vm.CgwMechFiles.Contains("run_tension.sh"),
+              $"coarse-grain tension decks: {vm.CgwMechFiles}");
+        vm.CgwPpaMethod = "caps";
+        vm.CgwRunPpa().GetAwaiter().GetResult();
+        var ppa = vm.CgwPpaTable.FirstOrDefault()?.Cells ?? [];
+        Check(vm.CgwPpaTable.Count == 1 && ppa[1] == "20" && ppa[2] == "6" && ppa[6] != "–" && vm.CgwCli.StartsWith("caps ppa") && vm.CgwStages[5].Done,
+              $"coarse-grain entanglements: {string.Join(" | ", ppa)} · {vm.CgwPpaMulti}");
+        vm.SetModule(8);
     }
 }
