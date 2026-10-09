@@ -53,15 +53,69 @@
 #include "caps/yaml.hpp"
 #ifdef _WIN32
 #include <io.h>
+// the one Win32 call needed (no <windows.h>: its min/max macros)
+extern "C" __declspec(dllimport) unsigned long __stdcall GetModuleFileNameA(void* module, char* name, unsigned long size);
 #define isatty _isatty
 #define fileno _fileno
 #else
 #include <unistd.h>
 #endif
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#endif
 
 using namespace caps;
 
 namespace {
+
+// Where the shipped data (data/, samples/) is: $CAPS_HOME, beside this program (Windows and Linux installs: data/ next to
+// caps; the macOS app: Contents/Resources beside Contents/MacOS), the working directory, the source tree it was built from.
+std::filesystem::path executable_dir() {
+  namespace fs = std::filesystem;
+  std::string p;
+#if defined(_WIN32)
+  char buf[4096];
+  const unsigned long n = GetModuleFileNameA(nullptr, buf, sizeof buf);
+  if (n > 0 && n < sizeof buf) p.assign(buf, n);
+#elif defined(__APPLE__)
+  char buf[4096];
+  uint32_t size = sizeof buf;
+  if (_NSGetExecutablePath(buf, &size) == 0) p = buf;
+#else
+  std::error_code ec;
+  p = fs::read_symlink("/proc/self/exe", ec).string();
+#endif
+  if (p.empty()) return {};
+  std::error_code ec;
+  const fs::path c = fs::weakly_canonical(fs::path(p), ec);
+  return (ec ? fs::path(p) : c).parent_path();
+}
+
+const std::vector<std::string>& caps_roots() {
+  static const std::vector<std::string> roots = [] {
+    std::vector<std::string> r;
+    if (const char* h = std::getenv("CAPS_HOME")) r.push_back(h);
+    const std::filesystem::path exe = executable_dir();
+    if (!exe.empty()) {
+      r.push_back(exe.string());
+      r.push_back((exe.parent_path() / "Resources").string());
+      r.push_back(exe.parent_path().string());
+    }
+    r.push_back(".");
+    r.push_back(CAPS_SOURCE_ROOT);
+    return r;
+  }();
+  return roots;
+}
+
+// A force field by path, or by its library name (opls2005, pcff, compass, gaff2-moltemplate …) from data/forcefields.
+std::string ff_path(const std::string& s) {
+  if (s.empty() || std::filesystem::exists(s)) return s;
+  for (const auto& root : caps_roots())
+    for (const std::string& name : {s, s + ".json"})
+      if (std::filesystem::exists(root + "/data/forcefields/" + name)) return root + "/data/forcefields/" + name;
+  return s;
+}
 
 // Charges worth keeping: a file whose charge column is all zero (a builder's placeholder) has none.
 bool file_charges(const System& s) {
@@ -345,7 +399,7 @@ ForceField cli_forcefield(System& s0, std::map<std::string, std::string>& o, boo
     if (!quiet) std::printf("force field: UFF (every element; %s)\n", uo.qeq ? "QEq charges" : uo.keep_charges ? "charges from the file" : "no charges");
     return assign_uff(s0, uo);
   }
-  FFDef def = load_forcefield(o["--ff"]);
+  FFDef def = load_forcefield(ff_path(o["--ff"]));
   if (o.count("--typing")) load_typing(def, o["--typing"]);
   if (needs_prepare(def)) {   // united atom, shells, ionic bonds: the structure the force field describes
     std::string ch = o.count("--charges") ? o["--charges"] : (file_charges(s0) ? "keep" : "auto");
@@ -380,7 +434,7 @@ int cli_recipe(const Json& r, const std::string& file, std::map<std::string, std
   ro.out_dir = o.count("--out") ? o["--out"] : ".";
   if (o.count("--seed")) ro.seed = std::stoll(o["--seed"]);
   if (o.count("--threads")) ro.threads = std::stoi(o["--threads"]);
-  for (const std::string root : {std::getenv("CAPS_HOME") ? std::string(std::getenv("CAPS_HOME")) : std::string(), std::string("."), std::string(CAPS_SOURCE_ROOT)})
+  for (const std::string& root : caps_roots())
     if (!root.empty() && std::filesystem::exists(root + "/data/forcefields/catalogue.json")) { ro.forcefield_dir = root + "/data/forcefields"; break; }
   const bool json = o.count("--json") > 0, tty = isatty(fileno(stdout));
   auto esc = [](const std::string& x) { return Json(x).dump(0); };
@@ -529,7 +583,7 @@ static int dft_main(const std::string& cmd, int argc, char** argv) {
     } else pos.push_back(a);
   }
   std::string data;
-  for (const std::string root : {std::getenv("CAPS_HOME") ? std::string(std::getenv("CAPS_HOME")) : std::string(), std::string("."), std::string(CAPS_SOURCE_ROOT)})
+  for (const std::string& root : caps_roots())
     if (!root.empty() && std::filesystem::exists(root + "/data/sheets/sheets.json")) { data = root + "/data"; break; }
   if (data.empty()) { std::fprintf(stderr, "caps: data/sheets not found (set CAPS_HOME)\n"); return 2; }
   try {
@@ -563,7 +617,7 @@ static int cg_main(const std::string& cmd, int argc, char** argv) {
     } else pos.push_back(a);
   }
   std::string data;
-  for (const std::string root : {std::getenv("CAPS_HOME") ? std::string(std::getenv("CAPS_HOME")) : std::string(), std::string("."), std::string(CAPS_SOURCE_ROOT)})
+  for (const std::string& root : caps_roots())
     if (!root.empty() && std::filesystem::exists(root + "/data/cg/mapping_rules.json")) { data = root + "/data"; break; }
   if (data.empty()) { std::fprintf(stderr, "caps: data/cg not found (set CAPS_HOME)\n"); return 2; }
   try {
@@ -1254,13 +1308,9 @@ int main(int argc, char** argv) {
   if (cmd == "bench") {
     try {
       BenchOptions b;
-      // the shipped data: $CAPS_HOME, the working directory, or the source tree this was built from
+      // the shipped data (caps_roots)
       auto find = [](const std::string& rel, const std::string& probe) {
-        std::vector<std::string> roots;
-        if (const char* h = std::getenv("CAPS_HOME")) roots.push_back(h);
-        roots.push_back(".");
-        roots.push_back(CAPS_SOURCE_ROOT);
-        for (const auto& r : roots)
+        for (const auto& r : caps_roots())
           if (std::filesystem::exists(r + "/" + rel + "/" + probe)) return r + "/" + rel;
         return rel;
       };
@@ -1306,7 +1356,7 @@ int main(int argc, char** argv) {
       if (!o.count("-o")) return usage();
       if (o.count("--template") && !o.count("--ff")) throw std::runtime_error("--template needs --ff (the force field whose templates to use)");
       FFDef def;
-      if (o.count("--ff")) def = load_forcefield(o["--ff"]);
+      if (o.count("--ff")) def = load_forcefield(ff_path(o["--ff"]));
       if (o.count("--template") && o["--template"] == "list") {
         for (const auto& [k, v] : bead_template_list(def)) std::printf("%-20s %s\n", k.c_str(), v.size() > 90 ? (v.substr(0, 87) + "...").c_str() : v.c_str());
         return 0;
@@ -1371,7 +1421,7 @@ int main(int argc, char** argv) {
     try {
       if (pos.empty()) return usage();
       std::string data;
-      for (const std::string root : {std::getenv("CAPS_HOME") ? std::string(std::getenv("CAPS_HOME")) : std::string(), std::string("."), std::string(CAPS_SOURCE_ROOT)})
+      for (const std::string& root : caps_roots())
         if (!root.empty() && std::filesystem::exists(root + "/data/martini/martini22-protein.json")) { data = root + "/data/martini/martini22-protein.json"; break; }
       System aa = load(pos[0], o);
       {   // bonds from the file and from distances (martinize2's -bonds-from both: a PDB's CONECT may list only disulfides)
@@ -1519,7 +1569,7 @@ int main(int argc, char** argv) {
       }
       if (sub == "info") {
         if (pos.size() < 2) return usage();
-        const FFDef ff = load_forcefield(pos[1]);
+        const FFDef ff = load_forcefield(ff_path(pos[1]));
         std::printf("%s %s\nsource %s\nstyles pair %s · bond %s · angle %s · dihedral %s · improper %s\nmixing %s · special lj %g %g %g · coul %g %g %g · "
                     "cut-off %g · impropers %s\n",
                     ff.name.c_str(), ff.version.c_str(), ff.source.c_str(), ff.pair_style.c_str(), ff.bond_style.c_str(), ff.angle_style.c_str(),
@@ -1539,7 +1589,7 @@ int main(int argc, char** argv) {
         // caps ff type FILE --ff FF.json [--typing RULES.json] [-o TYPES.txt] [--explain]
         if (pos.size() < 2 || !o.count("--ff")) return usage();
         System s = load(pos[1], o);
-        FFDef ff = load_forcefield(o["--ff"]);
+        FFDef ff = load_forcefield(ff_path(o["--ff"]));
         if (o.count("--typing"))
           for (std::stringstream ts(o["--typing"]); ts.good();) {   // several files: comma-separated, later ones on top
             std::string f;
@@ -1592,7 +1642,7 @@ int main(int argc, char** argv) {
           f = assign_uff(s, uo);
           for (const auto& n : f.notes) std::printf("%s\n", n.c_str());
         } else {
-          FFDef ff = load_forcefield(o["--ff"]);
+          FFDef ff = load_forcefield(ff_path(o["--ff"]));
           if (o.count("--overlay")) merge_forcefield(ff, load_forcefield(o["--overlay"]));
           if (o.count("--typing"))
             for (std::stringstream ts(o["--typing"]); ts.good();) {   // several files: comma-separated, later ones on top
