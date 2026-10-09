@@ -32,7 +32,7 @@ package() {
   cp -R data/. "$pkgdir/opt/caps/data/"   # every data folder
   find "$pkgdir/opt/caps/data" -name "__pycache__" -type d -prune -exec rm -rf {} +
   install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
-  install -Dm644 licenses/RDKit-UFF-parameters.txt "$pkgdir/usr/share/licenses/$pkgname/RDKit-UFF-parameters.txt"
+  install -Dm644 licenses/RDKit-periodic-table.txt "$pkgdir/usr/share/licenses/$pkgname/RDKit-periodic-table.txt"
   cp -R samples "$pkgdir/opt/caps/"
   ln -s /opt/caps/CapsStudio "$pkgdir/usr/bin/caps-studio"
   ln -s /opt/caps/caps "$pkgdir/usr/bin/caps"

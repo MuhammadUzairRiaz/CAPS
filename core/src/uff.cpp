@@ -254,7 +254,7 @@ FFDef uff_definition() {
   FFDef d;
   d.name = "UFF";
   d.version = "1992";
-  d.source = "Rappé, Casewit, Colwell, Goddard & Skiff, J. Am. Chem. Soc. 114, 10024 (1992); parameter table from RDKit (BSD)";
+  d.source = "Rappé, Casewit, Colwell, Goddard & Skiff, J. Am. Chem. Soc. 114, 10024 (1992), Tables I and III; QEq data: Rappé & Goddard, J. Phys. Chem. 95, 3358 (1991)";
   d.references = {"A. K. Rappé, C. J. Casewit, K. S. Colwell, W. A. Goddard III, W. M. Skiff, J. Am. Chem. Soc. 114, 10024 (1992)"};
   for (const auto& q : kUff) {
     if (!std::strcmp(q.label, "O_3_z") || !std::strcmp(q.label, "P_3+q")) continue;
