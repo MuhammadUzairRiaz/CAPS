@@ -15,6 +15,7 @@
 
 #include "caps/bundle.hpp"
 #include "caps/cg_bonded.hpp"
+#include "caps/cg_build.hpp"
 #include "caps/cg_nonbonded.hpp"
 #include "caps/mechanics.hpp"
 #include "caps/trajectory.hpp"
@@ -112,6 +113,34 @@ const std::vector<Cmd>& table() {
         "caps cgfit ibi-step cg/PBS.map.json ibi/it000/PBS.lammpstrj ibi/it000/PBS.log … --targets ibi/targets.json --pairs ibi/it000/pairs.json -o ibi/it001",
         "caps cgfit fit --pairs ibi/it020/pairs.json --form lj126 --types cg/types.json -o lj",
         "caps cgfit calibrate --fits lj/fits.json --history calib/calibration.json --s-sigma 1 --s-eps 1 --density 1.31 --tg 365 --target-density 1.25 --target-tg 241 -o calib/step1"}},
+      {"cgbuild", "caps cgbuild --units BS=B+S,BA=B+A --composition BS:0.8,BA:0.2 --dp 400 --chains 200 --density 1.25 --bonded DIR --maps MAPS -o DIR [MAP FRAMES …]",
+       "A coarse-grained melt of repeat units (each a bead sequence) with real sequence statistics, the chains random walks drawn "
+       "from the inverted bonded distributions (bonded.json), in a cubic box at the density; reports R_ee, L/R_ee (a warning when "
+       "the box is smaller than the chains) and ⟨R²(n)⟩/n, compared with the all-atom model's when its maps and frames are given; "
+       "writes STEM.cg.data, STEM.map.json and in.cg_equil (soft push-off, the model's pairs, hot anneal, NPT).",
+       {{"units", "", "repeat units as NAME=BEAD+BEAD…, comma-separated (BS=B+S,BA=B+A,BT=B+T)"},
+        {"composition", "", "unit shares NAME:share (BS:0.8,BA:0.2); default equal"},
+        {"sequence", "bernoulli", "bernoulli, markov, block, gradient, alternating or pattern"},
+        {"markov", "", "markov: transitions FROM>TO:p, comma-separated (BA>BA:0.9,BA>BT:0.1,BT>BT:0.8,BT>BA:0.2)"},
+        {"blocks", "", "block: block lengths, cycling through the units (20,10)"},
+        {"pattern", "", "pattern: letters A, B, … for the units in order (AAB)"},
+        {"dp", "100", "repeat units per chain (the number average when lengths are drawn)"},
+        {"chains", "10", "chains"},
+        {"lengths", "monodisperse", "monodisperse, schulz-zimm, flory, poisson or log-normal"},
+        {"pdi", "1", "dispersity Đ of drawn lengths"},
+        {"density", "1.2", "g/cm³ (the box follows)"},
+        {"bonded", "", "the bonded folder (bonded.json): its distributions are drawn from"},
+        {"maps", "", "map.json files (comma-separated) for the bead masses (each kind's most common)"},
+        {"masses", "", "or the masses directly: B=88.1,S=84.07 (g/mol)"},
+        {"types", "", "the shared type list (types.json); default: the kinds and terms of the melt"},
+        {"seed", "1", "random seed (sequences, lengths, walks)"},
+        {"stem", "melt", "file names: STEM.cg.data, STEM.map.json"},
+        {"T", "300", "in.cg_equil: the final temperature (K)"},
+        {"anneal_T", "500", "in.cg_equil: the anneal temperature (K)"},
+        {"dt", "10", "in.cg_equil: time step (fs)"},
+        {"o", "melt", "the output folder"}},
+       {"caps cgbuild --units BS=B+S,BA=B+A --composition BS:0.8,BA:0.2 --dp 400 --chains 200 --density 1.25 --bonded bonded --maps cg/PBSA.map.json --types cg/types.json -o melt_PBSA_400",
+        "caps cgbuild --units BA=B+A,BT=B+T --composition BA:0.56,BT:0.44 --lengths schulz-zimm --pdi 2 --dp 200 --chains 300 --density 1.26 --bonded bonded --maps cg/PBAT.map.json -o melt cg/PBAT.map.json cg/PBAT.cg.lammpstrj"}},
   };
   return t;
 }
@@ -1039,7 +1068,116 @@ Json cg_run(const std::string& c, const Json& a, const std::string& data_dir) {
                std::string(mode == "bonded" ? "bonded Boltzmann inversion" : "bonded IBI step") + " over " + std::to_string(acc.frames()) + " frames of " + std::to_string(sys.size()) + " systems",
                {{"temperature", std::to_string(o.temperature)}, {"threshold", std::to_string(o.threshold)}, {"smooth (bins)", std::to_string(o.smooth)},
                 {"bins", std::to_string(o.bond_bin) + " Å, " + std::to_string(o.angle_bin) + "°, " + std::to_string(o.dihedral_bin) + "°"}},
-               ins, {"reith2003"}, {{"bonded potentials", "tabulated, from mapped all-atom distributions at one temperature"}});
+               ins, {"tschop1998", "reith2003"}, {{"bonded potentials", "tabulated, from mapped all-atom distributions at one temperature"}});
+  }
+  if (c == "cgbuild") {
+    CgBuildOptions o;
+    for (const auto& u : L(a, "units")) {
+      const auto e = u.find('=');
+      if (e == std::string::npos) throw std::invalid_argument("--units takes NAME=BEAD+BEAD…, not " + u);
+      CgUnit cu;
+      cu.name = u.substr(0, e);
+      std::stringstream ss(u.substr(e + 1));
+      for (std::string b; std::getline(ss, b, '+');) if (!b.empty()) cu.beads.push_back(b);
+      o.units.push_back(cu);
+    }
+    if (o.units.empty()) throw std::invalid_argument("give the repeat units: --units BS=B+S,BA=B+A");
+    for (const auto& x : L(a, "composition")) {
+      const auto e = x.find(':');
+      if (e == std::string::npos) throw std::invalid_argument("--composition takes NAME:share");
+      o.composition[x.substr(0, e)] = std::stod(x.substr(e + 1));
+    }
+    o.sequence = S(a, "sequence", "bernoulli");
+    for (const auto& x : L(a, "markov")) {
+      const auto gt = x.find('>'), co = x.find(':');
+      if (gt == std::string::npos || co == std::string::npos) throw std::invalid_argument("--markov takes FROM>TO:p");
+      o.markov[x.substr(0, gt)][x.substr(gt + 1, co - gt - 1)] = std::stod(x.substr(co + 1));
+    }
+    if (!o.markov.empty() && !a.has("sequence")) o.sequence = "markov";
+    for (const auto& x : L(a, "blocks")) o.blocks.push_back(std::stoi(x));
+    o.pattern = S(a, "pattern");
+    o.dp = int(N(a, "dp", 100)), o.chains = int(N(a, "chains", 10));
+    o.lengths = S(a, "lengths", "monodisperse"), o.pdi = N(a, "pdi", 1);
+    o.density = N(a, "density", 1.2);
+    o.seed = uint64_t(N(a, "seed", 1));
+    if (S(a, "bonded").empty()) throw std::invalid_argument("give --bonded (the folder of cgfit bonded): the walks draw from its distributions");
+    const CgBondedResult bonded = bonded_from_json(read_json_file((fs::path(S(a, "bonded")) / "bonded.json").string()));
+    std::map<std::string, double> masses;
+    if (!S(a, "maps").empty()) {
+      std::vector<CgSysIn> ms;
+      for (const auto& m : L(a, "maps")) { CgSysIn x; x.map = m; x.mj = read_json_file(m); x.t = cg_topology_from_map(x.mj); ms.push_back(std::move(x)); }
+      masses = cg_masses(ms);
+    }
+    for (const auto& x : L(a, "masses")) {
+      const auto e = x.find('=');
+      if (e == std::string::npos) throw std::invalid_argument("--masses takes BEAD=g/mol");
+      masses[x.substr(0, e)] = std::stod(x.substr(e + 1));
+    }
+    const CgBuildResult res = build_cg_polymer(o, bonded, masses);
+    CgTypes types;
+    if (!S(a, "types").empty()) types = cg_types_from_json(read_json_file(S(a, "types")));
+    else types = cg_types_of(res.topology);
+    const std::string dir = S(a, "o", "melt");
+    fs::create_directories(dir);
+    const std::string stem = (fs::path(dir) / S(a, "stem", "melt")).string();
+    for (const auto& f : write_cg_build(res, types, stem)) files.push_back(f);
+    CgEquilOptions eo;
+    eo.T = N(a, "T", 300), eo.anneal_T = N(a, "anneal_T", 500), eo.dt = N(a, "dt", 10), eo.exclude = int(N(a, "exclude", 3));
+    write_text((fs::path(dir) / "in.cg_equil").string(), cg_equil_deck(eo));
+    files.push_back((fs::path(dir) / "in.cg_equil").string());
+    // internal distances, and the all-atom model's from its mapped frames when given
+    std::ostringstream t;
+    char b[400];
+    for (const auto& n : res.notes) t << n << "\n";
+    for (const auto& [u, n] : res.units_drawn) { std::snprintf(b, sizeof b, "  %s %.1f %%", u.c_str(), 100.0 * n / std::max(1, [&] { int z = 0; for (const auto& kv : res.units_drawn) z += kv.second; return z; }())); t << b; }
+    t << "\n";
+    for (const auto& q : res.sequences) t << "  " << (q.size() > 90 ? q.substr(0, 90) + " …" : q) << "\n";
+    std::vector<double> ref;
+    const auto sys = cg_systems(in, 0);
+    if (!sys.empty()) {
+      std::vector<std::vector<Vec3>> frames;
+      std::vector<Cell> cells;
+      std::vector<double> sum, cnt;
+      for (const auto& x : sys) {
+        std::vector<double> cn;
+        std::vector<double> part;
+        std::vector<std::vector<Vec3>> fr;
+        std::vector<Cell> ce;
+        cg_frames(x, size_t(std::max(1.0, N(a, "stride", 1))), [&](const std::vector<Vec3>& q, const Cell& c2) { fr.push_back(q), ce.push_back(c2); });
+        part = cg_internal_distances(x.t, fr, ce, &cn);
+        if (sum.size() < part.size()) sum.resize(part.size(), 0.0), cnt.resize(part.size(), 0.0);
+        for (size_t k = 0; k < part.size(); ++k) sum[k] += part[k] * cn[k], cnt[k] += cn[k];
+      }
+      for (size_t k = 0; k < sum.size(); ++k) ref.push_back(cnt[k] > 0 ? sum[k] / cnt[k] : 0.0);
+    }
+    {
+      const std::string cp = stem + ".internal.csv";
+      std::ofstream f(cp);
+      f << "n,built_R2n_over_n" << (ref.empty() ? "" : ",aa_R2n_over_n") << "\n";
+      for (size_t k = 0; k < res.internal.size(); ++k) {
+        f << k + 1 << "," << res.internal[k];
+        if (!ref.empty()) f << "," << (k < ref.size() ? ref[k] : 0.0);
+        f << "\n";
+      }
+      files.push_back(cp);
+    }
+    for (size_t n : {size_t(1), size_t(2), size_t(5), size_t(10), size_t(20), size_t(50), size_t(100), size_t(200)}) {
+      if (n > res.internal.size()) break;
+      if (!ref.empty() && n <= ref.size() && ref[n - 1] > 0) std::snprintf(b, sizeof b, "  ⟨R²(n)⟩/n at n = %3zu: built %.1f Å², all-atom %.1f Å² (ratio %.2f)\n", n, res.internal[n - 1], ref[n - 1], res.internal[n - 1] / ref[n - 1]);
+      else std::snprintf(b, sizeof b, "  ⟨R²(n)⟩/n at n = %3zu: built %.1f Å²\n", n, res.internal[n - 1]);
+      t << b;
+    }
+    t << "wrote " << stem << ".cg.data, .map.json, .internal.csv and " << dir << "/in.cg_equil\n" << r.text("command") << "\n";
+    r["text"] = t.str();
+    r["box"] = res.box;
+    r["ree_rms"] = res.ree_rms;
+    r["contour"] = res.contour;
+    r["beads"] = double(res.beads.atoms.size());
+    provenance(stem + ".cg.data", "cg.build", std::to_string(o.chains) + " chains of " + std::to_string(o.dp) + " units (" + o.sequence + ")",
+               {{"units", S(a, "units")}, {"composition", S(a, "composition")}, {"sequence", o.sequence}, {"dp", std::to_string(o.dp)}, {"chains", std::to_string(o.chains)},
+                {"lengths", o.lengths + (o.lengths == "monodisperse" ? "" : " Đ " + std::to_string(o.pdi))}, {"density", std::to_string(o.density)}},
+               {{"bonded.json", sha_of((fs::path(S(a, "bonded")) / "bonded.json").string())}}, {"auhl2003"},
+               {{"start", "random walks with the bonded distributions, overlapping: push off before use"}});
   }
   r["files"] = files;
   return r;

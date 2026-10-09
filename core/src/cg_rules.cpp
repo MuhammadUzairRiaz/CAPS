@@ -594,7 +594,7 @@ void write_cg_lammps_data(const CgMapping& m, const System& cg, const CgTypes& t
   std::ofstream f(path);
   if (!f) throw std::runtime_error("cannot write " + path);
   char line[256];
-  f << "# CAPS coarse-grained beads (" << m.beads() << " beads, position: " << m.position << ")\n\n";
+  f << "# CAPS coarse-grained beads (" << cg.atoms.size() << " beads, position: " << m.position << ")\n\n";
   f << cg.atoms.size() << " atoms\n" << t.beads.size() << " atom types\n";
   f << m.bonds.size() << " bonds\n" << std::max<size_t>(1, t.bonds.size()) << " bond types\n";
   f << m.angles.size() << " angles\n" << std::max<size_t>(1, t.angles.size()) << " angle types\n";

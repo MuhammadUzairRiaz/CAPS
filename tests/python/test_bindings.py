@@ -686,6 +686,9 @@ with tempfile.TemporaryDirectory() as _td:
     check(os.path.exists(os.path.join(_td, "ibi", "run_ibi.sh")) and os.path.exists(os.path.join(_td, "ibi", "in.cg_run")), "ibi-start decks")
     _f = caps.cg("cgfit", "fit", pairs=os.path.join(_td, "ibi", "it000", "pairs.json"), form="lj126", o=os.path.join(_td, "lj"))
     check("pair_style lj/cut" in open(os.path.join(_td, "lj", "pair.in")).read(), "cgfit fit")
+    _cb = caps.cg("cgbuild", os.path.join(_td, "melt.map.json"), os.path.join(_td, "melt.cg.data"), units="BS=B+S", dp=6, chains=12, density=1.2,
+                  bonded=os.path.join(_td, "bonded"), maps=os.path.join(_td, "melt.map.json"), o=os.path.join(_td, "built"))
+    check(_cb["beads"] == 144 and os.path.exists(os.path.join(_td, "built", "in.cg_equil")), f"cgbuild: {_cb['beads']} beads, box {_cb['box']:.1f} Å")
 print("ok   coarse-graining: cg_map(rules=…), caps.cg('cgmap')")
 
 print("all python checks passed")
