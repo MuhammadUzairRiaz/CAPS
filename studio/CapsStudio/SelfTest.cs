@@ -1020,12 +1020,19 @@ internal static class SelfTest
             var started = Until(() => vm.MdRunning && vm.MdLog.StartsWith("step"), 120000);   // a slow CI runner's first steps
             var startLog = $"{vm.MdLog.Split('\n')[0]}' · RunMd returned after {tReturn:F1} s, started at {jobsClock.Elapsed.TotalSeconds:F1} s, running {vm.MdRunning}, {poolFree} pool threads free";
             vm.PauseRun();
-            // a pause takes hold at the run's next block of steps (later on a slow machine): then the log must stay still
-            Until(() => vm.RunPaused && vm.Jobs.FirstOrDefault(j => j.IsRunning)?.StatusText == "paused", 15000);
-            Until(() => false, 500);
+            // a pause takes hold at the run's next report (about a second apart on a slow machine): the run holds when its
+            // log then stays the same for 2.5 s
             var held = vm.MdLog;
-            Until(() => false, 800);
-            var still = vm.MdLog == held && vm.RunPaused && vm.Jobs.FirstOrDefault(j => j.IsRunning)?.StatusText == "paused";
+            var holdClock = System.Diagnostics.Stopwatch.StartNew();
+            var stableSince = 0L;
+            var still = false;
+            while (holdClock.ElapsedMilliseconds < 20000)
+            {
+                Until(() => false, 100);
+                if (vm.MdLog != held) { held = vm.MdLog; stableSince = holdClock.ElapsedMilliseconds; }
+                else if (holdClock.ElapsedMilliseconds - stableSince > 2500) { still = true; break; }
+            }
+            still = still && vm.RunPaused && vm.Jobs.FirstOrDefault(j => j.IsRunning)?.StatusText == "paused";
             vm.MdStepsD = 3_000_000;
             vm.QueueMd();
             var queued = vm.QueuedCount == 1 && vm.Jobs[0].IsQueued && vm.JobsSummary.Contains("1 queued");
