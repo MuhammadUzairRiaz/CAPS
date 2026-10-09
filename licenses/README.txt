@@ -10,4 +10,4 @@ Element names and mass numbers (core/src/element_extra.inc)
   NIST: Atomic Weights and Isotopic Compositions; NUBASE2020 (Kondev et al., Chin. Phys. C 45, 030001 (2021)).
 
 Pauling electronegativities and electron configurations (core/src/element_extra.inc)
-  Blue Obelisk Data Repository (MIT licence), as distributed with VTK 9.6.1.
+  Blue Obelisk Data Repository (MIT licence), as distributed with VTK 9.6.1: see BlueObelisk-MIT.txt.
