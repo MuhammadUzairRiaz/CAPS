@@ -1,0 +1,4 @@
+#!/bin/bash
+# A stand-in for ws_allocate [-F FS] NAME DAYS (tests only): prints the workspace's path, information on stderr
+[ "$1" = -F ] && shift 2
+d="$FAKE_WS/$1"; mkdir -p "$d"; echo "Info: creating workspace." >&2; echo "$d"

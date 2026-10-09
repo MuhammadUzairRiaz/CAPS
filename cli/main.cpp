@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <ctime>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
@@ -34,6 +35,7 @@
 #include "caps/bundle.hpp"
 #include "caps/crystal.hpp"
 #include "caps/cg_commands.hpp"
+#include "caps/cluster_job.hpp"
 #include "caps/dft_commands.hpp"
 #include "caps/spacegroup.hpp"
 #include "caps/peptide.hpp"
@@ -169,6 +171,10 @@ int usage() {
                "  caps vasp-conv setup|collect CASE · vasp-scan make|fit · vasp-derived charge|cdd|freq|aimd\n"
                "  caps vasp-jobs submit|update|reset|cleanup|store · vasp-check · vasp-progress · vasp-health · vasp-bind\n"
                "  caps vasp-analyze geom|wf|dos|cdd|bader|freq|md|summary …\n"
+               "  Cluster jobs (caps job help): CAPS's own runs as batch jobs on any SLURM or PBS cluster, or a workstation\n"
+               "  caps job profile [--preset slurm|slurm-workspace|pbs|workstation] [--set key=value,…]   your host profile\n"
+               "  caps job new --title T --kind md [--input FILES] [--cpus N] [--time HH:MM:SS] [--submit] -- caps md …\n"
+               "  caps job status|tail [-f]|poll|collect|cancel DIR · caps job list · caps job new --array LIST.txt\n"
                "  Coarse-graining (caps <command> --help for every option):\n"
                "  caps cgmap STRUCTURE… --preset ester-cut -o DIR [--dump DUMP]    chemistry-aware coarse-grained mapping\n"
                "  caps cgfit bonded|refine|targets|ibi-start|ibi-step|ibi-run|fit|tg|calibrate|sample-chain …   CG potentials\n"
@@ -620,6 +626,452 @@ static int dft_main(const std::string& cmd, int argc, char** argv) {
   }
 }
 
+// caps job …: CAPS's own engines as batch jobs on a cluster or workstation (caps/cluster_job.hpp). Run on the cluster
+// itself (or by the Studio over ssh): the queue commands (sbatch, squeue, sacct, scancel; qsub, qstat, qdel) are called
+// here, the rest is the core's.
+namespace {
+
+std::string iso_now_cli() {
+  const std::time_t t = std::time(nullptr);
+  char b[32];
+  std::strftime(b, sizeof b, "%Y-%m-%dT%H:%M:%SZ", std::gmtime(&t));
+  return b;
+}
+
+std::string run_capture(const std::string& cmd) {
+#ifdef _WIN32
+  FILE* p = _popen(cmd.c_str(), "r");
+#else
+  FILE* p = popen(cmd.c_str(), "r");
+#endif
+  if (!p) return "";
+  std::string out;
+  char buf[4096];
+  size_t n;
+  while ((n = std::fread(buf, 1, sizeof buf, p)) > 0) out.append(buf, n);
+#ifdef _WIN32
+  _pclose(p);
+#else
+  pclose(p);
+#endif
+  return out;
+}
+
+std::string shq(const std::string& s) {   // a single-quoted shell word
+  std::string o = "'";
+  for (char c : s) o += c == '\'' ? std::string("'\\''") : std::string(1, c);
+  return o + "'";
+}
+
+std::string first_line(const std::string& s) { return s.substr(0, s.find('\n')); }
+
+int job_usage() {
+  std::fprintf(stderr,
+               "usage (run on the cluster, or by the Studio over ssh):\n"
+               "  caps job profile [--preset slurm|slurm-workspace|pbs|workstation] [--set key=value,…] [--force]   the host profile\n"
+               "                   (~/CAPS/host.json: scheduler, account, partition, modules, root, scratch, cpus, mem_per_cpu, time …)\n"
+               "  caps job new --title T --kind md [--input FILE,…] [--cpus N] [--mem 2G] [--time 24:00:00] [--partition P]\n"
+               "               [--keep-workspace] [--host-profile FILE] [--submit] -- caps md structure.data -o out.data …\n"
+               "  caps job new --kind md --array LIST.txt [--input FILE,…] [--submit]   one task per line: TITLE caps …\n"
+               "  caps job submit DIR          queue a job folder made by caps job new\n"
+               "  caps job status [DIR] [--json]   state, node, scratch, step reached, the latest thermo row, ETA, the log's end\n"
+               "  caps job tail [DIR] [-f]     the live log (run.log in the scratch folder while it runs)\n"
+               "  caps job poll DIR [--log-offset N --progress-offset N --err-offset N]   everything new since a look, as JSON\n"
+               "  caps job collect [DIR]       copy the scratch folder to out/ (a job stopped by its time limit)\n"
+               "  caps job list [--json]       every job folder under the root (the Studio's Find my jobs)\n"
+               "  caps job cancel DIR          scancel / qdel / kill\n"
+               "  caps job template            the built-in job script ({placeholders})\n");
+  return 2;
+}
+
+struct JobArgs {
+  std::string sub;
+  std::vector<std::string> pos;
+  std::map<std::string, std::string> opt;
+  std::vector<std::string> inputs;
+  std::string command;
+};
+
+JobArgs parse_job_args(int argc, char** argv) {
+  static const std::set<std::string> switches = {"--submit", "--keep-workspace", "--json", "-f", "--force", "--no-keep-workspace"};
+  JobArgs a;
+  a.sub = argc > 2 ? argv[2] : "";
+  for (int i = 3; i < argc; ++i) {
+    const std::string s = argv[i];
+    if (s == "--") {   // the command: everything after, as one line (each word quoted only when it needs it)
+      for (int k = i + 1; k < argc; ++k) {
+        std::string w = argv[k];
+        const bool plain = !w.empty() && w.find_first_of(" \t'\"$`\\*?;&|<>()") == std::string::npos;
+        a.command += (a.command.empty() ? "" : " ") + (plain ? w : shq(w));
+      }
+      break;
+    }
+    if (s.rfind("-", 0) == 0 && s.size() > 1) {
+      if (switches.count(s)) { a.opt[s] = "1"; continue; }
+      if (i + 1 >= argc) throw std::invalid_argument(s + " needs a value");
+      const std::string v = argv[++i];
+      if (s == "--input") {
+        std::stringstream ss(v);
+        std::string x;
+        while (std::getline(ss, x, ',')) if (!x.empty()) a.inputs.push_back(x);
+      } else {
+        a.opt[s] = v;
+      }
+      continue;
+    }
+    a.pos.push_back(s);
+  }
+  return a;
+}
+
+HostProfile job_profile(const JobArgs& a) {
+  const std::string path = a.opt.count("--host-profile") ? a.opt.at("--host-profile") : default_host_profile_path();
+  HostProfile h = load_host_profile(path);
+  if (a.opt.count("--root")) h.root = a.opt.at("--root");
+  if (a.opt.count("--scheduler")) h.scheduler = a.opt.at("--scheduler");
+  return h;
+}
+
+std::string job_dir_arg(const JobArgs& a) {
+  std::string d = a.pos.empty() ? std::string(".") : a.pos[0];
+  if (!std::filesystem::exists(std::filesystem::path(d) / "caps-job.json"))
+    throw std::invalid_argument(d + " is not a CAPS job folder (no caps-job.json)");
+  return std::filesystem::absolute(d).lexically_normal().string();
+}
+
+// queue the script; the scheduler's id ("" when it refused)
+std::string submit_script(const HostProfile& h, const JobFolder& f, int tasks, std::string* message) {
+  const std::string dir = shq(f.dir), script = shq(f.script);
+  std::string out;
+  if (h.scheduler == "slurm") {
+    out = run_capture("cd " + dir + " && sbatch --parsable " + script + " 2>&1");
+    const std::string id = first_line(out).substr(0, first_line(out).find(';'));
+    if (!id.empty() && std::all_of(id.begin(), id.end(), [](char c) { return std::isdigit(static_cast<unsigned char>(c)); })) return id;
+  } else if (h.scheduler == "pbs") {
+    out = run_capture("cd " + dir + " && qsub " + script + " 2>&1");
+    const std::string id = first_line(out);
+    if (!id.empty() && std::isdigit(static_cast<unsigned char>(id[0]))) return id;
+  } else {   // a workstation: in the background, tasks one after another
+    const std::string run = tasks > 0 ? "for i in $(seq 0 " + std::to_string(tasks - 1) + "); do CAPS_TASK=$i bash " + script + "; done"
+                                      : "bash " + script;
+    out = run_capture("cd " + dir + " && nohup bash -c " + shq(run) + " > job.out 2>&1 < /dev/null & echo $!");
+    const std::string pid = first_line(out);
+    if (!pid.empty() && std::isdigit(static_cast<unsigned char>(pid[0]))) return "pid:" + pid;
+  }
+  if (message) *message = out;
+  return "";
+}
+
+// before the scheduler sees the script: state submitted (the script's own writes come later and win)
+void mark_submitting(const HostProfile& h, const JobFolder& f) {
+  Json c = Json::object();
+  c["state"] = std::string("submitted");
+  c["scheduler"] = h.scheduler;
+  c["submitted"] = std::string(iso_now_cli());
+  update_job_state(f.dir, c);
+  for (const auto& d : f.task_dirs) update_job_state(d, c);
+}
+// after: the scheduler's id, unless the script already wrote its own (a job that started at once)
+void mark_submitted(const HostProfile& h, const JobFolder& f, const std::string& id) {
+  auto set_id = [&](const std::string& dir, const std::string& jid, const std::string& task) {
+    const Json st = read_job_state(dir);
+    if (st.has("slurm_job") && st["slurm_job"].is_string() && !st["slurm_job"].str().empty()) return;
+    Json c = Json::object();
+    c["slurm_job"] = jid;
+    if (!task.empty()) c["array_task"] = task;
+    update_job_state(dir, c);
+  };
+  set_id(f.dir, id, "");
+  for (size_t k = 0; k < f.task_dirs.size(); ++k)
+    set_id(f.task_dirs[k], h.scheduler == "slurm" ? id + "_" + std::to_string(k) : h.scheduler == "pbs" ? id.substr(0, id.find('[')) + "[" + std::to_string(k) + "]" : id,
+           std::to_string(k));
+}
+
+// the queue's line for a job ("%T|%r|%M|%l|%N"; empty when it has left the queue) and the accounting after it
+std::string queue_line(const std::string& scheduler, const std::string& id) {
+  if (id.empty()) return "";
+  if (id.rfind("pid:", 0) == 0) {
+    const std::string pid = id.substr(4);
+    return run_capture("kill -0 " + pid + " 2>/dev/null && echo 'RUNNING|None|||'$(hostname)");
+  }
+  if (scheduler == "pbs") {
+    const std::string s = run_capture("qstat " + shq(id) + " 2>/dev/null | tail -n 1");
+    std::stringstream ss(s);
+    std::vector<std::string> f;
+    std::string x;
+    while (ss >> x) f.push_back(x);
+    if (f.size() < 5 || f[0].find(id.substr(0, id.find('.'))) == std::string::npos) return "";
+    const std::string st = f[4] == "Q" || f[4] == "H" || f[4] == "W" ? "PENDING" : f[4] == "R" ? "RUNNING" : f[4] == "E" ? "COMPLETING" : "";
+    return st.empty() ? "" : st + "|None|" + f[3] + "||";
+  }
+  return first_line(run_capture("squeue -h -j " + shq(id) + " -o '%T|%r|%M|%l|%N' 2>/dev/null"));
+}
+std::string acct_text(const std::string& scheduler, const std::string& id) {
+  if (scheduler != "slurm" || id.empty() || id.rfind("pid:", 0) == 0) return "";
+  return run_capture("sacct -j " + shq(id) + " -o State,ExitCode,Elapsed,MaxRSS -P -n 2>/dev/null");
+}
+
+Json poll_dir(const HostProfile& h, const std::string& dir, const PollRequest& base) {
+  const Json st = read_job_state(dir);
+  const std::string id = st.has("slurm_job") && st["slurm_job"].is_string() ? st["slurm_job"].str() : "";
+  const std::string sched = st.has("scheduler") && st["scheduler"].is_string() ? st["scheduler"].str() : h.scheduler;
+  const std::string q = queue_line(sched, id);
+  const std::string acct = q.empty() ? acct_text(sched, id) : "";
+  PollRequest p = base;
+  p.dir = dir;
+  return job_poll(p, q, acct);
+}
+
+std::string fmt_duration(double s) {
+  if (s < 0) return "unknown";
+  char b[64];
+  const long t = long(s + 0.5);
+  if (t >= 86400) std::snprintf(b, sizeof b, "%ldd %ldh %02ldm", t / 86400, (t % 86400) / 3600, (t % 3600) / 60);
+  else std::snprintf(b, sizeof b, "%ldh %02ldm %02lds", t / 3600, (t % 3600) / 60, t % 60);
+  return b;
+}
+
+int job_main(int argc, char** argv) {
+  JobArgs a;
+  try {
+    a = parse_job_args(argc, argv);
+  } catch (const std::exception& e) {
+    std::fprintf(stderr, "caps job: %s\n", e.what());
+    return 2;
+  }
+  try {
+    if (a.sub.empty() || a.sub == "--help" || a.sub == "-h" || a.sub == "help") return job_usage();
+    if (a.sub == "template") {
+      const HostProfile h = job_profile(a);
+      std::printf("%s", h.job_template.empty() ? job_template_for(h.scheduler).c_str() : h.job_template.c_str());
+      return 0;
+    }
+    if (a.sub == "profile") {
+      const std::string path = a.opt.count("--host-profile") ? a.opt.at("--host-profile") : default_host_profile_path();
+      HostProfile h = load_host_profile(path);
+      bool changed = false;
+      if (a.opt.count("--preset")) {
+        if (std::filesystem::exists(path) && !a.opt.count("--force")) throw std::invalid_argument(path + " exists: --force to replace it with the preset");
+        bool found = false;
+        for (const auto& [k, p] : host_presets()) if (k == a.opt.at("--preset")) h = p, found = true;
+        if (!found) throw std::invalid_argument("presets: slurm, slurm-workspace, pbs, workstation");
+        changed = true;
+      }
+      if (a.opt.count("--set")) {
+        Json j = host_profile_json(h);
+        std::stringstream ss(a.opt.at("--set"));
+        std::string kv;
+        while (std::getline(ss, kv, ',')) {
+          const auto eq = kv.find('=');
+          if (eq == std::string::npos) throw std::invalid_argument("--set key=value,…");
+          const std::string k = kv.substr(0, eq), v = kv.substr(eq + 1);
+          if (!j.has(k)) throw std::invalid_argument("no profile key " + k);
+          if (j[k].is_number()) j[k] = std::stod(v);
+          else if (j[k].kind() == Json::Bool) j[k] = v == "1" || v == "true" || v == "yes";
+          else j[k] = v;
+        }
+        h = host_profile_from_json(j);
+        changed = true;
+      }
+      if (changed) save_host_profile(h, path);
+      std::printf("%s\n%s", path.c_str(), host_profile_json(h).dump(2).c_str());
+      std::printf("\n");
+      return 0;
+    }
+    if (a.sub == "new") {
+      const HostProfile h = job_profile(a);
+      JobRequest r;
+      r.title = a.opt.count("--title") ? a.opt.at("--title") : "";
+      r.kind = a.opt.count("--kind") ? a.opt.at("--kind") : "run";
+      r.command = a.command;
+      r.inputs = a.inputs;
+      if (a.opt.count("--cpus")) r.cpus = std::stoi(a.opt.at("--cpus"));
+      if (a.opt.count("--mem")) r.mem = a.opt.at("--mem");
+      if (a.opt.count("--time")) r.time = a.opt.at("--time");
+      if (a.opt.count("--partition")) r.partition = a.opt.at("--partition");
+      if (a.opt.count("--caps")) r.caps_bin = a.opt.at("--caps");
+      if (a.opt.count("--keep-workspace")) r.keep_workspace = 1;
+      if (a.opt.count("--no-keep-workspace")) r.keep_workspace = 0;
+      JobFolder f;
+      int tasks = 0;
+      if (a.opt.count("--array")) {
+        std::ifstream in(a.opt.at("--array"));
+        if (!in) throw std::invalid_argument("cannot read " + a.opt.at("--array"));
+        std::stringstream ss;
+        ss << in.rdbuf();
+        const auto list = read_array_list(ss.str());
+        tasks = int(list.size());
+        f = make_array_job(h, r, list);
+      } else {
+        if (r.command.empty()) throw std::invalid_argument("give the command after -- (caps job new --title T --kind md -- caps md …)");
+        if (r.title.empty()) throw std::invalid_argument("--title (the structure's or study's name)");
+        f = make_job(h, r);
+      }
+      Json out = Json::object();
+      out["dir"] = f.dir, out["job"] = f.job, out["script"] = f.script;
+      Json td = Json::array();
+      for (const auto& d : f.task_dirs) td.push_back(d);
+      out["tasks"] = td;
+      if (a.opt.count("--submit")) {
+        std::string msg;
+        mark_submitting(h, f);
+        const std::string id = submit_script(h, f, tasks, &msg);
+        if (id.empty()) {
+          Json back = Json::object();
+          back["state"] = std::string("created");
+          update_job_state(f.dir, back);
+          out["submitted"] = false, out["error"] = msg;
+          std::printf("%s\n", a.opt.count("--json") ? out.dump(0).c_str() : ("made " + f.dir + "; the scheduler refused it:\n" + msg).c_str());
+          return 1;
+        }
+        mark_submitted(h, f, id);
+        out["submitted"] = true, out["id"] = id;
+      }
+      if (a.opt.count("--json")) std::printf("%s\n", out.dump(0).c_str());
+      else {
+        std::printf("%s\n", f.dir.c_str());
+        for (const auto& d : f.task_dirs) std::printf("  task %s\n", d.c_str());
+        if (out.has("id")) std::printf("submitted: %s\n", out["id"].str().c_str());
+        else std::printf("next: caps job submit %s\n", f.dir.c_str());
+      }
+      return 0;
+    }
+    if (a.sub == "submit") {
+      const HostProfile h = job_profile(a);
+      JobFolder f;
+      f.dir = job_dir_arg(a);
+      f.script = (std::filesystem::path(f.dir) / "job.sh").string();
+      int tasks = 0;
+      if (std::ifstream tl(std::filesystem::path(f.dir) / "tasks.txt"); tl) {
+        std::string line;
+        while (std::getline(tl, line)) if (!line.empty()) f.task_dirs.push_back(line), ++tasks;
+      }
+      std::string msg;
+      mark_submitting(h, f);
+      const std::string id = submit_script(h, f, tasks, &msg);
+      if (id.empty()) { std::fprintf(stderr, "caps job: the scheduler refused it:\n%s", msg.c_str()); return 1; }
+      mark_submitted(h, f, id);
+      std::printf("submitted: %s\n", id.c_str());
+      return 0;
+    }
+    if (a.sub == "poll") {
+      const HostProfile h = job_profile(a);
+      PollRequest p;
+      if (a.opt.count("--log-offset")) p.log_offset = std::stoll(a.opt.at("--log-offset"));
+      if (a.opt.count("--progress-offset")) p.progress_offset = std::stoll(a.opt.at("--progress-offset"));
+      if (a.opt.count("--err-offset")) p.err_offset = std::stoll(a.opt.at("--err-offset"));
+      std::printf("%s\n", poll_dir(h, job_dir_arg(a), p).dump(0).c_str());
+      return 0;
+    }
+    if (a.sub == "status") {
+      const HostProfile h = job_profile(a);
+      PollRequest p;
+      p.max_bytes = 4000;   // the log's end and the newest progress lines
+      const std::string dir = job_dir_arg(a);
+      const Json j = poll_dir(h, dir, p);
+      if (a.opt.count("--json")) { std::printf("%s\n", j.dump(1).c_str()); return 0; }
+      const Json& st = j["job_state"];
+      auto sv = [](const Json& o, const char* k) { return o.has(k) && o[k].is_string() ? o[k].str() : std::string(); };
+      std::printf("job      %s / %s   (%s)\n", sv(st, "title").c_str(), sv(st, "job").c_str(), dir.c_str());
+      std::printf("state    %s", j["state"].str().c_str());
+      const Json& q = j["queue"];
+      if (q["found"].boolean()) {
+        std::printf("  (%s%s%s)", q["state"].str().c_str(), q["reason"].str().empty() ? "" : ", ", q["reason"].str().c_str());
+        std::printf("\nnode     %s\nelapsed  %s of %s", q["node"].str().c_str(), q["elapsed"].str().c_str(), q["limit"].str().c_str());
+      } else if (j.has("acct")) {
+        std::printf("  (sacct %s, exit %s, %s, MaxRSS %s)", j["acct"]["state"].str().c_str(), j["acct"]["exit_code"].str().c_str(), j["acct"]["elapsed"].str().c_str(), j["acct"]["max_rss"].str().c_str());
+      }
+      std::printf("\nfiles    %s\n", j["live_dir"].str().c_str());
+      const auto& pl = j["progress"].items();
+      for (auto it = pl.rbegin(); it != pl.rend(); ++it)
+        if (it->has("step")) {
+          const Json& r = *it;
+          std::printf("reached  %s · step %.0f · %.3f ps · T %.1f K · P %.0f atm · ρ %.4f g/cm³ · Epot %.1f\n", sv(r, "stage").c_str(), r["step"].number(),
+                      r.has("time_ps") ? r["time_ps"].number() : 0.0, r.has("T") ? r["T"].number() : 0.0, r.has("P") ? r["P"].number() : 0.0,
+                      r.has("rho") ? r["rho"].number() : 0.0, r.has("pe") ? r["pe"].number() : 0.0);
+          break;
+        }
+      if (j.has("fraction")) std::printf("done     %.1f %%%s\n", 100 * j["fraction"].number(), j.has("eta_s") ? ("   ETA " + fmt_duration(j["eta_s"].number())).c_str() : "");
+      std::string log = j["log"].str();
+      std::vector<std::string> lines;
+      std::stringstream ls(log);
+      std::string line;
+      while (std::getline(ls, line)) lines.push_back(line);
+      if (!lines.empty()) {
+        std::printf("log      (the last lines of %s)\n", "run.log");
+        for (size_t k = lines.size() > 6 ? lines.size() - 6 : 0; k < lines.size(); ++k) std::printf("  %s\n", lines[k].c_str());
+      }
+      return 0;
+    }
+    if (a.sub == "tail") {
+      const std::string dir = job_dir_arg(a);
+      const Json st = read_job_state(dir);
+      const std::string log = (std::filesystem::path(job_live_dir(dir, st)) / (st.has("log") && st["log"].is_string() ? st["log"].str() : "run.log")).string();
+      if (!std::filesystem::exists(log)) { std::fprintf(stderr, "caps job: no log yet (%s)\n", log.c_str()); return 1; }
+      std::fprintf(stderr, "%s\n", log.c_str());
+      return std::system(("tail -n 40 " + std::string(a.opt.count("-f") ? "-F " : "") + shq(log)).c_str()) == 0 ? 0 : 1;
+    }
+    if (a.sub == "collect") {
+      const std::string dir = job_dir_arg(a);
+      const Json st = read_job_state(dir);
+      const std::string scr = st.has("scratch") && st["scratch"].is_string() ? st["scratch"].str() : "";
+      const auto out = std::filesystem::path(dir) / "out";
+      if (scr.empty() || !std::filesystem::is_directory(scr) || std::filesystem::equivalent(scr, out)) {
+        std::printf("nothing to collect: the scratch folder is gone or is out/ itself\n");
+        return 0;
+      }
+      std::filesystem::create_directories(out);
+      std::filesystem::copy(scr, out, std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing);
+      std::printf("copied %s → %s\n", scr.c_str(), out.string().c_str());
+      return 0;
+    }
+    if (a.sub == "list") {
+      const HostProfile h = job_profile(a);
+      const auto root = std::filesystem::path(expand_home(h.root));
+      Json all = Json::array();
+      std::error_code ec;
+      if (std::filesystem::is_directory(root, ec))
+        for (const auto& t : std::filesystem::directory_iterator(root, ec)) {
+          if (!t.is_directory(ec) || t.path().filename() == "_arrays" || t.path().filename() == "bin" || t.path().filename() == "src") continue;
+          for (const auto& jd : std::filesystem::directory_iterator(t.path(), ec)) {
+            if (!std::filesystem::exists(jd.path() / "caps-job.json")) continue;
+            Json st = read_job_state(jd.path().string());
+            st["dir"] = jd.path().string();
+            all.push_back(st);
+          }
+        }
+      if (a.opt.count("--json")) { std::printf("%s\n", all.dump(0).c_str()); return 0; }
+      for (const auto& st : all.items()) {
+        auto sv = [&](const char* k) { return st.has(k) && st[k].is_string() ? st[k].str() : std::string(); };
+        std::printf("%-12s %-10s %-24s %s\n", sv("state").c_str(), sv("slurm_job").c_str(), (sv("title") + "/" + sv("job")).c_str(), sv("dir").c_str());
+      }
+      return 0;
+    }
+    if (a.sub == "cancel") {
+      const HostProfile h = job_profile(a);
+      const std::string dir = job_dir_arg(a);
+      const Json st = read_job_state(dir);
+      const std::string id = st.has("slurm_job") && st["slurm_job"].is_string() ? st["slurm_job"].str() : "";
+      if (id.empty()) throw std::invalid_argument("the job was not submitted");
+      const std::string sched = st.has("scheduler") && st["scheduler"].is_string() ? st["scheduler"].str() : h.scheduler;
+      std::ofstream(std::filesystem::path(dir) / "cancel-requested") << iso_now_cli() << "\n";   // the script records cancelled, not timeout
+      const std::string cmd = id.rfind("pid:", 0) == 0 ? "kill " + id.substr(4) : sched == "pbs" ? "qdel " + shq(id) : "scancel " + shq(id);
+      const int rc = std::system((cmd + " 2>&1").c_str());
+      Json c = Json::object();
+      c["state"] = std::string("cancelled");
+      update_job_state(dir, c);
+      std::printf("%s: %s\n", cmd.c_str(), rc == 0 ? "done" : "the scheduler reported a problem");
+      return rc == 0 ? 0 : 1;
+    }
+    return job_usage();
+  } catch (const std::exception& e) {
+    std::fprintf(stderr, "caps job: %s\n", e.what());
+    return 2;
+  }
+}
+
+}  // namespace
+
 // The coarse-graining workflow (caps/cg_commands.hpp): the same commands as the Studio's Coarse-grain page
 static int cg_main(const std::string& cmd, int argc, char** argv) {
   std::vector<std::string> pos;
@@ -659,6 +1111,7 @@ int main(int argc, char** argv) {
     std::printf("caps %s (commit %s)\n", version_string(), commit_string());
     return 0;
   }
+  if (argc >= 2 && std::string(argv[1]) == "job") return job_main(argc, argv);
   if (argc >= 2 && is_dft_command(argv[1])) return dft_main(argv[1], argc, argv);
   if (argc >= 2 && is_cg_command(argv[1])) return cg_main(argv[1], argc, argv);
   if (argc < 3) return usage();
