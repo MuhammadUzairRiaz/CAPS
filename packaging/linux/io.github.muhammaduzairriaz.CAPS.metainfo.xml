@@ -10,6 +10,9 @@
       typing, relaxes and equilibrates them, runs molecular dynamics and crosslinking, and analyses structure,
       dynamics, mechanics and the glass transition with errors and comparisons against experiment.</p>
   </description>
+  <developer id="io.github.muhammaduzairriaz">
+    <name>Muhammad Uzair Riaz</name>
+  </developer>
   <launchable type="desktop-id">io.github.muhammaduzairriaz.CAPS.desktop</launchable>
   <url type="homepage">https://github.com/MuhammadUzairRiaz/CAPS</url>
   <content_rating type="oars-1.1" />
