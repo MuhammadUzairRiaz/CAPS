@@ -12,8 +12,8 @@
 // tails — distorted contacts of an unrelaxed start — cannot leave soft spots that let beads collapse. Dihedrals are
 // periodic: unsampled ranges take a smooth barrier through the gap, joined at both edges.
 //
-// Each table also carries how well it is sampled: the frames split in two halves, each inverted alone, and the largest
-// difference over the inverted range (k_B T). Iterative refinement (bonded IBI): with the same distributions from a CG run,
+// Each table also carries how well it is sampled: the samples split in two halves — odd and even molecules, or the frames'
+// halves for a single molecule — each inverted alone, and the largest difference over the inverted range (k_B T). Iterative refinement (bonded IBI): with the same distributions from a CG run,
 // U ← U + α k_B T ln(P_CG / P_target) where both are sampled, which corrects for the non-bonded 1–3 and 1–4 terms that
 // shift the bonded distributions.
 //

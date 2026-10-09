@@ -826,4 +826,93 @@ CgTrajectoryReport map_lammps_dump(const CgMapping& m, const System& aa, const s
   return rep;
 }
 
+size_t for_each_dump_frame(const std::string& path, size_t natoms,
+                           const std::function<bool(size_t, int64_t, const std::vector<Vec3>&, const Cell&, bool)>& f, size_t stride) {
+  std::ifstream in(path, std::ios::binary);
+  if (!in) throw std::runtime_error("cannot open " + path);
+  std::vector<Vec3> pos(natoms);
+  std::vector<char> got(natoms);
+  std::string line;
+  size_t frame = 0, passed = 0;
+  stride = std::max<size_t>(1, stride);
+  while (std::getline(in, line)) {
+    if (line.rfind("ITEM: TIMESTEP", 0) != 0) continue;
+    std::getline(in, line);
+    const int64_t ts = std::strtoll(line.c_str(), nullptr, 10);
+    std::getline(in, line);
+    std::getline(in, line);
+    const size_t n = size_t(std::strtoull(line.c_str(), nullptr, 10));
+    std::string boxhead;
+    std::getline(in, boxhead);
+    double lo[3], hi[3], tilt[3] = {0, 0, 0};
+    const bool tri = boxhead.find("xy") != std::string::npos;
+    for (int k = 0; k < 3; ++k) {
+      std::getline(in, line);
+      char* e = nullptr;
+      lo[k] = std::strtod(line.c_str(), &e);
+      hi[k] = std::strtod(e, &e);
+      if (tri) tilt[k] = std::strtod(e, &e);
+    }
+    std::getline(in, line);
+    std::vector<std::string> cols;
+    {
+      std::istringstream ss(line.substr(std::min(line.size(), size_t(11))));
+      for (std::string c; ss >> c;) cols.push_back(c);
+    }
+    const bool want = frame % stride == 0;
+    if (!want) {
+      for (size_t k = 0; k < n; ++k) std::getline(in, line);
+      ++frame;
+      continue;
+    }
+    if (n != natoms) throw std::invalid_argument(path + ": frame " + std::to_string(frame + 1) + " has " + std::to_string(n) + " atoms, not " + std::to_string(natoms));
+    auto col = [&](const char* name) { for (size_t k = 0; k < cols.size(); ++k) if (cols[k] == name) return int(k); return -1; };
+    const int cid = col("id");
+    int cx = col("xu"), cy = col("yu"), cz = col("zu"), mode = 0;
+    if (cx < 0) { cx = col("x"), cy = col("y"), cz = col("z"); mode = 1; }
+    if (cx < 0) { cx = col("xsu"), cy = col("ysu"), cz = col("zsu"); mode = 3; }
+    if (cx < 0) { cx = col("xs"), cy = col("ys"), cz = col("zs"); mode = 2; }
+    if (cid < 0 || cx < 0 || cy < 0 || cz < 0) throw std::invalid_argument(path + ": the dump needs id and xu yu zu, x y z, xs ys zs or xsu ysu zsu");
+    const int ix = col("ix"), iy = col("iy"), iz = col("iz");
+    const bool images = ix >= 0 && iy >= 0 && iz >= 0;
+    double xlo = lo[0], xhi = hi[0], ylo = lo[1], yhi = hi[1];
+    if (tri) {
+      xlo -= std::min({0.0, tilt[0], tilt[1], tilt[0] + tilt[1]});
+      xhi -= std::max({0.0, tilt[0], tilt[1], tilt[0] + tilt[1]});
+      ylo -= std::min(0.0, tilt[2]);
+      yhi -= std::max(0.0, tilt[2]);
+    }
+    Cell cell;
+    cell.origin = {xlo, ylo, lo[2]};
+    cell.a = {xhi - xlo, 0, 0};
+    cell.b = {tilt[0], yhi - ylo, 0};
+    cell.c = {tilt[1], tilt[2], hi[2] - lo[2]};
+    std::fill(got.begin(), got.end(), 0);
+    std::vector<double> v(cols.size());
+    for (size_t k = 0; k < n; ++k) {
+      if (!std::getline(in, line)) throw std::invalid_argument(path + ": the dump ends inside frame " + std::to_string(frame + 1));
+      const char* p = line.c_str();
+      for (size_t c = 0; c < cols.size(); ++c) {
+        const char* e;
+        p = next_field(p, e);
+        v[c] = std::strtod(p, nullptr);
+        p = e;
+      }
+      const int64_t id = int64_t(v[size_t(cid)]);
+      if (id < 1 || size_t(id) > natoms) throw std::invalid_argument(path + ": atom id " + std::to_string(id) + " outside 1 … " + std::to_string(natoms));
+      Vec3 r{v[size_t(cx)], v[size_t(cy)], v[size_t(cz)]};
+      if (mode >= 2) r = cell.to_cartesian(r) + cell.origin;
+      if (mode == 1 && images) r = r + cell.a * v[size_t(ix)] + cell.b * v[size_t(iy)] + cell.c * v[size_t(iz)];
+      pos[size_t(id - 1)] = r;
+      got[size_t(id - 1)] = 1;
+    }
+    if (std::find(got.begin(), got.end(), 0) != got.end()) throw std::invalid_argument(path + ": frame " + std::to_string(frame + 1) + " misses atoms");
+    ++passed;
+    const bool wrapped = !(mode == 0 || mode == 3 || images);
+    if (!f(frame, ts, pos, cell, wrapped)) break;
+    ++frame;
+  }
+  return passed;
+}
+
 }  // namespace caps

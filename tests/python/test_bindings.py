@@ -668,6 +668,14 @@ with tempfile.TemporaryDirectory() as _td:
     check(all(os.path.exists(f) for f in _r["files"]) and _r["types"]["bonds"] == ["B-S"], "cgmap files and types")
     check("--preset ester-cut" in _r["command"], "cgmap command line")
 check("--dump" in caps.cg_help("cgmap"), "cg_help")
+with tempfile.TemporaryDirectory() as _td:
+    _pbs.save(os.path.join(_td, "pbs.data"))
+    caps.cg("cgmap", os.path.join(_td, "pbs.data"), preset="ester-cut", o=_td)
+    _b = caps.cg("cgfit", "bonded", os.path.join(_td, "pbs.map.json"), os.path.join(_td, "pbs.cg.data"), types=os.path.join(_td, "types.json"),
+                 o=os.path.join(_td, "bonded"))
+    _keys = {(t["kind"], t["key"]) for t in _b["tables"] if t["sampled"]}
+    check(("bond", "B-S") in _keys and ("angle", "S-B-S") in _keys, f"cgfit bonded: {sorted(_keys)}")
+    check(os.path.exists(os.path.join(_td, "bonded", "bonded.in")) and os.path.exists(os.path.join(_td, "bonded", "bonds.table")), "cgfit bonded files")
 print("ok   coarse-graining: cg_map(rules=…), caps.cg('cgmap')")
 
 print("all python checks passed")

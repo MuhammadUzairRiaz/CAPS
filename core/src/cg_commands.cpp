@@ -2,6 +2,7 @@
 #include "caps/cg_commands.hpp"
 
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <cstdio>
 #include <filesystem>
@@ -11,6 +12,7 @@
 #include <stdexcept>
 
 #include "caps/bundle.hpp"
+#include "caps/cg_bonded.hpp"
 #include "caps/cg_rules.hpp"
 #include "caps/dft_commands.hpp"
 #include "caps/io.hpp"
@@ -48,6 +50,29 @@ const std::vector<Cmd>& table() {
         {"last", "", "the last frame kept (1-based; default: the end)"}},
        {"caps cgmap PBS/system.data PBSA/system.data PBAT/system.data --preset ester-cut -o cg",
         "caps cgmap system.data --map cg/system.map.json --types cg/types.json --dump hold.lammpstrj --stride 5 -o cg"}},
+      {"cgfit", "caps cgfit bonded MAP [FRAMES …] [MAP [FRAMES …] …] --types FILE -o DIR  |  caps cgfit refine MAP CG_FRAMES … --tables DIR/bonded.json -o DIR2",
+       "Bonded coarse-grained potentials by tabulated Boltzmann inversion over many frames of many systems mapped alike: each MAP "
+       "(STEM.map.json from cgmap) followed by its frames (CG dumps STEM.cg.lammpstrj or the single frame STEM.cg.data); each "
+       "system's histograms normalised, then weighted. U(r) = −kT ln[P/r²], U(θ) = −kT ln[P/sin θ], U(φ) = −kT ln P, inverted only "
+       "where P exceeds a share of its maximum, with slope-continuous walls outside. refine: one bonded IBI step from a CG run "
+       "with the tables (U ← U + α kT ln(P_CG/P_target)), for the shift the non-bonded 1–3 and 1–4 terms cause.",
+       {{"types", "", "the shared type list (types.json from cgmap); default: the union of the maps given"},
+        {"T", "300", "temperature of the inversion (K): the AA run's"},
+        {"weights", "", "one weight per system, comma-separated (default: equal; each system is normalised, so frame counts do not weigh)"},
+        {"stride", "1", "every n-th frame of each dump"},
+        {"threshold", "0.05", "invert where the smoothed distribution exceeds this share of its maximum; walls outside"},
+        {"smooth", "1", "Gaussian smoothing of the histograms, σ in bins (1: the round trip on an ideal chain stays within 0.06 kT)"},
+        {"bin_bond", "0.02", "bond histogram bin (Å)"},
+        {"bin_angle", "1", "angle histogram bin (degrees)"},
+        {"bin_dihedral", "5", "dihedral histogram bin (degrees)"},
+        {"bond_wall", "20", "curvature of the bond walls, kcal/mol/Å² (at least the well's)"},
+        {"angle_wall", "0.005", "curvature of the angle walls, kcal/mol/deg²"},
+        {"aat", "1,170,180", "dihedral_style table/cut switch K, θ1, θ2: the dihedral turns off as a neighbouring angle goes from θ1 to θ2"},
+        {"tables", "", "refine: the bonded.json of the tables the CG run used"},
+        {"alpha", "0.5", "refine: damping of the update"},
+        {"o", "bonded", "the output folder (tables, bonded.in, gromacs/, bonded.json)"}},
+       {"caps cgfit bonded cg/PBS.map.json cg/PBS.cg.lammpstrj cg/PBSA.map.json cg/PBSA.cg.lammpstrj cg/PBAT.map.json cg/PBAT.cg.lammpstrj --types cg/types.json -T 300 -o bonded",
+        "caps cgfit refine cg/PBS.map.json run1/cg.lammpstrj --tables bonded/bonded.json --types cg/types.json -o bonded_it2"}},
   };
   return t;
 }
@@ -124,7 +149,15 @@ std::string stem_of(const std::string& p) {
       s = (b.empty() ? "" : b + "_") + a;
     }
   }
-  return s;
+  // file names that are easy to type: letters, digits, . _ - (folder names such as "PBSA 11.27.12 AM" hold odd spaces)
+  std::string out;
+  for (unsigned char ch : s) {
+    const bool ok = std::isalnum(ch) || ch == '.' || ch == '_' || ch == '-';
+    if (ok) out += char(ch);
+    else if (ch < 0x80 || (ch & 0xC0) == 0xC0) { if (out.empty() || out.back() != '_') out += '_'; }   // one _ per space or non-ASCII character
+  }
+  while (!out.empty() && out.back() == '_') out.pop_back();
+  return out.empty() ? "system" : out;
 }
 std::string sha_of(const std::string& p) {
   std::ifstream f(p, std::ios::binary);
@@ -357,6 +390,148 @@ Json cg_run(const std::string& c, const Json& a, const std::string& data_dir) {
     t << "types: " << types.beads.size() << " bead, " << types.bonds.size() << " bond, " << types.angles.size() << " angle, " << types.dihedrals.size() << " dihedral\n";
     t << "wrote " << files.size() << " files in " << dir << "\n" << r.text("command") << "\n";
     r["text"] = t.str();
+  }
+  if (c == "cgfit") {
+    if (in.empty()) throw std::invalid_argument("cgfit bonded | refine, then the maps and their frames");
+    const std::string mode = in[0];
+    if (mode != "bonded" && mode != "refine") throw std::invalid_argument("cgfit " + mode + ": bonded or refine (the non-bonded fits follow)");
+    // systems: each map.json followed by its frames
+    struct SysIn { std::string map; std::vector<std::string> frames; Json mj; CgTopology t; };
+    std::vector<SysIn> sys;
+    for (size_t k = 1; k < in.size(); ++k) {
+      const std::string& p = in[k];
+      if (p.size() >= 9 && p.compare(p.size() - 9, 9, ".map.json") == 0) {
+        SysIn x;
+        x.map = p;
+        x.mj = read_json_file(p);
+        x.t = cg_topology_from_map(x.mj);
+        sys.push_back(std::move(x));
+      } else {
+        if (sys.empty()) throw std::invalid_argument("give a mapping (STEM.map.json) before its frames: " + p);
+        sys.back().frames.push_back(p);
+      }
+    }
+    if (sys.empty()) throw std::invalid_argument("give at least one mapping (STEM.map.json) and its frames");
+    CgTypes types;
+    if (!S(a, "types").empty()) types = cg_types_from_json(read_json_file(S(a, "types")));
+    else {
+      std::vector<CgTypes> lists;
+      for (const auto& x : sys) {
+        CgTypes t;
+        std::set<std::string> b, bo, an, di;
+        for (const auto& k : x.t.kind) b.insert(k);
+        for (const auto& [i, j] : x.t.bonds) bo.insert(cg_key({x.t.kind[size_t(i)], x.t.kind[size_t(j)]}));
+        for (const auto& q : x.t.angles) an.insert(cg_key({x.t.kind[size_t(q[0])], x.t.kind[size_t(q[1])], x.t.kind[size_t(q[2])]}));
+        for (const auto& q : x.t.dihedrals) di.insert(cg_key({x.t.kind[size_t(q[0])], x.t.kind[size_t(q[1])], x.t.kind[size_t(q[2])], x.t.kind[size_t(q[3])]}));
+        lists.push_back({{b.begin(), b.end()}, {bo.begin(), bo.end()}, {an.begin(), an.end()}, {di.begin(), di.end()}});
+      }
+      types = cg_types_union(lists);
+    }
+    CgBondedOptions o;
+    o.temperature = N(a, "T", 300);
+    o.threshold = N(a, "threshold", o.threshold);
+    o.smooth = N(a, "smooth", o.smooth);
+    o.bond_bin = N(a, "bin_bond", o.bond_bin);
+    o.angle_bin = N(a, "bin_angle", o.angle_bin);
+    o.dihedral_bin = N(a, "bin_dihedral", o.dihedral_bin);
+    o.bond_wall = N(a, "bond_wall", o.bond_wall);
+    o.angle_wall = N(a, "angle_wall", o.angle_wall);
+    if (a.has("aat")) {
+      const auto v = L(a, "aat");
+      if (v.size() != 3) throw std::invalid_argument("--aat takes K,θ1,θ2");
+      o.aat_k = std::stod(v[0]), o.aat_theta1 = std::stod(v[1]), o.aat_theta2 = std::stod(v[2]);
+    }
+    std::vector<double> w(sys.size(), 1.0);
+    if (a.has("weights")) {
+      const auto v = L(a, "weights");
+      if (v.size() != sys.size()) throw std::invalid_argument("--weights needs " + std::to_string(sys.size()) + " values, one per system");
+      for (size_t k = 0; k < v.size(); ++k) w[k] = std::stod(v[k]);
+    }
+    const size_t stride = size_t(std::max(1.0, N(a, "stride", 1)));
+    CgBondedAccumulator acc(types, o);
+    Json sysrep = Json::array();
+    KeyValues ins;
+    for (size_t k = 0; k < sys.size(); ++k) {
+      const auto& x = sys[k];
+      const int si = acc.add_system(x.t, w[k], fs::path(x.map).filename().string());
+      ins.push_back({fs::path(x.map).filename().string(), sha_of(x.map)});
+      size_t nfr = 0;
+      for (const auto& fpath : x.frames) {
+        ins.push_back({fs::path(fpath).filename().string(), sha_of(fpath)});
+        if (fs::path(fpath).extension() == ".data") {
+          const System d = read_lammps_data(fpath);
+          if (d.atoms.size() != x.t.beads()) throw std::invalid_argument(fpath + " has " + std::to_string(d.atoms.size()) + " beads, its map " + std::to_string(x.t.beads()));
+          std::vector<Vec3> p(d.atoms.size());
+          for (size_t b = 0; b < d.atoms.size(); ++b) p[size_t(d.atoms[b].id > 0 ? d.atoms[b].id - 1 : int64_t(b))] = d.atoms[b].pos;
+          acc.add_frame(si, p, d.cell);
+          ++nfr;
+        } else {
+          nfr += for_each_dump_frame(fpath, x.t.beads(), [&](size_t, int64_t, const std::vector<Vec3>& p, const Cell& cell, bool) {
+            acc.add_frame(si, p, cell);
+            return true;
+          }, stride);
+        }
+      }
+      if (!nfr) throw std::invalid_argument("no frames for " + x.map + ": give its CG dump(s) or STEM.cg.data after it");
+      Json e = Json::object();
+      e["map"] = x.map;
+      e["frames"] = double(nfr);
+      e["weight"] = w[k];
+      sysrep.push_back(e);
+    }
+    const std::string dir = S(a, "o", mode == "bonded" ? "bonded" : "bonded_refined");
+    CgBondedResult res;
+    std::map<std::string, double> residual;
+    if (mode == "bonded") {
+      res = invert_bonded(acc);
+    } else {
+      if (S(a, "tables").empty()) throw std::invalid_argument("refine needs --tables (the bonded.json the CG run used)");
+      res = refine_bonded(bonded_from_json(read_json_file(S(a, "tables"))), acc, N(a, "alpha", 0.5), &residual);
+    }
+    for (const auto& f : write_bonded(res, types, o, dir)) files.push_back(f);
+    write_text((fs::path(dir) / "types.json").string(), cg_types_json(types).dump(1) + "\n");
+    files.push_back((fs::path(dir) / "types.json").string());
+    // the report: per table its minimum, curvature, sampled range and how well the halves agree
+    Json tabs = Json::array();
+    std::ostringstream t;
+    char b[256];
+    std::snprintf(b, sizeof b, "%s: %zu systems, %zu frames, %.0f K\n", mode == "bonded" ? "Boltzmann inversion" : "bonded IBI step", sys.size(), acc.frames(), o.temperature);
+    t << b;
+    for (const auto* list : {&res.bonds, &res.angles, &res.dihedrals})
+      for (const auto& T : *list) {
+        Json e = Json::object();
+        e["kind"] = T.kind == 0 ? "bond" : T.kind == 1 ? "angle" : "dihedral";
+        e["key"] = T.key;
+        e["sampled"] = T.sampled;
+        e["count"] = double(T.count);
+        e["x0"] = T.x0;
+        e["k_harmonic"] = T.k_harmonic;
+        e["lo"] = T.lo;
+        e["hi"] = T.hi;
+        if (!std::isnan(T.half_diff)) e["half_diff_kT"] = T.half_diff;
+        const std::string rk = std::string(e.text("kind")) + " " + T.key;
+        if (residual.count(rk)) e["residual"] = residual[rk];
+        tabs.push_back(e);
+        if (!T.sampled) { t << "  " << e.text("kind") << " " << T.key << ": no samples\n"; continue; }
+        const char* u = T.kind == 0 ? "Å" : "°";
+        char hd[64];
+        if (std::isnan(T.half_diff)) std::snprintf(hd, sizeof hd, "no split check");
+        else std::snprintf(hd, sizeof hd, "halves differ by %.2f kT", T.half_diff);
+        std::snprintf(b, sizeof b, "  %-8s %-10s min %.3g %s · range %.3g–%.3g %s · %s · %ld samples%s\n", e.text("kind").c_str(), T.key.c_str(), T.x0, u,
+                      T.lo, T.hi, u, hd, T.count, residual.count(rk) ? (" · residual " + std::to_string(residual[rk]).substr(0, 5)).c_str() : "");
+        t << b;
+      }
+    for (const auto& nn : res.notes) t << "  note: " << nn << "\n";
+    t << "wrote " << dir << " (bonded.in: include after read_data with -var BONDED " << dir << ")\n" << r.text("command") << "\n";
+    r["text"] = t.str();
+    r["tables"] = tabs;
+    r["systems"] = sysrep;
+    r["dir"] = dir;
+    provenance((fs::path(dir) / "bonded.in").string(), mode == "bonded" ? "cg.bonded_bi" : "cg.bonded_ibi",
+               std::string(mode == "bonded" ? "bonded Boltzmann inversion" : "bonded IBI step") + " over " + std::to_string(acc.frames()) + " frames of " + std::to_string(sys.size()) + " systems",
+               {{"temperature", std::to_string(o.temperature)}, {"threshold", std::to_string(o.threshold)}, {"smooth (bins)", std::to_string(o.smooth)},
+                {"bins", std::to_string(o.bond_bin) + " Å, " + std::to_string(o.angle_bin) + "°, " + std::to_string(o.dihedral_bin) + "°"}},
+               ins, {"reith2003"}, {{"bonded potentials", "tabulated, from mapped all-atom distributions at one temperature"}});
   }
   r["files"] = files;
   return r;
