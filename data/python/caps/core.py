@@ -1205,6 +1205,20 @@ def cg(command: str, *inputs: str, **options) -> dict:
     return _json_call(library().caps_cg_run, _enc(command), _enc(json.dumps(args)), _enc(str(_data_dir())))
 
 
+def map_trajectory(topology: str, dump: str, mapping: str, out: str = "", stride: int = 1, types: str = "", first: int = 1, last: Optional[int] = None) -> dict:
+    """An all-atom LAMMPS dump mapped to beads frame by frame (one frame in memory): topology the all-atom structure the
+    mapping was made for, mapping its map.json (caps cgmap), out the CG dump (default: next to the mapping). Returns the
+    cgmap report (its "systems"[0]["trajectory"] has the frames and seconds)."""
+    o = {"map": str(mapping), "dump": str(dump), "stride": stride, "first": first, "o": os.path.dirname(str(mapping)) or "."}
+    if out:
+        o["out_dump"] = str(out)
+    if types:
+        o["types"] = str(types)
+    if last is not None:
+        o["last"] = last
+    return cg("cgmap", str(topology), **o)
+
+
 def cg_help(command: str) -> str:
     """--help of a coarse-graining command: what it does, every option with its default and the reason, examples."""
     cap = 1 << 16
@@ -1611,6 +1625,38 @@ def chi_by_contacts(a: str, b: str, forcefield: Optional[str] = "gaff2", samples
 
 class build:
     """The builders: each returns a new Document."""
+
+    @staticmethod
+    def cg_polymer(beads_per_unit: dict, composition: Optional[dict] = None, sequence: str = "bernoulli", dp: int = 100, chains: int = 10,
+                   density: float = 1.2, lengths: Optional[dict] = None, bonded: str = "bonded", maps=None, masses: Optional[dict] = None,
+                   seed: int = 1, out: str = "melt", markov: Optional[dict] = None, blocks: Optional[list] = None, pattern: str = "",
+                   types: str = "", reference=None) -> dict:
+        """A coarse-grained melt (caps cgbuild): beads_per_unit={"BS": ["B", "S"], "BA": ["B", "A"]}, composition={"BS": 0.8,
+        "BA": 0.2}, sequence bernoulli | markov (markov={"BA": {"BA": 0.9, "BT": 0.1}, …}) | block (blocks=[20, 10]) | gradient |
+        alternating | pattern, lengths={"distribution": "schulz-zimm", "pdi": 2} (dp is the number average), bonded: the folder of
+        caps cgfit bonded, maps: map.json file(s) for the bead masses (or masses={"B": 88.1, …}), reference: [map.json, frames …]
+        of the all-atom chains to compare ⟨R²(n)⟩/n with. Writes OUT/melt.cg.data, melt.map.json, melt.internal.csv and
+        in.cg_equil; returns the report (box, ree_rms, text …)."""
+        o = {"units": ",".join(f"{k}={'+'.join(v)}" for k, v in beads_per_unit.items()), "sequence": sequence, "dp": dp, "chains": chains,
+             "density": density, "bonded": str(bonded), "seed": seed, "o": str(out)}
+        if composition:
+            o["composition"] = ",".join(f"{k}:{v}" for k, v in composition.items())
+        if lengths:
+            o["lengths"] = lengths.get("distribution", "schulz-zimm")
+            o["pdi"] = lengths.get("pdi", 1.0)
+        if maps:
+            o["maps"] = ",".join(str(m) for m in ([maps] if isinstance(maps, (str, os.PathLike)) else maps))
+        if masses:
+            o["masses"] = ",".join(f"{k}={v}" for k, v in masses.items())
+        if markov:
+            o["markov"] = ",".join(f"{a}>{b}:{p}" for a, row in markov.items() for b, p in row.items())
+        if blocks:
+            o["blocks"] = ",".join(str(b) for b in blocks)
+        if pattern:
+            o["pattern"] = pattern
+        if types:
+            o["types"] = str(types)
+        return cg("cgbuild", *([str(x) for x in reference] if reference else []), **o)
 
     @staticmethod
     def smiles(smiles: str, forcefield: str = "uff", conformers: int = 1, seed: int = 1, rotor_search: bool = False,
