@@ -66,6 +66,8 @@
 #include "caps/pipeline.hpp"
 #include "caps/bundle.hpp"
 #include "caps/crystal.hpp"
+#include "caps/cg_commands.hpp"
+#include "caps/cg_rules.hpp"
 #include "caps/dft_commands.hpp"
 #include "caps/spacegroup.hpp"
 #include "caps/peptide.hpp"
@@ -11457,6 +11459,7 @@ caps::CgMapOptions cg_map_options(const caps::Json& j) {
   o.scheme = j.text("scheme", "unit");
   o.per_bead = int(j.num("per_bead", 3));
   o.temperature = j.num("temperature", 300);
+  if (j.has("rules")) o.rules = caps::cg_rules_from_json(j["rules"]);   // the rules scheme (caps/cg_rules.hpp)
   return o;
 }
 std::string cg_map_report(const caps::CgMapResult& r) {
@@ -11716,6 +11719,25 @@ extern "C" int32_t caps_dft_run(const char* command, const char* args_json, cons
   try {
     const caps::Json a = caps::Json::parse(args_json && *args_json ? args_json : "{}");
     return report_out(caps::dft_run(command ? command : "", a, data_dir ? data_dir : "").dump(0), out, cap);
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return -1;
+  }
+}
+
+extern "C" int32_t caps_cg_run(const char* command, const char* args_json, const char* data_dir, char* out, int32_t cap) {
+  try {
+    const caps::Json a = caps::Json::parse(args_json && *args_json ? args_json : "{}");
+    return report_out(caps::cg_run(command ? command : "", a, data_dir ? data_dir : "").dump(0), out, cap);
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return -1;
+  }
+}
+
+extern "C" int32_t caps_cg_help(const char* command, char* out, int32_t cap) {
+  try {
+    return report_out(caps::cg_help(command ? command : ""), out, cap);
   } catch (const std::exception& e) {
     g_error = e.what();
     return -1;

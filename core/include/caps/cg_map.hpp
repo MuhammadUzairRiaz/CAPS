@@ -8,6 +8,8 @@
 //                  Kremer, Macromolecules 39, 6708 (2006) for PS; moltemplate's "2-bead polymer" is the generic form);
 //                  a unit without a side group is one bead
 //   backbone_n     n backbone atoms per bead, side groups with their backbone atom (polyethylene 3:1 and the like)
+//   rules          chemistry-aware beads (caps/cg_rules.hpp): bonds cut by SMARTS, fragment SMARTS or an atom → bead list,
+//                  named by rules (polyesters: the ester-cut preset's B, S, A, T beads)
 //
 // The bead model (a starting point, as its report says):
 //   bonds, angles   Boltzmann inversion of the mapped distributions over every bond and angle of the chains and every
@@ -28,15 +30,17 @@
 #include <utility>
 #include <vector>
 
+#include "caps/cg_rules.hpp"
 #include "caps/field.hpp"
 #include "caps/system.hpp"
 
 namespace caps {
 
 struct CgMapOptions {
-  std::string scheme = "unit";   // unit | backbone_side | backbone_n
+  std::string scheme = "unit";   // unit | backbone_side | backbone_n | rules (caps/cg_rules.hpp: bond cuts, fragments or a list)
   int per_bead = 3;              // backbone_n
   double temperature = 300;      // K: the inversion's k_B T
+  CgRules rules;                 // the rules scheme
 };
 
 struct CgBondType { std::string a, b; double r0 = 0, k = 0, sd = 0; int count = 0; };

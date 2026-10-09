@@ -1,0 +1,52 @@
+{
+ "format": "caps-cg-rules",
+ "version": 1,
+ "presets": [
+  {
+   "id": "ester-cut",
+   "title": "Polyesters: cut every ester C(=O)–O",
+   "description": "Every ester bond between the carbonyl carbon and the ester oxygen is cut; the fragments are the diol and diacid (or hydroxy-acid) residues. Each ester oxygen stays with its diol, acid and alcohol end groups stay in their bead, so mass is conserved exactly. One bead set covers copolyesters that share residues (PBS, PBSA and PBAT share B).",
+   "cut": [
+    "[CX3](=O)-[OX2;!H1]"
+   ],
+   "names": [
+    {
+     "name": "T",
+     "smarts": "[CX3](=O)c1ccc(cc1)[CX3]=O",
+     "description": "terephthalate –C(=O)C6H4C(=O)–"
+    },
+    {
+     "name": "A",
+     "smarts": "[CX3](=O)[CH2][CH2][CH2][CH2][CX3]=O",
+     "description": "adipate –C(=O)(CH2)4C(=O)–"
+    },
+    {
+     "name": "S",
+     "smarts": "[CX3](=O)[CH2][CH2][CX3]=O",
+     "description": "succinate –C(=O)(CH2)2C(=O)–"
+    },
+    {
+     "name": "C",
+     "smarts": "[OX2][CH2][CH2][CH2][CH2][CH2][CX3]=O",
+     "description": "caproyl –O(CH2)5C(=O)– (PCL)"
+    },
+    {
+     "name": "L",
+     "smarts": "[OX2][CH1]([CH3])[CX3]=O",
+     "description": "lactyl –OCH(CH3)C(=O)– (PLA)"
+    },
+    {
+     "name": "B",
+     "smarts": "[OX2][CH2][CH2][CH2][CH2][OX2]",
+     "description": "butanediol –O(CH2)4O–"
+    },
+    {
+     "name": "E",
+     "smarts": "[OX2][CH2][CH2][OX2]",
+     "description": "ethylene glycol –OCH2CH2O–"
+    }
+   ],
+   "position": "com"
+  }
+ ]
+}

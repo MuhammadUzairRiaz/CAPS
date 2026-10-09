@@ -655,4 +655,19 @@ _op2.field.assign("opls2005")
 check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op.atoms)) < 1e-6, "recipe and field.assign give one set of OPLS 2005 charges")
 print("ok   polymer(forcefield=opls2005): export, charges identical by both routes")
 
+# chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
+check(caps.abi_version() == 66, "ABI 66")
+_pbs = caps.polymer("[*]OCCCCOC(=O)CCC(=O)[*]", dp=4, chains=2, seed=3)
+_cgd = _pbs.cg_map(rules="ester-cut")
+check(_cgd.atoms == 16, f"ester cut: 16 beads ({_cgd.atoms})")
+with tempfile.TemporaryDirectory() as _td:
+    _pbs.save(os.path.join(_td, "pbs.data"))
+    _r = caps.cg("cgmap", os.path.join(_td, "pbs.data"), preset="ester-cut", o=_td)
+    _e = _r["systems"][0]
+    check(_e["beads"] == 16 and _e["kinds"] == {"B": 8, "S": 8} and _e["mass_error"] < 1e-6, f"cgmap: {_e['kinds']}")
+    check(all(os.path.exists(f) for f in _r["files"]) and _r["types"]["bonds"] == ["B-S"], "cgmap files and types")
+    check("--preset ester-cut" in _r["command"], "cgmap command line")
+check("--dump" in caps.cg_help("cgmap"), "cg_help")
+print("ok   coarse-graining: cg_map(rules=…), caps.cg('cgmap')")
+
 print("all python checks passed")
