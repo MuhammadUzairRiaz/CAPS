@@ -12,6 +12,9 @@
 //   T9  reproducibility: the same run twice is bit-identical
 //   T11 rendering time
 //   T12 molecule builder: stereochemistry and round trips
+//   T13 coarse-grained mapping of grown copolyesters; T14 bonded Boltzmann inversion of an ideal chain; T15 IBI
+//   self-consistency on a Lennard-Jones fluid; T16, T17 Kremer–Grest entanglement and hardening (not run: cluster runs);
+//   T18 API regressions
 #pragma once
 #include <functional>
 #include <string>
