@@ -1,0 +1,18 @@
+{
+ "format": "caps-terminations",
+ "version": 1,
+ "about": "Surface terminations and adatoms. 'bond' per surface element where a value is known (the starting bond length; DFT relaxation decides the real one); for any other surface element CAPS uses the sum of covalent radii (Cordero 2008). 'range' is what the validator accepts for the surface–X distance.",
+ "terminations": [
+  {"name": "O",  "atom": "O",  "bond": {"Ti": 2.05}, "range": {"Ti": [1.90, 2.35]}, "source": "Ti–O of the reference Ti3C2Tx workflow"},
+  {"name": "F",  "atom": "F",  "bond": {"Ti": 2.20}, "range": {"Ti": [2.00, 2.40]}, "source": "Ti–F of the reference Ti3C2Tx workflow"},
+  {"name": "OH", "atom": "O",  "tail": "H", "tail_bond": 0.97, "bond": {"Ti": 2.20}, "range": {"Ti": [2.00, 2.45]}, "source": "Ti–O(H) and O–H of the reference Ti3C2Tx workflow"},
+  {"name": "Cl", "atom": "Cl"},
+  {"name": "Br", "atom": "Br"},
+  {"name": "I",  "atom": "I"},
+  {"name": "S",  "atom": "S"},
+  {"name": "Se", "atom": "Se"},
+  {"name": "Te", "atom": "Te"},
+  {"name": "NH", "atom": "N",  "tail": "H"},
+  {"name": "H",  "atom": "H"}
+ ]
+}
