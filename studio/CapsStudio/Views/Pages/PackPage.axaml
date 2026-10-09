@@ -6,6 +6,7 @@
     <Grid ColumnDefinitions="*,Auto">
       <StackPanel Spacing="3">
         <TextBlock Text="Packing · CAPS Pack" Classes="title" />
+        <v:RemoteRunPanel IsVisible="{Binding RunsRemote}" Margin="0,8,0,0" />
         <TextBlock Text="Places copies of molecules you already have — solvents, gases, additives, fillers, curatives, pre-built chains — as rigid bodies into an empty box or around the current structure, without overlaps (as Packmol and Materials Studio's Amorphous Cell Packing). It does not make polymer chains: Polymer cell grows those. The packed cell can go straight to Export; Minimise and Dynamics are optional." Classes="muted" TextWrapping="Wrap" MaxWidth="900" />
       </StackPanel>
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
@@ -24,6 +25,8 @@
         <Button Click="OnQueue" IsVisible="{Binding !Idle}" ToolTip.Tip="Queue this packing with its input as it is now; it packs a new cell when the current run ends (Jobs lists it)">
           <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="plus" Size="15" VerticalAlignment="Center" /><TextBlock Text="Queue packing" VerticalAlignment="Center" /></StackPanel>
         </Button>
+        <ComboBox ItemsSource="{Binding RunWhereChoices}" SelectedIndex="{Binding RunWhereIndex}" IsVisible="{Binding HasHosts}" MinWidth="150" VerticalAlignment="Center"
+                  ToolTip.Tip="Where the run goes: this machine, or a host from Settings › Compute &amp; remote (Jobs follows it; the results come back)" />
         <Button Classes="primary" Click="OnPack" IsEnabled="{Binding Idle}" IsVisible="{Binding !Packing}">
           <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="play" Size="16" VerticalAlignment="Center" /><TextBlock Text="Pack" VerticalAlignment="Center" /></StackPanel>
         </Button>

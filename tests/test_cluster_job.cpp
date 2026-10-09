@@ -240,6 +240,25 @@ TEST(ClusterJob, PollReadsWhatIsNew) {
   EXPECT_EQ(job_poll(p, "", "CANCELLED by 1|0:0|00:00:00|\n")["state"].str(), "cancelled");
 }
 
+TEST(ClusterJob, ChainedCommandsAndFolderInputs) {
+  const auto root = tmpdir("caps_cj_chain");
+  fs::create_directories(root / "bonded");
+  spit(root / "bonded" / "bonds.table", "x");
+  HostProfile h;
+  h.root = (root / "CAPS").string();
+  JobRequest r;
+  r.title = "T", r.kind = "mech";
+  r.command = "caps tensile s.data -o a.data && caps elastic s.data --json e.json; caps info a.data";
+  r.inputs = {(root / "bonded").string()};
+  const JobFolder f = make_job(h, r);
+  const std::string sh = slurp(fs::path(f.dir) / "cmd.sh");
+  EXPECT_EQ(sh.find("exec "), std::string::npos);   // several commands: none replaces the shell
+  EXPECT_NE(sh.find("\"$CAPS\" tensile s.data -o a.data && \"$CAPS\" elastic"), std::string::npos) << sh;
+  EXPECT_NE(sh.find("; \"$CAPS\" info a.data"), std::string::npos) << sh;
+  EXPECT_TRUE(fs::exists(fs::path(f.dir) / "bonded" / "bonds.table"));   // a folder input, copied whole
+  EXPECT_TRUE(bash_ok(fs::path(f.dir) / "cmd.sh"));
+}
+
 TEST(ClusterJob, TitlesAreSafeFolderNames) {
   EXPECT_EQ(sanitize_title("PBS DP-25/40"), "PBS_DP-25_40");
   EXPECT_EQ(sanitize_title("../../etc"), "_.._etc");

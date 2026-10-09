@@ -23,6 +23,8 @@
           <Button Click="OnRoot" ToolTip.Tip="{Binding CgwRoot}">
             <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="folder" Size="14" VerticalAlignment="Center" /><TextBlock Text="Working folder…" VerticalAlignment="Center" /></StackPanel>
           </Button>
+          <ComboBox ItemsSource="{Binding RunWhereChoices}" SelectedIndex="{Binding RunWhereIndex}" IsVisible="{Binding HasHosts}" MinWidth="150" VerticalAlignment="Center"
+                    ToolTip.Tip="Where the run goes: this machine, or a host from Settings › Compute &amp; remote (Jobs follows it; the results come back)" />
           <Button Classes="primary" Click="OnPrimary" IsEnabled="{Binding CgwIdle}">
             <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="{Binding CgwPrimaryIcon}" Size="14" VerticalAlignment="Center" /><TextBlock Text="{Binding CgwPrimaryText}" VerticalAlignment="Center" /></StackPanel>
           </Button>
@@ -34,6 +36,7 @@
         </StackPanel>
       </DockPanel>
     </Border>
+    <Border DockPanel.Dock="Top" Padding="22,10,22,0" IsVisible="{Binding RunsRemote}"><v:RemoteRunPanel /></Border>
     <!-- footer: the command line of the last action -->
     <Border DockPanel.Dock="Bottom" Padding="22,6" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
       <DockPanel>

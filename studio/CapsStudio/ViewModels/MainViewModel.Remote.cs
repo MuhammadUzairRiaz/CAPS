@@ -477,6 +477,15 @@ public sealed partial class MainViewModel
             if (now.Count > 0)
                 back = await Tool("scp", ScpArgs(h, now.Select(f => $"{Target(h)}:{r.Dir}/out/{f.Name}"), outDir + "/"), CopyTimeoutMs(now.Sum(f => f.Bytes)));
             await Tool("scp", ScpArgs(h, [$"{Target(h)}:{r.Dir}/{(r.Mode == "job" ? "slurm-*" : "*.log")}"], r.Local), 60000);
+            foreach (var f in r.Fetch)   // output folders, back where they were meant to go here
+            {
+                var bar = f.IndexOf('|');
+                var (name, target) = (f[..bar], f[(bar + 1)..]);
+                var parent = Path.GetDirectoryName(Path.GetFullPath(target)) ?? outDir;
+                Directory.CreateDirectory(parent);
+                var got = await Tool("scp", ScpArgs(h, [$"{Target(h)}:{r.Dir}/out/{name}"], parent + "/", true), CopyTimeoutMs(LargeRemoteBytes));
+                j.Add(got.Code == 0 ? $"{name} → {target}" : $"Could not bring {name} back: {FirstLine(got.Err, got.Code)}");
+            }
             var result = Path.Combine(outDir, r.Stem + ".data");
             j.Ended = DateTime.Now;
             // a structure, or (a Glass replica: the scan runs on a copy) its properties

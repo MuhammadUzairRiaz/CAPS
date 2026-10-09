@@ -127,6 +127,13 @@ public partial class MainViewModel
     public async Task<JsonObject?> Cgw(string command, JsonObject args)
     {
         if (DftDataDir.Length == 0) { CgwStatus = "CAPS data folder not found (data/cg)"; return null; }
+        if (RunsRemote && _module == 80)
+        {   // Run where = a host: the stage's command goes to the cluster; its outputs come back into the stage's folder
+            var job = await SubmitCgRemote(command, args);
+            CgwStatus = job is { IsFailed: false } ? $"{command} sent to {job.Remote?.Host}: Jobs follows it; the results come back into the stage's folder (run the stage here again to read them)"
+                                                   : $"Could not send {command}: {job?.Error}";
+            return null;
+        }
         CgwBusy = true;
         CgwStatus = $"Running {command} …";
         try
