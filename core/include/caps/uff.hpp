@@ -13,9 +13,11 @@
 //             sp2–sp3 and group-16 rules.
 //  Inversions K [C0 + C1 cos ω + C2 cos 2ω] at sp2 C, N, O (K = 6, 50 for C bonded to sp2 O) and pyramidal P, As, Sb, Bi.
 //  van der Waals  D [(x/r)¹² − 2 (x/r)⁶], geometric means of x and D; 1-2 and 1-3 pairs excluded, 1-4 at full strength.
-//  No charges (UFF's clean-up use, as in RDKit and Open Babel).
+//  No charges (UFF's clean-up use).
 //
-// The functional forms and special cases follow RDKit's implementation of UFF, whose parameter table CAPS carries.
+// The functional forms are the paper's; the parameter table (uff_params.inc) is CAPS's own, typed in from the paper and
+// from Rappé & Goddard, J. Phys. Chem. 95, 3358 (1991). Where the paper leaves a choice open, the choice is noted at
+// the code that makes it.
 #pragma once
 #include <string>
 #include <vector>
