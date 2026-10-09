@@ -78,7 +78,9 @@ fi
 ARCH="$ARCH" "$TOOL" --appimage-extract-and-run -n "$AD" "$OUT/CAPS-$VERSION-linux-$ARCH.AppImage" > "$WORK/appimage.log" 2>&1 || { tail -20 "$WORK/appimage.log"; exit 1; }
 
 echo "== deb"
-DEB="$WORK/deb"
+# staged on a Linux file system: on a Windows drive (WSL's /mnt/…) every file reads as mode 777, which dpkg-deb refuses
+DEB="$(mktemp -d)/deb"
+trap 'rm -rf "$(dirname "$DEB")"' EXIT
 mkdir -p "$DEB/DEBIAN" "$DEB/opt" "$DEB/usr/bin" "$DEB/usr/share/applications" "$DEB/usr/share/metainfo"
 cp -R "$APP" "$DEB/opt/caps"
 ln -s /opt/caps/CapsStudio "$DEB/usr/bin/caps-studio"
@@ -93,13 +95,15 @@ Version: $VERSION
 Section: science
 Priority: optional
 Architecture: $DEBARCH
-Depends: libc6 (>= 2.35), libstdc++6, zlib1g, libfontconfig1, libice6, libsm6, libx11-6, libicu70 | libicu72 | libicu74 | libicu-dev
+Depends: libc6 (>= 2.35), libstdc++6, zlib1g, libfontconfig1, libice6, libsm6, libx11-6, libicu70 | libicu72 | libicu74 | libicu76 | libicu77 | libicu78 | libicu80 | libicu-dev
 Maintainer: Muhammad Uzair Riaz <274318895+MuhammadUzairRiaz@users.noreply.github.com>
 Homepage: https://github.com/MuhammadUzairRiaz/CAPS
 Description: CAPS Studio - build, simulate and analyse amorphous polymer cells
  Chain Assembly and Packing Suite: grow and pack polymer cells, assign force fields,
  relax, equilibrate, run dynamics and crosslinking, and analyse the results.
 CTL
+chmod -R u=rwX,go=rX "$DEB"
+chmod 0755 "$DEB/opt/caps/CapsStudio" "$DEB/opt/caps/caps"
 dpkg-deb --root-owner-group --build "$DEB" "$OUT/caps-studio_${VERSION}_${DEBARCH}.deb" > /dev/null
 
 echo "== tarball"
