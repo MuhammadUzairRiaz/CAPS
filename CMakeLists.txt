@@ -40,8 +40,11 @@ if(MINGW)
 endif()
 
 find_package(Threads REQUIRED)
-# zlib: the system library (macOS, Linux); built from source where there is none (Windows)
-find_package(ZLIB QUIET)
+# zlib: the system library (macOS, Linux); built from source and linked statically on Windows (an MSYS2 zlib would make
+# caps.dll need zlib1.dll, which the installer does not carry) and wherever there is none
+if(NOT WIN32)
+  find_package(ZLIB QUIET)
+endif()
 if(NOT ZLIB_FOUND)
   include(FetchContent)
   FetchContent_Declare(zlib
