@@ -1,0 +1,45 @@
+{
+ "format": "caps-clusters",
+ "version": 1,
+ "about": "Cluster profiles for VASP job scripts: edit or add your own (Settings › DFT clusters, or this file). No e-mail lines are ever written. 'parallel' rules are tried in order: the first whose max_atoms is not exceeded gives MPI ranks, KPAR, NCORE and the time limit; 'gamma' is used for Γ-only runs (a molecule in a box). 'hang' is the seconds without VASP output after which the watchdog restarts a stage, by size.",
+ "profiles": [
+  {
+   "name": "slurm-workspace",
+   "about": "A Slurm cluster with workspaces and 104-core nodes",
+   "scheduler": "slurm",
+   "account": "",
+   "cores_per_node": 104,
+   "mem_per_cpu": 4000,
+   "licenses": "",
+   "modules": "",
+   "vasp": "vasp_std",
+   "workspace": {"allocate": "ws_allocate $WS 7", "find": "ws_find $WS", "release": "ws_release $WS"},
+   "parallel": [
+    {"max_atoms": 20,  "ranks": 52,  "kpar": 4, "ncore": 13, "time": "08:00:00"},
+    {"max_atoms": 100, "ranks": 104, "kpar": 4, "ncore": 26, "time": "24:00:00"},
+    {"max_atoms": 0,   "ranks": 104, "kpar": 2, "ncore": 26, "time": "48:00:00"}
+   ],
+   "gamma": {"ranks": 52, "kpar": 1, "ncore": 13, "time": "24:00:00"},
+   "hang": [{"max_atoms": 20, "seconds": 600}, {"max_atoms": 100, "seconds": 1200}, {"max_atoms": 0, "seconds": 1800}]
+  },
+  {
+   "name": "generic-slurm",
+   "about": "Any Slurm cluster without workspaces: edit the account, modules and cores",
+   "scheduler": "slurm",
+   "account": "",
+   "cores_per_node": 64,
+   "mem_per_cpu": 2000,
+   "licenses": "",
+   "modules": "",
+   "vasp": "vasp_std",
+   "workspace": {"allocate": "", "find": "", "release": ""},
+   "parallel": [
+    {"max_atoms": 20,  "ranks": 32, "kpar": 4, "ncore": 8,  "time": "08:00:00"},
+    {"max_atoms": 100, "ranks": 64, "kpar": 4, "ncore": 16, "time": "24:00:00"},
+    {"max_atoms": 0,   "ranks": 64, "kpar": 2, "ncore": 16, "time": "48:00:00"}
+   ],
+   "gamma": {"ranks": 32, "kpar": 1, "ncore": 8, "time": "24:00:00"},
+   "hang": [{"max_atoms": 20, "seconds": 600}, {"max_atoms": 100, "seconds": 1200}, {"max_atoms": 0, "seconds": 1800}]
+  }
+ ]
+}

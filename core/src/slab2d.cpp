@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <filesystem>
 #include <fstream>
 #include <map>
 #include <numeric>
@@ -568,6 +569,11 @@ void write_vasp_poscar(const System& s, const std::string& path, const std::stri
   }
   std::set<std::string> seen;
   for (const auto& r : runs) if (!seen.insert(r.first).second) throw std::runtime_error("POSCAR: species " + r.first + " is not contiguous (group the atoms by element first)");
+  {
+    std::error_code ec;
+    const auto parent = std::filesystem::path(path).parent_path();
+    if (!parent.empty()) std::filesystem::create_directories(parent, ec);
+  }
   std::ofstream f(path);
   if (!f) throw std::runtime_error("cannot write " + path);
   char b[160];
