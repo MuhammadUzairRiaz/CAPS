@@ -23,6 +23,8 @@
 #include "caps/mechanics.hpp"
 #include "caps/trajectory.hpp"
 #include "caps/cg_rules.hpp"
+#include "caps/dynamics.hpp"
+#include "caps/recipe.hpp"
 #include "caps/dft_commands.hpp"
 #include "caps/io.hpp"
 #include "caps/provenance.hpp"
@@ -68,7 +70,9 @@ const std::vector<Cmd>& table() {
        "Non-bonded: targets (per-pair g(r) per system from MAP FRAMES …); ibi-start (−kT ln g tables, LAMMPS decks and run_ibi.sh, "
        "the loop for a cluster); ibi-step (one joint update from each system's CG dump and log: MAP DUMP [LOG] …); ibi-run (the loop "
        "with CAPS's engine, small systems: MAP DATA …); fit (LJ 12-6, LJ 9-6, Morse or Mie fitted to the tables); tg (T_g from a "
-       "cooling scan's T and density columns); calibrate (the next σ and ε scale factors from the runs so far, with decks for them).",
+       "cooling scan's T and density columns); calibrate (the next σ and ε scale factors from the runs so far, with decks for them); "
+       "sample-chain (isolated all-atom chains grown, typed and run by Langevin dynamics with no neighbours, each frame mapped — "
+       "bonded distributions without an equilibrated melt, Fritz et al. 2009).",
        {{"types", "", "the shared type list (types.json from cgmap); default: the union of the maps given"},
         {"T", "300", "temperature of the inversion (K): the AA run's"},
         {"weights", "", "one weight per system, comma-separated (default: equal; each system is normalised, so frame counts do not weigh)"},
@@ -108,6 +112,12 @@ const std::vector<Cmd>& table() {
         {"t_hi", "500", "decks: the cooling scan's start (K)"},
         {"t_lo", "150", "decks: the cooling scan's end (K)"},
         {"t_step", "25", "decks: the cooling scan's step (K)"},
+        {"units", "", "sample-chain: repeat-unit SMILES with two *, comma-separated (several: alternating, or --sequence)"},
+        {"forcefield", "opls2005", "sample-chain: the all-atom force field"},
+        {"chains", "1", "sample-chain: independent chains (each grown and run on its own)"},
+        {"frame_every", "200", "sample-chain: steps between mapped frames"},
+        {"equilibrate", "", "sample-chain: steps before frames are kept (default a fifth of the run)"},
+        {"screening", "vacuum", "sample-chain: vacuum (Coulomb within the cut-off) or off (no Coulomb)"},
         {"o", "bonded", "the output folder"}},
        {"caps cgfit bonded cg/PBS.map.json cg/PBS.cg.lammpstrj cg/PBSA.map.json cg/PBSA.cg.lammpstrj cg/PBAT.map.json cg/PBAT.cg.lammpstrj --types cg/types.json -T 300 -o bonded",
         "caps cgfit refine cg/PBS.map.json run1/cg.lammpstrj --tables bonded/bonded.json --types cg/types.json -o bonded_it2",
@@ -474,7 +484,7 @@ void write_cg_decks(const std::string& dir, int exclude, double T, double dt, in
 }
 
 // the non-bonded modes of cgfit
-void cgfit_nonbonded(const std::string& mode, const Json& a, const std::vector<std::string>& in, Json& r, Json& files) {
+void cgfit_nonbonded(const std::string& mode, const Json& a, const std::vector<std::string>& in, Json& r, Json& files, const std::string& data_dir) {
   std::ostringstream t;
   char b[512];
   const double T = N(a, "T", 300);
@@ -727,6 +737,107 @@ void cgfit_nonbonded(const std::string& mode, const Json& a, const std::vector<s
     t << b;
     r["tg"] = fit.tg;
     r["tg_err"] = fit.tg_err;
+  } else if (mode == "sample-chain") {
+    // isolated all-atom chains (Fritz, Harmandaris, Kremer & van der Vegt 2009): grown, typed, Langevin dynamics with no
+    // neighbours, each frame mapped — bonded distributions without an equilibrated melt
+    const auto units = L(a, "units");
+    if (units.empty()) throw std::invalid_argument("sample-chain needs --units (repeat-unit SMILES with two *)");
+    const int dp = int(N(a, "dp", 10)), chains = int(N(a, "chains", 1));
+    const std::string dir = S(a, "o", "single_chain");
+    fs::create_directories(dir);
+    std::string label;
+    const CgRules rules = rules_of(a, data_dir, &label);
+    Json build = Json::object(), poly = Json::object(), ul = Json::array();
+    for (const auto& u : units) ul.push_back(u);
+    poly["units"] = ul, poly["dp"] = dp, poly["chains"] = 1, poly["tacticity"] = S(a, "tacticity", "atactic");
+    poly["sequence"] = units.size() > 1 ? S(a, "sequence", "alternating") : std::string("homopolymer");
+    if (!S(a, "tail_cap").empty()) poly["tail_cap"] = S(a, "tail_cap");
+    build["polymer"] = poly;
+    const double steps = N(a, "steps", 20000), dt = N(a, "dt", 1.0);
+    const int every = int(N(a, "frame_every", 200));
+    const std::string ffname = S(a, "forcefield", "opls2005");
+    std::vector<std::vector<Vec3>> beads_frames;
+    std::vector<Cell> cells;
+    CgMapping m0;
+    System aa0;
+    for (int ch = 0; ch < chains; ++ch) {
+      Json rec = Json::object();
+      rec["recipe"] = 1, rec["name"] = "chain";
+      rec["build"] = build;
+      Json grow = Json::object();
+      grow["density"] = 0.05, grow["seed"] = int(N(a, "seed", 1)) + ch;
+      rec["grow"] = grow;
+      Json type = Json::object();
+      type["forcefield"] = ffname;
+      rec["type"] = type;
+      RecipeOptions ro;
+      ro.forcefield_dir = (fs::path(data_dir) / "forcefields").string();
+      RecipeResult res = run_recipe(rec, ro);
+      if (!res.field) throw std::invalid_argument("the chain could not be typed with " + ffname);
+      System s = res.system;
+      const CgMapping m = cg_mapping(s, rules);
+      if (ch == 0) m0 = m, aa0 = s;
+      else if (m.bead_kind != m0.bead_kind) throw std::invalid_argument("chains of another bead sequence: sample one sequence at a time");
+      // a box far larger than the chain: no neighbours, no images
+      Vec3 lo{1e300, 1e300, 1e300}, hi{-1e300, -1e300, -1e300};
+      for (const auto& at : s.atoms) for (int k = 0; k < 3; ++k) lo[size_t(k)] = std::min(lo[size_t(k)], at.pos[size_t(k)]), hi[size_t(k)] = std::max(hi[size_t(k)], at.pos[size_t(k)]);
+      const double L = std::max({hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]}) * 3 + 60;
+      s.cell = Cell{};
+      s.cell.origin = lo - Vec3{L / 3, L / 3, L / 3};
+      s.cell.a = {L, 0, 0}, s.cell.b = {0, L, 0}, s.cell.c = {0, 0, L};
+      DynamicsOptions d;
+      d.field = res.field;
+      d.dt = dt;
+      d.steps = int64_t(steps);
+      d.temperature = N(a, "T", 300);
+      d.thermostat = Thermostat::Langevin;
+      d.tau_t = N(a, "damp", 1000);
+      d.seed = uint64_t(N(a, "seed", 1)) + uint64_t(ch);
+      d.new_velocities = true;
+      d.energy.cutoff = N(a, "cutoff", 15);
+      d.energy.coulomb = S(a, "screening", "vacuum") != "off";
+      d.frame_every = every;
+      const int64_t skip = int64_t(N(a, "equilibrate", steps / 5));
+      d.frame = [&](const std::vector<double>& x, const Cell& c2, int64_t stp) {
+        if (stp < skip) return;
+        std::vector<Vec3> p(x.size() / 3);
+        for (size_t i = 0; i < p.size(); ++i) p[i] = {x[3 * i], x[3 * i + 1], x[3 * i + 2]};
+        beads_frames.push_back(cg_positions(m, s, p, c2));
+        cells.push_back(c2);
+      };
+      run_dynamics(s, d);
+    }
+    // the frames as a CG dump of one chain each (the bead order of the map), the map and the CG structure
+    const std::string stem = (fs::path(dir) / "chain").string();
+    write_text(stem + ".map.json", cg_mapping_json(m0, aa0).dump(1) + "\n");
+    const CgTypes types = cg_types_of(m0);
+    write_text((fs::path(dir) / "types.json").string(), cg_types_json(types).dump(1) + "\n");
+    {
+      std::vector<Vec3> p0;
+      for (const auto& at : aa0.atoms) p0.push_back(at.pos);
+      write_cg_lammps_data(m0, cg_structure(m0, aa0, cg_positions(m0, aa0, p0, aa0.cell), Cell{}, types), types, stem + ".cg.data");
+    }
+    {
+      std::ofstream f(stem + ".cg.lammpstrj");
+      char b[200];
+      std::vector<int> tnum;
+      for (const auto& k : m0.bead_kind) tnum.push_back(int(std::find(types.beads.begin(), types.beads.end(), k) - types.beads.begin()) + 1);
+      for (size_t fr = 0; fr < beads_frames.size(); ++fr) {
+        const Cell& c2 = cells[fr];
+        f << "ITEM: TIMESTEP\n" << fr << "\nITEM: NUMBER OF ATOMS\n" << m0.beads() << "\nITEM: BOX BOUNDS pp pp pp\n";
+        for (int k = 0; k < 3; ++k) { std::snprintf(b, sizeof b, "%.4f %.4f\n", c2.origin[size_t(k)], c2.origin[size_t(k)] + (k == 0 ? c2.a[0] : k == 1 ? c2.b[1] : c2.c[2])); f << b; }
+        f << "ITEM: ATOMS id mol type xu yu zu\n";
+        for (size_t bb = 0; bb < m0.beads(); ++bb) { std::snprintf(b, sizeof b, "%zu 1 %d %.4f %.4f %.4f\n", bb + 1, tnum[bb], beads_frames[fr][bb][0], beads_frames[fr][bb][1], beads_frames[fr][bb][2]); f << b; }
+      }
+    }
+    files.push_back(stem + ".map.json"), files.push_back(stem + ".cg.data"), files.push_back(stem + ".cg.lammpstrj");
+    std::snprintf(b, sizeof b, "%d isolated chain(s) of %d units (%s, %s): %zu beads, %zu frames mapped (%g steps of %g fs, Langevin at %g K, frames after step %lld)\n", chains, dp,
+                  ffname.c_str(), label.c_str(), m0.beads(), beads_frames.size(), steps, dt, N(a, "T", 300), (long long)int64_t(N(a, "equilibrate", steps / 5)));
+    t << b;
+    t << "next: caps cgfit bonded " << stem << ".map.json " << stem << ".cg.lammpstrj --types " << (fs::path(dir) / "types.json").string() << " -o bonded_single\n";
+    t << "note: isolated chains sample no neighbours — their bonded distributions miss the melt's packing (Fritz et al. 2009 use them for the bonded terms only); run long chains for ns on a cluster\n";
+    provenance(stem + ".cg.lammpstrj", "cg.sample_chain", "isolated chains sampled by Langevin dynamics", {{"units", S(a, "units")}, {"dp", std::to_string(dp)}, {"forcefield", ffname},
+               {"steps", std::to_string(int64_t(steps))}, {"dt (fs)", std::to_string(dt)}}, {}, {"fritz2009"});
   } else if (mode == "calibrate") {
     if (S(a, "fits").empty()) throw std::invalid_argument("calibrate needs --fits (fits.json)");
     const Json fj = read_json_file(S(a, "fits"));
@@ -958,7 +1069,7 @@ Json cg_run(const std::string& c, const Json& a, const std::string& data_dir) {
     if (in.empty()) throw std::invalid_argument("cgfit bonded | refine, then the maps and their frames");
     const std::string mode = in[0];
     if (mode != "bonded" && mode != "refine") {
-      cgfit_nonbonded(mode, a, in, r, files);
+      cgfit_nonbonded(mode, a, in, r, files, data_dir);
       r["files"] = files;
       return r;
     }
