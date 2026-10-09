@@ -26,7 +26,7 @@ public partial class MechanicsPage : PageBase
         };
     }
 
-    private async void OnRun(object? s, RoutedEventArgs e) => await Vm.RunMechanics();
+    private async void OnRun(object? s, RoutedEventArgs e) { if (Vm.RunsRemote) await Vm.SubmitMechanicsRemote(); else await Vm.RunMechanics(); }
     private void OnCancel(object? s, RoutedEventArgs e) => Vm.Analyze.Cancel();
     private void OnExport(object? s, RoutedEventArgs e) => Window?.ExportAnalysis();
 }

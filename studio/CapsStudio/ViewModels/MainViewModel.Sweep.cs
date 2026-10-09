@@ -232,14 +232,18 @@ public sealed partial class MainViewModel
             var h = _settings.Hosts[SweepHostIndex - 1];
             SweepError = "";
             SweepRunning = true;
-            foreach (var run in _sweepRuns.Where(r => r.Status is "queued" or "stopped" or "failed").ToList())
+            // one array job: a task per cell (caps job new --array), each followed in Jobs and fetched when it ends
+            var todo = _sweepRuns.Where(r => r.Status is "queued" or "stopped" or "failed").ToList();
+            try
             {
-                var job = await SendRecipe(h, "Sweep", $"Sweep · {run.Condition} · seed {run.Seed}", System.IO.Path.GetFileNameWithoutExtension(run.Path), SweepRecipe(poly, run));
-                run.Status = job.Status == "failed" ? "failed" : "running";
-                run.Detail = job.Status == "failed" ? job.Error : $"on {h.Name} · {job.Remote?.JobId}";
-                RaiseSweep();
-                if (job.Status == "failed") break;   // the host is unreachable: the rest stay queued
+                var jobs = await SendRecipeArray(h, "Sweep", todo.Select(run => ($"Sweep · {run.Condition} · seed {run.Seed}", System.IO.Path.GetFileNameWithoutExtension(run.Path), SweepRecipe(poly, run))).ToList());
+                for (var i = 0; i < todo.Count && i < jobs.Count; ++i) { todo[i].Status = "running"; todo[i].Detail = $"on {h.Name} · {jobs[i].Remote?.JobId}"; }
             }
+            catch (Exception e)
+            {
+                SweepError = "Could not send the sweep: " + e.Message;   // the host is unreachable: the runs stay queued
+            }
+            RaiseSweep();
             SweepRunning = false;
             RaiseSweep();
             Status = $"Sweep sent to {h.Name} · Jobs follows the runs and fetches each cell when it finishes";

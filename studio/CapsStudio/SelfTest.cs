@@ -1113,6 +1113,32 @@ internal static class SelfTest
                 }
                 var released = Directory.GetDirectories(fakeWs).Length == 0;
                 Check(others.All(o => o.Contains(" done ")) && released, "remote relax and grow on a SLURM stand-in with workspaces: " + string.Join(" · ", others) + $" · workspaces released {released}");
+                // the pages whose engine is a caps command, on the same stand-in: Mechanics (a short pull and the elastic
+                // constants) and CBMC regrowth; and a sweep sent as one array job (a task per cell)
+                vm.Analyze.TensRateD = 0.05m; vm.Analyze.TensMaxD = 0.01m; vm.Analyze.CijConfigsD = 1;
+                var cmdJobs = new List<string>();
+                foreach (var (kind, send) in new (string, Func<Task<Job?>>)[] { ("Mechanics", vm.SubmitMechanicsRemote), ("CBMC", vm.SubmitCbmcRemote) })
+                {
+                    vm.CbMovesD = 20;
+                    var job = send().GetAwaiter().GetResult();
+                    Until(() => { if (job is { IsRunning: true } or { IsQueued: true }) vm.RefreshJob(job).GetAwaiter().GetResult(); return job is { IsRunning: false, IsQueued: false }; }, 180000);
+                    // CBMC on this one short chain has no end to regrow: the host's own message must come back with the failure
+                    var ok = job?.IsDone == true || kind == "CBMC" && job?.IsFailed == true && job.Error.Contains("no chain end with a rotatable backbone bond");
+                    cmdJobs.Add($"{kind} {job?.Status}{(ok ? " ok" : "")}{(job?.IsFailed == true ? ": " + job.Error.Trim().Split('\n').LastOrDefault() : "")}");
+                }
+                vm.OpenSweep();
+                var keepSweep = (vm.SweepIso, vm.SweepSyn, vm.SweepAta, vm.SweepDps, vm.SweepSeeds, vm.SweepChains, vm.SweepNpt, vm.SweepEquilibrate, vm.SweepTg);
+                vm.SweepIso = false; vm.SweepSyn = false; vm.SweepAta = true;
+                vm.SweepDps = "3"; vm.SweepSeeds = "1, 2"; vm.SweepChains = 1;
+                vm.SweepNpt = false; vm.SweepEquilibrate = false; vm.SweepTg = false;
+                vm.SweepHostIndex = vm.RunWhereChoices.Count - 1;
+                vm.RunSweep().GetAwaiter().GetResult();
+                var sweepJobs = vm.Jobs.Where(j => j.Kind == "Sweep" && j.IsClusterJob).ToList();
+                Until(() => { foreach (var j in sweepJobs.Where(j => j.IsRunning || j.IsQueued)) vm.RefreshJob(j).GetAwaiter().GetResult(); return sweepJobs.All(j => !j.IsRunning && !j.IsQueued); }, 180000);
+                vm.SweepHostIndex = 0;
+                (vm.SweepIso, vm.SweepSyn, vm.SweepAta, vm.SweepDps, vm.SweepSeeds, vm.SweepChains, vm.SweepNpt, vm.SweepEquilibrate, vm.SweepTg) = keepSweep;
+                Check(cmdJobs.All(c => c.Contains(" ok")) && sweepJobs.Count == 2 && sweepJobs.All(j => j.IsDone) && sweepJobs.All(j => j.Remote!.JobId.Contains('_')),
+                      $"cluster runs from Mechanics and CBMC: {string.Join(" · ", cmdJobs)} · sweep as an array: {string.Join(" · ", sweepJobs.Select(j => $"{j.Remote?.JobId} {j.Status}"))} {vm.SweepError}");
                 // the install script and the profile the host reads
                 var buildSh = Path.Combine(outDir, "build-caps.sh");
                 File.WriteAllText(buildSh, MainViewModel.BuildScript(new RemoteHost { Root = work, BuildModules = "module load GCC" }, "abc123"));
