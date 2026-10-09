@@ -1,4 +1,5 @@
 #include "caps/recipe.hpp"
+#include "caps/live.hpp"
 #include "caps/dft_commands.hpp"
 #include "caps/ffio.hpp"
 #include "caps/properties.hpp"
@@ -961,10 +962,25 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           } catch (const std::exception& ex) { throw RecipeError(2, std::string("md: ") + ex.what()); }
           m.seed = seed_of(J);
           m.new_velocities = true;
+          // thermo rows: thermo_every steps (default 200 over the run); frames: frame_every steps or frame_ps, written only
+          // where the caller gave a frames file (a cluster job's traj.lammpstrj)
+          m.thermo_every = J.has("thermo_every") ? std::max(1, int(num(J, "thermo_every", 100))) : int(std::max<int64_t>(1, m.steps / 200));
+          const int frame_every = J.has("frame_every") ? int(num(J, "frame_every", 0))
+                                  : J.has("frame_ps")  ? int(std::lround(num(J, "frame_ps", 0) * 1000 / m.dt))
+                                                       : 0;
           m.frame_every = 0;
-          m.thermo_every = int(std::max<int64_t>(1, m.steps / 200));
+          if (frame_every > 0 && o.live && !o.frames_path.empty()) {
+            if (!o.live->frames_open()) o.live->open_frames(o.frames_path, s);
+            m.frame_every = frame_every;
+            m.frame = [&](const std::vector<double>& x, const Cell& c, int64_t fs) { o.live->frame(x, c, fs); };
+          }
           m.progress = [&](const ThermoRow& t) {
-            report(k, st, g6(t.time_ps) + " ps · T " + g6(std::round(t.temperature)) + " K · ρ " + g6(t.density), "running", m.steps ? double(t.step) / double(m.steps) : 1);
+            const double f = m.steps ? double(t.step) / double(m.steps) : 1;
+            report(k, st, g6(t.time_ps) + " ps · T " + g6(std::round(t.temperature)) + " K · ρ " + g6(t.density), "running", f);
+            if (o.live) {
+              o.live->thermo(t, st);
+              o.live->progress(st, k + 1, n, (k + f) / n, &t);
+            }
             return true;
           };
           try { run_dynamics(s, m); } catch (const std::exception& e) { throw RecipeError(4, std::string("md: ") + e.what()); }
@@ -1033,8 +1049,19 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
               throw RecipeError(2, "equilibrate: internal_target is \"ris-pe\" or an array of values indexed by n");
             }
           }
-          e.progress = [&](int si, int sn, const std::string& label, const ThermoRow&) {
-            report(k, st, proto + " · step " + std::to_string(si + 1) + "/" + std::to_string(sn) + " · " + label, "running", sn ? double(si) / sn : 0);
+          if (J.has("thermo_ps")) e.thermo_ps = std::max(1e-3, num(J, "thermo_ps", e.thermo_ps));
+          if (num(J, "frame_ps", 0) > 0 && o.live && !o.frames_path.empty()) {
+            if (!o.live->frames_open()) o.live->open_frames(o.frames_path, s);
+            e.frame_ps = num(J, "frame_ps", 10);
+            e.frame = [&](const std::vector<double>& x, const Cell& c, int64_t fs) { o.live->frame(x, c, fs); };
+          }
+          e.progress = [&](int si, int sn, const std::string& label, const ThermoRow& t) {
+            const double f = sn ? double(si) / sn : 0;
+            report(k, st, proto + " · step " + std::to_string(si + 1) + "/" + std::to_string(sn) + " · " + label, "running", f);
+            if (o.live) {
+              o.live->thermo(t, label);
+              o.live->progress(st + ": " + label, k + 1, n, (k + f) / n, &t);
+            }
             return true;
           };
           EquilibrateReport er;

@@ -15,6 +15,7 @@
 #include "caps/analysis.hpp"
 #include "caps/elements.hpp"
 #include "caps/io.hpp"
+#include "caps/live.hpp"
 #include "io_util.hpp"
 
 namespace caps {
@@ -486,35 +487,36 @@ void write_lammps_data(const System& s_in, const std::string& path) {
   }
 }
 
+void write_lammps_dump_frame(std::ostream& out, const System& top, const std::vector<Vec3>& pos, const Cell& c, int64_t step) {
+  char buf[256];
+  const bool tri = std::fabs(c.b[0]) + std::fabs(c.c[0]) + std::fabs(c.c[1]) > 0;
+  out << "ITEM: TIMESTEP\n" << step << "\nITEM: NUMBER OF ATOMS\n" << top.atoms.size() << "\n";
+  // LAMMPS bounding-box form of the cell
+  const double xlo = c.origin[0], ylo = c.origin[1], zlo = c.origin[2];
+  const double xhi = xlo + c.a[0], yhi = ylo + c.b[1], zhi = zlo + c.c[2];
+  if (tri) {
+    const double xy = c.b[0], xz = c.c[0], yz = c.c[1];
+    std::snprintf(buf, sizeof buf, "ITEM: BOX BOUNDS xy xz yz pp pp pp\n%.6f %.6f %.6f\n%.6f %.6f %.6f\n%.6f %.6f %.6f\n",
+                  xlo + std::min({0.0, xy, xz, xy + xz}), xhi + std::max({0.0, xy, xz, xy + xz}), xy, ylo + std::min(0.0, yz),
+                  yhi + std::max(0.0, yz), xz, zlo, zhi, yz);
+  } else {
+    std::snprintf(buf, sizeof buf, "ITEM: BOX BOUNDS pp pp pp\n%.6f %.6f\n%.6f %.6f\n%.6f %.6f\n", xlo, xhi, ylo, yhi, zlo, zhi);
+  }
+  out << buf << "ITEM: ATOMS id mol type xu yu zu\n";
+  for (size_t i = 0; i < top.atoms.size(); ++i) {
+    const auto& a = top.atoms[i];
+    std::snprintf(buf, sizeof buf, "%lld %lld %d %.5f %.5f %.5f\n", static_cast<long long>(a.id), static_cast<long long>(a.mol), a.type,
+                  pos[i][0], pos[i][1], pos[i][2]);
+    out << buf;
+  }
+}
+
 void write_lammps_dump(const Trajectory& t, const std::string& path) {
   std::ofstream out(path);
   if (!out) throw ReadError("cannot write " + path);
-  const System& top = t.topology;
-  char buf[256];
-  for (size_t k = 0; k < t.frames(); ++k) {
-    const Cell& c = k < t.cells.size() ? t.cells[k] : top.cell;
-    const bool tri = std::fabs(c.b[0]) + std::fabs(c.c[0]) + std::fabs(c.c[1]) > 0;
-    out << "ITEM: TIMESTEP\n" << (k < t.timesteps.size() ? t.timesteps[k] : int64_t(k)) << "\nITEM: NUMBER OF ATOMS\n" << top.atoms.size() << "\n";
-    // LAMMPS bounding-box form of the cell
-    const double xlo = c.origin[0], ylo = c.origin[1], zlo = c.origin[2];
-    const double xhi = xlo + c.a[0], yhi = ylo + c.b[1], zhi = zlo + c.c[2];
-    if (tri) {
-      const double xy = c.b[0], xz = c.c[0], yz = c.c[1];
-      std::snprintf(buf, sizeof buf, "ITEM: BOX BOUNDS xy xz yz pp pp pp\n%.6f %.6f %.6f\n%.6f %.6f %.6f\n%.6f %.6f %.6f\n",
-                    xlo + std::min({0.0, xy, xz, xy + xz}), xhi + std::max({0.0, xy, xz, xy + xz}), xy, ylo + std::min(0.0, yz),
-                    yhi + std::max(0.0, yz), xz, zlo, zhi, yz);
-    } else {
-      std::snprintf(buf, sizeof buf, "ITEM: BOX BOUNDS pp pp pp\n%.6f %.6f\n%.6f %.6f\n%.6f %.6f\n", xlo, xhi, ylo, yhi, zlo, zhi);
-    }
-    out << buf << "ITEM: ATOMS id mol type xu yu zu\n";
-    const auto& pos = t.positions[k];
-    for (size_t i = 0; i < top.atoms.size(); ++i) {
-      const auto& a = top.atoms[i];
-      std::snprintf(buf, sizeof buf, "%lld %lld %d %.5f %.5f %.5f\n", static_cast<long long>(a.id), static_cast<long long>(a.mol), a.type,
-                    pos[i][0], pos[i][1], pos[i][2]);
-      out << buf;
-    }
-  }
+  for (size_t k = 0; k < t.frames(); ++k)
+    write_lammps_dump_frame(out, t.topology, t.positions[k], k < t.cells.size() ? t.cells[k] : t.topology.cell,
+                            k < t.timesteps.size() ? t.timesteps[k] : int64_t(k));
 }
 
 }  // namespace caps

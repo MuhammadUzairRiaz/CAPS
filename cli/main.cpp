@@ -1,6 +1,7 @@
 // caps — command-line front end over the same core the Studio uses.
 #include <cstdlib>
 #include <cctype>
+#include <chrono>
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -16,6 +17,7 @@
 #include <vector>
 
 #include "caps/amber.hpp"
+#include "caps/config.hpp"
 #include "caps/analysis.hpp"
 #include "caps/cbmc.hpp"
 #include "caps/dlpoly.hpp"
@@ -41,6 +43,7 @@
 #include "caps/equilibrate.hpp"
 #include "caps/grow.hpp"
 #include "caps/io.hpp"
+#include "caps/live.hpp"
 #include "caps/mechanics.hpp"
 #include "caps/molecule.hpp"
 #include "caps/pack.hpp"
@@ -176,7 +179,7 @@ int usage() {
                "  caps bundle  FILE [--topology DATA] --steps S.json [-o OUT.caps-bundle.zip] [--include-input] [--frame N]\n"
                "                                   a figure with its data, pipeline, provenance and hashes (and the input)\n"
                "  caps reproduce BUNDLE.caps-bundle.zip   rebuild a bundle's data from its input and pipeline, compare sha256\n"
-               "  caps run     RECIPE.yaml|json [--seed N] [--threads N] [--out DIR] [--json]   build → type → grow → relax → equilibrate →\n"
+               "  caps run     RECIPE.yaml|json [--seed N] [--threads N] [--out DIR] [--json] [--log thermo.csv] [--dump traj.lammpstrj]   build → type → grow → relax → equilibrate →\n"
                "               md → analyze → export from one file (exit 0 ok · 2 input · 3 missing params · 4 failed run)\n"
                "  caps run     PIPELINE.yaml|json [--input 'runs/*/X.lammpstrj'] [--frame first|last] [--csv OUT] [--out DIR: the outputs: block] [--branch NAME]\n"
                "                                   a saved pipeline over many inputs: one row of attributes per input\n"
@@ -222,6 +225,7 @@ int usage() {
                "               [--constraints none|h-bonds|all-bonds] [--constraint-solver shake|lincs] [--seed 1] [--new-velocities] [--thermo 100] [--dump TRAJ.lammpstrj --every 1000]\n"
                "               [--log thermo.csv] [--cutoff 10] [--skin 1.5] [--threads N] [--no-coulomb] [--quiet]\n"
                "               [--checkpoint-every N [--checkpoint OUT.restart.data]]   the full state every N steps\n"
+               "               [--progress-file progress.jsonl]   one JSON line per thermo row (default in a SLURM job)\n"
                "               caps md OUT.restart.data --resume --steps TOTAL -o OUT   continues from a checkpoint\n"
                "  caps equilibrate FILE -o OUT.data [--protocol larsen21|annealing|pushoff|PROTOCOL.txt] [--print-protocol]\n"
                "               [--tfinal 300] [--tmax 600] [--pfinal 1] [--pmax 49346] [--scale 1] (atm, K; --scale shortens every stage)\n"
@@ -299,7 +303,7 @@ const std::set<std::string>& known_options() {
     "--no-cleanup", "--no-coulomb", "--no-ions", "--no-orthogonal", "--no-pbc", "--no-pushoff", "--no-relax",
     "--no-tail", "--normal", "--noscfix", "--nt", "--out", "--overlay", "--padding", "--pair", "--particles",
     "--ops", "--ops-file", "--checkpoint-every", "--checkpoint", "--resume", "--height", "--top-ratio", "--passivate", "--pattern", "--per-cycle", "--perspective", "--pfinal", "--ph", "--pitch", "--pmax", "--pme",
-    "--pme-order", "--pme-spacing", "--ppii", "--press", "--pressure", "--primitive", "--print-protocol", "--probe",
+    "--pme-order", "--pme-spacing", "--ppii", "--press", "--pressure", "--primitive", "--print-protocol", "--probe", "--progress-file",
     "--props", "--protocol", "--ps", "--qdirect", "--qmax", "--quick", "--quiet", "--radius", "--ramp", "--rate",
     "--ratio", "--repeats", "--report", "--rmax", "--salt", "--samples", "--scale", "--seed", "--sequence", "--sf",
     "--shape", "--sites", "--size", "--skin", "--slabs", "--solvent", "--solvents", "--spring", "--ss", "--step",
@@ -438,7 +442,15 @@ int cli_recipe(const Json& r, const std::string& file, std::map<std::string, std
     if (!root.empty() && std::filesystem::exists(root + "/data/forcefields/catalogue.json")) { ro.forcefield_dir = root + "/data/forcefields"; break; }
   const bool json = o.count("--json") > 0, tty = isatty(fileno(stdout));
   auto esc = [](const std::string& x) { return Json(x).dump(0); };
+  // live files (a cluster job): thermo rows, progress lines, frames of the stages that ask for them
+  LiveOutput live("run");
+  const bool as_job = !default_progress_file().empty();
+  if (o.count("--log") || as_job) live.open_thermo(o.count("--log") ? o["--log"] : "thermo.csv");
+  if (const std::string pf = o.count("--progress-file") ? o["--progress-file"] : default_progress_file(); !pf.empty()) live.open_progress(pf);
+  ro.live = &live;
+  ro.frames_path = o.count("--dump") ? o["--dump"] : (std::filesystem::path(ro.out_dir) / "traj.lammpstrj").string();
   bool open_line = false;
+  auto last_line = std::chrono::steady_clock::now() - std::chrono::hours(1);
   ro.progress = [&](const RecipeEvent& e) {
     if (json) {
       std::printf("{\"stage\":%d,\"stages\":%d,\"name\":%s,\"status\":%s,\"fraction\":%.3f,\"detail\":%s}\n", e.stage, e.stages, esc(e.name).c_str(), esc(e.status).c_str(), e.fraction,
@@ -449,7 +461,14 @@ int cli_recipe(const Json& r, const std::string& file, std::map<std::string, std
     char head[64];
     std::snprintf(head, sizeof head, "[%d/%d] %-12s", e.stage, e.stages, e.name.c_str());
     if (e.status == "running") {
-      if (!tty) return;
+      if (!tty) {   // a log file (a batch job): a line every 30 s, so tail -f shows the run moving
+        const auto now = std::chrono::steady_clock::now();
+        if (now - last_line < std::chrono::seconds(30)) return;
+        last_line = now;
+        std::printf("%s %3.0f%%  %s\n", head, 100 * e.fraction, e.detail.c_str());
+        std::fflush(stdout);
+        return;
+      }
       const int w = 20, f = int(std::lround(std::clamp(e.fraction, 0.0, 1.0) * w));
       std::string bar = std::string(size_t(f), '#') + std::string(size_t(w - f), '.');
       std::printf("\r%s %s %3.0f%%  %-50.50s", head, bar.c_str(), 100 * e.fraction, e.detail.c_str());
@@ -466,6 +485,7 @@ int cli_recipe(const Json& r, const std::string& file, std::map<std::string, std
   };
   try {
     const auto res = run_recipe(r, ro);
+    live.done(true);
     if (json) {
       Json out = Json::object();
       out["status"] = Json("done");
@@ -481,6 +501,7 @@ int cli_recipe(const Json& r, const std::string& file, std::map<std::string, std
     }
     return 0;
   } catch (const RecipeError& e) {
+    live.done(false, e.what());
     if (json) std::printf("{\"status\":\"failed\",\"exit\":%d,\"error\":%s}\n", e.code, esc(e.what()).c_str());
     else std::fprintf(stderr, "caps run: %s (exit %d)\n", e.what(), e.code);
     return e.code;
@@ -633,6 +654,11 @@ static int cg_main(const std::string& cmd, int argc, char** argv) {
 }
 
 int main(int argc, char** argv) {
+  if (argc == 2 && (std::string(argv[1]) == "--version" || std::string(argv[1]) == "version")) {
+    // "caps 0.1.0 (commit a1b2c3d4e5)": the Studio compares it with its own before running jobs on a host
+    std::printf("caps %s (commit %s)\n", version_string(), commit_string());
+    return 0;
+  }
   if (argc >= 2 && is_dft_command(argv[1])) return dft_main(argv[1], argc, argv);
   if (argc >= 2 && is_cg_command(argv[1])) return cg_main(argv[1], argc, argv);
   if (argc < 3) return usage();
@@ -2618,27 +2644,32 @@ int main(int argc, char** argv) {
           if (!quiet) std::printf("checkpoint: step %lld → %s\n", static_cast<long long>(step), cp.c_str());
         };
       }
-      Trajectory traj;
-      traj.topology = s;
-      if (o.count("--dump"))
-        d.frame = [&](const std::vector<double>& x, const Cell& c, int64_t step) {
-          std::vector<Vec3> p(x.size() / 3);
-          for (size_t i = 0; i < p.size(); ++i) p[i] = {x[3 * i], x[3 * i + 1], x[3 * i + 2]};
-          traj.positions.push_back(std::move(p));
-          traj.cells.push_back(c);
-          traj.timesteps.push_back(step);
-        };
-      else
+      // live output: the dump, the thermo CSV and the progress lines are written while the run goes (a cluster job is
+      // followed by reading them; a run stopped by a time limit leaves what it had done)
+      LiveOutput live("md");
+      if (o.count("--dump")) {
+        live.open_frames(o["--dump"], s);
+        d.frame = [&](const std::vector<double>& x, const Cell& c, int64_t step) { live.frame(x, c, step); };
+      } else {
         d.frame_every = 0;
+      }
+      if (o.count("--log")) live.open_thermo(o["--log"]);
+      if (const std::string pf = o.count("--progress-file") ? o["--progress-file"] : default_progress_file(); !pf.empty()) live.open_progress(pf);
+      const double total_steps = double(d.step_offset + d.steps);
       if (!quiet) std::printf("%10s %9s %9s %13s %13s %13s %10s %8s\n", "step", "time/ps", "T/K", "Epot", "Etotal", "conserved", "P/atm", "ρ/g·cm⁻³");
       d.progress = [&](const ThermoRow& r) {
-        if (!quiet)
+        if (!quiet) {
           std::printf("%10lld %9.3f %9.2f %13.3f %13.3f %13.3f %10.1f %8.4f\n", static_cast<long long>(r.step), r.time_ps, r.temperature, r.potential,
                       r.total, r.conserved, r.pressure, r.density);
+          std::fflush(stdout);
+        }
+        live.thermo(r, "md");
+        live.progress("md", 0, 0, total_steps > 0 ? double(r.step) / total_steps : -1, &r);
         return true;
       };
       DynamicsReport rep;
       run_dynamics(s, d, &rep);
+      live.done(true);
       const std::string out = o["-o"];
       auto ends = [&](const char* e) { return out.size() > 4 && out.substr(out.size() - 4) == e; };
       if (ends(".pdb")) write_pdb(s, out);
@@ -2647,17 +2678,6 @@ int main(int argc, char** argv) {
       else if (ends("mol2")) write_mol2(s, out);
       else if (ends(".car")) write_car(s, out);
       else if (const std::string why = write_lammps_data_or_structure(s, d.field ? *d.field : default_forcefield(s), d.energy, out); !why.empty()) std::fprintf(stderr, "%s: %s\n", out.c_str(), why.c_str());
-      if (o.count("--dump")) write_lammps_dump(traj, o["--dump"]);
-      if (o.count("--log")) {
-        std::ofstream lg(o["--log"]);
-        lg << "step,time_ps,temperature_K,potential,kinetic,total,conserved,pressure_atm,volume_A3,density_g_cm3\n";
-        char b[256];
-        for (const auto& r : rep.thermo) {
-          std::snprintf(b, sizeof b, "%lld,%.4f,%.3f,%.4f,%.4f,%.4f,%.4f,%.2f,%.2f,%.5f\n", static_cast<long long>(r.step), r.time_ps, r.temperature,
-                        r.potential, r.kinetic, r.total, r.conserved, r.pressure, r.volume, r.density);
-          lg << b;
-        }
-      }
       for (const auto& n : rep.notes) std::printf("%s\n", n.c_str());
       std::printf("wrote %s%s\n", out.c_str(), o.count("--dump") ? (" and " + o["--dump"]).c_str() : "");
       return 0;
@@ -2704,20 +2724,20 @@ int main(int argc, char** argv) {
       if (o.count("--max-blocks")) e.max_blocks = std::stoi(o["--max-blocks"]);
       if (o.count("--every-ps")) e.frame_ps = std::stod(o["--every-ps"]);
       const bool quiet = o.count("--quiet");
-      Trajectory traj;
-      traj.topology = s;
-      if (o.count("--dump"))
-        e.frame = [&](const std::vector<double>& x, const Cell& c, int64_t step) {
-          std::vector<Vec3> p(x.size() / 3);
-          for (size_t i = 0; i < p.size(); ++i) p[i] = {x[3 * i], x[3 * i + 1], x[3 * i + 2]};
-          traj.positions.push_back(std::move(p));
-          traj.cells.push_back(c);
-          traj.timesteps.push_back(step);
-        };
-      std::printf("%s# total %.1f ps\n", protocol_text(e.stages).c_str(), protocol_ps(e.stages) * 1.0);
+      LiveOutput live("equilibrate");
+      if (o.count("--dump")) {
+        live.open_frames(o["--dump"], s);
+        e.frame = [&](const std::vector<double>& x, const Cell& c, int64_t step) { live.frame(x, c, step); };
+      }
+      if (o.count("--log")) live.open_thermo(o["--log"]);
+      if (const std::string pf = o.count("--progress-file") ? o["--progress-file"] : default_progress_file(); !pf.empty()) live.open_progress(pf);
+      const double total_ps = protocol_ps(e.stages);
+      std::printf("%s# total %.1f ps\n", protocol_text(e.stages).c_str(), total_ps);
       int last_stage = -1;
       double last_print = -1e9;
       e.progress = [&](int st, int n, const std::string& label, const ThermoRow& r) {
+        live.thermo(r, label);
+        live.progress(label, st, n, total_ps > 0 && !e.until_converged ? r.time_ps / total_ps : -1, &r);
         if (quiet) return true;
         if (st != last_stage || r.time_ps - last_print >= 5.0) {
           std::printf("[%2d/%d] %-28s %9.2f ps  T %7.1f K  P %9.0f atm  ρ %.4f  Epot %11.1f\n", st, n, label.c_str(), r.time_ps, r.temperature,
@@ -2730,23 +2750,13 @@ int main(int argc, char** argv) {
       };
       EquilibrateReport rep;
       equilibrate(s, e, &rep);
+      live.done(true);
       const std::string out = o["-o"];
       auto ends = [&](const char* x) { return out.size() > 4 && out.substr(out.size() - 4) == x; };
       if (ends(".pdb")) write_pdb(s, out);
       else if (ends(".gro")) write_gro(s, out);   // same atoms and order as a GROMACS topology read with --topology
       else if (ends(".xyz")) write_xyz(s, out);
       else if (const std::string why = write_lammps_data_or_structure(s, default_forcefield(s), e.md.energy, out); !why.empty()) std::fprintf(stderr, "%s: %s\n", out.c_str(), why.c_str());
-      if (o.count("--dump")) write_lammps_dump(traj, o["--dump"]);
-      if (o.count("--log")) {
-        std::ofstream lg(o["--log"]);
-        lg << "step,time_ps,target_K,temperature_K,potential,kinetic,total,pressure_atm,volume_A3,density_g_cm3\n";
-        char b[256];
-        for (const auto& r : rep.thermo) {
-          std::snprintf(b, sizeof b, "%lld,%.4f,%.2f,%.3f,%.4f,%.4f,%.4f,%.2f,%.2f,%.5f\n", static_cast<long long>(r.step), r.time_ps, r.target_temperature,
-                        r.temperature, r.potential, r.kinetic, r.total, r.pressure, r.volume, r.density);
-          lg << b;
-        }
-      }
       std::printf("\n%-30s %8s %8s %10s %9s\n", "stage", "ps", "T/K", "P/atm", "ρ/g·cm⁻³");
       for (const auto& st : rep.stages)
         std::printf("%-30s %8.1f %8.1f %10.0f %9.4f\n", st.label.c_str(), st.ps, st.temperature, st.pressure, st.density);
