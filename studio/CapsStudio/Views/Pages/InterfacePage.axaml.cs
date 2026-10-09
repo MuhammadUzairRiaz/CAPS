@@ -55,7 +55,7 @@ public partial class InterfacePage : PageBase
         if (change.Property == IsVisibleProperty && IsVisible && DataContext is MainViewModel vm) ShowView(vm);
     }
 
-    private async void OnRun(object? s, RoutedEventArgs e) => await Vm.RunInterface();
+    private async void OnRun(object? s, RoutedEventArgs e) { if (Vm.RunsRemote && Vm.Analyze.PullOn) await Vm.SubmitPullRemote(); else await Vm.RunInterface(); }
     private void OnCancel(object? s, RoutedEventArgs e) => Vm.Analyze.Cancel();
     private void OnUseHeld(object? s, RoutedEventArgs e) => Vm.IfUseHeld();
     private void OnExport(object? s, RoutedEventArgs e) => Window?.ExportAnalysis();

@@ -353,7 +353,8 @@ public sealed partial class MainViewModel
         var mk = await Tool("ssh", SshArgs(h, $"mkdir -p {RootPath(h, stage)} && cd {RootPath(h, stage)} && pwd"), 30000);
         if (mk.Code != 0) throw new InvalidOperationException("ssh: " + FirstLine(mk.Err, mk.Code));
         var dir = mk.Out.Split('\n').Last().Trim();
-        var up = await Tool("scp", ScpArgs(h, files.Select(f => Path.Combine(r.Local, f)), $"{Target(h)}:{dir}/"), 300000);
+        var folders = files.Any(f => Directory.Exists(Path.Combine(r.Local, f)));
+        var up = await Tool("scp", ScpArgs(h, files.Select(f => Path.Combine(r.Local, f)), $"{Target(h)}:{dir}/", folders), 300000);
         if (up.Code != 0) throw new InvalidOperationException("scp: " + FirstLine(up.Err, up.Code));
         job.Add($"Uploaded {string.Join(", ", files)} to {h.Name}");
         var inv = CultureInfo.InvariantCulture;

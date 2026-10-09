@@ -39,17 +39,19 @@ public sealed class RemoteRun
     public string Acct { get; set; } = "";
     public double Eta { get; set; } = -1;
     public DateTime LastPoll { get; set; } = DateTime.MinValue;
+    /// <summary>Output folders brought back when the job ends: "name in the results|local folder".</summary>
+    public List<string> Fetch { get; set; } = new();
     public JsonObject Json() => new()
     {
         ["host"] = Host, ["scheduler"] = Scheduler, ["job_id"] = JobId, ["dir"] = Dir, ["local"] = Local, ["stem"] = Stem, ["batch"] = Batch, ["mode"] = Mode,
-        ["log_offset"] = LogOffset, ["progress_offset"] = ProgressOffset, ["err_offset"] = ErrOffset, ["live_dir"] = LiveDir,
+        ["log_offset"] = LogOffset, ["progress_offset"] = ProgressOffset, ["err_offset"] = ErrOffset, ["live_dir"] = LiveDir, ["fetch"] = new JsonArray(Fetch.Select(f => (JsonNode)f).ToArray()),
         ["on_host"] = new JsonArray(OnHost.Select(f => (JsonNode)new JsonObject { ["name"] = f.Name, ["bytes"] = f.Bytes }).ToArray()),
     };
     public static RemoteRun From(JsonObject o) => new()
     {
         Host = (string?)o["host"] ?? "", Scheduler = (string?)o["scheduler"] ?? "SLURM", JobId = (string?)o["job_id"] ?? "", Dir = (string?)o["dir"] ?? "",
         Local = (string?)o["local"] ?? "", Stem = (string?)o["stem"] ?? "structure", Batch = (string?)o["batch"] ?? "", Mode = (string?)o["mode"] ?? "",
-        LogOffset = (long?)o["log_offset"] ?? 0, ProgressOffset = (long?)o["progress_offset"] ?? 0, ErrOffset = (long?)o["err_offset"] ?? 0, LiveDir = (string?)o["live_dir"] ?? "",
+        LogOffset = (long?)o["log_offset"] ?? 0, ProgressOffset = (long?)o["progress_offset"] ?? 0, ErrOffset = (long?)o["err_offset"] ?? 0, LiveDir = (string?)o["live_dir"] ?? "", Fetch = o["fetch"] is JsonArray fa ? fa.Select(x => (string?)x ?? "").Where(x => x.Contains('|')).ToList() : new(),
         OnHost = o["on_host"] is JsonArray a ? a.OfType<JsonObject>().Select(f => new RemoteFile((string?)f["name"] ?? "", (long?)f["bytes"] ?? 0)).Where(f => f.Name.Length > 0).ToList() : new(),
     };
 }

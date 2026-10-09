@@ -19,7 +19,7 @@ public partial class PackPage : PageBase
     }
     public Decorator Slot => this.FindControl<Decorator>("ViewSlot")!;
 
-    private async void OnPack(object? s, RoutedEventArgs e) => await Vm.RunPack();
+    private async void OnPack(object? s, RoutedEventArgs e) { if (Vm.RunsRemote) await Vm.SubmitPackRemote(); else await Vm.RunPack(); }
     private void OnCancel(object? s, RoutedEventArgs e) => Vm.CancelPack();
     private void OnNew(object? s, RoutedEventArgs e) => Vm.NewPackInput();
     private void OnAddRegion(object? s, RoutedEventArgs e) => Vm.AddPackRegion((s as Control)?.Tag as string ?? "box");

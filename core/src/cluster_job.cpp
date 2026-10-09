@@ -79,10 +79,22 @@ std::string next_job_name(const fs::path& parent, const std::string& kind) {
 
 // "caps md …" → exec "$CAPS" md … (cmd.sh, run in the scratch folder with CAPS set by job.sh)
 std::string command_script(const std::string& command) {
-  std::string c = trim(command);
-  if (c.rfind("caps ", 0) == 0) c = "\"$CAPS\" " + c.substr(5);
-  else if (c == "caps") c = "\"$CAPS\"";
-  return "#!/bin/bash\n# the command of this CAPS job (cmd.txt as written; caps is the installed program, $CAPS)\nexec " + c + "\n";
+  // every caps that starts a command (after &&, || or ;) is the installed program; one command runs in place (exec)
+  const std::string c = trim(command);
+  std::string out;
+  bool at_start = true, chained = false;
+  for (size_t i = 0; i < c.size();) {
+    if (at_start) {
+      size_t j = i;
+      while (j < c.size() && c[j] == ' ') ++j;
+      if (c.compare(j, 5, "caps ") == 0 || (j + 4 == c.size() && c.compare(j, 4, "caps") == 0)) { out += c.substr(i, j - i) + "\"$CAPS\""; i = j + 4; at_start = false; continue; }
+      at_start = false;
+    }
+    if (c.compare(i, 2, "&&") == 0 || c.compare(i, 2, "||") == 0) { out += c.substr(i, 2); i += 2; at_start = chained = true; continue; }
+    if (c[i] == ';') { out += ';'; ++i; at_start = chained = true; continue; }
+    out += c[i++];
+  }
+  return "#!/bin/bash\n# the command of this CAPS job (cmd.txt as written; caps is the installed program, $CAPS)\n" + std::string(chained ? "" : "exec ") + out + "\n";
 }
 
 void write_task(const fs::path& dir, const std::string& title, const std::string& job, const std::string& command,
@@ -91,9 +103,13 @@ void write_task(const fs::path& dir, const std::string& title, const std::string
   for (const auto& in : inputs) {
     if (in.empty()) continue;
     if (!fs::exists(in)) throw std::invalid_argument("input not found: " + in);
-    // a hard link where the file system allows it (a resumed job's trajectory can be large), else a copy
-    const fs::path to = dir / fs::path(in).filename();
+    const fs::path to = dir / fs::path(in).lexically_normal().filename();
     std::error_code ec;
+    if (fs::is_directory(in)) {   // a folder the command reads (a coarse-graining stage's tables): copied whole
+      fs::copy(in, to, fs::copy_options::recursive | fs::copy_options::overwrite_existing);
+      continue;
+    }
+    // a hard link where the file system allows it (a resumed job's trajectory can be large), else a copy
     fs::remove(to, ec);
     fs::create_hard_link(in, to, ec);
     if (ec) fs::copy_file(in, to, fs::copy_options::overwrite_existing);

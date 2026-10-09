@@ -13,6 +13,8 @@
       <DockPanel>
         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
           <Button Click="OnExport" IsEnabled="{Binding Analyze.HasResults}"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="download" Size="14" VerticalAlignment="Center" /><TextBlock Text="Export CSV / LaTeX" VerticalAlignment="Center" /></StackPanel></Button>
+          <ComboBox ItemsSource="{Binding RunWhereChoices}" SelectedIndex="{Binding RunWhereIndex}" IsVisible="{Binding HasHosts}" MinWidth="150" VerticalAlignment="Center"
+                    ToolTip.Tip="Where the run goes: this machine, or a host from Settings › Compute &amp; remote (Jobs follows it; the results come back)" />
           <Button Classes="primary" Click="OnRun" IsVisible="{Binding Analyze.NotWorking}" IsEnabled="{Binding HasDocument}"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="play" Size="14" VerticalAlignment="Center" /><TextBlock Text="Run" VerticalAlignment="Center" /></StackPanel></Button>
           <Button Content="Cancel" Click="OnCancel" IsVisible="{Binding Analyze.Working}" />
         </StackPanel>
@@ -22,6 +24,7 @@
         </StackPanel>
       </DockPanel>
     </Border>
+    <Border DockPanel.Dock="Top" Padding="22,10,22,0" IsVisible="{Binding RunsRemote}"><v:RemoteRunPanel /></Border>
     <Border DockPanel.Dock="Bottom" Height="28" Padding="22,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
       <DockPanel>
         <TextBlock DockPanel.Dock="Right" Text="MD strain rates are orders of magnitude above experiment; reported with every value" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
