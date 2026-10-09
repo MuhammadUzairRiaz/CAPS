@@ -10,6 +10,10 @@ Palette palette();
 unsigned element_colour(int z);
 unsigned category_colour(int k);
 
+// "0.1.0" and the commit the build came from ("a1b2c3d4e5", or "unknown")
+const char* version_string();
+const char* commit_string();
+
 // Worker threads for the parallel loops (pair terms, Pack, analysis): 0 = one per hardware thread, at most 16.
 void set_max_threads(int n);
 int max_threads();
