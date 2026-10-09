@@ -1,4 +1,5 @@
 #include "caps/recipe.hpp"
+#include "caps/dft_commands.hpp"
 #include "caps/ffio.hpp"
 #include "caps/properties.hpp"
 
@@ -42,7 +43,7 @@ namespace caps {
 namespace {
 
 const std::vector<std::string> kStages = {"build", "type", "grow", "react", "relax", "cbmc", "equilibrate", "md", "analyze", "export"};   // equilibrated, then production MD
-const std::set<std::string> kTop = {"recipe", "name", "build", "type", "grow", "react", "relax", "cbmc", "md", "equilibrate", "analyze", "export", "electrostatics", "cutoff", "seed", "threads"};
+const std::set<std::string> kTop = {"recipe", "name", "dft", "build", "type", "grow", "react", "relax", "cbmc", "md", "equilibrate", "analyze", "export", "electrostatics", "cutoff", "seed", "threads"};
 
 std::string g6(double x) { char b[32]; std::snprintf(b, sizeof b, "%.6g", x); return b; }
 double num(const Json& j, const char* k, double def) { return j.is_object() && j.has(k) && j[k].is_number() ? j[k].number() : def; }
@@ -94,6 +95,14 @@ std::vector<std::string> recipe_stages(const Json& r) {
   for (const auto& [k, v] : r.members())
     if (!kTop.count(k)) throw RecipeError(2, "unknown key '" + k + "' (stages: build, type, grow, react, relax, md, equilibrate, analyze, export)");
   if (r.has("recipe") && r["recipe"].is_number() && r["recipe"].number() != 1) throw RecipeError(2, "this CAPS reads recipe version 1");
+  // a DFT recipe: a list of workbench commands (caps/dft_commands.hpp), each {command: …, its options}, run in order
+  if (r.has("dft")) {
+    if (r.has("build")) throw RecipeError(2, "a dft recipe is its own list of commands (sheet, terminate, adsorb-dft, vasp-set …): no build stage with it");
+    if (!r["dft"].is_array() || r["dft"].items().empty()) throw RecipeError(2, "dft: a list of commands, e.g. - {command: sheet, preset: Ti3C2, o: Ti3C2.vasp}");
+    for (const auto& c : r["dft"].items())
+      if (!c.is_object() || !c.has("command") || !is_dft_command(c.text("command"))) throw RecipeError(2, "dft: every item needs a command (" + [] { std::string n; for (const auto& x : dft_commands()) n += (n.empty() ? "" : ", ") + x; return n; }() + ")");
+    return {"dft"};
+  }
   if (!r.has("build")) throw RecipeError(2, "a recipe needs a build stage (polymer, molecule or file)");
   std::vector<std::string> out;
   for (const auto& s : kStages) if (r.has(s)) out.push_back(s);
@@ -124,6 +133,17 @@ RecipeCheck check_recipe(const Json& r) {
   std::vector<std::string> stages;
   try { stages = recipe_stages(r); } catch (const RecipeError& e) { c.code = e.code; c.error = e.what(); return c; }
   auto list = [](const Json& a) { std::string out; if (a.is_array()) for (const auto& x : a.items()) out += (out.empty() ? "" : ", ") + (x.is_string() ? x.str() : g6(x.number())); return out; };
+  if (stages.size() == 1 && stages[0] == "dft") {
+    for (const auto& item : r["dft"].items()) {
+      RecipeStageInfo info{item.text("command"), "", true};
+      Json a = item;
+      Json args = Json::object();
+      for (const auto& [k, v] : a.members()) if (k != "command") args[k] = v;
+      info.summary = dft_command_line(item.text("command"), args);
+      c.stages.push_back(std::move(info));
+    }
+    return c;
+  }
   for (const auto& st : stages) {
     const Json& J = r[st];
     RecipeStageInfo info{st, "", true};
@@ -219,6 +239,31 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
   const auto stages = recipe_stages(r);
   RecipeResult res;
   res.name = text(r, "name", "recipe");
+  if (stages.size() == 1 && stages[0] == "dft") {
+    // the DFT workbench's commands in order, in the recipe's folder (relative paths from base_dir), results in out_dir
+    const std::string data = o.forcefield_dir.empty() ? std::string() : std::filesystem::absolute(o.forcefield_dir).parent_path().string();
+    const auto here = std::filesystem::current_path();
+    std::filesystem::create_directories(o.out_dir.empty() ? "." : o.out_dir);
+    std::filesystem::current_path(o.out_dir.empty() ? "." : o.out_dir);
+    const auto& items = r["dft"].items();
+    try {
+      for (size_t k = 0; k < items.size(); ++k) {
+        const std::string cmd = items[k].text("command");
+        Json args = Json::object();
+        for (const auto& [key, v] : items[k].members()) if (key != "command") args[key] = v;
+        if (o.progress) o.progress(RecipeEvent{int(k) + 1, int(items.size()), cmd, dft_command_line(cmd, args), "running", 0.0});
+        const Json out = dft_run(cmd, args, data);
+        if (out.has("wrote")) res.files.push_back(out.text("wrote"));
+        res.manifest.steps.push_back(step("dft." + cmd, dft_command_line(cmd, args), {{"command", cmd}}, "", {}));
+        if (o.progress) o.progress(RecipeEvent{int(k) + 1, int(items.size()), cmd, out.has("ok") && !out["ok"].boolean() ? "finished with findings" : "done", "done", 1.0});
+      }
+    } catch (const std::exception& e) {
+      std::filesystem::current_path(here);
+      throw RecipeError(4, std::string("dft: ") + e.what());
+    }
+    std::filesystem::current_path(here);
+    return res;
+  }
   const int n = int(stages.size());
   const long long seed0 = o.seed >= 0 ? o.seed : (long long)num(r, "seed", 1);
   auto seed_of = [&](const Json& j) { return uint64_t(o.seed >= 0 ? o.seed : (long long)num(j, "seed", double(seed0))); };

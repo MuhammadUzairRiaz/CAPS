@@ -126,6 +126,16 @@ program, on your own computer.
   - Python steps
   - figures exported as PNG or SVG, alone or as reproducible bundles
 
+### DFT surfaces and adsorption (VASP)
+
+- 2D sheets from layer lists (presets in `data/sheets`, e.g. Ti3C2 from Materials Project mp-1094034) or one layer cut out of a bulk, stacked or MAX-type structure
+- surface sites (fcc / hcp hollows, top, bridge) and terminations from a library (O, OH, F, Cl, S, NH …): height from the bond, mixed and Janus faces, seeded and identical on every platform
+- a 2D validator: composition, complete sheets and layers, vacuum, contacts, termination bonds and coordination, O–H, face asymmetry
+- adsorption sets: anchors by SMARTS, orientations × azimuths (symmetry-equivalent ones marked), contact and periodic-image checks, the slab / molecule / complex trio with one settings set, an independent audit
+- VASP sets: INCAR stages with a reason per tag, one k-point density, POTCARs from your licensed PAW folder (never shipped), job scripts from editable cluster profiles (resume, live backup, hang watchdog, long-term storage), convergence and lattice scans, charge / CDD / frequency / AIMD sets
+- output reading and analysis: run checks, progress with ETA, health flags, binding energies, adsorption geometry, work function, DOS, charge-density difference, Bader, nitrile shift, AIMD stability, a summary table
+- the same in the Studio (DFT pages), the CLI (`caps sheet`, `terminate`, `validate`, `adsorb-dft`, `vasp-*`, each with `--help` and `--json`), Python (`caps.dft`) and recipes (a `dft:` list of commands)
+
 ### Interoperability
 
 | Read | Write |

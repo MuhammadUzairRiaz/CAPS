@@ -11,6 +11,7 @@
 
 #include "caps/adsorb_dft.hpp"
 #include "caps/crystal.hpp"
+#include "caps/elements.hpp"
 #include "caps/dft_analysis.hpp"
 #include "caps/io.hpp"
 #include "caps/molecule.hpp"
@@ -59,6 +60,10 @@ const std::vector<Cmd>& table() {
         {"o", "slab.vasp", "the output"},
         {"vasp_set", "", "also write a VASP set (01_cell … 04_static) into this folder"}},
        {"caps terminate Ti3C2.vasp --top OH -o Ti3C2_OH.vasp", "caps terminate Ti3C2.vasp --top O:0.5,OH:0.25,F:0.25 --supercell 3x3 --seed 1 -o mixed.vasp --vasp-set structures/Ti3C2_mixed"}},
+      {"sites", "caps sites SLAB [--element Ti]",
+       "The surface sites of both faces of a slab: three-fold hollows classified fcc (above the third layer) or hcp (above the second), top and bridge, with the in-plane distance r a termination's height comes from (h = √(d² − r²)).",
+       {{"element", "", "the outer layer's element (default: the most common heavy element there)"},
+        {"species", "", "a termination (O, OH, F …): the height it takes on each site"}}, {"caps sites Ti3C2.vasp --species O --json"}},
       {"validate", "caps validate FILE [FILE …] [--expect Ti3C2O2]",
        "PASS/FAIL report of a 2D slab: labels, composition × N, one complete sheet and its layers, fragments, floating atoms, vacuum, close contacts, isolated atoms, termination distances and coordination, O–H bonds, site classes, top/bottom asymmetry. Exit code 1 on FAIL.",
        {{"expect", "", "expected formula per cell, e.g. Ti3C2O2 (× N)"}, {"core", "", "the bare layer's formula, e.g. Ti3C2"}},
@@ -388,6 +393,41 @@ Json dft_run(const std::string& c, const Json& a, const std::string& data_dir) {
       so.report_json = v.json();
       r["vasp_set"] = set_result(write_vasp_set(s, S(a, "vasp_set"), so));
     }
+    return r;
+  }
+  if (c == "sites") {
+    if (in.empty()) throw std::invalid_argument("sites: give the slab");
+    const System s = read_any(in[0]);
+    Json a2 = Json::array();
+    std::map<std::string, int> count;
+    // with --species: the height a termination of that kind takes on each site, h = √(d² − r²) (top: d)
+    double bond = 0;
+    const std::string sp = S(a, "species");
+    std::string surf = S(a, "element");
+    if (surf.empty()) {
+      std::map<int, int> c;
+      double zx = -1e300;
+      for (const auto& at : s.atoms) if (at.element != 1) zx = std::max(zx, at.pos[2]);
+      for (const auto& at : s.atoms) if (at.element != 1 && at.pos[2] > zx - 0.2) ++c[at.element];
+      int best = 0, bn = 0;
+      for (const auto& [z, n] : c) if (n > bn) bn = n, best = z;
+      surf = best ? std::string(element(best).symbol) : "";
+    }
+    if (!sp.empty()) for (const auto& k : termination_library(data_dir, surf)) if (k.name == sp) bond = k.bond, r["bond"] = k.bond, r["bond_source"] = k.source;
+    r["surface_element"] = surf;
+    for (const auto& x : surface_sites(s, surf)) {
+      Json j = Json::object();
+      Json p = Json::array();
+      for (double v : x.pos) p.push_back(v);
+      j["pos"] = p, j["kind"] = x.kind, j["face"] = x.face, j["beneath"] = x.beneath, j["r"] = x.r;
+      if (bond > 0) j["h"] = x.kind == "top" ? bond : (bond > x.r ? std::sqrt(bond * bond - x.r * x.r) : -1.0);
+      a2.push_back(j);
+      ++count[x.face + " " + x.kind];
+    }
+    r["sites"] = a2;
+    std::string t;
+    for (const auto& [k, n] : count) t += k + ": " + std::to_string(n) + "\n";
+    r["text"] = t;
     return r;
   }
   if (c == "validate") {

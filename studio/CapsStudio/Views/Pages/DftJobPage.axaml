@@ -1,0 +1,132 @@
+<!-- CAPS Studio › DFT › VASP set designer: the stages, the INCAR of every stage with the reason for each tag, the k-point
+     density with the mesh it gives this cell, the POTCAR folder (the user's licensed PAW data, never shipped) and its ENCUT,
+     the cluster profile (ranks, KPAR, NCORE, time, modules; no e-mail lines), long-term storage, a preview of every file,
+     then the set written. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.DftJobPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="Border.pcard"><Setter Property="Background" Value="{DynamicResource Bg1B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+      <Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="10" /><Setter Property="Padding" Value="16,14" /></Style>
+    <Style Selector="Border.stage"><Setter Property="Background" Value="{DynamicResource Bg2B}" /><Setter Property="CornerRadius" Value="6" /><Setter Property="Padding" Value="10,5" /><Setter Property="Margin" Value="0,0,6,0" /></Style>
+  </p:PageBase.Styles>
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Button Click="OnPreview" IsEnabled="{Binding DftIdle}">Preview</Button>
+          <Button Classes="primary" Click="OnWrite" IsEnabled="{Binding DftIdle}">
+            <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="save" Size="14" VerticalAlignment="Center" /><TextBlock Text="Write set" VerticalAlignment="Center" /></StackPanel>
+          </Button>
+        </StackPanel>
+        <StackPanel Spacing="3">
+          <TextBlock Text="VASP set designer" FontSize="19" FontWeight="SemiBold" />
+          <TextBlock Text="Stages, INCAR with reasons, KPOINTS of one density, POTCAR from your PAW folder, a job script for your cluster" FontSize="12.5" Foreground="{DynamicResource MutedB}" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+    <Border DockPanel.Dock="Bottom" Padding="22,6" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+      <DockPanel>
+        <Button DockPanel.Dock="Right" Classes="small ghost" Content="Copy" Click="OnCopyCli" IsVisible="{Binding HasDftCli}" />
+        <StackPanel Spacing="2">
+          <SelectableTextBlock Text="{Binding DftCli}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding DftStatus}" FontSize="11.5" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+    <Grid v:Panes.Split="True" ColumnDefinitions="*,440" ColumnSpacing="14" Margin="22,18">
+      <Grid RowDefinitions="Auto,*,*" RowSpacing="12">
+        <Border Classes="pcard">
+          <StackPanel Spacing="8">
+            <TextBlock Text="Stages (one job runs them in order; resubmitting resumes)" FontSize="13.5" FontWeight="SemiBold" />
+            <ItemsControl ItemsSource="{Binding JobStageChips}">
+              <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate><DataTemplate x:DataType="x:String"><Border Classes="stage"><TextBlock Text="{Binding}" Classes="mono" FontSize="12" /></Border></DataTemplate></ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <ItemsControl ItemsSource="{Binding JobFacts}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:Row"><Grid ColumnDefinitions="110,*" Margin="0,1"><TextBlock Text="{Binding Key}" Classes="muted" FontSize="12" /><TextBlock Grid.Column="1" Text="{Binding Value}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" /></Grid></DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+        <Border Grid.Row="1" Classes="pcard" Padding="0">
+          <DockPanel>
+            <Border DockPanel.Dock="Top" Padding="16,8" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+              <Grid ColumnDefinitions="60,130,140,*"><TextBlock Text="STAGE" Classes="h3" /><TextBlock Grid.Column="1" Text="TAG" Classes="h3" /><TextBlock Grid.Column="2" Text="VALUE" Classes="h3" /><TextBlock Grid.Column="3" Text="WHY" Classes="h3" /></Grid>
+            </Border>
+            <ScrollViewer>
+              <ItemsControl ItemsSource="{Binding JobIncar}" Margin="16,4">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:IncarRow">
+                    <Grid ColumnDefinitions="60,130,140,*" Margin="0,2">
+                      <TextBlock Text="{Binding File}" Classes="dim" FontSize="11" />
+                      <TextBlock Grid.Column="1" Text="{Binding Key}" Classes="mono" FontSize="11.5" />
+                      <TextBlock Grid.Column="2" Text="{Binding Value}" Classes="mono" FontSize="11.5" TextTrimming="CharacterEllipsis" />
+                      <TextBlock Grid.Column="3" Text="{Binding Why}" FontSize="11.5" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+          </DockPanel>
+        </Border>
+        <Border Grid.Row="2" Classes="pcard" Padding="0">
+          <DockPanel>
+            <Border DockPanel.Dock="Top" Padding="16,8" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+              <DockPanel><ComboBox DockPanel.Dock="Right" ItemsSource="{Binding JobFiles}" SelectedIndex="{Binding JobFile}" Width="200" /><TextBlock Text="Every file of the set" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" /></DockPanel>
+            </Border>
+            <ScrollViewer HorizontalScrollBarVisibility="Auto"><SelectableTextBlock Text="{Binding JobPreviewText}" Classes="mono" FontSize="11" Margin="16,8" /></ScrollViewer>
+          </DockPanel>
+        </Border>
+      </Grid>
+      <ScrollViewer Grid.Column="1">
+        <StackPanel Spacing="14">
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <TextBlock Text="Structure and folder" FontSize="13.5" FontWeight="SemiBold" />
+              <DockPanel><Button DockPanel.Dock="Right" Classes="small" Content="Choose…" Click="OnStructure" /><TextBlock Text="{Binding JobStructure}" Classes="mono dim" FontSize="11" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" /></DockPanel>
+              <StackPanel Spacing="3"><TextBlock Text="Case folder" Classes="label" /><TextBox Text="{Binding JobOut}" Classes="mono" FontSize="11.5" /></StackPanel>
+              <StackPanel Spacing="3"><TextBlock Text="Label (SYSTEM, job name) · empty = the folder's name" Classes="label" /><TextBox Text="{Binding JobLabel}" /></StackPanel>
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <TextBlock Text="Calculation" FontSize="13.5" FontWeight="SemiBold" />
+              <StackPanel Spacing="3"><TextBlock Text="Stages" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.DftStageSets}" SelectedIndex="{Binding JobStages}" HorizontalAlignment="Stretch" ToolTip.Tip="A new slab: relax the in-plane cell twice (the restart removes Pulay stress), then the ions, then a single point. A complex or a set's slab: fixed cell" /></StackPanel>
+              <StackPanel Spacing="3"><TextBlock Text="04_static outputs" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.DftStaticOuts}" SelectedIndex="{Binding JobStaticOut}" HorizontalAlignment="Stretch" ToolTip.Tip="Charge densities are large: write them only where Bader or a charge-density difference needs them" /></StackPanel>
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                <StackPanel Spacing="3"><TextBlock Text="Dispersion" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.DftIvdws}" SelectedIndex="{Binding JobIvdw}" HorizontalAlignment="Stretch" /></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="3"><TextBlock Text="Dipole correction" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.DftDipoles}" SelectedIndex="{Binding JobDipole}" HorizontalAlignment="Stretch" ToolTip.Tip="IDIPOL = 3 energy-only (no LDIPOL: electrons would leak into the vacuum on low-work-function surfaces)" /></StackPanel>
+              </Grid>
+              <StackPanel Spacing="3"><TextBlock Text="ENCUT (eV) · 0 = 1.3 × the largest ENMAX of the POTCARs" Classes="label" /><NumericUpDown Value="{Binding JobEncut}" Minimum="0" Maximum="3000" Increment="10" FormatString="0" /></StackPanel>
+              <StackPanel Spacing="3">
+                <TextBlock Text="k-point density (Å): N = ceil(kdens / |a|), 1 along the vacuum" Classes="label" />
+                <Slider Minimum="10" Maximum="100" Value="{Binding Kdens}" TickFrequency="1" IsSnapToTickEnabled="True" />
+                <TextBlock Text="{Binding JobMesh}" Classes="mono" FontSize="11.5" />
+              </StackPanel>
+              <CheckBox Classes="toggle" Content="Γ point only (a molecule in a box)" IsChecked="{Binding JobGamma}" />
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <TextBlock Text="POTCAR" FontSize="13.5" FontWeight="SemiBold" />
+              <DockPanel><Button DockPanel.Dock="Right" Classes="small" Content="PAW folder…" Click="OnPaw" /><TextBlock Text="{Binding PotcarDir}" Classes="mono dim" FontSize="11" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" /></DockPanel>
+              <TextBlock Classes="dim" FontSize="11" TextWrapping="Wrap" Text="Your licensed potpaw_PBE folder: CAPS assembles each POTCAR from it in the POSCAR's species order and checks the order by the TITEL lines. POTCARs are never shipped or uploaded. Without it, make_potcar.sh in every folder does the same on the cluster. The dataset per element: data/dft/potcar_map.json." />
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <TextBlock Text="Cluster" FontSize="13.5" FontWeight="SemiBold" />
+              <ComboBox ItemsSource="{Binding DftProfiles}" SelectedItem="{Binding DftProfile}" HorizontalAlignment="Stretch" />
+              <TextBlock Text="{Binding JobProfileText}" FontSize="11.5" TextWrapping="Wrap" Foreground="{DynamicResource MutedB}" />
+              <TextBlock Text="LONG-TERM STORAGE" Classes="h3" Margin="0,6,0,0" />
+              <TextBox Text="{Binding JobStore}" Classes="mono" FontSize="11.5" Watermark="/data/walrus/ws/you-workspace/vasp/project" />
+              <DockPanel><Button DockPanel.Dock="Right" Classes="small" Content="Set for a project folder…" Click="OnStore" /><TextBlock Classes="dim" FontSize="11" TextWrapping="Wrap" Text="Writes &lt;project&gt;/.store: jobs below it create their stage folders there and leave links." /></DockPanel>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+  </DockPanel>
+</p:PageBase>

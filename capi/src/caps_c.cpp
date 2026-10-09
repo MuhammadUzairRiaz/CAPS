@@ -66,6 +66,7 @@
 #include "caps/pipeline.hpp"
 #include "caps/bundle.hpp"
 #include "caps/crystal.hpp"
+#include "caps/dft_commands.hpp"
 #include "caps/spacegroup.hpp"
 #include "caps/peptide.hpp"
 #include "caps/solvate.hpp"
@@ -11709,4 +11710,23 @@ extern "C" int32_t caps_expression_count(caps_doc* d, const char* expr, char* ou
   for (const auto& t : d->frame.types) if (!t.label.empty()) types[std::to_string(t.type)] = t.label;
   r["types"] = std::move(types);
   return report_out(r.dump(0), out, cap);
+}
+
+extern "C" int32_t caps_dft_run(const char* command, const char* args_json, const char* data_dir, char* out, int32_t cap) {
+  try {
+    const caps::Json a = caps::Json::parse(args_json && *args_json ? args_json : "{}");
+    return report_out(caps::dft_run(command ? command : "", a, data_dir ? data_dir : "").dump(0), out, cap);
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return -1;
+  }
+}
+
+extern "C" int32_t caps_dft_help(const char* command, char* out, int32_t cap) {
+  try {
+    return report_out(caps::dft_help(command ? command : ""), out, cap);
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return -1;
+  }
 }
