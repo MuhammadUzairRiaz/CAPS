@@ -52,7 +52,8 @@ struct CgBondedOptions {
   double angle_bin = 1.0;            // degrees
   double dihedral_bin = 5.0;         // degrees
   double threshold = 0.05;           // invert where the smoothed P exceeds this share of its maximum
-  double smooth = 1;                 // Gaussian smoothing, σ in bins (0: none)
+  double smooth = 1;                 // Gaussian smoothing, σ in bins at least (0: none); widened to Silverman's bandwidth
+                                     // 0.9 sd n^(−1/5) when the samples are few
   double bond_wall = 20;             // kcal/mol/Å², the walls' curvature (at least the inverted well's)
   double angle_wall = 0.005;         // kcal/mol/deg²
   double dihedral_cap = 0;           // kcal/mol: the gap barrier's height above the sampled maximum (0: 2 k_B T)
