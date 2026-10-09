@@ -319,6 +319,13 @@
                   <TextBox Grid.Row="1" Text="{Binding RxBrLinks}" Classes="mono" Watermark="(those joining two chains)" />
                   <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding RxBrCheckD}" Minimum="1" Increment="1000" FormatString="0" ShowButtonSpinner="False" />
                 </Grid>
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="4">
+                  <TextBlock Text="Stabilize steps" Classes="label" /><TextBlock Grid.Column="1" Text="Hydrogen transfer within (Å)" Classes="label" />
+                  <NumericUpDown Grid.Row="1" Value="{Binding RxBrStabilizeD}" Minimum="1" Increment="20" FormatString="0" ShowButtonSpinner="False"
+                                 ToolTip.Tip="Steps each reaction's atoms stay under nve/limit after it happens (react … stabilize_steps; LAMMPS's default 60 is too few when a hydrogen moves to a new partner)" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding RxBrHTransferD}" Minimum="0" Increment="0.25" FormatString="0.00" ShowButtonSpinner="False"
+                                 ToolTip.Tip="A hydrogen that changes partner (an acid H onto the epoxide O) must be this close to its new partner before the reaction happens: a distance constraint in each map file (0: none)" />
+                </Grid>
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
                   <Button Content="Write files…" Click="OnExportBondReact" IsEnabled="{Binding CanReact}" HorizontalAlignment="Stretch" />
                   <Button Grid.Column="1" Content="Write and run in LAMMPS…" Click="OnRunBondReact" IsEnabled="{Binding RxLmpIdle}" HorizontalAlignment="Stretch" />

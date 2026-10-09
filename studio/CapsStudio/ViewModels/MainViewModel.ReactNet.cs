@@ -262,6 +262,9 @@ public sealed partial class MainViewModel
     public decimal RxBrLimitingD { get => (decimal)_rxBrLimiting; set => Set(ref _rxBrLimiting, (double)Math.Clamp(value, 0m, 1e9m), nameof(RxBrLimitingD)); }
     public decimal RxBrCheckD { get => (decimal)_rxBrCheck; set => Set(ref _rxBrCheck, (double)Math.Clamp(value, 1m, 1e9m), nameof(RxBrCheckD)); }
     public decimal RxBrMaxStepsD { get => (decimal)_rxBrMax; set => Set(ref _rxBrMax, (double)Math.Clamp(value, 1m, 1e12m), nameof(RxBrMaxStepsD)); }
+    private double _rxBrStabilize = 200, _rxBrHTransfer = 3.5;
+    public decimal RxBrStabilizeD { get => (decimal)_rxBrStabilize; set => Set(ref _rxBrStabilize, (double)Math.Clamp(value, 1m, 100000m), nameof(RxBrStabilizeD)); }
+    public decimal RxBrHTransferD { get => (decimal)_rxBrHTransfer; set => Set(ref _rxBrHTransfer, (double)Math.Clamp(value, 0m, 20m), nameof(RxBrHTransferD)); }
 
     private static JsonArray NumberList(string text)
     {
@@ -279,6 +282,7 @@ public sealed partial class MainViewModel
             ["nevery"] = 100, ["temperature"] = _rxTemp, ["steps"] = _rxBrSteps, ["seed"] = Math.Max(1, _rxSeed),
             ["lammps_styles"] = _rxBrStyles == 0 ? "native" : "exact", ["kspace"] = RxBrKspaceChoices[_rxBrKspace],
             ["mol_ids"] = _rxBrMolIds switch { 1 => "keep", 2 => "molmap", _ => "reset" },
+            ["stabilize_steps"] = (int)_rxBrStabilize, ["h_transfer_max"] = _rxBrHTransfer,
         };
         if (RxSeveral && _rxByWeights) o["weights"] = new JsonArray(RxReactions.Select(r => (JsonNode)(double)r.WeightD).ToArray());
         var choices = Field.Library.Where(e => e.AutoTyping).ToList();
