@@ -59,6 +59,7 @@ add_library(caps_core STATIC
   src/dlpoly.cpp
   src/pairmodel.cpp
   src/adsorption.cpp
+  src/slab2d.cpp
   src/sorption.cpp
   src/functionalize.cpp
   src/layers.cpp
