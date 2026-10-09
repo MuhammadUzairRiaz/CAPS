@@ -246,8 +246,9 @@ std::string template_view(const ReactionTemplate& t);
 
 // The template as an atom-mapped reaction SMARTS (reactants>>products): the query atoms with their constraints
 // ([#6;X4;!H0;A:1] — element, connections, hydrogens, three-ring, aliphatic), the products by element and map number;
-// deleted atoms are absent from the products (removed, as RDKit reads it). The pattern's bonds are connectivity only, written
-// '~' (any bond), except a formed bond between atoms that keep their bond count (a substitution): single, '-'.
+// deleted atoms are absent from the products (removed, as Daylight reaction SMARTS defines it). The pattern's bonds are
+// connectivity only, written '~' (any bond), except a formed bond between atoms that keep their bond count (a
+// substitution): single, '-'.
 std::string reaction_smarts(const ReactionTemplate& t);
 
 }  // namespace caps
