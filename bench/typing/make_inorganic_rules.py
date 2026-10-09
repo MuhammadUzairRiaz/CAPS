@@ -17,7 +17,7 @@ import json, os, re, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DATA = os.path.join(ROOT, "data")
-SRC = sys.argv[1] if len(sys.argv) > 1 else "~/project/dl_f_4.13/lib"
+SRC = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser("~/project/dl_f_4.13/lib")
 FILES = {"binary_halides": "inorganic-binary-halides", "binary_misc": "inorganic-binary-misc", "binary_oxides": "inorganic-binary-oxides",
          "glass": "inorganic-glass", "ternary_oxides": "inorganic-ternary-oxides", "zeolite": "inorganic-zeolite"}
 PREFER = {"inorganic-binary-oxides": {("O", "Ti"): "TiO2_1"}}   # composition → template, where the first would not do

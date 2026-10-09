@@ -23,7 +23,7 @@ import json, os, re, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DATA = os.path.join(ROOT, "data")
-SRC = sys.argv[1] if len(sys.argv) > 1 else "~/project/dl_f_4.13/lib"
+SRC = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser("~/project/dl_f_4.13/lib")
 FID = "misc"
 REFS = ["A. J. O'Malley, C. R. A. Catlow, Phys. Chem. Chem. Phys. 15, 19024 (2013)",
         "D. F. Plant, G. Maurin, R. G. Bell, J. Phys. Chem. B 111, 2836 (2007)",

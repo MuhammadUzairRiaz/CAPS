@@ -30,7 +30,7 @@ import template_pdb
 
 CAPS = os.path.join(ROOT, "build", "cli", "caps")
 GMX = os.environ.get("GMX", shutil.which("gmx") or "gmx")
-LIB = os.environ.get("DLFIELD", "~/project/dl_f_4.13") + "/lib"
+LIB = os.environ.get("DLFIELD", os.path.expanduser("~/project/dl_f_4.13")) + "/lib"
 FF = os.path.join(ROOT, "data", "forcefields")
 arg = lambda k, d: sys.argv[sys.argv.index(k) + 1] if k in sys.argv else d
 only = arg("--only", "")

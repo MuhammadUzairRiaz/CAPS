@@ -149,7 +149,7 @@ public sealed partial class MainViewModel
             ("Study table", 74, "file", "study table spreadsheet sheet formula column statistics regression pca principal components correlation compare structures results qspr"),
             ("2D sheets & terminations", 75, "layers", "dft vasp 2d sheet mxene ti3c2 layered surface termination o oh f mixed janus fcc hcp hollow site slab validate poscar"),
             ("DFT adsorption set", 76, "flask", "dft vasp adsorption molecule surface anchor nitrile orientation azimuth complex binding slab molecule trio audit"),
-            ("VASP set designer", 77, "server", "dft vasp incar kpoints potcar encut job slurm cluster slurm-workspace stages relax static convergence"),
+            ("VASP set designer", 77, "server", "dft vasp incar kpoints potcar encut job slurm cluster stages relax static convergence"),
             ("DFT runs", 78, "jobs", "dft vasp runs monitor progress eta health outcar oszicar resubmit reset cleanup store"),
             ("DFT results", 79, "chart", "dft vasp results binding energy dos work function locpot charge density difference bader frequency aimd summary"),
             ("Coarse-grain workflow", 80, "grow", "coarse grain cg mapping beads ester cut boltzmann inversion bonded ibi iterative pair potential g(r) fit lj calibrate tg density melt build equilibrate entanglement ppa z1 ne tension stress strain dynamics msd backmap pbs pbsa pbat polyester"),

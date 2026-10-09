@@ -1,8 +1,8 @@
-"""Export the local mirror of the CAPS design canvas to design."""
+"""Export the local mirror of the CAPS design canvas to the repository's design/ folder."""
 import json, os, shutil, html, glob
 
 SRC = os.path.dirname(os.path.abspath(__file__))
-DST = "design"
+DST = os.environ.get("CAPS_DESIGN_DIR", os.path.normpath(os.path.join(SRC, "..")))
 c = json.load(open(os.path.join(SRC, "project", "canvas.json")))
 os.makedirs(os.path.join(DST, "boards"), exist_ok=True)
 os.makedirs(os.path.join(DST, "generator"), exist_ok=True)

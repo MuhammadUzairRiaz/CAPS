@@ -1,11 +1,11 @@
 {
  "format": "caps-clusters",
  "version": 1,
- "about": "Cluster profiles for VASP job scripts: edit or add your own (Settings › DFT clusters, or this file). No e-mail lines are ever written. 'parallel' rules are tried in order: the first whose max_atoms is not exceeded gives MPI ranks, KPAR, NCORE and the time limit; 'gamma' is used for Γ-only runs (a molecule in a box). 'hang' is the seconds without VASP output after which the watchdog restarts a stage, by size.",
+ "about": "Cluster profiles for VASP job scripts: generic starting points. Put your own in ~/CAPS/dft-clusters.json (same format; a profile there replaces one of the same name), or edit them in Settings › DFT clusters. No e-mail lines are ever written. 'parallel' rules are tried in order: the first whose max_atoms is not exceeded gives MPI ranks, KPAR, NCORE and the time limit; 'gamma' is used for Γ-only runs (a molecule in a box). 'hang' is the seconds without VASP output after which the watchdog restarts a stage, by size.",
  "profiles": [
   {
    "name": "slurm-workspace",
-   "about": "A Slurm cluster with workspaces and 104-core nodes",
+   "about": "A Slurm cluster with ws_allocate workspaces and 104-core nodes: fill in your account and modules (or copy this profile to ~/CAPS/dft-clusters.json and edit it there)",
    "scheduler": "slurm",
    "account": "",
    "cores_per_node": 104,

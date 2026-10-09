@@ -98,6 +98,7 @@ caps ff apply FILE --ff FF.json [-o OUT.data [--lammps-input OUT.in [--lammps-ru
              [--constraints none|h-bonds|all-bonds] [--constraint-solver shake|lincs] [--seed 1] [--new-velocities] [--thermo 100] [--dump TRAJ.lammpstrj --every 1000]
              [--log thermo.csv] [--cutoff 10] [--skin 1.5] [--threads N] [--no-coulomb] [--quiet]
              [--checkpoint-every N [--checkpoint OUT.restart.data]]   the full state every N steps
+             [--progress-file progress.jsonl]   one JSON line per thermo row (default in a SLURM job)
              caps md OUT.restart.data --resume --steps TOTAL -o OUT   continues from a checkpoint</code></pre></div></article>
 <article class="cmd" id="equilibrate" data-name="equilibrate"><h3><code>caps equilibrate</code></h3>
 <div class="code" data-lang="synopsis"><pre><code>caps equilibrate FILE -o OUT.data [--protocol larsen21|annealing|pushoff|PROTOCOL.txt] [--print-protocol]
@@ -113,7 +114,7 @@ caps ff apply FILE --ff FF.json [-o OUT.data [--lammps-input OUT.in [--lammps-ru
              [--no-relax] [--md-ps 0] [--temp 300] [--seed 1] [--fa 2 --fb 4 --ratio 1] [--list-templates] [--quiet]</code></pre></div></article>
 <article class="cmd" id="run" data-name="run"><h3><code>caps run</code></h3>
 <p>build → type → grow → relax → equilibrate →</p>
-<div class="code" data-lang="synopsis"><pre><code>caps run     RECIPE.yaml|json [--seed N] [--threads N] [--out DIR] [--json]   build → type → grow → relax → equilibrate →
+<div class="code" data-lang="synopsis"><pre><code>caps run     RECIPE.yaml|json [--seed N] [--threads N] [--out DIR] [--json] [--log thermo.csv] [--dump traj.lammpstrj]   build → type → grow → relax → equilibrate →
              md → analyze → export from one file (exit 0 ok · 2 input · 3 missing params · 4 failed run)
 caps run     PIPELINE.yaml|json [--input &#x27;runs/*/X.lammpstrj&#x27;] [--frame first|last] [--csv OUT] [--out DIR: the outputs: block] [--branch NAME]
                                  a saved pipeline over many inputs: one row of attributes per input</code></pre></div></article>
