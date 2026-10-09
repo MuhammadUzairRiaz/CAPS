@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Running CAPS on your own cluster · CAPS tutorial</title>
+<meta name="description" content="Build the caps command line on a SLURM or PBS cluster, send runs there from the command line or from the Studio, follow them live, and continue a run that hit its time limit.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="icon" type="image/svg+xml" href="../assets/caps.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/caps_32.png">
+<link rel="apple-touch-icon" href="../assets/caps_256.png">
+<link rel="stylesheet" href="../assets/site.css?v=c2a81f6c45">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script defer src="../assets/site.js?v=c2a81f6c45"></script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="../index.html" title="CAPS · Chain Assembly and Packing Suite"><svg class="mark" viewBox="0 0 30 30" aria-hidden="true"><path d="M15 2 L26.3 8.5 L26.3 21.5 L15 28 L3.7 21.5 L3.7 8.5 Z" fill="none" stroke="var(--accent)" stroke-width="2"/><path d="M15 9.5 V11.7 M19.8 17.8 L17.9 16.7 M10.2 17.8 L12.1 16.7" stroke="currentColor" stroke-width="1.4"/><circle cx="15" cy="15" r="3.4" fill="var(--accent)"/><circle cx="15" cy="7.5" r="2" fill="currentColor"/><circle cx="21.5" cy="18.8" r="2" fill="currentColor"/><circle cx="8.5" cy="18.8" r="2" fill="currentColor"/></svg><span class="brand-name"><b>CAPS</b><small>Chain Assembly and Packing Suite</small></span></a>
+  <button class="menu" aria-expanded="false" aria-controls="nav">Menu</button>
+  <nav id="nav" class="links"><a href="../index.html">Home</a><a href="../modules/index.html">Modules</a><a href="../cli/index.html">CLI guide</a><a href="../cli/reference.html">Command reference</a><a href="../tutorials/index.html" aria-current="page">Tutorials</a><a href="../theory/index.html">Theory</a><a href="../python.html">Python</a><a href="../manual/index.html">Studio tour</a><a href="https://github.com/MuhammadUzairRiaz/CAPS">GitHub</a></nav>
+</header>
+<div class="doc">
+<nav class="toc" aria-label="On this page"><h2>On this page</h2><a class="l2" href="#what-you-need">What you need</a><a class="l2" href="#1-build-caps-on-the-cluster">1. Build caps on the cluster</a><a class="l2" href="#2-describe-your-cluster-once">2. Describe your cluster once</a><a class="l2" href="#3-send-a-run">3. Send a run</a><a class="l2" href="#4-follow-it">4. Follow it</a><a class="l2" href="#5-the-same-from-the-studio">5. The same from the Studio</a><a class="l2" href="#6-when-a-run-hits-its-time-limit">6. When a run hits its time limit</a><a class="l2" href="#7-how-many-cores-to-ask-for">7. How many cores to ask for</a><a class="l2" href="#next">Next</a></nav>
+<main>
+<header class="hero"><p class="eyebrow">Tutorial 08</p><h1>Running CAPS on your own cluster</h1><p>Build the caps command line on a SLURM or PBS cluster, send runs there from the command line or from the Studio, follow them live, and continue a run that hit its time limit.</p><div class="strip"><span><i>Time</i> 20 minutes, plus queue time</span><span><i>Level</i> intermediate</span><span><i>Uses</i> caps job · Settings › Compute &amp; remote · Jobs</span></div></header><h2 id="what-you-need">What you need</h2>
+<p>An account on a cluster you can reach with <code>ssh</code> using a key (an SSH agent holds it; CAPS never asks for or stores a password), a C++20 compiler with gfortran, CMake 3.24 or newer, and git. On most clusters these come from modules. A workstation you can ssh into works too: CAPS then runs jobs in the background without a queue.</p>
+<p>CAPS runs threads, not MPI ranks. One run uses one node, so a job asks for one node, one task and N cores.</p>
+<h2 id="1-build-caps-on-the-cluster">1. Build caps on the cluster</h2>
+<p>Log in and build the command line once, in your home folder. Load your site's compiler and CMake modules first.</p>
+<div class="code" data-lang="shell"><pre><code>module load GCC CMake            # your site&#x27;s names
+git clone https://github.com/MuhammadUzairRiaz/CAPS.git ~/CAPS/src/CAPS
+cd ~/CAPS/src/CAPS
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCAPS_BUILD_TESTS=OFF
+cmake --build build -j 8 --target caps_cli
+mkdir -p ~/CAPS/bin &amp;&amp; ln -sf ~/CAPS/src/CAPS/build/cli/caps ~/CAPS/bin/caps
+~/CAPS/bin/caps --version</code></pre></div>
+<p>Build inside a short interactive or batch job if your site does not allow compiling on login nodes. The Studio's Install / update caps (step 5) does exactly this as a batch job.</p>
+<h2 id="2-describe-your-cluster-once">2. Describe your cluster once</h2>
+<p><code>caps job profile</code> writes <code>~/CAPS/host.json</code>. Start from a generic preset and fill in your own values:</p>
+<div class="code" data-lang="shell"><pre><code>~/CAPS/bin/caps job profile --preset slurm
+~/CAPS/bin/caps job profile --set &quot;account=myproject,partition=compute,cpus=32,mem_per_cpu=2G,time=24:00:00&quot;
+~/CAPS/bin/caps job profile --set &quot;modules=module purge; module load GCC&quot;</code></pre></div>
+<p>The presets are <code>slurm</code>, <code>slurm-workspace</code> (sites with <code>ws_allocate</code>), <code>pbs</code> and <code>workstation</code>. <code>scratch</code> is <code>workspace</code>, <code>env</code> (a folder under <code>scratch_var</code>, such as <code>$SCRATCH</code> or <code>$TMPDIR</code>) or <code>none</code>. The profile stays on the cluster; nothing in it goes anywhere else.</p>
+<h2 id="3-send-a-run">3. Send a run</h2>
+<div class="code" data-lang="shell"><pre><code>~/CAPS/bin/caps job new --title PS_melt --kind md --input cell.data --submit -- \
+  caps md cell.data -o md.data --steps 1000000 --dump traj.lammpstrj --every 5000 --log thermo.csv</code></pre></div>
+<div class="code" data-lang="output"><pre><code>/home/you/CAPS/PS_melt/md-1
+submitted: 4815162</code></pre></div>
+<p>The job folder holds the inputs, <code>cmd.txt</code>, <code>job.sh</code> (open it to see exactly what runs) and <code>caps-job.json</code>. The script copies the inputs to scratch, runs the command there, copies everything back to <code>out/</code> and releases a workspace only after that copy succeeded.</p>
+<p>Many runs at once go as one array job. Write one line per task, a title and a command:</p>
+<div class="code" data-lang="output"><pre><code>PS_seed1 caps md cell.data -o md.data --steps 1000000 --seed 1
+PS_seed2 caps md cell.data -o md.data --steps 1000000 --seed 2</code></pre></div>
+<div class="code" data-lang="shell"><pre><code>~/CAPS/bin/caps job new --kind md --array seeds.txt --input cell.data --submit</code></pre></div>
+<h2 id="4-follow-it">4. Follow it</h2>
+<div class="code" data-lang="shell"><pre><code>~/CAPS/bin/caps job status ~/CAPS/PS_melt/md-1
+~/CAPS/bin/caps job tail ~/CAPS/PS_melt/md-1 -f
+~/CAPS/bin/caps job list</code></pre></div>
+<p><code>status</code> shows the queue state, the node, the step reached with its temperature, pressure and density, and an ETA:</p>
+<div class="eq">$$t_\mathrm{left} = t_\mathrm{elapsed}\,\frac{1 - f}{f}$$</div>
+<p>where f is the fraction done. <code>tail -f</code> follows <code>run.log</code> in the scratch folder while the job runs.</p>
+<h2 id="5-the-same-from-the-studio">5. The same from the Studio</h2>
+<p>In Settings › Compute &amp; remote, add a host: its name, the login node, your user name and the port. Choose a preset under "Jobs on this host" and fill in your account, cores, memory, time limit, scratch kind and modules. Then:</p>
+<ol><li>Test connection reads caps's version, the node size, the queue and whether workspaces exist.</li><li>Install / update caps builds the command line on the host at the Studio's own version, as a short job.</li><li>On any simulation page (Dynamics, Equilibrate, Relax, React, Grow, Glass, Mechanics, the pull-out, Pack, Coarse-grain), choose the host in Run where. A panel shows the job's title, cores, memory, time limit, how often frames and thermo rows are written, and the exact caps command that will run.</li></ol>
+<p>Jobs then shows the queue, the run's own log (follow, search, errors in red), temperature and density as they come in, and the latest frame on request. Copy terminal commands gives you the <code>ssh</code> and <code>caps job tail -f</code> lines for the same job. Find my jobs adds jobs you started by hand on the cluster.</p>
+<h2 id="6-when-a-run-hits-its-time-limit">6. When a run hits its time limit</h2>
+<p>Ten minutes before the limit SLURM sends USR1 (the job script asks for it). caps writes a checkpoint, the results come back, and the job is marked <code>timeout</code>. Continue it as a new job:</p>
+<div class="code" data-lang="shell"><pre><code>~/CAPS/bin/caps job resume ~/CAPS/PS_melt/md-1 --submit</code></pre></div>
+<p>or press Resume from checkpoint in Jobs. MD continues from its last step, an equilibration from its stage and step, a Tg scan from the temperatures done, a tensile pull from the strain reached, and a recipe from the stages done. Logs and trajectories keep growing in the new job.</p>
+<h2 id="7-how-many-cores-to-ask-for">7. How many cores to ask for</h2>
+<div class="code" data-lang="shell"><pre><code>~/CAPS/bin/caps job scaling --input cell.data --submit
+~/CAPS/bin/caps job collect-bench ~/CAPS/_arrays/bench-1</code></pre></div>
+<div class="code" data-lang="output"><pre><code>threads   ns/day   speedup  efficiency
+      1   74.234      1.00        100 %
+      2  128.421      1.73         86 %
+      4  203.964      2.75         69 %
+      8  212.021      2.86         36 %
+suggested: 2 threads (the fastest at 70 % parallel efficiency or more)</code></pre></div>
+<p>That table is from a laptop with four performance cores, running a 648-atom polystyrene cell with the <code>workstation</code> preset (the tasks run one after another). Past four threads the run spills onto the slower cores and barely gains. A cluster node and a larger cell give a different curve. Run the check with a cell of the size you will simulate.</p>
+<h2 id="next">Next</h2>
+<ul><li><a href="../theory/cluster-jobs.html">Theory: Cluster jobs</a> covers the job script, checkpoints and the scaling table.</li><li><code>caps job help</code> lists every subcommand.</li></ul><nav class="pager"><a href="analysis.html"><small>Previous</small>Analysing trajectories</a><span></span></nav>
+</main>
+</div>
+<footer class="foot"><span>CAPS 0.2.0 · generated by <code>tools/docs/build_site.py</code> from the program itself</span><a href="https://github.com/MuhammadUzairRiaz/CAPS">github.com/MuhammadUzairRiaz/CAPS</a></footer>
+</body>
+</html>

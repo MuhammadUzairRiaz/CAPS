@@ -70,6 +70,7 @@ Long runs belong on a workstation or a cluster, not inside CAPS. For those, CAPS
 | `in.cg_ppa` + `STEM.ends.in` | `caps ppa … --method lammps` | `lmp -in in.cg_ppa -var DATA equil.data -var OUT ppa`, then `caps ppa MAP equil.data ppa.lammpstrj` |
 | `tension/run_tension.sh`, `in.cg_tensile_*` | `caps mech decks` | `DATA=equil.data bash run_tension.sh`, then `caps mech analyze` |
 | `aa/in.backmap`, `pair_coeffs.in` | `caps backmap` | `lmp -in in.backmap -var DATA backmapped.data -var OUT relaxed`, then `caps backmap check` |
+| `ROOT/TITLE/KIND-N/job.sh`, `caps-job.json` | `caps job new` | `caps job submit DIR`, or `--submit` at once; `caps job status DIR` follows it |
 | `job.slurm`, `make_potcar.sh`, `INCAR.*`, `KPOINTS` | `caps vasp-set`, `caps adsorb-dft` | `bash make_potcar.sh` (your PAW set), `sbatch job.slurm`; `caps vasp-jobs` submits and tracks many |
 
 > **Careful:** the LAMMPS inputs for coarse-grained models use `dihedral_style table/cut` (LAMMPS's EXTRA-MOLECULE package) and fix bond/react needs the REACTION package. `lmp -h` lists the packages a LAMMPS binary has.
@@ -96,6 +97,17 @@ When the chain is fixed (build, type, grow, relax, equilibrate, run, analyse, ex
 ### Pipelines over many trajectories
 
 `caps pipeline FILE --steps STEPS.yaml` runs a chain of analysis steps (the Studio's pipeline, including Python steps) on one frame; `caps run PIPELINE.yaml --input 'runs/*/traj.lammpstrj' --csv results.csv` runs it over many inputs and writes one row per input.
+
+## Running on a cluster
+
+`caps job` runs any of these commands as a batch job on a SLURM or PBS cluster, or in the background on a workstation. Build caps on the cluster once, describe the cluster in `~/CAPS/host.json` with `caps job profile`, then wrap the command:
+
+```bash
+caps job new --title PS_melt --kind md --input cell.data --submit -- caps md cell.data -o md.data --steps 1000000
+caps job status ~/CAPS/PS_melt/md-1
+```
+
+A run stopped by its time limit leaves a checkpoint, and `caps job resume DIR --submit` continues it. [Tutorial 08](../tutorials/cluster.html) goes through it all, including the Studio's Run where.
 
 ## Command line, Python or Studio?
 
