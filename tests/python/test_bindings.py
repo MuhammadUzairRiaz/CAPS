@@ -642,4 +642,17 @@ _te = caps.dft("terminate", _os.path.join(_dd, "Ti3C2.vasp"), top="OH", o=_os.pa
 _va = caps.dft("validate", _os.path.join(_dd, "Ti3C2_OH.vasp"), expect="Ti3C2O2H2")
 check(_sh["formula"] == "Ti3C2" and _te["formula"] == "Ti3C2O2H2" and _va["ok"] and "--seed" in caps.dft_help("terminate") and _te["command"].startswith("caps terminate"),
       f"DFT workbench: {_sh['formula']} → {_te['formula']} · validate {_va['ok']}")
+# a polymer typed in the recipe can be exported without assigning again, and carries the charges its files hold
+_op = caps.polymer("[*]OCCCCOC(=O)CCC(=O)[*]", dp=2, chains=1, forcefield="opls2005", seed=1)
+check(_op.forcefield.startswith("OPLS-AA / OPLS 2005"), "polymer(forcefield=…) keeps its force field")
+with tempfile.TemporaryDirectory() as _td:
+    _op.export_engines(_td, run="none", gromacs=False)
+    _lines = open(os.path.join(_td, "system.data")).read().split("Atoms  # full")[1].strip().splitlines()
+    _qf = [float(l.split()[3]) for l in _lines[:_op.atoms]]
+    check(max(abs(a - b) for a, b in zip(_qf, [_op.atom(i)["charge"] for i in range(_op.atoms)])) < 1e-6, "recipe charges = exported charges")
+_op2 = caps.polymer("[*]OCCCCOC(=O)CCC(=O)[*]", dp=2, chains=1, seed=1)
+_op2.field.assign("opls2005")
+check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op.atoms)) < 1e-6, "recipe and field.assign give one set of OPLS 2005 charges")
+print("ok   polymer(forcefield=opls2005): export, charges identical by both routes")
+
 print("all python checks passed")
