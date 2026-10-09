@@ -136,6 +136,16 @@ program, on your own computer.
 - output reading and analysis: run checks, progress with ETA, health flags, binding energies, adsorption geometry, work function, DOS, charge-density difference, Bader, nitrile shift, AIMD stability, a summary table
 - the same in the Studio (DFT pages), the CLI (`caps sheet`, `terminate`, `validate`, `adsorb-dft`, `vasp-*`, each with `--help` and `--json`), Python (`caps.dft`) and recipes (a `dft:` list of commands)
 
+### Coarse-graining of real polymers
+
+- chemistry-aware mapping: bonds cut by SMARTS (polyesters: every ester C(=O)–O, so PBS, PBSA and PBAT share the diol bead), fragment SMARTS or an atom → bead list; beads named by rules, unknown fragments reported; one type list for several systems; LAMMPS trajectories mapped frame by frame
+- bonded potentials by tabulated Boltzmann inversion over many frames and systems: walls outside the sampled range, IUPAC dihedrals, a split-half convergence check, bonded IBI; LAMMPS (`bond/angle_style table`, `dihedral_style table/cut`) and GROMACS tables
+- non-bonded: per-pair g(r) targets, joint IBI over several systems with the pressure ramp (LAMMPS decks and a loop script for a cluster, or CAPS's engine for small systems), LJ 12-6 / 9-6 / Morse / Mie fits, density and T_g calibration
+- melts of real sequences (Bernoulli, Markov, block, gradient; Schulz–Zimm lengths) as random walks from the bonded distributions, with a push-off and anneal deck and ⟨R²(n)⟩/n against the all-atom chains
+- entanglements (CAPS's PPA, a LAMMPS PPA deck, Z1+; the S- and M-estimators of Hoy, Foteinopoulou & Kröger), tension decks in stress and volume modes with the stress split by term, strain hardening, orientation, dynamics (g₁–g₃, τ_e, τ_R, D) and the AA ↔ CG time factor
+- fragment backmapping with every term restored from templates and a staged relaxation deck
+- `caps cgmap`, `cgfit`, `cgbuild`, `ppa`, `mech`, `cgdyn`, `backmap` (each with `--help` and `--json`), Python `caps.cg`, the Studio's Coarse-grain page; bench tables T13–T18
+
 ### Interoperability
 
 | Read | Write |
