@@ -1139,6 +1139,13 @@ internal static class SelfTest
                 (vm.SweepIso, vm.SweepSyn, vm.SweepAta, vm.SweepDps, vm.SweepSeeds, vm.SweepChains, vm.SweepNpt, vm.SweepEquilibrate, vm.SweepTg) = keepSweep;
                 Check(cmdJobs.All(c => c.Contains(" ok")) && sweepJobs.Count == 2 && sweepJobs.All(j => j.IsDone) && sweepJobs.All(j => j.Remote!.JobId.Contains('_')),
                       $"cluster runs from Mechanics and CBMC: {string.Join(" · ", cmdJobs)} · sweep as an array: {string.Join(" · ", sweepJobs.Select(j => $"{j.Remote?.JobId} {j.Status}"))} {vm.SweepError}");
+                // the thread-scaling check: one array task per thread count on a two-core stand-in node, then the table
+                vm.SelectedHost!.Host!.NodeCores = 2;
+                vm.ScalingTest().GetAwaiter().GetResult();
+                var sj = vm.Jobs.FirstOrDefault(j => j.Kind == "Scaling");
+                Until(() => { if (sj is { IsRunning: true } or { IsQueued: true }) vm.RefreshJob(sj).GetAwaiter().GetResult(); return sj is { IsRunning: false, IsQueued: false }; }, 180000);
+                Check(sj is { IsDone: true } && vm.HostScalingText.Contains("ns/day") && sj.QueueText.Split('\n').Count(l => l.TrimStart().Length > 0 && char.IsDigit(l.TrimStart()[0])) == 2,
+                      $"scaling check: {sj?.Status} · {vm.HostScalingText} · {sj?.Error}");
                 // the install script and the profile the host reads
                 var buildSh = Path.Combine(outDir, "build-caps.sh");
                 File.WriteAllText(buildSh, MainViewModel.BuildScript(new RemoteHost { Root = work, BuildModules = "module load GCC" }, "abc123"));

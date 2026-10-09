@@ -476,7 +476,7 @@ public sealed partial class MainViewModel
 
     /// <summary>Asks the host now (Refresh); the timer asks every 30 s for the job shown in Jobs, every 5 min otherwise.</summary>
     public Task RefreshJob(Job? j) => j?.Remote is { } r && _settings.Hosts.FirstOrDefault(x => x.Name == r.Host) is { } h
-        ? r.Mode switch { "job" => PollJob(j, h, r), "install" => PollInstall(j, h, r), _ => CheckRemote(j) }
+        ? r.Mode switch { "job" => PollJob(j, h, r), "install" => PollInstall(j, h, r), "scaling" => PollScaling(j, h, r), _ => CheckRemote(j) }
         : Task.CompletedTask;
 
     private bool PollDue(Job j)
@@ -529,6 +529,82 @@ public sealed partial class MainViewModel
             StartRemotePoll();
         }
         catch (Exception e) { j.Add($"{r.Host} not reached: {e.Message}"); }
+    }
+
+    // ---------------------------------------------------------------- thread scaling
+    private string _scalingText = "";
+    /// <summary>The last scaling check's table on the selected host: threads, ns/day, speedup, efficiency, a suggestion.</summary>
+    public string HostScalingText { get => _scalingText; private set => Set(ref _scalingText, value); }
+
+    /// <summary>The same short MD at several thread counts on one node (caps job scaling): the open structure, or the
+    /// sample polystyrene melt of the host's CAPS source; Jobs follows it and the table appears here when it is done.</summary>
+    public async Task ScalingTest()
+    {
+        if (_host?.Host is not { } h || h.Hostname.Length == 0) { HostScalingText = "Choose a host with a hostname first"; return; }
+        HostScalingText = "Sending the scaling check…";
+        var k = _jobCounters["Scaling"] = _jobCounters.GetValueOrDefault("Scaling") + 1;
+        var job = new Job { Id = $"scaling-{k}", Kind = "Scaling", Module = 10, Title = $"Thread scaling · on {h.Name}", Document = _doc != null ? Title : "sample polystyrene melt", Atoms = _doc?.Summary().Atoms ?? 0 };
+        job.Remote = new RemoteRun { Host = h.Name, Scheduler = h.Scheduler, Mode = "scaling", Local = Path.Combine(RemoteFolder, $"scaling-{k}-{DateTime.Now:yyyyMMdd-HHmmss}") };
+        job.Status = "queued";
+        Jobs.Insert(0, job);
+        Raise(nameof(HasJobs)); Raise(nameof(JobsSummary));
+        try
+        {
+            await WriteHostProfile(h);
+            Directory.CreateDirectory(job.Remote.Local);
+            string input;
+            if (_doc != null)
+            {
+                _doc.Save(Path.Combine(job.Remote.Local, "structure.caps.data"));
+                var mk = await Tool("ssh", SshArgs(h, $"mkdir -p {RootPath(h, ".uploads")} && cd {RootPath(h, ".uploads")} && pwd"), 30000);
+                var dir = mk.Out.Split('\n').Last().Trim();
+                var up = await Tool("scp", ScpArgs(h, [Path.Combine(job.Remote.Local, "structure.caps.data")], $"{Target(h)}:{dir}/scaling-{k}.data"), 300000);
+                if (up.Code != 0) throw new InvalidOperationException("scp: " + FirstLine(up.Err, up.Code));
+                input = Q($"{dir}/scaling-{k}.data");
+            }
+            else input = RootPath(h, "src/CAPS/samples/ps_melt.data");
+            var res = await Tool("ssh", SshArgs(h, $"{CapsOnHost(h)} job scaling --host-profile {RootPath(h, "host.json")} --input {input} --steps 2000 --submit --json"), 120000);
+            var line = res.Out.Split('\n').LastOrDefault(l => l.TrimStart().StartsWith('{')) ?? "";
+            if (JsonNode.Parse(line) is not JsonObject o || o["submitted"]?.GetValue<bool>() != true)
+                throw new InvalidOperationException("caps job scaling: " + FirstLine(res.Err.Length > 0 ? res.Err : res.Out, res.Code));
+            job.Remote.Dir = (string?)o["dir"] ?? "";
+            job.Remote.JobId = (string?)o["id"] ?? "";
+            job.Status = "running";
+            job.Add($"{(o["tasks"] as JsonArray)?.Count ?? 0} thread counts on one node · {h.Scheduler} {job.Remote.JobId} · {job.Remote.Dir}");
+            HostScalingText = "Running on the host: Jobs follows it; the table appears here";
+            StartRemotePoll();
+        }
+        catch (Exception e)
+        {
+            job.Status = "failed";
+            job.Error = e.Message;
+            job.Ended = DateTime.Now;
+            HostScalingText = "Could not send the scaling check: " + e.Message;
+        }
+        SaveJobs();
+    }
+
+    private async Task PollScaling(Job j, RemoteHost h, RemoteRun r)
+    {
+        var res = await Tool("ssh", [.. SharedConnection(), .. SshArgs(h, $"{CapsOnHost(h)} job collect-bench {Q(r.Dir)} --json")], 60000);
+        if (res.Code != 0 || JsonNode.Parse(res.Out.Split('\n').Last(l => l.Length > 0)) is not JsonObject t) { j.Add($"{r.Host} not reached: {FirstLine(res.Err, res.Code)}"); return; }
+        var rows = (t["rows"] as JsonArray ?? []).OfType<JsonObject>().ToList();
+        var waiting = (int?)t["waiting"] ?? 0;
+        var text = new System.Text.StringBuilder("threads   ns/day   speedup  efficiency\n");
+        foreach (var x in rows)
+            text.Append(string.Format(Inv, "{0,7:0} {1,8:0.000} {2,9:0.00} {3,10:0} %\n", (double?)x["threads"] ?? 0, (double?)x["ns_per_day"] ?? 0, (double?)x["speedup"] ?? 0, 100 * ((double?)x["efficiency"] ?? 0)));
+        if ((int?)t["suggested_threads"] is { } best) text.Append($"suggested: {best} threads (the fastest at 70 % parallel efficiency or more)\n");
+        if (waiting > 0) text.Append($"{waiting} thread count(s) still running\n");
+        j.SetQueue(text.ToString().TrimEnd());
+        j.Progress = rows.Count + waiting > 0 ? rows.Count / (double)(rows.Count + waiting) : 0;
+        if (waiting == 0 && rows.Count > 0)
+        {
+            j.Status = "done";
+            j.Ended = DateTime.Now;
+            j.Add($"Scaling on {(string?)t["node"]}: " + string.Join(" · ", rows.Select(x => $"{(double?)x["threads"]:0} → {(double?)x["ns_per_day"]:0.###} ns/day")));
+            if (_settings.Hosts.FirstOrDefault(x => x.Name == r.Host) == _host?.Host) HostScalingText = text.ToString().TrimEnd();
+        }
+        SaveJobs();
     }
 
     /// <summary>The terminal commands that show the same job by hand: ssh, then the live log.</summary>

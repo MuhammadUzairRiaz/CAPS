@@ -121,6 +121,7 @@ struct DynamicsReport {
   int64_t steps = 0;
   double seconds = 0, ns_per_day = 0;
   int list_builds = 0;
+  int threads = 0;                  // worker threads the run used
   std::vector<std::string> notes;
 };
 
