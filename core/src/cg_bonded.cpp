@@ -219,22 +219,27 @@ void CgBondedAccumulator::set_expected_frames(int s, size_t frames) { sys_.at(si
 void CgBondedAccumulator::add_frame(int si, const std::vector<Vec3>& p, const Cell& cell) {
   Sys& s = sys_.at(size_t(si));
   if (p.size() != s.t.beads()) throw std::invalid_argument("a frame of " + s.name + " has " + std::to_string(p.size()) + " beads, its mapping " + std::to_string(s.t.beads()));
-  // contiguous halves when the frame count is known, else alternate frames
-  const int half = s.expected > 1 ? (s.frames < s.expected / 2 ? 0 : 1) : int(s.frames % 2);
+  // the halves for the sampling check: odd and even molecules when there are several (meaningful for one frame, and free of
+  // the time correlation of neighbouring frames); one molecule: contiguous halves of the frames (when their count is
+  // known), else alternate frames
+  std::set<int> mols(s.t.mol.begin(), s.t.mol.end());
+  const bool by_mol = mols.size() > 1;
+  const int fhalf = s.expected > 1 ? (s.frames < s.expected / 2 ? 0 : 1) : int(s.frames % 2);
+  auto half_of = [&](int bead) { return by_mol ? (s.t.mol[size_t(bead)] & 1) : fhalf; };
   const bool pbc = cell.valid();
   auto vec = [&](int a, int b) { const Vec3 d = p[size_t(b)] - p[size_t(a)]; return pbc ? cell.minimum_image(d) : d; };
   const double nb0 = double(nbins(0)), nb1 = double(nbins(1)), nb2 = double(nbins(2));
   for (size_t k = 0; k < s.t.bonds.size(); ++k) {
     const double r = norm(vec(s.t.bonds[k].first, s.t.bonds[k].second));
     const double b = std::floor(r / o_.bond_bin);
-    if (b >= 0 && b < nb0) s.h[0][half][size_t(s.bond_t[k])][size_t(b)] += 1;
+    if (b >= 0 && b < nb0) s.h[0][half_of(s.t.bonds[k].first)][size_t(s.bond_t[k])][size_t(b)] += 1;
   }
   for (size_t k = 0; k < s.t.angles.size(); ++k) {
     const auto& q = s.t.angles[k];
     const Vec3 u = vec(q[1], q[0]), v = vec(q[1], q[2]);
     const double th = std::acos(std::clamp(dot(u, v) / (norm(u) * norm(v)), -1.0, 1.0)) * 180.0 / kPi;
     const double b = std::min(nb1 - 1, std::floor(th / o_.angle_bin));
-    s.h[1][half][size_t(s.angle_t[k])][size_t(b)] += 1;
+    s.h[1][half_of(q[1])][size_t(s.angle_t[k])][size_t(b)] += 1;
   }
   for (size_t k = 0; k < s.t.dihedrals.size(); ++k) {
     const auto& q = s.t.dihedrals[k];
@@ -242,7 +247,7 @@ void CgBondedAccumulator::add_frame(int si, const std::vector<Vec3>& p, const Ce
     const Vec3 n1 = cross(b1, b2), n2 = cross(b2, b3);
     const double ph = std::atan2(norm(b2) * dot(b1, n2), dot(n1, n2)) * 180.0 / kPi;   // IUPAC, as cg_dihedral_deg
     const double b = std::min(nb2 - 1, std::floor((ph + 180.0) / o_.dihedral_bin));
-    s.h[2][half][size_t(s.dih_t[k])][size_t(std::max(0.0, b))] += 1;
+    s.h[2][half_of(q[1])][size_t(s.dih_t[k])][size_t(std::max(0.0, b))] += 1;
   }
   ++s.frames;
 }
@@ -436,7 +441,6 @@ CgBondedTable make_table(const CgBondedHistogram& H, const CgBondedOptions& o, d
     table_periodic(T, v, o, kT);
   }
   T.half_diff = half_difference(H, o, kT, v.ilo, v.ihi);
-  if (H.count < 1000) notes.push_back(std::string(kind_name(H.kind)) + " " + H.key + ": only " + std::to_string(H.count) + " samples");
   return T;
 }
 
@@ -448,9 +452,23 @@ CgBondedResult invert_bonded(const CgBondedAccumulator& acc) {
   r.temperature = o.temperature;
   r.frames = acc.frames();
   const double kT = kB * o.temperature;
+  std::string few;
   for (const auto& H : acc.pooled()) {
     CgBondedTable T = make_table(H, o, kT, r.notes);
+    if (T.sampled && H.count < 1000) few += (few.empty() ? "" : ", ") + std::string(kind_name(H.kind)) + " " + H.key + " " + std::to_string(H.count);
     (H.kind == 0 ? r.bonds : H.kind == 1 ? r.angles : r.dihedrals).push_back(std::move(T));
+  }
+  if (!few.empty()) r.notes.push_back("fewer than 1000 samples (more frames or systems would help): " + few);
+  // the split check: potentials that differ between the halves by more than 1 k_B T are not converged
+  double worst = 0;
+  std::string where;
+  for (const auto* list : {&r.bonds, &r.angles, &r.dihedrals})
+    for (const auto& T : *list)
+      if (T.sampled && !std::isnan(T.half_diff) && T.half_diff > worst) worst = T.half_diff, where = std::string(kind_name(T.kind)) + " " + T.key;
+  if (worst > 1.0) {
+    char b[320];
+    std::snprintf(b, sizeof b, "NOT CONVERGED: the two halves of the samples give potentials up to %.1f kT apart (%s); invert an equilibrated trajectory with many frames — distributions of a single or unrelaxed structure are too broad and leave soft tails", worst, where.c_str());
+    r.notes.insert(r.notes.begin(), b);
   }
   for (const auto& n : acc.notes()) r.notes.push_back(n);
   return r;

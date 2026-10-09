@@ -143,3 +143,14 @@ CgTrajectoryReport map_lammps_dump(const CgMapping& m, const System& aa, const s
                                    const CgTrajectoryOptions& o = {});
 
 }  // namespace caps
+
+namespace caps {
+
+// Each frame of a LAMMPS text dump, streamed (one frame in memory): positions in atom-id order (id k → index k − 1, ids 1 …
+// natoms), unwrapped when the dump has xu yu zu, image flags or xsu ysu zsu, else as written (`wrapped` true: measure with
+// minimum images); every `stride`-th frame. f returns false to stop. Returns the frames passed to f.
+size_t for_each_dump_frame(const std::string& path, size_t natoms,
+                           const std::function<bool(size_t frame, int64_t timestep, const std::vector<Vec3>& pos, const Cell& cell, bool wrapped)>& f,
+                           size_t stride = 1);
+
+}  // namespace caps
