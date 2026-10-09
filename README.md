@@ -276,6 +276,17 @@ In Jupyter, `doc.view()` draws an interactive 3D view.
 
 ---
 
+## Running on a cluster
+
+`caps job` runs CAPS's own engines as batch jobs on any SLURM or PBS cluster, or in the background on a workstation you reach over ssh. Build the command line on the cluster once (`cmake -DCAPS_BUILD_TESTS=OFF`, target `caps_cli`), describe the cluster with `caps job profile`, then wrap a command:
+
+```bash
+caps job new --title PS_melt --kind md --input cell.data --submit -- caps md cell.data -o md.data --steps 1000000
+caps job status ~/CAPS/PS_melt/md-1
+```
+
+A run stopped by its time limit writes a checkpoint, and `caps job resume DIR --submit` continues it. `caps job scaling` measures ns/day against threads on one node. In the Studio, add the host in Settings › Compute & remote, press Install / update caps, and choose the host in Run where on any simulation page; Jobs follows the run live. Tutorial 08 on the documentation site covers both.
+
 ## Documentation
 
 - **Documentation site** — [`docs/index.html`](docs/index.html), served by GitHub Pages from `docs/`: a CLI guide

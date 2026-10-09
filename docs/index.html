@@ -24,7 +24,7 @@
 
 <main>
 <section class="home2-hero">
-  <p class="eyebrow">Open source · CAPS 0.1.0 · BSD 3-Clause</p>
+  <p class="eyebrow">Open source · CAPS 0.2.0 · BSD 3-Clause</p>
   <h1>Polymers and materials, from a SMILES string to a <em>methods section</em>.</h1>
   <p>CAPS builds molecules, chains, crystals, surfaces and composites; types them with the force field you choose;
     relaxes, runs and crosslinks them; coarse-grains them; prepares DFT surface studies; and writes every step down so
@@ -43,7 +43,7 @@
     <div><b>25</b><span>Studio modules</span></div>
     <div><b>63</b><span>commands</span></div>
     <div><b>63</b><span>force-field libraries</span></div>
-    <div><b>88</b><span>documented methods</span></div>
+    <div><b>91</b><span>documented methods</span></div>
   </div>
 </section>
 
@@ -81,16 +81,16 @@
 <h2 class="section-h" id="download">Download</h2>
 <p>Installers for each release are on GitHub. CAPS is free and open source.</p>
 <div class="dl">
-  <a href="https://github.com/MuhammadUzairRiaz/CAPS/releases/latest"><b>macOS</b><span>Apple silicon. Drag CAPS Studio to Applications.</span><code>CAPS-0.1.0-macos-arm64.dmg</code></a>
-  <a href="https://github.com/MuhammadUzairRiaz/CAPS/releases/latest"><b>Windows</b><span>Windows 10/11, x64. Installer or portable zip.</span><code>CAPS-0.1.0-windows-x64-setup.exe</code></a>
-  <a href="https://github.com/MuhammadUzairRiaz/CAPS/releases/latest"><b>Linux</b><span>Ubuntu/Debian package, AppImage or tarball.</span><code>caps-studio_0.1.0_amd64.deb</code></a>
+  <a href="https://github.com/MuhammadUzairRiaz/CAPS/releases/latest"><b>macOS</b><span>Apple silicon. Drag CAPS Studio to Applications.</span><code>CAPS-0.2.0-macos-arm64.dmg</code></a>
+  <a href="https://github.com/MuhammadUzairRiaz/CAPS/releases/latest"><b>Windows</b><span>Windows 10/11, x64. Installer or portable zip.</span><code>CAPS-0.2.0-windows-x64-setup.exe</code></a>
+  <a href="https://github.com/MuhammadUzairRiaz/CAPS/releases/latest"><b>Linux</b><span>Ubuntu/Debian package, AppImage or tarball.</span><code>caps-studio_0.2.0_amd64.deb</code></a>
 </div>
 <div class="table"><table>
 <thead><tr><th>System</th><th>Install</th><th>The <code>caps</code> command</th></tr></thead>
 <tbody>
 <tr><td>macOS (Apple silicon)</td><td>Open the <code>.dmg</code> and drag CAPS Studio to Applications</td><td><code>/Applications/CAPS Studio.app/Contents/MacOS/caps</code>; link it onto your PATH (below)</td></tr>
 <tr><td>Windows 10/11 (x64)</td><td>Run the <code>-setup.exe</code>, or unpack the portable <code>.zip</code></td><td><code>caps.exe</code> in the install folder; tick <em>Add the caps command line to PATH</em> in the installer</td></tr>
-<tr><td>Ubuntu / Debian</td><td><code>sudo apt install ./caps-studio_0.1.0_amd64.deb</code></td><td><code>/usr/bin/caps</code></td></tr>
+<tr><td>Ubuntu / Debian</td><td><code>sudo apt install ./caps-studio_0.2.0_amd64.deb</code></td><td><code>/usr/bin/caps</code></td></tr>
 <tr><td>Any Linux (Arch, Fedora …)</td><td>The <code>.AppImage</code> (needs FUSE 2), or the <code>.tar.gz</code></td><td>the tarball's <code>caps</code>, or <code>./CAPS-…AppImage --appimage-extract</code> and <code>squashfs-root/usr/bin/caps</code></td></tr>
 </tbody></table></div>
 <div class="code" data-lang="shell"><pre><code># macOS: put caps on your PATH
@@ -104,10 +104,10 @@ folder (see <a href="python.html#setup">Python setup</a>).</p>
 <p>Guides for the Studio, the command line and Python, plus the theory behind every method.</p>
 <div class="cards">
   <a class="card" href="modules/index.html"><b>Module guides</b><span>Every Studio page, step by step, with its screenshot and the same step as a command and in Python.</span><span class="meta">25 modules</span></a>
-  <a class="card" href="tutorials/index.html"><b>Tutorials</b><span>Amorphous cells, force-field export, recipes and provenance, crosslinking, coarse-graining, DFT surfaces and analysis.</span><span class="meta">7 tutorials · run as written</span></a>
+  <a class="card" href="tutorials/index.html"><b>Tutorials</b><span>Amorphous cells, force-field export, recipes and provenance, crosslinking, coarse-graining, DFT surfaces and analysis.</span><span class="meta">8 tutorials · run as written</span></a>
   <a class="card" href="cli/index.html"><b>CLI guide</b><span>Conventions, the command for each task, the scripts CAPS writes for you to run, and how commands chain into a project.</span><span class="meta">start here for the command line</span></a>
   <a class="card" href="cli/reference.html"><b>Command reference</b><span>Every command's synopsis, and for the newer workflows every option with its default and the reason for it.</span><span class="meta">63 commands · filterable</span></a>
-  <a class="card" href="theory/index.html"><b>Theory</b><span>The equations CAPS solves, with symbols, defaults, when to use each method, the tests that check it and the papers it follows.</span><span class="meta">88 methods · typeset</span></a>
+  <a class="card" href="theory/index.html"><b>Theory</b><span>The equations CAPS solves, with symbols, defaults, when to use each method, the tests that check it and the papers it follows.</span><span class="meta">91 methods · typeset</span></a>
   <a class="card" href="python.html"><b>Python API</b><span><code>import caps</code>: open and build structures, assign force fields, run, crosslink, analyse and write pipeline steps.</span><span class="meta">generated from the docstrings</span></a>
 </div>
 
@@ -126,6 +126,6 @@ folder (see <a href="python.html#setup">Python setup</a>).</p>
 
 </main>
 </div>
-<footer class="foot"><span>CAPS 0.1.0 · generated by <code>tools/docs/build_site.py</code> from the program itself</span><a href="https://github.com/MuhammadUzairRiaz/CAPS">github.com/MuhammadUzairRiaz/CAPS</a></footer>
+<footer class="foot"><span>CAPS 0.2.0 · generated by <code>tools/docs/build_site.py</code> from the program itself</span><a href="https://github.com/MuhammadUzairRiaz/CAPS">github.com/MuhammadUzairRiaz/CAPS</a></footer>
 </body>
 </html>
