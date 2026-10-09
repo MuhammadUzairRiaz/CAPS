@@ -689,6 +689,8 @@ with tempfile.TemporaryDirectory() as _td:
     _cb = caps.cg("cgbuild", os.path.join(_td, "melt.map.json"), os.path.join(_td, "melt.cg.data"), units="BS=B+S", dp=6, chains=12, density=1.2,
                   bonded=os.path.join(_td, "bonded"), maps=os.path.join(_td, "melt.map.json"), o=os.path.join(_td, "built"))
     check(_cb["beads"] == 144 and os.path.exists(os.path.join(_td, "built", "in.cg_equil")), f"cgbuild: {_cb['beads']} beads, box {_cb['box']:.1f} Å")
+    _cp = caps.build.cg_polymer({"BS": ["B", "S"]}, dp=6, chains=6, density=1.2, bonded=os.path.join(_td, "bonded"), maps=os.path.join(_td, "melt.map.json"), out=os.path.join(_td, "built2"))
+    check(_cp["beads"] == 72, "caps.build.cg_polymer")
     _pp = caps.cg("ppa", os.path.join(_td, "melt.map.json"), os.path.join(_td, "melt.cg.data"), o=os.path.join(_td, "ppa"))
     check(len(_pp["systems"]) == 1 and _pp["systems"][0]["lpp"] > 0, "ppa (CAPS's PPA)")
     _md = caps.cg("mech", "decks", rates="1e-6", mode="both", o=os.path.join(_td, "tension"))
