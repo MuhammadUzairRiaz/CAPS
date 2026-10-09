@@ -634,4 +634,12 @@ _ua = caps.polymer("[*]CC[*]", dp=10)
 _uar = _ua.field.assign("oplsua2024")
 check(_uar["complete"] and _ua.summary()["atoms"] == 20 and abs(_ua.summary()["total_mass"] - 282.556) < 0.01,
       f"OPLS-UA 2024 PE: {_ua.summary()['atoms']} sites, {_ua.summary()['total_mass']:.3f} g/mol")
+# DFT workbench: the reference Ti3C2 sheet, an OH-terminated slab that validates, and its help text
+import tempfile as _tf, os as _os
+_dd = _tf.mkdtemp()
+_sh = caps.dft("sheet", preset="Ti3C2", o=_os.path.join(_dd, "Ti3C2.vasp"))
+_te = caps.dft("terminate", _os.path.join(_dd, "Ti3C2.vasp"), top="OH", o=_os.path.join(_dd, "Ti3C2_OH.vasp"))
+_va = caps.dft("validate", _os.path.join(_dd, "Ti3C2_OH.vasp"), expect="Ti3C2O2H2")
+check(_sh["formula"] == "Ti3C2" and _te["formula"] == "Ti3C2O2H2" and _va["ok"] and "--seed" in caps.dft_help("terminate") and _te["command"].startswith("caps terminate"),
+      f"DFT workbench: {_sh['formula']} → {_te['formula']} · validate {_va['ok']}")
 print("all python checks passed")

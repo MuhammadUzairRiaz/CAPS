@@ -1,0 +1,103 @@
+<!-- CAPS Studio › DFT › Runs: every case folder below a project (one with a job.slurm): stages done and running, ionic
+     steps, last energy, max force, ETA from the force's fall; adsorption sets' health flags (ENERGY, JUMP, DIPOLE, SCF, GEOM,
+     HANG) each with what to do; for the chosen run its force curve and the tools — resubmit, reset a stage, derived sets,
+     the structure in the 3D view, cleanup of finished stages. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.DftRunsPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="Border.pcard"><Setter Property="Background" Value="{DynamicResource Bg1B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+      <Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="10" /><Setter Property="Padding" Value="16,14" /></Style>
+  </p:PageBase.Styles>
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Button Click="OnFolder">Project folder…</Button>
+          <Button Classes="primary" Click="OnRefresh" IsEnabled="{Binding DftIdle}">
+            <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="history" Size="14" VerticalAlignment="Center" /><TextBlock Text="Refresh" VerticalAlignment="Center" /></StackPanel>
+          </Button>
+        </StackPanel>
+        <StackPanel Spacing="3">
+          <TextBlock Text="DFT runs" FontSize="19" FontWeight="SemiBold" />
+          <TextBlock Text="{Binding RunsRoot}" FontSize="12.5" Classes="mono" Foreground="{DynamicResource MutedB}" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+    <Border DockPanel.Dock="Bottom" Padding="22,6" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+      <DockPanel>
+        <Button DockPanel.Dock="Right" Classes="small ghost" Content="Copy" Click="OnCopyCli" IsVisible="{Binding HasDftCli}" />
+        <StackPanel Spacing="2">
+          <SelectableTextBlock Text="{Binding DftCli}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding DftStatus}" FontSize="11.5" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+    <Grid v:Panes.Split="True" ColumnDefinitions="*,400" ColumnSpacing="14" Margin="22,18">
+      <Border Classes="pcard" Padding="0">
+        <DockPanel>
+          <Border DockPanel.Dock="Top" Padding="16,8" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+            <Grid ColumnDefinitions="2*,1.2*,50,55,100,70,70,1.6*">
+              <TextBlock Text="CASE" Classes="h3" /><TextBlock Grid.Column="1" Text="STATE" Classes="h3" /><TextBlock Grid.Column="2" Text="DONE" Classes="h3" /><TextBlock Grid.Column="3" Text="STEPS" Classes="h3" />
+              <TextBlock Grid.Column="4" Text="E0 (eV)" Classes="h3" /><TextBlock Grid.Column="5" Text="FMAX" Classes="h3" /><TextBlock Grid.Column="6" Text="ETA" Classes="h3" /><TextBlock Grid.Column="7" Text="HEALTH" Classes="h3" />
+            </Grid>
+          </Border>
+          <ListBox ItemsSource="{Binding DftRuns}" SelectedItem="{Binding SelectedDftRun}" Background="Transparent">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:DftRunRow">
+                <Grid ColumnDefinitions="2*,1.2*,50,55,100,70,70,1.6*" ToolTip.Tip="{Binding Actions}">
+                  <TextBlock Text="{Binding Case}" Classes="mono" FontSize="11.5" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Grid.Column="1" Text="{Binding State}" FontSize="11.5" Foreground="{Binding FlagBrush}" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Grid.Column="2" Text="{Binding Done}" Classes="mono" FontSize="11.5" />
+                  <TextBlock Grid.Column="3" Text="{Binding Steps}" Classes="mono" FontSize="11.5" />
+                  <TextBlock Grid.Column="4" Text="{Binding Energy}" Classes="mono" FontSize="11.5" />
+                  <TextBlock Grid.Column="5" Text="{Binding Force}" Classes="mono" FontSize="11.5" />
+                  <TextBlock Grid.Column="6" Text="{Binding Eta}" Classes="mono" FontSize="11.5" />
+                  <TextBlock Grid.Column="7" Text="{Binding Flags}" FontSize="11" Foreground="{DynamicResource ErrB}" TextTrimming="CharacterEllipsis" />
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </DockPanel>
+      </Border>
+      <ScrollViewer Grid.Column="1">
+        <StackPanel Spacing="14">
+          <Border Classes="pcard" IsVisible="{Binding HasDftRun}">
+            <StackPanel Spacing="8">
+              <TextBlock Text="{Binding SelectedDftRun.Case, FallbackValue=''}" FontSize="13.5" FontWeight="SemiBold" TextWrapping="Wrap" />
+              <v:LinePlot x:Name="Force" Height="150" AutoRange="True" XLabel="ionic step" YLabel="max force (eV/Å)" EmptyText="no forces yet" />
+              <TextBlock Text="{Binding SelectedDftRun.Actions, FallbackValue=''}" FontSize="11.5" TextWrapping="Wrap" Foreground="{DynamicResource WarnB}" />
+              <WrapPanel>
+                <Button Classes="small" Margin="0,0,6,6" Click="OnResubmit" ToolTip.Tip="sbatch job.slurm (skips finished and queued folders); on a cluster login node">Resubmit</Button>
+                <Button Classes="small" Margin="0,0,6,6" Click="OnOpen" ToolTip.Tip="The latest CONTCAR (or input) as the Studio's structure">3D view</Button>
+              </WrapPanel>
+              <TextBlock Text="RESET A STAGE" Classes="h3" />
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <ComboBox ItemsSource="{Binding DftRunStages}" SelectedItem="{Binding DftRunStage}" Width="140" />
+                <Button Classes="small" Click="OnReset" ToolTip.Tip="Renames the real folder to &lt;stage&gt;_bad (nothing deleted); the next job redoes it. Cancel its job first.">Put aside</Button>
+              </StackPanel>
+              <TextBlock Text="DERIVED SETS" Classes="h3" />
+              <WrapPanel>
+                <Button Classes="small" Margin="0,0,6,6" Click="OnDerived" Tag="charge" ToolTip.Tip="The single point again with CHGCAR, AECCAR, LOCPOT (Bader, work function)">charge</Button>
+                <Button Classes="small" Margin="0,0,6,6" Click="OnDerived" Tag="cdd" ToolTip.Tip="Slab part and molecule part at the frozen complex geometry (same grid)">charge difference</Button>
+                <Button Classes="small" Margin="0,0,6,6" Click="OnDerived" Tag="freq" ToolTip.Tip="Partial Hessian of the nitrile group, adsorbed and free">frequencies</Button>
+                <Button Classes="small" Margin="0,0,6,6" Click="OnDerived" Tag="aimd" ToolTip.Tip="NVT AIMD from 03_relax/CONTCAR: CSVR, deuterium on H, 1 fs, segments">AIMD</Button>
+              </WrapPanel>
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <TextBlock Text="Disk" FontSize="13.5" FontWeight="SemiBold" />
+              <TextBlock Classes="dim" FontSize="11" TextWrapping="Wrap" Text="Only finished stages (DONE) are touched: WAVECAR, CHG, AECCAR1, vaspout.h5 everywhere; charge files where nothing reads them." />
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Classes="small" Click="OnCleanup">Clean up</Button>
+                <CheckBox x:Name="KeepBest" Content="also charge files of all but the best complex" />
+              </StackPanel>
+              <TextBlock Text="{Binding DftPlan}" FontSize="11.5" TextWrapping="Wrap" Foreground="{DynamicResource WarnB}" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+  </DockPanel>
+</p:PageBase>

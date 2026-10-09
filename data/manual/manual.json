@@ -2667,6 +2667,141 @@
    "tested": "tests/test_dynamics.cpp Dynamics.TabulatedPairMatchesLennardJones (a tabulated LJ gives the analytic energy and forces) and Dynamics.IbiRecoversTheLjLiquidStructure (the residual falls from 0.0095 to 0.0025); a polystyrene CG model's energy in CAPS and in LAMMPS agree to 0.1 %",
    "deviation": "one table for every bead pair (the pooled g(r)); structure, not dynamics, is matched (CG time runs faster than real time); the model belongs to the state point it was refined at",
    "tex": "V_{i+1}(r) = V_i(r) + \\alpha\\,k_B T \\ln\\frac{g_i(r)}{g_{\\mathrm t}(r)},\\qquad V_0(r) = -k_B T \\ln g_{\\mathrm t}(r)"
+  },
+  {
+   "id": "termination-height",
+   "group": "DFT surfaces",
+   "title": "Termination height from the bond length",
+   "summary": "A termination on a three-fold hollow sits above the centroid of a nearest-neighbour triangle of the outer layer. Its bond d to the three surface atoms fixes the height: with the in-plane distance r from the site to each of them (r = a/√3 for a hollow of a hexagonal layer, a/2 on a bridge, 0 on top), h follows from Pythagoras. CAPS takes the height from d rather than using d as a vertical offset, which would put the atom too far out.",
+   "equation": "h = √(d² − r²),  r = a/√3 (hollow), a/2 (bridge), 0 (top)",
+   "equation_note": "for Ti–O 2.05 Å on a = 3.0814 Å: h = 1.0186 Å",
+   "tex": "h = \\sqrt{d^{2} - r^{2}}, \\qquad r = \\frac{a}{\\sqrt{3}}\\ \\text{(hollow)},\\quad \\frac{a}{2}\\ \\text{(bridge)},\\quad 0\\ \\text{(top)}",
+   "symbols": [
+    [
+     "h",
+     "height of the termination above the outer layer's plane",
+     "Å"
+    ],
+    [
+     "d",
+     "surface atom – termination bond",
+     "data/sheets/terminations.json, or --bond"
+    ],
+    [
+     "r",
+     "in-plane distance from the site to its surface atoms",
+     "from the outer layer's nearest-neighbour distance"
+    ],
+    [
+     "a",
+     "in-plane lattice constant",
+     "the sheet's cell"
+    ]
+   ],
+   "when": "Every terminated sheet (caps terminate, 2D sheets page). d ≤ r is an error: the bond cannot reach the site. Mixed faces get the same counts top and bottom (no net dipole) unless Janus is asked for; the arrangement is NumPy's default_rng(seed) shuffle, identical on every platform.",
+   "cites": [],
+   "source": "core/src/slab2d.cpp",
+   "tested": "Slab2D.HeightFromBondLength, Slab2D.ReferenceSlabsRebuiltExactly",
+   "deviation": "",
+   "engines": [
+    "caps terminate",
+    "2D sheets & terminations"
+   ]
+  },
+  {
+   "id": "kpoint-density",
+   "group": "DFT surfaces",
+   "title": "One k-point density for every cell",
+   "summary": "Each Γ-centred mesh is chosen from one length, so a 1 × 1 cell and its 5 × 5 supercell sample the Brillouin zone equally finely and their energies can be compared: N_i is the k-density over the cell length, rounded up, and 1 along the vacuum. Γ-centred meshes are needed for hexagonal cells.",
+   "equation": "N_i = ⌈kdens / |a_i|⌉ (i = 1, 2),  N_3 = 1",
+   "equation_note": "kdens 45 Å: 15 × 15 (a ≈ 3.05 Å), 5 × 5 (3 × 3), 3 × 3 (5 × 5)",
+   "tex": "N_i = \\left\\lceil \\frac{k_{\\mathrm{dens}}}{|\\mathbf{a}_i|} \\right\\rceil \\quad (i = 1, 2), \\qquad N_3 = 1",
+   "symbols": [
+    [
+     "N_i",
+     "k-points along reciprocal vector i",
+     ""
+    ],
+    [
+     "k_dens",
+     "k-point density",
+     "Å, --kdens (45)"
+    ],
+    [
+     "a_i",
+     "cell vector",
+     "Å"
+    ]
+   ],
+   "when": "Every VASP set (caps vasp-set, VASP set designer); a molecule in a box uses Γ only. Converge it with caps vasp-conv: E0 within 1 meV/atom and in-plane stress within 1 kB of the densest mesh, for that setting and every denser one.",
+   "cites": [],
+   "source": "core/src/vasp_set.cpp",
+   "tested": "DftSets.KpointMeshes, DftSets.ConvergenceChoice",
+   "deviation": "",
+   "engines": [
+    "caps vasp-set",
+    "VASP set designer"
+   ]
+  },
+  {
+   "id": "binding-energy-dft",
+   "group": "DFT surfaces",
+   "title": "Adsorption energy from three runs",
+   "summary": "The binding energy of a molecule on a slab is the single-point energy of the relaxed complex minus those of the relaxed slab alone and the relaxed molecule alone. The three runs must share every setting that shifts absolute energies — ENCUT, PREC, smearing, dispersion, dipole correction, LREAL, functional — or the difference is meaningless; CAPS writes them from one settings set and compares the INCARs before subtracting. Negative is bound. Values from a relaxation instead of 04_static are flagged as not final.",
+   "equation": "E_bind = E0(complex) − E0(slab) − E0(molecule)",
+   "equation_note": "E0 = energy(σ → 0); 1 eV = 96.485 kJ/mol",
+   "tex": "E_{\\mathrm{bind}} = E_{0}(\\text{complex}) - E_{0}(\\text{slab}) - E_{0}(\\text{molecule})",
+   "symbols": [
+    [
+     "E_0",
+     "energy extrapolated to zero smearing (OUTCAR energy(sigma->0))",
+     "eV, 04_static"
+    ]
+   ],
+   "when": "caps vasp-bind, DFT results. The best orientation is the lowest; those within 0.05 eV of it are not reliably ordered. The dipole correction is energy-only (IDIPOL = 3 without LDIPOL): on low-work-function surfaces such as OH-terminated MXene LDIPOL lets electrons leak into the vacuum and the energy runs away.",
+   "cites": [],
+   "source": "core/src/dft_analysis.cpp",
+   "tested": "DftSets.HealthCheckFlags",
+   "deviation": "",
+   "engines": [
+    "caps vasp-bind",
+    "DFT results"
+   ]
+  },
+  {
+   "id": "work-function",
+   "group": "DFT surfaces",
+   "title": "Work function and charge-density difference",
+   "summary": "The work function is the vacuum level of the planar-averaged electrostatic potential (LOCPOT, LVHAR) minus the Fermi energy, read on each face in the plateau more than 4 Å from the atoms. Adsorption changes it by Δφ. The charge-density difference subtracts the slab part and the molecule part, computed at the frozen complex geometry on the same FFT grid, from the complex; its plane average integrated along z gives the charge moved across the interface.",
+   "equation": "φ = V_vac − E_F;  Δρ = ρ_complex − ρ_slab − ρ_molecule;  ΔQ(z) = ∫₀ᶻ A ⟨Δρ⟩ dz′",
+   "equation_note": "ΔQ at the mid-plane > 0: the slab side gained electrons",
+   "tex": "\\phi = V_{\\mathrm{vac}} - E_{F}, \\qquad \\Delta\\rho = \\rho_{\\mathrm{complex}} - \\rho_{\\mathrm{slab}} - \\rho_{\\mathrm{molecule}}, \\qquad \\Delta Q(z) = \\int_{0}^{z} A\\,\\langle \\Delta\\rho \\rangle_{xy}\\,dz'",
+   "symbols": [
+    [
+     "V_vac",
+     "plane-averaged potential in the vacuum plateau",
+     "eV"
+    ],
+    [
+     "E_F",
+     "Fermi energy",
+     "OUTCAR E-fermi"
+    ],
+    [
+     "A",
+     "in-plane cell area",
+     "Å²"
+    ]
+   ],
+   "when": "caps vasp-analyze wf / cdd, DFT results; the charge run (LCHARG, LAECHG, LVHAR) and the cdd set come from caps vasp-derived. The sign must agree with Bader's.",
+   "cites": [],
+   "source": "core/src/dft_analysis.cpp",
+   "tested": "",
+   "deviation": "",
+   "engines": [
+    "caps vasp-analyze",
+    "DFT results"
+   ]
   }
  ]
 }

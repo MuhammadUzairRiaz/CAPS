@@ -53,6 +53,10 @@ public sealed class AppSettings
     public bool PauseSlowSteps { get; set; } = true;
     /// <summary>Colour-vision cues for chains: every other chain's bonds dashed and chain ends labelled with their number.</summary>
     public bool ChainCues { get; set; }
+    /// <summary>DFT workbench: the working folder, the cluster profile, and the user's licensed PAW directory.</summary>
+    public string DftRoot { get; set; } = "";
+    public string DftProfile { get; set; } = "";
+    public string PotcarDir { get; set; } = "";
     /// <summary>Save pipeline: a copy of the pipeline's YAML written beside every set of outputs it makes.</summary>
     public bool PipelineStoreWithResults { get; set; } = true;
     /// <summary>Save pipeline: Python steps arrive switched off when the file is loaded again (false: kept on, for files in your own library or project).</summary>

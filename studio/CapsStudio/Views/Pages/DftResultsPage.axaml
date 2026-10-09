@@ -1,0 +1,138 @@
+<!-- CAPS Studio › DFT › Results: binding energies per orientation (bars, ranked, final or not), the adsorption geometry,
+     the grouped DOS, the potential profile with the work function, the charge-density difference profile, Bader transfer,
+     the nitrile stretch shift, the AIMD stability run, and the summary across surfaces (the hand-over to classical MD).
+     Whatever the finished runs do not allow yet is said, not guessed. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.DftResultsPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="Border.pcard"><Setter Property="Background" Value="{DynamicResource Bg1B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+      <Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="10" /><Setter Property="Padding" Value="16,14" /></Style>
+  </p:PageBase.Styles>
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Button Click="OnSet">Adsorption set…</Button>
+          <Button Click="OnAimd">AIMD folder…</Button>
+          <Button Click="OnMain">Project…</Button>
+          <Button Classes="primary" Click="OnRefresh" IsEnabled="{Binding DftIdle}">
+            <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="chart" Size="14" VerticalAlignment="Center" /><TextBlock Text="Analyse" VerticalAlignment="Center" /></StackPanel>
+          </Button>
+        </StackPanel>
+        <StackPanel Spacing="3">
+          <TextBlock Text="DFT results" FontSize="19" FontWeight="SemiBold" />
+          <TextBlock Text="{Binding ResultsSet}" Classes="mono" FontSize="12" Foreground="{DynamicResource MutedB}" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+    <Border DockPanel.Dock="Bottom" Padding="22,6" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+      <StackPanel Spacing="2">
+        <SelectableTextBlock Text="{Binding DftCli}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding DftStatus}" FontSize="11.5" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
+      </StackPanel>
+    </Border>
+    <ScrollViewer Margin="22,18">
+      <StackPanel Spacing="14">
+        <Border Classes="pcard">
+          <StackPanel Spacing="6">
+            <ItemsControl ItemsSource="{Binding ResultsFacts}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:Row"><Grid ColumnDefinitions="170,*" Margin="0,2"><TextBlock Text="{Binding Key}" FontWeight="SemiBold" FontSize="12.5" /><TextBlock Grid.Column="1" Text="{Binding Value}" Classes="mono" FontSize="12" TextWrapping="Wrap" /></Grid></DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Text="{Binding ResultsNote}" FontSize="11.5" Foreground="{DynamicResource WarnB}" TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
+          <Border Classes="pcard">
+            <StackPanel Spacing="6">
+              <TextBlock Text="Binding energies (eV, strongest first)" FontSize="13.5" FontWeight="SemiBold" />
+              <v:LinePlot x:Name="Bind" Height="180" Bars="True" AutoRange="True" XLabel="complex (ranked)" YLabel="E_bind (eV)" EmptyText="no finished complexes" />
+              <ItemsControl ItemsSource="{Binding BindRows}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:DftTableRow">
+                    <Grid ColumnDefinitions="2*,80,80,80" Margin="0,1">
+                      <TextBlock Text="{Binding Cells[0]}" Classes="mono" FontSize="11.5" /><TextBlock Grid.Column="1" Text="{Binding Cells[1]}" Classes="mono" FontSize="11.5" />
+                      <TextBlock Grid.Column="2" Text="{Binding Cells[2]}" Classes="mono" FontSize="11.5" /><TextBlock Grid.Column="3" Text="{Binding Cells[3]}" FontSize="11" Foreground="{DynamicResource MutedB}" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </Border>
+          <Border Grid.Column="1" Classes="pcard">
+            <StackPanel Spacing="6">
+              <TextBlock Text="Adsorption geometry" FontSize="13.5" FontWeight="SemiBold" />
+              <Grid ColumnDefinitions="2*,55,55,90,45,45,45,45">
+                <TextBlock Text="COMPLEX" Classes="h3" /><TextBlock Grid.Column="1" Text="h min" Classes="h3" /><TextBlock Grid.Column="2" Text="h COM" Classes="h3" /><TextBlock Grid.Column="3" Text="ANCHOR" Classes="h3" />
+                <TextBlock Grid.Column="4" Text="H-B" Classes="h3" /><TextBlock Grid.Column="5" Text="CH…X" Classes="h3" /><TextBlock Grid.Column="6" Text="CONT" Classes="h3" /><TextBlock Grid.Column="7" Text="TILT" Classes="h3" />
+              </Grid>
+              <ItemsControl ItemsSource="{Binding GeomRows}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:DftTableRow">
+                    <Grid ColumnDefinitions="2*,55,55,90,45,45,45,45" Margin="0,1">
+                      <TextBlock Text="{Binding Cells[0]}" Classes="mono" FontSize="11" TextTrimming="CharacterEllipsis" /><TextBlock Grid.Column="1" Text="{Binding Cells[1]}" Classes="mono" FontSize="11" />
+                      <TextBlock Grid.Column="2" Text="{Binding Cells[2]}" Classes="mono" FontSize="11" /><TextBlock Grid.Column="3" Text="{Binding Cells[3]}" Classes="mono" FontSize="11" />
+                      <TextBlock Grid.Column="4" Text="{Binding Cells[4]}" Classes="mono" FontSize="11" /><TextBlock Grid.Column="5" Text="{Binding Cells[5]}" Classes="mono" FontSize="11" />
+                      <TextBlock Grid.Column="6" Text="{Binding Cells[6]}" Classes="mono" FontSize="11" /><TextBlock Grid.Column="7" Text="{Binding Cells[7]}" Classes="mono" FontSize="11" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </Border>
+        </Grid>
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
+          <Border Classes="pcard">
+            <StackPanel Spacing="6">
+              <DockPanel><ComboBox DockPanel.Dock="Right" ItemsSource="{Binding DosGroupNames}" SelectedItem="{Binding DosGroup}" Width="160" /><TextBlock Text="DOS of the best complex" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" /></DockPanel>
+              <v:LinePlot x:Name="Dos" Height="190" AutoRange="True" XLabel="E − E_F (eV)" YLabel="states/eV" EmptyText="no DOSCAR yet" />
+            </StackPanel>
+          </Border>
+          <Border Grid.Column="1" Classes="pcard">
+            <StackPanel Spacing="6">
+              <TextBlock Text="Planar-averaged potential (work function)" FontSize="13.5" FontWeight="SemiBold" />
+              <v:LinePlot x:Name="Wf" Height="190" AutoRange="True" XLabel="z (Å)" YLabel="V − E_F (eV)" EmptyText="no LOCPOT yet" />
+            </StackPanel>
+          </Border>
+        </Grid>
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
+          <Border Classes="pcard">
+            <StackPanel Spacing="6">
+              <TextBlock Text="Charge-density difference: Δρ(z) and the cumulative ΔQ(z)" FontSize="13.5" FontWeight="SemiBold" />
+              <v:LinePlot x:Name="Cdd" Height="190" AutoRange="True" XLabel="z (Å)" YLabel="Δρ (e/Å), ΔQ (e)" EmptyText="no CDD set yet" />
+            </StackPanel>
+          </Border>
+          <Border Grid.Column="1" Classes="pcard">
+            <StackPanel Spacing="6">
+              <TextBlock Text="AIMD: height of the molecule above the surface" FontSize="13.5" FontWeight="SemiBold" />
+              <v:LinePlot x:Name="Md" Height="190" AutoRange="True" XLabel="t (ps)" YLabel="COM height (Å)" EmptyText="no AIMD segments yet" />
+            </StackPanel>
+          </Border>
+        </Grid>
+        <Border Classes="pcard">
+          <StackPanel Spacing="6">
+            <TextBlock Text="Summary across surfaces (results_summary.csv: the hand-over to classical MD)" FontSize="13.5" FontWeight="SemiBold" />
+            <Grid ColumnDefinitions="1.4*,70,80,1.6*,80,70,70,1.6*">
+              <TextBlock Text="CASE" Classes="h3" /><TextBlock Grid.Column="1" Text="a (Å)" Classes="h3" /><TextBlock Grid.Column="2" Text="E_bind" Classes="h3" /><TextBlock Grid.Column="3" Text="BEST" Classes="h3" />
+              <TextBlock Grid.Column="4" Text="BADER" Classes="h3" /><TextBlock Grid.Column="5" Text="Δφ" Classes="h3" /><TextBlock Grid.Column="6" Text="Δν" Classes="h3" /><TextBlock Grid.Column="7" Text="AIMD" Classes="h3" />
+            </Grid>
+            <ItemsControl ItemsSource="{Binding DftSummaryRows}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:DftTableRow">
+                  <Grid ColumnDefinitions="1.4*,70,80,1.6*,80,70,70,1.6*" Margin="0,1">
+                    <TextBlock Text="{Binding Cells[0]}" Classes="mono" FontSize="11.5" /><TextBlock Grid.Column="1" Text="{Binding Cells[1]}" Classes="mono" FontSize="11.5" />
+                    <TextBlock Grid.Column="2" Text="{Binding Cells[2]}" Classes="mono" FontSize="11.5" /><TextBlock Grid.Column="3" Text="{Binding Cells[3]}" Classes="mono" FontSize="11" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Grid.Column="4" Text="{Binding Cells[4]}" Classes="mono" FontSize="11.5" /><TextBlock Grid.Column="5" Text="{Binding Cells[5]}" Classes="mono" FontSize="11.5" />
+                    <TextBlock Grid.Column="6" Text="{Binding Cells[6]}" Classes="mono" FontSize="11.5" /><TextBlock Grid.Column="7" Text="{Binding Cells[7]}" FontSize="11" TextTrimming="CharacterEllipsis" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</p:PageBase>
