@@ -324,7 +324,8 @@ CgMapResult cg_map(const System& aa, const CgMapOptions& o, const std::vector<st
   // a step a twentieth of the fastest bond's period, in whole half femtoseconds
   F->native_timestep = std::max(0.5, std::floor(shortest_period / 20 / 0.5) * 0.5);
   std::snprintf(b, sizeof b, "%zu beads (%zu types) from %zu atoms · %zu bond and %zu angle types inverted from %zu frame(s) · σ = %.3f Å (g(r) of the non-bonded "
-                "beads reaches 1/e at σ; cut %.3f Å = 2^(1/6) σ), ε = k_B T = %.4f kcal/mol · Δt ≤ %.1f fs",
+                "beads reaches 1/e at σ; cut %.3f Å = 2^(1/6) σ), ε = k_B T = %.4f kcal/mol · Δt ≤ %.1f fs for these harmonic springs only (with tabulated "
+                "bonded potentials, whose walls are stiffer, and cohesive non-bonded terms about 10 fs: check the energy drift in a short NVE run)",
                 nbead, tnames.size(), n, r.bonds.size(), r.angles.size(), r.frames.size(), r.sigma, r.cut, r.epsilon, F->native_timestep);
   r.notes.push_back(b);
   if (!r.pair_cut.empty()) {

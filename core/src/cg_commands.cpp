@@ -521,6 +521,37 @@ Json cg_run(const std::string& c, const Json& a, const std::string& data_dir) {
                       T.lo, T.hi, u, hd, T.count, residual.count(rk) ? (" · residual " + std::to_string(residual[rk]).substr(0, 5)).c_str() : "");
         t << b;
       }
+    // a time step for these tables: a thirtieth of the fastest bond oscillation, the stiffer of the well and the wall
+    // (masses: each bond type's lightest bead pair from the maps)
+    {
+      double dt = 1e30;
+      std::string by;
+      for (const auto& T : res.bonds) {
+        if (!T.sampled) continue;
+        const auto dash = T.key.find('-');
+        double mu = 1e30;
+        for (const auto& x : sys) {
+          std::map<std::string, double> mk;
+          for (const auto& bd : x.mj["beads"].items()) {
+            const std::string k = bd["kind"].str();
+            const double m = bd.num("mass", 0);
+            if (m > 0 && (!mk.count(k) || m < mk[k])) mk[k] = m;
+          }
+          const std::string ka = T.key.substr(0, dash), kb = T.key.substr(dash + 1);
+          if (mk.count(ka) && mk.count(kb)) mu = std::min(mu, mk[ka] * mk[kb] / (mk[ka] + mk[kb]));
+        }
+        if (mu >= 1e30) continue;
+        const double k = std::max(T.k_harmonic, o.bond_wall);   // E = k x²: spring constant 2k
+        const double period = 2 * 3.14159265358979 * std::sqrt(mu / (2 * k * 418.4)) * 1000;   // fs (kcal/mol/Å², g/mol)
+        if (period / 30 < dt) dt = period / 30, by = T.key;
+      }
+      if (dt < 1e30) {
+        const double step = std::max(0.5, std::floor(dt * 2) / 2);
+        r["timestep_fs"] = step;
+        std::snprintf(b, sizeof b, "  time step: about %.1f fs (a thirtieth of the %s bond's period with its wall); check the energy drift in a short NVE run with the non-bonded terms on\n", step, by.c_str());
+        t << b;
+      }
+    }
     for (const auto& nn : res.notes) t << "  note: " << nn << "\n";
     t << "wrote " << dir << " (bonded.in: include after read_data with -var BONDED " << dir << ")\n" << r.text("command") << "\n";
     r["text"] = t.str();
