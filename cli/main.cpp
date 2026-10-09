@@ -548,7 +548,9 @@ static int cg_main(const std::string& cmd, int argc, char** argv) {
     const std::string a = argv[i];
     if (a == "--help" || a == "-h") { std::printf("%s", cg_help(cmd).c_str()); return 0; }
     if (a == "--json") { json = true; continue; }
-    if (a.rfind("--", 0) == 0 || a == "-o") {
+    // options: --name, or one dash and a letter (-o, -T, -P); a value starting with - is consumed below
+    if (a.rfind("--", 0) == 0 || (a.size() >= 2 && a[0] == '-' && std::isalpha(static_cast<unsigned char>(a[1])))) {
+      if (!cg_is_option(cmd, a)) { std::fprintf(stderr, "caps %s: unknown option %s (caps %s --help lists them)\n", cmd.c_str(), a.c_str(), cmd.c_str()); return 2; }
       if (cg_is_switch(cmd, a)) flags.push_back({a, "true"});
       else if (i + 1 < argc) flags.push_back({a, argv[++i]});
       else { std::fprintf(stderr, "caps %s: %s needs a value\n", cmd.c_str(), a.c_str()); return 2; }

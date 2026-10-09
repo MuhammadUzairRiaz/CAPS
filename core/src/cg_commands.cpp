@@ -118,6 +118,11 @@ const std::vector<Cmd>& table() {
         {"frame_every", "200", "sample-chain: steps between mapped frames"},
         {"equilibrate", "", "sample-chain: steps before frames are kept (default a fifth of the run)"},
         {"screening", "vacuum", "sample-chain: vacuum (Coulomb within the cut-off) or off (no Coulomb)"},
+        {"tacticity", "atactic", "sample-chain: atactic, isotactic or syndiotactic"},
+        {"tail_cap", "", "sample-chain: the chain's tail end group (SMILES with one *)"},
+        {"damp", "1000", "sample-chain: the Langevin damping time (fs)"},
+        {"cutoff", "15", "sample-chain: the interaction cut-off (Å)"},
+        {"table_dr", "0.05", "ibi-*: the pair tables' spacing (Å)"},
         {"o", "bonded", "the output folder"}},
        {"caps cgfit bonded cg/PBS.map.json cg/PBS.cg.lammpstrj cg/PBSA.map.json cg/PBSA.cg.lammpstrj cg/PBAT.map.json cg/PBAT.cg.lammpstrj --types cg/types.json -T 300 -o bonded",
         "caps cgfit refine cg/PBS.map.json run1/cg.lammpstrj --tables bonded/bonded.json --types cg/types.json -o bonded_it2",
@@ -897,6 +902,15 @@ const std::vector<std::string>& cg_commands() {
   return c;
 }
 bool is_cg_command(const std::string& c) { return std::find(cg_commands().begin(), cg_commands().end(), c) != cg_commands().end(); }
+bool cg_is_option(const std::string& c, std::string name) {
+  while (!name.empty() && name[0] == '-') name.erase(0, 1);
+  std::replace(name.begin(), name.end(), '-', '_');
+  if (name == "json" || name == "help" || name == "o" || name == "output") return true;
+  for (const auto& x : table())
+    if (c == x.name) for (const auto& o : x.opts) if (name == o.name) return true;
+  return false;
+}
+
 bool cg_is_switch(const std::string& c, std::string name) {
   while (!name.empty() && name[0] == '-') name.erase(0, 1);
   std::replace(name.begin(), name.end(), '-', '_');

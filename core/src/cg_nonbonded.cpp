@@ -823,6 +823,8 @@ CgEngineRun run_cg_engine(const System& beads, const ForceField& ff, const CgEng
   if (!beads.cell.valid()) throw std::invalid_argument("CG runs need a periodic cell");
   CgEngineRun out;
   System s = beads;
+  // every site is a bead (a CG data file read back guesses elements from the masses): the CG time-step limit applies
+  for (Atom& a : s.atoms) a.element = 0;
   DynamicsOptions d;
   d.field = std::make_shared<ForceField>(ff);
   d.energy.cutoff = ff.cutoff;
