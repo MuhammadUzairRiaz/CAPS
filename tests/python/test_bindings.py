@@ -656,7 +656,7 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=opls2005): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 66, "ABI 66")
+check(caps.abi_version() == 67, "ABI 67")
 _pbs = caps.polymer("[*]OCCCCOC(=O)CCC(=O)[*]", dp=4, chains=2, seed=3)
 _cgd = _pbs.cg_map(rules="ester-cut")
 check(_cgd.atoms == 16, f"ester cut: 16 beads ({_cgd.atoms})")

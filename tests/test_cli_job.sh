@@ -43,4 +43,20 @@ grep -q '"exit": *[1-9]' "$HOME/CAPS/bad/md-1/caps-job.json" || fail "the exit c
 sleep 1
 "$C" job cancel "$HOME/CAPS/slow/test-1" > /dev/null || fail cancel
 grep -q '"state": *"cancelled"' "$HOME/CAPS/slow/test-1/caps-job.json" || fail "cancelled state"
+# 5 the time limit: USR1 to the job script (SLURM's --signal=B:USR1) → caps writes a checkpoint, the job ends as timeout
+#   with its results back; caps job resume continues it as a new job to the full length
+"$C" job new --title limit --kind md --input "$T/cell.data" --submit -- caps md cell.data -o md.data --steps 4000 --thermo 100 \
+  --threads 1 --log thermo.csv --quiet > /dev/null || fail "time-limit job"
+L=$HOME/CAPS/limit/md-1
+wait_state "$L" running
+sleep 1
+id=$(grep -o '"slurm_job": *"[^"]*"' "$L/caps-job.json" | sed 's/.*"\([^"]*\)"$/\1/')
+pkill -USR1 -P "$(cat "$FAKE_STATE/$id.pid")" || fail "no job script to signal"
+wait_state "$L" timeout
+[ -s "$L/out/resume.txt" ] && [ -s "$L/out/md.restart.data" ] || { ls "$L/out"; fail "no checkpoint after the time limit"; }
+"$C" job resume "$L" --submit > /dev/null || fail "job resume"
+wait_state "$HOME/CAPS/limit/md-2" finished
+[ "$(tail -n 1 "$HOME/CAPS/limit/md-2/out/thermo.csv" | cut -d, -f1)" = 4000 ] || fail "the resumed run did not reach step 4000"
+[ "$(grep -c '^step' "$HOME/CAPS/limit/md-2/out/thermo.csv")" = 1 ] || fail "the thermo log was not continued"
+grep -q '"resumed_by"' "$L/caps-job.json" || fail "resumed_by"
 echo "caps job on the fake cluster: ok"

@@ -4,6 +4,8 @@
 #include "caps/config.hpp"
 
 #include <algorithm>
+#include <atomic>
+#include <csignal>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -31,11 +33,11 @@ int positive_int(const char* s) {
   return end && *end == '\0' && v >= 1 && v <= 100000 ? int(v) : 0;
 }
 
-std::unique_ptr<std::ofstream> open_file(const std::string& path) {
+std::unique_ptr<std::ofstream> open_file(const std::string& path, bool append = false) {
   const std::filesystem::path parent = std::filesystem::path(path).parent_path();
   std::error_code ec;
   if (!parent.empty()) std::filesystem::create_directories(parent, ec);
-  auto f = std::make_unique<std::ofstream>(path, std::ios::out | std::ios::trunc);
+  auto f = std::make_unique<std::ofstream>(path, std::ios::out | (append ? std::ios::app : std::ios::trunc));
   if (!*f) throw std::runtime_error("cannot write " + path);
   return f;
 }
@@ -50,6 +52,20 @@ std::string iso_now() {
 // a finite number for JSON (NaN and ±∞ would make the line unreadable)
 double fin(double v) { return std::isfinite(v) ? v : 0.0; }
 }  // namespace
+
+namespace {
+std::atomic<bool> g_stop{false};
+extern "C" void caps_on_stop_signal(int) { g_stop.store(true); }
+}  // namespace
+
+void install_stop_signals() {
+#ifdef SIGUSR1
+  std::signal(SIGUSR1, caps_on_stop_signal);
+#endif
+  std::signal(SIGTERM, caps_on_stop_signal);
+}
+bool stop_requested() { return g_stop.load(std::memory_order_relaxed); }
+void request_stop(bool on) { g_stop.store(on); }
 
 int env_threads() {
   if (const int n = positive_int(std::getenv("CAPS_THREADS"))) return n;
@@ -78,20 +94,22 @@ std::string thermo_csv_row(const ThermoRow& r, const std::string& stage) {
   return b;
 }
 
-void LiveOutput::open_thermo(const std::string& path) {
-  thermo_ = open_file(path);
-  *thermo_ << thermo_header() << "\n";
+void LiveOutput::open_thermo(const std::string& path, bool append) {
+  std::error_code ec;
+  const bool had = append && std::filesystem::exists(path, ec) && std::filesystem::file_size(path, ec) > 0;
+  thermo_ = open_file(path, append);
+  if (!had) *thermo_ << thermo_header() << "\n";
   thermo_->flush();
 }
 
-void LiveOutput::open_frames(const std::string& path, const System& topology) {
-  frames_ = open_file(path);
+void LiveOutput::open_frames(const std::string& path, const System& topology, bool append) {
+  frames_ = open_file(path, append);
   topology_ = topology;
   nframes_ = 0;
 }
 
-void LiveOutput::open_progress(const std::string& path) {
-  progress_ = open_file(path);
+void LiveOutput::open_progress(const std::string& path, bool append) {
+  progress_ = open_file(path, append);
   Json j = Json::object();
   j["command"] = command_;
   j["state"] = std::string("running");

@@ -494,6 +494,42 @@ public sealed partial class MainViewModel
         await PollJob(j, h, r);
     }
 
+    /// <summary>A job stopped near its time limit, again from its checkpoint (caps job resume on the host): a new job of
+    /// the same title and kind, followed here like the first.</summary>
+    public async Task ResumeRemote(Job? j)
+    {
+        if (j?.Remote is not { Mode: "job" } r || _settings.Hosts.FirstOrDefault(x => x.Name == r.Host) is not { } h) return;
+        try
+        {
+            var res = await Tool("ssh", [.. SharedConnection(), .. SshArgs(h, $"{CapsOnHost(h)} job resume {Q(r.Dir)} --host-profile {RootPath(h, "host.json")} --submit --json")], 120000);
+            var line = res.Out.Split('\n').LastOrDefault(l => l.TrimStart().StartsWith('{')) ?? "";
+            if (JsonNode.Parse(line) is not JsonObject o || o["submitted"]?.GetValue<bool>() != true)
+            {
+                j.Add("Resume: " + FirstLine(res.Err.Length > 0 ? res.Err : res.Out, res.Code));
+                return;
+            }
+            var k = _jobCounters[j.Kind] = _jobCounters.GetValueOrDefault(j.Kind) + 1;
+            var job = new Job { Id = $"{j.Kind.ToLowerInvariant()}-{k}", Kind = j.Kind, Module = j.Module, Title = j.Title.Replace(" · resumed", "") + " · resumed", Document = j.Document, Atoms = j.Atoms };
+            job.Remote = new RemoteRun
+            {
+                Host = r.Host, Scheduler = r.Scheduler, Mode = "job", Stem = r.Stem, Dir = (string?)o["dir"] ?? "", JobId = (string?)o["id"] ?? "",
+                Local = Path.Combine(RemoteFolder, $"{job.Id}-{DateTime.Now:yyyyMMdd-HHmmss}"),
+            };
+            Directory.CreateDirectory(job.Remote.Local);
+            foreach (var f in new[] { "structure.caps.data" })   // the structure that went up, for the latest-frame view
+                if (File.Exists(Path.Combine(r.Local, f))) File.Copy(Path.Combine(r.Local, f), Path.Combine(job.Remote.Local, f), true);
+            job.Status = "queued";
+            job.Add($"Resumes {j.Id} from its checkpoint · {h.Scheduler} {job.Remote.JobId} · {job.Remote.Dir}");
+            j.Add($"Resumed as {job.Id} ({job.Remote.Dir})");
+            Jobs.Insert(0, job);
+            SelectedJob = job;
+            Raise(nameof(HasJobs)); Raise(nameof(JobsSummary));
+            SaveJobs();
+            StartRemotePoll();
+        }
+        catch (Exception e) { j.Add($"{r.Host} not reached: {e.Message}"); }
+    }
+
     /// <summary>The terminal commands that show the same job by hand: ssh, then the live log.</summary>
     public string TerminalCommands(Job? j)
     {

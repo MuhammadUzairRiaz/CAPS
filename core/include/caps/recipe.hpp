@@ -61,6 +61,12 @@ struct RecipeOptions {
   // frame_ps), into frames_path (opened at the first frame, appended by every later stage)
   LiveOutput* live = nullptr;
   std::string frames_path;
+  // stage checkpoints (a cluster job stopped by its time limit): after each stage that changes the structure, the
+  // structure, its force field and the provenance so far go to checkpoint_dir (recipe.state.json and beside it); resume
+  // runs build and type again (cheap set-up), takes the checkpoint's state and goes on with the next stage (analyze and
+  // export always run again). A stage stopped part-way runs again from its start.
+  std::string checkpoint_dir;
+  bool resume = false;
 };
 
 struct RecipeResult {
