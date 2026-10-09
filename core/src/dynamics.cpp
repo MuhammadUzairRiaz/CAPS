@@ -5,6 +5,7 @@
 #include "caps/rng.hpp"
 #include "caps/uff.hpp"
 #include "caps/dynamics.hpp"
+#include "caps/live.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -502,13 +503,14 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
   auto deform = [&](int64_t step) {
     if (o.deform_axis < 0) return;
     const double t1 = step * dt * 1e-3, t0 = (step - 1) * dt * 1e-3;
-    scale_axis(o.deform_axis, (1 + o.deform_rate * t1) / (1 + o.deform_rate * t0));
+    scale_axis(o.deform_axis, (1 + o.deform_strain0 + o.deform_rate * t1) / (1 + o.deform_strain0 + o.deform_rate * t0));
   };
 
   const auto t_start = std::chrono::steady_clock::now();
   emit(0);
   if (o.frame && o.frame_every > 0) o.frame(x, cell, o.step_offset);
 
+  int64_t interrupted_at = -1;
   for (int64_t step = 1; step <= o.steps; ++step) {
     cur_step = step;
     if (ramp) {
@@ -636,6 +638,16 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
       place_virtual_sites(ff, x, cell);
       o.checkpoint(x, v, cell, step + o.step_offset);
     }
+    // a stop asked for from outside (a cluster job's time limit): a checkpoint of this step, the state kept, then out
+    if (stop_requested() && step < o.steps) {
+      if (o.checkpoint && std::all_of(x.begin(), x.end(), [](double q) { return std::isfinite(q); }) &&
+          std::all_of(v.begin(), v.end(), [](double q) { return std::isfinite(q); })) {
+        place_virtual_sites(ff, x, cell);
+        o.checkpoint(x, v, cell, step + o.step_offset);
+      }
+      interrupted_at = step;
+      break;
+    }
   }
 
   rep.seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - t_start).count();
@@ -673,6 +685,7 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
   s.cell = cell;
   s.unwrapped = true;
   if (rep_out) *rep_out = std::move(rep);
+  if (interrupted_at >= 0) throw DynamicsInterrupted(interrupted_at + o.step_offset);
 }
 
 }  // namespace caps

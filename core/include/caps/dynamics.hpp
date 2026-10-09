@@ -75,6 +75,7 @@ struct DynamicsOptions {
   // deform_axis (0 x, 1 y, 2 z) is L0 (1 + deform_rate t), with t in ps from the start of this run.
   int deform_axis = -1;
   double deform_rate = 0.0;         // 1/ps
+  double deform_strain0 = 0.0;      // the engineering strain the box already has (a resumed pull): L = L0 (1 + e0 + rate t)
   bool new_velocities = false;      // draw Maxwell–Boltzmann velocities even when the system has some
   // Per atom: 1 = held in place (a substrate under a film): no velocity, no force, not counted in the temperature.
   std::vector<char> fixed;
@@ -125,6 +126,12 @@ struct DynamicsReport {
 
 struct DynamicsCancelled : std::runtime_error {
   DynamicsCancelled() : std::runtime_error("dynamics cancelled") {}
+};
+// A stop asked for from outside (SIGUSR1 / SIGTERM: a cluster job near its time limit, caps/live.hpp): the run ended at
+// `step` (with step_offset) after writing a checkpoint when it has a checkpoint callback, and the System holds the state.
+struct DynamicsInterrupted : std::runtime_error {
+  explicit DynamicsInterrupted(int64_t s) : std::runtime_error("stopped at step " + std::to_string(s) + " (a stop was asked for)"), step(s) {}
+  int64_t step;
 };
 
 // Runs MD on `s` in place: positions (unwrapped), cell, velocities and charges are updated. Velocities are taken from

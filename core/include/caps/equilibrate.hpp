@@ -80,6 +80,12 @@ struct EquilibrateOptions {
   std::vector<double> internal_target;
   std::function<bool(int stage, int stages, const std::string& label, const ThermoRow& row)> progress;
   std::function<void(const std::vector<double>& x, const Cell& c, int64_t step)> frame;
+  // Checkpoints (a cluster job stopped near its time limit, caps/live.hpp): the state when a stop is asked for, with the
+  // stage (0-based) and the steps done in it; a run started with start_stage / start_step continues from there (the
+  // stages before it skipped, the interrupted one run for what was left, a temperature ramp from where it was).
+  std::function<void(const std::vector<double>& x, const std::vector<double>& v, const Cell& c, int stage, int64_t step_in_stage)> checkpoint;
+  int start_stage = 0;
+  int64_t start_step = 0;
 };
 
 struct StageSummary {

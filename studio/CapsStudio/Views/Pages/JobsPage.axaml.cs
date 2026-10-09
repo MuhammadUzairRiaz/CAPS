@@ -102,6 +102,7 @@ public partial class JobsPage : PageBase
         await Vm.CancelRemote(Vm.SelectedJob);
     }
     private async void OnLatestFrame(object? s, RoutedEventArgs e) => await Vm.LatestFrame(Vm.SelectedJob);
+    private async void OnResumeRemote(object? s, RoutedEventArgs e) => await Vm.ResumeRemote(Vm.SelectedJob);
     private async void OnCopyTerminal(object? s, RoutedEventArgs e)
     {
         var text = Vm.TerminalCommands(Vm.SelectedJob);

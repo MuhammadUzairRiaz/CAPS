@@ -10,6 +10,7 @@
 #include <ctime>
 #include <filesystem>
 #include <fstream>
+#include <set>
 #include <sstream>
 #include <stdexcept>
 
@@ -90,7 +91,12 @@ void write_task(const fs::path& dir, const std::string& title, const std::string
   for (const auto& in : inputs) {
     if (in.empty()) continue;
     if (!fs::exists(in)) throw std::invalid_argument("input not found: " + in);
-    fs::copy_file(in, dir / fs::path(in).filename(), fs::copy_options::overwrite_existing);
+    // a hard link where the file system allows it (a resumed job's trajectory can be large), else a copy
+    const fs::path to = dir / fs::path(in).filename();
+    std::error_code ec;
+    fs::remove(to, ec);
+    fs::create_hard_link(in, to, ec);
+    if (ec) fs::copy_file(in, to, fs::copy_options::overwrite_existing);
   }
   write_file((dir / "cmd.txt").string(), trim(command) + "\n");
   write_file((dir / "cmd.sh").string(), command_script(command));
@@ -449,6 +455,39 @@ JobFolder make_array_job(const HostProfile& h, const JobRequest& r, const std::v
   st["state"] = std::string("created");
   st["tasks"] = double(tasks.size());
   write_job_state(f.dir, st);
+  return f;
+}
+
+JobFolder make_resume_job(const HostProfile& h, const std::string& stopped_dir, const JobRequest& overrides) {
+  const Json st = read_job_state(stopped_dir);
+  const fs::path out = fs::path(stopped_dir) / "out";
+  fs::path from = out;
+  const std::string scr = str_or(st, "scratch", "");
+  std::error_code ec;
+  if (!fs::exists(out / "resume.txt") && !scr.empty() && fs::exists(fs::path(scr) / "resume.txt", ec)) from = scr;   // the workspace was kept
+  if (!fs::exists(from / "resume.txt"))
+    throw std::invalid_argument("the job left no resume.txt: it finished, or it stopped before its first checkpoint (submit it again)");
+  std::ifstream rf(from / "resume.txt");
+  std::string line;
+  std::getline(rf, line);
+  JobRequest r = overrides;
+  r.command = trim(line);
+  if (r.title.empty()) r.title = str_or(st, "title", fs::path(stopped_dir).parent_path().filename().string());
+  if (r.kind.empty() || r.kind == "run") {
+    const std::string job = str_or(st, "job", fs::path(stopped_dir).filename().string());
+    r.kind = job.substr(0, job.rfind('-'));
+  }
+  static const std::set<std::string> skip = {"caps-job.json", "caps-job.json.tmp", "cmd.txt", "cmd.sh", "job.sh", "run.log", "resume.txt"};
+  for (const auto& e : fs::directory_iterator(from, ec))
+    if (e.is_regular_file(ec) && !skip.count(e.path().filename().string()) && e.path().filename().string().rfind("slurm-", 0) != 0)
+      r.inputs.push_back(e.path().string());
+  JobFolder f = make_job(h, r);
+  Json c = Json::object();
+  c["resumed_by"] = f.dir;
+  update_job_state(stopped_dir, c);
+  Json n = Json::object();
+  n["resumes"] = std::string(fs::absolute(stopped_dir).lexically_normal().string());
+  update_job_state(f.dir, n);
   return f;
 }
 
