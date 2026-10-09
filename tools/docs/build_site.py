@@ -294,9 +294,10 @@ def markdown(text: str) -> tuple[str, list[tuple[int, str, str]], dict]:
 
 
 # ---------------------------------------------------------------------------------------------------------- page shell
-NAV = [("index.html", "Home"), ("cli/index.html", "CLI guide"), ("cli/reference.html", "Command reference"),
+NAV = [("index.html", "Home"), ("modules/index.html", "Modules"), ("cli/index.html", "CLI guide"), ("cli/reference.html", "Command reference"),
        ("tutorials/index.html", "Tutorials"), ("theory/index.html", "Theory"), ("python.html", "Python"),
        ("manual/index.html", "Studio tour")]
+RELEASES = REPO + "/releases/latest"
 
 
 def page(path: str, title: str, body: str, toc_html: str = "", maths: bool = False, wide: bool = False, desc: str = "") -> str:
@@ -564,12 +565,125 @@ def build_python(out: Path, lib: str) -> None:
                                           desc="The caps Python package: functions, Document methods, builders, pipeline steps."))
 
 
-def build_home(out: Path, n_methods: int, n_cmds: int) -> None:
+# ---------------------------------------------------------------------------------------------------------- modules
+def ui(s: str) -> str:
+    """inline() plus [[Label]] for a Studio control, shown as a key cap."""
+    keys: list[str] = []
+
+    def keep(m):
+        keys.append(f'<span class="ui">{html.escape(m.group(1))}</span>')
+        return f"\x01{len(keys) - 1}\x01"
+    out = inline(re.sub(r"\[\[(.+?)\]\]", keep, s))
+    return re.sub(r"\x01(\d+)\x01", lambda m: keys[int(m.group(1))], out)
+
+
+def plain(s: str) -> str:
+    return re.sub(r"[`*]|\[\[|\]\]", "", s)
+
+
+def module_shot(img: str, cap: str, up: str, eager: bool = False) -> str:
+    load = "eager" if eager else "lazy"
+    alt = html.escape(plain(cap))
+    return (f'<figure class="shot"><button type="button" class="zoom" aria-label="Show full size">'
+            f'<img src="{up}manual/img/{img}" alt="{alt}" width="1440" height="900" loading="{load}" decoding="async"></button>'
+            f'<figcaption>{ui(cap)}</figcaption></figure>')
+
+
+def module_thumb(m: dict) -> str:
+    if m.get("shots"):
+        return f'<img src="../manual/img/{m["shots"][0]["img"]}" alt="" loading="lazy" width="1440" height="900">'
+    return f'<div class="thumb st-{m["stage"]}" aria-hidden="true"><span>{html.escape(m["title"])}</span></div>'
+
+
+def build_modules(out: Path) -> list[dict]:
+    data = json.loads((SRC / "modules.json").read_text())
+    stages = {s["id"]: s for s in data["stages"]}
+    mods = data["modules"]
+    by = {m["slug"]: m for m in mods}
+    d = out / "modules"
+    d.mkdir(parents=True, exist_ok=True)
+    order = [m for s in data["stages"] for m in mods if m["stage"] == s["id"]]
+
+    def side(current: str) -> str:
+        parts = ['<h2>Modules</h2>']
+        for s in data["stages"]:
+            parts.append(f'<h3 class="stage-h"><i class="dot st-{s["id"]}"></i>{html.escape(s["name"])}</h3>')
+            for m in order:
+                if m["stage"] == s["id"]:
+                    on = ' aria-current="page" class="on"' if m["slug"] == current else ""
+                    parts.append(f'<a href="{m["slug"]}.html"{on}>{html.escape(m["title"])}</a>')
+        return "".join(parts)
+
+    for k, m in enumerate(order):
+        st = stages[m["stage"]]
+        where = '<i>›</i>'.join(f'<span class="ui">{html.escape(w)}</span>' for w in m["where"])
+        facts = "".join(f'<div><dt>{a}</dt><dd>{ui(m[b])}</dd></div>' for a, b in (("You start with", "input"), ("You get", "output")) if m.get(b))
+        hero = (f'<header class="mod-hero"><p class="eyebrow"><i class="dot st-{st["id"]}"></i>{html.escape(st["name"])} · module {k + 1:02d}</p>'
+                f'<h1>{html.escape(m["title"])}</h1><p class="lede">{ui(m["lede"])}</p>'
+                f'<p class="where"><b>Open it</b> {where}</p>'
+                f'<dl class="io">{facts}</dl></header>')
+        shots = m.get("shots", [])
+        figs = module_shot(shots[0]["img"], shots[0]["cap"], "../", eager=True) if shots else ""
+        steps = "".join(f'<li><div><h3>{ui(t["t"])}</h3>{"".join(f"<p>{ui(p)}</p>" for p in (t["d"] if isinstance(t["d"], list) else [t["d"]]))}</div></li>'
+                        for t in m["steps"])
+        body = [hero, figs, f'<h2 id="steps">Step by step</h2><ol class="stepper">{steps}</ol>']
+        for t in m.get("tips", []):
+            body.append(f'<aside>{ui(t)}</aside>')
+        if len(shots) > 1:
+            body.append('<div class="shots2">' + "".join(module_shot(x["img"], x["cap"], "../") for x in shots[1:]) + "</div>")
+        tabs = [(lbl, lang, m[key]) for lbl, lang, key in (("Command line", "shell", "cli"), ("Python", "Python", "python")) if m.get(key)]
+        if tabs:
+            body.append('<h2 id="scripted">The same without the Studio</h2>'
+                        '<p class="muted">Every Studio page calls the same core as the <code>caps</code> command and the '
+                        '<code>caps</code> Python package, so a step you clicked can be repeated in a script.</p>')
+            body.append('<div class="tabs" role="tablist">' + "".join(
+                f'<button role="tab" type="button" aria-selected="{"true" if i == 0 else "false"}" data-tab="{i}">{lbl}</button>'
+                for i, (lbl, _, _) in enumerate(tabs)) + "</div>")
+            body.append("".join(f'<div class="tabpanel" data-panel="{i}"{"" if i == 0 else " hidden"}><div class="code" data-lang="{lang}"><pre><code>{html.escape(code)}</code></pre></div></div>'
+                                for i, (_, lang, code) in enumerate(tabs)))
+        links = []
+        for t in m.get("tutorials", []):
+            links.append(f'<a class="card mini" href="../tutorials/{t[0]}.html"><span class="num">Tutorial</span><b>{html.escape(t[1])}</b></a>')
+        for t in m.get("theory", []):
+            links.append(f'<a class="card mini" href="../theory/{t[0]}.html"><span class="num">Theory</span><b>{html.escape(t[1])}</b></a>')
+        nexts = [by[n] for n in m.get("next", []) if n in by]
+        if nexts:
+            body.append('<h2 id="next">Where to go next</h2><div class="cards next">' + "".join(
+                f'<a class="card shot-card" href="{n["slug"]}.html">{module_thumb(n)}'
+                f'<span class="num"><i class="dot st-{n["stage"]}"></i>{html.escape(stages[n["stage"]]["name"])}</span><b>{html.escape(n["title"])}</b><span>{ui(n["card"])}</span></a>'
+                for n in nexts) + "</div>")
+        if links:
+            body.append('<h2 id="read">Read more</h2><div class="cards minis">' + "".join(links) + "</div>")
+        prev = order[k - 1] if k > 0 else None
+        nxt = order[k + 1] if k + 1 < len(order) else None
+        body.append('<nav class="pager">' + (f'<a href="{prev["slug"]}.html"><small>Previous</small>{html.escape(prev["title"])}</a>' if prev else "<span></span>")
+                    + (f'<a class="next" href="{nxt["slug"]}.html"><small>Next</small>{html.escape(nxt["title"])}</a>' if nxt else "<span></span>") + "</nav>")
+        (d / f'{m["slug"]}.html').write_text(page(f'modules/{m["slug"]}.html', f'{m["title"]} · CAPS Studio', "\n".join(body), side(m["slug"]),
+                                                   desc=plain(m["lede"])))
+
+    # the index: one section per stage, a card with a screenshot per module
+    parts = ['<header class="hero"><p class="eyebrow">CAPS Studio</p><h1>Modules</h1><p>Every page of the Studio, in the order a '
+             'project uses them. Each guide shows the page, walks through it step by step, and gives the same step as a '
+             '<code>caps</code> command and in Python.</p></header>']
+    parts.append('<div class="stage-strip">' + '<i>→</i>'.join(f'<a href="#{s["id"]}"><i class="dot st-{s["id"]}"></i>{html.escape(s["name"])}</a>' for s in data["stages"]) + "</div>")
+    for s in data["stages"]:
+        cards = "".join(f'<a class="card shot-card" href="{m["slug"]}.html">{module_thumb(m)}'
+                        f'<b>{html.escape(m["title"])}</b><span>{ui(m["card"])}</span><span class="meta">{len(m["steps"])} steps</span></a>'
+                        for m in order if m["stage"] == s["id"])
+        parts.append(f'<section class="stage" id="{s["id"]}"><h2><i class="dot st-{s["id"]}"></i>{html.escape(s["name"])}</h2>'
+                     f'<p class="muted">{ui(s["blurb"])}</p><div class="cards">{cards}</div></section>')
+    (d / "index.html").write_text(page("modules/index.html", "CAPS Studio modules", "\n".join(parts), wide=True,
+                                       desc="Step-by-step guides for every CAPS Studio module: build, force fields, runs, crosslinking, analysis and export."))
+    return order
+
+
+def build_home(out: Path, n_methods: int, n_cmds: int, n_modules: int) -> None:
     md = (SRC / "home.html").read_text()
     n_ff = len([f for f in (ROOT / "data/forcefields").glob("*.json") if f.name != "catalogue.json"])
     n_tut = len(list((SRC / "tutorials").glob("*.md")))
     md = md.replace("{N_METHODS}", str(n_methods)).replace("{N_CMDS}", str(n_cmds)).replace("{N_FF}", str(n_ff)).replace("{N_TUT}", str(n_tut))
-    (out / "index.html").write_text(page("index.html", "CAPS documentation", md, wide=True,
+    md = md.replace("{N_MODULES}", str(n_modules)).replace("{RELEASES}", RELEASES).replace("{VERSION}", "0.1.0")
+    (out / "index.html").write_text(page("index.html", "CAPS · polymer and materials simulation", md, wide=True,
                                          desc="CAPS: build, type, run and analyse polymers and materials from the Studio, the command line or Python."))
 
 
@@ -585,13 +699,15 @@ def main() -> None:
     for f in ("site.css", "site.js"):
         (out / "assets" / f).write_text((SRC / f).read_text())
     (out / ".nojekyll").write_text("")
+    (out / "CNAME").write_text("caps-studio.org\n")   # the custom domain GitHub Pages serves the site on
     summary = build_reference(a.caps, out)
     build_guide(out, summary)
     build_tutorials(out)
     build_theory(out, Refs(a.lib))
     build_python(out, a.lib)
+    modules = build_modules(out)
     n_methods = len(json.loads((ROOT / "data/manual/manual.json").read_text())["pages"])
-    build_home(out, n_methods, len(summary))
+    build_home(out, n_methods, len(summary), len(modules))
     print(f"wrote {out}: {len(summary)} commands, {n_methods} methods")
 
 

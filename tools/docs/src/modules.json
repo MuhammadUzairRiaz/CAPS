@@ -1,0 +1,1643 @@
+{
+ "stages": [
+  {
+   "id": "start",
+   "name": "Get started",
+   "blurb": "The window every module lives in: open files, find pages with ⌘K, and follow the pipeline strip."
+  },
+  {
+   "id": "build",
+   "name": "Build",
+   "blurb": "Make the structure: molecules, polymers, amorphous cells, packed boxes, crystals, slabs, fillers and solvated systems."
+  },
+  {
+   "id": "prepare",
+   "name": "Prepare",
+   "blurb": "Give the structure a force field, take out close contacts and bring it to the density and temperature you want."
+  },
+  {
+   "id": "run",
+   "name": "Run",
+   "blurb": "Molecular dynamics in CAPS, coarse-grained and mesoscale models, and adsorption on surfaces."
+  },
+  {
+   "id": "react",
+   "name": "React",
+   "blurb": "Crosslink, cure and vulcanise with reaction templates, in CAPS or as LAMMPS fix bond/react files."
+  },
+  {
+   "id": "out",
+   "name": "Analyse & export",
+   "blurb": "Measure properties, write decks for LAMMPS, GROMACS and others, run jobs and draft the methods section."
+  }
+ ],
+ "modules": [
+  {
+   "slug": "start",
+   "title": "Start",
+   "stage": "start",
+   "where": [
+    "File",
+    "Start page"
+   ],
+   "card": "Type a SMILES or a file path, pick a builder, reopen a project, or follow a guided example.",
+   "lede": "The first screen: one box that understands a SMILES, a file path or a module name, six builders, your projects and recent files, and guided examples to learn from.",
+   "input": "Nothing — or a SMILES, a file, or a recipe.",
+   "output": "An open structure in the Studio, or the builder you picked.",
+   "shots": [
+    {
+     "img": "01_start.jpg",
+     "cap": "**Start**: the quick box, the six builders, projects, recent files and guided examples."
+    }
+   ],
+   "steps": [
+    {
+     "t": "Type into the quick box",
+     "d": [
+      "Paste a SMILES (for example `C=Cc1ccccc1`), a file path, or a page name. The box recognises it — **SMILES detected**, **File found** — and its button changes to [[Build 3D]], [[Build polymer]], [[Open]] or [[Go]]."
+     ]
+    },
+    {
+     "t": "Or pick a builder",
+     "d": [
+      "Six cards: **Molecule**, **Polymer**, **Crystal**, **Amorphous cell**, **Surface or interface** and **Solvated system**."
+     ]
+    },
+    {
+     "t": "Or open your work",
+     "d": [
+      "[[Open project…]] or [[New project]] (any folder), a recent file, or **Last session** → [[Restore]].",
+      "Drag and drop LAMMPS data and dump, GROMACS .gro, PDB, XYZ, mol2 or CIF anywhere on the open strip."
+     ]
+    },
+    {
+     "t": "Learn by example",
+     "d": [
+      "**Learn** runs guided examples on a sample polystyrene cell: grow, type with GAFF2, relax, equilibrate with the 21-step protocol, then density, g(r), Tg and moduli.",
+      "**Fibre–rubber composites**: a rubber film on glass fibre, fillers in rubber, a sulfur-cured natural rubber, adhesion and pull-out."
+     ]
+    },
+    {
+     "t": "Repeat a saved build",
+     "d": [
+      "**From a recipe** → [[Import recipe]] reads a CAPS YAML/JSON recipe or a Packmol input."
+     ]
+    }
+   ],
+   "cli": "caps                        # every command on one screen\ncaps info cell.data         # what a file holds\ncaps run recipe.yaml        # a whole saved study from one file",
+   "python": "import caps\n\nd = caps.open(\"cell.data\")   # LAMMPS, GROMACS, PDB, XYZ, mol2, CIF …\nprint(d.summary())",
+   "next": [
+    "studio",
+    "polymer",
+    "molecule"
+   ],
+   "tutorials": [
+    [
+     "first-cell",
+     "Your first polymer cell"
+    ]
+   ]
+  },
+  {
+   "slug": "studio",
+   "title": "Studio",
+   "stage": "start",
+   "where": [
+    "Top bar",
+    "Studio"
+   ],
+   "card": "The 3D view, project tree, inspector and quick analysis; the pipeline strip shows how far a structure has got.",
+   "lede": "Where every structure opens: a 3D view with editing tools, the project tree, the inspector, file checks and quick analysis of the frame shown. The module bar along the top takes you to every other page.",
+   "input": "Any structure you built or opened.",
+   "output": "Edits, selections, measurements, saved files and figures.",
+   "shots": [
+    {
+     "img": "02_studio.jpg",
+     "cap": "**Studio**: 3D view, project tree, properties, inspector and the analysis tabs along the bottom."
+    }
+   ],
+   "steps": [
+    {
+     "t": "Find your way",
+     "d": [
+      "The **module bar** along the top runs in working order: Studio · Build, Polymer cell, Packing · Force field, Minimise, Equilibrate, Dynamics, React · Analyze, Export · Jobs, Bench. The gear opens Settings.",
+      "Press **⌘K** (Ctrl+K) to find any page, builder or command by name."
+     ]
+    },
+    {
+     "t": "Follow the pipeline strip",
+     "d": [
+      "Structure → Made by → Force field → Minimise → Equilibrate → Dynamics → Export. A step turns green when done; click any step to go to its page. Minimise, Equilibrate and Dynamics are optional."
+     ]
+    },
+    {
+     "t": "Look and edit",
+     "d": [
+      "Click an atom to pick it, drag to rotate, ⇧-drag to pan. The toolbar selects, moves, rotates, draws bonds, adds hydrogens and rings, measures and colours.",
+      "Each open structure has its own tab; [[+]] opens another."
+     ]
+    },
+    {
+     "t": "Use the project tree",
+     "d": [
+      "Every structure in the project, with **Edit** (reopens the builder that made it, with its settings), **Delete** (twice to confirm; files on disk stay) and **Copy structure** to try a change on a duplicate."
+     ]
+    },
+    {
+     "t": "Check and save",
+     "d": [
+      "**Validation** › [[All checks…]] lists every file check. The **File** tab saves as LAMMPS data, PDB, XYZ, mol2, CIF or a VASP POSCAR."
+     ]
+    },
+    {
+     "t": "Quick analysis",
+     "d": [
+      "The bottom tabs analyse the frame shown: g(r), Minimisation, Thermo, Molecules, Network, Around atom, Chains."
+     ]
+    }
+   ],
+   "cli": "caps check cell.data --report checks.md\ncaps render cell.data -o cell.png --style ball --colour molecule\ncaps convert cell.data cell.pdb",
+   "python": "import caps\n\nd = caps.open(\"cell.data\")\nprint(d.checks())\nd.render(\"cell.png\", style=\"ball_and_stick\")\nd.save(\"cell.pdb\")",
+   "next": [
+    "polymer",
+    "force-field"
+   ]
+  },
+  {
+   "slug": "molecule",
+   "title": "Molecule builder",
+   "stage": "build",
+   "where": [
+    "Build",
+    "Molecule builder…"
+   ],
+   "card": "Draw or type a SMILES and get 3D conformers: monomers, curatives, solvents and additives.",
+   "lede": "Sketch a molecule or type its SMILES and CAPS builds 3D coordinates and conformers, cleaned up with a force field. Use it for monomers, curatives, solvents, plasticisers and small additives.",
+   "input": "A SMILES string or a 2D sketch.",
+   "output": "A 3D molecule (several conformers if you ask), ready for Packing, the Polymer builder or the Studio.",
+   "shots": [
+    {
+     "img": "03_molecule.jpg",
+     "cap": "**Molecule builder**: the 2D sketch, the live 3D preview and the conformers table."
+    }
+   ],
+   "steps": [
+    {
+     "t": "Draw or type",
+     "d": [
+      "Sketch with the draw, ring and charge tools and the element buttons (C, N, O, S, F, Cl, Br, P, I, Si), or type the SMILES under **Identifiers**. Properties update: formula, molecular weight, stereocentres and a valence check."
+     ]
+    },
+    {
+     "t": "Set the 3D embedding",
+     "d": [
+      "Method [[Distance bounds]] (default) or with a rotor search; conformers 1–50 (default 5); clean up with GAFF2 or UFF (every element); hydrogens added from valences, or as written for united-atom models."
+     ]
+    },
+    {
+     "t": "Pick a conformer",
+     "d": [
+      "The **Conformers** table lists each one by relative energy, lowest first."
+     ]
+    },
+    {
+     "t": "Send it on",
+     "d": [
+      "[[Open in Studio]]; [[Use in Pack]] to fill a box with it; [[Use as repeat unit]] when the SMILES has two `*` (it becomes unit A of the Polymer builder); or [[Insert into document]]."
+     ]
+    }
+   ],
+   "cli": "caps build 'C=Cc1ccccc1' -o styrene.mol2 --conformers 5 --ff uff",
+   "python": "from caps import build\n\nm = build.smiles(\"C=Cc1ccccc1\", forcefield=\"uff\", conformers=5)\nm.save(\"styrene.mol2\")",
+   "next": [
+    "packing",
+    "polymer"
+   ]
+  },
+  {
+   "slug": "polymer",
+   "title": "Polymer builder",
+   "stage": "build",
+   "where": [
+    "Top bar",
+    "Build"
+   ],
+   "card": "114 repeat units and 21 copolymers, or your own SMILES; architecture, sequence, composition, tacticity and end groups.",
+   "lede": "Define the chain: pick a polymer from the library or write a repeat unit, then set the architecture, sequence, composition, tacticity, linkage and end groups — and preview one chain in 3D.",
+   "input": "A polymer from the library, or a repeat unit as SMILES with two `*` (head first).",
+   "output": "One chain in the Studio, or the polymer handed to Polymer cell to grow a cell.",
+   "shots": [
+    {
+     "img": "04_polymer.jpg",
+     "cap": "**Polymer builder**: the library on the left, a one-chain preview in the middle, the settings on the right."
+    },
+    {
+     "img": "04b_composition.jpg",
+     "cap": "**Composition**: PBSA, BS:BA 80:20 by moles at DP 25 — 20 BS and 5 BA in every chain."
+    }
+   ],
+   "steps": [
+    {
+     "t": "Choose the repeat unit",
+     "d": [
+      "Search the **Library** by name or SMILES; [[Rubbers]] filters elastomers. Or type a SMILES under **Repeat units**: the first `*` is the head, the second the tail (for example `*CC(*)c1ccccc1`). [[Unit]] adds a second unit for a copolymer."
+     ]
+    },
+    {
+     "t": "Set the architecture",
+     "d": [
+      "[[Linear]] (default), [[Branched]], [[Star]], [[Comb]] or [[Dendrimer]], with arms, generations or branch probability. [[Network →]] goes to React."
+     ]
+    },
+    {
+     "t": "Set the sequence and length",
+     "d": [
+      "Homopolymer, alternating, block, random, gradient, pattern (for example `AAB`) or random with exact composition. Degree of polymerisation 2–2000, and a name."
+     ]
+    },
+    {
+     "t": "Copolymers: set the composition",
+     "d": [
+      "Give each unit a target % **by moles** or **by weight**; CAPS converts weights to mole fractions with the repeat-unit masses and shows each unit's count per chain. [[Use: random]] or [[Use: exact composition]] (every chain holds exactly those counts)."
+     ]
+    },
+    {
+     "t": "Stereo, linkage and ends",
+     "d": [
+      "Atactic, isotactic or syndiotactic (or a dyad pattern); head-to-tail, head-to-head or random reversals; end groups such as hydrogen, methyl, phenyl or hydroxyl."
+     ]
+    },
+    {
+     "t": "Build",
+     "d": [
+      "[[Build in document]] builds one chain and opens it. [[Send to CAPS Grow]] takes the polymer to Polymer cell to grow a periodic cell. [[Save to your library]] keeps it for later."
+     ]
+    }
+   ],
+   "tips": [
+    "Several polymers in one cell? Press [[Blend…]] on this page — see the Blend module."
+   ],
+   "python": "import caps\n\nchain = caps.polymer(\"*CC(*)c1ccccc1\", dp=20, chains=1, tacticity=\"syndiotactic\")\nchain.save(\"sps_chain.pdb\")",
+   "next": [
+    "polymer-cell",
+    "blend"
+   ],
+   "tutorials": [
+    [
+     "first-cell",
+     "Your first polymer cell"
+    ]
+   ]
+  },
+  {
+   "slug": "polymer-cell",
+   "title": "Polymer cell",
+   "stage": "build",
+   "where": [
+    "Top bar",
+    "Polymer cell"
+   ],
+   "card": "Grow amorphous chains into a periodic cell at a target density, with the force field assigned when growth ends.",
+   "lede": "CAPS Grow builds an amorphous periodic cell: chains grown one unit at a time without overlaps, at the density, shape and tacticity you set, with the force field assigned the moment growth finishes.",
+   "input": "A polymer from the Polymer builder (polystyrene by default).",
+   "output": "A periodic cell (LAMMPS data, PDB or XYZ), typed if you chose a force field.",
+   "shots": [
+    {
+     "img": "05_grow.jpg",
+     "cap": "**Polymer cell · CAPS Grow**: 10 chains × 30 units, 4,820 atoms at 0.60 g/cm³, with the live growth counters."
+    }
+   ],
+   "steps": [
+    {
+     "t": "Set the components",
+     "d": [
+      "Each polymer with its number of chains (10), DP (8) and dispersity Đ. [[Choose polymer…]] opens the Polymer builder to add or change one."
+     ]
+    },
+    {
+     "t": "Choose the force field",
+     "d": [
+      "Pick it under **Force field** and keep [[Assign when growing finishes]] on. [[Compare all force fields]] shows which force fields cover the polymer."
+     ]
+    },
+    {
+     "t": "Set the cell",
+     "d": [
+      "Size from a **density** (0.4–0.6 g/cm³ grows easily; compress it later in Minimise) or a box. Shape: cubic periodic, a slab with vacuum, a cylinder pore, or around a fibre. Tacticity, seed and contact scale."
+     ]
+    },
+    {
+     "t": "Choose the growth method",
+     "d": [
+      "Self-avoiding growth (the roomiest trial), Rosenbluth with soft spheres, or configurational-bias growth with Lennard-Jones."
+     ]
+    },
+    {
+     "t": "Press Grow cell",
+     "d": [
+      "The live counters show chains grown, units placed, restarts, the closest contact margin, the density and the elapsed time."
+     ]
+    },
+    {
+     "t": "Keep the recipe",
+     "d": [
+      "[[Save recipe]] writes a YAML you can rerun with `caps run`; [[Copy as Python]] (or **Copy caps command**) gives the same build as a script. [[Save cell…]] writes the cell."
+     ]
+    }
+   ],
+   "tips": [
+    "Solvent, gas or fillers in the grown cell: Packing › Pack into › Around the current structure."
+   ],
+   "cli": "caps grow -o ps.data --chains 10 --dp 30 --density 0.6 \\\n    --units '*CC(*)c1ccccc1' --tacticity atactic --seed 1",
+   "python": "import caps\n\nd = caps.polymer(\"*CC(*)c1ccccc1\", dp=30, chains=10, density=0.6, seed=1)\nd.field.assign(\"pcff\")\nd.save(\"ps.data\")",
+   "next": [
+    "force-field",
+    "minimise"
+   ],
+   "tutorials": [
+    [
+     "first-cell",
+     "Your first polymer cell"
+    ]
+   ],
+   "theory": [
+    [
+     "growth",
+     "Chain growth"
+    ]
+   ]
+  },
+  {
+   "slug": "blend",
+   "title": "Blend",
+   "stage": "build",
+   "where": [
+    "Build",
+    "Blend builder…"
+   ],
+   "card": "Several polymers grown together in one cell: mixed, as two slabs, or as a droplet.",
+   "lede": "Grow two or more polymers together in one cell, by weight, volume or chain count, starting mixed, as two slabs or as a droplet.",
+   "input": "Two or more polymers (from the library or the Polymer builder).",
+   "output": "A blend cell; if every component has a force field, it goes straight to the Force field step by group.",
+   "shots": [
+    {
+     "img": "11_blend.jpg",
+     "cap": "**Blend builder**: components with chains, DP and density, the starting morphology and the cell."
+    }
+   ],
+   "steps": [
+    {
+     "t": "Add the components",
+     "d": [
+      "[[Add component]] for each polymer with its chains, DP and density; [[Builder's chain]] takes the Polymer builder's polymer. Give the composition by weight %, volume % or chain count."
+     ]
+    },
+    {
+     "t": "Choose the starting morphology",
+     "d": [
+      "[[Mixed]] (default), [[Two slabs]] or [[Droplet]]."
+     ]
+    },
+    {
+     "t": "Set the cell",
+     "d": [
+      "Growth density 0.5 g/cm³, and the growth method (best of k trials or Rosenbluth)."
+     ]
+    },
+    {
+     "t": "Press Build blend",
+     "d": [
+      "Then compress it in Minimise (target density) and equilibrate. Give each component its own force field with **Force field › By group**."
+     ]
+    }
+   ],
+   "cli": "caps blend --components '*CC(*)c1ccccc1,*CC(*)(C)C(=O)OC' --weights 0.5,0.5 \\\n    --chains 8 --dp 20 --density 0.5 -o blend.data",
+   "next": [
+    "force-field",
+    "minimise"
+   ]
+  },
+  {
+   "slug": "packing",
+   "title": "Packing",
+   "stage": "build",
+   "where": [
+    "Top bar",
+    "Packing"
+   ],
+   "card": "Fill a box — or the space around a structure — with molecules, with no two closer than a tolerance.",
+   "lede": "CAPS Pack fills an empty box, or the free space around the current structure, with molecules in regions you define, so that no two atoms of different molecules are closer than the tolerance. Packmol inputs open too.",
+   "input": "Molecules (SMILES, files, curatives, solvents) and optionally a structure to pack around.",
+   "output": "A packed periodic cell, ready to type, minimise or export.",
+   "shots": [
+    {
+     "img": "10_pack.jpg",
+     "cap": "**Packing · CAPS Pack**: molecules and regions, the objective and the report."
+    }
+   ],
+   "steps": [
+    {
+     "t": "Choose what to pack into",
+     "d": [
+      "[[An empty box]], or [[Around the current structure]] — the structure is kept fixed and molecules fill its cell (solvent in a polymer, gas in a pore)."
+     ]
+    },
+    {
+     "t": "Add the molecules",
+     "d": [
+      "[[Add molecule]]: from a SMILES, your molecules, rubber curatives and additives, solvents, or a file (pdb, mol2, xyz, data, gro). Set the number of copies of each."
+     ]
+    },
+    {
+     "t": "Add regions (optional)",
+     "d": [
+      "[[Add region]]: a box, a slab between two planes, a sphere or a cylinder, to put molecules where you want them."
+     ]
+    },
+    {
+     "t": "Set the objective",
+     "d": [
+      "Tolerance d_tol 2.0 Å. [[Fill to a density…]] sets the count for you; optionally compress the cell afterwards."
+     ]
+    },
+    {
+     "t": "Press Pack",
+     "d": [
+      "The report shows convergence and the guarantee: the smallest distance now against the target. Then [[Export to LAMMPS / GROMACS…]], or minimise and run dynamics first."
+     ]
+    }
+   ],
+   "tips": [
+    "[[Open input…]] reads a Packmol input; [[Save input…]] and [[Copy as Python]] repeat the same packing later."
+   ],
+   "cli": "caps pack mixture.inp -o mixture.data   # packmol-style input",
+   "python": "import caps\n\nbox = caps.pack([(\"CCO\", 50), (\"O\", 200)], box=30.0, tolerance=2.0)\nbox.save(\"mixture.data\")",
+   "next": [
+    "force-field",
+    "minimise"
+   ],
+   "theory": [
+    [
+     "packing",
+     "Packing"
+    ]
+   ]
+  },
+  {
+   "slug": "solvation",
+   "title": "Solvation",
+   "stage": "build",
+   "where": [
+    "Build",
+    "Solvation…"
+   ],
+   "card": "Solvent and ions around a solute: box shape, solvent model, salt concentration or neutralisation.",
+   "lede": "Put a solute in a box of solvent with ions: the box from an edge, a padding or a, b, c; a solvent and its model; and salt at a concentration, or just enough to neutralise.",
+   "input": "A solute (the open structure), or nothing for a box of pure solvent.",
+   "output": "A solvated, neutral or salted system packed by CAPS Pack.",
+   "shots": [
+    {
+     "img": "21_solvation.jpg",
+     "cap": "**Solvation & ions**: box, solvent model and ions."
+    }
+   ],
+   "steps": [
+    {
+     "t": "Set the box",
+     "d": [
+      "Cubic (edge 30 Å), rectangular, or padded (10 Å around the solute; chosen automatically when a structure is open). Minimum distance 2.0 Å."
+     ]
+    },
+    {
+     "t": "Choose the solvent",
+     "d": [
+      "The solvent and its model (TIP4P/2005 first for water), its density, or a number of molecules."
+     ]
+    },
+    {
+     "t": "Add ions",
+     "d": [
+      "None, Neutralise, a **Concentration** (default; salt and mol/L) or Custom counts of cations and anions."
+     ]
+    },
+    {
+     "t": "Press Solvate",
+     "d": [
+      "Packing progress is shown; the result opens as a new structure."
+     ]
+    }
+   ],
+   "cli": "caps solvate solute.pdb -o solvated.data --padding 10 --solvent water \\\n    --model TIP4P/2005 --salt NaCl --conc 0.15",
+   "python": "import caps\nfrom caps import build\n\nsolute = caps.open(\"solute.pdb\")\nbox = build.solvate(solute, padding=10, solvent=\"water\", salt=\"NaCl\", concentration=0.15)\nbox.save(\"solvated.data\")",
+   "next": [
+    "force-field",
+    "minimise"
+   ]
+  },
+  {
+   "slug": "crystal",
+   "title": "Crystal",
+   "stage": "build",
+   "where": [
+    "Build",
+    "Crystal…"
+   ],
+   "card": "Space group, lattice and sites; CIF import; supercells, primitive and Niggli cells, defects and nanowires.",
+   "lede": "Build a crystal from its space group (all 230, in their ITA settings), lattice and asymmetric unit, or import a CIF — then make supercells, find symmetry, reduce cells, cut clusters and add defects.",
+   "input": "A space group with lattice and sites, a CIF, or a structure from the library.",
+   "output": "A periodic crystal, savable as CIF or VASP POSCAR.",
+   "shots": [
+    {
+     "img": "14_crystal.jpg",
+     "cap": "**Crystal builder**: space group, lattice and the asymmetric unit."
+    }
+   ],
+   "steps": [
+    {
+     "t": "Pick the space group",
+     "d": [
+      "Search by symbol, number or system (`Pnma`, `14`, `cubic`)."
+     ]
+    },
+    {
+     "t": "Set the lattice and sites",
+     "d": [
+      "a, b, c in Å and α, β, γ in degrees. Under **Asymmetric unit**, [[Add site]] with label, element, x, y, z and occupancy — or [[Import CIF]], or pick one [[From the library]]."
+     ]
+    },
+    {
+     "t": "Use the symmetry tools",
+     "d": [
+      "[[Apply symmetry]], [[Find symmetry]], [[Primitive cell]] and a supercell, with a tolerance of 0.001–0.1 Å."
+     ]
+    },
+    {
+     "t": "Press Build crystal",
+     "d": [
+      "The crystal opens as a new structure. **Cell tools** then act on it: Niggli reduction, conventional cell, redefine the lattice, a vacuum slab, a cluster, point defects or a nanowire."
+     ]
+    },
+    {
+     "t": "Save it",
+     "d": [
+      "File › Save as **CIF** (P 1 with the cell and formula; opens in VESTA, Mercury, pymatgen, ASE) or **VASP POSCAR** (VASP 5, atoms grouped by element)."
+     ]
+    }
+   ],
+   "cli": "caps crystal --group 'P 42/m n m' --cell 4.594,4.594,2.959 \\\n    --sites 'Ti1 Ti 0 0 0; O1 O 0.3048 0.3048 0' --supercell 2,2,2 -o rutile.cif\ncaps crystal rutile.cif --find-symmetry",
+   "python": "from caps import build\n\nrutile = build.crystal(\"P 42/m n m\", 4.594, 4.594, 2.959,\n                       [(\"Ti1\", \"Ti\", 0, 0, 0), (\"O1\", \"O\", 0.3048, 0.3048, 0)],\n                       supercell=(2, 2, 2))\nrutile.save(\"rutile.vasp\")",
+   "next": [
+    "surface",
+    "nanostructure"
+   ]
+  },
+  {
+   "slug": "surface",
+   "title": "Surface & interface",
+   "stage": "build",
+   "where": [
+    "Build",
+    "Surface / slab…"
+   ],
+   "card": "Cleave a crystal along (hkl), choose the termination, add vacuum, and grow a polymer film or brush on it.",
+   "lede": "Cleave a slab from a crystal, choose its termination and vacuum, and build interfaces: a polymer film grown against the surface, a grafted brush, or a stack of layers with the lattice mismatch shared between them.",
+   "input": "A crystal (the open one, or a CIF).",
+   "output": "A slab, or a slab with a polymer film — the surface held in place for Minimise.",
+   "shots": [
+    {
+     "img": "15_surface.jpg",
+     "cap": "**Surface & interface builder**: cleave, polymer film and the layer stack."
+    }
+   ],
+   "steps": [
+    {
+     "t": "Cleave",
+     "d": [
+      "Miller indices h k l (default 0 0 1), the source crystal or [[Open CIF…]], the thickness in layers (3), vacuum (15 Å), the termination and a surface supercell. Tick [[Rectangular surface cell (needed for a film)]] for a film."
+     ]
+    },
+    {
+     "t": "Add a polymer film (optional)",
+     "d": [
+      "Switch on **Polymer film**: a free film grown against the surface, or a brush grafted to surface sites (σ in chains/nm²). Thickness 25 Å, density 0.9 g/cm³, units per chain and the gap to the surface."
+     ]
+    },
+    {
+     "t": "Stack layers (optional)",
+     "d": [
+      "[[Add layer]]: this slab again (a sandwich) or a structure file; or a Polymer cell. **Lattice matching** shows the strain per layer, which can be shared between them."
+     ]
+    },
+    {
+     "t": "Build",
+     "d": [
+      "[[Build slab]], or [[Build interface]] with a film or layers. The surface is molecule 1 and is held in place in Minimise."
+     ]
+    },
+    {
+     "t": "Type each part",
+     "d": [
+      "Force field › **By group**: an inorganic model for the slab (for example IFF, clay or glass sets) and the polymer's own force field for the film. Then Analyze gives the interface density profile, adhesion and pull-out."
+     ]
+    }
+   ],
+   "cli": "caps surface quartz.cif -o slab.data --hkl 0,0,1 --layers 3 --vacuum 15 --list\ncaps interface quartz.cif -o film.data --units '*CC(C)=CC*' --film 30 \\\n    --film-density 0.9 --chains 8 --dp 10",
+   "next": [
+    "force-field",
+    "minimise"
+   ],
+   "tutorials": [
+    [
+     "dft-surfaces",
+     "DFT surfaces"
+    ]
+   ]
+  },
+  {
+   "slug": "nanostructure",
+   "title": "Nanostructure",
+   "stage": "build",
+   "where": [
+    "Build",
+    "Nanostructure…"
+   ],
+   "card": "Graphene and h-BN sheets, nanotubes, particles and pores; graft functional groups; grow a polymer matrix around them.",
+   "lede": "Build fillers — sheets, nanotubes, particles and pores — graft functional groups or silanes onto them, and grow a polymer or rubber matrix around them to make a composite.",
+   "input": "Nothing (choose a type and material), or a crystal for particles and pores.",
+   "output": "A filler, a functionalised filler, or a filler–polymer composite.",
+   "shots": [
+    {
+     "img": "12_nano_sheet.jpg",
+     "cap": "**Nanostructure**: a graphene sheet with the Functional groups panel."
+    },
+    {
+     "img": "13_nano_matrix.jpg",
+     "cap": "**Polymer matrix** switched on: the button becomes Build composite."
+    }
+   ],
+   "steps": [
+    {
+     "t": "Choose the type",
+     "d": [
+      "**Sheet** (graphene or h-BN, width, layers, periodic or a flake with H edges), **Nanotube** (chirality n, m; length; multi-walled or ropes), **Particle** (a crystal cut to a sphere, cube, octahedron, fibre …; optional passivation) or **Pore** (slit, cylinder or from a CIF, with a fluid)."
+     ]
+    },
+    {
+     "t": "Graft functional groups (optional)",
+     "d": [
+      "A preset such as carboxyl, or a SMILES with `*` at the attachment atom; where they go (sidewall, ends, edges); a share of sites or an exact count; a minimum spacing. [[Graft]] — undo with ⌘Z. **Silane coupling agent** grafts silanes onto silanols."
+     ]
+    },
+    {
+     "t": "Add a polymer matrix (optional)",
+     "d": [
+      "Switch on **Polymer matrix**: the polymer, chains, units per chain and density. The directions the filler fills stay periodic; the rest open up for the chains."
+     ]
+    },
+    {
+     "t": "Build",
+     "d": [
+      "[[Build sheet]], [[Build nanotube]], [[Build particle]] or [[Build pore]] — or [[Build composite]] with the matrix on."
+     ]
+    },
+    {
+     "t": "Type and relax",
+     "d": [
+      "Force field › **By group** (a carbon or IFF model for the filler, PCFF, COMPASS or OPLS-AA for the polymer), then Minimise: freshly grafted groups can sit close to their neighbours."
+     ]
+    }
+   ],
+   "cli": "caps nano sheet --lx 20 --ly 20 --layers 1 -o graphene.data\ncaps nano tube --n 10 --m 10 --length 25 \\\n    --units '*CC(C)=CC*' --chains 10 --dp 20 --density 0.9 -o cnt_nr.data",
+   "python": "from caps import build\n\ntube = build.nano(kind=\"tube\", n=10, m=10, length=25)\ntube.save(\"cnt.data\")",
+   "next": [
+    "force-field",
+    "minimise"
+   ]
+  },
+  {
+   "slug": "biomolecule",
+   "title": "Biomolecule",
+   "stage": "build",
+   "where": [
+    "Build",
+    "Biomolecule…"
+   ],
+   "card": "Peptides from a sequence with their secondary structure, termini and protonation; DNA and RNA strands.",
+   "lede": "Build an all-atom peptide from its one-letter sequence — helix, strand, PPII or coil, with termini and protonation at a pH — or a DNA or RNA strand.",
+   "input": "A one-letter sequence or a FASTA file.",
+   "output": "An all-atom peptide or strand, cleaned up with UFF.",
+   "shots": [],
+   "steps": [
+    {
+     "t": "Choose the mode",
+     "d": [
+      "[[Peptide]] (default) or [[Nucleic acid]]."
+     ]
+    },
+    {
+     "t": "Enter the sequence",
+     "d": [
+      "One-letter codes, or [[Import FASTA]]. For a strand: DNA or RNA, written 5′ → 3′."
+     ]
+    },
+    {
+     "t": "Set the secondary structure",
+     "d": [
+      "α-helix, β-strand, PPII or coil, or your own φ, ψ and ω."
+     ]
+    },
+    {
+     "t": "Termini and state",
+     "d": [
+      "N-terminus NH₃⁺, NH₂ or acetyl; C-terminus COO⁻, COOH or N-methyl amide; side chains at pH 7, 4 or 10, or neutral; UFF clean-up or the placed geometry."
+     ]
+    },
+    {
+     "t": "Build",
+     "d": [
+      "[[Build peptide]] or [[Build strand]]; it opens as a new structure."
+     ]
+    }
+   ],
+   "cli": "caps peptide AEAAAKEAAAKA -o peptide.pdb --helix --ph 7",
+   "python": "from caps import build\n\np = build.peptide(\"AEAAAKEAAAKA\", structure=\"HHHHHHHHHHHH\")\np.save(\"peptide.pdb\")",
+   "next": [
+    "solvation",
+    "force-field"
+   ]
+  },
+  {
+   "slug": "force-field",
+   "title": "Force field",
+   "stage": "prepare",
+   "where": [
+    "Top bar",
+    "Force field"
+   ],
+   "card": "Type every atom from SMARTS rules, set charges, fill any missing term and give each part of a composite its own force field.",
+   "lede": "Assign atom types, charges and parameters from the force field you choose (PCFF, COMPASS, OPLS-AA, GAFF, CVFF, UFF and more). CAPS never guesses a parameter: anything missing is listed before you can run.",
+   "input": "Any structure with bonds: a grown cell, a crystal, a PDB with CONECT, a mol2, a LAMMPS data file.",
+   "output": "Every atom typed and charged, a typing report, and a structure ready for Minimise, Dynamics and Export.",
+   "shots": [
+    {
+     "img": "06_field.jpg",
+     "cap": "**Force field · typing report** for a PCFF polystyrene cell: 4,820 atoms typed, 0 missing terms, and the other force fields that also cover it."
+    }
+   ],
+   "steps": [
+    {
+     "t": "Pick the force field and the charges",
+     "d": [
+      "Choose it in [[Force field]]. [[Charges]] defaults to [[Automatic (force field, else Gasteiger)]]; you can also take them from the force field, Gasteiger–Marsili, QEq, OPLS bond increments, or keep the file's own charges."
+     ]
+    },
+    {
+     "t": "Press Assign · retype all",
+     "d": [
+      "CAPS types every atom from its typing rules. The chips above the table give typed, untyped, missing terms, estimated terms and the net charge."
+     ]
+    },
+    {
+     "t": "Check the atoms table",
+     "d": [
+      "Filter by [[All]], [[Untyped]] or [[Overridden]]. Click a row, or an atom in the **Types in 3D** view, to see the rule (SMARTS) that matched it.",
+      "To change one type, use [[Set type by hand]] → [[Set]]; [[Back to the rule]] undoes it."
+     ]
+    },
+    {
+     "t": "Clear the Missing before run panel",
+     "d": [
+      "Its badge reads **Blocks Relax and Dynamics** until every term exists, then **Ready to run**.",
+      "[[Which force fields describe this structure?]] lists the alternatives that cover everything, each with [[Use]]. Otherwise fill gaps with [[Fill gaps from…]] or [[Import parameters…]] (a published file), or [[Enter manually (estimated)]]: hand-entered values are flagged as estimated in the report and in every file written."
+     ]
+    },
+    {
+     "t": "Composites: one force field per part",
+     "d": [
+      "Switch on [[By group]], press [[Suggest groups]] (filler, polymer, blend components), choose a force field — or a literature potential such as Tersoff from a file — for each group, then [[Assign by group]].",
+      "Set how cross pairs mix ([[Between groups · ε]], [[σ]], [[1-4 pairs]]) or give pairs explicitly; CAPS writes the cross terms."
+     ]
+    },
+    {
+     "t": "Go on, or export the typed cell",
+     "d": [
+      "Continue to Minimise. [[Export ▾]] also writes a LAMMPS data + input file, or a types file for `caps ff apply --types`."
+     ]
+    }
+   ],
+   "tips": [
+    "Class II force fields (PCFF, COMPASS) go to LAMMPS only: GROMACS has no class II functional form, and the Export page says so instead of writing an approximate file."
+   ],
+   "cli": "# types from the rules, then the parameters and the decks\ncaps ff type cell.data --ff opls2005 -o types.txt --explain\ncaps ff apply cell.data --ff opls2005 --types types.txt \\\n    -o cell_ff.data --lammps-input cell.in --gromacs cell",
+   "python": "import caps\n\nd = caps.open(\"cell.data\")\nreport = d.field.assign(\"pcff\")          # types, charges and every term\nprint(report)",
+   "next": [
+    "minimise",
+    "export"
+   ],
+   "tutorials": [
+    [
+     "force-fields",
+     "Force fields and export"
+    ]
+   ],
+   "theory": [
+    [
+     "force-fields",
+     "Force fields"
+    ],
+    [
+     "charges",
+     "Charges"
+    ]
+   ]
+  },
+  {
+   "slug": "minimise",
+   "title": "Minimise",
+   "stage": "prepare",
+   "where": [
+    "Top bar",
+    "Minimise"
+   ],
+   "card": "Remove close contacts, compress a low-density cell to its target and relax the box.",
+   "lede": "Energy minimisation with CAPS Relax: L-BFGS, conjugate gradient, steepest descent or FIRE, with a soft-core push-off for freshly built cells and optional compression to a target density.",
+   "input": "A structure with a force field assigned (otherwise the built-in GAFF).",
+   "output": "A relaxed structure, energy and max-force curves, and the criterion that stopped each stage in the report.",
+   "shots": [
+    {
+     "img": "07_relax.jpg",
+     "cap": "**Minimise · CAPS Relax** with the live energy and max-force plots."
+    }
+   ],
+   "steps": [
+    {
+     "t": "Choose the method",
+     "d": [
+      "[[L-BFGS]] is the default and the fastest in most cases; [[FIRE]] is robust for very strained cells."
+     ]
+    },
+    {
+     "t": "Set the push-off and the cell",
+     "d": [
+      "Keep [[Soft-core push-off before minimising]] on for a grown or packed cell: it caps the force (500 kcal/mol/Å) while overlaps separate.",
+      "[[Compress to a target density]] brings a 0.6 g/cm³ grown cell up to, for example, 1.05 g/cm³ in steps of 0.06.",
+      "[[Relax the box towards a pressure]]: isotropic, each axis, only z (a film or slab) or only x and y."
+     ]
+    },
+    {
+     "t": "Hold what must not move",
+     "d": [
+      "Under **Constraints & restraints**: [[Hold a molecule in place]] (a substrate), [[Hold selection]] along x, y or z, or restraints between atoms with [[Add measured]]."
+     ]
+    },
+    {
+     "t": "Set when to stop",
+     "d": [
+      "Any of: |F|max below 0.5 kcal/mol/Å, 5000 iterations per stage, a relative ΔE per step, or a box stress below 100 atm."
+     ]
+    },
+    {
+     "t": "Press Minimise",
+     "d": [
+      "Energy and max force are plotted live. [[Cancel]] stops it; [[Queue]] runs it as a job; [[Copy as Python]] gives the same call as a script."
+     ]
+    }
+   ],
+   "tips": [
+    "The reported |F|max counts free atoms only; atoms you held are not included."
+   ],
+   "cli": "caps relax cell.data -o cell_min.data --method lbfgs --ftol 0.5 \\\n    --density 1.05 --step 0.06",
+   "python": "import caps\n\nd = caps.open(\"cell.data\")\nd.relax(ftol=0.5, method=\"lbfgs\", density=1.05)\nd.save(\"cell_min.data\")",
+   "next": [
+    "equilibrate",
+    "dynamics"
+   ],
+   "theory": [
+    [
+     "minimisers",
+     "Minimisers"
+    ]
+   ]
+  },
+  {
+   "slug": "equilibrate",
+   "title": "Equilibrate",
+   "stage": "prepare",
+   "where": [
+    "Top bar",
+    "Equilibrate"
+   ],
+   "card": "Run a published protocol such as Larsen's 21 steps, then production blocks until density, energy and Rg stop drifting.",
+   "lede": "Bring a cell to its equilibrium density and chain dimensions with a published protocol, and keep running until the properties you care about have converged.",
+   "input": "A minimised structure with a force field.",
+   "output": "An equilibrated cell, live density, energy and Rg curves, convergence criteria and a report.",
+   "shots": [
+    {
+     "img": "09_equilibrate.jpg",
+     "cap": "**Equilibrate · convergence**: density, potential energy and radius of gyration plotted live."
+    }
+   ],
+   "steps": [
+    {
+     "t": "Pick a protocol",
+     "d": [
+      "[[Larsen et al. 21-step (2011)]] (the default) compresses and decompresses between T max / P max and your targets; [[Simulated annealing]] cycles between T low and T high; [[MD push-off]] separates overlaps; [[Custom (edit the text)]] lets you write the stages yourself."
+     ]
+    },
+    {
+     "t": "Set the targets",
+     "d": [
+      "T final 300 K, T max 600 K, P final 1 atm. [[Time ×]] stretches or shortens every stage. The stages are listed, editable, under **Stages (editable text)**."
+     ]
+    },
+    {
+     "t": "Ask for convergence",
+     "d": [
+      "Switch on [[Production blocks until converged]]: CAPS adds 20 ps blocks (up to 20) until density, energy and Rg stop drifting.",
+      "Optionally require the mean-square internal distances to converge too, to RIS polyethylene or a curve from a file."
+     ]
+    },
+    {
+     "t": "Long chains: regrow the ends",
+     "d": [
+      "**Chain ends · configurational-bias Monte Carlo** → [[Regrow chain ends]] relaxes chain conformations faster than MD alone."
+     ]
+    },
+    {
+     "t": "Press Equilibrate",
+     "d": [
+      "Watch the plots and the **Criteria** panel. [[Accept now]] keeps the current state; [[Save trajectory…]] writes the frames."
+     ]
+    }
+   ],
+   "cli": "caps equilibrate cell_min.data -o cell_eq.data --protocol larsen21 \\\n    --tfinal 300 --pfinal 1 --until-converged --log thermo.csv",
+   "python": "import caps\n\nd = caps.open(\"cell_min.data\")\nok = d.equilibrate(\"larsen21\", temperature=300, pressure=1, until_converged=True)\nd.save(\"cell_eq.data\")",
+   "next": [
+    "dynamics",
+    "analyze"
+   ],
+   "tutorials": [
+    [
+     "first-cell",
+     "Your first polymer cell"
+    ]
+   ],
+   "theory": [
+    [
+     "protocols",
+     "Equilibration protocols"
+    ]
+   ]
+  },
+  {
+   "slug": "dynamics",
+   "title": "Dynamics",
+   "stage": "run",
+   "where": [
+    "Top bar",
+    "Dynamics"
+   ],
+   "card": "NVE, NVT, NPT or NPH molecular dynamics in CAPS, with live snapshots, or a LAMMPS / GROMACS deck.",
+   "lede": "Run molecular dynamics directly in CAPS with modern thermostats and barostats, bond constraints and multiple time steps — or write the same run as a deck for LAMMPS or GROMACS.",
+   "input": "A structure with a force field, usually minimised or equilibrated.",
+   "output": "A trajectory, thermodynamic log and the final state; or input decks for another engine.",
+   "shots": [
+    {
+     "img": "08_dynamics.jpg",
+     "cap": "**Dynamics · CAPS Dynamics** with the ensemble, thermostat and barostat settings and live snapshots."
+    }
+   ],
+   "steps": [
+    {
+     "t": "Choose the ensemble and time step",
+     "d": [
+      "[[NVE]], [[NVT]] (default), [[NPT]] or [[NPH]]; Δt 1 fs. For 2 fs, constrain bonds to hydrogen ([[SHAKE]], [[RATTLE (as LAMMPS)]] or [[LINCS (as GROMACS)]]) or use r-RESPA."
+     ]
+    },
+    {
+     "t": "Set the thermostat and barostat",
+     "d": [
+      "Thermostat: [[Bussi velocity rescaling]] (default), Langevin (BAOAB) or Nosé–Hoover chain; T 300 K, τ_T 100 fs.",
+      "Barostat: [[Stochastic cell rescaling]] (default), Berendsen (early relaxation only) or MTK; P 1 atm, τ_P 1000 fs; coupling isotropic, per axis, only z, only x and y, or full shape."
+     ]
+    },
+    {
+     "t": "Check the interactions",
+     "d": [
+      "Electrostatics by damped shifted force or particle-mesh Ewald, the cut-off, and the mixing rule (the force field's own by default)."
+     ]
+    },
+    {
+     "t": "Set the length and the output",
+     "d": [
+      "Steps 20 000, a frame every 1000 steps, a checkpoint interval, and [[Run on]]: this machine or a host from Settings."
+     ]
+    },
+    {
+     "t": "Press Run",
+     "d": [
+      "Snapshots and thermodynamics update live; [[Stop]] or pause at any time and continue later.",
+      "Prefer another engine? Under **Export to other engines** pick LAMMPS, GROMACS or both and press [[Save input deck…]]."
+     ]
+    }
+   ],
+   "cli": "caps md cell_eq.data -o cell_md.data --steps 20000 --dt 1 --temp 300 \\\n    --thermostat bussi --barostat crescale --pressure 1 \\\n    --dump traj.lammpstrj --every 1000 --log thermo.csv",
+   "python": "import caps\n\nd = caps.open(\"cell_eq.data\")\nd.md(steps=20000, dt=1.0, temperature=300, thermostat=\"bussi\",\n     barostat=\"crescale\", pressure=1.0, frame_every=1000)\nd.save_trajectory(\"traj.lammpstrj\")",
+   "next": [
+    "analyze",
+    "export"
+   ],
+   "theory": [
+    [
+     "integrators",
+     "Integrators"
+    ],
+    [
+     "thermostats",
+     "Thermostats"
+    ],
+    [
+     "barostats",
+     "Barostats"
+    ]
+   ]
+  },
+  {
+   "slug": "react",
+   "title": "React",
+   "stage": "react",
+   "where": [
+    "Top bar",
+    "React"
+   ],
+   "card": "Crosslink, cure and vulcanise with reaction templates; watch links form; or write LAMMPS fix bond/react files.",
+   "lede": "Build crosslinked networks — sulfur-cured or peroxide-cured rubber, epoxy–amine, ENR with acids or MAH, esterification — with your own force field re-applied after every cycle.",
+   "input": "A cell with a force field (React re-types the network with it after each cycle).",
+   "output": "The network, a link map, gel point, ν, Mc, DC and a report; or LAMMPS fix bond/react templates.",
+   "shots": [
+    {
+     "img": "16_react.jpg",
+     "cap": "**React · crosslinking**: ten PCFF polyethylene chains crosslinked between chains, each chain in its own colour with the links circled."
+    },
+    {
+     "img": "enr_mah_react.png",
+     "cap": "ENR-50 chains linked through maleic anhydride: every link between chains, with the units it joins."
+    }
+   ],
+   "steps": [
+    {
+     "t": "Assign the force field first",
+     "d": [
+      "Do the Force field step on the cell. React types, charges and parameterises the network with it after every cycle."
+     ]
+    },
+    {
+     "t": "Choose the reaction",
+     "d": [
+      "Under **Reaction templates** pick a category and a reaction — C–C crosslink, sulfur donor, peroxide (allylic C–C), ENR epoxide + COOH, epoxide + primary amine, anhydride + alcohol … — then [[Add to the reactions]]. [[Editor…]] shows and edits the template; [[Import LAMMPS…]] reads any fix bond/react pre/post/map set."
+     ]
+    },
+    {
+     "t": "Sulfur cure: add the donors",
+     "d": [
+      "Under **Sulfur donors** set the Sₓ range and the dose in phr (2.5 by default) and press [[Insert]]. A donor that reaches two chains becomes a C–Sₓ–C bridge."
+     ]
+    },
+    {
+     "t": "Set the network target",
+     "d": [
+      "Keep [[Links only between different chains]] on. [[Stop at]] a conversion, a number of links, links per chain, crosslink density ν, Mc or DC %.",
+      "Choose whether byproducts (H₂, H₂O) stay in the cell."
+     ]
+    },
+    {
+     "t": "Choose the protocol",
+     "d": [
+      "[[Polymatic cycle]] (react, relax, repeat) or [[REACTER-style during MD]]. Capture distance (0 = the template's), cycles, reactions per cycle and T. [[Auto capture]] widens the search when no pair is found."
+     ]
+    },
+    {
+     "t": "Press Crosslink",
+     "d": [
+      "The live view colours each chain and highlights new links; the plots show links between chains, the gel point and the network against your target."
+     ]
+    },
+    {
+     "t": "Save, or run it in LAMMPS",
+     "d": [
+      "[[Save network…]] writes the result. Under **LAMMPS fix bond/react**, [[Write files…]] writes pre/post templates, map files, a data file with every type the reaction creates and an input; run `lmp -in react.in`."
+     ]
+    }
+   ],
+   "tips": [
+    "PCFF gives epoxide ring angles general values, about 108 kcal/mol of strain per ENR epoxide; the Force field step says so. For epoxidised rubber, GAFF or OPLS 2005 describe the ring properly."
+   ],
+   "cli": "caps react --list-templates\ncaps react cell.data -o network.data --template cc_crosslink \\\n    --cycles 50 --per-cycle 5 --target 0.3 --temp 500 --seed 1",
+   "python": "import caps\n\nd = caps.polymer(\"*CC(C)=CC*\", dp=10, chains=6, density=0.6, seed=1)  # cis-1,4-polyisoprene\nd.relax(max_iterations=300)\nd.field.assign(\"opls2005\")\nprint(d.react(\"peroxide_allylic\", cycles=5, per_cycle=4, target=0.3, seed=1))\nd.save(\"nr_xl.data\")",
+   "next": [
+    "analyze",
+    "export"
+   ],
+   "tutorials": [
+    [
+     "crosslinking",
+     "Crosslinking and fix bond/react"
+    ]
+   ]
+  },
+  {
+   "slug": "coarse-grained",
+   "title": "Coarse-grained",
+   "stage": "run",
+   "where": [
+    "Build",
+    "Coarse-grained melt…"
+   ],
+   "card": "Kremer–Grest, MARTINI, or beads derived from your own polymer — then backmap to atoms.",
+   "lede": "Reach long times and large cells with bead models: a generic Kremer–Grest melt, MARTINI with published bead types, or a model derived from an all-atom melt of your own polymer.",
+   "input": "A polymer from the library, or an all-atom cell (and its trajectory) already open.",
+   "output": "A coarse-grained melt with its bonded and pair potentials, a LAMMPS deck, and a backmapped all-atom cell.",
+   "shots": [
+    {
+     "img": "17_cg.jpg",
+     "cap": "**Build › Coarse-grained** with the three models and the page's own guide to which model to use."
+    }
+   ],
+   "steps": [
+    {
+     "t": "Pick the model",
+     "d": [
+      "**Kremer–Grest**: generic FENE + WCA beads for polymer physics. **MARTINI**: about four heavy atoms per bead, published types. **From a polymer**: your polymer's own beads."
+     ]
+    },
+    {
+     "t": "From a polymer: choose the mapping",
+     "d": [
+      "One bead per repeat unit (the common 1:1 model), two beads per unit (backbone + side group), or n backbone atoms per bead (for example 3:1 for polyethylene)."
+     ]
+    },
+    {
+     "t": "Let CAPS derive the beads",
+     "d": [
+      "CAPS grows an all-atom reference melt, maps every frame to beads, and fits harmonic bonds and angles by Boltzmann inversion and a repulsive WCA with σ from the bead g(r).",
+      "Already have an all-atom run? [[Map the open all-atom structure (every frame)]] uses it instead."
+     ]
+    },
+    {
+     "t": "Run or export",
+     "d": [
+      "Run the melt in CAPS or write the LAMMPS deck. The model is repulsive only: a starting point for iterative Boltzmann inversion (IBI), which adds the attractions."
+     ]
+    },
+    {
+     "t": "Back to atoms",
+     "d": [
+      "[[Backmap the open melt]] rebuilds an all-atom cell when you need atomistic detail."
+     ]
+    }
+   ],
+   "cli": "# chemistry-aware mapping, bonded fits, a CG melt, then back to atoms\ncaps cgmap aa.data --preset ester-cut -o cg/ --dump aa.lammpstrj\ncaps cgfit bonded --help\ncaps cgbuild --units BS=B+S --dp 100 --chains 50 --bonded cg/ --maps cg/map.json -o melt/\ncaps backmap cg/map.json aa.data --cg melt/map.json --frame melt/last.data -o back/",
+   "python": "from caps import build\n\nkg = build.kremer_grest(chains=50, beads=100, density=0.85)\nkg.export_engines(\"kg\", stem=\"melt\", gromacs=False)\n\nps = build.cg_from_polymer(\"*CC(*)c1ccccc1\", name=\"PS\", scheme=\"unit\", chains=10, dp=20)",
+   "next": [
+    "dpd",
+    "analyze"
+   ],
+   "tutorials": [
+    [
+     "coarse-graining",
+     "Coarse-graining a polymer"
+    ]
+   ],
+   "theory": [
+    [
+     "coarse-grained",
+     "Coarse-grained models"
+    ]
+   ]
+  },
+  {
+   "slug": "dpd",
+   "title": "DPD",
+   "stage": "run",
+   "where": [
+    "Modules",
+    "Mesoscale (DPD)…"
+   ],
+   "card": "Dissipative particle dynamics for phase separation, lamellae and domains in blends and block copolymers.",
+   "lede": "Mesoscale dissipative particle dynamics: describe species as bead strings, set χ between bead types, and watch blends and block copolymers segregate into domains.",
+   "input": "Species written as bead strings (for example A5B5) and χ parameters between bead types.",
+   "output": "The segregation ψ, domain spacing, structure factor and the final domains.",
+   "shots": [
+    {
+     "img": "24_dpd.jpg",
+     "cap": "**Mesoscale · dissipative particle dynamics**: species, χ between bead types and the segregation over the run."
+    }
+   ],
+   "steps": [
+    {
+     "t": "Add the species",
+     "d": [
+      "Under **Species**, [[Add]] each one with its name, its beads (for example `A5B5` for a symmetric diblock) and the number of molecules."
+     ]
+    },
+    {
+     "t": "Set χ between bead types",
+     "d": [
+      "Under **χ between bead types**, [[Add]] each pair with its Flory–Huggins χ."
+     ]
+    },
+    {
+     "t": "Set the run",
+     "d": [
+      "Steps (dt 0.04) 20 000, density ρ 3, r_c 6.46 Å. Start from a random mix, or seed lamellae, cylinders or spheres. Chain stiffness k_θ is optional."
+     ]
+    },
+    {
+     "t": "Press Run DPD",
+     "d": [
+      "Follow **Segregation over the run** and the structure factor of the first bead type; the result gives ψ, the domain spacing and the domains at the end."
+     ]
+    }
+   ],
+   "next": [
+    "analyze"
+   ]
+  },
+  {
+   "slug": "adsorption",
+   "title": "Adsorption & sorption",
+   "stage": "run",
+   "where": [
+    "Modules",
+    "Analysis",
+    "Adsorption locator…"
+   ],
+   "card": "Find the lowest-energy places a molecule sits on a surface, and gas uptake isotherms by Widom insertion and GCMC.",
+   "lede": "Two Monte Carlo tools on a fixed substrate: the adsorption locator places molecules on a surface or in a pore by simulated annealing; sorption computes solubility, Henry constants and isotherms.",
+   "input": "A substrate (slab, crystal, pore or polymer cell) with a force field, and the adsorbate as SMILES.",
+   "output": "Adsorption energies and the lowest configurations; or Widom solubility and a GCMC isotherm.",
+   "shots": [
+    {
+     "img": "25_adsorption.jpg",
+     "cap": "**Adsorption locator**: the adsorbates, the search region and the lowest configurations found."
+    }
+   ],
+   "steps": [
+    {
+     "t": "Open the substrate and assign its force field",
+     "d": [
+      "The substrate is held fixed; only the adsorbates move."
+     ]
+    },
+    {
+     "t": "Adsorption locator: add the adsorbates",
+     "d": [
+      "Under **Adsorbates**, [[Add]] each as SMILES (for example `O=C=O`) with its count."
+     ]
+    },
+    {
+     "t": "Choose where to search",
+     "d": [
+      "[[Above the substrate's top face]] (default) or [[Anywhere in the cell]]. Cycles 3, steps per cycle 20 000, annealing from 10⁴ K to 100 K."
+     ]
+    },
+    {
+     "t": "Press Locate",
+     "d": [
+      "The **Adsorption energy** table gives dE/dN per component; the lowest configurations become frames you can step through."
+     ]
+    },
+    {
+     "t": "Gas uptake: open Sorption",
+     "d": [
+      "**Modules › Analysis › Sorption (gas uptake)…**: pick the sorbate (CO₂, CH₄, N₂, O₂, H₂O, He, H₂ or a SMILES) or a mixture, T, Widom insertions and the GCMC pressures, then [[Compute]].",
+      "You get the solubility coefficient, Henry constant, the isotherm (mol/kg, cm³(STP)/cm³, q_st), selectivities for a mixture, and a map of where the sorbate sits."
+     ]
+    }
+   ],
+   "python": "import caps\n\nslab = caps.open(\"slab.data\")\nslab.field.assign(\"pcff\")\nres = slab.adsorption([(\"O=C=O\", 4)], region=\"above\")\nprint(res[\"adsorption_energy\"])\n\ncell = caps.open(\"polymer.data\")\ncell.field.assign(\"pcff\")\niso = cell.sorption(\"O=C=O\", pressures_kpa=(10, 100, 1000))",
+   "next": [
+    "analyze"
+   ]
+  },
+  {
+   "slug": "dft",
+   "title": "DFT workbench",
+   "stage": "run",
+   "where": [
+    "⌘K",
+    "Go to 2D sheets & terminations"
+   ],
+   "card": "2D sheets and terminations, adsorption sets, VASP input sets, cluster runs and results — for surface DFT studies.",
+   "lede": "Prepare and follow surface DFT studies: build 2D sheets such as MXenes with terminated faces, place molecules on them, write checked VASP sets, run them on a cluster and collect binding energies, DOS and work functions.",
+   "input": "A sheet preset (for example Ti₃C₂) or a layered structure, and adsorbate SMILES.",
+   "output": "Validated slabs, adsorption sets, VASP input folders, job status and a results summary.",
+   "shots": [],
+   "steps": [
+    {
+     "t": "Build the sheet",
+     "d": [
+      "⌘K → **Go to 2D sheets & terminations**. Choose a preset or [[From a structure…]] (the layer formula, the elements to remove), terminate the top and bottom faces (sites fcc, hcp, top or bridge; Janus faces allowed), repeat and vacuum. [[Build & validate]] checks the slab."
+     ]
+    },
+    {
+     "t": "Place the molecules",
+     "d": [
+      "⌘K → **Go to DFT adsorption set**: the slab (or a relaxed CONTCAR), the molecule as SMILES, its anchors (parallel, upright) and azimuths, with a force-field pre-screen. [[Build set]]."
+     ]
+    },
+    {
+     "t": "Write the VASP sets",
+     "d": [
+      "⌘K → **Go to VASP set designer**: the stages (cell, relax, static), dispersion, dipole correction, ENCUT and k-point density, the PAW folder. [[Preview]], then [[Write set]]."
+     ]
+    },
+    {
+     "t": "Run and follow",
+     "d": [
+      "⌘K → **Go to DFT runs**: each case's stage, resubmit or reset a stage, derived sets such as AIMD."
+     ]
+    },
+    {
+     "t": "Collect the results",
+     "d": [
+      "⌘K → **Go to DFT results** → [[Analyse]]: binding energies, adsorption geometry, DOS, work function, charge-density difference and the summary CSV."
+     ]
+    }
+   ],
+   "tips": [
+    "Each DFT page has a [[Copy]] button with the `caps` command line for the same step."
+   ],
+   "cli": "caps sheet --preset Ti3C2 -o ti3c2.vasp\ncaps terminate ti3c2.vasp --top O:0.5,OH:0.25,F:0.25 --supercell 3x3 -o term.vasp\ncaps validate term.vasp --expect Ti3C2O2\ncaps adsorb-dft term.vasp --supercell 5x5 --smiles 'O=C=O' --out ads/\ncaps vasp-set term.vasp --out sets/term --profile slurm-workspace\ncaps vasp-analyze summary",
+   "next": [
+    "jobs"
+   ],
+   "tutorials": [
+    [
+     "dft-surfaces",
+     "DFT surfaces"
+    ]
+   ],
+   "theory": [
+    [
+     "dft-surfaces",
+     "DFT surfaces"
+    ]
+   ]
+  },
+  {
+   "slug": "analyze",
+   "title": "Analyze",
+   "stage": "out",
+   "where": [
+    "Top bar",
+    "Analyze"
+   ],
+   "card": "Density, g(r), chain statistics, Tg, moduli, diffusion, free volume, interfaces and crosslink density — each with CSV.",
+   "lede": "Measure what you built: structure, chain statistics, thermodynamics, mechanics, dynamics, free volume, interfaces and rubber networks, from one frame or a whole trajectory, with error bars and fits.",
+   "input": "A structure or a trajectory (CAPS's own, or LAMMPS, GROMACS, AMBER).",
+   "output": "Result cards with curves and fits; CSV or LaTeX tables.",
+   "shots": [
+    {
+     "img": "18_analyze.jpg",
+     "cap": "**Analyze**: calculations by group, the trajectory window and result cards with their curves."
+    },
+    {
+     "img": "22_glass.jpg",
+     "cap": "**Glass transition**: a cooling scan and the two-line fit that gives Tg."
+    }
+   ],
+   "steps": [
+    {
+     "t": "Pick the calculations",
+     "d": [
+      "Tick chips by group: **Structure** (density, RDF, S(q), X-ray, neutron), **Chains** (Rg, Ree, C∞, persistence, entanglements), **Thermo** (CED, δ, Tg), **Mechanics** (Cij, stress–strain, creep), **Dynamics** (MSD, D, viscosity), **Free volume**, **Interface** (z profile, adhesion, pull-out) and **Rubber network** (crosslink density, H-bonds)."
+     ]
+    },
+    {
+     "t": "Choose the frames",
+     "d": [
+      "Under **Source**: the trajectory, first and last frame, every n-th, and the time per frame."
+     ]
+    },
+    {
+     "t": "Adjust the settings",
+     "d": [
+      "The g(r) pair, only between molecules, the probe radius for free volume, the MSD fit window, and blocks for the protocols that run (cooling for Tg, deformation, pull test)."
+     ]
+    },
+    {
+     "t": "Press Run selected",
+     "d": [
+      "Each result is a card with its value, error and curve. [[Compare with]] overlays reference data; [[Export CSV / LaTeX…]] writes the tables."
+     ]
+    },
+    {
+     "t": "Dedicated pages for the big ones",
+     "d": [
+      "**Glass transition**: cooling from 500 K to 200 K in 20 K steps, 100 ps NPT each, Tg from a two-line fit ([[Run cooling]]).",
+      "**Diffusion**: the MSD with its fit window and the Yeh–Hummer box-size correction.",
+      "**Mechanics**: uniaxial tension and the stiffness matrix. All under **Modules › Analysis**."
+     ]
+    }
+   ],
+   "cli": "caps analyze traj.lammpstrj --topology cell.data \\\n    --props density,rdf,rg,msd,diffusion --csv results/\ncaps tg cell.data -o tg.data --from 500 --to 200 --step 20 --ps 100 --csv tg/\ncaps tensile cell.data -o strained.data --axis x --rate 1e-3 --strain 0.2",
+   "python": "import caps\n\nd = caps.open(\"traj.lammpstrj\", topology=\"cell.data\")\nfor r in d.analyze(\"density,rdf,rg\"):\n    print(r[\"name\"], r[\"value\"], r.get(\"error\"), r[\"unit\"])",
+   "next": [
+    "export",
+    "project"
+   ],
+   "tutorials": [
+    [
+     "analysis",
+     "Analysis"
+    ]
+   ],
+   "theory": [
+    [
+     "analysis",
+     "Analysis methods"
+    ]
+   ]
+  },
+  {
+   "slug": "export",
+   "title": "Export",
+   "stage": "out",
+   "where": [
+    "Top bar",
+    "Export"
+   ],
+   "card": "LAMMPS, GROMACS, DL_POLY 4, AMBER/OpenMM and moltemplate decks, checked before they are written.",
+   "lede": "Write the simulation files for the engine you run on — in the force field's own style — with a run protocol, after CAPS has checked that the deck would run.",
+   "input": "A structure with a complete force field.",
+   "output": "LAMMPS data + input, GROMACS top/itp/gro/mdp, DL_POLY 4, AMBER prmtop/inpcrd, moltemplate .lt.",
+   "shots": [
+    {
+     "img": "19_export.jpg",
+     "cap": "**Export** for the PCFF polystyrene cell: every check green, LAMMPS ready, GROMACS refused for class II with the reason shown."
+    }
+   ],
+   "steps": [
+    {
+     "t": "Check the list",
+     "d": [
+      "**Checked before writing** lists anything that would stop the deck running. With no force field you get [[Open the Force field step]]."
+     ]
+    },
+    {
+     "t": "Choose the folder and name",
+     "d": [
+      "Under **Write to**: [[Choose…]] a folder and a file name (default `system`)."
+     ]
+    },
+    {
+     "t": "LAMMPS styles",
+     "d": [
+      "The force field's own styles, or CAPS-exact for verification; [[Hybrid]] when needed. Electrostatics automatic, PPPM, Ewald, damped shifted force or plain cut-off; the cut-off, k-space accuracy and units."
+     ]
+    },
+    {
+     "t": "Pick the run",
+     "d": [
+      "[[Check (single point)]], Minimise, NVT, NPT, a tensile test, creep, shear viscosity (NEMD) or a full equilibration protocol in LAMMPS — with T, P, dt and steps."
+     ]
+    },
+    {
+     "t": "Add other engines",
+     "d": [
+      "[[Write for GROMACS]], and optionally DL_POLY 4 (FIELD, CONFIG, CONTROL) and AMBER / OpenMM (prmtop, inpcrd)."
+     ]
+    },
+    {
+     "t": "Press Write",
+     "d": [
+      "The file list and a preview appear. Run LAMMPS with `lmp -in STEM.in`, GROMACS from the top, gro and mdp."
+     ]
+    }
+   ],
+   "cli": "caps ff apply cell.data --ff pcff -o cell.data --lammps-input cell.in \\\n    --lammps-run npt --temp 300 --press 1 --steps 100000",
+   "python": "import caps\n\nd = caps.open(\"cell.data\")\nd.field.assign(\"opls2005\")\nd.export_engines(\"engines\", stem=\"cell\", run=\"npt\", temperature=300, steps=100000)",
+   "next": [
+    "jobs",
+    "project"
+   ],
+   "tutorials": [
+    [
+     "force-fields",
+     "Force fields and export"
+    ]
+   ]
+  },
+  {
+   "slug": "jobs",
+   "title": "Jobs",
+   "stage": "out",
+   "where": [
+    "Top bar",
+    "Jobs"
+   ],
+   "card": "Every run, local or on a SLURM / PBS cluster, with live progress, logs and recovery hints.",
+   "lede": "Follow every run in one place — on this machine, a workstation over SSH, or a SLURM or PBS cluster — with live progress, logs, provenance and help when something fails.",
+   "input": "Any run page's [[Queue]] button, or [[New]] here.",
+   "output": "Running and finished jobs, their logs, results and provenance.",
+   "shots": [
+    {
+     "img": "23_jobs.jpg",
+     "cap": "**Jobs**: running and finished runs with progress, log and provenance."
+    }
+   ],
+   "steps": [
+    {
+     "t": "Add a host (once)",
+     "d": [
+      "**Settings › Compute & remote › Add host**: name, hostname, port, user; scheduler SLURM, PBS or none; partition and remote work directory. [[Test connection]] checks it (SSH agent)."
+     ]
+    },
+    {
+     "t": "Send a run",
+     "d": [
+      "On any run page set [[Run on]] to this machine or a host and press [[Queue]], or start one here with [[New]] (grow, pack, relax, dynamics, equilibrate, react, analyze, parameter sweep)."
+     ]
+    },
+    {
+     "t": "Follow it",
+     "d": [
+      "Filter by state, search by title, kind, structure or host. Each job shows **Progress** live and its **Log**; [[Check now]] polls a remote job."
+     ]
+    },
+    {
+     "t": "Get the result",
+     "d": [
+      "[[Open result]] or [[Open in Studio]]. The **Provenance manifest** records every step."
+     ]
+    },
+    {
+     "t": "When a run fails",
+     "d": [
+      "**What happened** and **Suggested recovery** explain it; [[Restart with fix]] runs again with the fix applied; [[Copy diagnostics]] for a bug report."
+     ]
+    }
+   ],
+   "next": [
+    "project"
+   ]
+  },
+  {
+   "slug": "project",
+   "title": "Project & methods",
+   "stage": "out",
+   "where": [
+    "File",
+    "Project home…"
+   ],
+   "card": "A results table for every structure and a methods section with BibTeX, written from provenance.",
+   "lede": "Every structure in the project folder with its key results, and a methods paragraph with BibTeX drafted from the provenance of each step: every builder, force field and protocol, with its citation.",
+   "input": "A project folder of structures CAPS made (each carries a provenance file).",
+   "output": "A results table, a methods section and BibTeX for your paper.",
+   "shots": [
+    {
+     "img": "20_project.jpg",
+     "cap": "**Project**: the results table and the methods section generated from provenance."
+    }
+   ],
+   "steps": [
+    {
+     "t": "Open the project home",
+     "d": [
+      "**File › Project home…**, or [[Project home…]] in the Inspector. [[Other folder…]] switches project."
+     ]
+    },
+    {
+     "t": "Read the results table",
+     "d": [
+      "Structure, atoms, density, Tg, C∞, the last step and the status. [[Export table]] writes it out."
+     ]
+    },
+    {
+     "t": "Copy the methods",
+     "d": [
+      "**Methods section · generated from provenance** updates whenever provenance changes. [[Copy]] the text and [[BibTeX]] the references."
+     ]
+    },
+    {
+     "t": "Share it",
+     "d": [
+      "[[Share project]] packages the project for a colleague or a reviewer."
+     ]
+    }
+   ],
+   "cli": "caps provenance cell.data --methods\ncaps provenance cell.data --bibtex > refs.bib\ncaps bundle traj.lammpstrj --topology cell.data --steps pipeline.json -o figure.caps-bundle.zip\ncaps reproduce figure.caps-bundle.zip",
+   "python": "import caps\n\nm = caps.provenance_file(\"cell.data.provenance.json\")\nprint(caps.methods(m)[\"text\"])\nprint(caps.bibtex(m))",
+   "next": [
+    "start"
+   ],
+   "tutorials": [
+    [
+     "recipes",
+     "Recipes and provenance"
+    ]
+   ]
+  }
+ ]
+}

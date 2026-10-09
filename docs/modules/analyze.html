@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Analyze · CAPS Studio</title>
+<meta name="description" content="Measure what you built: structure, chain statistics, thermodynamics, mechanics, dynamics, free volume, interfaces and rubber networks, from one frame or a whole trajectory, with error bars and fits.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/site.css">
+
+<script defer src="../assets/site.js"></script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="../index.html"><span class="mark" aria-hidden="true"></span>CAPS</a>
+  <button class="menu" aria-expanded="false" aria-controls="nav">Menu</button>
+  <nav id="nav" class="links"><a href="../index.html">Home</a><a href="../modules/index.html" aria-current="page">Modules</a><a href="../cli/index.html">CLI guide</a><a href="../cli/reference.html">Command reference</a><a href="../tutorials/index.html">Tutorials</a><a href="../theory/index.html">Theory</a><a href="../python.html">Python</a><a href="../manual/index.html">Studio tour</a><a href="https://github.com/MuhammadUzairRiaz/CAPS">GitHub</a></nav>
+</header>
+<div class="doc">
+<nav class="toc" aria-label="On this page"><h2>Modules</h2><h3 class="stage-h"><i class="dot st-start"></i>Get started</h3><a href="start.html">Start</a><a href="studio.html">Studio</a><h3 class="stage-h"><i class="dot st-build"></i>Build</h3><a href="molecule.html">Molecule builder</a><a href="polymer.html">Polymer builder</a><a href="polymer-cell.html">Polymer cell</a><a href="blend.html">Blend</a><a href="packing.html">Packing</a><a href="solvation.html">Solvation</a><a href="crystal.html">Crystal</a><a href="surface.html">Surface &amp; interface</a><a href="nanostructure.html">Nanostructure</a><a href="biomolecule.html">Biomolecule</a><h3 class="stage-h"><i class="dot st-prepare"></i>Prepare</h3><a href="force-field.html">Force field</a><a href="minimise.html">Minimise</a><a href="equilibrate.html">Equilibrate</a><h3 class="stage-h"><i class="dot st-run"></i>Run</h3><a href="dynamics.html">Dynamics</a><a href="coarse-grained.html">Coarse-grained</a><a href="dpd.html">DPD</a><a href="adsorption.html">Adsorption &amp; sorption</a><a href="dft.html">DFT workbench</a><h3 class="stage-h"><i class="dot st-react"></i>React</h3><a href="react.html">React</a><h3 class="stage-h"><i class="dot st-out"></i>Analyse &amp; export</h3><a href="analyze.html" aria-current="page" class="on">Analyze</a><a href="export.html">Export</a><a href="jobs.html">Jobs</a><a href="project.html">Project &amp; methods</a></nav>
+<main>
+<header class="mod-hero"><p class="eyebrow"><i class="dot st-out"></i>Analyse &amp; export · module 22</p><h1>Analyze</h1><p class="lede">Measure what you built: structure, chain statistics, thermodynamics, mechanics, dynamics, free volume, interfaces and rubber networks, from one frame or a whole trajectory, with error bars and fits.</p><p class="where"><b>Open it</b> <span class="ui">Top bar</span><i>›</i><span class="ui">Analyze</span></p><dl class="io"><div><dt>You start with</dt><dd>A structure or a trajectory (CAPS's own, or LAMMPS, GROMACS, AMBER).</dd></div><div><dt>You get</dt><dd>Result cards with curves and fits; CSV or LaTeX tables.</dd></div></dl></header>
+<figure class="shot"><button type="button" class="zoom" aria-label="Show full size"><img src="../manual/img/18_analyze.jpg" alt="Analyze: calculations by group, the trajectory window and result cards with their curves." width="1440" height="900" loading="eager" decoding="async"></button><figcaption><strong>Analyze</strong>: calculations by group, the trajectory window and result cards with their curves.</figcaption></figure>
+<h2 id="steps">Step by step</h2><ol class="stepper"><li><div><h3>Pick the calculations</h3><p>Tick chips by group: <strong>Structure</strong> (density, RDF, S(q), X-ray, neutron), <strong>Chains</strong> (Rg, Ree, C∞, persistence, entanglements), <strong>Thermo</strong> (CED, δ, Tg), <strong>Mechanics</strong> (Cij, stress–strain, creep), <strong>Dynamics</strong> (MSD, D, viscosity), <strong>Free volume</strong>, <strong>Interface</strong> (z profile, adhesion, pull-out) and <strong>Rubber network</strong> (crosslink density, H-bonds).</p></div></li><li><div><h3>Choose the frames</h3><p>Under <strong>Source</strong>: the trajectory, first and last frame, every n-th, and the time per frame.</p></div></li><li><div><h3>Adjust the settings</h3><p>The g(r) pair, only between molecules, the probe radius for free volume, the MSD fit window, and blocks for the protocols that run (cooling for Tg, deformation, pull test).</p></div></li><li><div><h3>Press Run selected</h3><p>Each result is a card with its value, error and curve. <span class="ui">Compare with</span> overlays reference data; <span class="ui">Export CSV / LaTeX…</span> writes the tables.</p></div></li><li><div><h3>Dedicated pages for the big ones</h3><p><strong>Glass transition</strong>: cooling from 500 K to 200 K in 20 K steps, 100 ps NPT each, Tg from a two-line fit (<span class="ui">Run cooling</span>).</p><p><strong>Diffusion</strong>: the MSD with its fit window and the Yeh–Hummer box-size correction.</p><p><strong>Mechanics</strong>: uniaxial tension and the stiffness matrix. All under <strong>Modules › Analysis</strong>.</p></div></li></ol>
+<div class="shots2"><figure class="shot"><button type="button" class="zoom" aria-label="Show full size"><img src="../manual/img/22_glass.jpg" alt="Glass transition: a cooling scan and the two-line fit that gives Tg." width="1440" height="900" loading="lazy" decoding="async"></button><figcaption><strong>Glass transition</strong>: a cooling scan and the two-line fit that gives Tg.</figcaption></figure></div>
+<h2 id="scripted">The same without the Studio</h2><p class="muted">Every Studio page calls the same core as the <code>caps</code> command and the <code>caps</code> Python package, so a step you clicked can be repeated in a script.</p>
+<div class="tabs" role="tablist"><button role="tab" type="button" aria-selected="true" data-tab="0">Command line</button><button role="tab" type="button" aria-selected="false" data-tab="1">Python</button></div>
+<div class="tabpanel" data-panel="0"><div class="code" data-lang="shell"><pre><code>caps analyze traj.lammpstrj --topology cell.data \
+    --props density,rdf,rg,msd,diffusion --csv results/
+caps tg cell.data -o tg.data --from 500 --to 200 --step 20 --ps 100 --csv tg/
+caps tensile cell.data -o strained.data --axis x --rate 1e-3 --strain 0.2</code></pre></div></div><div class="tabpanel" data-panel="1" hidden><div class="code" data-lang="Python"><pre><code>import caps
+
+d = caps.open(&quot;traj.lammpstrj&quot;, topology=&quot;cell.data&quot;)
+for r in d.analyze(&quot;density,rdf,rg&quot;):
+    print(r[&quot;name&quot;], r[&quot;value&quot;], r.get(&quot;error&quot;), r[&quot;unit&quot;])</code></pre></div></div>
+<h2 id="next">Where to go next</h2><div class="cards next"><a class="card shot-card" href="export.html"><img src="../manual/img/19_export.jpg" alt="" loading="lazy" width="1440" height="900"><span class="num"><i class="dot st-out"></i>Analyse &amp; export</span><b>Export</b><span>LAMMPS, GROMACS, DL_POLY 4, AMBER/OpenMM and moltemplate decks, checked before they are written.</span></a><a class="card shot-card" href="project.html"><img src="../manual/img/20_project.jpg" alt="" loading="lazy" width="1440" height="900"><span class="num"><i class="dot st-out"></i>Analyse &amp; export</span><b>Project &amp; methods</b><span>A results table for every structure and a methods section with BibTeX, written from provenance.</span></a></div>
+<h2 id="read">Read more</h2><div class="cards minis"><a class="card mini" href="../tutorials/analysis.html"><span class="num">Tutorial</span><b>Analysis</b></a><a class="card mini" href="../theory/analysis.html"><span class="num">Theory</span><b>Analysis methods</b></a></div>
+<nav class="pager"><a href="react.html"><small>Previous</small>React</a><a class="next" href="export.html"><small>Next</small>Export</a></nav>
+</main>
+</div>
+<footer class="foot"><span>CAPS 0.1.0 · generated by <code>tools/docs/build_site.py</code> from the program itself</span><a href="https://github.com/MuhammadUzairRiaz/CAPS">github.com/MuhammadUzairRiaz/CAPS</a></footer>
+</body>
+</html>
