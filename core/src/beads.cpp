@@ -438,6 +438,8 @@ System map_to_beads(const System& s, const std::vector<BeadRule>& rules, const s
     out.types.push_back(TypeInfo{});
   }
   auto site = [&](uint32_t a) { return bead_of[a] >= 0 ? bead_of[a] : keep_of[a]; };
+  rep.site_of.resize(n);
+  for (uint32_t a = 0; a < n; ++a) rep.site_of[a] = site(a);
   std::set<std::pair<int, int>> bonds;
   for (const auto& b : s.bonds) {
     const int u = site(b.i), v = site(b.j);
