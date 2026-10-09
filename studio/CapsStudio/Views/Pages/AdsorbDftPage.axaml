@@ -119,6 +119,11 @@
               <TextBlock Text="Placement" FontSize="13.5" FontWeight="SemiBold" />
               <StackPanel Spacing="3"><TextBlock Text="Azimuths (°)" Classes="label" /><TextBox Text="{Binding AdsAzimuths}" Classes="mono" /></StackPanel>
               <CheckBox Classes="toggle" Content="Leave out symmetry-equivalent azimuths" IsChecked="{Binding AdsSkipEquivalent}" ToolTip.Tip="Rotations that map the outer layer onto itself give the same complex" />
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="Pre-screen: force-field minima" Classes="label" VerticalAlignment="Center" />
+                <NumericUpDown Value="{Binding AdsPrescreen}" Minimum="0" Maximum="20" FormatString="0" Width="110"
+                               ToolTip.Tip="The Adsorption Locator (UFF, simulated annealing) anneals the molecule over the surface; its lowest distinct configurations become complex_ff1 … with the same checks" />
+              </StackPanel>
               <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
                 <StackPanel Spacing="3"><TextBlock Text="Closest contact (Å)" Classes="label" /><NumericUpDown Value="{Binding AdsDmin}" Minimum="0.5" Maximum="10" Increment="0.05" FormatString="0.00" ToolTip.Tip="Any molecule atom to any slab atom" /></StackPanel>
                 <StackPanel Grid.Column="1" Spacing="3"><TextBlock Text="Heavy-atom contact (Å)" Classes="label" /><NumericUpDown Value="{Binding AdsDheavy}" Minimum="0.5" Maximum="10" Increment="0.1" FormatString="0.0" ToolTip.Tip="Non-H of the molecule to non-H of the slab" /></StackPanel>

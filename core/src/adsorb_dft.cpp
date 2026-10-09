@@ -13,7 +13,10 @@
 #include <sstream>
 #include <stdexcept>
 
+#include "caps/adsorption.hpp"
 #include "caps/analysis.hpp"
+#include "caps/crystal.hpp"
+#include "caps/uff.hpp"
 #include "caps/edit.hpp"
 #include "caps/elements.hpp"
 
@@ -152,6 +155,61 @@ std::vector<int> species_order_index(const System& s, const std::vector<std::str
   };
   std::stable_sort(idx.begin(), idx.end(), [&](int a, int b) { return rank(s.atoms[size_t(a)].element) < rank(s.atoms[size_t(b)].element); });
   return idx;
+}
+
+
+// slab + the molecule's positions m → the complex as written (vacuum centred, in-plane wrapped, species grouped with
+// the slab's atoms first in each block) and its checks: contacts, the image distance of the unwrapped molecule (with the
+// smallest passing supercell), the slab part re-validated
+void finish_complex(AdsorbComplex& cx, const System& slab, const System& mol, const std::vector<Vec3>& m, const AdsorbSetOptions& o) {
+  // slab + molecule, vacuum centred, in-plane wrapped, species grouped (slab atoms first in each block)
+  System both = slab;
+  std::vector<char> is_mol(slab.atoms.size(), 0);
+  for (size_t k = 0; k < m.size(); ++k) {
+    Atom a = mol.atoms[k];
+    a.pos = m[k];
+    a.mol = 0;
+    both.atoms.push_back(a);
+    is_mol.push_back(1);
+  }
+  double zmin = 1e300, zmax = -1e300;
+  for (const auto& a : both.atoms) zmin = std::min(zmin, a.pos[2]), zmax = std::max(zmax, a.pos[2]);
+  for (auto& a : both.atoms) a.pos[2] += o.vacuum / 2.0 - zmin;
+  both.cell.c = {0, 0, (zmax - zmin) + o.vacuum};
+  std::vector<Vec3> unwrapped;
+  for (size_t i = slab.atoms.size(); i < both.atoms.size(); ++i) unwrapped.push_back(both.atoms[i].pos);
+  wrap_ase(both, {true, true, false});
+  const auto idx = species_order_index(both, o.order);
+  System sorted = both;
+  sorted.atoms.clear();
+  for (int i : idx) { if (is_mol[size_t(i)]) cx.molecule.push_back(int(sorted.atoms.size())); sorted.atoms.push_back(both.atoms[size_t(i)]); }
+  sorted.bonds.clear();
+  for (size_t i = 0; i < sorted.atoms.size(); ++i) sorted.atoms[i].id = int64_t(i + 1);
+  cx.system = sorted;
+  // checks on the complex as written
+  System slab_part = sorted;
+  slab_part.atoms.clear();
+  std::vector<Vec3> mpos;
+  std::set<int> ms(cx.molecule.begin(), cx.molecule.end());
+  for (size_t i = 0; i < sorted.atoms.size(); ++i) (ms.count(int(i)) ? mpos.push_back(sorted.atoms[i].pos) : slab_part.atoms.push_back(sorted.atoms[i]));
+  std::vector<int> mel;
+  for (int i : cx.molecule) mel.push_back(sorted.atoms[size_t(i)].element);
+  std::tie(cx.any, cx.heavy) = contacts(slab_part, mpos, mel, sorted.cell);
+  cx.image = image_distance(unwrapped, sorted.cell.a, sorted.cell.b);
+  if (cx.any < o.dmin - 0.1) cx.issues.push_back({"ERROR", "closest molecule-slab contact " + fmt("%.2f", cx.any) + " A < " + fmt("%.2f", o.dmin) + " A", {}});
+  if (cx.heavy < o.dheavy - 0.1) cx.issues.push_back({"ERROR", "closest heavy-atom molecule-slab contact " + fmt("%.2f", cx.heavy) + " A < " + fmt("%.2f", o.dheavy) + " A", {}});
+  if (cx.image < o.image_warn) {
+    // the smallest n × n multiple of the slab's cell that passes
+    const double na = 1;
+    for (int nn = 2; nn <= 12; ++nn) if (image_distance(unwrapped, sorted.cell.a * (nn / na), sorted.cell.b * (nn / na)) >= o.image_warn) { cx.suggested_supercell = nn; break; }
+    const std::string tip = cx.suggested_supercell ? " (a cell " + std::to_string(cx.suggested_supercell) + " times larger in-plane passes)" : "";
+    if (cx.image < o.image_error) cx.issues.push_back({"ERROR", "molecule overlaps its own periodic image (" + fmt("%.2f", cx.image) + " A): use a larger supercell" + tip, cx.molecule});
+    else cx.issues.push_back({"WARN", "molecule only " + fmt("%.2f", cx.image) + " A from its periodic image (lateral interaction): consider a larger supercell" + tip, cx.molecule});
+  }
+  ValidateOptions vo;
+  const auto rep = validate_2d(slab_part, vo);
+  for (const auto& f : rep.findings) if (f.level == "ERROR") cx.issues.push_back({"ERROR", "slab: " + f.text, {}});
+  for (const auto& f : cx.issues) if (f.level == "ERROR") cx.status = "FAIL";
 }
 
 }  // namespace
@@ -320,54 +378,7 @@ AdsorbSet build_adsorption_set(const System& slab0, const System& mol, const std
         if (z < -50) throw std::runtime_error("could not place the molecule");
       }
       for (size_t k = 0; k < base.size(); ++k) m[k] = base[k] + Vec3{0, 0, z};
-      // slab + molecule, vacuum centred, in-plane wrapped, species grouped (slab atoms first in each block)
-      System both = slab;
-      std::vector<char> is_mol(slab.atoms.size(), 0);
-      for (size_t k = 0; k < m.size(); ++k) {
-        Atom a = mol.atoms[k];
-        a.pos = m[k];
-        a.mol = 0;
-        both.atoms.push_back(a);
-        is_mol.push_back(1);
-      }
-      double zmin = 1e300, zmax = -1e300;
-      for (const auto& a : both.atoms) zmin = std::min(zmin, a.pos[2]), zmax = std::max(zmax, a.pos[2]);
-      for (auto& a : both.atoms) a.pos[2] += o.vacuum / 2.0 - zmin;
-      both.cell.c = {0, 0, (zmax - zmin) + o.vacuum};
-      std::vector<Vec3> unwrapped;
-      for (size_t i = slab.atoms.size(); i < both.atoms.size(); ++i) unwrapped.push_back(both.atoms[i].pos);
-      wrap_ase(both, {true, true, false});
-      const auto idx = species_order_index(both, o.order);
-      System sorted = both;
-      sorted.atoms.clear();
-      for (int i : idx) { if (is_mol[size_t(i)]) cx.molecule.push_back(int(sorted.atoms.size())); sorted.atoms.push_back(both.atoms[size_t(i)]); }
-      sorted.bonds.clear();
-      for (size_t i = 0; i < sorted.atoms.size(); ++i) sorted.atoms[i].id = int64_t(i + 1);
-      cx.system = sorted;
-      // checks on the complex as written
-      System slab_part = sorted;
-      slab_part.atoms.clear();
-      std::vector<Vec3> mpos;
-      std::set<int> ms(cx.molecule.begin(), cx.molecule.end());
-      for (size_t i = 0; i < sorted.atoms.size(); ++i) (ms.count(int(i)) ? mpos.push_back(sorted.atoms[i].pos) : slab_part.atoms.push_back(sorted.atoms[i]));
-      std::vector<int> mel;
-      for (int i : cx.molecule) mel.push_back(sorted.atoms[size_t(i)].element);
-      std::tie(cx.any, cx.heavy) = contacts(slab_part, mpos, mel, sorted.cell);
-      cx.image = image_distance(unwrapped, sorted.cell.a, sorted.cell.b);
-      if (cx.any < o.dmin - 0.1) cx.issues.push_back({"ERROR", "closest molecule-slab contact " + fmt("%.2f", cx.any) + " A < " + fmt("%.2f", o.dmin) + " A", {}});
-      if (cx.heavy < o.dheavy - 0.1) cx.issues.push_back({"ERROR", "closest heavy-atom molecule-slab contact " + fmt("%.2f", cx.heavy) + " A < " + fmt("%.2f", o.dheavy) + " A", {}});
-      if (cx.image < o.image_warn) {
-        // the smallest n × n multiple of the slab's cell that passes
-        const double na = 1;
-        for (int nn = 2; nn <= 12; ++nn) if (image_distance(unwrapped, sorted.cell.a * (nn / na), sorted.cell.b * (nn / na)) >= o.image_warn) { cx.suggested_supercell = nn; break; }
-        const std::string tip = cx.suggested_supercell ? " (a cell " + std::to_string(cx.suggested_supercell) + " times larger in-plane passes)" : "";
-        if (cx.image < o.image_error) cx.issues.push_back({"ERROR", "molecule overlaps its own periodic image (" + fmt("%.2f", cx.image) + " A): use a larger supercell" + tip, cx.molecule});
-        else cx.issues.push_back({"WARN", "molecule only " + fmt("%.2f", cx.image) + " A from its periodic image (lateral interaction): consider a larger supercell" + tip, cx.molecule});
-      }
-      ValidateOptions vo;
-      const auto rep = validate_2d(slab_part, vo);
-      for (const auto& f : rep.findings) if (f.level == "ERROR") cx.issues.push_back({"ERROR", "slab: " + f.text, {}});
-      for (const auto& f : cx.issues) if (f.level == "ERROR") cx.status = "FAIL";
+      finish_complex(cx, slab, mol, m, o);
       out.complexes.push_back(std::move(cx));
     }
   }
@@ -429,6 +440,78 @@ std::vector<AuditRow> audit_complexes(const System& slab, const System& molecule
     r.intact = connected && int(mol.size()) == int(molecule.atoms.size()) && bonds_of(m, el) == ref_bonds;
     r.ok = r.intact && r.any >= dmin && r.heavy >= dheavy && r.image >= dimage;
     out.push_back(r);
+  }
+  return out;
+}
+
+std::vector<AdsorbComplex> prescreen_complexes(const System& slab0, const System& mol, const AdsorbSetOptions& o, const PrescreenOptions& p, std::vector<double>* energies) {
+  const System slab = group_by_species(slab0, o.order);
+  // slab (molecule 1, bonds from the crystal) + the molecule above its centre (molecule 2, its own bonds)
+  System s = slab;
+  s.bonds = crystal_bonds(slab);
+  for (auto& a : s.atoms) a.mol = 1;
+  double top = -1e300;
+  for (const auto& a : slab.atoms) top = std::max(top, a.pos[2]);
+  Vec3 c{0, 0, 0};
+  double zlo = 1e300;
+  for (const auto& a : mol.atoms) c = c + a.pos, zlo = std::min(zlo, a.pos[2]);
+  c = c * (1.0 / double(mol.atoms.size()));
+  const Vec3 ctr = (slab.cell.a + slab.cell.b) * 0.5;
+  const uint32_t off = uint32_t(s.atoms.size());
+  for (const auto& a0 : mol.atoms) {
+    Atom a = a0;
+    a.pos = {a0.pos[0] - c[0] + ctr[0], a0.pos[1] - c[1] + ctr[1], a0.pos[2] - zlo + top + 3.0};
+    a.mol = 2;
+    s.atoms.push_back(a);
+  }
+  for (const auto& b : mol.bonds) s.bonds.push_back({b.i + off, b.j + off, b.order});
+  s.has_mol = true;
+  const ForceField ff = assign_uff(s);
+  AdsorptionOptions ao;
+  ao.first_mobile_atom = int(off);
+  ao.cycles = p.cycles;
+  ao.steps = p.steps;
+  ao.keep = std::max(1, p.keep) * 4;   // more than asked: near-duplicates are left out below
+  ao.seed = p.seed;
+  ao.coulomb = false;   // UFF without charges: the contact and dispersion picture, not electrostatics
+  ao.z_lo = top + 1.0;
+  ao.z_hi = top + p.window;
+  AdsorptionReport rep;
+  System run = s;
+  locate_adsorption(run, ff, ao, &rep);
+  std::vector<AdsorbComplex> out;
+  std::vector<std::vector<Vec3>> kept;
+  for (size_t k = 0; k < rep.configs.size() && int(out.size()) < p.keep; ++k) {
+    // the molecule's atoms of this configuration, made whole along its bonds
+    std::vector<Vec3> m(mol.atoms.size());
+    for (size_t i = 0; i < m.size(); ++i) m[i] = rep.configs[k].positions[off + i];
+    std::vector<char> done(m.size(), 0);
+    done[0] = 1;
+    std::deque<size_t> q{0};
+    while (!q.empty()) {
+      const size_t i = q.front();
+      q.pop_front();
+      for (size_t j = 0; j < m.size(); ++j)
+        if (!done[j]) {
+          const Vec3 d = mic_ab(slab.cell, m[j] - m[i]);
+          if (norm(d) < 1.9) m[j] = m[i] + d, done[j] = 1, q.push_back(j);
+        }
+    }
+    // a configuration within 0.5 Å RMS (minimum image) of one already kept is the same minimum
+    bool same = false;
+    for (const auto& prev : kept) {
+      double ss = 0;
+      for (size_t i = 0; i < m.size(); ++i) { const Vec3 d = mic_ab(slab.cell, m[i] - prev[i]); ss += dot(d, d); }
+      same |= std::sqrt(ss / double(m.size())) < 0.5;
+    }
+    if (same) continue;
+    kept.push_back(m);
+    AdsorbComplex cx;
+    cx.mode = "prescreen";
+    cx.name = "complex_ff" + std::to_string(out.size() + 1);
+    finish_complex(cx, slab, mol, m, o);
+    out.push_back(std::move(cx));
+    if (energies) energies->push_back(rep.configs[k].energy);
   }
   return out;
 }
