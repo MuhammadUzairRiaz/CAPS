@@ -643,7 +643,12 @@ class Document:
             by component, numbered in that order, in the data file and every template, each a LAMMPS group;
           targets: [0.2, 0.4, …], limiting, link_reactions: ["enr_acid_ester_*"], check_every, max_steps — the input runs
             to each crosslink density, writes crosslink_progress.dat and STEM_XL20.data …; stall_chunks, rmax_step,
-            rmax_limit raise Rmax when no reaction happens;
+            rmax_limit raise Rmax when no reaction happens (the check uses the absolute Rmax and stops at the limit);
+          stabilize_steps (200): steps each reaction's atoms stay under nve/limit afterwards (react … stabilize_steps);
+          h_transfer_max (3.5 Å; 0: none): a hydrogen that changes partner must be this close to its new partner before
+            the reaction happens (a distance constraint in each map file);
+          every template is checked for LAMMPS's rule — each atom linked to an initiator without passing an edge atom —
+            and atoms beyond an edge are left out (the notes say how many);
           mol_ids: reset | keep | molmap (keep_chain_ids=True: molmap — chains keep their ids, a crosslinker takes the
             id of the chain it first bonds to; LAMMPS 2 Apr 2025 or later).
         Returns {files, notes, variants, steps (coverage per reaction step), frames, link_reactions, candidates, covered}."""

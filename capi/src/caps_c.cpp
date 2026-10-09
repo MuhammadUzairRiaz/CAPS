@@ -3179,6 +3179,8 @@ int32_t caps_bond_react_export(caps_doc* d, const char* templates, const char* d
     b.stall_chunks = std::max(0, int(o.num("stall_chunks", 0)));
     b.rmax_step = std::max(0.01, o.num("rmax_step", 0.5));
     b.rmax_limit = std::max(0.0, o.num("rmax_limit", 0));
+    b.stabilize_steps = std::max(1, int(o.num("stabilize_steps", 200)));
+    b.h_transfer_max = std::max(0.0, o.num("h_transfer_max", 3.5));
     // F5: molecule ids during the cure
     b.mol_ids = o.text("mol_ids", flag("keep_chain_ids", false) ? "molmap" : "reset");
     if (b.mol_ids == "no") b.mol_ids = "keep";
