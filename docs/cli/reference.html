@@ -1,0 +1,809 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CAPS command reference</title>
+<meta name="description" content="Every caps command with its options, defaults and reasons.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/site.css">
+
+<script defer src="../assets/site.js"></script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="../index.html"><span class="mark" aria-hidden="true"></span>CAPS</a>
+  <button class="menu" aria-expanded="false" aria-controls="nav">Menu</button>
+  <nav id="nav" class="links"><a href="../index.html">Home</a><a href="../cli/index.html">CLI guide</a><a href="../cli/reference.html" aria-current="page">Command reference</a><a href="../tutorials/index.html">Tutorials</a><a href="../theory/index.html">Theory</a><a href="../python.html">Python</a><a href="../manual/index.html">Studio tour</a><a href="https://github.com/MuhammadUzairRiaz/CAPS">GitHub</a></nav>
+</header>
+<div class="doc">
+<nav class="toc" aria-label="On this page"><h2>Build structures</h2><a href="#build"><code>build</code></a><a href="#grow"><code>grow</code></a><a href="#blend"><code>blend</code></a><a href="#peptide"><code>peptide</code></a><a href="#crystal"><code>crystal</code></a><a href="#surface"><code>surface</code></a><a href="#interface"><code>interface</code></a><a href="#nano"><code>nano</code></a><a href="#pore"><code>pore</code></a><a href="#solvate"><code>solvate</code></a><a href="#pack"><code>pack</code></a><a href="#edit"><code>edit</code></a><h2>Force fields</h2><a href="#ff"><code>ff</code></a><a href="#field"><code>field</code></a><h2>Relax and run</h2><a href="#relax"><code>relax</code></a><a href="#md"><code>md</code></a><a href="#equilibrate"><code>equilibrate</code></a><a href="#cbmc"><code>cbmc</code></a><a href="#react"><code>react</code></a><a href="#run"><code>run</code></a><h2>Properties</h2><a href="#tensile"><code>tensile</code></a><a href="#tg"><code>tg</code></a><a href="#elastic"><code>elastic</code></a><a href="#pull"><code>pull</code></a><h2>Inspect and analyse</h2><a href="#info"><code>info</code></a><a href="#check"><code>check</code></a><a href="#contacts"><code>contacts</code></a><a href="#chains"><code>chains</code></a><a href="#shape"><code>shape</code></a><a href="#rdf"><code>rdf</code></a><a href="#analyze"><code>analyze</code></a><a href="#frames"><code>frames</code></a><a href="#convert"><code>convert</code></a><a href="#render"><code>render</code></a><a href="#pipeline"><code>pipeline</code></a><h2>Reproducibility</h2><a href="#provenance"><code>provenance</code></a><a href="#bundle"><code>bundle</code></a><a href="#reproduce"><code>reproduce</code></a><a href="#bench"><code>bench</code></a><h2>Coarse-graining</h2><a href="#cgmap"><code>cgmap</code></a><a href="#cgfit"><code>cgfit</code></a><a href="#cgbuild"><code>cgbuild</code></a><a href="#ppa"><code>ppa</code></a><a href="#mech"><code>mech</code></a><a href="#cgdyn"><code>cgdyn</code></a><a href="#backmap"><code>backmap</code></a><h2>Biomolecular coarse-graining</h2><a href="#dssp"><code>dssp</code></a><a href="#martini"><code>martini</code></a><h2>DFT surfaces</h2><a href="#sheet"><code>sheet</code></a><a href="#terminate"><code>terminate</code></a><a href="#validate"><code>validate</code></a><a href="#adsorb-dft"><code>adsorb-dft</code></a><a href="#vasp-set"><code>vasp-set</code></a><a href="#vasp-conv"><code>vasp-conv</code></a><a href="#vasp-scan"><code>vasp-scan</code></a><a href="#vasp-derived"><code>vasp-derived</code></a><a href="#vasp-jobs"><code>vasp-jobs</code></a><a href="#vasp-check"><code>vasp-check</code></a><a href="#vasp-progress"><code>vasp-progress</code></a><a href="#vasp-health"><code>vasp-health</code></a><a href="#vasp-bind"><code>vasp-bind</code></a><a href="#vasp-analyze"><code>vasp-analyze</code></a></nav>
+<main>
+<header class="hero"><p class="eyebrow">Command line · every command</p><h1>Command reference</h1><p>Every <code>caps</code> command with its synopsis, as the program prints it. Commands marked <span class="pill">--help</span> print each option with its default and the reason for it; that text is reproduced in full. Shared conventions (units, files, seeds, exit codes) are in the <a href="index.html">CLI guide</a>.</p><label class="filter"><span>Filter</span><input id="cmdfilter" type="search" placeholder="grow, rdf, tensile …" autocomplete="off"></label></header>
+<section class="group" id="build-structures"><h2>Build structures</h2><p class="lede">Molecules, chains, cells, crystals, surfaces and fillers.</p>
+<article class="cmd" id="build" data-name="build"><h3><code>caps build</code></h3>
+<div class="code" data-lang="synopsis"><pre><code>caps build   SMILES -o OUT.mol2|OUT.pdb|OUT.xyz|OUT.data [--conformers 1] [--seed 1] [--ff FF.json] [--all]
+             a 3D molecule from SMILES; --ff cleans each conformer up with that force field (with typing rules)</code></pre></div></article>
+<article class="cmd" id="grow" data-name="grow"><h3><code>caps grow</code></h3>
+<div class="code" data-lang="synopsis"><pre><code>caps grow    -o OUT.data|OUT.pdb|OUT.xyz [--chains 10] [--dp 8] [--density 0.5 | --box 33]
+             [--tacticity atactic|isotactic|syndiotactic] [--seed 1] [--trans] [--scale 1.0]
+             [--units &#x27;*CC(*)c1ccccc1,*CC(*)(C)C(=O)OC&#x27; --sequence homopolymer|alternating|block|random|shuffled|gradient|pattern
+              --weights 0.7,0.3 --blocks 20,20 --pattern AAB --ff FF.json] [--auto-scale]   any repeat units (else polystyrene)</code></pre></div></article>
+<article class="cmd" id="blend" data-name="blend"><h3><code>caps blend</code></h3>
+<div class="code" data-lang="synopsis"><pre><code>caps blend   --components SMILES1,SMILES2 [--weights 0.5,0.5] [--chains 8] [--dp 20] [--density 0.5] [--slabs | --droplet] -o OUT</code></pre></div></article>
+<article class="cmd" id="peptide" data-name="peptide"><h3><code>caps peptide</code></h3>
+<div class="code" data-lang="synopsis"><pre><code>caps peptide SEQUENCE|FILE.fasta -o OUT.pdb|mol2|xyz|data [--helix | --strand | --ppii | --structure HHHHCCC]
+             [--n-term NH3+|NH2|ACE] [--c-term COO-|COOH|NME] [--ph 7] [--neutral] [--no-cleanup] [--seed 1]
+                                 an all-atom peptide: backbone from φ/ψ/ω, side chains at the pH, UFF clean-up</code></pre></div></article>
+<article class="cmd" id="crystal" data-name="crystal"><h3><code>caps crystal</code></h3>
+<div class="code" data-lang="synopsis"><pre><code>caps crystal --group &#x27;P 42/m n m&#x27; --cell a,b,c[,α,β,γ] --sites &#x27;Ti1 Ti 0 0 0; O1 O 0.3048 0.3048 0&#x27; -o OUT
+             (OUT.cif in P 1, OUT.vasp or POSCAR for VASP, .data, .pdb, .xyz …)
+             [--supercell 2,2,2] [--primitive] [--symmetrize] [--tolerance 0.01]   a crystal from a space group
+caps crystal CRYSTAL.cif --find-symmetry [--tolerance 0.1]   its space group and asymmetric unit
+caps crystal --groups [QUERY]    the 530 space-group settings (key, number, Hermann–Mauguin, Hall)</code></pre></div></article>
+<article class="cmd" id="surface" data-name="surface"><h3><code>caps surface</code></h3>
+<div class="code" data-lang="synopsis"><pre><code>caps surface CRYSTAL.cif -o OUT.data|mol2|pdb|xyz [--hkl 0,0,1] [--layers 3] [--termination 1] [--vacuum 15]
+             [--supercell 2,2] [--no-orthogonal] [--max-strain 2] [--passivate] [--list]   a slab (terminations listed)</code></pre></div></article>
+<article class="cmd" id="interface" data-name="interface"><h3><code>caps interface</code></h3>
+<div class="code" data-lang="synopsis"><pre><code>caps interface CRYSTAL.cif|SLAB -o OUT --units SMILES[,…] [surface options] [--film 30] [--film-density 0.9]
+             [--chains N] [--dp 10] [--gap 1] [--vacuum 0] [--sequence …] [--ff FF]   a polymer film on a surface</code></pre></div></article>
+<article class="cmd" id="nano" data-name="nano"><h3><code>caps nano</code></h3>
+<p>tube [--n 10 --m 10 --length 25 --finite] | sheet [--lx 20 --ly 20 --layers 1 --flake] |</p>
+<div class="code" data-lang="synopsis"><pre><code>caps nano    tube [--n 10 --m 10 --length 25 --finite] | sheet [--lx 20 --ly 20 --layers 1 --flake] |
+             particle CRYSTAL.cif [--shape sphere|cube|octahedron|cuboctahedron|truncated-octahedron|icosahedron|rod|cone|frustum|tetrahedron|pyramid|hemisphere|fibre
+             --radius 12 --height 24 --top-ratio 0.5 --length 20 --passivate]
+             [--units SMILES --chains 10 --dp 20 --density 0.9]   -o OUT   fillers, alone or in a polymer matrix</code></pre></div></article>
+<article class="cmd" id="pore" data-name="pore"><h3><code>caps pore</code></h3>
+<p>slit [--width 10 --layers 1 --lx 26 --ly 22 --vacuum] | cylinder CRYSTAL.cif [--width 14 --wall 6 --length 20 --passivate] |</p>
+<div class="code" data-lang="synopsis"><pre><code>caps pore    slit [--width 10 --layers 1 --lx 26 --ly 22 --vacuum] | cylinder CRYSTAL.cif [--width 14 --wall 6 --length 20 --passivate] |
+             framework CRYSTAL.cif [--supercell 2,2,2]   [--fluid SMILES --count N --tolerance 2 --seed 1] -o OUT   a fluid in a pore</code></pre></div></article>
+<article class="cmd" id="solvate" data-name="solvate"><h3><code>caps solvate</code></h3>
+<div class="code" data-lang="synopsis"><pre><code>caps solvate [SOLUTE] -o OUT [--edge 30 | --box a,b,c | --padding 10] [--solvent water|toluene|…] [--model TIP4P/2005]
+             [--salt NaCl --conc 0.15 | --neutralise | --ions 3,6 | --no-ions] [--molecules N] [--tolerance 2] [--solvents]
+                                 solvent and ions packed around a solute (CAPS Pack)</code></pre></div></article>
+<article class="cmd" id="pack" data-name="pack"><h3><code>caps pack</code></h3>
+<p>packmol-style input (structure … end structure)</p>
+<div class="code" data-lang="synopsis"><pre><code>caps pack    INPUT.inp [-o OUT] [--threads N] [--quiet]   packmol-style input (structure … end structure)</code></pre></div></article>
+<article class="cmd" id="edit" data-name="edit"><h3><code>caps edit</code></h3>
+<p>edits in order, atoms numbered from 1:</p>
+<div class="code" data-lang="synopsis"><pre><code>caps edit    FILE --ops &#x27;OP ARGS; OP ARGS …&#x27; | --ops-file OPS.txt -o OUT   edits in order, atoms numbered from 1:
+             element SEL Sym · delete SEL · bond I J [order] · unbond I J · addh [SEL] · attach I SMILES ·
+             length I J Å · angle I J K ° · torsion I J K L ° · invert I · config I R|S · rotate SEL x,y,z ° ·
+             mirror SEL nx,ny,nz · move SEL dx,dy,dz · clean [SEL] · tacticity iso|syndio ·
+             crystals: supercell na nb nc · primitive · niggli · conventional · redefine m11 … m33 · vacuum Å ·
+             nanowire u v w radius [repeats] [cylinder|hexagonal|square] [vacuum] ·
+             SEL: 3,5-9 · all · element:C,N · smarts:PATTERN · type:LABEL (numbers after a delete shift)</code></pre></div></article>
+</section>
+<section class="group" id="force-fields"><h2>Force fields</h2><p class="lede">Types, charges and parameters; exports for LAMMPS, GROMACS and DL_POLY.</p>
+<article class="cmd" id="ff" data-name="ff"><h3><code>caps ff</code></h3>
+<p>convert a moltemplate force field into the CAPS format</p>
+<div class="code" data-lang="synopsis"><pre><code>caps ff import-lt FILE.lt -o FF.json          convert a moltemplate force field into the CAPS format
+caps ff info FF.json                           types, rules, styles, references
+caps ff type FILE --ff FF.json [--typing RULES.json] [-o TYPES.txt] [--explain]   assign atom types from SMARTS rules
+caps ff apply FILE --ff FF.json [-o OUT.data [--lammps-input OUT.in [--lammps-run check|minimize|nvt|npt --temp 300 --press 1 --dt FS (default: the force field&#x27;s, Martini 20, else 0.5) --steps N] [--moltemplate SYSTEM.lt]]] [--gromacs STEM] [--dlpoly DIR] [--overlay USER.json] [--types TYPES.txt] [--charges auto|keep|types|gasteiger]
+             [--lammps-style native|exact] [--hybrid] [--kspace auto|pppm|ewald|dsf|cut] [--kspace-accuracy 1e-4] [--lammps-cutoff Å] [--units auto|real|metal]
+             [--list] [-o OUT.data]   parameters for a structure whose atoms carry type names (or TYPES.txt)</code></pre></div></article>
+<article class="cmd" id="field" data-name="field"><h3><code>caps field</code></h3>
+<div class="code" data-lang="synopsis"><pre><code>caps field   FILE [--topology DATA] [--forces OUT.txt]   GAFF types, terms, energy (and per-atom forces)</code></pre></div></article>
+</section>
+<section class="group" id="relax-and-run"><h2>Relax and run</h2><p class="lede">Minimisation, molecular dynamics, equilibration protocols, regrowth, crosslinking and recipes.</p>
+<article class="cmd" id="relax" data-name="relax"><h3><code>caps relax</code></h3>
+<div class="code" data-lang="synopsis"><pre><code>caps relax   FILE -o OUT.data|OUT.pdb|OUT.xyz [--method lbfgs|cg|sd|fire] [--ftol 0.5] [--iterations 5000]
+             [--density 1.05] [--step 0.06] [--box-relax] [--pressure 1] [--no-pushoff] [--cutoff 10]
+             [--no-coulomb] [--quiet]   (.data output carries the force field for LAMMPS)</code></pre></div></article>
+<article class="cmd" id="md" data-name="md"><h3><code>caps md</code></h3>
+<div class="code" data-lang="synopsis"><pre><code>caps md      FILE -o OUT.data [--steps 10000] [--dt 1] [--temp 300] [--thermostat bussi|langevin|nose-hoover|none]
+             [--tau-t 100] [--barostat none|crescale|berendsen|mtk] [--pressure 1] [--tau-p 1000]
+             [--constraints none|h-bonds|all-bonds] [--constraint-solver shake|lincs] [--seed 1] [--new-velocities] [--thermo 100] [--dump TRAJ.lammpstrj --every 1000]
+             [--log thermo.csv] [--cutoff 10] [--skin 1.5] [--threads N] [--no-coulomb] [--quiet]
+             [--checkpoint-every N [--checkpoint OUT.restart.data]]   the full state every N steps
+             caps md OUT.restart.data --resume --steps TOTAL -o OUT   continues from a checkpoint</code></pre></div></article>
+<article class="cmd" id="equilibrate" data-name="equilibrate"><h3><code>caps equilibrate</code></h3>
+<div class="code" data-lang="synopsis"><pre><code>caps equilibrate FILE -o OUT.data [--protocol larsen21|annealing|pushoff|PROTOCOL.txt] [--print-protocol]
+             [--tfinal 300] [--tmax 600] [--pfinal 1] [--pmax 49346] [--scale 1] (atm, K; --scale shortens every stage)
+             [--cycles 3] [--tlow 300] [--thigh 600] [--ramp 50] [--hold 50]   (annealing, ps)
+             [--until-converged] [--block 20] [--max-blocks 20] [--dt 1] [--thermostat bussi|langevin]
+             [--barostat crescale|berendsen] [--seed 1] [--dump TRAJ.lammpstrj --every-ps 10] [--log thermo.csv] [--quiet]</code></pre></div></article>
+<article class="cmd" id="cbmc" data-name="cbmc"><h3><code>caps cbmc</code></h3>
+<div class="code" data-lang="synopsis"><pre><code>caps cbmc    FILE -o OUT.data [--moves 1000] [--trials 8] [--max-torsions 4] [--temp 300] [--cutoff 9] [--seed 1]
+             [--ff FF] [--no-coulomb]   configurational-bias regrowth of chain ends (Siepmann &amp; Frenkel)</code></pre></div></article>
+<article class="cmd" id="react" data-name="react"><h3><code>caps react</code></h3>
+<div class="code" data-lang="synopsis"><pre><code>caps react   FILE -o OUT [--template NAME|FILE.txt ...] [--capture Å] [--per-cycle 10] [--cycles 100] [--target 1.0]
+             [--no-relax] [--md-ps 0] [--temp 300] [--seed 1] [--fa 2 --fb 4 --ratio 1] [--list-templates] [--quiet]</code></pre></div></article>
+<article class="cmd" id="run" data-name="run"><h3><code>caps run</code></h3>
+<p>build → type → grow → relax → equilibrate →</p>
+<div class="code" data-lang="synopsis"><pre><code>caps run     RECIPE.yaml|json [--seed N] [--threads N] [--out DIR] [--json]   build → type → grow → relax → equilibrate →
+             md → analyze → export from one file (exit 0 ok · 2 input · 3 missing params · 4 failed run)
+caps run     PIPELINE.yaml|json [--input &#x27;runs/*/X.lammpstrj&#x27;] [--frame first|last] [--csv OUT] [--out DIR: the outputs: block] [--branch NAME]
+                                 a saved pipeline over many inputs: one row of attributes per input</code></pre></div></article>
+</section>
+<section class="group" id="properties"><h2>Properties</h2><p class="lede">Mechanics, glass transition, elastic constants and interfaces.</p>
+<article class="cmd" id="tensile" data-name="tensile"><h3><code>caps tensile</code></h3>
+<div class="code" data-lang="synopsis"><pre><code>caps tensile DATA -o OUT.data [--axis x] [--rate 1e-3] [--strain 0.2] [--temp 300] [--fixed-lateral] [--ff FF.json] [--csv DIR]</code></pre></div></article>
+<article class="cmd" id="tg" data-name="tg"><h3><code>caps tg</code></h3>
+<p>caps tg --fit TABLE.csv</p>
+<div class="code" data-lang="synopsis"><pre><code>caps tg DATA -o OUT.data [--from 500 --to 200 --step 20 --ps 100] [--ff FF.json] [--csv DIR]   |   caps tg --fit TABLE.csv</code></pre></div></article>
+<article class="cmd" id="elastic" data-name="elastic"><h3><code>caps elastic</code></h3>
+<div class="code" data-lang="synopsis"><pre><code>caps elastic FILE [--topology DATA] [--method strain|fluct|fluct-run] [--configs N] [--strain 1e-4] [--temp T] [--ps 100] [--ff FF.json] [--json OUT]</code></pre></div></article>
+<article class="cmd" id="pull" data-name="pull"><h3><code>caps pull</code></h3>
+<div class="code" data-lang="synopsis"><pre><code>caps pull    FILE [--normal | --axis x|y|z] [--distance 10] [--rate 5] [--spring 10] [--temp 300] [--surface 1] [--csv OUT]
+             pull-out / debonding of a film from a held surface: interfacial shear strength, work of separation</code></pre></div></article>
+</section>
+<section class="group" id="inspect-and-analyse"><h2>Inspect and analyse</h2><p class="lede">Files, structure, trajectories and figures.</p>
+<article class="cmd" id="info" data-name="info"><h3><code>caps info</code></h3>
+<div class="code" data-lang="synopsis"><pre><code>caps info    FILE [--topology DATA]</code></pre></div></article>
+<article class="cmd" id="check" data-name="check"><h3><code>caps check</code></h3>
+<p>file checks (counts, bonds, contacts, charges, cell)</p>
+<div class="code" data-lang="synopsis"><pre><code>caps check   FILE [--topology DATA] [--report OUT.md]   file checks (counts, bonds, contacts, charges, cell)</code></pre></div></article>
+<article class="cmd" id="contacts" data-name="contacts"><h3><code>caps contacts</code></h3>
+<p>smallest distance between atoms of different molecules</p>
+<div class="code" data-lang="synopsis"><pre><code>caps contacts FILE [--tol 2.0] [--no-pbc] [--molecule-size N]   smallest distance between atoms of different molecules</code></pre></div></article>
+<article class="cmd" id="chains" data-name="chains"><h3><code>caps chains</code></h3>
+<p>backbones and mean-square internal distances</p>
+<div class="code" data-lang="synopsis"><pre><code>caps chains  FILE [--topology DATA]          backbones and mean-square internal distances</code></pre></div></article>
+<article class="cmd" id="shape" data-name="shape"><h3><code>caps shape</code></h3>
+<p>per-molecule Rg and shape</p>
+<div class="code" data-lang="synopsis"><pre><code>caps shape   FILE [--topology DATA]          per-molecule Rg and shape</code></pre></div></article>
+<article class="cmd" id="rdf" data-name="rdf"><h3><code>caps rdf</code></h3>
+<div class="code" data-lang="synopsis"><pre><code>caps rdf     FILE [--topology DATA] [--rmax 12] [--dr 0.2] [--pair C-C] [--inter]</code></pre></div></article>
+<article class="cmd" id="analyze" data-name="analyze"><h3><code>caps analyze</code></h3>
+<div class="code" data-lang="synopsis"><pre><code>caps analyze FILE [--topology DATA] [--props density,rdf,sq,xray,neutron,rg,ree,cn,persistence,msd,diffusion,
+             relaxation,ced,delta,ffv,psd,crosslinks,entanglements] [--first N --last N --stride N] [--frame-ps X | --timestep-fs 1]
+             [--pair C-C --inter] [--qmax 25 --dq 0.02 --qdirect 4] [--probe 0] [--grid 0.4] [--ff FF.json] [--json OUT] [--csv DIR]
+             interfaces (zprofile, adhesion, interaction, orientation): [--surface 1-3,7 (molecule ids; 1)] [--axis x|y|z (z)] [--zbin 0.5]</code></pre></div></article>
+<article class="cmd" id="frames" data-name="frames"><h3><code>caps frames</code></h3>
+<div class="code" data-lang="synopsis"><pre><code>caps frames  FILE OUT.lammpstrj|dcd|xyz|pdb|gro|trr [--topology DATA] [--first N] [--last N] [--stride N]   (read thinned)</code></pre></div></article>
+<article class="cmd" id="convert" data-name="convert"><h3><code>caps convert</code></h3>
+<div class="code" data-lang="synopsis"><pre><code>caps convert FILE OUT.data|xyz|pdb|mol2|car|gro|sdf|cif|vasp|POSCAR [--topology DATA]   (.car: with its .mdf)</code></pre></div></article>
+<article class="cmd" id="render" data-name="render"><h3><code>caps render</code></h3>
+<div class="code" data-lang="synopsis"><pre><code>caps render  FILE -o OUT.png|OUT.svg [--topology DATA] [--frame N] [--size WxH]
+             [--bg dark|white|transparent] [--colour molecule|element|type|distance]
+             [--style ball|space|sticks|noh|backbone] [--yaw DEG] [--pitch DEG] [--zoom Z] [--no-cell]</code></pre></div></article>
+<article class="cmd" id="pipeline" data-name="pipeline"><h3><code>caps pipeline</code></h3>
+<div class="code" data-lang="synopsis"><pre><code>caps pipeline FILE [--topology DATA] --steps STEPS.json|STEPS.yaml|&#x27;[…]&#x27; [--frame N] [--table NAME] [--particles EXPR] [--out DIR] [--branch NAME]
+                                 visualize pipeline on one frame: step status, attributes, a table as CSV</code></pre></div></article>
+</section>
+<section class="group" id="reproducibility"><h2>Reproducibility</h2><p class="lede">Provenance, bundles and the validation suite.</p>
+<article class="cmd" id="provenance" data-name="provenance"><h3><code>caps provenance</code></h3>
+<p>the steps that produced FILE (FILE.provenance.json)</p>
+<div class="code" data-lang="synopsis"><pre><code>caps provenance FILE [--json | --bibtex | --methods] [--compare OTHER]   the steps that produced FILE (FILE.provenance.json)</code></pre></div></article>
+<article class="cmd" id="bundle" data-name="bundle"><h3><code>caps bundle</code></h3>
+<div class="code" data-lang="synopsis"><pre><code>caps bundle  FILE [--topology DATA] --steps S.json [-o OUT.caps-bundle.zip] [--include-input] [--frame N]
+                                 a figure with its data, pipeline, provenance and hashes (and the input)</code></pre></div></article>
+<article class="cmd" id="reproduce" data-name="reproduce"><h3><code>caps reproduce</code></h3>
+<p>rebuild a bundle&#x27;s data from its input and pipeline, compare sha256</p>
+<div class="code" data-lang="synopsis"><pre><code>caps reproduce BUNDLE.caps-bundle.zip   rebuild a bundle&#x27;s data from its input and pipeline, compare sha256</code></pre></div></article>
+<article class="cmd" id="bench" data-name="bench"><h3><code>caps bench</code></h3>
+<p>the built-in validation suite</p>
+<div class="code" data-lang="synopsis"><pre><code>caps bench   [T1 T2 … | --all] [--repeats 3] [--quick] [--out DIR] [--samples DIR]   the built-in validation suite</code></pre></div></article>
+</section>
+<section class="group" id="coarse-graining"><h2>Coarse-graining</h2><p class="lede">Chemistry-aware mapping, bonded and non-bonded potentials, melts, entanglements, backmapping.</p>
+<article class="cmd" id="cgmap" data-name="cgmap"><h3><code>caps cgmap</code><span class="pill">--help</span></h3>
+<div class="code" data-lang="caps cgmap --help"><pre><code>usage: caps cgmap STRUCTURE [STRUCTURE …] (--preset ID | --rules FILE | --cut SMARTS --names N=SMARTS,… | --map FILE) [-o DIR] [--dump DUMP]
+
+Chemistry-aware coarse-grained mapping: bonds cut by SMARTS (the fragments are the beads), fragment SMARTS, or an atom → bead list; beads named by rules (unknown fragments reported, never merged), at the centre of mass, centre of geometry or one atom. Several structures share one type list (bead, bond, angle, dihedral types numbered alike, so tables are shared). Writes per structure STEM.cg.data and STEM.map.json; with --dump maps a LAMMPS dump frame by frame (one frame in memory).
+
+options (default · why):
+  --preset
+      a rule set from data/cg/mapping_rules.json (ester-cut: polyesters, B S A T beads)
+  --rules
+      a rule file: {&quot;cut&quot;: [SMARTS …] | &quot;beads&quot;: {NAME: SMARTS} | &quot;explicit&quot;: [bead per atom], &quot;names&quot;: {NAME: SMARTS}, &quot;position&quot;, &quot;strict&quot;}
+  --cut
+      bond SMARTS, comma-separated: the bond between each pattern&#x27;s first and last atoms is cut
+  --names
+      naming rules NAME=SMARTS, comma-separated, first match wins
+  --map
+      an existing map.json (the same atoms): used as it is
+  --position  [com]
+      com (centre of mass), cog (centre of geometry) or atom:SMARTS (the first atom of its first match in the bead)
+  --no-strict  [false]
+      name fragments no rule matches by their class (F1, F2 …) instead of stopping
+  --types
+      a shared type list (JSON: beads, bonds, angles, dihedrals); default: the union over the structures given, written to DIR/types.json
+  -o  [.]
+      the output folder
+  --dump
+      a LAMMPS dump of the (single) structure: id plus xu yu zu, x y z (ix iy iz), or xs ys zs
+  --out-dump
+      the mapped dump (default DIR/STEM.cg.lammpstrj)
+  --stride  [1]
+      every n-th frame of the dump
+  --first  [1]
+      the first frame kept (1-based)
+  --last
+      the last frame kept (1-based; default: the end)
+  --json
+      machine-readable output
+
+examples:
+  caps cgmap PBS/system.data PBSA/system.data PBAT/system.data --preset ester-cut -o cg
+  caps cgmap system.data --map cg/system.map.json --types cg/types.json --dump hold.lammpstrj --stride 5 -o cg</code></pre></div></article>
+<article class="cmd" id="cgfit" data-name="cgfit"><h3><code>caps cgfit</code><span class="pill">--help</span></h3>
+<div class="code" data-lang="caps cgfit --help"><pre><code>usage: caps cgfit bonded|refine|targets|ibi-start|ibi-step|ibi-run|fit|tg|calibrate …  (see below)
+
+Bonded coarse-grained potentials by tabulated Boltzmann inversion over many frames of many systems mapped alike: each MAP (STEM.map.json from cgmap) followed by its frames (CG dumps STEM.cg.lammpstrj or the single frame STEM.cg.data); each system&#x27;s histograms normalised, then weighted. U(r) = −kT ln[P/r²], U(θ) = −kT ln[P/sin θ], U(φ) = −kT ln P, inverted only where P exceeds a share of its maximum, with slope-continuous walls outside. refine: one bonded IBI step from a CG run with the tables (U ← U + α kT ln(P_CG/P_target)), for the shift the non-bonded 1–3 and 1–4 terms cause.
+Non-bonded: targets (per-pair g(r) per system from MAP FRAMES …); ibi-start (−kT ln g tables, LAMMPS decks and run_ibi.sh, the loop for a cluster); ibi-step (one joint update from each system&#x27;s CG dump and log: MAP DUMP [LOG] …); ibi-run (the loop with CAPS&#x27;s engine, small systems: MAP DATA …); fit (LJ 12-6, LJ 9-6, Morse or Mie fitted to the tables); tg (T_g from a cooling scan&#x27;s T and density columns); calibrate (the next σ and ε scale factors from the runs so far, with decks for them); sample-chain (isolated all-atom chains grown, typed and run by Langevin dynamics with no neighbours, each frame mapped — bonded distributions without an equilibrated melt, Fritz et al. 2009).
+
+options (default · why):
+  --types
+      the shared type list (types.json from cgmap); default: the union of the maps given
+  -T  [300]
+      temperature of the inversion (K): the AA run&#x27;s
+  --weights
+      one weight per system, comma-separated (default: equal; each system is normalised, so frame counts do not weigh)
+  --stride  [1]
+      every n-th frame of each dump
+  --threshold  [0.05]
+      invert where the smoothed distribution exceeds this share of its maximum; walls outside
+  --smooth  [1]
+      Gaussian smoothing of the histograms, σ in bins (1: the round trip on an ideal chain stays within 0.06 kT)
+  --bin-bond  [0.02]
+      bond histogram bin (Å)
+  --bin-angle  [1]
+      angle histogram bin (degrees)
+  --bin-dihedral  [5]
+      dihedral histogram bin (degrees)
+  --bond-wall  [20]
+      curvature of the bond walls, kcal/mol/Å² (at least the well&#x27;s)
+  --angle-wall  [0.005]
+      curvature of the angle walls, kcal/mol/deg²
+  --aat  [1,170,180]
+      dihedral_style table/cut switch K, θ1, θ2: the dihedral turns off as a neighbouring angle goes from θ1 to θ2
+  --tables
+      refine: the bonded.json of the tables the CG run used
+  --alpha  [0.5]
+      refine: damping of the update
+  --rmax  [15]
+      targets: g(r) range (Å; at most half the box)
+  --dr  [0.05]
+      targets: g(r) bin (Å)
+  --exclude  [3]
+      targets: bead pairs fewer than this many bonds apart left out (3: 1-2 and 1-3, special_bonds lj 0 0 1)
+  --pressure  [1]
+      targets: each system&#x27;s AA pressure (atm, comma-separated): the IBI pressure target
+  --targets
+      ibi-*: the targets.json
+  --pairs
+      ibi-step / fit: the pairs.json of the current tables
+  --bonded
+      ibi-start / ibi-run: the bonded folder (bonded.in, bonded.json)
+  --rc  [15]
+      ibi-start: the tables&#x27; cut-off (Å)
+  --ramp  [0.1]
+      ibi-*: the pressure correction&#x27;s size, A = −ramp kT sign(ΔP) min(1, 0.0003|ΔP|/bar) (0: off)
+  --iterations  [3]
+      ibi-run: iterations with CAPS&#x27;s engine
+  --steps  [2000]
+      ibi-run: steps per iteration (CAPS&#x27;s engine; keep runs short on a laptop) / the decks&#x27; production steps
+  --dt  [10]
+      time step of the runs (fs)
+  --form  [lj126]
+      fit: lj126, lj96, morse or mie
+  --repulsion  [4]
+      fit: the fitted range starts where U falls below this many kT
+  --fits
+      calibrate: the fits.json to scale
+  --history
+      calibrate: calibration.json (the runs so far; created when missing)
+  --s-sigma  [1]
+      calibrate: the σ scale factor of the run being reported
+  --s-eps  [1]
+      calibrate: the ε scale factor of the run being reported
+  --density
+      calibrate: that run&#x27;s density (g/cm³)
+  --tg
+      calibrate: that run&#x27;s T_g (K), e.g. from caps cgfit tg
+  --target-density
+      calibrate: the AA (or experimental) density, g/cm³
+  --target-tg
+      calibrate: the AA (or experimental) T_g, K
+  --t-hi  [500]
+      decks: the cooling scan&#x27;s start (K)
+  --t-lo  [150]
+      decks: the cooling scan&#x27;s end (K)
+  --t-step  [25]
+      decks: the cooling scan&#x27;s step (K)
+  --units
+      sample-chain: repeat-unit SMILES with two *, comma-separated (several: alternating, or --sequence)
+  --forcefield  [opls2005]
+      sample-chain: the all-atom force field
+  --chains  [1]
+      sample-chain: independent chains (each grown and run on its own)
+  --frame-every  [200]
+      sample-chain: steps between mapped frames
+  --equilibrate
+      sample-chain: steps before frames are kept (default a fifth of the run)
+  --screening  [vacuum]
+      sample-chain: vacuum (Coulomb within the cut-off) or off (no Coulomb)
+  --tacticity  [atactic]
+      sample-chain: atactic, isotactic or syndiotactic
+  --tail-cap
+      sample-chain: the chain&#x27;s tail end group (SMILES with one *)
+  --damp  [1000]
+      sample-chain: the Langevin damping time (fs)
+  --cutoff  [15]
+      sample-chain: the interaction cut-off (Å)
+  --table-dr  [0.05]
+      ibi-*: the pair tables&#x27; spacing (Å)
+  -o  [bonded]
+      the output folder
+  --json
+      machine-readable output
+
+examples:
+  caps cgfit bonded cg/PBS.map.json cg/PBS.cg.lammpstrj cg/PBSA.map.json cg/PBSA.cg.lammpstrj cg/PBAT.map.json cg/PBAT.cg.lammpstrj --types cg/types.json -T 300 -o bonded
+  caps cgfit refine cg/PBS.map.json run1/cg.lammpstrj --tables bonded/bonded.json --types cg/types.json -o bonded_it2
+  caps cgfit targets cg/PBS.map.json cg/PBS.cg.lammpstrj cg/PBAT.map.json cg/PBAT.cg.lammpstrj --types cg/types.json -T 300 -o ibi
+  caps cgfit ibi-start --targets ibi/targets.json --bonded bonded --types cg/types.json -o ibi   (then: bash ibi/run_ibi.sh 20)
+  caps cgfit ibi-step cg/PBS.map.json ibi/it000/PBS.lammpstrj ibi/it000/PBS.log … --targets ibi/targets.json --pairs ibi/it000/pairs.json -o ibi/it001
+  caps cgfit fit --pairs ibi/it020/pairs.json --form lj126 --types cg/types.json -o lj
+  caps cgfit calibrate --fits lj/fits.json --history calib/calibration.json --s-sigma 1 --s-eps 1 --density 1.31 --tg 365 --target-density 1.25 --target-tg 241 -o calib/step1</code></pre></div></article>
+<article class="cmd" id="cgbuild" data-name="cgbuild"><h3><code>caps cgbuild</code><span class="pill">--help</span></h3>
+<div class="code" data-lang="caps cgbuild --help"><pre><code>usage: caps cgbuild --units BS=B+S,BA=B+A --composition BS:0.8,BA:0.2 --dp 400 --chains 200 --density 1.25 --bonded DIR --maps MAPS -o DIR [MAP FRAMES …]
+
+A coarse-grained melt of repeat units (each a bead sequence) with real sequence statistics, the chains random walks drawn from the inverted bonded distributions (bonded.json), in a cubic box at the density; reports R_ee, L/R_ee (a warning when the box is smaller than the chains) and ⟨R²(n)⟩/n, compared with the all-atom model&#x27;s when its maps and frames are given; writes STEM.cg.data, STEM.map.json and in.cg_equil (soft push-off, the model&#x27;s pairs, hot anneal, NPT).
+
+options (default · why):
+  --units
+      repeat units as NAME=BEAD+BEAD…, comma-separated (BS=B+S,BA=B+A,BT=B+T)
+  --composition
+      unit shares NAME:share (BS:0.8,BA:0.2); default equal
+  --sequence  [bernoulli]
+      bernoulli, markov, block, gradient, alternating or pattern
+  --markov
+      markov: transitions FROM&gt;TO:p, comma-separated (BA&gt;BA:0.9,BA&gt;BT:0.1,BT&gt;BT:0.8,BT&gt;BA:0.2)
+  --blocks
+      block: block lengths, cycling through the units (20,10)
+  --pattern
+      pattern: letters A, B, … for the units in order (AAB)
+  --dp  [100]
+      repeat units per chain (the number average when lengths are drawn)
+  --chains  [10]
+      chains
+  --lengths  [monodisperse]
+      monodisperse, schulz-zimm, flory, poisson or log-normal
+  --pdi  [1]
+      dispersity Đ of drawn lengths
+  --density  [1.2]
+      g/cm³ (the box follows)
+  --bonded
+      the bonded folder (bonded.json): its distributions are drawn from
+  --maps
+      map.json files (comma-separated) for the bead masses (each kind&#x27;s most common)
+  --masses
+      or the masses directly: B=88.1,S=84.07 (g/mol)
+  --types
+      the shared type list (types.json); default: the kinds and terms of the melt
+  --seed  [1]
+      random seed (sequences, lengths, walks)
+  --stem  [melt]
+      file names: STEM.cg.data, STEM.map.json
+  -T  [300]
+      in.cg_equil: the final temperature (K)
+  --anneal-T  [500]
+      in.cg_equil: the anneal temperature (K)
+  --dt  [10]
+      in.cg_equil: time step (fs)
+  -o  [melt]
+      the output folder
+  --json
+      machine-readable output
+
+examples:
+  caps cgbuild --units BS=B+S,BA=B+A --composition BS:0.8,BA:0.2 --dp 400 --chains 200 --density 1.25 --bonded bonded --maps cg/PBSA.map.json --types cg/types.json -o melt_PBSA_400
+  caps cgbuild --units BA=B+A,BT=B+T --composition BA:0.56,BT:0.44 --lengths schulz-zimm --pdi 2 --dp 200 --chains 300 --density 1.26 --bonded bonded --maps cg/PBAT.map.json -o melt cg/PBAT.map.json cg/PBAT.cg.lammpstrj</code></pre></div></article>
+<article class="cmd" id="ppa" data-name="ppa"><h3><code>caps ppa</code><span class="pill">--help</span></h3>
+<div class="code" data-lang="caps ppa --help"><pre><code>usage: caps ppa MAP FRAMES [PPA_DUMP] [MAP FRAMES … for more chain lengths] [--method caps|z1|lammps] -o DIR
+
+Entanglements of coarse-grained melts: primitive paths by CAPS&#x27;s own PPA (ends held, intra-chain pairs off), by a LAMMPS PPA (--method lammps writes in.cg_ppa; give its dump after the frames to read it back) or by Z1+ (config.Z1 written, Z1+ run when found — $CAPS_Z1 or --z1 — and its shortest paths read); N_e by the classical and modified S-coil and S-kink estimators (Hoy, Foteinopoulou &amp; Kröger 2009, Eqs. 4–7) per system, and by M-kink (13) and M-coil (15) over several chain lengths; M_e = N_e × the mean bead mass, Z = N / N_e, the tube step a_pp.
+
+options (default · why):
+  --method  [caps]
+      caps (CAPS&#x27;s PPA), z1 (Z1+: kinks), both, or lammps (write in.cg_ppa for large systems)
+  --frame  [last]
+      which frame of each system: last, or a number (1-based)
+  --sigma  [0]
+      PPA bead diameter (Å; 0: the mean bond length / 0.97, as Kremer–Grest)
+  --z1
+      the Z1+ script (default $CAPS_Z1, else Z1+ on the PATH)
+  --max-steps  [200000]
+      CAPS&#x27;s PPA: minimisation steps at most (said when not converged)
+  -o  [ppa]
+      the output folder
+  --json
+      machine-readable output
+
+examples:
+  caps ppa cg/DP100.map.json eq/DP100.lammpstrj cg/DP200.map.json eq/DP200.lammpstrj --method both -o ppa</code></pre></div></article>
+<article class="cmd" id="mech" data-name="mech"><h3><code>caps mech</code><span class="pill">--help</span></h3>
+<div class="code" data-lang="caps mech --help"><pre><code>usage: caps mech decks --rates 1e-6,1e-7 --mode both -o tension  |  caps mech analyze STRESS_STRAIN.dat [MAP DUMP] -o DIR
+
+Tension of coarse-grained melts. decks: LAMMPS inputs per mode (stress: lateral axes at P; volume: constant volume) and rate (1/fs), printing σ = −(P_zz − (P_xx+P_yy)/2) and its bond, angle, dihedral, pair and kinetic parts at even strain steps, with frames for the analysis, and run_tension.sh. analyze: modulus (0 → fit strain), yield, softening, the strain-hardening modulus G_R from σ against λ² − 1/λ (Hoy &amp; Robbins 2006), the stress parts at the end; with the map and dump also ⟨P₂⟩(ε) of the bonds, the end-to-end anisotropy, the empty grid share (probe radius) and, with --z1, Z(ε).
+
+options (default · why):
+  --rates  [1e-6,1e-7]
+      decks: engineering strain rates, 1/fs (1e-6 /fs = 1e9 /s in CG time; map to AA time with cgdyn timemap)
+  --mode  [both]
+      decks: stress, volume or both
+  --max-strain  [3]
+      decks: final engineering strain
+  -T  [300]
+      decks: temperature (K)
+  -P  [1]
+      decks: lateral pressure in stress mode (atm)
+  --dt  [10]
+      decks: time step (fs)
+  --frames  [60]
+      decks: dumps at even strain steps
+  --fit-strain  [0.02]
+      analyze: modulus fit range
+  --hardening-from
+      analyze: strain where the G_R fit starts (default: the softening minimum)
+  --probe  [0]
+      analyze: probe radius for the empty share (Å; 0: skip)
+  --z1
+      analyze: the Z1+ script for Z(ε) on the frames
+  -o  [tension]
+      the output folder
+  --json
+      machine-readable output
+
+examples:
+  caps mech decks --rates 1e-6,1e-7,1e-8 --mode both --max-strain 3 -o tension
+  caps mech analyze tension/stress_1e-07.stress_strain.dat melt/melt.map.json tension/stress_1e-07.lammpstrj --probe 2.5 -o tension/analysis</code></pre></div></article>
+<article class="cmd" id="cgdyn" data-name="cgdyn"><h3><code>caps cgdyn</code><span class="pill">--help</span></h3>
+<div class="code" data-lang="caps cgdyn --help"><pre><code>usage: caps cgdyn MAP DUMP [--dt 10] -o DIR  |  caps cgdyn timemap AA.csv CG.csv
+
+Chain dynamics from a CG (or mapped AA) trajectory: g₁ of the inner beads, g₂ about the chain&#x27;s centre of mass, g₃ of the centres of mass, the bond and end-to-end autocorrelations, over all time origins at logarithmic lags; D from g₃, τ_R where the end-to-end correlation falls to 1/e, τ_e where g₁&#x27;s exponent falls below 3/8. timemap: the factor s with t_AA = s t_CG from two g₁ curves (the dynamics.csv files of the AA mapped run and the CG run of the same system).
+
+options (default · why):
+  --dt
+      fs per timestep of the dump (the times are timestep × dt); required
+  --stride  [1]
+      every n-th frame
+  -o  [dynamics]
+      the output folder
+  --json
+      machine-readable output
+
+examples:
+  caps cgdyn cg/DP25.map.json aa_mapped/DP25.cg.lammpstrj --dt 1 -o dyn_aa
+  caps cgdyn cg/DP25.map.json cgrun/DP25.lammpstrj --dt 10 -o dyn_cg
+  caps cgdyn timemap dyn_aa/dynamics.csv dyn_cg/dynamics.csv</code></pre></div></article>
+<article class="cmd" id="backmap" data-name="backmap"><h3><code>caps backmap</code><span class="pill">--help</span></h3>
+<div class="code" data-lang="caps backmap --help"><pre><code>usage: caps backmap REF_MAP REF_DATA --cg CG_MAP --frame CG_FRAME [--input REF.in] -o DIR  |  caps backmap check DATA
+
+Coarse-grained beads back to all atoms, fragment per bead: a library from a reference all-atom cell (LAMMPS data with its force field) and its map.json — each bead class (kind and place: head, inner, tail) with conformers, and every bond, angle, dihedral and improper as a template over the classes of the beads it spans — placed on a CG configuration (each fragment&#x27;s centre of mass on its bead, turned to its two chain neighbours), the cut bonds and the terms across them restored with their types and charges; writes the all-atom data, pair_coeffs.in and in.backmap (bonded only, soft-core push-off, the full force field from the reference input&#x27;s style lines, a short NPT). check: bond lengths and angles against harmonic r0 and θ0.
+
+options (default · why):
+  --cg
+      the CG system&#x27;s map.json (from cgmap or cgbuild)
+  --frame
+      its positions: STEM.cg.data, a LAMMPS data file written by a CG run, or a dump (the last frame)
+  --input
+      the reference LAMMPS input (its pair_style, kspace_style, special_bonds, bond/angle/dihedral/improper_style lines)
+  --conformers  [20]
+      instances of each bead class drawn from
+  --seed  [1]
+      random choice of conformers
+  -T  [300]
+      in.backmap: temperature (K)
+  -o  [backmap]
+      the output folder
+  --json
+      machine-readable output
+
+examples:
+  caps backmap cg/PBSA_DP-25-40.map.json PBSA/DP-25-40/system.data --cg melt/melt.map.json --frame melt/equil.data --input PBSA/DP-25-40/system.in -o backmap
+  caps backmap check backmap/relaxed.data</code></pre></div></article>
+</section>
+<section class="group" id="biomolecular-coarse-graining"><h2>Biomolecular coarse-graining</h2><p class="lede">Secondary structure and Martini proteins.</p>
+<article class="cmd" id="dssp" data-name="dssp"><h3><code>caps dssp</code></h3>
+<div class="code" data-lang="synopsis"><pre><code>caps dssp    PROTEIN.pdb                      DSSP secondary structure (and Martini&#x27;s codes)</code></pre></div></article>
+<article class="cmd" id="martini" data-name="martini"><h3><code>caps martini</code></h3>
+<div class="code" data-lang="synopsis"><pre><code>caps martini PROTEIN.pdb -o CG.data [--itp CG.itp] [--ss LETTERS|C|none]   Martini 2.2 protein (martinize&#x27;s rules);
+             --martini 3 [--noscfix] [--nt] [--extdih] [--cys none] [--idr 1:24] [--elastic --ef 700 --el 0 --eu 0.9
+             --ea 0 --ep 1 --es 0 --em 0 --ermd 2 --eunit molecule|chain|all]   Martini 3 protein (martinize2&#x27;s options)</code></pre></div></article>
+</section>
+<section class="group" id="dft-surfaces"><h2>DFT surfaces</h2><p class="lede">2D sheets, terminations, adsorption complexes and VASP case folders.</p>
+<article class="cmd" id="sheet" data-name="sheet"><h3><code>caps sheet</code><span class="pill">--help</span></h3>
+<div class="code" data-lang="caps sheet --help"><pre><code>usage: caps sheet [--preset NAME | --from FILE] -o OUT
+
+One 2D sheet: a preset from data/sheets/sheets.json (layer lists: element, stacking position, height), or ONE complete layer cut out of a bulk, stacked or MAX-type structure.
+
+options (default · why):
+  --preset  [Ti3C2]
+      a layer list from data/sheets/sheets.json (Ti3C2: Materials Project mp-1094034)
+  -a
+      in-plane lattice constant (Å); heights scale with it — a start for the DFT cell relaxation
+  --from
+      a CIF / POSCAR / any structure to cut one layer out of
+  --formula
+      the layer&#x27;s composition up to a multiple (Ti3C2), so incomplete layers are skipped
+  --remove
+      elements taken out first (a MAX phase&#x27;s A element: Al)
+  --index  [0]
+      which complete layer, from the bottom
+  --gap  [2.0]
+      Å along z that separates two layers
+  -o  [sheet.vasp]
+      the output (POSCAR, CIF, PDB, XYZ, LAMMPS data … by extension)
+  --json
+      machine-readable output
+
+examples:
+  caps sheet --preset Ti3C2 -o Ti3C2.vasp
+  caps sheet --from Ti3AlC2.cif --remove Al --formula Ti3C2 -o sheet.vasp</code></pre></div></article>
+<article class="cmd" id="terminate" data-name="terminate"><h3><code>caps terminate</code><span class="pill">--help</span></h3>
+<div class="code" data-lang="caps terminate --help"><pre><code>usage: caps terminate SHEET [--top O:0.5,OH:0.25,F:0.25] -o OUT
+
+Terminations on both faces of a sheet: fcc/hcp hollows, top or bridge sites; height from the bond length h = √(d² − r²); mixed faces by fractions with a seed; the bottom face the same as the top unless --janus.
+
+options (default · why):
+  --top  [O]
+      species and fractions on the top face (O, OH, F, Cl, Br, I, S, Se, Te, NH, H; data/sheets/terminations.json)
+  --bottom
+      the bottom face with --janus
+  --janus  [false]
+      different faces (a net dipole: the dipole correction is switched on)
+  --site  [fcc]
+      fcc (above the third layer), hcp (above the second), top or bridge
+  --site-bottom
+      the bottom face&#x27;s site with --janus
+  --supercell  [1x1]
+      in-plane repeat; a mixed face needs several sites (3x3)
+  --vacuum  [20]
+      Å between periodic images, centred along z (&lt; 15 Å warns, &lt; 10 Å fails)
+  --seed  [1]
+      the random arrangement of a mixed face (NumPy default_rng: the same on every platform)
+  --bond
+      overrides, e.g. O=2.05,OH=2.2,OH.tail=0.97 (Å)
+  --order  [Ti,C,N,O,F,H]
+      species order of the POSCAR (the POTCAR order follows it)
+  --surface
+      the outer layer&#x27;s element (default: the most common heavy element there)
+  -o  [slab.vasp]
+      the output
+  --vasp-set
+      also write a VASP set (01_cell … 04_static) into this folder
+  --json
+      machine-readable output
+
+examples:
+  caps terminate Ti3C2.vasp --top OH -o Ti3C2_OH.vasp
+  caps terminate Ti3C2.vasp --top O:0.5,OH:0.25,F:0.25 --supercell 3x3 --seed 1 -o mixed.vasp --vasp-set structures/Ti3C2_mixed</code></pre></div></article>
+<article class="cmd" id="validate" data-name="validate"><h3><code>caps validate</code><span class="pill">--help</span></h3>
+<div class="code" data-lang="caps validate --help"><pre><code>usage: caps validate FILE [FILE …] [--expect Ti3C2O2]
+
+PASS/FAIL report of a 2D slab: labels, composition × N, one complete sheet and its layers, fragments, floating atoms, vacuum, close contacts, isolated atoms, termination distances and coordination, O–H bonds, site classes, top/bottom asymmetry. Exit code 1 on FAIL.
+
+options (default · why):
+  --expect
+      expected formula per cell, e.g. Ti3C2O2 (× N)
+  --core
+      the bare layer&#x27;s formula, e.g. Ti3C2
+  --json
+      machine-readable output
+
+examples:
+  caps validate structures/*/POSCAR --core Ti3C2
+  caps validate CONTCAR --expect Ti3C2O2H2 --json</code></pre></div></article>
+<article class="cmd" id="adsorb-dft" data-name="adsorb-dft"><h3><code>caps adsorb-dft</code><span class="pill">--help</span></h3>
+<div class="code" data-lang="caps adsorb-dft --help"><pre><code>usage: caps adsorb-dft SLAB [--smiles S | --molecule FILE] --out ROOT
+
+A molecule on a slab for DFT: anchors by SMARTS, anchor-down / parallel / upright × azimuths (symmetry-equivalent ones marked), lowered to the contact limits, image distance checked; the trio slab/ molecule/ complex_* written with one settings set, then audited independently.
+
+options (default · why):
+  --smiles  [C/C=C/CCC(C#N)C/C=C/C]
+      the molecule (stereo kept), embedded and cleaned up with UFF
+  --molecule
+      a structure file instead of SMILES
+  --from-relaxed  [false]
+      the slab is a relaxed CONTCAR: repeated by --supercell and re-centred
+  --supercell  [1x1]
+      repeat of SLAB (with --from-relaxed: of the relaxed cell)
+  --modes
+      anchor:nitrile,anchor:vinyl,parallel,upright (default: every anchor found + parallel)
+  --azimuths  [0,90,180,270]
+      degrees about z
+  --skip-equivalent  [false]
+      leave out azimuths the outer layer&#x27;s symmetry makes equivalent
+  --prescreen  [0]
+      also the N lowest configurations of the force-field Adsorption Locator (UFF, simulated annealing) as complexes
+  --prescreen-steps  [20000]
+      Monte Carlo steps per annealing cycle
+  --prescreen-cycles  [3]
+      annealing cycles
+  --dmin  [2.3]
+      Å, closest molecule–slab contact (any atoms)
+  --dheavy  [3.0]
+      Å, closest heavy-atom contact
+  --vacuum  [20]
+      Å
+  --force  [false]
+      write complexes that fail their checks
+  --out  [adsorption]
+      the set&#x27;s folder
+  --pp-dir
+      your licensed PAW directory (POTCARs written into every folder)
+  --profile  [slurm-workspace]
+      cluster profile (data/dft/clusters.json)
+  --kdens  [45]
+      Å: N_i = ceil(kdens / |a_i|)
+  --json
+      machine-readable output
+
+examples:
+  caps adsorb-dft structures/Ti3C2_OH/03_relax/CONTCAR --from-relaxed --supercell 5x5 --out adsorption/Ti3C2_OH_NBR</code></pre></div></article>
+<article class="cmd" id="vasp-set" data-name="vasp-set"><h3><code>caps vasp-set</code><span class="pill">--help</span></h3>
+<div class="code" data-lang="caps vasp-set --help"><pre><code>usage: caps vasp-set STRUCTURE --out DIR
+
+One VASP case folder: POSCAR (species grouped), INCAR.cell / .relax / .static with a reason per tag, KPOINTS, job.slurm (stages, resume, backup, watchdog, storage), make_potcar.sh, POTCAR from your PAW directory, the validation report.
+
+options (default · why):
+  --out
+      the case folder
+  --label
+      SYSTEM and the job name (default: the folder name)
+  --stages  [slab]
+      slab (01_cell 02_cell2 03_relax 04_static), fixed (03_relax 04_static) or a list
+  --static-out  [pot]
+      04_static outputs: none (energy + DOS), pot (+ LOCPOT), all (+ CHGCAR, AECCAR)
+  --encut
+      eV (default 1.3 × the largest ENMAX of the POTCARs; 520 without them)
+  --kdens  [45]
+      Å
+  --ivdw  [12]
+      D3-BJ
+  --ispin  [1]
+      non-magnetic
+  --dipole  [auto]
+      auto (when the faces differ), on, off — energy-only, no LDIPOL
+  --gamma  [false]
+      Γ only (a molecule in a box)
+  --pp-dir
+      your licensed PAW directory
+  --profile  [slurm-workspace]
+      cluster profile
+  --json
+      machine-readable output
+
+examples:
+  caps vasp-set Ti3C2_O.vasp --out structures/Ti3C2_O --pp-dir $PP_DIR</code></pre></div></article>
+<article class="cmd" id="vasp-conv" data-name="vasp-conv"><h3><code>caps vasp-conv</code><span class="pill">--help</span></h3>
+<div class="code" data-lang="caps vasp-conv --help"><pre><code>usage: caps vasp-conv setup|collect CASE
+
+ENCUT and k-mesh convergence single points from a case folder (conv_encut_*, conv_k_*), and the choice: the cheapest setting for which it AND every more expensive one pass (ENCUT: in-plane stress ≤ 1 kB and max force ≤ 0.01 eV/Å; k: E0 ≤ 1 meV/atom and stress ≤ 1 kB).
+
+options (default · why):
+  --encuts  [400,450,520,600,700,800]
+      eV
+  --kmeshes  [6,9,12,15,18]
+      N × N × 1
+  --json
+      machine-readable output
+
+examples:
+  caps vasp-conv setup structures/Ti3C2_O
+  caps vasp-conv collect structures/Ti3C2_O --json</code></pre></div></article>
+<article class="cmd" id="vasp-scan" data-name="vasp-scan"><h3><code>caps vasp-scan</code><span class="pill">--help</span></h3>
+<div class="code" data-lang="caps vasp-scan --help"><pre><code>usage: caps vasp-scan make CASE LO HI STEP | fit CASE
+
+In-plane lattice-constant scan (fixed-cell relaxations, ascan_&lt;a&gt;) and its fit: the parabola&#x27;s minimum and Birch–Murnaghan (3rd order) on the cell volume. A cross-check of 01_cell, or its replacement on VASP &lt; 6.4.
+  --json
+      machine-readable output
+
+examples:
+  caps vasp-scan make structures/Ti3C2_O 2.98 3.18 0.04
+  caps vasp-scan fit structures/Ti3C2_O</code></pre></div></article>
+<article class="cmd" id="vasp-derived" data-name="vasp-derived"><h3><code>caps vasp-derived</code><span class="pill">--help</span></h3>
+<div class="code" data-lang="caps vasp-derived --help"><pre><code>usage: caps vasp-derived charge|cdd|freq|aimd CASE
+
+Sets made from a finished run: charge (the complex&#x27;s single point with CHGCAR, AECCAR, LOCPOT), cdd (slab part and molecule part at the frozen complex geometry: same cell, k-mesh, ENCUT → same FFT grid), freq (partial Hessian, IBRION 5, the nitrile group freed), aimd (CSVR NVT, H as deuterium, 1 fs, segments of NSW steps).
+
+options (default · why):
+  --pp-dir
+      PAW directory (cdd, aimd)
+  --free
+      freq: 0-based atoms to free (default: the nitrile N, C, α-C and its H)
+  --temperature  [300]
+      aimd, K
+  --nsw  [1000]
+      aimd steps (fs) per segment
+  --segments  [6]
+      aimd: 1 equilibration + 5 production
+  --out
+      aimd folder
+  --profile  [slurm-workspace]
+      cluster profile
+  --json
+      machine-readable output
+
+examples:
+  caps vasp-derived charge adsorption/Ti3C2_OH_NBR/complex_nitrile_down_az0
+  caps vasp-derived aimd complex_X/03_relax/CONTCAR --out aimd/Ti3C2_OH_best</code></pre></div></article>
+<article class="cmd" id="vasp-jobs" data-name="vasp-jobs"><h3><code>caps vasp-jobs</code><span class="pill">--help</span></h3>
+<div class="code" data-lang="caps vasp-jobs --help"><pre><code>usage: caps vasp-jobs submit|update|reset|cleanup|store …
+
+Job tools: submit (folders whose last stage is not DONE and that are not queued; --run calls sbatch), update (rewrite job.slurm from the profile, keeping name, ranks, time, stages, hang), reset CASE STAGE (renames the real stage folder &lt;stage&gt;_bad), cleanup ROOT (only finished stages; --keep-best), store ROOT PATH (stage folders to long-term storage with links, writes .store). Dry runs unless --yes.
+
+options (default · why):
+  --yes  [false]
+      really do it (cleanup, store)
+  --keep-best  [false]
+      cleanup: also the charge files of all but the best complex of each set
+  --run  [false]
+      submit: call sbatch
+  --profile  [slurm-workspace]
+      update: the profile to write
+  --json
+      machine-readable output
+
+examples:
+  caps vasp-jobs submit adsorption/Ti3C2_OH_NBR/*
+  caps vasp-jobs cleanup . --keep-best --yes</code></pre></div></article>
+<article class="cmd" id="vasp-check" data-name="vasp-check"><h3><code>caps vasp-check</code><span class="pill">--help</span></h3>
+<div class="code" data-lang="caps vasp-check --help"><pre><code>usage: caps vasp-check CASE|STAGE …
+
+Finished? converged? SCF failures, ionic steps, final E0, max force, magnetisation, warnings, the lattice change of the cell stages (02_cell2 &lt; 0.002 Å), the CONTCAR re-validated.
+
+options (default · why):
+  --complex  [false]
+      an adsorption complex (no slab re-validation)
+  --json
+      machine-readable output
+
+examples:
+  caps vasp-check structures/Ti3C2_O</code></pre></div></article>
+<article class="cmd" id="vasp-progress" data-name="vasp-progress"><h3><code>caps vasp-progress</code><span class="pill">--help</span></h3>
+<div class="code" data-lang="caps vasp-progress --help"><pre><code>usage: caps vasp-progress CASE …
+
+Stages done and running, live files in the workspace, steps, last energies, max force against 0.01 eV/Å, time per step, ETA from a log(fmax) fit.
+  --json
+      machine-readable output
+
+examples:
+  caps vasp-progress structures/*</code></pre></div></article>
+<article class="cmd" id="vasp-health" data-name="vasp-health"><h3><code>caps vasp-health</code><span class="pill">--help</span></h3>
+<div class="code" data-lang="caps vasp-health --help"><pre><code>usage: caps vasp-health SET
+
+Every complex of an adsorption set against E_ref = E(slab) + E(molecule): ENERGY, JUMP, DIPOLE, SCF, GEOM, HANG — each with what to do. Exit code 1 when anything is flagged.
+  --json
+      machine-readable output
+
+examples:
+  caps vasp-health adsorption/Ti3C2_OH_NBR</code></pre></div></article>
+<article class="cmd" id="vasp-bind" data-name="vasp-bind"><h3><code>caps vasp-bind</code><span class="pill">--help</span></h3>
+<div class="code" data-lang="caps vasp-bind --help"><pre><code>usage: caps vasp-bind SET
+
+E_bind = E0(complex) − E0(slab) − E0(molecule) from 04_static, eV and kJ/mol, ranked; settings compared across the trio; binding_energies.csv.
+  --json
+      machine-readable output
+
+examples:
+  caps vasp-bind adsorption/Ti3C2_OH_NBR</code></pre></div></article>
+<article class="cmd" id="vasp-analyze" data-name="vasp-analyze"><h3><code>caps vasp-analyze</code><span class="pill">--help</span></h3>
+<div class="code" data-lang="caps vasp-analyze --help"><pre><code>usage: caps vasp-analyze geom|wf|dos|cdd|bader|freq|md|summary …
+
+geom COMPLEX… (heights, anchor distance, H-bonds, contacts, tilt) · wf STAGE [--reference STAGE] (work function, Δφ) · dos STAGE (grouped DOS, DOS(E_F), HOMO/LUMO-like peaks) · cdd COMPLEX (Δρ, CHGCAR_diff, ΔQ) · bader SLAB_POSCAR COMPLEX_POSCAR ACF.dat [POTCAR] · freq COMPLEX (ν(C≡N) shift) · md AIMD (stability verdict) · summary MAIN (results_summary.csv).
+
+options (default · why):
+  --reference
+      wf: the slab-alone stage for Δφ
+  --equil-ps  [1.0]
+      md: equilibration cut
+  --dt-fs  [1.0]
+      md: time step
+  --json
+      machine-readable output
+
+examples:
+  caps vasp-analyze geom adsorption/Ti3C2_OH_NBR/complex_*
+  caps vasp-analyze summary ~/mxene</code></pre></div></article>
+</section>
+</main>
+</div>
+<footer class="foot"><span>CAPS 0.1.0 · generated by <code>tools/docs/build_site.py</code> from the program itself</span><a href="https://github.com/MuhammadUzairRiaz/CAPS">github.com/MuhammadUzairRiaz/CAPS</a></footer>
+</body>
+</html>

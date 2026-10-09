@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Analysing trajectories · CAPS tutorial</title>
+<meta name="description" content="Density, structure, chain dimensions, dynamics, free volume and cohesive energy from any trajectory CAPS reads, with errors, curves for plotting, and figures.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script defer src="../assets/site.js"></script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="../index.html"><span class="mark" aria-hidden="true"></span>CAPS</a>
+  <button class="menu" aria-expanded="false" aria-controls="nav">Menu</button>
+  <nav id="nav" class="links"><a href="../index.html">Home</a><a href="../cli/index.html">CLI guide</a><a href="../cli/reference.html">Command reference</a><a href="../tutorials/index.html" aria-current="page">Tutorials</a><a href="../theory/index.html">Theory</a><a href="../python.html">Python</a><a href="../manual/index.html">Studio tour</a><a href="https://github.com/MuhammadUzairRiaz/CAPS">GitHub</a></nav>
+</header>
+<div class="doc">
+<nav class="toc" aria-label="On this page"><h2>On this page</h2><a class="l2" href="#one-command-many-properties">One command, many properties</a><a class="l2" href="#choosing-frames">Choosing frames</a><a class="l2" href="#quick-looks">Quick looks</a><a class="l2" href="#pipelines">Pipelines</a><a class="l2" href="#next">Next</a></nav>
+<main>
+<header class="hero"><p class="eyebrow">Tutorial 07</p><h1>Analysing trajectories</h1><p>Density, structure, chain dimensions, dynamics, free volume and cohesive energy from any trajectory CAPS reads, with errors, curves for plotting, and figures.</p><div class="strip"><span><i>Time</i> 10 minutes</span><span><i>Level</i> first steps</span><span><i>Uses</i> analyze · rdf · chains · frames · render · pipeline</span></div></header><h2 id="one-command-many-properties">One command, many properties</h2>
+<p><code>caps analyze</code> computes any set of properties over the frames of a trajectory (from CAPS, LAMMPS, GROMACS or AMBER) and reports each with its method and a block-average error:</p>
+<div class="code" data-lang="shell"><pre><code>caps analyze ps.lammpstrj --topology ps_md.data --props density,rg,ree,cn --json props.json
+caps analyze ps.lammpstrj --topology ps_md.data --props rdf,sq --pair C-C --inter --csv curves</code></pre></div>
+<div class="table"><table><thead><tr><th>Property</th><th>What it gives</th></tr></thead><tbody><tr><td><code>density</code></td><td>mass over cell volume</td></tr><tr><td><code>rdf</code>, <code>sq</code>, <code>xray</code>, <code>neutron</code></td><td>g(r) by element pair (<code>--pair C-C</code>, <code>--inter</code> for different molecules only), S(q), scattering</td></tr><tr><td><code>rg</code>, <code>ree</code>, <code>cn</code>, <code>persistence</code></td><td>radius of gyration, end-to-end distance, characteristic ratio C\(_n\) and C\(_\infty\), persistence length</td></tr><tr><td><code>msd</code>, <code>diffusion</code>, <code>relaxation</code></td><td>mean-square displacement, D from its slope, end-to-end relaxation</td></tr><tr><td><code>ced</code>, <code>delta</code></td><td>cohesive energy density and the Hildebrand solubility parameter</td></tr><tr><td><code>ffv</code>, <code>psd</code></td><td>fractional free volume and the pore-size distribution (<code>--probe</code>, <code>--grid</code>)</td></tr><tr><td><code>crosslinks</code>, <code>entanglements</code></td><td>network measures, primitive-path entanglements</td></tr><tr><td><code>zprofile</code>, <code>adhesion</code>, <code>interaction</code>, <code>orientation</code></td><td>interfaces (<code>--surface</code>, <code>--axis</code>)</td></tr></tbody></table></div>
+<p>The diffusion coefficient comes from the Einstein relation in the mean-square displacement's linear range:</p>
+<div class="eq">$$D = \lim_{t\to\infty} \frac{\langle |\mathbf{r}(t) - \mathbf{r}(0)|^2 \rangle}{6t}$$</div>
+<p>so give the time between frames: <code>--frame-ps 0.2</code> (or <code>--timestep-fs 1</code> when the dump records step numbers).</p>
+<h2 id="choosing-frames">Choosing frames</h2>
+<p><code>--first</code>, <code>--last</code> and <code>--stride</code> pick frames; drop the equilibration part of a run with <code>--first</code>. <code>caps frames</code> writes a thinned or converted copy:</p>
+<div class="code" data-lang="shell"><pre><code>caps frames ps.lammpstrj thin.dcd --topology ps_md.data --stride 2</code></pre></div>
+<h2 id="quick-looks">Quick looks</h2>
+<div class="code" data-lang="shell"><pre><code>caps rdf ps_md.data --pair C-C --inter       # g(r) of one frame
+caps chains ps_md.data                       # backbones and mean-square internal distances
+caps shape ps_md.data                        # per-molecule Rg and shape
+caps render ps_md.data -o ps.png --style sticks --colour molecule</code></pre></div>
+<h2 id="pipelines">Pipelines</h2>
+<p>For analysis you repeat, save the chain of steps (selections, modifiers, Python steps) as a pipeline, from the Studio or by hand, and run it on one frame or on many trajectories:</p>
+<div class="code" data-lang="shell"><pre><code># steps.yaml: a pipeline saved from the Studio, or written by hand
+caps pipeline ps_md.data --steps steps.yaml --out out
+caps run steps.yaml --input &#x27;runs/*/traj.lammpstrj&#x27; --csv results.csv</code></pre></div>
+<h2 id="next">Next</h2>
+<ul><li><a href="../theory/analysis.html">Theory: Analysis</a> gives every property's definition, defaults and tests.</li><li><a href="../python.html">Python</a>: <code>Document.analyze()</code> returns the same numbers as a dictionary.</li></ul><nav class="pager"><a href="dft-surfaces.html"><small>Previous</small>A DFT surface study</a><span></span></nav>
+</main>
+</div>
+<footer class="foot"><span>CAPS 0.1.0 · generated by <code>tools/docs/build_site.py</code> from the program itself</span><a href="https://github.com/MuhammadUzairRiaz/CAPS">github.com/MuhammadUzairRiaz/CAPS</a></footer>
+</body>
+</html>

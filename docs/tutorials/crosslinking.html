@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Crosslinking a rubber network · CAPS tutorial</title>
+<meta name="description" content="Cure natural rubber with a peroxide template inside CAPS, or export the same chemistry as a LAMMPS fix bond/react set with typed templates.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script defer src="../assets/site.js"></script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="../index.html"><span class="mark" aria-hidden="true"></span>CAPS</a>
+  <button class="menu" aria-expanded="false" aria-controls="nav">Menu</button>
+  <nav id="nav" class="links"><a href="../index.html">Home</a><a href="../cli/index.html">CLI guide</a><a href="../cli/reference.html">Command reference</a><a href="../tutorials/index.html" aria-current="page">Tutorials</a><a href="../theory/index.html">Theory</a><a href="../python.html">Python</a><a href="../manual/index.html">Studio tour</a><a href="https://github.com/MuhammadUzairRiaz/CAPS">GitHub</a></nav>
+</header>
+<div class="doc">
+<nav class="toc" aria-label="On this page"><h2>On this page</h2><a class="l2" href="#two-ways-to-crosslink">Two ways to crosslink</a><a class="l2" href="#1-build-and-type">1. Build and type</a><a class="l2" href="#2a-export-for-lammps-fix-bond-react">2a. Export for LAMMPS fix bond/react</a><a class="l2" href="#2b-or-cure-inside-caps">2b. Or cure inside CAPS</a><a class="l2" href="#3-engine-inputs-for-the-network">3. Engine inputs for the network</a><a class="l2" href="#next">Next</a></nav>
+<main>
+<header class="hero"><p class="eyebrow">Tutorial 04</p><h1>Crosslinking a rubber network</h1><p>Cure natural rubber with a peroxide template inside CAPS, or export the same chemistry as a LAMMPS fix bond/react set with typed templates.</p><div class="strip"><span><i>Time</i> 10 minutes</span><span><i>Level</i> intermediate</span><span><i>Uses</i> Python · react · bond_react · export_engines</span></div></header><h2 id="two-ways-to-crosslink">Two ways to crosslink</h2>
+<p><strong>CAPS React</strong> cures the structure itself, cycle by cycle: in each cycle it finds reactive pairs within a capture distance, makes the bonds the template describes, re-types the products and relaxes. It is quick and deterministic, and well suited to building a network at a target conversion.</p>
+<p><strong>fix bond/react export</strong> writes the same chemistry for LAMMPS's REACTION package: pre- and post-reaction templates and map files for every chemical environment found in your structure, typed with your force field, and an input that runs the cure under dynamics.</p>
+<p>Both are driven from Python.</p>
+<h2 id="1-build-and-type">1. Build and type</h2>
+<div class="code" data-lang="Python"><pre><code>import caps
+
+d = caps.polymer(&quot;*CC(C)=CC*&quot;, dp=10, chains=6, density=0.6, seed=1)   # cis-1,4-polyisoprene
+d.relax(max_iterations=300)
+d.field.assign(&quot;opls2005&quot;)</code></pre></div>
+<p><code>caps.reaction_templates()</code> lists the built-in chemistry: C–C crosslinks, accelerated sulfur and peroxide cures of diene rubbers, silane polysulfides, epoxy–amine, epoxidised natural rubber with acids, anhydride–alcohol, esterification. <code>caps.reaction_template(&quot;peroxide_allylic&quot;)</code> prints one, with a comment on every atom.</p>
+<h2 id="2a-export-for-lammps-fix-bond-react">2a. Export for LAMMPS fix bond/react</h2>
+<div class="code" data-lang="Python"><pre><code>r = d.bond_react(&quot;peroxide_allylic&quot;, &quot;xl_lammps&quot;, forcefield=&quot;opls2005&quot;)
+print(r[&quot;notes&quot;])</code></pre></div>
+<div class="code" data-lang="output"><pre><code>6 templates for 1 reactions cover 5572 of 26408 candidate pairs (within the survey distance) in this structure
+reaction peroxide_allylic: 1802 rarer environments (20836 candidate pairs) have no template; raise the number of templates to cover them
+stabilize_steps 200 on every reaction (the reacting atoms stay under nve/limit that long after a reaction)</code></pre></div>
+<p>The folder holds <code>react.data</code>, <code>react.in</code> and, per template, <code>_pre.mol</code>, <code>_post.mol</code> and <code>_map.txt</code>. Every template is checked against LAMMPS's rule that each atom must be reachable from an initiator without passing through an edge atom; hydrogens that change partner get a distance constraint in the map file. Options include <code>targets=[0.2, 0.4]</code> (stop and save at each crosslink density), <code>variants</code> (more templates for rarer environments), <code>type_groups</code> (atom types split by component, for blends) and <code>keep_chain_ids=True</code>.</p>
+<div class="code" data-lang="shell"><pre><code>cd xl_lammps &amp;&amp; lmp -in react.in</code></pre></div>
+<h2 id="2b-or-cure-inside-caps">2b. Or cure inside CAPS</h2>
+<div class="code" data-lang="Python"><pre><code>report = d.react(&quot;peroxide_allylic&quot;, cycles=5, per_cycle=4, target=0.3, seed=1)
+print(report)
+d.save(&quot;nr_xl.data&quot;)</code></pre></div>
+<div class="code" data-lang="output"><pre><code>link 10 (cycle 5, peroxide_allylic): chain 3 unit 8 — direct bond — chain 6 unit 10
+link 11 (cycle 5, peroxide_allylic): chain 2 unit 6 — direct bond — chain 6 unit 8
+20 byproduct molecules removed
+force field after the run: OPLS-AA / OPLS 2005 · complete</code></pre></div>
+<p>Stop at a conversion (<code>target</code>), or at a network measure: <code>crosslinks=(&quot;per_chain&quot;, 1.5)</code>, <code>(&quot;density&quot;, mol/m³)</code> or <code>(&quot;mc&quot;, g/mol)</code>. <code>between_chains=True</code> refuses links within a chain, and <code>keep_byproducts=True</code> keeps the H₂ or H₂O that leaves.</p>
+<h2 id="3-engine-inputs-for-the-network">3. Engine inputs for the network</h2>
+<div class="code" data-lang="Python"><pre><code>d.export_engines(&quot;engines&quot;, stem=&quot;nr&quot;, run=&quot;npt&quot;, temperature=300, steps=5000)</code></pre></div>
+<p>writes <code>nr.data</code> and <code>nr.in</code> for LAMMPS and <code>nr.top</code>, <code>.itp</code>, <code>.gro</code>, <code>.mdp</code> and <code>nr_em.mdp</code> for GROMACS, with the force field re-assigned to the products.</p>
+<h2 id="next">Next</h2>
+<ul><li><code>d.react_summary()</code> returns the network numbers of the cure (links per chain, crosslink density, M\(_c\)); <code>caps analyze FILE --props crosslinks</code> counts sulfur bridges after a sulfur cure.</li><li><code>d.react_sites(&quot;peroxide_allylic&quot;)</code> counts each chain's reactive sites before you choose a target.</li></ul><nav class="pager"><a href="recipes.html"><small>Previous</small>Recipes, provenance and a methods paragraph</a><a class="next" href="coarse-graining.html"><small>Next</small>Coarse-graining a polyester</a></nav>
+</main>
+</div>
+<footer class="foot"><span>CAPS 0.1.0 · generated by <code>tools/docs/build_site.py</code> from the program itself</span><a href="https://github.com/MuhammadUzairRiaz/CAPS">github.com/MuhammadUzairRiaz/CAPS</a></footer>
+</body>
+</html>

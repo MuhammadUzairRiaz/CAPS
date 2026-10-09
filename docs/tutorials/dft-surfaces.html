@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>A DFT surface study · CAPS tutorial</title>
+<meta name="description" content="Cut a Ti₃C₂ MXene sheet, terminate it with O, OH and F, validate it, place a nitrile on it, and write VASP case folders ready for a Slurm cluster.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script defer src="../assets/site.js"></script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="../index.html"><span class="mark" aria-hidden="true"></span>CAPS</a>
+  <button class="menu" aria-expanded="false" aria-controls="nav">Menu</button>
+  <nav id="nav" class="links"><a href="../index.html">Home</a><a href="../cli/index.html">CLI guide</a><a href="../cli/reference.html">Command reference</a><a href="../tutorials/index.html" aria-current="page">Tutorials</a><a href="../theory/index.html">Theory</a><a href="../python.html">Python</a><a href="../manual/index.html">Studio tour</a><a href="https://github.com/MuhammadUzairRiaz/CAPS">GitHub</a></nav>
+</header>
+<div class="doc">
+<nav class="toc" aria-label="On this page"><h2>On this page</h2><a class="l2" href="#1-a-sheet">1. A sheet</a><a class="l2" href="#2-terminations">2. Terminations</a><a class="l2" href="#3-validate">3. Validate</a><a class="l2" href="#4-a-molecule-on-the-slab">4. A molecule on the slab</a><a class="l2" href="#5-vasp-case-folders">5. VASP case folders</a><a class="l2" href="#6-on-the-cluster">6. On the cluster</a><a class="l2" href="#next">Next</a></nav>
+<main>
+<header class="hero"><p class="eyebrow">Tutorial 06</p><h1>A DFT surface study</h1><p>Cut a Ti₃C₂ MXene sheet, terminate it with O, OH and F, validate it, place a nitrile on it, and write VASP case folders ready for a Slurm cluster.</p><div class="strip"><span><i>Time</i> 10 minutes</span><span><i>Level</i> intermediate</span><span><i>Uses</i> sheet · terminate · validate · adsorb-dft · vasp-set · vasp-jobs · vasp-analyze</span></div></header><h2 id="1-a-sheet">1. A sheet</h2>
+<div class="code" data-lang="shell"><pre><code>caps sheet --preset Ti3C2 -o Ti3C2.vasp</code></pre></div>
+<p>Presets come from <code>data/sheets/sheets.json</code> (each a list of layers: element, stacking position, height). To cut one complete layer from a bulk or MAX-phase structure instead, use <code>--from Ti3AlC2.cif --formula Ti3C2 --remove Al</code>.</p>
+<h2 id="2-terminations">2. Terminations</h2>
+<div class="code" data-lang="shell"><pre><code>caps terminate Ti3C2.vasp --top O:0.5,OH:0.25,F:0.25 --supercell 3x3 --seed 1 -o mixed.vasp</code></pre></div>
+<p>Groups sit in fcc or hcp hollows, on top or bridge sites, at the height set by the bond length:</p>
+<div class="eq">$$h = \sqrt{d^2 - r^2}$$</div>
+<p>where d is the bond length to the nearest surface atoms and r the in-plane distance to them. Mixed faces are drawn by the fractions with the seed; the bottom face matches the top unless <code>--janus</code>.</p>
+<h2 id="3-validate">3. Validate</h2>
+<div class="code" data-lang="shell"><pre><code>caps validate mixed.vasp</code></pre></div>
+<p>A PASS/FAIL report: composition, one complete sheet and its layers, floating or isolated atoms, vacuum, close contacts, termination distances and coordination, O–H bonds, site classes and top/bottom asymmetry. It exits 1 on FAIL, so a batch script can stop on a broken slab.</p>
+<h2 id="4-a-molecule-on-the-slab">4. A molecule on the slab</h2>
+<div class="code" data-lang="shell"><pre><code>caps adsorb-dft mixed.vasp --smiles &#x27;C#N&#x27; --out ads</code></pre></div>
+<p>CAPS finds anchors by SMARTS (here the nitrile N), places the molecule anchor-down, parallel and upright at several azimuths, lowers it to the contact limits and checks the distance to its periodic images. The <code>ads</code> folder holds <code>slab/</code>, <code>molecule/</code> and one <code>complex_*</code> folder per placement, all with the same settings so the adsorption energy is consistent:</p>
+<div class="eq">$$E_\mathrm{ads} = E_\mathrm{complex} - E_\mathrm{slab} - E_\mathrm{molecule}$$</div>
+<h2 id="5-vasp-case-folders">5. VASP case folders</h2>
+<div class="code" data-lang="shell"><pre><code>caps vasp-set mixed.vasp --out vset --profile generic-slurm</code></pre></div>
+<p>The folder gets <code>POSCAR</code> (species grouped), <code>INCAR.cell</code>, <code>INCAR.relax</code> and <code>INCAR.static</code> with a reason beside every tag, <code>KPOINTS</code>, <code>job.slurm</code> (stages, resume, backup, a watchdog), <code>make_potcar.sh</code> and a validation report. POTCAR files are licensed by VASP, so CAPS never ships them: <code>--pp-dir</code> points at your PAW set, or run <code>make_potcar.sh</code> on the cluster.</p>
+<h2 id="6-on-the-cluster">6. On the cluster</h2>
+<div class="code" data-lang="output"><pre><code>caps vasp-jobs submit|update|reset|cleanup|store    many cases at once
+caps vasp-check · vasp-progress · vasp-health       what is running, converging or stuck
+caps vasp-conv setup|collect CASE                   ENCUT and k-mesh convergence
+caps vasp-analyze geom|wf|dos|cdd|bader|freq|md|summary</code></pre></div>
+<p><code>vasp-analyze</code> reads the finished runs: geometry (heights, anchor distance, H-bonds, tilt), work function and its shift, grouped DOS, charge-density difference, Bader charges, the ν(C≡N) shift and AIMD stability; <code>summary</code> gathers them into <code>results_summary.csv</code>.</p>
+<h2 id="next">Next</h2>
+<ul><li><a href="../theory/dft-surfaces.html">Theory: DFT surfaces</a>: termination heights, one k-point density for every cell, the adsorption energy and the work function.</li><li>Every DFT command takes <code>--help</code>, with each option's default and why.</li></ul><nav class="pager"><a href="coarse-graining.html"><small>Previous</small>Coarse-graining a polyester</a><a class="next" href="analysis.html"><small>Next</small>Analysing trajectories</a></nav>
+</main>
+</div>
+<footer class="foot"><span>CAPS 0.1.0 · generated by <code>tools/docs/build_site.py</code> from the program itself</span><a href="https://github.com/MuhammadUzairRiaz/CAPS">github.com/MuhammadUzairRiaz/CAPS</a></footer>
+</body>
+</html>

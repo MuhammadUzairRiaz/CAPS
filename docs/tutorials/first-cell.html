@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Your first amorphous polymer cell · CAPS tutorial</title>
+<meta name="description" content="Grow polystyrene chains in a periodic box, relax them, run molecular dynamics, and measure density, chain size and stiffness, using five commands.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script defer src="../assets/site.js"></script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="../index.html"><span class="mark" aria-hidden="true"></span>CAPS</a>
+  <button class="menu" aria-expanded="false" aria-controls="nav">Menu</button>
+  <nav id="nav" class="links"><a href="../index.html">Home</a><a href="../cli/index.html">CLI guide</a><a href="../cli/reference.html">Command reference</a><a href="../tutorials/index.html" aria-current="page">Tutorials</a><a href="../theory/index.html">Theory</a><a href="../python.html">Python</a><a href="../manual/index.html">Studio tour</a><a href="https://github.com/MuhammadUzairRiaz/CAPS">GitHub</a></nav>
+</header>
+<div class="doc">
+<nav class="toc" aria-label="On this page"><h2>On this page</h2><a class="l2" href="#what-you-will-make">What you will make</a><a class="l2" href="#1-grow-the-chains">1. Grow the chains</a><a class="l2" href="#2-relax">2. Relax</a><a class="l2" href="#3-run-molecular-dynamics">3. Run molecular dynamics</a><a class="l2" href="#4-measure">4. Measure</a><a class="l2" href="#5-check-and-look">5. Check and look</a><a class="l2" href="#next">Next</a></nav>
+<main>
+<header class="hero"><p class="eyebrow">Tutorial 01</p><h1>Your first amorphous polymer cell</h1><p>Grow polystyrene chains in a periodic box, relax them, run molecular dynamics, and measure density, chain size and stiffness, using five commands.</p><div class="strip"><span><i>Time</i> 5 minutes</span><span><i>Level</i> first steps</span><span><i>Uses</i> grow · relax · md · analyze · check · render</span></div></header><h2 id="what-you-will-make">What you will make</h2>
+<p>A small atactic polystyrene melt: 4 chains of 10 repeat units (648 atoms), relaxed and run for 2 ps at 300 K and 1 atm. It is far too small and too short for production numbers; the point is the route, which is the same at any size.</p>
+<h2 id="1-grow-the-chains">1. Grow the chains</h2>
+<p><code>caps grow</code> places repeat units one at a time from internal coordinates, choosing among trial torsions the one with the most room, so chains do not overlap even at a useful density. The repeat unit is a SMILES string with two <code>*</code> marking where units join.</p>
+<div class="code" data-lang="shell"><pre><code>caps grow -o ps.data --chains 4 --dp 10 --density 0.5 --units &#x27;*CC(*)c1ccccc1&#x27; --seed 1</code></pre></div>
+<p>Growing at 0.5 g/cm³ (about half polystyrene's density) leaves room; the barostat compresses the cell later. <code>--tacticity isotactic</code> or <code>syndiotactic</code> changes the stereochemistry, <code>--units</code> with several SMILES and <code>--sequence</code> makes copolymers.</p>
+<h2 id="2-relax">2. Relax</h2>
+<p>Grown cells have strained bonds and close contacts. <code>caps relax</code> pushes overlapping atoms apart with capped forces, then minimises with L-BFGS until the largest force is below 0.5 kcal/mol/Å.</p>
+<div class="code" data-lang="shell"><pre><code>caps relax ps.data -o ps_min.data --iterations 500 --quiet</code></pre></div>
+<p>With no force field named, CAPS uses its default (GAFF for C and H, UFF otherwise) and writes it into the <code>.data</code> file, so LAMMPS can read the result directly.</p>
+<h2 id="3-run-molecular-dynamics">3. Run molecular dynamics</h2>
+<div class="code" data-lang="shell"><pre><code>caps md ps_min.data -o ps_md.data --steps 2000 --dt 1 --temp 300 --barostat berendsen \
+  --dump ps.lammpstrj --every 200 --quiet</code></pre></div>
+<p>This is 2 ps of NPT dynamics with velocity Verlet, the Bussi thermostat (the default) and a Berendsen barostat, saving a frame every 200 steps. For a real study, compress and anneal first with <code>caps equilibrate --protocol larsen21</code> (the 21-step compression and decompression protocol), then run nanoseconds.</p>
+<aside class="note">Keep runs on a laptop short; for long runs, export the cell to LAMMPS or GROMACS (<a href="force-fields.html">Tutorial 02</a>) and run it on a workstation or cluster.</aside>
+<h2 id="4-measure">4. Measure</h2>
+<div class="code" data-lang="shell"><pre><code>caps analyze ps.lammpstrj --topology ps_md.data --props density,rg --json props.json
+caps analyze ps.lammpstrj --topology ps_md.data --props rdf,ree,cn --pair C-C --inter --csv csv</code></pre></div>
+<p>A trajectory has no bonds, so <code>--topology</code> gives the data file of the same atoms. Each property prints its value, how it was computed and a standard error from block averages; <code>--csv</code> writes the curves (g(r), end-to-end distances, C\(_n\)) for plotting. The characteristic ratio comes from all internal distances along the backbones:</p>
+<div class="eq">$$C_n = \frac{\langle R^2(n) \rangle}{n\,\langle b^2 \rangle}, \qquad C_n = C_\infty\left(1 - \frac{a}{n}\right)$$</div>
+<p>With chains of 19 backbone bonds, CAPS notes that C\(_\infty\) is an extrapolation; longer chains give a value you can compare with experiment (about 10 for atactic polystyrene).</p>
+<h2 id="5-check-and-look">5. Check and look</h2>
+<div class="code" data-lang="shell"><pre><code>caps check ps_md.data
+caps render ps_md.data -o ps.png --style sticks --colour molecule --size 900x700</code></pre></div>
+<p><code>caps check</code> reports counts, bonds, close contacts, charges and the cell; <code>caps render</code> draws a picture without opening the Studio. To look around interactively, open <code>ps_md.data</code> in CAPS Studio.</p>
+<h2 id="next">Next</h2>
+<ul><li><a href="force-fields.html">Tutorial 02</a>: the same cell with OPLS-AA, PCFF or COMPASS, written for LAMMPS and GROMACS.</li><li><a href="recipes.html">Tutorial 03</a>: the whole route as one recipe file, with a methods paragraph for your paper.</li><li><a href="../theory/growth.html">Theory: Growth</a> and <a href="../theory/analysis.html">Analysis</a> for the methods behind each step.</li></ul><nav class="pager"><span></span><a class="next" href="force-fields.html"><small>Next</small>Force fields and engine inputs</a></nav>
+</main>
+</div>
+<footer class="foot"><span>CAPS 0.1.0 · generated by <code>tools/docs/build_site.py</code> from the program itself</span><a href="https://github.com/MuhammadUzairRiaz/CAPS">github.com/MuhammadUzairRiaz/CAPS</a></footer>
+</body>
+</html>

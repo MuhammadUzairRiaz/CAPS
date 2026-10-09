@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Recipes, provenance and a methods paragraph · CAPS tutorial</title>
+<meta name="description" content="Describe a whole study in one YAML file, run it with one command, and get the methods paragraph, BibTeX and a record that shows exactly how two runs differ.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script defer src="../assets/site.js"></script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="../index.html"><span class="mark" aria-hidden="true"></span>CAPS</a>
+  <button class="menu" aria-expanded="false" aria-controls="nav">Menu</button>
+  <nav id="nav" class="links"><a href="../index.html">Home</a><a href="../cli/index.html">CLI guide</a><a href="../cli/reference.html">Command reference</a><a href="../tutorials/index.html" aria-current="page">Tutorials</a><a href="../theory/index.html">Theory</a><a href="../python.html">Python</a><a href="../manual/index.html">Studio tour</a><a href="https://github.com/MuhammadUzairRiaz/CAPS">GitHub</a></nav>
+</header>
+<div class="doc">
+<nav class="toc" aria-label="On this page"><h2>On this page</h2><a class="l2" href="#a-recipe">A recipe</a><a class="l2" href="#run-it">Run it</a><a class="l2" href="#the-methods-paragraph">The methods paragraph</a><a class="l2" href="#what-differs-between-two-runs">What differs between two runs</a><a class="l2" href="#bundles">Bundles</a><a class="l2" href="#next">Next</a></nav>
+<main>
+<header class="hero"><p class="eyebrow">Tutorial 03</p><h1>Recipes, provenance and a methods paragraph</h1><p>Describe a whole study in one YAML file, run it with one command, and get the methods paragraph, BibTeX and a record that shows exactly how two runs differ.</p><div class="strip"><span><i>Time</i> 5 minutes</span><span><i>Level</i> first steps</span><span><i>Uses</i> run · provenance</span></div></header><h2 id="a-recipe">A recipe</h2>
+<p>A recipe lists the stages of a study: build, type, grow, relax, run, analyse, export. This one ships as <code>samples/ps_cell.yaml</code>:</p>
+<div class="code" data-lang="recipe (YAML)"><pre><code>recipe: 1
+name: ps_cell
+build:
+  polymer:
+    smiles: &quot;*CC(*)c1ccccc1&quot;
+    dp: 20
+    chains: 10
+    tacticity: atactic
+type: { forcefield: gaff2 }
+grow: { trials: 16, density: 0.50, seed: 20260923 }
+relax: { method: lbfgs, fmax: 0.5 }
+md: { ps: 1, temperature: 300, ensemble: nvt }
+analyze: { properties: [density, rg] }
+export: [lammps, gromacs]</code></pre></div>
+<h2 id="run-it">Run it</h2>
+<div class="code" data-lang="shell"><pre><code>caps run samples/ps_cell.yaml --out rec</code></pre></div>
+<p>The folder gets the structure (<code>ps_cell.data</code>), the LAMMPS input, the GROMACS topology and coordinates, the properties (<code>ps_cell.properties.json</code>) and <code>ps_cell.data.provenance.json</code>. Exit codes tell a script what went wrong: 2 a bad recipe, 3 parameters missing from the force field, 4 a failed run.</p>
+<h2 id="the-methods-paragraph">The methods paragraph</h2>
+<div class="code" data-lang="shell"><pre><code>caps provenance rec/ps_cell.data --methods
+caps provenance rec/ps_cell.data --bibtex &gt; refs.bib</code></pre></div>
+<div class="code" data-lang="output"><pre><code>The structure was made by the CAPS recipe &quot;ps_cell&quot; (SHA-256 51565067c3c3…), whose steps follow. Atom types were
+assigned from GAFF2 (moltemplate) [1], with Gasteiger charges [2]. 10 chains of 20 repeat units were grown in a
+periodic cell at an initial density of 0.5 g/cm³ with CAPS 0.1.0, each unit placed from internal coordinates [3] …</code></pre></div>
+<p>Every method CAPS used cites its source, and the references are checked against their DOIs. Edit the paragraph as you like; the facts in it come from the record, not from memory.</p>
+<h2 id="what-differs-between-two-runs">What differs between two runs</h2>
+<div class="code" data-lang="shell"><pre><code>caps run samples/ps_cell.yaml --out rec2 --seed 2
+caps provenance rec/ps_cell.data --compare rec2/ps_cell.data</code></pre></div>
+<div class="code" data-lang="output"><pre><code>step 3 grow.trials            rng                mt19937-64 · seed 20260923  vs  mt19937-64 · seed 2
+step 5 dynamics.nvt           rng                mt19937-64 · seed 1  vs  mt19937-64 · seed 2</code></pre></div>
+<p><code>--seed</code> overrides every seed in the recipe, so replicas need no edited copies.</p>
+<h2 id="bundles">Bundles</h2>
+<p><code>caps bundle FILE --steps S.json -o fig.caps-bundle.zip --include-input</code> packs a figure's data with its analysis pipeline, provenance and hashes; <code>caps reproduce fig.caps-bundle.zip</code> rebuilds the data from the input and compares the SHA-256 of every file. Put a bundle beside each figure of a paper.</p>
+<h2 id="next">Next</h2>
+<ul><li>The <a href="../cli/index.html#putting-commands-together">CLI guide</a> shows recipes beside shell loops and pipelines.</li><li><code>caps bench --quick</code> runs CAPS's built-in validation suite against reference values.</li></ul><nav class="pager"><a href="force-fields.html"><small>Previous</small>Force fields and engine inputs</a><a class="next" href="crosslinking.html"><small>Next</small>Crosslinking a rubber network</a></nav>
+</main>
+</div>
+<footer class="foot"><span>CAPS 0.1.0 · generated by <code>tools/docs/build_site.py</code> from the program itself</span><a href="https://github.com/MuhammadUzairRiaz/CAPS">github.com/MuhammadUzairRiaz/CAPS</a></footer>
+</body>
+</html>
