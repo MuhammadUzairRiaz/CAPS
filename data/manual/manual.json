@@ -1049,7 +1049,7 @@
    "tested": "bench/analyze/check_analyze.py (MDAnalysis)",
    "deviation": "no finite-size (Yeh–Hummer) correction",
    "engines": [],
-   "tex": "D = \\lim_{t\\to\\infty}\\frac{\\left\\langle|r(t) - r(0)|^2\\right\\rangle}{6t}, \\qquad \\text{fitted over 20–50 % of the run}"
+   "tex": "D = \\lim_{t\\to\\infty}\\frac{\\left\\langle|r(t) - r(0)|^2\\right\\rangle}{6t}, \\qquad \\text{fitted over 20–50\\% of the run}"
   },
   {
    "id": "adsorption-locator",

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Coarse-graining a polyester · CAPS tutorial</title>
+<meta name="description" content="Map an all-atom poly(butylene succinate) run onto beads, invert bonded and non-bonded potentials, build a long-chain melt, measure entanglements, and put the atoms back.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script defer src="../assets/site.js"></script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="../index.html"><span class="mark" aria-hidden="true"></span>CAPS</a>
+  <button class="menu" aria-expanded="false" aria-controls="nav">Menu</button>
+  <nav id="nav" class="links"><a href="../index.html">Home</a><a href="../cli/index.html">CLI guide</a><a href="../cli/reference.html">Command reference</a><a href="../tutorials/index.html" aria-current="page">Tutorials</a><a href="../theory/index.html">Theory</a><a href="../python.html">Python</a><a href="../manual/index.html">Studio tour</a><a href="https://github.com/MuhammadUzairRiaz/CAPS">GitHub</a></nav>
+</header>
+<div class="doc">
+<nav class="toc" aria-label="On this page"><h2>On this page</h2><a class="l2" href="#the-route">The route</a><a class="l2" href="#0-an-all-atom-reference-run">0. An all-atom reference run</a><a class="l2" href="#1-map">1. Map</a><a class="l2" href="#2-bonded-potentials">2. Bonded potentials</a><a class="l2" href="#3-non-bonded-potentials">3. Non-bonded potentials</a><a class="l2" href="#4-build-a-long-chain-melt">4. Build a long-chain melt</a><a class="l2" href="#5-entanglements-mechanics-dynamics">5. Entanglements, mechanics, dynamics</a><a class="l2" href="#6-backmap">6. Backmap</a><a class="l2" href="#next">Next</a></nav>
+<main>
+<header class="hero"><p class="eyebrow">Tutorial 05</p><h1>Coarse-graining a polyester</h1><p>Map an all-atom poly(butylene succinate) run onto beads, invert bonded and non-bonded potentials, build a long-chain melt, measure entanglements, and put the atoms back.</p><div class="strip"><span><i>Time</i> 15 minutes</span><span><i>Level</i> advanced</span><span><i>Uses</i> cgmap · cgfit · cgbuild · ppa · cgdyn · mech · backmap</span></div></header><h2 id="the-route">The route</h2>
+<p>The coarse-graining commands follow the order of a study, and each writes the files the next one reads:</p>
+<div class="table"><table><thead><tr><th>Stage</th><th>Command</th><th>Reads</th><th>Writes</th></tr></thead><tbody><tr><td>Map</td><td><code>cgmap</code></td><td>all-atom structure (+ dump)</td><td><code>STEM.map.json</code>, <code>STEM.cg.data</code>, <code>STEM.cg.lammpstrj</code>, <code>types.json</code></td></tr><tr><td>Bonded</td><td><code>cgfit bonded</code></td><td>maps + CG frames</td><td><code>bonded/</code> tables, <code>bonded.in</code>, <code>bonded.json</code></td></tr><tr><td>Non-bonded</td><td><code>cgfit targets</code>, <code>ibi-start</code>/<code>ibi-step</code>/<code>ibi-run</code>, <code>fit</code>, <code>calibrate</code></td><td>maps + frames, targets</td><td>pair tables, LAMMPS decks, <code>run_ibi.sh</code>, fits</td></tr><tr><td>Build</td><td><code>cgbuild</code></td><td><code>bonded.json</code>, maps</td><td><code>melt.cg.data</code>, <code>in.cg_equil</code></td></tr><tr><td>Analyse</td><td><code>ppa</code>, <code>mech</code>, <code>cgdyn</code></td><td>CG frames</td><td>N\(_e\), stress–strain, g\(_1\)–g\(_3\)</td></tr><tr><td>Backmap</td><td><code>backmap</code></td><td>reference all-atom cell + CG frame</td><td>all-atom data, <code>in.backmap</code></td></tr></tbody></table></div>
+<h2 id="0-an-all-atom-reference-run">0. An all-atom reference run</h2>
+<p>A small, short run is enough to follow the route; a real model needs an equilibrated melt with many frames.</p>
+<div class="code" data-lang="shell"><pre><code>caps grow -o pbs.data --chains 6 --dp 6 --density 0.6 --units &#x27;*OCCCCOC(=O)CCC(=O)*&#x27; --seed 1
+caps relax pbs.data -o pbs_min.data --iterations 500 --quiet
+caps md pbs_min.data -o pbs_md.data --steps 3000 --dt 1 --temp 450 --dump pbs.lammpstrj --every 100 --quiet</code></pre></div>
+<h2 id="1-map">1. Map</h2>
+<p>The <code>ester-cut</code> preset cuts every ester C(=O)–O bond, so the fragments are the beads: B for the butanediol part, S for the succinate. Beads are named by rules; a fragment no rule names is reported, never merged silently.</p>
+<div class="code" data-lang="shell"><pre><code>caps cgmap pbs_md.data --preset ester-cut -o cg --dump pbs.lammpstrj</code></pre></div>
+<div class="code" data-lang="output"><pre><code>    B S B S B S B S B S B S
+    note: cut [CX3](=O)-[OX2;!H1]: 66 bonds
+    trajectory: 31 frames → cg/pbs_md.cg.lammpstrj (0.0 s)
+types: 2 bead, 1 bond, 2 angle, 1 dihedral</code></pre></div>
+<p>Several structures mapped together share one type list, so PBS, PBSA and PBAT models can share tables.</p>
+<h2 id="2-bonded-potentials">2. Bonded potentials</h2>
+<p>Boltzmann inversion of the bond, angle and dihedral distributions, with the Jacobians removed:</p>
+<div class="eq">$$U(r) = -k_\mathrm{B}T \ln\frac{P(r)}{r^2}, \qquad U(\theta) = -k_\mathrm{B}T \ln\frac{P(\theta)}{\sin\theta}, \qquad U(\varphi) = -k_\mathrm{B}T \ln P(\varphi)$$</div>
+<div class="code" data-lang="shell"><pre><code>caps cgfit bonded cg/pbs_md.map.json cg/pbs_md.cg.lammpstrj -T 450 -o bonded</code></pre></div>
+<p>Each distribution is inverted only where it exceeds a share of its maximum, with slope-continuous walls outside. The two halves of the molecules are inverted separately as a check, and a NOT CONVERGED note says when they disagree; with this tutorial's 31 frames they do, which is the right warning.</p>
+<h2 id="3-non-bonded-potentials">3. Non-bonded potentials</h2>
+<p>Target radial distribution functions per bead pair, then iterative Boltzmann inversion:</p>
+<div class="eq">$$U_{i+1}(r) = U_i(r) + k_\mathrm{B}T \ln\frac{g_i(r)}{g_\mathrm{target}(r)}$$</div>
+<div class="code" data-lang="shell"><pre><code>caps cgfit targets cg/pbs_md.map.json cg/pbs_md.cg.lammpstrj -T 450 -o targets
+caps cgfit ibi-start cg/pbs_md.map.json --targets targets/targets.json --bonded bonded -T 450 -o ibi</code></pre></div>
+<p><code>ibi-start</code> writes the starting tables, the LAMMPS decks and <code>run_ibi.sh</code>, which runs the loop on a cluster (<code>bash ibi/run_ibi.sh 20</code>). For small systems, <code>ibi-run</code> runs a few iterations with CAPS's own engine:</p>
+<div class="code" data-lang="shell"><pre><code>caps cgfit ibi-run cg/pbs_md.map.json cg/pbs_md.cg.data --targets targets/targets.json \
+  --bonded bonded -T 450 --iterations 2 --steps 1000 -o ibirun</code></pre></div>
+<p>All pairs are updated jointly, with a pressure correction ramp. <code>cgfit fit</code> then fits Lennard-Jones 12-6, 9-6, Morse or Mie forms to the tables, and <code>cgfit calibrate</code> scales σ and ε towards a target density and T\(_g\).</p>
+<h2 id="4-build-a-long-chain-melt">4. Build a long-chain melt</h2>
+<div class="code" data-lang="shell"><pre><code>caps cgbuild --units BS=B+S --dp 20 --chains 10 --density 1.2 --bonded bonded \
+  --maps cg/pbs_md.map.json -T 450 -o melt cg/pbs_md.map.json cg/pbs_md.cg.lammpstrj</code></pre></div>
+<div class="code" data-lang="output"><pre><code>  ⟨R²(n)⟩/n at n =  10: built 55.1 Å², all-atom 53.1 Å² (ratio 1.04)
+wrote melt/melt.cg.data, .map.json, .internal.csv and melt/in.cg_equil</code></pre></div>
+<p>Chains are random walks drawn from the inverted bonded distributions, with real sequence statistics for copolymers (<code>--composition</code>, <code>--sequence markov</code>). Given the all-atom maps and frames, it compares the internal distances with the all-atom model's. <code>in.cg_equil</code> equilibrates the melt in LAMMPS: soft push-off, the model's pairs, a hot anneal, NPT.</p>
+<h2 id="5-entanglements-mechanics-dynamics">5. Entanglements, mechanics, dynamics</h2>
+<div class="code" data-lang="shell"><pre><code>caps ppa melt/melt.map.json melt/melt.cg.data -o ppa
+caps cgdyn cg/pbs_md.map.json cg/pbs_md.cg.lammpstrj --dt 1 -o dyn
+caps mech decks --rates 1e-6 --mode stress -o tension</code></pre></div>
+<p><code>ppa</code> finds primitive paths (CAPS's own PPA, a LAMMPS deck with <code>--method lammps</code>, or Z1+) and reports the entanglement length by the estimators of Hoy, Foteinopoulou and Kröger (2009), for example the modified S-coil:</p>
+<div class="eq">$$N_e = (N - 1)\left(\frac{\langle L_\mathrm{pp}^2 \rangle}{\langle R^2 \rangle} - 1\right)^{-1}$$</div>
+<p>Run on an equilibrated melt; the unrelaxed build above only shows the output. <code>cgdyn</code> gives g\(_1\), g\(_2\), g\(_3\), the diffusion coefficient and τ\(_R\); <code>cgdyn timemap</code> maps CG time onto all-atom time. <code>mech decks</code> writes tension inputs; <code>mech analyze</code> gives the modulus, yield, softening and strain-hardening modulus.</p>
+<h2 id="6-backmap">6. Backmap</h2>
+<div class="code" data-lang="shell"><pre><code>caps backmap cg/pbs_md.map.json pbs_md.data --cg melt/melt.map.json --frame melt/melt.cg.data -o aa</code></pre></div>
+<div class="code" data-lang="output"><pre><code>400 beads → 4820 atoms · 4810 bonds, 8800 angles, 11580 dihedrals, 1200 impropers · net charge 0.0000 e
+next: lmp -in aa/in.backmap -var DATA backmapped.data -var OUT relaxed (from aa), then caps backmap check aa/relaxed.data</code></pre></div>
+<p>Each bead gets a fragment of its class (head, inner or tail) from the reference cell, turned to its chain neighbours. The cut bonds and every term across them are restored with their own types and charges. <code>in.backmap</code> relaxes in stages, and <code>caps backmap check</code> compares bond lengths and angles with the force field's.</p>
+<h2 id="next">Next</h2>
+<ul><li>The Studio's Coarse-grain page runs the same stages with a plot for each and the command line to copy.</li><li><a href="../theory/coarse-grained.html">Theory: Coarse-grained</a> has every equation and its reference.</li></ul><nav class="pager"><a href="crosslinking.html"><small>Previous</small>Crosslinking a rubber network</a><a class="next" href="dft-surfaces.html"><small>Next</small>A DFT surface study</a></nav>
+</main>
+</div>
+<footer class="foot"><span>CAPS 0.1.0 · generated by <code>tools/docs/build_site.py</code> from the program itself</span><a href="https://github.com/MuhammadUzairRiaz/CAPS">github.com/MuhammadUzairRiaz/CAPS</a></footer>
+</body>
+</html>
