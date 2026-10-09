@@ -2669,6 +2669,367 @@
    "tex": "V_{i+1}(r) = V_i(r) + \\alpha\\,k_B T \\ln\\frac{g_i(r)}{g_{\\mathrm t}(r)},\\qquad V_0(r) = -k_B T \\ln g_{\\mathrm t}(r)"
   },
   {
+   "id": "cg-mapping",
+   "title": "Chemistry-aware coarse-grained mapping",
+   "summary": "Beads follow the chemistry, not a count of atoms. Bonds matched by SMARTS are cut (for polyesters every ester C(=O)–O, the bond between the pattern's first and last atoms) and the connected fragments left are the beads; or fragments are given by SMARTS (an exact cover of each molecule), or listed atom by atom. Each fragment is classed by its formula, aromaticity and a Weisfeiler–Lehman key of its heavy-atom graph, and named by the first naming SMARTS that embeds in it; a class no rule names stops the mapping (or is named by its class), never merged into a neighbour. End groups stay in their bead, so mass is conserved exactly. Several systems share one type list (bead, bond, angle and dihedral types numbered alike), so PBS, PBSA and PBAT share B and its terms.",
+   "equation": "R_I = Σ_{i∈I} m_i r_i / Σ_{i∈I} m_i   (centre of mass; or the centre of geometry, or one named atom)",
+   "equation_note": "the PBS, PBSA (80/20) and PBAT (56/44) cells of DP 25: 2 beads per repeat unit, mass conserved to 10⁻⁸ g/mol",
+   "tex": "\\mathbf{R}_I = \\frac{\\sum_{i \\in I} m_i\\, \\mathbf{r}_i}{\\sum_{i \\in I} m_i}",
+   "symbols": [
+    [
+     "R_I",
+     "position of bead I",
+     "Å"
+    ],
+    [
+     "m_i, r_i",
+     "mass and position of atom i of the bead",
+     "g/mol, Å (made whole about the bead's first atom)"
+    ]
+   ],
+   "when": "caps cgmap (Coarse-grain page, Mapping). Trajectories are mapped frame by frame (LAMMPS dumps: xu yu zu, x y z with or without image flags, scaled); wrapped beads are made whole along each chain's bonds.",
+   "cites": [],
+   "source": "core/src/cg_rules.cpp, data/cg/mapping_rules.json",
+   "tested": "CgRules.*, bench T13",
+   "deviation": "",
+   "engines": [
+    "caps cgmap",
+    "Coarse-grain page"
+   ],
+   "group": "Coarse-grained"
+  },
+  {
+   "id": "cg-bonded-bi",
+   "title": "Bonded potentials by Boltzmann inversion",
+   "summary": "Bond, angle and dihedral distributions of the mapped beads, gathered over many frames of several systems (each system's histograms normalised, then weighted), are inverted per type. Only where the smoothed distribution exceeds a share of its maximum (5 %) is it inverted; outside, the potential continues with its edge slope and a stiff quadratic wall, so sparse tails — distorted contacts of an unrelaxed start — cannot leave soft spots that let beads collapse. Dihedrals use the IUPAC sign; unsampled ranges get a smooth barrier. Each table carries a split-half check (odd and even molecules inverted separately): halves more than 1 kT apart are reported as not converged. A bonded IBI step corrects the shift the non-bonded 1–3 and 1–4 terms cause.",
+   "equation": "U(r) = −kT ln[P(r)/r²],  U(θ) = −kT ln[P(θ)/sin θ],  U(φ) = −kT ln P(φ);  refinement U ← U + α kT ln(P_CG/P_target)",
+   "equation_note": "ideal chain drawn from known potentials: recovered within 0.06 kT (bench T14: ≤ 0.1 kT)",
+   "tex": "U(r) = -k_BT \\ln\\frac{P(r)}{r^{2}}, \\quad U(\\theta) = -k_BT \\ln\\frac{P(\\theta)}{\\sin\\theta}, \\quad U(\\varphi) = -k_BT \\ln P(\\varphi), \\qquad U \\leftarrow U + \\alpha\\, k_BT \\ln\\frac{P_{\\mathrm{CG}}}{P_{\\mathrm{target}}}",
+   "symbols": [
+    [
+     "P",
+     "distribution of the bond length r, angle θ or dihedral φ (smoothed, at least one bin, widened to Silverman's bandwidth for few samples)",
+     "—"
+    ],
+    [
+     "k_BT",
+     "the inversion's thermal energy",
+     "kcal/mol"
+    ],
+    [
+     "α",
+     "damping of a refinement step",
+     "0.5"
+    ]
+   ],
+   "when": "caps cgfit bonded / refine. Writes LAMMPS bond and angle tables (angles in degrees, the force per degree as angle_style table reads it), dihedral_style table/cut (its aat switch turns a dihedral off as an angle straightens) and GROMACS tables (which recent GROMACS versions do not run). The suggested time step is a thirtieth of the stiffest bond's period with its wall (10.5 fs for the polyester tables).",
+   "cites": [
+    "tschop1998",
+    "reith2003"
+   ],
+   "source": "core/src/cg_bonded.cpp",
+   "tested": "CgBonded.*, bench T14",
+   "deviation": "The walls and the gap barriers are CAPS's choices for unsampled ranges, not inverted data.",
+   "engines": [
+    "caps cgfit bonded",
+    "Coarse-grain page"
+   ],
+   "group": "Coarse-grained"
+  },
+  {
+   "id": "cg-ibi-joint",
+   "title": "Joint per-pair iterative Boltzmann inversion",
+   "summary": "One table per bead-type pair, started from −kT ln g of the targets and refined from CG runs. Several systems are fitted at once: a pair present in several (B–B in PBS, PBSA and PBAT) gets the average of their corrections, weighted by each system's statistics at that distance and its weight, so one table set serves all of them. The pressure correction adds a linear ramp that vanishes at the cut-off; its amplitude follows the weighted mean pressure error. Convergence per pair: the relative squared deviation of g and its largest point deviation. g(r) alone hardly fixes the pressure: the ramp and the thermomechanical calibration exist for that.",
+   "equation": "U_{n+1}(r) = U_n(r) + α kT Σ_s w_s c_s(r) ln[g_s,n(r)/g_s,t(r)] / Σ_s w_s c_s(r) + A (1 − r/r_c),  A = −0.1 kT sign(ΔP) min(1, 0.0003 |ΔP|/bar)",
+   "equation_note": "LAMMPS runs the tables (pair_style table) with the bonded tables; run_ibi.sh loops LAMMPS and caps cgfit ibi-step",
+   "tex": "U_{n+1}(r) = U_n(r) + \\alpha k_BT\\, \\frac{\\sum_s w_s c_s(r) \\ln \\dfrac{g_{s,n}(r)}{g_{s,t}(r)}}{\\sum_s w_s c_s(r)} + A\\left(1 - \\frac{r}{r_c}\\right), \\quad A = -0.1\\, k_BT\\, \\operatorname{sign}(\\Delta P) \\min\\!\\left(1, 0.0003\\, \\frac{|\\Delta P|}{\\text{bar}}\\right)",
+   "symbols": [
+    [
+     "g_{s,n}, g_{s,t}",
+     "system s's CG and target g(r) of the pair",
+     "—"
+    ],
+    [
+     "w_s, c_s",
+     "system weight and its ideal pair count",
+     "—"
+    ],
+    [
+     "α",
+     "damping",
+     "0.2"
+    ],
+    [
+     "ΔP",
+     "weighted mean pressure error",
+     "atm → bar"
+    ],
+    [
+     "r_c",
+     "the table's cut-off (on the table grid)",
+     "Å"
+    ]
+   ],
+   "when": "caps cgfit targets, ibi-start, ibi-step (each system's dump and log), ibi-run (CAPS's engine, small systems; bonded terms as springs at the tables' wells, dihedrals left out). Pairs no system has get a zero table so LAMMPS has every coefficient (said in pair.in). Below the first resolved g the wall is linear plus quadratic (10 kcal/mol/Å²).",
+   "cites": [
+    "reith2003"
+   ],
+   "source": "core/src/cg_nonbonded.cpp",
+   "tested": "CgNonbonded.*, bench T15",
+   "deviation": "",
+   "engines": [
+    "caps cgfit",
+    "Coarse-grain page"
+   ],
+   "group": "Coarse-grained"
+  },
+  {
+   "id": "cg-calibration",
+   "title": "Analytic pairs and thermomechanical calibration",
+   "summary": "IBI tables belong to one state point. For mechanics they are fitted by an analytic form (LJ 12-6, LJ 9-6 as lj/class2, Morse, or Mie n–6), over the well and the repulsion up to a few kT, by Levenberg–Marquardt with the shift at the cut-off kept. The fitted set is then scaled: every σ by one factor to reach the target density, every ε by one factor to reach the target T_g, the ratios between pairs kept. Each step is a secant in log–log from the runs so far (the first from ρ ∝ s_σ⁻³ and T_g ∝ s_ε). T_g comes from a stepwise cooling scan: a bilinear fit of the specific volume.",
+   "equation": "s_σ ← s_σ exp[(ln ρ_t − ln ρ)/m_ρ],  s_ε ← s_ε exp[(ln T_g,t − ln T_g)/m_T],  m: the secant slopes (−3 and 1 at first)",
+   "equation_note": "secant steps are limited to ×0.8–1.25 (σ) and ×0.7–1.4 (ε) per run",
+   "tex": "s_\\sigma \\leftarrow s_\\sigma \\exp\\!\\left[\\frac{\\ln\\rho_t - \\ln\\rho}{m_\\rho}\\right], \\qquad s_\\varepsilon \\leftarrow s_\\varepsilon \\exp\\!\\left[\\frac{\\ln T_{g,t} - \\ln T_g}{m_T}\\right]",
+   "symbols": [
+    [
+     "s_σ, s_ε",
+     "scale factors of every σ and every ε",
+     "—"
+    ],
+    [
+     "ρ, ρ_t",
+     "the CG run's density and the target",
+     "g/cm³"
+    ],
+    [
+     "T_g, T_g,t",
+     "the CG run's glass transition and the target",
+     "K"
+    ],
+    [
+     "m_ρ, m_T",
+     "slopes of ln ρ against ln s_σ and of ln T_g against ln s_ε",
+     "from the last two runs"
+    ]
+   ],
+   "when": "caps cgfit fit, tg, calibrate (in.cg_run with ENS npt for the density, in.cg_tg for the cooling scan). Energy renormalisation (ε as a function of T) is not done.",
+   "cites": [],
+   "source": "core/src/cg_nonbonded.cpp",
+   "tested": "CgNonbonded.FitsRecoverKnownParameters, CgNonbonded.CalibrationSteps",
+   "deviation": "",
+   "engines": [
+    "caps cgfit",
+    "Coarse-grain page"
+   ],
+   "group": "Coarse-grained"
+  },
+  {
+   "id": "cg-build",
+   "title": "Coarse-grained melts of real sequences",
+   "summary": "Chains of repeat units (each a bead sequence: BS, BA, BT) drawn with Bernoulli, first-order Markov, block, gradient, alternating or patterned sequences, monodisperse or with drawn lengths (Schulz–Zimm …), as random walks whose bonds, angles and dihedrals are drawn from the inverted distributions (their Jacobians put back), in a cubic box at the density. The walks start with the all-atom model's local structure and overlap; a soft push-off, the model's pairs with limited steps, a hot anneal and NPT follow (in.cg_equil). The report compares ⟨R²(n)⟩/n with the mapped all-atom chains and warns when the box is smaller than the chains.",
+   "equation": "⟨R²(n)⟩/n → ⟨b²⟩ (1 − ⟨cos θ⟩)/(1 + ⟨cos θ⟩)   (independent bonds and angles, uniform dihedrals: a freely rotating chain)",
+   "equation_note": "the PBSA walks reproduce the mapped cell's ⟨R²(n)⟩/n within 2 % for n = 1–20",
+   "tex": "\\frac{\\langle R^{2}(n)\\rangle}{n} \\;\\to\\; \\langle b^{2}\\rangle\\, \\frac{1 - \\langle\\cos\\theta\\rangle}{1 + \\langle\\cos\\theta\\rangle}",
+   "symbols": [
+    [
+     "R(n)",
+     "distance between beads n bonds apart",
+     "Å"
+    ],
+    [
+     "b",
+     "bond length",
+     "Å"
+    ],
+    [
+     "θ",
+     "bond angle at a bead",
+     "—"
+    ]
+   ],
+   "when": "caps cgbuild (Coarse-grain page, Build CG melt). L ≥ R_ee at least, 1.5 R_ee better: a smaller box lets chains meet their own images.",
+   "cites": [
+    "auhl2003"
+   ],
+   "source": "core/src/cg_build.cpp",
+   "tested": "CgBuild.*",
+   "deviation": "Neighbouring angles and dihedrals are drawn independently (their correlations come back during equilibration).",
+   "engines": [
+    "caps cgbuild",
+    "Coarse-grain page"
+   ],
+   "group": "Coarse-grained"
+  },
+  {
+   "id": "cg-entanglement",
+   "title": "Entanglement length estimators",
+   "summary": "Primitive paths from CAPS's PPA (ends held, intra-chain pairs off, FENE bonds with zero rest length, K = 30 ε/σ²), a LAMMPS PPA deck with the same potentials (the two agree within 1 % on a test melt), or Z1+'s shortest paths (Z = interior kinks). N_e follows from the classical and modified single-chain-length estimators, and from M-kink and M-coil over several chain lengths, which converge fastest. M_e = N_e × the mean bead mass.",
+   "equation": "S-coil N_e = (N−1)⟨R²⟩/⟨L_pp⟩²; S-kink N_e = N(N−1)/(⟨Z⟩(N−1)+N); mod S-kink N_e = N/⟨Z⟩; mod S-coil N_e = (N−1)(⟨L_pp²⟩/⟨R²⟩−1)⁻¹; M-kink 1/N_e = d⟨Z⟩/dN; M-coil C(x)/x|_{x=N_e} = d/dN(⟨L_pp⟩²/((N−1)l₀²))",
+   "equation_note": "Hoy, Foteinopoulou & Kröger 2009, Eqs. (4)–(7), (13), (15); N beads per chain",
+   "tex": "N_e^{\\text{S-coil}} = \\frac{(N-1)\\langle R^2\\rangle}{\\langle L_{pp}\\rangle^2}, \\quad N_e^{\\text{S-kink}} = \\frac{N(N-1)}{\\langle Z\\rangle (N-1) + N}, \\quad N_e^{\\text{mod S-kink}} = \\frac{N}{\\langle Z\\rangle}, \\quad N_e^{\\text{mod S-coil}} = (N-1)\\left(\\frac{\\langle L_{pp}^2\\rangle}{\\langle R^2\\rangle} - 1\\right)^{-1}, \\quad \\frac{1}{N_e^{\\text{M-kink}}} = \\frac{d\\langle Z\\rangle}{dN}",
+   "symbols": [
+    [
+     "N",
+     "beads per chain",
+     "—"
+    ],
+    [
+     "R",
+     "end-to-end distance",
+     "Å"
+    ],
+    [
+     "L_pp",
+     "primitive path contour length",
+     "Å"
+    ],
+    [
+     "Z",
+     "interior kinks of a shortest path (Z1+)",
+     "—"
+    ],
+    [
+     "C(x)",
+     "characteristic ratio of a chain of x beads, from ⟨R²(n)⟩",
+     "—"
+    ],
+    [
+     "l₀",
+     "bond length",
+     "Å"
+    ]
+   ],
+   "when": "caps ppa (Coarse-grain page, Analyse). Z1+ is run when it is installed ($CAPS_Z1); otherwise config.Z1 is written for it. Kink estimators need Z1+.",
+   "cites": [
+    "everaers2004",
+    "hoy2009",
+    "kroger2005",
+    "kroger2022"
+   ],
+   "source": "core/src/cg_analysis.cpp",
+   "tested": "CgAnalysis.EstimatorFormulas, CgAnalysis.Z1ConfigAndPaths",
+   "deviation": "",
+   "engines": [
+    "caps ppa",
+    "Coarse-grain page"
+   ],
+   "group": "Coarse-grained"
+  },
+  {
+   "id": "cg-tension",
+   "title": "Uniaxial tension of coarse-grained melts",
+   "summary": "LAMMPS decks for each mode and rate: stress mode (the lateral axes at P with an uncoupled NPT, so voids and necking can form) or constant volume, after an NPT relaxation. The axial stress and its bond, angle, dihedral, pair and kinetic parts (stress/atom per term, summed; they add up to the total) are printed at even strain steps, with frames for orientation and entanglement analyses. The analysis gives the modulus, the yield (where the smoothed stress first falls 2 % below its running maximum), the softening and the strain-hardening modulus.",
+   "equation": "σ = −(P_zz − (P_xx + P_yy)/2),  σ = σ₀ + G_R (λ² − 1/λ) past the softening,  λ = 1 + ε",
+   "equation_note": "⟨P₂⟩ = ⟨(3 cos²β − 1)/2⟩ of the bonds against the pull; R_ee anisotropy ⟨R_z²⟩/(½(⟨R_x²⟩ + ⟨R_y²⟩))",
+   "tex": "\\sigma = -\\left(P_{zz} - \\frac{P_{xx} + P_{yy}}{2}\\right), \\qquad \\sigma = \\sigma_0 + G_R\\left(\\lambda^{2} - \\frac{1}{\\lambda}\\right), \\quad \\lambda = 1 + \\varepsilon",
+   "symbols": [
+    [
+     "P_ij",
+     "pressure tensor",
+     "atm → MPa"
+    ],
+    [
+     "G_R",
+     "strain-hardening modulus",
+     "MPa"
+    ],
+    [
+     "λ, ε",
+     "stretch and engineering strain along z",
+     "—"
+    ]
+   ],
+   "when": "caps mech decks / analyze. Rates are CG time: map them to all-atom time with the factor of caps cgdyn timemap before comparing with experiment.",
+   "cites": [
+    "hoyrobbins2006"
+   ],
+   "source": "core/src/cg_analysis.cpp",
+   "tested": "CgAnalysis.TensionCurve",
+   "deviation": "",
+   "engines": [
+    "caps mech",
+    "Coarse-grain page"
+   ],
+   "group": "Coarse-grained"
+  },
+  {
+   "id": "cg-dynamics",
+   "title": "Chain dynamics and the coarse-grained time scale",
+   "summary": "Mean-square displacements over all time origins at logarithmic lags: g₁ of the inner half of each chain, g₂ about the chain's centre of mass, g₃ of the centres of mass; the bond and end-to-end autocorrelations. D from g₃'s last decade, τ_R where the end-to-end correlation falls to 1/e, τ_e where g₁'s local exponent first falls below 3/8 after the Rouse ½. CG dynamics run faster than all-atom (less friction): the time factor comes from the overlap of the two g₁ curves of the same system.",
+   "equation": "g₁(t) = ⟨|r_i(t) − r_i(0)|²⟩_inner,  g₃(t) = ⟨|R_cm(t) − R_cm(0)|²⟩,  D = lim g₃/6t,  t_AA = s t_CG,  ln s = ⟨ln t_AA(g) − ln t_CG(g)⟩_g",
+   "equation_note": "s is the geometric mean of the time ratios at equal g₁; its spread says whether one factor fits all time scales",
+   "tex": "g_1(t) = \\langle |\\mathbf{r}_i(t) - \\mathbf{r}_i(0)|^2 \\rangle_{\\text{inner}}, \\quad g_3(t) = \\langle |\\mathbf{R}_{cm}(t) - \\mathbf{R}_{cm}(0)|^2 \\rangle, \\quad D = \\lim_{t\\to\\infty} \\frac{g_3}{6t}, \\quad \\ln s = \\left\\langle \\ln t_{AA}(g) - \\ln t_{CG}(g) \\right\\rangle_g",
+   "symbols": [
+    [
+     "r_i",
+     "bead positions (unwrapped)",
+     "Å"
+    ],
+    [
+     "R_cm",
+     "chain centre of mass",
+     "Å"
+    ],
+    [
+     "s",
+     "time-mapping factor t_AA = s t_CG",
+     "—"
+    ]
+   ],
+   "when": "caps cgdyn (a CG run, or a mapped all-atom trajectory), caps cgdyn timemap AA.csv CG.csv.",
+   "cites": [],
+   "source": "core/src/cg_analysis.cpp",
+   "tested": "CgAnalysis.OrientationAndDynamics",
+   "deviation": "",
+   "engines": [
+    "caps cgdyn",
+    "Coarse-grain page"
+   ],
+   "group": "Coarse-grained"
+  },
+  {
+   "id": "cg-backmap",
+   "title": "Backmapping chemistry-specific beads",
+   "summary": "A fragment library from a reference all-atom cell and its mapping: each bead class (kind and place in the chain) with conformers, and every bond, angle, dihedral and improper as a template over the classes of the consecutive beads it spans. Each target bead gets a fragment of its class, its centre of mass on the bead, turned by Horn's fit so that the directions to its two chain neighbours match the reference's; the cut bonds and the terms across them come back with their types and charges. A staged relaxation follows: bonded terms only, a soft-core push-off, the full force field (minimised with Ewald when the reference uses PPPM), a short NPT.",
+   "equation": "x_a = R_b + 𝐑 (x_a,ref − R_b,ref),  𝐑 from Horn's fit of {0, d₁, d₂} (the directions to the two chain neighbours)",
+   "equation_note": "PBSA DP-50 melt: 4000 beads → 50 580 atoms, neutral; restored ester bonds 0.71 Å off r₀ → 0.017 Å after stages 1–3",
+   "tex": "\\mathbf{x}_a = \\mathbf{R}_b + \\mathsf{R}\\,(\\mathbf{x}_{a,\\mathrm{ref}} - \\mathbf{R}_{b,\\mathrm{ref}}), \\qquad \\mathsf{R} = \\arg\\min \\sum_{k=1}^{2} \\left|\\mathsf{R}\\, \\mathbf{d}_{k,\\mathrm{ref}} - \\mathbf{d}_k\\right|^2",
+   "symbols": [
+    [
+     "x_a",
+     "position of atom a of the fragment",
+     "Å"
+    ],
+    [
+     "R_b",
+     "bead position (target) and its reference",
+     "Å"
+    ],
+    [
+     "d_k",
+     "directions to the two orienting chain neighbours",
+     "Å"
+    ],
+    [
+     "𝐑",
+     "rotation (Horn's quaternion fit)",
+     "—"
+    ]
+   ],
+   "when": "caps backmap REF_MAP REF_DATA --cg MAP --frame FRAME --input REF.in; caps backmap check relaxed.data (bonds and angles against harmonic r₀, θ₀).",
+   "cites": [
+    "horn1987"
+   ],
+   "source": "core/src/cg_backmap.cpp",
+   "tested": "python: backmap gives back every term of the cell it was mapped from",
+   "deviation": "Fragments are placed rigidly: the cut bonds start stretched or compressed until the relaxation.",
+   "engines": [
+    "caps backmap",
+    "Coarse-grain page"
+   ],
+   "group": "Coarse-grained"
+  },
+  {
    "id": "termination-height",
    "group": "DFT surfaces",
    "title": "Termination height from the bond length",
