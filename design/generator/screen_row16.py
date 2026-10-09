@@ -96,7 +96,7 @@ def smart_select():
                ("Stereo centres", "stereo *", f"{len(stereo)}"), ("Hydrogens", "element H", f"{nH}"),
                ("Near ring 5", "within 5 of ring 5", f"{len(near)}"), ("… heavy only", "within 5 of ring 5 and not H", f"{len(near_heavy)}")]
     pt = table(["Saved query", "Expression", "Atoms"], [[a, b, c] for a, b, c in presets], ["26%", "60%", "14%"], mono_cols=(1, 2), align_right=(2,), fs=11, rowh=28, hl={0})
-    grammar = [("element C N O", "by element"), ("smarts \"…\"", "RDKit SMARTS match"), ("within 5.0 of sel", "distance in Å"), ("chain 1-4", "chains or residues"),
+    grammar = [("element C N O", "by element"), ("smarts \"…\"", "SMARTS match"), ("within 5.0 of sel", "distance in Å"), ("chain 1-4", "chains or residues"),
                ("stereo R|S|*", "stereo centres"), ("and · or · not · ( )", "combine")]
     gr = "".join(f'<div style="display: flex; gap: 10px; padding: 5px 0; border-bottom: 1px solid {BG2}; font-size: 12px"><span style="width: 170px; flex-shrink: 0; font-family: {MONO}; color: {SEL}">{a}</span><span style="color: {MUTED}">{b}</span></div>' for a, b in grammar)
     right = (panel_head("Select by query", chip("⌘F", MUTED, BG2, True))

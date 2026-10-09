@@ -250,7 +250,7 @@ def convergence():
 
 # ------------------------------------------------------------------ Provenance viewer
 def provenance():
-    steps = [("chem.build", "polymer from *CC(*)c1ccccc1 · DP 40 × 20", "RDKit 2025.09 · ETKDG v3", "riniker2015"),
+    steps = [("chem.build", "polymer from *CC(*)c1ccccc1 · DP 40 × 20", "CAPS builder · UFF clean-up", "rappe1992"),
              ("field.assign", "GAFF2 · AM1-BCC library charges", "caps-ffdb 1.0", "wang2004"),
              ("grow.cbmc", "k = 16 · ρ₀ 0.50 g/cm³ · seed 20260923", "Philox4x32-10", "siepmann1992 · rosenbluth1955"),
              ("relax.lbfgs", "|F|max 0.02 kcal/mol/Å · push-off on", "", "liu1989 · auhl2003"),
