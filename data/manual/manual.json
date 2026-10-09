@@ -794,11 +794,12 @@
    ],
    "when": "Geometry clean-up of any molecule; runs on structures outside GAFF's scope. UFF has no charges of its own: use QEq when electrostatics matter.",
    "cites": [
-    "rappe1992"
+    "rappe1992",
+    "rappe1991"
    ],
    "source": "core/src/uff.cpp · core/src/uff_params.inc",
    "tested": "Uff.TableCoversEveryElementToLawrencium · Uff.ForcesMatchFiniteDifferences · Uff.CleanUpGivesTextbookGeometry",
-   "deviation": "functional forms and special cases follow RDKit's UFF, whose parameter table CAPS carries; LAMMPS export checked term by term",
+   "deviation": "parameter table typed in from the paper's Tables I and III and the QEq paper (Rh6+3 Z1 = 3.508 as printed); a wall below 30° on the periodic angle terms, not in the paper; LAMMPS export checked term by term",
    "engines": [
     "field.assign",
     "chem.build",

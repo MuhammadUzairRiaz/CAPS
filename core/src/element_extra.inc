@@ -1,5 +1,5 @@
 // Element data for labels (generated; do not edit by hand):
-//   names and most common isotope (mass number): RDKit 2026.03.3 periodic table (BSD)
+//   names and most common isotope (mass number): RDKit 2026.03.3 periodic table (BSD; licenses/RDKit-periodic-table.txt)
 //   Pauling electronegativity and ground-state electron configuration: Blue Obelisk Data Repository via VTK 9.6.1 (MIT);
 //   0 = not tabulated. Indexed by atomic number (0 unused).
 struct ElementExtra { const char* name; double pauling; int mass_number; const char* configuration; };

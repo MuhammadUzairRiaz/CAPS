@@ -1404,7 +1404,7 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
               o.e = t.a * (1 - std::cos(nn * th)) / (nn * nn);
               dEdth = t.a * std::sin(nn * th) / nn;
             }
-            if (c > 0.8660) {   // UFF's wall below 30°, where these periodic forms have a spurious minimum (as RDKit)
+            if (c > 0.8660) {   // a wall below 30°, where these periodic forms have a spurious minimum (not in the paper)
               const double w = std::exp(-20 * (th - t.b + 0.25));
               o.e += w;
               dEdth += -20 * w;

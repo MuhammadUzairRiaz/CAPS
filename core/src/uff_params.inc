@@ -1,6 +1,13 @@
-// UFF atomic parameters (Rappé, Casewit, Colwell, Goddard & Skiff, J. Am. Chem. Soc. 114, 10024 (1992)), as tabulated
-// in RDKit's Code/ForceField/UFF/Params.cpp (Copyright (C) 2004-2021 Greg Landrum and other RDKit contributors, BSD
-// licence: redistribution with this notice; see licenses/RDKit-UFF-parameters.txt).
+// UFF atomic parameters, CAPS's own table, typed in from the published sources and checked against the page images:
+//   r1, theta0, x1, D1, zeta, Z1  Rappé, Casewit, Colwell, Goddard & Skiff, J. Am. Chem. Soc. 114, 10024 (1992),
+//                                 Table I (Rh6+3 Z1 = 3.508 as printed).
+//   V1                            the same paper, Table III (sp3 torsional barriers; 0 for every other type).
+//   U1                            the same paper, text after eq 17: 2, 1.25, 0.7, 0.2, 0.1 for periods 2 to 6
+//                                 (0 for periods 1 and 7, which the paper does not assign).
+//   Xi, hardness, radius          H Li C N O F Na Si P S Cl K Br Rb I Cs: Rappé & Goddard, J. Phys. Chem. 95, 3358
+//                                 (1991), Table I (hardness η = J / 2). Every other element: UFF's GMP electronegativity
+//                                 set (Rappé & Goddard, ref. 13 of the UFF paper, cited there as submitted and never
+//                                 printed in full), the values UFF implementations share.
 // label, r1 (Å), theta0 (deg), x1 (Å), D1 (kcal/mol), zeta, Z1, V1 (kcal/mol), U1 (kcal/mol), Xi (GMP electronegativity, eV),
 // hardness η (eV; the QEq idempotential J = 2η), QEq radius (Å)
 // clang-format off
@@ -69,7 +76,7 @@
 {"Mo3+6", 1.484, 109.47, 3.052, 0.056, 12, 3.4, 0, 0.2, 3.465, 3.755, 1.53},
 {"Tc6+5", 1.322, 90, 2.998, 0.048, 12, 3.4, 0, 0.2, 3.29, 3.99, 1.5},
 {"Ru6+2", 1.478, 90, 2.963, 0.056, 12, 3.4, 0, 0.2, 3.575, 4.015, 1.5},
-{"Rh6+3", 1.332, 90, 2.929, 0.053, 12, 3.5, 0, 0.2, 3.975, 4.005, 1.509},
+{"Rh6+3", 1.332, 90, 2.929, 0.053, 12, 3.508, 0, 0.2, 3.975, 4.005, 1.509},
 {"Pd4+2", 1.338, 90, 2.899, 0.048, 12, 3.21, 0, 0.2, 4.32, 4, 1.544},
 {"Ag1+1", 1.386, 180, 3.148, 0.036, 12, 1.956, 0, 0.2, 4.436, 3.134, 1.622},
 {"Cd3+2", 1.403, 109.47, 2.848, 0.228, 12, 1.65, 0, 0.2, 5.034, 3.957, 1.6},
