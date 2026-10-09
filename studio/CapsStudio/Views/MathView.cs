@@ -134,7 +134,7 @@ public sealed class MathView : Control
             ["lfloor"] = ("⌊", SymKind.Open), ["rfloor"] = ("⌋", SymKind.Close), ["lceil"] = ("⌈", SymKind.Open), ["rceil"] = ("⌉", SymKind.Close),
             ["|"] = ("‖", SymKind.Upright), ["AA"] = ("Å", SymKind.Upright), ["angle"] = ("∠", SymKind.Upright),
         };
-        private static readonly HashSet<string> Funcs = ["exp", "ln", "log", "cos", "sin", "tan", "erfc", "erf", "sign", "tr", "dev", "det", "arccos"];
+        private static readonly HashSet<string> Funcs = ["exp", "ln", "log", "cos", "sin", "tan", "erfc", "erf", "sign", "tr", "dev", "det", "arccos", "arg"];
         private static readonly HashSet<string> Limits = ["lim", "min", "max", "argmax", "argmin", "sup", "inf"];
         private static readonly Dictionary<string, double> Spaces = new() { [","] = 0.17, [":"] = 0.22, [";"] = 0.28, ["!"] = -0.17, [" "] = 0.3, ["quad"] = 1, ["qquad"] = 2 };
 

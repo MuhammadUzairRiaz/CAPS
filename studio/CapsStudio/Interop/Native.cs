@@ -535,6 +535,8 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_smarts_count")] public static extern int SmartsCount([MarshalAs(UnmanagedType.LPUTF8Str)] string smiles, [MarshalAs(UnmanagedType.LPUTF8Str)] string smarts);
     [DllImport(Lib, EntryPoint = "caps_dft_run")] public static extern int DftRun([MarshalAs(UnmanagedType.LPUTF8Str)] string command, [MarshalAs(UnmanagedType.LPUTF8Str)] string args, [MarshalAs(UnmanagedType.LPUTF8Str)] string dataDir, byte[]? text, int cap);
     [DllImport(Lib, EntryPoint = "caps_dft_help")] public static extern int DftHelp([MarshalAs(UnmanagedType.LPUTF8Str)] string command, byte[]? text, int cap);
+    [DllImport(Lib, EntryPoint = "caps_cg_run")] public static extern int CgRun([MarshalAs(UnmanagedType.LPUTF8Str)] string command, [MarshalAs(UnmanagedType.LPUTF8Str)] string args, [MarshalAs(UnmanagedType.LPUTF8Str)] string dataDir, byte[]? text, int cap);
+    [DllImport(Lib, EntryPoint = "caps_cg_help")] public static extern int CgHelp([MarshalAs(UnmanagedType.LPUTF8Str)] string command, byte[]? text, int cap);
     [DllImport(Lib, EntryPoint = "caps_fragment_smiles")] public static extern int FragmentSmiles(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string atoms, byte[]? text, int cap);
     [DllImport(Lib, EntryPoint = "caps_stack_documents")] public static extern IntPtr StackDocuments(IntPtr[] docs, int n, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_embed_document")] public static extern IntPtr EmbedDocument(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, [MarshalAs(UnmanagedType.LPUTF8Str)] string spec, in CapsGrowOpts o, CapsProgress? progress, IntPtr user, byte[] report, int cap);
@@ -1050,6 +1052,17 @@ public sealed class CapsDocument : IDisposable
         return System.Text.Encoding.UTF8.GetString(buf, 0, Math.Max(0, n - 1));
     }
     public static string DftHelp(string command) => StaticJson((b, c) => Native.DftHelp(command, b, c));
+    /// <summary>A coarse-graining command (caps_cg_run: cgmap, cgfit, cgbuild, ppa, mech, cgdyn, backmap): run ONCE into a
+    /// large buffer, as DftRun (a command writes files).</summary>
+    public static string CgRun(string command, string argsJson, string dataDir)
+    {
+        var buf = new byte[32 << 20];
+        var n = Native.CgRun(command, argsJson, dataDir, buf, buf.Length);
+        if (n < 0) throw new InvalidOperationException(Native.LastError());
+        if (n > buf.Length) throw new InvalidOperationException("the report is larger than 32 MB");
+        return System.Text.Encoding.UTF8.GetString(buf, 0, Math.Max(0, n - 1));
+    }
+    public static string CgHelp(string command) => StaticJson((b, c) => Native.CgHelp(command, b, c));
     private static string StaticJson(Func<byte[]?, int, int> call)
     {
         var n = call(null, 0);

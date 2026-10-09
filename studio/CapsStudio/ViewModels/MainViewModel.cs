@@ -571,6 +571,7 @@ public sealed partial class MainViewModel : ObservableObject
         [77] = v => v.OpenDftJob(),
         [78] = v => v.OpenDftRuns(),
         [79] = v => v.OpenDftResults(),
+        [80] = v => v.OpenCgw(),
     };
 
     public void SetModule(int m, [System.Runtime.CompilerServices.CallerMemberName] string caller = "")
@@ -643,7 +644,7 @@ public sealed partial class MainViewModel : ObservableObject
         Raise(nameof(IsDpd));
         Raise(nameof(IsReader));
         Raise(nameof(IsStudy));
-        Raise(nameof(IsSheets)); Raise(nameof(IsAdsorbDft)); Raise(nameof(IsDftJob)); Raise(nameof(IsDftRuns)); Raise(nameof(IsDftResults));
+        Raise(nameof(IsSheets)); Raise(nameof(IsAdsorbDft)); Raise(nameof(IsDftJob)); Raise(nameof(IsDftRuns)); Raise(nameof(IsDftResults)); Raise(nameof(IsCgw));
         Raise(nameof(IsPeriodic));
         Raise(nameof(IsOrientation));
         Raise(nameof(IsRecipes));

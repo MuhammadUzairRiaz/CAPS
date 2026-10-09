@@ -1,0 +1,598 @@
+<!-- CAPS Studio › Coarse-grain workflow: all-atom polymer models to a coarse-grained melt and back. A strip of six stages —
+     mapping (chemistry-aware cuts), bonded tables by Boltzmann inversion, non-bonded tables by IBI with their fit and
+     calibration, the CG melt, its equilibration deck, and the analyses (entanglements, tension, dynamics, backmapping).
+     Every action is a `caps` command (caps_cg_run), shown at the bottom to copy; long runs go to a cluster. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.CoarseGrainPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="Border.pcard"><Setter Property="Background" Value="{DynamicResource Bg1B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+      <Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="10" /><Setter Property="Padding" Value="16,14" /></Style>
+    <Style Selector="TextBlock.ctitle"><Setter Property="FontSize" Value="13.5" /><Setter Property="FontWeight" Value="SemiBold" /></Style>
+    <Style Selector="TextBlock.cell"><Setter Property="FontFamily" Value="{DynamicResource Mono}" /><Setter Property="FontSize" Value="11.5" /><Setter Property="TextTrimming" Value="CharacterEllipsis" /></Style>
+    <Style Selector="TextBlock.path"><Setter Property="TextTrimming" Value="PathSegmentEllipsis" /></Style>
+    <Style Selector="SelectableTextBlock.mono"><Setter Property="FontFamily" Value="{DynamicResource Mono}" /></Style>
+    <Style Selector="Button.stage"><Setter Property="Padding" Value="12,8" /><Setter Property="BorderThickness" Value="1" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+      <Setter Property="CornerRadius" Value="9" /><Setter Property="HorizontalAlignment" Value="Stretch" /><Setter Property="HorizontalContentAlignment" Value="Left" /></Style>
+  </p:PageBase.Styles>
+  <DockPanel>
+    <!-- header -->
+    <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Button Click="OnRoot" ToolTip.Tip="{Binding CgwRoot}">
+            <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="folder" Size="14" VerticalAlignment="Center" /><TextBlock Text="Working folder…" VerticalAlignment="Center" /></StackPanel>
+          </Button>
+          <Button Classes="primary" Click="OnPrimary" IsEnabled="{Binding CgwIdle}">
+            <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="{Binding CgwPrimaryIcon}" Size="14" VerticalAlignment="Center" /><TextBlock Text="{Binding CgwPrimaryText}" VerticalAlignment="Center" /></StackPanel>
+          </Button>
+        </StackPanel>
+        <StackPanel Spacing="3">
+          <TextBlock Text="Coarse-grain workflow" FontSize="19" FontWeight="SemiBold" />
+          <TextBlock Text="All-atom polymer cells to a coarse-grained melt: beads by chemistry, tables from the atoms' own distributions, then the melt and what it tells" FontSize="12.5" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding CgwRoot}" Classes="mono" FontSize="11" Foreground="{DynamicResource DimB}" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+    <!-- footer: the command line of the last action -->
+    <Border DockPanel.Dock="Bottom" Padding="22,6" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+      <DockPanel>
+        <Button DockPanel.Dock="Right" Classes="small ghost" Content="Copy" Click="OnCopyCli" IsVisible="{Binding HasCgwCli}" ToolTip.Tip="The same from a terminal" />
+        <StackPanel Spacing="2">
+          <SelectableTextBlock Text="{Binding CgwCli}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding CgwStatus}" FontSize="11.5" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+    <!-- stage strip -->
+    <Border DockPanel.Dock="Top" Padding="22,12,22,0">
+      <ItemsControl ItemsSource="{Binding CgwStages}">
+        <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:CgwStageItem">
+            <Button Classes="stage" Margin="0,0,8,0" Background="{Binding BackBrush}" Tag="{Binding}" Click="OnStage">
+              <Grid ColumnDefinitions="26,*">
+                <Border Width="22" Height="22" CornerRadius="11" Background="{Binding DotBrush}" VerticalAlignment="Center">
+                  <TextBlock Text="{Binding Number}" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource Bg0B}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <StackPanel Grid.Column="1" Margin="6,0,0,0" Spacing="1">
+                  <TextBlock Text="{Binding Title}" FontSize="12.5" FontWeight="SemiBold" Foreground="{Binding TitleBrush}" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Text="{Binding Sub}" FontSize="10.5" Foreground="{DynamicResource DimB}" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+              </Grid>
+            </Button>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </Border>
+    <ScrollViewer Margin="22,14,22,12">
+      <StackPanel Spacing="14">
+
+        <!-- ============================== 1 Mapping -->
+        <Grid ColumnDefinitions="430,*" ColumnSpacing="14" IsVisible="{Binding CgwOnMap}">
+          <StackPanel Spacing="14">
+            <Border Classes="pcard">
+              <StackPanel Spacing="8">
+                <TextBlock Text="All-atom structures" Classes="ctitle" />
+                <TextBlock Text="Several systems share one type list, so their tables are shared (PBS, PBSA, PBAT share B)." FontSize="11.5" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
+                <ItemsControl ItemsSource="{Binding CgwInputs}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="x:String">
+                      <DockPanel Margin="0,1"><Button DockPanel.Dock="Right" Classes="small ghost" Content="×" Tag="{Binding}" Click="OnRemoveInput" />
+                        <TextBlock Text="{Binding}" Classes="cell path" VerticalAlignment="Center" ToolTip.Tip="{Binding}" /></DockPanel>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Button Classes="small" Content="Add structures…" Click="OnAddInputs" HorizontalAlignment="Left" />
+                <StackPanel Spacing="3"><TextBlock Text="Mapping rules" Classes="label" />
+                  <ComboBox ItemsSource="{Binding CgwPresets}" SelectedItem="{Binding CgwPreset}" HorizontalAlignment="Stretch" ToolTip.Tip="Rule sets in data/cg/mapping_rules.json, or your own cut and naming SMARTS" /></StackPanel>
+                <StackPanel Spacing="6" IsVisible="{Binding CgwIsCustom}">
+                  <StackPanel Spacing="3"><TextBlock Text="Bonds cut (SMARTS, comma-separated)" Classes="label" /><TextBox Text="{Binding CgwCut}" Classes="mono" Watermark="[CX3](=O)-[OX2;!H1]" /></StackPanel>
+                  <StackPanel Spacing="3"><TextBlock Text="Bead names NAME=SMARTS (first match wins)" Classes="label" /><TextBox Text="{Binding CgwNames}" Classes="mono" Watermark="S=[CX3](=O)[CH2][CH2][CX3]=O,B=[OX2][CH2][CH2][CH2][CH2][OX2]" /></StackPanel>
+                </StackPanel>
+                <StackPanel Spacing="3"><TextBlock Text="All-atom trajectory to map (one structure; optional)" Classes="label" />
+                  <DockPanel><Button DockPanel.Dock="Right" Classes="small" Content="Dump…" Tag="file:CgwMapDump" Click="OnPickFile" />
+                    <Button DockPanel.Dock="Right" Classes="small ghost" Content="×" Tag="clear:CgwMapDump" Click="OnPickFile" IsVisible="{Binding HasCgwMapDump}" Margin="0,0,6,0" />
+                    <TextBlock Text="{Binding CgwMapDump}" Classes="cell path" ToolTip.Tip="{Binding CgwMapDump}" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" /></DockPanel></StackPanel>
+                <StackPanel Spacing="3"><TextBlock Text="Output folder" Classes="label" />
+                  <DockPanel><Button DockPanel.Dock="Right" Classes="small" Content="…" Tag="folder:CgwMapOut" Click="OnPickFile" /><TextBlock Text="{Binding CgwMapOut}" Classes="cell path" ToolTip.Tip="{Binding CgwMapOut}" VerticalAlignment="Center" /></DockPanel></StackPanel>
+                <Button Classes="primary" Click="OnMap" IsEnabled="{Binding CgwIdle}" HorizontalAlignment="Right">
+                  <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="atom" Size="14" VerticalAlignment="Center" /><TextBlock Text="Map" VerticalAlignment="Center" /></StackPanel></Button>
+              </StackPanel>
+            </Border>
+            <Border Classes="pcard">
+              <StackPanel Spacing="6">
+                <TextBlock Text="Bead position" Classes="ctitle" />
+                <v:MathView Tex="{x:Static vm:MainViewModel.CgwMapTex}" FontSize="16" HorizontalAlignment="Left" />
+                <TextBlock Text="Each fragment between cut bonds is a bead at its atoms' centre of mass; fragments no rule names stop the mapping instead of being merged." FontSize="11.5" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+          <StackPanel Grid.Column="1" Spacing="14">
+            <Border Classes="pcard">
+              <StackPanel Spacing="6">
+                <TextBlock Text="Mapped systems" Classes="ctitle" />
+                <Grid ColumnDefinitions="1.6*,60,55,55,70,60,1.8*,70">
+                  <TextBlock Text="SYSTEM" Classes="h3" /><TextBlock Grid.Column="1" Text="ATOMS" Classes="h3" /><TextBlock Grid.Column="2" Text="BEADS" Classes="h3" /><TextBlock Grid.Column="3" Text="CHAINS" Classes="h3" />
+                  <TextBlock Grid.Column="4" Text="BEADS/CH" Classes="h3" /><TextBlock Grid.Column="5" Text="/UNIT" Classes="h3" /><TextBlock Grid.Column="6" Text="COMPOSITION" Classes="h3" /><TextBlock Grid.Column="7" Text="Δ MASS" Classes="h3" />
+                </Grid>
+                <ItemsControl ItemsSource="{Binding CgwMapRows}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:DftTableRow">
+                      <Grid ColumnDefinitions="1.6*,60,55,55,70,60,1.8*,70" Margin="0,1">
+                        <TextBlock Text="{Binding Cells[0]}" Classes="cell" /><TextBlock Grid.Column="1" Text="{Binding Cells[1]}" Classes="cell" /><TextBlock Grid.Column="2" Text="{Binding Cells[2]}" Classes="cell" />
+                        <TextBlock Grid.Column="3" Text="{Binding Cells[3]}" Classes="cell" /><TextBlock Grid.Column="4" Text="{Binding Cells[4]}" Classes="cell" /><TextBlock Grid.Column="5" Text="{Binding Cells[5]}" Classes="cell" />
+                        <TextBlock Grid.Column="6" Text="{Binding Cells[6]}" Classes="cell" /><TextBlock Grid.Column="7" Text="{Binding Cells[7]}" Classes="cell" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Text="First chain's bead sequence" Classes="label" Margin="0,6,0,0" />
+                <SelectableTextBlock Text="{Binding CgwSequence}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" MaxHeight="90" />
+                <TextBlock Text="{Binding CgwMapNotes}" FontSize="11.5" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+            <Border Classes="pcard">
+              <StackPanel Spacing="6">
+                <TextBlock Text="Beads of each kind" Classes="ctitle" />
+                <v:XyChart x:Name="KindChart" Height="220" YLabel="beads" Empty="map a structure to see its beads" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </Grid>
+
+        <!-- ============================== 2 Bonded -->
+        <Grid ColumnDefinitions="430,*" ColumnSpacing="14" IsVisible="{Binding CgwOnBonded}">
+          <StackPanel Spacing="14">
+            <Border Classes="pcard">
+              <StackPanel Spacing="8">
+                <TextBlock Text="Systems: map and mapped frames" Classes="ctitle" />
+                <TextBlock Text="Each map.json with the frames that follow it (STEM.cg.lammpstrj from an all-atom run, or the single STEM.cg.data). Filled from Mapping." FontSize="11.5" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
+                <ItemsControl ItemsSource="{Binding CgwSystems}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:CgwSysRow">
+                      <DockPanel Margin="0,2"><Button DockPanel.Dock="Right" Classes="small ghost" Content="×" Tag="{Binding}" Click="OnRemoveSys" />
+                        <StackPanel><TextBlock Text="{Binding MapName}" Classes="cell" ToolTip.Tip="{Binding Map}" /><TextBlock Text="{Binding FramesText}" Classes="cell" Foreground="{DynamicResource MutedB}" /></StackPanel></DockPanel>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Button Classes="small" Content="Add system (map, then frames)…" Tag="sys" Click="OnAddSystem" HorizontalAlignment="Left" />
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                  <StackPanel Spacing="3"><TextBlock Text="T of the all-atom run (K)" Classes="label" /><NumericUpDown Value="{Binding CgwT}" Minimum="1" Maximum="5000" Increment="10" FormatString="0" /></StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="3"><TextBlock Text="Type list" Classes="label" />
+                    <DockPanel><Button DockPanel.Dock="Right" Classes="small" Content="…" Tag="file:CgwTypes" Click="OnPickFile" /><TextBlock Text="{Binding CgwTypes}" Classes="cell path" ToolTip.Tip="{Binding CgwTypes}" VerticalAlignment="Center" /></DockPanel></StackPanel>
+                </Grid>
+                <StackPanel Spacing="3"><TextBlock Text="Output folder" Classes="label" />
+                  <DockPanel><Button DockPanel.Dock="Right" Classes="small" Content="…" Tag="folder:CgwBondedOut" Click="OnPickFile" /><TextBlock Text="{Binding CgwBondedOut}" Classes="cell path" ToolTip.Tip="{Binding CgwBondedOut}" VerticalAlignment="Center" /></DockPanel></StackPanel>
+                <Button Classes="primary" Click="OnBonded" IsEnabled="{Binding CgwIdle}" HorizontalAlignment="Right">
+                  <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="chart" Size="14" VerticalAlignment="Center" /><TextBlock Text="Invert bonded" VerticalAlignment="Center" /></StackPanel></Button>
+              </StackPanel>
+            </Border>
+            <Border Classes="pcard">
+              <StackPanel Spacing="6">
+                <TextBlock Text="Boltzmann inversion" Classes="ctitle" />
+                <v:MathView Tex="{x:Static vm:MainViewModel.CgwBondedTex}" FontSize="14" HorizontalAlignment="Left" />
+                <TextBlock Text="Inverted only where the smoothed distribution is well sampled; slope-continuous walls outside. The samples are split in two halves: tables whose halves differ by more than 1 kT are not converged." FontSize="11.5" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+          <StackPanel Grid.Column="1" Spacing="14">
+            <Border Classes="pcard" BorderBrush="{DynamicResource ErrB}" BorderThickness="2" IsVisible="{Binding HasCgwNotConverged}">
+              <StackPanel Spacing="4">
+                <StackPanel Orientation="Horizontal" Spacing="8"><v:Icon Kind="alert" Size="16" Foreground="{DynamicResource ErrB}" /><TextBlock Text="NOT CONVERGED" FontWeight="Bold" Foreground="{DynamicResource ErrB}" /></StackPanel>
+                <TextBlock Text="{Binding CgwNotConverged}" FontSize="12" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+            <Border Classes="pcard">
+              <StackPanel Spacing="6">
+                <DockPanel><TextBlock DockPanel.Dock="Right" Text="{Binding CgwTimestep}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource AccB}" /><TextBlock Text="Bonded tables" Classes="ctitle" /></DockPanel>
+                <Grid ColumnDefinitions="70,1.4*,80,1.4*,90,70" Margin="8,0">
+                  <TextBlock Text="KIND" Classes="h3" /><TextBlock Grid.Column="1" Text="KEY" Classes="h3" /><TextBlock Grid.Column="2" Text="MIN" Classes="h3" />
+                  <TextBlock Grid.Column="3" Text="RANGE" Classes="h3" /><TextBlock Grid.Column="4" Text="HALVES (kT)" Classes="h3" /><TextBlock Grid.Column="5" Text="SAMPLES" Classes="h3" />
+                </Grid>
+                <ListBox ItemsSource="{Binding CgwBondedRows}" SelectedItem="{Binding CgwBondedSel}" MaxHeight="260" Background="Transparent">
+                  <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:CgwBondedRow">
+                      <Grid ColumnDefinitions="70,1.4*,80,1.4*,90,70">
+                        <TextBlock Text="{Binding Kind}" Classes="cell" /><TextBlock Grid.Column="1" Text="{Binding Key}" Classes="cell" /><TextBlock Grid.Column="2" Text="{Binding Min}" Classes="cell" />
+                        <TextBlock Grid.Column="3" Text="{Binding Range}" Classes="cell" /><TextBlock Grid.Column="4" Text="{Binding Halves}" Classes="cell" Foreground="{Binding FlagBrush}" FontWeight="SemiBold" />
+                        <TextBlock Grid.Column="5" Text="{Binding Samples}" Classes="cell" />
+                      </Grid>
+                    </DataTemplate>
+                  </ListBox.ItemTemplate>
+                </ListBox>
+                <TextBlock Text="{Binding CgwBondedNotes}" FontSize="11.5" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
+              <Border Classes="pcard">
+                <StackPanel Spacing="6"><TextBlock Text="Distribution of the selected term" Classes="ctitle" />
+                  <v:XyChart x:Name="PChart" Height="210" YLabel="P (normalised)" ShowLegend="False" Empty="select a table" /></StackPanel>
+              </Border>
+              <Border Grid.Column="1" Classes="pcard">
+                <StackPanel Spacing="6"><TextBlock Text="Its potential" Classes="ctitle" />
+                  <v:XyChart x:Name="UChart" Height="210" YLabel="U (kcal/mol)" ShowLegend="False" Empty="select a table" /></StackPanel>
+              </Border>
+            </Grid>
+          </StackPanel>
+        </Grid>
+
+        <!-- ============================== 3 Non-bonded -->
+        <Grid ColumnDefinitions="430,*" ColumnSpacing="14" IsVisible="{Binding CgwOnNonBonded}">
+          <StackPanel Spacing="14">
+            <Border Classes="pcard">
+              <StackPanel Spacing="8">
+                <TextBlock Text="g(r) targets" Classes="ctitle" />
+                <TextBlock Text="From the systems of the Bonded stage (bead pairs closer than three bonds left out)." FontSize="11.5" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+                  <StackPanel Spacing="3"><TextBlock Text="r max (Å)" Classes="label" /><NumericUpDown Value="{Binding CgwRmax}" Minimum="1" Maximum="100" Increment="1" FormatString="0.#" /></StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="3"><TextBlock Text="bin (Å)" Classes="label" /><NumericUpDown Value="{Binding CgwDr}" Minimum="0.001" Maximum="1" Increment="0.01" FormatString="0.###" /></StackPanel>
+                  <StackPanel Grid.Column="2" Spacing="3"><TextBlock Text="AA pressure (atm)" Classes="label" /><TextBox Text="{Binding CgwPressure}" Classes="mono" ToolTip.Tip="Each system's all-atom pressure, comma-separated: the IBI pressure target" /></StackPanel>
+                </Grid>
+                <StackPanel Spacing="3"><TextBlock Text="Output folder" Classes="label" />
+                  <DockPanel><Button DockPanel.Dock="Right" Classes="small" Content="…" Tag="folder:CgwIbiOut" Click="OnPickFile" /><TextBlock Text="{Binding CgwIbiOut}" Classes="cell path" ToolTip.Tip="{Binding CgwIbiOut}" VerticalAlignment="Center" /></DockPanel></StackPanel>
+                <Button Classes="primary" Click="OnTargets" IsEnabled="{Binding CgwIdle}" HorizontalAlignment="Right" Content="Make targets" />
+              </StackPanel>
+            </Border>
+            <Border Classes="pcard">
+              <StackPanel Spacing="8">
+                <TextBlock Text="Iterative Boltzmann inversion" Classes="ctitle" />
+                <v:MathView Tex="{x:Static vm:MainViewModel.CgwIbiTex}" FontSize="15" HorizontalAlignment="Left" />
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                  <StackPanel Spacing="3"><TextBlock Text="Targets" Classes="label" />
+                    <DockPanel><Button DockPanel.Dock="Right" Classes="small" Content="…" Tag="file:CgwTargets" Click="OnPickFile" /><TextBlock Text="{Binding CgwTargets}" Classes="cell path" ToolTip.Tip="{Binding CgwTargets}" VerticalAlignment="Center" /></DockPanel></StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="3"><TextBlock Text="cut-off (Å)" Classes="label" /><NumericUpDown Value="{Binding CgwRc}" Minimum="1" Maximum="100" Increment="1" FormatString="0.#" Width="110" /></StackPanel>
+                </Grid>
+                <Button Click="OnIbiStart" IsEnabled="{Binding CgwIdle}" HorizontalAlignment="Right" Content="Start IBI (tables and decks)" />
+                <Border Background="{DynamicResource Bg2B}" CornerRadius="8" Padding="10,8" IsVisible="{Binding HasCgwIbiScript}">
+                  <StackPanel Spacing="4">
+                    <TextBlock Text="The loop runs LAMMPS for every iteration: run it on a cluster, not on this machine." FontSize="11.5" Foreground="{DynamicResource WarnB}" TextWrapping="Wrap" />
+                    <DockPanel><Button DockPanel.Dock="Right" Classes="small ghost" Content="Copy" Tag="ibi" Click="OnCopyText" />
+                      <SelectableTextBlock Text="{Binding CgwIbiLoop}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" /></DockPanel>
+                    <TextBlock Text="{Binding CgwIbiScript}" Classes="cell path" ToolTip.Tip="{Binding CgwIbiScript}" Foreground="{DynamicResource MutedB}" />
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+            </Border>
+            <Border Classes="pcard">
+              <StackPanel Spacing="8">
+                <TextBlock Text="One IBI step from the cluster's runs" Classes="ctitle" />
+                <TextBlock Text="Each system's map, the CG dump and the log of the last iteration." FontSize="11.5" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
+                <ItemsControl ItemsSource="{Binding CgwStepRows}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:CgwSysRow">
+                      <DockPanel Margin="0,2"><Button DockPanel.Dock="Right" Classes="small ghost" Content="×" Tag="{Binding}" Click="OnRemoveSys" />
+                        <StackPanel><TextBlock Text="{Binding MapName}" Classes="cell" /><TextBlock Text="{Binding FramesText}" Classes="cell" Foreground="{DynamicResource MutedB}" /></StackPanel></DockPanel>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Button Classes="small" Content="Add system (map, dump, log)…" Tag="step" Click="OnAddSystem" HorizontalAlignment="Left" />
+                <StackPanel Spacing="3"><TextBlock Text="Current tables (pairs.json)" Classes="label" />
+                  <DockPanel><Button DockPanel.Dock="Right" Classes="small" Content="…" Tag="file:CgwPairsPath" Click="OnPickFile" /><TextBlock Text="{Binding CgwPairsPath}" Classes="cell path" ToolTip.Tip="{Binding CgwPairsPath}" VerticalAlignment="Center" /></DockPanel></StackPanel>
+                <StackPanel Spacing="3"><TextBlock Text="Next iteration's folder" Classes="label" />
+                  <DockPanel><Button DockPanel.Dock="Right" Classes="small" Content="…" Tag="folder:CgwStepOut" Click="OnPickFile" /><TextBlock Text="{Binding CgwStepOut}" Classes="cell path" ToolTip.Tip="{Binding CgwStepOut}" VerticalAlignment="Center" /></DockPanel></StackPanel>
+                <Button Click="OnIbiStep" IsEnabled="{Binding CgwIdle}" HorizontalAlignment="Right" Content="IBI step" />
+                <TextBlock Text="{Binding CgwStepSummary}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" />
+                <ItemsControl ItemsSource="{Binding CgwStepPairs}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:DftTableRow">
+                      <Grid ColumnDefinitions="*,90,90"><TextBlock Text="{Binding Cells[0]}" Classes="cell" /><TextBlock Grid.Column="1" Text="{Binding Cells[1]}" Classes="cell" ToolTip.Tip="residual" /><TextBlock Grid.Column="2" Text="{Binding Cells[2]}" Classes="cell" ToolTip.Tip="largest deviation" /></Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+            <Border Classes="pcard">
+              <StackPanel Spacing="8">
+                <TextBlock Text="Analytic fit of the tables" Classes="ctitle" />
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                  <ComboBox ItemsSource="{x:Static vm:MainViewModel.CgwForms}" SelectedItem="{Binding CgwForm}" HorizontalAlignment="Stretch" ToolTip.Tip="LJ 12-6, LJ 9-6, Morse or Mie" />
+                  <Button Grid.Column="1" Click="OnFit" IsEnabled="{Binding CgwIdle}" Content="Fit" />
+                </Grid>
+                <TextBlock Text="{Binding CgwFits}" Classes="cell path" ToolTip.Tip="{Binding CgwFits}" Foreground="{DynamicResource MutedB}" />
+              </StackPanel>
+            </Border>
+            <Border Classes="pcard">
+              <StackPanel Spacing="8">
+                <TextBlock Text="Calibrate σ and ε against density and T_g" Classes="ctitle" />
+                <StackPanel Spacing="3"><TextBlock Text="Fits" Classes="label" />
+                  <DockPanel><Button DockPanel.Dock="Right" Classes="small" Content="…" Tag="file:CgwFits" Click="OnPickFile" /><TextBlock Text="{Binding CgwFits}" Classes="cell path" ToolTip.Tip="{Binding CgwFits}" VerticalAlignment="Center" /></DockPanel></StackPanel>
+                <StackPanel Spacing="3"><TextBlock Text="History (created when missing)" Classes="label" />
+                  <DockPanel><Button DockPanel.Dock="Right" Classes="small" Content="…" Tag="save:CgwHistory" Click="OnPickFile" /><TextBlock Text="{Binding CgwHistory}" Classes="cell path" ToolTip.Tip="{Binding CgwHistory}" VerticalAlignment="Center" /></DockPanel></StackPanel>
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto,Auto" RowSpacing="6">
+                  <StackPanel Spacing="3"><TextBlock Text="s_σ of the run reported" Classes="label" /><NumericUpDown Value="{Binding CgwSSigma}" Minimum="0.1" Maximum="10" Increment="0.01" FormatString="0.0000" /></StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="3"><TextBlock Text="s_ε of the run reported" Classes="label" /><NumericUpDown Value="{Binding CgwSEps}" Minimum="0.01" Maximum="100" Increment="0.01" FormatString="0.0000" /></StackPanel>
+                  <StackPanel Grid.Row="1" Spacing="3"><TextBlock Text="Its density (g/cm³)" Classes="label" /><NumericUpDown Value="{Binding CgwDensity}" Minimum="0" Maximum="10" Increment="0.01" FormatString="0.000" /></StackPanel>
+                  <StackPanel Grid.Row="1" Grid.Column="1" Spacing="3"><TextBlock Text="Its T_g (K)" Classes="label" /><NumericUpDown Value="{Binding CgwTg}" Minimum="0" Maximum="3000" Increment="1" FormatString="0.0" /></StackPanel>
+                  <StackPanel Grid.Row="2" Spacing="3"><TextBlock Text="Target density (g/cm³)" Classes="label" /><NumericUpDown Value="{Binding CgwTargetDensity}" Minimum="0" Maximum="10" Increment="0.01" FormatString="0.000" /></StackPanel>
+                  <StackPanel Grid.Row="2" Grid.Column="1" Spacing="3"><TextBlock Text="Target T_g (K)" Classes="label" /><NumericUpDown Value="{Binding CgwTargetTg}" Minimum="0" Maximum="3000" Increment="1" FormatString="0.0" /></StackPanel>
+                </Grid>
+                <DockPanel><Button DockPanel.Dock="Right" Classes="small" Content="T_g from a scan…" Tag="tg" Click="OnTgScan" ToolTip.Tip="A cooling scan: 'T density' per line (in.cg_tg writes one)" />
+                  <TextBlock Text="{Binding CgwTgFile}" Classes="cell path" ToolTip.Tip="{Binding CgwTgFile}" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" /></DockPanel>
+                <Button Click="OnCalibrate" IsEnabled="{Binding CgwIdle}" HorizontalAlignment="Right" Content="Next scale factors" />
+                <TextBlock Text="{Binding CgwCalNext}" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource AccB}" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+          <StackPanel Grid.Column="1" Spacing="14">
+            <Border Classes="pcard">
+              <StackPanel Spacing="6">
+                <DockPanel><ComboBox DockPanel.Dock="Right" ItemsSource="{Binding CgwPairKeys}" SelectedItem="{Binding CgwPairKey}" Width="140" /><TextBlock Text="Target g(r) of the pair, per system" Classes="ctitle" VerticalAlignment="Center" /></DockPanel>
+                <v:XyChart x:Name="GrChart" Height="240" XLabel="r (Å)" YLabel="g(r)" Empty="make the targets to see g(r)" />
+              </StackPanel>
+            </Border>
+            <Border Classes="pcard">
+              <StackPanel Spacing="6">
+                <TextBlock Text="The pair's potential: current table and fit" Classes="ctitle" />
+                <v:XyChart x:Name="PairChart" Height="240" XLabel="r (Å)" YLabel="U (kcal/mol)" Empty="start IBI (or pick a pairs.json) to see the tables" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </Grid>
+
+        <!-- ============================== 4 Build CG melt -->
+        <Grid ColumnDefinitions="430,*" ColumnSpacing="14" IsVisible="{Binding CgwOnBuild}">
+          <StackPanel Spacing="14">
+            <Border Classes="pcard">
+              <StackPanel Spacing="8">
+                <TextBlock Text="Chains" Classes="ctitle" />
+                <StackPanel Spacing="3"><TextBlock Text="Repeat units NAME=BEAD+BEAD" Classes="label" /><TextBox Text="{Binding CgwUnits}" Classes="mono" Watermark="BS=B+S,BA=B+A" /></StackPanel>
+                <StackPanel Spacing="3"><TextBlock Text="Composition NAME:share (empty: equal)" Classes="label" /><TextBox Text="{Binding CgwComposition}" Classes="mono" Watermark="BS:0.8,BA:0.2" /></StackPanel>
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                  <StackPanel Spacing="3"><TextBlock Text="Sequence" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.CgwSequences}" SelectedItem="{Binding CgwSeq}" HorizontalAlignment="Stretch" /></StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="3" IsVisible="{Binding CgwSeqHasParam}"><TextBlock Text="{Binding CgwSeqParamLabel}" Classes="label" TextTrimming="CharacterEllipsis" /><TextBox Text="{Binding CgwSeqParam}" Classes="mono" /></StackPanel>
+                </Grid>
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+                  <StackPanel Spacing="3"><TextBlock Text="DP (units/chain)" Classes="label" /><NumericUpDown Value="{Binding CgwDp}" Minimum="1" Maximum="100000" FormatString="0" /></StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="3"><TextBlock Text="Chains" Classes="label" /><NumericUpDown Value="{Binding CgwChains}" Minimum="1" Maximum="1000000" FormatString="0" /></StackPanel>
+                  <StackPanel Grid.Column="2" Spacing="3"><TextBlock Text="Density (g/cm³)" Classes="label" /><NumericUpDown Value="{Binding CgwBuildDensity}" Minimum="0.01" Maximum="10" Increment="0.01" FormatString="0.000" /></StackPanel>
+                </Grid>
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                  <StackPanel Spacing="3"><TextBlock Text="Chain lengths" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.CgwLengthKinds}" SelectedItem="{Binding CgwLengths}" HorizontalAlignment="Stretch" /></StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="3" IsVisible="{Binding CgwDrawn}"><TextBlock Text="Dispersity Đ" Classes="label" /><NumericUpDown Value="{Binding CgwPdi}" Minimum="1" Maximum="20" Increment="0.1" FormatString="0.00" /></StackPanel>
+                </Grid>
+                <StackPanel Spacing="3"><TextBlock Text="Bonded tables (folder with bonded.json)" Classes="label" />
+                  <DockPanel><Button DockPanel.Dock="Right" Classes="small" Content="…" Tag="folder:CgwBondedOut" Click="OnPickFile" /><TextBlock Text="{Binding CgwBondedOut}" Classes="cell path" ToolTip.Tip="{Binding CgwBondedOut}" VerticalAlignment="Center" /></DockPanel></StackPanel>
+                <StackPanel Spacing="3"><TextBlock Text="Maps for the bead masses (comma-separated)" Classes="label" /><TextBox Text="{Binding CgwBuildMaps}" Classes="mono" FontSize="11" TextWrapping="Wrap" /></StackPanel>
+                <CheckBox IsChecked="{Binding CgwBuildRef}" Content="Compare ⟨R²(n)⟩/n with the all-atom systems (Bonded stage)" />
+                <StackPanel Spacing="3"><TextBlock Text="Output folder" Classes="label" />
+                  <DockPanel><Button DockPanel.Dock="Right" Classes="small" Content="…" Tag="folder:CgwBuildOut" Click="OnPickFile" /><TextBlock Text="{Binding CgwBuildOut}" Classes="cell path" ToolTip.Tip="{Binding CgwBuildOut}" VerticalAlignment="Center" /></DockPanel></StackPanel>
+                <Button Classes="primary" Click="OnBuild" IsEnabled="{Binding CgwIdle}" HorizontalAlignment="Right">
+                  <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="grow" Size="14" VerticalAlignment="Center" /><TextBlock Text="Build melt" VerticalAlignment="Center" /></StackPanel></Button>
+              </StackPanel>
+            </Border>
+            <Border Classes="pcard">
+              <StackPanel Spacing="6">
+                <TextBlock Text="Chain statistics" Classes="ctitle" />
+                <v:MathView Tex="{x:Static vm:MainViewModel.CgwBuildTex}" FontSize="15" HorizontalAlignment="Left" />
+                <TextBlock Text="Chains are random walks drawn from the inverted bonded distributions; the box must hold a chain's end-to-end distance or chains meet their own images." FontSize="11.5" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+          <StackPanel Grid.Column="1" Spacing="14">
+            <Border Classes="pcard" BorderBrush="{DynamicResource WarnB}" BorderThickness="2" IsVisible="{Binding HasCgwBuildWarning}">
+              <DockPanel><v:Icon DockPanel.Dock="Left" Kind="alert" Size="16" Foreground="{DynamicResource WarnB}" VerticalAlignment="Top" Margin="0,0,8,0" />
+                <TextBlock Text="{Binding CgwBuildWarning}" FontSize="12" TextWrapping="Wrap" /></DockPanel>
+            </Border>
+            <Border Classes="pcard">
+              <ItemsControl ItemsSource="{Binding CgwBuildFacts}">
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:Row"><StackPanel Spacing="2"><TextBlock Text="{Binding Key}" Classes="label" /><TextBlock Text="{Binding Value}" FontSize="16" FontWeight="SemiBold" /></StackPanel></DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </Border>
+            <Border Classes="pcard">
+              <StackPanel Spacing="6">
+                <TextBlock Text="⟨R²(n)⟩/n: the built chains against the all-atom model" Classes="ctitle" />
+                <v:XyChart x:Name="R2Chart" Height="280" XLabel="n (bonds along the chain)" YLabel="⟨R²(n)⟩/n (Å²)" Empty="build a melt to see its chains" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </Grid>
+
+        <!-- ============================== 5 Equilibrate -->
+        <Grid ColumnDefinitions="430,*" ColumnSpacing="14" IsVisible="{Binding CgwOnEquil}">
+          <Border Classes="pcard" VerticalAlignment="Top">
+            <StackPanel Spacing="8">
+              <TextBlock Text="Equilibration runs in LAMMPS" Classes="ctitle" />
+              <TextBlock TextWrapping="Wrap" FontSize="12" Text="The built walks overlap. The deck pushes them apart with a soft repulsion ramped up while the bonded tables keep each chain's local structure, then switches on the model's pairs, minimises, anneals hot (chains relax faster), cools and runs NPT." />
+              <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource WarnB}" Text="These are long runs: CAPS does not start them on this machine. Copy the command for a workstation or cluster (dihedral_style table/cut needs LAMMPS's EXTRA-MOLECULE package)." />
+              <TextBlock Text="Command" Classes="label" Margin="0,4,0,0" />
+              <Border Background="{DynamicResource Bg2B}" CornerRadius="8" Padding="10,8">
+                <DockPanel><Button DockPanel.Dock="Right" Classes="small ghost" Content="Copy" Tag="equil" Click="OnCopyText" IsVisible="{Binding HasCgwEquil}" />
+                  <SelectableTextBlock Text="{Binding CgwEquilCommand}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" /></DockPanel>
+              </Border>
+              <TextBlock Text="{Binding CgwEquilPath}" Classes="cell path" ToolTip.Tip="{Binding CgwEquilPath}" Foreground="{DynamicResource MutedB}" />
+              <TextBlock Text="Then: map its dump for the analyses (Analyse › entanglements, tension, dynamics) and backmap a frame." FontSize="11.5" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+          <Border Grid.Column="1" Classes="pcard">
+            <StackPanel Spacing="6">
+              <TextBlock Text="in.cg_equil (written by Build, read-only)" Classes="ctitle" />
+              <TextBlock Text="Build a melt first: its folder holds the deck." FontSize="12" Foreground="{DynamicResource MutedB}" IsVisible="{Binding !HasCgwEquil}" />
+              <SelectableTextBlock Text="{Binding CgwEquilDeck}" Classes="mono" FontSize="11" TextWrapping="NoWrap" />
+            </StackPanel>
+          </Border>
+        </Grid>
+
+        <!-- ============================== 6 Analyse -->
+        <StackPanel Spacing="14" IsVisible="{Binding CgwOnAnalyse}">
+          <!-- entanglements -->
+          <Grid ColumnDefinitions="430,*" ColumnSpacing="14">
+            <Border Classes="pcard">
+              <StackPanel Spacing="8">
+                <TextBlock Text="Entanglements by primitive paths" Classes="ctitle" />
+                <ItemsControl ItemsSource="{Binding CgwPpaRows}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:CgwSysRow">
+                      <DockPanel Margin="0,2"><Button DockPanel.Dock="Right" Classes="small ghost" Content="×" Tag="{Binding}" Click="OnRemoveSys" />
+                        <StackPanel><TextBlock Text="{Binding MapName}" Classes="cell" /><TextBlock Text="{Binding FramesText}" Classes="cell" Foreground="{DynamicResource MutedB}" /></StackPanel></DockPanel>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Button Classes="small" Content="Add CG system (map, then frames)…" Tag="ppa" Click="OnAddSystem" HorizontalAlignment="Left" ToolTip.Tip="Several chain lengths give the M-kink and M-coil estimates" />
+                <StackPanel Spacing="3"><TextBlock Text="Method" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.CgwPpaMethods}" SelectedItem="{Binding CgwPpaMethod}" HorizontalAlignment="Stretch"
+                  ToolTip.Tip="caps: CAPS's PPA · z1: Z1+ kinks (installed separately) · both · lammps: writes in.cg_ppa for large systems" /></StackPanel>
+                <v:MathView Tex="{x:Static vm:MainViewModel.CgwPpaTex}" FontSize="14" HorizontalAlignment="Left" />
+                <Button Classes="primary" Click="OnPpa" IsEnabled="{Binding CgwIdle}" HorizontalAlignment="Right" Content="Entanglements" />
+              </StackPanel>
+            </Border>
+            <Border Grid.Column="1" Classes="pcard">
+              <StackPanel Spacing="6">
+                <TextBlock Text="Entanglement length (beads) by estimator" Classes="ctitle" />
+                <Grid ColumnDefinitions="1.2*,45,55,60,55,60,85,60,85,80,50">
+                  <TextBlock Text="SYSTEM" Classes="h3" /><TextBlock Grid.Column="1" Text="N" Classes="h3" /><TextBlock Grid.Column="2" Text="CHAINS" Classes="h3" /><TextBlock Grid.Column="3" Text="L_pp Å" Classes="h3" />
+                  <TextBlock Grid.Column="4" Text="a_pp Å" Classes="h3" /><TextBlock Grid.Column="5" Text="S-coil" Classes="h3" /><TextBlock Grid.Column="6" Text="mod S-coil" Classes="h3" /><TextBlock Grid.Column="7" Text="S-kink" Classes="h3" />
+                  <TextBlock Grid.Column="8" Text="mod S-kink" Classes="h3" /><TextBlock Grid.Column="9" Text="M_e g/mol" Classes="h3" /><TextBlock Grid.Column="10" Text="Z" Classes="h3" />
+                </Grid>
+                <ItemsControl ItemsSource="{Binding CgwPpaTable}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:DftTableRow">
+                      <Grid ColumnDefinitions="1.2*,45,55,60,55,60,85,60,85,80,50" Margin="0,1">
+                        <TextBlock Text="{Binding Cells[0]}" Classes="cell" /><TextBlock Grid.Column="1" Text="{Binding Cells[1]}" Classes="cell" /><TextBlock Grid.Column="2" Text="{Binding Cells[2]}" Classes="cell" />
+                        <TextBlock Grid.Column="3" Text="{Binding Cells[3]}" Classes="cell" /><TextBlock Grid.Column="4" Text="{Binding Cells[4]}" Classes="cell" /><TextBlock Grid.Column="5" Text="{Binding Cells[5]}" Classes="cell" />
+                        <TextBlock Grid.Column="6" Text="{Binding Cells[6]}" Classes="cell" FontWeight="SemiBold" /><TextBlock Grid.Column="7" Text="{Binding Cells[7]}" Classes="cell" /><TextBlock Grid.Column="8" Text="{Binding Cells[8]}" Classes="cell" />
+                        <TextBlock Grid.Column="9" Text="{Binding Cells[9]}" Classes="cell" /><TextBlock Grid.Column="10" Text="{Binding Cells[10]}" Classes="cell" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Text="{Binding CgwPpaMulti}" FontSize="11.5" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
+                <TextBlock Text="M_e and Z from the modified S-coil N_e (Hoy, Foteinopoulou &amp; Kröger 2009)." FontSize="11" Foreground="{DynamicResource DimB}" />
+              </StackPanel>
+            </Border>
+          </Grid>
+          <!-- tension -->
+          <Grid ColumnDefinitions="430,*" ColumnSpacing="14">
+            <StackPanel Spacing="14">
+              <Border Classes="pcard">
+                <StackPanel Spacing="8">
+                  <TextBlock Text="Tension decks" Classes="ctitle" />
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto,Auto" RowSpacing="6">
+                    <StackPanel Spacing="3"><TextBlock Text="Rates (1/fs)" Classes="label" /><TextBox Text="{Binding CgwRates}" Classes="mono" /></StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="3"><TextBlock Text="Mode" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.CgwMechModes}" SelectedItem="{Binding CgwMechMode}" HorizontalAlignment="Stretch" ToolTip.Tip="stress: lateral axes at P · volume: constant volume" /></StackPanel>
+                    <StackPanel Grid.Row="1" Spacing="3"><TextBlock Text="Final strain" Classes="label" /><NumericUpDown Value="{Binding CgwMaxStrain}" Minimum="0.01" Maximum="20" Increment="0.1" FormatString="0.##" /></StackPanel>
+                    <StackPanel Grid.Row="1" Grid.Column="1" Spacing="3"><TextBlock Text="T (K)" Classes="label" /><NumericUpDown Value="{Binding CgwMechT}" Minimum="1" Maximum="3000" Increment="10" FormatString="0" /></StackPanel>
+                    <StackPanel Grid.Row="2" Spacing="3"><TextBlock Text="Lateral P (atm)" Classes="label" /><NumericUpDown Value="{Binding CgwMechP}" Minimum="0" Maximum="100000" Increment="1" FormatString="0.#" /></StackPanel>
+                    <StackPanel Grid.Row="2" Grid.Column="1" Spacing="3"><TextBlock Text="Time step (fs) · frames" Classes="label" />
+                      <Grid ColumnDefinitions="*,*" ColumnSpacing="6"><NumericUpDown Value="{Binding CgwMechDt}" Minimum="0.1" Maximum="100" Increment="1" FormatString="0.#" /><NumericUpDown Grid.Column="1" Value="{Binding CgwMechFrames}" Minimum="1" Maximum="10000" FormatString="0" /></Grid></StackPanel>
+                  </Grid>
+                  <Button Click="OnMechDecks" IsEnabled="{Binding CgwIdle}" HorizontalAlignment="Right" Content="Write decks" />
+                  <TextBlock Text="{Binding CgwMechFiles}" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
+                </StackPanel>
+              </Border>
+              <Border Classes="pcard">
+                <StackPanel Spacing="8">
+                  <TextBlock Text="Analyse a tension run" Classes="ctitle" />
+                  <StackPanel Spacing="3"><TextBlock Text="STEM.stress_strain.dat" Classes="label" />
+                    <DockPanel><Button DockPanel.Dock="Right" Classes="small" Content="…" Tag="file:CgwStressFile" Click="OnPickFile" /><TextBlock Text="{Binding CgwStressFile}" Classes="cell path" ToolTip.Tip="{Binding CgwStressFile}" VerticalAlignment="Center" /></DockPanel></StackPanel>
+                  <StackPanel Spacing="3"><TextBlock Text="Orientation (optional): CG map and the run's dump" Classes="label" />
+                    <DockPanel><Button DockPanel.Dock="Right" Classes="small" Content="Map…" Tag="file:CgwMechMap" Click="OnPickFile" /><TextBlock Text="{Binding CgwMechMap}" Classes="cell path" ToolTip.Tip="{Binding CgwMechMap}" VerticalAlignment="Center" /></DockPanel>
+                    <DockPanel><Button DockPanel.Dock="Right" Classes="small" Content="Dump…" Tag="file:CgwMechDump" Click="OnPickFile" /><TextBlock Text="{Binding CgwMechDump}" Classes="cell path" ToolTip.Tip="{Binding CgwMechDump}" VerticalAlignment="Center" /></DockPanel></StackPanel>
+                  <DockPanel><Button DockPanel.Dock="Right" Click="OnMechAnalyze" IsEnabled="{Binding CgwIdle}" Content="Analyse" />
+                    <StackPanel Orientation="Horizontal" Spacing="6"><TextBlock Text="Probe (Å)" Classes="label" VerticalAlignment="Center" /><NumericUpDown Value="{Binding CgwProbe}" Minimum="0" Maximum="10" Increment="0.5" FormatString="0.#" Width="110" /></StackPanel></DockPanel>
+                  <v:MathView Tex="{x:Static vm:MainViewModel.CgwTensionTex}" FontSize="13.5" HorizontalAlignment="Left" />
+                </StackPanel>
+              </Border>
+            </StackPanel>
+            <Border Grid.Column="1" Classes="pcard">
+              <StackPanel Spacing="8">
+                <TextBlock Text="Stress–strain and its parts" Classes="ctitle" />
+                <ItemsControl ItemsSource="{Binding CgwMechFacts}">
+                  <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:Row"><StackPanel Spacing="2"><TextBlock Text="{Binding Key}" Classes="label" /><TextBlock Text="{Binding Value}" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap" /></StackPanel></DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <v:XyChart x:Name="StressChart" Height="300" XLabel="engineering strain" YLabel="σ (MPa)" Empty="analyse a stress_strain.dat (written by the tension decks' runs)" />
+              </StackPanel>
+            </Border>
+          </Grid>
+          <!-- dynamics -->
+          <Grid ColumnDefinitions="430,*" ColumnSpacing="14">
+            <Border Classes="pcard">
+              <StackPanel Spacing="8">
+                <TextBlock Text="Chain dynamics" Classes="ctitle" />
+                <StackPanel Spacing="3"><TextBlock Text="CG map and trajectory" Classes="label" />
+                  <DockPanel><Button DockPanel.Dock="Right" Classes="small" Content="Map…" Tag="file:CgwDynMap" Click="OnPickFile" /><TextBlock Text="{Binding CgwDynMap}" Classes="cell path" ToolTip.Tip="{Binding CgwDynMap}" VerticalAlignment="Center" /></DockPanel>
+                  <DockPanel><Button DockPanel.Dock="Right" Classes="small" Content="Dump…" Tag="file:CgwDynDump" Click="OnPickFile" /><TextBlock Text="{Binding CgwDynDump}" Classes="cell path" ToolTip.Tip="{Binding CgwDynDump}" VerticalAlignment="Center" /></DockPanel></StackPanel>
+                <DockPanel><Button DockPanel.Dock="Right" Click="OnDyn" IsEnabled="{Binding CgwIdle}" Content="Dynamics" />
+                  <StackPanel Orientation="Horizontal" Spacing="6"><TextBlock Text="fs per timestep" Classes="label" VerticalAlignment="Center" /><NumericUpDown Value="{Binding CgwDynDt}" Minimum="0.01" Maximum="1000" Increment="1" FormatString="0.##" Width="120" /></StackPanel></DockPanel>
+                <v:MathView Tex="{x:Static vm:MainViewModel.CgwDynTex}" FontSize="13.5" HorizontalAlignment="Left" />
+                <TextBlock Text="Time mapping: the AA (mapped) and the CG dynamics.csv of the same system" Classes="label" Margin="0,6,0,0" />
+                <DockPanel><Button DockPanel.Dock="Right" Classes="small" Content="AA…" Tag="file:CgwAaCsv" Click="OnPickFile" /><TextBlock Text="{Binding CgwAaCsv}" Classes="cell path" ToolTip.Tip="{Binding CgwAaCsv}" VerticalAlignment="Center" /></DockPanel>
+                <DockPanel><Button DockPanel.Dock="Right" Classes="small" Content="CG…" Tag="file:CgwCgCsv" Click="OnPickFile" /><TextBlock Text="{Binding CgwCgCsv}" Classes="cell path" ToolTip.Tip="{Binding CgwCgCsv}" VerticalAlignment="Center" /></DockPanel>
+                <DockPanel><Button DockPanel.Dock="Right" Click="OnTimeMap" IsEnabled="{Binding CgwIdle}" Content="Time factor" />
+                  <TextBlock Text="{Binding CgwTimeMap}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource AccB}" TextWrapping="Wrap" VerticalAlignment="Center" /></DockPanel>
+              </StackPanel>
+            </Border>
+            <Border Grid.Column="1" Classes="pcard">
+              <StackPanel Spacing="8">
+                <TextBlock Text="Mean-square displacements" Classes="ctitle" />
+                <ItemsControl ItemsSource="{Binding CgwDynFacts}">
+                  <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:Row"><StackPanel Spacing="2"><TextBlock Text="{Binding Key}" Classes="label" /><TextBlock Text="{Binding Value}" FontSize="14" FontWeight="SemiBold" /></StackPanel></DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <v:XyChart x:Name="DynChart" Height="280" XLabel="log₁₀ t (fs)" YLabel="g (Å²), log scale" LogY="True" Empty="run the dynamics of a CG trajectory" />
+              </StackPanel>
+            </Border>
+          </Grid>
+          <!-- backmap -->
+          <Grid ColumnDefinitions="430,*" ColumnSpacing="14">
+            <Border Classes="pcard">
+              <StackPanel Spacing="8">
+                <TextBlock Text="Backmap to all atoms" Classes="ctitle" />
+                <TextBlock Text="Fragments from an all-atom reference cell (with its force field) placed on the beads; the cut bonds restored with their types and charges." FontSize="11.5" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
+                <StackPanel Spacing="3"><TextBlock Text="Reference: map.json and its LAMMPS data" Classes="label" />
+                  <DockPanel><Button DockPanel.Dock="Right" Classes="small" Content="Map…" Tag="file:CgwBackRefMap" Click="OnPickFile" /><TextBlock Text="{Binding CgwBackRefMap}" Classes="cell path" ToolTip.Tip="{Binding CgwBackRefMap}" VerticalAlignment="Center" /></DockPanel>
+                  <DockPanel><Button DockPanel.Dock="Right" Classes="small" Content="Data…" Tag="file:CgwBackRefData" Click="OnPickFile" /><TextBlock Text="{Binding CgwBackRefData}" Classes="cell path" ToolTip.Tip="{Binding CgwBackRefData}" VerticalAlignment="Center" /></DockPanel>
+                  <DockPanel><Button DockPanel.Dock="Right" Classes="small" Content="Input…" Tag="file:CgwBackInput" Click="OnPickFile" ToolTip.Tip="The reference LAMMPS input: its pair, kspace and bonded style lines" /><TextBlock Text="{Binding CgwBackInput}" Classes="cell path" ToolTip.Tip="{Binding CgwBackInput}" VerticalAlignment="Center" /></DockPanel></StackPanel>
+                <StackPanel Spacing="3"><TextBlock Text="CG system: map.json and a frame" Classes="label" />
+                  <DockPanel><Button DockPanel.Dock="Right" Classes="small" Content="Map…" Tag="file:CgwBackCg" Click="OnPickFile" /><TextBlock Text="{Binding CgwBackCg}" Classes="cell path" ToolTip.Tip="{Binding CgwBackCg}" VerticalAlignment="Center" /></DockPanel>
+                  <DockPanel><Button DockPanel.Dock="Right" Classes="small" Content="Frame…" Tag="file:CgwBackFrame" Click="OnPickFile" /><TextBlock Text="{Binding CgwBackFrame}" Classes="cell path" ToolTip.Tip="{Binding CgwBackFrame}" VerticalAlignment="Center" /></DockPanel></StackPanel>
+                <Button Click="OnBackmap" IsEnabled="{Binding CgwIdle}" HorizontalAlignment="Right" Content="Backmap" />
+              </StackPanel>
+            </Border>
+            <Border Grid.Column="1" Classes="pcard">
+              <StackPanel Spacing="8">
+                <ItemsControl ItemsSource="{Binding CgwBackFacts}">
+                  <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:Row"><StackPanel Spacing="2"><TextBlock Text="{Binding Key}" Classes="label" /><TextBlock Text="{Binding Value}" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap" /></StackPanel></DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <DockPanel><Button DockPanel.Dock="Right" Click="OnBackCheck" IsEnabled="{Binding CgwIdle}" Content="Check" />
+                  <Button DockPanel.Dock="Right" Classes="small" Content="Data…" Tag="file:CgwBackCheckData" Click="OnPickFile" Margin="0,0,8,0" />
+                  <StackPanel><TextBlock Text="Bonds and angles against harmonic r₀, θ₀ (after in.backmap: relaxed.data)" Classes="label" /><TextBlock Text="{Binding CgwBackCheckData}" Classes="cell path" ToolTip.Tip="{Binding CgwBackCheckData}" /></StackPanel></DockPanel>
+                <Grid ColumnDefinitions="70,60,70,*,90,100">
+                  <TextBlock Text="KIND" Classes="h3" /><TextBlock Grid.Column="1" Text="TYPE" Classes="h3" /><TextBlock Grid.Column="2" Text="COUNT" Classes="h3" />
+                  <TextBlock Grid.Column="3" Text="REFERENCE" Classes="h3" /><TextBlock Grid.Column="4" Text="MEAN |Δ|" Classes="h3" /><TextBlock Grid.Column="5" Text="LARGEST |Δ|" Classes="h3" />
+                </Grid>
+                <ItemsControl ItemsSource="{Binding CgwBackCheck}" MaxHeight="260">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:DftTableRow">
+                      <Grid ColumnDefinitions="70,60,70,*,90,100" Margin="0,1">
+                        <TextBlock Text="{Binding Cells[0]}" Classes="cell" /><TextBlock Grid.Column="1" Text="{Binding Cells[1]}" Classes="cell" /><TextBlock Grid.Column="2" Text="{Binding Cells[2]}" Classes="cell" />
+                        <TextBlock Grid.Column="3" Text="{Binding Cells[3]}" Classes="cell" /><TextBlock Grid.Column="4" Text="{Binding Cells[4]}" Classes="cell" /><TextBlock Grid.Column="5" Text="{Binding Cells[5]}" Classes="cell" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+          </Grid>
+        </StackPanel>
+
+        <!-- the last command's report -->
+        <Border Classes="pcard" IsVisible="{Binding HasCgwReport}">
+          <Expander Header="Report of the last command" HorizontalAlignment="Stretch">
+            <SelectableTextBlock Text="{Binding CgwReport}" Classes="mono" FontSize="11" TextWrapping="Wrap" />
+          </Expander>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</p:PageBase>

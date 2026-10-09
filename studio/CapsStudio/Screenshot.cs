@@ -91,6 +91,34 @@ internal static class Screenshot
                 if (kv[1] == "ads") { vm.OpenAdsorbDft(); vm.AdsSlab = vm.SlabPath; Wait(vm.BuildAdsorptionSet()); }
                 if (kv[1] == "job") { vm.OpenDftJob(); vm.JobStructure = vm.SlabPath; Wait(vm.PreviewJob()); }
             }
+            if (kv[0] == "cgflow")   // cgflow=map|bonded|nonbonded|build|equil|analyse: the coarse-grain workflow on a small grown PBS cell, shown at that stage
+            {
+                var vm = w.ViewModel;
+                void Wait(Task t) { while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(10); } }
+                var root = Path.Combine(Path.GetTempPath(), "caps-shot-cg");
+                if (Directory.Exists(root)) Directory.Delete(root, true);
+                Directory.CreateDirectory(root);
+                vm.CgwRoot = root;
+                vm.OpenCgw();
+                var (pbs, _) = Interop.CapsDocument.GrowChains("{\"units\":[{\"name\":\"butylene succinate\",\"smiles\":\"[*]OCCCCOC(=O)CCC(=O)[*]\"}],\"dp\":6}",
+                    new Interop.CapsGrowOpts { Chains = 4, Dp = 0, Seed = 1, Density = 0.3, ContactScale = 0.8, Curve = 1 }, null, "pbs");
+                var pbsFile = Path.Combine(root, "pbs.data");
+                pbs.Save(pbsFile);
+                pbs.Dispose();
+                vm.CgwAddInputs([pbsFile]);
+                Wait(vm.CgwRunMap());
+                Wait(vm.CgwRunBonded());
+                vm.CgwRmax = 10;
+                Wait(vm.CgwRunTargets());
+                Wait(vm.CgwIbiStart());
+                vm.CgwDp = 10; vm.CgwChains = 6; vm.CgwBuildRef = true;
+                Wait(vm.CgwBuild());
+                Wait(vm.CgwMechDecks());
+                Wait(vm.CgwRunPpa());
+                vm.CgwStage = Array.IndexOf(new[] { "map", "bonded", "nonbonded", "build", "equil", "analyse" }, kv[1]) is var st and >= 0 ? st : 0;
+                for (int k = 0; k < 60; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+                Console.WriteLine("cgflow: " + vm.CgwStatus);
+            }
             if (kv[0] == "figure")   // figure=BG: Export › Figure with that background selected
             {
                 w.ViewModel.OpenFigure();
