@@ -229,6 +229,10 @@ struct TensileOptions {
   std::function<bool(const TensilePoint&)> progress;   // return false to cancel
   std::function<void(const std::vector<double>&, const Cell&, int64_t)> frame;
   int frame_every = 0;
+  // checkpoints: the state when a stop is asked for (and every checkpoint_every steps), with the curve so far and L0
+  int64_t checkpoint_every = 0;
+  std::function<void(const std::vector<double>& x, const std::vector<double>& v, const Cell&, const std::vector<TensilePoint>& curve, const double L0[3])> checkpoint;
+  const struct TensileResume* resume = nullptr;
 };
 struct TensileResult {
   std::vector<TensilePoint> curve;
@@ -240,6 +244,9 @@ struct TensileResult {
   std::string method;
   std::vector<std::string> notes;
 };
+// A pull continued after a stop: the curve so far and the reference lengths L0 (Å); the structure given is the
+// checkpoint (strained, with velocities); the run goes on at the same rate to max_strain, no equilibration.
+struct TensileResume { std::vector<TensilePoint> curve; double L0[3] = {0, 0, 0}; };
 TensileResult run_tensile(System& s, const TensileOptions& o);
 
 // Pull-out / debonding of a film from a surface (fibre–rubber interfaces): the surface (molecule `surface_mol`) held,
@@ -318,6 +325,10 @@ struct CoolingOptions {
   int property = 0, fit = 0;
   double glassy_max = 0, rubbery_min = 0;
   std::function<bool(const ThermoRow&, int step_index, int steps)> progress;   // return false to cancel
+  // checkpoints (a cluster job stopped near its time limit): after each temperature the state and the points so far; a
+  // scan given the points already done goes on from the next temperature (no equilibration again)
+  std::function<void(const System&, const std::vector<CoolingPoint>&)> after_point;
+  std::vector<CoolingPoint> done;
 };
 struct CoolingResult {
   std::vector<CoolingPoint> points;

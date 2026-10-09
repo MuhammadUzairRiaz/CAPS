@@ -1,5 +1,6 @@
 #include "caps/recipe.hpp"
 #include "caps/live.hpp"
+#include "caps/provenance.hpp"
 #include "caps/dft_commands.hpp"
 #include "caps/ffio.hpp"
 #include "caps/properties.hpp"
@@ -40,6 +41,8 @@
 #include "caps/uff.hpp"
 
 namespace caps {
+
+using fs_path = std::filesystem::path;
 
 namespace {
 
@@ -485,9 +488,44 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
       sys.has_charges = true;
     }
   };
+  // a resumed run: what the checkpoint says was done
+  int done = 0;
+  Json saved;
+  const std::string state_file = o.checkpoint_dir.empty() ? "" : (std::filesystem::path(o.checkpoint_dir) / "recipe.state.json").string();
+  if (o.resume) {
+    if (state_file.empty() || !std::filesystem::exists(state_file)) throw RecipeError(2, "resume: no recipe.state.json in " + o.checkpoint_dir);
+    std::ifstream sf(state_file);
+    std::stringstream ss;
+    ss << sf.rdbuf();
+    saved = Json::parse(ss.str());
+    if (saved.text("recipe_sha256") != o.sha256) throw RecipeError(2, "resume: the checkpoint is of another recipe (or the recipe was changed since)");
+    done = int(saved.num("done", 0));
+  }
+  bool loaded = !o.resume;
+  auto setup_stage = [](const std::string& x) { return x == "build" || x == "type"; };
+  auto rerun_stage = [](const std::string& x) { return x == "analyze" || x == "export"; };
   for (int k = 0; k < n; ++k) {
     const std::string& st = stages[size_t(k)];
     const Json& J = r[st];
+    if (!loaded && (k >= done || rerun_stage(st)) && !setup_stage(st)) {   // the checkpoint's state, before the first stage that runs on it
+      const fs_path dir = o.checkpoint_dir;
+      s = read_lammps_data((dir / saved.text("structure")).string());
+      ff.reset();
+      if (saved.has("forcefield") && !saved.text("forcefield").empty()) {
+        std::ifstream ffi(dir / saved.text("forcefield"));
+        std::stringstream fs2;
+        fs2 << ffi.rdbuf();
+        ff = std::make_shared<ForceField>(forcefield_from_json(fs2.str()));
+        ffname = saved.text("forcefield_name", ffname);
+        for (size_t i = 0; i < s.atoms.size() && i < ff->charge.size(); ++i) s.atoms[i].charge = ff->charge[i];
+      }
+      if (saved.has("manifest")) res.manifest = manifest_from_json(saved["manifest"]);
+      loaded = true;
+    }
+    if (o.resume && k < done && !setup_stage(st) && !rerun_stage(st)) {
+      report(k, st, "from the checkpoint", "done", 1);
+      continue;
+    }
     try {
       if (st == "build") {
         report(k, st, "", "running", 0);
@@ -970,7 +1008,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
                                                        : 0;
           m.frame_every = 0;
           if (frame_every > 0 && o.live && !o.frames_path.empty()) {
-            if (!o.live->frames_open()) o.live->open_frames(o.frames_path, s);
+            if (!o.live->frames_open()) o.live->open_frames(o.frames_path, s, o.resume);
             m.frame_every = frame_every;
             m.frame = [&](const std::vector<double>& x, const Cell& c, int64_t fs) { o.live->frame(x, c, fs); };
           }
@@ -1051,7 +1089,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           }
           if (J.has("thermo_ps")) e.thermo_ps = std::max(1e-3, num(J, "thermo_ps", e.thermo_ps));
           if (num(J, "frame_ps", 0) > 0 && o.live && !o.frames_path.empty()) {
-            if (!o.live->frames_open()) o.live->open_frames(o.frames_path, s);
+            if (!o.live->frames_open()) o.live->open_frames(o.frames_path, s, o.resume);
             e.frame_ps = num(J, "frame_ps", 10);
             e.frame = [&](const std::vector<double>& x, const Cell& c, int64_t fs) { o.live->frame(x, c, fs); };
           }
@@ -1192,6 +1230,26 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
         std::string d;
         for (const auto& f : formats) d += (d.empty() ? "" : ", ") + f;
         report(k, st, d + (first.empty() ? "" : " · provenance beside " + std::filesystem::path(first).filename().string()), "done", 1);
+      }
+      // a checkpoint after each stage that changed the structure
+      if (!state_file.empty() && !setup_stage(st) && !rerun_stage(st) && !s.atoms.empty()) {
+        const fs_path dir = o.checkpoint_dir;
+        std::filesystem::create_directories(dir);
+        write_lammps_data(s, (dir / "recipe.checkpoint.data.tmp").string());
+        std::filesystem::rename(dir / "recipe.checkpoint.data.tmp", dir / "recipe.checkpoint.data");
+        Json st_json = Json::object();
+        st_json["recipe_sha256"] = o.sha256;
+        st_json["done"] = double(k + 1);
+        st_json["stage"] = st;
+        st_json["structure"] = std::string("recipe.checkpoint.data");
+        if (ff && ff->type_index.size() == s.atoms.size()) {
+          std::ofstream(dir / "recipe.checkpoint.ff.json") << forcefield_to_json(*ff);
+          st_json["forcefield"] = std::string("recipe.checkpoint.ff.json");
+          st_json["forcefield_name"] = ffname;
+        }
+        st_json["manifest"] = manifest_json(res.manifest);
+        std::ofstream(state_file + ".tmp") << st_json.dump(1) << "\n";
+        std::filesystem::rename(state_file + ".tmp", state_file);
       }
     } catch (const RecipeError& e) {
       report(k, st, e.what(), "failed", 0);

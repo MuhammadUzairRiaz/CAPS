@@ -174,7 +174,7 @@ int usage() {
                "  Cluster jobs (caps job help): CAPS's own runs as batch jobs on any SLURM or PBS cluster, or a workstation\n"
                "  caps job profile [--preset slurm|slurm-workspace|pbs|workstation] [--set key=value,…]   your host profile\n"
                "  caps job new --title T --kind md [--input FILES] [--cpus N] [--time HH:MM:SS] [--submit] -- caps md …\n"
-               "  caps job status|tail [-f]|poll|collect|cancel DIR · caps job list · caps job new --array LIST.txt\n"
+               "  caps job status|tail [-f]|poll|collect|cancel|resume DIR · caps job list · caps job new --array LIST.txt\n"
                "  Coarse-graining (caps <command> --help for every option):\n"
                "  caps cgmap STRUCTURE… --preset ester-cut -o DIR [--dump DUMP]    chemistry-aware coarse-grained mapping\n"
                "  caps cgfit bonded|refine|targets|ibi-start|ibi-step|ibi-run|fit|tg|calibrate|sample-chain …   CG potentials\n"
@@ -308,7 +308,7 @@ const std::set<std::string>& known_options() {
     "--molecules", "--n", "--n-term", "--names", "--neutral", "--neutralise", "--new-velocities", "--no-cell",
     "--no-cleanup", "--no-coulomb", "--no-ions", "--no-orthogonal", "--no-pbc", "--no-pushoff", "--no-relax",
     "--no-tail", "--normal", "--noscfix", "--nt", "--out", "--overlay", "--padding", "--pair", "--particles",
-    "--ops", "--ops-file", "--checkpoint-every", "--checkpoint", "--resume", "--height", "--top-ratio", "--passivate", "--pattern", "--per-cycle", "--perspective", "--pfinal", "--ph", "--pitch", "--pmax", "--pme",
+    "--ops", "--ops-file", "--checkpoint-every", "--checkpoint", "--resume", "--resume-at", "--resume-points", "--resume-curve", "--height", "--top-ratio", "--passivate", "--pattern", "--per-cycle", "--perspective", "--pfinal", "--ph", "--pitch", "--pmax", "--pme",
     "--pme-order", "--pme-spacing", "--ppii", "--press", "--pressure", "--primitive", "--print-protocol", "--probe", "--progress-file",
     "--props", "--protocol", "--ps", "--qdirect", "--qmax", "--quick", "--quiet", "--radius", "--ramp", "--rate",
     "--ratio", "--repeats", "--report", "--rmax", "--salt", "--samples", "--scale", "--seed", "--sequence", "--sf",
@@ -342,6 +342,15 @@ std::string closest_option(const std::string& a) {
   return bd <= 3 ? best : std::string();
 }
 
+// Options without a value (the rest take the next word)
+bool is_cli_switch(const std::string& a) {
+  return a == "--no-cell" || a == "--inter" || a == "--perspective" || a == "--trans" || a == "--escalate" ||
+         a == "--box-relax" || a == "--no-pushoff" || a == "--no-coulomb" || a == "--quiet" || a == "--new-velocities" ||
+         a == "--until-converged" || a == "--print-protocol" || a == "--no-pbc" ||
+         a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" || a == "--include-input" || a == "--primitive" || a == "--symmetrize" || a == "--find-symmetry" || a == "--groups" || a == "--neutral" || a == "--no-cleanup" || a == "--helix" || a == "--strand" || a == "--ppii" || a == "--neutralise" || a == "--no-ions" || a == "--solvents" || a == "--bibtex" || a == "--json" || a == "--deterministic" || a == "--vacuum" || a == "--methods" ||
+         a == "--noscfix" || a == "--nt" || a == "--extdih" || a == "--elastic" || a == "--hybrid" || a == "--resume";
+}
+
 std::map<std::string, std::string> parse(int argc, char** argv, int from, std::vector<std::string>& pos) {
   std::map<std::string, std::string> o;
   for (int i = from; i < argc; ++i) {
@@ -351,12 +360,7 @@ std::map<std::string, std::string> parse(int argc, char** argv, int from, std::v
       throw std::invalid_argument("unknown option " + a + (near.empty() ? "" : " (did you mean " + near + "?)"));
     }
     if (a.rfind("--", 0) == 0 || a == "-o") {
-      const bool flag = a == "--no-cell" || a == "--inter" || a == "--perspective" || a == "--trans" || a == "--escalate" ||
-                        a == "--box-relax" || a == "--no-pushoff" || a == "--no-coulomb" || a == "--quiet" || a == "--new-velocities" ||
-                        a == "--until-converged" || a == "--print-protocol" || a == "--no-pbc" ||
-                        a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" || a == "--include-input" || a == "--primitive" || a == "--symmetrize" || a == "--find-symmetry" || a == "--groups" || a == "--neutral" || a == "--no-cleanup" || a == "--helix" || a == "--strand" || a == "--ppii" || a == "--neutralise" || a == "--no-ions" || a == "--solvents" || a == "--bibtex" || a == "--json" || a == "--deterministic" || a == "--vacuum" || a == "--methods" ||
-                        a == "--noscfix" || a == "--nt" || a == "--extdih" || a == "--elastic" || a == "--hybrid" || a == "--resume" ||
-                        (a == "--types" && (i + 1 >= argc || std::string(argv[i + 1]).rfind("--", 0) == 0));
+      const bool flag = is_cli_switch(a) || (a == "--types" && (i + 1 >= argc || std::string(argv[i + 1]).rfind("--", 0) == 0));
       o[a] = flag ? "1" : (i + 1 < argc ? argv[++i] : "");
     } else {
       pos.push_back(a);
@@ -451,10 +455,15 @@ int cli_recipe(const Json& r, const std::string& file, std::map<std::string, std
   // live files (a cluster job): thermo rows, progress lines, frames of the stages that ask for them
   LiveOutput live("run");
   const bool as_job = !default_progress_file().empty();
-  if (o.count("--log") || as_job) live.open_thermo(o.count("--log") ? o["--log"] : "thermo.csv");
-  if (const std::string pf = o.count("--progress-file") ? o["--progress-file"] : default_progress_file(); !pf.empty()) live.open_progress(pf);
+  const bool resuming = o.count("--resume") > 0;   // the files of the run it continues grow on
+  if (o.count("--log") || as_job) live.open_thermo(o.count("--log") ? o["--log"] : "thermo.csv", resuming);
+  if (const std::string pf = o.count("--progress-file") ? o["--progress-file"] : default_progress_file(); !pf.empty()) live.open_progress(pf, resuming);
   ro.live = &live;
   ro.frames_path = o.count("--dump") ? o["--dump"] : (std::filesystem::path(ro.out_dir) / "traj.lammpstrj").string();
+  // stage checkpoints in a job (or with --resume): a run stopped near its time limit goes on from its last finished stage
+  install_stop_signals();
+  ro.resume = o.count("--resume") > 0;
+  if (as_job || ro.resume || o.count("--checkpoint")) ro.checkpoint_dir = o.count("--checkpoint") ? o["--checkpoint"] : ro.out_dir;
   bool open_line = false;
   auto last_line = std::chrono::steady_clock::now() - std::chrono::hours(1);
   ro.progress = [&](const RecipeEvent& e) {
@@ -491,6 +500,7 @@ int cli_recipe(const Json& r, const std::string& file, std::map<std::string, std
   };
   try {
     const auto res = run_recipe(r, ro);
+    std::filesystem::remove("resume.txt");
     live.done(true);
     if (json) {
       Json out = Json::object();
@@ -507,6 +517,15 @@ int cli_recipe(const Json& r, const std::string& file, std::map<std::string, std
     }
     return 0;
   } catch (const RecipeError& e) {
+    if (stop_requested() && !ro.checkpoint_dir.empty()) {   // stopped from outside: go on from the last finished stage
+      std::string again = "caps run " + file + " --resume --out " + ro.out_dir + (ro.checkpoint_dir != ro.out_dir ? " --checkpoint " + ro.checkpoint_dir : "");
+      if (o.count("--seed")) again += " --seed " + o["--seed"];
+      if (o.count("--log")) again += " --log " + o["--log"];
+      std::ofstream("resume.txt") << again << "\n";
+      std::printf("\nstopped (a stop was asked for): finished stages are in %s/recipe.state.json; continue with\n  %s\n", ro.checkpoint_dir.c_str(), again.c_str());
+      live.done(false, "interrupted; resume: " + again);
+      return 75;
+    }
     live.done(false, e.what());
     if (json) std::printf("{\"status\":\"failed\",\"exit\":%d,\"error\":%s}\n", e.code, esc(e.what()).c_str());
     else std::fprintf(stderr, "caps run: %s (exit %d)\n", e.what(), e.code);
@@ -678,6 +697,7 @@ int job_usage() {
                "  caps job tail [DIR] [-f]     the live log (run.log in the scratch folder while it runs)\n"
                "  caps job poll DIR [--log-offset N --progress-offset N --err-offset N]   everything new since a look, as JSON\n"
                "  caps job collect [DIR]       copy the scratch folder to out/ (a job stopped by its time limit)\n"
+               "  caps job resume DIR [--submit] [--time …]   a job stopped near its time limit, again from its checkpoint\n"
                "  caps job list [--json]       every job folder under the root (the Studio's Find my jobs)\n"
                "  caps job cancel DIR          scancel / qdel / kill\n"
                "  caps job template            the built-in job script ({placeholders})\n");
@@ -936,6 +956,28 @@ int job_main(int argc, char** argv) {
       }
       return 0;
     }
+    if (a.sub == "resume") {   // a job stopped near its time limit: the same title and kind again, from its checkpoint
+      const HostProfile h = job_profile(a);
+      JobRequest ov;
+      if (a.opt.count("--cpus")) ov.cpus = std::stoi(a.opt.at("--cpus"));
+      if (a.opt.count("--mem")) ov.mem = a.opt.at("--mem");
+      if (a.opt.count("--time")) ov.time = a.opt.at("--time");
+      if (a.opt.count("--partition")) ov.partition = a.opt.at("--partition");
+      ov.kind = "";
+      JobFolder f = make_resume_job(h, job_dir_arg(a), ov);
+      Json out = Json::object();
+      out["dir"] = f.dir, out["job"] = f.job, out["script"] = f.script;
+      if (a.opt.count("--submit")) {
+        std::string msg;
+        mark_submitting(h, f);
+        const std::string id = submit_script(h, f, 0, &msg);
+        if (id.empty()) { out["submitted"] = false, out["error"] = msg; }
+        else { mark_submitted(h, f, id); out["submitted"] = true, out["id"] = id; }
+      }
+      if (a.opt.count("--json")) std::printf("%s\n", out.dump(0).c_str());
+      else std::printf("%s\n%s\n", f.dir.c_str(), out.has("id") ? ("submitted: " + out["id"].str()).c_str() : ("next: caps job submit " + f.dir).c_str());
+      return out.has("submitted") && !out["submitted"].boolean() ? 1 : 0;
+    }
     if (a.sub == "submit") {
       const HostProfile h = job_profile(a);
       JobFolder f;
@@ -1103,6 +1145,25 @@ static int cg_main(const std::string& cmd, int argc, char** argv) {
     std::fprintf(stderr, "caps %s: %s\n", cmd.c_str(), e.what());
     return 2;
   }
+}
+
+// The command that continues a stopped run (resume.txt): the same options, the checkpoint as the input, the extra ones.
+std::string resume_line(const std::string& head, const std::string& input, const std::map<std::string, std::string>& o,
+                        const std::map<std::string, std::string>& extra) {
+  auto word = [](const std::string& w) {
+    if (!w.empty() && w.find_first_of(" \t'\"$`\\*?;&|<>()") == std::string::npos) return w;
+    std::string q = "'";
+    for (char c : w) q += c == '\'' ? std::string("'\\''") : std::string(1, c);
+    return q + "'";
+  };
+  std::string line = head + " " + word(input);
+  for (const auto& [k, v] : o) {
+    if (extra.count(k) || k == "--resume" || k == "--resume-at" || k == "--print-protocol") continue;
+    line += " " + k;
+    if (!is_cli_switch(k)) line += " " + word(v);
+  }
+  for (const auto& [k, v] : extra) line += " " + k + (v.empty() ? "" : " " + word(v));
+  return line;
 }
 
 int main(int argc, char** argv) {
@@ -2496,7 +2557,60 @@ int main(int argc, char** argv) {
         if (!quiet && shown++ % 20 == 0) std::printf("strain %7.4f  stress %9.2f MPa  lateral %8.4f %8.4f  T %6.1f K\n", p.strain, p.stress, p.lateral1, p.lateral2, p.temperature);
         return true;
       };
-      const TensileResult r = run_tensile(s, to);
+      // checkpoints: the strained state with the curve so far and L0, when a stop is asked for (a cluster job near its time
+      // limit: exit 75 and resume.txt) and every --checkpoint-every steps
+      install_stop_signals();
+      TensileResume resume;
+      const std::string t_cp = std::filesystem::path(o["-o"]).replace_extension(".restart.data").string();
+      const std::string t_curve = std::filesystem::path(o["-o"]).replace_extension(".tensile-curve.json").string();
+      if (o.count("--resume-curve")) {
+        if (to.axis == 3) throw std::invalid_argument("--resume-curve: a pull averaged over three axes starts again (one axis at a time continues)");
+        std::ifstream cf(o["--resume-curve"]);
+        std::stringstream ss;
+        ss << cf.rdbuf();
+        const Json j = Json::parse(ss.str());
+        for (int k = 0; k < 3; ++k) resume.L0[k] = j["L0"][size_t(k)].number();
+        for (const auto& q : j["curve"].items()) {
+          TensilePoint p;
+          p.strain = q.num("strain", 0), p.stress = q.num("stress", 0), p.lateral1 = q.num("lateral1", 0), p.lateral2 = q.num("lateral2", 0);
+          p.temperature = q.num("T", 0), p.time_ps = q.num("time_ps", 0);
+          resume.curve.push_back(p);
+        }
+        to.resume = &resume;
+      }
+      if (o.count("--checkpoint-every")) to.checkpoint_every = std::stoll(o["--checkpoint-every"]);
+      if (to.axis != 3)
+        to.checkpoint = [&](const std::vector<double>& x, const std::vector<double>& v, const Cell& c, const std::vector<TensilePoint>& curve, const double L0[3]) {
+          System k = s;
+          k.cell = c;
+          k.velocities.resize(k.atoms.size());
+          for (size_t i = 0; i < k.atoms.size(); ++i) k.atoms[i].pos = {x[3 * i], x[3 * i + 1], x[3 * i + 2]}, k.velocities[i] = {v[3 * i], v[3 * i + 1], v[3 * i + 2]};
+          k.unwrapped = true;
+          save_structure(k, *ff, to.energy, t_cp);
+          Json j = Json::object(), l0 = Json::array(), arr = Json::array();
+          for (int a = 0; a < 3; ++a) l0.push_back(L0[a]);
+          for (const auto& p : curve) {
+            Json q = Json::object();
+            q["strain"] = p.strain, q["stress"] = p.stress, q["lateral1"] = p.lateral1, q["lateral2"] = p.lateral2, q["T"] = p.temperature, q["time_ps"] = p.time_ps;
+            arr.push_back(q);
+          }
+          j["L0"] = l0, j["curve"] = arr;
+          std::ofstream(t_curve) << j.dump(0) << "\n";
+          std::ofstream("resume.txt") << resume_line("caps tensile", t_cp, o, {{"--resume-curve", t_curve}}) << "\n";
+        };
+      TensileResult r;
+      try {
+        r = run_tensile(s, to);
+      } catch (const DynamicsInterrupted& ex) {
+        if (!std::filesystem::exists("resume.txt")) std::ofstream("resume.txt") << resume_line("caps tensile", pos[0], o, {}) << "\n";
+        std::ifstream rf("resume.txt");
+        std::string again;
+        std::getline(rf, again);
+        if (o.count("--dump")) write_lammps_dump(traj, o["--dump"]);
+        std::printf("stopped at step %lld (a stop was asked for); continue with\n  %s\n", static_cast<long long>(ex.step), again.c_str());
+        return 75;
+      }
+      std::filesystem::remove("resume.txt");   // finished: nothing to continue
       save_structure(s, *ff, to.energy, o["-o"]);
       if (o.count("--dump")) write_lammps_dump(traj, o["--dump"]);
       cli_report(tensile_properties(r), o);
@@ -2592,6 +2706,33 @@ int main(int argc, char** argv) {
       if (o.count("--seed")) co.seed = std::stoull(o["--seed"]);
       co.new_velocities = o.count("--new-velocities") || s.velocities.size() != s.atoms.size();
       const bool quiet = o.count("--quiet");
+      // checkpoints after each temperature (a cluster job near its time limit stops with exit 75 and resume.txt)
+      install_stop_signals();
+      const std::string tg_cp = std::filesystem::path(o["-o"]).replace_extension(".restart.data").string();
+      const std::string tg_state = std::filesystem::path(o["-o"]).replace_extension(".tg-points.json").string();
+      if (o.count("--resume-points")) {
+        std::ifstream pf(o["--resume-points"]);
+        std::stringstream ss;
+        ss << pf.rdbuf();
+        for (const auto& q : Json::parse(ss.str())["points"].items()) {
+          CoolingPoint p;
+          p.temperature = q.num("T", 0), p.density = q.num("density", 0), p.density_err = q.num("density_err", 0);
+          p.specific_volume = q.num("specific_volume", 0), p.potential = q.num("potential", 0);
+          co.done.push_back(p);
+        }
+      }
+      co.after_point = [&](const System& now, const std::vector<CoolingPoint>& pts) {
+        save_structure(now, *ff, co.energy, tg_cp);
+        Json j = Json::object(), arr = Json::array();
+        for (const auto& p : pts) {
+          Json q = Json::object();
+          q["T"] = p.temperature, q["density"] = p.density, q["density_err"] = p.density_err, q["specific_volume"] = p.specific_volume, q["potential"] = p.potential;
+          arr.push_back(q);
+        }
+        j["points"] = arr;
+        std::ofstream(tg_state) << j.dump(1) << "\n";
+        std::ofstream("resume.txt") << resume_line("caps tg", tg_cp, o, {{"--resume-points", tg_state}}) << "\n";
+      };
       int last = -1;
       co.progress = [&](const ThermoRow& r, int k, int n) {
         if (!quiet && k != last) {
@@ -2601,7 +2742,18 @@ int main(int argc, char** argv) {
         }
         return true;
       };
-      const CoolingResult r = run_cooling(s, co);
+      CoolingResult r;
+      try {
+        r = run_cooling(s, co);
+      } catch (const DynamicsInterrupted& ex) {
+        if (!std::filesystem::exists("resume.txt")) std::ofstream("resume.txt") << resume_line("caps tg", pos[0], o, {}) << "\n";   // before the first temperature
+        std::ifstream rf("resume.txt");
+        std::string again;
+        std::getline(rf, again);
+        std::printf("stopped at step %lld (a stop was asked for); continue with\n  %s\n", static_cast<long long>(ex.step), again.c_str());
+        return 75;
+      }
+      std::filesystem::remove("resume.txt");   // finished: nothing to continue
       if (!quiet)
         for (const auto& p : r.points) std::printf("%8.1f K  %.5f ± %.5f g/cm³\n", p.temperature, p.density, p.density_err);
       save_structure(s, *ff, co.energy, o["-o"]);
@@ -3075,10 +3227,12 @@ int main(int argc, char** argv) {
         d.new_velocities = false;
         std::printf("resuming at step %lld: %lld steps to go\n", static_cast<long long>(done), static_cast<long long>(d.steps));
       }
-      // checkpoints: the full state every N steps, written whole (to a temporary file, then renamed)
-      if (o.count("--checkpoint-every")) {
-        d.checkpoint_every = std::stoll(o["--checkpoint-every"]);
-        const std::string cp = o.count("--checkpoint") ? o["--checkpoint"] : std::filesystem::path(o["-o"]).replace_extension(".restart.data").string();
+      // checkpoints: the full state every N steps, written whole (to a temporary file, then renamed); also when a stop is
+      // asked for (SIGUSR1 / SIGTERM: a cluster job near its time limit), so the run can continue with --resume
+      install_stop_signals();
+      const std::string cp = o.count("--checkpoint") ? o["--checkpoint"] : std::filesystem::path(o["-o"]).replace_extension(".restart.data").string();
+      {
+        if (o.count("--checkpoint-every")) d.checkpoint_every = std::stoll(o["--checkpoint-every"]);
         const int64_t total = d.step_offset + d.steps;
         d.checkpoint = [&, cp, total](const std::vector<double>& x, const std::vector<double>& v, const Cell& c, int64_t step) {
           System k = s;
@@ -3100,14 +3254,15 @@ int main(int argc, char** argv) {
       // live output: the dump, the thermo CSV and the progress lines are written while the run goes (a cluster job is
       // followed by reading them; a run stopped by a time limit leaves what it had done)
       LiveOutput live("md");
+      const bool resumed = o.count("--resume") > 0;   // the files of the run it continues grow on
       if (o.count("--dump")) {
-        live.open_frames(o["--dump"], s);
+        live.open_frames(o["--dump"], s, resumed);
         d.frame = [&](const std::vector<double>& x, const Cell& c, int64_t step) { live.frame(x, c, step); };
       } else {
         d.frame_every = 0;
       }
-      if (o.count("--log")) live.open_thermo(o["--log"]);
-      if (const std::string pf = o.count("--progress-file") ? o["--progress-file"] : default_progress_file(); !pf.empty()) live.open_progress(pf);
+      if (o.count("--log")) live.open_thermo(o["--log"], resumed);
+      if (const std::string pf = o.count("--progress-file") ? o["--progress-file"] : default_progress_file(); !pf.empty()) live.open_progress(pf, resumed);
       const double total_steps = double(d.step_offset + d.steps);
       if (!quiet) std::printf("%10s %9s %9s %13s %13s %13s %10s %8s\n", "step", "time/ps", "T/K", "Epot", "Etotal", "conserved", "P/atm", "ρ/g·cm⁻³");
       d.progress = [&](const ThermoRow& r) {
@@ -3121,7 +3276,20 @@ int main(int argc, char** argv) {
         return true;
       };
       DynamicsReport rep;
-      run_dynamics(s, d, &rep);
+      try {
+        run_dynamics(s, d, &rep);
+      } catch (const DynamicsInterrupted& e) {
+        // the checkpoint holds this step; the command that continues the run is written beside it
+        std::string again = "caps md " + cp + " --resume --steps " + std::to_string(d.step_offset + d.steps) + " -o " + o["-o"];
+        for (const char* k : {"--dt", "--temp", "--thermostat", "--tau-t", "--barostat", "--pressure", "--tau-p", "--constraints", "--constraint-solver", "--thermo",
+                              "--every", "--cutoff", "--skin", "--threads", "--checkpoint-every", "--log", "--dump"})
+          if (o.count(k)) again += std::string(" ") + k + " " + o[k];
+        std::ofstream("resume.txt") << again << "\n";
+        std::printf("stopped at step %lld (a stop was asked for): the state is in %s; continue with\n  %s\n", static_cast<long long>(e.step), cp.c_str(), again.c_str());
+        live.done(false, "interrupted at step " + std::to_string(e.step) + "; resume: " + again);
+        return 75;
+      }
+      std::filesystem::remove("resume.txt");   // finished: nothing to continue
       live.done(true);
       const std::string out = o["-o"];
       auto ends = [&](const char* e) { return out.size() > 4 && out.substr(out.size() - 4) == e; };
@@ -3142,6 +3310,7 @@ int main(int argc, char** argv) {
       return 0;
     }
     if (cmd == "equilibrate") {
+      install_stop_signals();
       ProtocolParams pp;
       if (o.count("--tfinal")) pp.t_final = pp.t_low = std::stod(o["--tfinal"]);
       if (o.count("--tmax")) pp.t_max = pp.t_high = std::stod(o["--tmax"]);
@@ -3173,17 +3342,40 @@ int main(int argc, char** argv) {
       if (o.count("--seed")) e.md.seed = std::stoull(o["--seed"]);
       if (o.count("--cutoff")) e.md.energy.cutoff = std::stod(o["--cutoff"]);
       e.until_converged = o.count("--until-converged");
+      // continued after a stop: --resume-at STAGE:STEP (written into resume.txt by the stopped run)
+      if (o.count("--resume-at")) {
+        const std::string ra = o["--resume-at"];
+        const auto colon = ra.find(':');
+        e.start_stage = std::stoi(ra.substr(0, colon)) - 1;
+        e.start_step = colon == std::string::npos ? 0 : std::stoll(ra.substr(colon + 1));
+        if (s.velocities.size() != s.atoms.size()) throw std::invalid_argument("--resume-at needs the checkpoint (it carries the velocities)");
+      }
+      const std::string eq_cp = o.count("--checkpoint") ? o["--checkpoint"] : std::filesystem::path(o["-o"]).replace_extension(".restart.data").string();
+      e.checkpoint = [&](const std::vector<double>& x, const std::vector<double>& v, const Cell& c, int stage, int64_t at) {
+        System k = s;
+        k.cell = c;
+        k.velocities.resize(k.atoms.size());
+        for (size_t i = 0; i < k.atoms.size(); ++i) k.atoms[i].pos = {x[3 * i], x[3 * i + 1], x[3 * i + 2]}, k.velocities[i] = {v[3 * i], v[3 * i + 1], v[3 * i + 2]};
+        k.unwrapped = true;
+        k.title = "checkpoint equilibrate stage " + std::to_string(stage + 1) + " step " + std::to_string(at);
+        const std::string tmp = eq_cp + ".tmp";
+        const std::string why = write_lammps_data_or_structure(k, e.md.field ? *e.md.field : default_forcefield(k), e.md.energy, tmp);
+        if (!why.empty()) write_lammps_data(k, tmp);
+        std::filesystem::rename(tmp, eq_cp);
+        std::ofstream("resume.txt") << resume_line("caps equilibrate", eq_cp, o, {{"--resume-at", std::to_string(stage + 1) + ":" + std::to_string(at)}}) << "\n";
+      };
       if (o.count("--block")) e.block_ps = std::stod(o["--block"]);
       if (o.count("--max-blocks")) e.max_blocks = std::stoi(o["--max-blocks"]);
       if (o.count("--every-ps")) e.frame_ps = std::stod(o["--every-ps"]);
       const bool quiet = o.count("--quiet");
       LiveOutput live("equilibrate");
+      const bool resumed = o.count("--resume-at") > 0;   // the files of the run it continues grow on
       if (o.count("--dump")) {
-        live.open_frames(o["--dump"], s);
+        live.open_frames(o["--dump"], s, resumed);
         e.frame = [&](const std::vector<double>& x, const Cell& c, int64_t step) { live.frame(x, c, step); };
       }
-      if (o.count("--log")) live.open_thermo(o["--log"]);
-      if (const std::string pf = o.count("--progress-file") ? o["--progress-file"] : default_progress_file(); !pf.empty()) live.open_progress(pf);
+      if (o.count("--log")) live.open_thermo(o["--log"], resumed);
+      if (const std::string pf = o.count("--progress-file") ? o["--progress-file"] : default_progress_file(); !pf.empty()) live.open_progress(pf, resumed);
       const double total_ps = protocol_ps(e.stages);
       std::printf("%s# total %.1f ps\n", protocol_text(e.stages).c_str(), total_ps);
       int last_stage = -1;
@@ -3202,7 +3394,17 @@ int main(int argc, char** argv) {
         return true;
       };
       EquilibrateReport rep;
-      equilibrate(s, e, &rep);
+      try {
+        equilibrate(s, e, &rep);
+      } catch (const DynamicsInterrupted& ex) {
+        std::ifstream rf("resume.txt");
+        std::string again;
+        std::getline(rf, again);
+        std::printf("stopped at step %lld (a stop was asked for): the state is in %s; continue with\n  %s\n", static_cast<long long>(ex.step), eq_cp.c_str(), again.c_str());
+        live.done(false, "interrupted; resume: " + again);
+        return 75;
+      }
+      std::filesystem::remove("resume.txt");
       live.done(true);
       const std::string out = o["-o"];
       auto ends = [&](const char* x) { return out.size() > 4 && out.substr(out.size() - 4) == x; };

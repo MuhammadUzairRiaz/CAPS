@@ -22,6 +22,12 @@
 
 namespace caps {
 
+// A stop asked for from outside: SIGUSR1 (a SLURM job's --signal before its time limit) or SIGTERM. Long runs check it
+// at every step (run_dynamics), write a checkpoint and end with DynamicsInterrupted; the CLI installs the handlers.
+void install_stop_signals();
+bool stop_requested();
+void request_stop(bool on = true);   // the same from code (tests)
+
 // threads from the environment: CAPS_THREADS, then SLURM_CPUS_PER_TASK; 0 when neither is set (or not a number ≥ 1)
 int env_threads();
 
@@ -35,9 +41,10 @@ std::string thermo_csv_row(const ThermoRow& r, const std::string& stage = "");
 class LiveOutput {
  public:
   explicit LiveOutput(std::string command = "") : command_(std::move(command)) {}
-  void open_thermo(const std::string& path);
-  void open_frames(const std::string& path, const System& topology);
-  void open_progress(const std::string& path);
+  // append: a resumed run continues the files of the run it continues (no second header)
+  void open_thermo(const std::string& path, bool append = false);
+  void open_frames(const std::string& path, const System& topology, bool append = false);
+  void open_progress(const std::string& path, bool append = false);
   bool thermo_open() const { return thermo_ != nullptr; }
   bool frames_open() const { return frames_ != nullptr; }
   bool progress_open() const { return progress_ != nullptr; }

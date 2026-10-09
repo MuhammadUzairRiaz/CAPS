@@ -1071,7 +1071,15 @@ TensileResult run_tensile(System& s, const TensileOptions& o) {
   d.frame = o.frame;
   d.seed = o.seed;
   d.new_velocities = o.new_velocities;
-  if (o.equilibrate_ps > 0) {
+  const TensileResume* rs = o.resume && !o.resume->curve.empty() ? o.resume : nullptr;
+  if (rs) {   // continued after a stop: the strain reached, the rest of the pull at the same rate
+    const double e0 = rs->curve.back().strain;
+    d.deform_strain0 = e0;
+    d.steps = std::max<int64_t>(1, static_cast<int64_t>(std::ceil((o.max_strain - e0) / o.rate / (o.dt * 1e-3))));
+    d.step_offset = static_cast<int64_t>(std::llround(rs->curve.back().time_ps * 1000 / o.dt));
+    d.new_velocities = false;
+  }
+  if (o.equilibrate_ps > 0 && !rs) {
     DynamicsOptions e = d;
     e.deform_axis = -1;
     e.barostat = Barostat::Berendsen;
@@ -1085,9 +1093,20 @@ TensileResult run_tensile(System& s, const TensileOptions& o) {
   }
   double L0[3] = {0, 0, 0};
   bool first = true;
+  if (rs) {
+    for (int k = 0; k < 3; ++k) L0[k] = rs->L0[k];
+    first = false;
+    res.curve = rs->curve;
+    res.notes.push_back("continued from a checkpoint at " + fmt(100 * rs->curve.back().strain, 3) + " % strain");
+  }
+  if (o.checkpoint) {
+    d.checkpoint_every = o.checkpoint_every;
+    d.checkpoint = [&](const std::vector<double>& x, const std::vector<double>& v, const Cell& c, int64_t) { o.checkpoint(x, v, c, res.curve, L0); };
+  }
   d.progress = [&](const ThermoRow& r) {
     const double L[3] = {r.lx, r.ly, r.lz};
     if (first) { for (int k = 0; k < 3; ++k) L0[k] = L[k]; first = false; }
+    if (rs && !res.curve.empty() && r.step <= d.step_offset) return true;   // the resumed start repeats the last point
     TensilePoint p;
     p.strain = L[o.axis] / L0[o.axis] - 1;
     p.stress = -r.p[o.axis] * kAtmMPa;
@@ -1291,7 +1310,14 @@ CoolingResult run_cooling(System& s, const CoolingOptions& o) {
   bool first_velocities = o.new_velocities;
   // equilibrate at the starting temperature before the first sampled hold
   const double eq_ps = o.equilibrate_ps < 0 ? o.ps_per_step : o.equilibrate_ps;
-  if (eq_ps > 0) {
+  const size_t k0 = std::min(o.done.size(), temps.size());   // a scan continued after a stop
+  if (k0 > 0) {
+    res.points = std::vector<CoolingPoint>(o.done.begin(), o.done.begin() + long(k0));
+    offset = static_cast<int64_t>(std::llround(eq_ps * 1000 / o.dt)) + int64_t(k0) * steps;
+    first_velocities = false;
+    res.notes.push_back("continued from a checkpoint: " + std::to_string(k0) + " temperatures were done before");
+  }
+  if (eq_ps > 0 && k0 == 0) {
     DynamicsOptions d;
     d.field = o.field;
     d.energy = o.energy;
@@ -1313,7 +1339,7 @@ CoolingResult run_cooling(System& s, const CoolingOptions& o) {
     offset += d.steps;
     first_velocities = false;
   }
-  for (size_t k = 0; k < temps.size(); ++k) {
+  for (size_t k = k0; k < temps.size(); ++k) {
     DynamicsOptions d;
     d.field = o.field;
     d.energy = o.energy;
@@ -1361,6 +1387,7 @@ CoolingResult run_cooling(System& s, const CoolingOptions& o) {
     }
     p.specific_volume = p.density > 0 ? 1 / p.density : 0;
     res.points.push_back(p);
+    if (o.after_point) o.after_point(s, res.points);
   }
   std::vector<double> T, v;
   const double atoms = double(std::max<size_t>(1, s.atoms.size()));

@@ -111,6 +111,9 @@
             <Button Click="OnCheckRemote" IsVisible="{Binding CanCheckRemote}" ToolTip.Tip="Ask the host now (every 30 s while this job is shown, every 5 min otherwise)">
               <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="server" Size="15" VerticalAlignment="Center" /><TextBlock Text="Refresh now" VerticalAlignment="Center" /></StackPanel>
             </Button>
+            <Button Classes="primary" Click="OnResumeRemote" IsVisible="{Binding CanResumeRemote}" ToolTip.Tip="caps job resume on the host: a new job of the same title and kind, from the checkpoint written at the time limit">
+              <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="play" Size="15" VerticalAlignment="Center" /><TextBlock Text="Resume from checkpoint" VerticalAlignment="Center" /></StackPanel>
+            </Button>
             <Button x:Name="CancelHost" Click="OnCancelRemote" IsVisible="{Binding CanCancelRemote}" ToolTip.Tip="scancel / qdel on the host: the results so far come back">
               <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="stop" Size="15" VerticalAlignment="Center" /><TextBlock x:Name="CancelHostText" Text="Cancel on host" VerticalAlignment="Center" /></StackPanel>
             </Button>

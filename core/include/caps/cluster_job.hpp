@@ -92,6 +92,9 @@ struct JobFolder {
 // Makes the folder(s), copies the inputs, writes cmd.txt, job.sh and caps-job.json (state created)
 JobFolder make_job(const HostProfile& h, const JobRequest& r);
 JobFolder make_array_job(const HostProfile& h, const JobRequest& r, const std::vector<ArrayTask>& tasks);
+// A job that stopped near its time limit continued as a new job of the same title and kind: its results (out/) as the
+// inputs, its resume.txt as the command; the stopped job's state names the new one (resumed_by)
+JobFolder make_resume_job(const HostProfile& h, const std::string& stopped_dir, const JobRequest& overrides);
 std::vector<ArrayTask> read_array_list(const std::string& text);   // "title<TAB or spaces>caps …" per line, # comments
 
 // caps-job.json

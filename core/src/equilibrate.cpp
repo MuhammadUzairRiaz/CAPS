@@ -202,11 +202,19 @@ void equilibrate(System& s, const EquilibrateOptions& o, EquilibrateReport* rep_
   const int total_stages = nstages + (o.until_converged ? o.max_blocks : 0);
   const double natoms = double(s.atoms.size());
 
-  auto run_stage = [&](const Stage& st, int index, const std::string& label, uint64_t seed) {
+  auto run_stage = [&](const Stage& st, int index, const std::string& label, uint64_t seed, int64_t skip = 0) {
     DynamicsOptions d = o.md;
-    d.steps = std::max<int64_t>(1, std::llround(st.ps * 1000.0 / dt));
-    d.temperature = st.t_start;
+    const int64_t full = std::max<int64_t>(1, std::llround(st.ps * 1000.0 / dt));
+    skip = std::clamp<int64_t>(skip, 0, full - 1);
+    d.steps = full - skip;
+    // a stage continued after a stop: the ramp from where it was
+    d.temperature = st.t_end >= 0 ? st.t_start + (st.t_end - st.t_start) * double(skip) / double(full) : st.t_start;
     d.temperature_end = st.t_end;
+    offset += skip;
+    if (o.checkpoint)
+      d.checkpoint = [&, index, skip](const std::vector<double>& x, const std::vector<double>& v, const Cell& c, int64_t step) {
+        o.checkpoint(x, v, c, index - 1, skip + (step - d.step_offset));
+      };
     d.thermostat = st.ensemble == Ensemble::NVE ? Thermostat::None
                                                 : (o.md.thermostat == Thermostat::None ? Thermostat::Bussi : o.md.thermostat);
     d.barostat = st.ensemble == Ensemble::NPT ? (o.md.barostat == Barostat::None ? Barostat::CRescale : o.md.barostat) : Barostat::None;
@@ -249,7 +257,13 @@ void equilibrate(System& s, const EquilibrateOptions& o, EquilibrateReport* rep_
     return std::make_pair(first, rep.thermo.size());
   };
 
-  for (int k = 0; k < nstages; ++k) run_stage(o.stages[k], k + 1, o.stages[k].label, o.md.seed + 1000003ull * k);
+  const int first_stage = std::clamp(o.start_stage, 0, nstages);
+  if (first_stage > 0 || o.start_step > 0) {   // continued after a stop: the stages done before count in the time axis
+    for (int k = 0; k < first_stage; ++k) offset += std::max<int64_t>(1, std::llround(o.stages[k].ps * 1000.0 / dt));
+    rep.notes.push_back("continued from a checkpoint at stage " + std::to_string(first_stage + 1) + ", step " + std::to_string(o.start_step) +
+                        " of it: the stages before are not in this report");
+  }
+  for (int k = first_stage; k < nstages; ++k) run_stage(o.stages[k], k + 1, o.stages[k].label, o.md.seed + 1000003ull * k, k == first_stage ? o.start_step : 0);
 
   if (o.until_converged) {
     const Stage& last = o.stages.back();

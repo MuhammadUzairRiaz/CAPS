@@ -100,7 +100,7 @@ public sealed class Job : INotifyPropertyChanged
         {
             _status = value;
             foreach (var n in new[] { nameof(Status), nameof(IsRunning), nameof(IsQueued), nameof(IsFailed), nameof(IsDone), nameof(IsQuiet), nameof(StatusText), nameof(ShowPause), nameof(CanCancel),
-                                      nameof(CanCheckRemote), nameof(CanOpenRemote), nameof(Where), nameof(HasFix), nameof(CanCancelRemote) }) Raise(n);
+                                      nameof(CanCheckRemote), nameof(CanOpenRemote), nameof(Where), nameof(HasFix), nameof(CanCancelRemote), nameof(CanResumeRemote) }) Raise(n);
         }
     }
     public bool IsRunning => _status == "running";
@@ -111,6 +111,8 @@ public sealed class Job : INotifyPropertyChanged
     public bool ShowPause => IsRunning && !_paused && Kind is "Dynamics" or "Equilibrate" or "Relax";
     public bool CanCancel => (IsRunning || IsQueued) && !IsRemote;
     public bool CanCancelRemote => (IsRunning || IsQueued) && IsClusterJob;
+    /// <summary>A cluster job stopped near its time limit: it goes on from its checkpoint as a new job.</summary>
+    public bool CanResumeRemote => IsClusterJob && _status == "stopped";
     public bool IsFailed => _status == "failed";
     public bool IsDone => _status == "done";
     public bool IsQuiet => _status is "cancelled" or "stopped";
