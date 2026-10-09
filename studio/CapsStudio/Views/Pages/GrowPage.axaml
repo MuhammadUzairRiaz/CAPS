@@ -8,6 +8,7 @@
       <StackPanel Spacing="3">
         <TextBlock Text="Polymer cell · CAPS Grow" Classes="title" />
         <TextBlock Text="Makes new polymer chains: from repeat units, monomer by monomer, each chain grown inside a periodic cell at the density you set (an amorphous polymer or rubber, as Materials Studio's Amorphous Cell Construction). To put molecules you already have — solvent, gas, fillers, curatives — into a box or into this cell, use Packing. The cell can go straight to Export; Minimise and Dynamics are optional." Classes="muted" TextWrapping="Wrap" MaxWidth="900" />
+        <v:RemoteRunPanel IsVisible="{Binding RunsRemote}" Margin="0,8,0,0" />
       </StackPanel>
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
         <Button Click="OnSaveRecipe" ToolTip.Tip="This build as a YAML recipe: caps run RECIPE.yaml, or Start › From a recipe">

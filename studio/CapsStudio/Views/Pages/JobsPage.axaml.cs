@@ -21,6 +21,12 @@ public partial class JobsPage : PageBase
     private readonly Grid _curves;
     private readonly TextBlock _progressTitle;
     private Job? _watched;
+    private readonly SelectableTextBlock _liveText;
+    private readonly ScrollViewer _liveScroll;
+    private readonly CheckBox _follow;
+    private readonly TextBox _logSearch;
+    private readonly TextBlock _cancelHostText;
+    private bool _cancelArmed;
     private readonly DispatcherTimer _clock = new() { Interval = TimeSpan.FromSeconds(1) };
 
     public JobsPage()
@@ -35,6 +41,12 @@ public partial class JobsPage : PageBase
         _bar = this.FindControl<ProgressBar>("Bar")!;
         _curves = this.FindControl<Grid>("Curves")!;
         _progressTitle = this.FindControl<TextBlock>("ProgressTitle")!;
+        _liveText = this.FindControl<SelectableTextBlock>("LiveText")!;
+        _liveScroll = this.FindControl<ScrollViewer>("LiveScroll")!;
+        _follow = this.FindControl<CheckBox>("FollowLog")!;
+        _logSearch = this.FindControl<TextBox>("LogSearch")!;
+        _cancelHostText = this.FindControl<TextBlock>("CancelHostText")!;
+        _logSearch.TextChanged += (_, _) => ShowLive();
         _clock.Tick += (_, _) => _watched?.Tick();
         DataContextChanged += (_, _) =>
         {
@@ -53,13 +65,57 @@ public partial class JobsPage : PageBase
         if (_watched != null) _watched.PropertyChanged += OnJob;
         ShowStages();
         ShowCurves();
+        ShowLive();
+        DisarmCancel();
         _clock.IsEnabled = _watched?.IsRunning == true;
+    }
+
+    /// <summary>The run's own log: every line, or those with the search text; errors and warnings in their colours;
+    /// kept at its end while Follow is on.</summary>
+    private void ShowLive()
+    {
+        var text = _watched?.LiveLog ?? "";
+        var q = _logSearch.Text?.Trim() ?? "";
+        var lines = text.Split('\n');
+        if (lines.Length > 4000) lines = lines[^4000..];
+        _liveText.Inlines?.Clear();
+        _liveText.Inlines ??= new Avalonia.Controls.Documents.InlineCollection();
+        foreach (var line in lines)
+        {
+            if (q.Length > 0 && !line.Contains(q, StringComparison.OrdinalIgnoreCase)) continue;
+            var run = new Avalonia.Controls.Documents.Run(line + "\n");
+            var low = line.ToLowerInvariant();
+            if (low.Contains("error") || low.Contains("failed") || low.Contains("caps job: ") || low.StartsWith("caps ", StringComparison.Ordinal) && low.Contains(": "))
+                run.Foreground = this.FindResource("ErrB") as IBrush;
+            else if (low.Contains("warning") || low.Contains("note:") || low.Contains("not converged"))
+                run.Foreground = this.FindResource("WarnB") as IBrush ?? this.FindResource("AccB") as IBrush;
+            _liveText.Inlines.Add(run);
+        }
+        if (_follow.IsChecked == true) Dispatcher.UIThread.Post(() => _liveScroll.ScrollToEnd(), DispatcherPriority.Background);
+    }
+
+    private void DisarmCancel() { _cancelArmed = false; _cancelHostText.Text = "Cancel on host"; }
+    private async void OnCancelRemote(object? s, RoutedEventArgs e)
+    {
+        if (!_cancelArmed) { _cancelArmed = true; _cancelHostText.Text = "Confirm cancel"; return; }   // a second press confirms
+        DisarmCancel();
+        await Vm.CancelRemote(Vm.SelectedJob);
+    }
+    private async void OnLatestFrame(object? s, RoutedEventArgs e) => await Vm.LatestFrame(Vm.SelectedJob);
+    private async void OnCopyTerminal(object? s, RoutedEventArgs e)
+    {
+        var text = Vm.TerminalCommands(Vm.SelectedJob);
+        if (text.Length == 0 || Window?.Clipboard is not { } cb) return;
+        try { await cb.SetTextAsync(text); Vm.Status = "Copied: ssh, caps job status, caps job tail -f"; }
+        catch { Vm.Status = text.Replace("\n", "  ·  "); }
     }
 
     private void OnJob(object? s, PropertyChangedEventArgs e)
     {
         if (e.PropertyName is nameof(Job.Stage) or nameof(Job.Stages) or nameof(Job.Status)) Dispatcher.UIThread.Post(ShowStages);
         if (e.PropertyName == nameof(Job.Status)) _clock.IsEnabled = _watched?.IsRunning == true;
+        if (e.PropertyName == nameof(Job.LiveLog)) Dispatcher.UIThread.Post(ShowLive);
+        if (e.PropertyName == nameof(Job.HasCurves)) Dispatcher.UIThread.Post(ShowCurves);
     }
 
     private void ShowCurves()
@@ -119,7 +175,7 @@ public partial class JobsPage : PageBase
     private void OnSuggest(object? s, RoutedEventArgs e) { if (Vm.SelectedJob is { SuggestModule: >= 0 } j) Vm.SetModule(j.SuggestModule); }
     private void OnCancel(object? s, RoutedEventArgs e) => Vm.CancelJob(Vm.SelectedJob);
     private void OnPause(object? s, RoutedEventArgs e) => Vm.TogglePause();
-    private async void OnCheckRemote(object? s, RoutedEventArgs e) => await Vm.CheckRemote(Vm.SelectedJob);
+    private async void OnCheckRemote(object? s, RoutedEventArgs e) => await Vm.RefreshJob(Vm.SelectedJob);
     private void OnOpenRemote(object? s, RoutedEventArgs e) => Vm.OpenRemoteResult(Vm.SelectedJob);
     private void OnClear(object? s, RoutedEventArgs e) => Vm.ClearJobs();
     private void OnNew(object? s, RoutedEventArgs e) { if ((s as MenuItem)?.Tag is string t && int.TryParse(t, out var m)) Vm.SetModule(m); }

@@ -1,0 +1,32 @@
+<!-- A run sent to a cluster (Run where = a host): what the job asks for, the live views' intervals, and the exact caps
+     command that runs on the host (copyable: the same as a user types there). -->
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views"
+             x:Class="CapsStudio.Views.RemoteRunPanel" x:DataType="vm:MainViewModel">
+  <Border Classes="inset" Padding="12,10" CornerRadius="8" MaxWidth="980" HorizontalAlignment="Left">
+    <StackPanel Spacing="8">
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <v:Icon Kind="server" Size="14" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" />
+        <TextBlock Text="On the cluster" FontWeight="SemiBold" VerticalAlignment="Center" />
+        <TextBlock Text="{Binding RemoteHostLabel}" Classes="dim" FontSize="11.5" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+      </StackPanel>
+      <Grid ColumnDefinitions="2*,*,*,*,*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="3">
+        <TextBlock Text="Title (job folder)" Classes="label" />
+        <TextBlock Grid.Column="1" Text="Cores" Classes="label" />
+        <TextBlock Grid.Column="2" Text="Mem per core" Classes="label" />
+        <TextBlock Grid.Column="3" Text="Time limit" Classes="label" />
+        <TextBlock Grid.Column="4" Text="Frame every (ps)" Classes="label" />
+        <TextBlock Grid.Column="5" Text="Thermo every (ps)" Classes="label" />
+        <TextBox Grid.Row="1" Text="{Binding RemoteTitle}" FontFamily="{DynamicResource Mono}" ToolTip.Tip="The job's folder on the host: ROOT/TITLE/KIND-N" />
+        <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding RemoteCpus}" Minimum="1" FormatString="0" ToolTip.Tip="Threads of one caps run on one node (capped at the node's cores)" />
+        <TextBox Grid.Row="1" Grid.Column="2" Text="{Binding RemoteMem}" FontFamily="{DynamicResource Mono}" Watermark="2G" />
+        <TextBox Grid.Row="1" Grid.Column="3" Text="{Binding RemoteTime}" FontFamily="{DynamicResource Mono}" Watermark="24:00:00" />
+        <NumericUpDown Grid.Row="1" Grid.Column="4" Value="{Binding RemoteFramePs}" Minimum="0" Increment="5" FormatString="0.###" ToolTip.Tip="Frames for the live Structure view and the trajectory (0: none)" />
+        <NumericUpDown Grid.Row="1" Grid.Column="5" Value="{Binding RemoteThermoPs}" Minimum="0.001" Increment="0.5" FormatString="0.###" ToolTip.Tip="Thermo rows for the live Energy view" />
+      </Grid>
+      <CheckBox Content="Keep the workspace afterwards" IsChecked="{Binding RemoteKeepWorkspace}" FontSize="12" />
+      <SelectableTextBlock Text="{Binding RemoteCommand}" FontFamily="{DynamicResource Mono}" FontSize="11" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap"
+                           ToolTip.Tip="What runs on the host: the same command works from a terminal there" />
+    </StackPanel>
+  </Border>
+</UserControl>

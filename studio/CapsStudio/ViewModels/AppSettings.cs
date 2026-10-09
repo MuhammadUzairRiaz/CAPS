@@ -156,7 +156,26 @@ public sealed class RemoteHost
     public int Port { get; set; } = 22;
     public string Scheduler { get; set; } = "SLURM";      // SLURM | PBS | none
     public string Partition { get; set; } = "";
-    public string WorkDir { get; set; } = "/scratch/$USER/caps";
+    public string WorkDir { get; set; } = "/scratch/$USER/caps";   // before cluster jobs (kept so old settings load)
+    // cluster jobs (caps job on the host; the same keys as the host's ~/CAPS/host.json, which the Studio writes)
+    public string Account { get; set; } = "";
+    public string Modules { get; set; } = "";          // module lines for jobs
+    public string BuildModules { get; set; } = "";     // module lines for building caps
+    public string Root { get; set; } = "~/CAPS";       // job folders, bin/caps, src/
+    public string Scratch { get; set; } = "none";      // workspace | env | none
+    public string WsFilesystem { get; set; } = "";
+    public int WsDays { get; set; } = 10;
+    public string ScratchVar { get; set; } = "$SCRATCH";
+    public int Cpus { get; set; } = 16;
+    public string MemPerCpu { get; set; } = "2G";
+    public string TimeLimit { get; set; } = "24:00:00";
+    public string MailType { get; set; } = "";
+    public string MailUser { get; set; } = "";
+    public bool KeepWorkspace { get; set; }
+    public int NodeCores { get; set; }                 // from the host test (sinfo)
+    public string NodeMem { get; set; } = "";
+    public string JobScript { get; set; } = "";        // the host's own job script ("" the built-in one)
+    public string CapsVersion { get; set; } = "";      // what the host test found
 
     public const string DefaultTemplate = "#!/bin/bash\n#SBATCH --job-name=caps-{job}\n#SBATCH --partition={partition}\n#SBATCH --cpus-per-task=8\n" +
                                           "#SBATCH --time=24:00:00\n#SBATCH --output=caps-%j.log\ncd {workdir}/{job}\ncaps run {recipe}\n";
