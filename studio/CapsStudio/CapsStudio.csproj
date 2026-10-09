@@ -10,7 +10,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyName>CapsStudio</AssemblyName>
     <RootNamespace>CapsStudio</RootNamespace>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <Copyright>Copyright (c) 2026 Muhammad Uzair Riaz</Copyright>
     <PackageLicenseExpression>BSD-3-Clause</PackageLicenseExpression>
     <Product>CAPS Studio</Product>
