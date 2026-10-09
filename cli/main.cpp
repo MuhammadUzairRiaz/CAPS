@@ -31,6 +31,7 @@
 #include "caps/pipeline.hpp"
 #include "caps/bundle.hpp"
 #include "caps/crystal.hpp"
+#include "caps/dft_commands.hpp"
 #include "caps/spacegroup.hpp"
 #include "caps/peptide.hpp"
 #include "caps/solvate.hpp"
@@ -100,6 +101,15 @@ int usage() {
                "               a 3D molecule from SMILES; --ff cleans each conformer up with that force field (with typing rules)\n"
                "  caps check   FILE [--topology DATA] [--report OUT.md]   file checks (counts, bonds, contacts, charges, cell)\n"
                "  caps pipeline FILE [--topology DATA] --steps STEPS.json|STEPS.yaml|'[…]' [--frame N] [--table NAME] [--particles EXPR] [--out DIR] [--branch NAME]\n"
+               "  DFT surfaces & adsorption (caps <command> --help for every option, its default and why):\n"
+               "  caps sheet [--preset Ti3C2 | --from FILE --formula Ti3C2 --remove Al] -o OUT     a 2D sheet\n"
+               "  caps terminate SHEET --top O:0.5,OH:0.25,F:0.25 [--supercell 3x3] [--vasp-set DIR] -o OUT\n"
+               "  caps validate FILE… [--expect Ti3C2O2]       2D slab checks (exit 1 on FAIL)\n"
+               "  caps adsorb-dft SLAB [--from-relaxed] [--supercell 5x5] [--smiles S] --out ROOT\n"
+               "  caps vasp-set STRUCTURE --out DIR [--pp-dir PAW] [--profile slurm-workspace]\n"
+               "  caps vasp-conv setup|collect CASE · vasp-scan make|fit · vasp-derived charge|cdd|freq|aimd\n"
+               "  caps vasp-jobs submit|update|reset|cleanup|store · vasp-check · vasp-progress · vasp-health · vasp-bind\n"
+               "  caps vasp-analyze geom|wf|dos|cdd|bader|freq|md|summary …\n"
                "                                   visualize pipeline on one frame: step status, attributes, a table as CSV\n"
                "  caps bundle  FILE [--topology DATA] --steps S.json [-o OUT.caps-bundle.zip] [--include-input] [--frame N]\n"
                "                                   a figure with its data, pipeline, provenance and hashes (and the input)\n"
@@ -495,7 +505,40 @@ static void write_structure_file(const System& s, const std::string& out) {
   else write_lammps_data(s, out);
 }
 
+// The DFT surface & adsorption workbench (caps/dft_commands.hpp): the same commands as the Studio's DFT pages
+static int dft_main(const std::string& cmd, int argc, char** argv) {
+  std::vector<std::string> pos;
+  std::vector<std::pair<std::string, std::string>> flags;
+  bool json = false;
+  for (int i = 2; i < argc; ++i) {
+    const std::string a = argv[i];
+    if (a == "--help" || a == "-h") { std::printf("%s", dft_help(cmd).c_str()); return 0; }
+    if (a == "--json") { json = true; continue; }
+    if (a.rfind("--", 0) == 0 || a == "-o") {
+      if (dft_is_switch(cmd, a)) flags.push_back({a, "true"});
+      else if (i + 1 < argc) flags.push_back({a, argv[++i]});
+      else { std::fprintf(stderr, "caps %s: %s needs a value\n", cmd.c_str(), a.c_str()); return 2; }
+    } else pos.push_back(a);
+  }
+  std::string data;
+  for (const std::string root : {std::getenv("CAPS_HOME") ? std::string(std::getenv("CAPS_HOME")) : std::string(), std::string("."), std::string(CAPS_SOURCE_ROOT)})
+    if (!root.empty() && std::filesystem::exists(root + "/data/sheets/sheets.json")) { data = root + "/data"; break; }
+  if (data.empty()) { std::fprintf(stderr, "caps: data/sheets not found (set CAPS_HOME)\n"); return 2; }
+  try {
+    const Json r = dft_run(cmd, dft_args_from_cli(pos, flags), data);
+    if (json) std::printf("%s\n", r.dump(1).c_str());
+    else if (r.has("text")) std::printf("%s", r.text("text").c_str());
+    else if (r.has("report")) std::printf("%s\nwrote %s\n%s", r.text("report").c_str(), r.text("wrote").c_str(), r.has("vasp_set") ? ("VASP set: " + r["vasp_set"].text("dir") + "\n").c_str() : "");
+    else std::printf("%s\n", r.dump(1).c_str());
+    return r.has("ok") && !r["ok"].boolean() ? 1 : 0;
+  } catch (const std::exception& e) {
+    std::fprintf(stderr, "caps %s: %s\n", cmd.c_str(), e.what());
+    return 2;
+  }
+}
+
 int main(int argc, char** argv) {
+  if (argc >= 2 && is_dft_command(argv[1])) return dft_main(argv[1], argc, argv);
   if (argc < 3) return usage();
   const std::string cmd = argv[1];
   std::vector<std::string> pos;
