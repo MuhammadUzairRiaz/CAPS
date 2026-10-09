@@ -192,7 +192,7 @@ def _declare(L: C.CDLL) -> None:
         "caps_relax": ([P, C.POINTER(_RelaxOpts), P, P, B, I], I), "caps_md": ([P, C.POINTER(_MdOpts), P, P, B, I], I),
         "caps_equilibrate": ([P, S, C.POINTER(_EquilOpts), P, P, B, I], I), "caps_equilibrate_checks": ([P, B, I], I),
         "caps_protocol_text": ([S, C.POINTER(_ProtocolParams), B, I], I),
-        "caps_field_assign": ([P, S, S, I], I), "caps_field_assign_groups": ([P, S], I), "caps_field_file_available": ([P], I), "caps_kg_backmap": ([P, S, S, B, I], P), "caps_cg_map": ([P, S, B, I], P), "caps_cg_from_polymer": ([S, S, P, P, B, I], P), "caps_field_report": ([P, B, I], I), "caps_field_import": ([P, S], I), "caps_field_import_ex": ([P, S, S], I), "caps_field_set_options": ([P, S], I), "caps_fragment_smiles": ([P, S, B, I], I), "caps_dft_run": ([S, S, S, B, I], I), "caps_dft_help": ([S, B, I], I), "caps_smarts_count": ([S, S], I),
+        "caps_field_assign": ([P, S, S, I], I), "caps_field_assign_groups": ([P, S], I), "caps_field_file_available": ([P], I), "caps_kg_backmap": ([P, S, S, B, I], P), "caps_cg_map": ([P, S, B, I], P), "caps_cg_from_polymer": ([S, S, P, P, B, I], P), "caps_field_report": ([P, B, I], I), "caps_field_import": ([P, S], I), "caps_field_import_ex": ([P, S, S], I), "caps_field_set_options": ([P, S], I), "caps_fragment_smiles": ([P, S, B, I], I), "caps_dft_run": ([S, S, S, B, I], I), "caps_dft_help": ([S, B, I], I), "caps_cg_run": ([S, S, S, B, I], I), "caps_cg_help": ([S, B, I], I), "caps_smarts_count": ([S, S], I),
         "caps_build_smiles": ([S, S, C.POINTER(_BuildOpts), B, I], P),
         "caps_build_beads": ([S, S, C.c_uint64, B, I], P), "caps_bead_templates": ([S, B, I], I),
         "caps_peptide_build": ([S, B, I], P), "caps_crystal_build": ([S, B, I], P), "caps_nano_build": ([S, B, I], P),
@@ -814,12 +814,24 @@ class Document:
             raise _error()
         return buf.value.decode()
 
-    def cg_map(self, scheme: str = "unit", per_bead: int = 3, temperature: float = 300.0, ibi: Optional[dict] = None) -> "Document":
-        """This all-atom structure (every frame) mapped to beads — scheme unit | backbone_side | backbone_n — with a bead
-        model: Boltzmann-inverted harmonic bonds and angles, a repulsive WCA from the non-bonded bead g(r). A new Document
-        (its model assigned); .report holds the inverted parameters (JSON)."""
+    def cg_map(self, scheme: str = "unit", per_bead: int = 3, temperature: float = 300.0, ibi: Optional[dict] = None,
+               rules=None) -> "Document":
+        """This all-atom structure (every frame) mapped to beads — scheme unit | backbone_side | backbone_n | rules — with a
+        bead model: Boltzmann-inverted harmonic bonds and angles, a repulsive WCA from the non-bonded bead g(r). rules (scheme
+        "rules"): a preset id of data/cg/mapping_rules.json ("ester-cut") or a dict {"cut": [SMARTS], "names": {"B": SMARTS},
+        "position": "com"} (also "beads": {name: fragment SMARTS} or "explicit": [bead per atom]). A new Document (its model
+        assigned); .report holds the inverted parameters (JSON)."""
         rep = C.create_string_buffer(1 << 20)
         o = {"scheme": scheme, "per_bead": per_bead, "temperature": temperature}
+        if rules is not None:
+            if isinstance(rules, str):
+                with _builtins.open(os.path.join(str(_data_dir()), "cg", "mapping_rules.json"), encoding="utf-8") as f:
+                    lib = {p["id"]: p for p in json.load(f)["presets"]}
+                if rules not in lib:
+                    raise ValueError(f"no mapping preset {rules!r} (there are: {', '.join(lib)})")
+                rules = lib[rules]
+            o["rules"] = rules
+            o["scheme"] = "rules" if scheme == "unit" else scheme
         if ibi:   # {"iterations": 6, "run_ps": 20}: the non-bonded pair refined by iterative Boltzmann inversion
             o["ibi"] = ibi
         h = library().caps_cg_map(self._h, _enc(json.dumps(o)), rep, len(rep))
@@ -1178,6 +1190,28 @@ def dft(command: str, *inputs: str, **options) -> dict:
     args = dict(options)
     args["inputs"] = [str(x) for x in inputs]
     return _json_call(library().caps_dft_run, _enc(command), _enc(json.dumps(args)), _enc(str(_data_dir())))
+
+
+def cg(command: str, *inputs: str, **options) -> dict:
+    """The coarse-graining workflow, the same commands as `caps <command>` and the Studio's Coarse-grain page: cgmap
+    (chemistry-aware mapping of structures and LAMMPS dumps; bonds cut by SMARTS, fragments or an atom → bead list, beads
+    named by rules, one type list for several systems). Positional arguments are the command's inputs, keyword options its
+    --flags. Returns the JSON report (with "command", the equivalent command line). cg_help(command) lists every option.
+
+        caps.cg("cgmap", "PBS/system.data", "PBSA/system.data", "PBAT/system.data", preset="ester-cut", o="cg")
+        caps.cg("cgmap", "system.data", map="cg/system.map.json", types="cg/types.json", dump="hold.lammpstrj", stride=5, o="cg")"""
+    args = dict(options)
+    args["inputs"] = [str(x) for x in inputs]
+    return _json_call(library().caps_cg_run, _enc(command), _enc(json.dumps(args)), _enc(str(_data_dir())))
+
+
+def cg_help(command: str) -> str:
+    """--help of a coarse-graining command: what it does, every option with its default and the reason, examples."""
+    cap = 1 << 16
+    buf = C.create_string_buffer(cap)
+    if library().caps_cg_help(_enc(command), buf, cap) < 0:
+        raise _error()
+    return buf.value.decode()
 
 
 def dft_help(command: str) -> str:

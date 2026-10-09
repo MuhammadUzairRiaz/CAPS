@@ -91,6 +91,7 @@ struct BeadMapReport {
   int beads = 0, molecules_mapped = 0;
   std::map<std::string, int> by_type;
   std::vector<uint32_t> uncovered;   // atoms of the input left as they were
+  std::vector<int> site_of;          // for each input atom, its site (bead, or the atom kept) in the result
   std::vector<std::string> notes;
 };
 System map_to_beads(const System& s, const std::vector<BeadRule>& rules, const std::vector<BeadGroup>& groups,

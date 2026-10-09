@@ -72,8 +72,13 @@ CgMapResult cg_map(const System& aa, const CgMapOptions& o, const std::vector<st
     const System cg = coarse_grain(aa, o.per_bead, &rr);
     bead = rr.site_of;
     for (const auto& a : cg.atoms) btype.push_back("B" + std::to_string(o.per_bead)), bmol.push_back(a.mol - 1);
+  } else if (o.scheme == "rules") {
+    const CgMapping m = cg_mapping(aa, o.rules);
+    bead = m.bead_of();
+    btype = m.bead_kind;
+    for (int mm : m.bead_mol) bmol.push_back(mm);
   } else {
-    throw std::invalid_argument("mapping scheme: unit, backbone_side or backbone_n");
+    throw std::invalid_argument("mapping scheme: unit, backbone_side, backbone_n or rules");
   }
   const size_t nbead = btype.size();
   // masses: each bead's atoms'

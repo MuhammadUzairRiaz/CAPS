@@ -11,8 +11,15 @@ internal static class SelfTest
     {
         var fails = 0;
         void Check(bool ok, string what) { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {what}"); if (!ok) fails++; }
+        // checks that run Python: skipped, and said so, on a machine without Python 3 (the features then say how to set one)
+        void PyCheck(bool ok, string what)
+        {
+            if (!MainViewModel.PythonAvailable) { Console.WriteLine($"skip {what.Split(':')[0]}: no Python 3 interpreter on this machine"); return; }
+            Check(ok, what);
+        }
+        Console.WriteLine($"info Python: {(MainViewModel.PythonAvailable ? MainViewModel.PythonExe : "none")}");
 
-        Check(Native.AbiVersion() == 65, "native ABI version 65");
+        Check(Native.AbiVersion() == 66, "native ABI version 66");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -217,7 +224,7 @@ internal static class SelfTest
                   $"Field by group with Tersoff silicon: suggested {suggested} (library {vm.Field.PotentialLibrary.Count}, pick {vm.Field.Groups.FirstOrDefault()?.Pick}, kind {vm.Field.Groups.FirstOrDefault()?.Kind}) · {vm.Field.ForceFieldName} · {vm.Field.Log}");
             // LAMMPS agrees term by term once the Tersoff energy (which CAPS does not compute) is taken out
             vm.CompareEnergies().GetAwaiter().GetResult();
-            Check(vm.ParityOk || vm.ParityDetail.Contains("not found"), $"compare energies beside Tersoff: {vm.ParityText}\n{vm.ParityTable}");
+            Check(vm.ParityOk || vm.ParityDetail.Contains("not found") || vm.ParityDetail.Contains("which is not enabled in this LAMMPS binary"), $"compare energies beside Tersoff: {vm.ParityText}\n{vm.ParityTable}");
             // a carbon filler: the library's AIREBO suggested; LAMMPS reads it in metal units only, so the deck is in metal units
             var cc = new System.Text.StringBuilder("CRYST1   30.000   30.000   30.000  90.00  90.00  90.00 P 1           1\n");
             (string Rn, int Res, double X, double Y, double Z, string El)[] ccRows =
@@ -1013,6 +1020,8 @@ internal static class SelfTest
             var started = Until(() => vm.MdRunning && vm.MdLog.StartsWith("step"), 120000);   // a slow CI runner's first steps
             var startLog = $"{vm.MdLog.Split('\n')[0]}' · RunMd returned after {tReturn:F1} s, started at {jobsClock.Elapsed.TotalSeconds:F1} s, running {vm.MdRunning}, {poolFree} pool threads free";
             vm.PauseRun();
+            // a pause takes hold at the run's next block of steps (later on a slow machine): then the log must stay still
+            Until(() => vm.RunPaused && vm.Jobs.FirstOrDefault(j => j.IsRunning)?.StatusText == "paused", 15000);
             Until(() => false, 500);
             var held = vm.MdLog;
             Until(() => false, 800);
@@ -1090,7 +1099,7 @@ internal static class SelfTest
                     var file = Path.Combine(outDir, $"caps-selftest-{name}.py");
                     var body = System.Text.RegularExpressions.Regex.Replace(text, @"caps\.open\([^\n]*\)", $"caps.open(\"{pySaved.Replace('\\', '/')}\")");   // forward slashes: a Windows backslash is an escape in Python
                     File.WriteAllText(file, body);
-                    var psi = new System.Diagnostics.ProcessStartInfo("python3") { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, WorkingDirectory = outDir };
+                    var psi = new System.Diagnostics.ProcessStartInfo(MainViewModel.PythonExe) { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, WorkingDirectory = outDir };
                     if (name is "react" or "pack") { psi.ArgumentList.Add("-m"); psi.ArgumentList.Add("py_compile"); }
                     psi.ArgumentList.Add(file);
                     if (Paths.Python is { } pkg) psi.Environment["PYTHONPATH"] = pkg;
@@ -1102,7 +1111,7 @@ internal static class SelfTest
                     proc.WaitForExit(120000);
                     results.Add($"{name} {proc.ExitCode}{(proc.ExitCode != 0 ? " " + err.Result.Trim().Split('\n').LastOrDefault() : "")}");
                 }
-                Check(results.All(r => r.Split(' ')[1] == "0") && scripts[0].Item2.Contains("doc.relax(") && scripts[1].Item2.Contains("doc.md(steps=50"),
+                PyCheck(results.All(r => r.Split(' ')[1] == "0") && scripts[0].Item2.Contains("doc.relax(") && scripts[1].Item2.Contains("doc.md(steps=50"),
                       "copy as Python: " + string.Join(" · ", results));
                 vm.MdStepsD = steps;
             }
@@ -1110,7 +1119,7 @@ internal static class SelfTest
             // Compare energies: the LAMMPS files run for zero steps in the LAMMPS on this machine, term by term against CAPS
             {
                 vm.CompareEnergies().GetAwaiter().GetResult();
-                Check(vm.ParityOk || vm.ParityDetail.Contains("not found"), $"compare energies: {vm.ParityText} · {vm.ParityDetail} · mixing {vm.Field.MixingRule}\n{vm.ParityTable}");
+                Check(vm.ParityOk || vm.ParityDetail.Contains("not found") || vm.ParityDetail.Contains("which is not enabled in this LAMMPS binary"), $"compare energies: {vm.ParityText} · {vm.ParityDetail} · mixing {vm.Field.MixingRule}\n{vm.ParityTable}");
             }
 
             // the queue beyond Dynamics: a Relax on this structure and a Grow (as its recipe) behind a running MD; stopping
@@ -1606,7 +1615,7 @@ internal static class SelfTest
             vm.FillShortcutConflicts();
             var conflicts = vm.ShortcutConflicts.Count;
             if (vm.ShortcutConflicts.FirstOrDefault() is { } sc) vm.ResolveShortcutConflict(sc);
-            Check(strong == 2 && light == 1 && py.StartsWith("✓", StringComparison.Ordinal) && py.Contains("caps package: ABI", StringComparison.Ordinal) && conflicts == 1 && vm.ShortcutConflicts.Count == 0,
+            PyCheck(strong == 2 && light == 1 && py.StartsWith("✓", StringComparison.Ordinal) && py.Contains("caps package: ABI", StringComparison.Ordinal) && conflicts == 1 && vm.ShortcutConflicts.Count == 0,
                   $"settings: outlines {strong}/{light} · python {py.Split('\n')[0]} · conflicts {conflicts} → {vm.ShortcutConflicts.Count}");
         }
 
@@ -1751,7 +1760,7 @@ internal static class SelfTest
                 vm.ConsoleOpenDoc().GetAwaiter().GetResult();
                 var docBack = vm.ProjectItems.Count == itemsBefore + 1;
                 vm.StopConsole();
-                Check(started && ran && docBack, $"python console: started {started} · ran {ran} · doc back {docBack} · {vm.ConsoleText.Trim().Split('\n').LastOrDefault()}");
+                PyCheck(started && ran && docBack, $"python console: started {started} · ran {ran} · doc back {docBack} · {vm.ConsoleText.Trim().Split('\n').LastOrDefault()}");
             }
             vm.SetModule(8);
         }
@@ -2585,7 +2594,7 @@ internal static class SelfTest
             var promo = vm.PromoteToParameter("\"Water\"");
             vm.RunMacro().GetAwaiter().GetResult();
             for (var i = 0; i < 20; i++) { Avalonia.Threading.Dispatcher.UIThread.RunJobs(); Thread.Sleep(25); }
-            Check(vm.IsMacro && vm.RecordedCommands.Count == 3 && promo == null && vm.MacroParameters.Count == 1 && vm.MacroOutput.Contains($"atoms {nm0 + 3}") && vm.MacroOutput.Contains("done"),
+            PyCheck(vm.IsMacro && vm.RecordedCommands.Count == 3 && promo == null && vm.MacroParameters.Count == 1 && vm.MacroOutput.Contains($"atoms {nm0 + 3}") && vm.MacroOutput.Contains("done"),
                   $"macro: {vm.RecordedCommands.Count} recorded · params {string.Join(",", vm.MacroParameters.Select(p => p.Name + "=" + p.Default))} · {vm.MacroOutput.Replace('\n', ' ').Trim()}");
             // runs are recorded too: a short MD becomes doc.md(steps=40, …) (the call alone; the macro opens and saves)
             vm.NewMacro();
@@ -2617,7 +2626,7 @@ internal static class SelfTest
             var macroAtoms = vm.Document!.Summary().Atoms;
             vm.RunMacro().GetAwaiter().GetResult();
             for (var i = 0; i < 20; i++) { Avalonia.Threading.Dispatcher.UIThread.RunJobs(); Thread.Sleep(25); }
-            Check(vm.MacroOutput.Contains($"atoms {macroAtoms}") && vm.MacroOutput.Contains("the result is open") && vm.Title.Contains("result"),
+            PyCheck(vm.MacroOutput.Contains($"atoms {macroAtoms}") && vm.MacroOutput.Contains("the result is open") && vm.Title.Contains("result"),
                   $"macro on the open structure: {vm.MacroOutput.Replace('\n', ' ').Trim()} · {vm.Title}");
             vm.MacroTarget = 0;
             // the run form: the parameters' values for this run reach macro(…) (a script whose own main uses the defaults)
@@ -2628,7 +2637,7 @@ internal static class SelfTest
             vm.MacroArgs[1].Value = "rubber";
             vm.RunMacro().GetAwaiter().GetResult();
             for (var i = 0; i < 20; i++) { Avalonia.Threading.Dispatcher.UIThread.RunJobs(); Thread.Sleep(25); }
-            Check(form == 2 && vm.MacroOutput.Contains("value 63 rubber"), $"macro form: {form} arguments · {vm.MacroOutput.Replace('\n', ' ').Trim()}");
+            PyCheck(form == 2 && vm.MacroOutput.Contains("value 63 rubber"), $"macro form: {form} arguments · {vm.MacroOutput.Replace('\n', ' ').Trim()}");
             vm.SetModule(8);
         }
         vm.Open(Path.Combine(dir, "ps_melt.lammpstrj"), Path.Combine(dir, "ps_melt.data"));
@@ -3143,7 +3152,7 @@ internal static class SelfTest
             var script = vm.NewOverlayScript();
             System.Text.Json.Nodes.JsonArray? drawn = null;
             vm.RenderOut(_ => ovPng, false, (rgba, w, h, sp, path) => { drawn = sp.Custom; }).GetAwaiter().GetResult();
-            Check(File.Exists(script) && drawn is { Count: > 0 } && drawn.Any(c => ((string?)c?["s"] ?? "").Contains("ρ =")),
+            PyCheck(File.Exists(script) && drawn is { Count: > 0 } && drawn.Any(c => ((string?)c?["s"] ?? "").Contains("ρ =")),
                   $"python overlay: {drawn?.Count ?? 0} commands · {vm.OvPythonNote} {vm.OvConsole}");
             vm.OvPython = false;
             vm.SetModule(8);
@@ -3190,7 +3199,7 @@ internal static class SelfTest
             codeField?.Commit();
             var afterRun = vm.PipeAttributes.FirstOrDefault(a => a.Key == "Heavy atoms")?.Value;
             var console = vm.StepFields.FirstOrDefault(f => f.IsCode)?.Output ?? "";
-            Check(heavy == "640" && beforeRun == "640" && pending && afterRun == "1280" && codeField?.DraftChanged == false && console.Contains("1280 heavy atoms in 10 molecules"),
+            PyCheck(heavy == "640" && beforeRun == "640" && pending && afterRun == "1280" && codeField?.DraftChanged == false && console.Contains("1280 heavy atoms in 10 molecules"),
                   $"python step typed: {heavy} → {afterRun} after Run (pending {pending}) · console '{console}' · {vm.PipelineRows.LastOrDefault()?.Summary}");
             vm.ClearPipeline();
             // chain orientation per atom, then an affine strain of 10 % along x
@@ -4311,12 +4320,12 @@ internal static class SelfTest
             var code = nbj["cells"]!.AsArray().Where(c => (string?)c!["cell_type"] == "code").Select(c => (string)c!["source"]!).ToList();
             var script = Path.Combine(outDir, "caps-notebook-check.py");
             File.WriteAllText(script, string.Join("\n\n", code.Where(c => !c.Contains("doc.view"))) + "\nprint('NOTEBOOK OK', doc.summary()['atoms'])\n");
-            var psi = new System.Diagnostics.ProcessStartInfo("python3", $"\"{script}\"") { RedirectStandardOutput = true, RedirectStandardError = true };
+            var psi = new System.Diagnostics.ProcessStartInfo(MainViewModel.PythonExe, $"\"{script}\"") { RedirectStandardOutput = true, RedirectStandardError = true };
             var run = System.Diagnostics.Process.Start(psi)!;
             var stdout = run.StandardOutput.ReadToEnd();
             var stderr = run.StandardError.ReadToEnd();
             run.WaitForExit(120000);
-            Check(code.Count == 4 && run.ExitCode == 0 && stdout.Contains("NOTEBOOK OK 1300"),
+            PyCheck(code.Count == 4 && run.ExitCode == 0 && stdout.Contains("NOTEBOOK OK 1300"),
                   $"notebook: {Path.GetFileName(nbPath)} · {code.Count} code cells · runs: {(run.ExitCode == 0 ? "yes" : stderr.Split('\n').LastOrDefault(l => l.Length > 0))}");
             try { File.Delete(nbPath); } catch { }
         }

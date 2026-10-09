@@ -31,6 +31,7 @@
 #include "caps/pipeline.hpp"
 #include "caps/bundle.hpp"
 #include "caps/crystal.hpp"
+#include "caps/cg_commands.hpp"
 #include "caps/dft_commands.hpp"
 #include "caps/spacegroup.hpp"
 #include "caps/peptide.hpp"
@@ -102,6 +103,7 @@ int usage() {
                "  caps check   FILE [--topology DATA] [--report OUT.md]   file checks (counts, bonds, contacts, charges, cell)\n"
                "  caps pipeline FILE [--topology DATA] --steps STEPS.json|STEPS.yaml|'[…]' [--frame N] [--table NAME] [--particles EXPR] [--out DIR] [--branch NAME]\n"
                "  DFT surfaces & adsorption (caps <command> --help for every option, its default and why):\n"
+               "  caps cgmap STRUCTURE… --preset ester-cut -o DIR [--dump DUMP]    chemistry-aware coarse-grained mapping\n"
                "  caps sheet [--preset Ti3C2 | --from FILE --formula Ti3C2 --remove Al] -o OUT     a 2D sheet\n"
                "  caps terminate SHEET --top O:0.5,OH:0.25,F:0.25 [--supercell 3x3] [--vasp-set DIR] -o OUT\n"
                "  caps validate FILE… [--expect Ti3C2O2]       2D slab checks (exit 1 on FAIL)\n"
@@ -537,8 +539,40 @@ static int dft_main(const std::string& cmd, int argc, char** argv) {
   }
 }
 
+// The coarse-graining workflow (caps/cg_commands.hpp): the same commands as the Studio's Coarse-grain page
+static int cg_main(const std::string& cmd, int argc, char** argv) {
+  std::vector<std::string> pos;
+  std::vector<std::pair<std::string, std::string>> flags;
+  bool json = false;
+  for (int i = 2; i < argc; ++i) {
+    const std::string a = argv[i];
+    if (a == "--help" || a == "-h") { std::printf("%s", cg_help(cmd).c_str()); return 0; }
+    if (a == "--json") { json = true; continue; }
+    if (a.rfind("--", 0) == 0 || a == "-o") {
+      if (cg_is_switch(cmd, a)) flags.push_back({a, "true"});
+      else if (i + 1 < argc) flags.push_back({a, argv[++i]});
+      else { std::fprintf(stderr, "caps %s: %s needs a value\n", cmd.c_str(), a.c_str()); return 2; }
+    } else pos.push_back(a);
+  }
+  std::string data;
+  for (const std::string root : {std::getenv("CAPS_HOME") ? std::string(std::getenv("CAPS_HOME")) : std::string(), std::string("."), std::string(CAPS_SOURCE_ROOT)})
+    if (!root.empty() && std::filesystem::exists(root + "/data/cg/mapping_rules.json")) { data = root + "/data"; break; }
+  if (data.empty()) { std::fprintf(stderr, "caps: data/cg not found (set CAPS_HOME)\n"); return 2; }
+  try {
+    const Json r = cg_run(cmd, dft_args_from_cli(pos, flags), data);
+    if (json) std::printf("%s\n", r.dump(1).c_str());
+    else if (r.has("text")) std::printf("%s", r.text("text").c_str());
+    else std::printf("%s\n", r.dump(1).c_str());
+    return r.has("ok") && !r["ok"].boolean() ? 1 : 0;
+  } catch (const std::exception& e) {
+    std::fprintf(stderr, "caps %s: %s\n", cmd.c_str(), e.what());
+    return 2;
+  }
+}
+
 int main(int argc, char** argv) {
   if (argc >= 2 && is_dft_command(argv[1])) return dft_main(argv[1], argc, argv);
+  if (argc >= 2 && is_cg_command(argv[1])) return cg_main(argv[1], argc, argv);
   if (argc < 3) return usage();
   const std::string cmd = argv[1];
   std::vector<std::string> pos;

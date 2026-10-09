@@ -115,6 +115,9 @@ add_library(caps_core STATIC
   src/gromacs_top.cpp
   src/amber.cpp
   src/cg_map.cpp
+  src/cg_rules.cpp
+  src/cg_commands.cpp
+  src/cg_bonded.cpp
   src/kspace.cpp
   src/fortran_runtime.cpp
   fortran/caps_kspace.f90
