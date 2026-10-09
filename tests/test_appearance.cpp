@@ -192,9 +192,10 @@ TEST(Appearance, LabelsOfAtomsAndBonds) {
   std::set<std::string> chem;
   for (const auto& b : bond_labels(s, "chemical")) chem.insert(b.text);
   EXPECT_EQ(chem, (std::set<std::string>{"C=O", "C–C", "C–H", "C–O", "O–H"}));
-  // tabulated element data (RDKit, Blue Obelisk)
+  // tabulated element data (IUPAC/CIAAW, NUBASE2020, Blue Obelisk)
   EXPECT_STREQ(element_name(29), "Copper");
   EXPECT_EQ(most_common_mass_number(29), 63);   // not the rounded weight 63.55 → 64
+  EXPECT_EQ(most_common_mass_number(43), 98);   // no natural composition: the longest-lived isotope
   EXPECT_DOUBLE_EQ(pauling_electronegativity(8), 3.44);
   EXPECT_STREQ(electron_configuration(26), "[Ar] 3d6 4s2");
   EXPECT_THROW(atom_labels(s, "spin"), std::invalid_argument);
