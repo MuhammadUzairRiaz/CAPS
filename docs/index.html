@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CAPS documentation</title>
+<meta name="description" content="CAPS: build, type, run and analyse polymers and materials from the Studio, the command line or Python.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="assets/site.css">
+
+<script defer src="assets/site.js"></script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>CAPS</a>
+  <button class="menu" aria-expanded="false" aria-controls="nav">Menu</button>
+  <nav id="nav" class="links"><a href="index.html" aria-current="page">Home</a><a href="cli/index.html">CLI guide</a><a href="cli/reference.html">Command reference</a><a href="tutorials/index.html">Tutorials</a><a href="theory/index.html">Theory</a><a href="python.html">Python</a><a href="manual/index.html">Studio tour</a><a href="https://github.com/MuhammadUzairRiaz/CAPS">GitHub</a></nav>
+</header>
+<div class="doc wide">
+
+<main>
+<section class="home-hero">
+  <div>
+    <p class="eyebrow">CAPS 0.1.0 · macOS · Windows · Linux</p>
+    <h1>Polymers and materials, from a SMILES string to a paper's methods section.</h1>
+    <p>CAPS builds molecules, chains, crystals, surfaces and composites; types them with the force field you choose;
+      relaxes, runs and crosslinks them; coarse-grains and backmaps them; prepares DFT surface studies; and writes every
+      step down so the result can be reproduced and cited. One C++ core, three ways in: the Studio, the <code>caps</code>
+      command line and the <code>caps</code> Python package.</p>
+    <div class="ctas">
+      <a class="btn primary" href="tutorials/first-cell.html">Start the first tutorial →</a>
+      <a class="btn" href="cli/index.html">CLI guide</a>
+      <a class="btn" href="manual/index.html">Studio tour</a>
+    </div>
+    <div class="stats">
+      <div><b>62</b><span>commands</span></div>
+      <div><b>63</b><span>force-field libraries</span></div>
+      <div><b>88</b><span>documented methods</span></div>
+      <div><b>7</b><span>tutorials</span></div>
+    </div>
+  </div>
+  <div class="terminal" aria-label="An example session">
+    <div class="bar"><i></i><i></i><i></i></div>
+<pre><span class="m"># grow 4 polystyrene chains, relax, run and analyse</span>
+<span class="p">$</span> caps grow -o ps.data --chains 4 --dp 10 --density 0.5 \
+    --units '*CC(*)c1ccccc1' --seed 1
+<span class="p">$</span> caps relax ps.data -o ps_min.data --quiet
+<span class="p">$</span> caps md ps_min.data -o ps_md.data --steps 2000 \
+    --barostat berendsen --dump ps.lammpstrj --every 200
+<span class="p">$</span> caps analyze ps.lammpstrj --topology ps_md.data \
+    --props density,rg
+<span class="m"># the same cell for LAMMPS and GROMACS with OPLS-AA</span>
+<span class="p">$</span> caps ff type ps_md.data --ff opls2005 -o types.txt
+<span class="p">$</span> caps ff apply ps_md.data --ff opls2005 --types types.txt \
+    -o ps.data --lammps-input ps.in --gromacs ps
+<span class="ok">wrote ps.top, ps.gro and ps.mdp</span></pre>
+  </div>
+</section>
+
+<h2 id="paths">Where to go</h2>
+<div class="cards">
+  <a class="card" href="cli/index.html"><b>CLI guide</b><span>Conventions, the command for each task, the scripts CAPS writes for you to run, and how commands chain into a project.</span><span class="meta">start here for the command line</span></a>
+  <a class="card" href="cli/reference.html"><b>Command reference</b><span>Every command's synopsis, and for the newer workflows every option with its default and the reason for it.</span><span class="meta">62 commands · filterable</span></a>
+  <a class="card" href="tutorials/index.html"><b>Tutorials</b><span>Amorphous cells, force-field export, recipes and provenance, crosslinking, coarse-graining, DFT surfaces and Python scripting.</span><span class="meta">7 tutorials · run as written</span></a>
+  <a class="card" href="theory/index.html"><b>Theory</b><span>The equations CAPS solves, with symbols, defaults, when to use each method, the tests that check it and the papers it follows.</span><span class="meta">88 methods · typeset</span></a>
+  <a class="card" href="python.html"><b>Python API</b><span><code>import caps</code>: open and build structures, assign force fields, run, crosslink, analyse and write pipeline steps.</span><span class="meta">generated from the docstrings</span></a>
+  <a class="card" href="manual/index.html"><b>Studio tour</b><span>The desktop application page by page: the viewer, builders, force fields, runs, analysis and the methods report.</span><span class="meta">screenshots</span></a>
+</div>
+
+<h2 id="install">Install</h2>
+<div class="table"><table>
+<thead><tr><th>System</th><th>Download</th><th>The <code>caps</code> command</th></tr></thead>
+<tbody>
+<tr><td>macOS (Apple silicon)</td><td><code>CAPS-0.1.0-macos-arm64.dmg</code>: drag CAPS Studio to Applications</td><td><code>/Applications/CAPS Studio.app/Contents/MacOS/caps</code>; link it onto your PATH (below)</td></tr>
+<tr><td>Windows 10/11 (x64)</td><td><code>CAPS-0.1.0-windows-x64-setup.exe</code>, or the portable <code>.zip</code></td><td><code>caps.exe</code> in the install folder; tick <em>Add the caps command line to PATH</em> in the installer</td></tr>
+<tr><td>Ubuntu / Debian</td><td><code>sudo apt install ./caps-studio_0.1.0_amd64.deb</code></td><td><code>/usr/bin/caps</code></td></tr>
+<tr><td>Any Linux (Arch, Fedora …)</td><td><code>CAPS-0.1.0-linux-x86_64.AppImage</code> (needs FUSE 2), or the <code>.tar.gz</code></td><td>the tarball's <code>caps</code>, or <code>./CAPS-…AppImage --appimage-extract</code> and <code>squashfs-root/usr/bin/caps</code></td></tr>
+</tbody></table></div>
+<div class="code" data-lang="shell"><pre><code># macOS: put caps on your PATH
+sudo ln -sf "/Applications/CAPS Studio.app/Contents/MacOS/caps" /usr/local/bin/caps
+caps            # the usage: every command on one screen</code></pre></div>
+<p>The force-field library, typing rules, samples and presets ship with the program and are found beside it; set
+<code>CAPS_HOME</code> only to use a different copy. The Python package is in the program's <code>data/python</code>
+folder (see <a href="python.html#setup">Python setup</a>).</p>
+
+<h2 id="routes">Typical routes</h2>
+<p>Most projects follow one of these chains; each link is a command (or a Studio page, or a Python call).</p>
+<p><b>Amorphous polymer</b></p>
+<div class="route"><span>grow</span><i>→</i><span>relax</span><i>→</i><span>equilibrate</span><i>→</i><span>md</span><i>→</i><span>analyze · tensile · tg</span><i>→</i><span>ff apply → LAMMPS / GROMACS</span></div>
+<p><b>Crosslinked network</b></p>
+<div class="route"><span>grow / blend</span><i>→</i><span>ff assign</span><i>→</i><span>react (in CAPS)</span><i>or</i><span>bond_react export (LAMMPS fix bond/react)</span><i>→</i><span>analyze crosslinks</span></div>
+<p><b>Coarse-grained model</b></p>
+<div class="route"><span>all-atom run</span><i>→</i><span>cgmap</span><i>→</i><span>cgfit bonded · targets · ibi</span><i>→</i><span>cgbuild</span><i>→</i><span>ppa · mech · cgdyn</span><i>→</i><span>backmap</span></div>
+<p><b>DFT surface study</b></p>
+<div class="route"><span>sheet</span><i>→</i><span>terminate</span><i>→</i><span>validate</span><i>→</i><span>adsorb-dft</span><i>→</i><span>vasp-set · vasp-jobs</span><i>→</i><span>vasp-analyze</span></div>
+<p><b>Reproducible study</b></p>
+<div class="route"><span>recipe.yaml</span><i>→</i><span>run</span><i>→</i><span>provenance --methods · --bibtex</span><i>→</i><span>bundle</span><i>→</i><span>reproduce</span></div>
+
+</main>
+</div>
+<footer class="foot"><span>CAPS 0.1.0 · generated by <code>tools/docs/build_site.py</code> from the program itself</span><a href="https://github.com/MuhammadUzairRiaz/CAPS">github.com/MuhammadUzairRiaz/CAPS</a></footer>
+</body>
+</html>

@@ -278,6 +278,10 @@ In Jupyter, `doc.view()` draws an interactive 3D view.
 
 ## Documentation
 
+- **Documentation site** — [`docs/index.html`](docs/index.html), served by GitHub Pages from `docs/`: a CLI guide
+  (conventions, the command for each task, the scripts CAPS writes for you to run), the reference of every command,
+  seven tutorials, the theory pages with typeset equations and references, and the Python API. It is generated from
+  the program itself: `python3 tools/docs/build_site.py` after a build.
 - **User manual** — [`docs/manual/index.html`](docs/manual/index.html): a guided tour of every page in CAPS Studio.
 - **Theory manual** — in CAPS Studio: press F1, or search for "Theory manual" in the command palette. It has one page for each method (integrators,
   thermostats, barostats, Ewald sums, chain growth, packing, charge models, equilibration protocols, scattering,

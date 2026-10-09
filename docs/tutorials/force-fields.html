@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Force fields and engine inputs · CAPS tutorial</title>
+<meta name="description" content="Type a structure with OPLS-AA or PCFF, inspect the assignment, and write complete inputs for LAMMPS and GROMACS.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script defer src="../assets/site.js"></script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="../index.html"><span class="mark" aria-hidden="true"></span>CAPS</a>
+  <button class="menu" aria-expanded="false" aria-controls="nav">Menu</button>
+  <nav id="nav" class="links"><a href="../index.html">Home</a><a href="../cli/index.html">CLI guide</a><a href="../cli/reference.html">Command reference</a><a href="../tutorials/index.html" aria-current="page">Tutorials</a><a href="../theory/index.html">Theory</a><a href="../python.html">Python</a><a href="../manual/index.html">Studio tour</a><a href="https://github.com/MuhammadUzairRiaz/CAPS">GitHub</a></nav>
+</header>
+<div class="doc">
+<nav class="toc" aria-label="On this page"><h2>On this page</h2><a class="l2" href="#the-library">The library</a><a class="l2" href="#1-assign-types">1. Assign types</a><a class="l2" href="#2-parameters-and-engine-files">2. Parameters and engine files</a><a class="l2" href="#class-ii-force-fields">Class II force fields</a><a class="l2" href="#options-worth-knowing">Options worth knowing</a><a class="l2" href="#next">Next</a></nav>
+<main>
+<header class="hero"><p class="eyebrow">Tutorial 02</p><h1>Force fields and engine inputs</h1><p>Type a structure with OPLS-AA or PCFF, inspect the assignment, and write complete inputs for LAMMPS and GROMACS.</p><div class="strip"><span><i>Time</i> 5 minutes</span><span><i>Level</i> first steps</span><span><i>Uses</i> ff info · ff type · ff apply</span></div></header><h2 id="the-library">The library</h2>
+<p>CAPS ships its force fields as JSON files in <code>data/forcefields</code>: OPLS-AA (2005, 2020, 2024), PCFF and COMPASS (class II), CVFF, GAFF and GAFF2, AMBER, CHARMM, DREIDING, TraPPE, UFF, inorganic and clay sets, Martini and others. Commands accept a library name or a path.</p>
+<div class="code" data-lang="shell"><pre><code>caps ff info opls2005        # types, typing rules, styles and references
+caps ff info pcff</code></pre></div>
+<h2 id="1-assign-types">1. Assign types</h2>
+<p>Typing rules are SMARTS patterns: each atom gets the type of the most specific rule it matches. <code>caps ff type</code> writes one type per atom and reports atoms left untyped or matched ambiguously.</p>
+<div class="code" data-lang="shell"><pre><code>caps ff type ps_md.data --ff opls2005 -o types.txt</code></pre></div>
+<div class="code" data-lang="output"><pre><code>0 untyped, 0 ambiguous
+wrote types.txt</code></pre></div>
+<p><code>--explain</code> prints, for every atom, the rule that won and the ones it beat; use it when a type looks wrong.</p>
+<h2 id="2-parameters-and-engine-files">2. Parameters and engine files</h2>
+<p><code>caps ff apply</code> looks up every bond, angle, dihedral and improper and the pair coefficients, assigns charges (with <code>--charges auto</code>, the force field's own scheme: fixed charges per type or bond increments), and writes the files for each engine:</p>
+<div class="code" data-lang="shell"><pre><code>caps ff apply ps_md.data --ff opls2005 --types types.txt -o ps_opls.data \
+  --lammps-input ps_opls.in --lammps-run npt --steps 5000 --gromacs ps_opls</code></pre></div>
+<div class="code" data-lang="output"><pre><code>wrote ps_opls.in (the force field&#x27;s own styles)
+gromacs: CAPS&#x27;s damped shifted force becomes PME in GROMACS (no DSF there)
+gromacs: the cell is 23.8 Å across, less than 2 r_c (24 Å): GROMACS needs a larger cell (a supercell) or a shorter cut-off
+wrote ps_opls.top, ps_opls.gro and ps_opls.mdp</code></pre></div>
+<p>The notes matter: this tutorial's cell is smaller than twice the cut-off, which GROMACS refuses. A production cell (thousands of atoms) passes. Run the results with:</p>
+<div class="code" data-lang="shell"><pre><code>lmp -in ps_opls.in
+gmx grompp -f ps_opls.mdp -c ps_opls.gro -p ps_opls.top -o run.tpr &amp;&amp; gmx mdrun -deffnm run</code></pre></div>
+<h2 id="class-ii-force-fields">Class II force fields</h2>
+<p>PCFF and COMPASS carry cross terms (bond–bond, bond–angle, angle–angle, middle-bond and end-bond torsion couplings) and 9-6 Lennard-Jones pairs. The same two commands handle them; the LAMMPS input uses <code>class2</code> styles:</p>
+<div class="code" data-lang="shell"><pre><code>caps ff type ps_md.data --ff pcff -o types_pcff.txt
+caps ff apply ps_md.data --ff pcff --types types_pcff.txt -o ps_pcff.data --lammps-input ps_pcff.in</code></pre></div>
+<h2 id="options-worth-knowing">Options worth knowing</h2>
+<div class="table"><table><thead><tr><th>Option</th><th>Effect</th></tr></thead><tbody><tr><td><code>--charges auto|keep|types|gasteiger</code></td><td>where charges come from (<code>keep</code>: the file's)</td></tr><tr><td><code>--kspace auto|pppm|ewald|dsf|cut</code></td><td>long-range electrostatics in the LAMMPS input</td></tr><tr><td><code>--lammps-style native|exact</code></td><td>the force field's own styles, or the styles that give exactly CAPS's energy (to check CAPS against LAMMPS)</td></tr><tr><td><code>--overlay USER.json</code></td><td>your own parameters on top of the library's (missing terms, refits)</td></tr><tr><td><code>--dlpoly DIR</code></td><td>DL_POLY CONTROL, FIELD and CONFIG</td></tr></tbody></table></div>
+<h2 id="next">Next</h2>
+<ul><li><a href="crosslinking.html">Tutorial 04</a> assigns a force field from Python and keeps it through a cure.</li><li><a href="../theory/force-fields.html">Theory: Force fields</a> for the functional forms and mixing rules.</li></ul><nav class="pager"><a href="first-cell.html"><small>Previous</small>Your first amorphous polymer cell</a><a class="next" href="recipes.html"><small>Next</small>Recipes, provenance and a methods paragraph</a></nav>
+</main>
+</div>
+<footer class="foot"><span>CAPS 0.1.0 · generated by <code>tools/docs/build_site.py</code> from the program itself</span><a href="https://github.com/MuhammadUzairRiaz/CAPS">github.com/MuhammadUzairRiaz/CAPS</a></footer>
+</body>
+</html>
