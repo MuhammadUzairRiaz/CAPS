@@ -1,0 +1,4 @@
+#!/bin/bash
+# A stand-in for sacct (tests only)
+echo "COMPLETED|0:0|00:00:42|"
+echo "COMPLETED|0:0|00:00:42|123M"

@@ -1,5 +1,6 @@
 add_library(caps_core STATIC
   src/live.cpp
+  src/cluster_job.cpp
   src/elements.cpp
   src/labels.cpp
   src/lattice.cpp
