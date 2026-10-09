@@ -303,6 +303,8 @@ MARK = ('<svg class="mark" viewBox="0 0 30 30" aria-hidden="true"><path d="M15 2
         'stroke="currentColor" stroke-width="1.4"/><circle cx="15" cy="15" r="3.4" fill="var(--accent)"/>'
         '<circle cx="15" cy="7.5" r="2" fill="currentColor"/><circle cx="21.5" cy="18.8" r="2" fill="currentColor"/>'
         '<circle cx="8.5" cy="18.8" r="2" fill="currentColor"/></svg>')
+ASSET_V = __import__("hashlib").sha1(((Path(__file__).resolve().parent / "src" / "site.css").read_bytes()
+                                      + (Path(__file__).resolve().parent / "src" / "site.js").read_bytes())).hexdigest()[:10]
 FAVICON = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30"><rect x="0.5" y="0.5" width="29" height="29" rx="6.5" fill="#16191C"/>'
            '<path d="M15 2 L26.3 8.5 L26.3 21.5 L15 28 L3.7 21.5 L3.7 8.5 Z" fill="none" stroke="#F0A83C" stroke-width="2" transform="translate(3 3) scale(.8)"/>'
            '<g transform="translate(3 3) scale(.8)"><circle cx="15" cy="15" r="3.4" fill="#F0A83C"/><circle cx="15" cy="7.5" r="2" fill="#E8E6E1"/>'
@@ -331,13 +333,13 @@ def page(path: str, title: str, body: str, toc_html: str = "", maths: bool = Fal
 <link rel="icon" type="image/svg+xml" href="{up}assets/caps.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="{up}assets/caps_32.png">
 <link rel="apple-touch-icon" href="{up}assets/caps_256.png">
-<link rel="stylesheet" href="{up}assets/site.css">
+<link rel="stylesheet" href="{up}assets/site.css?v={ASSET_V}">
 {head_maths}
-<script defer src="{up}assets/site.js"></script>
+<script defer src="{up}assets/site.js?v={ASSET_V}"></script>
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="{up}index.html" title="CAPS · Chain Assembly and Packing Suite">{MARK}CAPS</a>
+  <a class="brand" href="{up}index.html" title="CAPS · Chain Assembly and Packing Suite">{MARK}<span class="brand-name"><b>CAPS</b><small>Chain Assembly and Packing Suite</small></span></a>
   <button class="menu" aria-expanded="false" aria-controls="nav">Menu</button>
   <nav id="nav" class="links">{nav}<a href="{REPO}">GitHub</a></nav>
 </header>
