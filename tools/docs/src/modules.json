@@ -726,7 +726,12 @@
    "lede": "Build an all-atom peptide from its one-letter sequence — helix, strand, PPII or coil, with termini and protonation at a pH — or a DNA or RNA strand.",
    "input": "A one-letter sequence or a FASTA file.",
    "output": "An all-atom peptide or strand, cleaned up with UFF.",
-   "shots": [],
+   "shots": [
+    {
+     "img": "26_biomolecule.jpg",
+     "cap": "**Biomolecule builder**: a 30-residue peptide, α-helix for residues 1–22 and coil for 23–30, with the sequence, the per-residue structure and the termini."
+    }
+   ],
    "steps": [
     {
      "t": "Choose the mode",
@@ -1332,7 +1337,12 @@
    "lede": "Prepare and follow surface DFT studies: build 2D sheets such as MXenes with terminated faces, place molecules on them, write checked VASP sets, run them on a cluster and collect binding energies, DOS and work functions.",
    "input": "A sheet preset (for example Ti₃C₂) or a layered structure, and adsorbate SMILES.",
    "output": "Validated slabs, adsorption sets, VASP input folders, job status and a results summary.",
-   "shots": [],
+   "shots": [
+    {
+     "img": "27_dft_sheets.jpg",
+     "cap": "**2D sheets & terminations**: a Ti₃C₂ sheet with OH on the fcc sites of its top face, the surface-site map and the validation (PASS), with the `caps terminate` line for the same step."
+    }
+   ],
    "steps": [
     {
      "t": "Build the sheet",
