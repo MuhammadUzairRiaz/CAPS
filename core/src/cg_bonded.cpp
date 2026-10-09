@@ -458,7 +458,7 @@ CgBondedTable make_table(const CgBondedHistogram& H, const CgBondedOptions& o, d
   T.sampled = true;
   if (H.kind == 0) {
     const double tlo = o.bond_table_lo > 0 ? o.bond_table_lo : std::max(0.5, v.xc[size_t(v.ilo)] - 2.0);
-    const double thi = o.bond_table_hi > 0 ? o.bond_table_hi : v.xc[size_t(v.ihi)] + 3.0;
+    const double thi = o.bond_table_hi > 0 ? o.bond_table_hi : v.xc[size_t(v.ihi)] + 8.0;   // LAMMPS stops on a bond past the table: room for transients
     table_open(T, v, 0, o, kT, tlo, thi, o.bond_table_dr);
   } else if (H.kind == 1) {
     table_open(T, v, 1, o, kT, 0.0, 180.0, o.angle_table_dt);
