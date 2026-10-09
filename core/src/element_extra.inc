@@ -4,8 +4,8 @@
 //   of an interval) for the 84 elements it lists; for the others the longest-lived isotope: the bracketed value of
 //   NIST's Atomic Weights and Isotopic Compositions (Tc, Pm, Po-Ac, Np, Pu), else the longest measured half-life of
 //   NUBASE2020 (Kondev et al., Chin. Phys. C 45, 030001 (2021); Am-Og).
-//   Pauling electronegativity and ground-state electron configuration: Blue Obelisk Data Repository via VTK 9.6.1 (MIT);
-//   0 = not tabulated. Indexed by atomic number (0 unused).
+//   Pauling electronegativity and ground-state electron configuration: Blue Obelisk Data Repository via VTK 9.6.1
+//   (MIT; licenses/BlueObelisk-MIT.txt); 0 = not tabulated. Indexed by atomic number (0 unused).
 struct ElementExtra { const char* name; double pauling; int mass_number; const char* configuration; };
 static const ElementExtra kElementExtra[] = {
     {"", 0.0, 0, ""},
