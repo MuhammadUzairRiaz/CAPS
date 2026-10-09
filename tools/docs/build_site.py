@@ -298,6 +298,15 @@ NAV = [("index.html", "Home"), ("modules/index.html", "Modules"), ("cli/index.ht
        ("tutorials/index.html", "Tutorials"), ("theory/index.html", "Theory"), ("python.html", "Python"),
        ("manual/index.html", "Studio tour")]
 RELEASES = REPO + "/releases/latest"
+MARK = ('<svg class="mark" viewBox="0 0 30 30" aria-hidden="true"><path d="M15 2 L26.3 8.5 L26.3 21.5 L15 28 L3.7 21.5 L3.7 8.5 Z" '
+        'fill="none" stroke="var(--accent)" stroke-width="2"/><path d="M15 9.5 V11.7 M19.8 17.8 L17.9 16.7 M10.2 17.8 L12.1 16.7" '
+        'stroke="currentColor" stroke-width="1.4"/><circle cx="15" cy="15" r="3.4" fill="var(--accent)"/>'
+        '<circle cx="15" cy="7.5" r="2" fill="currentColor"/><circle cx="21.5" cy="18.8" r="2" fill="currentColor"/>'
+        '<circle cx="8.5" cy="18.8" r="2" fill="currentColor"/></svg>')
+FAVICON = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30"><rect x="0.5" y="0.5" width="29" height="29" rx="6.5" fill="#16191C"/>'
+           '<path d="M15 2 L26.3 8.5 L26.3 21.5 L15 28 L3.7 21.5 L3.7 8.5 Z" fill="none" stroke="#F0A83C" stroke-width="2" transform="translate(3 3) scale(.8)"/>'
+           '<g transform="translate(3 3) scale(.8)"><circle cx="15" cy="15" r="3.4" fill="#F0A83C"/><circle cx="15" cy="7.5" r="2" fill="#E8E6E1"/>'
+           '<circle cx="21.5" cy="18.8" r="2" fill="#E8E6E1"/><circle cx="8.5" cy="18.8" r="2" fill="#E8E6E1"/></g></svg>')
 
 
 def page(path: str, title: str, body: str, toc_html: str = "", maths: bool = False, wide: bool = False, desc: str = "") -> str:
@@ -319,13 +328,16 @@ def page(path: str, title: str, body: str, toc_html: str = "", maths: bool = Fal
 <meta name="description" content="{html.escape(desc or 'CAPS: a polymer and materials simulation workbench — command line, Python and Studio.')}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="icon" type="image/svg+xml" href="{up}assets/caps.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="{up}assets/caps_32.png">
+<link rel="apple-touch-icon" href="{up}assets/caps_256.png">
 <link rel="stylesheet" href="{up}assets/site.css">
 {head_maths}
 <script defer src="{up}assets/site.js"></script>
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="{up}index.html"><span class="mark" aria-hidden="true"></span>CAPS</a>
+  <a class="brand" href="{up}index.html" title="CAPS · Chain Assembly and Packing Suite">{MARK}CAPS</a>
   <button class="menu" aria-expanded="false" aria-controls="nav">Menu</button>
   <nav id="nav" class="links">{nav}<a href="{REPO}">GitHub</a></nav>
 </header>
@@ -699,6 +711,9 @@ def main() -> None:
     for f in ("site.css", "site.js"):
         (out / "assets" / f).write_text((SRC / f).read_text())
     (out / ".nojekyll").write_text("")
+    (out / "assets" / "caps.svg").write_text(FAVICON)
+    for n in ("caps_32.png", "caps_256.png"):   # the app icon (packaging/icon/make_icon.py)
+        (out / "assets" / n).write_bytes((ROOT / "packaging/icon" / n).read_bytes())
     (out / "CNAME").write_text("caps-studio.org\n")   # the custom domain GitHub Pages serves the site on
     summary = build_reference(a.caps, out)
     build_guide(out, summary)
