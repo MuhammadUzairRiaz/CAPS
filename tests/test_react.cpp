@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <map>
 
 #include "caps/pack.hpp"
@@ -1020,4 +1021,207 @@ TEST(React, SitesPerChainAreCountedAndCapped) {
   for (const auto& c : per) lost += c.sites;
   for (const auto& c : after) lost -= c.sites;
   EXPECT_EQ(lost, 2 * rep.crosslinks);
+}
+
+// ---- fix bond/react sets that LAMMPS runs as written (the PBS/ENR-50/MAH report): templates obey LAMMPS's rule that every
+// atom is linked to an initiator without passing an edge atom, no template atom is bonded to nothing, a hydrogen that
+// changes partner carries a distance constraint, every reaction has stabilize_steps, and the Rmax raise compares the
+// absolute Rmax with its limit
+namespace {
+struct MolFile { int atoms = 0; std::vector<std::pair<int, int>> bonds; std::vector<std::string> type_names; };
+MolFile read_mol_file(const std::string& path) {
+  std::ifstream f(path);
+  MolFile m;
+  std::string line, sec;
+  while (std::getline(f, line)) {
+    const std::string t = line.substr(0, line.find('#'));
+    std::istringstream ss(t);
+    std::vector<std::string> w;
+    for (std::string x; ss >> x;) w.push_back(x);
+    if (w.empty()) continue;
+    if (w.size() == 2 && w[1] == "atoms") { m.atoms = std::stoi(w[0]); continue; }
+    if (w.size() == 1 && std::isalpha(static_cast<unsigned char>(w[0][0]))) { sec = w[0]; continue; }
+    if (sec == "Bonds" && w.size() >= 4) m.bonds.push_back({std::stoi(w[2]), std::stoi(w[3])});
+    if (sec == "Types" && w.size() >= 2) {
+      const auto c = line.find('#');
+      std::string name = c == std::string::npos ? "" : line.substr(c + 1);
+      name.erase(0, name.find_first_not_of(' '));
+      m.type_names.push_back(name);
+    }
+  }
+  return m;
+}
+struct MapFile { std::vector<int> init, edge; std::vector<std::vector<std::string>> constraints; int equivalences = 0; };
+MapFile read_map_file(const std::string& path) {
+  std::ifstream f(path);
+  MapFile m;
+  std::string line, sec;
+  while (std::getline(f, line)) {
+    const std::string t = line.substr(0, line.find('#'));
+    std::istringstream ss(t);
+    std::vector<std::string> w;
+    for (std::string x; ss >> x;) w.push_back(x);
+    if (w.empty()) continue;
+    if (w.size() == 1 && std::isalpha(static_cast<unsigned char>(w[0][0]))) { sec = w[0]; continue; }
+    if (w.size() == 2 && std::isalpha(static_cast<unsigned char>(w[1][0]))) continue;   // a count line
+    if (sec == "InitiatorIDs") m.init.push_back(std::stoi(w[0]));
+    if (sec == "EdgeIDs") m.edge.push_back(std::stoi(w[0]));
+    if (sec == "Equivalences") ++m.equivalences;
+    if (sec == "Constraints") m.constraints.push_back(w);
+  }
+  return m;
+}
+// every template of a set: the LAMMPS rules, and the hydrogen-transfer constraints
+void check_bond_react_set(const std::string& dir, const std::string& stem, const BondReactReport& rep, double hmax) {
+  ASSERT_FALSE(rep.variants.empty());
+  for (const auto& v : rep.variants) {
+    const std::string base = dir + "/" + stem + "_" + v.name;
+    const MolFile pre = read_mol_file(base + "_pre.mol"), post = read_mol_file(base + "_post.mol");
+    const MapFile map = read_map_file(base + "_map.txt");
+    EXPECT_EQ(pre.atoms, post.atoms) << v.name;
+    EXPECT_EQ(map.equivalences, pre.atoms) << v.name;
+    std::vector<std::set<int>> nb(size_t(pre.atoms) + 1), nbp(size_t(pre.atoms) + 1);
+    for (auto [a, b] : pre.bonds) nb[size_t(a)].insert(b), nb[size_t(b)].insert(a);
+    for (auto [a, b] : post.bonds) nbp[size_t(a)].insert(b), nbp[size_t(b)].insert(a);
+    // reached from an initiator without passing an edge atom
+    const std::set<int> edge(map.edge.begin(), map.edge.end());
+    std::set<int> seen(map.init.begin(), map.init.end());
+    std::vector<int> q(map.init.begin(), map.init.end());
+    for (size_t h = 0; h < q.size(); ++h) {
+      if (edge.count(q[h])) continue;
+      for (int w : nb[size_t(q[h])]) if (seen.insert(w).second) q.push_back(w);
+    }
+    EXPECT_EQ(int(seen.size()), pre.atoms) << v.name << ": atoms beyond an edge";
+    for (int a = 1; a <= pre.atoms && pre.atoms > 1; ++a) EXPECT_FALSE(nb[size_t(a)].empty()) << v.name << ": atom " << a << " bonded to nothing";
+    // a hydrogen whose partner changes: one constraint to its new partner
+    int moving = 0;
+    for (int a = 1; a <= pre.atoms; ++a) {
+      if (pre.type_names[size_t(a - 1)].rfind("H", 0) != 0 || nb[size_t(a)] == nbp[size_t(a)] || nbp[size_t(a)].empty()) continue;
+      ++moving;
+      int partner = 0;
+      for (int w : nbp[size_t(a)]) if (!nb[size_t(a)].count(w)) partner = w;
+      int found = 0;
+      for (const auto& c : map.constraints)
+        if (c.size() == 5 && c[0] == "distance" && std::stoi(c[1]) == a && std::stoi(c[2]) == partner && std::stod(c[4]) == hmax) ++found;
+      EXPECT_EQ(found, 1) << v.name << ": hydrogen " << a << " → " << partner;
+    }
+    EXPECT_EQ(int(map.constraints.size()), moving) << v.name;
+  }
+  std::ifstream in(dir + "/" + stem + ".in");
+  std::stringstream ss;
+  ss << in.rdbuf();
+  std::istringstream lines(ss.str());
+  int reacts = 0;
+  for (std::string l; std::getline(lines, l);)
+    if (l.rfind("  react ", 0) == 0) { ++reacts; EXPECT_NE(l.find("stabilize_steps 200"), std::string::npos) << l; }
+  EXPECT_EQ(reacts, int(rep.variants.size()));
+}
+System enr_chains(int chains, int dp, uint64_t seed) {
+  ChainSpec spec;
+  spec.units = {{"ENR", "[*]CC1(C)OC1C[*]"}, {"NR", "[*]C/C=C(C)\\C[*]"}};
+  spec.sequence = Sequence::Alternating;
+  spec.dp = dp;
+  GrowOptions g;
+  g.chains = chains;
+  g.density = 0.3;
+  g.seed = seed;
+  g.auto_scale = true;
+  return grow_chains(spec, g);
+}
+}  // namespace
+
+TEST(React, BondReactMaleicAcidTwoStepsRunsInLammps) {
+  System s = enr_chains(4, 6, 31);
+  PackReport pr;
+  s = insert_molecules(s, build_molecule("OC(=O)/C=C\\C(=O)O").system, 6, PackOptions{}, &pr);
+  auto uff = [](const System& x) { return std::make_shared<const ForceField>(assign_uff(x)); };
+  const auto dir = (std::filesystem::temp_directory_path() / "caps_br_maleic").string();
+  std::filesystem::remove_all(dir);
+  BondReactOptions bo;
+  bo.between_chains = true;
+  bo.survey_after = {0.25, 0.5, 0.8};
+  bo.survey_relax = false;
+  bo.survey_capture = 12;
+  bo.mol_ids = "molmap";
+  bo.targets = {0.5};
+  bo.limiting = 6;
+  bo.stall_chunks = 20;
+  bo.rmax = 3.5, bo.rmax_step = 0.25, bo.rmax_limit = 4.0;
+  const auto rep = write_bond_react(s, parse_templates(builtin_template("enr_acid_ester")), uff, dir, "ma", bo);
+  check_bond_react_set(dir, "ma", rep, 3.5);
+  if (std::getenv("CAPS_TEST_VERBOSE")) { for (const auto& n : rep.notes) std::printf("note: %s\n", n.c_str()); for (const auto& v : rep.variants) std::printf("%s %s %d atoms\n", v.name.c_str(), v.step.c_str(), v.pre_atoms); }
+  EXPECT_GT(rep.h_transfers, 0);   // the acid H moves to the epoxide O
+  // the Rmax raise compares the absolute Rmax with its limit and logs it
+  std::ifstream in(dir + "/ma.in");
+  std::stringstream ss;
+  ss << in.rdbuf();
+  EXPECT_NE(ss.str().find("$(3.5+v_rmax_add) < 4"), std::string::npos);
+  EXPECT_EQ(ss.str().find("${rmax_add} < 4"), std::string::npos);
+  EXPECT_NE(ss.str().find("Rmax now"), std::string::npos);
+  // with LAMMPS on the PATH (a build with REACTER and reset_mol_ids molmap): a dense liquid of the model compounds (the ENR
+  // epoxide unit and maleic acid) exported the same way runs 2000 steps with reactions and no atom lost (CAPS_TEST_LMP=0
+  // skips it)
+  const char* skip = std::getenv("CAPS_TEST_LMP");
+  if (!(skip && std::string(skip) == "0") && std::system("command -v lmp > /dev/null 2>&1") == 0) {
+    const System liq = packed({{"CC1(C)OC1C", 12}, {"OC(=O)/C=C\\C(=O)O", 6}}, 15, 7);
+    const auto dl = (std::filesystem::temp_directory_path() / "caps_br_liquid").string();
+    std::filesystem::remove_all(dl);
+    BondReactOptions lo;
+    lo.between_chains = true;
+    lo.mol_ids = "molmap";
+    lo.nevery = 20;
+    lo.steps = 2000;
+    lo.temperature = 400;
+    const auto lrep = write_bond_react(liq, parse_templates(builtin_template("enr_acid_ester")), uff, dl, "liq", lo);
+    check_bond_react_set(dl, "liq", lrep, 3.5);
+    const int rc = std::system(("cd \"" + dl + "\" && lmp -in liq.in > check.log 2>&1").c_str());
+    std::ifstream lg(dl + "/check.log");
+    std::stringstream ls;
+    ls << lg.rdbuf();
+    const std::string log = ls.str();
+    if (log.find("Unrecognized fix style 'bond/react'") != std::string::npos || (log.find("ERROR") != std::string::npos && log.find("molmap") != std::string::npos)) {
+      GTEST_LOG_(INFO) << "this LAMMPS lacks REACTER or reset_mol_ids molmap: not run";
+    } else {
+      EXPECT_EQ(rc, 0) << log.substr(log.size() > 2000 ? log.size() - 2000 : 0);
+      EXPECT_EQ(log.find("ERROR"), std::string::npos);
+      EXPECT_EQ(log.find("Bond atoms"), std::string::npos);
+      // at least one reaction: the sum of the f_rxns columns on the last thermo line
+      std::istringstream ll(log);
+      std::vector<std::string> head, last;
+      for (std::string l; std::getline(ll, l);) {
+        std::istringstream w(l);
+        std::vector<std::string> t;
+        for (std::string x; w >> x;) t.push_back(x);
+        if (!t.empty() && t[0] == "Step") head = t;
+        else if (!head.empty() && t.size() == head.size() && std::isdigit(static_cast<unsigned char>(t[0][0]))) last = t;
+      }
+      double reactions = 0;
+      for (size_t c = 0; c < head.size() && c < last.size(); ++c)
+        if (head[c].rfind("f_rxns[", 0) == 0) reactions += std::stod(last[c]);
+      EXPECT_GT(reactions, 0) << "no reaction in 2000 steps";
+    }
+    if (!std::getenv("CAPS_TEST_KEEP")) std::filesystem::remove_all(dl);
+  }
+  if (!std::getenv("CAPS_TEST_KEEP")) std::filesystem::remove_all(dir);
+}
+
+TEST(React, BondReactAnhydrideAlcoholAndEpoxide) {
+  System s = enr_chains(3, 6, 33);
+  PackReport pr;
+  s = insert_molecules(s, build_molecule("OCCCCO").system, 4, PackOptions{}, &pr);   // butanediol: PBS's hydroxyl ends
+  s = insert_molecules(s, build_molecule("O=C1OC(=O)C=C1").system, 6, PackOptions{}, &pr);
+  auto uff = [](const System& x) { return std::make_shared<const ForceField>(assign_uff(x)); };
+  const auto dir = (std::filesystem::temp_directory_path() / "caps_br_mah").string();
+  std::filesystem::remove_all(dir);
+  BondReactOptions bo;
+  bo.between_chains = true;
+  bo.survey_after = {0.25, 0.5, 0.8};
+  bo.survey_relax = false;
+  bo.survey_capture = 12;
+  bo.mol_ids = "molmap";
+  const auto t = parse_templates(builtin_template("anhydride_alcohol") + "\n" + builtin_template("enr_acid_ester"));
+  const auto rep = write_bond_react(s, t, uff, dir, "mah", bo);
+  check_bond_react_set(dir, "mah", rep, 3.5);
+  if (std::getenv("CAPS_TEST_VERBOSE")) { for (const auto& n : rep.notes) std::printf("note: %s\n", n.c_str()); for (const auto& v : rep.variants) std::printf("%s %s %d atoms\n", v.name.c_str(), v.step.c_str(), v.pre_atoms); }
+  std::filesystem::remove_all(dir);
 }

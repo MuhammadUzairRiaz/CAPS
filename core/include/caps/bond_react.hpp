@@ -36,6 +36,12 @@ struct BondReactOptions {
   int64_t steps = 100000;
   double timestep = 0;          // fs (0: the force field's own)
   double stabilization_xmax = 0.03;   // Å per step: nve/limit on the reacting atoms (stabilization yes)
+  // steps each reaction's atoms stay under nve/limit after it happens (react … stabilize_steps; REACTER's default is 60,
+  // too few for a hydrogen that moves to a new partner a few Å away)
+  int stabilize_steps = 200;
+  // a hydrogen that changes partner (an acid H onto an epoxide O): the reaction waits until it is within this distance of
+  // its new partner (a distance constraint in the map file; 0: none), so the new O–H bond is not formed stretched
+  double h_transfer_max = 3.5;
   uint64_t seed = 12345;
   EnergyOptions energy;
   LammpsStyle style;
@@ -81,6 +87,7 @@ struct BondReactReport {
   struct Frame { double conversion = 0; int reactions = 0, atoms = 0; };   // the virtual-cure copies surveyed
   std::vector<Frame> frames;
   std::vector<std::string> link_reactions;   // the reactions counted as links in the input (targets)
+  int h_transfers = 0;                       // hydrogen-transfer distance constraints written
 };
 
 // field: the force field of a structure (the user's assignment re-run on it); required. The files are written to

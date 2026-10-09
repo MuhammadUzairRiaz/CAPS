@@ -122,6 +122,41 @@ bool glob(const std::string& p, const std::string& s, size_t i = 0, size_t j = 0
   return j == s.size();
 }
 
+// LAMMPS's rule for a pre-reaction template: every atom reached from an initiator by a path that does not pass through an
+// edge atom (edge atoms themselves may be reached; the walk stops there), and every atom bonded to another template atom.
+// Atoms that break it are removed from the site (a hydrogen moved onto another molecule, an edge atom's other neighbours);
+// edge status follows the bonds of the structure the template is cut from. Returns the atoms removed.
+std::vector<uint32_t> prune_unreachable(Site& site, const std::vector<std::vector<uint32_t>>& nb, uint32_t init_a, uint32_t init_b) {
+  std::vector<uint32_t> removed;
+  for (;;) {
+    std::set<uint32_t> in(site.atoms.begin(), site.atoms.end());
+    auto edge = [&](uint32_t a) {
+      for (uint32_t w : nb[a])
+        if (!in.count(w)) return true;
+      return false;
+    };
+    std::set<uint32_t> seen;
+    std::vector<uint32_t> q;
+    for (uint32_t a : {init_a, init_b})
+      if (in.count(a) && seen.insert(a).second) q.push_back(a);
+    for (size_t h = 0; h < q.size(); ++h) {
+      if (edge(q[h]) && q[h] != init_a && q[h] != init_b) continue;
+      for (uint32_t w : nb[q[h]])
+        if (in.count(w) && seen.insert(w).second) q.push_back(w);
+    }
+    std::vector<uint32_t> keep, drop;
+    for (uint32_t a : site.atoms) {
+      bool bonded = site.atoms.size() == 1;
+      for (uint32_t w : nb[a]) bonded = bonded || in.count(w);
+      (seen.count(a) && bonded ? keep : drop).push_back(a);
+    }
+    if (drop.empty()) break;
+    removed.insert(removed.end(), drop.begin(), drop.end());
+    site.atoms = keep;   // edges change with the atoms gone: walk again
+  }
+  return removed;
+}
+
 }  // namespace
 
 BondReactReport write_bond_react(const System& s0, const std::vector<ReactionTemplate>& templates,
@@ -346,6 +381,7 @@ BondReactReport write_bond_react(const System& s0, const std::vector<ReactionTem
     bool link = false;
   };
   std::vector<Variant> variants;
+  int pruned_templates = 0, pruned_atoms = 0;
   for (size_t k = 0; k < templates.size(); ++k) {
     if (groups[k].empty()) {
       rep.notes.push_back("reaction " + templates[k].name + ": no reactive pair in the structure (nor after another reaction) within the survey distance — no template written");
@@ -424,15 +460,42 @@ BondReactReport write_bond_react(const System& s0, const std::vector<ReactionTem
           // takes the chain's molecule id at once
           std::set<uint32_t> whole;
           if (o.mol_ids == "molmap") {
-            std::set<int64_t> small;
-            for (uint32_t a : var.site.atoms) {
-              const int64_t org = S.origin[a];
-              if (org >= 0 && !poly.count(s.atoms[size_t(org)].mol)) small.insert(s.atoms[size_t(org)].mol);
-            }
-            for (size_t i = 0; i < sn; ++i)
-              if (S.origin[i] >= 0 && small.count(s.atoms[size_t(S.origin[i])].mol)) whole.insert(uint32_t(i));
+            // the small-molecule atoms the template reaches and every small-molecule atom bonded to them, by the bonds of
+            // the structure the template is cut from (not by original molecule id: a hydrogen an earlier step moved onto
+            // another molecule keeps its old id but is no longer part of the small molecule)
+            auto small_atom = [&](uint32_t i) { return S.origin[i] >= 0 && !poly.count(s.atoms[size_t(S.origin[i])].mol); };
+            std::vector<uint32_t> q;
+            for (uint32_t a : var.site.atoms)
+              if (small_atom(a) && whole.insert(a).second) q.push_back(a);
+            for (size_t h = 0; h < q.size(); ++h)
+              for (uint32_t w : S.nb[q[h]])
+                if (small_atom(w) && whole.insert(w).second) q.push_back(w);
           }
-          if (need > o.radius || !whole.empty()) var.site = cut(S.sys, S.nb, S.ff->atom_type, templates[k], var.site.match, int(k), need, whole.empty() ? nullptr : &whole);
+          // the atoms the reaction changes (pattern roles, and every atom whose type or charge changes): never dropped
+          std::set<uint32_t> keep;
+          for (int map : changed_maps(templates[k])) keep.insert(atom_of(templates[k], var.site.match, map));
+          for (size_t i = 0; i < sn; ++i)
+            if (var.post_of[i] >= 0 && (ffp->atom_type[size_t(var.post_of[i])] != S.ff->atom_type[i] || std::fabs(ffp->charge[size_t(var.post_of[i])] - S.ff->charge[i]) >= 1e-6))
+              keep.insert(uint32_t(i));
+          // cut, then LAMMPS's rule: every template atom reached from an initiator without passing through an edge atom
+          // (and bonded inside the template); atoms beyond an edge are dropped, and if a changing atom would be, the
+          // template grows by a bond and is cut again
+          const uint32_t ia = atom_of(templates[k], var.site.match, templates[k].init_a), ib = atom_of(templates[k], var.site.match, templates[k].init_b);
+          int radius = need;
+          for (int tries = 0;; ++tries) {
+            if (tries > 0 || need > o.radius || !whole.empty()) var.site = cut(S.sys, S.nb, S.ff->atom_type, templates[k], var.site.match, int(k), radius, whole.empty() ? nullptr : &whole);
+            const auto dropped = prune_unreachable(var.site, S.nb, ia, ib);
+            bool lost = false;
+            for (uint32_t a : dropped) lost = lost || keep.count(a);
+            if (!lost) {
+              if (!dropped.empty()) ++pruned_templates, pruned_atoms += int(dropped.size());
+              break;
+            }
+            if (tries >= 4)
+              throw ReactError("reaction " + templates[k].name + ": an atom the reaction changes cannot be linked to an initiator without passing an edge atom, even " +
+                               std::to_string(radius) + " bonds out — check the template's initiators");
+            ++radius;
+          }
         }
         rep.covered += int(by[v].first);
         srep.covered += int(by[v].first);
@@ -629,6 +692,24 @@ BondReactReport write_bond_react(const System& s0, const std::vector<ReactionTem
                       map_path = base + "_" + var.name + "_map.txt";
     write_mol(pre_path, false);
     write_mol(post_path, true);
+    // hydrogens that change partner: the reaction waits until each is within h_transfer_max of its new partner
+    std::vector<std::pair<int, int>> htransfer;
+    if (o.h_transfer_max > 0) {
+      const auto pnb = var.post.neighbours();
+      std::vector<int64_t> stage_of(var.post.atoms.size(), -1);
+      for (size_t i = 0; i < var.post_of.size(); ++i)
+        if (var.post_of[i] >= 0) stage_of[size_t(var.post_of[i])] = int64_t(i);
+      for (size_t k = 0; k < pre.size(); ++k) {
+        const uint32_t a = pre[k];
+        if (S.sys.atoms[a].element != 1 || var.post_of[a] < 0) continue;
+        std::set<int64_t> before(S.nb[a].begin(), S.nb[a].end()), after;
+        for (uint32_t w : pnb[size_t(var.post_of[a])]) after.insert(stage_of[w]);
+        if (before == after) continue;
+        for (int64_t w : after)
+          if (!before.count(w) && w >= 0 && id.count(uint32_t(w))) { htransfer.push_back({int(k + 1), id.at(uint32_t(w))}); break; }
+      }
+    }
+    rep.h_transfers += int(htransfer.size());
     {
       std::ofstream f(map_path);
       if (!f) throw std::runtime_error("cannot write " + map_path);
@@ -636,6 +717,7 @@ BondReactReport write_bond_react(const System& s0, const std::vector<ReactionTem
       f << edge.size() << " edgeIDs\n";
       f << pre.size() << " equivalences\n";
       if (!deleted.empty()) f << deleted.size() << " deleteIDs\n";
+      if (!htransfer.empty()) f << htransfer.size() << " constraints\n";
       f << "\nInitiatorIDs\n\n" << id.at(atom_of(t, var.site.match, t.init_a)) << "\n" << id.at(atom_of(t, var.site.match, t.init_b)) << "\n";
       if (!edge.empty()) {
         f << "\nEdgeIDs\n\n";
@@ -647,6 +729,15 @@ BondReactReport write_bond_react(const System& s0, const std::vector<ReactionTem
       }
       f << "\nEquivalences\n\n";
       for (size_t k = 0; k < pre.size(); ++k) f << k + 1 << " " << k + 1 << "\n";
+      if (!htransfer.empty()) {
+        // the moving hydrogen and its new partner (pre-template ids)
+        f << "\nConstraints\n\n";
+        char c[96];
+        for (const auto& [h, w] : htransfer) {
+          std::snprintf(c, sizeof c, "distance %d %d 0.0 %g\n", h, w, o.h_transfer_max);
+          f << c;
+        }
+      }
     }
     rep.files.push_back(pre_path);
     rep.files.push_back(post_path);
@@ -668,8 +759,8 @@ BondReactReport write_bond_react(const System& s0, const std::vector<ReactionTem
       std::snprintf(b, sizeof b, "%.4g", rmax);
       rm = b;
     }
-    std::snprintf(b, sizeof b, "  react %s all %d 0.0 %s %s_pre %s_post %s prob %.4g %llu%s", var.name.c_str(), o.nevery, rm.c_str(), var.name.c_str(),
-                  var.name.c_str(), fm.c_str(), prob, static_cast<unsigned long long>(o.seed + v), o.between_chains ? " molecule inter" : "");
+    std::snprintf(b, sizeof b, "  react %s all %d 0.0 %s %s_pre %s_post %s prob %.4g %llu%s stabilize_steps %d", var.name.c_str(), o.nevery, rm.c_str(), var.name.c_str(),
+                  var.name.c_str(), fm.c_str(), prob, static_cast<unsigned long long>(o.seed + v), o.between_chains ? " molecule inter" : "", std::max(1, o.stabilize_steps));
     react_lines.push_back(b);
   }
 
@@ -780,8 +871,19 @@ BondReactReport write_bond_react(const System& s0, const std::vector<ReactionTem
           const double r0 = o.rmax > 0 ? std::min(o.rmax, t.capture) : t.capture;
           if (o.rmax_limit > r0) cmds += " \"variable rmax_" + std::to_string(v + 1) + " equal $(ternary(" + num(r0) + "+v_rmax_add<" + num(o.rmax_limit) + "," + num(r0) + "+v_rmax_add," + num(o.rmax_limit) + "))\"";
         }
-        cmds += " \"print 'step $(step): no reaction for " + std::to_string(o.stall_chunks) + " chunks, Rmax raised by $(v_rmax_add) A' append crosslink_rmax.log\"";
-        out += "if \"${stall} >= " + std::to_string(o.stall_chunks) + " && ${rmax_add} < " + num(o.rmax_limit) + "\" then " + cmds + "\n";
+        // the condition and the log use the absolute Rmax (the smallest of the raised ones): raising stops at the limit
+        double rmin = 1e300;
+        std::string now;
+        for (size_t v = 0; v < variants.size(); ++v) {
+          const ReactionTemplate& t = templates[size_t(variants[v].site.reaction)];
+          const double r0 = o.rmax > 0 ? std::min(o.rmax, t.capture) : t.capture;
+          if (o.rmax_limit > r0) {
+            rmin = std::min(rmin, r0);
+            now += (now.empty() ? "" : ", ") + std::string("$(v_rmax_") + std::to_string(v + 1) + ":%.2f)";
+          }
+        }
+        cmds += " \"print 'step $(step): no reaction for " + std::to_string(o.stall_chunks) + " chunks, Rmax now " + now + " A (limit " + num(o.rmax_limit) + " A)' append crosslink_rmax.log\"";
+        out += "if \"${stall} >= " + std::to_string(o.stall_chunks) + " && $(" + num(rmin) + "+v_rmax_add) < " + num(o.rmax_limit) + "\" then " + cmds + "\n";
       }
       out += "label           xl_check\n";
       out += "if \"${xl} >= ${tgt}\" then \"jump SELF xl_hit\"\n";
@@ -809,6 +911,15 @@ BondReactReport write_bond_react(const System& s0, const std::vector<ReactionTem
   std::snprintf(b, sizeof b, "%zu templates for %zu reactions cover %d of %d candidate pairs (within the survey distance) in %s", variants.size(),
                 templates.size(), rep.covered, rep.candidates, stages.size() > 1 ? "the structure and its surveyed copies" : "this structure");
   rep.notes.insert(rep.notes.begin(), b);
+  if (pruned_atoms)
+    rep.notes.push_back(std::to_string(pruned_atoms) + " atoms beyond edge atoms (or bonded to nothing in their template) left out of " + std::to_string(pruned_templates) +
+                        " templates: LAMMPS needs every template atom linked to an initiator by a path that passes no edge atom");
+  if (rep.h_transfers) {
+    char hb[200];
+    std::snprintf(hb, sizeof hb, "%d hydrogen transfers constrained (distance H – new partner ≤ %.2f Å in the map files)", rep.h_transfers, o.h_transfer_max);
+    rep.notes.push_back(hb);
+  }
+  rep.notes.push_back("stabilize_steps " + std::to_string(std::max(1, o.stabilize_steps)) + " on every reaction (the reacting atoms stay under nve/limit that long after a reaction)");
   if (o.between_chains && o.mol_ids == "reset")
     rep.notes.push_back("molecule inter: fix bond/react resets molecule ids to the bonded pieces after each reaction (reset_mol_ids, its default), so "
                         "initiators must sit in pieces not yet joined — a crosslinker cannot close back on its own chain, but two chains already "
