@@ -302,12 +302,37 @@ struct Inverted {
   int ilo = -1, ihi = -1;          // inverted bins
 };
 
-Inverted invert_hist(const std::vector<double>& h, int kind, double lo, double bin, const CgBondedOptions& o, double kT) {
+// smoothing for a histogram of `count` samples: at least o.smooth bins, widened to Silverman's bandwidth
+// h = 0.9 sd n^(−1/5) (circular spread for dihedrals) so sparse data give smooth potentials and dense data stay sharp
+double smoothing_bins(const std::vector<double>& h, const std::vector<double>& xc, int kind, double bin, long count, const CgBondedOptions& o) {
+  if (o.smooth <= 0 || count < 2) return o.smooth;
+  double w = 0, m = 0, c = 0, sn = 0;
+  for (size_t i = 0; i < h.size(); ++i) {
+    w += h[i];
+    if (kind == 2) c += h[i] * std::cos(xc[i] * kPi / 180), sn += h[i] * std::sin(xc[i] * kPi / 180);
+    else m += h[i] * xc[i];
+  }
+  if (w <= 0) return o.smooth;
+  double sd;
+  if (kind == 2) {
+    const double R = std::min(1.0, std::hypot(c, sn) / w);
+    sd = R > 1e-9 ? std::sqrt(-2 * std::log(std::max(R, 1e-12))) * 180 / kPi : 103.9;   // uniform: 360/√12
+  } else {
+    m /= w;
+    double v = 0;
+    for (size_t i = 0; i < h.size(); ++i) v += h[i] * (xc[i] - m) * (xc[i] - m);
+    sd = std::sqrt(v / w);
+  }
+  const double hb = 0.9 * sd * std::pow(double(count), -0.2) / bin;
+  return std::max(o.smooth, std::min(hb, 8.0));
+}
+
+Inverted invert_hist(const std::vector<double>& h, int kind, double lo, double bin, const CgBondedOptions& o, double kT, long count = 0) {
   Inverted r;
   const size_t n = h.size();
   r.xc.resize(n);
   for (size_t i = 0; i < n; ++i) r.xc[i] = lo + (double(i) + 0.5) * bin;
-  const std::vector<double> s = gauss_smooth(h, o.smooth, kind == 2);
+  const std::vector<double> s = gauss_smooth(h, smoothing_bins(h, r.xc, kind, bin, count, o), kind == 2);
   r.P.assign(n, 0.0);
   for (size_t i = 0; i < n; ++i) {
     const double jac = kind == 0 ? r.xc[i] * r.xc[i] : kind == 1 ? std::sin(r.xc[i] * kPi / 180.0) : 1.0;
@@ -403,7 +428,7 @@ void table_periodic(CgBondedTable& T, const Inverted& v, const CgBondedOptions& 
 }
 
 double half_difference(const CgBondedHistogram& H, const CgBondedOptions& o, double kT, int ilo, int ihi) {
-  const Inverted a = invert_hist(H.half[0], H.kind, H.lo, H.bin, o, kT), b = invert_hist(H.half[1], H.kind, H.lo, H.bin, o, kT);
+  const Inverted a = invert_hist(H.half[0], H.kind, H.lo, H.bin, o, kT, H.count / 2), b = invert_hist(H.half[1], H.kind, H.lo, H.bin, o, kT, H.count / 2);
   if (a.ilo < 0 || b.ilo < 0) return kNaN;
   // compare where both halves are inverted, each shifted to its mean over that common range
   std::vector<std::pair<double, double>> pairs;
@@ -422,7 +447,7 @@ CgBondedTable make_table(const CgBondedHistogram& H, const CgBondedOptions& o, d
   T.kind = H.kind;
   T.key = H.key;
   T.count = H.count;
-  const Inverted v = invert_hist(H.h, H.kind, H.lo, H.bin, o, kT);
+  const Inverted v = invert_hist(H.h, H.kind, H.lo, H.bin, o, kT, H.count);
   T.xh = v.xc;
   T.P = v.P;
   T.Uinv = v.U;
@@ -488,7 +513,7 @@ CgBondedResult refine_bonded(const CgBondedResult& cur, const CgBondedAccumulato
       if (!T.sampled) continue;
       const CgBondedHistogram* H = find(T.kind, T.key);
       if (!H || H->count == 0) { r.notes.push_back(std::string("the CG run has no ") + kind_name(T.kind) + " " + T.key + ": kept"); continue; }
-      const Inverted c = invert_hist(H->h, T.kind, H->lo, H->bin, o, kT);
+      const Inverted c = invert_hist(H->h, T.kind, H->lo, H->bin, o, kT, H->count);
       if (c.P.size() != T.P.size()) throw std::invalid_argument("the CG run's histograms use other bins than the tables");
       // residual and the correction on the bins, then the table rebuilt from the corrected inverted potential
       double res = 0, norm_t = 0;
