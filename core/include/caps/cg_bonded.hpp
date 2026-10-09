@@ -59,7 +59,7 @@ struct CgBondedOptions {
   double dihedral_cap = 0;           // kcal/mol: the gap barrier's height above the sampled maximum (0: 2 k_B T)
   // tables
   double bond_table_lo = 0;          // Å (0: the sampled minimum − 2 Å, at least 0.5)
-  double bond_table_hi = 0;          // Å (0: the sampled maximum + 3 Å)
+  double bond_table_hi = 0;          // Å (0: the sampled maximum + 8 Å; the wall is far too high to reach, but LAMMPS stops on a bond past a table)
   double bond_table_dr = 0.01;       // Å
   double angle_table_dt = 0.5;       // degrees (0 … 180)
   double dihedral_table_dp = 1.0;    // degrees (−180 … 180)
