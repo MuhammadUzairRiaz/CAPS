@@ -64,6 +64,7 @@ add_library(caps_core STATIC
   src/vasp_set.cpp
   src/vasp_out.cpp
   src/dft_analysis.cpp
+  src/dft_commands.cpp
   src/sorption.cpp
   src/functionalize.cpp
   src/layers.cpp
