@@ -121,6 +121,7 @@ add_library(caps_core STATIC
   src/cg_nonbonded.cpp
   src/cg_build.cpp
   src/cg_analysis.cpp
+  src/cg_backmap.cpp
   src/kspace.cpp
   src/fortran_runtime.cpp
   fortran/caps_kspace.f90
