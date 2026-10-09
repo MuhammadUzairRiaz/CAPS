@@ -36,7 +36,7 @@ users can run long production simulations wherever they like. External
 engines are used in development only to cross-validate CAPS, never at runtime.
 
 Libraries linked at build time are allowed when their licence permits, for
-example RDKit (BSD), FFTW or pocketFFT, Eigen, and oneTBB. Launching another
+example FFTW or pocketFFT, Eigen, and oneTBB. Launching another
 program as a subprocess is not.
 
 The engines must be original implementations of published methods. They
@@ -71,8 +71,7 @@ parallel strategy, and validation tests.
 
 ### 1. CAPS Chem: chemistry and topology core
 - SMILES and SMARTS parsing, ring perception, aromaticity, bond orders, and
-  stereo. Use RDKit linked as a C++ library, or write a native implementation
-  if you justify it.
+  stereo, as CAPS's own implementation.
 - 3D embedding: distance geometry with ETKDG (Riniker and Landrum, J. Chem.
   Inf. Model. 2015).
 - Polymer graph model: repeat units, head and tail atoms, tacticity,
