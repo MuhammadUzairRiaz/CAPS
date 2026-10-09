@@ -185,7 +185,8 @@ public sealed partial class MainViewModel
         var name = TemplateTabs.FirstOrDefault() ?? "template";
         var path = System.IO.Path.Combine(TemplateFolder, name + ".txt");
         File.WriteAllText(path, _tplText);
-        // beside it: each reaction as an atom-mapped reaction SMARTS (RDKit and Daylight read it) and the editor's JSON
+        // beside it: each reaction as an atom-mapped reaction SMARTS (standard Daylight syntax, read by cheminformatics
+        // toolkits) and the editor's JSON
         if (_tplViews is { Count: > 0 } views)
         {
             var smarts = string.Join("\n", views.Select(v => $"{v!["smarts"]?.GetValue<string>()} {v["name"]?.GetValue<string>()}"));

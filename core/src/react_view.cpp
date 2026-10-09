@@ -173,7 +173,7 @@ std::string reaction_smarts(const ReactionTemplate& t) {
     for (auto it = post.begin(); it != post.end();) it = (it->first == m || it->second == m) ? post.erase(it) : std::next(it);
   cut_byproduct(t, post);
   // the product side: element and map; a deleted atom is absent there (a mapped reactant atom missing from the products
-  // is removed, as RDKit and Daylight read reaction SMARTS)
+  // is removed, as Daylight reaction SMARTS defines it)
   auto product = [&](int m) { return "[#" + std::to_string(by.at(m)->element) + ":" + std::to_string(m) + "]"; };
   // a formed bond whose two atoms keep their number of bonds in the pattern (a substitution: an H or a partner lost, this
   // bond gained) is single; other bonds stay '~' (CAPS perceives the orders after the reaction)

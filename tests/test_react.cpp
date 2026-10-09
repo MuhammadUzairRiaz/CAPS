@@ -349,8 +349,9 @@ TEST(React, PolysulfideCouplesToNaturalRubber) {
 }
 
 // Reaction SMARTS (design/boards/ReactionTemplate "Saved as atom-mapped reaction SMARTS"): the query atoms with their
-// constraints, products by map number, deleted atoms absent, substitution bonds single. RDKit (2026.03) parses these and,
-// run on ethane + ethane / propylene oxide + methylamine, gives butane and 1-(methylamino)propan-2-ol.
+// constraints, products by map number, deleted atoms absent, substitution bonds single. Checked with an external
+// reaction-SMARTS toolkit (2026): run on ethane + ethane / propylene oxide + methylamine, they give butane and
+// 1-(methylamino)propan-2-ol.
 TEST(React, TemplatesAsReactionSmarts) {
   const auto cc = parse_templates(builtin_template("cc_crosslink"));
   EXPECT_EQ(reaction_smarts(cc[0]), "[#6;X4;H2;A:1]~[#1:3].[#6;X4;H2;A:2]~[#1:4]>>[#6:1]-[#6:2].[#1:3]-[#1:4]");
