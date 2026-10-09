@@ -87,8 +87,8 @@ std::filesystem::path executable_dir() {
   uint32_t size = sizeof buf;
   if (_NSGetExecutablePath(buf, &size) == 0) p = buf;
 #else
-  std::error_code ec;
-  p = fs::read_symlink("/proc/self/exe", ec).string();
+  std::error_code link_ec;
+  p = fs::read_symlink("/proc/self/exe", link_ec).string();
 #endif
   if (p.empty()) return {};
   std::error_code ec;
