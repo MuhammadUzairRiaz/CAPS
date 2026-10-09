@@ -878,6 +878,8 @@ void cgfit_nonbonded(const std::string& mode, const Json& a, const std::vector<s
     write_cg_decks(dir, int(N(a, "exclude", 3)), fj.num("temperature", 300), N(a, "dt", 10), int64_t(N(a, "steps", 500000)), N(a, "t_hi", 500), N(a, "t_lo", 150), N(a, "t_step", 25), deckfiles);
     for (const auto& f : deckfiles) files.push_back(f);
     r["s_sigma"] = st.s_sigma, r["s_eps"] = st.s_eps, r["density_done"] = st.density_done, r["tg_done"] = st.tg_done;
+    provenance((fs::path(dir) / "pair.in").string(), "cg.calibrate", "σ and ε scaled to the target density and T_g", {{"s_sigma", std::to_string(st.s_sigma)}, {"s_eps", std::to_string(st.s_eps)},
+               {"target density", std::to_string(rho_t)}, {"target T_g", std::to_string(tg_t)}}, {}, {"hsu2014"});
     std::snprintf(b, sizeof b, "next: run %s/in.cg_run with -var ENS npt (density) and in.cg_tg (T_g) using -var PAIR %s, then report them with --s-sigma %.4f --s-eps %.4f\n",
                   dir.c_str(), dir.c_str(), st.s_sigma, st.s_eps);
     t << b;

@@ -2813,7 +2813,9 @@
     ]
    ],
    "when": "caps cgfit fit, tg, calibrate (in.cg_run with ENS npt for the density, in.cg_tg for the cooling scan). Energy renormalisation (ε as a function of T) is not done.",
-   "cites": [],
+   "cites": [
+    "hsu2014"
+   ],
    "source": "core/src/cg_nonbonded.cpp",
    "tested": "CgNonbonded.FitsRecoverKnownParameters, CgNonbonded.CalibrationSteps",
    "deviation": "",
@@ -2977,7 +2979,9 @@
     ]
    ],
    "when": "caps cgdyn (a CG run, or a mapped all-atom trajectory), caps cgdyn timemap AA.csv CG.csv.",
-   "cites": [],
+   "cites": [
+    "salerno2016"
+   ],
    "source": "core/src/cg_analysis.cpp",
    "tested": "CgAnalysis.OrientationAndDynamics",
    "deviation": "",
