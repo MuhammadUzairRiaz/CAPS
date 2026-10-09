@@ -642,6 +642,58 @@ double slurm_duration_seconds(const std::string& s) {
   return days * 86400 + secs;
 }
 
+// ------------------------------------------------------------------------------------------------- scaling
+std::vector<int> scaling_threads(int cores) {
+  std::set<int> t;
+  const int top = cores > 0 ? cores : 32;
+  for (int p = 1; p < top; p *= 2) t.insert(p);
+  if (cores > 0) t.insert(std::max(1, cores / 2)), t.insert(cores);
+  else t.insert(32);
+  return {t.begin(), t.end()};
+}
+
+Json scaling_table(const std::vector<Json>& bench) {
+  std::vector<std::pair<double, double>> rows;   // threads, ns/day
+  std::string node, commit;
+  for (const auto& b : bench) {
+    if (!b.is_object() || !b.has("threads") || !b.has("ns_per_day")) continue;
+    rows.push_back({b["threads"].number(), b["ns_per_day"].number()});
+    if (node.empty()) node = str_or(b, "node", "");
+    if (commit.empty()) commit = str_or(b, "commit", "");
+  }
+  std::sort(rows.begin(), rows.end());
+  Json t = Json::object(), arr = Json::array();
+  t["node"] = node, t["commit"] = commit;
+  if (!rows.empty()) {
+    const double t0 = rows[0].first, r0 = rows[0].second;
+    double best = 0;
+    int best_threads = 0;
+    for (const auto& [th, nd] : rows) {
+      Json r = Json::object();
+      r["threads"] = th, r["ns_per_day"] = nd;
+      const double speedup = r0 > 0 ? nd / r0 : 0, eff = th > 0 && t0 > 0 ? speedup / (th / t0) : 0;
+      r["speedup"] = speedup, r["efficiency"] = eff;
+      arr.push_back(r);
+      if (eff >= 0.7 && nd > best) best = nd, best_threads = int(th);   // the fastest that still uses its cores well
+    }
+    if (best_threads > 0) t["suggested_threads"] = double(best_threads);
+  }
+  t["rows"] = arr;
+  return t;
+}
+
+std::string scaling_text(const Json& t) {
+  std::string s = "threads   ns/day   speedup  efficiency\n";
+  char b[128];
+  for (const auto& r : t["rows"].items()) {
+    std::snprintf(b, sizeof b, "%7.0f %8.3f %9.2f %10.0f %%\n", r["threads"].number(), r["ns_per_day"].number(), r["speedup"].number(), 100 * r["efficiency"].number());
+    s += b;
+  }
+  if (t.has("suggested_threads"))
+    s += "suggested: " + std::to_string(int(t["suggested_threads"].number())) + " threads (the fastest at 70 % parallel efficiency or more)\n";
+  return s;
+}
+
 // ------------------------------------------------------------------------------------------------- poll
 std::string job_live_dir(const std::string& dir, const Json& st) {
   const std::string state = str_or(st, "state", "");

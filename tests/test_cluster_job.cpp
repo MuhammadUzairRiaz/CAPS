@@ -259,6 +259,26 @@ TEST(ClusterJob, ChainedCommandsAndFolderInputs) {
   EXPECT_TRUE(bash_ok(fs::path(f.dir) / "cmd.sh"));
 }
 
+TEST(ClusterJob, ScalingThreadsAndTable) {
+  EXPECT_EQ(scaling_threads(104), (std::vector<int>{1, 2, 4, 8, 16, 32, 52, 64, 104}));
+  EXPECT_EQ(scaling_threads(8), (std::vector<int>{1, 2, 4, 8}));
+  EXPECT_EQ(scaling_threads(0).back(), 32);
+  std::vector<Json> b;
+  for (auto [t, nd] : std::vector<std::pair<double, double>>{{8, 7.2}, {1, 1.0}, {32, 16.0}, {16, 12.0}}) {
+    Json j = Json::object();
+    j["threads"] = t, j["ns_per_day"] = nd, j["node"] = std::string("n1");
+    b.push_back(j);
+  }
+  const Json t = scaling_table(b);
+  ASSERT_EQ(t["rows"].items().size(), 4u);
+  EXPECT_DOUBLE_EQ(t["rows"][0]["threads"].number(), 1);   // sorted
+  EXPECT_DOUBLE_EQ(t["rows"][1]["speedup"].number(), 7.2);
+  EXPECT_DOUBLE_EQ(t["rows"][1]["efficiency"].number(), 0.9);
+  EXPECT_DOUBLE_EQ(t["rows"][3]["efficiency"].number(), 0.5);
+  EXPECT_DOUBLE_EQ(t["suggested_threads"].number(), 16);   // 12 ns/day at 75 %; 32 threads only at 50 %
+  EXPECT_NE(scaling_text(t).find("suggested: 16 threads"), std::string::npos);
+}
+
 TEST(ClusterJob, TitlesAreSafeFolderNames) {
   EXPECT_EQ(sanitize_title("PBS DP-25/40"), "PBS_DP-25_40");
   EXPECT_EQ(sanitize_title("../../etc"), "_.._etc");

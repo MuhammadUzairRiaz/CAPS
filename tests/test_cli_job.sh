@@ -59,4 +59,12 @@ wait_state "$HOME/CAPS/limit/md-2" finished
 [ "$(tail -n 1 "$HOME/CAPS/limit/md-2/out/thermo.csv" | cut -d, -f1)" = 4000 ] || fail "the resumed run did not reach step 4000"
 [ "$(grep -c '^step' "$HOME/CAPS/limit/md-2/out/thermo.csv")" = 1 ] || fail "the thermo log was not continued"
 grep -q '"resumed_by"' "$L/caps-job.json" || fail "resumed_by"
+# 6 the thread-scaling check: one array task per thread count, then the table
+"$C" job profile --set "node_cores=2" > /dev/null
+"$C" job scaling --input "$T/cell.data" --threads 1,full --steps 300 --submit > "$T/scaling.txt" || fail "job scaling"
+A=$(head -n 1 "$T/scaling.txt")
+for d in $(cat "$A/tasks.txt"); do wait_state "$d" finished; done
+"$C" job collect-bench "$A" > "$T/bench.txt" || fail "collect-bench"
+grep -q "threads   ns/day" "$T/bench.txt" && [ "$(grep -cE '^ +[0-9]+ ' "$T/bench.txt")" = 2 ] || { cat "$T/bench.txt"; fail "the scaling table"; }
+[ -s "$A/scaling.json" ] || fail "scaling.json"
 echo "caps job on the fake cluster: ok"
