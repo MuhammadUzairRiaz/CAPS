@@ -5,6 +5,7 @@
 #include <cctype>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <limits>
@@ -14,6 +15,7 @@
 #include <stdexcept>
 
 #include "caps/bundle.hpp"
+#include "caps/cg_analysis.hpp"
 #include "caps/cg_bonded.hpp"
 #include "caps/cg_build.hpp"
 #include "caps/cg_nonbonded.hpp"
@@ -141,6 +143,48 @@ const std::vector<Cmd>& table() {
         {"o", "melt", "the output folder"}},
        {"caps cgbuild --units BS=B+S,BA=B+A --composition BS:0.8,BA:0.2 --dp 400 --chains 200 --density 1.25 --bonded bonded --maps cg/PBSA.map.json --types cg/types.json -o melt_PBSA_400",
         "caps cgbuild --units BA=B+A,BT=B+T --composition BA:0.56,BT:0.44 --lengths schulz-zimm --pdi 2 --dp 200 --chains 300 --density 1.26 --bonded bonded --maps cg/PBAT.map.json -o melt cg/PBAT.map.json cg/PBAT.cg.lammpstrj"}},
+      {"ppa", "caps ppa MAP FRAMES [PPA_DUMP] [MAP FRAMES … for more chain lengths] [--method caps|z1|lammps] -o DIR",
+       "Entanglements of coarse-grained melts: primitive paths by CAPS's own PPA (ends held, intra-chain pairs off), by a LAMMPS "
+       "PPA (--method lammps writes in.cg_ppa; give its dump after the frames to read it back) or by Z1+ (config.Z1 written, Z1+ run "
+       "when found — $CAPS_Z1 or --z1 — and its shortest paths read); N_e by the classical and modified S-coil and S-kink estimators "
+       "(Hoy, Foteinopoulou & Kröger 2009, Eqs. 4–7) per system, and by M-kink (13) and M-coil (15) over several chain lengths; "
+       "M_e = N_e × the mean bead mass, Z = N / N_e, the tube step a_pp.",
+       {{"method", "caps", "caps (CAPS's PPA), z1 (Z1+: kinks), both, or lammps (write in.cg_ppa for large systems)"},
+        {"frame", "last", "which frame of each system: last, or a number (1-based)"},
+        {"sigma", "0", "PPA bead diameter (Å; 0: the mean bond length / 0.97, as Kremer–Grest)"},
+        {"z1", "", "the Z1+ script (default $CAPS_Z1, else Z1+ on the PATH)"},
+        {"max_steps", "200000", "CAPS's PPA: minimisation steps at most (said when not converged)"},
+        {"o", "ppa", "the output folder"}},
+       {"caps ppa cg/DP100.map.json eq/DP100.lammpstrj cg/DP200.map.json eq/DP200.lammpstrj --method both -o ppa"}},
+      {"mech", "caps mech decks --rates 1e-6,1e-7 --mode both -o tension  |  caps mech analyze STRESS_STRAIN.dat [MAP DUMP] -o DIR",
+       "Tension of coarse-grained melts. decks: LAMMPS inputs per mode (stress: lateral axes at P; volume: constant volume) and rate "
+       "(1/fs), printing σ = −(P_zz − (P_xx+P_yy)/2) and its bond, angle, dihedral, pair and kinetic parts at even strain steps, with "
+       "frames for the analysis, and run_tension.sh. analyze: modulus (0 → fit strain), yield, softening, the strain-hardening "
+       "modulus G_R from σ against λ² − 1/λ (Hoy & Robbins 2006), the stress parts at the end; with the map and dump also ⟨P₂⟩(ε) of "
+       "the bonds, the end-to-end anisotropy, the empty grid share (probe radius) and, with --z1, Z(ε).",
+       {{"rates", "1e-6,1e-7", "decks: engineering strain rates, 1/fs (1e-6 /fs = 1e9 /s in CG time; map to AA time with cgdyn timemap)"},
+        {"mode", "both", "decks: stress, volume or both"},
+        {"max_strain", "3", "decks: final engineering strain"},
+        {"T", "300", "decks: temperature (K)"},
+        {"P", "1", "decks: lateral pressure in stress mode (atm)"},
+        {"dt", "10", "decks: time step (fs)"},
+        {"frames", "60", "decks: dumps at even strain steps"},
+        {"fit_strain", "0.02", "analyze: modulus fit range"},
+        {"hardening_from", "", "analyze: strain where the G_R fit starts (default: the softening minimum)"},
+        {"probe", "0", "analyze: probe radius for the empty share (Å; 0: skip)"},
+        {"z1", "", "analyze: the Z1+ script for Z(ε) on the frames"},
+        {"o", "tension", "the output folder"}},
+       {"caps mech decks --rates 1e-6,1e-7,1e-8 --mode both --max-strain 3 -o tension", "caps mech analyze tension/stress_1e-07.stress_strain.dat melt/melt.map.json tension/stress_1e-07.lammpstrj --probe 2.5 -o tension/analysis"}},
+      {"cgdyn", "caps cgdyn MAP DUMP [--dt 10] -o DIR  |  caps cgdyn timemap AA.csv CG.csv",
+       "Chain dynamics from a CG (or mapped AA) trajectory: g₁ of the inner beads, g₂ about the chain's centre of mass, g₃ of the "
+       "centres of mass, the bond and end-to-end autocorrelations, over all time origins at logarithmic lags; D from g₃, τ_R where "
+       "the end-to-end correlation falls to 1/e, τ_e where g₁'s exponent falls below 3/8. timemap: the factor s with t_AA = s t_CG "
+       "from two g₁ curves (the dynamics.csv files of the AA mapped run and the CG run of the same system).",
+       {{"dt", "", "fs per timestep of the dump (the times are timestep × dt); required"},
+        {"stride", "1", "every n-th frame"},
+        {"o", "dynamics", "the output folder"}},
+       {"caps cgdyn cg/DP25.map.json aa_mapped/DP25.cg.lammpstrj --dt 1 -o dyn_aa", "caps cgdyn cg/DP25.map.json cgrun/DP25.lammpstrj --dt 10 -o dyn_cg",
+        "caps cgdyn timemap dyn_aa/dynamics.csv dyn_cg/dynamics.csv"}},
   };
   return t;
 }
@@ -1178,6 +1222,267 @@ Json cg_run(const std::string& c, const Json& a, const std::string& data_dir) {
                 {"lengths", o.lengths + (o.lengths == "monodisperse" ? "" : " Đ " + std::to_string(o.pdi))}, {"density", std::to_string(o.density)}},
                {{"bonded.json", sha_of((fs::path(S(a, "bonded")) / "bonded.json").string())}}, {"auhl2003"},
                {{"start", "random walks with the bonded distributions, overlapping: push off before use"}});
+  }
+  if (c == "ppa") {
+    const auto sys = cg_systems(in, 0);
+    if (sys.empty()) throw std::invalid_argument("ppa: give each system's map.json and its frames");
+    const std::string dir = S(a, "o", "ppa");
+    fs::create_directories(dir);
+    const std::string method = S(a, "method", "caps");
+    std::string z1 = S(a, "z1", std::getenv("CAPS_Z1") ? std::getenv("CAPS_Z1") : "");
+    std::ostringstream t;
+    char b[512];
+    std::vector<CgEntanglement> sets;
+    std::vector<double> internal;
+    double l0sq = 0, mass_per_bead = 0;
+    Json rows = Json::array();
+    for (const auto& x : sys) {
+      const std::string stem = stem_of_map(x.map);
+      // the frame: the last of the frames (or the one asked for); a PPA dump given after the frames is read back
+      std::vector<std::string> frames = x.frames;
+      std::string ppa_dump;
+      if (frames.size() >= 2 && method != "lammps") { ppa_dump = frames.back(); frames.pop_back(); }
+      CgSysIn y = x;
+      y.frames = frames;
+      std::vector<Vec3> pos;
+      Cell cell;
+      size_t want = 0, k = 0;
+      const std::string fr = S(a, "frame", "last");
+      if (fr != "last") want = size_t(std::max(1.0, N(a, "frame", 1)));
+      cg_frames(y, 1, [&](const std::vector<Vec3>& q, const Cell& c2) { ++k; if (fr == "last" || k == want) pos = q, cell = c2; });
+      if (pos.empty()) throw std::invalid_argument(stem + ": frame " + fr + " not found");
+      // bond statistics for M-coil and the mean bead mass
+      double bsum = 0;
+      long bn = 0;
+      for (const auto& [i, j] : x.t.bonds) { Vec3 d = pos[size_t(j)] - pos[size_t(i)]; if (cell.valid()) d = cell.minimum_image(d); bsum += dot(d, d), ++bn; }
+      if (bn) l0sq = bsum / double(bn);
+      double ms = 0;
+      for (const auto& bd : x.mj["beads"].items()) ms += bd.num("mass", 0);
+      mass_per_bead = ms / double(std::max<size_t>(1, x.t.beads()));
+      CgChainPaths paths;
+      std::string how;
+      if (method == "lammps") {
+        double sg = N(a, "sigma", 0);
+        if (sg <= 0) sg = std::sqrt(l0sq) / 0.97;
+        const std::string ends = (fs::path(dir) / (stem + ".ends.in")).string();
+        write_text(ends, ppa_ends(x.t));
+        write_text((fs::path(dir) / "in.cg_ppa").string(), ppa_deck(x.t, sg, fs::path(ends).filename().string()));
+        files.push_back(ends), files.push_back((fs::path(dir) / "in.cg_ppa").string());
+        t << stem << ": LAMMPS PPA deck written (in.cg_ppa with " << fs::path(ends).filename().string() << "); run it on the frame, then: caps ppa " << x.map << " FRAME ppa.lammpstrj\n";
+        continue;
+      }
+      if (!ppa_dump.empty()) {
+        std::vector<Vec3> after;
+        for_each_dump_frame(ppa_dump, x.t.beads(), [&](size_t, int64_t, const std::vector<Vec3>& q, const Cell&, bool) { after = q; return true; });
+        paths = paths_from_positions(x.t, pos, after, cell);
+        how = "the PPA dump " + fs::path(ppa_dump).filename().string();
+      } else if (method == "caps" || method == "both") {
+        paths = caps_ppa(x.t, pos, cell, N(a, "sigma", 0), int(N(a, "max_steps", 200000)));
+        how = "CAPS's PPA, σ " + std::to_string(paths.sigma).substr(0, 5) + " Å, " + std::to_string(paths.steps) + " steps" + (paths.converged ? "" : ", NOT CONVERGED — raise --max-steps");
+      }
+      if (method == "z1" || method == "both") {
+        const std::string cfg = (fs::path(dir) / (stem + ".config.Z1")).string();
+        write_z1_config(x.t, pos, cell, cfg);
+        files.push_back(cfg);
+        if (z1.empty()) {
+          for (const char* d : {"/usr/local/bin/Z1+", "/opt/homebrew/bin/Z1+"}) if (fs::exists(d)) z1 = d;
+        }
+        if (!z1.empty() && fs::exists(z1)) {
+          const fs::path run = fs::path(dir) / (stem + "_z1");
+          fs::create_directories(run);
+          fs::copy_file(cfg, run / "config.Z1", fs::copy_options::overwrite_existing);
+          const std::string cmd = "cd \"" + run.string() + "\" && perl \"" + z1 + "\" config.Z1 > z1.log 2>&1";
+          const int rc = std::system(cmd.c_str());
+          const fs::path sp = run / "Z1+SP.dat";
+          if (rc == 0 && fs::exists(sp)) {
+            const CgChainPaths zp = read_z1_paths(sp.string());
+            if (paths.lpp.empty()) { paths = zp; for (size_t c2 = 0; c2 < x.t.chains.size() && c2 < paths.beads.size(); ++c2) paths.beads[c2] = int(x.t.chains[c2].size()); paths.r2.clear(); for (const auto& ch : x.t.chains) { (void)ch; } }
+            paths.z = zp.z;
+            if (paths.r2.size() != paths.lpp.size()) { const auto pp = paths_from_positions(x.t, pos, pos, cell); paths.r2 = pp.r2; paths.beads = pp.beads; }
+            how += std::string(how.empty() ? "" : " + ") + "Z1+ (kinks)";
+          } else t << "  Z1+ did not finish (see " << (run / "z1.log").string() << ")\n";
+        } else t << "  Z1+ not found (set CAPS_Z1 or --z1): config.Z1 written for it — " << cfg << "\n";
+      }
+      if (paths.lpp.empty()) continue;
+      const CgEntanglement e = entanglement_of(paths);
+      sets.push_back(e);
+      // C(x) from the longest chains measured
+      if (internal.empty() || x.t.chains.front().size() > internal.size()) internal = cg_internal_distances(x.t, {pos}, {cell});
+      std::snprintf(b, sizeof b, "%s (%s): %d chains × %.0f beads · ⟨R²⟩ %.0f Å² · ⟨L_pp⟩ %.1f Å · a_pp %.1f Å%s\n", stem.c_str(), how.c_str(), e.chains, e.N, e.r2, e.lpp, e.a_pp,
+                    e.z >= 0 ? (" · ⟨Z⟩ " + std::to_string(e.z).substr(0, 5)).c_str() : "");
+      t << b;
+      auto me = [&](double ne) { return ne > 0 ? ne * mass_per_bead : 0.0; };
+      std::snprintf(b, sizeof b, "  N_e (beads): S-coil %.1f · mod S-coil %.1f", e.ne_s_coil, e.ne_mod_s_coil);
+      t << b;
+      if (e.z >= 0) { std::snprintf(b, sizeof b, " · S-kink %.1f · mod S-kink %.1f", e.ne_s_kink, e.ne_mod_s_kink); t << b; }
+      std::snprintf(b, sizeof b, "\n  M_e (g/mol, bead mass %.1f): S-coil %.0f · mod S-coil %.0f%s · Z = N/N_e %.2f (mod S-coil)\n", mass_per_bead, me(e.ne_s_coil), me(e.ne_mod_s_coil),
+                    e.z >= 0 ? (" · mod S-kink " + std::to_string(int(std::lround(me(e.ne_mod_s_kink))))).c_str() : "", e.ne_mod_s_coil > 0 ? e.N / e.ne_mod_s_coil : 0.0);
+      t << b;
+      Json row = Json::object();
+      row["system"] = stem, row["N"] = e.N, row["chains"] = e.chains, row["r2"] = e.r2, row["lpp"] = e.lpp, row["lpp2"] = e.lpp2, row["a_pp"] = e.a_pp;
+      row["z"] = e.z, row["ne_s_coil"] = e.ne_s_coil, row["ne_mod_s_coil"] = e.ne_mod_s_coil, row["ne_s_kink"] = e.ne_s_kink, row["ne_mod_s_kink"] = e.ne_mod_s_kink;
+      row["bead_mass"] = mass_per_bead;
+      rows.push_back(row);
+    }
+    if (sets.size() >= 2) {
+      const CgMultiEstimate m = multi_estimators(sets, internal, l0sq);
+      std::snprintf(b, sizeof b, "over %zu chain lengths: M-kink N_e %s · M-coil N_e %s\n", sets.size(), m.ne_m_kink > 0 ? std::to_string(m.ne_m_kink).substr(0, 6).c_str() : "—",
+                    m.ne_m_coil > 0 ? std::to_string(m.ne_m_coil).substr(0, 6).c_str() : "—");
+      t << b;
+      if (!m.note.empty()) t << "  note: " << m.note << "\n";
+      r["ne_m_kink"] = m.ne_m_kink, r["ne_m_coil"] = m.ne_m_coil;
+    } else if (!sets.empty()) t << "M-kink and M-coil need two chain lengths or more (give several systems)\n";
+    r["systems"] = rows;
+    write_text((fs::path(dir) / "entanglement.json").string(), r.dump(1) + "\n");
+    files.push_back((fs::path(dir) / "entanglement.json").string());
+    {
+      KeyValues ins;
+      for (const auto& x : sys) { ins.push_back({fs::path(x.map).filename().string(), sha_of(x.map)}); for (const auto& f2 : x.frames) ins.push_back({fs::path(f2).filename().string(), sha_of(f2)}); }
+      std::vector<std::string> cites = {"everaers2004", "hoy2009"};
+      if (method == "z1" || method == "both") cites.push_back("kroger2005"), cites.push_back("kroger2022");
+      provenance((fs::path(dir) / "entanglement.json").string(), "cg.ppa", "entanglements of " + std::to_string(sys.size()) + " systems (" + method + ")",
+                 {{"method", method}, {"frame", S(a, "frame", "last")}, {"sigma", S(a, "sigma", "0")}}, ins, cites);
+    }
+    t << r.text("command") << "\n";
+    r["text"] = t.str();
+  }
+  if (c == "mech") {
+    if (in.empty()) throw std::invalid_argument("mech decks | analyze");
+    const std::string mode = in[0];
+    const std::string dir = S(a, "o", "tension");
+    fs::create_directories(dir);
+    std::ostringstream t;
+    char b[512];
+    if (mode == "decks") {
+      std::vector<std::string> modes;
+      const std::string m = S(a, "mode", "both");
+      if (m == "both") modes = {"stress", "volume"}; else modes = {m};
+      auto rates = L(a, "rates");
+      if (rates.empty()) rates = {"1e-6", "1e-7"};
+      std::ofstream sh((fs::path(dir) / "run_tension.sh").string());
+      sh << "#!/bin/bash\n# CAPS tension runs: every mode and rate (LAMMPS: $CAPS_LMP, default lmp); DATA, BONDED and PAIR as below\nset -euo pipefail\nLMP=${CAPS_LMP:-lmp}\n"
+            "DATA=${DATA:-equil.data}\nBONDED=${BONDED:-../bonded}\nPAIR=${PAIR:-../lj}\n";
+      for (const auto& md : modes)
+        for (const auto& rs : rates) {
+          CgTensionDeck d;
+          d.mode = md, d.rate = std::stod(rs), d.max_strain = N(a, "max_strain", 3), d.T = N(a, "T", 300), d.P = N(a, "P", 1), d.dt = N(a, "dt", 10), d.frames = int(N(a, "frames", 60));
+          const std::string name = "in.cg_tensile_" + md + "_" + rs;
+          write_text((fs::path(dir) / name).string(), tension_deck(d));
+          files.push_back((fs::path(dir) / name).string());
+          sh << "\"$LMP\" -in " << name << " -var DATA \"$DATA\" -var BONDED \"$BONDED\" -var PAIR \"$PAIR\" -var OUT " << md << "_" << rs << "\n";
+          std::snprintf(b, sizeof b, "%s mode, rate %s /fs: %.3g steps of %g fs to strain %g\n", md.c_str(), rs.c_str(), d.max_strain / (d.rate * d.dt), d.dt, d.max_strain);
+          t << b;
+        }
+      files.push_back((fs::path(dir) / "run_tension.sh").string());
+      provenance((fs::path(dir) / "run_tension.sh").string(), "cg.tension_decks", "uniaxial tension decks", {{"modes", S(a, "mode", "both")}, {"rates (1/fs)", S(a, "rates", "1e-6,1e-7")},
+                 {"max strain", S(a, "max_strain", "3")}}, {}, {"hoyrobbins2006"});
+      t << "then: caps mech analyze " << dir << "/<mode>_<rate>.stress_strain.dat [MAP <mode>_<rate>.lammpstrj]\n";
+    } else if (mode == "analyze") {
+      if (in.size() < 2) throw std::invalid_argument("mech analyze: give the stress_strain.dat (and the map and dump for orientations)");
+      const CgStressStrain cs = read_stress_strain(in[1]);
+      const CgTensionAnalysis an = analyse_tension(cs, N(a, "fit_strain", 0.02), a.has("hardening_from") ? N(a, "hardening_from", -1) : -1);
+      std::snprintf(b, sizeof b, "modulus %.1f MPa (0–%.0f %%) · yield %.1f MPa at %.3f · softening %.1f MPa (minimum at %.3f) · G_R %.2f MPa (σ vs λ² − 1/λ from strain %.2f, rms %.2f MPa)\n",
+                    an.modulus, 100 * N(a, "fit_strain", 0.02), an.yield_stress, an.yield_strain, an.softening, an.min_strain, an.hardening_modulus, an.hardening_from, an.hardening_rms);
+      t << b;
+      if (!an.note.empty()) t << "  note: " << an.note << "\n";
+      const size_t e = cs.strain.size() - 1;
+      if (std::isfinite(cs.bond[e])) {
+        std::snprintf(b, sizeof b, "  at strain %.2f: σ %.1f MPa = bond %.1f + angle %.1f + dihedral %.1f + pair %.1f + kinetic %.1f\n", cs.strain[e], cs.stress[e], cs.bond[e], cs.angle[e],
+                      cs.dihedral[e], cs.pair[e], cs.kinetic[e]);
+        t << b;
+      }
+      r["modulus"] = an.modulus, r["yield_stress"] = an.yield_stress, r["yield_strain"] = an.yield_strain, r["softening"] = an.softening, r["hardening_modulus"] = an.hardening_modulus;
+      const auto sys = cg_systems(in, 2);
+      if (!sys.empty()) {
+        const auto& x = sys.front();
+        std::ofstream f((fs::path(dir) / "orientation.csv").string());
+        f << "frame,strain,P2,Ree_anisotropy,void_fraction,Z\n";
+        const double probe = N(a, "probe", 0);
+        double lz0 = -1;
+        size_t k = 0;
+        std::string z1 = S(a, "z1", std::getenv("CAPS_Z1") ? std::getenv("CAPS_Z1") : "");
+        t << "  frame strain ⟨P₂⟩ anisotropy" << (probe > 0 ? " empty" : "") << "\n";
+        cg_frames(x, size_t(std::max(1.0, N(a, "stride", 1))), [&](const std::vector<Vec3>& q, const Cell& c2) {
+          ++k;
+          if (lz0 < 0) lz0 = c2.c[2];
+          CgOrientation o = orientation_of(x.t, q, c2, probe);
+          o.strain = (c2.c[2] - lz0) / lz0;
+          double z = -1;
+          if (!z1.empty() && fs::exists(z1)) {
+            const fs::path run = fs::path(dir) / ("z1_" + std::to_string(k));
+            fs::create_directories(run);
+            write_z1_config(x.t, q, c2, (run / "config.Z1").string());
+            if (std::system(("cd \"" + run.string() + "\" && perl \"" + z1 + "\" config.Z1 > z1.log 2>&1").c_str()) == 0 && fs::exists(run / "Z1+SP.dat"))
+              z = entanglement_of(read_z1_paths((run / "Z1+SP.dat").string())).z;
+          }
+          f << k << "," << o.strain << "," << o.p2 << "," << o.ree_anisotropy << "," << o.void_fraction << "," << z << "\n";
+          if (k % 10 == 1) {
+            std::snprintf(b, sizeof b, "  %5zu %6.3f %6.3f %8.2f%s\n", k, o.strain, o.p2, o.ree_anisotropy, probe > 0 ? (" " + std::to_string(o.void_fraction).substr(0, 6)).c_str() : "");
+            t << b;
+          }
+        });
+        files.push_back((fs::path(dir) / "orientation.csv").string());
+        t << "  every frame in " << (fs::path(dir) / "orientation.csv").string() << "\n";
+      }
+    } else throw std::invalid_argument("mech decks | analyze");
+    t << r.text("command") << "\n";
+    r["text"] = t.str();
+  }
+  if (c == "cgdyn") {
+    if (!in.empty() && in[0] == "timemap") {
+      if (in.size() < 3) throw std::invalid_argument("timemap: give the AA and the CG dynamics.csv");
+      auto load = [](const std::string& p, std::vector<double>& tt, std::vector<double>& g) {
+        std::ifstream f(p);
+        if (!f) throw std::invalid_argument("cannot open " + p);
+        std::string l;
+        std::getline(f, l);
+        while (std::getline(f, l)) {
+          std::stringstream ss(l);
+          std::string c1, c2;
+          std::getline(ss, c1, ','), std::getline(ss, c2, ',');
+          if (!c1.empty() && !c2.empty()) tt.push_back(std::stod(c1)), g.push_back(std::stod(c2));
+        }
+      };
+      std::vector<double> ta, ga, tc, gc;
+      load(in[1], ta, ga), load(in[2], tc, gc);
+      double spread = 0;
+      int pts = 0;
+      const double s2 = time_mapping(ta, ga, tc, gc, &spread, &pts);
+      char b[256];
+      std::snprintf(b, sizeof b, "t_AA = %.3g × t_CG (from %d common g₁ values; ln s varies by ±%.2f over them%s)\n", s2, pts, spread, spread > 0.3 ? ": the curves' shapes differ — the factor depends on the time scale" : "");
+      r["factor"] = s2, r["spread"] = spread;
+      r["text"] = std::string(b) + r.text("command") + "\n";
+    } else {
+      const auto sys = cg_systems(in, 0);
+      if (sys.empty()) throw std::invalid_argument("cgdyn: give the map.json and the dump");
+      if (!a.has("dt")) throw std::invalid_argument("cgdyn needs --dt (fs per timestep of the dump)");
+      const auto& x = sys.front();
+      std::vector<std::vector<Vec3>> frames;
+      std::vector<Cell> cells;
+      std::vector<double> times;
+      const double dt = N(a, "dt", 1);
+      for (const auto& p : x.frames)
+        for_each_dump_frame(p, x.t.beads(), [&](size_t, int64_t ts, const std::vector<Vec3>& q, const Cell& c2, bool) {
+          frames.push_back(q), cells.push_back(c2), times.push_back(double(ts) * dt);
+          return true;
+        }, size_t(std::max(1.0, N(a, "stride", 1))));
+      const CgDynamics D = cg_dynamics(x.t, frames, cells, times);
+      const std::string dir = S(a, "o", "dynamics");
+      fs::create_directories(dir);
+      {
+        std::ofstream f((fs::path(dir) / "dynamics.csv").string());
+        f << "t_fs,g1,g2,g3,P1,Ree_corr\n";
+        for (size_t k = 0; k < D.t.size(); ++k) f << D.t[k] << "," << D.g1[k] << "," << D.g2[k] << "," << D.g3[k] << "," << D.p1[k] << "," << D.ree[k] << "\n";
+      }
+      files.push_back((fs::path(dir) / "dynamics.csv").string());
+      char b[400];
+      std::snprintf(b, sizeof b, "%zu frames over %.3g fs · D %.3g Å²/fs (%.3g cm²/s) · τ_R %s · τ_e %s\n", frames.size(), times.back() - times.front(), D.D, D.D * 1e-1,
+                    D.tau_R > 0 ? (std::to_string(D.tau_R / 1000).substr(0, 7) + " ps").c_str() : "—", D.tau_e > 0 ? (std::to_string(D.tau_e / 1000).substr(0, 7) + " ps").c_str() : "—");
+      std::string text = b;
+      if (!D.note.empty()) text += "  note: " + D.note + "\n";
+      r["D"] = D.D, r["tau_R"] = D.tau_R, r["tau_e"] = D.tau_e;
+      r["text"] = text + "wrote " + (fs::path(dir) / "dynamics.csv").string() + "\n" + r.text("command") + "\n";
+    }
   }
   r["files"] = files;
   return r;

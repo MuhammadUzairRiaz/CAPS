@@ -331,8 +331,13 @@ std::vector<double> potential_of(const std::vector<double>& r, const std::vector
   std::vector<double> U(n, 0.0);
   for (size_t k = k0; k < n; ++k) U[k] = -kT * std::log(std::max(g[k], 1e-6));
   const double dr = r[1] - r[0];
+  // below the first resolved point (distances the target never reaches): its slope, at least 5 kT/Å, plus a quadratic wall
+  // (10 kcal/mol/Å²) so beads cannot pass through each other under load
   const double slope = std::max(5 * kT, (U[k0] - U[k0 + 1]) / dr);
-  for (size_t k = 0; k < k0; ++k) U[k] = U[k0] + slope * double(k0 - k) * dr;
+  for (size_t k = 0; k < k0; ++k) {
+    const double d = double(k0 - k) * dr;
+    U[k] = U[k0] + slope * d + 10.0 * d * d;
+  }
   if (first) *first = k0;
   return U;
 }
