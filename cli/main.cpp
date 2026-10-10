@@ -360,7 +360,10 @@ std::map<std::string, std::string> parse(int argc, char** argv, int from, std::v
       throw std::invalid_argument("unknown option " + a + (near.empty() ? "" : " (did you mean " + near + "?)"));
     }
     if (a.rfind("--", 0) == 0 || a == "-o") {
-      const bool flag = is_cli_switch(a) || (a == "--types" && (i + 1 >= argc || std::string(argv[i + 1]).rfind("--", 0) == 0));
+      // --json is a switch (provenance, run, job) except when a .json file name follows (analyze, elastic: --json OUT.json)
+      const auto next_json = [&] { const std::string n = i + 1 < argc ? argv[i + 1] : ""; return n.size() > 5 && n.compare(n.size() - 5, 5, ".json") == 0; };
+      const bool flag = (is_cli_switch(a) && !(a == "--json" && next_json())) ||
+                        (a == "--types" && (i + 1 >= argc || std::string(argv[i + 1]).rfind("--", 0) == 0));
       o[a] = flag ? "1" : (i + 1 < argc ? argv[++i] : "");
     } else {
       pos.push_back(a);
