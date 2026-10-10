@@ -75,7 +75,7 @@ struct GrowOptions {
   std::array<double, 3> orient_axis{0, 0, 0};
   double orient_strength = 0;
   // grow_chains: when a chain cannot be placed, try again at contact scales 0.85, 0.75, 0.7, 0.6 of the full limits
-  // (quaternary backbones such as polyisobutylene and methacrylates, dense films); Relax with push-off afterwards
+  // (dense cells and films, long side chains); Relax with push-off afterwards
   bool auto_scale = false;
   // A live view while growing (grow_chains; design/boards/GrowAllAtom): about every snapshot_seconds, the chains so far
   // (atoms and bonds, molecule = chain, no end caps) and where the growth stands.

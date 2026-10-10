@@ -156,6 +156,49 @@ TEST(Polymer, RubbersGrowAtFullContactLimits) {
   }
 }
 
+TEST(Polymer, MethacrylatesGrowAtFullContactLimits) {
+  // PMMA: a CH2 between two quaternary carbons, a methyl ester on each; full limits, no auto scale, several seeds
+  // (the template's ester geometry comes from a seeded embedding)
+  for (uint64_t seed : {1, 2, 3, 4}) {
+    GrowOptions o;
+    o.chains = 2;
+    o.density = 0.5;
+    o.seed = seed;
+    GrowReport rep;
+    const System s = grow_chains(spec({"*CC(*)(C)C(=O)OC"}, Sequence::Homopolymer, 5), o, &rep);
+    EXPECT_EQ(s.atoms.size(), size_t(2 * (5 * 15 + 2))) << "seed " << seed;
+    EXPECT_NEAR(s.density(), 0.5, 0.01);
+    EXPECT_GE(rep.worst_margin, o.accept - 1e-9);
+    EXPECT_TRUE(rep.notes.empty() || rep.notes.front().find("contact scale") == std::string::npos);
+    // every ester planar and Z: O=C–O–CH3 near 0°
+    std::vector<std::vector<int>> nb(s.atoms.size());
+    for (const auto& b : s.bonds) nb[b.i].push_back(int(b.j)), nb[b.j].push_back(int(b.i));
+    int esters = 0;
+    for (size_t c = 0; c < s.atoms.size(); ++c) {
+      if (s.atoms[c].element != 6) continue;
+      int od = -1, os = -1;
+      for (int w : nb[c])
+        if (s.atoms[size_t(w)].element == 8) (nb[size_t(w)].size() == 1 ? od : os) = w;
+      if (od < 0 || os < 0) continue;
+      int me = -1;
+      for (int w : nb[size_t(os)])
+        if (w != int(c)) me = w;
+      const double L = s.cell.a[0];
+      auto mi = [&](Vec3 d) {
+        for (int k = 0; k < 3; ++k) d[k] -= L * std::round(d[k] / L);
+        return d;
+      };
+      const Vec3 b0 = mi(s.atoms[size_t(od)].pos - s.atoms[c].pos), b1 = mi(s.atoms[size_t(os)].pos - s.atoms[c].pos),
+                 b2 = mi(s.atoms[size_t(me)].pos - s.atoms[size_t(os)].pos);
+      const Vec3 v = b0 - b1 * (dot(b0, b1) / dot(b1, b1)), w = b2 - b1 * (dot(b2, b1) / dot(b1, b1));
+      const double phi = std::atan2(dot(cross(b1, v), w) / norm(b1), dot(v, w));
+      EXPECT_LT(std::abs(phi), 20.0 * M_PI / 180) << "seed " << seed << " ester at atom " << c;
+      ++esters;
+    }
+    EXPECT_EQ(esters, 10);
+  }
+}
+
 TEST(Polymer, BlendsOfTwoRubbers) {
   BlendComponent nr, br;
   nr.spec.units = {{"NR", "[*]C/C=C(C)\\C[*]"}};
@@ -399,7 +442,8 @@ TEST(Polymer, RosenbluthGrowthIsLessStretched) {
   }
   EXPECT_GT(trans[0], 0.68);
   for (int m : {1, 2}) {
-    EXPECT_LT(trans[m], trans[0] - 0.08) << "method " << m;
+    // the torsion energy is of the backbone torsion (it was of a hydrogen's, which favoured gauche): about 0.62–0.67
+    EXPECT_LT(trans[m], trans[0] - 0.05) << "method " << m;
     EXPECT_GT(trans[m], 0.40) << "method " << m;
   }
 }
