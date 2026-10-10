@@ -2550,6 +2550,8 @@ int main(int argc, char** argv) {
       auto ff = std::make_shared<ForceField>(cli_forcefield(s0, o));
       EnergyOptions eo;
       if (o.count("--cutoff")) eo.cutoff = std::stod(o["--cutoff"]);
+      electrostatics(eo, o);
+      if (o.count("--threads")) eo.threads = std::stoi(o["--threads"]);
       const std::string method = o.count("--method") ? o["--method"] : (t.frames() > 1 && o.count("--temp") ? "fluct" : "strain");
       std::vector<Property> props;
       if (method == "fluct-run") {
@@ -2615,6 +2617,8 @@ int main(int argc, char** argv) {
       TensileOptions to;
       to.field = ff;
       if (o.count("--cutoff")) to.energy.cutoff = std::stod(o["--cutoff"]);
+      electrostatics(to.energy, o);
+      if (o.count("--threads")) to.energy.threads = std::stoi(o["--threads"]);
       if (o.count("--axis")) to.axis = axis_of(o["--axis"]);
       if (o.count("--rate")) to.rate = std::stod(o["--rate"]);
       if (o.count("--strain")) to.max_strain = std::stod(o["--strain"]);
@@ -2783,6 +2787,8 @@ int main(int argc, char** argv) {
       CoolingOptions co;
       co.field = ff;
       if (o.count("--cutoff")) co.energy.cutoff = std::stod(o["--cutoff"]);
+      electrostatics(co.energy, o);
+      if (o.count("--threads")) co.energy.threads = std::stoi(o["--threads"]);
       if (o.count("--from")) co.t_start = std::stod(o["--from"]);
       if (o.count("--to")) co.t_end = std::stod(o["--to"]);
       if (o.count("--step")) co.t_step = std::stod(o["--step"]);
