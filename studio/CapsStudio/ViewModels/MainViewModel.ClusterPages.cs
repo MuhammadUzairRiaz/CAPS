@@ -36,7 +36,14 @@ public sealed partial class MainViewModel
             var local = job.Remote.Local;
             Directory.CreateDirectory(local);
             var files = new List<string>();
-            if (withStructure) { _doc!.Save(Path.Combine(local, "structure.caps.data")); files.Add("structure.caps.data"); }
+            var withField = false;
+            if (withStructure)
+            {
+                _doc!.Save(Path.Combine(local, "structure.caps.data"));
+                files.Add("structure.caps.data");
+                // the force field as assigned here goes with it, read whole on the host (no typing again, no default)
+                if (Field.Assigned) { files.AddRange(SaveForceFieldForHost(local)); withField = true; }
+            }
             var names = new Dictionary<string, string>(StringComparer.Ordinal);
             string Upload(string path)
             {
@@ -51,6 +58,7 @@ public sealed partial class MainViewModel
                 return name;
             }
             var command = build(Upload);
+            if (withField) command = command.Replace("structure.caps.data ", "structure.caps.data --ff structure.ff.json ");
             await SendJob(job, h, kind, files.ToArray(), command);
             Status = $"{kind} sent to {h.Name} · {(h.Scheduler == "none" ? "process" : h.Scheduler)} {job.Remote.JobId} · Jobs follows it";
             StartRemotePoll();

@@ -27,6 +27,7 @@
 #include "caps/edit.hpp"
 #include "caps/elements.hpp"
 #include "caps/ffdef.hpp"
+#include "caps/ffio.hpp"
 #include "caps/martini_protein.hpp"
 #include "caps/typing.hpp"
 #include "caps/uff.hpp"
@@ -396,6 +397,21 @@ System load(const std::string& path, const std::map<std::string, std::string>& o
 // The force field for commands that take --ff FF.json [--typing RULES] [--charges MODE]: typed by the force field's
 // rules (or the atom names in the file); without --ff the built-in GAFF of C and H.
 ForceField cli_forcefield(System& s0, std::map<std::string, std::string>& o, bool quiet = false) {
+  // a force field written whole for this structure (the Studio's structure.ff.json, caps/ffio.hpp): used as it is
+  if (o.count("--ff") && std::filesystem::exists(o["--ff"])) {
+    std::ifstream ff(o["--ff"]);
+    std::stringstream ss;
+    ss << ff.rdbuf();
+    if (ss.str().find("caps-assigned-forcefield") != std::string::npos) {
+      ForceField F = forcefield_from_json(ss.str());
+      if (F.type_index.size() != s0.atoms.size())
+        throw std::invalid_argument(o["--ff"] + " is for " + std::to_string(F.type_index.size()) + " atoms; the structure has " + std::to_string(s0.atoms.size()));
+      for (size_t i = 0; i < s0.atoms.size(); ++i) s0.atoms[i].charge = F.charge[i];
+      s0.has_charges = true;
+      if (!quiet) std::printf("force field: %s (read whole from %s)\n", F.name.c_str(), o["--ff"].c_str());
+      return F;
+    }
+  }
   if (!o.count("--ff") && s0.forcefield && s0.forcefield->charge.size() == s0.atoms.size()) {
     if (!quiet) std::printf("force field: %s (the file's own; give --ff for another)\n", s0.forcefield->name.c_str());
     return *s0.forcefield;
@@ -3427,6 +3443,10 @@ int main(int argc, char** argv) {
       if (o.count("--barostat")) e.md.barostat = barostat_from_string(o["--barostat"]);
       if (o.count("--seed")) e.md.seed = std::stoull(o["--seed"]);
       if (o.count("--cutoff")) e.md.energy.cutoff = std::stod(o["--cutoff"]);
+      electrostatics(e.md.energy, o);
+      if (o.count("--threads")) e.md.energy.threads = std::stoi(o["--threads"]);
+      // the force field: --ff (a library name, a file, or one written whole by CAPS), else the built-in default
+      e.md.field = std::make_shared<ForceField>(cli_forcefield(s, o, o.count("--quiet") > 0));
       e.until_converged = o.count("--until-converged");
       // continued after a stop: --resume-at STAGE:STEP (written into resume.txt by the stopped run)
       if (o.count("--resume-at")) {
@@ -3497,7 +3517,7 @@ int main(int argc, char** argv) {
       if (ends(".pdb")) write_pdb(s, out);
       else if (ends(".gro")) write_gro(s, out);   // same atoms and order as a GROMACS topology read with --topology
       else if (ends(".xyz")) write_xyz(s, out);
-      else if (const std::string why = write_lammps_data_or_structure(s, default_forcefield(s), e.md.energy, out); !why.empty()) std::fprintf(stderr, "%s: %s\n", out.c_str(), why.c_str());
+      else if (const std::string why = write_lammps_data_or_structure(s, e.md.field ? *e.md.field : default_forcefield(s), e.md.energy, out); !why.empty()) std::fprintf(stderr, "%s: %s\n", out.c_str(), why.c_str());
       std::printf("\n%-30s %8s %8s %10s %9s\n", "stage", "ps", "T/K", "P/atm", "ρ/g·cm⁻³");
       for (const auto& st : rep.stages)
         std::printf("%-30s %8.1f %8.1f %10.0f %9.4f\n", st.label.c_str(), st.ps, st.temperature, st.pressure, st.density);
