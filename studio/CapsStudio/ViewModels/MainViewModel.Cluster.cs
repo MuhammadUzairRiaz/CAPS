@@ -188,7 +188,9 @@ public sealed partial class MainViewModel
                $"[ -d CAPS/.git ] || git clone --quiet {SourceRepository} CAPS || fail clone\n" +
                "cd CAPS && git fetch --quiet origin || fail fetch\n" +
                $"{checkout} || fail checkout\n" +
-               "cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCAPS_BUILD_TESTS=OFF || fail cmake\n" +
+               // the compiler's runtime linked in: caps then runs on a login node without the build modules (the Studio's
+               // ssh commands, caps job status by hand)
+               "cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCAPS_BUILD_TESTS=OFF -DCMAKE_EXE_LINKER_FLAGS=\"-static-libstdc++ -static-libgcc -static-libgfortran\" || fail cmake\n" +
                "cmake --build build -j \"${SLURM_CPUS_PER_TASK:-${NCPUS:-4}}\" --target caps_cli || fail build\n" +
                "ln -sf \"$ROOT/src/CAPS/build/cli/caps\" \"$ROOT/bin/caps\" || fail link\n" +
                "V=$(\"$ROOT/bin/caps\" --version) || fail run\n" +

@@ -20,13 +20,14 @@ Log in and build the command line once, in your home folder. Load your site's co
 module load GCC CMake            # your site's names
 git clone https://github.com/MuhammadUzairRiaz/CAPS.git ~/CAPS/src/CAPS
 cd ~/CAPS/src/CAPS
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCAPS_BUILD_TESTS=OFF
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCAPS_BUILD_TESTS=OFF \
+  -DCMAKE_EXE_LINKER_FLAGS="-static-libstdc++ -static-libgcc -static-libgfortran"
 cmake --build build -j 8 --target caps_cli
 mkdir -p ~/CAPS/bin && ln -sf ~/CAPS/src/CAPS/build/cli/caps ~/CAPS/bin/caps
 ~/CAPS/bin/caps --version
 ```
 
-Build inside a short interactive or batch job if your site does not allow compiling on login nodes. The Studio's Install / update caps (step 5) does exactly this as a batch job.
+The linker flags put the compiler's runtime inside `caps`, so it runs on a login node without the build modules loaded. Build inside a short interactive or batch job if your site does not allow compiling on login nodes. The Studio's Install / update caps (step 5) does exactly this as a batch job.
 
 ## 2. Describe your cluster once
 
@@ -54,7 +55,7 @@ submitted: 4815162
 
 The job folder holds the inputs, `cmd.txt`, `job.sh` (open it to see exactly what runs) and `caps-job.json`. The script copies the inputs to scratch, runs the command there, copies everything back to `out/` and releases a workspace only after that copy succeeded.
 
-Many runs at once go as one array job. Write one line per task, a title and a command:
+Many runs at once go as one array job. Write one line per task, a title and a command; the command is a shell line, so quote arguments with brackets or stars, such as a SMILES:
 
 ```text
 PS_seed1 caps md cell.data -o md.data --steps 1000000 --seed 1
