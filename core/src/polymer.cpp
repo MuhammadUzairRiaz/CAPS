@@ -69,6 +69,8 @@ struct Template {
   std::vector<int> group;                // sampled torsion group per atom, -1 fixed (template torsion)
   std::vector<double> offset;            // torsion − the group primary's
   std::vector<int> group_kind;           // per group; the link group's kind is set per step
+  std::vector<double> bb_offset;         // per group about a backbone bond: the backbone's torsion − the primary's (staggered
+                                         // draws are of the backbone's own torsion; 0 elsewhere)
   int link_group = -1;                   // the group about the link bond (head – previous tail)
   int tail = 0;                          // unit index (the head is 0)
   double tail_angle = 1.95;              // angle(next head, tail, tail's parent)
@@ -260,6 +262,23 @@ Template make_template(const std::string& name, const std::string& smiles, const
     for (int k = T.tail; all && T.parent[size_t(k)] >= 0; k = T.parent[size_t(k)]) all = in_ring(order[size_t(k)], order[size_t(T.parent[size_t(k)])]);
     T.ring_backbone = all;
   }
+  // sp2 centres outside rings with two children (a carbonyl carbon and its O and OR): planar, as the embedding does
+  // not always leave them (a pyramidal ester carbon puts its C=O out of plane, depending on the seed); the first
+  // child keeps its torsion, the second goes 180° from it, the two angles scaled to sum 240°
+  for (int s = 0; s < T.n; ++s) {
+    if (!T.sp2[size_t(s)]) continue;
+    std::vector<int> kids;
+    for (int c = 1; c < T.n; ++c)
+      if (T.parent[size_t(c)] == s) kids.push_back(c);
+    if (kids.size() != 2) continue;
+    bool ring = false;
+    for (auto [w, o] : adj[size_t(order[size_t(s)])]) ring |= keep[size_t(w)] && in_ring(order[size_t(s)], w);
+    if (ring) continue;
+    const int c1 = kids[0], c2 = kids[1];
+    const double sum = T.ang[size_t(c1)] + T.ang[size_t(c2)];
+    if (sum > 1e-6) T.ang[size_t(c1)] *= (4 * kPi / 3) / sum, T.ang[size_t(c2)] *= (4 * kPi / 3) / sum;
+    T.tor[size_t(c2)] = std::remainder(T.tor[size_t(c1)] + kPi, 2 * kPi);
+  }
   // torsion groups: atoms turning about the same bond share one sampled value
   std::map<std::pair<int, int>, int> groups;
   T.group.assign(size_t(T.n), -1);
@@ -274,7 +293,30 @@ Template make_template(const std::string& name, const std::string& smiles, const
       if (order_of(op, og) != 1 || in_ring(op, og)) continue;
       const bool sp = T.sp2[size_t(p)], sg = T.sp2[size_t(gp)];
       if (sp && sg) continue;                                    // conjugated: the template's (planar) torsion
-      if ((sp && T.donor[size_t(gp)]) || (sg && T.donor[size_t(p)])) continue;   // ester, amide: as built
+      if ((sp && T.donor[size_t(gp)]) || (sg && T.donor[size_t(p)])) {   // ester, amide: planar, Z (s-cis), not sampled
+        // the embedding leaves these anywhere (an ester's O-methyl pointing back at the backbone dead-ends PMMA's
+        // growth): the donor's substituent cis to the sp2 atom's double-bonded partner X, the rest trans; no X (an aryl
+        // ether): the nearer of 0 and 180°
+        const int s_old = sp ? op : og;
+        int x_old = -1;
+        for (auto [w, o] : adj[size_t(s_old)])
+          if (o == 2 && w != (sp ? og : op)) x_old = w;
+        const int ggp = T.ref[size_t(k)][2];
+        double target;
+        if (x_old < 0) target = std::abs(T.tor[size_t(k)]) < kPi / 2 ? 0.0 : kPi;
+        else if (sp) target = order[size_t(k)] == x_old ? 0.0 : kPi;   // k on the sp2 atom, ggp the donor's substituent
+        else {
+          // k on the donor: is it the substituent that goes cis to X (an N's heavy child first, else its first)?
+          int first = -1;
+          for (int c = 1; c < T.n; ++c)
+            if (T.parent[size_t(c)] == p && (first < 0 || (T.z[size_t(first)] == 1 && T.z[size_t(c)] != 1))) first = c;
+          const bool cis = k == first;
+          const bool ref_is_x = ggp >= 0 && order[size_t(ggp)] == x_old;
+          target = (cis == ref_is_x) ? 0.0 : kPi;
+        }
+        T.tor[size_t(k)] = target;
+        continue;
+      }
       kind = torsion_kind(sp, T.donor[size_t(p)], sg, T.donor[size_t(gp)]);
     }
     auto [it, fresh] = groups.emplace(std::make_pair(p, gp), int(T.group_kind.size()));
@@ -285,6 +327,23 @@ Template make_template(const std::string& name, const std::string& smiles, const
     }
     T.group[size_t(k)] = it->second;
     T.offset[size_t(k)] = T.tor[size_t(k)] - T.tor[size_t(primary[size_t(it->second)])];
+  }
+  // a group turning about a backbone bond draws the backbone's torsion (the next backbone atom, or the next unit's head
+  // at the tail), not its first heavy child's: at a quaternary carbon such as PMMA's the first child is a substituent,
+  // and a trans draw for it would put the backbone gauche
+  T.bb_offset.assign(T.group_kind.size(), 0.0);
+  {
+    std::vector<int> next_on_path(size_t(T.n), -1);
+    for (int k = T.tail; k > 0 && T.parent[size_t(k)] >= 0; k = T.parent[size_t(k)]) next_on_path[size_t(T.parent[size_t(k)])] = k;
+    for (size_t gi = 0; gi < T.group_kind.size(); ++gi) {
+      const int pk = primary[gi], p = T.ref[size_t(pk)][0], gp = T.ref[size_t(pk)][1], ggp = T.ref[size_t(pk)][2];
+      if (p < 0) continue;
+      double bb;
+      if (next_on_path[size_t(p)] >= 0) bb = T.tor[size_t(next_on_path[size_t(p)])];
+      else if (p == T.tail && T.tail_fixed) bb = dihedral(pos[size_t(P.d2)], X(p), X(gp), X(ggp));
+      else continue;
+      T.bb_offset[gi] = bb - T.tor[size_t(pk)];
+    }
   }
   for (const auto& b : g.bonds)
     if (keep[size_t(b.a)] && keep[size_t(b.b)]) T.bonds.push_back({newidx[size_t(b.a)], newidx[size_t(b.b)], b.order});
@@ -1229,13 +1288,29 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     std::vector<std::vector<int>> nadj(size_t(t.n));
     for (const auto& b : t.bonds) nadj[size_t(b[0])].push_back(b[1]), nadj[size_t(b[1])].push_back(b[0]);
     // bond distance (up to four) from each new atom to chain-local atoms: within three bonds exempt, four (1-5 pairs,
-    // such as a side group and the next backbone carbon, always close on a crowded backbone) at 85 % of the limit
+    // such as a side group and the next backbone carbon, always close on a crowded backbone) at 85 % of the limit; five
+    // (1-6 pairs) at 90 % when the path runs through a carbon without hydrogens (the substituents of alternate
+    // quaternary carbons of PMMA, PIB, poly(α-methylstyrene) sit at about the full limit in a relaxed chain)
+    auto quaternary = [&](int u) {
+      if (u >= base) {
+        const int a = u - base;
+        if (t.z[size_t(a)] != 6 || t.sp2[size_t(a)]) return false;
+        for (int w : nadj[size_t(a)])
+          if (t.z[size_t(w)] == 1) return false;
+        return int(nadj[size_t(a)].size()) + (a == 0) + (a == t.tail) >= 4;
+      }
+      if (ch.z[size_t(u)] != 6 || ch.sp2[size_t(u)]) return false;
+      for (int w : ch.adj[size_t(u)])
+        if (ch.z[size_t(w)] == 1) return false;
+      return int(ch.adj[size_t(u)].size()) + (u == pt) >= 4;
+    };
     std::vector<std::map<int, int>> excl(size_t(t.n));
     std::map<int, int> near_tail;                   // bond distance + 1 from the tail: the look-ahead atom's
+    bool tail_quaternary = false;
     for (int a = 0; a < t.n; ++a) {
-      const int depth = 4;
+      const int depth = 5;
       std::vector<std::pair<int, int>> st{{base + a, 0}};
-      std::set<int> seen{base + a};
+      std::set<int> seen{base + a}, via_q;          // via_q: reached through a quaternary carbon
       std::map<int, int> dist{{base + a, 0}};
       while (!st.empty()) {
         // breadth first, so each atom's distance is its shortest
@@ -1251,15 +1326,23 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
           next = ch.adj[size_t(u)];
           if (u == pt) next.push_back(base);
         }
+        const bool q = via_q.count(u) || (u != base + a && quaternary(u));
         for (int w : next)
-          if (w >= 3 && seen.insert(w).second) st.push_back({w, d + 1}), dist[w] = d + 1;
+          if (w >= 3 && seen.insert(w).second) {
+            st.push_back({w, d + 1}), dist[w] = d + 1;
+            if (q) via_q.insert(w);
+          }
       }
-      if (a == t.tail)
+      for (auto it = dist.begin(); it != dist.end();)
+        it = it->second == 5 && !via_q.count(it->first) ? dist.erase(it) : std::next(it);
+      if (a == t.tail) {   // the look-ahead atom's path runs through the tail (itself perhaps quaternary)
+        const bool qt = tail_quaternary = quaternary(base + a);
         for (const auto& [w, d] : dist)
-          if (d <= 3) near_tail[w] = d + 1;
+          if (d <= 3 || (d == 4 && (qt || via_q.count(w)))) near_tail[w] = d + 1;
+      }
       excl[size_t(a)] = std::move(dist);
     }
-    // the same as flat tables by chain-local index (bond distance + 1, 0: more than four bonds apart) for the inner loops
+    // the same as flat tables by chain-local index (bond distance + 1, 0: farther or not listed) for the inner loops
     const size_t nloc = size_t(base + t.n);
     std::vector<std::vector<uint8_t>> exl(size_t(t.n), std::vector<uint8_t>(nloc, 0));
     for (int a = 0; a < t.n; ++a)
@@ -1297,8 +1380,31 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
       const double c = dot(d, orient) / l;
       return 1.5 * c * c - 0.5;
     };
+    // a CH₂ head between two sp3 carbons without hydrogens (the previous tail and the head's backbone child: PMMA, PIB,
+    // poly(α-methylstyrene)) opens to 122° as in those chains (Sundararajan & Flory); the capped unit's angle, next
+    // to a stand-in methyl, crowds the substituents of alternate quaternary carbons into each other
+    std::vector<int> head_h;
+    double head_ang = 0;
+    if (k > 0 && t.n > 1 && t.z[0] == 6 && !t.sp2[0] && t.ref[1][0] == 0 && t.ref[1][1] == -1 && t.z[1] == 6 && !t.sp2[1] &&
+        ch.z[size_t(pt)] == 6 && !ch.sp2[size_t(pt)]) {
+      bool bare = true;
+      int heavy_children_0 = 0;
+      for (int a = 1; a < t.n; ++a) {
+        if (t.parent[size_t(a)] == 0) (t.z[size_t(a)] == 1 ? head_h.push_back(a) : void(++heavy_children_0));
+        if (t.parent[size_t(a)] == 1 && t.z[size_t(a)] == 1) bare = false;
+      }
+      for (int w : ch.adj[size_t(pt)])
+        if (ch.z[size_t(w)] == 1) bare = false;
+      if (bare && heavy_children_0 == 1 && head_h.size() == 2 && ch.adj[size_t(pt)].size() == 3) head_ang = 122.0 * kPi / 180;
+      else head_h.clear();
+    }
     std::vector<double> gv(t.group_kind.size()), best_gv;
     double best_root = 0;
+    // a group's draw: about a backbone bond, the backbone's own torsion (the primary's is that less the offset)
+    auto drawg = [&](size_t gi) {
+      const int kind = int(gi) == t.link_group ? link_kind : t.group_kind[gi];
+      return draw(kind, 0) - (kind == 0 ? t.bb_offset[gi] : 0.0);
+    };
     // places the unit's atoms for a root torsion and group torsions, and returns the worst contact margin (Å); stops
     // counting once the margin is below `floor`
     auto score = [&](double root_t, const std::vector<double>& gv, double floor, std::vector<Vec3>& trial) {   // trial: the buffer placed into
@@ -1317,8 +1423,19 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
         if (a == 0) tor = root_t, bond = link, ang = link_angle;
         else if (t.group[size_t(a)] >= 0) tor = gv[size_t(t.group[size_t(a)])] + t.offset[size_t(a)];
         else tor = t.tor[size_t(a)];
+        if (a == 1 && head_ang > 0) ang = head_ang;
         if (mir) tor = -tor;
         trial[size_t(a)] = place(P(r[2]), P(r[1]), P(r[0]), bond, ang, tor);
+      }
+      if (head_ang > 0) {   // the opened CH₂'s hydrogens: symmetric about its C–C–C plane, H–C–H 107°, each on its side
+        const Vec3 c = trial[0], ua = unitv(ch.pos[size_t(pt)] - c), ub = unitv(trial[1] - c);
+        const Vec3 bis = unitv(ua + ub) * -1.0, nrm = unitv(cross(ua, ub));
+        const double half = 0.5 * 107.0 * kPi / 180;
+        const double side = dot(trial[size_t(head_h[0])] - c, nrm) >= 0 ? 1.0 : -1.0;   // the first keeps its side
+        for (size_t i = 0; i < 2; ++i) {
+          const double sd = i == 0 ? side : -side;
+          trial[size_t(head_h[i])] = c + (bis * std::cos(half) + nrm * (sd * std::sin(half))) * t.bond[size_t(head_h[i])];
+        }
       }
       // worst margin against everything placed, and within the unit beyond three bonds
       double worst = 1e9;
@@ -1333,7 +1450,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
             const int dd = lut(ea, cell.local[size_t(id)]);
             if (dd) {
               if (dd - 1 <= 3) return;
-              f = 0.85;
+              f = dd - 1 == 4 ? 0.85 : 0.9;
             }
           } else if (dhead[size_t(a)] <= 3) {   // across an arm's junction
             const auto it = ch.pdist.find(id);
@@ -1352,7 +1469,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
         });
         for (int b = a + 1; b < t.n; ++b)
           if (const int dd = int(ea[size_t(base + b)]); dd == 0 || dd - 1 > 3) {
-            const double f = dd == 0 ? 1.0 : 0.85;
+            const double f = dd == 0 ? 1.0 : dd - 1 == 4 ? 0.85 : 0.9;
             const double m = norm(cell.mi(x - trial[size_t(b)])) - f * limitc(za, t.z[size_t(b)]);
             if (m < worst) worst = m;
           }
@@ -1366,7 +1483,8 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
         frame(trial[size_t(t.tail)], tp(t.r1), tp(t.r2), e1, e2, e3);
         const Vec3 dir = unitv(e1 * t.tf[0] + e2 * t.tf[1] + e3 * (mir ? -t.tf[2] : t.tf[2]));
         const Vec3 nx = trial[size_t(t.tail)] + dir * (last ? 1.09 : 1.53);
-        const int probe = last ? 1 : 6;
+        // past a quaternary tail the next head's hydrogens are crowded as well: the head probe with their room (−6)
+        const int probe = last ? 1 : tail_quaternary ? -6 : 6;
         worst = std::min(worst, region(nx));
         cell.near(nx, [&](int id) {
           double f = 1.0;
@@ -1374,7 +1492,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
             const int dd = lut(ntl, cell.local[size_t(id)]);
             if (dd) {
               if (dd - 1 <= 3) return;
-              f = 0.85;
+              f = dd - 1 == 4 ? 0.85 : 0.9;
             }
           } else if (dhead_next <= 3) {
             const auto it = ch.pdist.find(id);
@@ -1389,7 +1507,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
         });
         for (int b = 0; b < t.n; ++b)
           if (const int dd = int(ntl[size_t(base + b)]); dd == 0 || dd - 1 > 3) {
-            const double m = norm(cell.mi(nx - trial[size_t(b)])) - (dd == 0 ? 1.0 : 0.85) * limitc(probe, t.z[size_t(b)]);
+            const double m = norm(cell.mi(nx - trial[size_t(b)])) - (dd == 0 ? 1.0 : dd - 1 == 4 ? 0.85 : 0.9) * limitc(probe, t.z[size_t(b)]);
             if (m < worst) worst = m;
           }
         // deeper look-ahead (GrowOptions::lookahead bonds): points further along the free valence need room too — against
@@ -1426,7 +1544,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
         for (int tr = 0; tr < trials; ++tr) {
           roots[size_t(tr)] = draw(root_kind, 0);
           auto& g = gvs[size_t(tr)];
-          for (size_t gi = 0; gi < g.size(); ++gi) g[gi] = draw(int(gi) == t.link_group ? link_kind : t.group_kind[gi], 0);
+          for (size_t gi = 0; gi < g.size(); ++gi) g[gi] = drawg(gi);
           for (int a = 1; a < t.n; ++a)
             if (t.group[size_t(a)] >= 0 && t.group_kind[size_t(t.group[size_t(a)])] == 1 && t.offset[size_t(a)] == 0.0) g[size_t(t.group[size_t(a)])] += t.tor[size_t(a)];
         }
@@ -1452,7 +1570,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
       } else
       for (int tr = 0; tr < trials; ++tr) {
         const double root_t = draw(root_kind, 0);
-        for (size_t gi = 0; gi < gv.size(); ++gi) gv[gi] = draw(int(gi) == t.link_group ? link_kind : t.group_kind[gi], 0);
+        for (size_t gi = 0; gi < gv.size(); ++gi) gv[gi] = drawg(gi);
         // the template's own torsion is the reference for groups next to an sp2 atom
         for (int a = 1; a < t.n; ++a)
           if (t.group[size_t(a)] >= 0 && t.group_kind[size_t(t.group[size_t(a)])] == 1 && t.offset[size_t(a)] == 0.0) gv[size_t(t.group[size_t(a)])] += t.tor[size_t(a)];
@@ -1515,7 +1633,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
       // Rosenbluth: every trial within the contact limits weighted by exp(−E/kT); one drawn by its weight
       auto pair_energy = [&](int za, int zb, double d, int bonds) {
         if (o.method == 1) {   // soft spheres: 20 kcal/mol (1 − d/limit)² inside the limit
-          const double lim = (bonds == 4 ? 0.85 : 1.0) * limit(za, zb);
+          const double lim = (bonds == 4 ? 0.85 : bonds == 5 ? 0.9 : 1.0) * limit(za, zb);
           return d < lim ? 20.0 * (1 - d / lim) * (1 - d / lim) : 0.0;
         }
         if (d >= 6.0) return 0.0;   // UFF: D [(x/r)¹² − 2 (x/r)⁶], geometric means, shifted to zero at 6 Å
@@ -1565,13 +1683,16 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
       std::vector<std::vector<double>> kept_gv;
       for (int tr = 0; tr < trials; ++tr) {
         const double root_t = draw(root_kind, 0);
-        for (size_t gi = 0; gi < gv.size(); ++gi) gv[gi] = draw(int(gi) == t.link_group ? link_kind : t.group_kind[gi], 0);
+        for (size_t gi = 0; gi < gv.size(); ++gi) gv[gi] = drawg(gi);
         for (int a = 1; a < t.n; ++a)
           if (t.group[size_t(a)] >= 0 && t.group_kind[size_t(t.group[size_t(a)])] == 1 && t.offset[size_t(a)] == 0.0) gv[size_t(t.group[size_t(a)])] += t.tor[size_t(a)];
         const double m = score(root_t, gv, o.accept, trial);
         if (m < o.accept) continue;
         double E = trial_energy() + (next_dir ? 0.0 : tors_energy(root_kind, root_t));
-        for (size_t gi = 0; gi < gv.size(); ++gi) E += tors_energy(int(gi) == t.link_group ? link_kind : t.group_kind[gi], gv[gi]);
+        for (size_t gi = 0; gi < gv.size(); ++gi) {
+          const int kind = int(gi) == t.link_group ? link_kind : t.group_kind[gi];
+          E += tors_energy(kind, gv[gi] + (kind == 0 ? t.bb_offset[gi] : 0.0));
+        }
         kept.push_back(trial), kept_e.push_back(E), kept_m.push_back(m), kept_root.push_back(root_t), kept_gv.push_back(gv);
         kept_p2.push_back(orienting ? chord_p2(trial) : 0.0);
       }

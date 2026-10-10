@@ -176,7 +176,7 @@
                 </StackPanel>
                 <TextBlock Grid.Row="5" Grid.ColumnSpan="3" Text="{Binding GrowEstimate}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource DimB}" Margin="0,8,0,0" TextWrapping="Wrap" />
                 <CheckBox Grid.Row="6" Grid.ColumnSpan="3" Content="Lower the contact scale when a chain cannot be placed (repeat-unit chains)" IsChecked="{Binding GrowAutoScale}" Margin="0,6,0,0"
-                          ToolTip.Tip="Steps 0.85, 0.75, 0.7, 0.6 for crowded backbones (polyisobutylene, methacrylates); relax with push-off afterwards" />
+                          ToolTip.Tip="Steps 0.85, 0.75, 0.7, 0.6 where the full limits are too crowded (dense cells and films, long side chains); relax with push-off afterwards" />
               </Grid>
               <Grid Margin="16,0,16,16" ColumnDefinitions="*,*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto" RowSpacing="4">
                 <TextBlock Text="Orientation" Classes="label" />
