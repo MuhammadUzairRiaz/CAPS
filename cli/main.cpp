@@ -449,6 +449,8 @@ ForceField cli_forcefield(System& s0, std::map<std::string, std::string>& o, boo
     for (const auto& a : s0.atoms) types.push_back(a.name);
   }
   ParamReport rep;
+  if (!o.count("--charges") && file_charges(s0) && !quiet)
+    std::fprintf(stderr, "charges: the file's own charges are kept, not %s's (--charges auto gives the force field's own)\n", def.name.c_str());
   ForceField ff = parameterize(s0, def, types, o.count("--charges") ? o["--charges"] : (file_charges(s0) ? "keep" : "types"), &rep, false);
   if (!rep.missing.empty()) throw std::runtime_error(std::to_string(rep.missing.size()) + " parameters missing in " + def.name + " (caps ff apply lists them)");
   if (!quiet) std::printf("force field: %s\n", def.name.c_str());
@@ -2341,6 +2343,8 @@ int main(int argc, char** argv) {
             for (const auto& a : s.atoms) types.push_back(a.name);
           }
           std::string charges = o.count("--charges") ? o["--charges"] : (file_charges(s) ? "keep" : "auto");
+          if (!o.count("--charges") && charges == "keep")
+            std::fprintf(stderr, "charges: the file's own charges are kept, not %s's (--charges auto gives the force field's own)\n", ff.name.c_str());
           ParamReport rep;
           if (charges == "auto") {   // the force field's own charges, else Gasteiger–Marsili (as the Studio's default)
             try {
