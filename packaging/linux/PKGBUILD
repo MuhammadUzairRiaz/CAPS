@@ -1,7 +1,7 @@
 # Maintainer: Muhammad Uzair Riaz <274318895+MuhammadUzairRiaz@users.noreply.github.com>
 # Arch Linux package: builds CAPS from a release tag. makepkg -si
 pkgname=caps-studio
-pkgver=0.2.0
+pkgver=0.1.0
 pkgrel=1
 pkgdesc="CAPS Studio: build, simulate and analyse amorphous polymer cells"
 arch=('x86_64' 'aarch64')

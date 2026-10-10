@@ -1,7 +1,7 @@
 ; CAPS Studio installer (Inno Setup 6). Built by packaging/windows/build.ps1:
-;   iscc /DVersion=0.2.0 /DSource=<staged app folder> /DOutDir=<dist> caps.iss
+;   iscc /DVersion=0.1.0 /DSource=<staged app folder> /DOutDir=<dist> caps.iss
 #ifndef Version
-  #define Version "0.2.0"
+  #define Version "0.1.0"
 #endif
 #ifndef Source
   #define Source "..\..\build-pkg\windows\app"
