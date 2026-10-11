@@ -55,7 +55,8 @@ System read_mol2(const std::string& path);
 // (bonds across the cell included). Each atom's name is its force-field type.
 System read_car(const std::string& path);
 // Writes STEM.car and STEM.mdf (path's extension replaced): the cell as Materials Studio orients it, atom names as the
-// potential types, charges, one block per molecule, the bonds (with their cell images) in the .mdf.
+// potential types, charges, one block and one residue per molecule, made whole across the cell, the bonds in the .mdf
+// by atom name (a cell image only on a bond of a network periodic through the cell). msi2lmp reads the pair.
 void write_car(const System& s, const std::string& path);
 
 // Open any supported file. A topology (LAMMPS data) may be given for dumps.
