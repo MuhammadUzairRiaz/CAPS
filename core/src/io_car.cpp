@@ -148,10 +148,13 @@ System read_car(const std::string& path) {
   return s;
 }
 
-// The same pair written: the cell in Materials Studio's orientation (a along x, b in the xy plane; positions keep their
-// fractional coordinates), one block per molecule (bond-connected), each atom's name (its force-field type once one is
-// assigned) as the potential type, its charge; the .mdf lists every atom's bonds, "%abc#1" where the partner is the
-// image a b c cells over.
+// The same pair written: the cell in Materials Studio's orientation (a along x, b in the xy plane), one block and one
+// residue per molecule (bond-connected), made whole across the cell and placed with its centre in the cell (Amorphous
+// Cell style: atoms may lie outside it), atom names element + count within the molecule, each atom's name (its
+// force-field type once one is assigned) as the potential type, its charge. The .mdf lists every atom's bonds by name
+// within the residue; only a bond that still crosses the cell once the molecule is whole (a network periodic through
+// the cell) carries the partner's image, "%abc#1". msi2lmp resolves connections only within a contiguous run of atoms
+// with the same residue, so a residue split by other residues' atoms (one per monomer, end caps last) cannot be read.
 void write_car(const System& s, const std::string& path) {
   const std::string stem = std::filesystem::path(path).replace_extension("").string();
   std::ofstream car(stem + ".car"), mdf(stem + ".mdf");
@@ -168,33 +171,57 @@ void write_car(const System& s, const std::string& path) {
     ms = cell_from(la, lb, lc, al, be, ga);
   }
   const size_t n = s.atoms.size();
-  std::vector<Vec3> pos(n), frac(n);
-  for (size_t i = 0; i < n; ++i) {
-    if (pbc) {   // inside the cell, as Materials Studio writes them; bonds across it carry their images in the .mdf
-      frac[i] = s.cell.to_fractional(s.atoms[i].pos);
-      for (int k = 0; k < 3; ++k) frac[i][k] -= std::floor(frac[i][k]);
-      pos[i] = ms.to_cartesian(frac[i]);
-    } else {
-      pos[i] = s.atoms[i].pos;
-    }
-  }
   int nmol = 0;
   const auto mol = s.molecules(&nmol);
   std::vector<std::vector<uint32_t>> members(size_t(std::max(nmol, 0)));
   for (size_t i = 0; i < n; ++i) members[size_t(mol[i])].push_back(uint32_t(i));
   const auto nb = s.neighbours();
-  // atom names: element and a count within the residue (MS style), residue: the file's, else XXXX and the molecule
-  std::vector<std::string> name(n), res(n);
-  std::map<std::string, int> count;
-  for (size_t m = 0; m < members.size(); ++m)
+  // fractional positions, each molecule whole: a walk over its bonds puts every partner at the image nearest the atom
+  // it was reached from, then the molecule moves by whole cells so its centre is inside the cell
+  std::vector<Vec3> pos(n), frac(n);
+  if (pbc) {
+    std::vector<char> seen(n, 0);
+    for (const auto& mm : members) {
+      if (mm.empty()) continue;
+      std::vector<uint32_t> stack{mm[0]};
+      frac[mm[0]] = s.cell.to_fractional(s.atoms[mm[0]].pos);
+      seen[mm[0]] = 1;
+      while (!stack.empty()) {
+        const uint32_t i = stack.back();
+        stack.pop_back();
+        for (uint32_t j : nb[i]) {
+          if (seen[j]) continue;
+          Vec3 d = s.cell.to_fractional(s.atoms[j].pos) - frac[i];
+          for (int k = 0; k < 3; ++k) d[k] -= std::round(d[k]);
+          frac[j] = frac[i] + d;
+          seen[j] = 1;
+          stack.push_back(j);
+        }
+      }
+      Vec3 c{0, 0, 0};
+      for (uint32_t i : mm) c = c + frac[i];
+      Vec3 shift{0, 0, 0};
+      for (int k = 0; k < 3; ++k) shift[k] = std::floor(c[k] / double(mm.size()));
+      for (uint32_t i : mm) {
+        frac[i] = frac[i] - shift;
+        pos[i] = ms.to_cartesian(frac[i]);
+      }
+    }
+  } else {
+    for (size_t i = 0; i < n; ++i) pos[i] = s.atoms[i].pos;
+  }
+  // residue per molecule: the residue name of its first atom (else MOL), numbered by molecule; atom names element and a
+  // count within the molecule
+  std::vector<std::string> name(n), resname(members.size());
+  for (size_t m = 0; m < members.size(); ++m) {
+    std::map<std::string, int> count;
     for (uint32_t i : members[m]) {
       const auto& a = s.atoms[i];
-      const std::string rn = a.resname.empty() ? "XXXX" : a.resname.substr(0, 4);
-      const long rid = a.resid > 0 ? long(a.resid) : long(m + 1);
-      res[i] = rn + "_" + std::to_string(rid);
+      if (resname[m].empty()) resname[m] = a.resname.empty() ? "MOL" : a.resname.substr(0, 4);
       const std::string el = a.element ? element(a.element).symbol : "X";
-      name[i] = el + std::to_string(++count[res[i] + ":" + el]);
+      name[i] = el + std::to_string(++count[el]);
     }
+  }
   std::time_t now = std::time(nullptr);
   char date[64];
   std::strftime(date, sizeof date, "%a %b %d %H:%M:%S %Y", std::localtime(&now));
@@ -210,30 +237,31 @@ void write_car(const System& s, const std::string& path) {
          "@column 11 xray_temp_factor\n@column 12 connections\n\n";
   for (size_t m = 0; m < members.size(); ++m) {
     mdf << "@molecule MOL" << m + 1 << "\n\n";
+    const std::string rid = std::to_string(m + 1), res = resname[m] + "_" + rid;
     for (uint32_t i : members[m]) {
       const auto& a = s.atoms[i];
       const std::string el = a.element ? element(a.element).symbol : "X";
       const std::string type = a.name.empty() ? "?" : a.name.substr(0, 7);
-      const std::string rn = res[i].substr(0, res[i].find('_')), rid = res[i].substr(res[i].find('_') + 1);
       std::snprintf(b, sizeof b, "%-5s %14.9f %14.9f %14.9f %-4s %-6s %-7s %-2s %7.4f\n", name[i].c_str(), pos[i][0], pos[i][1], pos[i][2],
-                    rn.c_str(), rid.c_str(), type.c_str(), el.c_str(), a.charge);
+                    resname[m].c_str(), rid.c_str(), type.c_str(), el.c_str(), a.charge);
       car << b;
       std::string conn;
       for (uint32_t j : nb[i]) {
-        conn += " " + (res[j] == res[i] ? name[j] : res[j] + ":" + name[j]);
-        if (pbc) {   // the partner's image: where the bond reaches it
+        conn += " " + name[j];
+        if (pbc) {   // a bond still across the cell: the partner's image a b c cells over
           const Vec3 df = frac[j] - frac[i];
           const int t[3] = {-int(std::lround(df[0])), -int(std::lround(df[1])), -int(std::lround(df[2]))};
           if (t[0] || t[1] || t[2]) conn += "%" + std::to_string(t[0]) + std::to_string(t[1]) + std::to_string(t[2]) + "#1";
         }
       }
-      std::snprintf(b, sizeof b, "%-20s %-2s %-7s ?     0  0  %8.4f 0 0 8 1.0000  0.0000", (res[i] + ":" + name[i]).c_str(), el.c_str(), type.c_str(), a.charge);
+      std::snprintf(b, sizeof b, "%-20s %-2s %-7s ?     0  0  %8.4f 0 0 8 1.0000  0.0000", (res + ":" + name[i]).c_str(), el.c_str(), type.c_str(), a.charge);
       mdf << b << conn << "\n";
     }
     mdf << "\n";
     car << "end\n";
   }
   car << "end\n";
+  if (pbc) mdf << "#symmetry\n@periodicity 3 xyz\n@group (P1)\n\n";
   mdf << "#end\n";
 }
 

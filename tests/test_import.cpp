@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iterator>
+#include <sstream>
 #include <tuple>
 #include <vector>
 
@@ -133,7 +134,8 @@ TEST(Import, MaterialsStudioCarMdf) {
   EXPECT_TRUE(b.count({0, 1}) && b.count({0, 2}) && b.count({3, 4}) && b.count({3, 5}));
 }
 
-// .car/.mdf written back: the same atoms (types, charges), bonds and cell lengths and angles; atoms inside the cell
+// .car/.mdf written back: the same atoms (types, charges), bonds and cell lengths and angles; each water whole (the one
+// across the cell too) with its centre inside the cell
 TEST(Import, MaterialsStudioCarRoundTrip) {
   const System a = open_file(std::string(CAPS_SOURCE_DIR) + "/tests/data/car/water_pbc.car").topology;
   const std::string out = (std::filesystem::temp_directory_path() / "caps_roundtrip.car").string();
@@ -144,12 +146,72 @@ TEST(Import, MaterialsStudioCarRoundTrip) {
   for (size_t i = 0; i < a.atoms.size(); ++i) {
     EXPECT_EQ(b.atoms[i].name, a.atoms[i].name);
     EXPECT_NEAR(b.atoms[i].charge, a.atoms[i].charge, 1e-4);
-    const Vec3 f = b.cell.to_fractional(b.atoms[i].pos);
-    for (int k = 0; k < 3; ++k) EXPECT_TRUE(f[k] >= -1e-9 && f[k] < 1 + 1e-9);
   }
   EXPECT_EQ(b.bonds.size(), a.bonds.size());
+  for (const auto& x : b.bonds) EXPECT_LT(norm(b.atoms[x.i].pos - b.atoms[x.j].pos), 1.2);
+  for (size_t m = 0; m < 2; ++m) {
+    Vec3 c{0, 0, 0};
+    for (size_t i = 3 * m; i < 3 * m + 3; ++i) c = c + b.atoms[i].pos;
+    const Vec3 f = b.cell.to_fractional(c);
+    for (int k = 0; k < 3; ++k) EXPECT_TRUE(f[k] * 3 >= -1e-9 && f[k] * 3 < 3 + 1e-9);
+  }
   EXPECT_NEAR(norm(b.cell.b), norm(a.cell.b), 1e-6);
   EXPECT_NEAR(dot(b.cell.a, b.cell.b), dot(a.cell.a, a.cell.b), 1e-4);
+}
+
+// .car/.mdf as msi2lmp reads them: a chain of two residues (its end cap listed last, after the second residue) across
+// the cell is one residue, whole, its atoms contiguous, its connections plain names within the residue (no "RES:" and
+// no image); a ring periodic through the cell keeps the image of the one bond that cannot be made whole. Read back,
+// every bond is there.
+TEST(Import, MaterialsStudioCarForMsi2lmp) {
+  System s;
+  s.cell.a = {10, 0, 0}, s.cell.b = {0, 10, 0}, s.cell.c = {0, 0, 10};
+  auto add = [&](int z, Vec3 p, const char* res, int64_t rid, const char* type) {
+    Atom a;
+    a.element = z, a.pos = p, a.resname = res, a.resid = rid, a.name = type;
+    s.atoms.push_back(a);
+  };
+  add(6, {9.3, 5, 5}, "CC", 1, "c3");    // 0, residue 1
+  add(6, {0.3, 5, 5}, "CC", 2, "c3");    // 1, residue 2, across the cell from 0
+  add(1, {8.3, 5, 5}, "CC", 2, "hc");    // 2, residue 2 … bonded to 0
+  add(1, {1.3, 5, 5}, "CC", 1, "hc");    // 3, residue 1's end cap, last … bonded to 1
+  s.bonds = {{0, 1, 1}, {0, 2, 1}, {1, 3, 1}};
+  // a C3 ring periodic along y: 4–5–6 and 6 back to 4 through the cell
+  add(6, {5, 0.5, 2}, "", 0, "c");
+  add(6, {5, 3.8, 2}, "", 0, "c");
+  add(6, {5, 7.1, 2}, "", 0, "c");
+  s.bonds.push_back({4, 5, 1}), s.bonds.push_back({5, 6, 1}), s.bonds.push_back({4, 6, 1});
+  const auto dir = std::filesystem::temp_directory_path();
+  write_car(s, (dir / "caps_msi2lmp.car").string());
+  std::ifstream mdf(dir / "caps_msi2lmp.mdf");
+  std::string line;
+  std::vector<std::string> res, conn;
+  while (std::getline(mdf, line))
+    if (line.find(':') != std::string::npos && line[0] != '@' && line[0] != '!') {
+      res.push_back(line.substr(0, line.find(':')));
+      std::istringstream in(line);
+      std::string w, c;
+      for (int k = 0; in >> w; ++k)
+        if (k >= 12) c += w + " ";   // column 12 on: the connections
+      conn.push_back(c);
+    }
+  ASSERT_EQ(res.size(), 7u);
+  for (size_t i = 0; i < 4; ++i) EXPECT_EQ(res[i], "CC_1");
+  for (size_t i = 4; i < 7; ++i) EXPECT_EQ(res[i], "MOL_2");
+  for (size_t i = 0; i < 4; ++i) {
+    EXPECT_EQ(conn[i].find(':'), std::string::npos) << conn[i];
+    EXPECT_EQ(conn[i].find('%'), std::string::npos) << conn[i];
+  }
+  int images = 0;
+  for (size_t i = 4; i < 7; ++i) images += conn[i].find('%') != std::string::npos;
+  EXPECT_EQ(images, 2);   // the closing bond, from both ends
+  const System b = open_file((dir / "caps_msi2lmp.car").string()).topology;
+  ASSERT_EQ(b.atoms.size(), 7u);
+  ASSERT_EQ(b.bonds.size(), 6u);
+  for (const auto& x : b.bonds)
+    if (x.i < 4) EXPECT_LT(norm(b.atoms[x.i].pos - b.atoms[x.j].pos), 1.5);   // the chain whole
+  EXPECT_EQ(b.atoms[0].mol, b.atoms[3].mol);
+  EXPECT_NE(b.atoms[0].mol, b.atoms[4].mol);
 }
 
 // Bond perception: a long contact between two atoms bonded to a common third closes a ring across it, it is no bond
