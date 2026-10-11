@@ -9,7 +9,9 @@ settings (Coulomb and van der Waals cut at 15 Å, special_bonds 0 0 1, no tail) 
 
 Known msi2lmp behaviour CAPS does not copy (reported, not counted as differences):
   · bond-bond_1_3 terms only for dihedrals with a type named cp… (COMPASS's aromatic c3a gets none from msi2lmp);
-  · angle-angle terms of three-connected centres looked up by equivalence only when msi2lmp runs with -p 3.
+  · angle-angle terms of three-connected centres looked up by equivalence only when msi2lmp runs with -p 3;
+  · angle-angle reference angles written θ_ijk, θ_kjl, θ_ijl, where LAMMPS improper class2 reads θ_ijk, θ_ijl, θ_kjl
+    (CAPS writes LAMMPS's order; for the comparison its θ2 and θ3 are swapped back to msi2lmp's).
 
 The INTERFACE force field (IFF 1.5, data/forcefields/iff-pcff.json and iff-cvff.json) the same way: msi2lmp (built from
 LAMMPS's tools/msi2lmp/src, ~/lammps/tools/msi2lmp/msi2lmp-bin) writes the reference data for models of IFF's own model
@@ -214,9 +216,10 @@ def main():
             continue
         auto = re.findall(r"automatic[^\n]*", r.stdout)
         # compared as msi2lmp writes: bonded coefficients rounded to its 4 decimals, and bond-bond-1-3 terms only
-        # when the structure has a type named cp… (msi2lmp's rule; the .frc file gives them to any matching torsion)
+        # when the structure has a type named cp… (msi2lmp's rule; the .frc file gives them to any matching torsion);
+        # angle-angle θ2 and θ3 in msi2lmp's order (θ_kjl, θ_ijl)
         has_cp = any(t.startswith("cp") for _, t in atoms)
-        data, sec, out, zeroed = open(os.path.join(d, "caps.data")).read().splitlines(), "", [], 0
+        data, sec, out, zeroed, swapped = open(os.path.join(d, "caps.data")).read().splitlines(), "", [], 0, 0
         for line in data:
             w = line.split("#")[0].split()
             if line and line[0].isalpha():
@@ -226,6 +229,9 @@ def main():
                 if sec.startswith("BondBond13") and not has_cp and float(vals[1]) != 0:
                     vals[1] = "0.0000"
                     zeroed += 1
+                if sec == "AngleAngle Coeffs" and vals[5] != vals[6]:
+                    vals[5], vals[6] = vals[6], vals[5]
+                    swapped += 1
                 line = " ".join(vals)
             out.append(line)
         open(os.path.join(d, "caps.data"), "w").write("\n".join(out) + "\n")
@@ -251,6 +257,7 @@ def main():
         styl = " ".join(l.split(None, 1)[1] for l in open(os.path.join(d, "caps.in")).read().splitlines()
                         if re.match(r"(bond|angle|dihedral|improper)_style", l))
         quirk = f" · {zeroed} bond-bond-1-3 types left out as msi2lmp does (no cp type)" if zeroed else ""
+        quirk += f" · {swapped} angle-angle types with θ2, θ3 in msi2lmp's order" if swapped else ""
         rows.append((fn, f"{'ok' if ok else 'DIFFERS'} · {len(atoms)} atoms · largest relative difference {worst:.1e} · CAPS styles: {styl}{quirk}{why}",
                      "" if ok else "   msi2lmp/CAPS: " + "  ".join(f"{k} {ge[k]:.6f}/{ce[k]:.6f}" for k in TERMS)))
     for fn, res, more in rows:
