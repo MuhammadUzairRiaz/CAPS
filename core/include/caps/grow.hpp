@@ -77,6 +77,9 @@ struct GrowOptions {
   // grow_chains: when a chain cannot be placed, try again at contact scales 0.85, 0.75, 0.7, 0.6 of the full limits
   // (dense cells and films, long side chains); Relax with push-off afterwards
   bool auto_scale = false;
+  // grow_chains: a chain stuck in a pocket backs up further (2 … 64 units) and, out of backtracks, is cut to half its
+  // length (three times) before a new start; auto_scale turns it off for its quick tries at the stricter scales
+  bool escape = true;
   // A live view while growing (grow_chains; design/boards/GrowAllAtom): about every snapshot_seconds, the chains so far
   // (atoms and bonds, molecule = chain, no end caps) and where the growth stands.
   struct Live {

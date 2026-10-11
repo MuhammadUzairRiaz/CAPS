@@ -72,6 +72,7 @@ struct Template {
   std::vector<double> bb_offset;         // per group about a backbone bond: the backbone's torsion − the primary's (staggered
                                          // draws are of the backbone's own torsion; 0 elsewhere)
   int link_group = -1;                   // the group about the link bond (head – previous tail)
+  int heavy_groups = 0;                  // groups that turn a heavy atom (not only hydrogens)
   int tail = 0;                          // unit index (the head is 0)
   double tail_angle = 1.95;              // angle(next head, tail, tail's parent)
   double head_bond = 1.53, tail_bond = 1.53;   // head / tail to a carbon in the template
@@ -158,17 +159,56 @@ Template make_template(const std::string& name, const std::string& smiles, const
   EmbedOptions eo;
   eo.seed = seed;
   std::vector<Vec3> pos = embed(g, eo);
-  if (!ff.empty()) {
+  // crowded or floppy units: a carbon with four heavy neighbours (PIB, poly(α-methylstyrene), methacrylates) or five and
+  // more rotatable bonds between heavy atoms (a butyl ester); the raw embedding's angles and torsions vary with the
+  // seed, and a poor one (a butyl ester bent back on the backbone) leaves no room for the next units
+  bool crowded = false;
+  {
+    std::vector<std::vector<std::pair<int, int>>> nb(g.atoms.size());
+    for (const auto& b : g.bonds) nb[size_t(b.a)].push_back({b.b, b.order}), nb[size_t(b.b)].push_back({b.a, b.order});
+    auto heavy_deg = [&](int i) { return int(std::count_if(nb[size_t(i)].begin(), nb[size_t(i)].end(), [&](auto e) { return g.atoms[size_t(e.first)].element != 1; })); };
+    auto ring_bond = [&](int x, int y) {
+      std::vector<char> seen(g.atoms.size(), 0);
+      std::vector<int> st{x};
+      seen[size_t(x)] = 1;
+      while (!st.empty()) {
+        const int u = st.back();
+        st.pop_back();
+        for (auto [w, o] : nb[size_t(u)]) {
+          if ((u == x && w == y) || seen[size_t(w)]) continue;
+          if (w == y) return true;
+          seen[size_t(w)] = 1, st.push_back(w);
+        }
+      }
+      return false;
+    };
+    int rotatable = 0;
+    for (size_t i = 0; i < g.atoms.size(); ++i)
+      if (g.atoms[i].element == 6 && heavy_deg(int(i)) == 4) crowded = true;
+    for (const auto& b : g.bonds)
+      if (b.order == 1 && g.atoms[size_t(b.a)].element != 1 && g.atoms[size_t(b.b)].element != 1 && heavy_deg(b.a) >= 2 && heavy_deg(b.b) >= 2 &&
+          !ring_bond(b.a, b.b))
+        ++rotatable;
+    crowded = crowded || rotatable >= 5;
+  }
+  // the unit's geometry minimised with the force field given, or with UFF for a crowded or floppy unit
+  if (!ff.empty() || crowded) {
+    const std::string uf = ff.empty() ? std::string("uff") : ff;
     std::vector<std::string> fn;
-    auto f = molecule_forcefield(g, ff, "gasteiger", fn, nullptr, &pos);
-    if (!f && !is_uff(ff)) {   // units the chosen force field cannot type (silicones, phosphazenes …): UFF
+    auto f = molecule_forcefield(g, uf, "gasteiger", fn, nullptr, &pos);
+    if (!f && !is_uff(uf)) {   // units the chosen force field cannot type (silicones, phosphazenes …): UFF
       std::vector<std::string> un;
       f = molecule_forcefield(g, "uff", "gasteiger", un, nullptr, &pos);
       if (f) fn.clear();
     }
     std::string why;
-    if (!f || !minimise_molecule(g, f, 0.05, pos, nullptr, &why))
-      notes.push_back(name + ": unit geometry from the embedding" + (fn.empty() ? (why.empty() ? "" : " (" + why + ")") : " (" + fn.front() + ")"));
+    const std::vector<Vec3> start = pos;
+    if (!f || !minimise_molecule(g, f, 0.05, pos, nullptr, &why)) {
+      bool finite = true;
+      for (const auto& x : pos) finite = finite && std::isfinite(x[0]) && std::isfinite(x[1]) && std::isfinite(x[2]);
+      if (!finite) pos = start;
+      if (!ff.empty()) notes.push_back(name + ": unit geometry from the embedding" + (fn.empty() ? (why.empty() ? "" : " (" + why + ")") : " (" + fn.front() + ")"));
+    }
   }
   const size_t N = g.atoms.size();
   std::vector<std::vector<std::pair<int, int>>> adj(N);
@@ -328,6 +368,12 @@ Template make_template(const std::string& name, const std::string& smiles, const
     T.group[size_t(k)] = it->second;
     T.offset[size_t(k)] = T.tor[size_t(k)] - T.tor[size_t(primary[size_t(it->second)])];
   }
+  {
+    std::vector<char> heavy(T.group_kind.size(), 0);
+    for (int k = 0; k < T.n; ++k)
+      if (T.group[size_t(k)] >= 0 && T.z[size_t(k)] != 1) heavy[size_t(T.group[size_t(k)])] = 1;
+    T.heavy_groups = int(std::count(heavy.begin(), heavy.end(), 1));
+  }
   // a group turning about a backbone bond draws the backbone's torsion (the next backbone atom, or the next unit's head
   // at the tail), not its first heavy child's: at a quaternary carbon such as PMMA's the first child is a substituent,
   // and a trans draw for it would put the backbone gauche
@@ -411,6 +457,8 @@ struct ChainState {
   std::vector<int> unit_start;   // local index of each placed unit's head
   std::vector<double> unit_lnw;  // Rosenbluth methods: ln(Σ w / k) of each placed unit's step
   int backtracks = 0, fails = 0, starts = 0;
+  int reach = 0, stuck = 0;             // the most units placed since this start; failed steps since that grew
+  int cuts = 0;                         // times cut back to half since this start
   bool done = false;
   // branched molecules (star, comb, branched): a chain hung on an atom of another, grown once that chain (and the arm
   // before it on the same molecule) is complete
@@ -1157,6 +1205,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
       ++ch.starts;
       ch.fails = 0;
       ch.backtracks = 0;
+      ch.reach = 0, ch.stuck = 0, ch.cuts = 0;
       return;
     }
     if (ch.ext_anchor >= 0) {   // grafted: ghost 2 is the substrate site, ghost 1 behind it, ghost 0 off to the side
@@ -1189,6 +1238,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
       ++ch.starts;
       ch.fails = 0;
       ch.backtracks = 0;
+      ch.reach = 0, ch.stuck = 0, ch.cuts = 0;
       return;
     }
     // three ghosts: a start point and a random frame (the head bonds to ghost 2)
@@ -1213,6 +1263,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     ++ch.starts;
     ch.fails = 0;
     ch.backtracks = 0;
+    ch.reach = 0, ch.stuck = 0, ch.cuts = 0;
   };
 
   auto remove_units = [&](int ci, int count) {
@@ -1263,7 +1314,9 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
 
   // one growth step of chain ci: place its next unit (best of the trials) or back up
   auto advance = [&](int ci) {
-    const int this_trials = trials;
+    // units with more than three torsions that move heavy atoms (long side chains: butyl, hexyl esters) have many more
+    // ways to be placed than the trials sample: twice the trials for each one beyond three, at most eight times
+    const int this_trials = trials << std::clamp(T[size_t(C[size_t(ci)].seq[C[size_t(ci)].unit_start.size()])].heavy_groups - 3, 0, 3);
     auto& ch = C[size_t(ci)];
     const int k = int(ch.unit_start.size());
     const Template& t = T[size_t(ch.seq[size_t(k)])];
@@ -1287,10 +1340,10 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     // atoms within three bonds of each new atom: the unit's own bonds plus the link, walked from the new atom
     std::vector<std::vector<int>> nadj(size_t(t.n));
     for (const auto& b : t.bonds) nadj[size_t(b[0])].push_back(b[1]), nadj[size_t(b[1])].push_back(b[0]);
-    // bond distance (up to four) from each new atom to chain-local atoms: within three bonds exempt, four (1-5 pairs,
-    // such as a side group and the next backbone carbon, always close on a crowded backbone) at 85 % of the limit; five
-    // (1-6 pairs) at 90 % when the path runs through a carbon without hydrogens (the substituents of alternate
-    // quaternary carbons of PMMA, PIB, poly(α-methylstyrene) sit at about the full limit in a relaxed chain)
+    // bond distance from each new atom to chain-local atoms: within three bonds exempt, four (1-5 pairs, such as a side
+    // group and the next backbone carbon, always close on a crowded backbone) at 85 % of the limit; five to seven at
+    // 90 % when the path runs through a carbon without hydrogens (the substituents of neighbouring quaternary carbons
+    // of PMMA, PIB, poly(α-methylstyrene), and their hydrogens, sit at about the full limit in a relaxed chain)
     auto quaternary = [&](int u) {
       if (u >= base) {
         const int a = u - base;
@@ -1308,7 +1361,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     std::map<int, int> near_tail;                   // bond distance + 1 from the tail: the look-ahead atom's
     bool tail_quaternary = false;
     for (int a = 0; a < t.n; ++a) {
-      const int depth = 5;
+      const int depth = 7;
       std::vector<std::pair<int, int>> st{{base + a, 0}};
       std::set<int> seen{base + a}, via_q;          // via_q: reached through a quaternary carbon
       std::map<int, int> dist{{base + a, 0}};
@@ -1318,6 +1371,8 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
         auto [u, d] = st.back();
         st.pop_back();
         if (d == depth) continue;
+        const bool q = via_q.count(u) || (u != base + a && quaternary(u));
+        if (d >= 4 && !q) continue;   // past four bonds only paths through a quaternary carbon are kept
         std::vector<int> next;
         if (u >= base) {
           for (int w : nadj[size_t(u - base)]) next.push_back(base + w);
@@ -1326,7 +1381,6 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
           next = ch.adj[size_t(u)];
           if (u == pt) next.push_back(base);
         }
-        const bool q = via_q.count(u) || (u != base + a && quaternary(u));
         for (int w : next)
           if (w >= 3 && seen.insert(w).second) {
             st.push_back({w, d + 1}), dist[w] = d + 1;
@@ -1334,7 +1388,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
           }
       }
       for (auto it = dist.begin(); it != dist.end();)
-        it = it->second == 5 && !via_q.count(it->first) ? dist.erase(it) : std::next(it);
+        it = it->second >= 5 && !via_q.count(it->first) ? dist.erase(it) : std::next(it);
       if (a == t.tail) {   // the look-ahead atom's path runs through the tail (itself perhaps quaternary)
         const bool qt = tail_quaternary = quaternary(base + a);
         for (const auto& [w, d] : dist)
@@ -1633,7 +1687,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
       // Rosenbluth: every trial within the contact limits weighted by exp(−E/kT); one drawn by its weight
       auto pair_energy = [&](int za, int zb, double d, int bonds) {
         if (o.method == 1) {   // soft spheres: 20 kcal/mol (1 − d/limit)² inside the limit
-          const double lim = (bonds == 4 ? 0.85 : bonds == 5 ? 0.9 : 1.0) * limit(za, zb);
+          const double lim = (bonds == 4 ? 0.85 : bonds >= 5 && bonds <= 7 ? 0.9 : 1.0) * limit(za, zb);
           return d < lim ? 20.0 * (1 - d / lim) * (1 - d / lim) : 0.0;
         }
         if (d >= 6.0) return 0.0;   // UFF: D [(x/r)¹² − 2 (x/r)⁶], geometric means, shifted to zero at 6 Å
@@ -1713,6 +1767,14 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
       ++ch.fails;
       ++rep.backtracks;
       const int limit_bt = o.max_backtracks > 0 ? o.max_backtracks : 40 * std::max(1, spec.dp);
+      // out of backtracks with a long piece placed: back to half its length (three times) before a new start, which would
+      // throw away all of it; each cut counts as a start against max_restarts
+      if (o.escape && ch.backtracks + 1 > limit_bt && k >= 8 && ch.cuts < 3 && ch.parent < 0 && ch.starts <= o.max_restarts) {
+        ++ch.cuts, ++ch.starts, ++rep.restarts;
+        ch.backtracks = 0, ch.fails = 0, ch.stuck = 0, ch.reach = k / 2;
+        remove_units(ci, k - k / 2);
+        return;
+      }
       if (++ch.backtracks > limit_bt || k == 0) {
         if (ch.parent >= 0 && ch.starts > std::min(o.max_restarts, 60) && reanchor(ci)) {
           start_chain(ci);
@@ -1725,10 +1787,16 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
         start_chain(ci);
         return;
       }
-      remove_units(ci, std::min(k, 1 + ch.fails / 4));
+      // a chain that keeps failing without getting past its furthest unit is in a pocket (of its own coil or of other
+      // chains): every 25th such failure backs it up further, 2, 4, 8 … 64 units, rather than regrowing into the same
+      // pocket one unit at a time until it must start again (a long chain then never finishes)
+      if (k + 2 >= ch.reach) ++ch.stuck;   // at the frontier (not on the way back up after an escape)
+      const int escape = o.escape && k + 2 >= ch.reach && ch.stuck % 25 == 0 ? 1 << std::min(ch.stuck / 25, 6) : 1;
+      remove_units(ci, std::min(k, std::max(1 + ch.fails / 4, escape)));
       return;
     }
     ch.fails = std::max(0, ch.fails - 1);
+    if (k + 1 > ch.reach) ch.reach = k + 1, ch.stuck = 0;
     ++steps_placed;
     rep.worst_margin = std::min(rep.worst_margin, best_m);
     ch.unit_start.push_back(base);
@@ -2057,6 +2125,7 @@ System grow_chains(const ChainSpec& spec, const GrowOptions& o, GrowReport* repo
     if (k + 1 < scales.size()) {   // give up early on the stricter limits: the next scale is quick where these jam
       g.max_restarts = std::min(o.max_restarts, 5);
       if (g.max_backtracks <= 0) g.max_backtracks = std::min(1500, 20 * std::max(1, spec.dp));
+      g.escape = false;   // quick tries: a jam there is cheaper to settle at the next scale
     }
     try {
       System s = grow_chains_once(spec, g, report);
