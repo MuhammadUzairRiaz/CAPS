@@ -270,21 +270,31 @@ class Evaluator {
   // contribution of pairs crossing a truncated cut-off, as analytic Born terms are defined). unfreeze() ends it.
   void freeze_pairs(const std::vector<double>& x, const Cell& cell);
   void unfreeze() { frozen_ = false; }
-  size_t pairs() const { return pi_.size(); }
+  size_t pairs() const { return pj_.size(); }
 
  private:
   EnergyTerms compute_placed(const std::vector<double>& x, const Cell& cell, std::vector<double>& f);
   std::vector<double> xv_;           // positions with the virtual sites placed
   void build(const std::vector<double>& x, const Cell& cell);
+  void rescale_images(const Cell& cell);
+  const double* listed_positions(const std::vector<double>& x);
   void cap_radii();
   const ForceField& ff_;
   EnergyOptions opt_;
   std::vector<double> x0_;
   Cell cell0_;
-  std::vector<uint32_t> pi_, pj_;
-  std::vector<double> shift_;        // 3 per pair: Cartesian image shift, d = x_j − x_i + shift
-  std::vector<int32_t> ishift_;      // the same shifts as integer lattice coefficients
-  Cell cells_;                       // the cell the Cartesian shifts were computed for
+  // Pair list, by first atom: the pairs of atom i are [first_[i], first_[i + 1]), partner pj_ and image pq_. With the
+  // listed positions xs = x + off (each atom moved by the lattice vector that put it in the cell at the build), a
+  // pair's separation is d = xs_j − xs_i + qvec_[pq_]. Six bytes per pair: the list is read once per step.
+  std::vector<size_t> first_;
+  std::vector<uint32_t> pj_;
+  std::vector<uint16_t> pq_;
+  std::vector<int32_t> qint_;        // 3 per image code: integer lattice coefficients
+  std::vector<double> qvec_;         // 3 per image code: the Cartesian lattice vector for cells_
+  std::vector<int32_t> ioff_;        // 3 per atom: its offset as integer lattice coefficients
+  std::vector<double> off_;          // 3 per atom: the Cartesian offset for cells_
+  std::vector<double> xs_;           // listed positions of the current step
+  Cell cells_;                       // the cell the Cartesian offsets and images were computed for
   std::vector<double> eps_, s6_, rcap2_, ecap_, fcap_;   // per type pair
   bool lj96_ = false;                // class II 9-6 LJ
   std::vector<uint8_t> form_;        // per type pair: 0 LJ, else the PairFunc form
