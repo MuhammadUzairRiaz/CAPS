@@ -2083,6 +2083,9 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
       }
       return 0.0;
     };
+    // The reference angles go in LAMMPS improper class2's order, theta1 = ABC, theta2 = ABD, theta3 = CBD. msi2lmp writes
+    // ABC, CBD, ABD (GetParameters.c), which is off wherever ABD and CBD differ (C-CH-H-H centres of an alkane); CAPS
+    // keeps to the form LAMMPS evaluates, so the energy does not depend on the order of the outer atoms.
     auto aa_terms = [&](uint32_t A, uint32_t B, uint32_t C, uint32_t D, double m[3]) {
       // M1: ABC & CBD (shared C), M2: ABC & ABD (shared A), M3: ABD & CBD (shared D); own names first, then equivalents
       for (int pass = 0; pass < 2; ++pass) {
@@ -2141,7 +2144,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
         }
         double m[3] = {0, 0, 0};
         aa_terms(A, c, C, D, m);
-        ff.impropers2.push_back({A, c, C, D, K, chi0 * kDeg, m[0], m[1], m[2], t0_of(A, c, C), t0_of(C, c, D), t0_of(A, c, D)});
+        ff.impropers2.push_back({A, c, C, D, K, chi0 * kDeg, m[0], m[1], m[2], t0_of(A, c, C), t0_of(A, c, D), t0_of(C, c, D)});
       } else if (nbc.size() > 3) {
         for (size_t x = 0; x + 2 < nbc.size(); ++x)
           for (size_t y = x + 1; y + 1 < nbc.size(); ++y)
@@ -2149,7 +2152,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
               const uint32_t A = nbc[x], C = nbc[y], D = nbc[z];
               double m[3] = {0, 0, 0};
               aa_terms(A, c, C, D, m);
-              ff.impropers2.push_back({A, c, C, D, 0.0, 0.0, m[0], m[1], m[2], t0_of(A, c, C), t0_of(C, c, D), t0_of(A, c, D)});
+              ff.impropers2.push_back({A, c, C, D, 0.0, 0.0, m[0], m[1], m[2], t0_of(A, c, C), t0_of(A, c, D), t0_of(C, c, D)});
             }
       }
     }

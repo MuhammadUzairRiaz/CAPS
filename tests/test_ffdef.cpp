@@ -738,10 +738,24 @@ TEST(FFDef, FrcConversionsParameteriseFully) {
       bool mbt = false, bb = false, aa = false;
       for (const auto& d : ff.dihedrals2) mbt = mbt || d.mbt[0] != 0 || d.mbt[1] != 0 || d.mbt[2] != 0;
       for (const auto& a : ff.angles2) bb = bb || a.bb_m != 0;
+      // the angle-angle reference angles in LAMMPS improper class2's order: θ1 = i-j-k, θ2 = i-j-l, θ3 = k-j-l, each the θ0
+      // of that angle's own term (msi2lmp swaps θ2 and θ3; with them swapped liquid decane's improper energy came out
+      // 19.59 kcal/mol in LAMMPS against 6.91)
+      std::map<std::array<uint32_t, 3>, double> t0;
+      for (const auto& a : ff.angles2) t0[{a.j, std::min(a.i, a.k), std::max(a.i, a.k)}] = a.theta0;
+      auto at = [&](uint32_t a, uint32_t v, uint32_t b) {
+        auto it = t0.find({v, std::min(a, b), std::max(a, b)});
+        return it == t0.end() ? -1.0 : it->second;
+      };
+      size_t distinct = 0;
       for (const auto& q : ff.impropers2) {
         aa = aa || q.m1 != 0 || q.m2 != 0 || q.m3 != 0;
-        EXPECT_GT(q.theta2, 0) << id;   // θ2 is the k-j-l angle (LAMMPS's order)
+        EXPECT_NEAR(q.theta1, at(q.i, q.j, q.k), 1e-12) << id;
+        EXPECT_NEAR(q.theta2, at(q.i, q.j, q.l), 1e-12) << id;
+        EXPECT_NEAR(q.theta3, at(q.k, q.j, q.l), 1e-12) << id;
+        distinct += std::fabs(q.theta2 - q.theta3) > 1e-6;
       }
+      EXPECT_GT(distinct, 0u) << id;   // the check has terms where the order matters
       EXPECT_TRUE(mbt && bb && aa) << id;
     }
   }
