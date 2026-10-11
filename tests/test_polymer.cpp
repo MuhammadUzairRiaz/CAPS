@@ -199,6 +199,25 @@ TEST(Polymer, MethacrylatesGrowAtFullContactLimits) {
   }
 }
 
+TEST(Polymer, QuaternaryBackbonesGrowLongChains) {
+  // polyisobutylene, poly(α-methylstyrene) and poly(n-butyl methacrylate): a quaternary carbon every second backbone
+  // atom (the butyl ester a long side chain as well); full limits, no auto scale; short chains in a 0.6 g/cm³ cell and
+  // long ones at the Studio's 0.4
+  struct Case { const char* smiles; int chains, dp; double density; size_t unit_atoms; };
+  for (const Case& c : {Case{"*CC(*)(C)C", 3, 8, 0.6, 12}, Case{"*CC(*)(C)c1ccccc1", 3, 8, 0.6, 19},
+                        Case{"*CC(*)(C)C", 2, 200, 0.4, 12}, Case{"*CC(*)(C)c1ccccc1", 2, 100, 0.4, 19},
+                        Case{"*CC(*)(C)C(=O)OCCCC", 2, 50, 0.4, 24}}) {
+    GrowOptions o;
+    o.chains = c.chains;
+    o.density = c.density;
+    GrowReport rep;
+    const System s = grow_chains(spec({c.smiles}, Sequence::Homopolymer, c.dp), o, &rep);
+    EXPECT_EQ(s.atoms.size(), size_t(c.chains) * (size_t(c.dp) * c.unit_atoms + 2)) << c.smiles << " DP " << c.dp;
+    EXPECT_NEAR(s.density(), c.density, 0.01);
+    EXPECT_GE(rep.worst_margin, o.accept - 1e-9);
+  }
+}
+
 TEST(Polymer, BlendsOfTwoRubbers) {
   BlendComponent nr, br;
   nr.spec.units = {{"NR", "[*]C/C=C(C)\\C[*]"}};
@@ -442,7 +461,8 @@ TEST(Polymer, RosenbluthGrowthIsLessStretched) {
   }
   EXPECT_GT(trans[0], 0.68);
   for (int m : {1, 2}) {
-    // the torsion energy is of the backbone torsion (it was of a hydrogen's, which favoured gauche): about 0.62–0.67
+    // the torsion energy is of the backbone torsion (it was of a hydrogen's, which favoured gauche): about 0.60–0.67,
+    // the best-of-k trials about 0.75
     EXPECT_LT(trans[m], trans[0] - 0.05) << "method " << m;
     EXPECT_GT(trans[m], 0.40) << "method " << m;
   }
