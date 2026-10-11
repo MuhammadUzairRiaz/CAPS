@@ -2,6 +2,8 @@
 // thread count because each worker owns a fixed slice and reductions run in worker order.
 #pragma once
 #include <algorithm>
+#include <atomic>
+#include <chrono>
 #include <condition_variable>
 #include <functional>
 #include <mutex>
@@ -19,7 +21,7 @@ class ThreadPool {
     {
       std::lock_guard<std::mutex> l(m_);
       stop_ = true;
-      ++gen_;
+      gen_.fetch_add(1, std::memory_order_release);
     }
     cv_.notify_all();
     for (auto& w : workers_) w.join();
@@ -28,23 +30,43 @@ class ThreadPool {
 
   // Runs f(worker, begin, end) over [0, count) split into size() contiguous slices; the caller runs slice 0.
   // Every worker is called once per run, so per-worker buffers can be reset inside f.
+  // An MD step makes a dozen runs a few hundred µs apart: workers spin a short while for the next one before they
+  // sleep, and the caller spins for the last worker, so a run costs no system call while the work keeps coming.
   void run(size_t count, const std::function<void(int, size_t, size_t)>& f) {
     if (n_ == 1) { f(0, 0, count); return; }   // otherwise every worker is called, possibly with an empty range
+    job_ = &f;
+    count_ = count;
+    pending_.store(n_ - 1, std::memory_order_relaxed);
+    bool wake;
     {
       std::lock_guard<std::mutex> l(m_);
-      job_ = &f;
-      count_ = count;
-      pending_ = n_ - 1;
-      ++gen_;
+      gen_.fetch_add(1, std::memory_order_release);
+      wake = sleepers_ > 0;
     }
-    cv_.notify_all();
+    if (wake) cv_.notify_all();
     slice(0);
-    std::unique_lock<std::mutex> l(m_);
-    done_.wait(l, [this] { return pending_ == 0; });
+    spin([this] { return pending_.load(std::memory_order_acquire) == 0; });
+    if (pending_.load(std::memory_order_acquire) != 0) {
+      std::unique_lock<std::mutex> l(m_);
+      done_.wait(l, [this] { return pending_.load(std::memory_order_acquire) == 0; });
+    }
     job_ = nullptr;
   }
 
  private:
+  // spins until done() or about 100 µs have passed
+  template <class Done>
+  static void spin(Done done) {
+    const auto t0 = std::chrono::steady_clock::now();
+    for (int k = 1; !done(); ++k) {
+#if defined(__x86_64__) || defined(_M_X64) || defined(__i386__)
+      __builtin_ia32_pause();
+#elif defined(__aarch64__) || defined(__arm__)
+      __asm__ __volatile__("yield");
+#endif
+      if (k % 64 == 0 && std::chrono::steady_clock::now() - t0 > std::chrono::microseconds(100)) return;
+    }
+  }
   void slice(int t) {
     const size_t b = count_ * t / n_, e = count_ * (t + 1) / n_;
     (*job_)(t, b, e);
@@ -52,16 +74,21 @@ class ThreadPool {
   void loop(int t) {
     size_t seen = 0;
     for (;;) {
-      {
+      size_t g = seen;
+      spin([&] { return (g = gen_.load(std::memory_order_acquire)) != seen; });
+      if (g == seen) {
         std::unique_lock<std::mutex> l(m_);
-        cv_.wait(l, [&] { return gen_ != seen; });
-        seen = gen_;
-        if (stop_) return;
+        ++sleepers_;
+        cv_.wait(l, [&] { return gen_.load(std::memory_order_acquire) != seen; });
+        --sleepers_;
+        g = gen_.load(std::memory_order_acquire);
       }
+      seen = g;
+      if (stop_) return;
       slice(t);
-      {
-        std::lock_guard<std::mutex> l(m_);
-        if (--pending_ == 0) done_.notify_one();
+      if (pending_.fetch_sub(1, std::memory_order_acq_rel) == 1) {
+        { std::lock_guard<std::mutex> l(m_); }   // the caller is spinning, or waits under the lock: no lost wake-up
+        done_.notify_one();
       }
     }
   }
@@ -70,8 +97,10 @@ class ThreadPool {
   std::mutex m_;
   std::condition_variable cv_, done_;
   const std::function<void(int, size_t, size_t)>* job_ = nullptr;
-  size_t count_ = 0, gen_ = 0;
-  int pending_ = 0;
+  size_t count_ = 0;
+  std::atomic<size_t> gen_{0};
+  std::atomic<int> pending_{0};
+  int sleepers_ = 0;
   bool stop_ = false;
 };
 

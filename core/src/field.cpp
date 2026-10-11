@@ -12,6 +12,7 @@
 #include <functional>
 #include <map>
 #include <set>
+#include <type_traits>
 
 #include "caps/grow.hpp"
 #include "parallel.hpp"
@@ -614,16 +615,28 @@ void Evaluator::build(const std::vector<double>& x, const Cell& cell_in) {
   const double rcs2 = rcs * rcs;
   const size_t ntypes = ff_.lj.size();
   const bool skipping = !ff_.excluded_type_pairs.empty();
+  // a neighbour bin u in [−reach, nb − 1 + reach] is the image q = ⌊u / nb⌋ of bin u − q nb: the codes of the images
+  int qlo[3], span[3];
+  for (int k = 0; k < 3; ++k) {
+    qlo[k] = cell.periodic[k] ? -((reach[k] + nb[k] - 1) / nb[k]) : 0;
+    span[k] = (cell.periodic[k] ? (nb[k] - 1 + reach[k]) / nb[k] : 0) - qlo[k] + 1;
+  }
+  if (size_t(span[0]) * span[1] * span[2] > 65536) throw FieldError("the cell is too small for the cut-off: more than 65536 periodic images in range");
+  qint_.clear();
+  for (int a = 0; a < span[0]; ++a)
+    for (int b = 0; b < span[1]; ++b)
+      for (int c = 0; c < span[2]; ++c) qint_.insert(qint_.end(), {qlo[0] + a, qlo[1] + b, qlo[2] + c});
   const int nth = pool_->size();
-  std::vector<std::vector<uint32_t>> vi(nth), vj(nth);
-  std::vector<std::vector<double>> vs(nth);
+  std::vector<std::vector<uint32_t>> vj(nth);
+  std::vector<std::vector<uint16_t>> vq(nth);
+  std::vector<uint32_t> count(n);
   pool_->run(n, [&](int t, size_t b, size_t en) {
-    auto& PI = vi[t];
     auto& PJ = vj[t];
-    auto& SH = vs[t];
-    PI.clear(); PJ.clear(); SH.clear();
+    auto& PQ = vq[t];
+    PJ.clear(); PQ.clear();
     for (size_t i = b; i < en; ++i) {
       const auto& ex = ff_.excluded[i];
+      const size_t before = PJ.size();
       for (int dx = -reach[0]; dx <= reach[0]; ++dx)
         for (int dy = -reach[1]; dy <= reach[1]; ++dy)
           for (int dz = -reach[2]; dz <= reach[2]; ++dz) {
@@ -638,6 +651,7 @@ void Evaluator::build(const std::vector<double>& x, const Cell& cell_in) {
             }
             if (skip) continue;
             const bool zero = q[0] == 0 && q[1] == 0 && q[2] == 0;
+            const uint16_t code = static_cast<uint16_t>(((q[0] - qlo[0]) * span[1] + (q[1] - qlo[1])) * span[2] + (q[2] - qlo[2]));
             for (uint32_t j : bins[index(u[0], u[1], u[2])]) {
               // Half list balanced over atoms: an unordered pair is kept from the side given by the parity of i + j.
               if (j != i && (j > i) != (((i + j) & 1) == 0)) continue;
@@ -659,35 +673,65 @@ void Evaluator::build(const std::vector<double>& x, const Cell& cell_in) {
                 if (dot(d, d) <= dot(dm, dm) + 1e-6) continue;
               }
               if (skipping && skip_type_[size_t(ff_.type_index[i]) * ntypes + ff_.type_index[j]]) continue;
-              PI.push_back(static_cast<uint32_t>(i));
               PJ.push_back(j);
-              // d = x_j − x_i + shift with the actual (possibly unwrapped) positions
-              for (int k = 0; k < 3; ++k) SH.push_back(d[k] - (x[3 * j + k] - x[3 * i + k]));
+              PQ.push_back(code);
             }
           }
+      count[i] = static_cast<uint32_t>(PJ.size() - before);
     }
   });
-  pi_.clear();
-  pj_.clear();
-  shift_.clear();
-  for (int t = 0; t < nth; ++t) {
-    pi_.insert(pi_.end(), vi[t].begin(), vi[t].end());
-    pj_.insert(pj_.end(), vj[t].begin(), vj[t].end());
-    shift_.insert(shift_.end(), vs[t].begin(), vs[t].end());
+  first_.resize(n + 1);
+  first_[0] = 0;
+  for (size_t i = 0; i < n; ++i) first_[i + 1] = first_[i] + count[i];
+  pj_.resize(first_[n]);
+  pq_.resize(first_[n]);
+  // every worker's atoms are a contiguous range listed in order: its pairs go in one piece (the same split as above)
+  pool_->run(n, [&](int t, size_t b, size_t) {
+    std::copy(vj[t].begin(), vj[t].end(), pj_.begin() + std::ptrdiff_t(first_[b]));
+    std::copy(vq[t].begin(), vq[t].end(), pq_.begin() + std::ptrdiff_t(first_[b]));
+  });
+  // Each atom's offset to its binned position: a lattice vector (in the periodic directions) whose integer
+  // coefficients are kept, so a change of cell (barostat, compression) only rescales the offsets and images instead
+  // of forcing a rebuild.
+  off_.resize(3 * n);
+  ioff_.assign(3 * n, 0);
+  for (size_t i = 0; i < n; ++i) {
+    const Vec3 w = cell.origin + cell.a * fr[i][0] + cell.b * fr[i][1] + cell.c * fr[i][2];
+    for (int k = 0; k < 3; ++k) off_[3 * i + k] = w[k] - x[3 * i + k];
   }
-  // Each shift is a lattice vector; keep its integer coefficients so a change of cell (barostat, compression)
-  // only rescales the shifts instead of forcing a rebuild.
-  ishift_.assign(shift_.size(), 0);
   if (cell_in.valid())
-    for (size_t p = 0; p < shift_.size(); p += 3) {
-      const Vec3 fr0 = cell_in.to_fractional(cell_in.origin + Vec3{shift_[p], shift_[p + 1], shift_[p + 2]});
-      for (int k = 0; k < 3; ++k) ishift_[p + k] = static_cast<int32_t>(std::lround(fr0[k]));
+    for (size_t i = 0; i < n; ++i) {
+      const Vec3 o = cell_in.to_fractional(cell_in.origin + Vec3{off_[3 * i], off_[3 * i + 1], off_[3 * i + 2]});
+      for (int k = 0; k < 3; ++k) ioff_[3 * i + k] = static_cast<int32_t>(std::lround(o[k]));
     }
+  qvec_.resize(qint_.size());
+  for (size_t c = 0; c < qint_.size(); c += 3) {
+    const Vec3 v = cell.a * qint_[c] + cell.b * qint_[c + 1] + cell.c * qint_[c + 2];
+    for (int k = 0; k < 3; ++k) qvec_[c + k] = v[k];
+  }
   x0_ = x;
   cell0_ = cell_in;
   cells_ = cell_in;
   built_ = true;
   ++builds_;
+}
+
+void Evaluator::rescale_images(const Cell& cell) {
+  for (size_t i = 0; i < off_.size(); i += 3) {
+    const Vec3 v = cell.a * ioff_[i] + cell.b * ioff_[i + 1] + cell.c * ioff_[i + 2];
+    off_[i] = v[0]; off_[i + 1] = v[1]; off_[i + 2] = v[2];
+  }
+  for (size_t c = 0; c < qint_.size(); c += 3) {
+    const Vec3 v = cell.a * qint_[c] + cell.b * qint_[c + 1] + cell.c * qint_[c + 2];
+    qvec_[c] = v[0]; qvec_[c + 1] = v[1]; qvec_[c + 2] = v[2];
+  }
+  cells_ = cell;
+}
+
+const double* Evaluator::listed_positions(const std::vector<double>& x) {
+  xs_.resize(x.size());
+  for (size_t k = 0; k < x.size(); ++k) xs_[k] = x[k] + off_[k];
+  return xs_.data();
 }
 
 int apply_rigid_geometry(System& s, const ForceField& ff, size_t first, size_t last) {
@@ -810,13 +854,7 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
     auto same = [](const Cell& p, const Cell& q) { return p.a == q.a && p.b == q.b && p.c == q.c && p.origin == q.origin; };
     bool rebuild = !built_ || x0_.size() != x.size();
     if (frozen_ && !rebuild) {
-      if (!same(cell, cells_) && cell.valid()) {
-        for (size_t p = 0; p < shift_.size(); p += 3) {
-          const Vec3 v = cell.a * ishift_[p] + cell.b * ishift_[p + 1] + cell.c * ishift_[p + 2];
-          shift_[p] = v[0]; shift_[p + 1] = v[1]; shift_[p + 2] = v[2];
-        }
-        cells_ = cell;
-      }
+      if (!same(cell, cells_) && cell.valid()) rescale_images(cell);
     } else if (!rebuild) {
       if (same(cell, cell0_)) {
         const double lim = 0.25 * opt_.skin * opt_.skin;
@@ -843,13 +881,7 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
           const double dx = x[3 * i] - m[0], dy = x[3 * i + 1] - m[1], dz = x[3 * i + 2] - m[2];
           rebuild = dx * dx + dy * dy + dz * dz > lim;
         }
-        if (!rebuild && !same(cell, cells_)) {
-          for (size_t p = 0; p < shift_.size(); p += 3) {
-            const Vec3 v = cell.a * ishift_[p] + cell.b * ishift_[p + 1] + cell.c * ishift_[p + 2];
-            shift_[p] = v[0]; shift_[p + 1] = v[1]; shift_[p + 2] = v[2];
-          }
-          cells_ = cell;
-        }
+        if (!rebuild && !same(cell, cells_)) rescale_images(cell);
       }
     }
     if (rebuild) {
@@ -1082,96 +1114,126 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
   for (auto& v : acc) v.fill(0.0);
 
   const bool frozen = frozen_;
-  // Phase 1: pair list. Every worker is called (possibly with an empty range) and clears its own force buffer.
-  pool_->run(nonb ? pi_.size() : 0, [&](int t, size_t b, size_t en) {
+  // Phase 1: pair list. Every worker is called (possibly with an empty range) and clears its own force buffer; its
+  // atoms are a contiguous range holding about 1/nth of the pairs.
+  const double* xs = nonb ? listed_positions(x) : nullptr;
+  const size_t npairs = nonb ? pj_.size() : 0;
+  // Plain 12-6 pairs (no other pair form, cap, switch, alchemy, hydrogen bonds or frozen list; PME, DSF or no
+  // charges) take a copy of the loop with those branches compiled out: the same arithmetic, so the same numbers.
+  const bool plain = nonb && !alch && !hbon && !frozen_ && !capped && !ff_.lj_fsw && !lj96_ && !rf && !gro &&
+                     std::all_of(form_.begin(), form_.end(), [](uint8_t v) { return v == 0; });
+  std::vector<double> shift0;
+  if (plain) {
+    shift0.resize(nt * nt);
+    for (size_t tp = 0; tp < shift0.size(); ++tp) shift0[tp] = lj_shift(tp);
+  }
+  auto pair_phase = [&](int t, auto plain_c) {
+    constexpr bool kPlain = decltype(plain_c)::value;
     std::vector<double>& ft = tf_[t];
     ft.assign(x.size(), 0.0);
     double evdw = 0, ecoul = 0, vir = 0, wv[6] = {0, 0, 0, 0, 0, 0}, dl_lj = 0, dl_c = 0;
-    for (size_t p = b; p < en; ++p) {
-      const uint32_t i = pi_[p], j = pj_[p];
-      const double dx = x[3 * j] - x[3 * i] + shift_[3 * p], dy = x[3 * j + 1] - x[3 * i + 1] + shift_[3 * p + 1],
-                   dz = x[3 * j + 2] - x[3 * i + 2] + shift_[3 * p + 2];
-      const double r2 = dx * dx + dy * dy + dz * dz;
-      if (frozen ? !inside_[p] : r2 >= rc2) continue;
-      // a self image is listed once for each ±shift pair (the pair list keeps one), so it counts in full, as in LAMMPS
-      const double w = 1.0;
-      const size_t tp = size_t(ff_.type_index[i]) * nt + ff_.type_index[j];
-      const bool ab = alch && (*alch)[i] != (*alch)[j];   // an alchemical pair: soft-core, scaled
-      double ev = 0, fr = 0;
-      if (ab) {
-        if (eps_[tp] > 0) {
-          double u, fsc, dl, uc, fcc, dlc;
-          softcore(r2, s6_[tp], eps_[tp], u, fsc, dl);
-          softcore(rc2, s6_[tp], eps_[tp], uc, fcc, dlc);   // shifted to zero at the cut-off, as the plain pairs
-          ev = u - uc;
-          fr = fsc;
-          dl_lj += dl - dlc;
-        }
-      } else {
-        fr = lj(tp, r2, 1.0, ev);
-        ev -= lj_shift(tp);
-      }
-      evdw += w * ev;
-      const double ecoul0 = ecoul, fr0 = fr;
-      if (coul && q[i] != 0 && q[j] != 0) {
-        const double r = std::sqrt(r2), qq = kCoulomb * q[i] * q[j];
-        double ex2;
-        if (rf) {
-          ecoul += w * qq * (1 / r + krf * r2 - crf);
-          fr += qq * (1 / (r2 * r) - 2 * krf);
-        } else if (gro) {
-          const double qd = qq * qscale;
-          double ec = qd * (1 / r - gc[4]), fc = qd / r;
-          if (r > ri) {
-            const double tc = r - ri;
-            ec += qd * tc * tc * tc * (gc[2] + gc[3] * tc);
-            fc += qd * r * tc * tc * (gc[0] + gc[1] * tc);
+    if (npairs == 0) return;
+    const size_t ib = size_t(std::lower_bound(first_.begin(), first_.end() - 1, npairs * size_t(t) / size_t(nth)) - first_.begin());
+    const size_t ie = size_t(std::lower_bound(first_.begin(), first_.end() - 1, npairs * size_t(t + 1) / size_t(nth)) - first_.begin());
+    for (size_t i = ib; i < ie; ++i) {
+      const double xi = xs[3 * i], yi = xs[3 * i + 1], zi = xs[3 * i + 2];
+      double fxi = 0, fyi = 0, fzi = 0;
+      const size_t ti = size_t(ff_.type_index[i]) * nt;
+      for (size_t p = first_[i]; p < first_[i + 1]; ++p) {
+        const uint32_t j = pj_[p];
+        const double* sv = &qvec_[3 * size_t(pq_[p])];
+        const double dx = xs[3 * j] - xi + sv[0], dy = xs[3 * j + 1] - yi + sv[1], dz = xs[3 * j + 2] - zi + sv[2];
+        const double r2 = dx * dx + dy * dy + dz * dz;
+        if ((!kPlain && frozen) ? !inside_[p] : r2 >= rc2) continue;
+        // a self image is listed once for each ±shift pair (the pair list keeps one), so it counts in full, as in LAMMPS
+        const double w = 1.0;
+        const size_t tp = ti + ff_.type_index[j];
+        const bool ab = !kPlain && alch && (*alch)[i] != (*alch)[j];   // an alchemical pair: soft-core, scaled
+        double ev = 0, fr = 0;
+        if constexpr (kPlain) {
+          const double eps = eps_[tp];
+          if (eps > 0) {
+            const double q6 = s6_[tp] / (r2 * r2 * r2);
+            ev += 4 * eps * (q6 * q6 - q6);
+            fr = 24 * eps * (2 * q6 * q6 - q6) / r2;
           }
-          ecoul += w * ec;
-          fr += fc / r2;
-        } else if (pme) {
-          const double er = erfc_exp(beta * r, ex2);
-          ecoul += w * qq * er / r;
-          fr += qq * (er / r2 + b2pi * ex2 / r) / r;
+          ev -= shift0[tp];
+        } else if (ab) {
+          if (eps_[tp] > 0) {
+            double u, fsc, dl, uc, fcc, dlc;
+            softcore(r2, s6_[tp], eps_[tp], u, fsc, dl);
+            softcore(rc2, s6_[tp], eps_[tp], uc, fcc, dlc);   // shifted to zero at the cut-off, as the plain pairs
+            ev = u - uc;
+            fr = fsc;
+            dl_lj += dl - dlc;
+          }
         } else {
-          const double er = erfc_exp(a * r, ex2);
-          ecoul += w * qq * (er / r - dsf_e0 + dsf_f0 * (r - rc));
-          fr += qq * (er / r2 + a2pi * ex2 / r - dsf_f0) / r;
+          fr = lj(tp, r2, 1.0, ev);
+          ev -= lj_shift(tp);
         }
-      }
-      if (ab && ecoul != ecoul0) {   // the pair's electrostatics × λ_coul, its full value is ∂U/∂λ_coul
-        const double de = ecoul - ecoul0;
-        dl_c += de;
-        ecoul = ecoul0 + lam_c * de;
-        fr = fr0 + lam_c * (fr - fr0);
-      }
-      if (hbon && i != j && r2 < hro2) {   // hydrogen bonds, either atom the donor
-        auto run = [&](uint32_t D, uint32_t Aa, const Vec3& dDA) {
-          const auto it = ff_.hbond.param.find({ff_.type_index[D], ff_.type_index[Aa]});
-          if (it == ff_.hbond.param.end()) return;
-          for (uint32_t h : ff_.hbond.hyd[D]) {
-            const Vec3 d1 = mi(pos(D) - pos(h)), d2 = dDA + d1;
-            HbOut o;
-            if (!hb_one(it->second, d1, d2, o)) continue;
-            evdw += o.e;
-            for (int c = 0; c < 3; ++c) { ft[3 * D + c] += o.fd[c]; ft[3 * Aa + c] += o.fa[c]; ft[3 * h + c] += o.fh[c]; }
-            vir += dot(d1, o.fd) + dot(d2, o.fa);
-            wv[0] += d1[0] * o.fd[0] + d2[0] * o.fa[0]; wv[1] += d1[1] * o.fd[1] + d2[1] * o.fa[1]; wv[2] += d1[2] * o.fd[2] + d2[2] * o.fa[2];
-            wv[3] += 0.5 * (d1[0] * o.fd[1] + d1[1] * o.fd[0] + d2[0] * o.fa[1] + d2[1] * o.fa[0]);
-            wv[4] += 0.5 * (d1[0] * o.fd[2] + d1[2] * o.fd[0] + d2[0] * o.fa[2] + d2[2] * o.fa[0]);
-            wv[5] += 0.5 * (d1[1] * o.fd[2] + d1[2] * o.fd[1] + d2[1] * o.fa[2] + d2[2] * o.fa[1]);
+        evdw += w * ev;
+        const double ecoul0 = ecoul, fr0 = fr;
+        if (coul && q[i] != 0 && q[j] != 0) {
+          const double r = std::sqrt(r2), qq = kCoulomb * q[i] * q[j];
+          double ex2;
+          if (!kPlain && rf) {
+            ecoul += w * qq * (1 / r + krf * r2 - crf);
+            fr += qq * (1 / (r2 * r) - 2 * krf);
+          } else if (!kPlain && gro) {
+            const double qd = qq * qscale;
+            double ec = qd * (1 / r - gc[4]), fc = qd / r;
+            if (r > ri) {
+              const double tc = r - ri;
+              ec += qd * tc * tc * tc * (gc[2] + gc[3] * tc);
+              fc += qd * r * tc * tc * (gc[0] + gc[1] * tc);
+            }
+            ecoul += w * ec;
+            fr += fc / r2;
+          } else if (pme) {
+            const double er = erfc_exp(beta * r, ex2);
+            ecoul += w * qq * er / r;
+            fr += qq * (er / r2 + b2pi * ex2 / r) / r;
+          } else {
+            const double er = erfc_exp(a * r, ex2);
+            ecoul += w * qq * (er / r - dsf_e0 + dsf_f0 * (r - rc));
+            fr += qq * (er / r2 + a2pi * ex2 / r - dsf_f0) / r;
           }
-        };
-        if (!ff_.hbond.hyd[i].empty() && ff_.hbond.acceptor[j]) run(i, j, Vec3{dx, dy, dz});
-        if (!ff_.hbond.hyd[j].empty() && ff_.hbond.acceptor[i]) run(j, i, Vec3{-dx, -dy, -dz});
+        }
+        if (ab && ecoul != ecoul0) {   // the pair's electrostatics × λ_coul, its full value is ∂U/∂λ_coul
+          const double de = ecoul - ecoul0;
+          dl_c += de;
+          ecoul = ecoul0 + lam_c * de;
+          fr = fr0 + lam_c * (fr - fr0);
+        }
+        if (!kPlain && hbon && i != j && r2 < hro2) {   // hydrogen bonds, either atom the donor
+          auto run = [&](uint32_t D, uint32_t Aa, const Vec3& dDA) {
+            const auto it = ff_.hbond.param.find({ff_.type_index[D], ff_.type_index[Aa]});
+            if (it == ff_.hbond.param.end()) return;
+            for (uint32_t h : ff_.hbond.hyd[D]) {
+              const Vec3 d1 = mi(pos(D) - pos(h)), d2 = dDA + d1;
+              HbOut o;
+              if (!hb_one(it->second, d1, d2, o)) continue;
+              evdw += o.e;
+              for (int c = 0; c < 3; ++c) { ft[3 * D + c] += o.fd[c]; ft[3 * Aa + c] += o.fa[c]; ft[3 * h + c] += o.fh[c]; }
+              vir += dot(d1, o.fd) + dot(d2, o.fa);
+              wv[0] += d1[0] * o.fd[0] + d2[0] * o.fa[0]; wv[1] += d1[1] * o.fd[1] + d2[1] * o.fa[1]; wv[2] += d1[2] * o.fd[2] + d2[2] * o.fa[2];
+              wv[3] += 0.5 * (d1[0] * o.fd[1] + d1[1] * o.fd[0] + d2[0] * o.fa[1] + d2[1] * o.fa[0]);
+              wv[4] += 0.5 * (d1[0] * o.fd[2] + d1[2] * o.fd[0] + d2[0] * o.fa[2] + d2[2] * o.fa[0]);
+              wv[5] += 0.5 * (d1[1] * o.fd[2] + d1[2] * o.fd[1] + d2[1] * o.fa[2] + d2[2] * o.fa[1]);
+            }
+          };
+          if (!ff_.hbond.hyd[i].empty() && ff_.hbond.acceptor[j]) run(i, j, Vec3{dx, dy, dz});
+          if (!ff_.hbond.hyd[j].empty() && ff_.hbond.acceptor[i]) run(j, i, Vec3{-dx, -dy, -dz});
+        }
+        fr *= w;
+        const double fx = fr * dx, fy = fr * dy, fz = fr * dz;
+        ft[3 * j] += fx; ft[3 * j + 1] += fy; ft[3 * j + 2] += fz;
+        fxi -= fx; fyi -= fy; fzi -= fz;
+        vir += fx * dx + fy * dy + fz * dz;
+        wv[0] += fx * dx; wv[1] += fy * dy; wv[2] += fz * dz;
+        wv[3] += fx * dy; wv[4] += fx * dz; wv[5] += fy * dz;   // pair forces are central: f ∥ d, so f_a d_b = f_b d_a
       }
-      fr *= w;
-      const double fx = fr * dx, fy = fr * dy, fz = fr * dz;
-      ft[3 * j] += fx; ft[3 * j + 1] += fy; ft[3 * j + 2] += fz;
-      ft[3 * i] -= fx; ft[3 * i + 1] -= fy; ft[3 * i + 2] -= fz;
-      vir += fx * dx + fy * dy + fz * dz;
-      wv[0] += fx * dx; wv[1] += fy * dy; wv[2] += fz * dz;
-      wv[3] += fx * dy; wv[4] += fx * dz; wv[5] += fy * dz;   // pair forces are central: f ∥ d, so f_a d_b = f_b d_a
+      ft[3 * i] += fxi; ft[3 * i + 1] += fyi; ft[3 * i + 2] += fzi;
     }
     acc[t][4] += evdw;
     acc[t][5] += ecoul;
@@ -1179,7 +1241,7 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
     for (int c = 0; c < 6; ++c) acc[t][7 + c] += wv[c];
     acc[t][13] += dl_lj;
     acc[t][14] += dl_c;
-  });
+  };
 
   // Phase 2: bonded terms, 1-4 pairs and the electrostatics of bonded partners, as one index space split over workers.
   const size_t nb = ff_.bonds.size(), na = ff_.angles.size(), nd = ff_.dihedrals.size(), ni = ff_.impropers.size();
@@ -1190,7 +1252,7 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
   const size_t c5 = c4 + ff_.inversions.size(), c6 = c5 + ff_.bonds_x.size(), c7 = c6 + ff_.angles_x.size();
   const size_t c8 = c7 + ff_.urey_bradley.size(), c9 = c8 + ff_.cbt.size();
   const size_t total = c9 + ff_.lj_pairs.size();
-  pool_->run(total, [&](int t, size_t b, size_t en) {
+  auto bonded_phase = [&](int t, size_t b, size_t en) {
     std::vector<double>& ft = tf_[t];
     auto& A = acc[t];
     auto add = [&](uint32_t i, const Vec3& v) { ft[3 * i] += v[0]; ft[3 * i + 1] += v[1]; ft[3 * i + 2] += v[2]; };
@@ -1556,6 +1618,12 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
         V(d, fj);
       }
     }
+  };
+  // one run for both phases: each worker lists its pairs, then its share of the bonded terms, into its own buffer
+  pool_->run(size_t(nth), [&](int t, size_t, size_t) {
+    if (plain) pair_phase(t, std::true_type{});
+    else pair_phase(t, std::false_type{});
+    bonded_phase(t, total * size_t(t) / size_t(nth), total * size_t(t + 1) / size_t(nth));
   });
 
   // Reduce in worker order (deterministic for a given thread count); the reduction itself is split by atoms.
@@ -1590,25 +1658,28 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
       e.w[0] += d[0] * fv[0]; e.w[1] += d[1] * fv[1]; e.w[2] += d[2] * fv[2];
       e.w[3] += 0.5 * (d[0] * fv[1] + d[1] * fv[0]); e.w[4] += 0.5 * (d[0] * fv[2] + d[2] * fv[0]); e.w[5] += 0.5 * (d[1] * fv[2] + d[2] * fv[1]);
     };
-    for (size_t k = 0; k < pi_.size(); ++k) {
-      const uint32_t i = pi_[k], j = pj_[k];
-      if (!S.atom[i] || !S.atom[j]) continue;
-      const Vec3 d = pos(j) - pos(i) + Vec3{shift_[3 * k], shift_[3 * k + 1], shift_[3 * k + 2]};
-      const double r2 = dot(d, d);
-      if (r2 >= rcs2) continue;
-      const double r = std::sqrt(r2);
-      nbs[i].push_back({j, d, r});
-      nbs[j].push_back({i, d * -1.0, r});
-      // two-body
-      const double sr = S.sigma / r, srp = std::pow(sr, S.p), srq = std::pow(sr, S.q), ex = std::exp(S.sigma / (r - rcs));
-      const double u = S.B * srp - srq;
-      esw += S.A * S.eps * u * ex;
-      const double dudr = (-S.p * S.B * srp + S.q * srq) / r;
-      const double dEdr = S.A * S.eps * ex * (dudr - u * S.sigma / ((r - rcs) * (r - rcs)));
-      const Vec3 fj = d * (-dEdr / r);
-      push(j, fj);
-      push(i, fj * -1.0);
-      vir(d, fj);
+    for (uint32_t i = 0; i < n; ++i) {
+      for (size_t k = first_[i]; k < first_[i + 1]; ++k) {
+        const uint32_t j = pj_[k];
+        if (!S.atom[i] || !S.atom[j]) continue;
+        const double* sv = &qvec_[3 * size_t(pq_[k])];
+        const Vec3 d = Vec3{xs[3 * j], xs[3 * j + 1], xs[3 * j + 2]} - Vec3{xs[3 * i], xs[3 * i + 1], xs[3 * i + 2]} + Vec3{sv[0], sv[1], sv[2]};
+        const double r2 = dot(d, d);
+        if (r2 >= rcs2) continue;
+        const double r = std::sqrt(r2);
+        nbs[i].push_back({j, d, r});
+        nbs[j].push_back({i, d * -1.0, r});
+        // two-body
+        const double sr = S.sigma / r, srp = std::pow(sr, S.p), srq = std::pow(sr, S.q), ex = std::exp(S.sigma / (r - rcs));
+        const double u = S.B * srp - srq;
+        esw += S.A * S.eps * u * ex;
+        const double dudr = (-S.p * S.B * srp + S.q * srq) / r;
+        const double dEdr = S.A * S.eps * ex * (dudr - u * S.sigma / ((r - rcs) * (r - rcs)));
+        const Vec3 fj = d * (-dEdr / r);
+        push(j, fj);
+        push(i, fj * -1.0);
+        vir(d, fj);
+      }
     }
     // three-body: every pair of neighbours j, k of a vertex i
     for (uint32_t i = 0; i < n; ++i) {
@@ -1715,16 +1786,19 @@ void Evaluator::freeze_pairs(const std::vector<double>& x, const Cell& cell) {
   frozen_ = false;
   build(x, cell);
   const double rc2 = opt_.cutoff * opt_.cutoff;
-  inside_.assign(pi_.size(), 0);
-  for (size_t p = 0; p < pi_.size(); ++p) {
-    const uint32_t i = pi_[p], j = pj_[p];
-    double r2 = 0;
-    for (int k = 0; k < 3; ++k) {
-      const double d = x[3 * j + k] - x[3 * i + k] + shift_[3 * p + k];
-      r2 += d * d;
+  const double* xs = listed_positions(x);
+  inside_.assign(pj_.size(), 0);
+  for (size_t i = 0; i + 1 < first_.size(); ++i)
+    for (size_t p = first_[i]; p < first_[i + 1]; ++p) {
+      const uint32_t j = pj_[p];
+      const double* sv = &qvec_[3 * size_t(pq_[p])];
+      double r2 = 0;
+      for (int k = 0; k < 3; ++k) {
+        const double d = xs[3 * j + k] - xs[3 * i + k] + sv[k];
+        r2 += d * d;
+      }
+      inside_[p] = r2 < rc2;
     }
-    inside_[p] = r2 < rc2;
-  }
   frozen_ = true;
 }
 

@@ -166,24 +166,42 @@ contains
     complex(c_double_complex), intent(inout) :: f(0:)
     complex(c_double_complex), intent(in) :: tw(0:)
     integer, intent(in) :: o, fs, m, p, n
-    complex(c_double_complex) :: sc(0:p - 1)
-    integer :: u, q1, q, k, idx
+    ! a fixed scratch for the usual radices (7, …): an automatic array would be allocated on the heap on every call
+    complex(c_double_complex) :: small(0:15)
+    complex(c_double_complex), allocatable :: big(:)
+    if (p <= 16) then
+      call bfly_generic_s(f, o, fs, tw, m, p, n, small)
+    else
+      allocate (big(0:p - 1))
+      call bfly_generic_s(f, o, fs, tw, m, p, n, big)
+    end if
+  end subroutine bfly_generic
+
+  subroutine bfly_generic_s(f, o, fs, tw, m, p, n, sc)
+    complex(c_double_complex), intent(inout) :: f(0:)
+    complex(c_double_complex), intent(in) :: tw(0:)
+    integer, intent(in) :: o, fs, m, p, n
+    complex(c_double_complex), intent(inout) :: sc(0:)
+    complex(c_double_complex) :: acc
+    integer :: u, q1, q, k, idx, step
     do u = 0, m - 1
       do q1 = 0, p - 1
         sc(q1) = f(o + u + q1 * m)
       end do
       do q1 = 0, p - 1
         k = u + q1 * m
-        f(o + k) = sc(0)
+        acc = sc(0)
         idx = 0
+        step = fs * k   ! < fs·p·m = n, so one subtraction keeps idx + step in [0, n)
         do q = 1, p - 1
-          idx = idx + fs * k
-          idx = mod(idx, n)
-          f(o + k) = f(o + k) + sc(q) * tw(idx)
+          idx = idx + step
+          if (idx >= n) idx = idx - n
+          acc = acc + sc(q) * tw(idx)
         end do
+        f(o + k) = acc
       end do
     end do
-  end subroutine bfly_generic
+  end subroutine bfly_generic_s
 
   ! radices of n (4 first, then 2, 3, 5, …) and the remaining length after each
   pure subroutine factorize(n, pf, mm, nf)
@@ -335,8 +353,8 @@ module caps_kspace
   use caps_fft
   implicit none
   private
-  public :: caps_f_pme, caps_f_ewald, caps_f_fft3d, caps_f_good_size, caps_f_pme_spread, caps_f_fft_lines, caps_f_pme_influence, &
-            caps_f_pme_gather, caps_f_bspline_moduli
+  public :: caps_f_pme, caps_f_ewald, caps_f_fft3d, caps_f_good_size, caps_f_pme_splines, caps_f_pme_spread_planes, &
+            caps_f_fft_lines, caps_f_pme_influence, caps_f_pme_gather, caps_f_bspline_moduli
 
   real(c_double), parameter :: pi = 3.14159265358979323846_c_double
 
@@ -600,18 +618,17 @@ contains
     call bspline_moduli(k, p, bsp)
   end subroutine caps_f_bspline_moduli
 
-  subroutine caps_f_pme_spread(n, x, q, cell, grid, p, g, th, dth, idx) bind(C, name="caps_f_pme_spread")
-    integer(c_int), value :: n, p
-    real(c_double), intent(in) :: x(3, n), q(n), cell(3, 3)
+  ! B-spline weights, their derivatives and grid indices of atoms [first, last) (0-based)
+  subroutine caps_f_pme_splines(n, x, cell, grid, p, th, dth, idx, first, last) bind(C, name="caps_f_pme_splines")
+    integer(c_int), value :: n, p, first, last
+    real(c_double), intent(in) :: x(3, n), cell(3, 3)
     integer(c_int), intent(in) :: grid(3)
-    complex(c_double_complex), intent(out) :: g(0:grid(1) - 1, 0:grid(2) - 1, 0:grid(3) - 1)
-    real(c_double), intent(out) :: th(p, 3, n), dth(p, 3, n)
-    integer(c_int), intent(out) :: idx(p, 3, n)
-    real(c_double) :: h(3, 3), hi(3, 3), vol, s(3), u, w, st
-    integer :: i, d, a, b, c
+    real(c_double), intent(inout) :: th(p, 3, n), dth(p, 3, n)
+    integer(c_int), intent(inout) :: idx(p, 3, n)
+    real(c_double) :: h(3, 3), hi(3, 3), vol, s(3), u, w
+    integer :: i, d, a
     call cell_inverse(cell, h, hi, vol)
-    g = (0.0_c_double, 0.0_c_double)
-    do i = 1, n
+    do i = first + 1, last
       s = matmul(hi, x(:, i))
       do d = 1, 3
         u = (s(d) - floor(s(d))) * grid(d)
@@ -621,16 +638,34 @@ contains
           idx(a, d, i) = modulo(int(floor(u)) - p + a, grid(d))
         end do
       end do
+    end do
+  end subroutine caps_f_pme_splines
+
+  ! The charges spread onto the planes c in [first, last) of the third axis, which this call zeroes first. Every atom
+  ! is visited in index order, so each grid point sums its atoms in the same order whatever the split of the planes.
+  subroutine caps_f_pme_spread_planes(n, q, grid, p, g, th, idx, first, last) bind(C, name="caps_f_pme_spread_planes")
+    integer(c_int), value :: n, p, first, last
+    real(c_double), intent(in) :: q(n)
+    integer(c_int), intent(in) :: grid(3)
+    complex(c_double_complex), intent(inout) :: g(0:grid(1) - 1, 0:grid(2) - 1, 0:grid(3) - 1)
+    real(c_double), intent(in) :: th(p, 3, n)
+    integer(c_int), intent(in) :: idx(p, 3, n)
+    real(c_double) :: st
+    integer :: i, a, b, c, ic
+    g(:, :, first:last - 1) = (0.0_c_double, 0.0_c_double)
+    do i = 1, n
       do c = 1, p
+        ic = idx(c, 3, i)
+        if (ic < first .or. ic >= last) cycle
         do b = 1, p
           st = q(i) * th(b, 2, i) * th(c, 3, i)
           do a = 1, p
-            g(idx(a, 1, i), idx(b, 2, i), idx(c, 3, i)) = g(idx(a, 1, i), idx(b, 2, i), idx(c, 3, i)) + st * th(a, 1, i)
+            g(idx(a, 1, i), idx(b, 2, i), ic) = g(idx(a, 1, i), idx(b, 2, i), ic) + st * th(a, 1, i)
           end do
         end do
       end do
     end do
-  end subroutine caps_f_pme_spread
+  end subroutine caps_f_pme_spread_planes
 
   subroutine caps_f_fft_lines(g, k1, k2, k3, axis, sign, first, last) bind(C, name="caps_f_fft_lines")
     integer(c_int), value :: k1, k2, k3, axis, sign, first, last

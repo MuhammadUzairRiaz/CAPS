@@ -16,8 +16,9 @@ void caps_f_ewald(int n, const double* x, const double* q, const double* cell, c
 void caps_f_fft3d(double* re, double* im, int k1, int k2, int k3, int sign);
 int caps_f_good_size(int n);
 void caps_f_bspline_moduli(int k, int p, double* bsp);
-void caps_f_pme_spread(int n, const double* x, const double* q, const double* cell, const int* grid, int p, std::complex<double>* g, double* th,
-                       double* dth, int* idx);
+void caps_f_pme_splines(int n, const double* x, const double* cell, const int* grid, int p, double* th, double* dth, int* idx, int first, int last);
+void caps_f_pme_spread_planes(int n, const double* q, const int* grid, int p, std::complex<double>* g, const double* th, const int* idx, int first,
+                              int last);
 void caps_f_fft_lines(std::complex<double>* g, int k1, int k2, int k3, int axis, int sign, int first, int last);
 void caps_f_pme_influence(std::complex<double>* g, const int* grid, const double* cell, const double* b1, const double* b2, const double* b3,
                           double beta, double kcoul, int first, int last, double* energy, double* vir);
@@ -81,7 +82,13 @@ double pme_reciprocal(const std::vector<double>& x, const std::vector<double>& q
   std::vector<std::complex<double>> grid(size_t(k1) * size_t(k2) * size_t(k3));
   std::vector<double> th(size_t(p) * 3 * size_t(n)), dth(th.size());
   std::vector<int> idx(th.size());
-  caps_f_pme_spread(n, x.data(), q.data(), c, g.k, p, grid.data(), th.data(), dth.data(), idx.data());
+  pool.run(size_t(n), [&](int, size_t b, size_t e) {
+    if (b < e) caps_f_pme_splines(n, x.data(), c, g.k, p, th.data(), dth.data(), idx.data(), int(b), int(e));
+  });
+  // each worker owns whole planes of the third axis: no two write the same grid point
+  pool.run(size_t(k3), [&](int, size_t b, size_t e) {
+    if (b < e) caps_f_pme_spread_planes(n, q.data(), g.k, p, grid.data(), th.data(), idx.data(), int(b), int(e));
+  });
   // lines of each axis split over the workers (disjoint ranges: no two write the same grid point)
   auto transform = [&](int sign) {
     const int lines[3] = {k2 * k3, k1 * k3, k1 * k2};
