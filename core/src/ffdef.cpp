@@ -1884,6 +1884,10 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
           if (p.size() < 4) throw FFError("charmm angle " + r->name + " needs K theta0 K_ub r_ub");
           ff.angles.push_back({i, j, k, p[0], p[1] * kDeg});
           if (p[2] != 0) ff.urey_bradley.push_back({i, k, p[2], p[3]});
+        } else if (st == "screened") {   // K (θ − θ0)² exp(−(r_ij/ρ1 + r_kj/ρ2)): DL_POLY shrm with K = k/2
+          const auto& p = r->params;
+          if (p.size() < 4) throw FFError("screened angle " + r->name + " needs K theta0 rho1 rho2");
+          ff.angles_x.push_back({i, j, k, 6, p[0], p[1] * kDeg, rev ? p[3] : p[2], rev ? p[2] : p[3]});
         } else if (st == "quartic") {   // LAMMPS angle_style quartic: the class II angle without cross terms
           const auto& p = r->params;
           if (p.size() < 4) throw FFError("quartic angle " + r->name + " needs theta0 K2 K3 K4");
@@ -1946,15 +1950,19 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
     for (const auto& r : def.angles) {
       auto c = r.cross.find("contact");
       if (c == r.cross.end() || c->second.empty() || r.match.size() != 3 || r.params.size() < 2) continue;
-      if ((r.style.empty() ? def.angle_style : r.style) != "harmonic") throw FFError("contact angle " + r.name + " must be harmonic");
+      const std::string st = r.style.empty() ? def.angle_style : r.style;
+      if (st != "harmonic" && st != "screened") throw FFError("contact angle " + r.name + " must be harmonic or screened");
+      if (st == "screened" && r.params.size() < 4) throw FFError("screened angle " + r.name + " needs K theta0 rho1 rho2");
       const double rc2 = c->second[0] * c->second[0];
+      // 0: no match, 1: i-j-k as the rule, 2: reversed
       auto fits = [&](uint32_t i, uint32_t j, uint32_t k) {
         for (const auto* N : {&Na, &Na2}) {
           if (N->empty()) continue;
           std::vector<const std::string*> f{&(*N)[i], &(*N)[j], &(*N)[k]}, b{&(*N)[k], &(*N)[j], &(*N)[i]};
-          if (match_fw(r.match, f) || match_fw(r.match, b)) return true;
+          if (match_fw(r.match, f)) return 1;
+          if (match_fw(r.match, b)) return 2;
         }
-        return false;
+        return 0;
       };
       const std::vector<std::string> apex{r.match[1]};
       for (uint32_t j = 0; j < n; ++j) {
@@ -1972,8 +1980,11 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
         for (size_t x = 0; x < near.size(); ++x)
           for (size_t y = x + 1; y < near.size(); ++y) {
             const uint32_t i = near[x], k = near[y];
-            if (!fits(i, j, k)) continue;
-            ff.angles.push_back({i, j, k, r.params[0], r.params[1] * kDeg});
+            const int way = fits(i, j, k);
+            if (!way) continue;
+            if (st == "screened")
+              ff.angles_x.push_back({i, j, k, 6, r.params[0], r.params[1] * kDeg, r.params[way == 1 ? 2 : 3], r.params[way == 1 ? 3 : 2]});
+            else ff.angles.push_back({i, j, k, r.params[0], r.params[1] * kDeg});
             rep.used["angle " + r.name]++;
             ++n_three;
           }

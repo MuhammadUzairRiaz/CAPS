@@ -75,6 +75,21 @@ CASES = [
      "Ti1 Ti 0 0 0; O1 O 0.3053 0.3053 0", "--supercell", "3,3,5"]), "matsui1991-tio2", "types", "rules", ["--no-tail"]),
     ("Sanders, Leslie & Catlow 1984 (Table 1): alpha-quartz, O shells, O-Si-O bends by distance", ("file", os.path.join(ROOT, "data", "crystals",
      "alpha-quartz.cif")), "sanders1984-sio2", "types", "rules", ["--no-tail"]),
+    # oxide glasses (bench/ff/make_glass.py): the Teter partial-charge set, Tilocca's shell model (SM0; SM1's screened bend has
+    # no LAMMPS style and is refused), Vogel's LiPO3; overlays by --typing
+    ("Teter glass set (Cormack 2002 / Du 2009): alpha-quartz", ("file", os.path.join(ROOT, "data", "crystals", "alpha-quartz.cif")), "teter-glass", "types", "rules", ["--no-tail"]),
+    ("Teter glass set (Du 2009): corundum, Al 1.8", ("file", os.path.join(ROOT, "data", "crystals", "corundum.cif")), "teter-glass", "types", "rules", ["--no-tail"]),
+    ("Teter glass set (Du 2009): Y2O3 in the corundum structure", ("crystal", ["--group", "R -3 c", "--cell", "5.6,5.6,15.3", "--sites",
+     "Y1 Y 0 0 0.352; O1 O 0.306 0 0.25"]), "teter-glass", "types", "rules", ["--no-tail"]),
+    ("Teter glass set, Okhotnikov 2013 Y-O overlay: Y2O3 in the corundum structure", ("crystal", ["--group", "R -3 c", "--cell", "5.6,5.6,15.3", "--sites",
+     "Y1 Y 0 0 0.352; O1 O 0.306 0 0.25"]), "teter-glass", "types", "rules",
+     ["--no-tail", "--typing", os.path.join(ROOT, "data", "typing", "sets", "teter-glass", "okhotnikov2013-y.typing.json")]),
+    ("Teter glass set, Tilocca 2006 Table III overlay: alpha-quartz", ("file", os.path.join(ROOT, "data", "crystals", "alpha-quartz.cif")), "teter-glass", "types", "rules",
+     ["--no-tail", "--typing", os.path.join(ROOT, "data", "typing", "sets", "teter-glass", "tilocca2006-teter.typing.json")]),
+    ("Tilocca 2006 shell model SM0 (overlay): alpha-quartz", ("file", os.path.join(ROOT, "data", "crystals", "alpha-quartz.cif")), "tilocca2006-sm", "types", "rules",
+     ["--no-tail", "--typing", os.path.join(ROOT, "data", "typing", "sets", "tilocca2006-sm", "sm0.typing.json")]),
+    ("Vogel 2003 LiPO3: a cubic Li-P-O3 test cell", ("crystal", ["--group", "P m -3 m", "--cell", "3.6,3.6,3.6", "--sites",
+     "Li1 Li 0 0 0; P1 P 0.5 0.5 0.5; O1 O 0.5 0.5 0", "--supercell", "3,3,3"]), "vogel2003-lipo3", "types", "rules", ["--no-tail"]),
     ("GaN (Wonglakhon & Zahn 2020): wurtzite, formal charges, LJ + Born-Mayer", ("crystal", ["--group", "P 63 m c", "--cell", "3.189,3.189,5.185,90,90,120",
      "--sites", "Ga1 Ga 0.33333333 0.66666667 0; N1 N 0.33333333 0.66666667 0.377", "--supercell", "4,4,3"]), "gan2020", "types", "rules", ["--no-tail"]),
     # Bush, Gale, Catlow & Battle 1994 (one shell-model set for the oxides): MgO, SrTiO3, corundum

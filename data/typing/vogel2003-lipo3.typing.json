@@ -1,0 +1,38 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "LiPO3 glass (Vogel 2003)",
+ "unknown_types": "untyped",
+ "bonds": "defined",
+ "description": "Li, P and O of lithium metaphosphate (bench/ff/make_glass.py)",
+ "rules": [
+  {
+   "type": "Li_v",
+   "smarts": "[#3]",
+   "priority": 0,
+   "requires": [
+    "P",
+    "O"
+   ],
+   "description": "Li+"
+  },
+  {
+   "type": "P_v",
+   "smarts": "[#15]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "description": "P"
+  },
+  {
+   "type": "O_v",
+   "smarts": "[#8]",
+   "priority": 0,
+   "requires": [
+    "P"
+   ],
+   "description": "O"
+  }
+ ]
+}

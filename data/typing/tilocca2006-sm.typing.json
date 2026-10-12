@@ -1,0 +1,62 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "Silicate glasses, shell model (Tilocca, de Leeuw & Cormack 2006)",
+ "unknown_types": "untyped",
+ "bonds": "defined",
+ "shells": {
+  "O_smc": "O_sms",
+  "O_sm0c": "O_sm0s"
+ },
+ "description": "Si, Na, Ca and shell-model O (bench/ff/make_glass.py); SM0 is an overlay",
+ "rules": [
+  {
+   "type": "Si_sm",
+   "smarts": "[#14]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "description": "Si4+"
+  },
+  {
+   "type": "Na_sm",
+   "smarts": "[#11]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "description": "Na+"
+  },
+  {
+   "type": "Ca_sm",
+   "smarts": "[#20]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "description": "Ca2+"
+  },
+  {
+   "type": "O_smc",
+   "smarts": "[#8]",
+   "priority": 0,
+   "requires": [],
+   "description": "O2- core"
+  },
+  {
+   "type": "O_sms",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O_sms",
+   "description": "shell of O_smc"
+  },
+  {
+   "type": "O_sm0s",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O_sm0s",
+   "description": "shell of O_sm0c"
+  }
+ ]
+}

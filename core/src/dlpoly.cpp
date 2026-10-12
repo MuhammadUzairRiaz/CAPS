@@ -95,6 +95,7 @@ std::vector<std::string> write_dlpoly(const System& s, const ForceField& ff, con
     const std::initializer_list<int> ix = {L(a.i), L(a.j), L(a.k)};
     if (a.form == 1) M(a.i).angles.push_back(line("hcos", ix, {2 * a.a, a.b * kDeg}));
     else if (a.form == 2) M(a.i).angles.push_back(line("cos", ix, {a.a, 0.0, 1.0}));
+    else if (a.form == 6) M(a.i).angles.push_back(line("shrm", ix, {2 * a.a, a.b * kDeg, a.c, a.d}));   // k/2 (θ − θ0)² exp(−(r_ij/ρ1 + r_ik/ρ2))
     else if (a.form >= 11 && a.form <= 14) {
       const int m = a.form - 10;
       M(a.i).angles.push_back(m == 1 ? line("cos", ix, {a.a, 0.0, 1.0}) : line("cos", ix, {a.a / (m * m), 180.0, double(m)}));

@@ -1,0 +1,18 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "teter-glass: okhotnikov2013-y",
+ "unknown_types": "untyped",
+ "description": "Overlay: Okhotnikov's Y-O (Born-Mayer, derived in the paper) in place of Du's",
+ "rules": [
+  {
+   "type": "Y_ok",
+   "smarts": "[#39]",
+   "priority": 50,
+   "requires": [
+    "O"
+   ],
+   "description": "Y, Okhotnikov's Y-O"
+  }
+ ]
+}

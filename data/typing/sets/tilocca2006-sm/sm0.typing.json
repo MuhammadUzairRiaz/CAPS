@@ -1,0 +1,25 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "tilocca2006-sm: sm0",
+ "unknown_types": "untyped",
+ "description": "Overlay: SM0, the raw harmonic O-Si-O bend (Table I)",
+ "rules": [
+  {
+   "type": "Si_sm0",
+   "smarts": "[#14]",
+   "priority": 50,
+   "requires": [
+    "O"
+   ],
+   "description": "Si4+, SM0"
+  },
+  {
+   "type": "O_sm0c",
+   "smarts": "[#8]",
+   "priority": 50,
+   "requires": [],
+   "description": "O2- core, SM0"
+  }
+ ]
+}
