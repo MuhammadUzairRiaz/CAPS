@@ -8,10 +8,11 @@ R=${1:-docs/paper/runs/checks_1012}
 CH="water_spce?=data/typing/charmm-spc.typing.json;water_tip3p=data/typing/charmm-tip3p.typing.json;water_tip3p_pme=data/typing/charmm-tip3p-pme.typing.json"
 AM="water_tip3p=data/typing/amber-tip3p.typing.json;water_tip3p_pme=data/typing/amber-tip3p-pme.typing.json"
 CV="water_tip3p=data/typing/cvff-tip3p.typing.json;water_spce?=data/typing/cvff-spc.typing.json"
+DR="water_tip3p=data/typing/dreiding-tip3p.typing.json;water_tip3p_pme=data/typing/dreiding-tip3p-pme.typing.json"
 OP="water_tip3p_c=data/typing/opls2005-tip3p-c.typing.json;water_spce?=data/typing/opls2005-spc.typing.json"
 while read lib ff ov; do
   [ -z "$lib" ] && continue
-  case "$ov" in charmm) o="$CH";; amber) o="$AM";; cvff) o="$CV";; opls) o="$OP";; *) o="";; esac
+  case "$ov" in charmm) o="$CH";; amber) o="$AM";; cvff) o="$CV";; opls) o="$OP";; dreiding) o="$DR";; *) o="";; esac
   d=${ff%-frc}   # the .frc entries take the DL_FIELD run of their DL-derived twin
   dl=""; [ -d "$R/dlf_$d" ] && dl="--dl $R/dlf_$d"
   ex='tip4p|tip5p|TIP4P|TIP5P'
@@ -37,7 +38,7 @@ CHARMM36_lipid charmm36-lipid charmm
 CHARMM36_nucl charmm36-nucl charmm
 CHARMM36_carb charmm36-carb charmm
 CHARMM36_cgenff cgenff charmm
-DREIDING dreiding
+DREIDING dreiding dreiding
 GROMOS_G54A7 gromos-54a7
 OPLS_AAM opls-aam
 OPLS_CL_P opls-clp

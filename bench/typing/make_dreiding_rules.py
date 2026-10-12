@@ -73,11 +73,28 @@ FILES = {
         "variants": {"C_2": ["C_2S"], "C_R": ["C_RS"]},
         "conjugated_single_order": 1.5,
         # this file bonds O and N only to the paper's hydrogen-bonding H (H___A, its H__HB)
-        "extra": [("H__HB", 1, "[#1][O,N]", "H on O or N (DREIDING's H___A)")],
+        "extra": [("H__HB", 1, "[#1][O,N,S]", "H on O, N or S (DREIDING's H___A)"),
+                  # this file's functional-group keys (its templates use them in place of the paper's hybridisation types)
+                  ("CC", 3, "[CX3]=[OX1]", "carbonyl C"), ("OC", 3, "[OX1]=[CX3]", "carbonyl O"),
+                  ("COO", 4, "[CX3](~[OX1])~[OX1]", "carboxylate C"), ("OOC", 4, "[OX1]~[CX3]~[OX1]", "carboxylate O"),
+                  ("OCX", 4, "[OX2H1][CX3]=[OX1]", "carboxylic acid O(H)"), ("OS", 4, "[OX2]([#6])[CX3]=[OX1]", "ester O"),
+                  ("OE", 3, "[OX2]([CX4])[CX4]", "ether O"), ("OA", 3, "[OX2H1][CX4]", "alcohol O"),
+                  ("NNI", 3, "[NX1]#[CX2]", "nitrile N"), ("NH4", 3, "[NX4]", "ammonium N"),
+                  ("NAM", 3, "[NX3;H2,H1;!$(N[CX3]=[O,S,N])]", "amine N"), ("NAMD", 3, "[NX3][CX3]=[OX1]", "amide N"),
+                  ("NIM", 3, "[NX2]=[CX3]", "imine N"),
+                  ("SS", 3, "[SX2][SX2]", "disulfide S"), ("ST", 3, "[SX2H1]", "thiol S"), ("SO", 3, "[SX3]=[OX1]", "sulfoxide S")],
     },
 }
 
+OVERLAYS = {"dreiding-tip3p": ("DREIDING: TIP3P water (OW / HW)", [("OW", "[OX2H2]", "TIP3P water O"), ("HW", "[H][OX2H2]", "TIP3P water H")]),
+            "dreiding-tip3p-pme": ("DREIDING: TIP3P water for PME (OT3E / H3E)", [("OT3E", "[OX2H2]", "TIP3P (PME) water O"), ("H3E", "[H][OX2H2]", "TIP3P (PME) water H")])}
+
 if __name__ == "__main__":
+    for name, (label, rules) in OVERLAYS.items():
+        json.dump({"format": "caps-typing", "version": 1, "forcefield": label,
+                   "description": f"{label}: an overlay on the force field's own rules that picks this water model (bench/typing/make_dreiding_rules.py).",
+                   "rules": [{"type": t, "smarts": sm, "priority": 9, "description": d} for t, sm, d in rules]},
+                  open(os.path.join(DATA, "typing", name + ".typing.json"), "w"), ensure_ascii=False, indent=1)
     cat_p = os.path.join(DATA, "forcefields", "catalogue.json")
     cat = json.load(open(cat_p))
     for target, spec in FILES.items():
