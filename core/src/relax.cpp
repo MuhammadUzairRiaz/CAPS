@@ -160,6 +160,8 @@ RelaxStage minimise(Evaluator& ev, std::vector<double>& x, const Cell& cell, con
     std::deque<std::vector<double>> S, Y;
     std::deque<double> rho;
     std::vector<double> fprev, xprev, dprev(n3, 0.0);
+    std::vector<double> xq(o.method == Minimiser::ConjugateGradient ? n3 : 0), fq(xq.size());
+    bool cg_restarted = false;   // the last energy-change stop of CG was answered by a steepest-descent restart
     double step = 0.1;        // Å, largest atomic displacement of the first trial
     const double step_max = o.method == Minimiser::SteepestDescent ? 0.3 : 0.5;
     for (; it < o.max_iterations && st.stopped_by != "force"; ++it) {
@@ -211,6 +213,19 @@ RelaxStage minimise(Evaluator& ev, std::vector<double>& x, const Cell& cell, con
         if (en <= e - 1e-4 * a * slope) { ok = true; break; }
         a *= 0.5;
       }
+      // conjugate gradients keep their conjugacy only with a near-exact line search: the minimum of the parabola through
+      // E(0), its slope and E(a) is tried as well (one more evaluation; as LAMMPS's quadratic line search refines its step)
+      if (ok && o.method == Minimiser::ConjugateGradient) {
+        const double curv = en - e + a * slope;   // E(a) − E(0) − a E'(0), E'(0) = −slope
+        if (curv > 0) {
+          const double aq = 0.5 * slope * a * a / curv;
+          if (aq > 0 && aq < 4 * a && std::fabs(aq - a) > 1e-3 * a && aq * md <= step_max) {
+            for (size_t k = 0; k < n3; ++k) xq[k] = x[k] + aq * d[k];
+            const double eq = eval(xq, fq);
+            if (eq < en) { xn.swap(xq); fn.swap(fq); en = eq; a = aq; }
+          }
+        }
+      }
       if (!ok) {
         if (!S.empty() || !fprev.empty()) {   // start over from steepest descent once
           S.clear(); Y.clear(); rho.clear(); fprev.clear();
@@ -239,7 +254,20 @@ RelaxStage minimise(Evaluator& ev, std::vector<double>& x, const Cell& cell, con
       e = en;
       fmax = max_force(f);
       if (fmax < o.ftol) st.stopped_by = "force";
-      else if (de >= 0 && de < o.etol * std::max(1.0, std::fabs(e))) { st.stopped_by = "energy"; ++it; break; }
+      else if (de >= 0 && de < o.etol * std::max(1.0, std::fabs(e))) {
+        // conjugate gradients can stall on one tiny step far from a minimum: start over from steepest descent, and stop
+        // only when that fresh start cannot lower the energy either
+        if (o.method == Minimiser::ConjugateGradient && !cg_restarted) {
+          cg_restarted = true;
+          fprev.clear();
+          step = 0.1;
+          if ((it & 7) == 0) report(it);
+          continue;
+        }
+        st.stopped_by = "energy"; ++it; break;
+      } else {
+        cg_restarted = false;
+      }
       if ((it & 7) == 0) report(it);
     }
   }

@@ -38,8 +38,8 @@ DL_TOL = 1e-4   # relative, for DL_FIELD's LAMMPS energies (its coefficients and
 COMPASS_GAP = [
     (r"^c=|^c=1|^c=2", "non-aromatic C=C carbon (no alkene type)"),
     (r"^(cl|f|br|i)$", "halogen (no halogen types)"),
-    (r"^c_2$|^c_1$|^c'$", "carbonyl C other than ester / amide (no ketone or aldehyde type)"),
-    (r"^n$|^hn$|^nn$|^n2$|^hn2$|^n3n$|^nh$|^n_1|^n_2", "amine / amide N or its H (only n3m, an amide N without H)"),
+    (r"^c_0$", "aldehyde or ketone C (no aldehyde or ketone type: the aldehyde is the H-capped end of an ester or amide oligomer)"),
+    (r"^n$|^hn$|^nn$|^n2$|^hn2$|^n3n$|^nh$|^n_1|^n_2|^na$", "amine or N-H amide N, or its H (only n3m, an amide N without H)"),
     (r"^ct$|^nt$|^nz$", "nitrile C or N (no nitrile types)"),
     (r"^sf$|^s'$|^s$|^sp$|^s1$|^sc$", "sulfur (no sulfide or sulfone types)"),
     (r"^np$|^nb$|^n=|^npc$|^nr$", "aromatic or sp2 N (no pyridine, pyrrole or aniline N)"),
