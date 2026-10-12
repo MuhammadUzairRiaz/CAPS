@@ -16,7 +16,8 @@ namespace caps::nbnxm {
 
 void List::build(const std::vector<double>& x, const Cell& cell_in, double rl, const std::vector<std::vector<uint32_t>>& excluded,
                  const std::vector<int>& type_index, size_t ntypes, const std::vector<char>& skip_type, const std::vector<double>& q,
-                 const std::vector<double>& f12, const std::vector<double>& f6, ThreadPool& pool, const float* c12, const float* c6) {
+                 const std::vector<double>& f12, const std::vector<double>& f6, ThreadPool& pool, const float* c12, const float* c6,
+                 const std::vector<std::vector<uint32_t>>* p14) {
   rlist = rl;
   const size_t n = x.size() / 3;
   Cell cell = cell_in;
@@ -112,8 +113,10 @@ void List::build(const std::vector<double>& x, const Cell& cell_in, double rl, c
   // so a candidate costs one look-up, not one per atom pair
   std::vector<size_t> xfirst(nclusters + 1, 0);
   std::vector<std::pair<uint32_t, uint16_t>> xm;
+  std::vector<uint16_t> xm14;   // aligned with xm: the excluded pairs whose Coulomb keeps a fraction
   {
-    std::vector<std::pair<uint32_t, uint16_t>> tmp;
+    struct X { uint32_t cj; uint16_t bit, is14; };
+    std::vector<X> tmp;
     for (size_t c = 0; c < nclusters; ++c) {
       tmp.clear();
       for (int a = 0; a < 4; ++a) {
@@ -121,13 +124,15 @@ void List::build(const std::vector<double>& x, const Cell& cell_in, double rl, c
         if (ai == kPad) continue;
         for (uint32_t aj : excluded[ai]) {
           const uint32_t sj = iperm[aj];
-          tmp.push_back({sj / 4, uint16_t(1u << (4 * a + int(sj % 4)))});
+          const uint16_t bit = uint16_t(1u << (4 * a + int(sj % 4)));
+          const bool k14 = p14 && std::binary_search((*p14)[ai].begin(), (*p14)[ai].end(), aj);
+          tmp.push_back({sj / 4, bit, uint16_t(k14 ? bit : 0)});
         }
       }
-      std::sort(tmp.begin(), tmp.end());
+      std::sort(tmp.begin(), tmp.end(), [](const X& p, const X& r) { return p.cj != r.cj ? p.cj < r.cj : p.bit < r.bit; });
       for (const auto& e : tmp) {
-        if (xm.size() > xfirst[c] && xm.back().first == e.first) xm.back().second |= e.second;
-        else xm.push_back(e);
+        if (xm.size() > xfirst[c] && xm.back().first == e.cj) xm.back().second |= e.bit, xm14.back() |= e.is14;
+        else xm.push_back({e.cj, e.bit}), xm14.push_back(e.is14);
       }
       xfirst[c + 1] = xm.size();
     }
@@ -215,12 +220,14 @@ void List::build(const std::vector<double>& x, const Cell& cell_in, double rl, c
                     if (((row >> l) & 1u) && skip_type[size_t(type_index[perm[sa]]) * ntypes + size_t(type_index[perm[4 * cj + l]])]) row &= ~(1u << l);
                 mask |= row << (4 * a);
               }
-              // 1-2, 1-3 and 1-4 partners are left out at their nearest image only (as the atom pair list)
+              // 1-2, 1-3 and 1-4 partners are left out at their nearest image only (as the atom pair list); with p14
+              // they stay in the entry as excluded lanes, for the kernel's corrections
+              unsigned exm = 0, ex14 = 0;
               if (mask) {
                 const auto xb = xm.begin() + std::ptrdiff_t(xfirst[ci]), xe = xm.begin() + std::ptrdiff_t(xfirst[ci + 1]);
                 const auto it = std::lower_bound(xb, xe, std::pair<uint32_t, uint16_t>{uint32_t(cj), 0});
                 if (it != xe && it->first == cj && (it->second & mask)) {
-                  const unsigned ex = it->second & mask;
+                  const unsigned ex = it->second & mask, k14 = xm14[size_t(it - xm.begin())];
                   for (int b = 0; b < 16; ++b) {
                     if (!((ex >> b) & 1u)) continue;
                     const size_t sa = 4 * ci + size_t(b / 4), sb = 4 * cj + size_t(b % 4);
@@ -230,11 +237,14 @@ void List::build(const std::vector<double>& x, const Cell& cell_in, double rl, c
                     for (int k = 0; k < 3; ++k)
                       if (cell.periodic[k]) m[k] -= std::round(m[k]);
                     const Vec3 dm = cell.a * m[0] + cell.b * m[1] + cell.c * m[2];
-                    if (dot(d, d) <= dot(dm, dm) + 1e-6) mask &= ~(1u << b);
+                    if (dot(d, d) <= dot(dm, dm) + 1e-6) {
+                      mask &= ~(1u << b);
+                      if (p14) exm |= 1u << b, ex14 |= k14 & (1u << b);
+                    }
                   }
                 }
               }
-              if (mask) E.push_back({uint32_t(cj), code, uint16_t(mask)});
+              if (mask | exm) E.push_back({uint32_t(cj), code, uint16_t(mask), uint16_t(exm), uint16_t(ex14)});
             }
           }
         }
@@ -329,15 +339,16 @@ void List::prune(double radius, ThreadPool& pool) {
           const double* oj = &org[3 * size_t(en.cj)];
           const float sx = float(sq[0] + oj[0] - oi[0]), sy = float(sq[1] + oj[1] - oi[1]), sz = float(sq[2] + oj[2] - oi[2]);
           const F4 xj = load(&X[sj]) + set1(sx), yj = load(&Y[sj]) + set1(sy), zj = load(&Z[sj]) + set1(sz);
-          unsigned mask = 0;
+          unsigned in = 0;   // the lanes within the radius
+          const unsigned both = unsigned(en.mask) | unsigned(en.ex);
           for (int a = 0; a < 4; ++a) {
-            const unsigned rowbits = (en.mask >> (4 * a)) & 15u;
+            const unsigned rowbits = (both >> (4 * a)) & 15u;
             if (!rowbits) continue;
             const F4 dx = xj - set1(X[si + a]), dy = yj - set1(Y[si + a]), dz = zj - set1(Z[si + a]);
             const F4 d2 = fma(dx, dx, fma(dy, dy, dz * dz));
-            mask |= (bits(d2 < r2) & rowbits) << (4 * a);
+            in |= (bits(d2 < r2) & rowbits) << (4 * a);
           }
-          if (mask) E.push_back({en.cj, en.code, uint16_t(mask)});
+          if (in) E.push_back({en.cj, en.code, uint16_t(en.mask & in), uint16_t(en.ex & in), uint16_t(en.ex14 & in)});
         }
         F[ci - tb[t] + 1] = uint32_t(E.size());
       }
@@ -394,7 +405,7 @@ void kernel_t(const List& L, const Params& p, int tw, float* fxo, float* fyo, fl
   const bool shifted = p.shift != 0;
   const F4 kap2 = set1(-p.kappa * p.kappa), epk = set1(kErfcP * p.kappa), kc = set1(p.kc), e0 = set1(p.e0), f0 = set1(p.f0),
            rcv = set1(p.rc);
-  const F4 kap = set1(p.kappa), kap3 = set1(p.kappa * p.kappa * p.kappa), ku = set1(p.kappa * p.kappa / kFitUMax);
+  const F4 kap = set1(p.kappa), kap3 = set1(p.kappa * p.kappa * p.kappa), ku = set1(p.kappa * p.kappa / kFitUMax), f14 = set1(p.f14);
   const F4 twelve = set1(kLj == 2 ? 9.0f : 12.0f), six = set1(6.0f);
   // erfc by Abramowitz & Stegun 7.1.26 (|error| < 1.5e-7, the form LAMMPS uses without tables)
   const F4 a1 = set1(kErfcA[0]), a2 = set1(kErfcA[1]), a3 = set1(kErfcA[2]), a4 = set1(kErfcA[3]), a5 = set1(kErfcA[4]);
@@ -439,14 +450,19 @@ void kernel_t(const List& L, const Params& p, int tw, float* fxo, float* fyo, fl
       if constexpr (kCoul != 0) qj = load(Q + sj);
       if constexpr (kComb) p12j = load(P12 + sj), p6j = load(P6 + sj);
       F4 fjx = zero(), fjy = zero(), fjz = zero();
-      auto row = [&](auto ac) {
+      // kX: the entry has excluded lanes (a cluster pair along the diagonal, mostly); the others skip that work
+      auto row = [&](auto ac, auto xc) {
         constexpr int A = decltype(ac)::value;
-        const unsigned bits = (en.mask >> (4 * A)) & 15u;
-        if (!bits) return;
+        constexpr bool kX = decltype(xc)::value;
+        const unsigned bits = (en.mask >> (4 * A)) & 15u, xbits = kX ? (en.ex >> (4 * A)) & 15u : 0u;
+        if (!(bits | xbits)) return;
         const F4 dx = xj - lane<A>(xs), dy = yj - lane<A>(ys), dz = zj - lane<A>(zs);
         F4 r2 = fma(dx, dx, fma(dy, dy, dz * dz));
-        const M4 m = mask_bits(bits) & (r2 < rc2);
-        r2 = select(m, r2, one);
+        const M4 inr = r2 < rc2;
+        // m: the pairs that interact (Lennard-Jones and Coulomb); mall: those and the excluded pairs (the Ewald / DSF
+        // correction alone: Coulomb with the bare 1/r taken out, a 1-4 pair keeping f14 of it)
+        const M4 m = mask_bits(bits) & inr, mall = kX ? mask_bits(bits | xbits) & inr : m;
+        r2 = select(mall, r2, one);
         const F4 rinv = rsqrt(r2), r2i = rinv * rinv, r6i = r2i * r2i * r2i;
         F4 c12, c6;
         if constexpr (kComb) {
@@ -466,21 +482,25 @@ void kernel_t(const List& L, const Params& p, int tw, float* fxo, float* fyo, fl
         if constexpr (kLj == 2) rn = r6i * r2i * rinv;
         const F4 Aa = c12 * rn, Bb = c6 * r6i;
         F4 fr = fnma(six, Bb, twelve * Aa) * r2i;
+        if constexpr (kX) fr = masked(m, fr);
         if constexpr (kE) {
           F4 vlj = Aa - Bb;
           if (shifted) vlj = vlj - fnma(c6, rc6, c12 * rcn);
           ev = ev + masked(m, vlj);
         }
+        // the weight of the bare 1/r: 1 for a pair that interacts, f14 for an excluded 1-4 pair, 0 for the others
+        F4 wr = rinv;
+        if constexpr (kX) wr = select(m, one, masked(mask_bits((en.ex14 >> (4 * A)) & 15u), f14)) * rinv;
         if constexpr (kCoul == 1 || kCoul == 2) {
           const F4 qq = lane<A>(qi) * qj;
           const F4 t = ku * r2;
-          const F4 Fc = fma(kap3, ewald_gf(t), rinv * r2i);   // −(dE/dr)/r
+          const F4 Fc = fma(kap3, ewald_gf(t), wr * r2i);   // −(dE/dr)/r
           if constexpr (kCoul == 1) {
             fr = fma(qq, Fc, fr);
-            if constexpr (kE) ec = ec + masked(m, qq * fnma(kap, ewald_gv(t), rinv));
+            if constexpr (kE) ec = ec + masked(mall, qq * fnma(kap, ewald_gv(t), wr));
           } else {
             fr = fma(qq, fnma(f0, rinv, Fc), fr);
-            if constexpr (kE) ec = ec + masked(m, qq * fma(f0, r2 * rinv - rcv, fnma(kap, ewald_gv(t), rinv) - e0));
+            if constexpr (kE) ec = ec + masked(mall, qq * fma(f0, r2 * rinv - rcv, fnma(kap, ewald_gv(t), wr) - e0));
           }
         }
         if constexpr (kCoul == 3 || kCoul == 4) {
@@ -489,25 +509,33 @@ void kernel_t(const List& L, const Params& p, int tw, float* fxo, float* fyo, fl
           const F4 ex = exp_neg(kap2 * r2);
           const F4 t = one / fma(epk, r, one);
           const F4 poly = t * fma(t, fma(t, fma(t, fma(t, a5, a4), a3), a2), a1);
-          const F4 E = poly * ex * rinv;                 // erfc(κr)/r
-          const F4 Fc = fma(kc, ex, E) * r2i;            // −(dE/dr)/r
+          const F4 E0 = poly * ex * rinv;                // erfc(κr)/r
+          const F4 Fc0 = fma(kc, ex, E0) * r2i;          // −(dE/dr)/r
+          const F4 E = E0 - (rinv - wr), Fc = Fc0 - (rinv - wr) * r2i;   // less the part of 1/r an excluded pair drops
           if constexpr (kCoul == 3) {
-            if constexpr (kE) ec = ec + masked(m, qq * E);
+            if constexpr (kE) ec = ec + masked(mall, qq * E);
             fr = fma(qq, Fc, fr);
           } else {
-            if constexpr (kE) ec = ec + masked(m, qq * fma(f0, r - rcv, E - e0));
+            if constexpr (kE) ec = ec + masked(mall, qq * fma(f0, r - rcv, E - e0));
             fr = fma(qq, fnma(f0, rinv, Fc), fr);
           }
         }
-        fr = masked(m, fr);
+        fr = masked(mall, fr);
         const F4 fx = fr * dx, fy = fr * dy, fz = fr * dz;
         fjx = fjx + fx; fjy = fjy + fy; fjz = fjz + fz;
         fxa[A] = fxa[A] - fx; fya[A] = fya[A] - fy; fza[A] = fza[A] - fz;
       };
-      row(std::integral_constant<int, 0>{});
-      row(std::integral_constant<int, 1>{});
-      row(std::integral_constant<int, 2>{});
-      row(std::integral_constant<int, 3>{});
+      if (en.ex) {
+        row(std::integral_constant<int, 0>{}, std::true_type{});
+        row(std::integral_constant<int, 1>{}, std::true_type{});
+        row(std::integral_constant<int, 2>{}, std::true_type{});
+        row(std::integral_constant<int, 3>{}, std::true_type{});
+      } else {
+        row(std::integral_constant<int, 0>{}, std::false_type{});
+        row(std::integral_constant<int, 1>{}, std::false_type{});
+        row(std::integral_constant<int, 2>{}, std::false_type{});
+        row(std::integral_constant<int, 3>{}, std::false_type{});
+      }
       store(fxo + sj, load(fxo + sj) + fjx);
       store(fyo + sj, load(fyo + sj) + fjy);
       store(fzo + sj, load(fzo + sj) + fjz);
