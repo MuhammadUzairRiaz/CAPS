@@ -98,8 +98,8 @@ caps ff apply FILE --ff FF.json [-o OUT.data [--lammps-input OUT.in [--lammps-ru
 <article class="cmd" id="md" data-name="md"><h3><code>caps md</code></h3>
 <div class="code" data-lang="synopsis"><pre><code>caps md      FILE -o OUT.data [--steps 10000] [--dt 1] [--temp 300] [--thermostat bussi|langevin|nose-hoover|none]
              [--tau-t 100] [--barostat none|crescale|berendsen|mtk] [--pressure 1] [--tau-p 1000]
-             [--constraints none|h-bonds|all-bonds] [--constraint-solver shake|lincs] [--seed 1] [--new-velocities] [--thermo 100] [--dump TRAJ.lammpstrj --every 1000]
-             [--log thermo.csv] [--cutoff 10] [--skin 1.5] [--threads N] [--no-coulomb] [--quiet]
+             [--constraints none|h-bonds|all-bonds] [--constraint-solver shake|lincs] [--hmr 3.024] [--seed 1] [--new-velocities] [--thermo 100] [--dump TRAJ.lammpstrj --every 1000]
+             [--log thermo.csv] [--cutoff 10] [--skin 1.5] [--threads N] [--no-coulomb] [--precision mixed|double] [--quiet]
              [--checkpoint-every N [--checkpoint OUT.restart.data]]   the full state every N steps
              [--progress-file progress.jsonl]   one JSON line per thermo row (default in a SLURM job)
              caps md OUT.restart.data --resume --steps TOTAL -o OUT   continues from a checkpoint</code></pre></div></article>
@@ -108,7 +108,9 @@ caps ff apply FILE --ff FF.json [-o OUT.data [--lammps-input OUT.in [--lammps-ru
              [--tfinal 300] [--tmax 600] [--pfinal 1] [--pmax 49346] [--scale 1] (atm, K; --scale shortens every stage)
              [--cycles 3] [--tlow 300] [--thigh 600] [--ramp 50] [--hold 50]   (annealing, ps)
              [--until-converged] [--block 20] [--max-blocks 20] [--dt 1] [--thermostat bussi|langevin]
-             [--barostat crescale|berendsen] [--seed 1] [--dump TRAJ.lammpstrj --every-ps 10] [--log thermo.csv] [--quiet]</code></pre></div></article>
+             [--barostat crescale|berendsen] [--seed 1] [--dump TRAJ.lammpstrj --every-ps 10] [--log thermo.csv]
+             [--precision mixed|double] [--constraints h-bonds] [--hmr 3.024] [--quiet]   (mixed: pair terms in single precision
+             with SIMD, as GROMACS; --hmr: hydrogens at that mass, taken from their bonded atoms, for steps past 2 fs)</code></pre></div></article>
 <article class="cmd" id="cbmc" data-name="cbmc"><h3><code>caps cbmc</code></h3>
 <div class="code" data-lang="synopsis"><pre><code>caps cbmc    FILE -o OUT.data [--moves 1000] [--trials 8] [--max-torsions 4] [--temp 300] [--cutoff 9] [--seed 1]
              [--ff FF] [--no-coulomb]   configurational-bias regrowth of chain ends (Siepmann &amp; Frenkel)</code></pre></div></article>
