@@ -66,7 +66,41 @@ ENTRIES = {
                "CAPS rules for CL&P's types by ion family (bench/typing/make_clandp_rules.py): CL&P's own ion files (.zmat, .xyz) "
                "typed as they type them, 1165 / 1165 atoms in 55 molecules (P111i4's two swapped labels listed; CT2 and CS, the same "
                "parameters, counted as one)", ("CL&P ionic liquids", "opls_cl_p", 12), ["opls-clp"]),
+    "dreiding1990": ("DREIDING", "Mayo, Olafson, Goddard 1990 (Table I and the paper's rules)",
+                     ["S. L. Mayo, B. D. Olafson, W. A. Goddard III, J. Phys. Chem. 94, 8897 (1990)"],
+                     {"source": "the paper: J. Phys. Chem. 94, 8897 (1990), Table I (radii, angles, van der Waals) and its rules for "
+                                "bonds, angles, torsions, inversions and hydrogen bonds (bench/ff/make_dreiding.py)",
+                      "license": "published parameters of the paper"},
+                     "CAPS rules for the paper's labels (element and hybridisation: _3, _R, _2, _1; H___A on N or O); LAMMPS "
+                     "reproduces CAPS's energies and forces (bond constants by bond order, cosine-harmonic angles, the torsion rules, "
+                     "planar inversions, hydrogen bonds)", ("DREIDING", "dreiding", 14), ["dreiding"]),
 }
+RTF = "the topology's own residues typed as it types them (bench/ff/validate_rtf_types.py --cap-links): "
+for fid, name, version, refs, evidence, listing, replaces in (
+        ("charmm36-prot-toppar", "CHARMM36 proteins", "toppar_c36_jul17 (par_all36_prot.prm, top_all36_prot.rtf, its streams)",
+         ["R. B. Best et al., J. Chem. Theory Comput. 8, 3257 (2012)", "A. D. MacKerell Jr. et al., J. Phys. Chem. B 102, 3586 (1998)"],
+         RTF + "top_all36_prot.rtf 391 / 391 atoms, 24 / 24 residues", ("CHARMM36", "charmm36", 7), ["charmm36-prot"]),
+        ("charmm22-prot-toppar", "CHARMM22 proteins", "toppar_c36_jul17 (par_all22_prot.prm, top_all22_prot.rtf)",
+         ["A. D. MacKerell Jr. et al., J. Phys. Chem. B 102, 3586 (1998)"],
+         RTF + "top_all22_prot.rtf 381 / 381 atoms, 23 / 23 residues", ("CHARMM22 protein", "charmm22_prot", 21), ["charmm22-prot"]),
+        ("charmm36-carb-toppar", "CHARMM36 carbohydrates", "toppar_c36_jul17 (par_all36_carb.prm, top_all36_carb.rtf, its streams)",
+         ["O. Guvench et al., J. Chem. Theory Comput. 7, 3162 (2011)"],
+         RTF + "top_all36_carb.rtf 1786 / 1786 atoms, 75 / 75 residues", ("CHARMM36 carbohydrate", "charmm36_carb", 22), ["charmm36-carb"]),
+        ("cgenff-toppar", "CHARMM36 CGenFF", "toppar_c36_jul17 (par_all36_cgenff.prm, top_all36_cgenff.rtf: CGenFF 3.0.1 / 4.0)",
+         ["K. Vanommeslaeghe et al., J. Comput. Chem. 31, 671 (2010)"],
+         RTF + "top_all36_cgenff.rtf 9872 / 9872 atoms, 519 / 519 residues (residues with lone pairs left out)",
+         ("CHARMM36 CGenFF", "charmm36_cgenff", 23), ["cgenff"]),
+        ("charmm36-lipid-toppar", "CHARMM36 lipids", "toppar_c36_jul17 (par_all36_lipid.prm, top_all36_lipid.rtf, its streams)",
+         ["J. B. Klauda et al., J. Phys. Chem. B 114, 7830 (2010)"],
+         RTF + "top_all36_lipid.rtf 4224 / 4224 atoms, 35 / 35 residues", ("CHARMM36 lipid", "charmm36_lipid", 24), ["charmm36-lipid"]),
+        ("charmm36-nucl-toppar", "CHARMM36 nucleic acids", "toppar_c36_jul17 (par_all36_na.prm, top_all36_na.rtf, its streams)",
+         ["K. Hart et al., J. Chem. Theory Comput. 8, 348 (2012)"],
+         RTF + "top_all36_na.rtf 161 / 161 atoms, 5 / 5 residues", ("CHARMM36 nucleic acid", "charmm36_nucl", 25), ["charmm36-nucl"]),
+        ("charmm19-toppar", "CHARMM19 (united atom)", "param19 / toph19 (toppar_c36_jul17)",
+         ["E. Neria, S. Fischer, M. Karplus, J. Chem. Phys. 105, 1902 (1996)"],
+         RTF + "toph19.inp 319 / 319 atoms, 36 / 36 residues (--united); one torsion per bond as toph19 lists them, 103 / 104 central "
+         "bonds (bench/ff/validate_rtf_torsions.py; TRP's cross-ring terms left out)", ("CHARMM19", "charmm19", 20), ["charmm19"])):
+    ENTRIES[fid] = (name, version, refs, CHARMM, evidence, listing, replaces)
 cat_path = os.path.join(FF, "catalogue.json")
 cat = json.load(open(cat_path))
 fl = cat["forcefields"]

@@ -761,12 +761,12 @@ TEST(FFDef, FrcConversionsParameteriseFully) {
   }
 }
 
-// DREIDING's torsion rules (Mayo, Olafson, Goddard 1990) where DREIDING.par lists none: polystyrene's backbone CH–ring
+// DREIDING's torsion rules (Mayo, Olafson, Goddard 1990), which give every torsion of the paper's library: polystyrene's backbone CH–ring
 // carbon torsions are case (b), V = 1 kcal/mol, n = 6, φ0 = 0, over the 2 × 3 torsions about the bond; the export keeps
 // DREIDING's own LAMMPS styles and special_bonds keyword.
 TEST(FFDef, DreidingTorsionRulesFillWhatTheFileLacks) {
   System s = read_lammps_data(std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.data");
-  const FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/dreiding.json");
+  const FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/dreiding1990.json");
   EXPECT_EQ(def.torsion_rules, "dreiding1990");
   std::string ch = "gasteiger";
   prepare_for_forcefield(s, def, ch);

@@ -1,5 +1,7 @@
 #include <algorithm>
 #include <cmath>
+#include <filesystem>
+#include <fstream>
 #include <gtest/gtest.h>
 
 #include <string>
@@ -195,17 +197,16 @@ TEST(Typing, PrecedenceOverridesAndTypeReferences) {
 }
 
 TEST(Typing, ShippedRulesTypeCommonMolecules) {
-  for (const char* lib : {"pcff", "cvff"}) {
-    FFDef ff = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/" + lib + ".json");
-    load_typing(ff, std::string(CAPS_SOURCE_DIR) + "/data/typing/" + lib + ".typing.json");
+  for (const char* lib : {"pcff-frc", "cvff-frc"}) {
+    const FFDef ff = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/" + lib + ".json");   // its own typing
     const TypingResult r = assign_types(benzene(), ff);
     EXPECT_EQ(r.types[0], "cp") << lib;
     EXPECT_EQ(r.untyped, 0) << lib;
     const System ac = mol({"C", "C", "O", "O"}, {3, 0, 0, 1}, {{0, 1}, {1, 2}, {1, 3}});   // acetic acid
     const TypingResult q = assign_types(ac, ff);
     EXPECT_EQ(q.untyped, 0) << lib;
-    EXPECT_EQ(q.types[1], std::string(lib) == "pcff" ? "c_1" : "c'");
-    EXPECT_EQ(q.types[3], std::string(lib) == "pcff" ? "o_2" : "oh");
+    EXPECT_EQ(q.types[1], std::string(lib) == "pcff-frc" ? "c_1" : "c'");
+    EXPECT_EQ(q.types[3], std::string(lib) == "pcff-frc" ? "o_2" : "oh");
   }
 }
 
@@ -215,6 +216,11 @@ TypingResult type_with(const char* ff_name, const System& s) {
   FFDef ff = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/" + ff_name + ".json");
   if (ff.typing.empty()) load_typing(ff, std::string(CAPS_SOURCE_DIR) + "/data/typing/" + ff_name + ".typing.json");
   return assign_types(s, ff);
+}
+
+// a library built on this machine from files CAPS does not distribute (CHARMM's toppar: bench/ff/open/build_charmm.sh)
+bool built_here(const char* ff_name) {
+  return std::filesystem::exists(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/" + ff_name + ".json");
 }
 
 System butadiene() { return mol({"C", "C", "C", "C"}, {2, 1, 1, 2}, {{0, 1}, {1, 2}, {2, 3}}); }
@@ -315,56 +321,71 @@ TEST(Typing, OplsAa2024AsTheGromacsTopologies) {
 }
 
 TEST(Typing, MoleculeClassConditions) {
-  // the library's generic CHARMM set keys an sp3 CH3 by its molecule (in_molecule / not_in_molecule): a sulfoxide's
-  // methyls are lipid C_L3, an ether's CAE3, an amino acid's C3
+  // a rule keyed by its molecule (in_molecule / not_in_molecule, as the CHARMM family keys an sp3 CH3): a sulfoxide's
+  // methyls C_L3, an ether's CAE3, any other C3
+  const auto dir = std::filesystem::temp_directory_path();
+  const std::string rules = (dir / "caps_molecule_class.typing.json").string(), ffp = (dir / "caps_molecule_class.json").string();
+  std::ofstream(rules) << R"({"format": "caps-typing", "version": 1, "rules": [
+ {"type": "C3", "smarts": "[CX4H3]", "priority": 1},
+ {"type": "C_L3", "smarts": "[CX4H3]", "priority": 2, "in_molecule": ["[SX3]=[OX1]"]},
+ {"type": "CAE3", "smarts": "[CX4H3]", "priority": 2, "in_molecule": ["[OX2]([CX4])[CX4]"], "not_in_molecule": ["[#7]"]},
+ {"type": "X", "smarts": "[!#6]", "priority": 0}, {"type": "X", "smarts": "[#6;!X4]", "priority": 0}, {"type": "X", "smarts": "[CX4;!H3]", "priority": 0}]})";
+  std::ofstream(ffp) << R"({"format": "caps-forcefield", "format_version": 1, "name": "molecule classes", "typing": "caps_molecule_class.typing.json",
+ "atom_types": [{"name": "C3", "element": "C"}, {"name": "C_L3", "element": "C"}, {"name": "CAE3", "element": "C"}, {"name": "X", "element": "X"}]})";
+  const FFDef ff = load_forcefield(ffp);
   const System dmso = mol({"C", "S", "O", "C"}, {3, 0, 0, 3}, {{0, 1}, {1, 2}, {1, 3}});
-  EXPECT_EQ(type_with("charmm", dmso).types[0], "C_L3");
+  EXPECT_EQ(assign_types(dmso, ff).types[0], "C_L3");
   const System dme = mol({"C", "O", "C"}, {3, 0, 3}, {{0, 1}, {1, 2}});
-  EXPECT_EQ(type_with("charmm", dme).types[0], "CAE3");
-  const System ala = mol({"N", "C", "C", "C", "O", "O"}, {3, 1, 3, 0, 0, 0}, {{0, 1}, {1, 2}, {1, 3}, {3, 4}, {3, 5}});
-  EXPECT_EQ(type_with("charmm", ala).types[2], "C3");
+  EXPECT_EQ(assign_types(dme, ff).types[0], "CAE3");
+  // an amino ether: not_in_molecule keeps it out of CAE3
+  const System ame = mol({"C", "O", "C", "N"}, {3, 0, 2, 2}, {{0, 1}, {1, 2}, {2, 3}});
+  EXPECT_EQ(assign_types(ame, ff).types[0], "C3");
   // both together in one structure: each molecule keeps its own
   System two = dmso;
   const uint32_t off = uint32_t(two.atoms.size());
   for (const auto& a : dme.atoms) two.atoms.push_back(a);
   for (const auto& b : dme.bonds) two.bonds.push_back({b.i + off, b.j + off, b.order});
-  const TypingResult t2 = type_with("charmm", two);
+  const TypingResult t2 = assign_types(two, ff);
   EXPECT_EQ(t2.types[0], "C_L3");
   EXPECT_EQ(t2.types[off], "CAE3");
+  std::filesystem::remove(rules);
+  std::filesystem::remove(ffp);
 }
 
 TEST(Typing, CgenffConjugationPhaseAsTheRtf) {
+  if (!built_here("cgenff-toppar")) GTEST_SKIP() << "CGenFF is built locally from CHARMM's toppar (bench/ff/open/build_charmm.sh)";
   // top_all36_cgenff.rtf, RESI MOBU (1-methoxybutadiene): the enol ether C is CG2D1O, outside the alternation; the C
   // double-bonded to it anchors the phase (CG2DC1), then CG2DC2 across the single bond, the terminal =CH2 CG2DC3
   const System mobu = mol({"C", "O", "C", "C", "C", "C"}, {3, 0, 1, 1, 1, 2}, {{0, 1}, {1, 2}, {2, 3}, {3, 4}, {4, 5}});
-  const TypingResult t = type_with("cgenff", mobu);
+  const TypingResult t = type_with("cgenff-toppar", mobu);
   EXPECT_EQ(t.types[2], "CG2D1O");
   EXPECT_EQ(t.types[3], "CG2DC1");
   EXPECT_EQ(t.types[4], "CG2DC2");
   EXPECT_EQ(t.types[5], "CG2DC3");
   // RESI PRAL (acrolein): a conjugated C alone in its system is CG2DC1
-  const TypingResult a = type_with("cgenff", mol({"C", "C", "C", "O"}, {2, 1, 1, 0}, {{0, 1}, {1, 2}, {2, 3}}));
+  const TypingResult a = type_with("cgenff-toppar", mol({"C", "C", "C", "O"}, {2, 1, 1, 0}, {{0, 1}, {1, 2}, {2, 3}}));
   EXPECT_EQ(a.types[1], "CG2DC1");
 }
 
 TEST(Typing, CgenffAndOpls) {
+  if (!built_here("cgenff-toppar")) GTEST_SKIP() << "CGenFF is built locally from CHARMM's toppar (bench/ff/open/build_charmm.sh)";
   // CGenFF: conjugated diene CG2DC3 CG2DC2 CG2DC1 CG2DC3 (same type across a double bond, switched across the single)
-  const TypingResult b = type_with("cgenff", butadiene());
+  const TypingResult b = type_with("cgenff-toppar", butadiene());
   EXPECT_EQ(b.types[0], "CG2DC3");
   EXPECT_EQ(b.types[1], "CG2DC2");
   EXPECT_EQ(b.types[2], "CG2DC1");
   EXPECT_EQ(b.types[3], "CG2DC3");
-  const TypingResult f = type_with("cgenff", furan());
+  const TypingResult f = type_with("cgenff-toppar", furan());
   EXPECT_EQ(f.types[0], "OG2R50");
   EXPECT_EQ(f.types[1], "CG2R51");
-  // OPLS-AA (DL_FIELD names): methyl acetate CT CO4 O OES CT
+  // OPLS-AA 2024: methyl acetate CH3 135, ester C 465, =O 466, -O- 467, O-CH3 468
   const System ma = mol({"C", "C", "O", "O", "C"}, {3, 0, 0, 0, 3}, {{0, 1}, {1, 2}, {1, 3}, {3, 4}});
-  const TypingResult o = type_with("opls2005", ma);
-  EXPECT_EQ(o.types[0], "CT");
-  EXPECT_EQ(o.types[1], "CO4");
-  EXPECT_EQ(o.types[2], "O");
-  EXPECT_EQ(o.types[3], "OES");
-  EXPECT_EQ(o.types[4], "CT");
+  const TypingResult o = type_with("oplsaa2024", ma);
+  EXPECT_EQ(o.types[0], "opls_135");
+  EXPECT_EQ(o.types[1], "opls_465");
+  EXPECT_EQ(o.types[2], "opls_466");
+  EXPECT_EQ(o.types[3], "opls_467");
+  EXPECT_EQ(o.types[4], "opls_468");
 }
 
 #include "caps/example_typing.hpp"
@@ -420,6 +441,7 @@ TEST(Typing, ByExampleFromATrimer) {
 // OPLS 2005's own charges: charge keys (the typing file's charge_rules) and its bond charge increments give the ester
 // charges of PMMA's side group (C=O 0.51, O= −0.43, O −0.33, OCH3 0.16 with H 0.03), as the reference assigns them
 TEST(Typing, Opls2005ChargesFromBondIncrements) {
+  if (!built_here("opls2005")) GTEST_SKIP() << "OPLS 2005 has no open source CAPS can build it from; a local copy is needed";
   FFDef ff = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/opls2005.json");
   load_typing(ff, std::string(CAPS_SOURCE_DIR) + "/data/typing/opls2005.typing.json");
   BuildOptions bo;
@@ -449,6 +471,7 @@ TEST(Typing, Opls2005ChargesFromBondIncrements) {
 // +0.473 expects a substituent worth an H); OPLS 2005 types the same molecule and its bond increments give charges that
 // add up to zero, used with OPLS-AA 2024's own types
 TEST(Typing, CompanionChargesFromOpls2005) {
+  if (!built_here("opls2005")) GTEST_SKIP() << "OPLS 2005 has no open source CAPS can build it from; a local copy is needed";
   const std::string lib = std::string(CAPS_SOURCE_DIR) + "/data/forcefields/";
   FFDef ff = load_forcefield(lib + "oplsaa2024-moltemplate.json");
   load_typing(ff, std::string(CAPS_SOURCE_DIR) + "/data/typing/oplsaa2024-moltemplate.typing.json");

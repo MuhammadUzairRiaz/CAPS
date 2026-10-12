@@ -388,8 +388,9 @@ def _forcefield_path(ff: str) -> str:
     lib = Path(__file__).resolve().parents[1].parent / "forcefields"
     if ff.endswith("-dlfield"):   # library ids before the force fields got CAPS's own names
         ff = ff[: -len("-dlfield")]
-    aliases = {"gaff2": "gaff2-2.2.20-ambertools", "gaff": "gaff-1.81-ambertools", "opls": "oplsaa2024", "pcff": "pcff", "oplsaa2024": "oplsaa2024", "opls-ua": "oplsua2024", "oplsua": "oplsua2024",
-               "compass": "compass", "cvff": "cvff", "amber": "amber", "charmm": "charmm"}
+    aliases = {"gaff2": "gaff2-2.2.20-ambertools", "gaff": "gaff-1.81-ambertools", "opls": "oplsaa2024", "pcff": "pcff-frc", "oplsaa2024": "oplsaa2024", "opls-ua": "oplsua2024", "oplsua": "oplsua2024",
+               "compass": "compass-frc", "cvff": "cvff-frc", "amber": "amber-ff14sb-ambertools", "charmm": "charmm36-prot-toppar",
+               "dreiding": "dreiding1990", "cgenff": "cgenff-toppar", "charmm19": "charmm19-toppar"}
     name = aliases.get(ff.lower(), ff)
     p = lib / (name + ".json")
     if p.exists():
