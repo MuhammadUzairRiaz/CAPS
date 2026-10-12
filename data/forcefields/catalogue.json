@@ -2028,6 +2028,38 @@
     "key": "amber",
     "order": 17
    }
+  },
+  {
+   "id": "amber-ff14sb-ambertools",
+   "name": "AMBER ff14SB / OL15 / OL3",
+   "version": "ff14SB proteins, OL15 DNA, OL3 RNA (parm10.dat + frcmod.ff14SB + frcmod.DNA.OL15)",
+   "references": [
+    "J. A. Maier et al., J. Chem. Theory Comput. 11, 3696 (2015)",
+    "M. Zgarbova et al., J. Chem. Theory Comput. 11, 5723 (2015)",
+    "M. Zgarbova et al., J. Chem. Theory Comput. 7, 2886 (2011)"
+   ],
+   "origin": "built from source",
+   "source": "AmberTools 23.6, dat/leap/parm (ambermd.org)",
+   "license": "public domain (AmberTools LICENSE: the parameter files in dat/leap/parm have been placed in the public domain by their authors)",
+   "status": "validated",
+   "file": "amber-ff14sb-ambertools.json",
+   "counts": {
+    "atom_types": 67,
+    "pairs": 65,
+    "bonds": 194,
+    "angles": 541,
+    "dihedrals": 363,
+    "impropers": 79
+   },
+   "typing": {
+    "rules": "typing/amber-ff14sb-ambertools.typing.json",
+    "evidence": "CAPS rules in AMBER's own type names (bench/typing/make_amber_rules.py ff14sb); AmberTools' residue libraries amino12, aminont12, aminoct12, DNA.OL15 and RNA typed as the libraries type them: 2288 / 2288 atoms, 111 / 111 residues (bench/ff/validate_off_types.py)"
+   },
+   "list": {
+    "label": "AMBER ff14SB",
+    "key": "amber14sb",
+    "order": 16
+   }
   }
  ],
  "list_note": "The force fields the Studio lists, one per force field (entries without \"list\" stay loadable by id for recipes and scripts)"

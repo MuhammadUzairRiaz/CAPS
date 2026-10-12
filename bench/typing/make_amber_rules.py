@@ -95,6 +95,54 @@ def amber():
     return R
 
 
+AA_CA = "[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])]"   # an amino acid's C alpha (peptide or termini)
+LYS_N = "[#7X4]"                                                # lysine's ammonium N (neutral LYN keeps CT)
+ARG_N = "[#7X3;$(*~[#6X3](~[#7X3])~[#7X3])]"                    # arginine's NE
+DEOXY = "[CX4H2;R]"                                             # DNA's C2'
+RIBO = "[CX4H1;R;$(*-[OX2])]"                                   # RNA's C2'
+
+
+def ff14sb():
+    """ff14SB (Maier et al. 2015) proteins, OL15 DNA, OL3 RNA (parm10): the protein C alpha CX, side-chain sp3 carbons by
+    their heavy neighbours (2C two, 3C three; CT for methyls, the proline ring and a CH2 on an aromatic ring), Lys and
+    Arg chains C8, Asp / Glu carboxylate CO; DNA's C5' CJ and C3' C7, cytosine C5 / C6 C1, adenine C8 C2 (guanine C8 CK,
+    thymine CM as before); RNA's C5' CI, uracil C5 / C6 CS, cytosine C4, adenine C8 C5, guanine C8 CP"""
+    R = Rules(r for r in amber() if r["type"] != "H0")
+    SC = [f"$(*-{AA_CA})", f"$(*-[CX4]-{AA_CA})", f"$(*-[CX4]-[CX4]-{AA_CA})", f"$(*-[CX4]-[CX4]-[CX4]-{AA_CA})"]
+    side = ",".join(SC)
+    R.add("CX", 5, AA_CA, "protein C alpha")
+    R.add("2C", 5, f"[CX4;!R;{side};$(*(-[!#1])-[!#1]);!$(*(-[!#1])(-[!#1])-[!#1])]", "side-chain sp3 C with two heavy neighbours")
+    R.add("3C", 5, f"[CX4;!R;{side};$(*(-[!#1])(-[!#1])-[!#1])]", "side-chain sp3 C with three heavy neighbours")
+    R.add("CT", 6, f"[CX4H2;!R;$(*-{AA_CA});$(*-[#6X3;R]),$(*-[#16X1])]", "C beta on an aromatic ring (Phe, Tyr, Trp, His) or a thiolate (CYM)")
+    CH2 = "[CX4H2;!R]"
+    for pat, d in [(f"$(*(-{AA_CA}){CH2}{CH2}{CH2}{LYS_N})", "Lys C beta"), (f"$(*({CH2}{AA_CA}){CH2}{CH2}{LYS_N})", "Lys C gamma"),
+                   (f"$(*({CH2}{CH2}{AA_CA}){CH2}{LYS_N})", "Lys C delta"), (f"$(*({CH2}{CH2}{CH2}{AA_CA}){LYS_N})", "Lys C epsilon"),
+                   (f"$(*(-{AA_CA}){CH2}{CH2}{ARG_N})", "Arg C beta"), (f"$(*({CH2}{AA_CA}){CH2}{ARG_N})", "Arg C gamma"),
+                   (f"$(*({CH2}{CH2}{AA_CA}){ARG_N})", "Arg C delta")]:
+        R.add("C8", 7, f"[CX4H2;!R;{pat}]", d + " (basic side chain)")
+        if "Lys" in d:   # neutral lysine (LYN): its chain stays CT
+            R.add("CT", 6, f"[CX4H2;!R;{pat.replace(LYS_N, '[#7X3H2;!$(*~[#6X3])]')}]", d + " of a neutral lysine")
+    R.add("CO", 5, f"[#6X3;$(*(~[OX1])~[OX1]);$(*-[CX4]);!$(*-{AA_CA});{','.join('$(*-' + x[3:] for x in SC[:3])}]",
+          "Asp / Glu side-chain carboxylate C")
+    # nucleic acids: DNA (no O on C2') or RNA by the sugar the atom's nucleoside carries
+    for name, c2, c5t, c3t in (("DNA", DEOXY, "CJ", "C7"), ("RNA", RIBO, "CI", None)):
+        R.add(c5t, 6, f"[CX4H2;!R;$(*-[OX2]);$(*-[CX4;R](@[OX2;R])@[CX4;R]@{c2})]", f"{name} C5'")
+        if c3t:
+            R.add(c3t, 6, f"[CX4;R;$(*-[OX2;!R]);$(*@{c2});!$(*@[OX2;R]);$(*@[CX4;R]@[OX2;R])]", f"{name} C3'")
+    GLY = lambda c2: f"[#7X3;R]-[CX4;R]@{c2}"   # a base's glycosidic N, its sugar's C1' and C2'
+    for t, c2, smarts, d in [
+        ("C1", DEOXY, "[#6X3;r6;!r5;$(*~[#6X3;r6]-[NX3H2]),$(*~[#6X3;r6]~[#6X3;r6]-[NX3H2])]", "DNA cytosine C5 / C6"),
+        ("C4", RIBO, "[#6X3;r6;!r5;$(*~[#6X3;r6]-[NX3H2]),$(*~[#6X3;r6]~[#6X3;r6]-[NX3H2])]", "RNA cytosine C5 / C6"),
+        ("CS", RIBO, "[#6X3;r6;!r5;!$(*-[CX4]);$(*~[#6X3;r6]=[OX1]),$(*~[#6X3;r6]~[#6X3;r6]=[OX1]);!$(*~[#7X2])]", "RNA uracil C5 / C6"),
+        ("C2", DEOXY, "[#6X3;r5;!r6;$(*~[#7X2;r5]~[#6;r5;r6]~[#6;r6]-[NX3H2])]", "DNA adenine C8"),
+        ("C5", RIBO, "[#6X3;r5;!r6;$(*~[#7X2;r5]~[#6;r5;r6]~[#6;r6]-[NX3H2])]", "RNA adenine C8"),
+        ("CP", RIBO, "[#6X3;r5;!r6;$(*~[#7X2;r5]~[#6;r5;r6]~[#6;r6]=[OX1])]", "RNA guanine C8")]:
+        # the base atom is within three bonds of the glycosidic N
+        near = f"$(*-,:{GLY(c2)}),$(*~*-,:{GLY(c2)}),$(*~*~*-,:{GLY(c2)})"
+        R.add(t, 8, smarts[:-1] + f";{near}]", d)
+    return R
+
+
 def glycam():
     """GLYCAM06 (Kirschner et al., J. Comput. Chem. 29, 622 (2008)) on AMBER's rules: a carbohydrate's sp3 C Cg (Cy at a
     sialic acid's C2), their H Hc / H1 / H2, hydroxyl Oh / Ho, ether and glycosidic O Os (Oy in a sialic acid ring),
@@ -129,7 +177,8 @@ def glycam():
 
 
 if __name__ == "__main__":
-    for fid, label, make in [("amber-ff03-ambertools", "AMBER ff03", amber), ("glycam06j-ambertools", "GLYCAM06j", glycam)]:
+    for fid, label, make in [("amber-ff03-ambertools", "AMBER ff03", amber), ("amber-ff14sb-ambertools", "AMBER ff14SB / OL15 / OL3", ff14sb),
+                             ("glycam06j-ambertools", "GLYCAM06j", glycam)]:
         rules = make()
         doc = {"format": "caps-typing", "version": 1, "forcefield": label, "unknown_types": "untyped",
                "description": f"CAPS rules for {label} in AMBER's own type names, checked against AmberTools' residue "
