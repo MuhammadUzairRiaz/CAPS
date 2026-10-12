@@ -38,6 +38,12 @@ def element_of(name, mass, given=None):
         return given.capitalize()
     if mass < 0.5:
         return "X"   # lone pair / dummy site
+    # a united atom (CHARMM19's CH2E, SH1E): the element its name starts with, plus whole hydrogens
+    for sym in sorted({e for e, _ in ELEMENTS}, key=len, reverse=True):
+        if name.upper().startswith(sym.upper()):
+            m_el = dict(ELEMENTS)[sym]
+            if any(abs(mass - m_el - n * 1.008) < 0.02 for n in range(0, 5)):
+                return sym
     return min(ELEMENTS, key=lambda e: abs(e[1] - mass))[0]
 
 
@@ -188,6 +194,15 @@ for coll in (bonds, angles, dihedrals, impropers, nbfix):
         if out:
             foreign |= set(out)
             del coll[k]
+# CHARMM's wildcard Lennard-Jones entries (param19: C% = C and one more character, N* = every N type): each gives its
+# parameters to the types it matches that have no entry of their own
+import fnmatch
+for w in [t for t in pairs if any(c in t for c in "*%")]:
+    pat = w.replace("%", "?")
+    for t in types:
+        if t not in pairs and fnmatch.fnmatchcase(t, pat):
+            pairs[t] = {**pairs[w], "name": t, "match": [t], "comment": f"Lennard-Jones of the wildcard entry {w}"}
+    del pairs[w]
 for t in list(pairs):
     if t not in types:
         foreign.add(t)
@@ -215,6 +230,9 @@ doc = {"format": "caps-forcefield", "format_version": 1, "name": arg("--name"), 
                  + (", masses from " + ", ".join(r.split('/')[-1] for r in many("--rtf")) if many("--rtf") else "")]
                 + (["CMAP corrections in the source are not represented"] if cmap_seen else []) + notes,
        "version": arg("--version", "")}
+if not OPLS and abs(nb_values.get("E14FAC", 1.0) - 1.0) > 1e-9:   # CHARMM19: 1-4 Coulomb x 0.4
+    doc["special_coul"] = [0, 0, nb_values["E14FAC"]]
+    doc["notes"].append(f"1-4 Coulomb x {nb_values['E14FAC']:g} (the file's E14FAC)")
 if OPLS and many("--rtf"):
     # OPLS gives each type its charge: the charge the type carries in the topology's residues (the most common one where
     # residues differ, listed)

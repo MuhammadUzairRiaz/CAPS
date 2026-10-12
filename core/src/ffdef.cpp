@@ -146,6 +146,8 @@ void load_typing(FFDef& ff, const std::string& path) {
     ff.united_atom_hosts.clear();
     for (const auto& x : j["united_atom_hosts"].items()) ff.united_atom_hosts.push_back(element_from_symbol(x.str()));
   }
+  if (j.has("united_atom_keep"))
+    for (const auto& x : j["united_atom_keep"].items()) ff.united_atom_keep.push_back(x.str());
   ff.keep_defined_bonds = ff.keep_defined_bonds || j.text("bonds") == "defined";
   if (j.has("unbonded_types"))
     for (const auto& x : j["unbonded_types"].items()) ff.unbonded_types.push_back(x.str());
@@ -2788,7 +2790,17 @@ std::string prepare_core(System& s, const FFDef& ff, std::string& charges) {
   }
   ResolutionReport rep;
   const size_t before = s.atoms.size();
-  s = united_atom(s, &rep, ff.united_atom_hosts);
+  std::vector<char> keep;
+  if (!ff.united_atom_keep.empty()) {   // hydrogens the force field keeps explicit (CHARMM19's formyl H)
+    const Perception pk = perceive(s);
+    keep.assign(s.atoms.size(), 0);
+    for (const auto& text : ff.united_atom_keep) {
+      const Smarts sm(text);
+      for (uint32_t a = 0; a < s.atoms.size(); ++a)
+        if (s.atoms[a].element == 1 && sm.matches(s, pk, a, {})) keep[a] = 1;
+    }
+  }
+  s = united_atom(s, &rep, ff.united_atom_hosts, keep.empty() ? nullptr : &keep);
   return ff.name + " is united-atom: " + std::to_string(before - s.atoms.size()) + " hydrogens folded into their " +
          (ff.united_atom_hosts == std::vector<int>{6} ? std::string("carbons") : std::string("host atoms")) + " (" +
          std::to_string(s.atoms.size()) + " sites)" + (how.empty() ? "" : "; " + how + " charges computed on the all-atom structure and summed into each site");

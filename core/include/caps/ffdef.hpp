@@ -195,6 +195,7 @@ struct FFDef {
   // part of their carbon's site, so an all-atom structure is converted before typing (prepare_for_forcefield)
   bool united_atom = false;
   std::vector<int> united_atom_hosts{6};   // elements whose hydrogens fold in ("united_atom_hosts"; O for mW water)
+  std::vector<std::string> united_atom_keep;   // SMARTS of hydrogens that stay explicit ("united_atom_keep": a formyl H)
   // Shell models (typing file "shells": core type → shell type): each core gets a shell particle on it, bonded by the
   // file's core-shell spring and named for its shell type (prepare_for_forcefield)
   std::map<std::string, std::string> shells;

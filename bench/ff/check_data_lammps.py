@@ -94,6 +94,8 @@ CASES = [
     ("CHARMM36 carbohydrates toppar: glucose", ("smiles", "OC[C@H]1O[C@H](O)[C@H](O)[C@@H](O)[C@@H]1O"), "charmm36-carb-toppar", "gasteiger", "rules"),
     ("CHARMM36 nucleic acids toppar: thymidine", ("smiles", "CC1=CN([C@H]2C[C@H](O)[C@@H](CO)O2)C(=O)NC1=O"), "charmm36-nucl-toppar", "gasteiger", "rules"),
     ("CHARMM36 lipids toppar: phosphatidylcholine", ("smiles", "CCCCCCCC(=O)OC[C@H](COP(=O)([O-])OCC[N+](C)(C)C)OC(=O)CCCCCCC"), "charmm36-lipid-toppar", "qeq", "rules"),
+    # CHARMM19 (param19 / toph19, united atom: only polar H and formyl H explicit; 1-4 Coulomb x 0.4)
+    ("CHARMM19 toppar (united atom): peptide GAFKW", ("peptide", "GAFKW"), "charmm19-toppar", "gasteiger", "rules"),
     ("AMBER ff03: peptide GAFKW", ("peptide", "GAFKW"), "amber-ff03-ambertools", "gasteiger", "rules"),
     ("AMBER ff03: thymidine (N*, CM, CT / H2 sugar)", ("smiles-nudged", "CC1=CN([C@H]2C[C@H](O)[C@@H](CO)O2)C(=O)NC1=O"), "amber-ff03-ambertools", "gasteiger", "rules"),
     # GLYCAM06j (its 1-4 terms unscaled): a methyl glucoside and a beta-1,4 disaccharide

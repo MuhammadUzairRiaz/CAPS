@@ -70,6 +70,30 @@ def carb():
     return R
 
 
+def charmm19():
+    """CHARMM19 (Neria, Fischer & Karplus 1996; toph19 / param19), united atom, as its own topology types it: the
+    element-and-hydrogen rules of make_biomolecular_rules.py plus CHARMM19's own conventions"""
+    R = B.Rules([r for r in B.charmm19() if not (r["type"] in ("H", "OT") and "OX2H2" in r["smarts"])])
+    R.add("SH1E", 1, "[SX2H1]", "thiol S with its H (extended atom)")
+    R.add("NC2", 4, "[NX3H2;$(*~[CX3](~[NX3])~[NX3])]", "guanidinium NH2 (Arg)")
+    R.add("NH1", 4, "[NX3H1;$(*~[CX3](~[NX3])~[NX3])]", "guanidinium NE (Arg)")
+    R.add("HC", 4, "[H][NX3H2;$(*~[CX3](~[NX3])~[NX3])]", "H on a guanidinium NH2")
+    R.add("HC", 4, "[H][NX4]", "H on an ammonium N")
+    R.add("NH3", 4, "[NX4]", "ammonium N")
+    R.add("NH1", 3, "[#7X3H1;r5]", "ring N-H (His, Trp)")
+    R.add("NP", 5, "[#7;$(*~[Fe])]", "porphyrin N (bonded to the iron)")
+    R.add("FE", 5, "[Fe]", "heme iron")
+    R.add("CR1E", 0, "[#6X3H1;!$(*=[OX1])]", "sp2 CH (extended atom: heme meso and vinyl CH)")
+    R.add("CH2E", 0, "[CX3H2]", "sp2 CH2 (extended atom: heme vinyl)")
+    # small molecules of the file: formyl, CO, O2, sulfate, TIP3P
+    R.add("C", 5, "[CX3H1](=[OX1])", "formyl C"); R.add("HA", 5, "[H][CX3]=[OX1]", "formyl H")
+    R.add("CM", 5, "[CX1,CX2;$(*~[OX1])]", "carbon monoxide C"); R.add("OM", 5, "[OX1;$(*~[CX1,CX2])]", "carbon monoxide O")
+    R.add("OM", 5, "[OX1,OX2;$(*~[OX1,OX2]);!$(*~[#6])]", "dioxygen O")
+    R.add("S", 5, "[SX4;$(*(~[OX1])(~[OX1])(~[OX1])~[OX1])]", "sulfate S"); R.add("OC", 5, "[OX1;$(*~[SX4](~[OX1])(~[OX1])~[OX1])]", "sulfate O")
+    R.add("OT", 8, "[OX2H2]", "TIP3P water O"); R.add("HT", 8, "[H][OX2H2]", "TIP3P water H")
+    return R
+
+
 def water(R):
     """TIP3P as CHARMM's own water stream names it (OT / HT)"""
     return B.Rules([r for r in R if r["smarts"] not in ("[OX2H2]", "[H][OX2H2]")] +
@@ -83,6 +107,7 @@ SETS = {
     "charmm36-nucl-toppar": (water(B.charmm_nucl()), "CHARMM36 nucleic acids (toppar)"),
     "charmm36-lipid-toppar": (water(lipid()), "CHARMM36 lipids (toppar)"),
     "charmm36-carb-toppar": (water(carb()), "CHARMM36 carbohydrates (toppar)"),
+    "charmm19-toppar": (charmm19(), "CHARMM19 (toppar, united atom)"),
 }
 
 if __name__ == "__main__":
@@ -90,6 +115,10 @@ if __name__ == "__main__":
         doc = {"format": "caps-typing", "version": 1, "forcefield": label, "unknown_types": "untyped",
                "description": f"CAPS rules for {label}, checked against CHARMM's own topology (bench/typing/make_charmm_rules.py).",
                "rules": list(rules)}
+        if fid == "charmm19-toppar":   # extended atoms: hydrogens on carbon (and sulfur) fold into them
+            doc["united_atom"] = True
+            doc["united_atom_hosts"] = ["C", "S"]          # CH1E ... CR1E, and the thiol's SH1E
+            doc["united_atom_keep"] = ["[H][CX3]=[OX1]"]   # the formyl H (FORM) is an explicit atom (HA)
         if fid.replace("-toppar", "") in B.ANALOGIES:
             doc["analogies"] = B.ANALOGIES[fid.replace("-toppar", "")]
         json.dump(doc, open(os.path.join(OUT, fid + ".typing.json"), "w"), ensure_ascii=False, indent=1)
