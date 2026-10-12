@@ -75,8 +75,13 @@ struct Params {
 
 // Forces added to fx, fy, fz (by slot, float), energies and virial (xx yy zz xy xz yz) added
 struct Sums { double evdw = 0, ecoul = 0, w[6] = {0, 0, 0, 0, 0, 0}; };
-// worker t's i clusters, from its pruned entries
+// worker t's i clusters, from its pruned entries, with the widest kernel this processor runs
 void kernel(const List& L, const Params& p, int t, float* fx, float* fy, float* fz, Sums& out);
+const char* instruction_set();   // the one kernel() uses: "AVX2", "SSE2", "NEON" or "scalar"
+
+// the eight-lane kernel (nbnxm_avx2.cpp, built with AVX2 and FMA on x86-64): false when not built in
+bool kernel_avx2(const List& L, const Params& p, int t, float* fx, float* fy, float* fz, Sums& out);
+bool avx2_built();
 
 }  // namespace nbnxm
 }  // namespace caps

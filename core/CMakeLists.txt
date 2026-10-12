@@ -25,6 +25,7 @@ add_library(caps_core STATIC
   src/grow.cpp
   src/field.cpp
   src/nbnxm.cpp
+  src/nbnxm_avx2.cpp
   src/relax.cpp
   src/lammps_data.cpp
   src/gromacs.cpp
@@ -154,3 +155,12 @@ if(NOT MSVC)
   target_compile_options(caps_core PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wall -Wextra -Wpedantic>)
 endif()
 set_target_properties(caps_core PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/fortran_modules)
+# The eight-lane cluster kernel: its own file built with AVX2 and FMA on x86-64 (chosen at run time on a processor that
+# has them, so the rest stays portable); elsewhere the file is an empty stub
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64|amd64)$" AND NOT CMAKE_OSX_ARCHITECTURES MATCHES "arm64")
+  if(MSVC)
+    set_source_files_properties(src/nbnxm_avx2.cpp PROPERTIES COMPILE_OPTIONS "/arch:AVX2")
+  else()
+    set_source_files_properties(src/nbnxm_avx2.cpp PROPERTIES COMPILE_OPTIONS "-mavx2;-mfma")
+  endif()
+endif()

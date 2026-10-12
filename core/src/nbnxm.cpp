@@ -1,10 +1,13 @@
 #include "nbnxm.hpp"
 
 #include "parallel.hpp"
+#include "nbnxm_fit.hpp"
 #include "simd4.hpp"
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdlib>
+#include <string>
 #include <type_traits>
 #include <vector>
 
@@ -295,35 +298,15 @@ namespace {
 
 using namespace simd4;
 
-// erf(κr)/r = κ gV(u) and the force part 2 κ³ dgV/du = κ³ gF(u), u = (κr)² ≤ 16, as P(t)/Q(t) with t = u/16: rational
-// fits made for CAPS (least squares reweighted towards minimax), maximum absolute error 3e-8 (gV) and 5e-8 (gF), below
-// single-precision rounding
-inline F4 ewald_gv(F4 t) {
-  F4 p = fma(set1(3.2804742414e-01f), t, set1(-2.0071435048e+00f));
-  p = fma(p, t, set1(8.9639355099e+00f));
-  p = fma(p, t, set1(1.4467038445e+01f));
-  p = fma(p, t, set1(1.2811100603e+01f));
-  p = fma(p, t, set1(3.1401995010e+00f));
-  p = fma(p, t, set1(1.1283791379e+00f));
-  F4 q = fma(set1(5.9764272617e+01f), t, set1(5.7404020415e+01f));
-  q = fma(q, t, set1(2.9041673956e+01f));
-  q = fma(q, t, set1(8.1162471304e+00f));
-  q = fma(q, t, set1(1.0f));
-  return p / q;
+// the rational fits of nbnxm_fit.hpp, by Horner's rule
+template <size_t N>
+inline F4 horner(const float (&c)[N], F4 t) {
+  F4 p = set1(c[N - 1]);
+  for (size_t k = N - 1; k-- > 0;) p = fma(p, t, set1(c[k]));
+  return p;
 }
-inline F4 ewald_gf(F4 t) {
-  F4 p = fma(set1(-3.9860971314e-01f), t, set1(2.0075107894e+00f));
-  p = fma(p, t, set1(-4.3528567753e+00f));
-  p = fma(p, t, set1(5.0524604436e+00f));
-  p = fma(p, t, set1(-5.1479940366e+00f));
-  p = fma(p, t, set1(1.2926832369e+00f));
-  p = fma(p, t, set1(-7.5225272615e-01f));
-  F4 q = fma(set1(5.6797690753e+01f), t, set1(5.3807163983e+01f));
-  q = fma(q, t, set1(2.7653014088e+01f));
-  q = fma(q, t, set1(7.8815427017e+00f));
-  q = fma(q, t, set1(1.0f));
-  return p / q;
-}
+inline F4 ewald_gv(F4 t) { return horner(kGvP, t) / horner(kGvQ, t); }
+inline F4 ewald_gf(F4 t) { return horner(kGfP, t) / horner(kGfQ, t); }
 
 // kCoul: 0 none; 1 Ewald real space, 2 damped shifted force (rational fits, κ r_c ≤ 4); 3, 4 the same by erfc (any κ).
 // kE: energies too (a step that reports them), else forces and virial only.
@@ -331,12 +314,12 @@ template <int kLj, bool kComb, int kCoul, bool kE>
 void kernel_t(const List& L, const Params& p, int tw, float* fxo, float* fyo, float* fzo, Sums& out) {
   const F4 rc2 = set1(p.rc2), one = set1(1.0f), rcn = set1(p.rcn), rc6 = set1(p.rc6);
   const bool shifted = p.shift != 0;
-  const F4 kap2 = set1(-p.kappa * p.kappa), epk = set1(0.3275911f * p.kappa), kc = set1(p.kc), e0 = set1(p.e0), f0 = set1(p.f0),
+  const F4 kap2 = set1(-p.kappa * p.kappa), epk = set1(kErfcP * p.kappa), kc = set1(p.kc), e0 = set1(p.e0), f0 = set1(p.f0),
            rcv = set1(p.rc);
-  const F4 kap = set1(p.kappa), kap3 = set1(p.kappa * p.kappa * p.kappa), ku = set1(p.kappa * p.kappa / 16.0f);
+  const F4 kap = set1(p.kappa), kap3 = set1(p.kappa * p.kappa * p.kappa), ku = set1(p.kappa * p.kappa / kFitUMax);
   const F4 twelve = set1(kLj == 2 ? 9.0f : 12.0f), six = set1(6.0f);
   // erfc by Abramowitz & Stegun 7.1.26 (|error| < 1.5e-7, the form LAMMPS uses without tables)
-  const F4 a1 = set1(0.254829592f), a2 = set1(-0.284496736f), a3 = set1(1.421413741f), a4 = set1(-1.453152027f), a5 = set1(1.061405429f);
+  const F4 a1 = set1(kErfcA[0]), a2 = set1(kErfcA[1]), a3 = set1(kErfcA[2]), a4 = set1(kErfcA[3]), a5 = set1(kErfcA[4]);
   const float* X = L.X.data();
   const float* Y = L.Y.data();
   const float* Z = L.Z.data();
@@ -478,7 +461,7 @@ void kernel_t(const List& L, const Params& p, int tw, float* fxo, float* fyo, fl
 
 template <int kLj, bool kComb, bool kE>
 void by_coul(const List& L, const Params& p, int tw, float* fx, float* fy, float* fz, Sums& out) {
-  const bool fit = p.kappa * p.rc <= 4.0f;   // u = (κr)² within the fits
+  const bool fit = p.kappa * p.kappa * p.rc2 <= kFitUMax;   // u = (κr)² within the fits
   if (p.coul == 1) fit ? kernel_t<kLj, kComb, 1, kE>(L, p, tw, fx, fy, fz, out) : kernel_t<kLj, kComb, 3, kE>(L, p, tw, fx, fy, fz, out);
   else if (p.coul == 2) fit ? kernel_t<kLj, kComb, 2, kE>(L, p, tw, fx, fy, fz, out) : kernel_t<kLj, kComb, 4, kE>(L, p, tw, fx, fy, fz, out);
   else kernel_t<kLj, kComb, 0, kE>(L, p, tw, fx, fy, fz, out);
@@ -492,7 +475,37 @@ void by_energy(const List& L, const Params& p, int tw, float* fx, float* fy, flo
 
 }  // namespace
 
+namespace {
+// AVX2 and FMA when built in and the processor reports them; CAPS_SIMD=sse2 keeps the four-lane kernel (to compare),
+// CAPS_SIMD=avx2 takes the eight-lane one whatever the processor reports (an emulator that runs AVX2 without saying so)
+bool use_avx2() {
+  static const bool on = [] {
+#if (defined(__x86_64__) || defined(_M_X64)) && defined(__GNUC__)
+    const char* env = std::getenv("CAPS_SIMD");
+    if (env && std::string(env) == "sse2") return false;
+    if (env && std::string(env) == "avx2") return avx2_built();
+    return avx2_built() && __builtin_cpu_supports("avx2") && __builtin_cpu_supports("fma");
+#else
+    return false;
+#endif
+  }();
+  return on;
+}
+}  // namespace
+
+const char* instruction_set() {
+  if (use_avx2()) return "AVX2";
+#if defined(CAPS_SIMD4_NEON)
+  return "NEON";
+#elif defined(CAPS_SIMD4_SSE)
+  return "SSE2";
+#else
+  return "scalar";
+#endif
+}
+
 void kernel(const List& L, const Params& p, int tw, float* fx, float* fy, float* fz, Sums& out) {
+  if (use_avx2() && kernel_avx2(L, p, tw, fx, fy, fz, out)) return;
   if (p.lj == 2) {
     if (p.comb) by_energy<2, true>(L, p, tw, fx, fy, fz, out);
     else by_energy<2, false>(L, p, tw, fx, fy, fz, out);
