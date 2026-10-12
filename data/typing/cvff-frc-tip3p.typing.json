@@ -1,0 +1,4 @@
+{"format": "caps-typing", "version": 1, "forcefield": "CVFF (cvff.frc) TIP3P water",
+ "description": "TIP3P water as cvff.frc types it (otip / htip): an overlay on CVFF's rules",
+ "rules": [{"type": "otip", "smarts": "[OX2H2]", "priority": 20, "description": "TIP3P water O"},
+           {"type": "htip", "smarts": "[H][OX2H2]", "priority": 20, "description": "TIP3P water H"}]}

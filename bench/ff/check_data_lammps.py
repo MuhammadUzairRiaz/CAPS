@@ -108,6 +108,10 @@ CASES = [
     ("OPLS-AA 2024 (Jorgensen): isoprene, ethylbenzene, ester, disulfide, PVA unit, perfluorobutane", ("smiles", "CC=C(C)CC.CCc1ccccc1.CCOC(=O)C.CSSC.CC(O)CC(O)C.FC(F)(F)C(F)(F)C(F)(F)C(F)(F)F"),
      "oplsaa2024", "types", "rules"),
     ("OPLS-AA 2024 (Jorgensen): polystyrene melt (periodic)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "oplsaa2024", "types", "rules"),
+    # DREIDING from its paper (bench/ff/make_dreiding.py): bond constants by perceived order, cosine-harmonic angles,
+    # the paper's torsion rules, planar inversions, hydrogen bonds
+    ("DREIDING (Mayo 1990): butadienyl amide, benzene ring, phenol, nitrile", ("smiles", "C=CC=CCC(=O)NCc1ccccc1O.CCC#N"), "dreiding1990", "gasteiger", "rules"),
+    ("DREIDING (Mayo 1990) ethanol liquid: hydrogen bonds (periodic)", ("solvent-box", "ethanol", 26), "dreiding1990", "gasteiger", "rules"),
     ("GAFF 1.81 (gaff.dat): ester, epoxide, amide, thioether", ("smiles", "CCOC(=O)C.C1CO1.CC(=O)NC.CSC"), "gaff-1.81-ambertools", "gasteiger", "rules"),
     ("GAFF2 2.11 (gaff211.dat): isoprene, styrene, nitrile; nudged off linear", ("smiles-nudged", "CC=C(C)CC.C=Cc1ccccc1.CCC#N"), "gaff2-2.11-ambertools", "gasteiger", "rules"),
     ("GAFF2 2.2.20 (gaff2.dat): polystyrene melt (periodic)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "gaff2-2.2.20-ambertools", "gasteiger", "rules"),

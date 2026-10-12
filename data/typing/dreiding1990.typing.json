@@ -1,0 +1,231 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "DREIDING (Mayo 1990)",
+ "unknown_types": "untyped",
+ "description": "CAPS rules for DREIDING's labels as the paper defines them: element and hybridisation (_3 tetrahedral, _R resonant, _2 trigonal, _1 linear), H___A the hydrogen of a hydrogen bond (bench/ff/make_dreiding.py)",
+ "rules": [
+  {
+   "type": "H_",
+   "smarts": "[#1]",
+   "priority": 0,
+   "description": "hydrogen"
+  },
+  {
+   "type": "H___A",
+   "smarts": "[H][#7,#8]",
+   "priority": 2,
+   "description": "hydrogen-bond hydrogen (on N or O)"
+  },
+  {
+   "type": "H___b",
+   "smarts": "[H;D2]([#5])[#5]",
+   "priority": 3,
+   "description": "bridging hydrogen (diborane)"
+  },
+  {
+   "type": "B_3",
+   "smarts": "[#5X4]",
+   "priority": 0,
+   "description": "tetrahedral B"
+  },
+  {
+   "type": "B_2",
+   "smarts": "[#5X3]",
+   "priority": 0,
+   "description": "trigonal B"
+  },
+  {
+   "type": "C_3",
+   "smarts": "[#6X4]",
+   "priority": 0,
+   "description": "tetrahedral C"
+  },
+  {
+   "type": "C_2",
+   "smarts": "[#6X3]",
+   "priority": 0,
+   "description": "trigonal C"
+  },
+  {
+   "type": "C_1",
+   "smarts": "[#6X2]",
+   "priority": 0,
+   "description": "linear C"
+  },
+  {
+   "type": "C_R",
+   "smarts": "[c]",
+   "priority": 1,
+   "description": "resonant (aromatic) C"
+  },
+  {
+   "type": "N_3",
+   "smarts": "[#7X4,#7X3]",
+   "priority": 0,
+   "description": "tetrahedral N"
+  },
+  {
+   "type": "N_2",
+   "smarts": "[#7X2]",
+   "priority": 1,
+   "description": "trigonal N"
+  },
+  {
+   "type": "N_1",
+   "smarts": "[#7X1]",
+   "priority": 1,
+   "description": "linear N"
+  },
+  {
+   "type": "N_R",
+   "smarts": "[n]",
+   "priority": 2,
+   "description": "resonant (aromatic) N"
+  },
+  {
+   "type": "N_R",
+   "smarts": "[#7X3;$(*-[#6X3]=[#8X1,#16X1]),$(*-c)]",
+   "priority": 2,
+   "description": "resonant N (amide, N on an aromatic ring)"
+  },
+  {
+   "type": "O_3",
+   "smarts": "[#8X2]",
+   "priority": 0,
+   "description": "tetrahedral O"
+  },
+  {
+   "type": "O_2",
+   "smarts": "[#8X1]",
+   "priority": 1,
+   "description": "trigonal O"
+  },
+  {
+   "type": "O_R",
+   "smarts": "[o]",
+   "priority": 2,
+   "description": "resonant (aromatic) O"
+  },
+  {
+   "type": "F_",
+   "smarts": "[F]",
+   "priority": 0,
+   "description": "fluorine"
+  },
+  {
+   "type": "Cl",
+   "smarts": "[Cl]",
+   "priority": 0,
+   "description": "chlorine"
+  },
+  {
+   "type": "Br",
+   "smarts": "[Br]",
+   "priority": 0,
+   "description": "bromine"
+  },
+  {
+   "type": "I_",
+   "smarts": "[I]",
+   "priority": 0,
+   "description": "iodine"
+  },
+  {
+   "type": "Al3",
+   "smarts": "[#13]",
+   "priority": 0,
+   "description": "Al3"
+  },
+  {
+   "type": "Si3",
+   "smarts": "[#14]",
+   "priority": 0,
+   "description": "Si3"
+  },
+  {
+   "type": "P_3",
+   "smarts": "[#15]",
+   "priority": 0,
+   "description": "P_3"
+  },
+  {
+   "type": "S_3",
+   "smarts": "[#16]",
+   "priority": 0,
+   "description": "S_3"
+  },
+  {
+   "type": "Ga3",
+   "smarts": "[#31]",
+   "priority": 0,
+   "description": "Ga3"
+  },
+  {
+   "type": "Ge3",
+   "smarts": "[#32]",
+   "priority": 0,
+   "description": "Ge3"
+  },
+  {
+   "type": "As3",
+   "smarts": "[#33]",
+   "priority": 0,
+   "description": "As3"
+  },
+  {
+   "type": "Se3",
+   "smarts": "[#34]",
+   "priority": 0,
+   "description": "Se3"
+  },
+  {
+   "type": "In3",
+   "smarts": "[#49]",
+   "priority": 0,
+   "description": "In3"
+  },
+  {
+   "type": "Sn3",
+   "smarts": "[#50]",
+   "priority": 0,
+   "description": "Sn3"
+  },
+  {
+   "type": "Sb3",
+   "smarts": "[#51]",
+   "priority": 0,
+   "description": "Sb3"
+  },
+  {
+   "type": "Te3",
+   "smarts": "[#52]",
+   "priority": 0,
+   "description": "Te3"
+  },
+  {
+   "type": "Na",
+   "smarts": "[#11]",
+   "priority": 0,
+   "description": "Na"
+  },
+  {
+   "type": "Ca",
+   "smarts": "[#20]",
+   "priority": 0,
+   "description": "Ca"
+  },
+  {
+   "type": "Fe",
+   "smarts": "[#26]",
+   "priority": 0,
+   "description": "Fe"
+  },
+  {
+   "type": "Zn",
+   "smarts": "[#30]",
+   "priority": 0,
+   "description": "Zn"
+  }
+ ]
+}

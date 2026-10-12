@@ -11,7 +11,7 @@ Known msi2lmp behaviour CAPS does not copy (reported, not counted as differences
   · bond-bond_1_3 terms only for dihedrals with a type named cp… (COMPASS's aromatic c3a gets none from msi2lmp);
   · angle-angle terms of three-connected centres looked up by equivalence only when msi2lmp runs with -p 3;
   · angle-angle reference angles written θ_ijk, θ_kjl, θ_ijl, where LAMMPS improper class2 reads θ_ijk, θ_ijl, θ_kjl
-    (CAPS writes LAMMPS's order; for the comparison its θ2 and θ3 are swapped back to msi2lmp's).
+    (CAPS writes LAMMPS's order; msi2lmp's file is put in LAMMPS's order before the comparison).
 
 The INTERFACE force field (IFF 1.5, data/forcefields/iff-pcff.json and iff-cvff.json) the same way: msi2lmp (built from
 LAMMPS's tools/msi2lmp/src, ~/lammps/tools/msi2lmp/msi2lmp-bin) writes the reference data for models of IFF's own model
@@ -23,7 +23,12 @@ Then IFF's typing rules: the neutral silica models and metal surfaces of IFF's d
 (.xyz: elements only, bonds perceived), typed and charged by CAPS's rules (IFF's silica: sc4, oc23, oc24, hoy with the
 charges IFF states; its metals) must give the types, charges and bonds of the model's own .car / .mdf.
 
-usage: check_msi2lmp.py [--only NAME] [--keep DIR]
+With --polymers DIR (a directory of .xyz oligomers, e.g. one per polymer of data/polymers/library.json): CAPS types and
+charges each with CVFF, PCFF and COMPASS (its rules, the .frc file's bond increments), writes it as .car / .mdf with
+those types and charges, msi2lmp assigns its parameters from the same .frc file, and both data files are compared in
+LAMMPS as above: CAPS's parameter assignment against msi2lmp's on every polymer.
+
+usage: check_msi2lmp.py [--only NAME] [--keep DIR] [--polymers DIR]
 """
 import os, re, subprocess, sys, tempfile
 
@@ -182,9 +187,73 @@ def cases():
     return out
 
 
+FRC = os.path.expanduser("~/lammps/tools/msi2lmp/frc_files")
+POLY_FF = [("class1", "1", "cvff", "cvff-frc.json"), ("class2b", "2", "pcff", "pcff-frc.json"), ("class2a", "2", "compass_published", "compass-frc.json")]
+
+
+def write_car_mdf(base, el, types, q, pos, bonds):
+    """an msi2lmp input pair: atoms named by element and number, the CAPS types and charges, the bond list"""
+    names = [f"{e}{i + 1}" for i, e in enumerate(el)]
+    with open(base + ".car", "w") as f:
+        f.write("!BIOSYM archive 3\nPBC=OFF\nCAPS oligomer\n!DATE\n")
+        for n, e, t, c, p in zip(names, el, types, q, pos):
+            f.write(f"{n:<7s}{p[0]:15.9f}{p[1]:15.9f}{p[2]:15.9f} XXXX 1      {t:<7s} {e:<2s} {c:7.4f}\n")
+        f.write("end\nend\n")
+    nb = [[] for _ in el]
+    for i, j in bonds:
+        nb[i].append(j)
+        nb[j].append(i)
+    with open(base + ".mdf", "w") as f:
+        f.write("!BIOSYM molecular_data 4\n\n!Date\n\n#topology\n\n@column 1 element\n@column 2 atom_type\n@column 3 charge_group\n"
+                "@column 4 isotope\n@column 5 formal_charge\n@column 6 charge\n@column 7 switching_atom\n@column 8 oop_flag\n"
+                "@column 9 chirality_flag\n@column 10 occupancy\n@column 11 xray_temp_factor\n@column 12 connections\n \n@molecule oligomer\n \n")
+        for i, (n, e, t, c) in enumerate(zip(names, el, types, q)):
+            f.write(f"XXXX_1:{n:<12s} {e:<2s} {t:<6s} 1     0  0  {c:9.4f} 0 0 8 1.0000  0.0000 " + " ".join(names[j] for j in nb[i]) + " \n")
+        f.write("\n#end\n")
+
+
+def polymer_cases(src):
+    """(label, msi2lmp's data file, its .car, class, CAPS force field, boundary, style lines, extra CAPS options) per oligomer"""
+    out = []
+    for fn in sorted(os.listdir(src)):
+        if not fn.endswith(".xyz"):
+            continue
+        for cls, c, frc, ff in POLY_FF:
+            label = f"{fn[:-4]} {frc}"
+            if only and only not in label:
+                continue
+            d = os.path.join(work, "poly", f"{fn[:-4]}-{frc}")
+            os.makedirs(d, exist_ok=True)
+            data = os.path.join(d, "typed.data")
+            r = subprocess.run([CAPS, "ff", "apply", os.path.join(src, fn), "--ff", os.path.join(ROOT, "data", "forcefields", ff), "--charges", "types",
+                                "--allow-missing", "-o", data], capture_output=True, text=True)
+            if r.returncode or not os.path.exists(data):
+                out.append((label, None, "CAPS could not type it: " + ((r.stderr or r.stdout).strip().splitlines() or ["?"])[-1][:150], "", "", "", [], []))
+                continue
+            txt = open(data).read()
+            label_of = {int(w[0]): l.split("#")[1].split()[0] for l in txt.split("Masses", 1)[1].split("\n\n", 2)[1].splitlines()
+                        if "#" in l for w in [l.split()]}
+            mass = {int(w[0]): float(w[1]) for w in section(txt, "Masses")}
+            at = sorted((int(w[0]), int(w[2]), float(w[3]), tuple(map(float, w[4:7]))) for w in section(txt, "Atoms"))
+            bonds = [(int(w[2]) - 1, int(w[3]) - 1) for w in section(txt, "Bonds")]
+            el = [min((abs(mass[t] - m), e) for e, m in (("H", 1.008), ("C", 12.011), ("N", 14.007), ("O", 15.999), ("F", 18.998),
+                                                       ("Si", 28.086), ("P", 30.974), ("S", 32.06), ("Cl", 35.45), ("Br", 79.904)))[1]
+                  for _, t, _, _ in at]
+            base = os.path.join(d, "oligomer")
+            write_car_mdf(base, el, [label_of[t] for _, t, _, _ in at], [x[2] for x in at], [x[3] for x in at], bonds)
+            r = subprocess.run([MSI2LMP, "oligomer", "-c", c, "-p", "1", "-i", "-f", frc], cwd=d, capture_output=True, text=True,
+                               env=dict(os.environ, MSI2LMP_LIBRARY=FRC))
+            ref = os.path.join(d, "oligomer.data")
+            if not os.path.exists(ref):
+                out.append((label, None, "msi2lmp: " + ((r.stdout + r.stderr).strip().splitlines() or ["failed"])[-1][:150], "", "", "", [], []))
+                continue
+            out.append((label, ref, base + ".car", cls, ff, "boundary f f f", STYLES["class1" if cls == "class1" else "class2"], []))
+    return out
+
+
 def main():
     rows, fails = [], 0
-    for fn, ref, car, cls, ffname, boundary, styles, extra in cases():
+    for fn, ref, car, cls, ffname, boundary, styles, extra in (polymer_cases(arg("--polymers", "")) if "--polymers" in sys.argv else cases()):
         if only and only not in fn:
             continue
         if ref is None:
@@ -194,6 +263,19 @@ def main():
         name = re.sub(r"[^A-Za-z0-9_.-]+", "_", fn)
         d = os.path.join(work, name)
         os.makedirs(d, exist_ok=True)
+        # msi2lmp writes the angle-angle reference angles as theta_ijk, theta_kjl, theta_ijl, LAMMPS reads theta_ijk,
+        # theta_ijl, theta_kjl: msi2lmp's file is put in LAMMPS's order (CAPS writes it), so both mean what they say
+        fixed = []
+        sec = ""
+        for line in open(ref).read().splitlines():
+            if line and line[0].isalpha():
+                sec = line.strip()
+            w = line.split()
+            if sec.startswith("AngleAngle Coeffs") and len(w) == 7 and w[5] != w[6]:
+                line = " ".join([w[0], w[1], w[2], w[3], w[4], w[6], w[5]])
+            fixed.append(line)
+        ref = os.path.join(d, "msi2lmp_lammps_order.data")
+        open(ref, "w").write("\n".join(fixed) + "\n")
         text = open(ref).read()
         # the types Materials Studio assigned, from the .car file msi2lmp read (atoms in the same order)
         atoms = []
@@ -229,9 +311,6 @@ def main():
                 if sec.startswith("BondBond13") and not has_cp and float(vals[1]) != 0:
                     vals[1] = "0.0000"
                     zeroed += 1
-                if sec == "AngleAngle Coeffs" and vals[5] != vals[6]:
-                    vals[5], vals[6] = vals[6], vals[5]
-                    swapped += 1
                 line = " ".join(vals)
             out.append(line)
         open(os.path.join(d, "caps.data"), "w").write("\n".join(out) + "\n")
@@ -257,7 +336,6 @@ def main():
         styl = " ".join(l.split(None, 1)[1] for l in open(os.path.join(d, "caps.in")).read().splitlines()
                         if re.match(r"(bond|angle|dihedral|improper)_style", l))
         quirk = f" · {zeroed} bond-bond-1-3 types left out as msi2lmp does (no cp type)" if zeroed else ""
-        quirk += f" · {swapped} angle-angle types with θ2, θ3 in msi2lmp's order" if swapped else ""
         rows.append((fn, f"{'ok' if ok else 'DIFFERS'} · {len(atoms)} atoms · largest relative difference {worst:.1e} · CAPS styles: {styl}{quirk}{why}",
                      "" if ok else "   msi2lmp/CAPS: " + "  ".join(f"{k} {ge[k]:.6f}/{ce[k]:.6f}" for k in TERMS)))
     for fn, res, more in rows:

@@ -1,0 +1,4 @@
+{"format": "caps-typing", "version": 1, "forcefield": "CVFF (cvff.frc) SPC water",
+ "description": "SPC water as cvff.frc types it (ospc / hspc): an overlay on CVFF's rules",
+ "rules": [{"type": "ospc", "smarts": "[OX2H2]", "priority": 20, "description": "SPC water O"},
+           {"type": "hspc", "smarts": "[H][OX2H2]", "priority": 20, "description": "SPC water H"}]}
