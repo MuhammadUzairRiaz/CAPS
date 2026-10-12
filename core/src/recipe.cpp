@@ -63,7 +63,8 @@ KeyValues approx(const EnergyOptions& e, int threads) {
           {"Electrostatics", !e.coulomb ? "off" : e.electrostatics == EnergyOptions::Electrostatics::PME ? "SPME · relative tolerance " + g6(e.ewald_rtol)
                                                                                                           : "damped shifted force · cut-off " + g6(e.cutoff) + " Å"},
           {"Constraints", "none"},
-          {"Precision", "double · reproducible with " + std::to_string(t) + " threads"}};
+          {"Precision", std::string(e.mixed ? "mixed (12-6 and 9-6 pairs in single precision with SIMD, sums in double)" : "double") +
+                            " · reproducible with " + std::to_string(t) + " threads"}};
 }
 void elec_cite(std::vector<std::string>& c, const EnergyOptions& e) {
   if (e.coulomb) c.push_back(e.electrostatics == EnergyOptions::Electrostatics::PME ? "essmann1995" : "fennell2006");
@@ -977,6 +978,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           DynamicsOptions m;
           m.field = ff;
           m.energy = energy;
+          m.energy.mixed = true;   // MD in mixed precision, as the CLI and the Studio
           m.dt = num(J, "dt", 1.0);
           m.respa = int(num(J, "respa", 1));   // r-RESPA: bonded forces every dt / respa
           const double ps = num(J, "ps", 10);
@@ -1043,7 +1045,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           }
           pr.push_back({"force field", ffname});
           res.manifest.steps.push_back(step("dynamics." + ens, ens == "npt" ? "NPT molecular dynamics" : ens == "nvt" ? "NVT molecular dynamics" : ens == "nph" ? "NPH molecular dynamics" : "NVE molecular dynamics", pr,
-                                            seeded(m.seed), c, approx(energy, o.threads)));
+                                            seeded(m.seed), c, approx(m.energy, o.threads)));
           report(k, st, ens + " · " + g6(ps) + " ps · " + g6(m.temperature) + " K", "done", 1);
         } else {
           EquilibrateOptions e;
@@ -1060,6 +1062,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           } catch (const std::exception& ex) { throw RecipeError(2, std::string("equilibrate: ") + ex.what()); }
           e.md.field = ff;
           e.md.energy = energy;
+          e.md.energy.mixed = true;
           e.md.seed = seed_of(J);
           e.md.thermostat = thermostat_from_string(text(J, "thermostat", "bussi"));
           if (e.md.thermostat == Thermostat::None) e.md.thermostat = Thermostat::Bussi;
@@ -1111,7 +1114,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           double pmax = 0;
           for (const auto& sg : e.stages) pmax = std::max(pmax, sg.pressure);
           res.manifest.steps.push_back(step(proto == "larsen21" ? "equilibrate.larsen21" : "equilibrate.protocol", proto, {{"stages", std::to_string(e.stages.size())}, {"Pmax", g6(pmax) + " atm"},
-                                            {"length", g6(er.ps) + " ps"}, {"force field", ffname}}, seeded(e.md.seed), c, approx(energy, o.threads)));
+                                            {"length", g6(er.ps) + " ps"}, {"force field", ffname}}, seeded(e.md.seed), c, approx(e.md.energy, o.threads)));
           report(k, st, proto + " · " + std::to_string(e.stages.size()) + " stages · " + g6(er.ps) + " ps", "done", 1);
         }
       } else if (st == "analyze") {
