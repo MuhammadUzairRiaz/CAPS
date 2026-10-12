@@ -161,6 +161,10 @@ struct FFDef {
   // Bond increments (class II charges): match [a, b], params [δa, δb]; an atom's charge is the sum over its bonds
   // (plus its type charge, if any). The last matching rule wins, in either direction.
   std::vector<FFRule> bond_increments;
+  // A bond with no increment (JSON "missing_bond_increment": "zero"): counted as 0, as Materials Studio and msi2lmp do for
+  // the .frc force fields (PCFF has no c-s' increment, so a methyl on a sulfone S keeps -0.159). Otherwise it is a missing
+  // parameter and charges "auto" falls back to Gasteiger.
+  bool missing_increment_zero = false;
   // Automatic parameters (Accelrys "cff91_auto" / "cvff_auto"): used only when no rule above matches. They are
   // looked up by the types' auto equivalences, which depend on the position in the interaction:
   //   auto_bond; auto_angle_end / auto_angle_apex; auto_torsion_end / auto_torsion_center; auto_oop_end / _center.
