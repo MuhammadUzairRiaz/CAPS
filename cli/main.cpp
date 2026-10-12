@@ -2354,6 +2354,7 @@ int main(int argc, char** argv) {
             for (const auto& a : s.atoms) types.push_back(a.name);
           }
           std::string charges = o.count("--charges") ? o["--charges"] : (file_charges(s) ? "keep" : "auto");
+          const bool auto_charges = charges == "auto";
           if (!o.count("--charges") && charges == "keep")
             std::fprintf(stderr, "charges: the file's own charges are kept, not %s's (--charges auto gives the force field's own)\n", ff.name.c_str());
           ParamReport rep;
@@ -2381,6 +2382,28 @@ int main(int argc, char** argv) {
             }
           }
           if (charges != "types" || !f.charge.size()) f = parameterize(s, ff, types, charges, &rep, o.count("--allow-missing"));
+          // automatic charges: per-type charges that miss the formal charge give way to the companion force field's
+          // bond-increment charges when it names one (OPLS-AA 2024 -> OPLS 2005), as a recipe does
+          if (auto_charges && charges == "types" && !ff.charge_increments_from.empty()) {
+            double net = 0;
+            for (double q : f.charge) net += q;
+            int formal = 0;
+            for (int fc : perceive(s).charge) formal += fc;
+            if (std::fabs(net - formal) > 1e-3) {
+              try {
+                std::string note;
+                const auto q = companion_charges(s, ff, ff_path(o["--ff"]), &note);
+                for (size_t i = 0; i < s.atoms.size(); ++i) s.atoms[i].charge = q[i];
+                s.has_charges = true;
+                rep = ParamReport{};
+                f = parameterize(s, ff, types, "keep", &rep, o.count("--allow-missing"));
+                std::printf("charges: %s's own charges sum to %+.4f e, not %+d; used instead: %s\n", ff.name.c_str(), net, formal,
+                            (note.rfind("charges: ", 0) == 0 ? note.substr(9) : note).c_str());
+              } catch (const FFError& e) {
+                std::printf("charges: %s's own charges sum to %+.4f e, not %+d (%s)\n", ff.name.c_str(), net, formal, e.what());
+              }
+            }
+          }
           cutoff = ff.cutoff;
           for (const auto& n : f.notes) std::printf("%s\n", n.c_str());
         }
