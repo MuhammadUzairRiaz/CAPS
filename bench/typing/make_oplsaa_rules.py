@@ -306,6 +306,10 @@ by_h((135, 136, 137, 139), 6, "$(*[SX4](=[OX1])(=[OX1])[#6]);!$(*[!#6;!#1;!#16])
 add(488, 7, "c[SX4](=[OX1])(=[OX1])", "ring C on a sulfonyl S (charge 0: the SO2 group is neutral)")
 add(202, 5, "[SX2]([CX4])[CX4]", "sulfide S")
 add(203, 6, "[SX2]([#6])[SX2]", "disulfide S")
+# a polysulfide (sulfur crosslinks, trisulfides and longer): the S bonded to carbon is the disulfide S 203 with its carbon
+# group (213-216) balancing it; an S between two S has no carbon to pair with and carries 0 (CAPS's caps_s_poly, the class
+# and Lennard-Jones of 203)
+add("caps_s_poly", 7, "[SX2]([SX2])[SX2]", "S between two S (polysulfide)", True)
 add(200, 5, "[SX2H1][CX4]", "thiol S")
 add(204, 5, "[H][SX2H1]", "thiol H")
 by_h((209, 210, 211, 212), 5, "$(*[SX2][CX4])", "C on a sulfide S")

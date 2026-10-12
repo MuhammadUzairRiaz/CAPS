@@ -1590,6 +1590,12 @@
    "description": "disulfide S"
   },
   {
+   "type": "caps_s_poly",
+   "smarts": "[SX2]([SX2])[SX2]",
+   "priority": 7,
+   "description": "S between two S (polysulfide)"
+  },
+  {
    "type": "opls_200",
    "smarts": "[SX2H1][CX4]",
    "priority": 5,
