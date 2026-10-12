@@ -25,3 +25,42 @@ packaging/icon/caps.iconset/
 /Materials Studio*/
 /material_studio.png
 MS_information_design/
+
+# Force-field libraries converted from DL_FIELD's library files (STFC licence: no redistribution).
+# Kept on the developer's machine only, until they are rebuilt from the original published sources.
+/data/forcefields/pcff.json
+/data/forcefields/compass.json
+/data/forcefields/cvff.json
+/data/forcefields/opls2005.json
+/data/forcefields/opls2020.json
+/data/forcefields/opls-aam.json
+/data/forcefields/opls-clp.json
+/data/forcefields/opls-des.json
+/data/forcefields/amber.json
+/data/forcefields/gaff-amber16.json
+/data/forcefields/gaff-amber25.json
+/data/forcefields/charmm*.json
+/data/forcefields/cgenff.json
+/data/forcefields/dreiding.json
+/data/forcefields/gromos-54a7.json
+/data/forcefields/trappe-ua.json
+/data/forcefields/trappe-eh.json
+/data/forcefields/misc.json
+/data/forcefields/inorganic-*.json
+/data/typing/amber*.typing.json
+/data/typing/cgenff.typing.json
+/data/typing/charmm*.typing.json
+/data/typing/cvff-*.typing.json
+/data/typing/dreiding.typing.json
+/data/typing/dreiding-tip3p*.typing.json
+/data/typing/gaff-amber*.typing.json
+/data/typing/gaff-spc.typing.json
+/data/typing/gaff-tip3p*.typing.json
+/data/typing/gromos-54a7.typing.json
+/data/typing/inorganic-*.typing.json
+/data/typing/misc.typing.json
+/data/typing/opls-*.typing.json
+/data/typing/opls2005.typing.json
+/data/typing/trappe-eh.typing.json
+/data/typing/trappe-ua.typing.json
+/data/typing/sets/
