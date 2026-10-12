@@ -324,7 +324,7 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
   }
   for (const auto& t : ff.bonds_x) {
     if (t.form == 1) std::snprintf(b, sizeof b, " 3 %.10g %.10g %.10g", t.c / 10, t.a * KJ, t.b * 10);   // Morse: b0, D, β
-    else if (t.form == 2) std::snprintf(b, sizeof b, " 2 %.10g %.10g", t.b / 10, t.a * KJ * 1e4);   // GROMOS quartic
+    else if (t.form == 2) std::snprintf(b, sizeof b, " 2 %.10g %.10g", t.b / 10, 4 * t.a * KJ * 1e4);   // GROMOS quartic: kb = 4 K
     else throw FieldError("bond form " + std::to_string(t.form) + " has no GROMACS function");
     add(BONDS, {t.i, t.j}, b);
     mark(t.i, t.j);

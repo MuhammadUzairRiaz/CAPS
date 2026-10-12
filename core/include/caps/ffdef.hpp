@@ -234,6 +234,10 @@ struct FFDef {
   // structure without one (same bead types in the same order, same bonds). Loaded with the force field.
   std::string molecule_templates_path;
   std::shared_ptr<const Json> molecule_templates;
+  // Building blocks (force-field file "residue_templates": GROMOS's aminoacids.rtp with its termini, bench/ff/convert_gromos.py):
+  // residues recognised in the structure take their types, charges and every bonded term from the block, as pdb2gmx
+  // applies them (apply_residue_templates)
+  std::shared_ptr<const Json> residue_templates;
   // Every pair's Lennard-Jones terms from a table (force-field file "pair_table": gzip text, "T name mass" and
   // "P a b sigma(nm) epsilon(kJ/mol)"; Martini 3's 355,746 pairs): no mixing rule, a pair not listed has no LJ
   std::string pair_table;
@@ -324,6 +328,11 @@ struct ParamReport {
 // else QEq) and summed into the sites, so the caller then uses charges "keep" (charges is updated). Returns a note
 // when it converted, "" otherwise.
 std::string prepare_for_forcefield(System& s, const FFDef& ff, std::string& charges);
+// The force field's building blocks (FFDef::residue_templates) on a structure: every residue recognised by its atoms and
+// bonds (elements, connectivity, the links to its neighbours), its atoms named and typed as the block, charges set, and
+// an explicit topology with the block's terms (and those its neighbours list across the link), the exclusions within
+// nrexcl bonds and the 1-4 pairs. Returns a note; throws FFError naming atoms no block covers.
+std::string apply_residue_templates(System& s, const FFDef& ff);
 // Does the force field change the structure before typing (united atom, shells, ionic bonds)?
 inline bool needs_prepare(const FFDef& ff) {
   return ff.united_atom || !ff.shells.empty() || ff.keep_defined_bonds || !ff.unbonded_types.empty() || ff.coarse_grained || !ff.bead_rules.empty() || !ff.bead_groups.empty() ||

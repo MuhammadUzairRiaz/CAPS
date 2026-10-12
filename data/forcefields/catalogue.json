@@ -320,36 +320,6 @@
    }
   },
   {
-   "id": "gromos-54a7",
-   "name": "GROMOS 54A7",
-   "version": "2011",
-   "references": [
-    "N. Schmid et al., Eur. Biophys. J. 40, 843 (2011)"
-   ],
-   "origin": "converted",
-   "source_file": "GROMOS_G54A7.par",
-   "status": "validated",
-   "notes": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): octane identical; bonds kept as the GROMOS quartic form (the original distribution writes a harmonic approximation).",
-   "file": "gromos-54a7.json",
-   "counts": {
-    "atom_types": 28,
-    "pairs": 22,
-    "bonds": 28,
-    "angles": 38,
-    "dihedrals": 22,
-    "impropers": 6
-   },
-   "typing": {
-    "rules": "typing/gromos-54a7.typing.json",
-    "evidence": "CAPS rules from GROMOS 54A7 (united atom)'s type definitions (bench/typing/make_biomolecular_rules.py); united atom"
-   },
-   "list": {
-    "label": "GROMOS 54A7",
-    "key": "gromos_54a7",
-    "order": 9
-   }
-  },
-  {
    "id": "trappe-eh",
    "name": "TraPPE-EH",
    "version": "2007",
@@ -1881,6 +1851,37 @@
     "label": "TraPPE united-atom",
     "key": "trappe_ua",
     "order": 16
+   }
+  },
+  {
+   "id": "gromos54a7-gromacs",
+   "name": "GROMOS 54A7",
+   "version": "54A7 as GROMACS distributes it (gromos54a7.ff)",
+   "references": [
+    "N. Schmid et al., Eur. Biophys. J. 40, 843 (2011)",
+    "C. Oostenbrink et al., J. Comput. Chem. 25, 1656 (2004)"
+   ],
+   "origin": "built from source",
+   "source": "GROMACS share/top/gromos54a7.ff (ffnonbonded.itp, ffbonded.itp, atomtypes.atp, aminoacids.rtp, .n.tdb, .c.tdb)",
+   "license": "GNU LGPL 2.1 (part of GROMACS)",
+   "status": "validated",
+   "file": "gromos54a7-gromacs.json",
+   "counts": {
+    "atom_types": 56,
+    "pairs": 1541,
+    "bonds": 0,
+    "angles": 0,
+    "dihedrals": 0,
+    "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/gromos54a7-gromacs.typing.json",
+    "evidence": "a building-block force field: CAPS recognises the residues of aminoacids.rtp (with the termini of the .tdb files) in a structure and takes their types, charges and coded terms as pdb2gmx does; peptides of all 20 amino acids, a proline N-terminus and a glycine zwitterion give pdb2gmx's topology term for term and its energies (bench/ff/compare_pdb2gmx.py)"
+   },
+   "list": {
+    "label": "GROMOS 54A7",
+    "key": "gromos_54a7",
+    "order": 9
    }
   },
   {

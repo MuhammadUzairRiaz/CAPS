@@ -1180,6 +1180,16 @@ const std::string& Smarts::text() const { return d_->text; }
 // Typing
 
 TypingResult assign_types(const System& s, const FFDef& ff, const std::vector<std::string>* context) {
+  if (s.topology && s.topology->types.size() == s.atoms.size() && s.topology->natoms == s.atoms.size()) {
+    // building blocks: the types the topology names (apply_residue_templates)
+    TypingResult r;
+    r.types = s.topology->types;
+    r.why.assign(s.atoms.size(), s.topology->source);
+    r.rule.assign(s.atoms.size(), -1);
+    r.candidates.resize(s.atoms.size());
+    for (size_t i = 0; i < s.atoms.size(); ++i) r.candidates[i] = {r.types[i]};
+    return r;
+  }
   struct Rule { const TypingRule* r; const FFType* t; size_t order; Smarts sm; };
   std::map<std::string, const FFType*> byname;
   for (const auto& t : ff.types) byname[t.name] = &t;
