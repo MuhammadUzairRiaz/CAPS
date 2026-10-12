@@ -734,4 +734,17 @@ with tempfile.TemporaryDirectory() as _td:
     check("pair_coeff" in open(os.path.join(_td, "bm", "pair_coeffs.in")).read() and "kspace_style" in open(os.path.join(_td, "bm", "in.backmap")).read(), "backmap deck")
 print("ok   coarse-graining: cg_map(rules=…), caps.cg('cgmap')")
 
+# CM5 from Hirshfeld charges: methanol, mPW1PW91/6-311+G(2df,2p) (CM5PAC's test 1; its CM5 column is the reference)
+from caps import cm5 as _cm5
+_z = [8, 6, 1, 1, 1, 1]
+_x = [[-0.046153, -0.751257, 0.0], [-0.046153, 0.658469, 0.0], [0.857779, -1.062372, 0.0],
+      [-1.086394, 0.976180, 0.0], [0.437376, 1.072716, 0.889654], [0.437376, 1.072716, -0.889654]]
+_h = [-0.242831, -0.018875, 0.157735, 0.043410, 0.030283, 0.030283]
+_ref = [-0.466737, -0.145027, 0.332287, 0.103704, 0.087889, 0.087889]
+_q = _cm5.cm5(_z, _x, _h)
+check(max(abs(a - b) for a, b in zip(_q, _ref)) < 2e-6, f"CM5 methanol {[round(v, 6) for v in _q]}")
+_o = _cm5.opls(_z, _x, _q)
+check(abs(sum(_o)) < 1e-12 and abs(_o[4] - _o[5]) < 1e-12 and abs(_o[0] - 1.27 * _q[0]) < 0.01, f"1.27 x CM5 {_o}")
+print("ok   CM5 charges")
+
 print("all python checks passed")
