@@ -283,17 +283,32 @@ class Evaluator {
   EnergyOptions opt_;
   std::vector<double> x0_;
   Cell cell0_;
-  // Pair list, by first atom: the pairs of atom i are [first_[i], first_[i + 1]), partner pj_ and image pq_. With the
-  // listed positions xs = x + off (each atom moved by the lattice vector that put it in the cell at the build), a
-  // pair's separation is d = xs_j − xs_i + qvec_[pq_]. Six bytes per pair: the list is read once per step.
+  // Pair list over slots: at each build the atoms are put in bin order (slot s holds atom perm_[s]), so atoms close
+  // in space are close in memory. The pairs of slot i are [first_[i], first_[i + 1]), partner slot pj_ and image pq_.
+  // With the listed positions xs (slot order, each atom moved by the lattice vector that put it in the cell at the
+  // build) a pair's separation is d = xs_j − xs_i + qvec_[pq_]. Each slot's pairs are grouped by image: segment k of
+  // slot i (k in [segoff_[i], segoff_[i + 1])) has image segcode_[k] and ends at first_[i] + segend_[k], so a loop can
+  // take the shift once per segment instead of once per pair.
   std::vector<size_t> first_;
   std::vector<uint32_t> pj_;
   std::vector<uint16_t> pq_;
+  std::vector<size_t> segoff_;
+  std::vector<uint16_t> segcode_;
+  std::vector<uint32_t> segend_;
+  std::vector<uint32_t> perm_;       // slot → atom
+  std::vector<uint32_t> iperm_;      // atom → slot
+  std::vector<uint32_t> tslot_;      // per slot: the atom's type index
+  std::vector<double> qslot_;        // per slot: the atom's charge (qeff_)
   std::vector<int32_t> qint_;        // 3 per image code: integer lattice coefficients
   std::vector<double> qvec_;         // 3 per image code: the Cartesian lattice vector for cells_
-  std::vector<int32_t> ioff_;        // 3 per atom: its offset as integer lattice coefficients
-  std::vector<double> off_;          // 3 per atom: the Cartesian offset for cells_
-  std::vector<double> xs_;           // listed positions of the current step
+  std::vector<int32_t> ioff_;        // 3 per slot: its atom's offset as integer lattice coefficients
+  std::vector<double> off_;          // 3 per slot: the Cartesian offset for cells_
+  std::vector<double> xs_;           // listed positions of the current step, slot order
+  // Ewald real-space term erfc(κr)/r = 1/r − G(r²), G(s) = erf(κ√s)/√s smooth in s: G and dG/ds at nodes h apart,
+  // cubic Hermite between them (the force is the interpolant's own derivative)
+  double gtab_kappa_ = -1, gtab_h_ = 0;
+  std::vector<double> gtab_;         // 2 per node: G, dG/ds
+  void ewald_table(double kappa, double s_max);
   Cell cells_;                       // the cell the Cartesian offsets and images were computed for
   std::vector<double> eps_, s6_, rcap2_, ecap_, fcap_;   // per type pair
   bool lj96_ = false;                // class II 9-6 LJ
@@ -308,7 +323,8 @@ class Evaluator {
   struct Excluded { uint32_t i, j; double factor; };
   std::vector<Excluded> excl_;       // 1-2, 1-3 (factor 0) and 1-4 (Coulomb factor) partners
   std::unique_ptr<ThreadPool> pool_;
-  std::vector<std::vector<double>> tf_;   // per-worker force buffers
+  std::vector<std::vector<double>> tf_;   // per-worker force buffers, atom order (bonded terms)
+  std::vector<std::vector<double>> tfs_;  // per-worker force buffers, slot order (pairs)
   int builds_ = 0;
   bool built_ = false;
   bool frozen_ = false;
