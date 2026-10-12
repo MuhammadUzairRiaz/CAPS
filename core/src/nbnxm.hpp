@@ -1,0 +1,82 @@
+// Cluster pair list and kernel for plain pair terms in mixed precision (the scheme of GROMACS's nbnxm: Páll & Hess,
+// Comput. Phys. Commun. 184, 2641 (2013)). Atoms are put in a grid of columns, sorted along each column and cut into
+// clusters of four; the list holds pairs of clusters, each with its periodic image and a 16-bit mask of the atom pairs
+// that interact (exclusions, padding, the half list, the list radius). The kernel takes four j atoms per SIMD register
+// against each i atom in turn, in single precision; energies, virial and forces leave it in double.
+#pragma once
+
+#include "caps/system.hpp"
+#include <cstdint>
+#include <vector>
+
+namespace caps {
+
+class ThreadPool;
+
+namespace nbnxm {
+
+constexpr uint32_t kPad = 0xffffffffu;   // a slot with no atom
+
+struct Entry {
+  uint32_t cj;      // j cluster
+  uint16_t code;    // periodic image of the j cluster
+  uint16_t mask;    // bit 4a + l: i atom a with j atom l
+};
+
+struct List {
+  // build inputs
+  double rlist = 0;
+  // slots: cluster c holds slots 4c … 4c + 3; slot s holds atom perm[s] (kPad for padding)
+  size_t nclusters = 0;
+  std::vector<uint32_t> perm, iperm;
+  std::vector<double> off;        // 3 per slot: lattice offset to the binned position, Cartesian, for cells
+  std::vector<int32_t> ioff;      // 3 per slot: the same as integer lattice coefficients
+  std::vector<int32_t> qint;      // 3 per image code
+  std::vector<double> qvec;       // 3 per image code, Cartesian, for cells
+  std::vector<size_t> first;      // per i cluster: its entries [first[c], first[c + 1])
+  std::vector<Entry> entries;
+  // Dynamic pruning (as GROMACS): each worker's i clusters [tb[t], te[t]) (about 1/nth of the entries), and its entries
+  // with only the atom pairs inside a shorter radius at the last prune, i cluster tb[t] + k at [pf[t][k], pf[t][k + 1])
+  std::vector<size_t> tb, te;
+  std::vector<std::vector<Entry>> pe;
+  std::vector<std::vector<uint32_t>> pf;
+  // per step, by slot: positions relative to their cluster's origin (3 per cluster, double), so single precision keeps
+  // its digits for the separations; an entry's shift is the image plus the difference of the origins
+  std::vector<double> org;
+  std::vector<float> X, Y, Z, Q, P12, P6;
+  std::vector<uint32_t> T;        // type index (0 for padding)
+  Cell cells;
+
+  // the excluded partners (sorted), types, the type pairs that never interact (empty: none), charges, and per-type
+  // factors whose products are the pair coefficients (empty: the kernel looks them up per type pair)
+  void build(const std::vector<double>& x, const Cell& cell_in, double rlist, const std::vector<std::vector<uint32_t>>& excluded,
+             const std::vector<int>& type_index, size_t ntypes, const std::vector<char>& skip_type, const std::vector<double>& q,
+             const std::vector<double>& f12, const std::vector<double>& f6, ThreadPool& pool);
+  void rescale(const Cell& cell);                       // offsets and images for a deformed cell
+  void positions(const std::vector<double>& x);         // X, Y, Z for this step
+  void prune(double radius, ThreadPool& pool);          // pe, pf from the entries at the positions X, Y, Z
+};
+
+struct Params {
+  float rc2 = 0, rc = 0;
+  int lj = 1;                     // 1: 12-6, 2: class II 9-6
+  bool comb = false;              // the coefficients are products of per-type factors (P12, P6 per slot)
+  const float* c12 = nullptr;     // per type pair, when not comb
+  const float* c6 = nullptr;
+  size_t nt = 0;
+  float shift = 0;                // 1: energies shifted to zero at the cut-off
+  float rcn = 0, rc6 = 0;         // r_c⁻¹² (or r_c⁻⁹ for 9-6) and r_c⁻⁶
+  int coul = 0;                   // 0 none, 1 Ewald real space (PME), 2 damped shifted force
+  float kappa = 0, kc = 0;        // κ and 2κ/√π
+  float e0 = 0, f0 = 0;           // DSF shift constants
+  float kcoul = 0;                // Coulomb constant
+  bool energies = true;           // false: forces and virial only (the energies left at 0)
+};
+
+// Forces added to fx, fy, fz (by slot, float), energies and virial (xx yy zz xy xz yz) added
+struct Sums { double evdw = 0, ecoul = 0, w[6] = {0, 0, 0, 0, 0, 0}; };
+// worker t's i clusters, from its pruned entries
+void kernel(const List& L, const Params& p, int t, float* fx, float* fy, float* fz, Sums& out);
+
+}  // namespace nbnxm
+}  // namespace caps
