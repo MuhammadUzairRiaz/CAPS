@@ -59,7 +59,7 @@ struct List {
              const std::vector<double>& f12, const std::vector<double>& f6, ThreadPool& pool, const float* c12 = nullptr,
              const float* c6 = nullptr);
   void rescale(const Cell& cell);                       // offsets and images for a deformed cell
-  void positions(const std::vector<double>& x);         // X, Y, Z for this step
+  void positions(const std::vector<double>& x, ThreadPool& pool);   // X, Y, Z for this step
   void prune(double radius, ThreadPool& pool);          // pe, pf from the entries at the positions X, Y, Z
 };
 
