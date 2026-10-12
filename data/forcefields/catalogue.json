@@ -260,36 +260,6 @@
    }
   },
   {
-   "id": "opls-clp",
-   "name": "CL&P ionic liquids (OPLS-AA based)",
-   "version": "2004 onwards",
-   "references": [
-    "J. N. Canongia Lopes, A. A. H. Pádua, J. Phys. Chem. B 108, 2038 (2004)"
-   ],
-   "origin": "converted",
-   "source_file": "OPLS_CL_P.par",
-   "status": "validated",
-   "notes": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): 24 of 24 identical (kJ/mol constants confirmed as DL_POLY's k).",
-   "file": "opls-clp.json",
-   "counts": {
-    "atom_types": 62,
-    "pairs": 58,
-    "bonds": 48,
-    "angles": 81,
-    "dihedrals": 98,
-    "impropers": 16
-   },
-   "typing": {
-    "rules": "typing/opls-clp.typing.json",
-    "evidence": "CAPS rules from CL&P ionic liquids (OPLS-AA based)'s type definitions (bench/typing/make_opls_family_rules.py)"
-   },
-   "list": {
-    "label": "OPLS ionic liquids",
-    "key": "opls_cl_p",
-    "order": 12
-   }
-  },
-  {
    "id": "opls-des",
    "name": "OPLS-DES deep eutectic solvents",
    "version": "2018",
@@ -2089,6 +2059,36 @@
     "label": "OPLS-AA/M",
     "key": "opls_aam",
     "order": 11
+   }
+  },
+  {
+   "id": "clandp",
+   "name": "CL&P (ionic liquids)",
+   "version": "il.ff of 2026/04/16 (github.com/paduagroup/clandp)",
+   "references": [
+    "J. N. Canongia Lopes, A. A. H. Padua, Theor. Chem. Acc. 131, 1129 (2012)"
+   ],
+   "origin": "built from source",
+   "source": "il.ff, github.com/paduagroup/clandp",
+   "license": "MIT (Copyright (c) 2019 Agilio Padua)",
+   "status": "validated",
+   "file": "clandp.json",
+   "counts": {
+    "atom_types": 128,
+    "pairs": 128,
+    "bonds": 48,
+    "angles": 88,
+    "dihedrals": 110,
+    "impropers": 19
+   },
+   "typing": {
+    "rules": "typing/clandp.typing.json",
+    "evidence": "CAPS rules for CL&P's types by ion family (bench/typing/make_clandp_rules.py): CL&P's own ion files (.zmat, .xyz) typed as they type them, 1165 / 1165 atoms in 55 molecules (P111i4's two swapped labels listed; CT2 and CS, the same parameters, counted as one)"
+   },
+   "list": {
+    "label": "CL&P ionic liquids",
+    "key": "opls_cl_p",
+    "order": 12
    }
   }
  ],

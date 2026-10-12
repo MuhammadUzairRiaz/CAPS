@@ -1,0 +1,6 @@
+{
+ "description": "Molecule files of CL&P (github.com/paduagroup/clandp) whose own labels contradict the rest of the force field; bench/ff/validate_fftool_types.py --deviations reports them apart.",
+ "molecules": {
+  "P111i4": "the H on the branching CH (atom 23, 1.093 A from CI4) is labelled HC and one H of a methyl (atom 24, on CT 22) HI4: il.ff lists HI4 with CPI4 and CI4 for the isoalkylphosphonium's CH, and the six methyl H are equivalent, so the two labels are swapped"
+ }
+}
