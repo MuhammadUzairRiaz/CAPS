@@ -229,7 +229,7 @@ int usage() {
                "               [--ff FF] [--no-coulomb]   configurational-bias regrowth of chain ends (Siepmann & Frenkel)\n"
                "  caps md      FILE -o OUT.data [--steps 10000] [--dt 1] [--temp 300] [--thermostat bussi|langevin|nose-hoover|none]\n"
                "               [--tau-t 100] [--barostat none|crescale|berendsen|mtk] [--pressure 1] [--tau-p 1000]\n"
-               "               [--constraints none|h-bonds|all-bonds] [--constraint-solver shake|lincs] [--seed 1] [--new-velocities] [--thermo 100] [--dump TRAJ.lammpstrj --every 1000]\n"
+               "               [--constraints none|h-bonds|all-bonds] [--constraint-solver shake|lincs] [--hmr 3.024] [--seed 1] [--new-velocities] [--thermo 100] [--dump TRAJ.lammpstrj --every 1000]\n"
                "               [--log thermo.csv] [--cutoff 10] [--skin 1.5] [--threads N] [--no-coulomb] [--precision mixed|double] [--quiet]\n"
                "               [--checkpoint-every N [--checkpoint OUT.restart.data]]   the full state every N steps\n"
                "               [--progress-file progress.jsonl]   one JSON line per thermo row (default in a SLURM job)\n"
@@ -239,7 +239,8 @@ int usage() {
                "               [--cycles 3] [--tlow 300] [--thigh 600] [--ramp 50] [--hold 50]   (annealing, ps)\n"
                "               [--until-converged] [--block 20] [--max-blocks 20] [--dt 1] [--thermostat bussi|langevin]\n"
                "               [--barostat crescale|berendsen] [--seed 1] [--dump TRAJ.lammpstrj --every-ps 10] [--log thermo.csv]\n"
-               "               [--precision mixed|double] [--quiet]   (mixed: plain pair terms in single precision with SIMD, as GROMACS)\n"
+               "               [--precision mixed|double] [--constraints h-bonds] [--hmr 3.024] [--quiet]   (mixed: pair terms in single precision\n"
+               "               with SIMD, as GROMACS; --hmr: hydrogens at that mass, taken from their bonded atoms, for steps past 2 fs)\n"
                "  caps chains  FILE [--topology DATA]          backbones and mean-square internal distances\n"
                "  caps pack    INPUT.inp [-o OUT] [--threads N] [--quiet]   packmol-style input (structure … end structure)\n"
                "  caps contacts FILE [--tol 2.0] [--no-pbc] [--molecule-size N]   smallest distance between atoms of different molecules\n"
@@ -302,7 +303,7 @@ const std::set<std::string>& known_options() {
     "--escalate", "--eu", "--eunit", "--every", "--every-ps", "--ewald-rtol", "--exclude-mol", "--explain",
     "--extdih", "--fa", "--fb", "--ff", "--film", "--film-density", "--find-symmetry", "--finite", "--first",
     "--amber", "--digits", "--dsf-alpha", "--fit", "--fix-mol", "--fixed-lateral", "--flake", "--fluid", "--forcefields", "--forces", "--frame",
-    "--frame-ps", "--from", "--ftol", "--gap", "--grid", "--gromacs", "--group", "--groups", "--helix", "--hkl",
+    "--frame-ps", "--from", "--ftol", "--gap", "--grid", "--gromacs", "--group", "--groups", "--helix", "--hkl", "--hmr",
     "--hold", "--hybrid", "--idr", "--include-input", "--input", "--insert", "--inter", "--ions", "--iterations",
     "--itp", "--json", "--kspace", "--kspace-accuracy", "--lammps-cutoff", "--units", "--lammps-input", "--lammps-run", "--moltemplate",
     "--lammps-style", "--last", "--layers", "--length", "--list", "--list-templates", "--log", "--lx", "--ly", "--m",
@@ -3308,6 +3309,7 @@ int main(int argc, char** argv) {
       if (o.count("--tau-p")) d.tau_p = std::stod(o["--tau-p"]);
       if (o.count("--constraints")) d.constraints = constraints_from_string(o["--constraints"]);
       if (o.count("--constraint-solver")) d.constraint_algorithm = constraint_algorithm_from_string(o["--constraint-solver"]);
+      if (o.count("--hmr")) d.hmr = std::stod(o["--hmr"]);
       if (o.count("--seed")) d.seed = std::stoull(o["--seed"]);
       if (o.count("--thermo")) d.thermo_every = std::stoi(o["--thermo"]);
       if (o.count("--every")) d.frame_every = std::stoi(o["--every"]);
@@ -3466,6 +3468,8 @@ int main(int argc, char** argv) {
       if (o.count("--cutoff")) e.md.energy.cutoff = std::stod(o["--cutoff"]);
       electrostatics(e.md.energy, o);
       precision(e.md.energy, o);
+      if (o.count("--hmr")) e.md.hmr = std::stod(o["--hmr"]);
+      if (o.count("--constraints")) e.md.constraints = constraints_from_string(o["--constraints"]);
       if (o.count("--threads")) e.md.energy.threads = std::stoi(o["--threads"]);
       // the force field: --ff (a library name, a file, or one written whole by CAPS), else the built-in default
       e.md.field = std::make_shared<ForceField>(cli_forcefield(s, o, o.count("--quiet") > 0));
