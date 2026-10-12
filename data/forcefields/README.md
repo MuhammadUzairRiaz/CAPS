@@ -31,7 +31,7 @@ Built by `bench/ff/build_library.py` from the published parameter files. Status:
 | inorganic-binary-halides | Inorganic: binary halides | | converted: INORGANIC_binary_halides.par | validated | |
 | inorganic-binary-misc | Inorganic: binary misc | | converted: INORGANIC_binary_misc.par | validated | |
 | inorganic-binary-oxides | Inorganic: binary oxides | | converted: INORGANIC_binary_oxides.par | validated | |
-| inorganic-clay | Inorganic: clay | | converted: INORGANIC_clay.par | converted | |
+| clayff-cygan2004 | ClayFF | Cygan, Liang & Kalinichev 2004 | the paper's Tables 1 and 2 (bench/ff/make_clayff_cygan2004.py) | validated | yes |
 | inorganic-glass | Inorganic: glass | | converted: INORGANIC_glass.par | converted | |
 | inorganic-ternary-oxides | Inorganic: ternary oxides | | converted: INORGANIC_ternary_oxides.par | validated | |
 | inorganic-zeolite | Inorganic: zeolite | | converted: INORGANIC_zeolite.par | validated | |

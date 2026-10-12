@@ -21,6 +21,7 @@
 #include "caps/molecule.hpp"
 #include "caps/peptide.hpp"
 #include "caps/resolution.hpp"
+#include "caps/spacegroup.hpp"
 #include "caps/typing.hpp"
 #include "caps/uff.hpp"
 
@@ -1070,6 +1071,76 @@ TEST(FFDef, GromosBuildingBlocksAsPdb2gmx) {
   ASSERT_EQ(c.atoms.size(), 5u);
   EXPECT_EQ(c.bonds.size(), 9u);
   EXPECT_EQ(c.atoms[0].resname, "CHCL3");
+}
+
+// ClayFF from its paper (Cygan, Liang & Kalinichev, J. Phys. Chem. B 108, 1255 (2004); bench/ff/make_clayff_cygan2004.py):
+// every charge, Do and Ro of Table 1 and every term of Table 2 (p 1259), as an independent transcription here; Do, Ro as
+// Lennard-Jones epsilon = Do, sigma = Ro / 2^(1/6), Lorentz-Berthelot (Eqs. 4-5). Brucite (data/crystals) is typed mgh /
+// oh / ho with only its O-H bonds kept and three Mg-O-H bends per hydroxyl through contacts; SPC water o* / h* with its
+// H-O-H bend; pyrophyllite's formula unit Al2Si4O10(OH)2 and brucite are neutral with the paper's charges.
+TEST(FFDef, ClayffCygan2004AsPublished) {
+  const FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/clayff-cygan2004.json");
+  EXPECT_EQ(def.mixing, "arithmetic");
+  struct Row { const char* sym; double q, D, R; };
+  const Row table1[] = {{"h*", 0.41, 0, 0}, {"ho", 0.425, 0, 0}, {"o*", -0.82, 0.1554, 3.5532}, {"oh", -0.95, 0.1554, 3.5532},
+                        {"ob", -1.05, 0.1554, 3.5532}, {"obos", -1.1808, 0.1554, 3.5532}, {"obts", -1.1688, 0.1554, 3.5532},
+                        {"obss", -1.2996, 0.1554, 3.5532}, {"ohs", -1.0808, 0.1554, 3.5532}, {"st", 2.1, 1.8405e-6, 3.7064},
+                        {"ao", 1.575, 1.3298e-6, 4.7943}, {"at", 1.575, 1.8405e-6, 3.7064}, {"mgo", 1.36, 9.0298e-7, 5.9090},
+                        {"mgh", 1.05, 9.0298e-7, 5.9090}, {"cao", 1.36, 5.0298e-6, 6.2484}, {"cah", 1.05, 5.0298e-6, 6.2428},
+                        {"feo", 1.575, 9.0298e-6, 5.5070}, {"lio", 0.525, 9.0298e-6, 4.7257}, {"Na", 1, 0.1301, 2.6378},
+                        {"K", 1, 0.1, 3.7423}, {"Cs", 1, 0.1, 4.3002}, {"Ca", 2, 0.1, 3.2237}, {"Ba", 2, 0.047, 4.2840},
+                        {"Cl", -1, 0.1001, 4.9388}};
+  ASSERT_EQ(def.types.size(), std::size(table1));
+  for (const Row& r : table1) {
+    const FFType* t = def.type(r.sym);
+    ASSERT_NE(t, nullptr) << r.sym;
+    EXPECT_DOUBLE_EQ(t->charge, r.q) << r.sym;
+    const auto p = std::find_if(def.pairs.begin(), def.pairs.end(), [&](const FFRule& x) { return x.name == r.sym; });
+    ASSERT_NE(p, def.pairs.end()) << r.sym;
+    EXPECT_DOUBLE_EQ(p->params[0], r.D) << r.sym;
+    EXPECT_NEAR(p->params[1] * std::pow(2.0, 1.0 / 6), r.R, 1e-12) << r.sym;
+  }
+  ASSERT_EQ(def.bonds.size(), 3u);
+  for (const auto& b : def.bonds) {
+    EXPECT_DOUBLE_EQ(b.params[0], 554.1349) << b.name;
+    EXPECT_DOUBLE_EQ(b.params[1], 1.0) << b.name;
+  }
+  ASSERT_EQ(def.angles.size(), 19u);   // water's H-O-H and Metal-O-H for nine metals and two hydroxyl oxygens
+  for (const auto& a : def.angles) {
+    EXPECT_DOUBLE_EQ(a.params[0], a.name == "h*-o*-h*" ? 45.7696 : 30.0) << a.name;
+    EXPECT_DOUBLE_EQ(a.params[1], 109.47) << a.name;
+  }
+  auto q = [&](const char* sym) { return def.type(sym)->charge; };
+  EXPECT_NEAR(2 * q("ao") + 4 * q("st") + 10 * q("ob") + 2 * (q("oh") + q("ho")), 0, 1e-12);   // pyrophyllite
+
+  System s = supercell(read_cif(std::string(CAPS_SOURCE_DIR) + "/data/crystals/brucite.cif"), 4, 4, 3);
+  s.bonds = perceive_bonds(s);
+  std::string ch = "types";
+  prepare_for_forcefield(s, def, ch);
+  const TypingResult tr = assign_types(s, def);
+  ASSERT_EQ(tr.untyped, 0);
+  for (size_t i = 0; i < s.atoms.size(); ++i)
+    EXPECT_EQ(tr.types[i], s.atoms[i].element == 12 ? "mgh" : s.atoms[i].element == 8 ? "oh" : "ho") << i;
+  ParamReport rep;
+  const ForceField ff = parameterize(s, def, tr.types, ch, &rep, false);
+  EXPECT_TRUE(rep.missing.empty());
+  EXPECT_EQ(ff.bonds.size(), 96u);          // the O-H bonds only
+  EXPECT_EQ(ff.angles.size(), 3 * 96u);     // three Mg around each hydroxyl O
+  for (const auto& a : ff.angles) {
+    EXPECT_EQ(tr.types[a.i], "mgh");
+    EXPECT_NEAR(a.kt, 30.0, 1e-12);
+  }
+  double total = 0;
+  for (double c : ff.charge) total += c;
+  EXPECT_NEAR(total, 0, 1e-9);
+
+  System w = build_molecule("O").system;
+  const TypingResult tw = assign_types(w, def);
+  ASSERT_EQ(tw.untyped, 0);
+  const ForceField fw = parameterize(w, def, tw.types, "types", nullptr, false);
+  ASSERT_EQ(fw.angles.size(), 1u);
+  EXPECT_NEAR(fw.angles[0].kt, 45.7696, 1e-12);
+  EXPECT_EQ(tw.types[size_t(fw.angles[0].j)], "o*");
 }
 
 // Sanders, Leslie & Catlow's O-Si-O bends by distance: Si and O unbonded, the O shells within 1.9 A of each Si bent

@@ -1799,17 +1799,17 @@
    }
   },
   {
-   "id": "clayff2004",
+   "id": "clayff-cygan2004",
    "name": "ClayFF",
-   "version": "Cygan, Liang & Kalinichev 2004 (Tables 1 and 2)",
+   "version": "Cygan, Liang & Kalinichev 2004 (Tables 1 and 2, p 1259)",
    "references": [
     "R. T. Cygan, J.-J. Liang, A. G. Kalinichev, J. Phys. Chem. B 108, 1255 (2004)"
    ],
    "origin": "built from source",
-   "source": "the paper's Tables 1 (nonbond) and 2 (bonds, angles); bench/ff/make_clayff.py",
+   "source": "the paper's Table 1 (charges, Do, Ro) and Table 2 (O-H bonds, H-O-H and metal-O-H bends), p 1259, read from its page images; bench/ff/make_clayff_cygan2004.py",
    "license": "published parameters of the paper",
    "status": "validated",
-   "file": "clayff2004.json",
+   "file": "clayff-cygan2004.json",
    "counts": {
     "atom_types": 24,
     "pairs": 24,
@@ -1819,8 +1819,8 @@
     "impropers": 0
    },
    "typing": {
-    "rules": "typing/clayff2004.typing.json",
-    "evidence": "CAPS rules by coordination and neighbours type LAMMPS's ClayFF pyrophyllite as its file does (1280 / 1280 atoms); LAMMPS reproduces CAPS's energies on it (metal-O-H bends through contacts)"
+    "rules": "typing/clayff-cygan2004.typing.json",
+    "evidence": "CAPS rules by element, coordination and neighbours type the INTERFACE force field's clay models (pyrophyllite, kaolinite, muscovite, five montmorillonites; 10652 / 10652 atoms) as DL_FIELD's ClayFF typing does; a muscovite with Mg for every third octahedral Al 1241 / 1260, the other 19 the paper's obss (an O by a tetrahedral and an octahedral substitution, p 1259) where DL_FIELD has obos (bench/ff/validate_clayff_dlfield.py); LAMMPS and GROMACS reproduce CAPS's energies (metal-O-H bends through contacts)"
    },
    "list": {
     "label": "ClayFF",
