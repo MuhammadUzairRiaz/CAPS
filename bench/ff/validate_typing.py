@@ -49,8 +49,29 @@ def open_atoms(m):
         for b in js:
             if a != b:
                 nbs[a].add(b); nbs[b].add(a)
+    # under-saturated atoms that a double bond can satisfy (furan's C=C, a carbonyl's C=O) are not open: a maximum
+    # matching on the bonds between them; whatever stays unmatched is open
+    full = {"C": 4, "N": 3, "O": 2, "S": 2}
+    el = {a: element(t) for a, t in m["atoms"]}
+    low = {a for a in el if el[a] in full and len(nbs[a]) < full[el[a]]}
+    mate = {}
+
+    def augment(a, seen):
+        for b in nbs[a]:
+            if b in low and b not in seen:
+                seen.add(b)
+                if b not in mate or augment(mate[b], seen):
+                    mate[a], mate[b] = b, a
+                    return True
+        return False
+
+    for a in sorted(low):
+        if a not in mate:
+            augment(a, {a})
     out = {}
     for a, t in m["atoms"]:
+        if a in mate:
+            continue
         tl = t.lower()
         if element(t) == "C" and re.search(r"aliphatic|alkane|sp3|sialic|sugar|furan|pyran", tl) and len(nbs[a]) < 4:
             out[a] = 4 - len(nbs[a])
@@ -154,11 +175,39 @@ def write_mol2(path, name, m, caps=None, sugar=False):
     with open(path, "w") as f:
         f.write(f"@<TRIPOS>MOLECULE\n{name}\n{len(labels)} {len(bonds)} 1\nSMALL\nNO_CHARGES\n\n@<TRIPOS>ATOM\n")
         for i, (lab, t) in enumerate(m["atoms"]):
-            f.write(f"{i + 1} {lab} {i * 1.5:.3f} 0.000 0.000 {t[6:] if t.startswith('__cap_') else types.get(t, 'Du')} 1 MOL 0.0\n")
+            el = t[6:] if t.startswith('__cap_') else types.get(t, 'Du')
+            if UNITED and not t.startswith("__cap_") and element(t) == "C" and t in template_pdb.ATOM_MASS:
+                # a united-atom site (the library's element column may hold the site name, CE1): carbon, named by its
+                # hydrogens (CH2) as CAPS reads united-atom sites
+                el = "C"
+                nh = round((template_pdb.ATOM_MASS[t] - 12.011) / 1.008)
+                if 1 <= nh <= 4:
+                    el = f"CH{nh}"   # the mol2 type column, which CAPS reads as the site name
+            f.write(f"{i + 1} {lab} {i * 1.5:.3f} 0.000 0.000 {el} 1 MOL 0.0\n")
         f.write("@<TRIPOS>BOND\n")
         for k, (i, j) in enumerate(sorted(bonds)):
             f.write(f"{k + 1} {i + 1} {j + 1} un\n")
     return len(labels)
+
+
+def symmetry_classes(m):
+    """atoms the molecule's graph cannot tell apart (pyridine's C3 and C5): colour refinement on element and neighbours"""
+    labels = [a for a, _ in m["atoms"]]
+    nbs = collections.defaultdict(set)
+    for a, js in m["connect"].items():
+        for b in js:
+            if a != b:
+                nbs[a].add(b); nbs[b].add(a)
+    col = {a: element(t) for a, t in m["atoms"]}
+    for _ in range(len(labels)):
+        new = {a: (col[a], tuple(sorted(col[b] for b in nbs[a] if b in col))) for a in labels}
+        ids = {v: k for k, v in enumerate(sorted(set(new.values()), key=repr))}
+        new = {a: ids[new[a]] for a in labels}
+        if len(set(new.values())) == len(set(col.values())):
+            col = new
+            break
+        col = new
+    return [col[a] for a in labels]
 
 
 def retyped(name, dl_types):
@@ -181,7 +230,7 @@ OVERLAYS = [tuple(x.split("=", 1)) for x in arg("--overlay", "").split(";") if x
 names = only or [n for n, m in mols.items() if n in keys and usable(n, m, CAP)]
 if "--exclude" in sys.argv:   # e.g. water-model templates (TIP4P / TIP5P virtual sites cannot be typed from bonds)
     names = [n for n in names if not re.search(arg("--exclude", ""), n)]
-total = right = 0
+total = right = sym_total = 0
 wrong_mols, confusion, failed, apply_problems = [], collections.Counter(), [], []
 for name in names:
     m = mols[name]
@@ -215,7 +264,16 @@ for name in names:
         miss = re.findall(r"^  (.+)$", ra.stdout.split("missing parameters", 1)[1], re.M) if "missing parameters" in ra.stdout else []
         if ra.returncode or miss:
             apply_problems.append((name, ra.returncode, miss[:6], (ra.stderr.strip().splitlines() or [""])[-1][:100]))
-    bad = [(i, a[0], a[1], expect[i], got[i]) for i, a in enumerate(m["atoms"]) if expect[i] != got[i] and a[0] not in skip]
+    # a key that the library gives a symmetry-equivalent atom of the same molecule (pyridine's C5_2 for C3) is the same
+    # type under another name: no typer can tell those atoms apart
+    sym = symmetry_classes(m)
+    same_class = collections.defaultdict(set)
+    for i, c in enumerate(sym):
+        same_class[c].add(expect[i])
+    by_symmetry = [i for i, a in enumerate(m["atoms"]) if expect[i] != got[i] and a[0] not in skip and got[i] in same_class[sym[i]]]
+    sym_total += len(by_symmetry)
+    bad = [(i, a[0], a[1], expect[i], got[i]) for i, a in enumerate(m["atoms"])
+           if expect[i] != got[i] and a[0] not in skip and i not in by_symmetry]
     total += len(expect) - len(skip)
     right += len(expect) - len(skip) - len(bad)
     for b in bad:
@@ -225,7 +283,8 @@ for name in names:
 
 print(f"{lib}: {len(names)} templates, {right}/{total} atoms typed as DL_FIELD's templates "
       f"({100.0 * right / max(total, 1):.1f} %), {len(names) - len(wrong_mols) - len(failed)} molecules fully right, "
-      f"{len(wrong_mols)} with differences, {len(failed)} not run")
+      f"{len(wrong_mols)} with differences, {len(failed)} not run" +
+      (f"; {sym_total} atoms carry the key of a symmetry-equivalent atom (the library numbers equivalent ring positions apart)" if sym_total else ""))
 if confusion:
     print("expected → CAPS (atoms):")
     for (e, g), k in confusion.most_common(show):

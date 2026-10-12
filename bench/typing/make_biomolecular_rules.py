@@ -410,7 +410,8 @@ def gromos():
     R = Rules()
     R.add("CH1", 0, "[CX4H1]", "united CH"); R.add("CH2", 0, "[CX4H2]", "united CH2"); R.add("CH3", 0, "[CX4H3]", "united CH3")
     R.add("CH4", 0, "[CX4H4]", "united CH4"); R.add("CH0", 0, "[CX4H0]", "aliphatic carbon without H")
-    R.add("CH3p", 2, "[CX4H3][NX4+]", "united CH3 on a charged nitrogen")
+    # the library defines CH3p for a CH3 on N+, but its choline templates (DPPC, POPC, DOPC) type those methyls CH3: as
+    # the library does, CH3
     R.add("CR1", 1, "[#6X3H1]", "united aromatic or alkene CH")
     R.add("C", 1, "[#6X3H0]", "bare sp2 carbon (carbonyl, aromatic without H)")
     R.add("O", 1, "[OX1]=[#6]", "carbonyl oxygen"); R.add("OM", 3, "[OX1]~[CX3,PX4]~[OX1]", "carboxylate / phosphate oxygen")
@@ -429,6 +430,17 @@ def trappe_ua(full=True):
     if not full:
         return R
     R.add("CYC6", 1, "[CX4H2;r6]", "CH2 in a six-membered ring"); R.add("CYC5", 1, "[CX4H2;r5]", "CH2 in a five-membered ring")
+    R.add("CYC", 1, "[CX4H2;R;!r3;!r4;!r5;!r6]", "CH2 in a ring of seven or more")
+    # conjugated dienes (isoprene): the ends CEE2 / CEE1, the linked middle carbons CEL by H count, _1 on the more
+    # substituted double bond, _2 on the other (butadiene's two middles are alike)
+    DIENE = "[CX3]=[CX3]-[CX3]=[CX3]"
+    R.add("CEE2", 2, "[CX3H2;$(*=[CX3]-[CX3]=[CX3])]", "terminal =CH2 of a conjugated diene")
+    R.add("CEE1", 2, "[CX3H1;$(*=[CX3]-[CX3]=[CX3]);!$(*-[CX3]=[CX3])]", "terminal =CH- of a conjugated diene")
+    R.add("CEL0_1", 3, "[CX3H0;$(*(=[CX3])-[CX3]=[CX3])]", "middle =C< of a conjugated diene")
+    R.add("CEL1_2", 3, "[CX3H1;$(*(=[CX3])-[CX3H0]=[CX3])]", "middle =CH- of a diene whose other middle carbon is substituted")
+    R.add("CEL1_1", 3, "[CX3H1;$(*(=[CX3])-[CX3H1]=[CX3])]", "middle =CH- of a diene (butadiene)")
+    # O2 (TraPPE): two O and a massless centre site bonded to both
+    R.add("O", 3, "[O;$(O(~[#0])~O)]", "O2 oxygen"); R.add("E1", 3, "[#0;$(*(~O)~O)]", "O2 centre site")
     R.add("CE2", 1, "[CX3H2]=[CX3]", "alkene CH2="); R.add("CE1", 1, "[CX3H1]=[CX3]", "alkene CH="); R.add("CE0", 1, "[CX3H0]=[CX3]", "alkene C=")
     R.add("CB", 1, "[cH1]", "benzene CH"); R.add("CB0", 1, "[cH0]", "substituted aromatic C")
     R.add("OA", 1, "[OX2H1]", "alcohol oxygen"); R.add("HA", 1, "[H][OX2]", "alcohol H"); R.add("OE", 0, "[OX2]([#6])[#6]", "ether oxygen")
@@ -436,26 +448,48 @@ def trappe_ua(full=True):
     R.add("STI", 1, "[SX2H1]", "thiol sulfur"); R.add("HTI", 1, "[H][SX2]", "thiol H")
     R.add("SS", 1, "[SX2][SX2]", "disulfide sulfur"); R.add("S", 0, "[SX2]([#6])[#6]", "sulfide sulfur")
     R.add("CNI", 2, "[CX2]#[NX1]", "nitrile carbon"); R.add("NI", 2, "[NX1]#[CX2]", "nitrile nitrogen")
+    # small gases (Potoff & Siepmann 2001): CO2, and N2 with its centre site (a virtual site CAPS adds, typed by name)
+    R.add("CO2C", 3, "[CX2](=[OX1])=[OX1]", "carbon dioxide carbon"); R.add("CO2O", 3, "[OX1]=[CX2]=[OX1]", "carbon dioxide oxygen")
+    R.add("N2N", 3, "[NX1]#[NX1]", "nitrogen (N2) atom"); R.add("N2M", 3, "[#0]", "nitrogen (N2) centre site", atom_name="N2M")
     return R
 
 
 # ---------------------------------------------------------------- TraPPE-EH (explicit-hydrogen aromatics)
 def trappe_eh():
+    """TraPPE-EH (Rai & Siepmann 2007): each ring has its own keys by position (symmetry-equivalent positions share
+    parameters; the library still numbers them apart, so the lower number is given)"""
     R = Rules()
     BENZ = "c;r6;!$(c~[!#6;!#1]);!$(c:[!#6])"
     R.add("C_1", 0, f"[{BENZ}]", "benzene carbon"); R.add("H_1", 0, "[H]c", "benzene H")
-    R.add("N1_2", 2, "[nX2;r6;!$(n:c:n);!$(n:n);!$(n:c:c:n)]", "pyridine nitrogen")
-    R.add("C2_2", 2, "[c;r6;$(c:[nX2]);!$(c:[n]:c:[n])]", "pyridine C2 (next to N)")
-    R.add("C3_2", 2, "[c;r6;$(c:c:[nX2]);!$(c:[n])]", "pyridine C3")
+    # pyridine (one ring N)
+    R.add("N1_2", 2, "[nX2;r6;!$(n:c:n);!$(n:n);!$(n:c:c:n)]", "pyridine N")
+    R.add("C2_2", 2, "[c;r6;$(c:[nX2]);!$(c:[n]:c:[n]);!$(c:n:n);!$(c:n:c:c:n)]", "pyridine C2 / C6")
+    R.add("C3_2", 2, "[c;r6;$(c:c:[nX2]);!$(c:[n]);!$(c:c:n:c:n);!$(c:c:n:n)]", "pyridine C3 / C5")
     R.add("C4_2", 2, "[c;r6;$(c:c:c:[nX2]);!$(c:[n]);!$(c:c:[n])]", "pyridine C4")
-    R.add("H_2", 2, "[H]c(:c):[nX2,$(c:c:n),$(c:c:c:n)]", "pyridine H")
+    R.add("HA", 2, "[H][c;r6;$(c:n),$(c:c:n),$(c:c:c:n);!$(c:n:n);!$(c:c:n:n)]", "H on a pyridine, pyrimidine or pyrazine C")
+    # pyrimidine (1,3), pyrazine (1,4), pyridazine (1,2)
+    R.add("N_3", 3, "[nX2;r6;$(n:c:[nX2])]", "pyrimidine N")
+    R.add("C2_3", 3, "[c;r6;$(c(:[nX2]):[nX2])]", "pyrimidine C2")
+    R.add("C4_3", 3, "[c;r6;$(c:[nX2]:c:[nX2]);!$(c(:n):n)]", "pyrimidine C4 / C6")
+    R.add("C5_3", 3, "[c;r6;$(c:c:[nX2]:c:[nX2]);!$(c:n)]", "pyrimidine C5")
+    R.add("N_4", 3, "[nX2;r6;$(n:c:c:[nX2])]", "pyrazine N")
+    R.add("C2_4", 3, "[c;r6;$(c(:[nX2]):c:[nX2])]", "pyrazine C")
+    R.add("N1_5", 3, "[nX2;r6;$(n:[nX2])]", "pyridazine N")
+    R.add("C3_5", 3, "[c;r6;$(c:[nX2]:[nX2])]", "pyridazine C3 / C6")
+    R.add("C4_5", 3, "[c;r6;$(c:c:[nX2]:[nX2]);!$(c:n)]", "pyridazine C4 / C5")
+    R.add("H_5", 3, "[H][c;r6;$(c:[nX2]:[nX2]),$(c:c:[nX2]:[nX2])]", "pyridazine H")
+    # phenol: its own ring keys
     R.add("O_8", 3, "[OX2H1]c", "phenol oxygen"); R.add("HO_8", 3, "[H][OX2]c", "phenol hydroxyl H"); R.add("C1_8", 3, "c[OX2H1]", "phenol C1")
+    R.add("C2_8", 3, "[c;$(c:c[OX2H1])]", "phenol C2 / C6"); R.add("C3_8", 3, "[c;$(c:c:c[OX2H1])]", "phenol C3 / C5")
+    R.add("C4_8", 3, "[c;$(c:c:c:c[OX2H1])]", "phenol C4")
+    R.add("H_8", 3, "[H][c;$(c:c[OX2H1]),$(c:c:c[OX2H1]),$(c:c:c:c[OX2H1])]", "phenol ring H")
+    # five-membered rings
     R.add("N1_9", 3, "[nX3H1;r5]", "pyrrole nitrogen"); R.add("H6_9", 3, "[H][nX3;r5]", "pyrrole N-H")
-    R.add("C2_9", 3, "[c;r5;$(c:[nH1])]", "pyrrole C2"); R.add("C3_9", 3, "[c;r5;$(c:c:[nH1]);!$(c:[nH1])]", "pyrrole C3")
+    R.add("C2_9", 3, "[c;r5;$(c:[nH1])]", "pyrrole C2 / C5"); R.add("C3_9", 3, "[c;r5;$(c:c:[nH1]);!$(c:[nH1])]", "pyrrole C3 / C4")
     R.add("H_9", 3, "[H][c;r5;$(c:[nH1]),$(c:c:[nH1])]", "pyrrole C-H")
-    R.add("O1_7", 3, "[o;r5]", "furan oxygen"); R.add("C2_7", 3, "[c;r5;$(c:o)]", "furan C2"); R.add("C3_7", 3, "[c;r5;$(c:c:o);!$(c:o)]", "furan C3")
+    R.add("O1_7", 3, "[o;r5]", "furan oxygen"); R.add("C2_7", 3, "[c;r5;$(c:o)]", "furan C2 / C5"); R.add("C3_7", 3, "[c;r5;$(c:c:o);!$(c:o)]", "furan C3 / C4")
     R.add("H_7", 3, "[H][c;r5;$(c:o),$(c:c:o)]", "furan H")
-    R.add("S1_6", 3, "[s;r5]", "thiophene sulfur"); R.add("C2_6", 3, "[c;r5;$(c:s)]", "thiophene C2"); R.add("C3_6", 3, "[c;r5;$(c:c:s);!$(c:s)]", "thiophene C3")
+    R.add("S1_6", 3, "[s;r5]", "thiophene sulfur"); R.add("C2_6", 3, "[c;r5;$(c:s)]", "thiophene C2 / C5"); R.add("C3_6", 3, "[c;r5;$(c:c:s);!$(c:s)]", "thiophene C3 / C4")
     R.add("H_6", 3, "[H][c;r5;$(c:s),$(c:c:s)]", "thiophene H")
     return R
 

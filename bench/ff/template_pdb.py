@@ -13,10 +13,12 @@ COV = {"H": 0.31, "C": 0.76, "N": 0.71, "O": 0.66, "F": 0.57, "P": 1.07, "S": 1.
 
 
 ATOM_KEY = {}   # DL_FIELD atom type → library key, from the ATOM_TYPE table of the last file parsed
+ATOM_MASS = {}  # DL_FIELD atom type → mass (a united-atom site weighs its hydrogens too)
 
 
 def parse_sf(path):
     ATOM_KEY.clear()
+    ATOM_MASS.clear()
     types, keys, mols = {}, {}, {}
     sec, cur = None, None
     for line in open(path, errors="replace"):
@@ -39,6 +41,10 @@ def parse_sf(path):
         if sec == "types" and len(w) >= 4:
             types.setdefault(w[0], w[2])
             ATOM_KEY.setdefault(w[0], w[1])
+            try:
+                ATOM_MASS.setdefault(w[0], float(w[3]))
+            except ValueError:
+                pass
         elif sec == "keys" and len(w) >= 2:
             keys[w[0]] = w[1]
         elif sec == "mol":
