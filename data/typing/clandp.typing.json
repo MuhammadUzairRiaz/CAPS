@@ -1,0 +1,774 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "CL&P (ionic liquids)",
+ "unknown_types": "untyped",
+ "description": "CAPS rules for CL&P's types by ion family (bench/typing/make_clandp_rules.py), checked against CL&P's own ion files",
+ "rules": [
+  {
+   "type": "CT",
+   "smarts": "[CX4H3]",
+   "priority": 0,
+   "description": "alkane CH3"
+  },
+  {
+   "type": "CS",
+   "smarts": "[CX4H2]",
+   "priority": 0,
+   "description": "alkane CH2"
+  },
+  {
+   "type": "HC",
+   "smarts": "[H][CX4]",
+   "priority": 0,
+   "description": "H on an alkane C"
+  },
+  {
+   "type": "CT3",
+   "smarts": "[CX4H1;!$(*~[!#6;!#1])]",
+   "priority": 0,
+   "description": "alkane CH"
+  },
+  {
+   "type": "CT2",
+   "smarts": "[CX4H2;R;!$(*~[!#6;!#1])]",
+   "priority": 1,
+   "description": "CH2 of a carbocycle (cyclohexane carboxylate)"
+  },
+  {
+   "type": "C1",
+   "smarts": "[CX4H3;$(*-[$([#7X3;r5;$(*1~[#6]~[#7]~[#6]~[#6]~1),$(*1~[#6]~[#6]~[#7]~[#6]~1)]),$([#7X3;r6;$(*1~[#6]~[#6]~[#6]~[#6]~[#6]~1)]),$([#7X4]),$([#15X4;!$(*~[#8,#7,#9])])])]",
+   "priority": 3,
+   "description": "methyl on the cation's N"
+  },
+  {
+   "type": "C1A",
+   "smarts": "[CX4H2;$(*-[$([#7X3;r5;$(*1~[#6]~[#7]~[#6]~[#6]~1),$(*1~[#6]~[#6]~[#7]~[#6]~1)]),$([#7X3;r6;$(*1~[#6]~[#6]~[#6]~[#6]~[#6]~1)]),$([#7X4]),$([#15X4;!$(*~[#8,#7,#9])])])]",
+   "priority": 3,
+   "description": "CH2 on the cation's N (side chain or pyrrolidinium ring)"
+  },
+  {
+   "type": "C2",
+   "smarts": "[CX4H2;$(*-[CX4H2]-[$([#7X3;r5;$(*1~[#6]~[#7]~[#6]~[#6]~1),$(*1~[#6]~[#6]~[#7]~[#6]~1)]),$([#7X3;r6;$(*1~[#6]~[#6]~[#6]~[#6]~[#6]~1)]),$([#7X4]),$([#15X4;!$(*~[#8,#7,#9])])])]",
+   "priority": 2,
+   "description": "CH2 next to the cation's first carbon"
+  },
+  {
+   "type": "CE",
+   "smarts": "[CX4H3;$(*-[CX4H2]-[$([#7X3;r5;$(*1~[#6]~[#7]~[#6]~[#6]~1),$(*1~[#6]~[#6]~[#7]~[#6]~1)]),$([#7X3;r6;$(*1~[#6]~[#6]~[#6]~[#6]~[#6]~1)]),$([#7X4]),$([#15X4;!$(*~[#8,#7,#9])])])]",
+   "priority": 3,
+   "description": "an ethyl's CH3 on the cation's N (imidazolium, ammonium, pyridinium)"
+  },
+  {
+   "type": "H1",
+   "smarts": "[H][CX4;$(*-[$([#7X3;r5;$(*1~[#6]~[#7]~[#6]~[#6]~1),$(*1~[#6]~[#6]~[#7]~[#6]~1)]),$([#7X3;r6;$(*1~[#6]~[#6]~[#6]~[#6]~[#6]~1)]),$([#7X4]),$([#15X4;!$(*~[#8,#7,#9])])])]",
+   "priority": 3,
+   "description": "H on a carbon bonded to the cation's N"
+  },
+  {
+   "type": "C1P",
+   "smarts": "[CX4;$(*-[#15X4;!$(*~[#8,#7,#9])])]",
+   "priority": 4,
+   "description": "carbon on a phosphonium P"
+  },
+  {
+   "type": "P3",
+   "smarts": "[#15X4;!$(*~[#8,#7,#9])]",
+   "priority": 4,
+   "description": "phosphonium P"
+  },
+  {
+   "type": "NA",
+   "smarts": "[#7X3;r5;$(*1~[#6]~[#7]~[#6]~[#6]~1),$(*1~[#6]~[#6]~[#7]~[#6]~1)]",
+   "priority": 3,
+   "description": "imidazolium N"
+  },
+  {
+   "type": "CR",
+   "smarts": "[#6X3;r5;$(*1~[#7]~[#6]~[#6]~[#7]~1)]",
+   "priority": 3,
+   "description": "imidazolium C2"
+  },
+  {
+   "type": "CW",
+   "smarts": "[#6X3;r5;$(*1~[#6]~[#7]~[#6]~[#7]~1)]",
+   "priority": 2,
+   "description": "imidazolium C4 / C5"
+  },
+  {
+   "type": "HCR",
+   "smarts": "[H][#6X3;r5;$(*1~[#7]~[#6]~[#6]~[#7]~1)]",
+   "priority": 3,
+   "description": "H on the imidazolium C2"
+  },
+  {
+   "type": "HCW",
+   "smarts": "[H][#6X3;r5;$(*1~[#6]~[#7]~[#6]~[#7]~1)]",
+   "priority": 3,
+   "description": "H on the imidazolium C4 / C5"
+  },
+  {
+   "type": "NAH",
+   "smarts": "[#7X3H1;r5;$(*1~[#6]~[#7]~[#6]~[#6]~1),$(*1~[#6]~[#6]~[#7]~[#6]~1)]",
+   "priority": 5,
+   "description": "the N-H of an alkylimidazolium"
+  },
+  {
+   "type": "HNA",
+   "smarts": "[H][#7X3H1;r5]",
+   "priority": 5,
+   "description": "H on the imidazolium N"
+  },
+  {
+   "type": "CRH",
+   "smarts": "[#6X3;r5;$(*(~[#7H1;r5])~[#7;r5])]",
+   "priority": 5,
+   "description": "C2 of an alkylimidazolium"
+  },
+  {
+   "type": "CWH",
+   "smarts": "[#6X3;r5;$(*~[#7H1;r5]);!$(*(~[#7])~[#7])]",
+   "priority": 5,
+   "description": "C4 / C5 next to the N-H"
+  },
+  {
+   "type": "CRM",
+   "smarts": "[#6X3;r5;$(*(~[#7;r5])~[#7;r5]);$(*-[CX4])]",
+   "priority": 5,
+   "description": "alkylated imidazolium C2"
+  },
+  {
+   "type": "NAM",
+   "smarts": "[#7X3;r5;$(*~[#6X3;r5;$(*(~[#7;r5])~[#7;r5]);$(*-[CX4])])]",
+   "priority": 5,
+   "description": "imidazolium N next to an alkylated C2"
+  },
+  {
+   "type": "CCR",
+   "smarts": "[CX4H3;$(*-[#6X3;r5;$(*(~[#7;r5])~[#7;r5])])]",
+   "priority": 5,
+   "description": "methyl on the imidazolium C2"
+  },
+  {
+   "type": "H1",
+   "smarts": "[H][CX4H3;$(*-[#6X3;r5;$(*(~[#7;r5])~[#7;r5])])]",
+   "priority": 5,
+   "description": "H on the C2 methyl"
+  },
+  {
+   "type": "C1T",
+   "smarts": "[CX4H2;$(*-[#7X3;r5;$(*1~[#6]~[#7]~[#6]~[#6]~1),$(*1~[#6]~[#6]~[#7]~[#6]~1)]);$(*-c)]",
+   "priority": 6,
+   "description": "benzyl CH2 on the imidazolium N"
+  },
+  {
+   "type": "CAT",
+   "smarts": "[c;$(*-[CX4H2;$(*-[#7X3;r5;$(*1~[#6]~[#7]~[#6]~[#6]~1),$(*1~[#6]~[#6]~[#7]~[#6]~1)])])]",
+   "priority": 6,
+   "description": "benzyl ipso C"
+  },
+  {
+   "type": "CAO",
+   "smarts": "[c;$(*:c-[CX4H2;$(*-[#7X3;r5;$(*1~[#6]~[#7]~[#6]~[#6]~1),$(*1~[#6]~[#6]~[#7]~[#6]~1)])])]",
+   "priority": 6,
+   "description": "benzyl ortho C"
+  },
+  {
+   "type": "CAM",
+   "smarts": "[c;$(*:c:c-[CX4H2;$(*-[#7X3;r5;$(*1~[#6]~[#7]~[#6]~[#6]~1),$(*1~[#6]~[#6]~[#7]~[#6]~1)])])]",
+   "priority": 6,
+   "description": "benzyl meta C"
+  },
+  {
+   "type": "CAP",
+   "smarts": "[c;$(*:c:c:c-[CX4H2;$(*-[#7X3;r5;$(*1~[#6]~[#7]~[#6]~[#6]~1),$(*1~[#6]~[#6]~[#7]~[#6]~1)])])]",
+   "priority": 6,
+   "description": "benzyl para C"
+  },
+  {
+   "type": "HAT",
+   "smarts": "[H][c;$(*:c-[CX4H2;$(*-[#7X3;r5;$(*1~[#6]~[#7]~[#6]~[#6]~1),$(*1~[#6]~[#6]~[#7]~[#6]~1)])]),$(*:c:c-[CX4H2;$(*-[#7X3;r5;$(*1~[#6]~[#7]~[#6]~[#6]~1),$(*1~[#6]~[#6]~[#7]~[#6]~1)])]),$(*:c:c:c-[CX4H2;$(*-[#7X3;r5;$(*1~[#6]~[#7]~[#6]~[#6]~1),$(*1~[#6]~[#6]~[#7]~[#6]~1)])])]",
+   "priority": 6,
+   "description": "H on the benzyl ring"
+  },
+  {
+   "type": "C1H",
+   "smarts": "[CX4H2;$(*-[#7X3;r5;$(*1~[#6]~[#7]~[#6]~[#6]~1),$(*1~[#6]~[#6]~[#7]~[#6]~1)]);$(*-[CX4H2]-[CX4](F)F)]",
+   "priority": 6,
+   "description": "CH2 on the imidazolium N of a fluoroalkyl chain"
+  },
+  {
+   "type": "CFH",
+   "smarts": "[CX4;$(*(F)F);$(*-[CX4H2])]",
+   "priority": 6,
+   "description": "CF2 next to the CH2 of a fluoroalkyl chain"
+  },
+  {
+   "type": "CSF",
+   "smarts": "[CX4H0;$(*(F)F);!$(*(F)(F)F)]",
+   "priority": 4,
+   "description": "perfluoro CF2"
+  },
+  {
+   "type": "CTF",
+   "smarts": "[CX4H0;$(*(F)(F)F)]",
+   "priority": 4,
+   "description": "perfluoro CF3"
+  },
+  {
+   "type": "F",
+   "smarts": "[F][CX4]",
+   "priority": 4,
+   "description": "F on a perfluoroalkyl C"
+  },
+  {
+   "type": "C2O",
+   "smarts": "[CX4H2;$(*-[OX2H1]);$(*-[CX4]-[$([#7X3;r5;$(*1~[#6]~[#7]~[#6]~[#6]~1),$(*1~[#6]~[#6]~[#7]~[#6]~1)]),$([#7X3;r6;$(*1~[#6]~[#6]~[#6]~[#6]~[#6]~1)]),$([#7X4]),$([#15X4;!$(*~[#8,#7,#9])])])]",
+   "priority": 5,
+   "description": "CH2-OH on a cation's side chain"
+  },
+  {
+   "type": "OH",
+   "smarts": "[OX2H1;$(*-[CX4])]",
+   "priority": 5,
+   "description": "hydroxyl O"
+  },
+  {
+   "type": "HO",
+   "smarts": "[H][OX2H1]",
+   "priority": 5,
+   "description": "hydroxyl H"
+  },
+  {
+   "type": "OY",
+   "smarts": "[OX2;$(*(-[CX4])-[CX4])]",
+   "priority": 3,
+   "description": "ether O"
+  },
+  {
+   "type": "CSO",
+   "smarts": "[CX4H2;$(*-[OX2]-[CX4])]",
+   "priority": 3,
+   "description": "ether CH2"
+  },
+  {
+   "type": "C3O",
+   "smarts": "[CX4H3;$(*-[OX2]-[CX4])]",
+   "priority": 4,
+   "description": "methoxy CH3"
+  },
+  {
+   "type": "HY",
+   "smarts": "[H][CX4;$(*-[OX2]-[CX4])]",
+   "priority": 3,
+   "description": "H on an ether C"
+  },
+  {
+   "type": "COM",
+   "smarts": "[CX4H2;$(*-[OX2]-[CX4]);$(*-[CX4]-[$([#7X3;r5;$(*1~[#6]~[#7]~[#6]~[#6]~1),$(*1~[#6]~[#6]~[#7]~[#6]~1)]),$([#7X3;r6;$(*1~[#6]~[#6]~[#6]~[#6]~[#6]~1)]),$([#7X4])])]",
+   "priority": 5,
+   "description": "ether CH2 next to the cation's first carbon"
+  },
+  {
+   "type": "HC",
+   "smarts": "[H][CX4H2;$(*-[OX2]-[CX4]);$(*-[CX4]-[$([#7X3;r5;$(*1~[#6]~[#7]~[#6]~[#6]~1),$(*1~[#6]~[#6]~[#7]~[#6]~1)]),$([#7X3;r6;$(*1~[#6]~[#6]~[#6]~[#6]~[#6]~1)]),$([#7X4])])]",
+   "priority": 6,
+   "description": "H on that CH2"
+  },
+  {
+   "type": "C1PS",
+   "smarts": "[CX4H2;$(*-[#15X4;!$(*~[#8,#7,#9])]);$(*-[CX4]-[OX2])]",
+   "priority": 5,
+   "description": "phosphonium CH2 leading to an ether"
+  },
+  {
+   "type": "CPI4",
+   "smarts": "[CX4H2;$(*-[#15X4;!$(*~[#8,#7,#9])]);$(*-[CX4H1])]",
+   "priority": 5,
+   "description": "phosphonium CH2 on a branch point"
+  },
+  {
+   "type": "CI4",
+   "smarts": "[CX4H1;$(*-[CX4H2]-[#15X4;!$(*~[#8,#7,#9])])]",
+   "priority": 5,
+   "description": "branching CH of an isoalkyl phosphonium"
+  },
+  {
+   "type": "HI4",
+   "smarts": "[H][CX4H1;$(*-[CX4H2]-[#15X4;!$(*~[#8,#7,#9])])]",
+   "priority": 5,
+   "description": "H on that CH"
+  },
+  {
+   "type": "NAP",
+   "smarts": "[#7X3;r6;$(*1~[#6]~[#6]~[#6]~[#6]~[#6]~1)]",
+   "priority": 4,
+   "description": "pyridinium N"
+  },
+  {
+   "type": "CAPO",
+   "smarts": "[c;r6;$(*~[#7X3;r6;$(*1~[#6]~[#6]~[#6]~[#6]~[#6]~1)])]",
+   "priority": 4,
+   "description": "pyridinium ortho C"
+  },
+  {
+   "type": "CAPM",
+   "smarts": "[c;r6;$(*~[c]~[#7X3;r6;$(*1~[#6]~[#6]~[#6]~[#6]~[#6]~1)])]",
+   "priority": 4,
+   "description": "pyridinium meta C"
+  },
+  {
+   "type": "CAPP",
+   "smarts": "[c;r6;$(*~[c]~[c]~[#7X3;r6;$(*1~[#6]~[#6]~[#6]~[#6]~[#6]~1)])]",
+   "priority": 4,
+   "description": "pyridinium para C"
+  },
+  {
+   "type": "HAP",
+   "smarts": "[H][c;r6;$(*~[#7X3;r6;$(*1~[#6]~[#6]~[#6]~[#6]~[#6]~1)]),$(*~[c]~[#7X3;r6;$(*1~[#6]~[#6]~[#6]~[#6]~[#6]~1)]),$(*~[c]~[c]~[#7X3;r6;$(*1~[#6]~[#6]~[#6]~[#6]~[#6]~1)])]",
+   "priority": 4,
+   "description": "H on the pyridinium ring"
+  },
+  {
+   "type": "NAQ",
+   "smarts": "[#7X3;r6;$(*1~[#6]~[#6;R2]~[#6;R2]~[#6]~[#6]~1),$(*1~[#6]~[#6]~[#6;R2]~[#6;R2]~[#6]~1)]",
+   "priority": 6,
+   "description": "isoquinolinium N"
+  },
+  {
+   "type": "CAQ",
+   "smarts": "[#6;R2;$(*@*@[#7X3;r6;$(*1~[#6]~[#6;R2]~[#6;R2]~[#6]~[#6]~1),$(*1~[#6]~[#6]~[#6;R2]~[#6;R2]~[#6]~1)]),$(*@*@*@[#7X3;r6;$(*1~[#6]~[#6;R2]~[#6;R2]~[#6]~[#6]~1),$(*1~[#6]~[#6]~[#6;R2]~[#6;R2]~[#6]~1)])]",
+   "priority": 6,
+   "description": "isoquinolinium ring-fusion C"
+  },
+  {
+   "type": "CA",
+   "smarts": "[c;R1]",
+   "priority": 5,
+   "description": "isoquinolinium ring C",
+   "in_molecule": [
+    "[#7X3;r6;$(*1~[#6]~[#6;R2]~[#6;R2]~[#6]~[#6]~1),$(*1~[#6]~[#6]~[#6;R2]~[#6;R2]~[#6]~1)]"
+   ]
+  },
+  {
+   "type": "HA",
+   "smarts": "[H][c;R1]",
+   "priority": 5,
+   "description": "H on the isoquinolinium benzo ring",
+   "in_molecule": [
+    "[#7X3;r6;$(*1~[#6]~[#6;R2]~[#6;R2]~[#6]~[#6]~1),$(*1~[#6]~[#6]~[#6;R2]~[#6;R2]~[#6]~1)]"
+   ]
+  },
+  {
+   "type": "HAP",
+   "smarts": "[H][c;R1;$(*1~[#7]~*~*~*~*~1),$(*1~*~[#7]~*~*~*~1),$(*1~*~*~[#7]~*~*~1)]",
+   "priority": 6,
+   "description": "H on the isoquinolinium N ring",
+   "in_molecule": [
+    "[#7X3;r6;$(*1~[#6]~[#6;R2]~[#6;R2]~[#6]~[#6]~1),$(*1~[#6]~[#6]~[#6;R2]~[#6;R2]~[#6]~1)]"
+   ]
+  },
+  {
+   "type": "N4",
+   "smarts": "[#7X4;H0]",
+   "priority": 3,
+   "description": "quaternary ammonium N"
+  },
+  {
+   "type": "N3",
+   "smarts": "[#7X4;H1]",
+   "priority": 3,
+   "description": "protonated tertiary amine N (R3NH+)"
+  },
+  {
+   "type": "H3",
+   "smarts": "[H][#7X4;H1]",
+   "priority": 3,
+   "description": "H on R3NH+"
+  },
+  {
+   "type": "CG",
+   "smarts": "[CX3;$(*(~[NX3])(~[NX3])~[NX3])]",
+   "priority": 5,
+   "description": "guanidinium C"
+  },
+  {
+   "type": "NG",
+   "smarts": "[NX3;$(*~[CX3](~[NX3])~[NX3])]",
+   "priority": 5,
+   "description": "guanidinium N"
+  },
+  {
+   "type": "HG",
+   "smarts": "[H][NX3;$(*~[CX3](~[NX3])~[NX3])]",
+   "priority": 5,
+   "description": "guanidinium H"
+  },
+  {
+   "type": "B",
+   "smarts": "[#5;$(*(F)(F)(F)F)]",
+   "priority": 5,
+   "description": "tetrafluoroborate B"
+  },
+  {
+   "type": "FB",
+   "smarts": "[F][#5]",
+   "priority": 5,
+   "description": "tetrafluoroborate F"
+  },
+  {
+   "type": "P",
+   "smarts": "[#15;$(*(F)(F)(F)(F)(F)F)]",
+   "priority": 5,
+   "description": "hexafluorophosphate P"
+  },
+  {
+   "type": "FP",
+   "smarts": "[F][#15]",
+   "priority": 5,
+   "description": "hexafluorophosphate F"
+  },
+  {
+   "type": "Cl",
+   "smarts": "[Cl;X0]",
+   "priority": 5,
+   "description": "chloride"
+  },
+  {
+   "type": "Br",
+   "smarts": "[Br;X0]",
+   "priority": 5,
+   "description": "bromide"
+  },
+  {
+   "type": "Na",
+   "smarts": "[Na]",
+   "priority": 5,
+   "description": "sodium cation"
+  },
+  {
+   "type": "Li",
+   "smarts": "[Li]",
+   "priority": 5,
+   "description": "lithium cation"
+  },
+  {
+   "type": "SBT",
+   "smarts": "[#16X4;$(*~[NX2]~[#16X4]),$(*(~[OX1])(~[OX1])(~[OX1])-[CX4](F)(F)F)]",
+   "priority": 6,
+   "description": "S of a sulfonyl imide / triflate"
+  },
+  {
+   "type": "NBT",
+   "smarts": "[NX2;$(*(~[#16X4])~[#16X4])]",
+   "priority": 6,
+   "description": "N of a sulfonyl imide"
+  },
+  {
+   "type": "OBT",
+   "smarts": "[OX1;$(*~[#16X4]~[NX2])]",
+   "priority": 6,
+   "description": "O of a sulfonyl imide"
+  },
+  {
+   "type": "OTF",
+   "smarts": "[OX1;$(*~[#16X4](~[OX1])(~[OX1])-[CX4](F)(F)F)]",
+   "priority": 6,
+   "description": "triflate O"
+  },
+  {
+   "type": "CBT",
+   "smarts": "[CX4;$(*(F)(F)F);$(*-[#16X4])]",
+   "priority": 6,
+   "description": "CF3 on a sulfonyl S"
+  },
+  {
+   "type": "F1",
+   "smarts": "[F][CX4;$(*-[#16X4])]",
+   "priority": 6,
+   "description": "F on a C bonded to the sulfonyl S"
+  },
+  {
+   "type": "FSI",
+   "smarts": "[F][#16X4]",
+   "priority": 6,
+   "description": "F on S (bis(fluorosulfonyl)imide)"
+  },
+  {
+   "type": "C1F",
+   "smarts": "[CX4;$(*(F)F);!$(*(F)(F)F);$(*-[#16X4])]",
+   "priority": 6,
+   "description": "CF2 on a sulfonyl S"
+  },
+  {
+   "type": "CEF",
+   "smarts": "[CX4;$(*(F)(F)F);$(*-[CX4](F)(F)-[#16X4])]",
+   "priority": 6,
+   "description": "CF3 of a pentafluoroethyl sulfonyl"
+  },
+  {
+   "type": "N3A",
+   "smarts": "[NX2;$(*(-[CX2]#[NX1])-[CX2]#[NX1])]",
+   "priority": 6,
+   "description": "dicyanamide central N"
+  },
+  {
+   "type": "CZA",
+   "smarts": "[CX2;$(*#[NX1]);$(*-[NX2]-[CX2]#[NX1])]",
+   "priority": 6,
+   "description": "dicyanamide C"
+  },
+  {
+   "type": "NZA",
+   "smarts": "[NX1;$(*#[CX2]-[NX2]-[CX2]#N)]",
+   "priority": 6,
+   "description": "dicyanamide terminal N"
+  },
+  {
+   "type": "SK",
+   "smarts": "[SX1;$(*~[CX2]~[NX1])]",
+   "priority": 6,
+   "description": "thiocyanate S"
+  },
+  {
+   "type": "CK",
+   "smarts": "[CX2;$(*~[SX1]);$(*~[NX1])]",
+   "priority": 6,
+   "description": "thiocyanate C"
+  },
+  {
+   "type": "NK",
+   "smarts": "[NX1;$(*~[CX2]~[SX1])]",
+   "priority": 6,
+   "description": "thiocyanate N"
+  },
+  {
+   "type": "NO",
+   "smarts": "[NX3;$(*(~[OX1])(~[OX1])~[OX1])]",
+   "priority": 6,
+   "description": "nitrate N"
+  },
+  {
+   "type": "ON",
+   "smarts": "[OX1;$(*~[NX3](~[OX1])~[OX1])]",
+   "priority": 6,
+   "description": "nitrate O"
+  },
+  {
+   "type": "C3A",
+   "smarts": "[CX3;$(*(-[CX2]#N)(-[CX2]#N)-[CX2]#N)]",
+   "priority": 6,
+   "description": "tricyanomethanide central C"
+  },
+  {
+   "type": "CN",
+   "smarts": "[CX2;$(*#[NX1]);$(*-[CX3])]",
+   "priority": 6,
+   "description": "tricyanomethanide nitrile C"
+  },
+  {
+   "type": "NC",
+   "smarts": "[NX1;$(*#[CX2]-[CX3])]",
+   "priority": 6,
+   "description": "tricyanomethanide N"
+  },
+  {
+   "type": "CO2",
+   "smarts": "[CX3;$(*(~[OX1])~[OX1])]",
+   "priority": 5,
+   "description": "carboxylate C"
+  },
+  {
+   "type": "O2",
+   "smarts": "[OX1;$(*~[CX3]~[OX1])]",
+   "priority": 5,
+   "description": "carboxylate O"
+  },
+  {
+   "type": "CTA",
+   "smarts": "[CX4H3;$(*-[CX3](~[OX1])~[OX1])]",
+   "priority": 5,
+   "description": "acetate CH3"
+  },
+  {
+   "type": "C2C",
+   "smarts": "[CX4H2;$(*-[CX3](~[OX1])~[OX1])]",
+   "priority": 5,
+   "description": "CH2 on a carboxylate"
+  },
+  {
+   "type": "CPH",
+   "smarts": "[c;$(*-[CX4H2]-[CX3](~[OX1])~[OX1])]",
+   "priority": 6,
+   "description": "phenylacetate ipso C"
+  },
+  {
+   "type": "CAO",
+   "smarts": "[c;$(*:c-[CX4H2]-[CX3](~[OX1])~[OX1])]",
+   "priority": 6,
+   "description": "phenylacetate ortho C"
+  },
+  {
+   "type": "CAM",
+   "smarts": "[c;$(*:c:c-[CX4H2]-[CX3](~[OX1])~[OX1])]",
+   "priority": 6,
+   "description": "phenylacetate meta C"
+  },
+  {
+   "type": "CAP",
+   "smarts": "[c;$(*:c:c:c-[CX4H2]-[CX3](~[OX1])~[OX1])]",
+   "priority": 6,
+   "description": "phenylacetate para C"
+  },
+  {
+   "type": "HA",
+   "smarts": "[H][c;$(*:c-[CX4H2]-[CX3](~[OX1])~[OX1]),$(*:c:c-[CX4H2]-[CX3](~[OX1])~[OX1]),$(*:c:c:c-[CX4H2]-[CX3](~[OX1])~[OX1])]",
+   "priority": 6,
+   "description": "H on the phenylacetate ring"
+  },
+  {
+   "type": "C3C",
+   "smarts": "[CX4H1;$(*-[CX3](~[OX1])~[OX1])]",
+   "priority": 5,
+   "description": "CH on a carboxylate"
+  },
+  {
+   "type": "CBI",
+   "smarts": "[c;$(*-[CX3](~[OX1])~[OX1])]",
+   "priority": 6,
+   "description": "benzoate ipso C"
+  },
+  {
+   "type": "CAO",
+   "smarts": "[c;$(*:c-[CX3](~[OX1])~[OX1])]",
+   "priority": 6,
+   "description": "benzoate ortho C"
+  },
+  {
+   "type": "CAM",
+   "smarts": "[c;$(*:c:c-[CX3](~[OX1])~[OX1])]",
+   "priority": 6,
+   "description": "benzoate meta C"
+  },
+  {
+   "type": "CBP",
+   "smarts": "[c;$(*:c:c:c-[CX3](~[OX1])~[OX1])]",
+   "priority": 6,
+   "description": "benzoate para C"
+  },
+  {
+   "type": "HA",
+   "smarts": "[H][c;$(*:c-[CX3](~[OX1])~[OX1]),$(*:c:c-[CX3](~[OX1])~[OX1])]",
+   "priority": 6,
+   "description": "H on the benzoate ring"
+  },
+  {
+   "type": "O2F",
+   "smarts": "[OX1;$(*~[CX3](~[OX1])-[CX4](F)(F)F)]",
+   "priority": 7,
+   "description": "trifluoroacetate O"
+  },
+  {
+   "type": "CFA",
+   "smarts": "[CX4;$(*(F)(F)F);$(*-[CX3](~[OX1])~[OX1])]",
+   "priority": 7,
+   "description": "trifluoroacetate CF3"
+  },
+  {
+   "type": "FFA",
+   "smarts": "[F][CX4;$(*-[CX3](~[OX1])~[OX1])]",
+   "priority": 7,
+   "description": "trifluoroacetate F"
+  },
+  {
+   "type": "SO",
+   "smarts": "[#16X4;$(*(~[OX1])(~[OX1])~[OX1]);!$(*-[CX4](F)(F)F)]",
+   "priority": 5,
+   "description": "sulfonate / sulfate S"
+  },
+  {
+   "type": "OS3",
+   "smarts": "[OX1;$(*~[#16X4](~[OX1])(~[OX1])-[#6])]",
+   "priority": 5,
+   "description": "sulfonate O"
+  },
+  {
+   "type": "OS4",
+   "smarts": "[OX1;$(*~[#16X4](~[OX1])(~[OX1])-[OX2])]",
+   "priority": 6,
+   "description": "sulfate terminal O"
+  },
+  {
+   "type": "OC4",
+   "smarts": "[OX2;$(*-[#16X4]);$(*-[CX4])]",
+   "priority": 6,
+   "description": "sulfate ester O"
+  },
+  {
+   "type": "CS3",
+   "smarts": "[CX4;$(*-[#16X4](~[OX1])(~[OX1])~[OX1])]",
+   "priority": 5,
+   "description": "C on a sulfonate S"
+  },
+  {
+   "type": "HS3",
+   "smarts": "[H][CX4;$(*-[#16X4](~[OX1])(~[OX1])~[OX1])]",
+   "priority": 5,
+   "description": "H on that C"
+  },
+  {
+   "type": "CS4",
+   "smarts": "[CX4;$(*-[OX2]-[#16X4])]",
+   "priority": 6,
+   "description": "C on a sulfate O"
+  },
+  {
+   "type": "HS4",
+   "smarts": "[H][CX4;$(*-[OX2]-[#16X4])]",
+   "priority": 6,
+   "description": "H on that C"
+  },
+  {
+   "type": "CAPS",
+   "smarts": "[c;$(*-[#16X4](~[OX1])(~[OX1])~[OX1])]",
+   "priority": 7,
+   "description": "tosylate C on S"
+  },
+  {
+   "type": "CAMS",
+   "smarts": "[c;$(*:c-[#16X4](~[OX1])(~[OX1])~[OX1])]",
+   "priority": 7,
+   "description": "tosylate C next to it"
+  },
+  {
+   "type": "CAOS",
+   "smarts": "[c;$(*:c:c-[#16X4](~[OX1])(~[OX1])~[OX1])]",
+   "priority": 7,
+   "description": "tosylate C next to the methyl C"
+  },
+  {
+   "type": "CATS",
+   "smarts": "[c;$(*:c:c:c-[#16X4](~[OX1])(~[OX1])~[OX1])]",
+   "priority": 7,
+   "description": "tosylate C bearing the methyl"
+  },
+  {
+   "type": "CTTS",
+   "smarts": "[CX4H3;$(*-c:c:c:c-[#16X4](~[OX1])(~[OX1])~[OX1])]",
+   "priority": 7,
+   "description": "tosylate methyl"
+  },
+  {
+   "type": "HATS",
+   "smarts": "[H][c;$(*:c-[#16X4](~[OX1])(~[OX1])~[OX1]),$(*:c:c-[#16X4](~[OX1])(~[OX1])~[OX1])]",
+   "priority": 7,
+   "description": "H on the tosylate ring"
+  },
+  {
+   "type": "HTS",
+   "smarts": "[H][CX4H3;$(*-c:c:c:c-[#16X4](~[OX1])(~[OX1])~[OX1])]",
+   "priority": 7,
+   "description": "H on the tosylate methyl"
+  }
+ ]
+}

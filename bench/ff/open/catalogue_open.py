@@ -60,6 +60,12 @@ ENTRIES = {
                           "CAPS's OPLS-AA rules in OPLS-AA/M's names plus the protein and terminal types (bench/typing/make_oplsaam_rules.py): "
                           "the file's own topology typed as it types it, 508 / 508 atoms, its 25 residues and 11 terminal patches "
                           "(bench/ff/validate_rtf_types.py --patches)", ("OPLS-AA/M", "opls_aam", 11), ["opls-aam"]),
+    "clandp": ("CL&P (ionic liquids)", "il.ff of 2026/04/16 (github.com/paduagroup/clandp)",
+               ["J. N. Canongia Lopes, A. A. H. Padua, Theor. Chem. Acc. 131, 1129 (2012)"],
+               {"source": "il.ff, github.com/paduagroup/clandp", "license": "MIT (Copyright (c) 2019 Agilio Padua)"},
+               "CAPS rules for CL&P's types by ion family (bench/typing/make_clandp_rules.py): CL&P's own ion files (.zmat, .xyz) "
+               "typed as they type them, 1165 / 1165 atoms in 55 molecules (P111i4's two swapped labels listed; CT2 and CS, the same "
+               "parameters, counted as one)", ("CL&P ionic liquids", "opls_cl_p", 12), ["opls-clp"]),
 }
 cat_path = os.path.join(FF, "catalogue.json")
 cat = json.load(open(cat_path))

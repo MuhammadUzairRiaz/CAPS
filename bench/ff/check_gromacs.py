@@ -73,6 +73,7 @@ CASES = [
     ("OPLS-AA (GROMACS oplsaa.ff) isoprene, ethylbenzene, ester (vacuum)", ("smiles", "CC=C(C)CC.CCc1ccccc1.CCOC(=O)C"), "oplsaa-gromacs", "types", []),
     ("OPLS-AA 2024 (Jorgensen) isoprene, ethylbenzene, ester, PVA unit (vacuum)", ("smiles", "CC=C(C)CC.CCc1ccccc1.CCOC(=O)C.CC(O)CC(O)C"), "oplsaa2024", "types", []),
     ("OPLS-AA/M (Jorgensen lab) peptide GHWRKD (vacuum)", ("peptide", "GHWRKD"), "oplsaam-jorgensen", "types", []),
+    ("CL&P (il.ff) [C4C1im][NTf2] (vacuum)", ("smiles", "CCCCn1cc[n+](C)c1.FC(F)(F)S(=O)(=O)[N-]S(=O)(=O)C(F)(F)F"), "clandp", "types", []),
     ("GAFF 1.81 (gaff.dat) ester, epoxide, amide, thioether (vacuum)", ("smiles", "CCOC(=O)C.C1CO1.CC(=O)NC.CSC"), "gaff-1.81-ambertools", "gasteiger", []),
     ("GAFF2 2.11 (gaff211.dat) isoprene, styrene (vacuum)", ("smiles", "CC=C(C)CC.C=Cc1ccccc1"), "gaff2-2.11-ambertools", "gasteiger", []),
     ("CHARMM36 (toppar) peptide GAFKW (vacuum; CMAP not represented)", ("peptide", "GAFKW"), "charmm36-prot-toppar", "gasteiger", []),
