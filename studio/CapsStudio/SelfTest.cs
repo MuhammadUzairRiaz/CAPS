@@ -122,7 +122,7 @@ internal static class SelfTest
         Check(vm.PickedRows.Count >= 4 && vm.NeighbourRows.Count == 4, $"inspector: {vm.PickedTitle} · {string.Join(", ", vm.PickedRows.Select(r => r.Key))}");
 
         // CAPS Field: assign GAFF2 from the library, override one atom, clear
-        var gaff = vm.Field.Library.ToList().FindIndex(x => x.Id == "gaff-amber25");
+        var gaff = vm.Field.Library.ToList().FindIndex(x => x.Id == "gaff2-2.2.20-ambertools");
         Check(gaff >= 0, $"force-field library: {vm.Field.LibraryNote}");
         if (gaff >= 0)
         {
@@ -1392,7 +1392,7 @@ internal static class SelfTest
         // a force field per component: both GAFF2 here; after the build Field assigns them by group, one group per component
         {
             vm.OpenBlend();
-            var gaffEntry = vm.BlendForceFields.FirstOrDefault(f => f.Id == "gaff-amber25");
+            var gaffEntry = vm.BlendForceFields.FirstOrDefault(f => f.Id == "gaff2-2.2.20-ambertools");
             foreach (var r in vm.BlendRows) r.ForceField = gaffEntry;
             vm.BuildBlend().GetAwaiter().GetResult();
             for (int k = 0; k < 200 && vm.Field.Working; ++k) { Thread.Sleep(25); }
@@ -1469,7 +1469,7 @@ internal static class SelfTest
             var againOk = second.Summary().Atoms == hostAtoms + 7 * 9 && vm.ProjectItems.Count == itemsBefore && first.IsDisposed
                           && vm.ProjectItems.Any(i => ReferenceEquals(i.Doc, host));
             // the packed cell (made here, never saved) with a force field, deleted: kept, in Recent, opens with its force field
-            vm.Field.FfIndex = vm.Field.Library.ToList().FindIndex(e => e.Id == "gaff-amber25");
+            vm.Field.FfIndex = vm.Field.Library.ToList().FindIndex(e => e.Id == "gaff2-2.2.20-ambertools");
             vm.Field.Assign().GetAwaiter().GetResult();
             var packedItem = vm.ProjectItems.First(i => ReferenceEquals(i.Doc, second));
             vm.Activate(vm.ProjectItems.First(i => ReferenceEquals(i.Doc, host)));
@@ -1570,7 +1570,7 @@ internal static class SelfTest
         {
             while (vm.Document != null) vm.CloseDocument();
             vm.Open(Path.Combine(dir, "ps_melt.data"));
-            vm.Field.FfIndex = vm.Field.Library.ToList().FindIndex(e => e.Id == "gaff-amber25");
+            vm.Field.FfIndex = vm.Field.Library.ToList().FindIndex(e => e.Id == "gaff2-2.2.20-ambertools");
             vm.Field.Assign().GetAwaiter().GetResult();
             var on = vm.StepFieldDone && vm.StepFieldTip.Contains("every atom typed", StringComparison.Ordinal);
             while (vm.Document != null) vm.CloseDocument();
@@ -1585,7 +1585,7 @@ internal static class SelfTest
             {
                 vm.Open(amber);
                 var own = vm.Field.Assigned && vm.Field.Complete && vm.Field.ForceFieldName.Contains("phenol.prmtop", StringComparison.Ordinal) && !vm.Field.CanUseFileForceField;
-                var gaffIx = vm.Field.Library.ToList().FindIndex(x => x.Id == "gaff-amber25");
+                var gaffIx = vm.Field.Library.ToList().FindIndex(x => x.Id == "gaff2-2.2.20-ambertools");
                 var amberOffered = false;
                 if (gaffIx >= 0)
                 {
@@ -4016,7 +4016,7 @@ internal static class SelfTest
             vm.GrowChainsD = 3;
             vm.GrowDpD = 6;
             vm.GrowDensityD = 0.3m;
-            vm.GrowFfIndex = vm.Field.Library.ToList().FindIndex(e => e.Id == "gaff-amber25");   // Grow's own choice
+            vm.GrowFfIndex = vm.Field.Library.ToList().FindIndex(e => e.Id == "gaff2-2.2.20-ambertools");   // Grow's own choice
             vm.GrowChargeMode = 0;
             vm.GrowAssignField = true;
             vm.Grow().GetAwaiter().GetResult();
@@ -4688,7 +4688,7 @@ internal static class SelfTest
             vm.LoadKnownProjects();
             var none = !vm.HasKnownProjects;
             vm.Open(Path.Combine(dir, "ps_melt.data"));
-            var gaffP = vm.Field.Library.ToList().FindIndex(x => x.Id == "gaff-amber25");
+            var gaffP = vm.Field.Library.ToList().FindIndex(x => x.Id == "gaff2-2.2.20-ambertools");
             if (gaffP >= 0) { vm.Field.FfIndex = gaffP; vm.Field.Assign().GetAwaiter().GetResult(); }
             var typed = vm.Field.Assigned;
             vm.OpenNewProject();

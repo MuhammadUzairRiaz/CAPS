@@ -1,5 +1,6 @@
 #!/bin/bash
-# CAPS's AMBER-family libraries, built on this machine from AmberTools' own parameter files (dat/leap/parm), never committed.
+# CAPS's AMBER-family libraries from AmberTools' own parameter files (dat/leap/parm). GAFF / GAFF2 / ff03 are committed
+# (the files are public domain); GLYCAM is built locally only.
 #   bench/ff/open/build_amber.sh PARM_DIR [OUT_DIR]
 # PARM_DIR holds gaff.dat, gaff211.dat, gaff2.dat, parm99.dat, frcmod.ff03 (AmberTools, ambermd.org; its LICENSE places them in
 # the public domain) and, for the sugar library, GLYCAM_06h.dat (Woods group, its own copyright notice: built here, never shipped).
