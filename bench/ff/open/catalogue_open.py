@@ -91,6 +91,16 @@ ENTRIES = {
                            "files) in a structure and takes their types, charges and coded terms as pdb2gmx does; peptides of all 20 "
                            "amino acids, a proline N-terminus and a glycine zwitterion give pdb2gmx's topology term for term and its "
                            "energies (bench/ff/compare_pdb2gmx.py)", ("GROMOS 54A7", "gromos_54a7", 9), ["gromos-54a7"]),
+    "trappe-ua-umn": ("TraPPE-UA", "the TraPPE database (trappe.oit.umn.edu), retrieved October 2026",
+                      ["M. G. Martin, J. I. Siepmann, J. Phys. Chem. B 102, 2569 (1998)",
+                       "B. L. Eggimann et al., J. Chem. Eng. Data 65, 1330 (2020)"],
+                      {"source": "the TraPPE group's own parameter tables, model by model (trappe.oit.umn.edu), each term with its paper; "
+                                 "transcribed by bench/ff/make_trappe.py",
+                       "license": "published parameters of the TraPPE papers, cited per term (no file of the site is distributed)"},
+                      "CAPS rules for 92 TraPPE-UA site types: the database's own models typed as it types them (617 / 617 sites); "
+                      "every model's bonds, bends and torsions as it lists them (87 / 87 models; nine models whose own lists are "
+                      "inconsistent named apart); 1-4 Coulomb x 0.5 for the glycol ethers, diols, disulfides and acrylates as their "
+                      "models count it; LAMMPS and GROMACS reproduce CAPS's energies", ("TraPPE united-atom", "trappe_ua", 16), ["trappe-ua"]),
 }
 RTF = "the topology's own residues typed as it types them (bench/ff/validate_rtf_types.py --cap-links): "
 for fid, name, version, refs, evidence, listing, replaces in (

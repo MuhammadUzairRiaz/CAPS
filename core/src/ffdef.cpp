@@ -342,6 +342,18 @@ void save_forcefield(const FFDef& ff, const std::string& path) {
   if (ff.timestep > 0) j["timestep"] = ff.timestep;
   if (ff.torsions_if_defined) j["torsion_terms"] = "if_defined";
   if (ff.torsions_one_per_bond) j["torsion_selection"] = "one_per_bond";
+  if (!ff.coul14_rules.empty()) {
+    Json a = Json::array();
+    for (const auto& c : ff.coul14_rules) {
+      Json o = Json::object(), m = Json::array();
+      for (const auto& x : c.in_molecule) m.push_back(x);
+      o["in_molecule"] = m;
+      o["coul14"] = c.coul14;
+      if (!c.comment.empty()) o["comment"] = c.comment;
+      a.push_back(o);
+    }
+    j["coul14_rules"] = a;
+  }
   if (!ff.torsion_single_h.empty()) {
     Json a = Json::array();
     for (const auto& x : ff.torsion_single_h) a.push_back(x);
@@ -505,6 +517,14 @@ FFDef load_forcefield(const std::string& path) {
   ff.timestep = j.num("timestep", 0);
   ff.torsions_if_defined = j.text("torsion_terms") == "if_defined";
   ff.torsions_one_per_bond = j.text("torsion_selection") == "one_per_bond";
+  if (j.has("coul14_rules"))
+    for (const auto& r : j["coul14_rules"].items()) {
+      FFDef::Coul14Rule c;
+      for (const auto& x : r["in_molecule"].items()) c.in_molecule.push_back(x.str());
+      c.coul14 = r.num("coul14", 0);
+      c.comment = r.text("comment");
+      ff.coul14_rules.push_back(c);
+    }
   if (j.has("torsion_single_h"))
     for (const auto& x : j["torsion_single_h"].items()) ff.torsion_single_h.push_back(x.str());
   ff.angles_if_defined = j.text("angle_terms") == "if_defined";
@@ -2101,6 +2121,16 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
             if (p.size() > 3 && p[3] != 1.0 && p[3] != 0.0) rep.notes.push_back("charmm dihedral weights other than 0 / 1 are ignored");
           } else if (st == "harmonic") {
             term(p.at(0), int(p.at(2)), p.at(1) >= 0 ? 0 : 180);
+          } else if (st == "cistrans") {
+            // TraPPE's cis / trans double-bond torsion, quadratic about the isomer the structure has: K_cis (phi)^2 or
+            // K_trans (phi - 180)^2 (params K_cis K_trans), held as a harmonic term on the i-j-k-l dihedral
+            if (p.size() < 2) throw FFError("cistrans dihedral " + r->name + " needs K_cis K_trans");
+            auto mi = [&](Vec3 d) { return s.cell.valid() ? s.cell.minimum_image(d) : d; };
+            const Vec3 b1 = mi(s.atoms[j].pos - s.atoms[i].pos), b2 = mi(s.atoms[k].pos - s.atoms[j].pos), b3 = mi(s.atoms[l].pos - s.atoms[k].pos);
+            const Vec3 m = cross(b1, b2), nn = cross(b2, b3);
+            const bool cis = dot(m, nn) > 0;   // |phi| < 90 deg
+            ff.impropers_harmonic.push_back({i, j, k, l, cis ? p[0] : p[1], cis ? 0.0 : kPi});
+            rep.used[std::string("dihedral ") + r->name + (cis ? " (cis)" : " (trans)")]++;
           } else if (st == "class2") {
             if (p.size() < 6) throw FFError("class2 dihedral " + r->name + " needs K1 phi1 K2 phi2 K3 phi3");
             const auto mbt = group(*r, "mbt", 4), ebt = group(*r, "ebt", 8), at = group(*r, "at", 8), aat = group(*r, "aat", 3),
@@ -2198,6 +2228,67 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
   for (const auto& q : p14) ff.pairs14.push_back({q.first, q.second});
   if (use_topo)
     for (const auto& q : s.topology->pairs14) ff.pairs14.push_back({q[0], q[1]});
+  if (!def.coul14_rules.empty() && !ff.pairs14.empty()) {
+    // the molecules whose model has its own 1-4 Coulomb scale (FFDef::coul14_rules)
+    std::vector<int> comp(n, -1);
+    int nc = 0;
+    for (uint32_t a = 0; a < n; ++a) {
+      if (comp[a] >= 0) continue;
+      std::vector<uint32_t> todo{a};
+      comp[a] = nc;
+      while (!todo.empty()) {
+        const uint32_t x = todo.back();
+        todo.pop_back();
+        for (uint32_t y : nb[x]) if (comp[y] < 0) comp[y] = nc, todo.push_back(y);
+      }
+      ++nc;
+    }
+    std::vector<double> scale(size_t(nc), ff.coul14);
+    if (!dper) dper = std::make_unique<Perception>(perceive(s));
+    int marked = 0;
+    for (const auto& r : def.coul14_rules)
+      for (const auto& text : r.in_molecule) {
+        const Smarts sm(text);
+        std::vector<char> hit(size_t(nc), 0);
+        for (uint32_t a = 0; a < n; ++a)
+          if (!hit[size_t(comp[a])] && sm.matches(s, *dper, a, {})) hit[size_t(comp[a])] = 1;
+        for (int c = 0; c < nc; ++c)
+          if (hit[size_t(c)] && scale[size_t(c)] != r.coul14) scale[size_t(c)] = r.coul14, ++marked;
+      }
+    bool uniform = true;   // every molecule with its own scale, all the same: that scale for the whole force field
+    for (int c = 0; c < nc; ++c) uniform = uniform && scale[size_t(c)] == scale[0];
+    if (marked && uniform) {
+      ff.coul14 = scale[0];
+      rep.notes.push_back("1-4 Coulomb x " + std::to_string(scale[0]).substr(0, 4) + " for every molecule (" + def.coul14_rules.front().comment + ")");
+    } else if (marked) {
+      ff.pairs14_lj.assign(ff.pairs14.size(), ff.lj14);
+      ff.pairs14_coul.resize(ff.pairs14.size());
+      for (size_t q = 0; q < ff.pairs14.size(); ++q) ff.pairs14_coul[q] = scale[size_t(comp[ff.pairs14[q][0]])];
+      // parts, as a merge of force fields has them (LAMMPS: a pair sub-style per part with its own special weights): the
+      // atoms of the molecules with their own scale in part 1; a type used in both kinds of molecule gets a copy there
+      if (ff.pair_override.empty() && ff.pair_func.empty() && ff.lj14_types.empty()) {
+        const size_t nt = ff.type_names.size();
+        std::vector<char> in0(nt, 0), in1(nt, 0);
+        for (uint32_t a = 0; a < n; ++a) (scale[size_t(comp[a])] != ff.coul14 ? in1 : in0)[size_t(ff.type_index[a])] = 1;
+        std::vector<int> moved(nt, -1);
+        ff.type_part.assign(nt, 0);
+        for (size_t t = 0; t < nt; ++t) {
+          if (!in1[t]) continue;
+          if (!in0[t]) { ff.type_part[t] = 1; moved[t] = int(t); continue; }
+          moved[t] = int(ff.type_names.size());
+          ff.type_names.push_back(ff.type_names[t] + "_q14");
+          ff.lj.push_back(ff.lj[t]);
+          ff.type_part.push_back(1);
+        }
+        for (uint32_t a = 0; a < n; ++a)
+          if (scale[size_t(comp[a])] != ff.coul14) ff.type_index[a] = moved[size_t(ff.type_index[a])];
+        double other = ff.coul14;
+        for (const auto& r : def.coul14_rules) other = r.coul14;
+        ff.part14 = {{ff.lj14, ff.coul14}, {ff.lj14, other}};
+      }
+      rep.notes.push_back(std::to_string(marked) + " molecules with their model's own 1-4 Coulomb scale (" + def.coul14_rules.front().comment + ")");
+    }
+  }
   // impropers: every centre with three or more neighbours, triples sorted by index; last matching rule wins over all
   // orderings of the three (as moltemplate's canonical ordering does)
   const int cpos = def.improper_order == "center1_sorted" ? 0 : def.improper_order == "center2_sorted" ? 1 : 2;
@@ -2841,7 +2932,9 @@ std::string prepare_core(System& s, const FFDef& ff, std::string& charges) {
     ch = ch || (host(s.atoms[b.i].element) && s.atoms[b.j].element == 1) || (host(s.atoms[b.j].element) && s.atoms[b.i].element == 1);
   if (!ch) return note;
   std::string how;
-  if (charges == "auto" || charges == "gasteiger") {   // on the all-atom structure, where the method is defined
+  // a force field whose types carry charges (TraPPE) gives its own: nothing computed for the folding
+  const bool typed_charges = !ff.types.empty() && std::all_of(ff.types.begin(), ff.types.end(), [](const FFType& t) { return !std::isnan(t.charge); });
+  if ((charges == "auto" && !typed_charges) || charges == "gasteiger") {   // on the all-atom structure, where the method is defined
     ChargeReport q;
     try {
       q = compute_charges(s, "gasteiger");

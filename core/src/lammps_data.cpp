@@ -1589,6 +1589,9 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
         }
       }
     out << "# force fields with different 1-4 scalings: each part's Lennard-Jones and Coulomb in a sub-style of its own, with its own special weights\n";
+    if (coul == "coul/dsf")
+      out << "# (coul/dsf adds an atom's self energy in each sub-style its type takes part in: the total energy carries that constant twice for\n"
+             "#  the atoms of the later parts; the forces are not affected)\n";
   }
   for (const auto& l : styles) {
     if (l.rfind("kspace_style", 0) == 0) kspace.push_back(l);
