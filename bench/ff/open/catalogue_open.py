@@ -52,6 +52,14 @@ ENTRIES = {
                    "every term equals moltemplate's independent conversion of the same files except CT-CT-OH-HO, where that conversion "
                    "applies trifluoroethanol's torsion to every alcohol (bench/ff/convert_boss_opls.py applies the general line)",
                    ("OPLS-AA 2024", "oplsaa2024", 4), ["opls2020"]),
+    "oplsaam-jorgensen": ("OPLS-AA/M", "OPLS-AA/M of June 2015 (the Jorgensen lab's CHARMM-format files)",
+                          ["M. J. Robertson, J. Tirado-Rives, W. L. Jorgensen, J. Chem. Theory Comput. 11, 3499 (2015)",
+                           "W. L. Jorgensen, D. S. Maxwell, J. Tirado-Rives, J. Am. Chem. Soc. 118, 11225 (1996)"],
+                          {"source": "top_opls_aam.inp and par_opls_aam.inp, jorgensenresearch.com/opls-aa-m",
+                           "license": "CC BY 4.0 (the Jorgensen lab: free for anyone to use, including commercially, with attribution)"},
+                          "CAPS's OPLS-AA rules in OPLS-AA/M's names plus the protein and terminal types (bench/typing/make_oplsaam_rules.py): "
+                          "the file's own topology typed as it types it, 508 / 508 atoms, its 25 residues and 11 terminal patches "
+                          "(bench/ff/validate_rtf_types.py --patches)", ("OPLS-AA/M", "opls_aam", 11), ["opls-aam"]),
 }
 cat_path = os.path.join(FF, "catalogue.json")
 cat = json.load(open(cat_path))

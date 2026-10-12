@@ -112,6 +112,7 @@ CASES = [
     # the paper's torsion rules, planar inversions, hydrogen bonds
     ("DREIDING (Mayo 1990): butadienyl amide, benzene ring, phenol, nitrile", ("smiles", "C=CC=CCC(=O)NCc1ccccc1O.CCC#N"), "dreiding1990", "gasteiger", "rules"),
     ("DREIDING (Mayo 1990) ethanol liquid: hydrogen bonds (periodic)", ("solvent-box", "ethanol", 26), "dreiding1990", "gasteiger", "rules"),
+    ("OPLS-AA/M (Jorgensen lab): peptide GHWRKD", ("peptide", "GHWRKD"), "oplsaam-jorgensen", "types", "rules"),
     ("GAFF 1.81 (gaff.dat): ester, epoxide, amide, thioether", ("smiles", "CCOC(=O)C.C1CO1.CC(=O)NC.CSC"), "gaff-1.81-ambertools", "gasteiger", "rules"),
     ("GAFF2 2.11 (gaff211.dat): isoprene, styrene, nitrile; nudged off linear", ("smiles-nudged", "CC=C(C)CC.C=Cc1ccccc1.CCC#N"), "gaff2-2.11-ambertools", "gasteiger", "rules"),
     ("GAFF2 2.2.20 (gaff2.dat): polystyrene melt (periodic)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "gaff2-2.2.20-ambertools", "gasteiger", "rules"),

@@ -92,6 +92,10 @@ def read_masses(path):
             types[w[2]] = {"name": w[2], "element": element_of(w[2], m, el), "mass": m}
 
 
+nb_settings = set()   # the NONBONDED header's keywords (GEOM: geometric combination; E14FAC x: 1-4 Coulomb factor)
+nb_values = {}
+
+
 def read_params(path):
     global cmap_seen
     sec, in_stream_para = None, not path.endswith(".str")
@@ -109,6 +113,12 @@ def read_params(path):
                 types.setdefault(w[2], {"name": w[2], "element": element_of(w[2], float(w[3]), el), "mass": float(w[3])})
             continue
         is_header, new = section(w)
+        if (is_header and new == "nonbonded") or (sec == "nonbonded" and head in ("CUTNB", "NBXMOD")):
+            up = [x.upper() for x in w]
+            nb_settings.update(up)
+            for k, x in enumerate(up[:-1]):
+                if re.match(r"^-?[\d.]+$", up[k + 1]):
+                    nb_values[x] = float(up[k + 1])
         if is_header:
             sec = new
             if sec == "cmap":
@@ -184,7 +194,15 @@ for t in list(pairs):
         del pairs[t]
 if foreign:
     notes.append(f"entries naming types of other CHARMM files ({', '.join(sorted(foreign))}) left out: they apply only when those files are read too")
-doc = {"format": "caps-forcefield", "format_version": 1, "name": arg("--name"), "source": arg("--source", ", ".join(many("--prm"))),
+# OPLS in CHARMM's format (the Jorgensen lab's OPLS-AA/M files): the file's NONBONDED header says GEOM (geometric
+# combination of sigma and epsilon) and E14FAC (1-4 Coulomb factor); 1-4 Lennard-Jones from the second (1-4) columns; no
+# force switch (OPLS cuts plainly); impropers as the IMPR records write them, the out-of-plane atom first, the centre
+# second, V2 [1 - cos 2 phi]
+OPLS = "GEOM" in nb_settings
+if OPLS:
+    notes.append("OPLS settings from the file's NONBONDED header: geometric combination, 1-4 Coulomb x "
+                 f"{nb_values.get('E14FAC', 1.0):g}, 1-4 Lennard-Jones from its 1-4 columns")
+doc = {"format": "caps-forcefield", "format_version": 1, "name": arg("--name"), "source": arg("--source", ", ".join(p.split("/")[-1] for p in many("--prm"))),
        "references": many("--reference"), "units": "real",
        "styles": {"pair": "lj/charmmfsw/coul/long", "bond": "harmonic", "angle": "charmm", "dihedral": "charmmfsw", "improper": "harmonic", "special": "charmm"},
        "mixing": "arithmetic", "special_lj": [0, 0, 1], "special_coul": [0, 0, 1], "cutoff": 12,
@@ -197,6 +215,52 @@ doc = {"format": "caps-forcefield", "format_version": 1, "name": arg("--name"), 
                  + (", masses from " + ", ".join(r.split('/')[-1] for r in many("--rtf")) if many("--rtf") else "")]
                 + (["CMAP corrections in the source are not represented"] if cmap_seen else []) + notes,
        "version": arg("--version", "")}
+if OPLS and many("--rtf"):
+    # OPLS gives each type its charge: the charge the type carries in the topology's residues (the most common one where
+    # residues differ, listed)
+    import collections as _c
+    seen_q = _c.defaultdict(_c.Counter)
+    for rtf in many("--rtf"):
+        for s_ in lines(rtf):
+            w_ = s_.split()
+            if w_[0].upper() == "ATOM" and len(w_) >= 4 and re.match(r"^-?[\d.]+$", w_[3]):
+                seen_q[w_[2]][round(float(w_[3]), 4)] += 1
+    varied = []
+    for t, cnt in seen_q.items():
+        if t in types:
+            q, _ = cnt.most_common(1)[0]
+            types[t]["charge"] = q
+            if len(cnt) > 1:
+                varied.append(f"{t} {dict(cnt)}")
+    doc["atom_types"] = [types[t] for t in sorted(types)]
+    if varied:
+        doc["notes"].append("types whose charge differs between residues (the most common taken): " + "; ".join(varied))
+if OPLS:
+    doc.update({"styles": {"pair": "lj/cut/coul/long", "bond": "harmonic", "angle": "harmonic", "dihedral": "fourier", "improper": "fourier"},
+                "mixing": "geometric", "special_lj": [0, 0, 1], "special_coul": [0, 0, nb_values.get("E14FAC", 1.0)],
+                "improper_order": "center2_sorted"})
+    # 1-4 columns that are every epsilon times one factor with the same sigma are a 1-4 scale (OPLS's 0.5)
+    # types found only in residues of fewer than four atoms (TIP3P water, ions) are never in a 1-4 pair
+    size_of, cur_ = {}, None
+    for rtf in many("--rtf"):
+        for s_ in lines(rtf):
+            w_ = s_.split()
+            if w_[0].upper() in ("RESI", "PRES"):
+                cur_ = [] if w_[0].upper() == "RESI" else None
+            elif w_[0].upper() == "ATOM" and cur_ is not None and len(w_) >= 3:
+                cur_.append(w_[2])
+                for t_ in cur_:
+                    size_of[t_] = max(size_of.get(t_, 0), len(cur_))
+    in14 = lambda t_: size_of.get(t_, 4) >= 4
+    ratios = {round(p_["lj14"][0] / p_["params"][0], 6) for p_ in doc["pairs"] if "lj14" in p_ and p_["params"][0] > 0
+              and abs(p_["lj14"][1] - p_["params"][1]) < 1e-6 and in14(p_["name"])}
+    if len(ratios) == 1 and all("lj14" in p_ or p_["params"][0] == 0 for p_ in doc["pairs"] if in14(p_["name"])):
+        f = ratios.pop()
+        for p_ in doc["pairs"]:
+            p_.pop("lj14", None)
+        doc["special_lj"] = [0, 0, f]
+        doc["notes"].append(f"the 1-4 Lennard-Jones columns are every epsilon x {f:g} with the same sigma: written as that 1-4 scale")
+    doc.pop("pair_settings", None)
 json.dump(doc, open(OUT, "w"), indent=1, ensure_ascii=False)
 print(f"{OUT}: {len(types)} types, {len(pairs)} LJ + {len(nbfix)} NBFIX, {len(bonds)} bonds, {len(angles)} angles, "
       f"{len(dihedrals)} dihedrals, {len(impropers)} impropers; {len(notes)} notes")

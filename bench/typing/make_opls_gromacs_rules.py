@@ -28,7 +28,7 @@ for r in src["rules"]:
     rules.append({**r, "type": t, **({"overrides": [opls(x) for x in r["overrides"]]} if "overrides" in r else {})})
 # GROMACS's OPLS-AA/L types beyond the general rules (type, priority, smarts, description), as its amino-acid topologies
 # (aminoacids.rtp) and ions.itp use them
-AA = "[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])]"          # a peptide C alpha
+AA = "[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3,OX2H1])]"   # a peptide C alpha (a protonated C-terminus too)
 GUAN_C = "[CX3;$(*(~[NX3])(~[NX3])~[NX3])]"                           # guanidinium C (three sp2 N)
 HIS_A = f"[#6X3;r5;$(*-[CX4H2]-{AA})]"                                 # the ring C carrying His / Trp's CB
 IMID_RING = ",".join("$(*1~" + "~".join(f"[#{z}]" for z in seq) + "~1)" for seq in
@@ -46,7 +46,16 @@ ADD = [
       for t, h, lbl in ((273, 3, "CH3"), (274, 2, "CH2"), (275, 1, "CH"), (276, 0, "C"))],
     # ammonium (Lys NZ+)
     ("opls_287", 6, "[NX4H3+,NX4H3]", "N of RNH3+"), ("opls_290", 6, "[H][NX4H3]", "H of RNH3+"),
-    *[(f"opls_{t}", 6, f"[CX4H{h};$(*-[NX4H3])]", f"C of {lbl}NH3+") for t, h, lbl in ((291, 3, "CH3"), (292, 2, "RCH2"), (293, 1, "R2CH"), (294, 0, "R3C"))],
+    *[(f"opls_{t}", 10, f"[CX4H{h};$(*-[NX4H3])]", f"C of {lbl}NH3+") for t, h, lbl in ((291, 3, "CH3"), (292, 2, "RCH2"), (293, 1, "R2CH"), (294, 0, "R3C"))],
+    # the termini of a peptide (OPLS-AA's terminal C alpha types, as GROMACS's and OPLS-AA/M's topologies use them):
+    # the C alpha of a C-terminal carboxylate 283 (Gly 284, Pro 285), of an N-terminal NH3+ 293 (Gly 292, opls_291-294
+    # by H count), an N-terminal proline's NH2+ 309 / 310, its C alpha 295 and C delta 296
+    ("opls_283", 10, "[CX4H1;!R;$(*-[CX3](~[OX1])~[OX1]);!$(*-[CX3]~[OX2H1]);$(*-[#7X3,#7X4])]", "C-terminal C alpha (carboxylate)"),
+    ("opls_284", 10, "[CX4H2;!R;$(*-[CX3](~[OX1])~[OX1]);!$(*-[CX3]~[OX2H1]);$(*-[#7X3,#7X4])]", "C-terminal glycine C alpha"),
+    ("opls_285", 10, "[CX4H1;R;$(*-[CX3](~[OX1])~[OX1]);!$(*-[CX3]~[OX2H1]);$(*-[#7X3,#7X4;R])]", "C-terminal proline C alpha"),
+    ("opls_309", 10, "[NX4H2+,NX4H2;R]", "N-terminal proline N (R2NH2+)"), ("opls_310", 7, "[H][NX4H2;R]", "H on R2NH2+"),
+    ("opls_295", 10, "[CX4H1;R;$(*-[NX4H2]);$(*-[CX3]=[OX1])]", "N-terminal proline C alpha"),
+    ("opls_296", 10, "[CX4H2;R;$(*-[NX4H2])]", "N-terminal proline C delta"),
     # arginine, charged: guanidinium
     ("opls_302", 6, GUAN_C, "guanidinium C+"),
     ("opls_300", 6, f"[NX3H2;$(*~{GUAN_C})]", "guanidinium NH2"), ("opls_301", 6, f"[H][NX3H2;$(*~{GUAN_C})]", "H on guanidinium NH2"),
@@ -101,34 +110,35 @@ ADD = [
                                     ("opls_403", "[I-]"))],
     ("opls_111", 9, "[OX2H2]", "TIP3P water O"), ("opls_112", 9, "[H][OX2H2]", "TIP3P water H"),
 ]
-for t, p, sm, d in ADD:   # above the general rules' priorities (0-8)
-    rules.append({"type": t, "priority": p + 5, "smarts": sm, "description": d})
-for name, (o, h, label) in {"spc": ("opls_116", "opls_117", "SPC"), "tip4p": ("opls_113", "opls_114", "TIP4P")}.items():
-    json.dump({"format": "caps-typing", "version": 1, "forcefield": f"OPLS-AA (GROMACS) {label} water",
-               "description": f"{label} water for oplsaa-gromacs (an overlay on its rules)",
-               "rules": [{"type": o, "smarts": "[OX2H2]", "priority": 20, "description": f"{label} water O"},
-                         {"type": h, "smarts": "[H][OX2H2]", "priority": 20, "description": f"{label} water H"}]},
-              open(os.path.join(OUT, f"oplsaa-gromacs-{name}.typing.json"), "w"), indent=1)
-doc = {"format": "caps-typing", "version": 1, "forcefield": "OPLS-AA (GROMACS oplsaa.ff)", "unknown_types": "untyped",
-       "description": "CAPS's OPLS-AA rules in GROMACS's opls_NNN names (bench/typing/make_opls_gromacs_rules.py); types the "
-                      "GROMACS file lacks (" + ", ".join(sorted(dropped)) + ") are left untyped",
-       "rules": rules}
-json.dump(doc, open(os.path.join(OUT, "oplsaa-gromacs.typing.json"), "w"), indent=1, ensure_ascii=False)
-print(f"oplsaa-gromacs: {len(rules)} rules, {len(dropped)} types the GROMACS file lacks")
+if __name__ == "__main__":
+    for t, p, sm, d in ADD:   # above the general rules' priorities (0-8)
+        rules.append({"type": t, "priority": p + 5, "smarts": sm, "description": d})
+    for name, (o, h, label) in {"spc": ("opls_116", "opls_117", "SPC"), "tip4p": ("opls_113", "opls_114", "TIP4P")}.items():
+        json.dump({"format": "caps-typing", "version": 1, "forcefield": f"OPLS-AA (GROMACS) {label} water",
+                   "description": f"{label} water for oplsaa-gromacs (an overlay on its rules)",
+                   "rules": [{"type": o, "smarts": "[OX2H2]", "priority": 20, "description": f"{label} water O"},
+                             {"type": h, "smarts": "[H][OX2H2]", "priority": 20, "description": f"{label} water H"}]},
+                  open(os.path.join(OUT, f"oplsaa-gromacs-{name}.typing.json"), "w"), indent=1)
+    doc = {"format": "caps-typing", "version": 1, "forcefield": "OPLS-AA (GROMACS oplsaa.ff)", "unknown_types": "untyped",
+           "description": "CAPS's OPLS-AA rules in GROMACS's opls_NNN names (bench/typing/make_opls_gromacs_rules.py); types the "
+                          "GROMACS file lacks (" + ", ".join(sorted(dropped)) + ") are left untyped",
+           "rules": rules}
+    json.dump(doc, open(os.path.join(OUT, "oplsaa-gromacs.typing.json"), "w"), indent=1, ensure_ascii=False)
+    print(f"oplsaa-gromacs: {len(rules)} rules, {len(dropped)} types the GROMACS file lacks")
 
-# OPLS-AA 2024 from Jorgensen's own files (bench/ff/convert_boss_opls.py: oplsaa2024): the same chemistry rules in
-# opls_NNN names, water TIP3P as the .par numbers it (111 / 112)
-have24 = {t["name"] for t in json.load(open(os.path.join(DATA, "forcefields", "oplsaa2024.json")))["atom_types"]}
-WATER = {"9999": "opls_111", "9998": "opls_112"}
-rules24, lacking = [], set()
-for r in src["rules"]:
-    t = WATER.get(r["type"], opls(r["type"]))
-    if t not in have24:
-        lacking.add(t)
-        continue
-    rules24.append({**r, "type": t, **({"overrides": [WATER.get(x, opls(x)) for x in r["overrides"]]} if "overrides" in r else {})})
-json.dump({"format": "caps-typing", "version": 1, "forcefield": "OPLS-AA 2024 (Jorgensen)", "unknown_types": "untyped",
-           "description": "CAPS's OPLS-AA rules in opls_NNN names for the library built from Jorgensen's 2024 BOSS files "
-                          "(bench/typing/make_opls_gromacs_rules.py)", "rules": rules24},
-          open(os.path.join(OUT, "oplsaa2024.typing.json"), "w"), indent=1, ensure_ascii=False)
-print(f"oplsaa2024: {len(rules24)} rules" + (f", types the file lacks: {sorted(lacking)}" if lacking else ""))
+    # OPLS-AA 2024 from Jorgensen's own files (bench/ff/convert_boss_opls.py: oplsaa2024): the same chemistry rules in
+    # opls_NNN names, water TIP3P as the .par numbers it (111 / 112)
+    have24 = {t["name"] for t in json.load(open(os.path.join(DATA, "forcefields", "oplsaa2024.json")))["atom_types"]}
+    WATER = {"9999": "opls_111", "9998": "opls_112"}
+    rules24, lacking = [], set()
+    for r in src["rules"]:
+        t = WATER.get(r["type"], opls(r["type"]))
+        if t not in have24:
+            lacking.add(t)
+            continue
+        rules24.append({**r, "type": t, **({"overrides": [WATER.get(x, opls(x)) for x in r["overrides"]]} if "overrides" in r else {})})
+    json.dump({"format": "caps-typing", "version": 1, "forcefield": "OPLS-AA 2024 (Jorgensen)", "unknown_types": "untyped",
+               "description": "CAPS's OPLS-AA rules in opls_NNN names for the library built from Jorgensen's 2024 BOSS files "
+                              "(bench/typing/make_opls_gromacs_rules.py)", "rules": rules24},
+              open(os.path.join(OUT, "oplsaa2024.typing.json"), "w"), indent=1, ensure_ascii=False)
+    print(f"oplsaa2024: {len(rules24)} rules" + (f", types the file lacks: {sorted(lacking)}" if lacking else ""))
