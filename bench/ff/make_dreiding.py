@@ -10,11 +10,13 @@ built from them by the paper's rules:
   torsions   by the hybridisation of the two central atoms, cases (a)-(j), V divided over the torsions about the bond:
              CAPS's built-in rules ("torsion_rules": "dreiding1990")
   inversions planar centres (X_2, X_R) E = K (1 - cos psi), K = 40 kcal/mol, averaged over the three permutations
-  van der Waals  Lennard-Jones 12-6 with R0, D0; unlike pairs by geometric means of R0 and D0
-  hydrogen bonds  E = D_hb [5 (R_hb/R)^12 - 6 (R_hb/R)^10] cos^4 theta, D_hb 4.0 kcal/mol, R_hb 2.75 A (with charges)
+  van der Waals  Lennard-Jones 12-6 with R0, D0; unlike pairs: D0 by the geometric, R0 by the arithmetic mean (eq. 36a with
+             36c, "for DREIDING we use (36a) with (36c) as defaults")
+  hydrogen bonds  E = D_hb [5 (R_hb/R)^12 - 6 (R_hb/R)^10] cos^4 theta, R_hb 2.75 A, D_hb 7.0 kcal/mol: Table V's value for
+             Gasteiger charges, CAPS's charges for DREIDING (4.0 with experimental charges, 9.0 without charges)
   1-2 and 1-3 interactions excluded, 1-4 kept in full; charges Gasteiger-Marsili (CAPS's)
 The typing rules (written beside it): element and hybridisation as the paper defines its labels (_3 tetrahedral,
-_R resonant, _2 trigonal, _1 linear), H___A the hydrogen of a hydrogen bond (on N or O).
+_R resonant, _2 trigonal, _1 linear), H__HB the hydrogen of a hydrogen bond (on N or O).
 
 usage: make_dreiding.py [DATA_DIR]
 """
@@ -27,8 +29,8 @@ REF = "S. L. Mayo, B. D. Olafson, W. A. Goddard III, J. Phys. Chem. 94, 8897 (19
 # Table I: type, element, mass, R (A), theta (deg), R0 (A), D0 (kcal/mol)
 TABLE = [
     ("H_", "H", 1.008, 0.330, 180.0, 3.195, 0.0152),
-    ("H___A", "H", 1.008, 0.330, 180.0, 3.195, 0.0001),
-    ("H___b", "H", 1.008, 0.510, 90.0, 3.195, 0.0152),
+    ("H__HB", "H", 1.008, 0.330, 180.0, 3.195, 0.0001),
+    ("H_b", "H", 1.008, 0.510, 90.0, 3.195, 0.0152),
     ("B_3", "B", 10.81, 0.880, 109.471, 4.02, 0.095),
     ("B_2", "B", 10.81, 0.790, 120.0, 4.02, 0.095),
     ("C_3", "C", 12.011, 0.770, 109.471, 3.8983, 0.0951),
@@ -87,22 +89,25 @@ doc = {"format": "caps-forcefield", "format_version": 1, "name": "DREIDING (Mayo
        "references": [REF], "units": "real",
        "styles": {"pair": "lj/cut/coul/long", "bond": "harmonic", "angle": "cosine/squared", "dihedral": "charmm", "improper": "umbrella",
                   "special": "dreiding"},
-       "mixing": "geometric", "special_lj": [0, 0, 1], "special_coul": [0, 0, 1], "cutoff": 10, "torsion_rules": "dreiding1990",
+       "mixing": "arithmetic", "special_lj": [0, 0, 1], "special_coul": [0, 0, 1], "cutoff": 10, "torsion_rules": "dreiding1990",
        "improper_order": "center1_sorted", "improper_max_neighbours": 3, "equivalence": "replace",
        "hbonds": {"style": "dreiding/lj", "power": 4, "inner": 6.0, "outer": 6.5, "angle": 90,
-                  "source": REF + ": E_hb = D_hb [5 (R_hb/R)^12 - 6 (R_hb/R)^10] cos^4 theta, D_hb 4.0 kcal/mol, R_hb 2.75 A (with charges)",
-                  "terms": [{"donor": d, "acceptor": a, "hydrogen": "H___A", "eps": 4.0, "sigma": 2.75, "n": 4}
+                  "source": REF + ": E_hb = D_hb [5 (R_hb/R)^12 - 6 (R_hb/R)^10] cos^4 theta, D_hb 7.0 kcal/mol (Table V, Gasteiger charges), R_hb 2.75 A",
+                  "terms": [{"donor": d, "acceptor": a, "hydrogen": "H__HB", "eps": 7.0, "sigma": 2.75, "n": 4}
                             for d in ("N_*", "O_*") for a in ("N_*", "O_*")]},
        "atom_types": types, "pairs": pairs, "bonds": bonds, "angles": angles, "dihedrals": [], "impropers": impropers,
-       "notes": ["built by CAPS (bench/ff/make_dreiding.py) from the paper's Table I and rules"],
+       "notes": ["built by CAPS (bench/ff/make_dreiding.py) from the paper's Tables I-V and rules (read from the page images)",
+                 "type names as Table I prints them (H__HB, H_b)",
+                 "hydrogen bonds D_hb 7.0 kcal/mol for Gasteiger charges (Table V); with other charges use 4.0 (experimental) or 9.0 (none)",
+                 "DREIDING/A (Tables VI, VII), DREIDING/X6 and the implicit-hydrogen (united-atom) types C_R1, C_31-C_34 are not written"],
        "version": "1990", "typing": "../typing/dreiding1990.typing.json"}
 json.dump(doc, open(os.path.join(DATA, "forcefields", "dreiding1990.json"), "w"), indent=1)
 
 R = []
 def add(t, p, s, d):
     R.append({"type": t, "smarts": s, "priority": p, "description": d})
-add("H_", 0, "[#1]", "hydrogen"); add("H___A", 2, "[H][#7,#8]", "hydrogen-bond hydrogen (on N or O)")
-add("H___b", 3, "[H;D2]([#5])[#5]", "bridging hydrogen (diborane)")
+add("H_", 0, "[#1]", "hydrogen"); add("H__HB", 2, "[H][#7,#8]", "hydrogen-bond hydrogen (on N or O)")
+add("H_b", 3, "[H;D2]([#5])[#5]", "bridging hydrogen (diborane)")
 add("B_3", 0, "[#5X4]", "tetrahedral B"); add("B_2", 0, "[#5X3]", "trigonal B")
 add("C_3", 0, "[#6X4]", "tetrahedral C"); add("C_2", 0, "[#6X3]", "trigonal C"); add("C_1", 0, "[#6X2]", "linear C")
 add("C_R", 1, "[c]", "resonant (aromatic) C")
@@ -116,6 +121,6 @@ for t, z in (("Al3", 13), ("Si3", 14), ("P_3", 15), ("S_3", 16), ("Ga3", 31), ("
     add(t, 0, f"[#{z}]", t)
 json.dump({"format": "caps-typing", "version": 1, "forcefield": "DREIDING (Mayo 1990)", "unknown_types": "untyped",
            "description": "CAPS rules for DREIDING's labels as the paper defines them: element and hybridisation (_3 tetrahedral, "
-                          "_R resonant, _2 trigonal, _1 linear), H___A the hydrogen of a hydrogen bond (bench/ff/make_dreiding.py)",
+                          "_R resonant, _2 trigonal, _1 linear), H__HB the hydrogen of a hydrogen bond (bench/ff/make_dreiding.py)",
            "rules": R}, open(os.path.join(DATA, "typing", "dreiding1990.typing.json"), "w"), indent=1)
 print(f"dreiding1990: {len(types)} types, {len(bonds)} bonds, {len(angles)} angles; {len(R)} typing rules")

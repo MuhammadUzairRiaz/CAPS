@@ -1999,7 +1999,12 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
   auto dreiding_rule = [&](uint32_t i, uint32_t j, uint32_t k, uint32_t l, double& V, int& nn, double& phi0) -> char {
     auto hyb = [&](uint32_t a) -> char {
       const auto u = T[a].find('_');
-      if (u == std::string::npos) return '3';   // NH4, SO …: sp3 centres
+      if (u == std::string::npos) {
+        // (g) a halogen or a metal (Cl, Br, Na, Ca, Fe, Zn) takes no torsion; Al3, Si3 ... (no underscore) are sp3 centres
+        static const std::set<int> none = {9, 17, 35, 53, 3, 11, 19, 37, 55, 4, 12, 20, 38, 56, 26, 30};
+        if (none.count(s.atoms[a].element)) return '\0';
+        return '3';   // NH4, SO …: sp3 centres
+      }
       const char c = u + 1 < T[a].size() ? T[a][u + 1] : '\0';
       return c == '1' || c == '2' || c == '3' || c == 'R' ? c : '\0';   // H_, H__HB: monovalent
     };

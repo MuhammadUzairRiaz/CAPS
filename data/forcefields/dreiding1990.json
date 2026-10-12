@@ -15,7 +15,7 @@
   "improper": "umbrella",
   "special": "dreiding"
  },
- "mixing": "geometric",
+ "mixing": "arithmetic",
  "special_lj": [
   0,
   0,
@@ -37,37 +37,37 @@
   "inner": 6.0,
   "outer": 6.5,
   "angle": 90,
-  "source": "S. L. Mayo, B. D. Olafson, W. A. Goddard III, J. Phys. Chem. 94, 8897 (1990): E_hb = D_hb [5 (R_hb/R)^12 - 6 (R_hb/R)^10] cos^4 theta, D_hb 4.0 kcal/mol, R_hb 2.75 A (with charges)",
+  "source": "S. L. Mayo, B. D. Olafson, W. A. Goddard III, J. Phys. Chem. 94, 8897 (1990): E_hb = D_hb [5 (R_hb/R)^12 - 6 (R_hb/R)^10] cos^4 theta, D_hb 7.0 kcal/mol (Table V, Gasteiger charges), R_hb 2.75 A",
   "terms": [
    {
     "donor": "N_*",
     "acceptor": "N_*",
-    "hydrogen": "H___A",
-    "eps": 4.0,
+    "hydrogen": "H__HB",
+    "eps": 7.0,
     "sigma": 2.75,
     "n": 4
    },
    {
     "donor": "N_*",
     "acceptor": "O_*",
-    "hydrogen": "H___A",
-    "eps": 4.0,
+    "hydrogen": "H__HB",
+    "eps": 7.0,
     "sigma": 2.75,
     "n": 4
    },
    {
     "donor": "O_*",
     "acceptor": "N_*",
-    "hydrogen": "H___A",
-    "eps": 4.0,
+    "hydrogen": "H__HB",
+    "eps": 7.0,
     "sigma": 2.75,
     "n": 4
    },
    {
     "donor": "O_*",
     "acceptor": "O_*",
-    "hydrogen": "H___A",
-    "eps": 4.0,
+    "hydrogen": "H__HB",
+    "eps": 7.0,
     "sigma": 2.75,
     "n": 4
    }
@@ -81,16 +81,16 @@
    "description": "DREIDING H_: R 0.33 A, theta 180.0, R0 3.195 A, D0 0.0152 kcal/mol"
   },
   {
-   "name": "H___A",
+   "name": "H__HB",
    "element": "H",
    "mass": 1.008,
-   "description": "DREIDING H___A: R 0.33 A, theta 180.0, R0 3.195 A, D0 0.0001 kcal/mol"
+   "description": "DREIDING H__HB: R 0.33 A, theta 180.0, R0 3.195 A, D0 0.0001 kcal/mol"
   },
   {
-   "name": "H___b",
+   "name": "H_b",
    "element": "H",
    "mass": 1.008,
-   "description": "DREIDING H___b: R 0.51 A, theta 90.0, R0 3.195 A, D0 0.0152 kcal/mol"
+   "description": "DREIDING H_b: R 0.51 A, theta 90.0, R0 3.195 A, D0 0.0152 kcal/mol"
   },
   {
    "name": "B_3",
@@ -309,9 +309,9 @@
    ]
   },
   {
-   "name": "H___A",
+   "name": "H__HB",
    "match": [
-    "H___A"
+    "H__HB"
    ],
    "params": [
     0.0001,
@@ -319,9 +319,9 @@
    ]
   },
   {
-   "name": "H___b",
+   "name": "H_b",
    "match": [
-    "H___b"
+    "H_b"
    ],
    "params": [
     0.0152,
@@ -683,10 +683,10 @@
    ]
   },
   {
-   "name": "H_-H___A",
+   "name": "H_-H__HB",
    "match": [
     "H_",
-    "H___A"
+    "H__HB"
    ],
    "style": "harmonic/order",
    "params": [
@@ -695,10 +695,10 @@
    ]
   },
   {
-   "name": "H_-H___b",
+   "name": "H_-H_b",
    "match": [
     "H_",
-    "H___b"
+    "H_b"
    ],
    "style": "harmonic/order",
    "params": [
@@ -1115,10 +1115,10 @@
    ]
   },
   {
-   "name": "H___A-H___A",
+   "name": "H__HB-H__HB",
    "match": [
-    "H___A",
-    "H___A"
+    "H__HB",
+    "H__HB"
    ],
    "style": "harmonic/order",
    "params": [
@@ -1127,10 +1127,10 @@
    ]
   },
   {
-   "name": "H___A-H___b",
+   "name": "H__HB-H_b",
    "match": [
-    "H___A",
-    "H___b"
+    "H__HB",
+    "H_b"
    ],
    "style": "harmonic/order",
    "params": [
@@ -1139,9 +1139,9 @@
    ]
   },
   {
-   "name": "H___A-B_3",
+   "name": "H__HB-B_3",
    "match": [
-    "H___A",
+    "H__HB",
     "B_3"
    ],
    "style": "harmonic/order",
@@ -1151,9 +1151,9 @@
    ]
   },
   {
-   "name": "H___A-B_2",
+   "name": "H__HB-B_2",
    "match": [
-    "H___A",
+    "H__HB",
     "B_2"
    ],
    "style": "harmonic/order",
@@ -1163,9 +1163,9 @@
    ]
   },
   {
-   "name": "H___A-C_3",
+   "name": "H__HB-C_3",
    "match": [
-    "H___A",
+    "H__HB",
     "C_3"
    ],
    "style": "harmonic/order",
@@ -1175,9 +1175,9 @@
    ]
   },
   {
-   "name": "H___A-C_R",
+   "name": "H__HB-C_R",
    "match": [
-    "H___A",
+    "H__HB",
     "C_R"
    ],
    "style": "harmonic/order",
@@ -1187,9 +1187,9 @@
    ]
   },
   {
-   "name": "H___A-C_2",
+   "name": "H__HB-C_2",
    "match": [
-    "H___A",
+    "H__HB",
     "C_2"
    ],
    "style": "harmonic/order",
@@ -1199,9 +1199,9 @@
    ]
   },
   {
-   "name": "H___A-C_1",
+   "name": "H__HB-C_1",
    "match": [
-    "H___A",
+    "H__HB",
     "C_1"
    ],
    "style": "harmonic/order",
@@ -1211,9 +1211,9 @@
    ]
   },
   {
-   "name": "H___A-N_3",
+   "name": "H__HB-N_3",
    "match": [
-    "H___A",
+    "H__HB",
     "N_3"
    ],
    "style": "harmonic/order",
@@ -1223,9 +1223,9 @@
    ]
   },
   {
-   "name": "H___A-N_R",
+   "name": "H__HB-N_R",
    "match": [
-    "H___A",
+    "H__HB",
     "N_R"
    ],
    "style": "harmonic/order",
@@ -1235,9 +1235,9 @@
    ]
   },
   {
-   "name": "H___A-N_2",
+   "name": "H__HB-N_2",
    "match": [
-    "H___A",
+    "H__HB",
     "N_2"
    ],
    "style": "harmonic/order",
@@ -1247,9 +1247,9 @@
    ]
   },
   {
-   "name": "H___A-N_1",
+   "name": "H__HB-N_1",
    "match": [
-    "H___A",
+    "H__HB",
     "N_1"
    ],
    "style": "harmonic/order",
@@ -1259,9 +1259,9 @@
    ]
   },
   {
-   "name": "H___A-O_3",
+   "name": "H__HB-O_3",
    "match": [
-    "H___A",
+    "H__HB",
     "O_3"
    ],
    "style": "harmonic/order",
@@ -1271,9 +1271,9 @@
    ]
   },
   {
-   "name": "H___A-O_R",
+   "name": "H__HB-O_R",
    "match": [
-    "H___A",
+    "H__HB",
     "O_R"
    ],
    "style": "harmonic/order",
@@ -1283,9 +1283,9 @@
    ]
   },
   {
-   "name": "H___A-O_2",
+   "name": "H__HB-O_2",
    "match": [
-    "H___A",
+    "H__HB",
     "O_2"
    ],
    "style": "harmonic/order",
@@ -1295,9 +1295,9 @@
    ]
   },
   {
-   "name": "H___A-O_1",
+   "name": "H__HB-O_1",
    "match": [
-    "H___A",
+    "H__HB",
     "O_1"
    ],
    "style": "harmonic/order",
@@ -1307,9 +1307,9 @@
    ]
   },
   {
-   "name": "H___A-F_",
+   "name": "H__HB-F_",
    "match": [
-    "H___A",
+    "H__HB",
     "F_"
    ],
    "style": "harmonic/order",
@@ -1319,9 +1319,9 @@
    ]
   },
   {
-   "name": "H___A-Al3",
+   "name": "H__HB-Al3",
    "match": [
-    "H___A",
+    "H__HB",
     "Al3"
    ],
    "style": "harmonic/order",
@@ -1331,9 +1331,9 @@
    ]
   },
   {
-   "name": "H___A-Si3",
+   "name": "H__HB-Si3",
    "match": [
-    "H___A",
+    "H__HB",
     "Si3"
    ],
    "style": "harmonic/order",
@@ -1343,9 +1343,9 @@
    ]
   },
   {
-   "name": "H___A-P_3",
+   "name": "H__HB-P_3",
    "match": [
-    "H___A",
+    "H__HB",
     "P_3"
    ],
    "style": "harmonic/order",
@@ -1355,9 +1355,9 @@
    ]
   },
   {
-   "name": "H___A-S_3",
+   "name": "H__HB-S_3",
    "match": [
-    "H___A",
+    "H__HB",
     "S_3"
    ],
    "style": "harmonic/order",
@@ -1367,9 +1367,9 @@
    ]
   },
   {
-   "name": "H___A-Cl",
+   "name": "H__HB-Cl",
    "match": [
-    "H___A",
+    "H__HB",
     "Cl"
    ],
    "style": "harmonic/order",
@@ -1379,9 +1379,9 @@
    ]
   },
   {
-   "name": "H___A-Ga3",
+   "name": "H__HB-Ga3",
    "match": [
-    "H___A",
+    "H__HB",
     "Ga3"
    ],
    "style": "harmonic/order",
@@ -1391,9 +1391,9 @@
    ]
   },
   {
-   "name": "H___A-Ge3",
+   "name": "H__HB-Ge3",
    "match": [
-    "H___A",
+    "H__HB",
     "Ge3"
    ],
    "style": "harmonic/order",
@@ -1403,9 +1403,9 @@
    ]
   },
   {
-   "name": "H___A-As3",
+   "name": "H__HB-As3",
    "match": [
-    "H___A",
+    "H__HB",
     "As3"
    ],
    "style": "harmonic/order",
@@ -1415,9 +1415,9 @@
    ]
   },
   {
-   "name": "H___A-Se3",
+   "name": "H__HB-Se3",
    "match": [
-    "H___A",
+    "H__HB",
     "Se3"
    ],
    "style": "harmonic/order",
@@ -1427,9 +1427,9 @@
    ]
   },
   {
-   "name": "H___A-Br",
+   "name": "H__HB-Br",
    "match": [
-    "H___A",
+    "H__HB",
     "Br"
    ],
    "style": "harmonic/order",
@@ -1439,9 +1439,9 @@
    ]
   },
   {
-   "name": "H___A-In3",
+   "name": "H__HB-In3",
    "match": [
-    "H___A",
+    "H__HB",
     "In3"
    ],
    "style": "harmonic/order",
@@ -1451,9 +1451,9 @@
    ]
   },
   {
-   "name": "H___A-Sn3",
+   "name": "H__HB-Sn3",
    "match": [
-    "H___A",
+    "H__HB",
     "Sn3"
    ],
    "style": "harmonic/order",
@@ -1463,9 +1463,9 @@
    ]
   },
   {
-   "name": "H___A-Sb3",
+   "name": "H__HB-Sb3",
    "match": [
-    "H___A",
+    "H__HB",
     "Sb3"
    ],
    "style": "harmonic/order",
@@ -1475,9 +1475,9 @@
    ]
   },
   {
-   "name": "H___A-Te3",
+   "name": "H__HB-Te3",
    "match": [
-    "H___A",
+    "H__HB",
     "Te3"
    ],
    "style": "harmonic/order",
@@ -1487,9 +1487,9 @@
    ]
   },
   {
-   "name": "H___A-I_",
+   "name": "H__HB-I_",
    "match": [
-    "H___A",
+    "H__HB",
     "I_"
    ],
    "style": "harmonic/order",
@@ -1499,9 +1499,9 @@
    ]
   },
   {
-   "name": "H___A-Na",
+   "name": "H__HB-Na",
    "match": [
-    "H___A",
+    "H__HB",
     "Na"
    ],
    "style": "harmonic/order",
@@ -1511,9 +1511,9 @@
    ]
   },
   {
-   "name": "H___A-Ca",
+   "name": "H__HB-Ca",
    "match": [
-    "H___A",
+    "H__HB",
     "Ca"
    ],
    "style": "harmonic/order",
@@ -1523,9 +1523,9 @@
    ]
   },
   {
-   "name": "H___A-Fe",
+   "name": "H__HB-Fe",
    "match": [
-    "H___A",
+    "H__HB",
     "Fe"
    ],
    "style": "harmonic/order",
@@ -1535,9 +1535,9 @@
    ]
   },
   {
-   "name": "H___A-Zn",
+   "name": "H__HB-Zn",
    "match": [
-    "H___A",
+    "H__HB",
     "Zn"
    ],
    "style": "harmonic/order",
@@ -1547,10 +1547,10 @@
    ]
   },
   {
-   "name": "H___b-H___b",
+   "name": "H_b-H_b",
    "match": [
-    "H___b",
-    "H___b"
+    "H_b",
+    "H_b"
    ],
    "style": "harmonic/order",
    "params": [
@@ -1559,9 +1559,9 @@
    ]
   },
   {
-   "name": "H___b-B_3",
+   "name": "H_b-B_3",
    "match": [
-    "H___b",
+    "H_b",
     "B_3"
    ],
    "style": "harmonic/order",
@@ -1571,9 +1571,9 @@
    ]
   },
   {
-   "name": "H___b-B_2",
+   "name": "H_b-B_2",
    "match": [
-    "H___b",
+    "H_b",
     "B_2"
    ],
    "style": "harmonic/order",
@@ -1583,9 +1583,9 @@
    ]
   },
   {
-   "name": "H___b-C_3",
+   "name": "H_b-C_3",
    "match": [
-    "H___b",
+    "H_b",
     "C_3"
    ],
    "style": "harmonic/order",
@@ -1595,9 +1595,9 @@
    ]
   },
   {
-   "name": "H___b-C_R",
+   "name": "H_b-C_R",
    "match": [
-    "H___b",
+    "H_b",
     "C_R"
    ],
    "style": "harmonic/order",
@@ -1607,9 +1607,9 @@
    ]
   },
   {
-   "name": "H___b-C_2",
+   "name": "H_b-C_2",
    "match": [
-    "H___b",
+    "H_b",
     "C_2"
    ],
    "style": "harmonic/order",
@@ -1619,9 +1619,9 @@
    ]
   },
   {
-   "name": "H___b-C_1",
+   "name": "H_b-C_1",
    "match": [
-    "H___b",
+    "H_b",
     "C_1"
    ],
    "style": "harmonic/order",
@@ -1631,9 +1631,9 @@
    ]
   },
   {
-   "name": "H___b-N_3",
+   "name": "H_b-N_3",
    "match": [
-    "H___b",
+    "H_b",
     "N_3"
    ],
    "style": "harmonic/order",
@@ -1643,9 +1643,9 @@
    ]
   },
   {
-   "name": "H___b-N_R",
+   "name": "H_b-N_R",
    "match": [
-    "H___b",
+    "H_b",
     "N_R"
    ],
    "style": "harmonic/order",
@@ -1655,9 +1655,9 @@
    ]
   },
   {
-   "name": "H___b-N_2",
+   "name": "H_b-N_2",
    "match": [
-    "H___b",
+    "H_b",
     "N_2"
    ],
    "style": "harmonic/order",
@@ -1667,9 +1667,9 @@
    ]
   },
   {
-   "name": "H___b-N_1",
+   "name": "H_b-N_1",
    "match": [
-    "H___b",
+    "H_b",
     "N_1"
    ],
    "style": "harmonic/order",
@@ -1679,9 +1679,9 @@
    ]
   },
   {
-   "name": "H___b-O_3",
+   "name": "H_b-O_3",
    "match": [
-    "H___b",
+    "H_b",
     "O_3"
    ],
    "style": "harmonic/order",
@@ -1691,9 +1691,9 @@
    ]
   },
   {
-   "name": "H___b-O_R",
+   "name": "H_b-O_R",
    "match": [
-    "H___b",
+    "H_b",
     "O_R"
    ],
    "style": "harmonic/order",
@@ -1703,9 +1703,9 @@
    ]
   },
   {
-   "name": "H___b-O_2",
+   "name": "H_b-O_2",
    "match": [
-    "H___b",
+    "H_b",
     "O_2"
    ],
    "style": "harmonic/order",
@@ -1715,9 +1715,9 @@
    ]
   },
   {
-   "name": "H___b-O_1",
+   "name": "H_b-O_1",
    "match": [
-    "H___b",
+    "H_b",
     "O_1"
    ],
    "style": "harmonic/order",
@@ -1727,9 +1727,9 @@
    ]
   },
   {
-   "name": "H___b-F_",
+   "name": "H_b-F_",
    "match": [
-    "H___b",
+    "H_b",
     "F_"
    ],
    "style": "harmonic/order",
@@ -1739,9 +1739,9 @@
    ]
   },
   {
-   "name": "H___b-Al3",
+   "name": "H_b-Al3",
    "match": [
-    "H___b",
+    "H_b",
     "Al3"
    ],
    "style": "harmonic/order",
@@ -1751,9 +1751,9 @@
    ]
   },
   {
-   "name": "H___b-Si3",
+   "name": "H_b-Si3",
    "match": [
-    "H___b",
+    "H_b",
     "Si3"
    ],
    "style": "harmonic/order",
@@ -1763,9 +1763,9 @@
    ]
   },
   {
-   "name": "H___b-P_3",
+   "name": "H_b-P_3",
    "match": [
-    "H___b",
+    "H_b",
     "P_3"
    ],
    "style": "harmonic/order",
@@ -1775,9 +1775,9 @@
    ]
   },
   {
-   "name": "H___b-S_3",
+   "name": "H_b-S_3",
    "match": [
-    "H___b",
+    "H_b",
     "S_3"
    ],
    "style": "harmonic/order",
@@ -1787,9 +1787,9 @@
    ]
   },
   {
-   "name": "H___b-Cl",
+   "name": "H_b-Cl",
    "match": [
-    "H___b",
+    "H_b",
     "Cl"
    ],
    "style": "harmonic/order",
@@ -1799,9 +1799,9 @@
    ]
   },
   {
-   "name": "H___b-Ga3",
+   "name": "H_b-Ga3",
    "match": [
-    "H___b",
+    "H_b",
     "Ga3"
    ],
    "style": "harmonic/order",
@@ -1811,9 +1811,9 @@
    ]
   },
   {
-   "name": "H___b-Ge3",
+   "name": "H_b-Ge3",
    "match": [
-    "H___b",
+    "H_b",
     "Ge3"
    ],
    "style": "harmonic/order",
@@ -1823,9 +1823,9 @@
    ]
   },
   {
-   "name": "H___b-As3",
+   "name": "H_b-As3",
    "match": [
-    "H___b",
+    "H_b",
     "As3"
    ],
    "style": "harmonic/order",
@@ -1835,9 +1835,9 @@
    ]
   },
   {
-   "name": "H___b-Se3",
+   "name": "H_b-Se3",
    "match": [
-    "H___b",
+    "H_b",
     "Se3"
    ],
    "style": "harmonic/order",
@@ -1847,9 +1847,9 @@
    ]
   },
   {
-   "name": "H___b-Br",
+   "name": "H_b-Br",
    "match": [
-    "H___b",
+    "H_b",
     "Br"
    ],
    "style": "harmonic/order",
@@ -1859,9 +1859,9 @@
    ]
   },
   {
-   "name": "H___b-In3",
+   "name": "H_b-In3",
    "match": [
-    "H___b",
+    "H_b",
     "In3"
    ],
    "style": "harmonic/order",
@@ -1871,9 +1871,9 @@
    ]
   },
   {
-   "name": "H___b-Sn3",
+   "name": "H_b-Sn3",
    "match": [
-    "H___b",
+    "H_b",
     "Sn3"
    ],
    "style": "harmonic/order",
@@ -1883,9 +1883,9 @@
    ]
   },
   {
-   "name": "H___b-Sb3",
+   "name": "H_b-Sb3",
    "match": [
-    "H___b",
+    "H_b",
     "Sb3"
    ],
    "style": "harmonic/order",
@@ -1895,9 +1895,9 @@
    ]
   },
   {
-   "name": "H___b-Te3",
+   "name": "H_b-Te3",
    "match": [
-    "H___b",
+    "H_b",
     "Te3"
    ],
    "style": "harmonic/order",
@@ -1907,9 +1907,9 @@
    ]
   },
   {
-   "name": "H___b-I_",
+   "name": "H_b-I_",
    "match": [
-    "H___b",
+    "H_b",
     "I_"
    ],
    "style": "harmonic/order",
@@ -1919,9 +1919,9 @@
    ]
   },
   {
-   "name": "H___b-Na",
+   "name": "H_b-Na",
    "match": [
-    "H___b",
+    "H_b",
     "Na"
    ],
    "style": "harmonic/order",
@@ -1931,9 +1931,9 @@
    ]
   },
   {
-   "name": "H___b-Ca",
+   "name": "H_b-Ca",
    "match": [
-    "H___b",
+    "H_b",
     "Ca"
    ],
    "style": "harmonic/order",
@@ -1943,9 +1943,9 @@
    ]
   },
   {
-   "name": "H___b-Fe",
+   "name": "H_b-Fe",
    "match": [
-    "H___b",
+    "H_b",
     "Fe"
    ],
    "style": "harmonic/order",
@@ -1955,9 +1955,9 @@
    ]
   },
   {
-   "name": "H___b-Zn",
+   "name": "H_b-Zn",
    "match": [
-    "H___b",
+    "H_b",
     "Zn"
    ],
    "style": "harmonic/order",
@@ -9122,10 +9122,10 @@
    "comment": "linear centre: K (1 + cos theta)"
   },
   {
-   "name": "X-H___A-X",
+   "name": "X-H__HB-X",
    "match": [
     "*",
-    "H___A",
+    "H__HB",
     "*"
    ],
    "style": "cosine",
@@ -9135,10 +9135,10 @@
    "comment": "linear centre: K (1 + cos theta)"
   },
   {
-   "name": "X-H___b-X",
+   "name": "X-H_b-X",
    "match": [
     "*",
-    "H___b",
+    "H_b",
     "*"
    ],
    "style": "cosine/squared",
@@ -9652,7 +9652,10 @@
   }
  ],
  "notes": [
-  "built by CAPS (bench/ff/make_dreiding.py) from the paper's Table I and rules"
+  "built by CAPS (bench/ff/make_dreiding.py) from the paper's Tables I-V and rules (read from the page images)",
+  "type names as Table I prints them (H__HB, H_b)",
+  "hydrogen bonds D_hb 7.0 kcal/mol for Gasteiger charges (Table V); with other charges use 4.0 (experimental) or 9.0 (none)",
+  "DREIDING/A (Tables VI, VII), DREIDING/X6 and the implicit-hydrogen (united-atom) types C_R1, C_31-C_34 are not written"
  ],
  "version": "1990",
  "typing": "../typing/dreiding1990.typing.json"
