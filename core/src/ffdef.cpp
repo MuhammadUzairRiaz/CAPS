@@ -1820,6 +1820,17 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
         if (!r) {
           if (def.angles_if_defined) ++no_angle;
           else missing("angle " + shown(Na, {i, j, k}));
+          // class II with separate cross-term rules: the angle's own terms zero (allowed missing), the bond-bond and
+          // bond-angle terms the file gives kept, as msi2lmp -i writes them
+          if (allow_missing && !def.cross_rules.empty() && def.angle_style == "class2") {
+            bool rb = false, ra = false;
+            const auto m = cross_params(cross_lookup("bb", Na, {i, j, k}, &rb), 1);
+            const auto na = cross_params(cross_lookup("ba", Na, {i, j, k}, &ra), 2);
+            if (m[0] != 0 || na[0] != 0 || na[1] != 0) {
+              const double r1 = r0_of(i, j), r2 = r0_of(j, k);
+              ff.angles2.push_back({i, j, k, 0.0, 0, 0, 0, m[0], r1, r2, ra ? na[1] : na[0], ra ? na[0] : na[1], r1, r2});
+            }
+          }
           continue;
         }
         const std::string st = r->style.empty() ? def.angle_style : r->style;
@@ -1968,6 +1979,37 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
           }
           if (!r) {
             if (!def.torsions_if_defined) missing("dihedral " + shown(Nd, {i, j, k, l}));
+            // class II with separate cross-term rules: missing torsion terms are zero (allowed missing), the cross terms
+            // the file does give for the quadruple stay, as msi2lmp -i writes them
+            if (allow_missing && !def.cross_rules.empty() && def.dihedral_style == "class2") {
+              Class2Dihedral d{};
+              d.i = i; d.j = j; d.k = k; d.l = l;
+              bool r_ = false, re = false, rt = false;
+              const auto A = cross_params(cross_lookup("mbt", Nd, {i, j, k, l}, &r_), 3);
+              const auto B = cross_params(cross_lookup("ebt", Nd, {i, j, k, l}, &re), 6);
+              const auto D = cross_params(cross_lookup("at", Nd, {i, j, k, l}, &rt), 6);
+              const auto M = cross_params(cross_lookup("aat", Nd, {i, j, k, l}, &r_), 1);
+              const auto N13 = cross_params(cross_lookup("bb13", Nd, {i, j, k, l}, &r_), 1);
+              bool any = M[0] != 0 || N13[0] != 0;
+              for (int q = 0; q < 3; ++q) {
+                d.mbt[q] = A[q];
+                d.ebt_b[q] = re ? B[3 + q] : B[q];
+                d.ebt_c[q] = re ? B[q] : B[3 + q];
+                d.at_d[q] = rt ? D[3 + q] : D[q];
+                d.at_e[q] = rt ? D[q] : D[3 + q];
+                any = any || A[q] != 0 || B[q] != 0 || B[3 + q] != 0 || D[q] != 0 || D[3 + q] != 0;
+              }
+              if (any) {
+                d.mbt_r2 = r0_of(j, k);
+                d.ebt_r1 = d.bb13_r1 = r0_of(i, j);
+                d.ebt_r3 = d.bb13_r3 = r0_of(k, l);
+                d.at_theta1 = d.aat_theta1 = t0_of(i, j, k);
+                d.at_theta2 = d.aat_theta2 = t0_of(j, k, l);
+                d.aat_m = M[0];
+                d.bb13_n = N13[0];
+                ff.dihedrals2.push_back(d);
+              }
+            }
             continue;
           }
           const std::string st = r->style.empty() ? def.dihedral_style : r->style;

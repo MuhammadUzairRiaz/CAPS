@@ -10,6 +10,10 @@ settings (Coulomb and van der Waals cut at 15 Å, special_bonds 0 0 1, no tail) 
 Known msi2lmp behaviour CAPS does not copy (reported, not counted as differences):
   · bond-bond_1_3 terms only for dihedrals with a type named cp… (COMPASS's aromatic c3a gets none from msi2lmp);
   · angle-angle terms of three-connected centres looked up by equivalence only when msi2lmp runs with -p 3;
+  · an angle-angle constant whose key msi2lmp matches backwards (find_match allows it, as for torsions): reversing
+    i j k l moves the centre from j to k, so an N-centred coupling takes a C-centred entry (pcff.frc's c c n c_1,
+    3.9738, for the amide N of N,N-dimethylacrylamide and N-vinylpyrrolidone, where c n c c_1 gives -5.1828);
+    CAPS keeps the centre second (reported as DIFFERS in eimp only);
   · angle-angle reference angles written θ_ijk, θ_kjl, θ_ijl, where LAMMPS improper class2 reads θ_ijk, θ_ijl, θ_kjl
     (CAPS writes LAMMPS's order; msi2lmp's file is put in LAMMPS's order before the comparison).
 
@@ -188,6 +192,65 @@ def cases():
 
 
 FRC = os.path.expanduser("~/lammps/tools/msi2lmp/frc_files")
+
+
+def angleangle_reversed(ref_path, caps_path, frc, ffjson):
+    """Whether every angle-angle constant where msi2lmp and CAPS differ is msi2lmp matching a 4-type key backwards (the
+    centre moved from second to third place): msi2lmp's value is an entry e of the .frc's #angle-angle section whose
+    reversed key (e3 e2 e1 e0) has the coupling's centre second and fits it, by own types or equivalences"""
+    import json as _json
+    eq = {t["name"]: t.get("equivalence", {}).get("improper", t["name"]) for t in _json.load(open(ffjson))["atom_types"]}
+    entries, on = [], False
+    for line in open(os.path.join(FRC, frc + ".frc"), errors="replace"):
+        if line.startswith("#angle-angle "):
+            on = True
+            continue
+        if line.startswith("#"):
+            on = False
+        w = line.split()
+        if on and len(w) >= 7 and re.match(r"^[\d.]+$", w[0]):
+            entries.append((tuple(w[2:6]), float(w[6])))
+
+    def read(path):
+        sec, aa, imp, lab, ty = None, {}, [], {}, {}
+        for raw in open(path):
+            l = raw.split("#")[0].strip()
+            if l and l[0].isalpha():
+                sec = l.split()[0]
+                continue
+            if not l:
+                continue
+            w = l.split()
+            if sec == "AngleAngle":
+                aa[int(w[0])] = [float(x) for x in w[1:4]]
+            elif sec == "Masses" and "#" in raw:
+                lab[int(w[0])] = raw.split("#")[1].split()[0]
+            elif sec == "Atoms":
+                ty[int(w[0])] = int(w[2])
+            elif sec == "Impropers":
+                t, i, j, k, l2 = (int(x) for x in w[1:6])
+                M1, M2, M3 = aa[t]
+                imp.append((j, frozenset((i, k, l2)), {k: (M1, i, l2), i: (M2, k, l2), l2: (M3, i, k)}))
+        return {(j, o): m for j, o, m in imp}, lab, ty
+
+    ra, la, ta = read(ref_path)
+    rc, lc, tc = read(caps_path)
+    name = lambda a: lc.get(tc[a], str(a))
+    bad = 0
+    for key, mr in ra.items():
+        mc = rc.get(key)
+        if mc is None:
+            return False, 0
+        j = key[0]
+        for sh, (v, o1, o2) in mr.items():
+            if abs(v - mc[sh][0]) <= 1e-3:
+                continue
+            fits = lambda e, quad: all(x in (n, eq.get(n, n)) for x, n in zip(e, quad))
+            want = [(name(o1), name(j), name(sh), name(o2)), (name(o2), name(j), name(sh), name(o1))]
+            if not any(abs(val - v) <= 1e-3 and any(fits(e[::-1], q) for q in want) for e, val in entries):
+                return False, 0
+            bad += 1
+    return True, bad
 POLY_FF = [("class1", "1", "cvff", "cvff-frc.json"), ("class2b", "2", "pcff", "pcff-frc.json"), ("class2a", "2", "compass_published", "compass-frc.json")]
 
 
@@ -248,13 +311,24 @@ def polymer_cases(src):
                   for _, t, _, _ in at]
             base = os.path.join(d, "oligomer")
             write_car_mdf(base, el, [label_of[t] for _, t, _, _ in at], [x[2] for x in at], [x[3] for x in at], bonds)
-            r = subprocess.run([MSI2LMP, "oligomer", "-c", c, "-p", "1", "-i", "-f", frc], cwd=d, capture_output=True, text=True,
+            # -p 3: msi2lmp then also looks the angle-angle terms of three-connected centres up by equivalence
+            r = subprocess.run([MSI2LMP, "oligomer", "-c", c, "-p", "3", "-i", "-f", frc], cwd=d, capture_output=True, text=True,
                                env=dict(os.environ, MSI2LMP_LIBRARY=FRC))
             ref = os.path.join(d, "oligomer.data")
             if not os.path.exists(ref):
                 out.append((label, None, "msi2lmp: " + ((r.stdout + r.stderr).strip().splitlines() or ["failed"])[-1][:150], "", "", "", [], []))
                 continue
-            out.append((label, ref, base + ".car", cls, ff, "boundary f f f", STYLES["class1" if cls == "class1" else "class2"], []))
+            # msi2lmp -i leaves a term the .frc's explicit tables lack at zero; CAPS would take Materials Studio's automatic
+            # parameters there: compared with the explicit tables only, missing terms zero on both sides
+            import json as _json
+            lib = _json.load(open(os.path.join(ROOT, "data", "forcefields", ff)))
+            for k in [k for k in lib if k.startswith("auto_")]:
+                lib.pop(k)
+            if "typing" in lib and not os.path.isabs(lib["typing"]):
+                lib["typing"] = os.path.normpath(os.path.join(ROOT, "data", "forcefields", lib["typing"]))
+            explicit = os.path.join(d, "explicit_" + ff)
+            _json.dump(lib, open(explicit, "w"))
+            out.append((label, ref, base + ".car", cls, explicit, "boundary f f f", STYLES["class1" if cls == "class1" else "class2"], ["--allow-missing"]))
     return out
 
 
@@ -336,6 +410,11 @@ def main():
         worst = max(abs(diff[k]) / max(1.0, abs(ge[k])) for k in TERMS)
         ok = worst < 1e-6
         why = ""
+        if not ok and cls != "class1" and max(abs(diff[k]) / max(1.0, abs(ge[k])) for k in TERMS if k != "eimp") < 1e-6 and "poly" in ref:
+            frc = {"class2b": "pcff", "class2a": "compass_published"}[cls]
+            okr, nrev = angleangle_reversed(ref, os.path.join(d, "caps.data"), frc, ffname)
+            if okr:
+                ok, why = True, f" · {nrev} angle-angle constants msi2lmp takes from a key matched backwards (its centre moved); CAPS keeps the centre"
         if not ok and cls == "class1" and max(abs(diff[k]) / max(1.0, abs(ge[k])) for k in TERMS if k not in ("edihed", "eimp")) < 1e-6:
             ok, why = explained(text, open(os.path.join(d, "caps.data")).read(), [t for _, t in sorted(atoms)])
             why = (" · " if ok else " · ") + why
