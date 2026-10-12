@@ -1508,7 +1508,7 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
           }
         } else {
           fr = lj(tp, r2, 1.0, ev);
-          ev -= lj_shift(tp);
+          if (!(prc2_[tp] > 0 && r2 > prc2_[tp])) ev -= lj_shift(tp);   // beyond a pair's own cut-off: nothing, not -shift
         }
         evdw += w * ev;
         const double ecoul0 = ecoul, fr0 = fr;
@@ -1817,7 +1817,7 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
           }
         } else {
           fr = lj(tp, dot(d, d), lj14, ev);
-          ev -= lj14 * lj_shift(tp);
+          if (!(prc2_[tp] > 0 && dot(d, d) > prc2_[tp])) ev -= lj14 * lj_shift(tp);
         }
         A[4] += ev;
         const Vec3 fj = d * fr;

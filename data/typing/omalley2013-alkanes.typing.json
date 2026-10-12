@@ -1,0 +1,61 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "All-atom alkanes in silicalite (O'Malley & Catlow 2013)",
+ "unknown_types": "untyped",
+ "bonds": "defined",
+ "description": "all-atom alkanes and the silicalite framework (bench/ff/make_zeolite_sorbates.py)",
+ "rules": [
+  {
+   "type": "C4_om",
+   "smarts": "[CX4H4]",
+   "priority": 0,
+   "description": "alkane methane C"
+  },
+  {
+   "type": "C3_om",
+   "smarts": "[CX4H3]",
+   "priority": 0,
+   "description": "alkane CH3 C"
+  },
+  {
+   "type": "C2_om",
+   "smarts": "[CX4H2]",
+   "priority": 0,
+   "description": "alkane CH2 C"
+  },
+  {
+   "type": "C1_om",
+   "smarts": "[CX4H1]",
+   "priority": 0,
+   "description": "alkane CH C"
+  },
+  {
+   "type": "C0_om",
+   "smarts": "[CX4H0;!$(C~[!#6;!#1])]",
+   "priority": 0,
+   "description": "alkane quaternary C"
+  },
+  {
+   "type": "H_om",
+   "smarts": "[#1][CX4]",
+   "priority": 0,
+   "description": "alkane H"
+  },
+  {
+   "type": "Si_om",
+   "smarts": "[#14]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "description": "framework Si"
+  },
+  {
+   "type": "O_om",
+   "smarts": "[#8]",
+   "priority": 0,
+   "description": "framework O"
+  }
+ ]
+}
