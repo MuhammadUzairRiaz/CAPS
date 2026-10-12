@@ -55,7 +55,7 @@ double ewald_total(const std::vector<double>& x, const std::vector<double>& q, d
 }  // namespace
 
 TEST(Kspace, FftMatchesTheDirectTransform) {
-  for (int k1 : {6, 7, 10, 36, 45, 50}) {
+  for (int k1 : {6, 7, 10, 14, 21, 35, 36, 45, 49, 50, 56}) {   // radix 7 alone, after 2, 3, 5 and twice
     const int k2 = 5, k3 = 4;
     std::mt19937 rng(3);
     std::uniform_real_distribution<double> U(-1, 1);

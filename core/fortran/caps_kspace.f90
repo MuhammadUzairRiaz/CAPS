@@ -19,7 +19,7 @@ module caps_fft
 
 contains
 
-  ! the smallest n' ≥ n whose prime factors are 2, 3, 5 and 7 (radix 7 runs through the generic butterfly)
+  ! the smallest n' ≥ n whose prime factors are 2, 3, 5 and 7
   pure integer function good_size(n) result(m)
     integer, intent(in) :: n
     integer :: k
@@ -36,8 +36,8 @@ contains
   end function good_size
 
   ! 1-D DFT: X(m) = Σ_k x(k) exp(sign·2πi·m·k/n), unnormalised, out of place (in → out). Mixed-radix decimation in
-  ! time with the structure of KISS FFT (M. Borgerding): factors 4, 2, 3, 5, … ; radix-2 and radix-4 butterflies
-  ! written out, others generic. tw(0:n-1) = exp(sign·2πi·j/n).
+  ! time with the structure of KISS FFT (M. Borgerding): factors 4, 2, 3, 5, 7, … ; radix 2, 3, 4, 5 and 7 butterflies
+  ! written out, other primes generic. tw(0:n-1) = exp(sign·2πi·j/n).
   recursive subroutine kf_work(out, ofs, x, ifs, fstride, pf, mm, lev, tw, n, sign)
     complex(c_double_complex), intent(inout) :: out(0:)
     complex(c_double_complex), intent(in) :: x(0:), tw(0:)
@@ -63,6 +63,8 @@ contains
       call bfly3(out, ofs, fstride, tw, m, n)
     case (5)
       call bfly5(out, ofs, fstride, tw, m, n)
+    case (7)
+      call bfly7(out, ofs, fstride, tw, m)
     case default
       call bfly_generic(out, ofs, fstride, tw, m, p, n)
     end select
@@ -161,6 +163,45 @@ contains
       f(o + u + 3 * m) = s11 - s12
     end do
   end subroutine bfly5
+
+  ! radix 7: w_j = exp(sign·2πi·j/7) = c_j + i s_j; with a_q = s_q + s_7−q and b_q = s_q − s_7−q,
+  ! X_k = s0 + Σ_q a_q c(qk) + i Σ_q b_q s(qk) and X_7−k the same with − i (c(j) = c(7 − j), s(j) = −s(7 − j))
+  subroutine bfly7(f, o, fs, tw, m)
+    complex(c_double_complex), intent(inout) :: f(0:)
+    complex(c_double_complex), intent(in) :: tw(0:)
+    integer, intent(in) :: o, fs, m
+    complex(c_double_complex) :: s0, s1, s2, s3, s4, s5, s6, a1, a2, a3, b1, b2, b3, r, t
+    real(c_double) :: c1, c2, c3, q1, q2, q3
+    integer :: u
+    c1 = real(tw(fs * m)); q1 = aimag(tw(fs * m))
+    c2 = real(tw(2 * fs * m)); q2 = aimag(tw(2 * fs * m))
+    c3 = real(tw(3 * fs * m)); q3 = aimag(tw(3 * fs * m))
+    do u = 0, m - 1
+      s0 = f(o + u)
+      s1 = f(o + u + m) * tw(u * fs)
+      s2 = f(o + u + 2 * m) * tw(2 * u * fs)
+      s3 = f(o + u + 3 * m) * tw(3 * u * fs)
+      s4 = f(o + u + 4 * m) * tw(4 * u * fs)
+      s5 = f(o + u + 5 * m) * tw(5 * u * fs)
+      s6 = f(o + u + 6 * m) * tw(6 * u * fs)
+      a1 = s1 + s6; b1 = s1 - s6
+      a2 = s2 + s5; b2 = s2 - s5
+      a3 = s3 + s4; b3 = s3 - s4
+      f(o + u) = s0 + a1 + a2 + a3
+      r = s0 + a1 * c1 + a2 * c2 + a3 * c3
+      t = b1 * q1 + b2 * q2 + b3 * q3
+      f(o + u + m) = r + cmplx(-aimag(t), real(t), c_double_complex)
+      f(o + u + 6 * m) = r - cmplx(-aimag(t), real(t), c_double_complex)
+      r = s0 + a1 * c2 + a2 * c3 + a3 * c1
+      t = b1 * q2 - b2 * q3 - b3 * q1
+      f(o + u + 2 * m) = r + cmplx(-aimag(t), real(t), c_double_complex)
+      f(o + u + 5 * m) = r - cmplx(-aimag(t), real(t), c_double_complex)
+      r = s0 + a1 * c3 + a2 * c1 + a3 * c2
+      t = b1 * q3 - b2 * q1 + b3 * q2
+      f(o + u + 3 * m) = r + cmplx(-aimag(t), real(t), c_double_complex)
+      f(o + u + 4 * m) = r - cmplx(-aimag(t), real(t), c_double_complex)
+    end do
+  end subroutine bfly7
 
   subroutine bfly_generic(f, o, fs, tw, m, p, n)
     complex(c_double_complex), intent(inout) :: f(0:)
