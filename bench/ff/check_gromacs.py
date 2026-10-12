@@ -63,6 +63,17 @@ CASES = [
     ("IFF 1.5 (CVFF) Na-montmorillonite (bonded clay layers, cvff impropers; PME)",
      ("file", os.path.expanduser("~/iff-ref/INTERFACE_FF_1_5/MODEL_DATABASE/CLAY_MINERALS/mont0_333_Na_15_cell.car")),
      "iff-cvff", "keep", PME + ["--cutoff", "9", "--no-tail"]),
+    # the libraries built from their original sources on this machine (bench/ff/open), on molecules CAPS builds itself
+    ("CHARMM36 (toppar) peptide GAFKW (vacuum; CMAP not represented)", ("peptide", "GAFKW"), "charmm36-prot-toppar", "gasteiger", []),
+    ("CHARMM22 (toppar) peptide GAFKW (vacuum)", ("peptide", "GAFKW"), "charmm22-prot-toppar", "gasteiger", []),
+    ("CGenFF (toppar) toluene (vacuum)", ("smiles", "Cc1ccccc1", os.path.join(FF, "cgenff-toppar.json")), "cgenff-toppar", "gasteiger", []),
+    ("CGenFF (toppar) N-methylacetamide (vacuum)", ("smiles", "CNC(C)=O", os.path.join(FF, "cgenff-toppar.json")), "cgenff-toppar", "gasteiger", []),
+    ("CHARMM36 lipids (toppar) short phosphatidylcholine (vacuum)", ("smiles", "C[N+](C)(C)CCOP(=O)([O-])OCC(OC(=O)CCC)COC(=O)CCC"),
+     "charmm36-lipid-toppar", "qeq", []),
+    ("CHARMM36 carbohydrates (toppar) beta-D-glucose (vacuum)", ("smiles", "OC[C@H]1O[C@@H](O)[C@H](O)[C@@H](O)[C@@H]1O"),
+     "charmm36-carb-toppar", "gasteiger", []),
+    ("CHARMM36 nucleic acids (toppar) thymidine (vacuum)", ("smiles", "CC1=CN([C@H]2C[C@H](O)[C@@H](CO)O2)C(=O)NC1=O"),
+     "charmm36-nucl-toppar", "gasteiger", []),
     ("PCFF polystyrene (class II: refused)", ("file", PS), "pcff", "types", []),
     ("UFF polystyrene (inversions: refused)", ("file", PS), "uff", "types", []),
 ]
@@ -109,6 +120,17 @@ def structure(src, base):
         subprocess.run([CAPS, "solvate", "-o", out, "--edge", src[1], "--solvent", "water", "--model", src[2], "--no-ions",
                         "--molecules", src[3], "--tolerance", "2.6"],
                        capture_output=True, check=True)
+        return out
+    if src[0] == "smiles":   # a molecule CAPS builds from SMILES
+        out = os.path.join(work, base + ".mol2")
+        # cleaned up with the force field under test (a raw embedding leaves steep 1-4 contacts that single-precision
+        # GROMACS cannot follow to 1e-5)
+        cmd = [CAPS, "build", src[1], "-o", out] + (["--ff", src[2]] if len(src) > 2 else [])
+        subprocess.run(cmd, capture_output=True, check=True)
+        return out
+    if src[0] == "peptide":   # a peptide CAPS builds from its sequence
+        out = os.path.join(work, base + ".pdb")
+        subprocess.run([CAPS, "peptide", src[1], "-o", out], capture_output=True, check=True)
         return out
     if src[0] == "nano":
         out = os.path.join(work, base + ".data")
