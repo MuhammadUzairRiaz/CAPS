@@ -232,6 +232,7 @@ public struct CapsMdOpts
     public int BoxAxes;           // ABI 36: bits 1 x, 2 y, 4 z (0 = all)
     public double EfieldX, EfieldY, EfieldZ;   // ABI 61: a uniform electric field on the partial charges, V/Å
     public int FullShape;                      // ABI 62: with BoxAnisotropic, the tilts relax too
+    public double Hmr;                         // ABI 68: hydrogens at this mass (u), taken from their bonded atoms; 0 off
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -268,6 +269,7 @@ public struct CapsEquilOpts
     public int ConstraintAlgorithm;   // 0 SHAKE, 1 LINCS
     public IntPtr InternalTarget;     // a target ⟨R²(n)⟩/(n⟨b²⟩) indexed by n (pinned by the caller for the run), or zero
     public int InternalTargetN;
+    public double Hmr;                // ABI 68: hydrogen mass repartitioning (u), 0 off
 }
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
