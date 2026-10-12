@@ -275,6 +275,7 @@ Layout build(const System& s, const ForceField& ff, const LammpsStyle& st = {}) 
       const int B = n == 1 ? 1 : (n % 2 ? -1 : 1);
       L.angles.add("cosine/periodic", num({a.a / 2}) + " " + std::to_string(B) + " " + std::to_string(n), {}, {a.i, a.j, a.k}, lab({a.i, a.j, a.k}));
     }
+    else if (a.form == 6) throw FieldError("the screened harmonic bend (DL_POLY shrm) has no LAMMPS style: export to DL_POLY, or run it in CAPS");
     else throw FieldError("angle form " + std::to_string(a.form) + " has no LAMMPS style");
   }
   // dihedrals: the Fourier terms of one atom quadruple make one dihedral_style fourier entry

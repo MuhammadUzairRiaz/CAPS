@@ -1901,11 +1901,19 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
           } else if (t.form == 4) {   // SDK: K (θ − θ0)²
             o.e = t.a * (th - t.b) * (th - t.b);
             dEdth = 2 * t.a * (th - t.b);
+          } else if (t.form == 6) {   // screened harmonic: K (θ − θ0)² exp(−(r1/ρ1 + r2/ρ2)); the radial part below
+            const double S = std::exp(-(norm(u) / t.c + norm(v) / t.d));
+            o.e = t.a * (th - t.b) * (th - t.b) * S;
+            dEdth = 2 * t.a * (th - t.b) * S;
           } else {
             o.e = t.a * dc * dc;
             dEdth = -2 * t.a * dc * std::sin(th);
           }
           o.f[0] = gu * -dEdth; o.f[2] = gv * -dEdth;
+          if (t.form == 6) {   // −∂E/∂r along each arm: E/ρ r̂
+            o.f[0] = o.f[0] + u * (o.e / (t.c * norm(u)));
+            o.f[2] = o.f[2] + v * (o.e / (t.d * norm(v)));
+          }
           if (t.form == 4) {   // the end atoms' SDK pair, repulsive part only: cut at its minimum, shifted to zero there
             const size_t tp = size_t(ff_.type_index[t.i]) * nt + ff_.type_index[t.k];
             const Vec3 d13 = v - u;   // i → k

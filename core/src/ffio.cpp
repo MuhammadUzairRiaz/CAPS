@@ -81,7 +81,8 @@ std::string forcefield_to_json(const ForceField& ff) {
   j["impropers_harmonic"] = rows(ff.impropers_harmonic, [](const HarmonicTorsion& t) { return nums({double(t.i), double(t.j), double(t.k), double(t.l), t.k2, t.chi0}); });
   j["inversions"] = rows(ff.inversions, [](const InversionTerm& t) { return nums({double(t.c), double(t.a), double(t.b), double(t.d), t.kw, t.w0, double(t.form)}); });
   j["bonds_x"] = rows(ff.bonds_x, [](const BondX& t) { return nums({double(t.i), double(t.j), double(t.form), t.a, t.b, t.c, t.d}); });
-  j["angles_x"] = rows(ff.angles_x, [](const AngleX& t) { return nums({double(t.i), double(t.j), double(t.k), double(t.form), t.a, t.b}); });
+  j["angles_x"] = rows(ff.angles_x, [](const AngleX& t) { return t.form == 6 ? nums({double(t.i), double(t.j), double(t.k), double(t.form), t.a, t.b, t.c, t.d})
+                                                                                     : nums({double(t.i), double(t.j), double(t.k), double(t.form), t.a, t.b}); });
   j["urey_bradley"] = rows(ff.urey_bradley, [](const UreyBradley& t) { return nums({double(t.i), double(t.k), t.kub, t.r0}); });
   j["cbt"] = rows(ff.cbt, [](const CbtTorsion& t) { return nums({double(t.i), double(t.j), double(t.k), double(t.l), t.a[0], t.a[1], t.a[2], t.a[3], t.a[4]}); });
   j["lj_pairs"] = rows(ff.lj_pairs, [](const PairLJ& t) { return nums({double(t.i), double(t.j), t.eps, t.sigma}); });
@@ -194,7 +195,7 @@ ForceField forcefield_from_json(const std::string& text) {
   read_rows(j, "impropers_harmonic", f.impropers_harmonic, [](const Json& r) { return HarmonicTorsion{u(r, 0), u(r, 1), u(r, 2), u(r, 3), d(r, 4), d(r, 5)}; });
   read_rows(j, "inversions", f.inversions, [](const Json& r) { return InversionTerm{u(r, 0), u(r, 1), u(r, 2), u(r, 3), d(r, 4), d(r, 5), n(r, 6)}; });
   read_rows(j, "bonds_x", f.bonds_x, [](const Json& r) { return BondX{u(r, 0), u(r, 1), n(r, 2), d(r, 3), d(r, 4), d(r, 5), d(r, 6)}; });
-  read_rows(j, "angles_x", f.angles_x, [](const Json& r) { return AngleX{u(r, 0), u(r, 1), u(r, 2), n(r, 3), d(r, 4), d(r, 5)}; });
+  read_rows(j, "angles_x", f.angles_x, [](const Json& r) { return AngleX{u(r, 0), u(r, 1), u(r, 2), n(r, 3), d(r, 4), d(r, 5), r.size() > 7 ? d(r, 6) : 0.0, r.size() > 7 ? d(r, 7) : 0.0}; });
   read_rows(j, "urey_bradley", f.urey_bradley, [](const Json& r) { return UreyBradley{u(r, 0), u(r, 1), d(r, 2), d(r, 3)}; });
   read_rows(j, "cbt", f.cbt, [](const Json& r) {
     CbtTorsion t{u(r, 0), u(r, 1), u(r, 2), u(r, 3), {}};

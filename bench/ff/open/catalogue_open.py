@@ -146,6 +146,24 @@ ENTRIES = {
                          "rigid Si4+, shell-model O, Buckingham Si-O and O-O, the O-Si-O bend on the O shells within 1.9 A of each Si "
                          "as the paper writes it (K_B (theta - theta0)^2; GULP-style files apply 1/2 K_B with the same number); LAMMPS "
                          "reproduces CAPS's energies on alpha-quartz", ("SiO2 (Sanders 1984)", "sanders1984", 31), []),
+    "teter-glass": ("Oxide glasses, Teter partial charges", "Cormack 2002, Du 2009, Okhotnikov 2013 (each term with its table)",
+                    ["A. N. Cormack, J. Du, T. R. Zeitler, Phys. Chem. Chem. Phys. 4, 3193 (2002)", "J. Du, J. Am. Ceram. Soc. 92, 87 (2009)",
+                     "K. Okhotnikov, B. Stevensson, M. Eden, Phys. Chem. Chem. Phys. 15, 15041 (2013)",
+                     "A. Tilocca, N. H. de Leeuw, A. N. Cormack, Phys. Rev. B 73, 104209 (2006)"],
+                    {"source": "the papers' tables; bench/ff/make_glass.py", "license": "published parameters of the papers"},
+                    "rigid ions with partial charges (O -1.2, Si 2.4, Al/Y/La/Lu/Sc 1.8, Na 0.6), Buckingham terms with O; Okhotnikov's "
+                    "own Y-O and Tilocca's Teter set (Table III, with Ca) as overlays; LAMMPS reproduces CAPS's energies on quartz, "
+                    "corundum and Y2O3, each overlay included", ("Glass (Teter partial charges)", "teter_glass", 30), ["inorganic-glass"]),
+    "tilocca2006-sm": ("Silicate glasses, shell model (Tilocca 2006)", "2006, Table I (SM1; SM0 an overlay)",
+                       ["A. Tilocca, N. H. de Leeuw, A. N. Cormack, Phys. Rev. B 73, 104209 (2006)"],
+                       {"source": "the paper's Table I; bench/ff/make_glass.py", "license": "published parameters of the paper"},
+                       "formal-charge Si, Na, Ca and shell-model O; SM1's screened O-Si-O bend (CAPS and DL_POLY; LAMMPS and GROMACS have "
+                       "no such style), its energy on quartz equal to an independent evaluation of the paper's equation; SM0 (raw "
+                       "harmonic bend) as an overlay, LAMMPS reproducing CAPS's energies on quartz", ("Glass (Tilocca shell model)", "tilocca2006_sm", 30), []),
+    "vogel2003-lipo3": ("LiPO3 glass (Vogel 2003)", "2003, Table I", ["M. Vogel, arXiv:cond-mat/0307738v2 (2003)"],
+                        {"source": "the paper's Table I; bench/ff/make_glass.py", "license": "published parameters of the paper"},
+                        "Li, P, O with effective charges and Born-Mayer terms for every pair; LAMMPS reproduces CAPS's energies",
+                        ("Glass (LiPO3, Vogel)", "vogel2003", 30), []),
 }
 RTF = "the topology's own residues typed as it types them (bench/ff/validate_rtf_types.py --cap-links): "
 for fid, name, version, refs, evidence, listing, replaces in (

@@ -1,0 +1,177 @@
+{
+ "name": "LiPO3 glass (Vogel 2003)",
+ "source": "M. Vogel, arXiv:cond-mat/0307738v2 (2003), Table I and eq. 1",
+ "references": [
+  "M. Vogel, arXiv:cond-mat/0307738v2 (2003)"
+ ],
+ "cutoff": 10,
+ "atom_types": [
+  {
+   "name": "Li_v",
+   "element": "Li",
+   "mass": 6.94,
+   "charge": 0.6,
+   "description": "Li (+0.6; the paper's effective charge)"
+  },
+  {
+   "name": "P_v",
+   "element": "P",
+   "mass": 30.973762,
+   "charge": 3.0,
+   "description": "P (+3; the paper's effective charge)"
+  },
+  {
+   "name": "O_v",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -1.2,
+   "description": "O (-1.2; the paper's effective charge)"
+  }
+ ],
+ "pairs": [
+  {
+   "name": "Li_v",
+   "match": [
+    "Li_v"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "P_v",
+   "match": [
+    "P_v"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_v",
+   "match": [
+    "O_v"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Li_v-Li_v",
+   "match": [
+    "Li_v",
+    "Li_v"
+   ],
+   "style": "buck",
+   "params": [
+    3861.94997356,
+    0.29,
+    0.0
+   ],
+   "comment": "A 167.47 eV, rho 0.29 A (Table I)"
+  },
+  {
+   "name": "Li_v-P_v",
+   "match": [
+    "Li_v",
+    "P_v"
+   ],
+   "style": "buck",
+   "params": [
+    3645.6420333200003,
+    0.29,
+    0.0
+   ],
+   "comment": "A 158.09 eV, rho 0.29 A (Table I)"
+  },
+  {
+   "name": "Li_v-O_v",
+   "match": [
+    "Li_v",
+    "O_v"
+   ],
+   "style": "buck",
+   "params": [
+    6918.164400000001,
+    0.29,
+    0.0
+   ],
+   "comment": "A 300.0 eV, rho 0.29 A (Table I)"
+  },
+  {
+   "name": "P_v-P_v",
+   "match": [
+    "P_v",
+    "P_v"
+   ],
+   "style": "buck",
+   "params": [
+    3434.4074136400004,
+    0.29,
+    0.0
+   ],
+   "comment": "A 148.93 eV, rho 0.29 A (Table I)"
+  },
+  {
+   "name": "P_v-O_v",
+   "match": [
+    "P_v",
+    "O_v"
+   ],
+   "style": "buck",
+   "params": [
+    16019.24027368,
+    0.29,
+    0.0
+   ],
+   "comment": "A 694.66 eV, rho 0.29 A (Table I)"
+  },
+  {
+   "name": "O_v-O_v",
+   "match": [
+    "O_v",
+    "O_v"
+   ],
+   "style": "buck",
+   "params": [
+    60990.53735040001,
+    0.29,
+    0.0
+   ],
+   "comment": "A 2644.8 eV, rho 0.29 A (Table I)"
+  }
+ ],
+ "notes": [
+  "built by CAPS (bench/ff/make_glass.py) from the paper's Table I (A_LiO reduced by the paper; the rest after Karthikeyan et al.)"
+ ],
+ "version": "2003",
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "units": "real",
+ "typing": "../typing/vogel2003-lipo3.typing.json",
+ "styles": {
+  "pair": "buck/coul/long",
+  "bond": "harmonic",
+  "angle": "harmonic",
+  "dihedral": "fourier",
+  "improper": "fourier"
+ },
+ "mixing": "geometric",
+ "special_lj": [
+  0,
+  0,
+  1
+ ],
+ "special_coul": [
+  0,
+  0,
+  1
+ ],
+ "bonds": [],
+ "angles": [],
+ "dihedrals": [],
+ "impropers": []
+}

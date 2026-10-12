@@ -42,7 +42,8 @@ struct InversionTerm { uint32_t c, a, b, d; double kw, w0; int form = 0; };
 // cosine/squared/restricted, Martini 3) K (cos θ − cos θ0)² / sin² θ.
 // Urey–Bradley: K (r13 − r0)² between the end atoms of an angle, counted as angle energy (CHARMM).
 struct BondX { uint32_t i, j; int form; double a, b, c, d = 0; };   // form 3 FENE: −½ K R0² ln(1 − (r/R0)²) (a = K, b = R0) plus WCA ε, σ (c, d) below 2^(1/6) σ
-struct AngleX { uint32_t i, j, k; int form; double a, b; };
+// form 6, the screened harmonic bend (DL_POLY shrm, Tilocca et al. 2006): a (θ − b)² exp(−(r_ij/c + r_kj/d))
+struct AngleX { uint32_t i, j, k; int form; double a, b, c = 0, d = 0; };
 struct UreyBradley { uint32_t i, k; double kub, r0; };
 // Combined bending–torsion (GROMACS dihedral function 11, Martini 3 polymer backbones): sin³θ1 sin³θ2 Σ_{n=0..4} a_n cos^n φ
 // with θ1, θ2 the i-j-k and j-k-l angles and φ the i-j-k-l dihedral (IUPAC); a_n in kcal/mol (GROMACS's k folded in).

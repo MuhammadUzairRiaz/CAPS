@@ -273,7 +273,10 @@ TEST(FieldForms, ForcesMatchFiniteDifferences) {
   }
   for (size_t k = 0; k < ff.angles.size(); ++k) {
     const auto& a = ff.angles[k];
-    ff.angles_x.push_back({a.i, a.j, a.k, k % 3 == 0 ? 2 : 1, r(20, 60), a.theta0 + r(-5, 5) * D});
+    if (k % 4 == 3)   // the screened harmonic bend (Tilocca's SM1): its radial part adds forces along the arms
+      ff.angles_x.push_back({a.i, a.j, a.k, 6, r(200, 400), a.theta0 + r(-15, 15) * D, r(0.8, 1.2), r(0.8, 1.2)});
+    else
+      ff.angles_x.push_back({a.i, a.j, a.k, k % 3 == 0 ? 2 : 1, r(20, 60), a.theta0 + r(-5, 5) * D});
     ff.urey_bradley.push_back({a.i, a.k, r(5, 30), r(2.0, 2.6)});
   }
   const auto nb = s.neighbours();
@@ -1089,4 +1092,25 @@ TEST(FFDef, ThreeBodyBendsByDistanceOnShells) {
     EXPECT_EQ(tr.types[a.k], "O_s84s");
     EXPECT_NEAR(a.kt, 2.097 * 23.060548, 1e-9);
   }
+}
+
+// Tilocca, de Leeuw & Cormack's SM1: the screened O-Si-O bend on the shells within 2.5 A, 1/2 k (θ − θ0)² exp(−(r1 + r2)/ρ);
+// alpha-quartz's 18 bends sum to 0.147118 kcal/mol (an independent evaluation of the paper's eq. 4 from the same coordinates)
+TEST(FFDef, ScreenedBendsOfTheShellModel) {
+  const FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/tilocca2006-sm.json");
+  System q = read_cif(std::string(CAPS_SOURCE_DIR) + "/data/crystals/alpha-quartz.cif");
+  q.bonds = perceive_bonds(q);
+  std::string ch = "types";
+  prepare_for_forcefield(q, def, ch);
+  const TypingResult tr = assign_types(q, def);
+  ASSERT_EQ(tr.untyped, 0);
+  const ForceField ff = parameterize(q, def, tr.types, "types", nullptr, false);
+  ASSERT_EQ(ff.angles_x.size(), 18u);
+  EXPECT_TRUE(ff.angles.empty());
+  for (const auto& a : ff.angles_x) EXPECT_EQ(a.form, 6);
+  EnergyOptions o;
+  o.tail = false;
+  std::vector<double> f;
+  const EnergyTerms e = Evaluator(ff, o).compute(flat(q), q.cell, f);
+  EXPECT_NEAR(e.angle, 0.147118, 2e-6);
 }

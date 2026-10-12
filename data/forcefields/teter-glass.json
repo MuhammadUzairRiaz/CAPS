@@ -1,0 +1,451 @@
+{
+ "name": "Oxide glasses, Teter partial charges (Cormack 2002; Du 2009; Okhotnikov 2013)",
+ "source": "A. N. Cormack, J. Du, T. R. Zeitler, Phys. Chem. Chem. Phys. 4, 3193 (2002), Table 1; J. Du, J. Am. Ceram. Soc. 92, 87 (2009), Table II; K. Okhotnikov, B. Stevensson, M. Eden, Phys. Chem. Chem. Phys. 15, 15041 (2013), Table 1; overlay: A. Tilocca, N. H. de Leeuw, A. N. Cormack, Phys. Rev. B 73, 104209 (2006), Table III",
+ "references": [
+  "A. N. Cormack, J. Du, T. R. Zeitler, Phys. Chem. Chem. Phys. 4, 3193 (2002)",
+  "J. Du, J. Am. Ceram. Soc. 92, 87 (2009)",
+  "K. Okhotnikov, B. Stevensson, M. Eden, Phys. Chem. Chem. Phys. 15, 15041 (2013)",
+  "A. Tilocca, N. H. de Leeuw, A. N. Cormack, Phys. Rev. B 73, 104209 (2006)"
+ ],
+ "cutoff": 8,
+ "atom_types": [
+  {
+   "name": "O_te",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -1.2,
+   "description": "O (-1.2, Teter's partial charge)"
+  },
+  {
+   "name": "Si_te",
+   "element": "Si",
+   "mass": 28.0855,
+   "charge": 2.4,
+   "description": "Si (+2.4, Teter's partial charge)"
+  },
+  {
+   "name": "Al_te",
+   "element": "Al",
+   "mass": 26.982,
+   "charge": 1.8,
+   "description": "Al (+1.8, Teter's partial charge)"
+  },
+  {
+   "name": "Y_te",
+   "element": "Y",
+   "mass": 88.906,
+   "charge": 1.8,
+   "description": "Y (+1.8, Teter's partial charge)"
+  },
+  {
+   "name": "La_te",
+   "element": "La",
+   "mass": 138.905,
+   "charge": 1.8,
+   "description": "La (+1.8, Teter's partial charge)"
+  },
+  {
+   "name": "Lu_te",
+   "element": "Lu",
+   "mass": 174.967,
+   "charge": 1.8,
+   "description": "Lu (+1.8, Teter's partial charge)"
+  },
+  {
+   "name": "Sc_te",
+   "element": "Sc",
+   "mass": 44.956,
+   "charge": 1.8,
+   "description": "Sc (+1.8, Teter's partial charge)"
+  },
+  {
+   "name": "Na_te",
+   "element": "Na",
+   "mass": 22.98977,
+   "charge": 0.6,
+   "description": "Na (+0.6, Teter's partial charge)"
+  },
+  {
+   "name": "Y_ok",
+   "element": "Y",
+   "mass": 88.906,
+   "charge": 1.8,
+   "description": "Y (+1.8) with Okhotnikov's own Y-O (Table 1)"
+  },
+  {
+   "name": "O_tt",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -1.2,
+   "description": "O (-1.2) in Tilocca's Teter set (Table III)"
+  },
+  {
+   "name": "Si_tt",
+   "element": "Si",
+   "mass": 28.0855,
+   "charge": 2.4,
+   "description": "Si (+2.4) in Tilocca's Teter set (Table III)"
+  },
+  {
+   "name": "Na_tt",
+   "element": "Na",
+   "mass": 22.98977,
+   "charge": 0.6,
+   "description": "Na (+0.6) in Tilocca's Teter set (Table III)"
+  },
+  {
+   "name": "Ca_tt",
+   "element": "Ca",
+   "mass": 40.078,
+   "charge": 1.2,
+   "description": "Ca (+1.2) in Tilocca's Teter set (Table III)"
+  }
+ ],
+ "pairs": [
+  {
+   "name": "O_te",
+   "match": [
+    "O_te"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Si_te",
+   "match": [
+    "Si_te"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Al_te",
+   "match": [
+    "Al_te"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Y_te",
+   "match": [
+    "Y_te"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "La_te",
+   "match": [
+    "La_te"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Lu_te",
+   "match": [
+    "Lu_te"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Sc_te",
+   "match": [
+    "Sc_te"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Na_te",
+   "match": [
+    "Na_te"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Y_ok",
+   "match": [
+    "Y_ok"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_tt",
+   "match": [
+    "O_tt"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Si_tt",
+   "match": [
+    "Si_tt"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Na_tt",
+   "match": [
+    "Na_tt"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ca_tt",
+   "match": [
+    "Ca_tt"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_te-O_te",
+   "match": [
+    "O_te",
+    "O_te"
+   ],
+   "style": "buck",
+   "params": [
+    42540.8490686984,
+    0.343645,
+    4441.00033384
+   ],
+   "comment": "A 1844.7458 eV, rho 0.343645 A, C 192.58 eV A^6 (A. N. Cormack, J. Du, T. R. Zeitler, Phys. Chem. Chem. Phys. 4, 3193 (2002), Table 1; J. Du, J. Am. Ceram. Soc. 92, 87 (2009), Table II; K. Okhotnikov, B. Stevensson, M. Eden, Phys. Chem. Chem. Phys. 15, 15041 (2013), Table 1)"
+  },
+  {
+   "name": "Si_te-O_te",
+   "match": [
+    "Si_te",
+    "O_te"
+   ],
+   "style": "buck",
+   "params": [
+    315996.49849194003,
+    0.193817,
+    1260.973825188
+   ],
+   "comment": "A 13702.905 eV, rho 0.193817 A, C 54.681 eV A^6 (A. N. Cormack, J. Du, T. R. Zeitler, Phys. Chem. Chem. Phys. 4, 3193 (2002), Table 1; J. Du, J. Am. Ceram. Soc. 92, 87 (2009), Table II; K. Okhotnikov, B. Stevensson, M. Eden, Phys. Chem. Chem. Phys. 15, 15041 (2013), Table 1)"
+  },
+  {
+   "name": "Na_te-O_te",
+   "match": [
+    "Na_te",
+    "O_te"
+   ],
+   "style": "buck",
+   "params": [
+    101091.804128014,
+    0.243838,
+    707.9588236
+   ],
+   "comment": "A 4383.7555 eV, rho 0.243838 A, C 30.7 eV A^6 (A. N. Cormack, J. Du, T. R. Zeitler, Phys. Chem. Chem. Phys. 4, 3193 (2002), Table 1)"
+  },
+  {
+   "name": "Al_te-O_te",
+   "match": [
+    "Al_te",
+    "O_te"
+   ],
+   "style": "buck",
+   "params": [
+    281371.362396516,
+    0.195628,
+    737.868354356
+   ],
+   "comment": "A 12201.417 eV, rho 0.195628 A, C 31.997 eV A^6 (J. Du, J. Am. Ceram. Soc. 92, 87 (2009), Table II; K. Okhotnikov, B. Stevensson, M. Eden, Phys. Chem. Chem. Phys. 15, 15041 (2013), Table 1)"
+  },
+  {
+   "name": "Y_te-O_te",
+   "match": [
+    "Y_te",
+    "O_te"
+   ],
+   "style": "buck",
+   "params": [
+    680908.270403396,
+    0.211377,
+    1164.027281396
+   ],
+   "comment": "A 29526.977 eV, rho 0.211377 A, C 50.477 eV A^6 (J. Du, J. Am. Ceram. Soc. 92, 87 (2009), Table II; K. Okhotnikov, B. Stevensson, M. Eden, Phys. Chem. Chem. Phys. 15, 15041 (2013), Table 1)"
+  },
+  {
+   "name": "La_te-O_te",
+   "match": [
+    "La_te",
+    "O_te"
+   ],
+   "style": "buck",
+   "params": [
+    219950.35379660001,
+    0.235917,
+    0.0
+   ],
+   "comment": "A 9537.95 eV, rho 0.235917 A, C 0.0 eV A^6 (K. Okhotnikov, B. Stevensson, M. Eden, Phys. Chem. Chem. Phys. 15, 15041 (2013), Table 1)"
+  },
+  {
+   "name": "Lu_te-O_te",
+   "match": [
+    "Lu_te",
+    "O_te"
+   ],
+   "style": "buck",
+   "params": [
+    153516.14348532,
+    0.23036,
+    0.0
+   ],
+   "comment": "A 6657.09 eV, rho 0.23036 A, C 0.0 eV A^6 (K. Okhotnikov, B. Stevensson, M. Eden, Phys. Chem. Chem. Phys. 15, 15041 (2013), Table 1)"
+  },
+  {
+   "name": "Sc_te-O_te",
+   "match": [
+    "Sc_te",
+    "O_te"
+   ],
+   "style": "buck",
+   "params": [
+    71373.31848192,
+    0.244357,
+    0.0
+   ],
+   "comment": "A 3095.04 eV, rho 0.244357 A, C 0.0 eV A^6 (K. Okhotnikov, B. Stevensson, M. Eden, Phys. Chem. Chem. Phys. 15, 15041 (2013), Table 1)"
+  },
+  {
+   "name": "Y_ok-O_te",
+   "match": [
+    "Y_ok",
+    "O_te"
+   ],
+   "style": "buck",
+   "params": [
+    254118.01474080002,
+    0.224173,
+    0.0
+   ],
+   "comment": "A 11019.6 eV, rho 0.224173 A (K. Okhotnikov, B. Stevensson, M. Eden, Phys. Chem. Chem. Phys. 15, 15041 (2013), Table 1: derived there)"
+  },
+  {
+   "name": "O_tt-O_tt",
+   "match": [
+    "O_tt",
+    "O_tt"
+   ],
+   "style": "buck",
+   "params": [
+    46794.9344367792,
+    0.343645,
+    4434.08216944
+   ],
+   "comment": "A 2029.2204 eV, rho 0.343645 A, C 192.28 eV A^6 (A. Tilocca, N. H. de Leeuw, A. N. Cormack, Phys. Rev. B 73, 104209 (2006), Table III)"
+  },
+  {
+   "name": "Si_tt-O_tt",
+   "match": [
+    "Si_tt",
+    "O_tt"
+   ],
+   "style": "buck",
+   "params": [
+    315996.49849194003,
+    0.193817,
+    1260.973825188
+   ],
+   "comment": "A 13702.905 eV, rho 0.193817 A, C 54.681 eV A^6 (A. Tilocca, N. H. de Leeuw, A. N. Cormack, Phys. Rev. B 73, 104209 (2006), Table III)"
+  },
+  {
+   "name": "Na_tt-O_tt",
+   "match": [
+    "Na_tt",
+    "O_tt"
+   ],
+   "style": "buck",
+   "params": [
+    101091.804128014,
+    0.243838,
+    707.9588236
+   ],
+   "comment": "A 4383.7555 eV, rho 0.243838 A, C 30.7 eV A^6 (A. Tilocca, N. H. de Leeuw, A. N. Cormack, Phys. Rev. B 73, 104209 (2006), Table III)"
+  },
+  {
+   "name": "Ca_tt-O_tt",
+   "match": [
+    "Ca_tt",
+    "O_tt"
+   ],
+   "style": "buck",
+   "params": [
+    178654.2946605032,
+    0.252623,
+    2147.144563732
+   ],
+   "comment": "A 7747.1834 eV, rho 0.252623 A, C 93.109 eV A^6 (A. Tilocca, N. H. de Leeuw, A. N. Cormack, Phys. Rev. B 73, 104209 (2006), Table III)"
+  }
+ ],
+ "notes": [
+  "built by CAPS (bench/ff/make_glass.py) from the papers' tables",
+  "Buckingham terms with O only; cation-cation pairs interact by Coulomb alone",
+  "short-range terms cut at 8 A as Okhotnikov and Tilocca; the short-range splice the papers use for melts is not written",
+  "Ca is in the tilocca2006-teter overlay only (Table III)"
+ ],
+ "version": "2002-2013",
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "units": "real",
+ "typing": "../typing/teter-glass.typing.json",
+ "styles": {
+  "pair": "buck/coul/long",
+  "bond": "harmonic",
+  "angle": "harmonic",
+  "dihedral": "fourier",
+  "improper": "fourier"
+ },
+ "mixing": "geometric",
+ "special_lj": [
+  0,
+  0,
+  1
+ ],
+ "special_coul": [
+  0,
+  0,
+  1
+ ],
+ "bonds": [],
+ "angles": [],
+ "dihedrals": [],
+ "impropers": []
+}

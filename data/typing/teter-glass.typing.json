@@ -1,0 +1,80 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "Oxide glasses, Teter partial charges (Cormack 2002; Du 2009; Okhotnikov 2013)",
+ "unknown_types": "untyped",
+ "bonds": "defined",
+ "description": "each element by itself (bench/ff/make_glass.py); Okhotnikov's Y and Tilocca's Teter set are overlays",
+ "rules": [
+  {
+   "type": "O_te",
+   "smarts": "[#8]",
+   "priority": 0,
+   "requires": [],
+   "description": "O in an oxide glass"
+  },
+  {
+   "type": "Si_te",
+   "smarts": "[#14]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "description": "Si in an oxide glass"
+  },
+  {
+   "type": "Al_te",
+   "smarts": "[#13]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "description": "Al in an oxide glass"
+  },
+  {
+   "type": "Y_te",
+   "smarts": "[#39]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "description": "Y in an oxide glass"
+  },
+  {
+   "type": "La_te",
+   "smarts": "[#57]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "description": "La in an oxide glass"
+  },
+  {
+   "type": "Lu_te",
+   "smarts": "[#71]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "description": "Lu in an oxide glass"
+  },
+  {
+   "type": "Sc_te",
+   "smarts": "[#21]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "description": "Sc in an oxide glass"
+  },
+  {
+   "type": "Na_te",
+   "smarts": "[#11]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "description": "Na in an oxide glass"
+  }
+ ]
+}

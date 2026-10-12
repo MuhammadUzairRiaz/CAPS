@@ -66,6 +66,8 @@ MS_information_design/
 /data/typing/sets/*
 !/data/typing/sets/lewis-catlow1985-oxides/
 !/data/typing/sets/catlow1977-uo2/
+!/data/typing/sets/teter-glass/
+!/data/typing/sets/tilocca2006-sm/
 
 # force-field libraries built on the user's machine from their original sources (bench/ff/open): never committed
 data/forcefields/*-toppar.json

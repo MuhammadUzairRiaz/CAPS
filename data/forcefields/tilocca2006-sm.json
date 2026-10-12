@@ -1,0 +1,360 @@
+{
+ "name": "Silicate glasses, shell model (Tilocca, de Leeuw & Cormack 2006)",
+ "source": "A. Tilocca, N. H. de Leeuw, A. N. Cormack, Phys. Rev. B 73, 104209 (2006), Table I",
+ "references": [
+  "A. Tilocca, N. H. de Leeuw, A. N. Cormack, Phys. Rev. B 73, 104209 (2006)"
+ ],
+ "styles": {
+  "pair": "buck/coul/long",
+  "bond": "class2",
+  "angle": "harmonic",
+  "dihedral": "fourier",
+  "improper": "fourier"
+ },
+ "cutoff": 8,
+ "atom_types": [
+  {
+   "name": "Si_sm",
+   "element": "Si",
+   "mass": 28.0855,
+   "charge": 4.0,
+   "description": "Si (+4, rigid ion; Table I)"
+  },
+  {
+   "name": "Na_sm",
+   "element": "Na",
+   "mass": 22.98977,
+   "charge": 1.0,
+   "description": "Na (+1, rigid ion; Table I)"
+  },
+  {
+   "name": "Ca_sm",
+   "element": "Ca",
+   "mass": 40.078,
+   "charge": 2.0,
+   "description": "Ca (+2, rigid ion; Table I)"
+  },
+  {
+   "name": "Si_sm0",
+   "element": "Si",
+   "mass": 28.0855,
+   "charge": 4.0,
+   "description": "Si (+4), SM0 bends"
+  },
+  {
+   "name": "O_smc",
+   "element": "O",
+   "mass": 15.799000000000001,
+   "charge": 0.8482,
+   "description": "O core (Table I: Y -2.8482)"
+  },
+  {
+   "name": "O_sms",
+   "element": "O",
+   "mass": 0.2,
+   "charge": -2.8482,
+   "description": "O shell (0.2 amu, as the paper)"
+  },
+  {
+   "name": "O_sm0c",
+   "element": "O",
+   "mass": 15.799000000000001,
+   "charge": 0.8482,
+   "description": "O core, SM0"
+  },
+  {
+   "name": "O_sm0s",
+   "element": "O",
+   "mass": 0.2,
+   "charge": -2.8482,
+   "description": "O shell, SM0"
+  }
+ ],
+ "pairs": [
+  {
+   "name": "Si_sm",
+   "match": [
+    "Si_sm"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Na_sm",
+   "match": [
+    "Na_sm"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ca_sm",
+   "match": [
+    "Ca_sm"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Si_sm0",
+   "match": [
+    "Si_sm0"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_smc",
+   "match": [
+    "O_smc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_sms",
+   "match": [
+    "O_sms"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_sm0c",
+   "match": [
+    "O_sm0c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_sm0s",
+   "match": [
+    "O_sm0s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_sms-O_sms",
+   "match": [
+    "O_sms",
+    "O_sms"
+   ],
+   "style": "buck",
+   "params": [
+    524957.2328364,
+    0.149,
+    642.92807824
+   ],
+   "comment": "O-Os A 22764.3 eV, rho 0.149 A, C 27.88 eV A^6 (Table I)"
+  },
+  {
+   "name": "Si_sm-O_sms",
+   "match": [
+    "Si_sm",
+    "O_sms"
+   ],
+   "style": "buck",
+   "params": [
+    29607.66818268,
+    0.32052,
+    245.86187734584
+   ],
+   "comment": "Si-Os A 1283.91 eV, rho 0.32052 A, C 10.66158 eV A^6 (Table I)"
+  },
+  {
+   "name": "Na_sm-O_sms",
+   "match": [
+    "Na_sm",
+    "O_sms"
+   ],
+   "style": "buck",
+   "params": [
+    1302121.8056272245,
+    0.193931,
+    0.0
+   ],
+   "comment": "Na-Os A 56465.3453 eV, rho 0.193931 A, C 0.0 eV A^6 (Table I)"
+  },
+  {
+   "name": "Ca_sm-O_sms",
+   "match": [
+    "Ca_sm",
+    "O_sms"
+   ],
+   "style": "buck",
+   "params": [
+    49634.5226874168,
+    0.309227,
+    2.29314089312
+   ],
+   "comment": "Ca-Os A 2152.3566 eV, rho 0.309227 A, C 0.09944 eV A^6 (Table I)"
+  },
+  {
+   "name": "O_sm0s-O_sm0s",
+   "match": [
+    "O_sm0s",
+    "O_sm0s"
+   ],
+   "style": "buck",
+   "params": [
+    524957.2328364,
+    0.149,
+    642.92807824
+   ],
+   "comment": "O-Os A 22764.3 eV, rho 0.149 A, C 27.88 eV A^6 (Table I)"
+  },
+  {
+   "name": "Si_sm0-O_sm0s",
+   "match": [
+    "Si_sm0",
+    "O_sm0s"
+   ],
+   "style": "buck",
+   "params": [
+    29607.66818268,
+    0.32052,
+    245.86187734584
+   ],
+   "comment": "Si-Os A 1283.91 eV, rho 0.32052 A, C 10.66158 eV A^6 (Table I)"
+  },
+  {
+   "name": "Na_sm-O_sm0s",
+   "match": [
+    "Na_sm",
+    "O_sm0s"
+   ],
+   "style": "buck",
+   "params": [
+    1302121.8056272245,
+    0.193931,
+    0.0
+   ],
+   "comment": "Na-Os A 56465.3453 eV, rho 0.193931 A, C 0.0 eV A^6 (Table I)"
+  },
+  {
+   "name": "Ca_sm-O_sm0s",
+   "match": [
+    "Ca_sm",
+    "O_sm0s"
+   ],
+   "style": "buck",
+   "params": [
+    49634.5226874168,
+    0.309227,
+    2.29314089312
+   ],
+   "comment": "Ca-Os A 2152.3566 eV, rho 0.309227 A, C 0.09944 eV A^6 (Table I)"
+  }
+ ],
+ "bonds": [
+  {
+   "name": "O_smc-O_sms",
+   "match": [
+    "O_smc",
+    "O_sms"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    863.84812808,
+    0.0,
+    0.0
+   ],
+   "comment": "Oc-Os 74.92 eV/A^2 (Table I)"
+  },
+  {
+   "name": "O_sm0c-O_sm0s",
+   "match": [
+    "O_sm0c",
+    "O_sm0s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    863.84812808,
+    0.0,
+    0.0
+   ],
+   "comment": "Oc-Os 74.92 eV/A^2 (Table I)"
+  }
+ ],
+ "angles": [
+  {
+   "name": "O_sms-Si_sm-O_sms",
+   "match": [
+    "O_sms",
+    "Si_sm",
+    "O_sms"
+   ],
+   "style": "screened",
+   "params": [
+    1153.0274,
+    109.47,
+    1.0,
+    1.0
+   ],
+   "contact": [
+    2.5
+   ],
+   "comment": "SM1: 1/2 k3b (theta - theta0)^2 exp(-(r1/rho + r2/rho)), k3b 100.0 eV/rad^2, rho 1.0 A, r_max 2.5 A (Table I, eq. 4)"
+  },
+  {
+   "name": "O_sm0s-Si_sm0-O_sm0s",
+   "match": [
+    "O_sm0s",
+    "Si_sm0",
+    "O_sm0s"
+   ],
+   "style": "harmonic",
+   "params": [
+    24.178984578,
+    109.47
+   ],
+   "contact": [
+    1.9
+   ],
+   "comment": "SM0: 1/2 k3b (theta - theta0)^2, k3b 2.097 eV/rad^2, r_max 1.9 A (Table I, eq. 3)"
+  }
+ ],
+ "notes": [
+  "built by CAPS (bench/ff/make_glass.py) from the paper's Table I",
+  "SM1 by default (the screened O-Si-O bend: CAPS's own engine and DL_POLY; LAMMPS and GROMACS have no such style); SM0 is the overlay 'sm0'",
+  "short-range terms cut at 8 A as the paper"
+ ],
+ "version": "2006 (Table I)",
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "units": "real",
+ "typing": "../typing/tilocca2006-sm.typing.json",
+ "mixing": "geometric",
+ "special_lj": [
+  0,
+  0,
+  1
+ ],
+ "special_coul": [
+  0,
+  0,
+  1
+ ],
+ "dihedrals": [],
+ "impropers": []
+}

@@ -1,0 +1,37 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "teter-glass: tilocca2006-teter",
+ "unknown_types": "untyped",
+ "description": "Overlay: Tilocca et al.'s Teter set (Table III) for O, Si, Na, Ca",
+ "rules": [
+  {
+   "type": "O_tt",
+   "smarts": "[#8]",
+   "priority": 50,
+   "requires": [],
+   "description": "O (Tilocca's Teter set)"
+  },
+  {
+   "type": "Si_tt",
+   "smarts": "[#14]",
+   "priority": 50,
+   "requires": [],
+   "description": "Si (Tilocca's Teter set)"
+  },
+  {
+   "type": "Na_tt",
+   "smarts": "[#11]",
+   "priority": 50,
+   "requires": [],
+   "description": "Na (Tilocca's Teter set)"
+  },
+  {
+   "type": "Ca_tt",
+   "smarts": "[#20]",
+   "priority": 50,
+   "requires": [],
+   "description": "Ca (Tilocca's Teter set)"
+  }
+ ]
+}
