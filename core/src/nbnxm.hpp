@@ -20,7 +20,10 @@ constexpr uint32_t kPad = 0xffffffffu;   // a slot with no atom
 struct Entry {
   uint32_t cj;      // j cluster
   uint16_t code;    // periodic image of the j cluster
-  uint16_t mask;    // bit 4a + l: i atom a with j atom l
+  uint16_t mask;    // bit 4a + l: i atom a with j atom l interact
+  uint16_t ex;      // the same bits for excluded pairs (1-2, 1-3, 1-4 at their nearest image) when the kernel takes
+                    // their Ewald / DSF correction (List::build with p14), else 0
+  uint16_t ex14;    // those of them whose Coulomb keeps a fraction (1-4 pairs)
 };
 
 struct List {
@@ -57,7 +60,9 @@ struct List {
   void build(const std::vector<double>& x, const Cell& cell_in, double rlist, const std::vector<std::vector<uint32_t>>& excluded,
              const std::vector<int>& type_index, size_t ntypes, const std::vector<char>& skip_type, const std::vector<double>& q,
              const std::vector<double>& f12, const std::vector<double>& f6, ThreadPool& pool, const float* c12 = nullptr,
-             const float* c6 = nullptr);
+             const float* c6 = nullptr, const std::vector<std::vector<uint32_t>>* p14 = nullptr);
+  // p14 (per atom, sorted: the excluded partners whose Coulomb keeps a fraction): the entries then carry the excluded
+  // pairs too (ex, ex14), for the kernel's corrections; without it excluded pairs are left out
   void rescale(const Cell& cell);                       // offsets and images for a deformed cell
   void positions(const std::vector<double>& x, ThreadPool& pool);   // X, Y, Z for this step
   void prune(double radius, ThreadPool& pool);          // pe, pf from the entries at the positions X, Y, Z
@@ -77,6 +82,7 @@ struct Params {
   float e0 = 0, f0 = 0;           // DSF shift constants
   float kcoul = 0;                // Coulomb constant
   bool energies = true;           // false: forces and virial only (the energies left at 0)
+  float f14 = 0;                  // the fraction of Coulomb a 1-4 pair keeps (entries' ex14 lanes)
 };
 
 // Forces added to fx, fy, fz (by slot, float), energies added, and per image code the summed forces on the j atoms

@@ -675,6 +675,19 @@ void Evaluator::cluster_coefficients() {
              std::fabs(p6 - c6[a * nt + b]) <= 1e-7 * std::max(std::fabs(c6[a * nt + b]), 1e-300);
     }
   if (!comb) cl_f12_.clear(), cl_f6_.clear();
+  // the excluded pairs' corrections go to the kernel when the non-zero 1-4 fractions are all the same
+  cl_excl_ = true;
+  cl_f14_ = 0;
+  cl_p14_.assign(ff_.type_index.size(), {});
+  for (const auto& ex : excl_) {
+    if (ex.factor == 0) continue;
+    if (cl_f14_ != 0 && ex.factor != cl_f14_) cl_excl_ = false;
+    cl_f14_ = ex.factor;
+    cl_p14_[ex.i].push_back(ex.j);
+    cl_p14_[ex.j].push_back(ex.i);
+  }
+  for (auto& v : cl_p14_) std::sort(v.begin(), v.end());
+  if (!cl_excl_) cl_p14_.clear();
   cl_coef_ = true;
 }
 
@@ -1067,7 +1080,8 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
     if (st == 2) {
       const std::vector<char> none;
       cl_->build(x, cell, opt_.cutoff + opt_.skin, ff_.excluded, ff_.type_index, ff_.lj.size(),
-                 ff_.excluded_type_pairs.empty() ? none : skip_type_, qeff_, cl_f12_, cl_f6_, *pool_, cl_c12_.data(), cl_c6_.data());
+                 ff_.excluded_type_pairs.empty() ? none : skip_type_, qeff_, cl_f12_, cl_f6_, *pool_, cl_c12_.data(), cl_c6_.data(),
+                 cl_excl_ ? &cl_p14_ : nullptr);
       x0c_ = x;
       cell0c_ = cell;
       cl_built_ = true;
@@ -1606,6 +1620,7 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
     cp.f0 = float(dsf_f0);
     cp.kcoul = float(kCoulomb);
     cp.energies = energies_;
+    cp.f14 = float(cl_f14_);
   }
   auto cluster_phase = [&](size_t ch) {
     const size_t ns = cl_->perm.size();
@@ -1620,7 +1635,8 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
 
   // Phase 2: bonded terms, 1-4 pairs and the electrostatics of bonded partners, as one index space split over workers.
   const size_t nb = ff_.bonds.size(), na = ff_.angles.size(), nd = ff_.dihedrals.size(), ni = ff_.impropers.size();
-  const size_t n14 = ff_.pairs14.size(), nx = coul && !gro ? excl_.size() : 0, nh = ff_.impropers_harmonic.size();
+  // the electrostatics of bonded partners: here, unless the cluster kernel takes them (its excluded lanes)
+  const size_t n14 = ff_.pairs14.size(), nx = coul && !gro && !(clmode && cl_excl_) ? excl_.size() : 0, nh = ff_.impropers_harmonic.size();
   const size_t o1 = nb, o2 = o1 + na, o3 = o2 + nd, o4 = o3 + ni, o5 = o4 + n14, o6 = o5 + nx, o7 = o6 + nh;
   const size_t c1 = o7 + ff_.bonds2.size(), c2 = c1 + ff_.angles2.size(), c3 = c2 + ff_.dihedrals2.size();
   const size_t c4 = c3 + ff_.impropers2.size();
