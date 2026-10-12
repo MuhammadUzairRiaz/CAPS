@@ -105,44 +105,15 @@ def prepare(topdir, out):
         open(os.path.join(out, name + ".ref"), "w").write("".join(t.replace("opls_", "") + "\n" for t, *_ in atoms))
 
 
-# differences with a stated reason, by (reference number, CAPS number). The topologies date from 2012 and were built by
-# hand; where they and the 2024 table's own descriptions disagree, CAPS follows the table.
-EXPLAINED = {
-    ("140", "282"): "H alpha to an ester or aryl/cyclopropyl ketone C=O: the table gives 282 ('for R on C=O use 280-282'); "
-                    "the topologies use 282 in acetone, 2-hexanone and acetic anhydride but 140 here",
-    ("722", "975"): "alkyl Br: the topologies use the united-atom 722; the table's all-atom alkyl bromide is 975 (JPCB 2004)",
-    ("152", "976"): "C of an alkyl bromide: the table's RCH2Br 976 (the topologies borrow RCH2Cl 152)",
-    ("152", "978"): "C of a secondary alkyl bromide: the table's R2CHBr 978 (the topologies borrow RCH2Cl 152)",
-    ("153", "977"): "H on an alkyl bromide C: the table's 977 (the topologies borrow 153 of RCH2Cl; same charge)",
-    ("152", "1012"): "C of a secondary alkyl iodide: the table's iodoalkane 1012 (the topologies borrow RCH2Cl 152)",
-    ("153", "140"): "H on an alkyl iodide C: the table has no number of its own; 140",
-    ("732", "1014"): "alkyl I: the table's iodoalkane 1014 (the topologies borrow iodobenzene's 732)",
-    ("469", "777"): "dialkyl carbonate: the table's carbonate types 771-779/789 (the topologies use the ester types)",
-    ("467", "773"): "dialkyl carbonate: the table's carbonate types (the topologies use the ester types)",
-    ("465", "772"): "dialkyl carbonate: the table's carbonate types (the topologies use the ester types)",
-    ("466", "771"): "dialkyl carbonate: the table's carbonate types (the topologies use the ester types)",
-    ("490", "774"): "dialkyl carbonate: the table's carbonate types (the topologies use the ester types)",
-    ("468", "789"): "dimethyl carbonate: the table's 'methoxy C in carbonate' 789",
-    ("180", "186"): "O of an acetal (O-CH2-O): the table's OPLS/2020 acetal O 186",
-    ("154", "160"): "O of a tertiary alcohol: the table's OPLS/2020 tertiary alcohol O 160",
-    ("185", "1029"): "epoxide: the table's epoxide types 1025-1029 (the topologies use the ether types)",
-    ("180", "1025"): "epoxide: the table's epoxide types 1025-1029 (the topologies use the ether types)",
-    ("182", "1026"): "epoxide: the table's epoxide types 1025-1029 (the topologies use the ether types)",
-    ("183", "1027"): "epoxide: the table's epoxide types 1025-1029 (the topologies use the ether types)",
-    ("226", "398"): "Cl2C=: the table's 398/399 for two Cl on the alkene C (the topologies use ClHC='s 226/227)",
-    ("227", "399"): "Cl2C=: the table's 398/399 for two Cl on the alkene C (the topologies use ClHC='s 226/227)",
-    ("472", "199"): "diphenyl ether: the table's OPLS/2020 aryl ether types 177/199 (the topologies use the phenyl ester's 472/473)",
-    ("473", "177"): "diphenyl ether: the table's OPLS/2020 aryl ether types 177/199 (the topologies use the phenyl ester's 472/473)",
-    ("135", "273"): "CH3 of acetate: the table's 'CH3, carboxylate ion' 273",
-    ("145B", "519"): "biphenyl: 145B exists only in the GROMACS file; the table's biphenyl C1 519",
-    ("135", "927"): "propyne: GROMACS numbers 925-930 differently (its 930 is an H, 927 the inner sp C); in the 2024 table 927 is the CH3",
-    ("930", "140"): "propyne: GROMACS's 930 is an H; in the 2024 table 930 is a carbon (R3C-C#C)",
-    ("260", "142"): "acrylonitrile: the topologies give the vinyl C carrying the nitrile the benzene ring C 260; CAPS the alkene C 142",
-    ("140", "144"): "acrylonitrile: the topologies give the H on that vinyl C the sp3 H 140; CAPS the alkene H 144",
-    ("927", "925"): "propyne: GROMACS's 927 is the inner sp C; in the 2024 table that C is 925 and 927 the CH3",
-}
-EXPLAINED_MOLECULE = {"isoquinoline": "the topologies give isoquinoline quinoline's numbers 603-619 position by position, "
-                                      "though its N sits elsewhere; CAPS types it as a pyridine ring fused to a benzene ring"}
+# GROMACS numbers whose meaning differs from the 2024 table's, with the 2024 number of the same atom: 145B is the
+# biphenyl bridge C (class C!, the table's 519); 925-931 are another alkyne set there, 927 the alkyne C carrying an alkyl
+# (the table's 925) and 930 that alkyl's H (HC +0.06, the table's 140). In the 2024 table 927 and 930 are sp3 carbons.
+GROMACS_TO_2024 = {"145B": "519", "927": "925", "930": "140"}
+# the one deliberate difference: epoxides keep the table's epoxide types (three-ring angle terms); the topologies' ether
+# types give methyloxirane's ring 109.5 deg angles, about 119 kcal/mol of strain against 44
+EXPLAINED = {}
+EXPLAINED_MOLECULE = {"methyloxirane": "epoxide: the table's epoxide types 1025-1029 with three-ring angle terms; the topologies' "
+                                       "ether types put 109.5 deg angles on the ring (about 119 kcal/mol strain, 44 with these)"}
 
 
 def compare(out, ff, show):
@@ -157,7 +128,7 @@ def compare(out, ff, show):
         if not f.endswith(".sdf"):
             continue
         name = f[:-4]
-        ref = open(os.path.join(out, name + ".ref")).read().split()
+        ref = [GROMACS_TO_2024.get(t, t) for t in open(os.path.join(out, name + ".ref")).read().split()]
         tf = os.path.join(out, name + ".caps")
         subprocess.run([caps, "ff", "type", os.path.join(out, f), "--ff", ff, "-o", tf], capture_output=True, text=True)
         n += 1
