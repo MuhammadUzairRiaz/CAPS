@@ -71,6 +71,8 @@
                             IsEnabled="{Binding MdHasConstraints}"
                             ToolTip.Tip="How the positions are put back on the constraints each step: SHAKE (iterative, as LAMMPS fix shake) or LINCS (Hess et al. 1997, as GROMACS); both give the same trajectory to the tolerance, velocities by RATTLE. Equilibrate uses the same choice" />
                 </Grid>
+                <CheckBox Classes="toggle" Content="Heavier hydrogens (3.024 u)" IsChecked="{Binding MdHmr}"
+                          ToolTip.Tip="Hydrogen mass repartitioning: each hydrogen takes mass from the atom it is bonded to, so the total mass and every equilibrium average stay the same while hydrogens move slower. With bonds to hydrogen held, Δt can go to 3 fs (measured on polystyrene; 4 fs does not hold the energy). Equilibrate uses it too" />
                 <Grid ColumnDefinitions="2*,*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="4" IsEnabled="{Binding MdHasThermostat}">
                   <TextBlock Text="Thermostat" Classes="label" /><TextBlock Grid.Column="1" Text="T (K)" Classes="label" /><TextBlock Grid.Column="2" Text="τ_T (fs)" Classes="label" />
                   <ComboBox Grid.Row="1" ItemsSource="{x:Static vm:MainViewModel.Thermostats}" SelectedIndex="{Binding MdThermostat}" HorizontalAlignment="Stretch" />
