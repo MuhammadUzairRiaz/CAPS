@@ -131,6 +131,45 @@
    ],
    "source": "the 2024 .sb's cyclopropane entries (wlj 10/97)",
    "reason": "the file gives CY the CT values for bends outside the ring (CY-CT-HC = CT-CT-HC 37.5 / 110.7); CT-CT-CY is then CT-CT-CT, 58.35 / 112.7"
+  },
+  {
+   "match": [
+    "CA",
+    "SY",
+    "CA"
+   ],
+   "params": [
+    50.08,
+    103.78
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "B3LYP-D3BJ/def2-TZVP relaxed scan of diphenyl sulfone (9 points), E = K (theta - theta0)^2, RMS 0.05 kcal/mol"
+  },
+  {
+   "match": [
+    "OS",
+    "CT",
+    "CY"
+   ],
+   "params": [
+    61.14,
+    108.93
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "B3LYP-D3BJ/def2-TZVP relaxed scan of glycidyl methyl ether (9 points), E = K (theta - theta0)^2, RMS 0.05 kcal/mol"
+  },
+  {
+   "match": [
+    "CT",
+    "CM",
+    "Cl"
+   ],
+   "params": [
+    33.16,
+    113.04
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "B3LYP-D3BJ/def2-TZVP relaxed scan of (Z)-2-chloro-2-butene (9 points), E = K (theta - theta0)^2, RMS 0.01 kcal/mol"
   }
  ],
  "atom_types": [
