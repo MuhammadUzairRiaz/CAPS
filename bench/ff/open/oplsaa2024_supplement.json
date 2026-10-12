@@ -1,21 +1,180 @@
 {
- "description": "Terms the OPLS-AA 2024 BOSS files (J. Phys. Chem. B 128, 250 (2024), SI) lack for polymers of CAPS's library, each from the OPLS-AA paper that defines it; bench/ff/convert_boss_opls.py --supplement adds them only where the .sb has no entry (Jorgensen's files win). Units as the .sb: K in kcal/mol/A^2 or /rad^2 (E = K (x - x0)^2), r0 in A, theta0 in degrees.",
+ "description": "Terms the OPLS-AA 2024 BOSS files (J. Phys. Chem. B 128, 250 (2024), SI) lack for polymers of CAPS's library, each from the OPLS-AA paper that defines it, and atom types (caps_*) for environments the table has no number for, charged by OPLS-AA's own group increments; bench/ff/convert_boss_opls.py --supplement adds them only where the .sb has no entry (Jorgensen's files win). Units as the .sb: K in kcal/mol/A^2 or /rad^2 (E = K (x - x0)^2), r0 in A, theta0 in degrees.",
  "bonds": [
-  {"match": ["CF", "CT"], "params": [268.0, 1.529], "source": "E. K. Watkins, W. L. Jorgensen, J. Phys. Chem. A 105, 4118 (2001), Table 2",
-   "reason": "the paper's perfluoroalkane carbons are class CT (the 2024 files' CF): a fluorinated carbon bonded to a hydrocarbon carbon is its CT-CT, 268.0 / 1.529 (the 2024 files' CF-CF)"}
+  {
+   "match": [
+    "CF",
+    "CT"
+   ],
+   "params": [
+    268.0,
+    1.529
+   ],
+   "source": "E. K. Watkins, W. L. Jorgensen, J. Phys. Chem. A 105, 4118 (2001), Table 2",
+   "reason": "the paper's perfluoroalkane carbons are class CT (the 2024 files' CF): a fluorinated carbon bonded to a hydrocarbon carbon is its CT-CT, 268.0 / 1.529 (the 2024 files' CF-CF)"
+  }
  ],
  "angles": [
-  {"match": ["CF", "CT", "CF"], "params": [58.35, 112.7], "source": "Watkins & Jorgensen 2001, Table 3 (CT-CT-CT)", "reason": "the 2024 files' CF is the paper's CT"},
-  {"match": ["CF", "CT", "CT"], "params": [58.35, 112.7], "source": "Watkins & Jorgensen 2001, Table 3 (CT-CT-CT)", "reason": "as above"},
-  {"match": ["CT", "CF", "CT"], "params": [58.35, 112.7], "source": "Watkins & Jorgensen 2001, Table 3 (CT-CT-CT)", "reason": "as above"},
-  {"match": ["CF", "CT", "F"], "params": [50.0, 109.5], "source": "Watkins & Jorgensen 2001, Table 3 (CT-CT-F)", "reason": "as above"},
-  {"match": ["CT", "CF", "F"], "params": [50.0, 109.5], "source": "Watkins & Jorgensen 2001, Table 3 (CT-CT-F)", "reason": "as above"},
-  {"match": ["CF", "CT", "HC"], "params": [37.5, 110.7], "source": "W. L. Jorgensen, D. S. Maxwell, J. Tirado-Rives, J. Am. Chem. Soc. 118, 11225 (1996) (CT-CT-HC); Watkins & Jorgensen 2001",
-   "reason": "the perfluoroalkane paper has no H; with its CF = CT the bend is OPLS-AA's CT-CT-HC (the 2024 .sb's CT-CT-HC, 37.5 / 110.7)"},
-  {"match": ["CO", "OS", "CO"], "params": [60.0, 109.5], "source": "W. Damm, A. Frontera, J. Tirado-Rives, W. L. Jorgensen, J. Comput. Chem. 18, 1955 (1997), Table IV (CT-OS-CT, CT-OS-CO)",
-   "reason": "the paper's acetal carbon CO takes CT's bonded terms throughout (CT-OS-CO = CT-OS-CT, CT-CO-OS = CT-CT-OS); its C-O-C bend 60.0 / 109.5 (polyoxymethylene's O between two acetal carbons)"},
-  {"match": ["CO", "CT", "OS"], "params": [50.0, 109.5], "source": "Damm et al. 1997, Table IV (CT-CT-OS, CT-CO-OS)", "reason": "CO with CT's bonded terms: CT-CT-OS 50.0 / 109.5"},
-  {"match": ["CT", "CT", "CY"], "params": [58.35, 112.7], "source": "the 2024 .sb's cyclopropane entries (wlj 10/97)",
-   "reason": "the file gives CY the CT values for bends outside the ring (CY-CT-HC = CT-CT-HC 37.5 / 110.7); CT-CT-CY is then CT-CT-CT, 58.35 / 112.7"}
+  {
+   "match": [
+    "CF",
+    "CT",
+    "CF"
+   ],
+   "params": [
+    58.35,
+    112.7
+   ],
+   "source": "Watkins & Jorgensen 2001, Table 3 (CT-CT-CT)",
+   "reason": "the 2024 files' CF is the paper's CT"
+  },
+  {
+   "match": [
+    "CF",
+    "CT",
+    "CT"
+   ],
+   "params": [
+    58.35,
+    112.7
+   ],
+   "source": "Watkins & Jorgensen 2001, Table 3 (CT-CT-CT)",
+   "reason": "as above"
+  },
+  {
+   "match": [
+    "CT",
+    "CF",
+    "CT"
+   ],
+   "params": [
+    58.35,
+    112.7
+   ],
+   "source": "Watkins & Jorgensen 2001, Table 3 (CT-CT-CT)",
+   "reason": "as above"
+  },
+  {
+   "match": [
+    "CF",
+    "CT",
+    "F"
+   ],
+   "params": [
+    50.0,
+    109.5
+   ],
+   "source": "Watkins & Jorgensen 2001, Table 3 (CT-CT-F)",
+   "reason": "as above"
+  },
+  {
+   "match": [
+    "CT",
+    "CF",
+    "F"
+   ],
+   "params": [
+    50.0,
+    109.5
+   ],
+   "source": "Watkins & Jorgensen 2001, Table 3 (CT-CT-F)",
+   "reason": "as above"
+  },
+  {
+   "match": [
+    "CF",
+    "CT",
+    "HC"
+   ],
+   "params": [
+    37.5,
+    110.7
+   ],
+   "source": "W. L. Jorgensen, D. S. Maxwell, J. Tirado-Rives, J. Am. Chem. Soc. 118, 11225 (1996) (CT-CT-HC); Watkins & Jorgensen 2001",
+   "reason": "the perfluoroalkane paper has no H; with its CF = CT the bend is OPLS-AA's CT-CT-HC (the 2024 .sb's CT-CT-HC, 37.5 / 110.7)"
+  },
+  {
+   "match": [
+    "CO",
+    "OS",
+    "CO"
+   ],
+   "params": [
+    60.0,
+    109.5
+   ],
+   "source": "W. Damm, A. Frontera, J. Tirado-Rives, W. L. Jorgensen, J. Comput. Chem. 18, 1955 (1997), Table IV (CT-OS-CT, CT-OS-CO)",
+   "reason": "the paper's acetal carbon CO takes CT's bonded terms throughout (CT-OS-CO = CT-OS-CT, CT-CO-OS = CT-CT-OS); its C-O-C bend 60.0 / 109.5 (polyoxymethylene's O between two acetal carbons)"
+  },
+  {
+   "match": [
+    "CO",
+    "CT",
+    "OS"
+   ],
+   "params": [
+    50.0,
+    109.5
+   ],
+   "source": "Damm et al. 1997, Table IV (CT-CT-OS, CT-CO-OS)",
+   "reason": "CO with CT's bonded terms: CT-CT-OS 50.0 / 109.5"
+  },
+  {
+   "match": [
+    "CT",
+    "CT",
+    "CY"
+   ],
+   "params": [
+    58.35,
+    112.7
+   ],
+   "source": "the 2024 .sb's cyclopropane entries (wlj 10/97)",
+   "reason": "the file gives CY the CT values for bends outside the ring (CY-CT-HC = CT-CT-HC 37.5 / 110.7); CT-CT-CY is then CT-CT-CT, 58.35 / 112.7"
+  }
+ ],
+ "atom_types": [
+  {
+   "name": "caps_ccl2",
+   "lj_from": "opls_974",
+   "charge": 0.4,
+   "description": "C in R2CCl2",
+   "reason": "each Cl (151, -0.200) adds +0.200 to its carbon group, as the 2024 table's RCH2Cl 152 (-0.006 + 2 x 0.103), R2CHCl 973 (0.097 + 0.103) and R3CCl 974 (0.200) do: two Cl, +0.400 (poly(vinylidene chloride))"
+  },
+  {
+   "name": "caps_chcl2",
+   "lj_from": "opls_973",
+   "charge": 0.297,
+   "description": "C in RCHCl2",
+   "reason": "each Cl (151, -0.200) adds +0.200 to its carbon group, as the 2024 table's RCH2Cl 152 (-0.006 + 2 x 0.103), R2CHCl 973 (0.097 + 0.103) and R3CCl 974 (0.200) do: two Cl and one H 0.103, 0.400 - 0.103"
+  },
+  {
+   "name": "caps_ch2cl2",
+   "lj_from": "opls_152",
+   "charge": 0.194,
+   "description": "C in CH2Cl2",
+   "reason": "each Cl (151, -0.200) adds +0.200 to its carbon group, as the 2024 table's RCH2Cl 152 (-0.006 + 2 x 0.103), R2CHCl 973 (0.097 + 0.103) and R3CCl 974 (0.200) do: two Cl and two H, 0.400 - 0.206"
+  },
+  {
+   "name": "caps_ccl3",
+   "lj_from": "opls_974",
+   "charge": 0.6,
+   "description": "C in RCCl3",
+   "reason": "each Cl (151, -0.200) adds +0.200 to its carbon group, as the 2024 table's RCH2Cl 152 (-0.006 + 2 x 0.103), R2CHCl 973 (0.097 + 0.103) and R3CCl 974 (0.200) do: three Cl, +0.600"
+  },
+  {
+   "name": "caps_chcl3",
+   "lj_from": "opls_973",
+   "charge": 0.497,
+   "description": "C in CHCl3",
+   "reason": "each Cl (151, -0.200) adds +0.200 to its carbon group, as the 2024 table's RCH2Cl 152 (-0.006 + 2 x 0.103), R2CHCl 973 (0.097 + 0.103) and R3CCl 974 (0.200) do: three Cl and one H, 0.600 - 0.103"
+  },
+  {
+   "name": "caps_pyr2ch",
+   "lj_from": "opls_671",
+   "charge": -0.048,
+   "description": "CH on pyridine C2",
+   "reason": "a 2-alkyl group carries pyridine's H2 charge (+0.012): CH3 670 -0.168 + 3 x 0.060, CH2 671 -0.108 + 2 x 0.060; a CH -0.048 + 0.060 (poly(2-vinylpyridine))"
+  }
  ]
 }

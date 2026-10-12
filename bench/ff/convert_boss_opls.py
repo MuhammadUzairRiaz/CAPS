@@ -147,6 +147,19 @@ for l in open(SB, errors="replace").read().splitlines():
 if arg("--supplement"):   # terms the files lack, each from the OPLS-AA paper that defines it (Jorgensen's files win)
     sup = json.load(open(arg("--supplement")))
     added = []
+    # atom types for environments the .par has no number for, named caps_*: the class and LJ of the number named in
+    # lj_from, the charge from OPLS-AA's own group increments (or a CAPS CM5 derivation), each with its reason
+    names = {t["name"] for t in types}
+    for t in sup.get("atom_types", []):
+        if t["name"] in names:
+            continue
+        ref = next(x for x in types if x["name"] == t["lj_from"])
+        lj = next(x for x in pairs if x["name"] == t["lj_from"])["params"]
+        types.append({"name": t["name"], "element": ref["element"], "mass": ref["mass"], "charge": t["charge"],
+                      "description": f"{t['description']} (CAPS: {t['reason']})",
+                      "equivalence": dict(ref["equivalence"])})
+        pairs.append({"name": t["name"], "match": [t["name"]], "params": list(lj)})
+        added.append(t["name"])
     for kind, lst, seen in (("bonds", bonds, seen_b), ("angles", angles, seen_a)):
         for t in sup.get(kind, []):
             m = t["match"]
@@ -158,12 +171,15 @@ if arg("--supplement"):   # terms the files lack, each from the OPLS-AA paper th
                         "comment": f"{t['source']}: {t['reason']}"})
             added.append("-".join(m))
     if added:
-        notes.append(f"{len(added)} terms the 2024 files lack, each from the OPLS-AA paper that defines it (bench/ff/open/oplsaa2024_supplement.json): "
+        notes.append(f"{len(added)} types and terms the 2024 files lack, each from the OPLS-AA paper that defines it or from OPLS-AA's own "
+                     "charge increments (bench/ff/open/oplsaa2024_supplement.json): "
                      + ", ".join(added))
 if alternatives:
     notes.append(f"{len(alternatives)} torsions the .par gives again for particular molecules (the first, general line is "
                  "applied): " + "; ".join(alternatives))
 notes.append("'allenes improper' lines (four nearly collinear atoms) are left out")
+notes.append("torsions inside a three-membered ring (an epoxide's CT-CY-O$-CY, CY-O$-CY-HC ...) have no lines in the "
+             "files and are zero (ring3_torsions): the ring cannot turn, its shape held by the CY / O$ bends")
 doc = {"format": "caps-forcefield", "format_version": 1, "name": arg("--name", "OPLS-AA 2024 (Jorgensen)"),
        "source": "BOSS parameter files of W. L. Jorgensen et al., J. Phys. Chem. B 128, 250 (2024), SI jp3c06602_si_002 (.par) "
                  "and jp3c06602_si_003 (.sb)", "units": "real",
@@ -171,7 +187,7 @@ doc = {"format": "caps-forcefield", "format_version": 1, "name": arg("--name", "
                       "W. L. Jorgensen et al., J. Phys. Chem. B 128, 250 (2024)"],
        "styles": {"pair": "lj/cut/coul/long", "bond": "harmonic", "angle": "harmonic", "dihedral": "opls", "improper": "cvff"},
        "mixing": "geometric", "special_lj": [0, 0, 0.5], "special_coul": [0, 0, 0.5], "cutoff": 12,
-       "improper_order": "center1_sorted", "equivalence": "replace",
+       "improper_order": "center1_sorted", "equivalence": "replace", "ring3_torsions": "zero",
        "atom_types": types, "pairs": pairs, "bonds": bonds, "angles": angles, "dihedrals": dihedrals, "impropers": impropers,
        "notes": ["converted by CAPS (bench/ff/convert_boss_opls.py) from Jorgensen's published BOSS files"] + notes,
        "version": "2024 (parameter files of October 2023)"}

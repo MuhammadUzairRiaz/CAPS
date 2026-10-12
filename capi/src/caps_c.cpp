@@ -909,7 +909,7 @@ void field_run(caps_doc* d) {
   if (!d->field->model.empty()) { field_run_model(d); return; }
   FieldState& F = *d->field;
   caps::FFDef def = F.base;
-  def.zero_ring3_torsions = F.zero_ring3_torsions;
+  def.zero_ring3_torsions = def.zero_ring3_torsions || F.zero_ring3_torsions;   // the file's own convention, or the opt-in
   // gap fillers first: the last matching rule wins, so the force field's own rules (and the imported ones) come later
   caps::prepend_fill(def, F.fill);
   caps::merge_forcefield(def, F.extra);

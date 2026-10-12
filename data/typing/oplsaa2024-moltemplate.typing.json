@@ -2,7 +2,7 @@
  "format": "caps-typing",
  "version": 1,
  "forcefield": "OPLS-AA (2024 parameter file)",
- "description": "CAPS rules giving OPLS-AA type numbers by chemical group, with the carbons and hydrogens that balance each group's charge (Jorgensen, Maxwell & Tirado-Rives, J. Am. Chem. Soc. 118, 11225 (1996)). Environments the table has no number for (siloxanes, aryl carbonates, CCl2 carbons, substituted ureas, imides, carbamates) are left untyped and reported. Among matching rules the highest priority wins.",
+ "description": "CAPS rules giving OPLS-AA type numbers by chemical group, with the carbons and hydrogens that balance each group's charge (Jorgensen, Maxwell & Tirado-Rives, J. Am. Chem. Soc. 118, 11225 (1996)). Environments the table has no number for (siloxanes, aryl carbonates, N-alkyl ureas, N-substituted and aryl imides, carbamates) are left untyped and reported. Among matching rules the highest priority wins.",
  "rules": [
   {
    "type": "135",
@@ -75,6 +75,12 @@
    "smarts": "[c;R2;$(c(:c)(:c):c)]",
    "priority": 2,
    "description": "fused aromatic C (naphthalene C9)"
+  },
+  {
+   "type": "165",
+   "smarts": "[c;!$(*~[!#6;!#1]);$(c[CX3;!a]=[CX3])]",
+   "priority": 3,
+   "description": "aromatic C bearing a vinyl C (styrene C(ipso))"
   },
   {
    "type": "519",
@@ -351,6 +357,18 @@
    "smarts": "c[OX2;!$(O[#1]);!$(O[#6]=[O,S,N]);!$(O[Si]);!$(O~[#6](~[OX2])~[OX2]);!$(O[CX4]([OX2])[OX2]);!r3;$(O(c)c)]",
    "priority": 5,
    "description": "diaryl ether C(O) (the phenyl ester C(ipso))"
+  },
+  {
+   "type": "177",
+   "smarts": "[OX2;!$(O[#1]);!$(O[#6]=[O,S,N]);!$(O[Si]);!$(O~[#6](~[OX2])~[OX2]);!$(O[CX4]([OX2])[OX2]);!r3;$(O(c)c)]",
+   "priority": 6,
+   "description": "diaryl ether O (diphenyl ether, OPLS/2020)"
+  },
+  {
+   "type": "199",
+   "smarts": "c[OX2;!$(O[#1]);!$(O[#6]=[O,S,N]);!$(O[Si]);!$(O~[#6](~[OX2])~[OX2]);!$(O[CX4]([OX2])[OX2]);!r3;$(O(c)c)]",
+   "priority": 6,
+   "description": "diaryl ether C(O) (as anisole's C(OMe), with diphenyl ether's O 177)"
   },
   {
    "type": "186",
@@ -693,6 +711,12 @@
    "smarts": "[CX3](=[OX1])[OX2H1]",
    "priority": 7,
    "description": "carboxylic acid C"
+  },
+  {
+   "type": "470",
+   "smarts": "[CX3](=[OX1])([OX2H1])c",
+   "priority": 8,
+   "description": "aryl carboxylic acid C (benzoic acid: the ring keeps benzene's charges)"
   },
   {
    "type": "269",
@@ -1229,6 +1253,12 @@
    "description": "polychlorinated C (C)"
   },
   {
+   "type": "972",
+   "smarts": "[H][CX4H1;$(*(Cl)Cl);!$(*[F,Br,I])]",
+   "priority": 7,
+   "description": "H on a polychlorinated CH (as R2CHCl; a CH2 keeps 153)"
+  },
+  {
    "type": "153",
    "smarts": "[H][CX4;$(*(Cl)Cl)]",
    "priority": 6,
@@ -1487,6 +1517,30 @@
    "description": "sulfone O"
   },
   {
+   "type": "135",
+   "smarts": "[CX4H3;$(*[SX4](=[OX1])(=[OX1])[#6]);!$(*[!#6;!#1;!#16])]",
+   "priority": 6,
+   "description": "alkyl C on a sulfone S (CH3)"
+  },
+  {
+   "type": "136",
+   "smarts": "[CX4H2;$(*[SX4](=[OX1])(=[OX1])[#6]);!$(*[!#6;!#1;!#16])]",
+   "priority": 6,
+   "description": "alkyl C on a sulfone S (CH2)"
+  },
+  {
+   "type": "137",
+   "smarts": "[CX4H1;$(*[SX4](=[OX1])(=[OX1])[#6]);!$(*[!#6;!#1;!#16])]",
+   "priority": 6,
+   "description": "alkyl C on a sulfone S (CH)"
+  },
+  {
+   "type": "139",
+   "smarts": "[CX4H0;$(*[SX4](=[OX1])(=[OX1])[#6]);!$(*[!#6;!#1;!#16])]",
+   "priority": 6,
+   "description": "alkyl C on a sulfone S (C)"
+  },
+  {
    "type": "488",
    "smarts": "c[SX4](=[OX1])(=[OX1])",
    "priority": 7,
@@ -1581,18 +1635,6 @@
    "smarts": "[CX4H2;$(*[SX3]=[OX1])]",
    "priority": 6,
    "description": "C on a sulfoxide S (CH2)"
-  },
-  {
-   "type": "484",
-   "smarts": "[CX4H2;$(*[SX4](=[OX1])(=[OX1])[#6])]",
-   "priority": 6,
-   "description": "C alpha to a sulfone S (CH2)"
-  },
-  {
-   "type": "485",
-   "smarts": "[H][CX4H2][SX4](=[OX1])(=[OX1])[#6]",
-   "priority": 6,
-   "description": "H on C alpha to a sulfone S"
   },
   {
    "type": "213",
@@ -2112,33 +2154,117 @@
   },
   {
    "type": "247",
-   "smarts": "[CX3;$(C(=[OX1])([NX3H2])[NX3H2])]",
+   "smarts": "[CX3;$(C(=[OX1])([NX3;$([NH2]),$([NH1]c)])[NX3;$([NH2]),$([NH1]c)])]",
    "priority": 9,
    "description": "urea C"
   },
   {
    "type": "248",
-   "smarts": "[OX1]=[CX3;$(C(=[OX1])([NX3H2])[NX3H2])]",
+   "smarts": "[OX1]=[CX3;$(C(=[OX1])([NX3;$([NH2]),$([NH1]c)])[NX3;$([NH2]),$([NH1]c)])]",
    "priority": 9,
    "description": "urea O"
   },
   {
    "type": "249",
-   "smarts": "[NX3H2][CX3;$(C(=[OX1])([NX3H2])[NX3H2])]",
+   "smarts": "[NX3H2][CX3;$(C(=[OX1])([NX3;$([NH2]),$([NH1]c)])[NX3;$([NH2]),$([NH1]c)])]",
    "priority": 9,
    "description": "urea N"
   },
   {
    "type": "250",
-   "smarts": "[H][NX3H2][CX3;$(C(=[OX1])([NX3H2])[NX3H2])]",
+   "smarts": "[H][NX3H2][CX3;$(C(=[OX1])([NX3;$([NH2]),$([NH1]c)])[NX3;$([NH2]),$([NH1]c)])]",
    "priority": 9,
    "description": "urea H"
+  },
+  {
+   "type": "1033",
+   "smarts": "[NX3H1;$(*c)][CX3;$(C(=[OX1])([NX3;$([NH2]),$([NH1]c)])[NX3;$([NH2]),$([NH1]c)])]",
+   "priority": 9,
+   "description": "N-aryl urea N (N-phenylurea)"
+  },
+  {
+   "type": "250",
+   "smarts": "[H][NX3H1;$(*c)][CX3;$(C(=[OX1])([NX3;$([NH2]),$([NH1]c)])[NX3;$([NH2]),$([NH1]c)])]",
+   "priority": 9,
+   "description": "H on an N-aryl urea N"
+  },
+  {
+   "type": "1034",
+   "smarts": "c[NX3H1][CX3;$(C(=[OX1])([NX3;$([NH2]),$([NH1]c)])[NX3;$([NH2]),$([NH1]c)])]",
+   "priority": 9,
+   "description": "ring C on an N-aryl urea N"
+  },
+  {
+   "type": "252",
+   "smarts": "[CX3;$(*(=[OX1])[NX3H1;$(*([CX3;$(*(=[OX1])[NX3H1][CX3]=[OX1]);$(*[CX4,#1]);!$(*[OX2]);!$(*([NX3])[NX3])])[CX3;$(*(=[OX1])[NX3H1][CX3]=[OX1]);$(*[CX4,#1]);!$(*[OX2]);!$(*([NX3])[NX3])])])]",
+   "priority": 8,
+   "description": "imide C=O"
+  },
+  {
+   "type": "253",
+   "smarts": "[OX1]=[CX3][NX3H1;$(*([CX3;$(*(=[OX1])[NX3H1][CX3]=[OX1]);$(*[CX4,#1]);!$(*[OX2]);!$(*([NX3])[NX3])])[CX3;$(*(=[OX1])[NX3H1][CX3]=[OX1]);$(*[CX4,#1]);!$(*[OX2]);!$(*([NX3])[NX3])])]",
+   "priority": 8,
+   "description": "imide =O"
+  },
+  {
+   "type": "251",
+   "smarts": "[NX3H1;$(*([CX3;$(*(=[OX1])[NX3H1][CX3]=[OX1]);$(*[CX4,#1]);!$(*[OX2]);!$(*([NX3])[NX3])])[CX3;$(*(=[OX1])[NX3H1][CX3]=[OX1]);$(*[CX4,#1]);!$(*[OX2]);!$(*([NX3])[NX3])])]",
+   "priority": 8,
+   "description": "imide N"
+  },
+  {
+   "type": "254",
+   "smarts": "[H][NX3H1;$(*([CX3;$(*(=[OX1])[NX3H1][CX3]=[OX1]);$(*[CX4,#1]);!$(*[OX2]);!$(*([NX3])[NX3])])[CX3;$(*(=[OX1])[NX3H1][CX3]=[OX1]);$(*[CX4,#1]);!$(*[OX2]);!$(*([NX3])[NX3])])]",
+   "priority": 8,
+   "description": "H on imide N"
+  },
+  {
+   "type": "255",
+   "smarts": "[H][CX3][NX3H1;$(*([CX3;$(*(=[OX1])[NX3H1][CX3]=[OX1]);$(*[CX4,#1]);!$(*[OX2]);!$(*([NX3])[NX3])])[CX3;$(*(=[OX1])[NX3H1][CX3]=[OX1]);$(*[CX4,#1]);!$(*[OX2]);!$(*([NX3])[NX3])])]",
+   "priority": 8,
+   "description": "H on an imide carbonyl C (formimide)"
+  },
+  {
+   "type": "256",
+   "smarts": "[CX4H3;$(*[CX3](=[OX1])[NX3H1;$(*([CX3;$(*(=[OX1])[NX3H1][CX3]=[OX1]);$(*[CX4,#1]);!$(*[OX2]);!$(*([NX3])[NX3])])[CX3;$(*(=[OX1])[NX3H1][CX3]=[OX1]);$(*[CX4,#1]);!$(*[OX2]);!$(*([NX3])[NX3])])])]",
+   "priority": 8,
+   "description": "alkyl C on an imide carbonyl (CH3)"
+  },
+  {
+   "type": "257",
+   "smarts": "[CX4H2;$(*[CX3](=[OX1])[NX3H1;$(*([CX3;$(*(=[OX1])[NX3H1][CX3]=[OX1]);$(*[CX4,#1]);!$(*[OX2]);!$(*([NX3])[NX3])])[CX3;$(*(=[OX1])[NX3H1][CX3]=[OX1]);$(*[CX4,#1]);!$(*[OX2]);!$(*([NX3])[NX3])])])]",
+   "priority": 8,
+   "description": "alkyl C on an imide carbonyl (CH2)"
+  },
+  {
+   "type": "258",
+   "smarts": "[CX4H1;$(*[CX3](=[OX1])[NX3H1;$(*([CX3;$(*(=[OX1])[NX3H1][CX3]=[OX1]);$(*[CX4,#1]);!$(*[OX2]);!$(*([NX3])[NX3])])[CX3;$(*(=[OX1])[NX3H1][CX3]=[OX1]);$(*[CX4,#1]);!$(*[OX2]);!$(*([NX3])[NX3])])])]",
+   "priority": 8,
+   "description": "alkyl C on an imide carbonyl (CH)"
+  },
+  {
+   "type": "259",
+   "smarts": "[CX4H0;$(*[CX3](=[OX1])[NX3H1;$(*([CX3;$(*(=[OX1])[NX3H1][CX3]=[OX1]);$(*[CX4,#1]);!$(*[OX2]);!$(*([NX3])[NX3])])[CX3;$(*(=[OX1])[NX3H1][CX3]=[OX1]);$(*[CX4,#1]);!$(*[OX2]);!$(*([NX3])[NX3])])])]",
+   "priority": 8,
+   "description": "alkyl C on an imide carbonyl (C)"
+  },
+  {
+   "type": "140",
+   "smarts": "[H][CX4][CX3](=[OX1])[NX3H1;$(*([CX3;$(*(=[OX1])[NX3H1][CX3]=[OX1]);$(*[CX4,#1]);!$(*[OX2]);!$(*([NX3])[NX3])])[CX3;$(*(=[OX1])[NX3H1][CX3]=[OX1]);$(*[CX4,#1]);!$(*[OX2]);!$(*([NX3])[NX3])])]",
+   "priority": 8,
+   "description": "H on that C"
   },
   {
    "type": "670",
    "smarts": "[CX4H3;$(*c1ncccc1)]",
    "priority": 7,
    "description": "CH3 on pyridine C2"
+  },
+  {
+   "type": "671",
+   "smarts": "[CX4H2;$(*c1ncccc1)]",
+   "priority": 7,
+   "description": "CH2 on pyridine C2 (2-ethylpyridine)"
   },
   {
    "type": "672",

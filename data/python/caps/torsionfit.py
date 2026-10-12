@@ -124,6 +124,23 @@ def caps_apply(structure, ffjson, out, overlay=None):
     return float(m.group(1)) if m else None
 
 
+def listed_missing(structure, ffjson, cl):
+    """the torsion classes CAPS reports it has no parameters for. A data file leaves out torsions whose terms are all
+    zero (HC-CT-C-O in OPLS-AA ...), so a quadruple missing from it is not by itself a missing torsion"""
+    tmp = structure + ".missing.data"
+    r = subprocess.run([caps_binary(), "ff", "apply", structure, "--ff", ffjson, "--charges", "types", "-o", tmp],
+                       capture_output=True, text=True)
+    if os.path.exists(tmp):
+        os.remove(tmp)
+    out = set()
+    for line in (r.stdout + r.stderr).splitlines():
+        m = re.match(r"^\s+dihedral\s+(.+)$", line)
+        if m:
+            key = tuple(cl.get(t, t) for t in re.findall(r"(\S+?)\(", m.group(1)))
+            out.add(min(key, key[::-1]))
+    return out
+
+
 # ------------------------------------------------------------------ geometry
 def sub(a, b): return [a[k] - b[k] for k in range(3)]
 def dot(a, b): return sum(a[k] * b[k] for k in range(3))
@@ -239,9 +256,12 @@ def prepare():
         el = [element_of_mass(m) for m in masses]
         nb = neighbours(len(el), bonds)
         mols.append((types, pos, el, nb))
+        listed = listed_missing(structure, ffjson, cl)
         for q in propers(nb) - have:
             key = tuple(cl.get(types[x], types[x]) for x in q)
             key = min(key, key[::-1])
+            if key not in listed:   # an all-zero torsion of the force field, left out of the data file
+                continue
             missing.setdefault(key, (n, []))[1].append(q) if missing.get(key, (n,))[0] == n else None
     plan = {"ff": ffjson, "engine": engine, "level": LEVEL, "step": step, "scans": [], "not_scanned": []}
     jobs = []
@@ -389,9 +409,12 @@ def fit():
             types, _, pos, _, have = read_data(data)
             if groups is None:   # the missing torsions round the central bond, by class
                 groups = {}
+                listed = listed_missing(m2, ffjson, cl)
                 for q in propers(fnb) - have:
                     if {q[1], q[2]} == {b, c}:
                         key = tuple(cl.get(types[x], types[x]) for x in q)
+                        if min(key, key[::-1]) not in listed:
+                            continue
                         groups.setdefault(min(key, key[::-1]), []).append(q)
                 keys = sorted(groups)
             row = [1.0]

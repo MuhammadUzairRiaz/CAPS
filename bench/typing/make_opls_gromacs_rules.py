@@ -19,8 +19,12 @@ def opls(t):
     return "opls_%03d" % int(t) if re.fullmatch(r"\d+", t) else t
 
 
+# every rule with its flags (make_oplsaa_rules.py's R): the moltemplate file keeps only the numbers that library has
+_m = {}
+exec(open(os.path.join(HERE, "make_oplsaa_rules.py")).read().split('\nif __name__ == "__main__":')[0], _m)
+ALL = _m["R"]
 rules, dropped = [], set()
-for r in src["rules"]:
+for r in [x for x in ALL if not x.get("only2024")]:
     t = opls(r["type"])
     if t not in have:
         dropped.add(t)
@@ -142,11 +146,12 @@ if __name__ == "__main__":
     have24 = {t["name"] for t in json.load(open(os.path.join(DATA, "forcefields", "oplsaa2024.json")))["atom_types"]}
     WATER = {"9999": "opls_111", "9998": "opls_112"}
     rules24, lacking = [], set()
-    for r in src["rules"]:
+    for r in ALL:
         t = WATER.get(r["type"], opls(r["type"]))
         if t not in have24:
             lacking.add(t)
             continue
+        r = {k: v for k, v in r.items() if k != "only2024"}
         rules24.append({**r, "type": t, **({"overrides": [WATER.get(x, opls(x)) for x in r["overrides"]]} if "overrides" in r else {})})
     json.dump({"format": "caps-typing", "version": 1, "forcefield": "OPLS-AA 2024 (Jorgensen)", "unknown_types": "untyped",
                "description": "CAPS's OPLS-AA rules in opls_NNN names for the library built from Jorgensen's 2024 BOSS files "

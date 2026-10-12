@@ -342,6 +342,7 @@ void save_forcefield(const FFDef& ff, const std::string& path) {
   if (ff.timestep > 0) j["timestep"] = ff.timestep;
   if (ff.torsions_if_defined) j["torsion_terms"] = "if_defined";
   if (ff.torsions_one_per_bond) j["torsion_selection"] = "one_per_bond";
+  if (ff.zero_ring3_torsions) j["ring3_torsions"] = "zero";
   if (!ff.coul14_rules.empty()) {
     Json a = Json::array();
     for (const auto& c : ff.coul14_rules) {
@@ -517,6 +518,9 @@ FFDef load_forcefield(const std::string& path) {
   ff.timestep = j.num("timestep", 0);
   ff.torsions_if_defined = j.text("torsion_terms") == "if_defined";
   ff.torsions_one_per_bond = j.text("torsion_selection") == "one_per_bond";
+  // "ring3_torsions": "zero": the force field itself has no torsions inside a three-membered ring (the opt-in below as
+  // the file's own convention)
+  ff.zero_ring3_torsions = j.text("ring3_torsions") == "zero";
   if (j.has("coul14_rules"))
     for (const auto& r : j["coul14_rules"].items()) {
       FFDef::Coul14Rule c;
