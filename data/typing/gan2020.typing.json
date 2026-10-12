@@ -1,0 +1,22 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "GaN (Wonglakhon & Zahn 2020)",
+ "unknown_types": "untyped",
+ "bonds": "defined",
+ "description": "Ga and N ions (no bonds: the ions interact through the pair terms only)",
+ "rules": [
+  {
+   "type": "Ga",
+   "smarts": "[Ga]",
+   "priority": 0,
+   "description": "Ga3+"
+  },
+  {
+   "type": "N",
+   "smarts": "[N]",
+   "priority": 0,
+   "description": "N3-"
+  }
+ ]
+}

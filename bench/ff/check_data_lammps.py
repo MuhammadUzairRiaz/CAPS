@@ -61,6 +61,8 @@ CASES = [
     ("SrTiO3 perovskite, core-shell (CORESHELL styles)", ("crystal", ["--group", "P m -3 m", "--cell", "3.905,3.905,3.905", "--sites",
      "Sr1 Sr 0 0 0; Ti1 Ti 0.5 0.5 0.5; O1 O 0.5 0.5 0", "--supercell", "3,3,3"]), "inorganic-ternary-oxides", "types", "rules", ["--no-tail"]),
     ("Binary oxides (Buckingham, periodic)", ("ionic-first", "INORGANIC_binary_oxides", ""), "inorganic-binary-oxides", "qeq", "keys"),
+    ("GaN (Wonglakhon & Zahn 2020): wurtzite, formal charges, LJ + Born-Mayer", ("crystal", ["--group", "P 63 m c", "--cell", "3.189,3.189,5.185,90,90,120",
+     "--sites", "Ga1 Ga 0.33333333 0.66666667 0; N1 N 0.33333333 0.66666667 0.377", "--supercell", "4,4,3"]), "gan2020", "types", "rules", ["--no-tail"]),
     # Bush, Gale, Catlow & Battle 1994 (one shell-model set for the oxides): MgO, SrTiO3, corundum
     ("Bush 1994: MgO rock salt, core-shell", ("crystal", ["--group", "F m -3 m", "--cell", "4.212,4.212,4.212", "--sites", "Mg1 Mg 0 0 0; O1 O 0.5 0.5 0.5",
      "--supercell", "3,3,3"]), "bush1994-oxides", "types", "rules", ["--no-tail"]),
@@ -621,7 +623,7 @@ for case in CASES:
     if typing == "keys" and tfile:
         cmd += ["--types", tfile]
     if PME:
-        if src[0] not in ("file", "ionic-first", "cg-box"):
+        if src[0] not in ("file", "ionic-first", "cg-box", "crystal"):
             continue
         cmd += ["--pme", "--ewald-rtol", "1e-9", "--pme-spacing", "0.3", "--pme-order", "8"]
     if src[0] == "compass-ps":
@@ -666,7 +668,9 @@ for case in CASES:
         cf[a] = tuple(cf[a][k] + v[k] for k in range(3))
     cw = [cw[k] + hw[k] for k in range(6)]
     lw = [le[f"c_pv[{k}]"] * le["Volume"] / 68568.415 for k in range(1, 7)]
-    scale = max(1.0, max(abs(w) for w in cw))
+    # relative to the size of the terms it sums: an ionic crystal's Coulomb and repulsive virials (each of the order of
+    # their energies) nearly cancel, so the net virial alone would magnify LAMMPS's 1e-7 erfc in Coulomb (formal charges)
+    scale = max(1.0, max(abs(w) for w in cw), abs(ce.get("coulomb", 0.0)), abs(ce.get("vdw", 0.0)))
     dw = max(abs(a - b) for a, b in zip(cw, lw)) / scale
     # improper harmonic: LAMMPS clamps 1 − cos² of both bond angles and sin χ at 0.001 (improper_harmonic.cpp SMALL), so
     # at a (near-)flat centre its forces are not the derivative of its energy: those atoms are left out of the force
