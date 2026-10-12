@@ -63,6 +63,36 @@ TEST(Dynamics, InitialVelocitiesHaveTargetTemperatureAndNoDrift) {
   EXPECT_LT(std::fabs(p[0]) + std::fabs(p[1]) + std::fabs(p[2]), 1e-9);
 }
 
+// Hydrogen mass repartitioning: the density (total mass) and, with the structure's velocities, the temperature at the
+// start stay what they were; a short run with h-bonds constraints at 2.5 fs stays stable
+TEST(Dynamics, HydrogenMassRepartitioningKeepsMassAndTemperature) {
+  System s = relaxed_cell();
+  DynamicsOptions o;
+  o.steps = 0;
+  o.temperature = 300;
+  DynamicsReport r0;
+  run_dynamics(s, o, &r0);   // velocities for s
+  System h = s;
+  o.hmr = 3.024;
+  DynamicsReport r1;
+  run_dynamics(h, o, &r1);
+  ASSERT_EQ(r1.thermo.size(), 1u);
+  EXPECT_NEAR(r1.thermo[0].density, r0.thermo[0].density, 1e-12);
+  // each atom keeps its kinetic energy; taking out the centre-of-mass motion that leaves costs a few parts in 10⁴
+  EXPECT_NEAR(r1.thermo[0].temperature, r0.thermo[0].temperature, 1e-3 * r0.thermo[0].temperature);
+  EXPECT_TRUE(std::any_of(r1.notes.begin(), r1.notes.end(), [](const std::string& n) { return n.find("hydrogen mass repartitioning") != std::string::npos; }));
+  o.steps = 400;
+  o.dt = 2.5;
+  o.constraints = ConstraintMode::HBonds;
+  o.thermostat = Thermostat::None;
+  o.thermo_every = 20;
+  DynamicsReport r2;
+  run_dynamics(h, o, &r2);
+  double lo = 1e300, hi = -1e300;
+  for (size_t k = 5; k < r2.thermo.size(); ++k) lo = std::min(lo, r2.thermo[k].conserved), hi = std::max(hi, r2.thermo[k].conserved);
+  EXPECT_LT(hi - lo, 0.02 * std::fabs(r2.thermo[0].kinetic) + 1.0);
+}
+
 // Velocity Verlet conserves energy: after the first 100 fs the total stays within a small band and does not drift.
 TEST(Dynamics, NveConservesEnergy) {
   System s = relaxed_cell();
