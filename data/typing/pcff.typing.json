@@ -27,7 +27,7 @@
   },
   {
    "type": "hn2",
-   "smarts": "[H][N;!+]C=[O,S]",
+   "smarts": "[H][N;!+]C=O",
    "priority": 2,
    "description": "amide / urea / carbamate / imide H"
   },
@@ -89,12 +89,6 @@
    "description": "CH with three heavy neighbours"
   },
   {
-   "type": "c",
-   "smarts": "[CX4][F,Cl,Br,I]",
-   "priority": 2,
-   "description": "sp3 C on a halogen"
-  },
-  {
    "type": "coh",
    "smarts": "[CX4;H1,H2](O)O",
    "priority": 3,
@@ -132,9 +126,9 @@
   },
   {
    "type": "c4h",
-   "smarts": "[CX4;r4]O",
+   "smarts": "[CX4;r4;!H0]",
    "priority": 5,
-   "description": "sp3 C on O in a 4-ring"
+   "description": "sp3 C with hydrogens in a 4-membered ring (pcff.frc)"
   },
   {
    "type": "cp",
@@ -143,9 +137,9 @@
   },
   {
    "type": "c5",
-   "smarts": "[c;$(c1aaaa1);!$(c1aaaaa1)]",
+   "smarts": "[c;$(c1aaaa1)]",
    "priority": 1,
-   "description": "aromatic C in a 5-ring only"
+   "description": "aromatic C in a 5-membered ring, fused ones included (pcff.frc; Materials Studio)"
   },
   {
    "type": "ci",
@@ -163,12 +157,6 @@
    "type": "c=",
    "smarts": "[CX3]=[C,N]",
    "description": "non-aromatic C=C / C=N carbon"
-  },
-  {
-   "type": "c=1",
-   "smarts": "[CX3](=[C,N])[$([CX3]=[C,N]),$([NX2]=*)]",
-   "priority": 1,
-   "description": "double-bonded C conjugated with another double bond (a C=C next to an aromatic ring stays c=)"
   },
   {
    "type": "c=2",
@@ -354,7 +342,7 @@
   },
   {
    "type": "n_2",
-   "smarts": "[NX3;H1,H2]C=[O,S]",
+   "smarts": "[NX3;H1,H2]C=O",
    "priority": 3,
    "description": "amide / urea / carbamate N with H"
   },
@@ -509,8 +497,9 @@
    "description": "aromatic S"
   },
   {
-   "type": "p=",
-   "smarts": "[P]"
+   "type": "p",
+   "smarts": "[P]",
+   "description": "phosphorus (pcff.frc p)"
   },
   {
    "type": "p",
@@ -519,8 +508,9 @@
    "description": "phosphate anion P"
   },
   {
-   "type": "sio",
-   "smarts": "[Si]"
+   "type": "si",
+   "smarts": "[Si]",
+   "description": "silicon (pcff.frc si)"
   },
   {
    "type": "he",
@@ -553,16 +543,88 @@
    "description": "calcium ion"
   },
   {
-   "type": "c=2",
-   "smarts": "[CX3]=[CX3]Cl",
-   "priority": 3,
-   "description": "alkene C double-bonded to a chlorinated one (chloroprene =CH-)"
+   "type": "c3h",
+   "smarts": "[CX4;r3;!H0]",
+   "priority": 5,
+   "description": "sp3 C with hydrogens in a 3-membered ring (pcff.frc)"
   },
   {
-   "type": "c3h",
-   "smarts": "[CX4;r3;!H0;!$(*@[!#6])]",
+   "type": "cs",
+   "smarts": "[c;$(c1aaaa1);$(c[s])]",
+   "priority": 2,
+   "description": "aromatic C in a 5-membered ring next to S (pcff.frc)"
+  },
+  {
+   "type": "c=1",
+   "smarts": "[CX3;$(*-[#6X3]=*),$(*-[#6X2]#*),$(*-[#6X2]=*),$(*-c),$(*-[#7X2]=*);$(*=[#6,#7;!$(*-[#6X3]=*);!$(*-[#6X2]#*);!$(*-[#6X2]=*);!$(*-c);!$(*-[#7X2]=*)])]",
+   "priority": 1,
+   "description": "double-bonded C conjugated by a single bond, its partner not (butadiene C2, styrene vinyl CH)"
+  },
+  {
+   "type": "c=2",
+   "smarts": "[CX3;$(*-[#6X3]=*),$(*-[#6X2]#*),$(*-[#6X2]=*),$(*-c),$(*-[#7X2]=*);$(*=[#6;$(*-[#6X3]=*),$(*-[#6X2]#*),$(*-[#6X2]=*),$(*-c),$(*-[#7X2]=*)])]",
+   "priority": 2,
+   "description": "double-bonded C conjugated on both ends of its double bond (benzoquinone, cyclooctatetraene)"
+  },
+  {
+   "type": "c=2",
+   "smarts": "[CX3]=[SX1]",
+   "priority": 2,
+   "description": "thiocarbonyl C (thioamide)"
+  },
+  {
+   "type": "cr",
+   "smarts": "[CX3](=[NX2])([NX3])[NX3]",
    "priority": 5,
-   "description": "sp3 C with hydrogens in an all-carbon 3-ring (cyclopropane; epoxide C stay c3m)"
+   "description": "C of neutral guanidine (pcff.frc: C in neutral arginine)"
+  },
+  {
+   "type": "n2",
+   "smarts": "[NX3H2][CX3](=[NX2])[NX3]",
+   "priority": 5,
+   "description": "NH2 of neutral guanidine (pcff.frc)"
+  },
+  {
+   "type": "n",
+   "smarts": "[NX3]S(=O)=O",
+   "priority": 2,
+   "description": "sulfonamide N"
+  },
+  {
+   "type": "s'",
+   "smarts": "[SX4](=O)(=O)",
+   "priority": 2,
+   "description": "sulfone S: s' (pcff.frc parameterises s'; sf is its child for sulfonate)"
+  },
+  {
+   "type": "sio",
+   "smarts": "[Si][O]",
+   "priority": 1,
+   "description": "siloxane Si (pcff.frc)"
+  },
+  {
+   "type": "p=",
+   "smarts": "[P]=N",
+   "priority": 1,
+   "description": "phosphazene P (pcff.frc)"
+  },
+  {
+   "type": "c",
+   "smarts": "[CX4][F,Cl,Br,I]",
+   "priority": 2,
+   "description": "sp3 C on a halogen (DL_FIELD's PCFF)"
+  },
+  {
+   "type": "sf",
+   "smarts": "[SX4](=O)(=O)[OX2H1,OX1-]",
+   "priority": 3,
+   "description": "sulfonate / sulfonic acid S (pcff.frc sf)"
+  },
+  {
+   "type": "s",
+   "smarts": "[SX4](=O)(=O)([OX2,OX1-])[OX2,OX1-]",
+   "priority": 4,
+   "description": "sulfate S (DL_FIELD's PCFF: s)"
   }
  ]
 }
