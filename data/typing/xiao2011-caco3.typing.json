@@ -18,23 +18,15 @@
   },
   {
    "type": "Cm_x",
-   "smarts": "[#6]",
+   "smarts": "[#6;$([#6](~[#8])(~[#8])~[#8])]",
    "priority": 0,
-   "requires": [
-    "Ca",
-    "O"
-   ],
-   "description": "carbonate C (by composition: the C-O bonds carry no term and are dropped before typing)"
+   "description": "carbonate C (its C-O bonds carry no term: kept for typing only)"
   },
   {
    "type": "Om_x",
-   "smarts": "[#8]",
+   "smarts": "[#8;$([#8]~[#6;$([#6](~[#8])(~[#8])~[#8])])]",
    "priority": 0,
-   "requires": [
-    "Ca",
-    "C"
-   ],
-   "description": "carbonate O (any O but water's)"
+   "description": "carbonate O"
   },
   {
    "type": "Ow_x",

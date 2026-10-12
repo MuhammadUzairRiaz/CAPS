@@ -1,0 +1,47 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "Silicalite and benzene (Forester & Smith 1997)",
+ "unknown_types": "untyped",
+ "bonds": "defined",
+ "shells": {
+  "O_fsc": "O_fss"
+ },
+ "description": "silicalite Si and O, benzene (bench/ff/make_forester1997.py)",
+ "rules": [
+  {
+   "type": "Si_fs",
+   "smarts": "[#14]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "description": "Si of silicalite"
+  },
+  {
+   "type": "O_fsc",
+   "smarts": "[#8]",
+   "priority": 0,
+   "description": "O core"
+  },
+  {
+   "type": "C_bz",
+   "smarts": "[c;$(c1ccccc1)]",
+   "priority": 0,
+   "description": "benzene C"
+  },
+  {
+   "type": "H_bz",
+   "smarts": "[#1;$([#1]c)]",
+   "priority": 0,
+   "description": "benzene H"
+  },
+  {
+   "type": "O_fss",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O_fss",
+   "description": "shell of O_fsc"
+  }
+ ]
+}

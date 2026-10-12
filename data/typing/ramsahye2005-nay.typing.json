@@ -1,0 +1,58 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "Zeolite NaY and chloroform (Ramsahye & Bell 2005)",
+ "unknown_types": "untyped",
+ "bonds": "defined",
+ "description": "NaY framework, Na and chloroform (bench/ff/make_ramsahye2005.py)",
+ "rules": [
+  {
+   "type": "Si_rb",
+   "smarts": "[#14]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "description": "framework Si"
+  },
+  {
+   "type": "Al_rb",
+   "smarts": "[#13]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "description": "framework Al"
+  },
+  {
+   "type": "O_rb",
+   "smarts": "[#8]",
+   "priority": 0,
+   "description": "framework O"
+  },
+  {
+   "type": "Na_rb",
+   "smarts": "[#11]",
+   "priority": 0,
+   "description": "extra-framework Na"
+  },
+  {
+   "type": "C_cf",
+   "smarts": "[#6;$([#6]([#1])(Cl)(Cl)Cl)]",
+   "priority": 0,
+   "description": "chloroform C"
+  },
+  {
+   "type": "H_cf",
+   "smarts": "[#1;$([#1][#6;$([#6]([#1])(Cl)(Cl)Cl)])]",
+   "priority": 0,
+   "description": "chloroform H"
+  },
+  {
+   "type": "Cl_cf",
+   "smarts": "[Cl;$(Cl[#6;$([#6]([#1])(Cl)(Cl)Cl)])]",
+   "priority": 0,
+   "description": "chloroform Cl"
+  }
+ ]
+}

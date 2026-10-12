@@ -62,9 +62,10 @@ angles = [{"name": "Om_x-Cm_x-Om_x", "match": ["Om_x", "Cm_x", "Om_x"], "style":
           {"name": "Hw_x-Ow_x-Hw_x", "match": ["Hw_x", "Ow_x", "Hw_x"], "style": "harmonic", "params": [55.0, 104.52], "comment": "TIP3P geometry; flexible in CAPS"}]
 impropers = [{"name": "Om_x-Cm_x-Om_x-Om_x", "match": ["Om_x", "Cm_x", "Om_x", "Om_x"], "style": "cvff", "params": [28.9 / KJ, -1, 2], "contact": [1.6],
               "comment": "K_psi (1 - cos 2 psi), K_psi 28.9 kJ/mol (Table 1); O1-C-O2-O3, the three O within 1.6 A of the C"}]
+CO3 = "[#6;$([#6](~[#8])(~[#8])~[#8])]"
 rules = [{"type": "Ca_x", "smarts": "[#20]", "priority": 0, "requires": ["C", "O"], "description": "Ca of calcium carbonate"},
-         {"type": "Cm_x", "smarts": "[#6]", "priority": 0, "requires": ["Ca", "O"], "description": "carbonate C (by composition: the C-O bonds carry no term and are dropped before typing)"},
-         {"type": "Om_x", "smarts": "[#8]", "priority": 0, "requires": ["Ca", "C"], "description": "carbonate O (any O but water's)"},
+         {"type": "Cm_x", "smarts": CO3, "priority": 0, "description": "carbonate C (its C-O bonds carry no term: kept for typing only)"},
+         {"type": "Om_x", "smarts": f"[#8;$([#8]~{CO3})]", "priority": 0, "description": "carbonate O"},
          {"type": "Ow_x", "smarts": "[OX2H2]", "priority": 1, "description": "water O"},
          {"type": "Hw_x", "smarts": "[H][OX2H2]", "priority": 1, "description": "water H"}]
 doc = {"format": "caps-forcefield", "format_version": 1, "name": "CaCO3 (Xiao, Edwards & Grater 2011)", "source": REF + ", Table 1",

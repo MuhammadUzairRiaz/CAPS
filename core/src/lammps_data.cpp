@@ -688,8 +688,8 @@ std::vector<std::string> style_lines(const Layout& L, const ForceField& ff, cons
     if (e.coulomb && pme(e, L)) {
       std::snprintf(b, sizeof b, L.coreshell ? " coul/long/cs %.6f" : " coul/long %.6f", e.cutoff);
       p += b;
-    } else if (e.coulomb) {
-      std::snprintf(b, sizeof b, " coul/dsf %.6f %.6f", e.dsf_alpha, e.cutoff);
+    } else if (e.coulomb) {   // a shell model with other pair forms: CORESHELL's DSF (born/coul/dsf/cs, its Born terms zero)
+      std::snprintf(b, sizeof b, L.coreshell ? " born/coul/dsf/cs %.6f %.6f" : " coul/dsf %.6f %.6f", e.dsf_alpha, e.cutoff);
       p += b;
     }
     if (!L.sw_types.empty()) p += " sw";
@@ -767,7 +767,7 @@ std::vector<std::string> pair_lines(const Layout& L, const ForceField& ff) {
         coef = born ? num({A, rho, 0.0, C, 0.0}) : num({A, rho, C});
       } else if (it != ff.pair_func.end()) {
         style = it->second.form == 1 ? "buck" : "morse";
-        coef = num({it->second.a, it->second.b, it->second.c});
+        coef = it->second.rc > 0 ? num({it->second.a, it->second.b, it->second.c, it->second.rc}) : num({it->second.a, it->second.b, it->second.c});
       } else if (L.charmm) {   // ε σ ε14 σ14, both pairs mixed by the force field's rule
         const PairType pt = mixed_pair(ff, int(a2), int(b2));
         PairType p14 = pt;
@@ -780,6 +780,9 @@ std::vector<std::string> pair_lines(const Layout& L, const ForceField& ff) {
         coef = num({pt.eps, pt.sigma, p14.eps, p14.sigma});
       } else {
         const PairType pt = mixed_pair(ff, int(a2), int(b2));
+        // a shell model's hybrid: a pair with no Lennard-Jones term is left to the Coulomb sub-style alone (written for all
+        // pairs), so lj/cut never meets a core and its shell at r = 0 (LAMMPS keeps excluded pairs listed for DSF / Ewald)
+        if (L.pair_hybrid && L.coreshell && pt.eps == 0) continue;
         coef = num({pt.eps, pt.sigma});
       }
       r.push_back(std::to_string(a2 + 1) + " " + std::to_string(b2 + 1) + (L.pair_hybrid ? " " + style : "") + coef + "  # " + ff.type_names[a2] + " " +
@@ -806,7 +809,8 @@ std::vector<std::string> after_read(const Layout& L, const EnergyOptions& e, con
                                     const std::set<std::pair<int, int>>& ff_excl = {}, const ForceField* ff = nullptr, bool metal = false) {
   std::vector<std::string> r;
   if (L.pair_hybrid && e.coulomb && L.pair_combined.empty())
-    r.push_back(pme(e, L) ? (L.coreshell ? "pair_coeff * * coul/long/cs" : "pair_coeff * * coul/long") : "pair_coeff * * coul/dsf");
+    r.push_back(pme(e, L) ? (L.coreshell ? "pair_coeff * * coul/long/cs" : "pair_coeff * * coul/long")
+                          : (L.coreshell ? "pair_coeff * * born/coul/dsf/cs 0.0 1.0 0.0 0.0 0.0" : "pair_coeff * * coul/dsf"));
   for (const auto& [a, b] : ff_excl) r.push_back("neigh_modify exclude type " + std::to_string(a + 1) + " " + std::to_string(b + 1));
   if (!L.sw_types.empty()) {
     std::string l = "pair_coeff * * sw " + sw_path(data_path);

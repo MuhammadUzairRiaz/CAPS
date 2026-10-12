@@ -89,6 +89,14 @@ CASES = [
      "La1 La 0.5 0.5 0.5; Co1 Co 0 0 0; O1 O 0.5 0 0", "--supercell", "3,3,3"]), "la-perovskites", "types", "rules", ["--no-tail"]),
     ("La perovskites, Read 1999 (Table 1): La2NiO4 (I4/mmm), rigid Ni", ("crystal", ["--group", "I 4/m m m", "--cell", "3.86,3.86,12.65", "--sites",
      "La1 La 0 0 0.361; Ni1 Ni 0 0 0; O1 O 0 0.5 0; O2 O 0 0 0.176", "--supercell", "3,3,1"]), "la-perovskites", "types", "rules", ["--no-tail"]),
+    # zeolites: Schroder et al. 1992 (framework O shells, hydroxyl O-H Morse pair within 1.4 A with its Coulomb term kept)
+    ("Schroder 1992 zeolite set: alpha-quartz, O shells", ("file", os.path.join(ROOT, "data", "crystals", "alpha-quartz.cif")), "schroder1992-zeolite", "types", "rules", ["--no-tail"]),
+    ("Schroder 1992 zeolite set: Si(OH)4 and Al(OH)3, hydroxyl Morse pairs", ("smiles", "O[Si](O)(O)O.O[Al](O)O"), "schroder1992-zeolite", "types", "rules"),
+    ("Ramsahye 2005 NaY set: alpha-quartz", ("file", os.path.join(ROOT, "data", "crystals", "alpha-quartz.cif")), "ramsahye2005-nay", "types", "rules", ["--no-tail"]),
+    ("Ramsahye 2005 NaY set: chloroform, Na+, AlO4 and SiO4 (every cross term)", ("smiles", "ClC(Cl)Cl.ClC(Cl)Cl.[Na+].[O-][Al]([O-])([O-])[O-].[O-][Si]([O-])([O-])[O-]"),
+     "ramsahye2005-nay", "types", "rules"),
+    ("Forester 1997 silicalite set: alpha-quartz, O shells", ("file", os.path.join(ROOT, "data", "crystals", "alpha-quartz.cif")), "forester1997-silicalite", "types", "rules", ["--no-tail"]),
+    ("Forester 1997 silicalite set: benzene with SiO4 (benzene-O shell pairs)", ("smiles", "c1ccccc1.[O-][Si]([O-])([O-])[O-]"), "forester1997-silicalite", "types", "rules"),
     # oxide glasses (bench/ff/make_glass.py): the Teter partial-charge set, Tilocca's shell model (SM0; SM1's screened bend has
     # no LAMMPS style and is refused), Vogel's LiPO3; overlays by --typing
     ("Teter glass set (Cormack 2002 / Du 2009): alpha-quartz", ("file", os.path.join(ROOT, "data", "crystals", "alpha-quartz.cif")), "teter-glass", "types", "rules", ["--no-tail"]),

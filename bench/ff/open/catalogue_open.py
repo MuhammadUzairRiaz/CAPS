@@ -185,6 +185,26 @@ ENTRIES = {
                        "shell models with formal charges: LaMO3 (M = Cr, Mn, Fe, Co) from Cherry, La2NiO4 and its 2+ dopants from "
                        "Read, each set typed by composition (Ni present or not); LAMMPS reproduces CAPS's energies on LaFeO3, LaCoO3 "
                        "and La2NiO4 (CORESHELL styles)", ("La perovskites", "la_perovskites", 30), []),
+    "schroder1992-zeolite": ("Zeolites with bridging hydroxyls (Schroder et al. 1992)", "1992, Table 1",
+                             ["K.-P. Schroder, J. Sauer, M. Leslie, C. R. A. Catlow, J. M. Thomas, Chem. Phys. Lett. 188, 320 (1992)"],
+                             {"source": "the paper's Table 1 (read from the page image); bench/ff/make_schroder1992.py",
+                              "license": "published parameters of the paper"},
+                             "formal-charge Si and Al, shell-model framework O, hydroxyl O and H with the paper's fractional charges; the "
+                             "O-H Morse as a pair term within 1.4 A with its Coulomb term kept; O-T-O bends k (theta - theta0)^2 by "
+                             "distance; LAMMPS reproduces CAPS's energies on quartz and on Si(OH)4 / Al(OH)3",
+                             ("Zeolites (Schroder 1992)", "schroder1992", 30), []),
+    "ramsahye2005-nay": ("Zeolite NaY and chloroform (Ramsahye & Bell 2005)", "2005, Table 1",
+                         ["N. A. Ramsahye, R. G. Bell, J. Phys. Chem. B 109, 4738 (2005)"],
+                         {"source": "the paper's Table 1; bench/ff/make_ramsahye2005.py", "license": "published parameters of the paper"},
+                         "Kramer-charge framework (Si, Al, O) with Na, Buckingham terms and O-T-O bends by distance; chloroform's "
+                         "charges, bonds, bends and its Lennard-Jones pairs with itself, O and Na; LAMMPS reproduces CAPS's energies on "
+                         "quartz and on chloroform with Na+, AlO4 and SiO4", ("Zeolite NaY (Ramsahye 2005)", "ramsahye2005", 30), []),
+    "forester1997-silicalite": ("Silicalite and benzene (Forester & Smith 1997)", "1997, Tables 1 and 2",
+                                ["T. R. Forester, W. Smith, J. Chem. Soc., Faraday Trans. 93, 3249 (1997)"],
+                                {"source": "the paper's Tables 1 and 2; bench/ff/make_forester1997.py", "license": "published parameters of the paper"},
+                                "Schroder and Sauer's silica shell model as the paper gives it (Si-O shell repulsion only, O-Si-O bends "
+                                "on the shells) and the benzene-O shell pairs (rigid benzene); LAMMPS reproduces CAPS's energies on "
+                                "quartz and on benzene with SiO4", ("Silicalite (Forester 1997)", "forester1997", 30), []),
 }
 RTF = "the topology's own residues typed as it types them (bench/ff/validate_rtf_types.py --cap-links): "
 for fid, name, version, refs, evidence, listing, replaces in (

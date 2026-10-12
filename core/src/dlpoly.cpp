@@ -263,6 +263,7 @@ std::vector<std::string> write_dlpoly(const System& s, const ForceField& ff, con
       char buf[160];
       const auto pf = ff.pair_func.find({std::min(a, b), std::max(a, b)});
       if (pf != ff.pair_func.end()) {
+        if (pf->second.rc > 0) throw std::invalid_argument("DL_POLY: a pair with its own cut-off (" + tlist[x].first + " " + tlist[y].first + "): DL_POLY's van der Waals terms share one");
         if (pf->second.form == 1) std::snprintf(buf, sizeof buf, "  buck  %14.6f %12.6f %14.6f", pf->second.a, pf->second.b, pf->second.c);
         else if (pf->second.form == 2) std::snprintf(buf, sizeof buf, "  mors  %14.6f %12.6f %12.6f", pf->second.a, pf->second.c, pf->second.b);
         else throw std::invalid_argument("DL_POLY: pair form " + std::to_string(pf->second.form) + " has no DL_POLY equivalent");

@@ -1,0 +1,286 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "Silicalite and benzene (Forester & Smith 1997)",
+ "source": "T. R. Forester, W. Smith, J. Chem. Soc., Faraday Trans. 93, 3249 (1997), Tables 1 and 2",
+ "references": [
+  "T. R. Forester, W. Smith, J. Chem. Soc., Faraday Trans. 93, 3249 (1997)"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "buck/coul/long",
+  "bond": "class2",
+  "angle": "harmonic",
+  "dihedral": "fourier",
+  "improper": "fourier"
+ },
+ "mixing": "geometric",
+ "special_lj": [
+  0,
+  0,
+  1
+ ],
+ "special_coul": [
+  0,
+  0,
+  1
+ ],
+ "cutoff": 9.8,
+ "atom_types": [
+  {
+   "name": "Si_fs",
+   "element": "Si",
+   "mass": 28.0855,
+   "charge": 4.0,
+   "description": "Si (Table 1)"
+  },
+  {
+   "name": "O_fsc",
+   "element": "O",
+   "mass": 13.9994,
+   "charge": 1.06237,
+   "description": "O core (Table 1; 13.9994 u as the paper)"
+  },
+  {
+   "name": "O_fss",
+   "element": "O",
+   "mass": 2.0,
+   "charge": -3.06237,
+   "description": "O shell (Table 1; 2 u as the paper)"
+  },
+  {
+   "name": "C_bz",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.075,
+   "description": "benzene C (Table 2)"
+  },
+  {
+   "name": "H_bz",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.075,
+   "description": "benzene H (Table 2)"
+  }
+ ],
+ "pairs": [
+  {
+   "name": "Si_fs",
+   "match": [
+    "Si_fs"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_fsc",
+   "match": [
+    "O_fsc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_fss",
+   "match": [
+    "O_fss"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "C_bz",
+   "match": [
+    "C_bz"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "H_bz",
+   "match": [
+    "H_bz"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Si_fs-O_fss",
+   "match": [
+    "Si_fs",
+    "O_fss"
+   ],
+   "style": "buck",
+   "params": [
+    35765.75047801147,
+    0.30017,
+    0.0
+   ],
+   "comment": "A 149643.9 kJ/mol, rho 0.30017 A (Table 1)"
+  },
+  {
+   "name": "C_bz-O_fss",
+   "match": [
+    "C_bz",
+    "O_fss"
+   ],
+   "params": [
+    0.14614480166999663,
+    3.006679839295923
+   ],
+   "comment": "A 1.335e+06 kJ/mol A^12, B 1807 kJ/mol A^6 (Table 2)"
+  },
+  {
+   "name": "H_bz-O_fss",
+   "match": [
+    "H_bz",
+    "O_fss"
+   ],
+   "params": [
+    0.0974993333548573,
+    2.605751096517156
+   ],
+   "comment": "A 159900 kJ/mol A^12, B 510.8 kJ/mol A^6 (Table 2)"
+  },
+  {
+   "name": "Si_fs-O_fsc",
+   "match": [
+    "Si_fs",
+    "O_fsc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "Coulomb only"
+  },
+  {
+   "name": "Si_fs-C_bz",
+   "match": [
+    "Si_fs",
+    "C_bz"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "Coulomb only"
+  },
+  {
+   "name": "Si_fs-H_bz",
+   "match": [
+    "Si_fs",
+    "H_bz"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "Coulomb only"
+  },
+  {
+   "name": "O_fsc-O_fss",
+   "match": [
+    "O_fsc",
+    "O_fss"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "Coulomb only"
+  },
+  {
+   "name": "O_fsc-C_bz",
+   "match": [
+    "O_fsc",
+    "C_bz"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "Coulomb only"
+  },
+  {
+   "name": "O_fsc-H_bz",
+   "match": [
+    "O_fsc",
+    "H_bz"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "Coulomb only"
+  },
+  {
+   "name": "C_bz-H_bz",
+   "match": [
+    "C_bz",
+    "H_bz"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "Coulomb only"
+  }
+ ],
+ "bonds": [
+  {
+   "name": "O_fsc-O_fss",
+   "match": [
+    "O_fsc",
+    "O_fss"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    1300.1864244741873,
+    0.0,
+    0.0
+   ],
+   "comment": "1/2 k_shell r^2, k_shell 10879.96 kJ/mol/A^2 (Table 1, eq. 14)"
+  }
+ ],
+ "angles": [
+  {
+   "name": "O_fss-Si_fs-O_fss",
+   "match": [
+    "O_fss",
+    "Si_fs",
+    "O_fss"
+   ],
+   "style": "harmonic",
+   "params": [
+    2.1212237093690245,
+    109.47
+   ],
+   "contact": [
+    2.0
+   ],
+   "comment": "1/2 k_theta (theta - theta0)^2, k_theta 17.7504 kJ/mol/rad^2 (Table 1, eq. 14); shells within 2.0 A of the Si"
+  }
+ ],
+ "dihedrals": [],
+ "impropers": [],
+ "notes": [
+  "built by CAPS (bench/ff/make_forester1997.py) from the paper's Tables 1 and 2 and eq. 14",
+  "the paper's benzene is rigid: no intramolecular terms (run it as a rigid body)",
+  "O-Si-O bends on shells within 2.0 A of the Si (the distance is CAPS's)",
+  "short-range cut-off 9.8 A as the paper"
+ ],
+ "version": "1997 (Tables 1, 2)",
+ "typing": "../typing/forester1997-silicalite.typing.json"
+}

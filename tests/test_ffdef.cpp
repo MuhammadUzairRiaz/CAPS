@@ -1137,3 +1137,27 @@ TEST(FFDef, CarbonateTermsByDistanceWithoutBonds) {
     EXPECT_NEAR(t.delta, 3.14159265358979323846, 1e-12);   // v [1 + cos(2φ − π)] = v (1 − cos 2φ)
   }
 }
+
+// Schroder et al.'s hydroxyls: the O-H bond carries no term and no exclusion (the Morse is a pair within 1.4 A), yet the
+// hydroxyl O and H are typed from it (the dropped bond kept for typing)
+TEST(FFDef, DroppedBondsStillTypeAndPairCutOff) {
+  const FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/schroder1992-zeolite.json");
+  System s = build_molecule("O[Si](O)(O)O").system;
+  std::string ch = "types";
+  prepare_for_forcefield(s, def, ch);
+  EXPECT_TRUE(s.bonds.empty());
+  EXPECT_EQ(s.typing_bonds.size(), 8u);
+  const TypingResult tr = assign_types(s, def);
+  ASSERT_EQ(tr.untyped, 0);
+  for (size_t i = 0; i < s.atoms.size(); ++i)
+    EXPECT_EQ(tr.types[i], s.atoms[i].element == 14 ? "Si_sz" : s.atoms[i].element == 8 ? "Oh_sz" : "H_sz");
+  const ForceField ff = parameterize(s, def, tr.types, "types", nullptr, false);
+  bool morse = false;
+  for (const auto& [k, p] : ff.pair_func)
+    if (p.form == 2) {
+      morse = true;
+      EXPECT_NEAR(p.rc, 1.4, 1e-12);
+    }
+  EXPECT_TRUE(morse);
+  EXPECT_EQ(ff.angles.size(), 6u);
+}

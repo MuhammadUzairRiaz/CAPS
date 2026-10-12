@@ -1,0 +1,380 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "Zeolites with bridging hydroxyls (Schroder et al. 1992)",
+ "source": "K.-P. Schroder, J. Sauer, M. Leslie, C. R. A. Catlow, J. M. Thomas, Chem. Phys. Lett. 188, 320 (1992), Table 1",
+ "references": [
+  "K.-P. Schroder, J. Sauer, M. Leslie, C. R. A. Catlow, J. M. Thomas, Chem. Phys. Lett. 188, 320 (1992)"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "buck/coul/long",
+  "bond": "class2",
+  "angle": "harmonic",
+  "dihedral": "fourier",
+  "improper": "fourier"
+ },
+ "mixing": "geometric",
+ "special_lj": [
+  0,
+  0,
+  1
+ ],
+ "special_coul": [
+  0,
+  0,
+  1
+ ],
+ "cutoff": 7.5,
+ "atom_types": [
+  {
+   "name": "Si_sz",
+   "element": "Si",
+   "mass": 28.0855,
+   "charge": 4.0,
+   "description": "Si4+ (Table 1)"
+  },
+  {
+   "name": "Al_sz",
+   "element": "Al",
+   "mass": 26.982,
+   "charge": 3.0,
+   "description": "Al3+ (Table 1)"
+  },
+  {
+   "name": "O_szc",
+   "element": "O",
+   "mass": 14.3991,
+   "charge": 0.86902,
+   "description": "framework O2- core (Table 1)"
+  },
+  {
+   "name": "O_szs",
+   "element": "O",
+   "mass": 1.5999,
+   "charge": -2.86902,
+   "description": "framework O2- shell (Table 1)"
+  },
+  {
+   "name": "Oh_sz",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -1.426,
+   "description": "hydroxyl O1.4- (Table 1)"
+  },
+  {
+   "name": "H_sz",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.426,
+   "description": "hydroxyl H0.4+ (Table 1)"
+  }
+ ],
+ "pairs": [
+  {
+   "name": "Si_sz",
+   "match": [
+    "Si_sz"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Al_sz",
+   "match": [
+    "Al_sz"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_szc",
+   "match": [
+    "O_szc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_szs",
+   "match": [
+    "O_szs"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Oh_sz",
+   "match": [
+    "Oh_sz"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "H_sz",
+   "match": [
+    "H_sz"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Si_sz-O_szs",
+   "match": [
+    "Si_sz",
+    "O_szs"
+   ],
+   "style": "buck",
+   "params": [
+    29607.599001036,
+    0.32052,
+    245.86187734584
+   ],
+   "comment": "A 1283.907 eV, rho 0.32052 A, C 10.66158 eV A^6 (Table 1)"
+  },
+  {
+   "name": "Al_sz-O_szs",
+   "match": [
+    "Al_sz",
+    "O_szs"
+   ],
+   "style": "buck",
+   "params": [
+    33675.3182444,
+    0.29912,
+    0.0
+   ],
+   "comment": "A 1460.3 eV, rho 0.29912 A, C 0.0 eV A^6 (Table 1)"
+  },
+  {
+   "name": "O_szs-O_szs",
+   "match": [
+    "O_szs",
+    "O_szs"
+   ],
+   "style": "buck",
+   "params": [
+    524950.314672,
+    0.149,
+    642.92807824
+   ],
+   "comment": "A 22764.0 eV, rho 0.149 A, C 27.88 eV A^6 (Table 1)"
+  },
+  {
+   "name": "Si_sz-Oh_sz",
+   "match": [
+    "Si_sz",
+    "Oh_sz"
+   ],
+   "style": "buck",
+   "params": [
+    22681.3541850168,
+    0.32052,
+    245.86187734584
+   ],
+   "comment": "A 983.5566 eV, rho 0.32052 A, C 10.66158 eV A^6 (Table 1)"
+  },
+  {
+   "name": "Al_sz-Oh_sz",
+   "match": [
+    "Al_sz",
+    "Oh_sz"
+   ],
+   "style": "buck",
+   "params": [
+    26350.76933727,
+    0.29912,
+    0.0
+   ],
+   "comment": "A 1142.6775 eV, rho 0.29912 A, C 0.0 eV A^6 (Table 1)"
+  },
+  {
+   "name": "O_szs-Oh_sz",
+   "match": [
+    "O_szs",
+    "Oh_sz"
+   ],
+   "style": "buck",
+   "params": [
+    524950.314672,
+    0.149,
+    642.92807824
+   ],
+   "comment": "A 22764.0 eV, rho 0.149 A, C 27.88 eV A^6 (Table 1)"
+  },
+  {
+   "name": "O_szs-H_sz",
+   "match": [
+    "O_szs",
+    "H_sz"
+   ],
+   "style": "buck",
+   "params": [
+    7194.199159560001,
+    0.25,
+    0.0
+   ],
+   "comment": "A 311.97 eV, rho 0.25 A, C 0.0 eV A^6 (Table 1)"
+  },
+  {
+   "name": "Oh_sz-H_sz",
+   "match": [
+    "Oh_sz",
+    "H_sz"
+   ],
+   "style": "morse",
+   "params": [
+    162.63451477,
+    2.1986,
+    0.9485,
+    1.4
+   ],
+   "comment": "Morse D 7.0525 eV, a 2.1986 / A, r0 0.9485 A (Table 1), within 1.4 A"
+  }
+ ],
+ "bonds": [
+  {
+   "name": "O_szc-O_szs",
+   "match": [
+    "O_szc",
+    "O_szs"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    863.84812808,
+    0.0,
+    0.0
+   ],
+   "comment": "core-shell k 74.92 eV/A^2 (Table 1)"
+  }
+ ],
+ "angles": [
+  {
+   "name": "O_szs-Si_sz-O_szs",
+   "match": [
+    "O_szs",
+    "Si_sz",
+    "O_szs"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.36350368752001,
+    109.47
+   ],
+   "contact": [
+    2.2
+   ],
+   "comment": "k (theta - theta0)^2, k 2.09724 eV/rad^2, theta0 109.47 (Table 1, eq. 2); O within 2.2 A of the T"
+  },
+  {
+   "name": "O_szs-Si_sz-Oh_sz",
+   "match": [
+    "O_szs",
+    "Si_sz",
+    "Oh_sz"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.36350368752001,
+    109.47
+   ],
+   "contact": [
+    2.2
+   ],
+   "comment": "k (theta - theta0)^2, k 2.09724 eV/rad^2, theta0 109.47 (Table 1, eq. 2); O within 2.2 A of the T"
+  },
+  {
+   "name": "Oh_sz-Si_sz-Oh_sz",
+   "match": [
+    "Oh_sz",
+    "Si_sz",
+    "Oh_sz"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.36350368752001,
+    109.47
+   ],
+   "contact": [
+    2.2
+   ],
+   "comment": "k (theta - theta0)^2, k 2.09724 eV/rad^2, theta0 109.47 (Table 1, eq. 2); O within 2.2 A of the T"
+  },
+  {
+   "name": "O_szs-Al_sz-O_szs",
+   "match": [
+    "O_szs",
+    "Al_sz",
+    "O_szs"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.36350368752001,
+    109.47
+   ],
+   "contact": [
+    2.2
+   ],
+   "comment": "k (theta - theta0)^2, k 2.09724 eV/rad^2, theta0 109.47 (Table 1, eq. 2); O within 2.2 A of the T"
+  },
+  {
+   "name": "O_szs-Al_sz-Oh_sz",
+   "match": [
+    "O_szs",
+    "Al_sz",
+    "Oh_sz"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.36350368752001,
+    109.47
+   ],
+   "contact": [
+    2.2
+   ],
+   "comment": "k (theta - theta0)^2, k 2.09724 eV/rad^2, theta0 109.47 (Table 1, eq. 2); O within 2.2 A of the T"
+  },
+  {
+   "name": "Oh_sz-Al_sz-Oh_sz",
+   "match": [
+    "Oh_sz",
+    "Al_sz",
+    "Oh_sz"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.36350368752001,
+    109.47
+   ],
+   "contact": [
+    2.2
+   ],
+   "comment": "k (theta - theta0)^2, k 2.09724 eV/rad^2, theta0 109.47 (Table 1, eq. 2); O within 2.2 A of the T"
+  }
+ ],
+ "dihedrals": [],
+ "impropers": [],
+ "notes": [
+  "built by CAPS (bench/ff/make_schroder1992.py) from the paper's Table 1 and eq. 1-2",
+  "O-H Morse as a pair term within 1.4 A, the O-H Coulomb term kept (no bond, no exclusion)",
+  "O-T-O bends k (theta - theta0)^2 as eq. 2 writes it, O within 2.2 A of the T (the distance is CAPS's)",
+  "short-range cut-off 7.5 A as the paper",
+  "shells carry 10 % of the oxygen's mass (adiabatic core-shell)"
+ ],
+ "version": "1992 (Table 1)",
+ "typing": "../typing/schroder1992-zeolite.typing.json"
+}

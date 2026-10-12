@@ -1634,7 +1634,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
             (glob_match(r.match[1], vdw_name[a]) && glob_match(r.match[0], vdw_name[b]))) {
           if (r.style == "buck" || r.style == "born" || r.style == "morse") {
             if (r.params.size() < 3) throw FFError("pair " + r.name + ": " + r.style + " needs 3 parameters");
-            ff.pair_func[{int(a), int(b)}] = {r.style == "morse" ? 2 : 1, r.params[0], r.params[1], r.params[2]};
+            ff.pair_func[{int(a), int(b)}] = {r.style == "morse" ? 2 : 1, r.params[0], r.params[1], r.params[2], r.params.size() > 3 ? r.params[3] : 0.0};   // 4th: the pair's own cut-off
           } else if (int f = sdk_form(r.style)) {
             ff.pair_func[{int(a), int(b)}] = {f, r.params[0], r.params[1], 0};
           } else if (r.style == "cosine/squared") {
@@ -2992,6 +2992,10 @@ std::string prepare_core(System& s, const FFDef& ff, std::string& charges) {
     }
     const size_t dropped = s.bonds.size() - kept.size();
     if (dropped) {
+      std::set<std::pair<uint32_t, uint32_t>> on;
+      for (const auto& k : kept) on.insert({k.i, k.j});
+      for (const auto& b : s.bonds)
+        if (!on.count({b.i, b.j})) s.typing_bonds.push_back(b);
       s.bonds = std::move(kept);
       s.bonds_from_file = true;
       note += (note.empty() ? "" : "; ") + ff.name + " has no bonds between ions: " + std::to_string(dropped) +

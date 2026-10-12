@@ -1,0 +1,56 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "Zeolites with bridging hydroxyls (Schroder et al. 1992)",
+ "unknown_types": "untyped",
+ "bonds": "defined",
+ "shells": {
+  "O_szc": "O_szs"
+ },
+ "description": "Si, Al, framework and hydroxyl O, hydroxyl H (bench/ff/make_schroder1992.py)",
+ "rules": [
+  {
+   "type": "Si_sz",
+   "smarts": "[#14]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "description": "Si4+"
+  },
+  {
+   "type": "Al_sz",
+   "smarts": "[#13]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "description": "Al3+"
+  },
+  {
+   "type": "O_szc",
+   "smarts": "[#8]",
+   "priority": 0,
+   "description": "framework O2- core"
+  },
+  {
+   "type": "Oh_sz",
+   "smarts": "[#8;$([#8][#1])]",
+   "priority": 1,
+   "description": "hydroxyl O (bonded to an H)"
+  },
+  {
+   "type": "H_sz",
+   "smarts": "[#1;$([#1][#8])]",
+   "priority": 0,
+   "description": "hydroxyl H"
+  },
+  {
+   "type": "O_szs",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O_szs",
+   "description": "shell of O_szc"
+  }
+ ]
+}
