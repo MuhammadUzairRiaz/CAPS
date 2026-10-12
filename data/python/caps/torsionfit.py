@@ -1,6 +1,6 @@
 """Torsion parameters a force field lacks, fitted to quantum-chemical rotational profiles.
 
-    python -m caps.torsionfit prepare STRUCTURE FF.json WORKDIR [--engine orca|psi4] [--step 15] [--radius 2]
+    python -m caps.torsionfit prepare STRUCTURE[,STRUCTURE...] FF.json WORKDIR [--engine orca|psi4] [--step 15] [--radius 2]
     python -m caps.torsionfit collect WORKDIR
     python -m caps.torsionfit fit WORKDIR [--out overlay.json]
 
@@ -155,6 +155,22 @@ def rotate(p, moving, b, c, angle):
     return out
 
 
+def in_ring(nb, b, c):
+    """is the bond b-c in a ring (c reachable from b without that bond)?"""
+    seen, todo = {b}, [b]
+    while todo:
+        x = todo.pop()
+        for y in nb[x]:
+            if (x, y) in ((b, c), (c, b)):
+                continue
+            if y == c:
+                return True
+            if y not in seen:
+                seen.add(y)
+                todo.append(y)
+    return False
+
+
 def side(nb, start, block):
     seen, todo = {start}, [start]
     while todo:
@@ -211,35 +227,41 @@ def psi4_input(el, pos, quad, charge=0, mult=1):
 
 
 def prepare():
-    structure, ffjson, work = sys.argv[2], os.path.abspath(sys.argv[3]), os.path.abspath(sys.argv[4])
-    engine, step, radius = arg("--engine", "orca"), int(arg("--step", "15")), int(arg("--radius", "2"))
+    structures, ffjson, work = sys.argv[2].split(","), os.path.abspath(sys.argv[3]), os.path.abspath(sys.argv[4])
+    engine, step, radius = arg("--engine", "orca"), int(arg("--step", "15")), int(arg("--radius", "1"))
     os.makedirs(work, exist_ok=True)
-    data = os.path.join(work, "structure.data")
-    caps_apply(structure, ffjson, data)
-    types, masses, pos, bonds, have = read_data(data)
-    el = [element_of_mass(m) for m in masses]
-    nb = neighbours(len(el), bonds)
     cl = classes(ffjson)
-    missing = {}
-    for q in propers(nb) - have:
-        key = tuple(cl.get(types[x], types[x]) for x in q)
-        key = min(key, key[::-1])
-        missing.setdefault(key, []).append(q)
+    missing, mols = {}, []
+    for n, structure in enumerate(structures):   # each missing class from the first structure that has it
+        data = os.path.join(work, f"structure{n}.data")
+        caps_apply(structure, ffjson, data)
+        types, masses, pos, bonds, have = read_data(data)
+        el = [element_of_mass(m) for m in masses]
+        nb = neighbours(len(el), bonds)
+        mols.append((types, pos, el, nb))
+        for q in propers(nb) - have:
+            key = tuple(cl.get(types[x], types[x]) for x in q)
+            key = min(key, key[::-1])
+            missing.setdefault(key, (n, []))[1].append(q) if missing.get(key, (n,))[0] == n else None
     plan = {"ff": ffjson, "engine": engine, "level": LEVEL, "step": step, "scans": [], "not_scanned": []}
     jobs = []
-    for key, qs in sorted(missing.items()):
+    for key, (n, qs) in sorted(missing.items()):
+        types, pos, el, nb = mols[n]
         a, b, c, d = qs[0]
-        if c in side(nb, b, c) - {c} or b in side(nb, c, b) - {b}:   # the central bond in a ring: it cannot turn freely
+        if in_ring(nb, b, c):   # the central bond in a ring: it cannot turn freely
             plan["not_scanned"].append({"classes": key, "why": "the central bond is in a ring"})
             continue
-        for rad in (radius, radius + 1):
+        for rad in range(radius, radius + 3):   # the smallest fragment that keeps the types
             keep, idx, fel, fpos, fbonds = fragment(el, pos, nb, b, c, rad)
             fdir = os.path.join(work, "-".join(key).replace("*", "x"))
             os.makedirs(fdir, exist_ok=True)
             m2 = os.path.join(fdir, "fragment.mol2")
             write_mol2(m2, fel, fpos, fbonds)
             fdata = os.path.join(fdir, "fragment.data")
-            caps_apply(m2, ffjson, fdata)
+            try:
+                caps_apply(m2, ffjson, fdata)
+            except RuntimeError:   # the cut left atoms CAPS cannot type: a larger fragment
+                continue
             ftypes = read_data(fdata)[0]
             # the torsion's atoms and their neighbours keep the structure's types
             check = {x for x in (a, b, c, d)} | set(nb[b]) | set(nb[c])
@@ -250,12 +272,19 @@ def prepare():
             continue
         quad = [idx[a], idx[b], idx[c], idx[d]]
         fnb = neighbours(len(fel), fbonds)
-        moving = sorted(side(fnb, quad[2], quad[1]))
+        moving = side(fnb, quad[2], quad[1])
+        if len(moving) > len(fel) / 2:   # turn the smaller half (the same dihedral change, fewer clashes)
+            moving = side(fnb, quad[1], quad[2])
+            sign = -1
+        else:
+            sign = 1
+        moving = sorted(moving)
         phi0 = dihedral(fpos, *quad)
+        skipped = 0
         scan = {"classes": key, "dir": os.path.relpath(fdir, work), "quad": quad, "elements": fel, "bonds": fbonds, "points": []}
         for k in range(0, 360, step):
             target = -180 + k
-            p = rotate(fpos, moving, quad[1], quad[2], target - phi0)
+            p = rotate(fpos, moving, quad[1], quad[2], sign * (target - phi0))
             pdir = os.path.join(fdir, f"p{target:+04d}")
             os.makedirs(pdir, exist_ok=True)
             rel = os.path.relpath(pdir, work)   # jobs.txt and plan.json name points relative to WORKDIR: copy it anywhere
@@ -267,7 +296,11 @@ def prepare():
                 jobs.append(f"cd {rel} && ${{PSI4:-psi4}} point.in point.out")
             near = [set(fnb[i]) | {z for y in fnb[i] for z in fnb[y]} for i in range(len(p))]   # 1-2 and 1-3 partners
             close = min(norm(sub(p[i], p[j])) for i in range(len(p)) for j in range(i) if j not in near[i])
+            if close < 1.0:   # atoms on top of each other: no point (the optimiser would start from a broken structure)
+                skipped += 1
+                continue
             scan["points"].append({"phi": target, "dir": rel, "closest_nonbonded": round(close, 3)})
+        scan["skipped_points"] = skipped
         plan["scans"].append(scan)
     json.dump(plan, open(os.path.join(work, "plan.json"), "w"), indent=1)
     open(os.path.join(work, "jobs.txt"), "w").write("\n".join(jobs))
@@ -276,7 +309,7 @@ def prepare():
           f"not scanned: {len(plan['not_scanned'])}")
     for s in plan["scans"]:
         print(f"  {'-'.join(s['classes'])}: fragment of {len(s['elements'])} atoms, closest non-bonded pair over the scan "
-              f"{min(p['closest_nonbonded'] for p in s['points']):.2f} A")
+              f"{min(p['closest_nonbonded'] for p in s['points']):.2f} A" + (f", {s['skipped_points']} points clash (not run)" if s["skipped_points"] else ""))
     for s in plan["not_scanned"]:
         print(f"  {'-'.join(s['classes'])}: not scanned ({s['why']})")
 
@@ -316,8 +349,23 @@ def collect():
     print(f"{done} of {total} QM points finished")
 
 
+def lstsq(A, y, w):
+    """weighted least squares by the normal equations (a tiny ridge keeps an unused column at zero)"""
+    n = len(A[0])
+    M = [[sum(w[r] ** 2 * A[r][i] * A[r][j] for r in range(len(A))) + (1e-9 if i == j else 0.0) for j in range(n)] for i in range(n)]
+    b = [sum(w[r] ** 2 * A[r][i] * y[r] for r in range(len(A))) for i in range(n)]
+    for c in range(n):   # Gauss-Jordan with partial pivoting
+        p = max(range(c, n), key=lambda r: abs(M[r][c]))
+        M[c], M[p], b[c], b[p] = M[p], M[c], b[p], b[c]
+        for r in range(n):
+            if r != c and M[c][c]:
+                f = M[r][c] / M[c][c]
+                M[r] = [M[r][k] - f * M[c][k] for k in range(n)]
+                b[r] -= f * b[c]
+    return [b[i] / M[i][i] if M[i][i] else 0.0 for i in range(n)]
+
+
 def fit():
-    import numpy as np
     work = os.path.abspath(sys.argv[2])
     plan = json.load(open(os.path.join(work, "plan.json")))
     ffjson, cl = plan["ff"], classes(plan["ff"])
@@ -351,16 +399,20 @@ def fit():
                 row += [sum(0.5 * (1 + math.cos(f)) for f in phis), sum(0.5 * (1 - math.cos(2 * f)) for f in phis),
                         sum(0.5 * (1 + math.cos(3 * f)) for f in phis), sum(0.5 * (1 - math.cos(4 * f)) for f in phis)]
             rows.append(row)
-        A, y = np.array(rows), np.array(eqm) - np.array(emm)
-        rel = np.array(eqm) - min(eqm)
-        wts = np.where(rel > 10, 0.2, 1.0)
-        sol, *_ = np.linalg.lstsq(A * wts[:, None], y * wts, rcond=None)
-        rms = float(np.sqrt(np.mean((A @ sol - y) ** 2)))
+        y = [q - m for q, m in zip(eqm, emm)]
+        wts = [0.2 if q - min(eqm) > 10 else 1.0 for q in eqm]
+        sol = lstsq(rows, y, wts)
+        fitted = [sum(a * x for a, x in zip(r, sol)) for r in rows]
+        rms = math.sqrt(sum((f - v) ** 2 for f, v in zip(fitted, y)) / len(y))
+        # the profiles themselves, for the record: QM, MM without the fitted torsions, MM with them
+        scan_rows = [(p["phi"], q - min(eqm), m, f) for p, q, m, f in zip(pts, eqm, emm, fitted)]
         for n, k in enumerate(keys):
             V = [round(float(v), 4) for v in sol[1 + 4 * n: 5 + 4 * n]]
             rules.append({"name": "-".join(k), "match": [x.replace("*", "\\*") for x in k], "style": "opls", "params": V,
                           "comment": f"CAPS fit (QM): {plan['level']}, {len(pts)}-point scan of a {len(s['elements'])}-atom "
-                                     f"fragment, RMS {rms:.2f} kcal/mol"})
+                                     f"fragment, RMS {rms:.2f} kcal/mol",
+                          "fit": {"fragment": s["dir"], "scan": [{"phi": a, "E_qm": round(q, 4), "E_mm_without": round(m, 4),
+                                                                  "E_fit_correction": round(f, 4)} for a, q, m, f in scan_rows]}})
             print(f"{'-'.join(k)}: V = {V} (RMS {rms:.2f} kcal/mol over {len(pts)} points)")
     out = arg("--out", os.path.join(work, "fitted_torsions.json"))
     json.dump({"format": "caps-forcefield", "format_version": 1, "name": "CAPS-fitted torsions", "atom_types": [],
