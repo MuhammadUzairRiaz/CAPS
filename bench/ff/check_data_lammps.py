@@ -44,8 +44,8 @@ CASES = [
     ("COMPASS (DL_FIELD) first template", ("template-first", "COMPASS", ""), "compass", "types", "keys"),
     ("CVFF phenol (cvff impropers)", ("template", "CVFF", "phenol"), "cvff", "types", "rules"),
     ("CVFF ethyl acetate", ("template", "CVFF", "ethylacetate"), "cvff", "types", "rules"),
-    ("OPLS-AA methyl vinyl ketone", ("template", "OPLS2005", "methyl_vinyl_ketone"), "opls2005", "gasteiger", "rules"),
-    ("OPLS-AA phthalimide", ("template", "OPLS2005", "phthalimide"), "opls2005", "gasteiger", "rules"),
+    ("OPLS-AA methyl vinyl ketone", ("template", "OPLS2005", "methyl_vinyl_ketone"), "oplsaa2024", "auto", "rules"),
+    ("OPLS-AA phthalimide", ("template", "OPLS2005", "phthalimide"), "oplsaa2024", "auto", "rules"),
     ("GAFF toluene", ("template", "AMBER16_gaff", "toluene"), "gaff-1.81-ambertools", "gasteiger", "rules"),
     ("GAFF2 phenol", ("template", "AMBER25_gaff", "phenol"), "gaff2-2.2.20-ambertools", "gasteiger", "rules"),
     ("DREIDING first template (umbrella inversions)", ("template-first", "DREIDING", ""), "dreiding", "gasteiger", "keys"),
@@ -207,7 +207,7 @@ CASES = [
     ("Polystyrene melt, UFF (periodic, 1300 atoms)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "uff", "types", "rules"),
     # TraPPE in its own styles: the c1-c3 torsions as dihedral opls, 14 Å with TraPPE's 1-4 exclusions (united atom;
     # explicit-hydrogen aromatics)
-    ("TraPPE-UA: dodecane, 2-methylpentane (opls torsions)", ("smiles", "CCCCCCCCCCCC.CC(C)CCC"), "trappe-ua", "keep", "rules"),
+    ("TraPPE-UA: dodecane, 2-methylpentane (opls torsions)", ("smiles", "CCCCCCCCCCCC.CC(C)CCC"), "trappe-ua-umn", "keep", "rules"),
     ("TraPPE-UA (foyer): butanol, 2-propanol, tert-butanol, 2,3-dimethylbutane, neopentane (RB torsions as fourier)",
      ("smiles", "CCCCO.CC(C)O.CC(C)(C)O.CC(C)C(C)C.CC(C)(C)C"), "trappe-ua-foyer", "types", "rules"),
     ("TraPPE-UA (TraPPE database): DME alone (1-4 Coulomb x 0.5 for every molecule)", ("smiles", "COCCOC"), "trappe-ua-umn", "types", "rules"),

@@ -159,6 +159,22 @@
    "dl": "msi2lmp -6.5349 (pcff.frc's c= c c= h) and 3.9738 (c c n c_1): keys whose centre (second atom) is a carbon, matched backwards",
    "caps": "0 (no c=-centred entry) and -5.1828 (c n c c_1, the N-centred entry)",
    "reason": "an angle-angle key i-j-k-l couples angles i-j-k and k-j-l about j; read backwards its centre moves to k, a coupling fitted about another atom and its reference angles. msi2lmp's find_match allows the reversal (written for torsions); these are the only differences from msi2lmp on the 98 PCFF polymers"
+  },
+  {
+   "ff": "cvff-frc",
+   "tool": "DL_FIELD",
+   "environment": "a bend with no entry of its own in cvff.frc (c2-c'-h at an aldehyde end: nylon 6,6, PBT, polyacrylonitrile ...)",
+   "dl": "the h c' o entry (110 deg, 55.0)",
+   "caps": "cvff.frc's automatic parameters (120 deg, 40.0), as msi2lmp",
+   "reason": "DL_FIELD takes another bend's entry; the angle has no c c' h or wildcard entry in cvff.frc's quadratic_angle section"
+  },
+  {
+   "ff": "cvff-frc",
+   "tool": "DL_FIELD",
+   "environment": "torsions from cvff.frc's wildcard entries (* c c *, 1.4225 kcal/mol, n 3 ...)",
+   "dl": "the full barrier on some torsions of a bond and the divided one on others",
+   "caps": "the barrier divided over the bond's torsions, as msi2lmp writes it",
+   "reason": "cvff.frc's wildcard barrier is the bond's; msi2lmp (the converter written for these files) divides it over the torsions about the bond, and LAMMPS reproduces CAPS's energies against msi2lmp's on every CVFF polymer"
   }
  ]
 }
