@@ -38,7 +38,8 @@ def element_of(mass):
 
 
 def wild(t):
-    return "*" if t.upper() == "X" else t
+    """X is AMBER's wildcard; a * or ? inside a type name (C*, N*) is escaped, as CAPS's match patterns are globs"""
+    return "*" if t.upper() == "X" else t.replace("\\", "\\\\").replace("*", "\\*").replace("?", "\\?")
 
 
 def keyfields(line, n):
@@ -111,7 +112,7 @@ def read_dat(path):
     while i < len(L) and not L[i].strip().startswith("END"):   # MOD4 RE, then type R* eps
         w = L[i].split()
         if len(w) >= 3 and re.match(r"^-?[\d.]+$", w[1]) and re.match(r"^-?[\d.]+$", w[2]):
-            pairs[w[0]] = {"name": w[0], "match": [w[0]], "params": [float(w[2]), 2 * float(w[1]) / SIG]}
+            pairs[w[0]] = {"name": w[0], "match": [wild(w[0])], "params": [float(w[2]), 2 * float(w[1]) / SIG]}
         i += 1
 
 
@@ -142,7 +143,7 @@ def read_frcmod(path):
             add_improper(names, rest)
         elif sec == "NONB":
             w = line.split()
-            pairs[w[0]] = {"name": w[0], "match": [w[0]], "params": [float(w[2]), 2 * float(w[1]) / SIG]}
+            pairs[w[0]] = {"name": w[0], "match": [wild(w[0])], "params": [float(w[2]), 2 * float(w[1]) / SIG]}
 
 
 for i, a in enumerate(sys.argv):   # in the order given, each overriding the last (leap: parm99, frcmod.ff03, then GLYCAM)
@@ -152,7 +153,7 @@ for i, a in enumerate(sys.argv):   # in the order given, each overriding the las
         read_frcmod(sys.argv[i + 1])
 for t, base in equiv.items():   # nonbonded equivalences: the type takes its base type's Lennard-Jones
     if t not in pairs and base in pairs:
-        pairs[t] = {"name": t, "match": [t], "params": list(pairs[base]["params"]), "comment": f"Lennard-Jones of {base} (equivalence)"}
+        pairs[t] = {"name": t, "match": [wild(t)], "params": list(pairs[base]["params"]), "comment": f"Lennard-Jones of {base} (equivalence)"}
 # 1-4 scaling: AMBER's 0.5 / 1/1.2 unless the source sets its own (GLYCAM: SCEE = SCNB = 1, --scale14 1 1)
 LJ14, COUL14 = (1 / float(sys.argv[sys.argv.index("--scale14") + 1]), 1 / float(sys.argv[sys.argv.index("--scale14") + 2])) \
     if "--scale14" in sys.argv else (0.5, 1 / 1.2)
