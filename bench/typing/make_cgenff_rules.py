@@ -93,7 +93,7 @@ add("CG2D1O", 3, "[CX3;!H2;$(*-[#7,#8,#16])]=[#6X3]", d="double-bond C next to a
 add("CG2O1", 2, "[CX3](=O)[NX3]", d="amide C")
 add("CG2O2", 2, "[CX3](=O)[OX2]", d="carboxylic acid / ester C")
 add("CG2O5", 2, "[CX3](=O)([#6])[#6]", d="ketone C")
-add("CG2O4", 3, "[CX3H1](=O)", "[CX3H2]=O", d="aldehyde C")
+add("CG2O4", 3, "[CX3H1](=O)[#6]", "[CX3H2]=O", d="aldehyde C")
 add("CG2O3", 3, "[CX3](=O)[OX1-]", d="carboxylate C")
 add("CG2O6", 4, "[CX3](=[O,S])([#7,#8,#16])[#7,#8,#16]", d="urea / carbonate / carbamate C (and thio analogues)")
 add("CG2O7", 3, "[CX2](=O)=O", d="CO2 C")

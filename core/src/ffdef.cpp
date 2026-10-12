@@ -352,6 +352,7 @@ void save_forcefield(const FFDef& ff, const std::string& path) {
     if (ff.constraint_kj != 1e6) j["constraint_k"] = ff.constraint_kj;
   }
   j["improper_order"] = ff.improper_order;
+  if (ff.missing_increment_zero) j["missing_bond_increment"] = "zero";
   if (!ff.improper_written.empty()) j["improper_written"] = ff.improper_written;
   j["equivalence"] = ff.equivalence;
   if (ff.improper_matched_order) j["improper_matched_order"] = true;
@@ -519,6 +520,7 @@ FFDef load_forcefield(const std::string& path) {
     }
   }
   ff.improper_order = j.text("improper_order", ff.improper_order);
+  ff.missing_increment_zero = j.text("missing_bond_increment", "") == "zero";
   ff.improper_written = j.text("improper_written", ff.improper_written);
   ff.equivalence = j.text("equivalence", ff.equivalence);
   ff.improper_matched_order = j.has("improper_matched_order") && j["improper_matched_order"].boolean();
@@ -601,6 +603,7 @@ FFDef load_forcefield(const std::string& path) {
     merge_forcefield(base, ff);
     // how impropers are formed, when the overlay says (MARTINI's amino acids: GROMACS type-2 order, centre second)
     if (j.has("improper_order")) base.improper_order = ff.improper_order;
+    if (j.has("missing_bond_increment")) base.missing_increment_zero = ff.missing_increment_zero;
     if (j.has("improper_matched_order")) base.improper_matched_order = ff.improper_matched_order;
     if (j.has("improper_max_neighbours")) base.improper_max_neighbours = ff.improper_max_neighbours;
     if (j.has("timestep")) base.timestep = ff.timestep;
@@ -1656,19 +1659,30 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
       rep.charge_keys = Nk;
     }
     int unmatched = 0;
+    std::set<std::string> zeroed;
+    std::string zero_names;
     for (const auto& b : s.bonds) {
       bool rev = false;
       const FFRule* r = lookup(def.bond_increments, Nk, {b.i, b.j}, &rev);
       // then the bond equivalents, as COMPASS's tools match increments (c43, c44, c4o are c4 for bonds: c4-c43 is c4-c4)
       if (!r) r = lookup(def.bond_increments, Nb, {b.i, b.j}, &rev);
       if (!r || r->params.size() < 2) {
+        if (def.missing_increment_zero) {   // counted 0 (Materials Studio, msi2lmp); named once per type pair
+          const std::string what = shown(Nq, {b.i, b.j});
+          if (zeroed.insert(what).second) zero_names += (zero_names.empty() ? "" : ", ") + what;
+          ++unmatched;
+          continue;
+        }
         if (!unmatched++) rep.missing.push_back("bond increment " + shown(Nq, {b.i, b.j}));
         continue;
       }
       ff.charge[b.i] += rev ? r->params[1] : r->params[0];
       ff.charge[b.j] += rev ? r->params[0] : r->params[1];
     }
-    rep.notes.push_back("charges from bond increments" + (unmatched ? " (" + std::to_string(unmatched) + " bonds without an increment)" : std::string()));
+    rep.notes.push_back("charges from bond increments" +
+                        (unmatched ? " (" + std::to_string(unmatched) + " bonds without an increment" +
+                                         (def.missing_increment_zero ? ", counted 0 as Materials Studio and msi2lmp do: " + zero_names : std::string()) + ")"
+                                   : std::string()));
   } else if (charges == "types") {
     for (size_t i = 0; i < n; ++i) {
       if (std::isnan(FT[i]->charge)) throw FFError(def.name + " has no charge for type " + T[i] + "; use charges \"keep\" or \"gasteiger\"");

@@ -263,6 +263,36 @@ TEST(Typing, GaffRingsAndPolarHydrogensAsAntechamber) {
   }
 }
 
+TEST(Typing, OplsAa2024AsTheGromacsTopologies) {
+  // checked against the GROMACS OPLS-AA topologies of Caleman et al. 2012 (bench/typing/compare_oplsaa_top.py);
+  // the type name starts with the OPLS number
+  const auto num = [](const std::string& t) { return t.substr(0, t.find('_')); };
+  // dichloromethane: Cl 151, C 152, H 153 (formerly left untyped: the table has no CH2Cl2 numbers)
+  const TypingResult dcm = type_with("oplsaa2024-moltemplate", mol({"C", "Cl", "Cl"}, {2, 0, 0}, {{0, 1}, {0, 2}}));
+  EXPECT_EQ(dcm.untyped, 0);
+  EXPECT_EQ(num(dcm.types[0]), "152");
+  EXPECT_EQ(num(dcm.types[1]), "151");
+  EXPECT_EQ(num(dcm.types[3]), "153");
+  // diethyl sulfide: CH2 on S 210, CH3 135 (the sulfide C pattern asked the S for three neighbours)
+  const TypingResult des = type_with("oplsaa2024-moltemplate", mol({"C", "C", "S", "C", "C"}, {3, 2, 0, 2, 3}, {{0, 1}, {1, 2}, {2, 3}, {3, 4}}));
+  EXPECT_EQ(num(des.types[1]), "210");
+  EXPECT_EQ(num(des.types[2]), "202");
+  EXPECT_EQ(num(des.types[0]), "135");
+  // pyrimidine: N 530, C2 531, C4 532, C5 533
+  const TypingResult pym = type_with("oplsaa2024-moltemplate", mol({"N", "C", "N", "C", "C", "C"}, {0, 1, 0, 1, 1, 1},
+                                                                   {{0, 1}, {1, 2}, {2, 3}, {3, 4}, {4, 5}, {5, 0}}));
+  EXPECT_EQ(num(pym.types[0]), "530");
+  EXPECT_EQ(num(pym.types[1]), "531");
+  EXPECT_EQ(num(pym.types[3]), "532");
+  EXPECT_EQ(num(pym.types[4]), "533");
+  // glycerol: the triol types O 171, CH2 173, CH 174
+  const TypingResult gly = type_with("oplsaa2024-moltemplate", mol({"O", "C", "C", "O", "C", "O"}, {1, 2, 1, 1, 2, 1},
+                                                                   {{0, 1}, {1, 2}, {2, 3}, {2, 4}, {4, 5}}));
+  EXPECT_EQ(num(gly.types[0]), "171");
+  EXPECT_EQ(num(gly.types[1]), "173");
+  EXPECT_EQ(num(gly.types[2]), "174");
+}
+
 TEST(Typing, CgenffAndOpls) {
   // CGenFF: conjugated diene CG2DC3 CG2DC2 CG2DC1 CG2DC3 (same type across a double bond, switched across the single)
   const TypingResult b = type_with("cgenff", butadiene());
