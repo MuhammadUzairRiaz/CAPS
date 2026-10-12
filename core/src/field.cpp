@@ -598,20 +598,51 @@ void Evaluator::build(const std::vector<double>& x, const Cell& cell_in) {
     // bins are at least half the list radius wide: a pair up to rcs apart can be two bins away, periodic or not
     reach[k] = static_cast<int>(std::ceil(rcs / (w[k] / nb[k])));
   }
-  std::vector<Vec3> fr(n);
-  std::vector<std::array<int, 3>> bin(n);
-  std::vector<std::vector<uint32_t>> bins(static_cast<size_t>(nb[0]) * nb[1] * nb[2]);
+  // Atoms binned, then put in bin order (a counting sort, atoms of a bin in index order): slot s holds atom perm_[s],
+  // and every bin is a contiguous range of slots. fr and bin are kept by slot.
+  const size_t nbins = static_cast<size_t>(nb[0]) * nb[1] * nb[2];
   auto index = [&](int a, int b, int c) { return (static_cast<size_t>(a) * nb[1] + b) * nb[2] + c; };
+  std::vector<Vec3> fra(n);
+  std::vector<uint32_t> bina(n);
+  std::vector<size_t> bstart(nbins + 1, 0);
   for (size_t i = 0; i < n; ++i) {
     Vec3 f = cell.to_fractional({x[3 * i], x[3 * i + 1], x[3 * i + 2]});
+    int bi[3];
     for (int k = 0; k < 3; ++k) {
       if (cell.periodic[k]) f[k] -= std::floor(f[k]);
       f[k] = std::clamp(f[k], 0.0, 1.0 - 1e-12);
-      bin[i][k] = std::min(nb[k] - 1, static_cast<int>(f[k] * nb[k]));
+      bi[k] = std::min(nb[k] - 1, static_cast<int>(f[k] * nb[k]));
     }
-    fr[i] = f;
-    bins[index(bin[i][0], bin[i][1], bin[i][2])].push_back(static_cast<uint32_t>(i));
+    fra[i] = f;
+    bina[i] = static_cast<uint32_t>(index(bi[0], bi[1], bi[2]));
+    ++bstart[bina[i] + 1];
   }
+  for (size_t b = 0; b < nbins; ++b) bstart[b + 1] += bstart[b];
+  perm_.resize(n);
+  iperm_.resize(n);
+  {
+    std::vector<size_t> fill(bstart.begin(), bstart.end() - 1);
+    for (size_t i = 0; i < n; ++i) {
+      const size_t s = fill[bina[i]]++;
+      perm_[s] = static_cast<uint32_t>(i);
+      iperm_[i] = static_cast<uint32_t>(s);
+    }
+  }
+  std::vector<Vec3> fr(n);
+  std::vector<std::array<int, 3>> bin(n);
+  for (size_t s = 0; s < n; ++s) {
+    const uint32_t i = perm_[s];
+    fr[s] = fra[i];
+    const size_t b = bina[i];
+    bin[s] = {static_cast<int>(b / (size_t(nb[1]) * nb[2])), static_cast<int>(b / nb[2] % nb[1]), static_cast<int>(b % nb[2])};
+  }
+  // wrapped Cartesian positions by slot, and each image code's lattice vector: a candidate pair's separation is then
+  // three subtractions (the shift taken once per stencil bin)
+  std::vector<Vec3> cw(n);
+  for (size_t s = 0; s < n; ++s) cw[s] = cell.a * fr[s][0] + cell.b * fr[s][1] + cell.c * fr[s][2];
+  tslot_.resize(n);
+  qslot_.resize(n);
+  for (size_t s = 0; s < n; ++s) tslot_[s] = static_cast<uint32_t>(ff_.type_index[perm_[s]]), qslot_[s] = qeff_[perm_[s]];
   const double rcs2 = rcs * rcs;
   const size_t ntypes = ff_.lj.size();
   const bool skipping = !ff_.excluded_type_pairs.empty();
@@ -627,82 +658,118 @@ void Evaluator::build(const std::vector<double>& x, const Cell& cell_in) {
     for (int b = 0; b < span[1]; ++b)
       for (int c = 0; c < span[2]; ++c) qint_.insert(qint_.end(), {qlo[0] + a, qlo[1] + b, qlo[2] + c});
   const int nth = pool_->size();
+  // Every slot in a bin scans the same stencil: its bins in order of image code (then bin), worked out once per bin, so
+  // a slot's pairs come out grouped by image, and within an image in slot order.
+  const int sx = 2 * reach[0] + 1, sy = 2 * reach[1] + 1, sz = 2 * reach[2] + 1;
+  struct Cand { uint16_t code; uint32_t bin; };
   std::vector<std::vector<uint32_t>> vj(nth);
-  std::vector<std::vector<uint16_t>> vq(nth);
-  std::vector<uint32_t> count(n);
+  std::vector<std::vector<uint16_t>> vq(nth), vsc(nth);
+  std::vector<std::vector<uint32_t>> vse(nth);
+  std::vector<uint32_t> count(n), nseg(n);
   pool_->run(n, [&](int t, size_t b, size_t en) {
     auto& PJ = vj[t];
     auto& PQ = vq[t];
-    PJ.clear(); PQ.clear();
+    auto& SC = vsc[t];
+    auto& SE = vse[t];
+    PJ.clear(); PQ.clear(); SC.clear(); SE.clear();
+    std::vector<Cand> stencil;
+    stencil.reserve(size_t(sx) * sy * sz);
+    std::array<int, 3> sbin{-1, -1, -1};
     for (size_t i = b; i < en; ++i) {
-      const auto& ex = ff_.excluded[i];
+      if (bin[i] != sbin) {
+        sbin = bin[i];
+        stencil.clear();
+        for (int dx = -reach[0]; dx <= reach[0]; ++dx)
+          for (int dy = -reach[1]; dy <= reach[1]; ++dy)
+            for (int dz = -reach[2]; dz <= reach[2]; ++dz) {
+              int u[3] = {sbin[0] + dx, sbin[1] + dy, sbin[2] + dz}, q[3] = {0, 0, 0};
+              bool skip = false;
+              for (int k = 0; k < 3; ++k) {
+                if (u[k] < 0 || u[k] >= nb[k]) {
+                  if (!cell.periodic[k]) { skip = true; break; }
+                  q[k] = static_cast<int>(std::floor(static_cast<double>(u[k]) / nb[k]));
+                  u[k] -= q[k] * nb[k];
+                }
+              }
+              if (skip) continue;
+              const uint16_t code = static_cast<uint16_t>(((q[0] - qlo[0]) * span[1] + (q[1] - qlo[1])) * span[2] + (q[2] - qlo[2]));
+              stencil.push_back({code, static_cast<uint32_t>(index(u[0], u[1], u[2]))});
+            }
+        std::sort(stencil.begin(), stencil.end(), [](const Cand& p, const Cand& r) { return p.code != r.code ? p.code < r.code : p.bin < r.bin; });
+      }
+      const uint32_t ai = perm_[i];
+      const auto& ex = ff_.excluded[ai];
       const size_t before = PJ.size();
-      for (int dx = -reach[0]; dx <= reach[0]; ++dx)
-        for (int dy = -reach[1]; dy <= reach[1]; ++dy)
-          for (int dz = -reach[2]; dz <= reach[2]; ++dz) {
-            int u[3] = {bin[i][0] + dx, bin[i][1] + dy, bin[i][2] + dz}, q[3] = {0, 0, 0};
-            bool skip = false;
-            for (int k = 0; k < 3; ++k) {
-              if (u[k] < 0 || u[k] >= nb[k]) {
-                if (!cell.periodic[k]) { skip = true; break; }
-                q[k] = static_cast<int>(std::floor(static_cast<double>(u[k]) / nb[k]));
-                u[k] -= q[k] * nb[k];
-              }
-            }
-            if (skip) continue;
-            const bool zero = q[0] == 0 && q[1] == 0 && q[2] == 0;
-            const uint16_t code = static_cast<uint16_t>(((q[0] - qlo[0]) * span[1] + (q[1] - qlo[1])) * span[2] + (q[2] - qlo[2]));
-            for (uint32_t j : bins[index(u[0], u[1], u[2])]) {
-              // Half list balanced over atoms: an unordered pair is kept from the side given by the parity of i + j.
-              if (j != i && (j > i) != (((i + j) & 1) == 0)) continue;
-              if (j == i) {
-                // self images: keep one of each ±shift pair
-                if (zero) continue;
-                if (q[0] < 0 || (q[0] == 0 && (q[1] < 0 || (q[1] == 0 && q[2] < 0)))) continue;
-              }
-              const Vec3 df = fr[j] + Vec3{double(q[0]), double(q[1]), double(q[2])} - fr[i];
-              const Vec3 d = cell.a * df[0] + cell.b * df[1] + cell.c * df[2];
-              if (dot(d, d) >= rcs2) continue;
-              // 1-2, 1-3 and 1-4 partners are excluded at their nearest image only (the bonded one, whatever the bond
-              // length: coarse-grained bonds are several Å); further images interact, as LAMMPS's minimum-image check
-              if (j != i && std::binary_search(ex.begin(), ex.end(), j)) {
-                Vec3 m = fr[j] - fr[i];
-                for (int k = 0; k < 3; ++k)
-                  if (cell.periodic[k]) m[k] -= std::round(m[k]);
-                const Vec3 dm = cell.a * m[0] + cell.b * m[1] + cell.c * m[2];
-                if (dot(d, d) <= dot(dm, dm) + 1e-6) continue;
-              }
-              if (skipping && skip_type_[size_t(ff_.type_index[i]) * ntypes + ff_.type_index[j]]) continue;
-              PJ.push_back(j);
-              PQ.push_back(code);
-            }
+      const size_t seg0 = SC.size();
+      const uint32_t exlo = ex.empty() ? 1 : ex.front(), exhi = ex.empty() ? 0 : ex.back();
+      for (const Cand& c : stencil) {
+        const size_t code = c.code;
+        const int q[3] = {qint_[3 * code], qint_[3 * code + 1], qint_[3 * code + 2]};
+        const bool zero = q[0] == 0 && q[1] == 0 && q[2] == 0;
+        const Vec3 xi = cw[i] - (cell.a * double(q[0]) + cell.b * double(q[1]) + cell.c * double(q[2]));
+        const size_t pairs_before = PJ.size();
+        for (size_t j = bstart[c.bin]; j < bstart[c.bin + 1]; ++j) {
+          // Half list balanced over slots: an unordered pair is kept from the side given by the parity of i + j.
+          if (j != i && (j > i) != (((i + j) & 1) == 0)) continue;
+          if (j == i) {
+            // self images: keep one of each ±shift pair
+            if (zero) continue;
+            if (q[0] < 0 || (q[0] == 0 && (q[1] < 0 || (q[1] == 0 && q[2] < 0)))) continue;
           }
+          const Vec3 d = cw[j] - xi;
+          if (dot(d, d) >= rcs2) continue;
+          const uint32_t aj = perm_[j];
+          // 1-2, 1-3 and 1-4 partners are excluded at their nearest image only (the bonded one, whatever the bond
+          // length: coarse-grained bonds are several Å); further images interact, as LAMMPS's minimum-image check
+          if (j != i && aj >= exlo && aj <= exhi && std::binary_search(ex.begin(), ex.end(), aj)) {
+            Vec3 m = fr[j] - fr[i];
+            for (int k = 0; k < 3; ++k)
+              if (cell.periodic[k]) m[k] -= std::round(m[k]);
+            const Vec3 dm = cell.a * m[0] + cell.b * m[1] + cell.c * m[2];
+            if (dot(d, d) <= dot(dm, dm) + 1e-6) continue;
+          }
+          if (skipping && skip_type_[size_t(tslot_[i]) * ntypes + tslot_[j]]) continue;
+          PJ.push_back(static_cast<uint32_t>(j));
+          PQ.push_back(c.code);
+        }
+        if (PJ.size() == pairs_before) continue;
+        if (SC.size() > seg0 && SC.back() == c.code) SE.back() = static_cast<uint32_t>(PJ.size() - before);
+        else SC.push_back(c.code), SE.push_back(static_cast<uint32_t>(PJ.size() - before));
+      }
       count[i] = static_cast<uint32_t>(PJ.size() - before);
+      nseg[i] = static_cast<uint32_t>(SC.size() - seg0);
     }
   });
   first_.resize(n + 1);
+  segoff_.resize(n + 1);
   first_[0] = 0;
-  for (size_t i = 0; i < n; ++i) first_[i + 1] = first_[i] + count[i];
+  segoff_[0] = 0;
+  for (size_t i = 0; i < n; ++i) first_[i + 1] = first_[i] + count[i], segoff_[i + 1] = segoff_[i] + nseg[i];
   pj_.resize(first_[n]);
   pq_.resize(first_[n]);
-  // every worker's atoms are a contiguous range listed in order: its pairs go in one piece (the same split as above)
+  segcode_.resize(segoff_[n]);
+  segend_.resize(segoff_[n]);
+  // every worker's slots are a contiguous range listed in order: its pairs go in one piece (the same split as above)
   pool_->run(n, [&](int t, size_t b, size_t) {
     std::copy(vj[t].begin(), vj[t].end(), pj_.begin() + std::ptrdiff_t(first_[b]));
     std::copy(vq[t].begin(), vq[t].end(), pq_.begin() + std::ptrdiff_t(first_[b]));
+    std::copy(vsc[t].begin(), vsc[t].end(), segcode_.begin() + std::ptrdiff_t(segoff_[b]));
+    std::copy(vse[t].begin(), vse[t].end(), segend_.begin() + std::ptrdiff_t(segoff_[b]));
   });
-  // Each atom's offset to its binned position: a lattice vector (in the periodic directions) whose integer
+  // Each slot's offset to its binned position: a lattice vector (in the periodic directions) whose integer
   // coefficients are kept, so a change of cell (barostat, compression) only rescales the offsets and images instead
   // of forcing a rebuild.
   off_.resize(3 * n);
   ioff_.assign(3 * n, 0);
-  for (size_t i = 0; i < n; ++i) {
-    const Vec3 w = cell.origin + cell.a * fr[i][0] + cell.b * fr[i][1] + cell.c * fr[i][2];
-    for (int k = 0; k < 3; ++k) off_[3 * i + k] = w[k] - x[3 * i + k];
+  for (size_t s = 0; s < n; ++s) {
+    const uint32_t i = perm_[s];
+    const Vec3 w = cell.origin + cell.a * fr[s][0] + cell.b * fr[s][1] + cell.c * fr[s][2];
+    for (int k = 0; k < 3; ++k) off_[3 * s + k] = w[k] - x[3 * i + k];
   }
   if (cell_in.valid())
-    for (size_t i = 0; i < n; ++i) {
-      const Vec3 o = cell_in.to_fractional(cell_in.origin + Vec3{off_[3 * i], off_[3 * i + 1], off_[3 * i + 2]});
-      for (int k = 0; k < 3; ++k) ioff_[3 * i + k] = static_cast<int32_t>(std::lround(o[k]));
+    for (size_t s = 0; s < n; ++s) {
+      const Vec3 o = cell_in.to_fractional(cell_in.origin + Vec3{off_[3 * s], off_[3 * s + 1], off_[3 * s + 2]});
+      for (int k = 0; k < 3; ++k) ioff_[3 * s + k] = static_cast<int32_t>(std::lround(o[k]));
     }
   qvec_.resize(qint_.size());
   for (size_t c = 0; c < qint_.size(); c += 3) {
@@ -730,8 +797,46 @@ void Evaluator::rescale_images(const Cell& cell) {
 
 const double* Evaluator::listed_positions(const std::vector<double>& x) {
   xs_.resize(x.size());
-  for (size_t k = 0; k < x.size(); ++k) xs_[k] = x[k] + off_[k];
+  for (size_t s = 0; s < perm_.size(); ++s) {
+    const size_t i = 3 * size_t(perm_[s]);
+    xs_[3 * s] = x[i] + off_[3 * s];
+    xs_[3 * s + 1] = x[i + 1] + off_[3 * s + 1];
+    xs_[3 * s + 2] = x[i + 2] + off_[3 * s + 2];
+  }
   return xs_.data();
+}
+
+void Evaluator::ewald_table(double kappa, double s_max) {
+  // nodes at most 0.025/κ² apart in s (and at least 1024 to the cut-off): the cubic's error is below 1e-12 of G
+  const size_t m = std::max<size_t>(1024, size_t(std::ceil(s_max * kappa * kappa / 0.025)));
+  const double h = s_max / double(m);
+  if (kappa == gtab_kappa_ && h == gtab_h_ && !gtab_.empty()) return;
+  const double c = 2 * kappa / std::sqrt(kPi), k2 = kappa * kappa;
+  gtab_.assign(2 * (m + 2), 0.0);   // one node past s_max: a pair just inside the cut-off reads node m + 1
+  for (size_t k = 0; k <= m + 1; ++k) {
+    const double s = double(k) * h, x = k2 * s;
+    double G, dG;
+    if (x < 1) {
+      // small κ²s, where the closed form cancels: G = c Σ (−x)ⁿ / (n! (2n + 1)), dG/ds = −c κ² Σ (−x)ⁿ / (n! (2n + 3))
+      G = 0, dG = 0;
+      double term = 1;   // (−x)ⁿ / n!
+      for (int nn = 0; nn < 30; ++nn) {
+        G += term / (2 * nn + 1);
+        dG -= term / (2 * nn + 3);
+        term *= -x / (nn + 1);
+      }
+      G *= c;
+      dG *= c * k2;
+    } else {
+      const double r = std::sqrt(s), e = std::erf(kappa * r);
+      G = e / r;
+      dG = (c * std::exp(-x) - G) / (2 * s);
+    }
+    gtab_[2 * k] = G;
+    gtab_[2 * k + 1] = h * dG;
+  }
+  gtab_kappa_ = kappa;
+  gtab_h_ = h;
 }
 
 int apply_rigid_geometry(System& s, const ForceField& ff, size_t first, size_t last) {
@@ -892,8 +997,9 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
 
   const bool ortho = cell.valid() && orthogonal(cell);
   const double L[3] = {cell.a[0], cell.b[1], cell.c[2]};
+  const bool cvalid = cell.valid();   // a volume: once, not per call
   auto mi = [&](Vec3 d) {
-    if (!cell.valid()) return d;
+    if (!cvalid) return d;
     if (ortho) {
       for (int k = 0; k < 3; ++k)
         if (cell.periodic[k]) d[k] -= L[k] * std::round(d[k] / L[k]);
@@ -1088,6 +1194,7 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
   const double* q = qeff_.data();
   const int nth = pool_->size();
   tf_.resize(nth);
+  tfs_.resize(nth);
   // per worker: bond, angle, dihedral, improper, vdW, Coulomb, virial, virial tensor (xx yy zz xy xz yz)
   std::vector<std::array<double, 15>> acc(nth);   // + ∂U/∂λ of the alchemical pairs (LJ, Coulomb)
   // alchemical pairs: plain 12-6 for every type an alchemical atom has, pairwise electrostatics, no tail
@@ -1114,51 +1221,155 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
   for (auto& v : acc) v.fill(0.0);
 
   const bool frozen = frozen_;
-  // Phase 1: pair list. Every worker is called (possibly with an empty range) and clears its own force buffer; its
-  // atoms are a contiguous range holding about 1/nth of the pairs.
+  // Phase 1: pair list. Every worker is called (possibly with an empty range) and clears its own force buffers; its
+  // slots are a contiguous range holding about 1/nth of the pairs. Pair forces go to a buffer in slot order.
   const double* xs = nonb ? listed_positions(x) : nullptr;
   const size_t npairs = nonb ? pj_.size() : 0;
   // Plain 12-6 pairs (no other pair form, cap, switch, alchemy, hydrogen bonds or frozen list; PME, DSF or no
-  // charges) take a copy of the loop with those branches compiled out: the same arithmetic, so the same numbers.
-  const bool plain = nonb && !alch && !hbon && !frozen_ && !capped && !ff_.lj_fsw && !lj96_ && !rf && !gro &&
+  // charges) take a copy of the loop with those branches compiled out, the image shift taken once per segment and
+  // the two coefficients per type pair: 12-6 E = c12 r⁻¹² − cc6 r⁻⁶ (4ε σ¹², 4ε σ⁶); class II 9-6 E = c12 r⁻⁹ − cc6 r⁻⁶
+  // (2ε σ⁹, 3ε σ⁶).
+  const bool plain = nonb && !alch && !hbon && !frozen_ && !capped && !ff_.lj_fsw && !rf && !gro &&
                      std::all_of(form_.begin(), form_.end(), [](uint8_t v) { return v == 0; });
-  std::vector<double> shift0;
+  std::vector<double> shift0, c12, cc6;
   if (plain) {
     shift0.resize(nt * nt);
-    for (size_t tp = 0; tp < shift0.size(); ++tp) shift0[tp] = lj_shift(tp);
+    c12.resize(nt * nt);
+    cc6.resize(nt * nt);
+    for (size_t tp = 0; tp < shift0.size(); ++tp) {
+      shift0[tp] = lj_shift(tp);
+      const double eps = eps_[tp] > 0 ? eps_[tp] : 0.0;
+      c12[tp] = lj96_ ? 2 * eps * s6_[tp] * std::sqrt(s6_[tp]) : 4 * eps * s6_[tp] * s6_[tp];
+      cc6[tp] = lj96_ ? 3 * eps * s6_[tp] : 4 * eps * s6_[tp];
+    }
   }
-  auto pair_phase = [&](int t, auto plain_c) {
-    constexpr bool kPlain = decltype(plain_c)::value;
+  // erfc(κr)/r (E) and −(dE/dr)/r (F) at r² = s, 1/r given: from the table inside the cut-off
+  const double kappa = pme ? beta : a;
+  if (nonb && coul && !rf && !gro) ewald_table(kappa, rc2);
+  const double* gt = gtab_.data();
+  const double ghi = gtab_h_ > 0 ? 1 / gtab_h_ : 0.0;
+  auto ewald_ef = [gt, ghi](double s, double rinv, double& E, double& F) {
+    const double u = s * ghi;
+    const size_t k = size_t(u);
+    const double t = u - double(k), t2 = t * t;
+    const double* g = gt + 2 * k;   // G_k, h G'_k, G_k+1, h G'_k+1
+    const double G = g[0] + t2 * (3 - 2 * t) * (g[2] - g[0]) + t * (1 - t) * ((1 - t) * g[1] - t * g[3]);
+    const double dG = (6 * t * (1 - t) * (g[2] - g[0]) * ghi) + (1 - t) * (1 - 3 * t) * g[1] * ghi + t * (3 * t - 2) * g[3] * ghi;
+    E = rinv - G;
+    F = rinv * rinv * rinv + 2 * dG;
+  };
+  // kind: 0 any pair, 1 plain 12-6, 2 plain 9-6
+  auto pair_phase = [&](int t, auto kind_c) {
+    constexpr int kKind = decltype(kind_c)::value;
+    constexpr bool kPlain = kKind != 0;
     std::vector<double>& ft = tf_[t];
     ft.assign(x.size(), 0.0);
+    std::vector<double>& fs = tfs_[t];
+    if (nonb) fs.assign(x.size(), 0.0);
     double evdw = 0, ecoul = 0, vir = 0, wv[6] = {0, 0, 0, 0, 0, 0}, dl_lj = 0, dl_c = 0;
     if (npairs == 0) return;
     const size_t ib = size_t(std::lower_bound(first_.begin(), first_.end() - 1, npairs * size_t(t) / size_t(nth)) - first_.begin());
     const size_t ie = size_t(std::lower_bound(first_.begin(), first_.end() - 1, npairs * size_t(t + 1) / size_t(nth)) - first_.begin());
-    for (size_t i = ib; i < ie; ++i) {
-      const double xi = xs[3 * i], yi = xs[3 * i + 1], zi = xs[3 * i + 2];
+    if constexpr (kPlain) {
+      const uint32_t* ts = tslot_.data();
+      const double* qs = qslot_.data();
+      double* F = fs.data();
+      const bool pmec = coul && pme, dsfc = coul && !pme;
+      // Two passes per slot: the separations of its listed pairs, keeping those inside the cut-off without a branch,
+      // then the interactions of those alone (a third or more of a list with a 2 Å skin is outside, at random).
+      size_t most = 0;
+      for (size_t si = ib; si < ie; ++si) most = std::max(most, first_[si + 1] - first_[si]);
+      std::vector<uint32_t> bj(most + 1);
+      std::vector<double> bd(4 * (most + 1));
+      for (size_t si = ib; si < ie; ++si) {
+        size_t m = 0;
+        for (size_t k = segoff_[si]; k < segoff_[si + 1]; ++k) {
+          const double* sv = &qvec_[3 * size_t(segcode_[k])];
+          // d = xs_j − (xs_i − shift)
+          const double xi = xs[3 * si] - sv[0], yi = xs[3 * si + 1] - sv[1], zi = xs[3 * si + 2] - sv[2];
+          const size_t pb = k == segoff_[si] ? first_[si] : first_[si] + segend_[k - 1], pe = first_[si] + segend_[k];
+          for (size_t p = pb; p < pe; ++p) {
+            const uint32_t sj = pj_[p];
+            const double dx = xs[3 * sj] - xi, dy = xs[3 * sj + 1] - yi, dz = xs[3 * sj + 2] - zi;
+            const double r2 = dx * dx + dy * dy + dz * dz;
+            bj[m] = sj;
+            double* d = &bd[4 * m];
+            d[0] = dx; d[1] = dy; d[2] = dz; d[3] = r2;
+            m += r2 < rc2;
+          }
+        }
+        double fxi = 0, fyi = 0, fzi = 0;
+        const size_t ti = size_t(ts[si]) * nt;
+        const double qi = kCoulomb * qs[si];
+        for (size_t c = 0; c < m; ++c) {
+          const uint32_t sj = bj[c];
+          const double* d = &bd[4 * c];
+          const double dx = d[0], dy = d[1], dz = d[2], r2 = d[3];
+          const size_t tp = ti + ts[sj];
+          const double r2i = 1 / r2, r6i = r2i * r2i * r2i, rinv = std::sqrt(r2i);
+          double fr;
+          if constexpr (kKind == 2) {
+            const double r9i = r6i * r2i * rinv;
+            evdw += c12[tp] * r9i - cc6[tp] * r6i - shift0[tp];
+            fr = (9 * c12[tp] * r9i - 6 * cc6[tp] * r6i) * r2i;
+          } else {
+            evdw += r6i * (c12[tp] * r6i - cc6[tp]) - shift0[tp];
+            fr = r6i * (12 * c12[tp] * r6i - 6 * cc6[tp]) * r2i;
+          }
+          if (pmec || dsfc) {
+            const double qq = qi * qs[sj];
+            double E, Fc;
+            ewald_ef(r2, rinv, E, Fc);
+            if (pmec) {
+              ecoul += qq * E;
+              fr += qq * Fc;
+            } else {
+              ecoul += qq * (E - dsf_e0 + dsf_f0 * (r2 * rinv - rc));
+              fr += qq * (Fc - dsf_f0 * rinv);
+            }
+          }
+          const double fx = fr * dx, fy = fr * dy, fz = fr * dz;
+          F[3 * sj] += fx; F[3 * sj + 1] += fy; F[3 * sj + 2] += fz;
+          fxi -= fx; fyi -= fy; fzi -= fz;
+          wv[0] += fx * dx; wv[1] += fy * dy; wv[2] += fz * dz;
+          wv[3] += fx * dy; wv[4] += fx * dz; wv[5] += fy * dz;   // pair forces are central: f ∥ d, so f_a d_b = f_b d_a
+        }
+        F[3 * si] += fxi; F[3 * si + 1] += fyi; F[3 * si + 2] += fzi;
+      }
+      vir = wv[0] + wv[1] + wv[2];
+    } else {
+    // the same two passes: the pairs that interact (inside the cut-off, or frozen in), then their terms
+    size_t most = 0;
+    for (size_t si = ib; si < ie; ++si) most = std::max(most, first_[si + 1] - first_[si]);
+    std::vector<size_t> bp(most + 1);
+    std::vector<double> bd(4 * (most + 1));
+    for (size_t si = ib; si < ie; ++si) {
+      const uint32_t i = perm_[si];
+      const double xi = xs[3 * si], yi = xs[3 * si + 1], zi = xs[3 * si + 2];
+      size_t m = 0;
+      for (size_t p = first_[si]; p < first_[si + 1]; ++p) {
+        const uint32_t sj = pj_[p];
+        const double* sv = &qvec_[3 * size_t(pq_[p])];
+        const double dx = xs[3 * sj] - xi + sv[0], dy = xs[3 * sj + 1] - yi + sv[1], dz = xs[3 * sj + 2] - zi + sv[2];
+        const double r2 = dx * dx + dy * dy + dz * dz;
+        bp[m] = p;
+        double* d = &bd[4 * m];
+        d[0] = dx; d[1] = dy; d[2] = dz; d[3] = r2;
+        m += frozen ? inside_[p] != 0 : r2 < rc2;
+      }
       double fxi = 0, fyi = 0, fzi = 0;
       const size_t ti = size_t(ff_.type_index[i]) * nt;
-      for (size_t p = first_[i]; p < first_[i + 1]; ++p) {
-        const uint32_t j = pj_[p];
-        const double* sv = &qvec_[3 * size_t(pq_[p])];
-        const double dx = xs[3 * j] - xi + sv[0], dy = xs[3 * j + 1] - yi + sv[1], dz = xs[3 * j + 2] - zi + sv[2];
-        const double r2 = dx * dx + dy * dy + dz * dz;
-        if ((!kPlain && frozen) ? !inside_[p] : r2 >= rc2) continue;
+      for (size_t c = 0; c < m; ++c) {
+        const size_t p = bp[c];
+        const uint32_t sj = pj_[p], j = perm_[sj];
+        const double* d = &bd[4 * c];
+        const double dx = d[0], dy = d[1], dz = d[2], r2 = d[3];
         // a self image is listed once for each ±shift pair (the pair list keeps one), so it counts in full, as in LAMMPS
         const double w = 1.0;
         const size_t tp = ti + ff_.type_index[j];
-        const bool ab = !kPlain && alch && (*alch)[i] != (*alch)[j];   // an alchemical pair: soft-core, scaled
+        const bool ab = alch && (*alch)[i] != (*alch)[j];   // an alchemical pair: soft-core, scaled
         double ev = 0, fr = 0;
-        if constexpr (kPlain) {
-          const double eps = eps_[tp];
-          if (eps > 0) {
-            const double q6 = s6_[tp] / (r2 * r2 * r2);
-            ev += 4 * eps * (q6 * q6 - q6);
-            fr = 24 * eps * (2 * q6 * q6 - q6) / r2;
-          }
-          ev -= shift0[tp];
-        } else if (ab) {
+        if (ab) {
           if (eps_[tp] > 0) {
             double u, fsc, dl, uc, fcc, dlc;
             softcore(r2, s6_[tp], eps_[tp], u, fsc, dl);
@@ -1174,12 +1385,13 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
         evdw += w * ev;
         const double ecoul0 = ecoul, fr0 = fr;
         if (coul && q[i] != 0 && q[j] != 0) {
-          const double r = std::sqrt(r2), qq = kCoulomb * q[i] * q[j];
-          double ex2;
-          if (!kPlain && rf) {
+          const double qq = kCoulomb * q[i] * q[j];
+          if (rf) {
+            const double r = std::sqrt(r2);
             ecoul += w * qq * (1 / r + krf * r2 - crf);
             fr += qq * (1 / (r2 * r) - 2 * krf);
-          } else if (!kPlain && gro) {
+          } else if (gro) {
+            const double r = std::sqrt(r2);
             const double qd = qq * qscale;
             double ec = qd * (1 / r - gc[4]), fc = qd / r;
             if (r > ri) {
@@ -1189,14 +1401,29 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
             }
             ecoul += w * ec;
             fr += fc / r2;
-          } else if (pme) {
-            const double er = erfc_exp(beta * r, ex2);
-            ecoul += w * qq * er / r;
-            fr += qq * (er / r2 + b2pi * ex2 / r) / r;
-          } else {
-            const double er = erfc_exp(a * r, ex2);
-            ecoul += w * qq * (er / r - dsf_e0 + dsf_f0 * (r - rc));
-            fr += qq * (er / r2 + a2pi * ex2 / r - dsf_f0) / r;
+          } else if (r2 < rc2) {
+            const double rinv = 1 / std::sqrt(r2);
+            double E, Fc;
+            ewald_ef(r2, rinv, E, Fc);
+            if (pme) {
+              ecoul += w * qq * E;
+              fr += qq * Fc;
+            } else {
+              ecoul += w * qq * (E - dsf_e0 + dsf_f0 * (r2 * rinv - rc));
+              fr += qq * (Fc - dsf_f0 * rinv);
+            }
+          } else {   // a frozen pair beyond the cut-off: the closed form
+            const double r = std::sqrt(r2);
+            double ex2;
+            if (pme) {
+              const double er = erfc_exp(beta * r, ex2);
+              ecoul += w * qq * er / r;
+              fr += qq * (er / r2 + b2pi * ex2 / r) / r;
+            } else {
+              const double er = erfc_exp(a * r, ex2);
+              ecoul += w * qq * (er / r - dsf_e0 + dsf_f0 * (r - rc));
+              fr += qq * (er / r2 + a2pi * ex2 / r - dsf_f0) / r;
+            }
           }
         }
         if (ab && ecoul != ecoul0) {   // the pair's electrostatics × λ_coul, its full value is ∂U/∂λ_coul
@@ -1205,7 +1432,7 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
           ecoul = ecoul0 + lam_c * de;
           fr = fr0 + lam_c * (fr - fr0);
         }
-        if (!kPlain && hbon && i != j && r2 < hro2) {   // hydrogen bonds, either atom the donor
+        if (hbon && i != j && r2 < hro2) {   // hydrogen bonds, either atom the donor
           auto run = [&](uint32_t D, uint32_t Aa, const Vec3& dDA) {
             const auto it = ff_.hbond.param.find({ff_.type_index[D], ff_.type_index[Aa]});
             if (it == ff_.hbond.param.end()) return;
@@ -1214,7 +1441,8 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
               HbOut o;
               if (!hb_one(it->second, d1, d2, o)) continue;
               evdw += o.e;
-              for (int c = 0; c < 3; ++c) { ft[3 * D + c] += o.fd[c]; ft[3 * Aa + c] += o.fa[c]; ft[3 * h + c] += o.fh[c]; }
+              const size_t sD = iperm_[D], sA = iperm_[Aa], sH = iperm_[h];
+              for (int c = 0; c < 3; ++c) { fs[3 * sD + c] += o.fd[c]; fs[3 * sA + c] += o.fa[c]; fs[3 * sH + c] += o.fh[c]; }
               vir += dot(d1, o.fd) + dot(d2, o.fa);
               wv[0] += d1[0] * o.fd[0] + d2[0] * o.fa[0]; wv[1] += d1[1] * o.fd[1] + d2[1] * o.fa[1]; wv[2] += d1[2] * o.fd[2] + d2[2] * o.fa[2];
               wv[3] += 0.5 * (d1[0] * o.fd[1] + d1[1] * o.fd[0] + d2[0] * o.fa[1] + d2[1] * o.fa[0]);
@@ -1227,13 +1455,14 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
         }
         fr *= w;
         const double fx = fr * dx, fy = fr * dy, fz = fr * dz;
-        ft[3 * j] += fx; ft[3 * j + 1] += fy; ft[3 * j + 2] += fz;
+        fs[3 * sj] += fx; fs[3 * sj + 1] += fy; fs[3 * sj + 2] += fz;
         fxi -= fx; fyi -= fy; fzi -= fz;
         vir += fx * dx + fy * dy + fz * dz;
         wv[0] += fx * dx; wv[1] += fy * dy; wv[2] += fz * dz;
         wv[3] += fx * dy; wv[4] += fx * dz; wv[5] += fy * dz;   // pair forces are central: f ∥ d, so f_a d_b = f_b d_a
       }
-      ft[3 * i] += fxi; ft[3 * i + 1] += fyi; ft[3 * i + 2] += fzi;
+      fs[3 * si] += fxi; fs[3 * si + 1] += fyi; fs[3 * si + 2] += fzi;
+    }
     }
     acc[t][4] += evdw;
     acc[t][5] += ecoul;
@@ -1602,7 +1831,18 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
           V(d, fj);
           continue;
         }
-        if (pme) {
+        if (r2 < rc2) {
+          // the real-space part from the table (as the pairs), less (1 − factor) of 1/r
+          double E, Fc;
+          ewald_ef(r2, 1 / r, E, Fc);
+          if (pme) {
+            A[5] += qq * E - (1 - ex.factor) * qq / r;
+            fr = qq * (Fc - (1 - ex.factor) / (r2 * r));
+          } else {
+            A[5] += qq * (E - dsf_e0 + dsf_f0 * (r - rc)) - (1 - ex.factor) * qq / r;
+            fr = qq * (Fc - dsf_f0 / r - (1 - ex.factor) / (r2 * r));
+          }
+        } else if (pme) {
           // Ewald: the reciprocal sum includes the pair; add its real-space part and remove (1 − factor) of 1/r
           const double er = erfc_exp(beta * r, ex2);
           A[5] += qq * er / r - (1 - ex.factor) * qq / r;
@@ -1621,16 +1861,25 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
   };
   // one run for both phases: each worker lists its pairs, then its share of the bonded terms, into its own buffer
   pool_->run(size_t(nth), [&](int t, size_t, size_t) {
-    if (plain) pair_phase(t, std::true_type{});
-    else pair_phase(t, std::false_type{});
+    if (plain && lj96_) pair_phase(t, std::integral_constant<int, 2>{});
+    else if (plain) pair_phase(t, std::integral_constant<int, 1>{});
+    else pair_phase(t, std::integral_constant<int, 0>{});
     bonded_phase(t, total * size_t(t) / size_t(nth), total * size_t(t + 1) / size_t(nth));
   });
 
-  // Reduce in worker order (deterministic for a given thread count); the reduction itself is split by atoms.
-  pool_->run(x.size(), [&](int, size_t b, size_t en) {
+  // Reduce in worker order (deterministic for a given thread count); the reduction itself is split by atoms. Pair
+  // forces are in slot order.
+  const bool slots = nonb && iperm_.size() == n;
+  pool_->run(n, [&](int, size_t b, size_t en) {
     for (int t = 0; t < nth; ++t) {
       const std::vector<double>& ft = tf_[t];
-      for (size_t k = b; k < en; ++k) f[k] += ft[k];
+      for (size_t k = 3 * b; k < 3 * en; ++k) f[k] += ft[k];
+      if (!slots) continue;
+      const std::vector<double>& fs = tfs_[t];
+      for (size_t i = b; i < en; ++i) {
+        const size_t sl = 3 * size_t(iperm_[i]);
+        f[3 * i] += fs[sl]; f[3 * i + 1] += fs[sl + 1]; f[3 * i + 2] += fs[sl + 2];
+      }
     }
   });
   for (int t = 0; t < nth; ++t) {
@@ -1658,12 +1907,13 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
       e.w[0] += d[0] * fv[0]; e.w[1] += d[1] * fv[1]; e.w[2] += d[2] * fv[2];
       e.w[3] += 0.5 * (d[0] * fv[1] + d[1] * fv[0]); e.w[4] += 0.5 * (d[0] * fv[2] + d[2] * fv[0]); e.w[5] += 0.5 * (d[1] * fv[2] + d[2] * fv[1]);
     };
-    for (uint32_t i = 0; i < n; ++i) {
-      for (size_t k = first_[i]; k < first_[i + 1]; ++k) {
-        const uint32_t j = pj_[k];
+    for (uint32_t si = 0; si < n; ++si) {
+      const uint32_t i = perm_[si];
+      for (size_t k = first_[si]; k < first_[si + 1]; ++k) {
+        const uint32_t sj = pj_[k], j = perm_[sj];
         if (!S.atom[i] || !S.atom[j]) continue;
         const double* sv = &qvec_[3 * size_t(pq_[k])];
-        const Vec3 d = Vec3{xs[3 * j], xs[3 * j + 1], xs[3 * j + 2]} - Vec3{xs[3 * i], xs[3 * i + 1], xs[3 * i + 2]} + Vec3{sv[0], sv[1], sv[2]};
+        const Vec3 d = Vec3{xs[3 * sj], xs[3 * sj + 1], xs[3 * sj + 2]} - Vec3{xs[3 * si], xs[3 * si + 1], xs[3 * si + 2]} + Vec3{sv[0], sv[1], sv[2]};
         const double r2 = dot(d, d);
         if (r2 >= rcs2) continue;
         const double r = std::sqrt(r2);
