@@ -1,0 +1,65 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "lewis-catlow1985-oxides: Fe3t",
+ "unknown_types": "untyped",
+ "description": "Overlay: the Fe3t set (Table 3) in place of the element's first",
+ "rules": [
+  {
+   "type": "Fe3tc",
+   "smarts": "[#26]",
+   "priority": 50,
+   "requires": [
+    "O"
+   ],
+   "excludes": [
+    "Al",
+    "Ba",
+    "Ca",
+    "Ce",
+    "Co",
+    "Cr",
+    "Ge",
+    "Mg",
+    "Mn",
+    "Ni",
+    "Sn",
+    "Sr",
+    "Th",
+    "Ti",
+    "U",
+    "V",
+    "Zn"
+   ],
+   "description": "Fe3+ in its oxide"
+  },
+  {
+   "type": "O_Fe3tc",
+   "smarts": "[#8]",
+   "priority": 50,
+   "requires": [
+    "Fe"
+   ],
+   "excludes": [
+    "Al",
+    "Ba",
+    "Ca",
+    "Ce",
+    "Co",
+    "Cr",
+    "Ge",
+    "Mg",
+    "Mn",
+    "Ni",
+    "Sn",
+    "Sr",
+    "Th",
+    "Ti",
+    "U",
+    "V",
+    "Zn"
+   ],
+   "description": "O2- in the Fe3+ oxide"
+  }
+ ]
+}

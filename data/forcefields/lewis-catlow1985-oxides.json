@@ -1,0 +1,3321 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "Oxides (Lewis & Catlow 1985)",
+ "source": "G. V. Lewis, C. R. A. Catlow, J. Phys. C: Solid State Phys. 18, 1149 (1985), Table 3; O-O: C. R. A. Catlow, Proc. R. Soc. Lond. A 353, 533 (1977), Table 3",
+ "references": [
+  "G. V. Lewis, C. R. A. Catlow, J. Phys. C: Solid State Phys. 18, 1149 (1985)",
+  "C. R. A. Catlow, Proc. R. Soc. Lond. A 353, 533 (1977)"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "buck/coul/long",
+  "bond": "class2",
+  "angle": "harmonic",
+  "dihedral": "fourier",
+  "improper": "fourier"
+ },
+ "mixing": "geometric",
+ "special_lj": [
+  0,
+  0,
+  1
+ ],
+ "special_coul": [
+  0,
+  0,
+  1
+ ],
+ "cutoff": 6,
+ "atom_types": [
+  {
+   "name": "Mg2",
+   "element": "Mg",
+   "mass": 24.305,
+   "charge": 2.0,
+   "description": "Mg2+ (rigid: k+ 99999); G. V. Lewis, C. R. A. Catlow, J. Phys. C: Solid State Phys. 18, 1149 (1985), Table 3"
+  },
+  {
+   "name": "O_Mg2c",
+   "element": "O",
+   "mass": 14.3991,
+   "charge": 0.0,
+   "description": "O2- core in the Mg2 oxide; Table 3"
+  },
+  {
+   "name": "O_Mg2s",
+   "element": "O",
+   "mass": 1.5999,
+   "charge": -2.0,
+   "description": "O2- shell in the Mg2 oxide; Table 3"
+  },
+  {
+   "name": "Mg2t",
+   "element": "Mg",
+   "mass": 24.305,
+   "charge": 2.0,
+   "description": "Mg2+ (rigid: k+ 99999) (tetrahedral); G. V. Lewis, C. R. A. Catlow, J. Phys. C: Solid State Phys. 18, 1149 (1985), Table 3"
+  },
+  {
+   "name": "O_Mg2tc",
+   "element": "O",
+   "mass": 14.3991,
+   "charge": 0.0,
+   "description": "O2- core in the Mg2t oxide; Table 3"
+  },
+  {
+   "name": "O_Mg2ts",
+   "element": "O",
+   "mass": 1.5999,
+   "charge": -2.0,
+   "description": "O2- shell in the Mg2t oxide; Table 3"
+  },
+  {
+   "name": "Ca2c",
+   "element": "Ca",
+   "mass": 36.07020000000001,
+   "charge": 0.74,
+   "description": "Ca2+ core; G. V. Lewis, C. R. A. Catlow, J. Phys. C: Solid State Phys. 18, 1149 (1985), Table 3"
+  },
+  {
+   "name": "Ca2s",
+   "element": "Ca",
+   "mass": 4.0078000000000005,
+   "charge": 1.26,
+   "description": "Ca2+ shell; Table 3"
+  },
+  {
+   "name": "O_Ca2c",
+   "element": "O",
+   "mass": 14.3991,
+   "charge": 0.8199999999999998,
+   "description": "O2- core in the Ca2 oxide; Table 3"
+  },
+  {
+   "name": "O_Ca2s",
+   "element": "O",
+   "mass": 1.5999,
+   "charge": -2.82,
+   "description": "O2- shell in the Ca2 oxide; Table 3"
+  },
+  {
+   "name": "Sr2c",
+   "element": "Sr",
+   "mass": 78.858,
+   "charge": 0.6699999999999999,
+   "description": "Sr2+ core; G. V. Lewis, C. R. A. Catlow, J. Phys. C: Solid State Phys. 18, 1149 (1985), Table 3"
+  },
+  {
+   "name": "Sr2s",
+   "element": "Sr",
+   "mass": 8.762,
+   "charge": 1.33,
+   "description": "Sr2+ shell; Table 3"
+  },
+  {
+   "name": "O_Sr2c",
+   "element": "O",
+   "mass": 14.3991,
+   "charge": 1.5099999999999998,
+   "description": "O2- core in the Sr2 oxide; Table 3"
+  },
+  {
+   "name": "O_Sr2s",
+   "element": "O",
+   "mass": 1.5999,
+   "charge": -3.51,
+   "description": "O2- shell in the Sr2 oxide; Table 3"
+  },
+  {
+   "name": "Ba2c",
+   "element": "Ba",
+   "mass": 123.5943,
+   "charge": 0.54,
+   "description": "Ba2+ core; G. V. Lewis, C. R. A. Catlow, J. Phys. C: Solid State Phys. 18, 1149 (1985), Table 3"
+  },
+  {
+   "name": "Ba2s",
+   "element": "Ba",
+   "mass": 13.732700000000001,
+   "charge": 1.46,
+   "description": "Ba2+ shell; Table 3"
+  },
+  {
+   "name": "O_Ba2c",
+   "element": "O",
+   "mass": 14.3991,
+   "charge": 2.84,
+   "description": "O2- core in the Ba2 oxide; Table 3"
+  },
+  {
+   "name": "O_Ba2s",
+   "element": "O",
+   "mass": 1.5999,
+   "charge": -4.84,
+   "description": "O2- shell in the Ba2 oxide; Table 3"
+  },
+  {
+   "name": "Mn2c",
+   "element": "Mn",
+   "mass": 49.4442,
+   "charge": -1.0,
+   "description": "Mn2+ core; G. V. Lewis, C. R. A. Catlow, J. Phys. C: Solid State Phys. 18, 1149 (1985), Table 3"
+  },
+  {
+   "name": "Mn2s",
+   "element": "Mn",
+   "mass": 5.4938,
+   "charge": 3.0,
+   "description": "Mn2+ shell; Table 3"
+  },
+  {
+   "name": "O_Mn2c",
+   "element": "O",
+   "mass": 14.3991,
+   "charge": 0.2999999999999998,
+   "description": "O2- core in the Mn2 oxide; Table 3"
+  },
+  {
+   "name": "O_Mn2s",
+   "element": "O",
+   "mass": 1.5999,
+   "charge": -2.3,
+   "description": "O2- shell in the Mn2 oxide; Table 3"
+  },
+  {
+   "name": "Fe2c",
+   "element": "Fe",
+   "mass": 50.2605,
+   "charge": 0.0,
+   "description": "Fe2+ core; G. V. Lewis, C. R. A. Catlow, J. Phys. C: Solid State Phys. 18, 1149 (1985), Table 3"
+  },
+  {
+   "name": "Fe2s",
+   "element": "Fe",
+   "mass": 5.5845,
+   "charge": 2.0,
+   "description": "Fe2+ shell; Table 3"
+  },
+  {
+   "name": "O_Fe2c",
+   "element": "O",
+   "mass": 14.3991,
+   "charge": 0.1499999999999999,
+   "description": "O2- core in the Fe2 oxide; Table 3"
+  },
+  {
+   "name": "O_Fe2s",
+   "element": "O",
+   "mass": 1.5999,
+   "charge": -2.15,
+   "description": "O2- shell in the Fe2 oxide; Table 3"
+  },
+  {
+   "name": "Fe2tc",
+   "element": "Fe",
+   "mass": 50.2605,
+   "charge": 0.0,
+   "description": "Fe2+ core (tetrahedral); G. V. Lewis, C. R. A. Catlow, J. Phys. C: Solid State Phys. 18, 1149 (1985), Table 3"
+  },
+  {
+   "name": "Fe2ts",
+   "element": "Fe",
+   "mass": 5.5845,
+   "charge": 2.0,
+   "description": "Fe2+ shell; Table 3"
+  },
+  {
+   "name": "O_Fe2tc",
+   "element": "O",
+   "mass": 14.3991,
+   "charge": 0.1499999999999999,
+   "description": "O2- core in the Fe2t oxide; Table 3"
+  },
+  {
+   "name": "O_Fe2ts",
+   "element": "O",
+   "mass": 1.5999,
+   "charge": -2.15,
+   "description": "O2- shell in the Fe2t oxide; Table 3"
+  },
+  {
+   "name": "Co2c",
+   "element": "Co",
+   "mass": 53.0397,
+   "charge": 0.0,
+   "description": "Co2+ core; G. V. Lewis, C. R. A. Catlow, J. Phys. C: Solid State Phys. 18, 1149 (1985), Table 3"
+  },
+  {
+   "name": "Co2s",
+   "element": "Co",
+   "mass": 5.8933,
+   "charge": 2.0,
+   "description": "Co2+ shell; Table 3"
+  },
+  {
+   "name": "O_Co2c",
+   "element": "O",
+   "mass": 14.3991,
+   "charge": 0.06000000000000005,
+   "description": "O2- core in the Co2 oxide; Table 3"
+  },
+  {
+   "name": "O_Co2s",
+   "element": "O",
+   "mass": 1.5999,
+   "charge": -2.06,
+   "description": "O2- shell in the Co2 oxide; Table 3"
+  },
+  {
+   "name": "Co2tc",
+   "element": "Co",
+   "mass": 53.0397,
+   "charge": 0.0,
+   "description": "Co2+ core (tetrahedral); G. V. Lewis, C. R. A. Catlow, J. Phys. C: Solid State Phys. 18, 1149 (1985), Table 3"
+  },
+  {
+   "name": "Co2ts",
+   "element": "Co",
+   "mass": 5.8933,
+   "charge": 2.0,
+   "description": "Co2+ shell; Table 3"
+  },
+  {
+   "name": "O_Co2tc",
+   "element": "O",
+   "mass": 14.3991,
+   "charge": 0.06000000000000005,
+   "description": "O2- core in the Co2t oxide; Table 3"
+  },
+  {
+   "name": "O_Co2ts",
+   "element": "O",
+   "mass": 1.5999,
+   "charge": -2.06,
+   "description": "O2- shell in the Co2t oxide; Table 3"
+  },
+  {
+   "name": "Ni2c",
+   "element": "Ni",
+   "mass": 52.8237,
+   "charge": 0.0,
+   "description": "Ni2+ core; G. V. Lewis, C. R. A. Catlow, J. Phys. C: Solid State Phys. 18, 1149 (1985), Table 3"
+  },
+  {
+   "name": "Ni2s",
+   "element": "Ni",
+   "mass": 5.8693,
+   "charge": 2.0,
+   "description": "Ni2+ shell; Table 3"
+  },
+  {
+   "name": "O_Ni2c",
+   "element": "O",
+   "mass": 14.3991,
+   "charge": 0.0,
+   "description": "O2- core in the Ni2 oxide; Table 3"
+  },
+  {
+   "name": "O_Ni2s",
+   "element": "O",
+   "mass": 1.5999,
+   "charge": -2.0,
+   "description": "O2- shell in the Ni2 oxide; Table 3"
+  },
+  {
+   "name": "Ni2tc",
+   "element": "Ni",
+   "mass": 52.8237,
+   "charge": 0.0,
+   "description": "Ni2+ core (tetrahedral); G. V. Lewis, C. R. A. Catlow, J. Phys. C: Solid State Phys. 18, 1149 (1985), Table 3"
+  },
+  {
+   "name": "Ni2ts",
+   "element": "Ni",
+   "mass": 5.8693,
+   "charge": 2.0,
+   "description": "Ni2+ shell; Table 3"
+  },
+  {
+   "name": "O_Ni2tc",
+   "element": "O",
+   "mass": 14.3991,
+   "charge": 0.0,
+   "description": "O2- core in the Ni2t oxide; Table 3"
+  },
+  {
+   "name": "O_Ni2ts",
+   "element": "O",
+   "mass": 1.5999,
+   "charge": -2.0,
+   "description": "O2- shell in the Ni2t oxide; Table 3"
+  },
+  {
+   "name": "Zn2c",
+   "element": "Zn",
+   "mass": 58.842,
+   "charge": -0.04999999999999982,
+   "description": "Zn2+ core; G. V. Lewis, C. R. A. Catlow, J. Phys. C: Solid State Phys. 18, 1149 (1985), Table 3"
+  },
+  {
+   "name": "Zn2s",
+   "element": "Zn",
+   "mass": 6.538,
+   "charge": 2.05,
+   "description": "Zn2+ shell; Table 3"
+  },
+  {
+   "name": "O_Zn2c",
+   "element": "O",
+   "mass": 14.3991,
+   "charge": 0.0,
+   "description": "O2- core in the Zn2 oxide; Table 3"
+  },
+  {
+   "name": "O_Zn2s",
+   "element": "O",
+   "mass": 1.5999,
+   "charge": -2.0,
+   "description": "O2- shell in the Zn2 oxide; Table 3"
+  },
+  {
+   "name": "Al3",
+   "element": "Al",
+   "mass": 26.982,
+   "charge": 3.0,
+   "description": "Al3+ (rigid: k+ 99999); G. V. Lewis, C. R. A. Catlow, J. Phys. C: Solid State Phys. 18, 1149 (1985), Table 3"
+  },
+  {
+   "name": "O_Al3c",
+   "element": "O",
+   "mass": 14.3991,
+   "charge": 0.20999999999999996,
+   "description": "O2- core in the Al3 oxide; Table 3"
+  },
+  {
+   "name": "O_Al3s",
+   "element": "O",
+   "mass": 1.5999,
+   "charge": -2.21,
+   "description": "O2- shell in the Al3 oxide; Table 3"
+  },
+  {
+   "name": "Al3t",
+   "element": "Al",
+   "mass": 26.982,
+   "charge": 3.0,
+   "description": "Al3+ (rigid: k+ 99999) (tetrahedral); G. V. Lewis, C. R. A. Catlow, J. Phys. C: Solid State Phys. 18, 1149 (1985), Table 3"
+  },
+  {
+   "name": "O_Al3tc",
+   "element": "O",
+   "mass": 14.3991,
+   "charge": 0.20999999999999996,
+   "description": "O2- core in the Al3t oxide; Table 3"
+  },
+  {
+   "name": "O_Al3ts",
+   "element": "O",
+   "mass": 1.5999,
+   "charge": -2.21,
+   "description": "O2- shell in the Al3t oxide; Table 3"
+  },
+  {
+   "name": "Ti3c",
+   "element": "Ti",
+   "mass": 43.0803,
+   "charge": 1.77,
+   "description": "Ti3+ core; G. V. Lewis, C. R. A. Catlow, J. Phys. C: Solid State Phys. 18, 1149 (1985), Table 3"
+  },
+  {
+   "name": "Ti3s",
+   "element": "Ti",
+   "mass": 4.7867,
+   "charge": 1.23,
+   "description": "Ti3+ shell; Table 3"
+  },
+  {
+   "name": "O_Ti3c",
+   "element": "O",
+   "mass": 14.3991,
+   "charge": 0.20999999999999996,
+   "description": "O2- core in the Ti3 oxide; Table 3"
+  },
+  {
+   "name": "O_Ti3s",
+   "element": "O",
+   "mass": 1.5999,
+   "charge": -2.21,
+   "description": "O2- shell in the Ti3 oxide; Table 3"
+  },
+  {
+   "name": "V3c",
+   "element": "V",
+   "mass": 45.8478,
+   "charge": 1.66,
+   "description": "V3+ core; G. V. Lewis, C. R. A. Catlow, J. Phys. C: Solid State Phys. 18, 1149 (1985), Table 3"
+  },
+  {
+   "name": "V3s",
+   "element": "V",
+   "mass": 5.094200000000001,
+   "charge": 1.34,
+   "description": "V3+ shell; Table 3"
+  },
+  {
+   "name": "O_V3c",
+   "element": "O",
+   "mass": 14.3991,
+   "charge": 0.20999999999999996,
+   "description": "O2- core in the V3 oxide; Table 3"
+  },
+  {
+   "name": "O_V3s",
+   "element": "O",
+   "mass": 1.5999,
+   "charge": -2.21,
+   "description": "O2- shell in the V3 oxide; Table 3"
+  },
+  {
+   "name": "Cr3c",
+   "element": "Cr",
+   "mass": 46.796400000000006,
+   "charge": 2.0300000000000002,
+   "description": "Cr3+ core; G. V. Lewis, C. R. A. Catlow, J. Phys. C: Solid State Phys. 18, 1149 (1985), Table 3"
+  },
+  {
+   "name": "Cr3s",
+   "element": "Cr",
+   "mass": 5.1996,
+   "charge": 0.97,
+   "description": "Cr3+ shell; Table 3"
+  },
+  {
+   "name": "O_Cr3c",
+   "element": "O",
+   "mass": 14.3991,
+   "charge": 0.20999999999999996,
+   "description": "O2- core in the Cr3 oxide; Table 3"
+  },
+  {
+   "name": "O_Cr3s",
+   "element": "O",
+   "mass": 1.5999,
+   "charge": -2.21,
+   "description": "O2- shell in the Cr3 oxide; Table 3"
+  },
+  {
+   "name": "Cr3tc",
+   "element": "Cr",
+   "mass": 46.796400000000006,
+   "charge": 2.0300000000000002,
+   "description": "Cr3+ core (tetrahedral); G. V. Lewis, C. R. A. Catlow, J. Phys. C: Solid State Phys. 18, 1149 (1985), Table 3"
+  },
+  {
+   "name": "Cr3ts",
+   "element": "Cr",
+   "mass": 5.1996,
+   "charge": 0.97,
+   "description": "Cr3+ shell; Table 3"
+  },
+  {
+   "name": "O_Cr3tc",
+   "element": "O",
+   "mass": 14.3991,
+   "charge": 0.20999999999999996,
+   "description": "O2- core in the Cr3t oxide; Table 3"
+  },
+  {
+   "name": "O_Cr3ts",
+   "element": "O",
+   "mass": 1.5999,
+   "charge": -2.21,
+   "description": "O2- shell in the Cr3t oxide; Table 3"
+  },
+  {
+   "name": "Fe3c",
+   "element": "Fe",
+   "mass": 50.2605,
+   "charge": -1.9699999999999998,
+   "description": "Fe3+ core; G. V. Lewis, C. R. A. Catlow, J. Phys. C: Solid State Phys. 18, 1149 (1985), Table 3"
+  },
+  {
+   "name": "Fe3s",
+   "element": "Fe",
+   "mass": 5.5845,
+   "charge": 4.97,
+   "description": "Fe3+ shell; Table 3"
+  },
+  {
+   "name": "O_Fe3c",
+   "element": "O",
+   "mass": 14.3991,
+   "charge": 0.20999999999999996,
+   "description": "O2- core in the Fe3 oxide; Table 3"
+  },
+  {
+   "name": "O_Fe3s",
+   "element": "O",
+   "mass": 1.5999,
+   "charge": -2.21,
+   "description": "O2- shell in the Fe3 oxide; Table 3"
+  },
+  {
+   "name": "Fe3tc",
+   "element": "Fe",
+   "mass": 50.2605,
+   "charge": -1.9699999999999998,
+   "description": "Fe3+ core (tetrahedral); G. V. Lewis, C. R. A. Catlow, J. Phys. C: Solid State Phys. 18, 1149 (1985), Table 3"
+  },
+  {
+   "name": "Fe3ts",
+   "element": "Fe",
+   "mass": 5.5845,
+   "charge": 4.97,
+   "description": "Fe3+ shell; Table 3"
+  },
+  {
+   "name": "O_Fe3tc",
+   "element": "O",
+   "mass": 14.3991,
+   "charge": 0.20999999999999996,
+   "description": "O2- core in the Fe3t oxide; Table 3"
+  },
+  {
+   "name": "O_Fe3ts",
+   "element": "O",
+   "mass": 1.5999,
+   "charge": -2.21,
+   "description": "O2- shell in the Fe3t oxide; Table 3"
+  },
+  {
+   "name": "Ge4c",
+   "element": "Ge",
+   "mass": 65.367,
+   "charge": -0.8799999999999999,
+   "description": "Ge4+ core; G. V. Lewis, C. R. A. Catlow, J. Phys. C: Solid State Phys. 18, 1149 (1985), Table 3"
+  },
+  {
+   "name": "Ge4s",
+   "element": "Ge",
+   "mass": 7.263,
+   "charge": 4.88,
+   "description": "Ge4+ shell; Table 3"
+  },
+  {
+   "name": "O_Ge4c",
+   "element": "O",
+   "mass": 14.3991,
+   "charge": 0.08999999999999986,
+   "description": "O2- core in the Ge4 oxide; Table 3"
+  },
+  {
+   "name": "O_Ge4s",
+   "element": "O",
+   "mass": 1.5999,
+   "charge": -2.09,
+   "description": "O2- shell in the Ge4 oxide; Table 3"
+  },
+  {
+   "name": "Sn4c",
+   "element": "Sn",
+   "mass": 106.839,
+   "charge": 0.009999999999999787,
+   "description": "Sn4+ core; G. V. Lewis, C. R. A. Catlow, J. Phys. C: Solid State Phys. 18, 1149 (1985), Table 3"
+  },
+  {
+   "name": "Sn4s",
+   "element": "Sn",
+   "mass": 11.871,
+   "charge": 3.99,
+   "description": "Sn4+ shell; Table 3"
+  },
+  {
+   "name": "O_Sn4c",
+   "element": "O",
+   "mass": 14.3991,
+   "charge": 1.0,
+   "description": "O2- core in the Sn4 oxide; Table 3"
+  },
+  {
+   "name": "O_Sn4s",
+   "element": "O",
+   "mass": 1.5999,
+   "charge": -3.0,
+   "description": "O2- shell in the Sn4 oxide; Table 3"
+  },
+  {
+   "name": "Ti4c",
+   "element": "Ti",
+   "mass": 43.0803,
+   "charge": 1.1099999999999999,
+   "description": "Ti4+ core; G. V. Lewis, C. R. A. Catlow, J. Phys. C: Solid State Phys. 18, 1149 (1985), Table 3"
+  },
+  {
+   "name": "Ti4s",
+   "element": "Ti",
+   "mass": 4.7867,
+   "charge": 2.89,
+   "description": "Ti4+ shell; Table 3"
+  },
+  {
+   "name": "O_Ti4c",
+   "element": "O",
+   "mass": 14.3991,
+   "charge": 0.5299999999999998,
+   "description": "O2- core in the Ti4 oxide; Table 3"
+  },
+  {
+   "name": "O_Ti4s",
+   "element": "O",
+   "mass": 1.5999,
+   "charge": -2.53,
+   "description": "O2- shell in the Ti4 oxide; Table 3"
+  },
+  {
+   "name": "Ce4c",
+   "element": "Ce",
+   "mass": 126.10440000000001,
+   "charge": -1.8499999999999996,
+   "description": "Ce4+ core; G. V. Lewis, C. R. A. Catlow, J. Phys. C: Solid State Phys. 18, 1149 (1985), Table 3"
+  },
+  {
+   "name": "Ce4s",
+   "element": "Ce",
+   "mass": 14.011600000000001,
+   "charge": 5.85,
+   "description": "Ce4+ shell; Table 3"
+  },
+  {
+   "name": "O_Ce4c",
+   "element": "O",
+   "mass": 14.3991,
+   "charge": 0.6699999999999999,
+   "description": "O2- core in the Ce4 oxide; Table 3"
+  },
+  {
+   "name": "O_Ce4s",
+   "element": "O",
+   "mass": 1.5999,
+   "charge": -2.67,
+   "description": "O2- shell in the Ce4 oxide; Table 3"
+  },
+  {
+   "name": "U4c",
+   "element": "U",
+   "mass": 214.2261,
+   "charge": -2.4400000000000004,
+   "description": "U4+ core; G. V. Lewis, C. R. A. Catlow, J. Phys. C: Solid State Phys. 18, 1149 (1985), Table 3"
+  },
+  {
+   "name": "U4s",
+   "element": "U",
+   "mass": 23.8029,
+   "charge": 6.44,
+   "description": "U4+ shell; Table 3"
+  },
+  {
+   "name": "O_U4c",
+   "element": "O",
+   "mass": 14.3991,
+   "charge": 0.7000000000000002,
+   "description": "O2- core in the U4 oxide; Table 3"
+  },
+  {
+   "name": "O_U4s",
+   "element": "O",
+   "mass": 1.5999,
+   "charge": -2.7,
+   "description": "O2- shell in the U4 oxide; Table 3"
+  },
+  {
+   "name": "Th4c",
+   "element": "Th",
+   "mass": 208.8342,
+   "charge": -3.2800000000000002,
+   "description": "Th4+ core; G. V. Lewis, C. R. A. Catlow, J. Phys. C: Solid State Phys. 18, 1149 (1985), Table 3"
+  },
+  {
+   "name": "Th4s",
+   "element": "Th",
+   "mass": 23.2038,
+   "charge": 7.28,
+   "description": "Th4+ shell; Table 3"
+  },
+  {
+   "name": "O_Th4c",
+   "element": "O",
+   "mass": 14.3991,
+   "charge": 0.3999999999999999,
+   "description": "O2- core in the Th4 oxide; Table 3"
+  },
+  {
+   "name": "O_Th4s",
+   "element": "O",
+   "mass": 1.5999,
+   "charge": -2.4,
+   "description": "O2- shell in the Th4 oxide; Table 3"
+  }
+ ],
+ "pairs": [
+  {
+   "name": "Mg2",
+   "match": [
+    "Mg2"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Mg2c",
+   "match": [
+    "O_Mg2c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Mg2s",
+   "match": [
+    "O_Mg2s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Mg2-O_Mg2s",
+   "match": [
+    "Mg2",
+    "O_Mg2s"
+   ],
+   "style": "buck",
+   "params": [
+    18946.5462368,
+    0.3242,
+    0.0
+   ],
+   "comment": "Mg2+-O2- A 821.6 eV, rho 0.3242 A (Table 3)"
+  },
+  {
+   "name": "O_Mg2s-O_Mg2s",
+   "match": [
+    "O_Mg2s",
+    "O_Mg2s"
+   ],
+   "style": "buck",
+   "params": [
+    524957.2328364,
+    0.149,
+    469.74336276
+   ],
+   "comment": "O-O 22764.3 eV, 0.149 A, C 20.37 eV A^6 (C. R. A. Catlow, Proc. R. Soc. Lond. A 353, 533 (1977), Table 3, potential 1)"
+  },
+  {
+   "name": "Mg2t",
+   "match": [
+    "Mg2t"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Mg2tc",
+   "match": [
+    "O_Mg2tc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Mg2ts",
+   "match": [
+    "O_Mg2ts"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Mg2t-O_Mg2ts",
+   "match": [
+    "Mg2t",
+    "O_Mg2ts"
+   ],
+   "style": "buck",
+   "params": [
+    16384.519354,
+    0.3242,
+    0.0
+   ],
+   "comment": "Mg2+-O2- A 710.5 eV, rho 0.3242 A (Table 3, tetrahedral)"
+  },
+  {
+   "name": "O_Mg2ts-O_Mg2ts",
+   "match": [
+    "O_Mg2ts",
+    "O_Mg2ts"
+   ],
+   "style": "buck",
+   "params": [
+    524957.2328364,
+    0.149,
+    469.74336276
+   ],
+   "comment": "O-O 22764.3 eV, 0.149 A, C 20.37 eV A^6 (C. R. A. Catlow, Proc. R. Soc. Lond. A 353, 533 (1977), Table 3, potential 1)"
+  },
+  {
+   "name": "Ca2c",
+   "match": [
+    "Ca2c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ca2s",
+   "match": [
+    "Ca2s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Ca2c",
+   "match": [
+    "O_Ca2c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Ca2s",
+   "match": [
+    "O_Ca2s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ca2s-O_Ca2s",
+   "match": [
+    "Ca2s",
+    "O_Ca2s"
+   ],
+   "style": "buck",
+   "params": [
+    28339.107437200004,
+    0.3372,
+    0.0
+   ],
+   "comment": "Ca2+-O2- A 1228.9 eV, rho 0.3372 A (Table 3)"
+  },
+  {
+   "name": "O_Ca2s-O_Ca2s",
+   "match": [
+    "O_Ca2s",
+    "O_Ca2s"
+   ],
+   "style": "buck",
+   "params": [
+    524957.2328364,
+    0.149,
+    469.74336276
+   ],
+   "comment": "O-O 22764.3 eV, 0.149 A, C 20.37 eV A^6 (C. R. A. Catlow, Proc. R. Soc. Lond. A 353, 533 (1977), Table 3, potential 1)"
+  },
+  {
+   "name": "Sr2c",
+   "match": [
+    "Sr2c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Sr2s",
+   "match": [
+    "Sr2s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Sr2c",
+   "match": [
+    "O_Sr2c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Sr2s",
+   "match": [
+    "O_Sr2s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Sr2s-O_Sr2s",
+   "match": [
+    "Sr2s",
+    "O_Sr2s"
+   ],
+   "style": "buck",
+   "params": [
+    32284.767200000002,
+    0.35,
+    0.0
+   ],
+   "comment": "Sr2+-O2- A 1400.0 eV, rho 0.35 A (Table 3)"
+  },
+  {
+   "name": "O_Sr2s-O_Sr2s",
+   "match": [
+    "O_Sr2s",
+    "O_Sr2s"
+   ],
+   "style": "buck",
+   "params": [
+    524957.2328364,
+    0.149,
+    469.74336276
+   ],
+   "comment": "O-O 22764.3 eV, 0.149 A, C 20.37 eV A^6 (C. R. A. Catlow, Proc. R. Soc. Lond. A 353, 533 (1977), Table 3, potential 1)"
+  },
+  {
+   "name": "Ba2c",
+   "match": [
+    "Ba2c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ba2s",
+   "match": [
+    "Ba2s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Ba2c",
+   "match": [
+    "O_Ba2c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Ba2s",
+   "match": [
+    "O_Ba2s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ba2s-O_Ba2s",
+   "match": [
+    "Ba2s",
+    "O_Ba2s"
+   ],
+   "style": "buck",
+   "params": [
+    21485.5125716,
+    0.3949,
+    0.0
+   ],
+   "comment": "Ba2+-O2- A 931.7 eV, rho 0.3949 A (Table 3)"
+  },
+  {
+   "name": "O_Ba2s-O_Ba2s",
+   "match": [
+    "O_Ba2s",
+    "O_Ba2s"
+   ],
+   "style": "buck",
+   "params": [
+    524957.2328364,
+    0.149,
+    469.74336276
+   ],
+   "comment": "O-O 22764.3 eV, 0.149 A, C 20.37 eV A^6 (C. R. A. Catlow, Proc. R. Soc. Lond. A 353, 533 (1977), Table 3, potential 1)"
+  },
+  {
+   "name": "Mn2c",
+   "match": [
+    "Mn2c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Mn2s",
+   "match": [
+    "Mn2s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Mn2c",
+   "match": [
+    "O_Mn2c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Mn2s",
+   "match": [
+    "O_Mn2s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Mn2s-O_Mn2s",
+   "match": [
+    "Mn2s",
+    "O_Mn2s"
+   ],
+   "style": "buck",
+   "params": [
+    16506.7402584,
+    0.3464,
+    0.0
+   ],
+   "comment": "Mn2+-O2- A 715.8 eV, rho 0.3464 A (Table 3)"
+  },
+  {
+   "name": "O_Mn2s-O_Mn2s",
+   "match": [
+    "O_Mn2s",
+    "O_Mn2s"
+   ],
+   "style": "buck",
+   "params": [
+    524957.2328364,
+    0.149,
+    469.74336276
+   ],
+   "comment": "O-O 22764.3 eV, 0.149 A, C 20.37 eV A^6 (C. R. A. Catlow, Proc. R. Soc. Lond. A 353, 533 (1977), Table 3, potential 1)"
+  },
+  {
+   "name": "Fe2c",
+   "match": [
+    "Fe2c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Fe2s",
+   "match": [
+    "Fe2s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Fe2c",
+   "match": [
+    "O_Fe2c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Fe2s",
+   "match": [
+    "O_Fe2s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Fe2s-O_Fe2s",
+   "match": [
+    "Fe2s",
+    "O_Fe2s"
+   ],
+   "style": "buck",
+   "params": [
+    16006.326366800002,
+    0.3399,
+    0.0
+   ],
+   "comment": "Fe2+-O2- A 694.1 eV, rho 0.3399 A (Table 3)"
+  },
+  {
+   "name": "O_Fe2s-O_Fe2s",
+   "match": [
+    "O_Fe2s",
+    "O_Fe2s"
+   ],
+   "style": "buck",
+   "params": [
+    524957.2328364,
+    0.149,
+    469.74336276
+   ],
+   "comment": "O-O 22764.3 eV, 0.149 A, C 20.37 eV A^6 (C. R. A. Catlow, Proc. R. Soc. Lond. A 353, 533 (1977), Table 3, potential 1)"
+  },
+  {
+   "name": "Fe2tc",
+   "match": [
+    "Fe2tc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Fe2ts",
+   "match": [
+    "Fe2ts"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Fe2tc",
+   "match": [
+    "O_Fe2tc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Fe2ts",
+   "match": [
+    "O_Fe2ts"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Fe2ts-O_Fe2ts",
+   "match": [
+    "Fe2ts",
+    "O_Fe2ts"
+   ],
+   "style": "buck",
+   "params": [
+    13822.4924712,
+    0.3399,
+    0.0
+   ],
+   "comment": "Fe2+-O2- A 599.4 eV, rho 0.3399 A (Table 3, tetrahedral)"
+  },
+  {
+   "name": "O_Fe2ts-O_Fe2ts",
+   "match": [
+    "O_Fe2ts",
+    "O_Fe2ts"
+   ],
+   "style": "buck",
+   "params": [
+    524957.2328364,
+    0.149,
+    469.74336276
+   ],
+   "comment": "O-O 22764.3 eV, 0.149 A, C 20.37 eV A^6 (C. R. A. Catlow, Proc. R. Soc. Lond. A 353, 533 (1977), Table 3, potential 1)"
+  },
+  {
+   "name": "Co2c",
+   "match": [
+    "Co2c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Co2s",
+   "match": [
+    "Co2s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Co2c",
+   "match": [
+    "O_Co2c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Co2s",
+   "match": [
+    "O_Co2s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Co2s-O_Co2s",
+   "match": [
+    "Co2s",
+    "O_Co2s"
+   ],
+   "style": "buck",
+   "params": [
+    16057.0595724,
+    0.3362,
+    0.0
+   ],
+   "comment": "Co2+-O2- A 696.3 eV, rho 0.3362 A (Table 3)"
+  },
+  {
+   "name": "O_Co2s-O_Co2s",
+   "match": [
+    "O_Co2s",
+    "O_Co2s"
+   ],
+   "style": "buck",
+   "params": [
+    524957.2328364,
+    0.149,
+    469.74336276
+   ],
+   "comment": "O-O 22764.3 eV, 0.149 A, C 20.37 eV A^6 (C. R. A. Catlow, Proc. R. Soc. Lond. A 353, 533 (1977), Table 3, potential 1)"
+  },
+  {
+   "name": "Co2tc",
+   "match": [
+    "Co2tc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Co2ts",
+   "match": [
+    "Co2ts"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Co2tc",
+   "match": [
+    "O_Co2tc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Co2ts",
+   "match": [
+    "O_Co2ts"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Co2ts-O_Co2ts",
+   "match": [
+    "Co2ts",
+    "O_Co2ts"
+   ],
+   "style": "buck",
+   "params": [
+    13857.0832932,
+    0.3362,
+    0.0
+   ],
+   "comment": "Co2+-O2- A 600.9 eV, rho 0.3362 A (Table 3, tetrahedral)"
+  },
+  {
+   "name": "O_Co2ts-O_Co2ts",
+   "match": [
+    "O_Co2ts",
+    "O_Co2ts"
+   ],
+   "style": "buck",
+   "params": [
+    524957.2328364,
+    0.149,
+    469.74336276
+   ],
+   "comment": "O-O 22764.3 eV, 0.149 A, C 20.37 eV A^6 (C. R. A. Catlow, Proc. R. Soc. Lond. A 353, 533 (1977), Table 3, potential 1)"
+  },
+  {
+   "name": "Ni2c",
+   "match": [
+    "Ni2c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ni2s",
+   "match": [
+    "Ni2s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Ni2c",
+   "match": [
+    "O_Ni2c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Ni2s",
+   "match": [
+    "O_Ni2s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ni2s-O_Ni2s",
+   "match": [
+    "Ni2s",
+    "O_Ni2s"
+   ],
+   "style": "buck",
+   "params": [
+    15761.884558,
+    0.3332,
+    0.0
+   ],
+   "comment": "Ni2+-O2- A 683.5 eV, rho 0.3332 A (Table 3)"
+  },
+  {
+   "name": "O_Ni2s-O_Ni2s",
+   "match": [
+    "O_Ni2s",
+    "O_Ni2s"
+   ],
+   "style": "buck",
+   "params": [
+    524957.2328364,
+    0.149,
+    469.74336276
+   ],
+   "comment": "O-O 22764.3 eV, 0.149 A, C 20.37 eV A^6 (C. R. A. Catlow, Proc. R. Soc. Lond. A 353, 533 (1977), Table 3, potential 1)"
+  },
+  {
+   "name": "Ni2tc",
+   "match": [
+    "Ni2tc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ni2ts",
+   "match": [
+    "Ni2ts"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Ni2tc",
+   "match": [
+    "O_Ni2tc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Ni2ts",
+   "match": [
+    "O_Ni2ts"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ni2ts-O_Ni2ts",
+   "match": [
+    "Ni2ts",
+    "O_Ni2ts"
+   ],
+   "style": "buck",
+   "params": [
+    13695.6594572,
+    0.3332,
+    0.0
+   ],
+   "comment": "Ni2+-O2- A 593.9 eV, rho 0.3332 A (Table 3, tetrahedral)"
+  },
+  {
+   "name": "O_Ni2ts-O_Ni2ts",
+   "match": [
+    "O_Ni2ts",
+    "O_Ni2ts"
+   ],
+   "style": "buck",
+   "params": [
+    524957.2328364,
+    0.149,
+    469.74336276
+   ],
+   "comment": "O-O 22764.3 eV, 0.149 A, C 20.37 eV A^6 (C. R. A. Catlow, Proc. R. Soc. Lond. A 353, 533 (1977), Table 3, potential 1)"
+  },
+  {
+   "name": "Zn2c",
+   "match": [
+    "Zn2c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Zn2s",
+   "match": [
+    "Zn2s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Zn2c",
+   "match": [
+    "O_Zn2c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Zn2s",
+   "match": [
+    "O_Zn2s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Zn2s-O_Zn2s",
+   "match": [
+    "Zn2s",
+    "O_Zn2s"
+   ],
+   "style": "buck",
+   "params": [
+    11521.0497808,
+    0.3595,
+    0.0
+   ],
+   "comment": "Zn2+-O2- A 499.6 eV, rho 0.3595 A (Table 3)"
+  },
+  {
+   "name": "O_Zn2s-O_Zn2s",
+   "match": [
+    "O_Zn2s",
+    "O_Zn2s"
+   ],
+   "style": "buck",
+   "params": [
+    524957.2328364,
+    0.149,
+    469.74336276
+   ],
+   "comment": "O-O 22764.3 eV, 0.149 A, C 20.37 eV A^6 (C. R. A. Catlow, Proc. R. Soc. Lond. A 353, 533 (1977), Table 3, potential 1)"
+  },
+  {
+   "name": "Al3",
+   "match": [
+    "Al3"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Al3c",
+   "match": [
+    "O_Al3c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Al3s",
+   "match": [
+    "O_Al3s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Al3-O_Al3s",
+   "match": [
+    "Al3",
+    "O_Al3s"
+   ],
+   "style": "buck",
+   "params": [
+    25710.204965200002,
+    0.3118,
+    0.0
+   ],
+   "comment": "Al3+-O2- A 1114.9 eV, rho 0.3118 A (Table 3)"
+  },
+  {
+   "name": "O_Al3s-O_Al3s",
+   "match": [
+    "O_Al3s",
+    "O_Al3s"
+   ],
+   "style": "buck",
+   "params": [
+    524957.2328364,
+    0.149,
+    469.74336276
+   ],
+   "comment": "O-O 22764.3 eV, 0.149 A, C 20.37 eV A^6 (C. R. A. Catlow, Proc. R. Soc. Lond. A 353, 533 (1977), Table 3, potential 1)"
+  },
+  {
+   "name": "Al3t",
+   "match": [
+    "Al3t"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Al3tc",
+   "match": [
+    "O_Al3tc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Al3ts",
+   "match": [
+    "O_Al3ts"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Al3t-O_Al3ts",
+   "match": [
+    "Al3t",
+    "O_Al3ts"
+   ],
+   "style": "buck",
+   "params": [
+    23351.1109048,
+    0.3118,
+    0.0
+   ],
+   "comment": "Al3+-O2- A 1012.6 eV, rho 0.3118 A (Table 3, tetrahedral)"
+  },
+  {
+   "name": "O_Al3ts-O_Al3ts",
+   "match": [
+    "O_Al3ts",
+    "O_Al3ts"
+   ],
+   "style": "buck",
+   "params": [
+    524957.2328364,
+    0.149,
+    469.74336276
+   ],
+   "comment": "O-O 22764.3 eV, 0.149 A, C 20.37 eV A^6 (C. R. A. Catlow, Proc. R. Soc. Lond. A 353, 533 (1977), Table 3, potential 1)"
+  },
+  {
+   "name": "Ti3c",
+   "match": [
+    "Ti3c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ti3s",
+   "match": [
+    "Ti3s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Ti3c",
+   "match": [
+    "O_Ti3c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Ti3s",
+   "match": [
+    "O_Ti3s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ti3s-O_Ti3s",
+   "match": [
+    "Ti3s",
+    "O_Ti3s"
+   ],
+   "style": "buck",
+   "params": [
+    39564.982203600004,
+    0.3069,
+    0.0
+   ],
+   "comment": "Ti3+-O2- A 1715.7 eV, rho 0.3069 A (Table 3)"
+  },
+  {
+   "name": "O_Ti3s-O_Ti3s",
+   "match": [
+    "O_Ti3s",
+    "O_Ti3s"
+   ],
+   "style": "buck",
+   "params": [
+    524957.2328364,
+    0.149,
+    469.74336276
+   ],
+   "comment": "O-O 22764.3 eV, 0.149 A, C 20.37 eV A^6 (C. R. A. Catlow, Proc. R. Soc. Lond. A 353, 533 (1977), Table 3, potential 1)"
+  },
+  {
+   "name": "V3c",
+   "match": [
+    "V3c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "V3s",
+   "match": [
+    "V3s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_V3c",
+   "match": [
+    "O_V3c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_V3s",
+   "match": [
+    "O_V3s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "V3s-O_V3s",
+   "match": [
+    "V3s",
+    "O_V3s"
+   ],
+   "style": "buck",
+   "params": [
+    41282.9930296,
+    0.3061,
+    0.0
+   ],
+   "comment": "V3+-O2- A 1790.2 eV, rho 0.3061 A (Table 3)"
+  },
+  {
+   "name": "O_V3s-O_V3s",
+   "match": [
+    "O_V3s",
+    "O_V3s"
+   ],
+   "style": "buck",
+   "params": [
+    524957.2328364,
+    0.149,
+    469.74336276
+   ],
+   "comment": "O-O 22764.3 eV, 0.149 A, C 20.37 eV A^6 (C. R. A. Catlow, Proc. R. Soc. Lond. A 353, 533 (1977), Table 3, potential 1)"
+  },
+  {
+   "name": "Cr3c",
+   "match": [
+    "Cr3c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Cr3s",
+   "match": [
+    "Cr3s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Cr3c",
+   "match": [
+    "O_Cr3c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Cr3s",
+   "match": [
+    "O_Cr3s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Cr3s-O_Cr3s",
+   "match": [
+    "Cr3s",
+    "O_Cr3s"
+   ],
+   "style": "buck",
+   "params": [
+    39989.296286799996,
+    0.301,
+    0.0
+   ],
+   "comment": "Cr3+-O2- A 1734.1 eV, rho 0.301 A (Table 3)"
+  },
+  {
+   "name": "O_Cr3s-O_Cr3s",
+   "match": [
+    "O_Cr3s",
+    "O_Cr3s"
+   ],
+   "style": "buck",
+   "params": [
+    524957.2328364,
+    0.149,
+    469.74336276
+   ],
+   "comment": "O-O 22764.3 eV, 0.149 A, C 20.37 eV A^6 (C. R. A. Catlow, Proc. R. Soc. Lond. A 353, 533 (1977), Table 3, potential 1)"
+  },
+  {
+   "name": "Cr3tc",
+   "match": [
+    "Cr3tc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Cr3ts",
+   "match": [
+    "Cr3ts"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Cr3tc",
+   "match": [
+    "O_Cr3tc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Cr3ts",
+   "match": [
+    "O_Cr3ts"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Cr3ts-O_Cr3ts",
+   "match": [
+    "Cr3ts",
+    "O_Cr3ts"
+   ],
+   "style": "buck",
+   "params": [
+    35199.6204672,
+    0.301,
+    0.0
+   ],
+   "comment": "Cr3+-O2- A 1526.4 eV, rho 0.301 A (Table 3, tetrahedral)"
+  },
+  {
+   "name": "O_Cr3ts-O_Cr3ts",
+   "match": [
+    "O_Cr3ts",
+    "O_Cr3ts"
+   ],
+   "style": "buck",
+   "params": [
+    524957.2328364,
+    0.149,
+    469.74336276
+   ],
+   "comment": "O-O 22764.3 eV, 0.149 A, C 20.37 eV A^6 (C. R. A. Catlow, Proc. R. Soc. Lond. A 353, 533 (1977), Table 3, potential 1)"
+  },
+  {
+   "name": "Fe3c",
+   "match": [
+    "Fe3c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Fe3s",
+   "match": [
+    "Fe3s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Fe3c",
+   "match": [
+    "O_Fe3c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Fe3s",
+   "match": [
+    "O_Fe3s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Fe3s-O_Fe3s",
+   "match": [
+    "Fe3s",
+    "O_Fe3s"
+   ],
+   "style": "buck",
+   "params": [
+    25421.948115200004,
+    0.3299,
+    0.0
+   ],
+   "comment": "Fe3+-O2- A 1102.4 eV, rho 0.3299 A (Table 3)"
+  },
+  {
+   "name": "O_Fe3s-O_Fe3s",
+   "match": [
+    "O_Fe3s",
+    "O_Fe3s"
+   ],
+   "style": "buck",
+   "params": [
+    524957.2328364,
+    0.149,
+    469.74336276
+   ],
+   "comment": "O-O 22764.3 eV, 0.149 A, C 20.37 eV A^6 (C. R. A. Catlow, Proc. R. Soc. Lond. A 353, 533 (1977), Table 3, potential 1)"
+  },
+  {
+   "name": "Fe3tc",
+   "match": [
+    "Fe3tc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Fe3ts",
+   "match": [
+    "Fe3ts"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Fe3tc",
+   "match": [
+    "O_Fe3tc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Fe3ts",
+   "match": [
+    "O_Fe3ts"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Fe3ts-O_Fe3ts",
+   "match": [
+    "Fe3ts",
+    "O_Fe3ts"
+   ],
+   "style": "buck",
+   "params": [
+    20214.876376800003,
+    0.3299,
+    0.0
+   ],
+   "comment": "Fe3+-O2- A 876.6 eV, rho 0.3299 A (Table 3, tetrahedral)"
+  },
+  {
+   "name": "O_Fe3ts-O_Fe3ts",
+   "match": [
+    "O_Fe3ts",
+    "O_Fe3ts"
+   ],
+   "style": "buck",
+   "params": [
+    524957.2328364,
+    0.149,
+    469.74336276
+   ],
+   "comment": "O-O 22764.3 eV, 0.149 A, C 20.37 eV A^6 (C. R. A. Catlow, Proc. R. Soc. Lond. A 353, 533 (1977), Table 3, potential 1)"
+  },
+  {
+   "name": "Ge4c",
+   "match": [
+    "Ge4c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ge4s",
+   "match": [
+    "Ge4s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Ge4c",
+   "match": [
+    "O_Ge4c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Ge4s",
+   "match": [
+    "O_Ge4s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ge4s-O_Ge4s",
+   "match": [
+    "Ge4s",
+    "O_Ge4s"
+   ],
+   "style": "buck",
+   "params": [
+    23879.197454,
+    0.3464,
+    0.0
+   ],
+   "comment": "Ge4+-O2- A 1035.5 eV, rho 0.3464 A (Table 3)"
+  },
+  {
+   "name": "O_Ge4s-O_Ge4s",
+   "match": [
+    "O_Ge4s",
+    "O_Ge4s"
+   ],
+   "style": "buck",
+   "params": [
+    524957.2328364,
+    0.149,
+    469.74336276
+   ],
+   "comment": "O-O 22764.3 eV, 0.149 A, C 20.37 eV A^6 (C. R. A. Catlow, Proc. R. Soc. Lond. A 353, 533 (1977), Table 3, potential 1)"
+  },
+  {
+   "name": "Sn4c",
+   "match": [
+    "Sn4c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Sn4s",
+   "match": [
+    "Sn4s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Sn4c",
+   "match": [
+    "O_Sn4c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Sn4s",
+   "match": [
+    "O_Sn4s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Sn4s-O_Sn4s",
+   "match": [
+    "Sn4s",
+    "O_Sn4s"
+   ],
+   "style": "buck",
+   "params": [
+    21646.936407600002,
+    0.3813,
+    0.0
+   ],
+   "comment": "Sn4+-O2- A 938.7 eV, rho 0.3813 A (Table 3)"
+  },
+  {
+   "name": "O_Sn4s-O_Sn4s",
+   "match": [
+    "O_Sn4s",
+    "O_Sn4s"
+   ],
+   "style": "buck",
+   "params": [
+    524957.2328364,
+    0.149,
+    469.74336276
+   ],
+   "comment": "O-O 22764.3 eV, 0.149 A, C 20.37 eV A^6 (C. R. A. Catlow, Proc. R. Soc. Lond. A 353, 533 (1977), Table 3, potential 1)"
+  },
+  {
+   "name": "Ti4c",
+   "match": [
+    "Ti4c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ti4s",
+   "match": [
+    "Ti4s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Ti4c",
+   "match": [
+    "O_Ti4c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Ti4s",
+   "match": [
+    "O_Ti4s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ti4s-O_Ti4s",
+   "match": [
+    "Ti4s",
+    "O_Ti4s"
+   ],
+   "style": "buck",
+   "params": [
+    17392.2653016,
+    0.3879,
+    0.0
+   ],
+   "comment": "Ti4+-O2- A 754.2 eV, rho 0.3879 A (Table 3)"
+  },
+  {
+   "name": "O_Ti4s-O_Ti4s",
+   "match": [
+    "O_Ti4s",
+    "O_Ti4s"
+   ],
+   "style": "buck",
+   "params": [
+    524957.2328364,
+    0.149,
+    469.74336276
+   ],
+   "comment": "O-O 22764.3 eV, 0.149 A, C 20.37 eV A^6 (C. R. A. Catlow, Proc. R. Soc. Lond. A 353, 533 (1977), Table 3, potential 1)"
+  },
+  {
+   "name": "Ce4c",
+   "match": [
+    "Ce4c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ce4s",
+   "match": [
+    "Ce4s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Ce4c",
+   "match": [
+    "O_Ce4c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Ce4s",
+   "match": [
+    "O_Ce4s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ce4s-O_Ce4s",
+   "match": [
+    "Ce4s",
+    "O_Ce4s"
+   ],
+   "style": "buck",
+   "params": [
+    23374.1714528,
+    0.3949,
+    0.0
+   ],
+   "comment": "Ce4+-O2- A 1013.6 eV, rho 0.3949 A (Table 3)"
+  },
+  {
+   "name": "O_Ce4s-O_Ce4s",
+   "match": [
+    "O_Ce4s",
+    "O_Ce4s"
+   ],
+   "style": "buck",
+   "params": [
+    524957.2328364,
+    0.149,
+    469.74336276
+   ],
+   "comment": "O-O 22764.3 eV, 0.149 A, C 20.37 eV A^6 (C. R. A. Catlow, Proc. R. Soc. Lond. A 353, 533 (1977), Table 3, potential 1)"
+  },
+  {
+   "name": "U4c",
+   "match": [
+    "U4c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "U4s",
+   "match": [
+    "U4s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_U4c",
+   "match": [
+    "O_U4c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_U4s",
+   "match": [
+    "O_U4s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "U4s-O_U4s",
+   "match": [
+    "U4s",
+    "O_U4s"
+   ],
+   "style": "buck",
+   "params": [
+    24340.408414,
+    0.3949,
+    0.0
+   ],
+   "comment": "U4+-O2- A 1055.5 eV, rho 0.3949 A (Table 3)"
+  },
+  {
+   "name": "O_U4s-O_U4s",
+   "match": [
+    "O_U4s",
+    "O_U4s"
+   ],
+   "style": "buck",
+   "params": [
+    524957.2328364,
+    0.149,
+    469.74336276
+   ],
+   "comment": "O-O 22764.3 eV, 0.149 A, C 20.37 eV A^6 (C. R. A. Catlow, Proc. R. Soc. Lond. A 353, 533 (1977), Table 3, potential 1)"
+  },
+  {
+   "name": "Th4c",
+   "match": [
+    "Th4c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Th4s",
+   "match": [
+    "Th4s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Th4c",
+   "match": [
+    "O_Th4c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_Th4s",
+   "match": [
+    "O_Th4s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Th4s-O_Th4s",
+   "match": [
+    "Th4s",
+    "O_Th4s"
+   ],
+   "style": "buck",
+   "params": [
+    26466.590939600002,
+    0.3949,
+    0.0
+   ],
+   "comment": "Th4+-O2- A 1147.7 eV, rho 0.3949 A (Table 3)"
+  },
+  {
+   "name": "O_Th4s-O_Th4s",
+   "match": [
+    "O_Th4s",
+    "O_Th4s"
+   ],
+   "style": "buck",
+   "params": [
+    524957.2328364,
+    0.149,
+    469.74336276
+   ],
+   "comment": "O-O 22764.3 eV, 0.149 A, C 20.37 eV A^6 (C. R. A. Catlow, Proc. R. Soc. Lond. A 353, 533 (1977), Table 3, potential 1)"
+  }
+ ],
+ "bonds": [
+  {
+   "name": "O_Mg2c-O_Mg2s",
+   "match": [
+    "O_Mg2c",
+    "O_Mg2s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    181.48651276,
+    0.0,
+    0.0
+   ],
+   "comment": "O core-shell spring k- 15.74 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "O_Mg2tc-O_Mg2ts",
+   "match": [
+    "O_Mg2tc",
+    "O_Mg2ts"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    181.48651276,
+    0.0,
+    0.0
+   ],
+   "comment": "O core-shell spring k- 15.74 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "Ca2c-Ca2s",
+   "match": [
+    "Ca2c",
+    "Ca2s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    392.029316,
+    0.0,
+    0.0
+   ],
+   "comment": "cation core-shell spring k+ 34.0 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "O_Ca2c-O_Ca2s",
+   "match": [
+    "O_Ca2c",
+    "O_Ca2s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    316.5060213,
+    0.0,
+    0.0
+   ],
+   "comment": "O core-shell spring k- 27.45 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "Sr2c-Sr2s",
+   "match": [
+    "Sr2c",
+    "Sr2s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    248.24679922,
+    0.0,
+    0.0
+   ],
+   "comment": "cation core-shell spring k+ 21.53 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "O_Sr2c-O_Sr2s",
+   "match": [
+    "O_Sr2c",
+    "O_Sr2s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    456.13763944000004,
+    0.0,
+    0.0
+   ],
+   "comment": "O core-shell spring k- 39.56 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "Ba2c-Ba2s",
+   "match": [
+    "Ba2c",
+    "Ba2s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    170.41744972,
+    0.0,
+    0.0
+   ],
+   "comment": "cation core-shell spring k+ 14.78 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "O_Ba2c-O_Ba2s",
+   "match": [
+    "O_Ba2c",
+    "O_Ba2s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    811.61598686,
+    0.0,
+    0.0
+   ],
+   "comment": "O core-shell spring k- 70.39 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "Mn2c-Mn2s",
+   "match": [
+    "Mn2c",
+    "Mn2s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    936.2582488,
+    0.0,
+    0.0
+   ],
+   "comment": "cation core-shell spring k+ 81.2 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "O_Mn2c-O_Mn2s",
+   "match": [
+    "O_Mn2c",
+    "O_Mn2s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    227.49230602,
+    0.0,
+    0.0
+   ],
+   "comment": "O core-shell spring k- 19.73 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "Fe2c-Fe2s",
+   "match": [
+    "Fe2c",
+    "Fe2s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    125.91059208,
+    0.0,
+    0.0
+   ],
+   "comment": "cation core-shell spring k+ 10.92 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "O_Fe2c-O_Fe2s",
+   "match": [
+    "O_Fe2c",
+    "O_Fe2s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    204.6623635,
+    0.0,
+    0.0
+   ],
+   "comment": "O core-shell spring k- 17.75 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "Fe2tc-Fe2ts",
+   "match": [
+    "Fe2tc",
+    "Fe2ts"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    125.91059208,
+    0.0,
+    0.0
+   ],
+   "comment": "cation core-shell spring k+ 10.92 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "O_Fe2tc-O_Fe2ts",
+   "match": [
+    "O_Fe2tc",
+    "O_Fe2ts"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    204.6623635,
+    0.0,
+    0.0
+   ],
+   "comment": "O core-shell spring k- 17.75 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "Co2c-Co2s",
+   "match": [
+    "Co2c",
+    "Co2s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    123.83514276000001,
+    0.0,
+    0.0
+   ],
+   "comment": "cation core-shell spring k+ 10.74 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "O_Co2c-O_Co2s",
+   "match": [
+    "O_Co2c",
+    "O_Co2s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    190.48012648,
+    0.0,
+    0.0
+   ],
+   "comment": "O core-shell spring k- 16.52 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "Co2tc-Co2ts",
+   "match": [
+    "Co2tc",
+    "Co2ts"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    123.83514276000001,
+    0.0,
+    0.0
+   ],
+   "comment": "cation core-shell spring k+ 10.74 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "O_Co2tc-O_Co2ts",
+   "match": [
+    "O_Co2tc",
+    "O_Co2ts"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    190.48012648,
+    0.0,
+    0.0
+   ],
+   "comment": "O core-shell spring k- 16.52 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "Ni2c-Ni2s",
+   "match": [
+    "Ni2c",
+    "Ni2s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    101.12050298,
+    0.0,
+    0.0
+   ],
+   "comment": "cation core-shell spring k+ 8.77 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "O_Ni2c-O_Ni2s",
+   "match": [
+    "O_Ni2c",
+    "O_Ni2s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    181.94772372,
+    0.0,
+    0.0
+   ],
+   "comment": "O core-shell spring k- 15.78 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "Ni2tc-Ni2ts",
+   "match": [
+    "Ni2tc",
+    "Ni2ts"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    101.12050298,
+    0.0,
+    0.0
+   ],
+   "comment": "cation core-shell spring k+ 8.77 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "O_Ni2tc-O_Ni2ts",
+   "match": [
+    "O_Ni2tc",
+    "O_Ni2ts"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    181.94772372,
+    0.0,
+    0.0
+   ],
+   "comment": "O core-shell spring k- 15.78 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "Zn2c-Zn2s",
+   "match": [
+    "Zn2c",
+    "Zn2s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    118.53121672,
+    0.0,
+    0.0
+   ],
+   "comment": "cation core-shell spring k+ 10.28 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "O_Zn2c-O_Zn2s",
+   "match": [
+    "O_Zn2c",
+    "O_Zn2s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    178.94985248,
+    0.0,
+    0.0
+   ],
+   "comment": "O core-shell spring k- 15.52 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "O_Al3c-O_Al3s",
+   "match": [
+    "O_Al3c",
+    "O_Al3s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    314.66117746,
+    0.0,
+    0.0
+   ],
+   "comment": "O core-shell spring k- 27.29 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "O_Al3tc-O_Al3ts",
+   "match": [
+    "O_Al3tc",
+    "O_Al3ts"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    314.66117746,
+    0.0,
+    0.0
+   ],
+   "comment": "O core-shell spring k- 27.29 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "Ti3c-Ti3s",
+   "match": [
+    "Ti3c",
+    "Ti3s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    506.98614778,
+    0.0,
+    0.0
+   ],
+   "comment": "cation core-shell spring k+ 43.97 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "O_Ti3c-O_Ti3s",
+   "match": [
+    "O_Ti3c",
+    "O_Ti3s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    314.66117746,
+    0.0,
+    0.0
+   ],
+   "comment": "O core-shell spring k- 27.29 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "V3c-V3s",
+   "match": [
+    "V3c",
+    "V3s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    418.20303798000003,
+    0.0,
+    0.0
+   ],
+   "comment": "cation core-shell spring k+ 36.27 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "O_V3c-O_V3s",
+   "match": [
+    "O_V3c",
+    "O_V3s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    314.66117746,
+    0.0,
+    0.0
+   ],
+   "comment": "O core-shell spring k- 27.29 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "Cr3c-Cr3s",
+   "match": [
+    "Cr3c",
+    "Cr3s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    772.528358,
+    0.0,
+    0.0
+   ],
+   "comment": "cation core-shell spring k+ 67.0 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "O_Cr3c-O_Cr3s",
+   "match": [
+    "O_Cr3c",
+    "O_Cr3s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    314.66117746,
+    0.0,
+    0.0
+   ],
+   "comment": "O core-shell spring k- 27.29 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "Cr3tc-Cr3ts",
+   "match": [
+    "Cr3tc",
+    "Cr3ts"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    772.528358,
+    0.0,
+    0.0
+   ],
+   "comment": "cation core-shell spring k+ 67.0 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "O_Cr3tc-O_Cr3ts",
+   "match": [
+    "O_Cr3tc",
+    "O_Cr3ts"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    314.66117746,
+    0.0,
+    0.0
+   ],
+   "comment": "O core-shell spring k- 27.29 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "Fe3c-Fe3s",
+   "match": [
+    "Fe3c",
+    "Fe3s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    3513.2744878,
+    0.0,
+    0.0
+   ],
+   "comment": "cation core-shell spring k+ 304.7 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "O_Fe3c-O_Fe3s",
+   "match": [
+    "O_Fe3c",
+    "O_Fe3s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    314.66117746,
+    0.0,
+    0.0
+   ],
+   "comment": "O core-shell spring k- 27.29 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "Fe3tc-Fe3ts",
+   "match": [
+    "Fe3tc",
+    "Fe3ts"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    3513.2744878,
+    0.0,
+    0.0
+   ],
+   "comment": "cation core-shell spring k+ 304.7 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "O_Fe3tc-O_Fe3ts",
+   "match": [
+    "O_Fe3tc",
+    "O_Fe3ts"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    314.66117746,
+    0.0,
+    0.0
+   ],
+   "comment": "O core-shell spring k- 27.29 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "Ge4c-Ge4s",
+   "match": [
+    "Ge4c",
+    "Ge4s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    3657.4029128,
+    0.0,
+    0.0
+   ],
+   "comment": "cation core-shell spring k+ 317.2 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "O_Ge4c-O_Ge4s",
+   "match": [
+    "O_Ge4c",
+    "O_Ge4s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    709.111851,
+    0.0,
+    0.0
+   ],
+   "comment": "O core-shell spring k- 61.5 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "Sn4c-Sn4s",
+   "match": [
+    "Sn4c",
+    "Sn4s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    2208.047471,
+    0.0,
+    0.0
+   ],
+   "comment": "cation core-shell spring k+ 191.5 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "O_Sn4c-O_Sn4s",
+   "match": [
+    "O_Sn4c",
+    "O_Sn4s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    1358.2662772,
+    0.0,
+    0.0
+   ],
+   "comment": "O core-shell spring k- 117.8 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "Ti4c-Ti4s",
+   "match": [
+    "Ti4c",
+    "Ti4s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    430.0792202,
+    0.0,
+    0.0
+   ],
+   "comment": "cation core-shell spring k+ 37.3 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "O_Ti4c-O_Ti4s",
+   "match": [
+    "O_Ti4c",
+    "O_Ti4s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    996.2156736000001,
+    0.0,
+    0.0
+   ],
+   "comment": "O core-shell spring k- 86.4 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "Ce4c-Ce4s",
+   "match": [
+    "Ce4c",
+    "Ce4s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    1337.511784,
+    0.0,
+    0.0
+   ],
+   "comment": "cation core-shell spring k+ 116.0 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "O_Ce4c-O_Ce4s",
+   "match": [
+    "O_Ce4c",
+    "O_Ce4s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    588.043974,
+    0.0,
+    0.0
+   ],
+   "comment": "O core-shell spring k- 51.0 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "U4c-U4s",
+   "match": [
+    "U4c",
+    "U4s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    1487.405346,
+    0.0,
+    0.0
+   ],
+   "comment": "cation core-shell spring k+ 129.0 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "O_U4c-O_U4s",
+   "match": [
+    "O_U4c",
+    "O_U4s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    594.9621384000001,
+    0.0,
+    0.0
+   ],
+   "comment": "O core-shell spring k- 51.6 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "Th4c-Th4s",
+   "match": [
+    "Th4c",
+    "Th4s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    2226.4959094,
+    0.0,
+    0.0
+   ],
+   "comment": "cation core-shell spring k+ 193.1 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "O_Th4c-O_Th4s",
+   "match": [
+    "O_Th4c",
+    "O_Th4s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    449.68068600000004,
+    0.0,
+    0.0
+   ],
+   "comment": "O core-shell spring k- 39.0 eV/A^2 (Table 3)"
+  }
+ ],
+ "angles": [],
+ "dihedrals": [],
+ "impropers": [],
+ "notes": [
+  "built by CAPS (bench/ff/make_lewis_catlow1985.py) from the paper's Table 3 (method (c)(i))",
+  "short-range terms truncated at 6 A as the paper's (Table 1 footnote)",
+  "O-O: Catlow 1977 potential 1 (C 20.37 eV A^6)",
+  "shells carry 10 % of the ion's mass (adiabatic core-shell)"
+ ],
+ "version": "1985 (Table 3)",
+ "typing": "../typing/lewis-catlow1985-oxides.typing.json"
+}

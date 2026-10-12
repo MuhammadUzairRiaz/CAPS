@@ -1,0 +1,65 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "lewis-catlow1985-oxides: Co2t",
+ "unknown_types": "untyped",
+ "description": "Overlay: the Co2t set (Table 3) in place of the element's first",
+ "rules": [
+  {
+   "type": "Co2tc",
+   "smarts": "[#27]",
+   "priority": 50,
+   "requires": [
+    "O"
+   ],
+   "excludes": [
+    "Al",
+    "Ba",
+    "Ca",
+    "Ce",
+    "Cr",
+    "Fe",
+    "Ge",
+    "Mg",
+    "Mn",
+    "Ni",
+    "Sn",
+    "Sr",
+    "Th",
+    "Ti",
+    "U",
+    "V",
+    "Zn"
+   ],
+   "description": "Co2+ in its oxide"
+  },
+  {
+   "type": "O_Co2tc",
+   "smarts": "[#8]",
+   "priority": 50,
+   "requires": [
+    "Co"
+   ],
+   "excludes": [
+    "Al",
+    "Ba",
+    "Ca",
+    "Ce",
+    "Cr",
+    "Fe",
+    "Ge",
+    "Mg",
+    "Mn",
+    "Ni",
+    "Sn",
+    "Sr",
+    "Th",
+    "Ti",
+    "U",
+    "V",
+    "Zn"
+   ],
+   "description": "O2- in the Co2+ oxide"
+  }
+ ]
+}

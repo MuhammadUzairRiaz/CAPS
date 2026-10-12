@@ -1945,6 +1945,37 @@
    }
   },
   {
+   "id": "lewis-catlow1985-oxides",
+   "name": "Oxides (Lewis & Catlow 1985)",
+   "version": "1985, Table 3 (shell model, method (c)(i)); O-O from Catlow 1977",
+   "references": [
+    "G. V. Lewis, C. R. A. Catlow, J. Phys. C: Solid State Phys. 18, 1149 (1985)",
+    "C. R. A. Catlow, Proc. R. Soc. Lond. A 353, 533 (1977)"
+   ],
+   "origin": "built from source",
+   "source": "the papers' tables; bench/ff/make_lewis_catlow1985.py",
+   "license": "published parameters of the papers",
+   "status": "validated",
+   "file": "lewis-catlow1985-oxides.json",
+   "counts": {
+    "atom_types": 104,
+    "pairs": 158,
+    "bonds": 50,
+    "angles": 0,
+    "dihedrals": 0,
+    "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/lewis-catlow1985-oxides.typing.json",
+    "evidence": "20 oxides, each a shell-model set typed by composition (tetrahedral sites and second oxidation states as overlays); every cation-O term equals an independent transcription (27 / 27); LAMMPS reproduces CAPS's energies on MgO and CaO"
+   },
+   "list": {
+    "label": "Oxides (Lewis & Catlow 1985)",
+    "key": "lewis_catlow1985",
+    "order": 31
+   }
+  },
+  {
    "id": "charmm36-prot-toppar",
    "name": "CHARMM36 proteins",
    "version": "toppar_c36_jul17 (par_all36_prot.prm, top_all36_prot.rtf, its streams)",

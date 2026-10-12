@@ -1,0 +1,65 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "lewis-catlow1985-oxides: Ti4",
+ "unknown_types": "untyped",
+ "description": "Overlay: the Ti4 set (Table 3) in place of the element's first",
+ "rules": [
+  {
+   "type": "Ti4c",
+   "smarts": "[#22]",
+   "priority": 50,
+   "requires": [
+    "O"
+   ],
+   "excludes": [
+    "Al",
+    "Ba",
+    "Ca",
+    "Ce",
+    "Co",
+    "Cr",
+    "Fe",
+    "Ge",
+    "Mg",
+    "Mn",
+    "Ni",
+    "Sn",
+    "Sr",
+    "Th",
+    "U",
+    "V",
+    "Zn"
+   ],
+   "description": "Ti4+ in its oxide"
+  },
+  {
+   "type": "O_Ti4c",
+   "smarts": "[#8]",
+   "priority": 50,
+   "requires": [
+    "Ti"
+   ],
+   "excludes": [
+    "Al",
+    "Ba",
+    "Ca",
+    "Ce",
+    "Co",
+    "Cr",
+    "Fe",
+    "Ge",
+    "Mg",
+    "Mn",
+    "Ni",
+    "Sn",
+    "Sr",
+    "Th",
+    "U",
+    "V",
+    "Zn"
+   ],
+   "description": "O2- in the Ti4+ oxide"
+  }
+ ]
+}

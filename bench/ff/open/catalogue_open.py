@@ -125,6 +125,12 @@ ENTRIES = {
                            "16 halides of Li, Na, K, Rb with F, Cl, Br, I, each typed by the structure's composition; every pair term "
                            "equals an independent transcription of the same table; LAMMPS reproduces CAPS's energies on NaCl and LiF",
                            ("Alkali halides", "alkali_halides", 28), ["inorganic-binary-halides"]),
+    "lewis-catlow1985-oxides": ("Oxides (Lewis & Catlow 1985)", "1985, Table 3 (shell model, method (c)(i)); O-O from Catlow 1977",
+                                ["G. V. Lewis, C. R. A. Catlow, J. Phys. C: Solid State Phys. 18, 1149 (1985)", "C. R. A. Catlow, Proc. R. Soc. Lond. A 353, 533 (1977)"],
+                                {"source": "the papers' tables; bench/ff/make_lewis_catlow1985.py", "license": "published parameters of the papers"},
+                                "20 oxides, each a shell-model set typed by composition (tetrahedral sites and second oxidation states as "
+                                "overlays); every cation-O term equals an independent transcription (27 / 27); LAMMPS reproduces CAPS's "
+                                "energies on MgO and CaO", ("Oxides (Lewis & Catlow 1985)", "lewis_catlow1985", 31), []),
 }
 RTF = "the topology's own residues typed as it types them (bench/ff/validate_rtf_types.py --cap-links): "
 for fid, name, version, refs, evidence, listing, replaces in (
