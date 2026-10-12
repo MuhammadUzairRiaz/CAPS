@@ -2685,6 +2685,7 @@ int32_t caps_md(caps_doc* d, const caps_md_opts* o, caps_md_progress_fn progress
     m.energy.tail = o->tail != 0;
     m.energy.threads = o->threads;
     m.energy.mixed = true;   // MD in mixed precision, as the CLI
+    m.hmr = std::max(0.0, o->hmr);
     m.respa = std::clamp(o->respa, 1, 16);
     m.constraints = static_cast<caps::ConstraintMode>(std::clamp(o->constraints, 0, 2));
     m.constraint_algorithm = o->constraint_algorithm == 1 ? caps::ConstraintAlgorithm::Lincs : caps::ConstraintAlgorithm::Shake;
@@ -2856,6 +2857,7 @@ int32_t caps_equilibrate(caps_doc* d, const char* protocol, const caps_equil_opt
     e.md.energy.tail = o->tail != 0;
     e.md.energy.threads = o->threads;
     e.md.energy.mixed = true;
+    e.md.hmr = std::max(0.0, o->hmr);
     if (o->frame_ps > 0) e.frame_ps = o->frame_ps;
     if (o->thermo_ps > 0) e.thermo_ps = o->thermo_ps;
     e.until_converged = o->until_converged != 0;

@@ -119,7 +119,7 @@ class _MdOpts(C.Structure):
                 ("coulomb", C.c_int32), ("tail", C.c_int32), ("threads", C.c_int32), ("respa", C.c_int32), ("constraints", C.c_int32),
                 ("step_offset", C.c_int64), ("checkpoint_every", C.c_int64), ("constraint_algorithm", C.c_int32),
                 ("box_anisotropic", C.c_int32), ("box_axes", C.c_int32),
-                ("efield", C.c_double * 3), ("full_shape", C.c_int32)]
+                ("efield", C.c_double * 3), ("full_shape", C.c_int32), ("hmr", C.c_double)]
 
 
 class _EquilOpts(C.Structure):
@@ -128,7 +128,7 @@ class _EquilOpts(C.Structure):
                 ("frame_ps", C.c_double), ("thermo_ps", C.c_double), ("until_converged", C.c_int32), ("block_ps", C.c_double),
                 ("max_blocks", C.c_int32), ("tol_density", C.c_double), ("tol_energy", C.c_double), ("tol_rg", C.c_double),
                 ("constraints", C.c_int32), ("tol_internal", C.c_double), ("constraint_algorithm", C.c_int32),
-                ("internal_target", C.POINTER(C.c_double)), ("internal_target_n", C.c_int32)]
+                ("internal_target", C.POINTER(C.c_double)), ("internal_target_n", C.c_int32), ("hmr", C.c_double)]
 
 
 class _ProtocolParams(C.Structure):
@@ -530,17 +530,20 @@ class Document:
     def md(self, steps: int = 10000, dt: float = 1.0, temperature: float = 300.0, thermostat: str = "bussi", barostat: str = "none",
            pressure: float = 1.0, seed: int = 1, frame_every: int = 1000, thermo_every: int = 100, cutoff: float = 10.0,
            respa: int = 1, constraints: str = "none", constraint_solver: str = "shake", couple_axes: str = "",
-           efield: tuple = (0.0, 0.0, 0.0), full_shape: bool = False) -> str:
+           efield: tuple = (0.0, 0.0, 0.0), full_shape: bool = False, hmr: float = 0.0) -> str:
         """Molecular dynamics from the current frame; the frames recorded become the document's frames. respa > 1: r-RESPA,
         the bonded forces every dt / respa (e.g. dt=2, respa=4 with hydrogens). constraints "h-bonds" (bonds to hydrogen,
         rigid water) or "all-bonds": SHAKE/RATTLE, for dt=2 (the alternative to respa). thermostat "nose-hoover" with
         barostat "mtk" runs as LAMMPS's fix nvt / fix npt iso. constraint_solver "lincs" puts the positions back on the
-        constraints with LINCS (as GROMACS), "shake" with SHAKE (as LAMMPS); the same result to the tolerance."""
+        constraints with LINCS (as GROMACS), "shake" with SHAKE (as LAMMPS); the same result to the tolerance. hmr > 0
+        (3.024 usual) gives the hydrogens that mass, taken from their bonded atoms: the same equilibrium, slower hydrogens
+        (with h-bonds, dt up to 3 fs; 4 fs does not hold the energy on polystyrene)."""
         o = _MdOpts(dt, steps, temperature, {"none": 0, "bussi": 1, "langevin": 2, "nose-hoover": 3}[thermostat], 100.0,
                     {"none": 0, "crescale": 1, "berendsen": 2, "mtk": 3}[barostat], pressure, 1000.0, 0, seed, thermo_every, frame_every,
                     cutoff, 1, 1, 0, respa, {"none": 0, "h-bonds": 1, "all-bonds": 2}[constraints], 0, 0,
                     {"shake": 0, "lincs": 1}[constraint_solver])
         o.efield[:] = [float(e) for e in efield]   # V/Å on the partial charges (LAMMPS fix efield)
+        o.hmr = float(hmr)
         if couple_axes:   # "z", "xy" …: those axes coupled on their own to the pressure (Berendsen), the others fixed
             o.box_anisotropic, o.box_axes = 1, sum({"x": 1, "y": 2, "z": 4}[a] for a in set(couple_axes))
         if full_shape:   # every axis on its own and the tilts toward zero shear stress (Berendsen)
@@ -556,18 +559,20 @@ class Document:
                     ramp_ps: float = 50.0, hold_ps: float = 50.0, dt: float = 1.0, thermostat: str = "bussi", barostat: str = "crescale",
                     tau_t: float = 100.0, tau_p: float = 1000.0, seed: int = 1, cutoff: float = 10.0, coulomb: bool = True,
                     frame_ps: float = 10.0, thermo_ps: float = 0.5, until_converged: bool = False, block_ps: float = 20.0,
-                    max_blocks: int = 20, constraints: str = "none", constraint_solver: str = "shake", tail: bool = True) -> bool:
+                    max_blocks: int = 20, constraints: str = "none", constraint_solver: str = "shake", tail: bool = True,
+                    hmr: float = 0.0) -> bool:
         """Runs an equilibration protocol from the current frame: "larsen21" (Larsen et al. 2011, 21 steps: t_max, p_max
         ramps down to temperature and pressure), "annealing" (cycles between t_low and t_high, ramp_ps and hold_ps), "pushoff",
         or protocol text written by hand (one stage per line, as protocol_text gives). until_converged adds NPT blocks of
         block_ps until density, energy and Rg stop drifting (at most max_blocks); .checks then holds the checks. Returns True
-        when converged (or when no checks were asked for); the recorded frames become the document's frames."""
+        when converged (or when no checks were asked for); the recorded frames become the document's frames. hmr as for md."""
         text = protocol if "\n" in protocol or " " in protocol.strip() else protocol_text(
             protocol, temperature=temperature, t_max=t_max, pressure=pressure, p_max=p_max, time_scale=time_scale,
             cycles=cycles, t_low=t_low, t_high=t_high, ramp_ps=ramp_ps, hold_ps=hold_ps)
         o = _EquilOpts(dt, {"bussi": 1, "langevin": 2, "nose-hoover": 3}[thermostat], {"crescale": 1, "berendsen": 2, "mtk": 3}[barostat],
                        tau_t, tau_p, seed, cutoff, int(coulomb), int(tail), 0, frame_ps, thermo_ps, int(until_converged), block_ps, max_blocks,
                        0.0, 0.0, 0.0, {"none": 0, "h-bonds": 1, "all-bonds": 2}[constraints], 0.0, {"shake": 0, "lincs": 1}[constraint_solver])
+        o.hmr = float(hmr)
         rep = _report()
         rc = library().caps_equilibrate(self._h, _enc(text), C.byref(o), None, None, rep, len(rep))
         if rc < 0:

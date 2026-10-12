@@ -1394,6 +1394,10 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
     public bool MdConstraintsAllowed => _mdRespa == 0;
+    // Hydrogen mass repartitioning: hydrogens at 3.024 u, the difference taken from their bonded atoms (MD and Equilibrate)
+    private bool _mdHmr;
+    public bool MdHmr { get => _mdHmr; set { if (Set(ref _mdHmr, value)) RefreshPreflight(); } }
+    private double HmrMass => _mdHmr ? 3.024 : 0.0;
     private int RespaSteps => _mdRespa == 0 ? 1 : _mdRespa == 1 ? 2 : 4;
     public int MdBarostat
     {
@@ -1546,7 +1550,10 @@ public sealed partial class MainViewModel : ObservableObject
         if (_mdConstraints > 0)
             MdPreflight.Add(new CheckRow(string.Format(inv, "Δt {0:0.##} fs with {1} held at their lengths ({2})", _mdDt,
                     _mdConstraints == 1 ? "bonds to hydrogen" : "all bonds", _mdConstraintSolver == 1 ? "LINCS" : "SHAKE/RATTLE"),
-                _mdDt <= (_mdConstraints == 1 ? 2.0 : 2.5) ? "ok" : _mdDt <= 3.0 ? "check" : "fail"));
+                _mdDt <= (_mdConstraints == 1 ? 2.0 : 2.5) || (_mdConstraints == 1 && _mdHmr && _mdDt <= 3.0) ? "ok" : _mdDt <= 3.0 ? "check" : "fail"));
+        if (_mdHmr)
+            MdPreflight.Add(new CheckRow("Heavier hydrogens (3.024 u, from their bonded atoms): the same equilibrium, slower hydrogen motions; " +
+                "3 fs is measured to hold the energy on polystyrene, 4 fs is not", _mdConstraints == 1 || _mdDt <= 2.0 ? "ok" : "check"));
         else
             MdPreflight.Add(new CheckRow(RespaSteps > 1
                     ? string.Format(inv, "Δt {0:0.##} fs, bonded forces every {1:0.###} fs (r-RESPA), no bond constraints", _mdDt, inner)
@@ -1737,7 +1744,7 @@ public sealed partial class MainViewModel : ObservableObject
         Barostat = _mdEnsemble == 2 ? _mdBarostat + 1 : _mdEnsemble == 3 ? 2 : 0, Pressure = _mdPressure, TauP = _mdTauP,   // NPH: Berendsen
         NewVelocities = resume == null && _mdNewVelocities ? 1 : 0, Seed = (ulong)(_mdSeed = MdSeedChoice.Take()),
         ThermoEvery = (int)Math.Clamp(_mdSteps / 400, 10, 1000), FrameEvery = _mdFrameEvery,
-        Cutoff = _relaxCutoff, Coulomb = _relaxCoulomb ? 1 : 0, Tail = TailFlag, Respa = RespaSteps, Constraints = _mdConstraints, ConstraintAlgorithm = _mdConstraintSolver,
+        Cutoff = _relaxCutoff, Coulomb = _relaxCoulomb ? 1 : 0, Tail = TailFlag, Respa = RespaSteps, Constraints = _mdConstraints, ConstraintAlgorithm = _mdConstraintSolver, Hmr = HmrMass,
     };
 
     private async Task RunMd((long Offset, long Steps)? resume, CapsMdOpts? preset = null, int? ensemble = null)
@@ -1961,7 +1968,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         Dt = _mdDt, Thermostat = _mdThermostat + 1, Barostat = _mdBarostat + 1, TauT = _mdTauT, TauP = _mdTauP, Seed = (ulong)(_mdSeed = MdSeedChoice.Take()),
         Cutoff = _relaxCutoff, Coulomb = _relaxCoulomb ? 1 : 0, Tail = TailFlag,
-        FramePs = 10, ThermoPs = 0.5, UntilConverged = (until ?? _eqUntil) ? 1 : 0, BlockPs = _eqBlock, MaxBlocks = _eqMaxBlocks, Constraints = _mdConstraints, ConstraintAlgorithm = _mdConstraintSolver,
+        FramePs = 10, ThermoPs = 0.5, UntilConverged = (until ?? _eqUntil) ? 1 : 0, BlockPs = _eqBlock, MaxBlocks = _eqMaxBlocks, Constraints = _mdConstraints, ConstraintAlgorithm = _mdConstraintSolver, Hmr = HmrMass,
     };
 
     private (string Text, CapsEquilOpts Opts, bool Target) _eqRun;   // the last run, for the macro recorder
