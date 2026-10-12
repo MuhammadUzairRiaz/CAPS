@@ -1,0 +1,297 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "UO2 (Catlow 1977)",
+ "source": "C. R. A. Catlow, Proc. R. Soc. Lond. A 353, 533 (1977), Table 3",
+ "references": [
+  "C. R. A. Catlow, Proc. R. Soc. Lond. A 353, 533 (1977)"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "buck/coul/long",
+  "bond": "class2",
+  "angle": "harmonic",
+  "dihedral": "fourier",
+  "improper": "fourier"
+ },
+ "mixing": "geometric",
+ "special_lj": [
+  0,
+  0,
+  1
+ ],
+ "special_coul": [
+  0,
+  0,
+  1
+ ],
+ "cutoff": 10,
+ "atom_types": [
+  {
+   "name": "U1c",
+   "element": "U",
+   "mass": 214.2261,
+   "charge": -2.54,
+   "description": "U core, potential 1 (Table 3: Z 4.0, Y+ 6.54)"
+  },
+  {
+   "name": "U1s",
+   "element": "U",
+   "mass": 23.8029,
+   "charge": 6.54,
+   "description": "U shell, potential 1"
+  },
+  {
+   "name": "O1c",
+   "element": "O",
+   "mass": 14.3991,
+   "charge": 2.4,
+   "description": "O core, potential 1 (Table 3: Y- -4.4)"
+  },
+  {
+   "name": "O1s",
+   "element": "O",
+   "mass": 1.5999,
+   "charge": -4.4,
+   "description": "O shell, potential 1"
+  },
+  {
+   "name": "U2c",
+   "element": "U",
+   "mass": 214.2261,
+   "charge": -4.1,
+   "description": "U core, potential 2 (Table 3: Z 3.84, Y+ 7.94)"
+  },
+  {
+   "name": "U2s",
+   "element": "U",
+   "mass": 23.8029,
+   "charge": 7.94,
+   "description": "U shell, potential 2"
+  },
+  {
+   "name": "O2c",
+   "element": "O",
+   "mass": 14.3991,
+   "charge": 1.14,
+   "description": "O core, potential 2 (Table 3: Y- -3.06)"
+  },
+  {
+   "name": "O2s",
+   "element": "O",
+   "mass": 1.5999,
+   "charge": -3.06,
+   "description": "O shell, potential 2"
+  }
+ ],
+ "pairs": [
+  {
+   "name": "U1c",
+   "match": [
+    "U1c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "U1s",
+   "match": [
+    "U1s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O1c",
+   "match": [
+    "O1c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O1s",
+   "match": [
+    "O1s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "U1s-O1s",
+   "match": [
+    "U1s",
+    "O1s"
+   ],
+   "style": "buck",
+   "params": [
+    28083.1353544,
+    0.3871,
+    0.0
+   ],
+   "comment": "U-O A12 1217.8 eV, rho12 0.3871 A (Table 3, potential 1)"
+  },
+  {
+   "name": "O1s-O1s",
+   "match": [
+    "O1s",
+    "O1s"
+   ],
+   "style": "buck",
+   "params": [
+    524957.2328364,
+    0.149,
+    2587.3934856
+   ],
+   "comment": "O-O A22 22764.3 eV, rho22 0.149 A, C22 112.2 eV A^6 (Table 3, potential 1)"
+  },
+  {
+   "name": "U2c",
+   "match": [
+    "U2c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "U2s",
+   "match": [
+    "U2s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O2c",
+   "match": [
+    "O2c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O2s",
+   "match": [
+    "O2s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "U2s-O2s",
+   "match": [
+    "U2s",
+    "O2s"
+   ],
+   "style": "buck",
+   "params": [
+    29919.677397120002,
+    0.3747,
+    0.0
+   ],
+   "comment": "U-O A12 1297.44 eV, rho12 0.3747 A (Table 3, potential 2)"
+  },
+  {
+   "name": "O2s-O2s",
+   "match": [
+    "O2s",
+    "O2s"
+   ],
+   "style": "buck",
+   "params": [
+    524957.2328364,
+    0.149,
+    469.74336276
+   ],
+   "comment": "O-O A22 22764.3 eV, rho22 0.149 A, C22 20.37 eV A^6 (Table 3, potential 2)"
+  }
+ ],
+ "bonds": [
+  {
+   "name": "U1c-U1s",
+   "match": [
+    "U1c",
+    "U1s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    1191.9997261199999,
+    0.0,
+    0.0
+   ],
+   "comment": "K+ 103.38 eV/A^2 (Table 3, potential 1)"
+  },
+  {
+   "name": "O1c-O1s",
+   "match": [
+    "O1c",
+    "O1s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    3378.13967652,
+    0.0,
+    0.0
+   ],
+   "comment": "K- 292.98 eV/A^2 (Table 3, potential 1)"
+  },
+  {
+   "name": "U2c-U2s",
+   "match": [
+    "U2c",
+    "U2s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    2421.58814548,
+    0.0,
+    0.0
+   ],
+   "comment": "K+ 210.02 eV/A^2 (Table 3, potential 2)"
+  },
+  {
+   "name": "O2c-O2s",
+   "match": [
+    "O2c",
+    "O2s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    924.8432775399999,
+    0.0,
+    0.0
+   ],
+   "comment": "K- 80.21 eV/A^2 (Table 3, potential 2)"
+  }
+ ],
+ "angles": [],
+ "dihedrals": [],
+ "impropers": [],
+ "notes": [
+  "built by CAPS (bench/ff/make_catlow1977_uo2.py) from the paper's Table 3",
+  "potential 1 by default; potential 2 (fitted charge 3.84) is the overlay 'potential2'",
+  "shells carry 10 % of the ion's mass (adiabatic core-shell)"
+ ],
+ "version": "1977 (Table 3)",
+ "typing": "../typing/catlow1977-uo2.typing.json"
+}

@@ -1,0 +1,119 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "TiO2 (Matsui & Akaogi 1991)",
+ "source": "M. Matsui, M. Akaogi, Mol. Simul. 6, 239 (1991), Table 1",
+ "references": [
+  "M. Matsui, M. Akaogi, Mol. Simul. 6, 239 (1991)"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "buck/coul/long",
+  "bond": "harmonic",
+  "angle": "harmonic",
+  "dihedral": "fourier",
+  "improper": "fourier"
+ },
+ "mixing": "geometric",
+ "special_lj": [
+  0,
+  0,
+  1
+ ],
+ "special_coul": [
+  0,
+  0,
+  1
+ ],
+ "cutoff": 10,
+ "atom_types": [
+  {
+   "name": "Ti_ma",
+   "element": "Ti",
+   "mass": 47.867,
+   "charge": 2.196,
+   "description": "Ti in TiO2 (Table 1: q 2.196, A 1.1823, B 0.077, C 22.5)"
+  },
+  {
+   "name": "O_ma",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -1.098,
+   "description": "O in TiO2 (Table 1: q -1.098, A 1.6339, B 0.117, C 54.0)"
+  }
+ ],
+ "pairs": [
+  {
+   "name": "Ti_ma",
+   "match": [
+    "Ti_ma"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_ma",
+   "match": [
+    "O_ma"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ti_ma-Ti_ma",
+   "match": [
+    "Ti_ma",
+    "Ti_ma"
+   ],
+   "style": "buck",
+   "params": [
+    717653.9571168047,
+    0.154,
+    120.99665391969407
+   ],
+   "comment": "f (B_i+B_j) exp[(A_i+A_j)/(B_i+B_j)], B_i+B_j 0.154 A, C_i C_j 506.25 A^6 kJ/mol (Table 1)"
+  },
+  {
+   "name": "Ti_ma-O_ma",
+   "match": [
+    "Ti_ma",
+    "O_ma"
+   ],
+   "style": "buck",
+   "params": [
+    391052.7441686914,
+    0.194,
+    290.3919694072658
+   ],
+   "comment": "f (B_i+B_j) exp[(A_i+A_j)/(B_i+B_j)], B_i+B_j 0.194 A, C_i C_j 1215 A^6 kJ/mol (Table 1)"
+  },
+  {
+   "name": "O_ma-O_ma",
+   "match": [
+    "O_ma",
+    "O_ma"
+   ],
+   "style": "buck",
+   "params": [
+    271718.831070571,
+    0.234,
+    696.9407265774379
+   ],
+   "comment": "f (B_i+B_j) exp[(A_i+A_j)/(B_i+B_j)], B_i+B_j 0.234 A, C_i C_j 2916 A^6 kJ/mol (Table 1)"
+  }
+ ],
+ "bonds": [],
+ "angles": [],
+ "dihedrals": [],
+ "impropers": [],
+ "notes": [
+  "built by CAPS (bench/ff/make_matsui1991.py) from the paper's Table 1",
+  "rigid ions; the paper fitted rutile, anatase and brookite (and simulated TiO2 II)"
+ ],
+ "version": "1991",
+ "typing": "../typing/matsui1991-tio2.typing.json"
+}

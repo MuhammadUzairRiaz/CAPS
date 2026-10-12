@@ -69,6 +69,12 @@ CASES = [
      "--supercell", "3,3,3"]), "lewis-catlow1985-oxides", "types", "rules", ["--no-tail"]),
     ("Lewis & Catlow 1985 (Table 3): CaO, cation and anion shells", ("crystal", ["--group", "F m -3 m", "--cell", "4.81,4.81,4.81", "--sites", "Ca1 Ca 0 0 0; O1 O 0.5 0.5 0.5",
      "--supercell", "3,3,3"]), "lewis-catlow1985-oxides", "types", "rules", ["--no-tail"]),
+    ("Catlow 1977 UO2 (Table 3, potential 1): fluorite, U and O shells", ("crystal", ["--group", "F m -3 m", "--cell", "5.47,5.47,5.47", "--sites",
+     "U1 U 0 0 0; O1 O 0.25 0.25 0.25", "--supercell", "3,3,3"]), "catlow1977-uo2", "types", "rules", ["--no-tail"]),
+    ("Matsui & Akaogi 1991 (Table 1): rutile, rigid ions", ("crystal", ["--group", "P 42/m n m", "--cell", "4.594,4.594,2.959", "--sites",
+     "Ti1 Ti 0 0 0; O1 O 0.3053 0.3053 0", "--supercell", "3,3,5"]), "matsui1991-tio2", "types", "rules", ["--no-tail"]),
+    ("Sanders, Leslie & Catlow 1984 (Table 1): alpha-quartz, O shells, O-Si-O bends by distance", ("file", os.path.join(ROOT, "data", "crystals",
+     "alpha-quartz.cif")), "sanders1984-sio2", "types", "rules", ["--no-tail"]),
     ("GaN (Wonglakhon & Zahn 2020): wurtzite, formal charges, LJ + Born-Mayer", ("crystal", ["--group", "P 63 m c", "--cell", "3.189,3.189,5.185,90,90,120",
      "--sites", "Ga1 Ga 0.33333333 0.66666667 0; N1 N 0.33333333 0.66666667 0.377", "--supercell", "4,4,3"]), "gan2020", "types", "rules", ["--no-tail"]),
     # Bush, Gale, Catlow & Battle 1994 (one shell-model set for the oxides): MgO, SrTiO3, corundum

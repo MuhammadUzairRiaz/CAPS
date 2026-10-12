@@ -1,0 +1,27 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "catlow1977-uo2: potential2",
+ "unknown_types": "untyped",
+ "description": "Overlay: Catlow's potential 2 (Table 3) in place of potential 1",
+ "rules": [
+  {
+   "type": "U2c",
+   "smarts": "[#92]",
+   "priority": 50,
+   "requires": [
+    "O"
+   ],
+   "description": "U in UO2 (potential 2)"
+  },
+  {
+   "type": "O2c",
+   "smarts": "[#8]",
+   "priority": 50,
+   "requires": [
+    "U"
+   ],
+   "description": "O in UO2 (potential 2)"
+  }
+ ]
+}

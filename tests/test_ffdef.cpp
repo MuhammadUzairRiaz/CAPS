@@ -1068,3 +1068,25 @@ TEST(FFDef, GromosBuildingBlocksAsPdb2gmx) {
   EXPECT_EQ(c.bonds.size(), 9u);
   EXPECT_EQ(c.atoms[0].resname, "CHCL3");
 }
+
+// Sanders, Leslie & Catlow's O-Si-O bends by distance: Si and O unbonded, the O shells within 1.9 A of each Si bent
+TEST(FFDef, ThreeBodyBendsByDistanceOnShells) {
+  const FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/sanders1984-sio2.json");
+  System q = read_cif(std::string(CAPS_SOURCE_DIR) + "/data/crystals/alpha-quartz.cif");
+  q.bonds = perceive_bonds(q);
+  std::string ch = "types";
+  prepare_for_forcefield(q, def, ch);
+  ASSERT_EQ(q.atoms.size(), 15u);   // 3 Si, 6 O cores, 6 O shells
+  EXPECT_EQ(q.bonds.size(), 6u);    // the core-shell springs only
+  const TypingResult tr = assign_types(q, def);
+  ASSERT_EQ(tr.untyped, 0);
+  ParamReport rep;
+  const ForceField ff = parameterize(q, def, tr.types, "types", &rep, false);
+  ASSERT_EQ(ff.angles.size(), 18u);   // six per tetrahedron
+  for (const auto& a : ff.angles) {
+    EXPECT_EQ(tr.types[a.j], "Si_s84");
+    EXPECT_EQ(tr.types[a.i], "O_s84s");
+    EXPECT_EQ(tr.types[a.k], "O_s84s");
+    EXPECT_NEAR(a.kt, 2.097 * 23.060548, 1e-9);
+  }
+}

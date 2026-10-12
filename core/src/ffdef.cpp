@@ -1939,6 +1939,48 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
     }
     if (n_contact) rep.notes.push_back(std::to_string(n_contact) + " bends through unbonded contacts (" + std::to_string(def.angle_contacts).substr(0, 4) + " Å; ClayFF's M–O–H)");
   }
+  // Three-body bends by distance (GULP's "three", Sanders, Leslie & Catlow's O–Si–O): an angle rule with "contact": [r]
+  // takes every pair i, k within r of an apex j whose types it matches, bonded or not; no bond is made
+  if (!use_topo) {
+    int n_three = 0;
+    for (const auto& r : def.angles) {
+      auto c = r.cross.find("contact");
+      if (c == r.cross.end() || c->second.empty() || r.match.size() != 3 || r.params.size() < 2) continue;
+      if ((r.style.empty() ? def.angle_style : r.style) != "harmonic") throw FFError("contact angle " + r.name + " must be harmonic");
+      const double rc2 = c->second[0] * c->second[0];
+      auto fits = [&](uint32_t i, uint32_t j, uint32_t k) {
+        for (const auto* N : {&Na, &Na2}) {
+          if (N->empty()) continue;
+          std::vector<const std::string*> f{&(*N)[i], &(*N)[j], &(*N)[k]}, b{&(*N)[k], &(*N)[j], &(*N)[i]};
+          if (match_fw(r.match, f) || match_fw(r.match, b)) return true;
+        }
+        return false;
+      };
+      const std::vector<std::string> apex{r.match[1]};
+      for (uint32_t j = 0; j < n; ++j) {
+        bool is_apex = false;
+        for (const auto* N : {&Na, &Na2})
+          if (!N->empty() && match_fw(apex, {&(*N)[j]})) is_apex = true;
+        if (!is_apex) continue;
+        std::vector<uint32_t> near;
+        for (uint32_t a = 0; a < n; ++a) {
+          if (a == j) continue;
+          Vec3 d = s.atoms[a].pos - s.atoms[j].pos;
+          if (s.cell.valid()) d = s.cell.minimum_image(d);
+          if (dot(d, d) < rc2) near.push_back(a);
+        }
+        for (size_t x = 0; x < near.size(); ++x)
+          for (size_t y = x + 1; y < near.size(); ++y) {
+            const uint32_t i = near[x], k = near[y];
+            if (!fits(i, j, k)) continue;
+            ff.angles.push_back({i, j, k, r.params[0], r.params[1] * kDeg});
+            rep.used["angle " + r.name]++;
+            ++n_three;
+          }
+      }
+    }
+    if (n_three) rep.notes.push_back(std::to_string(n_three) + " three-body bends by distance from the apex (no bond made)");
+  }
   // DREIDING's torsion rules (Mayo, Olafson, Goddard, J. Phys. Chem. 94, 8897 (1990)): E = ½V[1 − cos(n(φ − φ0))] by the
   // hybridisation of the central atoms j, k (the character after "_" in the type: 1, 2, 3, R), V then divided over the
   // (nj − 1)(nk − 1) torsions about the bond. Bond orders, aromatic bonds from the structure's perception.

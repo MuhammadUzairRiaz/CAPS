@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Oxides for CAPS from G. V. Lewis, C. R. A. Catlow, J. Phys. C: Solid State Phys. 18, 1149 (1985), Table 3 (shell
 model parameters, method (c)(i)), with the O-O potential of C. R. A. Catlow, Proc. R. Soc. Lond. A 353, 533 (1977),
-Table 3, potential 1 (the one Catlow gives for separations near the perfect lattice's; Lewis & Catlow name only "the
-potential derived by Catlow (1977)").
+Table 3: A22 and rho22 (the same in both of Catlow's potentials) with C22 = 20.37 eV A^6, potential 2's (potential 1 has
+112.2). Lewis & Catlow name only "the potential derived by Catlow (1977)"; 20.37 is the value the published transcriptions
+of this set use.
 
   cation-O   A exp(-r/rho) between the cation (its shell when it has one) and the oxide's O shell
   O-O        22764.3 exp(-r/0.1490) - 20.37/r^6 eV between O shells
@@ -80,7 +81,7 @@ for el, zc, A, Atet, rho, Yp, kp, Ym, km in T3:
         pairs += [{"name": f"{csite}-{o_shell}", "match": [csite, o_shell], "style": "buck", "params": [a * EV, rho, 0.0],
                    "comment": f"{el}{zc}+-O2- A {a} eV, rho {rho} A (Table 3{', tetrahedral' if tet else ''})"},
                   {"name": f"{o_shell}-{o_shell}", "match": [o_shell, o_shell], "style": "buck", "params": [OO[0] * EV, OO[1], OO[2] * EV],
-                   "comment": f"O-O {OO[0]} eV, {OO[1]} A, C {OO[2]} eV A^6 ({REF_OO}, Table 3, potential 1)"}]
+                   "comment": f"O-O {OO[0]} eV, {OO[1]} A, C {OO[2]} eV A^6 ({REF_OO}, Table 3, potential 2's C)"}]
         others = [e for e in ALL if e != el]
         rs = [{"type": c_core, "smarts": f"[#{Z[el]}]", "priority": 0, "requires": ["O"], "excludes": others, "description": f"{el}{zc}+ in its oxide"},
               {"type": o_core, "smarts": "[#8]", "priority": 0, "requires": [el], "excludes": others, "description": f"O2- in the {el}{zc}+ oxide"}]
@@ -97,7 +98,7 @@ doc = {"format": "caps-forcefield", "format_version": 1, "name": "Oxides (Lewis 
        "mixing": "geometric", "special_lj": [0, 0, 1], "special_coul": [0, 0, 1], "cutoff": 6,
        "atom_types": types, "pairs": pairs, "bonds": bonds, "angles": [], "dihedrals": [], "impropers": [],
        "notes": ["built by CAPS (bench/ff/make_lewis_catlow1985.py) from the paper's Table 3 (method (c)(i))",
-                 "short-range terms truncated at 6 A as the paper's (Table 1 footnote)", "O-O: Catlow 1977 potential 1 (C 20.37 eV A^6)",
+                 "short-range terms truncated at 6 A as the paper's (Table 1 footnote)", "O-O: Catlow 1977 Table 3, A 22764.3 eV, rho 0.1490 A, C 20.37 eV A^6 (potential 2's C; Lewis & Catlow do not say which)",
                  "shells carry 10 % of the ion's mass (adiabatic core-shell)"],
        "version": "1985 (Table 3)", "typing": f"../typing/{FID}.typing.json"}
 json.dump(doc, open(os.path.join(DATA, "forcefields", FID + ".json"), "w"), indent=1)

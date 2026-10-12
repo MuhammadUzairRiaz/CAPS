@@ -1,0 +1,157 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "SiO2 (Sanders, Leslie & Catlow 1984)",
+ "source": "M. J. Sanders, M. Leslie, C. R. A. Catlow, J. Chem. Soc., Chem. Commun. 1271 (1984), Table 1",
+ "references": [
+  "M. J. Sanders, M. Leslie, C. R. A. Catlow, J. Chem. Soc., Chem. Commun. 1271 (1984)"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "buck/coul/long",
+  "bond": "class2",
+  "angle": "harmonic",
+  "dihedral": "fourier",
+  "improper": "fourier"
+ },
+ "mixing": "geometric",
+ "special_lj": [
+  0,
+  0,
+  1
+ ],
+ "special_coul": [
+  0,
+  0,
+  1
+ ],
+ "cutoff": 10,
+ "atom_types": [
+  {
+   "name": "Si_s84",
+   "element": "Si",
+   "mass": 28.0855,
+   "charge": 4.0,
+   "description": "Si4+ (rigid ion, formal charge); Table 1"
+  },
+  {
+   "name": "O_s84c",
+   "element": "O",
+   "mass": 14.3991,
+   "charge": 0.8482,
+   "description": "O core (Table 1: +0.8482)"
+  },
+  {
+   "name": "O_s84s",
+   "element": "O",
+   "mass": 1.5999,
+   "charge": -2.8482,
+   "description": "O shell (Table 1: -2.8482)"
+  }
+ ],
+ "pairs": [
+  {
+   "name": "Si_s84",
+   "match": [
+    "Si_s84"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_s84c",
+   "match": [
+    "O_s84c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_s84s",
+   "match": [
+    "O_s84s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Si_s84-O_s84s",
+   "match": [
+    "Si_s84",
+    "O_s84s"
+   ],
+   "style": "buck",
+   "params": [
+    29607.605919200403,
+    0.3205,
+    245.8623385568
+   ],
+   "comment": "Si-O A 1283.9073 eV, B 0.3205 A, C 10.6616 eV A^6 (Table 1)"
+  },
+  {
+   "name": "O_s84s-O_s84s",
+   "match": [
+    "O_s84s",
+    "O_s84s"
+   ],
+   "style": "buck",
+   "params": [
+    524950.314672,
+    0.149,
+    642.92807824
+   ],
+   "comment": "O-O A 22764.000 eV, B 0.149 A, C 27.88 eV A^6 (Table 1)"
+  }
+ ],
+ "bonds": [
+  {
+   "name": "O_s84c-O_s84s",
+   "match": [
+    "O_s84c",
+    "O_s84s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    863.8527401896,
+    0.0,
+    0.0
+   ],
+   "comment": "O core-shell spring 74.9204 eV/A^2 (Table 1)"
+  }
+ ],
+ "angles": [
+  {
+   "name": "O_s84s-Si_s84-O_s84s",
+   "match": [
+    "O_s84s",
+    "Si_s84",
+    "O_s84s"
+   ],
+   "style": "harmonic",
+   "params": [
+    48.357969156,
+    109.47
+   ],
+   "contact": [
+    1.9
+   ],
+   "comment": "E_B = K_B (theta - theta0)^2, K_B 2.097 eV/rad^2, theta0 109.47 (Table 1 and text); O shells within 1.9 A of Si"
+  }
+ ],
+ "dihedrals": [],
+ "impropers": [],
+ "notes": [
+  "built by CAPS (bench/ff/make_sanders1984.py) from the paper's Table 1",
+  "O-Si-O bends between O shells within 1.9 A of the Si (the distance is CAPS's); E = K_B (theta - theta0)^2 as the paper writes it",
+  "shells carry 10 % of the oxygen's mass (adiabatic core-shell)"
+ ],
+ "version": "1984 (Table 1)",
+ "typing": "../typing/sanders1984-sio2.typing.json"
+}
