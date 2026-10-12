@@ -55,11 +55,14 @@ CASES = [
     ("CGenFF toluene (vacuum; separate 1-4 LJ, Urey-Bradley, harmonic impropers)", ("template", "CHARMM36_cgenff", "toluene"), "cgenff", "gasteiger", []),
     # GROMOS in its own settings: reaction field (ε_rf 61) at 1.4 nm, no dispersion correction, C6/C12 (comb-rule 1)
     ("SPC/E water box, GROMOS 54A7 (reaction field, periodic)", ("solvate", "40", "SPC/E", "1200"), "gromos-54a7", "keep", []),
-    # ClayFF (LAMMPS's ClayFF test structure, its types and charges): the M-O-H bends are angles without an M-O bond, so
-    # GROMACS keeps M and H interacting as CAPS does. IFF 1.5 (CVFF) montmorillonite from IFF's own model database. Both
-    # cells are thinner than 2 x 10 A: compared at 8 and 9 A cut-offs.
-    ("ClayFF pyrophyllite (M-O-H bends by contact; PME)", ("file", os.path.expanduser("~/lammps/tools/msi2lmp/test/PyAC_bulk-clayff.car")),
-     "inorganic-clay", "keep", PME + ["--cutoff", "8", "--no-tail", "--names"]),
+    # ClayFF (Cygan 2004): LAMMPS's ClayFF test structure with its own types, and IFF's Na-montmorillonite typed by CAPS's
+    # rules; the M-O-H bends are angles without an M-O bond, so GROMACS keeps M and H interacting as CAPS does. IFF 1.5
+    # (CVFF) montmorillonite from IFF's own model database. The cells are thinner than 2 x 10 A: compared at 8 and 9 A.
+    ("ClayFF (Cygan 2004) pyrophyllite (M-O-H bends by contact; PME)", ("file", os.path.expanduser("~/lammps/tools/msi2lmp/test/PyAC_bulk-clayff.car")),
+     "clayff-cygan2004", "types", PME + ["--cutoff", "8", "--no-tail", "--names"]),
+    ("ClayFF (Cygan 2004) Na-montmorillonite, typed by rule (PME)",
+     ("file", os.path.expanduser("~/iff-ref/INTERFACE_FF_1_5/MODEL_DATABASE/CLAY_MINERALS/mont0_333_Na_15_cell.car")),
+     "clayff-cygan2004", "types", PME + ["--cutoff", "9", "--no-tail"]),
     ("IFF 1.5 (CVFF) Na-montmorillonite (bonded clay layers, cvff impropers; PME)",
      ("file", os.path.expanduser("~/iff-ref/INTERFACE_FF_1_5/MODEL_DATABASE/CLAY_MINERALS/mont0_333_Na_15_cell.car")),
      "iff-cvff", "keep", PME + ["--cutoff", "9", "--no-tail"]),

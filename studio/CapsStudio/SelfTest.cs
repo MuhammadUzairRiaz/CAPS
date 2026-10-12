@@ -2003,7 +2003,7 @@ internal static class SelfTest
                 var chBack = vm.Field.ChargeMode;
                 vm.Open(car);
                 var carAtoms = vm.Document!.Summary().Atoms;
-                vm.Field.FfIndex = vm.Field.Library.ToList().FindIndex(e => e.Id == "inorganic-clay");
+                vm.Field.FfIndex = vm.Field.Library.ToList().FindIndex(e => e.Id == "clayff-cygan2004");
                 vm.Field.ChargeMode = 3;   // keep the file's charges
                 vm.Field.Assign().GetAwaiter().GetResult();
                 Check(vm.Field.Assigned && vm.Field.Complete, $"ClayFF on a .car with its types: {(vm.Field.Complete ? "complete" : "incomplete")} · {vm.Field.FooterTyper}");
