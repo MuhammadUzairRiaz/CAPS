@@ -1,0 +1,1145 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "Binary oxides (Bush, Gale, Catlow & Battle 1994)",
+ "source": "bush.lib (UCL Database of Published Interatomic Potential Parameters)",
+ "references": [
+  "T. S. Bush, J. D. Gale, C. R. A. Catlow, P. D. Battle, J. Mater. Chem. 4, 831 (1994)"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "buck/coul/long",
+  "bond": "class2",
+  "angle": "harmonic",
+  "dihedral": "fourier",
+  "improper": "fourier"
+ },
+ "mixing": "geometric",
+ "special_lj": [
+  0,
+  0,
+  1
+ ],
+ "special_coul": [
+  0,
+  0,
+  1
+ ],
+ "cutoff": 10,
+ "equivalence": "replace",
+ "atom_types": [
+  {
+   "name": "Li",
+   "element": "Li",
+   "mass": 6.94,
+   "charge": 1.0,
+   "description": "Li core; T. S. Bush, J. D. Gale, C. R. A. Catlow, P. D. Battle, J. Mater. Chem. 4, 831 (1994)"
+  },
+  {
+   "name": "Os",
+   "element": "O",
+   "mass": 1.5999,
+   "charge": -2.513,
+   "description": "O shell; T. S. Bush, J. D. Gale, C. R. A. Catlow, P. D. Battle, J. Mater. Chem. 4, 831 (1994)"
+  },
+  {
+   "name": "Na",
+   "element": "Na",
+   "mass": 22.99,
+   "charge": 1.0,
+   "description": "Na core; T. S. Bush, J. D. Gale, C. R. A. Catlow, P. D. Battle, J. Mater. Chem. 4, 831 (1994)"
+  },
+  {
+   "name": "K",
+   "element": "K",
+   "mass": 39.098,
+   "charge": 1.0,
+   "description": "K core; T. S. Bush, J. D. Gale, C. R. A. Catlow, P. D. Battle, J. Mater. Chem. 4, 831 (1994)"
+  },
+  {
+   "name": "Mgs",
+   "element": "Mg",
+   "mass": 2.4305,
+   "charge": 0.42,
+   "description": "Mg shell; T. S. Bush, J. D. Gale, C. R. A. Catlow, P. D. Battle, J. Mater. Chem. 4, 831 (1994)"
+  },
+  {
+   "name": "Cas",
+   "element": "Ca",
+   "mass": 4.0078,
+   "charge": 1.281,
+   "description": "Ca shell; T. S. Bush, J. D. Gale, C. R. A. Catlow, P. D. Battle, J. Mater. Chem. 4, 831 (1994)"
+  },
+  {
+   "name": "Srs",
+   "element": "Sr",
+   "mass": 8.762,
+   "charge": 1.831,
+   "description": "Sr shell; T. S. Bush, J. D. Gale, C. R. A. Catlow, P. D. Battle, J. Mater. Chem. 4, 831 (1994)"
+  },
+  {
+   "name": "Bas",
+   "element": "Ba",
+   "mass": 13.7327,
+   "charge": 1.831,
+   "description": "Ba shell; T. S. Bush, J. D. Gale, C. R. A. Catlow, P. D. Battle, J. Mater. Chem. 4, 831 (1994)"
+  },
+  {
+   "name": "Fes",
+   "element": "Fe",
+   "mass": 5.5845,
+   "charge": 1.029,
+   "description": "Fe shell; T. S. Bush, J. D. Gale, C. R. A. Catlow, P. D. Battle, J. Mater. Chem. 4, 831 (1994)"
+  },
+  {
+   "name": "Tis",
+   "element": "Ti",
+   "mass": 4.7867,
+   "charge": 1.678,
+   "description": "Ti shell; T. S. Bush, J. D. Gale, C. R. A. Catlow, P. D. Battle, J. Mater. Chem. 4, 831 (1994)"
+  },
+  {
+   "name": "Als",
+   "element": "Al",
+   "mass": 2.6982,
+   "charge": 2.957,
+   "description": "Al shell; T. S. Bush, J. D. Gale, C. R. A. Catlow, P. D. Battle, J. Mater. Chem. 4, 831 (1994)"
+  },
+  {
+   "name": "Ga",
+   "element": "Ga",
+   "mass": 69.723,
+   "charge": 3.0,
+   "description": "Ga core; T. S. Bush, J. D. Gale, C. R. A. Catlow, P. D. Battle, J. Mater. Chem. 4, 831 (1994)"
+  },
+  {
+   "name": "Y",
+   "element": "Y",
+   "mass": 88.906,
+   "charge": 3.0,
+   "description": "Y core; T. S. Bush, J. D. Gale, C. R. A. Catlow, P. D. Battle, J. Mater. Chem. 4, 831 (1994)"
+  },
+  {
+   "name": "Las",
+   "element": "La",
+   "mass": 13.8905,
+   "charge": -2.149,
+   "description": "La shell; T. S. Bush, J. D. Gale, C. R. A. Catlow, P. D. Battle, J. Mater. Chem. 4, 831 (1994)"
+  },
+  {
+   "name": "Prs",
+   "element": "Pr",
+   "mass": 14.0908,
+   "charge": 1.322,
+   "description": "Pr shell; T. S. Bush, J. D. Gale, C. R. A. Catlow, P. D. Battle, J. Mater. Chem. 4, 831 (1994)"
+  },
+  {
+   "name": "Nds",
+   "element": "Nd",
+   "mass": 14.4242,
+   "charge": 1.322,
+   "description": "Nd shell; T. S. Bush, J. D. Gale, C. R. A. Catlow, P. D. Battle, J. Mater. Chem. 4, 831 (1994)"
+  },
+  {
+   "name": "Gds",
+   "element": "Gd",
+   "mass": 15.725,
+   "charge": 3.973,
+   "description": "Gd shell; T. S. Bush, J. D. Gale, C. R. A. Catlow, P. D. Battle, J. Mater. Chem. 4, 831 (1994)"
+  },
+  {
+   "name": "Eus",
+   "element": "Eu",
+   "mass": 15.1964,
+   "charge": 3.991,
+   "description": "Eu shell; T. S. Bush, J. D. Gale, C. R. A. Catlow, P. D. Battle, J. Mater. Chem. 4, 831 (1994)"
+  },
+  {
+   "name": "Tbs",
+   "element": "Tb",
+   "mass": 15.8925,
+   "charge": 3.972,
+   "description": "Tb shell; T. S. Bush, J. D. Gale, C. R. A. Catlow, P. D. Battle, J. Mater. Chem. 4, 831 (1994)"
+  },
+  {
+   "name": "Ybs",
+   "element": "Yb",
+   "mass": 17.3045,
+   "charge": 3.278,
+   "description": "Yb shell; T. S. Bush, J. D. Gale, C. R. A. Catlow, P. D. Battle, J. Mater. Chem. 4, 831 (1994)"
+  },
+  {
+   "name": "Mgc",
+   "element": "Mg",
+   "mass": 21.8745,
+   "charge": 1.58,
+   "description": "Mg core; T. S. Bush, J. D. Gale, C. R. A. Catlow, P. D. Battle, J. Mater. Chem. 4, 831 (1994)"
+  },
+  {
+   "name": "Cac",
+   "element": "Ca",
+   "mass": 36.0702,
+   "charge": 0.719,
+   "description": "Ca core; T. S. Bush, J. D. Gale, C. R. A. Catlow, P. D. Battle, J. Mater. Chem. 4, 831 (1994)"
+  },
+  {
+   "name": "Src",
+   "element": "Sr",
+   "mass": 78.858,
+   "charge": 0.169,
+   "description": "Sr core; T. S. Bush, J. D. Gale, C. R. A. Catlow, P. D. Battle, J. Mater. Chem. 4, 831 (1994)"
+  },
+  {
+   "name": "Bac",
+   "element": "Ba",
+   "mass": 123.5943,
+   "charge": 0.169,
+   "description": "Ba core; T. S. Bush, J. D. Gale, C. R. A. Catlow, P. D. Battle, J. Mater. Chem. 4, 831 (1994)"
+  },
+  {
+   "name": "Fec",
+   "element": "Fe",
+   "mass": 50.2605,
+   "charge": 1.971,
+   "description": "Fe core; T. S. Bush, J. D. Gale, C. R. A. Catlow, P. D. Battle, J. Mater. Chem. 4, 831 (1994)"
+  },
+  {
+   "name": "Tic",
+   "element": "Ti",
+   "mass": 43.0803,
+   "charge": 2.332,
+   "description": "Ti core; T. S. Bush, J. D. Gale, C. R. A. Catlow, P. D. Battle, J. Mater. Chem. 4, 831 (1994)"
+  },
+  {
+   "name": "Alc",
+   "element": "Al",
+   "mass": 24.2838,
+   "charge": 0.043,
+   "description": "Al core; T. S. Bush, J. D. Gale, C. R. A. Catlow, P. D. Battle, J. Mater. Chem. 4, 831 (1994)"
+  },
+  {
+   "name": "Lac",
+   "element": "La",
+   "mass": 125.0145,
+   "charge": 5.149,
+   "description": "La core; T. S. Bush, J. D. Gale, C. R. A. Catlow, P. D. Battle, J. Mater. Chem. 4, 831 (1994)"
+  },
+  {
+   "name": "Prc",
+   "element": "Pr",
+   "mass": 126.8172,
+   "charge": 1.678,
+   "description": "Pr core; T. S. Bush, J. D. Gale, C. R. A. Catlow, P. D. Battle, J. Mater. Chem. 4, 831 (1994)"
+  },
+  {
+   "name": "Ndc",
+   "element": "Nd",
+   "mass": 129.8178,
+   "charge": 1.678,
+   "description": "Nd core; T. S. Bush, J. D. Gale, C. R. A. Catlow, P. D. Battle, J. Mater. Chem. 4, 831 (1994)"
+  },
+  {
+   "name": "Gdc",
+   "element": "Gd",
+   "mass": 141.525,
+   "charge": -0.973,
+   "description": "Gd core; T. S. Bush, J. D. Gale, C. R. A. Catlow, P. D. Battle, J. Mater. Chem. 4, 831 (1994)"
+  },
+  {
+   "name": "Euc",
+   "element": "Eu",
+   "mass": 136.7676,
+   "charge": -0.991,
+   "description": "Eu core; T. S. Bush, J. D. Gale, C. R. A. Catlow, P. D. Battle, J. Mater. Chem. 4, 831 (1994)"
+  },
+  {
+   "name": "Tbc",
+   "element": "Tb",
+   "mass": 143.0325,
+   "charge": -0.972,
+   "description": "Tb core; T. S. Bush, J. D. Gale, C. R. A. Catlow, P. D. Battle, J. Mater. Chem. 4, 831 (1994)"
+  },
+  {
+   "name": "Ybc",
+   "element": "Yb",
+   "mass": 155.7405,
+   "charge": -0.278,
+   "description": "Yb core; T. S. Bush, J. D. Gale, C. R. A. Catlow, P. D. Battle, J. Mater. Chem. 4, 831 (1994)"
+  },
+  {
+   "name": "Oc",
+   "element": "O",
+   "mass": 14.3991,
+   "charge": 0.513,
+   "description": "O core; T. S. Bush, J. D. Gale, C. R. A. Catlow, P. D. Battle, J. Mater. Chem. 4, 831 (1994)"
+  }
+ ],
+ "pairs": [
+  {
+   "name": "Li",
+   "match": [
+    "Li"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Os",
+   "match": [
+    "Os"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Na",
+   "match": [
+    "Na"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "K",
+   "match": [
+    "K"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Mgs",
+   "match": [
+    "Mgs"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Cas",
+   "match": [
+    "Cas"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Srs",
+   "match": [
+    "Srs"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Bas",
+   "match": [
+    "Bas"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Fes",
+   "match": [
+    "Fes"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Tis",
+   "match": [
+    "Tis"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Als",
+   "match": [
+    "Als"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ga",
+   "match": [
+    "Ga"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Y",
+   "match": [
+    "Y"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Las",
+   "match": [
+    "Las"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Prs",
+   "match": [
+    "Prs"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Nds",
+   "match": [
+    "Nds"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Gds",
+   "match": [
+    "Gds"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Eus",
+   "match": [
+    "Eus"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Tbs",
+   "match": [
+    "Tbs"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ybs",
+   "match": [
+    "Ybs"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Mgc",
+   "match": [
+    "Mgc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Cac",
+   "match": [
+    "Cac"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Src",
+   "match": [
+    "Src"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Bac",
+   "match": [
+    "Bac"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Fec",
+   "match": [
+    "Fec"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Tic",
+   "match": [
+    "Tic"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Alc",
+   "match": [
+    "Alc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Lac",
+   "match": [
+    "Lac"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Prc",
+   "match": [
+    "Prc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ndc",
+   "match": [
+    "Ndc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Gdc",
+   "match": [
+    "Gdc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Euc",
+   "match": [
+    "Euc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Tbc",
+   "match": [
+    "Tbc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ybc",
+   "match": [
+    "Ybc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Oc",
+   "match": [
+    "Oc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Li-Os",
+   "match": [
+    "Li",
+    "Os"
+   ],
+   "style": "buck",
+   "params": [
+    9834.86251104,
+    0.3,
+    0.0
+   ],
+   "comment": "A 426.48 eV, rho 0.3 A, C 0 eV A^6; cut-off 10 A in the paper's set"
+  },
+  {
+   "name": "Na-Os",
+   "match": [
+    "Na",
+    "Os"
+   ],
+   "style": "buck",
+   "params": [
+    29321.579024192,
+    0.3,
+    0.0
+   ],
+   "comment": "A 1271.5 eV, rho 0.3 A, C 0 eV A^6; cut-off 10 A in the paper's set"
+  },
+  {
+   "name": "K-Os",
+   "match": [
+    "K",
+    "Os"
+   ],
+   "style": "buck",
+   "params": [
+    82731.33018836,
+    0.3,
+    0.0
+   ],
+   "comment": "A 3587.57 eV, rho 0.3 A, C 0 eV A^6; cut-off 10 A in the paper's set"
+  },
+  {
+   "name": "Mgs-Os",
+   "match": [
+    "Mgs",
+    "Os"
+   ],
+   "style": "buck",
+   "params": [
+    56665.370149164,
+    0.261,
+    0.0
+   ],
+   "comment": "A 2457.24 eV, rho 0.261 A, C 0 eV A^6; cut-off 10 A in the paper's set"
+  },
+  {
+   "name": "Cas-Os",
+   "match": [
+    "Cas",
+    "Os"
+   ],
+   "style": "buck",
+   "params": [
+    52410.652922068,
+    0.2986,
+    0.0
+   ],
+   "comment": "A 2272.74 eV, rho 0.2986 A, C 0 eV A^6; cut-off 10 A in the paper's set"
+  },
+  {
+   "name": "Srs-Os",
+   "match": [
+    "Srs",
+    "Os"
+   ],
+   "style": "buck",
+   "params": [
+    45122.620392696,
+    0.3252,
+    0.0
+   ],
+   "comment": "A 1956.7 eV, rho 0.3252 A, C 0 eV A^6; cut-off 10 A in the paper's set"
+  },
+  {
+   "name": "Bas-Os",
+   "match": [
+    "Bas",
+    "Os"
+   ],
+   "style": "buck",
+   "params": [
+    111115.313451968,
+    0.3067,
+    0.0
+   ],
+   "comment": "A 4818.42 eV, rho 0.3067 A, C 0 eV A^6; cut-off 10 A in the paper's set"
+  },
+  {
+   "name": "Fes-Os",
+   "match": [
+    "Fes",
+    "Os"
+   ],
+   "style": "buck",
+   "params": [
+    74239.62929558,
+    0.2641,
+    0.0
+   ],
+   "comment": "A 3219.34 eV, rho 0.2641 A, C 0 eV A^6; cut-off 10 A in the paper's set"
+  },
+  {
+   "name": "Tis-Os",
+   "match": [
+    "Tis",
+    "Os"
+   ],
+   "style": "buck",
+   "params": [
+    48152.891702636,
+    0.2888,
+    0.0
+   ],
+   "comment": "A 2088.11 eV, rho 0.2888 A, C 0 eV A^6; cut-off 10 A in the paper's set"
+  },
+  {
+   "name": "Als-Os",
+   "match": [
+    "Als",
+    "Os"
+   ],
+   "style": "buck",
+   "params": [
+    55564.505708740006,
+    0.2649,
+    0.0
+   ],
+   "comment": "A 2409.51 eV, rho 0.2649 A, C 0 eV A^6; cut-off 10 A in the paper's set"
+  },
+  {
+   "name": "Ga-Os",
+   "match": [
+    "Ga",
+    "Os"
+   ],
+   "style": "buck",
+   "params": [
+    53956.516757248,
+    0.2742,
+    0.0
+   ],
+   "comment": "A 2339.78 eV, rho 0.2742 A, C 0 eV A^6; cut-off 10 A in the paper's set"
+  },
+  {
+   "name": "Y-Os",
+   "match": [
+    "Y",
+    "Os"
+   ],
+   "style": "buck",
+   "params": [
+    35035.406304892,
+    0.3291,
+    0.0
+   ],
+   "comment": "A 1519.28 eV, rho 0.3291 A, C 0 eV A^6; cut-off 10 A in the paper's set"
+  },
+  {
+   "name": "Las-Os",
+   "match": [
+    "Las",
+    "Os"
+   ],
+   "style": "buck",
+   "params": [
+    125376.21000119601,
+    0.2939,
+    0.0
+   ],
+   "comment": "A 5436.83 eV, rho 0.2939 A, C 0 eV A^6; cut-off 10 A in the paper's set"
+  },
+  {
+   "name": "Prs-Os",
+   "match": [
+    "Prs",
+    "Os"
+   ],
+   "style": "buck",
+   "params": [
+    309728.941332664,
+    0.2557,
+    0.0
+   ],
+   "comment": "A 13431.1 eV, rho 0.2557 A, C 0 eV A^6; cut-off 10 A in the paper's set"
+  },
+  {
+   "name": "Nds-Os",
+   "match": [
+    "Nds",
+    "Os"
+   ],
+   "style": "buck",
+   "params": [
+    301729.214170916,
+    0.255,
+    0.0
+   ],
+   "comment": "A 13084.2 eV, rho 0.255 A, C 0 eV A^6; cut-off 10 A in the paper's set"
+  },
+  {
+   "name": "Gds-Os",
+   "match": [
+    "Gds",
+    "Os"
+   ],
+   "style": "buck",
+   "params": [
+    19978.252093772,
+    0.377,
+    0.0
+   ],
+   "comment": "A 866.339 eV, rho 0.377 A, C 0 eV A^6; cut-off 10 A in the paper's set"
+  },
+  {
+   "name": "Eus-Os",
+   "match": [
+    "Eus",
+    "Os"
+   ],
+   "style": "buck",
+   "params": [
+    19552.300711664,
+    0.3791,
+    0.0
+   ],
+   "comment": "A 847.868 eV, rho 0.3791 A, C 0 eV A^6; cut-off 10 A in the paper's set"
+  },
+  {
+   "name": "Tbs-Os",
+   "match": [
+    "Tbs",
+    "Os"
+   ],
+   "style": "buck",
+   "params": [
+    19489.322355075998,
+    0.375,
+    0.0
+   ],
+   "comment": "A 845.137 eV, rho 0.375 A, C 0 eV A^6; cut-off 10 A in the paper's set"
+  },
+  {
+   "name": "Ybs-Os",
+   "match": [
+    "Ybs",
+    "Os"
+   ],
+   "style": "buck",
+   "params": [
+    22853.671823892,
+    0.3515,
+    0.0
+   ],
+   "comment": "A 991.029 eV, rho 0.3515 A, C 0 eV A^6; cut-off 10 A in the paper's set"
+  },
+  {
+   "name": "Os-Os",
+   "match": [
+    "Os",
+    "Os"
+   ],
+   "style": "buck",
+   "params": [
+    585.96852468,
+    0.6937,
+    745.3169113600001
+   ],
+   "comment": "A 25.41 eV, rho 0.6937 A, C 32.32 eV A^6; cut-off 12 A in the paper's set"
+  }
+ ],
+ "bonds": [
+  {
+   "name": "Mgc-Mgs",
+   "match": [
+    "Mgc",
+    "Mgs"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    4035.0193863,
+    0.0,
+    0.0
+   ],
+   "comment": "core-shell spring k2 349.95 eV/A^2"
+  },
+  {
+   "name": "Cac-Cas",
+   "match": [
+    "Cac",
+    "Cas"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    392.60582969999996,
+    0.0,
+    0.0
+   ],
+   "comment": "core-shell spring k2 34.05 eV/A^2"
+  },
+  {
+   "name": "Src-Srs",
+   "match": [
+    "Src",
+    "Srs"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    248.24679922,
+    0.0,
+    0.0
+   ],
+   "comment": "core-shell spring k2 21.53 eV/A^2"
+  },
+  {
+   "name": "Bac-Bas",
+   "match": [
+    "Bac",
+    "Bas"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    392.60582969999996,
+    0.0,
+    0.0
+   ],
+   "comment": "core-shell spring k2 34.05 eV/A^2"
+  },
+  {
+   "name": "Fec-Fes",
+   "match": [
+    "Fec",
+    "Fes"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    2070.6066049200003,
+    0.0,
+    0.0
+   ],
+   "comment": "core-shell spring k2 179.58 eV/A^2"
+  },
+  {
+   "name": "Tic-Tis",
+   "match": [
+    "Tic",
+    "Tis"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    2924.0774864,
+    0.0,
+    0.0
+   ],
+   "comment": "core-shell spring k2 253.6 eV/A^2"
+  },
+  {
+   "name": "Alc-Als",
+   "match": [
+    "Alc",
+    "Als"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    4658.00009052,
+    0.0,
+    0.0
+   ],
+   "comment": "core-shell spring k2 403.98 eV/A^2"
+  },
+  {
+   "name": "Lac-Las",
+   "match": [
+    "Lac",
+    "Las"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    2005.1146486000002,
+    0.0,
+    0.0
+   ],
+   "comment": "core-shell spring k2 173.9 eV/A^2"
+  },
+  {
+   "name": "Prc-Prs",
+   "match": [
+    "Prc",
+    "Prs"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    3486.29364664,
+    0.0,
+    0.0
+   ],
+   "comment": "core-shell spring k2 302.36 eV/A^2"
+  },
+  {
+   "name": "Ndc-Nds",
+   "match": [
+    "Ndc",
+    "Nds"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    3486.1783439000005,
+    0.0,
+    0.0
+   ],
+   "comment": "core-shell spring k2 302.35 eV/A^2"
+  },
+  {
+   "name": "Gdc-Gds",
+   "match": [
+    "Gdc",
+    "Gds"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    3458.62098904,
+    0.0,
+    0.0
+   ],
+   "comment": "core-shell spring k2 299.96 eV/A^2"
+  },
+  {
+   "name": "Euc-Eus",
+   "match": [
+    "Euc",
+    "Eus"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    3515.8111480800003,
+    0.0,
+    0.0
+   ],
+   "comment": "core-shell spring k2 304.92 eV/A^2"
+  },
+  {
+   "name": "Tbc-Tbs",
+   "match": [
+    "Tbc",
+    "Tbs"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    3458.85159452,
+    0.0,
+    0.0
+   ],
+   "comment": "core-shell spring k2 299.98 eV/A^2"
+  },
+  {
+   "name": "Ybc-Ybs",
+   "match": [
+    "Ybc",
+    "Ybs"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    3561.8169413400005,
+    0.0,
+    0.0
+   ],
+   "comment": "core-shell spring k2 308.91 eV/A^2"
+  },
+  {
+   "name": "Oc-Os",
+   "match": [
+    "Oc",
+    "Os"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    236.71652522000002,
+    0.0,
+    0.0
+   ],
+   "comment": "core-shell spring k2 20.53 eV/A^2"
+  }
+ ],
+ "angles": [],
+ "dihedrals": [],
+ "impropers": [],
+ "notes": [
+  "built by CAPS (bench/ff/make_inorganic_gulp.py) from T. S. Bush, J. D. Gale, C. R. A. Catlow, P. D. Battle, J. Mater. Chem. 4, 831 (1994), as the UCL potentials database gives the set (bush.lib)",
+  "shells carry 10 % of the ion's mass (adiabatic core-shell); the source's shells are massless"
+ ],
+ "version": "1994",
+ "typing": "../typing/bush1994-oxides.typing.json"
+}

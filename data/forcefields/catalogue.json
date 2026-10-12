@@ -1911,6 +1911,36 @@
    }
   },
   {
+   "id": "bush1994-oxides",
+   "name": "Oxides (Bush et al. 1994)",
+   "version": "Bush, Gale, Catlow & Battle 1994 shell-model set",
+   "references": [
+    "T. S. Bush, J. D. Gale, C. R. A. Catlow, P. D. Battle, J. Mater. Chem. 4, 831 (1994)"
+   ],
+   "origin": "built from source",
+   "source": "the paper's set as the UCL Database of Published Interatomic Potential Parameters gives it (bush.lib, mcc.chem.ucl.ac.uk/Potentials); transcribed by bench/ff/make_inorganic_gulp.py",
+   "license": "published parameters of the paper (no file of the database is distributed)",
+   "status": "validated",
+   "file": "bush1994-oxides.json",
+   "counts": {
+    "atom_types": 35,
+    "pairs": 55,
+    "bonds": 15,
+    "angles": 0,
+    "dihedrals": 0,
+    "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/bush1994-oxides.typing.json",
+    "evidence": "one shell-model set for 20 cations with oxygen, typed by element (a shell on every core); every Buckingham term equals an independent transcription of the same paper; LAMMPS reproduces CAPS's energies on MgO, SrTiO3 and corundum (CORESHELL styles)"
+   },
+   "list": {
+    "label": "Oxides (Bush 1994)",
+    "key": "bush1994",
+    "order": 30
+   }
+  },
+  {
    "id": "charmm36-prot-toppar",
    "name": "CHARMM36 proteins",
    "version": "toppar_c36_jul17 (par_all36_prot.prm, top_all36_prot.rtf, its streams)",

@@ -1,0 +1,252 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "Binary oxides (Bush, Gale, Catlow & Battle 1994)",
+ "unknown_types": "untyped",
+ "bonds": "defined",
+ "description": "CAPS rules for Binary oxides (Bush, Gale, Catlow & Battle 1994): each species typed by the composition of the compound it belongs to (bench/ff/make_inorganic_gulp.py)",
+ "rules": [
+  {
+   "type": "Alc",
+   "smarts": "[#13]",
+   "priority": 0,
+   "description": "Al (Al)"
+  },
+  {
+   "type": "Bac",
+   "smarts": "[#56]",
+   "priority": 0,
+   "description": "Ba (Ba)"
+  },
+  {
+   "type": "Cac",
+   "smarts": "[#20]",
+   "priority": 0,
+   "description": "Ca (Ca)"
+  },
+  {
+   "type": "Euc",
+   "smarts": "[#63]",
+   "priority": 0,
+   "description": "Eu (Eu)"
+  },
+  {
+   "type": "Fec",
+   "smarts": "[#26]",
+   "priority": 0,
+   "description": "Fe (Fe)"
+  },
+  {
+   "type": "Ga",
+   "smarts": "[#31]",
+   "priority": 0,
+   "description": "Ga (Ga)"
+  },
+  {
+   "type": "Gdc",
+   "smarts": "[#64]",
+   "priority": 0,
+   "description": "Gd (Gd)"
+  },
+  {
+   "type": "K",
+   "smarts": "[#19]",
+   "priority": 0,
+   "description": "K (K)"
+  },
+  {
+   "type": "Lac",
+   "smarts": "[#57]",
+   "priority": 0,
+   "description": "La (La)"
+  },
+  {
+   "type": "Li",
+   "smarts": "[#3]",
+   "priority": 0,
+   "description": "Li (Li)"
+  },
+  {
+   "type": "Mgc",
+   "smarts": "[#12]",
+   "priority": 0,
+   "description": "Mg (Mg)"
+  },
+  {
+   "type": "Na",
+   "smarts": "[#11]",
+   "priority": 0,
+   "description": "Na (Na)"
+  },
+  {
+   "type": "Ndc",
+   "smarts": "[#60]",
+   "priority": 0,
+   "description": "Nd (Nd)"
+  },
+  {
+   "type": "Oc",
+   "smarts": "[#8]",
+   "priority": 0,
+   "description": "O (O)"
+  },
+  {
+   "type": "Prc",
+   "smarts": "[#59]",
+   "priority": 0,
+   "description": "Pr (Pr)"
+  },
+  {
+   "type": "Src",
+   "smarts": "[#38]",
+   "priority": 0,
+   "description": "Sr (Sr)"
+  },
+  {
+   "type": "Tbc",
+   "smarts": "[#65]",
+   "priority": 0,
+   "description": "Tb (Tb)"
+  },
+  {
+   "type": "Tic",
+   "smarts": "[#22]",
+   "priority": 0,
+   "description": "Ti (Ti)"
+  },
+  {
+   "type": "Y",
+   "smarts": "[#39]",
+   "priority": 0,
+   "description": "Y (Y)"
+  },
+  {
+   "type": "Ybc",
+   "smarts": "[#70]",
+   "priority": 0,
+   "description": "Yb (Yb)"
+  },
+  {
+   "type": "Mgs",
+   "smarts": "[#12]",
+   "priority": 99,
+   "atom_name": "Mgs",
+   "description": "shell of Mgc"
+  },
+  {
+   "type": "Cas",
+   "smarts": "[#20]",
+   "priority": 99,
+   "atom_name": "Cas",
+   "description": "shell of Cac"
+  },
+  {
+   "type": "Srs",
+   "smarts": "[#38]",
+   "priority": 99,
+   "atom_name": "Srs",
+   "description": "shell of Src"
+  },
+  {
+   "type": "Bas",
+   "smarts": "[#56]",
+   "priority": 99,
+   "atom_name": "Bas",
+   "description": "shell of Bac"
+  },
+  {
+   "type": "Fes",
+   "smarts": "[#26]",
+   "priority": 99,
+   "atom_name": "Fes",
+   "description": "shell of Fec"
+  },
+  {
+   "type": "Tis",
+   "smarts": "[#22]",
+   "priority": 99,
+   "atom_name": "Tis",
+   "description": "shell of Tic"
+  },
+  {
+   "type": "Als",
+   "smarts": "[#13]",
+   "priority": 99,
+   "atom_name": "Als",
+   "description": "shell of Alc"
+  },
+  {
+   "type": "Las",
+   "smarts": "[#57]",
+   "priority": 99,
+   "atom_name": "Las",
+   "description": "shell of Lac"
+  },
+  {
+   "type": "Prs",
+   "smarts": "[#59]",
+   "priority": 99,
+   "atom_name": "Prs",
+   "description": "shell of Prc"
+  },
+  {
+   "type": "Nds",
+   "smarts": "[#60]",
+   "priority": 99,
+   "atom_name": "Nds",
+   "description": "shell of Ndc"
+  },
+  {
+   "type": "Gds",
+   "smarts": "[#64]",
+   "priority": 99,
+   "atom_name": "Gds",
+   "description": "shell of Gdc"
+  },
+  {
+   "type": "Eus",
+   "smarts": "[#63]",
+   "priority": 99,
+   "atom_name": "Eus",
+   "description": "shell of Euc"
+  },
+  {
+   "type": "Tbs",
+   "smarts": "[#65]",
+   "priority": 99,
+   "atom_name": "Tbs",
+   "description": "shell of Tbc"
+  },
+  {
+   "type": "Ybs",
+   "smarts": "[#70]",
+   "priority": 99,
+   "atom_name": "Ybs",
+   "description": "shell of Ybc"
+  },
+  {
+   "type": "Os",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "Os",
+   "description": "shell of Oc"
+  }
+ ],
+ "shells": {
+  "Mgc": "Mgs",
+  "Cac": "Cas",
+  "Src": "Srs",
+  "Bac": "Bas",
+  "Fec": "Fes",
+  "Tic": "Tis",
+  "Alc": "Als",
+  "Lac": "Las",
+  "Prc": "Prs",
+  "Ndc": "Nds",
+  "Gdc": "Gds",
+  "Euc": "Eus",
+  "Tbc": "Tbs",
+  "Ybc": "Ybs",
+  "Oc": "Os"
+ }
+}

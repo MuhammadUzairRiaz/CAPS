@@ -61,6 +61,12 @@ CASES = [
     ("SrTiO3 perovskite, core-shell (CORESHELL styles)", ("crystal", ["--group", "P m -3 m", "--cell", "3.905,3.905,3.905", "--sites",
      "Sr1 Sr 0 0 0; Ti1 Ti 0.5 0.5 0.5; O1 O 0.5 0.5 0", "--supercell", "3,3,3"]), "inorganic-ternary-oxides", "types", "rules", ["--no-tail"]),
     ("Binary oxides (Buckingham, periodic)", ("ionic-first", "INORGANIC_binary_oxides", ""), "inorganic-binary-oxides", "qeq", "keys"),
+    # Bush, Gale, Catlow & Battle 1994 (one shell-model set for the oxides): MgO, SrTiO3, corundum
+    ("Bush 1994: MgO rock salt, core-shell", ("crystal", ["--group", "F m -3 m", "--cell", "4.212,4.212,4.212", "--sites", "Mg1 Mg 0 0 0; O1 O 0.5 0.5 0.5",
+     "--supercell", "3,3,3"]), "bush1994-oxides", "types", "rules", ["--no-tail"]),
+    ("Bush 1994: SrTiO3 perovskite, core-shell", ("crystal", ["--group", "P m -3 m", "--cell", "3.905,3.905,3.905", "--sites",
+     "Sr1 Sr 0 0 0; Ti1 Ti 0.5 0.5 0.5; O1 O 0.5 0.5 0", "--supercell", "3,3,3"]), "bush1994-oxides", "types", "rules", ["--no-tail"]),
+    ("Bush 1994: corundum (alpha-Al2O3), core-shell", ("file", os.path.join(ROOT, "data", "crystals", "corundum.cif")), "bush1994-oxides", "types", "rules", ["--no-tail"]),
     ("Polystyrene melt, GAFF2 (periodic, 1300 atoms)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "gaff2-2.2.20-ambertools", "gasteiger", "rules"),
     ("Polystyrene melt, PCFF (periodic, class II + class I)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "pcff", "types", "rules"),
     # CVFF, PCFF and COMPASS from their .frc files (msi2lmp's assignment; check_msi2lmp.py compares with msi2lmp itself)
@@ -543,6 +549,8 @@ def erfc_offset(d, pairs, g_ewald):
         if r < rc and q[i] and q[j]:
             t = 1 / (1 + 0.3275911 * a * r)
             erfc_as = t * (0.254829592 + t * (-0.284496736 + t * (1.421413741 + t * (-1.453152027 + t * 1.061405429)))) * math.exp(-a * a * r * r)
+            if r < 1e-6:   # a shell on its core (CORESHELL's /cs styles take r = 1e-10 there: no erfc difference to speak of)
+                continue
             off += q[i] * q[j] * (erfc_as - math.erfc(a * r)) / r
     return qqrd2e * off
 
