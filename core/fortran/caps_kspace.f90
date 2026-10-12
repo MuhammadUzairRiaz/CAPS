@@ -13,7 +13,7 @@ module caps_fft
   use, intrinsic :: iso_c_binding
   implicit none
   private
-  public :: fft1d, fft3d, good_size, smallest_factor, fft_lines
+  public :: fft1d, fft3d, good_size, smallest_factor, fft_lines, r2c_lines, c2r_lines
 
   real(c_double), parameter :: pi = 3.14159265358979323846_c_double
 
@@ -386,6 +386,80 @@ contains
     end do
   end subroutine fft_lines
 
+  ! Real to half-complex along the first axis: the real lines r(:, j, k) (line index j + k2·k) whose pair index
+  ! l = ⌊line/2⌋ lies in [first, last) are transformed two at a time, z = a + i b through one complex FFT (sign +1),
+  ! A(m) = (Z(m) + Z(−m)*)/2, B(m) = (Z(m) − Z(−m)*)/(2i), and their halves m = 0 … k1/2 written to h(:, j, k).
+  subroutine r2c_lines(r, h, k1, k2, k3, first, last)
+    integer, intent(in) :: k1, k2, k3, first, last
+    real(c_double), intent(in) :: r(0:k1 - 1, 0:k2 * k3 - 1)
+    complex(c_double_complex), intent(inout) :: h(0:k1 / 2, 0:k2 * k3 - 1)
+    complex(c_double_complex), allocatable :: tw(:), z(:), zz(:)
+    complex(c_double_complex) :: zm, zc
+    integer :: pf(32), mm(32), nf, l, la, lb, m, nl
+    nl = k2 * k3
+    allocate (tw(0:k1 - 1), z(0:k1 - 1), zz(0:k1 - 1))
+    call twiddles(k1, 1, tw)
+    call factorize(k1, pf, mm, nf)
+    do l = first, last - 1
+      la = 2 * l
+      lb = min(2 * l + 1, nl - 1)
+      if (lb == la) then
+        z = cmplx(r(:, la), 0.0_c_double, c_double_complex)
+      else
+        z = cmplx(r(:, la), r(:, lb), c_double_complex)
+      end if
+      if (k1 > 1) then
+        call kf_work(zz, 0, z, 0, 1, pf(1:nf), mm(1:nf), 1, tw, k1, 1)
+      else
+        zz = z
+      end if
+      do m = 0, k1 / 2
+        zm = zz(m)
+        zc = conjg(zz(modulo(k1 - m, k1)))
+        h(m, la) = 0.5_c_double * (zm + zc)
+        if (lb /= la) h(m, lb) = 0.5_c_double * cmplx(aimag(zm - zc), -real(zm - zc), c_double_complex)
+      end do
+    end do
+  end subroutine r2c_lines
+
+  ! The inverse (sign −1): the half spectra of a pair of real lines rebuilt whole (A(−m) = A(m)*), Z = A + i B through one
+  ! complex FFT, the real lines a = Re z, b = Im z
+  subroutine c2r_lines(h, r, k1, k2, k3, first, last)
+    integer, intent(in) :: k1, k2, k3, first, last
+    complex(c_double_complex), intent(in) :: h(0:k1 / 2, 0:k2 * k3 - 1)
+    real(c_double), intent(inout) :: r(0:k1 - 1, 0:k2 * k3 - 1)
+    complex(c_double_complex), allocatable :: tw(:), z(:), zz(:)
+    complex(c_double_complex) :: a, b
+    integer :: pf(32), mm(32), nf, l, la, lb, m, mh, nl
+    nl = k2 * k3
+    allocate (tw(0:k1 - 1), z(0:k1 - 1), zz(0:k1 - 1))
+    call twiddles(k1, -1, tw)
+    call factorize(k1, pf, mm, nf)
+    do l = first, last - 1
+      la = 2 * l
+      lb = min(2 * l + 1, nl - 1)
+      do m = 0, k1 - 1
+        mh = m
+        if (m > k1 / 2) mh = k1 - m
+        a = h(mh, la)
+        b = (0.0_c_double, 0.0_c_double)
+        if (lb /= la) b = h(mh, lb)
+        if (m > k1 / 2) then
+          a = conjg(a)
+          b = conjg(b)
+        end if
+        z(m) = a + cmplx(-aimag(b), real(b), c_double_complex)
+      end do
+      if (k1 > 1) then
+        call kf_work(zz, 0, z, 0, 1, pf(1:nf), mm(1:nf), 1, tw, k1, -1)
+      else
+        zz = z
+      end if
+      r(:, la) = real(zz)
+      if (lb /= la) r(:, lb) = aimag(zz)
+    end do
+  end subroutine c2r_lines
+
 end module caps_fft
 
 
@@ -435,6 +509,59 @@ contains
     hi(3, 3) = (h(1, 1) * h(2, 2) - h(1, 2) * h(2, 1)) / vol
     vol = abs(vol)
   end subroutine cell_inverse
+
+  ! The influence function at grid index (a, b, c), G(m) = kcoul exp(−π²m²/β²) / (π V m² B(m)), and its virial weights
+  ! w = G (δ − 2 (1 + π²m²/β²) m ⊗ m / m²) (xx yy zz xy xz yz), m = Σ m_d h⁻¹ row d with m_d the index, less K_d past
+  ! the middle. An even grid's Nyquist index K/2 stands for −K/2 and +K/2 alike: there G and w are the means over both
+  ! signs, so G(−m) = G(m) holds everywhere (in a skewed cell the two differ) and the transform of the real charge grid
+  ! can be kept for half the frequencies.
+  pure subroutine green(a, b, c, k, hi, vol, fac, kcoul, b1, b2, b3, g, w)
+    integer, intent(in) :: a, b, c, k(3)
+    real(c_double), intent(in) :: hi(3, 3), vol, fac, kcoul, b1(0:), b2(0:), b3(0:)
+    real(c_double), intent(out) :: g, w(6)
+    integer :: idx(3), m(3), d, s, ns, sel
+    logical :: nyq(3)
+    real(c_double) :: mv(3), m2len, e, ss, bm
+    idx = [a, b, c]
+    do d = 1, 3
+      m(d) = idx(d)
+      if (m(d) >= (k(d) + 1) / 2) m(d) = m(d) - k(d)
+      nyq(d) = mod(k(d), 2) == 0 .and. 2 * idx(d) == k(d)
+    end do
+    bm = b1(a) * b2(b) * b3(c)
+    ns = 2**count(nyq)
+    g = 0
+    w = 0
+    do s = 0, ns - 1
+      sel = 0
+      mv = 0
+      do d = 1, 3
+        if (nyq(d)) then
+          ! bit sel of s: this Nyquist component +K/2 (else −K/2)
+          if (btest(s, sel)) then
+            mv = mv - m(d) * hi(d, :)
+          else
+            mv = mv + m(d) * hi(d, :)
+          end if
+          sel = sel + 1
+        else
+          mv = mv + m(d) * hi(d, :)
+        end if
+      end do
+      m2len = dot_product(mv, mv)
+      e = kcoul * exp(-fac * m2len) / (pi * vol * m2len * bm)
+      ss = 2 * (1 + fac * m2len) / m2len
+      g = g + e
+      w(1) = w(1) + e * (1 - ss * mv(1) * mv(1))
+      w(2) = w(2) + e * (1 - ss * mv(2) * mv(2))
+      w(3) = w(3) + e * (1 - ss * mv(3) * mv(3))
+      w(4) = w(4) - e * ss * mv(1) * mv(2)
+      w(5) = w(5) - e * ss * mv(1) * mv(3)
+      w(6) = w(6) - e * ss * mv(2) * mv(3)
+    end do
+    g = g / ns
+    w = w / ns
+  end subroutine green
 
   ! Cardinal B-spline weights M_p(w + k), k = 0 … p−1, for the fractional offset w in [0, 1), and their derivatives
   ! (Essmann et al. 1995, eqs 4.1 and 4.4). theta(j) = M_p(w + p − j), the weight of grid point floor(u) − p + j.
@@ -505,8 +632,8 @@ contains
     real(c_double), allocatable :: th(:, :, :), dth(:, :, :), b1(:), b2(:), b3(:), phi(:, :, :)
     integer, allocatable :: idx(:, :, :)
     complex(c_double_complex), allocatable :: g(:, :, :)
-    integer :: i, d, a, b, c, k1, k2, k3, m1, m2, m3, ia, ib, ic
-    real(c_double) :: mv(3), m2len, fac, e_m, eterm, qa, grad(3), gs(3), st, ss
+    integer :: i, d, a, b, c, k1, k2, k3, ia, ib, ic
+    real(c_double) :: fac, e_m, eterm, wv(6), qa, grad(3), gs(3), st
     k1 = grid(1); k2 = grid(2); k3 = grid(3)
     call cell_inverse(cell, h, hi, vol)
     allocate (th(p, 3, n), dth(p, 3, n), idx(p, 3, n))
@@ -548,30 +675,16 @@ contains
     vir = 0
     fac = pi * pi / (beta * beta)
     do c = 0, k3 - 1
-      m3 = c
-      if (m3 >= (k3 + 1) / 2) m3 = m3 - k3
       do b = 0, k2 - 1
-        m2 = b
-        if (m2 >= (k2 + 1) / 2) m2 = m2 - k2
         do a = 0, k1 - 1
-          m1 = a
-          if (m1 >= (k1 + 1) / 2) m1 = m1 - k1
           if (a == 0 .and. b == 0 .and. c == 0) then
             g(a, b, c) = 0
             cycle
           end if
-          mv = m1 * hi(1, :) + m2 * hi(2, :) + m3 * hi(3, :)
-          m2len = dot_product(mv, mv)
-          eterm = kcoul * exp(-fac * m2len) / (pi * vol * m2len * b1(a) * b2(b) * b3(c))
-          e_m = 0.5_c_double * eterm * (real(g(a, b, c))**2 + aimag(g(a, b, c))**2)
-          energy = energy + e_m
-          ss = 2 * (1 + fac * m2len) / m2len
-          vir(1) = vir(1) + e_m * (1 - ss * mv(1) * mv(1))
-          vir(2) = vir(2) + e_m * (1 - ss * mv(2) * mv(2))
-          vir(3) = vir(3) + e_m * (1 - ss * mv(3) * mv(3))
-          vir(4) = vir(4) - e_m * ss * mv(1) * mv(2)
-          vir(5) = vir(5) - e_m * ss * mv(1) * mv(3)
-          vir(6) = vir(6) - e_m * ss * mv(2) * mv(3)
+          call green(a, b, c, grid, hi, vol, fac, kcoul, b1, b2, b3, eterm, wv)
+          e_m = 0.5_c_double * (real(g(a, b, c))**2 + aimag(g(a, b, c))**2)
+          energy = energy + e_m * eterm
+          vir = vir + e_m * wv
           g(a, b, c) = g(a, b, c) * eterm
         end do
       end do
@@ -688,12 +801,12 @@ contains
     integer(c_int), value :: n, p, first, last
     real(c_double), intent(in) :: q(n)
     integer(c_int), intent(in) :: grid(3)
-    complex(c_double_complex), intent(inout) :: g(0:grid(1) - 1, 0:grid(2) - 1, 0:grid(3) - 1)
+    real(c_double), intent(inout) :: g(0:grid(1) - 1, 0:grid(2) - 1, 0:grid(3) - 1)
     real(c_double), intent(in) :: th(p, 3, n)
     integer(c_int), intent(in) :: idx(p, 3, n)
     real(c_double) :: st
     integer :: i, a, b, c, ic
-    g(:, :, first:last - 1) = (0.0_c_double, 0.0_c_double)
+    g(:, :, first:last - 1) = 0.0_c_double
     do i = 1, n
       do c = 1, p
         ic = idx(c, 3, i)
@@ -708,64 +821,118 @@ contains
     end do
   end subroutine caps_f_pme_spread_planes
 
+  subroutine caps_f_r2c_lines(r, h, k1, k2, k3, first, last) bind(C, name="caps_f_r2c_lines")
+    integer(c_int), value :: k1, k2, k3, first, last
+    real(c_double), intent(in) :: r(0:k1 - 1, 0:k2 * k3 - 1)
+    complex(c_double_complex), intent(inout) :: h(0:k1 / 2, 0:k2 * k3 - 1)
+    call r2c_lines(r, h, k1, k2, k3, first, last)
+  end subroutine caps_f_r2c_lines
+
+  subroutine caps_f_c2r_lines(h, r, k1, k2, k3, first, last) bind(C, name="caps_f_c2r_lines")
+    integer(c_int), value :: k1, k2, k3, first, last
+    complex(c_double_complex), intent(in) :: h(0:k1 / 2, 0:k2 * k3 - 1)
+    real(c_double), intent(inout) :: r(0:k1 - 1, 0:k2 * k3 - 1)
+    call c2r_lines(h, r, k1, k2, k3, first, last)
+  end subroutine caps_f_c2r_lines
+
   subroutine caps_f_fft_lines(g, k1, k2, k3, axis, sign, first, last) bind(C, name="caps_f_fft_lines")
     integer(c_int), value :: k1, k2, k3, axis, sign, first, last
     complex(c_double_complex), intent(inout) :: g(0:k1 - 1, 0:k2 - 1, 0:k3 - 1)
     call fft_lines(g, k1, k2, k3, axis, sign, first, last)
   end subroutine caps_f_fft_lines
 
-  ! planes c in [first, last) along the third axis: G(m) = kcoul B(m) exp(−π²m²/β²)/(π V m²) applied in place;
-  ! adds this range's energy and virial
+  ! planes c in [first, last) along the third axis of the half spectrum (m1 = 0 … k1/2, the transform of a real grid):
+  ! G(m) = kcoul B(m) exp(−π²m²/β²)/(π V m²) applied in place; adds this range's energy and virial, every m1 other than 0
+  ! and k1/2 counted twice (it stands for −m as well: |F(−m)| = |F(m)|, and the virial is even in m)
   subroutine caps_f_pme_influence(g, grid, cell, b1, b2, b3, beta, kcoul, first, last, energy, vir) &
       bind(C, name="caps_f_pme_influence")
     integer(c_int), intent(in) :: grid(3)
-    complex(c_double_complex), intent(inout) :: g(0:grid(1) - 1, 0:grid(2) - 1, 0:grid(3) - 1)
+    complex(c_double_complex), intent(inout) :: g(0:grid(1) / 2, 0:grid(2) - 1, 0:grid(3) - 1)
     real(c_double), intent(in) :: cell(3, 3), b1(0:grid(1) - 1), b2(0:grid(2) - 1), b3(0:grid(3) - 1)
     real(c_double), value :: beta, kcoul
     integer(c_int), value :: first, last
     real(c_double), intent(inout) :: energy, vir(6)
-    real(c_double) :: h(3, 3), hi(3, 3), vol, mv(3), m2len, fac, eterm, e_m, ss
-    integer :: a, b, c, m1, m2, m3, k1, k2, k3
-    k1 = grid(1); k2 = grid(2); k3 = grid(3)
+    real(c_double) :: h(3, 3), hi(3, 3), vol, fac, eterm, e_m, wv(6)
+    integer :: a, b, c, k1
+    k1 = grid(1)
     call cell_inverse(cell, h, hi, vol)
     fac = pi * pi / (beta * beta)
     do c = first, last - 1
-      m3 = c
-      if (m3 >= (k3 + 1) / 2) m3 = m3 - k3
-      do b = 0, k2 - 1
-        m2 = b
-        if (m2 >= (k2 + 1) / 2) m2 = m2 - k2
-        do a = 0, k1 - 1
-          m1 = a
-          if (m1 >= (k1 + 1) / 2) m1 = m1 - k1
+      do b = 0, grid(2) - 1
+        do a = 0, k1 / 2
           if (a == 0 .and. b == 0 .and. c == 0) then
             g(a, b, c) = 0
             cycle
           end if
-          mv = m1 * hi(1, :) + m2 * hi(2, :) + m3 * hi(3, :)
-          m2len = dot_product(mv, mv)
-          eterm = kcoul * exp(-fac * m2len) / (pi * vol * m2len * b1(a) * b2(b) * b3(c))
-          e_m = 0.5_c_double * eterm * (real(g(a, b, c))**2 + aimag(g(a, b, c))**2)
-          energy = energy + e_m
-          ss = 2 * (1 + fac * m2len) / m2len
-          vir(1) = vir(1) + e_m * (1 - ss * mv(1) * mv(1))
-          vir(2) = vir(2) + e_m * (1 - ss * mv(2) * mv(2))
-          vir(3) = vir(3) + e_m * (1 - ss * mv(3) * mv(3))
-          vir(4) = vir(4) - e_m * ss * mv(1) * mv(2)
-          vir(5) = vir(5) - e_m * ss * mv(1) * mv(3)
-          vir(6) = vir(6) - e_m * ss * mv(2) * mv(3)
+          call green(a, b, c, grid, hi, vol, fac, kcoul, b1, b2, b3, eterm, wv)
+          e_m = 0.5_c_double * (real(g(a, b, c))**2 + aimag(g(a, b, c))**2)
+          if (a > 0 .and. 2 * a /= k1) e_m = 2 * e_m
+          energy = energy + e_m * eterm
+          vir = vir + e_m * wv
           g(a, b, c) = g(a, b, c) * eterm
         end do
       end do
     end do
   end subroutine caps_f_pme_influence
 
-  ! atoms [first, last) (0-based): F_i = −q_i Σ ∇M_i(k) φ(k), φ = Re g after the inverse transform; adds to f
+  ! The influence function and its virial weights (green) on planes c in [first, last) of the half spectrum, for
+  ! caps_f_pme_apply to reuse while the cell stays the same: gt(a, b, c), wt(6, a, b, c)
+  subroutine caps_f_pme_green(grid, cell, b1, b2, b3, beta, kcoul, first, last, gt, wt) &
+      bind(C, name="caps_f_pme_green")
+    integer(c_int), intent(in) :: grid(3)
+    real(c_double), intent(in) :: cell(3, 3), b1(0:grid(1) - 1), b2(0:grid(2) - 1), b3(0:grid(3) - 1)
+    real(c_double), value :: beta, kcoul
+    integer(c_int), value :: first, last
+    real(c_double), intent(inout) :: gt(0:grid(1) / 2, 0:grid(2) - 1, 0:grid(3) - 1)
+    real(c_double), intent(inout) :: wt(6, 0:grid(1) / 2, 0:grid(2) - 1, 0:grid(3) - 1)
+    real(c_double) :: h(3, 3), hi(3, 3), vol, fac
+    integer :: a, b, c
+    call cell_inverse(cell, h, hi, vol)
+    fac = pi * pi / (beta * beta)
+    do c = first, last - 1
+      do b = 0, grid(2) - 1
+        do a = 0, grid(1) / 2
+          if (a == 0 .and. b == 0 .and. c == 0) then
+            gt(a, b, c) = 0
+            wt(:, a, b, c) = 0
+            cycle
+          end if
+          call green(a, b, c, grid, hi, vol, fac, kcoul, b1, b2, b3, gt(a, b, c), wt(:, a, b, c))
+        end do
+      end do
+    end do
+  end subroutine caps_f_pme_green
+
+  ! caps_f_pme_influence from the tables of caps_f_pme_green
+  subroutine caps_f_pme_apply(g, grid, gt, wt, first, last, energy, vir) bind(C, name="caps_f_pme_apply")
+    integer(c_int), intent(in) :: grid(3)
+    complex(c_double_complex), intent(inout) :: g(0:grid(1) / 2, 0:grid(2) - 1, 0:grid(3) - 1)
+    real(c_double), intent(in) :: gt(0:grid(1) / 2, 0:grid(2) - 1, 0:grid(3) - 1)
+    real(c_double), intent(in) :: wt(6, 0:grid(1) / 2, 0:grid(2) - 1, 0:grid(3) - 1)
+    integer(c_int), value :: first, last
+    real(c_double), intent(inout) :: energy, vir(6)
+    real(c_double) :: e_m
+    integer :: a, b, c, k1
+    k1 = grid(1)
+    do c = first, last - 1
+      do b = 0, grid(2) - 1
+        do a = 0, k1 / 2
+          e_m = 0.5_c_double * (real(g(a, b, c))**2 + aimag(g(a, b, c))**2)
+          if (a > 0 .and. 2 * a /= k1) e_m = 2 * e_m
+          energy = energy + e_m * gt(a, b, c)
+          vir = vir + e_m * wt(:, a, b, c)
+          g(a, b, c) = g(a, b, c) * gt(a, b, c)
+        end do
+      end do
+    end do
+  end subroutine caps_f_pme_apply
+
+  ! atoms [first, last) (0-based): F_i = −q_i Σ ∇M_i(k) φ(k), φ the real grid after the inverse transform; adds to f
   subroutine caps_f_pme_gather(n, q, cell, grid, p, g, th, dth, idx, first, last, f) bind(C, name="caps_f_pme_gather")
     integer(c_int), value :: n, p, first, last
     real(c_double), intent(in) :: q(n), cell(3, 3)
     integer(c_int), intent(in) :: grid(3)
-    complex(c_double_complex), intent(in) :: g(0:grid(1) - 1, 0:grid(2) - 1, 0:grid(3) - 1)
+    real(c_double), intent(in) :: g(0:grid(1) - 1, 0:grid(2) - 1, 0:grid(3) - 1)
     real(c_double), intent(in) :: th(p, 3, n), dth(p, 3, n)
     integer(c_int), intent(in) :: idx(p, 3, n)
     real(c_double), intent(inout) :: f(3, n)
@@ -781,7 +948,7 @@ contains
           tb = th(b, 2, i)
           db = dth(b, 2, i)
           do a = 1, p
-            st = real(g(idx(a, 1, i), idx(b, 2, i), idx(c, 3, i)))
+            st = g(idx(a, 1, i), idx(b, 2, i), idx(c, 3, i))
             gs(1) = gs(1) + dth(a, 1, i) * tb * tc * st
             gs(2) = gs(2) + th(a, 1, i) * db * tc * st
             gs(3) = gs(3) + th(a, 1, i) * tb * dc * st
