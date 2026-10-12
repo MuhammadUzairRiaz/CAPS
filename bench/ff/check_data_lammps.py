@@ -97,6 +97,14 @@ CASES = [
      "ramsahye2005-nay", "types", "rules"),
     ("Forester 1997 silicalite set: alpha-quartz, O shells", ("file", os.path.join(ROOT, "data", "crystals", "alpha-quartz.cif")), "forester1997-silicalite", "types", "rules", ["--no-tail"]),
     ("Forester 1997 silicalite set: benzene with SiO4 (benzene-O shell pairs)", ("smiles", "c1ccccc1.[O-][Si]([O-])([O-])[O-]"), "forester1997-silicalite", "types", "rules"),
+    # zeolite sorbates (bench/ff/make_zeolite_sorbates.py)
+    ("O'Malley 2013 silicalite set: alpha-quartz, formal charges, O-Si-O bends by distance", ("file", os.path.join(ROOT, "data", "crystals", "alpha-quartz.cif")),
+     "omalley2013-alkanes", "types", "rules", ["--no-tail"]),
+    ("O'Malley 2013 all-atom alkanes: octane, isobutane, neopentane, methane with SiO4 (A/B pairs)", ("smiles",
+     "CCCCCCCC.CC(C)C.CC(C)(C)C.C.[O-][Si]([O-])([O-])[O-]"), "omalley2013-alkanes", "types", "rules"),
+    ("Plant 2007 methanol in NaY: two methanols, Na+, AlO4 and SiO4 (every cross term)", ("smiles",
+     "CO.CO.[Na+].[O-][Al]([O-])([O-])[O-].[O-][Si]([O-])([O-])[O-]"), "plant2007-methanol", "types", "rules"),
+    ("Peguin 2009 HFA134a (FF no. 2): two molecules", ("smiles", "FCC(F)(F)F.FCC(F)(F)F"), "peguin2009-hfa134a", "types", "rules"),
     # Hill & Sauer 1995 (CFF class II, every cross term; charges from the paper's bond increments)
     ("Hill & Sauer 1995: disilicic acid and a bridging-hydroxyl Si-O(H)-Al cluster", ("smiles",
      "O[Si](O)(O)O[Si](O)(O)O.O[Si](O)(O)[OH+][Al-](O)(O)O"), "hill-sauer1995", "types", "rules"),
@@ -218,7 +226,6 @@ CASES = [
      "trappe-ua-umn", "types", "rules"),
     ("TraPPE-UA alkanes (moltemplate): dodecane", ("smiles", "CCCCCCCCCCCC"), "trappe1998-moltemplate", "keep", "rules"),
     ("TraPPE-EH: benzene, naphthalene", ("smiles", "c1ccccc1.c1ccc2ccccc2c1"), "trappe-eh", "keep", "rules"),
-    ("Miscellaneous set: HFA-134a, methanol, chloroform, isopentane", ("smiles", "FCC(F)(F)F.CO.ClC(Cl)Cl.CCC(C)C"), "misc", "types", "rules"),
     # coarse-grained: MARTINI (lj/gromacs + coul/gromacs, dielectric 15, cosine/squared angles, 1-3 and 1-4 pairs kept)
     # and SDK (lj/sdk 9-6 / 12-4, angle sdk with its 1-3 repulsion), bead molecules and water beads in periodic boxes
     ("MARTINI DPPC + POPE + ions + water (periodic)", ("cg-box", "martini-moltemplate", [("template", "DPPC", 6), ("template", "POPE", 4),

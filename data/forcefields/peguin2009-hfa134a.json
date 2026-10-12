@@ -1,0 +1,282 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "HFA134a (Peguin et al. 2009, FF no. 2)",
+ "source": "R. P. S. Peguin, G. Kamath, J. J. Potoff, S. R. P. da Rocha, J. Phys. Chem. B 113, 178 (2009), Tables 1 and 2 (FF no. 2)",
+ "references": [
+  "R. P. S. Peguin, G. Kamath, J. J. Potoff, S. R. P. da Rocha, J. Phys. Chem. B 113, 178 (2009)"
+ ],
+ "version": "2009, FF no. 2",
+ "styles": {
+  "pair": "lj/cut/coul/long",
+  "bond": "harmonic",
+  "angle": "harmonic",
+  "dihedral": "fourier",
+  "improper": "fourier"
+ },
+ "mixing": "arithmetic",
+ "special_lj": [
+  0,
+  0,
+  0
+ ],
+ "special_coul": [
+  0,
+  0,
+  0
+ ],
+ "cutoff": 14,
+ "equivalence": "replace",
+ "atom_types": [
+  {
+   "name": "C3_hfa",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.534,
+   "description": "CF3 carbon (Table 2, FF no. 2)",
+   "equivalence": {
+    "vdw": "C_hfa",
+    "bond": "C_hfa",
+    "angle": "C_hfa",
+    "dihedral": "C_hfa"
+   }
+  },
+  {
+   "name": "C2_hfa",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.002,
+   "description": "CH2F carbon (Table 2, FF no. 2)",
+   "equivalence": {
+    "vdw": "C_hfa",
+    "bond": "C_hfa",
+    "angle": "C_hfa",
+    "dihedral": "C_hfa"
+   }
+  },
+  {
+   "name": "C_hfa",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.0,
+   "description": "HFA134a carbon (the class both carbons' terms take)"
+  },
+  {
+   "name": "F_hfa",
+   "element": "F",
+   "mass": 18.998,
+   "charge": -0.1915,
+   "description": "F (Table 2, FF no. 2)"
+  },
+  {
+   "name": "H_hfa",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.115,
+   "description": "H (Table 2, FF no. 2)"
+  }
+ ],
+ "pairs": [
+  {
+   "name": "C_hfa",
+   "match": [
+    "C_hfa"
+   ],
+   "params": [
+    0.09339860209999999,
+    3.6
+   ],
+   "comment": "eps/kB 47.0 K, sigma 3.6 A (Table 2)"
+  },
+  {
+   "name": "H_hfa",
+   "match": [
+    "H_hfa"
+   ],
+   "params": [
+    0.019872043,
+    2.5
+   ],
+   "comment": "eps/kB 10.0 K, sigma 2.5 A (Table 2)"
+  },
+  {
+   "name": "F_hfa",
+   "match": [
+    "F_hfa"
+   ],
+   "params": [
+    0.04868650535,
+    2.92
+   ],
+   "comment": "eps/kB 24.5 K, sigma 2.92 A (Table 2)"
+  }
+ ],
+ "bonds": [
+  {
+   "name": "C_hfa-C_hfa",
+   "match": [
+    "C_hfa",
+    "C_hfa"
+   ],
+   "params": [
+    600.0,
+    1.529
+   ],
+   "comment": "fixed length 1.529 A (Table 1; constrain in MD)"
+  },
+  {
+   "name": "C_hfa-F_hfa",
+   "match": [
+    "C_hfa",
+    "F_hfa"
+   ],
+   "params": [
+    600.0,
+    1.36
+   ],
+   "comment": "fixed length 1.36 A (Table 1; constrain in MD)"
+  },
+  {
+   "name": "C_hfa-H_hfa",
+   "match": [
+    "C_hfa",
+    "H_hfa"
+   ],
+   "params": [
+    600.0,
+    1.09
+   ],
+   "comment": "fixed length 1.09 A (Table 1; constrain in MD)"
+  }
+ ],
+ "angles": [
+  {
+   "name": "C_hfa-C_hfa-H_hfa",
+   "match": [
+    "C_hfa",
+    "C_hfa",
+    "H_hfa"
+   ],
+   "params": [
+    18.768548452210002,
+    110.7
+   ],
+   "comment": "k_theta/2 (theta - theta0)^2, k_theta 18889.4 K/rad^2 (Table 1)"
+  },
+  {
+   "name": "C_hfa-C_hfa-F_hfa",
+   "match": [
+    "C_hfa",
+    "C_hfa",
+    "F_hfa"
+   ],
+   "params": [
+    25.024665029469997,
+    109.5
+   ],
+   "comment": "k_theta/2 (theta - theta0)^2, k_theta 25185.8 K/rad^2 (Table 1)"
+  },
+  {
+   "name": "H_hfa-C_hfa-H_hfa",
+   "match": [
+    "H_hfa",
+    "C_hfa",
+    "H_hfa"
+   ],
+   "params": [
+    16.516251098589997,
+    107.8
+   ],
+   "comment": "k_theta/2 (theta - theta0)^2, k_theta 16622.6 K/rad^2 (Table 1)"
+  },
+  {
+   "name": "H_hfa-C_hfa-F_hfa",
+   "match": [
+    "H_hfa",
+    "C_hfa",
+    "F_hfa"
+   ],
+   "params": [
+    20.019791639704998,
+    107.0
+   ],
+   "comment": "k_theta/2 (theta - theta0)^2, k_theta 20148.7 K/rad^2 (Table 1)"
+  },
+  {
+   "name": "F_hfa-C_hfa-F_hfa",
+   "match": [
+    "F_hfa",
+    "C_hfa",
+    "F_hfa"
+   ],
+   "params": [
+    38.538051710329995,
+    109.1
+   ],
+   "comment": "k_theta/2 (theta - theta0)^2, k_theta 38786.2 K/rad^2 (Table 1)"
+  }
+ ],
+ "dihedrals": [
+  {
+   "name": "F_hfa-C_hfa-C_hfa-F_hfa",
+   "match": [
+    "F_hfa",
+    "C_hfa",
+    "C_hfa",
+    "F_hfa"
+   ],
+   "params": [
+    4,
+    0.0038949204279999997,
+    1,
+    0.0,
+    -0.04868650535,
+    2,
+    180.0,
+    2.126666297774,
+    3,
+    0.0,
+    0.022554768804999997,
+    0,
+    90.0
+   ],
+   "comment": "C0 + C1 (1 + cos phi) + C2 (1 - cos 2 phi) + C3 (1 + cos 3 phi); C0..C3 11.35, 1.96, -24.5, 1070.18 K (Table 1)"
+  },
+  {
+   "name": "F_hfa-C_hfa-C_hfa-H_hfa",
+   "match": [
+    "F_hfa",
+    "C_hfa",
+    "C_hfa",
+    "H_hfa"
+   ],
+   "params": [
+    4,
+    0.003159654837,
+    1,
+    0.0,
+    0.019792554828000002,
+    2,
+    180.0,
+    2.115677057995,
+    3,
+    0.0,
+    -0.058264830075999995,
+    0,
+    90.0
+   ],
+   "comment": "C0 + C1 (1 + cos phi) + C2 (1 - cos 2 phi) + C3 (1 + cos 3 phi); C0..C3 -29.32, 1.59, 9.96, 1064.65 K (Table 1)"
+  }
+ ],
+ "impropers": [],
+ "notes": [
+  "built by CAPS (bench/ff/make_zeolite_sorbates.py) from the paper's Tables 1 (read from the page image) and 2",
+  "bond lengths fixed in the paper: stiff harmonic bonds (600 kcal/mol/A^2), to be constrained in MD",
+  "Table 1's torsion columns read as C0..C3 of eq. 3",
+  "no intramolecular non-bonded pairs (eq. 1)",
+  "charges belong to HFA134a only (CHELPG fit of that molecule)",
+  "cut-off 14 A (section 3.2)"
+ ],
+ "units": "real",
+ "typing": "../typing/peguin2009-hfa134a.typing.json"
+}

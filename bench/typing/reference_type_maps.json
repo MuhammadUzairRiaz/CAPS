@@ -1,0 +1,39 @@
+{
+ "omalley2013-alkanes": {
+  "lib": "MISC_FF",
+  "map": {
+   "C4_om": "C1",
+   "C3_om": "Cp1",
+   "C2_om": "Cs1",
+   "C1_om": "Ct1",
+   "C0_om": "C1",
+   "H_om": "H1"
+  }
+ },
+ "plant2007-methanol": {
+  "lib": "MISC_FF",
+  "map": {
+   "C_pm": "C2",
+   "H_pm": "H2",
+   "Om_pm": "O2",
+   "Hm_pm": "HO2"
+  }
+ },
+ "ramsahye2005-nay": {
+  "lib": "MISC_FF",
+  "map": {
+   "C_cf": "C3",
+   "H_cf": "H3",
+   "Cl_cf": "Cl3"
+  }
+ },
+ "peguin2009-hfa134a": {
+  "lib": "MISC_FF",
+  "map": {
+   "C3_hfa": "CT",
+   "C2_hfa": "CT",
+   "F_hfa": "F",
+   "H_hfa": "HC"
+  }
+ }
+}

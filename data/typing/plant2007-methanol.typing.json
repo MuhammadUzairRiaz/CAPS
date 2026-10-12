@@ -1,0 +1,64 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "Methanol in zeolite NaY (Plant, Maurin & Bell 2007)",
+ "unknown_types": "untyped",
+ "bonds": "defined",
+ "description": "NaY framework, Na and methanol (bench/ff/make_zeolite_sorbates.py)",
+ "rules": [
+  {
+   "type": "Si_pm",
+   "smarts": "[#14]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "description": "framework Si"
+  },
+  {
+   "type": "Al_pm",
+   "smarts": "[#13]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "description": "framework Al"
+  },
+  {
+   "type": "Oz_pm",
+   "smarts": "[#8]",
+   "priority": 0,
+   "description": "framework O"
+  },
+  {
+   "type": "Na_pm",
+   "smarts": "[#11]",
+   "priority": 0,
+   "description": "extra-framework Na"
+  },
+  {
+   "type": "C_pm",
+   "smarts": "[#6;$([CX4H3][OX2H1])]",
+   "priority": 1,
+   "description": "methanol C"
+  },
+  {
+   "type": "Om_pm",
+   "smarts": "[#8;$([OX2H1][CX4H3])]",
+   "priority": 1,
+   "description": "methanol O"
+  },
+  {
+   "type": "H_pm",
+   "smarts": "[#1;$([#1][CX4H3][OX2H1])]",
+   "priority": 1,
+   "description": "methanol methyl H"
+  },
+  {
+   "type": "Hm_pm",
+   "smarts": "[#1;$([#1][OX2][CX4H3])]",
+   "priority": 1,
+   "description": "methanol hydroxyl H"
+  }
+ ]
+}

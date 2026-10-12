@@ -1,0 +1,362 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "All-atom alkanes in silicalite (O'Malley & Catlow 2013)",
+ "source": "A. J. O'Malley, C. R. A. Catlow, Phys. Chem. Chem. Phys. 15, 19024 (2013), Tables 2 and 3",
+ "references": [
+  "A. J. O'Malley, C. R. A. Catlow, Phys. Chem. Chem. Phys. 15, 19024 (2013)"
+ ],
+ "version": "2013 (Tables 2 and 3, all-atom model)",
+ "styles": {
+  "pair": "lj/cut/coul/long",
+  "bond": "harmonic",
+  "angle": "harmonic",
+  "dihedral": "fourier",
+  "improper": "fourier"
+ },
+ "mixing": "geometric",
+ "special_lj": [
+  0,
+  0,
+  1
+ ],
+ "special_coul": [
+  0,
+  0,
+  1
+ ],
+ "cutoff": 13,
+ "equivalence": "replace",
+ "atom_types": [
+  {
+   "name": "C4_om",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.4,
+   "description": "alkane methane C: H +0.1 each, the alkane neutral",
+   "equivalence": {
+    "vdw": "C_om",
+    "bond": "C_om",
+    "angle": "C_om",
+    "dihedral": "C_om"
+   }
+  },
+  {
+   "name": "C3_om",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.3,
+   "description": "alkane CH3 C: H +0.1 each, the alkane neutral",
+   "equivalence": {
+    "vdw": "C_om",
+    "bond": "C_om",
+    "angle": "C_om",
+    "dihedral": "C_om"
+   }
+  },
+  {
+   "name": "C2_om",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.2,
+   "description": "alkane CH2 C: H +0.1 each, the alkane neutral",
+   "equivalence": {
+    "vdw": "C_om",
+    "bond": "C_om",
+    "angle": "C_om",
+    "dihedral": "C_om"
+   }
+  },
+  {
+   "name": "C1_om",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.1,
+   "description": "alkane CH C: H +0.1 each, the alkane neutral",
+   "equivalence": {
+    "vdw": "C_om",
+    "bond": "C_om",
+    "angle": "C_om",
+    "dihedral": "C_om"
+   }
+  },
+  {
+   "name": "C0_om",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.0,
+   "description": "alkane quaternary C: H +0.1 each, the alkane neutral",
+   "equivalence": {
+    "vdw": "C_om",
+    "bond": "C_om",
+    "angle": "C_om",
+    "dihedral": "C_om"
+   }
+  },
+  {
+   "name": "C_om",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.0,
+   "description": "alkane C (the class every alkane C's terms take)"
+  },
+  {
+   "name": "H_om",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.1,
+   "description": "alkane H (+0.1 a.u.)"
+  },
+  {
+   "name": "Si_om",
+   "element": "Si",
+   "mass": 28.0855,
+   "charge": 4.0,
+   "description": "framework Si, formal charge (Table 3)"
+  },
+  {
+   "name": "O_om",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -2.0,
+   "description": "framework O, formal charge (Table 3)"
+  }
+ ],
+ "pairs": [
+  {
+   "name": "C_om-H_om",
+   "match": [
+    "C_om",
+    "H_om"
+   ],
+   "params": [
+    0.07025869460332548,
+    2.7975151169291204
+   ],
+   "comment": "A 270160 kJ/mol A^12, B 563.62 kJ/mol A^6 (Table 2)"
+  },
+  {
+   "name": "H_om",
+   "match": [
+    "H_om"
+   ],
+   "params": [
+    0.0591297178224607,
+    2.405416748825359
+   ],
+   "comment": "A 37131.4 kJ/mol A^12, B 191.69 kJ/mol A^6 (Table 2)"
+  },
+  {
+   "name": "C_om",
+   "match": [
+    "C_om"
+   ],
+   "params": [
+    0.09590575605022052,
+    3.2070415100906255
+   ],
+   "comment": "A 1.89999e+06 kJ/mol A^12, B 1746.32 kJ/mol A^6 (Table 2)"
+  },
+  {
+   "name": "H_om-O_om",
+   "match": [
+    "H_om",
+    "O_om"
+   ],
+   "params": [
+    0.11499100213140513,
+    2.5567537342685593
+   ],
+   "comment": "A 150170 kJ/mol A^12, B 537.587 kJ/mol A^6 (Table 2)"
+  },
+  {
+   "name": "C_om-O_om",
+   "match": [
+    "C_om",
+    "O_om"
+   ],
+   "params": [
+    0.16334339962084257,
+    2.9225263772711343
+   ],
+   "comment": "A 1.06134e+06 kJ/mol A^12, B 1703.35 kJ/mol A^6 (Table 2)"
+  },
+  {
+   "name": "Si_om-O_om",
+   "match": [
+    "Si_om",
+    "O_om"
+   ],
+   "style": "buck",
+   "params": [
+    29607.590822179733,
+    0.149,
+    642.9278202676865,
+    10.0
+   ],
+   "comment": "A 123878 kJ/mol, rho 0.149 A, C 2690.01 kJ/mol A^6 (Table 3); within 10 A"
+  },
+  {
+   "name": "O_om-O_om",
+   "match": [
+    "O_om",
+    "O_om"
+   ],
+   "style": "buck",
+   "params": [
+    524949.808795411,
+    0.32052,
+    245.82456978967494,
+    10.0
+   ],
+   "comment": "A 2.19639e+06 kJ/mol, rho 0.32052 A, C 1028.53 kJ/mol A^6 (Table 3); within 10 A"
+  },
+  {
+   "name": "C_om-Si_om",
+   "match": [
+    "C_om",
+    "Si_om"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "not in the paper's tables: Coulomb only"
+  },
+  {
+   "name": "H_om-Si_om",
+   "match": [
+    "H_om",
+    "Si_om"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "not in the paper's tables: Coulomb only"
+  },
+  {
+   "name": "Si_om",
+   "match": [
+    "Si_om"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "not in the paper's tables: Coulomb only"
+  }
+ ],
+ "bonds": [
+  {
+   "name": "C_om-H_om",
+   "match": [
+    "C_om",
+    "H_om"
+   ],
+   "params": [
+    357.3135755258126,
+    1.054
+   ],
+   "comment": "1/2 K (r - r0)^2, K 2990 kJ/mol/A^2 (Table 2)"
+  },
+  {
+   "name": "C_om-C_om",
+   "match": [
+    "C_om",
+    "C_om"
+   ],
+   "params": [
+    691.9216061185468,
+    1.405
+   ],
+   "comment": "K 5790 kJ/mol/A^2, r0 1.405 A as Table 2 prints it"
+  }
+ ],
+ "angles": [
+  {
+   "name": "C_om-C_om-C_om",
+   "match": [
+    "C_om",
+    "C_om",
+    "C_om"
+   ],
+   "params": [
+    39.0774378585086,
+    109.47
+   ],
+   "comment": "1/2 K (theta - theta0)^2, K 327 kJ/mol/rad^2 (Table 2)"
+  },
+  {
+   "name": "C_om-C_om-H_om",
+   "match": [
+    "C_om",
+    "C_om",
+    "H_om"
+   ],
+   "params": [
+    39.0774378585086,
+    109.47
+   ],
+   "comment": "1/2 K (theta - theta0)^2, K 327 kJ/mol/rad^2 (Table 2)"
+  },
+  {
+   "name": "H_om-C_om-H_om",
+   "match": [
+    "H_om",
+    "C_om",
+    "H_om"
+   ],
+   "params": [
+    39.0774378585086,
+    109.47
+   ],
+   "comment": "1/2 K (theta - theta0)^2, K 327 kJ/mol/rad^2 (Table 2)"
+  },
+  {
+   "name": "O_om-Si_om-O_om",
+   "match": [
+    "O_om",
+    "Si_om",
+    "O_om"
+   ],
+   "params": [
+    24.181763862332694,
+    109.47
+   ],
+   "contact": [
+    2.0
+   ],
+   "comment": "1/2 K (theta - theta0)^2, K 202.353 kJ/mol/rad^2 (Table 3); each O within 2.0 A of the Si"
+  }
+ ],
+ "impropers": [],
+ "dihedrals": [
+  {
+   "name": "X-C_om-C_om-X",
+   "match": [
+    "*",
+    "C_om",
+    "C_om",
+    "*"
+   ],
+   "style": "fourier",
+   "params": [
+    1,
+    0.0,
+    1,
+    0.0
+   ],
+   "comment": "zero: the paper's cosine torsion is in Raj, Sastre & Catlow 1999 (its ref. 18)"
+  }
+ ],
+ "notes": [
+  "built by CAPS (bench/ff/make_zeolite_sorbates.py) from the paper's Tables 2 and 3",
+  "the paper's torsion is that of N. Raj, G. Sastre, C. R. A. Catlow, J. Phys. Chem. B 103, 11007 (1999) (its ref. 18), not given in this paper: a zero torsion here; 1-2 and 1-3 pairs excluded, 1-4 pairs in full",
+  "bond K printed in kJ mol-1 rad-2 in Table 2: read as kJ mol-1 A-2 with DL_POLY's 1/2 K",
+  "framework: formal charges, Buckingham within 10 A, O-Si-O bends by distance (2.0 A, CAPS's); no Si-O bond term",
+  "Lennard-Jones cut-off 13 A (the paper's)"
+ ],
+ "units": "real",
+ "typing": "../typing/omalley2013-alkanes.typing.json"
+}
