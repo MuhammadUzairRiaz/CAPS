@@ -74,6 +74,15 @@ ENTRIES = {
                      "CAPS rules for the paper's labels (element and hybridisation: _3, _R, _2, _1; H___A on N or O); LAMMPS "
                      "reproduces CAPS's energies and forces (bond constants by bond order, cosine-harmonic angles, the torsion rules, "
                      "planar inversions, hydrogen bonds)", ("DREIDING", "dreiding", 14), ["dreiding"]),
+    "trappe-ua-foyer": ("TraPPE-UA (alkanes, alcohols)", "foyer trappe-ua.xml 0.0.2 (mosdef-hub/foyer, 2021-08-11)",
+                        ["M. G. Martin, J. I. Siepmann, J. Phys. Chem. B 102, 2569 (1998)", "M. G. Martin, J. I. Siepmann, J. Phys. Chem. B 103, 4508 (1999)",
+                         "B. Chen, J. J. Potoff, J. I. Siepmann, J. Phys. Chem. B 105, 3093 (2001)"],
+                        {"source": "foyer/forcefields/xml/trappe-ua.xml, github.com/mosdef-hub/foyer (bench/ff/convert_foyer.py)",
+                         "license": "MIT (Copyright (c) 2015 Vanderbilt University)"},
+                        "CAPS rules for foyer's eleven united-atom types (alkane and alcohol CHn, O, H); its Ryckaert-Bellemans torsions "
+                        "written exactly as Fourier terms; LAMMPS and GROMACS reproduce CAPS's energies. Torsions foyer's file lacks "
+                        "(CHn-CH2-CH-OH and similar, C-C between branched centres) are reported missing",
+                        ("TraPPE united-atom", "trappe_ua", 16), ["trappe-ua"]),
 }
 RTF = "the topology's own residues typed as it types them (bench/ff/validate_rtf_types.py --cap-links): "
 for fid, name, version, refs, evidence, listing, replaces in (
