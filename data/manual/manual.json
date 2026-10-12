@@ -88,6 +88,39 @@
    "tex": "e^{iL\\Delta t} \\approx e^{iL_{\\mathrm{slow}}\\,\\Delta t/2}\\,\\left[e^{iL_{\\mathrm{fast}}\\,\\delta t}\\right]^{n}\\,e^{iL_{\\mathrm{slow}}\\,\\Delta t/2}, \\qquad \\delta t = \\frac{\\Delta t}{n}"
   },
   {
+   "id": "hmr",
+   "group": "Integrators",
+   "title": "Hydrogen mass repartitioning",
+   "summary": "Each hydrogen bonded to one heavier atom takes mass from that atom up to a set value. The total mass, and with it every equilibrium average, stays the same, while the motions that involve hydrogens slow down. With bonds to hydrogen held, the time step can then grow past 2 fs as far as the heavy atoms' vibrations allow. Velocities read from the structure keep each atom's kinetic energy.",
+   "equation": "m_H' = m_H + Δm,   m_X' = m_X − Δm,   Δm = m_target − m_H",
+   "equation_note": "Hopkins et al. 2015",
+   "symbols": [
+    [
+     "m_target",
+     "hydrogen mass",
+     "--hmr · usually 3.024 u"
+    ],
+    [
+     "X",
+     "the heavy atom the hydrogen is bonded to",
+     "left as it is if it would drop below 1 u"
+    ]
+   ],
+   "when": "Longer steps with h-bonds constraints. On polystyrene (OPLS-AA, NVE, 5 ps) 3 fs holds the conserved quantity about as well as without repartitioning and drifts less; 4 fs does not hold it whatever the hydrogen mass. Dynamical properties (diffusion, relaxation times) change with the masses: measure them without it.",
+   "cites": [
+    "hopkins2015"
+   ],
+   "source": "core/src/dynamics.cpp",
+   "tested": "Dynamics.HydrogenMassRepartitioningKeepsMassAndTemperature",
+   "deviation": "none",
+   "engines": [
+    "dynamics.nve",
+    "dynamics.nvt",
+    "dynamics.npt"
+   ],
+   "tex": "m_\\mathrm{H}' = m_\\mathrm{H} + \\Delta m, \\qquad m_X' = m_X - \\Delta m, \\qquad \\Delta m = m_\\mathrm{target} - m_\\mathrm{H}"
+  },
+  {
    "id": "csvr",
    "group": "Thermostats",
    "title": "Stochastic velocity rescaling (CSVR)",
@@ -341,7 +374,7 @@
    "id": "spme",
    "group": "Electrostatics",
    "title": "Smooth particle-mesh Ewald (SPME)",
-   "summary": "The Ewald sum split into a short-ranged real-space part and a smooth reciprocal part evaluated on a grid: charges are spread with B-splines, transformed by FFT, multiplied by the influence function and gathered back as forces.",
+   "summary": "The Ewald sum split into a short-ranged real-space part and a smooth reciprocal part evaluated on a grid: charges are spread with B-splines, transformed by FFT, multiplied by the influence function and gathered back as forces. The threaded version keeps the transform of the real charge grid for half the frequencies; at an even grid's Nyquist index the influence function is the mean over both signs, so it is even in m in any cell.",
    "equation": "E_rec = (1/2πV) Σ_{m≠0} exp(−π²m²/β²)/m² · B(m) |F(Q)(m)|²,   erfc(β r_c) = ε_rel",
    "equation_note": "Essmann et al. 1995",
    "symbols": [
@@ -371,7 +404,7 @@
     "essmann1995"
    ],
    "source": "core/fortran/caps_kspace.f90 · core/src/kspace.cpp",
-   "tested": "Kspace.PmeMatchesEwaldForForcesEnergyAndVirial · Kspace.MadelungConstantOfRockSalt · Kspace.FftMatchesTheDirectTransform · bench/ff/check_data_lammps.py --pme",
+   "tested": "Kspace.PmeMatchesEwaldForForcesEnergyAndVirial · Kspace.MadelungConstantOfRockSalt · Kspace.FftMatchesTheDirectTransform · bench/ff/check_data_lammps.py --pme · Kspace.ThreadedHalfSpectrumPmeMatchesTheSerialOne",
    "deviation": "none",
    "engines": [
     "relax.lbfgs",
@@ -379,6 +412,49 @@
     "dynamics.npt"
    ],
    "tex": "E_\\mathrm{rec} = \\frac{1}{2\\pi V}\\sum_{m \\ne 0}\\frac{\\exp(-\\pi^2 m^2/\\beta^2)}{m^2}\\,B(m)\\,\\left|F(Q)(m)\\right|^2, \\qquad \\operatorname{erfc}(\\beta r_c) = \\epsilon_\\mathrm{rel}"
+  },
+  {
+   "id": "cluster-kernel",
+   "group": "Electrostatics",
+   "title": "Pair forces in mixed precision (cluster kernel)",
+   "summary": "Atoms are sorted into columns and cut into clusters of four. The pair list holds pairs of clusters, each with its periodic image and a 16-bit mask of the atom pairs that interact, and is pruned every few steps to r_c + 0.8 Å. The kernel takes the four atoms of a j cluster in one SIMD register against each i atom, in single precision with positions relative to each cluster's origin; energies, virial and forces leave it in double. The Ewald (or DSF) real-space term comes from rational fits of erf(√u)/√u and its derivative, so no exponential is evaluated per pair.",
+   "equation": "erfc(κr)/r = 1/r − κ g_V(κ²r²),   −(1/r) d/dr [erfc(κr)/r] = 1/r³ + κ³ g_F(κ²r²),   g ≈ P₆(t)/Q₄(t), t = κ²r²/16",
+   "equation_note": "the cluster scheme of Páll & Hess 2013; fits made for CAPS",
+   "symbols": [
+    [
+     "κ",
+     "Ewald coefficient β (SPME) or damping α (DSF)",
+     "from erfc(β r_c) = 10⁻⁵, or Electrostatics · α"
+    ],
+    [
+     "g_V, g_F",
+     "erf(√u)/√u and 2 d/du of it, as rational functions of t = u/16",
+     "maximum error 3·10⁻⁸ and 5·10⁻⁸ for u ≤ 16"
+    ],
+    [
+     "r_c",
+     "cut-off",
+     "Dynamics · cut-off"
+    ],
+    [
+     "r_c + 0.8 Å",
+     "pruned list radius",
+     "pruned again when an atom has moved 0.4 Å"
+    ]
+   ],
+   "when": "Molecular dynamics and equilibration with plain 12-6 or class II 9-6 Lennard-Jones and SPME, DSF or no charges (OPLS-AA, PCFF, COMPASS, CVFF, GAFF): on by default for MD (caps md --precision double turns it off). Other pair forms, single-point energies and minimisation keep the double-precision loop. NEON on Arm, SSE2 or AVX2 with FMA on x86-64, chosen at run time.",
+   "cites": [
+    "pall2013"
+   ],
+   "source": "core/src/nbnxm.cpp · core/src/nbnxm_avx2.cpp · core/src/nbnxm_fit.hpp · core/src/simd4.hpp",
+   "tested": "Nbnxm.MixedPrecisionMatchesDoubleForEveryPairForm · Nbnxm.MixedPrecisionDynamicsConservesEnergy · tests/nbnxm_check.cpp (NEON, SSE2, AVX2 and plain builds against a direct double sum)",
+   "deviation": "energies agree with double precision to about 1e-6 relative and forces to about 5e-6 rms; same-seed runs are bit-identical for a given thread count",
+   "engines": [
+    "dynamics.nve",
+    "dynamics.nvt",
+    "dynamics.npt"
+   ],
+   "tex": "\\frac{\\operatorname{erfc}(\\kappa r)}{r} = \\frac{1}{r} - \\kappa\\, g_V(\\kappa^2 r^2), \\qquad -\\frac{1}{r}\\frac{d}{dr}\\frac{\\operatorname{erfc}(\\kappa r)}{r} = \\frac{1}{r^3} + \\kappa^3 g_F(\\kappa^2 r^2), \\qquad g \\approx \\frac{P_6(t)}{Q_4(t)},\\; t = \\frac{\\kappa^2 r^2}{16}"
   },
   {
    "id": "ewald",

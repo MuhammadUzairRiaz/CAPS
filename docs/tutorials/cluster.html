@@ -31,11 +31,12 @@
 <div class="code" data-lang="shell"><pre><code>module load GCC CMake            # your site&#x27;s names
 git clone https://github.com/MuhammadUzairRiaz/CAPS.git ~/CAPS/src/CAPS
 cd ~/CAPS/src/CAPS
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCAPS_BUILD_TESTS=OFF
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCAPS_BUILD_TESTS=OFF \
+  -DCMAKE_EXE_LINKER_FLAGS=&quot;-static-libstdc++ -static-libgcc -static-libgfortran&quot;
 cmake --build build -j 8 --target caps_cli
 mkdir -p ~/CAPS/bin &amp;&amp; ln -sf ~/CAPS/src/CAPS/build/cli/caps ~/CAPS/bin/caps
 ~/CAPS/bin/caps --version</code></pre></div>
-<p>Build inside a short interactive or batch job if your site does not allow compiling on login nodes. The Studio's Install / update caps (step 5) does exactly this as a batch job.</p>
+<p>The linker flags put the compiler's runtime inside <code>caps</code>, so it runs on a login node without the build modules loaded. Build inside a short interactive or batch job if your site does not allow compiling on login nodes. The Studio's Install / update caps (step 5) does exactly this as a batch job.</p>
 <h2 id="2-describe-your-cluster-once">2. Describe your cluster once</h2>
 <p><code>caps job profile</code> writes <code>~/CAPS/host.json</code>. Start from a generic preset and fill in your own values:</p>
 <div class="code" data-lang="shell"><pre><code>~/CAPS/bin/caps job profile --preset slurm
@@ -48,7 +49,7 @@ mkdir -p ~/CAPS/bin &amp;&amp; ln -sf ~/CAPS/src/CAPS/build/cli/caps ~/CAPS/bin/
 <div class="code" data-lang="output"><pre><code>/home/you/CAPS/PS_melt/md-1
 submitted: 4815162</code></pre></div>
 <p>The job folder holds the inputs, <code>cmd.txt</code>, <code>job.sh</code> (open it to see exactly what runs) and <code>caps-job.json</code>. The script copies the inputs to scratch, runs the command there, copies everything back to <code>out/</code> and releases a workspace only after that copy succeeded.</p>
-<p>Many runs at once go as one array job. Write one line per task, a title and a command:</p>
+<p>Many runs at once go as one array job. Write one line per task, a title and a command; the command is a shell line, so quote arguments with brackets or stars, such as a SMILES:</p>
 <div class="code" data-lang="output"><pre><code>PS_seed1 caps md cell.data -o md.data --steps 1000000 --seed 1
 PS_seed2 caps md cell.data -o md.data --steps 1000000 --seed 2</code></pre></div>
 <div class="code" data-lang="shell"><pre><code>~/CAPS/bin/caps job new --kind md --array seeds.txt --input cell.data --submit</code></pre></div>
