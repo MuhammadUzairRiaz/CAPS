@@ -125,5 +125,14 @@
    "template": "but-2-yne",
    "reason": "the template's CONNECT records bond H12 to C2 and H13 to C3 (they belong on C1): the molecule it describes is not but-2-yne"
   }
+ ],
+ "auto_typing": [
+  {
+   "ff": "pcff-frc",
+   "environment": "a C=C carbon next to a halogen-bearing alkene carbon",
+   "dl": "c=2 on some (chloroethene =CH2, 1-chloropropene =CH-, 2-chlorobut-2-ene, vinyl bromide), c= on others (2-chloropropene =CH2)",
+   "caps": "c= / c=1 by pcff.frc's own definitions (c= 'non aromatic end doubly bonded carbon', c=1 'next to end doubly bonded carbon', c=2 'non aromatic doubly bonded carbon', used by CAPS for carbons conjugated on both ends)",
+   "reason": "DL_FIELD's automatic typing gives the terminal =CH2 of chloroethene c=2 but the same =CH2 of 2-chloropropene c= (independent of atom order, checked both ways); no rule in pcff.frc's type definitions separates them, so CAPS keeps the definitions. Polymers affected: polychloroprene (P097, P206), 4 atoms each"
+  }
  ]
 }

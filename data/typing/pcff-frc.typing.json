@@ -219,9 +219,9 @@
   },
   {
    "type": "oc",
-   "smarts": "[OX2]([CX4,c,CX2])[CX4,c,CX2]",
+   "smarts": "[OX2]([CX4,c,CX2,$([CX3]=[#6])])[CX4,c,CX2,$([CX3]=[#6])]",
    "priority": 1,
-   "description": "ether / acetal O"
+   "description": "ether / acetal O (also on an alkene carbon: a vinyl ether, as DL_FIELD types it)"
   },
   {
    "type": "o_2",
@@ -540,9 +540,9 @@
   },
   {
    "type": "c3h",
-   "smarts": "[CX4;r3;!H0]",
+   "smarts": "[CX4;r3;!H0;!$(*1~*~[#8]1)]",
    "priority": 5,
-   "description": "sp3 C with hydrogens in a 3-membered ring (pcff.frc)"
+   "description": "sp3 C with hydrogens in a 3-membered carbocycle (pcff.frc); an epoxide ring C is c3m, as DL_FIELD types it"
   },
   {
    "type": "cs",

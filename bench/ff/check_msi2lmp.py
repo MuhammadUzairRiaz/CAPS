@@ -234,7 +234,14 @@ def polymer_cases(src):
             label_of = {int(w[0]): l.split("#")[1].split()[0] for l in txt.split("Masses", 1)[1].split("\n\n", 2)[1].splitlines()
                         if "#" in l for w in [l.split()]}
             mass = {int(w[0]): float(w[1]) for w in section(txt, "Masses")}
-            at = sorted((int(w[0]), int(w[2]), float(w[3]), tuple(map(float, w[4:7]))) for w in section(txt, "Atoms"))
+            # unwrapped positions (the oligomer came from a periodic cell; the .car is not periodic)
+            box = []
+            for ax in "xyz":
+                m = re.search(r"(\S+)\s+(\S+)\s+" + ax + "lo " + ax + "hi", txt)
+                box.append(float(m.group(2)) - float(m.group(1)) if m else 0.0)
+            at = sorted((int(w[0]), int(w[2]), float(w[3]),
+                         tuple(float(w[4 + k]) + (int(w[7 + k]) * box[k] if len(w) >= 10 else 0.0) for k in range(3)))
+                        for w in section(txt, "Atoms"))
             bonds = [(int(w[2]) - 1, int(w[3]) - 1) for w in section(txt, "Bonds")]
             el = [min((abs(mass[t] - m), e) for e, m in (("H", 1.008), ("C", 12.011), ("N", 14.007), ("O", 15.999), ("F", 18.998),
                                                        ("Si", 28.086), ("P", 30.974), ("S", 32.06), ("Cl", 35.45), ("Br", 79.904)))[1]
