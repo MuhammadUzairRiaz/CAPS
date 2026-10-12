@@ -260,28 +260,61 @@ def charmm_prot(v36):
     R.add("NH1", 2, "[NX3H1][CX3]=[OX1]", "amide nitrogen with one H"); R.add("NH2", 2, "[NX3H2][CX3]=[OX1]", "amide nitrogen with two H")
     R.add("N", 2, "[NX3H0][CX3]=[OX1]", "amide nitrogen without H (proline)"); R.add("NH3", 3, "[NX4+]", "ammonium nitrogen")
     R.add("H", 0, "[H][N,O]", "polar H"); R.add("HC", 1, "[H][NX4+]", "H on an ammonium nitrogen")
-    R.add("S", 1, "[SX2]([#6])[#6]", "sulfide sulfur"); R.add("SM", 1, "[SX2][SX2]", "disulfide sulfur"); R.add("HS", 1, "[H][SX2]", "thiol H")
+    R.add("S", 1, "[SX2]", "sulfide / thiol sulfur"); R.add("SM", 2, "[SX2][SX2]", "disulfide sulfur"); R.add("HS", 1, "[H][SX2]", "thiol H")
+    R.add("CS", 3, "[CX4][SX1]", "thiolate C"); R.add("SS", 3, "[SX1]", "thiolate S")
+    # backbone H alpha: HB (CHARMM22); HB1, glycine's HB2 (CHARMM36)
+    AAH = "[CX4]([NX3,NX4])[CX3]=[OX1]"
+    if v36:
+        R.add("HB1", 3, f"[H][CX4H1;$({AAH})]", "backbone H alpha"); R.add("HB2", 3, f"[H][CX4H2;$({AAH})]", "glycine H alpha")
+    else:
+        R.add("HB", 3, f"[H]{AAH}", "backbone H alpha")
+    R.add("CD", 4, "[CX3H1](=[OX1])[#6]", "aldehyde C"); R.add("O", 4, "[OX1]=[CX3H1][#6]", "aldehyde O"); R.add("HR1", 4, "[H][CX3](=[OX1])[#6]", "aldehyde H")
+    R.add("HA", 4, "[H][CX3](=[OX1])[NX3]", "H on an amide C (formamide)")
+    R.add("C", 5, "[CX3]([NX3])([NX3])=[NX3]", "guanidinium C"); R.add("NC2", 5, "[NX3;$(*~[CX3](~[NX3])~[NX3])]", "guanidinium N")
+    R.add("HC", 5, "[H][NX3;$(*~[CX3](~[NX3])~[NX3])]", "H on a guanidinium N")
+    R.add("NH2", 2, "[NX3H2;!$(*[CX3]=[OX1])]", "amine N"); R.add("HC", 2, "[H][NX3H2;!$(*[CX3]=[OX1])]", "H on an amine N")
+    R.add("OC", 4, "[OX1][CX4]", "alkoxide O")
+    # indole, imidazole
+    R.add("CPT", 5, "[c;R2;$(*1:*:*:[nX3]:*:1),$(*1:*:[nX3]:*:*:1),$(*1:[nX3]:*:*:*:1)]", "indole ring fusion C")
+    R.add("CY", 5, "[c;r5;$(c1:c:[nX3]:c:c:1);!R2;$(*:[c;R2])]", "indole C3"); R.add("NY", 5, "[nX3;$(n1ccc2ccccc12)]", "indole N")
+    R.add("NR1", 5, "[nX3H1;r5;$(n1:c:n:c:c1)]", "imidazole N-H"); R.add("NR2", 5, "[nX2;r5;$(n1:c:n:c:c1)]", "imidazole N")
+    R.add("CPH2", 5, "[c;r5;$(c(:n):n)]", "imidazole C2"); R.add("CPH1", 5, "[c;r5;$(c1:n:c:n:c1);!$(c(:n):n)]", "imidazole C4 / C5")
+    R.add("HR1", 5, "[H][c;r5;$(c(:n):n)]", "imidazole H2"); R.add("HR3", 5, "[H][c;r5;$(c1:n:c:n:c1);!$(c(:n):n)]", "imidazole H4 / H5")
+    R.add("H", 1, "[H][n]", "H on an aromatic N")
+    # heme
+    R.add("FE", 8, "[Fe]", "heme iron"); R.add("NPH", 8, "[n,N;$(*~[Fe])]", "heme pyrrole N")
+    R.add("CPA", 8, "[#6;$(*~[n,N]~[Fe])]", "heme alpha C"); R.add("CPB", 8, "[#6;r5;$(*~[#6]~[n,N]~[Fe]);!$(*~[n,N]~[Fe])]", "heme beta C")
+    R.add("CPM", 8, "[#6;!r5;$(*(~[#6]~[n,N])~[#6]~[n,N]~[Fe]);!$(*~[n,N])]", "heme meso C")
+    R.add("HA", 8, "[H][#6;!r5;$(*(~[#6]~[n,N])~[#6]~[n,N]~[Fe])]", "heme meso H")
     water_ions(R, "OT", "HT")
-    R.add("SOD", 0, "[Na]", "sodium ion"); R.add("CLA", 0, "[Cl-;X0]", "chloride ion"); R.add("POT", 0, "[K]", "potassium ion")
+    R.add("SOD", 0, "[Na]", "sodium ion"); R.add("CLA", 0, "[Cl-,Cl;X0]", "chloride ion"); R.add("POT", 0, "[K]", "potassium ion")
     return R
 
 
 # ---------------------------------------------------------------- CHARMM36 lipids
 def charmm_lipid():
+    """the library's CHARMM36 lipid set: every H on an sp3 carbon is HAL3 (its HC_alkane), as the library has it;
+    choline's methyls CTL3 with HAL3, except in DMPC, the one template with CHARMM36's own CTL5 / HL"""
     R = Rules()
-    R.add("CTL1", 0, "[CX4H1]", "sp3 CH"); R.add("CTL2", 0, "[CX4H2]", "sp3 CH2"); R.add("CTL3", 0, "[CX4H3]", "sp3 CH3")
-    R.add("CTL5", 2, "[CX4H3][NX4+]", "methyl on a quaternary ammonium (choline)")
-    R.add("HAL1", 0, "[H][CX4H1]", "H on CH"); R.add("HAL2", 0, "[H][CX4H2]", "H on CH2"); R.add("HAL3", 0, "[H][CX4H3]", "H on CH3")
-    R.add("HL", 2, "[H][CX4][NX4+]", "H on a carbon bonded to N+")
+    R.add("CTL1", 0, "[CX4;H1,H0]", "sp3 CH"); R.add("CTL2", 0, "[CX4H2]", "sp3 CH2"); R.add("CTL3", 0, "[CX4H3]", "sp3 CH3")
+    R.add("HAL3", 0, "[H][CX4]", "H on sp3 C")
+    R.add("HBL", 2, "[H][CX4]([NX4,NX3])[CX3]=[OX1]", "H alpha of the serine head group")
+    MYR = "[CH3][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CX3](=[OX1])[OX2]"
+    R.add("CTL5", 2, "[CX4H3][NX4]", "choline methyl (DMPC)", in_molecule=[MYR])
+    R.add("HL", 2, "[H][CX4][NX4H0]", "H on a choline C (DMPC)", in_molecule=[MYR])
     R.add("CEL1", 1, "[CX3;H1,H0]=[CX3]", "alkene carbon =CH- (and =CR-)"); R.add("CEL2", 1, "[CX3H2]=[CX3]", "alkene carbon =CH2")
     R.add("HEL1", 1, "[H][CX3H1]=[CX3]", "H on =CH-"); R.add("HEL2", 1, "[H][CX3H2]=[CX3]", "H on =CH2")
-    R.add("CL", 3, "[CX3](=[OX1])[OX2]", "ester / acid carbonyl carbon"); R.add("CCL", 4, "[CX3](=[OX1])[OX1-]", "carboxylate carbon")
+    R.add("CL", 3, "[CX3](=[OX1])[OX2]", "ester / acid carbonyl carbon"); R.add("CCL", 4, "[CX3](~[OX1])~[OX1]", "carboxylate carbon")
     R.add("OBL", 2, "[OX1]=[CX3][OX2]", "ester / acid carbonyl oxygen"); R.add("OCL", 3, "[OX1]~[CX3]~[OX1]", "carboxylate oxygen")
-    R.add("OSL", 2, ESTER_O, "ester oxygen"); R.add("OHL", 1, "[OX2H1]", "hydroxyl oxygen"); R.add("HOL", 1, "[H][OX2]", "hydroxyl H")
-    R.add("NTL", 3, "[NX4+;H0]", "quaternary ammonium nitrogen"); R.add("NH3L", 3, "[NX4+;H3]", "ammonium nitrogen"); R.add("HCL", 3, "[H][NX4+]", "H on N+")
-    R.add("PL", 0, "[PX4]", "phosphorus"); R.add("O2L", 1, "[OX1]~P", "phosphate non-bridging oxygen"); R.add("OSLP", 1, "[OX2](P)[#6]", "phosphate ester oxygen")
+    R.add("OSL", 2, "[OX2]([#6])[$([CX3]=[OX1]),$([SX4])]", "ester oxygen (carboxylate, sulfate)"); R.add("OHL", 1, "[OX2H1]", "hydroxyl oxygen")
+    R.add("HOL", 1, "[H][OX2]", "hydroxyl H")
+    R.add("NTL", 3, "[NX4;H0]", "quaternary ammonium nitrogen"); R.add("NH3L", 3, "[NX4;H3]", "ammonium nitrogen"); R.add("HCL", 3, "[H][NX4]", "H on N+")
+    R.add("PL", 0, "[PX4]", "phosphorus"); R.add("O2L", 1, "[OX1]~[P,SX4]", "phosphate / sulfate non-bridging oxygen")
+    R.add("OSLP", 1, "[OX2](P)[#6]", "phosphate ester oxygen"); R.add("SL", 1, "[SX4]", "sulfate S")
     water_ions(R, "OT", "HT")
-    R.add("SOD", 0, "[Na]", "sodium ion"); R.add("CLA", 0, "[Cl-;X0]", "chloride ion"); R.add("POT", 0, "[K]", "potassium ion")
+    R.add("SOD", 0, "[Na]", "sodium ion"); R.add("CLA", 0, "[Cl-,Cl;X0]", "chloride ion"); R.add("POT", 0, "[K]", "potassium ion")
+    for e in ("Ag", "Au", "Pd"):
+        R.add(e.upper(), 0, f"[{e}]", f"{e} metal atom")
     return R
 
 
@@ -315,7 +348,9 @@ def charmm_nucl():
     PUR = "$(*@[R2]),$(*@*@[R2]),$([R2])"
     PYR = "r6;!$(*@[R2]);!$(*@*@[R2]);!R2"
     # phosphate
-    R.add("P", 0, "[PX4]", "phosphodiester phosphorus"); R.add("P2", 1, "[PX4;$(P[OX2H1])]", "phosphorus of a terminal phosphate monoester")
+    # P2: the DNA backbone phosphodiester (a molecule with 2'-deoxyribose); RNA's backbone P and every terminal phosphate P
+    DEOXY = "[CX4H2;$(*1@[CX4]@[OX2]@[CX4]@[CX4]1)]"
+    R.add("P", 0, "[PX4]", "phosphorus"); R.add("P2", 1, "[PX4;$(P([OX2][#6])[OX2][#6])]", "DNA backbone phosphodiester phosphorus", in_molecule=[DEOXY])
     R.add("ON3", 1, "[OX1]~P", "non-bridging phosphate oxygen"); R.add("ON2", 1, "[OX2]([#6])P", "bridging (ester) phosphate oxygen")
     R.add("ON4", 2, "[OX2H1]P", "phosphate hydroxyl oxygen"); R.add("HN4", 2, "[H][OX2]P", "phosphate hydroxyl H")
     # sugar
@@ -365,6 +400,9 @@ def charmm19():
     R.add("H", 0, "[H][N,O,n]", "polar H"); R.add("HC", 2, "[H][NX4+]", "H on a charged nitrogen")
     R.add("S", 0, "[SX2]", "sulfur")
     R.add("OT", 8, "[OX2H2]", "TIP3P water O"); R.add("H", 8, "[H][OX2H2]", "water H")
+    # ST2 water: two lone-pair sites bonded to the O (element-less sites, as CAPS reads them)
+    R.add("OH2", 8, "[O;$(O([#1])([#1])([#0])[#0])]", "ST2 water O"); R.add("LP", 8, "[#0][O;$(O([#1])[#1])]", "ST2 lone pair")
+    R.add("H", 8, "[H][O;$(O([#0])[#0])]", "ST2 water H")
     return R
 
 
@@ -465,7 +503,9 @@ SETS = {
 OVERLAYS = {
     "amber-tip3p": ("AMBER: original TIP3P water (H3P)", [("OW", "[OX2H2]", "TIP3P water O"), ("H3P", "[H][OX2H2]", "original TIP3P water H")]),
     "amber-tip3p-pme": ("AMBER: TIP3P water for PME (OT3E / H3E)", [("OT3E", "[OX2H2]", "TIP3P (PME) water O"), ("H3E", "[H][OX2H2]", "TIP3P (PME) water H")]),
-    "charmm-spc": ("CHARMM (library set): SPC / SPC/E water", [("OSPC", "[OX2H2]", "SPC water O"), ("HSPC", "[H][OX2H2]", "SPC water H")]),
+    "charmm-spc": ("CHARMM: SPC / SPC/E water", [("OSPC", "[OX2H2]", "SPC water O"), ("HSPC", "[H][OX2H2]", "SPC water H")]),
+    "charmm-tip3p": ("CHARMM: original TIP3P water (H3P)", [("OT", "[OX2H2]", "TIP3P water O"), ("H3P", "[H][OX2H2]", "original TIP3P water H")]),
+    "charmm-tip3p-pme": ("CHARMM: TIP3P water for PME (OTP / HTP)", [("OTP", "[OX2H2]", "TIP3P (PME) water O"), ("HTP", "[H][OX2H2]", "TIP3P (PME) water H")]),
 }
 
 if __name__ == "__main__":
