@@ -1,0 +1,1420 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "Oxides (Lewis & Catlow 1985)",
+ "unknown_types": "untyped",
+ "bonds": "defined",
+ "shells": {
+  "O_Mg2c": "O_Mg2s",
+  "O_Mg2tc": "O_Mg2ts",
+  "Ca2c": "Ca2s",
+  "O_Ca2c": "O_Ca2s",
+  "Sr2c": "Sr2s",
+  "O_Sr2c": "O_Sr2s",
+  "Ba2c": "Ba2s",
+  "O_Ba2c": "O_Ba2s",
+  "Mn2c": "Mn2s",
+  "O_Mn2c": "O_Mn2s",
+  "Fe2c": "Fe2s",
+  "O_Fe2c": "O_Fe2s",
+  "Fe2tc": "Fe2ts",
+  "O_Fe2tc": "O_Fe2ts",
+  "Co2c": "Co2s",
+  "O_Co2c": "O_Co2s",
+  "Co2tc": "Co2ts",
+  "O_Co2tc": "O_Co2ts",
+  "Ni2c": "Ni2s",
+  "O_Ni2c": "O_Ni2s",
+  "Ni2tc": "Ni2ts",
+  "O_Ni2tc": "O_Ni2ts",
+  "Zn2c": "Zn2s",
+  "O_Zn2c": "O_Zn2s",
+  "O_Al3c": "O_Al3s",
+  "O_Al3tc": "O_Al3ts",
+  "Ti3c": "Ti3s",
+  "O_Ti3c": "O_Ti3s",
+  "V3c": "V3s",
+  "O_V3c": "O_V3s",
+  "Cr3c": "Cr3s",
+  "O_Cr3c": "O_Cr3s",
+  "Cr3tc": "Cr3ts",
+  "O_Cr3tc": "O_Cr3ts",
+  "Fe3c": "Fe3s",
+  "O_Fe3c": "O_Fe3s",
+  "Fe3tc": "Fe3ts",
+  "O_Fe3tc": "O_Fe3ts",
+  "Ge4c": "Ge4s",
+  "O_Ge4c": "O_Ge4s",
+  "Sn4c": "Sn4s",
+  "O_Sn4c": "O_Sn4s",
+  "Ti4c": "Ti4s",
+  "O_Ti4c": "O_Ti4s",
+  "Ce4c": "Ce4s",
+  "O_Ce4c": "O_Ce4s",
+  "U4c": "U4s",
+  "O_U4c": "O_U4s",
+  "Th4c": "Th4s",
+  "O_Th4c": "O_Th4s"
+ },
+ "description": "each oxide typed by composition (bench/ff/make_lewis_catlow1985.py); tetrahedral sites and second oxidation states are overlays",
+ "rules": [
+  {
+   "type": "Mg2",
+   "smarts": "[#12]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "excludes": [
+    "Al",
+    "Ba",
+    "Ca",
+    "Ce",
+    "Co",
+    "Cr",
+    "Fe",
+    "Ge",
+    "Mn",
+    "Ni",
+    "Sn",
+    "Sr",
+    "Th",
+    "Ti",
+    "U",
+    "V",
+    "Zn"
+   ],
+   "description": "Mg2+ in its oxide"
+  },
+  {
+   "type": "O_Mg2c",
+   "smarts": "[#8]",
+   "priority": 0,
+   "requires": [
+    "Mg"
+   ],
+   "excludes": [
+    "Al",
+    "Ba",
+    "Ca",
+    "Ce",
+    "Co",
+    "Cr",
+    "Fe",
+    "Ge",
+    "Mn",
+    "Ni",
+    "Sn",
+    "Sr",
+    "Th",
+    "Ti",
+    "U",
+    "V",
+    "Zn"
+   ],
+   "description": "O2- in the Mg2+ oxide"
+  },
+  {
+   "type": "Ca2c",
+   "smarts": "[#20]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "excludes": [
+    "Al",
+    "Ba",
+    "Ce",
+    "Co",
+    "Cr",
+    "Fe",
+    "Ge",
+    "Mg",
+    "Mn",
+    "Ni",
+    "Sn",
+    "Sr",
+    "Th",
+    "Ti",
+    "U",
+    "V",
+    "Zn"
+   ],
+   "description": "Ca2+ in its oxide"
+  },
+  {
+   "type": "O_Ca2c",
+   "smarts": "[#8]",
+   "priority": 0,
+   "requires": [
+    "Ca"
+   ],
+   "excludes": [
+    "Al",
+    "Ba",
+    "Ce",
+    "Co",
+    "Cr",
+    "Fe",
+    "Ge",
+    "Mg",
+    "Mn",
+    "Ni",
+    "Sn",
+    "Sr",
+    "Th",
+    "Ti",
+    "U",
+    "V",
+    "Zn"
+   ],
+   "description": "O2- in the Ca2+ oxide"
+  },
+  {
+   "type": "Sr2c",
+   "smarts": "[#38]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "excludes": [
+    "Al",
+    "Ba",
+    "Ca",
+    "Ce",
+    "Co",
+    "Cr",
+    "Fe",
+    "Ge",
+    "Mg",
+    "Mn",
+    "Ni",
+    "Sn",
+    "Th",
+    "Ti",
+    "U",
+    "V",
+    "Zn"
+   ],
+   "description": "Sr2+ in its oxide"
+  },
+  {
+   "type": "O_Sr2c",
+   "smarts": "[#8]",
+   "priority": 0,
+   "requires": [
+    "Sr"
+   ],
+   "excludes": [
+    "Al",
+    "Ba",
+    "Ca",
+    "Ce",
+    "Co",
+    "Cr",
+    "Fe",
+    "Ge",
+    "Mg",
+    "Mn",
+    "Ni",
+    "Sn",
+    "Th",
+    "Ti",
+    "U",
+    "V",
+    "Zn"
+   ],
+   "description": "O2- in the Sr2+ oxide"
+  },
+  {
+   "type": "Ba2c",
+   "smarts": "[#56]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "excludes": [
+    "Al",
+    "Ca",
+    "Ce",
+    "Co",
+    "Cr",
+    "Fe",
+    "Ge",
+    "Mg",
+    "Mn",
+    "Ni",
+    "Sn",
+    "Sr",
+    "Th",
+    "Ti",
+    "U",
+    "V",
+    "Zn"
+   ],
+   "description": "Ba2+ in its oxide"
+  },
+  {
+   "type": "O_Ba2c",
+   "smarts": "[#8]",
+   "priority": 0,
+   "requires": [
+    "Ba"
+   ],
+   "excludes": [
+    "Al",
+    "Ca",
+    "Ce",
+    "Co",
+    "Cr",
+    "Fe",
+    "Ge",
+    "Mg",
+    "Mn",
+    "Ni",
+    "Sn",
+    "Sr",
+    "Th",
+    "Ti",
+    "U",
+    "V",
+    "Zn"
+   ],
+   "description": "O2- in the Ba2+ oxide"
+  },
+  {
+   "type": "Mn2c",
+   "smarts": "[#25]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "excludes": [
+    "Al",
+    "Ba",
+    "Ca",
+    "Ce",
+    "Co",
+    "Cr",
+    "Fe",
+    "Ge",
+    "Mg",
+    "Ni",
+    "Sn",
+    "Sr",
+    "Th",
+    "Ti",
+    "U",
+    "V",
+    "Zn"
+   ],
+   "description": "Mn2+ in its oxide"
+  },
+  {
+   "type": "O_Mn2c",
+   "smarts": "[#8]",
+   "priority": 0,
+   "requires": [
+    "Mn"
+   ],
+   "excludes": [
+    "Al",
+    "Ba",
+    "Ca",
+    "Ce",
+    "Co",
+    "Cr",
+    "Fe",
+    "Ge",
+    "Mg",
+    "Ni",
+    "Sn",
+    "Sr",
+    "Th",
+    "Ti",
+    "U",
+    "V",
+    "Zn"
+   ],
+   "description": "O2- in the Mn2+ oxide"
+  },
+  {
+   "type": "Fe2c",
+   "smarts": "[#26]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "excludes": [
+    "Al",
+    "Ba",
+    "Ca",
+    "Ce",
+    "Co",
+    "Cr",
+    "Ge",
+    "Mg",
+    "Mn",
+    "Ni",
+    "Sn",
+    "Sr",
+    "Th",
+    "Ti",
+    "U",
+    "V",
+    "Zn"
+   ],
+   "description": "Fe2+ in its oxide"
+  },
+  {
+   "type": "O_Fe2c",
+   "smarts": "[#8]",
+   "priority": 0,
+   "requires": [
+    "Fe"
+   ],
+   "excludes": [
+    "Al",
+    "Ba",
+    "Ca",
+    "Ce",
+    "Co",
+    "Cr",
+    "Ge",
+    "Mg",
+    "Mn",
+    "Ni",
+    "Sn",
+    "Sr",
+    "Th",
+    "Ti",
+    "U",
+    "V",
+    "Zn"
+   ],
+   "description": "O2- in the Fe2+ oxide"
+  },
+  {
+   "type": "Co2c",
+   "smarts": "[#27]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "excludes": [
+    "Al",
+    "Ba",
+    "Ca",
+    "Ce",
+    "Cr",
+    "Fe",
+    "Ge",
+    "Mg",
+    "Mn",
+    "Ni",
+    "Sn",
+    "Sr",
+    "Th",
+    "Ti",
+    "U",
+    "V",
+    "Zn"
+   ],
+   "description": "Co2+ in its oxide"
+  },
+  {
+   "type": "O_Co2c",
+   "smarts": "[#8]",
+   "priority": 0,
+   "requires": [
+    "Co"
+   ],
+   "excludes": [
+    "Al",
+    "Ba",
+    "Ca",
+    "Ce",
+    "Cr",
+    "Fe",
+    "Ge",
+    "Mg",
+    "Mn",
+    "Ni",
+    "Sn",
+    "Sr",
+    "Th",
+    "Ti",
+    "U",
+    "V",
+    "Zn"
+   ],
+   "description": "O2- in the Co2+ oxide"
+  },
+  {
+   "type": "Ni2c",
+   "smarts": "[#28]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "excludes": [
+    "Al",
+    "Ba",
+    "Ca",
+    "Ce",
+    "Co",
+    "Cr",
+    "Fe",
+    "Ge",
+    "Mg",
+    "Mn",
+    "Sn",
+    "Sr",
+    "Th",
+    "Ti",
+    "U",
+    "V",
+    "Zn"
+   ],
+   "description": "Ni2+ in its oxide"
+  },
+  {
+   "type": "O_Ni2c",
+   "smarts": "[#8]",
+   "priority": 0,
+   "requires": [
+    "Ni"
+   ],
+   "excludes": [
+    "Al",
+    "Ba",
+    "Ca",
+    "Ce",
+    "Co",
+    "Cr",
+    "Fe",
+    "Ge",
+    "Mg",
+    "Mn",
+    "Sn",
+    "Sr",
+    "Th",
+    "Ti",
+    "U",
+    "V",
+    "Zn"
+   ],
+   "description": "O2- in the Ni2+ oxide"
+  },
+  {
+   "type": "Zn2c",
+   "smarts": "[#30]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "excludes": [
+    "Al",
+    "Ba",
+    "Ca",
+    "Ce",
+    "Co",
+    "Cr",
+    "Fe",
+    "Ge",
+    "Mg",
+    "Mn",
+    "Ni",
+    "Sn",
+    "Sr",
+    "Th",
+    "Ti",
+    "U",
+    "V"
+   ],
+   "description": "Zn2+ in its oxide"
+  },
+  {
+   "type": "O_Zn2c",
+   "smarts": "[#8]",
+   "priority": 0,
+   "requires": [
+    "Zn"
+   ],
+   "excludes": [
+    "Al",
+    "Ba",
+    "Ca",
+    "Ce",
+    "Co",
+    "Cr",
+    "Fe",
+    "Ge",
+    "Mg",
+    "Mn",
+    "Ni",
+    "Sn",
+    "Sr",
+    "Th",
+    "Ti",
+    "U",
+    "V"
+   ],
+   "description": "O2- in the Zn2+ oxide"
+  },
+  {
+   "type": "Al3",
+   "smarts": "[#13]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "excludes": [
+    "Ba",
+    "Ca",
+    "Ce",
+    "Co",
+    "Cr",
+    "Fe",
+    "Ge",
+    "Mg",
+    "Mn",
+    "Ni",
+    "Sn",
+    "Sr",
+    "Th",
+    "Ti",
+    "U",
+    "V",
+    "Zn"
+   ],
+   "description": "Al3+ in its oxide"
+  },
+  {
+   "type": "O_Al3c",
+   "smarts": "[#8]",
+   "priority": 0,
+   "requires": [
+    "Al"
+   ],
+   "excludes": [
+    "Ba",
+    "Ca",
+    "Ce",
+    "Co",
+    "Cr",
+    "Fe",
+    "Ge",
+    "Mg",
+    "Mn",
+    "Ni",
+    "Sn",
+    "Sr",
+    "Th",
+    "Ti",
+    "U",
+    "V",
+    "Zn"
+   ],
+   "description": "O2- in the Al3+ oxide"
+  },
+  {
+   "type": "Ti3c",
+   "smarts": "[#22]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "excludes": [
+    "Al",
+    "Ba",
+    "Ca",
+    "Ce",
+    "Co",
+    "Cr",
+    "Fe",
+    "Ge",
+    "Mg",
+    "Mn",
+    "Ni",
+    "Sn",
+    "Sr",
+    "Th",
+    "U",
+    "V",
+    "Zn"
+   ],
+   "description": "Ti3+ in its oxide"
+  },
+  {
+   "type": "O_Ti3c",
+   "smarts": "[#8]",
+   "priority": 0,
+   "requires": [
+    "Ti"
+   ],
+   "excludes": [
+    "Al",
+    "Ba",
+    "Ca",
+    "Ce",
+    "Co",
+    "Cr",
+    "Fe",
+    "Ge",
+    "Mg",
+    "Mn",
+    "Ni",
+    "Sn",
+    "Sr",
+    "Th",
+    "U",
+    "V",
+    "Zn"
+   ],
+   "description": "O2- in the Ti3+ oxide"
+  },
+  {
+   "type": "V3c",
+   "smarts": "[#23]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "excludes": [
+    "Al",
+    "Ba",
+    "Ca",
+    "Ce",
+    "Co",
+    "Cr",
+    "Fe",
+    "Ge",
+    "Mg",
+    "Mn",
+    "Ni",
+    "Sn",
+    "Sr",
+    "Th",
+    "Ti",
+    "U",
+    "Zn"
+   ],
+   "description": "V3+ in its oxide"
+  },
+  {
+   "type": "O_V3c",
+   "smarts": "[#8]",
+   "priority": 0,
+   "requires": [
+    "V"
+   ],
+   "excludes": [
+    "Al",
+    "Ba",
+    "Ca",
+    "Ce",
+    "Co",
+    "Cr",
+    "Fe",
+    "Ge",
+    "Mg",
+    "Mn",
+    "Ni",
+    "Sn",
+    "Sr",
+    "Th",
+    "Ti",
+    "U",
+    "Zn"
+   ],
+   "description": "O2- in the V3+ oxide"
+  },
+  {
+   "type": "Cr3c",
+   "smarts": "[#24]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "excludes": [
+    "Al",
+    "Ba",
+    "Ca",
+    "Ce",
+    "Co",
+    "Fe",
+    "Ge",
+    "Mg",
+    "Mn",
+    "Ni",
+    "Sn",
+    "Sr",
+    "Th",
+    "Ti",
+    "U",
+    "V",
+    "Zn"
+   ],
+   "description": "Cr3+ in its oxide"
+  },
+  {
+   "type": "O_Cr3c",
+   "smarts": "[#8]",
+   "priority": 0,
+   "requires": [
+    "Cr"
+   ],
+   "excludes": [
+    "Al",
+    "Ba",
+    "Ca",
+    "Ce",
+    "Co",
+    "Fe",
+    "Ge",
+    "Mg",
+    "Mn",
+    "Ni",
+    "Sn",
+    "Sr",
+    "Th",
+    "Ti",
+    "U",
+    "V",
+    "Zn"
+   ],
+   "description": "O2- in the Cr3+ oxide"
+  },
+  {
+   "type": "Ge4c",
+   "smarts": "[#32]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "excludes": [
+    "Al",
+    "Ba",
+    "Ca",
+    "Ce",
+    "Co",
+    "Cr",
+    "Fe",
+    "Mg",
+    "Mn",
+    "Ni",
+    "Sn",
+    "Sr",
+    "Th",
+    "Ti",
+    "U",
+    "V",
+    "Zn"
+   ],
+   "description": "Ge4+ in its oxide"
+  },
+  {
+   "type": "O_Ge4c",
+   "smarts": "[#8]",
+   "priority": 0,
+   "requires": [
+    "Ge"
+   ],
+   "excludes": [
+    "Al",
+    "Ba",
+    "Ca",
+    "Ce",
+    "Co",
+    "Cr",
+    "Fe",
+    "Mg",
+    "Mn",
+    "Ni",
+    "Sn",
+    "Sr",
+    "Th",
+    "Ti",
+    "U",
+    "V",
+    "Zn"
+   ],
+   "description": "O2- in the Ge4+ oxide"
+  },
+  {
+   "type": "Sn4c",
+   "smarts": "[#50]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "excludes": [
+    "Al",
+    "Ba",
+    "Ca",
+    "Ce",
+    "Co",
+    "Cr",
+    "Fe",
+    "Ge",
+    "Mg",
+    "Mn",
+    "Ni",
+    "Sr",
+    "Th",
+    "Ti",
+    "U",
+    "V",
+    "Zn"
+   ],
+   "description": "Sn4+ in its oxide"
+  },
+  {
+   "type": "O_Sn4c",
+   "smarts": "[#8]",
+   "priority": 0,
+   "requires": [
+    "Sn"
+   ],
+   "excludes": [
+    "Al",
+    "Ba",
+    "Ca",
+    "Ce",
+    "Co",
+    "Cr",
+    "Fe",
+    "Ge",
+    "Mg",
+    "Mn",
+    "Ni",
+    "Sr",
+    "Th",
+    "Ti",
+    "U",
+    "V",
+    "Zn"
+   ],
+   "description": "O2- in the Sn4+ oxide"
+  },
+  {
+   "type": "Ce4c",
+   "smarts": "[#58]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "excludes": [
+    "Al",
+    "Ba",
+    "Ca",
+    "Co",
+    "Cr",
+    "Fe",
+    "Ge",
+    "Mg",
+    "Mn",
+    "Ni",
+    "Sn",
+    "Sr",
+    "Th",
+    "Ti",
+    "U",
+    "V",
+    "Zn"
+   ],
+   "description": "Ce4+ in its oxide"
+  },
+  {
+   "type": "O_Ce4c",
+   "smarts": "[#8]",
+   "priority": 0,
+   "requires": [
+    "Ce"
+   ],
+   "excludes": [
+    "Al",
+    "Ba",
+    "Ca",
+    "Co",
+    "Cr",
+    "Fe",
+    "Ge",
+    "Mg",
+    "Mn",
+    "Ni",
+    "Sn",
+    "Sr",
+    "Th",
+    "Ti",
+    "U",
+    "V",
+    "Zn"
+   ],
+   "description": "O2- in the Ce4+ oxide"
+  },
+  {
+   "type": "U4c",
+   "smarts": "[#92]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "excludes": [
+    "Al",
+    "Ba",
+    "Ca",
+    "Ce",
+    "Co",
+    "Cr",
+    "Fe",
+    "Ge",
+    "Mg",
+    "Mn",
+    "Ni",
+    "Sn",
+    "Sr",
+    "Th",
+    "Ti",
+    "V",
+    "Zn"
+   ],
+   "description": "U4+ in its oxide"
+  },
+  {
+   "type": "O_U4c",
+   "smarts": "[#8]",
+   "priority": 0,
+   "requires": [
+    "U"
+   ],
+   "excludes": [
+    "Al",
+    "Ba",
+    "Ca",
+    "Ce",
+    "Co",
+    "Cr",
+    "Fe",
+    "Ge",
+    "Mg",
+    "Mn",
+    "Ni",
+    "Sn",
+    "Sr",
+    "Th",
+    "Ti",
+    "V",
+    "Zn"
+   ],
+   "description": "O2- in the U4+ oxide"
+  },
+  {
+   "type": "Th4c",
+   "smarts": "[#90]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "excludes": [
+    "Al",
+    "Ba",
+    "Ca",
+    "Ce",
+    "Co",
+    "Cr",
+    "Fe",
+    "Ge",
+    "Mg",
+    "Mn",
+    "Ni",
+    "Sn",
+    "Sr",
+    "Ti",
+    "U",
+    "V",
+    "Zn"
+   ],
+   "description": "Th4+ in its oxide"
+  },
+  {
+   "type": "O_Th4c",
+   "smarts": "[#8]",
+   "priority": 0,
+   "requires": [
+    "Th"
+   ],
+   "excludes": [
+    "Al",
+    "Ba",
+    "Ca",
+    "Ce",
+    "Co",
+    "Cr",
+    "Fe",
+    "Ge",
+    "Mg",
+    "Mn",
+    "Ni",
+    "Sn",
+    "Sr",
+    "Ti",
+    "U",
+    "V",
+    "Zn"
+   ],
+   "description": "O2- in the Th4+ oxide"
+  },
+  {
+   "type": "O_Mg2s",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O_Mg2s",
+   "description": "shell of O_Mg2c"
+  },
+  {
+   "type": "O_Mg2ts",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O_Mg2ts",
+   "description": "shell of O_Mg2tc"
+  },
+  {
+   "type": "Ca2s",
+   "smarts": "[#20]",
+   "priority": 99,
+   "atom_name": "Ca2s",
+   "description": "shell of Ca2c"
+  },
+  {
+   "type": "O_Ca2s",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O_Ca2s",
+   "description": "shell of O_Ca2c"
+  },
+  {
+   "type": "Sr2s",
+   "smarts": "[#38]",
+   "priority": 99,
+   "atom_name": "Sr2s",
+   "description": "shell of Sr2c"
+  },
+  {
+   "type": "O_Sr2s",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O_Sr2s",
+   "description": "shell of O_Sr2c"
+  },
+  {
+   "type": "Ba2s",
+   "smarts": "[#56]",
+   "priority": 99,
+   "atom_name": "Ba2s",
+   "description": "shell of Ba2c"
+  },
+  {
+   "type": "O_Ba2s",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O_Ba2s",
+   "description": "shell of O_Ba2c"
+  },
+  {
+   "type": "Mn2s",
+   "smarts": "[#25]",
+   "priority": 99,
+   "atom_name": "Mn2s",
+   "description": "shell of Mn2c"
+  },
+  {
+   "type": "O_Mn2s",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O_Mn2s",
+   "description": "shell of O_Mn2c"
+  },
+  {
+   "type": "Fe2s",
+   "smarts": "[#26]",
+   "priority": 99,
+   "atom_name": "Fe2s",
+   "description": "shell of Fe2c"
+  },
+  {
+   "type": "O_Fe2s",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O_Fe2s",
+   "description": "shell of O_Fe2c"
+  },
+  {
+   "type": "Fe2ts",
+   "smarts": "[#26]",
+   "priority": 99,
+   "atom_name": "Fe2ts",
+   "description": "shell of Fe2tc"
+  },
+  {
+   "type": "O_Fe2ts",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O_Fe2ts",
+   "description": "shell of O_Fe2tc"
+  },
+  {
+   "type": "Co2s",
+   "smarts": "[#27]",
+   "priority": 99,
+   "atom_name": "Co2s",
+   "description": "shell of Co2c"
+  },
+  {
+   "type": "O_Co2s",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O_Co2s",
+   "description": "shell of O_Co2c"
+  },
+  {
+   "type": "Co2ts",
+   "smarts": "[#27]",
+   "priority": 99,
+   "atom_name": "Co2ts",
+   "description": "shell of Co2tc"
+  },
+  {
+   "type": "O_Co2ts",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O_Co2ts",
+   "description": "shell of O_Co2tc"
+  },
+  {
+   "type": "Ni2s",
+   "smarts": "[#28]",
+   "priority": 99,
+   "atom_name": "Ni2s",
+   "description": "shell of Ni2c"
+  },
+  {
+   "type": "O_Ni2s",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O_Ni2s",
+   "description": "shell of O_Ni2c"
+  },
+  {
+   "type": "Ni2ts",
+   "smarts": "[#28]",
+   "priority": 99,
+   "atom_name": "Ni2ts",
+   "description": "shell of Ni2tc"
+  },
+  {
+   "type": "O_Ni2ts",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O_Ni2ts",
+   "description": "shell of O_Ni2tc"
+  },
+  {
+   "type": "Zn2s",
+   "smarts": "[#30]",
+   "priority": 99,
+   "atom_name": "Zn2s",
+   "description": "shell of Zn2c"
+  },
+  {
+   "type": "O_Zn2s",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O_Zn2s",
+   "description": "shell of O_Zn2c"
+  },
+  {
+   "type": "O_Al3s",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O_Al3s",
+   "description": "shell of O_Al3c"
+  },
+  {
+   "type": "O_Al3ts",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O_Al3ts",
+   "description": "shell of O_Al3tc"
+  },
+  {
+   "type": "Ti3s",
+   "smarts": "[#22]",
+   "priority": 99,
+   "atom_name": "Ti3s",
+   "description": "shell of Ti3c"
+  },
+  {
+   "type": "O_Ti3s",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O_Ti3s",
+   "description": "shell of O_Ti3c"
+  },
+  {
+   "type": "V3s",
+   "smarts": "[#23]",
+   "priority": 99,
+   "atom_name": "V3s",
+   "description": "shell of V3c"
+  },
+  {
+   "type": "O_V3s",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O_V3s",
+   "description": "shell of O_V3c"
+  },
+  {
+   "type": "Cr3s",
+   "smarts": "[#24]",
+   "priority": 99,
+   "atom_name": "Cr3s",
+   "description": "shell of Cr3c"
+  },
+  {
+   "type": "O_Cr3s",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O_Cr3s",
+   "description": "shell of O_Cr3c"
+  },
+  {
+   "type": "Cr3ts",
+   "smarts": "[#24]",
+   "priority": 99,
+   "atom_name": "Cr3ts",
+   "description": "shell of Cr3tc"
+  },
+  {
+   "type": "O_Cr3ts",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O_Cr3ts",
+   "description": "shell of O_Cr3tc"
+  },
+  {
+   "type": "Fe3s",
+   "smarts": "[#26]",
+   "priority": 99,
+   "atom_name": "Fe3s",
+   "description": "shell of Fe3c"
+  },
+  {
+   "type": "O_Fe3s",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O_Fe3s",
+   "description": "shell of O_Fe3c"
+  },
+  {
+   "type": "Fe3ts",
+   "smarts": "[#26]",
+   "priority": 99,
+   "atom_name": "Fe3ts",
+   "description": "shell of Fe3tc"
+  },
+  {
+   "type": "O_Fe3ts",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O_Fe3ts",
+   "description": "shell of O_Fe3tc"
+  },
+  {
+   "type": "Ge4s",
+   "smarts": "[#32]",
+   "priority": 99,
+   "atom_name": "Ge4s",
+   "description": "shell of Ge4c"
+  },
+  {
+   "type": "O_Ge4s",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O_Ge4s",
+   "description": "shell of O_Ge4c"
+  },
+  {
+   "type": "Sn4s",
+   "smarts": "[#50]",
+   "priority": 99,
+   "atom_name": "Sn4s",
+   "description": "shell of Sn4c"
+  },
+  {
+   "type": "O_Sn4s",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O_Sn4s",
+   "description": "shell of O_Sn4c"
+  },
+  {
+   "type": "Ti4s",
+   "smarts": "[#22]",
+   "priority": 99,
+   "atom_name": "Ti4s",
+   "description": "shell of Ti4c"
+  },
+  {
+   "type": "O_Ti4s",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O_Ti4s",
+   "description": "shell of O_Ti4c"
+  },
+  {
+   "type": "Ce4s",
+   "smarts": "[#58]",
+   "priority": 99,
+   "atom_name": "Ce4s",
+   "description": "shell of Ce4c"
+  },
+  {
+   "type": "O_Ce4s",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O_Ce4s",
+   "description": "shell of O_Ce4c"
+  },
+  {
+   "type": "U4s",
+   "smarts": "[#92]",
+   "priority": 99,
+   "atom_name": "U4s",
+   "description": "shell of U4c"
+  },
+  {
+   "type": "O_U4s",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O_U4s",
+   "description": "shell of O_U4c"
+  },
+  {
+   "type": "Th4s",
+   "smarts": "[#90]",
+   "priority": 99,
+   "atom_name": "Th4s",
+   "description": "shell of Th4c"
+  },
+  {
+   "type": "O_Th4s",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O_Th4s",
+   "description": "shell of O_Th4c"
+  }
+ ]
+}

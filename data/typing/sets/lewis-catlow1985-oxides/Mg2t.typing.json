@@ -1,0 +1,65 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "lewis-catlow1985-oxides: Mg2t",
+ "unknown_types": "untyped",
+ "description": "Overlay: the Mg2t set (Table 3) in place of the element's first",
+ "rules": [
+  {
+   "type": "Mg2t",
+   "smarts": "[#12]",
+   "priority": 50,
+   "requires": [
+    "O"
+   ],
+   "excludes": [
+    "Al",
+    "Ba",
+    "Ca",
+    "Ce",
+    "Co",
+    "Cr",
+    "Fe",
+    "Ge",
+    "Mn",
+    "Ni",
+    "Sn",
+    "Sr",
+    "Th",
+    "Ti",
+    "U",
+    "V",
+    "Zn"
+   ],
+   "description": "Mg2+ in its oxide"
+  },
+  {
+   "type": "O_Mg2tc",
+   "smarts": "[#8]",
+   "priority": 50,
+   "requires": [
+    "Mg"
+   ],
+   "excludes": [
+    "Al",
+    "Ba",
+    "Ca",
+    "Ce",
+    "Co",
+    "Cr",
+    "Fe",
+    "Ge",
+    "Mn",
+    "Ni",
+    "Sn",
+    "Sr",
+    "Th",
+    "Ti",
+    "U",
+    "V",
+    "Zn"
+   ],
+   "description": "O2- in the Mg2+ oxide"
+  }
+ ]
+}
