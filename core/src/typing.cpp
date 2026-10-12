@@ -1147,11 +1147,47 @@ TypingResult assign_types(const System& s, const FFDef& ff, const std::vector<st
   // conditions on the whole structure: which elements it holds
   std::set<int> present;
   for (const auto& at : s.atoms) present.insert(at.element);
+  // conditions on the atom's molecule: connected components, and per SMARTS the components holding a match (lazily)
+  std::vector<int> comp(n, -1);
+  int ncomp = 0;
+  {
+    std::vector<std::vector<uint32_t>> adj(n);
+    for (const auto& b : s.bonds) adj[b.i].push_back(b.j), adj[b.j].push_back(b.i);
+    for (uint32_t a = 0; a < n; ++a) {
+      if (comp[a] >= 0) continue;
+      std::vector<uint32_t> st{a};
+      comp[a] = ncomp;
+      while (!st.empty()) {
+        const uint32_t x = st.back();
+        st.pop_back();
+        for (uint32_t y : adj[x])
+          if (comp[y] < 0) comp[y] = ncomp, st.push_back(y);
+      }
+      ++ncomp;
+    }
+  }
+  std::map<std::string, std::vector<char>> mol_has;
+  auto molecule_has = [&](const std::string& sm, uint32_t a) {
+    auto it = mol_has.find(sm);
+    if (it == mol_has.end()) {
+      std::vector<char> h(ncomp, 0);
+      const Smarts q(sm);
+      const std::vector<std::string> none(n);
+      for (uint32_t x = 0; x < n; ++x)
+        if (!h[comp[x]] && q.matches(s, p, x, none)) h[comp[x]] = 1;
+      it = mol_has.emplace(sm, std::move(h)).first;
+    }
+    return it->second[comp[a]] != 0;
+  };
   auto applies = [&](const Rule& x, uint32_t a) {
     for (int z : x.r->needs_elements)
       if (!present.count(z)) return false;
     for (int z : x.r->no_elements)
       if (present.count(z)) return false;
+    for (const auto& sm : x.r->in_molecule)
+      if (!molecule_has(sm, a)) return false;
+    for (const auto& sm : x.r->not_in_molecule)
+      if (molecule_has(sm, a)) return false;
     return x.r->atom_name.empty() || s.atoms[a].name == x.r->atom_name;
   };
   for (int pass = 0; pass < (any_type_refs && !context ? 10 : 1); ++pass) {

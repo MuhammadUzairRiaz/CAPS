@@ -69,6 +69,13 @@ std::vector<TypingRule> typing_from(const Json& a, const std::string& where) {
         }
       }
     r.atom_name = o.text("atom_name");
+    for (auto [key, vec] : {std::make_pair("in_molecule", &r.in_molecule), std::make_pair("not_in_molecule", &r.not_in_molecule)})
+      if (o.has(key)) {
+        const Json& v = o[std::string(key)];
+        if (v.is_string()) vec->push_back(v.str());
+        else
+          for (const auto& x : v.items()) vec->push_back(x.str());
+      }
     out.push_back(std::move(r));
   }
   return out;

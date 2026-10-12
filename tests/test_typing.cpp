@@ -293,6 +293,25 @@ TEST(Typing, OplsAa2024AsTheGromacsTopologies) {
   EXPECT_EQ(num(gly.types[2]), "174");
 }
 
+TEST(Typing, MoleculeClassConditions) {
+  // the library's generic CHARMM set keys an sp3 CH3 by its molecule (in_molecule / not_in_molecule): a sulfoxide's
+  // methyls are lipid C_L3, an ether's CAE3, an amino acid's C3
+  const System dmso = mol({"C", "S", "O", "C"}, {3, 0, 0, 3}, {{0, 1}, {1, 2}, {1, 3}});
+  EXPECT_EQ(type_with("charmm", dmso).types[0], "C_L3");
+  const System dme = mol({"C", "O", "C"}, {3, 0, 3}, {{0, 1}, {1, 2}});
+  EXPECT_EQ(type_with("charmm", dme).types[0], "CAE3");
+  const System ala = mol({"N", "C", "C", "C", "O", "O"}, {3, 1, 3, 0, 0, 0}, {{0, 1}, {1, 2}, {1, 3}, {3, 4}, {3, 5}});
+  EXPECT_EQ(type_with("charmm", ala).types[2], "C3");
+  // both together in one structure: each molecule keeps its own
+  System two = dmso;
+  const uint32_t off = uint32_t(two.atoms.size());
+  for (const auto& a : dme.atoms) two.atoms.push_back(a);
+  for (const auto& b : dme.bonds) two.bonds.push_back({b.i + off, b.j + off, b.order});
+  const TypingResult t2 = type_with("charmm", two);
+  EXPECT_EQ(t2.types[0], "C_L3");
+  EXPECT_EQ(t2.types[off], "CAE3");
+}
+
 TEST(Typing, CgenffAndOpls) {
   // CGenFF: conjugated diene CG2DC3 CG2DC2 CG2DC1 CG2DC3 (same type across a double bond, switched across the single)
   const TypingResult b = type_with("cgenff", butadiene());

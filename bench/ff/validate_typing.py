@@ -33,11 +33,17 @@ only = [x for x in arg("--only", "").split(",") if x]
 sf = os.path.join(LIB, lib + ".sf")
 types, keys, mols = template_pdb.parse_sf(sf)
 key_of = dict(template_pdb.ATOM_KEY)
-work = tempfile.mkdtemp()
+work = arg("--keep", "") or tempfile.mkdtemp()   # --keep DIR: the mol2 and type files stay there
+os.makedirs(work, exist_ok=True)
+
+
+UNITED = False   # united-atom rules: a CH2 site has two partners, nothing is open
 
 
 def open_atoms(m):
     """{atom label: missing partners} for sp3 C and ether / hydroxyl O the template leaves open"""
+    if UNITED:
+        return {}
     nbs = collections.defaultdict(set)
     for a, js in m["connect"].items():
         for b in js:
@@ -46,10 +52,12 @@ def open_atoms(m):
     out = {}
     for a, t in m["atoms"]:
         tl = t.lower()
-        if element(t) == "C" and re.search(r"aliphatic|alkane|sp3|sialic", tl) and len(nbs[a]) < 4:
+        if element(t) == "C" and re.search(r"aliphatic|alkane|sp3|sialic|sugar|furan|pyran", tl) and len(nbs[a]) < 4:
             out[a] = 4 - len(nbs[a])
-        elif element(t) == "O" and re.search(r"ether|hydroxyl|alcohol", tl) and len(nbs[a]) < 2:
+        elif element(t) == "O" and re.search(r"ether|hydroxyl|alcohol|glycosid|sugar", tl) and len(nbs[a]) < 2:
             out[a] = 2 - len(nbs[a])
+        elif element(t) == "S" and re.search(r"disulph|disulf", tl) and len(nbs[a]) < 2:
+            out[a] = 2 - len(nbs[a])   # half a disulfide bridge
         elif element(t) == "S" and len(nbs[a]) == 3 and all(element(dict(m["atoms"]).get(b, "")) == "O" for b in nbs[a]):
             out[a] = 1   # an SO3 group that a sugar O carries (sulfate ester)
     return out
@@ -154,6 +162,7 @@ def retyped(name, dl_types):
     return t
 
 
+UNITED = bool(__import__("json").load(open(rules)).get("united_atom"))
 CAP = "--cap-open" in sys.argv
 # --overlay 'REGEX=RULES.json;...': templates whose name matches take that typing overlay too (a water model: the same
 # structure, a different model, which the user picks)
