@@ -349,7 +349,7 @@
     [
      "erfc",
      "complementary error function",
-     "Abramowitz–Stegun 7.1.26, as LAMMPS"
+     "inside the cut-off erfc(αr)/r = 1/r − erf(αr)/r, the second from a cubic Hermite table in r² (error below 10⁻¹² of it); Abramowitz–Stegun 7.1.26 (|error| < 1.5 × 10⁻⁷, as LAMMPS) only for the shift constants at r_c and for frozen and excluded pairs beyond the cut-off"
     ]
    ],
    "when": "The default electrostatics in CAPS: cheap, no grid, fine for neutral bulk polymers. Use smooth PME for ionic systems, interfaces with net dipoles, or when comparing with Ewald-based codes.",
@@ -358,7 +358,7 @@
    ],
    "source": "core/src/field.cpp",
    "tested": "Field.ForcesMatchFiniteDifferences · bench/ff/check_data_lammps.py (LAMMPS lj/cut/coul/dsf)",
-   "deviation": "bonded partners are treated as LAMMPS coul/dsf does (the damped sum includes them, the excluded part is removed)",
+   "deviation": "bonded partners are treated as LAMMPS coul/dsf does (the damped sum includes them, the excluded part is removed); erfc is more accurate than LAMMPS's polynomial inside the cut-off, so energies differ from LAMMPS's by up to ~10⁻⁶ relative unless its erfc is corrected (bench/ff/check_data_lammps.py does)",
    "engines": [
     "relax.lbfgs",
     "relax.cg",
@@ -763,14 +763,14 @@
    "id": "trial-growth",
    "group": "Growth",
    "title": "Chain growth by trial placement",
-   "summary": "Chains grow unit by unit inside the periodic cell. Each step places the next backbone atom and its substituents from internal coordinates (NeRF), tries many torsions (trans and gauche with jitter, ring rotations) and keeps the roomiest: the trial whose worst distance to any atom already in the cell, minus its contact limit, is largest. A poor step backs up a few units; a chain that cannot continue restarts elsewhere.",
-   "equation": "keep argmax_trials  min_j ( |r − r_j| − ℓ(z, z_j) · s )",
-   "equation_note": "CAPS's own scheme",
+   "summary": "Chains grow unit by unit inside the periodic cell. Each step places the next backbone atom and its substituents from internal coordinates (NeRF) and draws many trials of the free torsions. The draw depends on the bond: between two sp³ atoms trans or gauche± with 15° Gaussian jitter, and in 30 % of draws any angle (crowded units such as methacrylates need the room between); next to an sp² atom 30° steps from the template's angle with 5° jitter; between two sp² atoms (conjugated) 0 or 180° with 8° jitter; ester and amide links trans with 8° jitter. The default method keeps the roomiest trial: the one whose worst distance to any atom already in the cell, minus its contact limit, is largest. Two Rosenbluth methods instead draw one of the trials within the contact limits with probability ∝ exp(−E/kT) at 450 K: method 1 with a soft-sphere overlap energy, method 2 with UFF Lennard-Jones between atoms (cut at 6 Å); both add Jorgensen's butane torsion energy about sp³–sp³ bonds, and the chains' Rosenbluth weights are reported. Units with more than three heavy-atom torsions get twice the trials for each extra one (at most eight times). A poor step backs up a few units; a chain that cannot continue restarts elsewhere.",
+   "equation": "best of k: keep argmax_trials min_j ( |r − r_j| − ℓ(z, z_j) · s ),  ℓ(a, b) = 0.88 (R_a + R_b) − 0.08 n_H;  Rosenbluth: P(trial) = exp(−E/kT) / Σ exp(−E/kT),  W = Π_steps Σ_trials exp(−E/kT) / k",
+   "equation_note": "CAPS's own scheme; the Rosenbluth methods after Theodorou & Suter 1985 (method 1), without a Monte Carlo acceptance step",
    "symbols": [
     [
      "ℓ",
-     "contact limits",
-     "C–C 3.0, C–H 2.45, H–H 2.0 Å"
+     "contact limit from Bondi radii R (n_H: hydrogens in the pair)",
+     "C–C 2.99, C–H 2.47, H–H 1.95 Å; 0.5 Å more at an arm's reserved head"
     ],
     [
      "s",
@@ -779,8 +779,18 @@
     ],
     [
      "trials",
-     "per growth step",
-     "120"
+     "per growth step (k)",
+     "120; doubled per heavy-atom torsion beyond three, at most × 8"
+    ],
+    [
+     "E",
+     "Rosenbluth trial energy",
+     "method 1: 20 kcal/mol (1 − d/ℓ)² inside ℓ (ℓ × 0.85 for 1-4, × 0.9 for 1-5 to 1-7 pairs); method 2: UFF D[(x/r)¹² − 2(x/r)⁶] shifted to 0 at 6 Å; both plus ½V1(1 + cos φ) + ½V2(1 − cos 2φ) + ½V3(1 + cos 3φ), V = 1.411, −0.271, 3.145 kcal/mol, about sp³–sp³ bonds"
+    ],
+    [
+     "T",
+     "temperature of the Boltzmann factors",
+     "450 K"
     ],
     [
      "seed",
@@ -791,18 +801,19 @@
    "when": "Building amorphous cells, films on surfaces and blends at a chosen density. Measure chain dimensions only after equilibration.",
    "cites": [
     "parsons2005",
-    "matsumoto1998"
+    "matsumoto1998",
+    "theodorou1985"
    ],
    "source": "core/src/grow.cpp · core/src/polymer.cpp",
    "tested": "Grow and polymer tests (tests/test_polymer.cpp)",
-   "deviation": "not configurational-bias Monte Carlo: trials are ranked by geometric room, not Boltzmann weights, so the grown chains are not a Rosenbluth-weighted ensemble",
+   "deviation": "the default best-of-k method is not configurational-bias Monte Carlo: trials are ranked by geometric room, not Boltzmann weights, so its chains are not a Rosenbluth-weighted ensemble; the Rosenbluth methods draw by weight but have no acceptance step, so they are not either. The polystyrene-only grower (core/src/grow.cpp) keeps fixed limits C–C 3.0, C–H 2.45, H–H 2.0 Å",
    "engines": [
     "grow.trials",
     "grow.blend",
     "interface.build",
     "nano.embed"
    ],
-   "tex": "\\text{keep}\\ \\ \\argmax_\\text{trials}\\ \\min_j\\left(|r - r_j| - \\ell(z, z_j)\\,s\\right)"
+   "tex": "\\text{best of }k:\\ \\ \\argmax_\\text{trials}\\ \\min_j\\left(|r - r_j| - \\ell(z, z_j)\\,s\\right), \\qquad \\ell(a, b) = 0.88\\,(R_a + R_b) - 0.08\\,n_\\mathrm{H} \\\\ \\text{Rosenbluth: } P(\\text{trial}) = \\frac{e^{-E/k_\\mathrm{B}T}}{\\sum_\\text{trials} e^{-E/k_\\mathrm{B}T}}, \\qquad W = \\prod_\\text{steps}\\frac{1}{k}\\sum_\\text{trials} e^{-E/k_\\mathrm{B}T}"
   },
   {
    "id": "overlap-penalty",
@@ -972,6 +983,11 @@
      "k",
      "iteration",
      "1 … 6"
+    ],
+    [
+     "q⁽⁰⁾",
+     "starting charges",
+     "the perceived formal charges, so the total is the net formal charge (acetate −1, methylammonium +1)"
     ]
    ],
    "when": "Quick charges for organic molecules. Other elements are refused; use QEq for them.",
@@ -979,7 +995,7 @@
     "gasteiger1980"
    ],
    "source": "core/src/grow.cpp (gasteiger_ch)",
-   "tested": "Gasteiger.HeteroatomsGetTheirOwnParameters",
+   "tested": "Gasteiger.HeteroatomsGetTheirOwnParameters · Gasteiger.IonsKeepTheirFormalCharge",
    "deviation": "parameters of Table 1 plus the sp³ sulfur extension",
    "engines": [
     "field.assign"
@@ -1103,9 +1119,9 @@
    "id": "msd-diffusion",
    "group": "Analysis",
    "title": "Mean-square displacement and diffusion",
-   "summary": "Displacements of atoms and of molecule centres over every time origin, with the drift of the whole system removed. The diffusion coefficient comes from the linear part of the molecule-centre MSD.",
-   "equation": "D = lim_{t→∞} ⟨|r(t) − r(0)|²⟩ / (6t),   fitted over 20–50 % of the run",
-   "equation_note": "Einstein 1905",
+   "summary": "Displacements of atoms and of molecule centres over every time origin, with the drift of the whole system removed. The diffusion coefficient comes from the linear part of the molecule-centre MSD. Given the shear viscosity and the temperature, the Yeh–Hummer finite-size correction is added.",
+   "equation": "D_PBC = lim_{t→∞} ⟨|r(t) − r(0)|²⟩ / (6t),  fitted over 20–50 % of the run;  D∞ = D_PBC + k_B T ξ / (6π η L),  ξ = 2.837297",
+   "equation_note": "Einstein 1905; Yeh & Hummer 2004",
    "symbols": [
     [
      "fit window",
@@ -1116,17 +1132,33 @@
      "origins",
      "time origins",
      "every stored frame"
+    ],
+    [
+     "η",
+     "shear viscosity (Green–Kubo, or measured)",
+     "none: no correction unless given (--viscosity, mPa·s)"
+    ],
+    [
+     "T",
+     "temperature of the run",
+     "--temp"
+    ],
+    [
+     "L",
+     "edge of the cubic cell",
+     "V^(1/3) of the mean volume"
     ]
    ],
    "when": "Small molecules in polymers (curatives, solvents, gases). Check the log–log slope reaches 1 before trusting D.",
    "cites": [
-    "einstein1905"
+    "einstein1905",
+    "yeh2004"
    ],
    "source": "core/src/properties.cpp",
-   "tested": "bench/analyze/check_analyze.py (MDAnalysis)",
-   "deviation": "no finite-size (Yeh–Hummer) correction",
+   "tested": "bench/analyze/check_analyze.py (MDAnalysis) · Properties.DiffusionOfRandomWalk (the Einstein D and the Yeh–Hummer term)",
+   "deviation": "the correction is exact only for a cubic cell; a non-cubic cell takes L = V^(1/3) and the report says so",
    "engines": [],
-   "tex": "D = \\lim_{t\\to\\infty}\\frac{\\left\\langle|r(t) - r(0)|^2\\right\\rangle}{6t}, \\qquad \\text{fitted over 20–50\\% of the run}"
+   "tex": "D_\\mathrm{PBC} = \\lim_{t\\to\\infty}\\frac{\\left\\langle|r(t) - r(0)|^2\\right\\rangle}{6t}, \\qquad \\text{fitted over 20–50\\% of the run} \\\\ D_\\infty = D_\\mathrm{PBC} + \\frac{k_\\mathrm{B}T\\,\\xi}{6\\pi\\eta L}, \\qquad \\xi = 2.837297"
   },
   {
    "id": "adsorption-locator",
@@ -1341,7 +1373,7 @@
    "title": "Elastic constants from stress fluctuations",
    "summary": "At finite temperature the elastic constants are the Born term (second strain derivatives of the energy) minus the stress fluctuations, plus the kinetic term, averaged over an NVT run.",
    "equation": "C_ijkl = ⟨C^B_ijkl⟩ − (V/k_BT)(⟨σ_ij σ_kl⟩ − ⟨σ_ij⟩⟨σ_kl⟩) + (N k_B T/V)(δ_ik δ_jl + δ_il δ_jk)",
-   "equation_note": "Lutsko 1989; Clavier et al. 2017",
+   "equation_note": "Lutsko 1989; Clavier et al. 2017. The kinetic term has this form because σ is the virial stress alone; a stress with its kinetic part would change it",
    "symbols": [
     [
      "C^B",
@@ -1350,8 +1382,13 @@
     ],
     [
      "σ",
-     "instantaneous stress",
+     "instantaneous virial stress, without the kinetic part",
      "sampled every step"
+    ],
+    [
+     "N k_B T/V (δ_ik δ_jl + δ_il δ_jk)",
+     "kinetic term (Voigt: 2 N k_B T/V on C11–C33, N k_B T/V on C44–C66, 0 on C12, C13, C23)",
+     "from N, T and the mean volume"
     ],
     [
      "run",
@@ -1365,7 +1402,7 @@
     "clavier2017"
    ],
    "source": "core/src/mechanics.cpp",
-   "tested": "Mechanics.FluctuationConstantsOfColdCrystal · Mechanics.BornMatrixMatchesLatticeSum",
+   "tested": "Mechanics.FluctuationConstantsOfColdCrystal · Mechanics.FluctuationKineticTermOfIdealGas · Mechanics.BornMatrixMatchesLatticeSum",
    "deviation": "none",
    "engines": [],
    "tex": "C_{ijkl} = \\langle C^\\mathrm{B}_{ijkl}\\rangle - \\frac{V}{k_\\mathrm{B}T}\\left(\\langle\\sigma_{ij}\\sigma_{kl}\\rangle - \\langle\\sigma_{ij}\\rangle\\langle\\sigma_{kl}\\rangle\\right) + \\frac{N k_\\mathrm{B}T}{V}\\left(\\delta_{ik}\\delta_{jl} + \\delta_{il}\\delta_{jk}\\right)"
@@ -2732,7 +2769,7 @@
     [
      "α",
      "damping of each update",
-     "—"
+     "0.3 (the joint per-pair IBI: 0.2)"
     ],
     [
      "V",

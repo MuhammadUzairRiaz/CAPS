@@ -165,6 +165,34 @@ TEST(Mechanics, FluctuationConstantsOfColdCrystal) {
   EXPECT_LT(fl.fluct[0][0], 0.2 * fl.born[0][0]);   // a cold crystal: fluctuations are a small correction
 }
 
+// An ideal gas (no pair inside the cut-off): no Born term, no virial, so C is the kinetic term alone,
+// N k_B T/V (δ_ik δ_jl + δ_il δ_jk) = (2, 2, 2, 1, 1, 1) N k_B T/V on the diagonal and zero off it (C12 = 0).
+TEST(Mechanics, FluctuationKineticTermOfIdealGas) {
+  const System s = argon(2, 20.0);   // nearest neighbours 14.1 Å apart, cut-off 7.5 Å
+  auto ff = argon_ff(s.atoms.size());
+  EnergyOptions e = lj_only();
+  e.cutoff = 7.5;
+  Trajectory t;
+  t.topology = s;
+  for (int k = 0; k < 4; ++k) {
+    std::vector<Vec3> p;
+    for (const auto& a : s.atoms) p.push_back(a.pos);
+    t.positions.push_back(p);
+    t.cells.push_back(s.cell);
+    t.timesteps.push_back(k);
+  }
+  FluctuationOptions fo;
+  fo.ff = ff.get();
+  fo.energy = e;
+  fo.temperature = 300;
+  const ElasticResult r = fluctuation_elastic(t, {0, 1, 2, 3}, fo);
+  const double nkt = s.atoms.size() * 0.0019872041 * 300 / s.cell.volume() * kGPa;
+  for (int I = 0; I < 6; ++I)
+    for (int J = 0; J < 6; ++J)
+      EXPECT_NEAR(r.C[I][J], I != J ? 0.0 : (I < 3 ? 2 * nkt : nkt), 1e-9) << I << J;
+  EXPECT_NEAR(r.prestress[0], -nkt, 1e-9);   // σ = −P = −N k_B T/V
+}
+
 TEST(Mechanics, IsotropicAveragesOfIsotropicSolid) {
   ElasticResult r;
   const double lam = 2.0, mu = 1.0;

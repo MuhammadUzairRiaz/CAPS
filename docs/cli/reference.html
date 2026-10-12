@@ -157,6 +157,7 @@ caps run     PIPELINE.yaml|json [--input &#x27;runs/*/X.lammpstrj&#x27;] [--fram
 <div class="code" data-lang="synopsis"><pre><code>caps analyze FILE [--topology DATA] [--props density,rdf,sq,xray,neutron,rg,ree,cn,persistence,msd,diffusion,
              relaxation,ced,delta,ffv,psd,crosslinks,entanglements] [--first N --last N --stride N] [--frame-ps X | --timestep-fs 1]
              [--pair C-C --inter] [--qmax 25 --dq 0.02 --qdirect 4] [--probe 0] [--grid 0.4] [--ff FF.json] [--json OUT] [--csv DIR]
+             diffusion: [--fit 0.2:0.5] [--viscosity ETA (mPa·s) --temp T (Yeh–Hummer finite-size correction)]
              interfaces (zprofile, adhesion, interaction, orientation): [--surface 1-3,7 (molecule ids; 1)] [--axis x|y|z (z)] [--zbin 0.5]</code></pre></div></article>
 <article class="cmd" id="frames" data-name="frames"><h3><code>caps frames</code></h3>
 <div class="code" data-lang="synopsis"><pre><code>caps frames  FILE OUT.lammpstrj|dcd|xyz|pdb|gro|trr [--topology DATA] [--first N] [--last N] [--stride N]   (read thinned)</code></pre></div></article>

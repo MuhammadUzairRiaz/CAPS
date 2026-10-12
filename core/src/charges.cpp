@@ -108,7 +108,7 @@ ChargeReport compute_charges(const System& s, const std::string& method, const s
     std::vector<char> arom(s.atoms.size(), 0);
     for (size_t i = 0; i < arom.size(); ++i) arom[i] = p.aromatic[i] ? 1 : 0;
     q = gasteiger_ch(s, arom);
-    notes.push_back("Gasteiger–Marsili, 6 iterations; the net charge follows from the formal charges");
+    notes.push_back("Gasteiger–Marsili, 6 iterations from the formal charges; the total is the net formal charge");
   } else if (method == "qeq") {
     QEqReport rep;
     q = qeq_charges(s, QEqOptions{}, &rep);

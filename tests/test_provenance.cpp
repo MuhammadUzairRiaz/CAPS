@@ -211,6 +211,7 @@ TEST(Pore, ChannelInQuartzIsEmptyAlongItsAxis) {
   EXPECT_EQ(int(s.atoms.size()), r.wall_atoms + 8 * 3);
 }
 
+#include "caps/charges.hpp"
 #include "caps/grow.hpp"
 
 TEST(Gasteiger, HeteroatomsGetTheirOwnParameters) {
@@ -242,6 +243,21 @@ TEST(Gasteiger, HeteroatomsGetTheirOwnParameters) {
     if (chloro.atoms[i].element == 17) EXPECT_LT(qc[i], -0.05);
   const System silane = build_molecule("[SiH4]", bo).system;
   EXPECT_THROW(gasteiger_ch(silane, {}), std::invalid_argument);
+}
+
+// Ions keep their formal charge: the iteration starts from it and only moves charge along bonds.
+TEST(Gasteiger, IonsKeepTheirFormalCharge) {
+  BuildOptions bo;
+  bo.forcefield = "uff";
+  for (const auto& [smi, net] : std::vector<std::pair<std::string, double>>{{"CC(=O)[O-]", -1.0}, {"C[NH3+]", 1.0}, {"CC(=O)O", 0.0}}) {
+    const System m = build_molecule(smi, bo).system;
+    const auto q = gasteiger_ch(m, {});
+    double total = 0;
+    for (double x : q) total += x;
+    EXPECT_NEAR(total, net, 1e-9) << smi;
+    const auto rep = compute_charges(m, "gasteiger");
+    EXPECT_EQ(rep.formal, int(net)) << smi;
+  }
 }
 
 TEST(Provenance, CitationTextReadsTheEntries) {

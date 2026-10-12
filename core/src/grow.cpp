@@ -394,7 +394,8 @@ double box_for_density(const GrowOptions& o) {
 
 std::vector<double> gasteiger_ch(const System& s, const std::vector<char>& aromatic, int iterations) {
   // Gasteiger & Marsili, Tetrahedron 36, 3219 (1980): χ = a + b q + c q² per atom type (element and hybridisation),
-  // charge moved along each bond by (χ_j − χ_i) / χ⁺ of the less electronegative atom, damped by ½ per iteration.
+  // charge moved along each bond by (χ_j − χ_i) / χ⁺ of the less electronegative atom, damped by ½ per iteration,
+  // starting from the formal charges.
   // Parameters of the paper's Table 1 (H, C, N, O, F, Cl, Br, I) and the S sp³ extension; other elements are refused.
   struct P { double a, b, c; };
   static const P H{7.17, 6.24, -0.56}, C3{7.98, 9.18, 1.88}, C2{8.79, 9.32, 1.51}, C1{10.39, 9.45, 0.73},
@@ -432,7 +433,10 @@ std::vector<double> gasteiger_ch(const System& s, const std::vector<char>& aroma
     }
   }
   const auto& nb = pc.nb;
+  // the iteration starts from the formal charges (N⁺ of an ammonium, O⁻ of a carboxylate) and moves charge only along
+  // bonds, so the total stays the molecule's net formal charge
   std::vector<double> q(n, 0.0), chi(n), dq(n);
+  for (size_t i = 0; i < n && i < pc.charge.size(); ++i) q[i] = pc.charge[i];
   auto plus = [&](const P* p) { return p == &H ? 20.02 : p->a + p->b + p->c; };   // χ⁺ of the cation; H takes 20.02
   for (int k = 0; k < iterations; ++k) {
     for (size_t i = 0; i < n; ++i) chi[i] = t[i]->a + t[i]->b * q[i] + t[i]->c * q[i] * q[i];
