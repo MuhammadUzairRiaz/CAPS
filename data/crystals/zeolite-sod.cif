@@ -1,0 +1,61 @@
+# SOD framework, sodalite (pure SiO2) — I m -3 m (229) a b c α β γ = 8.965 8.965 8.965 90.0 90.0 90.0; sites O1 O 0.1467 0.5 0.8533; T1 Si 0.25 0.5 0.0
+# Ch. Baerlocher, L. B. McCusker, Database of Zeolite Structures, IZA Structure Commission (http://www.iza-structure.org/databases/): idealised SiO2 framework refined with DLS-76; built by tools/make_zeolites.py (framework density 16.7 T/1000 A^3)
+# written by CAPS
+data_I_m_-3_m
+_chemical_formula_sum 'O24 Si12'
+_space_group_name_H-M_alt 'P 1'
+_space_group_IT_number 1
+_symmetry_space_group_name_H-M 'P 1'
+_symmetry_Int_Tables_number 1
+_cell_length_a 8.965000
+_cell_length_b 8.965000
+_cell_length_c 8.965000
+_cell_angle_alpha 90.000000
+_cell_angle_beta 90.000000
+_cell_angle_gamma 90.000000
+_cell_volume 720.5280
+loop_
+_space_group_symop_operation_xyz
+'x, y, z'
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+O1 O 0.146700 0.500000 0.853300
+O2 O 0.853300 0.500000 0.146700
+O3 O 0.353300 1.000000 0.646700
+O4 O 0.853300 0.500000 0.853300
+O5 O 0.353300 1.000000 0.353300
+O6 O 0.853300 0.146700 0.500000
+O7 O 0.353300 0.646700 0.000000
+O8 O 0.853300 0.853300 0.500000
+O9 O 0.353300 0.353300 0.000000
+O10 O 0.500000 0.853300 0.146700
+O11 O 1.000000 0.353300 0.646700
+O12 O 0.500000 0.853300 0.853300
+O13 O 1.000000 0.353300 0.353300
+O14 O 0.500000 0.146700 0.853300
+O15 O 1.000000 0.646700 0.353300
+O16 O 0.500000 0.146700 0.146700
+O17 O 1.000000 0.646700 0.646700
+O18 O 0.146700 0.853300 0.500000
+O19 O 0.646700 0.353300 0.000000
+O20 O 0.646700 0.000000 0.353300
+O21 O 0.146700 0.500000 0.146700
+O22 O 0.646700 1.000000 0.646700
+O23 O 0.146700 0.146700 0.500000
+O24 O 0.646700 0.646700 0.000000
+Si1 Si 0.250000 0.500000 0.000000
+Si2 Si 0.750000 0.500000 0.000000
+Si3 Si 0.250000 1.000000 0.500000
+Si4 Si 0.750000 1.000000 0.500000
+Si5 Si 0.500000 0.750000 0.000000
+Si6 Si 1.000000 0.250000 0.500000
+Si7 Si 0.500000 1.000000 0.750000
+Si8 Si 0.000000 0.500000 0.250000
+Si9 Si 0.500000 1.000000 0.250000
+Si10 Si 1.000000 0.500000 0.750000
+Si11 Si 0.500000 0.250000 0.000000
+Si12 Si 1.000000 0.750000 0.500000
