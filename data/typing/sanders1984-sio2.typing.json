@@ -1,0 +1,38 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "SiO2 (Sanders, Leslie & Catlow 1984)",
+ "unknown_types": "untyped",
+ "bonds": "defined",
+ "shells": {
+  "O_s84c": "O_s84s"
+ },
+ "description": "Si and O of silica (bench/ff/make_sanders1984.py)",
+ "rules": [
+  {
+   "type": "Si_s84",
+   "smarts": "[#14]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "description": "Si in silica"
+  },
+  {
+   "type": "O_s84c",
+   "smarts": "[#8]",
+   "priority": 0,
+   "requires": [
+    "Si"
+   ],
+   "description": "O in silica"
+  },
+  {
+   "type": "O_s84s",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O_s84s",
+   "description": "shell of O_s84c"
+  }
+ ]
+}

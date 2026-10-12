@@ -125,12 +125,27 @@ ENTRIES = {
                            "16 halides of Li, Na, K, Rb with F, Cl, Br, I, each typed by the structure's composition; every pair term "
                            "equals an independent transcription of the same table; LAMMPS reproduces CAPS's energies on NaCl and LiF",
                            ("Alkali halides", "alkali_halides", 28), ["inorganic-binary-halides"]),
-    "lewis-catlow1985-oxides": ("Oxides (Lewis & Catlow 1985)", "1985, Table 3 (shell model, method (c)(i)); O-O from Catlow 1977",
+    "lewis-catlow1985-oxides": ("Oxides (Lewis & Catlow 1985)", "1985, Table 3 (shell model, method (c)(i)); O-O from Catlow 1977 (C 20.37, his potential 2's)",
                                 ["G. V. Lewis, C. R. A. Catlow, J. Phys. C: Solid State Phys. 18, 1149 (1985)", "C. R. A. Catlow, Proc. R. Soc. Lond. A 353, 533 (1977)"],
                                 {"source": "the papers' tables; bench/ff/make_lewis_catlow1985.py", "license": "published parameters of the papers"},
                                 "20 oxides, each a shell-model set typed by composition (tetrahedral sites and second oxidation states as "
                                 "overlays); every cation-O term equals an independent transcription (27 / 27); LAMMPS reproduces CAPS's "
                                 "energies on MgO and CaO", ("Oxides (Lewis & Catlow 1985)", "lewis_catlow1985", 31), []),
+    "catlow1977-uo2": ("UO2 (Catlow 1977)", "1977, Table 3 (potentials 1 and 2)", ["C. R. A. Catlow, Proc. R. Soc. Lond. A 353, 533 (1977)"],
+                       {"source": "the paper's Table 3; bench/ff/make_catlow1977_uo2.py", "license": "published parameters of the paper"},
+                       "shell model for U and O; potential 1 by default, potential 2 as an overlay; LAMMPS reproduces CAPS's energies "
+                       "on fluorite UO2 (CORESHELL styles)", ("UO2 (Catlow 1977)", "catlow1977_uo2", 31), []),
+    "matsui1991-tio2": ("TiO2 (Matsui & Akaogi 1991)", "1991, Table 1", ["M. Matsui, M. Akaogi, Mol. Simul. 6, 239 (1991)"],
+                        {"source": "the paper's Table 1; bench/ff/make_matsui1991.py", "license": "published parameters of the paper"},
+                        "rigid Ti and O ions with partial charges; Ti-Ti, Ti-O and O-O Buckingham terms from the per-atom parameters "
+                        "(Ti-O 16957.7 eV, 0.194 A, 12.59 eV A^6, as the widely used transcription); LAMMPS reproduces CAPS's "
+                        "energies on rutile", ("TiO2 (Matsui & Akaogi)", "matsui1991", 31), []),
+    "sanders1984-sio2": ("SiO2 (Sanders, Leslie & Catlow 1984)", "1984, Table 1",
+                         ["M. J. Sanders, M. Leslie, C. R. A. Catlow, J. Chem. Soc., Chem. Commun. 1271 (1984)"],
+                         {"source": "the paper's Table 1; bench/ff/make_sanders1984.py", "license": "published parameters of the paper"},
+                         "rigid Si4+, shell-model O, Buckingham Si-O and O-O, the O-Si-O bend on the O shells within 1.9 A of each Si "
+                         "as the paper writes it (K_B (theta - theta0)^2; GULP-style files apply 1/2 K_B with the same number); LAMMPS "
+                         "reproduces CAPS's energies on alpha-quartz", ("SiO2 (Sanders 1984)", "sanders1984", 31), []),
 }
 RTF = "the topology's own residues typed as it types them (bench/ff/validate_rtf_types.py --cap-links): "
 for fid, name, version, refs, evidence, listing, replaces in (

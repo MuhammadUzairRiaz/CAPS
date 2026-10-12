@@ -1,0 +1,62 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "UO2 (Catlow 1977)",
+ "unknown_types": "untyped",
+ "bonds": "defined",
+ "shells": {
+  "U1c": "U1s",
+  "O1c": "O1s",
+  "U2c": "U2s",
+  "O2c": "O2s"
+ },
+ "description": "U and O of uranium dioxide (bench/ff/make_catlow1977_uo2.py); potential 2 is an overlay",
+ "rules": [
+  {
+   "type": "U1c",
+   "smarts": "[#92]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "description": "U in UO2 (potential 1)"
+  },
+  {
+   "type": "O1c",
+   "smarts": "[#8]",
+   "priority": 0,
+   "requires": [
+    "U"
+   ],
+   "description": "O in UO2 (potential 1)"
+  },
+  {
+   "type": "U1s",
+   "smarts": "[#92]",
+   "priority": 99,
+   "atom_name": "U1s",
+   "description": "shell of U1c"
+  },
+  {
+   "type": "O1s",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O1s",
+   "description": "shell of O1c"
+  },
+  {
+   "type": "U2s",
+   "smarts": "[#92]",
+   "priority": 99,
+   "atom_name": "U2s",
+   "description": "shell of U2c"
+  },
+  {
+   "type": "O2s",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O2s",
+   "description": "shell of O2c"
+  }
+ ]
+}

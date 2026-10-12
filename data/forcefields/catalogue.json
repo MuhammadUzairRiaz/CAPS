@@ -1947,7 +1947,7 @@
   {
    "id": "lewis-catlow1985-oxides",
    "name": "Oxides (Lewis & Catlow 1985)",
-   "version": "1985, Table 3 (shell model, method (c)(i)); O-O from Catlow 1977",
+   "version": "1985, Table 3 (shell model, method (c)(i)); O-O from Catlow 1977 (C 20.37, his potential 2's)",
    "references": [
     "G. V. Lewis, C. R. A. Catlow, J. Phys. C: Solid State Phys. 18, 1149 (1985)",
     "C. R. A. Catlow, Proc. R. Soc. Lond. A 353, 533 (1977)"
@@ -1972,6 +1972,96 @@
    "list": {
     "label": "Oxides (Lewis & Catlow 1985)",
     "key": "lewis_catlow1985",
+    "order": 31
+   }
+  },
+  {
+   "id": "catlow1977-uo2",
+   "name": "UO2 (Catlow 1977)",
+   "version": "1977, Table 3 (potentials 1 and 2)",
+   "references": [
+    "C. R. A. Catlow, Proc. R. Soc. Lond. A 353, 533 (1977)"
+   ],
+   "origin": "built from source",
+   "source": "the paper's Table 3; bench/ff/make_catlow1977_uo2.py",
+   "license": "published parameters of the paper",
+   "status": "validated",
+   "file": "catlow1977-uo2.json",
+   "counts": {
+    "atom_types": 8,
+    "pairs": 12,
+    "bonds": 4,
+    "angles": 0,
+    "dihedrals": 0,
+    "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/catlow1977-uo2.typing.json",
+    "evidence": "shell model for U and O; potential 1 by default, potential 2 as an overlay; LAMMPS reproduces CAPS's energies on fluorite UO2 (CORESHELL styles)"
+   },
+   "list": {
+    "label": "UO2 (Catlow 1977)",
+    "key": "catlow1977_uo2",
+    "order": 31
+   }
+  },
+  {
+   "id": "matsui1991-tio2",
+   "name": "TiO2 (Matsui & Akaogi 1991)",
+   "version": "1991, Table 1",
+   "references": [
+    "M. Matsui, M. Akaogi, Mol. Simul. 6, 239 (1991)"
+   ],
+   "origin": "built from source",
+   "source": "the paper's Table 1; bench/ff/make_matsui1991.py",
+   "license": "published parameters of the paper",
+   "status": "validated",
+   "file": "matsui1991-tio2.json",
+   "counts": {
+    "atom_types": 2,
+    "pairs": 5,
+    "bonds": 0,
+    "angles": 0,
+    "dihedrals": 0,
+    "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/matsui1991-tio2.typing.json",
+    "evidence": "rigid Ti and O ions with partial charges; Ti-Ti, Ti-O and O-O Buckingham terms from the per-atom parameters (Ti-O 16957.7 eV, 0.194 A, 12.59 eV A^6, as the widely used transcription); LAMMPS reproduces CAPS's energies on rutile"
+   },
+   "list": {
+    "label": "TiO2 (Matsui & Akaogi)",
+    "key": "matsui1991",
+    "order": 31
+   }
+  },
+  {
+   "id": "sanders1984-sio2",
+   "name": "SiO2 (Sanders, Leslie & Catlow 1984)",
+   "version": "1984, Table 1",
+   "references": [
+    "M. J. Sanders, M. Leslie, C. R. A. Catlow, J. Chem. Soc., Chem. Commun. 1271 (1984)"
+   ],
+   "origin": "built from source",
+   "source": "the paper's Table 1; bench/ff/make_sanders1984.py",
+   "license": "published parameters of the paper",
+   "status": "validated",
+   "file": "sanders1984-sio2.json",
+   "counts": {
+    "atom_types": 3,
+    "pairs": 5,
+    "bonds": 1,
+    "angles": 1,
+    "dihedrals": 0,
+    "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/sanders1984-sio2.typing.json",
+    "evidence": "rigid Si4+, shell-model O, Buckingham Si-O and O-O, the O-Si-O bend on the O shells within 1.9 A of each Si as the paper writes it (K_B (theta - theta0)^2; GULP-style files apply 1/2 K_B with the same number); LAMMPS reproduces CAPS's energies on alpha-quartz"
+   },
+   "list": {
+    "label": "SiO2 (Sanders 1984)",
+    "key": "sanders1984",
     "order": 31
    }
   },

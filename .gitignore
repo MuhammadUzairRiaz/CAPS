@@ -61,6 +61,7 @@ packaging/icon/caps.iconset/
 /data/typing/trappe-ua.typing.json
 /data/typing/sets/*
 !/data/typing/sets/lewis-catlow1985-oxides/
+!/data/typing/sets/catlow1977-uo2/
 
 # force-field libraries built on the user's machine from their original sources (bench/ff/open): never committed
 data/forcefields/*-toppar.json
