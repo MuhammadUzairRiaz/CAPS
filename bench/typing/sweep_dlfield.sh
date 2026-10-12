@@ -2,6 +2,8 @@
 # CAPS's typing against every DL_FIELD library that has a CAPS force field (bench/ff/validate_typing.py): whole
 # molecules and residues with their open valences capped; DL_FIELD's own re-typing applied where it was run
 # (validate_family.py work directories in $R/dlf_<ff>). One line per library; details in $R/typing_<ff>_dl.log.
+# ClayFF (clayff-cygan2004) has no templates to type: its line comes from DL_FIELD's automatic typing of periodic clay
+# cells (bench/ff/validate_clayff_dlfield.py), with the deliberate deviations of dlfield_deviations.json.
 #   DLFIELD=~/project/dl_f_4.13 bench/typing/sweep_dlfield.sh [OUTDIR]
 cd "$(dirname "$0")/../.."
 R=${1:-docs/paper/runs/checks_1012}
@@ -54,9 +56,10 @@ MISC_FF misc
 INORGANIC_binary_halides inorganic-binary-halides
 INORGANIC_binary_misc inorganic-binary-misc
 INORGANIC_binary_oxides inorganic-binary-oxides
-INORGANIC_clay inorganic-clay
 INORGANIC_glass inorganic-glass
 INORGANIC_ternary_oxides inorganic-ternary-oxides
 INORGANIC_zeolite inorganic-zeolite
 INORGANIC_zeolite_Hill_Sauer inorganic-zeolite-hill-sauer
 LIST
+python3 bench/ff/validate_clayff_dlfield.py --deviations bench/typing/dlfield_deviations.json > "$R/typing_clayff-cygan2004_dl.log" 2>&1
+echo "clayff-cygan2004: $(grep '^total' "$R/typing_clayff-cygan2004_dl.log" | cut -c1-200)"

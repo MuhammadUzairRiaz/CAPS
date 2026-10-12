@@ -7,19 +7,20 @@ DL_FIELD types it by element, coordination and neighbours (its own neighbour dis
 (dlf_notation.output) are mapped to the paper's species by their ATOM_TYPE table (INORGANIC_clay.sf), where some
 carry other names for the same species:
   o2h, o3h -> oh      obb (two octahedral Al and a Si) -> ob      obc, obt -> obts      obo -> obos      obs -> obss
-CAPS types the same xyz file with `caps ff type`. Every atom is compared. One difference is the paper's: an O next to a
-tetrahedral Al and an octahedral Mg / Fe / Li is obss in the paper (p 1259: "two octahedral substitutions or
-tetrahedral-octahedral substitutions") and obo (obos) in DL_FIELD; such atoms are counted apart, every other atom must
-agree. The default set adds IFF's muscovite with every third octahedral Al made Mg, which holds both kinds of obss.
+CAPS types the same xyz file with `caps ff type`. Every atom is compared. Deliberate deviations are read from
+bench/typing/dlfield_deviations.json ("auto_typing" entries for clayff-cygan2004): an O next to a tetrahedral Al and an
+octahedral Mg / Fe / Li is obss in the paper (p 1259: "two octahedral substitutions or tetrahedral-octahedral
+substitutions") and obo (obos) in DL_FIELD; such atoms, in that environment, are reported as the known deviation and
+every other atom must agree. The default set adds IFF's muscovite with every third octahedral Al made Mg, which holds both kinds of obss.
 
 DL_FIELD stops on structures outside its clay rules: brucite (an OH with three Mg) and LAMMPS's msi2lmp pyrophyllite
 (PyAC_bulk-clayff.car, whose hydroxyl H 889 lies 1.31 A from Al 880, inside DL_FIELD's Al-H distance).
 
-usage: validate_clayff_dlfield.py [STRUCTURE ...]   (default: the clays of the INTERFACE force field's model database:
+usage: validate_clayff_dlfield.py [STRUCTURE ...] [--deviations FILE]   (default: the clays of the INTERFACE force field's model database:
        pyrophyllite, kaolinite, muscovite, montmorillonites with Na or K)
 Environment: DLFIELD (default ~/project/dl_f_4.13).
 """
-import os, re, shutil, subprocess, sys, tempfile
+import json, os, re, shutil, subprocess, sys, tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
@@ -30,6 +31,7 @@ WORK = os.path.join(ROOT, "build", "dlfield_work_clay")
 IFF = os.path.expanduser("~/iff-ref/INTERFACE_FF_1_5/MODEL_DATABASE/CLAY_MINERALS")
 DEFAULT = [os.path.join(IFF, f + ".car") for f in ("pyrophyllite30_cell", "kaolinite30_cell", "mica15_cell", "mont0_333_Na_15_cell",
                                                    "mont0_333_K_15_cell", "mont0_400_Na_15_cell", "mont0_533_Na_15_cell", "mont0_321_Na_28_cell")]
+DEVIATIONS = os.path.join(ROOT, "bench", "typing", "dlfield_deviations.json")
 SAME = {"o2h": "oh", "o3h": "oh", "obb": "ob", "obc": "obts", "obt": "obts", "obo": "obos", "obs": "obss"}
 
 
@@ -111,9 +113,27 @@ def substituted_mica(work):
     return out
 
 
+def known_deviations(path):
+    """{(caps type, DL_FIELD type): reason} of the deliberate ClayFF deviations"""
+    if not path or not os.path.exists(path):
+        return {}
+    return {(d["caps"], d["dl"]): d["reason"] for d in json.load(open(path)).get("auto_typing", []) if d.get("ff") == "clayff-cygan2004"}
+
+
+# the environment each known deviation applies to: (caps, dl) -> test on the atom
+ENVIRONMENT = {("obss", "obos"): paper_obss}
+
+
 def main():
     work = tempfile.mkdtemp()
-    files = [a for a in sys.argv[1:] if not a.startswith("-")]
+    args = sys.argv[1:]
+    dev_file = DEVIATIONS
+    if "--deviations" in args:
+        k = args.index("--deviations")
+        dev_file = args[k + 1]
+        del args[k:k + 2]
+    known = known_deviations(dev_file)
+    files = [a for a in args if not a.startswith("-")]
     if not files:
         files = DEFAULT + [substituted_mica(work)]
     key = dl_keys()
@@ -141,7 +161,8 @@ def main():
             print(f"{name}: atom counts differ (CAPS {len(caps)}, DL_FIELD {len(dl)}, file {len(atoms)})")
             failed = True
             continue
-        dev = [i for i, (c, d) in enumerate(zip(caps, dl)) if c != d and (c, d) == ("obss", "obos") and paper_obss(i, atoms, nbs)]
+        dev = [i for i, (c, d) in enumerate(zip(caps, dl))
+               if c != d and (c, d) in known and ENVIRONMENT.get((c, d), lambda *a: True)(i, atoms, nbs)]
         bad = [(i, atoms[i][0], c, d) for i, (c, d) in enumerate(zip(caps, dl)) if c != d and i not in set(dev)]
         comp = {}
         for t in caps:
@@ -150,14 +171,18 @@ def main():
         total_ok += ok
         total_dev += len(dev)
         total += len(dl)
-        print(f"{name}: {ok} / {len(dl)} atoms as DL_FIELD types them" + (f", {len(dev)} O next to a tetrahedral and an "
-              "octahedral substitution obss as the paper names them (DL_FIELD obos)" if dev else "")
+        kinds = sorted({(caps[i], dl[i]) for i in dev})
+        print(f"{name}: {ok} / {len(dl)} atoms as DL_FIELD types them" + "".join(
+              f", {sum(1 for i in dev if (caps[i], dl[i]) == k)} known deviation{'' if len(dev) == 1 else 's'} (CAPS {k[0]}, DL_FIELD {k[1]})" for k in kinds)
               + f"  ({' '.join(f'{t} {n}' for t, n in sorted(comp.items()))})")
         for i, el, c, d in bad[:20]:
             print(f"   atom {i + 1} {el}: CAPS {c}, DL_FIELD {d}")
         failed = failed or bool(bad)
-    print(f"total: {total_ok} / {total} as DL_FIELD" + (f", {total_dev} where the paper's obss differs from DL_FIELD's obos" if total_dev else "")
-          + (", every other atom as DL_FIELD" if not failed else ""))
+    print(f"total: {total_ok} / {total} as DL_FIELD" + (f", {total_dev} known deviations (bench/typing/dlfield_deviations.json)" if total_dev else "")
+          + ("; every other atom as DL_FIELD" if not failed else "; FAILED"))
+    for (c, d), reason in known.items():
+        if total_dev:
+            print(f"known deviation CAPS {c} / DL_FIELD {d}: {reason}")
     sys.exit(1 if failed else 0)
 
 
