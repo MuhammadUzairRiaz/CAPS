@@ -2,7 +2,8 @@
  "format": "caps-forcefield",
  "format_version": 1,
  "name": "ClayFF (Cygan 2004)",
- "source": "R. T. Cygan, J.-J. Liang, A. G. Kalinichev, J. Phys. Chem. B 108, 1255 (2004), Tables 1 and 2",
+ "version": "2004 (Tables 1 and 2)",
+ "source": "R. T. Cygan, J.-J. Liang, A. G. Kalinichev, J. Phys. Chem. B 108, 1255 (2004), Tables 1 and 2 (p 1259), Eqs. 3-7 (pp 1257-1259)",
  "references": [
   "R. T. Cygan, J.-J. Liang, A. G. Kalinichev, J. Phys. Chem. B 108, 1255 (2004)"
  ],
@@ -31,170 +32,170 @@
   {
    "name": "h*",
    "element": "H",
-   "mass": 1.00797,
+   "mass": 1.008,
    "charge": 0.41,
-   "description": "water hydrogen (Table 1)"
+   "description": "water hydrogen (Table 1, p 1259)"
   },
   {
    "name": "ho",
    "element": "H",
-   "mass": 1.00797,
+   "mass": 1.008,
    "charge": 0.425,
-   "description": "hydroxyl hydrogen (Table 1)"
+   "description": "hydroxyl hydrogen (Table 1, p 1259)"
   },
   {
    "name": "o*",
    "element": "O",
-   "mass": 15.9994,
+   "mass": 15.999,
    "charge": -0.82,
-   "description": "water oxygen (Table 1)"
+   "description": "water oxygen (Table 1, p 1259)"
   },
   {
    "name": "oh",
    "element": "O",
-   "mass": 15.9994,
+   "mass": 15.999,
    "charge": -0.95,
-   "description": "hydroxyl oxygen (Table 1)"
+   "description": "hydroxyl oxygen (Table 1, p 1259)"
   },
   {
    "name": "ob",
    "element": "O",
-   "mass": 15.9994,
+   "mass": 15.999,
    "charge": -1.05,
-   "description": "bridging oxygen (Table 1)"
+   "description": "bridging oxygen (Table 1, p 1259)"
   },
   {
    "name": "obos",
    "element": "O",
-   "mass": 15.9994,
+   "mass": 15.999,
    "charge": -1.1808,
-   "description": "bridging oxygen with octahedral substitution (Table 1)"
+   "description": "bridging oxygen with octahedral substitution (Table 1, p 1259)"
   },
   {
    "name": "obts",
    "element": "O",
-   "mass": 15.9994,
+   "mass": 15.999,
    "charge": -1.1688,
-   "description": "bridging oxygen with tetrahedral substitution (Table 1)"
+   "description": "bridging oxygen with tetrahedral substitution (Table 1, p 1259)"
   },
   {
    "name": "obss",
    "element": "O",
-   "mass": 15.9994,
+   "mass": 15.999,
    "charge": -1.2996,
-   "description": "bridging oxygen with double substitution (Table 1)"
+   "description": "bridging oxygen with double substitution (Table 1, p 1259)"
   },
   {
    "name": "ohs",
    "element": "O",
-   "mass": 15.9994,
+   "mass": 15.999,
    "charge": -1.0808,
-   "description": "hydroxyl oxygen with substitution (Table 1)"
+   "description": "hydroxyl oxygen with substitution (Table 1, p 1259)"
   },
   {
    "name": "st",
    "element": "Si",
-   "mass": 28.0855,
+   "mass": 28.085,
    "charge": 2.1,
-   "description": "tetrahedral silicon (Table 1)"
+   "description": "tetrahedral silicon (Table 1, p 1259)"
   },
   {
    "name": "ao",
    "element": "Al",
-   "mass": 26.98154,
+   "mass": 26.982,
    "charge": 1.575,
-   "description": "octahedral aluminum (Table 1)"
+   "description": "octahedral aluminum (Table 1, p 1259)"
   },
   {
    "name": "at",
    "element": "Al",
-   "mass": 26.98154,
+   "mass": 26.982,
    "charge": 1.575,
-   "description": "tetrahedral aluminum (Table 1)"
+   "description": "tetrahedral aluminum (Table 1, p 1259)"
   },
   {
    "name": "mgo",
    "element": "Mg",
    "mass": 24.305,
    "charge": 1.36,
-   "description": "octahedral magnesium (Table 1)"
+   "description": "octahedral magnesium (Table 1, p 1259)"
   },
   {
    "name": "mgh",
    "element": "Mg",
    "mass": 24.305,
    "charge": 1.05,
-   "description": "hydroxide magnesium (Table 1)"
+   "description": "hydroxide magnesium (Table 1, p 1259)"
   },
   {
    "name": "cao",
    "element": "Ca",
    "mass": 40.078,
    "charge": 1.36,
-   "description": "octahedral calcium (Table 1)"
+   "description": "octahedral calcium (Table 1, p 1259)"
   },
   {
    "name": "cah",
    "element": "Ca",
    "mass": 40.078,
    "charge": 1.05,
-   "description": "hydroxide calcium (Table 1)"
+   "description": "hydroxide calcium (Table 1, p 1259)"
   },
   {
    "name": "feo",
    "element": "Fe",
-   "mass": 55.847,
+   "mass": 55.845,
    "charge": 1.575,
-   "description": "octahedral iron (Table 1)"
+   "description": "octahedral iron (Table 1, p 1259)"
   },
   {
    "name": "lio",
    "element": "Li",
-   "mass": 6.941,
+   "mass": 6.94,
    "charge": 0.525,
-   "description": "octahedral lithium (Table 1)"
+   "description": "octahedral lithium (Table 1, p 1259)"
   },
   {
    "name": "Na",
    "element": "Na",
-   "mass": 22.98977,
+   "mass": 22.99,
    "charge": 1.0,
-   "description": "aqueous sodium ion (Table 1; Smith and Dang)"
+   "description": "aqueous sodium ion (Table 1, p 1259; footnote a: Smith and Dang, ref 32)"
   },
   {
    "name": "K",
    "element": "K",
-   "mass": 39.0983,
+   "mass": 39.098,
    "charge": 1.0,
-   "description": "aqueous potassium ion (Table 1; Koneshan et al.)"
+   "description": "aqueous potassium ion (Table 1, p 1259; footnote b: Koneshan et al., ref 60)"
   },
   {
    "name": "Cs",
    "element": "Cs",
-   "mass": 132.9054,
+   "mass": 132.91,
    "charge": 1.0,
-   "description": "aqueous cesium ion (Table 1; Smith and Dang)"
+   "description": "aqueous cesium ion (Table 1, p 1259; footnote c: Smith and Dang, ref 59)"
   },
   {
    "name": "Ca",
    "element": "Ca",
    "mass": 40.078,
    "charge": 2.0,
-   "description": "aqueous calcium ion (Table 1; Koneshan et al.)"
+   "description": "aqueous calcium ion (Table 1, p 1259; footnote b: Koneshan et al., ref 60)"
   },
   {
    "name": "Ba",
    "element": "Ba",
-   "mass": 137.327,
+   "mass": 137.33,
    "charge": 2.0,
-   "description": "aqueous barium ion (Table 1; Aqvist)"
+   "description": "aqueous barium ion (Table 1, p 1259; footnote d: Aqvist, ref 61)"
   },
   {
    "name": "Cl",
    "element": "Cl",
-   "mass": 35.453,
+   "mass": 35.45,
    "charge": -1.0,
-   "description": "aqueous chloride ion (Table 1; Smith and Dang)"
+   "description": "aqueous chloride ion (Table 1, p 1259; footnote a: Smith and Dang, ref 32)"
   }
  ],
  "pairs": [
@@ -207,7 +208,7 @@
     0.0,
     0.0
    ],
-   "comment": "Do 0 kcal/mol, Ro 0 A"
+   "comment": "no Lennard-Jones term (Table 1, p 1259; p 1258)"
   },
   {
    "name": "ho",
@@ -218,7 +219,7 @@
     0.0,
     0.0
    ],
-   "comment": "Do 0 kcal/mol, Ro 0 A"
+   "comment": "no Lennard-Jones term (Table 1, p 1259; p 1258)"
   },
   {
    "name": "o*",
@@ -229,7 +230,7 @@
     0.1554,
     3.1655413252962536
    ],
-   "comment": "Do 0.1554 kcal/mol, Ro 3.5532 A"
+   "comment": "Do 0.1554 kcal/mol, Ro 3.5532 A (Table 1, p 1259)"
   },
   {
    "name": "oh",
@@ -240,7 +241,7 @@
     0.1554,
     3.1655413252962536
    ],
-   "comment": "Do 0.1554 kcal/mol, Ro 3.5532 A"
+   "comment": "Do 0.1554 kcal/mol, Ro 3.5532 A (Table 1, p 1259)"
   },
   {
    "name": "ob",
@@ -251,7 +252,7 @@
     0.1554,
     3.1655413252962536
    ],
-   "comment": "Do 0.1554 kcal/mol, Ro 3.5532 A"
+   "comment": "Do 0.1554 kcal/mol, Ro 3.5532 A (Table 1, p 1259)"
   },
   {
    "name": "obos",
@@ -262,7 +263,7 @@
     0.1554,
     3.1655413252962536
    ],
-   "comment": "Do 0.1554 kcal/mol, Ro 3.5532 A"
+   "comment": "Do 0.1554 kcal/mol, Ro 3.5532 A (Table 1, p 1259)"
   },
   {
    "name": "obts",
@@ -273,7 +274,7 @@
     0.1554,
     3.1655413252962536
    ],
-   "comment": "Do 0.1554 kcal/mol, Ro 3.5532 A"
+   "comment": "Do 0.1554 kcal/mol, Ro 3.5532 A (Table 1, p 1259)"
   },
   {
    "name": "obss",
@@ -284,7 +285,7 @@
     0.1554,
     3.1655413252962536
    ],
-   "comment": "Do 0.1554 kcal/mol, Ro 3.5532 A"
+   "comment": "Do 0.1554 kcal/mol, Ro 3.5532 A (Table 1, p 1259)"
   },
   {
    "name": "ohs",
@@ -295,7 +296,7 @@
     0.1554,
     3.1655413252962536
    ],
-   "comment": "Do 0.1554 kcal/mol, Ro 3.5532 A"
+   "comment": "Do 0.1554 kcal/mol, Ro 3.5532 A (Table 1, p 1259)"
   },
   {
    "name": "st",
@@ -306,7 +307,7 @@
     1.8405e-06,
     3.3020270089153536
    ],
-   "comment": "Do 1.8405e-06 kcal/mol, Ro 3.7064 A"
+   "comment": "Do 1.8405e-06 kcal/mol, Ro 3.7064 A (Table 1, p 1259)"
   },
   {
    "name": "ao",
@@ -317,7 +318,7 @@
     1.3298e-06,
     4.271235724380229
    ],
-   "comment": "Do 1.3298e-06 kcal/mol, Ro 4.7943 A"
+   "comment": "Do 1.3298e-06 kcal/mol, Ro 4.7943 A (Table 1, p 1259)"
   },
   {
    "name": "at",
@@ -328,7 +329,7 @@
     1.8405e-06,
     3.3020270089153536
    ],
-   "comment": "Do 1.8405e-06 kcal/mol, Ro 3.7064 A"
+   "comment": "Do 1.8405e-06 kcal/mol, Ro 3.7064 A (Table 1, p 1259)"
   },
   {
    "name": "mgo",
@@ -339,7 +340,7 @@
     9.0298e-07,
     5.264320525491264
    ],
-   "comment": "Do 9.0298e-07 kcal/mol, Ro 5.909 A"
+   "comment": "Do 9.0298e-07 kcal/mol, Ro 5.9090 A (Table 1, p 1259)"
   },
   {
    "name": "mgh",
@@ -350,7 +351,7 @@
     9.0298e-07,
     5.264320525491264
    ],
-   "comment": "Do 9.0298e-07 kcal/mol, Ro 5.909 A"
+   "comment": "Do 9.0298e-07 kcal/mol, Ro 5.9090 A (Table 1, p 1259)"
   },
   {
    "name": "cao",
@@ -361,7 +362,7 @@
     5.0298e-06,
     5.5666915504280965
    ],
-   "comment": "Do 5.0298e-06 kcal/mol, Ro 6.2484 A"
+   "comment": "Do 5.0298e-06 kcal/mol, Ro 6.2484 A (Table 1, p 1259)"
   },
   {
    "name": "cah",
@@ -372,7 +373,7 @@
     5.0298e-06,
     5.56170251760651
    ],
-   "comment": "Do 5.0298e-06 kcal/mol, Ro 6.2428 A"
+   "comment": "Do 5.0298e-06 kcal/mol, Ro 6.2428 A (Table 1, p 1259)"
   },
   {
    "name": "feo",
@@ -383,7 +384,7 @@
     9.0298e-06,
     4.906179240798848
    ],
-   "comment": "Do 9.0298e-06 kcal/mol, Ro 5.507 A"
+   "comment": "Do 9.0298e-06 kcal/mol, Ro 5.5070 A (Table 1, p 1259)"
   },
   {
    "name": "lio",
@@ -394,7 +395,7 @@
     9.0298e-06,
     4.210120072315801
    ],
-   "comment": "Do 9.0298e-06 kcal/mol, Ro 4.7257 A"
+   "comment": "Do 9.0298e-06 kcal/mol, Ro 4.7257 A (Table 1, p 1259)"
   },
   {
    "name": "Na",
@@ -405,7 +406,7 @@
     0.1301,
     2.350012638710587
    ],
-   "comment": "Do 0.1301 kcal/mol, Ro 2.6378 A"
+   "comment": "Do 0.1301 kcal/mol, Ro 2.6378 A (Table 1, p 1259; footnote a: Smith and Dang, ref 32)"
   },
   {
    "name": "K",
@@ -416,7 +417,7 @@
     0.1,
     3.3340102728965917
    ],
-   "comment": "Do 0.1 kcal/mol, Ro 3.7423 A"
+   "comment": "Do 0.1 kcal/mol, Ro 3.7423 A (Table 1, p 1259; footnote b: Koneshan et al., ref 60)"
   },
   {
    "name": "Cs",
@@ -427,7 +428,7 @@
     0.1,
     3.831042667747087
    ],
-   "comment": "Do 0.1 kcal/mol, Ro 4.3002 A"
+   "comment": "Do 0.1 kcal/mol, Ro 4.3002 A (Table 1, p 1259; footnote c: Smith and Dang, ref 59)"
   },
   {
    "name": "Ca",
@@ -438,7 +439,7 @@
     0.1,
     2.8719901976690116
    ],
-   "comment": "Do 0.1 kcal/mol, Ro 3.2237 A"
+   "comment": "Do 0.1 kcal/mol, Ro 3.2237 A (Table 1, p 1259; footnote b: Koneshan et al., ref 60)"
   },
   {
    "name": "Ba",
@@ -449,7 +450,7 @@
     0.047,
     3.8166101085132134
    ],
-   "comment": "Do 0.047 kcal/mol, Ro 4.284 A"
+   "comment": "Do 0.047 kcal/mol, Ro 4.2840 A (Table 1, p 1259; footnote d: Aqvist, ref 61)"
   },
   {
    "name": "Cl",
@@ -460,7 +461,7 @@
     0.1001,
     4.399970589151507
    ],
-   "comment": "Do 0.1001 kcal/mol, Ro 4.9388 A"
+   "comment": "Do 0.1001 kcal/mol, Ro 4.9388 A (Table 1, p 1259; footnote a: Smith and Dang, ref 32)"
   }
  ],
  "bonds": [
@@ -475,7 +476,7 @@
     554.1349,
     1.0
    ],
-   "comment": "Table 2"
+   "comment": "k1 554.1349 kcal/(mol A^2), ro 1.0000 A (Table 2, p 1259; Eq. 6, p 1258: k1 (r - ro)^2)"
   },
   {
    "name": "oh-ho",
@@ -488,7 +489,7 @@
     554.1349,
     1.0
    ],
-   "comment": "Table 2"
+   "comment": "k1 554.1349 kcal/(mol A^2), ro 1.0000 A (Table 2, p 1259; Eq. 6, p 1258: k1 (r - ro)^2)"
   },
   {
    "name": "ohs-ho",
@@ -501,7 +502,7 @@
     554.1349,
     1.0
    ],
-   "comment": "Table 2"
+   "comment": "k1 554.1349 kcal/(mol A^2), ro 1.0000 A (Table 2, p 1259; Eq. 6, p 1258: k1 (r - ro)^2)"
   }
  ],
  "angles": [
@@ -517,7 +518,7 @@
     45.7696,
     109.47
    ],
-   "comment": "Table 2: water"
+   "comment": "h*-o*-h*: k2 45.7696 kcal/(mol rad^2), theta_o 109.47 deg (Table 2, p 1259; Eq. 7, p 1259)"
   },
   {
    "name": "st-oh-ho",
@@ -531,21 +532,7 @@
     30.0,
     109.47
    ],
-   "comment": "Table 2: metal-O-H"
-  },
-  {
-   "name": "ao-oh-ho",
-   "match": [
-    "ao",
-    "oh",
-    "ho"
-   ],
-   "style": "harmonic",
-   "params": [
-    30.0,
-    109.47
-   ],
-   "comment": "Table 2: metal-O-H"
+   "comment": "Metal-oh-ho: k2 30.0 kcal/(mol rad^2), theta_o 109.47 deg (Table 2, p 1259; Eq. 7, p 1259)"
   },
   {
    "name": "at-oh-ho",
@@ -559,7 +546,21 @@
     30.0,
     109.47
    ],
-   "comment": "Table 2: metal-O-H"
+   "comment": "Metal-oh-ho: k2 30.0 kcal/(mol rad^2), theta_o 109.47 deg (Table 2, p 1259; Eq. 7, p 1259)"
+  },
+  {
+   "name": "ao-oh-ho",
+   "match": [
+    "ao",
+    "oh",
+    "ho"
+   ],
+   "style": "harmonic",
+   "params": [
+    30.0,
+    109.47
+   ],
+   "comment": "Metal-oh-ho: k2 30.0 kcal/(mol rad^2), theta_o 109.47 deg (Table 2, p 1259; Eq. 7, p 1259)"
   },
   {
    "name": "mgo-oh-ho",
@@ -573,7 +574,7 @@
     30.0,
     109.47
    ],
-   "comment": "Table 2: metal-O-H"
+   "comment": "Metal-oh-ho: k2 30.0 kcal/(mol rad^2), theta_o 109.47 deg (Table 2, p 1259; Eq. 7, p 1259)"
   },
   {
    "name": "mgh-oh-ho",
@@ -587,7 +588,7 @@
     30.0,
     109.47
    ],
-   "comment": "Table 2: metal-O-H"
+   "comment": "Metal-oh-ho: k2 30.0 kcal/(mol rad^2), theta_o 109.47 deg (Table 2, p 1259; Eq. 7, p 1259)"
   },
   {
    "name": "cao-oh-ho",
@@ -601,7 +602,7 @@
     30.0,
     109.47
    ],
-   "comment": "Table 2: metal-O-H"
+   "comment": "Metal-oh-ho: k2 30.0 kcal/(mol rad^2), theta_o 109.47 deg (Table 2, p 1259; Eq. 7, p 1259)"
   },
   {
    "name": "cah-oh-ho",
@@ -615,7 +616,7 @@
     30.0,
     109.47
    ],
-   "comment": "Table 2: metal-O-H"
+   "comment": "Metal-oh-ho: k2 30.0 kcal/(mol rad^2), theta_o 109.47 deg (Table 2, p 1259; Eq. 7, p 1259)"
   },
   {
    "name": "feo-oh-ho",
@@ -629,7 +630,7 @@
     30.0,
     109.47
    ],
-   "comment": "Table 2: metal-O-H"
+   "comment": "Metal-oh-ho: k2 30.0 kcal/(mol rad^2), theta_o 109.47 deg (Table 2, p 1259; Eq. 7, p 1259)"
   },
   {
    "name": "lio-oh-ho",
@@ -643,7 +644,7 @@
     30.0,
     109.47
    ],
-   "comment": "Table 2: metal-O-H"
+   "comment": "Metal-oh-ho: k2 30.0 kcal/(mol rad^2), theta_o 109.47 deg (Table 2, p 1259; Eq. 7, p 1259)"
   },
   {
    "name": "st-ohs-ho",
@@ -657,21 +658,7 @@
     30.0,
     109.47
    ],
-   "comment": "Table 2: metal-O-H"
-  },
-  {
-   "name": "ao-ohs-ho",
-   "match": [
-    "ao",
-    "ohs",
-    "ho"
-   ],
-   "style": "harmonic",
-   "params": [
-    30.0,
-    109.47
-   ],
-   "comment": "Table 2: metal-O-H"
+   "comment": "Metal-ohs-ho: k2 30.0 kcal/(mol rad^2), theta_o 109.47 deg (Table 2, p 1259; Eq. 7, p 1259)"
   },
   {
    "name": "at-ohs-ho",
@@ -685,7 +672,21 @@
     30.0,
     109.47
    ],
-   "comment": "Table 2: metal-O-H"
+   "comment": "Metal-ohs-ho: k2 30.0 kcal/(mol rad^2), theta_o 109.47 deg (Table 2, p 1259; Eq. 7, p 1259)"
+  },
+  {
+   "name": "ao-ohs-ho",
+   "match": [
+    "ao",
+    "ohs",
+    "ho"
+   ],
+   "style": "harmonic",
+   "params": [
+    30.0,
+    109.47
+   ],
+   "comment": "Metal-ohs-ho: k2 30.0 kcal/(mol rad^2), theta_o 109.47 deg (Table 2, p 1259; Eq. 7, p 1259)"
   },
   {
    "name": "mgo-ohs-ho",
@@ -699,7 +700,7 @@
     30.0,
     109.47
    ],
-   "comment": "Table 2: metal-O-H"
+   "comment": "Metal-ohs-ho: k2 30.0 kcal/(mol rad^2), theta_o 109.47 deg (Table 2, p 1259; Eq. 7, p 1259)"
   },
   {
    "name": "mgh-ohs-ho",
@@ -713,7 +714,7 @@
     30.0,
     109.47
    ],
-   "comment": "Table 2: metal-O-H"
+   "comment": "Metal-ohs-ho: k2 30.0 kcal/(mol rad^2), theta_o 109.47 deg (Table 2, p 1259; Eq. 7, p 1259)"
   },
   {
    "name": "cao-ohs-ho",
@@ -727,7 +728,7 @@
     30.0,
     109.47
    ],
-   "comment": "Table 2: metal-O-H"
+   "comment": "Metal-ohs-ho: k2 30.0 kcal/(mol rad^2), theta_o 109.47 deg (Table 2, p 1259; Eq. 7, p 1259)"
   },
   {
    "name": "cah-ohs-ho",
@@ -741,7 +742,7 @@
     30.0,
     109.47
    ],
-   "comment": "Table 2: metal-O-H"
+   "comment": "Metal-ohs-ho: k2 30.0 kcal/(mol rad^2), theta_o 109.47 deg (Table 2, p 1259; Eq. 7, p 1259)"
   },
   {
    "name": "feo-ohs-ho",
@@ -755,7 +756,7 @@
     30.0,
     109.47
    ],
-   "comment": "Table 2: metal-O-H"
+   "comment": "Metal-ohs-ho: k2 30.0 kcal/(mol rad^2), theta_o 109.47 deg (Table 2, p 1259; Eq. 7, p 1259)"
   },
   {
    "name": "lio-ohs-ho",
@@ -769,15 +770,18 @@
     30.0,
     109.47
    ],
-   "comment": "Table 2: metal-O-H"
+   "comment": "Metal-ohs-ho: k2 30.0 kcal/(mol rad^2), theta_o 109.47 deg (Table 2, p 1259; Eq. 7, p 1259)"
   }
  ],
  "dihedrals": [],
  "impropers": [],
  "notes": [
-  "built by CAPS (bench/ff/make_clayff.py) from the paper's Tables 1 and 2",
-  "metal-O-H bends: the metal within 2.6 A of the hydroxyl oxygen (ClayFF bonds no metal; the distance is CAPS's)"
+  "built by CAPS (bench/ff/make_clayff_cygan2004.py) from the paper's Tables 1 and 2 (p 1259)",
+  "E = Do [(Ro/r)^12 - 2 (Ro/r)^6] (Eq. 3) as Lennard-Jones: epsilon = Do, sigma = Ro / 2^(1/6); Ro arithmetic, Do geometric means (Eqs. 4-5, p 1257)",
+  "O-H of hydroxyls and water: 1-2 and 1-3 pairs excluded (p 1258); hydrogens have no Lennard-Jones term",
+  "Metal-O-H bends (Table 2) for the lattice metals st, at, ao, mgo, mgh, cao, cah, feo, lio, found within 2.6 A of the hydroxyl O (no metal-oxygen bonds in ClayFF; the distance is CAPS's)",
+  "Table 1 prints Ro 6.2484 A for cao and 6.2428 A for cah: both kept as printed",
+  "masses: standard atomic weights (not in the paper); cut-off 10 A: CAPS's default"
  ],
- "version": "2004",
- "typing": "../typing/clayff2004.typing.json"
+ "typing": "../typing/clayff-cygan2004.typing.json"
 }

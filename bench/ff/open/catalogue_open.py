@@ -109,12 +109,17 @@ ENTRIES = {
                         "one shell-model set for 20 cations with oxygen, typed by element (a shell on every core); every Buckingham "
                         "term equals an independent transcription of the same paper; LAMMPS reproduces CAPS's energies on MgO, "
                         "SrTiO3 and corundum (CORESHELL styles)", ("Oxides (Bush 1994)", "bush1994", 30), []),
-    "clayff2004": ("ClayFF", "Cygan, Liang & Kalinichev 2004 (Tables 1 and 2)",
-                   ["R. T. Cygan, J.-J. Liang, A. G. Kalinichev, J. Phys. Chem. B 108, 1255 (2004)"],
-                   {"source": "the paper's Tables 1 (nonbond) and 2 (bonds, angles); bench/ff/make_clayff.py",
-                    "license": "published parameters of the paper"},
-                   "CAPS rules by coordination and neighbours type LAMMPS's ClayFF pyrophyllite as its file does (1280 / 1280 atoms); "
-                   "LAMMPS reproduces CAPS's energies on it (metal-O-H bends through contacts)", ("ClayFF", "clayff", 26), ["inorganic-clay"]),
+    "clayff-cygan2004": ("ClayFF", "Cygan, Liang & Kalinichev 2004 (Tables 1 and 2, p 1259)",
+                         ["R. T. Cygan, J.-J. Liang, A. G. Kalinichev, J. Phys. Chem. B 108, 1255 (2004)"],
+                         {"source": "the paper's Table 1 (charges, Do, Ro) and Table 2 (O-H bonds, H-O-H and metal-O-H bends), "
+                                    "p 1259, read from its page images; bench/ff/make_clayff_cygan2004.py",
+                          "license": "published parameters of the paper"},
+                         "CAPS rules by element, coordination and neighbours type the INTERFACE force field's clay models "
+                         "(pyrophyllite, kaolinite, muscovite, five montmorillonites; 10652 / 10652 atoms) as DL_FIELD's "
+                         "ClayFF typing does; a muscovite with Mg for every third octahedral Al 1241 / 1260, the other 19 the "
+                         "paper's obss (an O by a tetrahedral and an octahedral substitution, p 1259) where DL_FIELD has obos "
+                         "(bench/ff/validate_clayff_dlfield.py); LAMMPS and GROMACS reproduce CAPS's energies (metal-O-H bends "
+                         "through contacts)", ("ClayFF", "clayff", 26), ["clayff2004", "inorganic-clay"]),
     "gan2020": ("GaN (Wonglakhon & Zahn 2020)", "2020 (Table 1)", ["T. Wonglakhon, D. Zahn, J. Phys.: Condens. Matter 32, 205401 (2020)"],
                 {"source": "the paper's Table 1; bench/ff/make_gan.py", "license": "published parameters of the paper (the article is CC BY)"},
                 "Ga and N ions with formal charges, Lennard-Jones Ga-Ga and N-N, Born-Mayer Ga-N; LAMMPS reproduces CAPS's energies on "

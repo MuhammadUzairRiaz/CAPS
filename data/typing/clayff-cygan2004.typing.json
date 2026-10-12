@@ -21,7 +21,7 @@
    "type": "at",
    "smarts": "[Al;X4]",
    "priority": 1,
-   "description": "tetrahedral aluminium"
+   "description": "tetrahedral aluminium (four O)"
   },
   {
    "type": "mgo",
@@ -33,19 +33,25 @@
    "type": "mgh",
    "smarts": "[Mg;!X0;!$(*~[O;H0])]",
    "priority": 1,
-   "description": "magnesium of a hydroxide (every O an OH)"
+   "description": "magnesium of a hydroxide (every O around it an OH)"
+  },
+  {
+   "type": "Ca",
+   "smarts": "[Ca]",
+   "priority": 0,
+   "description": "aqueous calcium ion (Ca holding no hydroxyl O: interlayer, in water)"
   },
   {
    "type": "cao",
-   "smarts": "[Ca;!X0]",
-   "priority": 0,
-   "description": "octahedral calcium"
+   "smarts": "[Ca;$(*~[O;H1])]",
+   "priority": 1,
+   "description": "octahedral calcium (holds a hydroxyl O)"
   },
   {
    "type": "cah",
-   "smarts": "[Ca;!X0;!$(*~[O;H0])]",
-   "priority": 1,
-   "description": "calcium of a hydroxide"
+   "smarts": "[Ca;$(*~[O;H1]);!$(*~[O;H0])]",
+   "priority": 2,
+   "description": "calcium of a hydroxide (every O around it an OH)"
   },
   {
    "type": "feo",
@@ -61,38 +67,32 @@
   },
   {
    "type": "Na",
-   "smarts": "[Na;X0]",
-   "priority": 2,
+   "smarts": "[Na]",
+   "priority": 0,
    "description": "aqueous Na ion"
   },
   {
    "type": "K",
-   "smarts": "[K;X0]",
-   "priority": 2,
+   "smarts": "[K]",
+   "priority": 0,
    "description": "aqueous K ion"
   },
   {
    "type": "Cs",
-   "smarts": "[Cs;X0]",
-   "priority": 2,
+   "smarts": "[Cs]",
+   "priority": 0,
    "description": "aqueous Cs ion"
   },
   {
-   "type": "Ca",
-   "smarts": "[Ca;X0]",
-   "priority": 2,
-   "description": "aqueous Ca ion"
-  },
-  {
    "type": "Ba",
-   "smarts": "[Ba;X0]",
-   "priority": 2,
+   "smarts": "[Ba]",
+   "priority": 0,
    "description": "aqueous Ba ion"
   },
   {
    "type": "Cl",
-   "smarts": "[Cl;X0]",
-   "priority": 2,
+   "smarts": "[Cl]",
+   "priority": 0,
    "description": "aqueous Cl ion"
   },
   {
@@ -105,19 +105,25 @@
    "type": "obts",
    "smarts": "[O;H0;$(*~[Al;X4])]",
    "priority": 2,
-   "description": "bridging oxygen with tetrahedral substitution (Al for Si)"
+   "description": "bridging oxygen next to a tetrahedral substitution (Al for Si)"
   },
   {
    "type": "obos",
    "smarts": "[O;H0;$(*~[Mg,Fe,Li]);$(*~[Si,Al])]",
    "priority": 2,
-   "description": "bridging oxygen with octahedral substitution"
+   "description": "bridging oxygen next to an octahedral substitution"
+  },
+  {
+   "type": "obss",
+   "smarts": "[O;H0;$(*(~[Mg,Fe,Li])~[Mg,Fe,Li]);$(*~[Si,Al])]",
+   "priority": 3,
+   "description": "bridging oxygen next to two octahedral substitutions"
   },
   {
    "type": "obss",
    "smarts": "[O;H0;$(*~[Al;X4]);$(*~[Mg,Fe,Li])]",
    "priority": 3,
-   "description": "bridging oxygen with double substitution"
+   "description": "bridging oxygen next to a tetrahedral and an octahedral substitution"
   },
   {
    "type": "oh",
@@ -127,9 +133,12 @@
   },
   {
    "type": "ohs",
-   "smarts": "[O;H1;$(*~[Mg,Fe,Li]);$(*~[Al,Si])]",
+   "smarts": "[O;H1;$(*~[Mg,Fe,Li])]",
    "priority": 2,
-   "description": "hydroxyl oxygen with substitution"
+   "description": "hydroxyl oxygen next to an octahedral substitution, in a silicate",
+   "requires": [
+    "Si"
+   ]
   },
   {
    "type": "ho",
@@ -139,16 +148,16 @@
   },
   {
    "type": "o*",
-   "smarts": "[OX2H2]",
+   "smarts": "[O;H2]",
    "priority": 5,
    "description": "SPC water oxygen"
   },
   {
    "type": "h*",
-   "smarts": "[H][OX2H2]",
+   "smarts": "[H][O;H2]",
    "priority": 5,
    "description": "SPC water hydrogen"
   }
  ],
- "description": "CAPS rules for the paper's ClayFF species by coordination and neighbours (bench/ff/make_clayff.py); only the O-H bonds the force field defines are kept"
+ "description": "CAPS rules for the ClayFF species of Cygan, Liang & Kalinichev 2004 (Table 1) by element, coordination and neighbours (bench/ff/make_clayff_cygan2004.py); only the O-H bonds the force field defines are kept"
 }

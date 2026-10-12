@@ -133,6 +133,14 @@
    "dl": "c=2 on some (chloroethene =CH2, 1-chloropropene =CH-, 2-chlorobut-2-ene, vinyl bromide), c= on others (2-chloropropene =CH2)",
    "caps": "c= / c=1 by pcff.frc's own definitions (c= 'non aromatic end doubly bonded carbon', c=1 'next to end doubly bonded carbon', c=2 'non aromatic doubly bonded carbon', used by CAPS for carbons conjugated on both ends)",
    "reason": "DL_FIELD's automatic typing gives the terminal =CH2 of chloroethene c=2 but the same =CH2 of 2-chloropropene c= (independent of atom order, checked both ways); no rule in pcff.frc's type definitions separates them, so CAPS keeps the definitions. Polymers affected: polychloroprene (P097, P206), 4 atoms each"
+  },
+  {
+   "ff": "clayff-cygan2004",
+   "lib": "INORGANIC_clay",
+   "environment": "a bridging O next to a tetrahedral Al and an octahedral Mg, Fe or Li (a clay with both substitutions, e.g. a muscovite with Mg in its octahedral sheet)",
+   "dl": "obos",
+   "caps": "obss",
+   "reason": "Cygan, Liang & Kalinichev 2004 (p 1259) give -1.2996 (obss) to 'a bridging oxygen coordinated to two octahedral substitutions or tetrahedral-octahedral substitutions'; DL_FIELD's automatic ClayFF typing counts only the octahedral substitution and gives obo (obos, -1.1808). CAPS follows the paper. bench/ff/validate_clayff_dlfield.py: 19 such atoms in IFF's muscovite with Mg for every third octahedral Al"
   }
  ],
  "parameters": [

@@ -8,8 +8,9 @@ naming more elements wins. A composition with several potential sets takes the f
 takes the general set (rutile and anatase cannot be told apart by composition); the others are chosen by hand in the
 Field step. Shell models declare their core → shell pairs ("shells"): CAPS puts a shell on every core it types.
 
-CLAYFF (Cygan, Liang & Kalinichev, J. Phys. Chem. B 108, 1255 (2004)) and the Hill-Sauer zeolite field (Hill & Sauer,
-J. Phys. Chem. 98, 1238 (1994); 99, 9536 (1995)) type by coordination and neighbours. Water models: O and H of water.
+The Hill-Sauer zeolite field (Hill & Sauer, J. Phys. Chem. 98, 1238 (1994); 99, 9536 (1995)) types by coordination and
+neighbours. Water models: O and H of water. ClayFF is not here: its library and rules come from the paper
+(bench/ff/make_clayff_cygan2004.py, data/typing/clayff-cygan2004.typing.json).
 
 usage: make_inorganic_rules.py [SOURCE_LIB_DIR]
 """
@@ -118,28 +119,6 @@ def compound_rules(short, fid):
     return rules, shells, chosen, alternatives
 
 
-def clayff():
-    R = []
-    AL_OCT, AL_TET, SUB = "[Al;!X4]", "[Al;X4]", "[Mg,Fe,Li]"
-    R.append(rule("st", 0, "[Si]", "tetrahedral silicon"))
-    R.append(rule("ao", 0, "[Al]", "octahedral aluminium")); R.append(rule("at", 1, "[Al;X4]", "tetrahedral aluminium"))
-    R.append(rule("mgo", 0, "[Mg;!X0]", "octahedral magnesium")); R.append(rule("mgh", 1, "[Mg;!X0;!$(*~[O;H0])]", "magnesium of a hydroxide (all O are OH)"))
-    R.append(rule("cao", 0, "[Ca;!X0]", "octahedral calcium")); R.append(rule("cah", 1, "[Ca;!X0;!$(*~[O;H0])]", "calcium of a hydroxide"))
-    R.append(rule("feo", 0, "[Fe]", "octahedral iron")); R.append(rule("lio", 0, "[Li]", "octahedral lithium"))
-    for ion, s in (("Na", "[Na;X0]"), ("K", "[K;X0]"), ("Cs", "[Cs;X0]"), ("Ca", "[Ca;X0]"), ("Ba", "[Ba;X0]"), ("Cl", "[Cl;X0]")):
-        R.append(rule(ion, 2, s, f"aqueous {ion} ion"))
-    R.append(rule("ob", 0, "[O;H0]", "bridging oxygen"))
-    R.append(rule("obb", 1, f"[O;H0;$(*(~{AL_OCT})~{AL_OCT});$(*~[Si])]", "bridging O with two octahedral Al and one Si"))
-    R.append(rule("obt", 2, f"[O;H0;$(*~{AL_TET})]", "bridging O with tetrahedral substitution (Al for Si)"))
-    R.append(rule("obc", 3, f"[O;H0;$(*~{AL_TET});$(*(~{AL_OCT})~{AL_OCT})]", "bridging O with two octahedral Al and a tetrahedral Al"))
-    R.append(rule("obo", 2, f"[O;H0;$(*~{SUB});$(*~[Si,Al])]", "bridging O with octahedral substitution"))
-    R.append(rule("obs", 4, f"[O;H0;$(*~{AL_TET});$(*~{SUB})]", "bridging O with double substitution"))
-    R.append(rule("oh", 1, "[O;H1]", "hydroxyl oxygen")); R.append(rule("ohs", 2, f"[O;H1;$(*~{SUB});$(*~[Al,Si])]", "hydroxyl O with substitution"))
-    R.append(rule("ho", 1, "[H][O;H1]", "hydroxyl hydrogen"))
-    R.append(rule("o*", 5, "[OX2H2]", "SPC water O")); R.append(rule("h*", 5, "[H][OX2H2]", "SPC water H"))
-    return R
-
-
 def hill_sauer():
     return [rule("Si", 0, "[Si]", "silicon"), rule("Al", 0, "[Al]", "aluminium"),
             rule("O_SS", 1, "[O;$(*(~[Si])~[Si])]", "Si-O-Si oxygen"), rule("O_AS", 1, "[O;H0;$(*(~[Si])~[Al])]", "Si-O-Al oxygen"),
@@ -173,7 +152,11 @@ if __name__ == "__main__":
     cat_p = os.path.join(DATA, "forcefields", "catalogue.json")
     cat = json.load(open(cat_p))
     made = {}
+    have = lambda fid: os.path.exists(os.path.join(DATA, "forcefields", fid + ".json"))
     for short, fid in FILES.items():
+        if not have(fid):   # the libraries converted from DL_FIELD's files are kept on disk only, never committed
+            print(f"{fid}: no data/forcefields/{fid}.json here, skipped")
+            continue
         rules, shells, chosen, alternatives = compound_rules(short, fid)
         # every other reference set as an overlay: caps ff type ... --typing <fid>.typing.json,sets/<fid>/<template>.typing.json
         sdir = os.path.join(DATA, "typing", "sets", fid)
@@ -186,7 +169,8 @@ if __name__ == "__main__":
             if sh:
                 ov["shells"] = sh
             json.dump(ov, open(os.path.join(sdir, name + ".typing.json"), "w"), ensure_ascii=False, indent=1)
-        label = next(e["name"] for e in cat["forcefields"] if e["id"] == fid)
+        label = next((e["name"] for e in cat["forcefields"] if e["id"] == fid), None) or \
+            json.load(open(os.path.join(DATA, "forcefields", fid + ".json"))).get("name", fid)
         out, doc = write(fid, rules, label, "Compound potential sets by composition (the first reference set of each; others by hand)."
                          + (" Shell model: a shell is added on each core." if shells else ""))
         if shells:
@@ -194,9 +178,12 @@ if __name__ == "__main__":
             json.dump(doc, open(out, "w"), ensure_ascii=False, indent=1)
         made[fid] = f"{len(rules)} rules, {len(chosen)} compounds" + (f", {len(shells)} shelled cores" if shells else "") + \
                     (f", {len(alternatives)} other potential sets as overlays (typing/sets/{fid})" if alternatives else "")
-    for fid, rules, label in (("inorganic-clay", clayff(), "CLAYFF (metal-O-H bends need metal-oxygen bonds, which are not kept: left out)"), ("inorganic-zeolite-hill-sauer", hill_sauer(), "Hill-Sauer zeolite field"),
+    for fid, rules, label in (("inorganic-zeolite-hill-sauer", hill_sauer(), "Hill-Sauer zeolite field"),
                               ("spce-moltemplate", water("O", "H"), "SPC/E water"), ("tip3p-1983-moltemplate", water("O", "H"), "TIP3P water (1983)"),
                               ("tip3p-2004-moltemplate", water("O", "H"), "TIP3P water (2004)")):
+        if not have(fid):
+            print(f"{fid}: no data/forcefields/{fid}.json here, skipped")
+            continue
         write(fid, rules, label, "")
         made[fid] = f"{len(rules)} rules"
     for e in cat["forcefields"]:
