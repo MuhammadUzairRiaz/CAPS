@@ -144,6 +144,22 @@ for l in open(SB, errors="replace").read().splitlines():
         angles.append({"name": "-".join(names), "match": [cls(x) for x in names], "style": "harmonic",
                        "params": [float(rest[0]), float(rest[1])], **({"comment": " ".join(rest[2:])} if rest[2:] else {})})
 
+if arg("--supplement"):   # terms the files lack, each from the OPLS-AA paper that defines it (Jorgensen's files win)
+    sup = json.load(open(arg("--supplement")))
+    added = []
+    for kind, lst, seen in (("bonds", bonds, seen_b), ("angles", angles, seen_a)):
+        for t in sup.get(kind, []):
+            m = t["match"]
+            key = tuple(sorted(m)) if kind == "bonds" else (tuple(m) if m[0] <= m[2] else tuple(m[::-1]))
+            if key in seen:
+                continue
+            seen[key] = True
+            lst.append({"name": "-".join(m), "match": [cls(x) for x in m], "style": "harmonic", "params": t["params"],
+                        "comment": f"{t['source']}: {t['reason']}"})
+            added.append("-".join(m))
+    if added:
+        notes.append(f"{len(added)} terms the 2024 files lack, each from the OPLS-AA paper that defines it (bench/ff/open/oplsaa2024_supplement.json): "
+                     + ", ".join(added))
 if alternatives:
     notes.append(f"{len(alternatives)} torsions the .par gives again for particular molecules (the first, general line is "
                  "applied): " + "; ".join(alternatives))
