@@ -13,6 +13,13 @@ python3 $C $O/gaff2-2.11-ambertools.json --typing ../typing/gaff2-2.11-ambertool
 python3 $C $O/gaff2-2.2.20-ambertools.json --typing ../typing/gaff2-2.2.20-ambertools.typing.json --name "GAFF2 2.2.20 (AmberTools)" --dat $P/gaff2.dat --reference "$GAFF" --version "2.2.20 (March 2021)"
 python3 $C $O/amber-ff03-ambertools.json --typing ../typing/amber-ff03-ambertools.typing.json --name "AMBER ff03 (parm99 + frcmod.ff03, AmberTools)" --dat $P/parm99.dat --frcmod $P/frcmod.ff03 \
   --reference "Y. Duan et al., J. Comput. Chem. 24, 1999 (2003)" --reference "J. Wang, P. Cieplak, P. A. Kollman, J. Comput. Chem. 21, 1049 (2000)"
+# AMBER's current biomolecular set as LEaP loads it together: ff14SB proteins (parm10.dat + frcmod.ff14SB), OL3 RNA (in
+# parm10.dat) and OL15 DNA (frcmod.DNA.OL15, its own C7 / C2 / C1 / CJ types)
+python3 $C $O/amber-ff14sb-ambertools.json --typing ../typing/amber-ff14sb-ambertools.typing.json --name "AMBER ff14SB / OL15 / OL3 (AmberTools)" \
+  --dat $P/parm10.dat --frcmod $P/frcmod.ff14SB --frcmod $P/frcmod.DNA.OL15 --version "ff14SB, DNA OL15, RNA OL3" \
+  --reference "J. A. Maier et al., J. Chem. Theory Comput. 11, 3696 (2015)" \
+  --reference "M. Zgarbova et al., J. Chem. Theory Comput. 11, 5723 (2015)" \
+  --reference "M. Zgarbova et al., J. Chem. Theory Comput. 7, 2886 (2011)"
 if [ -f $P/GLYCAM_06j.dat ]; then
   # GLYCAM sets SCEE = SCNB = 1 on its torsions; CAPS applies one 1-4 scaling per structure, so GLYCAM is a library of its own
   python3 $C $O/glycam06j-ambertools.json --typing ../typing/glycam06j-ambertools.typing.json --name "GLYCAM06j (AmberTools)" --dat $P/GLYCAM_06j.dat --scale14 1 1 \

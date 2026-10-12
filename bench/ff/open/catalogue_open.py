@@ -30,6 +30,12 @@ ENTRIES = {
                               "libraries all_amino03.lib, all_aminont94.lib, all_aminoct94.lib and all_nucleic94.lib typed as the "
                               "libraries type them: 2270 / 2270 atoms, 111 / 111 residues (bench/ff/validate_off_types.py)",
                               ("AMBER ff03", "amber", 17), ["amber"]),
+    "amber-ff14sb-ambertools": ("AMBER ff14SB / OL15 / OL3", "ff14SB proteins, OL15 DNA, OL3 RNA (parm10.dat + frcmod.ff14SB + frcmod.DNA.OL15)",
+                                ["J. A. Maier et al., J. Chem. Theory Comput. 11, 3696 (2015)", "M. Zgarbova et al., J. Chem. Theory Comput. 11, 5723 (2015)",
+                                 "M. Zgarbova et al., J. Chem. Theory Comput. 7, 2886 (2011)"], AMBERTOOLS,
+                                "CAPS rules in AMBER's own type names (bench/typing/make_amber_rules.py ff14sb); AmberTools' residue libraries "
+                                "amino12, aminont12, aminoct12, DNA.OL15 and RNA typed as the libraries type them: 2288 / 2288 atoms, 111 / 111 "
+                                "residues (bench/ff/validate_off_types.py)", ("AMBER ff14SB", "amber14sb", 16), []),
 }
 cat_path = os.path.join(FF, "catalogue.json")
 cat = json.load(open(cat_path))

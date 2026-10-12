@@ -68,6 +68,7 @@ CASES = [
     ("AMBER ff03 (AmberTools) thymidine (vacuum)", ("smiles", "CC1=CN([C@H]2C[C@H](O)[C@@H](CO)O2)C(=O)NC1=O"), "amber-ff03-ambertools", "gasteiger", []),
     ("GLYCAM06j (AmberTools) cellobiose (vacuum)", ("smiles", "OC[C@H]1O[C@@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)O[C@@H]2CO)[C@H](O)[C@@H](O)[C@@H]1O"),
      "glycam06j-ambertools", "gasteiger", []),
+    ("AMBER ff14SB (AmberTools) peptide GAFKWDR (vacuum)", ("peptide", "GAFKWDR"), "amber-ff14sb-ambertools", "gasteiger", []),
     ("GAFF 1.81 (gaff.dat) ester, epoxide, amide, thioether (vacuum)", ("smiles", "CCOC(=O)C.C1CO1.CC(=O)NC.CSC"), "gaff-1.81-ambertools", "gasteiger", []),
     ("GAFF2 2.11 (gaff211.dat) isoprene, styrene (vacuum)", ("smiles", "CC=C(C)CC.C=Cc1ccccc1"), "gaff2-2.11-ambertools", "gasteiger", []),
     ("CHARMM36 (toppar) peptide GAFKW (vacuum; CMAP not represented)", ("peptide", "GAFKW"), "charmm36-prot-toppar", "gasteiger", []),
