@@ -224,6 +224,14 @@ def retyped(name, dl_types):
 
 UNITED = bool(__import__("json").load(open(rules)).get("united_atom"))
 CAP = "--cap-open" in sys.argv
+# --deviations FILE: atoms where the library's template contradicts the force field's own typer (antechamber for GAFF),
+# each with its evidence: reported as explained, not counted right
+DEV = {}
+if "--deviations" in sys.argv:
+    for d in __import__("json").load(open(arg("--deviations", "")))["deviations"]:
+        if d["lib"] == lib and d.get("ff", os.path.basename(ffjson)[:-5]) == os.path.basename(ffjson)[:-5]:
+            for a in d["atoms"]:
+                DEV[(d["template"], a)] = (d["dl"], d["caps"], d["reason"])
 # a CAPS type whose every parameter class is another type's (equivalence vdw / bond / angle / dihedral all X, as
 # misc's CTf3 / CTf1 for CT, which only carry a molecule's own charges) is that type under another name
 ALIAS = {}
@@ -238,6 +246,7 @@ names = only or [n for n, m in mols.items() if n in keys and usable(n, m, CAP)]
 if "--exclude" in sys.argv:   # e.g. water-model templates (TIP4P / TIP5P virtual sites cannot be typed from bonds)
     names = [n for n in names if not re.search(arg("--exclude", ""), n)]
 total = right = sym_total = alias_total = 0
+explained = []
 wrong_mols, confusion, failed, apply_problems = [], collections.Counter(), [], []
 for name in names:
     m = mols[name]
@@ -285,8 +294,12 @@ for name in names:
     sym_total += len(by_symmetry)
     bad = [(i, a[0], a[1], expect[i], got[i]) for i, a in enumerate(m["atoms"])
            if expect[i] != got[i] and a[0] not in skip and i not in by_symmetry]
-    total += len(expect) - len(skip)
-    right += len(expect) - len(skip) - len(bad)
+    dev = [b for b in bad if DEV.get((name, b[1]), (None, None))[:2] == (b[3], b[4])]
+    for b in dev:
+        explained.append((name, b[1], b[3], b[4], DEV[(name, b[1])][2]))
+    bad = [b for b in bad if b not in dev]
+    total += len(expect) - len(skip) - len(dev)
+    right += len(expect) - len(skip) - len(bad) - len(dev)
     for b in bad:
         confusion[(b[3], b[4])] += 1
     if bad:
@@ -297,6 +310,10 @@ print(f"{lib}: {len(names)} templates, {right}/{total} atoms typed as DL_FIELD's
       f"{len(wrong_mols)} with differences, {len(failed)} not run" +
       (f"; {sym_total - alias_total} atoms carry the key of a symmetry-equivalent atom (the library numbers equivalent ring positions apart)" if sym_total > alias_total else "") +
       (f"; {alias_total} atoms carry a CAPS name for the key (every parameter class equivalent to it)" if alias_total else ""))
+if explained:
+    print(f"{len(explained)} atoms where the library's template contradicts the force field's own typer (not counted above):")
+    for e in sorted({(x[0], x[2], x[3], x[4]) for x in explained}):
+        print(f"  {e[0]}: library {e[1]}, CAPS {e[2]}: {e[3]}")
 if confusion:
     print("expected → CAPS (atoms):")
     for (e, g), k in confusion.most_common(show):

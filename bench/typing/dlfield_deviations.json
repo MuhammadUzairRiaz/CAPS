@@ -1,0 +1,74 @@
+{
+ "description": "Atoms where CAPS deliberately differs from a DL_FIELD 4.13 template: the template contradicts the force field's own typer, or the CAPS force-field file has no such type. The sweep (bench/typing/sweep_dlfield.sh) reports these as explained, not as matches.",
+ "deviations": [
+  {
+   "lib": "AMBER16_gaff",
+   "template": "dimethylsulphoxide",
+   "atoms": [
+    "H11",
+    "H12",
+    "H13",
+    "H21",
+    "H22",
+    "H23"
+   ],
+   "dl": "hc",
+   "caps": "h1",
+   "reason": "antechamber 22.0 (AmberTools 23.6), GAFF's own typer, gives DMSO's methyl H h1 (docs/paper/runs/checks_1012/antechamber_gaff/dmso.ac_gaff.mol2)",
+   "ff": "gaff-amber16"
+  },
+  {
+   "lib": "AMBER25_gaff",
+   "template": "dimethylsulphoxide",
+   "atoms": [
+    "H11",
+    "H12",
+    "H13",
+    "H21",
+    "H22",
+    "H23"
+   ],
+   "dl": "hc",
+   "caps": "h1",
+   "reason": "antechamber gives DMSO's methyl H h1 in GAFF2 too (dmso.ac_gaff2.mol2)",
+   "ff": "gaff-amber25"
+  },
+  {
+   "lib": "AMBER25_gaff",
+   "template": "ethylene_glycol",
+   "atoms": [
+    "H11",
+    "H12",
+    "H21",
+    "H22"
+   ],
+   "dl": "hc",
+   "caps": "h1",
+   "reason": "antechamber gives the H on ethylene glycol's carbons h1 (ethylene_glycol.ac_gaff2.mol2); the library's own GAFF (AMBER16) template has h1 as well",
+   "ff": "gaff-amber25"
+  },
+  {
+   "lib": "AMBER25_gaff",
+   "template": "ethylacetate",
+   "atoms": [
+    "H21",
+    "H22"
+   ],
+   "dl": "hc",
+   "caps": "h1",
+   "reason": "antechamber gives the H on ethyl acetate's O-CH2 h1 (ethyl_acetate.ac_gaff2.mol2); the library's own GAFF (AMBER16) template has h1 as well",
+   "ff": "gaff-amber25"
+  },
+  {
+   "lib": "PCFF",
+   "ff": "pcff-frc",
+   "template": "Sodium_ion",
+   "atoms": [
+    "Na"
+   ],
+   "dl": "SOD",
+   "caps": "?",
+   "reason": "pcff.frc (the class II file pcff-frc reads) has no sodium type; the DL-derived pcff entry types it SOD"
+  }
+ ]
+}

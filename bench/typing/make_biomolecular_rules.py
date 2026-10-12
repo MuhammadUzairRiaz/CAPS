@@ -537,6 +537,9 @@ SETS = {
 OVERLAYS = {
     "amber-tip3p": ("AMBER: original TIP3P water (H3P)", [("OW", "[OX2H2]", "TIP3P water O"), ("H3P", "[H][OX2H2]", "original TIP3P water H")]),
     "amber-tip3p-pme": ("AMBER: TIP3P water for PME (OT3E / H3E)", [("OT3E", "[OX2H2]", "TIP3P (PME) water O"), ("H3E", "[H][OX2H2]", "TIP3P (PME) water H")]),
+    "gaff-tip3p-c": ("GAFF / GAFF2 (library files): CHARMM's TIP3P water (OT / HT)", [("OT", "[OX2H2]", "TIP3P (CHARMM) water O"), ("HT", "[H][OX2H2]", "TIP3P (CHARMM) water H")]),
+    "gaff-tip3p-pme": ("GAFF / GAFF2 (library files): TIP3P water for PME (OTP / HTP)", [("OTP", "[OX2H2]", "TIP3P (PME) water O"), ("HTP", "[H][OX2H2]", "TIP3P (PME) water H")]),
+    "gaff-spc": ("GAFF / GAFF2 (library files): SPC / SPC/E water (OSPC / HSPC)", [("OSPC", "[OX2H2]", "SPC water O"), ("HSPC", "[H][OX2H2]", "SPC water H")]),
     "opls-tip3p-c": ("OPLS (2005, CL&P, AA/M): CHARMM's TIP3P water (OTC / HTC)", [("OTC", "[OX2H2]", "TIP3P (CHARMM) water O"), ("HTC", "[H][OX2H2]", "TIP3P (CHARMM) water H")]),
     "opls-spc": ("OPLS (2005, CL&P, AA/M): SPC / SPC/E water (OWS / HWS)", [("OWS", "[OX2H2]", "SPC water O"), ("HWS", "[H][OX2H2]", "SPC water H")]),
     "charmm-spc": ("CHARMM: SPC / SPC/E water", [("OSPC", "[OX2H2]", "SPC water O"), ("HSPC", "[H][OX2H2]", "SPC water H")]),
