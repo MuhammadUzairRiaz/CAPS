@@ -29,7 +29,7 @@ def frames(path):
     """geometries of a multi-frame xyz file: [(comment, elements, positions)]"""
     out, lines, k = [], open(path).read().splitlines(), 0
     while k < len(lines):
-        if not lines[k].strip():
+        if not lines[k].strip() or lines[k].strip() == ">":   # ORCA's .allxyz puts a ">" line between frames
             k += 1
             continue
         n = int(lines[k].split()[0])
