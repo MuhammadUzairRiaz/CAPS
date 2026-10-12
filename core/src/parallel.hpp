@@ -53,6 +53,21 @@ class ThreadPool {
     job_ = nullptr;
   }
 
+  // Runs f(slice, begin, end) over [0, count) cut into `slices` fixed slices, each taken by whichever worker is free (a
+  // fast core takes more): what a slice writes, and any sum kept per slice, is the same whichever worker ran it.
+  void run_slices(size_t count, size_t slices, const std::function<void(size_t, size_t, size_t)>& f) {
+    slices = std::max<size_t>(1, slices);
+    if (n_ == 1) {
+      for (size_t s = 0; s < slices; ++s) f(s, count * s / slices, count * (s + 1) / slices);
+      return;
+    }
+    std::atomic<size_t> next{0};
+    run(size_t(n_), [&](int, size_t, size_t) {
+      for (size_t s; (s = next.fetch_add(1, std::memory_order_relaxed)) < slices;) f(s, count * s / slices, count * (s + 1) / slices);
+    });
+  }
+  size_t slices() const { return n_ == 1 ? 1 : 4 * size_t(n_); }   // the usual number: 4 per worker
+
  private:
   // spins until done() or about 100 µs have passed
   template <class Done>

@@ -4,6 +4,7 @@
 #include "nbnxm_fit.hpp"
 #include "simd4.hpp"
 #include <algorithm>
+#include <atomic>
 #include <array>
 #include <cmath>
 #include <cstdlib>
@@ -278,46 +279,56 @@ void List::build(const std::vector<double>& x, const Cell& cell_in, double rl, c
   X.assign(ns, 0.0f);
   Y.assign(ns, 0.0f);
   Z.assign(ns, 0.0f);
-  const size_t ne = entries.size();
-  tb.resize(size_t(nth));
-  te.resize(size_t(nth));
-  for (int t = 0; t < nth; ++t) {
-    tb[size_t(t)] = size_t(std::lower_bound(first.begin(), first.end() - 1, ne * size_t(t) / size_t(nth)) - first.begin());
-    te[size_t(t)] = size_t(std::lower_bound(first.begin(), first.end() - 1, ne * size_t(t + 1) / size_t(nth)) - first.begin());
+  // chunks of i clusters, 4 per worker, taken by whichever worker is free: their entries shrink linearly from the first
+  // to the last (chunk t gets a share ∝ nch − t), so the step does not end waiting on a big chunk on a slow core
+  const size_t ne = entries.size(), nch = nth == 1 ? 1 : 4 * size_t(nth);
+  tb.resize(nch);
+  te.resize(nch);
+  const double whole = double(nch) * double(nch + 1) / 2;
+  auto bound = [&](size_t t) {   // the entry that starts chunk t
+    const double before = double(t) * double(nch) - double(t) * double(t - (t > 0 ? 1 : 0)) / 2;   // Σ_{k<t} (nch − k)
+    return size_t(double(ne) * before / whole);
+  };
+  for (size_t t = 0; t < nch; ++t) {
+    tb[t] = size_t(std::lower_bound(first.begin(), first.end() - 1, t == 0 ? 0 : bound(t)) - first.begin());
+    te[t] = t + 1 == nch ? nclusters : size_t(std::lower_bound(first.begin(), first.end() - 1, bound(t + 1)) - first.begin());
   }
-  pe.assign(size_t(nth), {});
-  pf.assign(size_t(nth), {});
+  pe.assign(nch, {});
+  pf.assign(nch, {});
 }
 
 void List::prune(double radius, ThreadPool& pool) {
   using namespace simd4;
   const F4 r2 = set1(float(radius * radius));
-  pool.run(size_t(pool.size()), [&](int t, size_t, size_t) {
-    auto& E = pe[size_t(t)];
-    auto& F = pf[size_t(t)];
-    E.clear();
-    F.assign(te[size_t(t)] - tb[size_t(t)] + 1, 0);
-    for (size_t ci = tb[size_t(t)]; ci < te[size_t(t)]; ++ci) {
-      const size_t si = 4 * ci;
-      for (size_t e = first[ci]; e < first[ci + 1]; ++e) {
-        const Entry& en = entries[e];
-        const size_t sj = 4 * size_t(en.cj);
-        const double* sq = &qvec[3 * size_t(en.code)];
-        const double* oi = &org[3 * ci];
-        const double* oj = &org[3 * size_t(en.cj)];
-        const float sx = float(sq[0] + oj[0] - oi[0]), sy = float(sq[1] + oj[1] - oi[1]), sz = float(sq[2] + oj[2] - oi[2]);
-        const F4 xj = load(&X[sj]) + set1(sx), yj = load(&Y[sj]) + set1(sy), zj = load(&Z[sj]) + set1(sz);
-        unsigned mask = 0;
-        for (int a = 0; a < 4; ++a) {
-          const unsigned rowbits = (en.mask >> (4 * a)) & 15u;
-          if (!rowbits) continue;
-          const F4 dx = xj - set1(X[si + a]), dy = yj - set1(Y[si + a]), dz = zj - set1(Z[si + a]);
-          const F4 d2 = fma(dx, dx, fma(dy, dy, dz * dz));
-          mask |= (bits(d2 < r2) & rowbits) << (4 * a);
+  std::atomic<size_t> next{0};
+  pool.run(size_t(pool.size()), [&](int, size_t, size_t) {
+    for (size_t t; (t = next.fetch_add(1, std::memory_order_relaxed)) < tb.size();) {
+      auto& E = pe[t];
+      auto& F = pf[t];
+      E.clear();
+      F.assign(te[t] - tb[t] + 1, 0);
+      for (size_t ci = tb[t]; ci < te[t]; ++ci) {
+        const size_t si = 4 * ci;
+        for (size_t e = first[ci]; e < first[ci + 1]; ++e) {
+          const Entry& en = entries[e];
+          const size_t sj = 4 * size_t(en.cj);
+          const double* sq = &qvec[3 * size_t(en.code)];
+          const double* oi = &org[3 * ci];
+          const double* oj = &org[3 * size_t(en.cj)];
+          const float sx = float(sq[0] + oj[0] - oi[0]), sy = float(sq[1] + oj[1] - oi[1]), sz = float(sq[2] + oj[2] - oi[2]);
+          const F4 xj = load(&X[sj]) + set1(sx), yj = load(&Y[sj]) + set1(sy), zj = load(&Z[sj]) + set1(sz);
+          unsigned mask = 0;
+          for (int a = 0; a < 4; ++a) {
+            const unsigned rowbits = (en.mask >> (4 * a)) & 15u;
+            if (!rowbits) continue;
+            const F4 dx = xj - set1(X[si + a]), dy = yj - set1(Y[si + a]), dz = zj - set1(Z[si + a]);
+            const F4 d2 = fma(dx, dx, fma(dy, dy, dz * dz));
+            mask |= (bits(d2 < r2) & rowbits) << (4 * a);
+          }
+          if (mask) E.push_back({en.cj, en.code, uint16_t(mask)});
         }
-        if (mask) E.push_back({en.cj, en.code, uint16_t(mask)});
+        F[ci - tb[t] + 1] = uint32_t(E.size());
       }
-      F[ci - tb[size_t(t)] + 1] = uint32_t(E.size());
     }
   });
 }
@@ -494,23 +505,12 @@ void kernel_t(const List& L, const Params& p, int tw, float* fxo, float* fyo, fl
     out.evdw += hsum(ev);
     out.ecoul += hsum(ec);
   }
-  // virial: this worker's forces at the listed positions, and the image terms
-  double W[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
-  const size_t ns = L.perm.size();
-  for (size_t s = 0; s < ns; ++s) {
-    const double* o = &L.org[3 * (s / 4)];
-    const double r[3] = {X[s] + o[0], Y[s] + o[1], Z[s] + o[2]}, f[3] = {fxo[s], fyo[s], fzo[s]};
-    for (int u = 0; u < 3; ++u)
-      for (int w = 0; w < 3; ++w) W[u][w] += r[u] * f[w];
-  }
+  // the forces taken through each image, for the virial
+  if (out.fsh.size() < 3 * ncodes) out.fsh.resize(3 * ncodes, 0.0);
   for (size_t c = 0; c < ncodes; ++c) {
     if (c == zero_code) continue;
-    const double f[3] = {hsum(fsh[3 * c]), hsum(fsh[3 * c + 1]), hsum(fsh[3 * c + 2])};
-    for (int u = 0; u < 3; ++u)
-      for (int w = 0; w < 3; ++w) W[u][w] += L.qvec[3 * c + u] * f[w];
+    for (int k = 0; k < 3; ++k) out.fsh[3 * c + size_t(k)] += hsum(fsh[3 * c + size_t(k)]);
   }
-  out.w[0] += W[0][0]; out.w[1] += W[1][1]; out.w[2] += W[2][2];
-  out.w[3] += 0.5 * (W[0][1] + W[1][0]); out.w[4] += 0.5 * (W[0][2] + W[2][0]); out.w[5] += 0.5 * (W[1][2] + W[2][1]);
 }
 
 template <int kLj, bool kComb, bool kE>
@@ -528,6 +528,21 @@ void by_energy(const List& L, const Params& p, int tw, float* fx, float* fy, flo
 }
 
 }  // namespace
+
+void pair_virial(const List& L, const double* F, size_t sb, size_t se, double W[9]) {
+  for (size_t s = sb; s < se; ++s) {
+    const double* o = &L.org[3 * (s / 4)];
+    const double r[3] = {double(L.X[s]) + o[0], double(L.Y[s]) + o[1], double(L.Z[s]) + o[2]};
+    for (int u = 0; u < 3; ++u)
+      for (int w = 0; w < 3; ++w) W[3 * u + w] += r[u] * F[3 * s + size_t(w)];
+  }
+}
+
+void shift_virial(const List& L, const std::vector<double>& fsh, double W[9]) {
+  for (size_t c = 0; 3 * c < fsh.size() && 3 * c < L.qvec.size(); ++c)
+    for (int u = 0; u < 3; ++u)
+      for (int w = 0; w < 3; ++w) W[3 * u + w] += L.qvec[3 * c + size_t(u)] * fsh[3 * c + size_t(w)];
+}
 
 namespace {
 // AVX2 and FMA when built in and the processor reports them; CAPS_SIMD=sse2 keeps the four-lane kernel (to compare),
