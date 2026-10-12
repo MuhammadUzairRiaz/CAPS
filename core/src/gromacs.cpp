@@ -108,6 +108,19 @@ bool periodic_bonds(const System& s, std::vector<Vec3>& pos) {
   return false;
 }
 
+// an angle whose atoms are not bonded to each other (ClayFF's metal-O-H bends, found by contact) can still span the cell
+// after the bonded molecules are made whole: GROMACS then needs periodic-molecules to take it at its nearest image
+bool angles_cross_cell(const System& s, const ForceField& ff, const std::vector<Vec3>& pos) {
+  if (!s.cell.valid()) return false;
+  auto crosses = [&](uint32_t a, uint32_t b) {
+    const Vec3 d = pos[b] - pos[a];
+    return norm(d - s.cell.minimum_image(d)) > 1e-6;
+  };
+  for (const auto& a : ff.angles)
+    if (crosses(a.j, a.i) || crosses(a.j, a.k)) return true;
+  return false;
+}
+
 // MARTINI 2's pairs as LAMMPS lj/gromacs: Lennard-Jones with GROMACS's force switch from lj_inner to the cut-off
 bool gromacs_switch(const ForceField& ff) {
   if (ff.pair_func.empty()) return false;
@@ -157,6 +170,7 @@ std::vector<std::string> gromacs_notes(const System& s, const ForceField& ff, co
     if (t.n < 0) throw FieldError("an improper with multiplicity < 0 has no GROMACS form");
   std::vector<Vec3> pos;
   if (periodic_bonds(s, pos)) notes.push_back("bonds cross the cell (an infinite network): periodic-molecules = yes");
+  else if (angles_cross_cell(s, ff, pos)) notes.push_back("bends between unbonded atoms cross the cell: periodic-molecules = yes");
   if (!s.cell.valid()) notes.push_back("no periodic cell: the molecule is centred in a box 2 r_c larger than it is");
   const bool any_charge = std::any_of(ff.charge.begin(), ff.charge.end(), [](double q) { return q != 0; });
   if (!any_charge) {
@@ -282,7 +296,7 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
   // The molecule sections, as lines tagged with their atoms: each written with molecule-local numbering, so identical
   // molecules (a melt's chains, a solvent) become one [ moleculetype ] in STEM.itp, listed with their count in [ molecules ].
   std::vector<Vec3> pos;
-  const bool periodic_mol = periodic_bonds(s, pos);
+  const bool periodic_mol = periodic_bonds(s, pos) || angles_cross_cell(s, ff, pos);
   // virtual sites where their atoms put them (GROMACS's rerun takes the coordinates as written; CAPS places the sites
   // at every evaluation)
   for (const auto& v : ff.vsites) {
@@ -570,7 +584,9 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
     const long res = (a.resid > 0 ? long(a.resid) : s.has_mol && a.mol > 0 ? long(a.mol) : long(mol[i] + 1)) % 100000;
     const std::string rn = clean(a.resname.empty() ? "MOL" : a.resname).substr(0, 5);
     const std::string& an = aname[i];
-    const Vec3 p = pos[i] + shift;
+    // with periodic molecules GROMACS takes every term at its nearest image: atoms folded into the cell, where single
+    // precision loses least (a network made whole can reach several cell lengths)
+    const Vec3 p = periodic_mol ? s.cell.wrap(pos[i] + s.cell.origin) - s.cell.origin : pos[i] + shift;
     std::snprintf(b, sizeof b, "%5ld%-5s%5s%5ld%13.8f%13.8f%13.8f\n", res, rn.c_str(), an.c_str(), long((i + 1) % 100000), p[0] / 10, p[1] / 10, p[2] / 10);
     gro << b;
   }
@@ -590,7 +606,7 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
   mdp << "integrator               = md\nnsteps                   = 0\ndt                       = " << (ff.native_timestep > 0 ? ff.native_timestep : 0.5) / 1000 << "\n";
   mdp << "nstcalcenergy            = 1\nnstenergy                = 1\n";
   mdp << gromacs_mdp(s, ff, e);
-  if (periodic_mol) mdp << "periodic-molecules       = yes         ; bonds cross the cell: an infinite network\n";
+  if (periodic_mol) mdp << "periodic-molecules       = yes         ; bonded terms cross the cell (an infinite network, or bends by contact)\n";
   mdp.close();
 
   return notes;

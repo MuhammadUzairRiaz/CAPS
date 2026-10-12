@@ -189,13 +189,19 @@ CASES = [
     # bipyramid), sp2 and pyramidal-P inversions (improper fourier), group-16 torsions, full 1-4 van der Waals
     ("UFF mixed elements (P, S, Si, Pt, F, Cl)", ("smiles", "CC#CC(=O)Oc1ccc(cc1)P(C)C.F[S](F)(F)(F)(F)F.N[Pt](N)(Cl)Cl."
                                                "FP(F)(F)(F)F.C[Si](C)(C)O[Si](C)(C)C.CSSC"), "uff", "types", "rules"),
-    # ClayFF (Cygan 2004) on LAMMPS's own ClayFF test structure (msi2lmp's pyrophyllite, its types and charges): O-H
-    # bonds, the M-O-H bends by contact, Lorentz-Berthelot mixing. Ewald: this LAMMPS build's PPPM fails on that cell
-    # (its own in.PyAC_bulk-clayff as well).
-    ("ClayFF pyrophyllite (LAMMPS's ClayFF test, triclinic, M-O-H bends)", ("file", os.path.expanduser("~/lammps/tools/msi2lmp/test/PyAC_bulk-clayff.car")),
-     "inorganic-clay", "keep", "names", ["--kspace", "ewald"]),
-    ("ClayFF (Cygan 2004, Tables 1 and 2) pyrophyllite: LAMMPS's ClayFF test structure, its own types", ("file", os.path.expanduser("~/lammps/tools/msi2lmp/test/PyAC_bulk-clayff.car")),
-     "clayff2004", "types", "names", ["--kspace", "ewald"]),
+    # ClayFF (Cygan, Liang & Kalinichev 2004, Tables 1 and 2): O-H bonds, the metal-O-H bends by contact, Lorentz-Berthelot
+    # mixing. LAMMPS's own ClayFF test structure (msi2lmp's pyrophyllite) with its types; the INTERFACE force field's clay
+    # models and brucite typed by CAPS's rules (obos, ohs, mgo and Na in montmorillonite; at, obts and K in muscovite;
+    # mgh in brucite). Ewald: this LAMMPS build's PPPM fails on the triclinic pyrophyllite (its own in.PyAC_bulk-clayff too).
+    ("ClayFF (Cygan 2004) pyrophyllite: LAMMPS's ClayFF test structure, its own types", ("file", os.path.expanduser("~/lammps/tools/msi2lmp/test/PyAC_bulk-clayff.car")),
+     "clayff-cygan2004", "types", "names", ["--kspace", "ewald"]),
+    ("ClayFF (Cygan 2004) Na-montmorillonite (IFF model, typed by rule)", ("file", os.path.expanduser("~/iff-ref/INTERFACE_FF_1_5/MODEL_DATABASE/CLAY_MINERALS/mont0_333_Na_15_cell.car")),
+     "clayff-cygan2004", "types", "rules", ["--kspace", "ewald"]),
+    ("ClayFF (Cygan 2004) muscovite (IFF model, typed by rule)", ("file", os.path.expanduser("~/iff-ref/INTERFACE_FF_1_5/MODEL_DATABASE/CLAY_MINERALS/mica15_cell.car")),
+     "clayff-cygan2004", "types", "rules", ["--kspace", "ewald"]),
+    ("ClayFF (Cygan 2004) brucite 7x7x5 (mgh, Mg-O-H bends)", ("crystal", ["--group", "P -3 m 1", "--cell", "3.142,3.142,4.766,90,90,120", "--sites",
+     "Mg1 Mg 0 0 0; O1 O 0.33333333 0.66666667 0.2203; H1 H 0.33333333 0.66666667 0.4213", "--supercell", "7,7,5"]),
+     "clayff-cygan2004", "types", "rules", ["--kspace", "ewald"]),
     # IFF typed by rule on slabs CAPS builds: hydroxylated quartz (sc4, oc23, oc24, hoy; the charges IFF states from
     # bond increments), a copper (111) slab (Lennard-Jones atoms, perceived bonds dropped)
     ("IFF (PCFF) hydroxylated quartz (001) slab, typed by rule", ("surface", os.path.join(ROOT, "data", "crystals", "alpha-quartz.cif"),
