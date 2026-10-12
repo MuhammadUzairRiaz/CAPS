@@ -771,6 +771,8 @@ std::vector<std::string> pair_lines(const Layout& L, const ForceField& ff) {
           f14.lj = ff.lj14_types;
           p14 = mixed_pair(f14, int(a2), int(b2));
         }
+        // mixed by CAPS, not numbers of the source: at full precision, so LAMMPS's 1-4 and switched pairs equal CAPS's
+        const Digits full(true);
         coef = num({pt.eps, pt.sigma, p14.eps, p14.sigma});
       } else {
         const PairType pt = mixed_pair(ff, int(a2), int(b2));

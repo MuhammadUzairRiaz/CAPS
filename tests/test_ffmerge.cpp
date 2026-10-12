@@ -57,7 +57,7 @@ TEST(FFMerge, SameForceFieldInTwoPartsIsExact) {
   // σ arithmetic): every term equals the single assignment's
   System s = open_file(std::string(CAPS_SOURCE_DIR) + "/samples/ps_melt.data").frame(0);
   make_molecules_whole(s);
-  const FFDef def = load_forcefield(kFF + "gaff-amber25.json");
+  const FFDef def = load_forcefield(kFF + "gaff2-2.2.20-ambertools.json");
   const auto mol = s.molecules();
   std::vector<uint32_t> a, b;
   for (size_t i = 0; i < s.atoms.size(); ++i) (mol[i] < 5 ? a : b).push_back(uint32_t(i));
@@ -84,7 +84,7 @@ TEST(FFMerge, DifferentFamiliesAreRefusedOrMergedAsAsked) {
   const auto mol = s.molecules();
   std::vector<uint32_t> a, b;
   for (size_t i = 0; i < s.atoms.size(); ++i) (mol[i] < 5 ? a : b).push_back(uint32_t(i));
-  const FFDef gaff = load_forcefield(kFF + "gaff-amber25.json"), opls = load_forcefield(kFF + "opls2005.json");
+  const FFDef gaff = load_forcefield(kFF + "gaff2-2.2.20-ambertools.json"), opls = load_forcefield(kFF + "opls2005.json");
   const ForceField fa = typed(part_of(s, a), gaff), fb = typed(part_of(s, b), opls);
   // GAFF 1-4 Coulomb 1/1.2, OPLS 1/2: refused unless asked
   {   // refused when asked; by default each keeps its own 1-4 scaling, pair by pair
@@ -159,7 +159,7 @@ TEST(FFMerge, ManyBodyGroup) {
   EXPECT_EQ(fs_.type_names, std::vector<std::string>{"Si"});
   EXPECT_NEAR(fs_.mass[0], 28.085, 0.01);
   EXPECT_EQ(fs_.charge[0], 0.0);
-  const FFDef gaff = load_forcefield(kFF + "gaff-amber25.json");
+  const FFDef gaff = load_forcefield(kFF + "gaff2-2.2.20-ambertools.json");
   const ForceField fm = typed(part_of(s, me), gaff);
   const ForceField m = merge_forcefields(s.atoms.size(), {{&fs_, si, "Si"}, {&fm, me, "methane"}}, MergeOptions{});
   ASSERT_TRUE(m.manybody.on());
@@ -264,7 +264,7 @@ TEST(FFMerge, AireboWritesMetalUnits) {
   const ForceField fc = manybody_part(part_of(s, cc), {"airebo", file, ""});
   EXPECT_TRUE(fc.manybody.metal_only);
   EXPECT_EQ(fc.manybody.args, "3.0 1 1");
-  const ForceField fm = typed(part_of(s, me), load_forcefield(kFF + "gaff-amber25.json"));
+  const ForceField fm = typed(part_of(s, me), load_forcefield(kFF + "gaff2-2.2.20-ambertools.json"));
   const ForceField m = merge_forcefields(s.atoms.size(), {{&fc, cc, "CNT"}, {&fm, me, "methane"}}, MergeOptions{});
   EXPECT_TRUE(lammps_metal_units(m));   // automatic: metal, the published file as it is
   const ForceField mm = forcefield_in_metal_units(m);
@@ -343,7 +343,7 @@ TEST(FFMerge, MeamMapsLibraryEntries) {
   }
   sp.entries = {{"Si", "Si"}, {"C", "C"}};
   const ForceField fc = manybody_part(part_of(s, sc), sp);
-  const ForceField fm = typed(part_of(s, me), load_forcefield(kFF + "gaff-amber25.json"));
+  const ForceField fm = typed(part_of(s, me), load_forcefield(kFF + "gaff2-2.2.20-ambertools.json"));
   const ForceField m = merge_forcefields(s.atoms.size(), {{&fc, sc, "SiC"}, {&fm, me, "methane"}}, MergeOptions{});
   LammpsStyle rs;
   rs.units = "real";
@@ -393,7 +393,7 @@ TEST(FFMerge, AssignedForceFieldFileRoundTrip) {
   const auto mol = s.molecules();
   std::vector<uint32_t> a, b;
   for (size_t i = 0; i < s.atoms.size(); ++i) (mol[i] < 5 ? a : b).push_back(uint32_t(i));
-  const FFDef gaff = load_forcefield(kFF + "gaff-amber25.json"), opls = load_forcefield(kFF + "opls2005.json");
+  const FFDef gaff = load_forcefield(kFF + "gaff2-2.2.20-ambertools.json"), opls = load_forcefield(kFF + "opls2005.json");
   const ForceField fa = typed(part_of(s, a), gaff), fb = typed(part_of(s, b), opls);
   const ForceField merged = merge_forcefields(s.atoms.size(), {{&fa, a, "GAFF"}, {&fb, b, "OPLS"}}, MergeOptions{});
   const ForceField pcff = typed(s, load_forcefield(kFF + "pcff.json"));
