@@ -3,7 +3,7 @@
  "version": 1,
  "forcefield": "DREIDING (Mayo 1990)",
  "unknown_types": "untyped",
- "description": "CAPS rules for DREIDING's labels as the paper defines them: element and hybridisation (_3 tetrahedral, _R resonant, _2 trigonal, _1 linear), H___A the hydrogen of a hydrogen bond (bench/ff/make_dreiding.py)",
+ "description": "CAPS rules for DREIDING's labels as the paper defines them: element and hybridisation (_3 tetrahedral, _R resonant, _2 trigonal, _1 linear), H__HB the hydrogen of a hydrogen bond (bench/ff/make_dreiding.py)",
  "rules": [
   {
    "type": "H_",
@@ -12,13 +12,13 @@
    "description": "hydrogen"
   },
   {
-   "type": "H___A",
+   "type": "H__HB",
    "smarts": "[H][#7,#8]",
    "priority": 2,
    "description": "hydrogen-bond hydrogen (on N or O)"
   },
   {
-   "type": "H___b",
+   "type": "H_b",
    "smarts": "[H;D2]([#5])[#5]",
    "priority": 3,
    "description": "bridging hydrogen (diborane)"

@@ -51,9 +51,9 @@ CASES = [
     ("DREIDING first template (umbrella inversions)", ("template-first", "DREIDING", ""), "dreiding", "gasteiger", "keys"),
     # DREIDING's own torsion rules (Mayo 1990, cases a-j) where the file lists none: C=C double and conjugated single
     # bonds (polybutadiene, butadiene), sp3 next to sp2 (b / j), biphenyl's ring link (f), the aromatic ring (d)
-    ("DREIDING ethanol liquid: hydrogen bonds (periodic, 270 molecules)", ("solvent-box", "ethanol", 26), "dreiding", "gasteiger", "rules"),
-    ("Polystyrene melt, DREIDING (periodic; sp3-aromatic torsions by DREIDING's rules)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "dreiding", "gasteiger", "rules"),
-    ("DREIDING rules: cis-polybutadiene fragment, butadiene, biphenyl, methyl acetate", ("smiles", "C/C=C\\CC/C=C\\CC/C=C\\C.C=CC=C.c1ccccc1-c1ccccc1.CC(=O)OC"), "dreiding", "gasteiger", "rules"),
+    ("DREIDING ethanol liquid: hydrogen bonds (periodic, 270 molecules)", ("solvent-box", "ethanol", 26), "dreiding1990", "gasteiger", "rules"),
+    ("Polystyrene melt, DREIDING (periodic; sp3-aromatic torsions by DREIDING's rules)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "dreiding1990", "gasteiger", "rules"),
+    ("DREIDING rules: cis-polybutadiene fragment, butadiene, biphenyl, methyl acetate", ("smiles", "C/C=C\\CC/C=C\\CC/C=C\\C.C=CC=C.c1ccccc1-c1ccccc1.CC(=O)OC"), "dreiding1990", "gasteiger", "rules"),
     ("Ionic halides (Buckingham, periodic)", ("ionic-first", "INORGANIC_binary_halides", ""), "inorganic-binary-halides", "qeq", "keys"),
     # a shell model (core and shell on each ion, a spring between them): CORESHELL's buck/coul/long/cs (born/coul/dsf/cs
     # in CAPS's own styles, which LAMMPS gives no tail term: compared without one). LAMMPS's /cs styles evaluate each
