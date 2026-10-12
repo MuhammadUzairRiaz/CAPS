@@ -35,8 +35,9 @@ ESTER_O = "[OX2]([#6])[CX3]=[OX1]"
 
 
 class Rules(list):
-    def add(self, t, prio, smarts, desc):
-        self.append({"type": t, "smarts": smarts, "priority": prio, "description": desc})
+    def add(self, t, prio, smarts, desc, **cond):
+        """cond: in_molecule / not_in_molecule (SMARTS on the atom's own molecule)"""
+        self.append({"type": t, "smarts": smarts, "priority": prio, "description": desc, **cond})
 
 
 def water_ions(R, o="OW", h="HW"):
@@ -127,47 +128,111 @@ def glycam(R):
 
 # ---------------------------------------------------------------- CHARMM (library's generic keys)
 def charmm():
+    """the library's generic CHARMM set, whose keys depend on the kind of molecule: amino acids and peptides, lipids
+    (quaternary ammonium, phosphate and sulfate esters, sulfoxides, sterols: the _L keys), carbohydrates (CS / CF ...),
+    ethers and saturated hydrocarbons (CAE / HAE / OET), and the rest; molecule classes by in_molecule"""
     R = Rules()
-    R.add("C1", 0, "[CX4H1]", "sp3 CH (CT1)"); R.add("C2", 0, "[CX4H2]", "sp3 CH2 (CT2)"); R.add("C3", 0, "[CX4H3]", "sp3 CH3 (CT3)")
-    R.add("CAE1", 2, "[CX4H1][OX2;!$(O[CX3]=O);!$([OH1])]", "sp3 CH next to an ether oxygen")
-    R.add("CAE2", 2, "[CX4H2][OX2;!$(O[CX3]=O);!$([OH1])]", "sp3 CH2 next to an ether oxygen")
-    R.add("CAE3", 2, "[CX4H3][OX2;!$(O[CX3]=O);!$([OH1])]", "sp3 CH3 next to an ether oxygen")
-    R.add("CTHF", 3, "[CX4H2;r5]@[OX2;r5]", "ring CH2 next to O in tetrahydrofuran")
-    R.add("CTHP", 3, "[CX4H2;r6]@[OX2;r6]", "ring CH2 next to O in tetrahydropyran")
-    R.add("CYCP", 1, "[CX4H2;r5;!$(*[O,N,S])]", "CH2 in a five-membered carbon ring")
-    R.add("C4", 1, "c", "aromatic carbon")
-    R.add("C15", 1, "[CX3H2]=[CX3]", "terminal alkene carbon H2C=")
-    R.add("C16", 1, "[CX3;H1,H0]=[CX3]", "inner alkene carbon =CH- (and =CR-)")
-    R.add("C6", 3, "[CX3](=[OX1])[NX3]", "amide carbonyl carbon")
-    R.add("C5", 3, "[CX3](=[OX1])[OX2]", "carbonyl carbon of an acid or ester")
-    R.add("C18", 4, "[CX3](=[OX1])([OX2])[OX2]", "carbonate carbon")
-    R.add("H1", 0, "[H][CX4]", "aliphatic H")
-    R.add("HAE1", 2, "[H][CX4H1][OX2;!$(O[CX3]=O);!$([OH1])]", "H on an ether CH")
-    R.add("HAE2", 2, "[H][CX4H2][OX2;!$(O[CX3]=O);!$([OH1])]", "H on an ether CH2")
-    R.add("HAE3", 2, "[H][CX4H3][OX2;!$(O[CX3]=O);!$([OH1])]", "H on an ether CH3")
-    R.add("HTHF", 3, "[H][CX4H2;r5]", "H on a CH2 in a five-membered ring")
-    R.add("H2", 0, "[H]c", "aromatic H")
-    R.add("H7", 1, "[H][CX3H2]=[CX3]", "H on a terminal alkene carbon")
-    R.add("H8", 1, "[H][CX3H1]=[CX3]", "H on an inner alkene carbon")
-    R.add("HN", 0, "[H][N,n]", "H on N")
-    R.add("HO", 0, "[H][OX2]", "hydroxyl H")
-    R.add("HS", 0, "[H][SX2]", "thiol H")
-    R.add("N1", 2, "[NX3H2][CX3]=[OX1]", "amide N with two H")
-    R.add("N2", 2, "[NX3H1][CX3]=[OX1]", "amide N with one H")
-    R.add("N5", 2, "[NX3H0][CX3]=[OX1]", "amide N without H (as in proline)")
-    R.add("N3", 3, "[NX4+]", "ammonium nitrogen")
-    R.add("OH", 1, "[OX2H1]", "hydroxyl oxygen")
-    R.add("OET", 0, "[OX2]([#6])[#6]", "ether oxygen")
-    R.add("OE", 2, ESTER_O, "ester oxygen")
-    R.add("OC1", 2, "[OX1]=[CX3][OX2]", "carbonyl oxygen of an acid or ester")
-    R.add("OC2", 2, "[OX1]=[CX3][NX3]", "carbonyl oxygen of an amide")
-    R.add("OC3", 3, "[OX1]~[CX3]~[OX1]", "carboxylate oxygen")
-    R.add("OCA", 3, "[OX1]=[CX3]([OX2])[OX2]", "carbonate carbonyl oxygen")
-    R.add("S1", 1, "[SX2H1]", "thiol sulfur"); R.add("S2", 1, "[SX2][SX2]", "disulfide sulfur")
-    R.add("S4", 1, "[SX3]=[OX1]", "sulfoxide sulfur"); R.add("S5", 1, "[SX4](=[OX1])=[OX1]", "sulfone / sulfate sulfur")
-    R.add("P1", 0, "[PX4]", "phosphate phosphorus"); R.add("OP", 1, "[OX1]~P", "phosphate oxygen")
-    water_ions(R, "OW", "HW")
-    R.add("Na+", 0, "[Na]", "sodium ion"); R.add("Cl-", 0, "[Cl-;X0]", "chloride ion")
+    STEROID = "[#6]1~[#6]~[#6]~[#6]2~[#6](~[#6]~1)~[#6]~[#6]~[#6]1~[#6]~2~[#6]~[#6]~[#6]2~[#6]~[#6]~[#6]~[#6]~1~2"
+    LIPID = f"[$([NX4]([CH3])([CH3])[CH3]),$([PX4]),$([SX4]),$([SX3]=[OX1]),$({STEROID})]"
+    SUGAR = sugar_ring_smarts()
+    # ethers and saturated hydrocarbons: only C, H and ether O, nothing unsaturated
+    ETHERS = {"not_in_molecule": ["[!#6;!#1;!#8]", "[OX2H1]", "[OX1]", "[#6;X3,X2]", "a", SUGAR]}
+    LIP = {"in_molecule": [LIPID]}
+    SUG = {"in_molecule": [SUGAR], "not_in_molecule": [LIPID]}
+    OTHER = {"not_in_molecule": [LIPID, SUGAR]}
+    # sp3 carbons and their H
+    R.add("C1", 0, "[CX4;H1,H0]", "sp3 CH / C (CT1)"); R.add("C2", 0, "[CX4H2]", "sp3 CH2 (CT2)"); R.add("C3", 0, "[CX4H3]", "sp3 CH3 (CT3)")
+    R.add("H1", 0, "[H][CX4]", "H on sp3 C")
+    R.add("CAE1", 2, "[CX4;H1,H0]", "ether / alkane CH, C", **ETHERS); R.add("CAE2", 2, "[CX4H2]", "ether / alkane CH2", **ETHERS)
+    R.add("CAE3", 2, "[CX4H3]", "ether / alkane CH3", **ETHERS)
+    R.add("HAE1", 2, "[H][CX4;H1,H0]", "H on ether / alkane CH", **ETHERS); R.add("HAE2", 2, "[H][CX4H2]", "H on ether / alkane CH2", **ETHERS)
+    R.add("HAE3", 2, "[H][CX4H3]", "H on ether / alkane CH3", **ETHERS)
+    R.add("CTHF", 3, "[CX4;$(*1@*@*@*@[OX2]1),$(*1@*@*@[OX2]@*1)]", "tetrahydrofuran ring C", **ETHERS)
+    R.add("HTHF", 3, "[H][CX4;$(*1@*@*@*@[OX2]1),$(*1@*@*@[OX2]@*1)]", "H on a tetrahydrofuran ring C", **ETHERS)
+    R.add("CTHP", 3, "[CX4;$(*1@*@*@*@*@[OX2]1),$(*1@*@*@*@[OX2]@*1),$(*1@*@*@[OX2]@*@*1)]", "tetrahydropyran ring C", **ETHERS)
+    R.add("CYCP", 3, "[CX4;$(*1@[CX4]@[CX4]@[CX4]@[CX4]1)]", "cyclopentane C", **ETHERS)
+    R.add("HTHF", 3, "[H][CX4;$(*1@[CX4]@[CX4]@[CX4]@[CX4]1)]", "H on a cyclopentane C", **ETHERS)
+    R.add("OET", 1, "[OX2]([CX4])[CX4]", "ether O")
+    # lipids
+    R.add("C_L1", 4, "[CX4;H1,H0]", "lipid CH / C", **LIP); R.add("C_L2", 4, "[CX4H2]", "lipid CH2", **LIP); R.add("C_L3", 4, "[CX4H3]", "lipid CH3", **LIP)
+    R.add("C_L4", 5, "[CX4H3][NX4]", "methyl on a quaternary ammonium N", **LIP)
+    R.add("H_L1", 4, "[H][CX4;H1,H0]", "H on lipid CH", **LIP); R.add("H_L2", 4, "[H][CX4H2]", "H on lipid CH2", **LIP)
+    R.add("H_L3", 4, "[H][CX4H3]", "H on lipid CH3", **LIP)
+    R.add("HL", 5, "[H][CX4][NX4H0]", "H on C of a quaternary ammonium", **LIP)
+    R.add("NT", 5, "[NX4H0]", "quaternary ammonium N")
+    R.add("N3L", 5, "[NX4;!H0]", "lipid ammonium N", **LIP)
+    R.add("OSL", 5, "[OX2;$(O[CX4H2]);$(O[$([CX3]=[OX1]),$([SX4])])]", "lipid ester O (on a CH2)", **LIP)
+    R.add("OE", 4, "[OX2]([#6])[$([CX3]=[OX1]),$([SX4]),$([PX4])]", "ester O (carboxylate, phosphate, sulfate)")
+    R.add("OP", 5, "[OX1]~[P,SX4]", "phosphate / sulfate O"); R.add("P1", 5, "[PX4]", "phosphate P"); R.add("S5", 5, "[SX4]", "sulfate S")
+    R.add("S4", 5, "[SX3]=[OX1]", "sulfoxide S"); R.add("OC3", 5, "[OX1]=[SX3]", "sulfoxide O")
+    # carbohydrates
+    PYR = "$(*1@*@*@*@*@[OX2]1)"; FUR = "$(*1@*@*@*@[OX2]1)"
+    ADJ = "$(*@[OX2;R])"; EXOC = "$(*!@[#6])"; EXOO = "$(*!@[#8])"
+    R.add("CS", 6, f"[CX4;R;{PYR},$(*1@*@*@*@[OX2]@*1),$(*1@*@*@[OX2]@*@*1)]", "pyranose ring C", **SUG)
+    R.add("CS1", 7, f"[CX4;R;{ADJ};!{EXOC};$(*1@*@*@*@*@[OX2]1)]", "pyranose C1", **SUG)
+    R.add("CS5", 7, f"[CX4;R;{ADJ};{EXOC};$(*1@*@*@*@*@[OX2]1)]", "pyranose C5", **SUG)
+    R.add("CF", 6, f"[CX4;R;{FUR},$(*1@*@*@[OX2]@*1)]", "furanose ring C", **SUG)
+    R.add("CFD", 7, f"[CX4H2;R;$(*1@*@*@[OX2]@*1)]", "furanose deoxy C2", **SUG)
+    R.add("CF1", 7, f"[CX4;R;{ADJ};!{EXOC};{FUR}]", "furanose C1", **SUG)
+    R.add("CF4", 7, f"[CX4;R;{ADJ};{EXOC};!{EXOO};{FUR}]", "furanose C4", **SUG)
+    R.add("CFF2", 7, f"[CX4;R;{ADJ};{EXOC};{EXOO};{FUR}]", "fructofuranose C2", **SUG)
+    R.add("CAS2", 6, "[CX4;!R;$(*[CX4;R])]", "exocyclic C of a sugar ring (C6)", **SUG)
+    R.add("CAS3", 6, "[CX4H3;$(*[OX2][CX4;R])]", "O-methyl of a glycoside", **SUG)
+    R.add("HAS1", 6, "[H][CX4H1]", "H on a sugar CH", **SUG); R.add("HAS2", 6, "[H][CX4H2]", "H on a sugar CH2", **SUG)
+    R.add("HAS3", 6, "[H][CX4H3]", "H on a sugar CH3", **SUG)
+    R.add("OHS", 6, "[OX2H1]", "sugar hydroxyl O", **SUG); R.add("HOS", 6, "[H][OX2H1]", "sugar hydroxyl H", **SUG)
+    R.add("OS", 7, "[OX2;R;$(*1@*@*@*@*@*1)]([CX4])[CX4]", "pyranose ring O", **SUG)
+    R.add("OF", 7, "[OX2;R;$(*1@*@*@*@*1)]([CX4])[CX4]", "furanose ring O", **SUG)
+    # amino acids and the rest
+    AAH = "[CX4]([NX3,NX4])[CX3]=[OX1]"
+    R.add("H3", 5, f"[H]{AAH}", "backbone H alpha", **OTHER)
+    R.add("C8", 6, "[CX4;r5]([NX4,NX3])[CX3]=[OX1]", "proline C alpha")
+    R.add("C9", 6, "[CX4H2;r5;$(*1@*@*@[NX3,NX4]@[CX4]1([CX3]=[OX1])),$(*1@*@[NX3,NX4]@[CX4]([CX3]=[OX1])@*1)]", "proline C beta / gamma")
+    R.add("C10", 6, "[CX4H2;r5;$(*1@[NX3,NX4]@[CX4]([CX3]=[OX1])@*@*1)]", "proline C delta")
+    R.add("N4", 6, "[NX4;r5;$(*@[CX4][CX3]=[OX1])]", "proline N")
+    R.add("C17", 5, "[CX4][SX1]", "thiolate C"); R.add("S3", 5, "[SX1]", "thiolate S")
+    R.add("S1", 3, "[SX2;!$(*[SX2])]", "thiol / thioether S"); R.add("S2", 4, "[SX2]([#6])[SX2]", "disulfide S")
+    R.add("HS", 3, "[H][SX2]", "thiol H")
+    R.add("C4", 1, "c", "aromatic C"); R.add("H2", 1, "[H]c", "aromatic H")
+    R.add("C15", 2, "[CX3H2]=[CX3]", "vinyl CH2="); R.add("C16", 2, "[CX3;H1,H0;!a]=[CX3;!a]", "alkene C")
+    R.add("H7", 2, "[H][CX3H2]=[CX3]", "H on a vinyl CH2="); R.add("H8", 2, "[H][CX3;H1;!a]=[CX3;!a]", "H on an alkene CH")
+    R.add("C5", 3, "[CX3](=[OX1])[OX2,#1,#6]", "acid / ester / aldehyde C=O")
+    R.add("C6", 4, "[CX3](~[OX1])~[OX1]", "carboxylate C"); R.add("OC3", 4, "[OX1]~[CX3]~[OX1]", "carboxylate O")
+    R.add("C6", 4, "[CX3](=[OX1])[NX3H2]", "primary amide C"); R.add("C7", 4, "[CX3](=[OX1])[NX3;!H2]", "peptide / secondary amide C")
+    R.add("OC1", 3, "[OX1]=[CX3][OX2]", "acid / ester carbonyl O"); R.add("OC2", 3, "[OX1]=[CX3][#1,#6,#7]", "amide / aldehyde O")
+    R.add("H4", 4, "[H][CX3]=[OX1]", "aldehyde H")
+    R.add("OH", 2, "[OX2H1]", "hydroxyl O"); R.add("HO", 2, "[H][OX2]", "hydroxyl H")
+    R.add("OC3", 5, "[OX1]~c", "phenoxide O")
+    R.add("N3", 3, "[NX4]", "ammonium N"); R.add("HN", 2, "[H][N,n]", "H on N")
+    R.add("N1", 3, "[NX3H2]", "primary amide / amine N")
+    R.add("N2", 3, "[NX3H1,NX2;$(*[CX3]=[OX1]),$(*[CX4][CX3]=[OX1])]", "peptide N")
+    R.add("HO", 4, "[H][NX3][CX3]=[OX1]", "amide H (the library's hydroxyl H)")
+    # arginine, tryptophan, histidine
+    R.add("C7", 5, "[CX3]([NX3])([NX3])=[NX3]", "guanidinium C"); R.add("N7", 5, "[NX3;$(*~[CX3](~[NX3])~[NX3])]", "guanidinium N")
+    R.add("N6", 5, "[nX3;$(n1ccc2ccccc12)]", "indole N"); R.add("HO", 5, "[H][nX3;$(n1ccc2ccccc12)]", "indole H(N)")
+    R.add("C11", 5, "[c;$(c1cnc2ccccc12);$(*[CX4])]", "indole C3"); R.add("C12", 5, "[c;R2;$(*1:*:*:[nX3]:*:1),$(*1:*:[nX3]:*:*:1),$(*1:[nX3]:*:*:*:1)]", "indole ring fusion C")
+    IMI = "$(*1:*:*:*:*1)"
+    R.add("C14", 5, "[c;r5;$(c(:n):n)]", "imidazole C2"); R.add("C13", 5, "[c;r5;$(c1:n:c:n:c1)]", "imidazole C4 / C5")
+    R.add("N10", 6, "[n;r5;$(n1:c:[nH]:c:c1),$(n1:c:n:c:c1);$([nH]1:c:[nH]:c:c1),$([nH]1:c:[nH+]:c:c1),$([nH+]1:c:[nH]:c:c1)]", "imidazolium N")
+    R.add("N8", 5, "[nX3H1;r5;$(n1:c:n:c:c1)]", "imidazole N-H"); R.add("N9", 5, "[nX2;r5;$(n1:c:n:c:c1)]", "imidazole N")
+    R.add("HO", 5, "[H][nX3;r5;$(n1:c:n:c:c1)]", "imidazole H(N)")
+    R.add("H4", 5, "[H][c;r5;$(c(:n):n)]", "imidazole H2")
+    R.add("H6", 5, "[H][c;r5;$(c1:n:c:n:c1);!$(c(:n):n)]", "imidazole H4")
+    R.add("H5", 6, "[H][c;r5;$(c(:[nH]):[nH])]", "imidazolium H2")
+    R.add("H4", 6, "[H][c;r5;$(c1:[nH]:c:[nH]:c1);!$(c(:n):n)]", "imidazolium H4")
+    # heme
+    R.add("FE", 8, "[Fe]", "heme iron"); R.add("NPH", 8, "[n,N;$(*~[Fe])]", "heme pyrrole N")
+    R.add("CPA", 8, "[#6;$(*~[n,N]~[Fe])]", "heme alpha C"); R.add("CPB", 8, "[#6;r5;$(*~[#6]~[n,N]~[Fe]);!$(*~[n,N]~[Fe])]", "heme beta C")
+    R.add("CPM", 8, "[#6;!r5;$(*(~[#6]~[n,N])~[#6]~[n,N]~[Fe]);!$(*~[n,N])]", "heme meso C")
+    R.add("H1", 8, "[H][#6;!r5;$(*(~[#6]~[n,N])~[#6]~[n,N]~[Fe])]", "heme meso H")
+    # small molecules
+    R.add("C19", 8, "[#6X1]~[#8X1]", "carbon monoxide C"); R.add("OM", 8, "[#8X1]~[#6X1]", "carbon monoxide O")
+    R.add("CST", 8, "[CX2](=[OX1])=[OX1]", "carbon dioxide C"); R.add("OST", 8, "[OX1]=[CX2]=[OX1]", "carbon dioxide O")
+    R.add("C18", 8, "[CX3](~[OX1])(~[OX1])~[OX1]", "carbonate C"); R.add("OCA", 8, "[OX1]~[CX3](~[OX1])~[OX1]", "carbonate O")
+    R.add("CLAL", 6, "[Cl][CX4]", "alkyl chloride Cl")
+    R.add("OT", 8, "[OX2H2]", "water O (TIP3P, CHARMM)"); R.add("HW", 8, "[H][OX2H2]", "water H (TIP3P, CHARMM)")
+    for e, t in (("Na", "Na+"), ("Cl", "Cl-"), ("Cu", "Cu2+"), ("Zn", "Zn2+")):
+        R.add(t, 8, f"[{e};X0]", f"{t} ion")
     return R
 
 
@@ -400,6 +465,7 @@ SETS = {
 OVERLAYS = {
     "amber-tip3p": ("AMBER: original TIP3P water (H3P)", [("OW", "[OX2H2]", "TIP3P water O"), ("H3P", "[H][OX2H2]", "original TIP3P water H")]),
     "amber-tip3p-pme": ("AMBER: TIP3P water for PME (OT3E / H3E)", [("OT3E", "[OX2H2]", "TIP3P (PME) water O"), ("H3E", "[H][OX2H2]", "TIP3P (PME) water H")]),
+    "charmm-spc": ("CHARMM (library set): SPC / SPC/E water", [("OSPC", "[OX2H2]", "SPC water O"), ("HSPC", "[H][OX2H2]", "SPC water H")]),
 }
 
 if __name__ == "__main__":

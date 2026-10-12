@@ -50,6 +50,9 @@ struct TypingRule {
   // every element of `requires` present, none of `excludes`. `atom_name`: only atoms of that name (the shells CAPS adds).
   std::vector<int> needs_elements, no_elements;
   std::string atom_name;
+  // Conditions on the atom's own molecule (its connected component): each SMARTS of `in_molecule` matches some atom of
+  // it, none of `not_in_molecule` does (a lipid's CH2 is not a protein's, though the atom's neighbourhood is the same)
+  std::vector<std::string> in_molecule, not_in_molecule;
 };
 
 // One parameter rule: glob patterns on type names (2 for bonds, 3 angles, 4 dihedrals / impropers), a style and its
