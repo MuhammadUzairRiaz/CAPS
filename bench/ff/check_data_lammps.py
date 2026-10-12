@@ -104,6 +104,10 @@ CASES = [
     ("OPLS-AA (GROMACS oplsaa.ff): peptide GHWRK", ("peptide", "GHWRK"), "oplsaa-gromacs", "types", "rules"),
     ("OPLS-AA (GROMACS oplsaa.ff): isoprene, ethylbenzene, ester, disulfide, phenol", ("smiles", "CC=C(C)CC.CCc1ccccc1.CCOC(=O)C.CSSC.Oc1ccccc1"),
      "oplsaa-gromacs", "types", "rules"),
+    # OPLS-AA 2024 from Jorgensen's own files (type charges)
+    ("OPLS-AA 2024 (Jorgensen): isoprene, ethylbenzene, ester, disulfide, PVA unit, perfluorobutane", ("smiles", "CC=C(C)CC.CCc1ccccc1.CCOC(=O)C.CSSC.CC(O)CC(O)C.FC(F)(F)C(F)(F)C(F)(F)C(F)(F)F"),
+     "oplsaa2024", "types", "rules"),
+    ("OPLS-AA 2024 (Jorgensen): polystyrene melt (periodic)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "oplsaa2024", "types", "rules"),
     ("GAFF 1.81 (gaff.dat): ester, epoxide, amide, thioether", ("smiles", "CCOC(=O)C.C1CO1.CC(=O)NC.CSC"), "gaff-1.81-ambertools", "gasteiger", "rules"),
     ("GAFF2 2.11 (gaff211.dat): isoprene, styrene, nitrile; nudged off linear", ("smiles-nudged", "CC=C(C)CC.C=Cc1ccccc1.CCC#N"), "gaff2-2.11-ambertools", "gasteiger", "rules"),
     ("GAFF2 2.2.20 (gaff2.dat): polystyrene melt (periodic)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "gaff2-2.2.20-ambertools", "gasteiger", "rules"),

@@ -278,7 +278,7 @@ internal static class SelfTest
         // Type by hand: polystyrene's head, body and tail typed by OPLS-AA 2024's rules, one body CH changed by hand
         // (with every equivalent atom), applied to the whole melt by environment; an SBR copolymer example holds every junction
         {
-            var o24 = vm.Field.Library.ToList().FindIndex(x => x.Id == "oplsaa2024-moltemplate");
+            var o24 = vm.Field.Library.ToList().FindIndex(x => x.Id == "oplsaa2024");
             vm.Field.FfIndex = o24;
             vm.UsePolystyreneInGrow();
             while (vm.PolyUnits.Count > 1) vm.RemovePolyUnit(vm.PolyUnits[^1]);
@@ -320,7 +320,7 @@ internal static class SelfTest
             vm.Field.Clear().GetAwaiter().GetResult();
         }
         // Coverage: OPLS-AA 2024 by type number types polystyrene completely and neutrally; the library check lists the others
-        var opls24 = vm.Field.Library.ToList().FindIndex(x => x.Id == "oplsaa2024-moltemplate");
+        var opls24 = vm.Field.Library.ToList().FindIndex(x => x.Id == "oplsaa2024");
         if (opls24 >= 0)
         {
             vm.Field.FfIndex = opls24;
@@ -913,7 +913,7 @@ internal static class SelfTest
         {   // typing by hand inside a by-group assignment: the film's group typed from the example in OPLS-AA 2024, the
             // surface keeps its own (UFF here), cross terms remade; the LAMMPS input lists each group's types with masses
             var ffKeep = vm.Field.FfIndex;
-            var o24g = vm.Field.Library.ToList().FindIndex(x => x.Id == "oplsaa2024-moltemplate");
+            var o24g = vm.Field.Library.ToList().FindIndex(x => x.Id == "oplsaa2024");
             var uffg = vm.Field.Library.ToList().FindIndex(x => x.Id == "uff");
             vm.Field.Groups.Clear();
             var gSurf = vm.Field.AddGroup("surface", "1");
@@ -4269,7 +4269,7 @@ internal static class SelfTest
             nrDoc.Save(nrFile);
             nrDoc.Dispose();
             vm.Open(nrFile);
-            vm.Field.FfIndex = vm.Field.Library.ToList().FindIndex(x => x.Id == "oplsaa2024-moltemplate");
+            vm.Field.FfIndex = vm.Field.Library.ToList().FindIndex(x => x.Id == "oplsaa2024");
             vm.Field.Assign().GetAwaiter().GetResult();
             var fillBefore = (vm.Field.Complete, vm.Field.CanFillSuggested, vm.Field.FillSuggestedText);
             vm.Field.FillSuggested().GetAwaiter().GetResult();
@@ -4288,7 +4288,7 @@ internal static class SelfTest
             pvp.Dispose();
             vm.Open(pvpFile);
             vm.Field.ChargeMode = 1;
-            vm.Field.FfIndex = vm.Field.Library.ToList().FindIndex(x => x.Id == "oplsaa2024-moltemplate");
+            vm.Field.FfIndex = vm.Field.Library.ToList().FindIndex(x => x.Id == "oplsaa2024");
             vm.Field.Assign().GetAwaiter().GetResult();
             var chBefore = (vm.Field.Complete, vm.Field.CanUseCompanionCharges, vm.Field.CompanionChargesText);
             vm.Field.UseCompanionCharges().GetAwaiter().GetResult();

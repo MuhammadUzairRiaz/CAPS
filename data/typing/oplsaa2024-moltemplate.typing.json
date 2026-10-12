@@ -1349,6 +1349,18 @@
    "description": "CF2"
   },
   {
+   "type": "966",
+   "smarts": "[CX4H1;$(*(F)F);!$(*(F)(F)F)]",
+   "priority": 6,
+   "description": "CF2H carbon"
+  },
+  {
+   "type": "967",
+   "smarts": "[H][CX4H1;$(*(F)F);!$(*(F)(F)F)]",
+   "priority": 6,
+   "description": "H on a CF2H carbon"
+  },
+  {
    "type": "961",
    "smarts": "[CX4;$(*(F)(F)F);!$(*(F)(F)(F)F);$(*[#6])]",
    "priority": 6,
