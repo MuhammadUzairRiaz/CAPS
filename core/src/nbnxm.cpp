@@ -16,7 +16,7 @@ namespace caps::nbnxm {
 
 void List::build(const std::vector<double>& x, const Cell& cell_in, double rl, const std::vector<std::vector<uint32_t>>& excluded,
                  const std::vector<int>& type_index, size_t ntypes, const std::vector<char>& skip_type, const std::vector<double>& q,
-                 const std::vector<double>& f12, const std::vector<double>& f6, ThreadPool& pool) {
+                 const std::vector<double>& f12, const std::vector<double>& f6, ThreadPool& pool, const float* c12, const float* c6) {
   rlist = rl;
   const size_t n = x.size() / 3;
   Cell cell = cell_in;
@@ -279,6 +279,18 @@ void List::build(const std::vector<double>& x, const Cell& cell_in, double rl, c
   X.assign(ns, 0.0f);
   Y.assign(ns, 0.0f);
   Z.assign(ns, 0.0f);
+  CT12.clear();
+  CT6.clear();
+  if (f12.empty() && c12 && c6 && 8 * ntypes * ns * sizeof(float) <= (size_t(64) << 20)) {
+    CT12.assign(ntypes * ns, 0.0f);
+    CT6.assign(ntypes * ns, 0.0f);
+    for (size_t t = 0; t < ntypes; ++t)
+      for (size_t sl = 0; sl < ns; ++sl) {
+        if (perm[sl] == kPad) continue;
+        CT12[t * ns + sl] = c12[t * ntypes + T[sl]];
+        CT6[t * ns + sl] = c6[t * ntypes + T[sl]];
+      }
+  }
   // chunks of i clusters, 4 per worker, taken by whichever worker is free: their entries shrink linearly from the first
   // to the last (chunk t gets a share ∝ nch − t), so the step does not end waiting on a big chunk on a slow core
   const size_t ne = entries.size(), nch = nth == 1 ? 1 : 4 * size_t(nth);
@@ -402,6 +414,8 @@ void kernel_t(const List& L, const Params& p, int tw, float* fxo, float* fyo, fl
   const size_t cb = L.tb[size_t(tw)], ce = L.te[size_t(tw)];
   const Entry* ents = L.pe[size_t(tw)].data();
   const uint32_t* pfi = L.pf[size_t(tw)].data();
+  const bool ct = !L.CT12.empty();
+  const size_t nsl = L.perm.size();
   for (size_t ci = cb; ci < ce; ++ci) {
     const size_t si = 4 * ci;
     F4 fxa[4], fya[4], fza[4];
@@ -437,6 +451,10 @@ void kernel_t(const List& L, const Params& p, int tw, float* fxo, float* fyo, fl
         if constexpr (kComb) {
           c12 = lane<A>(p12i) * p12j;
           c6 = lane<A>(p6i) * p6j;
+        } else if (ct) {
+          const size_t at = size_t(T[si + A]) * nsl + sj;
+          c12 = load(L.CT12.data() + at);
+          c6 = load(L.CT6.data() + at);
         } else {
           const uint32_t tj[4] = {T[sj], T[sj + 1], T[sj + 2], T[sj + 3]};
           const size_t rw = size_t(T[si + A]) * p.nt;

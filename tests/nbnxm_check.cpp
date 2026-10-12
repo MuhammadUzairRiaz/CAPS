@@ -103,11 +103,15 @@ int main() {
 
     for (int threads : {1, 3}) {
       ThreadPool pool(threads);
-      nbnxm::List L;
-      L.build(x, cell, rc + skin, ex, type, nt, {}, q, f12, f6, pool);
-      L.positions(x);
-      L.prune(rc + 0.8, pool);
-      for (const bool comb : {true, false}) {
+      // the coefficients three ways: per-type factors, a per (type, j cluster) table, gathered from the type-pair table
+      for (const int mode : {0, 1, 2}) {
+        const bool comb = mode == 0;
+        nbnxm::List L;
+        const std::vector<double> none;
+        L.build(x, cell, rc + skin, ex, type, nt, {}, q, comb ? f12 : none, comb ? f6 : none, pool, mode == 1 ? c12.data() : nullptr,
+                mode == 1 ? c6.data() : nullptr);
+        L.positions(x);
+        L.prune(rc + 0.8, pool);
         nbnxm::Params p;
         p.rc2 = float(rc * rc);
         p.rc = float(rc);
@@ -125,7 +129,6 @@ int main() {
         p.e0 = float(dsf_e0);
         p.f0 = float(dsf_f0);
         p.kcoul = float(kc);
-        if (!comb) L.P12.assign(L.P12.size(), 0.0f), L.P6.assign(L.P6.size(), 0.0f);
         const size_t ns = L.perm.size();
         std::vector<double> f(3 * n, 0.0);
         nbnxm::Sums sum;
@@ -152,7 +155,7 @@ int main() {
         const double tol_e = cs.kappa * rc > 4 ? 2e-5 : 2e-6;
         const bool ok = ev < 2e-6 && ec < tol_e && ef < 2e-6 && ew < 2e-5;
         fails += !ok;
-        std::printf("%-17s %d threads, %-7s: vdW %.1e  Coulomb %.1e  forces %.1e  virial %.1e  %s\n", cs.name, threads, comb ? "factors" : "table", ev,
+        std::printf("%-17s %d threads, %-7s: vdW %.1e  Coulomb %.1e  forces %.1e  virial %.1e  %s\n", cs.name, threads, mode == 0 ? "factors" : mode == 1 ? "table" : "gather", ev,
                     ec, ef, ew, ok ? "ok" : "FAIL");
       }
     }

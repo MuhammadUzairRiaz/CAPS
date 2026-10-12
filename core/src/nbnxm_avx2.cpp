@@ -74,6 +74,8 @@ void kernel8(const List& L, const Params& p, int tw, float* fxo, float* fyo, flo
   const size_t cb = L.tb[size_t(tw)], ce = L.te[size_t(tw)];
   const Entry* ents = L.pe[size_t(tw)].data();
   const uint32_t* pfi = L.pf[size_t(tw)].data();
+  const bool ct = !L.CT12.empty();
+  const size_t nsl = L.perm.size();
   for (size_t ci = cb; ci < ce; ++ci) {
     const size_t si = 4 * ci;
     const double* oi = &L.org[3 * ci];
@@ -114,6 +116,13 @@ void kernel8(const List& L, const Params& p, int tw, float* fxo, float* fyo, flo
         if constexpr (kComb) {
           c12 = _mm256_mul_ps(p12i[h], p12j);
           c6 = _mm256_mul_ps(p6i[h], p6j);
+        } else if (ct) {
+          const float* a12 = L.CT12.data() + size_t(T[si + 2 * h]) * nsl + sj;
+          const float* b12 = L.CT12.data() + size_t(T[si + 2 * h + 1]) * nsl + sj;
+          const float* a6 = L.CT6.data() + size_t(T[si + 2 * h]) * nsl + sj;
+          const float* b6 = L.CT6.data() + size_t(T[si + 2 * h + 1]) * nsl + sj;
+          c12 = _mm256_set_m128(_mm_loadu_ps(b12), _mm_loadu_ps(a12));
+          c6 = _mm256_set_m128(_mm_loadu_ps(b6), _mm_loadu_ps(a6));
         } else {
           const int ra = int(T[si + 2 * h] * p.nt), rb = int(T[si + 2 * h + 1] * p.nt);
           const __m256i idx = _mm256_setr_epi32(ra + int(T[sj]), ra + int(T[sj + 1]), ra + int(T[sj + 2]), ra + int(T[sj + 3]), rb + int(T[sj]),
