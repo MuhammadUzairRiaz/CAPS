@@ -1982,10 +1982,10 @@
    ],
    "style": "harmonic",
    "params": [
-    600.0,
+    0.0,
     1.466
    ],
-   "comment": "fixed length in TraPPE (M.-B.H. Ketko, J.L. Rafferty, J.I. Siepmann et al., Fluid Phase Equil. 274, 44 (2008))"
+   "comment": "rigid model: run it as a rigid body (M.-B.H. Ketko, J.L. Rafferty, J.I. Siepmann et al., Fluid Phase Equil. 274, 44 (2008))"
   },
   {
    "name": "CH2_107-O_106",
@@ -1995,10 +1995,10 @@
    ],
    "style": "harmonic",
    "params": [
-    600.0,
+    0.0,
     1.431
    ],
-   "comment": "fixed length in TraPPE (M.-B.H. Ketko, J.L. Rafferty, J.I. Siepmann et al., Fluid Phase Equil. 274, 44 (2008))"
+   "comment": "rigid model: run it as a rigid body (M.-B.H. Ketko, J.L. Rafferty, J.I. Siepmann et al., Fluid Phase Equil. 274, 44 (2008))"
   },
   {
    "name": "CH2_110-CH2_110",
@@ -3009,10 +3009,10 @@
    ],
    "style": "harmonic",
    "params": [
-    600.0,
+    0.0,
     1.54
    ],
-   "comment": "fixed length in TraPPE (M.G. Martin, J.I. Siepmann, J. Phys. Chem. B 102, 2569 (1998))"
+   "comment": "rigid model: run it as a rigid body (M.G. Martin, J.I. Siepmann, J. Phys. Chem. B 102, 2569 (1998))"
   },
   {
    "name": "CH3_49-C_47",
@@ -3256,10 +3256,10 @@
    ],
    "style": "harmonic",
    "params": [
-    600.0,
+    0.0,
     1.4
    ],
-   "comment": "fixed length in TraPPE (C.D. Wick, M.G. Martin, J.I. Siepmann, J. Phys. Chem. B 104, 8008 (2000))"
+   "comment": "rigid model: run it as a rigid body (C.D. Wick, M.G. Martin, J.I. Siepmann, J. Phys. Chem. B 104, 8008 (2000))"
   },
   {
    "name": "CH_80-S_79",
@@ -3269,10 +3269,10 @@
    ],
    "style": "harmonic",
    "params": [
-    600.0,
+    0.0,
     1.71
    ],
-   "comment": "fixed length in TraPPE (N. Lubna, G. Kamath, J.J. Potoff et al., J. Phys. Chem. B 109, 24100 (2005))"
+   "comment": "rigid model: run it as a rigid body (N. Lubna, G. Kamath, J.J. Potoff et al., J. Phys. Chem. B 109, 24100 (2005))"
   },
   {
    "name": "CH_88-CH_88",
@@ -3308,10 +3308,10 @@
    ],
    "style": "harmonic",
    "params": [
-    600.0,
+    0.0,
     1.4
    ],
-   "comment": "fixed length in TraPPE (C.D. Wick, M.G. Martin, J.I. Siepmann, J. Phys. Chem. B 104, 8008 (2000))"
+   "comment": "rigid model: run it as a rigid body (C.D. Wick, M.G. Martin, J.I. Siepmann, J. Phys. Chem. B 104, 8008 (2000))"
   },
   {
    "name": "C_11-O_6",
@@ -3399,10 +3399,10 @@
    ],
    "style": "harmonic",
    "params": [
-    600.0,
+    0.0,
     1.16
    ],
-   "comment": "fixed length in TraPPE (J.J. Potoff, J.I. Siepmann, AIChE J. 47, 1676 (2001))"
+   "comment": "rigid model: run it as a rigid body (J.J. Potoff, J.I. Siepmann, AIChE J. 47, 1676 (2001))"
   },
   {
    "name": "C_89-C_89",
@@ -3412,10 +3412,10 @@
    ],
    "style": "harmonic",
    "params": [
-    600.0,
+    0.0,
     1.4
    ],
-   "comment": "fixed length in TraPPE (C.D. Wick, M.G. Martin, J.I. Siepmann, J. Phys. Chem. B 104, 8008 (2000))"
+   "comment": "rigid model: run it as a rigid body (C.D. Wick, M.G. Martin, J.I. Siepmann, J. Phys. Chem. B 104, 8008 (2000))"
   },
   {
    "name": "C_90-C_90",
@@ -3425,10 +3425,10 @@
    ],
    "style": "harmonic",
    "params": [
-    600.0,
+    0.0,
     1.4
    ],
-   "comment": "fixed length in TraPPE (C.D. Wick, M.G. Martin, J.I. Siepmann, J. Phys. Chem. B 104, 8008 (2000))"
+   "comment": "rigid model: run it as a rigid body (C.D. Wick, M.G. Martin, J.I. Siepmann, J. Phys. Chem. B 104, 8008 (2000))"
   },
   {
    "name": "C_99-O_100",
@@ -3477,10 +3477,10 @@
    ],
    "style": "harmonic",
    "params": [
-    600.0,
+    0.0,
     1.0124
    ],
-   "comment": "fixed length in TraPPE (L. Zhang, J.I. Siepmann, Collect. Czech. Chem. Commun. 75, 577 (2010))"
+   "comment": "rigid model: run it as a rigid body (L. Zhang, J.I. Siepmann, Collect. Czech. Chem. Commun. 75, 577 (2010))"
   },
   {
    "name": "H_160-S_159",
@@ -3529,10 +3529,10 @@
    ],
    "style": "harmonic",
    "params": [
-    600.0,
+    0.0,
     1.1
    ],
-   "comment": "fixed length in TraPPE (J.J. Potoff, J.I. Siepmann, AIChE J. 47, 1676 (2001))"
+   "comment": "rigid model: run it as a rigid body (J.J. Potoff, J.I. Siepmann, AIChE J. 47, 1676 (2001))"
   },
   {
    "name": "O_108-O_108",
@@ -3542,10 +3542,10 @@
    ],
    "style": "harmonic",
    "params": [
-    600.0,
+    0.0,
     1.21
    ],
-   "comment": "fixed length in TraPPE (L. Zhang, J.I. Siepmann, Theor. Chem. Acc. 115, 391 (2006))"
+   "comment": "rigid model: run it as a rigid body (L. Zhang, J.I. Siepmann, Theor. Chem. Acc. 115, 391 (2006))"
   },
   {
    "name": "O_113-P_115",
@@ -3615,6 +3615,776 @@
  ],
  "angles": [
   {
+   "name": "X-CH2_107-X",
+   "match": [
+    "*",
+    "CH2_107",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    0.0,
+    60.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-CH2_110-X",
+   "match": [
+    "*",
+    "CH2_110",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    62.100134374999996,
+    114.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-CH2_13-X",
+   "match": [
+    "*",
+    "CH2_13",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    62.100134374999996,
+    114.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-CH2_140-X",
+   "match": [
+    "*",
+    "CH2_140",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    62.100134374999996,
+    114.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-CH2_141-X",
+   "match": [
+    "*",
+    "CH2_141",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    62.100134374999996,
+    105.5
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-CH2_142-X",
+   "match": [
+    "*",
+    "CH2_142",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    49.978188145,
+    108.5
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-CH2_143-X",
+   "match": [
+    "*",
+    "CH2_143",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    62.100134374999996,
+    105.5
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-CH2_146-X",
+   "match": [
+    "*",
+    "CH2_146",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    92.60372038,
+    109.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-CH2_147-X",
+   "match": [
+    "*",
+    "CH2_147",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    49.978188145,
+    108.5
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-CH2_149-X",
+   "match": [
+    "*",
+    "CH2_149",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    49.978188145,
+    112.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-CH2_150-X",
+   "match": [
+    "*",
+    "CH2_150",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    62.100134374999996,
+    114.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-CH2_152-X",
+   "match": [
+    "*",
+    "CH2_152",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    49.978188145,
+    112.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-CH2_154-X",
+   "match": [
+    "*",
+    "CH2_154",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    92.60372038,
+    111.55
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-CH2_155-X",
+   "match": [
+    "*",
+    "CH2_155",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    49.978188145,
+    112.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-CH2_156-X",
+   "match": [
+    "*",
+    "CH2_156",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    62.100134374999996,
+    114.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-CH2_158-X",
+   "match": [
+    "*",
+    "CH2_158",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    92.60372038,
+    111.55
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-CH2_17-X",
+   "match": [
+    "*",
+    "CH2_17",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    49.978188145,
+    112.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-CH2_3-X",
+   "match": [
+    "*",
+    "CH2_3",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    62.100134374999996,
+    114.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-CH2_50-X",
+   "match": [
+    "*",
+    "CH2_50",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    62.100134374999996,
+    114.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-CH2_66-X",
+   "match": [
+    "*",
+    "CH2_66",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    62.100134374999996,
+    114.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-CH2_71-X",
+   "match": [
+    "*",
+    "CH2_71",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    62.100134374999996,
+    114.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-CH2_76-X",
+   "match": [
+    "*",
+    "CH2_76",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    62.100134374999996,
+    114.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-CH_122-X",
+   "match": [
+    "*",
+    "CH_122",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    62.100134374999996,
+    106.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-CH_123-X",
+   "match": [
+    "*",
+    "CH_123",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    62.100134374999996,
+    106.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-CH_138-X",
+   "match": [
+    "*",
+    "CH_138",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    69.96946340299999,
+    119.7
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-CH_21-X",
+   "match": [
+    "*",
+    "CH_21",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    62.100134374999996,
+    121.4
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-CH_30-X",
+   "match": [
+    "*",
+    "CH_30",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    69.96946340299999,
+    119.7
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-CH_4-X",
+   "match": [
+    "*",
+    "CH_4",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    62.100134374999996,
+    112.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-CH_80-X",
+   "match": [
+    "*",
+    "CH_80",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    0.0,
+    111.5
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-C_125-X",
+   "match": [
+    "*",
+    "C_125",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    62.100134374999996,
+    109.4
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-C_139-X",
+   "match": [
+    "*",
+    "C_139",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    69.96946340299999,
+    119.7
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-C_31-X",
+   "match": [
+    "*",
+    "C_31",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    69.96946340299999,
+    119.7
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-C_47-X",
+   "match": [
+    "*",
+    "C_47",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    100.0,
+    180.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-C_5-X",
+   "match": [
+    "*",
+    "C_5",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    62.100134374999996,
+    109.47
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-C_86-X",
+   "match": [
+    "*",
+    "C_86",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    0.0,
+    180.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-C_89-X",
+   "match": [
+    "*",
+    "C_89",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    100.0,
+    120.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-C_90-X",
+   "match": [
+    "*",
+    "C_90",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    0.0,
+    120.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-N_126-X",
+   "match": [
+    "*",
+    "N_126",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    0.0,
+    106.68
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-O_101-X",
+   "match": [
+    "*",
+    "O_101",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    62.100134374999996,
+    115.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-O_106-X",
+   "match": [
+    "*",
+    "O_106",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    0.0,
+    60.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-O_113-X",
+   "match": [
+    "*",
+    "O_113",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    80.07042285989999,
+    121.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-O_119-X",
+   "match": [
+    "*",
+    "O_119",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    80.07042285989999,
+    121.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-O_144-X",
+   "match": [
+    "*",
+    "O_144",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    60.01356986,
+    112.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-O_145-X",
+   "match": [
+    "*",
+    "O_145",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    60.01356986,
+    112.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-O_148-X",
+   "match": [
+    "*",
+    "O_148",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    60.01356986,
+    112.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-O_151-X",
+   "match": [
+    "*",
+    "O_151",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    60.01356986,
+    112.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-O_153-X",
+   "match": [
+    "*",
+    "O_153",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    60.01356986,
+    112.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-O_157-X",
+   "match": [
+    "*",
+    "O_157",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    60.01356986,
+    112.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-O_20-X",
+   "match": [
+    "*",
+    "O_20",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    60.01356986,
+    112.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-O_6-X",
+   "match": [
+    "*",
+    "O_6",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    55.04555911,
+    108.5
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-S_159-X",
+   "match": [
+    "*",
+    "S_159",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    100.0,
+    92.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-S_63-X",
+   "match": [
+    "*",
+    "S_63",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    33.6135607345,
+    96.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-S_69-X",
+   "match": [
+    "*",
+    "S_69",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    45.258577932499996,
+    99.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-S_74-X",
+   "match": [
+    "*",
+    "S_74",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    45.258577932499996,
+    103.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-S_79-X",
+   "match": [
+    "*",
+    "S_79",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    0.0,
+    92.2
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
    "name": "CH2_107-CH2_107-O_106",
    "match": [
     "CH2_107",
@@ -3623,10 +4393,10 @@
    ],
    "style": "harmonic",
    "params": [
-    100.0,
+    0.0,
     60.0
    ],
-   "comment": "rigid in TraPPE (stiff here; hold the molecule rigid); M.-B.H. Ketko, J.L. Rafferty, J.I. Siepmann et al., Fluid Phase Equil. 274, 44 (2008)"
+   "comment": "rigid model: run it as a rigid body; M.-B.H. Ketko, J.L. Rafferty, J.I. Siepmann et al., Fluid Phase Equil. 274, 44 (2008)"
   },
   {
    "name": "CH2_107-O_106-CH2_107",
@@ -3637,10 +4407,10 @@
    ],
    "style": "harmonic",
    "params": [
-    100.0,
+    0.0,
     60.0
    ],
-   "comment": "rigid in TraPPE (stiff here; hold the molecule rigid); M.-B.H. Ketko, J.L. Rafferty, J.I. Siepmann et al., Fluid Phase Equil. 274, 44 (2008)"
+   "comment": "rigid model: run it as a rigid body; M.-B.H. Ketko, J.L. Rafferty, J.I. Siepmann et al., Fluid Phase Equil. 274, 44 (2008)"
   },
   {
    "name": "CH2_110-CH2_110-CH2_110",
@@ -5359,10 +6129,10 @@
    ],
    "style": "harmonic",
    "params": [
-    100.0,
+    0.0,
     120.0
    ],
-   "comment": "rigid in TraPPE (stiff here; hold the molecule rigid); C.D. Wick, M.G. Martin, J.I. Siepmann, J. Phys. Chem. B 104, 8008 (2000)"
+   "comment": "rigid model: run it as a rigid body; C.D. Wick, M.G. Martin, J.I. Siepmann, J. Phys. Chem. B 104, 8008 (2000)"
   },
   {
    "name": "CH3_2-C_89-C_89",
@@ -5373,10 +6143,10 @@
    ],
    "style": "harmonic",
    "params": [
-    100.0,
+    0.0,
     120.0
    ],
-   "comment": "rigid in TraPPE (stiff here; hold the molecule rigid); C.D. Wick, M.G. Martin, J.I. Siepmann, J. Phys. Chem. B 104, 8008 (2000)"
+   "comment": "rigid model: run it as a rigid body; C.D. Wick, M.G. Martin, J.I. Siepmann, J. Phys. Chem. B 104, 8008 (2000)"
   },
   {
    "name": "CH3_2-C_99-C_139",
@@ -5611,10 +6381,10 @@
    ],
    "style": "harmonic",
    "params": [
-    100.0,
+    0.0,
     112.4
    ],
-   "comment": "rigid in TraPPE (stiff here; hold the molecule rigid); N. Lubna, G. Kamath, J.J. Potoff et al., J. Phys. Chem. B 109, 24100 (2005)"
+   "comment": "rigid model: run it as a rigid body; N. Lubna, G. Kamath, J.J. Potoff et al., J. Phys. Chem. B 109, 24100 (2005)"
   },
   {
    "name": "CH_80-S_79-CH_80",
@@ -5625,10 +6395,10 @@
    ],
    "style": "harmonic",
    "params": [
-    100.0,
+    0.0,
     92.2
    ],
-   "comment": "rigid in TraPPE (stiff here; hold the molecule rigid); N. Lubna, G. Kamath, J.J. Potoff et al., J. Phys. Chem. B 109, 24100 (2005)"
+   "comment": "rigid model: run it as a rigid body; N. Lubna, G. Kamath, J.J. Potoff et al., J. Phys. Chem. B 109, 24100 (2005)"
   },
   {
    "name": "CH_88-CH_80-S_79",
@@ -5639,10 +6409,10 @@
    ],
    "style": "harmonic",
    "params": [
-    100.0,
+    0.0,
     111.5
    ],
-   "comment": "rigid in TraPPE (stiff here; hold the molecule rigid); N. Lubna, G. Kamath, J.J. Potoff et al., J. Phys. Chem. B 109, 24100 (2005)"
+   "comment": "rigid model: run it as a rigid body; N. Lubna, G. Kamath, J.J. Potoff et al., J. Phys. Chem. B 109, 24100 (2005)"
   },
   {
    "name": "CH_88-CH_88-CH_88",
@@ -5681,10 +6451,10 @@
    ],
    "style": "harmonic",
    "params": [
-    100.0,
+    0.0,
     120.0
    ],
-   "comment": "rigid in TraPPE (stiff here; hold the molecule rigid); C.D. Wick, M.G. Martin, J.I. Siepmann, J. Phys. Chem. B 104, 8008 (2000)"
+   "comment": "rigid model: run it as a rigid body; C.D. Wick, M.G. Martin, J.I. Siepmann, J. Phys. Chem. B 104, 8008 (2000)"
   },
   {
    "name": "CH_88-C_89-CH_88",
@@ -5709,10 +6479,10 @@
    ],
    "style": "harmonic",
    "params": [
-    100.0,
+    0.0,
     120.0
    ],
-   "comment": "rigid in TraPPE (stiff here; hold the molecule rigid); C.D. Wick, M.G. Martin, J.I. Siepmann, J. Phys. Chem. B 104, 8008 (2000)"
+   "comment": "rigid model: run it as a rigid body; C.D. Wick, M.G. Martin, J.I. Siepmann, J. Phys. Chem. B 104, 8008 (2000)"
   },
   {
    "name": "CH_88-C_90-CH_88",
@@ -5723,10 +6493,10 @@
    ],
    "style": "harmonic",
    "params": [
-    100.0,
+    0.0,
     120.0
    ],
-   "comment": "rigid in TraPPE (stiff here; hold the molecule rigid); C.D. Wick, M.G. Martin, J.I. Siepmann, J. Phys. Chem. B 104, 8008 (2000)"
+   "comment": "rigid model: run it as a rigid body; C.D. Wick, M.G. Martin, J.I. Siepmann, J. Phys. Chem. B 104, 8008 (2000)"
   },
   {
    "name": "CH_88-C_90-C_90",
@@ -5737,10 +6507,10 @@
    ],
    "style": "harmonic",
    "params": [
-    100.0,
+    0.0,
     120.0
    ],
-   "comment": "rigid in TraPPE (stiff here; hold the molecule rigid); C.D. Wick, M.G. Martin, J.I. Siepmann, J. Phys. Chem. B 104, 8008 (2000)"
+   "comment": "rigid model: run it as a rigid body; C.D. Wick, M.G. Martin, J.I. Siepmann, J. Phys. Chem. B 104, 8008 (2000)"
   },
   {
    "name": "C_11-O_6-H_7",
@@ -5821,10 +6591,10 @@
    ],
    "style": "harmonic",
    "params": [
-    100.0,
+    0.0,
     120.0
    ],
-   "comment": "rigid in TraPPE (stiff here; hold the molecule rigid); C.D. Wick, M.G. Martin, J.I. Siepmann, J. Phys. Chem. B 104, 8008 (2000)"
+   "comment": "rigid model: run it as a rigid body; C.D. Wick, M.G. Martin, J.I. Siepmann, J. Phys. Chem. B 104, 8008 (2000)"
   },
   {
    "name": "F_116-P_117-O_118",
@@ -5849,10 +6619,10 @@
    ],
    "style": "harmonic",
    "params": [
-    100.0,
+    0.0,
     106.68
    ],
-   "comment": "rigid in TraPPE (stiff here; hold the molecule rigid); L. Zhang, J.I. Siepmann, Collect. Czech. Chem. Commun. 75, 577 (2010)"
+   "comment": "rigid model: run it as a rigid body; L. Zhang, J.I. Siepmann, Collect. Czech. Chem. Commun. 75, 577 (2010)"
   },
   {
    "name": "H_160-S_159-H_160",
@@ -5975,780 +6745,10 @@
    ],
    "style": "harmonic",
    "params": [
-    100.0,
+    0.0,
     180.0
    ],
-   "comment": "rigid in TraPPE (stiff here; hold the molecule rigid); J.J. Potoff, J.I. Siepmann, AIChE J. 47, 1676 (2001)"
-  },
-  {
-   "name": "X-CH2_107-X",
-   "match": [
-    "*",
-    "CH2_107",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    100.0,
-    60.0
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-CH2_110-X",
-   "match": [
-    "*",
-    "CH2_110",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    62.100134374999996,
-    114.0
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-CH2_13-X",
-   "match": [
-    "*",
-    "CH2_13",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    62.100134374999996,
-    114.0
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-CH2_140-X",
-   "match": [
-    "*",
-    "CH2_140",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    62.100134374999996,
-    114.0
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-CH2_141-X",
-   "match": [
-    "*",
-    "CH2_141",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    62.100134374999996,
-    105.5
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-CH2_142-X",
-   "match": [
-    "*",
-    "CH2_142",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    49.978188145,
-    108.5
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-CH2_143-X",
-   "match": [
-    "*",
-    "CH2_143",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    62.100134374999996,
-    105.5
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-CH2_146-X",
-   "match": [
-    "*",
-    "CH2_146",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    92.60372038,
-    109.0
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-CH2_147-X",
-   "match": [
-    "*",
-    "CH2_147",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    49.978188145,
-    108.5
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-CH2_149-X",
-   "match": [
-    "*",
-    "CH2_149",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    49.978188145,
-    112.0
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-CH2_150-X",
-   "match": [
-    "*",
-    "CH2_150",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    62.100134374999996,
-    114.0
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-CH2_152-X",
-   "match": [
-    "*",
-    "CH2_152",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    49.978188145,
-    112.0
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-CH2_154-X",
-   "match": [
-    "*",
-    "CH2_154",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    92.60372038,
-    111.55
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-CH2_155-X",
-   "match": [
-    "*",
-    "CH2_155",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    49.978188145,
-    112.0
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-CH2_156-X",
-   "match": [
-    "*",
-    "CH2_156",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    62.100134374999996,
-    114.0
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-CH2_158-X",
-   "match": [
-    "*",
-    "CH2_158",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    92.60372038,
-    111.55
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-CH2_17-X",
-   "match": [
-    "*",
-    "CH2_17",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    49.978188145,
-    112.0
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-CH2_3-X",
-   "match": [
-    "*",
-    "CH2_3",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    62.100134374999996,
-    114.0
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-CH2_50-X",
-   "match": [
-    "*",
-    "CH2_50",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    62.100134374999996,
-    114.0
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-CH2_66-X",
-   "match": [
-    "*",
-    "CH2_66",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    62.100134374999996,
-    114.0
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-CH2_71-X",
-   "match": [
-    "*",
-    "CH2_71",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    62.100134374999996,
-    114.0
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-CH2_76-X",
-   "match": [
-    "*",
-    "CH2_76",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    62.100134374999996,
-    114.0
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-CH_122-X",
-   "match": [
-    "*",
-    "CH_122",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    62.100134374999996,
-    106.0
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-CH_123-X",
-   "match": [
-    "*",
-    "CH_123",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    62.100134374999996,
-    106.0
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-CH_138-X",
-   "match": [
-    "*",
-    "CH_138",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    69.96946340299999,
-    119.7
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-CH_21-X",
-   "match": [
-    "*",
-    "CH_21",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    62.100134374999996,
-    121.4
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-CH_30-X",
-   "match": [
-    "*",
-    "CH_30",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    69.96946340299999,
-    119.7
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-CH_4-X",
-   "match": [
-    "*",
-    "CH_4",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    62.100134374999996,
-    112.0
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-CH_80-X",
-   "match": [
-    "*",
-    "CH_80",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    100.0,
-    111.5
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-C_125-X",
-   "match": [
-    "*",
-    "C_125",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    62.100134374999996,
-    109.4
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-C_139-X",
-   "match": [
-    "*",
-    "C_139",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    69.96946340299999,
-    119.7
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-C_31-X",
-   "match": [
-    "*",
-    "C_31",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    69.96946340299999,
-    119.7
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-C_47-X",
-   "match": [
-    "*",
-    "C_47",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    100.0,
-    180.0
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-C_5-X",
-   "match": [
-    "*",
-    "C_5",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    62.100134374999996,
-    109.47
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-C_86-X",
-   "match": [
-    "*",
-    "C_86",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    100.0,
-    180.0
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-C_89-X",
-   "match": [
-    "*",
-    "C_89",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    100.0,
-    120.0
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-C_90-X",
-   "match": [
-    "*",
-    "C_90",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    100.0,
-    120.0
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-N_126-X",
-   "match": [
-    "*",
-    "N_126",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    100.0,
-    106.68
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-O_101-X",
-   "match": [
-    "*",
-    "O_101",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    62.100134374999996,
-    115.0
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-O_106-X",
-   "match": [
-    "*",
-    "O_106",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    100.0,
-    60.0
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-O_113-X",
-   "match": [
-    "*",
-    "O_113",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    80.07042285989999,
-    121.0
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-O_119-X",
-   "match": [
-    "*",
-    "O_119",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    80.07042285989999,
-    121.0
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-O_144-X",
-   "match": [
-    "*",
-    "O_144",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    60.01356986,
-    112.0
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-O_145-X",
-   "match": [
-    "*",
-    "O_145",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    60.01356986,
-    112.0
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-O_148-X",
-   "match": [
-    "*",
-    "O_148",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    60.01356986,
-    112.0
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-O_151-X",
-   "match": [
-    "*",
-    "O_151",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    60.01356986,
-    112.0
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-O_153-X",
-   "match": [
-    "*",
-    "O_153",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    60.01356986,
-    112.0
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-O_157-X",
-   "match": [
-    "*",
-    "O_157",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    60.01356986,
-    112.0
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-O_20-X",
-   "match": [
-    "*",
-    "O_20",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    60.01356986,
-    112.0
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-O_6-X",
-   "match": [
-    "*",
-    "O_6",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    55.04555911,
-    108.5
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-S_159-X",
-   "match": [
-    "*",
-    "S_159",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    100.0,
-    92.0
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-S_63-X",
-   "match": [
-    "*",
-    "S_63",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    33.6135607345,
-    96.0
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-S_69-X",
-   "match": [
-    "*",
-    "S_69",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    45.258577932499996,
-    99.0
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-S_74-X",
-   "match": [
-    "*",
-    "S_74",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    45.258577932499996,
-    103.0
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
-  },
-  {
-   "name": "X-S_79-X",
-   "match": [
-    "*",
-    "S_79",
-    "*"
-   ],
-   "style": "harmonic",
-   "params": [
-    100.0,
-    92.2
-   ],
-   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+   "comment": "rigid model: run it as a rigid body; J.J. Potoff, J.I. Siepmann, AIChE J. 47, 1676 (2001)"
   }
  ],
  "dihedrals": [

@@ -139,6 +139,10 @@ int united_atom_hydrogens(const std::string& name, int element) {
   if (element == 8) return name == "OH2" ? 2 : name == "OH" ? 1 : -1;   // a one-site water (mW) or hydroxyl site
   if (element != 6 || name.size() < 2 || name[0] != 'C') return -1;
   std::string x = name;
+  // a TraPPE site named by its type (CH3_2, CH2_3, CH_4: the database's numbering after the underscore)
+  if (const auto u = x.find('_'); u != std::string::npos && u + 1 < x.size() &&
+      std::all_of(x.begin() + long(u) + 1, x.end(), [](char c) { return c >= '0' && c <= '9'; }))
+    x.resize(u);
   if (x.size() > 2 && (x.back() == 'E' || x.back() == 'p')) x.pop_back();   // CHARMM19 CH2E, GROMOS CH3p
   if (x == "CH") return 1;
   if (x == "CR1") return 1;                                                    // aromatic CH (GROMOS, CHARMM19)

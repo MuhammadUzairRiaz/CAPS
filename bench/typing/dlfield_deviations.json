@@ -134,5 +134,31 @@
    "caps": "c= / c=1 by pcff.frc's own definitions (c= 'non aromatic end doubly bonded carbon', c=1 'next to end doubly bonded carbon', c=2 'non aromatic doubly bonded carbon', used by CAPS for carbons conjugated on both ends)",
    "reason": "DL_FIELD's automatic typing gives the terminal =CH2 of chloroethene c=2 but the same =CH2 of 2-chloropropene c= (independent of atom order, checked both ways); no rule in pcff.frc's type definitions separates them, so CAPS keeps the definitions. Polymers affected: polychloroprene (P097, P206), 4 atoms each"
   }
+ ],
+ "parameters": [
+  {
+   "ff": "cvff-frc",
+   "tool": "DL_FIELD",
+   "environment": "a quaternary sp3 carbon (cvff type c with four heavy neighbours: methacrylate backbones, polyisobutylene, 4,4-dimethyl-1-pentene, HFP)",
+   "dl": "Lennard-Jones eps 0.0390 kcal/mol, sigma 3.875 A (cvff.frc's values for cg)",
+   "caps": "eps 0.1600, sigma 3.475 A (cvff.frc's c: A 1981049.2250, B 1125.9980)",
+   "reason": "DL_FIELD labels the atom c but gives it cg's nonbond parameters; CAPS takes the type's own entry. Polymers: P009, P019, P021, P059, P062, P096, P202, P210 (8 atoms each)"
+  },
+  {
+   "ff": "pcff-frc",
+   "tool": "DL_FIELD",
+   "environment": "every class II cross term (bond-bond, bond-angle, angle-angle, middle/end-bond-torsion, angle-torsion, angle-angle-torsion, bond-bond-1-3)",
+   "dl": "left out of DL_FIELD's LAMMPS files (quartic angles and Fourier torsions only)",
+   "caps": "every term pcff.frc defines, as msi2lmp writes them",
+   "reason": "DL_FIELD's bonded energies differ from CAPS's and msi2lmp's on every PCFF polymer for this reason alone; the parameters both write are equal"
+  },
+  {
+   "ff": "pcff-frc",
+   "tool": "msi2lmp",
+   "environment": "angle-angle at an sp2 C=C carbon with neighbours (c, c=, h) (diene rubbers: polybutadiene, polyisoprene, polychloroprene) and at the amide N of N,N-dimethylacrylamide / N-vinylpyrrolidone",
+   "dl": "msi2lmp -6.5349 (pcff.frc's c= c c= h) and 3.9738 (c c n c_1): keys whose centre (second atom) is a carbon, matched backwards",
+   "caps": "0 (no c=-centred entry) and -5.1828 (c n c c_1, the N-centred entry)",
+   "reason": "an angle-angle key i-j-k-l couples angles i-j-k and k-j-l about j; read backwards its centre moves to k, a coupling fitted about another atom and its reference angles. msi2lmp's find_match allows the reversal (written for torsions); these are the only differences from msi2lmp on the 98 PCFF polymers"
+  }
  ]
 }

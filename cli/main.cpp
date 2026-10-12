@@ -115,12 +115,23 @@ const std::vector<std::string>& caps_roots() {
 }
 
 // A force field by path, or by its library name (opls2005, pcff, compass, gaff2-moltemplate …) from data/forcefields.
-std::string ff_path(const std::string& s) {
-  if (s.empty() || std::filesystem::exists(s)) return s;
-  for (const auto& root : caps_roots())
-    for (const std::string& name : {s, s + ".json"})
-      if (std::filesystem::exists(root + "/data/forcefields/" + name)) return root + "/data/forcefields/" + name;
-  return s;
+std::string ff_path(const std::string& s0) {
+  if (s0.empty() || std::filesystem::exists(s0)) return s0;
+  // the short names of the libraries rebuilt from their own sources (as caps.core._forcefield_path in Python)
+  static const std::map<std::string, std::string> alias = {
+      {"gaff2", "gaff2-2.2.20-ambertools"}, {"gaff", "gaff-1.81-ambertools"}, {"opls", "oplsaa2024"}, {"pcff", "pcff-frc"},
+      {"opls-ua", "oplsua2024"}, {"oplsua", "oplsua2024"}, {"compass", "compass-frc"}, {"cvff", "cvff-frc"},
+      {"amber", "amber-ff14sb-ambertools"}, {"charmm", "charmm36-prot-toppar"}, {"dreiding", "dreiding1990"}, {"cgenff", "cgenff-toppar"},
+      {"charmm19", "charmm19-toppar"}, {"trappe-ua", "trappe-ua-umn"}, {"trappe", "trappe-ua-umn"}, {"gromos", "gromos54a7-gromacs"},
+      {"gromos54a7", "gromos54a7-gromacs"}, {"clayff", "clayff2004"}};
+  std::string lower = s0;
+  for (auto& c : lower) c = char(std::tolower((unsigned char)c));
+  auto al = alias.find(lower);
+  for (const std::string& s : al == alias.end() ? std::vector<std::string>{s0} : std::vector<std::string>{s0, al->second})
+    for (const auto& root : caps_roots())
+      for (const std::string& name : {s, s + ".json"})
+        if (std::filesystem::exists(root + "/data/forcefields/" + name)) return root + "/data/forcefields/" + name;
+  return s0;
 }
 
 // Charges worth keeping: a file whose charge column is all zero (a builder's placeholder) has none.
