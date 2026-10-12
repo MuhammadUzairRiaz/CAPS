@@ -137,9 +137,9 @@
   },
   {
    "type": "c5",
-   "smarts": "[c;$(c1aaaa1)]",
+   "smarts": "[c;$(c1[n]c[n]c1),$(c1[n]cc[n]1);!$(c[nX2])]",
    "priority": 1,
-   "description": "aromatic C in a 5-membered ring, fused ones included (pcff.frc; Materials Studio)"
+   "description": "imidazole C bonded only to N-H, not to the pyridine-like N (DL_FIELD's PCFF: furan, oxazole and indole carbons stay cp)"
   },
   {
    "type": "ci",
@@ -615,6 +615,12 @@
    "smarts": "[SX4](=O)(=O)([OX2,OX1-])[OX2,OX1-]",
    "priority": 4,
    "description": "sulfate S (DL_FIELD's PCFF: s)"
+  },
+  {
+   "type": "ci",
+   "smarts": "[c;$(c1[n]c[n]c1),$(c1[n]cc[n]1);$(c[nX2])]",
+   "priority": 3,
+   "description": "imidazole C bonded to the pyridine-like N (DL_FIELD's PCFF, its neutral histidine templates)"
   }
  ]
 }
