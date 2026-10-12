@@ -170,6 +170,17 @@ if arg("--supplement"):   # terms the files lack, each from the OPLS-AA paper th
             lst.append({"name": "-".join(m), "match": [cls(x) for x in m], "style": "harmonic", "params": t["params"],
                         "comment": f"{t['source']}: {t['reason']}"})
             added.append("-".join(m))
+    # torsions: from the OPLS-AA paper that defines them, or CAPS's QM fits (bench/ff/merge_fits.py), fully named, so
+    # they come after the wildcard rules; a class the .par has keeps the .par's line
+    for t in sup.get("dihedrals", []):
+        m = t["match"]
+        key = tuple(m) if tuple(m) <= tuple(m[::-1]) else tuple(m[::-1])
+        if key in seen_d:
+            continue
+        seen_d[key] = True
+        dihedrals.append({"name": "-".join(m), "match": [cls(x) for x in m], "style": "opls", "params": t["params"],
+                          "comment": f"{t['source']}: {t['reason']}"})
+        added.append("-".join(m))
     if added:
         notes.append(f"{len(added)} types and terms the 2024 files lack, each from the OPLS-AA paper that defines it or from OPLS-AA's own "
                      "charge increments (bench/ff/open/oplsaa2024_supplement.json): "
