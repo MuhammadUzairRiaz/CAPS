@@ -164,6 +164,27 @@ ENTRIES = {
                         {"source": "the paper's Table I; bench/ff/make_glass.py", "license": "published parameters of the paper"},
                         "Li, P, O with effective charges and Born-Mayer terms for every pair; LAMMPS reproduces CAPS's energies",
                         ("Glass (LiPO3, Vogel)", "vogel2003", 30), []),
+    "xiao2011-caco3": ("CaCO3 (Xiao, Edwards & Grater 2011)", "2011, Table 1",
+                       ["S. Xiao, S. A. Edwards, F. Grater, J. Phys. Chem. C 115, 20067 (2011)",
+                        "W. L. Jorgensen, J. Chandrasekhar, J. D. Madura, R. W. Impey, M. L. Klein, J. Chem. Phys. 79, 926 (1983)"],
+                       {"source": "the paper's Table 1 and energy expression; bench/ff/make_xiao2011.py", "license": "published parameters of the paper"},
+                       "Ca, carbonate C and O with the paper's charges and C12/C6 pairs (Ca-O's C6 0 written as 1e-12), the O-C-O "
+                       "bend and the K (1 - cos 2 psi) plane term by distance (no C-O bond term, no exclusions), TIP3P water with "
+                       "the paper's mineral-water pairs; LAMMPS reproduces CAPS's energies on calcite and aragonite",
+                       ("CaCO3 (Xiao 2011)", "xiao2011", 30), []),
+    "gunn2012-pyrochlore": ("Gd pyrochlores (Gunn et al. 2012)", "2012, Table 1",
+                            ["D. S. D. Gunn, N. L. Allan, H. Foxhall, J. H. Harding, J. A. Purton, W. Smith, M. J. Stein, I. T. Todorov, "
+                             "K. P. Travis, J. Mater. Chem. 22, 4675 (2012)"],
+                            {"source": "the paper's Table 1; bench/ff/make_gunn2012.py", "license": "published parameters of the paper"},
+                            "rigid Gd, Ti, Zr and O ions with formal charges, Buckingham terms with O, 12 A cut-off; LAMMPS reproduces "
+                            "CAPS's energies on Gd2Ti2O7 and Gd2Zr2O7", ("Pyrochlores (Gunn 2012)", "gunn2012", 30), []),
+    "la-perovskites": ("La perovskite oxides (Cherry 1995; Read 1999)", "Cherry 1995 and Read 1999, Table 1 each",
+                       ["M. Cherry, M. S. Islam, C. R. A. Catlow, J. Solid State Chem. 118, 125 (1995)",
+                        "M. S. D. Read, M. S. Islam, F. King, F. E. Hancock, J. Phys. Chem. B 103, 1558 (1999)"],
+                       {"source": "the papers' Table 1; bench/ff/make_la_perovskites.py", "license": "published parameters of the papers"},
+                       "shell models with formal charges: LaMO3 (M = Cr, Mn, Fe, Co) from Cherry, La2NiO4 and its 2+ dopants from "
+                       "Read, each set typed by composition (Ni present or not); LAMMPS reproduces CAPS's energies on LaFeO3, LaCoO3 "
+                       "and La2NiO4 (CORESHELL styles)", ("La perovskites", "la_perovskites", 30), []),
 }
 RTF = "the topology's own residues typed as it types them (bench/ff/validate_rtf_types.py --cap-links): "
 for fid, name, version, refs, evidence, listing, replaces in (

@@ -1,0 +1,1054 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "La perovskite oxides (Cherry 1995; Read 1999)",
+ "source": "M. Cherry, M. S. Islam, C. R. A. Catlow, J. Solid State Chem. 118, 125 (1995), Table 1; M. S. D. Read, M. S. Islam, F. King, F. E. Hancock, J. Phys. Chem. B 103, 1558 (1999), Table 1",
+ "references": [
+  "M. Cherry, M. S. Islam, C. R. A. Catlow, J. Solid State Chem. 118, 125 (1995)",
+  "M. S. D. Read, M. S. Islam, F. King, F. E. Hancock, J. Phys. Chem. B 103, 1558 (1999)"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "buck/coul/long",
+  "bond": "class2",
+  "angle": "harmonic",
+  "dihedral": "fourier",
+  "improper": "fourier"
+ },
+ "mixing": "geometric",
+ "special_lj": [
+  0,
+  0,
+  1
+ ],
+ "special_coul": [
+  0,
+  0,
+  1
+ ],
+ "cutoff": 12,
+ "atom_types": [
+  {
+   "name": "O_cc",
+   "element": "O",
+   "mass": 14.3991,
+   "charge": 0.24,
+   "description": "O2- core (Cherry 1995, Table 1)"
+  },
+  {
+   "name": "O_cs",
+   "element": "O",
+   "mass": 1.5999,
+   "charge": -2.24,
+   "description": "O2- shell (Cherry 1995, Table 1)"
+  },
+  {
+   "name": "La_cc",
+   "element": "La",
+   "mass": 125.0145,
+   "charge": 3.25,
+   "description": "La3+ core (Cherry 1995, Table 1)"
+  },
+  {
+   "name": "La_cs",
+   "element": "La",
+   "mass": 13.890500000000001,
+   "charge": -0.25,
+   "description": "La3+ shell (Cherry 1995)"
+  },
+  {
+   "name": "Cr_cc",
+   "element": "Cr",
+   "mass": 46.796400000000006,
+   "charge": 2.03,
+   "description": "Cr3+ core (Cherry 1995, Table 1)"
+  },
+  {
+   "name": "Cr_cs",
+   "element": "Cr",
+   "mass": 5.1996,
+   "charge": 0.97,
+   "description": "Cr3+ shell (Cherry 1995)"
+  },
+  {
+   "name": "Mn_cc",
+   "element": "Mn",
+   "mass": 49.4442,
+   "charge": 0.0,
+   "description": "Mn3+ core (Cherry 1995, Table 1)"
+  },
+  {
+   "name": "Mn_cs",
+   "element": "Mn",
+   "mass": 5.4938,
+   "charge": 3.0,
+   "description": "Mn3+ shell (Cherry 1995)"
+  },
+  {
+   "name": "Fe_cc",
+   "element": "Fe",
+   "mass": 50.2605,
+   "charge": -1.97,
+   "description": "Fe3+ core (Cherry 1995, Table 1)"
+  },
+  {
+   "name": "Fe_cs",
+   "element": "Fe",
+   "mass": 5.5845,
+   "charge": 4.97,
+   "description": "Fe3+ shell (Cherry 1995)"
+  },
+  {
+   "name": "Co_cc",
+   "element": "Co",
+   "mass": 53.0397,
+   "charge": 0.96,
+   "description": "Co3+ core (Cherry 1995, Table 1)"
+  },
+  {
+   "name": "Co_cs",
+   "element": "Co",
+   "mass": 5.8933,
+   "charge": 2.04,
+   "description": "Co3+ shell (Cherry 1995)"
+  },
+  {
+   "name": "O_rc",
+   "element": "O",
+   "mass": 14.3991,
+   "charge": 0.389,
+   "description": "O2- core (Read 1999, Table 1)"
+  },
+  {
+   "name": "O_rs",
+   "element": "O",
+   "mass": 1.5999,
+   "charge": -2.389,
+   "description": "O2- shell (Read 1999, Table 1)"
+  },
+  {
+   "name": "La_rc",
+   "element": "La",
+   "mass": 125.0145,
+   "charge": 3.25,
+   "description": "La3+ core (Read 1999, Table 1)"
+  },
+  {
+   "name": "La_rs",
+   "element": "La",
+   "mass": 13.890500000000001,
+   "charge": -0.25,
+   "description": "La3+ shell (Read 1999)"
+  },
+  {
+   "name": "Ni_r",
+   "element": "Ni",
+   "mass": 58.693,
+   "charge": 2.0,
+   "description": "Ni2+ (rigid: k 99999.0) (Read 1999, Table 1)"
+  },
+  {
+   "name": "Mg_rc",
+   "element": "Mg",
+   "mass": 21.8745,
+   "charge": 0.415,
+   "description": "Mg2+ core (Read 1999, Table 1)"
+  },
+  {
+   "name": "Mg_rs",
+   "element": "Mg",
+   "mass": 2.4305000000000003,
+   "charge": 1.585,
+   "description": "Mg2+ shell (Read 1999)"
+  },
+  {
+   "name": "Ca_rc",
+   "element": "Ca",
+   "mass": 36.07020000000001,
+   "charge": -1.135,
+   "description": "Ca2+ core (Read 1999, Table 1)"
+  },
+  {
+   "name": "Ca_rs",
+   "element": "Ca",
+   "mass": 4.0078000000000005,
+   "charge": 3.135,
+   "description": "Ca2+ shell (Read 1999)"
+  },
+  {
+   "name": "Sr_rc",
+   "element": "Sr",
+   "mass": 78.858,
+   "charge": -1.251,
+   "description": "Sr2+ core (Read 1999, Table 1)"
+  },
+  {
+   "name": "Sr_rs",
+   "element": "Sr",
+   "mass": 8.762,
+   "charge": 3.251,
+   "description": "Sr2+ shell (Read 1999)"
+  },
+  {
+   "name": "Ba_rc",
+   "element": "Ba",
+   "mass": 123.5943,
+   "charge": -7.203,
+   "description": "Ba2+ core (Read 1999, Table 1)"
+  },
+  {
+   "name": "Ba_rs",
+   "element": "Ba",
+   "mass": 13.732700000000001,
+   "charge": 9.203,
+   "description": "Ba2+ shell (Read 1999)"
+  },
+  {
+   "name": "Mn_rc",
+   "element": "Mn",
+   "mass": 49.4442,
+   "charge": -1.42,
+   "description": "Mn2+ core (Read 1999, Table 1)"
+  },
+  {
+   "name": "Mn_rs",
+   "element": "Mn",
+   "mass": 5.4938,
+   "charge": 3.42,
+   "description": "Mn2+ shell (Read 1999)"
+  },
+  {
+   "name": "Fe_rc",
+   "element": "Fe",
+   "mass": 50.2605,
+   "charge": -0.997,
+   "description": "Fe2+ core (Read 1999, Table 1)"
+  },
+  {
+   "name": "Fe_rs",
+   "element": "Fe",
+   "mass": 5.5845,
+   "charge": 2.997,
+   "description": "Fe2+ shell (Read 1999)"
+  },
+  {
+   "name": "Co_rc",
+   "element": "Co",
+   "mass": 53.0397,
+   "charge": -1.503,
+   "description": "Co2+ core (Read 1999, Table 1)"
+  },
+  {
+   "name": "Co_rs",
+   "element": "Co",
+   "mass": 5.8933,
+   "charge": 3.503,
+   "description": "Co2+ shell (Read 1999)"
+  },
+  {
+   "name": "Cu_r",
+   "element": "Cu",
+   "mass": 63.546,
+   "charge": 2.0,
+   "description": "Cu2+ (rigid: k 999999.0) (Read 1999, Table 1)"
+  }
+ ],
+ "pairs": [
+  {
+   "name": "O_cs-O_cs",
+   "match": [
+    "O_cs",
+    "O_cs"
+   ],
+   "style": "buck",
+   "params": [
+    524957.2328364,
+    0.149,
+    991.603564
+   ],
+   "comment": "O-O 22764.3 eV, 0.1490 A, C 43.0 eV A^6 (Cherry 1995, Table 1)"
+  },
+  {
+   "name": "La_cs-O_cs",
+   "match": [
+    "La_cs",
+    "O_cs"
+   ],
+   "style": "buck",
+   "params": [
+    35633.389375080005,
+    0.359,
+    0.0
+   ],
+   "comment": "La3+-O2- A 1545.21 eV, rho 0.359 A (Cherry 1995, Table 1)"
+  },
+  {
+   "name": "Cr_cs-O_cs",
+   "match": [
+    "Cr_cs",
+    "O_cs"
+   ],
+   "style": "buck",
+   "params": [
+    38993.0806132,
+    0.301,
+    0.0
+   ],
+   "comment": "Cr3+-O2- A 1690.9 eV, rho 0.301 A (Cherry 1995, Table 1)"
+  },
+  {
+   "name": "Mn_cs-O_cs",
+   "match": [
+    "Mn_cs",
+    "O_cs"
+   ],
+   "style": "buck",
+   "params": [
+    29229.244590000002,
+    0.3214,
+    0.0
+   ],
+   "comment": "Mn3+-O2- A 1267.5 eV, rho 0.3214 A (Cherry 1995, Table 1)"
+  },
+  {
+   "name": "Fe_cs-O_cs",
+   "match": [
+    "Fe_cs",
+    "O_cs"
+   ],
+   "style": "buck",
+   "params": [
+    26666.295285279997,
+    0.3299,
+    0.0
+   ],
+   "comment": "Fe3+-O2- A 1156.36 eV, rho 0.3299 A (Cherry 1995, Table 1)"
+  },
+  {
+   "name": "Co_cs-O_cs",
+   "match": [
+    "Co_cs",
+    "O_cs"
+   ],
+   "style": "buck",
+   "params": [
+    30666.37794136,
+    0.3087,
+    0.0
+   ],
+   "comment": "Co3+-O2- A 1329.82 eV, rho 0.3087 A (Cherry 1995, Table 1)"
+  },
+  {
+   "name": "O_cc",
+   "match": [
+    "O_cc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_cs",
+   "match": [
+    "O_cs"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "La_cc",
+   "match": [
+    "La_cc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "La_cs",
+   "match": [
+    "La_cs"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Cr_cc",
+   "match": [
+    "Cr_cc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Cr_cs",
+   "match": [
+    "Cr_cs"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Mn_cc",
+   "match": [
+    "Mn_cc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Mn_cs",
+   "match": [
+    "Mn_cs"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Fe_cc",
+   "match": [
+    "Fe_cc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Fe_cs",
+   "match": [
+    "Fe_cs"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Co_cc",
+   "match": [
+    "Co_cc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Co_cs",
+   "match": [
+    "Co_cs"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_rs-O_rs",
+   "match": [
+    "O_rs",
+    "O_rs"
+   ],
+   "style": "buck",
+   "params": [
+    524957.2328364,
+    0.149,
+    991.603564
+   ],
+   "comment": "O-O 22764.3 eV, 0.1490 A, C 43.0 eV A^6 (Read 1999, Table 1)"
+  },
+  {
+   "name": "La_rs-O_rs",
+   "match": [
+    "La_rs",
+    "O_rs"
+   ],
+   "style": "buck",
+   "params": [
+    35633.389375080005,
+    0.359,
+    0.0
+   ],
+   "comment": "La3+-O2- A 1545.21 eV, rho 0.359 A (Read 1999, Table 1)"
+  },
+  {
+   "name": "Ni_r-O_rs",
+   "match": [
+    "Ni_r",
+    "O_rs"
+   ],
+   "style": "buck",
+   "params": [
+    14786.423377600002,
+    0.3372,
+    0.0
+   ],
+   "comment": "Ni2+-O2- A 641.2 eV, rho 0.3372 A (Read 1999, Table 1)"
+  },
+  {
+   "name": "Mg_rs-O_rs",
+   "match": [
+    "Mg_rs",
+    "O_rs"
+   ],
+   "style": "buck",
+   "params": [
+    32941.992818,
+    0.2945,
+    0.0
+   ],
+   "comment": "Mg2+-O2- A 1428.5 eV, rho 0.2945 A (Read 1999, Table 1)"
+  },
+  {
+   "name": "Ca_rs-O_rs",
+   "match": [
+    "Ca_rs",
+    "O_rs"
+   ],
+   "style": "buck",
+   "params": [
+    25145.221539200003,
+    0.3437,
+    0.0
+   ],
+   "comment": "Ca2+-O2- A 1090.4 eV, rho 0.3437 A (Read 1999, Table 1)"
+  },
+  {
+   "name": "Sr_rs-O_rs",
+   "match": [
+    "Sr_rs",
+    "O_rs"
+   ],
+   "style": "buck",
+   "params": [
+    22117.3715868,
+    0.3721,
+    0.0
+   ],
+   "comment": "Sr2+-O2- A 959.1 eV, rho 0.3721 A (Read 1999, Table 1)"
+  },
+  {
+   "name": "Ba_rs-O_rs",
+   "match": [
+    "Ba_rs",
+    "O_rs"
+   ],
+   "style": "buck",
+   "params": [
+    20885.938323600003,
+    0.3976,
+    0.0
+   ],
+   "comment": "Ba2+-O2- A 905.7 eV, rho 0.3976 A (Read 1999, Table 1)"
+  },
+  {
+   "name": "Mn_rs-O_rs",
+   "match": [
+    "Mn_rs",
+    "O_rs"
+   ],
+   "style": "buck",
+   "params": [
+    23231.196055200002,
+    0.3262,
+    0.0
+   ],
+   "comment": "Mn2+-O2- A 1007.4 eV, rho 0.3262 A (Read 1999, Table 1)"
+  },
+  {
+   "name": "Fe_rs-O_rs",
+   "match": [
+    "Fe_rs",
+    "O_rs"
+   ],
+   "style": "buck",
+   "params": [
+    27847.9177648,
+    0.3084,
+    0.0
+   ],
+   "comment": "Fe2+-O2- A 1207.6 eV, rho 0.3084 A (Read 1999, Table 1)"
+  },
+  {
+   "name": "Co_rs-O_rs",
+   "match": [
+    "Co_rs",
+    "O_rs"
+   ],
+   "style": "buck",
+   "params": [
+    34399.4194516,
+    0.2951,
+    0.0
+   ],
+   "comment": "Co2+-O2- A 1491.7 eV, rho 0.2951 A (Read 1999, Table 1)"
+  },
+  {
+   "name": "Cu_r-O_rs",
+   "match": [
+    "Cu_r",
+    "O_rs"
+   ],
+   "style": "buck",
+   "params": [
+    87613.94001640001,
+    0.24273,
+    0.0
+   ],
+   "comment": "Cu2+-O2- A 3799.3 eV, rho 0.24273 A (Read 1999, Table 1)"
+  },
+  {
+   "name": "O_rc",
+   "match": [
+    "O_rc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_rs",
+   "match": [
+    "O_rs"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "La_rc",
+   "match": [
+    "La_rc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "La_rs",
+   "match": [
+    "La_rs"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ni_r",
+   "match": [
+    "Ni_r"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Mg_rc",
+   "match": [
+    "Mg_rc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Mg_rs",
+   "match": [
+    "Mg_rs"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ca_rc",
+   "match": [
+    "Ca_rc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ca_rs",
+   "match": [
+    "Ca_rs"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Sr_rc",
+   "match": [
+    "Sr_rc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Sr_rs",
+   "match": [
+    "Sr_rs"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ba_rc",
+   "match": [
+    "Ba_rc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ba_rs",
+   "match": [
+    "Ba_rs"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Mn_rc",
+   "match": [
+    "Mn_rc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Mn_rs",
+   "match": [
+    "Mn_rs"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Fe_rc",
+   "match": [
+    "Fe_rc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Fe_rs",
+   "match": [
+    "Fe_rs"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Co_rc",
+   "match": [
+    "Co_rc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Co_rs",
+   "match": [
+    "Co_rs"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Cu_r",
+   "match": [
+    "Cu_r"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  }
+ ],
+ "bonds": [
+  {
+   "name": "O_cc-O_cs",
+   "match": [
+    "O_cc",
+    "O_cs"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    484.27150800000004,
+    0.0,
+    0.0
+   ],
+   "comment": "k 42.0 eV/A^2 (Cherry 1995)"
+  },
+  {
+   "name": "La_cc-La_cs",
+   "match": [
+    "La_cc",
+    "La_cs"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    1671.88973,
+    0.0,
+    0.0
+   ],
+   "comment": "k 145.0 eV/A^2 (Cherry 1995)"
+  },
+  {
+   "name": "Cr_cc-Cr_cs",
+   "match": [
+    "Cr_cc",
+    "Cr_cs"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    772.528358,
+    0.0,
+    0.0
+   ],
+   "comment": "k 67.0 eV/A^2 (Cherry 1995)"
+  },
+  {
+   "name": "Mn_cc-Mn_cs",
+   "match": [
+    "Mn_cc",
+    "Mn_cs"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    1095.3760300000001,
+    0.0,
+    0.0
+   ],
+   "comment": "k 95.0 eV/A^2 (Cherry 1995)"
+  },
+  {
+   "name": "Fe_cc-Fe_cs",
+   "match": [
+    "Fe_cc",
+    "Fe_cs"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    3513.2744878,
+    0.0,
+    0.0
+   ],
+   "comment": "k 304.7 eV/A^2 (Cherry 1995)"
+  },
+  {
+   "name": "Co_cc-Co_cs",
+   "match": [
+    "Co_cc",
+    "Co_cs"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    2263.3927862,
+    0.0,
+    0.0
+   ],
+   "comment": "k 196.3 eV/A^2 (Cherry 1995)"
+  },
+  {
+   "name": "O_rc-O_rs",
+   "match": [
+    "O_rc",
+    "O_rs"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    484.27150800000004,
+    0.0,
+    0.0
+   ],
+   "comment": "k 42.0 eV/A^2 (Read 1999)"
+  },
+  {
+   "name": "La_rc-La_rs",
+   "match": [
+    "La_rc",
+    "La_rs"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    1671.88973,
+    0.0,
+    0.0
+   ],
+   "comment": "k 145.0 eV/A^2 (Read 1999)"
+  },
+  {
+   "name": "Mg_rc-Mg_rs",
+   "match": [
+    "Mg_rc",
+    "Mg_rs"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    4169.3470784,
+    0.0,
+    0.0
+   ],
+   "comment": "k 361.6 eV/A^2 (Read 1999)"
+  },
+  {
+   "name": "Ca_rc-Ca_rs",
+   "match": [
+    "Ca_rc",
+    "Ca_rs"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    1270.6361948,
+    0.0,
+    0.0
+   ],
+   "comment": "k 110.2 eV/A^2 (Read 1999)"
+  },
+  {
+   "name": "Sr_rc-Sr_rs",
+   "match": [
+    "Sr_rc",
+    "Sr_rs"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    826.7206458,
+    0.0,
+    0.0
+   ],
+   "comment": "k 71.7 eV/A^2 (Read 1999)"
+  },
+  {
+   "name": "Ba_rc-Ba_rs",
+   "match": [
+    "Ba_rc",
+    "Ba_rs"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    5294.7018208,
+    0.0,
+    0.0
+   ],
+   "comment": "k 459.2 eV/A^2 (Read 1999)"
+  },
+  {
+   "name": "Mn_rc-Mn_rs",
+   "match": [
+    "Mn_rc",
+    "Mn_rs"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    1095.3760300000001,
+    0.0,
+    0.0
+   ],
+   "comment": "k 95.0 eV/A^2 (Read 1999)"
+  },
+  {
+   "name": "Fe_rc-Fe_rs",
+   "match": [
+    "Fe_rc",
+    "Fe_rs"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    725.2542346,
+    0.0,
+    0.0
+   ],
+   "comment": "k 62.9 eV/A^2 (Read 1999)"
+  },
+  {
+   "name": "Co_rc-Co_rs",
+   "match": [
+    "Co_rc",
+    "Co_rs"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    1274.0952770000001,
+    0.0,
+    0.0
+   ],
+   "comment": "k 110.5 eV/A^2 (Read 1999)"
+  }
+ ],
+ "angles": [],
+ "dihedrals": [],
+ "impropers": [],
+ "notes": [
+  "built by CAPS (bench/ff/make_la_perovskites.py) from the papers' Table 1",
+  "a structure with Ni takes Read's set (La2NiO4 and its 2+ dopants), one without Cherry's (LaMO3, M 3+)",
+  "short-range cut-off 12 A (Cherry: 3.0 lattice units)",
+  "shells carry 10 % of the ion's mass (adiabatic core-shell)"
+ ],
+ "version": "1995, 1999",
+ "typing": "../typing/la-perovskites.typing.json"
+}

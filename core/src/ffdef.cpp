@@ -2345,6 +2345,48 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
   // impropers: every centre with three or more neighbours, triples sorted by index; last matching rule wins over all
   // orderings of the three (as moltemplate's canonical ordering does)
   const int cpos = def.improper_order == "center1_sorted" ? 0 : def.improper_order == "center2_sorted" ? 1 : 2;
+  // Impropers by distance (a cvff rule with "contact": [r]): a centre matching the rule's centre position takes the three
+  // nearest atoms within r that match the other positions, bonded or not, sorted by index around it (Xiao et al.'s
+  // carbonate plane: O1-C-O2-O3 with the centre second)
+  if (!use_topo) {
+    int n_imp = 0;
+    for (const auto& r : def.impropers) {
+      auto c = r.cross.find("contact");
+      if (c == r.cross.end() || c->second.empty() || r.match.size() != 4) continue;
+      if ((r.style.empty() ? def.improper_style : r.style) != "cvff" || r.params.size() < 3)
+        throw FFError("contact improper " + r.name + " must be cvff (K d n)");
+      const double rc2 = c->second[0] * c->second[0];
+      std::vector<std::string> outer;
+      for (int q = 0; q < 4; ++q)
+        if (q != cpos) outer.push_back(r.match[q]);
+      auto is = [&](const std::string& pat, uint32_t a) {
+        const std::vector<std::string>* names[] = {&T, &Ni};
+        for (const auto* N : names)
+          if (!N->empty() && match_fw(std::vector<std::string>{pat}, {&(*N)[a]})) return true;
+        return false;
+      };
+      for (uint32_t j = 0; j < n; ++j) {
+        if (!is(r.match[cpos], j)) continue;
+        std::vector<std::pair<double, uint32_t>> near;
+        for (uint32_t a = 0; a < n; ++a) {
+          if (a == j) continue;
+          Vec3 d = s.atoms[a].pos - s.atoms[j].pos;
+          if (s.cell.valid()) d = s.cell.minimum_image(d);
+          if (dot(d, d) < rc2 && (is(outer[0], a) || is(outer[1], a) || is(outer[2], a))) near.push_back({dot(d, d), a});
+        }
+        if (near.size() < 3) continue;
+        std::sort(near.begin(), near.end());
+        std::array<uint32_t, 3> o{near[0].second, near[1].second, near[2].second};
+        std::sort(o.begin(), o.end());
+        std::array<uint32_t, 4> q4{};
+        for (int q = 0, m = 0; q < 4; ++q) q4[q] = q == cpos ? j : o[m++];
+        ff.impropers.push_back({q4[0], q4[1], q4[2], q4[3], r.params[0], int(r.params[2]), r.params[1] >= 0 ? 0.0 : kPi});
+        rep.used["improper " + r.name]++;
+        ++n_imp;
+      }
+    }
+    if (n_imp) rep.notes.push_back(std::to_string(n_imp) + " impropers by distance from the centre (no bond made)");
+  }
   if (use_topo) {
     // the explicit topology's impropers are among its dihedrals
   } else if (def.oop_scheme == "msi2lmp") {

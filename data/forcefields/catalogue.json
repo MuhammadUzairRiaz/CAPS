@@ -2131,6 +2131,98 @@
    }
   },
   {
+   "id": "xiao2011-caco3",
+   "name": "CaCO3 (Xiao, Edwards & Grater 2011)",
+   "version": "2011, Table 1",
+   "references": [
+    "S. Xiao, S. A. Edwards, F. Grater, J. Phys. Chem. C 115, 20067 (2011)",
+    "W. L. Jorgensen, J. Chandrasekhar, J. D. Madura, R. W. Impey, M. L. Klein, J. Chem. Phys. 79, 926 (1983)"
+   ],
+   "origin": "built from source",
+   "source": "the paper's Table 1 and energy expression; bench/ff/make_xiao2011.py",
+   "license": "published parameters of the paper",
+   "status": "validated",
+   "file": "xiao2011-caco3.json",
+   "counts": {
+    "atom_types": 5,
+    "pairs": 15,
+    "bonds": 1,
+    "angles": 2,
+    "dihedrals": 0,
+    "impropers": 1
+   },
+   "typing": {
+    "rules": "typing/xiao2011-caco3.typing.json",
+    "evidence": "Ca, carbonate C and O with the paper's charges and C12/C6 pairs (Ca-O's C6 0 written as 1e-12), the O-C-O bend and the K (1 - cos 2 psi) plane term by distance (no C-O bond term, no exclusions), TIP3P water with the paper's mineral-water pairs; LAMMPS reproduces CAPS's energies on calcite and aragonite"
+   },
+   "list": {
+    "label": "CaCO3 (Xiao 2011)",
+    "key": "xiao2011",
+    "order": 30
+   }
+  },
+  {
+   "id": "gunn2012-pyrochlore",
+   "name": "Gd pyrochlores (Gunn et al. 2012)",
+   "version": "2012, Table 1",
+   "references": [
+    "D. S. D. Gunn, N. L. Allan, H. Foxhall, J. H. Harding, J. A. Purton, W. Smith, M. J. Stein, I. T. Todorov, K. P. Travis, J. Mater. Chem. 22, 4675 (2012)"
+   ],
+   "origin": "built from source",
+   "source": "the paper's Table 1; bench/ff/make_gunn2012.py",
+   "license": "published parameters of the paper",
+   "status": "validated",
+   "file": "gunn2012-pyrochlore.json",
+   "counts": {
+    "atom_types": 4,
+    "pairs": 8,
+    "bonds": 0,
+    "angles": 0,
+    "dihedrals": 0,
+    "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/gunn2012-pyrochlore.typing.json",
+    "evidence": "rigid Gd, Ti, Zr and O ions with formal charges, Buckingham terms with O, 12 A cut-off; LAMMPS reproduces CAPS's energies on Gd2Ti2O7 and Gd2Zr2O7"
+   },
+   "list": {
+    "label": "Pyrochlores (Gunn 2012)",
+    "key": "gunn2012",
+    "order": 30
+   }
+  },
+  {
+   "id": "la-perovskites",
+   "name": "La perovskite oxides (Cherry 1995; Read 1999)",
+   "version": "Cherry 1995 and Read 1999, Table 1 each",
+   "references": [
+    "M. Cherry, M. S. Islam, C. R. A. Catlow, J. Solid State Chem. 118, 125 (1995)",
+    "M. S. D. Read, M. S. Islam, F. King, F. E. Hancock, J. Phys. Chem. B 103, 1558 (1999)"
+   ],
+   "origin": "built from source",
+   "source": "the papers' Table 1; bench/ff/make_la_perovskites.py",
+   "license": "published parameters of the papers",
+   "status": "validated",
+   "file": "la-perovskites.json",
+   "counts": {
+    "atom_types": 32,
+    "pairs": 49,
+    "bonds": 15,
+    "angles": 0,
+    "dihedrals": 0,
+    "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/la-perovskites.typing.json",
+    "evidence": "shell models with formal charges: LaMO3 (M = Cr, Mn, Fe, Co) from Cherry, La2NiO4 and its 2+ dopants from Read, each set typed by composition (Ni present or not); LAMMPS reproduces CAPS's energies on LaFeO3, LaCoO3 and La2NiO4 (CORESHELL styles)"
+   },
+   "list": {
+    "label": "La perovskites",
+    "key": "la_perovskites",
+    "order": 30
+   }
+  },
+  {
    "id": "charmm36-prot-toppar",
    "name": "CHARMM36 proteins",
    "version": "toppar_c36_jul17 (par_all36_prot.prm, top_all36_prot.rtf, its streams)",

@@ -1,0 +1,313 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "La perovskite oxides (Cherry 1995; Read 1999)",
+ "unknown_types": "untyped",
+ "bonds": "defined",
+ "shells": {
+  "O_cc": "O_cs",
+  "La_cc": "La_cs",
+  "Cr_cc": "Cr_cs",
+  "Mn_cc": "Mn_cs",
+  "Fe_cc": "Fe_cs",
+  "Co_cc": "Co_cs",
+  "O_rc": "O_rs",
+  "La_rc": "La_rs",
+  "Mg_rc": "Mg_rs",
+  "Ca_rc": "Ca_rs",
+  "Sr_rc": "Sr_rs",
+  "Ba_rc": "Ba_rs",
+  "Mn_rc": "Mn_rs",
+  "Fe_rc": "Fe_rs",
+  "Co_rc": "Co_rs"
+ },
+ "description": "La perovskites by composition (bench/ff/make_la_perovskites.py)",
+ "rules": [
+  {
+   "type": "La_cc",
+   "smarts": "[#57]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "excludes": [
+    "Ni"
+   ],
+   "description": "La3+ (Cherry 1995: no Ni)"
+  },
+  {
+   "type": "Cr_cc",
+   "smarts": "[#24]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "excludes": [
+    "Ni"
+   ],
+   "description": "Cr3+ (Cherry 1995: no Ni)"
+  },
+  {
+   "type": "Mn_cc",
+   "smarts": "[#25]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "excludes": [
+    "Ni"
+   ],
+   "description": "Mn3+ (Cherry 1995: no Ni)"
+  },
+  {
+   "type": "Fe_cc",
+   "smarts": "[#26]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "excludes": [
+    "Ni"
+   ],
+   "description": "Fe3+ (Cherry 1995: no Ni)"
+  },
+  {
+   "type": "Co_cc",
+   "smarts": "[#27]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "excludes": [
+    "Ni"
+   ],
+   "description": "Co3+ (Cherry 1995: no Ni)"
+  },
+  {
+   "type": "O_cc",
+   "smarts": "[#8]",
+   "priority": 0,
+   "requires": [
+    "La"
+   ],
+   "excludes": [
+    "Ni"
+   ],
+   "description": "O2- (Cherry 1995)"
+  },
+  {
+   "type": "La_rc",
+   "smarts": "[#57]",
+   "priority": 0,
+   "requires": [
+    "O",
+    "Ni"
+   ],
+   "description": "La3+ (Read 1999: with Ni)"
+  },
+  {
+   "type": "Ni_r",
+   "smarts": "[#28]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "description": "Ni2+ (Read 1999: with Ni)"
+  },
+  {
+   "type": "Mg_rc",
+   "smarts": "[#12]",
+   "priority": 0,
+   "requires": [
+    "O",
+    "Ni"
+   ],
+   "description": "Mg2+ (Read 1999: with Ni)"
+  },
+  {
+   "type": "Ca_rc",
+   "smarts": "[#20]",
+   "priority": 0,
+   "requires": [
+    "O",
+    "Ni"
+   ],
+   "description": "Ca2+ (Read 1999: with Ni)"
+  },
+  {
+   "type": "Sr_rc",
+   "smarts": "[#38]",
+   "priority": 0,
+   "requires": [
+    "O",
+    "Ni"
+   ],
+   "description": "Sr2+ (Read 1999: with Ni)"
+  },
+  {
+   "type": "Ba_rc",
+   "smarts": "[#56]",
+   "priority": 0,
+   "requires": [
+    "O",
+    "Ni"
+   ],
+   "description": "Ba2+ (Read 1999: with Ni)"
+  },
+  {
+   "type": "Mn_rc",
+   "smarts": "[#25]",
+   "priority": 0,
+   "requires": [
+    "O",
+    "Ni"
+   ],
+   "description": "Mn2+ (Read 1999: with Ni)"
+  },
+  {
+   "type": "Fe_rc",
+   "smarts": "[#26]",
+   "priority": 0,
+   "requires": [
+    "O",
+    "Ni"
+   ],
+   "description": "Fe2+ (Read 1999: with Ni)"
+  },
+  {
+   "type": "Co_rc",
+   "smarts": "[#27]",
+   "priority": 0,
+   "requires": [
+    "O",
+    "Ni"
+   ],
+   "description": "Co2+ (Read 1999: with Ni)"
+  },
+  {
+   "type": "Cu_r",
+   "smarts": "[#29]",
+   "priority": 0,
+   "requires": [
+    "O",
+    "Ni"
+   ],
+   "description": "Cu2+ (Read 1999: with Ni)"
+  },
+  {
+   "type": "O_rc",
+   "smarts": "[#8]",
+   "priority": 0,
+   "requires": [
+    "La",
+    "Ni"
+   ],
+   "description": "O2- (Read 1999)"
+  },
+  {
+   "type": "O_cs",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O_cs",
+   "description": "shell of O_cc"
+  },
+  {
+   "type": "La_cs",
+   "smarts": "[#57]",
+   "priority": 99,
+   "atom_name": "La_cs",
+   "description": "shell of La_cc"
+  },
+  {
+   "type": "Cr_cs",
+   "smarts": "[#24]",
+   "priority": 99,
+   "atom_name": "Cr_cs",
+   "description": "shell of Cr_cc"
+  },
+  {
+   "type": "Mn_cs",
+   "smarts": "[#25]",
+   "priority": 99,
+   "atom_name": "Mn_cs",
+   "description": "shell of Mn_cc"
+  },
+  {
+   "type": "Fe_cs",
+   "smarts": "[#26]",
+   "priority": 99,
+   "atom_name": "Fe_cs",
+   "description": "shell of Fe_cc"
+  },
+  {
+   "type": "Co_cs",
+   "smarts": "[#27]",
+   "priority": 99,
+   "atom_name": "Co_cs",
+   "description": "shell of Co_cc"
+  },
+  {
+   "type": "O_rs",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O_rs",
+   "description": "shell of O_rc"
+  },
+  {
+   "type": "La_rs",
+   "smarts": "[#57]",
+   "priority": 99,
+   "atom_name": "La_rs",
+   "description": "shell of La_rc"
+  },
+  {
+   "type": "Mg_rs",
+   "smarts": "[#12]",
+   "priority": 99,
+   "atom_name": "Mg_rs",
+   "description": "shell of Mg_rc"
+  },
+  {
+   "type": "Ca_rs",
+   "smarts": "[#20]",
+   "priority": 99,
+   "atom_name": "Ca_rs",
+   "description": "shell of Ca_rc"
+  },
+  {
+   "type": "Sr_rs",
+   "smarts": "[#38]",
+   "priority": 99,
+   "atom_name": "Sr_rs",
+   "description": "shell of Sr_rc"
+  },
+  {
+   "type": "Ba_rs",
+   "smarts": "[#56]",
+   "priority": 99,
+   "atom_name": "Ba_rs",
+   "description": "shell of Ba_rc"
+  },
+  {
+   "type": "Mn_rs",
+   "smarts": "[#25]",
+   "priority": 99,
+   "atom_name": "Mn_rs",
+   "description": "shell of Mn_rc"
+  },
+  {
+   "type": "Fe_rs",
+   "smarts": "[#26]",
+   "priority": 99,
+   "atom_name": "Fe_rs",
+   "description": "shell of Fe_rc"
+  },
+  {
+   "type": "Co_rs",
+   "smarts": "[#27]",
+   "priority": 99,
+   "atom_name": "Co_rs",
+   "description": "shell of Co_rc"
+  }
+ ]
+}
