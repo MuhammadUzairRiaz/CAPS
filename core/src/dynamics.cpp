@@ -120,6 +120,28 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
   }
   // virtual sites (massless, placed from their atoms) are not integrated: held, with a nominal mass for the arithmetic
   std::vector<double> m = ff.mass;
+  if (o.hmr > 0) {
+    // a hydrogen (element 1, or a mass below 1.6 u when the element is unknown) with exactly one bonded neighbour
+    // heavier than itself takes mass from that neighbour; a neighbour left lighter than 1 u keeps its mass
+    std::vector<std::vector<uint32_t>> nb(n);
+    for (const auto& b : s.bonds)
+      if (b.i < n && b.j < n) nb[b.i].push_back(b.j), nb[b.j].push_back(b.i);
+    auto hydrogen = [&](size_t i) { return s.atoms[i].element == 1 || (s.atoms[i].element == 0 && m[i] < 1.6); };
+    size_t moved = 0, kept = 0;
+    for (size_t i = 0; i < n; ++i) {
+      if (!hydrogen(i) || nb[i].size() != 1 || m[i] >= o.hmr) continue;
+      const uint32_t h = nb[i][0];
+      const double dm = o.hmr - m[i];
+      if (hydrogen(h) || m[h] - dm < 1.0) { ++kept; continue; }
+      m[h] -= dm;
+      m[i] = o.hmr;
+      ++moved;
+    }
+    char b[200];
+    std::snprintf(b, sizeof b, "hydrogen mass repartitioning: %zu hydrogens at %.3f u, the difference taken from their bonded atoms%s", moved, o.hmr,
+                  kept ? " (some left as they were: their neighbour would have been too light)" : "");
+    rep.notes.push_back(b);
+  }
   std::vector<char> held(n, 0);
   for (const auto& vs : ff.vsites) held[vs.site] = 2, m[vs.site] = 1.0;
   double mtot = 0;
@@ -184,6 +206,21 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
     for (size_t i = 0; i < n; ++i)
       for (int k = 0; k < 3; ++k) v[3 * i + k] = s.velocities[i][k];
     rep.notes.push_back("velocities taken from the structure");
+    if (o.hmr > 0) {
+      // the masses repartitioned: each atom keeps its kinetic energy (so the temperature) and the centre of mass stays put
+      double p[3] = {0, 0, 0}, mfree = 0;
+      for (size_t i = 0; i < n; ++i) {
+        if (held[i]) continue;
+        if (ff.mass[i] > 0 && m[i] != ff.mass[i])
+          for (int k = 0; k < 3; ++k) v[3 * i + k] *= std::sqrt(ff.mass[i] / m[i]);
+        mfree += m[i];
+        for (int k = 0; k < 3; ++k) p[k] += m[i] * v[3 * i + k];
+      }
+      for (size_t i = 0; i < n; ++i)
+        if (!held[i])
+          for (int k = 0; k < 3; ++k) v[3 * i + k] -= p[k] / mfree;
+      if (ncons) cons.rattle(x, v, cell);
+    }
   } else {
     for (size_t i = 0; i < n; ++i) {
       const double sd = std::sqrt(kB * o.temperature * kAcc / m[i]);

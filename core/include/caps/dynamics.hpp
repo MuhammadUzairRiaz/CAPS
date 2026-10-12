@@ -51,6 +51,13 @@ struct DynamicsOptions {
   // takes one degree of freedom out of the temperature; its forces are in the virial (pressure, barostat).
   ConstraintMode constraints = ConstraintMode::None;
   ConstraintAlgorithm constraint_algorithm = ConstraintAlgorithm::Shake;
+  // Hydrogen mass repartitioning (Hopkins et al., J. Chem. Theory Comput. 11, 1864 (2015)): > 0 gives every hydrogen
+  // bonded to one heavier atom this mass (u, 3.024 the usual), taken from that atom, so the total mass and every
+  // equilibrium average stay the same while the motions of hydrogens slow down; velocities read from the structure keep
+  // each atom's kinetic energy. With h-bonds constraints it lets the step grow past 2 fs as far as the heavy atoms'
+  // vibrations allow: on polystyrene (OPLS-AA, NVE, 5 ps) 3 fs holds the conserved quantity about as well as 3 fs
+  // without it and drifts less, while 4 fs does not hold it (heavier hydrogens do not help there).
+  double hmr = 0.0;
   int64_t steps = 10000;
   double temperature = 300.0;       // K, thermostat target and initial velocities
   double temperature_end = -1.0;    // K; ≥ 0 ramps the thermostat target linearly to this over the run
