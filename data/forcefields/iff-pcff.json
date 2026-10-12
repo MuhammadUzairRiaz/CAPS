@@ -68786,6 +68786,790 @@
  ],
  "auto_angles": [
   {
+   "name": "auto * sp_ *",
+   "match": [
+    "*",
+    "sp_",
+    "*"
+   ],
+   "style": "class2",
+   "params": [
+    92.567,
+    120.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto * si_ *",
+   "match": [
+    "*",
+    "si_",
+    "*"
+   ],
+   "style": "class2",
+   "params": [
+    113.5,
+    44.4,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto * s_ *",
+   "match": [
+    "*",
+    "s_",
+    "*"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    50.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto * s4e_ *",
+   "match": [
+    "*",
+    "s4e_",
+    "*"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    75.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto * s3e_ *",
+   "match": [
+    "*",
+    "s3e_",
+    "*"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    75.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto * p_ *",
+   "match": [
+    "*",
+    "p_",
+    "*"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    45.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto * op_ *",
+   "match": [
+    "*",
+    "op_",
+    "*"
+   ],
+   "style": "class2",
+   "params": [
+    108.0,
+    75.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto * o_ *",
+   "match": [
+    "*",
+    "o_",
+    "*"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    60.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto * nt_ *",
+   "match": [
+    "*",
+    "nt_",
+    "*"
+   ],
+   "style": "class2",
+   "params": [
+    180.0,
+    50.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto * np_ *",
+   "match": [
+    "*",
+    "np_",
+    "*"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    75.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto * na_ *",
+   "match": [
+    "*",
+    "na_",
+    "*"
+   ],
+   "style": "class2",
+   "params": [
+    109.0,
+    80.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto * n_ *",
+   "match": [
+    "*",
+    "n_",
+    "*"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    50.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto * n4m_ *",
+   "match": [
+    "*",
+    "n4m_",
+    "*"
+   ],
+   "style": "class2",
+   "params": [
+    109.0,
+    80.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto * n3m_ *",
+   "match": [
+    "*",
+    "n3m_",
+    "*"
+   ],
+   "style": "class2",
+   "params": [
+    109.0,
+    80.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto * ct_ *",
+   "match": [
+    "*",
+    "ct_",
+    "*"
+   ],
+   "style": "class2",
+   "params": [
+    180.0,
+    200.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto * cp_ *",
+   "match": [
+    "*",
+    "cp_",
+    "*"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    65.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto * c_ *",
+   "match": [
+    "*",
+    "c_",
+    "*"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    60.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto * c=_ *",
+   "match": [
+    "*",
+    "c=_",
+    "*"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    60.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto * c4m_ *",
+   "match": [
+    "*",
+    "c4m_",
+    "*"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    60.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto * c3m_ *",
+   "match": [
+    "*",
+    "c3m_",
+    "*"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    60.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto * c'_ *",
+   "match": [
+    "*",
+    "c'_",
+    "*"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    65.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *9 p_ c_",
+   "match": [
+    "*",
+    "p_",
+    "c_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    45.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *9 p_ c4m_",
+   "match": [
+    "*",
+    "p_",
+    "c4m_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    45.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *9 p_ c3m_",
+   "match": [
+    "*",
+    "p_",
+    "c3m_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    45.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *9 na_ c_",
+   "match": [
+    "*",
+    "na_",
+    "c_"
+   ],
+   "style": "class2",
+   "params": [
+    109.0,
+    80.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *9 na_ c4m_",
+   "match": [
+    "*",
+    "na_",
+    "c4m_"
+   ],
+   "style": "class2",
+   "params": [
+    109.0,
+    80.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *9 na_ c3m_",
+   "match": [
+    "*",
+    "na_",
+    "c3m_"
+   ],
+   "style": "class2",
+   "params": [
+    109.0,
+    80.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *9 n_ c_",
+   "match": [
+    "*",
+    "n_",
+    "c_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    50.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *9 n_ c4m_",
+   "match": [
+    "*",
+    "n_",
+    "c4m_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    50.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *9 n_ c3m_",
+   "match": [
+    "*",
+    "n_",
+    "c3m_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    50.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *9 n4m_ c_",
+   "match": [
+    "*",
+    "n4m_",
+    "c_"
+   ],
+   "style": "class2",
+   "params": [
+    110.0,
+    80.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *9 n3m_ c_",
+   "match": [
+    "*",
+    "n3m_",
+    "c_"
+   ],
+   "style": "class2",
+   "params": [
+    114.0,
+    80.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *9 c'_ c_",
+   "match": [
+    "*",
+    "c'_",
+    "c_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    40.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *9 c'_ c4m_",
+   "match": [
+    "*",
+    "c'_",
+    "c4m_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    40.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *9 c'_ c3m_",
+   "match": [
+    "*",
+    "c'_",
+    "c3m_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    40.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *8 p_ n_",
+   "match": [
+    "*",
+    "p_",
+    "n_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    45.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *8 na_ n_",
+   "match": [
+    "*",
+    "na_",
+    "n_"
+   ],
+   "style": "class2",
+   "params": [
+    109.0,
+    80.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *8 na_ n4m_",
+   "match": [
+    "*",
+    "na_",
+    "n4m_"
+   ],
+   "style": "class2",
+   "params": [
+    109.0,
+    80.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *8 na_ n3m_",
+   "match": [
+    "*",
+    "na_",
+    "n3m_"
+   ],
+   "style": "class2",
+   "params": [
+    109.0,
+    80.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *8 n_ n_",
+   "match": [
+    "*",
+    "n_",
+    "n_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    50.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *8 n4m_ n_",
+   "match": [
+    "*",
+    "n4m_",
+    "n_"
+   ],
+   "style": "class2",
+   "params": [
+    109.0,
+    80.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *8 n4m_ n4m_",
+   "match": [
+    "*",
+    "n4m_",
+    "n4m_"
+   ],
+   "style": "class2",
+   "params": [
+    109.0,
+    80.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *8 n4m_ n3m_",
+   "match": [
+    "*",
+    "n4m_",
+    "n3m_"
+   ],
+   "style": "class2",
+   "params": [
+    109.0,
+    80.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *8 n3m_ n_",
+   "match": [
+    "*",
+    "n3m_",
+    "n_"
+   ],
+   "style": "class2",
+   "params": [
+    109.0,
+    80.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *8 n3m_ n4m_",
+   "match": [
+    "*",
+    "n3m_",
+    "n4m_"
+   ],
+   "style": "class2",
+   "params": [
+    109.0,
+    80.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *8 n3m_ n3m_",
+   "match": [
+    "*",
+    "n3m_",
+    "n3m_"
+   ],
+   "style": "class2",
+   "params": [
+    109.0,
+    80.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *8 c'_ n_",
+   "match": [
+    "*",
+    "c'_",
+    "n_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    53.5,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *8 c'_ n4m_",
+   "match": [
+    "*",
+    "c'_",
+    "n4m_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    53.5,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *8 c'_ n3m_",
+   "match": [
+    "*",
+    "c'_",
+    "n3m_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    53.5,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
    "name": "auto *7 sp_ c_",
    "match": [
     "*",
@@ -68834,150 +69618,6 @@
    "comment": "auto, ver 2, ref 2"
   },
   {
-   "name": "auto *6 sp_ n_",
-   "match": [
-    "*",
-    "sp_",
-    "n_"
-   ],
-   "style": "class2",
-   "params": [
-    92.567,
-    126.506,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *5 sp_ o_",
-   "match": [
-    "*",
-    "sp_",
-    "o_"
-   ],
-   "style": "class2",
-   "params": [
-    92.567,
-    126.506,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *5 sp_ o'_",
-   "match": [
-    "*",
-    "sp_",
-    "o'_"
-   ],
-   "style": "class2",
-   "params": [
-    92.567,
-    126.506,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *4 sp_ s_",
-   "match": [
-    "*",
-    "sp_",
-    "s_"
-   ],
-   "style": "class2",
-   "params": [
-    92.567,
-    126.506,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *4 sp_ s'_",
-   "match": [
-    "*",
-    "sp_",
-    "s'_"
-   ],
-   "style": "class2",
-   "params": [
-    92.567,
-    126.506,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *3 sp_ f_",
-   "match": [
-    "*",
-    "sp_",
-    "f_"
-   ],
-   "style": "class2",
-   "params": [
-    92.567,
-    126.506,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *2 sp_ h_",
-   "match": [
-    "*",
-    "sp_",
-    "h_"
-   ],
-   "style": "class2",
-   "params": [
-    96.0,
-    48.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *1 sp_ si_",
-   "match": [
-    "*",
-    "sp_",
-    "si_"
-   ],
-   "style": "class2",
-   "params": [
-    96.0,
-    48.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto * sp_ *",
-   "match": [
-    "*",
-    "sp_",
-    "*"
-   ],
-   "style": "class2",
-   "params": [
-    92.567,
-    120.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
    "name": "auto *7 si_ c_",
    "match": [
     "*",
@@ -69015,118 +69655,6 @@
     "*",
     "si_",
     "c3m_"
-   ],
-   "style": "class2",
-   "params": [
-    113.5,
-    44.4,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *6 si_ n_",
-   "match": [
-    "*",
-    "si_",
-    "n_"
-   ],
-   "style": "class2",
-   "params": [
-    113.5,
-    44.4,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *5 si_ o_",
-   "match": [
-    "*",
-    "si_",
-    "o_"
-   ],
-   "style": "class2",
-   "params": [
-    113.1,
-    42.3,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *4 si_ s_",
-   "match": [
-    "*",
-    "si_",
-    "s_"
-   ],
-   "style": "class2",
-   "params": [
-    113.1,
-    42.3,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *3 si_ f_",
-   "match": [
-    "*",
-    "si_",
-    "f_"
-   ],
-   "style": "class2",
-   "params": [
-    117.3,
-    44.1,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *2 si_ h_",
-   "match": [
-    "*",
-    "si_",
-    "h_"
-   ],
-   "style": "class2",
-   "params": [
-    112.0,
-    31.8,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *1 si_ si_",
-   "match": [
-    "*",
-    "si_",
-    "si_"
-   ],
-   "style": "class2",
-   "params": [
-    113.4,
-    33.3,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto * si_ *",
-   "match": [
-    "*",
-    "si_",
-    "*"
    ],
    "style": "class2",
    "params": [
@@ -69186,6 +69714,566 @@
    "comment": "auto, ver 2, ref 2"
   },
   {
+   "name": "auto *7 s4e_ c_",
+   "match": [
+    "*",
+    "s4e_",
+    "c_"
+   ],
+   "style": "class2",
+   "params": [
+    99.0,
+    58.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *7 s4e_ c4m_",
+   "match": [
+    "*",
+    "s4e_",
+    "c4m_"
+   ],
+   "style": "class2",
+   "params": [
+    99.0,
+    58.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *7 s4e_ c3m_",
+   "match": [
+    "*",
+    "s4e_",
+    "c3m_"
+   ],
+   "style": "class2",
+   "params": [
+    99.0,
+    58.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *7 s3e_ c_",
+   "match": [
+    "*",
+    "s3e_",
+    "c_"
+   ],
+   "style": "class2",
+   "params": [
+    99.0,
+    58.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *7 s3e_ c4m_",
+   "match": [
+    "*",
+    "s3e_",
+    "c4m_"
+   ],
+   "style": "class2",
+   "params": [
+    99.0,
+    58.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *7 s3e_ c3m_",
+   "match": [
+    "*",
+    "s3e_",
+    "c3m_"
+   ],
+   "style": "class2",
+   "params": [
+    99.0,
+    58.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *7 p_ o_",
+   "match": [
+    "*",
+    "p_",
+    "o_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    45.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *7 o_ c_",
+   "match": [
+    "*",
+    "o_",
+    "c_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    60.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *7 o_ c4m_",
+   "match": [
+    "*",
+    "o_",
+    "c4m_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    60.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *7 o_ c3m_",
+   "match": [
+    "*",
+    "o_",
+    "c3m_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    60.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *7 np_ c_",
+   "match": [
+    "*",
+    "np_",
+    "c_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    75.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *7 np_ c4m_",
+   "match": [
+    "*",
+    "np_",
+    "c4m_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    75.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *7 np_ c3m_",
+   "match": [
+    "*",
+    "np_",
+    "c3m_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    75.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *7 na_ o_",
+   "match": [
+    "*",
+    "na_",
+    "o_"
+   ],
+   "style": "class2",
+   "params": [
+    109.0,
+    80.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *7 n_ o_",
+   "match": [
+    "*",
+    "n_",
+    "o_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    50.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *7 n4m_ o_",
+   "match": [
+    "*",
+    "n4m_",
+    "o_"
+   ],
+   "style": "class2",
+   "params": [
+    109.0,
+    80.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *7 n3m_ o_",
+   "match": [
+    "*",
+    "n3m_",
+    "o_"
+   ],
+   "style": "class2",
+   "params": [
+    109.0,
+    80.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *7 cp_ c_",
+   "match": [
+    "*",
+    "cp_",
+    "c_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    80.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *7 cp_ c4m_",
+   "match": [
+    "*",
+    "cp_",
+    "c4m_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    80.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *7 cp_ c3m_",
+   "match": [
+    "*",
+    "cp_",
+    "c3m_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    80.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *7 c_ c_",
+   "match": [
+    "*",
+    "c_",
+    "c_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    46.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *7 c_ c4m_",
+   "match": [
+    "*",
+    "c_",
+    "c4m_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    46.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *7 c_ c3m_",
+   "match": [
+    "*",
+    "c_",
+    "c3m_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    46.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *7 c=_ c_",
+   "match": [
+    "*",
+    "c=_",
+    "c_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    36.2,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *7 c=_ c4m_",
+   "match": [
+    "*",
+    "c=_",
+    "c4m_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    36.2,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *7 c=_ c3m_",
+   "match": [
+    "*",
+    "c=_",
+    "c3m_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    36.2,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *7 c4m_ c_",
+   "match": [
+    "*",
+    "c4m_",
+    "c_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    46.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *7 c4m_ c4m_",
+   "match": [
+    "*",
+    "c4m_",
+    "c4m_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    46.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *7 c4m_ c3m_",
+   "match": [
+    "*",
+    "c4m_",
+    "c3m_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    46.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *7 c3m_ c_",
+   "match": [
+    "*",
+    "c3m_",
+    "c_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    46.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *7 c3m_ c4m_",
+   "match": [
+    "*",
+    "c3m_",
+    "c4m_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    46.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *7 c3m_ c3m_",
+   "match": [
+    "*",
+    "c3m_",
+    "c3m_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    46.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *7 c'_ o_",
+   "match": [
+    "*",
+    "c'_",
+    "o_"
+   ],
+   "style": "class2",
+   "params": [
+    110.0,
+    122.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *6 sp_ n_",
+   "match": [
+    "*",
+    "sp_",
+    "n_"
+   ],
+   "style": "class2",
+   "params": [
+    92.567,
+    126.506,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *6 si_ n_",
+   "match": [
+    "*",
+    "si_",
+    "n_"
+   ],
+   "style": "class2",
+   "params": [
+    113.5,
+    44.4,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
    "name": "auto *6 s_ n_",
    "match": [
     "*",
@@ -69234,6 +70322,550 @@
    "comment": "auto, ver 2, ref 2"
   },
   {
+   "name": "auto *6 s4e_ n_",
+   "match": [
+    "*",
+    "s4e_",
+    "n_"
+   ],
+   "style": "class2",
+   "params": [
+    113.1,
+    42.3,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *6 s4e_ n4m_",
+   "match": [
+    "*",
+    "s4e_",
+    "n4m_"
+   ],
+   "style": "class2",
+   "params": [
+    113.1,
+    42.3,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *6 s4e_ n3m_",
+   "match": [
+    "*",
+    "s4e_",
+    "n3m_"
+   ],
+   "style": "class2",
+   "params": [
+    113.1,
+    42.3,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *6 s3e_ n_",
+   "match": [
+    "*",
+    "s3e_",
+    "n_"
+   ],
+   "style": "class2",
+   "params": [
+    113.1,
+    42.3,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *6 s3e_ n4m_",
+   "match": [
+    "*",
+    "s3e_",
+    "n4m_"
+   ],
+   "style": "class2",
+   "params": [
+    113.1,
+    42.3,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *6 s3e_ n3m_",
+   "match": [
+    "*",
+    "s3e_",
+    "n3m_"
+   ],
+   "style": "class2",
+   "params": [
+    113.1,
+    42.3,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *6 p_ o'_",
+   "match": [
+    "*",
+    "p_",
+    "o'_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    110.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *6 o_ n_",
+   "match": [
+    "*",
+    "o_",
+    "n_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    72.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *6 o_ n4m_",
+   "match": [
+    "*",
+    "o_",
+    "n4m_"
+   ],
+   "style": "class2",
+   "params": [
+    120.001,
+    72.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *6 o_ n3m_",
+   "match": [
+    "*",
+    "o_",
+    "n3m_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    72.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *6 np_ n_",
+   "match": [
+    "*",
+    "np_",
+    "n_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    75.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *6 na_ o'_",
+   "match": [
+    "*",
+    "na_",
+    "o'_"
+   ],
+   "style": "class2",
+   "params": [
+    114.0,
+    80.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *6 n_ o'_",
+   "match": [
+    "*",
+    "n_",
+    "o'_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    80.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *6 n4m_ o'_",
+   "match": [
+    "*",
+    "n4m_",
+    "o'_"
+   ],
+   "style": "class2",
+   "params": [
+    114.0,
+    80.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *6 n3m_ o'_",
+   "match": [
+    "*",
+    "n3m_",
+    "o'_"
+   ],
+   "style": "class2",
+   "params": [
+    114.0,
+    80.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *6 cp_ n_",
+   "match": [
+    "*",
+    "cp_",
+    "n_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    102.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *6 cp_ n4m_",
+   "match": [
+    "*",
+    "cp_",
+    "n4m_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    102.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *6 cp_ n3m_",
+   "match": [
+    "*",
+    "cp_",
+    "n3m_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    102.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *6 c_ n_",
+   "match": [
+    "*",
+    "c_",
+    "n_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    50.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *6 c_ n4m_",
+   "match": [
+    "*",
+    "c_",
+    "n4m_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    50.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *6 c_ n3m_",
+   "match": [
+    "*",
+    "c_",
+    "n3m_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    50.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *6 c=_ n_",
+   "match": [
+    "*",
+    "c=_",
+    "n_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    90.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *6 c=_ n4m_",
+   "match": [
+    "*",
+    "c=_",
+    "n4m_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    90.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *6 c=_ n3m_",
+   "match": [
+    "*",
+    "c=_",
+    "n3m_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    90.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *6 c4m_ n_",
+   "match": [
+    "*",
+    "c4m_",
+    "n_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    50.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *6 c4m_ n4m_",
+   "match": [
+    "*",
+    "c4m_",
+    "n4m_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    50.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *6 c4m_ n3m_",
+   "match": [
+    "*",
+    "c4m_",
+    "n3m_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    50.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *6 c3m_ n_",
+   "match": [
+    "*",
+    "c3m_",
+    "n_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    50.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *6 c3m_ n4m_",
+   "match": [
+    "*",
+    "c3m_",
+    "n4m_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    50.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *6 c3m_ n3m_",
+   "match": [
+    "*",
+    "c3m_",
+    "n3m_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    50.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *6 c'_ o'_",
+   "match": [
+    "*",
+    "c'_",
+    "o'_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    68.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *5 sp_ o_",
+   "match": [
+    "*",
+    "sp_",
+    "o_"
+   ],
+   "style": "class2",
+   "params": [
+    92.567,
+    126.506,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *5 sp_ o'_",
+   "match": [
+    "*",
+    "sp_",
+    "o'_"
+   ],
+   "style": "class2",
+   "params": [
+    92.567,
+    126.506,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *5 si_ o_",
+   "match": [
+    "*",
+    "si_",
+    "o_"
+   ],
+   "style": "class2",
+   "params": [
+    113.1,
+    42.3,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
    "name": "auto *5 s_ o_",
    "match": [
     "*",
@@ -69255,6 +70887,646 @@
     "*",
     "s_",
     "o'_"
+   ],
+   "style": "class2",
+   "params": [
+    113.1,
+    42.3,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *5 s4e_ o_",
+   "match": [
+    "*",
+    "s4e_",
+    "o_"
+   ],
+   "style": "class2",
+   "params": [
+    113.1,
+    42.3,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *5 s4e_ o'_",
+   "match": [
+    "*",
+    "s4e_",
+    "o'_"
+   ],
+   "style": "class2",
+   "params": [
+    113.1,
+    42.3,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *5 s3e_ o_",
+   "match": [
+    "*",
+    "s3e_",
+    "o_"
+   ],
+   "style": "class2",
+   "params": [
+    113.1,
+    42.3,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *5 s3e_ o'_",
+   "match": [
+    "*",
+    "s3e_",
+    "o'_"
+   ],
+   "style": "class2",
+   "params": [
+    113.1,
+    42.3,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *5 p_ s_",
+   "match": [
+    "*",
+    "p_",
+    "s_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    45.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *5 o_ o_",
+   "match": [
+    "*",
+    "o_",
+    "o_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    60.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *5 o_ o'_",
+   "match": [
+    "*",
+    "o_",
+    "o'_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    60.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *5 np_ o_",
+   "match": [
+    "*",
+    "np_",
+    "o_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    75.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *5 np_ o'_",
+   "match": [
+    "*",
+    "np_",
+    "o'_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    75.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *5 na_ s_",
+   "match": [
+    "*",
+    "na_",
+    "s_"
+   ],
+   "style": "class2",
+   "params": [
+    109.0,
+    80.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *5 na_ s4e_",
+   "match": [
+    "*",
+    "na_",
+    "s4e_"
+   ],
+   "style": "class2",
+   "params": [
+    109.0,
+    80.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *5 na_ s3e_",
+   "match": [
+    "*",
+    "na_",
+    "s3e_"
+   ],
+   "style": "class2",
+   "params": [
+    109.0,
+    80.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *5 n_ s_",
+   "match": [
+    "*",
+    "n_",
+    "s_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    50.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *5 n_ s4e_",
+   "match": [
+    "*",
+    "n_",
+    "s4e_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    50.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *5 n_ s3e_",
+   "match": [
+    "*",
+    "n_",
+    "s3e_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    50.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *5 n4m_ s_",
+   "match": [
+    "*",
+    "n4m_",
+    "s_"
+   ],
+   "style": "class2",
+   "params": [
+    109.0,
+    80.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *5 n4m_ s4e_",
+   "match": [
+    "*",
+    "n4m_",
+    "s4e_"
+   ],
+   "style": "class2",
+   "params": [
+    109.0,
+    80.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *5 n4m_ s3e_",
+   "match": [
+    "*",
+    "n4m_",
+    "s3e_"
+   ],
+   "style": "class2",
+   "params": [
+    109.0,
+    80.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *5 n3m_ s_",
+   "match": [
+    "*",
+    "n3m_",
+    "s_"
+   ],
+   "style": "class2",
+   "params": [
+    109.0,
+    80.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *5 n3m_ s4e_",
+   "match": [
+    "*",
+    "n3m_",
+    "s4e_"
+   ],
+   "style": "class2",
+   "params": [
+    109.0,
+    80.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *5 n3m_ s3e_",
+   "match": [
+    "*",
+    "n3m_",
+    "s3e_"
+   ],
+   "style": "class2",
+   "params": [
+    109.0,
+    80.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *5 cp_ o_",
+   "match": [
+    "*",
+    "cp_",
+    "o_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    60.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *5 cp_ o'_",
+   "match": [
+    "*",
+    "cp_",
+    "o'_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    60.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *5 c_ o_",
+   "match": [
+    "*",
+    "c_",
+    "o_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    70.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *5 c=_ o_",
+   "match": [
+    "*",
+    "c=_",
+    "o_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    68.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *5 c=_ o'_",
+   "match": [
+    "*",
+    "c=_",
+    "o'_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    68.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *5 c4m_ o_",
+   "match": [
+    "*",
+    "c4m_",
+    "o_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    70.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *5 c4m_ o4e_",
+   "match": [
+    "*",
+    "c4m_",
+    "o4e_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    70.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *5 c4m_ o3e_",
+   "match": [
+    "*",
+    "c4m_",
+    "o3e_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    70.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *5 c4m_ o'_",
+   "match": [
+    "*",
+    "c4m_",
+    "o'_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    70.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *5 c3m_ o_",
+   "match": [
+    "*",
+    "c3m_",
+    "o_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    70.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *5 c3m_ o4e_",
+   "match": [
+    "*",
+    "c3m_",
+    "o4e_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    70.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *5 c3m_ o3e_",
+   "match": [
+    "*",
+    "c3m_",
+    "o3e_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    70.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *5 c3m_ o'_",
+   "match": [
+    "*",
+    "c3m_",
+    "o'_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    70.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *5 c'_ s_",
+   "match": [
+    "*",
+    "c'_",
+    "s_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    40.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *5 c'_ s4e_",
+   "match": [
+    "*",
+    "c'_",
+    "s4e_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    40.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *5 c'_ s3e_",
+   "match": [
+    "*",
+    "c'_",
+    "s3e_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    40.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *4 sp_ s_",
+   "match": [
+    "*",
+    "sp_",
+    "s_"
+   ],
+   "style": "class2",
+   "params": [
+    92.567,
+    126.506,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *4 sp_ s'_",
+   "match": [
+    "*",
+    "sp_",
+    "s'_"
+   ],
+   "style": "class2",
+   "params": [
+    92.567,
+    126.506,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *4 si_ s_",
+   "match": [
+    "*",
+    "si_",
+    "s_"
    ],
    "style": "class2",
    "params": [
@@ -69330,198 +71602,6 @@
    "comment": "auto, ver 2, ref 2"
   },
   {
-   "name": "auto *3 s_ f_",
-   "match": [
-    "*",
-    "s_",
-    "f_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    75.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *2 s_ h_",
-   "match": [
-    "*",
-    "s_",
-    "h_"
-   ],
-   "style": "class2",
-   "params": [
-    112.0,
-    31.8,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *1 s_ si_",
-   "match": [
-    "*",
-    "s_",
-    "si_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    48.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto * s_ *",
-   "match": [
-    "*",
-    "s_",
-    "*"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    50.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *7 s4e_ c_",
-   "match": [
-    "*",
-    "s4e_",
-    "c_"
-   ],
-   "style": "class2",
-   "params": [
-    99.0,
-    58.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *7 s4e_ c4m_",
-   "match": [
-    "*",
-    "s4e_",
-    "c4m_"
-   ],
-   "style": "class2",
-   "params": [
-    99.0,
-    58.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *7 s4e_ c3m_",
-   "match": [
-    "*",
-    "s4e_",
-    "c3m_"
-   ],
-   "style": "class2",
-   "params": [
-    99.0,
-    58.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *6 s4e_ n_",
-   "match": [
-    "*",
-    "s4e_",
-    "n_"
-   ],
-   "style": "class2",
-   "params": [
-    113.1,
-    42.3,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *6 s4e_ n4m_",
-   "match": [
-    "*",
-    "s4e_",
-    "n4m_"
-   ],
-   "style": "class2",
-   "params": [
-    113.1,
-    42.3,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *6 s4e_ n3m_",
-   "match": [
-    "*",
-    "s4e_",
-    "n3m_"
-   ],
-   "style": "class2",
-   "params": [
-    113.1,
-    42.3,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *5 s4e_ o_",
-   "match": [
-    "*",
-    "s4e_",
-    "o_"
-   ],
-   "style": "class2",
-   "params": [
-    113.1,
-    42.3,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *5 s4e_ o'_",
-   "match": [
-    "*",
-    "s4e_",
-    "o'_"
-   ],
-   "style": "class2",
-   "params": [
-    113.1,
-    42.3,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
    "name": "auto *4 s4e_ s_",
    "match": [
     "*",
@@ -69580,198 +71660,6 @@
    "params": [
     109.5,
     75.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *3 s4e_ f_",
-   "match": [
-    "*",
-    "s4e_",
-    "f_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    75.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *2 s4e_ h_",
-   "match": [
-    "*",
-    "s4e_",
-    "h_"
-   ],
-   "style": "class2",
-   "params": [
-    112.0,
-    31.8,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *1 s4e_ si_",
-   "match": [
-    "*",
-    "s4e_",
-    "si_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    48.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto * s4e_ *",
-   "match": [
-    "*",
-    "s4e_",
-    "*"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    75.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *7 s3e_ c_",
-   "match": [
-    "*",
-    "s3e_",
-    "c_"
-   ],
-   "style": "class2",
-   "params": [
-    99.0,
-    58.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *7 s3e_ c4m_",
-   "match": [
-    "*",
-    "s3e_",
-    "c4m_"
-   ],
-   "style": "class2",
-   "params": [
-    99.0,
-    58.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *7 s3e_ c3m_",
-   "match": [
-    "*",
-    "s3e_",
-    "c3m_"
-   ],
-   "style": "class2",
-   "params": [
-    99.0,
-    58.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *6 s3e_ n_",
-   "match": [
-    "*",
-    "s3e_",
-    "n_"
-   ],
-   "style": "class2",
-   "params": [
-    113.1,
-    42.3,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *6 s3e_ n4m_",
-   "match": [
-    "*",
-    "s3e_",
-    "n4m_"
-   ],
-   "style": "class2",
-   "params": [
-    113.1,
-    42.3,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *6 s3e_ n3m_",
-   "match": [
-    "*",
-    "s3e_",
-    "n3m_"
-   ],
-   "style": "class2",
-   "params": [
-    113.1,
-    42.3,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *5 s3e_ o_",
-   "match": [
-    "*",
-    "s3e_",
-    "o_"
-   ],
-   "style": "class2",
-   "params": [
-    113.1,
-    42.3,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *5 s3e_ o'_",
-   "match": [
-    "*",
-    "s3e_",
-    "o'_"
-   ],
-   "style": "class2",
-   "params": [
-    113.1,
-    42.3,
     0,
     0
    ],
@@ -69842,182 +71730,6 @@
    "comment": "auto, ver 2, ref 2"
   },
   {
-   "name": "auto *3 s3e_ f_",
-   "match": [
-    "*",
-    "s3e_",
-    "f_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    75.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *2 s3e_ h_",
-   "match": [
-    "*",
-    "s3e_",
-    "h_"
-   ],
-   "style": "class2",
-   "params": [
-    112.0,
-    31.8,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *1 s3e_ si_",
-   "match": [
-    "*",
-    "s3e_",
-    "si_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    48.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto * s3e_ *",
-   "match": [
-    "*",
-    "s3e_",
-    "*"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    75.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *9 p_ c_",
-   "match": [
-    "*",
-    "p_",
-    "c_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    45.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *9 p_ c4m_",
-   "match": [
-    "*",
-    "p_",
-    "c4m_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    45.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *9 p_ c3m_",
-   "match": [
-    "*",
-    "p_",
-    "c3m_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    45.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *8 p_ n_",
-   "match": [
-    "*",
-    "p_",
-    "n_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    45.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *7 p_ o_",
-   "match": [
-    "*",
-    "p_",
-    "o_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    45.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *6 p_ o'_",
-   "match": [
-    "*",
-    "p_",
-    "o'_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    110.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *5 p_ s_",
-   "match": [
-    "*",
-    "p_",
-    "s_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    45.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
    "name": "auto *4 p_ s'_",
    "match": [
     "*",
@@ -70028,230 +71740,6 @@
    "params": [
     120.0,
     100.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *3 p_ f_",
-   "match": [
-    "*",
-    "p_",
-    "f_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    45.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *2 p_ h_",
-   "match": [
-    "*",
-    "p_",
-    "h_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    45.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *1 p_ si_",
-   "match": [
-    "*",
-    "p_",
-    "si_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    30.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto * p_ *",
-   "match": [
-    "*",
-    "p_",
-    "*"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    45.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *1 op_ si_",
-   "match": [
-    "*",
-    "op_",
-    "si_"
-   ],
-   "style": "class2",
-   "params": [
-    106.0,
-    27.5,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto * op_ *",
-   "match": [
-    "*",
-    "op_",
-    "*"
-   ],
-   "style": "class2",
-   "params": [
-    108.0,
-    75.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *7 o_ c_",
-   "match": [
-    "*",
-    "o_",
-    "c_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    60.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *7 o_ c4m_",
-   "match": [
-    "*",
-    "o_",
-    "c4m_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    60.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *7 o_ c3m_",
-   "match": [
-    "*",
-    "o_",
-    "c3m_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    60.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *6 o_ n_",
-   "match": [
-    "*",
-    "o_",
-    "n_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    72.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *6 o_ n4m_",
-   "match": [
-    "*",
-    "o_",
-    "n4m_"
-   ],
-   "style": "class2",
-   "params": [
-    120.001,
-    72.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *6 o_ n3m_",
-   "match": [
-    "*",
-    "o_",
-    "n3m_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    72.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *5 o_ o_",
-   "match": [
-    "*",
-    "o_",
-    "o_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    60.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *5 o_ o'_",
-   "match": [
-    "*",
-    "o_",
-    "o'_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    60.0,
     0,
     0
    ],
@@ -70322,182 +71810,6 @@
    "comment": "auto, ver 2, ref 2"
   },
   {
-   "name": "auto *3 o_ f_",
-   "match": [
-    "*",
-    "o_",
-    "f_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    60.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *2 o_ h_",
-   "match": [
-    "*",
-    "o_",
-    "h_"
-   ],
-   "style": "class2",
-   "params": [
-    109.0,
-    58.5,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *1 o_ si_",
-   "match": [
-    "*",
-    "o_",
-    "si_"
-   ],
-   "style": "class2",
-   "params": [
-    124.1,
-    56.4,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto * o_ *",
-   "match": [
-    "*",
-    "o_",
-    "*"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    60.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto * nt_ *",
-   "match": [
-    "*",
-    "nt_",
-    "*"
-   ],
-   "style": "class2",
-   "params": [
-    180.0,
-    50.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *7 np_ c_",
-   "match": [
-    "*",
-    "np_",
-    "c_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    75.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *7 np_ c4m_",
-   "match": [
-    "*",
-    "np_",
-    "c4m_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    75.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *7 np_ c3m_",
-   "match": [
-    "*",
-    "np_",
-    "c3m_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    75.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *6 np_ n_",
-   "match": [
-    "*",
-    "np_",
-    "n_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    75.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *5 np_ o_",
-   "match": [
-    "*",
-    "np_",
-    "o_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    75.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *5 np_ o'_",
-   "match": [
-    "*",
-    "np_",
-    "o'_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    75.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
    "name": "auto *4 np_ s_",
    "match": [
     "*",
@@ -70562,246 +71874,6 @@
    "comment": "auto, ver 2, ref 2"
   },
   {
-   "name": "auto *3 np_ h_",
-   "match": [
-    "*",
-    "np_",
-    "h_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    27.5,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *2 np_ f_",
-   "match": [
-    "*",
-    "np_",
-    "f_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    75.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *1 np_ si_",
-   "match": [
-    "*",
-    "np_",
-    "si_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    27.5,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto * np_ *",
-   "match": [
-    "*",
-    "np_",
-    "*"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    75.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *9 na_ c_",
-   "match": [
-    "*",
-    "na_",
-    "c_"
-   ],
-   "style": "class2",
-   "params": [
-    109.0,
-    80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *9 na_ c4m_",
-   "match": [
-    "*",
-    "na_",
-    "c4m_"
-   ],
-   "style": "class2",
-   "params": [
-    109.0,
-    80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *9 na_ c3m_",
-   "match": [
-    "*",
-    "na_",
-    "c3m_"
-   ],
-   "style": "class2",
-   "params": [
-    109.0,
-    80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *8 na_ n_",
-   "match": [
-    "*",
-    "na_",
-    "n_"
-   ],
-   "style": "class2",
-   "params": [
-    109.0,
-    80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *8 na_ n4m_",
-   "match": [
-    "*",
-    "na_",
-    "n4m_"
-   ],
-   "style": "class2",
-   "params": [
-    109.0,
-    80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *8 na_ n3m_",
-   "match": [
-    "*",
-    "na_",
-    "n3m_"
-   ],
-   "style": "class2",
-   "params": [
-    109.0,
-    80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *7 na_ o_",
-   "match": [
-    "*",
-    "na_",
-    "o_"
-   ],
-   "style": "class2",
-   "params": [
-    109.0,
-    80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *6 na_ o'_",
-   "match": [
-    "*",
-    "na_",
-    "o'_"
-   ],
-   "style": "class2",
-   "params": [
-    114.0,
-    80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *5 na_ s_",
-   "match": [
-    "*",
-    "na_",
-    "s_"
-   ],
-   "style": "class2",
-   "params": [
-    109.0,
-    80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *5 na_ s4e_",
-   "match": [
-    "*",
-    "na_",
-    "s4e_"
-   ],
-   "style": "class2",
-   "params": [
-    109.0,
-    80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *5 na_ s3e_",
-   "match": [
-    "*",
-    "na_",
-    "s3e_"
-   ],
-   "style": "class2",
-   "params": [
-    109.0,
-    80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
    "name": "auto *4 na_ s'_",
    "match": [
     "*",
@@ -70812,214 +71884,6 @@
    "params": [
     114.0,
     80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *3 na_ h_",
-   "match": [
-    "*",
-    "na_",
-    "h_"
-   ],
-   "style": "class2",
-   "params": [
-    110.0,
-    41.6,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *2 na_ f_",
-   "match": [
-    "*",
-    "na_",
-    "f_"
-   ],
-   "style": "class2",
-   "params": [
-    109.0,
-    80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *1 na_ si_",
-   "match": [
-    "*",
-    "na_",
-    "si_"
-   ],
-   "style": "class2",
-   "params": [
-    109.0,
-    41.6,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto * na_ *",
-   "match": [
-    "*",
-    "na_",
-    "*"
-   ],
-   "style": "class2",
-   "params": [
-    109.0,
-    80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *9 n_ c_",
-   "match": [
-    "*",
-    "n_",
-    "c_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    50.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *9 n_ c4m_",
-   "match": [
-    "*",
-    "n_",
-    "c4m_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    50.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *9 n_ c3m_",
-   "match": [
-    "*",
-    "n_",
-    "c3m_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    50.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *8 n_ n_",
-   "match": [
-    "*",
-    "n_",
-    "n_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    50.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *7 n_ o_",
-   "match": [
-    "*",
-    "n_",
-    "o_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    50.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *6 n_ o'_",
-   "match": [
-    "*",
-    "n_",
-    "o'_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *5 n_ s_",
-   "match": [
-    "*",
-    "n_",
-    "s_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    50.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *5 n_ s4e_",
-   "match": [
-    "*",
-    "n_",
-    "s4e_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    50.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *5 n_ s3e_",
-   "match": [
-    "*",
-    "n_",
-    "s3e_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    50.0,
     0,
     0
    ],
@@ -71042,214 +71906,6 @@
    "comment": "auto, ver 2, ref 2"
   },
   {
-   "name": "auto *3 n_ h_",
-   "match": [
-    "*",
-    "n_",
-    "h_"
-   ],
-   "style": "class2",
-   "params": [
-    122.0,
-    35.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *2 n_ f_",
-   "match": [
-    "*",
-    "n_",
-    "f_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    50.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *1 n_ si_",
-   "match": [
-    "*",
-    "n_",
-    "si_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    35.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto * n_ *",
-   "match": [
-    "*",
-    "n_",
-    "*"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    50.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *9 n4m_ c_",
-   "match": [
-    "*",
-    "n4m_",
-    "c_"
-   ],
-   "style": "class2",
-   "params": [
-    110.0,
-    80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *8 n4m_ n_",
-   "match": [
-    "*",
-    "n4m_",
-    "n_"
-   ],
-   "style": "class2",
-   "params": [
-    109.0,
-    80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *8 n4m_ n4m_",
-   "match": [
-    "*",
-    "n4m_",
-    "n4m_"
-   ],
-   "style": "class2",
-   "params": [
-    109.0,
-    80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *8 n4m_ n3m_",
-   "match": [
-    "*",
-    "n4m_",
-    "n3m_"
-   ],
-   "style": "class2",
-   "params": [
-    109.0,
-    80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *7 n4m_ o_",
-   "match": [
-    "*",
-    "n4m_",
-    "o_"
-   ],
-   "style": "class2",
-   "params": [
-    109.0,
-    80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *6 n4m_ o'_",
-   "match": [
-    "*",
-    "n4m_",
-    "o'_"
-   ],
-   "style": "class2",
-   "params": [
-    114.0,
-    80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *5 n4m_ s_",
-   "match": [
-    "*",
-    "n4m_",
-    "s_"
-   ],
-   "style": "class2",
-   "params": [
-    109.0,
-    80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *5 n4m_ s4e_",
-   "match": [
-    "*",
-    "n4m_",
-    "s4e_"
-   ],
-   "style": "class2",
-   "params": [
-    109.0,
-    80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *5 n4m_ s3e_",
-   "match": [
-    "*",
-    "n4m_",
-    "s3e_"
-   ],
-   "style": "class2",
-   "params": [
-    109.0,
-    80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
    "name": "auto *4 n4m_ s'_",
    "match": [
     "*",
@@ -71259,214 +71915,6 @@
    "style": "class2",
    "params": [
     114.0,
-    80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *3 n4m_ h_",
-   "match": [
-    "*",
-    "n4m_",
-    "h_"
-   ],
-   "style": "class2",
-   "params": [
-    110.0,
-    41.6,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *2 n4m_ f_",
-   "match": [
-    "*",
-    "n4m_",
-    "f_"
-   ],
-   "style": "class2",
-   "params": [
-    109.0,
-    80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *1 n4m_ si_",
-   "match": [
-    "*",
-    "n4m_",
-    "si_"
-   ],
-   "style": "class2",
-   "params": [
-    109.0,
-    41.6,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto * n4m_ *",
-   "match": [
-    "*",
-    "n4m_",
-    "*"
-   ],
-   "style": "class2",
-   "params": [
-    109.0,
-    80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *9 n3m_ c_",
-   "match": [
-    "*",
-    "n3m_",
-    "c_"
-   ],
-   "style": "class2",
-   "params": [
-    114.0,
-    80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *8 n3m_ n_",
-   "match": [
-    "*",
-    "n3m_",
-    "n_"
-   ],
-   "style": "class2",
-   "params": [
-    109.0,
-    80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *8 n3m_ n4m_",
-   "match": [
-    "*",
-    "n3m_",
-    "n4m_"
-   ],
-   "style": "class2",
-   "params": [
-    109.0,
-    80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *8 n3m_ n3m_",
-   "match": [
-    "*",
-    "n3m_",
-    "n3m_"
-   ],
-   "style": "class2",
-   "params": [
-    109.0,
-    80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *7 n3m_ o_",
-   "match": [
-    "*",
-    "n3m_",
-    "o_"
-   ],
-   "style": "class2",
-   "params": [
-    109.0,
-    80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *6 n3m_ o'_",
-   "match": [
-    "*",
-    "n3m_",
-    "o'_"
-   ],
-   "style": "class2",
-   "params": [
-    114.0,
-    80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *5 n3m_ s_",
-   "match": [
-    "*",
-    "n3m_",
-    "s_"
-   ],
-   "style": "class2",
-   "params": [
-    109.0,
-    80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *5 n3m_ s4e_",
-   "match": [
-    "*",
-    "n3m_",
-    "s4e_"
-   ],
-   "style": "class2",
-   "params": [
-    109.0,
-    80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *5 n3m_ s3e_",
-   "match": [
-    "*",
-    "n3m_",
-    "s3e_"
-   ],
-   "style": "class2",
-   "params": [
-    109.0,
     80.0,
     0,
     0
@@ -71484,214 +71932,6 @@
    "params": [
     114.0,
     80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *3 n3m_ h_",
-   "match": [
-    "*",
-    "n3m_",
-    "h_"
-   ],
-   "style": "class2",
-   "params": [
-    110.0,
-    41.6,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *2 n3m_ f_",
-   "match": [
-    "*",
-    "n3m_",
-    "f_"
-   ],
-   "style": "class2",
-   "params": [
-    109.0,
-    80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *1 n3m_ si_",
-   "match": [
-    "*",
-    "n3m_",
-    "si_"
-   ],
-   "style": "class2",
-   "params": [
-    109.0,
-    41.6,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto * n3m_ *",
-   "match": [
-    "*",
-    "n3m_",
-    "*"
-   ],
-   "style": "class2",
-   "params": [
-    109.0,
-    80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto * ct_ *",
-   "match": [
-    "*",
-    "ct_",
-    "*"
-   ],
-   "style": "class2",
-   "params": [
-    180.0,
-    200.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *7 cp_ c_",
-   "match": [
-    "*",
-    "cp_",
-    "c_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *7 cp_ c4m_",
-   "match": [
-    "*",
-    "cp_",
-    "c4m_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *7 cp_ c3m_",
-   "match": [
-    "*",
-    "cp_",
-    "c3m_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    80.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *6 cp_ n_",
-   "match": [
-    "*",
-    "cp_",
-    "n_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    102.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *6 cp_ n4m_",
-   "match": [
-    "*",
-    "cp_",
-    "n4m_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    102.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *6 cp_ n3m_",
-   "match": [
-    "*",
-    "cp_",
-    "n3m_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    102.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *5 cp_ o_",
-   "match": [
-    "*",
-    "cp_",
-    "o_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    60.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *5 cp_ o'_",
-   "match": [
-    "*",
-    "cp_",
-    "o'_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    60.0,
     0,
     0
    ],
@@ -71762,182 +72002,6 @@
    "comment": "auto, ver 2, ref 2"
   },
   {
-   "name": "auto *3 cp_ f_",
-   "match": [
-    "*",
-    "cp_",
-    "f_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    99.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *2 cp_ h_",
-   "match": [
-    "*",
-    "cp_",
-    "h_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    37.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *1 cp_ si_",
-   "match": [
-    "*",
-    "cp_",
-    "si_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    34.6,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto * cp_ *",
-   "match": [
-    "*",
-    "cp_",
-    "*"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    65.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *7 c_ c_",
-   "match": [
-    "*",
-    "c_",
-    "c_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    46.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *7 c_ c4m_",
-   "match": [
-    "*",
-    "c_",
-    "c4m_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    46.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *7 c_ c3m_",
-   "match": [
-    "*",
-    "c_",
-    "c3m_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    46.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *6 c_ n_",
-   "match": [
-    "*",
-    "c_",
-    "n_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    50.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *6 c_ n4m_",
-   "match": [
-    "*",
-    "c_",
-    "n4m_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    50.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *6 c_ n3m_",
-   "match": [
-    "*",
-    "c_",
-    "n3m_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    50.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *5 c_ o_",
-   "match": [
-    "*",
-    "c_",
-    "o_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    70.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
    "name": "auto *4 c_ s_",
    "match": [
     "*",
@@ -71996,198 +72060,6 @@
    "params": [
     109.5,
     62.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *3 c_ f_",
-   "match": [
-    "*",
-    "c_",
-    "f_"
-   ],
-   "style": "class2",
-   "params": [
-    107.8,
-    95.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *2 c_ h_",
-   "match": [
-    "*",
-    "c_",
-    "h_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    44.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *1 c_ si_",
-   "match": [
-    "*",
-    "c_",
-    "si_"
-   ],
-   "style": "class2",
-   "params": [
-    112.3,
-    34.6,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto * c_ *",
-   "match": [
-    "*",
-    "c_",
-    "*"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    60.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *7 c=_ c_",
-   "match": [
-    "*",
-    "c=_",
-    "c_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    36.2,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *7 c=_ c4m_",
-   "match": [
-    "*",
-    "c=_",
-    "c4m_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    36.2,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *7 c=_ c3m_",
-   "match": [
-    "*",
-    "c=_",
-    "c3m_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    36.2,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *6 c=_ n_",
-   "match": [
-    "*",
-    "c=_",
-    "n_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    90.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *6 c=_ n4m_",
-   "match": [
-    "*",
-    "c=_",
-    "n4m_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    90.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *6 c=_ n3m_",
-   "match": [
-    "*",
-    "c=_",
-    "n3m_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    90.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *5 c=_ o_",
-   "match": [
-    "*",
-    "c=_",
-    "o_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    68.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *5 c=_ o'_",
-   "match": [
-    "*",
-    "c=_",
-    "o'_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    68.0,
     0,
     0
    ],
@@ -72258,230 +72130,6 @@
    "comment": "auto, ver 2, ref 2"
   },
   {
-   "name": "auto *3 c=_ f_",
-   "match": [
-    "*",
-    "c=_",
-    "f_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    96.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *2 c=_ h_",
-   "match": [
-    "*",
-    "c=_",
-    "h_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    37.5,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *1 c=_ si_",
-   "match": [
-    "*",
-    "c=_",
-    "si_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    34.6,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto * c=_ *",
-   "match": [
-    "*",
-    "c=_",
-    "*"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    60.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *7 c4m_ c_",
-   "match": [
-    "*",
-    "c4m_",
-    "c_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    46.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *7 c4m_ c4m_",
-   "match": [
-    "*",
-    "c4m_",
-    "c4m_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    46.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *7 c4m_ c3m_",
-   "match": [
-    "*",
-    "c4m_",
-    "c3m_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    46.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *6 c4m_ n_",
-   "match": [
-    "*",
-    "c4m_",
-    "n_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    50.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *6 c4m_ n4m_",
-   "match": [
-    "*",
-    "c4m_",
-    "n4m_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    50.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *6 c4m_ n3m_",
-   "match": [
-    "*",
-    "c4m_",
-    "n3m_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    50.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *5 c4m_ o_",
-   "match": [
-    "*",
-    "c4m_",
-    "o_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    70.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *5 c4m_ o4e_",
-   "match": [
-    "*",
-    "c4m_",
-    "o4e_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    70.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *5 c4m_ o3e_",
-   "match": [
-    "*",
-    "c4m_",
-    "o3e_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    70.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *5 c4m_ o'_",
-   "match": [
-    "*",
-    "c4m_",
-    "o'_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    70.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
    "name": "auto *4 c4m_ s_",
    "match": [
     "*",
@@ -72540,230 +72188,6 @@
    "params": [
     109.5,
     62.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *3 c4m_ f_",
-   "match": [
-    "*",
-    "c4m_",
-    "f_"
-   ],
-   "style": "class2",
-   "params": [
-    107.8,
-    95.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *2 c4m_ h_",
-   "match": [
-    "*",
-    "c4m_",
-    "h_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    44.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *1 c4m_ si_",
-   "match": [
-    "*",
-    "c4m_",
-    "si_"
-   ],
-   "style": "class2",
-   "params": [
-    112.3,
-    34.6,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto * c4m_ *",
-   "match": [
-    "*",
-    "c4m_",
-    "*"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    60.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *7 c3m_ c_",
-   "match": [
-    "*",
-    "c3m_",
-    "c_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    46.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *7 c3m_ c4m_",
-   "match": [
-    "*",
-    "c3m_",
-    "c4m_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    46.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *7 c3m_ c3m_",
-   "match": [
-    "*",
-    "c3m_",
-    "c3m_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    46.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *6 c3m_ n_",
-   "match": [
-    "*",
-    "c3m_",
-    "n_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    50.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *6 c3m_ n4m_",
-   "match": [
-    "*",
-    "c3m_",
-    "n4m_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    50.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *6 c3m_ n3m_",
-   "match": [
-    "*",
-    "c3m_",
-    "n3m_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    50.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *5 c3m_ o_",
-   "match": [
-    "*",
-    "c3m_",
-    "o_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    70.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *5 c3m_ o4e_",
-   "match": [
-    "*",
-    "c3m_",
-    "o4e_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    70.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *5 c3m_ o3e_",
-   "match": [
-    "*",
-    "c3m_",
-    "o3e_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    70.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *5 c3m_ o'_",
-   "match": [
-    "*",
-    "c3m_",
-    "o'_"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    70.0,
     0,
     0
    ],
@@ -72834,10 +72258,234 @@
    "comment": "auto, ver 2, ref 2"
   },
   {
-   "name": "auto *3 c3m_ f_",
+   "name": "auto *4 c'_ s'_",
    "match": [
     "*",
-    "c3m_",
+    "c'_",
+    "s'_"
+   ],
+   "style": "class2",
+   "params": [
+    123.0,
+    80.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *3 sp_ f_",
+   "match": [
+    "*",
+    "sp_",
+    "f_"
+   ],
+   "style": "class2",
+   "params": [
+    92.567,
+    126.506,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *3 si_ f_",
+   "match": [
+    "*",
+    "si_",
+    "f_"
+   ],
+   "style": "class2",
+   "params": [
+    117.3,
+    44.1,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *3 s_ f_",
+   "match": [
+    "*",
+    "s_",
+    "f_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    75.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *3 s4e_ f_",
+   "match": [
+    "*",
+    "s4e_",
+    "f_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    75.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *3 s3e_ f_",
+   "match": [
+    "*",
+    "s3e_",
+    "f_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    75.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *3 p_ f_",
+   "match": [
+    "*",
+    "p_",
+    "f_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    45.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *3 o_ f_",
+   "match": [
+    "*",
+    "o_",
+    "f_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    60.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *3 np_ h_",
+   "match": [
+    "*",
+    "np_",
+    "h_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    27.5,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *3 na_ h_",
+   "match": [
+    "*",
+    "na_",
+    "h_"
+   ],
+   "style": "class2",
+   "params": [
+    110.0,
+    41.6,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *3 n_ h_",
+   "match": [
+    "*",
+    "n_",
+    "h_"
+   ],
+   "style": "class2",
+   "params": [
+    122.0,
+    35.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *3 n4m_ h_",
+   "match": [
+    "*",
+    "n4m_",
+    "h_"
+   ],
+   "style": "class2",
+   "params": [
+    110.0,
+    41.6,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *3 n3m_ h_",
+   "match": [
+    "*",
+    "n3m_",
+    "h_"
+   ],
+   "style": "class2",
+   "params": [
+    110.0,
+    41.6,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *3 cp_ f_",
+   "match": [
+    "*",
+    "cp_",
+    "f_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    99.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *3 c_ f_",
+   "match": [
+    "*",
+    "c_",
     "f_"
    ],
    "style": "class2",
@@ -72850,240 +72498,48 @@
    "comment": "auto, ver 2, ref 2"
   },
   {
-   "name": "auto *2 c3m_ h_",
+   "name": "auto *3 c=_ f_",
+   "match": [
+    "*",
+    "c=_",
+    "f_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    96.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *3 c4m_ f_",
+   "match": [
+    "*",
+    "c4m_",
+    "f_"
+   ],
+   "style": "class2",
+   "params": [
+    107.8,
+    95.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *3 c3m_ f_",
    "match": [
     "*",
     "c3m_",
-    "h_"
+    "f_"
    ],
    "style": "class2",
    "params": [
-    109.5,
-    44.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *1 c3m_ si_",
-   "match": [
-    "*",
-    "c3m_",
-    "si_"
-   ],
-   "style": "class2",
-   "params": [
-    112.3,
-    34.6,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto * c3m_ *",
-   "match": [
-    "*",
-    "c3m_",
-    "*"
-   ],
-   "style": "class2",
-   "params": [
-    109.5,
-    60.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *9 c'_ c_",
-   "match": [
-    "*",
-    "c'_",
-    "c_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    40.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *9 c'_ c4m_",
-   "match": [
-    "*",
-    "c'_",
-    "c4m_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    40.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *9 c'_ c3m_",
-   "match": [
-    "*",
-    "c'_",
-    "c3m_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    40.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *8 c'_ n_",
-   "match": [
-    "*",
-    "c'_",
-    "n_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    53.5,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *8 c'_ n4m_",
-   "match": [
-    "*",
-    "c'_",
-    "n4m_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    53.5,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *8 c'_ n3m_",
-   "match": [
-    "*",
-    "c'_",
-    "n3m_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    53.5,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *7 c'_ o_",
-   "match": [
-    "*",
-    "c'_",
-    "o_"
-   ],
-   "style": "class2",
-   "params": [
-    110.0,
-    122.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *6 c'_ o'_",
-   "match": [
-    "*",
-    "c'_",
-    "o'_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    68.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *5 c'_ s_",
-   "match": [
-    "*",
-    "c'_",
-    "s_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    40.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *5 c'_ s4e_",
-   "match": [
-    "*",
-    "c'_",
-    "s4e_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    40.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *5 c'_ s3e_",
-   "match": [
-    "*",
-    "c'_",
-    "s3e_"
-   ],
-   "style": "class2",
-   "params": [
-    120.0,
-    40.0,
-    0,
-    0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto *4 c'_ s'_",
-   "match": [
-    "*",
-    "c'_",
-    "s'_"
-   ],
-   "style": "class2",
-   "params": [
-    123.0,
-    80.0,
+    107.8,
+    95.0,
     0,
     0
    ],
@@ -73106,6 +72562,278 @@
    "comment": "auto, ver 2, ref 2"
   },
   {
+   "name": "auto *2 sp_ h_",
+   "match": [
+    "*",
+    "sp_",
+    "h_"
+   ],
+   "style": "class2",
+   "params": [
+    96.0,
+    48.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *2 si_ h_",
+   "match": [
+    "*",
+    "si_",
+    "h_"
+   ],
+   "style": "class2",
+   "params": [
+    112.0,
+    31.8,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *2 s_ h_",
+   "match": [
+    "*",
+    "s_",
+    "h_"
+   ],
+   "style": "class2",
+   "params": [
+    112.0,
+    31.8,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *2 s4e_ h_",
+   "match": [
+    "*",
+    "s4e_",
+    "h_"
+   ],
+   "style": "class2",
+   "params": [
+    112.0,
+    31.8,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *2 s3e_ h_",
+   "match": [
+    "*",
+    "s3e_",
+    "h_"
+   ],
+   "style": "class2",
+   "params": [
+    112.0,
+    31.8,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *2 p_ h_",
+   "match": [
+    "*",
+    "p_",
+    "h_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    45.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *2 o_ h_",
+   "match": [
+    "*",
+    "o_",
+    "h_"
+   ],
+   "style": "class2",
+   "params": [
+    109.0,
+    58.5,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *2 np_ f_",
+   "match": [
+    "*",
+    "np_",
+    "f_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    75.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *2 na_ f_",
+   "match": [
+    "*",
+    "na_",
+    "f_"
+   ],
+   "style": "class2",
+   "params": [
+    109.0,
+    80.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *2 n_ f_",
+   "match": [
+    "*",
+    "n_",
+    "f_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    50.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *2 n4m_ f_",
+   "match": [
+    "*",
+    "n4m_",
+    "f_"
+   ],
+   "style": "class2",
+   "params": [
+    109.0,
+    80.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *2 n3m_ f_",
+   "match": [
+    "*",
+    "n3m_",
+    "f_"
+   ],
+   "style": "class2",
+   "params": [
+    109.0,
+    80.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *2 cp_ h_",
+   "match": [
+    "*",
+    "cp_",
+    "h_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    37.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *2 c_ h_",
+   "match": [
+    "*",
+    "c_",
+    "h_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    44.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *2 c=_ h_",
+   "match": [
+    "*",
+    "c=_",
+    "h_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    37.5,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *2 c4m_ h_",
+   "match": [
+    "*",
+    "c4m_",
+    "h_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    44.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *2 c3m_ h_",
+   "match": [
+    "*",
+    "c3m_",
+    "h_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    44.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
    "name": "auto *2 c'_ h_",
    "match": [
     "*",
@@ -73122,10 +72850,218 @@
    "comment": "auto, ver 2, ref 2"
   },
   {
-   "name": "auto *1 c'_ si_",
+   "name": "auto *1 sp_ si_",
    "match": [
     "*",
-    "c'_",
+    "sp_",
+    "si_"
+   ],
+   "style": "class2",
+   "params": [
+    96.0,
+    48.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *1 si_ si_",
+   "match": [
+    "*",
+    "si_",
+    "si_"
+   ],
+   "style": "class2",
+   "params": [
+    113.4,
+    33.3,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *1 s_ si_",
+   "match": [
+    "*",
+    "s_",
+    "si_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    48.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *1 s4e_ si_",
+   "match": [
+    "*",
+    "s4e_",
+    "si_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    48.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *1 s3e_ si_",
+   "match": [
+    "*",
+    "s3e_",
+    "si_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    48.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *1 p_ si_",
+   "match": [
+    "*",
+    "p_",
+    "si_"
+   ],
+   "style": "class2",
+   "params": [
+    109.5,
+    30.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *1 op_ si_",
+   "match": [
+    "*",
+    "op_",
+    "si_"
+   ],
+   "style": "class2",
+   "params": [
+    106.0,
+    27.5,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *1 o_ si_",
+   "match": [
+    "*",
+    "o_",
+    "si_"
+   ],
+   "style": "class2",
+   "params": [
+    124.1,
+    56.4,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *1 np_ si_",
+   "match": [
+    "*",
+    "np_",
+    "si_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    27.5,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *1 na_ si_",
+   "match": [
+    "*",
+    "na_",
+    "si_"
+   ],
+   "style": "class2",
+   "params": [
+    109.0,
+    41.6,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *1 n_ si_",
+   "match": [
+    "*",
+    "n_",
+    "si_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    35.0,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *1 n4m_ si_",
+   "match": [
+    "*",
+    "n4m_",
+    "si_"
+   ],
+   "style": "class2",
+   "params": [
+    109.0,
+    41.6,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *1 n3m_ si_",
+   "match": [
+    "*",
+    "n3m_",
+    "si_"
+   ],
+   "style": "class2",
+   "params": [
+    109.0,
+    41.6,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *1 cp_ si_",
+   "match": [
+    "*",
+    "cp_",
     "si_"
    ],
    "style": "class2",
@@ -73138,16 +73074,80 @@
    "comment": "auto, ver 2, ref 2"
   },
   {
-   "name": "auto * c'_ *",
+   "name": "auto *1 c_ si_",
    "match": [
     "*",
-    "c'_",
-    "*"
+    "c_",
+    "si_"
+   ],
+   "style": "class2",
+   "params": [
+    112.3,
+    34.6,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *1 c=_ si_",
+   "match": [
+    "*",
+    "c=_",
+    "si_"
    ],
    "style": "class2",
    "params": [
     120.0,
-    65.0,
+    34.6,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *1 c4m_ si_",
+   "match": [
+    "*",
+    "c4m_",
+    "si_"
+   ],
+   "style": "class2",
+   "params": [
+    112.3,
+    34.6,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *1 c3m_ si_",
+   "match": [
+    "*",
+    "c3m_",
+    "si_"
+   ],
+   "style": "class2",
+   "params": [
+    112.3,
+    34.6,
+    0,
+    0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto *1 c'_ si_",
+   "match": [
+    "*",
+    "c'_",
+    "si_"
+   ],
+   "style": "class2",
+   "params": [
+    120.0,
+    34.6,
     0,
     0
    ],
@@ -74223,25 +74223,6 @@
    "comment": "auto, ver 2, ref 2"
   },
   {
-   "name": "auto h_ np_ sp_ *",
-   "match": [
-    "h_",
-    "np_",
-    "sp_",
-    "*"
-   ],
-   "style": "class2",
-   "params": [
-    0.0,
-    0.0,
-    5.5,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
    "name": "auto * np_ sp_ *",
    "match": [
     "*",
@@ -74254,25 +74235,6 @@
     0.0,
     0.0,
     10.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto h_ np_ si_ *",
-   "match": [
-    "h_",
-    "np_",
-    "si_",
-    "*"
-   ],
-   "style": "class2",
-   "params": [
-    0.0,
-    0.0,
-    0.125,
     0.0,
     0.0,
     0.0
@@ -74299,25 +74261,6 @@
    "comment": "auto, ver 2, ref 2"
   },
   {
-   "name": "auto h_ np_ s_ *",
-   "match": [
-    "h_",
-    "np_",
-    "s_",
-    "*"
-   ],
-   "style": "class2",
-   "params": [
-    0.0,
-    0.0,
-    0.5,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
    "name": "auto * np_ s_ *",
    "match": [
     "*",
@@ -74330,25 +74273,6 @@
     0.0,
     0.0,
     1.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto h_ np_ op_ *",
-   "match": [
-    "h_",
-    "np_",
-    "op_",
-    "*"
-   ],
-   "style": "class2",
-   "params": [
-    0.0,
-    0.0,
-    5.5,
     0.0,
     0.0,
     0.0
@@ -74375,25 +74299,6 @@
    "comment": "auto, ver 2, ref 2"
   },
   {
-   "name": "auto h_ np_ o_ *",
-   "match": [
-    "h_",
-    "np_",
-    "o_",
-    "*"
-   ],
-   "style": "class2",
-   "params": [
-    0.0,
-    0.0,
-    0.5,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
    "name": "auto * np_ o_ *",
    "match": [
     "*",
@@ -74406,25 +74311,6 @@
     0.0,
     0.0,
     1.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto * np_ np_ h_",
-   "match": [
-    "*",
-    "np_",
-    "np_",
-    "h_"
-   ],
-   "style": "class2",
-   "params": [
-    0.0,
-    0.0,
-    5.5,
     0.0,
     0.0,
     0.0
@@ -74599,25 +74485,6 @@
    "comment": "auto, ver 2, ref 2"
   },
   {
-   "name": "auto * n_ np_ h_",
-   "match": [
-    "*",
-    "n_",
-    "np_",
-    "h_"
-   ],
-   "style": "class2",
-   "params": [
-    0.0,
-    0.0,
-    0.375,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
    "name": "auto * n_ np_ *",
    "match": [
     "*",
@@ -74723,25 +74590,6 @@
     0.0,
     0.0,
     0.7,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "auto, ver 2, ref 3"
-  },
-  {
-   "name": "auto * n=_3 np_ h_",
-   "match": [
-    "*",
-    "n=_3",
-    "np_",
-    "h_"
-   ],
-   "style": "class2",
-   "params": [
-    0.0,
-    0.0,
-    0.75,
     0.0,
     0.0,
     0.0
@@ -74873,25 +74721,6 @@
     0.0,
     0.0,
     0.7,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "auto, ver 2, ref 3"
-  },
-  {
-   "name": "auto * n=_2 np_ h_",
-   "match": [
-    "*",
-    "n=_2",
-    "np_",
-    "h_"
-   ],
-   "style": "class2",
-   "params": [
-    0.0,
-    0.0,
-    0.75,
     0.0,
     0.0,
     0.0
@@ -75042,25 +74871,6 @@
     0.0,
     0.0,
     0.7,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "auto, ver 2, ref 3"
-  },
-  {
-   "name": "auto * n=_1 np_ h_",
-   "match": [
-    "*",
-    "n=_1",
-    "np_",
-    "h_"
-   ],
-   "style": "class2",
-   "params": [
-    0.0,
-    0.0,
-    0.75,
     0.0,
     0.0,
     0.0
@@ -75230,25 +75040,6 @@
     0.0,
     0.0,
     0.7,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto * n=_ np_ h_",
-   "match": [
-    "*",
-    "n=_",
-    "np_",
-    "h_"
-   ],
-   "style": "class2",
-   "params": [
-    0.0,
-    0.0,
-    0.75,
     0.0,
     0.0,
     0.0
@@ -75768,25 +75559,6 @@
    "comment": "auto, ver 2, ref 2"
   },
   {
-   "name": "auto * cp_ o_ h_",
-   "match": [
-    "*",
-    "cp_",
-    "o_",
-    "h_"
-   ],
-   "style": "class2",
-   "params": [
-    0.0,
-    0.0,
-    0.75,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
    "name": "auto * cp_ o_ *",
    "match": [
     "*",
@@ -75799,25 +75571,6 @@
     0.0,
     0.0,
     1.8,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto * cp_ np_ h_",
-   "match": [
-    "*",
-    "cp_",
-    "np_",
-    "h_"
-   ],
-   "style": "class2",
-   "params": [
-    0.0,
-    0.0,
-    1.0,
     0.0,
     0.0,
     0.0
@@ -76396,25 +76149,6 @@
    "comment": "auto, ver 2, ref 3"
   },
   {
-   "name": "auto * c=_3 np_ h_",
-   "match": [
-    "*",
-    "c=_3",
-    "np_",
-    "h_"
-   ],
-   "style": "class2",
-   "params": [
-    0.0,
-    0.0,
-    0.75,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "auto, ver 2, ref 3"
-  },
-  {
    "name": "auto * c=_3 np_ *",
    "match": [
     "*",
@@ -76727,25 +76461,6 @@
     0.0,
     0.0,
     0.9,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "auto, ver 2, ref 3"
-  },
-  {
-   "name": "auto * c=_2 np_ h_",
-   "match": [
-    "*",
-    "c=_2",
-    "np_",
-    "h_"
-   ],
-   "style": "class2",
-   "params": [
-    0.0,
-    0.0,
-    0.75,
     0.0,
     0.0,
     0.0
@@ -77084,25 +76799,6 @@
     0.0,
     0.0,
     0.9,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "auto, ver 2, ref 3"
-  },
-  {
-   "name": "auto * c=_1 np_ h_",
-   "match": [
-    "*",
-    "c=_1",
-    "np_",
-    "h_"
-   ],
-   "style": "class2",
-   "params": [
-    0.0,
-    0.0,
-    0.75,
     0.0,
     0.0,
     0.0
@@ -77467,25 +77163,6 @@
    "comment": "auto, ver 2, ref 2"
   },
   {
-   "name": "auto * c=_ np_ h_",
-   "match": [
-    "*",
-    "c=_",
-    "np_",
-    "h_"
-   ],
-   "style": "class2",
-   "params": [
-    0.0,
-    0.0,
-    0.75,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
    "name": "auto * c=_ np_ *",
    "match": [
     "*",
@@ -77765,25 +77442,6 @@
    "comment": "auto, ver 2, ref 2"
   },
   {
-   "name": "auto * c'_ np_ h",
-   "match": [
-    "*",
-    "c'_",
-    "np_",
-    "h"
-   ],
-   "style": "class2",
-   "params": [
-    0.0,
-    0.0,
-    1.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
    "name": "auto * c'_ np_ *",
    "match": [
     "*",
@@ -77796,25 +77454,6 @@
     0.0,
     0.0,
     5.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "comment": "auto, ver 2, ref 2"
-  },
-  {
-   "name": "auto * c'_ n_ h_",
-   "match": [
-    "*",
-    "c'_",
-    "n_",
-    "h_"
-   ],
-   "style": "class2",
-   "params": [
-    0.0,
-    0.0,
-    1.2,
     0.0,
     0.0,
     0.0
@@ -78077,6 +77716,367 @@
     0.0,
     0.0,
     0.45,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto h_ np_ sp_ *",
+   "match": [
+    "h_",
+    "np_",
+    "sp_",
+    "*"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    0.0,
+    5.5,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto h_ np_ si_ *",
+   "match": [
+    "h_",
+    "np_",
+    "si_",
+    "*"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    0.0,
+    0.125,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto h_ np_ s_ *",
+   "match": [
+    "h_",
+    "np_",
+    "s_",
+    "*"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    0.0,
+    0.5,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto h_ np_ op_ *",
+   "match": [
+    "h_",
+    "np_",
+    "op_",
+    "*"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    0.0,
+    5.5,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto h_ np_ o_ *",
+   "match": [
+    "h_",
+    "np_",
+    "o_",
+    "*"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    0.0,
+    0.5,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto * np_ np_ h_",
+   "match": [
+    "*",
+    "np_",
+    "np_",
+    "h_"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    0.0,
+    5.5,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto * n_ np_ h_",
+   "match": [
+    "*",
+    "n_",
+    "np_",
+    "h_"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    0.0,
+    0.375,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto * n=_3 np_ h_",
+   "match": [
+    "*",
+    "n=_3",
+    "np_",
+    "h_"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    0.0,
+    0.75,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "auto, ver 2, ref 3"
+  },
+  {
+   "name": "auto * n=_2 np_ h_",
+   "match": [
+    "*",
+    "n=_2",
+    "np_",
+    "h_"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    0.0,
+    0.75,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "auto, ver 2, ref 3"
+  },
+  {
+   "name": "auto * n=_1 np_ h_",
+   "match": [
+    "*",
+    "n=_1",
+    "np_",
+    "h_"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    0.0,
+    0.75,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "auto, ver 2, ref 3"
+  },
+  {
+   "name": "auto * n=_ np_ h_",
+   "match": [
+    "*",
+    "n=_",
+    "np_",
+    "h_"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    0.0,
+    0.75,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto * cp_ o_ h_",
+   "match": [
+    "*",
+    "cp_",
+    "o_",
+    "h_"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    0.0,
+    0.75,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto * cp_ np_ h_",
+   "match": [
+    "*",
+    "cp_",
+    "np_",
+    "h_"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto * c=_3 np_ h_",
+   "match": [
+    "*",
+    "c=_3",
+    "np_",
+    "h_"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    0.0,
+    0.75,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "auto, ver 2, ref 3"
+  },
+  {
+   "name": "auto * c=_2 np_ h_",
+   "match": [
+    "*",
+    "c=_2",
+    "np_",
+    "h_"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    0.0,
+    0.75,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "auto, ver 2, ref 3"
+  },
+  {
+   "name": "auto * c=_1 np_ h_",
+   "match": [
+    "*",
+    "c=_1",
+    "np_",
+    "h_"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    0.0,
+    0.75,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "auto, ver 2, ref 3"
+  },
+  {
+   "name": "auto * c=_ np_ h_",
+   "match": [
+    "*",
+    "c=_",
+    "np_",
+    "h_"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    0.0,
+    0.75,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto * c'_ np_ h",
+   "match": [
+    "*",
+    "c'_",
+    "np_",
+    "h"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "auto, ver 2, ref 2"
+  },
+  {
+   "name": "auto * c'_ n_ h_",
+   "match": [
+    "*",
+    "c'_",
+    "n_",
+    "h_"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    0.0,
+    1.2,
     0.0,
     0.0,
     0.0
