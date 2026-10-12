@@ -312,6 +312,20 @@ TEST(Typing, MoleculeClassConditions) {
   EXPECT_EQ(t2.types[off], "CAE3");
 }
 
+TEST(Typing, CgenffConjugationPhaseAsTheRtf) {
+  // top_all36_cgenff.rtf, RESI MOBU (1-methoxybutadiene): the enol ether C is CG2D1O, outside the alternation; the C
+  // double-bonded to it anchors the phase (CG2DC1), then CG2DC2 across the single bond, the terminal =CH2 CG2DC3
+  const System mobu = mol({"C", "O", "C", "C", "C", "C"}, {3, 0, 1, 1, 1, 2}, {{0, 1}, {1, 2}, {2, 3}, {3, 4}, {4, 5}});
+  const TypingResult t = type_with("cgenff", mobu);
+  EXPECT_EQ(t.types[2], "CG2D1O");
+  EXPECT_EQ(t.types[3], "CG2DC1");
+  EXPECT_EQ(t.types[4], "CG2DC2");
+  EXPECT_EQ(t.types[5], "CG2DC3");
+  // RESI PRAL (acrolein): a conjugated C alone in its system is CG2DC1
+  const TypingResult a = type_with("cgenff", mol({"C", "C", "C", "O"}, {2, 1, 1, 0}, {{0, 1}, {1, 2}, {2, 3}}));
+  EXPECT_EQ(a.types[1], "CG2DC1");
+}
+
 TEST(Typing, CgenffAndOpls) {
   // CGenFF: conjugated diene CG2DC3 CG2DC2 CG2DC1 CG2DC3 (same type across a double bond, switched across the single)
   const TypingResult b = type_with("cgenff", butadiene());

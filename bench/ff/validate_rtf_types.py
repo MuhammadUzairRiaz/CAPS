@@ -72,7 +72,10 @@ for r in residues(rtf):
     bonds = {}
     ok = True
     for a, b, o in r["bonds"]:
-        a, b = a.upper().lstrip("+-"), b.upper().lstrip("+-")
+        if a[:1] in "+-" or b[:1] in "+-":   # a bond to the neighbouring residue (PEGM's -C2): a polymer unit, not a molecule
+            ok = False
+            break
+        a, b = a.upper(), b.upper()
         if a not in idx or b not in idx:
             ok = False
             break
