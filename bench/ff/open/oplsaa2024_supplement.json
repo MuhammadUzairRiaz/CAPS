@@ -175,6 +175,13 @@
    "charge": -0.048,
    "description": "CH on pyridine C2",
    "reason": "a 2-alkyl group carries pyridine's H2 charge (+0.012): CH3 670 -0.168 + 3 x 0.060, CH2 671 -0.108 + 2 x 0.060; a CH -0.048 + 0.060 (poly(2-vinylpyridine))"
+  },
+  {
+   "name": "caps_s_poly",
+   "lj_from": "opls_203",
+   "charge": 0.0,
+   "description": "S between two S in a polysulfide",
+   "reason": "each S bonded to a carbon carries the disulfide S charge (203, -0.2175) against its carbon group (213-216, +0.2175); an S bonded only to S has no such partner, so 0"
   }
  ]
 }
