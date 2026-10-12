@@ -34,8 +34,8 @@ FFS = {"opls2005": "opls2005", "pcff": "pcff", "cvff": "cvff", "compass": "compa
        "amber25_gaff": "gaff-amber25", "charmm36_cgenff": "cgenff", "dreiding": "dreiding"}
 if "--ff" in sys.argv:
     FFS = {k: v for k, v in FFS.items() if k in arg("--ff", "").split(",") or v in arg("--ff", "").split(",")}
-BY_PARAMS = "--caps-ff" in sys.argv
-if BY_PARAMS:
+BY_PARAMS = "--caps-ff" in sys.argv and "--same-names" not in sys.argv   # --same-names: the library keeps DL_FIELD's type names
+if "--caps-ff" in sys.argv:
     FFS = {k: arg("--caps-ff", "") for k in FFS}
 
 

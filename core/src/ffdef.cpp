@@ -1764,6 +1764,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
                         std::to_string(s.topology->dihedrals.size()) + " dihedrals from the " + s.topology->source + " topology");
   }
   const std::vector<Bond>& rule_bonds = use_topo ? kNoBonds : s.bonds;
+  std::unique_ptr<Perception> bond_per;   // bond orders, for bonds whose constant scales with them (harmonic/order)
   // bonds
   for (const auto& b : rule_bonds) {
     const FFRule* r = lookup12(def.bonds, Nb, Nb2, {b.i, b.j});
@@ -1779,6 +1780,15 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
     else if (st == "gromos" && r->params.size() >= 2) ff.bonds_x.push_back({b.i, b.j, 2, r->params[0], r->params[1], 0});
     else if (st == "fene" && r->params.size() >= 2)   // K R0 [ε σ] (LAMMPS bond fene)
       ff.bonds_x.push_back({b.i, b.j, 3, r->params[0], r->params[1], r->params.size() > 3 ? r->params[2] : 0.0, r->params.size() > 3 ? r->params[3] : 0.0});
+    else if (st == "harmonic/order" && r->params.size() >= 2) {
+      // K per unit bond order (DREIDING: ½·700 n kcal/mol/Å²) times the bond's perceived order, aromatic bonds 1.5
+      if (!bond_per) bond_per = std::make_unique<Perception>(perceive(s));
+      double order = 1;
+      for (size_t q = 0; q < bond_per->nb[b.i].size(); ++q)
+        if (bond_per->nb[b.i][q] == b.j) order = bond_per->arom_bond[b.i][q] ? 1.5 : double(bond_per->order[b.i][q]);
+      ff.bonds.push_back({b.i, b.j, r->params[0] * order, r->params[1]});
+      ref_r0[{std::min(b.i, b.j), std::max(b.i, b.j)}] = r->params[1];
+    }
     else if (st != "harmonic" || r->params.size() < 2) throw FFError("bond style '" + st + "' (" + r->name + ") is not supported yet");
     else {
       ff.bonds.push_back({b.i, b.j, r->params[0], r->params[1]});
