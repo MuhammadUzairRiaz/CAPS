@@ -149,12 +149,6 @@
    "description": "alcohol O"
   },
   {
-   "type": "160",
-   "smarts": "[OX2H1][CX4H0]",
-   "priority": 6,
-   "description": "tertiary alcohol O"
-  },
-  {
    "type": "155",
    "smarts": "[H][OX2H1][CX4]",
    "priority": 5,
@@ -311,10 +305,10 @@
    "description": "alkyl aryl ether O (anisole)"
   },
   {
-   "type": "177",
+   "type": "473",
    "smarts": "[OX2;!$(O[#1]);!$(O[#6]=[O,S,N]);!$(O[Si]);!$(O~[#6](~[OX2])~[OX2]);!$(O[CX4]([OX2])[OX2]);!r3;$(O(c)c)]",
    "priority": 5,
-   "description": "diaryl ether O"
+   "description": "diaryl ether O (the phenyl ester O, as the GROMACS OPLS-AA topologies type diphenyl ether)"
   },
   {
    "type": "181",
@@ -348,9 +342,15 @@
   },
   {
    "type": "199",
-   "smarts": "c[OX2;!$(O[#1]);!$(O[#6]=[O,S,N]);!$(O[Si]);!$(O~[#6](~[OX2])~[OX2]);!$(O[CX4]([OX2])[OX2]);!r3;$(O(c)[CX4,c])]",
+   "smarts": "c[OX2;!$(O[#1]);!$(O[#6]=[O,S,N]);!$(O[Si]);!$(O~[#6](~[OX2])~[OX2]);!$(O[CX4]([OX2])[OX2]);!r3;$(O(c)[CX4])]",
    "priority": 5,
    "description": "aryl ether C(O)"
+  },
+  {
+   "type": "472",
+   "smarts": "c[OX2;!$(O[#1]);!$(O[#6]=[O,S,N]);!$(O[Si]);!$(O~[#6](~[OX2])~[OX2]);!$(O[CX4]([OX2])[OX2]);!r3;$(O(c)c)]",
+   "priority": 5,
+   "description": "diaryl ether C(O) (the phenyl ester C(ipso))"
   },
   {
    "type": "186",
@@ -456,9 +456,21 @@
   },
   {
    "type": "186",
-   "smarts": "[OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc);$(O[CX4][OX2])]",
+   "smarts": "[OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc);$(O([CX4][OX2])[CX4][OX2]);!$(O[CX4][OX2H1])]",
+   "priority": 8,
+   "description": "O between two acetal C (paraldehyde, 1,3,5-trioxane), as those topologies"
+  },
+  {
+   "type": "180",
+   "smarts": "[OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc);$(O[CX4][OX2]);!$(O[CX4][OX2H1])]",
    "priority": 7,
-   "description": "acetal / hemiacetal ether O"
+   "description": "acetal ether O (the dialkyl ether O, as the GROMACS OPLS-AA topologies type dimethoxymethane and 1,3-dioxolane)"
+  },
+  {
+   "type": "186",
+   "smarts": "[OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc);$(O[CX4][OX2H1])]",
+   "priority": 7,
+   "description": "hemiacetal ether O"
   },
   {
    "type": "187",
@@ -521,10 +533,52 @@
    "description": "H on C alpha to a ketone / aldehyde"
   },
   {
+   "type": "140",
+   "smarts": "[H][CX4][CX3](=[OX1])[OX2][#6;!$([CX3]=[OX1])]",
+   "priority": 5,
+   "description": "H alpha to an ester carbonyl (acyl side)"
+  },
+  {
+   "type": "140",
+   "smarts": "[H][CX4][CX3](=[OX1])[c,$([CX4;r3])]",
+   "priority": 5,
+   "description": "H alpha to an aryl or cyclopropyl ketone"
+  },
+  {
    "type": "282",
-   "smarts": "[H][CX4][CX3](=[OX1])[OX2H0]",
-   "priority": 4,
-   "description": "H on C alpha to an ester carbonyl (acyl side)"
+   "smarts": "[H][CX4][CX3](=[OX1])[OX2][CX3]=[OX1]",
+   "priority": 5,
+   "description": "H alpha to an anhydride carbonyl"
+  },
+  {
+   "type": "140",
+   "smarts": "[H][CX4;r3][CX3]=[OX1]",
+   "priority": 5,
+   "description": "H on a cyclopropyl C alpha to a ketone"
+  },
+  {
+   "type": "282",
+   "smarts": "[H][CX4][CX3](=[OX1])[OX2][CX4][CX4][OX2][CX3]=[OX1]",
+   "priority": 6,
+   "description": "H alpha to an ester carbonyl of a diester (O-(C)2-O)"
+  },
+  {
+   "type": "282",
+   "smarts": "[H][CX4][CX3](=[OX1])[OX2][CX4][CX4][CX4][OX2][CX3]=[OX1]",
+   "priority": 6,
+   "description": "H alpha to an ester carbonyl of a diester (O-(C)3-O)"
+  },
+  {
+   "type": "282",
+   "smarts": "[H][CX4][CX3](=[OX1])[OX2][CX4][CX4][CX4][CX4][OX2][CX3]=[OX1]",
+   "priority": 6,
+   "description": "H alpha to an ester carbonyl of a diester (O-(C)4-O)"
+  },
+  {
+   "type": "282",
+   "smarts": "[H][CX4]([CX3](=[OX1])[OX2])[CX3](=[OX1])[OX2]",
+   "priority": 6,
+   "description": "H on the C between two ester carbonyls (malonate)"
   },
   {
    "type": "232",
@@ -671,74 +725,122 @@
    "description": "carboxylate O"
   },
   {
-   "type": "273",
+   "type": "135",
    "smarts": "[CX4H3;$(*[CX3;$([CX3](~[OX1])~[OX1-])])]",
    "priority": 7,
-   "description": "C alpha to a carboxylate (CH3)"
+   "description": "C alpha to a carboxylate (the alkane types, as the GROMACS OPLS-AA topologies type acetate) (CH3)"
   },
   {
-   "type": "274",
+   "type": "136",
    "smarts": "[CX4H2;$(*[CX3;$([CX3](~[OX1])~[OX1-])])]",
    "priority": 7,
-   "description": "C alpha to a carboxylate (CH2)"
+   "description": "C alpha to a carboxylate (the alkane types, as the GROMACS OPLS-AA topologies type acetate) (CH2)"
   },
   {
-   "type": "275",
+   "type": "137",
    "smarts": "[CX4H1;$(*[CX3;$([CX3](~[OX1])~[OX1-])])]",
    "priority": 7,
-   "description": "C alpha to a carboxylate (CH)"
+   "description": "C alpha to a carboxylate (the alkane types, as the GROMACS OPLS-AA topologies type acetate) (CH)"
   },
   {
-   "type": "276",
+   "type": "139",
    "smarts": "[CX4H0;$(*[CX3;$([CX3](~[OX1])~[OX1-])])]",
    "priority": 7,
-   "description": "C alpha to a carboxylate (C)"
+   "description": "C alpha to a carboxylate (the alkane types, as the GROMACS OPLS-AA topologies type acetate) (C)"
   },
   {
    "type": "772",
-   "smarts": "[CX3](=[OX1])([OX2][CX4])[OX2][CX4]",
+   "smarts": "[CX3;R](=[OX1])([OX2][CX4])[OX2][CX4]",
    "priority": 7,
-   "description": "carbonate C=O"
+   "description": "cyclic carbonate C=O"
   },
   {
    "type": "771",
-   "smarts": "[OX1]=[CX3]([OX2][CX4])[OX2][CX4]",
+   "smarts": "[OX1]=[CX3;R]([OX2][CX4])[OX2][CX4]",
    "priority": 7,
-   "description": "carbonate =O"
+   "description": "cyclic carbonate =O"
   },
   {
    "type": "773",
-   "smarts": "[OX2;$(O[CX3](=[OX1])[OX2][CX4]);$(O[CX4])]",
+   "smarts": "[OX2;R;$(O[CX3](=[OX1])[OX2][CX4]);$(O[CX4])]",
    "priority": 7,
-   "description": "carbonate -O-"
+   "description": "cyclic carbonate -O-"
   },
   {
    "type": "789",
-   "smarts": "[CX4H3;$(*[OX2][CX3](=[OX1])[OX2][CX4])]",
+   "smarts": "[CX4H3;$(*[OX2;R][CX3](=[OX1])[OX2][CX4])]",
    "priority": 7,
-   "description": "carbonate alkoxy C (CH3)"
+   "description": "cyclic carbonate alkoxy C (CH3)"
   },
   {
    "type": "774",
-   "smarts": "[CX4H2;$(*[OX2][CX3](=[OX1])[OX2][CX4])]",
+   "smarts": "[CX4H2;$(*[OX2;R][CX3](=[OX1])[OX2][CX4])]",
    "priority": 7,
-   "description": "carbonate alkoxy C (CH2)"
+   "description": "cyclic carbonate alkoxy C (CH2)"
   },
   {
    "type": "775",
-   "smarts": "[CX4H1;$(*[OX2][CX3](=[OX1])[OX2][CX4])]",
+   "smarts": "[CX4H1;$(*[OX2;R][CX3](=[OX1])[OX2][CX4])]",
    "priority": 7,
-   "description": "carbonate alkoxy C (CH)"
+   "description": "cyclic carbonate alkoxy C (CH)"
   },
   {
    "type": "777",
-   "smarts": "[H][CX4][OX2][CX3](=[OX1])[OX2][CX4]",
+   "smarts": "[H][CX4][OX2;R][CX3](=[OX1])[OX2][CX4]",
    "priority": 7,
-   "description": "H on carbonate alkoxy C"
+   "description": "H on cyclic carbonate alkoxy C"
+  },
+  {
+   "type": "465",
+   "smarts": "[CX3;!R](=[OX1])([OX2][CX4])[OX2][CX4]",
+   "priority": 7,
+   "description": "open-chain carbonate C=O (ester C)"
+  },
+  {
+   "type": "466",
+   "smarts": "[OX1]=[CX3;!R]([OX2][CX4])[OX2][CX4]",
+   "priority": 7,
+   "description": "open-chain carbonate =O (ester =O)"
+  },
+  {
+   "type": "467",
+   "smarts": "[OX2;!R;$(O[CX3](=[OX1])[OX2][CX4]);$(O[CX4])]",
+   "priority": 7,
+   "description": "open-chain carbonate -O- (ester -O-)"
+  },
+  {
+   "type": "468",
+   "smarts": "[CX4H3;$(*[OX2;!R][CX3](=[OX1])[OX2][CX4])]",
+   "priority": 7,
+   "description": "open-chain carbonate alkoxy C (ester alkoxy C) (CH3)"
+  },
+  {
+   "type": "490",
+   "smarts": "[CX4H2;$(*[OX2;!R][CX3](=[OX1])[OX2][CX4])]",
+   "priority": 7,
+   "description": "open-chain carbonate alkoxy C (ester alkoxy C) (CH2)"
+  },
+  {
+   "type": "491",
+   "smarts": "[CX4H1;$(*[OX2;!R][CX3](=[OX1])[OX2][CX4])]",
+   "priority": 7,
+   "description": "open-chain carbonate alkoxy C (ester alkoxy C) (CH)"
+  },
+  {
+   "type": "492",
+   "smarts": "[CX4H0;$(*[OX2;!R][CX3](=[OX1])[OX2][CX4])]",
+   "priority": 7,
+   "description": "open-chain carbonate alkoxy C (ester alkoxy C) (C)"
+  },
+  {
+   "type": "469",
+   "smarts": "[H][CX4][OX2;!R][CX3](=[OX1])[OX2][CX4]",
+   "priority": 7,
+   "description": "H on open-chain carbonate alkoxy C"
   },
   {
    "type": "778",
-   "smarts": "[H][CX4H1][OX2][CX3](=[OX1])[OX2][CX4]",
+   "smarts": "[H][CX4H1][OX2;R][CX3](=[OX1])[OX2][CX4]",
    "priority": 8,
    "description": "H on carbonate alkoxy CH"
   },
@@ -1055,16 +1157,16 @@
    "description": "conjugated nitrile C (acrylonitrile)"
   },
   {
-   "type": "142",
-   "smarts": "[CX3H1;$(*[CX2]#[NX1])]=[CX3]",
+   "type": "260",
+   "smarts": "[CX3;$(*[CX2]#[NX1])]=[CX3]",
    "priority": 6,
-   "description": "alkene C carrying a nitrile (RHC=)"
+   "description": "alkene C carrying a nitrile (the benzonitrile ipso C, as the GROMACS OPLS-AA topologies type acrylonitrile)"
   },
   {
-   "type": "141",
-   "smarts": "[CX3H0;$(*[CX2]#[NX1])]=[CX3]",
-   "priority": 6,
-   "description": "alkene C carrying a nitrile (R2C=)"
+   "type": "140",
+   "smarts": "[H][CX3;$(*[CX2]#[NX1])]=[CX3]",
+   "priority": 7,
+   "description": "H on that C (140, as those topologies)"
   },
   {
    "type": "151",
@@ -1163,88 +1265,46 @@
    "description": "H on a fluorochloro C"
   },
   {
-   "type": "975",
+   "type": "722",
    "smarts": "[Br][CX4]",
    "priority": 5,
    "description": "alkyl bromide Br"
   },
   {
-   "type": "976",
-   "smarts": "[CX4H3;$(*[Br]);!$(*([Br])[Br]);!$(*[F,Cl,Br,I;!Br])]",
+   "type": "152",
+   "smarts": "[CX4H3;$(*[Br,I]);!$(*[F,Cl])]",
    "priority": 5,
-   "description": "alkyl bromide C (CH3Br takes RCH2Br's number: the table has none of its own) (CH3)"
+   "description": "C of an alkyl bromide or iodide (CH3)"
   },
   {
-   "type": "976",
-   "smarts": "[CX4H2;$(*[Br]);!$(*([Br])[Br]);!$(*[F,Cl,Br,I;!Br])]",
+   "type": "152",
+   "smarts": "[CX4H2;$(*[Br,I]);!$(*[F,Cl])]",
    "priority": 5,
-   "description": "alkyl bromide C (CH3Br takes RCH2Br's number: the table has none of its own) (CH2)"
+   "description": "C of an alkyl bromide or iodide (CH2)"
   },
   {
-   "type": "978",
-   "smarts": "[CX4H1;$(*[Br]);!$(*([Br])[Br]);!$(*[F,Cl,Br,I;!Br])]",
+   "type": "152",
+   "smarts": "[CX4H1;$(*[Br,I]);!$(*[F,Cl])]",
    "priority": 5,
-   "description": "alkyl bromide C (CH3Br takes RCH2Br's number: the table has none of its own) (CH)"
+   "description": "C of an alkyl bromide or iodide (CH)"
   },
   {
-   "type": "976",
-   "smarts": "[CX4H3;$(*(Br)Br);!$(*[F,Cl,I])]",
-   "priority": 6,
-   "description": "polybrominated C (CH3)"
-  },
-  {
-   "type": "976",
-   "smarts": "[CX4H2;$(*(Br)Br);!$(*[F,Cl,I])]",
-   "priority": 6,
-   "description": "polybrominated C (CH2)"
-  },
-  {
-   "type": "976",
-   "smarts": "[CX4H1;$(*(Br)Br);!$(*[F,Cl,I])]",
-   "priority": 6,
-   "description": "polybrominated C (CH)"
-  },
-  {
-   "type": "976",
-   "smarts": "[CX4H0;$(*(Br)Br);!$(*[F,Cl,I])]",
-   "priority": 6,
-   "description": "polybrominated C (C)"
-  },
-  {
-   "type": "977",
-   "smarts": "[H][CX4][Br]",
+   "type": "152",
+   "smarts": "[CX4H0;$(*[Br,I]);!$(*[F,Cl])]",
    "priority": 5,
-   "description": "H on an alkyl bromide C"
+   "description": "C of an alkyl bromide or iodide (C)"
   },
   {
-   "type": "1014",
+   "type": "153",
+   "smarts": "[H][CX4][Br,I]",
+   "priority": 5,
+   "description": "H on an alkyl bromide or iodide C"
+  },
+  {
+   "type": "732",
    "smarts": "[I][CX4]",
    "priority": 5,
-   "description": "alkyl iodide I (tentative in the table)"
-  },
-  {
-   "type": "1011",
-   "smarts": "[CX4H3;$(*[I])]",
-   "priority": 5,
-   "description": "alkyl iodide C (CH3)"
-  },
-  {
-   "type": "1011",
-   "smarts": "[CX4H2;$(*[I])]",
-   "priority": 5,
-   "description": "alkyl iodide C (CH2)"
-  },
-  {
-   "type": "1012",
-   "smarts": "[CX4H1;$(*[I])]",
-   "priority": 5,
-   "description": "alkyl iodide C (CH)"
-  },
-  {
-   "type": "1013",
-   "smarts": "[CX4H0;$(*[I])]",
-   "priority": 5,
-   "description": "alkyl iodide C (C)"
+   "description": "alkyl iodide I"
   },
   {
    "type": "956",
@@ -1391,16 +1451,16 @@
    "description": "chloroalkene C with an alkyl group (R-CCl=, chloroprene): CM, +0.12 e"
   },
   {
-   "type": "398",
+   "type": "226",
    "smarts": "[Cl][CX3;$(*(Cl)Cl)]=[CX3]",
    "priority": 7,
-   "description": "chloroalkene Cl (Cl2C=)"
+   "description": "chloroalkene Cl (Cl2C=: 226, as the GROMACS OPLS-AA topologies type 1,1-dichloroethene)"
   },
   {
-   "type": "399",
+   "type": "227",
    "smarts": "[CX3;$(*(Cl)Cl)]=[CX3]",
    "priority": 7,
-   "description": "chloroalkene C (Cl2C=)"
+   "description": "chloroalkene C (Cl2C=: 227)"
   },
   {
    "type": "493",
@@ -1895,30 +1955,6 @@
    "description": "alkyne terminal H"
   },
   {
-   "type": "927",
-   "smarts": "[CX4H3;$(*[CX2]#[CX2])]",
-   "priority": 6,
-   "description": "sp3 C on an alkyne C (CH3)"
-  },
-  {
-   "type": "928",
-   "smarts": "[CX4H2;$(*[CX2]#[CX2])]",
-   "priority": 6,
-   "description": "sp3 C on an alkyne C (CH2)"
-  },
-  {
-   "type": "929",
-   "smarts": "[CX4H1;$(*[CX2]#[CX2])]",
-   "priority": 6,
-   "description": "sp3 C on an alkyne C (CH)"
-  },
-  {
-   "type": "930",
-   "smarts": "[CX4H0;$(*[CX2]#[CX2])]",
-   "priority": 6,
-   "description": "sp3 C on an alkyne C (C)"
-  },
-  {
    "type": "401",
    "smarts": "[Cl-,Cl;X0]",
    "priority": 8,
@@ -2151,6 +2187,108 @@
    "smarts": "[H][c;$(c1cccc2cccnc12)]",
    "priority": 8,
    "description": "quinoline H8"
+  },
+  {
+   "type": "603",
+   "smarts": "[n;$(n1cc2ccccc2cc1)]",
+   "priority": 8,
+   "description": "isoquinoline atom typed as quinoline 603"
+  },
+  {
+   "type": "611",
+   "smarts": "[c;$(c1nccc2ccccc12)]",
+   "priority": 8,
+   "description": "isoquinoline atom typed as quinoline 611"
+  },
+  {
+   "type": "604",
+   "smarts": "[c;$(c1ncc2ccccc2c1)]",
+   "priority": 8,
+   "description": "isoquinoline atom typed as quinoline 604"
+  },
+  {
+   "type": "605",
+   "smarts": "[c;$(c1cncc2ccccc12)]",
+   "priority": 8,
+   "description": "isoquinoline atom typed as quinoline 605"
+  },
+  {
+   "type": "612",
+   "smarts": "[c;$(c12ccccc1cncc2)]",
+   "priority": 8,
+   "description": "isoquinoline atom typed as quinoline 612"
+  },
+  {
+   "type": "606",
+   "smarts": "[c;$(c1cccc2cnccc12)]",
+   "priority": 8,
+   "description": "isoquinoline atom typed as quinoline 606"
+  },
+  {
+   "type": "607",
+   "smarts": "[c;$(c1ccc2cnccc2c1)]",
+   "priority": 8,
+   "description": "isoquinoline atom typed as quinoline 607"
+  },
+  {
+   "type": "608",
+   "smarts": "[c;$(c1ccc2ccncc2c1)]",
+   "priority": 8,
+   "description": "isoquinoline atom typed as quinoline 608"
+  },
+  {
+   "type": "609",
+   "smarts": "[c;$(c1cccc2ccncc12)]",
+   "priority": 8,
+   "description": "isoquinoline atom typed as quinoline 609"
+  },
+  {
+   "type": "610",
+   "smarts": "[c;$(c12cnccc1cccc2)]",
+   "priority": 8,
+   "description": "isoquinoline atom typed as quinoline 610"
+  },
+  {
+   "type": "619",
+   "smarts": "[H][c;$(c1nccc2ccccc12)]",
+   "priority": 8,
+   "description": "isoquinoline H typed as quinoline 619"
+  },
+  {
+   "type": "613",
+   "smarts": "[H][c;$(c1ncc2ccccc2c1)]",
+   "priority": 8,
+   "description": "isoquinoline H typed as quinoline 613"
+  },
+  {
+   "type": "614",
+   "smarts": "[H][c;$(c1cncc2ccccc12)]",
+   "priority": 8,
+   "description": "isoquinoline H typed as quinoline 614"
+  },
+  {
+   "type": "615",
+   "smarts": "[H][c;$(c1cccc2cnccc12)]",
+   "priority": 8,
+   "description": "isoquinoline H typed as quinoline 615"
+  },
+  {
+   "type": "616",
+   "smarts": "[H][c;$(c1ccc2cnccc2c1)]",
+   "priority": 8,
+   "description": "isoquinoline H typed as quinoline 616"
+  },
+  {
+   "type": "617",
+   "smarts": "[H][c;$(c1ccc2ccncc2c1)]",
+   "priority": 8,
+   "description": "isoquinoline H typed as quinoline 617"
+  },
+  {
+   "type": "618",
+   "smarts": "[H][c;$(c1cccc2ccncc12)]",
+   "priority": 8,
+   "description": "isoquinoline H typed as quinoline 618"
   },
   {
    "type": "633",

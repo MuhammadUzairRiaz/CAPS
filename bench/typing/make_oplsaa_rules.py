@@ -58,7 +58,6 @@ by_h((None, 714, 715, 716), 1, f"r4;{HC_ONLY}", "cyclobutane C")
 # ---------------------------------------------------------------- alcohols and phenols
 ALC = "$(*[OX2H1])"
 add(154, 5, "[OX2H1][CX4]", "alcohol O")
-add(160, 6, "[OX2H1][CX4H0]", "tertiary alcohol O")
 add(155, 5, "[H][OX2H1][CX4]", "alcohol H")
 by_h((157, 157, 158, 159), 5, ALC, "alcohol C")
 # glycerol-like triols (three OH on consecutive carbons): the table's triol types
@@ -78,10 +77,11 @@ add(166, 5, "c[OX2H1]", "phenol C(OH)")
 ETHO = "[OX2;!$(O[#1]);!$(O[#6]=[O,S,N]);!$(O[Si]);!$(O~[#6](~[OX2])~[OX2]);!$(O[CX4]([OX2])[OX2]);!r3]"
 add(180, 5, f"{ETHO[:-1]};$(O([CX4])[CX4])]", "dialkyl ether O")
 add(179, 5, f"{ETHO[:-1]};$(O(c)[CX4])]", "alkyl aryl ether O (anisole)")
-add(177, 5, f"{ETHO[:-1]};$(O(c)c)]", "diaryl ether O")
+add(473, 5, f"{ETHO[:-1]};$(O(c)c)]", "diaryl ether O (the phenyl ester O, as the GROMACS OPLS-AA topologies type diphenyl ether)")
 by_h((181, 182, 183, 184), 5, f"$(*{ETHO[:-1]};$(O([CX4])[CX4,c])])", "ether alpha C")
 add(185, 5, f"[H][CX4]{ETHO[:-1]};$(O([CX4])[CX4,c])]", "H on ether alpha C")
-add(199, 5, f"c{ETHO[:-1]};$(O(c)[CX4,c])]", "aryl ether C(O)")
+add(199, 5, f"c{ETHO[:-1]};$(O(c)[CX4])]", "aryl ether C(O)")
+add(472, 5, f"c{ETHO[:-1]};$(O(c)c)]", "diaryl ether C(O) (the phenyl ester C(ipso))")
 # vinyl ethers (ethyl vinyl ether): the table has the vinyl C 517/518 but no O; the GROMACS OPLS-AA topologies give the O
 # the acetal O 186, the vinyl CH 518 and the alkoxy C the ether types
 add(186, 7, "[OX2;$(O[CX3]=[CX3]);$(O[CX4]);!$(O[CX3]=[O,S,N])]", "vinyl ether O")
@@ -101,7 +101,9 @@ add(194, 7, f"[H][CX4H1;{ACET}]", "H on acetal C (OCHRO)")
 by_h((None, 191, 195, 198), 7, HEMI, "hemiacetal C")
 add(192, 7, f"[H][CX4H2;{HEMI}]", "H on hemiacetal C (OCH2OH)")
 add(196, 7, f"[H][CX4H1;{HEMI}]", "H on hemiacetal C (OCHROH)")
-add(186, 7, f"{ACO[:-1]};$(O[CX4][OX2])]", "acetal / hemiacetal ether O")
+add(186, 8, f"{ACO[:-1]};$(O([CX4][OX2])[CX4][OX2]);!$(O[CX4][OX2H1])]", "O between two acetal C (paraldehyde, 1,3,5-trioxane), as those topologies")
+add(180, 7, f"{ACO[:-1]};$(O[CX4][OX2]);!$(O[CX4][OX2H1])]", "acetal ether O (the dialkyl ether O, as the GROMACS OPLS-AA topologies type dimethoxymethane and 1,3-dioxolane)")
+add(186, 7, f"{ACO[:-1]};$(O[CX4][OX2H1])]", "hemiacetal ether O")
 add(187, 7, f"[OX2H1;$(O[CX4]{ACO})]", "hemiacetal O(H)")
 add(188, 7, f"[H][OX2H1;$(O[CX4]{ACO})]", "hemiacetal H(O)")
 
@@ -116,7 +118,16 @@ add(281, 5, "[OX1]=[CX3H0]([#6])[#6]", "ketone O")
 add(282, 4, "[H][CX4][CX3](=[OX1])[#6,#1]", "H on C alpha to a ketone / aldehyde")
 # esters take the ketone's alpha parameters on the acyl side (the table: "=O: esters ketone params (see 280-282)"); an
 # acid's alpha H stays 140
-add(282, 4, "[H][CX4][CX3](=[OX1])[OX2H0]", "H on C alpha to an ester carbonyl (acyl side)")
+# as the GROMACS OPLS-AA topologies: alkyl ketones, aldehydes and anhydrides 282; the H alpha to an ester's acyl C, or to
+# a ketone C that also carries an aryl or cyclopropyl group (acetophenone, cyclopropyl methyl ketone), stays 140
+add(140, 5, "[H][CX4][CX3](=[OX1])[OX2][#6;!$([CX3]=[OX1])]", "H alpha to an ester carbonyl (acyl side)")
+add(140, 5, "[H][CX4][CX3](=[OX1])[c,$([CX4;r3])]", "H alpha to an aryl or cyclopropyl ketone")
+add(282, 5, "[H][CX4][CX3](=[OX1])[OX2][CX3]=[OX1]", "H alpha to an anhydride carbonyl")
+add(140, 5, "[H][CX4;r3][CX3]=[OX1]", "H on a cyclopropyl C alpha to a ketone")
+# diesters (glycol diacetates, diethyl malonate): the acyl-side H takes 282 there, as those topologies have it
+for n in (2, 3, 4):
+    add(282, 6, "[H][CX4][CX3](=[OX1])[OX2]" + "[CX4]" * n + "[OX2][CX3]=[OX1]", f"H alpha to an ester carbonyl of a diester (O-(C){n}-O)")
+add(282, 6, "[H][CX4]([CX3](=[OX1])[OX2])[CX3](=[OX1])[OX2]", "H on the C between two ester carbonyls (malonate)")
 # on an aromatic ring the ipso C keeps -0.115: the carbonyl C carries +0.115 more
 add(232, 6, "[CX3H1](=[OX1])c", "aryl aldehyde C (benzaldehyde)")
 add(233, 6, "[CX3H0](=[OX1])(c)[CX4]", "alkyl aryl ketone C (acetophenone)")
@@ -147,15 +158,22 @@ add(270, 7, "[H][OX2H1][CX3]=[OX1]", "carboxylic acid H")
 CXO = "$([CX3](~[OX1])~[OX1-])"
 add(271, 7, f"[CX3;{CXO}]", "carboxylate C")
 add(272, 7, f"[OX1;$(O~[CX3;{CXO}])]", "carboxylate O")
-by_h((273, 274, 275, 276), 7, f"$(*[CX3;{CXO}])", "C alpha to a carboxylate")
+by_h((135, 136, 137, 139), 7, f"$(*[CX3;{CXO}])", "C alpha to a carboxylate (the alkane types, as the GROMACS OPLS-AA topologies type acetate)")
 
 # ---------------------------------------------------------------- carbonates (dialkyl; aryl carbonates have no OPLS-AA type)
-add(772, 7, "[CX3](=[OX1])([OX2][CX4])[OX2][CX4]", "carbonate C=O")
-add(771, 7, "[OX1]=[CX3]([OX2][CX4])[OX2][CX4]", "carbonate =O")
-add(773, 7, "[OX2;$(O[CX3](=[OX1])[OX2][CX4]);$(O[CX4])]", "carbonate -O-")
-by_h((789, 774, 775, None), 7, "$(*[OX2][CX3](=[OX1])[OX2][CX4])", "carbonate alkoxy C")
-add(777, 7, "[H][CX4][OX2][CX3](=[OX1])[OX2][CX4]", "H on carbonate alkoxy C")
-add(778, 8, "[H][CX4H1][OX2][CX3](=[OX1])[OX2][CX4]", "H on carbonate alkoxy CH")
+# cyclic carbonates (ethylene and propylene carbonate) 771-779; an open-chain dialkyl carbonate takes the ester types
+# (465-469, 490), as the GROMACS OPLS-AA topologies type dimethyl and diethyl carbonate
+add(772, 7, "[CX3;R](=[OX1])([OX2][CX4])[OX2][CX4]", "cyclic carbonate C=O")
+add(771, 7, "[OX1]=[CX3;R]([OX2][CX4])[OX2][CX4]", "cyclic carbonate =O")
+add(773, 7, "[OX2;R;$(O[CX3](=[OX1])[OX2][CX4]);$(O[CX4])]", "cyclic carbonate -O-")
+by_h((789, 774, 775, None), 7, "$(*[OX2;R][CX3](=[OX1])[OX2][CX4])", "cyclic carbonate alkoxy C")
+add(777, 7, "[H][CX4][OX2;R][CX3](=[OX1])[OX2][CX4]", "H on cyclic carbonate alkoxy C")
+add(465, 7, "[CX3;!R](=[OX1])([OX2][CX4])[OX2][CX4]", "open-chain carbonate C=O (ester C)")
+add(466, 7, "[OX1]=[CX3;!R]([OX2][CX4])[OX2][CX4]", "open-chain carbonate =O (ester =O)")
+add(467, 7, "[OX2;!R;$(O[CX3](=[OX1])[OX2][CX4]);$(O[CX4])]", "open-chain carbonate -O- (ester -O-)")
+by_h((468, 490, 491, 492), 7, "$(*[OX2;!R][CX3](=[OX1])[OX2][CX4])", "open-chain carbonate alkoxy C (ester alkoxy C)")
+add(469, 7, "[H][CX4][OX2;!R][CX3](=[OX1])[OX2][CX4]", "H on open-chain carbonate alkoxy C")
+add(778, 8, "[H][CX4H1][OX2;R][CX3](=[OX1])[OX2][CX4]", "H on carbonate alkoxy CH")
 add(776, 7, "[CX4H3;$(*[CX4;R][OX2][CX3](=[OX1])[OX2][CX4])]", "CH3 on a cyclic carbonate ring C (propylene carbonate)")
 add(779, 7, "[H][CX4H3;$(*[CX4;R][OX2][CX3](=[OX1])[OX2][CX4])]", "H of that CH3")
 
@@ -204,8 +222,8 @@ add(260, 6, "c[CX2]#[NX1]", "benzonitrile C(ipso)")
 # OPLS-AA topologies (Caleman et al. 2012) take them
 add(262, 6, "[NX1]#[CX2][CX3]=[CX3]", "conjugated nitrile N (acrylonitrile)")
 add(261, 6, "[CX2](#[NX1])[CX3]=[CX3]", "conjugated nitrile C (acrylonitrile)")
-add(142, 6, "[CX3H1;$(*[CX2]#[NX1])]=[CX3]", "alkene C carrying a nitrile (RHC=)")
-add(141, 6, "[CX3H0;$(*[CX2]#[NX1])]=[CX3]", "alkene C carrying a nitrile (R2C=)")
+add(260, 6, "[CX3;$(*[CX2]#[NX1])]=[CX3]", "alkene C carrying a nitrile (the benzonitrile ipso C, as the GROMACS OPLS-AA topologies type acrylonitrile)")
+add(140, 7, "[H][CX3;$(*[CX2]#[NX1])]=[CX3]", "H on that C (140, as those topologies)")
 
 # ---------------------------------------------------------------- halogens (one halogen per carbon; CX2 / CX3 groups only when perfluorinated)
 ONEX = lambda X: f"$(*[{X}]);!$(*([{X}])[{X}]);!$(*[F,Cl,Br,I;!{X}])"
@@ -221,12 +239,12 @@ add(153, 6, "[H][CX4;$(*(Cl)Cl)]", "H on a polychlorinated C")
 by_h((None, 957, 959, 960), 6, "$(*F);$(*Cl);!$(*(F)F)", "fluorochloro C")
 add(965, 7, "[F][CX4;$(*Cl)]", "F on a C that also carries Cl")
 add(153, 7, "[H][CX4;$(*F);$(*Cl)]", "H on a fluorochloro C")
-add(975, 5, "[Br][CX4]", "alkyl bromide Br")
-by_h((976, 976, 978, None), 5, ONEX("Br"), "alkyl bromide C (CH3Br takes RCH2Br's number: the table has none of its own)")
-by_h((976, 976, 976, 976), 6, "$(*(Br)Br);!$(*[F,Cl,I])", "polybrominated C")
-add(977, 5, "[H][CX4][Br]", "H on an alkyl bromide C")
-add(1014, 5, "[I][CX4]", "alkyl iodide I (tentative in the table)")
-by_h((1011, 1011, 1012, 1013), 5, "$(*[I])", "alkyl iodide C")
+# alkyl bromides and iodides as the GROMACS OPLS-AA topologies type them: Br 722, I 732, the carbon RCH2Cl's 152 and its
+# H 153 whatever the number of H
+add(722, 5, "[Br][CX4]", "alkyl bromide Br")
+by_h((152, 152, 152, 152), 5, "$(*[Br,I]);!$(*[F,Cl])", "C of an alkyl bromide or iodide")
+add(153, 5, "[H][CX4][Br,I]", "H on an alkyl bromide or iodide C")
+add(732, 5, "[I][CX4]", "alkyl iodide I")
 add(956, 5, "[F][CX4;$(*[F]);!$(*(F)F)]", "monofluoroalkyl F")
 by_h((None, 957, 959, 960), 5, ONEX("F"), "monofluoroalkyl C")
 add(958, 5, "[H][CX4;$(*[F]);!$(*(F)F)]", "H on monofluoroalkyl C")
@@ -254,8 +272,8 @@ add(227, 6, "[CX3H1]([Cl])=[CX3]", "chloroalkene C (ClHC=)")
 # with the H's +0.115 gone), so 227's +0.005 becomes +0.12, balancing the Cl's -0.12; the table's CM number with that
 # charge is 399, so its number is used (same class, same bonded and LJ terms as 227)
 add(399, 7, "[CX3H0;!$(*(Cl)Cl)]([Cl])([CX4])=[CX3]", "chloroalkene C with an alkyl group (R-CCl=, chloroprene): CM, +0.12 e")
-add(398, 7, "[Cl][CX3;$(*(Cl)Cl)]=[CX3]", "chloroalkene Cl (Cl2C=)")
-add(399, 7, "[CX3;$(*(Cl)Cl)]=[CX3]", "chloroalkene C (Cl2C=)")
+add(226, 7, "[Cl][CX3;$(*(Cl)Cl)]=[CX3]", "chloroalkene Cl (Cl2C=: 226, as the GROMACS OPLS-AA topologies type 1,1-dichloroethene)")
+add(227, 7, "[CX3;$(*(Cl)Cl)]=[CX3]", "chloroalkene C (Cl2C=: 227)")
 
 # ---------------------------------------------------------------- sulfur
 add(493, 6, "[SX4](=[OX1])(=[OX1])([#6])[#6]", "sulfone S")
@@ -280,6 +298,9 @@ by_h((213, 214, 215, 216), 6, "$(*[SX2][SX2])", "C on a disulfide S")
 by_h((None, 206, 207, 208), 5, "$(*[SX2H1])", "C on a thiol S")
 
 # ---------------------------------------------------------------- epoxides
+# the table's epoxide types, with three-ring angle terms (CY-O^-CY 90 deg). The GROMACS OPLS-AA topologies type
+# methyloxirane with the ether types instead; their 109.5 deg angles put about 119 kcal/mol of strain in each ring
+# (44 with these), so CAPS keeps the epoxide types: the one place it differs from those topologies
 add(1025, 6, "[OX2;r3]([CX4])[CX4]", "epoxide O")
 by_h((None, 1026, 1027, 1028), 6, "$(*1[OX2][CX4]1)", "epoxide C")
 add(1029, 6, "[H][CX4;$(*1[OX2][CX4]1)]", "H on epoxide C")
@@ -330,7 +351,7 @@ add(444, 6, f"[H][CX4][OX2]{PO4}", "H on C of a phosphate ester O")
 add(925, 6, "[CX2]#[CX2]", "alkyne C")
 add(939, 7, "[CX2;$(*([#6])#[CX2][#6])]", "alkyne C of RC#CR")
 add(926, 6, "[H][CX2]#[CX2]", "alkyne terminal H")
-by_h((927, 928, 929, 930), 6, "$(*[CX2]#[CX2])", "sp3 C on an alkyne C")
+# the sp3 C on an alkyne C keeps the alkane types (135-139), as the GROMACS OPLS-AA topologies type propyne
 
 # monatomic ions
 for z, n, d in (("[Cl-,Cl;X0]", 401, "Cl-"), ("[Br-,Br;X0]", 402, "Br-"), ("[Li+,Li;X0]", 406, "Li+"), ("[Na+,Na;X0]", 407, "Na+"), ("[K+,K;X0]", 408, "K+")):
@@ -361,6 +382,14 @@ for n, sm in QUIN.items():
     add(n, 8, f"[{sm[0]};$({sm})]", f"quinoline {'N1' if n == 603 else 'C' + str(n - 602)}")
 for c, h in ((604, 613), (605, 614), (606, 615), (607, 616), (608, 617), (609, 618), (610, 619)):
     add(h, 8, f"[H][c;$({QUIN[c]})]", f"quinoline H{h - 611}")
+
+# isoquinoline: quinoline's numbers position by position, as the GROMACS OPLS-AA topologies give them
+ISOQ = {603: "n1cc2ccccc2cc1", 611: "c1nccc2ccccc12", 604: "c1ncc2ccccc2c1", 605: "c1cncc2ccccc12", 612: "c12ccccc1cncc2",
+        606: "c1cccc2cnccc12", 607: "c1ccc2cnccc2c1", 608: "c1ccc2ccncc2c1", 609: "c1cccc2ccncc12", 610: "c12cnccc1cccc2"}
+for n, sm in ISOQ.items():
+    add(n, 8, f"[{sm[0]};$({sm})]", f"isoquinoline atom typed as quinoline {n}")
+for c, h in ((611, 619), (604, 613), (605, 614), (606, 615), (607, 616), (608, 617), (609, 618)):
+    add(h, 8, f"[H][c;$({ISOQ[c]})]", f"isoquinoline H typed as quinoline {h}")
 
 # thiophene: no numbers of its own in the table; the GROMACS OPLS-AA topologies take furan's C and H and thiazole's S
 add(633, 7, "[s;r5;$(s1cccc1)]", "thiophene S")
