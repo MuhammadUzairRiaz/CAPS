@@ -41,15 +41,15 @@ PME = ["--pme", "--ewald-rtol", "1e-7", "--pme-spacing", "0.5", "--pme-order", "
 
 # (label, structure source, force field, charges, extra caps options)
 CASES = [
-    ("Polystyrene melt, GAFF2, PME (periodic, 1300 atoms)", ("file", PS), "gaff-amber25", "gasteiger", PME),
-    ("Polystyrene melt, GAFF2, PME, shifted LJ (no tail)", ("file", PS), "gaff-amber25", "gasteiger", PME + ["--no-tail"]),
+    ("Polystyrene melt, GAFF2, PME (periodic, 1300 atoms)", ("file", PS), "gaff2-2.2.20-ambertools", "gasteiger", PME),
+    ("Polystyrene melt, GAFF2, PME, shifted LJ (no tail)", ("file", PS), "gaff2-2.2.20-ambertools", "gasteiger", PME + ["--no-tail"]),
     ("Polystyrene melt, OPLS-AA, PME", ("file", PS), "opls2005", "gasteiger", PME),
     ("Polystyrene melt, OPLS-AA 2024 (its own charges), PME", ("file", PS), "oplsaa2024-moltemplate", "types", PME),
     ("Polystyrene melt, CVFF, PME (cvff impropers)", ("file", PS), "cvff", "types", PME),
-    ("Polystyrene melt, GAFF2, PME, triclinic cell (xy 0.5, xz 0.3, yz 0.2 Å)", ("tilt", PS), "gaff-amber25", "gasteiger", PME),
+    ("Polystyrene melt, GAFF2, PME, triclinic cell (xy 0.5, xz 0.3, yz 0.2 Å)", ("tilt", PS), "gaff2-2.2.20-ambertools", "gasteiger", PME),
     ("(6,6) nanotube, GAFF2, PME (bonds cross the cell: periodic-molecules)", ("nano", ["tube", "--n", "6", "--m", "6", "--length", "25"]),
-     "gaff-amber25", "gasteiger", PME),
-    ("GAFF toluene (vacuum)", ("template", "AMBER16_gaff", "toluene"), "gaff-amber16", "gasteiger", []),
+     "gaff2-2.2.20-ambertools", "gasteiger", PME),
+    ("GAFF toluene (vacuum)", ("template", "AMBER16_gaff", "toluene"), "gaff-1.81-ambertools", "gasteiger", []),
     ("CVFF phenol (vacuum, cvff impropers)", ("template", "CVFF", "phenol"), "cvff", "types", []),
     ("OPLS-AA methyl vinyl ketone (vacuum)", ("template", "OPLS2005", "methyl_vinyl_ketone"), "opls2005", "gasteiger", []),
     ("CGenFF toluene (vacuum; separate 1-4 LJ, Urey-Bradley, harmonic impropers)", ("template", "CHARMM36_cgenff", "toluene"), "cgenff", "gasteiger", []),
@@ -64,6 +64,10 @@ CASES = [
      ("file", os.path.expanduser("~/iff-ref/INTERFACE_FF_1_5/MODEL_DATABASE/CLAY_MINERALS/mont0_333_Na_15_cell.car")),
      "iff-cvff", "keep", PME + ["--cutoff", "9", "--no-tail"]),
     # the libraries built from their original sources on this machine (bench/ff/open), on molecules CAPS builds itself
+    ("AMBER ff03 (AmberTools) peptide GAFKW (vacuum)", ("peptide", "GAFKW"), "amber-ff03-ambertools", "gasteiger", []),
+    ("AMBER ff03 (AmberTools) thymidine (vacuum)", ("smiles", "CC1=CN([C@H]2C[C@H](O)[C@@H](CO)O2)C(=O)NC1=O"), "amber-ff03-ambertools", "gasteiger", []),
+    ("GAFF 1.81 (gaff.dat) ester, epoxide, amide, thioether (vacuum)", ("smiles", "CCOC(=O)C.C1CO1.CC(=O)NC.CSC"), "gaff-1.81-ambertools", "gasteiger", []),
+    ("GAFF2 2.11 (gaff211.dat) isoprene, styrene (vacuum)", ("smiles", "CC=C(C)CC.C=Cc1ccccc1"), "gaff2-2.11-ambertools", "gasteiger", []),
     ("CHARMM36 (toppar) peptide GAFKW (vacuum; CMAP not represented)", ("peptide", "GAFKW"), "charmm36-prot-toppar", "gasteiger", []),
     ("CHARMM22 (toppar) peptide GAFKW (vacuum)", ("peptide", "GAFKW"), "charmm22-prot-toppar", "gasteiger", []),
     ("CGenFF (toppar) toluene (vacuum)", ("smiles", "Cc1ccccc1", os.path.join(FF, "cgenff-toppar.json")), "cgenff-toppar", "gasteiger", []),
