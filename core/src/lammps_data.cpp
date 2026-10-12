@@ -44,8 +44,13 @@ struct Digits {
   ~Digits() { full_digits = old; }
 };
 
+// A number six decimals cannot hold exactly (one CAPS derived: a mixed σ, σ from R*, AMBER's PK / IDIVF) keeps 15
+// significant digits even in the native styles, so LAMMPS evaluates the parameters CAPS does; the force field's own
+// numbers (1.090, 340.0, 0.4615) read as six decimals.
+bool six_decimals_exact(double x) { return std::fabs(x - std::round(x * 1e6) / 1e6) <= 1e-12 * std::max(1.0, std::fabs(x)); }
+
 void fmt_coef(char* b, size_t n, double x) {
-  if (full_digits) std::snprintf(b, n, " %.15g", x == 0 ? 0.0 : x);
+  if (full_digits || !six_decimals_exact(x)) std::snprintf(b, n, " %.15g", x == 0 ? 0.0 : x);
   else if (x != 0 && std::fabs(x) < 1e-3) std::snprintf(b, n, " %.6e", x);
   else std::snprintf(b, n, " %.6f", x == 0 ? 0.0 : x);   // no "-0.000000"
 }
@@ -771,8 +776,6 @@ std::vector<std::string> pair_lines(const Layout& L, const ForceField& ff) {
           f14.lj = ff.lj14_types;
           p14 = mixed_pair(f14, int(a2), int(b2));
         }
-        // mixed by CAPS, not numbers of the source: at full precision, so LAMMPS's 1-4 and switched pairs equal CAPS's
-        const Digits full(true);
         coef = num({pt.eps, pt.sigma, p14.eps, p14.sigma});
       } else {
         const PairType pt = mixed_pair(ff, int(a2), int(b2));

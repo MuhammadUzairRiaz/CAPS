@@ -8686,5 +8686,6 @@
   "converted by CAPS (bench/ff/convert_amber_dat.py) from parm99.dat, frcmod.ff03 (AmberTools dat/leap/parm, public domain)",
   "types without Lennard-Jones in the source: CU, FE"
  ],
- "version": ""
+ "version": "",
+ "typing": "../typing/amber-ff03-ambertools.typing.json"
 }

@@ -26,7 +26,10 @@ ENTRIES = {
                                 "conjugated pairs (bench/typing/make_gaff_rules.py)", ("GAFF2", "gaff2", 18), ["gaff-amber25"]),
     "amber-ff03-ambertools": ("AMBER ff03", "parm99.dat + frcmod.ff03",
                               ["Y. Duan et al., J. Comput. Chem. 24, 1999 (2003)", "J. Wang, P. Cieplak, P. A. Kollman, J. Comput. Chem. 21, 1049 (2000)"],
-                              AMBERTOOLS, None, None, []),
+                              AMBERTOOLS, "CAPS rules in AMBER's own type names (bench/typing/make_amber_rules.py); AmberTools' residue "
+                              "libraries all_amino03.lib, all_aminont94.lib, all_aminoct94.lib and all_nucleic94.lib typed as the "
+                              "libraries type them: 2270 / 2270 atoms, 111 / 111 residues (bench/ff/validate_off_types.py)",
+                              ("AMBER ff03", "amber", 17), ["amber"]),
 }
 cat_path = os.path.join(FF, "catalogue.json")
 cat = json.load(open(cat_path))

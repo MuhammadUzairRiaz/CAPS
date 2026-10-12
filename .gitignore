@@ -69,6 +69,7 @@ MS_information_design/
 data/forcefields/*-toppar.json
 # CAPS's own typing rules for those libraries (bench/typing/make_charmm_rules.py): tracked
 !/data/typing/*-toppar.typing.json
+!/data/typing/*-ambertools.typing.json
 # AmberTools' public-domain parameter files: the GAFF / AMBER libraries built from them are tracked; GLYCAM carries its
 # own copyright notice and stays local
 data/forcefields/glycam*-ambertools.json

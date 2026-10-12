@@ -46,8 +46,8 @@ CASES = [
     ("CVFF ethyl acetate", ("template", "CVFF", "ethylacetate"), "cvff", "types", "rules"),
     ("OPLS-AA methyl vinyl ketone", ("template", "OPLS2005", "methyl_vinyl_ketone"), "opls2005", "gasteiger", "rules"),
     ("OPLS-AA phthalimide", ("template", "OPLS2005", "phthalimide"), "opls2005", "gasteiger", "rules"),
-    ("GAFF toluene", ("template", "AMBER16_gaff", "toluene"), "gaff-amber16", "gasteiger", "rules"),
-    ("GAFF2 phenol", ("template", "AMBER25_gaff", "phenol"), "gaff-amber25", "gasteiger", "rules"),
+    ("GAFF toluene", ("template", "AMBER16_gaff", "toluene"), "gaff-1.81-ambertools", "gasteiger", "rules"),
+    ("GAFF2 phenol", ("template", "AMBER25_gaff", "phenol"), "gaff2-2.2.20-ambertools", "gasteiger", "rules"),
     ("DREIDING first template (umbrella inversions)", ("template-first", "DREIDING", ""), "dreiding", "gasteiger", "keys"),
     # DREIDING's own torsion rules (Mayo 1990, cases a-j) where the file lists none: C=C double and conjugated single
     # bonds (polybutadiene, butadiene), sp3 next to sp2 (b / j), biphenyl's ring link (f), the aromatic ring (d)
@@ -61,7 +61,7 @@ CASES = [
     ("SrTiO3 perovskite, core-shell (CORESHELL styles)", ("crystal", ["--group", "P m -3 m", "--cell", "3.905,3.905,3.905", "--sites",
      "Sr1 Sr 0 0 0; Ti1 Ti 0.5 0.5 0.5; O1 O 0.5 0.5 0", "--supercell", "3,3,3"]), "inorganic-ternary-oxides", "types", "rules", ["--no-tail"]),
     ("Binary oxides (Buckingham, periodic)", ("ionic-first", "INORGANIC_binary_oxides", ""), "inorganic-binary-oxides", "qeq", "keys"),
-    ("Polystyrene melt, GAFF2 (periodic, 1300 atoms)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "gaff-amber25", "gasteiger", "rules"),
+    ("Polystyrene melt, GAFF2 (periodic, 1300 atoms)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "gaff2-2.2.20-ambertools", "gasteiger", "rules"),
     ("Polystyrene melt, PCFF (periodic, class II + class I)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "pcff", "types", "rules"),
     # CVFF, PCFF and COMPASS from their .frc files (msi2lmp's assignment; check_msi2lmp.py compares with msi2lmp itself)
     ("Polystyrene melt, PCFF from pcff.frc (periodic, full class II)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "pcff-frc", "types", "rules"),
@@ -94,6 +94,8 @@ CASES = [
     ("CHARMM36 carbohydrates toppar: glucose", ("smiles", "OC[C@H]1O[C@H](O)[C@H](O)[C@@H](O)[C@@H]1O"), "charmm36-carb-toppar", "gasteiger", "rules"),
     ("CHARMM36 nucleic acids toppar: thymidine", ("smiles", "CC1=CN([C@H]2C[C@H](O)[C@@H](CO)O2)C(=O)NC1=O"), "charmm36-nucl-toppar", "gasteiger", "rules"),
     ("CHARMM36 lipids toppar: phosphatidylcholine", ("smiles", "CCCCCCCC(=O)OC[C@H](COP(=O)([O-])OCC[N+](C)(C)C)OC(=O)CCCCCCC"), "charmm36-lipid-toppar", "qeq", "rules"),
+    ("AMBER ff03: peptide GAFKW", ("peptide", "GAFKW"), "amber-ff03-ambertools", "gasteiger", "rules"),
+    ("AMBER ff03: thymidine (N*, CM, CT / H2 sugar)", ("smiles-nudged", "CC1=CN([C@H]2C[C@H](O)[C@@H](CO)O2)C(=O)NC1=O"), "amber-ff03-ambertools", "gasteiger", "rules"),
     ("GAFF 1.81 (gaff.dat): ester, epoxide, amide, thioether", ("smiles", "CCOC(=O)C.C1CO1.CC(=O)NC.CSC"), "gaff-1.81-ambertools", "gasteiger", "rules"),
     ("GAFF2 2.11 (gaff211.dat): isoprene, styrene, nitrile; nudged off linear", ("smiles-nudged", "CC=C(C)CC.C=Cc1ccccc1.CCC#N"), "gaff2-2.11-ambertools", "gasteiger", "rules"),
     ("GAFF2 2.2.20 (gaff2.dat): polystyrene melt (periodic)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "gaff2-2.2.20-ambertools", "gasteiger", "rules"),
@@ -293,7 +295,7 @@ def structure(src, base):
     if kind == "compass-ps":   # polystyrene melt with COMPASS types (from the GAFF2 typing: c3 → c4, ca → c3a, H → h1)
         ps = os.path.join(ROOT, "samples", "ps_melt.data")
         gt = os.path.join(work, base + ".gaff")
-        subprocess.run([CAPS, "ff", "type", ps, "--ff", ff_file("gaff-amber25"), "-o", gt], capture_output=True, check=True)
+        subprocess.run([CAPS, "ff", "type", ps, "--ff", ff_file("gaff2-2.2.20-ambertools"), "-o", gt], capture_output=True, check=True)
         tfile = os.path.join(work, base + ".types")
         with open(tfile, "w") as f:
             for t in open(gt):
@@ -529,7 +531,7 @@ for case in CASES:
         continue
     base = re.sub(r"[^a-z0-9]+", "_", label.lower()).strip("_")[:40]
     ffj = ff_file(fid)
-    s, tfile = structure(src, base)
+    s, tfile = structure(src, base) if ffj else (None, None)
     if not ffj or not s:
         rows.append((label, "skipped (source not available)", "", ""))
         continue

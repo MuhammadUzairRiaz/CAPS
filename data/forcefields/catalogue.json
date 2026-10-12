@@ -378,36 +378,6 @@
    }
   },
   {
-   "id": "amber",
-   "name": "AMBER",
-   "version": "Cornell et al. 1995 family",
-   "references": [
-    "W. D. Cornell et al., J. Am. Chem. Soc. 117, 5179 (1995)"
-   ],
-   "origin": "converted",
-   "source_file": "AMBER.par",
-   "status": "validated",
-   "notes": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): BPTI (6PTI) and a methyl glucoside identical.",
-   "file": "amber.json",
-   "counts": {
-    "atom_types": 72,
-    "pairs": 68,
-    "bonds": 120,
-    "angles": 309,
-    "dihedrals": 355,
-    "impropers": 39
-   },
-   "typing": {
-    "rules": "typing/amber.typing.json",
-    "evidence": "CAPS rules from AMBER (Cornell et al. 1995 family)'s type definitions (bench/typing/make_biomolecular_rules.py)"
-   },
-   "list": {
-    "label": "AMBER",
-    "key": "amber",
-    "order": 17
-   }
-  },
-  {
    "id": "charmm",
    "name": "CHARMM",
    "version": "",
@@ -2048,6 +2018,15 @@
     "angles": 282,
     "dihedrals": 120,
     "impropers": 38
+   },
+   "typing": {
+    "rules": "typing/amber-ff03-ambertools.typing.json",
+    "evidence": "CAPS rules in AMBER's own type names (bench/typing/make_amber_rules.py); AmberTools' residue libraries all_amino03.lib, all_aminont94.lib, all_aminoct94.lib and all_nucleic94.lib typed as the libraries type them: 2270 / 2270 atoms, 111 / 111 residues (bench/ff/validate_off_types.py)"
+   },
+   "list": {
+    "label": "AMBER ff03",
+    "key": "amber",
+    "order": 17
    }
   }
  ],
