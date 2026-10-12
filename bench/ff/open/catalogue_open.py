@@ -205,6 +205,15 @@ ENTRIES = {
                                 "Schroder and Sauer's silica shell model as the paper gives it (Si-O shell repulsion only, O-Si-O bends "
                                 "on the shells) and the benzene-O shell pairs (rigid benzene); LAMMPS reproduces CAPS's energies on "
                                 "quartz and on benzene with SiO4", ("Silicalite (Forester 1997)", "forester1997", 30), []),
+    "hill-sauer1995": ("Aluminosilicates (Hill & Sauer 1995)", "1995, Table 8",
+                       ["J.-R. Hill, J. Sauer, J. Phys. Chem. 99, 9536 (1995)", "J.-R. Hill, J. Sauer, J. Phys. Chem. 98, 1238 (1994)"],
+                       {"source": "the paper's Table 8 (cross terms read from the page image); bench/ff/make_hill_sauer1995.py",
+                        "license": "published parameters of the paper"},
+                       "the ab initio CFF for silica and zeolite clusters: quartic bonds and angles, torsions, bond-bond, bond-angle, "
+                       "angle-angle and angle-angle-torsion cross terms, the bridging O's out-of-plane term, A_i A_j / r^9 repulsion "
+                       "and bond-increment charges; LAMMPS reproduces CAPS's energies on disilicic acid, a bridging-hydroxyl Si-O(H)-Al "
+                       "cluster, (HO)3Si-O-Al(OH)3 and a cyclotetrasilicic acid", ("Aluminosilicates (Hill & Sauer)", "hill_sauer1995", 30),
+                       ["inorganic-zeolite-hill-sauer"]),
 }
 RTF = "the topology's own residues typed as it types them (bench/ff/validate_rtf_types.py --cap-links): "
 for fid, name, version, refs, evidence, listing, replaces in (

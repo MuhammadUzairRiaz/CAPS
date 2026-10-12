@@ -1,0 +1,69 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "Aluminosilicates (Hill & Sauer 1995)",
+ "unknown_types": "untyped",
+ "description": "Hill and Sauer's aluminosilicate O and H types by their neighbours (bench/ff/make_hill_sauer1995.py)",
+ "rules": [
+  {
+   "type": "Si",
+   "smarts": "[Si]",
+   "priority": 0,
+   "description": "Si"
+  },
+  {
+   "type": "Al",
+   "smarts": "[Al]",
+   "priority": 0,
+   "description": "Al"
+  },
+  {
+   "type": "Oss",
+   "smarts": "[O;X2;$(O([Si])[Si])]",
+   "priority": 1,
+   "description": "Si-O-Si"
+  },
+  {
+   "type": "Oas",
+   "smarts": "[O;X2;$(O([Si])[Al])]",
+   "priority": 1,
+   "description": "Si-O-Al"
+  },
+  {
+   "type": "Ob",
+   "smarts": "[O;X3;$(O([Si])([Al])[#1])]",
+   "priority": 2,
+   "description": "bridging hydroxyl O"
+  },
+  {
+   "type": "Osh",
+   "smarts": "[O;X2;$(O([Si])[#1])]",
+   "priority": 1,
+   "description": "silanol O"
+  },
+  {
+   "type": "Oah",
+   "smarts": "[O;X2;$(O([Al])[#1])]",
+   "priority": 1,
+   "description": "aluminol O"
+  },
+  {
+   "type": "Hb",
+   "smarts": "[#1;$([#1]O([Si])[Al])]",
+   "priority": 2,
+   "description": "bridging hydroxyl H"
+  },
+  {
+   "type": "Hos",
+   "smarts": "[#1;$([#1][O;X2][Si])]",
+   "priority": 1,
+   "description": "silanol H"
+  },
+  {
+   "type": "Hoa",
+   "smarts": "[#1;$([#1][O;X2][Al])]",
+   "priority": 1,
+   "description": "aluminol H"
+  }
+ ]
+}
