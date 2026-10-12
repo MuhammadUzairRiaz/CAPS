@@ -14,6 +14,9 @@ OP="water_tip3p_c=data/typing/opls-tip3p-c.typing.json;water_spce?=data/typing/o
 while read lib ff ov; do
   [ -z "$lib" ] && continue
   case "$ov" in charmm) o="$CH";; amber) o="$AM";; cvff) o="$CV";; opls) o="$OP";; dreiding) o="$DR";; gaff) o="$GA";; *) o="";; esac
+  for f in data/typing/sets/$ff/*.typing.json; do   # other potential sets (inorganic): each overlay on its own template
+    [ -f "$f" ] && o="${o:+$o;}$(basename "$f" .typing.json)=$f"
+  done
   d=${ff%-frc}   # the .frc entries take the DL_FIELD run of their DL-derived twin
   dl=""; [ -d "$R/dlf_$d" ] && dl="--dl $R/dlf_$d"
   ex='tip4p|tip5p|TIP4P|TIP5P'

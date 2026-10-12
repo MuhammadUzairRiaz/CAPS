@@ -183,6 +183,8 @@ def write_mol2(path, name, m, caps=None, sugar=False):
                 nh = round((template_pdb.ATOM_MASS[t] - 12.011) / 1.008)
                 if 1 <= nh <= 4:
                     el = f"CH{nh}"   # the mol2 type column, which CAPS reads as the site name
+            if SHELLS and key_of.get(t) in SHELLS:
+                lab, el = el, key_of[t]   # a shell: named by its type, as CAPS names the shells it adds
             f.write(f"{i + 1} {lab} {i * 1.5:.3f} 0.000 0.000 {el} 1 MOL 0.0\n")
         f.write("@<TRIPOS>BOND\n")
         for k, (i, j) in enumerate(sorted(bonds)):
@@ -223,6 +225,9 @@ def retyped(name, dl_types):
 
 
 UNITED = bool(__import__("json").load(open(rules)).get("united_atom"))
+# a shell model types its shells by name (the shells CAPS adds carry their type's name): the template's labels go in
+# the mol2 type column, which CAPS reads as the atom name
+SHELLS = set((__import__("json").load(open(rules)).get("shells") or {}).values())
 CAP = "--cap-open" in sys.argv
 # --deviations FILE: atoms where the library's template contradicts the force field's own typer (antechamber for GAFF),
 # each with its evidence: reported as explained, not counted right
@@ -242,6 +247,8 @@ for t in __import__("json").load(open(ffjson))["atom_types"]:
 # --overlay 'REGEX=RULES.json;...': templates whose name matches take that typing overlay too (a water model: the same
 # structure, a different model, which the user picks)
 OVERLAYS = [tuple(x.split("=", 1)) for x in arg("--overlay", "").split(";") if x]
+for _, f in OVERLAYS:   # the shells an overlay's potential set declares
+    SHELLS |= set((__import__("json").load(open(f)).get("shells") or {}).values())
 names = only or [n for n, m in mols.items() if n in keys and usable(n, m, CAP)]
 if "--exclude" in sys.argv:   # e.g. water-model templates (TIP4P / TIP5P virtual sites cannot be typed from bonds)
     names = [n for n in names if not re.search(arg("--exclude", ""), n)]
@@ -257,7 +264,12 @@ for name in names:
     opened = open_atoms(m) if CAP else {}
     sugar_cap = bool(opened) and not has_ring_o(m)   # a group that only exists on a sugar: capped with one
     write_mol2(path, name, m, opened, sugar_cap)
-    over = [f for pat, f in OVERLAYS if re.fullmatch(pat, name)]
+    def hit(pat):
+        try:
+            return pat == name or bool(re.fullmatch(pat, name))
+        except re.error:
+            return False
+    over = [f for pat, f in OVERLAYS if hit(pat)]
     expect = [key_of.get(t, "?") for t in retyped(name, [t for _, t in m["atoms"]])]
     # atoms a cap retypes: a capped O itself, and the H already on a capped C
     skip = {a for a in opened if element(dict(m["atoms"])[a]) == "O" and not sugar_cap}
@@ -288,8 +300,13 @@ for name in names:
         same_class[c].add(expect[i])
     by_alias = [i for i, a in enumerate(m["atoms"]) if expect[i] != got[i] and a[0] not in skip and ALIAS.get(got[i]) == expect[i]]
     alias_total += len(by_alias)
+    # (only for bonded atoms: free ions have no topology to be symmetric about)
+    bonded = {a for a, js in m["connect"].items() if any(b != a for b in js)} | {b for a, js in m["connect"].items() for b in js if b != a}
     by_symmetry = [i for i, a in enumerate(m["atoms"]) if expect[i] != got[i] and a[0] not in skip and i not in by_alias
-                   and got[i] in same_class[sym[i]]]
+                   and a[0] in bonded and got[i] in same_class[sym[i]]]
+    if "--show-symmetry" in sys.argv:
+        for i in by_symmetry:
+            print(f"  symmetry: {name} {m['atoms'][i][0]} library {expect[i]}, CAPS {got[i]}")
     by_symmetry += by_alias
     sym_total += len(by_symmetry)
     bad = [(i, a[0], a[1], expect[i], got[i]) for i, a in enumerate(m["atoms"])
