@@ -64,3 +64,6 @@ MS_information_design/
 /data/typing/trappe-eh.typing.json
 /data/typing/trappe-ua.typing.json
 /data/typing/sets/
+
+# force-field libraries built on the user's machine from their original sources (bench/ff/open): never committed
+data/forcefields/*-toppar.json

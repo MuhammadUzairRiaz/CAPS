@@ -108,19 +108,23 @@ add("CG2O4", 3, "[CX3H1](=O)[#6]", "[CX3H2]=O", d="aldehyde C")
 add("CG2O3", 3, "[CX3](=O)[OX1-]", d="carboxylate C")
 add("CG2O6", 4, "[CX3](=[O,S])([#7,#8,#16])[#7,#8,#16]", d="urea / carbonate / carbamate C (and thio analogues)")
 add("CG2O7", 3, "[CX2](=O)=O", "[CX2](=O)=[NX2]", d="CO2 C, isocyanate C (RESI MICY)")
+add("CG2N2", 5, "[CX3](=[NX2])(-[NX3])-[SX2]", d="isothiourea C (RESI MT2A, DH3T)")
 add("CG2N2", 5, "[CX3;$(*=[NX3+])](-[NX3])[#6,#1]", d="amidinium C (a second N besides the N+; an iminium C is an alkene C, RESI SCH2)")
 add("CG2N1", 5, "[CX3](~[NX3])(~[NX3])~[NX3]", "[CX3](~[NX3])(~[NX3])=[NX2]", d="guanidine / guanidinium C")
 add("CG2R61", 0, "[c]", d="aromatic C, 6-ring")
 add("CG2R66", 2, "[c;r6]F", d="aromatic C bonded to F")
 add("CG2R67", 2, "[c;r6](-!@[a;r6])", d="biphenyl / bipyridyl bridge C")
 add("CG2R62", 2, f"[c;{A6};{CARB6}]", d="6-ring aromatic C in a ring with a carbonyl or N+ (nucleic bases, pyridinium)")
-add("CG2R64", 3, "[c;r6](:n):n", "[c;r6](:n)-[NX3]", d="aromatic amidine C (between two N)")
+add("CG2R64", 3, "[c;r6](:n):n", "[c;r6](:n)-[#7X3]", d="aromatic amidine C (between two ring N, or a ring N and an exocyclic N: RESI PIPA)")
+# between a ring N and a ring NH in a ring without a carbonyl (protonated pyrimidine: RESI PYRH, PYRF) it is CG2R62
+add("CG2R62", 4, "[c;r6;$(c(:[nX2]):[nX3H1]);!$(c1:a:c(=[O,S]):a:a:a1);!$(c1:a:a:c(=[O,S]):a:a1);!$(c1:a:a:a:c(=[O,S]):a1)]",
+    d="C between a ring N and a ring NH, no ring carbonyl")
 add("CG2R63", 4, "[c;r6]=[O,S]", d="6-ring aromatic carbonyl / thiocarbonyl C (nucleic bases, thio-uracils)")
 # five-membered rings: CGenFF's ring types win over the chain types (alkene, lactam carbonyl)
 add("CG2R51", 6, "[#6X3;r5;!$(*=[O,S])]", d="sp2 C in a 5-ring")
 add("CG2R52", 7, "[#6X3;r5]=[#7]", "[c;r5;$(c:[nX2]:[o,s,nX3])]", d="5-ring C double-bonded to N (isoxazole / pyrazole C3, whatever the Kekule structure)")
-add("CG2R53", 8, "[#6X3;r5](=[#7,#8,#16])~[#7,#8,#16]", f"[c;{A5}](~[#7,#8,#16])~[#7,#8,#16]", d="5-ring C double-bonded to N (or =O) next to another heteroatom")
-add("CG2RC0", 9, "[#6X3;r5;r6;x3]", d="C at a 5/6 ring fusion")
+add("CG2R53", 8, "[#6X3;r5](=[#7,#8,#16])~[#7,#8,#16]", f"[c;{A5}](@[#7,#8,#16])@[#7,#8,#16]", d="5-ring C double-bonded to N (or =O) next to another heteroatom")
+add("CG2RC0", 9, "[#6X3;r5;r6;x3;$(*1aaaaa1)]", d="C at a 5/6 ring fusion, the 6-ring aromatic (a tetrahydro 6-ring leaves 5-ring types: RESI WEI1, INCA, TICA)")
 # the bridge of a biphenyl closed into a 5-ring (carbazole, fluorene: RESI CRBZ, FLRN): a fusion C with two fusion neighbours
 add("CG2R67", 10, "[#6X3;r5;r6;x3;$(*(~[#6X3;R2])~[#6X3;R2])]", d="biphenyl bridge C in a fused 5-ring (carbazole, fluorene)")
 # azulene: 7-ring aromatic C and H, the 5/7 fusion C (RESI AZUL)
@@ -132,8 +136,8 @@ add("NG2R57", 5, "[n;r5]-!@[a;r5]", d="5-ring N bonded to another 5-ring")
 # beta-lactam (RESI AZDO)
 add("NG2R43", 5, "[NX3;r4][CX3;r4]=O", d="beta-lactam N"); add("CG2R53", 8, "[CX3;r4](=O)[NX3;r4]", d="beta-lactam C=O")
 # a 5-ring C carrying an exocyclic =CH2 next to a ring C=O (RESI MRDN, MHYO, MTDO); on an aryl ring as well, CG25C2 (MEOI)
-add("CG252O", 9, "[#6X3;r5;$(*=[CX3H2]);$(*@[CX3]=O)]", d="5-ring C with an exocyclic =CH2 next to a ring C=O")
-add("CG25C2", 10, "[#6X3;r5;$(*=[CX3H2]);$(*@[CX3]=O);$(*@c)]", d="the same C fused to an aromatic ring")
+add("CG252O", 9, "[#6X3;r5;$(*=!@[CX3]);$(*@[CX3]=O)]", d="5-ring C with an exocyclic C=C next to a ring C=O")
+add("CG25C2", 10, "[#6X3;r5;$(*=!@[CX3]);$(*@[CX3]=O);$(*@c)]", d="the same C fused to an aromatic ring (RESI MEOI, OIRD)")
 add("ALG1", 8, "[Al]", d="Al of AlF4- (RESI ALF4)"); add("FGP1", 8, "[F][Al]", d="F of AlF4-")
 add("CG1T1", 1, "[CX2]#C", d="alkyne C")
 add("CG1T2", 2, "[CX2H1]#C", d="terminal alkyne C")
@@ -157,8 +161,8 @@ add("NG2R51", 1, "[#7X3;r5;{AR2},{AR3}]", d="5-ring N, single-bonded, planar rin
 add("NG3C51", 2, "[NX3H1;r5;!$(N[#6X3]=[O,S]);!$(N[SX4]);!$(N=*)]", d="secondary amine in a 5-ring, also on a vinyl, amidine or aryl C (RESI 2PRL, 2IMI, INDI)")
 add("NG2S3", 3, "[NX3;$(N[SX4](~[OX1])(~[OX1])~[OX1])]", d="sulfamate N (RESI NMSM)")
 add("NG3N1", 3, "[NX3;!$(N[#6X3]=[O,S]);!$(N=*);!$(N[SX4])][NX3]", d="hydrazine N, also on an aryl C (RESI PHHZ)")
-add("NG2R51", 5, "[NX3;r5;$(Nc);$(N[CX3;r5]=O)]", d="N of an N-aryl 5-ring lactam (planar, RESI MEOI)")
-add("NG2R53", 4, "[NX3;r5;!$(Nc)][CX3;r5]=O", d="amide N in a non-planar 5-ring (lactam; an N-aryl lactam is planar, NG2R51: RESI MEOI)")
+add("NG2R51", 5, "[NX3;r5;$(Nc);$(N[CX3;r5](=O)[#6X3;r5])]", d="N of an N-aryl 5-ring lactam whose ring is all sp2 (RESI MEOI; with an sp3 ring C it stays NG2R53: MSCH, WEI3)")
+add("NG2R53", 4, "[NX3;r5][CX3;r5]=O", d="amide N in a non-planar 5-ring (lactam; an N-aryl lactam is planar, NG2R51: RESI MEOI)")
 add("NG2R52", 3, f"[#7X3;r5;$([#7+]),$(*-[#6X3;r5]=[#7X3+;r5])]", d="protonated imine / amidinium N in a 5-ring (imidazolium)")
 # both N of a 5-ring amidinium (imidazolium, dihydro-imidazolium: RESI IMIM, EIMM, 2IMP, 2HPP)
 add("NG2R52", 5, "[#7X3;r5;$(*@[#6X3;r5;$(*(@[#7X3])@[#7X3+])])]", "[#7X3+;r5]=[#6X3;r5]", d="N of a 5-ring amidinium or iminium (RESI 2HPP)")
@@ -177,7 +181,7 @@ add("OG302", 2, "[OX2;!H1][CX3]=O", d="ester O")
 add("OG303", 3, "[OX2;!H1][P,S]", d="phosphate / sulfate ester O")
 add("OG304", 4, "[OX2](P)P", d="pyrophosphate bridging O")
 add("OG3C31", 3, "[OX2;r3]", d="epoxide O")
-add("OG3C51", 3, "[OX2;r5]", d="5-ring ether O")
+add("OG3C51", 3, "[OX2;r5]", "[OX2;r4]", d="5-ring ether O; also oxetane's (RESI OXTN)")
 add("OG3C61", 3, "[OX2;r6;H0]", d="6-ring ether O")
 add("OG2R50", 3, "[o]", d="furan O")
 add("OG2D1", 1, "[OX1]=[#6]", d="carbonyl O (amide, ester, acid, aldehyde)")
@@ -208,8 +212,12 @@ add("SG3O3", 1, "[SX3]", d="sulfoxide S")
 add("SG3O2", 1, "[SX4]", d="sulfone / sulfonamide S")
 add("SG3O1", 2, "[SX4](~[OX1])(~[OX1])~[OX1]", d="sulfate / sulfonate S")
 add("PG0", 0, "[PX4]", d="neutral phosphate P")
-add("PG1", 1, "[PX4;" + count(2, "[OX1]") + "]", d="phosphate P, -1")
-add("PG2", 2, "[PX4;" + count(3, "[OX1]") + "]", d="phosphate P, -2")
+add("PG1", 1, "[PX4;" + count(2, "[OX1,SX1]") + ";!$(P(~[SX1])~[SX1])]", d="phosphate P, -1 (terminal O or S; with two terminal S and no terminal O it is PG0: RESI GTNS)")
+add("PG2", 2, "[PX4;" + count(3, "[OX1,SX1]") + "]", d="phosphate P, -2 (terminal O or S)")
+# thiophosphates (RESI GTPG, GTSS, GTGN): a terminal S on P, two such S, and the terminal O of a P that carries one
+add("SG2P1", 3, "[SX1]~[PX4]", d="terminal S on P (thiophosphate)")
+add("SG2P2", 4, "[SX1;$(*~[PX4]~[SX1])]", d="terminal S on a P with two (dithiophosphate)")
+add("OG2S1", 3, "[OX1;$(*~[PX4]~[SX1])]", d="terminal O on a thiophosphate P")
 for n in (1, 2, 3):
     add(f"FGA{n}", 1, f"[F][CX4;{count(n, 'F')}]", d=f"aliphatic F ({n} on the C)")
 add("FGR1", 1, "[F]c", d="aromatic F")
@@ -255,4 +263,13 @@ json.dump({"format": "caps-typing", "version": 1, "forcefield": "CGenFF (CHARMM3
            "analogy_source": "CGenFF analogues: the same element and hybridisation, nearest in hydrogen count, ring or substituent (the CGenFF program "
                              "assigns missing bonded parameters by analogy with penalties; this table is CAPS's simpler version)"},
           open(os.path.join(out, "cgenff.typing.json"), "w"), indent=1)
+# the same rules for the library built from CHARMM's own files (bench/ff/open/build_charmm.sh): there, TIP3P is OT / HT,
+# as toppar_water_ions.str names it
+RT = [dict(r, type="HT") if r["type"] == "H3P" else r for r in R]
+json.dump({"format": "caps-typing", "version": 1, "forcefield": "CGenFF (toppar)",
+           "description": "CGenFF atom types from CGenFF's own definitions (top_all36_cgenff.rtf); conjugated alkenes pair "
+                          "CG2DC1 / CG2DC2 (same type across a double bond); water is TIP3P (OT / HT, toppar_water_ions.str).",
+           "pair_mode": "double_same", "pairs": [["CG2DC2", "CG2DC1"]], "rules": RT, "analogies": ANALOGIES,
+           "analogy_source": "CGenFF analogues: the same element and hybridisation, nearest in hydrogen count, ring or substituent"},
+          open(os.path.join(out, "cgenff-toppar.typing.json"), "w"), indent=1)
 print(len(R), "rules")

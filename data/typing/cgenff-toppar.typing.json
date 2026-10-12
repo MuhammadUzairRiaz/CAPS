@@ -1,0 +1,1427 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "CGenFF (toppar)",
+ "description": "CGenFF atom types from CGenFF's own definitions (top_all36_cgenff.rtf); conjugated alkenes pair CG2DC1 / CG2DC2 (same type across a double bond); water is TIP3P (OT / HT, toppar_water_ions.str).",
+ "pair_mode": "double_same",
+ "pairs": [
+  [
+   "CG2DC2",
+   "CG2DC1"
+  ]
+ ],
+ "rules": [
+  {
+   "type": "HGA3",
+   "smarts": "[H][CX4]",
+   "description": "aliphatic H (methyl, methane)"
+  },
+  {
+   "type": "HGA1",
+   "smarts": "[H][CX4H1]",
+   "priority": 1,
+   "description": "aliphatic H (CH)"
+  },
+  {
+   "type": "HGA2",
+   "smarts": "[H][CX4H2]",
+   "priority": 1,
+   "description": "aliphatic H (CH2)"
+  },
+  {
+   "type": "HGA3",
+   "smarts": "[H][CX4H3]",
+   "priority": 1,
+   "description": "aliphatic H (CH3)"
+  },
+  {
+   "type": "HGA6",
+   "smarts": "[H][CX4;$(*~F);!$(*(~F)~F)]",
+   "priority": 2,
+   "description": "aliphatic H on monofluorinated C"
+  },
+  {
+   "type": "HGA7",
+   "smarts": "[H][CX4](F)F",
+   "priority": 3,
+   "description": "aliphatic H on difluorinated C"
+  },
+  {
+   "type": "HGAAM0",
+   "smarts": "[H][CX4H3][NX3H0;$([NX3;!$(N[#6X3]=[O,S,N]);!$(Na);!$(N[SX4]);!$(N[#6X3]=C);!$(NP);!$(N=*)])]",
+   "priority": 2,
+   "description": "H of a methyl on a neutral amine N with 0 H (methylamines)"
+  },
+  {
+   "type": "HGAAM1",
+   "smarts": "[H][CX4H3][NX3H1;$([NX3;!$(N[#6X3]=[O,S,N]);!$(Na);!$(N[SX4]);!$(N[#6X3]=C);!$(NP);!$(N=*)])]",
+   "priority": 2,
+   "description": "H of a methyl on a neutral amine N with 1 H (methylamines)"
+  },
+  {
+   "type": "HGAAM2",
+   "smarts": "[H][CX4H3][NX3H2;$([NX3;!$(N[#6X3]=[O,S,N]);!$(Na);!$(N[SX4]);!$(N[#6X3]=C);!$(NP);!$(N=*)])]",
+   "priority": 2,
+   "description": "H of a methyl on a neutral amine N with 2 H (methylamines)"
+  },
+  {
+   "type": "HGP5",
+   "smarts": "[H][CX4][NX4+H0]",
+   "priority": 3,
+   "description": "H on C next to a quaternary ammonium N"
+  },
+  {
+   "type": "HGA4",
+   "smarts": "[H][CX3]=[CX3]",
+   "priority": 1,
+   "description": "alkene H; H on a neutral imine C (RESI SCH1)"
+  },
+  {
+   "type": "HGA4",
+   "smarts": "[H][CX3]=[NX2]",
+   "priority": 1,
+   "description": "alkene H; H on a neutral imine C (RESI SCH1)"
+  },
+  {
+   "type": "HGR52",
+   "smarts": "[H][CX3]=[NX3+]",
+   "priority": 3,
+   "description": "H on an iminium C (RESI SCH2, SCH3)"
+  },
+  {
+   "type": "HGA5",
+   "smarts": "[H][CX3H2]=[CX3]",
+   "priority": 2,
+   "description": "terminal alkene H (=CH2)"
+  },
+  {
+   "type": "HGR61",
+   "smarts": "[H]c",
+   "priority": 1,
+   "description": "aromatic H"
+  },
+  {
+   "type": "HGR62",
+   "smarts": "[H][c;$(*1aaaaa1);$(c:[#7,#8,#16]),$(c:c-[F,Cl,Br,I]),$(c:c=[O,S])]",
+   "priority": 2,
+   "description": "aromatic H, 6-ring C next to a heteroatom, C-F or in a nucleic-base ring"
+  },
+  {
+   "type": "HGR62",
+   "smarts": "[H][c;$(*1aaaaa1);$(c1:[c;$(c=O)]:a:a:a:a1),$(c1:a:[c;$(c=O)]:a:a:a1),$(c1:a:a:[c;$(c=O)]:a:a1),$(c1:[n+]:a:a:a:a1),$(c1:a:[n+]:a:a:a1),$(c1:a:a:[n+]:a:a1)]",
+   "priority": 2,
+   "description": "aromatic H, 6-ring C next to a heteroatom, C-F or in a nucleic-base ring"
+  },
+  {
+   "type": "HGR63",
+   "smarts": "[H][c;$(*1aaaaa1);$(c:[n+]),$(c:a:[n+]),$(c:a:a:[n+])]",
+   "priority": 3,
+   "description": "H on a pyridinium ring"
+  },
+  {
+   "type": "HGR51",
+   "smarts": "[H][#6X3;r5]",
+   "priority": 2,
+   "description": "H on sp2 C in a 5-ring"
+  },
+  {
+   "type": "HGR52",
+   "smarts": "[H][#6X3;r5;$(*~[#7,#8,#16])]",
+   "priority": 3,
+   "description": "H on 5-ring C next to a heteroatom; aldehyde / formamide H (an imine C-H is HGA4)"
+  },
+  {
+   "type": "HGR52",
+   "smarts": "[H][CX3]=O",
+   "priority": 3,
+   "description": "H on 5-ring C next to a heteroatom; aldehyde / formamide H (an imine C-H is HGA4)"
+  },
+  {
+   "type": "HGR53",
+   "smarts": "[H][#6X3;r5;$(*(~[#7])~[#7]);$(*~[#7;$([#7+]),$(*-[#6X3]=[#7X3+])])]",
+   "priority": 4,
+   "description": "H on C2 of imidazolium"
+  },
+  {
+   "type": "HGPAM1",
+   "smarts": "[H]C#C",
+   "priority": 2,
+   "description": "alkyne H"
+  },
+  {
+   "type": "HGP1",
+   "smarts": "[H][#7]",
+   "description": "polar H"
+  },
+  {
+   "type": "HGP1",
+   "smarts": "[H][#8]",
+   "description": "polar H"
+  },
+  {
+   "type": "HGP2",
+   "smarts": "[H][#7;$([#7+]),$(*-[#6X3]=[#7X3+])]",
+   "priority": 2,
+   "description": "polar H on N+ (ammonium, iminium, amidinium, guanidinium, imidazolium)"
+  },
+  {
+   "type": "HGP2",
+   "smarts": "[H][#7X3;$(*~[#6X3](~[#7X3])~[#7X3]),$(n1a[n+]aa1)]",
+   "priority": 2,
+   "description": "polar H on N+ (ammonium, iminium, amidinium, guanidinium, imidazolium)"
+  },
+  {
+   "type": "HGP3",
+   "smarts": "[H][#16]",
+   "priority": 1,
+   "description": "thiol H"
+  },
+  {
+   "type": "HGP4",
+   "smarts": "[H][NX3H2]c",
+   "priority": 2,
+   "description": "H of an aromatic -NH2 (aniline, nucleic bases)"
+  },
+  {
+   "type": "HGPAM1",
+   "smarts": "[H][NX3H1;!R;$([NX3;!$(N[#6X3]=[O,S,N]);!$(Na);!$(N[SX4]);!$(N[#6X3]=C);!$(NP);!$(N=*)]),$(*-[CX3](=[NX2])[NX3])]",
+   "priority": 2,
+   "description": "H on an acyclic neutral amine / guanidine N with 1 H"
+  },
+  {
+   "type": "HGPAM2",
+   "smarts": "[H][NX3H2;!R;$([NX3;!$(N[#6X3]=[O,S,N]);!$(Na);!$(N[SX4]);!$(N[#6X3]=C);!$(NP);!$(N=*)]),$(*-[CX3](=[NX2])[NX3])]",
+   "priority": 2,
+   "description": "H on an acyclic neutral amine / guanidine N with 2 H"
+  },
+  {
+   "type": "HGPAM3",
+   "smarts": "[H][NX3H3;!R;$([NX3;!$(N[#6X3]=[O,S,N]);!$(Na);!$(N[SX4]);!$(N[#6X3]=C);!$(NP);!$(N=*)]),$(*-[CX3](=[NX2])[NX3])]",
+   "priority": 2,
+   "description": "H on an acyclic neutral amine / guanidine N with 3 H"
+  },
+  {
+   "type": "HGPAM1",
+   "smarts": "[H][NX3H1;!r5;!$(N[#6X3]=[O,S]);!$(N[SX4]);!$(NP);!$(N=*);!$(N[#7])]",
+   "priority": 2,
+   "description": "H on a secondary amine N on an aryl or vinyl C"
+  },
+  {
+   "type": "HGPAM2",
+   "smarts": "[H][NX3H2;!$(Nc);!$(N[#6X3]=[O,S]);!$(N[SX4]);!$(NP);!$(N=*);!$(N[#7])]",
+   "priority": 2,
+   "description": "H on a primary amine N on a vinyl C (enamine)"
+  },
+  {
+   "type": "HGP1",
+   "smarts": "[H][NX3][NX3]",
+   "priority": 3,
+   "description": "hydrazine H (RESI HDZN, PHHZ)"
+  },
+  {
+   "type": "HX",
+   "smarts": "[H][OX1-]",
+   "priority": 3,
+   "description": "hydroxide H"
+  },
+  {
+   "type": "HT",
+   "smarts": "[H][OX2H2]",
+   "priority": 5,
+   "description": "water H (TIP3P)"
+  },
+  {
+   "type": "CG331",
+   "smarts": "[CX4H3]",
+   "priority": 1,
+   "description": "methyl C / methane"
+  },
+  {
+   "type": "CG331",
+   "smarts": "[CX4H4]",
+   "priority": 1,
+   "description": "methyl C / methane"
+  },
+  {
+   "type": "CG321",
+   "smarts": "[CX4H2]",
+   "priority": 1,
+   "description": "CH2"
+  },
+  {
+   "type": "CG311",
+   "smarts": "[CX4H1]",
+   "priority": 1,
+   "description": "CH"
+  },
+  {
+   "type": "CG301",
+   "smarts": "[CX4H0]",
+   "priority": 1,
+   "description": "quaternary C"
+  },
+  {
+   "type": "CG322",
+   "smarts": "[CX4;$(*~F);!$(*(~F)~F)]",
+   "priority": 3,
+   "description": "monofluorinated C"
+  },
+  {
+   "type": "CG312",
+   "smarts": "[CX4;$(*(~F)~F);!$(*(~F)(~F)~F)]",
+   "priority": 3,
+   "description": "difluorinated C"
+  },
+  {
+   "type": "CG302",
+   "smarts": "[CX4](F)(F)F",
+   "priority": 3,
+   "description": "trifluorinated C"
+  },
+  {
+   "type": "CG323",
+   "smarts": "[CX4][SX1-]",
+   "priority": 3,
+   "description": "C on a thiolate S"
+  },
+  {
+   "type": "CG314",
+   "smarts": "[CX4H1][#7;$([#7+]),$(*-[#6X3]=[#7X3+])]",
+   "priority": 3,
+   "description": "CH next to a positive N"
+  },
+  {
+   "type": "CG324",
+   "smarts": "[CX4H2][#7;$([#7+]),$(*-[#6X3]=[#7X3+])]",
+   "priority": 3,
+   "description": "CH2 next to a positive N"
+  },
+  {
+   "type": "CG334",
+   "smarts": "[CX4H3][#7;$([#7+]),$(*-[#6X3]=[#7X3+])]",
+   "priority": 3,
+   "description": "CH3 next to a positive N"
+  },
+  {
+   "type": "CG3AM0",
+   "smarts": "[CX4H3][NX3H0;$([NX3;!$(N[#6X3]=[O,S,N]);!$(Na);!$(N[SX4]);!$(N[#6X3]=C);!$(NP);!$(N=*)])]",
+   "priority": 3,
+   "description": "methyl C on a neutral amine N with 0 H"
+  },
+  {
+   "type": "CG3AM1",
+   "smarts": "[CX4H3][NX3H1;$([NX3;!$(N[#6X3]=[O,S,N]);!$(Na);!$(N[SX4]);!$(N[#6X3]=C);!$(NP);!$(N=*)])]",
+   "priority": 3,
+   "description": "methyl C on a neutral amine N with 1 H"
+  },
+  {
+   "type": "CG3AM2",
+   "smarts": "[CX4H3][NX3H2;$([NX3;!$(N[#6X3]=[O,S,N]);!$(Na);!$(N[SX4]);!$(N[#6X3]=C);!$(NP);!$(N=*)])]",
+   "priority": 3,
+   "description": "methyl C on a neutral amine N with 2 H"
+  },
+  {
+   "type": "CG3C31",
+   "smarts": "[CX4;r3]",
+   "priority": 4,
+   "description": "cyclopropyl C"
+  },
+  {
+   "type": "CG3C41",
+   "smarts": "[CX4;r4]",
+   "priority": 4,
+   "description": "cyclobutyl C"
+  },
+  {
+   "type": "CG3C50",
+   "smarts": "[CX4H0;r5]",
+   "priority": 4,
+   "description": "5-ring quaternary sp3 C"
+  },
+  {
+   "type": "CG3C51",
+   "smarts": "[CX4H1;r5]",
+   "priority": 4,
+   "description": "5-ring sp3 CH"
+  },
+  {
+   "type": "CG3C52",
+   "smarts": "[CX4H2;r5]",
+   "priority": 4,
+   "description": "5-ring sp3 CH2"
+  },
+  {
+   "type": "CG3C53",
+   "smarts": "[CX4H1;r5][#7;$([#7+]),$(*-[#6X3]=[#7X3+])]",
+   "priority": 5,
+   "description": "5-ring CH next to a positive N"
+  },
+  {
+   "type": "CG3C54",
+   "smarts": "[CX4H2;r5][#7;$([#7+]),$(*-[#6X3]=[#7X3+])]",
+   "priority": 5,
+   "description": "5-ring CH2 next to a positive N"
+  },
+  {
+   "type": "CG3RC1",
+   "smarts": "[CX4;x3;r3,r4,r5]",
+   "priority": 6,
+   "description": "bridgehead of a bicyclic system with a ring of 5 or fewer"
+  },
+  {
+   "type": "CG2D1",
+   "smarts": "[CX3]=[#6X3,#7X2,#7X3+]",
+   "priority": 1,
+   "description": "alkene / imine C"
+  },
+  {
+   "type": "CG2D2",
+   "smarts": "[CX3H2]=[CX3]",
+   "priority": 2,
+   "description": "terminal alkene =CH2"
+  },
+  {
+   "type": "CG2DC1",
+   "smarts": "[CX3;!H2;$(*-[#6X3]=[#6,#7,#8]),$(*-c)]=[#6X3,#7]",
+   "priority": 3,
+   "description": "conjugated alkene C (with CG2DC2)"
+  },
+  {
+   "type": "CG2DC1",
+   "smarts": "[CX3;!H2]=[#6X3;$(*-[#6X3]=[#6,#7,#8]),$(*-c)]",
+   "priority": 3,
+   "description": "conjugated alkene C (with CG2DC2)"
+  },
+  {
+   "type": "CG2DC3",
+   "smarts": "[CX3H2]=[CX3;$(*-[#6X3]=[#6,#7,#8]),$(*-c)]",
+   "priority": 4,
+   "description": "terminal =CH2 of a conjugated alkene"
+  },
+  {
+   "type": "CG2D1O",
+   "smarts": "[CX3;!H2;$(*-[#7,#8,#16])]=[#6X3]",
+   "priority": 4,
+   "description": "double-bond C next to a heteroatom (enol ether, enamine), outside the DC alternation"
+  },
+  {
+   "type": "CG2DC1",
+   "smarts": "[CX3;!H2;$(*-[#6X3]=[#6,#7,#8]),$(*-c)]=[CX3;$(*-[#7,#8,#16])]",
+   "priority": 4,
+   "description": "conjugated C double-bonded to an enol / enamine C or to N"
+  },
+  {
+   "type": "CG2DC1",
+   "smarts": "[CX3;!H2;$(*-[#6X3]=[#6,#7,#8]),$(*-c)]=[#7]",
+   "priority": 4,
+   "description": "conjugated C double-bonded to an enol / enamine C or to N"
+  },
+  {
+   "type": "CG2O1",
+   "smarts": "[CX3](=O)[NX3]",
+   "priority": 2,
+   "description": "amide C"
+  },
+  {
+   "type": "CG2O2",
+   "smarts": "[CX3](=O)[OX2]",
+   "priority": 2,
+   "description": "carboxylic acid / ester C"
+  },
+  {
+   "type": "CG2O5",
+   "smarts": "[CX3](=O)([#6])[#6]",
+   "priority": 2,
+   "description": "ketone C"
+  },
+  {
+   "type": "CG2O4",
+   "smarts": "[CX3H1](=O)[#6]",
+   "priority": 3,
+   "description": "aldehyde C"
+  },
+  {
+   "type": "CG2O4",
+   "smarts": "[CX3H2]=O",
+   "priority": 3,
+   "description": "aldehyde C"
+  },
+  {
+   "type": "CG2O3",
+   "smarts": "[CX3](=O)[OX1-]",
+   "priority": 3,
+   "description": "carboxylate C"
+  },
+  {
+   "type": "CG2O6",
+   "smarts": "[CX3](=[O,S])([#7,#8,#16])[#7,#8,#16]",
+   "priority": 4,
+   "description": "urea / carbonate / carbamate C (and thio analogues)"
+  },
+  {
+   "type": "CG2O7",
+   "smarts": "[CX2](=O)=O",
+   "priority": 3,
+   "description": "CO2 C, isocyanate C (RESI MICY)"
+  },
+  {
+   "type": "CG2O7",
+   "smarts": "[CX2](=O)=[NX2]",
+   "priority": 3,
+   "description": "CO2 C, isocyanate C (RESI MICY)"
+  },
+  {
+   "type": "CG2N2",
+   "smarts": "[CX3](=[NX2])(-[NX3])-[SX2]",
+   "priority": 5,
+   "description": "isothiourea C (RESI MT2A, DH3T)"
+  },
+  {
+   "type": "CG2N2",
+   "smarts": "[CX3;$(*=[NX3+])](-[NX3])[#6,#1]",
+   "priority": 5,
+   "description": "amidinium C (a second N besides the N+; an iminium C is an alkene C, RESI SCH2)"
+  },
+  {
+   "type": "CG2N1",
+   "smarts": "[CX3](~[NX3])(~[NX3])~[NX3]",
+   "priority": 5,
+   "description": "guanidine / guanidinium C"
+  },
+  {
+   "type": "CG2N1",
+   "smarts": "[CX3](~[NX3])(~[NX3])=[NX2]",
+   "priority": 5,
+   "description": "guanidine / guanidinium C"
+  },
+  {
+   "type": "CG2R61",
+   "smarts": "[c]",
+   "description": "aromatic C, 6-ring"
+  },
+  {
+   "type": "CG2R66",
+   "smarts": "[c;r6]F",
+   "priority": 2,
+   "description": "aromatic C bonded to F"
+  },
+  {
+   "type": "CG2R67",
+   "smarts": "[c;r6](-!@[a;r6])",
+   "priority": 2,
+   "description": "biphenyl / bipyridyl bridge C"
+  },
+  {
+   "type": "CG2R62",
+   "smarts": "[c;$(*1aaaaa1);$(c1:[c;$(c=O)]:a:a:a:a1),$(c1:a:[c;$(c=O)]:a:a:a1),$(c1:a:a:[c;$(c=O)]:a:a1),$(c1:[n+]:a:a:a:a1),$(c1:a:[n+]:a:a:a1),$(c1:a:a:[n+]:a:a1)]",
+   "priority": 2,
+   "description": "6-ring aromatic C in a ring with a carbonyl or N+ (nucleic bases, pyridinium)"
+  },
+  {
+   "type": "CG2R64",
+   "smarts": "[c;r6](:n):n",
+   "priority": 3,
+   "description": "aromatic amidine C (between two ring N, or a ring N and an exocyclic N: RESI PIPA)"
+  },
+  {
+   "type": "CG2R64",
+   "smarts": "[c;r6](:n)-[#7X3]",
+   "priority": 3,
+   "description": "aromatic amidine C (between two ring N, or a ring N and an exocyclic N: RESI PIPA)"
+  },
+  {
+   "type": "CG2R62",
+   "smarts": "[c;r6;$(c(:[nX2]):[nX3H1]);!$(c1:a:c(=[O,S]):a:a:a1);!$(c1:a:a:c(=[O,S]):a:a1);!$(c1:a:a:a:c(=[O,S]):a1)]",
+   "priority": 4,
+   "description": "C between a ring N and a ring NH, no ring carbonyl"
+  },
+  {
+   "type": "CG2R63",
+   "smarts": "[c;r6]=[O,S]",
+   "priority": 4,
+   "description": "6-ring aromatic carbonyl / thiocarbonyl C (nucleic bases, thio-uracils)"
+  },
+  {
+   "type": "CG2R51",
+   "smarts": "[#6X3;r5;!$(*=[O,S])]",
+   "priority": 6,
+   "description": "sp2 C in a 5-ring"
+  },
+  {
+   "type": "CG2R52",
+   "smarts": "[#6X3;r5]=[#7]",
+   "priority": 7,
+   "description": "5-ring C double-bonded to N (isoxazole / pyrazole C3, whatever the Kekule structure)"
+  },
+  {
+   "type": "CG2R52",
+   "smarts": "[c;r5;$(c:[nX2]:[o,s,nX3])]",
+   "priority": 7,
+   "description": "5-ring C double-bonded to N (isoxazole / pyrazole C3, whatever the Kekule structure)"
+  },
+  {
+   "type": "CG2R53",
+   "smarts": "[#6X3;r5](=[#7,#8,#16])~[#7,#8,#16]",
+   "priority": 8,
+   "description": "5-ring C double-bonded to N (or =O) next to another heteroatom"
+  },
+  {
+   "type": "CG2R53",
+   "smarts": "[c;$(*1aaaa1)](@[#7,#8,#16])@[#7,#8,#16]",
+   "priority": 8,
+   "description": "5-ring C double-bonded to N (or =O) next to another heteroatom"
+  },
+  {
+   "type": "CG2RC0",
+   "smarts": "[#6X3;r5;r6;x3;$(*1aaaaa1)]",
+   "priority": 9,
+   "description": "C at a 5/6 ring fusion, the 6-ring aromatic (a tetrahydro 6-ring leaves 5-ring types: RESI WEI1, INCA, TICA)"
+  },
+  {
+   "type": "CG2R67",
+   "smarts": "[#6X3;r5;r6;x3;$(*(~[#6X3;R2])~[#6X3;R2])]",
+   "priority": 10,
+   "description": "biphenyl bridge C in a fused 5-ring (carbazole, fluorene)"
+  },
+  {
+   "type": "CG2R71",
+   "smarts": "[c;r7]",
+   "priority": 6,
+   "description": "7-ring aromatic C"
+  },
+  {
+   "type": "HGR71",
+   "smarts": "[H][c;r7]",
+   "priority": 6,
+   "description": "7-ring aromatic H"
+  },
+  {
+   "type": "CG2RC7",
+   "smarts": "[c;r5;r7]",
+   "priority": 10,
+   "description": "C at a 5/7 ring fusion"
+  },
+  {
+   "type": "CG2R57",
+   "smarts": "[c;r5]-!@[a;r5]",
+   "priority": 8,
+   "description": "5-ring C bonded to another 5-ring"
+  },
+  {
+   "type": "NG2R57",
+   "smarts": "[n;r5]-!@[a;r5]",
+   "priority": 5,
+   "description": "5-ring N bonded to another 5-ring"
+  },
+  {
+   "type": "NG2R43",
+   "smarts": "[NX3;r4][CX3;r4]=O",
+   "priority": 5,
+   "description": "beta-lactam N"
+  },
+  {
+   "type": "CG2R53",
+   "smarts": "[CX3;r4](=O)[NX3;r4]",
+   "priority": 8,
+   "description": "beta-lactam C=O"
+  },
+  {
+   "type": "CG252O",
+   "smarts": "[#6X3;r5;$(*=!@[CX3]);$(*@[CX3]=O)]",
+   "priority": 9,
+   "description": "5-ring C with an exocyclic C=C next to a ring C=O"
+  },
+  {
+   "type": "CG25C2",
+   "smarts": "[#6X3;r5;$(*=!@[CX3]);$(*@[CX3]=O);$(*@c)]",
+   "priority": 10,
+   "description": "the same C fused to an aromatic ring (RESI MEOI, OIRD)"
+  },
+  {
+   "type": "ALG1",
+   "smarts": "[Al]",
+   "priority": 8,
+   "description": "Al of AlF4- (RESI ALF4)"
+  },
+  {
+   "type": "FGP1",
+   "smarts": "[F][Al]",
+   "priority": 8,
+   "description": "F of AlF4-"
+  },
+  {
+   "type": "CG1T1",
+   "smarts": "[CX2]#C",
+   "priority": 1,
+   "description": "alkyne C"
+  },
+  {
+   "type": "CG1T2",
+   "smarts": "[CX2H1]#C",
+   "priority": 2,
+   "description": "terminal alkyne C"
+  },
+  {
+   "type": "CG1N1",
+   "smarts": "[CX2]#N",
+   "priority": 2,
+   "description": "nitrile C"
+  },
+  {
+   "type": "NG301",
+   "smarts": "[NX3H0]",
+   "priority": 1,
+   "description": "tertiary amine N"
+  },
+  {
+   "type": "NG311",
+   "smarts": "[NX3H1]",
+   "priority": 1,
+   "description": "secondary amine N"
+  },
+  {
+   "type": "NG321",
+   "smarts": "[NX3H2]",
+   "priority": 1,
+   "description": "primary amine N"
+  },
+  {
+   "type": "NG331",
+   "smarts": "[NX3H3]",
+   "priority": 1,
+   "description": "ammonia"
+  },
+  {
+   "type": "NG2S0",
+   "smarts": "[NX3H0][CX3]=O",
+   "priority": 3,
+   "description": "tertiary amide N"
+  },
+  {
+   "type": "NG2S1",
+   "smarts": "[NX3H1][CX3]=O",
+   "priority": 3,
+   "description": "secondary amide N (peptide)"
+  },
+  {
+   "type": "NG2S2",
+   "smarts": "[NX3H2][CX3]=O",
+   "priority": 3,
+   "description": "primary amide N"
+  },
+  {
+   "type": "NG2S3",
+   "smarts": "[NX3H2]c",
+   "priority": 2,
+   "description": "aniline NH2, phosphoramide N"
+  },
+  {
+   "type": "NG2S3",
+   "smarts": "[NX3]P",
+   "priority": 2,
+   "description": "aniline NH2, phosphoramide N"
+  },
+  {
+   "type": "NG2R60",
+   "smarts": "[nX2;$(*1aaaaa1)]",
+   "priority": 1,
+   "description": "pyridine N"
+  },
+  {
+   "type": "NG2R62",
+   "smarts": "[nX2;$(*1aaaaa1);$(n:[n,o,s]),$(n:a:[n,o,s])]",
+   "priority": 2,
+   "description": "6-ring N with a ring heteroatom ortho or meta (pyrimidine)"
+  },
+  {
+   "type": "NG2R61",
+   "smarts": "[nX3;$(*1aaaaa1)]",
+   "priority": 1,
+   "description": "6-ring aromatic N with a substituent (pyridone)"
+  },
+  {
+   "type": "NG2R67",
+   "smarts": "[n;r6](-!@[a;r6])",
+   "priority": 3,
+   "description": "6-ring N substituted with a 6-ring (N-phenyl pyridinone)"
+  },
+  {
+   "type": "NG2R50",
+   "smarts": "[#7X2;r5]",
+   "priority": 1,
+   "description": "5-ring N, double-bonded"
+  },
+  {
+   "type": "NG2R51",
+   "smarts": "[#7X3;r5;{AR2},{AR3}]",
+   "priority": 1,
+   "description": "5-ring N, single-bonded, planar ring (pyrrole type)"
+  },
+  {
+   "type": "NG3C51",
+   "smarts": "[NX3H1;r5;!$(N[#6X3]=[O,S]);!$(N[SX4]);!$(N=*)]",
+   "priority": 2,
+   "description": "secondary amine in a 5-ring, also on a vinyl, amidine or aryl C (RESI 2PRL, 2IMI, INDI)"
+  },
+  {
+   "type": "NG2S3",
+   "smarts": "[NX3;$(N[SX4](~[OX1])(~[OX1])~[OX1])]",
+   "priority": 3,
+   "description": "sulfamate N (RESI NMSM)"
+  },
+  {
+   "type": "NG3N1",
+   "smarts": "[NX3;!$(N[#6X3]=[O,S]);!$(N=*);!$(N[SX4])][NX3]",
+   "priority": 3,
+   "description": "hydrazine N, also on an aryl C (RESI PHHZ)"
+  },
+  {
+   "type": "NG2R51",
+   "smarts": "[NX3;r5;$(Nc);$(N[CX3;r5](=O)[#6X3;r5])]",
+   "priority": 5,
+   "description": "N of an N-aryl 5-ring lactam whose ring is all sp2 (RESI MEOI; with an sp3 ring C it stays NG2R53: MSCH, WEI3)"
+  },
+  {
+   "type": "NG2R53",
+   "smarts": "[NX3;r5][CX3;r5]=O",
+   "priority": 4,
+   "description": "amide N in a non-planar 5-ring (lactam; an N-aryl lactam is planar, NG2R51: RESI MEOI)"
+  },
+  {
+   "type": "NG2R52",
+   "smarts": "[#7X3;r5;$([#7+]),$(*-[#6X3;r5]=[#7X3+;r5])]",
+   "priority": 3,
+   "description": "protonated imine / amidinium N in a 5-ring (imidazolium)"
+  },
+  {
+   "type": "NG2R52",
+   "smarts": "[#7X3;r5;$(*@[#6X3;r5;$(*(@[#7X3])@[#7X3+])])]",
+   "priority": 5,
+   "description": "N of a 5-ring amidinium or iminium (RESI 2HPP)"
+  },
+  {
+   "type": "NG2R52",
+   "smarts": "[#7X3+;r5]=[#6X3;r5]",
+   "priority": 5,
+   "description": "N of a 5-ring amidinium or iminium (RESI 2HPP)"
+  },
+  {
+   "type": "NG2RC0",
+   "smarts": "[nX3;R2]",
+   "priority": 3,
+   "description": "N at a ring fusion (indolizine)"
+  },
+  {
+   "type": "NG2D1",
+   "smarts": "[NX2]=[#6]",
+   "priority": 1,
+   "description": "imine N"
+  },
+  {
+   "type": "NG2P1",
+   "smarts": "[NX3]~[CX3](~[NX3])~[NX3]",
+   "priority": 4,
+   "description": "guanidinium / amidinium / protonated imine N"
+  },
+  {
+   "type": "NG2P1",
+   "smarts": "[NX3;$([NX3+]=[CX3]),$(*-[CX3]=[NX3+])]",
+   "priority": 4,
+   "description": "guanidinium / amidinium / protonated imine N"
+  },
+  {
+   "type": "NG2O1",
+   "smarts": "[NX3+](=O)[O-]",
+   "priority": 3,
+   "description": "nitro N"
+  },
+  {
+   "type": "NG1T1",
+   "smarts": "[NX1]#C",
+   "priority": 2,
+   "description": "nitrile N"
+  },
+  {
+   "type": "NG3P0",
+   "smarts": "[NX4+H0]",
+   "priority": 3,
+   "description": "ammonium N with 0 H"
+  },
+  {
+   "type": "NG3P1",
+   "smarts": "[NX4+H1]",
+   "priority": 3,
+   "description": "ammonium N with 1 H"
+  },
+  {
+   "type": "NG3P2",
+   "smarts": "[NX4+H2]",
+   "priority": 3,
+   "description": "ammonium N with 2 H"
+  },
+  {
+   "type": "NG3P3",
+   "smarts": "[NX4+H3]",
+   "priority": 3,
+   "description": "ammonium N with 3 H"
+  },
+  {
+   "type": "OG301",
+   "smarts": "[OX2]",
+   "description": "ether O"
+  },
+  {
+   "type": "OG311",
+   "smarts": "[OX2H1]",
+   "priority": 1,
+   "description": "hydroxyl O"
+  },
+  {
+   "type": "OG302",
+   "smarts": "[OX2;!H1][CX3]=O",
+   "priority": 2,
+   "description": "ester O"
+  },
+  {
+   "type": "OG303",
+   "smarts": "[OX2;!H1][P,S]",
+   "priority": 3,
+   "description": "phosphate / sulfate ester O"
+  },
+  {
+   "type": "OG304",
+   "smarts": "[OX2](P)P",
+   "priority": 4,
+   "description": "pyrophosphate bridging O"
+  },
+  {
+   "type": "OG3C31",
+   "smarts": "[OX2;r3]",
+   "priority": 3,
+   "description": "epoxide O"
+  },
+  {
+   "type": "OG3C51",
+   "smarts": "[OX2;r5]",
+   "priority": 3,
+   "description": "5-ring ether O; also oxetane's (RESI OXTN)"
+  },
+  {
+   "type": "OG3C51",
+   "smarts": "[OX2;r4]",
+   "priority": 3,
+   "description": "5-ring ether O; also oxetane's (RESI OXTN)"
+  },
+  {
+   "type": "OG3C61",
+   "smarts": "[OX2;r6;H0]",
+   "priority": 3,
+   "description": "6-ring ether O"
+  },
+  {
+   "type": "OG2R50",
+   "smarts": "[o]",
+   "priority": 3,
+   "description": "furan O"
+  },
+  {
+   "type": "OG2D1",
+   "smarts": "[OX1]=[#6]",
+   "priority": 1,
+   "description": "carbonyl O (amide, ester, acid, aldehyde)"
+  },
+  {
+   "type": "OG2D3",
+   "smarts": "[OX1]=[CX3]([#6])[#6]",
+   "priority": 2,
+   "description": "ketone O"
+  },
+  {
+   "type": "OG2D4",
+   "smarts": "[OX1]=c",
+   "priority": 2,
+   "description": "carbonyl O on an aromatic ring"
+  },
+  {
+   "type": "OG312",
+   "smarts": "[OX1]~[c;$(c1ccccc1)]",
+   "priority": 4,
+   "description": "phenoxide O"
+  },
+  {
+   "type": "CG2R61",
+   "smarts": "[c;$(c1(~[OX1])ccccc1),$(c1c(~[OX1])cccc1),$(c1cc(~[OX1])ccc1),$(c1ccc(~[OX1])cc1)]",
+   "priority": 5,
+   "description": "phenoxide ring C"
+  },
+  {
+   "type": "HGR61",
+   "smarts": "[H][c;$(c1(~[OX1])ccccc1),$(c1c(~[OX1])cccc1),$(c1cc(~[OX1])ccc1),$(c1ccc(~[OX1])cc1)]",
+   "priority": 5,
+   "description": "phenoxide ring H"
+  },
+  {
+   "type": "OG2D2",
+   "smarts": "[OX1-][CX3]=O",
+   "priority": 3,
+   "description": "carboxylate / carbonate O"
+  },
+  {
+   "type": "OG2D2",
+   "smarts": "[OX1]=[CX3][OX1-]",
+   "priority": 3,
+   "description": "carboxylate / carbonate O"
+  },
+  {
+   "type": "OG2D5",
+   "smarts": "[OX1]=[CX2]=O",
+   "priority": 3,
+   "description": "CO2 O, isocyanate O"
+  },
+  {
+   "type": "OG2D5",
+   "smarts": "[OX1]=[CX2]=[NX2]",
+   "priority": 3,
+   "description": "CO2 O, isocyanate O"
+  },
+  {
+   "type": "OG3R60",
+   "smarts": "[#8X2;r6;$(*~[#6X3])]",
+   "priority": 4,
+   "description": "O in a partially unsaturated 6-ring (also a coumarin's, perceived aromatic)"
+  },
+  {
+   "type": "OG2P1",
+   "smarts": "[OX1]~[P,S]",
+   "priority": 2,
+   "description": "=O / O- on P or S"
+  },
+  {
+   "type": "OG2N1",
+   "smarts": "[OX1]~[N+]~[OX1]",
+   "priority": 2,
+   "description": "nitro O (an N-oxide O is OG312: RESI TMAO)"
+  },
+  {
+   "type": "OG312",
+   "smarts": "[OX1-][#6]",
+   "priority": 2,
+   "description": "alkoxide / phenoxide O; N-oxide O (RESI TMAO)"
+  },
+  {
+   "type": "OG312",
+   "smarts": "[OX1;$(*~[NX4+])]",
+   "priority": 2,
+   "description": "alkoxide / phenoxide O; N-oxide O (RESI TMAO)"
+  },
+  {
+   "type": "OX",
+   "smarts": "[OX1-][H]",
+   "priority": 3,
+   "description": "hydroxide O"
+  },
+  {
+   "type": "OT",
+   "smarts": "[OX2H2]",
+   "priority": 5,
+   "description": "water O (TIP3P)"
+  },
+  {
+   "type": "SG311",
+   "smarts": "[#16X2]",
+   "description": "sulfide / thiol S"
+  },
+  {
+   "type": "SG301",
+   "smarts": "[SX2]S",
+   "priority": 2,
+   "description": "disulfide S"
+  },
+  {
+   "type": "SG302",
+   "smarts": "[SX1-]",
+   "priority": 2,
+   "description": "thiolate S"
+  },
+  {
+   "type": "SG2R50",
+   "smarts": "[s]",
+   "priority": 2,
+   "description": "thiophene S"
+  },
+  {
+   "type": "SG2D1",
+   "smarts": "[SX1]=[#6]",
+   "priority": 2,
+   "description": "thiocarbonyl S"
+  },
+  {
+   "type": "SG3O3",
+   "smarts": "[SX3]",
+   "priority": 1,
+   "description": "sulfoxide S"
+  },
+  {
+   "type": "SG3O2",
+   "smarts": "[SX4]",
+   "priority": 1,
+   "description": "sulfone / sulfonamide S"
+  },
+  {
+   "type": "SG3O1",
+   "smarts": "[SX4](~[OX1])(~[OX1])~[OX1]",
+   "priority": 2,
+   "description": "sulfate / sulfonate S"
+  },
+  {
+   "type": "PG0",
+   "smarts": "[PX4]",
+   "description": "neutral phosphate P"
+  },
+  {
+   "type": "PG1",
+   "smarts": "[PX4;$(*(~[OX1,SX1])~[OX1,SX1]);!$(*(~[OX1,SX1])(~[OX1,SX1])~[OX1,SX1]);!$(P(~[SX1])~[SX1])]",
+   "priority": 1,
+   "description": "phosphate P, -1 (terminal O or S; with two terminal S and no terminal O it is PG0: RESI GTNS)"
+  },
+  {
+   "type": "PG2",
+   "smarts": "[PX4;$(*(~[OX1,SX1])(~[OX1,SX1])~[OX1,SX1]);!$(*(~[OX1,SX1])(~[OX1,SX1])(~[OX1,SX1])~[OX1,SX1])]",
+   "priority": 2,
+   "description": "phosphate P, -2 (terminal O or S)"
+  },
+  {
+   "type": "SG2P1",
+   "smarts": "[SX1]~[PX4]",
+   "priority": 3,
+   "description": "terminal S on P (thiophosphate)"
+  },
+  {
+   "type": "SG2P2",
+   "smarts": "[SX1;$(*~[PX4]~[SX1])]",
+   "priority": 4,
+   "description": "terminal S on a P with two (dithiophosphate)"
+  },
+  {
+   "type": "OG2S1",
+   "smarts": "[OX1;$(*~[PX4]~[SX1])]",
+   "priority": 3,
+   "description": "terminal O on a thiophosphate P"
+  },
+  {
+   "type": "FGA1",
+   "smarts": "[F][CX4;$(*~F);!$(*(~F)~F)]",
+   "priority": 1,
+   "description": "aliphatic F (1 on the C)"
+  },
+  {
+   "type": "FGA2",
+   "smarts": "[F][CX4;$(*(~F)~F);!$(*(~F)(~F)~F)]",
+   "priority": 1,
+   "description": "aliphatic F (2 on the C)"
+  },
+  {
+   "type": "FGA3",
+   "smarts": "[F][CX4;$(*(~F)(~F)~F);!$(*(~F)(~F)(~F)~F)]",
+   "priority": 1,
+   "description": "aliphatic F (3 on the C)"
+  },
+  {
+   "type": "FGR1",
+   "smarts": "[F]c",
+   "priority": 1,
+   "description": "aromatic F"
+  },
+  {
+   "type": "CLGA1",
+   "smarts": "[Cl]",
+   "description": "aliphatic Cl"
+  },
+  {
+   "type": "CLGA3",
+   "smarts": "[Cl][CX4](Cl)Cl",
+   "priority": 1,
+   "description": "Cl of CCl3"
+  },
+  {
+   "type": "CLGR1",
+   "smarts": "[Cl]c",
+   "priority": 1,
+   "description": "aromatic Cl"
+  },
+  {
+   "type": "BRGA1",
+   "smarts": "[Br][CX4;$(*~Br);!$(*(~Br)~Br)]",
+   "priority": 1,
+   "description": "aliphatic Br (1 on the C)"
+  },
+  {
+   "type": "BRGA2",
+   "smarts": "[Br][CX4;$(*(~Br)~Br);!$(*(~Br)(~Br)~Br)]",
+   "priority": 2,
+   "description": "aliphatic Br (2 on the C)"
+  },
+  {
+   "type": "BRGA3",
+   "smarts": "[Br][CX4;$(*(~Br)(~Br)~Br);!$(*(~Br)(~Br)(~Br)~Br)]",
+   "priority": 2,
+   "description": "aliphatic Br (3 on the C)"
+  },
+  {
+   "type": "BRGR1",
+   "smarts": "[Br]c",
+   "priority": 1,
+   "description": "aromatic Br"
+  },
+  {
+   "type": "IGR1",
+   "smarts": "[I]",
+   "description": "iodine (IGR1 for every I)"
+  },
+  {
+   "type": "SOD",
+   "smarts": "[Na]",
+   "priority": 2
+  },
+  {
+   "type": "POT",
+   "smarts": "[K]",
+   "priority": 2
+  },
+  {
+   "type": "CLA",
+   "smarts": "[Cl-;X0]",
+   "priority": 2
+  }
+ ],
+ "analogies": {
+  "CG331": [
+   "CG321",
+   "CG311"
+  ],
+  "CG321": [
+   "CG311",
+   "CG331",
+   "CG301"
+  ],
+  "CG311": [
+   "CG321",
+   "CG301",
+   "CG331"
+  ],
+  "CG301": [
+   "CG311",
+   "CG321"
+  ],
+  "CG3C52": [
+   "CG321"
+  ],
+  "CG3C51": [
+   "CG311"
+  ],
+  "CG3C50": [
+   "CG301"
+  ],
+  "CG3C53": [
+   "CG321"
+  ],
+  "CG3C54": [
+   "CG321"
+  ],
+  "CG3C41": [
+   "CG311",
+   "CG321"
+  ],
+  "CG3C31": [
+   "CG311",
+   "CG321"
+  ],
+  "CG3RC1": [
+   "CG311"
+  ],
+  "CG322": [
+   "CG321"
+  ],
+  "CG312": [
+   "CG311"
+  ],
+  "CG302": [
+   "CG301"
+  ],
+  "CG334": [
+   "CG331"
+  ],
+  "CG324": [
+   "CG321"
+  ],
+  "CG314": [
+   "CG311"
+  ],
+  "CG323": [
+   "CG321"
+  ],
+  "CG3AM2": [
+   "CG331"
+  ],
+  "CG3AM1": [
+   "CG331"
+  ],
+  "CG3AM0": [
+   "CG331"
+  ],
+  "CG2D1": [
+   "CG2D2",
+   "CG2DC1"
+  ],
+  "CG2D2": [
+   "CG2D1",
+   "CG2DC3"
+  ],
+  "CG2DC1": [
+   "CG2D1"
+  ],
+  "CG2DC2": [
+   "CG2D1"
+  ],
+  "CG2DC3": [
+   "CG2D2"
+  ],
+  "CG2D1O": [
+   "CG2D1"
+  ],
+  "CG2D2O": [
+   "CG2D2"
+  ],
+  "CG25C1": [
+   "CG2DC1",
+   "CG2D1"
+  ],
+  "CG25C2": [
+   "CG2DC3",
+   "CG2D2"
+  ],
+  "CG251O": [
+   "CG2D1"
+  ],
+  "CG252O": [
+   "CG2D2"
+  ],
+  "CG2R62": [
+   "CG2R61"
+  ],
+  "CG2R63": [
+   "CG2R61"
+  ],
+  "CG2R64": [
+   "CG2R61"
+  ],
+  "CG2R66": [
+   "CG2R61"
+  ],
+  "CG2R67": [
+   "CG2R61"
+  ],
+  "CG2R71": [
+   "CG2R61"
+  ],
+  "CG2RC0": [
+   "CG2R61"
+  ],
+  "CG2R52": [
+   "CG2R51"
+  ],
+  "CG2R53": [
+   "CG2R51"
+  ],
+  "CG2R57": [
+   "CG2R51"
+  ],
+  "CG2O4": [
+   "CG2O5"
+  ],
+  "CG2O5": [
+   "CG2O4"
+  ],
+  "CG2O6": [
+   "CG2O2"
+  ],
+  "OG3C51": [
+   "OG301"
+  ],
+  "OG3C61": [
+   "OG301"
+  ],
+  "OG3R60": [
+   "OG301"
+  ],
+  "OG3C31": [
+   "OG301"
+  ],
+  "OG303": [
+   "OG301"
+  ],
+  "OG304": [
+   "OG301"
+  ],
+  "OG302": [
+   "OG301"
+  ],
+  "NG321": [
+   "NG311",
+   "NG331"
+  ],
+  "NG311": [
+   "NG321",
+   "NG301"
+  ],
+  "NG301": [
+   "NG311"
+  ],
+  "NG331": [
+   "NG321"
+  ],
+  "NG2S2": [
+   "NG2S1"
+  ],
+  "NG2S0": [
+   "NG2S1"
+  ],
+  "NG2S3": [
+   "NG2S1"
+  ],
+  "HGA1": [
+   "HGA2",
+   "HGA3"
+  ],
+  "HGA2": [
+   "HGA1",
+   "HGA3"
+  ],
+  "HGA3": [
+   "HGA2",
+   "HGA1"
+  ],
+  "HGA6": [
+   "HGA2"
+  ],
+  "HGA7": [
+   "HGA1"
+  ],
+  "HGR62": [
+   "HGR61"
+  ],
+  "HGR63": [
+   "HGR61"
+  ],
+  "HGR52": [
+   "HGR51"
+  ],
+  "HGR53": [
+   "HGR51"
+  ],
+  "HGR71": [
+   "HGR61"
+  ]
+ },
+ "analogy_source": "CGenFF analogues: the same element and hybridisation, nearest in hydrogen count, ring or substituent"
+}
