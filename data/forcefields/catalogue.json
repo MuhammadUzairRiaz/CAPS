@@ -350,36 +350,6 @@
    }
   },
   {
-   "id": "trappe-ua",
-   "name": "TraPPE-UA",
-   "version": "1998",
-   "references": [
-    "M. G. Martin, J. I. Siepmann, J. Phys. Chem. B 102, 2569 (1998)"
-   ],
-   "origin": "converted",
-   "source_file": "TRAPPE_UA.par",
-   "status": "validated",
-   "notes": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): 23 of 25 identical; the other two are the original C-C-O-H torsion, which takes terms from the O-C-C-O entry - CAPS keeps the published TraPPE alcohol torsion.",
-   "file": "trappe-ua.json",
-   "counts": {
-    "atom_types": 39,
-    "pairs": 27,
-    "bonds": 55,
-    "angles": 67,
-    "dihedrals": 58,
-    "impropers": 0
-   },
-   "typing": {
-    "rules": "typing/trappe-ua.typing.json",
-    "evidence": "CAPS rules from TraPPE-UA's type definitions (bench/typing/make_biomolecular_rules.py); united atom"
-   },
-   "list": {
-    "label": "TraPPE united-atom",
-    "key": "trappe_ua",
-    "order": 16
-   }
-  },
-  {
    "id": "trappe-eh",
    "name": "TraPPE-EH",
    "version": "2007",
@@ -1879,6 +1849,38 @@
     "label": "DREIDING",
     "key": "dreiding",
     "order": 14
+   }
+  },
+  {
+   "id": "trappe-ua-foyer",
+   "name": "TraPPE-UA (alkanes, alcohols)",
+   "version": "foyer trappe-ua.xml 0.0.2 (mosdef-hub/foyer, 2021-08-11)",
+   "references": [
+    "M. G. Martin, J. I. Siepmann, J. Phys. Chem. B 102, 2569 (1998)",
+    "M. G. Martin, J. I. Siepmann, J. Phys. Chem. B 103, 4508 (1999)",
+    "B. Chen, J. J. Potoff, J. I. Siepmann, J. Phys. Chem. B 105, 3093 (2001)"
+   ],
+   "origin": "built from source",
+   "source": "foyer/forcefields/xml/trappe-ua.xml, github.com/mosdef-hub/foyer (bench/ff/convert_foyer.py)",
+   "license": "MIT (Copyright (c) 2015 Vanderbilt University)",
+   "status": "validated",
+   "file": "trappe-ua-foyer.json",
+   "counts": {
+    "atom_types": 11,
+    "pairs": 11,
+    "bonds": 15,
+    "angles": 50,
+    "dihedrals": 68,
+    "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/trappe-ua-foyer.typing.json",
+    "evidence": "CAPS rules for foyer's eleven united-atom types (alkane and alcohol CHn, O, H); its Ryckaert-Bellemans torsions written exactly as Fourier terms; LAMMPS and GROMACS reproduce CAPS's energies. Torsions foyer's file lacks (CHn-CH2-CH-OH and similar, C-C between branched centres) are reported missing"
+   },
+   "list": {
+    "label": "TraPPE united-atom",
+    "key": "trappe_ua",
+    "order": 16
    }
   },
   {

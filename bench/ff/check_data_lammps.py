@@ -142,6 +142,8 @@ CASES = [
     # TraPPE in its own styles: the c1-c3 torsions as dihedral opls, 14 Å with TraPPE's 1-4 exclusions (united atom;
     # explicit-hydrogen aromatics)
     ("TraPPE-UA: dodecane, 2-methylpentane (opls torsions)", ("smiles", "CCCCCCCCCCCC.CC(C)CCC"), "trappe-ua", "keep", "rules"),
+    ("TraPPE-UA (foyer): butanol, 2-propanol, tert-butanol, 2,3-dimethylbutane, neopentane (RB torsions as fourier)",
+     ("smiles", "CCCCO.CC(C)O.CC(C)(C)O.CC(C)C(C)C.CC(C)(C)C"), "trappe-ua-foyer", "types", "rules"),
     ("TraPPE-UA alkanes (moltemplate): dodecane", ("smiles", "CCCCCCCCCCCC"), "trappe1998-moltemplate", "keep", "rules"),
     ("TraPPE-EH: benzene, naphthalene", ("smiles", "c1ccccc1.c1ccc2ccccc2c1"), "trappe-eh", "keep", "rules"),
     ("Miscellaneous set: HFA-134a, methanol, chloroform, isopentane", ("smiles", "FCC(F)(F)F.CO.ClC(Cl)Cl.CCC(C)C"), "misc", "types", "rules"),

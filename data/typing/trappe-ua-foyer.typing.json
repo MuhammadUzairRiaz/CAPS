@@ -1,0 +1,76 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "TraPPE-UA (foyer)",
+ "unknown_types": "untyped",
+ "united_atom": true,
+ "description": "CAPS rules for foyer's TraPPE-UA types: alkanes (Martin & Siepmann 1998, 1999) and alcohols (Chen, Potoff & Siepmann 2001); united-atom CHn sites, the hydroxyl H explicit",
+ "rules": [
+  {
+   "type": "CH4",
+   "priority": 0,
+   "smarts": "[CX4H4]",
+   "description": "methane"
+  },
+  {
+   "type": "CH3_sp3",
+   "priority": 0,
+   "smarts": "[CX4H3]",
+   "description": "alkane CH3, united atom"
+  },
+  {
+   "type": "CH3_O",
+   "priority": 1,
+   "smarts": "[CX4H3][OX2H1]",
+   "description": "CH3 on a hydroxyl, united atom"
+  },
+  {
+   "type": "CH2_sp3",
+   "priority": 0,
+   "smarts": "[CX4H2]",
+   "description": "alkane CH2, united atom"
+  },
+  {
+   "type": "CH2_O",
+   "priority": 1,
+   "smarts": "[CX4H2][OX2H1]",
+   "description": "CH2 on a hydroxyl, united atom"
+  },
+  {
+   "type": "CH_sp3",
+   "priority": 0,
+   "smarts": "[CX4H1]",
+   "description": "alkane CH, united atom"
+  },
+  {
+   "type": "CH_O",
+   "priority": 1,
+   "smarts": "[CX4H1][OX2H1]",
+   "description": "CH on a hydroxyl, united atom"
+  },
+  {
+   "type": "C_sp3",
+   "priority": 0,
+   "smarts": "[CX4H0]",
+   "description": "alkane C, united atom"
+  },
+  {
+   "type": "C_O",
+   "priority": 1,
+   "smarts": "[CX4H0][OX2H1]",
+   "description": "C on a hydroxyl, united atom"
+  },
+  {
+   "type": "O",
+   "priority": 0,
+   "smarts": "[OX2H1][CX4]",
+   "description": "hydroxyl oxygen (alcohol)"
+  },
+  {
+   "type": "H",
+   "priority": 0,
+   "smarts": "[H][OX2H1][CX4]",
+   "description": "hydroxyl hydrogen"
+  }
+ ]
+}
