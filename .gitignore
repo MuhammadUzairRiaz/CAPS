@@ -67,3 +67,5 @@ MS_information_design/
 
 # force-field libraries built on the user's machine from their original sources (bench/ff/open): never committed
 data/forcefields/*-toppar.json
+# CAPS's own typing rules for those libraries (bench/typing/make_charmm_rules.py): tracked
+!/data/typing/*-toppar.typing.json
