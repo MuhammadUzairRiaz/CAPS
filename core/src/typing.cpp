@@ -1265,7 +1265,25 @@ TypingResult assign_types(const System& s, const FFDef& ff, const std::vector<st
           }
         }
       }
-      if (queue.size() == 1) colour[s0] = member.at(r.types[s0]).second;   // alone in its system: its own rule's type
+      // the base pair rule: the lowest-priority rule naming a pair member (CGenFF's generic CG2DC1); an atom alone in
+      // its system takes its type; in a system, the members typed by a higher-priority rule (anchors: CG2DC2 on a
+      // terminal =CH2, CG2DC1 next to an enol ether C) vote for the phase, and the colouring flips when they prefer it
+      int base_prio = 1 << 30, base_side = 0;
+      for (const auto& tr : ff.typing)
+        if (member.count(tr.type) && tr.priority < base_prio) base_prio = tr.priority, base_side = member.at(tr.type).second;
+      if (!ff.typing_pairs_double_same) {   // GAFF: an atom alone keeps its own rule's type, the phase from the first atom
+        if (queue.size() == 1) colour[s0] = member.at(r.types[s0]).second;
+        continue;
+      }
+      if (queue.size() == 1) {
+        colour[s0] = base_side;
+        continue;
+      }
+      int keep = 0, flip = 0;
+      for (uint32_t a : queue)
+        if (r.rule[a] >= 0 && ff.typing[r.rule[a]].priority > base_prio) (member.at(r.types[a]).second == colour[a] ? keep : flip)++;
+      if (flip > keep)
+        for (uint32_t a : queue) colour[a] = 1 - colour[a];
     }
     for (uint32_t a = 0; a < n; ++a) {
       if (colour[a] < 0) continue;
