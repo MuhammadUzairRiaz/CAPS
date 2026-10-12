@@ -101,6 +101,14 @@ ENTRIES = {
                       "every model's bonds, bends and torsions as it lists them (87 / 87 models; nine models whose own lists are "
                       "inconsistent named apart); 1-4 Coulomb x 0.5 for the glycol ethers, diols, disulfides and acrylates as their "
                       "models count it; LAMMPS and GROMACS reproduce CAPS's energies", ("TraPPE united-atom", "trappe_ua", 16), ["trappe-ua"]),
+    "bush1994-oxides": ("Oxides (Bush et al. 1994)", "Bush, Gale, Catlow & Battle 1994 shell-model set",
+                        ["T. S. Bush, J. D. Gale, C. R. A. Catlow, P. D. Battle, J. Mater. Chem. 4, 831 (1994)"],
+                        {"source": "the paper's set as the UCL Database of Published Interatomic Potential Parameters gives it (bush.lib, "
+                                   "mcc.chem.ucl.ac.uk/Potentials); transcribed by bench/ff/make_inorganic_gulp.py",
+                         "license": "published parameters of the paper (no file of the database is distributed)"},
+                        "one shell-model set for 20 cations with oxygen, typed by element (a shell on every core); every Buckingham "
+                        "term equals an independent transcription of the same paper; LAMMPS reproduces CAPS's energies on MgO, "
+                        "SrTiO3 and corundum (CORESHELL styles)", ("Oxides (Bush 1994)", "bush1994", 30), []),
 }
 RTF = "the topology's own residues typed as it types them (bench/ff/validate_rtf_types.py --cap-links): "
 for fid, name, version, refs, evidence, listing, replaces in (
