@@ -3,7 +3,7 @@
  "version": 1,
  "forcefield": "OPLS-AA (GROMACS oplsaa.ff)",
  "unknown_types": "untyped",
- "description": "CAPS's OPLS-AA rules in GROMACS's opls_NNN names (bench/typing/make_opls_gromacs_rules.py); types the GROMACS file lacks (opls_1025, opls_1026, opls_1027, opls_1028, opls_1029, opls_1060, opls_1061, opls_1062, opls_1063, opls_1064, opls_1065, opls_1066, opls_1067, opls_1068, opls_1069, opls_1070, opls_1071, opls_1072, opls_1073, opls_1074, opls_1075, opls_1076, opls_1077, opls_1078, opls_399, opls_489, opls_495, opls_519, opls_789, opls_939, opls_972, opls_973, opls_974, opls_987, opls_988, opls_9998, opls_9999) are left untyped",
+ "description": "CAPS's OPLS-AA rules in GROMACS's opls_NNN names (bench/typing/make_opls_gromacs_rules.py); types the GROMACS file lacks (opls_1025, opls_1026, opls_1027, opls_1028, opls_1029, opls_1060, opls_1061, opls_1062, opls_1063, opls_1064, opls_1065, opls_1066, opls_1067, opls_1068, opls_1069, opls_1070, opls_1071, opls_1072, opls_1073, opls_1074, opls_1075, opls_1076, opls_1077, opls_1078, opls_399, opls_489, opls_495, opls_519, opls_789, opls_939, opls_966, opls_967, opls_972, opls_973, opls_974, opls_987, opls_988, opls_9998, opls_9999) are left untyped",
  "rules": [
   {
    "type": "opls_135",

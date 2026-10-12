@@ -42,7 +42,16 @@ ENTRIES = {
                        {"source": "GROMACS share/top/oplsaa.ff (ffnonbonded.itp, ffbonded.itp)", "license": "GNU LGPL 2.1 (part of GROMACS)"},
                        "CAPS's OPLS-AA rules in opls_NNN names plus GROMACS's protein types (bench/typing/make_opls_gromacs_rules.py): "
                        "aminoacids.rtp 504 / 504 atoms, 46 / 46 residues (PGLU's entry listed as a deviation), methanol.itp exact; "
-                       "every parameter CAPS assigns equals GROMACS's own lookup (bench/ff/check_source_gromacs.py)", None, []),
+                       "every parameter CAPS assigns equals GROMACS's own lookup (bench/ff/check_source_gromacs.py)", ("OPLS-AA/L (GROMACS)", "oplsaal", 6), []),
+    "oplsaa2024": ("OPLS-AA 2024", "Jorgensen's BOSS parameter files of October 2023 (J. Phys. Chem. B 128, 250 (2024), SI)",
+                   ["W. L. Jorgensen, D. S. Maxwell, J. Tirado-Rives, J. Am. Chem. Soc. 118, 11225 (1996)",
+                    "W. L. Jorgensen et al., J. Phys. Chem. B 128, 250 (2024)"],
+                   {"source": "supporting information jp3c06602_si_002.txt (.par) and jp3c06602_si_003.txt (.sb), pubs.acs.org/doi/suppl/10.1021/acs.jpcb.3c06602",
+                    "license": "published parameter tables of the paper's supporting information (moltemplate, MIT, redistributes them as public domain)"},
+                   "CAPS's OPLS-AA rules by type number (bench/typing/make_oplsaa_rules.py) in opls_NNN names; on the polymer library "
+                   "every term equals moltemplate's independent conversion of the same files except CT-CT-OH-HO, where that conversion "
+                   "applies trifluoroethanol's torsion to every alcohol (bench/ff/convert_boss_opls.py applies the general line)",
+                   ("OPLS-AA 2024", "oplsaa2024", 4), ["opls2020"]),
 }
 cat_path = os.path.join(FF, "catalogue.json")
 cat = json.load(open(cat_path))
@@ -59,6 +68,10 @@ for fid, (name, version, refs, lic, evidence, listing, replaces) in ENTRIES.item
     if listing:
         e["list"] = {"label": listing[0], "key": listing[1], "order": listing[2]}
     fl[:] = [x for x in fl if x["id"] not in replaces and x["id"] != fid]
+    if listing:   # one entry per listing key: an older entry with this key keeps its file but leaves the list
+        for x in fl:
+            if x.get("list", {}).get("key") == listing[1]:
+                x.pop("list")
     fl.append(e)
 json.dump(cat, open(cat_path, "w"), indent=1, ensure_ascii=False)
 print(f"{cat_path}: {len(fl)} entries")

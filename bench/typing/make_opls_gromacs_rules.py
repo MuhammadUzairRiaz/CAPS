@@ -115,3 +115,20 @@ doc = {"format": "caps-typing", "version": 1, "forcefield": "OPLS-AA (GROMACS op
        "rules": rules}
 json.dump(doc, open(os.path.join(OUT, "oplsaa-gromacs.typing.json"), "w"), indent=1, ensure_ascii=False)
 print(f"oplsaa-gromacs: {len(rules)} rules, {len(dropped)} types the GROMACS file lacks")
+
+# OPLS-AA 2024 from Jorgensen's own files (bench/ff/convert_boss_opls.py: oplsaa2024): the same chemistry rules in
+# opls_NNN names, water TIP3P as the .par numbers it (111 / 112)
+have24 = {t["name"] for t in json.load(open(os.path.join(DATA, "forcefields", "oplsaa2024.json")))["atom_types"]}
+WATER = {"9999": "opls_111", "9998": "opls_112"}
+rules24, lacking = [], set()
+for r in src["rules"]:
+    t = WATER.get(r["type"], opls(r["type"]))
+    if t not in have24:
+        lacking.add(t)
+        continue
+    rules24.append({**r, "type": t, **({"overrides": [WATER.get(x, opls(x)) for x in r["overrides"]]} if "overrides" in r else {})})
+json.dump({"format": "caps-typing", "version": 1, "forcefield": "OPLS-AA 2024 (Jorgensen)", "unknown_types": "untyped",
+           "description": "CAPS's OPLS-AA rules in opls_NNN names for the library built from Jorgensen's 2024 BOSS files "
+                          "(bench/typing/make_opls_gromacs_rules.py)", "rules": rules24},
+          open(os.path.join(OUT, "oplsaa2024.typing.json"), "w"), indent=1, ensure_ascii=False)
+print(f"oplsaa2024: {len(rules24)} rules" + (f", types the file lacks: {sorted(lacking)}" if lacking else ""))

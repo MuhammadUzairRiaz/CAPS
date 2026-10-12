@@ -260,34 +260,6 @@
    }
   },
   {
-   "id": "opls2020",
-   "name": "OPLS 2005 with the OPLS 2020 bonds and angles",
-   "version": "as distributed",
-   "references": [],
-   "origin": "converted",
-   "source_file": "OPLS2020.par",
-   "status": "converted",
-   "notes": "the OPLS 2020 bond and angle supplement on OPLS 2005 (the base is loaded with it; 2020 values win)",
-   "file": "opls2020.json",
-   "counts": {
-    "atom_types": 0,
-    "pairs": 0,
-    "bonds": 450,
-    "angles": 2931,
-    "dihedrals": 0,
-    "impropers": 0
-   },
-   "typing": {
-    "rules": "typing/opls2005.typing.json",
-    "evidence": "OPLS 2005's CAPS rules; the supplement adds bonds and angles only"
-   },
-   "list": {
-    "label": "OPLS-2020",
-    "key": "opls2020",
-    "order": 10
-   }
-  },
-  {
    "id": "opls-aam",
    "name": "OPLS-AA/M",
    "version": "2015",
@@ -1094,11 +1066,6 @@
    "typing": {
     "rules": "typing/oplsaa2024-moltemplate.typing.json",
     "evidence": "CAPS OPLS-AA number rules (bench/typing/make_oplsaa_rules.py); on the polymer library every fully typed oligomer is neutral and its charges agree with an independent OPLS bond-increment assignment (bench/typing/check_oplsaa_numbers.py)"
-   },
-   "list": {
-    "label": "OPLS-AA 2024",
-    "key": "oplsaa2024",
-    "order": 4
    }
   },
   {
@@ -2085,6 +2052,42 @@
    "typing": {
     "rules": "typing/oplsaa-gromacs.typing.json",
     "evidence": "CAPS's OPLS-AA rules in opls_NNN names plus GROMACS's protein types (bench/typing/make_opls_gromacs_rules.py): aminoacids.rtp 504 / 504 atoms, 46 / 46 residues (PGLU's entry listed as a deviation), methanol.itp exact; every parameter CAPS assigns equals GROMACS's own lookup (bench/ff/check_source_gromacs.py)"
+   },
+   "list": {
+    "label": "OPLS-AA/L (GROMACS)",
+    "key": "oplsaal",
+    "order": 6
+   }
+  },
+  {
+   "id": "oplsaa2024",
+   "name": "OPLS-AA 2024",
+   "version": "Jorgensen's BOSS parameter files of October 2023 (J. Phys. Chem. B 128, 250 (2024), SI)",
+   "references": [
+    "W. L. Jorgensen, D. S. Maxwell, J. Tirado-Rives, J. Am. Chem. Soc. 118, 11225 (1996)",
+    "W. L. Jorgensen et al., J. Phys. Chem. B 128, 250 (2024)"
+   ],
+   "origin": "built from source",
+   "source": "supporting information jp3c06602_si_002.txt (.par) and jp3c06602_si_003.txt (.sb), pubs.acs.org/doi/suppl/10.1021/acs.jpcb.3c06602",
+   "license": "published parameter tables of the paper's supporting information (moltemplate, MIT, redistributes them as public domain)",
+   "status": "validated",
+   "file": "oplsaa2024.json",
+   "counts": {
+    "atom_types": 990,
+    "pairs": 990,
+    "bonds": 465,
+    "angles": 1417,
+    "dihedrals": 1107,
+    "impropers": 4
+   },
+   "typing": {
+    "rules": "typing/oplsaa2024.typing.json",
+    "evidence": "CAPS's OPLS-AA rules by type number (bench/typing/make_oplsaa_rules.py) in opls_NNN names; on the polymer library every term equals moltemplate's independent conversion of the same files except CT-CT-OH-HO, where that conversion applies trifluoroethanol's torsion to every alcohol (bench/ff/convert_boss_opls.py applies the general line)"
+   },
+   "list": {
+    "label": "OPLS-AA 2024",
+    "key": "oplsaa2024",
+    "order": 4
    }
   }
  ],
