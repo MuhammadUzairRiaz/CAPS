@@ -214,6 +214,27 @@ ENTRIES = {
                        "and bond-increment charges; LAMMPS reproduces CAPS's energies on disilicic acid, a bridging-hydroxyl Si-O(H)-Al "
                        "cluster, (HO)3Si-O-Al(OH)3 and a cyclotetrasilicic acid", ("Aluminosilicates (Hill & Sauer)", "hill_sauer1995", 30),
                        ["inorganic-zeolite-hill-sauer"]),
+    "omalley2013-alkanes": ("All-atom alkanes in silicalite (O'Malley & Catlow 2013)", "2013, Tables 2 and 3 (all-atom model)",
+                            ["A. J. O'Malley, C. R. A. Catlow, Phys. Chem. Chem. Phys. 15, 19024 (2013)"],
+                            {"source": "the paper's Tables 2 and 3 (read from the page images); bench/ff/make_zeolite_sorbates.py",
+                             "license": "published parameters of the paper"},
+                            "alkane C typed by its H count (charges +0.1 per H, each alkane neutral), H, and the formal-charge silica "
+                            "framework (Buckingham Si-O and O-O within 10 A, O-Si-O bends by distance); the paper's torsion (Raj, Sastre "
+                            "& Catlow 1999) not included; LAMMPS reproduces CAPS's energies on alpha-quartz and on alkanes with SiO4, "
+                            "GROMACS on the alkanes", ("Alkanes in silicalite (O'Malley 2013)", "omalley2013", 30), ["misc"]),
+    "plant2007-methanol": ("Methanol in zeolite NaY (Plant, Maurin & Bell 2007)", "2007, Tables 1-3",
+                           ["D. F. Plant, G. Maurin, R. G. Bell, J. Phys. Chem. B 111, 2836 (2007)"],
+                           {"source": "the paper's Tables 1-3; bench/ff/make_zeolite_sorbates.py", "license": "published parameters of the paper"},
+                           "Kramer-charge NaY framework with Na (as Ramsahye & Bell), methanol's charges, bonds, bends, torsion and "
+                           "pairs, and its pairs with the framework O and Na; LAMMPS reproduces CAPS's energies on methanol with Na+, "
+                           "AlO4 and SiO4, GROMACS on methanol", ("Methanol in NaY (Plant 2007)", "plant2007", 30), []),
+    "peguin2009-hfa134a": ("HFA134a (Peguin et al. 2009, FF no. 2)", "2009, Tables 1 and 2 (FF no. 2)",
+                           ["R. P. S. Peguin, G. Kamath, J. J. Potoff, S. R. P. da Rocha, J. Phys. Chem. B 113, 178 (2009)"],
+                           {"source": "the paper's Tables 1 (read from the page image) and 2; bench/ff/make_zeolite_sorbates.py",
+                            "license": "published parameters of the paper"},
+                           "CF3CH2F with the paper's FF no. 2 charges and Lennard-Jones terms, OPLS-AA bends and the fitted F-C-C-F and "
+                           "F-C-C-H torsions, no intramolecular pairs; LAMMPS and GROMACS reproduce CAPS's energies",
+                           ("HFA134a (Peguin 2009)", "peguin2009", 30), []),
 }
 RTF = "the topology's own residues typed as it types them (bench/ff/validate_rtf_types.py --cap-links): "
 for fid, name, version, refs, evidence, listing, replaces in (

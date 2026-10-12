@@ -1161,3 +1161,62 @@ TEST(FFDef, DroppedBondsStillTypeAndPairCutOff) {
   EXPECT_TRUE(morse);
   EXPECT_EQ(ff.angles.size(), 6u);
 }
+
+// Zeolite sorbates from their papers (bench/ff/make_zeolite_sorbates.py): O'Malley & Catlow's all-atom alkane neutral by
+// its C types (CH3 -0.3, CH2 -0.2, CH -0.1); Plant et al.'s methanol and Peguin et al.'s HFA134a typed with their tables'
+// charges; a Buckingham term with its own cut-off (10 A, under the 13 A global one) adds nothing beyond it, not -shift
+TEST(FFDef, ZeoliteSorbatesFromTheirPapers) {
+  const std::string dir = std::string(CAPS_SOURCE_DIR) + "/data/forcefields/";
+  auto typed = [&](const std::string& ff, const std::string& smiles, std::map<std::string, int>& count) {
+    const FFDef def = load_forcefield(dir + ff + ".json");
+    System s = build_molecule(smiles).system;
+    std::string ch = "types";
+    prepare_for_forcefield(s, def, ch);
+    const TypingResult tr = assign_types(s, def);
+    EXPECT_EQ(tr.untyped, 0) << ff;
+    for (const auto& t : tr.types) ++count[t];
+    const ForceField f = parameterize(s, def, tr.types, "types", nullptr, false);
+    double q = 0;
+    for (double x : f.charge) q += x;
+    EXPECT_NEAR(q, 0.0, 1e-9) << ff;
+    return f;
+  };
+  std::map<std::string, int> c;
+  typed("omalley2013-alkanes", "CC(C)CCC(C)(C)C", c);
+  EXPECT_EQ(c["C3_om"], 5);
+  EXPECT_EQ(c["C2_om"], 2);
+  EXPECT_EQ(c["C1_om"], 1);
+  EXPECT_EQ(c["C0_om"], 1);
+  EXPECT_EQ(c["H_om"], 20);
+  c.clear();
+  const ForceField m = typed("plant2007-methanol", "CO", c);
+  EXPECT_EQ(c["C_pm"], 1);
+  EXPECT_EQ(c["Om_pm"], 1);
+  EXPECT_EQ(c["Hm_pm"], 1);
+  EXPECT_EQ(c["H_pm"], 3);
+  ASSERT_EQ(m.dihedrals.size(), 3u);
+  c.clear();
+  typed("peguin2009-hfa134a", "FCC(F)(F)F", c);
+  EXPECT_EQ(c["C3_hfa"], 1);
+  EXPECT_EQ(c["C2_hfa"], 1);
+  EXPECT_EQ(c["F_hfa"], 4);
+  EXPECT_EQ(c["H_hfa"], 2);
+
+  const FFDef def = load_forcefield(dir + "omalley2013-alkanes.json");
+  System s;
+  for (int k = 0; k < 2; ++k) {
+    Atom a;
+    a.element = 8;
+    a.name = "O";
+    a.pos = {11.0 * k, 0, 0};
+    s.atoms.push_back(a);
+  }
+  const ForceField ff = parameterize(s, def, {"O_om", "O_om"}, "types", nullptr, false);
+  EnergyOptions o;
+  o.tail = false;
+  o.coulomb = false;
+  o.cutoff = 13;
+  std::vector<double> f;
+  EXPECT_NEAR(Evaluator(ff, o).compute(flat(s), Cell{}, f).vdw, 0.0, 1e-12);
+}
+
