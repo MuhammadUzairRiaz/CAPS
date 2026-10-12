@@ -565,6 +565,8 @@ struct Dyn {
   std::vector<std::vector<Vec3>> x;    // unwrapped atoms, per frame (drift removed)
   std::vector<std::vector<Vec3>> com;  // molecule centres, per frame
   std::vector<double> t;               // ps, from the first frame
+  double volume = 0;                   // Å³, mean over the frames (0 without a cell)
+  bool cubic = false;                  // every frame's cell cubic (edges equal to 0.1 %, right angles)
 };
 
 Dyn dynamics_data(const Trajectory& t, const std::vector<size_t>& fr, const std::vector<double>& times, std::vector<std::string>& notes) {
@@ -600,6 +602,15 @@ Dyn dynamics_data(const Trajectory& t, const std::vector<size_t>& fr, const std:
     d.com.push_back(std::move(c));
   }
   for (double x : times) d.t.push_back(x - times[0]);
+  d.cubic = true;
+  for (size_t k : fr) {
+    const Cell& c = k < t.cells.size() ? t.cells[k] : top.cell;
+    if (!c.valid()) { d.volume = 0, d.cubic = false; break; }
+    d.volume += c.volume() / double(fr.size());
+    const double la = norm(c.a), lb = norm(c.b), lc = norm(c.c);
+    const double off = std::fabs(dot(c.a, c.b)) + std::fabs(dot(c.a, c.c)) + std::fabs(dot(c.b, c.c));
+    if (std::fabs(lb - la) > 1e-3 * la || std::fabs(lc - la) > 1e-3 * la || off > 1e-6 * la * la) d.cubic = false;
+  }
   return d;
 }
 
@@ -668,6 +679,22 @@ Property msd_prop(const Dyn& d, const AnalyzeOptions& o, Property* diffusion) {
       if (beta < 0.9)
         D.notes.push_back("the MSD is not yet linear in time (log-log slope " + std::to_string(beta).substr(0, 4) +
                           " < 0.9): sub-diffusive, so D is an upper bound; run longer");
+      // Yeh & Hummer (2004): the periodic images' hydrodynamic drag lowers D by k_B T ξ / (6π η L) in a cubic cell
+      if (o.viscosity > 0 && o.temperature > 0 && d.volume > 0) {
+        const double L = std::cbrt(d.volume);   // Å
+        const double corr = 1.380649e-23 * o.temperature * 2.837297 / (6 * kPi * o.viscosity * 1e-3 * L * 1e-10);   // m²/s
+        D.extra["D_PBC (10⁻⁵ cm²/s)"] = D.value;
+        D.extra["Yeh–Hummer correction (10⁻⁵ cm²/s)"] = corr * 1e9;   // m²/s → 10⁻⁵ cm²/s
+        D.extra["viscosity η (mPa·s)"] = o.viscosity;
+        D.extra["cell edge L (Å)"] = L;
+        D.value += corr * 1e9;
+        D.extra["D (m²/s)"] = D.value * 1e-9;
+        D.method += "; Yeh–Hummer correction k_B T ξ/(6π η L) added (ξ = 2.837297)";
+        if (!d.cubic) D.notes.push_back("the cell is not cubic: the correction takes L = V^(1/3), exact only for a cube");
+      } else if (o.viscosity > 0) {
+        D.notes.push_back(o.temperature > 0 ? "no periodic cell: the Yeh–Hummer correction is not applied"
+                                            : "give the temperature (--temp) for the Yeh–Hummer correction");
+      }
     }
   }
   p.series.push_back(std::move(sa));

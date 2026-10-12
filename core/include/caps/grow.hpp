@@ -123,7 +123,8 @@ double box_for_density(const GrowOptions& o);
 System grow(const GrowOptions& o, GrowReport* report = nullptr);
 
 // Gasteiger–Marsili partial charges (H, C, N, O, F, Cl, Br, I, sp³ S; hybridisation from the perceived bonds). One
-// charge per atom; throws std::invalid_argument for other elements.
+// charge per atom, starting from the perceived formal charges, so the total is the net formal charge (−1 for acetate,
+// 0 for a neutral molecule); throws std::invalid_argument for other elements.
 std::vector<double> gasteiger_ch(const System& s, const std::vector<char>& aromatic, int iterations = 6);
 
 }  // namespace caps

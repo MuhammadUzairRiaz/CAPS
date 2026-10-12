@@ -366,8 +366,7 @@ ElasticResult fluctuation_elastic(const Trajectory& t, const std::vector<size_t>
   Mat6 Bm, Fm, K{};
   estimate(0, n, Bm, Fm);
   const double kin = natoms * kT / vmean * kGPa;
-  for (int I = 0; I < 6; ++I)
-    for (int J = 0; J < 6; ++J) K[I][J] = kin * ((I == J ? 1 : 0) + (I < 3 && J < 3 ? 1 : 0));
+  for (int I = 0; I < 6; ++I) K[I][I] = kin * (I < 3 ? 2 : 1);   // N k_B T/V (δ_ik δ_jl + δ_il δ_jk): 2 on C11..C33, 1 on C44..C66, 0 off the diagonal
   for (int I = 0; I < 6; ++I)
     for (int J = 0; J < 6; ++J) res.C[I][J] = Bm[I][J] - Fm[I][J] + K[I][J];
   res.born = Bm;
@@ -869,8 +868,7 @@ ElasticResult fluctuation_run(System& s, const FluctuationRunOptions& o) {
   const double kT = kB * o.temperature;
   const double kin = s.atoms.size() * kT / V * kGPa;
   Mat6 K{};
-  for (int I = 0; I < 6; ++I)
-    for (int J = 0; J < 6; ++J) K[I][J] = kin * ((I == J ? 1 : 0) + (I < 3 && J < 3 ? 1 : 0));
+  for (int I = 0; I < 6; ++I) K[I][I] = kin * (I < 3 ? 2 : 1);   // N k_B T/V (δ_ik δ_jl + δ_il δ_jk): 2 on C11..C33, 1 on C44..C66, 0 off the diagonal
   auto estimate = [&](const std::vector<const Block*>& bs, Mat6& Bm, Mat6& Fm) {
     double n = 0, nbn = 0;
     std::array<double, 6> m{};

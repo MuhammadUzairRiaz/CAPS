@@ -68,10 +68,14 @@ struct AnalyzeOptions {
   int deuterate = 0;
   // dynamics
   double fit_from = 0.2, fit_to = 0.5;   // Einstein fit window, as fractions of the run
+  // Yeh–Hummer finite-size correction of the diffusion coefficient, D∞ = D + k_B T ξ / (6π η L), ξ = 2.837297, L the
+  // edge of the (cubic) cell: applied when the shear viscosity η (mPa·s) and the temperature (below) are both given
+  double viscosity = 0;         // mPa·s; 0: no correction
   // cohesive energy: the force field of the structure (atoms in trajectory order), and its energy settings
   const ForceField* ff = nullptr;
   EnergyOptions energy;
-  // elastic constants from stress fluctuations (cij_fluct): the temperature of the NVT run the frames come from
+  // elastic constants from stress fluctuations (cij_fluct) and the Yeh–Hummer correction: the temperature of the run
+  // the frames come from
   double temperature = 0;       // K
   // response functions from fluctuations (fluct): the pressure of the NPT run the frames come from
   double pressure = 1.0;        // atm

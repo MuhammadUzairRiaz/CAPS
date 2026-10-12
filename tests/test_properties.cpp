@@ -154,6 +154,17 @@ TEST(Properties, DiffusionOfRandomWalk) {
   EXPECT_NEAR(d.value, D * 10.0, 0.1 * D * 10.0);     // 1 Å²/ps = 10 × 10⁻⁵ cm²/s
   EXPECT_NEAR(d.extra.at("log-log slope β"), 1.0, 0.1);
   EXPECT_TRUE(d.notes.empty());
+  // Yeh–Hummer: water's viscosity at 298 K in this 30 Å cube adds k_B T ξ / (6π η L) = 0.2319 × 10⁻⁵ cm²/s
+  o.viscosity = 0.89;
+  o.temperature = 298;
+  const auto pc = analyze(t, {"diffusion"}, o);
+  const auto& dc = get(pc, "diffusion");
+  const double corr = 1.380649e-23 * 298 * 2.837297 / (6 * 3.14159265358979 * 0.89e-3 * 30e-10) * 1e9;
+  EXPECT_NEAR(corr, 0.2319, 1e-3);
+  EXPECT_NEAR(dc.extra.at("Yeh–Hummer correction (10⁻⁵ cm²/s)"), corr, 1e-9);
+  EXPECT_NEAR(dc.value, d.value + corr, 1e-9);
+  EXPECT_NEAR(dc.extra.at("D_PBC (10⁻⁵ cm²/s)"), d.value, 1e-12);
+  EXPECT_TRUE(dc.notes.empty());   // a cubic cell
 }
 
 TEST(Properties, UnknownIdAndJson) {

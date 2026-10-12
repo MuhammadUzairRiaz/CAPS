@@ -143,6 +143,7 @@ int usage() {
                "  caps analyze FILE [--topology DATA] [--props density,rdf,sq,xray,neutron,rg,ree,cn,persistence,msd,diffusion,\n"
                "               relaxation,ced,delta,ffv,psd,crosslinks,entanglements] [--first N --last N --stride N] [--frame-ps X | --timestep-fs 1]\n"
                "               [--pair C-C --inter] [--qmax 25 --dq 0.02 --qdirect 4] [--probe 0] [--grid 0.4] [--ff FF.json] [--json OUT] [--csv DIR]\n"
+               "               diffusion: [--fit 0.2:0.5] [--viscosity ETA (mPa·s) --temp T (Yeh–Hummer finite-size correction)]\n"
                "               interfaces (zprofile, adhesion, interaction, orientation): [--surface 1-3,7 (molecule ids; 1)] [--axis x|y|z (z)] [--zbin 0.5]\n"
                "  caps elastic FILE [--topology DATA] [--method strain|fluct|fluct-run] [--configs N] [--strain 1e-4] [--temp T] [--ps 100] [--ff FF.json] [--json OUT]\n"
                "  caps tensile DATA -o OUT.data [--axis x] [--rate 1e-3] [--strain 0.2] [--temp 300] [--fixed-lateral] [--ff FF.json] [--csv DIR]\n"
@@ -320,7 +321,7 @@ const std::set<std::string>& known_options() {
     "--symmetrize", "--table", "--tacticity", "--target", "--tau-p", "--tau-t", "--temp", "--template",
     "--termination", "--tfinal", "--thermo", "--thermostat", "--thigh", "--threads", "--timestep-fs", "--tlow",
     "--tmax", "--to", "--tol", "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing", "--units",
-    "--until-converged", "--vacuum", "--volume", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
+    "--until-converged", "--vacuum", "--viscosity", "--volume", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
   return k;
 }
 
@@ -595,7 +596,7 @@ int axis_of(const std::string& a) {
   throw std::invalid_argument("axis must be x, y, z (or xyz for a tensile test averaged over the three)");
 }
 
-// --pme [--ewald-rtol 1e-5] [--pme-spacing 1.2] [--pme-order 4]: particle-mesh Ewald instead of damped shifted force
+// --pme [--ewald-rtol 1e-5] [--pme-spacing 1.0] [--pme-order 5]: particle-mesh Ewald instead of damped shifted force
 void electrostatics(EnergyOptions& e, std::map<std::string, std::string>& o) {
   if (o.count("--pme")) e.electrostatics = EnergyOptions::Electrostatics::PME;
   if (o.count("--ewald-rtol")) e.ewald_rtol = std::stod(o["--ewald-rtol"]);
@@ -2961,6 +2962,7 @@ int main(int argc, char** argv) {
         if (o.count("--cutoff")) ao.energy.cutoff = std::stod(o["--cutoff"]);
       }
       if (o.count("--temp")) ao.temperature = std::stod(o["--temp"]);
+      if (o.count("--viscosity")) ao.viscosity = std::stod(o["--viscosity"]);   // mPa·s: Yeh–Hummer correction of D (with --temp)
       const auto props = analyze(t, ids, ao);
       const auto fr = analysis_frames(t, ao);
       std::printf("%s · %zu frames used of %zu · %zu atoms\n", pos[0].c_str(), fr.size(), t.frames(), t.topology.atoms.size());
