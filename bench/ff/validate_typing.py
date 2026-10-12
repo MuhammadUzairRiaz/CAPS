@@ -65,7 +65,7 @@ def open_atoms(m):
                     return True
         return False
 
-    for a in sorted(low):
+    for a in sorted(low, key=lambda a: ({"O": 0, "S": 1, "N": 2}.get(el[a], 3), a)):   # a lone O / S / N takes its double bond first
         if a not in mate:
             augment(a, {a})
     out = {}
