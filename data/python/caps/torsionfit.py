@@ -1,6 +1,7 @@
 """Torsion parameters a force field lacks, fitted to quantum-chemical rotational profiles.
 
     python -m caps.torsionfit prepare STRUCTURE[,STRUCTURE...] FF.json WORKDIR [--engine orca|psi4] [--step 15] [--radius 2]
+                                    [--level oplsaa-l|dlpno]
     python -m caps.torsionfit collect WORKDIR
     python -m caps.torsionfit fit WORKDIR [--out overlay.json]
 
@@ -12,6 +13,8 @@ prepare  finds every proper torsion of STRUCTURE that FF.json has no parameters 
          energy, written as inputs for ORCA or Psi4 and a job list (jobs.txt: one shell command per point) to run where
          the program is installed. The levels follow OPLS-AA/L (Kaminski, Friesner, Tirado-Rives & Jorgensen,
          J. Phys. Chem. B 105, 6474 (2001)): geometries HF/6-31G**, energies MP2/cc-pVTZ (RI / density fitted).
+         --level dlpno: geometries wB97X-D3/def2-TZVP, energies DLPNO-CCSD(T)/cc-pVTZ with TightPNO (ORCA), for
+         checking a force field's torsions against a higher level or refitting them as an overlay.
 collect  reads every point's optimised geometry and its MP2 energy.
 fit      evaluates the fragment at each optimised geometry with CAPS (the missing torsions at zero, everything else the
          force field's own) and fits, by least squares, the OPLS Fourier terms V1-V4 of every missing class round the
@@ -23,9 +26,16 @@ CAPS never fills a torsion without saying so: these are CAPS's fits, not the for
 """
 import json, math, os, re, shutil, subprocess, sys
 
-ORCA_OPT = "! HF 6-31G** Opt TightSCF"
-ORCA_SP = "! RI-MP2 cc-pVTZ cc-pVTZ/C TightSCF"
-LEVEL = "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L)"
+# --level: the OPLS-AA/L level (the default, as the scans CAPS fitted first), or a higher one for checking or refitting
+# (geometries from a range-separated hybrid with dispersion, energies from local coupled cluster). The functional's own
+# D3 is part of its name, so nothing of it carries into the single point after $new_job
+LEVELS = {
+    "oplsaa-l": ("! HF 6-31G** Opt TightSCF", "! RI-MP2 cc-pVTZ cc-pVTZ/C TightSCF",
+                 "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L)"),
+    "dlpno": ("! wB97X-D3 def2-TZVP def2/J RIJCOSX Opt TightSCF", "! DLPNO-CCSD(T) cc-pVTZ cc-pVTZ/C TightPNO TightSCF",
+              "DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP"),
+}
+ORCA_OPT, ORCA_SP, LEVEL = LEVELS["oplsaa-l"]
 Z = {"H": 1, "C": 6, "N": 7, "O": 8, "F": 9, "Si": 14, "P": 15, "S": 16, "Cl": 17, "Br": 35, "I": 53}
 CAP_BOND = {"C": 1.09, "N": 1.01, "O": 0.96, "S": 1.34, "Si": 1.48, "P": 1.42}
 
@@ -226,11 +236,13 @@ def fragment(el, pos, nb, b, c, radius):
     return keep, idx, fel, fpos, fbonds
 
 
-def orca_input(el, pos, quad, charge=0, mult=1):
+def orca_input(el, pos, quad, charge=0, mult=1, level="oplsaa-l"):
     a, b, c, d = quad
+    opt, sp, _ = LEVELS[level]
     xyz = "\n".join(f"{e} {p[0]:.6f} {p[1]:.6f} {p[2]:.6f}" for e, p in zip(el, pos))
-    return (f"{ORCA_OPT}\n%geom Constraints {{ D {a} {b} {c} {d} C }} end end\n* xyz {charge} {mult}\n{xyz}\n*\n\n"
-            f"$new_job\n{ORCA_SP}\n* xyzfile {charge} {mult} point.xyz\n")
+    mem = "" if level == "oplsaa-l" else "%maxcore 6000\n"   # local coupled cluster wants more memory per core
+    return (f"{opt}\n{mem}%geom Constraints {{ D {a} {b} {c} {d} C }} end end\n* xyz {charge} {mult}\n{xyz}\n*\n\n"
+            f"$new_job\n{sp}\n{mem}* xyzfile {charge} {mult} point.xyz\n")
 
 
 def psi4_input(el, pos, quad, charge=0, mult=1):
@@ -246,6 +258,11 @@ def psi4_input(el, pos, quad, charge=0, mult=1):
 def prepare():
     structures, ffjson, work = sys.argv[2].split(","), os.path.abspath(sys.argv[3]), os.path.abspath(sys.argv[4])
     engine, step, radius = arg("--engine", "orca"), int(arg("--step", "15")), int(arg("--radius", "1"))
+    level = arg("--level", "oplsaa-l")
+    if level not in LEVELS:
+        raise SystemExit(f"--level is one of {', '.join(LEVELS)}")
+    if level != "oplsaa-l" and engine != "orca":
+        raise SystemExit("--level dlpno needs --engine orca")
     os.makedirs(work, exist_ok=True)
     cl = classes(ffjson)
     missing, mols = {}, []
@@ -263,7 +280,8 @@ def prepare():
             if key not in listed:   # an all-zero torsion of the force field, left out of the data file
                 continue
             missing.setdefault(key, (n, []))[1].append(q) if missing.get(key, (n,))[0] == n else None
-    plan = {"ff": ffjson, "engine": engine, "level": LEVEL, "step": step, "scans": [], "not_scanned": []}
+    plan = {"ff": ffjson, "engine": engine, "level": LEVELS[level][2], "level_key": level, "step": step, "scans": [],
+            "not_scanned": []}
     jobs = []
     for key, (n, qs) in sorted(missing.items()):
         types, pos, el, nb = mols[n]
@@ -314,7 +332,7 @@ def prepare():
             os.makedirs(pdir, exist_ok=True)
             rel = os.path.relpath(pdir, work)   # jobs.txt and plan.json name points relative to WORKDIR: copy it anywhere
             if engine == "orca":
-                open(os.path.join(pdir, "point.inp"), "w").write(orca_input(fel, p, quad))
+                open(os.path.join(pdir, "point.inp"), "w").write(orca_input(fel, p, quad, level=level))
                 jobs.append(f"cd {rel} && \"${{ORCA:-orca}}\" point.inp > point.out")
             else:
                 open(os.path.join(pdir, "point.in"), "w").write(psi4_input(fel, p, quad))
@@ -346,7 +364,7 @@ def read_point(pdir, engine):
         # ORCA also ends normally after an optimisation that ran out of cycles: such a point is not used, nor one
         # whose correlated single point is missing
         if ("ORCA TERMINATED NORMALLY" not in text or "OPTIMIZATION RUN DONE" not in text
-                or "did not converge" in text or not re.search(r"MP2 CORRELATION ENERGY|MP2 TOTAL ENERGY", text)):
+                or "did not converge" in text or not re.search(r"MP2 CORRELATION ENERGY|MP2 TOTAL ENERGY|E\(CCSD\(T\)\)", text)):
             return None
         e = float(re.findall(r"FINAL SINGLE POINT ENERGY\s+(-?\d+\.\d+)", text)[-1])
         lines = open(xyz).read().splitlines()[2:]
