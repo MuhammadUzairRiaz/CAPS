@@ -1,7 +1,8 @@
 """Torsion parameters a force field lacks, fitted to quantum-chemical rotational profiles.
 
     python -m caps.torsionfit prepare STRUCTURE[,STRUCTURE...] FF.json WORKDIR [--engine orca|psi4] [--step 15] [--radius 2]
-                                    [--level oplsaa-l|dlpno] [--nprocs 1] [--classes A-B-C-D,...]
+                                    [--level oplsaa-l|dlpno] [--nprocs 1] [--classes A-B-C-D,... [--only]]
+    python -m caps.torsionfit fill WORKDIR      (after collect: the points prepare skipped, from finished neighbours)
     python -m caps.torsionfit fit WORKDIR [--out overlay.json] [--refit]
     python -m caps.torsionfit collect WORKDIR
     python -m caps.torsionfit fit WORKDIR [--out overlay.json]
@@ -290,9 +291,11 @@ def prepare():
             key = min(key, key[::-1])
             if key not in forced and (q in have or key not in listed):   # present, or all zero in the force field
                 continue
+            if "--only" in sys.argv and key not in forced:   # --only: the --classes and nothing else
+                continue
             missing.setdefault(key, (n, []))[1].append(q) if missing.get(key, (n,))[0] == n else None
     plan = {"ff": ffjson, "engine": engine, "level": LEVELS[level][2], "level_key": level, "step": step, "scans": [],
-            "not_scanned": [], "forced": ["-".join(k) for k in sorted(forced)]}
+            "not_scanned": [], "forced": ["-".join(k) for k in sorted(forced)], "nprocs": nprocs}
     jobs = []
     for key, (n, qs) in sorted(missing.items()):
         types, pos, el, nb = mols[n]
@@ -405,6 +408,59 @@ def collect():
     print(f"{done} of {total} QM points finished")
 
 
+def fill():
+    """inputs for the points prepare skipped (two atoms closer than 1 A after turning the built fragment rigidly: the
+    eclipsed region of a large fragment), each started from the optimised geometry of the nearest finished point turned
+    to its angle, whose side groups have already moved out of the way. Run after collect; the new jobs are in
+    jobs_fill.txt (run them like jobs.txt, then collect again; repeat while points remain)"""
+    work = os.path.abspath(sys.argv[2])
+    plan = json.load(open(os.path.join(work, "plan.json")))
+    level, nprocs, engine = plan.get("level_key", "oplsaa-l"), plan.get("nprocs", 1), plan["engine"]
+    if engine != "orca":
+        raise SystemExit("fill writes ORCA inputs")
+    jobs, left = [], 0
+    for s in plan["scans"]:
+        quad, el = s["quad"], s["elements"]
+        fnb = neighbours(len(el), [tuple(b) for b in s["bonds"]])
+        near = [set(fnb[i]) | {z for y in fnb[i] for z in fnb[y]} for i in range(len(el))]
+        have = {p["phi"] for p in s["points"]}
+        done = [p for p in s["points"] if "positions" in p]
+        moving = sorted(side(fnb, quad[2], quad[1]))
+        if len(moving) > len(el) / 2:
+            moving = sorted(side(fnb, quad[1], quad[2]))
+        for target in range(-180, 180, plan["step"]):
+            if target in have:
+                continue
+            seeds = sorted(done, key=lambda p: min(abs(p["phi"] - target), 360 - abs(p["phi"] - target)))[:3]
+            made = False
+            for seed in seeds:
+                pos = [list(x) for x in seed["positions"]]
+                d = target - dihedral(pos, *quad)
+                for sgn in (1, -1):
+                    p = rotate(pos, moving, quad[1], quad[2], sgn * d)
+                    if abs((dihedral(p, *quad) - target + 180) % 360 - 180) > 1.0:
+                        continue
+                    close = min(norm(sub(p[i], p[j])) for i in range(len(p)) for j in range(i) if j not in near[i])
+                    if close < 1.0:
+                        continue
+                    pdir = os.path.join(work, s["dir"], f"p{target:+04d}")
+                    os.makedirs(pdir, exist_ok=True)
+                    rel = os.path.relpath(pdir, work)
+                    open(os.path.join(pdir, "point.inp"), "w").write(orca_input(el, p, quad, level=level, nprocs=nprocs))
+                    jobs.append(f"cd {rel} && \"${{ORCA:-orca}}\" point.inp > point.out")
+                    s["points"].append({"phi": target, "dir": rel, "closest_nonbonded": round(close, 3), "seed": seed["phi"]})
+                    have.add(target)
+                    made = True
+                    break
+                if made:
+                    break
+            if not made:
+                left += 1
+    json.dump(plan, open(os.path.join(work, "plan.json"), "w"), indent=1)
+    open(os.path.join(work, "jobs_fill.txt"), "w").write("".join(j + "\n" for j in jobs))
+    print(f"{len(jobs)} new points (jobs_fill.txt; array 1-{len(jobs)}); {left} still without a start geometry")
+
+
 def lstsq(A, y, w):
     """weighted least squares by the normal equations (a tiny ridge keeps an unused column at zero)"""
     n = len(A[0])
@@ -510,4 +566,4 @@ def fit():
 
 
 if __name__ == "__main__":
-    {"prepare": prepare, "collect": collect, "fit": fit}[sys.argv[1]]()
+    {"prepare": prepare, "collect": collect, "fill": fill, "fit": fit}[sys.argv[1]]()
