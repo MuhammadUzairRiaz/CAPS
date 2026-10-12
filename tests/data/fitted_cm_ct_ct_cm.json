@@ -1,0 +1,28 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "CAPS-fitted torsions",
+ "atom_types": [],
+ "dihedrals": [
+  {
+   "name": "CM-CT-CT-CM",
+   "match": [
+    "CM",
+    "CT",
+    "CT",
+    "CM"
+   ],
+   "style": "opls",
+   "params": [
+    -0.2399,
+    0.0209,
+    0.146,
+    -0.0422
+   ],
+   "comment": "CAPS fit (QM): MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 16-atom fragment, RMS 0.05 kcal/mol"
+  }
+ ],
+ "notes": [
+  "torsions CAPS fitted to MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L) rotational profiles (python -m caps.torsionfit); not parameters of the force field's authors"
+ ]
+}

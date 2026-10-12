@@ -174,7 +174,7 @@ internal static class SelfTest
             gb.FfIndex = gaff; gb.Charges = 2;
             vm.Field.AssignGroups().GetAwaiter().GetResult();
             var halves = vm.Field.IsGrouped && vm.Field.Complete;
-            var oplsIx = vm.Field.Library.ToList().FindIndex(x => x.Id == "opls2005");
+            var oplsIx = vm.Field.Library.ToList().FindIndex(x => x.Id == "oplsaa2024");
             var refused = false;
             var mixedName = "";
             if (oplsIx >= 0)

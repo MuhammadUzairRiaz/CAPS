@@ -84,7 +84,7 @@ TEST(FFMerge, DifferentFamiliesAreRefusedOrMergedAsAsked) {
   const auto mol = s.molecules();
   std::vector<uint32_t> a, b;
   for (size_t i = 0; i < s.atoms.size(); ++i) (mol[i] < 5 ? a : b).push_back(uint32_t(i));
-  const FFDef gaff = load_forcefield(kFF + "gaff2-2.2.20-ambertools.json"), opls = load_forcefield(kFF + "opls2005.json");
+  const FFDef gaff = load_forcefield(kFF + "gaff2-2.2.20-ambertools.json"), opls = load_forcefield(kFF + "oplsaa2024.json");
   const ForceField fa = typed(part_of(s, a), gaff), fb = typed(part_of(s, b), opls);
   // GAFF 1-4 Coulomb 1/1.2, OPLS 1/2: refused unless asked
   {   // refused when asked; by default each keeps its own 1-4 scaling, pair by pair
@@ -393,10 +393,10 @@ TEST(FFMerge, AssignedForceFieldFileRoundTrip) {
   const auto mol = s.molecules();
   std::vector<uint32_t> a, b;
   for (size_t i = 0; i < s.atoms.size(); ++i) (mol[i] < 5 ? a : b).push_back(uint32_t(i));
-  const FFDef gaff = load_forcefield(kFF + "gaff2-2.2.20-ambertools.json"), opls = load_forcefield(kFF + "opls2005.json");
+  const FFDef gaff = load_forcefield(kFF + "gaff2-2.2.20-ambertools.json"), opls = load_forcefield(kFF + "oplsaa2024.json");
   const ForceField fa = typed(part_of(s, a), gaff), fb = typed(part_of(s, b), opls);
   const ForceField merged = merge_forcefields(s.atoms.size(), {{&fa, a, "GAFF"}, {&fb, b, "OPLS"}}, MergeOptions{});
-  const ForceField pcff = typed(s, load_forcefield(kFF + "pcff.json"));
+  const ForceField pcff = typed(s, load_forcefield(kFF + "pcff-frc.json"));
   for (const ForceField* ff : {&merged, &pcff}) {
     const std::string text = forcefield_to_json(*ff);
     const ForceField back = forcefield_from_json(text);

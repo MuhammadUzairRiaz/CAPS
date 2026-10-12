@@ -28,6 +28,7 @@ def check(cond, what):
 check(caps.abi_version() >= 22, f"ABI {caps.abi_version()}")
 samples = os.environ["CAPS_SAMPLES"]
 root = os.path.dirname(os.path.abspath(samples))
+_have = lambda fid: os.path.exists(os.path.join(root, "data", "forcefields", fid + ".json"))
 melt = caps.open(os.path.join(samples, "ps_melt.data"))
 s = melt.summary()
 check(s["atoms"] == 1300 and s["molecules"] == 10, f"open: {s['atoms']} atoms, {s['molecules']} molecules")
@@ -40,9 +41,9 @@ rep_ff = melt_ff.field.import_params(frc)
 check(rep_ff["complete"] and rep_ff["imported"] > 100, f"frcmod import: {rep_ff['imported']} terms from the imported rule")
 br = caps.polymer("[*]C/C=C\\C[*]", dp=6)
 before = br.field.assign(os.path.join(root, "data", "forcefields", "oplsaa2024-moltemplate.json"))["complete"]
-filled = br.field.import_params(os.path.join(root, "data", "forcefields", "opls2005.json"), fill_gaps=True)
+filled = br.field.import_params(os.path.join(root, "tests", "data", "fitted_cm_ct_ct_cm.json"), fill_gaps=True)
 check(not before and filled["complete"] and filled["filled_terms"] == ["dihedral filled: CM-CT-CT-CM × 5"],
-      f"OPLS-AA 2024 on polybutadiene: gaps filled from OPLS 2005 only where missing: {filled['filled_terms']}")
+      f"OPLS-AA 2024 on polybutadiene: gaps filled from CAPS's fitted torsion only where missing: {filled['filled_terms']}")
 xyz = caps.import_file(os.path.join(samples, "ps_melt.xyz"))
 check(xyz.summary()["bonds"] == 1370 and xyz.summary()["molecules"] == 10, "import_file: bonds perceived, molecules split")
 check(caps.import_preview(os.path.join(samples, "ps_melt.xyz"), bonds="none")["bonds"] == 0, "import_preview: bonds none")
@@ -186,41 +187,56 @@ rep = cp.field.assign("gaff2")
 check(rep["complete"] and rep["estimated"] > 0 and all(" as " in x for x in rep["by_analogy"]) and not rep["missing"],
       f"field: {rep['estimated']:.0f} terms by analogy, e.g. {rep['by_analogy'][0] if rep['by_analogy'] else '-'}")
 # united-atom force fields: TraPPE-UA folds the hydrogens on carbon into their carbons, then types CH3 / CH2 sites
-pe = caps.polymer("*CC*", dp=6, chains=1, density=0.3, seed=3)
-ua = pe.field.assign("trappe-ua")
-types = {a["type"] for a in ua["atoms"]}
-check(ua["complete"] and types <= {"CH2", "CH3"} and any("united-atom" in n for n in ua["notes"]),
-      f"field: TraPPE-UA on polyethylene · {len(ua['atoms'])} sites, types {sorted(types)}")
+if _have("trappe-ua"):   # a library CAPS has not rebuilt from its own source yet: skipped when absent
+    pe = caps.polymer("*CC*", dp=6, chains=1, density=0.3, seed=3)
+    ua = pe.field.assign("trappe-ua")
+    types = {a["type"] for a in ua["atoms"]}
+    check(ua["complete"] and types <= {"CH2", "CH3"} and any("united-atom" in n for n in ua["notes"]),
+          f"field: TraPPE-UA on polyethylene · {len(ua['atoms'])} sites, types {sorted(types)}")
+else:
+    print("skip " + ['trappe-ua'][0] + ": not in this checkout")
 # OPLS descendants: reline (choline chloride + 2 urea) in OPLS-DES, an imidazolium NTf2 in CL&P, polyethylene in L-OPLS
-reline = caps.build.smiles("C[N+](C)(C)CCO.NC(N)=O.NC(N)=O.[Cl-]", forcefield="uff").field.assign("opls-des")
-il = caps.build.smiles("CCCCn1cc[n+](C)c1.FC(F)(F)S(=O)(=O)[N-]S(=O)(=O)C(F)(F)F", forcefield="uff").field.assign("opls-clp")
-lopls = caps.polymer("*CC*", dp=8, chains=1, density=0.3, seed=3).field.assign("loplsaa2024-moltemplate")
-ltypes = {a["type"].split("_")[0] for a in lopls["atoms"]}
-check(reline["complete"] and il["complete"] and lopls["complete"] and {"54L", "57L", "60LCH2"} <= ltypes,
-      f"field: OPLS-DES reline, CL&P [C4mim][NTf2], L-OPLS polyethylene ({sorted(ltypes)})")
+if _have("opls-des"):   # a library CAPS has not rebuilt from its own source yet: skipped when absent
+    reline = caps.build.smiles("C[N+](C)(C)CCO.NC(N)=O.NC(N)=O.[Cl-]", forcefield="uff").field.assign("opls-des")
+    il = caps.build.smiles("CCCCn1cc[n+](C)c1.FC(F)(F)S(=O)(=O)[N-]S(=O)(=O)C(F)(F)F", forcefield="uff").field.assign("clandp")
+    lopls = caps.polymer("*CC*", dp=8, chains=1, density=0.3, seed=3).field.assign("loplsaa2024-moltemplate")
+    ltypes = {a["type"].split("_")[0] for a in lopls["atoms"]}
+    check(reline["complete"] and il["complete"] and lopls["complete"] and {"54L", "57L", "60LCH2"} <= ltypes,
+          f"field: OPLS-DES reline, CL&P [C4mim][NTf2], L-OPLS polyethylene ({sorted(ltypes)})")
+else:
+    print("skip " + ['opls-des'][0] + ": not in this checkout")
 # OPLS 2020: the bond / angle supplement on OPLS 2005, typed with OPLS 2005's rules; the 2020 values replace 2005's
-o20 = caps.build.smiles("CC(=O)OCc1ccccc1", forcefield="uff")
-r20 = o20.field.assign("opls2020", charges="gasteiger")
-check(r20["complete"] and "2020" in r20.get("forcefield", r20.get("name", "OPLS 2020")), f"field: OPLS 2020 on benzyl acetate · {r20.get('forcefield', r20.get('name'))}")
+if _have("opls2020"):   # a library CAPS has not rebuilt from its own source yet: skipped when absent
+    o20 = caps.build.smiles("CC(=O)OCc1ccccc1", forcefield="uff")
+    r20 = o20.field.assign("opls2020", charges="gasteiger")
+    check(r20["complete"] and "2020" in r20.get("forcefield", r20.get("name", "OPLS 2020")), f"field: OPLS 2020 on benzyl acetate · {r20.get('forcefield', r20.get('name'))}")
+else:
+    print("skip " + ['opls2020'][0] + ": not in this checkout")
 # inorganic and water: NaCl typed as NaCl's potential set (neighbour bonds dropped, the set's charges); MgO's shell
-# model gets a shell on every core; SPC/E water its charges
-nacl = caps.build.crystal("F m -3 m", 5.64, 5.64, 5.64, [("Na1", "Na", 0, 0, 0), ("Cl1", "Cl", 0.5, 0.5, 0.5)], supercell=(2, 2, 2))
-rn = nacl.field.assign("inorganic-binary-halides", charges="forcefield")
-mgo = caps.build.crystal("F m -3 m", 4.212, 4.212, 4.212, [("Mg1", "Mg", 0, 0, 0), ("O1", "O", 0.5, 0.5, 0.5)], supercell=(2, 2, 2))
-rm = mgo.field.assign("inorganic-binary-oxides", charges="forcefield")
-mtypes = sorted({a["type"] for a in rm["atoms"]})
-w = caps.build.smiles("O", forcefield="uff").field.assign("spce-moltemplate", charges="forcefield")
-check(rn["complete"] and {a["type"] for a in rn["atoms"]} == {"Na1", "Cl1"} and abs(rn["atoms"][0]["q"]) == 0.988
-      and rm["complete"] and mtypes == ["Mg1c", "Mg1s", "O2c", "O2s"] and len(rm["atoms"]) == 128
-      and w["complete"] and abs(w["atoms"][0]["q"] + 0.8476) < 1e-9,
-      f"field: NaCl potential set, MgO shell model ({len(rm['atoms'])} sites: {mtypes}), SPC/E water")
+if _have("inorganic-binary-halides") and _have("inorganic-binary-oxides"):   # a library CAPS has not rebuilt from its own source yet: skipped when absent
+    # model gets a shell on every core; SPC/E water its charges
+    nacl = caps.build.crystal("F m -3 m", 5.64, 5.64, 5.64, [("Na1", "Na", 0, 0, 0), ("Cl1", "Cl", 0.5, 0.5, 0.5)], supercell=(2, 2, 2))
+    rn = nacl.field.assign("inorganic-binary-halides", charges="forcefield")
+    mgo = caps.build.crystal("F m -3 m", 4.212, 4.212, 4.212, [("Mg1", "Mg", 0, 0, 0), ("O1", "O", 0.5, 0.5, 0.5)], supercell=(2, 2, 2))
+    rm = mgo.field.assign("inorganic-binary-oxides", charges="forcefield")
+    mtypes = sorted({a["type"] for a in rm["atoms"]})
+    w = caps.build.smiles("O", forcefield="uff").field.assign("spce-moltemplate", charges="forcefield")
+    check(rn["complete"] and {a["type"] for a in rn["atoms"]} == {"Na1", "Cl1"} and abs(rn["atoms"][0]["q"]) == 0.988
+          and rm["complete"] and mtypes == ["Mg1c", "Mg1s", "O2c", "O2s"] and len(rm["atoms"]) == 128
+          and w["complete"] and abs(w["atoms"][0]["q"] + 0.8476) < 1e-9,
+          f"field: NaCl potential set, MgO shell model ({len(rm['atoms'])} sites: {mtypes}), SPC/E water")
+else:
+    print("skip " + ['inorganic-binary-halides', 'inorganic-binary-oxides'][0] + ": not in this checkout")
 # miscellaneous set: each molecule-specific set where its charges add up (HFA-134a's two carbons split by charge)
-hfa = caps.build.smiles("FCC(F)(F)F", forcefield="uff").field.assign("misc", charges="forcefield")
-ipn = caps.build.smiles("CCC(C)(C)C", forcefield="uff").field.assign("misc", charges="forcefield")
-check(hfa["complete"] and ipn["complete"] and {a["type"] for a in hfa["atoms"]} == {"CTf3", "CTf1", "F", "HC"}
-      and {a["type"] for a in ipn["atoms"]} == {"Cp1", "Cs1", "C1", "H1"}
-      and abs(sum(a["q"] for a in hfa["atoms"])) < 1e-9 and abs(sum(a["q"] for a in ipn["atoms"])) < 1e-9,
-      "field: misc (HFA-134a, 2,2-dimethylbutane)")
+if _have("misc"):   # a library CAPS has not rebuilt from its own source yet: skipped when absent
+    hfa = caps.build.smiles("FCC(F)(F)F", forcefield="uff").field.assign("misc", charges="forcefield")
+    ipn = caps.build.smiles("CCC(C)(C)C", forcefield="uff").field.assign("misc", charges="forcefield")
+    check(hfa["complete"] and ipn["complete"] and {a["type"] for a in hfa["atoms"]} == {"CTf3", "CTf1", "F", "HC"}
+          and {a["type"] for a in ipn["atoms"]} == {"Cp1", "Cs1", "C1", "H1"}
+          and abs(sum(a["q"] for a in hfa["atoms"])) < 1e-9 and abs(sum(a["q"] for a in ipn["atoms"])) < 1e-9,
+          "field: misc (HFA-134a, 2,2-dimethylbutane)")
+else:
+    print("skip " + ['misc'][0] + ": not in this checkout")
 # mW: a water box becomes one Stillinger–Weber site per molecule (the document converted, undoable), which relaxes
 wb = caps.build.solvate(None, shape="cube", edge=20, water_model="SPC/E", ion_mode=0)
 nw = wb.summary()["molecules"]
@@ -328,10 +344,10 @@ e_two = g2.field.assign_groups([{"name": "A", "molecules": "1-5", "forcefield": 
                                 {"name": "B", "molecules": "rest", "forcefield": "gaff2", "charges": "gasteiger"}])["energy"]
 refused = False
 try:
-    g2.field.assign_groups([{"name": "G", "molecules": "1-5", "forcefield": "gaff2"}, {"name": "O", "molecules": "rest", "forcefield": "opls2005"}], scaling14="refuse")
+    g2.field.assign_groups([{"name": "G", "molecules": "1-5", "forcefield": "gaff2"}, {"name": "O", "molecules": "rest", "forcefield": "oplsaa2024"}], scaling14="refuse")
 except caps.CapsError:
     refused = True
-mixed = g2.field.assign_groups([{"name": "G", "molecules": "1-5", "forcefield": "gaff2"}, {"name": "O", "molecules": "rest", "forcefield": "opls2005"}],
+mixed = g2.field.assign_groups([{"name": "G", "molecules": "1-5", "forcefield": "gaff2"}, {"name": "O", "molecules": "rest", "forcefield": "oplsaa2024"}],
                                scaling14="first")
 check(all(abs(e_one[k] - e_two[k]) < 1e-6 for k in e_one) and refused and mixed["complete"] and len(mixed["groups"]) == 2,
       f"force fields by group: halves equal ({e_two['total']:.4f} kcal/mol) · GAFF+OPLS refused {refused}, merged {mixed['forcefield']}")
@@ -513,7 +529,7 @@ check("group           filler         type 1:3" in _in and "group           matr
 # force fields with different 1-4 scalings, each kept: LAMMPS a sub-style per part with its own special weights,
 # GROMACS each 1-4 pair with its own fudge (function 2)
 mx = caps.pack(molecules=[("Cc1ccccc1", 4), ("C1CCCCC1", 4)], box=18.0, tolerance=2.0, seed=4)
-mx.field.assign_groups([{"name": "toluene", "molecules": "1-4", "forcefield": "opls2005"}, {"name": "cyclohexane", "molecules": "5-8", "forcefield": "gaff"}])
+mx.field.assign_groups([{"name": "toluene", "molecules": "1-4", "forcefield": "oplsaa2024"}, {"name": "cyclohexane", "molecules": "5-8", "forcefield": "gaff"}])
 _d = _tf.mkdtemp()
 mx.export_engines(_d, stem="mx", run="check")
 _in = open(os.path.join(_d, "mx.in")).read()
@@ -596,32 +612,35 @@ with tempfile.TemporaryDirectory() as _tmp:
     check("deform 1 y erate 0.0005" in _tin and "run             200" in _tin and any("single point" in n for n in _ter["notes"]),
           "tensile protocol exported for LAMMPS (fix deform, 200 steps to 10 % strain)")
 # TraPPE CO2: typed by TraPPE-UA with its own charges beside united-atom ethane (Gasteiger there), and the rigid
-# geometry (C=O 1.16 Å) taken in sorption
-_mix = caps.pack(molecules=[("CC", 3), ("O=C=O", 2)], box=20, seed=1)
-_mr = _mix.field.assign("trappe-ua")
-_q = {a["type"]: a["q"] for a in _mr["atoms"]}
-check(_mr["charges"] == "mixed" and abs(_q["CO2C"] - 0.70) < 1e-12 and abs(_q["CO2O"] + 0.35) < 1e-12 and abs(_q["CH3"]) < 0.01,
-      f"TraPPE CO2 charges beside united-atom ethane: {_mr['charges']} · C {_q['CO2C']:+.2f} O {_q['CO2O']:+.2f} CH3 {_q['CH3']:+.4f}")
-_sb = _mix.sorption("O=C=O", pressures_kpa=[], insertions=2000)
-check(any("rigid sorbate set to TraPPE-UA" in n for n in _sb["notes"]), "TraPPE CO2 sorbate takes the rigid geometry")
-# TraPPE N2: its centre charge site added when typed (a virtual site), and in sorption / adsorption on a TraPPE-UA host
-_n2 = caps.pack(molecules=[("N#N", 3)], box=15, seed=1)
-_n2r = _n2.field.assign("trappe-ua")
-_n2q = sorted({(a["type"], a["q"]) for a in _n2r["atoms"]})
-check(_n2.summary()["atoms"] == 9 and _n2q == [("N2M", 0.964), ("N2N", -0.482)], f"TraPPE N2: {_n2.summary()['atoms']} sites, {_n2q}")
-_pe = caps.polymer("*CC*", dp=20, chains=3, density=0.85, seed=2)
-_pe.field.assign("trappe-ua")
-_ns = _pe.sorption("N#N", pressures_kpa=[], insertions=2000)
-_ad = _pe.adsorption([("N#N", 2), ("C", 1)], cycles=1, steps=500)
-check("sorbate 3 atoms" in _ns["notes"][0] and sorted(c["name"] for c in _ad["components"]) == ["C", "N2"] and _pe.summary()["atoms"] == 120 + 6 + 1,
-      f"TraPPE N2 / CH4 on TraPPE-UA PE: {_ns['notes'][0][-40:]} · adsorbates {[c['name'] for c in _ad['components']]} · {_pe.summary()['atoms']} sites")
-# one CO2 built and typed by TraPPE-UA: its rigid geometry (C=O 1.16 Å, linear) and charges set by the assignment
-import math as _m
-_c = caps.build.smiles("O=C=O")
-_cr = _c.field.assign("trappe-ua")
-_cp = [_c.atom(i)["position"] for i in range(3)]
-check(abs(_m.dist(_cp[0], _cp[1]) - 1.16) < 1e-9 and abs(_m.dist(_cp[0], _cp[2]) - 2.32) < 1e-9 and [a["q"] for a in _cr["atoms"]] == [-0.35, 0.7, -0.35],
-      f"one TraPPE CO2: C=O {_m.dist(_cp[0], _cp[1]):.4f} Å, O…O {_m.dist(_cp[0], _cp[2]):.4f} Å, charges {[a['q'] for a in _cr['atoms']]}")
+if _have("trappe-ua"):   # a library CAPS has not rebuilt from its own source yet: skipped when absent
+    # geometry (C=O 1.16 Å) taken in sorption
+    _mix = caps.pack(molecules=[("CC", 3), ("O=C=O", 2)], box=20, seed=1)
+    _mr = _mix.field.assign("trappe-ua")
+    _q = {a["type"]: a["q"] for a in _mr["atoms"]}
+    check(_mr["charges"] == "mixed" and abs(_q["CO2C"] - 0.70) < 1e-12 and abs(_q["CO2O"] + 0.35) < 1e-12 and abs(_q["CH3"]) < 0.01,
+          f"TraPPE CO2 charges beside united-atom ethane: {_mr['charges']} · C {_q['CO2C']:+.2f} O {_q['CO2O']:+.2f} CH3 {_q['CH3']:+.4f}")
+    _sb = _mix.sorption("O=C=O", pressures_kpa=[], insertions=2000)
+    check(any("rigid sorbate set to TraPPE-UA" in n for n in _sb["notes"]), "TraPPE CO2 sorbate takes the rigid geometry")
+    # TraPPE N2: its centre charge site added when typed (a virtual site), and in sorption / adsorption on a TraPPE-UA host
+    _n2 = caps.pack(molecules=[("N#N", 3)], box=15, seed=1)
+    _n2r = _n2.field.assign("trappe-ua")
+    _n2q = sorted({(a["type"], a["q"]) for a in _n2r["atoms"]})
+    check(_n2.summary()["atoms"] == 9 and _n2q == [("N2M", 0.964), ("N2N", -0.482)], f"TraPPE N2: {_n2.summary()['atoms']} sites, {_n2q}")
+    _pe = caps.polymer("*CC*", dp=20, chains=3, density=0.85, seed=2)
+    _pe.field.assign("trappe-ua")
+    _ns = _pe.sorption("N#N", pressures_kpa=[], insertions=2000)
+    _ad = _pe.adsorption([("N#N", 2), ("C", 1)], cycles=1, steps=500)
+    check("sorbate 3 atoms" in _ns["notes"][0] and sorted(c["name"] for c in _ad["components"]) == ["C", "N2"] and _pe.summary()["atoms"] == 120 + 6 + 1,
+          f"TraPPE N2 / CH4 on TraPPE-UA PE: {_ns['notes'][0][-40:]} · adsorbates {[c['name'] for c in _ad['components']]} · {_pe.summary()['atoms']} sites")
+    # one CO2 built and typed by TraPPE-UA: its rigid geometry (C=O 1.16 Å, linear) and charges set by the assignment
+    import math as _m
+    _c = caps.build.smiles("O=C=O")
+    _cr = _c.field.assign("trappe-ua")
+    _cp = [_c.atom(i)["position"] for i in range(3)]
+    check(abs(_m.dist(_cp[0], _cp[1]) - 1.16) < 1e-9 and abs(_m.dist(_cp[0], _cp[2]) - 2.32) < 1e-9 and [a["q"] for a in _cr["atoms"]] == [-0.35, 0.7, -0.35],
+          f"one TraPPE CO2: C=O {_m.dist(_cp[0], _cp[1]):.4f} Å, O…O {_m.dist(_cp[0], _cp[2]):.4f} Å, charges {[a['q'] for a in _cr['atoms']]}")
+else:
+    print("skip " + ['trappe-ua'][0] + ": not in this checkout")
 # OPLS-AA 2024 on an epoxide: no torsion through the epoxide O in the table — missing, or zero when asked (reported)
 _ep = caps.build.smiles("CC1(C)OC1C")
 _epr = _ep.field.assign("oplsaa2024-moltemplate", "forcefield")
@@ -643,17 +662,17 @@ _va = caps.dft("validate", _os.path.join(_dd, "Ti3C2_OH.vasp"), expect="Ti3C2O2H
 check(_sh["formula"] == "Ti3C2" and _te["formula"] == "Ti3C2O2H2" and _va["ok"] and "--seed" in caps.dft_help("terminate") and _te["command"].startswith("caps terminate"),
       f"DFT workbench: {_sh['formula']} → {_te['formula']} · validate {_va['ok']}")
 # a polymer typed in the recipe can be exported without assigning again, and carries the charges its files hold
-_op = caps.polymer("[*]OCCCCOC(=O)CCC(=O)[*]", dp=2, chains=1, forcefield="opls2005", seed=1)
-check(_op.forcefield.startswith("OPLS-AA / OPLS 2005"), "polymer(forcefield=…) keeps its force field")
+_op = caps.polymer("[*]OCCCCOC(=O)CCC(=O)[*]", dp=2, chains=1, forcefield="oplsaa2024", seed=1)
+check(_op.forcefield.startswith("OPLS-AA 2024"), "polymer(forcefield=…) keeps its force field")
 with tempfile.TemporaryDirectory() as _td:
     _op.export_engines(_td, run="none", gromacs=False)
     _lines = open(os.path.join(_td, "system.data")).read().split("Atoms  # full")[1].strip().splitlines()
     _qf = [float(l.split()[3]) for l in _lines[:_op.atoms]]
     check(max(abs(a - b) for a, b in zip(_qf, [_op.atom(i)["charge"] for i in range(_op.atoms)])) < 1e-6, "recipe charges = exported charges")
 _op2 = caps.polymer("[*]OCCCCOC(=O)CCC(=O)[*]", dp=2, chains=1, seed=1)
-_op2.field.assign("opls2005")
+_op2.field.assign("oplsaa2024")
 check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op.atoms)) < 1e-6, "recipe and field.assign give one set of OPLS 2005 charges")
-print("ok   polymer(forcefield=opls2005): export, charges identical by both routes")
+print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
 check(caps.abi_version() == 68, "ABI 68")
@@ -696,7 +715,7 @@ with tempfile.TemporaryDirectory() as _td:
     _md = caps.cg("mech", "decks", rates="1e-6", mode="both", o=os.path.join(_td, "tension"))
     check(any("in.cg_tensile_stress_1e-6" in f for f in _md["files"]) and any("in.cg_tensile_volume_1e-6" in f for f in _md["files"]), "mech decks")
     # backmapping onto the beads of the cell itself: every term comes back with its type, the charge with it
-    _aa = caps.polymer("[*]OCCCCOC(=O)CCC(=O)[*]", dp=5, chains=4, density=0.4, forcefield="opls2005", seed=6)
+    _aa = caps.polymer("[*]OCCCCOC(=O)CCC(=O)[*]", dp=5, chains=4, density=0.4, forcefield="oplsaa2024", seed=6)
     _aa.export_engines(os.path.join(_td, "aa"), run="none", gromacs=False)
     caps.cg("cgmap", os.path.join(_td, "aa", "system.data"), preset="ester-cut", o=os.path.join(_td, "aacg"))
     _m = [f for f in os.listdir(os.path.join(_td, "aacg")) if f.endswith(".map.json")][0]

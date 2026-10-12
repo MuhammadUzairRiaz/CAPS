@@ -441,8 +441,9 @@ TEST(Recipe, SulfurCureTypedWithPcff) {
                caps::RecipeError);
 }
 
-// type.fill_from: OPLS-AA 2024 lacks the CM–CT–CT–CM torsion of polyisoprene; OPLS 2005's fills it (and only where
-// 2024 has none), the provenance says how many terms; without it the recipe stops with missing parameters (exit 3)
+// type.fill_from: OPLS-AA 2024 lacks the CM–CT–CT–CM torsion of polyisoprene (so does GROMACS's oplsaa.ff); CAPS's
+// own MP2 fit of it (caps.torsionfit, tests/data/fitted_cm_ct_ct_cm.json) fills it, only where 2024 has none, and the
+// provenance says how many terms; without it the recipe stops with missing parameters (exit 3)
 TEST(Recipe, FillGapsFromAnotherForceField) {
   const std::string lib = std::string(CAPS_SOURCE_DIR) + "/data/forcefields/";
   auto yaml = [&](const std::string& fill) {
@@ -452,11 +453,11 @@ TEST(Recipe, FillGapsFromAnotherForceField) {
   int code = 0;
   try { caps::run_recipe(yaml(""), o); } catch (const caps::RecipeError& e) { code = e.code; }
   EXPECT_EQ(code, 3);
-  const auto res = caps::run_recipe(yaml(", fill_from: " + lib + "opls2005.json"), o);
+  const auto res = caps::run_recipe(yaml(", fill_from: " + std::string(CAPS_SOURCE_DIR) + "/tests/data/fitted_cm_ct_ct_cm.json"), o);
   bool said = false;
   for (const auto& st : res.manifest.steps)
     if (st.engine == "field.assign")
-      for (const auto& [k, v] : st.params) said |= k == "gaps filled from" && v.find("OPLS 2005") != std::string::npos && v.find(" terms") != std::string::npos;
+      for (const auto& [k, v] : st.params) said |= k == "gaps filled from" && v.find("CAPS-fitted torsions") != std::string::npos && v.find(" terms") != std::string::npos;
   EXPECT_TRUE(said);
 }
 
