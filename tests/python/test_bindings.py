@@ -28,7 +28,12 @@ def check(cond, what):
 check(caps.abi_version() >= 22, f"ABI {caps.abi_version()}")
 samples = os.environ["CAPS_SAMPLES"]
 root = os.path.dirname(os.path.abspath(samples))
-_have = lambda fid: os.path.exists(os.path.join(root, "data", "forcefields", fid + ".json"))
+def _have(fid):   # a library id or an alias of one (caps resolves trappe-ua to trappe-ua-umn ...)
+    try:
+        caps.core._forcefield_path(fid)
+        return True
+    except Exception:
+        return False
 melt = caps.open(os.path.join(samples, "ps_melt.data"))
 s = melt.summary()
 check(s["atoms"] == 1300 and s["molecules"] == 10, f"open: {s['atoms']} atoms, {s['molecules']} molecules")
@@ -191,7 +196,7 @@ if _have("trappe-ua"):   # a library CAPS has not rebuilt from its own source ye
     pe = caps.polymer("*CC*", dp=6, chains=1, density=0.3, seed=3)
     ua = pe.field.assign("trappe-ua")
     types = {a["type"] for a in ua["atoms"]}
-    check(ua["complete"] and types <= {"CH2", "CH3"} and any("united-atom" in n for n in ua["notes"]),
+    check(ua["complete"] and types <= {"CH2_3", "CH3_2"} and any("united-atom" in n for n in ua["notes"]),
           f"field: TraPPE-UA on polyethylene · {len(ua['atoms'])} sites, types {sorted(types)}")
 else:
     print("skip " + ['trappe-ua'][0] + ": not in this checkout")
@@ -617,15 +622,15 @@ if _have("trappe-ua"):   # a library CAPS has not rebuilt from its own source ye
     _mix = caps.pack(molecules=[("CC", 3), ("O=C=O", 2)], box=20, seed=1)
     _mr = _mix.field.assign("trappe-ua")
     _q = {a["type"]: a["q"] for a in _mr["atoms"]}
-    check(_mr["charges"] == "mixed" and abs(_q["CO2C"] - 0.70) < 1e-12 and abs(_q["CO2O"] + 0.35) < 1e-12 and abs(_q["CH3"]) < 0.01,
-          f"TraPPE CO2 charges beside united-atom ethane: {_mr['charges']} · C {_q['CO2C']:+.2f} O {_q['CO2O']:+.2f} CH3 {_q['CH3']:+.4f}")
+    check(_mr["charges"] == "types" and abs(_q["C_86"] - 0.70) < 1e-12 and abs(_q["O_87"] + 0.35) < 1e-12 and _q["CH3_2"] == 0.0,   # every TraPPE site has its own charge (CH3 0)
+          f"TraPPE CO2 charges beside united-atom ethane (TraPPE's own, CH3 0): {_mr['charges']} · C {_q['C_86']:+.2f} O {_q['O_87']:+.2f} CH3 {_q['CH3_2']:+.4f}")
     _sb = _mix.sorption("O=C=O", pressures_kpa=[], insertions=2000)
     check(any("rigid sorbate set to TraPPE-UA" in n for n in _sb["notes"]), "TraPPE CO2 sorbate takes the rigid geometry")
     # TraPPE N2: its centre charge site added when typed (a virtual site), and in sorption / adsorption on a TraPPE-UA host
     _n2 = caps.pack(molecules=[("N#N", 3)], box=15, seed=1)
     _n2r = _n2.field.assign("trappe-ua")
     _n2q = sorted({(a["type"], a["q"]) for a in _n2r["atoms"]})
-    check(_n2.summary()["atoms"] == 9 and _n2q == [("N2M", 0.964), ("N2N", -0.482)], f"TraPPE N2: {_n2.summary()['atoms']} sites, {_n2q}")
+    check(_n2.summary()["atoms"] == 9 and _n2q == [("M_85", 0.964), ("N_84", -0.482)], f"TraPPE N2: {_n2.summary()['atoms']} sites, {_n2q}")
     _pe = caps.polymer("*CC*", dp=20, chains=3, density=0.85, seed=2)
     _pe.field.assign("trappe-ua")
     _ns = _pe.sorption("N#N", pressures_kpa=[], insertions=2000)

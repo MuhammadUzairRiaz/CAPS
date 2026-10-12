@@ -238,7 +238,7 @@ def write_library(path_ff, path_ty):
                              "comment": "TraPPE's glycol ethers, diols, disulfides and (meth)acrylates count 1-4 Coulomb x 0.5"}],
            "virtual_sites": [{"smarts": sm, "type": tname(i), "from": fr, "w": [round(x, 12) for x in w], "comment": c}
                              for i, sm, fr, w, c in VSITES if i in types],
-           "atom_types": lib_types, "pairs": lib_pairs, "bonds": BONDS, "angles": ANGLES, "dihedrals": DIHEDRALS, "impropers": IMPROPERS,
+           "atom_types": lib_types, "pairs": lib_pairs, "bonds": BONDS, "angles": WILD_ANGLES + ANGLES, "dihedrals": DIHEDRALS, "impropers": IMPROPERS,
            "notes": NOTES, "version": "TraPPE database, retrieved 2026-10", "typing": "../typing/trappe-ua-umn.typing.json"}
     json.dump(doc, open(path_ff, "w"), indent=1, ensure_ascii=False)
     json.dump({"format": "caps-typing", "version": 1, "forcefield": "TraPPE-UA", "unknown_types": "untyped", "united_atom": True,
@@ -332,6 +332,7 @@ def key_sym(k):
 
 obs = {"bond": collections.defaultdict(set), "angle": collections.defaultdict(set), "dihedral": collections.defaultdict(set)}
 rigid_models, coul14_models = [], []
+seen_in = {"bond": collections.defaultdict(set), "angle": collections.defaultdict(set)}   # key -> {rigid?} of the models it is in
 cistrans, cistrans_ref = collections.defaultdict(lambda: [None, None]), {}
 for d in mols:
     if d["incomplete"] or not usable(d):
@@ -345,11 +346,13 @@ for d in mols:
     for s_ in d["stretch"]:
         if real(s_["A"], s_["B"]):
             obs["bond"][key_sym((ty[int(s_["A"])], ty[int(s_["B"])]))].add((float(s_["distance"]), s_["ref_ID"]))
+            seen_in["bond"][key_sym((ty[int(s_["A"])], ty[int(s_["B"])]))].add(d["molname"][0]["lrigid"] == "1")
     for b in d["bend"]:
         if not real(b["A"], b["B"], b["C"]):
             continue
         k = (ty[int(b["A"])], ty[int(b["B"])], ty[int(b["C"])])
         obs["angle"][key_sym(k)].add((float(b["theta"]), float(b["ktheta"] or 0), b["ref_ID"]))
+        seen_in["angle"][key_sym(k)].add(d["molname"][0]["lrigid"] == "1")
     listed = set()
     for T in d["torsion_type"]:
         for t in T["torsion"]:
@@ -392,14 +395,19 @@ for kind in ("bond", "angle"):
         if len({x[:-1] for x in v}) > 1:
             print(f"  {kind} {'-'.join(k)} has {len(v)} parameter sets in different models: {sorted(v)}")
 KBOND = 600.0   # stiff harmonic for TraPPE's fixed lengths
-BONDS = [{"name": "-".join(k), "match": list(k), "style": "harmonic", "params": [KBOND, sorted(v)[0][0]],
-          "comment": f"fixed length in TraPPE ({cite(sorted(v)[0][1])})"} for k, v in sorted(obs["bond"].items())]
+# a term found only in TraPPE's rigid models (CO2, N2, O2 ...) takes K 0: CAPS's mark of a rigid molecule (apply_rigid_geometry,
+# sorption / adsorption, LAMMPS fix rigid), as the converted library had it
+rigid_only = lambda kind, k: seen_in[kind].get(k) == {True}
+BONDS = [{"name": "-".join(k), "match": list(k), "style": "harmonic", "params": [0.0 if rigid_only("bond", k) else KBOND, sorted(v)[0][0]],
+          "comment": (f"rigid model: run it as a rigid body" if rigid_only("bond", k) else "fixed length in TraPPE") + f" ({cite(sorted(v)[0][1])})"}
+         for k, v in sorted(obs["bond"].items())]
 ANGLES = []
 for k, v in sorted(obs["angle"].items()):
     th, kt, ref = sorted(v)[0]
     ANGLES.append({"name": "-".join(k), "match": list(k), "style": "harmonic",
-                   "params": [kt / 2 * KB if kt > 0 else 100.0, th],
-                   "comment": (f"k_theta {kt:g} K/rad^2" if kt > 0 else "rigid in TraPPE (stiff here; hold the molecule rigid)") + f"; {cite(ref)}"})
+                   "params": [kt / 2 * KB if kt > 0 else (0.0 if rigid_only("angle", k) else 100.0), th],
+                   "comment": (f"k_theta {kt:g} K/rad^2" if kt > 0 else "rigid model: run it as a rigid body" if rigid_only("angle", k)
+                               else "rigid in TraPPE (stiff here; hold the molecule rigid)") + f"; {cite(ref)}"})
 DIHEDRALS = []
 for k, v in sorted(obs["dihedral"].items()):
     fs, form, ref, _ = sorted(v)[0]
@@ -410,13 +418,17 @@ for k, v in sorted(obs["dihedral"].items()):
     DIHEDRALS.append({"name": "-".join(k), "match": list(k), "style": "fourier", "params": [len(fs)] + [x for f in fs for x in f],
                       "comment": f"TraPPE {form} form; {cite(ref)}"})
 # wildcard rules: a bend centre, or a torsion's central bond, with one parameter set in every model it appears in
-by_centre = collections.defaultdict(set)
+# written before the exact rules (the last matching rule wins): an exact rule (a rigid model's K 0) is never overridden
+WILD_ANGLES = []
+by_centre, centre_rigid = collections.defaultdict(set), collections.defaultdict(set)
 for k, v in obs["angle"].items():
     by_centre[k[1]] |= {x[:2] for x in v}
+    centre_rigid[k[1]] |= seen_in["angle"].get(k, set())
 for c_, v in sorted(by_centre.items()):
     if len(v) == 1:
         th, kt = next(iter(v))
-        ANGLES.append({"name": f"X-{c_}-X", "match": ["*", c_, "*"], "style": "harmonic", "params": [kt / 2 * KB if kt > 0 else 100.0, th],
+        WILD_ANGLES.append({"name": f"X-{c_}-X", "match": ["*", c_, "*"], "style": "harmonic",
+                       "params": [kt / 2 * KB if kt > 0 else (0.0 if centre_rigid[c_] == {True} else 100.0), th],
                        "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"})
 by_bond = collections.defaultdict(set)
 for k, v in obs["dihedral"].items():
@@ -524,7 +536,9 @@ if "--check" in sys.argv:
             bad.append((d["name"], f"1-4 Coulomb x 0.5 in TraPPE: {half}, in CAPS: {not half}"))
             continue
         I = d["idx"]
-        want_a = {key_sym((I[int(b["A"])], I[int(b["B"])], I[int(b["C"])])): (float(b["theta"]), float(b["ktheta"] or 0) / 2 * KB if float(b["ktheta"] or 0) > 0 else 100.0)
+        tyd = {int(a["natom"]): tname(int(a["nonbonded_ID"])) for a in d["nonbonded"]}
+        stiff = lambda b: 0.0 if rigid_only("angle", key_sym(tuple(tyd[int(b[x])] for x in "ABC"))) else 100.0   # as the library writes it
+        want_a = {key_sym((I[int(b["A"])], I[int(b["B"])], I[int(b["C"])])): (float(b["theta"]), float(b["ktheta"] or 0) / 2 * KB if float(b["ktheta"] or 0) > 0 else stiff(b))
                   for b in d["bend"] if all(int(b[x]) in I for x in "ABC")}
         want_d = {}
         for T in d["torsion_type"]:
