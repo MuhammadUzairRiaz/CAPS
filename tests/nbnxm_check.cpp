@@ -110,7 +110,7 @@ int main() {
         const std::vector<double> none;
         L.build(x, cell, rc + skin, ex, type, nt, {}, q, comb ? f12 : none, comb ? f6 : none, pool, mode == 1 ? c12.data() : nullptr,
                 mode == 1 ? c6.data() : nullptr);
-        L.positions(x);
+        L.positions(x, pool);
         L.prune(rc + 0.8, pool);
         nbnxm::Params p;
         p.rc2 = float(rc * rc);

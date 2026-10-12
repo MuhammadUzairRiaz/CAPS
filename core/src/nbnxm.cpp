@@ -358,17 +358,18 @@ void List::rescale(const Cell& cell) {
   cells = cell;
 }
 
-void List::positions(const std::vector<double>& x) {
-  const size_t ns = perm.size();
-  for (size_t s = 0; s < ns; ++s) {
-    // padding sits on its cluster's first atom (its pairs are masked)
-    const size_t r = perm[s] != kPad ? s : (s & ~size_t(3));
-    const size_t a = 3 * size_t(perm[r]);
-    const double* o = &org[3 * (s / 4)];
-    X[s] = float(x[a] + off[3 * r] - o[0]);
-    Y[s] = float(x[a + 1] + off[3 * r + 1] - o[1]);
-    Z[s] = float(x[a + 2] + off[3 * r + 2] - o[2]);
-  }
+void List::positions(const std::vector<double>& x, ThreadPool& pool) {
+  pool.run_slices(perm.size(), pool.slices(), [&](size_t, size_t sb, size_t se) {
+    for (size_t s = sb; s < se; ++s) {
+      // padding sits on its cluster's first atom (its pairs are masked)
+      const size_t r = perm[s] != kPad ? s : (s & ~size_t(3));
+      const size_t a = 3 * size_t(perm[r]);
+      const double* o = &org[3 * (s / 4)];
+      X[s] = float(x[a] + off[3 * r] - o[0]);
+      Y[s] = float(x[a + 1] + off[3 * r + 1] - o[1]);
+      Z[s] = float(x[a + 2] + off[3 * r + 2] - o[2]);
+    }
+  });
 }
 
 namespace {
