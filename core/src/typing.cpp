@@ -1265,6 +1265,7 @@ TypingResult assign_types(const System& s, const FFDef& ff, const std::vector<st
           }
         }
       }
+      if (queue.size() == 1) colour[s0] = member.at(r.types[s0]).second;   // alone in its system: its own rule's type
     }
     for (uint32_t a = 0; a < n; ++a) {
       if (colour[a] < 0) continue;
