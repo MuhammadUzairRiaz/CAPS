@@ -1,7 +1,8 @@
 """Torsion parameters a force field lacks, fitted to quantum-chemical rotational profiles.
 
     python -m caps.torsionfit prepare STRUCTURE[,STRUCTURE...] FF.json WORKDIR [--engine orca|psi4] [--step 15] [--radius 2]
-                                    [--level oplsaa-l|dlpno]
+                                    [--level oplsaa-l|dlpno] [--nprocs 1] [--classes A-B-C-D,...]
+    python -m caps.torsionfit fit WORKDIR [--out overlay.json] [--refit]
     python -m caps.torsionfit collect WORKDIR
     python -m caps.torsionfit fit WORKDIR [--out overlay.json]
 
@@ -236,11 +237,13 @@ def fragment(el, pos, nb, b, c, radius):
     return keep, idx, fel, fpos, fbonds
 
 
-def orca_input(el, pos, quad, charge=0, mult=1, level="oplsaa-l"):
+def orca_input(el, pos, quad, charge=0, mult=1, level="oplsaa-l", nprocs=1):
     a, b, c, d = quad
     opt, sp, _ = LEVELS[level]
     xyz = "\n".join(f"{e} {p[0]:.6f} {p[1]:.6f} {p[2]:.6f}" for e, p in zip(el, pos))
     mem = "" if level == "oplsaa-l" else "%maxcore 6000\n"   # local coupled cluster wants more memory per core
+    if nprocs > 1:   # ORCA starts its own MPI processes: the job needs as many tasks (--ntasks)
+        mem += f"%pal nprocs {nprocs} end\n"
     return (f"{opt}\n{mem}%geom Constraints {{ D {a} {b} {c} {d} C }} end end\n* xyz {charge} {mult}\n{xyz}\n*\n\n"
             f"$new_job\n{sp}\n{mem}* xyzfile {charge} {mult} point.xyz\n")
 
@@ -263,8 +266,16 @@ def prepare():
         raise SystemExit(f"--level is one of {', '.join(LEVELS)}")
     if level != "oplsaa-l" and engine != "orca":
         raise SystemExit("--level dlpno needs --engine orca")
+    nprocs = int(arg("--nprocs", "1"))
     os.makedirs(work, exist_ok=True)
     cl = classes(ffjson)
+    # --classes A-B-C-D,...: scan these too although the force field has them (to compare its values with QM, or to
+    # refit them as an overlay: fit --refit)
+    forced = set()
+    for c in (arg("--classes", "") or "").split(","):
+        if c:
+            k = tuple(c.split("-"))
+            forced.add(min(k, k[::-1]))
     missing, mols = {}, []
     for n, structure in enumerate(structures):   # each missing class from the first structure that has it
         data = os.path.join(work, f"structure{n}.data")
@@ -274,14 +285,14 @@ def prepare():
         nb = neighbours(len(el), bonds)
         mols.append((types, pos, el, nb))
         listed = listed_missing(structure, ffjson, cl)
-        for q in propers(nb) - have:
+        for q in propers(nb):
             key = tuple(cl.get(types[x], types[x]) for x in q)
             key = min(key, key[::-1])
-            if key not in listed:   # an all-zero torsion of the force field, left out of the data file
+            if key not in forced and (q in have or key not in listed):   # present, or all zero in the force field
                 continue
             missing.setdefault(key, (n, []))[1].append(q) if missing.get(key, (n,))[0] == n else None
     plan = {"ff": ffjson, "engine": engine, "level": LEVELS[level][2], "level_key": level, "step": step, "scans": [],
-            "not_scanned": []}
+            "not_scanned": [], "forced": ["-".join(k) for k in sorted(forced)]}
     jobs = []
     for key, (n, qs) in sorted(missing.items()):
         types, pos, el, nb = mols[n]
@@ -332,7 +343,7 @@ def prepare():
             os.makedirs(pdir, exist_ok=True)
             rel = os.path.relpath(pdir, work)   # jobs.txt and plan.json name points relative to WORKDIR: copy it anywhere
             if engine == "orca":
-                open(os.path.join(pdir, "point.inp"), "w").write(orca_input(fel, p, quad, level=level))
+                open(os.path.join(pdir, "point.inp"), "w").write(orca_input(fel, p, quad, level=level, nprocs=nprocs))
                 jobs.append(f"cd {rel} && \"${{ORCA:-orca}}\" point.inp > point.out")
             else:
                 open(os.path.join(pdir, "point.in"), "w").write(psi4_input(fel, p, quad))
@@ -415,6 +426,16 @@ def fit():
     plan = json.load(open(os.path.join(work, "plan.json")))
     ffjson, cl = plan["ff"], classes(plan["ff"])
     rules = []
+    # classes scanned although the force field has them (prepare --classes): their own terms are taken out of the MM
+    # energy (an overlay setting them to zero) so they are fitted like missing ones, and the profile of the force field
+    # as it is (E_mm_existing) is kept beside it with its RMS from QM. --refit puts their refits in the output overlay
+    forced = {tuple(k.split("-")) for k in plan.get("forced", [])}
+    zero = None
+    if forced:
+        zero = os.path.join(work, "zero_forced.json")
+        json.dump({"format": "caps-forcefield", "format_version": 1, "name": "forced classes at zero", "atom_types": [],
+                   "dihedrals": [{"name": "-".join(k), "match": list(k), "style": "opls", "params": [0, 0, 0, 0]}
+                                 for k in sorted(forced)]}, open(zero, "w"), indent=1)
     for s in plan["scans"]:
         pts = [p for p in s["points"] if "E_qm" in p]
         if len(pts) < 8:
@@ -422,13 +443,15 @@ def fit():
             continue
         fnb = neighbours(len(s["elements"]), [tuple(b) for b in s["bonds"]])
         b, c = s["quad"][1], s["quad"][2]
-        rows, emm, eqm = [], [], []
+        rows, emm, eqm, emm_full = [], [], [], []
         groups = None
         for p in pts:
             m2 = os.path.join(work, p["dir"], "opt.mol2")
             write_mol2(m2, s["elements"], p["positions"], [tuple(x) for x in s["bonds"]])
             data = os.path.join(work, p["dir"], "opt.data")
-            emm.append(caps_apply(m2, ffjson, data))
+            emm.append(caps_apply(m2, ffjson, data, zero))
+            if forced:
+                emm_full.append(caps_apply(m2, ffjson, os.path.join(work, p["dir"], "opt_full.data")))
             eqm.append(p["E_qm"] * 627.509474)
             types, _, pos, _, have = read_data(data)
             if groups is None:   # the missing torsions round the central bond, by class
@@ -437,7 +460,7 @@ def fit():
                 for q in propers(fnb) - have:
                     if {q[1], q[2]} == {b, c}:
                         key = tuple(cl.get(types[x], types[x]) for x in q)
-                        if min(key, key[::-1]) not in listed:
+                        if min(key, key[::-1]) not in listed and min(key, key[::-1]) not in forced:
                             continue
                         groups.setdefault(min(key, key[::-1]), []).append(q)
                 keys = sorted(groups)
@@ -454,13 +477,29 @@ def fit():
         rms = math.sqrt(sum((f - v) ** 2 for f, v in zip(fitted, y)) / len(y))
         # the profiles themselves, for the record: QM, MM without the fitted torsions, MM with them
         scan_rows = [(p["phi"], q - min(eqm), m, f) for p, q, m, f in zip(pts, eqm, emm, fitted)]
+        rms_existing = None
+        if emm_full:   # the force field as it is, against QM (a constant offset fitted out, the same weights)
+            d = [q - m for q, m in zip(eqm, emm_full)]
+            c0 = sum(w * v for w, v in zip(wts, d)) / sum(wts)
+            rms_existing = math.sqrt(sum((v - c0) ** 2 for v in d) / len(d))
+            print(f"{s['dir']}: the force field's own torsions against QM, RMS {rms_existing:.2f} kcal/mol")
         for n, k in enumerate(keys):
             V = [round(float(v), 4) for v in sol[1 + 4 * n: 5 + 4 * n]]
+            refit = k in forced
+            if refit and "--refit" not in sys.argv:
+                print(f"{'-'.join(k)}: refit V = {V} (RMS {rms:.2f} kcal/mol; not written without --refit)")
+                continue
+            fitrec = {"fragment": s["dir"], "scan": [{"phi": a, "E_qm": round(q, 4), "E_mm_without": round(m, 4),
+                                                      "E_fit_correction": round(f, 4)} for a, q, m, f in scan_rows]}
+            if emm_full:
+                fitrec["rms_existing"] = round(rms_existing, 3)
+                for r, e in zip(fitrec["scan"], emm_full):
+                    r["E_mm_existing"] = round(e - min(emm_full), 4)
             rules.append({"name": "-".join(k), "match": [x.replace("*", "\\*") for x in k], "style": "opls", "params": V,
-                          "comment": f"CAPS fit (QM): {plan['level']}, {len(pts)}-point scan of a {len(s['elements'])}-atom "
-                                     f"fragment, RMS {rms:.2f} kcal/mol",
-                          "fit": {"fragment": s["dir"], "scan": [{"phi": a, "E_qm": round(q, 4), "E_mm_without": round(m, 4),
-                                                                  "E_fit_correction": round(f, 4)} for a, q, m, f in scan_rows]}})
+                          "comment": f"CAPS {'refit' if refit else 'fit'} (QM): {plan['level']}, {len(pts)}-point scan of a "
+                                     f"{len(s['elements'])}-atom fragment, RMS {rms:.2f} kcal/mol"
+                                     + (f" (the force field's own: {rms_existing:.2f})" if rms_existing is not None else ""),
+                          "fit": fitrec})
             print(f"{'-'.join(k)}: V = {V} (RMS {rms:.2f} kcal/mol over {len(pts)} points)")
     out = arg("--out", os.path.join(work, "fitted_torsions.json"))
     json.dump({"format": "caps-forcefield", "format_version": 1, "name": "CAPS-fitted torsions", "atom_types": [],
