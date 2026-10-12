@@ -411,34 +411,6 @@
    }
   },
   {
-   "id": "inorganic-binary-misc",
-   "name": "Inorganic: binary misc",
-   "version": "",
-   "references": [],
-   "origin": "converted",
-   "source_file": "INORGANIC_binary_misc.par",
-   "status": "validated",
-   "notes": "GaN: Buckingham pairs identical to the reference FIELD file.",
-   "file": "inorganic-binary-misc.json",
-   "counts": {
-    "atom_types": 4,
-    "pairs": 3,
-    "bonds": 0,
-    "angles": 0,
-    "dihedrals": 0,
-    "impropers": 0
-   },
-   "typing": {
-    "rules": "typing/inorganic-binary-misc.typing.json",
-    "evidence": "CAPS rules (bench/typing/make_inorganic_rules.py): 2 rules, 1 compounds"
-   },
-   "list": {
-    "label": "Binary miscellaneous",
-    "key": "inorganic_binary_misc",
-    "order": 27
-   }
-  },
-  {
    "id": "inorganic-binary-oxides",
    "name": "Inorganic: binary oxides",
    "version": "",
@@ -1938,6 +1910,36 @@
     "label": "ClayFF",
     "key": "clayff",
     "order": 26
+   }
+  },
+  {
+   "id": "gan2020",
+   "name": "GaN (Wonglakhon & Zahn 2020)",
+   "version": "2020 (Table 1)",
+   "references": [
+    "T. Wonglakhon, D. Zahn, J. Phys.: Condens. Matter 32, 205401 (2020)"
+   ],
+   "origin": "built from source",
+   "source": "the paper's Table 1; bench/ff/make_gan.py",
+   "license": "published parameters of the paper (the article is CC BY)",
+   "status": "validated",
+   "file": "gan2020.json",
+   "counts": {
+    "atom_types": 2,
+    "pairs": 3,
+    "bonds": 0,
+    "angles": 0,
+    "dihedrals": 0,
+    "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/gan2020.typing.json",
+    "evidence": "Ga and N ions with formal charges, Lennard-Jones Ga-Ga and N-N, Born-Mayer Ga-N; LAMMPS reproduces CAPS's energies on wurtzite"
+   },
+   "list": {
+    "label": "GaN",
+    "key": "gan",
+    "order": 31
    }
   },
   {

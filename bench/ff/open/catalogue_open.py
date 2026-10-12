@@ -115,6 +115,10 @@ ENTRIES = {
                     "license": "published parameters of the paper"},
                    "CAPS rules by coordination and neighbours type LAMMPS's ClayFF pyrophyllite as its file does (1280 / 1280 atoms); "
                    "LAMMPS reproduces CAPS's energies on it (metal-O-H bends through contacts)", ("ClayFF", "clayff", 26), ["inorganic-clay"]),
+    "gan2020": ("GaN (Wonglakhon & Zahn 2020)", "2020 (Table 1)", ["T. Wonglakhon, D. Zahn, J. Phys.: Condens. Matter 32, 205401 (2020)"],
+                {"source": "the paper's Table 1; bench/ff/make_gan.py", "license": "published parameters of the paper (the article is CC BY)"},
+                "Ga and N ions with formal charges, Lennard-Jones Ga-Ga and N-N, Born-Mayer Ga-N; LAMMPS reproduces CAPS's energies on "
+                "wurtzite", ("GaN", "gan", 31), ["inorganic-binary-misc"]),
 }
 RTF = "the topology's own residues typed as it types them (bench/ff/validate_rtf_types.py --cap-links): "
 for fid, name, version, refs, evidence, listing, replaces in (
