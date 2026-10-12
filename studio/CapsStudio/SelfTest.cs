@@ -3993,14 +3993,20 @@ internal static class SelfTest
             vm.Field.Groups.Clear();
             vm.Field.GroupMode = false;
             vm.RemoveGrowSmall(vm.GrowSmall[0]);
-            // oriented growth: chains drawn along z, the report gives their ⟨P₂⟩
+            // oriented growth: chains drawn along z, the report gives their ⟨P₂⟩. Polyethylene, whose chains can be drawn
+            // at the full contact limits: 3 × 6 units at s = 4 give 0.59–0.88 over seeds 1–32, isotropic at most 0.34.
+            // (Atactic polystyrene stays near 0.2 at these limits: aligned all-trans steps next to a phenyl leave the
+            // next unit no room, and the units that survive the backing up are mostly the unaligned ones.)
+            vm.PolyUnits.Clear(); vm.AddPolyUnit("Ethylene", "*CC*");
+            vm.SendPolymerToGrow();
             vm.GrowOrient = 3;
             vm.GrowOrientStrengthD = 4;
             vm.Grow().GetAwaiter().GetResult();
             var p2line = vm.GrowLog.Split('\n').FirstOrDefault(l => l.Contains("oriented growth")) ?? "";
             var p2 = double.TryParse(p2line.Split("⟨P₂⟩ = ").LastOrDefault()?.Split(" ")[0], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var pv) ? pv : double.NaN;
-            Check(p2 > 0.3 && vm.GrowRecipe().Contains("orientation: { axis: z"), $"oriented growth: {p2line}");
+            Check(p2 > 0.45 && vm.GrowRecipe().Contains("orientation: { axis: z"), $"oriented growth: {p2line}");
             vm.GrowOrient = 0;
+            vm.UsePolystyreneInGrow();
         }
 
         // The pipeline in order (design/boards/PipelineGrow, ExportCenter): the force field chosen in Grow is assigned when
