@@ -69,6 +69,61 @@
    "dl": "SOD",
    "caps": "?",
    "reason": "pcff.frc (the class II file pcff-frc reads) has no sodium type; the DL-derived pcff entry types it SOD"
+  },
+  {
+   "lib": "CHARMM36_cgenff",
+   "ff": "cgenff",
+   "template": "hydroxyl_3_thf",
+   "atoms": [
+    "H31"
+   ],
+   "dl": "HGA2",
+   "caps": "HGA1",
+   "reason": "CGenFF's own topology (top_all36_cgenff.rtf, RESI THFO) gives the H on 3-hydroxy-THF's C3 HGA1"
+  },
+  {
+   "lib": "CHARMM36_cgenff",
+   "ff": "cgenff",
+   "template": "p-ethylphenol",
+   "atoms": [
+    "HA1",
+    "HA2",
+    "HA3"
+   ],
+   "dl": "HA",
+   "caps": "HGA3",
+   "reason": "the template keeps the placeholder HA (no parameters); CGenFF (top_all36_cgenff.rtf, RESI EPHE) has HGA3"
+  },
+  {
+   "lib": "CHARMM36_cgenff",
+   "ff": "cgenff",
+   "template": "p-ethylphenol",
+   "atoms": [
+    "HB1",
+    "HB2"
+   ],
+   "dl": "HA",
+   "caps": "HGA2",
+   "reason": "the template keeps the placeholder HA (no parameters); CGenFF (top_all36_cgenff.rtf, RESI EPHE) has HGA2"
+  },
+  {
+   "lib": "CHARMM36_cgenff",
+   "ff": "cgenff",
+   "template": "3-acetamide_pyridine",
+   "atoms": [
+    "HD2"
+   ],
+   "dl": "HGR62",
+   "caps": "HGR61",
+   "reason": "CGenFF (top_all36_cgenff.rtf, RESI 3AMP) gives HD2 HGR61"
+  }
+ ],
+ "excluded": [
+  {
+   "lib": "CHARMM36_cgenff",
+   "ff": "cgenff",
+   "template": "but-2-yne",
+   "reason": "the template's CONNECT records bond H12 to C2 and H13 to C3 (they belong on C1): the molecule it describes is not but-2-yne"
   }
  ]
 }

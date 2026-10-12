@@ -231,12 +231,15 @@ SHELLS = set((__import__("json").load(open(rules)).get("shells") or {}).values()
 CAP = "--cap-open" in sys.argv
 # --deviations FILE: atoms where the library's template contradicts the force field's own typer (antechamber for GAFF),
 # each with its evidence: reported as explained, not counted right
-DEV = {}
+DEV, EXCLUDED = {}, {}
 if "--deviations" in sys.argv:
     for d in __import__("json").load(open(arg("--deviations", "")))["deviations"]:
         if d["lib"] == lib and d.get("ff", os.path.basename(ffjson)[:-5]) == os.path.basename(ffjson)[:-5]:
             for a in d["atoms"]:
                 DEV[(d["template"], a)] = (d["dl"], d["caps"], d["reason"])
+    for d in __import__("json").load(open(arg("--deviations", ""))).get("excluded", []):
+        if d["lib"] == lib and d.get("ff", os.path.basename(ffjson)[:-5]) == os.path.basename(ffjson)[:-5]:
+            EXCLUDED[d["template"]] = d["reason"]
 # a CAPS type whose every parameter class is another type's (equivalence vdw / bond / angle / dihedral all X, as
 # misc's CTf3 / CTf1 for CT, which only carry a molecule's own charges) is that type under another name
 ALIAS = {}
@@ -250,6 +253,16 @@ OVERLAYS = [tuple(x.split("=", 1)) for x in arg("--overlay", "").split(";") if x
 for _, f in OVERLAYS:   # the shells an overlay's potential set declares
     SHELLS |= set((__import__("json").load(open(f)).get("shells") or {}).values())
 names = only or [n for n, m in mols.items() if n in keys and usable(n, m, CAP)]
+if "--dl-only" in sys.argv and dl_dir:   # only the templates DL_FIELD itself typed (CGenFF's templates hold placeholder keys, HA)
+    def dl_done(n):   # DL_FIELD finished: an output, no error in what it printed
+        d = os.path.join(dl_dir, n)
+        if not os.path.exists(os.path.join(d, "dl_field.output")):
+            return False
+        return not any("Error" in open(os.path.join(d, f), errors="replace").read() for f in ("dl_field.output", "dl_field.stdout")
+                       if os.path.exists(os.path.join(d, f)))
+    names = [n for n in names if dl_done(n)]
+if EXCLUDED:   # templates that do not describe their molecule (broken CONNECT records)
+    names = [n for n in names if n not in EXCLUDED]
 if "--exclude" in sys.argv:   # e.g. water-model templates (TIP4P / TIP5P virtual sites cannot be typed from bonds)
     names = [n for n in names if not re.search(arg("--exclude", ""), n)]
 total = right = sym_total = alias_total = 0
@@ -327,6 +340,8 @@ print(f"{lib}: {len(names)} templates, {right}/{total} atoms typed as DL_FIELD's
       f"{len(wrong_mols)} with differences, {len(failed)} not run" +
       (f"; {sym_total - alias_total} atoms carry the key of a symmetry-equivalent atom (the library numbers equivalent ring positions apart)" if sym_total > alias_total else "") +
       (f"; {alias_total} atoms carry a CAPS name for the key (every parameter class equivalent to it)" if alias_total else ""))
+for n, why in EXCLUDED.items():
+    print(f"  left out: {n}: {why}")
 if explained:
     print(f"{len(explained)} atoms where the library's template contradicts the force field's own typer (not counted above):")
     for e in sorted({(x[0], x[2], x[3], x[4]) for x in explained}):

@@ -20,9 +20,10 @@ while read lib ff ov; do
   d=${ff%-frc}   # the .frc entries take the DL_FIELD run of their DL-derived twin
   dl=""; [ -d "$R/dlf_$d" ] && dl="--dl $R/dlf_$d"
   ex='tip4p|tip5p|TIP4P|TIP5P'
-  [ "$ff" = opls2005 ] && ex="$ex|popc"   # DL_FIELD cannot read POPC's five-character atom names: no output to compare
+  [ "$ff" = opls2005 ] && ex="$ex|popc"
+  only=""; [ "$ff" = cgenff ] && only="--dl-only"   # CGenFF's templates hold placeholder keys (HA) that DL_FIELD re-types   # DL_FIELD cannot read POPC's five-character atom names: no output to compare
   python3 bench/ff/validate_typing.py "$lib" "data/forcefields/$ff.json" "data/typing/$ff.typing.json" $dl --show 40 --all --cap-open \
-    --exclude "$ex" ${o:+--overlay "$o"} --deviations bench/typing/dlfield_deviations.json > "$R/typing_${ff}_dl.log" 2>&1
+    --exclude "$ex" ${o:+--overlay "$o"} --deviations bench/typing/dlfield_deviations.json $only > "$R/typing_${ff}_dl.log" 2>&1
   head -1 "$R/typing_${ff}_dl.log" | cut -c1-200
 done <<'LIST'
 PCFF pcff-frc
