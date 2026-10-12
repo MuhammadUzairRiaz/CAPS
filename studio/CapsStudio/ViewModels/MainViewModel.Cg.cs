@@ -330,7 +330,7 @@ public sealed partial class MainViewModel
             GrownUnsaved = true;
             CgBackmapLog = report;
             var ff = Field.Library.ToList().FindIndex(x => x.Id == "gaff2-moltemplate");
-            if (ff < 0) ff = Field.Library.ToList().FindIndex(x => x.Id == "gaff-amber25");
+            if (ff < 0) ff = Field.Library.ToList().FindIndex(x => x.Id == "gaff2-2.2.20-ambertools");
             if (ff >= 0) { Field.FfIndex = ff; await Field.Assign(); }
             Status = "Backmapped: " + report.Split('\n').FirstOrDefault() + (ff >= 0 ? " · " + Field.ForceFieldName + " assigned" : "");
         }

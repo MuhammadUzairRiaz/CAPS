@@ -408,66 +408,6 @@
    }
   },
   {
-   "id": "gaff-amber16",
-   "name": "GAFF (AmberTools 16)",
-   "version": "GAFF 1.8x, 2016",
-   "references": [
-    "J. Wang, R. M. Wolf, J. W. Caldwell, P. A. Kollman, D. A. Case, J. Comput. Chem. 25, 1157 (2004)"
-   ],
-   "origin": "converted",
-   "source_file": "AMBER16_gaff.par",
-   "status": "validated",
-   "notes": "validated term by term for the ester and propylbenzene from mol2 input.",
-   "file": "gaff-amber16.json",
-   "typing": {
-    "rules": "typing/gaff-amber16.typing.json",
-    "evidence": "Rules follow antechamber's ATOMTYPE_GFF.DEF in order, with its ring classes and cc/cd-type conjugation pairs. 32 GAFF reference templates (water models aside): 365 / 373 atoms (97.9 %); the rest are template deviations from antechamber (DMSO methyl H hc, azobenzene N n2)."
-   },
-   "counts": {
-    "atom_types": 105,
-    "pairs": 100,
-    "bonds": 859,
-    "angles": 4642,
-    "dihedrals": 1075,
-    "impropers": 185
-   },
-   "list": {
-    "label": "AMBER GAFF",
-    "key": "amber_gaff",
-    "order": 8
-   }
-  },
-  {
-   "id": "gaff-amber25",
-   "name": "GAFF (AmberTools 25)",
-   "version": "2025",
-   "references": [
-    "J. Wang, R. M. Wolf, J. W. Caldwell, P. A. Kollman, D. A. Case, J. Comput. Chem. 25, 1157 (2004)"
-   ],
-   "origin": "converted",
-   "source_file": "AMBER25_gaff.par",
-   "status": "validated",
-   "notes": "validated term by term for the ester and propylbenzene; one carbonyl improper (X-X-c-o) is listed by the original distribution in an order that moves the key's end atom — CAPS follows the key.",
-   "file": "gaff-amber25.json",
-   "typing": {
-    "rules": "typing/gaff-amber25.typing.json",
-    "evidence": "GAFF2 rules after antechamber's ATOMTYPE_GFF2.DEF (c5 / c6, n7-n9, ns / nt, nu / nv ...). 27 the original distribution templates: 304 / 316 atoms (96.2 %; the rest: templates type H on C-O / C-S as hc where antechamber gives h1). A 6440-atom polystyrene melt: every atom as CAPS's GAFF builder typed it."
-   },
-   "counts": {
-    "atom_types": 114,
-    "pairs": 113,
-    "bonds": 1351,
-    "angles": 9731,
-    "dihedrals": 2322,
-    "impropers": 252
-   },
-   "list": {
-    "label": "GAFF / AMBER25",
-    "key": "amber25_gaff",
-    "order": 18
-   }
-  },
-  {
    "id": "charmm",
    "name": "CHARMM",
    "version": "",
@@ -2002,6 +1942,113 @@
    "status": "alias",
    "notes": "the same parameters as tip3p_2004 (style or comment variant)",
    "file": null
+  },
+  {
+   "id": "gaff-1.81-ambertools",
+   "name": "GAFF 1.81",
+   "version": "1.81 (gaff.dat, May 2017)",
+   "references": [
+    "J. Wang, R. M. Wolf, J. W. Caldwell, P. A. Kollman, D. A. Case, J. Comput. Chem. 25, 1157 (2004)"
+   ],
+   "origin": "built from source",
+   "source": "AmberTools 23.6, dat/leap/parm (ambermd.org)",
+   "license": "public domain (AmberTools LICENSE: the parameter files in dat/leap/parm have been placed in the public domain by their authors)",
+   "status": "validated",
+   "file": "gaff-1.81-ambertools.json",
+   "counts": {
+    "atom_types": 83,
+    "pairs": 83,
+    "bonds": 928,
+    "angles": 5315,
+    "dihedrals": 653,
+    "impropers": 38
+   },
+   "typing": {
+    "rules": "typing/gaff-1.81-ambertools.typing.json",
+    "evidence": "CAPS rules in the order of antechamber's ATOMTYPE_GFF.DEF (AmberTools 23.6), with its ring classes and conjugated pairs (bench/typing/make_gaff_rules.py)"
+   },
+   "list": {
+    "label": "GAFF",
+    "key": "gaff",
+    "order": 8
+   }
+  },
+  {
+   "id": "gaff2-2.11-ambertools",
+   "name": "GAFF2 2.11",
+   "version": "2.11 (gaff211.dat, May 2016)",
+   "references": [
+    "J. Wang, R. M. Wolf, J. W. Caldwell, P. A. Kollman, D. A. Case, J. Comput. Chem. 25, 1157 (2004)"
+   ],
+   "origin": "built from source",
+   "source": "AmberTools 23.6, dat/leap/parm (ambermd.org)",
+   "license": "public domain (AmberTools LICENSE: the parameter files in dat/leap/parm have been placed in the public domain by their authors)",
+   "status": "validated",
+   "file": "gaff2-2.11-ambertools.json",
+   "counts": {
+    "atom_types": 98,
+    "pairs": 96,
+    "bonds": 935,
+    "angles": 5312,
+    "dihedrals": 981,
+    "impropers": 38
+   },
+   "typing": {
+    "rules": "typing/gaff2-2.11-ambertools.typing.json",
+    "evidence": "CAPS rules in the order of antechamber's ATOMTYPE_GFF2.DEF, without c5 / c6 (added in GAFF2 2.2)"
+   }
+  },
+  {
+   "id": "gaff2-2.2.20-ambertools",
+   "name": "GAFF2",
+   "version": "2.2.20 (gaff2.dat, March 2021)",
+   "references": [
+    "J. Wang, R. M. Wolf, J. W. Caldwell, P. A. Kollman, D. A. Case, J. Comput. Chem. 25, 1157 (2004)"
+   ],
+   "origin": "built from source",
+   "source": "AmberTools 23.6, dat/leap/parm (ambermd.org)",
+   "license": "public domain (AmberTools LICENSE: the parameter files in dat/leap/parm have been placed in the public domain by their authors)",
+   "status": "validated",
+   "file": "gaff2-2.2.20-ambertools.json",
+   "counts": {
+    "atom_types": 99,
+    "pairs": 97,
+    "bonds": 1335,
+    "angles": 9712,
+    "dihedrals": 1341,
+    "impropers": 38
+   },
+   "typing": {
+    "rules": "typing/gaff2-2.2.20-ambertools.typing.json",
+    "evidence": "CAPS rules in the order of antechamber's ATOMTYPE_GFF2.DEF (AmberTools 23.6), with its ring classes and conjugated pairs (bench/typing/make_gaff_rules.py)"
+   },
+   "list": {
+    "label": "GAFF2",
+    "key": "gaff2",
+    "order": 18
+   }
+  },
+  {
+   "id": "amber-ff03-ambertools",
+   "name": "AMBER ff03",
+   "version": "parm99.dat + frcmod.ff03",
+   "references": [
+    "Y. Duan et al., J. Comput. Chem. 24, 1999 (2003)",
+    "J. Wang, P. Cieplak, P. A. Kollman, J. Comput. Chem. 21, 1049 (2000)"
+   ],
+   "origin": "built from source",
+   "source": "AmberTools 23.6, dat/leap/parm (ambermd.org)",
+   "license": "public domain (AmberTools LICENSE: the parameter files in dat/leap/parm have been placed in the public domain by their authors)",
+   "status": "validated",
+   "file": "amber-ff03-ambertools.json",
+   "counts": {
+    "atom_types": 63,
+    "pairs": 61,
+    "bonds": 115,
+    "angles": 282,
+    "dihedrals": 120,
+    "impropers": 38
+   }
   }
  ],
  "list_note": "The force fields the Studio lists, one per force field (entries without \"list\" stay loadable by id for recipes and scripts)"

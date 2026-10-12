@@ -953,7 +953,7 @@ internal static class Screenshot
                 {
                     F.Groups[0].Kind = 1;
                     F.Groups[0].File = kv[1];
-                    var gaff = F.Library.ToList().FindIndex(x => x.Id == "gaff-amber25");
+                    var gaff = F.Library.ToList().FindIndex(x => x.Id == "gaff2-2.2.20-ambertools");
                     foreach (var g in F.Groups.Skip(1)) { g.FfIndex = gaff; g.Charges = 2; }
                     var t = F.AssignGroups();
                     while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
