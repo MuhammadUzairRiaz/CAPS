@@ -1660,6 +1660,7 @@ static caps::LammpsStyle lammps_style_from(const caps::Json& o) {
   const std::string styles = o.text("lammps_styles", "native");
   if (styles != "native" && styles != "exact") throw std::runtime_error("lammps_styles: native or exact");
   ls.native = styles == "native";
+  ls.full_precision = !ls.native;
   ls.hybrid = flag("hybrid", false);
   ls.coulomb = o.text("coulomb", o.text("kspace", "auto"));
   if (ls.coulomb != "auto" && ls.coulomb != "pppm" && ls.coulomb != "ewald" && ls.coulomb != "dsf" && ls.coulomb != "cut")

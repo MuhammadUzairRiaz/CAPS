@@ -2494,6 +2494,7 @@ int main(int argc, char** argv) {
           // benches); --hybrid writes every style as hybrid; --kspace pppm|ewald|dsf|cut; --lammps-cutoff Å
           LammpsStyle ls;
           ls.native = !(o.count("--lammps-style") && o["--lammps-style"] == "exact");
+          ls.full_precision = !ls.native;
           ls.hybrid = o.count("--hybrid") > 0;
           if (o.count("--kspace")) ls.coulomb = o["--kspace"];
           if (o.count("--kspace-accuracy")) ls.kspace_accuracy = std::stod(o["--kspace-accuracy"]);

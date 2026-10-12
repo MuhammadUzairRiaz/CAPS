@@ -1185,6 +1185,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
             if (ff) {
               LammpsStyle ls;   // the force field's own styles unless the recipe says lammps_styles: exact
               ls.native = text(J, "lammps_styles", "native") != "exact";
+              ls.full_precision = !ls.native;
               ls.hybrid = J.has("hybrid") && J["hybrid"].kind() == Json::Bool && J["hybrid"].boolean();
               ls.units = text(J, "units", "auto");
               write_lammps_data_ff(s, *ff, energy, path, false, ls);
@@ -1197,6 +1198,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
             if (!ff) throw RecipeError(3, "export moltemplate: type the structure first (a type stage)");
             LammpsStyle ls;
             ls.native = text(J, "lammps_styles", "native") != "exact";
+            ls.full_precision = !ls.native;
             const std::string dp = stem + ".lt.data", ip = stem + ".lt.in";
             write_lammps_data_ff(s, *ff, energy, dp, false, ls);
             write_lammps_input(s, *ff, energy, std::filesystem::path(dp).filename().string(), ip, 0, true, {}, ls);
