@@ -2674,6 +2674,48 @@
    "priority": 14,
    "smarts": "[H][OX2H2]",
    "description": "TIP3P water H"
+  },
+  {
+   "type": "opls_293B",
+   "priority": 16,
+   "smarts": "[CX4H1;!R;$(*-[NX4H3]);$(*-[CX3](=[OX1])-[NX3])]",
+   "description": "N-terminal C alpha (NH3+)"
+  },
+  {
+   "type": "opls_292B",
+   "priority": 16,
+   "smarts": "[CX4H2;!R;$(*-[NX4H3]);$(*-[CX3](=[OX1])-[NX3])]",
+   "description": "N-terminal glycine C alpha (NH3+)"
+  },
+  {
+   "type": "opls_299",
+   "priority": 16,
+   "smarts": "[CX4H1;!R;$(*-[NX4H3]);$(*-[CX3](~[OX1])~[OX1])]",
+   "description": "zwitterion C alpha"
+  },
+  {
+   "type": "opls_298",
+   "priority": 16,
+   "smarts": "[CX4H2;!R;$(*-[NX4H3]);$(*-[CX3](~[OX1])~[OX1])]",
+   "description": "zwitterion glycine C alpha"
+  },
+  {
+   "type": "opls_246",
+   "priority": 16,
+   "smarts": "[CX4H1;R;$(*-[NX4H2]);$(*-[CX3]=[OX1])]",
+   "description": "N-terminal proline C alpha (NH2+)"
+  },
+  {
+   "type": "opls_912B",
+   "priority": 16,
+   "smarts": "[CX4H1;!R;$(*-[NX3H2]);$(*-[CX3](=[OX1])-[NX3])]",
+   "description": "N-terminal C alpha (neutral NH2)"
+  },
+  {
+   "type": "opls_906B",
+   "priority": 16,
+   "smarts": "[CX4H2;!R;$(*-[NX3H2]);$(*-[CX3](=[OX1])-[NX3])]",
+   "description": "N-terminal glycine C alpha (neutral NH2)"
   }
  ]
 }

@@ -110,8 +110,19 @@ ADD = [
                                     ("opls_403", "[I-]"))],
     ("opls_111", 9, "[OX2H2]", "TIP3P water O"), ("opls_112", 9, "[H][OX2H2]", "TIP3P water H"),
 ]
+# GROMACS's own termini (aminoacids.n.tdb / c.tdb replace the C alpha): N-terminal NH3+ 293B (Gly 292B), a zwitterion
+# 299 (Gly 298), an N-terminal proline's C alpha 246, a neutral NH2 terminus 912B (Gly 906B); C-terminal ones as ADD
+GMX_TERMINI = [
+    ("opls_293B", 11, "[CX4H1;!R;$(*-[NX4H3]);$(*-[CX3](=[OX1])-[NX3])]", "N-terminal C alpha (NH3+)"),
+    ("opls_292B", 11, "[CX4H2;!R;$(*-[NX4H3]);$(*-[CX3](=[OX1])-[NX3])]", "N-terminal glycine C alpha (NH3+)"),
+    ("opls_299", 11, "[CX4H1;!R;$(*-[NX4H3]);$(*-[CX3](~[OX1])~[OX1])]", "zwitterion C alpha"),
+    ("opls_298", 11, "[CX4H2;!R;$(*-[NX4H3]);$(*-[CX3](~[OX1])~[OX1])]", "zwitterion glycine C alpha"),
+    ("opls_246", 11, "[CX4H1;R;$(*-[NX4H2]);$(*-[CX3]=[OX1])]", "N-terminal proline C alpha (NH2+)"),
+    ("opls_912B", 11, "[CX4H1;!R;$(*-[NX3H2]);$(*-[CX3](=[OX1])-[NX3])]", "N-terminal C alpha (neutral NH2)"),
+    ("opls_906B", 11, "[CX4H2;!R;$(*-[NX3H2]);$(*-[CX3](=[OX1])-[NX3])]", "N-terminal glycine C alpha (neutral NH2)"),
+]
 if __name__ == "__main__":
-    for t, p, sm, d in ADD:   # above the general rules' priorities (0-8)
+    for t, p, sm, d in ADD + GMX_TERMINI:   # above the general rules' priorities (0-8)
         rules.append({"type": t, "priority": p + 5, "smarts": sm, "description": d})
     for name, (o, h, label) in {"spc": ("opls_116", "opls_117", "SPC"), "tip4p": ("opls_113", "opls_114", "TIP4P")}.items():
         json.dump({"format": "caps-typing", "version": 1, "forcefield": f"OPLS-AA (GROMACS) {label} water",

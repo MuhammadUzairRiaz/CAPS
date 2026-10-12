@@ -98,6 +98,15 @@ struct FFDef {
   // Torsions only where the file defines them ("torsion_terms": "if_defined"; MARTINI, SDK: TORSION IGNORE in their
   // sources): a dihedral with no term is not missing
   bool torsions_if_defined = false;
+  // One torsion per central bond ("torsion_selection": "one_per_bond"; CHARMM19, GROMOS: "a single dihedral per bond
+  // rather than multiple torsions"): each outer end the neighbour of highest atomic number, then most heavy neighbours,
+  // then lowest index; an end with only hydrogen neighbours takes every hydrogen. Which neighbour of a centre is chosen
+  // changes the energy only by that centre's departure from ideal geometry (n = 3 at sp3, n = 2 at sp2 centres). Bonds of aromatic rings carry none
+  // (their impropers hold them flat); a bond without a term has none (not missing).
+  bool torsions_one_per_bond = false;
+  // With it: SMARTS of centres whose hydrogen ends take one torsion, the first hydrogen ("torsion_single_h"; CHARMM19
+  // lists one on an amide NH2, every H of an ammonium or guanidinium)
+  std::vector<std::string> torsion_single_h;
   // Opt-in (the Field step, caps_field_set_options): a dihedral with no parameters whose four atoms close a three-membered
   // ring (i bonded to k, or j to l: an epoxide, aziridine or cyclopropane) is a zero term and counted, not missing. What
   // LAMMPS does with a moltemplate file that has no rule for it; a modelling choice, said in the report.

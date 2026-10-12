@@ -974,3 +974,55 @@ TEST(ParamImport, GromacsAmberTypes) {
   EXPECT_NEAR(ct->params[1], 3.39967, 1e-4);
   EXPECT_NEAR(ct->params[0], 0.1094, 1e-4);
 }
+
+// CHARMM19 / GROMOS style: one torsion per central bond (the end of highest atomic number; every H where only H is
+// there, one where torsion_single_h names the centre: an amide NH2); every 1-4 pair kept
+TEST(FFDef, OneTorsionPerBond) {
+  const std::string path = (std::filesystem::temp_directory_path() / "caps_one_per_bond.json").string();
+  std::ofstream(path) << R"({"format": "caps-forcefield", "format_version": 1, "name": "one per bond", "units": "real",
+ "styles": {"pair": "lj/cut/coul/long", "bond": "harmonic", "angle": "harmonic", "dihedral": "fourier", "improper": "harmonic"},
+ "mixing": "arithmetic", "special_lj": [0, 0, 1], "special_coul": [0, 0, 1], "cutoff": 10, "torsion_selection": "one_per_bond",
+ "torsion_single_h": ["[#7X3;$(*-[#6]=[#8X1])]"],
+ "atom_types": [{"name": "CT", "element": "C", "mass": 12.011}, {"name": "C", "element": "C", "mass": 12.011},
+                {"name": "O", "element": "O", "mass": 15.999}, {"name": "N", "element": "N", "mass": 14.007},
+                {"name": "H", "element": "H", "mass": 1.008}, {"name": "HC", "element": "H", "mass": 1.008}],
+ "pairs": [{"name": "*", "match": ["*"], "params": [0.1, 3.0]}],
+ "bonds": [{"name": "X-X", "match": ["*", "*"], "params": [300, 1.2]}],
+ "angles": [{"name": "X-X-X", "match": ["*", "*", "*"], "params": [50, 115]}],
+ "dihedrals": [{"name": "X-C-N-X", "match": ["*", "C", "N", "*"], "params": [1, 8.2, 2, 180]},
+               {"name": "X-CT-C-X", "match": ["*", "CT", "C", "*"], "params": [1, 1.0, 3, 0]}],
+ "impropers": []})";
+  FFDef def = load_forcefield(path);
+  // acetamide CH3-C(=O)-NH2
+  System s;
+  const std::vector<std::pair<int, Vec3>> at = {{6, {0, 0, 0}}, {6, {1.52, 0, 0}}, {8, {2.1, 1.05, 0}}, {7, {2.2, -1.15, 0}},
+                                                {1, {3.2, -1.15, 0}}, {1, {1.7, -2.05, 0}}, {1, {-0.4, 1.0, 0}},
+                                                {1, {-0.4, -0.5, 0.87}}, {1, {-0.4, -0.5, -0.87}}};
+  for (const auto& [z, p] : at) {
+    Atom a;
+    a.element = z;
+    a.pos = p;
+    s.atoms.push_back(a);
+  }
+  s.bonds = {{0, 1, 1}, {1, 2, 2}, {1, 3, 1}, {3, 4, 1}, {3, 5, 1}, {0, 6, 1}, {0, 7, 1}, {0, 8, 1}};
+  const std::vector<std::string> types = {"CT", "C", "O", "N", "H", "H", "HC", "HC", "HC"};
+  ParamReport rep;
+  ForceField ff = parameterize(s, def, types, "keep", &rep, false);
+  // CT-C: the three methyl H with O; C-N: O with the first N-H only
+  ASSERT_EQ(ff.dihedrals.size(), 4u);
+  int amide = 0;
+  for (const auto& d : ff.dihedrals) {
+    const bool cn = (d.j == 1 && d.k == 3) || (d.j == 3 && d.k == 1);
+    if (cn) {
+      ++amide;
+      EXPECT_TRUE((d.i == 2 && d.l == 4) || (d.i == 4 && d.l == 2));
+    } else {
+      EXPECT_TRUE(d.i == 2 || d.l == 2);
+    }
+  }
+  EXPECT_EQ(amide, 1);
+  def.torsions_one_per_bond = false;   // every torsion: 3 x 2 about CT-C, 2 x 2 about C-N
+  ff = parameterize(s, def, types, "keep", &rep, false);
+  EXPECT_EQ(ff.dihedrals.size(), 10u);
+  std::filesystem::remove(path);
+}
