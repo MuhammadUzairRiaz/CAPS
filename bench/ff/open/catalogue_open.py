@@ -119,6 +119,12 @@ ENTRIES = {
                 {"source": "the paper's Table 1; bench/ff/make_gan.py", "license": "published parameters of the paper (the article is CC BY)"},
                 "Ga and N ions with formal charges, Lennard-Jones Ga-Ga and N-N, Born-Mayer Ga-N; LAMMPS reproduces CAPS's energies on "
                 "wurtzite", ("GaN", "gan", 31), ["inorganic-binary-misc"]),
+    "catlow1977-halides": ("Alkali halides (Catlow, Diller & Norgett 1977)", "1977, Table 2 (set 1, rigid ions)",
+                           ["C. R. A. Catlow, K. M. Diller, M. J. Norgett, J. Phys. C: Solid State Phys. 10, 1395 (1977)"],
+                           {"source": "the paper's Table 2; bench/ff/make_catlow1977.py", "license": "published parameters of the paper"},
+                           "16 halides of Li, Na, K, Rb with F, Cl, Br, I, each typed by the structure's composition; every pair term "
+                           "equals an independent transcription of the same table; LAMMPS reproduces CAPS's energies on NaCl and LiF",
+                           ("Alkali halides", "alkali_halides", 28), ["inorganic-binary-halides"]),
 }
 RTF = "the topology's own residues typed as it types them (bench/ff/validate_rtf_types.py --cap-links): "
 for fid, name, version, refs, evidence, listing, replaces in (

@@ -1,0 +1,1259 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "Alkali halides (Catlow, Diller & Norgett 1977)",
+ "source": "C. R. A. Catlow, K. M. Diller, M. J. Norgett, J. Phys. C: Solid State Phys. 10, 1395 (1977), Table 2 (set 1)",
+ "references": [
+  "C. R. A. Catlow, K. M. Diller, M. J. Norgett, J. Phys. C: Solid State Phys. 10, 1395 (1977)"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "buck/coul/long",
+  "bond": "harmonic",
+  "angle": "harmonic",
+  "dihedral": "fourier",
+  "improper": "fourier"
+ },
+ "mixing": "geometric",
+ "special_lj": [
+  0,
+  0,
+  1
+ ],
+ "special_coul": [
+  0,
+  0,
+  1
+ ],
+ "cutoff": 10,
+ "atom_types": [
+  {
+   "name": "Li_LiF",
+   "element": "Li",
+   "mass": 6.94,
+   "charge": 0.981,
+   "description": "Li+ in LiF (Table 2c: Z 0.981)"
+  },
+  {
+   "name": "F_LiF",
+   "element": "F",
+   "mass": 18.998403,
+   "charge": -0.981,
+   "description": "F- in LiF (Table 2c: Z 0.981)"
+  },
+  {
+   "name": "Li_LiCl",
+   "element": "Li",
+   "mass": 6.94,
+   "charge": 0.995,
+   "description": "Li+ in LiCl (Table 2c: Z 0.995)"
+  },
+  {
+   "name": "Cl_LiCl",
+   "element": "Cl",
+   "mass": 35.453,
+   "charge": -0.995,
+   "description": "Cl- in LiCl (Table 2c: Z 0.995)"
+  },
+  {
+   "name": "Li_LiBr",
+   "element": "Li",
+   "mass": 6.94,
+   "charge": 0.992,
+   "description": "Li+ in LiBr (Table 2c: Z 0.992)"
+  },
+  {
+   "name": "Br_LiBr",
+   "element": "Br",
+   "mass": 79.904,
+   "charge": -0.992,
+   "description": "Br- in LiBr (Table 2c: Z 0.992)"
+  },
+  {
+   "name": "Li_LiI",
+   "element": "Li",
+   "mass": 6.94,
+   "charge": 0.979,
+   "description": "Li+ in LiI (Table 2c: Z 0.979)"
+  },
+  {
+   "name": "I_LiI",
+   "element": "I",
+   "mass": 126.90447,
+   "charge": -0.979,
+   "description": "I- in LiI (Table 2c: Z 0.979)"
+  },
+  {
+   "name": "Na_NaF",
+   "element": "Na",
+   "mass": 22.98977,
+   "charge": 0.981,
+   "description": "Na+ in NaF (Table 2c: Z 0.981)"
+  },
+  {
+   "name": "F_NaF",
+   "element": "F",
+   "mass": 18.998403,
+   "charge": -0.981,
+   "description": "F- in NaF (Table 2c: Z 0.981)"
+  },
+  {
+   "name": "Na_NaCl",
+   "element": "Na",
+   "mass": 22.98977,
+   "charge": 0.988,
+   "description": "Na+ in NaCl (Table 2c: Z 0.988)"
+  },
+  {
+   "name": "Cl_NaCl",
+   "element": "Cl",
+   "mass": 35.453,
+   "charge": -0.988,
+   "description": "Cl- in NaCl (Table 2c: Z 0.988)"
+  },
+  {
+   "name": "Na_NaBr",
+   "element": "Na",
+   "mass": 22.98977,
+   "charge": 0.988,
+   "description": "Na+ in NaBr (Table 2c: Z 0.988)"
+  },
+  {
+   "name": "Br_NaBr",
+   "element": "Br",
+   "mass": 79.904,
+   "charge": -0.988,
+   "description": "Br- in NaBr (Table 2c: Z 0.988)"
+  },
+  {
+   "name": "Na_NaI",
+   "element": "Na",
+   "mass": 22.98977,
+   "charge": 0.988,
+   "description": "Na+ in NaI (Table 2c: Z 0.988)"
+  },
+  {
+   "name": "I_NaI",
+   "element": "I",
+   "mass": 126.90447,
+   "charge": -0.988,
+   "description": "I- in NaI (Table 2c: Z 0.988)"
+  },
+  {
+   "name": "K_KF",
+   "element": "K",
+   "mass": 39.0983,
+   "charge": 0.969,
+   "description": "K+ in KF (Table 2c: Z 0.969)"
+  },
+  {
+   "name": "F_KF",
+   "element": "F",
+   "mass": 18.998403,
+   "charge": -0.969,
+   "description": "F- in KF (Table 2c: Z 0.969)"
+  },
+  {
+   "name": "K_KCl",
+   "element": "K",
+   "mass": 39.0983,
+   "charge": 0.994,
+   "description": "K+ in KCl (Table 2c: Z 0.994)"
+  },
+  {
+   "name": "Cl_KCl",
+   "element": "Cl",
+   "mass": 35.453,
+   "charge": -0.994,
+   "description": "Cl- in KCl (Table 2c: Z 0.994)"
+  },
+  {
+   "name": "K_KBr",
+   "element": "K",
+   "mass": 39.0983,
+   "charge": 0.988,
+   "description": "K+ in KBr (Table 2c: Z 0.988)"
+  },
+  {
+   "name": "Br_KBr",
+   "element": "Br",
+   "mass": 79.904,
+   "charge": -0.988,
+   "description": "Br- in KBr (Table 2c: Z 0.988)"
+  },
+  {
+   "name": "K_KI",
+   "element": "K",
+   "mass": 39.0983,
+   "charge": 0.994,
+   "description": "K+ in KI (Table 2c: Z 0.994)"
+  },
+  {
+   "name": "I_KI",
+   "element": "I",
+   "mass": 126.90447,
+   "charge": -0.994,
+   "description": "I- in KI (Table 2c: Z 0.994)"
+  },
+  {
+   "name": "Rb_RbF",
+   "element": "Rb",
+   "mass": 85.4678,
+   "charge": 0.96,
+   "description": "Rb+ in RbF (Table 2c: Z 0.96)"
+  },
+  {
+   "name": "F_RbF",
+   "element": "F",
+   "mass": 18.998403,
+   "charge": -0.96,
+   "description": "F- in RbF (Table 2c: Z 0.96)"
+  },
+  {
+   "name": "Rb_RbCl",
+   "element": "Rb",
+   "mass": 85.4678,
+   "charge": 0.991,
+   "description": "Rb+ in RbCl (Table 2c: Z 0.991)"
+  },
+  {
+   "name": "Cl_RbCl",
+   "element": "Cl",
+   "mass": 35.453,
+   "charge": -0.991,
+   "description": "Cl- in RbCl (Table 2c: Z 0.991)"
+  },
+  {
+   "name": "Rb_RbBr",
+   "element": "Rb",
+   "mass": 85.4678,
+   "charge": 0.998,
+   "description": "Rb+ in RbBr (Table 2c: Z 0.998)"
+  },
+  {
+   "name": "Br_RbBr",
+   "element": "Br",
+   "mass": 79.904,
+   "charge": -0.998,
+   "description": "Br- in RbBr (Table 2c: Z 0.998)"
+  },
+  {
+   "name": "Rb_RbI",
+   "element": "Rb",
+   "mass": 85.4678,
+   "charge": 0.999,
+   "description": "Rb+ in RbI (Table 2c: Z 0.999)"
+  },
+  {
+   "name": "I_RbI",
+   "element": "I",
+   "mass": 126.90447,
+   "charge": -0.999,
+   "description": "I- in RbI (Table 2c: Z 0.999)"
+  }
+ ],
+ "pairs": [
+  {
+   "name": "Li_LiF",
+   "match": [
+    "Li_LiF"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "F_LiF",
+   "match": [
+    "F_LiF"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Li_LiF-Li_LiF",
+   "match": [
+    "Li_LiF",
+    "Li_LiF"
+   ],
+   "style": "buck",
+   "params": [
+    26607.2602824,
+    0.1364,
+    293.09956508000005
+   ],
+   "comment": "Li+-Li+ A 1153.8 eV, rho 0.1364 A (Table 2a); C 12.71 eV A^6 (LiF, Table 2c)"
+  },
+  {
+   "name": "F_LiF-F_LiF",
+   "match": [
+    "F_LiF",
+    "F_LiF"
+   ],
+   "style": "buck",
+   "params": [
+    26005.379979600002,
+    0.2753,
+    293.09956508000005
+   ],
+   "comment": "F--F- A 1127.7 eV, rho 0.2753 A (Table 2b); C 12.71 eV A^6 (LiF, Table 2c)"
+  },
+  {
+   "name": "Li_LiF-F_LiF",
+   "match": [
+    "Li_LiF",
+    "F_LiF"
+   ],
+   "style": "buck",
+   "params": [
+    11198.2021088,
+    0.2614,
+    0.0
+   ],
+   "comment": "LiF: A 485.6 eV, rho 0.2614 A (Table 2c)"
+  },
+  {
+   "name": "Li_LiCl",
+   "match": [
+    "Li_LiCl"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Cl_LiCl",
+   "match": [
+    "Cl_LiCl"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Li_LiCl-Li_LiCl",
+   "match": [
+    "Li_LiCl",
+    "Li_LiCl"
+   ],
+   "style": "buck",
+   "params": [
+    26607.2602824,
+    0.1364,
+    7.840586320000001
+   ],
+   "comment": "Li+-Li+ A 1153.8 eV, rho 0.1364 A (Table 2a); C 0.34 eV A^6 (LiCl, Table 2c)"
+  },
+  {
+   "name": "Cl_LiCl-Cl_LiCl",
+   "match": [
+    "Cl_LiCl",
+    "Cl_LiCl"
+   ],
+   "style": "buck",
+   "params": [
+    28299.904505600003,
+    0.3214,
+    7.840586320000001
+   ],
+   "comment": "Cl--Cl- A 1227.2 eV, rho 0.3214 A (Table 2b); C 0.34 eV A^6 (LiCl, Table 2c)"
+  },
+  {
+   "name": "Li_LiCl-Cl_LiCl",
+   "match": [
+    "Li_LiCl",
+    "Cl_LiCl"
+   ],
+   "style": "buck",
+   "params": [
+    31837.392568799998,
+    0.2786,
+    0.0
+   ],
+   "comment": "LiCl: A 1380.6 eV, rho 0.2786 A (Table 2c)"
+  },
+  {
+   "name": "Li_LiBr",
+   "match": [
+    "Li_LiBr"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Br_LiBr",
+   "match": [
+    "Br_LiBr"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Li_LiBr-Li_LiBr",
+   "match": [
+    "Li_LiBr",
+    "Li_LiBr"
+   ],
+   "style": "buck",
+   "params": [
+    26607.2602824,
+    0.1364,
+    0.23060548
+   ],
+   "comment": "Li+-Li+ A 1153.8 eV, rho 0.1364 A (Table 2a); C 0.01 eV A^6 (LiBr, Table 2c)"
+  },
+  {
+   "name": "Br_LiBr-Br_LiBr",
+   "match": [
+    "Br_LiBr",
+    "Br_LiBr"
+   ],
+   "style": "buck",
+   "params": [
+    67987.1076136,
+    0.3164,
+    0.23060548
+   ],
+   "comment": "Br--Br- A 2948.2 eV, rho 0.3164 A (Table 2b); C 0.01 eV A^6 (LiBr, Table 2c)"
+  },
+  {
+   "name": "Li_LiBr-Br_LiBr",
+   "match": [
+    "Li_LiBr",
+    "Br_LiBr"
+   ],
+   "style": "buck",
+   "params": [
+    38345.0792144,
+    0.2882,
+    0.0
+   ],
+   "comment": "LiBr: A 1662.8 eV, rho 0.2882 A (Table 2c)"
+  },
+  {
+   "name": "Li_LiI",
+   "match": [
+    "Li_LiI"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "I_LiI",
+   "match": [
+    "I_LiI"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Li_LiI-Li_LiI",
+   "match": [
+    "Li_LiI",
+    "Li_LiI"
+   ],
+   "style": "buck",
+   "params": [
+    26607.2602824,
+    0.1364,
+    0.0
+   ],
+   "comment": "Li+-Li+ A 1153.8 eV, rho 0.1364 A (Table 2a); C 0.0 eV A^6 (LiI, Table 2c)"
+  },
+  {
+   "name": "I_LiI-I_LiI",
+   "match": [
+    "I_LiI",
+    "I_LiI"
+   ],
+   "style": "buck",
+   "params": [
+    126890.66537,
+    0.3066,
+    0.0
+   ],
+   "comment": "I--I- A 5502.5 eV, rho 0.3066 A (Table 2b); C 0.0 eV A^6 (LiI, Table 2c)"
+  },
+  {
+   "name": "Li_LiI-I_LiI",
+   "match": [
+    "Li_LiI",
+    "I_LiI"
+   ],
+   "style": "buck",
+   "params": [
+    205116.65629560003,
+    0.2617,
+    0.0
+   ],
+   "comment": "LiI: A 8894.7 eV, rho 0.2617 A (Table 2c)"
+  },
+  {
+   "name": "Na_NaF",
+   "match": [
+    "Na_NaF"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "F_NaF",
+   "match": [
+    "F_NaF"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Na_NaF-Na_NaF",
+   "match": [
+    "Na_NaF",
+    "Na_NaF"
+   ],
+   "style": "buck",
+   "params": [
+    182072.2506792,
+    0.1709,
+    269.34720064
+   ],
+   "comment": "Na+-Na+ A 7895.4 eV, rho 0.1709 A (Table 2a); C 11.68 eV A^6 (NaF, Table 2c)"
+  },
+  {
+   "name": "F_NaF-F_NaF",
+   "match": [
+    "F_NaF",
+    "F_NaF"
+   ],
+   "style": "buck",
+   "params": [
+    26005.379979600002,
+    0.2753,
+    269.34720064
+   ],
+   "comment": "F--F- A 1127.7 eV, rho 0.2753 A (Table 2b); C 11.68 eV A^6 (NaF, Table 2c)"
+  },
+  {
+   "name": "Na_NaF-F_NaF",
+   "match": [
+    "Na_NaF",
+    "F_NaF"
+   ],
+   "style": "buck",
+   "params": [
+    36763.125621600004,
+    0.2555,
+    0.0
+   ],
+   "comment": "NaF: A 1594.2 eV, rho 0.2555 A (Table 2c)"
+  },
+  {
+   "name": "Na_NaCl",
+   "match": [
+    "Na_NaCl"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Cl_NaCl",
+   "match": [
+    "Cl_NaCl"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Na_NaCl-Na_NaCl",
+   "match": [
+    "Na_NaCl",
+    "Na_NaCl"
+   ],
+   "style": "buck",
+   "params": [
+    182072.2506792,
+    0.1709,
+    670.13952488
+   ],
+   "comment": "Na+-Na+ A 7895.4 eV, rho 0.1709 A (Table 2a); C 29.06 eV A^6 (NaCl, Table 2c)"
+  },
+  {
+   "name": "Cl_NaCl-Cl_NaCl",
+   "match": [
+    "Cl_NaCl",
+    "Cl_NaCl"
+   ],
+   "style": "buck",
+   "params": [
+    28299.904505600003,
+    0.3214,
+    670.13952488
+   ],
+   "comment": "Cl--Cl- A 1227.2 eV, rho 0.3214 A (Table 2b); C 29.06 eV A^6 (NaCl, Table 2c)"
+  },
+  {
+   "name": "Na_NaCl-Cl_NaCl",
+   "match": [
+    "Na_NaCl",
+    "Cl_NaCl"
+   ],
+   "style": "buck",
+   "params": [
+    53378.2504556,
+    0.2903,
+    0.0
+   ],
+   "comment": "NaCl: A 2314.7 eV, rho 0.2903 A (Table 2c)"
+  },
+  {
+   "name": "Na_NaBr",
+   "match": [
+    "Na_NaBr"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Br_NaBr",
+   "match": [
+    "Br_NaBr"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Na_NaBr-Na_NaBr",
+   "match": [
+    "Na_NaBr",
+    "Na_NaBr"
+   ],
+   "style": "buck",
+   "params": [
+    182072.2506792,
+    0.1709,
+    970.38785984
+   ],
+   "comment": "Na+-Na+ A 7895.4 eV, rho 0.1709 A (Table 2a); C 42.08 eV A^6 (NaBr, Table 2c)"
+  },
+  {
+   "name": "Br_NaBr-Br_NaBr",
+   "match": [
+    "Br_NaBr",
+    "Br_NaBr"
+   ],
+   "style": "buck",
+   "params": [
+    67987.1076136,
+    0.3164,
+    970.38785984
+   ],
+   "comment": "Br--Br- A 2948.2 eV, rho 0.3164 A (Table 2b); C 42.08 eV A^6 (NaBr, Table 2c)"
+  },
+  {
+   "name": "Na_NaBr-Br_NaBr",
+   "match": [
+    "Na_NaBr",
+    "Br_NaBr"
+   ],
+   "style": "buck",
+   "params": [
+    59798.3070188,
+    0.3014,
+    0.0
+   ],
+   "comment": "NaBr: A 2593.1 eV, rho 0.3014 A (Table 2c)"
+  },
+  {
+   "name": "Na_NaI",
+   "match": [
+    "Na_NaI"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "I_NaI",
+   "match": [
+    "I_NaI"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Na_NaI-Na_NaI",
+   "match": [
+    "Na_NaI",
+    "Na_NaI"
+   ],
+   "style": "buck",
+   "params": [
+    182072.2506792,
+    0.1709,
+    631.39780424
+   ],
+   "comment": "Na+-Na+ A 7895.4 eV, rho 0.1709 A (Table 2a); C 27.38 eV A^6 (NaI, Table 2c)"
+  },
+  {
+   "name": "I_NaI-I_NaI",
+   "match": [
+    "I_NaI",
+    "I_NaI"
+   ],
+   "style": "buck",
+   "params": [
+    126890.66537,
+    0.3066,
+    631.39780424
+   ],
+   "comment": "I--I- A 5502.5 eV, rho 0.3066 A (Table 2b); C 27.38 eV A^6 (NaI, Table 2c)"
+  },
+  {
+   "name": "Na_NaI-I_NaI",
+   "match": [
+    "Na_NaI",
+    "I_NaI"
+   ],
+   "style": "buck",
+   "params": [
+    85450.860614,
+    0.3099,
+    0.0
+   ],
+   "comment": "NaI: A 3705.5 eV, rho 0.3099 A (Table 2c)"
+  },
+  {
+   "name": "K_KF",
+   "match": [
+    "K_KF"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "F_KF",
+   "match": [
+    "F_KF"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "K_KF-K_KF",
+   "match": [
+    "K_KF",
+    "K_KF"
+   ],
+   "style": "buck",
+   "params": [
+    87558.59470120001,
+    0.2603,
+    1028.5004408
+   ],
+   "comment": "K+-K+ A 3796.9 eV, rho 0.2603 A (Table 2a); C 44.6 eV A^6 (KF, Table 2c)"
+  },
+  {
+   "name": "F_KF-F_KF",
+   "match": [
+    "F_KF",
+    "F_KF"
+   ],
+   "style": "buck",
+   "params": [
+    26005.379979600002,
+    0.2753,
+    1028.5004408
+   ],
+   "comment": "F--F- A 1127.7 eV, rho 0.2753 A (Table 2b); C 44.6 eV A^6 (KF, Table 2c)"
+  },
+  {
+   "name": "K_KF-F_KF",
+   "match": [
+    "K_KF",
+    "F_KF"
+   ],
+   "style": "buck",
+   "params": [
+    55963.337886400004,
+    0.277,
+    0.0
+   ],
+   "comment": "KF: A 2426.8 eV, rho 0.277 A (Table 2c)"
+  },
+  {
+   "name": "K_KCl",
+   "match": [
+    "K_KCl"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Cl_KCl",
+   "match": [
+    "Cl_KCl"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "K_KCl-K_KCl",
+   "match": [
+    "K_KCl",
+    "K_KCl"
+   ],
+   "style": "buck",
+   "params": [
+    87558.59470120001,
+    0.2603,
+    2880.2624452
+   ],
+   "comment": "K+-K+ A 3796.9 eV, rho 0.2603 A (Table 2a); C 124.9 eV A^6 (KCl, Table 2c)"
+  },
+  {
+   "name": "Cl_KCl-Cl_KCl",
+   "match": [
+    "Cl_KCl",
+    "Cl_KCl"
+   ],
+   "style": "buck",
+   "params": [
+    28299.904505600003,
+    0.3214,
+    2880.2624452
+   ],
+   "comment": "Cl--Cl- A 1227.2 eV, rho 0.3214 A (Table 2b); C 124.9 eV A^6 (KCl, Table 2c)"
+  },
+  {
+   "name": "K_KCl-Cl_KCl",
+   "match": [
+    "K_KCl",
+    "Cl_KCl"
+   ],
+   "style": "buck",
+   "params": [
+    94961.0306092,
+    0.3048,
+    0.0
+   ],
+   "comment": "KCl: A 4117.9 eV, rho 0.3048 A (Table 2c)"
+  },
+  {
+   "name": "K_KBr",
+   "match": [
+    "K_KBr"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Br_KBr",
+   "match": [
+    "Br_KBr"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "K_KBr-K_KBr",
+   "match": [
+    "K_KBr",
+    "K_KBr"
+   ],
+   "style": "buck",
+   "params": [
+    87558.59470120001,
+    0.2603,
+    4238.5287224
+   ],
+   "comment": "K+-K+ A 3796.9 eV, rho 0.2603 A (Table 2a); C 183.8 eV A^6 (KBr, Table 2c)"
+  },
+  {
+   "name": "Br_KBr-Br_KBr",
+   "match": [
+    "Br_KBr",
+    "Br_KBr"
+   ],
+   "style": "buck",
+   "params": [
+    67987.1076136,
+    0.3164,
+    4238.5287224
+   ],
+   "comment": "Br--Br- A 2948.2 eV, rho 0.3164 A (Table 2b); C 183.8 eV A^6 (KBr, Table 2c)"
+  },
+  {
+   "name": "K_KBr-Br_KBr",
+   "match": [
+    "K_KBr",
+    "Br_KBr"
+   ],
+   "style": "buck",
+   "params": [
+    67890.253312,
+    0.3295,
+    0.0
+   ],
+   "comment": "KBr: A 2944.0 eV, rho 0.3295 A (Table 2c)"
+  },
+  {
+   "name": "K_KI",
+   "match": [
+    "K_KI"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "I_KI",
+   "match": [
+    "I_KI"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "K_KI-K_KI",
+   "match": [
+    "K_KI",
+    "K_KI"
+   ],
+   "style": "buck",
+   "params": [
+    87558.59470120001,
+    0.2603,
+    6593.0106731999995
+   ],
+   "comment": "K+-K+ A 3796.9 eV, rho 0.2603 A (Table 2a); C 285.9 eV A^6 (KI, Table 2c)"
+  },
+  {
+   "name": "I_KI-I_KI",
+   "match": [
+    "I_KI",
+    "I_KI"
+   ],
+   "style": "buck",
+   "params": [
+    126890.66537,
+    0.3066,
+    6593.0106731999995
+   ],
+   "comment": "I--I- A 5502.5 eV, rho 0.3066 A (Table 2b); C 285.9 eV A^6 (KI, Table 2c)"
+  },
+  {
+   "name": "K_KI-I_KI",
+   "match": [
+    "K_KI",
+    "I_KI"
+   ],
+   "style": "buck",
+   "params": [
+    134728.94563519998,
+    0.3264,
+    0.0
+   ],
+   "comment": "KI: A 5842.4 eV, rho 0.3264 A (Table 2c)"
+  },
+  {
+   "name": "Rb_RbF",
+   "match": [
+    "Rb_RbF"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "F_RbF",
+   "match": [
+    "F_RbF"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Rb_RbF-Rb_RbF",
+   "match": [
+    "Rb_RbF",
+    "Rb_RbF"
+   ],
+   "style": "buck",
+   "params": [
+    156998.51683880002,
+    0.2704,
+    1610.31806684
+   ],
+   "comment": "Rb+-Rb+ A 6808.1 eV, rho 0.2704 A (Table 2a); C 69.83 eV A^6 (RbF, Table 2c)"
+  },
+  {
+   "name": "F_RbF-F_RbF",
+   "match": [
+    "F_RbF",
+    "F_RbF"
+   ],
+   "style": "buck",
+   "params": [
+    26005.379979600002,
+    0.2753,
+    1610.31806684
+   ],
+   "comment": "F--F- A 1127.7 eV, rho 0.2753 A (Table 2b); C 69.83 eV A^6 (RbF, Table 2c)"
+  },
+  {
+   "name": "Rb_RbF-F_RbF",
+   "match": [
+    "Rb_RbF",
+    "F_RbF"
+   ],
+   "style": "buck",
+   "params": [
+    50947.668696400004,
+    0.2945,
+    0.0
+   ],
+   "comment": "RbF: A 2209.3 eV, rho 0.2945 A (Table 2c)"
+  },
+  {
+   "name": "Rb_RbCl",
+   "match": [
+    "Rb_RbCl"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Cl_RbCl",
+   "match": [
+    "Cl_RbCl"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Rb_RbCl-Rb_RbCl",
+   "match": [
+    "Rb_RbCl",
+    "Rb_RbCl"
+   ],
+   "style": "buck",
+   "params": [
+    156998.51683880002,
+    0.2704,
+    4639.7822576
+   ],
+   "comment": "Rb+-Rb+ A 6808.1 eV, rho 0.2704 A (Table 2a); C 201.2 eV A^6 (RbCl, Table 2c)"
+  },
+  {
+   "name": "Cl_RbCl-Cl_RbCl",
+   "match": [
+    "Cl_RbCl",
+    "Cl_RbCl"
+   ],
+   "style": "buck",
+   "params": [
+    28299.904505600003,
+    0.3214,
+    4639.7822576
+   ],
+   "comment": "Cl--Cl- A 1227.2 eV, rho 0.3214 A (Table 2b); C 201.2 eV A^6 (RbCl, Table 2c)"
+  },
+  {
+   "name": "Rb_RbCl-Cl_RbCl",
+   "match": [
+    "Rb_RbCl",
+    "Cl_RbCl"
+   ],
+   "style": "buck",
+   "params": [
+    82093.2448252,
+    0.3233,
+    0.0
+   ],
+   "comment": "RbCl: A 3559.9 eV, rho 0.3233 A (Table 2c)"
+  },
+  {
+   "name": "Rb_RbBr",
+   "match": [
+    "Rb_RbBr"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Br_RbBr",
+   "match": [
+    "Br_RbBr"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Rb_RbBr-Rb_RbBr",
+   "match": [
+    "Rb_RbBr",
+    "Rb_RbBr"
+   ],
+   "style": "buck",
+   "params": [
+    156998.51683880002,
+    0.2704,
+    6028.0272472
+   ],
+   "comment": "Rb+-Rb+ A 6808.1 eV, rho 0.2704 A (Table 2a); C 261.4 eV A^6 (RbBr, Table 2c)"
+  },
+  {
+   "name": "Br_RbBr-Br_RbBr",
+   "match": [
+    "Br_RbBr",
+    "Br_RbBr"
+   ],
+   "style": "buck",
+   "params": [
+    67987.1076136,
+    0.3164,
+    6028.0272472
+   ],
+   "comment": "Br--Br- A 2948.2 eV, rho 0.3164 A (Table 2b); C 261.4 eV A^6 (RbBr, Table 2c)"
+  },
+  {
+   "name": "Rb_RbBr-Br_RbBr",
+   "match": [
+    "Rb_RbBr",
+    "Br_RbBr"
+   ],
+   "style": "buck",
+   "params": [
+    96160.17910519999,
+    0.3321,
+    0.0
+   ],
+   "comment": "RbBr: A 4169.9 eV, rho 0.3321 A (Table 2c)"
+  },
+  {
+   "name": "Rb_RbI",
+   "match": [
+    "Rb_RbI"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "I_RbI",
+   "match": [
+    "I_RbI"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Rb_RbI-Rb_RbI",
+   "match": [
+    "Rb_RbI",
+    "Rb_RbI"
+   ],
+   "style": "buck",
+   "params": [
+    156998.51683880002,
+    0.2704,
+    9238.055528800001
+   ],
+   "comment": "Rb+-Rb+ A 6808.1 eV, rho 0.2704 A (Table 2a); C 400.6 eV A^6 (RbI, Table 2c)"
+  },
+  {
+   "name": "I_RbI-I_RbI",
+   "match": [
+    "I_RbI",
+    "I_RbI"
+   ],
+   "style": "buck",
+   "params": [
+    126890.66537,
+    0.3066,
+    9238.055528800001
+   ],
+   "comment": "I--I- A 5502.5 eV, rho 0.3066 A (Table 2b); C 400.6 eV A^6 (RbI, Table 2c)"
+  },
+  {
+   "name": "Rb_RbI-I_RbI",
+   "match": [
+    "Rb_RbI",
+    "I_RbI"
+   ],
+   "style": "buck",
+   "params": [
+    121805.814536,
+    0.3431,
+    0.0
+   ],
+   "comment": "RbI: A 5282.0 eV, rho 0.3431 A (Table 2c)"
+  }
+ ],
+ "bonds": [],
+ "angles": [],
+ "dihedrals": [],
+ "impropers": [],
+ "notes": [
+  "built by CAPS (bench/ff/make_catlow1977.py) from the paper's Table 2 (set 1: rigid ions with fitted charges)",
+  "the paper fitted V+- to nearest and V++, V-- to second neighbours; CAPS applies them within 10 A"
+ ],
+ "version": "1977 (set 1)",
+ "typing": "../typing/catlow1977-halides.typing.json"
+}

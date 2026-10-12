@@ -1,0 +1,554 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "Alkali halides (Catlow, Diller & Norgett 1977)",
+ "unknown_types": "untyped",
+ "bonds": "defined",
+ "rules": [
+  {
+   "type": "Li_LiF",
+   "smarts": "[#3]",
+   "priority": 0,
+   "requires": [
+    "F"
+   ],
+   "excludes": [
+    "Na",
+    "K",
+    "Rb",
+    "Cl",
+    "Br",
+    "I"
+   ],
+   "description": "Li+ in LiF"
+  },
+  {
+   "type": "F_LiF",
+   "smarts": "[#9]",
+   "priority": 0,
+   "requires": [
+    "Li"
+   ],
+   "excludes": [
+    "Na",
+    "K",
+    "Rb",
+    "Cl",
+    "Br",
+    "I"
+   ],
+   "description": "F- in LiF"
+  },
+  {
+   "type": "Li_LiCl",
+   "smarts": "[#3]",
+   "priority": 0,
+   "requires": [
+    "Cl"
+   ],
+   "excludes": [
+    "Na",
+    "K",
+    "Rb",
+    "F",
+    "Br",
+    "I"
+   ],
+   "description": "Li+ in LiCl"
+  },
+  {
+   "type": "Cl_LiCl",
+   "smarts": "[#17]",
+   "priority": 0,
+   "requires": [
+    "Li"
+   ],
+   "excludes": [
+    "Na",
+    "K",
+    "Rb",
+    "F",
+    "Br",
+    "I"
+   ],
+   "description": "Cl- in LiCl"
+  },
+  {
+   "type": "Li_LiBr",
+   "smarts": "[#3]",
+   "priority": 0,
+   "requires": [
+    "Br"
+   ],
+   "excludes": [
+    "Na",
+    "K",
+    "Rb",
+    "F",
+    "Cl",
+    "I"
+   ],
+   "description": "Li+ in LiBr"
+  },
+  {
+   "type": "Br_LiBr",
+   "smarts": "[#35]",
+   "priority": 0,
+   "requires": [
+    "Li"
+   ],
+   "excludes": [
+    "Na",
+    "K",
+    "Rb",
+    "F",
+    "Cl",
+    "I"
+   ],
+   "description": "Br- in LiBr"
+  },
+  {
+   "type": "Li_LiI",
+   "smarts": "[#3]",
+   "priority": 0,
+   "requires": [
+    "I"
+   ],
+   "excludes": [
+    "Na",
+    "K",
+    "Rb",
+    "F",
+    "Cl",
+    "Br"
+   ],
+   "description": "Li+ in LiI"
+  },
+  {
+   "type": "I_LiI",
+   "smarts": "[#53]",
+   "priority": 0,
+   "requires": [
+    "Li"
+   ],
+   "excludes": [
+    "Na",
+    "K",
+    "Rb",
+    "F",
+    "Cl",
+    "Br"
+   ],
+   "description": "I- in LiI"
+  },
+  {
+   "type": "Na_NaF",
+   "smarts": "[#11]",
+   "priority": 0,
+   "requires": [
+    "F"
+   ],
+   "excludes": [
+    "Li",
+    "K",
+    "Rb",
+    "Cl",
+    "Br",
+    "I"
+   ],
+   "description": "Na+ in NaF"
+  },
+  {
+   "type": "F_NaF",
+   "smarts": "[#9]",
+   "priority": 0,
+   "requires": [
+    "Na"
+   ],
+   "excludes": [
+    "Li",
+    "K",
+    "Rb",
+    "Cl",
+    "Br",
+    "I"
+   ],
+   "description": "F- in NaF"
+  },
+  {
+   "type": "Na_NaCl",
+   "smarts": "[#11]",
+   "priority": 0,
+   "requires": [
+    "Cl"
+   ],
+   "excludes": [
+    "Li",
+    "K",
+    "Rb",
+    "F",
+    "Br",
+    "I"
+   ],
+   "description": "Na+ in NaCl"
+  },
+  {
+   "type": "Cl_NaCl",
+   "smarts": "[#17]",
+   "priority": 0,
+   "requires": [
+    "Na"
+   ],
+   "excludes": [
+    "Li",
+    "K",
+    "Rb",
+    "F",
+    "Br",
+    "I"
+   ],
+   "description": "Cl- in NaCl"
+  },
+  {
+   "type": "Na_NaBr",
+   "smarts": "[#11]",
+   "priority": 0,
+   "requires": [
+    "Br"
+   ],
+   "excludes": [
+    "Li",
+    "K",
+    "Rb",
+    "F",
+    "Cl",
+    "I"
+   ],
+   "description": "Na+ in NaBr"
+  },
+  {
+   "type": "Br_NaBr",
+   "smarts": "[#35]",
+   "priority": 0,
+   "requires": [
+    "Na"
+   ],
+   "excludes": [
+    "Li",
+    "K",
+    "Rb",
+    "F",
+    "Cl",
+    "I"
+   ],
+   "description": "Br- in NaBr"
+  },
+  {
+   "type": "Na_NaI",
+   "smarts": "[#11]",
+   "priority": 0,
+   "requires": [
+    "I"
+   ],
+   "excludes": [
+    "Li",
+    "K",
+    "Rb",
+    "F",
+    "Cl",
+    "Br"
+   ],
+   "description": "Na+ in NaI"
+  },
+  {
+   "type": "I_NaI",
+   "smarts": "[#53]",
+   "priority": 0,
+   "requires": [
+    "Na"
+   ],
+   "excludes": [
+    "Li",
+    "K",
+    "Rb",
+    "F",
+    "Cl",
+    "Br"
+   ],
+   "description": "I- in NaI"
+  },
+  {
+   "type": "K_KF",
+   "smarts": "[#19]",
+   "priority": 0,
+   "requires": [
+    "F"
+   ],
+   "excludes": [
+    "Li",
+    "Na",
+    "Rb",
+    "Cl",
+    "Br",
+    "I"
+   ],
+   "description": "K+ in KF"
+  },
+  {
+   "type": "F_KF",
+   "smarts": "[#9]",
+   "priority": 0,
+   "requires": [
+    "K"
+   ],
+   "excludes": [
+    "Li",
+    "Na",
+    "Rb",
+    "Cl",
+    "Br",
+    "I"
+   ],
+   "description": "F- in KF"
+  },
+  {
+   "type": "K_KCl",
+   "smarts": "[#19]",
+   "priority": 0,
+   "requires": [
+    "Cl"
+   ],
+   "excludes": [
+    "Li",
+    "Na",
+    "Rb",
+    "F",
+    "Br",
+    "I"
+   ],
+   "description": "K+ in KCl"
+  },
+  {
+   "type": "Cl_KCl",
+   "smarts": "[#17]",
+   "priority": 0,
+   "requires": [
+    "K"
+   ],
+   "excludes": [
+    "Li",
+    "Na",
+    "Rb",
+    "F",
+    "Br",
+    "I"
+   ],
+   "description": "Cl- in KCl"
+  },
+  {
+   "type": "K_KBr",
+   "smarts": "[#19]",
+   "priority": 0,
+   "requires": [
+    "Br"
+   ],
+   "excludes": [
+    "Li",
+    "Na",
+    "Rb",
+    "F",
+    "Cl",
+    "I"
+   ],
+   "description": "K+ in KBr"
+  },
+  {
+   "type": "Br_KBr",
+   "smarts": "[#35]",
+   "priority": 0,
+   "requires": [
+    "K"
+   ],
+   "excludes": [
+    "Li",
+    "Na",
+    "Rb",
+    "F",
+    "Cl",
+    "I"
+   ],
+   "description": "Br- in KBr"
+  },
+  {
+   "type": "K_KI",
+   "smarts": "[#19]",
+   "priority": 0,
+   "requires": [
+    "I"
+   ],
+   "excludes": [
+    "Li",
+    "Na",
+    "Rb",
+    "F",
+    "Cl",
+    "Br"
+   ],
+   "description": "K+ in KI"
+  },
+  {
+   "type": "I_KI",
+   "smarts": "[#53]",
+   "priority": 0,
+   "requires": [
+    "K"
+   ],
+   "excludes": [
+    "Li",
+    "Na",
+    "Rb",
+    "F",
+    "Cl",
+    "Br"
+   ],
+   "description": "I- in KI"
+  },
+  {
+   "type": "Rb_RbF",
+   "smarts": "[#37]",
+   "priority": 0,
+   "requires": [
+    "F"
+   ],
+   "excludes": [
+    "Li",
+    "Na",
+    "K",
+    "Cl",
+    "Br",
+    "I"
+   ],
+   "description": "Rb+ in RbF"
+  },
+  {
+   "type": "F_RbF",
+   "smarts": "[#9]",
+   "priority": 0,
+   "requires": [
+    "Rb"
+   ],
+   "excludes": [
+    "Li",
+    "Na",
+    "K",
+    "Cl",
+    "Br",
+    "I"
+   ],
+   "description": "F- in RbF"
+  },
+  {
+   "type": "Rb_RbCl",
+   "smarts": "[#37]",
+   "priority": 0,
+   "requires": [
+    "Cl"
+   ],
+   "excludes": [
+    "Li",
+    "Na",
+    "K",
+    "F",
+    "Br",
+    "I"
+   ],
+   "description": "Rb+ in RbCl"
+  },
+  {
+   "type": "Cl_RbCl",
+   "smarts": "[#17]",
+   "priority": 0,
+   "requires": [
+    "Rb"
+   ],
+   "excludes": [
+    "Li",
+    "Na",
+    "K",
+    "F",
+    "Br",
+    "I"
+   ],
+   "description": "Cl- in RbCl"
+  },
+  {
+   "type": "Rb_RbBr",
+   "smarts": "[#37]",
+   "priority": 0,
+   "requires": [
+    "Br"
+   ],
+   "excludes": [
+    "Li",
+    "Na",
+    "K",
+    "F",
+    "Cl",
+    "I"
+   ],
+   "description": "Rb+ in RbBr"
+  },
+  {
+   "type": "Br_RbBr",
+   "smarts": "[#35]",
+   "priority": 0,
+   "requires": [
+    "Rb"
+   ],
+   "excludes": [
+    "Li",
+    "Na",
+    "K",
+    "F",
+    "Cl",
+    "I"
+   ],
+   "description": "Br- in RbBr"
+  },
+  {
+   "type": "Rb_RbI",
+   "smarts": "[#37]",
+   "priority": 0,
+   "requires": [
+    "I"
+   ],
+   "excludes": [
+    "Li",
+    "Na",
+    "K",
+    "F",
+    "Cl",
+    "Br"
+   ],
+   "description": "Rb+ in RbI"
+  },
+  {
+   "type": "I_RbI",
+   "smarts": "[#53]",
+   "priority": 0,
+   "requires": [
+    "Rb"
+   ],
+   "excludes": [
+    "Li",
+    "Na",
+    "K",
+    "F",
+    "Cl",
+    "Br"
+   ],
+   "description": "I- in RbI"
+  }
+ ],
+ "description": "each ion typed by the halide the structure holds (bench/ff/make_catlow1977.py)"
+}
