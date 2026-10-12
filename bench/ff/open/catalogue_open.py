@@ -109,6 +109,12 @@ ENTRIES = {
                         "one shell-model set for 20 cations with oxygen, typed by element (a shell on every core); every Buckingham "
                         "term equals an independent transcription of the same paper; LAMMPS reproduces CAPS's energies on MgO, "
                         "SrTiO3 and corundum (CORESHELL styles)", ("Oxides (Bush 1994)", "bush1994", 30), []),
+    "clayff2004": ("ClayFF", "Cygan, Liang & Kalinichev 2004 (Tables 1 and 2)",
+                   ["R. T. Cygan, J.-J. Liang, A. G. Kalinichev, J. Phys. Chem. B 108, 1255 (2004)"],
+                   {"source": "the paper's Tables 1 (nonbond) and 2 (bonds, angles); bench/ff/make_clayff.py",
+                    "license": "published parameters of the paper"},
+                   "CAPS rules by coordination and neighbours type LAMMPS's ClayFF pyrophyllite as its file does (1280 / 1280 atoms); "
+                   "LAMMPS reproduces CAPS's energies on it (metal-O-H bends through contacts)", ("ClayFF", "clayff", 26), ["inorganic-clay"]),
 }
 RTF = "the topology's own residues typed as it types them (bench/ff/validate_rtf_types.py --cap-links): "
 for fid, name, version, refs, evidence, listing, replaces in (
