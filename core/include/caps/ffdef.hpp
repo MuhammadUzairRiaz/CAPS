@@ -114,7 +114,8 @@ struct FFDef {
   std::vector<Coul14Rule> coul14_rules;
   // Opt-in (the Field step, caps_field_set_options): a dihedral with no parameters whose four atoms close a three-membered
   // ring (i bonded to k, or j to l: an epoxide, aziridine or cyclopropane) is a zero term and counted, not missing. What
-  // LAMMPS does with a moltemplate file that has no rule for it; a modelling choice, said in the report.
+  // LAMMPS does with a moltemplate file that has no rule for it; a modelling choice, said in the report. A file may
+  // make it its own convention ("ring3_torsions": "zero").
   bool zero_ring3_torsions = false;
   bool angles_if_defined = false;   // "angle_terms": "if_defined" (MARTINI's ANGLE WARN): a missing angle is a note, not an error
   // How improper quadruples are formed and ordered (moltemplate symmetry plugins):

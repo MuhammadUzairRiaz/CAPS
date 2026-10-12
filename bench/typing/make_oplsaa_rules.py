@@ -21,9 +21,11 @@ import json, os, sys
 R = []
 
 
-def add(num, prio, smarts, desc):
+def add(num, prio, smarts, desc, only2024=False):
+    """only2024: a number GROMACS's oplsaa.ff gives another meaning (its 165 is not the 2024 styrene C), or a CAPS type
+    (caps_*) of the 2024 library's supplement; such rules stay out of the GROMACS typing"""
     for s in ([smarts] if isinstance(smarts, str) else smarts):
-        R.append({"type": str(num), "smarts": s, "priority": prio, "description": desc})
+        R.append({"type": str(num), "smarts": s, "priority": prio, "description": desc, **({"only2024": True} if only2024 else {})})
 
 
 def by_h(nums, prio, env, desc):
@@ -49,6 +51,8 @@ add(144, 1, "[H][CX3]=[CX3]", "alkene H")
 add(145, 1, f"[c;{HC_ONLY}]", "aromatic C")
 add(146, 1, "[H]c", "aromatic H")
 add(147, 2, "[c;R2;$(c(:c)(:c):c)]", "fused aromatic C (naphthalene C9)")
+# styrene's ring C(ipso) 165 (0.000): an alkene C on a ring (stilbene, poly(p-phenylene vinylene)) stands in for the H
+add(165, 3, f"[c;{HC_ONLY};$(c[CX3;!a]=[CX3])]", "aromatic C bearing a vinyl C (styrene C(ipso))", True)
 add(519, 3, "[c;$(c-!@c)]", "biphenyl junction C")
 by_h((148, 149, 515, 516), 2, f"$(*c);{HC_ONLY}", "benzylic C")
 # small rings (OPLS-2020): cyclopropane and cyclobutane carbons have their own CY types; their H stay 140
@@ -82,6 +86,10 @@ by_h((181, 182, 183, 184), 5, f"$(*{ETHO[:-1]};$(O([CX4])[CX4,c])])", "ether alp
 add(185, 5, f"[H][CX4]{ETHO[:-1]};$(O([CX4])[CX4,c])]", "H on ether alpha C")
 add(199, 5, f"c{ETHO[:-1]};$(O(c)[CX4])]", "aryl ether C(O)")
 add(472, 5, f"c{ETHO[:-1]};$(O(c)c)]", "diaryl ether C(O) (the phenyl ester C(ipso))")
+# the 2024 table's own diphenyl ether (OPLS/2020): O 177 with each ring C(O) 199, which balance (the phenyl ester pair
+# 472 / 473 above leaves +0.055 a link); GROMACS's file has no 177, so its typing keeps the pair above
+add(177, 6, f"{ETHO[:-1]};$(O(c)c)]", "diaryl ether O (diphenyl ether, OPLS/2020)", True)
+add(199, 6, f"c{ETHO[:-1]};$(O(c)c)]", "diaryl ether C(O) (as anisole's C(OMe), with diphenyl ether's O 177)", True)
 # vinyl ethers (ethyl vinyl ether): the table has the vinyl C 517/518 but no O; the GROMACS OPLS-AA topologies give the O
 # the acetal O 186, the vinyl CH 518 and the alkoxy C the ether types
 add(186, 7, "[OX2;$(O[CX3]=[CX3]);$(O[CX4]);!$(O[CX3]=[O,S,N])]", "vinyl ether O")
@@ -152,6 +160,7 @@ add(469, 6, "[H][CX4][OX2][CX3](=[OX1])[#6,#1]", "H on ester alkoxy C")
 
 # ---------------------------------------------------------------- carboxylic acids
 add(267, 7, "[CX3](=[OX1])[OX2H1]", "carboxylic acid C")
+add(470, 8, "[CX3](=[OX1])([OX2H1])c", "aryl carboxylic acid C (benzoic acid: the ring keeps benzene's charges)")
 add(269, 7, "[OX1]=[CX3][OX2H1]", "carboxylic acid =O")
 add(268, 7, "[OX2H1][CX3]=[OX1]", "carboxylic acid -OH")
 add(270, 7, "[H][OX2H1][CX3]=[OX1]", "carboxylic acid H")
@@ -234,6 +243,15 @@ add(972, 5, "[H][CX4H1][Cl]", "H on R2CHCl")
 # polychlorinated carbons (CH2Cl2, CHCl3, CHCl2-, CCl3-): the table has no numbers of its own; the GROMACS OPLS-AA
 # topologies (Caleman et al. 2012) give every such carbon RCH2Cl's 152, its H 153 and the Cl 151
 by_h((152, 152, 152, 152), 6, "$(*(Cl)Cl);!$(*[F,Br,I])", "polychlorinated C")
+# OPLS-AA's own increment for the 2024 library: each Cl (-0.200) adds +0.200 to its carbon, as 152 / 973 / 974 do
+# with their H at 0.103: CAPS's caps_ccl2 (R2CCl2, +0.400), caps_chcl2 (+0.297), caps_ccl3 (+0.600), caps_chcl3
+# (+0.497) with the H 972, the Cl 151 (poly(vinylidene chloride) stays neutral)
+add("caps_ccl2", 7, "[CX4H0;$(*(Cl)Cl);!$(*(Cl)(Cl)Cl);!$(*[F,Br,I])]", "R2CCl2 C", True)
+add("caps_chcl2", 7, "[CX4H1;$(*(Cl)Cl);!$(*(Cl)(Cl)Cl);!$(*[F,Br,I])]", "RCHCl2 C", True)
+add("caps_ccl3", 7, "[CX4H0;$(*(Cl)(Cl)Cl);!$(*[F,Br,I])]", "RCCl3 C", True)
+add("caps_chcl3", 7, "[CX4H1;$(*(Cl)(Cl)Cl)]", "CHCl3 C", True)
+add("caps_ch2cl2", 7, "[CX4H2;$(*(Cl)Cl)]", "CH2Cl2 C", True)
+add(972, 7, "[H][CX4H1;$(*(Cl)Cl);!$(*[F,Br,I])]", "H on a polychlorinated CH (as R2CHCl; a CH2 keeps 153)", True)
 add(153, 6, "[H][CX4;$(*(Cl)Cl)]", "H on a polychlorinated C")
 # a carbon with both F and Cl (CHFCl2): the fluoroalkyl C by H count, F 965, H 153, as those topologies have it
 by_h((None, 957, 959, 960), 6, "$(*F);$(*Cl);!$(*(F)F)", "fluorochloro C")
@@ -281,6 +299,10 @@ add(227, 7, "[CX3;$(*(Cl)Cl)]=[CX3]", "chloroalkene C (Cl2C=: 227)")
 # ---------------------------------------------------------------- sulfur
 add(493, 6, "[SX4](=[OX1])(=[OX1])([#6])[#6]", "sulfone S")
 add(494, 6, "[OX1]=[SX4](=[OX1])([#6])[#6]", "sulfone O")
+# the table has no number for the alkyl C of a sulfone; S and its two O add up to zero, so it takes the alkane numbers
+# (dimethyl sulfone: 135, H 140) and the molecule stays neutral. The sulfonamide alpha-C types (CH2 484, H 485) the
+# GROMACS OPLS-AA topologies give sulfolane would leave it +0.54
+by_h((135, 136, 137, 139), 6, "$(*[SX4](=[OX1])(=[OX1])[#6]);!$(*[!#6;!#1;!#16])", "alkyl C on a sulfone S")
 add(488, 7, "c[SX4](=[OX1])(=[OX1])", "ring C on a sulfonyl S (charge 0: the SO2 group is neutral)")
 add(202, 5, "[SX2]([CX4])[CX4]", "sulfide S")
 add(203, 6, "[SX2]([#6])[SX2]", "disulfide S")
@@ -293,10 +315,6 @@ add(495, 7, "[SX3](=[OX1])(c)[CX4]", "alkyl aryl sulfoxide S")
 add(497, 7, "[OX1]=[SX3](c)[CX4]", "alkyl aryl sulfoxide O")
 add(489, 7, "c[SX3](=[OX1])[CX4]", "ring C on a sulfoxide S")
 by_h((498, 499, None, None), 6, "$(*[SX3]=[OX1])", "C on a sulfoxide S")
-# the table has no number for the alkyl C of a sulfone; the GROMACS OPLS-AA topologies (Caleman et al. 2012, sulfolane)
-# give it the sulfonamide alpha-C types, CH2 484 with H 485
-add(484, 6, "[CX4H2;$(*[SX4](=[OX1])(=[OX1])[#6])]", "C alpha to a sulfone S (CH2)")
-add(485, 6, "[H][CX4H2][SX4](=[OX1])(=[OX1])[#6]", "H on C alpha to a sulfone S")
 by_h((213, 214, 215, 216), 6, "$(*[SX2][SX2])", "C on a disulfide S")
 by_h((None, 206, 207, 208), 5, "$(*[SX2H1])", "C on a thiol S")
 
@@ -384,12 +402,34 @@ add(563, 4, "[H][cH1;$(c1[nX2]cc[nH]1)]", "imidazole H2")
 add(564, 4, "[H][cH1;$(c1[nX2]c[nH]c1)]", "imidazole H4")
 add(565, 4, "[H][cH1;$(c1[nH]c[nX2]c1)]", "imidazole H5")
 # urea O=C(NH2)2 (247-250; Duffy et al., Isr. J. Chem. 33, 323 (1993)): above the amide rules
-UREA = "[CX3;$(C(=[OX1])([NX3H2])[NX3H2])]"
+# and N-phenylurea (1033 N, 1034 ipso C, the NH H 250): an NH-aryl side carries +0.124, as an NH2 side does, so each N
+# may be NH2 or NH-aryl (an MDI polyurea, Ar-NH-CO-NH-Ar, is typed by the table); an N-alkyl urea has no number
+UN = "[NX3;$([NH2]),$([NH1]c)]"
+UREA = f"[CX3;$(C(=[OX1])({UN}){UN})]"
 add(247, 9, UREA, "urea C")
 add(248, 9, f"[OX1]={UREA}", "urea O")
 add(249, 9, f"[NX3H2]{UREA}", "urea N")
 add(250, 9, f"[H][NX3H2]{UREA}", "urea H")
+add(1033, 9, f"[NX3H1;$(*c)]{UREA}", "N-aryl urea N (N-phenylurea)")
+add(250, 9, f"[H][NX3H1;$(*c)]{UREA}", "H on an N-aryl urea N")
+add(1034, 9, f"c[NX3H1]{UREA}", "ring C on an N-aryl urea N")
+# imides (251-259): the NH imide of alkyl (or H) acyl groups; each acyl side's alkyl C takes 256-259 by H count with
+# its H 140 (+0.06 a group), the C=O 252 / 253, N 251, H 254, an H on the carbonyl C (formimide) 255. N-substituted
+# and aryl imides (phthalimides, polyimides) have no numbers
+IMC = "[CX3;$(*(=[OX1])[NX3H1][CX3]=[OX1]);$(*[CX4,#1]);!$(*[OX2]);!$(*([NX3])[NX3])]"
+IMN = f"[NX3H1;$(*({IMC}){IMC})]"
+add(252, 8, f"[CX3;$(*(=[OX1]){IMN})]", "imide C=O")
+add(253, 8, f"[OX1]=[CX3]{IMN}", "imide =O")
+add(251, 8, IMN, "imide N")
+add(254, 8, f"[H]{IMN}", "H on imide N")
+add(255, 8, f"[H][CX3]{IMN}", "H on an imide carbonyl C (formimide)")
+by_h((256, 257, 258, 259), 8, f"$(*[CX3](=[OX1]){IMN})", "alkyl C on an imide carbonyl")
+add(140, 8, f"[H][CX4][CX3](=[OX1]){IMN}", "H on that C")
 add(670, 7, "[CX4H3;$(*c1ncccc1)]", "CH3 on pyridine C2")
+add(671, 7, "[CX4H2;$(*c1ncccc1)]", "CH2 on pyridine C2 (2-ethylpyridine)")
+# 670 / 671 carry the H they replace (CH3 -0.168 + 3 x 0.06, CH2 -0.108 + 2 x 0.06: both +0.012, pyridine's H2); a CH
+# on C2 (poly(2-vinylpyridine)) by the same increment: CAPS's caps_pyr2ch, -0.048 + 0.06
+add("caps_pyr2ch", 7, "[CX4H1;$(*c1ncccc1)]", "CH on pyridine C2 (2-isopropylpyridine, poly(2-vinylpyridine))", True)
 add(672, 7, "[CX4H3;$(*c1cnccc1)]", "CH3 on pyridine C3")
 add(674, 7, "[CX4H3;$(*c1ccncc1),$(*c1ncncc1)]", "CH3 on pyridine C4 / pyrimidine C4")
 add(530, 8, "[n;$(n1cnccc1)]", "pyrimidine N")
@@ -444,7 +484,8 @@ def rules_for(ff_json):
     """the rules whose numbers the force field has (the 2008 table lacks some of the 2024 numbers)"""
     ff = json.load(open(ff_json))
     have = {t["name"].split("_b")[0] for t in ff["atom_types"]}
-    return [r for r in R if r["type"] in have], sorted({r["type"] for r in R if r["type"] not in have}, key=int)
+    keep = [{k: v for k, v in r.items() if k != "only2024"} for r in R if r["type"] in have]
+    return keep, sorted({r["type"] for r in R if r["type"] not in have}, key=lambda t: (not t.isdigit(), int(t) if t.isdigit() else 0, t))
 
 
 if __name__ == "__main__":
@@ -457,7 +498,7 @@ if __name__ == "__main__":
         doc = {"format": "caps-typing", "version": 1, "forcefield": label,
                "description": "CAPS rules giving OPLS-AA type numbers by chemical group, with the carbons and hydrogens that balance each group's "
                               "charge (Jorgensen, Maxwell & Tirado-Rives, J. Am. Chem. Soc. 118, 11225 (1996)). Environments the table has no "
-                              "number for (siloxanes, aryl carbonates, CCl2 carbons, substituted ureas, imides, carbamates) are left untyped and reported. "
+                              "number for (siloxanes, aryl carbonates, N-alkyl ureas, N-substituted and aryl imides, carbamates) are left untyped and reported. "
                               "Among matching rules the highest priority wins.",
                "rules": rules}
         p = os.path.join(out, ff + ".typing.json")
