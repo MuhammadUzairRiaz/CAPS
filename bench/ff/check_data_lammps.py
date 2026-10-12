@@ -14,7 +14,7 @@ its Ewald sum (kspace_style ewald): both converge to the same electrostatics; on
 usage: check_data_lammps.py [--only substring] [--keep DIR] [--pme]
 Needs LMP (default ~/lammps/build-class2/lmp) with CLASS2, MOLECULE, EXTRA-MOLECULE, EXTRA-PAIR, MANYBODY and MOFFF.
 """
-import math, os, re, subprocess, sys, tempfile
+import collections, math, os, re, subprocess, sys, tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
@@ -144,6 +144,10 @@ CASES = [
     ("TraPPE-UA: dodecane, 2-methylpentane (opls torsions)", ("smiles", "CCCCCCCCCCCC.CC(C)CCC"), "trappe-ua", "keep", "rules"),
     ("TraPPE-UA (foyer): butanol, 2-propanol, tert-butanol, 2,3-dimethylbutane, neopentane (RB torsions as fourier)",
      ("smiles", "CCCCO.CC(C)O.CC(C)(C)O.CC(C)C(C)C.CC(C)(C)C"), "trappe-ua-foyer", "types", "rules"),
+    ("TraPPE-UA (TraPPE database): DME alone (1-4 Coulomb x 0.5 for every molecule)", ("smiles", "COCCOC"), "trappe-ua-umn", "types", "rules"),
+    ("TraPPE-UA (TraPPE database): DME with dimethyl ether (1-4 Coulomb x 0.5 for DME only: a sub-style per part)", ("smiles", "COCCOC.COC"), "trappe-ua-umn", "types", "rules"),
+    ("TraPPE-UA (TraPPE database): hexane, DME (1-4 Coulomb x 0.5), methyl methacrylate, ethanol, propionitrile, cis-2-butene", ("smiles", "CCCCCC.COCCOC.CC(=C)C(=O)OC.CCO.CCC#N.C/C=C\\C"),
+     "trappe-ua-umn", "types", "rules"),
     ("TraPPE-UA alkanes (moltemplate): dodecane", ("smiles", "CCCCCCCCCCCC"), "trappe1998-moltemplate", "keep", "rules"),
     ("TraPPE-EH: benzene, naphthalene", ("smiles", "c1ccccc1.c1ccc2ccccc2c1"), "trappe-eh", "keep", "rules"),
     ("Miscellaneous set: HFA-134a, methanol, chloroform, isopentane", ("smiles", "FCC(F)(F)F.CO.ClC(Cl)Cl.CCC(C)C"), "misc", "types", "rules"),
@@ -476,6 +480,39 @@ def lammps_hbond_offset(d):
 DSF = re.compile(r"(?:^|\s)(?:lj/cut/)?coul/dsf (\S+) (\S+)")
 LONG = re.compile(r"(?:^|\s)(?:lj/cut/|lj/class2/)?coul/long (\S+)")
 
+def dsf_self_repeat(d):
+    """LAMMPS's coul/dsf adds each atom's self energy -(e_shift/2 + a/sqrt(pi)) q^2 in every coul/dsf sub-style
+    whose pairs it takes part in: with a sub-style per part (force fields or molecules with their own 1-4 scaling),
+    an atom of a type in two of them is counted twice. A constant (no force); this gives LAMMPS's surplus (kcal/mol)."""
+    inp = open(os.path.join(d, "case.in")).read()
+    ps = next((l for l in inp.splitlines() if l.startswith("pair_style")), "")
+    m = re.findall(r"coul/dsf\s+(\S+)\s+(\S+)", ps)
+    if len(m) < 2:
+        return 0.0
+    a, rc = float(m[0][0]), float(m[0][1])
+    subs = collections.defaultdict(set)   # type -> the coul/dsf sub-styles it takes part in
+    for l in inp.splitlines():
+        w = l.split()
+        if len(w) >= 5 and w[0] == "pair_coeff" and w[3] == "coul/dsf":
+            subs[int(w[1])].add(w[4])
+            subs[int(w[2])].add(w[4])
+    q, ty, sec = {}, {}, None
+    for l in open(os.path.join(d, "case.data")):
+        w = l.split("#")[0].split()
+        if l.startswith("Atoms"):
+            sec = "a"
+        elif l[:1].isalpha():
+            sec = None
+        elif sec == "a" and len(w) >= 7:
+            q[int(w[0])], ty[int(w[0])] = float(w[3]), int(w[2])
+    # LAMMPS's own shifts (pair_coul_dsf.cpp init_style): f_shift = -(erfc(a rc)/rc^2 + 2a/sqrt(pi) exp(-a^2 rc^2)/rc),
+    # e_shift = erfc(a rc)/rc - f_shift rc
+    f_shift = -(math.erfc(a * rc) / rc ** 2 + 2 * a / math.sqrt(math.pi) * math.exp(-a * a * rc * rc) / rc)
+    e_shift = math.erfc(a * rc) / rc - f_shift * rc
+    e1 = -(e_shift / 2 + a / math.sqrt(math.pi)) * 332.06371
+    return sum(e1 * q[i] ** 2 * (len(subs[ty[i]]) - 1) for i in q if len(subs[ty[i]]) > 1)
+
+
 def erfc_offset(d, pairs, g_ewald):
     """LAMMPS's coul/dsf and coul/long styles (the latter with pair_modify table 0) take erfc from Abramowitz and Stegun
     7.1.26 (|error| <= 1.5e-7), CAPS the exact erfc. This gives LAMMPS's Coulomb energy minus the exact one (kcal/mol,
@@ -605,6 +642,7 @@ for case in CASES:
         lm["dihedral"] += float(c0.group(1))
     # LAMMPS's coul/dsf and coul/long real-space energy with the exact erfc, as CAPS's
     lm["coulomb"] -= erfc_offset(d, lpairs, lg)
+    lm["coulomb"] -= dsf_self_repeat(d)
     # with PME both codes reach the Ewald limit only to their discretisation (CAPS's grid, LAMMPS's k-space cut-off; the
     # real-space erfc is exact on both sides after erfc_offset): the Coulomb term is compared to 1e-3 kcal/mol absolute there
     de = max(abs(ce[k] - lm[k]) / (max(1.0, abs(ce[k])) if not (PME and k == "coulomb") else 100.0) for k in ce)

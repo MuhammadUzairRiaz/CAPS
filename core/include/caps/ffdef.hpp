@@ -107,6 +107,11 @@ struct FFDef {
   // With it: SMARTS of centres whose hydrogen ends take one torsion, the first hydrogen ("torsion_single_h"; CHARMM19
   // lists one on an amide NH2, every H of an ammonium or guanidinium)
   std::vector<std::string> torsion_single_h;
+  // Molecules whose own model scales 1-4 Coulomb otherwise ("coul14_rules": [{"in_molecule": [SMARTS ...], "coul14": 0.5}]:
+  // TraPPE's acrylates, glycol ethers, diols and disulfides count 1-4 Coulomb x 0.5 where its other models exclude it):
+  // the 1-4 pairs of a molecule with any of the patterns take that Coulomb scale
+  struct Coul14Rule { std::vector<std::string> in_molecule; double coul14 = 0; std::string comment; };
+  std::vector<Coul14Rule> coul14_rules;
   // Opt-in (the Field step, caps_field_set_options): a dihedral with no parameters whose four atoms close a three-membered
   // ring (i bonded to k, or j to l: an epoxide, aziridine or cyclopropane) is a zero term and counted, not missing. What
   // LAMMPS does with a moltemplate file that has no rule for it; a modelling choice, said in the report.

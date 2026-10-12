@@ -77,6 +77,8 @@ CASES = [
     ("GAFF 1.81 (gaff.dat) ester, epoxide, amide, thioether (vacuum)", ("smiles", "CCOC(=O)C.C1CO1.CC(=O)NC.CSC"), "gaff-1.81-ambertools", "gasteiger", []),
     ("GAFF2 2.11 (gaff211.dat) isoprene, styrene (vacuum)", ("smiles", "CC=C(C)CC.C=Cc1ccccc1"), "gaff2-2.11-ambertools", "gasteiger", []),
     ("CHARMM36 (toppar) peptide GAFKW (vacuum; CMAP not represented)", ("peptide", "GAFKW"), "charmm36-prot-toppar", "gasteiger", []),
+    ("TraPPE-UA (TraPPE database) hexane, DME, methyl methacrylate, ethanol, cis-2-butene (vacuum)", ("smiles", "CCCCCC.COCCOC.CC(=C)C(=O)OC.CCO.C/C=C\\C"),
+     "trappe-ua-umn", "types", []),
     ("TraPPE-UA (foyer) butanol, 2-propanol, 2,3-dimethylbutane (vacuum)", ("smiles", "CCCCO.CC(C)O.CC(C)C(C)C"), "trappe-ua-foyer", "types", []),
     ("GROMOS 54A7 (building blocks) peptide GAFKWDR (vacuum)", ("peptide", "GAFKWDR"), "gromos54a7-gromacs", "keep", []),
     ("GROMOS 54A7 (building blocks) water, methanol, DMSO, chloroform, urea, TFE (vacuum)", ("smiles", "O.CO.CS(C)=O.ClC(Cl)Cl.NC(N)=O.OCC(F)(F)F"),
