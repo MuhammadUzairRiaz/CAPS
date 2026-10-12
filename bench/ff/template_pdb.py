@@ -44,6 +44,8 @@ def parse_sf(path):
         elif sec == "mol":
             if head == "CONNECT" and len(w) >= 4 and w[2] == ">":
                 cur["connect"][w[1]] = w[3:]
+            elif head == "IMPROPER" and any(a[:1] in "-+" for a in w[1:5]):   # e.g. -N: an atom of the neighbouring residue
+                cur["links"] = True
             elif len(w) >= 2 and w[1] in types:   # atom lines name a DL_FIELD atom type; other lines are directives
                 cur["atoms"].append((w[0], w[1]))
     return types, keys, mols
@@ -146,7 +148,7 @@ def candidates(sf, max_atoms=40):
         text = (name + " " + m["remark"]).lower()
         if "water" in text or "link" in text or "(link" in text or name not in keys: continue
         if not (3 <= len(m["atoms"]) <= max_atoms) or not m["connect"]: continue
-        if any(b not in [a for a, _ in m["atoms"]] for js in m["connect"].values() for b in js): continue   # links to neighbours
+        if any(b not in [a for a, _ in m["atoms"]] for js in m["connect"].values() for b in js) or m.get("links"): continue   # links to neighbours
         out.append(name)
     return out
 
