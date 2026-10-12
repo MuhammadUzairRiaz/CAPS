@@ -95,6 +95,42 @@ void List::build(const std::vector<double>& x, const Cell& cell_in, double rl, c
       }
     for (size_t l = 1; l < 4; ++l) wlo[c] = std::min(wlo[c], frs[4 * c + l][2]), whi[c] = std::max(whi[c], frs[4 * c + l][2]);
   }
+  // cluster origins (bounding-box centres), positions relative to them in single precision (the 16 atom pairs of a
+  // candidate cluster pair are checked four at a time) and each cluster's real lanes
+  org.resize(3 * nclusters);
+  for (size_t c = 0; c < nclusters; ++c)
+    for (int k = 0; k < 3; ++k) org[3 * c + k] = 0.5 * (blo[c][k] + bhi[c][k]);
+  std::vector<float> bx(ns), by(ns), bz(ns);
+  std::vector<uint8_t> real(nclusters, 0);
+  for (size_t s = 0; s < ns; ++s) {
+    const double* o = &org[3 * (s / 4)];
+    bx[s] = float(cw[s][0] - o[0]), by[s] = float(cw[s][1] - o[1]), bz[s] = float(cw[s][2] - o[2]);
+    if (perm[s] != kPad) real[s / 4] |= uint8_t(1u << (s % 4));
+  }
+  // excluded atom pairs by cluster pair: for each i cluster, its j clusters (sorted) with a mask of the excluded pairs,
+  // so a candidate costs one look-up, not one per atom pair
+  std::vector<size_t> xfirst(nclusters + 1, 0);
+  std::vector<std::pair<uint32_t, uint16_t>> xm;
+  {
+    std::vector<std::pair<uint32_t, uint16_t>> tmp;
+    for (size_t c = 0; c < nclusters; ++c) {
+      tmp.clear();
+      for (int a = 0; a < 4; ++a) {
+        const uint32_t ai = perm[4 * c + size_t(a)];
+        if (ai == kPad) continue;
+        for (uint32_t aj : excluded[ai]) {
+          const uint32_t sj = iperm[aj];
+          tmp.push_back({sj / 4, uint16_t(1u << (4 * a + int(sj % 4)))});
+        }
+      }
+      std::sort(tmp.begin(), tmp.end());
+      for (const auto& e : tmp) {
+        if (xm.size() > xfirst[c] && xm.back().first == e.first) xm.back().second |= e.second;
+        else xm.push_back(e);
+      }
+      xfirst[c + 1] = xm.size();
+    }
+  }
   // reach in columns and in images along c; image codes
   const int ru = cell.periodic[0] ? int(std::floor(rl * nu / w[0])) + 1 : nu;
   const int rv = cell.periodic[1] ? int(std::floor(rl * nv / w[1])) + 1 : nv;
@@ -113,12 +149,14 @@ void List::build(const std::vector<double>& x, const Cell& cell_in, double rl, c
     for (int b = 0; b < span[1]; ++b)
       for (int c = 0; c < span[2]; ++c) qint.insert(qint.end(), {qlo[0] + a, qlo[1] + b, qlo[2] + c});
   const double rl2 = rl * rl;
+  const simd4::F4 rl2f = simd4::set1(float(rl2 * (1 + 1e-5)));
   const bool skipping = !skip_type.empty();
   // the cluster pairs of every i cluster, threads over contiguous ranges
   const int nth = pool.size();
   std::vector<std::vector<Entry>> ve(nth);
   std::vector<uint32_t> count(nclusters);
   pool.run(nclusters, [&](int t, size_t cb, size_t ce) {
+    using namespace simd4;
     auto& E = ve[t];
     E.clear();
     for (size_t ci = cb; ci < ce; ++ci) {
@@ -133,13 +171,18 @@ void List::build(const std::vector<double>& x, const Cell& cell_in, double rl, c
           if (cell.periodic[1]) { qb = int(std::floor(double(V) / nv)); V -= qb * nv; }
           else if (V < 0 || V >= nv) continue;
           const size_t cc = size_t(U) * nv + V;
-          for (int qc = -rq; qc <= rq; ++qc) {
+          // images along c whose range of c meets this cluster's, ± the list radius
+          const int qc0 = cell.periodic[2] ? std::max(-rq, int(std::floor(wlo[ci] - dw))) : 0;
+          const int qc1 = cell.periodic[2] ? std::min(rq, int(std::floor(whi[ci] + dw))) : 0;
+          for (int qc = qc0; qc <= qc1; ++qc) {
             const Vec3 S = cell.a * double(qa) + cell.b * double(qb) + cell.c * double(qc);
             const bool zero = qa == 0 && qb == 0 && qc == 0;
             const bool positive = qa > 0 || (qa == 0 && (qb > 0 || (qb == 0 && qc > 0)));
             const uint16_t code = uint16_t(((qa - qlo[0]) * span[1] + (qb - qlo[1])) * span[2] + (qc - qlo[2]));
-            for (size_t cj = ccl[cc]; cj < ccl[cc + 1]; ++cj) {
-              if (wlo[cj] + qc > whi[ci] + dw || whi[cj] + qc < wlo[ci] - dw) continue;
+            // a column's clusters are in order of c (their low and high ends both rising): the ones in range by bisection
+            const double lo = wlo[ci] - dw - qc, hi = whi[ci] + dw - qc;
+            const size_t c0 = size_t(std::lower_bound(whi.begin() + std::ptrdiff_t(ccl[cc]), whi.begin() + std::ptrdiff_t(ccl[cc + 1]), lo) - whi.begin());
+            for (size_t cj = c0; cj < ccl[cc + 1] && wlo[cj] <= hi; ++cj) {
               // half list: each cluster pair from one side (by the parity of ci + cj), a cluster with itself once per ± image
               if (cj != ci) {
                 if ((cj > ci) != (((ci + cj) & 1) == 0)) continue;
@@ -148,32 +191,46 @@ void List::build(const std::vector<double>& x, const Cell& cell_in, double rl, c
               }
               double d2 = 0;
               for (int k = 0; k < 3; ++k) {
-                const double g = std::max({0.0, blo[cj][k] + S[k] - bhi[ci][k], blo[ci][k] - (bhi[cj][k] + S[k])});
+                const double g1 = blo[cj][k] + S[k] - bhi[ci][k], g2 = blo[ci][k] - (bhi[cj][k] + S[k]);
+                const double g = g1 > 0 ? g1 : g2 > 0 ? g2 : 0.0;
                 d2 += g * g;
               }
               if (d2 >= rl2) continue;
+              // the atom pairs within the list radius (a hair wider in single precision, so rounding never drops one)
+              const double* oi = &org[3 * ci];
+              const double* oj = &org[3 * cj];
+              const F4 xj = load(&bx[4 * cj]) + set1(float(S[0] + oj[0] - oi[0])), yj = load(&by[4 * cj]) + set1(float(S[1] + oj[1] - oi[1])),
+                       zj = load(&bz[4 * cj]) + set1(float(S[2] + oj[2] - oi[2]));
               unsigned mask = 0;
               for (int a = 0; a < 4; ++a) {
-                const uint32_t ai = perm[4 * ci + a];
-                if (ai == kPad) continue;
-                const auto& ex = excluded[ai];
-                const uint32_t exlo = ex.empty() ? 1 : ex.front(), exhi = ex.empty() ? 0 : ex.back();
-                for (int l = 0; l < 4; ++l) {
-                  const uint32_t aj = perm[4 * cj + l];
-                  if (aj == kPad) continue;
-                  if (cj == ci && zero && l <= a) continue;
-                  const Vec3 d = cw[4 * cj + l] + S - cw[4 * ci + a];
-                  if (dot(d, d) >= rl2) continue;
-                  // 1-2, 1-3 and 1-4 partners are left out at their nearest image only (as the atom pair list)
-                  if (aj != ai && aj >= exlo && aj <= exhi && std::binary_search(ex.begin(), ex.end(), aj)) {
-                    Vec3 m = frs[4 * cj + l] - frs[4 * ci + a];
+                if (!((real[ci] >> a) & 1u)) continue;
+                const size_t sa = 4 * ci + size_t(a);
+                const F4 dx = xj - set1(bx[sa]), dy = yj - set1(by[sa]), dz = zj - set1(bz[sa]);
+                unsigned row = bits(fma(dx, dx, fma(dy, dy, dz * dz)) < rl2f) & real[cj];
+                if (cj == ci && zero) row &= (0xFu << (a + 1)) & 0xFu;   // a cluster with itself: each pair once
+                if (!row) continue;
+                if (skipping)
+                  for (int l = 0; l < 4; ++l)
+                    if (((row >> l) & 1u) && skip_type[size_t(type_index[perm[sa]]) * ntypes + size_t(type_index[perm[4 * cj + l]])]) row &= ~(1u << l);
+                mask |= row << (4 * a);
+              }
+              // 1-2, 1-3 and 1-4 partners are left out at their nearest image only (as the atom pair list)
+              if (mask) {
+                const auto xb = xm.begin() + std::ptrdiff_t(xfirst[ci]), xe = xm.begin() + std::ptrdiff_t(xfirst[ci + 1]);
+                const auto it = std::lower_bound(xb, xe, std::pair<uint32_t, uint16_t>{uint32_t(cj), 0});
+                if (it != xe && it->first == cj && (it->second & mask)) {
+                  const unsigned ex = it->second & mask;
+                  for (int b = 0; b < 16; ++b) {
+                    if (!((ex >> b) & 1u)) continue;
+                    const size_t sa = 4 * ci + size_t(b / 4), sb = 4 * cj + size_t(b % 4);
+                    if (perm[sa] == perm[sb]) continue;   // an atom and its own image
+                    const Vec3 d = cw[sb] + S - cw[sa];
+                    Vec3 m = frs[sb] - frs[sa];
                     for (int k = 0; k < 3; ++k)
                       if (cell.periodic[k]) m[k] -= std::round(m[k]);
                     const Vec3 dm = cell.a * m[0] + cell.b * m[1] + cell.c * m[2];
-                    if (dot(d, d) <= dot(dm, dm) + 1e-6) continue;
+                    if (dot(d, d) <= dot(dm, dm) + 1e-6) mask &= ~(1u << b);
                   }
-                  if (skipping && skip_type[size_t(type_index[ai]) * ntypes + size_t(type_index[aj])]) continue;
-                  mask |= 1u << (4 * a + l);
                 }
               }
               if (mask) E.push_back({uint32_t(cj), code, uint16_t(mask)});
@@ -221,9 +278,6 @@ void List::build(const std::vector<double>& x, const Cell& cell_in, double rl, c
   X.assign(ns, 0.0f);
   Y.assign(ns, 0.0f);
   Z.assign(ns, 0.0f);
-  org.resize(3 * nclusters);
-  for (size_t c = 0; c < nclusters; ++c)
-    for (int k = 0; k < 3; ++k) org[3 * c + k] = 0.5 * (blo[c][k] + bhi[c][k]);
   const size_t ne = entries.size();
   tb.resize(size_t(nth));
   te.resize(size_t(nth));
