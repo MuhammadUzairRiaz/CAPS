@@ -56,6 +56,10 @@ def open_atoms(m):
             out[a] = 4 - len(nbs[a])
         elif element(t) == "O" and re.search(r"ether|hydroxyl|alcohol|glycosid|sugar", tl) and len(nbs[a]) < 2:
             out[a] = 2 - len(nbs[a])
+        elif element(t) == "O" and re.match(r"ol_", tl) and len(nbs[a]) < 2:
+            out[a] = 2 - len(nbs[a])   # a nucleotide's O3' linking to the next phosphate
+        elif element(t) == "P" and re.search(r"phosph|po4", tl) and len(nbs[a]) < 4:
+            out[a] = 4 - len(nbs[a])   # a nucleotide's phosphate linking to the previous sugar: capped as a methyl ester
         elif element(t) == "S" and re.search(r"disulph|disulf", tl) and len(nbs[a]) < 2:
             out[a] = 2 - len(nbs[a])   # half a disulfide bridge
         elif element(t) == "S" and len(nbs[a]) == 3 and all(element(dict(m["atoms"]).get(b, "")) == "O" for b in nbs[a]):
@@ -117,7 +121,14 @@ def write_mol2(path, name, m, caps=None, sugar=False):
     (through an O when the open atom is not itself an O) instead"""
     m = {"atoms": list(m["atoms"]), "connect": {a: list(js) for a, js in m["connect"].items()}}
     for a, n in (caps or {}).items():
-        if sugar:
+        if element(dict(m["atoms"])[a]) == "P":   # O-CH3
+            pre = f"CAP{a}_"
+            m["atoms"] += [(pre + "O", "__cap_O"), (pre + "C", "__cap_C")] + [(pre + f"H{k}", "__cap_H") for k in range(3)]
+            m["connect"][pre + "O"] = [pre + "C"]
+            m["connect"][pre + "C"] = [pre + f"H{k}" for k in range(3)]
+            m["connect"].setdefault(a, []).append(pre + "O")
+            n -= 1
+        elif sugar:
             pre = f"CAP{a}_"
             for lab, el, js in OXANYL:
                 m["atoms"].append((pre + lab, "__cap_" + el))
