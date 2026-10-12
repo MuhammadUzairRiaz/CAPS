@@ -435,8 +435,47 @@ def lammps_hbond_offset(d):
                 wv[3] += dm[0] * fD[1]; wv[4] += dm[0] * fD[2]; wv[5] += dm[1] * fD[2]
     return off, wv
 
+DSF = re.compile(r"(?:^|\s)(?:lj/cut/)?coul/dsf (\S+) (\S+)")
+
+def dsf_erfc_offset(d, pairs):
+    """LAMMPS's coul/dsf and lj/cut/coul/dsf take erfc from Abramowitz and Stegun 7.1.26 (|error| <= 1.5e-7), CAPS the
+    exact erfc. This gives LAMMPS's Coulomb energy minus the exact one (kcal/mol, or eV in metal units) over the pairs of
+    its own neighbour list (pairs: atom ids and distance, from the run): q_i q_j [erfc_AS(ar) - erfc(ar)] / r, the same
+    for a pair at full weight and an excluded one (LAMMPS takes the whole erfc term there and removes the bare 1/r)."""
+    inp = open(os.path.join(d, "case.in")).read()
+    m = DSF.search(next((l for l in inp.splitlines() if l.startswith("pair_style")), ""))
+    if not m or not pairs:
+        return 0.0
+    a, rc = float(m.group(1)), float(m.group(2))
+    diel = re.search(r"^dielectric\s+(\S+)", inp, re.M)
+    qqrd2e = (14.399645 if re.search(r"^units\s+metal", inp, re.M) else 332.06371) / (float(diel.group(1)) if diel else 1.0)
+    q, sec = {}, None
+    for l in open(os.path.join(d, "case.data")):
+        w = l.split("#")[0].split()
+        if l.startswith("Atoms"):
+            sec = "a"
+        elif l[:1].isalpha():
+            sec = None
+        elif sec == "a" and len(w) >= 7:
+            q[int(w[0])] = float(w[3])
+    off = 0.0
+    for i, j, r in pairs:
+        if r < rc and q[i] and q[j]:
+            t = 1 / (1 + 0.3275911 * a * r)
+            erfc_as = t * (0.254829592 + t * (-0.284496736 + t * (1.421413741 + t * (-1.453152027 + t * 1.061405429)))) * math.exp(-a * a * r * r)
+            off += q[i] * q[j] * (erfc_as - math.erfc(a * r)) / r
+    return qqrd2e * off
+
 def lammps(infile, dump):
-    txt = open(infile).read().replace("run 0", f"run 0\nwrite_dump all custom {dump} id fx fy fz modify sort id format float %.10f")
+    txt = open(infile).read()
+    # coul/dsf: every pair of LAMMPS's list with its distance, for its erfc (dsf_erfc_offset); the core-shell styles
+    # (born/coul/dsf/cs) keep theirs, as their core-shell pairs sit at r = 1e-10 A
+    pdump = dump + ".pairs"
+    dsf = DSF.search(next((l for l in txt.splitlines() if l.startswith("pair_style")), "")) is not None
+    if dsf:
+        txt = txt.replace("run 0", f"compute caps_pp all property/local patom1 patom2\ncompute caps_pd all pair/local dist\n"
+                          f"dump caps_pl all local 1 {pdump} c_caps_pp[1] c_caps_pp[2] c_caps_pd\ndump_modify caps_pl format float %.12g\nrun 0", 1)
+    txt = txt.replace("run 0", f"run 0\nwrite_dump all custom {dump} id fx fy fz modify sort id format float %.10f")
     # virial pressure tensor (no kinetic part) and the volume, for the virial tensor W = P V / nktv2p
     txt = re.sub(r"thermo_style custom (.*)", r"compute pv all pressure NULL virial\nthermo_style custom \1 vol c_pv[1] c_pv[2] c_pv[3] c_pv[4] c_pv[5] c_pv[6]", txt)
     with open(infile, "w") as f:
@@ -453,7 +492,13 @@ def lammps(infile, dump):
         w = l.split()
         if len(w) == 4:
             f[int(w[0])] = tuple(map(float, w[1:]))
-    return e, f
+    pairs = []
+    if dsf:
+        for l in open(pdump).read().split("ITEM: ENTRIES")[1].splitlines()[1:]:
+            w = l.split()
+            if len(w) == 3:
+                pairs.append((int(w[0]), int(w[1]), float(w[2])))
+    return e, f, pairs
 
 
 rows, fails = [], 0
@@ -501,7 +546,7 @@ for case in CASES:
     ce = dict(zip(["bond", "angle", "dihedral", "improper", "vdw", "coulomb"], map(float, m.groups())))
     cf = {int(w[0]): tuple(map(float, w[1:4])) for w in (l.split() for l in open(os.path.join(d, "caps_f.txt"))) if len(w) == 4}
     try:
-        le, lf = lammps(os.path.join(d, "case.in"), os.path.join(d, "f.dump"))
+        le, lf, lpairs = lammps(os.path.join(d, "case.in"), os.path.join(d, "f.dump"))
     except Exception as ex:
         rows.append((label, "LAMMPS failed: " + str(ex), "", ""))
         fails += 1
@@ -512,6 +557,8 @@ for case in CASES:
     c0 = re.search(r"the dihedral energy lower by (\S+) kcal/mol", r.stdout)
     if c0:
         lm["dihedral"] += float(c0.group(1))
+    # LAMMPS's coul/dsf energy with the exact erfc, as CAPS's
+    lm["coulomb"] -= dsf_erfc_offset(d, lpairs)
     # with PME both codes reach the Ewald limit only to their discretisation and the real-space erfc approximation
     # (Abramowitz–Stegun, 1.5e-7 per pair, as LAMMPS): the Coulomb term is compared to 1e-3 kcal/mol absolute there
     de = max(abs(ce[k] - lm[k]) / (max(1.0, abs(ce[k])) if not (PME and k == "coulomb") else 100.0) for k in ce)
