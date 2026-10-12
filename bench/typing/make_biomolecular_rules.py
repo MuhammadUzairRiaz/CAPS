@@ -75,9 +75,54 @@ def amber():
     R.add("S1", 1, "[SX2][SX2]", "disulfide sulfur")
     R.add("S2", 1, "[SX2H1]", "thiol sulfur")
     R.add("P", 0, "[PX4]", "phosphate phosphorus")
+    R.add("SSX", 3, "[SX3](=[OX1])([#6])[#6]", "sulfoxide S (DMSO)")
+    R.add("OSX", 3, "[OX1]=[SX3]([#6])[#6]", "sulfoxide O (DMSO)")
+    # a sulfate ester's SO3 (a sulfated sugar): S1 with OC on its three terminal O, as the library types it
+    R.add("S1", 3, "[SX4](~[OX1])(~[OX1])(~[OX1])[OX2]", "sulfate ester S")
+    R.add("OC", 4, "[OX1]~[SX4](~[OX1])(~[OX1])[OX2]", "sulfate ester terminal O")
     water_ions(R)
     R.add("Na+", 0, "[Na]", "sodium ion"); R.add("Cl-", 0, "[Cl-;X0]", "chloride ion"); R.add("Ca2+", 0, "[Ca]", "calcium ion")
+    glycam(R)
     return R
+
+
+def sugar_ring_smarts():
+    """an sp3 C of a carbohydrate ring: a five- or six-membered ring of carbons and one O, the C carrying an exocyclic O
+    or N or next (in the ring) to a C that does (tetrahydrofuran and tetrahydropyran do not count)"""
+    rings = []
+    for n in (6, 5):
+        seq = ["C"] * (n - 1) + ["O"]
+        for k in range(n - 1):   # start at each carbon
+            r = seq[k:] + seq[:k]
+            rings.append("$(" + r[0].replace("C", "[CX4;R]") + "1" + "".join("@" + ("[CX4;R]" if x == "C" else "[OX2;R]") for x in r[1:]) + "1)")
+    return "[CX4;" + ",".join(rings) + ";$(*!@[#8,#7]),$(*@[CX4]!@[#8,#7])]"
+
+
+def glycam(R):
+    """GLYCAM types for carbohydrates (Kirschner et al., J. Comput. Chem. 29, 622 (2008)), as the library types every
+    sugar: the sp3 carbons of the ring and of anything within three bonds of it (side chains, N- and O-acetyl, lactyl)
+    Cg with Hc on them where no O or N is attached (H1 / H2 otherwise, AMBER's own); their hydroxyl Oh / Ho, ether and
+    ester O Os, amide N Ng; a sialic acid's ring C carrying the carboxylate Cy, its ring O Oy"""
+    SC = sugar_ring_smarts()
+    CTX = f"$({SC}),$(*~{SC}),$(*~*~{SC}),$(*~*~*~{SC})"
+    # the carbons of an amino acid carrying a sugar (glycosylated Ser, Thr, Asn) stay AMBER's: an alpha C and its neighbours
+    AA = "!$([CX4]([NX3,NX4+])[CX3]=[OX1]);!$([CX4][CX4]([NX3,NX4+])[CX3]=[OX1])"
+    CTX = f"{CTX};{AA}"
+    GC = f"[CX4;{CTX}]"
+    R.add("G_Cg", 5, GC, "sp3 C of a carbohydrate (GLYCAM Cg)")
+    R.add("G_Hc", 5, f"[H][CX4;{CTX};!$(*[N,O,S,F,Cl,Br,I])]", "H on a carbohydrate sp3 C without O or N (GLYCAM Hc)")
+    R.add("G_Oh", 5, f"[OX2H1]{GC}", "carbohydrate hydroxyl O (GLYCAM Oh)")
+    R.add("G_Ho", 5, f"[H][OX2H1]{GC}", "carbohydrate hydroxyl H (GLYCAM Ho)")
+    R.add("G_Os", 5, f"[OX2H0;$(O{GC})]", "carbohydrate ether / ester O (GLYCAM Os)")
+    R.add("G_Ng", 5, f"[NX3;$(N[CX3]=[OX1]);$(N{GC})]", "carbohydrate amide N (GLYCAM Ng)")
+    # sialic acid (3-deoxy-2-ulosonic acid): the ring C next to the ring O carrying the carboxylate, next to the ring CH2
+    CY = "[CX4;R;$(*@[OX2;R]);$(*[CX3](~[OX1])~[OX1]);$(*@[CX4H2;R])]"
+    R.add("G_Cy", 6, CY, "sialic acid ring C2 (GLYCAM Cy)")
+    # the library's own choices: the anomeric H of a 3-deoxy pyranose (tyvelose) H1, not H2; the methyl H of a
+    # 6-deoxy sugar whose C4 carries N (bacillosamine) H1, not Hc
+    R.add("H1", 6, "[H][CX4;$(*(@[OX2;R])(!@[OX2])@[CX4;R]@[CX4H2;R])]", "anomeric H of a 3-deoxy pyranose (as the library has tyvelose)")
+    R.add("H1", 6, "[H][CX4H3][CX4;R]@[CX4;R][NX3]", "methyl H of a 6-deoxy sugar with N at C4 (as the library has bacillosamine)")
+    R.add("G_Oy", 6, f"[OX2;R;$(O@{CY})]", "sialic acid ring O (GLYCAM Oy)")
 
 
 # ---------------------------------------------------------------- CHARMM (library's generic keys)
@@ -351,7 +396,18 @@ SETS = {
     "trappe-eh": (trappe_eh(), "TraPPE-EH (explicit-hydrogen aromatics)", False),
 }
 
+# water-model overlays: the same three atoms, the model the user picks (caps ff type --typing amber.typing.json,OVERLAY)
+OVERLAYS = {
+    "amber-tip3p": ("AMBER: original TIP3P water (H3P)", [("OW", "[OX2H2]", "TIP3P water O"), ("H3P", "[H][OX2H2]", "original TIP3P water H")]),
+    "amber-tip3p-pme": ("AMBER: TIP3P water for PME (OT3E / H3E)", [("OT3E", "[OX2H2]", "TIP3P (PME) water O"), ("H3E", "[H][OX2H2]", "TIP3P (PME) water H")]),
+}
+
 if __name__ == "__main__":
+    for name, (label, rules) in OVERLAYS.items():
+        doc = {"format": "caps-typing", "version": 1, "forcefield": label,
+               "description": f"{label}: an overlay on the force field's own rules that picks this water model (bench/typing/make_biomolecular_rules.py).",
+               "rules": [{"type": t, "smarts": sm, "priority": 9, "description": d} for t, sm, d in rules]}
+        json.dump(doc, open(os.path.join(DATA, "typing", name + ".typing.json"), "w"), ensure_ascii=False, indent=1)
     cat_p = os.path.join(DATA, "forcefields", "catalogue.json")
     cat = json.load(open(cat_p))
     for target, (rules, label, ua) in SETS.items():
