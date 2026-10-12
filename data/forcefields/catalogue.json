@@ -320,69 +320,6 @@
    }
   },
   {
-   "id": "trappe-eh",
-   "name": "TraPPE-EH",
-   "version": "2007",
-   "references": [
-    "N. Rai, J. I. Siepmann, J. Phys. Chem. B 111, 10790 (2007)"
-   ],
-   "origin": "converted",
-   "source_file": "TRAPPE_EH.par",
-   "status": "validated",
-   "notes": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): 9 of 9 identical.",
-   "file": "trappe-eh.json",
-   "counts": {
-    "atom_types": 65,
-    "pairs": 17,
-    "bonds": 40,
-    "angles": 119,
-    "dihedrals": 25,
-    "impropers": 16
-   },
-   "typing": {
-    "rules": "typing/trappe-eh.typing.json",
-    "evidence": "CAPS rules from TraPPE-EH (explicit-hydrogen aromatics)'s type definitions (bench/typing/make_biomolecular_rules.py)"
-   },
-   "list": {
-    "label": "TraPPE-EH",
-    "key": "trappe_eh",
-    "order": 6
-   }
-  },
-  {
-   "id": "misc",
-   "name": "Miscellaneous",
-   "version": "",
-   "references": [
-    "A. J. O'Malley, C. R. A. Catlow, Phys. Chem. Chem. Phys. 15, 19024 (2013)",
-    "D. F. Plant, G. Maurin, R. G. Bell, J. Phys. Chem. B 111, 2836 (2007)",
-    "N. A. Ramsahye, R. G. Bell, J. Phys. Chem. B 109, 4738 (2005)",
-    "R. P. S. Peguin, G. Kamath, J. J. Potoff, S. R. P. da Rocha, J. Phys. Chem. B 113, 178 (2009)"
-   ],
-   "origin": "converted",
-   "source_file": "MISC_FF.par",
-   "status": "converted",
-   "notes": "alkanes (silicalite), methanol and chloroform (faujasite) and HFA-134a: molecule-specific sets, typed per molecule",
-   "file": "misc.json",
-   "counts": {
-    "atom_types": 15,
-    "pairs": 21,
-    "bonds": 10,
-    "angles": 13,
-    "dihedrals": 3,
-    "impropers": 0
-   },
-   "typing": {
-    "rules": "typing/misc.typing.json",
-    "evidence": "CAPS rules (bench/typing/make_misc_rules.py): 16 rules"
-   },
-   "list": {
-    "label": "Miscellaneous",
-    "key": "misc_ff",
-    "order": 15
-   }
-  },
-  {
    "id": "inorganic-binary-oxides",
    "name": "Inorganic: binary oxides",
    "version": "",
@@ -2316,6 +2253,127 @@
    }
   },
   {
+   "id": "trappe-eh-umn",
+   "name": "TraPPE-EH",
+   "version": "the TraPPE database (trappe.oit.umn.edu), explicit-hydrogen family, retrieved October 2026",
+   "references": [
+    "N. Rai, J. I. Siepmann, J. Phys. Chem. B 111, 10790 (2007)",
+    "B. L. Eggimann et al., J. Chem. Eng. Data 65, 1330 (2020)"
+   ],
+   "origin": "built from source",
+   "source": "the TraPPE group's own parameter tables, model by model (trappe.oit.umn.edu), each term with its paper; transcribed by bench/ff/make_trappe_eh.py",
+   "license": "published parameters of the TraPPE papers, cited per term (no file of the site is distributed)",
+   "status": "validated",
+   "file": "trappe-eh-umn.json",
+   "counts": {
+    "atom_types": 556,
+    "pairs": 36,
+    "bonds": 513,
+    "angles": 757,
+    "dihedrals": 935,
+    "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/trappe-eh-umn.typing.json",
+    "evidence": "the 65 TraPPE-EH models (alkanes, amines, amides, nitriles, nitro compounds, aromatics and heteroaromatics), each with its own charges: one CAPS type per symmetry class of a model, typed by a whole-molecule SMARTS (848 / 848 sites as the database types them); every model's bonds, bends and torsions as it lists them (59 / 65 models exact, the rest the database's symmetric-position differences); LAMMPS and GROMACS reproduce CAPS's energies"
+   },
+   "list": {
+    "label": "TraPPE explicit hydrogen",
+    "key": "trappe_eh",
+    "order": 17
+   }
+  },
+  {
+   "id": "omalley2013-alkanes",
+   "name": "All-atom alkanes in silicalite (O'Malley & Catlow 2013)",
+   "version": "2013, Tables 2 and 3 (all-atom model)",
+   "references": [
+    "A. J. O'Malley, C. R. A. Catlow, Phys. Chem. Chem. Phys. 15, 19024 (2013)"
+   ],
+   "origin": "built from source",
+   "source": "the paper's Tables 2 and 3 (read from the page images); bench/ff/make_zeolite_sorbates.py",
+   "license": "published parameters of the paper",
+   "status": "validated",
+   "file": "omalley2013-alkanes.json",
+   "counts": {
+    "atom_types": 9,
+    "pairs": 10,
+    "bonds": 2,
+    "angles": 4,
+    "dihedrals": 1,
+    "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/omalley2013-alkanes.typing.json",
+    "evidence": "alkane C typed by its H count (charges +0.1 per H, each alkane neutral), H, and the formal-charge silica framework (Buckingham Si-O and O-O within 10 A, O-Si-O bends by distance); the paper's torsion (Raj, Sastre & Catlow 1999) not included; LAMMPS reproduces CAPS's energies on alpha-quartz and on alkanes with SiO4, GROMACS on the alkanes"
+   },
+   "list": {
+    "label": "Alkanes in silicalite (O'Malley 2013)",
+    "key": "omalley2013",
+    "order": 30
+   }
+  },
+  {
+   "id": "plant2007-methanol",
+   "name": "Methanol in zeolite NaY (Plant, Maurin & Bell 2007)",
+   "version": "2007, Tables 1-3",
+   "references": [
+    "D. F. Plant, G. Maurin, R. G. Bell, J. Phys. Chem. B 111, 2836 (2007)"
+   ],
+   "origin": "built from source",
+   "source": "the paper's Tables 1-3; bench/ff/make_zeolite_sorbates.py",
+   "license": "published parameters of the paper",
+   "status": "validated",
+   "file": "plant2007-methanol.json",
+   "counts": {
+    "atom_types": 8,
+    "pairs": 36,
+    "bonds": 3,
+    "angles": 5,
+    "dihedrals": 1,
+    "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/plant2007-methanol.typing.json",
+    "evidence": "Kramer-charge NaY framework with Na (as Ramsahye & Bell), methanol's charges, bonds, bends, torsion and pairs, and its pairs with the framework O and Na; LAMMPS reproduces CAPS's energies on methanol with Na+, AlO4 and SiO4, GROMACS on methanol"
+   },
+   "list": {
+    "label": "Methanol in NaY (Plant 2007)",
+    "key": "plant2007",
+    "order": 30
+   }
+  },
+  {
+   "id": "peguin2009-hfa134a",
+   "name": "HFA134a (Peguin et al. 2009, FF no. 2)",
+   "version": "2009, Tables 1 and 2 (FF no. 2)",
+   "references": [
+    "R. P. S. Peguin, G. Kamath, J. J. Potoff, S. R. P. da Rocha, J. Phys. Chem. B 113, 178 (2009)"
+   ],
+   "origin": "built from source",
+   "source": "the paper's Tables 1 (read from the page image) and 2; bench/ff/make_zeolite_sorbates.py",
+   "license": "published parameters of the paper",
+   "status": "validated",
+   "file": "peguin2009-hfa134a.json",
+   "counts": {
+    "atom_types": 5,
+    "pairs": 3,
+    "bonds": 3,
+    "angles": 5,
+    "dihedrals": 2,
+    "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/peguin2009-hfa134a.typing.json",
+    "evidence": "CF3CH2F with the paper's FF no. 2 charges and Lennard-Jones terms, OPLS-AA bends and the fitted F-C-C-F and F-C-C-H torsions, no intramolecular pairs; LAMMPS and GROMACS reproduce CAPS's energies"
+   },
+   "list": {
+    "label": "HFA134a (Peguin 2009)",
+    "key": "peguin2009",
+    "order": 30
+   }
+  },
+  {
    "id": "charmm36-prot-toppar",
    "name": "CHARMM36 proteins",
    "version": "toppar_c36_jul17 (par_all36_prot.prm, top_all36_prot.rtf, its streams)",
@@ -2328,14 +2386,6 @@
    "license": "no licence stated with the files: built on the user's machine by bench/ff/open/build_charmm.sh, never distributed",
    "status": "validated",
    "file": "charmm36-prot-toppar.json",
-   "counts": {
-    "atom_types": 111,
-    "pairs": 115,
-    "bonds": 257,
-    "angles": 755,
-    "dihedrals": 1176,
-    "impropers": 75
-   },
    "typing": {
     "rules": "typing/charmm36-prot-toppar.typing.json",
     "evidence": "the topology's own residues typed as it types them (bench/ff/validate_rtf_types.py --cap-links): top_all36_prot.rtf 391 / 391 atoms, 24 / 24 residues"
@@ -2358,14 +2408,6 @@
    "license": "no licence stated with the files: built on the user's machine by bench/ff/open/build_charmm.sh, never distributed",
    "status": "validated",
    "file": "charmm22-prot-toppar.json",
-   "counts": {
-    "atom_types": 62,
-    "pairs": 66,
-    "bonds": 125,
-    "angles": 325,
-    "dihedrals": 382,
-    "impropers": 34
-   },
    "typing": {
     "rules": "typing/charmm22-prot-toppar.typing.json",
     "evidence": "the topology's own residues typed as it types them (bench/ff/validate_rtf_types.py --cap-links): top_all22_prot.rtf 381 / 381 atoms, 23 / 23 residues"
@@ -2388,14 +2430,6 @@
    "license": "no licence stated with the files: built on the user's machine by bench/ff/open/build_charmm.sh, never distributed",
    "status": "validated",
    "file": "charmm36-carb-toppar.json",
-   "counts": {
-    "atom_types": 72,
-    "pairs": 76,
-    "bonds": 199,
-    "angles": 694,
-    "dihedrals": 1503,
-    "impropers": 26
-   },
    "typing": {
     "rules": "typing/charmm36-carb-toppar.typing.json",
     "evidence": "the topology's own residues typed as it types them (bench/ff/validate_rtf_types.py --cap-links): top_all36_carb.rtf 1786 / 1786 atoms, 75 / 75 residues"
@@ -2418,14 +2452,6 @@
    "license": "no licence stated with the files: built on the user's machine by bench/ff/open/build_charmm.sh, never distributed",
    "status": "validated",
    "file": "cgenff-toppar.json",
-   "counts": {
-    "atom_types": 174,
-    "pairs": 179,
-    "bonds": 529,
-    "angles": 1640,
-    "dihedrals": 3380,
-    "impropers": 128
-   },
    "typing": {
     "rules": "typing/cgenff-toppar.typing.json",
     "evidence": "the topology's own residues typed as it types them (bench/ff/validate_rtf_types.py --cap-links): top_all36_cgenff.rtf 9872 / 9872 atoms, 519 / 519 residues (residues with lone pairs left out)"
@@ -2448,14 +2474,6 @@
    "license": "no licence stated with the files: built on the user's machine by bench/ff/open/build_charmm.sh, never distributed",
    "status": "validated",
    "file": "charmm36-lipid-toppar.json",
-   "counts": {
-    "atom_types": 48,
-    "pairs": 59,
-    "bonds": 84,
-    "angles": 255,
-    "dihedrals": 275,
-    "impropers": 5
-   },
    "typing": {
     "rules": "typing/charmm36-lipid-toppar.typing.json",
     "evidence": "the topology's own residues typed as it types them (bench/ff/validate_rtf_types.py --cap-links): top_all36_lipid.rtf 4224 / 4224 atoms, 35 / 35 residues"
@@ -2478,14 +2496,6 @@
    "license": "no licence stated with the files: built on the user's machine by bench/ff/open/build_charmm.sh, never distributed",
    "status": "validated",
    "file": "charmm36-nucl-toppar.json",
-   "counts": {
-    "atom_types": 97,
-    "pairs": 101,
-    "bonds": 192,
-    "angles": 541,
-    "dihedrals": 982,
-    "impropers": 43
-   },
    "typing": {
     "rules": "typing/charmm36-nucl-toppar.typing.json",
     "evidence": "the topology's own residues typed as it types them (bench/ff/validate_rtf_types.py --cap-links): top_all36_na.rtf 161 / 161 atoms, 5 / 5 residues"
@@ -2508,14 +2518,6 @@
    "license": "no licence stated with the files: built on the user's machine by bench/ff/open/build_charmm.sh, never distributed",
    "status": "validated",
    "file": "charmm19-toppar.json",
-   "counts": {
-    "atom_types": 29,
-    "pairs": 32,
-    "bonds": 70,
-    "angles": 191,
-    "dihedrals": 41,
-    "impropers": 43
-   },
    "typing": {
     "rules": "typing/charmm19-toppar.typing.json",
     "evidence": "the topology's own residues typed as it types them (bench/ff/validate_rtf_types.py --cap-links): toph19.inp 319 / 319 atoms, 36 / 36 residues (--united); one torsion per bond as toph19 lists them, 103 / 104 central bonds (bench/ff/validate_rtf_torsions.py; TRP's cross-ring terms left out)"

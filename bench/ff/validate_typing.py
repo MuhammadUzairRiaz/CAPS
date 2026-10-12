@@ -13,7 +13,7 @@ When DL_FIELD itself was run on the template (validate_family.py work directory,
 with one, by the DL type's name: a sugar's anomeric C or glycosidic O) are typed with H on each open valence; the atoms
 the cap retypes (the capped O, the H already on a capped C) are left out of the comparison.
 
-usage: validate_typing.py LIB FF.json RULES.json [--dl DIR] [--only a,b] [--show N] [--all] [--apply] [--charges types|gasteiger] [--exclude REGEX] [--cap-open]
+usage: validate_typing.py LIB FF.json RULES.json [--dl DIR] [--only a,b] [--show N] [--all] [--apply] [--charges types|gasteiger] [--exclude REGEX] [--cap-open] [--map FF_ID]
 """
 import collections, os, re, subprocess, sys, tempfile
 
@@ -229,6 +229,11 @@ UNITED = bool(__import__("json").load(open(rules)).get("united_atom"))
 # the mol2 type column, which CAPS reads as the atom name
 SHELLS = set((__import__("json").load(open(rules)).get("shells") or {}).values())
 CAP = "--cap-open" in sys.argv
+# --map FF_ID: the library's own type names translated to the reference's keys (bench/typing/reference_type_maps.json),
+# for a library rebuilt from the force field's original source; a map may be many-to-one (a per-molecule charge type)
+TYPE_MAP = {}
+if "--map" in sys.argv:
+    TYPE_MAP = __import__("json").load(open(os.path.join(ROOT, "bench", "typing", "reference_type_maps.json")))[arg("--map", "")]["map"]
 # --deviations FILE: atoms where the library's template contradicts the force field's own typer (antechamber for GAFF),
 # each with its evidence: reported as explained, not counted right
 DEV, EXCLUDED = {}, {}
@@ -298,6 +303,8 @@ for name in names:
         failed.append((name, (r.stderr or r.stdout).strip().splitlines()[-1][:120] if (r.stderr or r.stdout).strip() else "?"))
         continue
     got = [x.strip() for x in open(out)][:len(m["atoms"])]
+    if TYPE_MAP:   # a library built from the original source names its types its own way: each CAPS type -> the key
+        got = [TYPE_MAP.get(g, g) for g in got]
     if "--apply" in sys.argv:
         # end to end: the automatically typed molecule must get every parameter
         ra = subprocess.run([CAPS, "ff", "apply", path, "--ff", ffjson, "--typing", rules, "--charges", arg("--charges", "types"), "--allow-missing"],

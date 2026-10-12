@@ -1,0 +1,663 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "Methanol in zeolite NaY (Plant, Maurin & Bell 2007)",
+ "source": "D. F. Plant, G. Maurin, R. G. Bell, J. Phys. Chem. B 111, 2836 (2007), Tables 1-3",
+ "references": [
+  "D. F. Plant, G. Maurin, R. G. Bell, J. Phys. Chem. B 111, 2836 (2007)"
+ ],
+ "version": "2007 (Tables 1-3)",
+ "styles": {
+  "pair": "lj/cut/coul/long",
+  "bond": "harmonic",
+  "angle": "harmonic",
+  "dihedral": "fourier",
+  "improper": "fourier"
+ },
+ "mixing": "geometric",
+ "special_lj": [
+  0,
+  0,
+  1
+ ],
+ "special_coul": [
+  0,
+  0,
+  1
+ ],
+ "cutoff": 10,
+ "atom_types": [
+  {
+   "name": "Si_pm",
+   "element": "Si",
+   "mass": 28.0855,
+   "charge": 2.4,
+   "description": "framework Si (Table 1)"
+  },
+  {
+   "name": "Al_pm",
+   "element": "Al",
+   "mass": 26.982,
+   "charge": 1.4,
+   "description": "framework Al (Table 1)"
+  },
+  {
+   "name": "Oz_pm",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -1.2,
+   "description": "framework O (Table 1)"
+  },
+  {
+   "name": "Na_pm",
+   "element": "Na",
+   "mass": 22.98977,
+   "charge": 1.0,
+   "description": "extra-framework Na (Table 1)"
+  },
+  {
+   "name": "C_pm",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.093,
+   "description": "methanol C (Table 3)"
+  },
+  {
+   "name": "H_pm",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.1,
+   "description": "methanol methyl H (Table 3)"
+  },
+  {
+   "name": "Om_pm",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -0.432,
+   "description": "methanol O (Table 3)"
+  },
+  {
+   "name": "Hm_pm",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.225,
+   "description": "methanol hydroxyl H (Table 3)"
+  }
+ ],
+ "pairs": [
+  {
+   "name": "Si_pm-Oz_pm",
+   "match": [
+    "Si_pm",
+    "Oz_pm"
+   ],
+   "style": "buck",
+   "params": [
+    692346.832604,
+    0.1621,
+    296.09743632
+   ],
+   "comment": "A 30023.0 eV, rho 0.1621 A, C 12.84 eV A^6 (Table 1)"
+  },
+  {
+   "name": "Al_pm-Oz_pm",
+   "match": [
+    "Al_pm",
+    "Oz_pm"
+   ],
+   "style": "buck",
+   "params": [
+    622588.674904,
+    0.1622,
+    296.09743632
+   ],
+   "comment": "A 26998.0 eV, rho 0.1622 A, C 12.84 eV A^6 (Table 1)"
+  },
+  {
+   "name": "Na_pm-Oz_pm",
+   "match": [
+    "Na_pm",
+    "Oz_pm"
+   ],
+   "style": "buck",
+   "params": [
+    189096.49360000002,
+    0.218,
+    272.1144664
+   ],
+   "comment": "A 8200.0 eV, rho 0.218 A, C 11.8 eV A^6 (Table 1)"
+  },
+  {
+   "name": "Oz_pm-Oz_pm",
+   "match": [
+    "Oz_pm",
+    "Oz_pm"
+   ],
+   "style": "buck",
+   "params": [
+    20629.9662408,
+    0.3244,
+    0.0
+   ],
+   "comment": "A 894.6 eV, rho 0.3244 A, C 0.0 eV A^6 (Table 1)"
+  },
+  {
+   "name": "Na_pm-Om_pm",
+   "match": [
+    "Na_pm",
+    "Om_pm"
+   ],
+   "style": "buck",
+   "params": [
+    104270.57383680002,
+    0.2177,
+    0.0
+   ],
+   "comment": "A 4521.6 eV, rho 0.2177 A, C 0.0 eV A^6 (Table 2)"
+  },
+  {
+   "name": "Om_pm-Oz_pm",
+   "match": [
+    "Om_pm",
+    "Oz_pm"
+   ],
+   "params": [
+    0.17572137576,
+    4.104
+   ],
+   "comment": "eps 0.00762 eV, sigma 4.104 A (Table 2)"
+  },
+  {
+   "name": "Hm_pm-Oz_pm",
+   "match": [
+    "Hm_pm",
+    "Oz_pm"
+   ],
+   "params": [
+    0.11807000576000001,
+    3.374
+   ],
+   "comment": "eps 0.00512 eV, sigma 3.374 A (Table 2)"
+  },
+  {
+   "name": "C_pm-Oz_pm",
+   "match": [
+    "C_pm",
+    "Oz_pm"
+   ],
+   "params": [
+    0.13628783868000002,
+    4.31
+   ],
+   "comment": "eps 0.00591 eV, sigma 4.31 A (Table 2)"
+  },
+  {
+   "name": "H_pm-Oz_pm",
+   "match": [
+    "H_pm",
+    "Oz_pm"
+   ],
+   "params": [
+    0.08924432076000001,
+    3.732
+   ],
+   "comment": "eps 0.00387 eV, sigma 3.732 A (Table 2)"
+  },
+  {
+   "name": "Na_pm-Hm_pm",
+   "match": [
+    "Na_pm",
+    "Hm_pm"
+   ],
+   "params": [
+    0.20247161144,
+    2.6285
+   ],
+   "comment": "eps 0.00878 eV, sigma 2.6285 A (Table 2)"
+  },
+  {
+   "name": "Na_pm-H_pm",
+   "match": [
+    "Na_pm",
+    "H_pm"
+   ],
+   "params": [
+    0.20247161144,
+    2.6285
+   ],
+   "comment": "eps 0.00878 eV, sigma 2.6285 A (Table 2)"
+  },
+  {
+   "name": "Na_pm-C_pm",
+   "match": [
+    "Na_pm",
+    "C_pm"
+   ],
+   "params": [
+    0.3090113432,
+    3.0722
+   ],
+   "comment": "eps 0.0134 eV, sigma 3.0722 A (Table 2)"
+  },
+  {
+   "name": "H_pm",
+   "match": [
+    "H_pm"
+   ],
+   "params": [
+    0.0380499042,
+    2.45
+   ],
+   "comment": "eps 0.00165 eV, sigma 2.45 A (Table 3)"
+  },
+  {
+   "name": "C_pm-H_pm",
+   "match": [
+    "C_pm",
+    "H_pm"
+   ],
+   "params": [
+    0.07794465224000001,
+    2.92
+   ],
+   "comment": "eps 0.00338 eV, sigma 2.92 A (Table 3)"
+  },
+  {
+   "name": "Om_pm-H_pm",
+   "match": [
+    "Om_pm",
+    "H_pm"
+   ],
+   "params": [
+    0.09316461392000001,
+    2.65
+   ],
+   "comment": "eps 0.00404 eV, sigma 2.65 A (Table 3)"
+  },
+  {
+   "name": "C_pm",
+   "match": [
+    "C_pm"
+   ],
+   "params": [
+    0.16004020312,
+    3.475
+   ],
+   "comment": "eps 0.00694 eV, sigma 3.475 A (Table 3)"
+  },
+  {
+   "name": "Om_pm-C_pm",
+   "match": [
+    "Om_pm",
+    "C_pm"
+   ],
+   "params": [
+    0.19094133744,
+    3.15
+   ],
+   "comment": "eps 0.00828 eV, sigma 3.15 A (Table 3)"
+  },
+  {
+   "name": "Om_pm",
+   "match": [
+    "Om_pm"
+   ],
+   "params": [
+    0.22783821424,
+    2.86
+   ],
+   "comment": "eps 0.00988 eV, sigma 2.86 A (Table 3)"
+  },
+  {
+   "name": "Si_pm",
+   "match": [
+    "Si_pm"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "not in the paper's tables: Coulomb only"
+  },
+  {
+   "name": "Si_pm-Al_pm",
+   "match": [
+    "Si_pm",
+    "Al_pm"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "not in the paper's tables: Coulomb only"
+  },
+  {
+   "name": "Si_pm-Na_pm",
+   "match": [
+    "Si_pm",
+    "Na_pm"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "not in the paper's tables: Coulomb only"
+  },
+  {
+   "name": "Si_pm-C_pm",
+   "match": [
+    "Si_pm",
+    "C_pm"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "not in the paper's tables: Coulomb only"
+  },
+  {
+   "name": "Si_pm-H_pm",
+   "match": [
+    "Si_pm",
+    "H_pm"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "not in the paper's tables: Coulomb only"
+  },
+  {
+   "name": "Si_pm-Om_pm",
+   "match": [
+    "Si_pm",
+    "Om_pm"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "not in the paper's tables: Coulomb only"
+  },
+  {
+   "name": "Si_pm-Hm_pm",
+   "match": [
+    "Si_pm",
+    "Hm_pm"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "not in the paper's tables: Coulomb only"
+  },
+  {
+   "name": "Al_pm",
+   "match": [
+    "Al_pm"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "not in the paper's tables: Coulomb only"
+  },
+  {
+   "name": "Al_pm-Na_pm",
+   "match": [
+    "Al_pm",
+    "Na_pm"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "not in the paper's tables: Coulomb only"
+  },
+  {
+   "name": "Al_pm-C_pm",
+   "match": [
+    "Al_pm",
+    "C_pm"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "not in the paper's tables: Coulomb only"
+  },
+  {
+   "name": "Al_pm-H_pm",
+   "match": [
+    "Al_pm",
+    "H_pm"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "not in the paper's tables: Coulomb only"
+  },
+  {
+   "name": "Al_pm-Om_pm",
+   "match": [
+    "Al_pm",
+    "Om_pm"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "not in the paper's tables: Coulomb only"
+  },
+  {
+   "name": "Al_pm-Hm_pm",
+   "match": [
+    "Al_pm",
+    "Hm_pm"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "not in the paper's tables: Coulomb only"
+  },
+  {
+   "name": "Na_pm",
+   "match": [
+    "Na_pm"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "not in the paper's tables: Coulomb only"
+  },
+  {
+   "name": "C_pm-Hm_pm",
+   "match": [
+    "C_pm",
+    "Hm_pm"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "not in the paper's tables: Coulomb only"
+  },
+  {
+   "name": "H_pm-Hm_pm",
+   "match": [
+    "H_pm",
+    "Hm_pm"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "not in the paper's tables: Coulomb only"
+  },
+  {
+   "name": "Om_pm-Hm_pm",
+   "match": [
+    "Om_pm",
+    "Hm_pm"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "not in the paper's tables: Coulomb only"
+  },
+  {
+   "name": "Hm_pm",
+   "match": [
+    "Hm_pm"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "not in the paper's tables: Coulomb only"
+  }
+ ],
+ "bonds": [
+  {
+   "name": "C_pm-H_pm",
+   "match": [
+    "C_pm",
+    "H_pm"
+   ],
+   "params": [
+    340.83489944,
+    1.105
+   ],
+   "comment": "1/2 k (r - r0)^2, k 29.56 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "C_pm-Om_pm",
+   "match": [
+    "C_pm",
+    "Om_pm"
+   ],
+   "params": [
+    384.30403242,
+    1.42
+   ],
+   "comment": "1/2 k (r - r0)^2, k 33.33 eV/A^2 (Table 3)"
+  },
+  {
+   "name": "Hm_pm-Om_pm",
+   "match": [
+    "Hm_pm",
+    "Om_pm"
+   ],
+   "params": [
+    541.57696978,
+    0.945
+   ],
+   "comment": "1/2 k (r - r0)^2, k 46.97 eV/A^2 (Table 3)"
+  }
+ ],
+ "angles": [
+  {
+   "name": "C_pm-Om_pm-Hm_pm",
+   "match": [
+    "C_pm",
+    "Om_pm",
+    "Hm_pm"
+   ],
+   "params": [
+    64.5695344,
+    108.32
+   ],
+   "comment": "1/2 k (theta - theta0)^2, k 5.6 eV/rad^2 (Table 3)"
+  },
+  {
+   "name": "H_pm-C_pm-Om_pm",
+   "match": [
+    "H_pm",
+    "C_pm",
+    "Om_pm"
+   ],
+   "params": [
+    63.416507,
+    106.9
+   ],
+   "comment": "1/2 k (theta - theta0)^2, k 5.5 eV/rad^2 (Table 3)"
+  },
+  {
+   "name": "H_pm-C_pm-H_pm",
+   "match": [
+    "H_pm",
+    "C_pm",
+    "H_pm"
+   ],
+   "params": [
+    50.733205600000005,
+    108.38
+   ],
+   "comment": "1/2 k (theta - theta0)^2, k 4.4 eV/rad^2 (Table 3)"
+  },
+  {
+   "name": "Oz_pm-Si_pm-Oz_pm",
+   "match": [
+    "Oz_pm",
+    "Si_pm",
+    "Oz_pm"
+   ],
+   "params": [
+    139.5163154,
+    109.47
+   ],
+   "contact": [
+    2.0
+   ],
+   "comment": "1/2 k (theta - theta0)^2, k 12.1 eV/rad^2 (Table 1); each O within 2.0 A of the T"
+  },
+  {
+   "name": "Oz_pm-Al_pm-Oz_pm",
+   "match": [
+    "Oz_pm",
+    "Al_pm",
+    "Oz_pm"
+   ],
+   "params": [
+    25.366602800000003,
+    109.47
+   ],
+   "contact": [
+    2.0
+   ],
+   "comment": "1/2 k (theta - theta0)^2, k 2.2 eV/rad^2 (Table 1); each O within 2.0 A of the T"
+  }
+ ],
+ "dihedrals": [
+  {
+   "name": "H_pm-C_pm-Om_pm-Hm_pm",
+   "match": [
+    "H_pm",
+    "C_pm",
+    "Om_pm",
+    "Hm_pm"
+   ],
+   "params": [
+    1,
+    0.17572137576,
+    3,
+    0.0
+   ],
+   "comment": "k [1 + cos 3 phi], k 0.00762 eV (Table 3)"
+  }
+ ],
+ "impropers": [],
+ "notes": [
+  "built by CAPS (bench/ff/make_zeolite_sorbates.py) from the paper's Tables 1-3",
+  "framework as Ramsahye & Bell 2005 (Table 1): no T-O bond terms, O-T-O bends by distance (2.0 A, CAPS's)",
+  "methanol's 1-4 pairs (H...Hm) in full: the paper names no scaling",
+  "every pair no table lists: Coulomb only",
+  "cut-off 10 A (the paper gives none)"
+ ],
+ "units": "real",
+ "typing": "../typing/plant2007-methanol.typing.json"
+}
