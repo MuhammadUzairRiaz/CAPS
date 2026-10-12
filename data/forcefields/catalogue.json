@@ -383,34 +383,6 @@
    }
   },
   {
-   "id": "inorganic-binary-halides",
-   "name": "Inorganic: binary halides",
-   "version": "",
-   "references": [],
-   "origin": "converted",
-   "source_file": "INORGANIC_binary_halides.par",
-   "status": "validated",
-   "notes": "14 of 14 ionic templates: every Buckingham pair identical to the reference FIELD file.",
-   "file": "inorganic-binary-halides.json",
-   "counts": {
-    "atom_types": 32,
-    "pairs": 48,
-    "bonds": 0,
-    "angles": 0,
-    "dihedrals": 0,
-    "impropers": 0
-   },
-   "typing": {
-    "rules": "typing/inorganic-binary-halides.typing.json",
-    "evidence": "CAPS rules (bench/typing/make_inorganic_rules.py): 32 rules, 16 compounds"
-   },
-   "list": {
-    "label": "Binary halides",
-    "key": "inorganic_binary_halide",
-    "order": 26
-   }
-  },
-  {
    "id": "inorganic-binary-oxides",
    "name": "Inorganic: binary oxides",
    "version": "",
@@ -1940,6 +1912,36 @@
     "label": "GaN",
     "key": "gan",
     "order": 31
+   }
+  },
+  {
+   "id": "catlow1977-halides",
+   "name": "Alkali halides (Catlow, Diller & Norgett 1977)",
+   "version": "1977, Table 2 (set 1, rigid ions)",
+   "references": [
+    "C. R. A. Catlow, K. M. Diller, M. J. Norgett, J. Phys. C: Solid State Phys. 10, 1395 (1977)"
+   ],
+   "origin": "built from source",
+   "source": "the paper's Table 2; bench/ff/make_catlow1977.py",
+   "license": "published parameters of the paper",
+   "status": "validated",
+   "file": "catlow1977-halides.json",
+   "counts": {
+    "atom_types": 32,
+    "pairs": 80,
+    "bonds": 0,
+    "angles": 0,
+    "dihedrals": 0,
+    "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/catlow1977-halides.typing.json",
+    "evidence": "16 halides of Li, Na, K, Rb with F, Cl, Br, I, each typed by the structure's composition; every pair term equals an independent transcription of the same table; LAMMPS reproduces CAPS's energies on NaCl and LiF"
+   },
+   "list": {
+    "label": "Alkali halides",
+    "key": "alkali_halides",
+    "order": 28
    }
   },
   {

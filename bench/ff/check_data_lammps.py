@@ -61,6 +61,10 @@ CASES = [
     ("SrTiO3 perovskite, core-shell (CORESHELL styles)", ("crystal", ["--group", "P m -3 m", "--cell", "3.905,3.905,3.905", "--sites",
      "Sr1 Sr 0 0 0; Ti1 Ti 0.5 0.5 0.5; O1 O 0.5 0.5 0", "--supercell", "3,3,3"]), "inorganic-ternary-oxides", "types", "rules", ["--no-tail"]),
     ("Binary oxides (Buckingham, periodic)", ("ionic-first", "INORGANIC_binary_oxides", ""), "inorganic-binary-oxides", "qeq", "keys"),
+    ("Alkali halides (Catlow, Diller & Norgett 1977, set 1): NaCl rock salt, rigid ions", ("crystal", ["--group", "F m -3 m", "--cell", "5.64,5.64,5.64",
+     "--sites", "Na1 Na 0 0 0; Cl1 Cl 0.5 0.5 0.5", "--supercell", "3,3,3"]), "catlow1977-halides", "types", "rules", ["--no-tail"]),
+    ("Alkali halides (Catlow, Diller & Norgett 1977, set 1): LiF rock salt, rigid ions", ("crystal", ["--group", "F m -3 m", "--cell", "4.03,4.03,4.03",
+     "--sites", "Li1 Li 0 0 0; F1 F 0.5 0.5 0.5", "--supercell", "5,5,5"]), "catlow1977-halides", "types", "rules", ["--no-tail"]),
     ("GaN (Wonglakhon & Zahn 2020): wurtzite, formal charges, LJ + Born-Mayer", ("crystal", ["--group", "P 63 m c", "--cell", "3.189,3.189,5.185,90,90,120",
      "--sites", "Ga1 Ga 0.33333333 0.66666667 0; N1 N 0.33333333 0.66666667 0.377", "--supercell", "4,4,3"]), "gan2020", "types", "rules", ["--no-tail"]),
     # Bush, Gale, Catlow & Battle 1994 (one shell-model set for the oxides): MgO, SrTiO3, corundum
