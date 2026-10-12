@@ -11,6 +11,18 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 option(CAPS_BUILD_TESTS "Build unit tests" ON)
+# Code for the build machine's own processor (-march=native, e.g. AVX2 / AVX-512 on a cluster node): faster MD there, but
+# the binary may not run on an older processor, so installers leave it off. Makes no difference on Apple silicon.
+option(CAPS_NATIVE "Optimise for the build machine's processor (not for installers)" OFF)
+if(CAPS_NATIVE AND NOT MSVC)
+  include(CheckCXXCompilerFlag)
+  check_cxx_compiler_flag(-march=native CAPS_HAS_MARCH_NATIVE)
+  if(CAPS_HAS_MARCH_NATIVE)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-march=native> $<$<COMPILE_LANGUAGE:Fortran>:-march=native>)
+  else()
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-mcpu=native> $<$<COMPILE_LANGUAGE:Fortran>:-mcpu=native>)
+  endif()
+endif()
 
 # Compiler settings for every target: sources are UTF-8 (Å, ⟨⟩ in messages); MSVC needs to be told, and M_PI needs
 # _USE_MATH_DEFINES there.
