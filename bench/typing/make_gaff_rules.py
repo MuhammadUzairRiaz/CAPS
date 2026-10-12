@@ -19,7 +19,8 @@ CONJ_sb = "$(*-,:[#7X2,#15X2,#6X3]),$(*-,:[#16X3,#16X4,#15X3,#15X4;$(*=*)])"    
 
 def has(k):
     """at least k electron-withdrawing neighbours"""
-    return "$(*" + "".join("(" + EW + ")" for _ in range(k - 1)) + EW + ")"
+    # any bond: antechamber counts the O of C=O and the N of C=N too (an unmarked SMARTS bond is single or aromatic only)
+    return "$(*" + "".join("(~" + EW + ")" for _ in range(k - 1)) + "~" + EW + ")"
 
 
 def ew(n):
@@ -75,7 +76,9 @@ def rules(v2):
     add("p5", "[#15X4]", "[#15X5]", "[#15X6]")
     # nitrogen
     amide = "$(*[#6X3]~[#8X1,#16X1])"
-    nh_env = [f"[#7X3;$(*[#6,#7,#8,#16,#15;{RING}])", "[#7X3;$(*[#6X3;$(*=*)])", "[#7X3;$(*[#7X2;$(*=*)])", "[#7X3;$(*[#15X2;$(*=*)])"]
+    nh_env = [f"[#7X3;$(*[#6,#7,#8,#16,#15;{RING}])", "[#7X3;$(*[#6X3;$(*=*)])", "[#7X3;$(*[#7X2;$(*=*)])", "[#7X3;$(*[#15X2;$(*=*)])",
+              # the =NH2+ of guanidinium / amidinium: antechamber re-perceives the resonance and types it like the other N
+              "[#7X3;v4;$(*=[#6X3][#7X3])"]
     if v2:
         add("ns", f"[#7X3H1;{amide}]", d="amide N with 1 H")
         add("nt", f"[#7X3H2;{amide}]", d="amide N with 2 H")
@@ -104,7 +107,7 @@ def rules(v2):
     # oxygen
     add("o", "[#8X1]", d="O with one connection")
     add("oh", "[#8X2;H1,H2]", "[#8X3;H1,H2,H3]", d="hydroxyl O")
-    if v2:
+    if v2:   # antechamber 22 gives op / oq for GAFF too, but the AmberTools 16 GAFF parameters have no op / oq: os there
         add("op", "[#8X2;r3]"); add("oq", "[#8X2;r4]")
     add("os", "[#8X2]", "[#8X3]", "[#8]", d="ether / ester O")
     # sulfur

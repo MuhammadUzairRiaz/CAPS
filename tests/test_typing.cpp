@@ -236,6 +236,33 @@ TEST(Typing, GaffFollowsAntechamber) {
   EXPECT_EQ(type_with("gaff-amber16", ma).types[1], "n3");
 }
 
+TEST(Typing, GaffRingsAndPolarHydrogensAsAntechamber) {
+  // checked against antechamber 22.0 (AmberTools 23.6), bench/typing/compare_antechamber.py:
+  // naphthalene: all ten carbons ca (a double bond into the fused ring is not exocyclic)
+  const System nap = mol({"C", "C", "C", "C", "C", "C", "C", "C", "C", "C"}, {1, 1, 1, 0, 1, 1, 1, 1, 0, 1},
+                         {{0, 1}, {1, 2}, {2, 3}, {3, 4}, {4, 5}, {5, 6}, {6, 7}, {7, 8}, {8, 3}, {8, 9}, {9, 0}});
+  for (const char* ff : {"gaff-amber16", "gaff-amber25"}) {
+    const TypingResult t = type_with(ff, nap);
+    for (int i = 0; i < 10; ++i) EXPECT_EQ(t.types[i], "ca") << ff << " atom " << i;
+  }
+  // cyclooctatetraene: a planar conjugated ring, cc / cd (not the chain types ce / cf)
+  const System cot = mol({"C", "C", "C", "C", "C", "C", "C", "C"}, {1, 1, 1, 1, 1, 1, 1, 1},
+                         {{0, 1}, {1, 2}, {2, 3}, {3, 4}, {4, 5}, {5, 6}, {6, 7}, {7, 0}});
+  for (const std::string& t : type_with("gaff-amber25", cot).types)
+    if (t[0] == 'c') EXPECT_TRUE(t == "cc" || t == "cd") << t;
+  // acetaldehyde: the formyl H is h4 (the O of C=O counts as electron-withdrawing); DMF's formyl H is h5 (N and O)
+  const System ald = mol({"C", "C", "O"}, {3, 1, 0}, {{0, 1}, {1, 2}});
+  EXPECT_EQ(type_with("gaff-amber25", ald).types[6], "h4");
+  const System dmf = mol({"C", "N", "C", "C", "O"}, {1, 0, 3, 3, 0}, {{0, 1}, {1, 2}, {1, 3}, {0, 4}});
+  EXPECT_EQ(type_with("gaff-amber25", dmf).types[5], "h5");
+  // guanidinium: all three N alike, nv (GAFF2) / nh (GAFF), the formal =NH2+ included
+  const System gua = mol({"C", "N", "N", "N"}, {0, 2, 2, 2}, {{0, 1}, {0, 2}, {0, 3}});
+  for (int i = 1; i <= 3; ++i) {
+    EXPECT_EQ(type_with("gaff-amber25", gua).types[i], "nv") << i;
+    EXPECT_EQ(type_with("gaff-amber16", gua).types[i], "nh") << i;
+  }
+}
+
 TEST(Typing, CgenffAndOpls) {
   // CGenFF: conjugated diene CG2DC3 CG2DC2 CG2DC1 CG2DC3 (same type across a double bond, switched across the single)
   const TypingResult b = type_with("cgenff", butadiene());
