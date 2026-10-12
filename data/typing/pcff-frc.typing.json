@@ -552,15 +552,15 @@
   },
   {
    "type": "c=1",
-   "smarts": "[CX3;$(*-[#6X3]=*),$(*-[#6X2]#*),$(*-[#6X2]=*),$(*-c),$(*-[#7X2]=*);$(*=[#6,#7;!$(*-[#6X3]=*);!$(*-[#6X2]#*);!$(*-[#6X2]=*);!$(*-c);!$(*-[#7X2]=*)])]",
+   "smarts": "[CX3;$(*=[CX3]);$(*-[CX3]=[CX3])]",
    "priority": 1,
-   "description": "double-bonded C conjugated by a single bond, its partner not (butadiene C2, styrene vinyl CH)"
+   "description": "C=C carbon single-bonded to a carbon of another non-aromatic C=C (butadiene C2 and C3, the inner carbons of hexatriene and cyclooctatetraene); an aromatic ring, C=O, C#N or C=N next to it does not count"
   },
   {
-   "type": "c=2",
-   "smarts": "[CX3;$(*-[#6X3]=*),$(*-[#6X2]#*),$(*-[#6X2]=*),$(*-c),$(*-[#7X2]=*);$(*=[#6;$(*-[#6X3]=*),$(*-[#6X2]#*),$(*-[#6X2]=*),$(*-c),$(*-[#7X2]=*)])]",
-   "priority": 2,
-   "description": "double-bonded C conjugated on both ends of its double bond (benzoquinone, cyclooctatetraene)"
+   "type": "c=1",
+   "smarts": "[CX3;$(*=[NX2]-[#7]);$(*-c),$(*-[CX3]=[CX3])]",
+   "priority": 1,
+   "description": "hydrazone C (C=N-N) next to an aryl ring or a C=C"
   },
   {
    "type": "c=2",
