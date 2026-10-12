@@ -34,9 +34,27 @@ constexpr double R2D = 57.29577951308232;
 // A coefficient as the force-field tools write them: six fixed decimals ("0.044497", "3.500000"), so the same force
 // field reads the same in every file, engine and design tool. A nonzero value under 0.001 (an ε in eV for metal units)
 // keeps six significant digits instead, which six decimals would cut to three.
+// LammpsStyle::full_precision (the exact styles): every number at 15 significant digits instead, so LAMMPS evaluates
+// the same parameters, charges and positions CAPS does (six decimals cut a pair ε of 0.0161 by 3e-5 relative). Set for
+// the file being written by a Digits guard in each writer.
+thread_local bool full_digits = false;
+struct Digits {
+  bool old;
+  explicit Digits(bool full) : old(full_digits) { full_digits = full; }
+  ~Digits() { full_digits = old; }
+};
+
 void fmt_coef(char* b, size_t n, double x) {
-  if (x != 0 && std::fabs(x) < 1e-3) std::snprintf(b, n, " %.6e", x);
+  if (full_digits) std::snprintf(b, n, " %.15g", x == 0 ? 0.0 : x);
+  else if (x != 0 && std::fabs(x) < 1e-3) std::snprintf(b, n, " %.6e", x);
   else std::snprintf(b, n, " %.6f", x == 0 ? 0.0 : x);   // no "-0.000000"
+}
+
+// One number at six decimals, or at full precision (see full_digits)
+std::string dec(double x) {
+  char b[40];
+  std::snprintf(b, sizeof b, full_digits ? "%.15g" : "%.6f", x == 0 ? 0.0 : x);
+  return b;
 }
 
 // The rule unlike pairs were mixed by, for the input's comment: a force field's own, or (by group) each group's own
@@ -575,8 +593,8 @@ std::vector<std::string> hbond_lines(const ForceField& ff) {
   char b[240];
   for (const auto& [key, p] : ff.hbond.param) {
     const int d = key.first, a = key.second, h = ff.hbond.htype.at(key);
-    std::snprintf(b, sizeof b, "%d %d hbond/dreiding/lj %d %s %.6f %.6f %d  # donor %s, acceptor %s, hydrogen %s", std::min(d, a) + 1,
-                  std::max(d, a) + 1, h + 1, d <= a ? "i" : "j", p[0], p[1], int(p[2]), ff.type_names[size_t(d)].c_str(),
+    std::snprintf(b, sizeof b, "%d %d hbond/dreiding/lj %d %s %s %s %d  # donor %s, acceptor %s, hydrogen %s", std::min(d, a) + 1,
+                  std::max(d, a) + 1, h + 1, d <= a ? "i" : "j", dec(p[0]).c_str(), dec(p[1]).c_str(), int(p[2]), ff.type_names[size_t(d)].c_str(),
                   ff.type_names[size_t(a)].c_str(), ff.type_names[size_t(h)].c_str());
     r.push_back(b);
   }
@@ -626,7 +644,7 @@ std::vector<std::string> style_lines(const Layout& L, const ForceField& ff, cons
     else if (ff.native_special == "dreiding" && !ff.keep13 && ff.lj14 == 1 && ff.coul14 == 1)
       r.push_back("special_bonds dreiding");
     else {
-      std::snprintf(b, sizeof b, "special_bonds lj 0.0 %s %.6f coul 0.0 %s %.6f", ff.keep13 ? "1.0" : "0.0", ff.lj14, ff.keep13 ? "1.0" : "0.0", ff.coul14);
+      std::snprintf(b, sizeof b, "special_bonds lj 0.0 %s %s coul 0.0 %s %s", ff.keep13 ? "1.0" : "0.0", dec(ff.lj14).c_str(), ff.keep13 ? "1.0" : "0.0", dec(ff.coul14).c_str());
       r.push_back(b);
     }
     if (L.coul == "long") r.push_back("kspace_style " + L.kspace + " " + fmt_accuracy(L.kspace_accuracy));
@@ -696,9 +714,9 @@ std::vector<std::string> style_lines(const Layout& L, const ForceField& ff, cons
     r.push_back(nm + "_style " + k->style_line());
   }
   if (L.native)   // the force field's own form of the line (MARTINI: lj 0.0 1.0 1.0)
-    std::snprintf(b, sizeof b, "special_bonds lj 0.0 %s %.6f coul 0.0 %s %.6f", ff.keep13 ? "1.0" : "0.0", ff.lj14, ff.keep13 ? "1.0" : "0.0", ff.coul14);
+    std::snprintf(b, sizeof b, "special_bonds lj 0.0 %s %s coul 0.0 %s %s", ff.keep13 ? "1.0" : "0.0", dec(ff.lj14).c_str(), ff.keep13 ? "1.0" : "0.0", dec(ff.coul14).c_str());
   else
-    std::snprintf(b, sizeof b, "special_bonds lj 0 %d %.6f coul 0 %d %.6f", ff.keep13 ? 1 : 0, ff.lj14, ff.keep13 ? 1 : 0, ff.coul14);
+    std::snprintf(b, sizeof b, "special_bonds lj 0 %d %s coul 0 %d %s", ff.keep13 ? 1 : 0, dec(ff.lj14).c_str(), ff.keep13 ? 1 : 0, dec(ff.coul14).c_str());
   r.push_back(b);
   if (e.coulomb && pme(e, L)) {
     // CAPS's PME with its own β; LAMMPS's Ewald sum to the same accuracy reaches the same total electrostatics
@@ -1072,6 +1090,7 @@ static std::array<int, 4> tip4p_types(const System& s, const ForceField& ff, con
 
 void write_lammps_data_ff(const System& s, const ForceField& ff0, const EnergyOptions& e0, const std::string& path, bool pair_coeffs,
                           const LammpsStyle& st) {
+  const Digits digits(st.full_precision);
   if (!ff0.vsites.empty()) {   // four-site water: LAMMPS places the M sites itself
     System rs;
     ForceField rf;
@@ -1120,12 +1139,10 @@ void write_lammps_data_ff(const System& s, const ForceField& ff0, const EnergyOp
     }
     a = {w[0], 0, 0}, b = {0, w[1], 0}, cc = {0, 0, w[2]};
   }
-  std::snprintf(buf, sizeof buf, "%.6f %.6f xlo xhi\n%.6f %.6f ylo yhi\n%.6f %.6f zlo zhi\n", lo[0], lo[0] + a[0], lo[1], lo[1] + b[1], lo[2],
-                lo[2] + cc[2]);
-  out << buf;
+  out << dec(lo[0]) << " " << dec(lo[0] + a[0]) << " xlo xhi\n" << dec(lo[1]) << " " << dec(lo[1] + b[1]) << " ylo yhi\n" << dec(lo[2]) << " "
+      << dec(lo[2] + cc[2]) << " zlo zhi\n";
   if (std::fabs(b[0]) + std::fabs(cc[0]) + std::fabs(cc[1]) > 0) {
-    std::snprintf(buf, sizeof buf, "%.6f %.6f %.6f xy xz yz\n", b[0], cc[0], cc[1]);
-    out << buf;
+    out << dec(b[0]) << " " << dec(cc[0]) << " " << dec(cc[1]) << " xy xz yz\n";
   }
   out << "\nMasses\n\n";
   for (size_t t = 0; t < ff.type_names.size(); ++t) {
@@ -1163,7 +1180,8 @@ void write_lammps_data_ff(const System& s, const ForceField& ff0, const EnergyOp
   std::vector<int64_t> molid(na);
   for (size_t i = 0; i < na; ++i) molid[i] = s.has_mol ? s.atoms[i].mol : int64_t(frag[i]) + 1;
   // the written atoms' charges only (a bond/react union carries the reacted copies after them)
-  const std::vector<double> q6 = charges_six_decimals(std::vector<double>(ff.charge.begin(), ff.charge.begin() + long(std::min(na, ff.charge.size()))), molid);
+  const std::vector<double> q6 = full_digits ? std::vector<double>(ff.charge.begin(), ff.charge.begin() + long(std::min(na, ff.charge.size())))
+                                              : charges_six_decimals(std::vector<double>(ff.charge.begin(), ff.charge.begin() + long(std::min(na, ff.charge.size()))), molid);
   // image flags from whole molecules: atoms stored wrapped one by one would split bonds across the walls (LAMMPS:
   // "Inconsistent image flags")
   const std::vector<Vec3> whole = whole_positions(s);
@@ -1173,8 +1191,8 @@ void write_lammps_data_ff(const System& s, const ForceField& ff0, const EnergyOp
     int im[3] = {0, 0, 0};
     for (int k = 0; k < 3; ++k) im[k] = c.valid() && c.periodic[k] ? int(std::floor(fr[k])) : 0;
     const Vec3 w = whole[i] - (c.a * im[0] + c.b * im[1] + c.c * im[2]);
-    std::snprintf(buf, sizeof buf, "%zu %lld %d %.6f %.6f %.6f %.6f %d %d %d", i + 1, static_cast<long long>(molid[i]), ff.type_index[i] + 1,
-                  q6[i], w[0], w[1], w[2], im[0], im[1], im[2]);
+    std::snprintf(buf, sizeof buf, "%zu %lld %d %s %s %s %s %d %d %d", i + 1, static_cast<long long>(molid[i]), ff.type_index[i] + 1,
+                  dec(q6[i]).c_str(), dec(w[0]).c_str(), dec(w[1]).c_str(), dec(w[2]).c_str(), im[0], im[1], im[2]);
     out << buf << residue_comment(at) << "\n";
   }
   if (s.velocities.size() == s.atoms.size()) {
@@ -1200,6 +1218,7 @@ void write_lammps_data_ff(const System& s, const ForceField& ff0, const EnergyOp
 }
 
 LammpsTerms lammps_terms(const System& s, const ForceField& ff0, const EnergyOptions& e0, const LammpsStyle& st) {
+  const Digits digits(st.full_precision);
   const bool metal = lammps_metal_units(ff0, st);
   const ForceField mff = metal ? forcefield_in_metal_units(ff0) : ForceField{};
   const ForceField& ff = metal ? mff : ff0;
@@ -1269,6 +1288,7 @@ std::string shake_fix(const System& s, const ForceField& ff, const Layout& L, Co
 
 std::string lammps_shake_fix(const System& s, const ForceField& ff0, const EnergyOptions& e0, ConstraintMode mode, const std::string& group,
                              const LammpsStyle& st) {
+  const Digits digits(st.full_precision);
   if (!ff0.vsites.empty()) {
     System rs;
     ForceField rf;
@@ -1428,6 +1448,7 @@ std::string lammps_group_lines(const System& s, const ForceField& ff, const std:
 
 void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOptions& e0, const std::string& data_path, const std::string& path,
                         int64_t held_mol, bool pair_coeffs, const LammpsRun& run_in, const LammpsStyle& st, std::vector<std::string>* notes) {
+  const Digits digits(st.full_precision);
   // constraints LAMMPS's SHAKE cannot hold (every bond of a chain): flexible bonds and the unconstrained time step, said
   LammpsRun run = run_in;
   const bool shake_dropped = run.constraints != ConstraintMode::None && !s.bonds.empty() && !shake_clusters_ok(s, ff0, run.constraints);
@@ -1538,10 +1559,10 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
       if (l.rfind("pair_style", 0) == 0) {
         st2.push_back(ps);
         for (size_t k = 0; k < P; ++k) {
-          std::snprintf(b, sizeof b, "pair_modify pair %s %zu special lj 0.0 0.0 %.6f", lj.c_str(), k + 1, ff.part14[k][0]);
+          std::snprintf(b, sizeof b, "pair_modify pair %s %zu special lj 0.0 0.0 %s", lj.c_str(), k + 1, dec(ff.part14[k][0]).c_str());
           st2.push_back(b);
           if (!coul.empty()) {
-            std::snprintf(b, sizeof b, "pair_modify pair %s %zu special coul 0.0 0.0 %.6f", coul.c_str(), k + 1, ff.part14[k][1]);
+            std::snprintf(b, sizeof b, "pair_modify pair %s %zu special coul 0.0 0.0 %s", coul.c_str(), k + 1, dec(ff.part14[k][1]).c_str());
             st2.push_back(b);
           }
         }

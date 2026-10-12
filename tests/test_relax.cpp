@@ -242,6 +242,33 @@ TEST(Relax, LammpsExportHasTermsAndReadsBack) {
   EXPECT_NEAR(t.density(), s.density(), 1e-3);
 }
 
+TEST(LammpsData, ExactStylesWriteFullPrecision) {
+  // six decimals by default; full_precision (the exact styles) keeps 15 significant digits, so LAMMPS evaluates CAPS's
+  // own numbers: the charges, the pair coefficients and GAFF's 1-4 Coulomb weight 5/6
+  System s = small_cell(2, 3, 0.3);
+  const ForceField ff = assign_gaff(s);
+  const auto dir = std::filesystem::temp_directory_path();
+  auto read = [](const std::filesystem::path& p) {
+    std::ifstream f(p);
+    return std::string((std::istreambuf_iterator<char>(f)), {});
+  };
+  LammpsStyle exact;
+  exact.full_precision = true;
+  write_lammps_data_ff(s, ff, EnergyOptions{}, (dir / "caps_six.data").string());
+  write_lammps_data_ff(s, ff, EnergyOptions{}, (dir / "caps_full.data").string(), true, exact);
+  write_lammps_input(s, ff, EnergyOptions{}, "caps_six.data", (dir / "caps_six.in").string());
+  write_lammps_input(s, ff, EnergyOptions{}, "caps_full.data", (dir / "caps_full.in").string(), 0, false, {}, exact);
+  const std::string six = read(dir / "caps_six.data"), full = read(dir / "caps_full.data");
+  char q15[40], q6[40];
+  std::snprintf(q15, sizeof q15, " %.15g ", ff.charge[0]);
+  std::snprintf(q6, sizeof q6, " %.6f ", ff.charge[0]);
+  EXPECT_NE(full.find(q15), std::string::npos) << q15;
+  EXPECT_EQ(six.find(q15), std::string::npos);
+  EXPECT_NE(six.find(q6), std::string::npos) << q6;
+  EXPECT_NE(read(dir / "caps_six.in").find("coul 0 0 0.833333\n"), std::string::npos);
+  EXPECT_NE(read(dir / "caps_full.in").find("coul 0 0 0.833333333333333\n"), std::string::npos);
+}
+
 TEST(Gromacs, TopologyUnitsExclusionsAndRefusals) {
   System s = small_cell(2, 3, 0.3);
   ForceField ff = assign_gaff(s);

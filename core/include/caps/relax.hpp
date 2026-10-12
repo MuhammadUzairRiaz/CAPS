@@ -135,6 +135,9 @@ std::string export_title(std::string title, const std::string& ffname);
 struct LammpsStyle {
   bool native = false;
   bool hybrid = false;
+  // every number (coefficients, pair coefficients, 1-4 weights, charges, positions, box) at 15 significant digits
+  // instead of six decimals, so LAMMPS reproduces CAPS's energy and forces exactly: the exact styles set it
+  bool full_precision = false;
   std::string coulomb = "auto";   // native: auto (PPPM when the force field is long-range and the cell periodic), pppm, ewald, dsf, cut
   double cutoff = 0;              // native: Å; 0 the force field's
   double kspace_accuracy = 1e-4;  // native: relative accuracy of PPPM / Ewald
