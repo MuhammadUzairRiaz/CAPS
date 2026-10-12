@@ -83,6 +83,14 @@ ENTRIES = {
                         "written exactly as Fourier terms; LAMMPS and GROMACS reproduce CAPS's energies. Torsions foyer's file lacks "
                         "(CHn-CH2-CH-OH and similar, C-C between branched centres) are reported missing",
                         ("TraPPE united-atom", "trappe_ua", 16), ["trappe-ua"]),
+    "gromos54a7-gromacs": ("GROMOS 54A7", "54A7 as GROMACS distributes it (gromos54a7.ff)",
+                           ["N. Schmid et al., Eur. Biophys. J. 40, 843 (2011)", "C. Oostenbrink et al., J. Comput. Chem. 25, 1656 (2004)"],
+                           {"source": "GROMACS share/top/gromos54a7.ff (ffnonbonded.itp, ffbonded.itp, atomtypes.atp, aminoacids.rtp, .n.tdb, .c.tdb)",
+                            "license": "GNU LGPL 2.1 (part of GROMACS)"},
+                           "a building-block force field: CAPS recognises the residues of aminoacids.rtp (with the termini of the .tdb "
+                           "files) in a structure and takes their types, charges and coded terms as pdb2gmx does; peptides of all 20 "
+                           "amino acids, a proline N-terminus and a glycine zwitterion give pdb2gmx's topology term for term and its "
+                           "energies (bench/ff/compare_pdb2gmx.py)", ("GROMOS 54A7", "gromos_54a7", 9), ["gromos-54a7"]),
 }
 RTF = "the topology's own residues typed as it types them (bench/ff/validate_rtf_types.py --cap-links): "
 for fid, name, version, refs, evidence, listing, replaces in (

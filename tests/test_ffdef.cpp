@@ -19,6 +19,7 @@
 #include "caps/io.hpp"
 #include "caps/martini_protein.hpp"
 #include "caps/molecule.hpp"
+#include "caps/peptide.hpp"
 #include "caps/resolution.hpp"
 #include "caps/typing.hpp"
 #include "caps/uff.hpp"
@@ -1025,4 +1026,45 @@ TEST(FFDef, OneTorsionPerBond) {
   ff = parameterize(s, def, types, "keep", &rep, false);
   EXPECT_EQ(ff.dihedrals.size(), 10u);
   std::filesystem::remove(path);
+}
+
+// GROMOS 54A7 by its building blocks (aminoacids.rtp and the termini, as pdb2gmx applies them): an all-atom peptide is
+// folded to united atoms, each residue recognised, its types, charges and coded terms taken from the block. The counts
+// are pdb2gmx's own for the same peptide (bench/ff/compare_pdb2gmx.py: same topology and energies); rigid solvents
+// (water, chloroform) take their blocks' constraint bonds
+TEST(FFDef, GromosBuildingBlocksAsPdb2gmx) {
+  const std::string path = std::string(CAPS_SOURCE_DIR) + "/data/forcefields/gromos54a7-gromacs.json";
+  const FFDef def = load_forcefield(path);
+  PeptideOptions po;
+  po.sequence = "GAFKWDR";
+  System s = build_peptide(po);
+  std::string ch = "auto";
+  const std::string note = prepare_for_forcefield(s, def, ch);
+  EXPECT_NE(note.find("7 residues recognised"), std::string::npos) << note;
+  ASSERT_TRUE(s.topology);
+  EXPECT_EQ(s.atoms.size(), 91u);
+  EXPECT_EQ(s.topology->bonds.size(), 93u);
+  EXPECT_EQ(s.topology->angles.size(), 140u);
+  EXPECT_EQ(s.topology->pairs14.size(), 115u);
+  size_t impropers = 0;
+  for (const auto& d : s.topology->dihedrals) impropers += d.form == 2;
+  EXPECT_EQ(impropers, 56u);
+  double q = 0;
+  for (const auto& a : s.atoms) q += a.charge;
+  EXPECT_NEAR(q, 1.0, 1e-9);   // K+, R+, D−; NH3+ and COO− termini
+  const TypingResult tr = assign_types(s, def);
+  ParamReport rep;
+  const ForceField ff = parameterize(s, def, tr.types, "keep", &rep, false);
+  EXPECT_TRUE(rep.missing.empty());
+  EXPECT_EQ(ff.bonds_x.size(), 93u);
+  EXPECT_EQ(ff.pairs14.size(), 115u);
+  // chloroform: its H kept, the block's H–Cl and Cl–Cl constraint bonds in place of C–H
+  BuildOptions bo;
+  bo.forcefield = "uff";
+  System c = build_molecule("ClC(Cl)Cl", bo).system;
+  ch = "auto";
+  prepare_for_forcefield(c, def, ch);
+  ASSERT_EQ(c.atoms.size(), 5u);
+  EXPECT_EQ(c.bonds.size(), 9u);
+  EXPECT_EQ(c.atoms[0].resname, "CHCL3");
 }

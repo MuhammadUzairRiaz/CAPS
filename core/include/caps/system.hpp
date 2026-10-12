@@ -75,7 +75,7 @@ struct TypeInfo {
 // virtual_sitesn 2), massless. Valid only for the structure it was made with (natoms and the bond list must still match;
 // parameterize checks).
 struct ExplicitTopology {
-  struct Bond { uint32_t i, j; double k, r0; std::string group; };
+  struct Bond { uint32_t i, j; double k, r0; std::string group; int form = 0; };   // form 0 harmonic, 2 GROMOS quartic K (r² − r0²)²
   struct Angle { uint32_t i, j, k; int form; double kt, theta0; std::string group; };
   struct Dihedral { uint32_t i, j, k, l; int form; double kd, phi0; int n; std::string group; std::array<double, 5> c{}; };   // c: form 11's coefficients
   struct Pair { uint32_t i, j; double eps, sigma; };   // an explicit LJ pair (kcal/mol, Å)
@@ -88,6 +88,8 @@ struct ExplicitTopology {
   struct VSite { uint32_t site; std::vector<uint32_t> from; std::vector<double> w; double c = 0; };   // w empty: the centre of mass; c: out of plane (1/Å)
   std::vector<VSite> vsites;
   std::vector<double> masses;   // per atom when the molecule sets them (NaN: the type's), else empty
+  std::vector<std::array<uint32_t, 2>> pairs14;   // 1-4 pairs with the force field's 1-4 Lennard-Jones and Coulomb scale
+  std::vector<std::string> types;   // per atom, when the topology names the force-field types (building blocks), else empty
   std::string source;   // "Martini 2.2 protein (martinize rules)"
 };
 

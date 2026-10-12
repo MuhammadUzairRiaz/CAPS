@@ -364,6 +364,7 @@ void save_forcefield(const FFDef& ff, const std::string& path) {
     auto rel = [&](const std::string& f) { return std::filesystem::path(f).lexically_proximate(dir).generic_string(); };
     if (!ff.pair_table.empty()) j["pair_table"] = rel(ff.pair_table);
     if (!ff.molecule_templates_path.empty()) j["molecule_templates"] = rel(ff.molecule_templates_path);
+    if (ff.residue_templates) j["residue_templates"] = *ff.residue_templates;
     if (ff.constraint_kj != 1e6) j["constraint_k"] = ff.constraint_kj;
   }
   j["improper_order"] = ff.improper_order;
@@ -525,6 +526,7 @@ FFDef load_forcefield(const std::string& path) {
     };
     if (j.has("pair_table")) ff.pair_table = rel(j["pair_table"].str());
     ff.constraint_kj = j.num("constraint_k", ff.constraint_kj);
+    if (j.has("residue_templates")) ff.residue_templates = std::make_shared<const Json>(j["residue_templates"]);
     if (j.has("molecule_templates")) {
       ff.molecule_templates_path = rel(j["molecule_templates"].str());
       std::ifstream mf(ff.molecule_templates_path);
@@ -618,6 +620,7 @@ FFDef load_forcefield(const std::string& path) {
     if (!ff.bead_templates.empty()) base.bead_templates = ff.bead_templates;
     if (!ff.pair_table.empty()) base.pair_table = ff.pair_table;
     if (ff.molecule_templates) base.molecule_templates = ff.molecule_templates, base.molecule_templates_path = ff.molecule_templates_path;
+    if (ff.residue_templates) base.residue_templates = ff.residue_templates;
     merge_forcefield(base, ff);
     // how impropers are formed, when the overlay says (MARTINI's amino acids: GROMACS type-2 order, centre second)
     if (j.has("improper_order")) base.improper_order = ff.improper_order;
@@ -1757,7 +1760,10 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
     if (!use_topo) rep.notes.push_back("the structure's bonds no longer match its " + s.topology->source + " topology: bonded terms looked up instead");
   }
   if (use_topo) {
-    for (const auto& b : s.topology->bonds) ff.bonds.push_back({b.i, b.j, b.k, b.r0});
+    for (const auto& b : s.topology->bonds) {
+      if (b.form == 2) ff.bonds_x.push_back({b.i, b.j, 2, b.k, b.r0, 0});
+      else ff.bonds.push_back({b.i, b.j, b.k, b.r0});
+    }
     for (const auto& p : s.topology->pairs) ff.lj_pairs.push_back({p.i, p.j, p.eps, p.sigma});
     for (const auto& a : s.topology->angles) {
       if (a.form == 0) ff.angles.push_back({a.i, a.j, a.k, a.kt, a.theta0});
@@ -2190,6 +2196,8 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
   }
   if (only12) p14.clear();
   for (const auto& q : p14) ff.pairs14.push_back({q.first, q.second});
+  if (use_topo)
+    for (const auto& q : s.topology->pairs14) ff.pairs14.push_back({q[0], q[1]});
   // impropers: every centre with three or more neighbours, triples sorted by index; last matching rule wins over all
   // orderings of the three (as moltemplate's canonical ordering does)
   const int cpos = def.improper_order == "center1_sorted" ? 0 : def.improper_order == "center2_sorted" ? 1 : 2;
@@ -2469,6 +2477,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
   for (const auto& p : ex12) add_ex(p.first, p.second);
   if (use_topo) {
     for (const auto& p : s.topology->exclusions) add_ex(p.first, p.second);
+    for (const auto& p : s.topology->pairs14) add_ex(p[0], p[1]);
     // virtual sites at the centre of mass of their atoms: massless themselves
     const auto& tm = s.topology->masses;
     for (size_t i = 0; i < tm.size() && i < ff.mass.size(); ++i)
@@ -2596,7 +2605,13 @@ std::string prepare_core(System& s, const FFDef& ff, std::string& charges);
 }  // namespace
 
 std::string prepare_for_forcefield(System& s, const FFDef& ff, std::string& charges) {
+  if (ff.residue_templates) charges = "keep";   // the building blocks' own charges, nothing computed for the folding
   std::string note = prepare_core(s, ff, charges);
+  if (ff.residue_templates) {
+    const std::string r = apply_residue_templates(s, ff);
+    charges = "keep";
+    note += (note.empty() ? "" : "; ") + r;
+  }
   if (ff.site_rules.empty()) return note;
   // the model's massless sites, each right after the last atom of its molecule (a molecule stays contiguous), unless
   // already there

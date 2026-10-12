@@ -78,6 +78,9 @@ CASES = [
     ("GAFF2 2.11 (gaff211.dat) isoprene, styrene (vacuum)", ("smiles", "CC=C(C)CC.C=Cc1ccccc1"), "gaff2-2.11-ambertools", "gasteiger", []),
     ("CHARMM36 (toppar) peptide GAFKW (vacuum; CMAP not represented)", ("peptide", "GAFKW"), "charmm36-prot-toppar", "gasteiger", []),
     ("TraPPE-UA (foyer) butanol, 2-propanol, 2,3-dimethylbutane (vacuum)", ("smiles", "CCCCO.CC(C)O.CC(C)C(C)C"), "trappe-ua-foyer", "types", []),
+    ("GROMOS 54A7 (building blocks) peptide GAFKWDR (vacuum)", ("peptide", "GAFKWDR"), "gromos54a7-gromacs", "keep", []),
+    ("GROMOS 54A7 (building blocks) water, methanol, DMSO, chloroform, urea, TFE (vacuum)", ("smiles", "O.CO.CS(C)=O.ClC(Cl)Cl.NC(N)=O.OCC(F)(F)F"),
+     "gromos54a7-gromacs", "keep", []),
     ("CHARMM19 (toppar, united atom) peptide GAFKW (vacuum)", ("peptide", "GAFKW"), "charmm19-toppar", "gasteiger", []),
     ("CHARMM22 (toppar) peptide GAFKW (vacuum)", ("peptide", "GAFKW"), "charmm22-prot-toppar", "gasteiger", []),
     ("CGenFF (toppar) toluene (vacuum)", ("smiles", "Cc1ccccc1", os.path.join(FF, "cgenff-toppar.json")), "cgenff-toppar", "gasteiger", []),
@@ -175,7 +178,7 @@ def gmx(d, stem):
     r = run(["mdrun", "-s", stem + ".tpr", "-rerun", stem + ".gro", "-deffnm", stem, "-nt", "4"])
     if r.returncode:
         raise RuntimeError("mdrun: " + (r.stdout + r.stderr).strip().splitlines()[-1][:200])
-    terms = ["Bond", "Morse", "Quartic-Bonds", "Angle", "G96Angle", "U-B", "Proper-Dih.", "Per.-Imp.-Dih.", "Improper-Dih.", "LJ-14",
+    terms = ["Bond", "G96Bond", "Morse", "Quartic-Bonds", "Angle", "G96Angle", "U-B", "Proper-Dih.", "Per.-Imp.-Dih.", "Improper-Dih.", "LJ-14",
              "Coulomb-14", "LJ-(SR)", "Disper.-corr.", "Coulomb-(SR)", "Coul.-recip.", "Potential"]
     # names absent from this run are reported by gmx energy and skipped; the table lists the rest
     r = run(["energy", "-f", stem + ".edr", "-o", os.path.join(d, "e.xvg")], "\n".join(terms) + "\n\n")
@@ -411,7 +414,7 @@ for label, src, fid, charges, extra in CASES:
     # the cut-off both sides used: the .mdp's rvdw (the force field's own, e.g. OPLS 12 Å)
     rc = next((float(l.split("=")[1].split(";")[0]) * 10 for l in open(os.path.join(d, "case.mdp")) if l.split("=")[0].strip() == "rvdw"), 10.0)
     tail_caps = top_tail(d, "case", rc) if ("--no-tail" not in extra and "Disper. corr." in ge) else 0.0
-    gm = {"bond": G("Bond", "Morse", "Quartic Bonds"),
+    gm = {"bond": G("Bond", "G96Bond", "Morse", "Quartic Bonds"),
           "angle": G("Angle", "G96Angle", "U B"), "dihedral": G("Proper Dih."), "improper": G("Per. Imp. Dih.", "Improper Dih."),
           "vdw": G("LJ 14", "LJ (SR)"), "coulomb": G("Coulomb 14", "Coulomb (SR)", "Coul. recip.")}
     # GROMACS books a periodic improper (function 4) as "Per. Imp. Dih."; CAPS may count function-9 impropers as torsions
