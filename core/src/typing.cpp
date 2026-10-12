@@ -516,8 +516,10 @@ Perception perceive(const System& s) {
       all_cn = all_cn && (e == 6 || e == 7);
       all_sp3c = all_sp3c && e == 6 && d == 4;
       all_arom = all_arom && p.aromatic[a];
+      // exocyclic: a double bond out of every ring (C=O on pyridone); one into a fused ring (naphthalene's second ring
+      // seen from the first) is part of the ring system, as antechamber treats it
       for (size_t q = 0; q < p.nb[a].size(); ++q)
-        if (p.order[a][q] == 2 && std::find(r.begin(), r.end(), p.nb[a][q]) == r.end()) exo_double = true;
+        if (p.order[a][q] == 2 && !p.ring_bond[a][q] && std::find(r.begin(), r.end(), p.nb[a][q]) == r.end()) exo_double = true;
     }
     for (size_t k = 0; k < m && all_arom; ++k)
       for (size_t q = 0; q < p.nb[r[k]].size(); ++q)
@@ -535,6 +537,7 @@ Perception perceive(const System& s) {
       }
       if (doubles >= 2 && two_singles) cls = 2;
       else if (all_arom) cls = 2;   // aromatic by Hückel but not a pure six-membered C / N ring
+      else if (doubles >= 2) cls = 2;   // planar and conjugated without aromaticity (cyclooctatetraene: antechamber's cc / cd)
     }
     for (uint32_t a : r)
       if (p.ar_class[a] == 0 || cls < p.ar_class[a]) p.ar_class[a] = cls;
