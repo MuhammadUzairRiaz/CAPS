@@ -36,9 +36,11 @@ inline M4 operator<(F4 a, F4 b) { return {vcltq_f32(a.v, b.v)}; }
 inline M4 operator&(M4 a, M4 b) { return {vandq_u32(a.v, b.v)}; }
 inline F4 select(M4 m, F4 a, F4 b) { return {vbslq_f32(m.v, a.v, b.v)}; }   // m ? a : b
 inline F4 masked(M4 m, F4 a) { return {vreinterpretq_f32_u32(vandq_u32(m.v, vreinterpretq_u32_f32(a.v)))}; }
-inline M4 mask_bits(unsigned bits) {   // lane l set when bit l is
-  static const uint32_t lanes[4] = {1, 2, 4, 8};
-  return {vtstq_u32(vdupq_n_u32(bits), vld1q_u32(lanes))};
+inline M4 mask_bits(unsigned bits) {   // lane l set when bit l is (bits < 16): one load from a table
+  alignas(16) static const uint32_t table[16][4] = {
+      {0, 0, 0, 0}, {~0u, 0, 0, 0}, {0, ~0u, 0, 0}, {~0u, ~0u, 0, 0}, {0, 0, ~0u, 0}, {~0u, 0, ~0u, 0}, {0, ~0u, ~0u, 0}, {~0u, ~0u, ~0u, 0},
+      {0, 0, 0, ~0u}, {~0u, 0, 0, ~0u}, {0, ~0u, 0, ~0u}, {~0u, ~0u, 0, ~0u}, {0, 0, ~0u, ~0u}, {~0u, 0, ~0u, ~0u}, {0, ~0u, ~0u, ~0u}, {~0u, ~0u, ~0u, ~0u}};
+  return {vld1q_u32(table[bits & 15u])};
 }
 inline bool any(M4 m) { return vmaxvq_u32(m.v) != 0; }
 inline unsigned bits(M4 m) {   // bit l set for lane l
@@ -47,12 +49,7 @@ inline unsigned bits(M4 m) {   // bit l set for lane l
 }
 inline float hsum(F4 a) { return vaddvq_f32(a.v); }
 // 1/√a, a > 0: the estimate and two Newton steps (full single precision)
-inline F4 rsqrt(F4 a) {
-  float32x4_t y = vrsqrteq_f32(a.v);
-  y = vmulq_f32(y, vrsqrtsq_f32(vmulq_f32(a.v, y), y));
-  y = vmulq_f32(y, vrsqrtsq_f32(vmulq_f32(a.v, y), y));
-  return {y};
-}
+inline F4 rsqrt(F4 a) { return {vdivq_f32(vdupq_n_f32(1.0f), vsqrtq_f32(a.v))}; }
 // 2ⁿ for integral n held as floats, |n| ≤ 126
 inline F4 pow2i(F4 n) { return {vreinterpretq_f32_s32(vshlq_n_s32(vaddq_s32(vcvtq_s32_f32(n.v), vdupq_n_s32(127)), 23))}; }
 inline F4 round_near(F4 a) { return {vrndnq_f32(a.v)}; }
