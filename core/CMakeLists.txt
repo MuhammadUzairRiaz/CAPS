@@ -24,6 +24,7 @@ add_library(caps_core STATIC
     src/mech_props.cpp
   src/grow.cpp
   src/field.cpp
+  src/nbnxm.cpp
   src/relax.cpp
   src/lammps_data.cpp
   src/gromacs.cpp

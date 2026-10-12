@@ -6,9 +6,11 @@
 #include "caps/field.hpp"
 #include "caps/kspace.hpp"
 #include "kspace_pool.hpp"
+#include "nbnxm.hpp"
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <functional>
 #include <map>
 #include <set>
@@ -314,10 +316,10 @@ void Evaluator::set_options(const EnergyOptions& o0) {
   EnergyOptions o = o0;
   if (ff_.cutoff > 0) o.cutoff = ff_.cutoff;   // the model's own cut-off
   if (ff_.lj_shift || ff_.lj_fsw) o.tail = false;
-  if (o.threads != opt_.threads) pool_ = std::make_unique<ThreadPool>(o.threads > 0 ? o.threads : default_threads());
+  if (o.threads != opt_.threads) pool_ = std::make_unique<ThreadPool>(o.threads > 0 ? o.threads : default_threads()), cl_built_ = false;
   const bool relist = o.cutoff != opt_.cutoff || o.skin != opt_.skin;
   opt_ = o;
-  if (relist) built_ = false;
+  if (relist) built_ = false, cl_built_ = false;
   cap_radii();
 }
 
@@ -573,6 +575,83 @@ inline bool orthogonal(const Cell& c) {
 }
 
 }  // namespace
+
+namespace {
+
+// Whether a pair list built at (x0, cell0), its images now for cells, still serves (x, cell): every atom has moved less
+// than half the skin (relative to the affinely mapped positions when the cell was deformed, shrinking eating into the
+// skin). 0 it serves, 1 it serves once its images are rescaled to cell, 2 it must be rebuilt.
+int list_state(const std::vector<double>& x, const Cell& cell, const std::vector<double>& x0, const Cell& cell0, const Cell& cells,
+               double skin, double cutoff) {
+  auto same = [](const Cell& p, const Cell& q) { return p.a == q.a && p.b == q.b && p.c == q.c && p.origin == q.origin; };
+  const size_t n = x.size() / 3;
+  if (x0.size() != x.size()) return 2;
+  if (same(cell, cell0)) {
+    const double lim = 0.25 * skin * skin;
+    for (size_t i = 0; i < n; ++i) {
+      const double dx = x[3 * i] - x0[3 * i], dy = x[3 * i + 1] - x0[3 * i + 1], dz = x[3 * i + 2] - x0[3 * i + 2];
+      if (dx * dx + dy * dy + dz * dz > lim) return 2;
+    }
+    return 0;
+  }
+  if (!cell.valid() || !cell0.valid()) return 2;
+  // Shrinking eats into the skin by (1 − s)(rc + skin), s the smallest ratio of perpendicular widths; the rest of the
+  // skin covers moves relative to the affinely mapped positions.
+  auto widths = [](const Cell& c) {
+    const double v = c.volume();
+    return Vec3{v / norm(cross(c.b, c.c)), v / norm(cross(c.c, c.a)), v / norm(cross(c.a, c.b))};
+  };
+  const Vec3 w0 = widths(cell0), w1 = widths(cell);
+  const double sr = std::min({w1[0] / w0[0], w1[1] / w0[1], w1[2] / w0[2], 1.0});
+  const double allow = skin - (1 - sr) * (cutoff + skin);
+  if (allow < 0.1 * skin) return 2;
+  const double lim = 0.25 * allow * allow;
+  for (size_t i = 0; i < n; ++i) {
+    const Vec3 m = cell.to_cartesian(cell0.to_fractional({x0[3 * i], x0[3 * i + 1], x0[3 * i + 2]}));
+    const double dx = x[3 * i] - m[0], dy = x[3 * i + 1] - m[1], dz = x[3 * i + 2] - m[2];
+    if (dx * dx + dy * dy + dz * dz > lim) return 2;
+  }
+  return same(cell, cells) ? 0 : 1;
+}
+
+}  // namespace
+
+// The cluster kernel takes plain pairs only: 12-6 or 9-6 Lennard-Jones, PME, DSF or no charges, nothing that needs the
+// atom pair list (Stillinger–Weber, a frozen list) or a branch per pair.
+bool Evaluator::cluster_mode() const {
+  if (!opt_.mixed || frozen_ || opt_.force_cap > 0 || ff_.lj_fsw || ff_.hbond.on() || ff_.sw.on) return false;
+  if (opt_.alchemical && opt_.alchemical->size() == ff_.type_index.size()) return false;
+  if (opt_.coulomb && (ff_.coul_rf || ff_.coul_gromacs)) return false;
+  return std::all_of(form_.begin(), form_.end(), [](uint8_t v) { return v == 0; });
+}
+
+// Per type pair c12, c6 (12-6: 4εσ¹², 4εσ⁶; 9-6: 2εσ⁹, 3εσ⁶), and per-type factors when every pair's coefficients are
+// their products (geometric mixing, as OPLS-AA): the kernel then needs no lookup per pair.
+void Evaluator::cluster_coefficients() {
+  const size_t nt = ff_.lj.size();
+  cl_c12_.assign(nt * nt, 0.0f);
+  cl_c6_.assign(nt * nt, 0.0f);
+  std::vector<double> c12(nt * nt), c6(nt * nt);
+  for (size_t tp = 0; tp < nt * nt; ++tp) {
+    const double eps = eps_[tp] > 0 ? eps_[tp] : 0.0;
+    c12[tp] = lj96_ ? 2 * eps * s6_[tp] * std::sqrt(s6_[tp]) : 4 * eps * s6_[tp] * s6_[tp];
+    c6[tp] = lj96_ ? 3 * eps * s6_[tp] : 4 * eps * s6_[tp];
+    cl_c12_[tp] = float(c12[tp]);
+    cl_c6_[tp] = float(c6[tp]);
+  }
+  cl_f12_.assign(nt, 0.0);
+  cl_f6_.assign(nt, 0.0);
+  bool comb = true;
+  for (size_t t = 0; t < nt; ++t) cl_f12_[t] = std::sqrt(c12[t * nt + t]), cl_f6_[t] = std::sqrt(c6[t * nt + t]);
+  for (size_t a = 0; a < nt && comb; ++a)
+    for (size_t b = 0; b < nt && comb; ++b) {
+      const double p12 = cl_f12_[a] * cl_f12_[b], p6 = cl_f6_[a] * cl_f6_[b];
+      comb = std::fabs(p12 - c12[a * nt + b]) <= 1e-7 * std::max(std::fabs(c12[a * nt + b]), 1e-300) &&
+             std::fabs(p6 - c6[a * nt + b]) <= 1e-7 * std::max(std::fabs(c6[a * nt + b]), 1e-300);
+    }
+  if (!comb) cl_f12_.clear(), cl_f6_.clear();
+  cl_coef_ = true;
+}
 
 void Evaluator::build(const std::vector<double>& x, const Cell& cell_in) {
   const size_t n = x.size() / 3;
@@ -955,39 +1034,41 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
 
   // r-RESPA splits the forces: bonded terms alone need no pair list
   const bool nonb = opt_.parts & 2, bonded = opt_.parts & 1;
-  if (nonb) {
+  const bool clmode = nonb && cluster_mode();
+  if (clmode) {
+    if (!cl_) cl_ = std::make_unique<nbnxm::List>();
+    if (!cl_coef_) cluster_coefficients();
+    const int st = cl_built_ ? list_state(x, cell, x0c_, cell0c_, cl_->cells, opt_.skin, opt_.cutoff) : 2;
+    if (st == 2) {
+      const std::vector<char> none;
+      cl_->build(x, cell, opt_.cutoff + opt_.skin, ff_.excluded, ff_.type_index, ff_.lj.size(),
+                 ff_.excluded_type_pairs.empty() ? none : skip_type_, qeff_, cl_f12_, cl_f6_, *pool_);
+      x0c_ = x;
+      cell0c_ = cell;
+      cl_built_ = true;
+      ++builds_;
+    } else if (st == 1) {
+      cl_->rescale(cell);
+    }
+    cl_->positions(x);
+    // Dynamic pruning: the kernel takes the pairs within r_c + b of the outer list, pruned again once an atom has moved
+    // b/2 since the last prune (b = 0.8 Å, or the skin when that is shorter)
+    const double b = std::min(0.8, opt_.skin);
+    if (st == 2 || !cl_pruned_ || list_state(x, cell, x0p_, cell0p_, cell, b, opt_.cutoff) == 2) {
+      cl_->prune(opt_.cutoff + b, *pool_);
+      x0p_ = x;
+      cell0p_ = cell;
+      cl_pruned_ = true;
+    }
+  } else if (nonb) {
     auto same = [](const Cell& p, const Cell& q) { return p.a == q.a && p.b == q.b && p.c == q.c && p.origin == q.origin; };
     bool rebuild = !built_ || x0_.size() != x.size();
     if (frozen_ && !rebuild) {
       if (!same(cell, cells_) && cell.valid()) rescale_images(cell);
     } else if (!rebuild) {
-      if (same(cell, cell0_)) {
-        const double lim = 0.25 * opt_.skin * opt_.skin;
-        for (size_t i = 0; i < n && !rebuild; ++i) {
-          const double dx = x[3 * i] - x0_[3 * i], dy = x[3 * i + 1] - x0_[3 * i + 1], dz = x[3 * i + 2] - x0_[3 * i + 2];
-          rebuild = dx * dx + dy * dy + dz * dz > lim;
-        }
-      } else if (!cell.valid() || !cell0_.valid()) {
-        rebuild = true;
-      } else {
-        // The cell was deformed since the build. Shrinking eats into the skin by (1 − s)(rc + skin), s the smallest
-        // ratio of perpendicular widths; the rest of the skin covers moves relative to the affinely mapped positions.
-        auto widths = [](const Cell& c) {
-          const double v = c.volume();
-          return Vec3{v / norm(cross(c.b, c.c)), v / norm(cross(c.c, c.a)), v / norm(cross(c.a, c.b))};
-        };
-        const Vec3 w0 = widths(cell0_), w1 = widths(cell);
-        const double sr = std::min({w1[0] / w0[0], w1[1] / w0[1], w1[2] / w0[2], 1.0});
-        const double allow = opt_.skin - (1 - sr) * (opt_.cutoff + opt_.skin);
-        if (allow < 0.1 * opt_.skin) rebuild = true;
-        const double lim = 0.25 * allow * allow;
-        for (size_t i = 0; i < n && !rebuild; ++i) {
-          const Vec3 m = cell.to_cartesian(cell0_.to_fractional({x0_[3 * i], x0_[3 * i + 1], x0_[3 * i + 2]}));
-          const double dx = x[3 * i] - m[0], dy = x[3 * i + 1] - m[1], dz = x[3 * i + 2] - m[2];
-          rebuild = dx * dx + dy * dy + dz * dz > lim;
-        }
-        if (!rebuild && !same(cell, cells_)) rescale_images(cell);
-      }
+      const int st = list_state(x, cell, x0_, cell0_, cells_, opt_.skin, opt_.cutoff);
+      rebuild = st == 2;
+      if (st == 1) rescale_images(cell);
     }
     if (rebuild) {
       if (frozen_) throw std::logic_error("frozen pair list: the configuration changed size");
@@ -1223,8 +1304,8 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
   const bool frozen = frozen_;
   // Phase 1: pair list. Every worker is called (possibly with an empty range) and clears its own force buffers; its
   // slots are a contiguous range holding about 1/nth of the pairs. Pair forces go to a buffer in slot order.
-  const double* xs = nonb ? listed_positions(x) : nullptr;
-  const size_t npairs = nonb ? pj_.size() : 0;
+  const double* xs = nonb && !clmode ? listed_positions(x) : nullptr;
+  const size_t npairs = nonb && !clmode ? pj_.size() : 0;
   // Plain 12-6 pairs (no other pair form, cap, switch, alchemy, hydrogen bonds or frozen list; PME, DSF or no
   // charges) take a copy of the loop with those branches compiled out, the image shift taken once per segment and
   // the two coefficients per type pair: 12-6 E = c12 r⁻¹² − cc6 r⁻⁶ (4ε σ¹², 4ε σ⁶); class II 9-6 E = c12 r⁻⁹ − cc6 r⁻⁶
@@ -1470,6 +1551,42 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
     for (int c = 0; c < 6; ++c) acc[t][7 + c] += wv[c];
     acc[t][13] += dl_lj;
     acc[t][14] += dl_c;
+  };
+
+  // Mixed precision: the cluster kernel over each worker's i clusters (about 1/nth of the cluster pairs), float forces
+  // by slot
+  nbnxm::Params cp;
+  if (clmode) {
+    tfc_.resize(nth);
+    cp.rc2 = float(rc2);
+    cp.rc = float(rc);
+    cp.lj = lj96_ ? 2 : 1;
+    cp.comb = !cl_f12_.empty();
+    cp.c12 = cl_c12_.data();
+    cp.c6 = cl_c6_.data();
+    cp.nt = nt;
+    cp.shift = opt_.tail ? 0.0f : 1.0f;   // as lj_shift: truncated with the tail correction, shifted without
+    cp.rcn = float(lj96_ ? std::pow(rc, -9.0) : std::pow(rc, -12.0));
+    cp.rc6 = float(std::pow(rc, -6.0));
+    cp.coul = coul && !rf && !gro ? (pme ? 1 : 2) : 0;
+    cp.kappa = float(pme ? beta : a);
+    cp.kc = float(2 * (pme ? beta : a) / std::sqrt(kPi));
+    cp.e0 = float(dsf_e0);
+    cp.f0 = float(dsf_f0);
+    cp.kcoul = float(kCoulomb);
+    cp.energies = energies_;
+  }
+  auto cluster_phase = [&](int t) {
+    tf_[t].assign(x.size(), 0.0);
+    const size_t ns = cl_->perm.size();
+    std::vector<float>& fc = tfc_[t];
+    fc.assign(3 * ns, 0.0f);
+    nbnxm::Sums sm;
+    nbnxm::kernel(*cl_, cp, t, fc.data(), fc.data() + ns, fc.data() + 2 * ns, sm);
+    acc[t][4] += sm.evdw;
+    acc[t][5] += sm.ecoul;
+    acc[t][6] += sm.w[0] + sm.w[1] + sm.w[2];
+    for (int c = 0; c < 6; ++c) acc[t][7 + c] += sm.w[c];
   };
 
   // Phase 2: bonded terms, 1-4 pairs and the electrostatics of bonded partners, as one index space split over workers.
@@ -1861,7 +1978,8 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
   };
   // one run for both phases: each worker lists its pairs, then its share of the bonded terms, into its own buffer
   pool_->run(size_t(nth), [&](int t, size_t, size_t) {
-    if (plain && lj96_) pair_phase(t, std::integral_constant<int, 2>{});
+    if (clmode) cluster_phase(t);
+    else if (plain && lj96_) pair_phase(t, std::integral_constant<int, 2>{});
     else if (plain) pair_phase(t, std::integral_constant<int, 1>{});
     else pair_phase(t, std::integral_constant<int, 0>{});
     bonded_phase(t, total * size_t(t) / size_t(nth), total * size_t(t + 1) / size_t(nth));
@@ -1869,11 +1987,20 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
 
   // Reduce in worker order (deterministic for a given thread count); the reduction itself is split by atoms. Pair
   // forces are in slot order.
-  const bool slots = nonb && iperm_.size() == n;
+  const bool slots = nonb && !clmode && iperm_.size() == n;
   pool_->run(n, [&](int, size_t b, size_t en) {
     for (int t = 0; t < nth; ++t) {
       const std::vector<double>& ft = tf_[t];
       for (size_t k = 3 * b; k < 3 * en; ++k) f[k] += ft[k];
+      if (clmode) {
+        const std::vector<float>& fc = tfc_[t];
+        const size_t ns = cl_->perm.size();
+        for (size_t i = b; i < en; ++i) {
+          const size_t sl = cl_->iperm[i];
+          f[3 * i] += double(fc[sl]); f[3 * i + 1] += double(fc[ns + sl]); f[3 * i + 2] += double(fc[2 * ns + sl]);
+        }
+        continue;
+      }
       if (!slots) continue;
       const std::vector<double>& fs = tfs_[t];
       for (size_t i = b; i < en; ++i) {

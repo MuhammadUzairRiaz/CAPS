@@ -244,6 +244,8 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
                         ") V/Å on the partial charges: the field does work, so the conserved quantity is not conserved");
   Vec3 wall_f{0, 0, 0};
   auto compute = [&] {
+    // pair energies only on a step that reports them (or for a caller that reads every step)
+    ev.energies(o.each_step || cur_step % std::max(1, o.thermo_every) == 0 || cur_step == o.steps);
     EnergyTerms t = ev.compute(x, cell, respa > 1 ? f_slow : f);
     auto& F = respa > 1 ? f_slow : f;
     if (!movers.empty()) {   // the force on the moved group, before it is held
