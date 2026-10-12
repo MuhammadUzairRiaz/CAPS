@@ -285,6 +285,11 @@ def prepare():
         for k in range(0, 360, step):
             target = -180 + k
             p = rotate(fpos, moving, quad[1], quad[2], sign * (target - phi0))
+            near = [set(fnb[i]) | {z for y in fnb[i] for z in fnb[y]} for i in range(len(p))]   # 1-2 and 1-3 partners
+            close = min(norm(sub(p[i], p[j])) for i in range(len(p)) for j in range(i) if j not in near[i])
+            if close < 1.0:   # atoms on top of each other: no point, no input, no job (the optimiser would start broken)
+                skipped += 1
+                continue
             pdir = os.path.join(fdir, f"p{target:+04d}")
             os.makedirs(pdir, exist_ok=True)
             rel = os.path.relpath(pdir, work)   # jobs.txt and plan.json name points relative to WORKDIR: copy it anywhere
@@ -294,18 +299,14 @@ def prepare():
             else:
                 open(os.path.join(pdir, "point.in"), "w").write(psi4_input(fel, p, quad))
                 jobs.append(f"cd {rel} && ${{PSI4:-psi4}} point.in point.out")
-            near = [set(fnb[i]) | {z for y in fnb[i] for z in fnb[y]} for i in range(len(p))]   # 1-2 and 1-3 partners
-            close = min(norm(sub(p[i], p[j])) for i in range(len(p)) for j in range(i) if j not in near[i])
-            if close < 1.0:   # atoms on top of each other: no point (the optimiser would start from a broken structure)
-                skipped += 1
-                continue
             scan["points"].append({"phi": target, "dir": rel, "closest_nonbonded": round(close, 3)})
         scan["skipped_points"] = skipped
         plan["scans"].append(scan)
     json.dump(plan, open(os.path.join(work, "plan.json"), "w"), indent=1)
-    open(os.path.join(work, "jobs.txt"), "w").write("\n".join(jobs))
-    jobs.append("")
-    print(f"{len(missing)} missing torsion classes: {len(plan['scans'])} scans, {len(jobs) - 1} QM points (jobs.txt); "
+    # one line per planned point, each ended by a newline: the array is 1-N with N the number of lines
+    assert len(jobs) == sum(len(s["points"]) for s in plan["scans"])
+    open(os.path.join(work, "jobs.txt"), "w").write("".join(j + "\n" for j in jobs))
+    print(f"{len(missing)} missing torsion classes: {len(plan['scans'])} scans, {len(jobs)} QM points (jobs.txt; array 1-{len(jobs)}); "
           f"not scanned: {len(plan['not_scanned'])}")
     for s in plan["scans"]:
         print(f"  {'-'.join(s['classes'])}: fragment of {len(s['elements'])} atoms, closest non-bonded pair over the scan "
