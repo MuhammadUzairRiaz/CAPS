@@ -185,22 +185,13 @@ void kernel8(const List& L, const Params& p, int tw, float* fxo, float* fyo, flo
     out.evdw += hsum8(ev);
     out.ecoul += hsum8(ec);
   }
-  double W[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
-  const size_t ns = L.perm.size();
-  for (size_t s = 0; s < ns; ++s) {
-    const double* o = &L.org[3 * (s / 4)];
-    const double r[3] = {X[s] + o[0], Y[s] + o[1], Z[s] + o[2]}, f[3] = {fxo[s], fyo[s], fzo[s]};
-    for (int u = 0; u < 3; ++u)
-      for (int w = 0; w < 3; ++w) W[u][w] += r[u] * f[w];
-  }
+  if (out.fsh.size() < 3 * ncodes) out.fsh.resize(3 * ncodes, 0.0);
   for (size_t c = 0; c < ncodes; ++c) {
     if (c == zero_code) continue;
-    const double f[3] = {hsum4(fsh[3 * c]), hsum4(fsh[3 * c + 1]), hsum4(fsh[3 * c + 2])};
-    for (int u = 0; u < 3; ++u)
-      for (int w = 0; w < 3; ++w) W[u][w] += L.qvec[3 * c + u] * f[w];
+    out.fsh[3 * c] += hsum4(fsh[3 * c]);
+    out.fsh[3 * c + 1] += hsum4(fsh[3 * c + 1]);
+    out.fsh[3 * c + 2] += hsum4(fsh[3 * c + 2]);
   }
-  out.w[0] += W[0][0]; out.w[1] += W[1][1]; out.w[2] += W[2][2];
-  out.w[3] += 0.5 * (W[0][1] + W[1][0]); out.w[4] += 0.5 * (W[0][2] + W[2][0]); out.w[5] += 0.5 * (W[1][2] + W[2][1]);
 }
 
 template <int kLj, bool kComb, bool kE>

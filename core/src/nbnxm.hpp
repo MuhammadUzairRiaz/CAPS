@@ -35,8 +35,9 @@ struct List {
   std::vector<double> qvec;       // 3 per image code, Cartesian, for cells
   std::vector<size_t> first;      // per i cluster: its entries [first[c], first[c + 1])
   std::vector<Entry> entries;
-  // Dynamic pruning (as GROMACS): each worker's i clusters [tb[t], te[t]) (about 1/nth of the entries), and its entries
-  // with only the atom pairs inside a shorter radius at the last prune, i cluster tb[t] + k at [pf[t][k], pf[t][k + 1])
+  // Work in chunks of i clusters [tb[t], te[t]) with about equal entries (4 per worker), and dynamic pruning (as GROMACS):
+  // chunk t's entries with only the atom pairs inside a shorter radius at the last prune, i cluster tb[t] + k at
+  // [pf[t][k], pf[t][k + 1])
   std::vector<size_t> tb, te;
   std::vector<std::vector<Entry>> pe;
   std::vector<std::vector<uint32_t>> pf;
@@ -73,9 +74,18 @@ struct Params {
   bool energies = true;           // false: forces and virial only (the energies left at 0)
 };
 
-// Forces added to fx, fy, fz (by slot, float), energies and virial (xx yy zz xy xz yz) added
-struct Sums { double evdw = 0, ecoul = 0, w[6] = {0, 0, 0, 0, 0, 0}; };
-// worker t's i clusters, from its pruned entries, with the widest kernel this processor runs
+// Forces added to fx, fy, fz (by slot, float), energies added, and per image code the summed forces on the j atoms
+// taken through that image (fsh, 3 per code), for the virial: Σ d ⊗ f over the pairs = Σ x ⊗ F over the slots (F the
+// pair forces) + Σ S ⊗ fsh over the images (pair_virial, shift_virial)
+struct Sums {
+  double evdw = 0, ecoul = 0;
+  std::vector<double> fsh;
+};
+// Σ x ⊗ F over slots [sb, se) (F by slot, 3 per slot, double; x the listed positions), added to W (row-major 3 × 3)
+void pair_virial(const List& L, const double* F, size_t sb, size_t se, double W[9]);
+// Σ S ⊗ fsh over the images, added to W
+void shift_virial(const List& L, const std::vector<double>& fsh, double W[9]);
+// chunk t's i clusters, from its pruned entries, with the widest kernel this processor runs
 void kernel(const List& L, const Params& p, int t, float* fx, float* fy, float* fz, Sums& out);
 const char* instruction_set();   // the one kernel() uses: "AVX2", "SSE2", "NEON" or "scalar"
 

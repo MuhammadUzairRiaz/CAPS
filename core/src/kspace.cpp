@@ -85,11 +85,29 @@ double pme_reciprocal(const std::vector<double>& x, const std::vector<double>& q
   cell_array(cell, c);
   // the charge grid is real: its transform is kept for m1 = 0 … k1/2 only (the rest is its complex conjugate)
   const int h1 = k1 / 2 + 1;
-  std::vector<double> grid(size_t(k1) * size_t(k2) * size_t(k3));
-  std::vector<std::complex<double>> half(size_t(h1) * size_t(k2) * size_t(k3));
-  std::vector<double> th(size_t(p) * 3 * size_t(n)), dth(th.size());
-  std::vector<int> idx(th.size());
-  pool.run(size_t(n), [&](int, size_t b, size_t e) {
+  // buffers kept between calls (per calling thread): every one is written whole before it is read, so a step allocates
+  // and zeroes nothing on the calling thread (the spread zeroes its own planes)
+  struct Work {
+    std::vector<double> grid, th, dth;
+    std::vector<std::complex<double>> half;
+    std::vector<int> idx;
+  };
+  thread_local Work work;
+  Work& wk = work;   // the calling thread's (a worker naming `work` would reach its own)
+  wk.grid.resize(size_t(k1) * size_t(k2) * size_t(k3));
+  wk.half.resize(size_t(h1) * size_t(k2) * size_t(k3));
+  wk.th.resize(size_t(p) * 3 * size_t(n));
+  wk.dth.resize(wk.th.size());
+  wk.idx.resize(wk.th.size());
+  std::vector<double>& grid = wk.grid;
+  std::vector<std::complex<double>>& half = wk.half;
+  std::vector<double>& th = wk.th;
+  std::vector<double>& dth = wk.dth;
+  std::vector<int>& idx = wk.idx;
+  // every stage writes disjoint lines, planes or atoms, in slices taken by whichever worker is free (the spread excepted:
+  // each worker scans every atom for its planes, so more pieces would mean more scans)
+  const size_t S = pool.slices();
+  pool.run_slices(size_t(n), S, [&](size_t, size_t b, size_t e) {
     if (b < e) caps_f_pme_splines(n, x.data(), c, g.k, p, th.data(), dth.data(), idx.data(), int(b), int(e));
   });
   // each worker owns whole planes of the third axis: no two write the same grid point
@@ -102,11 +120,11 @@ double pme_reciprocal(const std::vector<double>& x, const std::vector<double>& q
   auto half_axes = [&](int sign) {
     const int lines[2] = {h1 * k3, h1 * k2};
     for (int axis = 2; axis <= 3; ++axis)
-      pool.run(size_t(lines[axis - 2]), [&](int, size_t b, size_t e) {
+      pool.run_slices(size_t(lines[axis - 2]), S, [&](size_t, size_t b, size_t e) {
         if (b < e) caps_f_fft_lines(half.data(), h1, k2, k3, axis, sign, int(b), int(e));
       });
   };
-  pool.run(pairs, [&](int, size_t b, size_t e) {
+  pool.run_slices(pairs, S, [&](size_t, size_t b, size_t e) {
     if (b < e) caps_f_r2c_lines(grid.data(), half.data(), k1, k2, k3, int(b), int(e));
   });
   half_axes(+1);
@@ -127,7 +145,7 @@ double pme_reciprocal(const std::vector<double>& x, const std::vector<double>& q
     caps_f_bspline_moduli(k3, p, b3.data());
     tab.gt.assign(half.size(), 0.0);
     tab.wt.assign(6 * half.size(), 0.0);
-    pool.run(size_t(k3), [&](int, size_t b, size_t e) {
+    pool.run_slices(size_t(k3), S, [&](size_t, size_t b, size_t e) {
       if (b < e) caps_f_pme_green(g.k, c, b1.data(), b2.data(), b3.data(), g.beta, kCoulombConstant, int(b), int(e), tab.gt.data(), tab.wt.data());
     });
     std::copy(c, c + 9, tab.cell);
@@ -135,21 +153,21 @@ double pme_reciprocal(const std::vector<double>& x, const std::vector<double>& q
     tab.beta = g.beta;
     tab.order = p;
   }
-  std::vector<std::array<double, 7>> part(static_cast<size_t>(pool.size()));
+  std::vector<std::array<double, 7>> part(S);   // energy and virial per slice, summed in slice order
   for (auto& a : part) a.fill(0.0);
-  pool.run(size_t(k3), [&](int t, size_t b, size_t e) {
-    if (b < e) caps_f_pme_apply(half.data(), g.k, tab.gt.data(), tab.wt.data(), int(b), int(e), &part[size_t(t)][0], &part[size_t(t)][1]);
+  pool.run_slices(size_t(k3), S, [&](size_t sl, size_t b, size_t e) {
+    if (b < e) caps_f_pme_apply(half.data(), g.k, tab.gt.data(), tab.wt.data(), int(b), int(e), &part[sl][0], &part[sl][1]);
   });
   half_axes(-1);
-  pool.run(pairs, [&](int, size_t b, size_t e) {
+  pool.run_slices(pairs, S, [&](size_t, size_t b, size_t e) {
     if (b < e) caps_f_c2r_lines(half.data(), grid.data(), k1, k2, k3, int(b), int(e));
   });
-  pool.run(size_t(n), [&](int, size_t b, size_t e) {
+  pool.run_slices(size_t(n), S, [&](size_t, size_t b, size_t e) {
     if (b < e) caps_f_pme_gather(n, q.data(), c, g.k, p, grid.data(), th.data(), dth.data(), idx.data(), int(b), int(e), f.data());
   });
   double energy = 0;
   for (int k = 0; k < 6; ++k) vir[k] = 0;
-  for (const auto& a : part) {   // worker order: deterministic for a given thread count
+  for (const auto& a : part) {   // slice order: deterministic for a given thread count
     energy += a[0];
     for (int k = 0; k < 6; ++k) vir[k] += a[1 + k];
   }
