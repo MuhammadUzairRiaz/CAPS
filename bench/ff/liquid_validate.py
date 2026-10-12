@@ -3,10 +3,10 @@
 terms were fitted to (Jorgensen, Maxwell & Tirado-Rives, J. Am. Chem. Soc. 118, 11225 (1996)).
 
     liquid_validate.py NAME SMILES --ff FF.json --out DIR [--n 300] [--temp 298.15] [--eq 5000] [--prod 5000]
-                       [--gas 20000] [--rho 0.8] [--threads N] [--json result.json]
+                       [--gas 20000] [--rho 0.8] [--pressure 1] [--threads N] [--json result.json]
 
 liquid   N molecules packed at 0.9 of --rho (a guess, or the experimental density: only the start), typed with FF.json (its own charges), minimised, then NPT at
-         --temp and 1 atm (Bussi thermostat, C-rescale barostat, PME, 12 A cutoff with tail corrections), --eq steps
+         --temp and --pressure atm (Bussi thermostat, C-rescale barostat, PME, 12 A cutoff with tail corrections), --eq steps
          to equilibrate and --prod steps averaged: density and potential energy per molecule
 gas      one molecule in a 100 A box, Langevin NVT, every intramolecular pair inside the 45 A cutoff and no periodic
          image (Coulomb as damped shifted force with alpha 0, the plain shifted Coulomb; for a molecule under 10 A
@@ -95,7 +95,7 @@ def main():
     liq = os.path.join(out, "liq.data")
     run([CAPS, "ff", "apply", box, "--ff", ff, "--charges", "types", "-o", liq], log)
     run([CAPS, "relax", liq, "-o", os.path.join(out, "liq_min.data")], log)
-    md = ["--temp", str(T), "--thermostat", "bussi", "--barostat", "crescale", "--pressure", "1", "--pme", "--cutoff", "12",
+    md = ["--temp", str(T), "--thermostat", "bussi", "--barostat", "crescale", "--pressure", arg("--pressure", "1"), "--pme", "--cutoff", "12",
           "--dt", "1", "--thermo", "100"] + th
     run([CAPS, "md", os.path.join(out, "liq_min.data"), "-o", os.path.join(out, "liq_eq.data"), "--steps", str(eq),
          "--log", os.path.join(out, "eq.csv")] + md, log)
@@ -119,6 +119,7 @@ def main():
     dh = Eg - El / n + R * T
     dh_e = math.sqrt(Eg_e ** 2 + (El_e / n) ** 2)
     res = {"name": name, "smiles": smiles, "ff": os.path.basename(ff), "n": n, "atoms": n * len(el), "T": T,
+           "P_atm": float(arg("--pressure", "1")),
            "steps": {"eq": eq, "prod": prod, "gas": gas}, "density": round(rho, 4), "density_err": round(rho_e, 4),
            "E_liq_per_mol": round(El / n, 4), "E_gas": round(Eg, 4), "dHvap": round(dh, 3), "dHvap_err": round(dh_e, 3)}
     print(json.dumps(res))
