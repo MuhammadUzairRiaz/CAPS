@@ -340,9 +340,15 @@ def read_point(pdir, engine):
     """(energy in hartree, element list, positions) of one finished point, or None"""
     if engine == "orca":
         out, xyz = os.path.join(pdir, "point.out"), os.path.join(pdir, "point.xyz")
-        if not (os.path.exists(out) and os.path.exists(xyz)) or "ORCA TERMINATED NORMALLY" not in open(out, errors="replace").read():
+        if not (os.path.exists(out) and os.path.exists(xyz)):
             return None
-        e = float(re.findall(r"FINAL SINGLE POINT ENERGY\s+(-?\d+\.\d+)", open(out, errors="replace").read())[-1])
+        text = open(out, errors="replace").read()
+        # ORCA also ends normally after an optimisation that ran out of cycles: such a point is not used, nor one
+        # whose correlated single point is missing
+        if ("ORCA TERMINATED NORMALLY" not in text or "OPTIMIZATION RUN DONE" not in text
+                or "did not converge" in text or not re.search(r"MP2 CORRELATION ENERGY|MP2 TOTAL ENERGY", text)):
+            return None
+        e = float(re.findall(r"FINAL SINGLE POINT ENERGY\s+(-?\d+\.\d+)", text)[-1])
         lines = open(xyz).read().splitlines()[2:]
     else:
         res = os.path.join(pdir, "point.result")
