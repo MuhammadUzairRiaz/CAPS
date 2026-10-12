@@ -600,17 +600,20 @@ namespace {
 // than half the skin (relative to the affinely mapped positions when the cell was deformed, shrinking eating into the
 // skin). 0 it serves, 1 it serves once its images are rescaled to cell, 2 it must be rebuilt.
 int list_state(const std::vector<double>& x, const Cell& cell, const std::vector<double>& x0, const Cell& cell0, const Cell& cells,
-               double skin, double cutoff) {
+               double skin, double cutoff, ThreadPool& pool) {
   auto same = [](const Cell& p, const Cell& q) { return p.a == q.a && p.b == q.b && p.c == q.c && p.origin == q.origin; };
   const size_t n = x.size() / 3;
   if (x0.size() != x.size()) return 2;
   if (same(cell, cell0)) {
     const double lim = 0.25 * skin * skin;
-    for (size_t i = 0; i < n; ++i) {
-      const double dx = x[3 * i] - x0[3 * i], dy = x[3 * i + 1] - x0[3 * i + 1], dz = x[3 * i + 2] - x0[3 * i + 2];
-      if (dx * dx + dy * dy + dz * dz > lim) return 2;
-    }
-    return 0;
+    std::atomic<bool> moved{false};
+    pool.run_slices(n, pool.slices(), [&](size_t, size_t b, size_t e) {
+      for (size_t i = b; i < e && !moved.load(std::memory_order_relaxed); ++i) {
+        const double dx = x[3 * i] - x0[3 * i], dy = x[3 * i + 1] - x0[3 * i + 1], dz = x[3 * i + 2] - x0[3 * i + 2];
+        if (dx * dx + dy * dy + dz * dz > lim) moved.store(true, std::memory_order_relaxed);
+      }
+    });
+    return moved ? 2 : 0;
   }
   if (!cell.valid() || !cell0.valid()) return 2;
   // Shrinking eats into the skin by (1 − s)(rc + skin), s the smallest ratio of perpendicular widths; the rest of the
@@ -624,11 +627,15 @@ int list_state(const std::vector<double>& x, const Cell& cell, const std::vector
   const double allow = skin - (1 - sr) * (cutoff + skin);
   if (allow < 0.1 * skin) return 2;
   const double lim = 0.25 * allow * allow;
-  for (size_t i = 0; i < n; ++i) {
-    const Vec3 m = cell.to_cartesian(cell0.to_fractional({x0[3 * i], x0[3 * i + 1], x0[3 * i + 2]}));
-    const double dx = x[3 * i] - m[0], dy = x[3 * i + 1] - m[1], dz = x[3 * i + 2] - m[2];
-    if (dx * dx + dy * dy + dz * dz > lim) return 2;
-  }
+  std::atomic<bool> moved{false};
+  pool.run_slices(n, pool.slices(), [&](size_t, size_t b, size_t e) {
+    for (size_t i = b; i < e && !moved.load(std::memory_order_relaxed); ++i) {
+      const Vec3 m = cell.to_cartesian(cell0.to_fractional({x0[3 * i], x0[3 * i + 1], x0[3 * i + 2]}));
+      const double dx = x[3 * i] - m[0], dy = x[3 * i + 1] - m[1], dz = x[3 * i + 2] - m[2];
+      if (dx * dx + dy * dy + dz * dz > lim) moved.store(true, std::memory_order_relaxed);
+    }
+  });
+  if (moved) return 2;
   return same(cell, cells) ? 0 : 1;
 }
 
@@ -1056,7 +1063,7 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
   if (clmode) {
     if (!cl_) cl_ = std::make_unique<nbnxm::List>();
     if (!cl_coef_) cluster_coefficients();
-    const int st = cl_built_ ? list_state(x, cell, x0c_, cell0c_, cl_->cells, opt_.skin, opt_.cutoff) : 2;
+    const int st = cl_built_ ? list_state(x, cell, x0c_, cell0c_, cl_->cells, opt_.skin, opt_.cutoff, *pool_) : 2;
     if (st == 2) {
       const std::vector<char> none;
       cl_->build(x, cell, opt_.cutoff + opt_.skin, ff_.excluded, ff_.type_index, ff_.lj.size(),
@@ -1068,11 +1075,11 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
     } else if (st == 1) {
       cl_->rescale(cell);
     }
-    cl_->positions(x);
+    cl_->positions(x, *pool_);
     // Dynamic pruning: the kernel takes the pairs within r_c + b of the outer list, pruned again once an atom has moved
     // b/2 since the last prune (b = 0.8 Å, or the skin when that is shorter)
     const double b = std::min(0.8, opt_.skin);
-    if (st == 2 || !cl_pruned_ || list_state(x, cell, x0p_, cell0p_, cell, b, opt_.cutoff) == 2) {
+    if (st == 2 || !cl_pruned_ || list_state(x, cell, x0p_, cell0p_, cell, b, opt_.cutoff, *pool_) == 2) {
       cl_->prune(opt_.cutoff + b, *pool_);
       x0p_ = x;
       cell0p_ = cell;
@@ -1084,7 +1091,7 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
     if (frozen_ && !rebuild) {
       if (!same(cell, cells_) && cell.valid()) rescale_images(cell);
     } else if (!rebuild) {
-      const int st = list_state(x, cell, x0_, cell0_, cells_, opt_.skin, opt_.cutoff);
+      const int st = list_state(x, cell, x0_, cell0_, cells_, opt_.skin, opt_.cutoff, *pool_);
       rebuild = st == 2;
       if (st == 1) rescale_images(cell);
     }
