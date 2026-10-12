@@ -346,6 +346,11 @@ class Evaluator {
   std::vector<float> cl_c12_, cl_c6_;    // per type pair
   std::vector<double> cl_f12_, cl_f6_;   // per type, when the pair coefficients are their products
   bool cl_coef_ = false;
+  // excluded pairs' Ewald / DSF corrections in the kernel: possible when every 1-4 pair keeps the same fraction of its
+  // Coulomb (cl_f14_); per atom, sorted, the excluded partners that keep one
+  bool cl_excl_ = false;
+  double cl_f14_ = 0;
+  std::vector<std::vector<uint32_t>> cl_p14_;
   bool energies_ = true;
   bool cl_pruned_ = false;
   std::vector<double> x0p_;   // positions and cell at the last prune

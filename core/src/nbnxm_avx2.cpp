@@ -57,7 +57,7 @@ void kernel8(const List& L, const Params& p, int tw, float* fxo, float* fyo, flo
   const __m256 rc2 = s8(p.rc2), one = s8(1.0f), rcn = s8(p.rcn), rc6 = s8(p.rc6);
   const bool shifted = p.shift != 0;
   const __m256 kap2 = s8(-p.kappa * p.kappa), epk = s8(kErfcP * p.kappa), kc = s8(p.kc), e0 = s8(p.e0), f0 = s8(p.f0), rcv = s8(p.rc);
-  const __m256 kap = s8(p.kappa), kap3 = s8(p.kappa * p.kappa * p.kappa), ku = s8(p.kappa * p.kappa / kFitUMax);
+  const __m256 kap = s8(p.kappa), kap3 = s8(p.kappa * p.kappa * p.kappa), ku = s8(p.kappa * p.kappa / kFitUMax), f14v = s8(p.f14);
   const __m256 twelve = s8(kLj == 2 ? 9.0f : 12.0f), six = s8(6.0f);
   const float* X = L.X.data();
   const float* Y = L.Y.data();
@@ -102,15 +102,19 @@ void kernel8(const List& L, const Params& p, int tw, float* fxo, float* fyo, flo
       if constexpr (kCoul != 0) qj = dup4(Q + sj);
       if constexpr (kComb) p12j = dup4(P12 + sj), p6j = dup4(P6 + sj);
       __m256 fjx = _mm256_setzero_ps(), fjy = fjx, fjz = fjx;
-      for (int h = 0; h < 2; ++h) {
-        const unsigned bits = (en.mask >> (8 * h)) & 0xffu;
-        if (!bits) continue;
+      // kX: the entry has excluded lanes (a cluster pair along the diagonal, mostly); the others skip that work
+      auto half = [&](int h, auto xc) {
+        constexpr bool kX = decltype(xc)::value;
+        const unsigned bits = (en.mask >> (8 * h)) & 0xffu, xbits = kX ? (en.ex >> (8 * h)) & 0xffu : 0u;
+        if (!(bits | xbits)) return;
         const __m256 dx = _mm256_sub_ps(xj, _mm256_sub_ps(xi[h], sx));
         const __m256 dy = _mm256_sub_ps(yj, _mm256_sub_ps(yi[h], sy));
         const __m256 dz = _mm256_sub_ps(zj, _mm256_sub_ps(zi[h], sz));
         __m256 r2 = _mm256_fmadd_ps(dx, dx, _mm256_fmadd_ps(dy, dy, _mm256_mul_ps(dz, dz)));
-        const __m256 m = _mm256_and_ps(mask8(bits), _mm256_cmp_ps(r2, rc2, _CMP_LT_OQ));
-        r2 = _mm256_blendv_ps(one, r2, m);
+        const __m256 inr = _mm256_cmp_ps(r2, rc2, _CMP_LT_OQ);
+        // m the pairs that interact, mall those and the excluded pairs (the Ewald / DSF correction alone)
+        const __m256 m = _mm256_and_ps(mask8(bits), inr), mall = kX ? _mm256_and_ps(mask8(bits | xbits), inr) : m;
+        r2 = _mm256_blendv_ps(one, r2, mall);
         const __m256 rinv = rsqrt8(r2), r2i = _mm256_mul_ps(rinv, rinv), r6i = _mm256_mul_ps(_mm256_mul_ps(r2i, r2i), r2i);
         __m256 c12, c6;
         if constexpr (kComb) {
@@ -134,6 +138,10 @@ void kernel8(const List& L, const Params& p, int tw, float* fxo, float* fyo, flo
         if constexpr (kLj == 2) rn = _mm256_mul_ps(_mm256_mul_ps(r6i, r2i), rinv);
         const __m256 Aa = _mm256_mul_ps(c12, rn), Bb = _mm256_mul_ps(c6, r6i);
         __m256 fr = _mm256_mul_ps(_mm256_fnmadd_ps(six, Bb, _mm256_mul_ps(twelve, Aa)), r2i);
+        if constexpr (kX) fr = _mm256_and_ps(m, fr);
+        // the weight of the bare 1/r: 1 for a pair that interacts, f14 for an excluded 1-4 pair, 0 for the others
+        __m256 wr = rinv;
+        if constexpr (kX) wr = _mm256_mul_ps(_mm256_blendv_ps(_mm256_and_ps(mask8((en.ex14 >> (8 * h)) & 0xffu), f14v), one, m), rinv);
         if constexpr (kE) {
           __m256 vlj = _mm256_sub_ps(Aa, Bb);
           if (shifted) vlj = _mm256_sub_ps(vlj, _mm256_fnmadd_ps(c6, rc6, _mm256_mul_ps(c12, rcn)));
@@ -143,16 +151,16 @@ void kernel8(const List& L, const Params& p, int tw, float* fxo, float* fyo, flo
           const __m256 qq = _mm256_mul_ps(qi[h], qj);
           if constexpr (kCoul == 1 || kCoul == 2) {
             const __m256 t = _mm256_mul_ps(ku, r2);
-            const __m256 Fc = _mm256_fmadd_ps(kap3, _mm256_div_ps(horner(kGfP, t), horner(kGfQ, t)), _mm256_mul_ps(rinv, r2i));
+            const __m256 Fc = _mm256_fmadd_ps(kap3, _mm256_div_ps(horner(kGfP, t), horner(kGfQ, t)), _mm256_mul_ps(wr, r2i));
             __m256 E = _mm256_setzero_ps();
-            if constexpr (kE) E = _mm256_fnmadd_ps(kap, _mm256_div_ps(horner(kGvP, t), horner(kGvQ, t)), rinv);
+            if constexpr (kE) E = _mm256_fnmadd_ps(kap, _mm256_div_ps(horner(kGvP, t), horner(kGvQ, t)), wr);
             if constexpr (kCoul == 1) {
               fr = _mm256_fmadd_ps(qq, Fc, fr);
-              if constexpr (kE) ec = _mm256_add_ps(ec, _mm256_and_ps(m, _mm256_mul_ps(qq, E)));
+              if constexpr (kE) ec = _mm256_add_ps(ec, _mm256_and_ps(mall, _mm256_mul_ps(qq, E)));
             } else {
               fr = _mm256_fmadd_ps(qq, _mm256_fnmadd_ps(f0, rinv, Fc), fr);
               if constexpr (kE)
-                ec = _mm256_add_ps(ec, _mm256_and_ps(m, _mm256_mul_ps(qq, _mm256_fmadd_ps(f0, _mm256_sub_ps(_mm256_mul_ps(r2, rinv), rcv), _mm256_sub_ps(E, e0)))));
+                ec = _mm256_add_ps(ec, _mm256_and_ps(mall, _mm256_mul_ps(qq, _mm256_fmadd_ps(f0, _mm256_sub_ps(_mm256_mul_ps(r2, rinv), rcv), _mm256_sub_ps(E, e0)))));
             }
           } else {
             const __m256 r = _mm256_mul_ps(r2, rinv);
@@ -160,21 +168,30 @@ void kernel8(const List& L, const Params& p, int tw, float* fxo, float* fyo, flo
             const __m256 t = _mm256_div_ps(one, _mm256_fmadd_ps(epk, r, one));
             __m256 poly = s8(kErfcA[4]);
             for (int k = 3; k >= 0; --k) poly = _mm256_fmadd_ps(poly, t, s8(kErfcA[k]));
-            const __m256 E = _mm256_mul_ps(_mm256_mul_ps(_mm256_mul_ps(poly, t), ex), rinv);
-            const __m256 Fc = _mm256_mul_ps(_mm256_fmadd_ps(kc, ex, E), r2i);
+            const __m256 E0 = _mm256_mul_ps(_mm256_mul_ps(_mm256_mul_ps(poly, t), ex), rinv);
+            const __m256 Fc0 = _mm256_mul_ps(_mm256_fmadd_ps(kc, ex, E0), r2i);
+            const __m256 drop = _mm256_sub_ps(rinv, wr);   // the part of 1/r an excluded pair drops
+            const __m256 E = _mm256_sub_ps(E0, drop), Fc = _mm256_fnmadd_ps(drop, r2i, Fc0);
             if constexpr (kCoul == 3) {
               fr = _mm256_fmadd_ps(qq, Fc, fr);
-              if constexpr (kE) ec = _mm256_add_ps(ec, _mm256_and_ps(m, _mm256_mul_ps(qq, E)));
+              if constexpr (kE) ec = _mm256_add_ps(ec, _mm256_and_ps(mall, _mm256_mul_ps(qq, E)));
             } else {
               fr = _mm256_fmadd_ps(qq, _mm256_fnmadd_ps(f0, rinv, Fc), fr);
-              if constexpr (kE) ec = _mm256_add_ps(ec, _mm256_and_ps(m, _mm256_mul_ps(qq, _mm256_fmadd_ps(f0, _mm256_sub_ps(r, rcv), _mm256_sub_ps(E, e0)))));
+              if constexpr (kE) ec = _mm256_add_ps(ec, _mm256_and_ps(mall, _mm256_mul_ps(qq, _mm256_fmadd_ps(f0, _mm256_sub_ps(r, rcv), _mm256_sub_ps(E, e0)))));
             }
           }
         }
-        fr = _mm256_and_ps(m, fr);
+        fr = _mm256_and_ps(mall, fr);
         const __m256 fx = _mm256_mul_ps(fr, dx), fy = _mm256_mul_ps(fr, dy), fz = _mm256_mul_ps(fr, dz);
         fjx = _mm256_add_ps(fjx, fx); fjy = _mm256_add_ps(fjy, fy); fjz = _mm256_add_ps(fjz, fz);
         fxa[h] = _mm256_sub_ps(fxa[h], fx); fya[h] = _mm256_sub_ps(fya[h], fy); fza[h] = _mm256_sub_ps(fza[h], fz);
+      };
+      if (en.ex) {
+        half(0, std::true_type{});
+        half(1, std::true_type{});
+      } else {
+        half(0, std::false_type{});
+        half(1, std::false_type{});
       }
       const __m128 gx = fold(fjx), gy = fold(fjy), gz = fold(fjz);
       _mm_storeu_ps(fxo + sj, _mm_add_ps(_mm_loadu_ps(fxo + sj), gx));

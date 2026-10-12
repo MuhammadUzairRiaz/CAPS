@@ -50,6 +50,10 @@ int main() {
   std::vector<std::vector<uint32_t>> ex(n);
   for (size_t i = 0; i + 1 < n; i += 2) ex[i].push_back(uint32_t(i + 1)), ex[i + 1].push_back(uint32_t(i));
   const double eps[nt] = {0.07, 0.03, 0.11}, sig[nt] = {3.5, 2.5, 3.2};
+  // every other excluded pair a 1-4 pair keeping half its Coulomb (for the kernel's corrections)
+  const double f14 = 0.5;
+  std::vector<std::vector<uint32_t>> p14(n);
+  for (size_t i = 0; i + 1 < n; i += 4) p14[i].push_back(uint32_t(i + 1)), p14[i + 1].push_back(uint32_t(i));
 
   int fails = 0;
   std::printf("kernel: %s\n", nbnxm::instruction_set());
@@ -69,9 +73,10 @@ int main() {
     const double dsf_e0 = std::erfc(cs.kappa * rc) / rc;
     const double dsf_f0 = std::erfc(cs.kappa * rc) / (rc * rc) + sp * cs.kappa * std::exp(-cs.kappa * cs.kappa * rc * rc) / rc;
 
-    // direct sum: every pair and image within rc, excluded pairs at their nearest image left out
-    double evdw = 0, ecoul = 0, w[6] = {0, 0, 0, 0, 0, 0};
-    std::vector<double> fref(3 * n, 0.0);
+    // direct sum: every pair and image within rc, excluded pairs at their nearest image left out; their Ewald / DSF
+    // corrections (Coulomb less the part of the bare 1/r the pair drops) kept apart
+    double evdw = 0, ecoul = 0, w[6] = {0, 0, 0, 0, 0, 0}, ecx = 0, wx[6] = {0, 0, 0, 0, 0, 0};
+    std::vector<double> fref(3 * n, 0.0), fx(3 * n, 0.0);
     for (size_t i = 0; i < n; ++i)
       for (size_t j = i; j < n; ++j)
         for (int ia = -1; ia <= 1; ++ia)
@@ -84,7 +89,19 @@ int main() {
               if (r2 >= rc * rc) continue;
               if (j != i && !ex[i].empty() && ex[i][0] == j) {
                 const Vec3 dm = cell.minimum_image(Vec3{x[3 * j] - x[3 * i], x[3 * j + 1] - x[3 * i + 1], x[3 * j + 2] - x[3 * i + 2]});
-                if (r2 <= dot(dm, dm) + 1e-6) continue;
+                if (r2 <= dot(dm, dm) + 1e-6) {
+                  if (cs.coul) {
+                    const double r = std::sqrt(r2), qq = kc * q[i] * q[j], er = std::erfc(cs.kappa * r), keep = p14[i].empty() ? 0.0 : f14;
+                    double E = er / r - (1 - keep) / r, F = (er / r + sp * cs.kappa * std::exp(-cs.kappa * cs.kappa * r2)) / r2 - (1 - keep) / (r2 * r);
+                    if (cs.coul == 2) E += -dsf_e0 + dsf_f0 * (r - rc), F -= dsf_f0 / r;
+                    ecx += qq * E;
+                    const double fr = qq * F;
+                    for (int k = 0; k < 3; ++k) fx[3 * j + k] += fr * d[k], fx[3 * i + k] -= fr * d[k];
+                    wx[0] += fr * d[0] * d[0]; wx[1] += fr * d[1] * d[1]; wx[2] += fr * d[2] * d[2];
+                    wx[3] += fr * d[0] * d[1]; wx[4] += fr * d[0] * d[2]; wx[5] += fr * d[1] * d[2];
+                  }
+                  continue;
+                }
               }
               const double r = std::sqrt(r2), a12 = f12[size_t(type[i])] * f12[size_t(type[j])], a6 = f6[size_t(type[i])] * f6[size_t(type[j])];
               evdw += a12 * std::pow(r, -pw) - a6 * std::pow(r, -6.0);
@@ -104,12 +121,14 @@ int main() {
     for (int threads : {1, 3}) {
       ThreadPool pool(threads);
       // the coefficients three ways: per-type factors, a per (type, j cluster) table, gathered from the type-pair table
-      for (const int mode : {0, 1, 2}) {
+      // and the excluded pairs' corrections left to the caller, or taken by the kernel
+      for (const int mode : {0, 1, 2})
+      for (const bool exk : {false, true}) {
         const bool comb = mode == 0;
         nbnxm::List L;
         const std::vector<double> none;
         L.build(x, cell, rc + skin, ex, type, nt, {}, q, comb ? f12 : none, comb ? f6 : none, pool, mode == 1 ? c12.data() : nullptr,
-                mode == 1 ? c6.data() : nullptr);
+                mode == 1 ? c6.data() : nullptr, exk ? &p14 : nullptr);
         L.positions(x, pool);
         L.prune(rc + 0.8, pool);
         nbnxm::Params p;
@@ -129,6 +148,7 @@ int main() {
         p.e0 = float(dsf_e0);
         p.f0 = float(dsf_f0);
         p.kcoul = float(kc);
+        p.f14 = float(f14);
         const size_t ns = L.perm.size();
         std::vector<double> f(3 * n, 0.0);
         nbnxm::Sums sum;
@@ -146,17 +166,24 @@ int main() {
         nbnxm::shift_virial(L, sum.fsh, W);
         const double wv[6] = {W[0], W[4], W[8], 0.5 * (W[1] + W[3]), 0.5 * (W[2] + W[6]), 0.5 * (W[5] + W[7])};
         double rms = 0, err = 0;
-        for (size_t k = 0; k < f.size(); ++k) rms += fref[k] * fref[k], err += (f[k] - fref[k]) * (f[k] - fref[k]);
+        const double wexp[6] = {w[0] + (exk ? wx[0] : 0), w[1] + (exk ? wx[1] : 0), w[2] + (exk ? wx[2] : 0),
+                                w[3] + (exk ? wx[3] : 0), w[4] + (exk ? wx[4] : 0), w[5] + (exk ? wx[5] : 0)};
+        for (size_t k = 0; k < f.size(); ++k) {
+          const double fe = fref[k] + (exk ? fx[k] : 0.0);
+          rms += fe * fe, err += (f[k] - fe) * (f[k] - fe);
+        }
+        const double ecexp = ecoul + (exk ? ecx : 0.0);
         const double ev = std::fabs(sum.evdw - evdw) / std::fabs(evdw), ef = std::sqrt(err / rms);
-        const double ec = cs.coul ? std::fabs(sum.ecoul - ecoul) / std::fabs(ecoul) : std::fabs(sum.ecoul);
+        // relative to the Coulomb energy without the corrections (they are negative, so the corrected total is smaller)
+        const double ec = cs.coul ? std::fabs(sum.ecoul - ecexp) / std::fabs(ecoul) : std::fabs(sum.ecoul);
         double ew = 0;
-        for (int c = 0; c < 6; ++c) ew = std::max(ew, std::fabs(wv[c] - w[c]) / (std::fabs(w[0] + w[1] + w[2]) / 3));
+        for (int c = 0; c < 6; ++c) ew = std::max(ew, std::fabs(wv[c] - wexp[c]) / (std::fabs(wexp[0] + wexp[1] + wexp[2]) / 3));
         // erfc by A&S (beyond the fits) is good to 1.5e-7 absolute only
         const double tol_e = cs.kappa * rc > 4 ? 2e-5 : 2e-6;
         const bool ok = ev < 2e-6 && ec < tol_e && ef < 2e-6 && ew < 2e-5;
         fails += !ok;
-        std::printf("%-17s %d threads, %-7s: vdW %.1e  Coulomb %.1e  forces %.1e  virial %.1e  %s\n", cs.name, threads, mode == 0 ? "factors" : mode == 1 ? "table" : "gather", ev,
-                    ec, ef, ew, ok ? "ok" : "FAIL");
+        std::printf("%-17s %d threads, %-7s %s: vdW %.1e  Coulomb %.1e  forces %.1e  virial %.1e  %s\n", cs.name, threads,
+                    mode == 0 ? "factors" : mode == 1 ? "table" : "gather", exk ? "excl" : "    ", ev, ec, ef, ew, ok ? "ok" : "FAIL");
       }
     }
   }
