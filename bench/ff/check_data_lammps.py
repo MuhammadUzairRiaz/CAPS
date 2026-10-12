@@ -136,6 +136,8 @@ CASES = [
     # (its own in.PyAC_bulk-clayff as well).
     ("ClayFF pyrophyllite (LAMMPS's ClayFF test, triclinic, M-O-H bends)", ("file", os.path.expanduser("~/lammps/tools/msi2lmp/test/PyAC_bulk-clayff.car")),
      "inorganic-clay", "keep", "names", ["--kspace", "ewald"]),
+    ("ClayFF (Cygan 2004, Tables 1 and 2) pyrophyllite: LAMMPS's ClayFF test structure, its own types", ("file", os.path.expanduser("~/lammps/tools/msi2lmp/test/PyAC_bulk-clayff.car")),
+     "clayff2004", "types", "names", ["--kspace", "ewald"]),
     # IFF typed by rule on slabs CAPS builds: hydroxylated quartz (sc4, oc23, oc24, hoy; the charges IFF states from
     # bond increments), a copper (111) slab (Lennard-Jones atoms, perceived bonds dropped)
     ("IFF (PCFF) hydroxylated quartz (001) slab, typed by rule", ("surface", os.path.join(ROOT, "data", "crystals", "alpha-quartz.cif"),

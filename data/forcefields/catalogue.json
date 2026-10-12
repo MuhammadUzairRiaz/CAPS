@@ -467,36 +467,6 @@
    }
   },
   {
-   "id": "inorganic-clay",
-   "name": "ClayFF (Cygan, Liang, Kalinichev 2004)",
-   "version": "",
-   "references": [
-    "R. T. Cygan, J.-J. Liang, A. G. Kalinichev, J. Phys. Chem. B 108, 1255 (2004)"
-   ],
-   "origin": "converted",
-   "source_file": "INORGANIC_clay.par",
-   "status": "converted",
-   "notes": "Lorentz–Berthelot mixing and ClayFF's M–O–H bends by contact; energies, forces and virial equal LAMMPS for LAMMPS's own ClayFF test structure (pyrophyllite)",
-   "file": "inorganic-clay.json",
-   "counts": {
-    "atom_types": 28,
-    "pairs": 25,
-    "bonds": 3,
-    "angles": 19,
-    "dihedrals": 0,
-    "impropers": 0
-   },
-   "typing": {
-    "rules": "typing/inorganic-clay.typing.json",
-    "evidence": "CAPS rules (bench/typing/make_inorganic_rules.py): 26 rules"
-   },
-   "list": {
-    "label": "Clay",
-    "key": "inorganic_clay",
-    "order": 29
-   }
-  },
-  {
    "id": "inorganic-glass",
    "name": "Inorganic: glass",
    "version": "",
@@ -1938,6 +1908,36 @@
     "label": "Oxides (Bush 1994)",
     "key": "bush1994",
     "order": 30
+   }
+  },
+  {
+   "id": "clayff2004",
+   "name": "ClayFF",
+   "version": "Cygan, Liang & Kalinichev 2004 (Tables 1 and 2)",
+   "references": [
+    "R. T. Cygan, J.-J. Liang, A. G. Kalinichev, J. Phys. Chem. B 108, 1255 (2004)"
+   ],
+   "origin": "built from source",
+   "source": "the paper's Tables 1 (nonbond) and 2 (bonds, angles); bench/ff/make_clayff.py",
+   "license": "published parameters of the paper",
+   "status": "validated",
+   "file": "clayff2004.json",
+   "counts": {
+    "atom_types": 24,
+    "pairs": 24,
+    "bonds": 3,
+    "angles": 19,
+    "dihedrals": 0,
+    "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/clayff2004.typing.json",
+    "evidence": "CAPS rules by coordination and neighbours type LAMMPS's ClayFF pyrophyllite as its file does (1280 / 1280 atoms); LAMMPS reproduces CAPS's energies on it (metal-O-H bends through contacts)"
+   },
+   "list": {
+    "label": "ClayFF",
+    "key": "clayff",
+    "order": 26
    }
   },
   {

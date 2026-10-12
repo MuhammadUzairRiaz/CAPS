@@ -1,0 +1,783 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "ClayFF (Cygan 2004)",
+ "source": "R. T. Cygan, J.-J. Liang, A. G. Kalinichev, J. Phys. Chem. B 108, 1255 (2004), Tables 1 and 2",
+ "references": [
+  "R. T. Cygan, J.-J. Liang, A. G. Kalinichev, J. Phys. Chem. B 108, 1255 (2004)"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "lj/cut/coul/long",
+  "bond": "harmonic",
+  "angle": "harmonic",
+  "dihedral": "fourier",
+  "improper": "fourier"
+ },
+ "mixing": "arithmetic",
+ "special_lj": [
+  0,
+  0,
+  1
+ ],
+ "special_coul": [
+  0,
+  0,
+  1
+ ],
+ "cutoff": 10,
+ "angle_contacts": 2.6,
+ "atom_types": [
+  {
+   "name": "h*",
+   "element": "H",
+   "mass": 1.00797,
+   "charge": 0.41,
+   "description": "water hydrogen (Table 1)"
+  },
+  {
+   "name": "ho",
+   "element": "H",
+   "mass": 1.00797,
+   "charge": 0.425,
+   "description": "hydroxyl hydrogen (Table 1)"
+  },
+  {
+   "name": "o*",
+   "element": "O",
+   "mass": 15.9994,
+   "charge": -0.82,
+   "description": "water oxygen (Table 1)"
+  },
+  {
+   "name": "oh",
+   "element": "O",
+   "mass": 15.9994,
+   "charge": -0.95,
+   "description": "hydroxyl oxygen (Table 1)"
+  },
+  {
+   "name": "ob",
+   "element": "O",
+   "mass": 15.9994,
+   "charge": -1.05,
+   "description": "bridging oxygen (Table 1)"
+  },
+  {
+   "name": "obos",
+   "element": "O",
+   "mass": 15.9994,
+   "charge": -1.1808,
+   "description": "bridging oxygen with octahedral substitution (Table 1)"
+  },
+  {
+   "name": "obts",
+   "element": "O",
+   "mass": 15.9994,
+   "charge": -1.1688,
+   "description": "bridging oxygen with tetrahedral substitution (Table 1)"
+  },
+  {
+   "name": "obss",
+   "element": "O",
+   "mass": 15.9994,
+   "charge": -1.2996,
+   "description": "bridging oxygen with double substitution (Table 1)"
+  },
+  {
+   "name": "ohs",
+   "element": "O",
+   "mass": 15.9994,
+   "charge": -1.0808,
+   "description": "hydroxyl oxygen with substitution (Table 1)"
+  },
+  {
+   "name": "st",
+   "element": "Si",
+   "mass": 28.0855,
+   "charge": 2.1,
+   "description": "tetrahedral silicon (Table 1)"
+  },
+  {
+   "name": "ao",
+   "element": "Al",
+   "mass": 26.98154,
+   "charge": 1.575,
+   "description": "octahedral aluminum (Table 1)"
+  },
+  {
+   "name": "at",
+   "element": "Al",
+   "mass": 26.98154,
+   "charge": 1.575,
+   "description": "tetrahedral aluminum (Table 1)"
+  },
+  {
+   "name": "mgo",
+   "element": "Mg",
+   "mass": 24.305,
+   "charge": 1.36,
+   "description": "octahedral magnesium (Table 1)"
+  },
+  {
+   "name": "mgh",
+   "element": "Mg",
+   "mass": 24.305,
+   "charge": 1.05,
+   "description": "hydroxide magnesium (Table 1)"
+  },
+  {
+   "name": "cao",
+   "element": "Ca",
+   "mass": 40.078,
+   "charge": 1.36,
+   "description": "octahedral calcium (Table 1)"
+  },
+  {
+   "name": "cah",
+   "element": "Ca",
+   "mass": 40.078,
+   "charge": 1.05,
+   "description": "hydroxide calcium (Table 1)"
+  },
+  {
+   "name": "feo",
+   "element": "Fe",
+   "mass": 55.847,
+   "charge": 1.575,
+   "description": "octahedral iron (Table 1)"
+  },
+  {
+   "name": "lio",
+   "element": "Li",
+   "mass": 6.941,
+   "charge": 0.525,
+   "description": "octahedral lithium (Table 1)"
+  },
+  {
+   "name": "Na",
+   "element": "Na",
+   "mass": 22.98977,
+   "charge": 1.0,
+   "description": "aqueous sodium ion (Table 1; Smith and Dang)"
+  },
+  {
+   "name": "K",
+   "element": "K",
+   "mass": 39.0983,
+   "charge": 1.0,
+   "description": "aqueous potassium ion (Table 1; Koneshan et al.)"
+  },
+  {
+   "name": "Cs",
+   "element": "Cs",
+   "mass": 132.9054,
+   "charge": 1.0,
+   "description": "aqueous cesium ion (Table 1; Smith and Dang)"
+  },
+  {
+   "name": "Ca",
+   "element": "Ca",
+   "mass": 40.078,
+   "charge": 2.0,
+   "description": "aqueous calcium ion (Table 1; Koneshan et al.)"
+  },
+  {
+   "name": "Ba",
+   "element": "Ba",
+   "mass": 137.327,
+   "charge": 2.0,
+   "description": "aqueous barium ion (Table 1; Aqvist)"
+  },
+  {
+   "name": "Cl",
+   "element": "Cl",
+   "mass": 35.453,
+   "charge": -1.0,
+   "description": "aqueous chloride ion (Table 1; Smith and Dang)"
+  }
+ ],
+ "pairs": [
+  {
+   "name": "h*",
+   "match": [
+    "h\\*"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "Do 0 kcal/mol, Ro 0 A"
+  },
+  {
+   "name": "ho",
+   "match": [
+    "ho"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "Do 0 kcal/mol, Ro 0 A"
+  },
+  {
+   "name": "o*",
+   "match": [
+    "o\\*"
+   ],
+   "params": [
+    0.1554,
+    3.1655413252962536
+   ],
+   "comment": "Do 0.1554 kcal/mol, Ro 3.5532 A"
+  },
+  {
+   "name": "oh",
+   "match": [
+    "oh"
+   ],
+   "params": [
+    0.1554,
+    3.1655413252962536
+   ],
+   "comment": "Do 0.1554 kcal/mol, Ro 3.5532 A"
+  },
+  {
+   "name": "ob",
+   "match": [
+    "ob"
+   ],
+   "params": [
+    0.1554,
+    3.1655413252962536
+   ],
+   "comment": "Do 0.1554 kcal/mol, Ro 3.5532 A"
+  },
+  {
+   "name": "obos",
+   "match": [
+    "obos"
+   ],
+   "params": [
+    0.1554,
+    3.1655413252962536
+   ],
+   "comment": "Do 0.1554 kcal/mol, Ro 3.5532 A"
+  },
+  {
+   "name": "obts",
+   "match": [
+    "obts"
+   ],
+   "params": [
+    0.1554,
+    3.1655413252962536
+   ],
+   "comment": "Do 0.1554 kcal/mol, Ro 3.5532 A"
+  },
+  {
+   "name": "obss",
+   "match": [
+    "obss"
+   ],
+   "params": [
+    0.1554,
+    3.1655413252962536
+   ],
+   "comment": "Do 0.1554 kcal/mol, Ro 3.5532 A"
+  },
+  {
+   "name": "ohs",
+   "match": [
+    "ohs"
+   ],
+   "params": [
+    0.1554,
+    3.1655413252962536
+   ],
+   "comment": "Do 0.1554 kcal/mol, Ro 3.5532 A"
+  },
+  {
+   "name": "st",
+   "match": [
+    "st"
+   ],
+   "params": [
+    1.8405e-06,
+    3.3020270089153536
+   ],
+   "comment": "Do 1.8405e-06 kcal/mol, Ro 3.7064 A"
+  },
+  {
+   "name": "ao",
+   "match": [
+    "ao"
+   ],
+   "params": [
+    1.3298e-06,
+    4.271235724380229
+   ],
+   "comment": "Do 1.3298e-06 kcal/mol, Ro 4.7943 A"
+  },
+  {
+   "name": "at",
+   "match": [
+    "at"
+   ],
+   "params": [
+    1.8405e-06,
+    3.3020270089153536
+   ],
+   "comment": "Do 1.8405e-06 kcal/mol, Ro 3.7064 A"
+  },
+  {
+   "name": "mgo",
+   "match": [
+    "mgo"
+   ],
+   "params": [
+    9.0298e-07,
+    5.264320525491264
+   ],
+   "comment": "Do 9.0298e-07 kcal/mol, Ro 5.909 A"
+  },
+  {
+   "name": "mgh",
+   "match": [
+    "mgh"
+   ],
+   "params": [
+    9.0298e-07,
+    5.264320525491264
+   ],
+   "comment": "Do 9.0298e-07 kcal/mol, Ro 5.909 A"
+  },
+  {
+   "name": "cao",
+   "match": [
+    "cao"
+   ],
+   "params": [
+    5.0298e-06,
+    5.5666915504280965
+   ],
+   "comment": "Do 5.0298e-06 kcal/mol, Ro 6.2484 A"
+  },
+  {
+   "name": "cah",
+   "match": [
+    "cah"
+   ],
+   "params": [
+    5.0298e-06,
+    5.56170251760651
+   ],
+   "comment": "Do 5.0298e-06 kcal/mol, Ro 6.2428 A"
+  },
+  {
+   "name": "feo",
+   "match": [
+    "feo"
+   ],
+   "params": [
+    9.0298e-06,
+    4.906179240798848
+   ],
+   "comment": "Do 9.0298e-06 kcal/mol, Ro 5.507 A"
+  },
+  {
+   "name": "lio",
+   "match": [
+    "lio"
+   ],
+   "params": [
+    9.0298e-06,
+    4.210120072315801
+   ],
+   "comment": "Do 9.0298e-06 kcal/mol, Ro 4.7257 A"
+  },
+  {
+   "name": "Na",
+   "match": [
+    "Na"
+   ],
+   "params": [
+    0.1301,
+    2.350012638710587
+   ],
+   "comment": "Do 0.1301 kcal/mol, Ro 2.6378 A"
+  },
+  {
+   "name": "K",
+   "match": [
+    "K"
+   ],
+   "params": [
+    0.1,
+    3.3340102728965917
+   ],
+   "comment": "Do 0.1 kcal/mol, Ro 3.7423 A"
+  },
+  {
+   "name": "Cs",
+   "match": [
+    "Cs"
+   ],
+   "params": [
+    0.1,
+    3.831042667747087
+   ],
+   "comment": "Do 0.1 kcal/mol, Ro 4.3002 A"
+  },
+  {
+   "name": "Ca",
+   "match": [
+    "Ca"
+   ],
+   "params": [
+    0.1,
+    2.8719901976690116
+   ],
+   "comment": "Do 0.1 kcal/mol, Ro 3.2237 A"
+  },
+  {
+   "name": "Ba",
+   "match": [
+    "Ba"
+   ],
+   "params": [
+    0.047,
+    3.8166101085132134
+   ],
+   "comment": "Do 0.047 kcal/mol, Ro 4.284 A"
+  },
+  {
+   "name": "Cl",
+   "match": [
+    "Cl"
+   ],
+   "params": [
+    0.1001,
+    4.399970589151507
+   ],
+   "comment": "Do 0.1001 kcal/mol, Ro 4.9388 A"
+  }
+ ],
+ "bonds": [
+  {
+   "name": "o*-h*",
+   "match": [
+    "o\\*",
+    "h\\*"
+   ],
+   "style": "harmonic",
+   "params": [
+    554.1349,
+    1.0
+   ],
+   "comment": "Table 2"
+  },
+  {
+   "name": "oh-ho",
+   "match": [
+    "oh",
+    "ho"
+   ],
+   "style": "harmonic",
+   "params": [
+    554.1349,
+    1.0
+   ],
+   "comment": "Table 2"
+  },
+  {
+   "name": "ohs-ho",
+   "match": [
+    "ohs",
+    "ho"
+   ],
+   "style": "harmonic",
+   "params": [
+    554.1349,
+    1.0
+   ],
+   "comment": "Table 2"
+  }
+ ],
+ "angles": [
+  {
+   "name": "h*-o*-h*",
+   "match": [
+    "h\\*",
+    "o\\*",
+    "h\\*"
+   ],
+   "style": "harmonic",
+   "params": [
+    45.7696,
+    109.47
+   ],
+   "comment": "Table 2: water"
+  },
+  {
+   "name": "st-oh-ho",
+   "match": [
+    "st",
+    "oh",
+    "ho"
+   ],
+   "style": "harmonic",
+   "params": [
+    30.0,
+    109.47
+   ],
+   "comment": "Table 2: metal-O-H"
+  },
+  {
+   "name": "ao-oh-ho",
+   "match": [
+    "ao",
+    "oh",
+    "ho"
+   ],
+   "style": "harmonic",
+   "params": [
+    30.0,
+    109.47
+   ],
+   "comment": "Table 2: metal-O-H"
+  },
+  {
+   "name": "at-oh-ho",
+   "match": [
+    "at",
+    "oh",
+    "ho"
+   ],
+   "style": "harmonic",
+   "params": [
+    30.0,
+    109.47
+   ],
+   "comment": "Table 2: metal-O-H"
+  },
+  {
+   "name": "mgo-oh-ho",
+   "match": [
+    "mgo",
+    "oh",
+    "ho"
+   ],
+   "style": "harmonic",
+   "params": [
+    30.0,
+    109.47
+   ],
+   "comment": "Table 2: metal-O-H"
+  },
+  {
+   "name": "mgh-oh-ho",
+   "match": [
+    "mgh",
+    "oh",
+    "ho"
+   ],
+   "style": "harmonic",
+   "params": [
+    30.0,
+    109.47
+   ],
+   "comment": "Table 2: metal-O-H"
+  },
+  {
+   "name": "cao-oh-ho",
+   "match": [
+    "cao",
+    "oh",
+    "ho"
+   ],
+   "style": "harmonic",
+   "params": [
+    30.0,
+    109.47
+   ],
+   "comment": "Table 2: metal-O-H"
+  },
+  {
+   "name": "cah-oh-ho",
+   "match": [
+    "cah",
+    "oh",
+    "ho"
+   ],
+   "style": "harmonic",
+   "params": [
+    30.0,
+    109.47
+   ],
+   "comment": "Table 2: metal-O-H"
+  },
+  {
+   "name": "feo-oh-ho",
+   "match": [
+    "feo",
+    "oh",
+    "ho"
+   ],
+   "style": "harmonic",
+   "params": [
+    30.0,
+    109.47
+   ],
+   "comment": "Table 2: metal-O-H"
+  },
+  {
+   "name": "lio-oh-ho",
+   "match": [
+    "lio",
+    "oh",
+    "ho"
+   ],
+   "style": "harmonic",
+   "params": [
+    30.0,
+    109.47
+   ],
+   "comment": "Table 2: metal-O-H"
+  },
+  {
+   "name": "st-ohs-ho",
+   "match": [
+    "st",
+    "ohs",
+    "ho"
+   ],
+   "style": "harmonic",
+   "params": [
+    30.0,
+    109.47
+   ],
+   "comment": "Table 2: metal-O-H"
+  },
+  {
+   "name": "ao-ohs-ho",
+   "match": [
+    "ao",
+    "ohs",
+    "ho"
+   ],
+   "style": "harmonic",
+   "params": [
+    30.0,
+    109.47
+   ],
+   "comment": "Table 2: metal-O-H"
+  },
+  {
+   "name": "at-ohs-ho",
+   "match": [
+    "at",
+    "ohs",
+    "ho"
+   ],
+   "style": "harmonic",
+   "params": [
+    30.0,
+    109.47
+   ],
+   "comment": "Table 2: metal-O-H"
+  },
+  {
+   "name": "mgo-ohs-ho",
+   "match": [
+    "mgo",
+    "ohs",
+    "ho"
+   ],
+   "style": "harmonic",
+   "params": [
+    30.0,
+    109.47
+   ],
+   "comment": "Table 2: metal-O-H"
+  },
+  {
+   "name": "mgh-ohs-ho",
+   "match": [
+    "mgh",
+    "ohs",
+    "ho"
+   ],
+   "style": "harmonic",
+   "params": [
+    30.0,
+    109.47
+   ],
+   "comment": "Table 2: metal-O-H"
+  },
+  {
+   "name": "cao-ohs-ho",
+   "match": [
+    "cao",
+    "ohs",
+    "ho"
+   ],
+   "style": "harmonic",
+   "params": [
+    30.0,
+    109.47
+   ],
+   "comment": "Table 2: metal-O-H"
+  },
+  {
+   "name": "cah-ohs-ho",
+   "match": [
+    "cah",
+    "ohs",
+    "ho"
+   ],
+   "style": "harmonic",
+   "params": [
+    30.0,
+    109.47
+   ],
+   "comment": "Table 2: metal-O-H"
+  },
+  {
+   "name": "feo-ohs-ho",
+   "match": [
+    "feo",
+    "ohs",
+    "ho"
+   ],
+   "style": "harmonic",
+   "params": [
+    30.0,
+    109.47
+   ],
+   "comment": "Table 2: metal-O-H"
+  },
+  {
+   "name": "lio-ohs-ho",
+   "match": [
+    "lio",
+    "ohs",
+    "ho"
+   ],
+   "style": "harmonic",
+   "params": [
+    30.0,
+    109.47
+   ],
+   "comment": "Table 2: metal-O-H"
+  }
+ ],
+ "dihedrals": [],
+ "impropers": [],
+ "notes": [
+  "built by CAPS (bench/ff/make_clayff.py) from the paper's Tables 1 and 2",
+  "metal-O-H bends: the metal within 2.6 A of the hydroxyl oxygen (ClayFF bonds no metal; the distance is CAPS's)"
+ ],
+ "version": "2004",
+ "typing": "../typing/clayff2004.typing.json"
+}
