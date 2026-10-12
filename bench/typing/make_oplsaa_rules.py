@@ -369,6 +369,26 @@ add(523, 4, "[c;$(c1ccncc1)]", "pyridine C4")
 add(524, 4, "[H][c;$(c1ncccc1)]", "pyridine H2")
 add(525, 4, "[H][c;$(c1cnccc1)]", "pyridine H3")
 add(526, 4, "[H][c;$(c1ccncc1)]", "pyridine H4")
+# pyrazine (527-529) and neutral imidazole (557-565): the parent rings, every C bearing its H (a substituted ring has other
+# numbers or none, and stays untyped); the charges of each ring sum to zero
+add(527, 4, "[nX2;$(n1ccncc1)]", "pyrazine N")
+add(528, 4, "[cH1;$(c1nccnc1)]", "pyrazine C")
+add(529, 4, "[H][cH1;$(c1nccnc1)]", "pyrazine H")
+add(557, 4, "[nX3H1;$([nH]1c[nX2]cc1)]", "imidazole N1 (NH)")
+add(558, 4, "[cH1;$(c1[nX2]cc[nH]1)]", "imidazole C2")
+add(559, 4, "[nX2;$(n1c[nH]cc1)]", "imidazole N3")
+add(560, 4, "[cH1;$(c1[nX2]c[nH]c1)]", "imidazole C4")
+add(561, 4, "[cH1;$(c1[nH]c[nX2]c1)]", "imidazole C5")
+add(562, 4, "[H][nX3H1;$([nH]1c[nX2]cc1)]", "imidazole H1 (on N1)")
+add(563, 4, "[H][cH1;$(c1[nX2]cc[nH]1)]", "imidazole H2")
+add(564, 4, "[H][cH1;$(c1[nX2]c[nH]c1)]", "imidazole H4")
+add(565, 4, "[H][cH1;$(c1[nH]c[nX2]c1)]", "imidazole H5")
+# urea O=C(NH2)2 (247-250; Duffy et al., Isr. J. Chem. 33, 323 (1993)): above the amide rules
+UREA = "[CX3;$(C(=[OX1])([NX3H2])[NX3H2])]"
+add(247, 9, UREA, "urea C")
+add(248, 9, f"[OX1]={UREA}", "urea O")
+add(249, 9, f"[NX3H2]{UREA}", "urea N")
+add(250, 9, f"[H][NX3H2]{UREA}", "urea H")
 add(670, 7, "[CX4H3;$(*c1ncccc1)]", "CH3 on pyridine C2")
 add(672, 7, "[CX4H3;$(*c1cnccc1)]", "CH3 on pyridine C3")
 add(674, 7, "[CX4H3;$(*c1ccncc1),$(*c1ncncc1)]", "CH3 on pyridine C4 / pyrimidine C4")
@@ -437,7 +457,7 @@ if __name__ == "__main__":
         doc = {"format": "caps-typing", "version": 1, "forcefield": label,
                "description": "CAPS rules giving OPLS-AA type numbers by chemical group, with the carbons and hydrogens that balance each group's "
                               "charge (Jorgensen, Maxwell & Tirado-Rives, J. Am. Chem. Soc. 118, 11225 (1996)). Environments the table has no "
-                              "number for (siloxanes, aryl carbonates, CCl2 carbons, ureas, imides, carbamates) are left untyped and reported. "
+                              "number for (siloxanes, aryl carbonates, CCl2 carbons, substituted ureas, imides, carbamates) are left untyped and reported. "
                               "Among matching rules the highest priority wins.",
                "rules": rules}
         p = os.path.join(out, ff + ".typing.json")

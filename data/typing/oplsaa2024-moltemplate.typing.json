@@ -2,7 +2,7 @@
  "format": "caps-typing",
  "version": 1,
  "forcefield": "OPLS-AA (2024 parameter file)",
- "description": "CAPS rules giving OPLS-AA type numbers by chemical group, with the carbons and hydrogens that balance each group's charge (Jorgensen, Maxwell & Tirado-Rives, J. Am. Chem. Soc. 118, 11225 (1996)). Environments the table has no number for (siloxanes, aryl carbonates, CCl2 carbons, ureas, imides, carbamates) are left untyped and reported. Among matching rules the highest priority wins.",
+ "description": "CAPS rules giving OPLS-AA type numbers by chemical group, with the carbons and hydrogens that balance each group's charge (Jorgensen, Maxwell & Tirado-Rives, J. Am. Chem. Soc. 118, 11225 (1996)). Environments the table has no number for (siloxanes, aryl carbonates, CCl2 carbons, substituted ureas, imides, carbamates) are left untyped and reported. Among matching rules the highest priority wins.",
  "rules": [
   {
    "type": "135",
@@ -2037,6 +2037,102 @@
    "smarts": "[H][c;$(c1ccncc1)]",
    "priority": 4,
    "description": "pyridine H4"
+  },
+  {
+   "type": "527",
+   "smarts": "[nX2;$(n1ccncc1)]",
+   "priority": 4,
+   "description": "pyrazine N"
+  },
+  {
+   "type": "528",
+   "smarts": "[cH1;$(c1nccnc1)]",
+   "priority": 4,
+   "description": "pyrazine C"
+  },
+  {
+   "type": "529",
+   "smarts": "[H][cH1;$(c1nccnc1)]",
+   "priority": 4,
+   "description": "pyrazine H"
+  },
+  {
+   "type": "557",
+   "smarts": "[nX3H1;$([nH]1c[nX2]cc1)]",
+   "priority": 4,
+   "description": "imidazole N1 (NH)"
+  },
+  {
+   "type": "558",
+   "smarts": "[cH1;$(c1[nX2]cc[nH]1)]",
+   "priority": 4,
+   "description": "imidazole C2"
+  },
+  {
+   "type": "559",
+   "smarts": "[nX2;$(n1c[nH]cc1)]",
+   "priority": 4,
+   "description": "imidazole N3"
+  },
+  {
+   "type": "560",
+   "smarts": "[cH1;$(c1[nX2]c[nH]c1)]",
+   "priority": 4,
+   "description": "imidazole C4"
+  },
+  {
+   "type": "561",
+   "smarts": "[cH1;$(c1[nH]c[nX2]c1)]",
+   "priority": 4,
+   "description": "imidazole C5"
+  },
+  {
+   "type": "562",
+   "smarts": "[H][nX3H1;$([nH]1c[nX2]cc1)]",
+   "priority": 4,
+   "description": "imidazole H1 (on N1)"
+  },
+  {
+   "type": "563",
+   "smarts": "[H][cH1;$(c1[nX2]cc[nH]1)]",
+   "priority": 4,
+   "description": "imidazole H2"
+  },
+  {
+   "type": "564",
+   "smarts": "[H][cH1;$(c1[nX2]c[nH]c1)]",
+   "priority": 4,
+   "description": "imidazole H4"
+  },
+  {
+   "type": "565",
+   "smarts": "[H][cH1;$(c1[nH]c[nX2]c1)]",
+   "priority": 4,
+   "description": "imidazole H5"
+  },
+  {
+   "type": "247",
+   "smarts": "[CX3;$(C(=[OX1])([NX3H2])[NX3H2])]",
+   "priority": 9,
+   "description": "urea C"
+  },
+  {
+   "type": "248",
+   "smarts": "[OX1]=[CX3;$(C(=[OX1])([NX3H2])[NX3H2])]",
+   "priority": 9,
+   "description": "urea O"
+  },
+  {
+   "type": "249",
+   "smarts": "[NX3H2][CX3;$(C(=[OX1])([NX3H2])[NX3H2])]",
+   "priority": 9,
+   "description": "urea N"
+  },
+  {
+   "type": "250",
+   "smarts": "[H][NX3H2][CX3;$(C(=[OX1])([NX3H2])[NX3H2])]",
+   "priority": 9,
+   "description": "urea H"
   },
   {
    "type": "670",
