@@ -936,7 +936,7 @@
    },
    "typing": {
     "rules": "typing/inorganic-binary-oxides.typing.json",
-    "evidence": "CAPS rules (bench/typing/make_inorganic_rules.py): 82 rules, 23 compounds, 20 shelled cores"
+    "evidence": "CAPS rules (bench/typing/make_inorganic_rules.py): 82 rules, 23 compounds, 19 shelled cores, 10 other potential sets as overlays (typing/sets/inorganic-binary-oxides)"
    },
    "list": {
     "label": "Binary oxides",
@@ -1022,7 +1022,7 @@
    },
    "typing": {
     "rules": "typing/inorganic-ternary-oxides.typing.json",
-    "evidence": "CAPS rules (bench/typing/make_inorganic_rules.py): 70 rules, 13 compounds, 18 shelled cores"
+    "evidence": "CAPS rules (bench/typing/make_inorganic_rules.py): 71 rules, 13 compounds, 18 shelled cores"
    },
    "list": {
     "label": "Ternary oxides",
@@ -1050,7 +1050,7 @@
    },
    "typing": {
     "rules": "typing/inorganic-zeolite.typing.json",
-    "evidence": "CAPS rules (bench/typing/make_inorganic_rules.py): 11 rules, 3 compounds"
+    "evidence": "CAPS rules (bench/typing/make_inorganic_rules.py): 11 rules, 3 compounds, 2 other potential sets as overlays (typing/sets/inorganic-zeolite)"
    },
    "list": {
     "label": "Zeolite",
