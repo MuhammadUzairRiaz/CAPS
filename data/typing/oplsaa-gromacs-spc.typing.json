@@ -1,0 +1,20 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "OPLS-AA (GROMACS) SPC water",
+ "description": "SPC water for oplsaa-gromacs (an overlay on its rules)",
+ "rules": [
+  {
+   "type": "opls_116",
+   "smarts": "[OX2H2]",
+   "priority": 20,
+   "description": "SPC water O"
+  },
+  {
+   "type": "opls_117",
+   "smarts": "[H][OX2H2]",
+   "priority": 20,
+   "description": "SPC water H"
+  }
+ ]
+}

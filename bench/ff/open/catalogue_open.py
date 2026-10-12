@@ -36,6 +36,13 @@ ENTRIES = {
                                 "CAPS rules in AMBER's own type names (bench/typing/make_amber_rules.py ff14sb); AmberTools' residue libraries "
                                 "amino12, aminont12, aminoct12, DNA.OL15 and RNA typed as the libraries type them: 2288 / 2288 atoms, 111 / 111 "
                                 "residues (bench/ff/validate_off_types.py)", ("AMBER ff14SB", "amber14sb", 16), []),
+    "oplsaa-gromacs": ("OPLS-AA (GROMACS oplsaa.ff)", "OPLS-AA/L as GROMACS distributes it (oplsaa.ff)",
+                       ["W. L. Jorgensen, D. S. Maxwell, J. Tirado-Rives, J. Am. Chem. Soc. 118, 11225 (1996)",
+                        "G. A. Kaminski, R. A. Friesner, J. Tirado-Rives, W. L. Jorgensen, J. Phys. Chem. B 105, 6474 (2001)"],
+                       {"source": "GROMACS share/top/oplsaa.ff (ffnonbonded.itp, ffbonded.itp)", "license": "GNU LGPL 2.1 (part of GROMACS)"},
+                       "CAPS's OPLS-AA rules in opls_NNN names plus GROMACS's protein types (bench/typing/make_opls_gromacs_rules.py): "
+                       "aminoacids.rtp 504 / 504 atoms, 46 / 46 residues (PGLU's entry listed as a deviation), methanol.itp exact; "
+                       "every parameter CAPS assigns equals GROMACS's own lookup (bench/ff/check_source_gromacs.py)", None, []),
 }
 cat_path = os.path.join(FF, "catalogue.json")
 cat = json.load(open(cat_path))

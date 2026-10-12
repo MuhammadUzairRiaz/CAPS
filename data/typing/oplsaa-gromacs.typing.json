@@ -1,0 +1,2637 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "OPLS-AA (GROMACS oplsaa.ff)",
+ "unknown_types": "untyped",
+ "description": "CAPS's OPLS-AA rules in GROMACS's opls_NNN names (bench/typing/make_opls_gromacs_rules.py); types the GROMACS file lacks (opls_1025, opls_1026, opls_1027, opls_1028, opls_1029, opls_1060, opls_1061, opls_1062, opls_1063, opls_1064, opls_1065, opls_1066, opls_1067, opls_1068, opls_1069, opls_1070, opls_1071, opls_1072, opls_1073, opls_1074, opls_1075, opls_1076, opls_1077, opls_1078, opls_399, opls_489, opls_495, opls_519, opls_789, opls_939, opls_972, opls_973, opls_974, opls_987, opls_988, opls_9998, opls_9999) are left untyped",
+ "rules": [
+  {
+   "type": "opls_135",
+   "smarts": "[CX4H3;!$(*~[!#6;!#1])]",
+   "priority": 0,
+   "description": "alkane C (CH3)"
+  },
+  {
+   "type": "opls_136",
+   "smarts": "[CX4H2;!$(*~[!#6;!#1])]",
+   "priority": 0,
+   "description": "alkane C (CH2)"
+  },
+  {
+   "type": "opls_137",
+   "smarts": "[CX4H1;!$(*~[!#6;!#1])]",
+   "priority": 0,
+   "description": "alkane C (CH)"
+  },
+  {
+   "type": "opls_139",
+   "smarts": "[CX4H0;!$(*~[!#6;!#1])]",
+   "priority": 0,
+   "description": "alkane C (C)"
+  },
+  {
+   "type": "opls_140",
+   "smarts": "[H][CX4]",
+   "priority": 0,
+   "description": "H on sp3 C"
+  },
+  {
+   "type": "opls_141",
+   "smarts": "[CX3H0;!$(*~[!#6;!#1])]=[CX3]",
+   "priority": 1,
+   "description": "alkene C (R2C=)"
+  },
+  {
+   "type": "opls_142",
+   "smarts": "[CX3H1;!$(*~[!#6;!#1])]=[CX3]",
+   "priority": 1,
+   "description": "alkene C (RHC=)"
+  },
+  {
+   "type": "opls_143",
+   "smarts": "[CX3H2;!$(*~[!#6;!#1])]=[CX3]",
+   "priority": 1,
+   "description": "alkene C (H2C=)"
+  },
+  {
+   "type": "opls_144",
+   "smarts": "[H][CX3]=[CX3]",
+   "priority": 1,
+   "description": "alkene H"
+  },
+  {
+   "type": "opls_145",
+   "smarts": "[c;!$(*~[!#6;!#1])]",
+   "priority": 1,
+   "description": "aromatic C"
+  },
+  {
+   "type": "opls_146",
+   "smarts": "[H]c",
+   "priority": 1,
+   "description": "aromatic H"
+  },
+  {
+   "type": "opls_147",
+   "smarts": "[c;R2;$(c(:c)(:c):c)]",
+   "priority": 2,
+   "description": "fused aromatic C (naphthalene C9)"
+  },
+  {
+   "type": "opls_148",
+   "smarts": "[CX4H3;$(*c);!$(*~[!#6;!#1])]",
+   "priority": 2,
+   "description": "benzylic C (CH3)"
+  },
+  {
+   "type": "opls_149",
+   "smarts": "[CX4H2;$(*c);!$(*~[!#6;!#1])]",
+   "priority": 2,
+   "description": "benzylic C (CH2)"
+  },
+  {
+   "type": "opls_515",
+   "smarts": "[CX4H1;$(*c);!$(*~[!#6;!#1])]",
+   "priority": 2,
+   "description": "benzylic C (CH)"
+  },
+  {
+   "type": "opls_516",
+   "smarts": "[CX4H0;$(*c);!$(*~[!#6;!#1])]",
+   "priority": 2,
+   "description": "benzylic C (C)"
+  },
+  {
+   "type": "opls_711",
+   "smarts": "[CX4H2;r3;!$(*~[!#6;!#1])]",
+   "priority": 1,
+   "description": "cyclopropane C (CH2)"
+  },
+  {
+   "type": "opls_712",
+   "smarts": "[CX4H1;r3;!$(*~[!#6;!#1])]",
+   "priority": 1,
+   "description": "cyclopropane C (CH)"
+  },
+  {
+   "type": "opls_713",
+   "smarts": "[CX4H0;r3;!$(*~[!#6;!#1])]",
+   "priority": 1,
+   "description": "cyclopropane C (C)"
+  },
+  {
+   "type": "opls_714",
+   "smarts": "[CX4H2;r4;!$(*~[!#6;!#1])]",
+   "priority": 1,
+   "description": "cyclobutane C (CH2)"
+  },
+  {
+   "type": "opls_715",
+   "smarts": "[CX4H1;r4;!$(*~[!#6;!#1])]",
+   "priority": 1,
+   "description": "cyclobutane C (CH)"
+  },
+  {
+   "type": "opls_716",
+   "smarts": "[CX4H0;r4;!$(*~[!#6;!#1])]",
+   "priority": 1,
+   "description": "cyclobutane C (C)"
+  },
+  {
+   "type": "opls_154",
+   "smarts": "[OX2H1][CX4]",
+   "priority": 5,
+   "description": "alcohol O"
+  },
+  {
+   "type": "opls_155",
+   "smarts": "[H][OX2H1][CX4]",
+   "priority": 5,
+   "description": "alcohol H"
+  },
+  {
+   "type": "opls_157",
+   "smarts": "[CX4H3;$(*[OX2H1])]",
+   "priority": 5,
+   "description": "alcohol C (CH3)"
+  },
+  {
+   "type": "opls_157",
+   "smarts": "[CX4H2;$(*[OX2H1])]",
+   "priority": 5,
+   "description": "alcohol C (CH2)"
+  },
+  {
+   "type": "opls_158",
+   "smarts": "[CX4H1;$(*[OX2H1])]",
+   "priority": 5,
+   "description": "alcohol C (CH)"
+  },
+  {
+   "type": "opls_159",
+   "smarts": "[CX4H0;$(*[OX2H1])]",
+   "priority": 5,
+   "description": "alcohol C (C)"
+  },
+  {
+   "type": "opls_173",
+   "smarts": "[CX4H2;$(*([OX2H1])[CX4]([OX2H1])[CX4][OX2H1])]",
+   "priority": 8,
+   "description": "triol C (CH2)"
+  },
+  {
+   "type": "opls_174",
+   "smarts": "[CX4H1;$(*([OX2H1])[CX4]([OX2H1])[CX4][OX2H1])]",
+   "priority": 8,
+   "description": "triol C (CH)"
+  },
+  {
+   "type": "opls_175",
+   "smarts": "[CX4H0;$(*([OX2H1])[CX4]([OX2H1])[CX4][OX2H1])]",
+   "priority": 8,
+   "description": "triol C (C)"
+  },
+  {
+   "type": "opls_176",
+   "smarts": "[H][CX4;$(*([OX2H1])[CX4]([OX2H1])[CX4][OX2H1])]",
+   "priority": 8,
+   "description": "H on a triol C"
+  },
+  {
+   "type": "opls_171",
+   "smarts": "[OX2H1][CX4;$(*([OX2H1])[CX4]([OX2H1])[CX4][OX2H1])]",
+   "priority": 8,
+   "description": "triol O"
+  },
+  {
+   "type": "opls_172",
+   "smarts": "[H][OX2H1][CX4;$(*([OX2H1])[CX4]([OX2H1])[CX4][OX2H1])]",
+   "priority": 8,
+   "description": "triol H(O)"
+  },
+  {
+   "type": "opls_173",
+   "smarts": "[CX4H2;$(*([OX2H1])([CX4][OX2H1])[CX4][OX2H1])]",
+   "priority": 8,
+   "description": "triol C (CH2)"
+  },
+  {
+   "type": "opls_174",
+   "smarts": "[CX4H1;$(*([OX2H1])([CX4][OX2H1])[CX4][OX2H1])]",
+   "priority": 8,
+   "description": "triol C (CH)"
+  },
+  {
+   "type": "opls_175",
+   "smarts": "[CX4H0;$(*([OX2H1])([CX4][OX2H1])[CX4][OX2H1])]",
+   "priority": 8,
+   "description": "triol C (C)"
+  },
+  {
+   "type": "opls_176",
+   "smarts": "[H][CX4;$(*([OX2H1])([CX4][OX2H1])[CX4][OX2H1])]",
+   "priority": 8,
+   "description": "H on a triol C"
+  },
+  {
+   "type": "opls_171",
+   "smarts": "[OX2H1][CX4;$(*([OX2H1])([CX4][OX2H1])[CX4][OX2H1])]",
+   "priority": 8,
+   "description": "triol O"
+  },
+  {
+   "type": "opls_172",
+   "smarts": "[H][OX2H1][CX4;$(*([OX2H1])([CX4][OX2H1])[CX4][OX2H1])]",
+   "priority": 8,
+   "description": "triol H(O)"
+  },
+  {
+   "type": "opls_218",
+   "smarts": "[CX4H2;$(*c);$(*[OX2H1])]",
+   "priority": 7,
+   "description": "benzyl alcohol C (CH2)"
+  },
+  {
+   "type": "opls_219",
+   "smarts": "[CX4H1;$(*c);$(*[OX2H1])]",
+   "priority": 7,
+   "description": "benzyl alcohol C (CH)"
+  },
+  {
+   "type": "opls_220",
+   "smarts": "[CX4H0;$(*c);$(*[OX2H1])]",
+   "priority": 7,
+   "description": "benzyl alcohol C (C)"
+  },
+  {
+   "type": "opls_221",
+   "smarts": "c[CX4][OX2H1]",
+   "priority": 7,
+   "description": "ring C of a benzyl alcohol"
+  },
+  {
+   "type": "opls_167",
+   "smarts": "[OX2H1]c",
+   "priority": 5,
+   "description": "phenol O"
+  },
+  {
+   "type": "opls_168",
+   "smarts": "[H][OX2H1]c",
+   "priority": 5,
+   "description": "phenol H"
+  },
+  {
+   "type": "opls_166",
+   "smarts": "c[OX2H1]",
+   "priority": 5,
+   "description": "phenol C(OH)"
+  },
+  {
+   "type": "opls_180",
+   "smarts": "[OX2;!$(O[#1]);!$(O[#6]=[O,S,N]);!$(O[Si]);!$(O~[#6](~[OX2])~[OX2]);!$(O[CX4]([OX2])[OX2]);!r3;$(O([CX4])[CX4])]",
+   "priority": 5,
+   "description": "dialkyl ether O"
+  },
+  {
+   "type": "opls_179",
+   "smarts": "[OX2;!$(O[#1]);!$(O[#6]=[O,S,N]);!$(O[Si]);!$(O~[#6](~[OX2])~[OX2]);!$(O[CX4]([OX2])[OX2]);!r3;$(O(c)[CX4])]",
+   "priority": 5,
+   "description": "alkyl aryl ether O (anisole)"
+  },
+  {
+   "type": "opls_473",
+   "smarts": "[OX2;!$(O[#1]);!$(O[#6]=[O,S,N]);!$(O[Si]);!$(O~[#6](~[OX2])~[OX2]);!$(O[CX4]([OX2])[OX2]);!r3;$(O(c)c)]",
+   "priority": 5,
+   "description": "diaryl ether O (the phenyl ester O, as the GROMACS OPLS-AA topologies type diphenyl ether)"
+  },
+  {
+   "type": "opls_181",
+   "smarts": "[CX4H3;$(*[OX2;!$(O[#1]);!$(O[#6]=[O,S,N]);!$(O[Si]);!$(O~[#6](~[OX2])~[OX2]);!$(O[CX4]([OX2])[OX2]);!r3;$(O([CX4])[CX4,c])])]",
+   "priority": 5,
+   "description": "ether alpha C (CH3)"
+  },
+  {
+   "type": "opls_182",
+   "smarts": "[CX4H2;$(*[OX2;!$(O[#1]);!$(O[#6]=[O,S,N]);!$(O[Si]);!$(O~[#6](~[OX2])~[OX2]);!$(O[CX4]([OX2])[OX2]);!r3;$(O([CX4])[CX4,c])])]",
+   "priority": 5,
+   "description": "ether alpha C (CH2)"
+  },
+  {
+   "type": "opls_183",
+   "smarts": "[CX4H1;$(*[OX2;!$(O[#1]);!$(O[#6]=[O,S,N]);!$(O[Si]);!$(O~[#6](~[OX2])~[OX2]);!$(O[CX4]([OX2])[OX2]);!r3;$(O([CX4])[CX4,c])])]",
+   "priority": 5,
+   "description": "ether alpha C (CH)"
+  },
+  {
+   "type": "opls_184",
+   "smarts": "[CX4H0;$(*[OX2;!$(O[#1]);!$(O[#6]=[O,S,N]);!$(O[Si]);!$(O~[#6](~[OX2])~[OX2]);!$(O[CX4]([OX2])[OX2]);!r3;$(O([CX4])[CX4,c])])]",
+   "priority": 5,
+   "description": "ether alpha C (C)"
+  },
+  {
+   "type": "opls_185",
+   "smarts": "[H][CX4][OX2;!$(O[#1]);!$(O[#6]=[O,S,N]);!$(O[Si]);!$(O~[#6](~[OX2])~[OX2]);!$(O[CX4]([OX2])[OX2]);!r3;$(O([CX4])[CX4,c])]",
+   "priority": 5,
+   "description": "H on ether alpha C"
+  },
+  {
+   "type": "opls_199",
+   "smarts": "c[OX2;!$(O[#1]);!$(O[#6]=[O,S,N]);!$(O[Si]);!$(O~[#6](~[OX2])~[OX2]);!$(O[CX4]([OX2])[OX2]);!r3;$(O(c)[CX4])]",
+   "priority": 5,
+   "description": "aryl ether C(O)"
+  },
+  {
+   "type": "opls_472",
+   "smarts": "c[OX2;!$(O[#1]);!$(O[#6]=[O,S,N]);!$(O[Si]);!$(O~[#6](~[OX2])~[OX2]);!$(O[CX4]([OX2])[OX2]);!r3;$(O(c)c)]",
+   "priority": 5,
+   "description": "diaryl ether C(O) (the phenyl ester C(ipso))"
+  },
+  {
+   "type": "opls_186",
+   "smarts": "[OX2;$(O[CX3]=[CX3]);$(O[CX4]);!$(O[CX3]=[O,S,N])]",
+   "priority": 7,
+   "description": "vinyl ether O"
+  },
+  {
+   "type": "opls_518",
+   "smarts": "[CX3;$(*[OX2][CX4]);!$(*=[O,S,N])]=[CX3]",
+   "priority": 7,
+   "description": "vinyl ether C(O)="
+  },
+  {
+   "type": "opls_181",
+   "smarts": "[CX4H3;$(*[OX2][CX3]=[CX3])]",
+   "priority": 7,
+   "description": "alkoxy C of a vinyl ether (CH3)"
+  },
+  {
+   "type": "opls_182",
+   "smarts": "[CX4H2;$(*[OX2][CX3]=[CX3])]",
+   "priority": 7,
+   "description": "alkoxy C of a vinyl ether (CH2)"
+  },
+  {
+   "type": "opls_183",
+   "smarts": "[CX4H1;$(*[OX2][CX3]=[CX3])]",
+   "priority": 7,
+   "description": "alkoxy C of a vinyl ether (CH)"
+  },
+  {
+   "type": "opls_184",
+   "smarts": "[CX4H0;$(*[OX2][CX3]=[CX3])]",
+   "priority": 7,
+   "description": "alkoxy C of a vinyl ether (C)"
+  },
+  {
+   "type": "opls_185",
+   "smarts": "[H][CX4][OX2][CX3]=[CX3]",
+   "priority": 7,
+   "description": "H on the alkoxy C of a vinyl ether"
+  },
+  {
+   "type": "opls_189",
+   "smarts": "[CX4H2;$(*([OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc)])[OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc)])]",
+   "priority": 7,
+   "description": "acetal C (CH2)"
+  },
+  {
+   "type": "opls_193",
+   "smarts": "[CX4H1;$(*([OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc)])[OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc)])]",
+   "priority": 7,
+   "description": "acetal C (CH)"
+  },
+  {
+   "type": "opls_197",
+   "smarts": "[CX4H0;$(*([OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc)])[OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc)])]",
+   "priority": 7,
+   "description": "acetal C (C)"
+  },
+  {
+   "type": "opls_190",
+   "smarts": "[H][CX4H2;$(*([OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc)])[OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc)])]",
+   "priority": 7,
+   "description": "H on acetal C (OCH2O)"
+  },
+  {
+   "type": "opls_194",
+   "smarts": "[H][CX4H1;$(*([OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc)])[OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc)])]",
+   "priority": 7,
+   "description": "H on acetal C (OCHRO)"
+  },
+  {
+   "type": "opls_191",
+   "smarts": "[CX4H2;$(*([OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc)])[OX2H1])]",
+   "priority": 7,
+   "description": "hemiacetal C (CH2)"
+  },
+  {
+   "type": "opls_195",
+   "smarts": "[CX4H1;$(*([OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc)])[OX2H1])]",
+   "priority": 7,
+   "description": "hemiacetal C (CH)"
+  },
+  {
+   "type": "opls_198",
+   "smarts": "[CX4H0;$(*([OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc)])[OX2H1])]",
+   "priority": 7,
+   "description": "hemiacetal C (C)"
+  },
+  {
+   "type": "opls_192",
+   "smarts": "[H][CX4H2;$(*([OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc)])[OX2H1])]",
+   "priority": 7,
+   "description": "H on hemiacetal C (OCH2OH)"
+  },
+  {
+   "type": "opls_196",
+   "smarts": "[H][CX4H1;$(*([OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc)])[OX2H1])]",
+   "priority": 7,
+   "description": "H on hemiacetal C (OCHROH)"
+  },
+  {
+   "type": "opls_186",
+   "smarts": "[OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc);$(O([CX4][OX2])[CX4][OX2]);!$(O[CX4][OX2H1])]",
+   "priority": 8,
+   "description": "O between two acetal C (paraldehyde, 1,3,5-trioxane), as those topologies"
+  },
+  {
+   "type": "opls_180",
+   "smarts": "[OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc);$(O[CX4][OX2]);!$(O[CX4][OX2H1])]",
+   "priority": 7,
+   "description": "acetal ether O (the dialkyl ether O, as the GROMACS OPLS-AA topologies type dimethoxymethane and 1,3-dioxolane)"
+  },
+  {
+   "type": "opls_186",
+   "smarts": "[OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc);$(O[CX4][OX2H1])]",
+   "priority": 7,
+   "description": "hemiacetal ether O"
+  },
+  {
+   "type": "opls_187",
+   "smarts": "[OX2H1;$(O[CX4][OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc)])]",
+   "priority": 7,
+   "description": "hemiacetal O(H)"
+  },
+  {
+   "type": "opls_188",
+   "smarts": "[H][OX2H1;$(O[CX4][OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc)])]",
+   "priority": 7,
+   "description": "hemiacetal H(O)"
+  },
+  {
+   "type": "opls_277",
+   "smarts": "[CX3H1](=[OX1])[#6]",
+   "priority": 5,
+   "description": "aldehyde C"
+  },
+  {
+   "type": "opls_278",
+   "smarts": "[OX1]=[CX3H1][#6]",
+   "priority": 5,
+   "description": "aldehyde O"
+  },
+  {
+   "type": "opls_279",
+   "smarts": "[H][CX3]=[OX1]",
+   "priority": 5,
+   "description": "aldehyde H"
+  },
+  {
+   "type": "opls_277",
+   "smarts": "[CX3H2]=[OX1]",
+   "priority": 5,
+   "description": "formaldehyde C"
+  },
+  {
+   "type": "opls_278",
+   "smarts": "[OX1]=[CX3H2]",
+   "priority": 5,
+   "description": "formaldehyde O"
+  },
+  {
+   "type": "opls_280",
+   "smarts": "[CX3H0](=[OX1])([#6])[#6]",
+   "priority": 5,
+   "description": "ketone C"
+  },
+  {
+   "type": "opls_281",
+   "smarts": "[OX1]=[CX3H0]([#6])[#6]",
+   "priority": 5,
+   "description": "ketone O"
+  },
+  {
+   "type": "opls_282",
+   "smarts": "[H][CX4][CX3](=[OX1])[#6,#1]",
+   "priority": 4,
+   "description": "H on C alpha to a ketone / aldehyde"
+  },
+  {
+   "type": "opls_140",
+   "smarts": "[H][CX4][CX3](=[OX1])[OX2][#6;!$([CX3]=[OX1])]",
+   "priority": 5,
+   "description": "H alpha to an ester carbonyl (acyl side)"
+  },
+  {
+   "type": "opls_140",
+   "smarts": "[H][CX4][CX3](=[OX1])[c,$([CX4;r3])]",
+   "priority": 5,
+   "description": "H alpha to an aryl or cyclopropyl ketone"
+  },
+  {
+   "type": "opls_282",
+   "smarts": "[H][CX4][CX3](=[OX1])[OX2][CX3]=[OX1]",
+   "priority": 5,
+   "description": "H alpha to an anhydride carbonyl"
+  },
+  {
+   "type": "opls_140",
+   "smarts": "[H][CX4;r3][CX3]=[OX1]",
+   "priority": 5,
+   "description": "H on a cyclopropyl C alpha to a ketone"
+  },
+  {
+   "type": "opls_282",
+   "smarts": "[H][CX4][CX3](=[OX1])[OX2][CX4][CX4][OX2][CX3]=[OX1]",
+   "priority": 6,
+   "description": "H alpha to an ester carbonyl of a diester (O-(C)2-O)"
+  },
+  {
+   "type": "opls_282",
+   "smarts": "[H][CX4][CX3](=[OX1])[OX2][CX4][CX4][CX4][OX2][CX3]=[OX1]",
+   "priority": 6,
+   "description": "H alpha to an ester carbonyl of a diester (O-(C)3-O)"
+  },
+  {
+   "type": "opls_282",
+   "smarts": "[H][CX4][CX3](=[OX1])[OX2][CX4][CX4][CX4][CX4][OX2][CX3]=[OX1]",
+   "priority": 6,
+   "description": "H alpha to an ester carbonyl of a diester (O-(C)4-O)"
+  },
+  {
+   "type": "opls_282",
+   "smarts": "[H][CX4]([CX3](=[OX1])[OX2])[CX3](=[OX1])[OX2]",
+   "priority": 6,
+   "description": "H on the C between two ester carbonyls (malonate)"
+  },
+  {
+   "type": "opls_232",
+   "smarts": "[CX3H1](=[OX1])c",
+   "priority": 6,
+   "description": "aryl aldehyde C (benzaldehyde)"
+  },
+  {
+   "type": "opls_233",
+   "smarts": "[CX3H0](=[OX1])(c)[CX4]",
+   "priority": 6,
+   "description": "alkyl aryl ketone C (acetophenone)"
+  },
+  {
+   "type": "opls_231",
+   "smarts": "[CX3H0](=[OX1])(c)c",
+   "priority": 7,
+   "description": "diaryl ketone C (benzophenone)"
+  },
+  {
+   "type": "opls_465",
+   "smarts": "[CX3;$(*(=[OX1])[OX2][#6]);$(*[#6,#1]);!$(*[OX2][#6][OX2]);!$(*(O)(O)=O)]",
+   "priority": 6,
+   "description": "ester C=O (alkyl acyl)"
+  },
+  {
+   "type": "opls_471",
+   "smarts": "[CX3;$(*(=[OX1])[OX2][#6]);$(*c)]",
+   "priority": 7,
+   "description": "ester C=O (aryl acyl, benzoate)"
+  },
+  {
+   "type": "opls_466",
+   "smarts": "[OX1]=[CX3;$(*[OX2][#6]);!$(*([OX2])[OX2])]",
+   "priority": 6,
+   "description": "ester =O"
+  },
+  {
+   "type": "opls_467",
+   "smarts": "[OX2;$(O[CX3](=[OX1])[#6,#1]);$(O[CX4])]",
+   "priority": 6,
+   "description": "ester -O- (alkoxy)"
+  },
+  {
+   "type": "opls_473",
+   "smarts": "[OX2;$(O[CX3](=[OX1])[#6,#1]);$(Oc)]",
+   "priority": 7,
+   "description": "ester -O- (phenyl ester)"
+  },
+  {
+   "type": "opls_473",
+   "smarts": "[OX2;$(O[CX3](=[OX1])[#6,#1]);$(O[CX3]=[CX3])]",
+   "priority": 7,
+   "description": "ester -O- (vinyl ester)"
+  },
+  {
+   "type": "opls_142",
+   "smarts": "[CX3H1;$(*[OX2][CX3]=[OX1])]=[CX3]",
+   "priority": 7,
+   "description": "vinyl ester C(O)= (RHC=)"
+  },
+  {
+   "type": "opls_141",
+   "smarts": "[CX3H0;$(*[OX2][CX3]=[OX1])]=[CX3]",
+   "priority": 7,
+   "description": "vinyl ester C(O)= (R2C=)"
+  },
+  {
+   "type": "opls_467",
+   "smarts": "[OX2;$(O([CX3]=[OX1])[CX3]=[OX1])]",
+   "priority": 7,
+   "description": "anhydride -O-"
+  },
+  {
+   "type": "opls_472",
+   "smarts": "c[OX2][CX3](=[OX1])[#6,#1]",
+   "priority": 7,
+   "description": "phenyl ester C(ipso)"
+  },
+  {
+   "type": "opls_468",
+   "smarts": "[CX4H3;$(*[OX2][CX3](=[OX1])[#6,#1])]",
+   "priority": 6,
+   "description": "ester alkoxy C (CH3)"
+  },
+  {
+   "type": "opls_490",
+   "smarts": "[CX4H2;$(*[OX2][CX3](=[OX1])[#6,#1])]",
+   "priority": 6,
+   "description": "ester alkoxy C (CH2)"
+  },
+  {
+   "type": "opls_491",
+   "smarts": "[CX4H1;$(*[OX2][CX3](=[OX1])[#6,#1])]",
+   "priority": 6,
+   "description": "ester alkoxy C (CH)"
+  },
+  {
+   "type": "opls_492",
+   "smarts": "[CX4H0;$(*[OX2][CX3](=[OX1])[#6,#1])]",
+   "priority": 6,
+   "description": "ester alkoxy C (C)"
+  },
+  {
+   "type": "opls_469",
+   "smarts": "[H][CX4][OX2][CX3](=[OX1])[#6,#1]",
+   "priority": 6,
+   "description": "H on ester alkoxy C"
+  },
+  {
+   "type": "opls_267",
+   "smarts": "[CX3](=[OX1])[OX2H1]",
+   "priority": 7,
+   "description": "carboxylic acid C"
+  },
+  {
+   "type": "opls_269",
+   "smarts": "[OX1]=[CX3][OX2H1]",
+   "priority": 7,
+   "description": "carboxylic acid =O"
+  },
+  {
+   "type": "opls_268",
+   "smarts": "[OX2H1][CX3]=[OX1]",
+   "priority": 7,
+   "description": "carboxylic acid -OH"
+  },
+  {
+   "type": "opls_270",
+   "smarts": "[H][OX2H1][CX3]=[OX1]",
+   "priority": 7,
+   "description": "carboxylic acid H"
+  },
+  {
+   "type": "opls_271",
+   "smarts": "[CX3;$([CX3](~[OX1])~[OX1-])]",
+   "priority": 7,
+   "description": "carboxylate C"
+  },
+  {
+   "type": "opls_272",
+   "smarts": "[OX1;$(O~[CX3;$([CX3](~[OX1])~[OX1-])])]",
+   "priority": 7,
+   "description": "carboxylate O"
+  },
+  {
+   "type": "opls_135",
+   "smarts": "[CX4H3;$(*[CX3;$([CX3](~[OX1])~[OX1-])])]",
+   "priority": 7,
+   "description": "C alpha to a carboxylate (the alkane types, as the GROMACS OPLS-AA topologies type acetate) (CH3)"
+  },
+  {
+   "type": "opls_136",
+   "smarts": "[CX4H2;$(*[CX3;$([CX3](~[OX1])~[OX1-])])]",
+   "priority": 7,
+   "description": "C alpha to a carboxylate (the alkane types, as the GROMACS OPLS-AA topologies type acetate) (CH2)"
+  },
+  {
+   "type": "opls_137",
+   "smarts": "[CX4H1;$(*[CX3;$([CX3](~[OX1])~[OX1-])])]",
+   "priority": 7,
+   "description": "C alpha to a carboxylate (the alkane types, as the GROMACS OPLS-AA topologies type acetate) (CH)"
+  },
+  {
+   "type": "opls_139",
+   "smarts": "[CX4H0;$(*[CX3;$([CX3](~[OX1])~[OX1-])])]",
+   "priority": 7,
+   "description": "C alpha to a carboxylate (the alkane types, as the GROMACS OPLS-AA topologies type acetate) (C)"
+  },
+  {
+   "type": "opls_772",
+   "smarts": "[CX3;R](=[OX1])([OX2][CX4])[OX2][CX4]",
+   "priority": 7,
+   "description": "cyclic carbonate C=O"
+  },
+  {
+   "type": "opls_771",
+   "smarts": "[OX1]=[CX3;R]([OX2][CX4])[OX2][CX4]",
+   "priority": 7,
+   "description": "cyclic carbonate =O"
+  },
+  {
+   "type": "opls_773",
+   "smarts": "[OX2;R;$(O[CX3](=[OX1])[OX2][CX4]);$(O[CX4])]",
+   "priority": 7,
+   "description": "cyclic carbonate -O-"
+  },
+  {
+   "type": "opls_774",
+   "smarts": "[CX4H2;$(*[OX2;R][CX3](=[OX1])[OX2][CX4])]",
+   "priority": 7,
+   "description": "cyclic carbonate alkoxy C (CH2)"
+  },
+  {
+   "type": "opls_775",
+   "smarts": "[CX4H1;$(*[OX2;R][CX3](=[OX1])[OX2][CX4])]",
+   "priority": 7,
+   "description": "cyclic carbonate alkoxy C (CH)"
+  },
+  {
+   "type": "opls_777",
+   "smarts": "[H][CX4][OX2;R][CX3](=[OX1])[OX2][CX4]",
+   "priority": 7,
+   "description": "H on cyclic carbonate alkoxy C"
+  },
+  {
+   "type": "opls_465",
+   "smarts": "[CX3;!R](=[OX1])([OX2][CX4])[OX2][CX4]",
+   "priority": 7,
+   "description": "open-chain carbonate C=O (ester C)"
+  },
+  {
+   "type": "opls_466",
+   "smarts": "[OX1]=[CX3;!R]([OX2][CX4])[OX2][CX4]",
+   "priority": 7,
+   "description": "open-chain carbonate =O (ester =O)"
+  },
+  {
+   "type": "opls_467",
+   "smarts": "[OX2;!R;$(O[CX3](=[OX1])[OX2][CX4]);$(O[CX4])]",
+   "priority": 7,
+   "description": "open-chain carbonate -O- (ester -O-)"
+  },
+  {
+   "type": "opls_468",
+   "smarts": "[CX4H3;$(*[OX2;!R][CX3](=[OX1])[OX2][CX4])]",
+   "priority": 7,
+   "description": "open-chain carbonate alkoxy C (ester alkoxy C) (CH3)"
+  },
+  {
+   "type": "opls_490",
+   "smarts": "[CX4H2;$(*[OX2;!R][CX3](=[OX1])[OX2][CX4])]",
+   "priority": 7,
+   "description": "open-chain carbonate alkoxy C (ester alkoxy C) (CH2)"
+  },
+  {
+   "type": "opls_491",
+   "smarts": "[CX4H1;$(*[OX2;!R][CX3](=[OX1])[OX2][CX4])]",
+   "priority": 7,
+   "description": "open-chain carbonate alkoxy C (ester alkoxy C) (CH)"
+  },
+  {
+   "type": "opls_492",
+   "smarts": "[CX4H0;$(*[OX2;!R][CX3](=[OX1])[OX2][CX4])]",
+   "priority": 7,
+   "description": "open-chain carbonate alkoxy C (ester alkoxy C) (C)"
+  },
+  {
+   "type": "opls_469",
+   "smarts": "[H][CX4][OX2;!R][CX3](=[OX1])[OX2][CX4]",
+   "priority": 7,
+   "description": "H on open-chain carbonate alkoxy C"
+  },
+  {
+   "type": "opls_778",
+   "smarts": "[H][CX4H1][OX2;R][CX3](=[OX1])[OX2][CX4]",
+   "priority": 8,
+   "description": "H on carbonate alkoxy CH"
+  },
+  {
+   "type": "opls_776",
+   "smarts": "[CX4H3;$(*[CX4;R][OX2][CX3](=[OX1])[OX2][CX4])]",
+   "priority": 7,
+   "description": "CH3 on a cyclic carbonate ring C (propylene carbonate)"
+  },
+  {
+   "type": "opls_779",
+   "smarts": "[H][CX4H3;$(*[CX4;R][OX2][CX3](=[OX1])[OX2][CX4])]",
+   "priority": 7,
+   "description": "H of that CH3"
+  },
+  {
+   "type": "opls_235",
+   "smarts": "[CX3;$(*(=[OX1])[NX3]);!$(*([NX3])[NX3]);!$(*[OX2]);!$(*[NX3][CX3]=[OX1])]",
+   "priority": 6,
+   "description": "amide C=O"
+  },
+  {
+   "type": "opls_236",
+   "smarts": "[OX1]=[CX3;$(*(=[OX1])[NX3]);!$(*([NX3])[NX3]);!$(*[OX2]);!$(*[NX3][CX3]=[OX1])]",
+   "priority": 6,
+   "description": "amide =O"
+  },
+  {
+   "type": "opls_237",
+   "smarts": "[NX3H2][CX3;$(*(=[OX1])[NX3]);!$(*([NX3])[NX3]);!$(*[OX2]);!$(*[NX3][CX3]=[OX1])]",
+   "priority": 6,
+   "description": "primary amide N"
+  },
+  {
+   "type": "opls_238",
+   "smarts": "[NX3H1;$(*[CX3;$(*(=[OX1])[NX3]);!$(*([NX3])[NX3]);!$(*[OX2]);!$(*[NX3][CX3]=[OX1])])][#6]",
+   "priority": 6,
+   "description": "secondary amide N"
+  },
+  {
+   "type": "opls_239",
+   "smarts": "[NX3H0;$(*[CX3;$(*(=[OX1])[NX3]);!$(*([NX3])[NX3]);!$(*[OX2]);!$(*[NX3][CX3]=[OX1])])]([#6])[#6]",
+   "priority": 6,
+   "description": "tertiary amide N"
+  },
+  {
+   "type": "opls_240",
+   "smarts": "[H][NX3H2][CX3;$(*(=[OX1])[NX3]);!$(*([NX3])[NX3]);!$(*[OX2]);!$(*[NX3][CX3]=[OX1])]",
+   "priority": 6,
+   "description": "H on primary amide N"
+  },
+  {
+   "type": "opls_241",
+   "smarts": "[H][NX3H1][CX3;$(*(=[OX1])[NX3]);!$(*([NX3])[NX3]);!$(*[OX2]);!$(*[NX3][CX3]=[OX1])]",
+   "priority": 6,
+   "description": "H on secondary amide N"
+  },
+  {
+   "type": "opls_234",
+   "smarts": "[CX3;$(*(=[OX1])[NX3]);$(*c);!$(*([NX3])[NX3]);!$(*[OX2])]",
+   "priority": 7,
+   "description": "aryl amide C=O (benzamide)"
+  },
+  {
+   "type": "opls_265",
+   "smarts": "[NX3H1;$(*[CX3;$(*(=[OX1])[NX3]);!$(*([NX3])[NX3]);!$(*[OX2]);!$(*[NX3][CX3]=[OX1])])]c",
+   "priority": 7,
+   "description": "secondary N-aryl amide N"
+  },
+  {
+   "type": "opls_266",
+   "smarts": "c[NX3H1][CX3;$(*(=[OX1])[NX3]);!$(*([NX3])[NX3]);!$(*[OX2]);!$(*[NX3][CX3]=[OX1])]",
+   "priority": 7,
+   "description": "ring C on a secondary amide N"
+  },
+  {
+   "type": "opls_242",
+   "smarts": "[CX4H3;$(*[NX3H1][CX3;$(*(=[OX1])[NX3]);!$(*([NX3])[NX3]);!$(*[OX2]);!$(*[NX3][CX3]=[OX1])])]",
+   "priority": 6,
+   "description": "C on secondary amide N (CH3)"
+  },
+  {
+   "type": "opls_244",
+   "smarts": "[CX4H2;$(*[NX3H1][CX3;$(*(=[OX1])[NX3]);!$(*([NX3])[NX3]);!$(*[OX2]);!$(*[NX3][CX3]=[OX1])])]",
+   "priority": 6,
+   "description": "C on secondary amide N (CH2)"
+  },
+  {
+   "type": "opls_229",
+   "smarts": "[CX4H1;$(*[NX3H1][CX3;$(*(=[OX1])[NX3]);!$(*([NX3])[NX3]);!$(*[OX2]);!$(*[NX3][CX3]=[OX1])])]",
+   "priority": 6,
+   "description": "C on secondary amide N (CH)"
+  },
+  {
+   "type": "opls_230",
+   "smarts": "[CX4H0;$(*[NX3H1][CX3;$(*(=[OX1])[NX3]);!$(*([NX3])[NX3]);!$(*[OX2]);!$(*[NX3][CX3]=[OX1])])]",
+   "priority": 6,
+   "description": "C on secondary amide N (C)"
+  },
+  {
+   "type": "opls_243",
+   "smarts": "[CX4H3;$(*[NX3H0][CX3;$(*(=[OX1])[NX3]);!$(*([NX3])[NX3]);!$(*[OX2]);!$(*[NX3][CX3]=[OX1])])]",
+   "priority": 6,
+   "description": "C on tertiary amide N (CH3)"
+  },
+  {
+   "type": "opls_245",
+   "smarts": "[CX4H2;$(*[NX3H0][CX3;$(*(=[OX1])[NX3]);!$(*([NX3])[NX3]);!$(*[OX2]);!$(*[NX3][CX3]=[OX1])])]",
+   "priority": 6,
+   "description": "C on tertiary amide N (CH2)"
+  },
+  {
+   "type": "opls_246",
+   "smarts": "[CX4H1;$(*[NX3H0][CX3;$(*(=[OX1])[NX3]);!$(*([NX3])[NX3]);!$(*[OX2]);!$(*[NX3][CX3]=[OX1])])]",
+   "priority": 6,
+   "description": "C on tertiary amide N (CH)"
+  },
+  {
+   "type": "opls_900",
+   "smarts": "[NX3H2;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])][CX4,c]",
+   "priority": 5,
+   "description": "primary amine N"
+  },
+  {
+   "type": "opls_901",
+   "smarts": "[NX3H1;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])]([CX4,c])[CX4,c]",
+   "priority": 5,
+   "description": "secondary amine N (alkyl or aryl: N-methylaniline, diarylamine)"
+  },
+  {
+   "type": "opls_902",
+   "smarts": "[NX3H0;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])]([CX4,c])([CX4,c])[CX4,c]",
+   "priority": 5,
+   "description": "tertiary amine N (alkyl or aryl: N,N-dimethylaniline)"
+  },
+  {
+   "type": "opls_909",
+   "smarts": "[H][NX3H2;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])]",
+   "priority": 5,
+   "description": "H on primary amine N"
+  },
+  {
+   "type": "opls_910",
+   "smarts": "[H][NX3H1;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])]",
+   "priority": 5,
+   "description": "H on secondary amine N"
+  },
+  {
+   "type": "opls_903",
+   "smarts": "[CX4H3;$(*[NX3H2;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])])]",
+   "priority": 5,
+   "description": "C on primary amine N (CH3)"
+  },
+  {
+   "type": "opls_906",
+   "smarts": "[CX4H2;$(*[NX3H2;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])])]",
+   "priority": 5,
+   "description": "C on primary amine N (CH2)"
+  },
+  {
+   "type": "opls_912",
+   "smarts": "[CX4H1;$(*[NX3H2;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])])]",
+   "priority": 5,
+   "description": "C on primary amine N (CH)"
+  },
+  {
+   "type": "opls_913",
+   "smarts": "[CX4H0;$(*[NX3H2;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])])]",
+   "priority": 5,
+   "description": "C on primary amine N (C)"
+  },
+  {
+   "type": "opls_904",
+   "smarts": "[CX4H3;$(*[NX3H1;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])])]",
+   "priority": 5,
+   "description": "C on secondary amine N (CH3)"
+  },
+  {
+   "type": "opls_907",
+   "smarts": "[CX4H2;$(*[NX3H1;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])])]",
+   "priority": 5,
+   "description": "C on secondary amine N (CH2)"
+  },
+  {
+   "type": "opls_914",
+   "smarts": "[CX4H1;$(*[NX3H1;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])])]",
+   "priority": 5,
+   "description": "C on secondary amine N (CH)"
+  },
+  {
+   "type": "opls_905",
+   "smarts": "[CX4H3;$(*[NX3H0;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])])]",
+   "priority": 5,
+   "description": "C on tertiary amine N (CH3)"
+  },
+  {
+   "type": "opls_908",
+   "smarts": "[CX4H2;$(*[NX3H0;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])])]",
+   "priority": 5,
+   "description": "C on tertiary amine N (CH2)"
+  },
+  {
+   "type": "opls_915",
+   "smarts": "[CX4H1;$(*[NX3H0;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])])]",
+   "priority": 5,
+   "description": "C on tertiary amine N (CH)"
+  },
+  {
+   "type": "opls_911",
+   "smarts": "[H][CX4][NX3;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])]",
+   "priority": 5,
+   "description": "H on C bonded to an amine N"
+  },
+  {
+   "type": "opls_916",
+   "smarts": "c[NX3H2;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])]",
+   "priority": 6,
+   "description": "aniline C(NH2)"
+  },
+  {
+   "type": "opls_917",
+   "smarts": "c[NX3H1;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])]",
+   "priority": 6,
+   "description": "N-alkylaniline C(N)"
+  },
+  {
+   "type": "opls_918",
+   "smarts": "c[NX3H0;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])]",
+   "priority": 6,
+   "description": "N,N-dialkylaniline C(N)"
+  },
+  {
+   "type": "opls_753",
+   "smarts": "[NX1]#[CX2][CX4]",
+   "priority": 6,
+   "description": "nitrile N"
+  },
+  {
+   "type": "opls_754",
+   "smarts": "[CX2](#[NX1])[CX4]",
+   "priority": 6,
+   "description": "nitrile C"
+  },
+  {
+   "type": "opls_755",
+   "smarts": "[CX4H3;$(*[CX2]#[NX1])]",
+   "priority": 6,
+   "description": "C alpha to a nitrile (CH3)"
+  },
+  {
+   "type": "opls_756",
+   "smarts": "[CX4H2;$(*[CX2]#[NX1])]",
+   "priority": 6,
+   "description": "C alpha to a nitrile (CH2)"
+  },
+  {
+   "type": "opls_757",
+   "smarts": "[CX4H1;$(*[CX2]#[NX1])]",
+   "priority": 6,
+   "description": "C alpha to a nitrile (CH)"
+  },
+  {
+   "type": "opls_758",
+   "smarts": "[CX4H0;$(*[CX2]#[NX1])]",
+   "priority": 6,
+   "description": "C alpha to a nitrile (C)"
+  },
+  {
+   "type": "opls_759",
+   "smarts": "[H][CX4][CX2]#[NX1]",
+   "priority": 6,
+   "description": "H alpha to a nitrile"
+  },
+  {
+   "type": "opls_262",
+   "smarts": "[NX1]#[CX2]c",
+   "priority": 6,
+   "description": "benzonitrile N"
+  },
+  {
+   "type": "opls_261",
+   "smarts": "[CX2](#[NX1])c",
+   "priority": 6,
+   "description": "benzonitrile C"
+  },
+  {
+   "type": "opls_260",
+   "smarts": "c[CX2]#[NX1]",
+   "priority": 6,
+   "description": "benzonitrile C(ipso)"
+  },
+  {
+   "type": "opls_262",
+   "smarts": "[NX1]#[CX2][CX3]=[CX3]",
+   "priority": 6,
+   "description": "conjugated nitrile N (acrylonitrile)"
+  },
+  {
+   "type": "opls_261",
+   "smarts": "[CX2](#[NX1])[CX3]=[CX3]",
+   "priority": 6,
+   "description": "conjugated nitrile C (acrylonitrile)"
+  },
+  {
+   "type": "opls_260",
+   "smarts": "[CX3;$(*[CX2]#[NX1])]=[CX3]",
+   "priority": 6,
+   "description": "alkene C carrying a nitrile (the benzonitrile ipso C, as the GROMACS OPLS-AA topologies type acrylonitrile)"
+  },
+  {
+   "type": "opls_140",
+   "smarts": "[H][CX3;$(*[CX2]#[NX1])]=[CX3]",
+   "priority": 7,
+   "description": "H on that C (140, as those topologies)"
+  },
+  {
+   "type": "opls_151",
+   "smarts": "[Cl][CX4]",
+   "priority": 5,
+   "description": "alkyl chloride Cl"
+  },
+  {
+   "type": "opls_152",
+   "smarts": "[CX4H2;$(*[Cl]);!$(*([Cl])[Cl]);!$(*[F,Cl,Br,I;!Cl])]",
+   "priority": 5,
+   "description": "alkyl chloride C (CH2)"
+  },
+  {
+   "type": "opls_153",
+   "smarts": "[H][CX4H2][Cl]",
+   "priority": 5,
+   "description": "H on RCH2Cl"
+  },
+  {
+   "type": "opls_152",
+   "smarts": "[CX4H3;$(*(Cl)Cl);!$(*[F,Br,I])]",
+   "priority": 6,
+   "description": "polychlorinated C (CH3)"
+  },
+  {
+   "type": "opls_152",
+   "smarts": "[CX4H2;$(*(Cl)Cl);!$(*[F,Br,I])]",
+   "priority": 6,
+   "description": "polychlorinated C (CH2)"
+  },
+  {
+   "type": "opls_152",
+   "smarts": "[CX4H1;$(*(Cl)Cl);!$(*[F,Br,I])]",
+   "priority": 6,
+   "description": "polychlorinated C (CH)"
+  },
+  {
+   "type": "opls_152",
+   "smarts": "[CX4H0;$(*(Cl)Cl);!$(*[F,Br,I])]",
+   "priority": 6,
+   "description": "polychlorinated C (C)"
+  },
+  {
+   "type": "opls_153",
+   "smarts": "[H][CX4;$(*(Cl)Cl)]",
+   "priority": 6,
+   "description": "H on a polychlorinated C"
+  },
+  {
+   "type": "opls_957",
+   "smarts": "[CX4H2;$(*F);$(*Cl);!$(*(F)F)]",
+   "priority": 6,
+   "description": "fluorochloro C (CH2)"
+  },
+  {
+   "type": "opls_959",
+   "smarts": "[CX4H1;$(*F);$(*Cl);!$(*(F)F)]",
+   "priority": 6,
+   "description": "fluorochloro C (CH)"
+  },
+  {
+   "type": "opls_960",
+   "smarts": "[CX4H0;$(*F);$(*Cl);!$(*(F)F)]",
+   "priority": 6,
+   "description": "fluorochloro C (C)"
+  },
+  {
+   "type": "opls_965",
+   "smarts": "[F][CX4;$(*Cl)]",
+   "priority": 7,
+   "description": "F on a C that also carries Cl"
+  },
+  {
+   "type": "opls_153",
+   "smarts": "[H][CX4;$(*F);$(*Cl)]",
+   "priority": 7,
+   "description": "H on a fluorochloro C"
+  },
+  {
+   "type": "opls_722",
+   "smarts": "[Br][CX4]",
+   "priority": 5,
+   "description": "alkyl bromide Br"
+  },
+  {
+   "type": "opls_152",
+   "smarts": "[CX4H3;$(*[Br,I]);!$(*[F,Cl])]",
+   "priority": 5,
+   "description": "C of an alkyl bromide or iodide (CH3)"
+  },
+  {
+   "type": "opls_152",
+   "smarts": "[CX4H2;$(*[Br,I]);!$(*[F,Cl])]",
+   "priority": 5,
+   "description": "C of an alkyl bromide or iodide (CH2)"
+  },
+  {
+   "type": "opls_152",
+   "smarts": "[CX4H1;$(*[Br,I]);!$(*[F,Cl])]",
+   "priority": 5,
+   "description": "C of an alkyl bromide or iodide (CH)"
+  },
+  {
+   "type": "opls_152",
+   "smarts": "[CX4H0;$(*[Br,I]);!$(*[F,Cl])]",
+   "priority": 5,
+   "description": "C of an alkyl bromide or iodide (C)"
+  },
+  {
+   "type": "opls_153",
+   "smarts": "[H][CX4][Br,I]",
+   "priority": 5,
+   "description": "H on an alkyl bromide or iodide C"
+  },
+  {
+   "type": "opls_732",
+   "smarts": "[I][CX4]",
+   "priority": 5,
+   "description": "alkyl iodide I"
+  },
+  {
+   "type": "opls_956",
+   "smarts": "[F][CX4;$(*[F]);!$(*(F)F)]",
+   "priority": 5,
+   "description": "monofluoroalkyl F"
+  },
+  {
+   "type": "opls_957",
+   "smarts": "[CX4H2;$(*[F]);!$(*([F])[F]);!$(*[F,Cl,Br,I;!F])]",
+   "priority": 5,
+   "description": "monofluoroalkyl C (CH2)"
+  },
+  {
+   "type": "opls_959",
+   "smarts": "[CX4H1;$(*[F]);!$(*([F])[F]);!$(*[F,Cl,Br,I;!F])]",
+   "priority": 5,
+   "description": "monofluoroalkyl C (CH)"
+  },
+  {
+   "type": "opls_960",
+   "smarts": "[CX4H0;$(*[F]);!$(*([F])[F]);!$(*[F,Cl,Br,I;!F])]",
+   "priority": 5,
+   "description": "monofluoroalkyl C (C)"
+  },
+  {
+   "type": "opls_958",
+   "smarts": "[H][CX4;$(*[F]);!$(*(F)F)]",
+   "priority": 5,
+   "description": "H on monofluoroalkyl C"
+  },
+  {
+   "type": "opls_965",
+   "smarts": "[F][CX4;$(*(F)F)]",
+   "priority": 6,
+   "description": "F of a CF2 / CF3 group"
+  },
+  {
+   "type": "opls_962",
+   "smarts": "[CX4;$(*(F)F);!$(*(F)(F)F);!$(*[H])]",
+   "priority": 6,
+   "description": "CF2"
+  },
+  {
+   "type": "opls_961",
+   "smarts": "[CX4;$(*(F)(F)F);!$(*(F)(F)(F)F);$(*[#6])]",
+   "priority": 6,
+   "description": "CF3 on carbon (a perfluoroalkyl end)"
+  },
+  {
+   "type": "opls_264",
+   "smarts": "[Cl]c",
+   "priority": 6,
+   "description": "aryl chloride Cl"
+  },
+  {
+   "type": "opls_727",
+   "smarts": "[c;$(c[F]);$(c:c[F]);!$(c(:c[F]):c[F])]",
+   "priority": 7,
+   "description": "C(F) next to one C(F) (difluorobenzenes)"
+  },
+  {
+   "type": "opls_728",
+   "smarts": "[F][c;$(c:c[F]);!$(c(:c[F]):c[F])]",
+   "priority": 7,
+   "description": "F on a C(F) next to one C(F)"
+  },
+  {
+   "type": "opls_720",
+   "smarts": "[c;$(c[F]);$(c(:c[F]):c[F])]",
+   "priority": 8,
+   "description": "C(F) between two C(F) (hexafluorobenzene)"
+  },
+  {
+   "type": "opls_721",
+   "smarts": "[F][c;$(c(:c[F]):c[F])]",
+   "priority": 8,
+   "description": "F on a C(F) between two C(F)"
+  },
+  {
+   "type": "opls_724",
+   "smarts": "c[CX4](F)(F)F",
+   "priority": 8,
+   "description": "ring C of a trifluoromethylbenzene"
+  },
+  {
+   "type": "opls_725",
+   "smarts": "[CX4;$(*(F)(F)(F)c)]",
+   "priority": 8,
+   "description": "CF3 on a benzene ring"
+  },
+  {
+   "type": "opls_726",
+   "smarts": "[F][CX4;$(*(F)(F)(F)c)]",
+   "priority": 8,
+   "description": "F of a CF3 on a benzene ring"
+  },
+  {
+   "type": "opls_263",
+   "smarts": "c[Cl]",
+   "priority": 6,
+   "description": "aryl chloride C"
+  },
+  {
+   "type": "opls_719",
+   "smarts": "[F]c",
+   "priority": 6,
+   "description": "aryl fluoride F"
+  },
+  {
+   "type": "opls_718",
+   "smarts": "c[F]",
+   "priority": 6,
+   "description": "aryl fluoride C"
+  },
+  {
+   "type": "opls_730",
+   "smarts": "[Br]c",
+   "priority": 6,
+   "description": "aryl bromide Br"
+  },
+  {
+   "type": "opls_729",
+   "smarts": "c[Br]",
+   "priority": 6,
+   "description": "aryl bromide C"
+  },
+  {
+   "type": "opls_226",
+   "smarts": "[Cl][CX3;!$(*(Cl)Cl)]=[CX3]",
+   "priority": 6,
+   "description": "chloroalkene Cl, one Cl on the C (ClHC=, R-CCl=)"
+  },
+  {
+   "type": "opls_227",
+   "smarts": "[CX3H1]([Cl])=[CX3]",
+   "priority": 6,
+   "description": "chloroalkene C (ClHC=)"
+  },
+  {
+   "type": "opls_226",
+   "smarts": "[Cl][CX3;$(*(Cl)Cl)]=[CX3]",
+   "priority": 7,
+   "description": "chloroalkene Cl (Cl2C=: 226, as the GROMACS OPLS-AA topologies type 1,1-dichloroethene)"
+  },
+  {
+   "type": "opls_227",
+   "smarts": "[CX3;$(*(Cl)Cl)]=[CX3]",
+   "priority": 7,
+   "description": "chloroalkene C (Cl2C=: 227)"
+  },
+  {
+   "type": "opls_493",
+   "smarts": "[SX4](=[OX1])(=[OX1])([#6])[#6]",
+   "priority": 6,
+   "description": "sulfone S"
+  },
+  {
+   "type": "opls_494",
+   "smarts": "[OX1]=[SX4](=[OX1])([#6])[#6]",
+   "priority": 6,
+   "description": "sulfone O"
+  },
+  {
+   "type": "opls_488",
+   "smarts": "c[SX4](=[OX1])(=[OX1])",
+   "priority": 7,
+   "description": "ring C on a sulfonyl S (charge 0: the SO2 group is neutral)"
+  },
+  {
+   "type": "opls_202",
+   "smarts": "[SX2]([CX4])[CX4]",
+   "priority": 5,
+   "description": "sulfide S"
+  },
+  {
+   "type": "opls_203",
+   "smarts": "[SX2]([#6])[SX2]",
+   "priority": 6,
+   "description": "disulfide S"
+  },
+  {
+   "type": "opls_200",
+   "smarts": "[SX2H1][CX4]",
+   "priority": 5,
+   "description": "thiol S"
+  },
+  {
+   "type": "opls_204",
+   "smarts": "[H][SX2H1]",
+   "priority": 5,
+   "description": "thiol H"
+  },
+  {
+   "type": "opls_209",
+   "smarts": "[CX4H3;$(*[SX2][CX4])]",
+   "priority": 5,
+   "description": "C on a sulfide S (CH3)"
+  },
+  {
+   "type": "opls_210",
+   "smarts": "[CX4H2;$(*[SX2][CX4])]",
+   "priority": 5,
+   "description": "C on a sulfide S (CH2)"
+  },
+  {
+   "type": "opls_211",
+   "smarts": "[CX4H1;$(*[SX2][CX4])]",
+   "priority": 5,
+   "description": "C on a sulfide S (CH)"
+  },
+  {
+   "type": "opls_212",
+   "smarts": "[CX4H0;$(*[SX2][CX4])]",
+   "priority": 5,
+   "description": "C on a sulfide S (C)"
+  },
+  {
+   "type": "opls_496",
+   "smarts": "[SX3](=[OX1])([CX4])[CX4]",
+   "priority": 6,
+   "description": "sulfoxide S"
+  },
+  {
+   "type": "opls_497",
+   "smarts": "[OX1]=[SX3]([CX4])[CX4]",
+   "priority": 6,
+   "description": "sulfoxide O"
+  },
+  {
+   "type": "opls_497",
+   "smarts": "[OX1]=[SX3](c)[CX4]",
+   "priority": 7,
+   "description": "alkyl aryl sulfoxide O"
+  },
+  {
+   "type": "opls_498",
+   "smarts": "[CX4H3;$(*[SX3]=[OX1])]",
+   "priority": 6,
+   "description": "C on a sulfoxide S (CH3)"
+  },
+  {
+   "type": "opls_499",
+   "smarts": "[CX4H2;$(*[SX3]=[OX1])]",
+   "priority": 6,
+   "description": "C on a sulfoxide S (CH2)"
+  },
+  {
+   "type": "opls_484",
+   "smarts": "[CX4H2;$(*[SX4](=[OX1])(=[OX1])[#6])]",
+   "priority": 6,
+   "description": "C alpha to a sulfone S (CH2)"
+  },
+  {
+   "type": "opls_485",
+   "smarts": "[H][CX4H2][SX4](=[OX1])(=[OX1])[#6]",
+   "priority": 6,
+   "description": "H on C alpha to a sulfone S"
+  },
+  {
+   "type": "opls_213",
+   "smarts": "[CX4H3;$(*[SX2][SX2])]",
+   "priority": 6,
+   "description": "C on a disulfide S (CH3)"
+  },
+  {
+   "type": "opls_214",
+   "smarts": "[CX4H2;$(*[SX2][SX2])]",
+   "priority": 6,
+   "description": "C on a disulfide S (CH2)"
+  },
+  {
+   "type": "opls_215",
+   "smarts": "[CX4H1;$(*[SX2][SX2])]",
+   "priority": 6,
+   "description": "C on a disulfide S (CH)"
+  },
+  {
+   "type": "opls_216",
+   "smarts": "[CX4H0;$(*[SX2][SX2])]",
+   "priority": 6,
+   "description": "C on a disulfide S (C)"
+  },
+  {
+   "type": "opls_206",
+   "smarts": "[CX4H2;$(*[SX2H1])]",
+   "priority": 5,
+   "description": "C on a thiol S (CH2)"
+  },
+  {
+   "type": "opls_207",
+   "smarts": "[CX4H1;$(*[SX2H1])]",
+   "priority": 5,
+   "description": "C on a thiol S (CH)"
+  },
+  {
+   "type": "opls_208",
+   "smarts": "[CX4H0;$(*[SX2H1])]",
+   "priority": 5,
+   "description": "C on a thiol S (C)"
+  },
+  {
+   "type": "opls_138",
+   "smarts": "[CX4H4]",
+   "priority": 3,
+   "description": "methane C"
+  },
+  {
+   "type": "opls_156",
+   "smarts": "[H][CX4H3][OX2H1]",
+   "priority": 6,
+   "description": "H on the C of methanol"
+  },
+  {
+   "type": "opls_217",
+   "smarts": "[CX4H3][SX2H1]",
+   "priority": 6,
+   "description": "C of methanethiol"
+  },
+  {
+   "type": "opls_734",
+   "smarts": "[SX2H1]c",
+   "priority": 6,
+   "description": "thiophenol S"
+  },
+  {
+   "type": "opls_735",
+   "smarts": "c[SX2H1]",
+   "priority": 6,
+   "description": "thiophenol C(S)"
+  },
+  {
+   "type": "opls_760",
+   "smarts": "[NX3+,NX3](=[OX1])(~[OX1])[CX4]",
+   "priority": 6,
+   "description": "nitro N (aliphatic)"
+  },
+  {
+   "type": "opls_767",
+   "smarts": "[NX3+,NX3](=[OX1])(~[OX1])c",
+   "priority": 7,
+   "description": "nitro N (aromatic)"
+  },
+  {
+   "type": "opls_761",
+   "smarts": "[OX1]~[NX3](~[OX1])[#6]",
+   "priority": 6,
+   "description": "nitro O"
+  },
+  {
+   "type": "opls_762",
+   "smarts": "[CX4H3;$(*[NX3](~[OX1])~[OX1])]",
+   "priority": 6,
+   "description": "C carrying a nitro group (CH3)"
+  },
+  {
+   "type": "opls_764",
+   "smarts": "[CX4H2;$(*[NX3](~[OX1])~[OX1])]",
+   "priority": 6,
+   "description": "C carrying a nitro group (CH2)"
+  },
+  {
+   "type": "opls_765",
+   "smarts": "[CX4H1;$(*[NX3](~[OX1])~[OX1])]",
+   "priority": 6,
+   "description": "C carrying a nitro group (CH)"
+  },
+  {
+   "type": "opls_766",
+   "smarts": "[CX4H0;$(*[NX3](~[OX1])~[OX1])]",
+   "priority": 6,
+   "description": "C carrying a nitro group (C)"
+  },
+  {
+   "type": "opls_763",
+   "smarts": "[H][CX4][NX3](~[OX1])~[OX1]",
+   "priority": 6,
+   "description": "H alpha to a nitro group"
+  },
+  {
+   "type": "opls_768",
+   "smarts": "c[NX3](~[OX1])~[OX1]",
+   "priority": 7,
+   "description": "C(NO2) of a nitroarene"
+  },
+  {
+   "type": "opls_181",
+   "smarts": "[CX4H3;$(*[OX2][SiX4;!$(*(O)O)])]",
+   "priority": 6,
+   "description": "C on a silyl ether O (CH3)"
+  },
+  {
+   "type": "opls_182",
+   "smarts": "[CX4H2;$(*[OX2][SiX4;!$(*(O)O)])]",
+   "priority": 6,
+   "description": "C on a silyl ether O (CH2)"
+  },
+  {
+   "type": "opls_183",
+   "smarts": "[CX4H1;$(*[OX2][SiX4;!$(*(O)O)])]",
+   "priority": 6,
+   "description": "C on a silyl ether O (CH)"
+  },
+  {
+   "type": "opls_184",
+   "smarts": "[CX4H0;$(*[OX2][SiX4;!$(*(O)O)])]",
+   "priority": 6,
+   "description": "C on a silyl ether O (C)"
+  },
+  {
+   "type": "opls_185",
+   "smarts": "[H][CX4][OX2][SiX4;!$(*(O)O)]",
+   "priority": 6,
+   "description": "H on C of a silyl ether O"
+  },
+  {
+   "type": "opls_440",
+   "smarts": "[PX4;$(P(=[OX1])([OX2][#6])([OX2][#6])[OX2][#6])]",
+   "priority": 6,
+   "description": "phosphate triester P"
+  },
+  {
+   "type": "opls_441",
+   "smarts": "[OX1]=[PX4;$(P(=[OX1])([OX2][#6])([OX2][#6])[OX2][#6])]",
+   "priority": 6,
+   "description": "phosphate =O"
+  },
+  {
+   "type": "opls_442",
+   "smarts": "[OX2;$(O([#6])[PX4;$(P(=[OX1])([OX2][#6])([OX2][#6])[OX2][#6])])]",
+   "priority": 6,
+   "description": "phosphate ester -O-"
+  },
+  {
+   "type": "opls_443",
+   "smarts": "[CX4H3;$(*[OX2][PX4;$(P(=[OX1])([OX2][#6])([OX2][#6])[OX2][#6])])]",
+   "priority": 6,
+   "description": "C on a phosphate ester O (CH3)"
+  },
+  {
+   "type": "opls_443",
+   "smarts": "[CX4H2;$(*[OX2][PX4;$(P(=[OX1])([OX2][#6])([OX2][#6])[OX2][#6])])]",
+   "priority": 6,
+   "description": "C on a phosphate ester O (CH2)"
+  },
+  {
+   "type": "opls_443",
+   "smarts": "[CX4H1;$(*[OX2][PX4;$(P(=[OX1])([OX2][#6])([OX2][#6])[OX2][#6])])]",
+   "priority": 6,
+   "description": "C on a phosphate ester O (CH)"
+  },
+  {
+   "type": "opls_444",
+   "smarts": "[H][CX4][OX2][PX4;$(P(=[OX1])([OX2][#6])([OX2][#6])[OX2][#6])]",
+   "priority": 6,
+   "description": "H on C of a phosphate ester O"
+  },
+  {
+   "type": "opls_925",
+   "smarts": "[CX2]#[CX2]",
+   "priority": 6,
+   "description": "alkyne C"
+  },
+  {
+   "type": "opls_926",
+   "smarts": "[H][CX2]#[CX2]",
+   "priority": 6,
+   "description": "alkyne terminal H"
+  },
+  {
+   "type": "opls_401",
+   "smarts": "[Cl-,Cl;X0]",
+   "priority": 8,
+   "description": "Cl-"
+  },
+  {
+   "type": "opls_402",
+   "smarts": "[Br-,Br;X0]",
+   "priority": 8,
+   "description": "Br-"
+  },
+  {
+   "type": "opls_406",
+   "smarts": "[Li+,Li;X0]",
+   "priority": 8,
+   "description": "Li+"
+  },
+  {
+   "type": "opls_407",
+   "smarts": "[Na+,Na;X0]",
+   "priority": 8,
+   "description": "Na+"
+  },
+  {
+   "type": "opls_408",
+   "smarts": "[K+,K;X0]",
+   "priority": 8,
+   "description": "K+"
+  },
+  {
+   "type": "opls_520",
+   "smarts": "[nX2;$(n1ccccc1)]",
+   "priority": 4,
+   "description": "pyridine N"
+  },
+  {
+   "type": "opls_521",
+   "smarts": "[c;$(c1ncccc1)]",
+   "priority": 4,
+   "description": "pyridine C2"
+  },
+  {
+   "type": "opls_522",
+   "smarts": "[c;$(c1cnccc1)]",
+   "priority": 4,
+   "description": "pyridine C3"
+  },
+  {
+   "type": "opls_523",
+   "smarts": "[c;$(c1ccncc1)]",
+   "priority": 4,
+   "description": "pyridine C4"
+  },
+  {
+   "type": "opls_524",
+   "smarts": "[H][c;$(c1ncccc1)]",
+   "priority": 4,
+   "description": "pyridine H2"
+  },
+  {
+   "type": "opls_525",
+   "smarts": "[H][c;$(c1cnccc1)]",
+   "priority": 4,
+   "description": "pyridine H3"
+  },
+  {
+   "type": "opls_526",
+   "smarts": "[H][c;$(c1ccncc1)]",
+   "priority": 4,
+   "description": "pyridine H4"
+  },
+  {
+   "type": "opls_670",
+   "smarts": "[CX4H3;$(*c1ncccc1)]",
+   "priority": 7,
+   "description": "CH3 on pyridine C2"
+  },
+  {
+   "type": "opls_672",
+   "smarts": "[CX4H3;$(*c1cnccc1)]",
+   "priority": 7,
+   "description": "CH3 on pyridine C3"
+  },
+  {
+   "type": "opls_674",
+   "smarts": "[CX4H3;$(*c1ccncc1),$(*c1ncncc1)]",
+   "priority": 7,
+   "description": "CH3 on pyridine C4 / pyrimidine C4"
+  },
+  {
+   "type": "opls_530",
+   "smarts": "[n;$(n1cnccc1)]",
+   "priority": 8,
+   "description": "pyrimidine N"
+  },
+  {
+   "type": "opls_531",
+   "smarts": "[c;$(c1ncccn1)]",
+   "priority": 8,
+   "description": "pyrimidine C2"
+  },
+  {
+   "type": "opls_532",
+   "smarts": "[c;$(c1ncncc1)]",
+   "priority": 8,
+   "description": "pyrimidine C4"
+  },
+  {
+   "type": "opls_533",
+   "smarts": "[c;$(c1cncnc1)]",
+   "priority": 8,
+   "description": "pyrimidine C5"
+  },
+  {
+   "type": "opls_534",
+   "smarts": "[H][c;$(c1ncccn1)]",
+   "priority": 8,
+   "description": "pyrimidine H2"
+  },
+  {
+   "type": "opls_535",
+   "smarts": "[H][c;$(c1ncncc1)]",
+   "priority": 8,
+   "description": "pyrimidine H4"
+  },
+  {
+   "type": "opls_536",
+   "smarts": "[H][c;$(c1cncnc1)]",
+   "priority": 8,
+   "description": "pyrimidine H5"
+  },
+  {
+   "type": "opls_603",
+   "smarts": "[n;$(n1cccc2ccccc12)]",
+   "priority": 8,
+   "description": "quinoline N1"
+  },
+  {
+   "type": "opls_604",
+   "smarts": "[c;$(c1nc2ccccc2cc1)]",
+   "priority": 8,
+   "description": "quinoline C2"
+  },
+  {
+   "type": "opls_605",
+   "smarts": "[c;$(c1cnc2ccccc2c1)]",
+   "priority": 8,
+   "description": "quinoline C3"
+  },
+  {
+   "type": "opls_606",
+   "smarts": "[c;$(c1ccnc2ccccc12)]",
+   "priority": 8,
+   "description": "quinoline C4"
+  },
+  {
+   "type": "opls_607",
+   "smarts": "[c;$(c1cccc2ncccc12)]",
+   "priority": 8,
+   "description": "quinoline C5"
+  },
+  {
+   "type": "opls_608",
+   "smarts": "[c;$(c1ccc2ncccc2c1)]",
+   "priority": 8,
+   "description": "quinoline C6"
+  },
+  {
+   "type": "opls_609",
+   "smarts": "[c;$(c1ccc2cccnc2c1)]",
+   "priority": 8,
+   "description": "quinoline C7"
+  },
+  {
+   "type": "opls_610",
+   "smarts": "[c;$(c1cccc2cccnc12)]",
+   "priority": 8,
+   "description": "quinoline C8"
+  },
+  {
+   "type": "opls_611",
+   "smarts": "[c;$(c12ncccc1cccc2)]",
+   "priority": 8,
+   "description": "quinoline C9"
+  },
+  {
+   "type": "opls_612",
+   "smarts": "[c;$(c12ccccc1nccc2)]",
+   "priority": 8,
+   "description": "quinoline C10"
+  },
+  {
+   "type": "opls_613",
+   "smarts": "[H][c;$(c1nc2ccccc2cc1)]",
+   "priority": 8,
+   "description": "quinoline H2"
+  },
+  {
+   "type": "opls_614",
+   "smarts": "[H][c;$(c1cnc2ccccc2c1)]",
+   "priority": 8,
+   "description": "quinoline H3"
+  },
+  {
+   "type": "opls_615",
+   "smarts": "[H][c;$(c1ccnc2ccccc12)]",
+   "priority": 8,
+   "description": "quinoline H4"
+  },
+  {
+   "type": "opls_616",
+   "smarts": "[H][c;$(c1cccc2ncccc12)]",
+   "priority": 8,
+   "description": "quinoline H5"
+  },
+  {
+   "type": "opls_617",
+   "smarts": "[H][c;$(c1ccc2ncccc2c1)]",
+   "priority": 8,
+   "description": "quinoline H6"
+  },
+  {
+   "type": "opls_618",
+   "smarts": "[H][c;$(c1ccc2cccnc2c1)]",
+   "priority": 8,
+   "description": "quinoline H7"
+  },
+  {
+   "type": "opls_619",
+   "smarts": "[H][c;$(c1cccc2cccnc12)]",
+   "priority": 8,
+   "description": "quinoline H8"
+  },
+  {
+   "type": "opls_603",
+   "smarts": "[n;$(n1cc2ccccc2cc1)]",
+   "priority": 8,
+   "description": "isoquinoline atom typed as quinoline 603"
+  },
+  {
+   "type": "opls_611",
+   "smarts": "[c;$(c1nccc2ccccc12)]",
+   "priority": 8,
+   "description": "isoquinoline atom typed as quinoline 611"
+  },
+  {
+   "type": "opls_604",
+   "smarts": "[c;$(c1ncc2ccccc2c1)]",
+   "priority": 8,
+   "description": "isoquinoline atom typed as quinoline 604"
+  },
+  {
+   "type": "opls_605",
+   "smarts": "[c;$(c1cncc2ccccc12)]",
+   "priority": 8,
+   "description": "isoquinoline atom typed as quinoline 605"
+  },
+  {
+   "type": "opls_612",
+   "smarts": "[c;$(c12ccccc1cncc2)]",
+   "priority": 8,
+   "description": "isoquinoline atom typed as quinoline 612"
+  },
+  {
+   "type": "opls_606",
+   "smarts": "[c;$(c1cccc2cnccc12)]",
+   "priority": 8,
+   "description": "isoquinoline atom typed as quinoline 606"
+  },
+  {
+   "type": "opls_607",
+   "smarts": "[c;$(c1ccc2cnccc2c1)]",
+   "priority": 8,
+   "description": "isoquinoline atom typed as quinoline 607"
+  },
+  {
+   "type": "opls_608",
+   "smarts": "[c;$(c1ccc2ccncc2c1)]",
+   "priority": 8,
+   "description": "isoquinoline atom typed as quinoline 608"
+  },
+  {
+   "type": "opls_609",
+   "smarts": "[c;$(c1cccc2ccncc12)]",
+   "priority": 8,
+   "description": "isoquinoline atom typed as quinoline 609"
+  },
+  {
+   "type": "opls_610",
+   "smarts": "[c;$(c12cnccc1cccc2)]",
+   "priority": 8,
+   "description": "isoquinoline atom typed as quinoline 610"
+  },
+  {
+   "type": "opls_619",
+   "smarts": "[H][c;$(c1nccc2ccccc12)]",
+   "priority": 8,
+   "description": "isoquinoline H typed as quinoline 619"
+  },
+  {
+   "type": "opls_613",
+   "smarts": "[H][c;$(c1ncc2ccccc2c1)]",
+   "priority": 8,
+   "description": "isoquinoline H typed as quinoline 613"
+  },
+  {
+   "type": "opls_614",
+   "smarts": "[H][c;$(c1cncc2ccccc12)]",
+   "priority": 8,
+   "description": "isoquinoline H typed as quinoline 614"
+  },
+  {
+   "type": "opls_615",
+   "smarts": "[H][c;$(c1cccc2cnccc12)]",
+   "priority": 8,
+   "description": "isoquinoline H typed as quinoline 615"
+  },
+  {
+   "type": "opls_616",
+   "smarts": "[H][c;$(c1ccc2cnccc2c1)]",
+   "priority": 8,
+   "description": "isoquinoline H typed as quinoline 616"
+  },
+  {
+   "type": "opls_617",
+   "smarts": "[H][c;$(c1ccc2ccncc2c1)]",
+   "priority": 8,
+   "description": "isoquinoline H typed as quinoline 617"
+  },
+  {
+   "type": "opls_618",
+   "smarts": "[H][c;$(c1cccc2ccncc12)]",
+   "priority": 8,
+   "description": "isoquinoline H typed as quinoline 618"
+  },
+  {
+   "type": "opls_633",
+   "smarts": "[s;r5;$(s1cccc1)]",
+   "priority": 7,
+   "description": "thiophene S"
+  },
+  {
+   "type": "opls_567",
+   "smarts": "[c;r5;$(c1sccc1)]",
+   "priority": 7,
+   "description": "thiophene C2"
+  },
+  {
+   "type": "opls_568",
+   "smarts": "[c;r5;$(c1cscc1)]",
+   "priority": 7,
+   "description": "thiophene C3"
+  },
+  {
+   "type": "opls_569",
+   "smarts": "[H][c;r5;$(c1sccc1)]",
+   "priority": 7,
+   "description": "thiophene H2"
+  },
+  {
+   "type": "opls_570",
+   "smarts": "[H][c;r5;$(c1cscc1)]",
+   "priority": 7,
+   "description": "thiophene H3"
+  },
+  {
+   "type": "opls_566",
+   "smarts": "[o;r5;$(o1cccc1)]",
+   "priority": 7,
+   "description": "furan O"
+  },
+  {
+   "type": "opls_567",
+   "smarts": "[c;r5;$(c1occc1)]",
+   "priority": 7,
+   "description": "furan C2"
+  },
+  {
+   "type": "opls_568",
+   "smarts": "[c;r5;$(c1cocc1)]",
+   "priority": 7,
+   "description": "furan C3"
+  },
+  {
+   "type": "opls_569",
+   "smarts": "[H][c;r5;$(c1occc1)]",
+   "priority": 7,
+   "description": "furan H2"
+  },
+  {
+   "type": "opls_570",
+   "smarts": "[H][c;r5;$(c1cocc1)]",
+   "priority": 7,
+   "description": "furan H3"
+  },
+  {
+   "type": "opls_680",
+   "smarts": "[CX4H3][c;r5;$(c1occc1)]",
+   "priority": 7,
+   "description": "CH3 on furan C2"
+  },
+  {
+   "type": "opls_681",
+   "smarts": "[CX4H2][c;r5;$(c1occc1)]",
+   "priority": 7,
+   "description": "CH2 on furan C2"
+  },
+  {
+   "type": "opls_542",
+   "smarts": "[nH1;r5;$(n1cccc1)]",
+   "priority": 7,
+   "description": "pyrrole N"
+  },
+  {
+   "type": "opls_543",
+   "smarts": "[c;r5;$(c1[nH1]ccc1)]",
+   "priority": 7,
+   "description": "pyrrole C2"
+  },
+  {
+   "type": "opls_544",
+   "smarts": "[c;r5;$(c1c[nH1]cc1)]",
+   "priority": 7,
+   "description": "pyrrole C3"
+  },
+  {
+   "type": "opls_545",
+   "smarts": "[H][nH1;r5;$(n1cccc1)]",
+   "priority": 7,
+   "description": "pyrrole H1"
+  },
+  {
+   "type": "opls_546",
+   "smarts": "[H][c;r5;$(c1[nH1]ccc1)]",
+   "priority": 7,
+   "description": "pyrrole H2"
+  },
+  {
+   "type": "opls_547",
+   "smarts": "[H][c;r5;$(c1c[nH1]cc1)]",
+   "priority": 7,
+   "description": "pyrrole H3"
+  },
+  {
+   "type": "opls_678",
+   "smarts": "[CX4H3][c;r5;$(c1[nH1]ccc1)]",
+   "priority": 7,
+   "description": "CH3 on pyrrole C2"
+  },
+  {
+   "type": "opls_679",
+   "smarts": "[CX4H2][c;r5;$(c1[nH1]ccc1)]",
+   "priority": 7,
+   "description": "CH2 on pyrrole C2"
+  },
+  {
+   "type": "opls_224B",
+   "priority": 14,
+   "smarts": "[CX4H1;!R;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])]",
+   "description": "peptide C alpha (all but Gly, Pro, Aib)"
+  },
+  {
+   "type": "opls_223B",
+   "priority": 14,
+   "smarts": "[CX4H2;!R;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])]",
+   "description": "glycine C alpha"
+  },
+  {
+   "type": "opls_225B",
+   "priority": 14,
+   "smarts": "[CX4H0;!R;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])]",
+   "description": "Aib C alpha"
+  },
+  {
+   "type": "opls_273",
+   "priority": 11,
+   "smarts": "[CX4H3;$(*-[CX3](~[OX1])~[OX1]);!$(*-[CX3]~[OX2H1])]",
+   "description": "C alpha to a carboxylate ion (CH3)"
+  },
+  {
+   "type": "opls_274",
+   "priority": 11,
+   "smarts": "[CX4H2;$(*-[CX3](~[OX1])~[OX1]);!$(*-[CX3]~[OX2H1])]",
+   "description": "C alpha to a carboxylate ion (CH2)"
+  },
+  {
+   "type": "opls_275",
+   "priority": 11,
+   "smarts": "[CX4H1;$(*-[CX3](~[OX1])~[OX1]);!$(*-[CX3]~[OX2H1])]",
+   "description": "C alpha to a carboxylate ion (CH)"
+  },
+  {
+   "type": "opls_276",
+   "priority": 11,
+   "smarts": "[CX4H0;$(*-[CX3](~[OX1])~[OX1]);!$(*-[CX3]~[OX2H1])]",
+   "description": "C alpha to a carboxylate ion (C)"
+  },
+  {
+   "type": "opls_287",
+   "priority": 11,
+   "smarts": "[NX4H3+,NX4H3]",
+   "description": "N of RNH3+"
+  },
+  {
+   "type": "opls_290",
+   "priority": 11,
+   "smarts": "[H][NX4H3]",
+   "description": "H of RNH3+"
+  },
+  {
+   "type": "opls_291",
+   "priority": 11,
+   "smarts": "[CX4H3;$(*-[NX4H3])]",
+   "description": "C of CH3NH3+"
+  },
+  {
+   "type": "opls_292",
+   "priority": 11,
+   "smarts": "[CX4H2;$(*-[NX4H3])]",
+   "description": "C of RCH2NH3+"
+  },
+  {
+   "type": "opls_293",
+   "priority": 11,
+   "smarts": "[CX4H1;$(*-[NX4H3])]",
+   "description": "C of R2CHNH3+"
+  },
+  {
+   "type": "opls_294",
+   "priority": 11,
+   "smarts": "[CX4H0;$(*-[NX4H3])]",
+   "description": "C of R3CNH3+"
+  },
+  {
+   "type": "opls_302",
+   "priority": 11,
+   "smarts": "[CX3;$(*(~[NX3])(~[NX3])~[NX3])]",
+   "description": "guanidinium C+"
+  },
+  {
+   "type": "opls_300",
+   "priority": 11,
+   "smarts": "[NX3H2;$(*~[CX3;$(*(~[NX3])(~[NX3])~[NX3])])]",
+   "description": "guanidinium NH2"
+  },
+  {
+   "type": "opls_301",
+   "priority": 11,
+   "smarts": "[H][NX3H2;$(*~[CX3;$(*(~[NX3])(~[NX3])~[NX3])])]",
+   "description": "H on guanidinium NH2"
+  },
+  {
+   "type": "opls_303",
+   "priority": 11,
+   "smarts": "[NX3H1;$(*-[CX4]);$(*~[CX3;$(*(~[NX3])(~[NX3])~[NX3])])]",
+   "description": "guanidinium NHR"
+  },
+  {
+   "type": "opls_304",
+   "priority": 11,
+   "smarts": "[H][NX3H1;$(*-[CX4]);$(*~[CX3;$(*(~[NX3])(~[NX3])~[NX3])])]",
+   "description": "H on guanidinium NHR"
+  },
+  {
+   "type": "opls_307",
+   "priority": 11,
+   "smarts": "[CX4H2;$(*-[NX3H1]~[CX3;$(*(~[NX3])(~[NX3])~[NX3])])]",
+   "description": "Arg CD (CH2 on the guanidinium)"
+  },
+  {
+   "type": "opls_140",
+   "priority": 12,
+   "smarts": "[H][CX4H2;$(*-[NX3H1]~[CX3;$(*(~[NX3])(~[NX3])~[NX3])])]",
+   "description": "H on Arg CD"
+  },
+  {
+   "type": "opls_308",
+   "priority": 11,
+   "smarts": "[CX4H2;$(*-[CX4H2]-[NX3H1]~[CX3;$(*(~[NX3])(~[NX3])~[NX3])]);$(*-[CX4H2]-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])])]",
+   "description": "Arg CG"
+  },
+  {
+   "type": "opls_308",
+   "priority": 12,
+   "smarts": "[CX4H2;$(*-[CX4H2]-[NX3H1]-[CX3](=[NX2H1])-[NX3H2]);$(*-[CX4H2]-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])])]",
+   "description": "CG of neutral Arg"
+  },
+  {
+   "type": "opls_752",
+   "priority": 12,
+   "smarts": "[CX3;$(*(=[NX2H1])(-[NX3H2])-[NX3H1])]",
+   "description": "CZ of neutral Arg"
+  },
+  {
+   "type": "opls_750",
+   "priority": 12,
+   "smarts": "[NX2H1;$(*=[CX3](-[NX3H2])-[NX3H1])]",
+   "description": "N1 of neutral Arg (HN=CZ)"
+  },
+  {
+   "type": "opls_751",
+   "priority": 12,
+   "smarts": "[NX3H2;$(*-[CX3](=[NX2H1])-[NX3H1])]",
+   "description": "N2 of neutral Arg (H2N-CZ)"
+  },
+  {
+   "type": "opls_749",
+   "priority": 12,
+   "smarts": "[NX3H1;$(*-[CX4]);$(*-[CX3](=[NX2H1])-[NX3H2])]",
+   "description": "NE of neutral Arg"
+  },
+  {
+   "type": "opls_748",
+   "priority": 12,
+   "smarts": "[CX4H2;$(*-[NX3H1]-[CX3](=[NX2H1])-[NX3H2])]",
+   "description": "CD of neutral Arg"
+  },
+  {
+   "type": "opls_304",
+   "priority": 12,
+   "smarts": "[H][NX3H1;$(*-[CX4]);$(*-[CX3](=[NX2H1])-[NX3H2])]",
+   "description": "HE of neutral Arg"
+  },
+  {
+   "type": "opls_301",
+   "priority": 12,
+   "smarts": "[H][#7;$(*~[CX3](~[NX2H1,NX3H2])~[NX3H1,NX3H2]);!$(*-[CX4])]",
+   "description": "HH of neutral Arg"
+  },
+  {
+   "type": "opls_505",
+   "priority": 12,
+   "smarts": "[CX4H2;$(*-[#6X3;r5;$(*-[CX4H2]-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])])]);$(*-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])]);$(*-[#6]1~[#6]~[#7]~[#6]~[#7]~1)]",
+   "description": "His CB"
+  },
+  {
+   "type": "opls_503",
+   "priority": 12,
+   "smarts": "[#7X3H1;r5;$(*1~[#6]~[#7]~[#6]~[#6]~1),$(*1~[#7]~[#6]~[#6]~[#7]~1),$(*1~[#6]~[#6]~[#7]~[#6]~1),$(*1~[#6]~[#7]~[#6]~[#7]~1),$(*1~[#7]~[#6]~[#7]~[#6]~1);$([#6X3;r5;$(*-[CX4H2]-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])])]),$(*@[#6X3;r5;$(*-[CX4H2]-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])])]),$(*@*@[#6X3;r5;$(*-[CX4H2]-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])])]);$(*1~*~*~[#7X2]~*~1),$(*1~*~[#7X2]~*~*~1)]",
+   "description": "N-H of neutral His"
+  },
+  {
+   "type": "opls_504",
+   "priority": 12,
+   "smarts": "[H][#7X3H1;r5;$(*1~[#6]~[#7]~[#6]~[#6]~1),$(*1~[#7]~[#6]~[#6]~[#7]~1),$(*1~[#6]~[#6]~[#7]~[#6]~1),$(*1~[#6]~[#7]~[#6]~[#7]~1),$(*1~[#7]~[#6]~[#7]~[#6]~1);$([#6X3;r5;$(*-[CX4H2]-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])])]),$(*@[#6X3;r5;$(*-[CX4H2]-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])])]),$(*@*@[#6X3;r5;$(*-[CX4H2]-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])])]);$(*1~*~*~[#7X2]~*~1),$(*1~*~[#7X2]~*~*~1)]",
+   "description": "H on the N of neutral His"
+  },
+  {
+   "type": "opls_511",
+   "priority": 12,
+   "smarts": "[#7X2;r5;$(*1~[#6]~[#7]~[#6]~[#6]~1),$(*1~[#7]~[#6]~[#6]~[#7]~1),$(*1~[#6]~[#6]~[#7]~[#6]~1),$(*1~[#6]~[#7]~[#6]~[#7]~1),$(*1~[#7]~[#6]~[#7]~[#6]~1);$([#6X3;r5;$(*-[CX4H2]-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])])]),$(*@[#6X3;r5;$(*-[CX4H2]-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])])]),$(*@*@[#6X3;r5;$(*-[CX4H2]-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])])])]",
+   "description": "N of neutral His without H"
+  },
+  {
+   "type": "opls_506",
+   "priority": 12,
+   "smarts": "[#6X3;r5;$(*1~[#6]~[#7]~[#6]~[#6]~1),$(*1~[#7]~[#6]~[#6]~[#7]~1),$(*1~[#6]~[#6]~[#7]~[#6]~1),$(*1~[#6]~[#7]~[#6]~[#7]~1),$(*1~[#7]~[#6]~[#7]~[#6]~1);$([#6X3;r5;$(*-[CX4H2]-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])])]),$(*@[#6X3;r5;$(*-[CX4H2]-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])])]),$(*@*@[#6X3;r5;$(*-[CX4H2]-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])])]);$(*(~[#7X2])~[#7X3H1])]",
+   "description": "CE1 of neutral His"
+  },
+  {
+   "type": "opls_507",
+   "priority": 12,
+   "smarts": "[#6X3;r5;$(*1~[#6]~[#7]~[#6]~[#6]~1),$(*1~[#7]~[#6]~[#6]~[#7]~1),$(*1~[#6]~[#6]~[#7]~[#6]~1),$(*1~[#6]~[#7]~[#6]~[#7]~1),$(*1~[#7]~[#6]~[#7]~[#6]~1);$([#6X3;r5;$(*-[CX4H2]-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])])]),$(*@[#6X3;r5;$(*-[CX4H2]-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])])]),$(*@*@[#6X3;r5;$(*-[CX4H2]-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])])]);!$(*(~[#7])~[#7]);$(*~[#7X2])]",
+   "description": "ring C next to the N without H (HID CD2, HIE CG)"
+  },
+  {
+   "type": "opls_508",
+   "priority": 12,
+   "smarts": "[#6X3;r5;$(*1~[#6]~[#7]~[#6]~[#6]~1),$(*1~[#7]~[#6]~[#6]~[#7]~1),$(*1~[#6]~[#6]~[#7]~[#6]~1),$(*1~[#6]~[#7]~[#6]~[#7]~1),$(*1~[#7]~[#6]~[#7]~[#6]~1);$([#6X3;r5;$(*-[CX4H2]-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])])]),$(*@[#6X3;r5;$(*-[CX4H2]-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])])]),$(*@*@[#6X3;r5;$(*-[CX4H2]-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])])]);!$(*(~[#7])~[#7]);$(*~[#7X3H1]);!$(*1~*~[#7X3H1]~*~[#7X3H1]~1)]",
+   "description": "ring C next to the N-H (HID CG, HIE CD2)"
+  },
+  {
+   "type": "opls_512",
+   "priority": 13,
+   "smarts": "[#7X3H1;r5;$(*1~[#6]~[#7]~[#6]~[#6]~1),$(*1~[#7]~[#6]~[#6]~[#7]~1),$(*1~[#6]~[#6]~[#7]~[#6]~1),$(*1~[#6]~[#7]~[#6]~[#7]~1),$(*1~[#7]~[#6]~[#7]~[#6]~1);$([#6X3;r5;$(*-[CX4H2]-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])])]),$(*@[#6X3;r5;$(*-[CX4H2]-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])])]),$(*@*@[#6X3;r5;$(*-[CX4H2]-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])])]);$(*1~*~[#7X3H1]~*~*~1),$(*1~*~*~[#7X3H1]~*~1)]",
+   "description": "N of charged His"
+  },
+  {
+   "type": "opls_513",
+   "priority": 13,
+   "smarts": "[H][#7X3H1;r5;$(*1~[#6]~[#7]~[#6]~[#6]~1),$(*1~[#7]~[#6]~[#6]~[#7]~1),$(*1~[#6]~[#6]~[#7]~[#6]~1),$(*1~[#6]~[#7]~[#6]~[#7]~1),$(*1~[#7]~[#6]~[#7]~[#6]~1);$([#6X3;r5;$(*-[CX4H2]-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])])]),$(*@[#6X3;r5;$(*-[CX4H2]-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])])]),$(*@*@[#6X3;r5;$(*-[CX4H2]-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])])]);$(*1~*~[#7X3H1]~*~*~1),$(*1~*~*~[#7X3H1]~*~1)]",
+   "description": "H on the N of charged His"
+  },
+  {
+   "type": "opls_509",
+   "priority": 13,
+   "smarts": "[#6X3;r5;$(*1~[#6]~[#7]~[#6]~[#6]~1),$(*1~[#7]~[#6]~[#6]~[#7]~1),$(*1~[#6]~[#6]~[#7]~[#6]~1),$(*1~[#6]~[#7]~[#6]~[#7]~1),$(*1~[#7]~[#6]~[#7]~[#6]~1);$([#6X3;r5;$(*-[CX4H2]-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])])]),$(*@[#6X3;r5;$(*-[CX4H2]-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])])]),$(*@*@[#6X3;r5;$(*-[CX4H2]-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])])]);$(*(~[#7X3H1])~[#7X3H1])]",
+   "description": "CE1 of charged His"
+  },
+  {
+   "type": "opls_510",
+   "priority": 13,
+   "smarts": "[#6X3;r5;$(*1~[#6]~[#7]~[#6]~[#6]~1),$(*1~[#7]~[#6]~[#6]~[#7]~1),$(*1~[#6]~[#6]~[#7]~[#6]~1),$(*1~[#6]~[#7]~[#6]~[#7]~1),$(*1~[#7]~[#6]~[#7]~[#6]~1);$([#6X3;r5;$(*-[CX4H2]-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])])]),$(*@[#6X3;r5;$(*-[CX4H2]-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])])]),$(*@*@[#6X3;r5;$(*-[CX4H2]-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])])]);!$(*(~[#7])~[#7]);$(*1~*~[#7X3H1]~*~[#7X3H1]~1),$(*1~[#7X3H1]~*~[#7X3H1]~*~1)]",
+   "description": "CG / CD2 of charged His"
+  },
+  {
+   "type": "opls_136",
+   "priority": 13,
+   "smarts": "[CX4H2;$(*-[#6X3;r5;!r6]~[#6;r5;r6]);$(*-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])])]",
+   "description": "Trp CB"
+  },
+  {
+   "type": "opls_500",
+   "priority": 13,
+   "smarts": "[#6X3;r5;!r6;$(*-[CX4H2]-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])]);$(*~[#6;r5;r6])]",
+   "description": "Trp CG"
+  },
+  {
+   "type": "opls_514",
+   "priority": 13,
+   "smarts": "[#6X3;r5;!r6;$(*~[#7X3H1;r5]);$(*~[#6X3;r5;!r6;$(*-[CX4H2]-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])]);$(*~[#6;r5;r6])])]",
+   "description": "Trp CD1"
+  },
+  {
+   "type": "opls_146",
+   "priority": 13,
+   "smarts": "[H][#6X3;r5;!r6;$(*~[#7X3H1;r5]);$(*~[#6X3;r5;!r6;$(*-[CX4H2]-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])]);$(*~[#6;r5;r6])])]",
+   "description": "Trp HD1"
+  },
+  {
+   "type": "opls_501",
+   "priority": 13,
+   "smarts": "[#6X3;r5;r6;!$(*~[#7]);$(*~[#6X3;r5;!r6;$(*-[CX4H2]-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])]);$(*~[#6;r5;r6])])]",
+   "description": "Trp CD2"
+  },
+  {
+   "type": "opls_502",
+   "priority": 13,
+   "smarts": "[#6X3;r5;r6;$(*~[#7X3H1;r5]~[#6X3;r5]~[#6X3;r5;$(*-[CX4H2]-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])])])]",
+   "description": "Trp CE2"
+  },
+  {
+   "type": "opls_503",
+   "priority": 13,
+   "smarts": "[#7X3H1;r5;$(*~[#6X3;r5;!r6]~[#6X3;r5;!r6;$(*-[CX4H2]-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])])]);$(*~[#6;r5;r6])]",
+   "description": "Trp NE1"
+  },
+  {
+   "type": "opls_504",
+   "priority": 13,
+   "smarts": "[H][#7X3H1;r5;$(*~[#6X3;r5;!r6]~[#6X3;r5;!r6;$(*-[CX4H2]-[CX4;$(*-[#7X3,#7X4]);$(*-[#6X3](~[OX1])~[OX1,#7X3])])]);$(*~[#6;r5;r6])]",
+   "description": "Trp HE1"
+  },
+  {
+   "type": "opls_203",
+   "priority": 11,
+   "smarts": "[SX2;$(*-[SX2])]",
+   "description": "disulfide S"
+  },
+  {
+   "type": "opls_214",
+   "priority": 11,
+   "smarts": "[CX4H2;$(*-[SX2]-[SX2])]",
+   "description": "CH2 on a disulfide S"
+  },
+  {
+   "type": "opls_238",
+   "priority": 13,
+   "smarts": "[NX3H1;r5;$(*-[CX3;r5]=[OX1])]",
+   "description": "lactam N-H"
+  },
+  {
+   "type": "opls_241",
+   "priority": 13,
+   "smarts": "[H][NX3H1;r5;$(*-[CX3;r5]=[OX1])]",
+   "description": "lactam N-H H"
+  },
+  {
+   "type": "opls_235",
+   "priority": 13,
+   "smarts": "[CX3;r5;$(*=[OX1]);$(*-[NX3;r5])]",
+   "description": "lactam C=O"
+  },
+  {
+   "type": "opls_236",
+   "priority": 13,
+   "smarts": "[OX1]=[CX3;r5;$(*-[NX3;r5])]",
+   "description": "lactam O"
+  },
+  {
+   "type": "opls_224B",
+   "priority": 14,
+   "smarts": "[CX4H1;r5;$(*-[NX3H1;r5]-[CX3;r5]=[OX1]);$(*-[CX3;!R](~[OX1])~[OX1,#7X3])]",
+   "description": "pyroglutamate C alpha"
+  },
+  {
+   "type": "opls_274",
+   "priority": 13,
+   "smarts": "[CX4H2;r5;$(*-[CX3;r5](=[OX1])-[NX3;r5]-[CX4H1;r5]-[CX3;!R](~[OX1])~[OX1,#7X3])]",
+   "description": "pyroglutamate CG"
+  },
+  {
+   "type": "opls_124",
+   "priority": 13,
+   "smarts": "[SX3](=[OX1])([CX4H3])[CX4H3]",
+   "description": "DMSO S"
+  },
+  {
+   "type": "opls_125",
+   "priority": 13,
+   "smarts": "[OX1]=[SX3]([CX4H3])[CX4H3]",
+   "description": "DMSO O"
+  },
+  {
+   "type": "opls_139",
+   "priority": 13,
+   "smarts": "[CX4H3][SX3](=[OX1])[CX4H3]",
+   "description": "DMSO C"
+  },
+  {
+   "type": "opls_406",
+   "priority": 14,
+   "smarts": "[Li+]",
+   "description": "ion"
+  },
+  {
+   "type": "opls_407",
+   "priority": 14,
+   "smarts": "[Na+]",
+   "description": "ion"
+  },
+  {
+   "type": "opls_408",
+   "priority": 14,
+   "smarts": "[K+]",
+   "description": "ion"
+  },
+  {
+   "type": "opls_409",
+   "priority": 14,
+   "smarts": "[Rb+]",
+   "description": "ion"
+  },
+  {
+   "type": "opls_410",
+   "priority": 14,
+   "smarts": "[Cs+]",
+   "description": "ion"
+  },
+  {
+   "type": "opls_411",
+   "priority": 14,
+   "smarts": "[Mg+2]",
+   "description": "ion"
+  },
+  {
+   "type": "opls_412",
+   "priority": 14,
+   "smarts": "[Ca+2]",
+   "description": "ion"
+  },
+  {
+   "type": "opls_413",
+   "priority": 14,
+   "smarts": "[Sr+2]",
+   "description": "ion"
+  },
+  {
+   "type": "opls_414",
+   "priority": 14,
+   "smarts": "[Ba+2]",
+   "description": "ion"
+  },
+  {
+   "type": "opls_400",
+   "priority": 14,
+   "smarts": "[F-]",
+   "description": "ion"
+  },
+  {
+   "type": "opls_401",
+   "priority": 14,
+   "smarts": "[Cl-]",
+   "description": "ion"
+  },
+  {
+   "type": "opls_402",
+   "priority": 14,
+   "smarts": "[Br-]",
+   "description": "ion"
+  },
+  {
+   "type": "opls_403",
+   "priority": 14,
+   "smarts": "[I-]",
+   "description": "ion"
+  },
+  {
+   "type": "opls_111",
+   "priority": 14,
+   "smarts": "[OX2H2]",
+   "description": "TIP3P water O"
+  },
+  {
+   "type": "opls_112",
+   "priority": 14,
+   "smarts": "[H][OX2H2]",
+   "description": "TIP3P water H"
+  }
+ ]
+}

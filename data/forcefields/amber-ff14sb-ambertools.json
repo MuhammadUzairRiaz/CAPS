@@ -545,7 +545,7 @@
   {
    "name": "C*",
    "match": [
-    "C*"
+    "C\\*"
    ],
    "params": [
     0.086,
@@ -827,7 +827,7 @@
   {
    "name": "N*",
    "match": [
-    "N*"
+    "N\\*"
    ],
    "params": [
     0.17,
@@ -1146,7 +1146,7 @@
    "name": "C-N*",
    "match": [
     "C",
-    "N*"
+    "N\\*"
    ],
    "style": "harmonic",
    "params": [
@@ -1410,7 +1410,7 @@
    "name": "CB-N*",
    "match": [
     "CB",
-    "N*"
+    "N\\*"
    ],
    "style": "harmonic",
    "params": [
@@ -1518,7 +1518,7 @@
    "name": "CK-N*",
    "match": [
     "CK",
-    "N*"
+    "N\\*"
    ],
    "style": "harmonic",
    "params": [
@@ -1554,7 +1554,7 @@
    "name": "CP-N*",
    "match": [
     "CP",
-    "N*"
+    "N\\*"
    ],
    "style": "harmonic",
    "params": [
@@ -1638,7 +1638,7 @@
    "name": "CM-N*",
    "match": [
     "CM",
-    "N*"
+    "N\\*"
    ],
    "style": "harmonic",
    "params": [
@@ -1722,7 +1722,7 @@
    "name": "CS-N*",
    "match": [
     "CS",
-    "N*"
+    "N\\*"
    ],
    "style": "harmonic",
    "params": [
@@ -1878,7 +1878,7 @@
    "name": "CT-N*",
    "match": [
     "CT",
-    "N*"
+    "N\\*"
    ],
    "style": "harmonic",
    "params": [
@@ -1925,7 +1925,7 @@
   {
    "name": "C*-HC",
    "match": [
-    "C*",
+    "C\\*",
     "HC"
    ],
    "style": "harmonic",
@@ -1937,7 +1937,7 @@
   {
    "name": "C*-CB",
    "match": [
-    "C*",
+    "C\\*",
     "CB"
    ],
    "style": "harmonic",
@@ -1949,7 +1949,7 @@
   {
    "name": "C*-CT",
    "match": [
-    "C*",
+    "C\\*",
     "CT"
    ],
    "style": "harmonic",
@@ -1961,7 +1961,7 @@
   {
    "name": "C*-CW",
    "match": [
-    "C*",
+    "C\\*",
     "CW"
    ],
    "style": "harmonic",
@@ -2358,7 +2358,7 @@
    "name": "H-N*",
    "match": [
     "H",
-    "N*"
+    "N\\*"
    ],
    "style": "harmonic",
    "params": [
@@ -2730,7 +2730,7 @@
    "name": "C5-N*",
    "match": [
     "C5",
-    "N*"
+    "N\\*"
    ],
    "style": "harmonic",
    "params": [
@@ -2826,7 +2826,7 @@
    "name": "C4-N*",
    "match": [
     "C4",
-    "N*"
+    "N\\*"
    ],
    "style": "harmonic",
    "params": [
@@ -2849,7 +2849,7 @@
   {
    "name": "C*-2C",
    "match": [
-    "C*",
+    "C\\*",
     "2C"
    ],
    "style": "harmonic",
@@ -3222,7 +3222,7 @@
    "name": "C2-N*",
    "match": [
     "C2",
-    "N*"
+    "N\\*"
    ],
    "style": "harmonic",
    "params": [
@@ -3318,7 +3318,7 @@
    "name": "C1-N*",
    "match": [
     "C1",
-    "N*"
+    "N\\*"
    ],
    "style": "harmonic",
    "params": [
@@ -3691,7 +3691,7 @@
   {
    "name": "N*-C-NA",
    "match": [
-    "N*",
+    "N\\*",
     "C",
     "NA"
    ],
@@ -3704,7 +3704,7 @@
   {
    "name": "N*-C-NC",
    "match": [
-    "N*",
+    "N\\*",
     "C",
     "NC"
    ],
@@ -3717,7 +3717,7 @@
   {
    "name": "N*-C-O",
    "match": [
-    "N*",
+    "N\\*",
     "C",
     "O"
    ],
@@ -4343,7 +4343,7 @@
    "match": [
     "CB",
     "CB",
-    "N*"
+    "N\\*"
    ],
    "style": "harmonic",
    "params": [
@@ -4380,7 +4380,7 @@
   {
    "name": "C*-CB-CA",
    "match": [
-    "C*",
+    "C\\*",
     "CB",
     "CA"
    ],
@@ -4393,7 +4393,7 @@
   {
    "name": "C*-CB-CN",
    "match": [
-    "C*",
+    "C\\*",
     "CB",
     "CN"
    ],
@@ -4419,7 +4419,7 @@
   {
    "name": "N*-CB-NC",
    "match": [
-    "N*",
+    "N\\*",
     "CB",
     "NC"
    ],
@@ -4551,7 +4551,7 @@
    "match": [
     "H5",
     "CK",
-    "N*"
+    "N\\*"
    ],
    "style": "harmonic",
    "params": [
@@ -4575,7 +4575,7 @@
   {
    "name": "N*-CK-NB",
    "match": [
-    "N*",
+    "N\\*",
     "CK",
     "NB"
    ],
@@ -4590,7 +4590,7 @@
    "match": [
     "H5",
     "CP",
-    "N*"
+    "N\\*"
    ],
    "style": "harmonic",
    "params": [
@@ -4614,7 +4614,7 @@
   {
    "name": "N*-CP-NB",
    "match": [
-    "N*",
+    "N\\*",
     "CP",
     "NB"
    ],
@@ -4759,7 +4759,7 @@
    "match": [
     "CM",
     "CM",
-    "N*"
+    "N\\*"
    ],
    "style": "harmonic",
    "params": [
@@ -4785,7 +4785,7 @@
    "match": [
     "H4",
     "CM",
-    "N*"
+    "N\\*"
    ],
    "style": "harmonic",
    "params": [
@@ -4980,7 +4980,7 @@
    "match": [
     "CS",
     "CS",
-    "N*"
+    "N\\*"
    ],
    "style": "harmonic",
    "params": [
@@ -5006,7 +5006,7 @@
    "match": [
     "H4",
     "CS",
-    "N*"
+    "N\\*"
    ],
    "style": "harmonic",
    "params": [
@@ -5123,7 +5123,7 @@
    "match": [
     "H1",
     "CT",
-    "N*"
+    "N\\*"
    ],
    "style": "harmonic",
    "params": [
@@ -5305,7 +5305,7 @@
    "match": [
     "H2",
     "CT",
-    "N*"
+    "N\\*"
    ],
    "style": "harmonic",
    "params": [
@@ -5851,7 +5851,7 @@
    "match": [
     "CT",
     "CT",
-    "N*"
+    "N\\*"
    ],
    "style": "harmonic",
    "params": [
@@ -6083,7 +6083,7 @@
   {
    "name": "C*-CT-CT",
    "match": [
-    "C*",
+    "C\\*",
     "CT",
     "CT"
    ],
@@ -6096,7 +6096,7 @@
   {
    "name": "C*-CT-CX",
    "match": [
-    "C*",
+    "C\\*",
     "CT",
     "CX"
    ],
@@ -6109,7 +6109,7 @@
   {
    "name": "C*-CT-HC",
    "match": [
-    "C*",
+    "C\\*",
     "CT",
     "HC"
    ],
@@ -6163,7 +6163,7 @@
    "match": [
     "OS",
     "CT",
-    "N*"
+    "N\\*"
    ],
    "style": "harmonic",
    "params": [
@@ -6499,7 +6499,7 @@
   {
    "name": "C*-CW-H4",
    "match": [
-    "C*",
+    "C\\*",
     "CW",
     "H4"
    ],
@@ -6512,7 +6512,7 @@
   {
    "name": "C*-CW-NA",
    "match": [
-    "C*",
+    "C\\*",
     "CW",
     "NA"
    ],
@@ -6539,7 +6539,7 @@
    "name": "CB-C*-CT",
    "match": [
     "CB",
-    "C*",
+    "C\\*",
     "CT"
    ],
    "style": "harmonic",
@@ -6552,7 +6552,7 @@
    "name": "CB-C*-CW",
    "match": [
     "CB",
-    "C*",
+    "C\\*",
     "CW"
    ],
    "style": "harmonic",
@@ -6565,7 +6565,7 @@
    "name": "CT-C*-CW",
    "match": [
     "CT",
-    "C*",
+    "C\\*",
     "CW"
    ],
    "style": "harmonic",
@@ -6760,7 +6760,7 @@
    "name": "C-N*-CM",
    "match": [
     "C",
-    "N*",
+    "N\\*",
     "CM"
    ],
    "style": "harmonic",
@@ -6773,7 +6773,7 @@
    "name": "C-N*-CS",
    "match": [
     "C",
-    "N*",
+    "N\\*",
     "CS"
    ],
    "style": "harmonic",
@@ -6786,7 +6786,7 @@
    "name": "C-N*-CT",
    "match": [
     "C",
-    "N*",
+    "N\\*",
     "CT"
    ],
    "style": "harmonic",
@@ -6799,7 +6799,7 @@
    "name": "C-N*-H",
    "match": [
     "C",
-    "N*",
+    "N\\*",
     "H"
    ],
    "style": "harmonic",
@@ -6812,7 +6812,7 @@
    "name": "CB-N*-CK",
    "match": [
     "CB",
-    "N*",
+    "N\\*",
     "CK"
    ],
    "style": "harmonic",
@@ -6825,7 +6825,7 @@
    "name": "CB-N*-CP",
    "match": [
     "CB",
-    "N*",
+    "N\\*",
     "CP"
    ],
    "style": "harmonic",
@@ -6838,7 +6838,7 @@
    "name": "CB-N*-CT",
    "match": [
     "CB",
-    "N*",
+    "N\\*",
     "CT"
    ],
    "style": "harmonic",
@@ -6851,7 +6851,7 @@
    "name": "CB-N*-H",
    "match": [
     "CB",
-    "N*",
+    "N\\*",
     "H"
    ],
    "style": "harmonic",
@@ -6864,7 +6864,7 @@
    "name": "CK-N*-CT",
    "match": [
     "CK",
-    "N*",
+    "N\\*",
     "CT"
    ],
    "style": "harmonic",
@@ -6877,7 +6877,7 @@
    "name": "CK-N*-H",
    "match": [
     "CK",
-    "N*",
+    "N\\*",
     "H"
    ],
    "style": "harmonic",
@@ -6890,7 +6890,7 @@
    "name": "CP-N*-CT",
    "match": [
     "CP",
-    "N*",
+    "N\\*",
     "CT"
    ],
    "style": "harmonic",
@@ -6903,7 +6903,7 @@
    "name": "CP-N*-H",
    "match": [
     "CP",
-    "N*",
+    "N\\*",
     "H"
    ],
    "style": "harmonic",
@@ -6916,7 +6916,7 @@
    "name": "CM-N*-CT",
    "match": [
     "CM",
-    "N*",
+    "N\\*",
     "CT"
    ],
    "style": "harmonic",
@@ -6929,7 +6929,7 @@
    "name": "CM-N*-H",
    "match": [
     "CM",
-    "N*",
+    "N\\*",
     "H"
    ],
    "style": "harmonic",
@@ -6942,7 +6942,7 @@
    "name": "CS-N*-CT",
    "match": [
     "CS",
-    "N*",
+    "N\\*",
     "CT"
    ],
    "style": "harmonic",
@@ -6955,7 +6955,7 @@
    "name": "CS-N*-H",
    "match": [
     "CS",
-    "N*",
+    "N\\*",
     "H"
    ],
    "style": "harmonic",
@@ -8204,7 +8204,7 @@
    "match": [
     "H5",
     "C5",
-    "N*"
+    "N\\*"
    ],
    "style": "harmonic",
    "params": [
@@ -8228,7 +8228,7 @@
   {
    "name": "N*-C5-NB",
    "match": [
-    "N*",
+    "N\\*",
     "C5",
     "NB"
    ],
@@ -8242,7 +8242,7 @@
    "name": "CB-N*-C5",
    "match": [
     "CB",
-    "N*",
+    "N\\*",
     "C5"
    ],
    "style": "harmonic",
@@ -8255,7 +8255,7 @@
    "name": "C5-N*-CT",
    "match": [
     "C5",
-    "N*",
+    "N\\*",
     "CT"
    ],
    "style": "harmonic",
@@ -8464,7 +8464,7 @@
    "match": [
     "C4",
     "C4",
-    "N*"
+    "N\\*"
    ],
    "style": "harmonic",
    "params": [
@@ -8477,7 +8477,7 @@
    "match": [
     "H4",
     "C4",
-    "N*"
+    "N\\*"
    ],
    "style": "harmonic",
    "params": [
@@ -8515,7 +8515,7 @@
    "name": "C-N*-C4",
    "match": [
     "C",
-    "N*",
+    "N\\*",
     "C4"
    ],
    "style": "harmonic",
@@ -8528,7 +8528,7 @@
    "name": "C4-N*-CT",
    "match": [
     "C4",
-    "N*",
+    "N\\*",
     "CT"
    ],
    "style": "harmonic",
@@ -8593,7 +8593,7 @@
    "name": "CB-C*-2C",
    "match": [
     "CB",
-    "C*",
+    "C\\*",
     "2C"
    ],
    "style": "harmonic",
@@ -8606,7 +8606,7 @@
    "name": "CW-C*-2C",
    "match": [
     "CW",
-    "C*",
+    "C\\*",
     "2C"
    ],
    "style": "harmonic",
@@ -9242,7 +9242,7 @@
   {
    "name": "C*-2C-CX",
    "match": [
-    "C*",
+    "C\\*",
     "2C",
     "CX"
    ],
@@ -9255,7 +9255,7 @@
   {
    "name": "C*-2C-HC",
    "match": [
-    "C*",
+    "C\\*",
     "2C",
     "HC"
    ],
@@ -9933,7 +9933,7 @@
    "match": [
     "H5",
     "C2",
-    "N*"
+    "N\\*"
    ],
    "style": "harmonic",
    "params": [
@@ -9957,7 +9957,7 @@
   {
    "name": "N*-C2-NB",
    "match": [
-    "N*",
+    "N\\*",
     "C2",
     "NB"
    ],
@@ -9971,7 +9971,7 @@
    "name": "CB-N*-C2",
    "match": [
     "CB",
-    "N*",
+    "N\\*",
     "C2"
    ],
    "style": "harmonic",
@@ -9984,7 +9984,7 @@
    "name": "C2-N*-CT",
    "match": [
     "C2",
-    "N*",
+    "N\\*",
     "CT"
    ],
    "style": "harmonic",
@@ -10193,7 +10193,7 @@
    "match": [
     "C1",
     "C1",
-    "N*"
+    "N\\*"
    ],
    "style": "harmonic",
    "params": [
@@ -10206,7 +10206,7 @@
    "match": [
     "H4",
     "C1",
-    "N*"
+    "N\\*"
    ],
    "style": "harmonic",
    "params": [
@@ -10244,7 +10244,7 @@
    "name": "C-N*-C1",
    "match": [
     "C",
-    "N*",
+    "N\\*",
     "C1"
    ],
    "style": "harmonic",
@@ -10257,7 +10257,7 @@
    "name": "C1-N*-CT",
    "match": [
     "C1",
-    "N*",
+    "N\\*",
     "CT"
    ],
    "style": "harmonic",
@@ -10544,7 +10544,7 @@
    "match": [
     "*",
     "C",
-    "N*",
+    "N\\*",
     "*"
    ],
    "style": "fourier",
@@ -10832,7 +10832,7 @@
    "match": [
     "*",
     "CB",
-    "N*",
+    "N\\*",
     "*"
    ],
    "style": "fourier",
@@ -11024,7 +11024,7 @@
    "match": [
     "*",
     "CK",
-    "N*",
+    "N\\*",
     "*"
    ],
    "style": "fourier",
@@ -11056,7 +11056,7 @@
    "match": [
     "*",
     "CP",
-    "N*",
+    "N\\*",
     "*"
    ],
    "style": "fourier",
@@ -11120,7 +11120,7 @@
    "match": [
     "*",
     "CM",
-    "N*",
+    "N\\*",
     "*"
    ],
    "style": "fourier",
@@ -11184,7 +11184,7 @@
    "match": [
     "*",
     "CS",
-    "N*",
+    "N\\*",
     "*"
    ],
    "style": "fourier",
@@ -11344,7 +11344,7 @@
    "match": [
     "*",
     "CT",
-    "N*",
+    "N\\*",
     "*"
    ],
    "style": "fourier",
@@ -11487,7 +11487,7 @@
    "name": "X-C*-CB-X",
    "match": [
     "*",
-    "C*",
+    "C\\*",
     "CB",
     "*"
    ],
@@ -11503,7 +11503,7 @@
    "name": "X-C*-CT-X",
    "match": [
     "*",
-    "C*",
+    "C\\*",
     "CT",
     "*"
    ],
@@ -11519,7 +11519,7 @@
    "name": "X-C*-CW-X",
    "match": [
     "*",
-    "C*",
+    "C\\*",
     "CW",
     "*"
    ],
@@ -11680,7 +11680,7 @@
    "match": [
     "*",
     "C5",
-    "N*",
+    "N\\*",
     "*"
    ],
    "style": "fourier",
@@ -11776,7 +11776,7 @@
    "match": [
     "*",
     "C4",
-    "N*",
+    "N\\*",
     "*"
    ],
    "style": "fourier",
@@ -12086,7 +12086,7 @@
    "match": [
     "OS",
     "CT",
-    "N*",
+    "N\\*",
     "C5"
    ],
    "style": "fourier",
@@ -12111,7 +12111,7 @@
    "match": [
     "OS",
     "CT",
-    "N*",
+    "N\\*",
     "CP"
    ],
    "style": "fourier",
@@ -12136,7 +12136,7 @@
    "match": [
     "OS",
     "CT",
-    "N*",
+    "N\\*",
     "C4"
    ],
    "style": "fourier",
@@ -12161,7 +12161,7 @@
    "match": [
     "OS",
     "CT",
-    "N*",
+    "N\\*",
     "CS"
    ],
    "style": "fourier",
@@ -12846,7 +12846,7 @@
     "CT",
     "OS",
     "CT",
-    "N*"
+    "N\\*"
    ],
    "style": "fourier",
    "params": [
@@ -12899,7 +12899,7 @@
    "match": [
     "OS",
     "CT",
-    "N*",
+    "N\\*",
     "CK"
    ],
    "style": "fourier",
@@ -12921,7 +12921,7 @@
    "match": [
     "OS",
     "CT",
-    "N*",
+    "N\\*",
     "CM"
    ],
    "style": "fourier",
@@ -13769,7 +13769,7 @@
    "name": "CB-C*-2C-HC",
    "match": [
     "CB",
-    "C*",
+    "C\\*",
     "2C",
     "HC"
    ],
@@ -13785,7 +13785,7 @@
    "name": "CW-C*-2C-HC",
    "match": [
     "CW",
-    "C*",
+    "C\\*",
     "2C",
     "HC"
    ],
@@ -15786,7 +15786,7 @@
     "C",
     "CX",
     "CT",
-    "C*"
+    "C\\*"
    ],
    "style": "fourier",
    "params": [
@@ -15811,7 +15811,7 @@
     "N",
     "CX",
     "CT",
-    "C*"
+    "C\\*"
    ],
    "style": "fourier",
    "params": [
@@ -15836,7 +15836,7 @@
     "N3",
     "CX",
     "CT",
-    "C*"
+    "C\\*"
    ],
    "style": "fourier",
    "params": [
@@ -15860,7 +15860,7 @@
    "match": [
     "CX",
     "CT",
-    "C*",
+    "C\\*",
     "CB"
    ],
    "style": "fourier",
@@ -15885,7 +15885,7 @@
    "match": [
     "CX",
     "CT",
-    "C*",
+    "C\\*",
     "CW"
    ],
    "style": "fourier",
@@ -16898,7 +16898,7 @@
    "match": [
     "*",
     "C2",
-    "N*",
+    "N\\*",
     "*"
    ],
    "style": "fourier",
@@ -16994,7 +16994,7 @@
    "match": [
     "*",
     "C1",
-    "N*",
+    "N\\*",
     "*"
    ],
    "style": "fourier",
@@ -17048,7 +17048,7 @@
    "match": [
     "OS",
     "CT",
-    "N*",
+    "N\\*",
     "C2"
    ],
    "style": "fourier",
@@ -17070,7 +17070,7 @@
    "match": [
     "OS",
     "CT",
-    "N*",
+    "N\\*",
     "C1"
    ],
    "style": "fourier",
@@ -17678,7 +17678,7 @@
    "match": [
     "CB",
     "CK",
-    "N*",
+    "N\\*",
     "CT"
    ],
    "style": "cvff",
@@ -17693,7 +17693,7 @@
    "match": [
     "CB",
     "CP",
-    "N*",
+    "N\\*",
     "CT"
    ],
    "style": "cvff",
@@ -17708,7 +17708,7 @@
    "match": [
     "C",
     "CM",
-    "N*",
+    "N\\*",
     "CT"
    ],
    "style": "cvff",
@@ -17723,7 +17723,7 @@
    "match": [
     "C",
     "CS",
-    "N*",
+    "N\\*",
     "CT"
    ],
    "style": "cvff",
@@ -17813,7 +17813,7 @@
    "match": [
     "CB",
     "CT",
-    "C*",
+    "C\\*",
     "CW"
    ],
    "style": "cvff",
@@ -18128,7 +18128,7 @@
    "match": [
     "CB",
     "C5",
-    "N*",
+    "N\\*",
     "CT"
    ],
    "style": "cvff",
@@ -18173,7 +18173,7 @@
    "match": [
     "C",
     "C4",
-    "N*",
+    "N\\*",
     "CT"
    ],
    "style": "cvff",
@@ -18246,7 +18246,7 @@
   {
    "name": "C*-CN-CB-CA",
    "match": [
-    "C*",
+    "C\\*",
     "CN",
     "CB",
     "CA"
@@ -18276,7 +18276,7 @@
   {
    "name": "N*-CB-CB-NC",
    "match": [
-    "N*",
+    "N\\*",
     "CB",
     "CB",
     "NC"
@@ -18458,7 +18458,7 @@
    "match": [
     "CB",
     "C2",
-    "N*",
+    "N\\*",
     "CT"
    ],
    "style": "cvff",
@@ -18503,7 +18503,7 @@
    "match": [
     "C",
     "C1",
-    "N*",
+    "N\\*",
     "CT"
    ],
    "style": "cvff",

@@ -80,7 +80,7 @@ cmap_seen = False
 
 
 def wild(t):
-    return "*" if t.upper() == "X" else t
+    return "*" if t.upper() == "X" else t.replace("*", "\\*").replace("?", "\\?")   # a literal * or ? escaped (CAPS patterns are globs)
 
 
 def read_masses(path):

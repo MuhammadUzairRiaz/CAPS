@@ -1,0 +1,9 @@
+{
+ "description": "Residues of GROMACS's oplsaa.ff/aminoacids.rtp whose own entry contradicts chemistry; bench/ff/validate_rtp_types.py --deviations reports them apart.",
+ "residues": {
+  "PGLU": "N carries H, CA, CD (the lactam bond) and the -C link to a previous residue: four neighbours on a neutral amide N. An N-terminal pyroglutamate has no previous residue, so the entry cannot be built as written"
+ },
+ "molecules": {
+  "ethanol.itp, 1propanol.itp": "every C is opls_157 and every H on C opls_156 (OPLS-AA's methanol H), where aminoacids.rtp's serine has CB opls_157 with HB opls_140 and the CH3 of an alcohol is opls_135; the LJ parameters are the same (157 = 135, 156 = 140), only the numbers differ. CAPS follows the residue topologies and the type definitions; methanol.itp matches"
+ }
+}

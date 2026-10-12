@@ -13,7 +13,11 @@ its library to the same xyz and writes its own. Compared:
     with the counts of each kind of term; non-bonded terms depend on the cut-off and electrostatics each program writes
     and are shown, not compared.
 
-usage: compare_polymers.py [--ff opls2005,pcff,...] [--polymer substring] [--keep DIR] [--json OUT]
+With --caps-ff ID the one DL_FIELD keyword of --ff is compared with CAPS library ID (a library built from the force
+field's original files, whose type names differ from DL_FIELD's keys): types are then compared by their parameters,
+each atom's Lennard-Jones epsilon and sigma (to 1e-3 relative), besides charges and bonded energies.
+
+usage: compare_polymers.py [--ff opls2005,pcff,...] [--caps-ff ID] [--polymer substring] [--keep DIR] [--json OUT]
 Needs DL_FIELD (DLFIELD, default ~/project/dl_f_4.13) and LAMMPS with CLASS2 (LMP).
 """
 import json, math, os, re, shutil, subprocess, sys, tempfile
@@ -30,6 +34,9 @@ FFS = {"opls2005": "opls2005", "pcff": "pcff", "cvff": "cvff", "compass": "compa
        "amber25_gaff": "gaff-amber25", "charmm36_cgenff": "cgenff", "dreiding": "dreiding"}
 if "--ff" in sys.argv:
     FFS = {k: v for k, v in FFS.items() if k in arg("--ff", "").split(",") or v in arg("--ff", "").split(",")}
+BY_PARAMS = "--caps-ff" in sys.argv
+if BY_PARAMS:
+    FFS = {k: arg("--caps-ff", "") for k in FFS}
 
 
 def oligomer(pid, smiles):
@@ -68,6 +75,32 @@ def atom_types_from_data(path):
             charges[int(w[0])] = float(w[3])
     ids = sorted(types)
     return [label.get(types[i], str(types[i])) for i in ids], [charges[i] for i in ids]
+
+
+def lj_per_atom(data, script):
+    """each atom's (epsilon, sigma) from the data file's Pair Coeffs or the input's pair_coeff i i lines"""
+    per_type, types, sec = {}, {}, None
+    for raw in open(data):
+        l = raw.split("#")[0].strip()
+        if not l:
+            continue
+        if re.match(r"^[A-Z][A-Za-z ]+$", l):
+            sec = l.strip()
+            continue
+        w = l.split()
+        if sec == "Pair Coeffs" and len(w) >= 3:
+            per_type[int(w[0])] = (float(w[1]), float(w[2]))
+        elif sec == "Atoms" and len(w) >= 7:
+            types[int(w[0])] = int(w[2])
+    for raw in open(script):
+        w = raw.split("#")[0].split()
+        if len(w) >= 5 and w[0] == "pair_coeff" and w[1] == w[2] and w[1].isdigit():
+            k = 3
+            while k < len(w) and not re.match(r"^-?[\d.]+(e-?\d+)?$", w[k]):   # a hybrid sub-style name
+                k += 1
+            if k + 1 < len(w):
+                per_type[int(w[1])] = (float(w[k]), float(w[k + 1]))
+    return [per_type.get(types[i]) for i in sorted(types)]
 
 
 def lammps_terms(d, script):
@@ -121,7 +154,14 @@ def case(pid, pname, xyz, kw, ffid):
     if len(dt) != len(ct):
         out["result"] = f"atom counts differ: DL_FIELD {len(dt)}, CAPS {len(ct)}"
         return out
-    diff = [(i + 1, a, b) for i, (a, b) in enumerate(zip(dt, ct)) if a != b]
+    if BY_PARAMS:   # the types' own parameters: Lennard-Jones per atom
+        dl, cl = lj_per_atom(os.path.join(ddir, "lammps1.data"), os.path.join(ddir, "lammps.in")), \
+                 lj_per_atom(os.path.join(cdir, "system.data"), os.path.join(cdir, "system.in"))
+        same = lambda x, y: x and y and all(abs(u - v) <= 1e-3 * max(abs(u), 1e-9) for u, v in zip(x, y))
+        diff = [(i + 1, f"{a} ({dl[i][0]:.4f}, {dl[i][1]:.3f})" if dl[i] else a, f"{b} ({cl[i][0]:.4f}, {cl[i][1]:.3f})" if cl[i] else b)
+                for i, (a, b) in enumerate(zip(dt, ct)) if not same(dl[i], cl[i])]
+    else:
+        diff = [(i + 1, a, b) for i, (a, b) in enumerate(zip(dt, ct)) if a != b]
     out["atoms"] = len(dt)
     out["types_same"] = len(dt) - len(diff)
     out["type_diffs"] = sorted({f"{a}→{b}" for _, a, b in diff})
