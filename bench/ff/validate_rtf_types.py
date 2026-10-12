@@ -6,7 +6,12 @@ Each RESI becomes a mol2 file with its bonds but no bond orders (or, with --orde
 DOUBLE / TRIPLE); CAPS types it and the result is compared with the RTF types. Residues with lone pairs or dummy
 atoms, and residues using types missing from the force-field file, are counted separately.
 
+With --patches PRES:RESI,...: each terminal patch applied to its host residue (its ATOM records replace or add atoms,
+DELETE ATOM removes one, its bonds added), the patched residue checked with the host's links on the patched end
+dropped (an N-terminal patch: no previous residue; a C-terminal one: no next residue).
+
 usage: validate_rtf_types.py TOP.rtf FF.json RULES.json [--orders] [--show N] [--all] [--only RESI,...] [--apply]
+                             [--patches PRES:RESI,...]
 """
 import collections, json, os, re, subprocess, sys, tempfile
 
@@ -16,13 +21,17 @@ rtf, ffjson, rules = sys.argv[1], sys.argv[2], sys.argv[3]
 arg = lambda k, d: sys.argv[sys.argv.index(k) + 1] if k in sys.argv else d
 show = int(arg("--show", "40"))
 only = [x for x in arg("--only", "").split(",") if x]
-known = {t["name"] for t in json.load(open(ffjson))["atom_types"]}
+ff_types = json.load(open(ffjson))["atom_types"]
+known = {t["name"] for t in ff_types}
+ff_element = {t["name"]: t.get("element") for t in ff_types if t.get("element") not in (None, "", "X")}
 
 ELEM = [("CLG", "Cl"), ("BRG", "Br"), ("ALG", "Al"), ("IG", "I"), ("H", "H"), ("C", "C"), ("N", "N"), ("O", "O"),
         ("S", "S"), ("P", "P"), ("F", "F"), ("B", "B")]
 
 
 def element(t):
+    if t in ff_element:   # the force field's own MASS record
+        return ff_element[t]
     for p, e in ELEM:
         if t.upper().startswith(p):
             return e
@@ -38,7 +47,7 @@ def residues(path):
             continue
         k = w[0].upper()
         if k in ("RESI", "PRES"):
-            cur = {"name": w[1], "patch": k == "PRES", "atoms": [], "bonds": []}
+            cur = {"name": w[1], "patch": k == "PRES", "atoms": [], "bonds": [], "delete": []}
             res.append(cur)
         elif cur is None:
             continue
@@ -48,9 +57,32 @@ def residues(path):
             order = {"BOND": 1, "DOUB": 2, "DOUBLE": 2, "TRIP": 3, "TRIPLE": 3, "AROM": 4}[k]
             for a, b in zip(w[1::2], w[2::2]):
                 cur["bonds"].append((a, b, order))
+        elif k == "DELETE" and len(w) >= 3 and w[1].upper() == "ATOM":
+            cur["delete"].append(w[2])
         elif k == "END":
             break
-    return [r for r in res if not r["patch"]]
+    plain = [r for r in res if not r["patch"]]
+    if "--patches" in sys.argv:
+        by = {r["name"]: r for r in res}
+        for pair in sys.argv[sys.argv.index("--patches") + 1].split(","):
+            pname, host = pair.split(":")
+            P, H = by[pname], by[host]
+            atoms = [(a, t) for a, t in H["atoms"] if a not in P["delete"]]
+            names = [a for a, _ in atoms]
+            for a, t in P["atoms"]:
+                if a in names:
+                    atoms[names.index(a)] = (a, t)
+                else:
+                    atoms.append((a, t))
+                    names.append(a)
+            # the end a patch makes: it redefines or bonds to the backbone N (N end) or C (C end)
+            touched = {a for a, _ in P["atoms"]} | {x for b in P["bonds"] for x in b[:2]}
+            n_term, c_term = "N" in touched, "C" in touched
+            bonds = [b for b in H["bonds"] if not any(x in P["delete"] for x in b[:2])]
+            bonds += [b for b in P["bonds"] if not any(x[:1] in "+-" for x in b[:2])]
+            plain.append({"name": f"{host}+{pname}", "patch": False, "atoms": atoms, "bonds": bonds, "delete": [],
+                          "no_prev": n_term, "no_next": c_term})
+    return plain
 
 
 work = os.environ.get("RTF_KEEP") or tempfile.mkdtemp()
@@ -90,10 +122,15 @@ for r in residues(rtf):
             for own, link in ((a, b), (b, a)):
                 if link[:1] == "+" and link[1:].upper() in idx and own[:1] not in "+-" and (link[1:].upper(), "-" + own.upper()) not in have:
                     links.append((link[1:], "-" + own, 1))
+    # a terminal patch: no residue before (N end) or after (C end), so no link that way
+    links = [x for x in links if not (r.get("no_prev") and any(y[:1] == "-" for y in x[:2]))
+             and not (r.get("no_next") and any(y[:1] == "+" for y in x[:2]))]
     for a, b, o in links:
         if a[:1] in "+-" or b[:1] in "+-":   # a bond to the neighbouring residue
             link, own = (a, b) if a[:1] in "+-" else (b, a)
-            cap = CAPS_FOR.get(link[1:2].upper()) if "--cap-links" in sys.argv else None
+            # the links of a peptide or nucleic-acid chain (-C / +N, -O3' / +P); another (PEGM's C-C) has no residue cap
+            standard = link[1:].upper() in ("C", "N", "O3'", "P", "O3*")
+            cap = CAPS_FOR.get(link[1:2].upper()) if "--cap-links" in sys.argv and standard else None
             if cap is None or own.upper() not in idx:   # a polymer unit we do not cap (PEGM's -C2): not a molecule
                 ok = False
                 break
