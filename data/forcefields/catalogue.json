@@ -320,36 +320,6 @@
    }
   },
   {
-   "id": "trappe-eh",
-   "name": "TraPPE-EH",
-   "version": "2007",
-   "references": [
-    "N. Rai, J. I. Siepmann, J. Phys. Chem. B 111, 10790 (2007)"
-   ],
-   "origin": "converted",
-   "source_file": "TRAPPE_EH.par",
-   "status": "validated",
-   "notes": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): 9 of 9 identical.",
-   "file": "trappe-eh.json",
-   "counts": {
-    "atom_types": 65,
-    "pairs": 17,
-    "bonds": 40,
-    "angles": 119,
-    "dihedrals": 25,
-    "impropers": 16
-   },
-   "typing": {
-    "rules": "typing/trappe-eh.typing.json",
-    "evidence": "CAPS rules from TraPPE-EH (explicit-hydrogen aromatics)'s type definitions (bench/typing/make_biomolecular_rules.py)"
-   },
-   "list": {
-    "label": "TraPPE-EH",
-    "key": "trappe_eh",
-    "order": 6
-   }
-  },
-  {
    "id": "inorganic-binary-oxides",
    "name": "Inorganic: binary oxides",
    "version": "",
@@ -2280,6 +2250,37 @@
     "label": "Aluminosilicates (Hill & Sauer)",
     "key": "hill_sauer1995",
     "order": 30
+   }
+  },
+  {
+   "id": "trappe-eh-umn",
+   "name": "TraPPE-EH",
+   "version": "the TraPPE database (trappe.oit.umn.edu), explicit-hydrogen family, retrieved October 2026",
+   "references": [
+    "N. Rai, J. I. Siepmann, J. Phys. Chem. B 111, 10790 (2007)",
+    "B. L. Eggimann et al., J. Chem. Eng. Data 65, 1330 (2020)"
+   ],
+   "origin": "built from source",
+   "source": "the TraPPE group's own parameter tables, model by model (trappe.oit.umn.edu), each term with its paper; transcribed by bench/ff/make_trappe_eh.py",
+   "license": "published parameters of the TraPPE papers, cited per term (no file of the site is distributed)",
+   "status": "validated",
+   "file": "trappe-eh-umn.json",
+   "counts": {
+    "atom_types": 556,
+    "pairs": 36,
+    "bonds": 513,
+    "angles": 757,
+    "dihedrals": 935,
+    "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/trappe-eh-umn.typing.json",
+    "evidence": "the 65 TraPPE-EH models (alkanes, amines, amides, nitriles, nitro compounds, aromatics and heteroaromatics), each with its own charges: one CAPS type per symmetry class of a model, typed by a whole-molecule SMARTS (848 / 848 sites as the database types them); every model's bonds, bends and torsions as it lists them (59 / 65 models exact, the rest the database's symmetric-position differences); LAMMPS and GROMACS reproduce CAPS's energies"
+   },
+   "list": {
+    "label": "TraPPE explicit hydrogen",
+    "key": "trappe_eh",
+    "order": 17
    }
   },
   {
