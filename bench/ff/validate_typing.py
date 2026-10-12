@@ -39,6 +39,8 @@ def usable(name, m):
         return False
     if any(b not in labels for js in m["connect"].values() for b in js):
         return False
+    if m.get("links"):   # an improper through a neighbouring residue's atom: a chain residue with an open valence
+        return False
     text = (name + " " + m["remark"]).lower()
     # chain residues and terminal residues are fragments with open valences, not molecules
     return "link" not in text and not re.search(r"_residue|_(nh3|coo|s)$", name.lower())
