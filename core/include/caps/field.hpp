@@ -238,6 +238,10 @@ struct EnergyOptions {
   // Which terms (r-RESPA splits them): 1 bonded (bonds, angles, torsions, impropers, cross terms), 2 non-bonded (pairs,
   // 1-4 pairs, electrostatics of bonded partners, k-space, self and tail terms), 3 both
   int parts = 3;
+  // Mixed precision: plain pair terms (12-6 or 9-6 Lennard-Jones with PME, DSF or no charges) by a cluster pair kernel in
+  // single precision with SIMD, sums and everything else in double (as GROMACS). Energies agree with double precision to
+  // about 1e-6 relative; MD and equilibration use it, single-point energies and tests keep double.
+  bool mixed = false;
 };
 
 struct EnergyTerms {
@@ -251,6 +255,7 @@ struct EnergyTerms {
 // Energy and forces for a force field over a periodic cell. The neighbour list is rebuilt when an atom has moved
 // more than half the skin, or when the cell changes.
 class ThreadPool;
+namespace nbnxm { struct List; }
 
 class Evaluator {
  public:
@@ -264,6 +269,9 @@ class Evaluator {
   // x: 3N positions (Å). f: 3N forces out (kcal/mol/Å). Returns the energy terms.
   EnergyTerms compute(const std::vector<double>& x, const Cell& cell, std::vector<double>& f);   // virtual sites placed first
   int list_builds() const { return builds_; }
+  // Whether the next calls need the pair energies: an MD step that reports none can skip them (mixed precision only;
+  // vdW and Coulomb then come back without the pair part)
+  void energies(bool on) { energies_ = on; }
   // Freezes the set of interacting pairs at configuration (x, cell): later calls use exactly the pairs inside the
   // cut-off there, whatever their new distance, and never rebuild the list (small deformations only). Makes the energy
   // a smooth function of strain for finite-difference second derivatives (the Born term without the impulsive
@@ -325,6 +333,21 @@ class Evaluator {
   std::unique_ptr<ThreadPool> pool_;
   std::vector<std::vector<double>> tf_;   // per-worker force buffers, atom order (bonded terms)
   std::vector<std::vector<double>> tfs_;  // per-worker force buffers, slot order (pairs)
+  // mixed precision: the cluster pair list (its own build state) and per-worker float force buffers (x | y | z by slot)
+  bool cluster_mode() const;
+  void cluster_coefficients();
+  std::unique_ptr<nbnxm::List> cl_;
+  bool cl_built_ = false;
+  std::vector<double> x0c_;
+  Cell cell0c_;
+  std::vector<std::vector<float>> tfc_;
+  std::vector<float> cl_c12_, cl_c6_;    // per type pair
+  std::vector<double> cl_f12_, cl_f6_;   // per type, when the pair coefficients are their products
+  bool cl_coef_ = false;
+  bool energies_ = true;
+  bool cl_pruned_ = false;
+  std::vector<double> x0p_;   // positions and cell at the last prune
+  Cell cell0p_;
   int builds_ = 0;
   bool built_ = false;
   bool frozen_ = false;

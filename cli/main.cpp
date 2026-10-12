@@ -230,7 +230,7 @@ int usage() {
                "  caps md      FILE -o OUT.data [--steps 10000] [--dt 1] [--temp 300] [--thermostat bussi|langevin|nose-hoover|none]\n"
                "               [--tau-t 100] [--barostat none|crescale|berendsen|mtk] [--pressure 1] [--tau-p 1000]\n"
                "               [--constraints none|h-bonds|all-bonds] [--constraint-solver shake|lincs] [--seed 1] [--new-velocities] [--thermo 100] [--dump TRAJ.lammpstrj --every 1000]\n"
-               "               [--log thermo.csv] [--cutoff 10] [--skin 1.5] [--threads N] [--no-coulomb] [--quiet]\n"
+               "               [--log thermo.csv] [--cutoff 10] [--skin 1.5] [--threads N] [--no-coulomb] [--precision mixed|double] [--quiet]\n"
                "               [--checkpoint-every N [--checkpoint OUT.restart.data]]   the full state every N steps\n"
                "               [--progress-file progress.jsonl]   one JSON line per thermo row (default in a SLURM job)\n"
                "               caps md OUT.restart.data --resume --steps TOTAL -o OUT   continues from a checkpoint\n"
@@ -238,7 +238,8 @@ int usage() {
                "               [--tfinal 300] [--tmax 600] [--pfinal 1] [--pmax 49346] [--scale 1] (atm, K; --scale shortens every stage)\n"
                "               [--cycles 3] [--tlow 300] [--thigh 600] [--ramp 50] [--hold 50]   (annealing, ps)\n"
                "               [--until-converged] [--block 20] [--max-blocks 20] [--dt 1] [--thermostat bussi|langevin]\n"
-               "               [--barostat crescale|berendsen] [--seed 1] [--dump TRAJ.lammpstrj --every-ps 10] [--log thermo.csv] [--quiet]\n"
+               "               [--barostat crescale|berendsen] [--seed 1] [--dump TRAJ.lammpstrj --every-ps 10] [--log thermo.csv]\n"
+               "               [--precision mixed|double] [--quiet]   (mixed: plain pair terms in single precision with SIMD, as GROMACS)\n"
                "  caps chains  FILE [--topology DATA]          backbones and mean-square internal distances\n"
                "  caps pack    INPUT.inp [-o OUT] [--threads N] [--quiet]   packmol-style input (structure … end structure)\n"
                "  caps contacts FILE [--tol 2.0] [--no-pbc] [--molecule-size N]   smallest distance between atoms of different molecules\n"
@@ -310,7 +311,7 @@ const std::set<std::string>& known_options() {
     "--no-cleanup", "--no-coulomb", "--no-ions", "--no-orthogonal", "--no-pbc", "--no-pushoff", "--no-relax",
     "--no-tail", "--normal", "--noscfix", "--nt", "--out", "--overlay", "--padding", "--pair", "--particles",
     "--ops", "--ops-file", "--checkpoint-every", "--checkpoint", "--resume", "--resume-at", "--bench-json", "--resume-points", "--resume-curve", "--height", "--top-ratio", "--passivate", "--pattern", "--per-cycle", "--perspective", "--pfinal", "--ph", "--pitch", "--pmax", "--pme",
-    "--pme-order", "--pme-spacing", "--ppii", "--press", "--pressure", "--primitive", "--print-protocol", "--probe", "--progress-file",
+    "--pme-order", "--pme-spacing", "--ppii", "--precision", "--press", "--pressure", "--primitive", "--print-protocol", "--probe", "--progress-file",
     "--props", "--protocol", "--ps", "--qdirect", "--qmax", "--quick", "--quiet", "--radius", "--ramp", "--rate",
     "--ratio", "--repeats", "--report", "--rmax", "--salt", "--samples", "--scale", "--seed", "--sequence", "--sf",
     "--shape", "--sites", "--size", "--skin", "--slabs", "--solvent", "--solvents", "--spring", "--ss", "--step",
@@ -600,6 +601,15 @@ void electrostatics(EnergyOptions& e, std::map<std::string, std::string>& o) {
   if (o.count("--pme-spacing")) e.pme_spacing = std::stod(o["--pme-spacing"]);
   if (o.count("--pme-order")) e.pme_order = std::stoi(o["--pme-order"]);
   if (o.count("--dsf-alpha")) e.dsf_alpha = std::stod(o["--dsf-alpha"]);
+}
+
+// --precision mixed|double (MD and equilibration): plain pair terms in single precision with SIMD (the default), or all in
+// double
+void precision(EnergyOptions& e, std::map<std::string, std::string>& o) {
+  e.mixed = true;
+  if (!o.count("--precision")) return;
+  if (o["--precision"] == "double") e.mixed = false;
+  else if (o["--precision"] != "mixed") throw std::runtime_error("--precision takes mixed or double");
 }
 
 void save_structure(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& out) {
@@ -3306,6 +3316,7 @@ int main(int argc, char** argv) {
       if (o.count("--threads")) d.energy.threads = std::stoi(o["--threads"]);
       d.energy.coulomb = !o.count("--no-coulomb");
       electrostatics(d.energy, o);
+      precision(d.energy, o);
       d.new_velocities = o.count("--new-velocities");
       if (o.count("--ff")) d.field = std::make_shared<ForceField>(cli_forcefield(s, o));
       if (o.count("--fix-mol")) {   // hold one molecule in place (the substrate of an interface is molecule 1)
@@ -3454,6 +3465,7 @@ int main(int argc, char** argv) {
       if (o.count("--seed")) e.md.seed = std::stoull(o["--seed"]);
       if (o.count("--cutoff")) e.md.energy.cutoff = std::stod(o["--cutoff"]);
       electrostatics(e.md.energy, o);
+      precision(e.md.energy, o);
       if (o.count("--threads")) e.md.energy.threads = std::stoi(o["--threads"]);
       // the force field: --ff (a library name, a file, or one written whole by CAPS), else the built-in default
       e.md.field = std::make_shared<ForceField>(cli_forcefield(s, o, o.count("--quiet") > 0));

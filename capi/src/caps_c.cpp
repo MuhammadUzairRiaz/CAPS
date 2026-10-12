@@ -1327,13 +1327,14 @@ int threads_used(int requested) {
   return int(std::clamp(h == 0 ? 1u : h, 1u, 16u));
 }
 
-caps::KeyValues energy_approx(double cutoff, bool coulomb, bool tail, int threads) {
+caps::KeyValues energy_approx(double cutoff, bool coulomb, bool tail, int threads, bool mixed = false) {
   caps::KeyValues a;
   a.push_back({"van der Waals", "cut-off " + g6(cutoff) + " Å" + (tail ? " + tail correction" : "")});
   a.push_back({"Electrostatics", !coulomb ? "off" : g_elec.mode == 1 ? "SPME · relative tolerance " + g6(g_elec.rtol) : "damped shifted force · cut-off " + g6(cutoff) + " Å"});
   a.push_back({"Constraints", "none"});
   // forces are summed in worker order: the same thread count gives the same trajectory bit for bit
-  a.push_back({"Precision", "double · reproducible with " + std::to_string(threads_used(threads)) + " threads"});
+  a.push_back({"Precision", std::string(mixed ? "mixed (12-6 and 9-6 pairs in single precision with SIMD, sums in double)" : "double") +
+                               " · reproducible with " + std::to_string(threads_used(threads)) + " threads"});
   return a;
 }
 void elec_cites(std::vector<std::string>& c, bool coulomb) {
@@ -2683,6 +2684,7 @@ int32_t caps_md(caps_doc* d, const caps_md_opts* o, caps_md_progress_fn progress
     m.energy = elec(m.energy);
     m.energy.tail = o->tail != 0;
     m.energy.threads = o->threads;
+    m.energy.mixed = true;   // MD in mixed precision, as the CLI
     m.respa = std::clamp(o->respa, 1, 16);
     m.constraints = static_cast<caps::ConstraintMode>(std::clamp(o->constraints, 0, 2));
     m.constraint_algorithm = o->constraint_algorithm == 1 ? caps::ConstraintAlgorithm::Lincs : caps::ConstraintAlgorithm::Shake;
@@ -2754,7 +2756,7 @@ int32_t caps_md(caps_doc* d, const caps_md_opts* o, caps_md_progress_fn progress
       pr.push_back({"force field", ff_label(d)});
       const bool drew = m.new_velocities || s.velocities.empty();
       prov_step(d, npt ? "dynamics.npt" : nvt ? "dynamics.nvt" : "dynamics.nve", npt ? "NPT molecular dynamics" : nvt ? "NVT molecular dynamics" : "NVE molecular dynamics",
-                std::move(pr), drew || nvt ? seeded(m.seed) : "", std::move(c), energy_approx(m.energy.cutoff, m.energy.coulomb, m.energy.tail, m.energy.threads));
+                std::move(pr), drew || nvt ? seeded(m.seed) : "", std::move(c), energy_approx(m.energy.cutoff, m.energy.coulomb, m.energy.tail, m.energy.threads, m.energy.mixed));
     }
     out.topology.atoms = s.atoms;
     out.topology.cell = s.cell;
@@ -2853,6 +2855,7 @@ int32_t caps_equilibrate(caps_doc* d, const char* protocol, const caps_equil_opt
     e.md.energy = elec(e.md.energy);
     e.md.energy.tail = o->tail != 0;
     e.md.energy.threads = o->threads;
+    e.md.energy.mixed = true;
     if (o->frame_ps > 0) e.frame_ps = o->frame_ps;
     if (o->thermo_ps > 0) e.thermo_ps = o->thermo_ps;
     e.until_converged = o->until_converged != 0;
@@ -2910,7 +2913,7 @@ int32_t caps_equilibrate(caps_doc* d, const char* protocol, const caps_equil_opt
                 (l21 ? "21-step compression and decompression" : std::to_string(e.stages.size()) + "-stage protocol") + std::string(rep.converged ? ", converged" : ""),
                 {{"stages", std::to_string(e.stages.size())}, {"Pmax", g6(pmax) + " atm"}, {"length", g6(rep.ps) + " ps"},
                  {"protocol sha256", caps::sha256_hex(text).substr(0, 12)}, {"force field", ff_label(d)}},
-                seeded(e.md.seed), std::move(c), energy_approx(e.md.energy.cutoff, e.md.energy.coulomb, e.md.energy.tail, e.md.energy.threads));
+                seeded(e.md.seed), std::move(c), energy_approx(e.md.energy.cutoff, e.md.energy.coulomb, e.md.energy.tail, e.md.energy.threads, e.md.energy.mixed));
     }
     out.topology.atoms = s.atoms;
     out.topology.cell = s.cell;
