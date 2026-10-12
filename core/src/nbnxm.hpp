@@ -46,13 +46,18 @@ struct List {
   std::vector<double> org;
   std::vector<float> X, Y, Z, Q, P12, P6;
   std::vector<uint32_t> T;        // type index (0 for padding)
+  // When the coefficients are not products of per-type factors: for i type t and j cluster c the four j atoms' c12
+  // and c6 side by side, CT12[4 (t·nclusters + c) + l] (a row loads them at once instead of gathering four); empty
+  // when that would take more than 64 MB (the kernel then gathers)
+  std::vector<float> CT12, CT6;
   Cell cells;
 
   // the excluded partners (sorted), types, the type pairs that never interact (empty: none), charges, and per-type
   // factors whose products are the pair coefficients (empty: the kernel looks them up per type pair)
   void build(const std::vector<double>& x, const Cell& cell_in, double rlist, const std::vector<std::vector<uint32_t>>& excluded,
              const std::vector<int>& type_index, size_t ntypes, const std::vector<char>& skip_type, const std::vector<double>& q,
-             const std::vector<double>& f12, const std::vector<double>& f6, ThreadPool& pool);
+             const std::vector<double>& f12, const std::vector<double>& f6, ThreadPool& pool, const float* c12 = nullptr,
+             const float* c6 = nullptr);
   void rescale(const Cell& cell);                       // offsets and images for a deformed cell
   void positions(const std::vector<double>& x);         // X, Y, Z for this step
   void prune(double radius, ThreadPool& pool);          // pe, pf from the entries at the positions X, Y, Z
