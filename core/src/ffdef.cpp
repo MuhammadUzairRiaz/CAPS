@@ -341,6 +341,12 @@ void save_forcefield(const FFDef& ff, const std::string& path) {
   j["cutoff"] = ff.cutoff;
   if (ff.timestep > 0) j["timestep"] = ff.timestep;
   if (ff.torsions_if_defined) j["torsion_terms"] = "if_defined";
+  if (ff.torsions_one_per_bond) j["torsion_selection"] = "one_per_bond";
+  if (!ff.torsion_single_h.empty()) {
+    Json a = Json::array();
+    for (const auto& x : ff.torsion_single_h) a.push_back(x);
+    j["torsion_single_h"] = a;
+  }
   if (ff.angles_if_defined) j["angle_terms"] = "if_defined";
   if (ff.lj_inner > 0 || ff.coul_inner > 0 || ff.dielectric != 1 || ff.model_cutoff || ff.coul_rf || ff.lj_shift || ff.lj_fsw) {
     Json ps = Json::object();
@@ -497,6 +503,9 @@ FFDef load_forcefield(const std::string& path) {
   ff.cutoff = j.num("cutoff", ff.cutoff);
   ff.timestep = j.num("timestep", 0);
   ff.torsions_if_defined = j.text("torsion_terms") == "if_defined";
+  ff.torsions_one_per_bond = j.text("torsion_selection") == "one_per_bond";
+  if (j.has("torsion_single_h"))
+    for (const auto& x : j["torsion_single_h"].items()) ff.torsion_single_h.push_back(x.str());
   ff.angles_if_defined = j.text("angle_terms") == "if_defined";
   if (j.has("pair_settings")) {
     const Json& ps = j["pair_settings"];
@@ -1950,15 +1959,54 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
   int ring3_zero = 0;
   // dihedrals (one per i-j-k-l with i < l, as moltemplate's canonical order)
   std::set<std::pair<uint32_t, uint32_t>> p14;
+  // one torsion per bond: the chosen outer ends of each side (see FFDef::torsions_one_per_bond)
+  std::vector<char> single_h;
+  if (def.torsions_one_per_bond && !def.torsion_single_h.empty()) {
+    if (!dper) dper = std::make_unique<Perception>(perceive(s));
+    single_h.assign(n, 0);
+    for (const auto& text : def.torsion_single_h) {
+      const Smarts sm(text);
+      for (uint32_t a = 0; a < n; ++a)
+        if (sm.matches(s, *dper, a, {})) single_h[a] = 1;
+    }
+  }
+  auto ends = [&](uint32_t c, uint32_t other) {
+    std::vector<uint32_t> heavy, h;
+    for (uint32_t a : nb[c])
+      if (a != other) (s.atoms[a].element == 1 ? h : heavy).push_back(a);
+    if (heavy.empty()) {
+      if (!single_h.empty() && single_h[c] && !h.empty()) return std::vector<uint32_t>{*std::min_element(h.begin(), h.end())};
+      return h;
+    }
+    auto heavy_nb = [&](uint32_t a) { return std::count_if(nb[a].begin(), nb[a].end(), [&](uint32_t x) { return s.atoms[x].element != 1; }); };
+    return std::vector<uint32_t>{*std::min_element(heavy.begin(), heavy.end(), [&](uint32_t x, uint32_t y) {
+      if (s.atoms[x].element != s.atoms[y].element) return s.atoms[x].element > s.atoms[y].element;
+      if (heavy_nb(x) != heavy_nb(y)) return heavy_nb(x) > heavy_nb(y);
+      return x < y;
+    })};
+  };
+  int n_flat_ring = 0;
   for (const auto& b : rule_bonds)
     for (int dir = 0; dir < 2; ++dir) {
       const uint32_t j = dir ? b.j : b.i, k = dir ? b.i : b.j;
+      std::vector<uint32_t> ends_j, ends_k;
+      bool flat_ring = false;
+      if (def.torsions_one_per_bond) {
+        ends_j = ends(j, k), ends_k = ends(k, j);
+        if (!dper) dper = std::make_unique<Perception>(perceive(s));
+        for (size_t q = 0; q < dper->nb[j].size(); ++q)
+          if (dper->nb[j][q] == k) flat_ring = dper->arom_bond[j][q] || (dper->ring_bond[j][q] && dper->aromatic[j] && dper->aromatic[k]);
+        if (flat_ring && dir == 0) ++n_flat_ring;
+      }
       for (uint32_t i : nb[j]) {
         if (i == k) continue;
         for (uint32_t l : nb[k]) {
           if (l == j || l == i || i > l) continue;   // each dihedral once, in the direction with i < l
           const auto key = std::make_pair(std::min(i, l), std::max(i, l));
           if (!ex12.count(key) && !ex13.count(key)) p14.insert(key);
+          if (def.torsions_one_per_bond && (flat_ring || std::find(ends_j.begin(), ends_j.end(), i) == ends_j.end() ||
+                                            std::find(ends_k.begin(), ends_k.end(), l) == ends_k.end()))
+            continue;
           bool rev = false;
           const FFRule* r = lookup12(def.dihedrals, Nd, Nd2, {i, j, k, l}, &rev);
           if (!r) r = auto_lookup(def.auto_dihedrals, {&Ate[i], &Atc[j], &Atc[k], &Ate[l]}, &rev);
@@ -1980,7 +2028,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
             continue;
           }
           if (!r) {
-            if (!def.torsions_if_defined) missing("dihedral " + shown(Nd, {i, j, k, l}));
+            if (!def.torsions_if_defined && !def.torsions_one_per_bond) missing("dihedral " + shown(Nd, {i, j, k, l}));
             // class II with separate cross-term rules: missing torsion terms are zero (allowed missing), the cross terms
             // the file does give for the quadruple stay, as msi2lmp -i writes them
             if (allow_missing && !def.cross_rules.empty() && def.dihedral_style == "class2") {
@@ -2096,6 +2144,9 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
         }
       }
     }
+  if (def.torsions_one_per_bond)
+    rep.notes.push_back("one torsion per central bond, as the force field defines them" +
+                        (n_flat_ring ? " (" + std::to_string(n_flat_ring) + " aromatic ring bonds without one: their impropers keep them flat)" : std::string()));
   if (n_dreiding) rep.notes.push_back(std::to_string(n_dreiding) + " torsions by DREIDING's hybridisation rules (none listed for them)");
   // DREIDING hydrogen bonds: donors (with their hydrogen-bond hydrogens) and acceptors by type, the first matching term
   // per (donor type, acceptor type)

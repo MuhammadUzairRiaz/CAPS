@@ -3,6 +3,7 @@
 
   convert_charmm_prm.py OUT.json --name NAME --prm par_all36_prot.prm [--prm toppar_water_ions.str ...]
                         [--rtf top_all36_prot.rtf ...] [--reference "..."] [--source "..."] [--version "..."]
+                        [--one-torsion-per-bond] [--typing ../typing/ID.typing.json]
 
 Reads the CHARMM36-format sections of each file in order (ATOMS / MASS, BONDS, ANGLES, DIHEDRALS, IMPROPER, NONBONDED,
 NBFIX; a stream file's read para block too) and writes CAPS's format:
@@ -230,6 +231,12 @@ doc = {"format": "caps-forcefield", "format_version": 1, "name": arg("--name"), 
                  + (", masses from " + ", ".join(r.split('/')[-1] for r in many("--rtf")) if many("--rtf") else "")]
                 + (["CMAP corrections in the source are not represented"] if cmap_seen else []) + notes,
        "version": arg("--version", "")}
+if arg("--typing"):
+    doc["typing"] = arg("--typing")
+if "--one-torsion-per-bond" in sys.argv:   # CHARMM19: "a single dihedral per bond rather than multiple torsions"
+    doc["torsion_selection"] = "one_per_bond"
+    doc["torsion_single_h"] = ["[#7X3;$(*-[#6]=[#8X1])]"]   # toph19: one torsion on an amide NH2, every H elsewhere
+    doc["notes"].append("one torsion per central bond, as the topology lists them (aromatic ring bonds none)")
 if not OPLS and abs(nb_values.get("E14FAC", 1.0) - 1.0) > 1e-9:   # CHARMM19: 1-4 Coulomb x 0.4
     doc["special_coul"] = [0, 0, nb_values["E14FAC"]]
     doc["notes"].append(f"1-4 Coulomb x {nb_values['E14FAC']:g} (the file's E14FAC)")

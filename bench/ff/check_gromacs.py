@@ -299,6 +299,79 @@ def pair14_shift(d, stem, cutoff):
             counts[w[0]] = counts.get(w[0], 0) + int(w[1])
     return sum(per[k] * c for k, c in counts.items())
 
+def force_switch_convention(d, stem, r1, rc):
+    """CHARMM's force switch (Steinbach & Brooks, J. Comput. Chem. 15, 667 (1994): CAPS, CHARMM, LAMMPS lj/charmmfsw)
+    minus GROMACS's vdw-modifier = Force-switch, in kcal/mol, from the files GROMACS ran. Two conventions differ:
+    GROMACS switches each power with its own polynomial (another constant below r1: 0.535 against CHARMM's
+    1/(r1³ rc³) = 0.579 nm⁻⁶ for r⁻⁶ at 1.0 / 1.2 nm), and its [pairs] are never switched where CHARMM shifts its 1-4
+    pairs as every other pair. Both sums are over the same coefficients; the difference is a constant with small forces."""
+    P, at, excl = expand_topology(d, stem)
+    excl = {(min(i, j), max(i, j)) for i, j in excl}
+    lines = open(os.path.join(d, stem + ".gro")).read().splitlines()
+    n = int(lines[1])
+    X = [tuple(float(x) * 10 for x in l[20:].split()[:3]) for l in lines[2:2 + n]]
+    box = [float(x) * 10 for x in lines[2 + n].split()[:3]]
+    def dist(i, j):
+        return math.sqrt(sum(((X[i][k] - X[j][k] + box[k] / 2) % box[k] - box[k] / 2) ** 2 for k in range(3)))
+    def charmm(r, s, e):
+        if r >= rc:
+            return 0.0
+        if r <= r1:
+            v12, v6 = r ** -12 - (r1 * rc) ** -6, r ** -6 - (r1 * rc) ** -3
+        else:
+            v12 = rc ** 6 / (rc ** 6 - r1 ** 6) * (r ** -6 - rc ** -6) ** 2
+            v6 = rc ** 3 / (rc ** 3 - r1 ** 3) * (r ** -3 - rc ** -3) ** 2
+        return 4 * e * (s ** 12 * v12 - s ** 6 * v6)
+    def gromacs(r, s, e):
+        if r >= rc:
+            return 0.0
+        out = 0.0
+        for a, c in ((12, s ** 12), (6, -s ** 6)):
+            A = -a * ((a + 4) * rc - (a + 1) * r1) / (rc ** (a + 2) * (rc - r1) ** 2)
+            B = a * ((a + 3) * rc - (a + 1) * r1) / (rc ** (a + 2) * (rc - r1) ** 3)
+            C = rc ** -a - A / 3 * (rc - r1) ** 3 - B / 4 * (rc - r1) ** 4
+            out += 4 * e * c * (r ** -a - C - (A / 3 * (r - r1) ** 3 + B / 4 * (r - r1) ** 4 if r > r1 else 0.0))
+        return out
+    delta = 0.0
+    for i in range(n):
+        for j in range(i + 1, n):
+            if (i, j) not in excl:
+                s, e = P[(at[i], at[j])]
+                delta += charmm(dist(i, j), s, e) - gromacs(dist(i, j), s, e)
+    # [pairs]: CHARMM shifts them, GROMACS does not
+    text, sec, cur, per, counts = [], "", None, {}, []
+    for l in open(os.path.join(d, stem + ".top")):
+        m = re.match(r'\s*#include\s+"([^"]+)"', l)
+        text += open(os.path.join(d, m.group(1))).read().splitlines() if m else [l]
+    for raw in text:
+        l = raw.split(";")[0].strip()
+        m = re.match(r"\[\s*(\S+)\s*\]", l)
+        if m:
+            sec = m.group(1)
+            continue
+        w = l.split()
+        if not w or l.startswith("#"):
+            continue
+        if sec == "moleculetype":
+            cur = w[0]
+            per[cur] = []
+        elif sec == "atoms" and cur:
+            per.setdefault(cur + "#n", []).append(1)
+        elif sec == "pairs" and cur:
+            per[cur].append((int(w[0]) - 1, int(w[1]) - 1, float(w[3]) * 10, float(w[4]) / KJ))
+        elif sec == "molecules":
+            counts.append((w[0], int(w[1])))
+    off = 0
+    for name, c in counts:
+        size = len(per.get(name + "#n", []))
+        for _ in range(c):
+            for i, j, s, e in per[name]:
+                r = dist(i + off, j + off)
+                delta += charmm(r, s, e) - 4 * e * ((s / r) ** 12 - (s / r) ** 6)
+            off += size
+    return delta
+
+
 rows, fails = [], 0
 KJ = 4.184
 for label, src, fid, charges, extra in CASES:
@@ -345,6 +418,10 @@ for label, src, fid, charges, extra in CASES:
     cm["vdw"] = ce["vdw"] - tail_caps
     shift14 = pair14_shift(d, "case", rc) if "--no-tail" in extra else 0.0
     cm["vdw"] += shift14
+    fsw = 0.0
+    if mdp.get("vdw-modifier", "").lower() == "force-switch":
+        fsw = force_switch_convention(d, "case", float(mdp["rvdw-switch"]) * 10, rc)
+        cm["vdw"] -= fsw
     keys = ["bond", "angle", "dihedral", "improper", "vdw"] + (["coulomb"] if periodic else [])
     de = max(abs(cm[k] - gm[k]) / max(1.0, abs(cm[k])) for k in keys)
     df = max(math.dist(a, tuple(x / 41.84 for x in b)) for a, b in zip(cf, gf)) if len(cf) == len(gf) else float("inf")
@@ -371,6 +448,9 @@ for label, src, fid, charges, extra in CASES:
     if periodic and tail_caps:
         extra_txt.append(f"tail CAPS {tail_caps:.4f} / GROMACS {G('Disper. corr.'):.4f} kcal/mol (definitions differ; GROMACS's own formula "
                          f"reproduced to {dt:.1e})")
+    if fsw:
+        extra_txt.append(f"CHARMM's force switch {fsw:+.4f} kcal/mol from GROMACS's (another polynomial; [pairs] unswitched), "
+                         "taken off CAPS's van der Waals")
     if shift14:
         extra_txt.append(f"CAPS's 1-4 cut-off shift {shift14:.4f} kcal/mol added back (GROMACS pairs are unshifted)")
     if not periodic:
