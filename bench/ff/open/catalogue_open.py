@@ -214,6 +214,16 @@ ENTRIES = {
                        "and bond-increment charges; LAMMPS reproduces CAPS's energies on disilicic acid, a bridging-hydroxyl Si-O(H)-Al "
                        "cluster, (HO)3Si-O-Al(OH)3 and a cyclotetrasilicic acid", ("Aluminosilicates (Hill & Sauer)", "hill_sauer1995", 30),
                        ["inorganic-zeolite-hill-sauer"]),
+    "trappe-eh-umn": ("TraPPE-EH", "the TraPPE database (trappe.oit.umn.edu), explicit-hydrogen family, retrieved October 2026",
+                      ["N. Rai, J. I. Siepmann, J. Phys. Chem. B 111, 10790 (2007)", "B. L. Eggimann et al., J. Chem. Eng. Data 65, 1330 (2020)"],
+                      {"source": "the TraPPE group's own parameter tables, model by model (trappe.oit.umn.edu), each term with its paper; "
+                                 "transcribed by bench/ff/make_trappe_eh.py",
+                       "license": "published parameters of the TraPPE papers, cited per term (no file of the site is distributed)"},
+                      "the 65 TraPPE-EH models (alkanes, amines, amides, nitriles, nitro compounds, aromatics and heteroaromatics), each "
+                      "with its own charges: one CAPS type per symmetry class of a model, typed by a whole-molecule SMARTS (848 / 848 "
+                      "sites as the database types them); every model's bonds, bends and torsions as it lists them (59 / 65 models "
+                      "exact, the rest the database's symmetric-position differences); LAMMPS and GROMACS reproduce CAPS's energies",
+                      ("TraPPE explicit hydrogen", "trappe_eh", 17), ["trappe-eh"]),
     "omalley2013-alkanes": ("All-atom alkanes in silicalite (O'Malley & Catlow 2013)", "2013, Tables 2 and 3 (all-atom model)",
                             ["A. J. O'Malley, C. R. A. Catlow, Phys. Chem. Chem. Phys. 15, 19024 (2013)"],
                             {"source": "the paper's Tables 2 and 3 (read from the page images); bench/ff/make_zeolite_sorbates.py",

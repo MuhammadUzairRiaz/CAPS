@@ -1220,3 +1220,30 @@ TEST(FFDef, ZeoliteSorbatesFromTheirPapers) {
   EXPECT_NEAR(Evaluator(ff, o).compute(flat(s), Cell{}, f).vdw, 0.0, 1e-12);
 }
 
+// TraPPE-EH from the TraPPE database (bench/ff/make_trappe_eh.py): each model's own charges by whole-molecule rules, so
+// phenol and pyridine are typed as themselves and neutral; an alkane's H is the C-H bond-centre site (C-M 0.55 A); a
+// structure that is no TraPPE-EH model stays untyped; 1-4 pairs carry nothing
+TEST(FFDef, TrappeEhModelsTypedAsThemselves) {
+  const FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/trappe-eh-umn.json");
+  for (const std::string smi : {"Oc1ccccc1", "c1ccncc1", "CCCCCCCC", "CC(N)=O", "Clc1cccs1"}) {
+    System s = build_molecule(smi).system;
+    std::string ch = "types";
+    prepare_for_forcefield(s, def, ch);
+    const TypingResult tr = assign_types(s, def);
+    ASSERT_EQ(tr.untyped, 0) << smi;
+    const ForceField ff = parameterize(s, def, tr.types, "types", nullptr, false);
+    double q = 0;
+    for (double x : ff.charge) q += x;
+    EXPECT_NEAR(q, 0.0, 1e-9) << smi;
+    if (smi == "CCCCCCCC")
+      for (const auto& b : ff.bonds)
+        if (s.atoms[b.i].element == 1 || s.atoms[b.j].element == 1) EXPECT_NEAR(b.r0, 0.55, 1e-12);
+    if (smi == "Clc1cccs1")   // the database's slip (the ring S typed as furan's O) corrected
+      for (size_t i = 0; i < s.atoms.size(); ++i)
+        if (s.atoms[i].element == 16) EXPECT_EQ(tr.types[i].substr(0, 3), "S7_");
+  }
+  System t = build_molecule("Cc1ccccc1").system;   // toluene: no TraPPE-EH model
+  std::string ch = "types";
+  prepare_for_forcefield(t, def, ch);
+  EXPECT_GT(assign_types(t, def).untyped, 0);
+}

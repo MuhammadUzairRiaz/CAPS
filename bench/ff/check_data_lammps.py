@@ -97,6 +97,11 @@ CASES = [
      "ramsahye2005-nay", "types", "rules"),
     ("Forester 1997 silicalite set: alpha-quartz, O shells", ("file", os.path.join(ROOT, "data", "crystals", "alpha-quartz.cif")), "forester1997-silicalite", "types", "rules", ["--no-tail"]),
     ("Forester 1997 silicalite set: benzene with SiO4 (benzene-O shell pairs)", ("smiles", "c1ccccc1.[O-][Si]([O-])([O-])[O-]"), "forester1997-silicalite", "types", "rules"),
+    # TraPPE-EH (bench/ff/make_trappe_eh.py): per-model charges, C-H bond-centre sites as the H atoms, 1-4 excluded
+    ("TraPPE-EH (TraPPE database): octane, methylamine, acetamide, acetonitrile, nitroethane (flexible)", ("smiles",
+     "CCCCCCCC.CN.CC(N)=O.CC#N.CC[N+](=O)[O-]", os.path.join(FF, "trappe-eh-umn.json")), "trappe-eh-umn", "types", "rules"),
+    ("TraPPE-EH (TraPPE database): benzene, pyridine, phenol, 2-chlorothiophene, naphthalene", ("smiles",
+     "c1ccccc1.c1ccncc1.Oc1ccccc1.Clc1cccs1.c1ccc2ccccc2c1"), "trappe-eh-umn", "types", "rules"),
     # zeolite sorbates (bench/ff/make_zeolite_sorbates.py)
     ("O'Malley 2013 silicalite set: alpha-quartz, formal charges, O-Si-O bends by distance", ("file", os.path.join(ROOT, "data", "crystals", "alpha-quartz.cif")),
      "omalley2013-alkanes", "types", "rules", ["--no-tail"]),
@@ -225,7 +230,6 @@ CASES = [
     ("TraPPE-UA (TraPPE database): hexane, DME (1-4 Coulomb x 0.5), methyl methacrylate, ethanol, propionitrile, cis-2-butene", ("smiles", "CCCCCC.COCCOC.CC(=C)C(=O)OC.CCO.CCC#N.C/C=C\\C"),
      "trappe-ua-umn", "types", "rules"),
     ("TraPPE-UA alkanes (moltemplate): dodecane", ("smiles", "CCCCCCCCCCCC"), "trappe1998-moltemplate", "keep", "rules"),
-    ("TraPPE-EH: benzene, naphthalene", ("smiles", "c1ccccc1.c1ccc2ccccc2c1"), "trappe-eh", "keep", "rules"),
     # coarse-grained: MARTINI (lj/gromacs + coul/gromacs, dielectric 15, cosine/squared angles, 1-3 and 1-4 pairs kept)
     # and SDK (lj/sdk 9-6 / 12-4, angle sdk with its 1-3 repulsion), bead molecules and water beads in periodic boxes
     ("MARTINI DPPC + POPE + ions + water (periodic)", ("cg-box", "martini-moltemplate", [("template", "DPPC", 6), ("template", "POPE", 4),
@@ -375,9 +379,9 @@ def structure(src, base):
         out = os.path.join(work, base + ".pdb")
         subprocess.run([CAPS, "peptide", src[1], "-o", out] + list(src[2:]), capture_output=True, check=True)
         return out, None
-    if kind in ("smiles", "smiles-nudged"):   # built and cleaned up by CAPS with UFF
+    if kind in ("smiles", "smiles-nudged"):   # built and cleaned up by CAPS with UFF (or the force field a third item names)
         m = os.path.join(work, base + ".mol2")
-        subprocess.run([CAPS, "build", src[1], "--ff", "uff", "-o", m], capture_output=True, check=True)
+        subprocess.run([CAPS, "build", src[1], "--ff", src[2] if len(src) > 2 else "uff", "-o", m], capture_output=True, check=True)
         if kind == "smiles-nudged":
             # every atom moved by up to 0.03 Å (fixed seed): a planar centre is no longer within 0.06° of flat, where
             # LAMMPS's improper harmonic clamps 1/sin χ (SMALL = 0.001) and its forces there are not the analytic ones

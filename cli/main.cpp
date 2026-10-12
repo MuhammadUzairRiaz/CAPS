@@ -123,7 +123,7 @@ std::string ff_path(const std::string& s0) {
       {"opls-ua", "oplsua2024"}, {"oplsua", "oplsua2024"}, {"compass", "compass-frc"}, {"cvff", "cvff-frc"},
       {"amber", "amber-ff14sb-ambertools"}, {"charmm", "charmm36-prot-toppar"}, {"dreiding", "dreiding1990"}, {"cgenff", "cgenff-toppar"},
       {"charmm19", "charmm19-toppar"}, {"trappe-ua", "trappe-ua-umn"}, {"trappe", "trappe-ua-umn"}, {"gromos", "gromos54a7-gromacs"},
-      {"gromos54a7", "gromos54a7-gromacs"}, {"clayff", "clayff2004"}};
+      {"gromos54a7", "gromos54a7-gromacs"}, {"clayff", "clayff2004"}, {"trappe-eh", "trappe-eh-umn"}};
   std::string lower = s0;
   for (auto& c : lower) c = char(std::tolower((unsigned char)c));
   auto al = alias.find(lower);
