@@ -1,10 +1,12 @@
 #include <gtest/gtest.h>
 
+#include <array>
 #include <cmath>
 #include <complex>
 #include <random>
 #include <vector>
 
+#include "../core/src/kspace_pool.hpp"
 #include "caps/kspace.hpp"
 
 using namespace caps;
@@ -55,7 +57,7 @@ double ewald_total(const std::vector<double>& x, const std::vector<double>& q, d
 }  // namespace
 
 TEST(Kspace, FftMatchesTheDirectTransform) {
-  for (int k1 : {6, 7, 10, 36, 45, 50}) {
+  for (int k1 : {6, 7, 10, 14, 21, 35, 36, 45, 49, 50, 56}) {   // radix 7 alone, after 2, 3, 5 and twice
     const int k2 = 5, k3 = 4;
     std::mt19937 rng(3);
     std::uniform_real_distribution<double> U(-1, 1);
@@ -153,4 +155,40 @@ TEST(Kspace, PmeMatchesEwaldForForcesEnergyAndVirial) {
   const double eps = 1e-5;
   const double dEdl = (scaled(1 + eps) - scaled(1 - eps)) / (2 * eps);
   EXPECT_NEAR(ve[0] + ve[1] + ve[2], -dEdl, 1e-5 * std::fabs(ee) + 1e-6);
+}
+
+TEST(Kspace, ThreadedHalfSpectrumPmeMatchesTheSerialOne) {
+  // the threaded PME (real grid, half spectrum along the first axis) against the serial whole-grid one: odd, even and
+  // prime grid lengths, an odd number of first-axis lines, a triclinic cell (where an even grid's Nyquist planes matter)
+  std::mt19937 rng(17);
+  std::uniform_real_distribution<double> U(0, 1);
+  Cell cell;
+  cell.a = {21, 0, 0};
+  cell.b = {2.5, 19, 0};
+  cell.c = {-1.5, 3, 22};
+  const int n = 240;
+  std::vector<double> x, q;
+  for (int i = 0; i < n; ++i) {
+    const double s[3] = {U(rng), U(rng), U(rng)};
+    for (int k = 0; k < 3; ++k) x.push_back(s[0] * cell.a[k] + s[1] * cell.b[k] + s[2] * cell.c[k]);
+    q.push_back(i % 2 ? 0.45 : -0.45);
+  }
+  const double beta = ewald_beta(9.0, 1e-5);
+  for (const auto& k : std::vector<std::array<int, 3>>{{20, 18, 21}, {21, 18, 20}, {35, 25, 27}, {14, 15, 7}, {16, 16, 16}}) {
+    PmeGrid g = pme_grid(cell, beta, 1.0, 5);
+    g.k[0] = k[0], g.k[1] = k[1], g.k[2] = k[2];
+    std::vector<double> fs(x.size(), 0.0), ft(x.size(), 0.0);
+    double vs[6], vt[6];
+    const double es = pme_reciprocal(x, q, cell, g, fs, vs);
+    for (int threads : {1, 3}) {
+      ThreadPool pool(threads);
+      std::fill(ft.begin(), ft.end(), 0.0);
+      const double et = pme_reciprocal(x, q, cell, g, ft, vt, pool);
+      double df = 0, fm = 0;
+      for (size_t i = 0; i < x.size(); ++i) df = std::max(df, std::fabs(ft[i] - fs[i])), fm = std::max(fm, std::fabs(fs[i]));
+      EXPECT_NEAR(et, es, 1e-10 * std::fabs(es)) << k[0] << " " << k[1] << " " << k[2];
+      EXPECT_LT(df, 1e-12 * (1 + fm)) << k[0] << " " << k[1] << " " << k[2];
+      for (int c = 0; c < 6; ++c) EXPECT_NEAR(vt[c], vs[c], 1e-11 * std::fabs(es)) << k[0] << " w" << c;
+    }
+  }
 }
