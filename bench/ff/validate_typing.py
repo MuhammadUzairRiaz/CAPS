@@ -224,13 +224,20 @@ def retyped(name, dl_types):
 
 UNITED = bool(__import__("json").load(open(rules)).get("united_atom"))
 CAP = "--cap-open" in sys.argv
+# a CAPS type whose every parameter class is another type's (equivalence vdw / bond / angle / dihedral all X, as
+# misc's CTf3 / CTf1 for CT, which only carry a molecule's own charges) is that type under another name
+ALIAS = {}
+for t in __import__("json").load(open(ffjson))["atom_types"]:
+    eq = t.get("equivalence") or {}
+    if eq and len(set(eq.values())) == 1 and set(eq) >= {"vdw", "bond"}:
+        ALIAS[t["name"]] = next(iter(eq.values()))
 # --overlay 'REGEX=RULES.json;...': templates whose name matches take that typing overlay too (a water model: the same
 # structure, a different model, which the user picks)
 OVERLAYS = [tuple(x.split("=", 1)) for x in arg("--overlay", "").split(";") if x]
 names = only or [n for n, m in mols.items() if n in keys and usable(n, m, CAP)]
 if "--exclude" in sys.argv:   # e.g. water-model templates (TIP4P / TIP5P virtual sites cannot be typed from bonds)
     names = [n for n in names if not re.search(arg("--exclude", ""), n)]
-total = right = sym_total = 0
+total = right = sym_total = alias_total = 0
 wrong_mols, confusion, failed, apply_problems = [], collections.Counter(), [], []
 for name in names:
     m = mols[name]
@@ -270,7 +277,11 @@ for name in names:
     same_class = collections.defaultdict(set)
     for i, c in enumerate(sym):
         same_class[c].add(expect[i])
-    by_symmetry = [i for i, a in enumerate(m["atoms"]) if expect[i] != got[i] and a[0] not in skip and got[i] in same_class[sym[i]]]
+    by_alias = [i for i, a in enumerate(m["atoms"]) if expect[i] != got[i] and a[0] not in skip and ALIAS.get(got[i]) == expect[i]]
+    alias_total += len(by_alias)
+    by_symmetry = [i for i, a in enumerate(m["atoms"]) if expect[i] != got[i] and a[0] not in skip and i not in by_alias
+                   and got[i] in same_class[sym[i]]]
+    by_symmetry += by_alias
     sym_total += len(by_symmetry)
     bad = [(i, a[0], a[1], expect[i], got[i]) for i, a in enumerate(m["atoms"])
            if expect[i] != got[i] and a[0] not in skip and i not in by_symmetry]
@@ -284,7 +295,8 @@ for name in names:
 print(f"{lib}: {len(names)} templates, {right}/{total} atoms typed as DL_FIELD's templates "
       f"({100.0 * right / max(total, 1):.1f} %), {len(names) - len(wrong_mols) - len(failed)} molecules fully right, "
       f"{len(wrong_mols)} with differences, {len(failed)} not run" +
-      (f"; {sym_total} atoms carry the key of a symmetry-equivalent atom (the library numbers equivalent ring positions apart)" if sym_total else ""))
+      (f"; {sym_total - alias_total} atoms carry the key of a symmetry-equivalent atom (the library numbers equivalent ring positions apart)" if sym_total > alias_total else "") +
+      (f"; {alias_total} atoms carry a CAPS name for the key (every parameter class equivalent to it)" if alias_total else ""))
 if confusion:
     print("expected → CAPS (atoms):")
     for (e, g), k in confusion.most_common(show):

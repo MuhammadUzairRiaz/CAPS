@@ -9,7 +9,7 @@ CH="water_spce?=data/typing/charmm-spc.typing.json;water_tip3p=data/typing/charm
 AM="water_tip3p=data/typing/amber-tip3p.typing.json;water_tip3p_pme=data/typing/amber-tip3p-pme.typing.json"
 CV="water_tip3p=data/typing/cvff-tip3p.typing.json;water_spce?=data/typing/cvff-spc.typing.json"
 DR="water_tip3p=data/typing/dreiding-tip3p.typing.json;water_tip3p_pme=data/typing/dreiding-tip3p-pme.typing.json"
-OP="water_tip3p_c=data/typing/opls2005-tip3p-c.typing.json;water_spce?=data/typing/opls2005-spc.typing.json"
+OP="water_tip3p_c=data/typing/opls-tip3p-c.typing.json;water_spce?=data/typing/opls-spc.typing.json"
 while read lib ff ov; do
   [ -z "$lib" ] && continue
   case "$ov" in charmm) o="$CH";; amber) o="$AM";; cvff) o="$CV";; opls) o="$OP";; dreiding) o="$DR";; *) o="";; esac
@@ -40,8 +40,8 @@ CHARMM36_carb charmm36-carb charmm
 CHARMM36_cgenff cgenff charmm
 DREIDING dreiding dreiding
 GROMOS_G54A7 gromos-54a7
-OPLS_AAM opls-aam
-OPLS_CL_P opls-clp
+OPLS_AAM opls-aam opls
+OPLS_CL_P opls-clp opls
 OPLS_DES opls-des
 TRAPPE_EH trappe-eh
 TRAPPE_UA trappe-ua
