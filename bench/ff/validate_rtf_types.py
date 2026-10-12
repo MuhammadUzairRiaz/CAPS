@@ -24,6 +24,8 @@ only = [x for x in arg("--only", "").split(",") if x]
 ff_types = json.load(open(ffjson))["atom_types"]
 known = {t["name"] for t in ff_types}
 ff_element = {t["name"]: t.get("element") for t in ff_types if t.get("element") not in (None, "", "X")}
+ff_mass = {t["name"]: t.get("mass", 0) for t in ff_types}
+ELEMENT_MASS = {"C": 12.011, "N": 14.007, "O": 15.999, "S": 32.06}
 
 ELEM = [("CLG", "Cl"), ("BRG", "Br"), ("ALG", "Al"), ("IG", "I"), ("H", "H"), ("C", "C"), ("N", "N"), ("O", "O"),
         ("S", "S"), ("P", "P"), ("F", "F"), ("B", "B")]
@@ -57,10 +59,20 @@ def residues(path):
             order = {"BOND": 1, "DOUB": 2, "DOUBLE": 2, "TRIP": 3, "TRIPLE": 3, "AROM": 4}[k]
             for a, b in zip(w[1::2], w[2::2]):
                 cur["bonds"].append((a, b, order))
+        elif k in ("IMPR", "IMPH") and len(w) >= 5:
+            cur.setdefault("impr", []).extend(w[q:q + 4] for q in range(1, len(w), 4) if len(w[q:q + 4]) == 4)
         elif k == "DELETE" and len(w) >= 3 and w[1].upper() == "ATOM":
             cur["delete"].append(w[2])
         elif k == "END":
             break
+    for r in res:
+        # a residue whose BOND records name no link but whose improper does (CHARMM19's CBX: IMPH N -C CA H, centre
+        # first): the improper's centre bonds to that neighbouring atom
+        if not any(x[:1] in "+-" for b in r["bonds"] for x in b[:2]):
+            for quad in r.get("impr", []):
+                for x in quad[1:]:
+                    if x[:1] in "+-":
+                        r["bonds"].append((quad[0], x, 1))
     plain = [r for r in res if not r["patch"]]
     if "--patches" in sys.argv:
         by = {r["name"]: r for r in res}
@@ -152,6 +164,13 @@ for r in residues(rtf):
     if not ok or not bonds and len(names) > 1:
         skipped["bonds to other residues"] += 1
         continue
+    if "--united" in sys.argv:   # united atoms (CHARMM19's CH2E): their hydrogens, from the type's mass, as explicit H
+        for i, (a, t) in enumerate(list(r["atoms"])):
+            el = element(t)
+            n_h = round((ff_mass.get(t, 0) - ELEMENT_MASS.get(el, 0)) / 1.008) if el in ELEMENT_MASS and el != "H" else 0
+            for _ in range(max(0, n_h)):
+                cap_atoms.append("H")
+                bonds[(i, len(names) + len(cap_atoms) - 1)] = 1
     path = os.path.join(work, re.sub(r"[^A-Za-z0-9_]", "_", r["name"]) + ".mol2")
     with open(path, "w") as f:
         f.write(f"@<TRIPOS>MOLECULE\n{r['name']}\n{len(names) + len(cap_atoms)} {len(bonds)} 1\nSMALL\nNO_CHARGES\n\n@<TRIPOS>ATOM\n")
@@ -170,6 +189,9 @@ for r in residues(rtf):
         failed.append((r["name"], (p.stderr or p.stdout).strip()[-120:]))
         continue
     got = [x.strip() for x in open(out)][:len(names)]
+    if len(got) < len(names):   # sites the force field folds away (a united-atom H the topology lists): not comparable
+        failed.append((r["name"], f"{len(names) - len(got)} of its atoms folded into others"))
+        continue
     if "--apply" in sys.argv:   # end to end: parameters for the automatically typed residue
         pa = subprocess.run([CAPS, "ff", "apply", path, "--ff", ffjson, "--typing", rules, "--charges", "gasteiger", "--allow-missing"],
                             capture_output=True, text=True)

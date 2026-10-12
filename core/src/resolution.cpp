@@ -41,12 +41,12 @@ ResolutionReport all_atom_summary(const System& s) {
   return r;
 }
 
-System united_atom(const System& s, ResolutionReport* rep, const std::vector<int>& hosts) {
+System united_atom(const System& s, ResolutionReport* rep, const std::vector<int>& hosts, const std::vector<char>* keep) {
   const size_t n = s.atoms.size();
   const auto nb = adjacency(s);
   std::vector<int> host(n, -1);   // the carbon a hydrogen folds into
   for (size_t i = 0; i < n; ++i)
-    if (s.atoms[i].element == 1 && nb[i].size() == 1 &&
+    if (s.atoms[i].element == 1 && nb[i].size() == 1 && !(keep && i < keep->size() && (*keep)[i]) &&
         std::find(hosts.begin(), hosts.end(), s.atoms[nb[i][0]].element) != hosts.end()) host[i] = int(nb[i][0]);
   System out;
   out.title = s.title.empty() ? "united-atom" : s.title + " (united-atom)";

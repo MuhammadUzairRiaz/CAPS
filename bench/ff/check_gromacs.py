@@ -77,6 +77,7 @@ CASES = [
     ("GAFF 1.81 (gaff.dat) ester, epoxide, amide, thioether (vacuum)", ("smiles", "CCOC(=O)C.C1CO1.CC(=O)NC.CSC"), "gaff-1.81-ambertools", "gasteiger", []),
     ("GAFF2 2.11 (gaff211.dat) isoprene, styrene (vacuum)", ("smiles", "CC=C(C)CC.C=Cc1ccccc1"), "gaff2-2.11-ambertools", "gasteiger", []),
     ("CHARMM36 (toppar) peptide GAFKW (vacuum; CMAP not represented)", ("peptide", "GAFKW"), "charmm36-prot-toppar", "gasteiger", []),
+    ("CHARMM19 (toppar, united atom) peptide GAFKW (vacuum)", ("peptide", "GAFKW"), "charmm19-toppar", "gasteiger", []),
     ("CHARMM22 (toppar) peptide GAFKW (vacuum)", ("peptide", "GAFKW"), "charmm22-prot-toppar", "gasteiger", []),
     ("CGenFF (toppar) toluene (vacuum)", ("smiles", "Cc1ccccc1", os.path.join(FF, "cgenff-toppar.json")), "cgenff-toppar", "gasteiger", []),
     ("CGenFF (toppar) N-methylacetamide (vacuum)", ("smiles", "CNC(C)=O", os.path.join(FF, "cgenff-toppar.json")), "cgenff-toppar", "gasteiger", []),
