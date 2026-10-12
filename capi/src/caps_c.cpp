@@ -2746,6 +2746,8 @@ int32_t caps_md(caps_doc* d, const caps_md_opts* o, caps_md_progress_fn progress
       if (m.thermostat == caps::Thermostat::Bussi) c.push_back("bussi2007");
       if (npt && m.barostat == caps::Barostat::CRescale) c.push_back("bernetti2020");
       if (npt && m.barostat == caps::Barostat::Berendsen) c.push_back("berendsen1984");
+      if (m.hmr > 0) c.push_back("hopkins2015");
+      if (m.energy.mixed) c.push_back("pall2013");
       elec_cites(c, m.energy.coulomb);
       caps::KeyValues pr = {{"length", g6(m.dt * double(m.steps) / 1000.0) + " ps · " + std::to_string(m.steps) + " steps of " + g6(m.dt) + " fs"},
                             {"temperature", g6(m.temperature) + " K"}, {"thermostat", std::string(caps::to_string(m.thermostat)) + (nvt ? " · τ " + g6(m.tau_t) + " fs" : "")}};
@@ -2754,6 +2756,7 @@ int32_t caps_md(caps_doc* d, const caps_md_opts* o, caps_md_progress_fn progress
         pr.push_back({"constraints", caps::to_string(m.constraints)});
         pr.push_back({"constraint solver", m.constraint_algorithm == caps::ConstraintAlgorithm::Lincs ? "LINCS" : "SHAKE"});
       }
+      if (m.hmr > 0) pr.push_back({"hydrogen masses", g6(m.hmr) + " u, taken from their bonded atoms (repartitioning)"});
       pr.push_back({"force field", ff_label(d)});
       const bool drew = m.new_velocities || s.velocities.empty();
       prov_step(d, npt ? "dynamics.npt" : nvt ? "dynamics.nvt" : "dynamics.nve", npt ? "NPT molecular dynamics" : nvt ? "NVT molecular dynamics" : "NVE molecular dynamics",
@@ -2906,6 +2909,8 @@ int32_t caps_equilibrate(caps_doc* d, const char* protocol, const caps_equil_opt
       for (const auto& st : e.stages) pmax = std::max(pmax, st.pressure);
       std::vector<std::string> c = {"swope1982", e.md.thermostat == caps::Thermostat::Bussi ? "bussi2007" : e.md.thermostat == caps::Thermostat::NoseHoover ? "martyna1992" : ""};
       if (e.md.constraints != caps::ConstraintMode::None) c.push_back(e.md.constraint_algorithm == caps::ConstraintAlgorithm::Lincs ? "hess1997" : "ryckaert1977"), c.push_back("andersen1983");
+      if (e.md.hmr > 0) c.push_back("hopkins2015");
+      if (e.md.energy.mixed) c.push_back("pall2013");
       c.push_back(e.md.barostat == caps::Barostat::CRescale ? "bernetti2020" : e.md.barostat == caps::Barostat::MTK ? "martyna1994" : "berendsen1984");
       if (l21) c.insert(c.begin(), "larsen2011");
       elec_cites(c, e.md.energy.coulomb);
