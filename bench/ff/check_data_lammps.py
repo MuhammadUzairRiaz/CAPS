@@ -96,6 +96,9 @@ CASES = [
     ("CHARMM36 lipids toppar: phosphatidylcholine", ("smiles", "CCCCCCCC(=O)OC[C@H](COP(=O)([O-])OCC[N+](C)(C)C)OC(=O)CCCCCCC"), "charmm36-lipid-toppar", "qeq", "rules"),
     ("AMBER ff03: peptide GAFKW", ("peptide", "GAFKW"), "amber-ff03-ambertools", "gasteiger", "rules"),
     ("AMBER ff03: thymidine (N*, CM, CT / H2 sugar)", ("smiles-nudged", "CC1=CN([C@H]2C[C@H](O)[C@@H](CO)O2)C(=O)NC1=O"), "amber-ff03-ambertools", "gasteiger", "rules"),
+    # GLYCAM06j (its 1-4 terms unscaled): a methyl glucoside and a beta-1,4 disaccharide
+    ("GLYCAM06j: methyl alpha-D-glucopyranoside, cellobiose", ("smiles", "CO[C@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O.OC[C@H]1O[C@@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)O[C@@H]2CO)[C@H](O)[C@@H](O)[C@@H]1O"),
+     "glycam06j-ambertools", "gasteiger", "rules"),
     ("GAFF 1.81 (gaff.dat): ester, epoxide, amide, thioether", ("smiles", "CCOC(=O)C.C1CO1.CC(=O)NC.CSC"), "gaff-1.81-ambertools", "gasteiger", "rules"),
     ("GAFF2 2.11 (gaff211.dat): isoprene, styrene, nitrile; nudged off linear", ("smiles-nudged", "CC=C(C)CC.C=Cc1ccccc1.CCC#N"), "gaff2-2.11-ambertools", "gasteiger", "rules"),
     ("GAFF2 2.2.20 (gaff2.dat): polystyrene melt (periodic)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "gaff2-2.2.20-ambertools", "gasteiger", "rules"),
