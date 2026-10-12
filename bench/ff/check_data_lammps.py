@@ -75,6 +75,20 @@ CASES = [
      "Ti1 Ti 0 0 0; O1 O 0.3053 0.3053 0", "--supercell", "3,3,5"]), "matsui1991-tio2", "types", "rules", ["--no-tail"]),
     ("Sanders, Leslie & Catlow 1984 (Table 1): alpha-quartz, O shells, O-Si-O bends by distance", ("file", os.path.join(ROOT, "data", "crystals",
      "alpha-quartz.cif")), "sanders1984-sio2", "types", "rules", ["--no-tail"]),
+    # Xiao, Edwards & Grater 2011 CaCO3: carbonate bends and plane terms by distance, no C-O bond term, no exclusions
+    ("Xiao 2011 CaCO3 (Table 1): calcite", ("file", os.path.join(ROOT, "data", "crystals", "calcite.cif")), "xiao2011-caco3", "types", "rules", ["--no-tail"]),
+    ("Xiao 2011 CaCO3 (Table 1): aragonite (De Villiers 1971)", ("crystal", ["--group", "P m c n", "--cell", "4.9614,7.9671,5.7404", "--sites",
+     "Ca1 Ca 0.25 0.41500 0.75970; C1 C 0.25 0.76220 -0.0852; O1 O 0.25 0.92250 -0.0961; O2 O 0.4736 0.68065 -0.08620"]), "xiao2011-caco3", "types", "rules", ["--no-tail"]),
+    ("Gunn 2012 (Table 1): Gd2Ti2O7 pyrochlore", ("crystal", ["--group", "F d -3 m:2", "--cell", "10.185,10.185,10.185", "--sites",
+     "Gd1 Gd 0.5 0.5 0.5; Ti1 Ti 0 0 0; O1 O 0.3300 0.125 0.125; O2 O 0.375 0.375 0.375"]), "gunn2012-pyrochlore", "types", "rules", ["--no-tail"]),
+    ("Gunn 2012 (Table 1): Gd2Zr2O7 pyrochlore", ("crystal", ["--group", "F d -3 m:2", "--cell", "10.53,10.53,10.53", "--sites",
+     "Gd1 Gd 0.5 0.5 0.5; Zr1 Zr 0 0 0; O1 O 0.3450 0.125 0.125; O2 O 0.375 0.375 0.375"]), "gunn2012-pyrochlore", "types", "rules", ["--no-tail"]),
+    ("La perovskites, Cherry 1995 (Table 1): cubic LaFeO3, all shells", ("crystal", ["--group", "P m -3 m", "--cell", "3.93,3.93,3.93", "--sites",
+     "La1 La 0.5 0.5 0.5; Fe1 Fe 0 0 0; O1 O 0.5 0 0", "--supercell", "3,3,3"]), "la-perovskites", "types", "rules", ["--no-tail"]),
+    ("La perovskites, Cherry 1995 (Table 1): cubic LaCoO3", ("crystal", ["--group", "P m -3 m", "--cell", "3.83,3.83,3.83", "--sites",
+     "La1 La 0.5 0.5 0.5; Co1 Co 0 0 0; O1 O 0.5 0 0", "--supercell", "3,3,3"]), "la-perovskites", "types", "rules", ["--no-tail"]),
+    ("La perovskites, Read 1999 (Table 1): La2NiO4 (I4/mmm), rigid Ni", ("crystal", ["--group", "I 4/m m m", "--cell", "3.86,3.86,12.65", "--sites",
+     "La1 La 0 0 0.361; Ni1 Ni 0 0 0; O1 O 0 0.5 0; O2 O 0 0 0.176", "--supercell", "3,3,1"]), "la-perovskites", "types", "rules", ["--no-tail"]),
     # oxide glasses (bench/ff/make_glass.py): the Teter partial-charge set, Tilocca's shell model (SM0; SM1's screened bend has
     # no LAMMPS style and is refused), Vogel's LiPO3; overlays by --typing
     ("Teter glass set (Cormack 2002 / Du 2009): alpha-quartz", ("file", os.path.join(ROOT, "data", "crystals", "alpha-quartz.cif")), "teter-glass", "types", "rules", ["--no-tail"]),

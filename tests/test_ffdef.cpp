@@ -1114,3 +1114,26 @@ TEST(FFDef, ScreenedBendsOfTheShellModel) {
   const EnergyTerms e = Evaluator(ff, o).compute(flat(q), q.cell, f);
   EXPECT_NEAR(e.angle, 0.147118, 2e-6);
 }
+
+// Xiao, Edwards & Grater's carbonate: no C-O bond term and no exclusions; three O-C-O bends and one O1-C-O2-O3 plane term
+// (K (1 - cos 2psi), the centre second, the O sorted by index) per carbonate, found by distance
+TEST(FFDef, CarbonateTermsByDistanceWithoutBonds) {
+  const FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/xiao2011-caco3.json");
+  System q = read_cif(std::string(CAPS_SOURCE_DIR) + "/data/crystals/calcite.cif");
+  q.bonds = perceive_bonds(q);
+  std::string ch = "types";
+  prepare_for_forcefield(q, def, ch);
+  EXPECT_TRUE(q.bonds.empty());
+  const TypingResult tr = assign_types(q, def);
+  ASSERT_EQ(tr.untyped, 0);
+  const ForceField ff = parameterize(q, def, tr.types, "types", nullptr, false);
+  ASSERT_EQ(ff.angles.size(), 18u);
+  ASSERT_EQ(ff.impropers.size(), 6u);
+  for (const auto& t : ff.impropers) {
+    EXPECT_EQ(tr.types[t.j], "Cm_x");
+    EXPECT_TRUE(t.i < t.k && t.k < t.l);
+    EXPECT_EQ(t.n, 2);
+    EXPECT_NEAR(t.v, 28.9 / 4.184, 1e-12);
+    EXPECT_NEAR(t.delta, 3.14159265358979323846, 1e-12);   // v [1 + cos(2φ − π)] = v (1 − cos 2φ)
+  }
+}

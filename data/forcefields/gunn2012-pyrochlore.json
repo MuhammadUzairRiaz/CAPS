@@ -1,0 +1,167 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "Gd pyrochlores (Gunn et al. 2012)",
+ "source": "D. S. D. Gunn, N. L. Allan, H. Foxhall, J. H. Harding, J. A. Purton, W. Smith, M. J. Stein, I. T. Todorov, K. P. Travis, J. Mater. Chem. 22, 4675 (2012), Table 1",
+ "references": [
+  "D. S. D. Gunn, N. L. Allan, H. Foxhall, J. H. Harding, J. A. Purton, W. Smith, M. J. Stein, I. T. Todorov, K. P. Travis, J. Mater. Chem. 22, 4675 (2012)"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "buck/coul/long",
+  "bond": "harmonic",
+  "angle": "harmonic",
+  "dihedral": "fourier",
+  "improper": "fourier"
+ },
+ "mixing": "geometric",
+ "special_lj": [
+  0,
+  0,
+  1
+ ],
+ "special_coul": [
+  0,
+  0,
+  1
+ ],
+ "cutoff": 12,
+ "atom_types": [
+  {
+   "name": "Gd_g",
+   "element": "Gd",
+   "mass": 157.25,
+   "charge": 3.0,
+   "description": "Gd (+3, formal; Table 1)"
+  },
+  {
+   "name": "Ti_g",
+   "element": "Ti",
+   "mass": 47.867,
+   "charge": 4.0,
+   "description": "Ti (+4, formal; Table 1)"
+  },
+  {
+   "name": "Zr_g",
+   "element": "Zr",
+   "mass": 91.224,
+   "charge": 4.0,
+   "description": "Zr (+4, formal; Table 1)"
+  },
+  {
+   "name": "O_g",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -2.0,
+   "description": "O (-2, formal; Table 1)"
+  }
+ ],
+ "pairs": [
+  {
+   "name": "Gd_g",
+   "match": [
+    "Gd_g"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ti_g",
+   "match": [
+    "Ti_g"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Zr_g",
+   "match": [
+    "Zr_g"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_g",
+   "match": [
+    "O_g"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_g-O_g",
+   "match": [
+    "O_g",
+    "O_g"
+   ],
+   "style": "buck",
+   "params": [
+    401920.44624816,
+    0.149,
+    643.15868372
+   ],
+   "comment": "O-O A 17428.92 eV, rho 0.149 A, C 27.89 eV A^6 (Table 1)"
+  },
+  {
+   "name": "Ti_g-O_g",
+   "match": [
+    "Ti_g",
+    "O_g"
+   ],
+   "style": "buck",
+   "params": [
+    14958.895522146799,
+    0.4065,
+    0.0
+   ],
+   "comment": "Ti-O A 648.6791 eV, rho 0.4065 A, C 0.0 eV A^6 (Table 1)"
+  },
+  {
+   "name": "Gd_g-O_g",
+   "match": [
+    "Gd_g",
+    "O_g"
+   ],
+   "style": "buck",
+   "params": [
+    45261.8876541776,
+    0.325,
+    0.0
+   ],
+   "comment": "Gd-O A 1962.7412 eV, rho 0.325 A, C 0.0 eV A^6 (Table 1)"
+  },
+  {
+   "name": "Zr_g-O_g",
+   "match": [
+    "Zr_g",
+    "O_g"
+   ],
+   "style": "buck",
+   "params": [
+    18588.1991572088,
+    0.4011,
+    0.0
+   ],
+   "comment": "Zr-O A 806.0606 eV, rho 0.4011 A, C 0.0 eV A^6 (Table 1)"
+  }
+ ],
+ "bonds": [],
+ "angles": [],
+ "dihedrals": [],
+ "impropers": [],
+ "notes": [
+  "built by CAPS (bench/ff/make_gunn2012.py) from the paper's Table 1",
+  "short-range cut-off 12 A as the paper"
+ ],
+ "version": "2012 (Table 1)",
+ "typing": "../typing/gunn2012-pyrochlore.typing.json"
+}

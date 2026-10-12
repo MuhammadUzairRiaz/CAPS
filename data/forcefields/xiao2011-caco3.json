@@ -1,0 +1,324 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "CaCO3 (Xiao, Edwards & Grater 2011)",
+ "source": "S. Xiao, S. A. Edwards, F. Grater, J. Phys. Chem. C 115, 20067 (2011), Table 1",
+ "references": [
+  "S. Xiao, S. A. Edwards, F. Grater, J. Phys. Chem. C 115, 20067 (2011)",
+  "W. L. Jorgensen, J. Chandrasekhar, J. D. Madura, R. W. Impey, M. L. Klein, J. Chem. Phys. 79, 926 (1983)"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "lj/cut/coul/long",
+  "bond": "harmonic",
+  "angle": "harmonic",
+  "dihedral": "fourier",
+  "improper": "cvff"
+ },
+ "improper_order": "center2_sorted",
+ "mixing": "geometric",
+ "special_lj": [
+  0,
+  0,
+  1
+ ],
+ "special_coul": [
+  0,
+  0,
+  1
+ ],
+ "cutoff": 10,
+ "atom_types": [
+  {
+   "name": "Ca_x",
+   "element": "Ca",
+   "mass": 40.078,
+   "charge": 1.668,
+   "description": "Ca in CaCO3 (Table 1)"
+  },
+  {
+   "name": "Cm_x",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.999,
+   "description": "carbonate C (Table 1)"
+  },
+  {
+   "name": "Om_x",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -0.889,
+   "description": "carbonate O (Table 1)"
+  },
+  {
+   "name": "Ow_x",
+   "element": "O",
+   "mass": 15.9994,
+   "charge": -0.834,
+   "description": "TIP3P water O (Jorgensen 1983)"
+  },
+  {
+   "name": "Hw_x",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.417,
+   "description": "TIP3P water H (Jorgensen 1983)"
+  }
+ ],
+ "pairs": [
+  {
+   "name": "Ca_x",
+   "match": [
+    "Ca_x"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "Ca-Ca: Coulomb only (not in Table 1)"
+  },
+  {
+   "name": "Hw_x",
+   "match": [
+    "Hw_x"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "TIP3P H: no Lennard-Jones"
+  },
+  {
+   "name": "Ow_x",
+   "match": [
+    "Ow_x"
+   ],
+   "params": [
+    0.1520725945017182,
+    3.1506561104957425
+   ],
+   "comment": "TIP3P O-O A 582000 kcal A^12, C 595 kcal A^6 (Jorgensen 1983)"
+  },
+  {
+   "name": "Ca_x-Om_x",
+   "match": [
+    "Ca_x",
+    "Om_x"
+   ],
+   "params": [
+    6.296252269169317e-20,
+    99.13135338631358
+   ],
+   "comment": "C12 9.49e-07 kJ/mol nm^12, C6 0 kJ/mol nm^6 (Table 1); C6 0 written as 1e-12"
+  },
+  {
+   "name": "Cm_x",
+   "match": [
+    "Cm_x"
+   ],
+   "params": [
+    2.650449185617765,
+    2.618549660454505
+   ],
+   "comment": "C12 4.61e-06 kJ/mol nm^12, C6 0.0143 kJ/mol nm^6 (Table 1)"
+  },
+  {
+   "name": "Cm_x-Om_x",
+   "match": [
+    "Cm_x",
+    "Om_x"
+   ],
+   "params": [
+    6.270199157346148,
+    1.1965649731540036
+   ],
+   "comment": "C12 9.04e-10 kJ/mol nm^12, C6 0.000308 kJ/mol nm^6 (Table 1)"
+  },
+  {
+   "name": "Om_x",
+   "match": [
+    "Om_x"
+   ],
+   "params": [
+    0.0002730469529585208,
+    4.744146812794143
+   ],
+   "comment": "C12 5.94e-07 kJ/mol nm^12, C6 5.21e-05 kJ/mol nm^6 (Table 1)"
+  },
+  {
+   "name": "Ca_x-Ow_x",
+   "match": [
+    "Ca_x",
+    "Ow_x"
+   ],
+   "params": [
+    0.2700629786866297,
+    2.760485980374524
+   ],
+   "comment": "C12 8.85e-07 kJ/mol nm^12, C6 0.002 kJ/mol nm^6 (Table 1)"
+  },
+  {
+   "name": "Cm_x-Ow_x",
+   "match": [
+    "Cm_x",
+    "Ow_x"
+   ],
+   "params": [
+    0.11618772505362461,
+    3.4692156519317447
+   ],
+   "comment": "C12 5.91e-06 kJ/mol nm^12, C6 0.00339 kJ/mol nm^6 (Table 1)"
+  },
+  {
+   "name": "Om_x-Ow_x",
+   "match": [
+    "Om_x",
+    "Ow_x"
+   ],
+   "params": [
+    0.1461312245406933,
+    3.118635641139978
+   ],
+   "comment": "C12 2.07e-06 kJ/mol nm^12, C6 0.00225 kJ/mol nm^6 (Table 1)"
+  },
+  {
+   "name": "Om_x-Hw_x",
+   "match": [
+    "Om_x",
+    "Hw_x"
+   ],
+   "params": [
+    6.972685358233061e-06,
+    4.496893438368581
+   ],
+   "comment": "C12 7.98e-09 kJ/mol nm^12, C6 9.65e-07 kJ/mol nm^6 (Table 1)"
+  },
+  {
+   "name": "Ca_x-Cm_x",
+   "match": [
+    "Ca_x",
+    "Cm_x"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "not in Table 1: Coulomb only"
+  },
+  {
+   "name": "Ca_x-Hw_x",
+   "match": [
+    "Ca_x",
+    "Hw_x"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "not in Table 1: Coulomb only"
+  },
+  {
+   "name": "Cm_x-Hw_x",
+   "match": [
+    "Cm_x",
+    "Hw_x"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "not in Table 1: Coulomb only"
+  },
+  {
+   "name": "Ow_x-Hw_x",
+   "match": [
+    "Ow_x",
+    "Hw_x"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "not in Table 1: Coulomb only"
+  }
+ ],
+ "bonds": [
+  {
+   "name": "Ow_x-Hw_x",
+   "match": [
+    "Ow_x",
+    "Hw_x"
+   ],
+   "style": "harmonic",
+   "params": [
+    450.0,
+    0.9572
+   ],
+   "comment": "TIP3P geometry; flexible in CAPS (rigid in the paper)"
+  }
+ ],
+ "angles": [
+  {
+   "name": "Om_x-Cm_x-Om_x",
+   "match": [
+    "Om_x",
+    "Cm_x",
+    "Om_x"
+   ],
+   "style": "harmonic",
+   "params": [
+    221.3193116634799,
+    120.0
+   ],
+   "contact": [
+    1.6
+   ],
+   "comment": "1/2 K_theta (theta - theta0)^2, K_theta 1852 kJ/mol/rad^2, theta0 120 (Table 1); O within 1.6 A of the C"
+  },
+  {
+   "name": "Hw_x-Ow_x-Hw_x",
+   "match": [
+    "Hw_x",
+    "Ow_x",
+    "Hw_x"
+   ],
+   "style": "harmonic",
+   "params": [
+    55.0,
+    104.52
+   ],
+   "comment": "TIP3P geometry; flexible in CAPS"
+  }
+ ],
+ "dihedrals": [],
+ "impropers": [
+  {
+   "name": "Om_x-Cm_x-Om_x-Om_x",
+   "match": [
+    "Om_x",
+    "Cm_x",
+    "Om_x",
+    "Om_x"
+   ],
+   "style": "cvff",
+   "params": [
+    6.907265774378584,
+    -1,
+    2
+   ],
+   "contact": [
+    1.6
+   ],
+   "comment": "K_psi (1 - cos 2 psi), K_psi 28.9 kJ/mol (Table 1); O1-C-O2-O3, the three O within 1.6 A of the C"
+  }
+ ],
+ "notes": [
+  "built by CAPS (bench/ff/make_xiao2011.py) from the paper's Table 1 and energy expression",
+  "carbonate: no C-O bond term and no exclusions; the O-C-O bend and the plane term by distance (1.6 A)",
+  "Ca-O C6 = 0 in the paper, written as 1e-12 kJ mol^-1 nm^6 (sigma/epsilon form)",
+  "Lennard-Jones cut at 1 nm as the paper",
+  "atom-wise C12, C6 for mineral-peptide pairs (Table 1, eq. 3, geometric): Ca 2.52e-7, 1.42e-3; C 1.44e-5, 4.61e-3; O 1.77e-6, 2.03e-3 (kJ/mol nm^12, nm^6)"
+ ],
+ "version": "2011 (Table 1)",
+ "typing": "../typing/xiao2011-caco3.typing.json"
+}
