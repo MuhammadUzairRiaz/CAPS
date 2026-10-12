@@ -131,7 +131,7 @@
    "ff": "pcff-frc",
    "environment": "a C=C carbon next to a halogen-bearing alkene carbon",
    "dl": "c=2 on some (chloroethene =CH2, 1-chloropropene =CH-, 2-chlorobut-2-ene, vinyl bromide), c= on others (2-chloropropene =CH2)",
-   "caps": "c= / c=1 by pcff.frc's own definitions (c= 'non aromatic end doubly bonded carbon', c=1 'next to end doubly bonded carbon', c=2 'non aromatic doubly bonded carbon', used by CAPS for carbons conjugated on both ends)",
+   "caps": "c= / c=1 by pcff.frc's own definitions (c= 'non aromatic end doubly bonded carbon', c=1 'next to end doubly bonded carbon': a C=C carbon single-bonded to another non-aromatic C=C carbon, as DL_FIELD types butadiene, hexatriene, cyclooctatetraene and phenylbutadiene; an aromatic ring, C=O, C#N or C=N next to it does not count, as DL_FIELD types styrene, PPV, acrolein, acrylonitrile, methacrylates and C=C-C=N)",
    "reason": "DL_FIELD's automatic typing gives the terminal =CH2 of chloroethene c=2 but the same =CH2 of 2-chloropropene c= (independent of atom order, checked both ways); no rule in pcff.frc's type definitions separates them, so CAPS keeps the definitions. Polymers affected: polychloroprene (P097, P206), 4 atoms each"
   }
  ],
@@ -155,26 +155,42 @@
   {
    "ff": "pcff-frc",
    "tool": "msi2lmp",
-   "environment": "angle-angle at an sp2 C=C carbon with neighbours (c, c=, h) (diene rubbers: polybutadiene, polyisoprene, polychloroprene) and at the amide N of N,N-dimethylacrylamide / N-vinylpyrrolidone",
+   "environment": "angle-angle at an sp2 C=C carbon with neighbours (c, c=, h) (diene rubbers: polybutadiene cis / trans / 1,2, polyisoprene cis / trans, polychloroprene cis / trans, ethylidene norbornene) and at the amide N of N,N-dimethylacrylamide / N-vinylpyrrolidone",
    "dl": "msi2lmp -6.5349 (pcff.frc's c= c c= h) and 3.9738 (c c n c_1): keys whose centre (second atom) is a carbon, matched backwards",
    "caps": "0 (no c=-centred entry) and -5.1828 (c n c c_1, the N-centred entry)",
-   "reason": "an angle-angle key i-j-k-l couples angles i-j-k and k-j-l about j; read backwards its centre moves to k, a coupling fitted about another atom and its reference angles. msi2lmp's find_match allows the reversal (written for torsions); these are the only differences from msi2lmp on the 98 PCFF polymers"
-  },
-  {
-   "ff": "cvff-frc",
-   "tool": "DL_FIELD",
-   "environment": "a bend with no entry of its own in cvff.frc (c2-c'-h at an aldehyde end: nylon 6,6, PBT, polyacrylonitrile ...)",
-   "dl": "the h c' o entry (110 deg, 55.0)",
-   "caps": "cvff.frc's automatic parameters (120 deg, 40.0), as msi2lmp",
-   "reason": "DL_FIELD takes another bend's entry; the angle has no c c' h or wildcard entry in cvff.frc's quadratic_angle section"
+   "reason": "an angle-angle key i-j-k-l couples angles i-j-k and k-j-l about j; read backwards its centre moves to k, a coupling fitted about another atom and its reference angles. msi2lmp's find_match allows the reversal (written for torsions); these are the only differences from msi2lmp on the 114 PCFF polymers (P005, P012, P015, P029, P056, P097, P203, P204, P205, P206, P209; bench/ff/check_msi2lmp.py --polymers)"
   },
   {
    "ff": "cvff-frc",
    "tool": "DL_FIELD",
    "environment": "torsions from cvff.frc's wildcard entries (* c c *, 1.4225 kcal/mol, n 3 ...)",
-   "dl": "the full barrier on some torsions of a bond and the divided one on others",
-   "caps": "the barrier divided over the bond's torsions, as msi2lmp writes it",
+   "dl": "the full barrier on some torsions of a bond and the divided one on others; in a three-membered ring (epoxide, cyclopropane) the barrier divided by the torsions present (8 about C-C, 2 about C-O)",
+   "caps": "the barrier divided by (n_j - 1)(n_k - 1) (9, 3 in the ring), as msi2lmp writes it",
    "reason": "cvff.frc's wildcard barrier is the bond's; msi2lmp (the converter written for these files) divides it over the torsions about the bond, and LAMMPS reproduces CAPS's energies against msi2lmp's on every CVFF polymer"
+  },
+  {
+   "ff": "pcff-frc",
+   "tool": "DL_FIELD",
+   "environment": "explicit pcff.frc terms DL_FIELD's PCFF assigns otherwise (polymer library)",
+   "dl": "cp cp cp cp without its V1 (8.3667); its own ester torsions (o_1 c_1 o_2 X, cp c_1 o_2 X, c_1 o_2 ho2); the generic * c_ c_ * (0.158) for C-C-C-N and C-C-C-halogen torsions; cff91_auto bonds and angles (60 deg ring angles) for the three-membered ring types c3m, c3h, o3e and for sio-hsi; c c c's quartic angle for a nitrile C's neighbours",
+   "caps": "pcff.frc's torsion_3 / quartic entries, the ring types by their class II equivalences (c, o), cff91_auto only where no explicit entry exists",
+   "reason": "msi2lmp assigns what CAPS assigns for every explicit term on all 114 polymers; DL_FIELD's library differs from pcff.frc there. Each difference is listed per polymer by bench/ff/class2_report.py"
+  },
+  {
+   "ff": "cvff-frc",
+   "tool": "DL_FIELD",
+   "environment": "explicit cvff.frc terms DL_FIELD's CVFF assigns otherwise (polymer library)",
+   "dl": "out-of-plane terms at centres cvff.frc's #out_of_plane does not list (ester / ketone c', substituted cp, trisubstituted c=, amide or aniline n); cvff_auto torsions where an explicit entry exists (amide c' n, aryl ether cp o, aniline cp n2); no cp cp c cp torsion (cvff.frc ver 1.9)",
+   "caps": "cvff.frc's explicit entries, as msi2lmp",
+   "reason": "msi2lmp assigns what CAPS assigns on all 114 polymers; DL_FIELD's library differs from cvff.frc there (bench/ff/class2_report.py lists each)"
+  },
+  {
+   "ff": "compass-frc",
+   "tool": "DL_FIELD",
+   "environment": "COMPASS torsions about C-C next to an ether or alcohol O (PEO, polyoxytetramethylene)",
+   "dl": "DL_FIELD's COMPASS entries (V1, V2, V3) that compass_published.frc does not have",
+   "caps": "compass_published.frc's c4 c4 entry (V3 -0.153), as msi2lmp",
+   "reason": "CAPS's COMPASS is the published file only; DL_FIELD's COMPASS library is larger"
   }
  ]
 }

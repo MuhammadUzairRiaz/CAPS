@@ -210,6 +210,57 @@ TEST(Typing, ShippedRulesTypeCommonMolecules) {
   }
 }
 
+// PCFF's c=1 (pcff.frc: "next to end doubly bonded carbon") as DL_FIELD's typing gives it: a C=C carbon single-bonded to
+// another non-aromatic C=C carbon; an aromatic ring or a C=O next to it does not make it c=1
+TEST(Typing, PcffConjugatedAlkeneCarbonsAsDlField) {
+  const FFDef ff = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/pcff-frc.json");
+  const System bd = mol({"C", "C", "C", "C"}, {2, 1, 1, 2}, {{0, 1}, {1, 2}, {2, 3}});   // buta-1,3-diene
+  const TypingResult b = assign_types(bd, ff);
+  EXPECT_EQ(b.types[0], "c=");
+  EXPECT_EQ(b.types[1], "c=1");
+  EXPECT_EQ(b.types[2], "c=1");
+  const System ht = mol({"C", "C", "C", "C", "C", "C"}, {2, 1, 1, 1, 1, 2}, {{0, 1}, {1, 2}, {2, 3}, {3, 4}, {4, 5}});   // hexa-1,3,5-triene
+  const TypingResult h = assign_types(ht, ff);
+  EXPECT_EQ(h.types[2], "c=1");
+  EXPECT_EQ(h.types[3], "c=1");
+  const System st = mol({"C", "C", "C", "C", "C", "C", "C", "C"}, {2, 1, 0, 1, 1, 1, 1, 1},
+                        {{0, 1}, {1, 2}, {2, 3}, {3, 4}, {4, 5}, {5, 6}, {6, 7}, {7, 2}});   // styrene
+  const TypingResult y = assign_types(st, ff);
+  EXPECT_EQ(y.types[0], "c=");
+  EXPECT_EQ(y.types[1], "c=");
+  EXPECT_EQ(y.types[2], "cp");
+  const System ac = mol({"C", "C", "C", "O"}, {2, 1, 1, 0}, {{0, 1}, {1, 2}, {2, 3}});   // acrolein
+  EXPECT_EQ(assign_types(ac, ff).types[1], "c=");
+}
+
+// the automatic bends of cvff.frc / pcff.frc (#quadratic_angle *_auto) by their numbered wildcards: the entry of the end
+// atom with the lowest number (*2 H before *7 / *9 C), the generic * X * last. CVFF: propanal's C-C(=O)-H takes
+// *2 c'_ h_ (110, 55); PCFF: styrene's ring C-CH=-H takes *2 c=_ h_ (120, 37.5), not * c=_ * (120, 60)
+TEST(Typing, FrcAutomaticBendsByNumberedWildcard) {
+  const System pr = mol({"C", "C", "C", "O"}, {3, 2, 1, 0}, {{0, 1}, {1, 2}, {2, 3}});
+  const System st = mol({"C", "C", "C", "C", "C", "C", "C", "C"}, {2, 1, 0, 1, 1, 1, 1, 1},
+                        {{0, 1}, {1, 2}, {2, 3}, {3, 4}, {4, 5}, {5, 6}, {6, 7}, {7, 2}});
+  struct Case { const char* lib; System s; uint32_t centre, heavy_end; double theta0, k; };
+  for (const Case& c : {Case{"cvff-frc", pr, 2, 1, 110.0, 55.0}, Case{"pcff-frc", st, 1, 2, 120.0, 37.5}}) {
+    const FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/" + c.lib + ".json");
+    System s = c.s;
+    const TypingResult tr = assign_types(s, def);
+    ASSERT_EQ(tr.untyped, 0) << c.lib;
+    ParamReport rep;
+    const ForceField f = parameterize(s, def, tr.types, "types", &rep, false);
+    bool found = false;
+    const auto check = [&](uint32_t i, uint32_t j, uint32_t k, double theta0, double kt) {
+      if (j != c.centre || !((i == c.heavy_end && s.atoms[k].element == 1) || (k == c.heavy_end && s.atoms[i].element == 1))) return;
+      found = true;
+      EXPECT_NEAR(theta0 * 180 / 3.14159265358979323846, c.theta0, 1e-6) << c.lib;
+      EXPECT_NEAR(kt, c.k, 1e-6) << c.lib;
+    };
+    for (const auto& a : f.angles) check(a.i, a.j, a.k, a.theta0, a.kt);
+    for (const auto& a : f.angles2) check(a.i, a.j, a.k, a.theta0, a.k2);
+    EXPECT_TRUE(found) << c.lib;
+  }
+}
+
 namespace {
 
 TypingResult type_with(const char* ff_name, const System& s) {
