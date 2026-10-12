@@ -100,6 +100,9 @@ struct System {
   Cell cell;
   std::vector<Atom> atoms;
   std::vector<Bond> bonds;
+  // bonds the force field drops ("bonds": "defined": no term, no exclusion) kept for typing only, so the rules see the
+  // chemistry they were written for (a hydroxyl O's H, a carbonate's O); atom indices as in atoms
+  std::vector<Bond> typing_bonds;
   std::vector<TypeInfo> types;
   std::vector<Vec3> velocities;   // Å/fs, one per atom, or empty
   bool bonds_from_file = false;

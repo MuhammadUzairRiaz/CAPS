@@ -278,6 +278,7 @@ Evaluator::Evaluator(const ForceField& ff, const EnergyOptions& o)
   pa_.assign(nt * nt, 0.0);
   pb_.assign(nt * nt, 0.0);
   pc_.assign(nt * nt, 0.0);
+  prc2_.assign(nt * nt, 0.0);
   for (const auto& [ab, pf] : ff.pair_func) {
     if (pf.form == kPairTable && (pf.a < 0 || size_t(pf.a) >= ff.tables.size())) throw FieldError("a tabulated pair refers to a table that is not there");
     for (const size_t tp : {size_t(ab.first) * nt + ab.second, size_t(ab.second) * nt + ab.first}) {
@@ -285,6 +286,7 @@ Evaluator::Evaluator(const ForceField& ff, const EnergyOptions& o)
       pa_[tp] = pf.a;
       pb_[tp] = pf.b;
       pc_[tp] = pf.c;
+      prc2_[tp] = pf.rc * pf.rc;
       eps_[tp] = 1;   // non-zero: the pair is evaluated
     }
   }
@@ -1167,6 +1169,7 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
   auto lj = [&](size_t tp, double r2, double scale, double& en) -> double {   // returns −(dE/dr)/r
     const double eps = eps_[tp];
     if (eps <= 0) return 0.0;
+    if (prc2_[tp] > 0 && r2 > prc2_[tp]) return 0.0;   // beyond the pair's own cut-off
     if (form_[tp] == 1) {   // Buckingham
       const double r = std::sqrt(r2), ex = pa_[tp] * std::exp(-r / pb_[tp]), c6 = pc_[tp] / (r2 * r2 * r2);
       en += scale * (ex - c6);
@@ -1266,7 +1269,7 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
     if (opt_.tail || ff_.lj_fsw || form_[tp] == kPairGromacs || form_[tp] == kPairCos2 || form_[tp] == kPairCos2Wca || form_[tp] == kPairTable) return 0.0;   // zero at their cut-offs by construction
     if (form_[tp] != 0) {
       double e0 = 0;
-      lj(tp, rc2, 1.0, e0);
+      lj(tp, prc2_[tp] > 0 ? std::min(prc2_[tp], rc2) : rc2, 1.0, e0);   // zero at the pair's own cut-off
       return eps_[tp] > 0 ? e0 : 0.0;
     }
     const double q = s6_[tp] / (rc2 * rc2 * rc2);

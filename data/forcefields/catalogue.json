@@ -2223,6 +2223,96 @@
    }
   },
   {
+   "id": "schroder1992-zeolite",
+   "name": "Zeolites with bridging hydroxyls (Schroder et al. 1992)",
+   "version": "1992, Table 1",
+   "references": [
+    "K.-P. Schroder, J. Sauer, M. Leslie, C. R. A. Catlow, J. M. Thomas, Chem. Phys. Lett. 188, 320 (1992)"
+   ],
+   "origin": "built from source",
+   "source": "the paper's Table 1 (read from the page image); bench/ff/make_schroder1992.py",
+   "license": "published parameters of the paper",
+   "status": "validated",
+   "file": "schroder1992-zeolite.json",
+   "counts": {
+    "atom_types": 6,
+    "pairs": 14,
+    "bonds": 1,
+    "angles": 6,
+    "dihedrals": 0,
+    "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/schroder1992-zeolite.typing.json",
+    "evidence": "formal-charge Si and Al, shell-model framework O, hydroxyl O and H with the paper's fractional charges; the O-H Morse as a pair term within 1.4 A with its Coulomb term kept; O-T-O bends k (theta - theta0)^2 by distance; LAMMPS reproduces CAPS's energies on quartz and on Si(OH)4 / Al(OH)3"
+   },
+   "list": {
+    "label": "Zeolites (Schroder 1992)",
+    "key": "schroder1992",
+    "order": 30
+   }
+  },
+  {
+   "id": "ramsahye2005-nay",
+   "name": "Zeolite NaY and chloroform (Ramsahye & Bell 2005)",
+   "version": "2005, Table 1",
+   "references": [
+    "N. A. Ramsahye, R. G. Bell, J. Phys. Chem. B 109, 4738 (2005)"
+   ],
+   "origin": "built from source",
+   "source": "the paper's Table 1; bench/ff/make_ramsahye2005.py",
+   "license": "published parameters of the paper",
+   "status": "validated",
+   "file": "ramsahye2005-nay.json",
+   "counts": {
+    "atom_types": 7,
+    "pairs": 29,
+    "bonds": 2,
+    "angles": 4,
+    "dihedrals": 0,
+    "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/ramsahye2005-nay.typing.json",
+    "evidence": "Kramer-charge framework (Si, Al, O) with Na, Buckingham terms and O-T-O bends by distance; chloroform's charges, bonds, bends and its Lennard-Jones pairs with itself, O and Na; LAMMPS reproduces CAPS's energies on quartz and on chloroform with Na+, AlO4 and SiO4"
+   },
+   "list": {
+    "label": "Zeolite NaY (Ramsahye 2005)",
+    "key": "ramsahye2005",
+    "order": 30
+   }
+  },
+  {
+   "id": "forester1997-silicalite",
+   "name": "Silicalite and benzene (Forester & Smith 1997)",
+   "version": "1997, Tables 1 and 2",
+   "references": [
+    "T. R. Forester, W. Smith, J. Chem. Soc., Faraday Trans. 93, 3249 (1997)"
+   ],
+   "origin": "built from source",
+   "source": "the paper's Tables 1 and 2; bench/ff/make_forester1997.py",
+   "license": "published parameters of the paper",
+   "status": "validated",
+   "file": "forester1997-silicalite.json",
+   "counts": {
+    "atom_types": 5,
+    "pairs": 15,
+    "bonds": 1,
+    "angles": 1,
+    "dihedrals": 0,
+    "impropers": 0
+   },
+   "typing": {
+    "rules": "typing/forester1997-silicalite.typing.json",
+    "evidence": "Schroder and Sauer's silica shell model as the paper gives it (Si-O shell repulsion only, O-Si-O bends on the shells) and the benzene-O shell pairs (rigid benzene); LAMMPS reproduces CAPS's energies on quartz and on benzene with SiO4"
+   },
+   "list": {
+    "label": "Silicalite (Forester 1997)",
+    "key": "forester1997",
+    "order": 30
+   }
+  },
+  {
    "id": "charmm36-prot-toppar",
    "name": "CHARMM36 proteins",
    "version": "toppar_c36_jul17 (par_all36_prot.prm, top_all36_prot.rtf, its streams)",

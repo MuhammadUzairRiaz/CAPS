@@ -1180,6 +1180,12 @@ const std::string& Smarts::text() const { return d_->text; }
 // Typing
 
 TypingResult assign_types(const System& s, const FFDef& ff, const std::vector<std::string>* context) {
+  if (!s.typing_bonds.empty()) {   // the bonds the force field dropped still tell the rules the chemistry
+    System t = s;
+    t.bonds.insert(t.bonds.end(), t.typing_bonds.begin(), t.typing_bonds.end());
+    t.typing_bonds.clear();
+    return assign_types(t, ff, context);
+  }
   if (s.topology && s.topology->types.size() == s.atoms.size() && s.topology->natoms == s.atoms.size()) {
     // building blocks: the types the topology names (apply_residue_templates)
     TypingResult r;

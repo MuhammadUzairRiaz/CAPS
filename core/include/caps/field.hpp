@@ -63,7 +63,8 @@ struct VirtualSite { uint32_t site; std::vector<uint32_t> from; std::vector<doub
 // SDK / SPICA coarse-grained Lennard-Jones (LAMMPS lj/sdk; a = ε, b = σ), C ε [(σ/r)^m − (σ/r)^n]:
 // 11 9-6 (C = 27/4), 12 12-4 (C = 3√3/2), 13 12-6 (C = 4), 14 12-5;
 // 20 Lennard-Jones 12-6 with GROMACS's force switch from ForceField::lj_inner to the cut-off (LAMMPS lj/gromacs, MARTINI).
-struct PairFunc { int form; double a, b, c; };
+// rc: the pair's own cut-off (0: the force field's), as LAMMPS pair_coeff's last argument (Schroder & Sauer's O-H Morse, 1.4 A)
+struct PairFunc { int form; double a, b, c; double rc = 0; };
 // 31 / 32 cosine-squared attraction (LAMMPS cosine/squared; Cooke–Deserno): −ε below σ, −ε cos²(π(r − σ) / 2(rc − σ)) up to
 // the pair's cut-off rc (a = ε, b = σ, c = rc), 32 with WCA ε[(σ/r)¹² − 2(σ/r)⁶ + 1] below σ; rc = σ: WCA only.
 constexpr int kPairSdk96 = 11, kPairSdk124 = 12, kPairSdk126 = 13, kPairSdk125 = 14, kPairGromacs = 20, kPairCos2 = 31, kPairCos2Wca = 32;
@@ -326,7 +327,7 @@ class Evaluator {
   std::vector<double> rmin2_, emin_; // per type pair: SDK minimum (r², energy), for the angle's 1-3 repulsion
   std::vector<char> skip_type_;      // per type pair: excluded by the force field (never in the pair list)
   std::vector<double> qeff_;         // charges / √εr: what every Coulomb term uses
-  std::vector<double> pa_, pb_, pc_;
+  std::vector<double> pa_, pb_, pc_, prc2_;   // prc2_: the pair's own cut-off squared (0: none)
   std::vector<double> eps14_, s614_;  // separate 1-4 LJ, when the force field has them
   std::vector<double> type_count_;   // atoms per type, for the tail correction
   struct Excluded { uint32_t i, j; double factor; };

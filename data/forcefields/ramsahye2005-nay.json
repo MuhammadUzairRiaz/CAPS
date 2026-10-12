@@ -1,0 +1,528 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "Zeolite NaY and chloroform (Ramsahye & Bell 2005)",
+ "source": "N. A. Ramsahye, R. G. Bell, J. Phys. Chem. B 109, 4738 (2005), Table 1",
+ "references": [
+  "N. A. Ramsahye, R. G. Bell, J. Phys. Chem. B 109, 4738 (2005)"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "lj/cut/coul/long",
+  "bond": "harmonic",
+  "angle": "harmonic",
+  "dihedral": "fourier",
+  "improper": "fourier"
+ },
+ "mixing": "geometric",
+ "special_lj": [
+  0,
+  0,
+  1
+ ],
+ "special_coul": [
+  0,
+  0,
+  1
+ ],
+ "cutoff": 10,
+ "atom_types": [
+  {
+   "name": "Si_rb",
+   "element": "Si",
+   "mass": 28.0855,
+   "charge": 2.4,
+   "description": "framework Si (Table 1)"
+  },
+  {
+   "name": "Al_rb",
+   "element": "Al",
+   "mass": 26.982,
+   "charge": 1.4,
+   "description": "framework Al (Table 1)"
+  },
+  {
+   "name": "O_rb",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -1.2,
+   "description": "framework O (Table 1)"
+  },
+  {
+   "name": "Na_rb",
+   "element": "Na",
+   "mass": 22.98977,
+   "charge": 1.0,
+   "description": "extra-framework Na (Table 1)"
+  },
+  {
+   "name": "C_cf",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.102,
+   "description": "chloroform C (Table 1)"
+  },
+  {
+   "name": "H_cf",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.18,
+   "description": "chloroform H (Table 1)"
+  },
+  {
+   "name": "Cl_cf",
+   "element": "Cl",
+   "mass": 35.453,
+   "charge": -0.026,
+   "description": "chloroform Cl (Table 1)"
+  }
+ ],
+ "pairs": [
+  {
+   "name": "Si_rb",
+   "match": [
+    "Si_rb"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Al_rb",
+   "match": [
+    "Al_rb"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_rb",
+   "match": [
+    "O_rb"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Na_rb",
+   "match": [
+    "Na_rb"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "H_cf",
+   "match": [
+    "H_cf"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Si_rb-O_rb",
+   "match": [
+    "Si_rb",
+    "O_rb"
+   ],
+   "style": "buck",
+   "params": [
+    692346.832604,
+    0.1621,
+    296.09743632
+   ],
+   "comment": "A 30023.0 eV, rho 0.1621 A, C 12.84 eV A^6 (Table 1)"
+  },
+  {
+   "name": "Al_rb-O_rb",
+   "match": [
+    "Al_rb",
+    "O_rb"
+   ],
+   "style": "buck",
+   "params": [
+    622588.674904,
+    0.1622,
+    296.09743632
+   ],
+   "comment": "A 26998.0 eV, rho 0.1622 A, C 12.84 eV A^6 (Table 1)"
+  },
+  {
+   "name": "O_rb-O_rb",
+   "match": [
+    "O_rb",
+    "O_rb"
+   ],
+   "style": "buck",
+   "params": [
+    20629.9662408,
+    0.3244,
+    0.0
+   ],
+   "comment": "A 894.6 eV, rho 0.3244 A, C 0.0 eV A^6 (Table 1)"
+  },
+  {
+   "name": "Na_rb-O_rb",
+   "match": [
+    "Na_rb",
+    "O_rb"
+   ],
+   "style": "buck",
+   "params": [
+    189096.49360000002,
+    0.218,
+    272.1144664
+   ],
+   "comment": "A 8200.0 eV, rho 0.218 A, C 11.8 eV A^6 (Table 1)"
+  },
+  {
+   "name": "C_cf-O_rb",
+   "match": [
+    "C_cf",
+    "O_rb"
+   ],
+   "params": [
+    0.17300761047136,
+    3.25
+   ],
+   "comment": "eps 0.00750232 eV, sigma 3.25 A (Table 1)"
+  },
+  {
+   "name": "H_cf-O_rb",
+   "match": [
+    "H_cf",
+    "O_rb"
+   ],
+   "params": [
+    0.17990317553432,
+    2.7
+   ],
+   "comment": "eps 0.00780134 eV, sigma 2.7 A (Table 1)"
+  },
+  {
+   "name": "Cl_cf-O_rb",
+   "match": [
+    "Cl_cf",
+    "O_rb"
+   ],
+   "params": [
+    0.3286866027536,
+    3.43
+   ],
+   "comment": "eps 0.0142532 eV, sigma 3.43 A (Table 1)"
+  },
+  {
+   "name": "C_cf",
+   "match": [
+    "C_cf"
+   ],
+   "params": [
+    0.05138720274128,
+    3.75
+   ],
+   "comment": "eps 0.00222836 eV, sigma 3.75 A (Table 1)"
+  },
+  {
+   "name": "H_cf-C_cf",
+   "match": [
+    "H_cf",
+    "C_cf"
+   ],
+   "params": [
+    0.05311512960292,
+    3.36
+   ],
+   "comment": "eps 0.00230329 eV, sigma 3.36 A (Table 1)"
+  },
+  {
+   "name": "C_cf-Cl_cf",
+   "match": [
+    "C_cf",
+    "Cl_cf"
+   ],
+   "params": [
+    0.1105822458244,
+    3.79
+   ],
+   "comment": "eps 0.0047953 eV, sigma 3.79 A (Table 1)"
+  },
+  {
+   "name": "H_cf-Cl_cf",
+   "match": [
+    "H_cf",
+    "Cl_cf"
+   ],
+   "params": [
+    0.11431782399491999,
+    3.39
+   ],
+   "comment": "eps 0.00495729 eV, sigma 3.39 A (Table 1)"
+  },
+  {
+   "name": "Na_rb-Cl_cf",
+   "match": [
+    "Na_rb",
+    "Cl_cf"
+   ],
+   "params": [
+    0.42224555204440006,
+    2.9
+   ],
+   "comment": "eps 0.0183103 eV, sigma 2.9 A (Table 1)"
+  },
+  {
+   "name": "Cl_cf",
+   "match": [
+    "Cl_cf"
+   ],
+   "params": [
+    0.23805403700400002,
+    3.82
+   ],
+   "comment": "eps 0.010323 eV, sigma 3.82 A (Table 1)"
+  },
+  {
+   "name": "H_cf-Na_rb",
+   "match": [
+    "H_cf",
+    "Na_rb"
+   ],
+   "params": [
+    0.022674191578807998,
+    3.1
+   ],
+   "comment": "eps 0.000983246 eV, sigma 3.1 A (Table 1)"
+  },
+  {
+   "name": "C_cf-Na_rb",
+   "match": [
+    "C_cf",
+    "Na_rb"
+   ],
+   "params": [
+    0.0263109322406,
+    3.69
+   ],
+   "comment": "eps 0.00114095 eV, sigma 3.69 A (Table 1)"
+  },
+  {
+   "name": "Si_rb-Al_rb",
+   "match": [
+    "Si_rb",
+    "Al_rb"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "not in Table 1: Coulomb only"
+  },
+  {
+   "name": "Si_rb-Na_rb",
+   "match": [
+    "Si_rb",
+    "Na_rb"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "not in Table 1: Coulomb only"
+  },
+  {
+   "name": "Si_rb-C_cf",
+   "match": [
+    "Si_rb",
+    "C_cf"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "not in Table 1: Coulomb only"
+  },
+  {
+   "name": "Si_rb-H_cf",
+   "match": [
+    "Si_rb",
+    "H_cf"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "not in Table 1: Coulomb only"
+  },
+  {
+   "name": "Si_rb-Cl_cf",
+   "match": [
+    "Si_rb",
+    "Cl_cf"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "not in Table 1: Coulomb only"
+  },
+  {
+   "name": "Al_rb-Na_rb",
+   "match": [
+    "Al_rb",
+    "Na_rb"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "not in Table 1: Coulomb only"
+  },
+  {
+   "name": "Al_rb-C_cf",
+   "match": [
+    "Al_rb",
+    "C_cf"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "not in Table 1: Coulomb only"
+  },
+  {
+   "name": "Al_rb-H_cf",
+   "match": [
+    "Al_rb",
+    "H_cf"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "not in Table 1: Coulomb only"
+  },
+  {
+   "name": "Al_rb-Cl_cf",
+   "match": [
+    "Al_rb",
+    "Cl_cf"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "not in Table 1: Coulomb only"
+  }
+ ],
+ "bonds": [
+  {
+   "name": "C_cf-Cl_cf",
+   "match": [
+    "C_cf",
+    "Cl_cf"
+   ],
+   "style": "harmonic",
+   "params": [
+    314.2126498014,
+    1.761
+   ],
+   "comment": "1/2 k (r - r0)^2, k 27.2511 eV/A^2 (Table 1)"
+  },
+  {
+   "name": "C_cf-H_cf",
+   "match": [
+    "C_cf",
+    "H_cf"
+   ],
+   "style": "harmonic",
+   "params": [
+    340.8487357688,
+    1.105
+   ],
+   "comment": "k 29.5612 eV/A^2 (Table 1)"
+  }
+ ],
+ "angles": [
+  {
+   "name": "Cl_cf-C_cf-Cl_cf",
+   "match": [
+    "Cl_cf",
+    "C_cf",
+    "Cl_cf"
+   ],
+   "style": "harmonic",
+   "params": [
+    50.001263806480004,
+    109.5
+   ],
+   "comment": "k 4.33652 eV/rad^2 (Table 1)"
+  },
+  {
+   "name": "H_cf-C_cf-Cl_cf",
+   "match": [
+    "H_cf",
+    "C_cf",
+    "Cl_cf"
+   ],
+   "style": "harmonic",
+   "params": [
+    67.00184570030001,
+    107.1
+   ],
+   "comment": "k 5.81095 eV/rad^2 (Table 1)"
+  },
+  {
+   "name": "O_rb-Si_rb-O_rb",
+   "match": [
+    "O_rb",
+    "Si_rb",
+    "O_rb"
+   ],
+   "style": "harmonic",
+   "params": [
+    139.5163154,
+    109.47
+   ],
+   "contact": [
+    2.0
+   ],
+   "comment": "1/2 k (theta - theta0)^2, k 12.100 eV/rad^2 (Table 1); O within 2.0 A of the Si"
+  },
+  {
+   "name": "O_rb-Al_rb-O_rb",
+   "match": [
+    "O_rb",
+    "Al_rb",
+    "O_rb"
+   ],
+   "style": "harmonic",
+   "params": [
+    25.366602800000003,
+    109.47
+   ],
+   "contact": [
+    2.0
+   ],
+   "comment": "k 2.200 eV/rad^2 (Table 1); O within 2.0 A of the Al"
+  }
+ ],
+ "dihedrals": [],
+ "impropers": [],
+ "notes": [
+  "built by CAPS (bench/ff/make_ramsahye2005.py) from the paper's Table 1",
+  "framework: no T-O bond terms; O-T-O bends by distance (2.0 A, CAPS's)",
+  "every pair Table 1 does not list: Coulomb only",
+  "cut-off 10 A (the paper gives none)"
+ ],
+ "version": "2005 (Table 1)",
+ "typing": "../typing/ramsahye2005-nay.typing.json"
+}

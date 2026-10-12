@@ -88,7 +88,8 @@ std::string forcefield_to_json(const ForceField& ff) {
   j["lj_pairs"] = rows(ff.lj_pairs, [](const PairLJ& t) { return nums({double(t.i), double(t.j), t.eps, t.sigma}); });
   {
     Json a = Json::array();
-    for (const auto& [k, f] : ff.pair_func) a.push_back(nums({double(k.first), double(k.second), double(f.form), f.a, f.b, f.c}));
+    for (const auto& [k, f] : ff.pair_func)
+      a.push_back(f.rc > 0 ? nums({double(k.first), double(k.second), double(f.form), f.a, f.b, f.c, f.rc}) : nums({double(k.first), double(k.second), double(f.form), f.a, f.b, f.c}));
     j["pair_func"] = a;
   }
   j["lj14_types"] = rows(ff.lj14_types, [](const PairType& p) { return nums({p.eps, p.sigma}); });
@@ -203,7 +204,7 @@ ForceField forcefield_from_json(const std::string& text) {
     return t;
   });
   read_rows(j, "lj_pairs", f.lj_pairs, [](const Json& r) { return PairLJ{u(r, 0), u(r, 1), d(r, 2), d(r, 3)}; });
-  for (const auto& r : at(j, "pair_func").items()) f.pair_func[{n(r, 0), n(r, 1)}] = PairFunc{n(r, 2), d(r, 3), d(r, 4), d(r, 5)};
+  for (const auto& r : at(j, "pair_func").items()) f.pair_func[{n(r, 0), n(r, 1)}] = PairFunc{n(r, 2), d(r, 3), d(r, 4), d(r, 5), r.size() > 6 ? d(r, 6) : 0.0};
   read_rows(j, "lj14_types", f.lj14_types, [](const Json& r) { return PairType{d(r, 0), d(r, 1)}; });
   read_rows(j, "bonds2", f.bonds2, [](const Json& r) { return Class2Bond{u(r, 0), u(r, 1), d(r, 2), d(r, 3), d(r, 4), d(r, 5)}; });
   read_rows(j, "angles2", f.angles2, [](const Json& r) {
