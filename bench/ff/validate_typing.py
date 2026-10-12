@@ -9,7 +9,11 @@ xyz input), types it with `caps ff type`, and compares the result with the templ
 When DL_FIELD itself was run on the template (validate_family.py work directory, --dl DIR), its re-typing
 ("Atom N - X changed to Y" in dl_field.output) is applied to the expected keys, since that is what DL_FIELD assigns.
 
-usage: validate_typing.py LIB FF.json RULES.json [--dl DIR] [--only a,b] [--show N] [--all] [--apply] [--charges types|gasteiger] [--exclude REGEX]
+--cap-open: residue templates whose only fault is an open valence (an sp3 C with three partners, an ether or hydroxyl O
+with one, by the DL type's name: a sugar's anomeric C or glycosidic O) are typed with H on each open valence; the atoms
+the cap retypes (the capped O, the H already on a capped C) are left out of the comparison.
+
+usage: validate_typing.py LIB FF.json RULES.json [--dl DIR] [--only a,b] [--show N] [--all] [--apply] [--charges types|gasteiger] [--exclude REGEX] [--cap-open]
 """
 import collections, os, re, subprocess, sys, tempfile
 
@@ -32,7 +36,44 @@ key_of = dict(template_pdb.ATOM_KEY)
 work = tempfile.mkdtemp()
 
 
-def usable(name, m):
+def open_atoms(m):
+    """{atom label: missing partners} for sp3 C and ether / hydroxyl O the template leaves open"""
+    nbs = collections.defaultdict(set)
+    for a, js in m["connect"].items():
+        for b in js:
+            if a != b:
+                nbs[a].add(b); nbs[b].add(a)
+    out = {}
+    for a, t in m["atoms"]:
+        tl = t.lower()
+        if element(t) == "C" and re.search(r"aliphatic|alkane|sp3|sialic", tl) and len(nbs[a]) < 4:
+            out[a] = 4 - len(nbs[a])
+        elif element(t) == "O" and re.search(r"ether|hydroxyl|alcohol", tl) and len(nbs[a]) < 2:
+            out[a] = 2 - len(nbs[a])
+        elif element(t) == "S" and len(nbs[a]) == 3 and all(element(dict(m["atoms"]).get(b, "")) == "O" for b in nbs[a]):
+            out[a] = 1   # an SO3 group that a sugar O carries (sulfate ester)
+    return out
+
+
+def has_ring_o(m):
+    """does the template hold a ring with an O (a sugar ring)?"""
+    nbs = collections.defaultdict(set)
+    for a, js in m["connect"].items():
+        for b in js:
+            if a != b:
+                nbs[a].add(b); nbs[b].add(a)
+    el = dict(m["atoms"])
+    for o in (a for a, t in m["atoms"] if element(t) == "O" and len(nbs[a]) == 2):
+        x, y = list(nbs[o])
+        seen, front = {x}, [x]   # is y reachable from x without passing o?
+        while front:
+            front = [c for f in front for c in nbs[f] if c != o and c not in seen and not seen.add(c)]
+        if y in seen:
+            return True
+    return False
+
+
+def usable(name, m, allow_open=False):
     """Whole molecules only: every CONNECT partner is in the template (no links to neighbouring residues)."""
     labels = {a for a, _ in m["atoms"]}
     if len(m["atoms"]) < 1:
@@ -40,6 +81,10 @@ def usable(name, m):
     if any(b not in labels for js in m["connect"].values() for b in js):
         return False
     if m.get("links"):   # an improper through a neighbouring residue's atom: a chain residue with an open valence
+        return False
+    # an open valence the template leaves for a neighbouring residue (a sugar's glycosidic C and O): an sp3 carbon with
+    # fewer than four partners, an ether or hydroxyl O with fewer than two, by the DL type's own name
+    if open_atoms(m) and not allow_open:
         return False
     text = (name + " " + m["remark"]).lower()
     # chain residues and terminal residues are fragments with open valences, not molecules
@@ -52,7 +97,34 @@ def element(t):
     return e[:1].upper() + e[1:2].lower() if len(e) > 1 and e[:2].capitalize() in template_pdb.COV else e[:1].upper()
 
 
-def write_mol2(path, name, m):
+# a sugar ring to cap the open valence of a group that only exists on a sugar (an aglycone, an O-methyl, a sulfate):
+# oxan-2-yl, its C1' carrying the open atom (an O) or an O carrying it (a C or S)
+OXANYL = [("C1", "C", ["O5", "C2", "H1"]), ("O5", "O", ["C5"]), ("C5", "C", ["C4", "H51", "H52"]), ("C4", "C", ["C3", "H41", "H42"]),
+          ("C3", "C", ["C2", "H31", "H32"]), ("C2", "C", ["H21", "O2"]), ("O2", "O", ["HO2"])] + \
+         [(h, "H", []) for h in ("H1", "H51", "H52", "H41", "H42", "H31", "H32", "H21", "HO2")]
+
+
+def write_mol2(path, name, m, caps=None, sugar=False):
+    """caps: {label: n} adds n H on that atom (open valences); sugar: one open valence per atom gets an oxan-2-yl ring
+    (through an O when the open atom is not itself an O) instead"""
+    m = {"atoms": list(m["atoms"]), "connect": {a: list(js) for a, js in m["connect"].items()}}
+    for a, n in (caps or {}).items():
+        if sugar:
+            pre = f"CAP{a}_"
+            for lab, el, js in OXANYL:
+                m["atoms"].append((pre + lab, "__cap_" + el))
+                m["connect"][pre + lab] = [pre + j for j in js]
+            if element(dict(m["atoms"])[a]) == "O":
+                m["connect"].setdefault(a, []).append(pre + "C1")
+            else:
+                m["atoms"].append((pre + "OL", "__cap_O"))
+                m["connect"][pre + "OL"] = [pre + "C1"]
+                m["connect"].setdefault(a, []).append(pre + "OL")
+            n -= 1
+        for k in range(n):
+            h = f"HCAP{a}_{k}"
+            m["atoms"].append((h, "__cap_H"))
+            m["connect"].setdefault(a, []).append(h)
     labels = [a for a, _ in m["atoms"]]
     idx = {a: i for i, a in enumerate(labels)}
     bonds = set()
@@ -63,7 +135,7 @@ def write_mol2(path, name, m):
     with open(path, "w") as f:
         f.write(f"@<TRIPOS>MOLECULE\n{name}\n{len(labels)} {len(bonds)} 1\nSMALL\nNO_CHARGES\n\n@<TRIPOS>ATOM\n")
         for i, (lab, t) in enumerate(m["atoms"]):
-            f.write(f"{i + 1} {lab} {i * 1.5:.3f} 0.000 0.000 {types.get(t, 'Du')} 1 MOL 0.0\n")
+            f.write(f"{i + 1} {lab} {i * 1.5:.3f} 0.000 0.000 {t[6:] if t.startswith('__cap_') else types.get(t, 'Du')} 1 MOL 0.0\n")
         f.write("@<TRIPOS>BOND\n")
         for k, (i, j) in enumerate(sorted(bonds)):
             f.write(f"{k + 1} {i + 1} {j + 1} un\n")
@@ -82,7 +154,11 @@ def retyped(name, dl_types):
     return t
 
 
-names = only or [n for n, m in mols.items() if n in keys and usable(n, m)]
+CAP = "--cap-open" in sys.argv
+# --overlay 'REGEX=RULES.json;...': templates whose name matches take that typing overlay too (a water model: the same
+# structure, a different model, which the user picks)
+OVERLAYS = [tuple(x.split("=", 1)) for x in arg("--overlay", "").split(";") if x]
+names = only or [n for n, m in mols.items() if n in keys and usable(n, m, CAP)]
 if "--exclude" in sys.argv:   # e.g. water-model templates (TIP4P / TIP5P virtual sites cannot be typed from bonds)
     names = [n for n in names if not re.search(arg("--exclude", ""), n)]
 total = right = 0
@@ -93,15 +169,25 @@ for name in names:
         failed.append((name, "atom type missing from ATOM_TYPE"))
         continue
     path = os.path.join(work, re.sub(r"[^A-Za-z0-9_.-]", "_", name) + ".mol2")
-    write_mol2(path, name, m)
+    opened = open_atoms(m) if CAP else {}
+    sugar_cap = bool(opened) and not has_ring_o(m)   # a group that only exists on a sugar: capped with one
+    write_mol2(path, name, m, opened, sugar_cap)
+    over = [f for pat, f in OVERLAYS if re.fullmatch(pat, name)]
     expect = [key_of.get(t, "?") for t in retyped(name, [t for _, t in m["atoms"]])]
+    # atoms a cap retypes: a capped O itself, and the H already on a capped C
+    skip = {a for a in opened if element(dict(m["atoms"])[a]) == "O" and not sugar_cap}
+    for a in ([] if sugar_cap else opened):
+        for b in m["connect"].get(a, []):
+            if element(dict(m["atoms"]).get(b, "")) == "H":
+                skip.add(b)
+        skip |= {x for x, js in m["connect"].items() if a in js and element(dict(m["atoms"]).get(x, "")) == "H"}
     out = path + ".types"
-    r = subprocess.run([CAPS, "ff", "type", path, "--ff", ffjson, "--typing", rules, "-o", out, "--explain"],
+    r = subprocess.run([CAPS, "ff", "type", path, "--ff", ffjson, "--typing", ",".join([rules] + over), "-o", out, "--explain"],
                        capture_output=True, text=True)
     if not os.path.exists(out):
         failed.append((name, (r.stderr or r.stdout).strip().splitlines()[-1][:120] if (r.stderr or r.stdout).strip() else "?"))
         continue
-    got = [x.strip() for x in open(out)]
+    got = [x.strip() for x in open(out)][:len(m["atoms"])]
     if "--apply" in sys.argv:
         # end to end: the automatically typed molecule must get every parameter
         ra = subprocess.run([CAPS, "ff", "apply", path, "--ff", ffjson, "--typing", rules, "--charges", arg("--charges", "types"), "--allow-missing"],
@@ -109,9 +195,9 @@ for name in names:
         miss = re.findall(r"^  (.+)$", ra.stdout.split("missing parameters", 1)[1], re.M) if "missing parameters" in ra.stdout else []
         if ra.returncode or miss:
             apply_problems.append((name, ra.returncode, miss[:6], (ra.stderr.strip().splitlines() or [""])[-1][:100]))
-    bad = [(i, a[0], a[1], expect[i], got[i]) for i, a in enumerate(m["atoms"]) if expect[i] != got[i]]
-    total += len(expect)
-    right += len(expect) - len(bad)
+    bad = [(i, a[0], a[1], expect[i], got[i]) for i, a in enumerate(m["atoms"]) if expect[i] != got[i] and a[0] not in skip]
+    total += len(expect) - len(skip)
+    right += len(expect) - len(skip) - len(bad)
     for b in bad:
         confusion[(b[3], b[4])] += 1
     if bad:
