@@ -419,8 +419,9 @@ inline double angle_grad(const Vec3& u, const Vec3& v, Vec3& gu, Vec3& gv) {
   return std::acos(c);
 }
 
-// φ of i-j-k-l from b1 = x_j − x_i, b2 = x_k − x_j, b3 = x_l − x_k, and dφ/dx for the four atoms.
-inline double dihedral_grad(const Vec3& b1, const Vec3& b2, const Vec3& b3, Vec3 g[4]) {
+// φ of i-j-k-l from b1 = x_j − x_i, b2 = x_k − x_j, b3 = x_l − x_k as its cosine and sine (no atan2), and dφ/dx for the
+// four atoms
+inline void dihedral_grad_cs(const Vec3& b1, const Vec3& b2, const Vec3& b3, Vec3 g[4], double& c, double& s) {
   const Vec3 m = cross(b1, b2), nn = cross(b2, b3);
   const double m2 = std::max(dot(m, m), 1e-24), n2 = std::max(dot(nn, nn), 1e-24), lb2 = norm(b2);
   g[0] = m * (-lb2 / m2);
@@ -428,7 +429,18 @@ inline double dihedral_grad(const Vec3& b1, const Vec3& b2, const Vec3& b3, Vec3
   const double p = dot(b1, b2) / (lb2 * lb2), q = dot(b3, b2) / (lb2 * lb2);
   g[1] = g[3] * q - g[0] * (1 + p);
   g[2] = g[0] * p - g[3] * (1 + q);
-  return std::atan2(lb2 * dot(b1, nn), dot(m, nn));
+  const double x = dot(m, nn), y = lb2 * dot(b1, nn), r = std::sqrt(x * x + y * y);
+  c = r > 0 ? x / r : 1.0;
+  s = r > 0 ? y / r : 0.0;
+}
+
+// cos(a − δ) and sin(a − δ) from cos a, sin a (δ = 0 or π without a cosine)
+inline void shifted(double ca, double sa, double delta, double& c, double& s) {
+  if (delta == 0) { c = ca; s = sa; return; }
+  if (std::fabs(delta - kPi) < 1e-12 || std::fabs(delta + kPi) < 1e-12) { c = -ca; s = -sa; return; }
+  const double cd = std::cos(delta), sd = std::sin(delta);
+  c = ca * cd + sa * sd;
+  s = sa * cd - ca * sd;
 }
 
 // Wilson angle χ between the plane of a, b and the vector c (all from the centre): sin χ = (a × b)·c / (|a × b| |c|).
@@ -475,12 +487,17 @@ inline Class2Out class2_angle(const Class2Angle& t, const Vec3& u, const Vec3& v
 inline Class2Out class2_dihedral(const Class2Dihedral& t, const Vec3& b1, const Vec3& b2, const Vec3& b3) {
   Class2Out o;
   Vec3 gp[4], ga1, gc1, ga2, gc2;
-  const double phi = dihedral_grad(b1, b2, b3, gp);
+  double c1, s1;   // cos φ, sin φ; the multiples by the double- and triple-angle formulas
+  dihedral_grad_cs(b1, b2, b3, gp, c1, s1);
   const double th1 = angle_grad(b1 * -1.0, b2, ga1, gc1);   // i-j-k: vectors j→i, j→k
   const double th2 = angle_grad(b2 * -1.0, b3, ga2, gc2);   // j-k-l: vectors k→j, k→l
   const double r1 = norm(b1), r2 = norm(b2), r3 = norm(b3);
-  const double c1 = std::cos(phi), c2 = std::cos(2 * phi), c3 = std::cos(3 * phi);
-  const double s1 = std::sin(phi), s2 = std::sin(2 * phi), s3 = std::sin(3 * phi);
+  const double c2 = 2 * c1 * c1 - 1, s2 = 2 * s1 * c1;
+  const double c3 = c1 * c2 - s1 * s2, s3 = s1 * c2 + c1 * s2;
+  double p1c, p1s, p2c, p2s, p3c, p3s;   // cos and sin of nφ − φn
+  shifted(c1, s1, t.phi1, p1c, p1s);
+  shifted(c2, s2, t.phi2, p2c, p2s);
+  shifted(c3, s3, t.phi3, p3c, p3s);
   const double dr1 = r1 - t.ebt_r1, dr2 = r2 - t.mbt_r2, dr3 = r3 - t.ebt_r3;
   const double dt1 = th1 - t.at_theta1, dt2 = th2 - t.at_theta2;
   const double da1 = th1 - t.aat_theta1, da2 = th2 - t.aat_theta2;
@@ -490,9 +507,9 @@ inline Class2Out class2_dihedral(const Class2Dihedral& t, const Vec3& b1, const 
   const double C = t.ebt_c[0] * c1 + t.ebt_c[1] * c2 + t.ebt_c[2] * c3, dC = -(t.ebt_c[0] * s1 + 2 * t.ebt_c[1] * s2 + 3 * t.ebt_c[2] * s3);
   const double D = t.at_d[0] * c1 + t.at_d[1] * c2 + t.at_d[2] * c3, dD = -(t.at_d[0] * s1 + 2 * t.at_d[1] * s2 + 3 * t.at_d[2] * s3);
   const double E = t.at_e[0] * c1 + t.at_e[1] * c2 + t.at_e[2] * c3, dE = -(t.at_e[0] * s1 + 2 * t.at_e[1] * s2 + 3 * t.at_e[2] * s3);
-  o.e = t.k1 * (1 - std::cos(phi - t.phi1)) + t.k2 * (1 - std::cos(2 * phi - t.phi2)) + t.k3 * (1 - std::cos(3 * phi - t.phi3)) +
+  o.e = t.k1 * (1 - p1c) + t.k2 * (1 - p2c) + t.k3 * (1 - p3c) +
         dr2 * A + dr1 * B + dr3 * C + dt1 * D + dt2 * E + t.aat_m * da1 * da2 * c1 + t.bb13_n * db1 * db3;
-  const double dEdphi = t.k1 * std::sin(phi - t.phi1) + 2 * t.k2 * std::sin(2 * phi - t.phi2) + 3 * t.k3 * std::sin(3 * phi - t.phi3) +
+  const double dEdphi = t.k1 * p1s + 2 * t.k2 * p2s + 3 * t.k3 * p3s +
                         dr2 * dA + dr1 * dB + dr3 * dC + dt1 * dD + dt2 * dE - t.aat_m * da1 * da2 * s1;
   const double dEdr1 = B + t.bb13_n * db3, dEdr2 = A, dEdr3 = C + t.bb13_n * db1;
   const double dEdth1 = D + t.aat_m * da2 * c1, dEdth2 = E + t.aat_m * da1 * c1;
@@ -1043,7 +1060,7 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
     if (st == 2) {
       const std::vector<char> none;
       cl_->build(x, cell, opt_.cutoff + opt_.skin, ff_.excluded, ff_.type_index, ff_.lj.size(),
-                 ff_.excluded_type_pairs.empty() ? none : skip_type_, qeff_, cl_f12_, cl_f6_, *pool_);
+                 ff_.excluded_type_pairs.empty() ? none : skip_type_, qeff_, cl_f12_, cl_f6_, *pool_, cl_c12_.data(), cl_c6_.data());
       x0c_ = x;
       cell0c_ = cell;
       cl_built_ = true;
