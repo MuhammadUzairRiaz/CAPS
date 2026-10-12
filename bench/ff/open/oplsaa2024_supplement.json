@@ -183,5 +183,23 @@
    "description": "S between two S in a polysulfide",
    "reason": "each S bonded to a carbon carries the disulfide S charge (203, -0.2175) against its carbon group (213-216, +0.2175); an S bonded only to S has no such partner, so 0"
   }
+ ],
+ "dihedrals": [
+  {
+   "match": [
+    "F",
+    "CF",
+    "CT",
+    "F"
+   ],
+   "params": [
+    -2.5,
+    0.0,
+    0.25,
+    0.0
+   ],
+   "source": "E. K. Watkins, W. L. Jorgensen, J. Phys. Chem. A 105, 4118 (2001), Table 5 (general F-CT-CT-F)",
+   "reason": "the paper's fluorinated carbons are all class CT (the 2024 files' CF for a perfluorinated carbon, CT for a CHF / CH2F carbon); an F-C-C-F torsion between two fluorinated carbons takes its general term"
+  }
  ]
 }
