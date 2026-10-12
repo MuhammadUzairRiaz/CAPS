@@ -258,6 +258,12 @@
    "description": "phosphate O"
   },
   {
+   "type": "O2",
+   "smarts": "[OX1]~[#16X4]",
+   "priority": 1,
+   "description": "sulfate O"
+  },
+  {
    "type": "OS",
    "smarts": "[OX2]",
    "priority": 0,

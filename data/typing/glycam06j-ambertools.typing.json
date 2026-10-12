@@ -1,0 +1,501 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "GLYCAM06j",
+ "unknown_types": "untyped",
+ "description": "CAPS rules for GLYCAM06j in AMBER's own type names, checked against AmberTools' residue libraries (bench/typing/make_amber_rules.py)",
+ "rules": [
+  {
+   "type": "CT",
+   "smarts": "[#6X4]",
+   "priority": 0,
+   "description": "sp3 C"
+  },
+  {
+   "type": "CA",
+   "smarts": "[#6X3]",
+   "priority": 1,
+   "description": "sp2 C (aromatic, guanidinium)"
+  },
+  {
+   "type": "C",
+   "smarts": "[#6X3]=[OX1]",
+   "priority": 3,
+   "description": "carbonyl C (amide, ester, ketone, ring C=O)"
+  },
+  {
+   "type": "C",
+   "smarts": "[#6X3](~[OX1])~[OX1]",
+   "priority": 3,
+   "description": "carboxylate C"
+  },
+  {
+   "type": "C",
+   "smarts": "[#6X3;R](-[OX2H1,OX1-])",
+   "priority": 3,
+   "description": "aromatic C bearing O (tyrosine CZ)"
+  },
+  {
+   "type": "CB",
+   "smarts": "[#6X3;r5;r6;!$(*~[#7;r6])]",
+   "priority": 4,
+   "description": "ring fusion C of indole away from N (Trp CD2), purine C5"
+  },
+  {
+   "type": "CB",
+   "smarts": "[#6X3;r5;r6;$(*~[#7;r6])]",
+   "priority": 4,
+   "description": "purine C4 / C5"
+  },
+  {
+   "type": "CN",
+   "smarts": "[#6X3;r5;r6;$(*1:c:c:c:c:c:1);$(*~[#7;r5])]",
+   "priority": 5,
+   "description": "indole ring fusion C bonded to N (Trp CE2)"
+  },
+  {
+   "type": "C*",
+   "smarts": "[#6X3;r5;!r6;$(*-[CX4]);$(*~[#6;r5;r6])]",
+   "priority": 4,
+   "description": "indole C3 (Trp CG)"
+  },
+  {
+   "type": "CW",
+   "smarts": "[#6X3;r5;!r6;$(*~[#7X3H1;r5]);!$(*(~[#7])~[#7])]",
+   "priority": 4,
+   "description": "five-ring C=C next to N-H (Trp CD1, His CD2 of HIE / HIP)"
+  },
+  {
+   "type": "CV",
+   "smarts": "[#6X3;r5;!r6;$(*~[#7X2;r5]);!$(*(~[#7])~[#7]);!$(*-[CX4])]",
+   "priority": 4,
+   "description": "five-ring C next to an N without H (His CD2 of HID)"
+  },
+  {
+   "type": "CC",
+   "smarts": "[#6X3;r5;!r6;$(*-[CX4]);$(*~[#7;r5])]",
+   "priority": 5,
+   "description": "imidazole C bearing the side chain (His CG)"
+  },
+  {
+   "type": "CR",
+   "smarts": "[#6X3;r5;!r6;$(*(~[#7;r5])~[#7;r5])]",
+   "priority": 5,
+   "description": "imidazole C between two N (His CE1)"
+  },
+  {
+   "type": "CK",
+   "smarts": "[#6X3;r5;!r6;$(*(~[#7;r5]~[#6;r5;r6])~[#7;r5]~[#6;r5;r6])]",
+   "priority": 6,
+   "description": "purine C8"
+  },
+  {
+   "type": "CM",
+   "smarts": "[#6X3;r6;!r5;$(*1~[#7]~*~*~*~*~1),$(*1~*~[#7]~*~*~*~1),$(*1~*~*~[#7]~*~*~1)]",
+   "priority": 2,
+   "description": "pyrimidine C5 / C6"
+  },
+  {
+   "type": "CQ",
+   "smarts": "[#6X3H1;r6;$(*(~[#7;r6])~[#7;r6])]",
+   "priority": 6,
+   "description": "purine C2 between two ring N"
+  },
+  {
+   "type": "CA",
+   "smarts": "[#6X3;R;$(*-[NX3H2,NX3H1;!R])]",
+   "priority": 6,
+   "description": "ring C bearing an amino group (A C6, C C4, G C2)"
+  },
+  {
+   "type": "C",
+   "smarts": "[#6X3;R]=[OX1]",
+   "priority": 7,
+   "description": "ring carbonyl C"
+  },
+  {
+   "type": "HC",
+   "smarts": "[H][#6X4]",
+   "priority": 0,
+   "description": "H on sp3 C"
+  },
+  {
+   "type": "H1",
+   "smarts": "[H][#6X4;$(*~[#7,#8,#16,#9,#17,#35,#53]);!$(*(~[#7,#8,#16,#9,#17,#35,#53])~[#7,#8,#16,#9,#17,#35,#53])]",
+   "priority": 1,
+   "description": "H on sp3 C with one electron-withdrawing neighbour"
+  },
+  {
+   "type": "H2",
+   "smarts": "[H][#6X4;$(*(~[#7,#8,#16,#9,#17,#35,#53])~[#7,#8,#16,#9,#17,#35,#53]);!$(*(~[#7,#8,#16,#9,#17,#35,#53])(~[#7,#8,#16,#9,#17,#35,#53])~[#7,#8,#16,#9,#17,#35,#53])]",
+   "priority": 1,
+   "description": "H on sp3 C with two"
+  },
+  {
+   "type": "H3",
+   "smarts": "[H][#6X4;$(*(~[#7,#8,#16,#9,#17,#35,#53])(~[#7,#8,#16,#9,#17,#35,#53])~[#7,#8,#16,#9,#17,#35,#53])]",
+   "priority": 1,
+   "description": "H on sp3 C with three"
+  },
+  {
+   "type": "HP",
+   "smarts": "[H][#6X4][#7X4+]",
+   "priority": 2,
+   "description": "H on C next to an ammonium N"
+  },
+  {
+   "type": "HP",
+   "smarts": "[H][#6X4][#7X3;!$(*~[#6X3]);!$(*~[#6X2])]",
+   "priority": 2,
+   "description": "H on C next to an sp3 amine N (neutral Lys CE)"
+  },
+  {
+   "type": "H0",
+   "smarts": "[H][#6X4H2]([#7X3][#6X3]=[OX1])[#6X3](=[OX1])[#7X3]",
+   "priority": 3,
+   "description": "glycine H alpha inside a chain (ff03)"
+  },
+  {
+   "type": "HA",
+   "smarts": "[H][#6X3]",
+   "priority": 0,
+   "description": "H on sp2 C"
+  },
+  {
+   "type": "H4",
+   "smarts": "[H][#6X3;$(*~[#7,#8,#16,#9,#17,#35,#53]);!$(*(~[#7,#8,#16,#9,#17,#35,#53])~[#7,#8,#16,#9,#17,#35,#53])]",
+   "priority": 1,
+   "description": "H on sp2 C with one electron-withdrawing neighbour"
+  },
+  {
+   "type": "H5",
+   "smarts": "[H][#6X3;$(*(~[#7,#8,#16,#9,#17,#35,#53])~[#7,#8,#16,#9,#17,#35,#53])]",
+   "priority": 1,
+   "description": "H on sp2 C with two"
+  },
+  {
+   "type": "H",
+   "smarts": "[H][#7]",
+   "priority": 0,
+   "description": "H on N"
+  },
+  {
+   "type": "HO",
+   "smarts": "[H][#8]",
+   "priority": 0,
+   "description": "hydroxyl H"
+  },
+  {
+   "type": "HS",
+   "smarts": "[H][#16]",
+   "priority": 0,
+   "description": "thiol H"
+  },
+  {
+   "type": "N3",
+   "smarts": "[#7X4]",
+   "priority": 0,
+   "description": "sp3 N (ammonium)"
+  },
+  {
+   "type": "N3",
+   "smarts": "[#7X3;!$(*~[#6X3]);!$(*~[#6X2])]",
+   "priority": 0,
+   "description": "sp3 amine N"
+  },
+  {
+   "type": "N2",
+   "smarts": "[#7X3;!R;$(*~[#6X3])]",
+   "priority": 1,
+   "description": "sp2 amino N (guanidinium, base amines)"
+  },
+  {
+   "type": "N",
+   "smarts": "[#7X3;$(*-[#6X3]=[OX1])]",
+   "priority": 2,
+   "description": "amide N"
+  },
+  {
+   "type": "NA",
+   "smarts": "[#7X3H1;R]",
+   "priority": 4,
+   "description": "ring N with H"
+  },
+  {
+   "type": "NB",
+   "smarts": "[#7X2;r5]",
+   "priority": 4,
+   "description": "five-ring N without H"
+  },
+  {
+   "type": "NC",
+   "smarts": "[#7X2;r6]",
+   "priority": 4,
+   "description": "six-ring N without H"
+  },
+  {
+   "type": "N*",
+   "smarts": "[#7X3;R;$(*-[#6X4]);$(*@[#6X3])]",
+   "priority": 5,
+   "description": "glycosidic ring N"
+  },
+  {
+   "type": "O",
+   "smarts": "[OX1]",
+   "priority": 0,
+   "description": "carbonyl O"
+  },
+  {
+   "type": "O2",
+   "smarts": "[OX1]~[#6X3]~[OX1]",
+   "priority": 1,
+   "description": "carboxylate O"
+  },
+  {
+   "type": "O2",
+   "smarts": "[OX1]~[#15]",
+   "priority": 1,
+   "description": "phosphate O"
+  },
+  {
+   "type": "O2",
+   "smarts": "[OX1]~[#16X4]",
+   "priority": 1,
+   "description": "sulfate O"
+  },
+  {
+   "type": "OS",
+   "smarts": "[OX2]",
+   "priority": 0,
+   "description": "ether / ester O"
+  },
+  {
+   "type": "OH",
+   "smarts": "[OX2H1]",
+   "priority": 1,
+   "description": "hydroxyl O"
+  },
+  {
+   "type": "S",
+   "smarts": "[#16]",
+   "priority": 0,
+   "description": "sulfide / disulfide S"
+  },
+  {
+   "type": "SH",
+   "smarts": "[#16X2H1]",
+   "priority": 1,
+   "description": "thiol S"
+  },
+  {
+   "type": "SH",
+   "smarts": "[#16X1]",
+   "priority": 1,
+   "description": "thiolate S (CYM)"
+  },
+  {
+   "type": "P",
+   "smarts": "[#15]",
+   "priority": 0,
+   "description": "phosphate P"
+  },
+  {
+   "type": "OW",
+   "smarts": "[OX2H2]",
+   "priority": 8,
+   "description": "water O"
+  },
+  {
+   "type": "HW",
+   "smarts": "[H][OX2H2]",
+   "priority": 8,
+   "description": "water H"
+  },
+  {
+   "type": "IP",
+   "smarts": "[Na+]",
+   "priority": 9,
+   "description": "ion"
+  },
+  {
+   "type": "IM",
+   "smarts": "[Cl-]",
+   "priority": 9,
+   "description": "ion"
+  },
+  {
+   "type": "Li",
+   "smarts": "[Li+]",
+   "priority": 9,
+   "description": "ion"
+  },
+  {
+   "type": "K",
+   "smarts": "[K+]",
+   "priority": 9,
+   "description": "ion"
+  },
+  {
+   "type": "Rb",
+   "smarts": "[Rb+]",
+   "priority": 9,
+   "description": "ion"
+  },
+  {
+   "type": "Cs",
+   "smarts": "[Cs+]",
+   "priority": 9,
+   "description": "ion"
+  },
+  {
+   "type": "MG",
+   "smarts": "[Mg+2]",
+   "priority": 9,
+   "description": "ion"
+  },
+  {
+   "type": "C0",
+   "smarts": "[Ca+2]",
+   "priority": 9,
+   "description": "ion"
+  },
+  {
+   "type": "Zn",
+   "smarts": "[Zn+2]",
+   "priority": 9,
+   "description": "ion"
+  },
+  {
+   "type": "F",
+   "smarts": "[F-]",
+   "priority": 9,
+   "description": "ion"
+  },
+  {
+   "type": "Br",
+   "smarts": "[Br-]",
+   "priority": 9,
+   "description": "ion"
+  },
+  {
+   "type": "I",
+   "smarts": "[I-]",
+   "priority": 9,
+   "description": "ion"
+  },
+  {
+   "type": "Cg",
+   "smarts": "[CX4;$([CX4;$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1);$(*!@[#8,#7]),$(*@[CX4]!@[#8,#7])]),$(*~[CX4;$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1);$(*!@[#8,#7]),$(*@[CX4]!@[#8,#7])]),$(*~*~[CX4;$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1);$(*!@[#8,#7]),$(*@[CX4]!@[#8,#7])]),$(*~*~*~[CX4;$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1);$(*!@[#8,#7]),$(*@[CX4]!@[#8,#7])]);!$([CX4]([NX3,NX4+])[CX3]=[OX1]);!$([CX4][CX4]([NX3,NX4+])[CX3]=[OX1])]",
+   "priority": 5,
+   "description": "sp3 C of a carbohydrate (GLYCAM Cg)"
+  },
+  {
+   "type": "Hc",
+   "smarts": "[H][CX4;$([CX4;$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1);$(*!@[#8,#7]),$(*@[CX4]!@[#8,#7])]),$(*~[CX4;$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1);$(*!@[#8,#7]),$(*@[CX4]!@[#8,#7])]),$(*~*~[CX4;$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1);$(*!@[#8,#7]),$(*@[CX4]!@[#8,#7])]),$(*~*~*~[CX4;$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1);$(*!@[#8,#7]),$(*@[CX4]!@[#8,#7])]);!$([CX4]([NX3,NX4+])[CX3]=[OX1]);!$([CX4][CX4]([NX3,NX4+])[CX3]=[OX1]);!$(*[N,O,S,F,Cl,Br,I])]",
+   "priority": 5,
+   "description": "H on a carbohydrate sp3 C without O or N (GLYCAM Hc)"
+  },
+  {
+   "type": "Oh",
+   "smarts": "[OX2H1][CX4;$([CX4;$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1);$(*!@[#8,#7]),$(*@[CX4]!@[#8,#7])]),$(*~[CX4;$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1);$(*!@[#8,#7]),$(*@[CX4]!@[#8,#7])]),$(*~*~[CX4;$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1);$(*!@[#8,#7]),$(*@[CX4]!@[#8,#7])]),$(*~*~*~[CX4;$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1);$(*!@[#8,#7]),$(*@[CX4]!@[#8,#7])]);!$([CX4]([NX3,NX4+])[CX3]=[OX1]);!$([CX4][CX4]([NX3,NX4+])[CX3]=[OX1])]",
+   "priority": 5,
+   "description": "carbohydrate hydroxyl O (GLYCAM Oh)"
+  },
+  {
+   "type": "Ho",
+   "smarts": "[H][OX2H1][CX4;$([CX4;$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1);$(*!@[#8,#7]),$(*@[CX4]!@[#8,#7])]),$(*~[CX4;$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1);$(*!@[#8,#7]),$(*@[CX4]!@[#8,#7])]),$(*~*~[CX4;$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1);$(*!@[#8,#7]),$(*@[CX4]!@[#8,#7])]),$(*~*~*~[CX4;$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1);$(*!@[#8,#7]),$(*@[CX4]!@[#8,#7])]);!$([CX4]([NX3,NX4+])[CX3]=[OX1]);!$([CX4][CX4]([NX3,NX4+])[CX3]=[OX1])]",
+   "priority": 5,
+   "description": "carbohydrate hydroxyl H (GLYCAM Ho)"
+  },
+  {
+   "type": "Os",
+   "smarts": "[OX2H0;$(O[CX4;$([CX4;$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1);$(*!@[#8,#7]),$(*@[CX4]!@[#8,#7])]),$(*~[CX4;$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1);$(*!@[#8,#7]),$(*@[CX4]!@[#8,#7])]),$(*~*~[CX4;$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1);$(*!@[#8,#7]),$(*@[CX4]!@[#8,#7])]),$(*~*~*~[CX4;$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1);$(*!@[#8,#7]),$(*@[CX4]!@[#8,#7])]);!$([CX4]([NX3,NX4+])[CX3]=[OX1]);!$([CX4][CX4]([NX3,NX4+])[CX3]=[OX1])])]",
+   "priority": 5,
+   "description": "carbohydrate ether / ester O (GLYCAM Os)"
+  },
+  {
+   "type": "Ng",
+   "smarts": "[NX3;$(N[CX3]=[OX1]);$(N[CX4;$([CX4;$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1);$(*!@[#8,#7]),$(*@[CX4]!@[#8,#7])]),$(*~[CX4;$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1);$(*!@[#8,#7]),$(*@[CX4]!@[#8,#7])]),$(*~*~[CX4;$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1);$(*!@[#8,#7]),$(*@[CX4]!@[#8,#7])]),$(*~*~*~[CX4;$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[CX4;R]@[OX2;R]1),$([CX4;R]1@[CX4;R]@[CX4;R]@[OX2;R]@[CX4;R]1),$([CX4;R]1@[CX4;R]@[OX2;R]@[CX4;R]@[CX4;R]1),$([CX4;R]1@[OX2;R]@[CX4;R]@[CX4;R]@[CX4;R]1);$(*!@[#8,#7]),$(*@[CX4]!@[#8,#7])]);!$([CX4]([NX3,NX4+])[CX3]=[OX1]);!$([CX4][CX4]([NX3,NX4+])[CX3]=[OX1])])]",
+   "priority": 5,
+   "description": "carbohydrate amide N (GLYCAM Ng)"
+  },
+  {
+   "type": "Cy",
+   "smarts": "[CX4;R;$(*@[OX2;R]);$(*[CX3](~[OX1])~[OX1]);$(*@[CX4H2;R])]",
+   "priority": 6,
+   "description": "sialic acid ring C2 (GLYCAM Cy)"
+  },
+  {
+   "type": "H1",
+   "smarts": "[H][CX4H3][CX4;R]@[CX4;R][NX3]",
+   "priority": 6,
+   "description": "methyl H of a 6-deoxy sugar with N at C4 (as the library has bacillosamine)"
+  },
+  {
+   "type": "Oy",
+   "smarts": "[OX2;R;$(O@[CX4;R;$(*@[OX2;R]);$(*[CX3](~[OX1])~[OX1]);$(*@[CX4H2;R])])]",
+   "priority": 6,
+   "description": "sialic acid ring O (GLYCAM Oy)"
+  },
+  {
+   "type": "H1",
+   "smarts": "[H][C@@]1([OX2])[C@@]([H])([OX2])[C@@]([H])([OX2])[C@@]([H])([CX4H2])[OX2]1",
+   "priority": 7,
+   "description": "anomeric H of alpha-D-lyxofuranose: H1 as GLYCAM types it (?DD)"
+  },
+  {
+   "type": "H1",
+   "smarts": "[H][C@]1([OX2])[C@]([H])([OX2])[C@]([H])([OX2])[C@]([H])([CX4H2])[OX2]1",
+   "priority": 7,
+   "description": "anomeric H of alpha-L-lyxofuranose: H1 as GLYCAM types it (?dD)"
+  },
+  {
+   "type": "H1",
+   "smarts": "[H][C@@]1([OX2])[C@]([H])([OX2])[C@@]([H])([OX2])[C@@]([H])([CX4H2])[OX2]1",
+   "priority": 7,
+   "description": "anomeric H of alpha-D-xylofuranose: H1 as GLYCAM types it (?XD)"
+  },
+  {
+   "type": "H1",
+   "smarts": "[H][C@]1([OX2])[C@@]([H])([OX2])[C@]([H])([OX2])[C@]([H])([CX4H2])[OX2]1",
+   "priority": 7,
+   "description": "anomeric H of alpha-L-xylofuranose: H1 as GLYCAM types it (?xD)"
+  },
+  {
+   "type": "H1",
+   "smarts": "[H][C@]1([OX2])[C@]([H])([OX2])[C@]([H])([OX2])[C@@]([H])([CX4H2])[OX2]1",
+   "priority": 7,
+   "description": "anomeric H of beta-D-ribofuranose: H1 as GLYCAM types it (?RU)"
+  },
+  {
+   "type": "H1",
+   "smarts": "[H][C@@]1([OX2])[C@@]([H])([OX2])[C@@]([H])([OX2])[C@]([H])([CX4H2])[OX2]1",
+   "priority": 7,
+   "description": "anomeric H of beta-L-ribofuranose: H1 as GLYCAM types it (?rU)"
+  },
+  {
+   "type": "H1",
+   "smarts": "[H][CX4]1([OX2])[C@]([H])([OX2])[C@@]([H])([OX2])[C@]([H])([OX2])[C@@]([H])([CX4H3])[OX2]1",
+   "priority": 7,
+   "description": "anomeric H of D-quinovopyranose (6-deoxy-glucose), either anomer: H1 as GLYCAM types it (?QA / ?QB)"
+  },
+  {
+   "type": "H1",
+   "smarts": "[H][CX4]1([OX2])[C@@]([H])([OX2])[C@]([H])([OX2])[C@@]([H])([OX2])[C@]([H])([CX4H3])[OX2]1",
+   "priority": 7,
+   "description": "anomeric H of L-quinovopyranose, either anomer: H1 as GLYCAM types it (?qA / ?qB)"
+  },
+  {
+   "type": "H1",
+   "smarts": "[H][CX4]1([OX2])[C@@]([H])([OX2])[CX4]([H])([H])[C@]([H])([OX2])[C@@]([H])([CX4H3])[OX2]1",
+   "priority": 7,
+   "description": "anomeric H of D-tyvelose (3,6-dideoxy-arabino-hexopyranose), either anomer: H1 as GLYCAM types it (?TV / ?Tv)"
+  },
+  {
+   "type": "H1",
+   "smarts": "[H][CX4]1([OX2])[C@]([H])([OX2])[CX4]([H])([H])[C@@]([H])([OX2])[C@]([H])([CX4H3])[OX2]1",
+   "priority": 7,
+   "description": "anomeric H of L-tyvelose, either anomer: H1 as GLYCAM types it (?tV / ?tv)"
+  }
+ ]
+}

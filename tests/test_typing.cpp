@@ -142,6 +142,27 @@ TEST(Smarts, Errors) {
   for (const char* bad : {"", "[C", "C(", "C)", "C1CC", "[Q]", "C.C", "%x"}) EXPECT_THROW(Smarts{bad}, FFError) << bad;
 }
 
+// @ / @@ from the positions: CHFClBr with F above the carbon and Cl, Br, H anticlockwise below it, seen from F
+TEST(Typing, SmartsChiralityFromPositions) {
+  System s = mol({"C", "F", "Cl", "Br"}, {1, 0, 0, 0}, {{0, 1}, {0, 2}, {0, 3}});
+  const double h = -1.0 / 3, c = std::cos(2 * M_PI / 3), sn = std::sin(2 * M_PI / 3);
+  s.atoms[1].pos = {0, 0, 1};
+  s.atoms[2].pos = {1, 0, h};
+  s.atoms[3].pos = {c, sn, h};
+  s.atoms[4].pos = {c, -sn, h};   // H
+  const Perception p = perceive(s);
+  EXPECT_TRUE(Smarts("[C@](F)(Cl)(Br)[H]").matches(s, p, 0, {}));
+  EXPECT_FALSE(Smarts("[C@@](F)(Cl)(Br)[H]").matches(s, p, 0, {}));
+  EXPECT_TRUE(Smarts("[C@@](F)(Br)(Cl)[H]").matches(s, p, 0, {}));   // two neighbours swapped: the other sense
+  EXPECT_TRUE(Smarts("[C@@H](F)(Cl)Br").matches(s, p, 0, {}));        // the bracket's H first: an odd permutation
+  EXPECT_TRUE(Smarts("[C@](F)(Cl)Br").matches(s, p, 0, {}));          // the unnamed fourth neighbour last
+  EXPECT_TRUE(Smarts("F[C@](Cl)(Br)[H]").matches(s, p, 1, {}));       // reached from F: F is still first
+  EXPECT_FALSE(Smarts("F[C@@](Cl)(Br)[H]").matches(s, p, 1, {}));
+  EXPECT_TRUE(Smarts("[C](F)(Cl)(Br)[H]").matches(s, p, 0, {}));
+  for (auto& a : s.atoms) a.pos = {0, 0, 0};   // no positions: no handedness, a chiral pattern does not match
+  EXPECT_FALSE(Smarts("[C@](F)(Cl)(Br)[H]").matches(s, perceive(s), 0, {}));
+}
+
 TEST(Typing, PrecedenceOverridesAndTypeReferences) {
   FFDef ff;
   ff.name = "test";

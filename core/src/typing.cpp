@@ -581,7 +581,13 @@ class SmartsNode {
   std::vector<std::unique_ptr<AtomExpr>> atoms;
   std::vector<PBond> bonds;
   std::vector<std::vector<std::pair<int, int>>> adj;   // (other atom, bond index)
+  // stereo: each atom's neighbours in the order the pattern writes them (the atom before it, its ring closures where
+  // they stand, then its branches and the atom after it), @ (1) or @@ (2), and whether the atom's own bracket gives H1
+  std::vector<std::vector<int>> order;
+  std::vector<int> chiral;
+  std::vector<char> chiral_h;
   bool uses_types = false;
+  bool uses_chirality = false;
 };
 
 namespace {
@@ -684,7 +690,12 @@ struct Parser {
       if (v == 1 && std::isdigit(static_cast<unsigned char>(peek()))) v = number(1);
       return prim(Prim::Charge, sign * v);
     }
-    if (c == '@') { while (peek() == '@') ++i; return prim(Prim::Chiral); }
+    if (c == '@') {   // @ anticlockwise, @@ clockwise, looking from the first neighbour (checked from 3D positions)
+      int n = 0;
+      while (peek() == '@') { ++i; ++n; }
+      if (n > 2) fail("'@' or '@@' only");
+      return prim(Prim::Chiral, n);
+    }
     // two-letter element symbols first ([Hg], [Xe], [Ru]); then H is a hydrogen atom only as the first primitive
     // ([H], [H+]) and a hydrogen count after it ([CH3]); D X R are always counts
     if (std::isupper(static_cast<unsigned char>(c)) && std::islower(static_cast<unsigned char>(peek(1))))
@@ -837,12 +848,22 @@ struct Parser {
       if (uses_types(*k)) return true;
     return false;
   }
+  // @ / @@ and H1 among the atom's own AND terms (not under ! or ,)
+  static void stereo_terms(const AtomExpr& e, int& chiral, bool& h1) {
+    if (e.op == Op::And || e.op == Op::AndLow) {
+      for (const auto& k : e.kids) stereo_terms(*k, chiral, h1);
+    } else if (e.op == Op::Prim) {
+      if (e.prim == Prim::Chiral) chiral = e.value;
+      if (e.prim == Prim::HCount && e.value == 1) h1 = true;
+    }
+  }
+  struct Open { int atom; std::unique_ptr<BondExpr> bond; size_t slot; };
   static void compile(const std::string& text, SmartsNode& g) {
     Parser P(text);
     std::vector<int> stack;
     int prev = -1;
     std::unique_ptr<BondExpr> pending;
-    std::map<int, std::pair<int, std::unique_ptr<BondExpr>>> ring;
+    std::map<int, Open> ring;
     while (P.i < text.size()) {
       const char c = P.peek();
       if (c == '(') {
@@ -877,11 +898,14 @@ struct Parser {
         }
         auto it = ring.find(d);
         if (it == ring.end()) {
-          ring[d] = {prev, std::move(pending)};
+          g.order[prev].push_back(-1);   // the closing atom, once known, stands where the digit does
+          ring[d] = {prev, std::move(pending), g.order[prev].size() - 1};
         } else {
-          auto e = pending ? std::move(pending) : std::move(it->second.second);
+          auto e = pending ? std::move(pending) : std::move(it->second.bond);
           if (!e) e = std::make_unique<BondExpr>();
-          add_bond(g, it->second.first, prev, std::move(e));
+          add_bond(g, it->second.atom, prev, std::move(e));
+          g.order[it->second.atom][it->second.slot] = prev;
+          g.order[prev].push_back(it->second.atom);
           ring.erase(it);
         }
         pending.reset();
@@ -903,9 +927,20 @@ struct Parser {
       } else if (!P.element_symbol(a, false)) {
         P.fail(std::string("unexpected '") + c + "'");
       }
+      int chiral = 0;
+      bool h1 = false;
+      stereo_terms(*a, chiral, h1);
       g.atoms.push_back(std::move(a));
       g.adj.emplace_back();
+      g.order.emplace_back();
+      g.chiral.push_back(chiral);
+      g.chiral_h.push_back(chiral && h1);
+      g.uses_chirality = g.uses_chirality || chiral;
       const int cur = int(g.atoms.size()) - 1;
+      if (prev >= 0) {
+        g.order[prev].push_back(cur);
+        g.order[cur].push_back(prev);
+      }
       if (prev >= 0) add_bond(g, prev, cur, pending ? std::move(pending) : std::make_unique<BondExpr>());
       pending.reset();
       prev = cur;
@@ -988,6 +1023,38 @@ bool eval_bond(const BondExpr& e, const Ctx& c, uint32_t a, size_t k) {
   return false;
 }
 
+// The @ / @@ of every chiral pattern atom against the matched atoms' positions: the neighbours in the pattern's order
+// (an H1 in the atom's bracket is its hydrogen, right after the atom before it; a fourth neighbour the pattern leaves
+// out comes last); '@' when, looking from the first, the other three run anticlockwise (negative signed volume).
+bool chirality_holds(const SmartsNode& g, const Ctx& c, const std::vector<int64_t>& map) {
+  if (!g.uses_chirality) return true;
+  for (size_t k = 0; k < g.atoms.size(); ++k) {
+    if (!g.chiral[k]) continue;
+    const uint32_t t = uint32_t(map[k]);
+    std::vector<uint32_t> nb;
+    for (int o : g.order[k]) nb.push_back(uint32_t(map[size_t(o)]));
+    const auto& real = c.p.nb[t];
+    if (g.chiral_h[k]) {
+      for (uint32_t x : real)
+        if (c.s.atoms[x].element == 1 && std::find(nb.begin(), nb.end(), x) == nb.end()) {
+          nb.insert(nb.begin() + (k > 0 && !g.order[k].empty() ? 1 : 0), x);
+          break;
+        }
+    }
+    if (nb.size() == 3 && real.size() == 4)
+      for (uint32_t x : real)
+        if (std::find(nb.begin(), nb.end(), x) == nb.end()) nb.push_back(x);
+    if (nb.size() != 4) return false;
+    std::array<Vec3, 4> d;
+    for (int q = 0; q < 4; ++q) d[size_t(q)] = c.s.cell.valid() ? c.s.cell.minimum_image(c.s.atoms[nb[size_t(q)]].pos - c.s.atoms[t].pos)
+                                                                : c.s.atoms[nb[size_t(q)]].pos - c.s.atoms[t].pos;
+    const double v = dot(d[1] - d[0], cross(d[2] - d[0], d[3] - d[0]));
+    if (std::fabs(v) < 1e-6) return false;   // flat or no coordinates: no handedness
+    if ((v < 0) != (g.chiral[k] == 1)) return false;
+  }
+  return true;
+}
+
 bool match_node(const SmartsNode& g, const Ctx& c, uint32_t anchor) {
   const size_t m = g.atoms.size();
   if (!eval_atom(*g.atoms[0], c, anchor)) return false;
@@ -997,7 +1064,7 @@ bool match_node(const SmartsNode& g, const Ctx& c, uint32_t anchor) {
   used[anchor] = 1;
   // pattern atoms in parse order: each atom k > 0 is bonded to an earlier one (its first bond)
   std::function<bool(size_t)> go = [&](size_t k) -> bool {
-    if (k == m) return true;
+    if (k == m) return chirality_holds(g, c, map);
     int parent = -1, pb = -1;
     for (auto [o, b] : g.adj[k])
       if (size_t(o) < k) { parent = o; pb = b; break; }
@@ -1041,7 +1108,7 @@ void match_all(const SmartsNode& g, const Ctx& c, uint32_t anchor, const std::ve
   used[anchor] = 1;
   std::function<void(size_t)> go = [&](size_t k) {
     if (k == m) {
-      out.emplace_back(map.begin(), map.end());
+      if (chirality_holds(g, c, map)) out.emplace_back(map.begin(), map.end());
       return;
     }
     int parent = -1, pb = -1;

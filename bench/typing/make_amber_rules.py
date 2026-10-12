@@ -16,7 +16,7 @@ import json, os, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from make_biomolecular_rules import Rules
+from make_biomolecular_rules import Rules, glycam as glycam_rules
 
 OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(os.path.dirname(HERE)), "data", "typing")
 EW = "#7,#8,#16,#9,#17,#35,#53"   # AMBER's electron-withdrawing neighbours
@@ -80,7 +80,7 @@ def amber():
     # oxygen
     R.add("O", 0, "[OX1]", "carbonyl O")
     R.add("O2", 1, "[OX1]~[#6X3]~[OX1]", "carboxylate O")
-    R.add("O2", 1, "[OX1]~[#15]", "phosphate O")
+    R.add("O2", 1, "[OX1]~[#15]", "phosphate O"); R.add("O2", 1, "[OX1]~[#16X4]", "sulfate O")
     R.add("OS", 0, "[OX2]", "ether / ester O")
     R.add("OH", 1, "[OX2H1]", "hydroxyl O")
     # sulfur, phosphorus
@@ -95,9 +95,42 @@ def amber():
     return R
 
 
+def glycam():
+    """GLYCAM06 (Kirschner et al., J. Comput. Chem. 29, 622 (2008)) on AMBER's rules: a carbohydrate's sp3 C Cg (Cy at a
+    sialic acid's C2), their H Hc / H1 / H2, hydroxyl Oh / Ho, ether and glycosidic O Os (Oy in a sialic acid ring),
+    amide N Ng (bench/typing/make_biomolecular_rules.py glycam(), in GLYCAM's own names)"""
+    R = amber()
+    G = Rules()
+    glycam_rules(G)
+    for r in G:
+        r["type"] = r["type"].removeprefix("G_")
+    # the anomeric H of a 3-deoxy pyranose is not H1 as a class (GLYCAM types abequose's H2, tyvelose's H1: below)
+    G = Rules(r for r in G if not r["description"].startswith("anomeric H of a 3-deoxy pyranose"))
+    # GLYCAM types the anomeric H H1, not H2, in these sugars (and their enantiomers), told apart from their epimers by
+    # the configuration of every ring carbon (@ / @@ from the structure's positions); written from GLYCAM_06j-1.prep's
+    # residues: the ring from the anomeric C round to the ring O, each carbon's H and O (or CH3 / CH2) in that order
+    for code, sugar, smarts in [
+        ("?DD", "alpha-D-lyxofuranose", "[H][C@@]1([OX2])[C@@]([H])([OX2])[C@@]([H])([OX2])[C@@]([H])([CX4H2])[OX2]1"),
+        ("?dD", "alpha-L-lyxofuranose", "[H][C@]1([OX2])[C@]([H])([OX2])[C@]([H])([OX2])[C@]([H])([CX4H2])[OX2]1"),
+        ("?XD", "alpha-D-xylofuranose", "[H][C@@]1([OX2])[C@]([H])([OX2])[C@@]([H])([OX2])[C@@]([H])([CX4H2])[OX2]1"),
+        ("?xD", "alpha-L-xylofuranose", "[H][C@]1([OX2])[C@@]([H])([OX2])[C@]([H])([OX2])[C@]([H])([CX4H2])[OX2]1"),
+        ("?RU", "beta-D-ribofuranose", "[H][C@]1([OX2])[C@]([H])([OX2])[C@]([H])([OX2])[C@@]([H])([CX4H2])[OX2]1"),
+        ("?rU", "beta-L-ribofuranose", "[H][C@@]1([OX2])[C@@]([H])([OX2])[C@@]([H])([OX2])[C@]([H])([CX4H2])[OX2]1"),
+        ("?QA / ?QB", "D-quinovopyranose (6-deoxy-glucose), either anomer",
+         "[H][CX4]1([OX2])[C@]([H])([OX2])[C@@]([H])([OX2])[C@]([H])([OX2])[C@@]([H])([CX4H3])[OX2]1"),
+        ("?qA / ?qB", "L-quinovopyranose, either anomer",
+         "[H][CX4]1([OX2])[C@@]([H])([OX2])[C@]([H])([OX2])[C@@]([H])([OX2])[C@]([H])([CX4H3])[OX2]1"),
+        ("?TV / ?Tv", "D-tyvelose (3,6-dideoxy-arabino-hexopyranose), either anomer",
+         "[H][CX4]1([OX2])[C@@]([H])([OX2])[CX4]([H])([H])[C@]([H])([OX2])[C@@]([H])([CX4H3])[OX2]1"),
+        ("?tV / ?tv", "L-tyvelose, either anomer",
+         "[H][CX4]1([OX2])[C@]([H])([OX2])[CX4]([H])([H])[C@@]([H])([OX2])[C@]([H])([CX4H3])[OX2]1")]:
+        G.add("H1", 7, smarts, f"anomeric H of {sugar}: H1 as GLYCAM types it ({code})")
+    return Rules(list(R) + list(G))
+
+
 if __name__ == "__main__":
-    for fid, label in [("amber-ff03-ambertools", "AMBER ff03")]:
-        rules = amber()
+    for fid, label, make in [("amber-ff03-ambertools", "AMBER ff03", amber), ("glycam06j-ambertools", "GLYCAM06j", glycam)]:
+        rules = make()
         doc = {"format": "caps-typing", "version": 1, "forcefield": label, "unknown_types": "untyped",
                "description": f"CAPS rules for {label} in AMBER's own type names, checked against AmberTools' residue "
                               "libraries (bench/typing/make_amber_rules.py)", "rules": list(rules)}
