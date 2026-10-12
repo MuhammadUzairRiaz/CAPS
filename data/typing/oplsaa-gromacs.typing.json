@@ -1806,6 +1806,102 @@
    "description": "pyridine H4"
   },
   {
+   "type": "opls_527",
+   "smarts": "[nX2;$(n1ccncc1)]",
+   "priority": 4,
+   "description": "pyrazine N"
+  },
+  {
+   "type": "opls_528",
+   "smarts": "[cH1;$(c1nccnc1)]",
+   "priority": 4,
+   "description": "pyrazine C"
+  },
+  {
+   "type": "opls_529",
+   "smarts": "[H][cH1;$(c1nccnc1)]",
+   "priority": 4,
+   "description": "pyrazine H"
+  },
+  {
+   "type": "opls_557",
+   "smarts": "[nX3H1;$([nH]1c[nX2]cc1)]",
+   "priority": 4,
+   "description": "imidazole N1 (NH)"
+  },
+  {
+   "type": "opls_558",
+   "smarts": "[cH1;$(c1[nX2]cc[nH]1)]",
+   "priority": 4,
+   "description": "imidazole C2"
+  },
+  {
+   "type": "opls_559",
+   "smarts": "[nX2;$(n1c[nH]cc1)]",
+   "priority": 4,
+   "description": "imidazole N3"
+  },
+  {
+   "type": "opls_560",
+   "smarts": "[cH1;$(c1[nX2]c[nH]c1)]",
+   "priority": 4,
+   "description": "imidazole C4"
+  },
+  {
+   "type": "opls_561",
+   "smarts": "[cH1;$(c1[nH]c[nX2]c1)]",
+   "priority": 4,
+   "description": "imidazole C5"
+  },
+  {
+   "type": "opls_562",
+   "smarts": "[H][nX3H1;$([nH]1c[nX2]cc1)]",
+   "priority": 4,
+   "description": "imidazole H1 (on N1)"
+  },
+  {
+   "type": "opls_563",
+   "smarts": "[H][cH1;$(c1[nX2]cc[nH]1)]",
+   "priority": 4,
+   "description": "imidazole H2"
+  },
+  {
+   "type": "opls_564",
+   "smarts": "[H][cH1;$(c1[nX2]c[nH]c1)]",
+   "priority": 4,
+   "description": "imidazole H4"
+  },
+  {
+   "type": "opls_565",
+   "smarts": "[H][cH1;$(c1[nH]c[nX2]c1)]",
+   "priority": 4,
+   "description": "imidazole H5"
+  },
+  {
+   "type": "opls_247",
+   "smarts": "[CX3;$(C(=[OX1])([NX3H2])[NX3H2])]",
+   "priority": 9,
+   "description": "urea C"
+  },
+  {
+   "type": "opls_248",
+   "smarts": "[OX1]=[CX3;$(C(=[OX1])([NX3H2])[NX3H2])]",
+   "priority": 9,
+   "description": "urea O"
+  },
+  {
+   "type": "opls_249",
+   "smarts": "[NX3H2][CX3;$(C(=[OX1])([NX3H2])[NX3H2])]",
+   "priority": 9,
+   "description": "urea N"
+  },
+  {
+   "type": "opls_250",
+   "smarts": "[H][NX3H2][CX3;$(C(=[OX1])([NX3H2])[NX3H2])]",
+   "priority": 9,
+   "description": "urea H"
+  },
+  {
    "type": "opls_670",
    "smarts": "[CX4H3;$(*c1ncccc1)]",
    "priority": 7,
