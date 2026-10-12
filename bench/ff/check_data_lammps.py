@@ -8,7 +8,7 @@ and COMPASS: hybrid styles with skip lines in the class II sections), DREIDING (
 (Buckingham pairs, periodic; QEq charges, as DL_FIELD keeps ionic charges in its templates and Gasteiger–Marsili has no parameters for the metals), a periodic polymer melt (tail corrections), mW water (Stillinger–Weber three-body term, pair_style sw), and CHARMM-type force fields, whose separate
 1-4 Lennard-Jones parameters LAMMPS cannot reproduce without switching (the writer refuses them; reported as such).
 
-With --pme, CAPS uses particle-mesh Ewald on a fine grid (β from ewald-rtol 1e-7, spacing 0.5 Å, order 6) and LAMMPS
+With --pme, CAPS uses particle-mesh Ewald on a fine grid (β from ewald-rtol 1e-9, spacing 0.3 Å, order 8) and LAMMPS
 its Ewald sum (kspace_style ewald): both converge to the same electrostatics; only periodic cases are run.
 
 usage: check_data_lammps.py [--only substring] [--keep DIR] [--pme]
@@ -436,17 +436,20 @@ def lammps_hbond_offset(d):
     return off, wv
 
 DSF = re.compile(r"(?:^|\s)(?:lj/cut/)?coul/dsf (\S+) (\S+)")
+LONG = re.compile(r"(?:^|\s)(?:lj/cut/|lj/class2/)?coul/long (\S+)")
 
-def dsf_erfc_offset(d, pairs):
-    """LAMMPS's coul/dsf and lj/cut/coul/dsf take erfc from Abramowitz and Stegun 7.1.26 (|error| <= 1.5e-7), CAPS the
-    exact erfc. This gives LAMMPS's Coulomb energy minus the exact one (kcal/mol, or eV in metal units) over the pairs of
-    its own neighbour list (pairs: atom ids and distance, from the run): q_i q_j [erfc_AS(ar) - erfc(ar)] / r, the same
-    for a pair at full weight and an excluded one (LAMMPS takes the whole erfc term there and removes the bare 1/r)."""
+def erfc_offset(d, pairs, g_ewald):
+    """LAMMPS's coul/dsf and coul/long styles (the latter with pair_modify table 0) take erfc from Abramowitz and Stegun
+    7.1.26 (|error| <= 1.5e-7), CAPS the exact erfc. This gives LAMMPS's Coulomb energy minus the exact one (kcal/mol,
+    or eV in metal units) over the pairs of its own neighbour list (pairs: atom ids and distance, from the run):
+    q_i q_j [erfc_AS(ar) - erfc(ar)] / r with a the DSF damping or LAMMPS's Ewald g, the same for a pair at full weight
+    and an excluded one (LAMMPS takes the whole erfc term there and removes the bare 1/r)."""
     inp = open(os.path.join(d, "case.in")).read()
-    m = DSF.search(next((l for l in inp.splitlines() if l.startswith("pair_style")), ""))
-    if not m or not pairs:
+    ps = next((l for l in inp.splitlines() if l.startswith("pair_style")), "")
+    m, ml = DSF.search(ps), LONG.search(ps)
+    if not pairs or not (m or (ml and g_ewald)):
         return 0.0
-    a, rc = float(m.group(1)), float(m.group(2))
+    a, rc = (float(m.group(1)), float(m.group(2))) if m else (g_ewald, float(ml.group(1)))
     diel = re.search(r"^dielectric\s+(\S+)", inp, re.M)
     qqrd2e = (14.399645 if re.search(r"^units\s+metal", inp, re.M) else 332.06371) / (float(diel.group(1)) if diel else 1.0)
     q, sec = {}, None
@@ -468,11 +471,15 @@ def dsf_erfc_offset(d, pairs):
 
 def lammps(infile, dump):
     txt = open(infile).read()
-    # coul/dsf: every pair of LAMMPS's list with its distance, for its erfc (dsf_erfc_offset); the core-shell styles
-    # (born/coul/dsf/cs) keep theirs, as their core-shell pairs sit at r = 1e-10 A
+    # coul/dsf and coul/long: every pair of LAMMPS's list with its distance, for its erfc (erfc_offset); coul/long
+    # without LAMMPS's 12-bit Coulomb table, whose interpolation is ~1e-7 off. The core-shell styles (born/coul/dsf/cs,
+    # coul/long/cs) and TIP4P keep theirs, as their core-shell pairs sit at r = 1e-10 A
     pdump = dump + ".pairs"
-    dsf = DSF.search(next((l for l in txt.splitlines() if l.startswith("pair_style")), "")) is not None
+    ps = next((l for l in txt.splitlines() if l.startswith("pair_style")), "")
+    dsf = (DSF.search(ps) or LONG.search(ps)) is not None
     if dsf:
+        if LONG.search(ps):
+            txt = txt.replace("run 0", "pair_modify table 0\nrun 0", 1)
         txt = txt.replace("run 0", f"compute caps_pp all property/local patom1 patom2\ncompute caps_pd all pair/local dist\n"
                           f"dump caps_pl all local 1 {pdump} c_caps_pp[1] c_caps_pp[2] c_caps_pd\ndump_modify caps_pl format float %.12g\nrun 0", 1)
     txt = txt.replace("run 0", f"run 0\nwrite_dump all custom {dump} id fx fy fz modify sort id format float %.10f")
@@ -498,7 +505,8 @@ def lammps(infile, dump):
             w = l.split()
             if len(w) == 3:
                 pairs.append((int(w[0]), int(w[1]), float(w[2])))
-    return e, f, pairs
+    g = re.search(r"G vector \(1/distance\) = (\S+)", r.stdout)
+    return e, f, pairs, float(g.group(1)) if g else 0.0
 
 
 rows, fails = [], 0
@@ -528,7 +536,7 @@ for case in CASES:
     if PME:
         if src[0] not in ("file", "ionic-first", "cg-box"):
             continue
-        cmd += ["--pme", "--ewald-rtol", "1e-7", "--pme-spacing", "0.5", "--pme-order", "6"]
+        cmd += ["--pme", "--ewald-rtol", "1e-9", "--pme-spacing", "0.3", "--pme-order", "8"]
     if src[0] == "compass-ps":
         ov = os.path.join(work, base + ".overlay.json")
         with open(ov, "w") as f:
@@ -546,7 +554,7 @@ for case in CASES:
     ce = dict(zip(["bond", "angle", "dihedral", "improper", "vdw", "coulomb"], map(float, m.groups())))
     cf = {int(w[0]): tuple(map(float, w[1:4])) for w in (l.split() for l in open(os.path.join(d, "caps_f.txt"))) if len(w) == 4}
     try:
-        le, lf, lpairs = lammps(os.path.join(d, "case.in"), os.path.join(d, "f.dump"))
+        le, lf, lpairs, lg = lammps(os.path.join(d, "case.in"), os.path.join(d, "f.dump"))
     except Exception as ex:
         rows.append((label, "LAMMPS failed: " + str(ex), "", ""))
         fails += 1
@@ -557,10 +565,10 @@ for case in CASES:
     c0 = re.search(r"the dihedral energy lower by (\S+) kcal/mol", r.stdout)
     if c0:
         lm["dihedral"] += float(c0.group(1))
-    # LAMMPS's coul/dsf energy with the exact erfc, as CAPS's
-    lm["coulomb"] -= dsf_erfc_offset(d, lpairs)
-    # with PME both codes reach the Ewald limit only to their discretisation and the real-space erfc approximation
-    # (Abramowitz–Stegun, 1.5e-7 per pair, as LAMMPS): the Coulomb term is compared to 1e-3 kcal/mol absolute there
+    # LAMMPS's coul/dsf and coul/long real-space energy with the exact erfc, as CAPS's
+    lm["coulomb"] -= erfc_offset(d, lpairs, lg)
+    # with PME both codes reach the Ewald limit only to their discretisation (CAPS's grid, LAMMPS's k-space cut-off; the
+    # real-space erfc is exact on both sides after erfc_offset): the Coulomb term is compared to 1e-3 kcal/mol absolute there
     de = max(abs(ce[k] - lm[k]) / (max(1.0, abs(ce[k])) if not (PME and k == "coulomb") else 100.0) for k in ce)
     mw = re.search(r"virial tensor \(kcal/mol\): xx (\S+)  yy (\S+)  zz (\S+)  xy (\S+)  xz (\S+)  yz (\S+)", r.stdout)
     cw = list(map(float, mw.groups()))
