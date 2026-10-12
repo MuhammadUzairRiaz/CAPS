@@ -9,6 +9,7 @@
 #include "nbnxm.hpp"
 
 #include <algorithm>
+#include <atomic>
 #include <cmath>
 #include <cstdlib>
 #include <functional>
@@ -1274,10 +1275,15 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
 
   const double* q = qeff_.data();
   const int nth = pool_->size();
-  tf_.resize(nth);
+  // Mixed precision hands out the work in chunks a worker takes when it is free (the cluster list's i-cluster chunks,
+  // then 2 per worker of the bonded terms), each with its own buffers, summed in chunk order: a fast core takes more
+  // chunks, and the result does not depend on which worker took which. Otherwise one static share per worker.
+  const size_t cpair = clmode ? cl_->tb.size() : 0, cbond = clmode ? (nth == 1 ? 1 : 2 * size_t(nth)) : 0;
+  const size_t nbuf = clmode ? cbond : size_t(nth);   // bonded (atom order) buffers
+  tf_.resize(std::max(tf_.size(), nbuf));
   tfs_.resize(nth);
   // per worker: bond, angle, dihedral, improper, vdW, Coulomb, virial, virial tensor (xx yy zz xy xz yz)
-  std::vector<std::array<double, 15>> acc(nth);   // + ∂U/∂λ of the alchemical pairs (LJ, Coulomb)
+  std::vector<std::array<double, 15>> acc(clmode ? cpair + cbond : size_t(nth));   // + ∂U/∂λ of the alchemical pairs (LJ, Coulomb)
   // alchemical pairs: plain 12-6 for every type an alchemical atom has, pairwise electrostatics, no tail
   const std::vector<char>* alch = opt_.alchemical && opt_.alchemical->size() == n ? opt_.alchemical : nullptr;
   if (alch && nonb) {
@@ -1557,7 +1563,8 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
   // by slot
   nbnxm::Params cp;
   if (clmode) {
-    tfc_.resize(nth);
+    tfc_.resize(std::max(tfc_.size(), cpair));
+    cl_fsh_.resize(std::max(cl_fsh_.size(), cpair));
     cp.rc2 = float(rc2);
     cp.rc = float(rc);
     cp.lj = lj96_ ? 2 : 1;
@@ -1576,17 +1583,15 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
     cp.kcoul = float(kCoulomb);
     cp.energies = energies_;
   }
-  auto cluster_phase = [&](int t) {
-    tf_[t].assign(x.size(), 0.0);
+  auto cluster_phase = [&](size_t ch) {
     const size_t ns = cl_->perm.size();
-    std::vector<float>& fc = tfc_[t];
+    std::vector<float>& fc = tfc_[ch];
     fc.assign(3 * ns, 0.0f);
     nbnxm::Sums sm;
-    nbnxm::kernel(*cl_, cp, t, fc.data(), fc.data() + ns, fc.data() + 2 * ns, sm);
-    acc[t][4] += sm.evdw;
-    acc[t][5] += sm.ecoul;
-    acc[t][6] += sm.w[0] + sm.w[1] + sm.w[2];
-    for (int c = 0; c < 6; ++c) acc[t][7 + c] += sm.w[c];
+    nbnxm::kernel(*cl_, cp, int(ch), fc.data(), fc.data() + ns, fc.data() + 2 * ns, sm);
+    acc[ch][4] += sm.evdw;
+    acc[ch][5] += sm.ecoul;
+    cl_fsh_[ch] = std::move(sm.fsh);
   };
 
   // Phase 2: bonded terms, 1-4 pairs and the electrostatics of bonded partners, as one index space split over workers.
@@ -1598,9 +1603,7 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
   const size_t c5 = c4 + ff_.inversions.size(), c6 = c5 + ff_.bonds_x.size(), c7 = c6 + ff_.angles_x.size();
   const size_t c8 = c7 + ff_.urey_bradley.size(), c9 = c8 + ff_.cbt.size();
   const size_t total = c9 + ff_.lj_pairs.size();
-  auto bonded_phase = [&](int t, size_t b, size_t en) {
-    std::vector<double>& ft = tf_[t];
-    auto& A = acc[t];
+  auto bonded_phase = [&](std::vector<double>& ft, std::array<double, 15>& A, size_t b, size_t en) {
     auto add = [&](uint32_t i, const Vec3& v) { ft[3 * i] += v[0]; ft[3 * i + 1] += v[1]; ft[3 * i + 2] += v[2]; };
     // virial of force fv at relative position d, scalar and tensor
     auto V = [&](const Vec3& d, const Vec3& fv) {
@@ -2010,30 +2013,72 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
     }
   };
   // one run for both phases: each worker lists its pairs, then its share of the bonded terms, into its own buffer
-  pool_->run(size_t(nth), [&](int t, size_t, size_t) {
-    if (clmode) cluster_phase(t);
-    else if (plain && lj96_) pair_phase(t, std::integral_constant<int, 2>{});
-    else if (plain) pair_phase(t, std::integral_constant<int, 1>{});
-    else pair_phase(t, std::integral_constant<int, 0>{});
-    bonded_phase(t, total * size_t(t) / size_t(nth), total * size_t(t + 1) / size_t(nth));
-  });
+  if (clmode) {
+    std::atomic<size_t> next{0};
+    pool_->run(size_t(nth), [&](int, size_t, size_t) {
+      // in order: the bigger half of the pair chunks, the bonded chunks, the smaller pair chunks (the step ends on small ones)
+      const size_t h = cpair / 2;
+      for (size_t k; (k = next.fetch_add(1, std::memory_order_relaxed)) < cpair + cbond;) {
+        const size_t c = k < h ? k : k < h + cbond ? cpair + (k - h) : k - cbond;
+        if (c < cpair) {
+          cluster_phase(c);
+        } else {
+          const size_t j = c - cpair;
+          tf_[j].assign(x.size(), 0.0);
+          bonded_phase(tf_[j], acc[c], total * j / cbond, total * (j + 1) / cbond);
+        }
+      }
+    });
+  } else {
+    pool_->run(size_t(nth), [&](int t, size_t, size_t) {
+      if (plain && lj96_) pair_phase(t, std::integral_constant<int, 2>{});
+      else if (plain) pair_phase(t, std::integral_constant<int, 1>{});
+      else pair_phase(t, std::integral_constant<int, 0>{});
+      bonded_phase(tf_[t], acc[t], total * size_t(t) / size_t(nth), total * size_t(t + 1) / size_t(nth));
+    });
+  }
 
   // Reduce in worker order (deterministic for a given thread count); the reduction itself is split by atoms. Pair
   // forces are in slot order.
   const bool slots = nonb && !clmode && iperm_.size() == n;
-  pool_->run(n, [&](int, size_t b, size_t en) {
-    for (int t = 0; t < nth; ++t) {
+  // Mixed precision: the pair chunks summed by slot in chunk order, and their virial from those forces at the listed
+  // positions plus the image terms (per worker range, then in worker order)
+  double wpair[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+  if (clmode) {
+    const size_t ns = cl_->perm.size();
+    cl_P_.resize(3 * ns);
+    const size_t S = pool_->slices();
+    std::vector<std::array<double, 9>> wpart(S);   // per slice, summed in slice order
+    for (auto& w : wpart) w.fill(0.0);
+    pool_->run_slices(ns, S, [&](size_t t, size_t b, size_t en) {
+      for (size_t sl = b; sl < en; ++sl) {
+        double px = 0, py = 0, pz = 0;
+        for (size_t c = 0; c < cpair; ++c) {
+          const float* fc = tfc_[c].data();
+          px += double(fc[sl]); py += double(fc[ns + sl]); pz += double(fc[2 * ns + sl]);
+        }
+        cl_P_[3 * sl] = px; cl_P_[3 * sl + 1] = py; cl_P_[3 * sl + 2] = pz;
+      }
+      nbnxm::pair_virial(*cl_, cl_P_.data(), b, en, wpart[t].data());
+    });
+    std::vector<double> fsh;
+    for (size_t c = 0; c < cpair; ++c) {
+      if (fsh.size() < cl_fsh_[c].size()) fsh.resize(cl_fsh_[c].size(), 0.0);
+      for (size_t k = 0; k < cl_fsh_[c].size(); ++k) fsh[k] += cl_fsh_[c][k];
+    }
+    for (const auto& w : wpart)
+      for (int k = 0; k < 9; ++k) wpair[k] += w[size_t(k)];
+    nbnxm::shift_virial(*cl_, fsh, wpair);
+  }
+  pool_->run_slices(n, pool_->slices(), [&](size_t, size_t b, size_t en) {
+    if (clmode)
+      for (size_t i = b; i < en; ++i) {
+        const double* P = &cl_P_[3 * size_t(cl_->iperm[i])];
+        f[3 * i] += P[0]; f[3 * i + 1] += P[1]; f[3 * i + 2] += P[2];
+      }
+    for (size_t t = 0; t < nbuf; ++t) {
       const std::vector<double>& ft = tf_[t];
       for (size_t k = 3 * b; k < 3 * en; ++k) f[k] += ft[k];
-      if (clmode) {
-        const std::vector<float>& fc = tfc_[t];
-        const size_t ns = cl_->perm.size();
-        for (size_t i = b; i < en; ++i) {
-          const size_t sl = cl_->iperm[i];
-          f[3 * i] += double(fc[sl]); f[3 * i + 1] += double(fc[ns + sl]); f[3 * i + 2] += double(fc[2 * ns + sl]);
-        }
-        continue;
-      }
       if (!slots) continue;
       const std::vector<double>& fs = tfs_[t];
       for (size_t i = b; i < en; ++i) {
@@ -2042,7 +2087,12 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
       }
     }
   });
-  for (int t = 0; t < nth; ++t) {
+  if (clmode) {
+    e.virial += wpair[0] + wpair[4] + wpair[8];
+    e.w[0] += wpair[0]; e.w[1] += wpair[4]; e.w[2] += wpair[8];
+    e.w[3] += 0.5 * (wpair[1] + wpair[3]); e.w[4] += 0.5 * (wpair[2] + wpair[6]); e.w[5] += 0.5 * (wpair[5] + wpair[7]);
+  }
+  for (size_t t = 0; t < acc.size(); ++t) {
     e.bond += acc[t][0];
     e.angle += acc[t][1];
     e.dihedral += acc[t][2];
@@ -2122,10 +2172,8 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
   if (pme) {
     // reciprocal part (Fortran), self energy −β/√π Σq², and the neutralising background −π Q²/(2Vβ²) for a net charge
     const PmeGrid grid = pme_grid(cell, beta, opt_.pme_spacing, opt_.pme_order);
-    std::vector<double> fk(x.size(), 0.0);
     double vk[6];
-    e.coulomb += pme_reciprocal(x, qeff_, cell, grid, fk, vk, *pool_);
-    for (size_t k = 0; k < x.size(); ++k) f[k] += fk[k];
+    e.coulomb += pme_reciprocal(x, qeff_, cell, grid, f, vk, *pool_);   // its forces added to f
     e.virial += vk[0] + vk[1] + vk[2];
     for (int c = 0; c < 6; ++c) e.w[c] += vk[c];
     double q2 = 0, qt = 0;

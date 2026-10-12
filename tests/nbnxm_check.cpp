@@ -129,18 +129,25 @@ int main() {
         const size_t ns = L.perm.size();
         std::vector<double> f(3 * n, 0.0);
         nbnxm::Sums sum;
-        for (int t = 0; t < threads; ++t) {
+        std::vector<double> P(3 * ns, 0.0);   // pair forces by slot, for the virial
+        for (size_t t = 0; t < L.tb.size(); ++t) {
           std::vector<float> fb(3 * ns, 0.0f);
-          nbnxm::kernel(L, p, t, fb.data(), fb.data() + ns, fb.data() + 2 * ns, sum);
+          nbnxm::kernel(L, p, int(t), fb.data(), fb.data() + ns, fb.data() + 2 * ns, sum);
+          for (size_t sl = 0; sl < ns; ++sl)
+            for (int k = 0; k < 3; ++k) P[3 * sl + size_t(k)] += fb[size_t(k) * ns + sl];
           for (size_t i = 0; i < n; ++i)
             for (int k = 0; k < 3; ++k) f[3 * i + k] += fb[size_t(k) * ns + L.iperm[i]];
         }
+        double W[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+        nbnxm::pair_virial(L, P.data(), 0, ns, W);
+        nbnxm::shift_virial(L, sum.fsh, W);
+        const double wv[6] = {W[0], W[4], W[8], 0.5 * (W[1] + W[3]), 0.5 * (W[2] + W[6]), 0.5 * (W[5] + W[7])};
         double rms = 0, err = 0;
         for (size_t k = 0; k < f.size(); ++k) rms += fref[k] * fref[k], err += (f[k] - fref[k]) * (f[k] - fref[k]);
         const double ev = std::fabs(sum.evdw - evdw) / std::fabs(evdw), ef = std::sqrt(err / rms);
         const double ec = cs.coul ? std::fabs(sum.ecoul - ecoul) / std::fabs(ecoul) : std::fabs(sum.ecoul);
         double ew = 0;
-        for (int c = 0; c < 6; ++c) ew = std::max(ew, std::fabs(sum.w[c] - w[c]) / (std::fabs(w[0] + w[1] + w[2]) / 3));
+        for (int c = 0; c < 6; ++c) ew = std::max(ew, std::fabs(wv[c] - w[c]) / (std::fabs(w[0] + w[1] + w[2]) / 3));
         // erfc by A&S (beyond the fits) is good to 1.5e-7 absolute only
         const double tol_e = cs.kappa * rc > 4 ? 2e-5 : 2e-6;
         const bool ok = ev < 2e-6 && ec < tol_e && ef < 2e-6 && ew < 2e-5;

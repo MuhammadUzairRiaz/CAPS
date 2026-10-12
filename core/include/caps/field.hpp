@@ -341,6 +341,8 @@ class Evaluator {
   std::vector<double> x0c_;
   Cell cell0c_;
   std::vector<std::vector<float>> tfc_;
+  std::vector<std::vector<double>> cl_fsh_;   // per pair chunk: forces through each image (for the virial)
+  std::vector<double> cl_P_;                  // the summed pair forces by slot
   std::vector<float> cl_c12_, cl_c6_;    // per type pair
   std::vector<double> cl_f12_, cl_f6_;   // per type, when the pair coefficients are their products
   bool cl_coef_ = false;
