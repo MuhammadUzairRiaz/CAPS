@@ -3300,6 +3300,7 @@ int main(int argc, char** argv) {
       for (const auto& n : rep.notes) std::printf("%s\n", n.c_str());
       for (const auto& st : rep.stages)
         std::printf("  %-34s %5d it  E %12.1f  |F|max %8.3f  (%s)\n", st.name.c_str(), st.iterations, st.energy, st.fmax, st.stopped_by.c_str());
+      std::printf("%d iterations, %d energy and force evaluations\n", rep.iterations, rep.evaluations);
       std::printf("wrote %s\n", out.c_str());
       return rep.converged ? 0 : 3;
     }

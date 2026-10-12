@@ -94,6 +94,22 @@ def ordered(es, make):
     return [make(e) for e in w[::-1] + x[::-1]]
 
 
+def auto_ordered(es, make, angles):
+    """The *_auto sections in the order CAPS's last-match lookup needs: the fewer wildcards the higher the precedence
+    (torsion_1: "* c'_ n_ h_" before "* c'_ n_ *", which the file lists first); angles by their numbered wildcards,
+    *1 (an Si end) before *2 (H) ... *9, as the end-atom hierarchy of #quadratic_angle cff91_auto reads, the generic
+    "* X *" last; within a rank the first entry in the file wins."""
+    def rank(e):
+        w = sum(1 for t in e[2] if wild(t))
+        if w == 0:
+            return 1000
+        if not angles:
+            return 1000 - 100 * w
+        num = [t[1:] for t in e[2] if wild(t) and t[1:].isdigit()]
+        return 100 - int(num[0]) if w == 1 and num else 0
+    return [make(e) for e in sorted(es[::-1], key=rank)]
+
+
 def rule(e, params, style=None, name=None):
     # a literal * or ? in a type name (CVFF's o*, h* water) is escaped: only a leading * is msi2lmp's wildcard
     r = {"name": name or "-".join(e[2]), "match": ["*" if wild(t) else t.replace("\\", "\\\\").replace("*", "\\*").replace("?", "\\?")
@@ -220,7 +236,7 @@ def convert(frc, cls, name, version, references, typing, out_name, src=None, ext
     at_ = entries(first(secs, "#torsion_1", auto), 4, 3)
     if cls == 2:
         ff["auto_bonds"] = ordered(ab_, lambda e: auto_rule(e, [e[3][0], e[3][1], 0, 0], "class2"))
-        ff["auto_angles"] = ordered(aa_, lambda e: auto_rule(e, [e[3][0], e[3][1], 0, 0], "class2"))
+        ff["auto_angles"] = auto_ordered(aa_, lambda e: auto_rule(e, [e[3][0], e[3][1], 0, 0], "class2"), True)
 
         def t1c2(e):
             # Kphi [1 + cos(nφ − φ0)] = Kphi [1 − cos(nφ − (φ0 + 180))]: LAMMPS's class2 form, K and φ at position n
@@ -231,11 +247,11 @@ def convert(frc, cls, name, version, references, typing, out_name, src=None, ext
             p[2 * (int(n) - 1)] = K
             p[2 * (int(n) - 1) + 1] = (phi0 + 180.0) % 360.0
             return auto_rule(e, p, "class2")
-        ff["auto_dihedrals"] = ordered(at_, t1c2)
+        ff["auto_dihedrals"] = auto_ordered(at_, t1c2, False)
     else:
         ff["auto_bonds"] = ordered(ab_, lambda e: auto_rule(e, [e[3][1], e[3][0]], "harmonic"))
-        ff["auto_angles"] = ordered(aa_, lambda e: auto_rule(e, [e[3][1], e[3][0]], "harmonic"))
-        ff["auto_dihedrals"] = ordered(at_, lambda e: auto_rule(e, [e[3][0], 1 if e[3][2] == 0 else -1, int(e[3][1])], "harmonic"))
+        ff["auto_angles"] = auto_ordered(aa_, lambda e: auto_rule(e, [e[3][1], e[3][0]], "harmonic"), True)
+        ff["auto_dihedrals"] = auto_ordered(at_, lambda e: auto_rule(e, [e[3][0], 1 if e[3][2] == 0 else -1, int(e[3][1])], "harmonic"), False)
     ff["bond_increments"] = ordered(entries(first(secs, "#bond_increments"), 2, 2), lambda e: rule(e, e[3]))
     if src and "INTERFACE_FF" in src:
         # cvff_interface_v1_5.frc lists sc4-oc23 as -1.0 / +1.0, a placeholder (Si -4): the stated charges replace it

@@ -34,7 +34,7 @@ charges each with CVFF, PCFF and COMPASS (its rules, the .frc file's bond increm
 those types and charges, msi2lmp assigns its parameters from the same .frc file, and both data files are compared in
 LAMMPS as above: CAPS's parameter assignment against msi2lmp's on every polymer.
 
-usage: check_msi2lmp.py [--only NAME] [--keep DIR] [--polymers DIR]
+usage: check_msi2lmp.py [--only NAME] [--keep DIR] [--polymers DIR] [--json OUT]
 """
 import os, re, subprocess, sys, tempfile
 
@@ -196,6 +196,9 @@ def cases():
 FRC = os.path.expanduser("~/lammps/tools/msi2lmp/frc_files")
 
 
+keys = set()   # the .frc keys msi2lmp matched backwards in the last angleangle_reversed call
+
+
 def angleangle_reversed(ref_path, caps_path, frc, ffjson):
     """Whether every angle-angle constant where msi2lmp and CAPS differ is msi2lmp matching a 4-type key backwards (the
     centre moved from second to third place): msi2lmp's value is an entry e of the .frc's #angle-angle section whose
@@ -239,6 +242,7 @@ def angleangle_reversed(ref_path, caps_path, frc, ffjson):
     rc, lc, tc = read(caps_path)
     name = lambda a: lc.get(tc[a], str(a))
     bad = 0
+    keys.clear()
     for key, mr in ra.items():
         mc = rc.get(key)
         if mc is None:
@@ -249,9 +253,11 @@ def angleangle_reversed(ref_path, caps_path, frc, ffjson):
                 continue
             fits = lambda e, quad: all(x in (n, eq.get(n, n)) for x, n in zip(e, quad))
             want = [(name(o1), name(j), name(sh), name(o2)), (name(o2), name(j), name(sh), name(o1))]
-            if not any(abs(val - v) <= 1e-3 and any(fits(e[::-1], q) for q in want) for e, val in entries):
+            hit = [e for e, val in entries if abs(val - v) <= 1e-3 and any(fits(e[::-1], q) for q in want)]
+            if not hit:
                 return False, 0
             bad += 1
+            keys.add(f"{' '.join(hit[0])} {v:g} at {name(j)} ({name(o1)}, {name(sh)}, {name(o2)})")
     return True, bad
 POLY_FF = [("class1", "1", "cvff", "cvff-frc.json"), ("class2b", "2", "pcff", "pcff-frc.json"), ("class2a", "2", "compass_published", "compass-frc.json")]
 
@@ -335,7 +341,7 @@ def polymer_cases(src):
 
 
 def main():
-    rows, fails = [], 0
+    rows, fails, records = [], 0, []
     for fn, ref, car, cls, ffname, boundary, styles, extra in (polymer_cases(arg("--polymers", "")) if "--polymers" in sys.argv else cases()):
         if only and only not in fn:
             continue
@@ -356,6 +362,10 @@ def main():
             w = line.split()
             if sec.startswith("AngleAngle Coeffs") and len(w) == 7 and w[5] != w[6]:
                 line = " ".join([w[0], w[1], w[2], w[3], w[4], w[6], w[5]])
+            # msi2lmp -i writes a missing class I torsion as "0.0 0 0", a sign LAMMPS's harmonic style refuses: the same
+            # zero term with sign 1
+            if sec.startswith("Dihedral Coeffs") and "harmonic" in sec and len(w) >= 4 and w[0].isdigit() and float(w[1]) == 0 and w[2] == "0":
+                line = " ".join([w[0], w[1], "1", w[3]] + w[4:])
             fixed.append(line)
         ref = os.path.join(d, "msi2lmp_lammps_order.data")
         open(ref, "w").write("\n".join(fixed) + "\n")
@@ -412,11 +422,11 @@ def main():
         worst = max(abs(diff[k]) / max(1.0, abs(ge[k])) for k in TERMS)
         ok = worst < 1e-6
         why = ""
-        if not ok and cls != "class1" and max(abs(diff[k]) / max(1.0, abs(ge[k])) for k in TERMS if k != "eimp") < 1e-6 and "poly" in ref:
+        if not ok and cls != "class1" and max(abs(diff[k]) / max(1.0, abs(ge[k])) for k in TERMS if k != "eimp") < 1e-6 and "--polymers" in sys.argv:
             frc = {"class2b": "pcff", "class2a": "compass_published"}[cls]
             okr, nrev = angleangle_reversed(ref, os.path.join(d, "caps.data"), frc, ffname)
             if okr:
-                ok, why = True, f" · {nrev} angle-angle constants msi2lmp takes from a key matched backwards (its centre moved); CAPS keeps the centre"
+                ok, why = True, f" · {nrev} angle-angle constants msi2lmp takes from a key matched backwards (its centre moved); CAPS keeps the centre: " + "; ".join(sorted(keys))
         if not ok and cls == "class1" and max(abs(diff[k]) / max(1.0, abs(ge[k])) for k in TERMS if k not in ("edihed", "eimp")) < 1e-6:
             ok, why = explained(text, open(os.path.join(d, "caps.data")).read(), [t for _, t in sorted(atoms)])
             why = (" · " if ok else " · ") + why
@@ -424,8 +434,14 @@ def main():
         styl = " ".join(l.split(None, 1)[1] for l in open(os.path.join(d, "caps.in")).read().splitlines()
                         if re.match(r"(bond|angle|dihedral|improper)_style", l))
         quirk = f" · {zeroed} bond-bond-1-3 types left out as msi2lmp does (no cp type)" if zeroed else ""
+        records.append({"case": fn, "atoms": len(atoms), "ok": ok, "worst_rel": worst, "msi2lmp": ge, "caps": ce,
+                        "bb13_zeroed": zeroed, "note": why.strip(" ·")})
         rows.append((fn, f"{'ok' if ok else 'DIFFERS'} · {len(atoms)} atoms · largest relative difference {worst:.1e} · CAPS styles: {styl}{quirk}{why}",
                      "" if ok else "   msi2lmp/CAPS: " + "  ".join(f"{k} {ge[k]:.6f}/{ce[k]:.6f}" for k in TERMS)))
+    if "--json" in sys.argv:   # every case: msi2lmp's and CAPS's LAMMPS energy terms, failures with their reason
+        import json as _json
+        failed = [{"case": fn, "ok": False, "error": res} for fn, res, _ in rows if not res.startswith(("ok", "DIFFERS"))]
+        _json.dump(records + failed, open(arg("--json", "msi2lmp.json"), "w"), indent=1)
     for fn, res, more in rows:
         print(f"{fn}\n   {res}" + (f"\n{more}" if more else ""))
     print(f"\n{sum(1 for r in rows if ' ok ' in ' ' + r[1][:3] + ' ')} of {len(rows)} msi2lmp reference structures agree with CAPS (work: {work})")
