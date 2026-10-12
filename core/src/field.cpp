@@ -1608,23 +1608,52 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
       A[7] += d[0] * fv[0]; A[8] += d[1] * fv[1]; A[9] += d[2] * fv[2];
       A[10] += 0.5 * (d[0] * fv[1] + d[1] * fv[0]); A[11] += 0.5 * (d[0] * fv[2] + d[2] * fv[0]); A[12] += 0.5 * (d[1] * fv[2] + d[2] * fv[1]);
     };
-    // Torsions (proper and improper share the form).
-    // φ follows IUPAC (atan2 of |b2| b1·n and m·n); Field.ForcesMatchFiniteDifferences checks the gradients.
-    auto torsion = [&](const TorsionTerm& tt, double& en) {
-      const Vec3 b1 = mi(pos(tt.j) - pos(tt.i)), b2 = mi(pos(tt.k) - pos(tt.j)), b3 = mi(pos(tt.l) - pos(tt.k));
+    // Torsions (proper and improper share the form); φ follows IUPAC, Field.ForcesMatchFiniteDifferences checks the
+    // gradients. Torsions of one quadruple i-j-k-l in a row (a Fourier series is one term each) share its geometry: φ from its cosine
+    // and sine (no atan2), cos(nφ − δ) and sin(nφ − δ) by the recurrence for integral n, forces once for the summed dE/dφ.
+    // Terms [t, lim) of T from t; t is left on the last one taken.
+    auto torsion_group = [&](const std::vector<TorsionTerm>& T, size_t& t, size_t lim, double& en) {
+      const TorsionTerm& t0 = T[t];
+      auto same = [&](size_t u) { return T[u].i == t0.i && T[u].j == t0.j && T[u].k == t0.k && T[u].l == t0.l; };
+      const Vec3 b1 = mi(pos(t0.j) - pos(t0.i)), b2 = mi(pos(t0.k) - pos(t0.j)), b3 = mi(pos(t0.l) - pos(t0.k));
       const Vec3 m = cross(b1, b2), nn = cross(b2, b3);
       const double m2 = dot(m, m), n2 = dot(nn, nn), lb2 = norm(b2);
-      if (m2 < 1e-12 || n2 < 1e-12 || lb2 < 1e-9) return;
-      const double phi = std::atan2(lb2 * dot(b1, nn), dot(m, nn));
-      en += tt.v * (1 + std::cos(tt.n * phi - tt.delta));
-      const double dEdphi = -tt.v * tt.n * std::sin(tt.n * phi - tt.delta);
+      if (m2 < 1e-12 || n2 < 1e-12 || lb2 < 1e-9) {
+        while (t + 1 < lim && same(t + 1)) ++t;
+        return;
+      }
+      const double xc = dot(m, nn), yc = lb2 * dot(b1, nn), rc_ = std::sqrt(xc * xc + yc * yc);
+      const double c1 = xc / rc_, s1 = yc / rc_;   // cos φ, sin φ (φ as atan2(y, x), IUPAC)
+      double dEdphi = 0;
+      for (;;) {
+        const TorsionTerm& tt = T[t];
+        double cn = 1, sn = 0;
+        if (tt.n >= 0 && tt.n <= 12) {
+          for (int r = 0; r < tt.n; ++r) {
+            const double c = cn * c1 - sn * s1;
+            sn = sn * c1 + cn * s1;
+            cn = c;
+          }
+        } else {
+          const double phi = std::atan2(yc, xc);
+          cn = std::cos(tt.n * phi), sn = std::sin(tt.n * phi);
+        }
+        double cd = 1, sd = 0;   // δ = 0 or π nearly always
+        if (tt.delta != 0) {
+          if (std::fabs(tt.delta - kPi) < 1e-12) cd = -1;
+          else cd = std::cos(tt.delta), sd = std::sin(tt.delta);
+        }
+        en += tt.v * (1 + cn * cd + sn * sd);
+        dEdphi -= tt.v * tt.n * (sn * cd - cn * sd);
+        if (t + 1 < lim && same(t + 1)) ++t;
+        else break;
+      }
       const Vec3 g1 = m * (-lb2 / m2), g4 = nn * (lb2 / n2);
       const double p = dot(b1, b2) / (lb2 * lb2), qd = dot(b3, b2) / (lb2 * lb2);
       const Vec3 g2 = g4 * qd - g1 * (1 + p);
       const Vec3 g3 = g1 * p - g4 * (1 + qd);
       const Vec3 f1 = g1 * -dEdphi, f2 = g2 * -dEdphi, f3 = g3 * -dEdphi, f4 = g4 * -dEdphi;
-      add(tt.i, f1); add(tt.j, f2); add(tt.k, f3); add(tt.l, f4);
-      // positions relative to atom i
+      add(t0.i, f1); add(t0.j, f2); add(t0.k, f3); add(t0.l, f4);
       const Vec3 r2 = b1, r3 = b1 + b2, r4 = b1 + b2 + b3;
       V(r2, f2); V(r3, f3); V(r4, f4);
     };
@@ -1713,9 +1742,13 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
         add(an.j, (fi + fk) * -1.0);
         V(u, fi); V(v, fk);
       } else if (k < o3) {
-        torsion(ff_.dihedrals[k - o2], A[2]);
+        size_t t = k - o2;
+        torsion_group(ff_.dihedrals, t, std::min(en, o3) - o2, A[2]);
+        k = o2 + t;
       } else if (k < o4) {
-        torsion(ff_.impropers[k - o3], A[3]);
+        size_t t = k - o3;
+        torsion_group(ff_.impropers, t, std::min(en, o4) - o3, A[3]);
+        k = o3 + t;
       } else if (k < o5) {
         // 1-4 pairs: LJ scaled (with the same cut-off shift), at the nearest image.
         const auto& pr = ff_.pairs14[k - o4];
