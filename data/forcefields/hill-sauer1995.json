@@ -1,0 +1,3366 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "Aluminosilicates (Hill & Sauer 1995)",
+ "version": "1995 (Table 8)",
+ "source": "J.-R. Hill, J. Sauer, J. Phys. Chem. 99, 9536 (1995), Table 8",
+ "references": [
+  "J.-R. Hill, J. Sauer, J. Phys. Chem. 99, 9536 (1995)",
+  "J.-R. Hill, J. Sauer, J. Phys. Chem. 98, 1238 (1994)"
+ ],
+ "units": "real",
+ "mixing": "sixthpower",
+ "special_lj": [
+  0,
+  0,
+  1
+ ],
+ "special_coul": [
+  0,
+  0,
+  1
+ ],
+ "cutoff": 10,
+ "missing_bond_increment": "zero",
+ "equivalence": "replace",
+ "styles": {
+  "pair": "lj/class2/coul/long",
+  "bond": "class2",
+  "angle": "class2",
+  "dihedral": "class2",
+  "improper": "class2"
+ },
+ "oop_scheme": "msi2lmp",
+ "improper_order": "center2_sorted",
+ "atom_types": [
+  {
+   "name": "Si",
+   "element": "Si",
+   "mass": 28.0855,
+   "description": "Si (Table 8)",
+   "equivalence": {}
+  },
+  {
+   "name": "Al",
+   "element": "Al",
+   "mass": 26.982,
+   "description": "Al (Table 8)",
+   "equivalence": {}
+  },
+  {
+   "name": "Ob",
+   "element": "O",
+   "mass": 15.999,
+   "description": "bridging hydroxyl O, Si-O(H)-Al (Table 8)",
+   "equivalence": {}
+  },
+  {
+   "name": "Hb",
+   "element": "H",
+   "mass": 1.008,
+   "description": "bridging hydroxyl H (Table 8)",
+   "equivalence": {}
+  },
+  {
+   "name": "Oss",
+   "element": "O",
+   "mass": 15.999,
+   "description": "Si-O-Si O (Table 8)",
+   "equivalence": {}
+  },
+  {
+   "name": "Oas",
+   "element": "O",
+   "mass": 15.999,
+   "description": "Si-O-Al O (Table 8)",
+   "equivalence": {}
+  },
+  {
+   "name": "Osh",
+   "element": "O",
+   "mass": 15.999,
+   "description": "silanol O, Si-OH (Table 8)",
+   "equivalence": {}
+  },
+  {
+   "name": "Hos",
+   "element": "H",
+   "mass": 1.008,
+   "description": "silanol H (Table 8)",
+   "equivalence": {}
+  },
+  {
+   "name": "Oah",
+   "element": "O",
+   "mass": 15.999,
+   "description": "aluminol O, Al-OH (Table 8)",
+   "equivalence": {}
+  },
+  {
+   "name": "Hoa",
+   "element": "H",
+   "mass": 1.008,
+   "description": "aluminol H (Table 8)",
+   "equivalence": {}
+  }
+ ],
+ "pairs": [
+  {
+   "name": "Si",
+   "match": [
+    "Si"
+   ],
+   "params": [
+    4.2405940460485093e-42,
+    141007.43339514386
+   ],
+   "comment": "A_i A_j = 432.332 x 432.332 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Si-Al",
+   "match": [
+    "Si",
+    "Al"
+   ],
+   "params": [
+    3.866148647719457e-41,
+    97558.85611759506
+   ],
+   "comment": "A_i A_j = 432.332 x 143.183 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Si-Ob",
+   "match": [
+    "Si",
+    "Ob"
+   ],
+   "params": [
+    1.0182687045546511e-41,
+    121852.95293111082
+   ],
+   "comment": "A_i A_j = 432.332 x 278.997 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Si-Hb",
+   "match": [
+    "Si",
+    "Hb"
+   ],
+   "params": [
+    1.3142158201199074e-38,
+    36929.09593292801
+   ],
+   "comment": "A_i A_j = 432.332 x 7.766 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Si-Oss",
+   "match": [
+    "Si",
+    "Oss"
+   ],
+   "params": [
+    1.3805597578574647e-41,
+    115825.4303654873
+   ],
+   "comment": "A_i A_j = 432.332 x 239.609 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Si-Oas",
+   "match": [
+    "Si",
+    "Oas"
+   ],
+   "params": [
+    9.952426456532887e-42,
+    122318.3539325945
+   ],
+   "comment": "A_i A_j = 432.332 x 282.206 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Si-Osh",
+   "match": [
+    "Si",
+    "Osh"
+   ],
+   "params": [
+    3.489289320906969e-41,
+    99240.80855809264
+   ],
+   "comment": "A_i A_j = 432.332 x 150.717 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Si-Hos",
+   "match": [
+    "Si",
+    "Hos"
+   ],
+   "params": [
+    1.8064161102596376e-39,
+    51405.56749283277
+   ],
+   "comment": "A_i A_j = 432.332 x 20.947 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Si-Oah",
+   "match": [
+    "Si",
+    "Oah"
+   ],
+   "params": [
+    2.801821509211341e-41,
+    102937.36494524612
+   ],
+   "comment": "A_i A_j = 432.332 x 168.194 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Si-Hoa",
+   "match": [
+    "Si",
+    "Hoa"
+   ],
+   "params": [
+    1.1032643047013178e-38,
+    38021.845813541855
+   ],
+   "comment": "A_i A_j = 432.332 x 8.476 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Al",
+   "match": [
+    "Al"
+   ],
+   "params": [
+    3.5247668614238352e-40,
+    67498.07565323285
+   ],
+   "comment": "A_i A_j = 143.183 x 143.183 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Al-Ob",
+   "match": [
+    "Al",
+    "Ob"
+   ],
+   "params": [
+    9.283553512502333e-41,
+    84306.43985411145
+   ],
+   "comment": "A_i A_j = 143.183 x 278.997 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Al-Hb",
+   "match": [
+    "Al",
+    "Hb"
+   ],
+   "params": [
+    1.1981702706257997e-37,
+    25550.144910285726
+   ],
+   "comment": "A_i A_j = 143.183 x 7.766 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Al-Oss",
+   "match": [
+    "Al",
+    "Oss"
+   ],
+   "params": [
+    1.2586560238913002e-40,
+    80136.1759710907
+   ],
+   "comment": "A_i A_j = 143.183 x 239.609 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Al-Oas",
+   "match": [
+    "Al",
+    "Oas"
+   ],
+   "params": [
+    9.073624984760404e-41,
+    84628.43698750723
+   ],
+   "comment": "A_i A_j = 143.183 x 282.206 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Al-Osh",
+   "match": [
+    "Al",
+    "Osh"
+   ],
+   "params": [
+    3.1811842970672568e-40,
+    68661.76860323016
+   ],
+   "comment": "A_i A_j = 143.183 x 150.717 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Al-Hos",
+   "match": [
+    "Al",
+    "Hos"
+   ],
+   "params": [
+    1.646909165570019e-38,
+    35565.98572092943
+   ],
+   "comment": "A_i A_j = 143.183 x 20.947 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Al-Oah",
+   "match": [
+    "Al",
+    "Oah"
+   ],
+   "params": [
+    2.554420046191992e-40,
+    71219.30620264371
+   ],
+   "comment": "A_i A_j = 143.183 x 168.194 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Al-Hoa",
+   "match": [
+    "Al",
+    "Hoa"
+   ],
+   "params": [
+    1.0058458209817886e-37,
+    26306.186104770703
+   ],
+   "comment": "A_i A_j = 143.183 x 8.476 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Ob",
+   "match": [
+    "Ob"
+   ],
+   "params": [
+    2.4451082641159423e-41,
+    105300.42126518745
+   ],
+   "comment": "A_i A_j = 278.997 x 278.997 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Ob-Hb",
+   "match": [
+    "Ob",
+    "Hb"
+   ],
+   "params": [
+    3.155748525152311e-38,
+    31912.639498184963
+   ],
+   "comment": "A_i A_j = 278.997 x 7.766 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Ob-Oss",
+   "match": [
+    "Ob",
+    "Oss"
+   ],
+   "params": [
+    3.315056289115307e-41,
+    100091.67867768194
+   ],
+   "comment": "A_i A_j = 278.997 x 239.609 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Ob-Oas",
+   "match": [
+    "Ob",
+    "Oas"
+   ],
+   "params": [
+    2.389817154158512e-41,
+    105702.60209326453
+   ],
+   "comment": "A_i A_j = 278.997 x 282.206 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Ob-Osh",
+   "match": [
+    "Ob",
+    "Osh"
+   ],
+   "params": [
+    8.378623556119748e-41,
+    85759.91550876001
+   ],
+   "comment": "A_i A_j = 278.997 x 150.717 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Ob-Hos",
+   "match": [
+    "Ob",
+    "Hos"
+   ],
+   "params": [
+    4.337639897869376e-39,
+    44422.6240083944
+   ],
+   "comment": "A_i A_j = 278.997 x 20.947 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Ob-Oah",
+   "match": [
+    "Ob",
+    "Oah"
+   ],
+   "params": [
+    6.727847861873249e-41,
+    88954.33087116688
+   ],
+   "comment": "A_i A_j = 278.997 x 168.194 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Ob-Hoa",
+   "match": [
+    "Ob",
+    "Hoa"
+   ],
+   "params": [
+    2.649203159110287e-38,
+    32856.94999701361
+   ],
+   "comment": "A_i A_j = 278.997 x 8.476 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Hb",
+   "match": [
+    "Hb"
+   ],
+   "params": [
+    4.0729275264225124e-35,
+    9671.533575125455
+   ],
+   "comment": "A_i A_j = 7.766 x 7.766 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Hb-Oss",
+   "match": [
+    "Hb",
+    "Oss"
+   ],
+   "params": [
+    4.278536107665969e-38,
+    30334.063435176744
+   ],
+   "comment": "A_i A_j = 7.766 x 239.609 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Hb-Oas",
+   "match": [
+    "Hb",
+    "Oas"
+   ],
+   "params": [
+    3.0843877427841393e-38,
+    32034.525542184565
+   ],
+   "comment": "A_i A_j = 7.766 x 282.206 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Hb-Osh",
+   "match": [
+    "Hb",
+    "Osh"
+   ],
+   "params": [
+    1.0813766129734664e-37,
+    25990.639297951795
+   ],
+   "comment": "A_i A_j = 7.766 x 150.717 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Hb-Hos",
+   "match": [
+    "Hb",
+    "Hos"
+   ],
+   "params": [
+    5.5983209051450055e-36,
+    13462.8443885626
+   ],
+   "comment": "A_i A_j = 7.766 x 20.947 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Hb-Oah",
+   "match": [
+    "Hb",
+    "Oah"
+   ],
+   "params": [
+    8.68321304178819e-38,
+    26958.747731357053
+   ],
+   "comment": "A_i A_j = 7.766 x 168.194 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Hb-Hoa",
+   "match": [
+    "Hb",
+    "Hoa"
+   ],
+   "params": [
+    3.419161059199098e-35,
+    9957.71894989786
+   ],
+   "comment": "A_i A_j = 7.766 x 8.476 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Oss",
+   "match": [
+    "Oss"
+   ],
+   "params": [
+    4.494524173544666e-41,
+    95140.58937415112
+   ],
+   "comment": "A_i A_j = 239.609 x 239.609 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Oss-Oas",
+   "match": [
+    "Oss",
+    "Oas"
+   ],
+   "params": [
+    3.240093088308809e-41,
+    100473.96541244094
+   ],
+   "comment": "A_i A_j = 239.609 x 282.206 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Oss-Osh",
+   "match": [
+    "Oss",
+    "Osh"
+   ],
+   "params": [
+    1.1359664159446526e-40,
+    81517.75466225795
+   ],
+   "comment": "A_i A_j = 239.609 x 150.717 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Oss-Hos",
+   "match": [
+    "Oss",
+    "Hos"
+   ],
+   "params": [
+    5.880934040582622e-39,
+    42225.23476017337
+   ],
+   "comment": "A_i A_j = 239.609 x 20.947 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Oss-Oah",
+   "match": [
+    "Oss",
+    "Oah"
+   ],
+   "params": [
+    9.121556985444094e-41,
+    84554.15653202696
+   ],
+   "comment": "A_i A_j = 239.609 x 168.194 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Oss-Hoa",
+   "match": [
+    "Oss",
+    "Hoa"
+   ],
+   "params": [
+    3.591766353514828e-38,
+    31231.66310177909
+   ],
+   "comment": "A_i A_j = 239.609 x 8.476 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Oas",
+   "match": [
+    "Oas"
+   ],
+   "params": [
+    2.3357763392842015e-41,
+    106106.31899704321
+   ],
+   "comment": "A_i A_j = 282.206 x 282.206 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Oas-Osh",
+   "match": [
+    "Oas",
+    "Osh"
+   ],
+   "params": [
+    8.189158163878375e-41,
+    86087.4639973674
+   ],
+   "comment": "A_i A_j = 282.206 x 150.717 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Oas-Hos",
+   "match": [
+    "Oas",
+    "Hos"
+   ],
+   "params": [
+    4.239553065450297e-39,
+    44592.290259434936
+   ],
+   "comment": "A_i A_j = 282.206 x 20.947 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Oas-Oah",
+   "match": [
+    "Oas",
+    "Oah"
+   ],
+   "params": [
+    6.575711377216522e-41,
+    89294.08000057172
+   ],
+   "comment": "A_i A_j = 282.206 x 168.194 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Oas-Hoa",
+   "match": [
+    "Oas",
+    "Hoa"
+   ],
+   "params": [
+    2.5892968615775275e-38,
+    32982.44270824035
+   ],
+   "comment": "A_i A_j = 282.206 x 8.476 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Osh",
+   "match": [
+    "Osh"
+   ],
+   "params": [
+    2.8710930197009835e-40,
+    69845.52407010319
+   ],
+   "comment": "A_i A_j = 150.717 x 150.717 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Osh-Hos",
+   "match": [
+    "Osh",
+    "Hos"
+   ],
+   "params": [
+    1.4863739311516163e-38,
+    36179.15708089201
+   ],
+   "comment": "A_i A_j = 150.717 x 20.947 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Osh-Oah",
+   "match": [
+    "Osh",
+    "Oah"
+   ],
+   "params": [
+    2.3054236658867266e-40,
+    72447.15460764851
+   ],
+   "comment": "A_i A_j = 150.717 x 168.194 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Osh-Hoa",
+   "match": [
+    "Osh",
+    "Hoa"
+   ],
+   "params": [
+    9.077993117778675e-38,
+    26759.71493526222
+   ],
+   "comment": "A_i A_j = 150.717 x 8.476 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Hos",
+   "match": [
+    "Hos"
+   ],
+   "params": [
+    7.695004822369715e-37,
+    18740.376344948007
+   ],
+   "comment": "A_i A_j = 20.947 x 20.947 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Hos-Oah",
+   "match": [
+    "Hos",
+    "Oah"
+   ],
+   "params": [
+    1.1935251187336693e-38,
+    37526.77099226914
+   ],
+   "comment": "A_i A_j = 20.947 x 168.194 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Hos-Hoa",
+   "match": [
+    "Hos",
+    "Hoa"
+   ],
+   "params": [
+    4.699705730483543e-36,
+    13861.216491281935
+   ],
+   "comment": "A_i A_j = 20.947 x 8.476 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Oah",
+   "match": [
+    "Oah"
+   ],
+   "params": [
+    1.851203789901636e-40,
+    75145.69159043855
+   ],
+   "comment": "A_i A_j = 168.194 x 168.194 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Oah-Hoa",
+   "match": [
+    "Oah",
+    "Hoa"
+   ],
+   "params": [
+    7.289426023077251e-38,
+    27756.470167304145
+   ],
+   "comment": "A_i A_j = 168.194 x 8.476 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  },
+  {
+   "name": "Hoa",
+   "match": [
+    "Hoa"
+   ],
+   "params": [
+    2.870333997573505e-35,
+    10252.372688875119
+   ],
+   "comment": "A_i A_j = 8.476 x 8.476 kcal/mol A^9 (Table 8), B 0 (written 1e-10)"
+  }
+ ],
+ "bonds": [
+  {
+   "name": "Si-Ob",
+   "match": [
+    "Si",
+    "Ob"
+   ],
+   "style": "class2",
+   "params": [
+    1.6581,
+    370.5744,
+    -569.4988,
+    3102.2502
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Si-Oas",
+   "match": [
+    "Si",
+    "Oas"
+   ],
+   "style": "class2",
+   "params": [
+    1.6157,
+    494.1042,
+    -36.7016,
+    2150.6836
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Si-Oss",
+   "match": [
+    "Si",
+    "Oss"
+   ],
+   "style": "class2",
+   "params": [
+    1.6104,
+    459.0786,
+    -672.4445,
+    443.3651
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Si-Osh",
+   "match": [
+    "Si",
+    "Osh"
+   ],
+   "style": "class2",
+   "params": [
+    1.6238,
+    431.7825,
+    -799.2202,
+    4446.0952
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Al-Ob",
+   "match": [
+    "Al",
+    "Ob"
+   ],
+   "style": "class2",
+   "params": [
+    1.9698,
+    86.8129,
+    26.3933,
+    758.4299
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Al-Oas",
+   "match": [
+    "Al",
+    "Oas"
+   ],
+   "style": "class2",
+   "params": [
+    1.7193,
+    328.685,
+    -341.0143,
+    2189.0349
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Al-Oah",
+   "match": [
+    "Al",
+    "Oah"
+   ],
+   "style": "class2",
+   "params": [
+    1.7096,
+    311.6053,
+    -734.839,
+    6022.397
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Ob-Hb",
+   "match": [
+    "Ob",
+    "Hb"
+   ],
+   "style": "class2",
+   "params": [
+    0.954,
+    656.8465,
+    -1627.4874,
+    3684.1929
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Osh-Hos",
+   "match": [
+    "Osh",
+    "Hos"
+   ],
+   "style": "class2",
+   "params": [
+    0.9458,
+    707.2556,
+    -1531.5564,
+    1603.1003
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Oah-Hoa",
+   "match": [
+    "Oah",
+    "Hoa"
+   ],
+   "style": "class2",
+   "params": [
+    0.9408,
+    730.0168,
+    -1566.4841,
+    1703.5916
+   ],
+   "comment": "Table 8"
+  }
+ ],
+ "angles": [
+  {
+   "name": "Ob-Si-Osh",
+   "match": [
+    "Ob",
+    "Si",
+    "Osh"
+   ],
+   "style": "class2",
+   "params": [
+    103.9653,
+    103.5467,
+    -19.2943,
+    331.9679
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Osh-Si-Osh",
+   "match": [
+    "Osh",
+    "Si",
+    "Osh"
+   ],
+   "style": "class2",
+   "params": [
+    111.3627,
+    58.2199,
+    96.8353,
+    527.5761
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Ob-Al-Oas",
+   "match": [
+    "Ob",
+    "Al",
+    "Oas"
+   ],
+   "style": "class2",
+   "params": [
+    81.4988,
+    43.2829,
+    -113.779,
+    202.1476
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Ob-Al-Oah",
+   "match": [
+    "Ob",
+    "Al",
+    "Oah"
+   ],
+   "style": "class2",
+   "params": [
+    97.9051,
+    27.692,
+    -41.0318,
+    35.4654
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Oas-Al-Oah",
+   "match": [
+    "Oas",
+    "Al",
+    "Oah"
+   ],
+   "style": "class2",
+   "params": [
+    118.337,
+    48.9048,
+    180.6775,
+    1557.5081
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Oah-Al-Oah",
+   "match": [
+    "Oah",
+    "Al",
+    "Oah"
+   ],
+   "style": "class2",
+   "params": [
+    107.0368,
+    76.4087,
+    -274.149,
+    293.2546
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Si-Ob-Al",
+   "match": [
+    "Si",
+    "Ob",
+    "Al"
+   ],
+   "style": "class2",
+   "params": [
+    136.6645,
+    195.295,
+    48.8575,
+    185.3481
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Si-Ob-Hb",
+   "match": [
+    "Si",
+    "Ob",
+    "Hb"
+   ],
+   "style": "class2",
+   "params": [
+    119.2823,
+    43.0215,
+    -15.2099,
+    13.1396
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Al-Ob-Hb",
+   "match": [
+    "Al",
+    "Ob",
+    "Hb"
+   ],
+   "style": "class2",
+   "params": [
+    107.12,
+    43.9725,
+    -53.4364,
+    103.3838
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Si-Osh-Hos",
+   "match": [
+    "Si",
+    "Osh",
+    "Hos"
+   ],
+   "style": "class2",
+   "params": [
+    118.9384,
+    20.0134,
+    -33.2675,
+    42.4295
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Al-Oas-Si",
+   "match": [
+    "Al",
+    "Oas",
+    "Si"
+   ],
+   "style": "class2",
+   "params": [
+    162.4,
+    10.3454,
+    12.6366,
+    9.0038
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Al-Oah-Hoa",
+   "match": [
+    "Al",
+    "Oah",
+    "Hoa"
+   ],
+   "style": "class2",
+   "params": [
+    131.3984,
+    7.8119,
+    -1.6786,
+    53.6329
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Oas-Si-Osh",
+   "match": [
+    "Oas",
+    "Si",
+    "Osh"
+   ],
+   "style": "class2",
+   "params": [
+    118.5582,
+    87.1068,
+    167.1975,
+    278.6751
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Oas-Si-Oss",
+   "match": [
+    "Oas",
+    "Si",
+    "Oss"
+   ],
+   "style": "class2",
+   "params": [
+    112.4279,
+    88.0709,
+    -57.043,
+    92.4803
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Oss-Si-Osh",
+   "match": [
+    "Oss",
+    "Si",
+    "Osh"
+   ],
+   "style": "class2",
+   "params": [
+    109.9424,
+    91.8675,
+    17.2882,
+    252.8231
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Oss-Si-Oss",
+   "match": [
+    "Oss",
+    "Si",
+    "Oss"
+   ],
+   "style": "class2",
+   "params": [
+    112.02,
+    81.9691,
+    -36.5814,
+    116.9558
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Oss-Si-Ob",
+   "match": [
+    "Oss",
+    "Si",
+    "Ob"
+   ],
+   "style": "class2",
+   "params": [
+    107.6066,
+    99.6715,
+    -33.1512,
+    10.7204
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Si-Oss-Si",
+   "match": [
+    "Si",
+    "Oss",
+    "Si"
+   ],
+   "style": "class2",
+   "params": [
+    173.7651,
+    20.7015,
+    27.5506,
+    10.993
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Oas-Al-Oas",
+   "match": [
+    "Oas",
+    "Al",
+    "Oas"
+   ],
+   "style": "class2",
+   "params": [
+    113.4,
+    300.052,
+    -32.5659,
+    67.2591
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Oas-Si-Ob",
+   "match": [
+    "Oas",
+    "Si",
+    "Ob"
+   ],
+   "style": "class2",
+   "params": [
+    102.9438,
+    103.827,
+    10.899,
+    0.6674
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Oas-Si-Oas",
+   "match": [
+    "Oas",
+    "Si",
+    "Oas"
+   ],
+   "style": "class2",
+   "params": [
+    110.612,
+    154.186,
+    -68.6595,
+    23.6292
+   ],
+   "comment": "Table 8"
+  }
+ ],
+ "dihedrals": [
+  {
+   "name": "Osh-Si-Ob-Al",
+   "match": [
+    "Osh",
+    "Si",
+    "Ob",
+    "Al"
+   ],
+   "style": "class2",
+   "params": [
+    0.6228,
+    0.0,
+    1.0917,
+    0.0,
+    -0.1696,
+    0.0
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Osh-Si-Ob-Hb",
+   "match": [
+    "Osh",
+    "Si",
+    "Ob",
+    "Hb"
+   ],
+   "style": "class2",
+   "params": [
+    4.6176,
+    0.0,
+    -1.1913,
+    0.0,
+    -0.1141,
+    0.0
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Ob-Si-Osh-Hos",
+   "match": [
+    "Ob",
+    "Si",
+    "Osh",
+    "Hos"
+   ],
+   "style": "class2",
+   "params": [
+    1.0464,
+    0.0,
+    -1.5833,
+    0.0,
+    -0.4804,
+    0.0
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Osh-Si-Osh-Hos",
+   "match": [
+    "Osh",
+    "Si",
+    "Osh",
+    "Hos"
+   ],
+   "style": "class2",
+   "params": [
+    1.774,
+    0.0,
+    -0.0772,
+    0.0,
+    0.0326,
+    0.0
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Oas-Al-Ob-Si",
+   "match": [
+    "Oas",
+    "Al",
+    "Ob",
+    "Si"
+   ],
+   "style": "class2",
+   "params": [
+    -4.1073,
+    0.0,
+    3.5859,
+    0.0,
+    0.2635,
+    0.0
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Oas-Al-Ob-Hb",
+   "match": [
+    "Oas",
+    "Al",
+    "Ob",
+    "Hb"
+   ],
+   "style": "class2",
+   "params": [
+    -3.699,
+    0.0,
+    -3.0937,
+    0.0,
+    0.852,
+    0.0
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Oah-Al-Ob-Si",
+   "match": [
+    "Oah",
+    "Al",
+    "Ob",
+    "Si"
+   ],
+   "style": "class2",
+   "params": [
+    -7.3022,
+    0.0,
+    3.1717,
+    0.0,
+    0.3184,
+    0.0
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Oah-Al-Ob-Hb",
+   "match": [
+    "Oah",
+    "Al",
+    "Ob",
+    "Hb"
+   ],
+   "style": "class2",
+   "params": [
+    -6.3428,
+    0.0,
+    -3.6734,
+    0.0,
+    -0.3907,
+    0.0
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Ob-Al-Oas-Si",
+   "match": [
+    "Ob",
+    "Al",
+    "Oas",
+    "Si"
+   ],
+   "style": "class2",
+   "params": [
+    2.1752,
+    0.0,
+    -0.9201,
+    0.0,
+    1.1534,
+    0.0
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Oah-Al-Oas-Si",
+   "match": [
+    "Oah",
+    "Al",
+    "Oas",
+    "Si"
+   ],
+   "style": "class2",
+   "params": [
+    0.9847,
+    0.0,
+    -0.7285,
+    0.0,
+    -0.5777,
+    0.0
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Ob-Al-Oah-Hoa",
+   "match": [
+    "Ob",
+    "Al",
+    "Oah",
+    "Hoa"
+   ],
+   "style": "class2",
+   "params": [
+    -0.9767,
+    0.0,
+    0.7745,
+    0.0,
+    -0.9612,
+    0.0
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Oas-Al-Oah-Hoa",
+   "match": [
+    "Oas",
+    "Al",
+    "Oah",
+    "Hoa"
+   ],
+   "style": "class2",
+   "params": [
+    -1.801,
+    0.0,
+    0.6647,
+    0.0,
+    0.5364,
+    0.0
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Oah-Al-Oah-Hoa",
+   "match": [
+    "Oah",
+    "Al",
+    "Oah",
+    "Hoa"
+   ],
+   "style": "class2",
+   "params": [
+    -1.1075,
+    0.0,
+    0.8045,
+    0.0,
+    0.3328,
+    0.0
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Al-Oas-Si-Osh",
+   "match": [
+    "Al",
+    "Oas",
+    "Si",
+    "Osh"
+   ],
+   "style": "class2",
+   "params": [
+    3.065,
+    0.0,
+    0.3404,
+    0.0,
+    0.0146,
+    0.0
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Oas-Si-Osh-Hos",
+   "match": [
+    "Oas",
+    "Si",
+    "Osh",
+    "Hos"
+   ],
+   "style": "class2",
+   "params": [
+    3.0272,
+    0.0,
+    -0.1573,
+    0.0,
+    -0.2321,
+    0.0
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Oss-Si-Oas-Al",
+   "match": [
+    "Oss",
+    "Si",
+    "Oas",
+    "Al"
+   ],
+   "style": "class2",
+   "params": [
+    2.1989,
+    0.0,
+    0.7528,
+    0.0,
+    -0.4936,
+    0.0
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Oas-Si-Oss-Si",
+   "match": [
+    "Oas",
+    "Si",
+    "Oss",
+    "Si"
+   ],
+   "style": "class2",
+   "params": [
+    0.0397,
+    0.0,
+    0.0133,
+    0.0,
+    -0.2453,
+    0.0
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Osh-Si-Oss-Si",
+   "match": [
+    "Osh",
+    "Si",
+    "Oss",
+    "Si"
+   ],
+   "style": "class2",
+   "params": [
+    0.1277,
+    0.0,
+    0.0442,
+    0.0,
+    -0.0009,
+    0.0
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Oss-Si-Osh-Hos",
+   "match": [
+    "Oss",
+    "Si",
+    "Osh",
+    "Hos"
+   ],
+   "style": "class2",
+   "params": [
+    3.2254,
+    0.0,
+    -0.2132,
+    0.0,
+    -0.4145,
+    0.0
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Oss-Si-Oss-Si",
+   "match": [
+    "Oss",
+    "Si",
+    "Oss",
+    "Si"
+   ],
+   "style": "class2",
+   "params": [
+    0.0306,
+    0.0,
+    -0.0105,
+    0.0,
+    0.0804,
+    0.0
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Ob-Si-Oss-Si",
+   "match": [
+    "Ob",
+    "Si",
+    "Oss",
+    "Si"
+   ],
+   "style": "class2",
+   "params": [
+    0.535,
+    0.0,
+    -0.4717,
+    0.0,
+    -0.0036,
+    0.0
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Oss-Si-Ob-Al",
+   "match": [
+    "Oss",
+    "Si",
+    "Ob",
+    "Al"
+   ],
+   "style": "class2",
+   "params": [
+    0.1641,
+    0.0,
+    1.7914,
+    0.0,
+    0.197,
+    0.0
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Oss-Si-Ob-Hb",
+   "match": [
+    "Oss",
+    "Si",
+    "Ob",
+    "Hb"
+   ],
+   "style": "class2",
+   "params": [
+    3.7091,
+    0.0,
+    -0.656,
+    0.0,
+    0.0856,
+    0.0
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Oas-Al-Oas-Si",
+   "match": [
+    "Oas",
+    "Al",
+    "Oas",
+    "Si"
+   ],
+   "style": "class2",
+   "params": [
+    6.0838,
+    0.0,
+    -0.5702,
+    0.0,
+    -1.4818,
+    0.0
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Ob-Si-Oas-Al",
+   "match": [
+    "Ob",
+    "Si",
+    "Oas",
+    "Al"
+   ],
+   "style": "class2",
+   "params": [
+    5.7178,
+    0.0,
+    0.1922,
+    0.0,
+    -0.3374,
+    0.0
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Oas-Si-Ob-Al",
+   "match": [
+    "Oas",
+    "Si",
+    "Ob",
+    "Al"
+   ],
+   "style": "class2",
+   "params": [
+    -1.8325,
+    0.0,
+    2.228,
+    0.0,
+    0.231,
+    0.0
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Oas-Si-Ob-Hb",
+   "match": [
+    "Oas",
+    "Si",
+    "Ob",
+    "Hb"
+   ],
+   "style": "class2",
+   "params": [
+    5.7768,
+    0.0,
+    -2.1457,
+    0.0,
+    0.1001,
+    0.0
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Oas-Si-Oas-Al",
+   "match": [
+    "Oas",
+    "Si",
+    "Oas",
+    "Al"
+   ],
+   "style": "class2",
+   "params": [
+    1.8597,
+    0.0,
+    -0.0231,
+    0.0,
+    -0.4345,
+    0.0
+   ],
+   "comment": "Table 8"
+  }
+ ],
+ "impropers": [
+  {
+   "name": "Si-Ob-Hb-Al",
+   "match": [
+    "Si",
+    "Ob",
+    "Hb",
+    "Al"
+   ],
+   "style": "class2",
+   "params": [
+    0.8407,
+    -0.2235
+   ],
+   "comment": "out-of-plane (Table 8)"
+  }
+ ],
+ "cross_rules": {
+  "bb": [
+   {
+    "name": "Ob-Si-Osh",
+    "match": [
+     "Ob",
+     "Si",
+     "Osh"
+    ],
+    "params": [
+     131.7627
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Osh-Si-Osh",
+    "match": [
+     "Osh",
+     "Si",
+     "Osh"
+    ],
+    "params": [
+     28.5745
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Ob-Al-Oas",
+    "match": [
+     "Ob",
+     "Al",
+     "Oas"
+    ],
+    "params": [
+     84.3372
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Ob-Al-Oah",
+    "match": [
+     "Ob",
+     "Al",
+     "Oah"
+    ],
+    "params": [
+     37.6888
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Oas-Al-Oah",
+    "match": [
+     "Oas",
+     "Al",
+     "Oah"
+    ],
+    "params": [
+     49.9526
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Oah-Al-Oah",
+    "match": [
+     "Oah",
+     "Al",
+     "Oah"
+    ],
+    "params": [
+     19.3587
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Si-Ob-Al",
+    "match": [
+     "Si",
+     "Ob",
+     "Al"
+    ],
+    "params": [
+     130.8388
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Si-Ob-Hb",
+    "match": [
+     "Si",
+     "Ob",
+     "Hb"
+    ],
+    "params": [
+     18.0332
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Al-Ob-Hb",
+    "match": [
+     "Al",
+     "Ob",
+     "Hb"
+    ],
+    "params": [
+     -18.4463
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Si-Osh-Hos",
+    "match": [
+     "Si",
+     "Osh",
+     "Hos"
+    ],
+    "params": [
+     9.6155
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Al-Oas-Si",
+    "match": [
+     "Al",
+     "Oas",
+     "Si"
+    ],
+    "params": [
+     83.1658
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Al-Oah-Hoa",
+    "match": [
+     "Al",
+     "Oah",
+     "Hoa"
+    ],
+    "params": [
+     -2.6112
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Oas-Si-Osh",
+    "match": [
+     "Oas",
+     "Si",
+     "Osh"
+    ],
+    "params": [
+     72.4616
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Oas-Si-Oss",
+    "match": [
+     "Oas",
+     "Si",
+     "Oss"
+    ],
+    "params": [
+     45.752
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Oss-Si-Osh",
+    "match": [
+     "Oss",
+     "Si",
+     "Osh"
+    ],
+    "params": [
+     70.6866
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Oss-Si-Ob",
+    "match": [
+     "Oss",
+     "Si",
+     "Ob"
+    ],
+    "params": [
+     63.3273
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Si-Oss-Si",
+    "match": [
+     "Si",
+     "Oss",
+     "Si"
+    ],
+    "params": [
+     151.8742
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Oas-Al-Oas",
+    "match": [
+     "Oas",
+     "Al",
+     "Oas"
+    ],
+    "params": [
+     -56.505
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Oas-Si-Ob",
+    "match": [
+     "Oas",
+     "Si",
+     "Ob"
+    ],
+    "params": [
+     63.3273
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Oas-Si-Oas",
+    "match": [
+     "Oas",
+     "Si",
+     "Oas"
+    ],
+    "params": [
+     151.8742
+    ],
+    "comment": "Table 8"
+   }
+  ],
+  "ba": [
+   {
+    "name": "Ob-Si-Osh",
+    "match": [
+     "Ob",
+     "Si",
+     "Osh"
+    ],
+    "params": [
+     -0.9347,
+     96.7623
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Osh-Si-Osh",
+    "match": [
+     "Osh",
+     "Si",
+     "Osh"
+    ],
+    "params": [
+     43.7331,
+     43.7331
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Ob-Al-Oas",
+    "match": [
+     "Ob",
+     "Al",
+     "Oas"
+    ],
+    "params": [
+     12.9574,
+     20.0579
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Ob-Al-Oah",
+    "match": [
+     "Ob",
+     "Al",
+     "Oah"
+    ],
+    "params": [
+     25.6722,
+     20.7253
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Oas-Al-Oah",
+    "match": [
+     "Oas",
+     "Al",
+     "Oah"
+    ],
+    "params": [
+     87.4126,
+     15.6056
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Oah-Al-Oah",
+    "match": [
+     "Oah",
+     "Al",
+     "Oah"
+    ],
+    "params": [
+     -6.2892,
+     -6.2892
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Si-Ob-Al",
+    "match": [
+     "Si",
+     "Ob",
+     "Al"
+    ],
+    "params": [
+     23.045,
+     3.6805
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Si-Ob-Hb",
+    "match": [
+     "Si",
+     "Ob",
+     "Hb"
+    ],
+    "params": [
+     36.5384,
+     53.8615
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Al-Ob-Hb",
+    "match": [
+     "Al",
+     "Ob",
+     "Hb"
+    ],
+    "params": [
+     -12.7238,
+     33.9457
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Si-Osh-Hos",
+    "match": [
+     "Si",
+     "Osh",
+     "Hos"
+    ],
+    "params": [
+     46.1485,
+     25.1227
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Al-Oas-Si",
+    "match": [
+     "Al",
+     "Oas",
+     "Si"
+    ],
+    "params": [
+     9.1662,
+     13.7478
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Al-Oah-Hoa",
+    "match": [
+     "Al",
+     "Oah",
+     "Hoa"
+    ],
+    "params": [
+     38.1658,
+     31.2114
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Oas-Si-Osh",
+    "match": [
+     "Oas",
+     "Si",
+     "Osh"
+    ],
+    "params": [
+     -54.0838,
+     63.333
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Oas-Si-Oss",
+    "match": [
+     "Oas",
+     "Si",
+     "Oss"
+    ],
+    "params": [
+     20.1222,
+     77.9618
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Oss-Si-Osh",
+    "match": [
+     "Oss",
+     "Si",
+     "Osh"
+    ],
+    "params": [
+     41.1242,
+     75.6
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Oss-Si-Oss",
+    "match": [
+     "Oss",
+     "Si",
+     "Oss"
+    ],
+    "params": [
+     78.1239,
+     78.1239
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Oss-Si-Ob",
+    "match": [
+     "Oss",
+     "Si",
+     "Ob"
+    ],
+    "params": [
+     52.7776,
+     12.2769
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Si-Oss-Si",
+    "match": [
+     "Si",
+     "Oss",
+     "Si"
+    ],
+    "params": [
+     9.239,
+     9.239
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Oas-Al-Oas",
+    "match": [
+     "Oas",
+     "Al",
+     "Oas"
+    ],
+    "params": [
+     110.1523,
+     110.1523
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Oas-Si-Ob",
+    "match": [
+     "Oas",
+     "Si",
+     "Ob"
+    ],
+    "params": [
+     13.36,
+     -8.3197
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Oas-Si-Oas",
+    "match": [
+     "Oas",
+     "Si",
+     "Oas"
+    ],
+    "params": [
+     234.0716,
+     234.0716
+    ],
+    "comment": "Table 8"
+   }
+  ],
+  "aa": [
+   {
+    "name": "Osh-Si-Oss-Osh",
+    "match": [
+     "Osh",
+     "Si",
+     "Oss",
+     "Osh"
+    ],
+    "params": [
+     52.6194
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Oss-Si-Osh-Osh",
+    "match": [
+     "Oss",
+     "Si",
+     "Osh",
+     "Osh"
+    ],
+    "params": [
+     60.1802
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Osh-Si-Osh-Osh",
+    "match": [
+     "Osh",
+     "Si",
+     "Osh",
+     "Osh"
+    ],
+    "params": [
+     38.4444
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Oss-Si-Oss-Osh",
+    "match": [
+     "Oss",
+     "Si",
+     "Oss",
+     "Osh"
+    ],
+    "params": [
+     52.3408
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Oss-Si-Osh-Oss",
+    "match": [
+     "Oss",
+     "Si",
+     "Osh",
+     "Oss"
+    ],
+    "params": [
+     86.3954
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Oss-Si-Oss-Oss",
+    "match": [
+     "Oss",
+     "Si",
+     "Oss",
+     "Oss"
+    ],
+    "params": [
+     -6.303
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Osh-Si-Ob-Osh",
+    "match": [
+     "Osh",
+     "Si",
+     "Ob",
+     "Osh"
+    ],
+    "params": [
+     -13.6331
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Ob-Si-Osh-Osh",
+    "match": [
+     "Ob",
+     "Si",
+     "Osh",
+     "Osh"
+    ],
+    "params": [
+     17.4074
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Oah-Al-Ob-Oah",
+    "match": [
+     "Oah",
+     "Al",
+     "Ob",
+     "Oah"
+    ],
+    "params": [
+     0.0
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Ob-Al-Oah-Oah",
+    "match": [
+     "Ob",
+     "Al",
+     "Oah",
+     "Oah"
+    ],
+    "params": [
+     -20.0594
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Oah-Al-Oah-Oah",
+    "match": [
+     "Oah",
+     "Al",
+     "Oah",
+     "Oah"
+    ],
+    "params": [
+     -51.8916
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Al-Ob-Si-Hb",
+    "match": [
+     "Al",
+     "Ob",
+     "Si",
+     "Hb"
+    ],
+    "params": [
+     36.0652
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Si-Ob-Al-Hb",
+    "match": [
+     "Si",
+     "Ob",
+     "Al",
+     "Hb"
+    ],
+    "params": [
+     58.8895
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Si-Ob-Hb-Al",
+    "match": [
+     "Si",
+     "Ob",
+     "Hb",
+     "Al"
+    ],
+    "params": [
+     44.4559
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Oss-Si-Ob-Osh",
+    "match": [
+     "Oss",
+     "Si",
+     "Ob",
+     "Osh"
+    ],
+    "params": [
+     61.4849
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Ob-Si-Oss-Osh",
+    "match": [
+     "Ob",
+     "Si",
+     "Oss",
+     "Osh"
+    ],
+    "params": [
+     75.8868
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Ob-Si-Osh-Oss",
+    "match": [
+     "Ob",
+     "Si",
+     "Osh",
+     "Oss"
+    ],
+    "params": [
+     50.5839
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Oas-Al-Ob-Oah",
+    "match": [
+     "Oas",
+     "Al",
+     "Ob",
+     "Oah"
+    ],
+    "params": [
+     13.676
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Ob-Al-Oas-Oah",
+    "match": [
+     "Ob",
+     "Al",
+     "Oas",
+     "Oah"
+    ],
+    "params": [
+     28.2428
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Ob-Al-Oah-Oas",
+    "match": [
+     "Ob",
+     "Al",
+     "Oah",
+     "Oas"
+    ],
+    "params": [
+     -34.0834
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Oah-Al-Oas-Oah",
+    "match": [
+     "Oah",
+     "Al",
+     "Oas",
+     "Oah"
+    ],
+    "params": [
+     -62.0442
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Oas-Al-Oah-Oah",
+    "match": [
+     "Oas",
+     "Al",
+     "Oah",
+     "Oah"
+    ],
+    "params": [
+     -19.2127
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Osh-Si-Oas-Osh",
+    "match": [
+     "Osh",
+     "Si",
+     "Oas",
+     "Osh"
+    ],
+    "params": [
+     13.9083
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Oas-Si-Osh-Osh",
+    "match": [
+     "Oas",
+     "Si",
+     "Osh",
+     "Osh"
+    ],
+    "params": [
+     46.1582
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Oas-Si-Oss-Osh",
+    "match": [
+     "Oas",
+     "Si",
+     "Oss",
+     "Osh"
+    ],
+    "params": [
+     51.3039
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Oss-Si-Oas-Osh",
+    "match": [
+     "Oss",
+     "Si",
+     "Oas",
+     "Osh"
+    ],
+    "params": [
+     40.7833
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Oss-Si-Osh-Oas",
+    "match": [
+     "Oss",
+     "Si",
+     "Osh",
+     "Oas"
+    ],
+    "params": [
+     52.5469
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Oas-Al-Ob-Oas",
+    "match": [
+     "Oas",
+     "Al",
+     "Ob",
+     "Oas"
+    ],
+    "params": [
+     -6.112
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Ob-Al-Oas-Oas",
+    "match": [
+     "Ob",
+     "Al",
+     "Oas",
+     "Oas"
+    ],
+    "params": [
+     39.4951
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Oas-Al-Oas-Oah",
+    "match": [
+     "Oas",
+     "Al",
+     "Oas",
+     "Oah"
+    ],
+    "params": [
+     0.0
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Oas-Al-Oah-Oas",
+    "match": [
+     "Oas",
+     "Al",
+     "Oah",
+     "Oas"
+    ],
+    "params": [
+     98.5159
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Ob-Si-Oas-Osh",
+    "match": [
+     "Ob",
+     "Si",
+     "Oas",
+     "Osh"
+    ],
+    "params": [
+     25.6772
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Oas-Si-Ob-Osh",
+    "match": [
+     "Oas",
+     "Si",
+     "Ob",
+     "Osh"
+    ],
+    "params": [
+     -35.6378
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Oas-Si-Osh-Ob",
+    "match": [
+     "Oas",
+     "Si",
+     "Osh",
+     "Ob"
+    ],
+    "params": [
+     31.8901
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Oas-Si-Oss-Oss",
+    "match": [
+     "Oas",
+     "Si",
+     "Oss",
+     "Oss"
+    ],
+    "params": [
+     19.2372
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Oss-Si-Oas-Oss",
+    "match": [
+     "Oss",
+     "Si",
+     "Oas",
+     "Oss"
+    ],
+    "params": [
+     0.0
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Oss-Si-Ob-Oss",
+    "match": [
+     "Oss",
+     "Si",
+     "Ob",
+     "Oss"
+    ],
+    "params": [
+     79.7785
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Ob-Si-Oss-Oss",
+    "match": [
+     "Ob",
+     "Si",
+     "Oss",
+     "Oss"
+    ],
+    "params": [
+     0.0
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Oas-Si-Osh-Oas",
+    "match": [
+     "Oas",
+     "Si",
+     "Osh",
+     "Oas"
+    ],
+    "params": [
+     0.0
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Osh-Si-Oas-Oas",
+    "match": [
+     "Osh",
+     "Si",
+     "Oas",
+     "Oas"
+    ],
+    "params": [
+     -23.1336
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Oas-Si-Ob-Oas",
+    "match": [
+     "Oas",
+     "Si",
+     "Ob",
+     "Oas"
+    ],
+    "params": [
+     0.0
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   },
+   {
+    "name": "Ob-Si-Oas-Oas",
+    "match": [
+     "Ob",
+     "Si",
+     "Oas",
+     "Oas"
+    ],
+    "params": [
+     0.0
+    ],
+    "comment": "Table 8 (i-j-k/l)"
+   }
+  ],
+  "aat": [
+   {
+    "name": "Osh-Si-Ob-Al",
+    "match": [
+     "Osh",
+     "Si",
+     "Ob",
+     "Al"
+    ],
+    "params": [
+     213.6799
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Osh-Si-Ob-Hb",
+    "match": [
+     "Osh",
+     "Si",
+     "Ob",
+     "Hb"
+    ],
+    "params": [
+     -21.4028
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Ob-Si-Osh-Hos",
+    "match": [
+     "Ob",
+     "Si",
+     "Osh",
+     "Hos"
+    ],
+    "params": [
+     -9.3392
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Osh-Si-Osh-Hos",
+    "match": [
+     "Osh",
+     "Si",
+     "Osh",
+     "Hos"
+    ],
+    "params": [
+     -2.9461
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Oas-Al-Ob-Si",
+    "match": [
+     "Oas",
+     "Al",
+     "Ob",
+     "Si"
+    ],
+    "params": [
+     32.3177
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Oas-Al-Ob-Hb",
+    "match": [
+     "Oas",
+     "Al",
+     "Ob",
+     "Hb"
+    ],
+    "params": [
+     8.8676
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Oah-Al-Ob-Si",
+    "match": [
+     "Oah",
+     "Al",
+     "Ob",
+     "Si"
+    ],
+    "params": [
+     -5.9667
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Oah-Al-Ob-Hb",
+    "match": [
+     "Oah",
+     "Al",
+     "Ob",
+     "Hb"
+    ],
+    "params": [
+     -22.3131
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Ob-Al-Oas-Si",
+    "match": [
+     "Ob",
+     "Al",
+     "Oas",
+     "Si"
+    ],
+    "params": [
+     16.7797
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Oah-Al-Oas-Si",
+    "match": [
+     "Oah",
+     "Al",
+     "Oas",
+     "Si"
+    ],
+    "params": [
+     7.8776
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Ob-Al-Oah-Hoa",
+    "match": [
+     "Ob",
+     "Al",
+     "Oah",
+     "Hoa"
+    ],
+    "params": [
+     -6.368
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Oas-Al-Oah-Hoa",
+    "match": [
+     "Oas",
+     "Al",
+     "Oah",
+     "Hoa"
+    ],
+    "params": [
+     -52.1956
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Oah-Al-Oah-Hoa",
+    "match": [
+     "Oah",
+     "Al",
+     "Oah",
+     "Hoa"
+    ],
+    "params": [
+     6.5018
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Al-Oas-Si-Osh",
+    "match": [
+     "Al",
+     "Oas",
+     "Si",
+     "Osh"
+    ],
+    "params": [
+     -14.1105
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Oas-Si-Osh-Hos",
+    "match": [
+     "Oas",
+     "Si",
+     "Osh",
+     "Hos"
+    ],
+    "params": [
+     -4.6863
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Oss-Si-Oas-Al",
+    "match": [
+     "Oss",
+     "Si",
+     "Oas",
+     "Al"
+    ],
+    "params": [
+     8.4655
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Oas-Si-Oss-Si",
+    "match": [
+     "Oas",
+     "Si",
+     "Oss",
+     "Si"
+    ],
+    "params": [
+     -10.4191
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Osh-Si-Oss-Si",
+    "match": [
+     "Osh",
+     "Si",
+     "Oss",
+     "Si"
+    ],
+    "params": [
+     2.3216
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Oss-Si-Osh-Hos",
+    "match": [
+     "Oss",
+     "Si",
+     "Osh",
+     "Hos"
+    ],
+    "params": [
+     6.4184
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Oss-Si-Oss-Si",
+    "match": [
+     "Oss",
+     "Si",
+     "Oss",
+     "Si"
+    ],
+    "params": [
+     -4.515
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Ob-Si-Oss-Si",
+    "match": [
+     "Ob",
+     "Si",
+     "Oss",
+     "Si"
+    ],
+    "params": [
+     11.8037
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Oss-Si-Ob-Al",
+    "match": [
+     "Oss",
+     "Si",
+     "Ob",
+     "Al"
+    ],
+    "params": [
+     -71.4139
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Oss-Si-Ob-Hb",
+    "match": [
+     "Oss",
+     "Si",
+     "Ob",
+     "Hb"
+    ],
+    "params": [
+     15.116
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Oas-Al-Oas-Si",
+    "match": [
+     "Oas",
+     "Al",
+     "Oas",
+     "Si"
+    ],
+    "params": [
+     -18.0184
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Ob-Si-Oas-Al",
+    "match": [
+     "Ob",
+     "Si",
+     "Oas",
+     "Al"
+    ],
+    "params": [
+     17.2526
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Oas-Si-Ob-Al",
+    "match": [
+     "Oas",
+     "Si",
+     "Ob",
+     "Al"
+    ],
+    "params": [
+     91.5202
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Oas-Si-Ob-Hb",
+    "match": [
+     "Oas",
+     "Si",
+     "Ob",
+     "Hb"
+    ],
+    "params": [
+     17.5674
+    ],
+    "comment": "Table 8"
+   },
+   {
+    "name": "Oas-Si-Oas-Al",
+    "match": [
+     "Oas",
+     "Si",
+     "Oas",
+     "Al"
+    ],
+    "params": [
+     -10.9279
+    ],
+    "comment": "Table 8"
+   }
+  ],
+  "mbt": [],
+  "ebt": [],
+  "at": [],
+  "bb13": []
+ },
+ "bond_increments": [
+  {
+   "name": "Si-Osh",
+   "match": [
+    "Si",
+    "Osh"
+   ],
+   "params": [
+    0.1303,
+    -0.1303
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Hos-Osh",
+   "match": [
+    "Hos",
+    "Osh"
+   ],
+   "params": [
+    0.0641,
+    -0.0641
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Al-Oah",
+   "match": [
+    "Al",
+    "Oah"
+   ],
+   "params": [
+    0.3013,
+    -0.3013
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Hoa-Oah",
+   "match": [
+    "Hoa",
+    "Oah"
+   ],
+   "params": [
+    0.0575,
+    -0.0575
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Si-Ob",
+   "match": [
+    "Si",
+    "Ob"
+   ],
+   "params": [
+    0.1392,
+    -0.1392
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Al-Ob",
+   "match": [
+    "Al",
+    "Ob"
+   ],
+   "params": [
+    0.0284,
+    -0.0284
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Hb-Ob",
+   "match": [
+    "Hb",
+    "Ob"
+   ],
+   "params": [
+    0.0839,
+    -0.0839
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Si-Oss",
+   "match": [
+    "Si",
+    "Oss"
+   ],
+   "params": [
+    0.1309,
+    -0.1309
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Si-Oas",
+   "match": [
+    "Si",
+    "Oas"
+   ],
+   "params": [
+    0.1265,
+    -0.1265
+   ],
+   "comment": "Table 8"
+  },
+  {
+   "name": "Al-Oas",
+   "match": [
+    "Al",
+    "Oas"
+   ],
+   "params": [
+    0.1694,
+    -0.1694
+   ],
+   "comment": "Table 8"
+  }
+ ],
+ "notes": [
+  "built by CAPS (bench/ff/make_hill_sauer1995.py) from the paper's Table 8 (cross terms read from the page image)",
+  "nonbond A_i A_j / r^9 with B 0 as the paper, as lj/class2 with B 1e-10 kcal/mol A^6 (every pair explicit)",
+  "charges from the bond increments; the geometry-dependent charges of Table 9 are not used",
+  "cut-off 10 A (CAPS's; the paper's lattice sums are Ewald)"
+ ],
+ "typing": "../typing/hill-sauer1995.typing.json"
+}

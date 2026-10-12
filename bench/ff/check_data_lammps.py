@@ -97,6 +97,11 @@ CASES = [
      "ramsahye2005-nay", "types", "rules"),
     ("Forester 1997 silicalite set: alpha-quartz, O shells", ("file", os.path.join(ROOT, "data", "crystals", "alpha-quartz.cif")), "forester1997-silicalite", "types", "rules", ["--no-tail"]),
     ("Forester 1997 silicalite set: benzene with SiO4 (benzene-O shell pairs)", ("smiles", "c1ccccc1.[O-][Si]([O-])([O-])[O-]"), "forester1997-silicalite", "types", "rules"),
+    # Hill & Sauer 1995 (CFF class II, every cross term; charges from the paper's bond increments)
+    ("Hill & Sauer 1995: disilicic acid and a bridging-hydroxyl Si-O(H)-Al cluster", ("smiles",
+     "O[Si](O)(O)O[Si](O)(O)O.O[Si](O)(O)[OH+][Al-](O)(O)O"), "hill-sauer1995", "types", "rules"),
+    ("Hill & Sauer 1995: (HO)3Si-O-Al(OH)3 anion and a four-ring", ("smiles", "O[Si](O)(O)O[Al-](O)(O)O.O[Si]1(O)O[Si](O)(O)O[Si](O)(O)O[Si](O)(O)O1"),
+     "hill-sauer1995", "types", "rules"),
     # oxide glasses (bench/ff/make_glass.py): the Teter partial-charge set, Tilocca's shell model (SM0; SM1's screened bend has
     # no LAMMPS style and is refused), Vogel's LiPO3; overlays by --typing
     ("Teter glass set (Cormack 2002 / Du 2009): alpha-quartz", ("file", os.path.join(ROOT, "data", "crystals", "alpha-quartz.cif")), "teter-glass", "types", "rules", ["--no-tail"]),

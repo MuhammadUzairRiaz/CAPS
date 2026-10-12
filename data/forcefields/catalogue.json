@@ -467,34 +467,6 @@
    }
   },
   {
-   "id": "inorganic-zeolite-hill-sauer",
-   "name": "Inorganic: zeolite Hill Sauer",
-   "version": "",
-   "references": [],
-   "origin": "converted",
-   "source_file": "INORGANIC_zeolite_Hill_Sauer.par",
-   "status": "converted",
-   "notes": "Buckingham / Morse pairs and core-shell springs converted; no buildable reference example.",
-   "file": "inorganic-zeolite-hill-sauer.json",
-   "counts": {
-    "atom_types": 10,
-    "pairs": 55,
-    "bonds": 10,
-    "angles": 21,
-    "dihedrals": 29,
-    "impropers": 1
-   },
-   "typing": {
-    "rules": "typing/inorganic-zeolite-hill-sauer.typing.json",
-    "evidence": "CAPS rules (bench/typing/make_inorganic_rules.py): 10 rules"
-   },
-   "list": {
-    "label": "Zeolite Hill-Sauer",
-    "key": "inorganic_zeolite_hs",
-    "order": 33
-   }
-  },
-  {
    "id": "compass-published-moltemplate",
    "name": "COMPASS (published subset, full class II)",
    "version": "1998",
@@ -2309,6 +2281,37 @@
    "list": {
     "label": "Silicalite (Forester 1997)",
     "key": "forester1997",
+    "order": 30
+   }
+  },
+  {
+   "id": "hill-sauer1995",
+   "name": "Aluminosilicates (Hill & Sauer 1995)",
+   "version": "1995, Table 8",
+   "references": [
+    "J.-R. Hill, J. Sauer, J. Phys. Chem. 99, 9536 (1995)",
+    "J.-R. Hill, J. Sauer, J. Phys. Chem. 98, 1238 (1994)"
+   ],
+   "origin": "built from source",
+   "source": "the paper's Table 8 (cross terms read from the page image); bench/ff/make_hill_sauer1995.py",
+   "license": "published parameters of the paper",
+   "status": "validated",
+   "file": "hill-sauer1995.json",
+   "counts": {
+    "atom_types": 10,
+    "pairs": 55,
+    "bonds": 10,
+    "angles": 21,
+    "dihedrals": 28,
+    "impropers": 1
+   },
+   "typing": {
+    "rules": "typing/hill-sauer1995.typing.json",
+    "evidence": "the ab initio CFF for silica and zeolite clusters: quartic bonds and angles, torsions, bond-bond, bond-angle, angle-angle and angle-angle-torsion cross terms, the bridging O's out-of-plane term, A_i A_j / r^9 repulsion and bond-increment charges; LAMMPS reproduces CAPS's energies on disilicic acid, a bridging-hydroxyl Si-O(H)-Al cluster, (HO)3Si-O-Al(OH)3 and a cyclotetrasilicic acid"
+   },
+   "list": {
+    "label": "Aluminosilicates (Hill & Sauer)",
+    "key": "hill_sauer1995",
     "order": 30
    }
   },
