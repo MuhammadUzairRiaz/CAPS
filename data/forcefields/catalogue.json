@@ -1893,10 +1893,10 @@
    "status": "validated",
    "file": "trappe-ua-umn.json",
    "counts": {
-    "atom_types": 93,
-    "pairs": 93,
-    "bonds": 119,
-    "angles": 214,
+    "atom_types": 109,
+    "pairs": 109,
+    "bonds": 126,
+    "angles": 224,
     "dihedrals": 210,
     "impropers": 0
    },
