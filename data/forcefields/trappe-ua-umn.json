@@ -10,11 +10,16 @@
   "C.D. Wick, J.M. Stubbs, N. Rai et al., J. Phys. Chem. B 109, 18974 (2005)",
   "C.D. Wick, M.G. Martin, J.I. Siepmann, J. Phys. Chem. B 104, 8008 (2000)",
   "J.-S. Lee, C.D. Wick, J.M. Stubbs et al., Mol. Phys. 103, 99 (2005)",
+  "J.J. Potoff, J.I. Siepmann, AIChE J. 47, 1676 (2001)",
   "J.M. Stubbs, J.J. Potoff, J.I. Siepmann, J. Phys. Chem. B 108, 17596 (2004)",
   "K.A. Maerzke, N.E. Schultz, R.B. Ross et al., J. Phys. Chem. B 113, 6415 (2009)",
+  "L. Zhang, J.I. Siepmann, Collect. Czech. Chem. Commun. 75, 577 (2010)",
   "L. Zhang, J.I. Siepmann, J. Phys. Chem. B 109, 2911 (2005)",
+  "L. Zhang, J.I. Siepmann, Theor. Chem. Acc. 115, 391 (2006)",
+  "M.-B.H. Ketko, J.L. Rafferty, J.I. Siepmann et al., Fluid Phase Equil. 274, 44 (2008)",
   "M.G. Martin, J.I. Siepmann, J. Phys. Chem. B 102, 2569 (1998)",
   "M.G. Martin, J.I. Siepmann, J. Phys. Chem. B 103, 4508 (1999)",
+  "M.S. Shah, M. Tsapatsis, J.I. Siepmann, J. Phys. Chem. B 119, 7041 (2015)",
   "N. Lubna, G. Kamath, J.J. Potoff et al., J. Phys. Chem. B 109, 24100 (2005)",
   "S.J. Keasler, S.M. Charan, C.D. Wick et al., J. Phys. Chem. B 116, 11234 (2012)",
   "TraPPE reference 9902"
@@ -49,6 +54,66 @@
    ],
    "coul14": 0.5,
    "comment": "TraPPE's glycol ethers, diols, disulfides and (meth)acrylates count 1-4 Coulomb x 0.5"
+  }
+ ],
+ "virtual_sites": [
+  {
+   "smarts": "[NX1]#[NX1]",
+   "type": "M_85",
+   "from": [
+    0,
+    1
+   ],
+   "w": [
+    0.5,
+    0.5
+   ],
+   "comment": "N2's centre charge, midway between the atoms"
+  },
+  {
+   "smarts": "[OX1]=[OX1]",
+   "type": "M_109",
+   "from": [
+    0,
+    1
+   ],
+   "w": [
+    0.5,
+    0.5
+   ],
+   "comment": "O2's centre charge, midway between the atoms"
+  },
+  {
+   "smarts": "[NX3]([H])([H])[H]",
+   "type": "M_128",
+   "from": [
+    0,
+    1,
+    2,
+    3
+   ],
+   "w": [
+    0.790289416557,
+    0.069903527814,
+    0.069903527814,
+    0.069903527814
+   ],
+   "comment": "NH3's charge on the axis, 0.08 A from N towards the H"
+  },
+  {
+   "smarts": "[SX2]([H])[H]",
+   "type": "M_161",
+   "from": [
+    0,
+    1,
+    2
+   ],
+   "w": [
+    0.677711222472,
+    0.161144388764,
+    0.161144388764
+   ],
+   "comment": "H2S's charge on the bisector, 0.3 A from S"
   }
  ],
  "atom_types": [
@@ -396,6 +461,34 @@
    "description": "CH+[CH]+S (aromatic (thiophene)); C.D. Wick, M.G. Martin, J.I. Siepmann, J. Phys. Chem. B 104, 8008 (2000)"
   },
   {
+   "name": "N_84",
+   "element": "N",
+   "mass": 14.007,
+   "charge": -0.482,
+   "description": "[N]#N (dinitrogen); J.J. Potoff, J.I. Siepmann, AIChE J. 47, 1676 (2001)"
+  },
+  {
+   "name": "M_85",
+   "element": "",
+   "mass": 0.0,
+   "charge": 0.964,
+   "description": "N#[M]#N (dinitrogen); J.J. Potoff, J.I. Siepmann, AIChE J. 47, 1676 (2001)"
+  },
+  {
+   "name": "C_86",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.7,
+   "description": "O=[C]=O (carbon dioxide); J.J. Potoff, J.I. Siepmann, AIChE J. 47, 1676 (2001)"
+  },
+  {
+   "name": "O_87",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -0.35,
+   "description": "[O]=C=O (carbon dioxide); J.M. Stubbs, J.J. Potoff, J.I. Siepmann, J. Phys. Chem. B 108, 17596 (2004)"
+  },
+  {
    "name": "CH_88",
    "element": "C",
    "mass": 13.019,
@@ -436,6 +529,34 @@
    "mass": 15.999,
    "charge": -0.25,
    "description": "CHx-[O]-C=O (ester); J.M. Stubbs, J.J. Potoff, J.I. Siepmann, J. Phys. Chem. B 108, 17596 (2004)"
+  },
+  {
+   "name": "O_106",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -0.42,
+   "description": "CH2-[O]-CH2 (ethylene oxide); M.-B.H. Ketko, J.L. Rafferty, J.I. Siepmann et al., Fluid Phase Equil. 274, 44 (2008)"
+  },
+  {
+   "name": "CH2_107",
+   "element": "C",
+   "mass": 14.027,
+   "charge": 0.21,
+   "description": "[CH2]-O-CH2 (ethylene oxide); M.-B.H. Ketko, J.L. Rafferty, J.I. Siepmann et al., Fluid Phase Equil. 274, 44 (2008)"
+  },
+  {
+   "name": "O_108",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -0.113,
+   "description": "[O]=O (dioxygen); L. Zhang, J.I. Siepmann, Theor. Chem. Acc. 115, 391 (2006)"
+  },
+  {
+   "name": "M_109",
+   "element": "",
+   "mass": 0.0,
+   "charge": 0.226,
+   "description": "O=[M]=O (dioxygen); L. Zhang, J.I. Siepmann, Theor. Chem. Acc. 115, 391 (2006)"
   },
   {
    "name": "CH2_110",
@@ -550,11 +671,46 @@
    "description": "(CH3)3-[C]-CH-O-P (soman); M.G. Martin, J.I. Siepmann, J. Phys. Chem. B 103, 4508 (1999)"
   },
   {
+   "name": "N_126",
+   "element": "N",
+   "mass": 14.007,
+   "charge": 0.0,
+   "description": "[N]-H3 (ammonia); L. Zhang, J.I. Siepmann, Collect. Czech. Chem. Commun. 75, 577 (2010)"
+  },
+  {
+   "name": "H_127",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.41,
+   "description": "[H]-NH2 (ammonia); L. Zhang, J.I. Siepmann, Collect. Czech. Chem. Commun. 75, 577 (2010)"
+  },
+  {
+   "name": "M_128",
+   "element": "",
+   "mass": 0.0,
+   "charge": -1.23,
+   "description": "[M]-NH3 (ammonia); L. Zhang, J.I. Siepmann, Collect. Czech. Chem. Commun. 75, 577 (2010)"
+  },
+  {
    "name": "CH_135",
    "element": "C",
    "mass": 13.019,
    "charge": 0.0,
    "description": "CH+[CH]+CH (aromatic (w/quadrupole)); C.D. Wick, J.I. Siepmann, W.L. Klotz et al., J. Chromatogr. A 954, 181 (2002)"
+  },
+  {
+   "name": "M_136",
+   "element": "",
+   "mass": 0.0,
+   "charge": 2.42,
+   "description": "[M]center (aromatic (arene)); C.D. Wick, J.I. Siepmann, W.L. Klotz et al., J. Chromatogr. A 954, 181 (2002)"
+  },
+  {
+   "name": "M_137",
+   "element": "",
+   "mass": 0.0,
+   "charge": -1.21,
+   "description": "[M]pi (aromatic (arene)); C.D. Wick, J.I. Siepmann, W.L. Klotz et al., J. Chromatogr. A 954, 181 (2002)"
   },
   {
    "name": "CH_138",
@@ -702,6 +858,27 @@
    "mass": 14.027,
    "charge": 0.36,
    "description": "O-[CH2]-O (cyclic triether (6 mem)); S.J. Keasler, S.M. Charan, C.D. Wick et al., J. Phys. Chem. B 116, 11234 (2012)"
+  },
+  {
+   "name": "S_159",
+   "element": "S",
+   "mass": 32.06,
+   "charge": 0.0,
+   "description": "H-[S]-H (hydrogen sulfide); M.S. Shah, M. Tsapatsis, J.I. Siepmann, J. Phys. Chem. B 119, 7041 (2015)"
+  },
+  {
+   "name": "H_160",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.21,
+   "description": "[H]-SH (hydrogen sulfide); M.S. Shah, M. Tsapatsis, J.I. Siepmann, J. Phys. Chem. B 119, 7041 (2015)"
+  },
+  {
+   "name": "M_161",
+   "element": "",
+   "mass": 0.0,
+   "charge": -0.42,
+   "description": "H2S-[M] (hydrogen sulfide); M.S. Shah, M. Tsapatsis, J.I. Siepmann, J. Phys. Chem. B 119, 7041 (2015)"
   }
  ],
  "pairs": [
@@ -1196,6 +1373,46 @@
    ]
   },
   {
+   "name": "N_84",
+   "match": [
+    "N_84"
+   ],
+   "params": [
+    0.0715393548,
+    3.31
+   ]
+  },
+  {
+   "name": "M_85",
+   "match": [
+    "M_85"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "C_86",
+   "match": [
+    "C_86"
+   ],
+   "params": [
+    0.053654516099999994,
+    2.8
+   ]
+  },
+  {
+   "name": "O_87",
+   "match": [
+    "O_87"
+   ],
+   "params": [
+    0.1569891397,
+    3.05
+   ]
+  },
+  {
    "name": "CH_88",
    "match": [
     "CH_88"
@@ -1253,6 +1470,46 @@
    "params": [
     0.10929623649999999,
     2.8
+   ]
+  },
+  {
+   "name": "O_106",
+   "match": [
+    "O_106"
+   ],
+   "params": [
+    0.0576289247,
+    3.1
+   ]
+  },
+  {
+   "name": "CH2_107",
+   "match": [
+    "CH2_107"
+   ],
+   "params": [
+    0.1947460214,
+    3.6
+   ]
+  },
+  {
+   "name": "O_108",
+   "match": [
+    "O_108"
+   ],
+   "params": [
+    0.0973730107,
+    3.02
+   ]
+  },
+  {
+   "name": "M_109",
+   "match": [
+    "M_109"
+   ],
+   "params": [
+    0.0,
+    0.0
    ]
   },
   {
@@ -1416,6 +1673,36 @@
    ]
   },
   {
+   "name": "N_126",
+   "match": [
+    "N_126"
+   ],
+   "params": [
+    0.3676327955,
+    3.42
+   ]
+  },
+  {
+   "name": "H_127",
+   "match": [
+    "H_127"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "M_128",
+   "match": [
+    "M_128"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
    "name": "CH_135",
    "match": [
     "CH_135"
@@ -1423,6 +1710,26 @@
    "params": [
     0.0953858064,
     3.74
+   ]
+  },
+  {
+   "name": "M_136",
+   "match": [
+    "M_136"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "M_137",
+   "match": [
+    "M_137"
+   ],
+   "params": [
+    0.0,
+    0.0
    ]
   },
   {
@@ -1634,9 +1941,65 @@
     0.10432822574999999,
     3.91
    ]
+  },
+  {
+   "name": "S_159",
+   "match": [
+    "S_159"
+   ],
+   "params": [
+    0.2424389246,
+    3.6
+   ]
+  },
+  {
+   "name": "H_160",
+   "match": [
+    "H_160"
+   ],
+   "params": [
+    0.099360215,
+    2.5
+   ]
+  },
+  {
+   "name": "M_161",
+   "match": [
+    "M_161"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
   }
  ],
  "bonds": [
+  {
+   "name": "CH2_107-CH2_107",
+   "match": [
+    "CH2_107",
+    "CH2_107"
+   ],
+   "style": "harmonic",
+   "params": [
+    600.0,
+    1.466
+   ],
+   "comment": "fixed length in TraPPE (M.-B.H. Ketko, J.L. Rafferty, J.I. Siepmann et al., Fluid Phase Equil. 274, 44 (2008))"
+  },
+  {
+   "name": "CH2_107-O_106",
+   "match": [
+    "CH2_107",
+    "O_106"
+   ],
+   "style": "harmonic",
+   "params": [
+    600.0,
+    1.431
+   ],
+   "comment": "fixed length in TraPPE (M.-B.H. Ketko, J.L. Rafferty, J.I. Siepmann et al., Fluid Phase Equil. 274, 44 (2008))"
+  },
   {
    "name": "CH2_110-CH2_110",
    "match": [
@@ -3029,6 +3392,19 @@
    "comment": "fixed length in TraPPE (N. Lubna, G. Kamath, J.J. Potoff et al., J. Phys. Chem. B 109, 24100 (2005))"
   },
   {
+   "name": "C_86-O_87",
+   "match": [
+    "C_86",
+    "O_87"
+   ],
+   "style": "harmonic",
+   "params": [
+    600.0,
+    1.16
+   ],
+   "comment": "fixed length in TraPPE (J.J. Potoff, J.I. Siepmann, AIChE J. 47, 1676 (2001))"
+  },
+  {
    "name": "C_89-C_89",
    "match": [
     "C_89",
@@ -3094,6 +3470,32 @@
    "comment": "fixed length in TraPPE (TraPPE reference 9902)"
   },
   {
+   "name": "H_127-N_126",
+   "match": [
+    "H_127",
+    "N_126"
+   ],
+   "style": "harmonic",
+   "params": [
+    600.0,
+    1.0124
+   ],
+   "comment": "fixed length in TraPPE (L. Zhang, J.I. Siepmann, Collect. Czech. Chem. Commun. 75, 577 (2010))"
+  },
+  {
+   "name": "H_160-S_159",
+   "match": [
+    "H_160",
+    "S_159"
+   ],
+   "style": "harmonic",
+   "params": [
+    600.0,
+    1.34
+   ],
+   "comment": "fixed length in TraPPE (N. Lubna, G. Kamath, J.J. Potoff et al., J. Phys. Chem. B 109, 24100 (2005))"
+  },
+  {
    "name": "H_64-S_63",
    "match": [
     "H_64",
@@ -3118,6 +3520,32 @@
     0.945
    ],
    "comment": "fixed length in TraPPE (B. Chen, J.J. Potoff, J.I. Siepmann, J. Phys. Chem. B 105, 3093 (2001))"
+  },
+  {
+   "name": "N_84-N_84",
+   "match": [
+    "N_84",
+    "N_84"
+   ],
+   "style": "harmonic",
+   "params": [
+    600.0,
+    1.1
+   ],
+   "comment": "fixed length in TraPPE (J.J. Potoff, J.I. Siepmann, AIChE J. 47, 1676 (2001))"
+  },
+  {
+   "name": "O_108-O_108",
+   "match": [
+    "O_108",
+    "O_108"
+   ],
+   "style": "harmonic",
+   "params": [
+    600.0,
+    1.21
+   ],
+   "comment": "fixed length in TraPPE (L. Zhang, J.I. Siepmann, Theor. Chem. Acc. 115, 391 (2006))"
   },
   {
    "name": "O_113-P_115",
@@ -3186,6 +3614,34 @@
   }
  ],
  "angles": [
+  {
+   "name": "CH2_107-CH2_107-O_106",
+   "match": [
+    "CH2_107",
+    "CH2_107",
+    "O_106"
+   ],
+   "style": "harmonic",
+   "params": [
+    100.0,
+    60.0
+   ],
+   "comment": "rigid in TraPPE (stiff here; hold the molecule rigid); M.-B.H. Ketko, J.L. Rafferty, J.I. Siepmann et al., Fluid Phase Equil. 274, 44 (2008)"
+  },
+  {
+   "name": "CH2_107-O_106-CH2_107",
+   "match": [
+    "CH2_107",
+    "O_106",
+    "CH2_107"
+   ],
+   "style": "harmonic",
+   "params": [
+    100.0,
+    60.0
+   ],
+   "comment": "rigid in TraPPE (stiff here; hold the molecule rigid); M.-B.H. Ketko, J.L. Rafferty, J.I. Siepmann et al., Fluid Phase Equil. 274, 44 (2008)"
+  },
   {
    "name": "CH2_110-CH2_110-CH2_110",
    "match": [
@@ -5385,6 +5841,34 @@
    "comment": "k_theta 100794 K/rad^2; TraPPE reference 9902"
   },
   {
+   "name": "H_127-N_126-H_127",
+   "match": [
+    "H_127",
+    "N_126",
+    "H_127"
+   ],
+   "style": "harmonic",
+   "params": [
+    100.0,
+    106.68
+   ],
+   "comment": "rigid in TraPPE (stiff here; hold the molecule rigid); L. Zhang, J.I. Siepmann, Collect. Czech. Chem. Commun. 75, 577 (2010)"
+  },
+  {
+   "name": "H_160-S_159-H_160",
+   "match": [
+    "H_160",
+    "S_159",
+    "H_160"
+   ],
+   "style": "harmonic",
+   "params": [
+    100.0,
+    92.0
+   ],
+   "comment": "rigid in TraPPE (stiff here; hold the molecule rigid); M.S. Shah, M. Tsapatsis, J.I. Siepmann, J. Phys. Chem. B 119, 7041 (2015)"
+  },
+  {
    "name": "O_100-C_99-O_101",
    "match": [
     "O_100",
@@ -5481,6 +5965,34 @@
     111.55
    ],
    "comment": "k_theta 93200 K/rad^2; S.J. Keasler, S.M. Charan, C.D. Wick et al., J. Phys. Chem. B 116, 11234 (2012)"
+  },
+  {
+   "name": "O_87-C_86-O_87",
+   "match": [
+    "O_87",
+    "C_86",
+    "O_87"
+   ],
+   "style": "harmonic",
+   "params": [
+    100.0,
+    180.0
+   ],
+   "comment": "rigid in TraPPE (stiff here; hold the molecule rigid); J.J. Potoff, J.I. Siepmann, AIChE J. 47, 1676 (2001)"
+  },
+  {
+   "name": "X-CH2_107-X",
+   "match": [
+    "*",
+    "CH2_107",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    100.0,
+    60.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
   },
   {
    "name": "X-CH2_110-X",
@@ -5945,6 +6457,20 @@
    "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
   },
   {
+   "name": "X-C_86-X",
+   "match": [
+    "*",
+    "C_86",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    100.0,
+    180.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
    "name": "X-C_89-X",
    "match": [
     "*",
@@ -5973,6 +6499,20 @@
    "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
   },
   {
+   "name": "X-N_126-X",
+   "match": [
+    "*",
+    "N_126",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    100.0,
+    106.68
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
    "name": "X-O_101-X",
    "match": [
     "*",
@@ -5983,6 +6523,20 @@
    "params": [
     62.100134374999996,
     115.0
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-O_106-X",
+   "match": [
+    "*",
+    "O_106",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    100.0,
+    60.0
    ],
    "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
   },
@@ -6123,6 +6677,20 @@
    "params": [
     55.04555911,
     108.5
+   ],
+   "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
+  },
+  {
+   "name": "X-S_159-X",
+   "match": [
+    "*",
+    "S_159",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    100.0,
+    92.0
    ],
    "comment": "every bend at this centre in the TraPPE models (CAPS's wildcard for other neighbours)"
   },
@@ -11019,7 +11587,7 @@
  "impropers": [],
  "notes": [
   "built by CAPS (bench/ff/make_trappe.py) from the TraPPE database's own models (trappe.oit.umn.edu), each term with its paper",
-  "rigid models (benzene (6 site), m-xylene, naphthalene, o-xylene, p-xylene, thiophene, toluene (7 site)) have no intramolecular terms in TraPPE: their angles are stiff here; hold them rigid",
+  "rigid models (ammonia, benzene (6 site), carbon dioxide, ethylene oxide, m-xylene, naphthalene, nitrogen, o-xylene, oxygen, p-xylene, thiophene, toluene (7 site)) have no intramolecular terms in TraPPE: their angles are stiff here; hold them rigid",
   "1-4 Coulomb x 0.5 in TraPPE for 1,2-dimethoxyethane, 1,2-ethanediol, 1,3-propanediol, 2-ethylhexyl acrylate, 2-hydroxyethyl acrylate, 2-methoxyethan-1-ol, diethyl disulfide, dimethyl disulfide, ethyl acrylate, ethyl methacrylate, methyl acrylate, methyl methacrylate, n-butyl acrylate, n-butyl methacrylate, n-octyl acrylate (coul14_rules); every other 1-4 pair excluded",
   "TraPPE fixes bond lengths: bonds are stiff harmonic (600 kcal/mol/A^2), to be constrained in MD"
  ],

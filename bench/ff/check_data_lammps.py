@@ -146,6 +146,8 @@ CASES = [
      ("smiles", "CCCCO.CC(C)O.CC(C)(C)O.CC(C)C(C)C.CC(C)(C)C"), "trappe-ua-foyer", "types", "rules"),
     ("TraPPE-UA (TraPPE database): DME alone (1-4 Coulomb x 0.5 for every molecule)", ("smiles", "COCCOC"), "trappe-ua-umn", "types", "rules"),
     ("TraPPE-UA (TraPPE database): DME with dimethyl ether (1-4 Coulomb x 0.5 for DME only: a sub-style per part)", ("smiles", "COCCOC.COC"), "trappe-ua-umn", "types", "rules"),
+    ("TraPPE (TraPPE database): CO2, ethylene oxide, decane (the models with charge sites go to GROMACS); nudged off linear", ("smiles-nudged", "O=C=O.C1CO1.CCCCCCCCCC"),
+     "trappe-ua-umn", "types", "rules"),
     ("TraPPE-UA (TraPPE database): hexane, DME (1-4 Coulomb x 0.5), methyl methacrylate, ethanol, propionitrile, cis-2-butene", ("smiles", "CCCCCC.COCCOC.CC(=C)C(=O)OC.CCO.CCC#N.C/C=C\\C"),
      "trappe-ua-umn", "types", "rules"),
     ("TraPPE-UA alkanes (moltemplate): dodecane", ("smiles", "CCCCCCCCCCCC"), "trappe1998-moltemplate", "keep", "rules"),

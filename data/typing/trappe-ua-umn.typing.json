@@ -557,6 +557,94 @@
    "priority": 4,
    "smarts": "[CX4H0]([CX4H3])([CX4H3])([CX4H3])[CX4H1][OX2][PX4]",
    "description": "(CH3)3-[C]-CH-O-P (soman)"
+  },
+  {
+   "type": "C_86",
+   "priority": 3,
+   "smarts": "[CX2](=[OX1])=[OX1]",
+   "description": "O=[C]=O (carbon dioxide)"
+  },
+  {
+   "type": "O_87",
+   "priority": 3,
+   "smarts": "[OX1]=[CX2]=[OX1]",
+   "description": "[O]=C=O (carbon dioxide)"
+  },
+  {
+   "type": "N_84",
+   "priority": 3,
+   "smarts": "[NX1]#[NX1]",
+   "description": "[N]#N (dinitrogen)"
+  },
+  {
+   "type": "O_108",
+   "priority": 3,
+   "smarts": "[OX1]=[OX1]",
+   "description": "[O]=O (dioxygen)"
+  },
+  {
+   "type": "N_126",
+   "priority": 3,
+   "smarts": "[NX3H3]",
+   "description": "[N]-H3 (ammonia)"
+  },
+  {
+   "type": "H_127",
+   "priority": 3,
+   "smarts": "[H][NX3H3]",
+   "description": "[H]-NH2 (ammonia)"
+  },
+  {
+   "type": "S_159",
+   "priority": 3,
+   "smarts": "[SX2H2]",
+   "description": "H-[S]-H (hydrogen sulfide)"
+  },
+  {
+   "type": "H_160",
+   "priority": 3,
+   "smarts": "[H][SX2H2]",
+   "description": "[H]-SH (hydrogen sulfide)"
+  },
+  {
+   "type": "O_106",
+   "priority": 4,
+   "smarts": "[OX2;r3]([CX4H2])[CX4H2]",
+   "description": "CH2-[O]-CH2 (ethylene oxide)"
+  },
+  {
+   "type": "CH2_107",
+   "priority": 4,
+   "smarts": "[CX4H2;r3][OX2;r3]",
+   "description": "[CH2]-O-CH2 (ethylene oxide)"
+  },
+  {
+   "type": "M_85",
+   "priority": 5,
+   "smarts": "[#0]",
+   "atom_name": "M_85",
+   "description": "N2's centre charge, midway between the atoms"
+  },
+  {
+   "type": "M_109",
+   "priority": 5,
+   "smarts": "[#0]",
+   "atom_name": "M_109",
+   "description": "O2's centre charge, midway between the atoms"
+  },
+  {
+   "type": "M_128",
+   "priority": 5,
+   "smarts": "[#0]",
+   "atom_name": "M_128",
+   "description": "NH3's charge on the axis, 0.08 A from N towards the H"
+  },
+  {
+   "type": "M_161",
+   "priority": 5,
+   "smarts": "[#0]",
+   "atom_name": "M_161",
+   "description": "H2S's charge on the bisector, 0.3 A from S"
   }
  ]
 }

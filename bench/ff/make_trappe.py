@@ -79,8 +79,30 @@ RULES = [
     (117, 3, "[PX4](=[OX1])F"), (116, 3, "[F][PX4]"), (118, 3, "[OX1]=[PX4]F"), (119, 3, "[OX2]([CX4])[PX4]F"), (120, 4, "[CX4H3][PX4]F"),
     (121, 4, "[CX4H3][CX4H1][OX2][PX4]"), (122, 4, "[CX4H1]([CX4H3])([CX4H3])[OX2][PX4]"), (123, 4, "[CX4H1]([CX4H3])([CX4H0])[OX2][PX4]"),
     (124, 4, "[CX4H3][CX4H0][CX4H1][OX2][PX4]"), (125, 4, "[CX4H0]([CX4H3])([CX4H3])([CX4H3])[CX4H1][OX2][PX4]"),
+    # TraPPE-small (rigid): carbon dioxide, nitrogen, oxygen, ammonia, hydrogen sulfide, ethylene oxide
+    (86, 3, "[CX2](=[OX1])=[OX1]"), (87, 3, "[OX1]=[CX2]=[OX1]"), (84, 3, "[NX1]#[NX1]"), (108, 3, "[OX1]=[OX1]"),
+    (126, 3, "[NX3H3]"), (127, 3, "[H][NX3H3]"), (159, 3, "[SX2H2]"), (160, 3, "[H][SX2H2]"),
+    (106, 4, "[OX2;r3]([CX4H2])[CX4H2]"), (107, 4, "[CX4H2;r3][OX2;r3]"),
 ]
-MASS = {"CH4": 16.043, "CH3": 15.035, "CH2": 14.027, "CH": 13.019, "C": 12.011, "O": 15.999, "N": 14.007, "S": 32.06, "P": 30.974,
+
+
+# the massless charge sites of the small models, as weighted sums of their atoms (CAPS's virtual sites): N2's and O2's
+# midway between the atoms; NH3's on the axis 0.08 A from N towards the H, H2S's on the bisector 0.3 A from S
+def _axis_w(d_site, bond, angle_deg, nh):
+    """weights (centre, each H) of a site d_site from the centre towards the centroid of nh H atoms"""
+    a = math.radians(angle_deg)
+    cos_ax = math.sqrt((1 + 2 * math.cos(a)) / 3) if nh == 3 else math.cos(a / 2)
+    f = d_site / (bond * cos_ax)
+    return [1 - f] + [f / nh] * nh
+
+
+VSITES = [
+    (85, "[NX1]#[NX1]", [0, 1], [0.5, 0.5], "N2's centre charge, midway between the atoms"),
+    (109, "[OX1]=[OX1]", [0, 1], [0.5, 0.5], "O2's centre charge, midway between the atoms"),
+    (128, "[NX3]([H])([H])[H]", [0, 1, 2, 3], _axis_w(0.08, 1.0124, 106.68, 3), "NH3's charge on the axis, 0.08 A from N towards the H"),
+    (161, "[SX2]([H])[H]", [0, 1, 2], _axis_w(0.3, 1.34, 92.0, 2), "H2S's charge on the bisector, 0.3 A from S"),
+]
+MASS = {"M": 0.0, "CH4": 16.043, "CH3": 15.035, "CH2": 14.027, "CH": 13.019, "C": 12.011, "O": 15.999, "N": 14.007, "S": 32.06, "P": 30.974,
         "F": 18.998, "H": 1.008}
 ELEM = {"CH4": "C", "CH3": "C", "CH2": "C", "CH": "C", "C": "C"}
 NAMEH = {"CH4": "CH4", "CH3": "CH3", "CH2": "CH2", "CH": "CH", "C": "C"}
@@ -90,7 +112,7 @@ mols = []
 for e in sel:
     d = json.load(open(os.path.join(SITE, "molecules", e["molecule_ID"] + ".json")))
     m = d["molname"][0]
-    if m["family"] != "UA":
+    if m["family"] not in ("UA", "small"):
         continue
     # the site's own gaps: a row with no site type (some esters) makes the model incomplete
     d["incomplete"] = any(a.get("nonbonded_ID") is None for a in d["nonbonded"])
@@ -101,6 +123,11 @@ for e in sel:
     for T in d["torsion_type"]:
         T["torsion"] = [t for t in T["torsion"] if t and t.get("A") is not None]
     d["name"] = re.sub(r"<[^>]+>", "", m["name"])
+    keep = sorted(int(a["natom"]) for a in d["nonbonded"] if a["prtype"] != "M")
+    d["idx"] = {k: i + 1 for i, k in enumerate(keep)}   # the model's atom number -> the reference structure's
+    d["nsites"] = sum(a["prtype"] == "M" for a in d["nonbonded"])
+    if d["name"] == "carbon dioxide":   # the database's bond list gives 1-2 and 2-3 (O-O); carbon 1 holds both oxygens
+        d["stretch"] = [x if (x["A"], x["B"]) != ("2", "3") else {**x, "A": "1", "B": "3"} for x in d["stretch"]]
     d["id"] = m["molecule_ID"]
     mols.append(d)
 pubs = {p["articleid"]: p for p in json.load(open(os.path.join(SITE, "publications.json")))["reg_pubs"]}
@@ -117,7 +144,10 @@ def cite(ref):
 
 # which models CAPS can hold: no massless charge sites (M), no united CFn sites
 def usable(d):
-    return all(a["prtype"] in MASS or a["prtype"] in ELEM for a in d["nonbonded"])
+    """CAPS holds the model: no united CFn sites, and no quadrupole charge sites out of the ring plane (TraPPE's
+    benzene, toluene, pyridine, pyrimidine and nitrobenzene with explicit quadrupoles)"""
+    quad = any(m and m.get("message_ID") == "4" for m in d.get("messages") or [])
+    return not quad and all(a["prtype"] in MASS or a["prtype"] in ELEM for a in d["nonbonded"])
 
 
 types = {}
@@ -125,7 +155,7 @@ for d in mols:
     for a in d["nonbonded"]:
         i = int(a["nonbonded_ID"])
         types.setdefault(i, a)
-rule_ids = {r[0] for r in RULES}
+rule_ids = {r[0] for r in RULES} | {v[0] for v in VSITES}
 print(f"{len(mols)} TraPPE-UA models; {len(types)} site types; rules for {len(rule_ids & set(types))}; without a rule: "
       + ", ".join(f"{i} {types[i]['atomtype']}" for i in sorted(set(types) - rule_ids)))
 
@@ -140,19 +170,22 @@ for i in sorted(types):
     a = types[i]
     if a["prtype"] not in MASS:
         continue
-    lib_types.append({"name": tname(i), "element": ELEM.get(a["prtype"], a["prtype"]), "mass": MASS[a["prtype"]], "charge": float(a["charge"]),
+    lib_types.append({"name": tname(i), "element": "" if a["prtype"] == "M" else ELEM.get(a["prtype"], a["prtype"]), "mass": MASS[a["prtype"]], "charge": float(a["charge"]),
                       "description": f"{a['atomtype']} ({a['functionalgroup']}); {cite(a['ref_ID'])}"})
     lib_pairs.append({"name": tname(i), "match": [tname(i)], "params": [float(a["epsilon"]) * KB, float(a["sigma"])]})
 rules = [{"type": tname(i), "priority": p, "smarts": sm, "description": types[i]["atomtype"] + f" ({types[i]['functionalgroup']})"}
          for i, p, sm in RULES if i in types]
+# the charge sites CAPS adds (element 0, named by their type)
+rules += [{"type": tname(i), "priority": 5, "smarts": "[#0]", "atom_name": tname(i), "description": c} for i, sm, fr, w, c in VSITES if i in types]
 
 
 # ---------------------------------------------------------------- reference structures (the site's own models)
 def mol2(d, path):
     """the model's sites and bonds (united atoms named CH3, CH2 ... so CAPS reads their hydrogens)"""
-    at = {int(a["natom"]): a for a in d["nonbonded"]}
+    I = d["idx"]
+    at = {I[int(a["natom"])]: a for a in d["nonbonded"] if a["prtype"] != "M"}
     n = max(at)
-    bonds = [(int(s["A"]), int(s["B"])) for s in d["stretch"]]
+    bonds = [(I[int(s["A"])], I[int(s["B"])]) for s in d["stretch"] if int(s["A"]) in I and int(s["B"]) in I]
     # positions from the model's own drawing (its molfile, atoms in the model's order) where it has one: a cis isomer
     # drawn cis; 2D bond lengths of 1 scaled to 1.5 A
     xyz = {k: (k * 1.3, (k % 3) * 0.9, 0.0) for k in range(1, n + 1)}
@@ -203,6 +236,8 @@ def write_library(path_ff, path_ty):
            "coul14_rules": [{"in_molecule": ["[OX2][CX4;!R][CX4;!R][OX2]", "[OX2H1][CX4][CX4][CX4][OX2H1]", "[SX2][SX2]",
                                              "[CX3H2]=[CX3][CX3](=[OX1])[OX2]"], "coul14": 0.5,
                              "comment": "TraPPE's glycol ethers, diols, disulfides and (meth)acrylates count 1-4 Coulomb x 0.5"}],
+           "virtual_sites": [{"smarts": sm, "type": tname(i), "from": fr, "w": [round(x, 12) for x in w], "comment": c}
+                             for i, sm, fr, w, c in VSITES if i in types],
            "atom_types": lib_types, "pairs": lib_pairs, "bonds": BONDS, "angles": ANGLES, "dihedrals": DIHEDRALS, "impropers": IMPROPERS,
            "notes": NOTES, "version": "TraPPE database, retrieved 2026-10", "typing": "../typing/trappe-ua-umn.typing.json"}
     json.dump(doc, open(path_ff, "w"), indent=1, ensure_ascii=False)
@@ -306,9 +341,13 @@ for d in mols:
         rigid_models.append(d["name"])
     if any(m and m.get("message_ID") == "3" for m in d.get("messages") or []):
         coul14_models.append(d["name"])
+    real = lambda *xs: all(int(x) in d["idx"] for x in xs)
     for s_ in d["stretch"]:
-        obs["bond"][key_sym((ty[int(s_["A"])], ty[int(s_["B"])]))].add((float(s_["distance"]), s_["ref_ID"]))
+        if real(s_["A"], s_["B"]):
+            obs["bond"][key_sym((ty[int(s_["A"])], ty[int(s_["B"])]))].add((float(s_["distance"]), s_["ref_ID"]))
     for b in d["bend"]:
+        if not real(b["A"], b["B"], b["C"]):
+            continue
         k = (ty[int(b["A"])], ty[int(b["B"])], ty[int(b["C"])])
         obs["angle"][key_sym(k)].add((float(b["theta"]), float(b["ktheta"] or 0), b["ref_ID"]))
     listed = set()
@@ -327,8 +366,9 @@ for d in mols:
     # a torsion the model does not list has none in TraPPE (a linear nitrile's, a diene's second end ...): a zero term
     nbr = collections.defaultdict(set)
     for s_ in d["stretch"]:
-        nbr[int(s_["A"])].add(int(s_["B"]))
-        nbr[int(s_["B"])].add(int(s_["A"]))
+        if real(s_["A"], s_["B"]):
+            nbr[int(s_["A"])].add(int(s_["B"]))
+            nbr[int(s_["B"])].add(int(s_["A"]))
     for j in nbr:
         for k_ in nbr[j]:
             for i in nbr[j] - {k_}:
@@ -394,6 +434,7 @@ DEVIATIONS = {"2-hydroxyethyl acrylate": "its CH2-CH2-OH bend next to the ether 
               "naphthalene": "its bend list leaves two ring bends out (a rigid model)",
               "sarin": "its bend list leaves the O-P-F bend out", "soman": "its bend list leaves the O-P-F bend out",
               "dimethyl methylphosphonate": "its bend list leaves the second P-O-CH3 bend (1-4-7) out, and it lists no torsions"}
+CORRECTED = {"carbon dioxide": "its bond list gives 2-3 (O-O) for 1-3 (the second C=O); read as 1-3"}
 for m_, ks in lost.items():
     DEVIATIONS.setdefault(m_, "its torsion list leaves out " + ", ".join(sorted(set(ks))) + ", which the other TraPPE models with these types list")
 IMPROPERS = []
@@ -425,7 +466,11 @@ if "--check" in sys.argv:
             bad.append((d["name"], "failed: " + (r.stderr or r.stdout).strip()[-120:]))
             continue
         got = [x.strip() for x in open(out)]
-        want = [tname(int(a["nonbonded_ID"])) for a in sorted(d["nonbonded"], key=lambda a: int(a["natom"]))]
+        want = [tname(int(a["nonbonded_ID"])) for a in sorted(d["nonbonded"], key=lambda a: int(a["natom"])) if a["prtype"] != "M"]
+        sites = sorted(tname(int(a["nonbonded_ID"])) for a in d["nonbonded"] if a["prtype"] == "M")
+        if sorted(got[len(want):]) != sites:
+            bad.append((d["name"], f"charge sites {got[len(want):]} where the model has {sites}"))
+        got = got[:len(want)]
         total += len(want)
         diff = [(k + 1, w, g) for k, (w, g) in enumerate(zip(want, got)) if w != g]
         right += len(want) - len(diff)
@@ -472,14 +517,19 @@ if "--check" in sys.argv:
         got = itp_terms(stem + ".itp")
         half = any(m and m.get("message_ID") == "3" for m in d.get("messages") or [])
         itp = open(stem + ".itp").read()
-        if half != bool(re.search(r"^\s*\d+\s+\d+\s+2\s+0\.5\s", itp, re.M)):   # [ pairs ] function 2, qq scale 0.5
+        top = open(stem + ".top").read()
+        fudge = re.search(r"\[\s*defaults\s*\]\s*\n(?:;.*\n)*\s*\S+\s+\S+\s+\S+\s+\S+\s+(\S+)", top)
+        # 1-4 Coulomb x 0.5: [ pairs ] function 2 with qq scale 0.5, or every pair by fudgeQQ 0.5
+        if half != (bool(re.search(r"^\s*\d+\s+\d+\s+2\s+0\.5\s", itp, re.M)) or (fudge is not None and abs(float(fudge.group(1)) - 0.5) < 1e-9)):
             bad.append((d["name"], f"1-4 Coulomb x 0.5 in TraPPE: {half}, in CAPS: {not half}"))
             continue
-        want_a = {key_sym((int(b["A"]), int(b["B"]), int(b["C"]))): (float(b["theta"]), float(b["ktheta"] or 0) / 2 * KB if float(b["ktheta"] or 0) > 0 else 100.0) for b in d["bend"]}
+        I = d["idx"]
+        want_a = {key_sym((I[int(b["A"])], I[int(b["B"])], I[int(b["C"])])): (float(b["theta"]), float(b["ktheta"] or 0) / 2 * KB if float(b["ktheta"] or 0) > 0 else 100.0)
+                  for b in d["bend"] if all(int(b[x]) in I for x in "ABC")}
         want_d = {}
         for T in d["torsion_type"]:
             for t in T["torsion"]:
-                q = key_sym((int(t["A"]), int(t["B"]), int(t["C"]), int(t["D"])))
+                q = key_sym((I[int(t["A"])], I[int(t["B"])], I[int(t["C"])], I[int(t["D"])]))
                 if T["torsion_type"] == "cistrans":
                     want_d[q] = [("quadratic", round(float(t["d0"]) / 2 * KB, 6), round((float(t["phi0"]) + 180) % 360, 4))]
                 else:
@@ -503,7 +553,9 @@ if "--check" in sys.argv:
             if k not in want_d:
                 errs.append(f"extra torsion {k}")
         for s_ in d["stretch"]:
-            k = key_sym((int(s_["A"]), int(s_["B"])))
+            if not (int(s_["A"]) in I and int(s_["B"]) in I):
+                continue
+            k = key_sym((I[int(s_["A"])], I[int(s_["B"])]))
             if abs(got["bonds"].get(k, -1) - float(s_["distance"])) > 1e-6:
                 errs.append(f"bond {k}")
         nb_tot += 1
@@ -514,5 +566,7 @@ if "--check" in sys.argv:
     print(f"bonded terms: {nb_ok}/{nb_tot} models get exactly their own bonds, bends and torsions; the database's own errors listed apart:")
     for m_, why in DEVIATIONS.items():
         print(f"   deviation {m_}: {why}")
+    for m_, why in CORRECTED.items():
+        print(f"   corrected {m_}: {why}")
     for n_, b in bad:
         print("  ", n_, ":", b)
