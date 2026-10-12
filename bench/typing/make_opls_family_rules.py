@@ -68,8 +68,11 @@ def clp():
     IMID_N = "[#7;r5;$(*~[#6;r5]~[#7;r5])]"
     CATION_N = f"[$([#7+]),$({IMID_N})]"
     R.add("CT", 0, "[CX4]", "alkyl carbon"); R.add("HC", 0, "[H][CX4]", "alkyl H")
-    R.add("C1", 2, f"[CX4;$(*{CATION_N}),$(*[#15+])]", "carbon on the cationic centre")
-    R.add("H1", 2, f"[H][CX4;$(*{CATION_N}),$(*[#15+])]", "H on a carbon on the cationic centre")
+    R.add("CA", 0, "c", "aromatic carbon"); R.add("HA", 0, "[H]c", "aromatic H")
+    # a chain carbon on the cationic N (not a ring carbon, not a benzyl carbon); phosphonium's carbons stay CT
+    ONN = f"$(*{CATION_N});!R;!$(*c)"
+    R.add("C1", 2, f"[CX4;{ONN}]", "chain carbon on the cationic nitrogen")
+    R.add("H1", 2, f"[H][CX4;{ONN}]", "H on a chain carbon on the cationic nitrogen")
     # imidazolium
     R.add("NA", 3, IMID_N, "imidazolium nitrogen"); R.add("CR", 3, "[#6;r5](~[#7;r5])~[#7;r5]", "imidazolium C2")
     R.add("CW", 2, f"[#6;r5;$(*~{IMID_N});!$(*(~[#7;r5])~[#7;r5])]", "imidazolium C4 / C5")
@@ -80,23 +83,28 @@ def clp():
     R.add("CA", 2, PYRC, "pyridinium ring carbon")
     R.add("HA", 2, f"[H]{PYRC}", "H on a pyridinium ring carbon")
     # ammonium, phosphonium, guanidinium
-    R.add("NT", 3, "[NX4+;H0]", "quaternary ammonium / pyrrolidinium nitrogen"); R.add("HN", 3, "[H][NX4+]", "H on an ammonium nitrogen")
+    R.add("NT", 3, "[NX4]", "ammonium / pyrrolidinium nitrogen"); R.add("HN", 3, "[H][NX4]", "H on an ammonium nitrogen")
     R.add("PT", 3, "[PX4+]", "phosphonium phosphorus")
-    R.add("CG", 4, "[CX3;$(C(~[#7])(~[#7])~[#7])]", "guanidinium carbon"); R.add("NG", 4, "[#7;$(*[CX3](~[#7])~[#7])]", "guanidinium nitrogen")
-    R.add("HG", 4, "[H][#7;$(*[CX3](~[#7])~[#7])]", "H on a guanidinium nitrogen")
+    R.add("CG", 4, "[CX3;$(C(~[#7])(~[#7])~[#7])]", "guanidinium carbon"); R.add("NG", 4, "[#7;$(*~[CX3](~[#7])~[#7])]", "guanidinium nitrogen")
+    R.add("HG", 4, "[H][#7;$(*~[CX3](~[#7])~[#7])]", "H on a guanidinium nitrogen")
     # anions
-    R.add("NB", 4, "[#7X2;$(*(S)S)]", "bis(sulfonyl)amide nitrogen (NTf2)"); R.add("SB", 4, "[SX4;$(S~[#7X2])]", "sulfonyl sulfur of NTf2")
-    R.add("OB", 4, "[OX1]~[SX4]~[#7X2]", "sulfonyl oxygen of NTf2"); R.add("CF", 4, "[CX4](F)(F)(F)S", "CF3 carbon on sulfur")
-    R.add("FB", 4, "[F][CX4]([F])([F])S", "F of a CF3 on sulfur"); R.add("F", 1, "[F][CX4]", "F on carbon")
+    R.add("NB", 4, "[#7X2;$(*(~S)~S)]", "bis(sulfonyl)amide nitrogen (NTf2)"); R.add("SB", 4, "[SX4;$(S~[#7X2])]", "sulfonyl sulfur of NTf2")
+    R.add("OB", 4, "[OX1]~[SX4]~[#7X2]", "sulfonyl oxygen of NTf2")
+    R.add("CF", 4, "[CX4;$(*(F)F)]", "fluorinated carbon (CF2, CF3)")
+    R.add("FB", 4, "[F][CX4]S", "F on a carbon on sulfur"); R.add("FB", 4, "[F][SX4]", "F on sulfur (FSI)"); R.add("F", 1, "[F][CX4]", "F on carbon")
+    # triflate: the sulfonyl of NTf2 (SB / OB), unlike an alkylsulfonate's SO / OS
+    R.add("SB", 5, "[SX4;$(S[CX4](F)(F)F);$(S(~[OX1])(~[OX1])~[OX1])]", "triflate sulfur")
+    R.add("OB", 5, "[OX1]~[SX4;$(S[CX4](F)(F)F)](~[OX1])~[OX1]", "triflate oxygen")
     R.add("SO", 3, "[SX4;$(S(~[OX1])(~[OX1])~[OX1])]", "sulfonate / sulfate sulfur"); R.add("OS", 3, "[OX1]~[SX4](~[OX1])~[OX1]", "sulfonate / sulfate oxygen")
     R.add("CS3", 3, "[CX4;!$(*(F)(F)F)][SX4](~[OX1])(~[OX1])~[OX1]", "alkyl carbon on a sulfonate"); R.add("HS3", 3, "[H][CX4][SX4](~[OX1])(~[OX1])~[OX1]", "H on a sulfonate alkyl carbon")
     R.add("OC", 4, "[OX2]([#6])[SX4](~[OX1])(~[OX1])~[OX1]", "ester oxygen of an alkyl sulfate")
     R.add("CS4", 4, "[CX4][OX2][SX4](~[OX1])(~[OX1])~[OX1]", "alkyl carbon of an alkyl sulfate"); R.add("HS4", 4, "[H][CX4][OX2][SX4]", "H on an alkyl sulfate carbon")
     R.add("SK", 4, "[SX1]~[CX2]~[NX1]", "thiocyanate sulfur"); R.add("CK", 4, "[CX2](~[SX1])~[NX1]", "thiocyanate carbon"); R.add("NK", 4, "[NX1]~[CX2]~[SX1]", "thiocyanate nitrogen")
-    R.add("N3", 4, "[NX2](C#N)C#N", "dicyanamide central nitrogen"); R.add("CZ", 4, "[CX2](#N)[NX2]", "dicyanamide carbon"); R.add("NZ", 4, "[NX1]#C[NX2]", "dicyanamide terminal nitrogen")
+    R.add("N3", 4, "[NX2](~[CX2]~[NX1])~[CX2]~[NX1]", "dicyanamide central nitrogen"); R.add("CZ", 4, "[CX2](~[NX1])~[NX2]", "dicyanamide carbon")
+    R.add("NZ", 4, "[NX1]~[CX2]~[NX2]", "dicyanamide terminal nitrogen")
     R.add("C3A", 4, "[CX3](C#N)(C#N)C#N", "tricyanomethanide central carbon")
     R.add("CN", 2, "[CX2]#[NX1]", "nitrile carbon"); R.add("NC", 2, "[NX1]#[CX2]", "nitrile nitrogen")
-    R.add("B", 3, "[B]", "borate boron"); R.add("P", 3, "[PX6]", "hexafluorophosphate phosphorus"); R.add("FP", 3, "[F][PX6]", "hexafluorophosphate fluorine")
+    R.add("B", 3, "[B]", "borate boron"); R.add("FP", 3, "[F][B]", "tetrafluoroborate fluorine"); R.add("P", 3, "[PX6]", "hexafluorophosphate phosphorus"); R.add("FP", 3, "[F][PX6]", "hexafluorophosphate fluorine")
     R.add("CO", 3, "[CX3](=[OX1])[OX1-]", "carboxylate carbon"); R.add("O2", 3, "[OX1]~[CX3]~[OX1]", "carboxylate oxygen")
     R.add("OH", 2, "[OX2H1]", "alcohol oxygen"); R.add("HO", 2, "[H][OX2]", "alcohol H")
     R.add("Li+", 0, "[Li]", "lithium ion"); R.add("Na+", 0, "[Na]", "sodium ion"); R.add("Cl-", 0, "[Cl-;X0]", "chloride ion"); R.add("Br-", 0, "[Br-;X0]", "bromide ion")
