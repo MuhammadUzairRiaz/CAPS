@@ -85,6 +85,18 @@ CASES = [
     # CHARMM in its own styles: lj/charmmfsw (force switch 10-12 Å, pairs in the switching shell), the 1-4 pairs with
     # their own ε14 / σ14 through dihedral charmmfsw weights (a phenyl ring's para pairs reached by two torsions once)
     ("Polystyrene melt, CGenFF (periodic; lj/charmmfsw, 1-4 by dihedral weights)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "cgenff", "gasteiger", "rules"),
+    # the libraries CAPS builds from the force fields' own files (bench/ff/open: CHARMM's toppar, AmberTools' dat/leap/parm):
+    # CHARMM in its own styles (Urey-Bradley angles, multi-term torsions, periodic impropers, separate 1-4 LJ; run with
+    # --native), GAFF / GAFF2 typed by antechamber's rules
+    ("CHARMM36 toppar: peptide GAFKW (Urey-Bradley, 1-4 LJ)", ("peptide", "GAFKW"), "charmm36-prot-toppar", "gasteiger", "rules"),
+    ("CHARMM22 toppar: peptide GAFKW", ("peptide", "GAFKW"), "charmm22-prot-toppar", "gasteiger", "rules"),
+    ("CGenFF toppar: toluene, N-methylacetamide, ethyl acetate", ("smiles", "Cc1ccccc1.CC(=O)NC.CCOC(=O)C"), "cgenff-toppar", "gasteiger", "rules"),
+    ("CHARMM36 carbohydrates toppar: glucose", ("smiles", "OC[C@H]1O[C@H](O)[C@H](O)[C@@H](O)[C@@H]1O"), "charmm36-carb-toppar", "gasteiger", "rules"),
+    ("CHARMM36 nucleic acids toppar: thymidine", ("smiles", "CC1=CN([C@H]2C[C@H](O)[C@@H](CO)O2)C(=O)NC1=O"), "charmm36-nucl-toppar", "gasteiger", "rules"),
+    ("CHARMM36 lipids toppar: phosphatidylcholine", ("smiles", "CCCCCCCC(=O)OC[C@H](COP(=O)([O-])OCC[N+](C)(C)C)OC(=O)CCCCCCC"), "charmm36-lipid-toppar", "qeq", "rules"),
+    ("GAFF 1.81 (gaff.dat): ester, epoxide, amide, thioether", ("smiles", "CCOC(=O)C.C1CO1.CC(=O)NC.CSC"), "gaff-1.81-ambertools", "gasteiger", "rules"),
+    ("GAFF2 2.11 (gaff211.dat): isoprene, styrene, nitrile; nudged off linear", ("smiles-nudged", "CC=C(C)CC.C=Cc1ccccc1.CCC#N"), "gaff2-2.11-ambertools", "gasteiger", "rules"),
+    ("GAFF2 2.2.20 (gaff2.dat): polystyrene melt (periodic)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "gaff2-2.2.20-ambertools", "gasteiger", "rules"),
     # UFF (every element): Fourier and periodic angles (linear, trigonal, square planar, octahedral, trigonal
     # bipyramid), sp2 and pyramidal-P inversions (improper fourier), group-16 torsions, full 1-4 van der Waals
     ("UFF mixed elements (P, S, Si, Pt, F, Cl)", ("smiles", "CC#CC(=O)Oc1ccc(cc1)P(C)C.F[S](F)(F)(F)(F)F.N[Pt](N)(Cl)Cl."

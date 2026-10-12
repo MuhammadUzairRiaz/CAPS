@@ -28,7 +28,8 @@ def ew(n):
     return has(n) + ";!" + has(n + 1)
 
 
-def rules(v2):
+def rules(v2, small_rings=None):
+    small_rings = v2 if small_rings is None else small_rings   # op / oq / sp / sq
     R = []
     add = lambda t, *sm, d="": [R.append({"type": t, "smarts": x, **({"description": d} if d else {})}) for x in sm]
     add("ow", "[OX2H2]", d="water O (GAFF / TIP3P)")
@@ -107,14 +108,14 @@ def rules(v2):
     # oxygen
     add("o", "[#8X1]", d="O with one connection")
     add("oh", "[#8X2;H1,H2]", "[#8X3;H1,H2,H3]", d="hydroxyl O")
-    if v2:   # antechamber 22 gives op / oq for GAFF too, but the AmberTools 16 GAFF parameters have no op / oq: os there
+    if small_rings:   # antechamber 22 gives op / oq for GAFF too, but the AmberTools 16 GAFF parameters have no op / oq: os there
         add("op", "[#8X2;r3]"); add("oq", "[#8X2;r4]")
     add("os", "[#8X2]", "[#8X3]", "[#8]", d="ether / ester O")
     # sulfur
     add("s", "[#16X1]")
     add("s2", "[#16X2;$(*=*),$(*#*)]")
     add("sh", "[#16X2;H1,H2]")
-    if v2:
+    if small_rings:
         add("sp", "[#16X2;r3]"); add("sq", "[#16X2;r4]")
     add("ss", "[#16X2]")
     add("sx", f"[#16X3;$(*=*);{CONJ_sb}]")
@@ -138,12 +139,16 @@ ANALOGIES = {"cx": ["c3"], "cy": ["c3"], "c5": ["c3"], "c6": ["c3"],          # 
              "op": ["os"], "oq": ["os"],                                      # sp3 O in 3- / 4-membered rings
              "px": ["p4"], "py": ["p5"], "sx": ["s4"], "sy": ["s6"]}          # conjugated S / P labels
 out = sys.argv[1]
-for name, v2, ff, src in [("gaff-amber16", False, "GAFF (AmberTools 16)", "ATOMTYPE_GFF.DEF"),
-                          ("gaff-amber25", True, "GAFF2 (AmberTools 25)", "ATOMTYPE_GFF2.DEF")]:
+for name, v2, ff, src, *small in [("gaff-amber16", False, "GAFF (AmberTools 16)", "ATOMTYPE_GFF.DEF"),
+                          ("gaff-amber25", True, "GAFF2 (AmberTools 25)", "ATOMTYPE_GFF2.DEF"),
+                          # the libraries built from AmberTools' own gaff.dat / gaff2.dat (bench/ff/open/build_amber.sh)
+                          ("gaff-1.81-ambertools", False, "GAFF 1.81 (AmberTools gaff.dat)", "ATOMTYPE_GFF.DEF", True),   # gaff.dat 1.81 has op / oq / sp / sq
+                          ("gaff2-2.11-ambertools", True, "GAFF2 2.11 (AmberTools gaff211.dat)", "ATOMTYPE_GFF2.DEF", True, {"c5", "c6"}),   # c5 / c6 came with 2.2: c3 here
+                          ("gaff2-2.2.20-ambertools", True, "GAFF2 2.2.20 (AmberTools gaff2.dat)", "ATOMTYPE_GFF2.DEF")]:
     json.dump({"format": "caps-typing", "version": 1, "forcefield": ff,
                "description": f"GAFF{'2' if v2 else ''} atom types following antechamber's {src} in order (first matching rule wins); "
                               "{AR1}..{AR5} are antechamber's ring classes, pairs its conjugation pattern.",
-               "ordered": True, "pairs": PAIRS, "rules": rules(v2),
+               "ordered": True, "pairs": PAIRS, "rules": [r for r in rules(v2, *small[:1]) if r["type"] not in (small[1] if len(small) > 1 else ())],
                "analogies": ANALOGIES, "analogy_source": "GAFF analogues: the same element and hybridisation, without the ring-size or conjugation label (as parmchk2 fills missing GAFF terms)"},
               open(os.path.join(out, name + ".typing.json"), "w"), indent=1)
     print("wrote", name)

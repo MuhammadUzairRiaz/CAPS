@@ -217,7 +217,7 @@ TEST(Perception, CationsFoundBySearch) {
 
 TEST(Typing, GaffFollowsAntechamber) {
   // antechamber: furan os / cc cd cd cc / h4 on the carbons next to O, ha on the others; butadiene c2 ce ce c2
-  const TypingResult f = type_with("gaff-amber16", furan());
+  const TypingResult f = type_with("gaff-1.81-ambertools", furan());
   EXPECT_EQ(f.types[0], "os");
   EXPECT_EQ(f.types[1], "cc");
   EXPECT_EQ(f.types[2], "cd");
@@ -225,15 +225,15 @@ TEST(Typing, GaffFollowsAntechamber) {
   EXPECT_EQ(f.types[4], "cc");
   EXPECT_EQ(f.types[5], "h4");
   EXPECT_EQ(f.types[6], "ha");
-  const TypingResult b = type_with("gaff-amber16", butadiene());
+  const TypingResult b = type_with("gaff-1.81-ambertools", butadiene());
   EXPECT_EQ(b.types[0], "c2");
   EXPECT_EQ(b.types[1], "ce");
   EXPECT_EQ(b.types[2], "ce");
   EXPECT_EQ(b.types[3], "c2");
   // GAFF2 amine N by hydrogen count: methylamine n8
   const System ma = mol({"C", "N"}, {3, 2}, {{0, 1}});
-  EXPECT_EQ(type_with("gaff-amber25", ma).types[1], "n8");
-  EXPECT_EQ(type_with("gaff-amber16", ma).types[1], "n3");
+  EXPECT_EQ(type_with("gaff2-2.2.20-ambertools", ma).types[1], "n8");
+  EXPECT_EQ(type_with("gaff-1.81-ambertools", ma).types[1], "n3");
 }
 
 TEST(Typing, GaffRingsAndPolarHydrogensAsAntechamber) {
@@ -241,25 +241,25 @@ TEST(Typing, GaffRingsAndPolarHydrogensAsAntechamber) {
   // naphthalene: all ten carbons ca (a double bond into the fused ring is not exocyclic)
   const System nap = mol({"C", "C", "C", "C", "C", "C", "C", "C", "C", "C"}, {1, 1, 1, 0, 1, 1, 1, 1, 0, 1},
                          {{0, 1}, {1, 2}, {2, 3}, {3, 4}, {4, 5}, {5, 6}, {6, 7}, {7, 8}, {8, 3}, {8, 9}, {9, 0}});
-  for (const char* ff : {"gaff-amber16", "gaff-amber25"}) {
+  for (const char* ff : {"gaff-1.81-ambertools", "gaff2-2.2.20-ambertools"}) {
     const TypingResult t = type_with(ff, nap);
     for (int i = 0; i < 10; ++i) EXPECT_EQ(t.types[i], "ca") << ff << " atom " << i;
   }
   // cyclooctatetraene: a planar conjugated ring, cc / cd (not the chain types ce / cf)
   const System cot = mol({"C", "C", "C", "C", "C", "C", "C", "C"}, {1, 1, 1, 1, 1, 1, 1, 1},
                          {{0, 1}, {1, 2}, {2, 3}, {3, 4}, {4, 5}, {5, 6}, {6, 7}, {7, 0}});
-  for (const std::string& t : type_with("gaff-amber25", cot).types)
+  for (const std::string& t : type_with("gaff2-2.2.20-ambertools", cot).types)
     if (t[0] == 'c') EXPECT_TRUE(t == "cc" || t == "cd") << t;
   // acetaldehyde: the formyl H is h4 (the O of C=O counts as electron-withdrawing); DMF's formyl H is h5 (N and O)
   const System ald = mol({"C", "C", "O"}, {3, 1, 0}, {{0, 1}, {1, 2}});
-  EXPECT_EQ(type_with("gaff-amber25", ald).types[6], "h4");
+  EXPECT_EQ(type_with("gaff2-2.2.20-ambertools", ald).types[6], "h4");
   const System dmf = mol({"C", "N", "C", "C", "O"}, {1, 0, 3, 3, 0}, {{0, 1}, {1, 2}, {1, 3}, {0, 4}});
-  EXPECT_EQ(type_with("gaff-amber25", dmf).types[5], "h5");
+  EXPECT_EQ(type_with("gaff2-2.2.20-ambertools", dmf).types[5], "h5");
   // guanidinium: all three N alike, nv (GAFF2) / nh (GAFF), the formal =NH2+ included
   const System gua = mol({"C", "N", "N", "N"}, {0, 2, 2, 2}, {{0, 1}, {0, 2}, {0, 3}});
   for (int i = 1; i <= 3; ++i) {
-    EXPECT_EQ(type_with("gaff-amber25", gua).types[i], "nv") << i;
-    EXPECT_EQ(type_with("gaff-amber16", gua).types[i], "nh") << i;
+    EXPECT_EQ(type_with("gaff2-2.2.20-ambertools", gua).types[i], "nv") << i;
+    EXPECT_EQ(type_with("gaff-1.81-ambertools", gua).types[i], "nh") << i;
   }
 }
 
