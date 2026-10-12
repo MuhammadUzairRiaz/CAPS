@@ -53,7 +53,16 @@ def residues(path):
     return [r for r in res if not r["patch"]]
 
 
-work = tempfile.mkdtemp()
+work = os.environ.get("RTF_KEEP") or tempfile.mkdtemp()
+# --cap-links: a residue bonded to its neighbours (-C, +N, -O3', +P ...) gets a small cap on each link; only its own atoms
+# are compared. Each cap: (element, [later atoms of the cap it bonds to]); the first atom bonds to the residue
+METHYL = [("C", [1, 2, 3]), ("H", []), ("H", []), ("H", [])]
+CAPS_FOR = {
+    "C": [("C", [1, 2]), ("O", []), ("C", [3, 4, 5]), ("H", []), ("H", []), ("H", [])],                       # acetyl
+    "N": [("N", [1, 2]), ("H", []), ("C", [3, 4, 5]), ("H", []), ("H", []), ("H", [])],                       # N-methyl amide
+    "O": [("O", [1])] + [(e, [j + 1 for j in js]) for e, js in METHYL],                                       # methoxy
+    "P": [("P", [1, 2, 3]), ("O", []), ("O", []), ("O", [4])] + [(e, [j + 4 for j in js]) for e, js in METHYL],  # methyl phosphate
+}
 total = right = 0
 confusion, wrong, skipped, failed = collections.Counter(), [], collections.Counter(), []
 applied, unparam = [0], []
@@ -71,10 +80,32 @@ for r in residues(rtf):
     idx = {a.upper(): i for i, a in enumerate(names)}
     bonds = {}
     ok = True
-    for a, b, o in r["bonds"]:
-        if a[:1] in "+-" or b[:1] in "+-":   # a bond to the neighbouring residue (PEGM's -C2): a polymer unit, not a molecule
-            ok = False
-            break
+    cap_atoms = []   # (element) of the atoms capping links to neighbouring residues, after the residue's own atoms
+    links = list(r["bonds"])
+    if "--cap-links" in sys.argv:
+        # a "+X" link from atom A (C +N) means this residue's own X is bonded to the previous residue's A (N -C): the
+        # topology lists each peptide / phosphodiester bond once
+        have = {(a.upper(), b.upper()) for a, b, _ in links} | {(b.upper(), a.upper()) for a, b, _ in links}
+        for a, b, o in r["bonds"]:
+            for own, link in ((a, b), (b, a)):
+                if link[:1] == "+" and link[1:].upper() in idx and own[:1] not in "+-" and (link[1:].upper(), "-" + own.upper()) not in have:
+                    links.append((link[1:], "-" + own, 1))
+    for a, b, o in links:
+        if a[:1] in "+-" or b[:1] in "+-":   # a bond to the neighbouring residue
+            link, own = (a, b) if a[:1] in "+-" else (b, a)
+            cap = CAPS_FOR.get(link[1:2].upper()) if "--cap-links" in sys.argv else None
+            if cap is None or own.upper() not in idx:   # a polymer unit we do not cap (PEGM's -C2): not a molecule
+                ok = False
+                break
+            # the cap: its atoms and bonds, the first bonded to the residue's atom (an acetyl for -C, an N-methyl amide
+            # for +N, a methyl for a link O, a methyl phosphate for a link P)
+            base = len(names) + len(cap_atoms)
+            cap_atoms += [e for e, _ in cap]
+            bonds[(idx[own.upper()], base)] = 1
+            for k, (_, js) in enumerate(cap):
+                for j in js:
+                    bonds[(base + k, base + j)] = 1
+            continue
         a, b = a.upper(), b.upper()
         if a not in idx or b not in idx:
             ok = False
@@ -86,9 +117,12 @@ for r in residues(rtf):
         continue
     path = os.path.join(work, re.sub(r"[^A-Za-z0-9_]", "_", r["name"]) + ".mol2")
     with open(path, "w") as f:
-        f.write(f"@<TRIPOS>MOLECULE\n{r['name']}\n{len(names)} {len(bonds)} 1\nSMALL\nNO_CHARGES\n\n@<TRIPOS>ATOM\n")
+        f.write(f"@<TRIPOS>MOLECULE\n{r['name']}\n{len(names) + len(cap_atoms)} {len(bonds)} 1\nSMALL\nNO_CHARGES\n\n@<TRIPOS>ATOM\n")
         for i, (a, t) in enumerate(r["atoms"]):
             f.write(f"{i + 1} {a} {i * 1.5:.3f} 0 0 {element(t)} 1 {r['name'][:4]} 0.0\n")
+        for k, e in enumerate(cap_atoms):
+            i = len(names) + k
+            f.write(f"{i + 1} X{k} {i * 1.5:.3f} 0 0 {e} 1 CAP 0.0\n")
         f.write("@<TRIPOS>BOND\n")
         for k, ((i, j), o) in enumerate(sorted(bonds.items())):
             code = {1: "1", 2: "2", 3: "3", 4: "ar"}[o] if "--orders" in sys.argv else "un"
@@ -98,7 +132,7 @@ for r in residues(rtf):
     if not os.path.exists(out):
         failed.append((r["name"], (p.stderr or p.stdout).strip()[-120:]))
         continue
-    got = [x.strip() for x in open(out)]
+    got = [x.strip() for x in open(out)][:len(names)]
     if "--apply" in sys.argv:   # end to end: parameters for the automatically typed residue
         pa = subprocess.run([CAPS, "ff", "apply", path, "--ff", ffjson, "--typing", rules, "--charges", "gasteiger", "--allow-missing"],
                             capture_output=True, text=True)
