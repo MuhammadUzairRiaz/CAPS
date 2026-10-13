@@ -90,6 +90,12 @@ add(179, 5, f"{ETHO[:-1]};$(O(c)[CX4])]", "alkyl aryl ether O (anisole)")
 add(473, 5, f"{ETHO[:-1]};$(O(c)c)]", "diaryl ether O (the phenyl ester O, as the GROMACS OPLS-AA topologies type diphenyl ether)")
 by_h((181, 182, 183, 184), 5, f"$(*{ETHO[:-1]};$(O([CX4])[CX4,c])])", "ether alpha C")
 add(185, 5, f"[H][CX4]{ETHO[:-1]};$(O([CX4])[CX4,c])]", "H on ether alpha C")
+# benzyl ethers (poly(styrene oxide)): no numbers; by the benzyl alcohol increment (218-221: the ring C on the carbinol
+# C is 221, -0.055 for benzene's -0.115, and the carbinol C gains +0.055), the ring C 221 and the ether alpha C +0.055
+# over 182-184 (CAPS's caps_bzo_*: CH2 0.195, CH 0.225, C 0.255), so the aryl group stays neutral
+BZO = f"$(*c);$(*{ETHO[:-1]};$(O([CX4])[CX4,c])])"
+by_h((None, "caps_bzo_ch2", "caps_bzo_ch", "caps_bzo_c"), 6, BZO, "benzyl ether alpha C")
+add(221, 6, f"c[CX4;$(*{ETHO[:-1]};$(O([CX4])[CX4,c])])]", "ring C of a benzyl ether (as a benzyl alcohol's, 221)")
 add(199, 5, f"c{ETHO[:-1]};$(O(c)[CX4])]", "aryl ether C(O)")
 add(472, 5, f"c{ETHO[:-1]};$(O(c)c)]", "diaryl ether C(O) (the phenyl ester C(ipso))")
 # the 2024 table's own diphenyl ether (OPLS/2020): O 177 with each ring C(O) 199, which balance (the phenyl ester pair

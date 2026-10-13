@@ -360,6 +360,30 @@
    "description": "H on ether alpha C"
   },
   {
+   "type": "caps_bzo_ch2",
+   "smarts": "[CX4H2;$(*c);$(*[OX2;!$(O[#1]);!$(O[#6]=[O,S,N]);!$(O[Si]);!$(O~[#6](~[OX2])~[OX2]);!$(O[CX4]([OX2])[OX2]);!r3;$(O([CX4])[CX4,c])])]",
+   "priority": 6,
+   "description": "benzyl ether alpha C (CH2)"
+  },
+  {
+   "type": "caps_bzo_ch",
+   "smarts": "[CX4H1;$(*c);$(*[OX2;!$(O[#1]);!$(O[#6]=[O,S,N]);!$(O[Si]);!$(O~[#6](~[OX2])~[OX2]);!$(O[CX4]([OX2])[OX2]);!r3;$(O([CX4])[CX4,c])])]",
+   "priority": 6,
+   "description": "benzyl ether alpha C (CH)"
+  },
+  {
+   "type": "caps_bzo_c",
+   "smarts": "[CX4H0;$(*c);$(*[OX2;!$(O[#1]);!$(O[#6]=[O,S,N]);!$(O[Si]);!$(O~[#6](~[OX2])~[OX2]);!$(O[CX4]([OX2])[OX2]);!r3;$(O([CX4])[CX4,c])])]",
+   "priority": 6,
+   "description": "benzyl ether alpha C (C)"
+  },
+  {
+   "type": "opls_221",
+   "smarts": "c[CX4;$(*[OX2;!$(O[#1]);!$(O[#6]=[O,S,N]);!$(O[Si]);!$(O~[#6](~[OX2])~[OX2]);!$(O[CX4]([OX2])[OX2]);!r3;$(O([CX4])[CX4,c])])]",
+   "priority": 6,
+   "description": "ring C of a benzyl ether (as a benzyl alcohol's, 221)"
+  },
+  {
    "type": "opls_199",
    "smarts": "c[OX2;!$(O[#1]);!$(O[#6]=[O,S,N]);!$(O[Si]);!$(O~[#6](~[OX2])~[OX2]);!$(O[CX4]([OX2])[OX2]);!r3;$(O(c)[CX4])]",
    "priority": 5,
