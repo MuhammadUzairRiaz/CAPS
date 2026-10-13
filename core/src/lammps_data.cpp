@@ -1146,6 +1146,10 @@ void write_lammps_data_ff(const System& s, const ForceField& ff0, const EnergyOp
     char w[200];
     std::snprintf(w, sizeof w, "# caps-ff special lj 0 %.17g %.17g coul 0 %.17g %.17g\n", ff.keep13 ? 1.0 : 0.0, ff.lj14, ff.keep13 ? 1.0 : 0.0, ff.coul14);
     out << "# caps-ff name " << ff.name << "\n" << w;
+    if (ff.native_cutoff > 0) {   // the force field's own cut-off (relax, md and equilibrate take it without --cutoff)
+      std::snprintf(w, sizeof w, "# caps-ff cutoff %.17g\n", ff.native_cutoff);
+      out << w;
+    }
     for (size_t k = 0; k < left.size(); ++k) out << (k ? ", " : "# caps-ff not-in-file ") << left[k];
     if (!left.empty()) out << "\n";
   }

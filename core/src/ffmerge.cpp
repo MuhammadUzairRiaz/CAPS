@@ -118,6 +118,7 @@ ForceField merge_forcefields(size_t natoms, const std::vector<FFPart>& parts, co
                   P.ff->native_special == F0.native_special;
   if (same_native) M.native_pair = F0.native_pair, M.native_dihedral = F0.native_dihedral, M.native_improper = F0.native_improper, M.native_special = F0.native_special;
   M.native_timestep = F0.native_timestep;
+  for (const auto& P : parts) M.native_cutoff = std::max(M.native_cutoff, P.ff->native_cutoff);   // the longest part's cut-off covers every part
   for (const auto& P : parts) if (P.ff->native_timestep > 0) M.native_timestep = M.native_timestep > 0 ? std::min(M.native_timestep, P.ff->native_timestep) : P.ff->native_timestep;
 
   // types: each part's in turn; a name that another part already uses gets the part's tag
