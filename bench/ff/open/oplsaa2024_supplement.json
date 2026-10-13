@@ -903,38 +903,6 @@
   },
   {
    "match": [
-    "C",
-    "OS",
-    "CM",
-    "CM"
-   ],
-   "params": [
-    -0.9626,
-    3.9025,
-    -0.6758,
-    0.0548
-   ],
-   "source": "CAPS fit (QM)",
-   "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 12-atom fragment, RMS 0.05 kcal/mol; fragment C-OS-CM-CM"
-  },
-  {
-   "match": [
-    "C",
-    "OS",
-    "CM",
-    "HC"
-   ],
-   "params": [
-    0.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "source": "CAPS fit (QM)",
-   "reason": "zero; the heavy-atom torsions about the same bond carry the profile of a 24-point MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L) scan of a 12-atom fragment (RMS 0.05 kcal/mol); fragment C-OS-CM-CM"
-  },
-  {
-   "match": [
     "CB",
     "CA",
     "CT",
@@ -1012,38 +980,6 @@
    ],
    "source": "CAPS fit (QM)",
    "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.03 kcal/mol; fragment CM-CM-C-OS"
-  },
-  {
-   "match": [
-    "CM",
-    "OS",
-    "C",
-    "CT"
-   ],
-   "params": [
-    1.97,
-    5.3748,
-    -0.9837,
-    -0.216
-   ],
-   "source": "CAPS fit (QM)",
-   "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 12-atom fragment, RMS 0.05 kcal/mol; fragment CM-OS-C-CT"
-  },
-  {
-   "match": [
-    "CM",
-    "OS",
-    "C",
-    "O"
-   ],
-   "params": [
-    -2.5186,
-    4.4022,
-    -1.6929,
-    0.1281
-   ],
-   "source": "CAPS fit (QM)",
-   "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 12-atom fragment, RMS 0.05 kcal/mol; fragment CM-OS-C-CT"
   },
   {
    "match": [
@@ -1300,6 +1236,86 @@
    ],
    "source": "the 2024 .par's nitrile torsions X-CA-CZ-NZ (type 242): zero",
    "reason": "a torsion about the linear C-C#N axis of a conjugated nitrile (acrylonitrile) carries nothing, as the files write it for benzonitrile"
+  },
+  {
+   "match": [
+    "C",
+    "OS",
+    "CM",
+    "CM"
+   ],
+   "params": [
+    -2.5738,
+    4.7601,
+    -0.755,
+    0.0882
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 12-atom fragment, RMS 0.05 kcal/mol; fragment C-OS-CM-CM"
+  },
+  {
+   "match": [
+    "C",
+    "OS",
+    "CM",
+    "HC"
+   ],
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "zero; the heavy-atom torsions about the same bond carry the profile of a 24-point MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L) scan of a 12-atom fragment (RMS 0.05 kcal/mol); fragment C-OS-CM-CM"
+  },
+  {
+   "match": [
+    "CM",
+    "OS",
+    "C",
+    "CT"
+   ],
+   "params": [
+    1.4139,
+    5.1712,
+    -0.6052,
+    -0.6718
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 12-atom fragment, RMS 0.07 kcal/mol; fragment CM-OS-C-CT"
+  },
+  {
+   "match": [
+    "CM",
+    "OS",
+    "C",
+    "O"
+   ],
+   "params": [
+    -1.6657,
+    5.0437,
+    -1.0662,
+    0.7246
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 12-atom fragment, RMS 0.07 kcal/mol; fragment CM-OS-C-CT"
+  },
+  {
+   "match": [
+    "Cl",
+    "CT",
+    "CT",
+    "OH"
+   ],
+   "params": [
+    -0.8825,
+    -1.3083,
+    0.6485,
+    -0.1945
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 16-atom fragment, RMS 0.37 kcal/mol; fragment Cl-CT-CT-OH"
   }
  ]
 }
