@@ -4,8 +4,10 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <fstream>
 #include <map>
 #include <set>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -14,6 +16,7 @@
 #include "caps/elements.hpp"
 #include "caps/analysis.hpp"
 #include "caps/edit.hpp"
+#include "caps/json.hpp"
 #include "caps/polymer.hpp"
 #include "caps/molecule.hpp"
 #include "caps/molinfo.hpp"
@@ -763,4 +766,32 @@ TEST(Polymer, DyadPatternOnAGrownChain) {
   const std::string& d = t.chains[0].dyads;
   ASSERT_GE(d.size(), 9u);
   for (size_t k = 0; k < d.size(); ++k) EXPECT_EQ(d[k], "mmr"[k % 3]) << d;
+}
+
+// Every polymer of the library grows as one chain of 4 units at low density with the default options: stiff aromatic
+// units (diaryl ethers and amines such as PPSU and polyaniline, a methoxy on a ring) and saturated rings (vinyl
+// cyclohexane) used to clash within the unit itself, so no trial could place even the first unit
+TEST(Polymer, EveryLibraryPolymerGrowsAsOneChain) {
+  std::ifstream f(std::string(CAPS_SOURCE_DIR) + "/data/polymers/library.json");
+  std::stringstream ss;
+  ss << f.rdbuf();
+  const Json lib = Json::parse(ss.str());
+  ASSERT_GE(lib["polymers"].size(), 100u);
+  for (const auto& p : lib["polymers"].items()) {
+    const std::string id = p["id"].str(), smiles = p["smiles"].str();
+    GrowOptions o;
+    o.chains = 1;
+    o.density = 0.01;
+    o.seed = 5;
+    GrowReport rep;
+    System s;
+    try {
+      s = grow_chains(spec({smiles}, Sequence::Homopolymer, 4), o, &rep);
+    } catch (const std::exception& e) {
+      ADD_FAILURE() << id << " " << p["name"].str() << ": " << e.what();
+      continue;
+    }
+    EXPECT_GE(int(s.atoms.size()), 4 * repeat_unit_info(smiles).atoms) << id;
+    EXPECT_GE(rep.worst_margin, o.accept) << id;
+  }
 }

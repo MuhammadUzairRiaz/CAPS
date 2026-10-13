@@ -11,6 +11,7 @@
 #include <array>
 #include <cmath>
 #include <functional>
+#include <limits>
 #include <map>
 #include <optional>
 #include <numeric>
@@ -51,10 +52,10 @@ double dihedral(const Vec3& a, const Vec3& b, const Vec3& c, const Vec3& d) {
 }
 
 // torsion kinds: 0 sp3–sp3 (trans, gauche±), 1 next to an sp2 atom (30° steps), 2 conjugated (0 or 180°),
-// 3 ester / amide link (trans)
-int torsion_kind(bool sp2a, bool donor_a, bool sp2b, bool donor_b) {
+// 3 ester / amide link (trans); twist: a donor on a ring atom (an aryl ether or amine), 30° steps
+int torsion_kind(bool sp2a, bool donor_a, bool sp2b, bool donor_b, bool twist = false) {
   if (sp2a && sp2b) return 2;
-  if ((sp2a && donor_b) || (sp2b && donor_a)) return 3;
+  if ((sp2a && donor_b) || (sp2b && donor_a)) return twist ? 1 : 3;
   if (sp2a || sp2b) return 1;
   return 0;
 }
@@ -64,6 +65,8 @@ struct Template {
   int n = 0;
   std::vector<int> z;
   std::vector<bool> sp2, donor;
+  std::vector<bool> exo;                 // sp2 with a double bond out of its rings (a carbonyl C, a vinyl C): an ester's or
+                                         // amide's planar partner, not a ring carbon
   std::vector<std::array<int, 3>> ref;   // parent, grandparent, great-grandparent; < 0: -1 previous tail, -2 its parent, -3 …
   std::vector<double> bond, ang, tor;
   std::vector<int> group;                // sampled torsion group per atom, -1 fixed (template torsion)
@@ -87,6 +90,9 @@ struct Template {
   // the backbone runs through a ring (every bond from head to tail is a ring bond: 2,3-linked norbornenes, ENB): its
   // links sit in narrow torsion windows, so every step searches widely and keeps the roomiest placement
   bool ring_backbone = false;
+  // a ring backbone with the configuration of its head and tail written (2,3-exo,exo): never mirrored, the chain is
+  // built of the unit as written (its mirror image beside it does not fit next to these rigid units)
+  bool keep_configuration = false;
 };
 
 // orthonormal frame at t from its neighbours a (e1 toward a) and b
@@ -150,15 +156,118 @@ MolGraph capped(const Parsed& p) {
   return g;
 }
 
+// Head to tail through ring bonds only (both on one ring system)
+bool head_tail_on_ring(const MolGraph& g, int head, int tail, const std::vector<char>& skip) {
+  std::vector<std::vector<int>> nb(g.atoms.size());
+  for (const auto& b : g.bonds) nb[size_t(b.a)].push_back(b.b), nb[size_t(b.b)].push_back(b.a);
+  auto ring_bond = [&](int x, int y) {
+    std::vector<char> seen(g.atoms.size(), 0);
+    std::vector<int> st{x};
+    seen[size_t(x)] = 1;
+    while (!st.empty()) {
+      const int u = st.back();
+      st.pop_back();
+      for (int w : nb[size_t(u)]) {
+        if ((u == x && w == y) || seen[size_t(w)]) continue;
+        if (w == y) return true;
+        seen[size_t(w)] = 1, st.push_back(w);
+      }
+    }
+    return false;
+  };
+  // shortest path head -> tail over heavy atoms of the unit
+  std::vector<int> prev(g.atoms.size(), -2), q{head};
+  prev[size_t(head)] = -1;
+  for (size_t i = 0; i < q.size() && prev[size_t(tail)] == -2; ++i)
+    for (int w : nb[size_t(q[i])])
+      if (prev[size_t(w)] == -2 && !skip[size_t(w)] && g.atoms[size_t(w)].element != 1) prev[size_t(w)] = q[i], q.push_back(w);
+  if (head == tail || prev[size_t(tail)] == -2) return false;
+  for (int v = tail; prev[size_t(v)] >= 0; v = prev[size_t(v)])
+    if (!ring_bond(v, prev[size_t(v)])) return false;
+  return true;
+}
+
+// The capped unit's coordinates taken from the middle unit of a minimised trimer (three copies, each tail bonded to
+// the next head in place of the stand-ins), for a unit whose head and tail are on one ring system; the head's stand-in
+// carbon sits on the previous unit's tail, two of its hydrogens on that tail's other neighbours, the tail's stand-in on
+// the next head. Nothing when the unit is not such a unit or the trimer cannot be embedded or minimised.
+template <class Relax>
+std::optional<std::vector<Vec3>> ring_backbone_trimer(const MolGraph& g, const Parsed& P, uint64_t seed, Relax&& relax) {
+  const int N = int(g.atoms.size());
+  std::vector<char> stand_in(size_t(N), 0);
+  std::vector<std::vector<int>> hs(2);
+  for (int s = 0; s < 2; ++s) {
+    const int d = s == 0 ? P.d1 : P.d2;
+    stand_in[size_t(d)] = 1;
+    for (const auto& b : g.bonds)
+      if ((b.a == d || b.b == d) && g.atoms[size_t(b.a == d ? b.b : b.a)].element == 1) {
+        stand_in[size_t(b.a == d ? b.b : b.a)] = 1;
+        hs[size_t(s)].push_back(b.a == d ? b.b : b.a);
+      }
+  }
+  if (!head_tail_on_ring(g, P.head, P.tail, stand_in) || hs[0].size() < 2) return std::nullopt;
+  // copy c's atoms at c·N; the head's stand-in (and its hydrogens) dropped on copies 1, 2, the tail's on copies 0, 1
+  auto dropped = [&](int c, int i) {
+    if (!stand_in[size_t(i)]) return false;
+    const bool head_side = i == P.d1 || std::count(hs[0].begin(), hs[0].end(), i);
+    return head_side ? c > 0 : c < 2;
+  };
+  std::vector<int> idx(size_t(3 * N), -1);
+  MolGraph t;
+  for (int c = 0; c < 3; ++c)
+    for (int i = 0; i < N; ++i)
+      if (!dropped(c, i)) idx[size_t(c * N + i)] = int(t.atoms.size()), t.atoms.push_back(g.atoms[size_t(i)]);
+  // a link replaces the stand-in in place (the neighbour order the chirality is written in)
+  auto remap = [&](int c, int w) {
+    if (c > 0 && w == P.d1) return idx[size_t((c - 1) * N + P.tail)];
+    if (c < 2 && w == P.d2) return idx[size_t((c + 1) * N + P.head)];
+    return w >= 0 ? idx[size_t(c * N + w)] : w;
+  };
+  for (int c = 0; c < 3; ++c)
+    for (int i = 0; i < N; ++i)
+      if (const int k = idx[size_t(c * N + i)]; k >= 0)
+        for (int& w : t.atoms[size_t(k)].order) w = remap(c, w);
+  for (int c = 0; c < 3; ++c)
+    for (const auto& b : g.bonds) {
+      if (dropped(c, b.a) || dropped(c, b.b)) {
+        // the link: copy c's tail to copy c + 1's head, once
+        if (c < 2 && ((b.a == P.tail && b.b == P.d2) || (b.b == P.tail && b.a == P.d2)))
+          t.bonds.push_back({idx[size_t(c * N + P.tail)], idx[size_t((c + 1) * N + P.head)], b.order, 0});
+        continue;
+      }
+      t.bonds.push_back({idx[size_t(c * N + b.a)], idx[size_t(c * N + b.b)], b.order, b.dir});
+    }
+  t.heavy = int(t.atoms.size());
+  std::vector<Vec3> x;
+  EmbedOptions eo;
+  eo.seed = seed;
+  try { x = embed(t, eo); } catch (const std::runtime_error&) { return std::nullopt; }
+  if (x.size() != t.atoms.size() || !std::isfinite(relax(t, x, false))) return std::nullopt;
+  for (int v : chirality_check(t, x))
+    if (v < 0) return std::nullopt;
+  std::vector<Vec3> pos(static_cast<size_t>(N));
+  for (int i = 0; i < N; ++i)
+    if (const int k = idx[size_t(N + i)]; k >= 0) pos[size_t(i)] = x[size_t(k)];
+  const int prev_tail = idx[size_t(P.tail)], next_head = idx[size_t(2 * N + P.head)], head1 = idx[size_t(N + P.head)];
+  pos[size_t(P.d1)] = x[size_t(prev_tail)];
+  pos[size_t(P.d2)] = x[size_t(next_head)];
+  // the head stand-in's hydrogens: the previous tail's other neighbours
+  std::vector<int> others;
+  for (const auto& b : t.bonds)
+    if (b.a == prev_tail || b.b == prev_tail)
+      if (const int w = b.a == prev_tail ? b.b : b.a; w != head1) others.push_back(w);
+  if (others.size() < 2) return std::nullopt;
+  for (size_t k = 0; k < hs[0].size(); ++k) pos[size_t(hs[0][k])] = x[size_t(others[std::min(k, others.size() - 1)])];
+  for (int h : hs[1]) pos[size_t(h)] = x[size_t(next_head)];
+  return pos;
+}
+
 Template make_template(const std::string& name, const std::string& smiles, const std::string& ff, uint64_t seed, std::vector<std::string>& notes,
                        bool reversed = false) {
   const Parsed P = parse_unit(smiles, reversed);
   MolGraph g = capped(P);
   const auto problems = valence_problems(g);
   if (!problems.empty()) throw std::runtime_error(name + ": " + problems.front());
-  EmbedOptions eo;
-  eo.seed = seed;
-  std::vector<Vec3> pos = embed(g, eo);
   // crowded or floppy units: a carbon with four heavy neighbours (PIB, poly(α-methylstyrene), methacrylates) or five and
   // more rotatable bonds between heavy atoms (a butyl ester); the raw embedding's angles and torsions vary with the
   // seed, and a poor one (a butyl ester bent back on the backbone) leaves no room for the next units
@@ -191,23 +300,123 @@ Template make_template(const std::string& name, const std::string& smiles, const
         ++rotatable;
     crowded = crowded || rotatable >= 5;
   }
-  // the unit's geometry minimised with the force field given, or with UFF for a crowded or floppy unit
-  if (!ff.empty() || crowded) {
+  // the unit's geometry minimised with the force field given, or with UFF for a crowded or floppy unit; notes only for
+  // the first embedding; the energy (NaN when the minimisation failed)
+  auto relax_graph = [&](const MolGraph& graph, std::vector<Vec3>& pos, bool first) {
+    double energy = std::numeric_limits<double>::quiet_NaN();
     const std::string uf = ff.empty() ? std::string("uff") : ff;
     std::vector<std::string> fn;
-    auto f = molecule_forcefield(g, uf, "gasteiger", fn, nullptr, &pos);
+    auto f = molecule_forcefield(graph, uf, "gasteiger", fn, nullptr, &pos);
     if (!f && !is_uff(uf)) {   // units the chosen force field cannot type (silicones, phosphazenes …): UFF
       std::vector<std::string> un;
-      f = molecule_forcefield(g, "uff", "gasteiger", un, nullptr, &pos);
+      f = molecule_forcefield(graph, "uff", "gasteiger", un, nullptr, &pos);
       if (f) fn.clear();
     }
     std::string why;
     const std::vector<Vec3> start = pos;
-    if (!f || !minimise_molecule(g, f, 0.05, pos, nullptr, &why)) {
+    if (!f || !minimise_molecule(graph, f, 0.05, pos, &energy, &why)) {
+      energy = std::numeric_limits<double>::quiet_NaN();
       bool finite = true;
       for (const auto& x : pos) finite = finite && std::isfinite(x[0]) && std::isfinite(x[1]) && std::isfinite(x[2]);
       if (!finite) pos = start;
-      if (!ff.empty()) notes.push_back(name + ": unit geometry from the embedding" + (fn.empty() ? (why.empty() ? "" : " (" + why + ")") : " (" + fn.front() + ")"));
+      if (first && !ff.empty()) notes.push_back(name + ": unit geometry from the embedding" + (fn.empty() ? (why.empty() ? "" : " (" + why + ")") : " (" + fn.front() + ")"));
+    }
+    return energy;
+  };
+  auto relax = [&](std::vector<Vec3>& pos, bool first) { return relax_graph(g, pos, first); };
+  // the unit's worst contact margin at the grower's limits (pairs four bonds apart at 85 %, farther pairs in full; the
+  // stand-in carbons left out): a ring the embedding leaves as a boat puts its flagpole hydrogens 1.8 Å apart, and no
+  // torsion the grower samples can open it (poly(vinyl cyclohexane))
+  std::vector<char> stand_in(g.atoms.size(), 0);
+  for (int d : {P.d1, P.d2}) {
+    stand_in[size_t(d)] = 1;
+    for (const auto& b : g.bonds)
+      if ((b.a == d || b.b == d) && g.atoms[size_t(b.a == d ? b.b : b.a)].element == 1) stand_in[size_t(b.a == d ? b.b : b.a)] = 1;
+  }
+  std::vector<std::vector<int>> gnb(g.atoms.size());
+  for (const auto& b : g.bonds) gnb[size_t(b.a)].push_back(b.b), gnb[size_t(b.b)].push_back(b.a);
+  auto unit_margin = [&](const std::vector<Vec3>& x) {
+    double worst = 1e9;
+    for (size_t a = 0; a < g.atoms.size(); ++a) {
+      if (stand_in[a]) continue;
+      std::vector<int> dist(g.atoms.size(), -1);   // bond distances up to 4
+      std::vector<int> fr{int(a)};
+      dist[a] = 0;
+      for (int d = 1; d <= 4; ++d) {
+        std::vector<int> nx;
+        for (int u : fr)
+          for (int w : gnb[size_t(u)])
+            if (dist[size_t(w)] < 0) dist[size_t(w)] = d, nx.push_back(w);
+        fr = std::move(nx);
+      }
+      const int za = g.atoms[a].element;
+      for (size_t b = a + 1; b < g.atoms.size(); ++b) {
+        if (stand_in[b] || (dist[b] >= 0 && dist[b] <= 3)) continue;
+        const int zb = g.atoms[b].element;
+        const double lim = 0.88 * (element(za).vdw + element(zb).vdw) - 0.08 * ((za == 1) + (zb == 1));
+        worst = std::min(worst, norm(x[a] - x[b]) - (dist[b] == 4 ? 0.85 : 1.0) * lim);
+      }
+    }
+    return worst;
+  };
+  // a saturated ring (two sp3 atoms bonded in a ring): its conformer is the embedding's (boat or chair, a substituent
+  // axial or equatorial), and an axial backbone has its 1,3-diaxial hydrogens against the next unit (poly(vinyl
+  // cyclohexane)); the lowest energy of a few minimised embeddings with room within the unit
+  bool saturated_ring = false;
+  {
+    auto pi = [&](int i) {
+      for (const auto& b : g.bonds)
+        if ((b.a == i || b.b == i) && b.order != 1) return true;
+      return false;
+    };
+    for (const auto& b : g.bonds)
+      if (!saturated_ring && b.order == 1 && g.atoms[size_t(b.a)].element != 1 && g.atoms[size_t(b.b)].element != 1 && !pi(b.a) && !pi(b.b) &&
+          !stand_in[size_t(b.a)] && !stand_in[size_t(b.b)]) {
+        std::vector<char> seen(g.atoms.size(), 0);   // is b in a ring: its ends connected without it
+        std::vector<int> st{b.a};
+        seen[size_t(b.a)] = 1;
+        while (!st.empty() && !saturated_ring) {
+          const int u = st.back();
+          st.pop_back();
+          for (int w : gnb[size_t(u)]) {
+            if ((u == b.a && w == b.b) || seen[size_t(w)]) continue;
+            if (w == b.b) { saturated_ring = true; break; }
+            seen[size_t(w)] = 1, st.push_back(w);
+          }
+        }
+      }
+  }
+  EmbedOptions eo;
+  eo.seed = seed;
+  std::vector<Vec3> pos = embed(g, eo);
+  if (saturated_ring) {
+    double best_e = relax(pos, true), best_m = unit_margin(pos);
+    for (int attempt = 1; attempt < 6; ++attempt) {
+      eo.seed = seed + 7919 * uint64_t(attempt);
+      std::vector<Vec3> x;
+      try { x = embed(g, eo); } catch (const std::runtime_error&) { continue; }
+      const double e = relax(x, false), m = unit_margin(x);
+      if (!std::isfinite(e)) continue;
+      // room first, then energy
+      const bool better = (m >= 0) != (best_m >= 0) ? m >= 0 : best_m >= 0 ? !std::isfinite(best_e) || e < best_e - 1e-6 : m > best_m;
+      if (better) best_e = e, best_m = m, pos = std::move(x);
+    }
+  } else if (!ff.empty() || crowded) relax(pos, true);
+  // a ring backbone (head and tail on one ring system: 2,3-linked norbornenes, ENB): the rigid units sit close to the
+  // units two along, and the angles at the links open by a few degrees in a relaxed chain, which over a bicyclic unit
+  // decides whether the next one fits (ENB's hydrogens 1.5 Å apart with the capped unit's angles, 2.1 Å relaxed); the
+  // unit's geometry is that of the middle unit of a minimised trimer, its stand-ins the neighbours' link atoms
+  if (const auto x = ring_backbone_trimer(g, P, seed, relax_graph)) pos = *x;
+  // a unit that crowds itself: minimised with UFF (or the force field given), then other embeddings, the roomiest kept
+  if (double best = unit_margin(pos); best < 0) {
+    for (int attempt = 0; attempt < 8 && best < 0; ++attempt) {
+      std::vector<Vec3> x = pos;
+      if (attempt > 0) {
+        eo.seed = seed + 7919 * uint64_t(attempt);
+        try { x = embed(g, eo); } catch (const std::runtime_error&) { continue; }
+      }
+      if (attempt > 0 || !(!ff.empty() || crowded || saturated_ring)) relax(x, false);
+      if (const double m = unit_margin(x); m > best) best = m, pos = std::move(x);
     }
   }
   const size_t N = g.atoms.size();
@@ -258,6 +467,7 @@ Template make_template(const std::string& name, const std::string& smiles, const
     T.donor.push_back(!pi && (g.atoms[size_t(old)].element == 7 || g.atoms[size_t(old)].element == 8 || g.atoms[size_t(old)].element == 16));
     const int p = up(k), gp = up(p), ggp = up(gp);
     T.ref.push_back({p, gp, ggp});
+    T.exo.push_back(false);
     T.bond.push_back(norm(X(k) - X(p)));
     T.ang.push_back(angle_at(X(k), X(p), X(gp)));
     T.tor.push_back(dihedral(X(k), X(p), X(gp), X(ggp)));
@@ -297,10 +507,14 @@ Template make_template(const std::string& name, const std::string& smiles, const
       if (w == b) return o;
     return 0;
   };
+  for (int k = 0; k < T.n; ++k)
+    for (auto [w, o] : adj[size_t(order[size_t(k)])])
+      if ((o == 2 || o == 3) && !in_ring(order[size_t(k)], w)) T.exo[size_t(k)] = true;
   {
     bool all = T.tail != 0;
     for (int k = T.tail; all && T.parent[size_t(k)] >= 0; k = T.parent[size_t(k)]) all = in_ring(order[size_t(k)], order[size_t(T.parent[size_t(k)])]);
     T.ring_backbone = all;
+    T.keep_configuration = all && P.g.atoms[size_t(P.head)].chiral != 0 && P.g.atoms[size_t(P.tail)].chiral != 0;
   }
   // sp2 centres outside rings with two children (a carbonyl carbon and its O and OR): planar, as the embedding does
   // not always leave them (a pyramidal ester carbon puts its C=O out of plane, depending on the seed); the first
@@ -333,6 +547,10 @@ Template make_template(const std::string& name, const std::string& smiles, const
       if (order_of(op, og) != 1 || in_ring(op, og)) continue;
       const bool sp = T.sp2[size_t(p)], sg = T.sp2[size_t(gp)];
       if (sp && sg) continue;                                    // conjugated: the template's (planar) torsion
+      // a donor on a ring atom (aryl ethers, amines, sulfides; an aryl ester's or imide's aryl side): planar is only a
+      // reference, sampled in 30° steps from it; with the embedding's angles a planar methoxy's hydrogens touch the ring's
+      // (poly(4-methoxystyrene)), and two planar rings on one O or NH overlap (PPSU, polyaniline)
+      const bool twist = (sp && T.donor[size_t(gp)] && !T.exo[size_t(p)]) || (sg && T.donor[size_t(p)] && !T.exo[size_t(gp)]);
       if ((sp && T.donor[size_t(gp)]) || (sg && T.donor[size_t(p)])) {   // ester, amide: planar, Z (s-cis), not sampled
         // the embedding leaves these anywhere (an ester's O-methyl pointing back at the backbone dead-ends PMMA's
         // growth): the donor's substituent cis to the sp2 atom's double-bonded partner X, the rest trans; no X (an aryl
@@ -355,9 +573,9 @@ Template make_template(const std::string& name, const std::string& smiles, const
           target = (cis == ref_is_x) ? 0.0 : kPi;
         }
         T.tor[size_t(k)] = target;
-        continue;
+        if (!twist) continue;
       }
-      kind = torsion_kind(sp, T.donor[size_t(p)], sg, T.donor[size_t(gp)]);
+      kind = torsion_kind(sp, T.donor[size_t(p)], sg, T.donor[size_t(gp)], twist);
     }
     auto [it, fresh] = groups.emplace(std::make_pair(p, gp), int(T.group_kind.size()));
     if (fresh) {
@@ -452,7 +670,7 @@ struct ChainState {
   std::vector<char> mirror;
   std::vector<Vec3> pos;      // local (unwrapped); 0..2 are ghosts standing in for the start
   std::vector<int> z, tparent, gid, unit_of;
-  std::vector<char> sp2, donor, backbone;
+  std::vector<char> sp2, donor, exo, backbone;
   std::vector<std::vector<int>> adj;
   std::vector<int> unit_start;   // local index of each placed unit's head
   std::vector<double> unit_lnw;  // Rosenbluth methods: ln(Σ w / k) of each placed unit's step
@@ -838,7 +1056,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     }
     ch.mirror.resize(ch.seq.size());
     for (size_t k = 0; k < ch.seq.size(); ++k) {
-      if (spec.keep_configuration) { ch.mirror[k] = 0; continue; }   // D-sugars stay D
+      if (spec.keep_configuration || T[size_t(ch.seq[k])].keep_configuration) { ch.mirror[k] = 0; continue; }   // D-sugars stay D
       if (k == 0) ch.mirror[k] = U(rng) < 0.5;
       else if (spec.tacticity == Tacticity::Isotactic) ch.mirror[k] = ch.mirror[k - 1];
       else if (spec.tacticity == Tacticity::Syndiotactic) ch.mirror[k] = !ch.mirror[k - 1];
@@ -1178,7 +1396,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     if (n_arms) unresolve_arms(ci);
     for (size_t i = 3; i < ch.gid.size(); ++i)
       if (ch.gid[i] >= 0) cell.kill(ch.gid[i]);
-    ch.pos.clear(), ch.z.clear(), ch.tparent.clear(), ch.gid.clear(), ch.unit_of.clear(), ch.sp2.clear(), ch.donor.clear(), ch.backbone.clear(), ch.adj.clear(), ch.unit_start.clear();
+    ch.pos.clear(), ch.z.clear(), ch.tparent.clear(), ch.gid.clear(), ch.unit_of.clear(), ch.sp2.clear(), ch.donor.clear(), ch.exo.clear(), ch.backbone.clear(), ch.adj.clear(), ch.unit_start.clear();
     ch.unit_lnw.clear();
     if (ch.parent >= 0) {   // an arm: the ghosts are its anchor atom and the two atoms before it in the parent
       if (!ch.started) begin_arm(ci);
@@ -1199,7 +1417,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
         g0 = g1 + unitv(w - u * dot(w, u)) * 1.53;
       }
       for (const Vec3& p : {g0, g1, P}) {
-        ch.pos.push_back(p), ch.z.push_back(6), ch.gid.push_back(-1), ch.unit_of.push_back(-1), ch.sp2.push_back(0), ch.donor.push_back(0), ch.backbone.push_back(1), ch.adj.push_back({});
+        ch.pos.push_back(p), ch.z.push_back(6), ch.gid.push_back(-1), ch.unit_of.push_back(-1), ch.sp2.push_back(0), ch.donor.push_back(0), ch.exo.push_back(0), ch.backbone.push_back(1), ch.adj.push_back({});
       }
       ch.tparent = {-1, 0, 1};
       ++ch.starts;
@@ -1231,7 +1449,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
         g0 = g1 + unitv(w - u * dot(w, u)) * 1.53;
       }
       for (const Vec3& p : {g0, g1, P}) {
-        ch.pos.push_back(p), ch.z.push_back(6), ch.gid.push_back(-1), ch.unit_of.push_back(-1), ch.sp2.push_back(0), ch.donor.push_back(0), ch.backbone.push_back(1), ch.adj.push_back({});
+        ch.pos.push_back(p), ch.z.push_back(6), ch.gid.push_back(-1), ch.unit_of.push_back(-1), ch.sp2.push_back(0), ch.donor.push_back(0), ch.exo.push_back(0), ch.backbone.push_back(1), ch.adj.push_back({});
       }
       ch.pdist = sub_near[size_t(ci)];
       ch.tparent = {-1, 0, 1};
@@ -1257,7 +1475,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     w = unitv(w - u * dot(w, u));
     const Vec3 g2 = s, g1 = s + u * 1.53, g0 = g1 + unitv(u * 0.4 + w) * 1.53;
     for (const Vec3& p : {g0, g1, g2}) {
-      ch.pos.push_back(p), ch.z.push_back(6), ch.gid.push_back(-1), ch.unit_of.push_back(-1), ch.sp2.push_back(0), ch.donor.push_back(0), ch.backbone.push_back(1), ch.adj.push_back({});
+      ch.pos.push_back(p), ch.z.push_back(6), ch.gid.push_back(-1), ch.unit_of.push_back(-1), ch.sp2.push_back(0), ch.donor.push_back(0), ch.exo.push_back(0), ch.backbone.push_back(1), ch.adj.push_back({});
     }
     ch.tparent = {-1, 0, 1};
     ++ch.starts;
@@ -1281,7 +1499,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
         }
       }
       ch.pos.resize(size_t(from)), ch.z.resize(size_t(from)), ch.tparent.resize(size_t(from)), ch.gid.resize(size_t(from));
-      ch.unit_of.resize(size_t(from)), ch.sp2.resize(size_t(from)), ch.donor.resize(size_t(from)), ch.backbone.resize(size_t(from)), ch.adj.resize(size_t(from));
+      ch.unit_of.resize(size_t(from)), ch.sp2.resize(size_t(from)), ch.donor.resize(size_t(from)), ch.exo.resize(size_t(from)), ch.backbone.resize(size_t(from)), ch.adj.resize(size_t(from));
     }
   };
 
@@ -1335,8 +1553,12 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     std::optional<Vec3> next_dir;
     if (k > 0) next_dir = free_valence(ci, k - 1);
     else if (ch.parent >= 0) next_dir = ch.anchor_dir;   // an arm's head takes the parent's freed valence
-    const int root_kind = torsion_kind(ch.sp2[size_t(pt)], ch.donor[size_t(pt)], ch.sp2[size_t(ptp)], ch.donor[size_t(ptp)]);
-    const int link_kind = torsion_kind(t.sp2[0], t.donor[0], ch.sp2[size_t(pt)], ch.donor[size_t(pt)]);
+    // a donor on a ring atom across the link (an aryl ether or amine split between units): sampled, as in a unit
+    const bool root_twist = (ch.donor[size_t(pt)] && ch.sp2[size_t(ptp)] && !ch.exo[size_t(ptp)]) ||
+                            (ch.donor[size_t(ptp)] && ch.sp2[size_t(pt)] && !ch.exo[size_t(pt)]);
+    const bool link_twist = (ch.donor[size_t(pt)] && t.sp2[0] && !t.exo[0]) || (t.donor[0] && ch.sp2[size_t(pt)] && !ch.exo[size_t(pt)]);
+    const int root_kind = torsion_kind(ch.sp2[size_t(pt)], ch.donor[size_t(pt)], ch.sp2[size_t(ptp)], ch.donor[size_t(ptp)], root_twist);
+    const int link_kind = torsion_kind(t.sp2[0], t.donor[0], ch.sp2[size_t(pt)], ch.donor[size_t(pt)], link_twist);
     // atoms within three bonds of each new atom: the unit's own bonds plus the link, walked from the new atom
     std::vector<std::vector<int>> nadj(size_t(t.n));
     for (const auto& b : t.bonds) nadj[size_t(b[0])].push_back(b[1]), nadj[size_t(b[1])].push_back(b[0]);
@@ -1809,6 +2031,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
       ch.unit_of.push_back(k);
       ch.sp2.push_back(t.sp2[size_t(a)]);
       ch.donor.push_back(t.donor[size_t(a)]);
+      ch.exo.push_back(t.exo[size_t(a)]);
       ch.backbone.push_back(a == 0 || a == t.tail);
       ch.adj.push_back({});
       ch.gid.push_back(cell.add(best[size_t(a)], t.z[size_t(a)], ci, idx));
