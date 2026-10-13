@@ -174,6 +174,12 @@ add(467, 7, "[OX2;$(O([CX3]=[OX1])[CX3]=[OX1])]", "anhydride -O-")
 add(472, 7, "c[OX2][CX3](=[OX1])[#6,#1]", "phenyl ester C(ipso)")
 by_h((468, 490, 491, 492), 6, "$(*[OX2][CX3](=[OX1])[#6,#1])", "ester alkoxy C")
 add(469, 6, "[H][CX4][OX2][CX3](=[OX1])[#6,#1]", "H on ester alkoxy C")
+# benzyl esters (poly(benzyl methacrylate)): no numbers; as the benzyl ethers above, by the benzyl alcohol increment
+# (218-221): the ring C on the alkoxy C is 221 (-0.055 for benzene's -0.115) and the alkoxy C gains +0.055 over 490-492
+# (CAPS's caps_bze_*: CH2 0.245, CH 0.275, C 0.305), so the aryl group stays neutral; it was -0.115 e per benzyl ester
+BZE = "$(*c);$(*[OX2][CX3](=[OX1])[#6,#1])"
+by_h((None, "caps_bze_ch2", "caps_bze_ch", "caps_bze_c"), 7, BZE, "benzyl ester alkoxy C")
+add(221, 7, "c[CX4;$(*[OX2][CX3](=[OX1])[#6,#1])]", "ring C of a benzyl ester (as a benzyl alcohol's, 221)")
 
 # ---------------------------------------------------------------- carboxylic acids
 add(267, 7, "[CX3](=[OX1])[OX2H1]", "carboxylic acid C")

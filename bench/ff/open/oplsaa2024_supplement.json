@@ -626,6 +626,27 @@
    "charge": 0.135,
    "description": "vinyl ester C(O)= (R2C=, isopropenyl acetate)",
    "reason": "the class and Lennard-Jones of the alkene C 141; +0.135 as the phenyl ester's C(ipso) 472, which balances the ester group"
+  },
+  {
+   "name": "caps_bze_ch2",
+   "lj_from": "opls_490",
+   "charge": 0.245,
+   "description": "benzyl ester alkoxy CH2 (490 0.190 + 0.055)",
+   "reason": "the benzyl alcohol increment of the table (ring C 221 at -0.055 for benzene's -0.115, the carbinol C +0.055 over an alcohol's: 218 0.200 against 157 0.145) applied to an ester alkoxy C"
+  },
+  {
+   "name": "caps_bze_ch",
+   "lj_from": "opls_491",
+   "charge": 0.275,
+   "description": "benzyl ester alkoxy CH (491 0.220 + 0.055)",
+   "reason": "the benzyl alcohol increment of the table (ring C 221 at -0.055 for benzene's -0.115, the carbinol C +0.055 over an alcohol's: 218 0.200 against 157 0.145) applied to an ester alkoxy C"
+  },
+  {
+   "name": "caps_bze_c",
+   "lj_from": "opls_492",
+   "charge": 0.305,
+   "description": "benzyl ester alkoxy C (492 0.250 + 0.055)",
+   "reason": "the benzyl alcohol increment of the table (ring C 221 at -0.055 for benzene's -0.115, the carbinol C +0.055 over an alcohol's: 218 0.200 against 157 0.145) applied to an ester alkoxy C"
   }
  ],
  "dihedrals": [
@@ -1316,6 +1337,518 @@
    ],
    "source": "CAPS fit (QM)",
    "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 16-atom fragment, RMS 0.37 kcal/mol; fragment Cl-CT-CT-OH"
+  },
+  {
+   "match": [
+    "CA",
+    "CA",
+    "CT",
+    "CA"
+   ],
+   "params": [
+    4.8799,
+    0.1124,
+    0.7252,
+    0.1021
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf2__CA-CA-CT-CA 0.11 kcal/mol; ridge 0.001; fragment tf2__CA-CA-CT-CA"
+  },
+  {
+   "match": [
+    "CA",
+    "CA",
+    "CY",
+    "O$"
+   ],
+   "params": [
+    -9.939,
+    1.1926,
+    4.3076,
+    0.0018
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf2__CA-CA-CY-HC 1.05, tf2__CA-CA-CY-O$ 0.62 kcal/mol; ridge 0.003; fragment tf2__CA-CA-CY-HC, tf2__CA-CA-CY-O$"
+  },
+  {
+   "match": [
+    "CA",
+    "CA",
+    "NT",
+    "CA"
+   ],
+   "params": [
+    -4.5217,
+    0.7361,
+    -0.0428,
+    -0.2528
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf2__CA-CA-NT-CA 0.50 kcal/mol; ridge 0.003; fragment tf2__CA-CA-NT-CA"
+  },
+  {
+   "match": [
+    "CA",
+    "CA",
+    "SY",
+    "CA"
+   ],
+   "params": [
+    2.4097,
+    -0.4168,
+    0.5682,
+    0.0002
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf2__CA-CA-SY-CA 0.08, tf2__CA-CA-SY-OY 0.09 kcal/mol; ridge 0.001; fragment tf2__CA-CA-SY-CA, tf2__CA-CA-SY-OY"
+  },
+  {
+   "match": [
+    "CA",
+    "OS",
+    "CT",
+    "CY"
+   ],
+   "params": [
+    2.0929,
+    0.5206,
+    -1.665,
+    -0.7253
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf2__CA-OS-CT-CY 0.69 kcal/mol; ridge 0.001; fragment tf2__CA-OS-CT-CY"
+  },
+  {
+   "match": [
+    "CY",
+    "CY",
+    "CT",
+    "OS"
+   ],
+   "params": [
+    -0.7897,
+    2.1703,
+    4.9409,
+    0.1495
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 3 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf2__CY-CY-CT-OS 0.42, tf2__HC-CY-CT-OS 0.25, tf2__O$-CY-CT-OS 0.26 kcal/mol; ridge 0.001; fragment tf2__CY-CY-CT-OS, tf2__HC-CY-CT-OS, tf2__O$-CY-CT-OS"
+  },
+  {
+   "match": [
+    "O$",
+    "CY",
+    "CT",
+    "OS"
+   ],
+   "params": [
+    0.4614,
+    0.2907,
+    7.5348,
+    -0.0804
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 3 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf2__CY-CY-CT-OS 0.42, tf2__HC-CY-CT-OS 0.25, tf2__O$-CY-CT-OS 0.26 kcal/mol; ridge 0.001; fragment tf2__CY-CY-CT-OS, tf2__HC-CY-CT-OS, tf2__O$-CY-CT-OS"
+  },
+  {
+   "match": [
+    "CF",
+    "CT",
+    "CF",
+    "CT"
+   ],
+   "params": [
+    7.9332,
+    -4.477,
+    0.2589,
+    4.7113
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 3 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf3__CT-CF-CT-F 1.10, tfall__CF-CT-CF-CT 0.92, tfall__CF-CT-CF-F 0.69 kcal/mol; ridge 0.001; fragment tf3__CT-CF-CT-F, tfall__CF-CT-CF-CT, tfall__CF-CT-CF-F"
+  },
+  {
+   "match": [
+    "CF",
+    "CT",
+    "CF",
+    "F"
+   ],
+   "params": [
+    7.7954,
+    -6.1749,
+    0.3889,
+    3.3118
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 4 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf3__CT-CF-CT-F 1.10, tf3__F-CF-CT-F 0.41, tfall__CF-CT-CF-CT 0.92, tfall__CF-CT-CF-F 0.69 kcal/mol; ridge 0.001; fragment tf3__CT-CF-CT-F, tf3__F-CF-CT-F, tfall__CF-CT-CF-CT, tfall__CF-CT-CF-F"
+  },
+  {
+   "match": [
+    "CT",
+    "CF",
+    "CT",
+    "F"
+   ],
+   "params": [
+    -3.6376,
+    1.5439,
+    -1.352,
+    0.3633
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf3__CT-CF-CT-F 1.10 kcal/mol; ridge 0.001; fragment tf3__CT-CF-CT-F"
+  },
+  {
+   "match": [
+    "C",
+    "N",
+    "CT",
+    "CA"
+   ],
+   "params": [
+    -4.1129,
+    -1.3139,
+    0.4683,
+    -1.5876
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf7__C-N-CT-CA 0.93 kcal/mol; ridge 0.001; fragment tf7__C-N-CT-CA"
+  },
+  {
+   "match": [
+    "C",
+    "OS",
+    "CT",
+    "CA"
+   ],
+   "params": [
+    -1.53,
+    -1.5702,
+    0.3797,
+    -0.2833
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf7__C-OS-CT-CA 0.11 kcal/mol; ridge 0.001; fragment tf7__C-OS-CT-CA"
+  },
+  {
+   "match": [
+    "CA",
+    "C",
+    "N",
+    "CT"
+   ],
+   "params": [
+    0.4932,
+    -1.4524,
+    1.9855,
+    1.082
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf7__CA-C-N-CT 0.92 kcal/mol; ridge 0.001; fragment tf7__CA-C-N-CT"
+  },
+  {
+   "match": [
+    "CA",
+    "CT",
+    "CT",
+    "CA"
+   ],
+   "params": [
+    -1.8601,
+    0.2723,
+    0.7326,
+    -0.0731
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf7__CA-CT-CT-CA 0.03 kcal/mol; ridge 0.001; fragment tf7__CA-CT-CT-CA"
+  },
+  {
+   "match": [
+    "C",
+    "CT",
+    "CT",
+    "NT"
+   ],
+   "params": [
+    -9.6834,
+    -0.3504,
+    0.0926,
+    -0.2087
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tfall__C-CT-CT-NT 0.24 kcal/mol; ridge 0.001; fragment tfall__C-CT-CT-NT"
+  },
+  {
+   "match": [
+    "CF",
+    "CT",
+    "CT",
+    "F"
+   ],
+   "params": [
+    1.9386,
+    -0.6246,
+    0.0158,
+    0.141
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tfall__CF-CT-CT-F 0.08, tfall__CF-CT-CT-HC 0.07 kcal/mol; ridge 0.001; fragment tfall__CF-CT-CT-F, tfall__CF-CT-CT-HC"
+  },
+  {
+   "match": [
+    "CO",
+    "CT",
+    "OH",
+    "HO"
+   ],
+   "params": [
+    4.097,
+    -1.5177,
+    0.4171,
+    -0.0985
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tfall__CO-CT-OH-HO 0.17 kcal/mol; ridge 0.001; fragment tfall__CO-CT-OH-HO"
+  },
+  {
+   "match": [
+    "CO",
+    "OS",
+    "CO",
+    "CT"
+   ],
+   "params": [
+    1.5138,
+    0.637,
+    -1.3071,
+    0.5542
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tfall__CO-OS-CO-HC 0.18, tfall__CO-OS-CO-OH 0.16 kcal/mol; ridge 0.001; fragment tfall__CO-OS-CO-HC, tfall__CO-OS-CO-OH"
+  },
+  {
+   "match": [
+    "CO",
+    "OS",
+    "CO",
+    "OH"
+   ],
+   "params": [
+    -1.9792,
+    -1.7998,
+    1.7994,
+    1.0753
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tfall__CO-OS-CO-HC 0.18, tfall__CO-OS-CO-OH 0.16 kcal/mol; ridge 0.001; fragment tfall__CO-OS-CO-HC, tfall__CO-OS-CO-OH"
+  },
+  {
+   "match": [
+    "CT",
+    "CF",
+    "CT",
+    "CT"
+   ],
+   "params": [
+    6.9919,
+    -1.4248,
+    -2.3891,
+    -2.0792
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 3 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tfall__CT-CF-CT-CT 0.38, tfall__CT-CF-CT-HC 0.32, tfall__CT-CT-CF-F 0.32 kcal/mol; ridge 0.01; fragment tfall__CT-CF-CT-CT, tfall__CT-CF-CT-HC, tfall__CT-CT-CF-F"
+  },
+  {
+   "match": [
+    "CT",
+    "CT",
+    "CF",
+    "F"
+   ],
+   "params": [
+    7.4725,
+    -2.4644,
+    2.0347,
+    -1.6806
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 3 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tfall__CT-CF-CT-CT 0.38, tfall__CT-CF-CT-HC 0.32, tfall__CT-CT-CF-F 0.32 kcal/mol; ridge 0.01; fragment tfall__CT-CF-CT-CT, tfall__CT-CF-CT-HC, tfall__CT-CT-CF-F"
+  },
+  {
+   "match": [
+    "CT",
+    "CO",
+    "OH",
+    "HO"
+   ],
+   "params": [
+    -1.8685,
+    -0.2081,
+    2.2314,
+    0.04
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tfall__CT-CO-OH-HO 0.04, tfall__HC-CO-OH-HO 0.05 kcal/mol; ridge 0.001; fragment tfall__CT-CO-OH-HO, tfall__HC-CO-OH-HO"
+  },
+  {
+   "match": [
+    "HC",
+    "CO",
+    "OH",
+    "HO"
+   ],
+   "params": [
+    -1.6443,
+    0.8395,
+    -0.9253,
+    -0.1292
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tfall__CT-CO-OH-HO 0.04, tfall__HC-CO-OH-HO 0.05 kcal/mol; ridge 0.001; fragment tfall__CT-CO-OH-HO, tfall__HC-CO-OH-HO"
+  },
+  {
+   "match": [
+    "Cl",
+    "CM",
+    "CT",
+    "HC"
+   ],
+   "params": [
+    0.0,
+    0.0,
+    0.5796,
+    0.0
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tfall__Cl-CM-CT-HC 0.01 kcal/mol; ridge 0.001; fragment tfall__Cl-CM-CT-HC"
+  },
+  {
+   "match": [
+    "CT",
+    "CF",
+    "CT",
+    "HC"
+   ],
+   "params": [
+    0.0,
+    0.0,
+    -1.1563,
+    0.0
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tfall__F-CF-CT-HC 0.03 kcal/mol; ridge 0.001; fragment tfall__F-CF-CT-HC"
+  },
+  {
+   "match": [
+    "F",
+    "CF",
+    "CT",
+    "HC"
+   ],
+   "params": [
+    0.0,
+    0.0,
+    1.0425,
+    0.0
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tfall__F-CF-CT-HC 0.03 kcal/mol; ridge 0.001; fragment tfall__F-CF-CT-HC"
+  },
+  {
+   "match": [
+    "HC",
+    "CO",
+    "CT",
+    "HC"
+   ],
+   "params": [
+    0.0,
+    0.0,
+    0.253,
+    0.0
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tfall__HC-CO-CT-HC 0.11, tfall__HC-CT-CO-OH 0.14 kcal/mol; ridge 0.001; fragment tfall__HC-CO-CT-HC, tfall__HC-CT-CO-OH"
+  },
+  {
+   "match": [
+    "HC",
+    "CT",
+    "CO",
+    "OH"
+   ],
+   "params": [
+    0.0,
+    0.0,
+    0.3461,
+    0.0
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tfall__HC-CT-CO-OH 0.14 kcal/mol; ridge 0.001; fragment tfall__HC-CT-CO-OH"
+  },
+  {
+   "match": [
+    "OH",
+    "CO",
+    "CT",
+    "OH"
+   ],
+   "params": [
+    9.9058,
+    -2.2473,
+    1.5932,
+    0.3269
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 3 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tfall__HC-CO-CT-OH 0.73, tfall__OH-CO-CT-OH 0.65, tfall__OH-CT-CO-OS 0.68 kcal/mol; ridge 0.3; fragment tfall__HC-CO-CT-OH, tfall__OH-CO-CT-OH, tfall__OH-CT-CO-OS"
+  },
+  {
+   "match": [
+    "OH",
+    "CT",
+    "CO",
+    "OS"
+   ],
+   "params": [
+    5.1062,
+    0.1564,
+    2.4867,
+    1.3589
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 3 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tfall__HC-CO-CT-OH 0.73, tfall__OH-CO-CT-OH 0.65, tfall__OH-CT-CO-OS 0.68 kcal/mol; ridge 0.3; fragment tfall__HC-CO-CT-OH, tfall__OH-CO-CT-OH, tfall__OH-CT-CO-OS"
+  },
+  {
+   "match": [
+    "OH",
+    "C",
+    "CT",
+    "OS"
+   ],
+   "params": [
+    1.6242,
+    3.4672,
+    -0.3634,
+    -0.6181
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 3 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tfall__HC-CT-C-OH 0.58, tfall__O-C-CT-OS 0.70, tfall__OH-C-CT-OS 0.76 kcal/mol; ridge 0.001; fragment tfall__HC-CT-C-OH, tfall__O-C-CT-OS, tfall__OH-C-CT-OS"
+  },
+  {
+   "match": [
+    "CT",
+    "CT",
+    "CY",
+    "CY"
+   ],
+   "params": [
+    -0.2396,
+    0.7013,
+    1.7056,
+    0.3476
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tfall__HC-CT-CY-HC 0.19 kcal/mol; ridge 0.001; fragment tfall__HC-CT-CY-HC"
   }
  ]
 }
