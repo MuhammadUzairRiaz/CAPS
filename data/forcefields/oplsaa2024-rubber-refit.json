@@ -16,12 +16,12 @@
    ],
    "style": "opls",
    "params": [
-    -2.4515,
-    1.3739,
-    -0.7866,
-    0.2021
+    -2.4614,
+    1.3381,
+    -0.807,
+    0.2403
    ],
-   "comment": "CAPS refit (QM), joint over 4 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS cisPI/CM-CM-CT-CT 0.32, transPI/CM-CM-CT-CT 0.43, cisBR/CM-CM-CT-CT 0.38, CR/CM-CM-CT-CT 0.45 kcal/mol"
+   "comment": "CAPS refit (QM), joint over 4 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS cisPI/CM-CM-CT-CT 0.33, transPI/CM-CM-CT-CT 0.48, cisBR/CM-CM-CT-CT 0.41, CR/CM-CM-CT-CT 0.43 kcal/mol; ridge 0.001"
   },
   {
    "name": "CT-CT-CT-CZ",
@@ -33,10 +33,10 @@
    ],
    "style": "opls",
    "params": [
-    -1.4321,
+    -1.4313,
     0.5968,
-    0.5355,
-    0.0339
+    0.5352,
+    0.0341
    ],
    "comment": "CAPS refit (QM): MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 22-point scan of a 19-atom fragment, RMS 0.25 kcal/mol (the force field's own: 0.73)"
   }
