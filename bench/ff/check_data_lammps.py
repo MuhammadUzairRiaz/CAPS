@@ -283,6 +283,13 @@ CASES = [
      "trappe-ua-umn", "types", "rules"),
     ("TraPPE-UA (TraPPE database): hexane, DME (1-4 Coulomb x 0.5), methyl methacrylate, ethanol, propionitrile, cis-2-butene", ("smiles", "CCCCCC.COCCOC.CC(=C)C(=O)OC.CCO.CCC#N.C/C=C\\C"),
      "trappe-ua-umn", "types", "rules"),
+    # the transferable hydrocarbon terms (Martin & Siepmann 1998, 1999; Wick, Martin & Siepmann 2000) on DP-4 chains
+    ("TraPPE-UA (transferable terms): polypropylene DP 4", ("grow", "[*]CC(C)[*]", 4, 3), "trappe-ua-umn", "types", "rules"),
+    ("TraPPE-UA (transferable terms): cis-1,4-polybutadiene DP 4 (cis/trans about CH=CH)", ("grow", "[*]C/C=C\\C[*]", 4, 3, "nudged"),
+     "trappe-ua-umn", "types", "rules"),
+    ("TraPPE-UA (transferable terms): trans-1,4-polybutadiene DP 4", ("grow", "[*]C/C=C/C[*]", 4, 3, "nudged"), "trappe-ua-umn", "types", "rules"),
+    ("TraPPE-UA (transferable terms): polystyrene DP 4", ("grow", "[*]CC([*])C1=CC=CC=C1", 4, 3), "trappe-ua-umn", "types", "rules"),
+    ("TraPPE-UA (transferable terms): polyisobutylene DP 4", ("grow", "*CC(*)(C)C", 4, 3), "trappe-ua-umn", "types", "rules"),
     ("TraPPE-UA alkanes (moltemplate): dodecane", ("smiles", "CCCCCCCCCCCC"), "trappe1998-moltemplate", "keep", "rules"),
     # coarse-grained: MARTINI (lj/gromacs + coul/gromacs, dielectric 15, cosine/squared angles, 1-3 and 1-4 pairs kept)
     # and SDK (lj/sdk 9-6 / 12-4, angle sdk with its 1-3 repulsion), bead molecules and water beads in periodic boxes
@@ -475,6 +482,22 @@ def structure(src, base):
             f.write("\nBonds\n\n")
             for k, (i, j) in enumerate(bonds):
                 f.write(f"{k + 1} 1 {i + 1} {j + 1}\n")
+        return out, None
+    if kind == "grow":   # one isolated chain from CAPS's polymer builder: (grow, repeat-unit SMILES, degree of polymerisation, seed[, nudged])
+        out = os.path.join(work, base + ".xyz")
+        subprocess.run([CAPS, "grow", "--units", src[1], "--chains", "1", "--dp", str(src[2]), "--density", "0.01", "--seed", str(src[3]),
+                        "-o", out], capture_output=True, check=True)
+        if "nudged" in src[4:]:
+            # as smiles-nudged: every atom moved by up to 0.03 A (fixed seed), so no C=C is exactly flat, where LAMMPS's
+            # improper harmonic (the cis / trans torsion) clamps 1/sin chi and its forces are not the analytic ones
+            import random
+            rng = random.Random(7)
+            lines = open(out).read().split("\n")
+            for i in range(2, len(lines)):
+                w = lines[i].split()
+                if len(w) >= 4:
+                    lines[i] = " ".join([w[0]] + ["%.5f" % (float(x) + rng.uniform(-0.03, 0.03)) for x in w[1:4]] + w[4:])
+            open(out, "w").write("\n".join(lines))
         return out, None
     if kind == "peptide":   # an all-atom peptide from CAPS's builder
         out = os.path.join(work, base + ".pdb")
