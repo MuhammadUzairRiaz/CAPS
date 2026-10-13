@@ -96,6 +96,12 @@
    "description": "aromatic C bearing a vinyl C (styrene C(ipso))"
   },
   {
+   "type": "opls_1004",
+   "smarts": "[c;!$(*~[!#6;!#1]);$(c[CX4]c)]",
+   "priority": 3,
+   "description": "ring C on a C bearing two aryl rings (diphenylmethane C(ipso))"
+  },
+  {
    "type": "opls_519",
    "smarts": "[c;$(c-!@c)]",
    "priority": 3,
@@ -1834,6 +1840,24 @@
    "smarts": "[H][CX4;$(*1[OX2][CX4]1)]",
    "priority": 6,
    "description": "H on epoxide C"
+  },
+  {
+   "type": "caps_epx_ch",
+   "smarts": "[CX4H1;$(*1[OX2][CX4]1);$(*c)]",
+   "priority": 7,
+   "description": "epoxide C bearing an aryl (CH)"
+  },
+  {
+   "type": "caps_epx_c",
+   "smarts": "[CX4H0;$(*1[OX2][CX4]1);$(*c)]",
+   "priority": 7,
+   "description": "epoxide C bearing an aryl (C)"
+  },
+  {
+   "type": "opls_221",
+   "smarts": "c[CX4;$(*1[OX2][CX4]1)]",
+   "priority": 7,
+   "description": "ring C on an epoxide C (as a benzyl alcohol's, 221)"
   },
   {
    "type": "opls_138",

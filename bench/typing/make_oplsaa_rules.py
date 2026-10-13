@@ -59,6 +59,10 @@ add(146, 1, "[H]c", "aromatic H")
 add(147, 2, "[c;R2;$(c(:c)(:c):c)]", "fused aromatic C (naphthalene C9)")
 # styrene's ring C(ipso) 165 (0.000): an alkene C on a ring (stilbene, poly(p-phenylene vinylene)) stands in for the H
 add(165, 3, f"[c;{HC_ONLY};$(c[CX3;!a]=[CX3])]", "aromatic C bearing a vinyl C (styrene C(ipso))", True)
+# a ring C on an sp3 C that carries a second aryl ring (diphenylmethane, the bisphenol A isopropylidene of polysulfone
+# and polycarbonate): the table's diphenylmethane C(ipso) 1004 (-0.0575, half of benzene's -0.115), so the benzylic C's
+# +0.115 (149 + 2 H, or 516) balances both rings; with 145 on both ipso C each such unit was -0.115 e
+add(1004, 3, f"[c;{HC_ONLY};$(c[CX4]c)]", "ring C on a C bearing two aryl rings (diphenylmethane C(ipso))", True)
 add(519, 3, "[c;$(c-!@c)]", "biphenyl junction C")
 by_h((148, 149, 515, 516), 2, f"$(*c);{HC_ONLY}", "benzylic C")
 # small rings (OPLS-2020): cyclopropane and cyclobutane carbons have their own CY types; their H stay 140
@@ -360,6 +364,11 @@ by_h((None, 206, 207, 208), 5, "$(*[SX2H1])", "C on a thiol S")
 add(1025, 6, "[OX2;r3]([CX4])[CX4]", "epoxide O")
 by_h((None, 1026, 1027, 1028), 6, "$(*1[OX2][CX4]1)", "epoxide C")
 add(1029, 6, "[H][CX4;$(*1[OX2][CX4]1)]", "H on epoxide C")
+# an aryl on an epoxide C (styrene oxide; poly(phenyl glycidyl ether) joins its units this way): no numbers; as the
+# benzyl ethers and esters, by the benzyl alcohol increment (218-221) on a C that bears O: the ring C 221 (-0.055) and
+# the epoxide C +0.055 over 1027 / 1028 (caps_epx_ch 0.225, caps_epx_c 0.255); with 145 the ring C left -0.115 e
+by_h((None, None, "caps_epx_ch", "caps_epx_c"), 7, "$(*1[OX2][CX4]1);$(*c)", "epoxide C bearing an aryl")
+add(221, 7, "c[CX4;$(*1[OX2][CX4]1)]", "ring C on an epoxide C (as a benzyl alcohol's, 221)")
 
 
 # ---------------------------------------------------------------- small molecules and special cases
