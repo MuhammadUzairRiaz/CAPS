@@ -329,6 +329,21 @@ for fid, name, version, refs, evidence, listing, replaces in (
          RTF + "toph19.inp 319 / 319 atoms, 36 / 36 residues (--united); one torsion per bond as toph19 lists them, 103 / 104 central "
          "bonds (bench/ff/validate_rtf_torsions.py; TRP's cross-ring terms left out)", ("CHARMM19", "charmm19", 20), ["charmm19"])):
     ENTRIES[fid] = (name, version, refs, CHARMM, evidence, listing, replaces)
+# CGenFF v. 2a5, the version published with the CGenFF paper, from its Supporting Information (bench/ff/open/build_cgenff_si.sh)
+ENTRIES["cgenff-2a5-jcc2010"] = (
+    "CGenFF 2a5 (J. Comput. Chem. 2010)", "2a5 (the paper's Supporting Information: par_all36_cgenff.prm, top_all36_cgenff.rtf)",
+    ["K. Vanommeslaeghe, E. Hatcher, C. Acharya, S. Kundu, S. Zhong, J. Shim, E. Darian, O. Guvench, P. Lopes, I. Vorobyov, "
+     "A. D. MacKerell Jr., J. Comput. Chem. 31, 671 (2010), doi:10.1002/jcc.21367"],
+    {"source": "Supporting Information of the paper, jcc_21367_sm_suppinfo.tgz (doi:10.1002/jcc.21367): par_all36_cgenff.prm and "
+               "top_all36_cgenff.rtf, CGenFF v. 2a5",
+     "license": "parameter values as published in the Supporting Information of Vanommeslaeghe et al. 2010; CAPS's conversion"},
+    "CAPS's CGenFF rules (bench/typing/make_cgenff_rules.py) without the types later releases added, with 2a5's phosphorus "
+    "and sulfoxide types; the SI's top_all36_cgenff.rtf typed as it types itself for 7471 / 7505 atoms, 371 / 388 residues "
+    "(bench/ff/validate_rtf_types.py; the other 34 atoms are 2a5 assignments that later releases revised, as CAPS's rules "
+    "follow, or residues later releases dropped); every residue complete at its integer charge with no missing bonded term, "
+    "388 / 388 with the topology's types and 387 / 388 with CAPS's (PRAL: one aldehyde improper, bench/ff/check_rtf_params.py); "
+    "LAMMPS and GROMACS reproduce CAPS's energies (Urey-Bradley, 1-4 Lennard-Jones)",
+    ("CGenFF 2a5 (2010)", "cgenff_2a5", 23), [])
 cat_path = os.path.join(FF, "catalogue.json")
 cat = json.load(open(cat_path))
 fl = cat["forcefields"]
@@ -339,6 +354,8 @@ for fid, (name, version, refs, lic, evidence, listing, replaces) in ENTRIES.item
     if os.path.exists(path):
         d = json.load(open(path))
         e["counts"] = {"atom_types": len(d["atom_types"]), **{k: len(d.get(k, [])) for k in ("pairs", "bonds", "angles", "dihedrals", "impropers")}}
+    else:   # a library built only on the user's machine (CHARMM's toppar) and absent here: the counts the catalogue had
+        e.update({k: v for x in fl if x["id"] == fid for k, v in x.items() if k == "counts"})
     if evidence:
         e["typing"] = {"rules": f"typing/{fid}.typing.json", "evidence": evidence}
     if listing:

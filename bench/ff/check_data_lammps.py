@@ -197,6 +197,10 @@ CASES = [
     ("CHARMM36 toppar: peptide GAFKW (Urey-Bradley, 1-4 LJ)", ("peptide", "GAFKW"), "charmm36-prot-toppar", "gasteiger", "rules"),
     ("CHARMM22 toppar: peptide GAFKW", ("peptide", "GAFKW"), "charmm22-prot-toppar", "gasteiger", "rules"),
     ("CGenFF toppar: toluene, N-methylacetamide, ethyl acetate", ("smiles", "Cc1ccccc1.CC(=O)NC.CCOC(=O)C"), "cgenff-toppar", "gasteiger", "rules"),
+    # CGenFF v. 2a5 from the 2010 paper's Supporting Information (SI residues TOLU, ETAC, UREA, DMSO and an amide; QEq charges, as Gasteiger-Marsili has none for S=O):
+    # Urey-Bradley angles, multi-term torsions, harmonic impropers, separate 1-4 LJ
+    ("CGenFF 2a5 (JCC 2010 SI): toluene, N-methylacetamide, ethyl acetate, urea, DMSO", ("smiles", "Cc1ccccc1.CC(=O)NC.CCOC(=O)C.NC(N)=O.CS(C)=O"),
+     "cgenff-2a5-jcc2010", "qeq", "rules"),
     ("CHARMM36 carbohydrates toppar: glucose", ("smiles", "OC[C@H]1O[C@H](O)[C@H](O)[C@@H](O)[C@@H]1O"), "charmm36-carb-toppar", "gasteiger", "rules"),
     ("CHARMM36 nucleic acids toppar: thymidine", ("smiles", "CC1=CN([C@H]2C[C@H](O)[C@@H](CO)O2)C(=O)NC1=O"), "charmm36-nucl-toppar", "gasteiger", "rules"),
     ("CHARMM36 lipids toppar: phosphatidylcholine", ("smiles", "CCCCCCCC(=O)OC[C@H](COP(=O)([O-])OCC[N+](C)(C)C)OC(=O)CCCCCCC"), "charmm36-lipid-toppar", "qeq", "rules"),

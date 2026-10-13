@@ -3,7 +3,7 @@
 
   convert_charmm_prm.py OUT.json --name NAME --prm par_all36_prot.prm [--prm toppar_water_ions.str ...]
                         [--rtf top_all36_prot.rtf ...] [--reference "..."] [--source "..."] [--version "..."]
-                        [--one-torsion-per-bond] [--typing ../typing/ID.typing.json]
+                        [--one-torsion-per-bond] [--typing ../typing/ID.typing.json] [--note "..." ...]
 
 Reads the CHARMM36-format sections of each file in order (ATOMS / MASS, BONDS, ANGLES, DIHEDRALS, IMPROPER, NONBONDED,
 NBFIX; a stream file's read para block too) and writes CAPS's format:
@@ -229,7 +229,7 @@ doc = {"format": "caps-forcefield", "format_version": 1, "name": arg("--name"), 
        "bonds": list(bonds.values()), "angles": list(angles.values()), "dihedrals": list(dihedrals.values()), "impropers": list(impropers.values()),
        "notes": [f"converted by CAPS (bench/ff/convert_charmm_prm.py) from {', '.join(p.split('/')[-1] for p in many('--prm'))}"
                  + (", masses from " + ", ".join(r.split('/')[-1] for r in many("--rtf")) if many("--rtf") else "")]
-                + (["CMAP corrections in the source are not represented"] if cmap_seen else []) + notes,
+                + (["CMAP corrections in the source are not represented"] if cmap_seen else []) + notes + many("--note"),
        "version": arg("--version", "")}
 if arg("--typing"):
     doc["typing"] = arg("--typing")
