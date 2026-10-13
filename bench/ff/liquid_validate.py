@@ -3,7 +3,7 @@
 terms were fitted to (Jorgensen, Maxwell & Tirado-Rives, J. Am. Chem. Soc. 118, 11225 (1996)).
 
     liquid_validate.py NAME SMILES --ff FF.json --out DIR [--n 300] [--temp 298.15] [--eq 5000] [--prod 5000]
-                       [--gas 20000] [--rho 0.8] [--pressure 1] [--threads N] [--json result.json]
+                       [--gas 20000] [--rho 0.8] [--pressure 1] [--overlay OV.json] [--threads N] [--json result.json]
 
 liquid   N molecules packed at 0.9 of --rho (a guess, or the experimental density: only the start), typed with FF.json (its own charges), minimised, then NPT at
          --temp and --pressure atm (Bussi thermostat, C-rescale barostat, PME, 12 A cutoff with tail corrections), --eq steps
@@ -67,6 +67,7 @@ def main():
     eq, prod, gas = int(arg("--eq", "5000")), int(arg("--prod", "5000")), int(arg("--gas", "20000"))
     threads = arg("--threads")
     th = ["--threads", threads] if threads else []
+    ov = ["--overlay", os.path.abspath(arg("--overlay"))] if arg("--overlay") else []   # e.g. a Lennard-Jones refit on trial
     os.makedirs(out, exist_ok=True)
     log = os.path.join(out, "run.log")
     mol = os.path.join(out, "mol.mol2")   # with its bonds: nothing in the box is perceived from distances
@@ -93,12 +94,12 @@ def main():
     box = os.path.join(out, "box.data")
     pack(n, edge, box)
     liq = os.path.join(out, "liq.data")
-    run([CAPS, "ff", "apply", box, "--ff", ff, "--charges", "types", "-o", liq], log)
+    run([CAPS, "ff", "apply", box, "--ff", ff, "--charges", "types", "-o", liq] + ov, log)
     # every step names the force field: relax, md and equilibrate do not take it from a data file's coefficients
     # (without --ff they fall back to the built-in GAFF or UFF)
-    run([CAPS, "relax", liq, "-o", os.path.join(out, "liq_min.data"), "--ff", ff], log)
+    run([CAPS, "relax", liq, "-o", os.path.join(out, "liq_min.data"), "--ff", ff] + ov, log)
     md = ["--temp", str(T), "--thermostat", "bussi", "--barostat", "crescale", "--pressure", arg("--pressure", "1"), "--pme", "--cutoff", "12",
-          "--dt", "1", "--thermo", "100", "--ff", ff] + th
+          "--dt", "1", "--thermo", "100", "--ff", ff] + ov + th
     run([CAPS, "md", os.path.join(out, "liq_min.data"), "-o", os.path.join(out, "liq_eq.data"), "--steps", str(eq),
          "--log", os.path.join(out, "eq.csv")] + md, log)
     run([CAPS, "md", os.path.join(out, "liq_eq.data"), "-o", os.path.join(out, "liq_prod.data"), "--steps", str(prod),
@@ -107,10 +108,10 @@ def main():
     g = os.path.join(out, "gas_box.data")
     pack(1, 100.0, g)
     gd = os.path.join(out, "gas.data")
-    run([CAPS, "ff", "apply", g, "--ff", ff, "--charges", "types", "-o", gd], log)
+    run([CAPS, "ff", "apply", g, "--ff", ff, "--charges", "types", "-o", gd] + ov, log)
     run([CAPS, "md", gd, "-o", os.path.join(out, "gas_out.data"), "--steps", str(gas), "--temp", str(T),
          "--thermostat", "langevin", "--barostat", "none", "--cutoff", "45", "--dsf-alpha", "0", "--dt", "1",
-         "--thermo", "50", "--log", os.path.join(out, "gas.csv"), "--ff", ff] + th, log)
+         "--thermo", "50", "--log", os.path.join(out, "gas.csv"), "--ff", ff] + ov + th, log)
     P = thermo(os.path.join(out, "prod.csv"))
     rho, rho_e = block(col(P, "density", "density_g_cm3", "rho"))
     El, El_e = block(col(P, "pe", "potential", "epot", "E_pot"))
@@ -120,7 +121,7 @@ def main():
     Eg, Eg_e = block(gpe)
     dh = Eg - El / n + R * T
     dh_e = math.sqrt(Eg_e ** 2 + (El_e / n) ** 2)
-    res = {"name": name, "smiles": smiles, "ff": os.path.basename(ff), "n": n, "atoms": n * len(el), "T": T,
+    res = {"name": name, "smiles": smiles, "ff": os.path.basename(ff) + (" + " + os.path.basename(arg("--overlay")) if arg("--overlay") else ""), "n": n, "atoms": n * len(el), "T": T,
            "P_atm": float(arg("--pressure", "1")),
            "steps": {"eq": eq, "prod": prod, "gas": gas}, "density": round(rho, 4), "density_err": round(rho_e, 4),
            "E_liq_per_mol": round(El / n, 4), "E_gas": round(Eg, 4), "dHvap": round(dh, 3), "dHvap_err": round(dh_e, 3)}
