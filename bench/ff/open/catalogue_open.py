@@ -151,6 +151,40 @@ ENTRIES = {
                          "rigid Si4+, shell-model O, Buckingham Si-O and O-O, the O-Si-O bend on the O shells within 1.9 A of each Si "
                          "as the paper writes it (K_B (theta - theta0)^2; GULP-style files apply 1/2 K_B with the same number); LAMMPS "
                          "reproduces CAPS's energies on alpha-quartz", ("SiO2 (Sanders 1984)", "sanders1984", 31), []),
+    "catlow1976-mgo": ("MgO (Catlow, Faux & Norgett 1976)", "1976, Table 1 (models 1 and 2)",
+                       ["C. R. A. Catlow, I. D. Faux, M. J. Norgett, J. Phys. C: Solid State Phys. 9, 419 (1976)"],
+                       {"source": "the paper's Table 1(b), 1(c); bench/ff/make_catlow1976_mgo.py", "license": "published parameters of the paper"},
+                       "rigid Mg2+ and a shell-model O2-; model 1 by default, model 2 as an overlay; the perfect lattice at r0 2.106 A "
+                       "gives -40.82 eV per MgO (the paper: 40.85); LAMMPS reproduces CAPS's energies on rock-salt MgO with either model",
+                       ("MgO (Catlow 1976)", "catlow1976_mgo", 31), []),
+    "catlow1985-rutile": ("Rutile (Catlow, Freeman & Royle 1985)", "1985, Table IVa",
+                          ["C. R. A. Catlow, C. M. Freeman, R. L. Royle, Physica B+C 131, 1 (1985)"],
+                          {"source": "the paper's Table IVa; bench/ff/make_catlow1985_rutile.py", "license": "published parameters of the paper"},
+                          "Ti and O shells with harmonic and quartic core-shell springs (the quartic constant read as K w^4/24); the "
+                          "paper's alpha-quartz set is sanders1984-sio2; LAMMPS reproduces CAPS's energies on rutile",
+                          ("Rutile (Catlow 1985)", "catlow1985_rutile", 31), []),
+    "khan1998-zro2": ("ZrO2 (Khan, Islam & Bates 1998)", "1998, Table 1", ["M. S. Khan, M. S. Islam, D. R. Bates, J. Mater. Chem. 8, 2299 (1998)"],
+                      {"source": "the paper's Table 1; bench/ff/make_khan1998_zro2.py", "license": "published parameters of the paper"},
+                      "Zr and O shells, formal charges, 10.254 A cut-off; cubic ZrO2 at a = 5.07 A gives -109.76 eV per ZrO2 (the paper's "
+                      "lattice energy); LAMMPS reproduces CAPS's energies", ("ZrO2 (Khan 1998)", "khan1998_zro2", 31), []),
+    "sayle2000-alkaline-earth-oxides": ("MgO, CaO, SrO, BaO rigid ions (Sayle & Watson 2000)", "2000, Table 1",
+                                        ["D. C. Sayle, G. W. Watson, Phys. Chem. Chem. Phys. 2, 5491 (2000)"],
+                                        {"source": "the paper's Table 1; bench/ff/make_sayle2000.py", "license": "published parameters of the paper"},
+                                        "formal-charge rigid ions, one O for the four oxides and their interfaces, 10 A cut-off; LAMMPS "
+                                        "reproduces CAPS's energies on MgO and BaO", ("Alkaline-earth oxides (Sayle 2000)", "sayle2000", 31), []),
+    "sepliarsky2005-perovskites": ("Ferroelectric perovskites (Sepliarsky et al. 2005)", "2005, Table 1 (K(Nb,Ta)O3, (Ba,Sr)TiO3)",
+                                   ["M. Sepliarsky, A. Asthagiri, S. R. Phillpot, M. G. Stachiotti, R. L. Migoni, Curr. Opin. Solid State "
+                                    "Mater. Sci. 9, 107 (2005)"],
+                                   {"source": "the paper's Table 1; bench/ff/make_sepliarsky2005.py", "license": "published parameters of the paper"},
+                                   "every ion a core and a shell with anharmonic springs c2 w^2/2 + c4 w^4/24, Buckingham pairs, each set "
+                                   "typed by composition; PbTiO3 left out (Table 1's Pb-Ti row makes it unbound); LAMMPS reproduces CAPS's "
+                                   "energies on KNbO3, KTaO3, BaTiO3 and SrTiO3", ("Perovskites (Sepliarsky 2005)", "sepliarsky2005", 30), []),
+    "bandura2003-tio2-water": ("TiO2-H2O (Bandura & Kubicki 2003)", "2003, Tables 2, 3, 5, 6, 9, 10",
+                               ["A. V. Bandura, J. D. Kubicki, J. Phys. Chem. B 107, 11072 (2003)"],
+                               {"source": "the paper's tables; bench/ff/make_bandura2003.py", "license": "published parameters of the paper"},
+                               "Matsui & Akaogi's rigid ions with the paper's surface charges and pairs, sites typed by neighbours (TiV, "
+                               "TiVI, TiVIoh, Ob, Os, Obh, Ooh), Morse O-H, Ti-O-H bends by distance, flexible SPC/E water; LAMMPS "
+                               "reproduces CAPS's energies on a hydroxylated rutile (110) slab with water", ("TiO2-water (Bandura 2003)", "bandura2003", 31), []),
     "teter-glass": ("Oxide glasses, Teter partial charges", "Cormack 2002, Du 2009, Okhotnikov 2013 (each term with its table)",
                     ["A. N. Cormack, J. Du, T. R. Zeitler, Phys. Chem. Chem. Phys. 4, 3193 (2002)", "J. Du, J. Am. Ceram. Soc. 92, 87 (2009)",
                      "K. Okhotnikov, B. Stevensson, M. Eden, Phys. Chem. Chem. Phys. 15, 15041 (2013)",
