@@ -94,9 +94,11 @@ def main():
     pack(n, edge, box)
     liq = os.path.join(out, "liq.data")
     run([CAPS, "ff", "apply", box, "--ff", ff, "--charges", "types", "-o", liq], log)
-    run([CAPS, "relax", liq, "-o", os.path.join(out, "liq_min.data")], log)
+    # every step names the force field: relax, md and equilibrate do not take it from a data file's coefficients
+    # (without --ff they fall back to the built-in GAFF or UFF)
+    run([CAPS, "relax", liq, "-o", os.path.join(out, "liq_min.data"), "--ff", ff], log)
     md = ["--temp", str(T), "--thermostat", "bussi", "--barostat", "crescale", "--pressure", arg("--pressure", "1"), "--pme", "--cutoff", "12",
-          "--dt", "1", "--thermo", "100"] + th
+          "--dt", "1", "--thermo", "100", "--ff", ff] + th
     run([CAPS, "md", os.path.join(out, "liq_min.data"), "-o", os.path.join(out, "liq_eq.data"), "--steps", str(eq),
          "--log", os.path.join(out, "eq.csv")] + md, log)
     run([CAPS, "md", os.path.join(out, "liq_eq.data"), "-o", os.path.join(out, "liq_prod.data"), "--steps", str(prod),
@@ -108,7 +110,7 @@ def main():
     run([CAPS, "ff", "apply", g, "--ff", ff, "--charges", "types", "-o", gd], log)
     run([CAPS, "md", gd, "-o", os.path.join(out, "gas_out.data"), "--steps", str(gas), "--temp", str(T),
          "--thermostat", "langevin", "--barostat", "none", "--cutoff", "45", "--dsf-alpha", "0", "--dt", "1",
-         "--thermo", "50", "--log", os.path.join(out, "gas.csv")] + th, log)
+         "--thermo", "50", "--log", os.path.join(out, "gas.csv"), "--ff", ff] + th, log)
     P = thermo(os.path.join(out, "prod.csv"))
     rho, rho_e = block(col(P, "density", "density_g_cm3", "rho"))
     El, El_e = block(col(P, "pe", "potential", "epot", "E_pot"))
