@@ -8,6 +8,9 @@
         density and heat of vaporisation of every finished molecule against the reference values (NIST WebBook /
         ThermoML only), the errors, and a flag where the density is off by more than 2 % or dHvap by more than
         0.5 kcal/mol: the tolerances OPLS-AA's own liquid fits worked to (Jorgensen, Maxwell & Tirado-Rives 1996)
+    liquid_compare.py pair OUTDIR_A OUTDIR_B REFERENCE.json [--labels A,B] [--csv out.csv]
+        two force fields side by side (OPLS-AA 2024 against the classic GROMACS OPLS-AA), on the molecules finished in
+        both, with each one's mean unsigned errors over that common set
 
 A reference flagged as weak in REFERENCE.json (a dHvap away from 298 K or from a compilation) is reported but does
 not raise a flag.
@@ -83,5 +86,41 @@ def table():
             w.writerows(rows)
 
 
+def pair():
+    da, db, ref = sys.argv[2], sys.argv[3], {slug(r["name"]): r for r in json.load(open(sys.argv[4]))}
+    la, lb = (arg("--labels") or "A,B").split(",")
+    rows = []
+    for k, r in sorted(ref.items()):
+        pa, pb = os.path.join(da, k + ".json"), os.path.join(db, k + ".json")
+        if not (os.path.exists(pa) and os.path.exists(pb)):
+            continue
+        a, b = json.load(open(pa)), json.load(open(pb))
+        rho_x, h_x = r.get("density_g_cm3"), r.get("dHvap_kcal_mol")
+        row = {"molecule": r["name"], "rho_exp": rho_x, "dHvap_exp": h_x, "weak_reference": weak(r)}
+        for lab, d in ((la, a), (lb, b)):
+            row[f"rho_{lab}"] = d["density"]
+            row[f"rho_dev_pct_{lab}"] = round(100 * (d["density"] - rho_x) / rho_x, 2) if rho_x else None
+            row[f"dHvap_{lab}"] = d["dHvap"]
+            row[f"dHvap_dev_{lab}"] = round(d["dHvap"] - h_x, 3) if h_x else None
+        rows.append(row)
+    f = lambda v, fmt: "" if v is None else format(v, fmt)
+    print(f"{'molecule':22s} {'rho exp':>7} {'dev% ' + la:>12} {'dev% ' + lb:>12}  {'dHvap exp':>9} {'dev ' + la:>11} {'dev ' + lb:>11}")
+    for x in rows:
+        print(f"{x['molecule'][:22]:22s} {f(x['rho_exp'], '.4f'):>7} {f(x['rho_dev_pct_' + la], '+.2f'):>12} "
+              f"{f(x['rho_dev_pct_' + lb], '+.2f'):>12}  {f(x['dHvap_exp'], '.2f'):>9} {f(x['dHvap_dev_' + la], '+.2f'):>11} "
+              f"{f(x['dHvap_dev_' + lb], '+.2f'):>11}{' (weak ref)' if x['weak_reference'] else ''}")
+    for lab in (la, lb):
+        dr = [abs(x["rho_dev_pct_" + lab]) for x in rows if x["rho_dev_pct_" + lab] is not None]
+        dh = [abs(x["dHvap_dev_" + lab]) for x in rows if x["dHvap_dev_" + lab] is not None and not x["weak_reference"]]
+        if dr and dh:
+            print(f"{lab}: density mean |dev| {sum(dr) / len(dr):.2f} % ({len(dr)} liquids), "
+                  f"dHvap mean |dev| {sum(dh) / len(dh):.2f} kcal/mol ({len(dh)}, weak references left out)")
+    if arg("--csv") and rows:
+        with open(arg("--csv"), "w", newline="") as fh:
+            w = csv.DictWriter(fh, fieldnames=list(rows[0]))
+            w.writeheader()
+            w.writerows(rows)
+
+
 if __name__ == "__main__":
-    {"jobs": jobs, "table": table}[sys.argv[1]]()
+    {"jobs": jobs, "table": table, "pair": pair}[sys.argv[1]]()
