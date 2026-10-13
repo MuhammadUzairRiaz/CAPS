@@ -21,19 +21,19 @@
   {
    "type": "CH2_3",
    "priority": 0,
-   "smarts": "[CX4H2;!r3;!r4]",
+   "smarts": "[CX4H2;!R]",
    "description": "CHx-[CH2]-CHx (general)"
   },
   {
    "type": "CH_4",
    "priority": 0,
-   "smarts": "[CX4H1;!r3;!r4]",
+   "smarts": "[CX4H1;!r3;!r4;!R2]",
    "description": "(CHx)2-[CH]-CHx (general)"
   },
   {
    "type": "C_5",
    "priority": 0,
-   "smarts": "[CX4H0;!r3;!r4]",
+   "smarts": "[CX4H0;!r3;!r4;!R2]",
    "description": "(CHx)3-[C]-CHx (general)"
   },
   {
@@ -351,19 +351,19 @@
   {
    "type": "CH2_141",
    "priority": 1,
-   "smarts": "[CX4H2;r5]",
+   "smarts": "[CX4H2;r5;R1]",
    "description": "CH2-[CH2]-CH2 (cyclic alkane (5 mem))"
   },
   {
    "type": "CH2_140",
    "priority": 1,
-   "smarts": "[CX4H2;r6]",
+   "smarts": "[CX4H2;r6;R1]",
    "description": "CH2-[CH2]-CH2 (cyclic alkane (6 mem))"
   },
   {
    "type": "CH2_110",
    "priority": 1,
-   "smarts": "[CX4H2;R;!r3;!r4;!r5;!r6]",
+   "smarts": "[CX4H2;R1;!r3;!r4;!r5;!r6]",
    "description": "CH2-[CH2]-CH2 (cyclic alkane (large))"
   },
   {

@@ -1382,6 +1382,69 @@ TEST(FFDef, TrappeUaTransferableHydrocarbonTerms) {
   EXPECT_EQ(assign_types(r, def).untyped, 3);
 }
 
+// TraPPE-UA's alcohol, ether and ring terms (bench/ff/make_trappe.py, from Chen, Potoff & Siepmann 2001, Stubbs, Potoff &
+// Siepmann 2004 and Keasler et al. 2012): poly(vinyl alcohol), poly(vinyl methyl ether) and poly(vinyl cyclohexane)
+// oligomers parameterised whole and neutral with the tables' numbers; the ring torsions as a series in psi = phi - 180;
+// a bridged ring (norbornane) stays untyped
+TEST(FFDef, TrappeUaOxygenAndRingTerms) {
+  const FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/trappe-ua-umn.json");
+  constexpr double KB = 0.0019872043;
+  const double kPi = std::acos(-1.0);
+  struct Want { const char* t[4]; int n; double v, delta; };
+  struct Case { const char* smi; std::vector<Want> tors; const char* bend[3]; double th0, kt; };
+  const std::vector<Case> cases = {
+      // PVA: CHx-(CH)-CHy 112 deg at the hydroxyl CH (2001 Table 1); CHx-(CH)-(O)-H c1 197.33 K
+      {"CC(O)CC(O)CC(O)C", {{{"CH2_3", "CH_10", "O_6", "H_7"}, 1, 197.33 * KB, 0}}, {"CH2_3", "CH_10", "CH2_3"}, 112.0, 62500.0 / 2 * KB},
+      // PVME: CHx-CHy-O-CHz c1 725.35 K; CHx-(CHy)-O 112 deg, 50300 K (2004 Table 1)
+      {"CC(OC)CC(OC)CC(OC)C", {{{"CH2_3", "CH_18", "O_20", "CH3_16"}, 1, 725.35 * KB, 0}}, {"CH2_3", "CH_18", "O_20"}, 112.0, 50300.0 / 2 * KB},
+      // PVCH: the six-membered ring's C-C-C-C, c1 6840 K in psi (2012 Table 3); its C-C-C 114 deg (Table 2)
+      {"CC(C1CCCCC1)CC(C1CCCCC1)C", {{{"CH2_140", "CH2_140", "CH2_140", "CH2_140"}, 1, 6840 * KB, 180},
+                                      {{"CH2_140", "CH2_140", "CH2_140", "CH2_140"}, 3, 63 * KB, 180}},
+       {"CH2_140", "CH_4", "CH2_140"}, 114.0, 62500.0 / 2 * KB},
+  };
+  for (const auto& c : cases) {
+    System s = build_molecule(c.smi).system;
+    std::string ch = "types";
+    prepare_for_forcefield(s, def, ch);
+    const TypingResult tr = assign_types(s, def);
+    ASSERT_EQ(tr.untyped, 0) << c.smi;
+    ParamReport rep;
+    const ForceField ff = parameterize(s, def, tr.types, ch, &rep, false);
+    EXPECT_TRUE(rep.missing.empty()) << c.smi;
+    double q = 0;
+    for (double x : ff.charge) q += x;
+    EXPECT_NEAR(q, 0.0, 1e-9) << c.smi;
+    for (const auto& w : c.tors) {
+      int found = 0;
+      for (const auto& d : ff.dihedrals) {
+        const std::array<std::string, 4> t{tr.types[d.i], tr.types[d.j], tr.types[d.k], tr.types[d.l]};
+        const bool fw = t[0] == w.t[0] && t[1] == w.t[1] && t[2] == w.t[2] && t[3] == w.t[3];
+        const bool bw = t[3] == w.t[0] && t[2] == w.t[1] && t[1] == w.t[2] && t[0] == w.t[3];
+        if ((fw || bw) && d.n == w.n) {
+          EXPECT_NEAR(d.v, w.v, 1e-8) << c.smi << " " << w.t[1] << "-" << w.t[2];
+          EXPECT_NEAR(std::fmod(d.delta * 180 / kPi + 720, 360.0), w.delta, 1e-6) << c.smi;
+          ++found;
+        }
+      }
+      EXPECT_GT(found, 0) << c.smi << " " << w.t[0] << "-" << w.t[1] << "-" << w.t[2] << "-" << w.t[3];
+    }
+    int nb = 0;
+    for (const auto& a : ff.angles) {
+      const std::string t0 = tr.types[a.i], t1 = tr.types[a.j], t2 = tr.types[a.k];
+      if (t1 == c.bend[1] && ((t0 == c.bend[0] && t2 == c.bend[2]) || (t0 == c.bend[2] && t2 == c.bend[0]))) {
+        EXPECT_NEAR(a.theta0 * 180 / kPi, c.th0, 1e-9) << c.smi;
+        EXPECT_NEAR(a.kt, c.kt, 1e-9) << c.smi;
+        ++nb;
+      }
+    }
+    EXPECT_GT(nb, 0) << c.smi;
+  }
+  System r = build_molecule("C1CC2CCC1C2").system;   // norbornane: no TraPPE-UA paper fits a bridged ring
+  std::string ch = "types";
+  prepare_for_forcefield(r, def, ch);
+  EXPECT_EQ(assign_types(r, def).untyped, 3);
+}
+
 // Inorganic sets from their papers (bench/ff/make_catlow1976_mgo.py, make_catlow1985_rutile.py, make_khan1998_zro2.py,
 // make_sayle2000.py, make_sepliarsky2005.py): each crystal typed whole, every pair and spring found, neutral, and the
 // tables' numbers in place (eV to kcal/mol); the quartic core-shell springs as class II K4 = c4/24
