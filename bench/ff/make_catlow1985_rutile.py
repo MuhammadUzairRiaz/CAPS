@@ -10,7 +10,9 @@
          constant, K2 = 1.1 x 10^5 eV/A^5". The paper prints neither the quartic energy expression nor a consistent unit
          (a w^4 constant is eV A^-4). CAPS reads it as K w^4 / 24 (4! in the denominator: the anharmonic core-shell
          form 1/2 k2 w^2 + 1/24 k4 w^4 of Catlow's group's lattice codes, which Sepliarsky et al. 2005 also print), with
-         K in eV A^-4: class II bond K2 = K1/2, K4 = 1.1e5/24.
+         K in eV A^-4: class II bond K2 = K1/2, K4 = 1.1e5/24. Catlow & James, Proc. R. Soc. Lond. A 384, 157 (1982)
+         does not settle it: its rutile potential (Table 1) is an earlier, harmonic-only shell model (K1 65974.0,
+         K2 18.41 eV A^-2) with no quartic term.
 The paper's alpha-quartz model (Table Ia) is Sanders, Leslie & Catlow's set, already the library sanders1984-sio2 (every
 number equal), so it is not written again here.
 
@@ -51,7 +53,7 @@ doc = {"format": "caps-forcefield", "format_version": 1, "name": "Rutile (Catlow
        "atom_types": types, "pairs": pairs, "bonds": bonds, "angles": [], "dihedrals": [], "impropers": [],
        "notes": ["built by CAPS (bench/ff/make_catlow1985_rutile.py) from the paper's Table IVa",
                  "Ti and O shells; Ti-Ti Coulomb only",
-                 "the quartic core-shell constant 1.1e5 (footnote c, printed in eV/A^5) is read as K w^4/24 with K in eV/A^4; the paper prints no expression for it",
+                 "the quartic core-shell constant 1.1e5 (footnote c, printed in eV/A^5) is read as K w^4/24 with K in eV/A^4; the paper prints no expression for it; Catlow & James 1982, the earlier rutile model, is harmonic only and does not settle it",
                  "the paper states no cut-off; 10 A is CAPS's choice",
                  "the paper's alpha-quartz set (Table Ia) is sanders1984-sio2",
                  "shells carry 10 % of the ion's mass (adiabatic core-shell)"],

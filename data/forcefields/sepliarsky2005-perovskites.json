@@ -544,7 +544,7 @@
   "every ion a core and a shell; short-range terms between shells; pairs Table 1 does not list are Coulomb only",
   "core-shell V(w) = c2 w^2/2 + c4 w^4/24 (section 2) as a class II bond: K2 = c2/2, K4 = c4/24",
   "K(Nb,Ta)O3 and (Ba,Sr)TiO3: Buckingham pairs (section 2); each set typed by composition (K with Nb / Ta; Ba / Sr with Ti)",
-  "PbTiO3 is left out: Table 1's Pb-Ti row read as the stated Rydberg form (A + C r) exp(-r/rho) makes cubic PbTiO3 unbound (+141 eV per formula unit); the original parameter papers (Sepliarsky & Cohen 2002; Sepliarsky et al. 2004) are needed",
+  "PbTiO3 is left out: Table 1's Pb-Ti row read as the stated Rydberg form (A + C r) exp(-r/rho) makes cubic PbTiO3 unbound (+141 eV per formula unit); Sepliarsky & Cohen 2002 and Sepliarsky et al. 2004, the original papers, print no parameter table",
   "the review states no cut-off; 10 A is CAPS's choice",
   "Ta-O A 1046.63 eV and Nb-O 1036.63 eV as Table 1 prints them",
   "shells carry 10 % of the ion's mass (adiabatic core-shell)"
