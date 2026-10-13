@@ -39,7 +39,9 @@ RULES = [
     (1, 0, "[CX4H4]"),
     # sp3 carbons; not in a three- or four-membered ring, which TraPPE-UA has no bends for (its 109.5-114 deg bends
     # on a 60 or 90 deg ring angle would be no model at all): such carbons stay untyped
-    (2, 0, "[CX4H3]"), (3, 0, "[CX4H2;!r3;!r4]"), (4, 0, "[CX4H1;!r3;!r4]"), (5, 0, "[CX4H0;!r3;!r4]"),
+    # nor a ring CH2 (the ring rules below type those), nor a CH or C shared by two rings (fused or bridged rings,
+    # which no TraPPE-UA paper fits)
+    (2, 0, "[CX4H3]"), (3, 0, "[CX4H2;!R]"), (4, 0, "[CX4H1;!r3;!r4;!R2]"), (5, 0, "[CX4H0;!r3;!r4;!R2]"),
     # alcohols
     (6, 1, "[OX2H1][CX4]"), (7, 1, "[H][OX2H1][CX4]"),
     (8, 2, "[CX4H3][OX2H1]"), (9, 2, "[CX4H2][OX2H1]"), (10, 2, "[CX4H1][OX2H1]"), (11, 2, "[CX4H0][OX2H1]"),
@@ -69,7 +71,8 @@ RULES = [
     # esters
     (99, 3, "[CX3](=[OX1])[OX2][#6]"), (100, 3, "[OX1]=[CX3][OX2][#6]"), (101, 3, "[OX2]([#6])[CX3]=[OX1]"),
     # cycloalkanes: CH2 in a ring of 5, 6, 7 or more
-    (141, 1, "[CX4H2;r5]"), (140, 1, "[CX4H2;r6]"), (110, 1, "[CX4H2;R;!r3;!r4;!r5;!r6]"),
+    # (in one ring only: Keasler et al. 2012 fitted single rings; a fused or bridged ring's CH2 stays untyped)
+    (141, 1, "[CX4H2;r5;R1]"), (140, 1, "[CX4H2;r6;R1]"), (110, 1, "[CX4H2;R1;!r3;!r4;!r5;!r6]"),
     # cyclic ethers: tetrahydrofuran, 1,3-dioxolane, tetrahydropyran, 1,4- and 1,3-dioxane, 1,3,5-trioxane
     (144, 3, "[OX2;r5]([CX4H2])[CX4H2]"), (142, 3, "[CX4H2;r5][OX2;r5]"), (143, 3, "[CX4H2;r5;$(*[CX4H2][OX2])]"),
     (145, 4, "[OX2;r5;$(*[CX4H2][OX2])]"), (146, 4, "[CX4H2;r5]([OX2])[OX2]"), (147, 4, "[CX4H2;r5;$(*[OX2][CX4H2][OX2])]"),
@@ -238,9 +241,9 @@ def write_library(path_ff, path_ty):
            "references": sorted({cite(a["ref_ID"]) for d in mols for a in d["nonbonded"]}),
            "styles": {"pair": "lj/cut/coul/long", "bond": "harmonic", "angle": "harmonic", "dihedral": "fourier", "improper": "harmonic"},
            "mixing": "arithmetic", "special_lj": [0, 0, 0], "special_coul": [0, 0, 0], "cutoff": 14, "equivalence": "replace",
-           "coul14_rules": [{"in_molecule": ["[OX2][CX4;!R][CX4;!R][OX2]", "[OX2H1][CX4][CX4][CX4][OX2H1]", "[SX2][SX2]",
+           "coul14_rules": [{"in_molecule": ["[OX2][CX4;!R][CX4;!R][OX2]", "[OX2H1][CX4][CX4][CX4][OX2H1]", "[OX2][CX4;!R][CX4;!R][CX4;!R][OX2]", "[SX2][SX2]",
                                              "[CX3H2]=[CX3][CX3](=[OX1])[OX2]"], "coul14": 0.5,
-                             "comment": "TraPPE's glycol ethers, diols, disulfides and (meth)acrylates count 1-4 Coulomb x 0.5"}],
+                             "comment": "TraPPE's glycol ethers, diols, disulfides and (meth)acrylates count 1-4 Coulomb x 0.5; so does any chain with two O three carbons apart (Stubbs et al. 2004: 1-4 charge pairs x 1/2, e.g. poly(vinyl alcohol), poly(vinyl ethers))"}],
            "virtual_sites": [{"smarts": sm, "type": tname(i), "from": fr, "w": [round(x, 12) for x in w], "comment": c}
                              for i, sm, fr, w, c in VSITES if i in types],
            "atom_types": lib_types, "pairs": lib_pairs, "bonds": BONDS, "angles": WILD_ANGLES + ANGLES, "dihedrals": DIHEDRALS, "impropers": IMPROPERS,
@@ -268,10 +271,15 @@ def fourier(form, t):
         const = c("c0")
         terms = [(c("c1"), 1, 0.0), (c("c2"), 2, 180.0), (c("c3"), 3, 0.0)]
     elif form in ("C3", "C4", "C6"):
+        # C3 (Keasler et al. 2012, the five- and six-membered rings) is a series in psi = phi - 180 (trans at 0): its
+        # minima fall at the rings' own torsions (cyclohexane's 55 deg: 12 K above c0 - c1 + c2 - c3 ... ), where the
+        # series in phi would put 15 kcal/mol into every cyclohexane torsion. cos(n psi) = cos(n phi - n 180).
+        # C4 (Maerzke et al. 2009) is in phi: 1,3-butadiene's s-trans (phi 180) is its zero.
         nmax = int(form[1])
+        shift = 180.0 if form == "C3" else 0.0
         const = c("c0")
         for n in range(1, nmax + 1):
-            terms.append((c(f"c{n}"), n, 0.0))
+            terms.append((c(f"c{n}"), n, n * shift))
             const -= c(f"c{n}")
     elif form == "aro":
         terms = [(c("e0"), 2, 180.0 - float(t["e1"]))]
@@ -305,7 +313,8 @@ def site_u(form, t, phi):
     if form == "opls":
         return g("c0") + g("c1") * (1 + math.cos(r(phi))) + g("c2") * (1 - math.cos(r(2 * phi))) + g("c3") * (1 + math.cos(r(3 * phi)))
     if form in ("C3", "C4", "C6"):
-        return g("c0") + sum(g(f"c{n}") * math.cos(r(n * phi)) for n in range(1, int(form[1]) + 1))
+        x = phi - 180 if form == "C3" else phi
+        return g("c0") + sum(g(f"c{n}") * math.cos(r(n * x)) for n in range(1, int(form[1]) + 1))
     if form == "aro":
         return g("e0") * (1 - math.cos(r(2 * phi) + r(g("e1"))))
     if form == "phosphorus":
@@ -456,6 +465,138 @@ for i in S3:
         GEN_TORS_CT[key_sym((i, "CH_30", "CH_30", l))] = ([2 * 12400.0 / 2 * KB, 2 * 13400.0 / 2 * KB],
                                                            f"CHx-(CH)=(CH)-CHy cis / trans, d0 12400 / 13400 K as printed: {P00} Table 4; "
                                                            "x 2 as the TraPPE database's cis- and trans-2-butene give it")
+# ---- alcohols, ethers and glycols (TraPPE-UA 5 and 6), five- and six-membered cycloalkane rings (Keasler 2012)
+P01 = "B. Chen, J.J. Potoff, J.I. Siepmann, J. Phys. Chem. B 105, 3093 (2001)"
+P04 = "J.M. Stubbs, J.J. Potoff, J.I. Siepmann, J. Phys. Chem. B 108, 17596 (2004)"
+P12 = "S.J. Keasler, S.M. Charan, C.D. Wick, I.G. Economou, J.I. Siepmann, J. Phys. Chem. B 116, 11234 (2012)"
+ALC = ["CH3_8", "CH2_9", "CH_10", "C_11"]       # the carbon bonded to a hydroxyl O (2001 Table 1: (CHx)-OH)
+ETH = ["CH3_16", "CH2_17", "CH_18", "C_19"]     # the carbon bonded to an ether O (2004 Table 2)
+NH = {t: 3 - i for grp in (S3, ALC, ETH) for i, t in enumerate(grp)}   # hydrogens on each sp3 kind
+SP3 = S3 + ALC + ETH
+# carbon neighbours of an sp3 carbon (CH3_8 and CH3_16, methanol's and a methyl ether's CH3, have only their O)
+CEND = [t for t in SP3 if t not in ("CH3_8", "CH3_16")] + ["CH_30", "C_31", "C_89"]
+OEND = {"CH3_8": "O_6", "CH2_9": "O_6", "CH_10": "O_6", "C_11": "O_6", "CH3_16": "O_20", "CH2_17": "O_20", "CH_18": "O_20", "C_19": "O_20"}
+
+
+def put(d, k, v):
+    if k not in d:
+        d[k] = v
+
+
+for a in CEND[:-3]:
+    for b in CEND:
+        put(GEN_BONDS, key_sym((a, b)), (1.54, f"CHx-CHy 1.54 A fixed: {P01} Table 1; {P04} Table 1"))
+for a in ALC:
+    put(GEN_BONDS, key_sym((a, "O_6")), (1.43, f"CHx-OH 1.43 A fixed: {P01} Table 1"))
+for a in ETH:
+    put(GEN_BONDS, key_sym((a, "O_20")), (1.41, f"CHx-O (ether) 1.41 A fixed: {P04} Table 1"))
+put(GEN_BONDS, key_sym(("O_6", "H_7")), (0.945, f"O-H 0.945 A fixed: {P01} Table 1"))
+BEND_C = {2: (114.0, "CHx-(CH2)-CHy"), 1: (112.0, "CHx-(CH)-CHy"), 0: (109.47, "CHx-(C)-CHy")}
+for c in SP3:
+    if NH[c] == 3:
+        continue
+    th, what = BEND_C[NH[c]]
+    for a in (CEND if not (c in OEND and NH[c] == 2) else []):
+        for b in CEND:
+            put(GEN_ANGLES, key_sym((a, c, b)), (th, 62500.0, f"{what}: {P01} Table 1; {P04} Table 1"))
+    if c in OEND:
+        for a in CEND:
+            if OEND[c] == "O_6":
+                put(GEN_ANGLES, key_sym((a, c, "O_6")), (109.47, 50400.0, f"CHx-(CHy)-OH: {P01} Table 1"))
+            else:
+                put(GEN_ANGLES, key_sym((a, c, "O_20")), (112.0, 50300.0, f"CHx-(CHy)-O (ether): {P04} Table 1"))
+for a in ALC:
+    put(GEN_ANGLES, key_sym((a, "O_6", "H_7")), (108.5, 55400.0, f"CHx-(O)-H: {P01} Table 1"))
+for a in ETH:
+    for b in ETH:
+        put(GEN_ANGLES, key_sym((a, "O_20", b)), (112.0, 60400.0, f"CHx-(O)-CHy (ether): {P04} Table 1"))
+# torsions about a C-C bond of sp3 carbons, by the hydrogens on the two central carbons and whether an end is an O
+T_CH2CH2O = OPLS(0.0, 176.62, -53.34, 769.93)
+T_OCCO = OPLS(503.24, 0.0, -251.62, 1006.47)
+T_CH2C = OPLS(0.0, 0.0, 0.0, 461.29)
+# the other neighbours of a central carbon: an O-bonded CH2 has only its O besides the central partner
+ends_of = lambda c: [OEND[c]] if (c in OEND and NH[c] == 2) else CEND + ([OEND[c]] if c in OEND else [])
+for j in SP3:
+    for k in SP3:
+        hj, hk = sorted((NH[j], NH[k]), reverse=True)
+        if NH[j] == 3 or NH[k] == 3 or (hj, hk) not in ((2, 2), (2, 1), (1, 1), (2, 0)):
+            continue
+        for i in ends_of(j):
+            for l in ends_of(k):
+                no = (i in ("O_6", "O_20")) + (l in ("O_6", "O_20"))
+                key = key_sym((i, j, k, l))
+                if (hj, hk) == (2, 2):
+                    t = [(T_CH2CH2, f"CHx-(CH2)-(CH2)-CHy: {P01} Table 1; {P04} Table 1 (both print c1 335.03 K; 355.03 K as in the 1998 paper)"),
+                         (T_CH2CH2O, f"CHx-(CH2)-(CH2)-O, c1 176.62, c2 -53.34, c3 769.93 K: {P01} Table 1 (OH); {P04} Table 1 (ether)"),
+                         (T_OCCO, f"O-(CH2)-(CH2)-O, c0 503.24, c2 -251.62, c3 1006.47 K: {P04} Table 1")][no]
+                elif no == 2:
+                    continue   # O-CH2-CH-O, O-CH-CH-O, O-CH2-C-O: in none of the tables
+                elif (hj, hk) == (2, 0):
+                    t = (T_CH2C, f"CHx-(CH2)-(C)-CHy, c3 461.29 K: {P99} Table 2" + (" (an O end read as CHx)" if no else ""))
+                else:
+                    t = (T_CH2CH, f"CHx-(CH2)-(CH)-CHy / CHx-(CH)-(CH)-CHy: {P99} Table 2" +
+                         (" (an O end read as CHx, as the TraPPE database's 2-butanol has it)" if no else ""))
+                put(GEN_TORS, key, ("fourier",) + t)
+# torsions about the C-O bonds
+# CHx-(CH)-(O)-H: the 2001 Table 1 prints c0 215.96 K, the database's propan-2-ol and 2-butanol 215.89 K (a constant,
+# no force); the database's value is used so those models and a polymer get one term
+T_COH = {2: OPLS(0.0, 209.82, -29.17, 187.93), 1: OPLS(215.89, 197.33, 31.46, -173.92), 0: OPLS(0.0, 0.0, 0.0, 163.56)}
+for j in ALC:
+    if NH[j] == 3:
+        continue
+    for i in CEND:
+        put(GEN_TORS, key_sym((i, j, "O_6", "H_7")),
+            ("fourier", T_COH[NH[j]], f"CHx-({j.split('_')[0]})-(O)-H: {P01} Table 1" + (" (c0 215.89 K as the database gives it; the table prints 215.96)" if NH[j] == 1 else "")))
+for j in ETH:
+    if NH[j] == 3:
+        continue
+    for i in CEND:
+        for l in ETH:
+            put(GEN_TORS, key_sym((i, j, "O_20", l)), ("fourier", OPLS(0.0, 725.35, -163.75, 558.20),
+                                                        f"CHx-CHy-O-CHz, c1 725.35, c2 -163.75, c3 558.20 K: {P04} Table 1"))
+# five- and six-membered cycloalkane rings: the ring CH2 types (CH2_141, CH2_140) and a ring CH or C (CH_4, C_5)
+# carrying a substituent; Keasler et al. 2012 Table 2 bends and Table 3 torsions (c0 + sum c_n cos(n phi)) inside the
+# ring; at a ring CH or C a bend or torsion with an end outside the ring takes the linear term (CHx-(CH)-CHy ...)
+RING = {"CH2_141": (5, 105.5, (31394.0, 45914.0, 16518.0, 1496.0)), "CH2_140": (6, 114.0, (5073.0, 6840.0, 3509.0, 63.0))}
+for r, (size, th, cs) in RING.items():
+    ring_t = fourier("C3", {"c0": cs[0], "c1": cs[1], "c2": cs[2], "c3": cs[3]})
+    what_t = f"{size}-membered ring C-C-C-C, c0 {cs[0]:g}, c1 {cs[1]:g}, c2 {cs[2]:g}, c3 {cs[3]:g} K: {P12} Table 3"
+    what_b = f"{size}-membered ring C-C-C {th} deg, k_theta 62500 K: {P12} Table 2"
+    RC = [r, "CH_4", "C_5"]            # ring members a ring CH2 can be bonded to
+    for a in RC:
+        put(GEN_BONDS, key_sym((r, a)), (1.54, f"CHx-CHy 1.54 A fixed (ring): {P99} Table 2; {P12} (bond lengths as for linear molecules)"))
+        for b in RC:
+            put(GEN_ANGLES, key_sym((a, r, b)), (th, 62500.0, what_b))
+    for c in ("CH_4", "C_5"):
+        put(GEN_ANGLES, key_sym((r, c, r)), (th, 62500.0, what_b + " (at the ring CH or C)"))
+        for x in CEND:
+            if x not in RING:
+                put(GEN_ANGLES, key_sym((r, c, x)), (BEND_C[NH[c]][0], 62500.0,
+                                                     f"{BEND_C[NH[c]][1]} at a ring {c.split('_')[0]} with one end outside the ring: {P99} Table 2"))
+    # inside the ring: every torsion whose central bond has a ring CH2 and whose ends are ring members
+    for i in RC:
+        for l in RC:
+            put(GEN_TORS, key_sym((i, r, r, l)), ("fourier", ring_t, what_t))
+            for c in ("CH_4", "C_5"):
+                put(GEN_TORS, key_sym((i, r, c, r)), ("fourier", ring_t, what_t))
+    # a central ring bond CH2-CH (or C) with the end on the CH outside the ring, and the exocyclic bond CH-X
+    for c, (tt, tw) in (("CH_4", (T_CH2CH, f"CHx-(CH2)-(CH)-CHy: {P99} Table 2")), ("C_5", (T_CH2C, f"CHx-(CH2)-(C)-CHy: {P99} Table 2"))):
+        for i in RC:
+            for x in CEND:
+                if x not in RING:
+                    put(GEN_TORS, key_sym((i, r, c, x)), ("fourier", tt, tw + " (a ring bond with one end outside the ring)"))
+        for x in SP3:
+            if NH[x] == 3:
+                continue
+            hx = NH[x]
+            pair = tuple(sorted((NH[c], hx), reverse=True))
+            if pair not in ((2, 1), (1, 1), (2, 0)):
+                continue
+            tt2, tw2 = (T_CH2C, f"CHx-(CH2)-(C)-CHy: {P99} Table 2") if 0 in pair else (T_CH2CH, f"CHx-(CH2)-(CH)-CHy / CHx-(CH)-(CH)-CHy: {P99} Table 2")
+            for l in ends_of(x):
+                if l not in RING:
+                    put(GEN_TORS, key_sym((r, c, x, l)), ("fourier", tt2, tw2 + " (the bond from a ring CH or C out of the ring)"))
+
 # a model that omits a torsion these tables define: the database's gap (listed with the deviations), not a zero
 gen_lost = collections.defaultdict(list)
 for k in list(obs["dihedral"]):
@@ -604,30 +745,38 @@ for k, (p, c) in GEN_TORS_CT.items():
                 print(f"  transferable cis/trans {'-'.join(k)} {p}; the database gives {v}")
 print("transferable terms against the parameter sets of the models that contain the same types: " +
       "; ".join(f"{kind} {MODEL_CMP[kind, True]} agree, {MODEL_CMP[kind, False]} differ" for kind in ("bond", "angle", "dihedral")))
-# and against the rule CAPS's library takes for the same types (a model's own, or a wildcard of one set over the models)
+# and against the rules CAPS's library has for the same types. The order in each list, the last matching rule winning:
+# CAPS's wildcards (a centre or central bond with one parameter set over the models), then the transferable terms,
+# then the models' own terms. A model's own term always wins; a transferable term replaces a wildcard, which was only
+# CAPS's guess for other ends (a glycol's O-C-C-O torsion stood for every torsion about a CH2(OH)-CH2(OH) bond)
+D_WILD = [x for x in DIHEDRALS if "*" in x["match"]]
+D_EXACT = [x for x in DIHEDRALS if "*" not in x["match"]]
 GEN_REPORT = collections.Counter()
-for kind, gen, full in (("bond", G_BONDS, G_BONDS + BONDS), ("angle", G_ANGLES, G_ANGLES + WILD_ANGLES + ANGLES),
-                        ("dihedral", G_DIHEDRALS, G_DIHEDRALS + DIHEDRALS)):
+replaced = collections.Counter()
+for kind, gen, wild, exact in (("bond", G_BONDS, [], BONDS), ("angle", G_ANGLES, WILD_ANGLES, ANGLES), ("dihedral", G_DIHEDRALS, D_WILD, D_EXACT)):
     for g in gen:
-        r = resolve(full, g["match"])
-        if r is g:
+        r = resolve(exact, g["match"])
+        if r is None:
             GEN_REPORT[kind, "new"] += 1
+            w = resolve(wild, g["match"])
+            if w is not None and not (w["style"] == g["style"] and same(w["params"], g["params"])):
+                replaced[kind, w["name"]] += 1
         elif r["style"] == g["style"] and same(r["params"], g["params"]):
             GEN_REPORT[kind, "agrees"] += 1
-            GEN_REPORT[kind, "exact" if "*" not in r["match"] else "wild"] += 1
         elif r["params"][0] == 0.0 and r["style"] == "harmonic" and "rigid model" in r["comment"]:
             GEN_REPORT[kind, "rigid"] += 1   # a term found only in TraPPE's rigid models keeps K 0 (run them as rigid bodies)
             print(f"  transferable {kind} {'-'.join(g['match'])}: the database's rigid models hold it with K 0, kept")
         else:
             GEN_REPORT[kind, "differs"] += 1
             print(f"  transferable {kind} {'-'.join(g['match'])} {g['params']} differs from the database's {r['name']} {r['params']} ({r['comment']})")
-print("transferable terms: " + "; ".join(f"{kind} {len(gen)} ({GEN_REPORT[kind, 'new']} new, {GEN_REPORT[kind, 'agrees']} as the database's models give them "
-                                          f"({GEN_REPORT[kind, 'exact']} a model's own term, {GEN_REPORT[kind, 'wild']} a wildcard of one set over the models), "
-                                          f"{GEN_REPORT[kind, 'rigid']} rigid-model K 0 kept, {GEN_REPORT[kind, 'differs']} differ)"
+print("transferable terms: " + "; ".join(f"{kind} {len(gen)} ({GEN_REPORT[kind, 'agrees']} equal to a database model's own term, "
+                                          f"{GEN_REPORT[kind, 'rigid']} rigid-model K 0 kept, {GEN_REPORT[kind, 'differs']} differ, {GEN_REPORT[kind, 'new']} new)"
                                           for kind, gen in (("bond", G_BONDS), ("angle", G_ANGLES), ("dihedral", G_DIHEDRALS))))
+for (kind, name), n in sorted(replaced.items()):
+    print(f"  CAPS's wildcard {kind} {name} gives way to the papers' terms for {n} type combinations")
 BONDS[:0] = G_BONDS
-WILD_ANGLES[:0] = G_ANGLES
-DIHEDRALS[:0] = G_DIHEDRALS
+ANGLES[:0] = G_ANGLES          # after WILD_ANGLES in the library (WILD_ANGLES + ANGLES)
+DIHEDRALS[:] = D_WILD + G_DIHEDRALS + D_EXACT
 NOTES += [f"transferable hydrocarbon terms (bonds, bends, torsions by pseudo-atom kind) from {P98}, {P99} Table 2 and {P00} Tables 2-4, "
           "written over CH3_2 CH2_3 CH_4 C_5 (sp3), CH2_29 CH_30 C_31 (sp2) and CH_88 C_89 (aromatic); a term a database model gives "
           "comes later in each list and wins; where both give one they agree",
@@ -635,7 +784,19 @@ NOTES += [f"transferable hydrocarbon terms (bonds, bends, torsions by pseudo-ato
           f"{P00} Table 4 prints d0 12400 K (cis) and 13400 K (trans) for d0 / 2 (phi - phi0)^2 about CHx-CH=CH-CHy; the database's "
           "cis- and trans-2-butene give 24800 and 26800 K; both the 2-butenes and the transferable term use the database's values",
           f"{P00} Table 4 names the second aromatic torsion CHx(aro)-C(aro)-CH(sp2)-CHx; the database uses it for isopropylbenzene's sp3 CH, "
-          "and so does CAPS (CH_4)"]
+          "and so does CAPS (CH_4)",
+          f"transferable alcohol, ether and glycol terms from {P01} Table 1 and {P04} Table 1 over the hydroxyl and ether O, H and "
+          "the carbons bonded to them (CH3_8 CH2_9 CH_10 C_11, CH3_16 CH2_17 CH_18 C_19); 1-4 Coulomb x 0.5 as the 2004 paper counts it "
+          "for any chain with two O three carbons apart (poly(vinyl alcohol), poly(vinyl ethers))",
+          "readings: a C-C torsion of the 1999 Table 2 (CHx-CH2-CH-CHy, CHx-CH-CH-CHy, CHx-CH2-C-CHy) with one O end takes the "
+          "carbon term, as the database's 2-butanol does; O-CH2-CH-O, O-C-O-C and every acetal term are in none of the tables",
+          f"CHx-(CH)-(O)-H: {P01} Table 1 prints c0 215.96 K, the database's propan-2-ol and 2-butanol 215.89 K (a constant); 215.89 used",
+          f"five- and six-membered cycloalkane rings ({P12} Tables 2 and 3) over CH2_141 / CH2_140 and a ring CH or C carrying a "
+          "substituent (typed CH_4 / C_5, linear Lennard-Jones: the paper fits CH2 rings only); a bend or torsion with an end outside "
+          "the ring takes the linear term; carbons shared by two rings (fused, bridged) stay untyped",
+          "the 2012 paper's torsions (the database's C3 form, every five- and six-membered ring model) are a series in psi = phi - 180: "
+          "their minima are the rings' own torsions (cyclohexane chair 55 deg: c0 - c1 cos + ... = 12 K), where read in phi they put "
+          "15 kcal/mol into every cyclohexane torsion; before this the library read them in phi"]
 work = tempfile.mkdtemp()
 ff_path = os.path.join(OUT, "forcefields", "trappe-ua-umn.json")
 ty_path = os.path.join(OUT, "typing", "trappe-ua-umn.typing.json")
