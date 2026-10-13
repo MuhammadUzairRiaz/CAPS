@@ -21,19 +21,19 @@
   {
    "type": "CH2_3",
    "priority": 0,
-   "smarts": "[CX4H2]",
+   "smarts": "[CX4H2;!r3;!r4]",
    "description": "CHx-[CH2]-CHx (general)"
   },
   {
    "type": "CH_4",
    "priority": 0,
-   "smarts": "[CX4H1]",
+   "smarts": "[CX4H1;!r3;!r4]",
    "description": "(CHx)2-[CH]-CHx (general)"
   },
   {
    "type": "C_5",
    "priority": 0,
-   "smarts": "[CX4H0]",
+   "smarts": "[CX4H0;!r3;!r4]",
    "description": "(CHx)3-[C]-CHx (general)"
   },
   {
@@ -147,13 +147,13 @@
   {
    "type": "CH_30",
    "priority": 1,
-   "smarts": "[CX3H1]=[#6]",
+   "smarts": "[CX3H1;!r3;!r4]=[#6]",
    "description": "CHx=[CH](sp2)-CHy(sp3) (alkene)"
   },
   {
    "type": "C_31",
    "priority": 1,
-   "smarts": "[CX3H0]=[#6]",
+   "smarts": "[CX3H0;!r3;!r4]=[#6]",
    "description": "CHx=[C](sp2)-CHy(sp3) (alkene)"
   },
   {

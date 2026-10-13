@@ -1321,6 +1321,67 @@ TEST(FFDef, TrappeEhModelsTypedAsThemselves) {
   EXPECT_GT(assign_types(t, def).untyped, 0);
 }
 
+// TraPPE-UA's transferable hydrocarbon terms (bench/ff/make_trappe.py, from Martin & Siepmann 1998 and 1999 and Wick,
+// Martin & Siepmann 2000): polymer oligomers whose torsions no database molecule has are parameterised whole, with the
+// papers' numbers; cis and trans C=C get their own harmonic term; a carbon in a three-membered ring stays untyped
+TEST(FFDef, TrappeUaTransferableHydrocarbonTerms) {
+  const FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/trappe-ua-umn.json");
+  constexpr double KB = 0.0019872043;   // kcal/mol/K
+  const double kPi = std::acos(-1.0);
+  struct Want { const char* t[4]; int n; double v, delta; };
+  struct Case { const char* smi; std::vector<Want> tors; double k_ct, chi0; int n_ct; };
+  const std::vector<Case> cases = {
+      // polypropylene: CHx-(CH2)-(CH)-CHy, 1999 Table 2 (c3 441.27 K)
+      {"CC(C)CC(C)CC(C)CC(C)C", {{{"CH3_2", "CH_4", "CH2_3", "CH_4"}, 3, 441.27 * KB, 0}}, 0, 0, 0},
+      // polystyrene: CHx(aro)-C(aro)-(CH)-CHx, 2000 Table 4 (e0 167 K, e1 5 pi / 3), and the backbone CH-CH2-CH-C(aro)
+      {"CC(c1ccccc1)CC(c1ccccc1)C", {{{"CH_88", "C_89", "CH_4", "CH2_3"}, 2, 167 * KB, 240},
+                                      {{"C_89", "CH_4", "CH2_3", "CH_4"}, 1, 428.73 * KB, 0}}, 0, 0, 0},
+      // polyisobutylene: CHx-(CH2)-(C)-CHy, 1999 Table 2 (c3 461.29 K)
+      {"CC(C)(C)CC(C)(C)CC(C)(C)C", {{{"CH3_2", "C_5", "CH2_3", "C_5"}, 3, 461.29 * KB, 0}}, 0, 0, 0},
+      // cis- and trans-1,4-polybutadiene: CHx-(CH2)-(CH)=CHy, 2000 Table 4 (c1 86.36 K); cis / trans about CH=CH
+      {"CC/C=C\\CC/C=C\\CC", {{{"CH2_3", "CH2_3", "CH_30", "CH_30"}, 1, 86.36 * KB, 0}}, 24800.0 / 2 * KB, 0.0, 2},
+      {"CC/C=C/CC/C=C/CC", {{{"CH2_3", "CH2_3", "CH_30", "CH_30"}, 1, 86.36 * KB, 0}}, 26800.0 / 2 * KB, kPi, 2},
+  };
+  for (const auto& c : cases) {
+    System s = build_molecule(c.smi).system;
+    std::string ch = "types";
+    prepare_for_forcefield(s, def, ch);
+    const TypingResult tr = assign_types(s, def);
+    ASSERT_EQ(tr.untyped, 0) << c.smi;
+    ParamReport rep;
+    const ForceField ff = parameterize(s, def, tr.types, ch, &rep, false);
+    EXPECT_TRUE(rep.missing.empty()) << c.smi;
+    for (const auto& b : ff.bonds) {
+      const bool dbl = tr.types[b.i].rfind("CH_30", 0) == 0 && tr.types[b.j].rfind("CH_30", 0) == 0;
+      const bool aro = tr.types[b.i].find("_8") != std::string::npos && tr.types[b.j].find("_8") != std::string::npos;
+      EXPECT_NEAR(b.r0, dbl ? 1.33 : aro ? 1.40 : 1.54, 1e-12) << c.smi << " " << tr.types[b.i] << "-" << tr.types[b.j];
+    }
+    for (const auto& w : c.tors) {
+      int found = 0;
+      for (const auto& d : ff.dihedrals) {
+        const std::array<std::string, 4> t{tr.types[d.i], tr.types[d.j], tr.types[d.k], tr.types[d.l]};
+        const bool fw = t[0] == w.t[0] && t[1] == w.t[1] && t[2] == w.t[2] && t[3] == w.t[3];
+        const bool bw = t[3] == w.t[0] && t[2] == w.t[1] && t[1] == w.t[2] && t[0] == w.t[3];
+        if ((fw || bw) && d.n == w.n) {
+          EXPECT_NEAR(d.v, w.v, 1e-8) << c.smi << " " << w.t[0] << "-" << w.t[1] << "-" << w.t[2] << "-" << w.t[3];
+          EXPECT_NEAR(std::fmod(d.delta * 180 / kPi + 360, 360.0), w.delta, 1e-6) << c.smi;
+          ++found;
+        }
+      }
+      EXPECT_GT(found, 0) << c.smi << " " << w.t[0] << "-" << w.t[1] << "-" << w.t[2] << "-" << w.t[3];
+    }
+    ASSERT_EQ(int(ff.impropers_harmonic.size()), c.n_ct) << c.smi;
+    for (const auto& h : ff.impropers_harmonic) {
+      EXPECT_NEAR(h.k2, c.k_ct, 1e-8) << c.smi;
+      EXPECT_NEAR(h.chi0, c.chi0, 1e-12) << c.smi;
+    }
+  }
+  System r = build_molecule("CC1CC1CCC").system;   // a cyclopropane ring: TraPPE-UA has no bends for it
+  std::string ch = "types";
+  prepare_for_forcefield(r, def, ch);
+  EXPECT_EQ(assign_types(r, def).untyped, 3);
+}
+
 // Inorganic sets from their papers (bench/ff/make_catlow1976_mgo.py, make_catlow1985_rutile.py, make_khan1998_zro2.py,
 // make_sayle2000.py, make_sepliarsky2005.py): each crystal typed whole, every pair and spring found, neutral, and the
 // tables' numbers in place (eV to kcal/mol); the quartic core-shell springs as class II K4 = c4/24

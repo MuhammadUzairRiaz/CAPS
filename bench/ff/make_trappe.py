@@ -17,6 +17,9 @@ structure) and builds the force field from the models:
              site's psi = phi - 180 deg where it uses psi
   terms      each bend and torsion keyed by the CAPS types of its atoms as the models list them; a centre (bend) or
              central bond (torsion) with one parameter set in every model it appears in gets a wildcard rule
+  transferable  the hydrocarbon bonds, bends and torsions the TraPPE-UA papers define by pseudo-atom kind (Martin &
+             Siepmann 1998, 1999 Table 2; Wick, Martin & Siepmann 2000 Tables 2-4), over the sp3, sp2 and aromatic
+             carbon types, ahead of the models' own terms (which win), each compared with the models that have its types
 
 --check: every UA model's sites typed by CAPS's rules must be the site's types, and every bonded term CAPS assigns
 the site's (same atoms, same parameters).
@@ -34,7 +37,9 @@ KB = 0.0019872043   # kcal/mol/K
 # (id, priority, SMARTS on the united-atom structure, implicit H counts as perceived from the CHn sites)
 RULES = [
     (1, 0, "[CX4H4]"),
-    (2, 0, "[CX4H3]"), (3, 0, "[CX4H2]"), (4, 0, "[CX4H1]"), (5, 0, "[CX4H0]"),
+    # sp3 carbons; not in a three- or four-membered ring, which TraPPE-UA has no bends for (its 109.5-114 deg bends
+    # on a 60 or 90 deg ring angle would be no model at all): such carbons stay untyped
+    (2, 0, "[CX4H3]"), (3, 0, "[CX4H2;!r3;!r4]"), (4, 0, "[CX4H1;!r3;!r4]"), (5, 0, "[CX4H0;!r3;!r4]"),
     # alcohols
     (6, 1, "[OX2H1][CX4]"), (7, 1, "[H][OX2H1][CX4]"),
     (8, 2, "[CX4H3][OX2H1]"), (9, 2, "[CX4H2][OX2H1]"), (10, 2, "[CX4H1][OX2H1]"), (11, 2, "[CX4H0][OX2H1]"),
@@ -46,7 +51,7 @@ RULES = [
     # ketones
     (23, 2, "[CX3](=[OX1])([#6])[#6]"), (24, 2, "[OX1]=[CX3]([#6])[#6]"),
     # alkenes: CH2=, CH= and C= next to an sp3 carbon, or (conjugated) to an sp2 one
-    (29, 1, "[CX3H2]=[#6]"), (30, 1, "[CX3H1]=[#6]"), (31, 1, "[CX3H0]=[#6]"),
+    (29, 1, "[CX3H2]=[#6]"), (30, 1, "[CX3H1;!r3;!r4]=[#6]"), (31, 1, "[CX3H0;!r3;!r4]=[#6]"),
     (138, 2, "[CX3H1](=[#6])[#6X3]"), (139, 2, "[CX3H0](=[#6])[#6X3]"),
     # nitriles
     (47, 2, "[CX2](#[NX1])[CX4]"), (48, 2, "[NX1]#[CX2][CX4]"), (49, 3, "[CX4H3][CX2]#[NX1]"), (50, 3, "[CX4H2][CX2]#[NX1]"),
@@ -378,6 +383,87 @@ for d in mols:
                 for l in nbr[k_] - {j, i}:
                     if key_sym((i, j, k_, l)) not in listed:
                         obs["dihedral"][key_sym((ty[i], ty[j], ty[k_], ty[l]))].add(((), "none", None, d["name"]))
+# ---------------------------------------------------------------- transferable hydrocarbon terms from the papers
+# TraPPE-UA defines its hydrocarbon bonded terms by pseudo-atom kind (CHx-(CH2)-(CH)-CHy ...), not molecule by
+# molecule. These are those tables, written over CAPS's types for the papers' pseudo-atoms: sp3 CH3 / CH2 / CH / C
+# (CH3_2, CH2_3, CH_4, C_5), sp2 CH2= / CH= / C= (CH2_29, CH_30, C_31) and aromatic CH / R-C (CH_88, C_89). They are
+# written first in each list: a term the database's own models give (exact or wildcard) comes later and wins, and
+# the two are compared below. Sources:
+P98 = "M.G. Martin, J.I. Siepmann, J. Phys. Chem. B 102, 2569 (1998)"
+P99 = "M.G. Martin, J.I. Siepmann, J. Phys. Chem. B 103, 4508 (1999)"
+P00 = "C.D. Wick, M.G. Martin, J.I. Siepmann, J. Phys. Chem. B 104, 8008 (2000)"
+S3 = ["CH3_2", "CH2_3", "CH_4", "C_5"]          # sp3 carbons
+DBL = ["CH2_29", "CH_30", "C_31"]               # sp2 carbons, the partners of a C=C
+ARO = ["CH_88", "C_89"]                         # aromatic CH and the ring carbon that carries an alkyl group
+E = S3 + ["CH_30", "C_31", "C_89"]              # what an sp3 carbon is single-bonded to in these hydrocarbons
+OPLS = lambda c0, c1, c2, c3: fourier("opls", {"c0": c0, "c1": c1, "c2": c2, "c3": c3})
+ARO_T = lambda e0, e1: fourier("aro", {"e0": e0, "e1": e1})
+GEN_BONDS = {}   # key -> (r0, comment)
+for a in S3:
+    for b in S3 + ["CH_30", "C_31", "C_89"]:
+        GEN_BONDS[key_sym((a, b))] = (1.54, f"CHx-CHy 1.54 A fixed: {P99} Table 2; {P00} Table 2")
+for a in DBL:
+    for b in DBL:
+        GEN_BONDS[key_sym((a, b))] = (1.33, f"CHx=CHy 1.33 A fixed: {P00} Table 2")
+for a in ARO:
+    for b in ARO:
+        GEN_BONDS[key_sym((a, b))] = (1.40, f"CHx(aro)-CHy(aro) 1.40 A fixed (rigid ring): {P00} Table 2")
+GEN_ANGLES = {}   # key -> (theta0, k_theta / k_B in K or None for rigid, comment)
+
+
+def gen_angle(centre, ends1, ends2, th, kt, what):
+    for a in ends1:
+        for b in ends2:
+            GEN_ANGLES[key_sym((a, centre, b))] = (th, kt, what)
+
+
+gen_angle("CH2_3", E, E, 114.0, 62500.0, f"CHx-(CH2)-CHy: {P98} section 2 (eq 4); {P99} Table 2; {P00} Table 3")
+gen_angle("CH_4", E, E, 112.0, 62500.0, f"CHx-(CH)-CHy: {P99} Table 2; {P00} Table 3")
+gen_angle("C_5", E, E, 109.47, 62500.0, f"CHx-(C)-CHy: {P99} Table 2")
+gen_angle("CH_30", DBL, S3, 119.7, 70420.0, f"CHx(sp2)=CH(sp2)-CHy: {P00} Table 3")
+gen_angle("C_31", DBL, S3, 119.7, 70420.0, f"CHx(sp2)=C(sp2)-CHy: {P00} Table 3")
+gen_angle("C_31", S3, S3, 119.7, 70420.0, f"CHx-C(sp2)-CHy: {P00} Table 3")
+gen_angle("CH_88", ARO, ARO, 120.0, None, f"CHx(aro)-CHy(aro)-CHz(aro) 120 deg, rigid: {P00} Table 3")
+gen_angle("C_89", ARO, ARO, 120.0, None, f"CHx(aro)-CHy(aro)-CHz(aro) 120 deg, rigid: {P00} Table 3")
+gen_angle("C_89", ARO, S3, 120.0, None, f"CHx(aro)-CHy(aro)-CHz 120 deg, rigid: {P00} Table 3")
+GEN_TORS = {}   # key -> (style, params, comment)
+
+
+def gen_tors(ends_j, j, k, ends_k, style, params, what):
+    for i in ends_j:
+        for l in ends_k:
+            GEN_TORS[key_sym((i, j, k, l))] = (style, params, what)
+
+
+T_CH2CH2 = OPLS(0.0, 355.03, -68.19, 791.32)
+T_CH2CH = OPLS(-251.06, 428.73, -111.85, 441.27)
+gen_tors(E, "CH2_3", "CH2_3", E, "fourier", T_CH2CH2,
+         f"CHx-(CH2)-(CH2)-CHy, c1 355.03, c2 -68.19, c3 791.32 K: {P98} eq 5; {P00} Table 4 ({P99} Table 2 prints c1 335.03)")
+gen_tors(E, "CH2_3", "CH_4", E, "fourier", T_CH2CH, f"CHx-(CH2)-(CH)-CHy, c0 -251.06, c1 428.73, c2 -111.85, c3 441.27 K: {P99} Table 2")
+gen_tors(E, "CH_4", "CH_4", E, "fourier", T_CH2CH, f"CHx-(CH)-(CH)-CHy, c0 -251.06, c1 428.73, c2 -111.85, c3 441.27 K: {P99} Table 2")
+gen_tors(E, "CH2_3", "C_5", E, "fourier", OPLS(0.0, 0.0, 0.0, 461.29), f"CHx-(CH2)-(C)-CHy, c3 461.29 K: {P99} Table 2")
+gen_tors(E, "CH2_3", "CH_30", DBL, "fourier", OPLS(688.5, 86.36, -109.77, -282.24),
+         f"CHx-(CH2)-(CH)=CHy, c0 688.5, c1 86.36, c2 -109.77, c3 -282.24 K: {P00} Table 4")
+gen_tors(ARO, "C_89", "CH2_3", E, "fourier", ARO_T(131.0, 180.0), f"CHx(aro)-C(aro)-(CH2)-CHx, e0 131 K, e1 pi: {P00} Table 4")
+gen_tors(ARO, "C_89", "CH_4", E, "fourier", ARO_T(167.0, 300.0),
+         f"CHx(aro)-C(aro)-(CH)-CHx, e0 167 K, e1 5pi/3: {P00} Table 4 (printed CH(sp2); the CH of isopropylbenzene, sp3)")
+# cis / trans about CH=CH: Table 4 prints d0 12400 K (cis) and 13400 K (trans) for d0 / 2 (phi - phi0)^2; the TraPPE
+# database's own cis- and trans-2-butene give d0 24800 and 26800 K in the same formula. CAPS keeps the database's
+# values, so 2-butene and a longer chain get one term; the factor two is listed in the library's notes.
+GEN_TORS_CT = {}
+for i in S3:
+    for l in S3:
+        GEN_TORS_CT[key_sym((i, "CH_30", "CH_30", l))] = ([2 * 12400.0 / 2 * KB, 2 * 13400.0 / 2 * KB],
+                                                           f"CHx-(CH)=(CH)-CHy cis / trans, d0 12400 / 13400 K as printed: {P00} Table 4; "
+                                                           "x 2 as the TraPPE database's cis- and trans-2-butene give it")
+# a model that omits a torsion these tables define: the database's gap (listed with the deviations), not a zero
+gen_lost = collections.defaultdict(list)
+for k in list(obs["dihedral"]):
+    if (k in GEN_TORS or k in GEN_TORS_CT) and all(not x[0] for x in obs["dihedral"][k]):
+        for x in obs["dihedral"][k]:
+            gen_lost[x[3]].append("-".join(k))
+        del obs["dihedral"][k]
+
 # where models disagree on a torsion the listed one stands, and a model that omits it is named (the database's gap)
 lost = collections.defaultdict(list)
 for k, v in obs["dihedral"].items():
@@ -449,6 +535,8 @@ DEVIATIONS = {"2-hydroxyethyl acrylate": "its CH2-CH2-OH bend next to the ether 
 CORRECTED = {"carbon dioxide": "its bond list gives 2-3 (O-O) for 1-3 (the second C=O); read as 1-3"}
 for m_, ks in lost.items():
     DEVIATIONS.setdefault(m_, "its torsion list leaves out " + ", ".join(sorted(set(ks))) + ", which the other TraPPE models with these types list")
+for m_, ks in gen_lost.items():
+    DEVIATIONS.setdefault(m_, "its torsion list leaves out " + ", ".join(sorted(set(ks))) + ", which the papers' transferable tables define; CAPS gives the paper's term")
 IMPROPERS = []
 NOTES = ["built by CAPS (bench/ff/make_trappe.py) from the TraPPE database's own models (trappe.oit.umn.edu), each term with its paper",
          "rigid models (" + ", ".join(sorted(set(rigid_models))) + ") have no intramolecular terms in TraPPE: their angles are stiff here; hold them rigid",
@@ -459,6 +547,95 @@ for k, (kc, kt) in sorted(cistrans.items()):
                          "comment": f"d0 / 2 (psi - psi0)^2 about the isomer the structure has (cis or trans); {cite(cistrans_ref[k])}"})
     obs["dihedral"].pop(key_sym(k), None)
     DIHEDRALS[:] = [x for x in DIHEDRALS if not (x["match"] == list(k) and x["style"] != "cistrans")]
+
+# the transferable terms, ahead of the models' own (the last matching rule wins)
+G_BONDS = [{"name": "-".join(k) + " (transferable)", "match": list(k), "style": "harmonic", "params": [KBOND, r0], "comment": c}
+           for k, (r0, c) in sorted(GEN_BONDS.items())]
+G_ANGLES = [{"name": "-".join(k) + " (transferable)", "match": list(k), "style": "harmonic",
+             "params": [kt / 2 * KB if kt else 100.0, th],
+             "comment": (f"k_theta {kt:g} K/rad^2; " if kt else "rigid in TraPPE (stiff here; hold the ring rigid); ") + c}
+            for k, (th, kt, c) in sorted(GEN_ANGLES.items())]
+G_DIHEDRALS = [{"name": "-".join(k) + " cis/trans (transferable)", "match": list(k), "style": "cistrans", "params": p, "comment": c}
+               for k, (p, c) in sorted(GEN_TORS_CT.items())]
+G_DIHEDRALS += [{"name": "-".join(k) + " (transferable)", "match": list(k), "style": st, "params": [len(fs)] + [x for f in fs for x in f], "comment": c}
+                for k, (st, fs, c) in sorted(GEN_TORS.items())]
+
+
+def resolve(rules, key):
+    """the rule CAPS takes for these types: the last whose patterns match forwards or backwards ('*' any type)"""
+    fit = lambda m, t: len(m) == len(t) and all(a == "*" or a == b for a, b in zip(m, t))
+    for r in reversed(rules):
+        if fit(r["match"], key) or fit(r["match"], key[::-1]):
+            return r
+    return None
+
+
+def same(p, q):
+    return len(p) == len(q) and all(abs(a - b) <= 1e-6 * max(1.0, abs(a)) for a, b in zip(p, q))
+
+
+# every transferable term against the database's models that contain the same types: each model's own term
+MODEL_CMP = collections.Counter()
+rnd = lambda fs: sorted((round(a, 8), n, round(d % 360, 6)) for a, n, d in fs)
+for k, (r0, c) in GEN_BONDS.items():
+    for dist, ref in obs["bond"].get(k, ()):
+        ok = abs(dist - r0) < 1e-9
+        MODEL_CMP["bond", ok] += 1
+        if not ok:
+            print(f"  transferable bond {'-'.join(k)} {r0} A; a model ({cite(ref)}) gives {dist} A")
+for k, (th, kt, c) in GEN_ANGLES.items():
+    for th_m, kt_m, ref in obs["angle"].get(k, ()):
+        ok = abs(th_m - th) < 1e-9 and (abs(kt_m - kt) < 1e-6 if kt else kt_m == 0)
+        MODEL_CMP["angle", ok] += 1
+        if not ok:
+            print(f"  transferable bend {'-'.join(k)} {th} deg, {kt} K; a model ({cite(ref)}) gives {th_m} deg, {kt_m} K")
+for k, (st, fs, c) in GEN_TORS.items():
+    for fs_m, form, ref, name in obs["dihedral"].get(k, ()):
+        ok = rnd(fs_m) == rnd(fs)
+        MODEL_CMP["dihedral", ok] += 1
+        if not ok:
+            print(f"  transferable torsion {'-'.join(k)}; {name} gives {fs_m} ({form}), the paper {fs}")
+for k, (p, c) in GEN_TORS_CT.items():
+    for kk, v in cistrans.items():
+        if key_sym(kk) == k:
+            ok = same(v, p)
+            MODEL_CMP["dihedral", ok] += 1
+            if not ok:
+                print(f"  transferable cis/trans {'-'.join(k)} {p}; the database gives {v}")
+print("transferable terms against the parameter sets of the models that contain the same types: " +
+      "; ".join(f"{kind} {MODEL_CMP[kind, True]} agree, {MODEL_CMP[kind, False]} differ" for kind in ("bond", "angle", "dihedral")))
+# and against the rule CAPS's library takes for the same types (a model's own, or a wildcard of one set over the models)
+GEN_REPORT = collections.Counter()
+for kind, gen, full in (("bond", G_BONDS, G_BONDS + BONDS), ("angle", G_ANGLES, G_ANGLES + WILD_ANGLES + ANGLES),
+                        ("dihedral", G_DIHEDRALS, G_DIHEDRALS + DIHEDRALS)):
+    for g in gen:
+        r = resolve(full, g["match"])
+        if r is g:
+            GEN_REPORT[kind, "new"] += 1
+        elif r["style"] == g["style"] and same(r["params"], g["params"]):
+            GEN_REPORT[kind, "agrees"] += 1
+            GEN_REPORT[kind, "exact" if "*" not in r["match"] else "wild"] += 1
+        elif r["params"][0] == 0.0 and r["style"] == "harmonic" and "rigid model" in r["comment"]:
+            GEN_REPORT[kind, "rigid"] += 1   # a term found only in TraPPE's rigid models keeps K 0 (run them as rigid bodies)
+            print(f"  transferable {kind} {'-'.join(g['match'])}: the database's rigid models hold it with K 0, kept")
+        else:
+            GEN_REPORT[kind, "differs"] += 1
+            print(f"  transferable {kind} {'-'.join(g['match'])} {g['params']} differs from the database's {r['name']} {r['params']} ({r['comment']})")
+print("transferable terms: " + "; ".join(f"{kind} {len(gen)} ({GEN_REPORT[kind, 'new']} new, {GEN_REPORT[kind, 'agrees']} as the database's models give them "
+                                          f"({GEN_REPORT[kind, 'exact']} a model's own term, {GEN_REPORT[kind, 'wild']} a wildcard of one set over the models), "
+                                          f"{GEN_REPORT[kind, 'rigid']} rigid-model K 0 kept, {GEN_REPORT[kind, 'differs']} differ)"
+                                          for kind, gen in (("bond", G_BONDS), ("angle", G_ANGLES), ("dihedral", G_DIHEDRALS))))
+BONDS[:0] = G_BONDS
+WILD_ANGLES[:0] = G_ANGLES
+DIHEDRALS[:0] = G_DIHEDRALS
+NOTES += [f"transferable hydrocarbon terms (bonds, bends, torsions by pseudo-atom kind) from {P98}, {P99} Table 2 and {P00} Tables 2-4, "
+          "written over CH3_2 CH2_3 CH_4 C_5 (sp3), CH2_29 CH_30 C_31 (sp2) and CH_88 C_89 (aromatic); a term a database model gives "
+          "comes later in each list and wins; where both give one they agree",
+          f"{P99} Table 2 prints c1 335.03 K for CHx-(CH2)-(CH2)-CHy; {P98} (eq 5), {P00} Table 4 and the database give 355.03 K, used here",
+          f"{P00} Table 4 prints d0 12400 K (cis) and 13400 K (trans) for d0 / 2 (phi - phi0)^2 about CHx-CH=CH-CHy; the database's "
+          "cis- and trans-2-butene give 24800 and 26800 K; both the 2-butenes and the transferable term use the database's values",
+          f"{P00} Table 4 names the second aromatic torsion CHx(aro)-C(aro)-CH(sp2)-CHx; the database uses it for isopropylbenzene's sp3 CH, "
+          "and so does CAPS (CH_4)"]
 work = tempfile.mkdtemp()
 ff_path = os.path.join(OUT, "forcefields", "trappe-ua-umn.json")
 ty_path = os.path.join(OUT, "typing", "trappe-ua-umn.typing.json")

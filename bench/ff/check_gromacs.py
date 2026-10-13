@@ -99,6 +99,13 @@ CASES = [
     ("CHARMM36 (toppar) peptide GAFKW (vacuum; CMAP not represented)", ("peptide", "GAFKW"), "charmm36-prot-toppar", "gasteiger", []),
     ("TraPPE-UA (TraPPE database) hexane, DME, methyl methacrylate, ethanol, cis-2-butene (vacuum)", ("smiles", "CCCCCC.COCCOC.CC(=C)C(=O)OC.CCO.C/C=C\\C"),
      "trappe-ua-umn", "types", []),
+    # the transferable hydrocarbon terms (Martin & Siepmann 1998, 1999; Wick, Martin & Siepmann 2000) on DP-4 chains, raw
+    # from the builder (polyisobutylene with seed 5: seed 3 leaves a contact single-precision GROMACS follows to 7e-5 only)
+    ("TraPPE-UA (transferable terms) polypropylene DP 4 (one chain, periodic)", ("grow", "[*]CC(C)[*]", 4, 3), "trappe-ua-umn", "types", []),
+    ("TraPPE-UA (transferable terms) cis-1,4-polybutadiene DP 4 (one chain, periodic)", ("grow", "[*]C/C=C\\C[*]", 4, 3), "trappe-ua-umn", "types", []),
+    ("TraPPE-UA (transferable terms) trans-1,4-polybutadiene DP 4 (one chain, periodic)", ("grow", "[*]C/C=C/C[*]", 4, 3), "trappe-ua-umn", "types", []),
+    ("TraPPE-UA (transferable terms) polystyrene DP 4 (one chain, periodic)", ("grow", "[*]CC([*])C1=CC=CC=C1", 4, 3), "trappe-ua-umn", "types", []),
+    ("TraPPE-UA (transferable terms) polyisobutylene DP 4 (one chain, periodic)", ("grow", "*CC(*)(C)C", 4, 5), "trappe-ua-umn", "types", []),
     ("TraPPE (TraPPE database) CO2, N2, NH3, H2S, O2, ethylene oxide, decane (vacuum; charge sites)", ("smiles", "O=C=O.N#N.N.S.O=O.C1CO1.CCCCCCCCCC"),
      "trappe-ua-umn", "types", []),
     ("TraPPE-EH (TraPPE database) octane, methylamine, acetamide, acetonitrile, nitroethane (vacuum)", ("smiles",
@@ -178,6 +185,12 @@ def structure(src, base):
         # GROMACS cannot follow to 1e-5)
         cmd = [CAPS, "build", src[1], "-o", out] + (["--ff", src[2]] if len(src) > 2 else [])
         subprocess.run(cmd, capture_output=True, check=True)
+        return out
+    if src[0] == "grow":   # one chain from CAPS's polymer builder: (grow, repeat-unit SMILES, degree of polymerisation, seed), in a
+        # cell of 0.005 g/cm3 (over 2 r_c across, which GROMACS needs)
+        out = os.path.join(work, base + ".xyz")
+        subprocess.run([CAPS, "grow", "--units", src[1], "--chains", "1", "--dp", str(src[2]), "--density", "0.005", "--seed", str(src[3]),
+                        "-o", out], capture_output=True, check=True)
         return out
     if src[0] == "peptide":   # a peptide CAPS builds from its sequence
         out = os.path.join(work, base + ".pdb")
