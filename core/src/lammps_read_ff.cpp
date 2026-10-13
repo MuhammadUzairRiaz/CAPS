@@ -436,6 +436,7 @@ void rebuild_lammps_forcefield(System& s, const LammpsFileTerms& d, const std::u
   };
   std::string name, left_out;
   std::vector<double> special;
+  double cutoff = 0;
   for (const auto& line : d.caps_ff) {
     std::istringstream is(line);
     std::string key;
@@ -446,6 +447,7 @@ void rebuild_lammps_forcefield(System& s, const LammpsFileTerms& d, const std::u
     while (!rest.empty() && std::isspace(static_cast<unsigned char>(rest.back()))) rest.pop_back();
     if (key == "name") name = rest;
     else if (key == "not-in-file") left_out = rest;
+    else if (key == "cutoff" && is_number(rest)) cutoff = std::strtod(rest.c_str(), nullptr);
     else if (key == "special") {   // lj w12 w13 w14 coul w12 w13 w14
       std::istringstream ss(rest);
       std::string w;
@@ -471,6 +473,7 @@ void rebuild_lammps_forcefield(System& s, const LammpsFileTerms& d, const std::u
   try {
     ForceField F = build(s, d, index, special[2], special[5], special[1] == 1);
     F.name = name.empty() ? "the force field of " + file : name;
+    F.native_cutoff = cutoff;
     F.notes.push_back("force field: " + F.name + ", rebuilt from " + file + " (its coefficients, charges and 1-4 weights)");
     s.forcefield = std::make_shared<const ForceField>(std::move(F));
     s.notes.push_back("force field " + s.forcefield->name + " read from the file's coefficients");

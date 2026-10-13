@@ -235,16 +235,17 @@ int usage() {
                "                --weights 0.7,0.3 --blocks 20,20 --pattern AAB --ff FF.json] [--auto-scale]   any repeat units (else polystyrene)\n"
                "  caps field   FILE [--topology DATA] [--forces OUT.txt]   the structure's force field (below): types, terms, energy (and per-atom forces)\n"
                "  caps relax   FILE -o OUT.data|OUT.pdb|OUT.xyz [--method lbfgs|cg|sd|fire] [--ftol 0.5] [--iterations 5000]\n"
-               "               [--density 1.05] [--step 0.06] [--box-relax] [--pressure 1] [--no-pushoff] [--cutoff 10]\n"
+               "               [--density 1.05] [--step 0.06] [--box-relax] [--pressure 1] [--no-pushoff] [--cutoff Å]\n"
                "               [--no-coulomb] [--ff FF.json] [--quiet]   (.data output carries the force field for LAMMPS)\n"
                "               without --ff (relax, md, equilibrate, field): the force field a data file CAPS wrote holds (its coefficients,\n"
-               "               charges and 1-4 weights; refused when CAPS cannot rebuild it from the file), else GAFF (C and H) or UFF\n"
+               "               charges and 1-4 weights; refused when CAPS cannot rebuild it from the file), else GAFF (C and H) or UFF;\n"
+               "               without --cutoff (relax, md, equilibrate): the force field's own cut-off, else 10 Å\n"
                "  caps cbmc    FILE -o OUT.data [--moves 1000] [--trials 8] [--max-torsions 4] [--temp 300] [--cutoff 9] [--seed 1]\n"
                "               [--ff FF] [--no-coulomb]   configurational-bias regrowth of chain ends (Siepmann & Frenkel)\n"
                "  caps md      FILE -o OUT.data [--steps 10000] [--dt 1] [--temp 300] [--thermostat bussi|langevin|nose-hoover|none]\n"
                "               [--tau-t 100] [--barostat none|crescale|berendsen|mtk] [--pressure 1] [--tau-p 1000]\n"
                "               [--constraints none|h-bonds|all-bonds] [--constraint-solver shake|lincs] [--hmr 3.024] [--seed 1] [--new-velocities] [--thermo 100] [--dump TRAJ.lammpstrj --every 1000]\n"
-               "               [--log thermo.csv] [--cutoff 10] [--skin 1.5] [--threads N] [--no-coulomb] [--precision mixed|double] [--ff FF.json] [--quiet]\n"
+               "               [--log thermo.csv] [--cutoff Å] [--skin 1.5] [--threads N] [--no-coulomb] [--precision mixed|double] [--ff FF.json] [--quiet]\n"
                "               [--checkpoint-every N [--checkpoint OUT.restart.data]]   the full state every N steps\n"
                "               [--progress-file progress.jsonl]   one JSON line per thermo row (default in a SLURM job)\n"
                "               caps md OUT.restart.data --resume --steps TOTAL -o OUT   continues from a checkpoint\n"
@@ -477,6 +478,19 @@ ForceField cli_forcefield(System& s0, std::map<std::string, std::string>& o, boo
   if (!rep.missing.empty()) throw std::runtime_error(std::to_string(rep.missing.size()) + " parameters missing in " + def.name + " (caps ff apply lists them)");
   if (!quiet) std::printf("force field: %s\n", def.name.c_str());
   return ff;
+}
+
+// The cut-off of relax, md and equilibrate: --cutoff, else the force field's own (its library's "cutoff", a data file's
+// record of it), else 10 Å. A coarse-grained model's own cut-off (ForceField::cutoff) applies whatever this says.
+void run_cutoff(EnergyOptions& e, const ForceField& ff, std::map<std::string, std::string>& o, bool quiet) {
+  if (o.count("--cutoff")) {
+    e.cutoff = std::stod(o["--cutoff"]);
+    return;
+  }
+  if (ff.cutoff > 0) return;
+  e.cutoff = ff.native_cutoff > 0 ? ff.native_cutoff : 10.0;
+  if (!quiet)
+    std::printf("cut-off: %g Å (%s; --cutoff for another)\n", e.cutoff, ff.native_cutoff > 0 ? "the force field's own" : "the default, the force field gives none");
 }
 
 // caps run RECIPE.yaml: every stage on one line as it runs ([k/n] stage · detail · state, a bar while it works), or one
@@ -3271,10 +3285,10 @@ int main(int argc, char** argv) {
       if (o.count("--pressure")) r.pressure = std::stod(o["--pressure"]);
       r.relax_box = o.count("--box-relax");
       r.pushoff = !o.count("--no-pushoff");
-      if (o.count("--cutoff")) r.energy.cutoff = std::stod(o["--cutoff"]);
       r.energy.coulomb = !o.count("--no-coulomb");
       electrostatics(r.energy, o);
       r.field = std::make_shared<ForceField>(cli_forcefield(s, o, o.count("--quiet") > 0));
+      run_cutoff(r.energy, *r.field, o, o.count("--quiet") > 0);
       if (o.count("--fix-mol")) {   // hold one molecule in place (the substrate of an interface is molecule 1)
         const int64_t m = std::stoll(o["--fix-mol"]);
         r.fixed.assign(s.atoms.size(), 0);
@@ -3363,7 +3377,6 @@ int main(int argc, char** argv) {
       if (o.count("--seed")) d.seed = std::stoull(o["--seed"]);
       if (o.count("--thermo")) d.thermo_every = std::stoi(o["--thermo"]);
       if (o.count("--every")) d.frame_every = std::stoi(o["--every"]);
-      if (o.count("--cutoff")) d.energy.cutoff = std::stod(o["--cutoff"]);
       if (o.count("--skin")) d.energy.skin = std::stod(o["--skin"]);
       if (o.count("--threads")) d.energy.threads = std::stoi(o["--threads"]);
       d.energy.coulomb = !o.count("--no-coulomb");
@@ -3371,6 +3384,7 @@ int main(int argc, char** argv) {
       precision(d.energy, o);
       d.new_velocities = o.count("--new-velocities");
       d.field = std::make_shared<ForceField>(cli_forcefield(s, o, o.count("--quiet") > 0));
+      run_cutoff(d.energy, *d.field, o, o.count("--quiet") > 0);
       if (o.count("--fix-mol")) {   // hold one molecule in place (the substrate of an interface is molecule 1)
         const int64_t mm = std::stoll(o["--fix-mol"]);
         d.fixed.assign(s.atoms.size(), 0);
@@ -3515,7 +3529,6 @@ int main(int argc, char** argv) {
       if (o.count("--thermostat")) e.md.thermostat = thermostat_from_string(o["--thermostat"]);
       if (o.count("--barostat")) e.md.barostat = barostat_from_string(o["--barostat"]);
       if (o.count("--seed")) e.md.seed = std::stoull(o["--seed"]);
-      if (o.count("--cutoff")) e.md.energy.cutoff = std::stod(o["--cutoff"]);
       electrostatics(e.md.energy, o);
       precision(e.md.energy, o);
       if (o.count("--hmr")) e.md.hmr = std::stod(o["--hmr"]);
@@ -3523,6 +3536,7 @@ int main(int argc, char** argv) {
       if (o.count("--threads")) e.md.energy.threads = std::stoi(o["--threads"]);
       // the force field: --ff (a library name, a file, or one written whole by CAPS), else the built-in default
       e.md.field = std::make_shared<ForceField>(cli_forcefield(s, o, o.count("--quiet") > 0));
+      run_cutoff(e.md.energy, *e.md.field, o, o.count("--quiet") > 0);
       e.until_converged = o.count("--until-converged");
       // continued after a stop: --resume-at STAGE:STEP (written into resume.txt by the stopped run)
       if (o.count("--resume-at")) {

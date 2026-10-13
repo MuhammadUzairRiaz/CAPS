@@ -94,15 +94,16 @@ caps ff apply FILE --ff FF.json [-o OUT.data [--lammps-input OUT.in [--lammps-ru
 <section class="group" id="relax-and-run"><h2>Relax and run</h2><p class="lede">Minimisation, molecular dynamics, equilibration protocols, regrowth, crosslinking and recipes.</p>
 <article class="cmd" id="relax" data-name="relax"><h3><code>caps relax</code></h3>
 <div class="code" data-lang="synopsis"><pre><code>caps relax   FILE -o OUT.data|OUT.pdb|OUT.xyz [--method lbfgs|cg|sd|fire] [--ftol 0.5] [--iterations 5000]
-             [--density 1.05] [--step 0.06] [--box-relax] [--pressure 1] [--no-pushoff] [--cutoff 10]
+             [--density 1.05] [--step 0.06] [--box-relax] [--pressure 1] [--no-pushoff] [--cutoff Å]
              [--no-coulomb] [--ff FF.json] [--quiet]   (.data output carries the force field for LAMMPS)
              without --ff (relax, md, equilibrate, field): the force field a data file CAPS wrote holds (its coefficients,
-             charges and 1-4 weights; refused when CAPS cannot rebuild it from the file), else GAFF (C and H) or UFF</code></pre></div></article>
+             charges and 1-4 weights; refused when CAPS cannot rebuild it from the file), else GAFF (C and H) or UFF;
+             without --cutoff (relax, md, equilibrate): the force field&#x27;s own cut-off, else 10 Å</code></pre></div></article>
 <article class="cmd" id="md" data-name="md"><h3><code>caps md</code></h3>
 <div class="code" data-lang="synopsis"><pre><code>caps md      FILE -o OUT.data [--steps 10000] [--dt 1] [--temp 300] [--thermostat bussi|langevin|nose-hoover|none]
              [--tau-t 100] [--barostat none|crescale|berendsen|mtk] [--pressure 1] [--tau-p 1000]
              [--constraints none|h-bonds|all-bonds] [--constraint-solver shake|lincs] [--hmr 3.024] [--seed 1] [--new-velocities] [--thermo 100] [--dump TRAJ.lammpstrj --every 1000]
-             [--log thermo.csv] [--cutoff 10] [--skin 1.5] [--threads N] [--no-coulomb] [--precision mixed|double] [--ff FF.json] [--quiet]
+             [--log thermo.csv] [--cutoff Å] [--skin 1.5] [--threads N] [--no-coulomb] [--precision mixed|double] [--ff FF.json] [--quiet]
              [--checkpoint-every N [--checkpoint OUT.restart.data]]   the full state every N steps
              [--progress-file progress.jsonl]   one JSON line per thermo row (default in a SLURM job)
              caps md OUT.restart.data --resume --steps TOTAL -o OUT   continues from a checkpoint</code></pre></div></article>

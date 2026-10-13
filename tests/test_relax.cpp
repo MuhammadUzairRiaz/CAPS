@@ -657,6 +657,7 @@ TEST(LammpsData, RelaxUsesTheForceFieldTheFileHolds) {
   EXPECT_EQ(r.forcefield->name, ff.name);
   EXPECT_EQ(r.forcefield->lj14, 0.5);
   EXPECT_EQ(r.forcefield->coul14, 0.5);
+  EXPECT_EQ(r.forcefield->native_cutoff, 12.0);   // the force field's own cut-off, which relax / md / equilibrate take without --cutoff
   EXPECT_EQ(default_forcefield(r).name, ff.name);
   expect_same_terms(want, terms_of(r, *r.forcefield, e), "acetonitrile read back");
   System q = r;

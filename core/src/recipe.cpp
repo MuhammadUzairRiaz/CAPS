@@ -294,6 +294,10 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
     res.manifest.steps.push_back(step("recipe.run", "recipe " + res.name, {{"recipe", res.name}, {"sha256", o.sha256}, {"stages", std::to_string(n)}}, "", {}));
   // Types a structure with the recipe's force field (throws RecipeError 3 for untyped atoms or missing parameters).
   std::string borrowed;   // a library force field typed with its family's rules
+  // without "cutoff:" in the recipe, the runs take the force field's own cut-off (its library's, a data file's record)
+  auto own_cutoff = [&](const ForceField* f) {
+    if (!r.has("cutoff") && f && f->native_cutoff > 0) energy.cutoff = f->native_cutoff;
+  };
   auto type_now = [&](System& sys) {
     const Json T = r.has("type") ? r["type"] : Json::object();
     if (T.has("file")) {   // a force field written whole by CAPS (caps/ffio.hpp): used as it is, nothing typed again
@@ -310,6 +314,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
         sys.has_charges = true;
         ff = F;
         ffname = F->name + " (read whole from " + std::filesystem::path(fp).filename().string() + ")";
+        own_cutoff(F.get());
       } catch (const FieldError& e) { throw RecipeError(2, std::string("type: ") + e.what()); }
       return;
     }
@@ -476,6 +481,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
         if (!filled_from.empty()) ffname += " (gaps filled from " + filled_from + ": " + std::to_string(filled_terms) + " terms)";
       }
     } catch (const RecipeError&) { throw; } catch (const std::exception& e) { throw RecipeError(3, e.what()); }
+    own_cutoff(ff.get());
     const std::string ch = !companion_note.empty() ? companion_note.substr(9) : charges == "qeq" ? "QEq" : charges == "gasteiger" ? "Gasteiger" : charges == "keep" ? "the file's" : charges == "auto" && ffname == "UFF" ? "no" : increments ? "from the force field's bond increments" : "from the force field";
     std::vector<std::string> c;
     if (ffname == "UFF") c.push_back("rappe1992");
@@ -663,6 +669,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           const std::string p = path_of(J["file"].str());
           if (!std::filesystem::exists(p)) throw RecipeError(2, "no file " + p);
           s = open_file(p, J.has("topology") ? path_of(J["topology"].str()) : "").frame(0);
+          own_cutoff(s.forcefield.get());   // the force field the file holds
           res.manifest.inputs.push_back({std::filesystem::path(p).filename().string(), ""});
           res.manifest.steps.push_back(step("io.read", "read " + std::filesystem::path(p).filename().string(), {{"file", std::filesystem::path(p).filename().string()}, {"atoms", std::to_string(s.atoms.size())}}, "", {}));
           report(k, st, std::filesystem::path(p).filename().string() + " · " + std::to_string(s.atoms.size()) + " atoms", "done", 1);

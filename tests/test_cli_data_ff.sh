@@ -1,6 +1,6 @@
 #!/bin/bash
 # caps relax on a LAMMPS data file caps ff apply wrote with OPLS-AA 2024, without --ff: the file's own coefficients,
-# charges and 1-4 weights (its starting energy terms are caps ff apply's), not the built-in GAFF / UFF; a file whose
+# charges, 1-4 weights and cut-off (its starting energy terms are caps ff apply's), not the built-in GAFF / UFF; a file whose
 # force field CAPS cannot rebuild (here: without CAPS's record of its 1-4 weights) is refused with a pointer to --ff.
 # usage: test_cli_data_ff.sh CAPS SOURCE_DIR
 set -u
@@ -25,6 +25,18 @@ start=$(echo "$out" | grep '^starting energy')
   caps relax:    $start"
 echo "caps ff apply: $apply"
 echo "caps relax:    $start"
+
+# without --cutoff: the force field's own (OPLS-AA 2024's 12 Å, recorded in the data file), as caps ff apply uses it
+apply12=$("$CAPS" ff apply box.pdb --ff "$ROOT/data/forcefields/oplsaa2024.json" | grep '^energy')
+out12=$("$CAPS" relax box.data -o relaxed12.data --iterations 1 2> /dev/null)
+echo "$out12" | grep -q "^cut-off: 12 Å (the force field's own" || fail "relax did not take the force field's cut-off: $out12"
+start12=$(echo "$out12" | grep '^starting energy')
+[ "${apply12#energy (kcal/mol): }" = "${start12#starting energy (kcal/mol): }" ] || fail "energy terms at the force field's cut-off differ
+  caps ff apply: $apply12
+  caps relax:    $start12"
+"$CAPS" md box.data -o md.data --steps 2 --thermo 1 2> /dev/null | grep -q "^cut-off: 12 Å (the force field's own" || fail "md did not take the force field's cut-off"
+"$CAPS" relax box.data -o x.data --cutoff 9 --iterations 1 2> /dev/null | grep -q "^cut-off" && fail "--cutoff given, yet a cut-off line"
+echo "cut-off 12 Å: $start12"
 
 # the relaxed file carries the force field on
 "$CAPS" relax relaxed.data -o again.data --cutoff 7.5 --iterations 5 2> /dev/null | grep -q "^force field: OPLS-AA 2024 (Jorgensen) (the file's own" ||
