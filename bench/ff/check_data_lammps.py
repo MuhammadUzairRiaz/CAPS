@@ -290,6 +290,12 @@ CASES = [
     ("TraPPE-UA (transferable terms): trans-1,4-polybutadiene DP 4", ("grow", "[*]C/C=C/C[*]", 4, 3, "nudged"), "trappe-ua-umn", "types", "rules"),
     ("TraPPE-UA (transferable terms): polystyrene DP 4", ("grow", "[*]CC([*])C1=CC=CC=C1", 4, 3), "trappe-ua-umn", "types", "rules"),
     ("TraPPE-UA (transferable terms): polyisobutylene DP 4", ("grow", "*CC(*)(C)C", 4, 3), "trappe-ua-umn", "types", "rules"),
+    # alcohols, ethers and rings (Chen, Potoff & Siepmann 2001; Stubbs, Potoff & Siepmann 2004; Keasler et al. 2012)
+    ("TraPPE-UA (transferable) PVA, poly(vinyl alcohol) DP 4 (1-4 Coulomb x 0.5)", ("grow", "[*]CC([*])O", 4, 3), "trappe-ua-umn", "types", "rules"),
+    ("TraPPE-UA (transferable) PVME, poly(vinyl methyl ether) DP 4", ("grow", "[*]CC([*])OC", 4, 3), "trappe-ua-umn", "types", "rules"),
+    ("TraPPE-UA (transferable) PIBVE, poly(isobutyl vinyl ether) DP 4", ("grow", "[*]CC([*])OCC(C)C", 4, 3), "trappe-ua-umn", "types", "rules"),
+    ("TraPPE-UA (transferable) PVCH, poly(vinyl cyclohexane) DP 4 (six-membered ring)", ("grow", "[*]CC([*])C1CCCCC1", 4, 3), "trappe-ua-umn", "types", "rules"),
+    ("TraPPE-UA (transferable) PVCP, poly(vinyl cyclopentane) DP 4 (five-membered ring)", ("grow", "[*]CC([*])C1CCCC1", 4, 3), "trappe-ua-umn", "types", "rules"),
     ("TraPPE-UA alkanes (moltemplate): dodecane", ("smiles", "CCCCCCCCCCCC"), "trappe1998-moltemplate", "keep", "rules"),
     # OPLS-UA: the 2024 file's united-atom types with the 1984 paper's terms where the file has none
     # (bench/ff/open/oplsua2024_supplement.json): CH-CH2 torsions (isopentane), C=C-C-C (1-butene), bends by Table I

@@ -1717,6 +1717,9 @@
     "M. G. Martin, J. I. Siepmann, J. Phys. Chem. B 102, 2569 (1998)",
     "M. G. Martin, J. I. Siepmann, J. Phys. Chem. B 103, 4508 (1999)",
     "C. D. Wick, M. G. Martin, J. I. Siepmann, J. Phys. Chem. B 104, 8008 (2000)",
+    "B. Chen, J. J. Potoff, J. I. Siepmann, J. Phys. Chem. B 105, 3093 (2001)",
+    "J. M. Stubbs, J. J. Potoff, J. I. Siepmann, J. Phys. Chem. B 108, 17596 (2004)",
+    "S. J. Keasler, S. M. Charan, C. D. Wick, I. G. Economou, J. I. Siepmann, J. Phys. Chem. B 116, 11234 (2012)",
     "B. L. Eggimann et al., J. Chem. Eng. Data 65, 1330 (2020)"
    ],
    "origin": "built from source",
@@ -1727,14 +1730,14 @@
    "counts": {
     "atom_types": 109,
     "pairs": 109,
-    "bonds": 157,
-    "angles": 356,
-    "dihedrals": 423,
+    "bonds": 235,
+    "angles": 1069,
+    "dihedrals": 2986,
     "impropers": 0
    },
    "typing": {
     "rules": "typing/trappe-ua-umn.typing.json",
-    "evidence": "CAPS rules for 106 TraPPE-UA site types: the database's own models typed as it types them (634 / 634 sites); every model's bonds, bends and torsions as it lists them (92 / 92 models; ten models whose own lists are inconsistent or incomplete named apart); the transferable hydrocarbon terms of Martin & Siepmann 1998 and 1999 and Wick, Martin & Siepmann 2000 (31 bonds, 132 bends, 213 torsions) equal every database model's term for the same types; 18 of the 114 library polymers parameterised whole as DP-4 chains (bench/ff/trappe_polymer_coverage.py); 1-4 Coulomb x 0.5 for the glycol ethers, diols, disulfides and acrylates as their models count it; LAMMPS and GROMACS reproduce CAPS's energies"
+    "evidence": "CAPS rules for 106 TraPPE-UA site types: the database's own models typed as it types them (634 / 634 sites); every model's bonds, bends and torsions as it lists them (92 / 92 models; ten models whose own lists are inconsistent or incomplete named apart); the transferable terms of the hydrocarbon (1998, 1999, 2000), alcohol (2001), ether and glycol (2004) and cycloalkane-ring (2012) papers (109 bonds, 845 bends, 2776 torsions) equal every database model's term for the same types; 30 of the 114 library polymers parameterised whole as DP-4 chains (bench/ff/trappe_polymer_coverage.py); 1-4 Coulomb x 0.5 for the glycol ethers, diols, disulfides and acrylates as their models count it; LAMMPS and GROMACS reproduce CAPS's energies"
    },
    "list": {
     "label": "TraPPE united-atom",

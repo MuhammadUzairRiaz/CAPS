@@ -100,12 +100,17 @@ CASES = [
     ("TraPPE-UA (TraPPE database) hexane, DME, methyl methacrylate, ethanol, cis-2-butene (vacuum)", ("smiles", "CCCCCC.COCCOC.CC(=C)C(=O)OC.CCO.C/C=C\\C"),
      "trappe-ua-umn", "types", []),
     # the transferable hydrocarbon terms (Martin & Siepmann 1998, 1999; Wick, Martin & Siepmann 2000) on DP-4 chains, raw
-    # from the builder (polyisobutylene with seed 5: seed 3 leaves a contact single-precision GROMACS follows to 7e-5 only)
+    # from the builder (polyisobutylene, PVME and PVCP with seed 5: seed 3 leaves a contact single-precision GROMACS
+    # follows to 5e-5 to 7e-5 only); the charged chains with PME
     ("TraPPE-UA (transferable terms) polypropylene DP 4 (one chain, periodic)", ("grow", "[*]CC(C)[*]", 4, 3), "trappe-ua-umn", "types", []),
     ("TraPPE-UA (transferable terms) cis-1,4-polybutadiene DP 4 (one chain, periodic)", ("grow", "[*]C/C=C\\C[*]", 4, 3), "trappe-ua-umn", "types", []),
     ("TraPPE-UA (transferable terms) trans-1,4-polybutadiene DP 4 (one chain, periodic)", ("grow", "[*]C/C=C/C[*]", 4, 3), "trappe-ua-umn", "types", []),
     ("TraPPE-UA (transferable terms) polystyrene DP 4 (one chain, periodic)", ("grow", "[*]CC([*])C1=CC=CC=C1", 4, 3), "trappe-ua-umn", "types", []),
     ("TraPPE-UA (transferable terms) polyisobutylene DP 4 (one chain, periodic)", ("grow", "*CC(*)(C)C", 4, 5), "trappe-ua-umn", "types", []),
+    ("TraPPE-UA (transferable) PVA, poly(vinyl alcohol) DP 4 (one chain, periodic; PME)", ("grow", "[*]CC([*])O", 4, 3), "trappe-ua-umn", "types", PME),
+    ("TraPPE-UA (transferable) PVME, poly(vinyl methyl ether) DP 4 (one chain, periodic; PME)", ("grow", "[*]CC([*])OC", 4, 5), "trappe-ua-umn", "types", PME),
+    ("TraPPE-UA (transferable) PVCH, poly(vinyl cyclohexane) DP 4 (one chain, periodic)", ("grow", "[*]CC([*])C1CCCCC1", 4, 3), "trappe-ua-umn", "types", []),
+    ("TraPPE-UA (transferable) PVCP, poly(vinyl cyclopentane) DP 4 (one chain, periodic)", ("grow", "[*]CC([*])C1CCCC1", 4, 5), "trappe-ua-umn", "types", []),
     ("TraPPE (TraPPE database) CO2, N2, NH3, H2S, O2, ethylene oxide, decane (vacuum; charge sites)", ("smiles", "O=C=O.N#N.N.S.O=O.C1CO1.CCCCCCCCCC"),
      "trappe-ua-umn", "types", []),
     ("TraPPE-EH (TraPPE database) octane, methylamine, acetamide, acetonitrile, nitroethane (vacuum)", ("smiles",
