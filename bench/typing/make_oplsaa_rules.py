@@ -517,6 +517,22 @@ add("caps_cbz_h4", 8, f"[H][cH1;$(c{CBZ_CS})]", "H on carbazole C4", True)
 add("caps_cbz_h2", 8, f"[H][cH1;$(c[cH1;$(c{CBZ_CN})])]", "H on carbazole C2", True)
 add("caps_cbz_h3", 8, f"[H][cH1;$(c[cH1;$(c{CBZ_CS})])]", "H on carbazole C3", True)
 add("caps_cbz_ct", 8, f"[CX4H1;$(*{CBZ})]", "CH on a carbazole N (poly(N-vinylcarbazole) backbone)", True)
+# siloxanes (poly(dimethylsiloxane)): the table types silanes and silyl ethers with one O on Si, not Si-O-Si. CAPS
+# types charged by 1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on HO-[SiMe2-O]2-SiMe2-H and octamethyltrisiloxane),
+# made exact so a SiMe2-O unit is neutral (Si +0.4197 against the bridging O -0.4197, the methyls neutral) and the
+# chain ends balance the extra O; classes and Lennard-Jones of the table's Si 1075, OS 1078, silanol 1073 / 1074, Si-H
+# 1064 and CH3-on-Si 1065 / 140
+SILOX = "[SiX4;$(*[OX2][SiX4])]"
+add("caps_pdms_si", 8, "[SiX4;$(*([OX2][SiX4])[OX2][SiX4])]", "siloxane Si between two Si-O-Si O (D unit)", True)
+add("caps_pdms_sioh", 8, f"[SiX4;$(*[OX2][SiX4]);$(*[OX2H1])]", "siloxane Si bearing OH (silanol chain end)", True)
+add("caps_pdms_sih", 8, f"[SiX4;$(*[OX2][SiX4]);$(*[#1])]", "siloxane Si bearing H (Si-H chain end)", True)
+add("caps_pdms_sim3", 8, f"[SiX4;$(*[OX2][SiX4]);$(*([CX4])([CX4])[CX4])]", "siloxane Si of a trimethylsilyl end (M unit)", True)
+add("caps_pdms_ob", 8, "[OX2;$(O([SiX4])[SiX4])]", "Si-O-Si O", True)
+add("caps_pdms_oh", 8, f"[OX2H1;$(O{SILOX})]", "silanol O on a siloxane Si", True)
+add("caps_pdms_ho", 8, f"[H][OX2H1;$(O{SILOX})]", "H of that silanol", True)
+add("caps_pdms_hsi", 8, f"[H]{SILOX}", "H on a siloxane Si", True)
+add("caps_pdms_c", 8, f"[CX4H3;$(*{SILOX})]", "CH3 on a siloxane Si", True)
+add("caps_pdms_hc", 8, f"[H][CX4H3;$(*{SILOX})]", "H of a CH3 on a siloxane Si", True)
 add("caps_cbz_ct2", 8, f"[CX4H2;$(*{CBZ})]", "CH2 on a carbazole N (a chain end, or N-ethyl / N-vinyl-derived)", True)
 add("caps_cbz_hc", 8, f"[H][CX4;$(*{CBZ})]", "H on that CH / CH2", True)
 

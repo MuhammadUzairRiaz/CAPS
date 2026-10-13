@@ -486,6 +486,16 @@ def fill():
     print(f"{len(jobs)} new points (jobs_fill.txt; array 1-{len(jobs)}); {left} still without a start geometry")
 
 
+def rotor(key, quads, el, nb):
+    """a torsion class whose end H sits on a CH3 turning about the central bond: its three H sum cos(phi) and
+    cos(2 phi) to about zero, so only V3 is defined (OPLS-AA's methyl torsions are V3 only)"""
+    for q in quads:
+        for end, mid in ((q[0], q[1]), (q[3], q[2])):
+            if el[end] == "H" and el[mid] == "C" and sum(1 for x in nb[mid] if el[x] == "H") == 3:
+                return True
+    return False
+
+
 def lstsq_solve(M, b):
     """M x = b by Gauss-Jordan with partial pivoting"""
     n = len(M)
@@ -593,9 +603,15 @@ def fit():
             row = [1.0]
             for k in keys:
                 phis = [math.radians(dihedral(pos, *q)) for q in groups[k]]
-                row += [sum(0.5 * (1 + math.cos(f)) for f in phis), sum(0.5 * (1 - math.cos(2 * f)) for f in phis),
-                        sum(0.5 * (1 + math.cos(3 * f)) for f in phis), sum(0.5 * (1 - math.cos(4 * f)) for f in phis)]
+                terms = [sum(0.5 * (1 + math.cos(f)) for f in phis), sum(0.5 * (1 - math.cos(2 * f)) for f in phis),
+                         sum(0.5 * (1 + math.cos(3 * f)) for f in phis), sum(0.5 * (1 - math.cos(4 * f)) for f in phis)]
+                if rotor(k, groups[k], s["elements"], fnb):   # a CH3 rotor's H: V3 only, as OPLS-AA's methyl torsions
+                    terms = [0.0, 0.0, terms[2], 0.0]
+                row += terms
             rows.append(row)
+        if not keys:   # nothing about this bond is missing (any more): nothing to fit
+            print(f"{s['dir']}: no missing torsion about this bond")
+            continue
         y = [q - m for q, m in zip(eqm, emm)]
         wts = [0.2 if q - min(eqm) > 10 else 1.0 for q in eqm]
         if "--joint" in sys.argv:   # one fit over every scan of the plan below
@@ -605,7 +621,9 @@ def fit():
         # the smallest ridge that keeps every V within a physical bound (10 kcal/mol): none for a well-posed fit, just
         # enough where torsions about the bond turn together (--ridge fixes it)
         lam_used = None
-        for lam in ([float(arg("--ridge"))] if arg("--ridge") else [0.0, 1e-4, 1e-3, 3e-3, 0.01, 0.03, 0.1, 0.3, 0.5]):
+        # at least 1e-3: a term that does not change the profile at all (V1, V2 of a CH3 rotor, whose three H sum their
+        # cos(phi) and cos(2 phi) to zero) stays zero instead of taking any value, which would be wrong on a CH2 or CH
+        for lam in ([float(arg("--ridge"))] if arg("--ridge") else [1e-3, 3e-3, 0.01, 0.03, 0.1, 0.3, 0.5]):
             sol = lstsq(rows, y, wts, ridge=lam)
             lam_used = lam
             if max(abs(v) for v in sol[1:]) <= 10.0:
@@ -635,7 +653,7 @@ def fit():
             rules.append({"name": "-".join(k), "match": [x.replace("*", "\\*") for x in k], "style": "opls", "params": V,
                           "comment": f"CAPS {'refit' if refit else 'fit'} (QM): {plan['level']}, {len(pts)}-point scan of a "
                                      f"{len(s['elements'])}-atom fragment, RMS {rms:.2f} kcal/mol"
-                                     + (f", ridge {lam_used:g}" if lam_used else "")
+                                     + (f", ridge {lam_used:g}" if lam_used and lam_used > 1e-3 else "")
                                      + (f" (the force field's own: {rms_existing:.2f})" if rms_existing is not None else ""),
                           "fit": fitrec})
             print(f"{'-'.join(k)}: V = {V} (RMS {rms:.2f} kcal/mol over {len(pts)} points)")
@@ -659,7 +677,7 @@ def fit():
                 Y.append(yy)
                 W.append(ww)
         nc = len(joint)
-        for lam in [0.0, 1e-4, 1e-3, 3e-3, 0.01, 0.03, 0.1, 0.3, 0.5]:
+        for lam in [1e-3, 3e-3, 0.01, 0.03, 0.1, 0.3, 0.5]:
             # the ridge on the V columns only (lstsq leaves column 0 alone; shift the constants out of its reach)
             M = [[sum(W[r] ** 2 * A[r][i] * A[r][jj] for r in range(len(A))) + ((lam if i >= nc else 0.0) + 1e-9 if i == jj else 0.0)
                   for jj in range(len(A[0]))] for i in range(len(A[0]))]

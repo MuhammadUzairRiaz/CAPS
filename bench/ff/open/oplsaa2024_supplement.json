@@ -325,6 +325,19 @@
    ],
    "source": "the 2024 .sb's ester bends C-OS-CT and C-OS-CA (83 / 116.9)",
    "reason": "an anhydride's C-O-C is an ester O between two carbonyl carbons; the files give the ester O the same bend toward an alkyl and an aryl carbon, so it takes that one (CAPS's relaxed scan of acetic anhydride could not be fitted while its torsions were missing)"
+  },
+  {
+   "match": [
+    "OH",
+    "Si",
+    "OS"
+   ],
+   "params": [
+    60.0,
+    110.0
+   ],
+   "source": "the 2024 .sb's OS-Si-OS (wlj)",
+   "reason": "a silanol O and a siloxane O on the same Si (a PDMS chain end): the files' O-Si-O bend"
   }
  ],
  "atom_types": [
@@ -502,6 +515,76 @@
    "charge": 0.255,
    "description": "benzyl ether alpha C (184 0.200 + 0.055)",
    "reason": "the benzyl alcohol increment of the table (ring C 221 at -0.055 for benzene's -0.115, the carbinol C +0.055 over an alcohol's: 218 0.200 against 157 0.145) applied to an ether alpha C"
+  },
+  {
+   "name": "caps_pdms_si",
+   "lj_from": "opls_1075",
+   "charge": 0.4197,
+   "description": "siloxane Si between two Si-O-Si O",
+   "reason": "1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on B3LYP-D3BJ/def2-TZVP geometries of HO-[SiMe2-O]2-SiMe2-H and octamethyltrisiloxane, equivalent atoms averaged); the model's 0.410, set to balance the bridging O so a SiMe2-O unit is neutral"
+  },
+  {
+   "name": "caps_pdms_ob",
+   "lj_from": "opls_1078",
+   "charge": -0.4197,
+   "description": "Si-O-Si O",
+   "reason": "1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on B3LYP-D3BJ/def2-TZVP geometries of HO-[SiMe2-O]2-SiMe2-H and octamethyltrisiloxane, equivalent atoms averaged); mean of the model's two bridging O"
+  },
+  {
+   "name": "caps_pdms_sioh",
+   "lj_from": "opls_1075",
+   "charge": 0.3784,
+   "description": "siloxane Si bearing OH",
+   "reason": "1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on B3LYP-D3BJ/def2-TZVP geometries of HO-[SiMe2-O]2-SiMe2-H and octamethyltrisiloxane, equivalent atoms averaged); the model's 0.3834, scaled with the Si-H end by 0.987 so the two ends balance the chain's extra bridging O"
+  },
+  {
+   "name": "caps_pdms_sih",
+   "lj_from": "opls_1075",
+   "charge": 0.2171,
+   "description": "siloxane Si bearing H",
+   "reason": "1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on B3LYP-D3BJ/def2-TZVP geometries of HO-[SiMe2-O]2-SiMe2-H and octamethyltrisiloxane, equivalent atoms averaged); the model's 0.2200, scaled as above"
+  },
+  {
+   "name": "caps_pdms_sim3",
+   "lj_from": "opls_1075",
+   "charge": 0.2099,
+   "description": "siloxane Si of a trimethylsilyl end",
+   "reason": "1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on B3LYP-D3BJ/def2-TZVP geometries of HO-[SiMe2-O]2-SiMe2-H and octamethyltrisiloxane, equivalent atoms averaged); half the bridging O, so Me3Si-O-[SiMe2-O]n-SiMe3 is neutral with neutral methyls (octamethyltrisiloxane's own Si 0.272 with methyls of -0.017)"
+  },
+  {
+   "name": "caps_pdms_oh",
+   "lj_from": "opls_1073",
+   "charge": -0.6116,
+   "description": "silanol O on a siloxane Si",
+   "reason": "1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on B3LYP-D3BJ/def2-TZVP geometries of HO-[SiMe2-O]2-SiMe2-H and octamethyltrisiloxane, equivalent atoms averaged); the model's value"
+  },
+  {
+   "name": "caps_pdms_ho",
+   "lj_from": "opls_1074",
+   "charge": 0.4398,
+   "description": "H of a siloxane silanol",
+   "reason": "1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on B3LYP-D3BJ/def2-TZVP geometries of HO-[SiMe2-O]2-SiMe2-H and octamethyltrisiloxane, equivalent atoms averaged); the model's value"
+  },
+  {
+   "name": "caps_pdms_hsi",
+   "lj_from": "opls_1064",
+   "charge": -0.004,
+   "description": "H on a siloxane Si",
+   "reason": "1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on B3LYP-D3BJ/def2-TZVP geometries of HO-[SiMe2-O]2-SiMe2-H and octamethyltrisiloxane, equivalent atoms averaged); the model's value"
+  },
+  {
+   "name": "caps_pdms_c",
+   "lj_from": "opls_1065",
+   "charge": -0.3435,
+   "description": "CH3 on a siloxane Si",
+   "reason": "1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on B3LYP-D3BJ/def2-TZVP geometries of HO-[SiMe2-O]2-SiMe2-H and octamethyltrisiloxane, equivalent atoms averaged); mean of the model's methyl C (-0.3427), rounded so a CH3 is neutral with its H"
+  },
+  {
+   "name": "caps_pdms_hc",
+   "lj_from": "opls_140",
+   "charge": 0.1145,
+   "description": "H of a CH3 on a siloxane Si",
+   "reason": "1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on B3LYP-D3BJ/def2-TZVP geometries of HO-[SiMe2-O]2-SiMe2-H and octamethyltrisiloxane, equivalent atoms averaged); mean of the model's methyl H"
   }
  ],
  "dihedrals": [
@@ -603,51 +686,51 @@
   },
   {
    "match": [
-    "CA",
-    "CT",
-    "CT",
-    "OS"
-   ],
-   "params": [
-    -0.5617,
-    0.1212,
-    0.835,
-    -0.1228
-   ],
-   "source": "CAPS fit (QM)",
-   "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 22-atom fragment, RMS 0.15 kcal/mol; fragment CA-CT-CT-OS"
-  },
-  {
-   "match": [
-    "CA",
-    "CT",
+    "OH",
+    "Si",
     "OS",
-    "CT"
+    "Si"
    ],
    "params": [
-    -0.366,
-    -0.4283,
-    0.9422,
-    -0.3234
+    0.0,
+    0.0,
+    0.0,
+    0.0
    ],
-   "source": "CAPS fit (QM)",
-   "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 18-point scan of a 19-atom fragment, RMS 0.02 kcal/mol; fragment CA-CT-OS-CT"
+   "source": "the 2024 .par's OS-Si-OS-Si (type 376)",
+   "reason": "a silanol end's O-Si-O-Si torsion, as the files' siloxane one"
   },
   {
    "match": [
-    "CM",
-    "CT",
-    "CT",
-    "CT"
+    "OS",
+    "Si",
+    "OH",
+    "HO"
    ],
    "params": [
-    1.3251,
-    -0.5987,
-    0.0549,
-    -0.3855
+    0.0,
+    0.0,
+    0.18,
+    0.0
    ],
-   "source": "CAPS fit (QM)",
-   "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 18-point scan of a 18-atom fragment, RMS 0.13 kcal/mol; fragment CM-CT-CT-CT"
+   "source": "the 2024 .par's silanol H torsions CT-Si-OH-HO and H-Si-OH-HO (types 370, 378)",
+   "reason": "the silanol H's rotor; the files give it V3 0.18 whatever the third neighbour of Si"
+  },
+  {
+   "match": [
+    "Si",
+    "OS",
+    "Si",
+    "H"
+   ],
+   "params": [
+    0.0,
+    0.0,
+    0.18,
+    0.0
+   ],
+   "source": "the 2024 .par's H-Si-OS-CT (type 369)",
+   "reason": "an H on Si turning about a Si-O bond (a Si-H chain end); the files' silyl ether value"
   },
   {
    "match": [
@@ -663,7 +746,7 @@
     -2.3586
    ],
    "source": "CAPS fit (QM)",
-   "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 14-atom fragment, RMS 0.16 kcal/mol, ridge 0.001; fragment C-N-C-CT"
+   "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 14-atom fragment, RMS 0.16 kcal/mol; fragment C-N-C-CT"
   },
   {
    "match": [
@@ -679,7 +762,7 @@
     3.0795
    ],
    "source": "CAPS fit (QM)",
-   "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 14-atom fragment, RMS 0.16 kcal/mol, ridge 0.001; fragment C-N-C-CT"
+   "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 14-atom fragment, RMS 0.16 kcal/mol; fragment C-N-C-CT"
   },
   {
    "match": [
@@ -689,10 +772,10 @@
     "CA"
    ],
    "params": [
-    4.6493,
-    1.004,
-    5.2702,
-    -0.0976
+    4.2266,
+    0.9994,
+    5.2608,
+    -0.1009
    ],
    "source": "CAPS fit (QM)",
    "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 25-atom fragment, RMS 0.33 kcal/mol; fragment CA-C-CA-CA"
@@ -705,109 +788,61 @@
     "N"
    ],
    "params": [
-    -1.7833,
-    -3.9942,
-    0.463,
-    1.2261
+    -1.7827,
+    -3.9928,
+    0.4628,
+    1.2257
    ],
    "source": "CAPS fit (QM)",
    "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 23-point scan of a 28-atom fragment, RMS 0.44 kcal/mol; fragment CA-N-C-N"
   },
   {
    "match": [
-    "CM",
-    "CM",
+    "CA",
     "CT",
-    "S"
+    "CT",
+    "OS"
    ],
    "params": [
-    0.2815,
-    -0.6898,
-    -1.5678,
-    0.2837
+    -0.5615,
+    0.1211,
+    0.8348,
+    -0.1227
    ],
    "source": "CAPS fit (QM)",
-   "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 14-atom fragment, RMS 0.41 kcal/mol; fragment CM-CM-CT-S"
+   "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 22-atom fragment, RMS 0.15 kcal/mol; fragment CA-CT-CT-OS"
   },
   {
    "match": [
-    "HC",
-    "CM",
+    "CA",
     "CT",
-    "S"
-   ],
-   "params": [
-    0.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "source": "CAPS fit (QM)",
-   "reason": "zero; the heavy-atom torsions about the same bond carry the profile of a 24-point MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L) scan of a 14-atom fragment (RMS 0.41 kcal/mol); fragment CM-CM-CT-S"
-  },
-  {
-   "match": [
-    "CM",
-    "CT",
-    "S",
+    "OS",
     "CT"
    ],
    "params": [
-    -0.7273,
-    -0.2397,
-    0.6058,
-    -0.2416
+    -0.5433,
+    -0.4282,
+    0.9625,
+    -0.3273
    ],
    "source": "CAPS fit (QM)",
-   "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 13-atom fragment, RMS 0.37 kcal/mol; fragment CM-CT-S-CT"
+   "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 18-point scan of a 19-atom fragment, RMS 0.02 kcal/mol; fragment CA-CT-OS-CT"
   },
   {
    "match": [
     "CM",
     "CT",
-    "S",
-    "S"
-   ],
-   "params": [
-    -0.2391,
-    -0.5107,
-    0.2036,
-    0.1535
-   ],
-   "source": "CAPS fit (QM)",
-   "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 22-point scan of a 14-atom fragment, RMS 0.15 kcal/mol; fragment CM-CT-S-S"
-  },
-  {
-   "match": [
     "CT",
-    "S",
-    "S",
-    "S"
+    "CT"
    ],
    "params": [
-    1.2334,
-    -5.6023,
-    1.6667,
-    0.1222
+    1.3235,
+    -0.5972,
+    0.0536,
+    -0.3844
    ],
    "source": "CAPS fit (QM)",
-   "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 11-atom fragment, RMS 0.31 kcal/mol; fragment CT-S-S-S"
-  },
-  {
-   "match": [
-    "S",
-    "S",
-    "S",
-    "S"
-   ],
-   "params": [
-    1.7073,
-    -3.2563,
-    1.0074,
-    0.4436
-   ],
-   "source": "CAPS fit (QM)",
-   "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 12-atom fragment, RMS 0.04 kcal/mol; fragment S-S-S-S"
+   "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 18-point scan of a 18-atom fragment, RMS 0.13 kcal/mol; fragment CM-CT-CT-CT"
   },
   {
    "match": [
@@ -817,13 +852,13 @@
     "HC"
    ],
    "params": [
-    -2.6067,
-    2.2787,
-    0.0031,
-    -0.5461
+    0.0,
+    0.0,
+    0.0135,
+    0.0
    ],
    "source": "CAPS fit (QM)",
-   "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.03 kcal/mol; fragment C-CM-CT-HC"
+   "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.04 kcal/mol; fragment C-CM-CT-HC"
   },
   {
    "match": [
@@ -833,9 +868,9 @@
     "CM"
    ],
    "params": [
-    -0.9629,
-    3.9038,
-    -0.676,
+    -0.9626,
+    3.9025,
+    -0.6758,
     0.0548
    ],
    "source": "CAPS fit (QM)",
@@ -865,10 +900,10 @@
     "HC"
    ],
    "params": [
-    -1.2398,
-    1.3959,
-    0.5614,
-    -0.0674
+    0.0,
+    0.0,
+    0.553,
+    0.0
    ],
    "source": "CAPS fit (QM)",
    "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 21-atom fragment, RMS 0.03 kcal/mol; fragment CB-CA-CT-HC"
@@ -881,10 +916,10 @@
     "CT"
    ],
    "params": [
-    0.8652,
-    7.1265,
-    1.3445,
-    0.1227
+    0.8738,
+    7.0969,
+    1.3604,
+    0.1234
    ],
    "source": "CAPS fit (QM)",
    "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.07 kcal/mol; fragment CM-C-OS-CT"
@@ -897,10 +932,10 @@
     "Cl"
    ],
    "params": [
-    1.1142,
-    0.8525,
-    -1.386,
-    -0.1518
+    1.1138,
+    0.8522,
+    -1.3855,
+    -0.1517
    ],
    "source": "CAPS fit (QM)",
    "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 10-atom fragment, RMS 0.05 kcal/mol; fragment CM-C=-C=-Cl"
@@ -929,10 +964,10 @@
     "OS"
    ],
    "params": [
-    1.2408,
+    1.2403,
     -0.1388,
-    0.5292,
-    -0.3826
+    0.5291,
+    -0.3825
    ],
    "source": "CAPS fit (QM)",
    "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.03 kcal/mol; fragment CM-CM-C-OS"
@@ -945,13 +980,13 @@
     "CT"
    ],
    "params": [
-    -0.1368,
-    9.2514,
-    -1.1201,
-    -0.2351
+    1.97,
+    5.3748,
+    -0.9837,
+    -0.216
    ],
    "source": "CAPS fit (QM)",
-   "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 12-atom fragment, RMS 0.05 kcal/mol, ridge 0.0001; fragment CM-OS-C-CT"
+   "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 12-atom fragment, RMS 0.05 kcal/mol; fragment CM-OS-C-CT"
   },
   {
    "match": [
@@ -961,13 +996,13 @@
     "O"
    ],
    "params": [
-    -4.4774,
-    0.534,
-    -1.9713,
-    -0.1851
+    -2.5186,
+    4.4022,
+    -1.6929,
+    0.1281
    ],
    "source": "CAPS fit (QM)",
-   "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 12-atom fragment, RMS 0.05 kcal/mol, ridge 0.0001; fragment CM-OS-C-CT"
+   "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 12-atom fragment, RMS 0.05 kcal/mol; fragment CM-OS-C-CT"
   },
   {
    "match": [
@@ -977,10 +1012,10 @@
     "Cl"
    ],
    "params": [
-    -0.4655,
-    0.3635,
-    5.8135,
-    0.1355
+    -0.4653,
+    0.3644,
+    5.7907,
+    0.1345
    ],
    "source": "CAPS fit (QM)",
    "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 10-atom fragment, RMS 0.08 kcal/mol; fragment CY-CY-CT-Cl"
@@ -993,10 +1028,10 @@
     "O$"
    ],
    "params": [
-    0.2864,
-    -0.53,
-    8.0258,
-    0.2908
+    0.2858,
+    -0.5288,
+    8.0027,
+    0.2897
    ],
    "source": "CAPS fit (QM)",
    "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 10-atom fragment, RMS 0.08 kcal/mol; fragment CY-CY-CT-Cl"
@@ -1052,15 +1087,143 @@
   {
    "match": [
     "CM",
+    "CM",
+    "CT",
+    "S"
+   ],
+   "params": [
+    0.2814,
+    -0.6896,
+    -1.5673,
+    0.2836
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 14-atom fragment, RMS 0.41 kcal/mol; fragment CM-CM-CT-S"
+  },
+  {
+   "match": [
+    "HC",
+    "CM",
+    "CT",
+    "S"
+   ],
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "zero; the heavy-atom torsions about the same bond carry the profile of a 24-point MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L) scan of a 14-atom fragment (RMS 0.41 kcal/mol); fragment CM-CM-CT-S"
+  },
+  {
+   "match": [
+    "CM",
+    "CT",
+    "S",
+    "CT"
+   ],
+   "params": [
+    -0.727,
+    -0.2396,
+    0.6056,
+    -0.2415
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 13-atom fragment, RMS 0.37 kcal/mol; fragment CM-CT-S-CT"
+  },
+  {
+   "match": [
+    "CM",
+    "CT",
+    "S",
+    "S"
+   ],
+   "params": [
+    -0.2391,
+    -0.5105,
+    0.2035,
+    0.1535
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 22-point scan of a 14-atom fragment, RMS 0.15 kcal/mol; fragment CM-CT-S-S"
+  },
+  {
+   "match": [
+    "CT",
+    "S",
+    "S",
+    "S"
+   ],
+   "params": [
+    1.233,
+    -5.6005,
+    1.6661,
+    0.1222
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 11-atom fragment, RMS 0.31 kcal/mol; fragment CT-S-S-S"
+  },
+  {
+   "match": [
+    "S",
+    "S",
+    "S",
+    "S"
+   ],
+   "params": [
+    1.7068,
+    -3.2552,
+    1.0071,
+    0.4435
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 12-atom fragment, RMS 0.04 kcal/mol; fragment S-S-S-S"
+  },
+  {
+   "match": [
+    "CT",
+    "CT",
+    "CT",
+    "NA"
+   ],
+   "params": [
+    -0.5206,
+    0.2587,
+    0.6374,
+    -0.3134
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 22-point scan of a 34-atom fragment, RMS 0.28 kcal/mol; fragment CT-CT-CT-NA"
+  },
+  {
+   "match": [
+    "HC",
+    "CT",
+    "CT",
+    "NA"
+   ],
+   "params": [
+    0.0,
+    0.0,
+    0.1048,
+    0.0
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 34-atom fragment, RMS 0.08 kcal/mol; fragment HC-CT-CT-NA"
+  },
+  {
+   "match": [
+    "CM",
     "CT",
     "CT",
     "CM"
    ],
    "params": [
-    -0.5409,
+    -0.5407,
     -0.0324,
-    -0.0136,
-    -0.2392
+    -0.0137,
+    -0.2391
    ],
    "source": "CAPS fit (QM)",
    "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 17-point scan of a 28-atom fragment, RMS 0.08 kcal/mol (the force field's own: 0.23); fragment CM-CT-CT-CM"

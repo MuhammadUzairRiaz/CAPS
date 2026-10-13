@@ -2802,6 +2802,66 @@
    "description": "CH on a carbazole N (poly(N-vinylcarbazole) backbone)"
   },
   {
+   "type": "caps_pdms_si",
+   "smarts": "[SiX4;$(*([OX2][SiX4])[OX2][SiX4])]",
+   "priority": 8,
+   "description": "siloxane Si between two Si-O-Si O (D unit)"
+  },
+  {
+   "type": "caps_pdms_sioh",
+   "smarts": "[SiX4;$(*[OX2][SiX4]);$(*[OX2H1])]",
+   "priority": 8,
+   "description": "siloxane Si bearing OH (silanol chain end)"
+  },
+  {
+   "type": "caps_pdms_sih",
+   "smarts": "[SiX4;$(*[OX2][SiX4]);$(*[#1])]",
+   "priority": 8,
+   "description": "siloxane Si bearing H (Si-H chain end)"
+  },
+  {
+   "type": "caps_pdms_sim3",
+   "smarts": "[SiX4;$(*[OX2][SiX4]);$(*([CX4])([CX4])[CX4])]",
+   "priority": 8,
+   "description": "siloxane Si of a trimethylsilyl end (M unit)"
+  },
+  {
+   "type": "caps_pdms_ob",
+   "smarts": "[OX2;$(O([SiX4])[SiX4])]",
+   "priority": 8,
+   "description": "Si-O-Si O"
+  },
+  {
+   "type": "caps_pdms_oh",
+   "smarts": "[OX2H1;$(O[SiX4;$(*[OX2][SiX4])])]",
+   "priority": 8,
+   "description": "silanol O on a siloxane Si"
+  },
+  {
+   "type": "caps_pdms_ho",
+   "smarts": "[H][OX2H1;$(O[SiX4;$(*[OX2][SiX4])])]",
+   "priority": 8,
+   "description": "H of that silanol"
+  },
+  {
+   "type": "caps_pdms_hsi",
+   "smarts": "[H][SiX4;$(*[OX2][SiX4])]",
+   "priority": 8,
+   "description": "H on a siloxane Si"
+  },
+  {
+   "type": "caps_pdms_c",
+   "smarts": "[CX4H3;$(*[SiX4;$(*[OX2][SiX4])])]",
+   "priority": 8,
+   "description": "CH3 on a siloxane Si"
+  },
+  {
+   "type": "caps_pdms_hc",
+   "smarts": "[H][CX4H3;$(*[SiX4;$(*[OX2][SiX4])])]",
+   "priority": 8,
+   "description": "H of a CH3 on a siloxane Si"
+  },
+  {
    "type": "caps_cbz_ct2",
    "smarts": "[CX4H2;$(*[n;r5;$(n1c2ccccc2c2ccccc12)])]",
    "priority": 8,
