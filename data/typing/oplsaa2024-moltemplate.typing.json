@@ -359,6 +359,12 @@
    "description": "H on ether alpha C"
   },
   {
+   "type": "221",
+   "smarts": "c[CX4;$(*[OX2;!$(O[#1]);!$(O[#6]=[O,S,N]);!$(O[Si]);!$(O~[#6](~[OX2])~[OX2]);!$(O[CX4]([OX2])[OX2]);!r3;$(O([CX4])[CX4,c])])]",
+   "priority": 6,
+   "description": "ring C of a benzyl ether (as a benzyl alcohol's, 221)"
+  },
+  {
    "type": "199",
    "smarts": "c[OX2;!$(O[#1]);!$(O[#6]=[O,S,N]);!$(O[Si]);!$(O~[#6](~[OX2])~[OX2]);!$(O[CX4]([OX2])[OX2]);!r3;$(O(c)[CX4])]",
    "priority": 5,

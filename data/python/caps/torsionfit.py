@@ -3,7 +3,7 @@
     python -m caps.torsionfit prepare STRUCTURE[,STRUCTURE...] FF.json WORKDIR [--engine orca|psi4] [--step 15] [--radius 2]
                                     [--level oplsaa-l|dlpno] [--nprocs 1] [--classes A-B-C-D,... [--only]]
     python -m caps.torsionfit fill WORKDIR      (after collect: the points prepare skipped, from finished neighbours)
-    python -m caps.torsionfit fit WORKDIR [--out overlay.json] [--refit]
+    python -m caps.torsionfit fit WORKDIR [--out overlay.json] [--refit] [--ridge 0.5]
     python -m caps.torsionfit collect WORKDIR
     python -m caps.torsionfit fit WORKDIR [--out overlay.json]
 
@@ -485,10 +485,14 @@ def fill():
     print(f"{len(jobs)} new points (jobs_fill.txt; array 1-{len(jobs)}); {left} still without a start geometry")
 
 
-def lstsq(A, y, w):
-    """weighted least squares by the normal equations (a tiny ridge keeps an unused column at zero)"""
+def lstsq(A, y, w, ridge=0.0):
+    """weighted least squares by the normal equations; `ridge` (kcal^-2 mol^2 scale of the normal matrix) pulls every
+    column but the first (the constant) towards zero, so torsions that turn together about one bond (an O and a C on
+    the same carbon, 180 deg apart, whose cos(phi) terms are each other's negatives) share the profile instead of
+    cancelling at huge values; a tiny ridge always keeps an unused column at zero"""
     n = len(A[0])
-    M = [[sum(w[r] ** 2 * A[r][i] * A[r][j] for r in range(len(A))) + (1e-9 if i == j else 0.0) for j in range(n)] for i in range(n)]
+    M = [[sum(w[r] ** 2 * A[r][i] * A[r][j] for r in range(len(A))) + ((ridge if i > 0 else 0.0) + 1e-9 if i == j else 0.0)
+          for j in range(n)] for i in range(n)]
     b = [sum(w[r] ** 2 * A[r][i] * y[r] for r in range(len(A))) for i in range(n)]
     for c in range(n):   # Gauss-Jordan with partial pivoting
         p = max(range(c, n), key=lambda r: abs(M[r][c]))
@@ -526,6 +530,7 @@ def fit():
         rows, emm, eqm, emm_full = [], [], [], []
         groups = None
         for p in pts:
+            os.makedirs(os.path.join(work, p["dir"]), exist_ok=True)   # a plan copied without its point folders
             m2 = os.path.join(work, p["dir"], "opt.mol2")
             write_mol2(m2, s["elements"], p["positions"], [tuple(x) for x in s["bonds"]])
             data = os.path.join(work, p["dir"], "opt.data")
@@ -543,7 +548,11 @@ def fit():
                         if min(key, key[::-1]) not in listed and min(key, key[::-1]) not in forced:
                             continue
                         groups.setdefault(min(key, key[::-1]), []).append(q)
-                keys = sorted(groups)
+                # heavy-atom torsions carry the profile when there are any: one ending in H stays zero (OPLS-AA's own
+                # practice; its H torsions are mostly small) and is written as such, so the force field is complete
+                heavy = [k for k in groups if not (k[0].startswith("H") or k[3].startswith("H"))]
+                zeroed = sorted(k for k in groups if heavy and k not in heavy)
+                keys = sorted(heavy) if heavy else sorted(groups)
             row = [1.0]
             for k in keys:
                 phis = [math.radians(dihedral(pos, *q)) for q in groups[k]]
@@ -552,7 +561,14 @@ def fit():
             rows.append(row)
         y = [q - m for q, m in zip(eqm, emm)]
         wts = [0.2 if q - min(eqm) > 10 else 1.0 for q in eqm]
-        sol = lstsq(rows, y, wts)
+        # the smallest ridge that keeps every V within a physical bound (10 kcal/mol): none for a well-posed fit, just
+        # enough where torsions about the bond turn together (--ridge fixes it)
+        lam_used = None
+        for lam in ([float(arg("--ridge"))] if arg("--ridge") else [0.0, 1e-4, 1e-3, 3e-3, 0.01, 0.03, 0.1, 0.3, 0.5]):
+            sol = lstsq(rows, y, wts, ridge=lam)
+            lam_used = lam
+            if max(abs(v) for v in sol[1:]) <= 10.0:
+                break
         fitted = [sum(a * x for a, x in zip(r, sol)) for r in rows]
         rms = math.sqrt(sum((f - v) ** 2 for f, v in zip(fitted, y)) / len(y))
         # the profiles themselves, for the record: QM, MM without the fitted torsions, MM with them
@@ -565,7 +581,7 @@ def fit():
             print(f"{s['dir']}: the force field's own torsions against QM, RMS {rms_existing:.2f} kcal/mol")
         for n, k in enumerate(keys):
             V = [round(float(v), 4) for v in sol[1 + 4 * n: 5 + 4 * n]]
-            refit = k in forced
+            refit = k in forced and k not in listed   # a --classes class the force field lacks is a plain fit
             if refit and "--refit" not in sys.argv:
                 print(f"{'-'.join(k)}: refit V = {V} (RMS {rms:.2f} kcal/mol; not written without --refit)")
                 continue
@@ -578,9 +594,18 @@ def fit():
             rules.append({"name": "-".join(k), "match": [x.replace("*", "\\*") for x in k], "style": "opls", "params": V,
                           "comment": f"CAPS {'refit' if refit else 'fit'} (QM): {plan['level']}, {len(pts)}-point scan of a "
                                      f"{len(s['elements'])}-atom fragment, RMS {rms:.2f} kcal/mol"
+                                     + (f", ridge {lam_used:g}" if lam_used else "")
                                      + (f" (the force field's own: {rms_existing:.2f})" if rms_existing is not None else ""),
                           "fit": fitrec})
             print(f"{'-'.join(k)}: V = {V} (RMS {rms:.2f} kcal/mol over {len(pts)} points)")
+        for k in zeroed:
+            if k in forced and k not in listed:
+                continue
+            rules.append({"name": "-".join(k), "match": [x.replace("*", "\\*") for x in k], "style": "opls", "params": [0.0, 0.0, 0.0, 0.0],
+                          "comment": f"CAPS fit (QM): zero; the heavy-atom torsions about the same bond carry the profile of a "
+                                     f"{len(pts)}-point {plan['level']} scan of a {len(s['elements'])}-atom fragment (RMS {rms:.2f} kcal/mol)",
+                          "fit": {"fragment": s["dir"], "zeroed": True, "scan": []}})
+            print(f"{'-'.join(k)}: zero (the heavy-atom torsions about this bond carry the profile)")
     out = arg("--out", os.path.join(work, "fitted_torsions.json"))
     json.dump({"format": "caps-forcefield", "format_version": 1, "name": "CAPS-fitted torsions", "atom_types": [],
                "dihedrals": rules, "notes": [f"torsions CAPS fitted to {plan['level']} rotational profiles "

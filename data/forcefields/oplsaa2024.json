@@ -13186,6 +13186,45 @@
     "dihedral": "CT",
     "improper": "CT"
    }
+  },
+  {
+   "name": "caps_bzo_ch2",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.195,
+   "description": "benzyl ether alpha CH2 (182 0.140 + 0.055) (CAPS: the benzyl alcohol increment of the table (ring C 221 at -0.055 for benzene's -0.115, the carbinol C +0.055 over an alcohol's: 218 0.200 against 157 0.145) applied to an ether alpha C)",
+   "equivalence": {
+    "bond": "CT",
+    "angle": "CT",
+    "dihedral": "CT",
+    "improper": "CT"
+   }
+  },
+  {
+   "name": "caps_bzo_ch",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.225,
+   "description": "benzyl ether alpha CH (183 0.170 + 0.055) (CAPS: the benzyl alcohol increment of the table (ring C 221 at -0.055 for benzene's -0.115, the carbinol C +0.055 over an alcohol's: 218 0.200 against 157 0.145) applied to an ether alpha C)",
+   "equivalence": {
+    "bond": "CT",
+    "angle": "CT",
+    "dihedral": "CT",
+    "improper": "CT"
+   }
+  },
+  {
+   "name": "caps_bzo_c",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.255,
+   "description": "benzyl ether alpha C (184 0.200 + 0.055) (CAPS: the benzyl alcohol increment of the table (ring C 221 at -0.055 for benzene's -0.115, the carbinol C +0.055 over an alcohol's: 218 0.200 against 157 0.145) applied to an ether alpha C)",
+   "equivalence": {
+    "bond": "CT",
+    "angle": "CT",
+    "dihedral": "CT",
+    "improper": "CT"
+   }
   }
  ],
  "pairs": [
@@ -23303,6 +23342,36 @@
    "name": "caps_cbz_ct2",
    "match": [
     "caps_cbz_ct2"
+   ],
+   "params": [
+    0.066,
+    3.5
+   ]
+  },
+  {
+   "name": "caps_bzo_ch2",
+   "match": [
+    "caps_bzo_ch2"
+   ],
+   "params": [
+    0.066,
+    3.5
+   ]
+  },
+  {
+   "name": "caps_bzo_ch",
+   "match": [
+    "caps_bzo_ch"
+   ],
+   "params": [
+    0.066,
+    3.5
+   ]
+  },
+  {
+   "name": "caps_bzo_c",
+   "match": [
+    "caps_bzo_c"
    ],
    "params": [
     0.066,
@@ -49267,6 +49336,20 @@
     111.49
    ],
    "comment": "CAPS fit (QM): B3LYP-D3BJ/def2-TZVP relaxed scan of epichlorohydrin (9 points), E = K (theta - theta0)^2, RMS 0.04 kcal/mol"
+  },
+  {
+   "name": "C-OS-C",
+   "match": [
+    "C",
+    "OS",
+    "C"
+   ],
+   "style": "harmonic",
+   "params": [
+    83.0,
+    116.9
+   ],
+   "comment": "the 2024 .sb's ester bends C-OS-CT and C-OS-CA (83 / 116.9): an anhydride's C-O-C is an ester O between two carbonyl carbons; the files give the ester O the same bend toward an alkyl and an aryl carbon, so it takes that one (CAPS's relaxed scan of acetic anhydride could not be fitted while its torsions were missing)"
   }
  ],
  "dihedrals": [
@@ -68190,6 +68273,482 @@
     0.0
    ],
    "comment": "the 2024 .par's aromatic ring torsions (type 165): every torsion inside an aromatic ring in the files is V2 7.25, rings of CN and CB atoms included; carbazole's benzene rings"
+  },
+  {
+   "name": "CA-CT-CT-OS",
+   "match": [
+    "CA",
+    "CT",
+    "CT",
+    "OS"
+   ],
+   "style": "opls",
+   "params": [
+    -0.5617,
+    0.1212,
+    0.835,
+    -0.1228
+   ],
+   "comment": "CAPS fit (QM): MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 22-atom fragment, RMS 0.15 kcal/mol; fragment CA-CT-CT-OS"
+  },
+  {
+   "name": "CA-CT-OS-CT",
+   "match": [
+    "CA",
+    "CT",
+    "OS",
+    "CT"
+   ],
+   "style": "opls",
+   "params": [
+    -0.366,
+    -0.4283,
+    0.9422,
+    -0.3234
+   ],
+   "comment": "CAPS fit (QM): MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 18-point scan of a 19-atom fragment, RMS 0.02 kcal/mol; fragment CA-CT-OS-CT"
+  },
+  {
+   "name": "CM-CT-CT-CT",
+   "match": [
+    "CM",
+    "CT",
+    "CT",
+    "CT"
+   ],
+   "style": "opls",
+   "params": [
+    1.3251,
+    -0.5987,
+    0.0549,
+    -0.3855
+   ],
+   "comment": "CAPS fit (QM): MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 18-point scan of a 18-atom fragment, RMS 0.13 kcal/mol; fragment CM-CT-CT-CT"
+  },
+  {
+   "name": "C-N-C-CT",
+   "match": [
+    "C",
+    "N",
+    "C",
+    "CT"
+   ],
+   "style": "opls",
+   "params": [
+    2.3929,
+    1.5975,
+    -3.4939,
+    -2.3586
+   ],
+   "comment": "CAPS fit (QM): MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 14-atom fragment, RMS 0.16 kcal/mol, ridge 0.001; fragment C-N-C-CT"
+  },
+  {
+   "name": "C-N-C-O",
+   "match": [
+    "C",
+    "N",
+    "C",
+    "O"
+   ],
+   "style": "opls",
+   "params": [
+    2.3494,
+    -3.8928,
+    -3.3362,
+    3.0795
+   ],
+   "comment": "CAPS fit (QM): MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 14-atom fragment, RMS 0.16 kcal/mol, ridge 0.001; fragment C-N-C-CT"
+  },
+  {
+   "name": "CA-C-CA-CA",
+   "match": [
+    "CA",
+    "C",
+    "CA",
+    "CA"
+   ],
+   "style": "opls",
+   "params": [
+    4.6493,
+    1.004,
+    5.2702,
+    -0.0976
+   ],
+   "comment": "CAPS fit (QM): MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 25-atom fragment, RMS 0.33 kcal/mol; fragment CA-C-CA-CA"
+  },
+  {
+   "name": "CA-N-C-N",
+   "match": [
+    "CA",
+    "N",
+    "C",
+    "N"
+   ],
+   "style": "opls",
+   "params": [
+    -1.7833,
+    -3.9942,
+    0.463,
+    1.2261
+   ],
+   "comment": "CAPS fit (QM): MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 23-point scan of a 28-atom fragment, RMS 0.44 kcal/mol; fragment CA-N-C-N"
+  },
+  {
+   "name": "CM-CM-CT-S",
+   "match": [
+    "CM",
+    "CM",
+    "CT",
+    "S"
+   ],
+   "style": "opls",
+   "params": [
+    0.2815,
+    -0.6898,
+    -1.5678,
+    0.2837
+   ],
+   "comment": "CAPS fit (QM): MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 14-atom fragment, RMS 0.41 kcal/mol; fragment CM-CM-CT-S"
+  },
+  {
+   "name": "HC-CM-CT-S",
+   "match": [
+    "HC",
+    "CM",
+    "CT",
+    "S"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "CAPS fit (QM): zero; the heavy-atom torsions about the same bond carry the profile of a 24-point MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L) scan of a 14-atom fragment (RMS 0.41 kcal/mol); fragment CM-CM-CT-S"
+  },
+  {
+   "name": "CM-CT-S-CT",
+   "match": [
+    "CM",
+    "CT",
+    "S",
+    "CT"
+   ],
+   "style": "opls",
+   "params": [
+    -0.7273,
+    -0.2397,
+    0.6058,
+    -0.2416
+   ],
+   "comment": "CAPS fit (QM): MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 13-atom fragment, RMS 0.37 kcal/mol; fragment CM-CT-S-CT"
+  },
+  {
+   "name": "CM-CT-S-S",
+   "match": [
+    "CM",
+    "CT",
+    "S",
+    "S"
+   ],
+   "style": "opls",
+   "params": [
+    -0.2391,
+    -0.5107,
+    0.2036,
+    0.1535
+   ],
+   "comment": "CAPS fit (QM): MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 22-point scan of a 14-atom fragment, RMS 0.15 kcal/mol; fragment CM-CT-S-S"
+  },
+  {
+   "name": "CT-S-S-S",
+   "match": [
+    "CT",
+    "S",
+    "S",
+    "S"
+   ],
+   "style": "opls",
+   "params": [
+    1.2334,
+    -5.6023,
+    1.6667,
+    0.1222
+   ],
+   "comment": "CAPS fit (QM): MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 11-atom fragment, RMS 0.31 kcal/mol; fragment CT-S-S-S"
+  },
+  {
+   "name": "S-S-S-S",
+   "match": [
+    "S",
+    "S",
+    "S",
+    "S"
+   ],
+   "style": "opls",
+   "params": [
+    1.7073,
+    -3.2563,
+    1.0074,
+    0.4436
+   ],
+   "comment": "CAPS fit (QM): MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 12-atom fragment, RMS 0.04 kcal/mol; fragment S-S-S-S"
+  },
+  {
+   "name": "C-CM-CT-HC",
+   "match": [
+    "C",
+    "CM",
+    "CT",
+    "HC"
+   ],
+   "style": "opls",
+   "params": [
+    -2.6067,
+    2.2787,
+    0.0031,
+    -0.5461
+   ],
+   "comment": "CAPS fit (QM): MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.03 kcal/mol; fragment C-CM-CT-HC"
+  },
+  {
+   "name": "C-OS-CM-CM",
+   "match": [
+    "C",
+    "OS",
+    "CM",
+    "CM"
+   ],
+   "style": "opls",
+   "params": [
+    -0.9629,
+    3.9038,
+    -0.676,
+    0.0548
+   ],
+   "comment": "CAPS fit (QM): MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 12-atom fragment, RMS 0.05 kcal/mol; fragment C-OS-CM-CM"
+  },
+  {
+   "name": "C-OS-CM-HC",
+   "match": [
+    "C",
+    "OS",
+    "CM",
+    "HC"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "CAPS fit (QM): zero; the heavy-atom torsions about the same bond carry the profile of a 24-point MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L) scan of a 12-atom fragment (RMS 0.05 kcal/mol); fragment C-OS-CM-CM"
+  },
+  {
+   "name": "CB-CA-CT-HC",
+   "match": [
+    "CB",
+    "CA",
+    "CT",
+    "HC"
+   ],
+   "style": "opls",
+   "params": [
+    -1.2398,
+    1.3959,
+    0.5614,
+    -0.0674
+   ],
+   "comment": "CAPS fit (QM): MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 21-atom fragment, RMS 0.03 kcal/mol; fragment CB-CA-CT-HC"
+  },
+  {
+   "name": "CM-C-OS-CT",
+   "match": [
+    "CM",
+    "C",
+    "OS",
+    "CT"
+   ],
+   "style": "opls",
+   "params": [
+    0.8652,
+    7.1265,
+    1.3445,
+    0.1227
+   ],
+   "comment": "CAPS fit (QM): MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.07 kcal/mol; fragment CM-C-OS-CT"
+  },
+  {
+   "name": "CM-C=-C=-Cl",
+   "match": [
+    "CM",
+    "C=",
+    "C=",
+    "Cl"
+   ],
+   "style": "opls",
+   "params": [
+    1.1142,
+    0.8525,
+    -1.386,
+    -0.1518
+   ],
+   "comment": "CAPS fit (QM): MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 10-atom fragment, RMS 0.05 kcal/mol; fragment CM-C=-C=-Cl"
+  },
+  {
+   "name": "Cl-C=-C=-HC",
+   "match": [
+    "Cl",
+    "C=",
+    "C=",
+    "HC"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "CAPS fit (QM): zero; the heavy-atom torsions about the same bond carry the profile of a 24-point MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L) scan of a 10-atom fragment (RMS 0.05 kcal/mol); fragment CM-C=-C=-Cl"
+  },
+  {
+   "name": "CM-CM-C-OS",
+   "match": [
+    "CM",
+    "CM",
+    "C",
+    "OS"
+   ],
+   "style": "opls",
+   "params": [
+    1.2408,
+    -0.1388,
+    0.5292,
+    -0.3826
+   ],
+   "comment": "CAPS fit (QM): MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.03 kcal/mol; fragment CM-CM-C-OS"
+  },
+  {
+   "name": "CM-OS-C-CT",
+   "match": [
+    "CM",
+    "OS",
+    "C",
+    "CT"
+   ],
+   "style": "opls",
+   "params": [
+    -0.1368,
+    9.2514,
+    -1.1201,
+    -0.2351
+   ],
+   "comment": "CAPS fit (QM): MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 12-atom fragment, RMS 0.05 kcal/mol, ridge 0.0001; fragment CM-OS-C-CT"
+  },
+  {
+   "name": "CM-OS-C-O",
+   "match": [
+    "CM",
+    "OS",
+    "C",
+    "O"
+   ],
+   "style": "opls",
+   "params": [
+    -4.4774,
+    0.534,
+    -1.9713,
+    -0.1851
+   ],
+   "comment": "CAPS fit (QM): MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 12-atom fragment, RMS 0.05 kcal/mol, ridge 0.0001; fragment CM-OS-C-CT"
+  },
+  {
+   "name": "CY-CY-CT-Cl",
+   "match": [
+    "CY",
+    "CY",
+    "CT",
+    "Cl"
+   ],
+   "style": "opls",
+   "params": [
+    -0.4655,
+    0.3635,
+    5.8135,
+    0.1355
+   ],
+   "comment": "CAPS fit (QM): MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 10-atom fragment, RMS 0.08 kcal/mol; fragment CY-CY-CT-Cl"
+  },
+  {
+   "name": "Cl-CT-CY-O$",
+   "match": [
+    "Cl",
+    "CT",
+    "CY",
+    "O$"
+   ],
+   "style": "opls",
+   "params": [
+    0.2864,
+    -0.53,
+    8.0258,
+    0.2908
+   ],
+   "comment": "CAPS fit (QM): MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 10-atom fragment, RMS 0.08 kcal/mol; fragment CY-CY-CT-Cl"
+  },
+  {
+   "name": "Cl-CT-CY-HC",
+   "match": [
+    "Cl",
+    "CT",
+    "CY",
+    "HC"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "CAPS fit (QM): zero; the heavy-atom torsions about the same bond carry the profile of a 24-point MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L) scan of a 10-atom fragment (RMS 0.08 kcal/mol); fragment CY-CY-CT-Cl"
+  },
+  {
+   "name": "HC-CT-CY-HC",
+   "match": [
+    "HC",
+    "CT",
+    "CY",
+    "HC"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "CAPS fit (QM): zero; the heavy-atom torsions about the same bond carry the profile of a 24-point MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L) scan of a 10-atom fragment (RMS 0.08 kcal/mol); fragment CY-CY-CT-Cl"
+  },
+  {
+   "name": "HC-CT-CY-O$",
+   "match": [
+    "HC",
+    "CT",
+    "CY",
+    "O$"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "CAPS fit (QM): zero; the heavy-atom torsions about the same bond carry the profile of a 24-point MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L) scan of a 10-atom fragment (RMS 0.08 kcal/mol); fragment CY-CY-CT-Cl"
   }
  ],
  "impropers": [
@@ -68260,7 +68819,7 @@
  ],
  "notes": [
   "converted by CAPS (bench/ff/convert_boss_opls.py) from Jorgensen's published BOSS files",
-  "52 types and terms the 2024 files lack, each from the OPLS-AA paper that defines it or from OPLS-AA's own charge increments (bench/ff/open/oplsaa2024_supplement.json): caps_ccl2, caps_chcl2, caps_ch2cl2, caps_ccl3, caps_chcl3, caps_pyr2ch, caps_s_poly, caps_c_dienecl, caps_cbz_n, caps_cbz_cn, caps_cbz_cs, caps_cbz_c1, caps_cbz_c2, caps_cbz_c3, caps_cbz_c4, caps_cbz_h1, caps_cbz_h2, caps_cbz_h3, caps_cbz_h4, caps_cbz_hc, caps_cbz_ct, caps_cbz_ct2, CF-CT, C=-Cl, CF-CT-CF, CF-CT-CT, CT-CF-CT, CF-CT-F, CT-CF-F, CF-CT-HC, CO-OS-CO, CO-CT-OS, CT-CT-CY, CA-SY-CA, OS-CT-CY, CT-CM-Cl, CM-C=-Cl, C=-C=-Cl, CT-NA-CN, CN-NA-CN, CN-CB-CB, CT-CT-NA, S-S-S, CM-CT-S, CM-C-OS, Cl-CT-CY, F-CF-CT-F, Cl-C=-CM-HC, CB-CN-CA-CA, CB-CN-CA-HA, NA-CN-CA-CA, NA-CN-CA-HA",
+  "84 types and terms the 2024 files lack, each from the OPLS-AA paper that defines it or from OPLS-AA's own charge increments (bench/ff/open/oplsaa2024_supplement.json): caps_ccl2, caps_chcl2, caps_ch2cl2, caps_ccl3, caps_chcl3, caps_pyr2ch, caps_s_poly, caps_c_dienecl, caps_cbz_n, caps_cbz_cn, caps_cbz_cs, caps_cbz_c1, caps_cbz_c2, caps_cbz_c3, caps_cbz_c4, caps_cbz_h1, caps_cbz_h2, caps_cbz_h3, caps_cbz_h4, caps_cbz_hc, caps_cbz_ct, caps_cbz_ct2, caps_bzo_ch2, caps_bzo_ch, caps_bzo_c, CF-CT, C=-Cl, CF-CT-CF, CF-CT-CT, CT-CF-CT, CF-CT-F, CT-CF-F, CF-CT-HC, CO-OS-CO, CO-CT-OS, CT-CT-CY, CA-SY-CA, OS-CT-CY, CT-CM-Cl, CM-C=-Cl, C=-C=-Cl, CT-NA-CN, CN-NA-CN, CN-CB-CB, CT-CT-NA, S-S-S, CM-CT-S, CM-C-OS, Cl-CT-CY, C-OS-C, F-CF-CT-F, Cl-C=-CM-HC, CB-CN-CA-CA, CB-CN-CA-HA, NA-CN-CA-CA, NA-CN-CA-HA, CA-CT-CT-OS, CA-CT-OS-CT, CM-CT-CT-CT, C-N-C-CT, C-N-C-O, CA-C-CA-CA, CA-N-C-N, CM-CM-CT-S, HC-CM-CT-S, CM-CT-S-CT, CM-CT-S-S, CT-S-S-S, S-S-S-S, C-CM-CT-HC, C-OS-CM-CM, C-OS-CM-HC, CB-CA-CT-HC, CM-C-OS-CT, CM-C=-C=-Cl, Cl-C=-C=-HC, CM-CM-C-OS, CM-OS-C-CT, CM-OS-C-O, CY-CY-CT-Cl, Cl-CT-CY-O$, Cl-CT-CY-HC, HC-CT-CY-HC, HC-CT-CY-O$",
   "83 torsions the .par gives again for particular molecules (the first, general line is applied): CT-CT-CT-CT [1.1, -0.2, 0.2, 0.0] (butane only OPLS/2020); CT-CT-CT-OH [-1.552, 0.0, 0.0, 0.0] (polyols  AA); OH-CT-CT-OH [12.234, 0.0, 0.0, 0.0] (triols only AA); C-N-CT-HC [0.0, 0.0, -0.139, 0.0] (N-methylformamide); C-N-CT-CT [-1.396, -0.427, 0.0, 0.0] (N-ethylformamide); N-CT-CT-CT [1.964, 0.0, 0.659, 0.0] (N-propylformamide); CT-CT-C-N [2.844, -0.361, -0.325, 0.0] (propanamide OPLS-AA/M); CT-CT-C-O [0.406, 1.304, 0.139, 0.0] (propanamide OPLS-AA/M); C-N-CT-CT [1.13, -1.42, 0.44, 0.0] (first (theta) torsion for beta-3-pept); CT-CT-C-N [3.26, 0.44, 0.6, 0.0] (lastl (psi) torsion for beta-3-peptid); CT-CT-CT-C [-3.185, -0.825, 0.493, 0.0] (carboxylate ion); CT-CT-C-O [0.0, 0.546, 0.0, 0.0] (RCOOH acid); HC-CT-OH-HO [-2.589, -1.123, 0.27, 0.0] (axial cyclohexanol); C-CT-CT-HC [0.0, 0.0, 0.074, 0.0] (dicarboxylic acid); CT-CT-C-O [-0.75, -0.55, -0.25, 0.0] (dicarboxylic acid); CT-CT-C-OH [0.0, 1.412, 0.0, 0.0] (dicarboxylic acid); CT-CT-N-CT [2.859, 2.058, -11.266, 0.0] (\"       chi4 CG-CD-N-CA); CT-CT-NM-CT [2.859, 2.058, -11.266, 0.0] (); CT-CT-C-O [-0.277, 1.228, -0.694, 0.0] (aldehyde & ketone & acyl halide); CT-CT-CT-C [-1.697, -0.456, 0.585, 0.0] (aldehyde & ketone & acyl halide); O2-P-OS-CT [0.9, -2.93, 2.64, 0.0] (dimethyl phosphate); HO-OH-CT-CT [4.478, -2.1746, 0.0, 0.0] (trifluoroethanol); HC-CT-OH-HO [0.0, 0.0, 0.476, 0.0] (trifluoroethanol); CT-C-OH-HO [3.2, 4.9, 0.0, 0.0] (1,2-diacid monoanion); CT-CT-C-O [-1.0, -1.9, -0.9, 0.0] (1,2-diacid monoanion); C-CT-CT-C [0.8, 0.0, 0.9, 0.0] (1,2-diacid monoanion); F-CT-CT-HC [0.0, 0.0, 0.3137, 0.0] (trifluoroethanol); CT-CT-CT-O? [-1.336, 0.0, 0.0, 0.0] (hexopyranoses); CT-CT-OH-HO [2.674, -2.883, 1.026, 0.0] (hexopyranoses); OH-CT-CT-OH [9.066, 0.0, 0.0, 0.0] (hexopyranoses); ??-CR-NB-?? [0.0, 10.0, 0.0, 0.0] (); ??-CR-NA-?? [0.0, 10.0, 0.0, 0.0] (); ??-CR-NC-?? [0.0, 10.0, 0.0, 0.0] (); ??-NA-CW-?? [0.0, 5.0, 0.0, 0.0] (); ??-CW-NA-?? [0.0, 3.0, 0.0, 0.0] (); CT-CT-NT-H [0.0, 4.0, 0.0, 0.0] (azetidine - 4 membered cyclic amines); CT-CT-NT-H [0.2, -0.417, 0.418, 0.0] (pyrrolidine 5 membered cyclic amines); CT-NT-CT-CT [1.536, -0.128, 0.695, 0.0] (exocyclic amines); CT-NT-CT-CT [1.464, -0.128, 0.695, 0.0] (exocyclic 1,4-diamines); CT-CT-NT-H [0.819, -0.417, 0.418, 0.0] (cyclic amines); CT-CT-NT-H [1.522, -0.417, 0.418, 0.0] (cyclic 1,4-diamines); CT-C=-C=-CM [0.9, 0.23, -0.505, 0.0] (2-Me-1,3-butadiene); O-C-OH-HO [0.0, 5.0, 0.0, 0.0] (benzoic acids); O-C-OS-CT [0.0, 5.0, 0.0, 0.0] (benzoic esters); CA-CA-N2-H [0.0, 2.133, 0.0, 0.0] (aniline JT-R 2014/04 fit AA to MP2/au); SA-CR-N-H [0.0, 2.133, 0.0, 0.0] (aniline-like); OA-CR-N-H [0.0, 2.133, 0.0, 0.0] (aniline-like); HC-CT-CT-SY [0.0, 0.0, 0.35, 0.0] (sulfone); CK-N*-CT-OS [3.132, -1.491, 2.744, 0.0] (Ping added,nucleoside); CK-NA-CT-CT [2.756, -0.872, -3.68, 0.0] (Ping added,nucleoside); C?-NA-CT-OS [0.0, -1.876, 0.0, 0.0] (Ping added for chi in nucleoside); C?-NA-CT-CT [0.0, -0.576, 0.0, 0.0] (Ping added for ..); O-C-C-HC [0.0, 0.2, 0.0, 0.0] (dicarbonyls BMC 8,1881(2000)); HC-C-C-HC [0.8, 0.0, 0.0, 0.0] (dicarbonyls    \"); C-CT-CT-CT [-1.751, 1.606, 0.0, 0.0] (Chi-1' Leu OPLS-AA/M); C-CT-CT-CT [2.994, 0.252, 0.3, 0.0] (Chi-1 Val,Ile OPLS-AA/M); C-CT-CT-CT [-1.422, 1.068, 0.0, 0.0] (Chi-1' Val,Ile OPLS-AA/M); C-CT-CT-CA [-1.406, 1.777, 0.0, 0.0] (Chi-1' Phe, Tyr OPLS-AA/M); C-CT-CT-C* [-0.506, 0.975, 0.0, 0.0] (Chi-1' Trp OPLS-AA/M); N-CT-CT-CT [0.214, 0.541, 0.392, 0.0] (Chi-1  Met OPLS-AA/M); C-CT-CT-CT [-0.911, 0.699, 0.0, 0.0] (Chi-1' Met OPLS-AA/M); N-CT-CT-C [-7.89, 0.662, 0.997, 0.0] (Chi-1  Asp,Ash OPLS-AA/M); C-CT-CT-C [1.543, 0.696, 0.0, 0.0] (Chi-1' Asp,Ash OPLS-AA/M); N-CT-CT-C [-5.501, 1.527, 0.0, 0.0] (Chi-1  Asn OPLS-AA/M); C-CT-CT-C [0.598, 1.558, 0.255, 0.0] (Chi-1' Asn OPLS-AA/M); N-CT-CT-CT [1.987, 0.457, 0.82, 0.0] (Chi-1  Glu OPLS-AA/M); C-CT-CT-CT [-1.764, 0.7, 0.0, 0.0] (Chi-1' Glu OPLS-AA/M); N-CT-CT-CT [0.884, 0.897, 0.88, 0.0] (Chi-1  Gln,Glh,Lys,Lyn,Arn OPLS-AA/M); C-CT-CT-CT [-2.538, 0.911, 0.0, 0.0] (Chi-1' Gln,Glh,Lys,Lyn,Arn OPLS-AA/M); N-CT-CT-CT [0.103, 0.653, 0.563, 0.0] (Chi-1  Arg OPLS-AA/M); C-CT-CT-CT [-1.971, 0.77, 0.0, 0.0] (Chi-1' Arg OPLS-AA/M); N-CT-C-N [-0.94, 2.755, -2.67, 0.0] (Psi  Pro OPLS-AA/M); CT-CT-C-N [5.029, 0.719, 2.24, 0.0] (Psi' Pro OPLS-AA/M); C-CT-CT-CT [-1.751, 1.606, 0.0, 0.0] (Chi-1' Pro OPLS-AA/M); CT-CT-C-N [1.494, -0.511, 0.125, 0.0] (Chi-2  Asn OPLS-AA/M); CT-CT-C-O [1.656, 1.304, 0.439, 0.0] (Chi-2' Asn OPLS-AA/M); CT-CT-CT-C [-1.267, 0.479, -0.486, 0.0] (Chi-2  Gln OPLS-AA/M); CT-CT-CT-C [-0.885, 1.025, -1.293, 0.0] (Chi-2  Glu OPLS-AA/M); CA-C!-CW-NA [0.0, 2.0, 0.0, 0.0] (biaryl_7); CA-C!-CV-NB [0.0, 1.59, 0.0, 0.0] (4-phenyltriazole); CA-C!-N-C [0.0, 1.76, 0.0, 0.23] (biaryl_62); C-N-CY-CY [-0.71, 2.1, -1.83, 0.0] (biaryl_ether_15_scan_2); C-CT-CT-CT [-4.16, -0.76, 0.96, 0.16] (alkyl_hydantoin)",
   "'allenes improper' lines (four nearly collinear atoms) are left out",
   "torsions inside a three-membered ring (an epoxide's CT-CY-O$-CY, CY-O$-CY-HC ...) have no lines in the files and are zero (ring3_torsions): the ring cannot turn, its shape held by the CY / O$ bends"
