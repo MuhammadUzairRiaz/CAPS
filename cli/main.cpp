@@ -233,16 +233,18 @@ int usage() {
                "               [--tacticity atactic|isotactic|syndiotactic] [--seed 1] [--trans] [--scale 1.0]\n"
                "               [--units '*CC(*)c1ccccc1,*CC(*)(C)C(=O)OC' --sequence homopolymer|alternating|block|random|shuffled|gradient|pattern\n"
                "                --weights 0.7,0.3 --blocks 20,20 --pattern AAB --ff FF.json] [--auto-scale]   any repeat units (else polystyrene)\n"
-               "  caps field   FILE [--topology DATA] [--forces OUT.txt]   GAFF types, terms, energy (and per-atom forces)\n"
+               "  caps field   FILE [--topology DATA] [--forces OUT.txt]   the structure's force field (below): types, terms, energy (and per-atom forces)\n"
                "  caps relax   FILE -o OUT.data|OUT.pdb|OUT.xyz [--method lbfgs|cg|sd|fire] [--ftol 0.5] [--iterations 5000]\n"
                "               [--density 1.05] [--step 0.06] [--box-relax] [--pressure 1] [--no-pushoff] [--cutoff 10]\n"
-               "               [--no-coulomb] [--quiet]   (.data output carries the force field for LAMMPS)\n"
+               "               [--no-coulomb] [--ff FF.json] [--quiet]   (.data output carries the force field for LAMMPS)\n"
+               "               without --ff (relax, md, equilibrate, field): the force field a data file CAPS wrote holds (its coefficients,\n"
+               "               charges and 1-4 weights; refused when CAPS cannot rebuild it from the file), else GAFF (C and H) or UFF\n"
                "  caps cbmc    FILE -o OUT.data [--moves 1000] [--trials 8] [--max-torsions 4] [--temp 300] [--cutoff 9] [--seed 1]\n"
                "               [--ff FF] [--no-coulomb]   configurational-bias regrowth of chain ends (Siepmann & Frenkel)\n"
                "  caps md      FILE -o OUT.data [--steps 10000] [--dt 1] [--temp 300] [--thermostat bussi|langevin|nose-hoover|none]\n"
                "               [--tau-t 100] [--barostat none|crescale|berendsen|mtk] [--pressure 1] [--tau-p 1000]\n"
                "               [--constraints none|h-bonds|all-bonds] [--constraint-solver shake|lincs] [--hmr 3.024] [--seed 1] [--new-velocities] [--thermo 100] [--dump TRAJ.lammpstrj --every 1000]\n"
-               "               [--log thermo.csv] [--cutoff 10] [--skin 1.5] [--threads N] [--no-coulomb] [--precision mixed|double] [--quiet]\n"
+               "               [--log thermo.csv] [--cutoff 10] [--skin 1.5] [--threads N] [--no-coulomb] [--precision mixed|double] [--ff FF.json] [--quiet]\n"
                "               [--checkpoint-every N [--checkpoint OUT.restart.data]]   the full state every N steps\n"
                "               [--progress-file progress.jsonl]   one JSON line per thermo row (default in a SLURM job)\n"
                "               caps md OUT.restart.data --resume --steps TOTAL -o OUT   continues from a checkpoint\n"
@@ -427,17 +429,23 @@ ForceField cli_forcefield(System& s0, std::map<std::string, std::string>& o, boo
     }
   }
   if (!o.count("--ff") && s0.forcefield && s0.forcefield->charge.size() == s0.atoms.size()) {
-    if (!quiet) std::printf("force field: %s (the file's own; give --ff for another)\n", s0.forcefield->name.c_str());
+    if (!quiet) std::printf("force field: %s (the file's own coefficients and charges; give --ff for another)\n", s0.forcefield->name.c_str());
     return *s0.forcefield;
   }
   if (!o.count("--ff")) {
+    // coefficients in the file that CAPS cannot rebuild: refused, not replaced by GAFF or UFF
+    if (!s0.forcefield_error.empty() && s0.forcefield_atoms == s0.atoms.size()) throw std::runtime_error(s0.forcefield_error);
     const bool ch = std::all_of(s0.atoms.begin(), s0.atoms.end(), [](const Atom& a) { return a.element == 1 || a.element == 6; });
-    if (!ch) {
-      if (!quiet) std::printf("force field: UFF (elements beyond C and H); give --ff for another\n");
-      return assign_uff(s0);
+    if (ch) {
+      try {
+        ForceField F = assign_gaff(s0);
+        if (!quiet) std::printf("force field: the built-in GAFF (C and H; the structure has no force field of its own); give --ff for another\n");
+        return F;
+      } catch (const FieldError&) {   // the built-in GAFF knows sp3 and aromatic carbon only (not C=C of rubbers)
+      }
     }
-    if (!quiet) std::printf("force field: the built-in GAFF (C and H); give --ff for another\n");
-    return assign_gaff(s0);
+    if (!quiet) std::printf("force field: UFF (the structure has no force field of its own%s); give --ff for another\n", ch ? "; C=C is beyond the built-in GAFF" : "");
+    return assign_uff(s0);
   }
   if (is_uff(o["--ff"])) {
     UffOptions uo;
@@ -2285,7 +2293,9 @@ int main(int argc, char** argv) {
         double cutoff = 10.0;
         const bool own = o["--ff"] == "file";   // the force field the file carries (an AMBER prmtop)
         if (own) {
-          if (!s.forcefield || s.forcefield->charge.size() != s.atoms.size()) throw std::runtime_error("--ff file: " + pos[1] + " carries no force field (open an AMBER prmtop with its coordinates)");
+          if (!s.forcefield || s.forcefield->charge.size() != s.atoms.size())
+            throw std::runtime_error(!s.forcefield_error.empty() ? s.forcefield_error
+                                                                 : "--ff file: " + pos[1] + " carries no force field (open an AMBER prmtop with its coordinates, or a LAMMPS data file CAPS wrote with one)");
           f = *s.forcefield;
           for (const auto& n : f.notes) std::printf("%s\n", n.c_str());
         } else if (uff) {
@@ -3264,7 +3274,7 @@ int main(int argc, char** argv) {
       if (o.count("--cutoff")) r.energy.cutoff = std::stod(o["--cutoff"]);
       r.energy.coulomb = !o.count("--no-coulomb");
       electrostatics(r.energy, o);
-      if (o.count("--ff")) r.field = std::make_shared<ForceField>(cli_forcefield(s, o));
+      r.field = std::make_shared<ForceField>(cli_forcefield(s, o, o.count("--quiet") > 0));
       if (o.count("--fix-mol")) {   // hold one molecule in place (the substrate of an interface is molecule 1)
         const int64_t m = std::stoll(o["--fix-mol"]);
         r.fixed.assign(s.atoms.size(), 0);
@@ -3298,6 +3308,8 @@ int main(int argc, char** argv) {
       else if (const std::string why = write_lammps_data_or_structure(s, r.field ? *r.field : default_forcefield(s), r.energy, out); !why.empty()) std::fprintf(stderr, "%s: %s\n", out.c_str(), why.c_str());
       std::printf("%s\n", rep.field.c_str());
       for (const auto& n : rep.notes) std::printf("%s\n", n.c_str());
+      std::printf("starting energy (kcal/mol): bond %.6f  angle %.6f  dihedral %.6f  improper %.6f  vdW %.6f  Coulomb %.6f  total %.6f\n", rep.initial.bond,
+                  rep.initial.angle, rep.initial.dihedral, rep.initial.improper, rep.initial.vdw, rep.initial.coulomb, rep.initial.total());
       for (const auto& st : rep.stages)
         std::printf("  %-34s %5d it  E %12.1f  |F|max %8.3f  (%s)\n", st.name.c_str(), st.iterations, st.energy, st.fmax, st.stopped_by.c_str());
       std::printf("%d iterations, %d energy and force evaluations\n", rep.iterations, rep.evaluations);
@@ -3358,7 +3370,7 @@ int main(int argc, char** argv) {
       electrostatics(d.energy, o);
       precision(d.energy, o);
       d.new_velocities = o.count("--new-velocities");
-      if (o.count("--ff")) d.field = std::make_shared<ForceField>(cli_forcefield(s, o));
+      d.field = std::make_shared<ForceField>(cli_forcefield(s, o, o.count("--quiet") > 0));
       if (o.count("--fix-mol")) {   // hold one molecule in place (the substrate of an interface is molecule 1)
         const int64_t mm = std::stoll(o["--fix-mol"]);
         d.fixed.assign(s.atoms.size(), 0);

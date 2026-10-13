@@ -17,6 +17,7 @@
 #include "caps/io.hpp"
 #include "caps/live.hpp"
 #include "io_util.hpp"
+#include "lammps_read_ff.hpp"
 
 namespace caps {
 
@@ -136,18 +137,25 @@ System read_lammps_data(const std::string& path) {
   std::vector<std::pair<int64_t, Vec3>> vel;
   size_t lineno = 1;
   size_t skipped_bonds = 0;
+  LammpsFileTerms terms;   // the coefficient sections and bonded terms, for the force field CAPS wrote into the file
 
   while (std::getline(in, line)) {
     ++lineno;
     std::string comment;
     const std::string body = trim(strip_comment(line, &comment));
-    if (body.empty()) continue;
+    if (body.empty()) {
+      // "# caps-ff …" under the title: the force field's name and 1-4 weights, as CAPS writes them
+      if (section.empty() && trim(comment).rfind("caps-ff ", 0) == 0) terms.caps_ff.push_back(trim(comment).substr(8));
+      continue;
+    }
     auto tok = split(body);
 
     // Section headers are a single keyword (optionally followed by a style comment).
     static const char* kSections[] = {"Masses", "Atoms", "Velocities", "Bonds", "Angles", "Dihedrals", "Impropers",
                                       "Pair Coeffs", "Bond Coeffs", "Angle Coeffs", "Dihedral Coeffs", "Improper Coeffs",
-                                      "PairIJ Coeffs", "Ellipsoids", "Lines", "Triangles", "Bodies"};
+                                      "PairIJ Coeffs", "Ellipsoids", "Lines", "Triangles", "Bodies", "BondBond Coeffs", "BondAngle Coeffs",
+                                      "MiddleBondTorsion Coeffs", "EndBondTorsion Coeffs", "AngleTorsion Coeffs", "AngleAngleTorsion Coeffs",
+                                      "BondBond13 Coeffs", "AngleAngle Coeffs"};
     bool is_header = false;
     for (const char* h : kSections)
       if (body == h) { is_header = true; section = h; style_hint = trim(comment); break; }
@@ -199,6 +207,14 @@ System read_lammps_data(const std::string& path) {
       auto j = index.find(std::stoll(tok[3]));
       if (i == index.end() || j == index.end()) { ++skipped_bonds; continue; }
       s.bonds.push_back({i->second, j->second});
+      terms.bond_type.push_back(std::stoi(tok[1]));
+    } else if ((section == "Angles" && tok.size() >= 5) || (section == "Dihedrals" && tok.size() >= 6) || (section == "Impropers" && tok.size() >= 6)) {
+      LammpsFileTerms::Term t{std::stoi(tok[1]), {}};
+      for (size_t k = 2; k < (section == "Angles" ? 5u : 6u); ++k) t.ids.push_back(std::stoll(tok[k]));
+      (section == "Angles" ? terms.angles : section == "Dihedrals" ? terms.dihedrals : terms.impropers).push_back(std::move(t));
+    } else if (section.size() > 7 && section.compare(section.size() - 7, 7, " Coeffs") == 0) {
+      terms.rows[section].push_back(tok);
+      terms.style.emplace(section, style_hint);
     }
   }
   if (!vel.empty()) {
@@ -227,6 +243,7 @@ System read_lammps_data(const std::string& path) {
     s.notes.push_back("image flags applied to " + std::to_string(flagged) + " atoms (positions unwrapped)");
   }
   assign_elements(s);
+  rebuild_lammps_forcefield(s, terms, index, path);
   return s;
 }
 

@@ -630,9 +630,8 @@ TEST(React, BondReactExportAndImport) {
   {
     std::ifstream in(dir + "/rx.data");
     std::string line;
-    std::getline(in, line);
-    std::getline(in, line);
-    std::getline(in, line);
+    std::getline(in, line);   // the title, then CAPS's force-field record (comments) and a blank line
+    while (std::getline(in, line) && (line.empty() || line[0] == '#')) {}
     EXPECT_EQ(line, std::to_string(s.atoms.size()) + " atoms");
   }
   const std::string v = dir + "/rx_" + rep.variants[0].name;

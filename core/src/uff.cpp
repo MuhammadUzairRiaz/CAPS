@@ -232,8 +232,10 @@ double equation17(double bo, const UffParam& a, const UffParam& b) { return 5 * 
 }  // namespace
 
 ForceField default_forcefield(const System& s) {
-  // the force field the file carries (an AMBER topology), while its atoms are the structure's
+  // the force field the file carries (an AMBER topology, a CAPS data file), while its atoms are the structure's
   if (s.forcefield && s.forcefield->charge.size() == s.atoms.size()) return *s.forcefield;
+  // a file with coefficients CAPS cannot rebuild: not GAFF or UFF in their place
+  if (!s.forcefield_error.empty() && s.forcefield_atoms == s.atoms.size()) throw FieldError(s.forcefield_error);
   const bool ch = std::all_of(s.atoms.begin(), s.atoms.end(), [](const Atom& a) { return a.element == 1 || a.element == 6; });
   if (ch) {
     try {

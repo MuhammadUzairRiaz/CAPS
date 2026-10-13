@@ -321,7 +321,13 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
     bool increments = false;      // the force field's own charges are bond increments (OPLS 2005, PCFF, COMPASS)
     ff.reset();
     try {
-      if (name == "default") {
+      if (name == "default" && sys.forcefield && sys.forcefield->charge.size() == sys.atoms.size()) {
+        // the force field the input file holds (a data file CAPS wrote, an AMBER topology)
+        ff = std::make_shared<ForceField>(*sys.forcefield);
+        ffname = sys.forcefield->name + " (the input file's own)";
+      } else if (name == "default" && !sys.forcefield_error.empty() && sys.forcefield_atoms == sys.atoms.size()) {
+        throw RecipeError(2, "type: " + sys.forcefield_error + " (in a recipe: type: { forcefield: NAME })");
+      } else if (name == "default") {
         const bool ch = std::all_of(sys.atoms.begin(), sys.atoms.end(), [](const Atom& a) { return a.element == 1 || a.element == 6; });
         ff = std::make_shared<ForceField>(ch ? assign_gaff(sys) : assign_uff(sys));
         ffname = ch ? "the built-in GAFF (C and H)" : "UFF";

@@ -1125,7 +1125,31 @@ void write_lammps_data_ff(const System& s, const ForceField& ff0, const EnergyOp
   const std::vector<const Kind*> kinds = {&L.bonds, &L.angles, &L.dihedrals, &L.impropers};
 
   // the LAMMPS data format: one title line, the counts, the box, then the sections (atom_style full, units real)
-  out << "CAPS · " << clean_title(s.title, ff.name) << " · " << ff.name << (metal ? " · units metal (eV)" : "") << "\n\n";
+  out << "CAPS · " << clean_title(s.title, ff.name) << " · " << ff.name << (metal ? " · units metal (eV)" : "") << "\n";
+  // for CAPS reading the file back (caps relax / md without --ff): the force field's name and the 1-2 / 1-3 / 1-4 weights
+  // LAMMPS takes from the input's special_bonds, or what of the force field the file cannot hold (comments to LAMMPS)
+  {
+    std::vector<std::string> left;
+    if (metal) left.push_back("energies in eV (units metal)");
+    if (st.tip4p_qdist > 0) left.push_back("TIP4P's M sites (LAMMPS's tip4p styles place them)");
+    if (ff.hbond.on()) left.push_back("DREIDING hydrogen bonds");
+    if (ff.sw.on) left.push_back("the Stillinger–Weber three-body term");
+    if (ff.manybody.on()) left.push_back("the many-body potential " + ff.manybody.style);
+    if (!ff.excluded_type_pairs.empty()) left.push_back("type pairs that never interact");
+    if (ff.lj_fsw || L.charmm || !ff.lj14_types.empty()) left.push_back("CHARMM's force switch and separate 1-4 Lennard-Jones");
+    if (ff.dielectric != 1 || ff.coul_rf || ff.coul_gromacs || ff.lj_shift || ff.cutoff > 0 || ff.lj_inner > 0)
+      left.push_back("the model's own dielectric, cut-off and switches");
+    if (!ff.tables.empty()) left.push_back("tabulated pairs");
+    if (!pair_coeffs) left.push_back("the pair coefficients (in the input file)");
+    if (ff.per_pair14()) left.push_back("per-group 1-4 weights");
+    if (na < s.atoms.size()) left.push_back("every atom of the system");
+    char w[200];
+    std::snprintf(w, sizeof w, "# caps-ff special lj 0 %.17g %.17g coul 0 %.17g %.17g\n", ff.keep13 ? 1.0 : 0.0, ff.lj14, ff.keep13 ? 1.0 : 0.0, ff.coul14);
+    out << "# caps-ff name " << ff.name << "\n" << w;
+    for (size_t k = 0; k < left.size(); ++k) out << (k ? ", " : "# caps-ff not-in-file ") << left[k];
+    if (!left.empty()) out << "\n";
+  }
+  out << "\n";
   out << na << " atoms\n";
   const char* plural[] = {"bonds", "angles", "dihedrals", "impropers"};
   for (int k = 0; k < 4; ++k)

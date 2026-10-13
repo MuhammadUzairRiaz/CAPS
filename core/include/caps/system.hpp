@@ -111,7 +111,12 @@ struct System {
   bool unwrapped = false;   // positions are unwrapped (xu/yu/zu or image flags applied)
   std::vector<std::string> notes;  // what the reader inferred or skipped
   std::shared_ptr<const ExplicitTopology> topology;   // bonded terms given term by term, or null
-  std::shared_ptr<const ForceField> forcefield;       // the force field the file carries for these atoms (AMBER prmtop), or null
+  std::shared_ptr<const ForceField> forcefield;       // the force field the file carries for these atoms (AMBER prmtop, a CAPS data file), or null
+  // the file carries a force field CAPS cannot rebuild exactly from it (a LAMMPS data file another program wrote, a style
+  // CAPS does not read back): why, for the error that asks for --ff instead of falling back to GAFF / UFF; for
+  // forcefield_atoms atoms (a structure edited since has another count and no longer this force field)
+  std::string forcefield_error;
+  size_t forcefield_atoms = 0;
   struct Tag { std::string name, colour; };           // named atom sets (design/boards/Tags): bit k of Atom::tags
   std::vector<Tag> tags;
 

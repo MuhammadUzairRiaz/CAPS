@@ -22,4 +22,6 @@ endif()
 # caps job on a fake SLURM cluster (stub sbatch / squeue / sacct / scancel / ws_allocate / ws_release; needs bash)
 if(NOT WIN32)
   add_test(NAME cli_job_fake_cluster COMMAND bash ${PROJECT_SOURCE_DIR}/tests/test_cli_job.sh $<TARGET_FILE:caps_cli> ${PROJECT_SOURCE_DIR})
+  # caps relax without --ff on a data file caps ff apply wrote: the file's own force field, or a refusal
+  add_test(NAME cli_relax_data_own_ff COMMAND bash ${PROJECT_SOURCE_DIR}/tests/test_cli_data_ff.sh $<TARGET_FILE:caps_cli> ${PROJECT_SOURCE_DIR})
 endif()
