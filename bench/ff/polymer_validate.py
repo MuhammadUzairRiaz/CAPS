@@ -69,8 +69,15 @@ def main():
     if chains * (dp * na + 2) > 15000:
         raise SystemExit("over 15,000 atoms")
     g = os.path.join(out, "grown.data")
-    run([CAPS, "grow", "-o", g, "--units", P["smiles"], "--chains", str(chains), "--dp", str(dp), "--density", "0.5",
-         "--ff", ff, "--seed", seed], log)
+    # grown loose (equilibration compresses it); a crowded cell of many short chains retries looser
+    for rho0 in ("0.5", "0.35", "0.25"):
+        try:
+            run([CAPS, "grow", "-o", g, "--units", P["smiles"], "--chains", str(chains), "--dp", str(dp), "--density", rho0,
+                 "--ff", ff, "--seed", seed], log)
+            break
+        except SystemExit:
+            if rho0 == "0.25":
+                raise
     eq = os.path.join(out, "equil.data")
     run([CAPS, "equilibrate", g, "-o", eq, "--protocol", "larsen21", "--tfinal", T, "--scale", arg("--scale", "1"),
          "--seed", seed, "--log", os.path.join(out, "equil.csv"), "--ff", ff], log)   # --ff: not taken from the data file
