@@ -484,14 +484,16 @@
    "origin": "converted",
    "source_file": "the united-atom types of the 2024 OPLS parameter file (on oplsaa2024-moltemplate.json)",
    "status": "converted",
-   "notes": "united atom: hydrogens on carbon fold into their carbons when it is assigned. The table parameterises the united-atom alkanes, alkenes, aromatic CH, alcohols, ethers, sulfur groups, nitriles and chloromethanes; bonded terms of branched or substituted chains it never gave (CH-CH2-CH torsions, C-CH2-C angles, an alkene CH next to CH2-CH2) are reported as missing, not invented.",
+   "notes": "united atom: hydrogens on carbon fold into their carbons when it is assigned. The table parameterises the united-atom alkanes, alkenes, aromatic CH, alcohols, ethers, sulfur groups, nitriles and chloromethanes. Hydrocarbon terms it never gave (CH-CH2 torsions of branched chains, C=C-C-C and C=C torsions, bends next to an sp2 carbon) come from Jorgensen, Madura & Swenson 1984, Tables I and II (33 bends, 420 torsions; bench/ff/open/oplsua2024_supplement.json), the 2024 file's own terms kept; bends take Table I's angle with the 2024 file's force constant, torsions about C=C the 2024 file's alkene V2 (the paper holds both fixed). Ether and alcohol terms it lacks are reported as missing, not invented.",
    "file": "oplsua2024.json",
    "counts": {
-    "atom_types": 29
+    "atom_types": 29,
+    "angles": 33,
+    "dihedrals": 420
    },
    "typing": {
     "rules": "typing/oplsua2024.typing.json",
-    "evidence": "CAPS united-atom rules (bench/ff/make_oplsua2024.py): CH3 typed by the carbons on its neighbour as the 1984 paper defines it; polyethylene and n-alkanes complete; substituted aromatic C, esters and epoxides have no united-atom type in the table (left untyped)."
+    "evidence": "CAPS united-atom rules (bench/ff/make_oplsua2024.py): CH3 typed by the carbons on its neighbour as the 1984 paper defines it; on the polymer library (DP-4 chains) 22 of 114 complete and neutral, every hydrocarbon among them (polyolefins, polybutadienes, polyisoprenes, polyisobutylene, vinyl cycloalkanes, polynorbornene); 6 ethers and alcohols lack 2024 terms; 86 left untyped (substituted aromatic C, esters, amides, halogens and other groups without a united-atom type). LAMMPS and GROMACS reproduce CAPS's energies on polypropylene, polybutadiene and cis-polyisoprene oligomers."
    },
    "list": {
     "label": "OPLS-UA 2024",

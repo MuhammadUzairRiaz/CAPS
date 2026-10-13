@@ -117,6 +117,10 @@ CASES = [
     ("Plant 2007 methanol (vacuum; three methanols)", ("smiles", "CO.CO.CO"), "plant2007-methanol", "types", []),
     ("Peguin 2009 HFA134a FF no. 2 (vacuum; no intramolecular pairs)", ("smiles", "FCC(F)(F)F.FCC(F)(F)F"), "peguin2009-hfa134a", "types", []),
     ("TraPPE-UA (foyer) butanol, 2-propanol, 2,3-dimethylbutane (vacuum)", ("smiles", "CCCCO.CC(C)O.CC(C)C(C)C"), "trappe-ua-foyer", "types", []),
+    # OPLS-UA: the 2024 file's united-atom types with the 1984 paper's terms where the file has none
+    ("OPLS-UA 2024 + 1984 terms: polypropylene tetramer (vacuum)", ("smiles", "CC(C)CC(C)CC(C)CC(C)C"), "oplsua2024", "types", []),
+    ("OPLS-UA 2024 + 1984 terms: 1,4-polybutadiene trimer, cis, trans, cis (vacuum)", ("smiles", "C/C=C\\CC/C=C/CC/C=C\\C"), "oplsua2024", "types", []),
+    ("OPLS-UA 2024 + 1984 terms: cis-1,4-polyisoprene trimer (vacuum)", ("smiles", "C/C=C(C)\\CC/C=C(C)\\CC/C=C(C)\\C"), "oplsua2024", "types", []),
     ("GROMOS 54A7 (building blocks) peptide GAFKWDR (vacuum)", ("peptide", "GAFKWDR"), "gromos54a7-gromacs", "keep", []),
     ("GROMOS 54A7 (building blocks) water, methanol, DMSO, chloroform, urea, TFE (vacuum)", ("smiles", "O.CO.CS(C)=O.ClC(Cl)Cl.NC(N)=O.OCC(F)(F)F"),
      "gromos54a7-gromacs", "keep", []),
