@@ -1,0 +1,27 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "catlow1976-mgo: model2",
+ "unknown_types": "untyped",
+ "description": "Overlay: Catlow, Faux & Norgett's model 2 (Table 1) in place of model 1",
+ "rules": [
+  {
+   "type": "Mg_c76m2",
+   "smarts": "[#12]",
+   "priority": 50,
+   "requires": [
+    "O"
+   ],
+   "description": "Mg in MgO (model 2)"
+  },
+  {
+   "type": "O_c76m2c",
+   "smarts": "[#8]",
+   "priority": 50,
+   "requires": [
+    "Mg"
+   ],
+   "description": "O in MgO (model 2)"
+  }
+ ]
+}
