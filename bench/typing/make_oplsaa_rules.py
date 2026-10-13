@@ -303,6 +303,9 @@ add(962, 6, "[CX4;$(*(F)F);!$(*(F)(F)F);!$(*[H])]", "CF2")
 # a CF2H group (a fluoropolymer's H-capped end, HCF2-): the table's CF2H of difluoromethylbenzene, 966 / 967
 add(966, 6, "[CX4H1;$(*(F)F);!$(*(F)(F)F)]", "CF2H carbon")
 add(967, 6, "[H][CX4H1;$(*(F)F);!$(*(F)(F)F)]", "H on a CF2H carbon")
+# its F: the table gives no F of its own for 966 / 967, and with the perfluoroalkane F (965, -0.12) the group was
+# +0.16 e (0.25 + 0.15 - 0.24); the benzylic F 726 (-0.20) makes it neutral, as the table's CF2H group must be
+add(726, 7, "[F][CX4H1;$(*(F)F);!$(*(F)(F)F)]", "F of a CF2H carbon (the benzylic F 726: 966 + 967 + 2 x 726 = 0)")
 add(961, 6, "[CX4;$(*(F)(F)F);!$(*(F)(F)(F)F);$(*[#6])]", "CF3 on carbon (a perfluoroalkyl end)")
 add(264, 6, "[Cl]c", "aryl chloride Cl")
 # fluorobenzenes: a ring C-F with one C-F neighbour takes the difluorobenzene types, with two the hexafluorobenzene

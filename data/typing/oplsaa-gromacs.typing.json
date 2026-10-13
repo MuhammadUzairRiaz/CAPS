@@ -1326,6 +1326,12 @@
    "description": "CF2"
   },
   {
+   "type": "opls_726",
+   "smarts": "[F][CX4H1;$(*(F)F);!$(*(F)(F)F)]",
+   "priority": 7,
+   "description": "F of a CF2H carbon (the benzylic F 726: 966 + 967 + 2 x 726 = 0)"
+  },
+  {
    "type": "opls_961",
    "smarts": "[CX4;$(*(F)(F)F);!$(*(F)(F)(F)F);$(*[#6])]",
    "priority": 6,
