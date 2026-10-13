@@ -220,8 +220,9 @@
  "status": "converted",
  "notes": [
   "the united-atom carbon sites carry their hydrogens' mass (CH4 16.043, CH3 15.035, CH2 14.027, CH 13.019)",
-  "33 bends and 420 torsions the 2024 file lacks for united-atom hydrocarbons, from Jorgensen, Madura & Swenson, J. Am. Chem. Soc. 106, 6638 (1984), Tables I and II (bench/ff/open/oplsua2024_supplement.json; each term's comment names its table and anything taken from the 2024 file); the 2024 file's own terms win",
-  "the 1984 torsions were fit with fixed bond lengths and angles, no 1-4 Lennard-Jones and a weak carbon-carbon term beyond 1-4 (eq 3: sigma 4 A, epsilon 0.0074 kcal/mol); here they run with the 2024 file's flexible bonds and its 1-4 x 0.5 scaling"
+  "56 bends and 595 torsions the 2024 file lacks for united-atom hydrocarbons, alcohols and ethers, from Jorgensen, Madura & Swenson, J. Am. Chem. Soc. 106, 6638 (1984), Tables I and II; Jorgensen, J. Phys. Chem. 90, 1276 (1986), Tables II and III; Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), Table II and p. 960 (bench/ff/open/oplsua2024_supplement.json; each term's comment names its table and anything taken from the 2024 file); the 2024 file's own terms win",
+  "the papers' torsions were fit with fixed bond lengths and angles, no 1-4 Lennard-Jones and weak terms beyond 1-4 (1984 eq 3: C-C sigma 4 A, epsilon 0.0074; 1986: HO-CH3 sigma 2.6 A, epsilon 0.008; 1990 eq 3: sigma 2.745 A, epsilon 0.008 kcal/mol); here they run with the 2024 file's flexible bonds and its 1-4 x 0.5 scaling",
+  "no torsion about a C-C bond between two oxygens (O-C-C-O: poly(ethylene oxide), glycols) and no O-C-O acetal terms: none of the three papers has one, so they are reported missing"
  ],
  "angles": [
   {
@@ -652,6 +653,305 @@
     124.0
    ],
    "comment": "Jorgensen, Madura & Swenson 1984, Table I (C-C3-C 124.0 deg); K from the 2024 file: a bend C=C-C at an sp2 carbon (C3 in Table I) whose partner class the 2024 file's hydrocarbon block (jtr 5-14-91) leaves out (it lists C9-C8-X and C8-C8-X, not C7-C8-X); theta0 is the paper's fixed angle, K = 70.0 the 2024 block's constant for its sp2 UA bends. The 2024 block puts the C=C-C bends it lists at 118 deg; those stay"
+  },
+  {
+   "name": "C3-OS-C3",
+   "match": [
+    "*_b*_aC3_d*_i*",
+    "*_b*_aOS_d*_i*",
+    "*_b*_aC3_d*_i*"
+   ],
+   "params": [
+    100.0,
+    112.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), Table II (COC 112.0 deg); K from the 2024 file: the paper holds the C-O-C angle fixed at 112.0 deg and gives no force constant; K = 100.0 the 2024 file's constant for its UA C-OS-C bends (C2-OS-C2, CH-OS-CH)"
+  },
+  {
+   "name": "C3-OS-CH",
+   "match": [
+    "*_b*_aC3_d*_i*",
+    "*_b*_aOS_d*_i*",
+    "*_b*_aCH_d*_i*"
+   ],
+   "params": [
+    100.0,
+    112.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), Table II (COC 112.0 deg); K from the 2024 file: the paper holds the C-O-C angle fixed at 112.0 deg and gives no force constant; K = 100.0 the 2024 file's constant for its UA C-OS-C bends (C2-OS-C2, CH-OS-CH)"
+  },
+  {
+   "name": "C3-OS-CT",
+   "match": [
+    "*_b*_aC3_d*_i*",
+    "*_b*_aOS_d*_i*",
+    "*_b*_aCT_d*_i*"
+   ],
+   "params": [
+    100.0,
+    112.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), Table II (COC 112.0 deg); K from the 2024 file: the paper holds the C-O-C angle fixed at 112.0 deg and gives no force constant; K = 100.0 the 2024 file's constant for its UA C-OS-C bends (C2-OS-C2, CH-OS-CH)"
+  },
+  {
+   "name": "C2-OS-CH",
+   "match": [
+    "*_b*_aC2_d*_i*",
+    "*_b*_aOS_d*_i*",
+    "*_b*_aCH_d*_i*"
+   ],
+   "params": [
+    100.0,
+    112.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), Table II (COC 112.0 deg); K from the 2024 file: the paper holds the C-O-C angle fixed at 112.0 deg and gives no force constant; K = 100.0 the 2024 file's constant for its UA C-OS-C bends (C2-OS-C2, CH-OS-CH)"
+  },
+  {
+   "name": "C2-OS-CT",
+   "match": [
+    "*_b*_aC2_d*_i*",
+    "*_b*_aOS_d*_i*",
+    "*_b*_aCT_d*_i*"
+   ],
+   "params": [
+    100.0,
+    112.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), Table II (COC 112.0 deg); K from the 2024 file: the paper holds the C-O-C angle fixed at 112.0 deg and gives no force constant; K = 100.0 the 2024 file's constant for its UA C-OS-C bends (C2-OS-C2, CH-OS-CH)"
+  },
+  {
+   "name": "CH-OS-CT",
+   "match": [
+    "*_b*_aCH_d*_i*",
+    "*_b*_aOS_d*_i*",
+    "*_b*_aCT_d*_i*"
+   ],
+   "params": [
+    100.0,
+    112.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), Table II (COC 112.0 deg); K from the 2024 file: the paper holds the C-O-C angle fixed at 112.0 deg and gives no force constant; K = 100.0 the 2024 file's constant for its UA C-OS-C bends (C2-OS-C2, CH-OS-CH)"
+  },
+  {
+   "name": "CT-C2-OS",
+   "match": [
+    "*_b*_aCT_d*_i*",
+    "*_b*_aC2_d*_i*",
+    "*_b*_aOS_d*_i*"
+   ],
+   "params": [
+    80.0,
+    112.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), Table II (OCC 112.0 deg); K from the 2024 file: the paper's fixed O-C-C angle of its acyclic ethers; K = 80.0 the 2024 file's constant for its UA C-C-OS bends. The 2024 file's own C-C-OS bends (109.5 deg) stay"
+  },
+  {
+   "name": "CT-CH-OS",
+   "match": [
+    "*_b*_aCT_d*_i*",
+    "*_b*_aCH_d*_i*",
+    "*_b*_aOS_d*_i*"
+   ],
+   "params": [
+    80.0,
+    112.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), Table II (OCC 112.0 deg); K from the 2024 file: the paper's fixed O-C-C angle of its acyclic ethers; K = 80.0 the 2024 file's constant for its UA C-C-OS bends. The 2024 file's own C-C-OS bends (109.5 deg) stay"
+  },
+  {
+   "name": "C7-C2-OS",
+   "match": [
+    "*_b*_aC7_d*_i*",
+    "*_b*_aC2_d*_i*",
+    "*_b*_aOS_d*_i*"
+   ],
+   "params": [
+    80.0,
+    112.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), Table II (OCC 112.0 deg); K from the 2024 file: the paper's fixed O-C-C angle of its acyclic ethers; K = 80.0 the 2024 file's constant for its UA C-C-OS bends. The 2024 file's own C-C-OS bends (109.5 deg) stay"
+  },
+  {
+   "name": "C7-CH-OS",
+   "match": [
+    "*_b*_aC7_d*_i*",
+    "*_b*_aCH_d*_i*",
+    "*_b*_aOS_d*_i*"
+   ],
+   "params": [
+    80.0,
+    112.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), Table II (OCC 112.0 deg); K from the 2024 file: the paper's fixed O-C-C angle of its acyclic ethers; K = 80.0 the 2024 file's constant for its UA C-C-OS bends. The 2024 file's own C-C-OS bends (109.5 deg) stay"
+  },
+  {
+   "name": "C8-C2-OS",
+   "match": [
+    "*_b*_aC8_d*_i*",
+    "*_b*_aC2_d*_i*",
+    "*_b*_aOS_d*_i*"
+   ],
+   "params": [
+    80.0,
+    112.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), Table II (OCC 112.0 deg); K from the 2024 file: the paper's fixed O-C-C angle of its acyclic ethers; K = 80.0 the 2024 file's constant for its UA C-C-OS bends. The 2024 file's own C-C-OS bends (109.5 deg) stay"
+  },
+  {
+   "name": "C8-CH-OS",
+   "match": [
+    "*_b*_aC8_d*_i*",
+    "*_b*_aCH_d*_i*",
+    "*_b*_aOS_d*_i*"
+   ],
+   "params": [
+    80.0,
+    112.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), Table II (OCC 112.0 deg); K from the 2024 file: the paper's fixed O-C-C angle of its acyclic ethers; K = 80.0 the 2024 file's constant for its UA C-C-OS bends. The 2024 file's own C-C-OS bends (109.5 deg) stay"
+  },
+  {
+   "name": "C3-CT-OH",
+   "match": [
+    "*_b*_aC3_d*_i*",
+    "*_b*_aCT_d*_i*",
+    "*_b*_aOH_d*_i*"
+   ],
+   "params": [
+    80.0,
+    108.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table II (CCO 108.0 deg); K from the 2024 file: the paper's fixed C-C-O angle of the alcohols; K = 80.0 the 2024 file's constant for its UA C-C-OH bends. The 2024 file's own C-C-OH bends (109.5 deg) stay"
+  },
+  {
+   "name": "C2-CT-OH",
+   "match": [
+    "*_b*_aC2_d*_i*",
+    "*_b*_aCT_d*_i*",
+    "*_b*_aOH_d*_i*"
+   ],
+   "params": [
+    80.0,
+    108.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table II (CCO 108.0 deg); K from the 2024 file: the paper's fixed C-C-O angle of the alcohols; K = 80.0 the 2024 file's constant for its UA C-C-OH bends. The 2024 file's own C-C-OH bends (109.5 deg) stay"
+  },
+  {
+   "name": "CH-CT-OH",
+   "match": [
+    "*_b*_aCH_d*_i*",
+    "*_b*_aCT_d*_i*",
+    "*_b*_aOH_d*_i*"
+   ],
+   "params": [
+    80.0,
+    108.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table II (CCO 108.0 deg); K from the 2024 file: the paper's fixed C-C-O angle of the alcohols; K = 80.0 the 2024 file's constant for its UA C-C-OH bends. The 2024 file's own C-C-OH bends (109.5 deg) stay"
+  },
+  {
+   "name": "CT-C2-OH",
+   "match": [
+    "*_b*_aCT_d*_i*",
+    "*_b*_aC2_d*_i*",
+    "*_b*_aOH_d*_i*"
+   ],
+   "params": [
+    80.0,
+    108.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table II (CCO 108.0 deg); K from the 2024 file: the paper's fixed C-C-O angle of the alcohols; K = 80.0 the 2024 file's constant for its UA C-C-OH bends. The 2024 file's own C-C-OH bends (109.5 deg) stay"
+  },
+  {
+   "name": "CT-CH-OH",
+   "match": [
+    "*_b*_aCT_d*_i*",
+    "*_b*_aCH_d*_i*",
+    "*_b*_aOH_d*_i*"
+   ],
+   "params": [
+    80.0,
+    108.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table II (CCO 108.0 deg); K from the 2024 file: the paper's fixed C-C-O angle of the alcohols; K = 80.0 the 2024 file's constant for its UA C-C-OH bends. The 2024 file's own C-C-OH bends (109.5 deg) stay"
+  },
+  {
+   "name": "C7-C2-OH",
+   "match": [
+    "*_b*_aC7_d*_i*",
+    "*_b*_aC2_d*_i*",
+    "*_b*_aOH_d*_i*"
+   ],
+   "params": [
+    80.0,
+    108.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table II (CCO 108.0 deg); K from the 2024 file: the paper's fixed C-C-O angle of the alcohols; K = 80.0 the 2024 file's constant for its UA C-C-OH bends. The 2024 file's own C-C-OH bends (109.5 deg) stay"
+  },
+  {
+   "name": "C7-CH-OH",
+   "match": [
+    "*_b*_aC7_d*_i*",
+    "*_b*_aCH_d*_i*",
+    "*_b*_aOH_d*_i*"
+   ],
+   "params": [
+    80.0,
+    108.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table II (CCO 108.0 deg); K from the 2024 file: the paper's fixed C-C-O angle of the alcohols; K = 80.0 the 2024 file's constant for its UA C-C-OH bends. The 2024 file's own C-C-OH bends (109.5 deg) stay"
+  },
+  {
+   "name": "C7-CT-OH",
+   "match": [
+    "*_b*_aC7_d*_i*",
+    "*_b*_aCT_d*_i*",
+    "*_b*_aOH_d*_i*"
+   ],
+   "params": [
+    80.0,
+    108.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table II (CCO 108.0 deg); K from the 2024 file: the paper's fixed C-C-O angle of the alcohols; K = 80.0 the 2024 file's constant for its UA C-C-OH bends. The 2024 file's own C-C-OH bends (109.5 deg) stay"
+  },
+  {
+   "name": "C8-C2-OH",
+   "match": [
+    "*_b*_aC8_d*_i*",
+    "*_b*_aC2_d*_i*",
+    "*_b*_aOH_d*_i*"
+   ],
+   "params": [
+    80.0,
+    108.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table II (CCO 108.0 deg); K from the 2024 file: the paper's fixed C-C-O angle of the alcohols; K = 80.0 the 2024 file's constant for its UA C-C-OH bends. The 2024 file's own C-C-OH bends (109.5 deg) stay"
+  },
+  {
+   "name": "C8-CH-OH",
+   "match": [
+    "*_b*_aC8_d*_i*",
+    "*_b*_aCH_d*_i*",
+    "*_b*_aOH_d*_i*"
+   ],
+   "params": [
+    80.0,
+    108.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table II (CCO 108.0 deg); K from the 2024 file: the paper's fixed C-C-O angle of the alcohols; K = 80.0 the 2024 file's constant for its UA C-C-OH bends. The 2024 file's own C-C-OH bends (109.5 deg) stay"
+  },
+  {
+   "name": "C8-CT-OH",
+   "match": [
+    "*_b*_aC8_d*_i*",
+    "*_b*_aCT_d*_i*",
+    "*_b*_aOH_d*_i*"
+   ],
+   "params": [
+    80.0,
+    108.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table II (CCO 108.0 deg); K from the 2024 file: the paper's fixed C-C-O angle of the alcohols; K = 80.0 the 2024 file's constant for its UA C-C-OH bends. The 2024 file's own C-C-OH bends (109.5 deg) stay"
   }
  ],
  "dihedrals": [
@@ -7374,6 +7674,2806 @@
     0.0
    ],
    "comment": "Jorgensen, Madura & Swenson 1984, Table II (other n-alkanes): the paper's general per-torsion function for rotation about a saturated C-C bond (fit with the paper's eq 3 to MM2 energies of 91 conformers of butane to heptane), taken for the sp3-sp3 bonds the 2024 file and the isopentane term leave without a term"
+  },
+  {
+   "name": "C3-C2-OS-CH",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C3-C2-OS-CT",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C3-CH-OS-C3",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dC3_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C2-OS-CH-C3",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC3_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C3-CH-OS-CH",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C3-CH-OS-CT",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C3-CT-OS-C3",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dC3_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C2-OS-CT-C3",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC3_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C3-CT-OS-CH",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C3-CT-OS-CT",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C2-C2-OS-C3",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dC3_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C2-C2-OS-C2",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dC2_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C2-C2-OS-CH",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C2-C2-OS-CT",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C2-CH-OS-C3",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dC3_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C2-CH-OS-C2",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dC2_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C2-CH-OS-CH",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C2-CH-OS-CT",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C2-CT-OS-C3",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dC3_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C2-CT-OS-C2",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dC2_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C2-CT-OS-CH",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C2-CT-OS-CT",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C3-OS-C2-CH",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C2-OS-C2-CH",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "CH-C2-OS-CH",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "CH-C2-OS-CT",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C3-OS-CH-CH",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C2-OS-CH-CH",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "CH-CH-OS-CH",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "CH-CH-OS-CT",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C3-OS-CT-CH",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C2-OS-CT-CH",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "CH-CT-OS-CH",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "CH-CT-OS-CT",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C3-OS-C2-CT",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C2-OS-C2-CT",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "CH-OS-C2-CT",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "CT-C2-OS-CT",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C3-OS-CH-CT",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C2-OS-CH-CT",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "CH-OS-CH-CT",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "CT-CH-OS-CT",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C3-OS-CT-CT",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C2-OS-CT-CT",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "CH-OS-CT-CT",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C3-OS-C2-C7",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC7_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C2-OS-C2-C7",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC7_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C7-C2-OS-CH",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C7-C2-OS-CT",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C3-OS-CH-C7",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC7_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C2-OS-CH-C7",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC7_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C7-CH-OS-CH",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C7-CH-OS-CT",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C3-OS-CT-C7",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC7_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C2-OS-CT-C7",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC7_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C7-CT-OS-CH",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C7-CT-OS-CT",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C3-OS-C2-C8",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC8_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C2-OS-C2-C8",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC8_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C8-C2-OS-CH",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C8-C2-OS-CT",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C3-OS-CH-C8",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC8_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C2-OS-CH-C8",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC8_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C8-CH-OS-CH",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C8-CH-OS-CT",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C3-OS-CT-C8",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC8_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C2-OS-CT-C8",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC8_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C8-CT-OS-CH",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "C8-CT-OS-CT",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "comment": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2): rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "name": "CH-CH-OH-HO",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOH_i*",
+    "*_b*_a*_dHO_i*"
+   ],
+   "params": [
+    0.784,
+    -0.125,
+    0.3455,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (2-propanol C-O), per torsion: the paper gives 2-propanol's C-O rotation as one function of phi (V0 0.429, V1 0.784, V2 0.125, V3 -0.691), trans (phi = 0, the hydroxyl H between the two methyls) 0.49 kcal/mol above gauche. The two C-C-O-H torsions sit at phi + 60 and phi - 60, so V1' = V1, V2' = -V2, V3' = -V3/2 on each give the paper's function up to a constant"
+  },
+  {
+   "name": "CT-CH-OH-HO",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOH_i*",
+    "*_b*_a*_dHO_i*"
+   ],
+   "params": [
+    0.784,
+    -0.125,
+    0.3455,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (2-propanol C-O), per torsion: the paper gives 2-propanol's C-O rotation as one function of phi (V0 0.429, V1 0.784, V2 0.125, V3 -0.691), trans (phi = 0, the hydroxyl H between the two methyls) 0.49 kcal/mol above gauche. The two C-C-O-H torsions sit at phi + 60 and phi - 60, so V1' = V1, V2' = -V2, V3' = -V3/2 on each give the paper's function up to a constant"
+  },
+  {
+   "name": "C7-CH-OH-HO",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOH_i*",
+    "*_b*_a*_dHO_i*"
+   ],
+   "params": [
+    0.784,
+    -0.125,
+    0.3455,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (2-propanol C-O), per torsion: the paper gives 2-propanol's C-O rotation as one function of phi (V0 0.429, V1 0.784, V2 0.125, V3 -0.691), trans (phi = 0, the hydroxyl H between the two methyls) 0.49 kcal/mol above gauche. The two C-C-O-H torsions sit at phi + 60 and phi - 60, so V1' = V1, V2' = -V2, V3' = -V3/2 on each give the paper's function up to a constant"
+  },
+  {
+   "name": "C8-CH-OH-HO",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOH_i*",
+    "*_b*_a*_dHO_i*"
+   ],
+   "params": [
+    0.784,
+    -0.125,
+    0.3455,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (2-propanol C-O), per torsion: the paper gives 2-propanol's C-O rotation as one function of phi (V0 0.429, V1 0.784, V2 0.125, V3 -0.691), trans (phi = 0, the hydroxyl H between the two methyls) 0.49 kcal/mol above gauche. The two C-C-O-H torsions sit at phi + 60 and phi - 60, so V1' = V1, V2' = -V2, V3' = -V3/2 on each give the paper's function up to a constant"
+  },
+  {
+   "name": "CT-C2-OH-HO",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOH_i*",
+    "*_b*_a*_dHO_i*"
+   ],
+   "params": [
+    0.834,
+    -0.116,
+    0.747,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (ethanol and 1-propanol C-O): rotation about a primary alcohol's C-O bond: one C-C-O-H torsion, so the function is per torsion as printed"
+  },
+  {
+   "name": "C7-C2-OH-HO",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOH_i*",
+    "*_b*_a*_dHO_i*"
+   ],
+   "params": [
+    0.834,
+    -0.116,
+    0.747,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (ethanol and 1-propanol C-O): rotation about a primary alcohol's C-O bond: one C-C-O-H torsion, so the function is per torsion as printed"
+  },
+  {
+   "name": "C8-C2-OH-HO",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOH_i*",
+    "*_b*_a*_dHO_i*"
+   ],
+   "params": [
+    0.834,
+    -0.116,
+    0.747,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (ethanol and 1-propanol C-O): rotation about a primary alcohol's C-O bond: one C-C-O-H torsion, so the function is per torsion as printed"
+  },
+  {
+   "name": "CH-CT-OH-HO",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOH_i*",
+    "*_b*_a*_dHO_i*"
+   ],
+   "params": [
+    0.0,
+    0.0,
+    0.21667,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (2-methyl-2-propanol C-O, V3 0.650), per torsion: three C-C-O-H torsions 120 deg apart share the threefold function: V3' = V3 / 3 on each"
+  },
+  {
+   "name": "C7-CT-OH-HO",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOH_i*",
+    "*_b*_a*_dHO_i*"
+   ],
+   "params": [
+    0.0,
+    0.0,
+    0.21667,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (2-methyl-2-propanol C-O, V3 0.650), per torsion: three C-C-O-H torsions 120 deg apart share the threefold function: V3' = V3 / 3 on each"
+  },
+  {
+   "name": "C8-CT-OH-HO",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOH_i*",
+    "*_b*_a*_dHO_i*"
+   ],
+   "params": [
+    0.0,
+    0.0,
+    0.21667,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (2-methyl-2-propanol C-O, V3 0.650), per torsion: three C-C-O-H torsions 120 deg apart share the threefold function: V3' = V3 / 3 on each"
+  },
+  {
+   "name": "C3-C2-CH-OH",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C3-C2-CH-OS",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C3-C2-CT-OH",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C3-C2-CT-OS",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C3-CH-C2-OH",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C3-CH-C2-OS",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C3-CH-CH-OH",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C3-CH-CH-OS",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C3-CH-CT-OH",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C3-CH-CT-OS",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C3-CT-C2-OH",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C3-CT-C2-OS",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C3-CT-CH-OH",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C3-CT-CH-OS",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C3-CT-CT-OH",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C3-CT-CT-OS",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C2-C2-CH-OH",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C2-C2-CH-OS",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C2-C2-CT-OH",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C2-C2-CT-OS",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C2-CH-CH-OH",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C2-CH-CH-OS",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C2-CH-CT-OH",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C2-CH-CT-OS",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C2-CT-C2-OH",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C2-CT-C2-OS",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C2-CT-CH-OH",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C2-CT-CH-OS",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C2-CT-CT-OH",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C2-CT-CT-OS",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "CH-C2-C2-OH",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "CH-C2-C2-OS",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "CH-C2-CH-OH",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "CH-C2-CH-OS",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "CH-C2-CT-OH",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "CH-C2-CT-OS",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "CH-CH-C2-OH",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "CH-CH-C2-OS",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "CH-CH-CH-OH",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "CH-CH-CH-OS",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "CH-CH-CT-OH",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "CH-CH-CT-OS",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "CH-CT-C2-OH",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "CH-CT-C2-OS",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "CH-CT-CH-OH",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "CH-CT-CH-OS",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "CH-CT-CT-OH",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "CH-CT-CT-OS",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "CT-C2-C2-OH",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "CT-C2-C2-OS",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "CT-C2-CH-OH",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "CT-C2-CH-OS",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "CT-C2-CT-OH",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "CT-C2-CT-OS",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "CT-CH-C2-OH",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "CT-CH-C2-OS",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "CT-CH-CH-OH",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "CT-CH-CH-OS",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "CT-CH-CT-OH",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "CT-CH-CT-OS",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C7-C2-C2-OH",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C7-C2-C2-OS",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C7-C2-CH-OH",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C7-C2-CH-OS",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C7-C2-CT-OH",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C7-C2-CT-OS",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C7-CH-C2-OH",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C7-CH-C2-OS",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C7-CH-CH-OH",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C7-CH-CH-OS",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C7-CH-CT-OH",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C7-CH-CT-OS",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C7-CT-C2-OH",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C7-CT-C2-OS",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C7-CT-CH-OH",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C7-CT-CH-OS",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C7-CT-CT-OH",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C7-CT-CT-OS",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C8-C2-C2-OH",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C8-C2-C2-OS",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C8-C2-CH-OH",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C8-C2-CH-OS",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C8-C2-CT-OH",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C8-C2-CT-OS",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C8-CH-C2-OH",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C8-CH-C2-OS",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C8-CH-CH-OH",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C8-CH-CH-OS",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C8-CH-CT-OH",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C8-CH-CT-OS",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C8-CT-C2-OH",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C8-CT-C2-OS",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C8-CT-CH-OH",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C8-CT-CH-OS",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C8-CT-CT-OH",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOH_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "C8-CT-CT-OS",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
   }
  ],
  "typing": "../typing/oplsua2024.typing.json"

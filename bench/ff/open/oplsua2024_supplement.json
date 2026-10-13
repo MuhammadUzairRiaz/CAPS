@@ -1,54 +1,283 @@
 {
- "description": "United-atom hydrocarbon terms the 2024 OPLS parameter file lacks, from W. L. Jorgensen, J. D. Madura, C. J. Swenson, J. Am. Chem. Soc. 106, 6638 (1984), the paper that defines OPLS-UA types 66-77. bench/ff/make_oplsua2024.py expands each entry over the classes it lists (a list at a position means any of those classes; S = sp3 C3 C2 CH CT, D = sp2 C7 C8 C9) and adds a term only where neither the 2024 file nor an earlier entry gives one: the 2024 file wins, and within this file the first entry that matches wins. Units as the 2024 file: torsions V1-V4 in kcal/mol for E = V1/2 (1 + cos phi) + V2/2 (1 - cos 2phi) + V3/2 (1 + cos 3phi) (the paper's eq 2, its V0 a constant offset left out); bends K in kcal/mol/rad^2 for E = K (theta - theta0)^2, theta0 in degrees.",
+ "description": "United-atom terms the 2024 OPLS parameter file lacks, from the papers that define its united-atom types: hydrocarbons from W. L. Jorgensen, J. D. Madura, C. J. Swenson, J. Am. Chem. Soc. 106, 6638 (1984) (types 66-77), alcohols from W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986) (types 78-81, 106, 107), ethers from J. M. Briggs, T. Matsui, W. L. Jorgensen, J. Comput. Chem. 11, 958 (1990) (types 108-110). Each paper holds bond lengths and angles fixed (1984 Table I, 1986 Table II, 1990 Table II): only torsions move in them. bench/ff/make_oplsua2024.py expands each entry over the classes it lists (a list at a position means any of those classes; S = sp3 C3 C2 CH CT, D = sp2 C7 C8 C9) and adds a term only where neither the 2024 file nor an earlier entry gives one: the 2024 file wins, and within this file the first entry that matches wins. Units as the 2024 file: torsions V1-V4 in kcal/mol for E = V1/2 (1 + cos phi) + V2/2 (1 - cos 2phi) + V3/2 (1 + cos 3phi) (the paper's eq 2, its V0 a constant offset left out); bends K in kcal/mol/rad^2 for E = K (theta - theta0)^2, theta0 in degrees.",
  "classes": {
-  "S": ["C3", "C2", "CH", "CT"],
-  "D": ["C7", "C8", "C9"],
-  "A": ["C3", "C2", "CH", "CT", "C7", "C8", "C9"]
+  "S": [
+   "C3",
+   "C2",
+   "CH",
+   "CT"
+  ],
+  "D": [
+   "C7",
+   "C8",
+   "C9"
+  ],
+  "A": [
+   "C3",
+   "C2",
+   "CH",
+   "CT",
+   "C7",
+   "C8",
+   "C9"
+  ]
  },
  "angles": [
   {
-   "match": ["A", ["C2", "CH"], "A"],
-   "params": [63.0, 112.0],
+   "match": [
+    "A",
+    [
+     "C2",
+     "CH"
+    ],
+    "A"
+   ],
+   "params": [
+    63.0,
+    112.0
+   ],
    "source": "Jorgensen, Madura & Swenson 1984, Table I (C-C4-C 112.0 deg); K from the 2024 file",
    "reason": "the paper holds bond angles fixed at Table I's values and gives no force constant; theta0 is the paper's angle at an sp3 carbon (C4) between any two carbons, K = 63.0 the 2024 file's constant for every UA C-C(sp3)-C bend (C2-C2-C3, C2-CH-C2 ...)"
   },
   {
-   "match": ["D", ["C7", "C8"], "A"],
-   "params": [70.0, 124.0],
+   "match": [
+    "D",
+    [
+     "C7",
+     "C8"
+    ],
+    "A"
+   ],
+   "params": [
+    70.0,
+    124.0
+   ],
    "source": "Jorgensen, Madura & Swenson 1984, Table I (C-C3-C 124.0 deg); K from the 2024 file",
    "reason": "a bend C=C-C at an sp2 carbon (C3 in Table I) whose partner class the 2024 file's hydrocarbon block (jtr 5-14-91) leaves out (it lists C9-C8-X and C8-C8-X, not C7-C8-X); theta0 is the paper's fixed angle, K = 70.0 the 2024 block's constant for its sp2 UA bends. The 2024 block puts the C=C-C bends it lists at 118 deg; those stay"
+  },
+  {
+   "match": [
+    "S",
+    "OS",
+    "S"
+   ],
+   "params": [
+    100.0,
+    112.0
+   ],
+   "source": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), Table II (COC 112.0 deg); K from the 2024 file",
+   "reason": "the paper holds the C-O-C angle fixed at 112.0 deg and gives no force constant; K = 100.0 the 2024 file's constant for its UA C-OS-C bends (C2-OS-C2, CH-OS-CH)"
+  },
+  {
+   "match": [
+    "A",
+    [
+     "C2",
+     "CH"
+    ],
+    "OS"
+   ],
+   "params": [
+    80.0,
+    112.0
+   ],
+   "source": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), Table II (OCC 112.0 deg); K from the 2024 file",
+   "reason": "the paper's fixed O-C-C angle of its acyclic ethers; K = 80.0 the 2024 file's constant for its UA C-C-OS bends. The 2024 file's own C-C-OS bends (109.5 deg) stay"
+  },
+  {
+   "match": [
+    "A",
+    [
+     "C2",
+     "CH",
+     "CT"
+    ],
+    "OH"
+   ],
+   "params": [
+    80.0,
+    108.0
+   ],
+   "source": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table II (CCO 108.0 deg); K from the 2024 file",
+   "reason": "the paper's fixed C-C-O angle of the alcohols; K = 80.0 the 2024 file's constant for its UA C-C-OH bends. The 2024 file's own C-C-OH bends (109.5 deg) stay"
+  },
+  {
+   "match": [
+    "S",
+    "OH",
+    "HO"
+   ],
+   "params": [
+    55.0,
+    108.5
+   ],
+   "source": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table II (COH 108.5 deg); K from the 2024 file",
+   "reason": "the paper's fixed C-O-H angle; K = 55.0 the 2024 file's constant for its UA C-OH-HO bends (at the same 108.5 deg)"
   }
  ],
  "dihedrals": [
   {
-   "match": ["D", "D", "S", "A"],
-   "params": [0.343, -0.436, -1.121, 0.0],
+   "match": [
+    "D",
+    "D",
+    "S",
+    "A"
+   ],
+   "params": [
+    0.343,
+    -0.436,
+    -1.121,
+    0.0
+   ],
    "source": "Jorgensen, Madura & Swenson 1984, Table II (1-butene)",
    "reason": "rotation about an sp2-sp3 single bond, the C=C-C-C torsion of 1-butene (V0 1.363 a constant, left out); phi = 0 is syn as in the paper, trans 180 deg, the IUPAC convention of the 2024 file"
   },
   {
-   "match": ["S", "C7", "S", "A"],
-   "params": [0.0, 0.0, 0.0, 0.0],
+   "match": [
+    "S",
+    "C7",
+    "S",
+    "A"
+   ],
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
    "source": "Jorgensen, Madura & Swenson 1984, Table II (1-butene): zero",
    "reason": "in 1-butene the sp2 CH's other substituent is a hydrogen folded into its site, so the paper's function for the whole rotation sits on the C=C-C-C torsion alone; the torsion from a C= (C7) carbon's single-bonded substituent carries no term of its own"
   },
   {
-   "match": ["A", "D", "D", "A"],
-   "params": [0.0, 14.0, 0.0, 0.0],
+   "match": [
+    "A",
+    "D",
+    "D",
+    "A"
+   ],
+   "params": [
+    0.0,
+    14.0,
+    0.0,
+    0.0
+   ],
    "source": "the 2024 file's alkene torsion ??-CM-CM-?? (V2 = 14.0)",
    "reason": "the 1984 paper holds the C=C bond rigid (cis- and trans-2-butene simulated as fixed isomers) and gives no term for turning it; the 2024 file's own torsion for any substituents about a C=C bond (all-atom class CM) keeps the united-atom C=C planar, V2 = 14.0 per torsion as in the file"
   },
   {
-   "match": ["A", "CH", "C2", "A"],
-   "params": [1.526, -0.533, 1.7265, 0.0],
+   "match": [
+    "A",
+    "CH",
+    "C2",
+    "A"
+   ],
+   "params": [
+    1.526,
+    -0.533,
+    1.7265,
+    0.0
+   ],
    "source": "Jorgensen, Madura & Swenson 1984, Table II (isopentane), per torsion",
    "reason": "the paper gives isopentane's rotation about its CH-CH2 bond as one function of phi (V0 2.713, V1 1.526, V2 0.533, V3 -3.453), phi = 0 where the CH2's carbon is gauche to both carbons on the CH. The two C-CH-CH2-C torsions sit at phi + 60 and phi - 60, so V1' = V1, V2' = -V2 and V3' = -V3/2 on each reproduce the paper's function exactly up to a constant (with three-fold symmetry at the CH). Every CH-CH2 bond in a united-atom chain has the same two torsions"
   },
   {
-   "match": ["A", "S", "S", "A"],
-   "params": [1.411, -0.271, 3.145, 0.0],
+   "match": [
+    "A",
+    "S",
+    "S",
+    "A"
+   ],
+   "params": [
+    1.411,
+    -0.271,
+    3.145,
+    0.0
+   ],
    "source": "Jorgensen, Madura & Swenson 1984, Table II (other n-alkanes)",
    "reason": "the paper's general per-torsion function for rotation about a saturated C-C bond (fit with the paper's eq 3 to MM2 energies of 91 conformers of butane to heptane), taken for the sp3-sp3 bonds the 2024 file and the isopentane term leave without a term"
+  },
+  {
+   "match": [
+    "A",
+    "S",
+    "OS",
+    "S"
+   ],
+   "params": [
+    2.8827,
+    -0.6507,
+    2.2183,
+    0.0
+   ],
+   "source": "Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), p. 960 (EME and DEE, eq 2)",
+   "reason": "rotation about an ether C-O bond, the C-C-O-C torsion of ethyl methyl ether and diethyl ether (one carbon on each side, so the function is per torsion as printed); the 1-5 Lennard-Jones term of the paper's eq 3 (sigma 2.745 A, epsilon 0.008 kcal/mol) is not added"
+  },
+  {
+   "match": [
+    "A",
+    "CH",
+    "OH",
+    "HO"
+   ],
+   "params": [
+    0.784,
+    -0.125,
+    0.3455,
+    0.0
+   ],
+   "source": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (2-propanol C-O), per torsion",
+   "reason": "the paper gives 2-propanol's C-O rotation as one function of phi (V0 0.429, V1 0.784, V2 0.125, V3 -0.691), trans (phi = 0, the hydroxyl H between the two methyls) 0.49 kcal/mol above gauche. The two C-C-O-H torsions sit at phi + 60 and phi - 60, so V1' = V1, V2' = -V2, V3' = -V3/2 on each give the paper's function up to a constant"
+  },
+  {
+   "match": [
+    "A",
+    "C2",
+    "OH",
+    "HO"
+   ],
+   "params": [
+    0.834,
+    -0.116,
+    0.747,
+    0.0
+   ],
+   "source": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (ethanol and 1-propanol C-O)",
+   "reason": "rotation about a primary alcohol's C-O bond: one C-C-O-H torsion, so the function is per torsion as printed"
+  },
+  {
+   "match": [
+    "A",
+    "CT",
+    "OH",
+    "HO"
+   ],
+   "params": [
+    0.0,
+    0.0,
+    0.21667,
+    0.0
+   ],
+   "source": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (2-methyl-2-propanol C-O, V3 0.650), per torsion",
+   "reason": "three C-C-O-H torsions 120 deg apart share the threefold function: V3' = V3 / 3 on each"
+  },
+  {
+   "match": [
+    "A",
+    "S",
+    "S",
+    [
+     "OH",
+     "OS"
+    ]
+   ],
+   "params": [
+    0.702,
+    -0.212,
+    3.06,
+    0.0
+   ],
+   "source": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2)",
+   "reason": "rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
   }
  ]
 }

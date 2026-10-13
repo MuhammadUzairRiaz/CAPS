@@ -15,8 +15,10 @@ C1, n-alkanes C2, isobutane C3, neopentane C4). Chemistry the table has no unite
 carbon, an ester, an epoxide, an ether or sulfide CH) is left untyped and reported, not guessed.
 
 Terms the 2024 file lacks for united-atom hydrocarbons (polypropylene's backbone torsions, the bends and torsions of
-polybutadiene and the polyisoprenes) come from the 1984 paper through bench/ff/open/oplsua2024_supplement.json: each
-entry, cited by table, is expanded over the classes it names and added only where the 2024 file has no term.
+polybutadiene and the polyisoprenes), alcohols and ethers (poly(vinyl alcohol), polyoxytetramethylene) come from the
+papers that define the types (1984 hydrocarbons, 1986 alcohols, 1990 ethers) through
+bench/ff/open/oplsua2024_supplement.json: each entry, cited by table, is expanded over the classes it names and added
+only where the 2024 file has no term.
 
 usage: make_oplsua2024.py [DATA_DIR] [--supplement FILE]
 """
@@ -107,7 +109,7 @@ for r in R:
     rules.append(dict(r, type=t["name"]))
 
 
-# terms from the 1984 paper where the 2024 file has none (the 2024 file wins; the first supplement entry that matches wins)
+# terms from the 1984, 1986 and 1990 papers where the 2024 file has none (the 2024 file wins; the first supplement entry that matches wins)
 sup = json.load(open(SUPPLEMENT))
 CL = sup["classes"]
 
@@ -159,12 +161,15 @@ ff = {"format": "caps-forcefield", "format_version": 1, "name": "OPLS-UA (2024 p
       "extends": "oplsaa2024-moltemplate.json", "atom_types": types, "version": "2024", "status": "converted",
       "notes": ["the united-atom carbon sites carry their hydrogens' mass (CH4 16.043, CH3 15.035, CH2 14.027, CH 13.019)",
                 f"{len(added['angles'])} bends and {len(added['dihedrals'])} torsions the 2024 file lacks for united-atom "
-                "hydrocarbons, from Jorgensen, Madura & Swenson, J. Am. Chem. Soc. 106, 6638 (1984), Tables I and II "
-                "(bench/ff/open/oplsua2024_supplement.json; each term's comment names its table and anything taken from the "
-                "2024 file); the 2024 file's own terms win",
-                "the 1984 torsions were fit with fixed bond lengths and angles, no 1-4 Lennard-Jones and a weak carbon-carbon "
-                "term beyond 1-4 (eq 3: sigma 4 A, epsilon 0.0074 kcal/mol); here they run with the 2024 file's flexible bonds "
-                "and its 1-4 x 0.5 scaling"],
+                "hydrocarbons, alcohols and ethers, from Jorgensen, Madura & Swenson, J. Am. Chem. Soc. 106, 6638 (1984), "
+                "Tables I and II; Jorgensen, J. Phys. Chem. 90, 1276 (1986), Tables II and III; Briggs, Matsui & Jorgensen, "
+                "J. Comput. Chem. 11, 958 (1990), Table II and p. 960 (bench/ff/open/oplsua2024_supplement.json; each term's "
+                "comment names its table and anything taken from the 2024 file); the 2024 file's own terms win",
+                "the papers' torsions were fit with fixed bond lengths and angles, no 1-4 Lennard-Jones and weak terms beyond "
+                "1-4 (1984 eq 3: C-C sigma 4 A, epsilon 0.0074; 1986: HO-CH3 sigma 2.6 A, epsilon 0.008; 1990 eq 3: sigma "
+                "2.745 A, epsilon 0.008 kcal/mol); here they run with the 2024 file's flexible bonds and its 1-4 x 0.5 scaling",
+                "no torsion about a C-C bond between two oxygens (O-C-C-O: poly(ethylene oxide), glycols) and no O-C-O "
+                "acetal terms: none of the three papers has one, so they are reported missing"],
       "angles": added["angles"], "dihedrals": added["dihedrals"],
       "typing": "../typing/oplsua2024.typing.json"}
 json.dump(ff, open(os.path.join(DATA, "forcefields", "oplsua2024.json"), "w"), ensure_ascii=False, indent=1)
@@ -176,4 +181,4 @@ doc = {"format": "caps-typing", "version": 1, "forcefield": "OPLS-UA (2024 param
        "unknown_types": "untyped", "united_atom": True, "rules": rules}
 json.dump(doc, open(os.path.join(DATA, "typing", "oplsua2024.typing.json"), "w"), ensure_ascii=False, indent=1)
 print(f"{len(types)} united-atom sites, {len(rules)} rules, {len(added['angles'])} bends and "
-      f"{len(added['dihedrals'])} torsions from the 1984 paper")
+      f"{len(added['dihedrals'])} torsions from the 1984, 1986 and 1990 papers")
