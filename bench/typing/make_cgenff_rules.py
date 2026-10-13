@@ -272,4 +272,28 @@ json.dump({"format": "caps-typing", "version": 1, "forcefield": "CGenFF (toppar)
            "pair_mode": "double_same", "pairs": [["CG2DC2", "CG2DC1"]], "rules": RT, "analogies": ANALOGIES,
            "analogy_source": "CGenFF analogues: the same element and hybridisation, nearest in hydrogen count, ring or substituent"},
           open(os.path.join(out, "cgenff-toppar.typing.json"), "w"), indent=1)
-print(len(R), "rules")
+# the same rules for CGenFF v. 2a5, the version published with the paper (Vanommeslaeghe et al., J. Comput. Chem. 31,
+# 671 (2010), Supporting Information; library cgenff-2a5-jcc2010). Its files predate the types later releases added, so
+# their rules go and the next rule down applies (a terminal alkyne C is CG1T1, a pyrophosphate bridge O OG303, a
+# cyclobutyl C CG321 / CG311); water and ions are not part of it. Phosphorus and the sulfoxide S follow 2a5's own use:
+# PG1 for every phosphate P outside a pyrophosphate (MP_0, MP_1, MP_2, AMP), PG2 for a P in a pyrophosphate (ADP, ATP,
+# NAD, PPI1), PG3 for the protonated P of a pyrophosphate (PPI2); DMSO's S is SG3O1.
+LATER = {"CG1T2", "CG252O", "CG25C2", "CG2R57", "CG3C41", "NG2R43", "NG2R57", "NG2R67", "OG2S1", "OG304", "OG3C31",
+         "PG0", "SG2D1", "SG2P1", "SG2P2", "SG3O2", "SG3O3", "H3P", "OT", "HX", "OX", "SOD", "POT", "CLA"}
+R5 = [r for r in R if r["type"] not in LATER and r["type"] not in ("PG1", "PG2")]
+R5 += [{"type": "PG1", "smarts": "[PX4]", "description": "phosphate P outside a pyrophosphate, any charge (2a5: MP_0, MP_1, MP_2)"},
+       {"type": "PG2", "smarts": "[PX4;$(P-[OX2]-[PX4])]", "priority": 1, "description": "P of a pyrophosphate (2a5: ADP, ATP, NAD, PPI1)"},
+       {"type": "PG3", "smarts": "[PX4;$(P-[OX2]-[PX4]);$(P-[OX2H1])]", "priority": 2, "description": "protonated P of a pyrophosphate (2a5: PPI2)"},
+       {"type": "SG3O1", "smarts": "[SX3](~[OX1])", "priority": 1, "description": "sulfoxide S (2a5 types DMSO's S as SG3O1)"},
+       {"type": "NG2R61", "smarts": "[NX3H0;$(N1~[#6X3]~[#6X3]~[#6X3]~[#6X3]~[#6X3]1)]", "priority": 3,
+        "description": "N of a 6-ring whose atoms are all sp2 but not aromatic (2a5's 4HQI: NG2R61 'because all atoms in the right ring are sp2')"}]
+A5 = {k: [x for x in v if x not in LATER] for k, v in ANALOGIES.items() if k not in LATER}
+json.dump({"format": "caps-typing", "version": 1, "forcefield": "CGenFF 2a5 (J. Comput. Chem. 2010 SI)",
+           "description": "CGenFF v. 2a5 atom types from CGenFF's own definitions (top_all36_cgenff.rtf of the 2010 paper's "
+                          "Supporting Information); conjugated alkenes pair CG2DC1 / CG2DC2 (same type across a double bond); "
+                          "types added in later releases are left out.",
+           "pair_mode": "double_same", "pairs": [["CG2DC2", "CG2DC1"]], "rules": R5,
+           "analogies": {k: v for k, v in A5.items() if v},
+           "analogy_source": "CGenFF analogues: the same element and hybridisation, nearest in hydrogen count, ring or substituent"},
+          open(os.path.join(out, "cgenff-2a5-jcc2010.typing.json"), "w"), indent=1)
+print(len(R), "rules;", len(R5), "for 2a5")

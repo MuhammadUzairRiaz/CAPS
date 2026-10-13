@@ -137,6 +137,11 @@ CASES = [
     ("CHARMM22 (toppar) peptide GAFKW (vacuum)", ("peptide", "GAFKW"), "charmm22-prot-toppar", "gasteiger", []),
     ("CGenFF (toppar) toluene (vacuum)", ("smiles", "Cc1ccccc1", os.path.join(FF, "cgenff-toppar.json")), "cgenff-toppar", "gasteiger", []),
     ("CGenFF (toppar) N-methylacetamide (vacuum)", ("smiles", "CNC(C)=O", os.path.join(FF, "cgenff-toppar.json")), "cgenff-toppar", "gasteiger", []),
+    # CGenFF v. 2a5 from the 2010 paper's Supporting Information (residues TOLU, ETAC, UREA, DMSO; QEq charges for the S=O)
+    ("CGenFF 2a5 (JCC 2010 SI) toluene, N-methylacetamide (vacuum)", ("smiles", "Cc1ccccc1.CNC(C)=O", os.path.join(FF, "cgenff-2a5-jcc2010.json")),
+     "cgenff-2a5-jcc2010", "gasteiger", []),
+    ("CGenFF 2a5 (JCC 2010 SI) ethyl acetate, urea, DMSO (vacuum)", ("smiles", "CCOC(=O)C.NC(N)=O.CS(C)=O", os.path.join(FF, "cgenff-2a5-jcc2010.json")),
+     "cgenff-2a5-jcc2010", "qeq", []),
     ("CHARMM36 lipids (toppar) short phosphatidylcholine (vacuum)", ("smiles", "C[N+](C)(C)CCOP(=O)([O-])OCC(OC(=O)CCC)COC(=O)CCC"),
      "charmm36-lipid-toppar", "qeq", []),
     ("CHARMM36 carbohydrates (toppar) beta-D-glucose (vacuum)", ("smiles", "OC[C@H]1O[C@@H](O)[C@H](O)[C@@H](O)[C@@H]1O"),

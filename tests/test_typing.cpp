@@ -418,6 +418,50 @@ TEST(Typing, CgenffConjugationPhaseAsTheRtf) {
   EXPECT_EQ(a.types[1], "CG2DC1");
 }
 
+TEST(Typing, Cgenff2a5FromThePaperSI) {
+  // CGenFF v. 2a5 as published with Vanommeslaeghe et al., J. Comput. Chem. 31, 671 (2010): in the repository
+  const std::string lib = std::string(CAPS_SOURCE_DIR) + "/data/forcefields/cgenff-2a5-jcc2010.json";
+  const FFDef def = load_forcefield(lib);
+  EXPECT_EQ(def.types.size(), 140u);
+  EXPECT_NE(def.source.find("doi:10.1002/jcc.21367"), std::string::npos);
+  EXPECT_NE(def.source.find("CGenFF v. 2a5"), std::string::npos);
+  {
+    std::ifstream in(lib);
+    const std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    EXPECT_NE(text.find("parameter values as published in the Supporting Information of Vanommeslaeghe et al. 2010; CAPS's conversion"), std::string::npos);
+    EXPECT_EQ(text.find("DL_FIELD"), std::string::npos);
+  }
+  // 2a5's own typing where later releases added types: DMSO's S is SG3O1 (no SG3O3), a terminal alkyne C CG1T1 (no
+  // CG1T2), phosphate P PG1 outside a pyrophosphate, PG2 in one, PG3 for its protonated P (RESI PPI2; no PG0)
+  const TypingResult dmso = type_with("cgenff-2a5-jcc2010", mol({"C", "S", "O", "C"}, {3, 0, 0, 3}, {{0, 1}, {1, 2}, {1, 3}}));
+  EXPECT_EQ(dmso.types[1], "SG3O1");
+  EXPECT_EQ(dmso.types[2], "OG2P1");
+  const TypingResult propyne = type_with("cgenff-2a5-jcc2010", mol({"C", "C", "C"}, {1, 0, 3}, {{0, 1}, {1, 2}}));
+  EXPECT_EQ(propyne.types[0], "CG1T1");
+  // CH3-O-P(O2)-O-P(O2)-OH
+  const TypingResult ppi2 = type_with("cgenff-2a5-jcc2010", mol({"C", "O", "P", "O", "O", "O", "P", "O", "O", "O"}, {3, 0, 0, 0, 0, 0, 0, 1, 0, 0},
+                                                                {{0, 1}, {1, 2}, {2, 3}, {2, 4}, {2, 5}, {3, 6}, {6, 7}, {6, 8}, {6, 9}}));
+  EXPECT_EQ(ppi2.types[2], "PG2");
+  EXPECT_EQ(ppi2.types[3], "OG303");
+  EXPECT_EQ(ppi2.types[6], "PG3");
+  const TypingResult mp = type_with("cgenff-2a5-jcc2010", mol({"C", "O", "P", "O", "O", "O"}, {3, 0, 0, 0, 0, 0}, {{0, 1}, {1, 2}, {2, 3}, {2, 4}, {2, 5}}));
+  EXPECT_EQ(mp.types[2], "PG1");
+  // toluene: every term from the file, Urey-Bradley on the ring angles, the methyl C's own 1-4 Lennard-Jones
+  const System tol = mol({"C", "C", "C", "C", "C", "C", "C"}, {3, 0, 1, 1, 1, 1, 1}, {{0, 1}, {1, 2}, {2, 3}, {3, 4}, {4, 5}, {5, 6}, {6, 1}});
+  FFDef d2 = def;
+  if (d2.typing.empty()) load_typing(d2, std::string(CAPS_SOURCE_DIR) + "/data/typing/cgenff-2a5-jcc2010.typing.json");
+  const TypingResult tt = assign_types(tol, d2);
+  EXPECT_EQ(tt.untyped, 0);
+  EXPECT_EQ(tt.types[0], "CG331");
+  EXPECT_EQ(tt.types[1], "CG2R61");
+  ParamReport rep;
+  const ForceField ff = parameterize(tol, d2, tt.types, "gasteiger", &rep);
+  EXPECT_TRUE(rep.missing.empty());
+  EXPECT_EQ(rep.estimated_terms, 0);
+  EXPECT_FALSE(ff.urey_bradley.empty());
+  EXPECT_FALSE(ff.lj14_types.empty());
+}
+
 TEST(Typing, CgenffAndOpls) {
   if (!built_here("cgenff-toppar")) GTEST_SKIP() << "CGenFF is built locally from CHARMM's toppar (bench/ff/open/build_charmm.sh)";
   // CGenFF: conjugated diene CG2DC3 CG2DC2 CG2DC1 CG2DC3 (same type across a double bond, switched across the single)

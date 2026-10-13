@@ -2803,6 +2803,36 @@
     "key": "charmm19",
     "order": 20
    }
+  },
+  {
+   "id": "cgenff-2a5-jcc2010",
+   "name": "CGenFF 2a5 (J. Comput. Chem. 2010)",
+   "version": "2a5 (the paper's Supporting Information: par_all36_cgenff.prm, top_all36_cgenff.rtf)",
+   "references": [
+    "K. Vanommeslaeghe, E. Hatcher, C. Acharya, S. Kundu, S. Zhong, J. Shim, E. Darian, O. Guvench, P. Lopes, I. Vorobyov, A. D. MacKerell Jr., J. Comput. Chem. 31, 671 (2010), doi:10.1002/jcc.21367"
+   ],
+   "origin": "built from source",
+   "source": "Supporting Information of the paper, jcc_21367_sm_suppinfo.tgz (doi:10.1002/jcc.21367): par_all36_cgenff.prm and top_all36_cgenff.rtf, CGenFF v. 2a5",
+   "license": "parameter values as published in the Supporting Information of Vanommeslaeghe et al. 2010; CAPS's conversion",
+   "status": "validated",
+   "file": "cgenff-2a5-jcc2010.json",
+   "counts": {
+    "atom_types": 140,
+    "pairs": 140,
+    "bonds": 414,
+    "angles": 1296,
+    "dihedrals": 2876,
+    "impropers": 69
+   },
+   "typing": {
+    "rules": "typing/cgenff-2a5-jcc2010.typing.json",
+    "evidence": "CAPS's CGenFF rules (bench/typing/make_cgenff_rules.py) without the types later releases added, with 2a5's phosphorus and sulfoxide types; the SI's top_all36_cgenff.rtf typed as it types itself for 7471 / 7505 atoms, 371 / 388 residues (bench/ff/validate_rtf_types.py; the other 34 atoms are 2a5 assignments that later releases revised, as CAPS's rules follow, or residues later releases dropped); every residue complete at its integer charge with no missing bonded term, 388 / 388 with the topology's types and 387 / 388 with CAPS's (PRAL: one aldehyde improper, bench/ff/check_rtf_params.py); LAMMPS and GROMACS reproduce CAPS's energies (Urey-Bradley, 1-4 Lennard-Jones)"
+   },
+   "list": {
+    "label": "CGenFF 2a5 (2010)",
+    "key": "cgenff_2a5",
+    "order": 23
+   }
   }
  ],
  "list_note": "The force fields the Studio lists, one per force field (entries without \"list\" stay loadable by id for recipes and scripts)"
