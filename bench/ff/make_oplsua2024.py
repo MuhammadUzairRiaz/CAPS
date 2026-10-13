@@ -14,12 +14,22 @@ A CH3 site takes its type by the number of carbons on the carbon it is bonded to
 C1, n-alkanes C2, isobutane C3, neopentane C4). Chemistry the table has no united-atom type for (a substituted aromatic
 carbon, an ester, an epoxide, an ether or sulfide CH) is left untyped and reported, not guessed.
 
-usage: make_oplsua2024.py [DATA_DIR]
+Terms the 2024 file lacks for united-atom hydrocarbons (polypropylene's backbone torsions, the bends and torsions of
+polybutadiene and the polyisoprenes) come from the 1984 paper through bench/ff/open/oplsua2024_supplement.json: each
+entry, cited by table, is expanded over the classes it names and added only where the 2024 file has no term.
+
+usage: make_oplsua2024.py [DATA_DIR] [--supplement FILE]
 """
-import json, os, sys
+import fnmatch, itertools, json, os, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-DATA = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "data")
+ARGS = sys.argv[1:]
+SUPPLEMENT = os.path.join(ROOT, "bench", "ff", "open", "oplsua2024_supplement.json")
+if "--supplement" in ARGS:
+    i = ARGS.index("--supplement")
+    SUPPLEMENT = ARGS[i + 1]
+    del ARGS[i:i + 2]
+DATA = ARGS[0] if ARGS else os.path.join(ROOT, "data")
 BASE = os.path.join(DATA, "forcefields", "oplsaa2024-moltemplate.json")
 MC, MH = 12.011, 1.008
 
@@ -96,6 +106,50 @@ for r in R:
         raise SystemExit(f"type {r['type']} is not in {BASE}")
     rules.append(dict(r, type=t["name"]))
 
+
+# terms from the 1984 paper where the 2024 file has none (the 2024 file wins; the first supplement entry that matches wins)
+sup = json.load(open(SUPPLEMENT))
+CL = sup["classes"]
+
+
+def classes(x):
+    return CL.get(x, [x]) if isinstance(x, str) else x
+
+
+def valid(t):
+    # CH3 (C3) and =CH2 (C9) carry one carbon: only at the ends of a term, and a C9 only on an sp2 carbon
+    if any(c in ("C3", "C9") for c in t[1:-1]):
+        return False
+    return (t[0] != "C9" or t[1] in CL["D"]) and (t[-1] != "C9" or t[-2] in CL["D"])
+
+
+def pattern(kind, c):
+    return f"*_b*_a{c}_d*_i*" if kind == "angles" else f"*_b*_a*_d{c}_i*"
+
+
+def base_has(kind, t):
+    names = [f"0_b{c}_a{c}_d{c}_i{c}" for c in t]
+    for r in base[kind]:
+        if len(r["match"]) == len(t) and any(all(fnmatch.fnmatchcase(n, p) for n, p in zip(seq, r["match"]))
+                                             for seq in (names, names[::-1])):
+            return True
+    return False
+
+
+added = {"angles": [], "dihedrals": []}
+for kind in added:
+    seen = set()
+    for e in sup[kind]:
+        for t in itertools.product(*[classes(x) for x in e["match"]]):
+            key = min(t, t[::-1])
+            if key in seen or not valid(key):
+                continue
+            seen.add(key)
+            if base_has(kind, key):
+                continue
+            added[kind].append({"name": "-".join(key), "match": [pattern(kind, c) for c in key], "params": list(e["params"]),
+                                "comment": f"{e['source']}: {e['reason']}"})
+
 ff = {"format": "caps-forcefield", "format_version": 1, "name": "OPLS-UA (2024 parameter file)",
       "source": "the united-atom types of the 2024 OPLS parameter file",
       "references": ["W. L. Jorgensen et al., J. Phys. Chem. B (2024), doi:10.1021/acs.jpcb.3c06602 (the parameter file)",
@@ -103,7 +157,15 @@ ff = {"format": "caps-forcefield", "format_version": 1, "name": "OPLS-UA (2024 p
                      "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986)", "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986)",
                      "J. M. Briggs, T. Matsui, W. L. Jorgensen, J. Comput. Chem. 11, 958 (1990)"],
       "extends": "oplsaa2024-moltemplate.json", "atom_types": types, "version": "2024", "status": "converted",
-      "notes": ["the united-atom carbon sites carry their hydrogens' mass (CH4 16.043, CH3 15.035, CH2 14.027, CH 13.019)"],
+      "notes": ["the united-atom carbon sites carry their hydrogens' mass (CH4 16.043, CH3 15.035, CH2 14.027, CH 13.019)",
+                f"{len(added['angles'])} bends and {len(added['dihedrals'])} torsions the 2024 file lacks for united-atom "
+                "hydrocarbons, from Jorgensen, Madura & Swenson, J. Am. Chem. Soc. 106, 6638 (1984), Tables I and II "
+                "(bench/ff/open/oplsua2024_supplement.json; each term's comment names its table and anything taken from the "
+                "2024 file); the 2024 file's own terms win",
+                "the 1984 torsions were fit with fixed bond lengths and angles, no 1-4 Lennard-Jones and a weak carbon-carbon "
+                "term beyond 1-4 (eq 3: sigma 4 A, epsilon 0.0074 kcal/mol); here they run with the 2024 file's flexible bonds "
+                "and its 1-4 x 0.5 scaling"],
+      "angles": added["angles"], "dihedrals": added["dihedrals"],
       "typing": "../typing/oplsua2024.typing.json"}
 json.dump(ff, open(os.path.join(DATA, "forcefields", "oplsua2024.json"), "w"), ensure_ascii=False, indent=1)
 doc = {"format": "caps-typing", "version": 1, "forcefield": "OPLS-UA (2024 parameter file)",
@@ -113,4 +175,5 @@ doc = {"format": "caps-typing", "version": 1, "forcefield": "OPLS-UA (2024 param
                       "reported. Among matching rules the highest priority wins.",
        "unknown_types": "untyped", "united_atom": True, "rules": rules}
 json.dump(doc, open(os.path.join(DATA, "typing", "oplsua2024.typing.json"), "w"), ensure_ascii=False, indent=1)
-print(f"{len(types)} united-atom sites, {len(rules)} rules")
+print(f"{len(types)} united-atom sites, {len(rules)} rules, {len(added['angles'])} bends and "
+      f"{len(added['dihedrals'])} torsions from the 1984 paper")
