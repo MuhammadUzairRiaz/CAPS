@@ -59,9 +59,13 @@ def arg(k, d=None):
 # ------------------------------------------------------------------ structures
 def read_data(path):
     """atoms (element, type label, position), bonds and dihedral quadruples of a LAMMPS data file CAPS wrote"""
-    label, mass, atoms, bonds, dihs, sec = {}, {}, {}, [], set(), None
+    label, mass, atoms, bonds, dihs, sec, box = {}, {}, {}, [], set(), None, [None, None, None]
     for raw in open(path):
         line = raw.split("#")[0].strip()
+        m = re.match(r"^(\S+)\s+(\S+)\s+([xyz])lo\s+[xyz]hi$", line)
+        if m:
+            box["xyz".index(m.group(3))] = float(m.group(2)) - float(m.group(1))
+            continue
         if re.match(r"^[A-Z][A-Za-z ]+$", line):
             sec = line
             continue
@@ -82,7 +86,32 @@ def read_data(path):
     types = [label[atoms[i][0]] for i in ids]
     masses = [mass[atoms[i][0]] for i in ids]
     pos = [atoms[i][1] for i in ids]
-    return types, masses, pos, bonds, dihs
+    return types, masses, unwrap(pos, bonds, box), bonds, dihs
+
+
+def unwrap(pos, bonds, box):
+    """positions with every molecule whole: walking its bonds, each atom is put at the periodic image nearest the atom
+    it is bonded to. A fragment cut from a periodic cell otherwise keeps bonds across the box (a C at z = 36 A bonded to
+    one at z = 0.3 A), and the QM optimisation sees separate pieces: it cannot converge and its energies mean nothing"""
+    if not all(box):
+        return pos
+    pos = [list(p) for p in pos]
+    nb = neighbours(len(pos), bonds)
+    seen = [False] * len(pos)
+    for s in range(len(pos)):
+        if seen[s]:
+            continue
+        seen[s], stack = True, [s]
+        while stack:
+            i = stack.pop()
+            for j in nb[i]:
+                if seen[j]:
+                    continue
+                for k in range(3):
+                    pos[j][k] -= box[k] * round((pos[j][k] - pos[i][k]) / box[k])
+                seen[j] = True
+                stack.append(j)
+    return [tuple(p) for p in pos]
 
 
 def element_of_mass(m):
@@ -264,7 +293,7 @@ def orca_input(el, pos, quad, charge=0, mult=1, level="oplsaa-l", nprocs=1, hold
     if nprocs > 1:   # ORCA starts its own MPI processes: the job needs as many tasks (--ntasks)
         mem += f"%pal nprocs {nprocs} end\n"
     cons = "".join(f" {{ D {w} {x} {y} {z} C }}" for w, x, y, z in [(a, b, c, d)] + list(hold))
-    head = f"{opt}\n{mem}%geom Constraints{cons} end end\n* xyz {charge} {mult}\n{xyz}\n*\n"
+    head = f"{opt}\n{mem}%geom MaxIter 300 Constraints{cons} end end\n* xyz {charge} {mult}\n{xyz}\n*\n"
     if level != "oplsaa-l":
         return head
     return head + f"\n$new_job\n{sp}\n{mem}* xyzfile {charge} {mult} point.xyz\n"
