@@ -1,0 +1,61 @@
+{
+ "description": "TraPPE-UA torsions that no TraPPE paper or database model defines, fitted by CAPS to RI-MP2/cc-pVTZ//HF/6-31G** relaxed scans of all-atom fragments with the united-atom model evaluated on them (python -m caps.torsionfit; merged by bench/ff/merge_ua_fits.py). OPLS-form V1-V4 in kcal/mol; make_trappe.py writes them as fourier terms (K = V/2) placed before every TraPPE term, which wins wherever one matches. These are CAPS's fits, not TraPPE parameters.",
+ "dihedrals": [
+  {
+   "match": [
+    "CH2_3",
+    "CH_30",
+    "C_31",
+    "CH2_3"
+   ],
+   "style": "cistrans",
+   "params": [
+    24.641333319999998,
+    26.62853762
+   ],
+   "comment": "CAPS's transfer, not a TraPPE term: no TraPPE paper or model defines a torsion about a trisubstituted C=C (the CH=C(CH3) of polyisoprene); a rotation scan through the pi bond cannot be fitted, so the double bond keeps its configuration by Wick, Martin & Siepmann, J. Phys. Chem. B 104, 8008 (2000) Table 4's CHx-(CH)=(CH)-CHy cis / trans term, with the database's x 2 as for the disubstituted bonds"
+  },
+  {
+   "match": [
+    "CH2_3",
+    "CH_30",
+    "C_31",
+    "CH3_2"
+   ],
+   "style": "cistrans",
+   "params": [
+    24.641333319999998,
+    26.62853762
+   ],
+   "comment": "CAPS's transfer, not a TraPPE term: no TraPPE paper or model defines a torsion about a trisubstituted C=C (the CH=C(CH3) of polyisoprene); a rotation scan through the pi bond cannot be fitted, so the double bond keeps its configuration by Wick, Martin & Siepmann, J. Phys. Chem. B 104, 8008 (2000) Table 4's CHx-(CH)=(CH)-CHy cis / trans term, with the database's x 2 as for the disubstituted bonds"
+  },
+  {
+   "match": [
+    "CH3_2",
+    "CH_30",
+    "C_31",
+    "CH2_3"
+   ],
+   "style": "cistrans",
+   "params": [
+    24.641333319999998,
+    26.62853762
+   ],
+   "comment": "CAPS's transfer, not a TraPPE term: no TraPPE paper or model defines a torsion about a trisubstituted C=C (the CH=C(CH3) of polyisoprene); a rotation scan through the pi bond cannot be fitted, so the double bond keeps its configuration by Wick, Martin & Siepmann, J. Phys. Chem. B 104, 8008 (2000) Table 4's CHx-(CH)=(CH)-CHy cis / trans term, with the database's x 2 as for the disubstituted bonds"
+  },
+  {
+   "match": [
+    "CH3_2",
+    "CH_30",
+    "C_31",
+    "CH3_2"
+   ],
+   "style": "cistrans",
+   "params": [
+    24.641333319999998,
+    26.62853762
+   ],
+   "comment": "CAPS's transfer, not a TraPPE term: no TraPPE paper or model defines a torsion about a trisubstituted C=C (the CH=C(CH3) of polyisoprene); a rotation scan through the pi bond cannot be fitted, so the double bond keeps its configuration by Wick, Martin & Siepmann, J. Phys. Chem. B 104, 8008 (2000) Table 4's CHx-(CH)=(CH)-CHy cis / trans term, with the database's x 2 as for the disubstituted bonds"
+  }
+ ]
+}

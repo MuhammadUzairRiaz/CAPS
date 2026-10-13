@@ -776,7 +776,21 @@ for (kind, name), n in sorted(replaced.items()):
     print(f"  CAPS's wildcard {kind} {name} gives way to the papers' terms for {n} type combinations")
 BONDS[:0] = G_BONDS
 ANGLES[:0] = G_ANGLES          # after WILD_ANGLES in the library (WILD_ANGLES + ANGLES)
-DIHEDRALS[:] = D_WILD + G_DIHEDRALS + D_EXACT
+# CAPS's own QM fits (caps.torsionfit, bench/ff/merge_ua_fits.py) for torsions no TraPPE paper or model defines; first in
+# the list, so any TraPPE term (CAPS takes the last rule that matches) wins over them. OPLS V_n -> fourier K = V_n / 2
+CAPS_FITS_FILE = os.path.join(ROOT, "bench", "ff", "open", "trappe_ua_capsfits.json")
+CAPS_FITS = []
+if os.path.exists(CAPS_FITS_FILE):
+    for e in json.load(open(CAPS_FITS_FILE)).get("dihedrals", []):
+        if e.get("style") == "cistrans":   # a cis / trans restraint carried over from a TraPPE term (its comment says which)
+            CAPS_FITS.append({"name": "-".join(e["match"]) + " cis/trans (CAPS)", "match": list(e["match"]), "style": "cistrans",
+                              "params": list(e["params"]), "comment": e["comment"]})
+            continue
+        terms = [(round(v / 2, 6), n, 0.0 if n % 2 else 180.0) for n, v in enumerate(e["params"], 1) if v]
+        CAPS_FITS.append({"name": "-".join(e["match"]) + " (CAPS fit)", "match": list(e["match"]), "style": "fourier",
+                          "params": [len(terms)] + [x for t in terms for x in t] if terms else [1, 0.0, 1, 0.0],
+                          "comment": e["comment"]})
+DIHEDRALS[:] = CAPS_FITS + D_WILD + G_DIHEDRALS + D_EXACT
 NOTES += [f"transferable hydrocarbon terms (bonds, bends, torsions by pseudo-atom kind) from {P98}, {P99} Table 2 and {P00} Tables 2-4, "
           "written over CH3_2 CH2_3 CH_4 C_5 (sp3), CH2_29 CH_30 C_31 (sp2) and CH_88 C_89 (aromatic); a term a database model gives "
           "comes later in each list and wins; where both give one they agree",
