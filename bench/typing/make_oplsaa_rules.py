@@ -491,6 +491,28 @@ add(546, 7, "[H][c;r5;$(c1[nH1]ccc1)]", "pyrrole H2")
 add(547, 7, "[H][c;r5;$(c1c[nH1]cc1)]", "pyrrole H3")
 add(678, 7, "[CX4H3][c;r5;$(c1[nH1]ccc1)]", "CH3 on pyrrole C2")
 add(679, 7, "[CX4H2][c;r5;$(c1[nH1]ccc1)]", "CH2 on pyrrole C2")
+# N-alkyl carbazoles (poly(N-vinylcarbazole)): no numbers in the table. CAPS types charged by 1.27 x CM5 (M06-2X/
+# 6-311+G(2df,2p) Hirshfeld, N-isopropylcarbazole, equivalent atoms averaged), with the classes and Lennard-Jones of
+# indole's N 587 (NA), tryptophan's CE2 502 (CN, the C on N) and CD2 501 (CB, the other fusion C), whose bonds the files
+# have (NA-CN, CN-CB, CB-CB, CA-CN, CA-CB), and benzene's CA / HA; the CH on N
+# carries the methyls' share so the carbazolyl-CH group is neutral beside alkane CH2 (bench/ff/open/oplsaa2024_supplement.json)
+CBZ = "[n;r5;$(n1c2ccccc2c2ccccc12)]"
+CBZ_CN = f"[c;r5;r6;$(c{CBZ})]"
+CBZ_CS = f"[c;r5;r6;!$(c{CBZ})]"
+add("caps_cbz_n", 8, f"{CBZ[:-1]};$(n[CX4])]", "carbazole N (N-alkyl)", True)
+add("caps_cbz_cn", 8, CBZ_CN, "carbazole C on N (C8a / C9a)", True)
+add("caps_cbz_cs", 8, CBZ_CS, "carbazole fusion C (C4a / C4b)", True)
+add("caps_cbz_c1", 8, f"[cH1;$(c{CBZ_CN})]", "carbazole C1 / C8", True)
+add("caps_cbz_c4", 8, f"[cH1;$(c{CBZ_CS})]", "carbazole C4 / C5", True)
+add("caps_cbz_c2", 8, f"[cH1;$(c[cH1;$(c{CBZ_CN})])]", "carbazole C2 / C7", True)
+add("caps_cbz_c3", 8, f"[cH1;$(c[cH1;$(c{CBZ_CS})])]", "carbazole C3 / C6", True)
+add("caps_cbz_h1", 8, f"[H][cH1;$(c{CBZ_CN})]", "H on carbazole C1", True)
+add("caps_cbz_h4", 8, f"[H][cH1;$(c{CBZ_CS})]", "H on carbazole C4", True)
+add("caps_cbz_h2", 8, f"[H][cH1;$(c[cH1;$(c{CBZ_CN})])]", "H on carbazole C2", True)
+add("caps_cbz_h3", 8, f"[H][cH1;$(c[cH1;$(c{CBZ_CS})])]", "H on carbazole C3", True)
+add("caps_cbz_ct", 8, f"[CX4H1;$(*{CBZ})]", "CH on a carbazole N (poly(N-vinylcarbazole) backbone)", True)
+add("caps_cbz_ct2", 8, f"[CX4H2;$(*{CBZ})]", "CH2 on a carbazole N (a chain end, or N-ethyl / N-vinyl-derived)", True)
+add("caps_cbz_hc", 8, f"[H][CX4;$(*{CBZ})]", "H on that CH / CH2", True)
 
 
 def rules_for(ff_json):

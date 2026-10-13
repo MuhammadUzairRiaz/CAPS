@@ -13004,6 +13004,188 @@
     "dihedral": "C=",
     "improper": "C="
    }
+  },
+  {
+   "name": "caps_cbz_n",
+   "element": "N",
+   "mass": 14.007,
+   "charge": -0.3902,
+   "description": "carbazole N (CAPS: 1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on the B3LYP-D3BJ/def2-TZVP geometry of N-isopropylcarbazole, equivalent atoms averaged))",
+   "equivalence": {
+    "bond": "NA",
+    "angle": "NA",
+    "dihedral": "NA",
+    "improper": "NA"
+   }
+  },
+  {
+   "name": "caps_cbz_cn",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.1334,
+   "description": "carbazole C on N (CAPS: 1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on the B3LYP-D3BJ/def2-TZVP geometry of N-isopropylcarbazole, equivalent atoms averaged))",
+   "equivalence": {
+    "bond": "CN",
+    "angle": "CN",
+    "dihedral": "CN",
+    "improper": "CN"
+   }
+  },
+  {
+   "name": "caps_cbz_cs",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.0314,
+   "description": "carbazole fusion C (CAPS: 1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on the B3LYP-D3BJ/def2-TZVP geometry of N-isopropylcarbazole, equivalent atoms averaged))",
+   "equivalence": {
+    "bond": "CB",
+    "angle": "CB",
+    "dihedral": "CB",
+    "improper": "CB"
+   }
+  },
+  {
+   "name": "caps_cbz_c1",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.1359,
+   "description": "carbazole C1/C8 (CAPS: 1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on the B3LYP-D3BJ/def2-TZVP geometry of N-isopropylcarbazole, equivalent atoms averaged))",
+   "equivalence": {
+    "bond": "CA",
+    "angle": "CA",
+    "dihedral": "CA",
+    "improper": "CA"
+   }
+  },
+  {
+   "name": "caps_cbz_c2",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.1233,
+   "description": "carbazole C2/C7 (CAPS: 1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on the B3LYP-D3BJ/def2-TZVP geometry of N-isopropylcarbazole, equivalent atoms averaged))",
+   "equivalence": {
+    "bond": "CA",
+    "angle": "CA",
+    "dihedral": "CA",
+    "improper": "CA"
+   }
+  },
+  {
+   "name": "caps_cbz_c3",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.1411,
+   "description": "carbazole C3/C6 (CAPS: 1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on the B3LYP-D3BJ/def2-TZVP geometry of N-isopropylcarbazole, equivalent atoms averaged))",
+   "equivalence": {
+    "bond": "CA",
+    "angle": "CA",
+    "dihedral": "CA",
+    "improper": "CA"
+   }
+  },
+  {
+   "name": "caps_cbz_c4",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.1114,
+   "description": "carbazole C4/C5 (CAPS: 1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on the B3LYP-D3BJ/def2-TZVP geometry of N-isopropylcarbazole, equivalent atoms averaged))",
+   "equivalence": {
+    "bond": "CA",
+    "angle": "CA",
+    "dihedral": "CA",
+    "improper": "CA"
+   }
+  },
+  {
+   "name": "caps_cbz_h1",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.1169,
+   "description": "H on carbazole C1 (CAPS: 1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on the B3LYP-D3BJ/def2-TZVP geometry of N-isopropylcarbazole, equivalent atoms averaged))",
+   "equivalence": {
+    "bond": "HA",
+    "angle": "HA",
+    "dihedral": "HA",
+    "improper": "HA"
+   }
+  },
+  {
+   "name": "caps_cbz_h2",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.1155,
+   "description": "H on carbazole C2 (CAPS: 1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on the B3LYP-D3BJ/def2-TZVP geometry of N-isopropylcarbazole, equivalent atoms averaged))",
+   "equivalence": {
+    "bond": "HA",
+    "angle": "HA",
+    "dihedral": "HA",
+    "improper": "HA"
+   }
+  },
+  {
+   "name": "caps_cbz_h3",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.1125,
+   "description": "H on carbazole C3 (CAPS: 1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on the B3LYP-D3BJ/def2-TZVP geometry of N-isopropylcarbazole, equivalent atoms averaged))",
+   "equivalence": {
+    "bond": "HA",
+    "angle": "HA",
+    "dihedral": "HA",
+    "improper": "HA"
+   }
+  },
+  {
+   "name": "caps_cbz_h4",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.1203,
+   "description": "H on carbazole C4 (CAPS: 1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on the B3LYP-D3BJ/def2-TZVP geometry of N-isopropylcarbazole, equivalent atoms averaged))",
+   "equivalence": {
+    "bond": "HA",
+    "angle": "HA",
+    "dihedral": "HA",
+    "improper": "HA"
+   }
+  },
+  {
+   "name": "caps_cbz_hc",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.136,
+   "description": "H on the CH on a carbazole N (CAPS: 1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on the B3LYP-D3BJ/def2-TZVP geometry of N-isopropylcarbazole, equivalent atoms averaged))",
+   "equivalence": {
+    "bond": "HC",
+    "angle": "HC",
+    "dihedral": "HC",
+    "improper": "HC"
+   }
+  },
+  {
+   "name": "caps_cbz_ct",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.1432,
+   "description": "CH on a carbazole N (CAPS: 1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on the B3LYP-D3BJ/def2-TZVP geometry of N-isopropylcarbazole, equivalent atoms averaged); its own 0.0538 plus the +0.0890 of the model's two methyls and +0.0004 of rounding of the model's two methyls, which the alkane CH2 (136 / 140, neutral) of the backbone replace, so the carbazolyl-CH group is neutral)",
+   "equivalence": {
+    "bond": "CT",
+    "angle": "CT",
+    "dihedral": "CT",
+    "improper": "CT"
+   }
+  },
+  {
+   "name": "caps_cbz_ct2",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.0072,
+   "description": "CH2 on a carbazole N (CAPS: the group on the N keeps the CH group's +0.2792 (caps_cbz_ct 0.1432 + H 0.1360) with one more H in place of a backbone carbon: 0.2792 - 2 x 0.1360)",
+   "equivalence": {
+    "bond": "CT",
+    "angle": "CT",
+    "dihedral": "CT",
+    "improper": "CT"
+   }
   }
  ],
  "pairs": [
@@ -22985,6 +23167,146 @@
    "params": [
     0.076,
     3.55
+   ]
+  },
+  {
+   "name": "caps_cbz_n",
+   "match": [
+    "caps_cbz_n"
+   ],
+   "params": [
+    0.17,
+    3.25
+   ]
+  },
+  {
+   "name": "caps_cbz_cn",
+   "match": [
+    "caps_cbz_cn"
+   ],
+   "params": [
+    0.07,
+    3.55
+   ]
+  },
+  {
+   "name": "caps_cbz_cs",
+   "match": [
+    "caps_cbz_cs"
+   ],
+   "params": [
+    0.07,
+    3.55
+   ]
+  },
+  {
+   "name": "caps_cbz_c1",
+   "match": [
+    "caps_cbz_c1"
+   ],
+   "params": [
+    0.068,
+    3.55
+   ]
+  },
+  {
+   "name": "caps_cbz_c2",
+   "match": [
+    "caps_cbz_c2"
+   ],
+   "params": [
+    0.068,
+    3.55
+   ]
+  },
+  {
+   "name": "caps_cbz_c3",
+   "match": [
+    "caps_cbz_c3"
+   ],
+   "params": [
+    0.068,
+    3.55
+   ]
+  },
+  {
+   "name": "caps_cbz_c4",
+   "match": [
+    "caps_cbz_c4"
+   ],
+   "params": [
+    0.068,
+    3.55
+   ]
+  },
+  {
+   "name": "caps_cbz_h1",
+   "match": [
+    "caps_cbz_h1"
+   ],
+   "params": [
+    0.03,
+    2.42
+   ]
+  },
+  {
+   "name": "caps_cbz_h2",
+   "match": [
+    "caps_cbz_h2"
+   ],
+   "params": [
+    0.03,
+    2.42
+   ]
+  },
+  {
+   "name": "caps_cbz_h3",
+   "match": [
+    "caps_cbz_h3"
+   ],
+   "params": [
+    0.03,
+    2.42
+   ]
+  },
+  {
+   "name": "caps_cbz_h4",
+   "match": [
+    "caps_cbz_h4"
+   ],
+   "params": [
+    0.03,
+    2.42
+   ]
+  },
+  {
+   "name": "caps_cbz_hc",
+   "match": [
+    "caps_cbz_hc"
+   ],
+   "params": [
+    0.03,
+    2.5
+   ]
+  },
+  {
+   "name": "caps_cbz_ct",
+   "match": [
+    "caps_cbz_ct"
+   ],
+   "params": [
+    0.066,
+    3.5
+   ]
+  },
+  {
+   "name": "caps_cbz_ct2",
+   "match": [
+    "caps_cbz_ct2"
+   ],
+   "params": [
+    0.066,
+    3.5
    ]
   }
  ],
@@ -48833,6 +49155,62 @@
     121.5
    ],
    "comment": "the 2024 .sb's chloroalkene terms (wlj): CM-CM-Cl: a diene's central carbon (class C=) is the same sp2 carbon as an alkene CM; the files give C= its own terms only toward carbon and H, so the Cl takes CM's"
+  },
+  {
+   "name": "CT-NA-CN",
+   "match": [
+    "CT",
+    "NA",
+    "CN"
+   ],
+   "style": "harmonic",
+   "params": [
+    70.0,
+    124.0
+   ],
+   "comment": "the 2024 .sb's CW-NA-CT (N-alkyl azole): carbazole's N bonded to an alkyl C: the azole N-alkyl bend, the ring C on N being CN instead of CW"
+  },
+  {
+   "name": "CN-NA-CN",
+   "match": [
+    "CN",
+    "NA",
+    "CN"
+   ],
+   "style": "harmonic",
+   "params": [
+    70.0,
+    111.6
+   ],
+   "comment": "the 2024 .sb's CN-NA-CW (tryptophan's ring N): carbazole's five-membered ring at N, between its two C on N (class CN)"
+  },
+  {
+   "name": "CN-CB-CB",
+   "match": [
+    "CN",
+    "CB",
+    "CB"
+   ],
+   "style": "harmonic",
+   "params": [
+    85.0,
+    108.8
+   ],
+   "comment": "the 2024 .sb's CS-CB-CN (tryptophan's ring): carbazole's five-membered ring at a fusion C (CB), toward the other fusion C"
+  },
+  {
+   "name": "CT-CT-NA",
+   "match": [
+    "CT",
+    "CT",
+    "NA"
+   ],
+   "style": "harmonic",
+   "params": [
+    50.0,
+    109.5
+   ],
+   "comment": "the 2024 .sb's CT-CT-N* (an alkyl C on an aromatic N): poly(N-vinylcarbazole)'s backbone CH on the carbazole N"
   }
  ],
  "dihedrals": [
@@ -67688,6 +68066,74 @@
     0.0
    ],
    "comment": "the 2024 .par's chloroalkene torsion Cl-CM-CM-HC (type 222): a twist about a C=C double bond; at a diene's central carbon (C=) it is the same double bond, so it takes the table's chloroalkene term"
+  },
+  {
+   "name": "CB-CN-CA-CA",
+   "match": [
+    "CB",
+    "CN",
+    "CA",
+    "CA"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    7.25,
+    0.0,
+    0.0
+   ],
+   "comment": "the 2024 .par's aromatic ring torsions (type 165): every torsion inside an aromatic ring in the files is V2 7.25, rings of CN and CB atoms included; carbazole's benzene rings"
+  },
+  {
+   "name": "CB-CN-CA-HA",
+   "match": [
+    "CB",
+    "CN",
+    "CA",
+    "HA"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    7.25,
+    0.0,
+    0.0
+   ],
+   "comment": "the 2024 .par's aromatic ring torsions (type 165): every torsion inside an aromatic ring in the files is V2 7.25, rings of CN and CB atoms included; carbazole's benzene rings"
+  },
+  {
+   "name": "NA-CN-CA-CA",
+   "match": [
+    "NA",
+    "CN",
+    "CA",
+    "CA"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    7.25,
+    0.0,
+    0.0
+   ],
+   "comment": "the 2024 .par's aromatic ring torsions (type 165): every torsion inside an aromatic ring in the files is V2 7.25, rings of CN and CB atoms included; carbazole's benzene rings"
+  },
+  {
+   "name": "NA-CN-CA-HA",
+   "match": [
+    "NA",
+    "CN",
+    "CA",
+    "HA"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    7.25,
+    0.0,
+    0.0
+   ],
+   "comment": "the 2024 .par's aromatic ring torsions (type 165): every torsion inside an aromatic ring in the files is V2 7.25, rings of CN and CB atoms included; carbazole's benzene rings"
   }
  ],
  "impropers": [
@@ -67758,7 +68204,7 @@
  ],
  "notes": [
   "converted by CAPS (bench/ff/convert_boss_opls.py) from Jorgensen's published BOSS files",
-  "26 types and terms the 2024 files lack, each from the OPLS-AA paper that defines it or from OPLS-AA's own charge increments (bench/ff/open/oplsaa2024_supplement.json): caps_ccl2, caps_chcl2, caps_ch2cl2, caps_ccl3, caps_chcl3, caps_pyr2ch, caps_s_poly, caps_c_dienecl, CF-CT, C=-Cl, CF-CT-CF, CF-CT-CT, CT-CF-CT, CF-CT-F, CT-CF-F, CF-CT-HC, CO-OS-CO, CO-CT-OS, CT-CT-CY, CA-SY-CA, OS-CT-CY, CT-CM-Cl, CM-C=-Cl, C=-C=-Cl, F-CF-CT-F, Cl-C=-CM-HC",
+  "48 types and terms the 2024 files lack, each from the OPLS-AA paper that defines it or from OPLS-AA's own charge increments (bench/ff/open/oplsaa2024_supplement.json): caps_ccl2, caps_chcl2, caps_ch2cl2, caps_ccl3, caps_chcl3, caps_pyr2ch, caps_s_poly, caps_c_dienecl, caps_cbz_n, caps_cbz_cn, caps_cbz_cs, caps_cbz_c1, caps_cbz_c2, caps_cbz_c3, caps_cbz_c4, caps_cbz_h1, caps_cbz_h2, caps_cbz_h3, caps_cbz_h4, caps_cbz_hc, caps_cbz_ct, caps_cbz_ct2, CF-CT, C=-Cl, CF-CT-CF, CF-CT-CT, CT-CF-CT, CF-CT-F, CT-CF-F, CF-CT-HC, CO-OS-CO, CO-CT-OS, CT-CT-CY, CA-SY-CA, OS-CT-CY, CT-CM-Cl, CM-C=-Cl, C=-C=-Cl, CT-NA-CN, CN-NA-CN, CN-CB-CB, CT-CT-NA, F-CF-CT-F, Cl-C=-CM-HC, CB-CN-CA-CA, CB-CN-CA-HA, NA-CN-CA-CA, NA-CN-CA-HA",
   "83 torsions the .par gives again for particular molecules (the first, general line is applied): CT-CT-CT-CT [1.1, -0.2, 0.2, 0.0] (butane only OPLS/2020); CT-CT-CT-OH [-1.552, 0.0, 0.0, 0.0] (polyols  AA); OH-CT-CT-OH [12.234, 0.0, 0.0, 0.0] (triols only AA); C-N-CT-HC [0.0, 0.0, -0.139, 0.0] (N-methylformamide); C-N-CT-CT [-1.396, -0.427, 0.0, 0.0] (N-ethylformamide); N-CT-CT-CT [1.964, 0.0, 0.659, 0.0] (N-propylformamide); CT-CT-C-N [2.844, -0.361, -0.325, 0.0] (propanamide OPLS-AA/M); CT-CT-C-O [0.406, 1.304, 0.139, 0.0] (propanamide OPLS-AA/M); C-N-CT-CT [1.13, -1.42, 0.44, 0.0] (first (theta) torsion for beta-3-pept); CT-CT-C-N [3.26, 0.44, 0.6, 0.0] (lastl (psi) torsion for beta-3-peptid); CT-CT-CT-C [-3.185, -0.825, 0.493, 0.0] (carboxylate ion); CT-CT-C-O [0.0, 0.546, 0.0, 0.0] (RCOOH acid); HC-CT-OH-HO [-2.589, -1.123, 0.27, 0.0] (axial cyclohexanol); C-CT-CT-HC [0.0, 0.0, 0.074, 0.0] (dicarboxylic acid); CT-CT-C-O [-0.75, -0.55, -0.25, 0.0] (dicarboxylic acid); CT-CT-C-OH [0.0, 1.412, 0.0, 0.0] (dicarboxylic acid); CT-CT-N-CT [2.859, 2.058, -11.266, 0.0] (\"       chi4 CG-CD-N-CA); CT-CT-NM-CT [2.859, 2.058, -11.266, 0.0] (); CT-CT-C-O [-0.277, 1.228, -0.694, 0.0] (aldehyde & ketone & acyl halide); CT-CT-CT-C [-1.697, -0.456, 0.585, 0.0] (aldehyde & ketone & acyl halide); O2-P-OS-CT [0.9, -2.93, 2.64, 0.0] (dimethyl phosphate); HO-OH-CT-CT [4.478, -2.1746, 0.0, 0.0] (trifluoroethanol); HC-CT-OH-HO [0.0, 0.0, 0.476, 0.0] (trifluoroethanol); CT-C-OH-HO [3.2, 4.9, 0.0, 0.0] (1,2-diacid monoanion); CT-CT-C-O [-1.0, -1.9, -0.9, 0.0] (1,2-diacid monoanion); C-CT-CT-C [0.8, 0.0, 0.9, 0.0] (1,2-diacid monoanion); F-CT-CT-HC [0.0, 0.0, 0.3137, 0.0] (trifluoroethanol); CT-CT-CT-O? [-1.336, 0.0, 0.0, 0.0] (hexopyranoses); CT-CT-OH-HO [2.674, -2.883, 1.026, 0.0] (hexopyranoses); OH-CT-CT-OH [9.066, 0.0, 0.0, 0.0] (hexopyranoses); ??-CR-NB-?? [0.0, 10.0, 0.0, 0.0] (); ??-CR-NA-?? [0.0, 10.0, 0.0, 0.0] (); ??-CR-NC-?? [0.0, 10.0, 0.0, 0.0] (); ??-NA-CW-?? [0.0, 5.0, 0.0, 0.0] (); ??-CW-NA-?? [0.0, 3.0, 0.0, 0.0] (); CT-CT-NT-H [0.0, 4.0, 0.0, 0.0] (azetidine - 4 membered cyclic amines); CT-CT-NT-H [0.2, -0.417, 0.418, 0.0] (pyrrolidine 5 membered cyclic amines); CT-NT-CT-CT [1.536, -0.128, 0.695, 0.0] (exocyclic amines); CT-NT-CT-CT [1.464, -0.128, 0.695, 0.0] (exocyclic 1,4-diamines); CT-CT-NT-H [0.819, -0.417, 0.418, 0.0] (cyclic amines); CT-CT-NT-H [1.522, -0.417, 0.418, 0.0] (cyclic 1,4-diamines); CT-C=-C=-CM [0.9, 0.23, -0.505, 0.0] (2-Me-1,3-butadiene); O-C-OH-HO [0.0, 5.0, 0.0, 0.0] (benzoic acids); O-C-OS-CT [0.0, 5.0, 0.0, 0.0] (benzoic esters); CA-CA-N2-H [0.0, 2.133, 0.0, 0.0] (aniline JT-R 2014/04 fit AA to MP2/au); SA-CR-N-H [0.0, 2.133, 0.0, 0.0] (aniline-like); OA-CR-N-H [0.0, 2.133, 0.0, 0.0] (aniline-like); HC-CT-CT-SY [0.0, 0.0, 0.35, 0.0] (sulfone); CK-N*-CT-OS [3.132, -1.491, 2.744, 0.0] (Ping added,nucleoside); CK-NA-CT-CT [2.756, -0.872, -3.68, 0.0] (Ping added,nucleoside); C?-NA-CT-OS [0.0, -1.876, 0.0, 0.0] (Ping added for chi in nucleoside); C?-NA-CT-CT [0.0, -0.576, 0.0, 0.0] (Ping added for ..); O-C-C-HC [0.0, 0.2, 0.0, 0.0] (dicarbonyls BMC 8,1881(2000)); HC-C-C-HC [0.8, 0.0, 0.0, 0.0] (dicarbonyls    \"); C-CT-CT-CT [-1.751, 1.606, 0.0, 0.0] (Chi-1' Leu OPLS-AA/M); C-CT-CT-CT [2.994, 0.252, 0.3, 0.0] (Chi-1 Val,Ile OPLS-AA/M); C-CT-CT-CT [-1.422, 1.068, 0.0, 0.0] (Chi-1' Val,Ile OPLS-AA/M); C-CT-CT-CA [-1.406, 1.777, 0.0, 0.0] (Chi-1' Phe, Tyr OPLS-AA/M); C-CT-CT-C* [-0.506, 0.975, 0.0, 0.0] (Chi-1' Trp OPLS-AA/M); N-CT-CT-CT [0.214, 0.541, 0.392, 0.0] (Chi-1  Met OPLS-AA/M); C-CT-CT-CT [-0.911, 0.699, 0.0, 0.0] (Chi-1' Met OPLS-AA/M); N-CT-CT-C [-7.89, 0.662, 0.997, 0.0] (Chi-1  Asp,Ash OPLS-AA/M); C-CT-CT-C [1.543, 0.696, 0.0, 0.0] (Chi-1' Asp,Ash OPLS-AA/M); N-CT-CT-C [-5.501, 1.527, 0.0, 0.0] (Chi-1  Asn OPLS-AA/M); C-CT-CT-C [0.598, 1.558, 0.255, 0.0] (Chi-1' Asn OPLS-AA/M); N-CT-CT-CT [1.987, 0.457, 0.82, 0.0] (Chi-1  Glu OPLS-AA/M); C-CT-CT-CT [-1.764, 0.7, 0.0, 0.0] (Chi-1' Glu OPLS-AA/M); N-CT-CT-CT [0.884, 0.897, 0.88, 0.0] (Chi-1  Gln,Glh,Lys,Lyn,Arn OPLS-AA/M); C-CT-CT-CT [-2.538, 0.911, 0.0, 0.0] (Chi-1' Gln,Glh,Lys,Lyn,Arn OPLS-AA/M); N-CT-CT-CT [0.103, 0.653, 0.563, 0.0] (Chi-1  Arg OPLS-AA/M); C-CT-CT-CT [-1.971, 0.77, 0.0, 0.0] (Chi-1' Arg OPLS-AA/M); N-CT-C-N [-0.94, 2.755, -2.67, 0.0] (Psi  Pro OPLS-AA/M); CT-CT-C-N [5.029, 0.719, 2.24, 0.0] (Psi' Pro OPLS-AA/M); C-CT-CT-CT [-1.751, 1.606, 0.0, 0.0] (Chi-1' Pro OPLS-AA/M); CT-CT-C-N [1.494, -0.511, 0.125, 0.0] (Chi-2  Asn OPLS-AA/M); CT-CT-C-O [1.656, 1.304, 0.439, 0.0] (Chi-2' Asn OPLS-AA/M); CT-CT-CT-C [-1.267, 0.479, -0.486, 0.0] (Chi-2  Gln OPLS-AA/M); CT-CT-CT-C [-0.885, 1.025, -1.293, 0.0] (Chi-2  Glu OPLS-AA/M); CA-C!-CW-NA [0.0, 2.0, 0.0, 0.0] (biaryl_7); CA-C!-CV-NB [0.0, 1.59, 0.0, 0.0] (4-phenyltriazole); CA-C!-N-C [0.0, 1.76, 0.0, 0.23] (biaryl_62); C-N-CY-CY [-0.71, 2.1, -1.83, 0.0] (biaryl_ether_15_scan_2); C-CT-CT-CT [-4.16, -0.76, 0.96, 0.16] (alkyl_hydantoin)",
   "'allenes improper' lines (four nearly collinear atoms) are left out",
   "torsions inside a three-membered ring (an epoxide's CT-CY-O$-CY, CY-O$-CY-HC ...) have no lines in the files and are zero (ring3_torsions): the ring cannot turn, its shape held by the CY / O$ bends"

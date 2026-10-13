@@ -2704,6 +2704,90 @@
    "smarts": "[CX4H2][c;r5;$(c1[nH1]ccc1)]",
    "priority": 7,
    "description": "CH2 on pyrrole C2"
+  },
+  {
+   "type": "caps_cbz_n",
+   "smarts": "[n;r5;$(n1c2ccccc2c2ccccc12);$(n[CX4])]",
+   "priority": 8,
+   "description": "carbazole N (N-alkyl)"
+  },
+  {
+   "type": "caps_cbz_cn",
+   "smarts": "[c;r5;r6;$(c[n;r5;$(n1c2ccccc2c2ccccc12)])]",
+   "priority": 8,
+   "description": "carbazole C on N (C8a / C9a)"
+  },
+  {
+   "type": "caps_cbz_cs",
+   "smarts": "[c;r5;r6;!$(c[n;r5;$(n1c2ccccc2c2ccccc12)])]",
+   "priority": 8,
+   "description": "carbazole fusion C (C4a / C4b)"
+  },
+  {
+   "type": "caps_cbz_c1",
+   "smarts": "[cH1;$(c[c;r5;r6;$(c[n;r5;$(n1c2ccccc2c2ccccc12)])])]",
+   "priority": 8,
+   "description": "carbazole C1 / C8"
+  },
+  {
+   "type": "caps_cbz_c4",
+   "smarts": "[cH1;$(c[c;r5;r6;!$(c[n;r5;$(n1c2ccccc2c2ccccc12)])])]",
+   "priority": 8,
+   "description": "carbazole C4 / C5"
+  },
+  {
+   "type": "caps_cbz_c2",
+   "smarts": "[cH1;$(c[cH1;$(c[c;r5;r6;$(c[n;r5;$(n1c2ccccc2c2ccccc12)])])])]",
+   "priority": 8,
+   "description": "carbazole C2 / C7"
+  },
+  {
+   "type": "caps_cbz_c3",
+   "smarts": "[cH1;$(c[cH1;$(c[c;r5;r6;!$(c[n;r5;$(n1c2ccccc2c2ccccc12)])])])]",
+   "priority": 8,
+   "description": "carbazole C3 / C6"
+  },
+  {
+   "type": "caps_cbz_h1",
+   "smarts": "[H][cH1;$(c[c;r5;r6;$(c[n;r5;$(n1c2ccccc2c2ccccc12)])])]",
+   "priority": 8,
+   "description": "H on carbazole C1"
+  },
+  {
+   "type": "caps_cbz_h4",
+   "smarts": "[H][cH1;$(c[c;r5;r6;!$(c[n;r5;$(n1c2ccccc2c2ccccc12)])])]",
+   "priority": 8,
+   "description": "H on carbazole C4"
+  },
+  {
+   "type": "caps_cbz_h2",
+   "smarts": "[H][cH1;$(c[cH1;$(c[c;r5;r6;$(c[n;r5;$(n1c2ccccc2c2ccccc12)])])])]",
+   "priority": 8,
+   "description": "H on carbazole C2"
+  },
+  {
+   "type": "caps_cbz_h3",
+   "smarts": "[H][cH1;$(c[cH1;$(c[c;r5;r6;!$(c[n;r5;$(n1c2ccccc2c2ccccc12)])])])]",
+   "priority": 8,
+   "description": "H on carbazole C3"
+  },
+  {
+   "type": "caps_cbz_ct",
+   "smarts": "[CX4H1;$(*[n;r5;$(n1c2ccccc2c2ccccc12)])]",
+   "priority": 8,
+   "description": "CH on a carbazole N (poly(N-vinylcarbazole) backbone)"
+  },
+  {
+   "type": "caps_cbz_ct2",
+   "smarts": "[CX4H2;$(*[n;r5;$(n1c2ccccc2c2ccccc12)])]",
+   "priority": 8,
+   "description": "CH2 on a carbazole N (a chain end, or N-ethyl / N-vinyl-derived)"
+  },
+  {
+   "type": "caps_cbz_hc",
+   "smarts": "[H][CX4;$(*[n;r5;$(n1c2ccccc2c2ccccc12)])]",
+   "priority": 8,
+   "description": "H on that CH / CH2"
   }
  ]
 }

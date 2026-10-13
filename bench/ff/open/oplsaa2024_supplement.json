@@ -208,6 +208,58 @@
    ],
    "source": "the 2024 .sb's chloroalkene terms (wlj): CM-CM-Cl",
    "reason": "a diene's central carbon (class C=) is the same sp2 carbon as an alkene CM; the files give C= its own terms only toward carbon and H, so the Cl takes CM's"
+  },
+  {
+   "match": [
+    "CT",
+    "NA",
+    "CN"
+   ],
+   "params": [
+    70.0,
+    124.0
+   ],
+   "source": "the 2024 .sb's CW-NA-CT (N-alkyl azole)",
+   "reason": "carbazole's N bonded to an alkyl C: the azole N-alkyl bend, the ring C on N being CN instead of CW"
+  },
+  {
+   "match": [
+    "CN",
+    "NA",
+    "CN"
+   ],
+   "params": [
+    70.0,
+    111.6
+   ],
+   "source": "the 2024 .sb's CN-NA-CW (tryptophan's ring N)",
+   "reason": "carbazole's five-membered ring at N, between its two C on N (class CN)"
+  },
+  {
+   "match": [
+    "CN",
+    "CB",
+    "CB"
+   ],
+   "params": [
+    85.0,
+    108.8
+   ],
+   "source": "the 2024 .sb's CS-CB-CN (tryptophan's ring)",
+   "reason": "carbazole's five-membered ring at a fusion C (CB), toward the other fusion C"
+  },
+  {
+   "match": [
+    "CT",
+    "CT",
+    "NA"
+   ],
+   "params": [
+    50.0,
+    109.5
+   ],
+   "source": "the 2024 .sb's CT-CT-N* (an alkyl C on an aromatic N)",
+   "reason": "poly(N-vinylcarbazole)'s backbone CH on the carbazole N"
   }
  ],
  "atom_types": [
@@ -266,6 +318,104 @@
    "charge": 0.12,
    "description": "C(Cl) of chloroprene, a conjugated diene central carbon",
    "reason": "the class and Lennard-Jones of the diene central C 178; +0.12 balances its chloroalkene Cl 226 (-0.12), as the table's 399 (R-CCl=) does"
+  },
+  {
+   "name": "caps_cbz_n",
+   "lj_from": "opls_587",
+   "charge": -0.3902,
+   "description": "carbazole N",
+   "reason": "1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on the B3LYP-D3BJ/def2-TZVP geometry of N-isopropylcarbazole, equivalent atoms averaged)"
+  },
+  {
+   "name": "caps_cbz_cn",
+   "lj_from": "opls_502",
+   "charge": 0.1334,
+   "description": "carbazole C on N",
+   "reason": "1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on the B3LYP-D3BJ/def2-TZVP geometry of N-isopropylcarbazole, equivalent atoms averaged)"
+  },
+  {
+   "name": "caps_cbz_cs",
+   "lj_from": "opls_501",
+   "charge": -0.0314,
+   "description": "carbazole fusion C",
+   "reason": "1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on the B3LYP-D3BJ/def2-TZVP geometry of N-isopropylcarbazole, equivalent atoms averaged)"
+  },
+  {
+   "name": "caps_cbz_c1",
+   "lj_from": "opls_145",
+   "charge": -0.1359,
+   "description": "carbazole C1/C8",
+   "reason": "1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on the B3LYP-D3BJ/def2-TZVP geometry of N-isopropylcarbazole, equivalent atoms averaged)"
+  },
+  {
+   "name": "caps_cbz_c2",
+   "lj_from": "opls_145",
+   "charge": -0.1233,
+   "description": "carbazole C2/C7",
+   "reason": "1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on the B3LYP-D3BJ/def2-TZVP geometry of N-isopropylcarbazole, equivalent atoms averaged)"
+  },
+  {
+   "name": "caps_cbz_c3",
+   "lj_from": "opls_145",
+   "charge": -0.1411,
+   "description": "carbazole C3/C6",
+   "reason": "1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on the B3LYP-D3BJ/def2-TZVP geometry of N-isopropylcarbazole, equivalent atoms averaged)"
+  },
+  {
+   "name": "caps_cbz_c4",
+   "lj_from": "opls_145",
+   "charge": -0.1114,
+   "description": "carbazole C4/C5",
+   "reason": "1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on the B3LYP-D3BJ/def2-TZVP geometry of N-isopropylcarbazole, equivalent atoms averaged)"
+  },
+  {
+   "name": "caps_cbz_h1",
+   "lj_from": "opls_146",
+   "charge": 0.1169,
+   "description": "H on carbazole C1",
+   "reason": "1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on the B3LYP-D3BJ/def2-TZVP geometry of N-isopropylcarbazole, equivalent atoms averaged)"
+  },
+  {
+   "name": "caps_cbz_h2",
+   "lj_from": "opls_146",
+   "charge": 0.1155,
+   "description": "H on carbazole C2",
+   "reason": "1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on the B3LYP-D3BJ/def2-TZVP geometry of N-isopropylcarbazole, equivalent atoms averaged)"
+  },
+  {
+   "name": "caps_cbz_h3",
+   "lj_from": "opls_146",
+   "charge": 0.1125,
+   "description": "H on carbazole C3",
+   "reason": "1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on the B3LYP-D3BJ/def2-TZVP geometry of N-isopropylcarbazole, equivalent atoms averaged)"
+  },
+  {
+   "name": "caps_cbz_h4",
+   "lj_from": "opls_146",
+   "charge": 0.1203,
+   "description": "H on carbazole C4",
+   "reason": "1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on the B3LYP-D3BJ/def2-TZVP geometry of N-isopropylcarbazole, equivalent atoms averaged)"
+  },
+  {
+   "name": "caps_cbz_hc",
+   "lj_from": "opls_140",
+   "charge": 0.136,
+   "description": "H on the CH on a carbazole N",
+   "reason": "1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on the B3LYP-D3BJ/def2-TZVP geometry of N-isopropylcarbazole, equivalent atoms averaged)"
+  },
+  {
+   "name": "caps_cbz_ct",
+   "lj_from": "opls_135",
+   "charge": 0.1432,
+   "description": "CH on a carbazole N",
+   "reason": "1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on the B3LYP-D3BJ/def2-TZVP geometry of N-isopropylcarbazole, equivalent atoms averaged); its own 0.0538 plus the +0.0890 of the model's two methyls and +0.0004 of rounding of the model's two methyls, which the alkane CH2 (136 / 140, neutral) of the backbone replace, so the carbazolyl-CH group is neutral"
+  },
+  {
+   "name": "caps_cbz_ct2",
+   "lj_from": "opls_136",
+   "charge": 0.0072,
+   "description": "CH2 on a carbazole N",
+   "reason": "the group on the N keeps the CH group's +0.2792 (caps_cbz_ct 0.1432 + H 0.1360) with one more H in place of a backbone carbon: 0.2792 - 2 x 0.1360"
   }
  ],
  "dihedrals": [
@@ -300,6 +450,70 @@
    ],
    "source": "the 2024 .par's chloroalkene torsion Cl-CM-CM-HC (type 222)",
    "reason": "a twist about a C=C double bond; at a diene's central carbon (C=) it is the same double bond, so it takes the table's chloroalkene term"
+  },
+  {
+   "match": [
+    "CB",
+    "CN",
+    "CA",
+    "CA"
+   ],
+   "params": [
+    0.0,
+    7.25,
+    0.0,
+    0.0
+   ],
+   "source": "the 2024 .par's aromatic ring torsions (type 165)",
+   "reason": "every torsion inside an aromatic ring in the files is V2 7.25, rings of CN and CB atoms included; carbazole's benzene rings"
+  },
+  {
+   "match": [
+    "CB",
+    "CN",
+    "CA",
+    "HA"
+   ],
+   "params": [
+    0.0,
+    7.25,
+    0.0,
+    0.0
+   ],
+   "source": "the 2024 .par's aromatic ring torsions (type 165)",
+   "reason": "every torsion inside an aromatic ring in the files is V2 7.25, rings of CN and CB atoms included; carbazole's benzene rings"
+  },
+  {
+   "match": [
+    "NA",
+    "CN",
+    "CA",
+    "CA"
+   ],
+   "params": [
+    0.0,
+    7.25,
+    0.0,
+    0.0
+   ],
+   "source": "the 2024 .par's aromatic ring torsions (type 165)",
+   "reason": "every torsion inside an aromatic ring in the files is V2 7.25, rings of CN and CB atoms included; carbazole's benzene rings"
+  },
+  {
+   "match": [
+    "NA",
+    "CN",
+    "CA",
+    "HA"
+   ],
+   "params": [
+    0.0,
+    7.25,
+    0.0,
+    0.0
+   ],
+   "source": "the 2024 .par's aromatic ring torsions (type 165)",
+   "reason": "every torsion inside an aromatic ring in the files is V2 7.25, rings of CN and CB atoms included; carbazole's benzene rings"
   }
  ]
 }
