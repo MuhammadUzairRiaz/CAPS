@@ -60,6 +60,7 @@ struct VirtualSite { uint32_t site; std::vector<uint32_t> from; std::vector<doub
 
 // Pair forms other than Lennard-Jones, per type pair: 1 Buckingham A e^(−r/ρ) − C/r⁶ (a = A, b = ρ, c = C);
 // 2 Morse D0 [e^(−2α(r − r0)) − 2 e^(−α(r − r0))] (a = D0, b = α, c = r0);
+// 3 Rydberg (A + C r) e^(−r/ρ) (a = A, b = ρ, c = C; Sepliarsky et al.'s PbTiO3), no LAMMPS style of its own: written as a table;
 // SDK / SPICA coarse-grained Lennard-Jones (LAMMPS lj/sdk; a = ε, b = σ), C ε [(σ/r)^m − (σ/r)^n]:
 // 11 9-6 (C = 27/4), 12 12-4 (C = 3√3/2), 13 12-6 (C = 4), 14 12-5;
 // 20 Lennard-Jones 12-6 with GROMACS's force switch from ForceField::lj_inner to the cut-off (LAMMPS lj/gromacs, MARTINI).
@@ -67,6 +68,7 @@ struct VirtualSite { uint32_t site; std::vector<uint32_t> from; std::vector<doub
 struct PairFunc { int form; double a, b, c; double rc = 0; };
 // 31 / 32 cosine-squared attraction (LAMMPS cosine/squared; Cooke–Deserno): −ε below σ, −ε cos²(π(r − σ) / 2(rc − σ)) up to
 // the pair's cut-off rc (a = ε, b = σ, c = rc), 32 with WCA ε[(σ/r)¹² − 2(σ/r)⁶ + 1] below σ; rc = σ: WCA only.
+constexpr int kPairRydberg = 3;
 constexpr int kPairSdk96 = 11, kPairSdk124 = 12, kPairSdk126 = 13, kPairSdk125 = 14, kPairGromacs = 20, kPairCos2 = 31, kPairCos2Wca = 32;
 // 40 a tabulated pair (iterative Boltzmann inversion, numerical potentials): ForceField::tables[a], E and F = −dE/dr on an
 // even grid from r0 by dr, linearly interpolated; zero beyond the last point, a straight wall (the first force) below r0.

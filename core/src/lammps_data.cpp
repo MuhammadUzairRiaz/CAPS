@@ -142,6 +142,11 @@ struct Kind {
   }
 };
 
+// Rydberg pairs as LAMMPS tables: points per table (LAMMPS's own spline then evaluates them), and the innermost distance
+constexpr int kRydbergTablePoints = 20000;
+constexpr double kRydbergTableInner = 0.5;
+double rydberg_cut(const PairFunc& p, double rc) { return p.rc > 0 ? std::min(p.rc, rc) : rc; }
+
 struct Layout {
   Kind bonds{"Bond", {}}, angles{"Angle", {"BondBond", "BondAngle"}},
       dihedrals{"Dihedral", {"MiddleBondTorsion", "EndBondTorsion", "AngleTorsion", "AngleAngleTorsion", "BondBond13"}},
@@ -154,6 +159,8 @@ struct Layout {
   bool gromacs = false;                    // MARTINI: lj/gromacs(/coul/gromacs), one style for every pair
   bool cos2 = false;                       // cosine/squared pairs (Cooke–Deserno): no shift, no tail
   bool table_only = false;                 // every pair tabulated (an IBI model): pair_style table, the tables in caps_pairs.table
+  bool rydberg = false;                    // Rydberg pairs (A + C r) e^(−r/ρ): sub-style table spline, caps_rydberg.table
+  double rydberg_rc = 0;                   // …tabulated up to the cut-off in use (or the pair's own, when shorter)
   bool charmm = false;                     // CHARMM (native): lj/charmmfsw, 1-4 pairs through dihedral charmmfsw weights
   bool hbond = false;                      // DREIDING hydrogen bonds: hbond/dreiding/lj overlaid on the pair style
   bool coreshell = false;                  // core-shell pairs (a shell on its core): the long-range Coulomb as .../cs
@@ -458,9 +465,10 @@ Layout build(const System& s, const ForceField& ff, const LammpsStyle& st = {}) 
       const int f = it == ff.pair_func.end() ? 0 : it->second.form;
       // a 12-6 pair in a 9-6 system (another force field's group beside class II): lj/cut, with its own tail
       if (f == kPairSdk126 && L.pair_base == "lj/class2") { L.pair_styles.insert("lj/cut"); continue; }
-      L.pair_styles.insert(f == 0 ? L.pair_base : f == 1 ? "buck" : f == 2 ? "morse" : f >= kPairSdk96 && f <= kPairSdk125 ? "lj/sdk" : f == kPairGromacs ? "lj/gromacs" : f == kPairCos2 || f == kPairCos2Wca ? "cosine/squared" : f == kPairTable ? "table" : "?");
+      L.pair_styles.insert(f == 0 ? L.pair_base : f == 1 ? "buck" : f == 2 ? "morse" : f >= kPairSdk96 && f <= kPairSdk125 ? "lj/sdk" : f == kPairGromacs ? "lj/gromacs" : f == kPairCos2 || f == kPairCos2Wca ? "cosine/squared" : f == kPairTable ? "table" : f == kPairRydberg ? "rydberg" : "?");
     }
   if (L.pair_styles.count("?")) throw FieldError("a pair form has no LAMMPS style");
+  L.rydberg = L.pair_styles.count("rydberg") > 0;
   L.pair_hybrid = ff.pair_form == "lj9-6" || !ff.pair_func.empty();
   L.sdk = L.pair_styles.count("lj/sdk") > 0;
   L.cos2 = L.pair_styles.count("cosine/squared") > 0;
@@ -507,6 +515,13 @@ Layout build(const System& s, const ForceField& ff, const LammpsStyle& st = {}) 
         else all = mixed_pair(ff, a2, b2).eps == 0;
       }
     if (all && any_buck) { L.cs_buck = true; L.pair_hybrid = false; }
+    // a shell model's hybrid writes no Lennard-Jones line for an empty pair (the Coulomb sub-style has it): with no
+    // Lennard-Jones term left, the sub-style goes (LAMMPS refuses one that no pair uses)
+    bool lj_used = false;
+    for (int a2 = 0; a2 < nt && !lj_used; ++a2)
+      for (int b2 = a2; b2 < nt && !lj_used; ++b2)
+        lj_used = !ff.pair_func.count({a2, b2}) && mixed_pair(ff, a2, b2).eps != 0;
+    if (!L.cs_buck && L.pair_hybrid && !lj_used) L.pair_styles.erase(L.pair_base);
   }
   L.hbond = ff.hbond.on();
   if (L.hbond) {
@@ -682,7 +697,8 @@ std::vector<std::string> style_lines(const Layout& L, const ForceField& ff, cons
     std::string p = "pair_style hybrid/overlay";
     if (L.hbond) p += " " + hbond_style(ff);
     for (const auto& st : L.pair_styles) {
-      std::snprintf(b, sizeof b, " %s %.6f", st.c_str(), e.cutoff);
+      if (st == "rydberg") std::snprintf(b, sizeof b, " table spline %d", kRydbergTablePoints);   // its cut-off in each pair_coeff
+      else std::snprintf(b, sizeof b, " %s %.6f", st.c_str(), e.cutoff);
       p += b;
     }
     if (e.coulomb && pme(e, L)) {
@@ -756,6 +772,9 @@ std::vector<std::string> pair_lines(const Layout& L, const ForceField& ff) {
         const auto& tb = ff.tables.at(size_t(it->second.a));
         style = "table";
         coef = " caps_pairs.table T" + std::to_string(int(it->second.a)) + num({tb.r0 + tb.dr * double(tb.e.size() - 1)});
+      } else if (f == kPairRydberg) {   // caps_rydberg.table beside the input, section Y<i>_<j>, the pair's cut-off last
+        style = "table";
+        coef = " caps_rydberg.table Y" + std::to_string(a2 + 1) + "_" + std::to_string(b2 + 1) + num({rydberg_cut(it->second, L.rydberg_rc)});
       } else if (f == kPairCos2 || f == kPairCos2Wca) {
         style = "cosine/squared";
         coef = num({it->second.a, it->second.b, it->second.c}) + (f == kPairCos2Wca ? " wca" : "");
@@ -897,6 +916,7 @@ Layout prepare(const System& s, const ForceField& ff, EnergyOptions& e, const La
   }
   // a shell model in CAPS's own styles: the CORESHELL style that matches the Coulomb in use
   if (L.cs_buck && !L.native) L.pair_combined = e.coulomb && pme(e, L) ? "buck/coul/long/cs" : "born/coul/dsf/cs";
+  L.rydberg_rc = e.cutoff;
   if (L.cs_buck && L.pair_combined == "born/coul/dsf/cs" && e.tail && L.periodic)
     L.notes.push_back("born/coul/dsf/cs has no tail correction: LAMMPS's van der Waals leaves out CAPS's tail term (use --no-tail, or Ewald / PPPM)");
   return L;
@@ -920,7 +940,7 @@ ForceField forcefield_in_metal_units(const ForceField& ff0) {
   for (auto& p : ff.lj14_types) p.eps *= f;
   for (auto& [k, p] : ff.pair_override) p.eps *= f;
   for (auto& [k, p] : ff.pair_func) {
-    if (p.form == 1) p.a *= f, p.c *= f;   // Buckingham A, C
+    if (p.form == 1 || p.form == kPairRydberg) p.a *= f, p.c *= f;   // Buckingham A, C; Rydberg A, C
     else p.a *= f;                         // Morse D0; SDK, lj/gromacs and cosine/squared ε
   }
   for (auto& t : ff.lj_pairs) t.eps *= f;
@@ -1521,6 +1541,29 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
   EnergyOptions e = e0;
   const Layout L = prepare(s, ff, e, st);
   if (notes) notes->insert(notes->end(), L.notes.begin(), L.notes.end());
+  if (L.rydberg) {   // Rydberg pairs: caps_rydberg.table beside the input, one section per type pair (r, E, F = −dE/dr), r² even
+    const size_t slash = path.find_last_of('/');
+    std::ofstream tf((slash == std::string::npos ? std::string() : path.substr(0, slash + 1)) + "caps_rydberg.table");
+    tf << "# Rydberg pairs (A + C r) exp(-r/rho) tabulated by CAPS (r in A, E in " << (metal ? "eV" : "kcal/mol") << ", F = -dE/dr)"
+       << (e.tail ? "\n" : "; shifted to zero at the cut-off, as CAPS evaluates them without tail corrections\n");
+    for (const auto& [ab, p] : ff.pair_func) {
+      if (p.form != kPairRydberg) continue;
+      const double rc = rydberg_cut(p, L.rydberg_rc), r0 = kRydbergTableInner;
+      auto E = [&](double r) { return (p.a + p.c * r) * std::exp(-r / p.b); };
+      const double shift = e.tail ? 0.0 : E(rc);
+      const int n = kRydbergTablePoints;
+      char hb[200];
+      std::snprintf(hb, sizeof hb, "\nY%d_%d\nN %d RSQ %.10g %.10g\n\n", ab.first + 1, ab.second + 1, n, r0, rc);
+      tf << hb;
+      for (int i = 0; i < n; ++i) {   // RSQ: points even in r², as LAMMPS's spline tables are laid out
+        const double r = std::sqrt(r0 * r0 + (rc * rc - r0 * r0) * double(i) / double(n - 1));
+        const double ex = std::exp(-r / p.b), f = ((p.a + p.c * r) / p.b - p.c) * ex;
+        char lb[200];
+        std::snprintf(lb, sizeof lb, "%d %.15g %.15g %.15g\n", i + 1, r, E(r) - shift, f);
+        tf << lb;
+      }
+    }
+  }
   std::ofstream out(path);
   if (!out) throw std::runtime_error("cannot write " + path);
   char b[400];

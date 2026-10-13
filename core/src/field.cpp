@@ -1175,6 +1175,11 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
       en += scale * (ex - c6);
       return scale * (ex / pb_[tp] - 6 * c6 / r) / r;
     }
+    if (form_[tp] == kPairRydberg) {   // Rydberg (A + C r) e^(−r/ρ)
+      const double r = std::sqrt(r2), ex = std::exp(-r / pb_[tp]), u = pa_[tp] + pc_[tp] * r;
+      en += scale * u * ex;
+      return scale * (u / pb_[tp] - pc_[tp]) * ex / r;
+    }
     if (form_[tp] == 2) {   // Morse
       const double r = std::sqrt(r2), e1 = std::exp(-pb_[tp] * (r - pc_[tp]));
       en += scale * pa_[tp] * (e1 * e1 - 2 * e1);
@@ -2266,7 +2271,7 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
           wt += nn * 2 * kPi * (A * ex * (rc3 + 3 * rho * rc2 + 6 * rho * rho * rc + 6 * rho * rho * rho) - 2 * Cc / rc3);
           continue;
         }
-        if (form_[tp] == 2) continue;   // Morse: no tail term (LAMMPS pair morse)
+        if (form_[tp] == 2 || form_[tp] == kPairRydberg) continue;   // Morse, Rydberg: no tail term (LAMMPS pair morse, table)
         if (form_[tp] == kPairSdk126) {   // a 12-6 pair in a 9-6 system (another force field's group): its own 12-6 tail
           const double e6 = pa_[tp], sg6 = std::pow(pb_[tp], 6), sg12 = sg6 * sg6;
           et += nn * 2 * kPi * 4 * e6 * (sg12 / (9 * rc9) - sg6 / (3 * rc3));

@@ -259,8 +259,8 @@ TEST(FFDef, ImportsDlfieldPcff) {
   EXPECT_NEAR(hc->mass, 1.00797, 1e-6);   // not the 12.0115 typo of HC_benzyl
 }
 
-// Morse / GROMOS bonds, cosine-squared and linear-cosine angles, Urey–Bradley, planar inversions, Buckingham pairs
-// and separate 1-4 Lennard-Jones: forces are the gradient of the energy.
+// Morse / GROMOS bonds, cosine-squared and linear-cosine angles, Urey–Bradley, planar inversions, Buckingham and Rydberg
+// pairs and separate 1-4 Lennard-Jones: forces are the gradient of the energy.
 TEST(FieldForms, ForcesMatchFiniteDifferences) {
   const System s = small_cell(2, 3, 0.25);
   ForceField ff = assign_gaff(s);
@@ -285,6 +285,8 @@ TEST(FieldForms, ForcesMatchFiniteDifferences) {
     if (nb[c].size() == 3) ff.inversions.push_back({c, nb[c][0], nb[c][1], nb[c][2], r(10, 50), 0.0, 1});
   const int nt = int(ff.lj.size());
   ff.pair_func[{0, nt - 1}] = {1, 5000.0, 0.3, 20.0};
+  ASSERT_GT(nt, 2);
+  ff.pair_func[{1, nt - 1}] = {kPairRydberg, 3000.0, 0.35, -150.0};   // (A + C r) e^(−r/ρ), C < 0 as PbTiO3's Ti-O
   for (const auto& p : ff.lj) ff.lj14_types.push_back({p.eps * 0.5, p.sigma * 0.9});
   ff.lj14 = 1.0;
   std::vector<double> x = flat(s);
