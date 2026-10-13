@@ -6,8 +6,10 @@ terms were fitted to (Jorgensen, Maxwell & Tirado-Rives, J. Am. Chem. Soc. 118, 
                        [--gas 20000] [--rho 0.8] [--pressure 1] [--overlay OV.json] [--threads N] [--json result.json]
 
 liquid   N molecules packed at 0.9 of --rho (a guess, or the experimental density: only the start), typed with FF.json (its own charges), minimised, then NPT at
-         --temp and --pressure atm (Bussi thermostat, C-rescale barostat, PME, 12 A cutoff with tail corrections), --eq steps
-         to equilibrate and --prod steps averaged: density and potential energy per molecule
+         --temp and --pressure atm (Bussi thermostat, C-rescale barostat, PME, the force field's own cut-off (OPLS-AA 2024:
+         12 A) with tail corrections), --eq steps
+         to equilibrate and --prod steps averaged: density and potential energy per molecule. caps ff apply writes the
+         force field (and --overlay) into the data files; relax and md take it, its charges, 1-4 weights and cut-off from them
 gas      one molecule in a 100 A box, Langevin NVT, every intramolecular pair inside the 45 A cutoff and no periodic
          image (Coulomb as damped shifted force with alpha 0, the plain shifted Coulomb; for a molecule under 10 A
          the shift changes its energy by far less than the 0.5 kcal/mol tolerance)
@@ -32,6 +34,7 @@ def arg(k, d=None):
 def run(cmd, log):
     with open(log, "a") as f:
         f.write("$ " + " ".join(cmd) + "\n")
+        f.flush()   # before the command's own output
         r = subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT)
     if r.returncode:
         raise SystemExit(f"failed: {' '.join(cmd)} (see {log})")
@@ -95,11 +98,11 @@ def main():
     pack(n, edge, box)
     liq = os.path.join(out, "liq.data")
     run([CAPS, "ff", "apply", box, "--ff", ff, "--charges", "types", "-o", liq] + ov, log)
-    # every step names the force field: relax, md and equilibrate do not take it from a data file's coefficients
-    # (without --ff they fall back to the built-in GAFF or UFF)
-    run([CAPS, "relax", liq, "-o", os.path.join(out, "liq_min.data"), "--ff", ff] + ov, log)
-    md = ["--temp", str(T), "--thermostat", "bussi", "--barostat", "crescale", "--pressure", arg("--pressure", "1"), "--pme", "--cutoff", "12",
-          "--dt", "1", "--thermo", "100", "--ff", ff] + ov + th
+    # relax and md run on the force field the data file holds (written by caps ff apply with the overlay), at its own
+    # cut-off; a file whose force field CAPS cannot rebuild stops them
+    run([CAPS, "relax", liq, "-o", os.path.join(out, "liq_min.data")], log)
+    md = ["--temp", str(T), "--thermostat", "bussi", "--barostat", "crescale", "--pressure", arg("--pressure", "1"), "--pme",
+          "--dt", "1", "--thermo", "100"] + th
     run([CAPS, "md", os.path.join(out, "liq_min.data"), "-o", os.path.join(out, "liq_eq.data"), "--steps", str(eq),
          "--log", os.path.join(out, "eq.csv")] + md, log)
     run([CAPS, "md", os.path.join(out, "liq_eq.data"), "-o", os.path.join(out, "liq_prod.data"), "--steps", str(prod),
@@ -111,7 +114,7 @@ def main():
     run([CAPS, "ff", "apply", g, "--ff", ff, "--charges", "types", "-o", gd] + ov, log)
     run([CAPS, "md", gd, "-o", os.path.join(out, "gas_out.data"), "--steps", str(gas), "--temp", str(T),
          "--thermostat", "langevin", "--barostat", "none", "--cutoff", "45", "--dsf-alpha", "0", "--dt", "1",
-         "--thermo", "50", "--log", os.path.join(out, "gas.csv"), "--ff", ff] + ov + th, log)
+         "--thermo", "50", "--log", os.path.join(out, "gas.csv")] + th, log)
     P = thermo(os.path.join(out, "prod.csv"))
     rho, rho_e = block(col(P, "density", "density_g_cm3", "rho"))
     El, El_e = block(col(P, "pe", "potential", "epot", "E_pot"))
