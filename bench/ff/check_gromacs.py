@@ -83,6 +83,17 @@ CASES = [
      os.path.join(FF, "clandp-des.json")), "clandp-des", "types", PME),
     ("CL&P DES (des.ff) betaine, P4444 Br, levulinic acid, ethylene glycol (vacuum)", ("smiles", "C[N+](C)(C)CC(=O)[O-].CCCC[P+](CCCC)(CCCC)CCCC.[Br-].CC(=O)CCC(=O)O.OCCO",
      os.path.join(FF, "clandp-des.json")), "clandp-des", "types", []),
+    # 38 A boxes for the paper's 16 A cut-off (GROMACS's pair list needs more than twice 1.76 nm), reline at 0.37 g/cm3: a
+    # sparser box leaves the van der Waals total small beside the single-precision pair sums it cancels from. Glyceline's
+    # Coulomb total is a small rest of large 1-4, short-range and reciprocal sums; GROMACS's own rerun spread (mdrun -nt 1
+    # to 4) on 36 + 72 molecules was 0.014 kcal/mol of 314, so it stays at 24 + 48
+    ("OPLS-DES (Doherty & Acevedo 2018) reline, 48 choline chloride + 96 urea, PME", ("mix-box", [("C[N+](C)(C)CCO", 48), ("[Cl-]", 48), ("NC(N)=O", 96)], 38,
+     os.path.join(FF, "oplsdes-doherty2018.json")), "oplsdes-doherty2018", "types", PME),
+    ("OPLS-DES (Doherty & Acevedo 2018) glyceline, 24 choline chloride + 48 glycerol, PME", ("mix-box", [("C[N+](C)(C)CCO", 24), ("[Cl-]", 24), ("OCC(O)CO", 48)], 38,
+     os.path.join(FF, "oplsdes-doherty2018.json")), "oplsdes-doherty2018", "types", PME),
+    ("OPLS-DES (Doherty & Acevedo 2018) choline chloride, ethylene glycol, levulinic, malonic, oxalic acid, phenol (vacuum)",
+     ("smiles", "C[N+](C)(C)CCO.[Cl-].OCCO.CC(=O)CCC(=O)O.OC(=O)CC(=O)O.OC(=O)C(=O)O.Oc1ccccc1", os.path.join(FF, "oplsdes-doherty2018.json")),
+     "oplsdes-doherty2018", "types", []),
     ("GAFF 1.81 (gaff.dat) ester, epoxide, amide, thioether (vacuum)", ("smiles", "CCOC(=O)C.C1CO1.CC(=O)NC.CSC"), "gaff-1.81-ambertools", "gasteiger", []),
     ("GAFF2 2.11 (gaff211.dat) isoprene, styrene (vacuum)", ("smiles", "CC=C(C)CC.C=Cc1ccccc1"), "gaff2-2.11-ambertools", "gasteiger", []),
     ("CHARMM36 (toppar) peptide GAFKW (vacuum; CMAP not represented)", ("peptide", "GAFKW"), "charmm36-prot-toppar", "gasteiger", []),

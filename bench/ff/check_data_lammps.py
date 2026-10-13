@@ -234,6 +234,15 @@ CASES = [
     ("CL&P DES (des.ff): betaine, P4444 Br, N2220 acetate, levulinic and succinic acid, ethylene glycol, ethanol, acetone; nudged",
      ("smiles-nudged", "C[N+](C)(C)CC(=O)[O-].CCCC[P+](CCCC)(CCCC)CCCC.[Br-].CC[NH+](CC)CC.CC(=O)[O-].CC(=O)CCC(=O)O.OC(=O)CCC(=O)O.OCCO.CCO.CC(C)=O"),
      "clandp-des", "types", "rules"),
+    # OPLS-DES (Doherty & Acevedo 2018, the paper's SI tables): reline and glyceline as periodic boxes (34 A: the paper's
+    # 16 A cut-off), the other HBDs with choline chloride in vacuum; ions at +-0.8 e
+    ("OPLS-DES (Doherty & Acevedo 2018): reline, 16 choline chloride + 32 urea (periodic)", ("mix-box", [("C[N+](C)(C)CCO", 16), ("[Cl-]", 16), ("NC(N)=O", 32)], 34, "oplsdes-doherty2018"),
+     "oplsdes-doherty2018", "types", "rules"),
+    ("OPLS-DES (Doherty & Acevedo 2018): glyceline, 12 choline chloride + 24 glycerol (periodic)", ("mix-box", [("C[N+](C)(C)CCO", 12), ("[Cl-]", 12), ("OCC(O)CO", 24)], 34, "oplsdes-doherty2018"),
+     "oplsdes-doherty2018", "types", "rules"),
+    ("OPLS-DES (Doherty & Acevedo 2018): choline chloride, ethylene glycol, levulinic, malonic and oxalic acid, phenol; nudged",
+     ("smiles-nudged", "C[N+](C)(C)CCO.[Cl-].OCCO.CC(=O)CCC(=O)O.OC(=O)CC(=O)O.OC(=O)C(=O)O.Oc1ccccc1"),
+     "oplsdes-doherty2018", "types", "rules"),
     ("GAFF 1.81 (gaff.dat): ester, epoxide, amide, thioether", ("smiles", "CCOC(=O)C.C1CO1.CC(=O)NC.CSC"), "gaff-1.81-ambertools", "gasteiger", "rules"),
     ("GAFF2 2.11 (gaff211.dat): isoprene, styrene, nitrile; nudged off linear", ("smiles-nudged", "CC=C(C)CC.C=Cc1ccccc1.CCC#N"), "gaff2-2.11-ambertools", "gasteiger", "rules"),
     ("GAFF2 2.2.20 (gaff2.dat): polystyrene melt (periodic)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "gaff2-2.2.20-ambertools", "gasteiger", "rules"),

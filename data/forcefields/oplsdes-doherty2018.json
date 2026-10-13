@@ -1,0 +1,3811 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "OPLS-DES (Doherty & Acevedo 2018)",
+ "source": "B. Doherty, O. Acevedo, J. Phys. Chem. B 122, 9982 (2018), Supporting Information Tables S1-S6 and Schemes S1-S2",
+ "references": [
+  "B. Doherty, O. Acevedo, J. Phys. Chem. B 122, 9982 (2018)",
+  "S. V. Sambasivarao, O. Acevedo, J. Chem. Theory Comput. 5, 1038 (2009)",
+  "W. L. Jorgensen, D. S. Maxwell, J. Tirado-Rives, J. Am. Chem. Soc. 118, 11225 (1996)",
+  "B. Szefczyk, M. N. D. S. Cordeiro, J. Phys. Chem. B 115, 3013 (2011)"
+ ],
+ "version": "2018 (SI Tables S1-S6)",
+ "units": "real",
+ "styles": {
+  "pair": "lj/cut/coul/long",
+  "bond": "harmonic",
+  "angle": "harmonic",
+  "dihedral": "opls",
+  "improper": "cvff"
+ },
+ "mixing": "geometric",
+ "special_lj": [
+  0,
+  0,
+  0.5
+ ],
+ "special_coul": [
+  0,
+  0,
+  0.5
+ ],
+ "cutoff": 16,
+ "ion_charge_scale": 0.8,
+ "improper_order": "center2_sorted",
+ "atom_types": [
+  {
+   "name": "CS",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.131,
+   "description": "choline CH2 on N (Table S1, Scheme S1)"
+  },
+  {
+   "name": "HS",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.068,
+   "description": "H on choline's CH2 on N (Table S1, Scheme S1)"
+  },
+  {
+   "name": "NA",
+   "element": "N",
+   "mass": 14.007,
+   "charge": 0.791,
+   "description": "choline N (Table S1, Scheme S1)"
+  },
+  {
+   "name": "CA",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.1,
+   "description": "choline methyl C (Table S1, Scheme S1)"
+  },
+  {
+   "name": "CW",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.132,
+   "description": "choline CH2 on O (Table S1, Scheme S1)"
+  },
+  {
+   "name": "OY",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -0.468,
+   "description": "choline hydroxyl O (Table S1, Scheme S1)"
+  },
+  {
+   "name": "HA",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.033,
+   "description": "H on choline's methyls (Table S1, Scheme S1)"
+  },
+  {
+   "name": "HW",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.034,
+   "description": "H on choline's CH2 on O (Table S1, Scheme S1)"
+  },
+  {
+   "name": "HY",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.275,
+   "description": "choline hydroxyl H (Table S1, Scheme S1)"
+  },
+  {
+   "name": "Cl",
+   "element": "Cl",
+   "mass": 35.453,
+   "charge": -0.8,
+   "description": "chloride (Table S1, Scheme S1)"
+  },
+  {
+   "name": "HO_etg",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.348,
+   "description": "ethylene glycol hydroxyl H (Table S4, Scheme S2)"
+  },
+  {
+   "name": "OG_etg",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -0.56,
+   "description": "ethylene glycol O (OH in Scheme S2) (Table S4, Scheme S2)"
+  },
+  {
+   "name": "CG_etg",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.116,
+   "description": "ethylene glycol C (Table S4, Scheme S2)"
+  },
+  {
+   "name": "HG_etg",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.048,
+   "description": "H on ethylene glycol's C (Table S4, Scheme S2)"
+  },
+  {
+   "name": "CM_gly",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.142,
+   "description": "glycerol central CH (Table S4, Scheme S2)"
+  },
+  {
+   "name": "OM_gly",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -0.5447,
+   "description": "glycerol O on the central C (Table S4, Scheme S2)"
+  },
+  {
+   "name": "CB_gly",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.16,
+   "description": "glycerol terminal CH2 (Table S4, Scheme S2)"
+  },
+  {
+   "name": "HM_gly",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.2912,
+   "description": "H on glycerol's central O (Table S4, Scheme S2)"
+  },
+  {
+   "name": "HZ_gly",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.0221,
+   "description": "H on glycerol's central C (Table S4, Scheme S2)"
+  },
+  {
+   "name": "HC_gly",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.0637,
+   "description": "H on glycerol's terminal C (Table S4, Scheme S2)"
+  },
+  {
+   "name": "OH_gly",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -0.547,
+   "description": "glycerol O on a terminal C (Table S4, Scheme S2)"
+  },
+  {
+   "name": "HO_gly",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.3043,
+   "description": "H on glycerol's terminal O (Table S4, Scheme S2)"
+  },
+  {
+   "name": "CB_lev",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.416,
+   "description": "levulinic acid carboxyl C (Table S4, Scheme S2)"
+  },
+  {
+   "name": "OH_lev",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -0.424,
+   "description": "levulinic acid carboxyl OH (Table S4, Scheme S2)"
+  },
+  {
+   "name": "HO_lev",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.36,
+   "description": "levulinic acid carboxyl H (Table S4, Scheme S2)"
+  },
+  {
+   "name": "OB_lev",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -0.352,
+   "description": "levulinic acid carboxyl =O (Table S4, Scheme S2)"
+  },
+  {
+   "name": "CZ_lev",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.096,
+   "description": "levulinic acid CH2 on the carboxyl C (Table S4, Scheme S2)"
+  },
+  {
+   "name": "HZ_lev",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.048,
+   "description": "H on CZ (Table S4, Scheme S2)"
+  },
+  {
+   "name": "CF_lev",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.096,
+   "description": "levulinic acid CH2 on the ketone C (Table S4, Scheme S2)"
+  },
+  {
+   "name": "HF_lev",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.048,
+   "description": "H on CF (Table S4, Scheme S2)"
+  },
+  {
+   "name": "CD_lev",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.376,
+   "description": "levulinic acid ketone C (Table S4, Scheme S2)"
+  },
+  {
+   "name": "CT_lev",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.144,
+   "description": "levulinic acid methyl C (Table S4, Scheme S2)"
+  },
+  {
+   "name": "HT_lev",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.048,
+   "description": "H on the methyl (Table S4, Scheme S2)"
+  },
+  {
+   "name": "OC_lev",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -0.376,
+   "description": "levulinic acid ketone O (Table S4, Scheme S2)"
+  },
+  {
+   "name": "CD_mal",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.416,
+   "description": "malonic acid carboxyl C (Table S4, Scheme S2)"
+  },
+  {
+   "name": "CT_mal",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.096,
+   "description": "malonic acid CH2 (Table S4, Scheme S2)"
+  },
+  {
+   "name": "HC_mal",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.048,
+   "description": "H on malonic acid's CH2 (Table S4, Scheme S2)"
+  },
+  {
+   "name": "OD_mal",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -0.352,
+   "description": "malonic acid carboxyl =O (Table S4, Scheme S2)"
+  },
+  {
+   "name": "OH_mal",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -0.424,
+   "description": "malonic acid carboxyl OH (Table S4, Scheme S2)"
+  },
+  {
+   "name": "HO_mal",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.36,
+   "description": "malonic acid carboxyl H (Table S4, Scheme S2)"
+  },
+  {
+   "name": "CD_ox",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.416,
+   "description": "oxalic acid C (Table S4, Scheme S2)"
+  },
+  {
+   "name": "OH_ox",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -0.394,
+   "description": "oxalic acid OH (Table S4, Scheme S2)"
+  },
+  {
+   "name": "HO_ox",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.33,
+   "description": "oxalic acid H (Table S4, Scheme S2)"
+  },
+  {
+   "name": "OD_ox",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -0.352,
+   "description": "oxalic acid =O (Table S4, Scheme S2)"
+  },
+  {
+   "name": "CB_phe",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.092,
+   "description": "phenol ring CH (Table S4, Scheme S2)"
+  },
+  {
+   "name": "CO_phe",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.12,
+   "description": "phenol ring C holding the OH (Table S4, Scheme S2)"
+  },
+  {
+   "name": "HB_phe",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.092,
+   "description": "phenol ring H (Table S4, Scheme S2)"
+  },
+  {
+   "name": "OH_phe",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -0.468,
+   "description": "phenol O (Table S4, Scheme S2)"
+  },
+  {
+   "name": "HO_phe",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.348,
+   "description": "phenol hydroxyl H (Table S4, Scheme S2)"
+  },
+  {
+   "name": "C_urea",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.124,
+   "description": "urea C (Table S4, Scheme S2)"
+  },
+  {
+   "name": "O_urea",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -0.322,
+   "description": "urea O (Table S4, Scheme S2)"
+  },
+  {
+   "name": "N_urea",
+   "element": "N",
+   "mass": 14.007,
+   "charge": -0.453,
+   "description": "urea N (Table S4, Scheme S2)"
+  },
+  {
+   "name": "HT_urea",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.276,
+   "description": "urea H trans to O (Scheme S2); CAPS assigns it to every urea H (Table S4, Scheme S2)"
+  },
+  {
+   "name": "HC_urea",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.276,
+   "description": "urea H cis to O (Scheme S2); the same terms as HT, not assigned by CAPS's rules (Table S4, Scheme S2)"
+  }
+ ],
+ "pairs": [
+  {
+   "name": "CS",
+   "match": [
+    "CS"
+   ],
+   "params": [
+    0.066,
+    3.5
+   ],
+   "comment": "sigma 3.5 A, epsilon 0.066 kcal/mol (Table S1)"
+  },
+  {
+   "name": "HS",
+   "match": [
+    "HS"
+   ],
+   "params": [
+    0.03,
+    2.6
+   ],
+   "comment": "sigma 2.6 A, epsilon 0.03 kcal/mol (Table S1)"
+  },
+  {
+   "name": "NA",
+   "match": [
+    "NA"
+   ],
+   "params": [
+    0.17,
+    3.25
+   ],
+   "comment": "sigma 3.25 A, epsilon 0.17 kcal/mol (Table S1)"
+  },
+  {
+   "name": "CA",
+   "match": [
+    "CA"
+   ],
+   "params": [
+    0.066,
+    3.5
+   ],
+   "comment": "sigma 3.5 A, epsilon 0.066 kcal/mol (Table S1)"
+  },
+  {
+   "name": "CW",
+   "match": [
+    "CW"
+   ],
+   "params": [
+    0.066,
+    3.5
+   ],
+   "comment": "sigma 3.5 A, epsilon 0.066 kcal/mol (Table S1)"
+  },
+  {
+   "name": "OY",
+   "match": [
+    "OY"
+   ],
+   "params": [
+    0.17,
+    3.07
+   ],
+   "comment": "sigma 3.07 A, epsilon 0.17 kcal/mol (Table S1)"
+  },
+  {
+   "name": "HA",
+   "match": [
+    "HA"
+   ],
+   "params": [
+    0.03,
+    2.5
+   ],
+   "comment": "sigma 2.5 A, epsilon 0.03 kcal/mol (Table S1)"
+  },
+  {
+   "name": "HW",
+   "match": [
+    "HW"
+   ],
+   "params": [
+    0.03,
+    2.2
+   ],
+   "comment": "sigma 2.2 A, epsilon 0.03 kcal/mol (Table S1)"
+  },
+  {
+   "name": "HY",
+   "match": [
+    "HY"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "sigma 0.0 A, epsilon 0.0 kcal/mol (Table S1)"
+  },
+  {
+   "name": "Cl",
+   "match": [
+    "Cl"
+   ],
+   "params": [
+    0.148,
+    3.77
+   ],
+   "comment": "sigma 3.77 A, epsilon 0.148 kcal/mol (Table S1)"
+  },
+  {
+   "name": "HO_etg",
+   "match": [
+    "HO_etg"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "sigma 0.0 A, epsilon 0.0 kcal/mol (Table S4)"
+  },
+  {
+   "name": "OG_etg",
+   "match": [
+    "OG_etg"
+   ],
+   "params": [
+    0.2975,
+    3.0
+   ],
+   "comment": "sigma 3.0 A, epsilon 0.2975 kcal/mol (Table S4)"
+  },
+  {
+   "name": "CG_etg",
+   "match": [
+    "CG_etg"
+   ],
+   "params": [
+    0.1155,
+    3.5
+   ],
+   "comment": "sigma 3.5 A, epsilon 0.1155 kcal/mol (Table S4)"
+  },
+  {
+   "name": "HG_etg",
+   "match": [
+    "HG_etg"
+   ],
+   "params": [
+    0.0525,
+    2.5
+   ],
+   "comment": "sigma 2.5 A, epsilon 0.0525 kcal/mol (Table S4)"
+  },
+  {
+   "name": "CM_gly",
+   "match": [
+    "CM_gly"
+   ],
+   "params": [
+    0.1452,
+    3.5
+   ],
+   "comment": "sigma 3.5 A, epsilon 0.1452 kcal/mol (Table S4)"
+  },
+  {
+   "name": "OM_gly",
+   "match": [
+    "OM_gly"
+   ],
+   "params": [
+    0.374,
+    3.07
+   ],
+   "comment": "sigma 3.07 A, epsilon 0.374 kcal/mol (Table S4)"
+  },
+  {
+   "name": "CB_gly",
+   "match": [
+    "CB_gly"
+   ],
+   "params": [
+    0.1452,
+    3.5
+   ],
+   "comment": "sigma 3.5 A, epsilon 0.1452 kcal/mol (Table S4)"
+  },
+  {
+   "name": "HM_gly",
+   "match": [
+    "HM_gly"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "sigma 0.0 A, epsilon 0.0 kcal/mol (Table S4)"
+  },
+  {
+   "name": "HZ_gly",
+   "match": [
+    "HZ_gly"
+   ],
+   "params": [
+    0.066,
+    2.5
+   ],
+   "comment": "sigma 2.5 A, epsilon 0.066 kcal/mol (Table S4)"
+  },
+  {
+   "name": "HC_gly",
+   "match": [
+    "HC_gly"
+   ],
+   "params": [
+    0.066,
+    2.5
+   ],
+   "comment": "sigma 2.5 A, epsilon 0.066 kcal/mol (Table S4)"
+  },
+  {
+   "name": "OH_gly",
+   "match": [
+    "OH_gly"
+   ],
+   "params": [
+    0.374,
+    3.07
+   ],
+   "comment": "sigma 3.07 A, epsilon 0.374 kcal/mol (Table S4)"
+  },
+  {
+   "name": "HO_gly",
+   "match": [
+    "HO_gly"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "sigma 0.0 A, epsilon 0.0 kcal/mol (Table S4)"
+  },
+  {
+   "name": "CB_lev",
+   "match": [
+    "CB_lev"
+   ],
+   "params": [
+    0.126,
+    3.75
+   ],
+   "comment": "sigma 3.75 A, epsilon 0.126 kcal/mol (Table S4)"
+  },
+  {
+   "name": "OH_lev",
+   "match": [
+    "OH_lev"
+   ],
+   "params": [
+    0.204,
+    3.0
+   ],
+   "comment": "sigma 3.0 A, epsilon 0.204 kcal/mol (Table S4)"
+  },
+  {
+   "name": "HO_lev",
+   "match": [
+    "HO_lev"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "sigma 0.0 A, epsilon 0.0 kcal/mol (Table S4)"
+  },
+  {
+   "name": "OB_lev",
+   "match": [
+    "OB_lev"
+   ],
+   "params": [
+    0.252,
+    2.96
+   ],
+   "comment": "sigma 2.96 A, epsilon 0.252 kcal/mol (Table S4)"
+  },
+  {
+   "name": "CZ_lev",
+   "match": [
+    "CZ_lev"
+   ],
+   "params": [
+    0.0792,
+    3.5
+   ],
+   "comment": "sigma 3.5 A, epsilon 0.0792 kcal/mol (Table S4)"
+  },
+  {
+   "name": "HZ_lev",
+   "match": [
+    "HZ_lev"
+   ],
+   "params": [
+    0.036,
+    2.5
+   ],
+   "comment": "sigma 2.5 A, epsilon 0.036 kcal/mol (Table S4)"
+  },
+  {
+   "name": "CF_lev",
+   "match": [
+    "CF_lev"
+   ],
+   "params": [
+    0.0792,
+    3.5
+   ],
+   "comment": "sigma 3.5 A, epsilon 0.0792 kcal/mol (Table S4)"
+  },
+  {
+   "name": "HF_lev",
+   "match": [
+    "HF_lev"
+   ],
+   "params": [
+    0.036,
+    2.5
+   ],
+   "comment": "sigma 2.5 A, epsilon 0.036 kcal/mol (Table S4)"
+  },
+  {
+   "name": "CD_lev",
+   "match": [
+    "CD_lev"
+   ],
+   "params": [
+    0.126,
+    3.75
+   ],
+   "comment": "sigma 3.75 A, epsilon 0.126 kcal/mol (Table S4)"
+  },
+  {
+   "name": "CT_lev",
+   "match": [
+    "CT_lev"
+   ],
+   "params": [
+    0.0792,
+    3.5
+   ],
+   "comment": "sigma 3.5 A, epsilon 0.0792 kcal/mol (Table S4)"
+  },
+  {
+   "name": "HT_lev",
+   "match": [
+    "HT_lev"
+   ],
+   "params": [
+    0.036,
+    2.5
+   ],
+   "comment": "sigma 2.5 A, epsilon 0.036 kcal/mol (Table S4)"
+  },
+  {
+   "name": "OC_lev",
+   "match": [
+    "OC_lev"
+   ],
+   "params": [
+    0.252,
+    2.96
+   ],
+   "comment": "sigma 2.96 A, epsilon 0.252 kcal/mol (Table S4)"
+  },
+  {
+   "name": "CD_mal",
+   "match": [
+    "CD_mal"
+   ],
+   "params": [
+    0.2625,
+    3.75
+   ],
+   "comment": "sigma 3.75 A, epsilon 0.2625 kcal/mol (Table S4)"
+  },
+  {
+   "name": "CT_mal",
+   "match": [
+    "CT_mal"
+   ],
+   "params": [
+    0.165,
+    3.5
+   ],
+   "comment": "sigma 3.5 A, epsilon 0.165 kcal/mol (Table S4)"
+  },
+  {
+   "name": "HC_mal",
+   "match": [
+    "HC_mal"
+   ],
+   "params": [
+    0.075,
+    2.5
+   ],
+   "comment": "sigma 2.5 A, epsilon 0.075 kcal/mol (Table S4)"
+  },
+  {
+   "name": "OD_mal",
+   "match": [
+    "OD_mal"
+   ],
+   "params": [
+    0.525,
+    2.96
+   ],
+   "comment": "sigma 2.96 A, epsilon 0.525 kcal/mol (Table S4)"
+  },
+  {
+   "name": "OH_mal",
+   "match": [
+    "OH_mal"
+   ],
+   "params": [
+    0.425,
+    3.0
+   ],
+   "comment": "sigma 3.0 A, epsilon 0.425 kcal/mol (Table S4)"
+  },
+  {
+   "name": "HO_mal",
+   "match": [
+    "HO_mal"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "sigma 0.0 A, epsilon 0.0 kcal/mol (Table S4)"
+  },
+  {
+   "name": "CD_ox",
+   "match": [
+    "CD_ox"
+   ],
+   "params": [
+    0.1575,
+    3.75
+   ],
+   "comment": "sigma 3.75 A, epsilon 0.1575 kcal/mol (Table S4)"
+  },
+  {
+   "name": "OH_ox",
+   "match": [
+    "OH_ox"
+   ],
+   "params": [
+    0.255,
+    2.92
+   ],
+   "comment": "sigma 2.92 A, epsilon 0.255 kcal/mol (Table S4)"
+  },
+  {
+   "name": "HO_ox",
+   "match": [
+    "HO_ox"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "sigma 0.0 A, epsilon 0.0 kcal/mol (Table S4)"
+  },
+  {
+   "name": "OD_ox",
+   "match": [
+    "OD_ox"
+   ],
+   "params": [
+    0.315,
+    2.96
+   ],
+   "comment": "sigma 2.96 A, epsilon 0.315 kcal/mol (Table S4)"
+  },
+  {
+   "name": "CB_phe",
+   "match": [
+    "CB_phe"
+   ],
+   "params": [
+    0.077,
+    3.55
+   ],
+   "comment": "sigma 3.55 A, epsilon 0.077 kcal/mol (Table S4)"
+  },
+  {
+   "name": "CO_phe",
+   "match": [
+    "CO_phe"
+   ],
+   "params": [
+    0.077,
+    3.55
+   ],
+   "comment": "sigma 3.55 A, epsilon 0.077 kcal/mol (Table S4)"
+  },
+  {
+   "name": "HB_phe",
+   "match": [
+    "HB_phe"
+   ],
+   "params": [
+    0.033,
+    2.42
+   ],
+   "comment": "sigma 2.42 A, epsilon 0.033 kcal/mol (Table S4)"
+  },
+  {
+   "name": "OH_phe",
+   "match": [
+    "OH_phe"
+   ],
+   "params": [
+    0.187,
+    3.07
+   ],
+   "comment": "sigma 3.07 A, epsilon 0.187 kcal/mol (Table S4)"
+  },
+  {
+   "name": "HO_phe",
+   "match": [
+    "HO_phe"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "sigma 0.0 A, epsilon 0.0 kcal/mol (Table S4)"
+  },
+  {
+   "name": "C_urea",
+   "match": [
+    "C_urea"
+   ],
+   "params": [
+    0.1575,
+    3.75
+   ],
+   "comment": "sigma 3.75 A, epsilon 0.1575 kcal/mol (Table S4)"
+  },
+  {
+   "name": "O_urea",
+   "match": [
+    "O_urea"
+   ],
+   "params": [
+    0.315,
+    2.96
+   ],
+   "comment": "sigma 2.96 A, epsilon 0.315 kcal/mol (Table S4)"
+  },
+  {
+   "name": "N_urea",
+   "match": [
+    "N_urea"
+   ],
+   "params": [
+    0.255,
+    3.55
+   ],
+   "comment": "sigma 3.55 A, epsilon 0.255 kcal/mol (Table S4)"
+  },
+  {
+   "name": "HT_urea",
+   "match": [
+    "HT_urea"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "sigma 0.0 A, epsilon 0.0 kcal/mol (Table S4)"
+  },
+  {
+   "name": "HC_urea",
+   "match": [
+    "HC_urea"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "sigma 0.0 A, epsilon 0.0 kcal/mol (Table S4)"
+  }
+ ],
+ "bonds": [
+  {
+   "name": "HA-CA",
+   "match": [
+    "HA",
+    "CA"
+   ],
+   "style": "harmonic",
+   "params": [
+    340.0,
+    1.099
+   ],
+   "comment": "choline HA-CA: kr 340 kcal/mol/A^2, r0 1.099 A (Table S2)"
+  },
+  {
+   "name": "CA-NA",
+   "match": [
+    "CA",
+    "NA"
+   ],
+   "style": "harmonic",
+   "params": [
+    490.0,
+    1.498
+   ],
+   "comment": "choline CA-NA: kr 490 kcal/mol/A^2, r0 1.498 A (Table S2)"
+  },
+  {
+   "name": "NA-CS",
+   "match": [
+    "NA",
+    "CS"
+   ],
+   "style": "harmonic",
+   "params": [
+    490.0,
+    1.516
+   ],
+   "comment": "choline NA-CS: kr 490 kcal/mol/A^2, r0 1.516 A (Table S2)"
+  },
+  {
+   "name": "CS-HS",
+   "match": [
+    "CS",
+    "HS"
+   ],
+   "style": "harmonic",
+   "params": [
+    340.0,
+    1.0805
+   ],
+   "comment": "choline CS-HS: kr 340 kcal/mol/A^2, r0 1.0805 A (Table S2)"
+  },
+  {
+   "name": "CS-CW",
+   "match": [
+    "CS",
+    "CW"
+   ],
+   "style": "harmonic",
+   "params": [
+    317.0,
+    1.521
+   ],
+   "comment": "choline CS-CW: kr 317 kcal/mol/A^2, r0 1.521 A (Table S2)"
+  },
+  {
+   "name": "CW-HW",
+   "match": [
+    "CW",
+    "HW"
+   ],
+   "style": "harmonic",
+   "params": [
+    340.0,
+    1.085
+   ],
+   "comment": "choline CW-HW: kr 340 kcal/mol/A^2, r0 1.085 A (Table S2)"
+  },
+  {
+   "name": "CW-OY",
+   "match": [
+    "CW",
+    "OY"
+   ],
+   "style": "harmonic",
+   "params": [
+    450.0,
+    1.395
+   ],
+   "comment": "choline CW-OY: kr 450 kcal/mol/A^2, r0 1.395 A (Table S2)"
+  },
+  {
+   "name": "OY-HY",
+   "match": [
+    "OY",
+    "HY"
+   ],
+   "style": "harmonic",
+   "params": [
+    553.0,
+    0.949
+   ],
+   "comment": "choline OY-HY: kr 553 kcal/mol/A^2, r0 0.949 A (Table S2)"
+  },
+  {
+   "name": "OG_etg-HO_etg",
+   "match": [
+    "OG_etg",
+    "HO_etg"
+   ],
+   "style": "harmonic",
+   "params": [
+    553.0,
+    0.945
+   ],
+   "comment": "ethylene glycol OG-HO: kr 553 kcal/mol/A^2, r0 0.945 A (Table S5 (OG-HO, CT-OG, CT-CT, HC-CT read as Table S4's OG, CG, HG))"
+  },
+  {
+   "name": "CG_etg-OG_etg",
+   "match": [
+    "CG_etg",
+    "OG_etg"
+   ],
+   "style": "harmonic",
+   "params": [
+    320.0,
+    1.41
+   ],
+   "comment": "ethylene glycol CG-OG: kr 320 kcal/mol/A^2, r0 1.41 A (Table S5 (OG-HO, CT-OG, CT-CT, HC-CT read as Table S4's OG, CG, HG))"
+  },
+  {
+   "name": "CG_etg-CG_etg",
+   "match": [
+    "CG_etg",
+    "CG_etg"
+   ],
+   "style": "harmonic",
+   "params": [
+    268.0,
+    1.529
+   ],
+   "comment": "ethylene glycol CG-CG: kr 268 kcal/mol/A^2, r0 1.529 A (Table S5 (OG-HO, CT-OG, CT-CT, HC-CT read as Table S4's OG, CG, HG))"
+  },
+  {
+   "name": "HG_etg-CG_etg",
+   "match": [
+    "HG_etg",
+    "CG_etg"
+   ],
+   "style": "harmonic",
+   "params": [
+    340.0,
+    1.09
+   ],
+   "comment": "ethylene glycol HG-CG: kr 340 kcal/mol/A^2, r0 1.09 A (Table S5 (OG-HO, CT-OG, CT-CT, HC-CT read as Table S4's OG, CG, HG))"
+  },
+  {
+   "name": "OM_gly-CM_gly",
+   "match": [
+    "OM_gly",
+    "CM_gly"
+   ],
+   "style": "harmonic",
+   "params": [
+    320.0,
+    1.41
+   ],
+   "comment": "glycerol OM-CM: kr 320 kcal/mol/A^2, r0 1.41 A (Table S5)"
+  },
+  {
+   "name": "CB_gly-CM_gly",
+   "match": [
+    "CB_gly",
+    "CM_gly"
+   ],
+   "style": "harmonic",
+   "params": [
+    268.0,
+    1.529
+   ],
+   "comment": "glycerol CB-CM: kr 268 kcal/mol/A^2, r0 1.529 A (Table S5)"
+  },
+  {
+   "name": "HM_gly-OM_gly",
+   "match": [
+    "HM_gly",
+    "OM_gly"
+   ],
+   "style": "harmonic",
+   "params": [
+    553.0,
+    0.945
+   ],
+   "comment": "glycerol HM-OM: kr 553 kcal/mol/A^2, r0 0.945 A (Table S5)"
+  },
+  {
+   "name": "HZ_gly-CM_gly",
+   "match": [
+    "HZ_gly",
+    "CM_gly"
+   ],
+   "style": "harmonic",
+   "params": [
+    340.0,
+    1.09
+   ],
+   "comment": "glycerol HZ-CM: kr 340 kcal/mol/A^2, r0 1.09 A (Table S5)"
+  },
+  {
+   "name": "HC_gly-CB_gly",
+   "match": [
+    "HC_gly",
+    "CB_gly"
+   ],
+   "style": "harmonic",
+   "params": [
+    340.0,
+    1.09
+   ],
+   "comment": "glycerol HC-CB: kr 340 kcal/mol/A^2, r0 1.09 A (Table S5)"
+  },
+  {
+   "name": "OH_gly-CB_gly",
+   "match": [
+    "OH_gly",
+    "CB_gly"
+   ],
+   "style": "harmonic",
+   "params": [
+    320.0,
+    1.41
+   ],
+   "comment": "glycerol OH-CB: kr 320 kcal/mol/A^2, r0 1.41 A (Table S5)"
+  },
+  {
+   "name": "HO_gly-OH_gly",
+   "match": [
+    "HO_gly",
+    "OH_gly"
+   ],
+   "style": "harmonic",
+   "params": [
+    553.0,
+    0.945
+   ],
+   "comment": "glycerol HO-OH: kr 553 kcal/mol/A^2, r0 0.945 A (Table S5)"
+  },
+  {
+   "name": "OH_lev-CB_lev",
+   "match": [
+    "OH_lev",
+    "CB_lev"
+   ],
+   "style": "harmonic",
+   "params": [
+    450.0,
+    1.364
+   ],
+   "comment": "levulinic acid OH-CB: kr 450 kcal/mol/A^2, r0 1.364 A (Table S5)"
+  },
+  {
+   "name": "OH_lev-HO_lev",
+   "match": [
+    "OH_lev",
+    "HO_lev"
+   ],
+   "style": "harmonic",
+   "params": [
+    553.0,
+    0.945
+   ],
+   "comment": "levulinic acid OH-HO: kr 553 kcal/mol/A^2, r0 0.945 A (Table S5)"
+  },
+  {
+   "name": "OB_lev-CB_lev",
+   "match": [
+    "OB_lev",
+    "CB_lev"
+   ],
+   "style": "harmonic",
+   "params": [
+    570.0,
+    1.229
+   ],
+   "comment": "levulinic acid OB-CB: kr 570 kcal/mol/A^2, r0 1.229 A (Table S5)"
+  },
+  {
+   "name": "CZ_lev-CB_lev",
+   "match": [
+    "CZ_lev",
+    "CB_lev"
+   ],
+   "style": "harmonic",
+   "params": [
+    317.0,
+    1.522
+   ],
+   "comment": "levulinic acid CZ-CB: kr 317 kcal/mol/A^2, r0 1.522 A (Table S5)"
+  },
+  {
+   "name": "HZ_lev-CZ_lev",
+   "match": [
+    "HZ_lev",
+    "CZ_lev"
+   ],
+   "style": "harmonic",
+   "params": [
+    340.0,
+    1.09
+   ],
+   "comment": "levulinic acid HZ-CZ: kr 340 kcal/mol/A^2, r0 1.09 A (Table S5)"
+  },
+  {
+   "name": "CF_lev-CZ_lev",
+   "match": [
+    "CF_lev",
+    "CZ_lev"
+   ],
+   "style": "harmonic",
+   "params": [
+    268.0,
+    1.529
+   ],
+   "comment": "levulinic acid CF-CZ: kr 268 kcal/mol/A^2, r0 1.529 A (Table S5)"
+  },
+  {
+   "name": "HF_lev-CF_lev",
+   "match": [
+    "HF_lev",
+    "CF_lev"
+   ],
+   "style": "harmonic",
+   "params": [
+    340.0,
+    1.09
+   ],
+   "comment": "levulinic acid HF-CF: kr 340 kcal/mol/A^2, r0 1.09 A (Table S5)"
+  },
+  {
+   "name": "CD_lev-CF_lev",
+   "match": [
+    "CD_lev",
+    "CF_lev"
+   ],
+   "style": "harmonic",
+   "params": [
+    317.0,
+    1.522
+   ],
+   "comment": "levulinic acid CD-CF: kr 317 kcal/mol/A^2, r0 1.522 A (Table S5)"
+  },
+  {
+   "name": "CT_lev-CD_lev",
+   "match": [
+    "CT_lev",
+    "CD_lev"
+   ],
+   "style": "harmonic",
+   "params": [
+    317.0,
+    1.522
+   ],
+   "comment": "levulinic acid CT-CD: kr 317 kcal/mol/A^2, r0 1.522 A (Table S5)"
+  },
+  {
+   "name": "HT_lev-CT_lev",
+   "match": [
+    "HT_lev",
+    "CT_lev"
+   ],
+   "style": "harmonic",
+   "params": [
+    340.0,
+    1.09
+   ],
+   "comment": "levulinic acid HT-CT: kr 340 kcal/mol/A^2, r0 1.09 A (Table S5)"
+  },
+  {
+   "name": "OC_lev-CD_lev",
+   "match": [
+    "OC_lev",
+    "CD_lev"
+   ],
+   "style": "harmonic",
+   "params": [
+    570.0,
+    1.229
+   ],
+   "comment": "levulinic acid OC-CD: kr 570 kcal/mol/A^2, r0 1.229 A (Table S5)"
+  },
+  {
+   "name": "OD_mal-CD_mal",
+   "match": [
+    "OD_mal",
+    "CD_mal"
+   ],
+   "style": "harmonic",
+   "params": [
+    570.0,
+    1.229
+   ],
+   "comment": "malonic acid OD-CD: kr 570 kcal/mol/A^2, r0 1.229 A (Table S5)"
+  },
+  {
+   "name": "OH_mal-CD_mal",
+   "match": [
+    "OH_mal",
+    "CD_mal"
+   ],
+   "style": "harmonic",
+   "params": [
+    450.0,
+    1.364
+   ],
+   "comment": "malonic acid OH-CD: kr 450 kcal/mol/A^2, r0 1.364 A (Table S5)"
+  },
+  {
+   "name": "CT_mal-CD_mal",
+   "match": [
+    "CT_mal",
+    "CD_mal"
+   ],
+   "style": "harmonic",
+   "params": [
+    317.0,
+    1.522
+   ],
+   "comment": "malonic acid CT-CD: kr 317 kcal/mol/A^2, r0 1.522 A (Table S5)"
+  },
+  {
+   "name": "HO_mal-OH_mal",
+   "match": [
+    "HO_mal",
+    "OH_mal"
+   ],
+   "style": "harmonic",
+   "params": [
+    553.0,
+    0.945
+   ],
+   "comment": "malonic acid HO-OH: kr 553 kcal/mol/A^2, r0 0.945 A (Table S5)"
+  },
+  {
+   "name": "HC_mal-CT_mal",
+   "match": [
+    "HC_mal",
+    "CT_mal"
+   ],
+   "style": "harmonic",
+   "params": [
+    340.0,
+    1.09
+   ],
+   "comment": "malonic acid HC-CT: kr 340 kcal/mol/A^2, r0 1.09 A (Table S5)"
+  },
+  {
+   "name": "CD_ox-CD_ox",
+   "match": [
+    "CD_ox",
+    "CD_ox"
+   ],
+   "style": "harmonic",
+   "params": [
+    350.0,
+    1.51
+   ],
+   "comment": "oxalic acid CD-CD: kr 350 kcal/mol/A^2, r0 1.51 A (Table S5)"
+  },
+  {
+   "name": "OD_ox-CD_ox",
+   "match": [
+    "OD_ox",
+    "CD_ox"
+   ],
+   "style": "harmonic",
+   "params": [
+    570.0,
+    1.229
+   ],
+   "comment": "oxalic acid OD-CD: kr 570 kcal/mol/A^2, r0 1.229 A (Table S5)"
+  },
+  {
+   "name": "OH_ox-CD_ox",
+   "match": [
+    "OH_ox",
+    "CD_ox"
+   ],
+   "style": "harmonic",
+   "params": [
+    450.0,
+    1.364
+   ],
+   "comment": "oxalic acid OH-CD: kr 450 kcal/mol/A^2, r0 1.364 A (Table S5)"
+  },
+  {
+   "name": "HO_ox-OH_ox",
+   "match": [
+    "HO_ox",
+    "OH_ox"
+   ],
+   "style": "harmonic",
+   "params": [
+    553.0,
+    0.945
+   ],
+   "comment": "oxalic acid HO-OH: kr 553 kcal/mol/A^2, r0 0.945 A (Table S5)"
+  },
+  {
+   "name": "CB_phe-CB_phe",
+   "match": [
+    "CB_phe",
+    "CB_phe"
+   ],
+   "style": "harmonic",
+   "params": [
+    469.0,
+    1.4
+   ],
+   "comment": "phenol CB-CB: kr 469 kcal/mol/A^2, r0 1.4 A (Table S5)"
+  },
+  {
+   "name": "CO_phe-CB_phe",
+   "match": [
+    "CO_phe",
+    "CB_phe"
+   ],
+   "style": "harmonic",
+   "params": [
+    469.0,
+    1.4
+   ],
+   "comment": "phenol CO-CB: kr 469 kcal/mol/A^2, r0 1.4 A (Table S5)"
+  },
+  {
+   "name": "HB_phe-CB_phe",
+   "match": [
+    "HB_phe",
+    "CB_phe"
+   ],
+   "style": "harmonic",
+   "params": [
+    367.0,
+    1.08
+   ],
+   "comment": "phenol HB-CB: kr 367 kcal/mol/A^2, r0 1.08 A (Table S5)"
+  },
+  {
+   "name": "OH_phe-CO_phe",
+   "match": [
+    "OH_phe",
+    "CO_phe"
+   ],
+   "style": "harmonic",
+   "params": [
+    450.0,
+    1.365
+   ],
+   "comment": "phenol OH-CO: kr 450 kcal/mol/A^2, r0 1.365 A (Table S5)"
+  },
+  {
+   "name": "HO_phe-OH_phe",
+   "match": [
+    "HO_phe",
+    "OH_phe"
+   ],
+   "style": "harmonic",
+   "params": [
+    553.0,
+    0.945
+   ],
+   "comment": "phenol HO-OH: kr 553 kcal/mol/A^2, r0 0.945 A (Table S5)"
+  },
+  {
+   "name": "O_urea-C_urea",
+   "match": [
+    "O_urea",
+    "C_urea"
+   ],
+   "style": "harmonic",
+   "params": [
+    570.0,
+    1.229
+   ],
+   "comment": "urea O-C: kr 570 kcal/mol/A^2, r0 1.229 A (Table S5)"
+  },
+  {
+   "name": "N_urea-C_urea",
+   "match": [
+    "N_urea",
+    "C_urea"
+   ],
+   "style": "harmonic",
+   "params": [
+    490.0,
+    1.335
+   ],
+   "comment": "urea N-C: kr 490 kcal/mol/A^2, r0 1.335 A (Table S5)"
+  },
+  {
+   "name": "HT_urea-N_urea",
+   "match": [
+    "HT_urea",
+    "N_urea"
+   ],
+   "style": "harmonic",
+   "params": [
+    434.0,
+    1.01
+   ],
+   "comment": "urea HT-N: kr 434 kcal/mol/A^2, r0 1.01 A (Table S5)"
+  },
+  {
+   "name": "HC_urea-N_urea",
+   "match": [
+    "HC_urea",
+    "N_urea"
+   ],
+   "style": "harmonic",
+   "params": [
+    434.0,
+    1.01
+   ],
+   "comment": "urea HC-N: kr 434 kcal/mol/A^2, r0 1.01 A (Table S5)"
+  }
+ ],
+ "angles": [
+  {
+   "name": "HA-CA-HA",
+   "match": [
+    "HA",
+    "CA",
+    "HA"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.0,
+    110.01
+   ],
+   "comment": "choline HA-CA-HA: k 35 kcal/mol/rad^2, theta0 110.01 deg (Table S2)"
+  },
+  {
+   "name": "HA-CA-NA",
+   "match": [
+    "HA",
+    "CA",
+    "NA"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.0,
+    108.9
+   ],
+   "comment": "choline HA-CA-NA: k 35 kcal/mol/rad^2, theta0 108.9 deg (Table S2)"
+  },
+  {
+   "name": "CA-NA-CS",
+   "match": [
+    "CA",
+    "NA",
+    "CS"
+   ],
+   "style": "harmonic",
+   "params": [
+    51.8,
+    110.2
+   ],
+   "comment": "choline CA-NA-CS: k 51.8 kcal/mol/rad^2, theta0 110.2 deg (Table S2)"
+  },
+  {
+   "name": "NA-CS-HS",
+   "match": [
+    "NA",
+    "CS",
+    "HS"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.0,
+    106.4
+   ],
+   "comment": "choline NA-CS-HS: k 35 kcal/mol/rad^2, theta0 106.4 deg (Table S2)"
+  },
+  {
+   "name": "NA-CS-CW",
+   "match": [
+    "NA",
+    "CS",
+    "CW"
+   ],
+   "style": "harmonic",
+   "params": [
+    70.0,
+    116.6
+   ],
+   "comment": "choline NA-CS-CW: k 70 kcal/mol/rad^2, theta0 116.6 deg (Table S2)"
+  },
+  {
+   "name": "CS-CW-HW",
+   "match": [
+    "CS",
+    "CW",
+    "HW"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.0,
+    108.3
+   ],
+   "comment": "choline CS-CW-HW: k 35 kcal/mol/rad^2, theta0 108.3 deg (Table S2)"
+  },
+  {
+   "name": "CS-CW-OY",
+   "match": [
+    "CS",
+    "CW",
+    "OY"
+   ],
+   "style": "harmonic",
+   "params": [
+    80.0,
+    109.6
+   ],
+   "comment": "choline CS-CW-OY: k 80 kcal/mol/rad^2, theta0 109.6 deg (Table S2)"
+  },
+  {
+   "name": "HS-CS-CW",
+   "match": [
+    "HS",
+    "CS",
+    "CW"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.0,
+    109.3
+   ],
+   "comment": "choline HS-CS-CW: k 35 kcal/mol/rad^2, theta0 109.3 deg (Table S2)"
+  },
+  {
+   "name": "HW-CW-OY",
+   "match": [
+    "HW",
+    "CW",
+    "OY"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.0,
+    111.6
+   ],
+   "comment": "choline HW-CW-OY: k 35 kcal/mol/rad^2, theta0 111.6 deg (Table S2)"
+  },
+  {
+   "name": "CW-OY-HY",
+   "match": [
+    "CW",
+    "OY",
+    "HY"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.0,
+    110.9
+   ],
+   "comment": "choline CW-OY-HY: k 35 kcal/mol/rad^2, theta0 110.9 deg (Table S2)"
+  },
+  {
+   "name": "CA-NA-CA",
+   "match": [
+    "CA",
+    "NA",
+    "CA"
+   ],
+   "style": "harmonic",
+   "params": [
+    55.0,
+    108.73
+   ],
+   "comment": "choline CA-NA-CA: k 55 kcal/mol/rad^2, theta0 108.73 deg (Table S2)"
+  },
+  {
+   "name": "HS-CS-HS",
+   "match": [
+    "HS",
+    "CS",
+    "HS"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.0,
+    108.6
+   ],
+   "comment": "choline HS-CS-HS: k 35 kcal/mol/rad^2, theta0 108.6 deg (Table S2)"
+  },
+  {
+   "name": "HW-CW-HW",
+   "match": [
+    "HW",
+    "CW",
+    "HW"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.0,
+    107.4
+   ],
+   "comment": "choline HW-CW-HW: k 35 kcal/mol/rad^2, theta0 107.4 deg (Table S2)"
+  },
+  {
+   "name": "HO_etg-OG_etg-CG_etg",
+   "match": [
+    "HO_etg",
+    "OG_etg",
+    "CG_etg"
+   ],
+   "style": "harmonic",
+   "params": [
+    55.0,
+    108.5
+   ],
+   "comment": "ethylene glycol HO-OG-CG: k 55 kcal/mol/rad^2, theta0 108.5 deg (Table S5)"
+  },
+  {
+   "name": "OG_etg-CG_etg-CG_etg",
+   "match": [
+    "OG_etg",
+    "CG_etg",
+    "CG_etg"
+   ],
+   "style": "harmonic",
+   "params": [
+    50.0,
+    108.0
+   ],
+   "comment": "ethylene glycol OG-CG-CG: k 50 kcal/mol/rad^2, theta0 108.0 deg (Table S5)"
+  },
+  {
+   "name": "OG_etg-CG_etg-HG_etg",
+   "match": [
+    "OG_etg",
+    "CG_etg",
+    "HG_etg"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.0,
+    109.5
+   ],
+   "comment": "ethylene glycol OG-CG-HG: k 35 kcal/mol/rad^2, theta0 109.5 deg (Table S5)"
+  },
+  {
+   "name": "CG_etg-CG_etg-HG_etg",
+   "match": [
+    "CG_etg",
+    "CG_etg",
+    "HG_etg"
+   ],
+   "style": "harmonic",
+   "params": [
+    37.5,
+    110.7
+   ],
+   "comment": "ethylene glycol CG-CG-HG: k 37.5 kcal/mol/rad^2, theta0 110.7 deg (Table S5)"
+  },
+  {
+   "name": "HG_etg-CG_etg-HG_etg",
+   "match": [
+    "HG_etg",
+    "CG_etg",
+    "HG_etg"
+   ],
+   "style": "harmonic",
+   "params": [
+    33.0,
+    107.8
+   ],
+   "comment": "ethylene glycol HG-CG-HG: k 33 kcal/mol/rad^2, theta0 107.8 deg (Table S5)"
+  },
+  {
+   "name": "OM_gly-CM_gly-CB_gly",
+   "match": [
+    "OM_gly",
+    "CM_gly",
+    "CB_gly"
+   ],
+   "style": "harmonic",
+   "params": [
+    50.0,
+    109.5
+   ],
+   "comment": "glycerol OM-CM-CB: k 50 kcal/mol/rad^2, theta0 109.5 deg (Table S5)"
+  },
+  {
+   "name": "CM_gly-OM_gly-HM_gly",
+   "match": [
+    "CM_gly",
+    "OM_gly",
+    "HM_gly"
+   ],
+   "style": "harmonic",
+   "params": [
+    55.0,
+    108.5
+   ],
+   "comment": "glycerol CM-OM-HM: k 55 kcal/mol/rad^2, theta0 108.5 deg (Table S5)"
+  },
+  {
+   "name": "OM_gly-CM_gly-HZ_gly",
+   "match": [
+    "OM_gly",
+    "CM_gly",
+    "HZ_gly"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.0,
+    109.5
+   ],
+   "comment": "glycerol OM-CM-HZ: k 35 kcal/mol/rad^2, theta0 109.5 deg (Table S5)"
+  },
+  {
+   "name": "CM_gly-CB_gly-HC_gly",
+   "match": [
+    "CM_gly",
+    "CB_gly",
+    "HC_gly"
+   ],
+   "style": "harmonic",
+   "params": [
+    37.5,
+    110.7
+   ],
+   "comment": "glycerol CM-CB-HC: k 37.5 kcal/mol/rad^2, theta0 110.7 deg (Table S5)"
+  },
+  {
+   "name": "CM_gly-CB_gly-OH_gly",
+   "match": [
+    "CM_gly",
+    "CB_gly",
+    "OH_gly"
+   ],
+   "style": "harmonic",
+   "params": [
+    50.0,
+    109.5
+   ],
+   "comment": "glycerol CM-CB-OH: k 50 kcal/mol/rad^2, theta0 109.5 deg (Table S5)"
+  },
+  {
+   "name": "CB_gly-OH_gly-HO_gly",
+   "match": [
+    "CB_gly",
+    "OH_gly",
+    "HO_gly"
+   ],
+   "style": "harmonic",
+   "params": [
+    55.0,
+    108.5
+   ],
+   "comment": "glycerol CB-OH-HO: k 55 kcal/mol/rad^2, theta0 108.5 deg (Table S5)"
+  },
+  {
+   "name": "CB_gly-CM_gly-CB_gly",
+   "match": [
+    "CB_gly",
+    "CM_gly",
+    "CB_gly"
+   ],
+   "style": "harmonic",
+   "params": [
+    58.35,
+    112.7
+   ],
+   "comment": "glycerol CB-CM-CB: k 58.35 kcal/mol/rad^2, theta0 112.7 deg (Table S5)"
+  },
+  {
+   "name": "CB_gly-CM_gly-HZ_gly",
+   "match": [
+    "CB_gly",
+    "CM_gly",
+    "HZ_gly"
+   ],
+   "style": "harmonic",
+   "params": [
+    37.5,
+    110.7
+   ],
+   "comment": "glycerol CB-CM-HZ: k 37.5 kcal/mol/rad^2, theta0 110.7 deg (Table S5)"
+  },
+  {
+   "name": "HC_gly-CB_gly-HC_gly",
+   "match": [
+    "HC_gly",
+    "CB_gly",
+    "HC_gly"
+   ],
+   "style": "harmonic",
+   "params": [
+    33.0,
+    107.8
+   ],
+   "comment": "glycerol HC-CB-HC: k 33 kcal/mol/rad^2, theta0 107.8 deg (Table S5)"
+  },
+  {
+   "name": "HC_gly-CB_gly-OH_gly",
+   "match": [
+    "HC_gly",
+    "CB_gly",
+    "OH_gly"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.0,
+    109.5
+   ],
+   "comment": "glycerol HC-CB-OH: k 35 kcal/mol/rad^2, theta0 109.5 deg (Table S5)"
+  },
+  {
+   "name": "CB_lev-OH_lev-HO_lev",
+   "match": [
+    "CB_lev",
+    "OH_lev",
+    "HO_lev"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.0,
+    113.0
+   ],
+   "comment": "levulinic acid CB-OH-HO: k 35 kcal/mol/rad^2, theta0 113.0 deg (Table S5 (its HO-CB-CZ read as OH-CB-CZ))"
+  },
+  {
+   "name": "OH_lev-CB_lev-OB_lev",
+   "match": [
+    "OH_lev",
+    "CB_lev",
+    "OB_lev"
+   ],
+   "style": "harmonic",
+   "params": [
+    80.0,
+    121.0
+   ],
+   "comment": "levulinic acid OH-CB-OB: k 80 kcal/mol/rad^2, theta0 121.0 deg (Table S5 (its HO-CB-CZ read as OH-CB-CZ))"
+  },
+  {
+   "name": "OH_lev-CB_lev-CZ_lev",
+   "match": [
+    "OH_lev",
+    "CB_lev",
+    "CZ_lev"
+   ],
+   "style": "harmonic",
+   "params": [
+    70.0,
+    108.0
+   ],
+   "comment": "levulinic acid OH-CB-CZ: k 70 kcal/mol/rad^2, theta0 108.0 deg (Table S5 (its HO-CB-CZ read as OH-CB-CZ))"
+  },
+  {
+   "name": "CB_lev-CZ_lev-HZ_lev",
+   "match": [
+    "CB_lev",
+    "CZ_lev",
+    "HZ_lev"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.0,
+    109.5
+   ],
+   "comment": "levulinic acid CB-CZ-HZ: k 35 kcal/mol/rad^2, theta0 109.5 deg (Table S5 (its HO-CB-CZ read as OH-CB-CZ))"
+  },
+  {
+   "name": "CB_lev-CZ_lev-CF_lev",
+   "match": [
+    "CB_lev",
+    "CZ_lev",
+    "CF_lev"
+   ],
+   "style": "harmonic",
+   "params": [
+    63.0,
+    111.1
+   ],
+   "comment": "levulinic acid CB-CZ-CF: k 63 kcal/mol/rad^2, theta0 111.1 deg (Table S5 (its HO-CB-CZ read as OH-CB-CZ))"
+  },
+  {
+   "name": "CZ_lev-CF_lev-HF_lev",
+   "match": [
+    "CZ_lev",
+    "CF_lev",
+    "HF_lev"
+   ],
+   "style": "harmonic",
+   "params": [
+    37.5,
+    110.7
+   ],
+   "comment": "levulinic acid CZ-CF-HF: k 37.5 kcal/mol/rad^2, theta0 110.7 deg (Table S5 (its HO-CB-CZ read as OH-CB-CZ))"
+  },
+  {
+   "name": "CZ_lev-CF_lev-CD_lev",
+   "match": [
+    "CZ_lev",
+    "CF_lev",
+    "CD_lev"
+   ],
+   "style": "harmonic",
+   "params": [
+    63.0,
+    111.1
+   ],
+   "comment": "levulinic acid CZ-CF-CD: k 63 kcal/mol/rad^2, theta0 111.1 deg (Table S5 (its HO-CB-CZ read as OH-CB-CZ))"
+  },
+  {
+   "name": "CF_lev-CD_lev-CT_lev",
+   "match": [
+    "CF_lev",
+    "CD_lev",
+    "CT_lev"
+   ],
+   "style": "harmonic",
+   "params": [
+    70.0,
+    116.0
+   ],
+   "comment": "levulinic acid CF-CD-CT: k 70 kcal/mol/rad^2, theta0 116.0 deg (Table S5 (its HO-CB-CZ read as OH-CB-CZ))"
+  },
+  {
+   "name": "CD_lev-CT_lev-HT_lev",
+   "match": [
+    "CD_lev",
+    "CT_lev",
+    "HT_lev"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.0,
+    109.5
+   ],
+   "comment": "levulinic acid CD-CT-HT: k 35 kcal/mol/rad^2, theta0 109.5 deg (Table S5 (its HO-CB-CZ read as OH-CB-CZ))"
+  },
+  {
+   "name": "CF_lev-CD_lev-OC_lev",
+   "match": [
+    "CF_lev",
+    "CD_lev",
+    "OC_lev"
+   ],
+   "style": "harmonic",
+   "params": [
+    80.0,
+    120.4
+   ],
+   "comment": "levulinic acid CF-CD-OC: k 80 kcal/mol/rad^2, theta0 120.4 deg (Table S5 (its HO-CB-CZ read as OH-CB-CZ))"
+  },
+  {
+   "name": "OB_lev-CB_lev-CZ_lev",
+   "match": [
+    "OB_lev",
+    "CB_lev",
+    "CZ_lev"
+   ],
+   "style": "harmonic",
+   "params": [
+    80.0,
+    120.4
+   ],
+   "comment": "levulinic acid OB-CB-CZ: k 80 kcal/mol/rad^2, theta0 120.4 deg (Table S5 (its HO-CB-CZ read as OH-CB-CZ))"
+  },
+  {
+   "name": "HZ_lev-CZ_lev-HZ_lev",
+   "match": [
+    "HZ_lev",
+    "CZ_lev",
+    "HZ_lev"
+   ],
+   "style": "harmonic",
+   "params": [
+    33.0,
+    107.8
+   ],
+   "comment": "levulinic acid HZ-CZ-HZ: k 33 kcal/mol/rad^2, theta0 107.8 deg (Table S5 (its HO-CB-CZ read as OH-CB-CZ))"
+  },
+  {
+   "name": "HZ_lev-CZ_lev-CF_lev",
+   "match": [
+    "HZ_lev",
+    "CZ_lev",
+    "CF_lev"
+   ],
+   "style": "harmonic",
+   "params": [
+    37.5,
+    110.7
+   ],
+   "comment": "levulinic acid HZ-CZ-CF: k 37.5 kcal/mol/rad^2, theta0 110.7 deg (Table S5 (its HO-CB-CZ read as OH-CB-CZ))"
+  },
+  {
+   "name": "HF_lev-CF_lev-HF_lev",
+   "match": [
+    "HF_lev",
+    "CF_lev",
+    "HF_lev"
+   ],
+   "style": "harmonic",
+   "params": [
+    33.0,
+    107.8
+   ],
+   "comment": "levulinic acid HF-CF-HF: k 33 kcal/mol/rad^2, theta0 107.8 deg (Table S5 (its HO-CB-CZ read as OH-CB-CZ))"
+  },
+  {
+   "name": "HF_lev-CF_lev-CD_lev",
+   "match": [
+    "HF_lev",
+    "CF_lev",
+    "CD_lev"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.0,
+    109.5
+   ],
+   "comment": "levulinic acid HF-CF-CD: k 35 kcal/mol/rad^2, theta0 109.5 deg (Table S5 (its HO-CB-CZ read as OH-CB-CZ))"
+  },
+  {
+   "name": "CT_lev-CD_lev-OC_lev",
+   "match": [
+    "CT_lev",
+    "CD_lev",
+    "OC_lev"
+   ],
+   "style": "harmonic",
+   "params": [
+    80.0,
+    120.4
+   ],
+   "comment": "levulinic acid CT-CD-OC: k 80 kcal/mol/rad^2, theta0 120.4 deg (Table S5 (its HO-CB-CZ read as OH-CB-CZ))"
+  },
+  {
+   "name": "HT_lev-CT_lev-HT_lev",
+   "match": [
+    "HT_lev",
+    "CT_lev",
+    "HT_lev"
+   ],
+   "style": "harmonic",
+   "params": [
+    33.0,
+    107.8
+   ],
+   "comment": "levulinic acid HT-CT-HT: k 33 kcal/mol/rad^2, theta0 107.8 deg (Table S5 (its HO-CB-CZ read as OH-CB-CZ))"
+  },
+  {
+   "name": "OD_mal-CD_mal-OH_mal",
+   "match": [
+    "OD_mal",
+    "CD_mal",
+    "OH_mal"
+   ],
+   "style": "harmonic",
+   "params": [
+    80.0,
+    121.0
+   ],
+   "comment": "malonic acid OD-CD-OH: k 80 kcal/mol/rad^2, theta0 121.0 deg (Table S5)"
+  },
+  {
+   "name": "OD_mal-CD_mal-CT_mal",
+   "match": [
+    "OD_mal",
+    "CD_mal",
+    "CT_mal"
+   ],
+   "style": "harmonic",
+   "params": [
+    80.0,
+    120.4
+   ],
+   "comment": "malonic acid OD-CD-CT: k 80 kcal/mol/rad^2, theta0 120.4 deg (Table S5)"
+  },
+  {
+   "name": "CD_mal-OH_mal-HO_mal",
+   "match": [
+    "CD_mal",
+    "OH_mal",
+    "HO_mal"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.0,
+    113.0
+   ],
+   "comment": "malonic acid CD-OH-HO: k 35 kcal/mol/rad^2, theta0 113.0 deg (Table S5)"
+  },
+  {
+   "name": "CD_mal-CT_mal-CD_mal",
+   "match": [
+    "CD_mal",
+    "CT_mal",
+    "CD_mal"
+   ],
+   "style": "harmonic",
+   "params": [
+    63.0,
+    111.1
+   ],
+   "comment": "malonic acid CD-CT-CD: k 63 kcal/mol/rad^2, theta0 111.1 deg (Table S5)"
+  },
+  {
+   "name": "CD_mal-CT_mal-HC_mal",
+   "match": [
+    "CD_mal",
+    "CT_mal",
+    "HC_mal"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.0,
+    109.5
+   ],
+   "comment": "malonic acid CD-CT-HC: k 35 kcal/mol/rad^2, theta0 109.5 deg (Table S5)"
+  },
+  {
+   "name": "CT_mal-CD_mal-OH_mal",
+   "match": [
+    "CT_mal",
+    "CD_mal",
+    "OH_mal"
+   ],
+   "style": "harmonic",
+   "params": [
+    70.0,
+    108.0
+   ],
+   "comment": "malonic acid CT-CD-OH: k 70 kcal/mol/rad^2, theta0 108.0 deg (Table S5)"
+  },
+  {
+   "name": "HC_mal-CT_mal-HC_mal",
+   "match": [
+    "HC_mal",
+    "CT_mal",
+    "HC_mal"
+   ],
+   "style": "harmonic",
+   "params": [
+    33.0,
+    107.8
+   ],
+   "comment": "malonic acid HC-CT-HC: k 33 kcal/mol/rad^2, theta0 107.8 deg (Table S5)"
+  },
+  {
+   "name": "CD_ox-CD_ox-OD_ox",
+   "match": [
+    "CD_ox",
+    "CD_ox",
+    "OD_ox"
+   ],
+   "style": "harmonic",
+   "params": [
+    80.0,
+    121.4
+   ],
+   "comment": "oxalic acid CD-CD-OD: k 80 kcal/mol/rad^2, theta0 121.4 deg (Table S5)"
+  },
+  {
+   "name": "CD_ox-CD_ox-OH_ox",
+   "match": [
+    "CD_ox",
+    "CD_ox",
+    "OH_ox"
+   ],
+   "style": "harmonic",
+   "params": [
+    70.96,
+    118.03
+   ],
+   "comment": "oxalic acid CD-CD-OH: k 70.96 kcal/mol/rad^2, theta0 118.03 deg (Table S5)"
+  },
+  {
+   "name": "CD_ox-OH_ox-HO_ox",
+   "match": [
+    "CD_ox",
+    "OH_ox",
+    "HO_ox"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.0,
+    113.0
+   ],
+   "comment": "oxalic acid CD-OH-HO: k 35 kcal/mol/rad^2, theta0 113.0 deg (Table S5)"
+  },
+  {
+   "name": "OH_ox-CD_ox-OD_ox",
+   "match": [
+    "OH_ox",
+    "CD_ox",
+    "OD_ox"
+   ],
+   "style": "harmonic",
+   "params": [
+    80.0,
+    121.0
+   ],
+   "comment": "oxalic acid OH-CD-OD: k 80 kcal/mol/rad^2, theta0 121.0 deg (Table S5)"
+  },
+  {
+   "name": "CB_phe-CB_phe-CB_phe",
+   "match": [
+    "CB_phe",
+    "CB_phe",
+    "CB_phe"
+   ],
+   "style": "harmonic",
+   "params": [
+    63.0,
+    120.0
+   ],
+   "comment": "phenol CB-CB-CB: k 63 kcal/mol/rad^2, theta0 120.0 deg (Table S5)"
+  },
+  {
+   "name": "CO_phe-CB_phe-CB_phe",
+   "match": [
+    "CO_phe",
+    "CB_phe",
+    "CB_phe"
+   ],
+   "style": "harmonic",
+   "params": [
+    63.0,
+    120.0
+   ],
+   "comment": "phenol CO-CB-CB: k 63 kcal/mol/rad^2, theta0 120.0 deg (Table S5)"
+  },
+  {
+   "name": "CB_phe-CO_phe-OH_phe",
+   "match": [
+    "CB_phe",
+    "CO_phe",
+    "OH_phe"
+   ],
+   "style": "harmonic",
+   "params": [
+    70.0,
+    120.0
+   ],
+   "comment": "phenol CB-CO-OH: k 70 kcal/mol/rad^2, theta0 120.0 deg (Table S5)"
+  },
+  {
+   "name": "CB_phe-CB_phe-HB_phe",
+   "match": [
+    "CB_phe",
+    "CB_phe",
+    "HB_phe"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.0,
+    120.0
+   ],
+   "comment": "phenol CB-CB-HB: k 35 kcal/mol/rad^2, theta0 120.0 deg (Table S5)"
+  },
+  {
+   "name": "CO_phe-CB_phe-HB_phe",
+   "match": [
+    "CO_phe",
+    "CB_phe",
+    "HB_phe"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.0,
+    120.0
+   ],
+   "comment": "phenol CO-CB-HB: k 35 kcal/mol/rad^2, theta0 120.0 deg (Table S5)"
+  },
+  {
+   "name": "CO_phe-OH_phe-HO_phe",
+   "match": [
+    "CO_phe",
+    "OH_phe",
+    "HO_phe"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.0,
+    113.0
+   ],
+   "comment": "phenol CO-OH-HO: k 35 kcal/mol/rad^2, theta0 113.0 deg (Table S5)"
+  },
+  {
+   "name": "CB_phe-CO_phe-CB_phe",
+   "match": [
+    "CB_phe",
+    "CO_phe",
+    "CB_phe"
+   ],
+   "style": "harmonic",
+   "params": [
+    63.0,
+    120.0
+   ],
+   "comment": "phenol CB-CO-CB: k 63 kcal/mol/rad^2, theta0 120.0 deg (Table S5)"
+  },
+  {
+   "name": "O_urea-C_urea-N_urea",
+   "match": [
+    "O_urea",
+    "C_urea",
+    "N_urea"
+   ],
+   "style": "harmonic",
+   "params": [
+    80.0,
+    122.9
+   ],
+   "comment": "urea O-C-N: k 80 kcal/mol/rad^2, theta0 122.9 deg (Table S5)"
+  },
+  {
+   "name": "C_urea-N_urea-HC_urea",
+   "match": [
+    "C_urea",
+    "N_urea",
+    "HC_urea"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.0,
+    119.8
+   ],
+   "comment": "urea C-N-HC: k 35 kcal/mol/rad^2, theta0 119.8 deg (Table S5)"
+  },
+  {
+   "name": "C_urea-N_urea-HT_urea",
+   "match": [
+    "C_urea",
+    "N_urea",
+    "HT_urea"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.0,
+    119.8
+   ],
+   "comment": "urea C-N-HT: k 35 kcal/mol/rad^2, theta0 119.8 deg (Table S5)"
+  },
+  {
+   "name": "N_urea-C_urea-N_urea",
+   "match": [
+    "N_urea",
+    "C_urea",
+    "N_urea"
+   ],
+   "style": "harmonic",
+   "params": [
+    70.0,
+    114.2
+   ],
+   "comment": "urea N-C-N: k 70 kcal/mol/rad^2, theta0 114.2 deg (Table S5)"
+  },
+  {
+   "name": "H?_urea-N_urea-H?_urea",
+   "match": [
+    "H?_urea",
+    "N_urea",
+    "H?_urea"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.0,
+    120.0
+   ],
+   "comment": "urea HC-N-HT: k 35 kcal/mol/rad^2, theta0 120.0 deg (Table S5); matched as H?-N-H? (CAPS types every urea H HT)"
+  }
+ ],
+ "dihedrals": [
+  {
+   "name": "CW-CS-NA-CA",
+   "match": [
+    "CW",
+    "CS",
+    "NA",
+    "CA"
+   ],
+   "style": "opls",
+   "params": [
+    0.1,
+    0.55,
+    0.65,
+    0.0
+   ],
+   "comment": "choline CW-CS-NA-CA: V1 V2 V3 0.1 0.55 0.65 kcal/mol (Table S3)"
+  },
+  {
+   "name": "CA-NA-CA-HA",
+   "match": [
+    "CA",
+    "NA",
+    "CA",
+    "HA"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.825,
+    0.0
+   ],
+   "comment": "choline CA-NA-CA-HA: V1 V2 V3 0.0 0.0 0.825 kcal/mol (Table S3)"
+  },
+  {
+   "name": "CS-NA-CA-HA",
+   "match": [
+    "CS",
+    "NA",
+    "CA",
+    "HA"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.94,
+    0.0
+   ],
+   "comment": "choline CS-NA-CA-HA: V1 V2 V3 0.0 0.0 0.94 kcal/mol (Table S3)"
+  },
+  {
+   "name": "HS-CS-NA-CA",
+   "match": [
+    "HS",
+    "CS",
+    "NA",
+    "CA"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    1.0,
+    0.7,
+    0.0
+   ],
+   "comment": "choline HS-CS-NA-CA: V1 V2 V3 0.0 1.0 0.7 kcal/mol (Table S3)"
+  },
+  {
+   "name": "OY-CW-CS-NA",
+   "match": [
+    "OY",
+    "CW",
+    "CS",
+    "NA"
+   ],
+   "style": "opls",
+   "params": [
+    -6.0,
+    -5.0,
+    3.2,
+    0.0
+   ],
+   "comment": "choline OY-CW-CS-NA: V1 V2 V3 -6.0 -5.0 3.2 kcal/mol (Table S3)"
+  },
+  {
+   "name": "OY-CW-CS-HS",
+   "match": [
+    "OY",
+    "CW",
+    "CS",
+    "HS"
+   ],
+   "style": "opls",
+   "params": [
+    -0.5,
+    -2.5,
+    0.25,
+    0.0
+   ],
+   "comment": "choline OY-CW-CS-HS: V1 V2 V3 -0.5 -2.5 0.25 kcal/mol (Table S3)"
+  },
+  {
+   "name": "HW-CW-CS-NA",
+   "match": [
+    "HW",
+    "CW",
+    "CS",
+    "NA"
+   ],
+   "style": "opls",
+   "params": [
+    -6.0,
+    -7.0,
+    0.75,
+    0.0
+   ],
+   "comment": "choline HW-CW-CS-NA: V1 V2 V3 -6.0 -7.0 0.75 kcal/mol (Table S3)"
+  },
+  {
+   "name": "HW-CW-CS-HS",
+   "match": [
+    "HW",
+    "CW",
+    "CS",
+    "HS"
+   ],
+   "style": "opls",
+   "params": [
+    6.0,
+    -3.0,
+    2.0,
+    0.0
+   ],
+   "comment": "choline HW-CW-CS-HS: V1 V2 V3 6.0 -3.0 2.0 kcal/mol (Table S3)"
+  },
+  {
+   "name": "HY-OY-CW-CS",
+   "match": [
+    "HY",
+    "OY",
+    "CW",
+    "CS"
+   ],
+   "style": "opls",
+   "params": [
+    -0.356,
+    -0.174,
+    0.35,
+    0.0
+   ],
+   "comment": "choline HY-OY-CW-CS: V1 V2 V3 -0.356 -0.174 0.35 kcal/mol (Table S3)"
+  },
+  {
+   "name": "HY-OY-CW-HW",
+   "match": [
+    "HY",
+    "OY",
+    "CW",
+    "HW"
+   ],
+   "style": "opls",
+   "params": [
+    -3.0,
+    1.0,
+    -2.0,
+    0.0
+   ],
+   "comment": "choline HY-OY-CW-HW: V1 V2 V3 -3.0 1.0 -2.0 kcal/mol (Table S3)"
+  },
+  {
+   "name": "OG_etg-CG_etg-CG_etg-OG_etg",
+   "match": [
+    "OG_etg",
+    "CG_etg",
+    "CG_etg",
+    "OG_etg"
+   ],
+   "style": "opls",
+   "params": [
+    3.887,
+    -1.192,
+    3.206,
+    0.0
+   ],
+   "comment": "ethylene glycol OG-CG-CG-OG: V1 V2 V3 3.887 -1.192 3.206 kcal/mol (Table S6 (ref. 3; its OH read as OG))"
+  },
+  {
+   "name": "CG_etg-CG_etg-OG_etg-HO_etg",
+   "match": [
+    "CG_etg",
+    "CG_etg",
+    "OG_etg",
+    "HO_etg"
+   ],
+   "style": "opls",
+   "params": [
+    0.413,
+    -0.754,
+    1.028,
+    0.0
+   ],
+   "comment": "ethylene glycol CG-CG-OG-HO: V1 V2 V3 0.413 -0.754 1.028 kcal/mol (Table S6 (ref. 3; its OH read as OG))"
+  },
+  {
+   "name": "HM_gly-OM_gly-CM_gly-CB_gly",
+   "match": [
+    "HM_gly",
+    "OM_gly",
+    "CM_gly",
+    "CB_gly"
+   ],
+   "style": "opls",
+   "params": [
+    -0.356,
+    -0.174,
+    0.492,
+    0.0
+   ],
+   "comment": "glycerol HM-OM-CM-CB: V1 V2 V3 -0.356 -0.174 0.492 kcal/mol (Table S6)"
+  },
+  {
+   "name": "HZ_gly-CM_gly-OM_gly-HM_gly",
+   "match": [
+    "HZ_gly",
+    "CM_gly",
+    "OM_gly",
+    "HM_gly"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.352,
+    0.0
+   ],
+   "comment": "glycerol HZ-CM-OM-HM: V1 V2 V3 0.0 0.0 0.352 kcal/mol (Table S6)"
+  },
+  {
+   "name": "HC_gly-CB_gly-CM_gly-OM_gly",
+   "match": [
+    "HC_gly",
+    "CB_gly",
+    "CM_gly",
+    "OM_gly"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.468,
+    0.0
+   ],
+   "comment": "glycerol HC-CB-CM-OM: V1 V2 V3 0.0 0.0 0.468 kcal/mol (Table S6)"
+  },
+  {
+   "name": "OH_gly-CB_gly-CM_gly-OM_gly",
+   "match": [
+    "OH_gly",
+    "CB_gly",
+    "CM_gly",
+    "OM_gly"
+   ],
+   "style": "opls",
+   "params": [
+    12.234,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "glycerol OH-CB-CM-OM: V1 V2 V3 12.234 0.0 0.0 kcal/mol (Table S6)"
+  },
+  {
+   "name": "HO_gly-OH_gly-CB_gly-CM_gly",
+   "match": [
+    "HO_gly",
+    "OH_gly",
+    "CB_gly",
+    "CM_gly"
+   ],
+   "style": "opls",
+   "params": [
+    -0.356,
+    -0.174,
+    0.492,
+    0.0
+   ],
+   "comment": "glycerol HO-OH-CB-CM: V1 V2 V3 -0.356 -0.174 0.492 kcal/mol (Table S6)"
+  },
+  {
+   "name": "HC_gly-CB_gly-CM_gly-CB_gly",
+   "match": [
+    "HC_gly",
+    "CB_gly",
+    "CM_gly",
+    "CB_gly"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.3,
+    0.0
+   ],
+   "comment": "glycerol HC-CB-CM-CB: V1 V2 V3 0.0 0.0 0.3 kcal/mol (Table S6)"
+  },
+  {
+   "name": "OH_gly-CB_gly-CM_gly-CB_gly",
+   "match": [
+    "OH_gly",
+    "CB_gly",
+    "CM_gly",
+    "CB_gly"
+   ],
+   "style": "opls",
+   "params": [
+    -1.552,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "glycerol OH-CB-CM-CB: V1 V2 V3 -1.552 0.0 0.0 kcal/mol (Table S6)"
+  },
+  {
+   "name": "HC_gly-CB_gly-CM_gly-HZ_gly",
+   "match": [
+    "HC_gly",
+    "CB_gly",
+    "CM_gly",
+    "HZ_gly"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.3,
+    0.0
+   ],
+   "comment": "glycerol HC-CB-CM-HZ: V1 V2 V3 0.0 0.0 0.3 kcal/mol (Table S6)"
+  },
+  {
+   "name": "OH_gly-CB_gly-CM_gly-HZ_gly",
+   "match": [
+    "OH_gly",
+    "CB_gly",
+    "CM_gly",
+    "HZ_gly"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.468,
+    0.0
+   ],
+   "comment": "glycerol OH-CB-CM-HZ: V1 V2 V3 0.0 0.0 0.468 kcal/mol (Table S6)"
+  },
+  {
+   "name": "HO_gly-OH_gly-CB_gly-HC_gly",
+   "match": [
+    "HO_gly",
+    "OH_gly",
+    "CB_gly",
+    "HC_gly"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.352,
+    0.0
+   ],
+   "comment": "glycerol HO-OH-CB-HC: V1 V2 V3 0.0 0.0 0.352 kcal/mol (Table S6)"
+  },
+  {
+   "name": "OB_lev-CB_lev-OH_lev-HO_lev",
+   "match": [
+    "OB_lev",
+    "CB_lev",
+    "OH_lev",
+    "HO_lev"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    5.5,
+    0.0,
+    0.0
+   ],
+   "comment": "levulinic acid OB-CB-OH-HO: V1 V2 V3 0.0 5.5 0.0 kcal/mol (Table S6)"
+  },
+  {
+   "name": "CZ_lev-CB_lev-OH_lev-HO_lev",
+   "match": [
+    "CZ_lev",
+    "CB_lev",
+    "OH_lev",
+    "HO_lev"
+   ],
+   "style": "opls",
+   "params": [
+    1.5,
+    5.5,
+    0.0,
+    0.0
+   ],
+   "comment": "levulinic acid CZ-CB-OH-HO: V1 V2 V3 1.5 5.5 0.0 kcal/mol (Table S6)"
+  },
+  {
+   "name": "HZ_lev-CZ_lev-CB_lev-OB_lev",
+   "match": [
+    "HZ_lev",
+    "CZ_lev",
+    "CB_lev",
+    "OB_lev"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "levulinic acid HZ-CZ-CB-OB: V1 V2 V3 0.0 0.0 0.0 kcal/mol (Table S6)"
+  },
+  {
+   "name": "CF_lev-CZ_lev-CB_lev-OB_lev",
+   "match": [
+    "CF_lev",
+    "CZ_lev",
+    "CB_lev",
+    "OB_lev"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "levulinic acid CF-CZ-CB-OB: V1 V2 V3 0.0 0.0 0.0 kcal/mol (Table S6)"
+  },
+  {
+   "name": "HF_lev-CF_lev-CZ_lev-CB_lev",
+   "match": [
+    "HF_lev",
+    "CF_lev",
+    "CZ_lev",
+    "CB_lev"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    -0.1,
+    0.0
+   ],
+   "comment": "levulinic acid HF-CF-CZ-CB: V1 V2 V3 0.0 0.0 -0.1 kcal/mol (Table S6)"
+  },
+  {
+   "name": "CD_lev-CF_lev-CZ_lev-CB_lev",
+   "match": [
+    "CD_lev",
+    "CF_lev",
+    "CZ_lev",
+    "CB_lev"
+   ],
+   "style": "opls",
+   "params": [
+    -0.55,
+    0.0,
+    1.0,
+    0.0
+   ],
+   "comment": "levulinic acid CD-CF-CZ-CB: V1 V2 V3 -0.55 0.0 1.0 kcal/mol (Table S6)"
+  },
+  {
+   "name": "CT_lev-CD_lev-CF_lev-CZ_lev",
+   "match": [
+    "CT_lev",
+    "CD_lev",
+    "CF_lev",
+    "CZ_lev"
+   ],
+   "style": "opls",
+   "params": [
+    1.454,
+    -0.144,
+    -0.775,
+    0.0
+   ],
+   "comment": "levulinic acid CT-CD-CF-CZ: V1 V2 V3 1.454 -0.144 -0.775 kcal/mol (Table S6)"
+  },
+  {
+   "name": "HT_lev-CT_lev-CD_lev-CF_lev",
+   "match": [
+    "HT_lev",
+    "CT_lev",
+    "CD_lev",
+    "CF_lev"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.275,
+    0.0
+   ],
+   "comment": "levulinic acid HT-CT-CD-CF: V1 V2 V3 0.0 0.0 0.275 kcal/mol (Table S6)"
+  },
+  {
+   "name": "OC_lev-CD_lev-CF_lev-CZ_lev",
+   "match": [
+    "OC_lev",
+    "CD_lev",
+    "CF_lev",
+    "CZ_lev"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "levulinic acid OC-CD-CF-CZ: V1 V2 V3 0.0 0.0 0.0 kcal/mol (Table S6)"
+  },
+  {
+   "name": "HZ_lev-CZ_lev-CB_lev-OH_lev",
+   "match": [
+    "HZ_lev",
+    "CZ_lev",
+    "CB_lev",
+    "OH_lev"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "levulinic acid HZ-CZ-CB-OH: V1 V2 V3 0.0 0.0 0.0 kcal/mol (Table S6)"
+  },
+  {
+   "name": "CF_lev-CZ_lev-CB_lev-OH_lev",
+   "match": [
+    "CF_lev",
+    "CZ_lev",
+    "CB_lev",
+    "OH_lev"
+   ],
+   "style": "opls",
+   "params": [
+    1.0,
+    0.546,
+    0.45,
+    0.0
+   ],
+   "comment": "levulinic acid CF-CZ-CB-OH: V1 V2 V3 1.0 0.546 0.45 kcal/mol (Table S6)"
+  },
+  {
+   "name": "HF_lev-CF_lev-CZ_lev-HZ_lev",
+   "match": [
+    "HF_lev",
+    "CF_lev",
+    "CZ_lev",
+    "HZ_lev"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.3,
+    0.0
+   ],
+   "comment": "levulinic acid HF-CF-CZ-HZ: V1 V2 V3 0.0 0.0 0.3 kcal/mol (Table S6)"
+  },
+  {
+   "name": "CD_lev-CF_lev-CZ_lev-HZ_lev",
+   "match": [
+    "CD_lev",
+    "CF_lev",
+    "CZ_lev",
+    "HZ_lev"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    -0.1,
+    0.0
+   ],
+   "comment": "levulinic acid CD-CF-CZ-HZ: V1 V2 V3 0.0 0.0 -0.1 kcal/mol (Table S6)"
+  },
+  {
+   "name": "CT_lev-CD_lev-CF_lev-HF_lev",
+   "match": [
+    "CT_lev",
+    "CD_lev",
+    "CF_lev",
+    "HF_lev"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.275,
+    0.0
+   ],
+   "comment": "levulinic acid CT-CD-CF-HF: V1 V2 V3 0.0 0.0 0.275 kcal/mol (Table S6)"
+  },
+  {
+   "name": "OC_lev-CD_lev-CF_lev-HF_lev",
+   "match": [
+    "OC_lev",
+    "CD_lev",
+    "CF_lev",
+    "HF_lev"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "levulinic acid OC-CD-CF-HF: V1 V2 V3 0.0 0.0 0.0 kcal/mol (Table S6)"
+  },
+  {
+   "name": "OC_lev-CD_lev-CT_lev-HT_lev",
+   "match": [
+    "OC_lev",
+    "CD_lev",
+    "CT_lev",
+    "HT_lev"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "levulinic acid OC-CD-CT-HT: V1 V2 V3 0.0 0.0 0.0 kcal/mol (Table S6)"
+  },
+  {
+   "name": "HO_mal-OH_mal-CD_mal-CT_mal",
+   "match": [
+    "HO_mal",
+    "OH_mal",
+    "CD_mal",
+    "CT_mal"
+   ],
+   "style": "opls",
+   "params": [
+    1.5,
+    5.5,
+    0.0,
+    0.0
+   ],
+   "comment": "malonic acid HO-OH-CD-CT: V1 V2 V3 1.5 5.5 0.0 kcal/mol (Table S6)"
+  },
+  {
+   "name": "HC_mal-CT_mal-CD_mal-OD_mal",
+   "match": [
+    "HC_mal",
+    "CT_mal",
+    "CD_mal",
+    "OD_mal"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "malonic acid HC-CT-CD-OD: V1 V2 V3 0.0 0.0 0.0 kcal/mol (Table S6)"
+  },
+  {
+   "name": "CD_mal-CT_mal-CD_mal-OH_mal",
+   "match": [
+    "CD_mal",
+    "CT_mal",
+    "CD_mal",
+    "OH_mal"
+   ],
+   "style": "opls",
+   "params": [
+    1.0,
+    0.546,
+    0.45,
+    0.0
+   ],
+   "comment": "malonic acid CD-CT-CD-OH: V1 V2 V3 1.0 0.546 0.45 kcal/mol (Table S6)"
+  },
+  {
+   "name": "HC_mal-CT_mal-CD_mal-OH_mal",
+   "match": [
+    "HC_mal",
+    "CT_mal",
+    "CD_mal",
+    "OH_mal"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "malonic acid HC-CT-CD-OH: V1 V2 V3 0.0 0.0 0.0 kcal/mol (Table S6)"
+  },
+  {
+   "name": "OD_mal-CD_mal-OH_mal-HO_mal",
+   "match": [
+    "OD_mal",
+    "CD_mal",
+    "OH_mal",
+    "HO_mal"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    5.5,
+    0.0,
+    0.0
+   ],
+   "comment": "malonic acid OD-CD-OH-HO: V1 V2 V3 0.0 5.5 0.0 kcal/mol (Table S6)"
+  },
+  {
+   "name": "OD_mal-CD_mal-CT_mal-CD_mal",
+   "match": [
+    "OD_mal",
+    "CD_mal",
+    "CT_mal",
+    "CD_mal"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "malonic acid OD-CD-CT-CD: V1 V2 V3 0.0 0.0 0.0 kcal/mol (Table S6)"
+  },
+  {
+   "name": "HO_ox-OH_ox-CD_ox-OD_ox",
+   "match": [
+    "HO_ox",
+    "OH_ox",
+    "CD_ox",
+    "OD_ox"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    5.5,
+    0.0,
+    0.0
+   ],
+   "comment": "oxalic acid HO-OH-CD-OD: V1 V2 V3 0.0 5.5 0.0 kcal/mol (Table S6)"
+  },
+  {
+   "name": "OD_ox-CD_ox-CD_ox-OD_ox",
+   "match": [
+    "OD_ox",
+    "CD_ox",
+    "CD_ox",
+    "OD_ox"
+   ],
+   "style": "opls",
+   "params": [
+    1.6,
+    3.2,
+    0.0,
+    0.0
+   ],
+   "comment": "oxalic acid OD-CD-CD-OD: V1 V2 V3 1.6 3.2 0.0 kcal/mol (Table S6)"
+  },
+  {
+   "name": "OH_ox-CD_ox-CD_ox-OH_ox",
+   "match": [
+    "OH_ox",
+    "CD_ox",
+    "CD_ox",
+    "OH_ox"
+   ],
+   "style": "opls",
+   "params": [
+    1.6,
+    3.2,
+    0.0,
+    0.0
+   ],
+   "comment": "oxalic acid OH-CD-CD-OH: V1 V2 V3 1.6 3.2 0.0 kcal/mol (Table S6)"
+  },
+  {
+   "name": "OD_ox-CD_ox-CD_ox-OH_ox",
+   "match": [
+    "OD_ox",
+    "CD_ox",
+    "CD_ox",
+    "OH_ox"
+   ],
+   "style": "opls",
+   "params": [
+    1.6,
+    3.2,
+    0.0,
+    0.0
+   ],
+   "comment": "oxalic acid OD-CD-CD-OH: V1 V2 V3 1.6 3.2 0.0 kcal/mol (Table S6)"
+  },
+  {
+   "name": "HO_ox-OH_ox-CD_ox-CD_ox",
+   "match": [
+    "HO_ox",
+    "OH_ox",
+    "CD_ox",
+    "CD_ox"
+   ],
+   "style": "opls",
+   "params": [
+    3.0,
+    5.5,
+    0.0,
+    0.0
+   ],
+   "comment": "oxalic acid HO-OH-CD-CD: V1 V2 V3 3.0 5.5 0.0 kcal/mol (Table S6)"
+  },
+  {
+   "name": "HO_phe-OH_phe-CO_phe-CB_phe",
+   "match": [
+    "HO_phe",
+    "OH_phe",
+    "CO_phe",
+    "CB_phe"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    1.682,
+    0.0,
+    0.0
+   ],
+   "comment": "phenol HO-OH-CO-CB: V1 V2 V3 0.0 1.682 0.0 kcal/mol (Table S6)"
+  },
+  {
+   "name": "CB_phe-CB_phe-CB_phe-CB_phe",
+   "match": [
+    "CB_phe",
+    "CB_phe",
+    "CB_phe",
+    "CB_phe"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    7.25,
+    0.0,
+    0.0
+   ],
+   "comment": "phenol CB-CB-CB-CB: V1 V2 V3 0.0 7.25 0.0 kcal/mol (Table S6)"
+  },
+  {
+   "name": "CO_phe-CB_phe-CB_phe-CB_phe",
+   "match": [
+    "CO_phe",
+    "CB_phe",
+    "CB_phe",
+    "CB_phe"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    7.25,
+    0.0,
+    0.0
+   ],
+   "comment": "phenol CO-CB-CB-CB: V1 V2 V3 0.0 7.25 0.0 kcal/mol (Table S6)"
+  },
+  {
+   "name": "CB_phe-CB_phe-CO_phe-CB_phe",
+   "match": [
+    "CB_phe",
+    "CB_phe",
+    "CO_phe",
+    "CB_phe"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    7.25,
+    0.0,
+    0.0
+   ],
+   "comment": "phenol CB-CB-CO-CB: V1 V2 V3 0.0 7.25 0.0 kcal/mol (Table S6)"
+  },
+  {
+   "name": "CB_phe-CB_phe-CB_phe-HB_phe",
+   "match": [
+    "CB_phe",
+    "CB_phe",
+    "CB_phe",
+    "HB_phe"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    7.25,
+    0.0,
+    0.0
+   ],
+   "comment": "phenol CB-CB-CB-HB: V1 V2 V3 0.0 7.25 0.0 kcal/mol (Table S6)"
+  },
+  {
+   "name": "CO_phe-CB_phe-CB_phe-HB_phe",
+   "match": [
+    "CO_phe",
+    "CB_phe",
+    "CB_phe",
+    "HB_phe"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    7.25,
+    0.0,
+    0.0
+   ],
+   "comment": "phenol CO-CB-CB-HB: V1 V2 V3 0.0 7.25 0.0 kcal/mol (Table S6)"
+  },
+  {
+   "name": "CB_phe-CO_phe-CB_phe-HB_phe",
+   "match": [
+    "CB_phe",
+    "CO_phe",
+    "CB_phe",
+    "HB_phe"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    7.25,
+    0.0,
+    0.0
+   ],
+   "comment": "phenol CB-CO-CB-HB: V1 V2 V3 0.0 7.25 0.0 kcal/mol (Table S6)"
+  },
+  {
+   "name": "OH_phe-CO_phe-CB_phe-CB_phe",
+   "match": [
+    "OH_phe",
+    "CO_phe",
+    "CB_phe",
+    "CB_phe"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    7.25,
+    0.0,
+    0.0
+   ],
+   "comment": "phenol OH-CO-CB-CB: V1 V2 V3 0.0 7.25 0.0 kcal/mol (Table S6)"
+  },
+  {
+   "name": "OH_phe-CO_phe-CB_phe-HB_phe",
+   "match": [
+    "OH_phe",
+    "CO_phe",
+    "CB_phe",
+    "HB_phe"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    7.25,
+    0.0,
+    0.0
+   ],
+   "comment": "phenol OH-CO-CB-HB: V1 V2 V3 0.0 7.25 0.0 kcal/mol (Table S6)"
+  },
+  {
+   "name": "HB_phe-CB_phe-CB_phe-HB_phe",
+   "match": [
+    "HB_phe",
+    "CB_phe",
+    "CB_phe",
+    "HB_phe"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    7.25,
+    0.0,
+    0.0
+   ],
+   "comment": "phenol HB-CB-CB-HB: V1 V2 V3 0.0 7.25 0.0 kcal/mol (Table S6)"
+  },
+  {
+   "name": "HT_urea-N_urea-C_urea-O_urea",
+   "match": [
+    "HT_urea",
+    "N_urea",
+    "C_urea",
+    "O_urea"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    4.9,
+    0.0,
+    0.0
+   ],
+   "comment": "urea HT-N-C-O: V1 V2 V3 0.0 4.9 0.0 kcal/mol (Table S6)"
+  },
+  {
+   "name": "HC_urea-N_urea-C_urea-O_urea",
+   "match": [
+    "HC_urea",
+    "N_urea",
+    "C_urea",
+    "O_urea"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    4.9,
+    0.0,
+    0.0
+   ],
+   "comment": "urea HC-N-C-O: V1 V2 V3 0.0 4.9 0.0 kcal/mol (Table S6)"
+  },
+  {
+   "name": "HT_urea-N_urea-C_urea-N_urea",
+   "match": [
+    "HT_urea",
+    "N_urea",
+    "C_urea",
+    "N_urea"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    4.9,
+    0.0,
+    0.0
+   ],
+   "comment": "urea HT-N-C-N: V1 V2 V3 0.0 4.9 0.0 kcal/mol (Table S6)"
+  },
+  {
+   "name": "HC_urea-N_urea-C_urea-N_urea",
+   "match": [
+    "HC_urea",
+    "N_urea",
+    "C_urea",
+    "N_urea"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    4.9,
+    0.0,
+    0.0
+   ],
+   "comment": "urea HC-N-C-N: V1 V2 V3 0.0 4.9 0.0 kcal/mol (Table S6)"
+  },
+  {
+   "name": "HG_etg-CG_etg-CG_etg-HG_etg",
+   "match": [
+    "HG_etg",
+    "CG_etg",
+    "CG_etg",
+    "HG_etg"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "ethylene glycol HG-CG-CG-HG: zero; Table S6 lists only the two heavy-atom torsions of ref. 3"
+  },
+  {
+   "name": "HG_etg-CG_etg-CG_etg-OG_etg",
+   "match": [
+    "HG_etg",
+    "CG_etg",
+    "CG_etg",
+    "OG_etg"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "ethylene glycol HG-CG-CG-OG: zero; Table S6 lists only the two heavy-atom torsions of ref. 3"
+  },
+  {
+   "name": "HG_etg-CG_etg-OG_etg-HO_etg",
+   "match": [
+    "HG_etg",
+    "CG_etg",
+    "OG_etg",
+    "HO_etg"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "ethylene glycol HG-CG-OG-HO: zero; Table S6 lists only the two heavy-atom torsions of ref. 3"
+  }
+ ],
+ "impropers": [
+  {
+   "name": "*-NA-*-*",
+   "match": [
+    "*",
+    "NA",
+    "*",
+    "*"
+   ],
+   "style": "cvff",
+   "params": [
+    1.0,
+    -1,
+    2
+   ],
+   "comment": "choline X-NA-X-X: V2 2.0 kcal/mol, improper on NA (Table S3)"
+  },
+  {
+   "name": "*-CD_mal-*-*",
+   "match": [
+    "*",
+    "CD_mal",
+    "*",
+    "*"
+   ],
+   "style": "cvff",
+   "params": [
+    10.5,
+    -1,
+    2
+   ],
+   "comment": "malonic acid X-CD-X-X: V2 21.0 kcal/mol, improper on CD (Table S6)"
+  },
+  {
+   "name": "*-CD_ox-*-*",
+   "match": [
+    "*",
+    "CD_ox",
+    "*",
+    "*"
+   ],
+   "style": "cvff",
+   "params": [
+    10.5,
+    -1,
+    2
+   ],
+   "comment": "oxalic acid X-CD-X-X: V2 21.0 kcal/mol, improper on CD (Table S6)"
+  },
+  {
+   "name": "*-C_urea-*-*",
+   "match": [
+    "*",
+    "C_urea",
+    "*",
+    "*"
+   ],
+   "style": "cvff",
+   "params": [
+    10.5,
+    -1,
+    2
+   ],
+   "comment": "urea X-C-X-X: V2 21.0 kcal/mol, improper on C (Table S6)"
+  },
+  {
+   "name": "*-N_urea-*-*",
+   "match": [
+    "*",
+    "N_urea",
+    "*",
+    "*"
+   ],
+   "style": "cvff",
+   "params": [
+    2.5,
+    -1,
+    2
+   ],
+   "comment": "urea X-N-X-X: V2 5.0 kcal/mol, improper on N (Table S6)"
+  }
+ ],
+ "notes": [
+  "built by CAPS (bench/ff/make_opls_des_doherty2018.py) from the paper and its SI only; each term cites its table",
+  "charges as the SI prints them, built for a +-0.8 e ion scaling: choline +0.8, chloride -0.8, every HBD neutral",
+  "choline chloride's charges and Lennard-Jones terms refitted to reline's ND/EPSR structure; the HBDs' non-bonded terms tuned against choline chloride: for DES mixtures only, not the pure HBD liquids (paper p. 9984)",
+  "HBD bonds, bends and torsions as the SI's Tables S5 and S6 print them (OPLS-AA's, ethylene glycol's torsions from Szefczyk & Cordeiro 2011); choline's from OPLS-2009IL (Table S2, S3)",
+  "ethylene glycol: Table S6 lists only OH-CG-CG-OH and CG-CG-OH-HO (Szefczyk & Cordeiro's); its hydrogen torsions H-C-C-H, H-C-C-O and H-C-O-H are zero",
+  "rows X-c-X-X of Tables S3 and S6 read as impropers on c, V2 / 2 (1 - cos 2 phi), every triple of its neighbours (four on choline's N); the all-zero X-CM-X-X and X-CT-X-X left out; no improper for phenol's ring or levulinic acid's carbonyls (none listed)",
+  "levulinic acid's bend HO-CB-CZ (Table S5) read as OH-CB-CZ; ethylene glycol's OPLS-AA class names in Table S5 (CT, HC) and the O called OH in Table S6 and Scheme S2 read as Table S4's CG, HG, OG",
+  "urea's HC (cis to O) and HT (trans) have identical terms; CAPS's rules assign HT to every urea H, and the H-N-H bend (HC-N-HT, Table S5) is matched as H?-N-H?",
+  "ion_charge_scale 0.8: an ion's types add up to its formal charge times 0.8 (the paper's scaling)",
+  "geometric mixing, 1-4 pairs scaled by 0.5, cut-off 16 A (the paper's GROMACS set-up, PME)",
+  "masses: standard atomic masses (the paper gives none)"
+ ],
+ "typing": "../typing/oplsdes-doherty2018.typing.json"
+}

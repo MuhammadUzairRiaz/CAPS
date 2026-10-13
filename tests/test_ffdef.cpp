@@ -1486,3 +1486,66 @@ TEST(FFDef, ClandpDesComponentsTypedWhole) {
   EXPECT_NEAR(rule(def.impropers, "N-N-C-O")[0], 87.864 / 2 / 4.184, 1e-12);
   EXPECT_DOUBLE_EQ(def.type("CU")->charge, 0.142);
 }
+
+// OPLS-DES from Doherty & Acevedo's paper and SI only (bench/ff/make_opls_des_doherty2018.py,
+// bench/typing/make_oplsdes_doherty2018_rules.py): the paper's nine molecules typed as Schemes S1 and S2 type them, choline
+// and chloride at +-0.8 e (ion_charge_scale), the HBDs neutral, every bonded term found; molecules outside the set
+// untyped; numbers as the SI's tables print them
+TEST(FFDef, OplsDesDoherty2018FromThePaper) {
+  const FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/oplsdes-doherty2018.json");
+  EXPECT_DOUBLE_EQ(def.ion_charge_scale, 0.8);
+  auto typed = [&](const std::string& smi, std::map<std::string, int>* count = nullptr) {
+    System s = build_molecule(smi).system;
+    std::string ch = "types";
+    prepare_for_forcefield(s, def, ch);
+    const TypingResult tr = assign_types(s, def);
+    if (count)
+      for (const auto& t : tr.types) ++(*count)[t];
+    if (tr.untyped) return std::make_pair(tr.untyped, 0.0);
+    ParamReport rep;
+    const ForceField f = parameterize(s, def, tr.types, "types", &rep, false);
+    EXPECT_TRUE(rep.missing.empty()) << smi << ": " << (rep.missing.empty() ? "" : rep.missing[0]);
+    double q = 0;
+    for (double x : f.charge) q += x;
+    int formal = 0;
+    for (int c : perceive(s).charge) formal += c;
+    EXPECT_NEAR(q, 0.8 * formal, 1e-9) << smi;
+    return std::make_pair(0, q);
+  };
+  const std::vector<std::pair<std::string, double>> whole = {
+      {"C[N+](C)(C)CCO", 0.8}, {"[Cl-]", -0.8}, {"OCCO", 0}, {"OCC(O)CO", 0}, {"CC(=O)CCC(=O)O", 0}, {"OC(=O)CC(=O)O", 0},
+      {"OC(=O)C(=O)O", 0}, {"Oc1ccccc1", 0}, {"NC(N)=O", 0}};
+  for (const auto& [smi, q] : whole) {
+    const auto r = typed(smi);
+    EXPECT_EQ(r.first, 0) << smi;
+    EXPECT_NEAR(r.second, q, 1e-9) << smi;
+  }
+  for (const std::string smi : {"CC(O)CO", "CC(=O)O", "OC(=O)CCC(=O)O", "C[N+](C)(C)C", "C[N+](C)(C)CC(=O)[O-]", "[Br-]", "CNC(N)=O"})
+    EXPECT_GT(typed(smi).first, 0) << smi;
+  std::map<std::string, int> c;   // Scheme S1
+  typed("C[N+](C)(C)CCO", &c);
+  EXPECT_EQ(c, (std::map<std::string, int>{{"NA", 1}, {"CA", 3}, {"HA", 9}, {"CS", 1}, {"HS", 2}, {"CW", 1}, {"HW", 2}, {"OY", 1}, {"HY", 1}}));
+  c.clear();   // Scheme S2
+  typed("OCC(O)CO", &c);
+  EXPECT_EQ(c, (std::map<std::string, int>{{"CM_gly", 1}, {"OM_gly", 1}, {"HM_gly", 1}, {"HZ_gly", 1}, {"CB_gly", 2}, {"HC_gly", 4},
+                                           {"OH_gly", 2}, {"HO_gly", 2}}));
+  c.clear();
+  typed("CC(=O)CCC(=O)O", &c);
+  EXPECT_EQ(c["CZ_lev"], 1);
+  EXPECT_EQ(c["CF_lev"], 1);
+  EXPECT_EQ(c["OC_lev"], 1);
+  EXPECT_EQ(c["OB_lev"], 1);
+  auto rule = [&](const std::vector<FFRule>& v, const std::string& name) {
+    const auto p = std::find_if(v.begin(), v.end(), [&](const FFRule& x) { return x.name == name; });
+    EXPECT_NE(p, v.end()) << name;
+    return p == v.end() ? std::vector<double>(4, 0.0) : p->params;
+  };
+  EXPECT_DOUBLE_EQ(def.type("NA")->charge, 0.791);                         // Table S1
+  EXPECT_DOUBLE_EQ(def.type("OM_gly")->charge, -0.5447);                   // Table S4
+  EXPECT_EQ(rule(def.dihedrals, "OY-CW-CS-NA"), (std::vector<double>{-6.0, -5.0, 3.2, 0.0}));   // Table S3
+  EXPECT_EQ(rule(def.bonds, "CS-HS"), (std::vector<double>{340.0, 1.0805}));                  // Table S2
+  EXPECT_EQ(rule(def.angles, "CD_ox-CD_ox-OH_ox"), (std::vector<double>{70.96, 118.03}));     // Table S5
+  EXPECT_EQ(rule(def.angles, "OH_lev-CB_lev-CZ_lev"), (std::vector<double>{70.0, 108.0}));    // Table S5's HO-CB-CZ
+  EXPECT_EQ(rule(def.impropers, "*-CD_mal-*-*"), (std::vector<double>{10.5, -1.0, 2.0}));     // Table S6, V2 21
+  EXPECT_EQ(rule(def.impropers, "*-NA-*-*"), (std::vector<double>{1.0, -1.0, 2.0}));          // Table S3, V2 2
+}

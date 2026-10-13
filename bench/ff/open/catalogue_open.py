@@ -77,6 +77,19 @@ ENTRIES = {
                    "levulinic acid, ketones) typed whole and neutral or at their ion charge (bench/ff/check_clandp_des_components.py); "
                    "those des.ff's charges cannot make neutral (methanol, malonic and oxalic acid) left untyped",
                    ("CL&P deep-eutectic solvents", "opls_des", 13), ["opls-des"]),
+    "oplsdes-doherty2018": ("OPLS-DES (Doherty & Acevedo 2018)", "2018 (SI Tables S1-S6)",
+                            ["B. Doherty, O. Acevedo, J. Phys. Chem. B 122, 9982 (2018)",
+                             "S. V. Sambasivarao, O. Acevedo, J. Chem. Theory Comput. 5, 1038 (2009)",
+                             "W. L. Jorgensen, D. S. Maxwell, J. Tirado-Rives, J. Am. Chem. Soc. 118, 11225 (1996)"],
+                            {"source": "the paper and its Supporting Information (Tables S1-S6, Schemes S1-S2); "
+                                       "bench/ff/make_opls_des_doherty2018.py",
+                             "license": "published parameters of the paper"},
+                            "CAPS rules for the paper's nine molecules as the SI's Schemes S1 and S2 type them, each rule only inside "
+                            "its whole molecule (bench/typing/make_oplsdes_doherty2018_rules.py): choline, chloride, ethylene glycol, "
+                            "glycerol, levulinic, malonic and oxalic acid, phenol, urea, 102 / 102 atoms by parameters (100 by name: "
+                            "urea's cis H, HC, has HT's terms and is typed HT); choline +0.8, chloride -0.8, the HBDs neutral, no "
+                            "missing term (bench/ff/check_oplsdes_doherty2018_components.py); LAMMPS and GROMACS reproduce CAPS's "
+                            "energies on reline, glyceline and the other HBDs", ("OPLS-DES (Doherty & Acevedo 2018)", "oplsdes_doherty2018", 13), []),
     "dreiding1990": ("DREIDING", "Mayo, Olafson, Goddard 1990 (Table I and the paper's rules)",
                      ["S. L. Mayo, B. D. Olafson, W. A. Goddard III, J. Phys. Chem. 94, 8897 (1990)"],
                      {"source": "the paper: J. Phys. Chem. 94, 8897 (1990), Table I (radii, angles, van der Waals) and its rules for "

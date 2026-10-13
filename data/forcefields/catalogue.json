@@ -1588,6 +1588,38 @@
    }
   },
   {
+   "id": "oplsdes-doherty2018",
+   "name": "OPLS-DES (Doherty & Acevedo 2018)",
+   "version": "2018 (SI Tables S1-S6)",
+   "references": [
+    "B. Doherty, O. Acevedo, J. Phys. Chem. B 122, 9982 (2018)",
+    "S. V. Sambasivarao, O. Acevedo, J. Chem. Theory Comput. 5, 1038 (2009)",
+    "W. L. Jorgensen, D. S. Maxwell, J. Tirado-Rives, J. Am. Chem. Soc. 118, 11225 (1996)"
+   ],
+   "origin": "built from source",
+   "source": "the paper and its Supporting Information (Tables S1-S6, Schemes S1-S2); bench/ff/make_opls_des_doherty2018.py",
+   "license": "published parameters of the paper",
+   "status": "validated",
+   "file": "oplsdes-doherty2018.json",
+   "counts": {
+    "atom_types": 54,
+    "pairs": 54,
+    "bonds": 48,
+    "angles": 68,
+    "dihedrals": 66,
+    "impropers": 5
+   },
+   "typing": {
+    "rules": "typing/oplsdes-doherty2018.typing.json",
+    "evidence": "CAPS rules for the paper's nine molecules as the SI's Schemes S1 and S2 type them, each rule only inside its whole molecule (bench/typing/make_oplsdes_doherty2018_rules.py): choline, chloride, ethylene glycol, glycerol, levulinic, malonic and oxalic acid, phenol, urea, 102 / 102 atoms by parameters (100 by name: urea's cis H, HC, has HT's terms and is typed HT); choline +0.8, chloride -0.8, the HBDs neutral, no missing term (bench/ff/check_oplsdes_doherty2018_components.py); LAMMPS and GROMACS reproduce CAPS's energies on reline, glyceline and the other HBDs"
+   },
+   "list": {
+    "label": "OPLS-DES (Doherty & Acevedo 2018)",
+    "key": "oplsdes_doherty2018",
+    "order": 13
+   }
+  },
+  {
    "id": "dreiding1990",
    "name": "DREIDING",
    "version": "Mayo, Olafson, Goddard 1990 (Table I and the paper's rules)",

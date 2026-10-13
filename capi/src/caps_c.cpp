@@ -1065,9 +1065,14 @@ void field_run(caps_doc* d) {
     for (double q : F.ff->charge) net += q;
     int formal = 0;
     for (int c : caps::perceive(s).charge) formal += c;
-    if (std::fabs(net - formal) > 1e-3) {
-      char b[240];
-      std::snprintf(b, sizeof b, "charges: the force field's charges add up to %+.3f e, not the formal charge %+d e (a group typed only partly)", net, formal);
+    // a force field built for scaled ions (OPLS-DES: +-0.8 e) is checked against the formal charge times its scale
+    if (std::fabs(net - formal * def.ion_charge_scale) > 1e-3) {
+      char b[320];
+      if (def.ion_charge_scale != 1.0)
+        std::snprintf(b, sizeof b, "charges: the force field's charges add up to %+.3f e, not the formal charge %+d e times its ion scale %g (a group typed only partly)",
+                      net, formal, def.ion_charge_scale);
+      else
+        std::snprintf(b, sizeof b, "charges: the force field's charges add up to %+.3f e, not the formal charge %+d e (a group typed only partly)", net, formal);
       F.rep.missing.push_back(b);
     }
   }

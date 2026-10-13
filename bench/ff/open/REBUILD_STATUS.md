@@ -29,7 +29,7 @@ State of 2026-10-13 (branch `ff-rebuild-rest`, commits 1053f7a2 and b2ee52e2; th
 | opls2020 | OPLS2020.par | oplsaa2024 | as above | yes | as above | other session (OPLS) |
 | opls-aam | OPLS_AAM.par | oplsaam-jorgensen | Jorgensen lab `top_opls_aam.inp`, `par_opls_aam.inp` | yes (`opls-aam`) | CC BY 4.0 | done (other session) |
 | opls-clp | OPLS_CL_P.par | clandp | Padua's `il.ff` (github.com/paduagroup/clandp) | yes (`clandp-dl` is the reference only) | MIT | other session (CL&P) |
-| opls-des | OPLS_DES.par | clandp-des | Padua's `des.ff` of 2025/12/19 (github.com/paduagroup/clandp), CL&P's DES set; DL_FIELD's file was Doherty & Acevedo's OPLS-DES, J. Phys. Chem. B 122, 9982 (2018), a different parameter set (charges scaled by 0.8, refitted Lennard-Jones) whose own files (github.com/orlandoacevedo/DES, GPL 3) are local in `opls-des-dl/DES-master` and not converted | yes (`clandp-dl/clandp-master/des.ff`) | MIT | done (section 3) |
+| opls-des | OPLS_DES.par | oplsdes-doherty2018 (the set DL_FIELD's file held); clandp-des (CL&P's DES set) | oplsdes-doherty2018: Doherty & Acevedo, J. Phys. Chem. B 122, 9982 (2018) and its SI (Tables S1-S6, Schemes S1-S2), transcribed; Acevedo's own GROMACS files (github.com/orlandoacevedo/DES, GPL 3, local in `opls-des-dl/DES-master`) are an accuracy reference only, nothing taken from them. clandp-des: Padua's `des.ff` of 2025/12/19 (github.com/paduagroup/clandp) | yes (`papers/jp8b06647.pdf`, `papers/jp8b06647_si_001.pdf`; `clandp-dl/clandp-master/des.ff`) | published parameters; MIT | done (section 3) |
 | trappe-ua | TRAPPE_UA.par | trappe-ua-umn, trappe-ua-foyer | TraPPE database (trappe.oit.umn.edu); foyer `trappe-ua.xml` | yes (`trappe-site`, `foyer-trappe`) | published parameters; MIT (foyer) | done (other session) |
 | **trappe-eh** | TRAPPE_EH.par | **trappe-eh-umn** | TraPPE database, EH family (Rai & Siepmann, J. Phys. Chem. B 111, 10790 (2007) and the later EH papers) | yes (`trappe-site`) | published parameters, cited per term | **done here** |
 | **misc** | MISC_FF.par | **omalley2013-alkanes, plant2007-methanol, ramsahye2005-nay (chloroform), peguin2009-hfa134a** | the four papers (see section 3) | yes (`papers/c3cp52653d.pdf`, `jp0674524.pdf`, `jp046958o.pdf`, `jp806213w.pdf`) | published parameters | **done here** (one torsion paper missing) |
@@ -58,6 +58,7 @@ per-paper libraries above.
 | oplsaam-jorgensen | Jorgensen lab CHARMM-format files | CC BY 4.0 | original source |
 | clandp | Padua's `il.ff` | MIT | original source |
 | clandp-des | Padua's `des.ff` | MIT | original source |
+| oplsdes-doherty2018 | Doherty & Acevedo 2018, the paper's SI tables | published parameters | original source (Acevedo's GPL 3 files are the reference only) |
 | dreiding1990 | the 1990 paper | published parameters | original source |
 | trappe-ua-umn, trappe-ua-foyer | TraPPE database; foyer `trappe-ua.xml` | published parameters; MIT | original source |
 | **trappe-eh-umn** | TraPPE database, EH models | published parameters | original source (this branch) |
@@ -79,6 +80,7 @@ per-paper libraries above.
 | MISC: HFA134a | peguin2009-hfa134a | `make_zeolite_sorbates.py` | `HFA_134a` 8 / 8 atoms | agrees | agrees | same |
 | TraPPE-EH | trappe-eh-umn | `bench/ff/make_trappe_eh.py SITE_DIR --check` | 9 templates, 94 / 94 atoms (17 carry the key of a symmetry-equivalent position); the database's own 65 models 848 / 848 sites | agrees (flexible and rigid sets) | agrees | `FFDef.TrappeEhModelsTypedAsThemselves` |
 | CL&P deep-eutectic solvents | clandp-des | `bench/ff/convert_fftool.py des.ff` (47 types, 16 bonds, 30 angles, 44 dihedrals, 6 impropers), `bench/typing/make_clandp_des_rules.py` (45 rules) | not comparable: DL_FIELD's OPLS_DES is Acevedo's set. Against Padua's own files (`validate_fftool_types.py`): the 14 whose types des.ff defines (cholinium.xyz, N1110, N1111, N2220, N2222, N4444, P1111, P66614, c1c1pyrr, c3c1pyrr, c4c1pyrr, Cl, Br, oac) 362 / 362 atoms, each at its integer charge; 29 DES components typed whole and neutral or at their ion charge, 7 that des.ff cannot make neutral left untyped (`check_clandp_des_components.py`) | agrees: reline and glyceline boxes (608 and 600 atoms, periodic) and a vacuum set of 10 components, energy terms 1.0e-7 to 3.8e-7, forces <= 1.9e-5 kcal/mol/A, virial <= 2.2e-6 (exact styles); native styles bonded and vdW 1.6e-8 to 3.8e-7 | agrees: reline and glyceline with PME 6.9e-6 and 3.3e-5, vacuum set 5.0e-6 | `FFDef.ClandpDesComponentsTypedWhole`, python_bindings |
+| OPLS-DES (Doherty & Acevedo 2018) | oplsdes-doherty2018 | `bench/ff/make_opls_des_doherty2018.py` (54 types, 48 bonds, 68 angles, 66 dihedrals, 5 impropers, every term citing its SI table), `bench/typing/make_oplsdes_doherty2018_rules.py` (53 rules) | the SI's Schemes S1-S2: the paper's 9 molecules 102 / 102 atoms by parameters, 100 by name (urea's cis H, HC, typed HT: identical terms), choline +0.8, chloride -0.8, HBDs 0, no missing term; 12 other molecules left untyped (`check_oplsdes_doherty2018_components.py`). Against DL_FIELD's OPLS_DES templates and Acevedo's GROMACS files (references only, `compare_oplsdes_doherty2018.py`): see below | agrees: reline (16 ChCl + 32 urea) and glyceline (12 + 24) in 34 A boxes, a vacuum set of the other HBDs; energy terms 2.2e-8 to 6.4e-8, forces <= 9.9e-6 kcal/mol/A, virial <= 7.8e-7 (exact styles); native bonded and vdW the same | agrees: reline (48 + 96) and glyceline (24 + 48) in 38 A boxes with PME, 1.4e-6 and 4.0e-5; vacuum set 4.8e-5 | `FFDef.OplsDesDoherty2018FromThePaper` |
 | binary oxides: MgO (Catlow, Faux & Norgett 1976) | catlow1976-mgo | `bench/ff/make_catlow1976_mgo.py` | `magnesium_oxide3` 2 / 2 atoms | agrees (rock-salt MgO, model 1 and the model 2 overlay) | - (Buckingham) | `FFDef.InorganicSetsFromTheirPapers` |
 | binary oxides: rutile (Catlow, Freeman & Royle 1985) | catlow1985-rutile | `bench/ff/make_catlow1985_rutile.py` | `rutile1` 6 / 6 atoms | agrees (rutile, Ti and O shells) | - | same |
 | binary oxides: ZrO2 (Khan, Islam & Bates 1998) | khan1998-zro2 | `bench/ff/make_khan1998_zro2.py` | `zirconium(iv)_oxide1` 6 / 6 atoms | agrees (cubic ZrO2) | - | same |
@@ -144,6 +146,41 @@ Notes on the inorganic sets (terms against DL_FIELD's .par: `python3 bench/ff/co
   within 2.6 A of the hydroxyl O; the Morse constant -A is dropped. Charges are Table 9's, so a hydroxylated slab is not
   exactly neutral (the paper's own scheme).
 
+**OPLS-DES (oplsdes-doherty2018).** Built from B. Doherty, O. Acevedo, J. Phys. Chem. B 122, 9982 (2018) and its SI
+only. The paper: OPLS-AA form, geometric mixing, 1-4 pairs x 0.5, charges built for +-0.8 e ions (the SI prints them
+scaled), choline chloride's charges and Lennard-Jones refitted to reline's ND/EPSR structure, choline's bonded terms from
+OPLS-2009IL, the HBDs' bonded terms OPLS-AA's (ethylene glycol's torsions Szefczyk & Cordeiro's), the HBDs' non-bonded
+terms tuned for DES mixtures only; GROMACS with a 16 A cut-off. The SI prints every term (Tables S1-S6), so no term
+comes from another library. Readings: ethylene glycol's rows in OPLS-AA class names (CT, HC) and its O called OH are
+Table S4's CG, HG, OG; levulinic acid's bend "HO-CB-CZ" is OH-CB-CZ; the X-c-X-X rows are impropers on c (centre second,
+every triple of neighbours); the all-zero X-CM-X-X and X-CT-X-X are left out; ethylene glycol's block lists only
+OG-CG-CG-OG and CG-CG-OG-HO, so its H-C-C-H, H-C-C-O and H-C-O-H torsions are zero (both references have none either);
+urea's HC and HT carry identical terms and CAPS types both HT. The type-charge check takes the library's
+`ion_charge_scale` 0.8 (new FFDef field) so the scaled ions count as whole.
+
+Against the two references (on the reference's own geometry nudged by 0.08 A, `compare_oplsdes_doherty2018.py DES_DIR --dlfield`):
+- DL_FIELD's OPLS_DES (its templates for the 8 molecules, 101 atoms): charges, Lennard-Jones, bonds, bends and torsions
+  all equal; energies equal on ethylene glycol, glycerol and phenol. It differs only in impropers: none on choline's N
+  (the SI has X-NA-X-X, V2 2.0: 6.08 kcal/mol on the test geometry), two carbonyl impropers on levulinic acid that the
+  SI does not list (11.09 kcal/mol), and another atom order for the same impropers on malonic and oxalic acid and urea
+  (energy differences 0.82, 0.03, 0.0005 kcal/mol).
+- Acevedo's GROMACS files (GPL 3; nothing taken from them; 9 molecules, 102 atoms): charges and bends all equal, type
+  names 100 / 102 (urea's HC), Lennard-Jones 94 / 102 (ethylene glycol, below); choline's every term equal.
+  Where they differ from the SI, CAPS follows the SI: (1) no `[ pairs ]` section in any .itp, so the files have no 1-4
+  Lennard-Jones or Coulomb although the paper scales them by 0.5; with CAPS's 1-4 list added, choline, levulinic acid
+  and phenol match CAPS's total exactly (48.1794, 13.9829, 33.088 / 33.090 kcal/mol); (2) extra `[ exclusions ]` of
+  1-5 O...H pairs in ethylene glycol, glycerol and oxalic acid (and H...O 1-4 pairs in malonic acid), which the paper
+  does not describe; (3) ethylene glycol's epsilons are the SI's divided by 1.75 (CG 0.066 for 0.1155, HG 0.030 for
+  0.0525, OG 0.170 for 0.2975; the files' own comments print the SI's values) and its C-O length is 1.43 A for the SI's
+  1.410 (the comment says 1.410); (4) malonic acid's second CD-CT bond 1.552 A for 1.522 (the other copy and the
+  comment 1.522); (5) oxalic acid's second HO-OH-CD-CD V2 2.871 kcal/mol (12.012 kJ/mol) for 5.5 (the other copy 23.012
+  kJ/mol and the comment 5.50); (6) O-H force constants 463750 kJ/mol/nm^2 (554.2) beside 462750 (553) and phenol's C-C
+  468.88 for 469 (unit rounding); (7) the same impropers with another atom order (urea 0.42 kcal/mol on the test geometry),
+  and zero impropers on glycerol's CM and malonic acid's CT.
+- Not in the paper and not added: impropers on phenol's ring and levulinic acid's carbonyls; Lennard-Jones or charges for
+  any molecule outside the paper's set (the GPL repository's later additions, acetamide, ethylammonium and others, are
+  not part of the 2018 paper).
+
 ## 4. Papers needed
 
 | needed for | citation | DOI | state |
@@ -166,7 +203,10 @@ Bandura & Kubicki 2003 (10.1021/jp034093t), Khan, Islam & Bates 1998 (10.1039/a8
 - Bi2O3 (Walther & Zahn): their 2015 paper.
 - The O'Malley alkane torsion: Raj, Sastre & Catlow 1999 does not hold it; the source O'Malley & Catlow meant is unknown.
 - Families handled by other sessions: OPLS (2005 / 2020 / 2024), PCFF, COMPASS, CVFF, ClayFF, CL&P.
-- Acevedo's OPLS-DES (the parameters DL_FIELD's OPLS_DES held) is not rebuilt: its own GROMACS files are local
-  (`opls-des-dl/DES-master`, GPL 3); clandp-des covers the same mixtures with CL&P's parameters.
+- Acevedo's OPLS-DES is rebuilt from the paper as oplsdes-doherty2018 (section 3); its GPL 3 files stay a reference.
+  Open readings, all recorded in the generator: ethylene glycol's hydrogen torsions (zero: the SI lists none; OPLS-AA
+  would give 0.300 / 0.468 / 0.352 kcal/mol), the order of the outer atoms in the impropers (the SI writes only
+  X-c-X-X), and the improper on choline's four-connected N (four triples, as the X-NA-X-X row reads). Szefczyk &
+  Cordeiro, J. Phys. Chem. B 115, 3013 (2011) (ethylene glycol's torsions) would settle the first; not local.
 - `bench/typing/sweep_dlfield.sh` still sweeps the converted files where they exist on disk; the rebuilt libraries are
   checked with `validate_typing.py --map` as above.
