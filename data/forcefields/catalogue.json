@@ -1478,11 +1478,11 @@
    "status": "validated",
    "file": "oplsaa2024.json",
    "counts": {
-    "atom_types": 990,
-    "pairs": 990,
-    "bonds": 465,
-    "angles": 1417,
-    "dihedrals": 1107,
+    "atom_types": 1034,
+    "pairs": 1034,
+    "bonds": 467,
+    "angles": 1442,
+    "dihedrals": 1187,
     "impropers": 4
    },
    "typing": {
@@ -2567,6 +2567,14 @@
    "license": "no licence stated with the files: built on the user's machine by bench/ff/open/build_charmm.sh, never distributed",
    "status": "validated",
    "file": "charmm36-prot-toppar.json",
+   "counts": {
+    "atom_types": 111,
+    "pairs": 115,
+    "bonds": 257,
+    "angles": 755,
+    "dihedrals": 1176,
+    "impropers": 75
+   },
    "typing": {
     "rules": "typing/charmm36-prot-toppar.typing.json",
     "evidence": "the topology's own residues typed as it types them (bench/ff/validate_rtf_types.py --cap-links): top_all36_prot.rtf 391 / 391 atoms, 24 / 24 residues"
@@ -2589,6 +2597,14 @@
    "license": "no licence stated with the files: built on the user's machine by bench/ff/open/build_charmm.sh, never distributed",
    "status": "validated",
    "file": "charmm22-prot-toppar.json",
+   "counts": {
+    "atom_types": 62,
+    "pairs": 66,
+    "bonds": 125,
+    "angles": 325,
+    "dihedrals": 382,
+    "impropers": 34
+   },
    "typing": {
     "rules": "typing/charmm22-prot-toppar.typing.json",
     "evidence": "the topology's own residues typed as it types them (bench/ff/validate_rtf_types.py --cap-links): top_all22_prot.rtf 381 / 381 atoms, 23 / 23 residues"
@@ -2611,6 +2627,14 @@
    "license": "no licence stated with the files: built on the user's machine by bench/ff/open/build_charmm.sh, never distributed",
    "status": "validated",
    "file": "charmm36-carb-toppar.json",
+   "counts": {
+    "atom_types": 72,
+    "pairs": 76,
+    "bonds": 199,
+    "angles": 694,
+    "dihedrals": 1503,
+    "impropers": 26
+   },
    "typing": {
     "rules": "typing/charmm36-carb-toppar.typing.json",
     "evidence": "the topology's own residues typed as it types them (bench/ff/validate_rtf_types.py --cap-links): top_all36_carb.rtf 1786 / 1786 atoms, 75 / 75 residues"
@@ -2633,6 +2657,14 @@
    "license": "no licence stated with the files: built on the user's machine by bench/ff/open/build_charmm.sh, never distributed",
    "status": "validated",
    "file": "cgenff-toppar.json",
+   "counts": {
+    "atom_types": 174,
+    "pairs": 179,
+    "bonds": 529,
+    "angles": 1640,
+    "dihedrals": 3380,
+    "impropers": 128
+   },
    "typing": {
     "rules": "typing/cgenff-toppar.typing.json",
     "evidence": "the topology's own residues typed as it types them (bench/ff/validate_rtf_types.py --cap-links): top_all36_cgenff.rtf 9872 / 9872 atoms, 519 / 519 residues (residues with lone pairs left out)"
@@ -2655,6 +2687,14 @@
    "license": "no licence stated with the files: built on the user's machine by bench/ff/open/build_charmm.sh, never distributed",
    "status": "validated",
    "file": "charmm36-lipid-toppar.json",
+   "counts": {
+    "atom_types": 48,
+    "pairs": 59,
+    "bonds": 84,
+    "angles": 255,
+    "dihedrals": 275,
+    "impropers": 5
+   },
    "typing": {
     "rules": "typing/charmm36-lipid-toppar.typing.json",
     "evidence": "the topology's own residues typed as it types them (bench/ff/validate_rtf_types.py --cap-links): top_all36_lipid.rtf 4224 / 4224 atoms, 35 / 35 residues"
@@ -2677,6 +2717,14 @@
    "license": "no licence stated with the files: built on the user's machine by bench/ff/open/build_charmm.sh, never distributed",
    "status": "validated",
    "file": "charmm36-nucl-toppar.json",
+   "counts": {
+    "atom_types": 97,
+    "pairs": 101,
+    "bonds": 192,
+    "angles": 541,
+    "dihedrals": 982,
+    "impropers": 43
+   },
    "typing": {
     "rules": "typing/charmm36-nucl-toppar.typing.json",
     "evidence": "the topology's own residues typed as it types them (bench/ff/validate_rtf_types.py --cap-links): top_all36_na.rtf 161 / 161 atoms, 5 / 5 residues"
@@ -2699,6 +2747,14 @@
    "license": "no licence stated with the files: built on the user's machine by bench/ff/open/build_charmm.sh, never distributed",
    "status": "validated",
    "file": "charmm19-toppar.json",
+   "counts": {
+    "atom_types": 29,
+    "pairs": 32,
+    "bonds": 70,
+    "angles": 191,
+    "dihedrals": 41,
+    "impropers": 43
+   },
    "typing": {
     "rules": "typing/charmm19-toppar.typing.json",
     "evidence": "the topology's own residues typed as it types them (bench/ff/validate_rtf_types.py --cap-links): toph19.inp 319 / 319 atoms, 36 / 36 residues (--united); one torsion per bond as toph19 lists them, 103 / 104 central bonds (bench/ff/validate_rtf_torsions.py; TRP's cross-ring terms left out)"
