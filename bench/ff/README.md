@@ -137,15 +137,9 @@ CT2 and W terms are checked equal to the library's before they are added (`bench
 | COMPASS | 7 / 7 |
 | OPLS 2005 | 59 / 60 (aniline: DL_FIELD's template fixes an improper's atom order) |
 | CL&P | 24 / 24 |
-| AMBER | BPTI (6PTI), methyl glucoside |
 | CHARMM | 48 / 48 |
-| CHARMM22 proteins | 35 / 35 templates, SOD1 protein |
-| CHARMM36 proteins | 4 / 4 templates, BPTI |
-| CHARMM36 nucleic acids | DL_FIELD's nucleic-acid example |
 | CGenFF | 60 / 60 |
-| CHARMM19 | 3 / 3 templates, C18 alkane |
 | DREIDING | 29 / 29 |
-| GROMOS 54A7 | octane (the other templates are chain residues) |
 | TraPPE-UA | 23 / 25 (the two are DL_FIELD's C-C-O-H torsion error) |
 | TraPPE-EH | 9 / 9 |
 | Inorganic halides, GaN, binary oxides, ternary oxides, zeolites | 14 / 14, 1 / 1, 17 / 17 (+ Al2O3, MgO shell models), 12 / 12, 4 / 4 |

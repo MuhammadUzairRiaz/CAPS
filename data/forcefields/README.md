@@ -9,22 +9,13 @@ Built by `bench/ff/build_library.py` from the published parameter files. Status:
 | cvff | CVFF | 1988 | converted: CVFF.par | validated | yes |
 | opls2005 | OPLS-AA / OPLS 2005 | 2005 | converted: OPLS2005.par | validated | yes |
 | opls2020 | OPLS 2020 bond / angle supplement | as distributed | converted: OPLS2020.par | converted | |
-| opls-aam | OPLS-AA/M | 2015 | converted: OPLS_AAM.par | converted | |
 | opls-clp | CL&P ionic liquids (OPLS-AA based) | 2004 onwards | converted: OPLS_CL_P.par | validated | |
 | opls-des | OPLS-DES deep eutectic solvents | 2018 | converted: OPLS_DES.par | converted | |
-| amber | AMBER | Cornell et al. 1995 family | converted: AMBER.par | validated | |
 | gaff-amber16 | GAFF (AmberTools 16) | GAFF 1.8x, 2016 | converted: AMBER16_gaff.par | validated | yes |
 | gaff-amber25 | GAFF (AmberTools 25) | 2025 | converted: AMBER25_gaff.par | validated | yes |
 | charmm | CHARMM | | converted: CHARMM.par | validated | |
-| charmm19 | CHARMM19 united atom | | converted: CHARMM19.par | validated | |
-| charmm22-prot | CHARMM22 proteins | 1998 | converted: CHARMM22_prot.par | validated | |
-| charmm36-carb | CHARMM36 carbohydrates | | converted: CHARMM36_carb.par | converted | |
 | cgenff | CGenFF (CHARMM36) | | converted: CHARMM36_cgenff.par | validated | yes |
-| charmm36-lipid | CHARMM36 lipids | 2010 | converted: CHARMM36_lipid.par | converted | |
-| charmm36-nucl | CHARMM36 nucleic acids | | converted: CHARMM36_nucl.par | validated | |
-| charmm36-prot | CHARMM36 proteins | 2012 | converted: CHARMM36_prot.par | validated | |
 | dreiding | DREIDING | 1990 | converted: DREIDING.par | validated | |
-| gromos-54a7 | GROMOS 54A7 | 2011 | converted: GROMOS_G54A7.par | validated | |
 | trappe-ua | TraPPE-UA | 1998 | converted: TRAPPE_UA.par; CO2 added from Potoff & Siepmann 2001 (checked against gmso's TraPPE CO2 file, bench/ff/check_trappe_co2.py) | validated | |
 | trappe-eh | TraPPE-EH | 2007 | converted: TRAPPE_EH.par | validated | |
 | misc | Miscellaneous | | converted: MISC_FF.par | converted | |

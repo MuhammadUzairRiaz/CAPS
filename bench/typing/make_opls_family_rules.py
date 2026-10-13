@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
-"""CAPS typing rules for three OPLS-AA descendants in the library, from each one's type definitions:
+"""CAPS typing rules for two OPLS-AA descendants in the library, from each one's type definitions:
 
-  opls-aam   OPLS-AA/M (Robertson, Tirado-Rives & Jorgensen, J. Chem. Theory Comput. 11, 3499 (2015)): the protein types
-             by OPLS number used chemically (alkanes C135-C137 / H140, amides C235 / O236 / N237-N239, acids and
-             carboxylates, alcohols, thiols, sulfides, disulfides, benzene and phenol, ammonium, guanidinium); a CH2 or CH
-             on an amide nitrogen takes the backbone Cα types C223 / C224
   opls-clp   CL&P (Canongia Lopes & Pádua, J. Phys. Chem. B 108, 2038 (2004) and later): ionic-liquid ions by their
              structure (imidazolium, pyridinium, ammonium, phosphonium, guanidinium cations with their alkyl chains;
              NTf2, triflate / alkylsulfonate, alkyl sulfate, thiocyanate, dicyanamide, tricyanomethanide, PF6, BF4,
@@ -13,8 +9,10 @@
              each component is recognised as a whole molecule (choline, ethylene glycol, glycerol, levulinic, malonic and
              oxalic acids, phenol, urea, chloride)
 
-None of the three files carries per-type charges: automatic charges are Gasteiger-Marsili (else QEq), as the Field
+Neither file carries per-type charges: automatic charges are Gasteiger-Marsili (else QEq), as the Field
 report says. Atoms no rule covers stay untyped and are reported.
+
+(OPLS-AA/M, a protein force field, was removed on 2026-10-14: CAPS focuses on polymers, crystals and materials.)
 
 usage: make_opls_family_rules.py [DATA_DIR]
 """
@@ -27,40 +25,6 @@ DATA = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "data")
 class Rules(list):
     def add(self, t, prio, smarts, desc):
         self.append({"type": t, "smarts": smarts, "priority": prio, "description": desc})
-
-
-def aam():
-    R = Rules()
-    R.add("C135", 0, "[CX4H3]", "CH3 (alkanes)"); R.add("C136", 0, "[CX4H2]", "CH2 (alkanes)"); R.add("C137", 0, "[CX4H1]", "CH (alkanes)")
-    R.add("H140", 0, "[H][CX4]", "H on sp3 carbon")
-    AMIDE_N = "[NX3][CX3]=[OX1]"
-    R.add("C223", 3, f"[CX4H2]{AMIDE_N}", "CH2 on an amide nitrogen (glycine Cα)")
-    R.add("C224", 3, f"[CX4H1]{AMIDE_N}", "CH on an amide nitrogen (alanine Cα)")
-    R.add("C235", 3, "[CX3](=[OX1])[NX3]", "amide C=O carbon"); R.add("O236", 3, "[OX1]=[CX3][NX3]", "amide oxygen")
-    R.add("N238", 3, "[NX3H1][CX3]=[OX1]", "secondary amide nitrogen"); R.add("H241", 3, "[H][NX3H1][CX3]=[OX1]", "H on a secondary amide N")
-    R.add("N237", 3, "[NX3H2][CX3]=[OX1]", "primary amide nitrogen"); R.add("H240", 3, "[H][NX3H2][CX3]=[OX1]", "H on a primary amide N")
-    R.add("N239", 3, "[NX3H0][CX3]=[OX1]", "tertiary amide nitrogen")
-    R.add("C271", 4, "[CX3](=[OX1])[OX1-]", "carboxylate carbon"); R.add("O272", 4, "[OX1]~[CX3]~[OX1]", "carboxylate oxygen")
-    R.add("C274", 4, "[CX4H2][CX3](=[OX1])[OX1-]", "CH2 next to a carboxylate")
-    R.add("C267", 4, "[CX3](=[OX1])[OX2H1]", "carboxylic acid carbon"); R.add("O269", 4, "[OX1]=[CX3][OX2H1]", "carboxylic acid C=O oxygen")
-    R.add("O268", 4, "[OX2H1][CX3]=[OX1]", "carboxylic acid OH oxygen"); R.add("H270", 4, "[H][OX2][CX3]=[OX1]", "carboxylic acid H")
-    R.add("C157", 2, "[CX4H2][OX2H1]", "CH2 of an alcohol"); R.add("C158", 2, "[CX4H1][OX2H1]", "CH of an alcohol")
-    R.add("O154", 2, "[OX2H1][CX4]", "alcohol oxygen"); R.add("H155", 2, "[H][OX2][CX4]", "alcohol H")
-    R.add("S200", 2, "[SX2H1]", "thiol sulfur"); R.add("H204", 2, "[H][SX2]", "thiol H"); R.add("C206", 2, "[CX4H2][SX2H1]", "CH2 of a thiol")
-    R.add("S202", 1, "[SX2]([#6])[#6]", "sulfide sulfur"); R.add("C209", 2, "[CX4H3][SX2]", "CH3 on sulfur"); R.add("C210", 2, "[CX4H2][SX2;!H1;!$(S[SX2])]", "CH2 of a sulfide")
-    R.add("S203", 2, "[SX2][SX2]", "disulfide sulfur"); R.add("C214", 3, "[CX4H2][SX2][SX2]", "CH2 of a disulfide")
-    R.add("C145", 1, "c", "benzene carbon"); R.add("H146", 1, "[H]c", "aromatic H"); R.add("C149", 2, "[CX4H2]c", "CH2 on an aromatic ring")
-    R.add("C166", 3, "c[OX2H1]", "phenol carbon"); R.add("O167", 3, "[OX2H1]c", "phenol oxygen"); R.add("H168", 3, "[H][OX2]c", "phenol H")
-    R.add("N287", 3, "[NX4+;H3]", "ammonium nitrogen"); R.add("H290", 3, "[H][NX4+]", "H on N+")
-    R.add("C292", 3, "[CX4H2][NX4+]", "CH2 on N+"); R.add("C293", 3, "[CX4H1][NX4+]", "CH on N+")
-    R.add("N309", 4, "[NX4+;H2]", "R2NH2+ nitrogen"); R.add("H310", 4, "[H][NX4+;H2]", "H in R2NH2+")
-    GUAN = "[CX3;$(C(~[#7])(~[#7])~[#7])]"
-    R.add("C302", 4, GUAN, "guanidinium carbon"); R.add("N300", 4, f"[#7;H2;$(*{GUAN})]", "guanidinium NH2")
-    R.add("N303", 4, f"[#7;H1;$(*{GUAN})]", "guanidinium NH-R"); R.add("H301", 4, f"[H][#7;H2;$(*{GUAN})]", "H on a guanidinium NH2")
-    R.add("H304", 4, f"[H][#7;H1;$(*{GUAN})]", "H on a guanidinium NH-R"); R.add("C307", 4, f"[CX4H2][#7;$(*{GUAN})]", "CH2 on a guanidinium N")
-    R.add("OT", 8, "[OX2H2]", "TIP3P water O"); R.add("HT", 8, "[H][OX2H2]", "TIP3P water H")
-    R.add("SOD", 0, "[Na]", "sodium ion"); R.add("CLA", 0, "[Cl-;X0]", "chloride ion")
-    return R
 
 
 def clp():
@@ -154,16 +118,11 @@ def des():
     return R
 
 
-# Terms the protein-derived OPLS-AA/M file lacks for other molecules (it lists the combinations proteins contain), by
-# analogy: same element and hybridisation, nearest in hydrogen count or neighbourhood; each such term listed as estimated.
-ANALOGIES = {"opls-aam": {"C135": ["C136", "C137", "C224"], "C136": ["C135", "C137", "C224", "C223"], "C137": ["C136", "C135", "C224"],
-                          "C223": ["C224", "C136"], "C224": ["C223", "C137"], "C149": ["C136"], "C157": ["C136"], "C158": ["C137"],
-                          "C206": ["C136"], "C210": ["C136"], "C214": ["C136"], "C274": ["C136"], "C292": ["C136"], "C293": ["C137"],
-                          "C307": ["C136"], "N237": ["N238"], "N239": ["N238"], "H240": ["H241"]},
+ANALOGIES = {
              # triflate and alkylsulfonate sulfonyls: the file lists S-CF3 only for NTf2's sulfonyl group
              "opls-clp": {"SO": ["SB"], "OS": ["OB"]}}
 
-SETS = {"opls-aam": (aam(), "OPLS-AA/M"), "opls-clp": (clp(), "CL&P ionic liquids (OPLS-AA based)"), "opls-des": (des(), "OPLS-DES deep eutectic solvents")}
+SETS = {"opls-clp": (clp(), "CL&P ionic liquids (OPLS-AA based)"), "opls-des": (des(), "OPLS-DES deep eutectic solvents")}
 
 if __name__ == "__main__":
     cat_p = os.path.join(DATA, "forcefields", "catalogue.json")

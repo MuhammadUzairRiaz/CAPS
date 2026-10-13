@@ -54,7 +54,6 @@ CASES = [
     ("OPLS-AA methyl vinyl ketone (vacuum)", ("template", "OPLS2005", "methyl_vinyl_ketone"), "opls2005", "gasteiger", []),
     ("CGenFF toluene (vacuum; separate 1-4 LJ, Urey-Bradley, harmonic impropers)", ("template", "CHARMM36_cgenff", "toluene"), "cgenff", "gasteiger", []),
     # GROMOS in its own settings: reaction field (ε_rf 61) at 1.4 nm, no dispersion correction, C6/C12 (comb-rule 1)
-    ("SPC/E water box, GROMOS 54A7 (reaction field, periodic)", ("solvate", "40", "SPC/E", "1200"), "gromos-54a7", "keep", []),
     # ClayFF (Cygan 2004): LAMMPS's ClayFF test structure with its own types, and IFF's Na-montmorillonite typed by CAPS's
     # rules; the M-O-H bends are angles without an M-O bond, so GROMACS keeps M and H interacting as CAPS does. IFF 1.5
     # (CVFF) montmorillonite from IFF's own model database. The cells are thinner than 2 x 10 A: compared at 8 and 9 A.
@@ -67,15 +66,9 @@ CASES = [
      ("file", os.path.expanduser("~/iff-ref/INTERFACE_FF_1_5/MODEL_DATABASE/CLAY_MINERALS/mont0_333_Na_15_cell.car")),
      "iff-cvff", "keep", PME + ["--cutoff", "9", "--no-tail"]),
     # the libraries built from their original sources on this machine (bench/ff/open), on molecules CAPS builds itself
-    ("AMBER ff03 (AmberTools) peptide GAFKW (vacuum)", ("peptide", "GAFKW"), "amber-ff03-ambertools", "gasteiger", []),
-    ("AMBER ff03 (AmberTools) thymidine (vacuum)", ("smiles", "CC1=CN([C@H]2C[C@H](O)[C@@H](CO)O2)C(=O)NC1=O"), "amber-ff03-ambertools", "gasteiger", []),
-    ("GLYCAM06j (AmberTools) cellobiose (vacuum)", ("smiles", "OC[C@H]1O[C@@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)O[C@@H]2CO)[C@H](O)[C@@H](O)[C@@H]1O"),
-     "glycam06j-ambertools", "gasteiger", []),
-    ("AMBER ff14SB (AmberTools) peptide GAFKWDR (vacuum)", ("peptide", "GAFKWDR"), "amber-ff14sb-ambertools", "gasteiger", []),
     ("OPLS-AA (GROMACS oplsaa.ff) peptide GHWRK (vacuum)", ("peptide", "GHWRK"), "oplsaa-gromacs", "types", []),
     ("OPLS-AA (GROMACS oplsaa.ff) isoprene, ethylbenzene, ester (vacuum)", ("smiles", "CC=C(C)CC.CCc1ccccc1.CCOC(=O)C"), "oplsaa-gromacs", "types", []),
     ("OPLS-AA 2024 (Jorgensen) isoprene, ethylbenzene, ester, PVA unit (vacuum)", ("smiles", "CC=C(C)CC.CCc1ccccc1.CCOC(=O)C.CC(O)CC(O)C"), "oplsaa2024", "types", []),
-    ("OPLS-AA/M (Jorgensen lab) peptide GHWRKD (vacuum)", ("peptide", "GHWRKD"), "oplsaam-jorgensen", "types", []),
     ("CL&P (il.ff) [C4C1im][NTf2] (vacuum)", ("smiles", "CCCCn1cc[n+](C)c1.FC(F)(F)S(=O)(=O)[N-]S(=O)(=O)C(F)(F)F"), "clandp", "types", []),
     ("CL&P DES (des.ff) reline, 16 choline chloride + 32 urea, PME", ("mix-box", [("C[N+](C)(C)CCO", 16), ("[Cl-]", 16), ("NC(N)=O", 32)], 30,
      os.path.join(FF, "clandp-des.json")), "clandp-des", "types", PME),
@@ -96,7 +89,6 @@ CASES = [
      "oplsdes-doherty2018", "types", []),
     ("GAFF 1.81 (gaff.dat) ester, epoxide, amide, thioether (vacuum)", ("smiles", "CCOC(=O)C.C1CO1.CC(=O)NC.CSC"), "gaff-1.81-ambertools", "gasteiger", []),
     ("GAFF2 2.11 (gaff211.dat) isoprene, styrene (vacuum)", ("smiles", "CC=C(C)CC.C=Cc1ccccc1"), "gaff2-2.11-ambertools", "gasteiger", []),
-    ("CHARMM36 (toppar) peptide GAFKW (vacuum; CMAP not represented)", ("peptide", "GAFKW"), "charmm36-prot-toppar", "gasteiger", []),
     ("TraPPE-UA (TraPPE database) hexane, DME, methyl methacrylate, ethanol, cis-2-butene (vacuum)", ("smiles", "CCCCCC.COCCOC.CC(=C)C(=O)OC.CCO.C/C=C\\C"),
      "trappe-ua-umn", "types", []),
     # the transferable hydrocarbon terms (Martin & Siepmann 1998, 1999; Wick, Martin & Siepmann 2000) on DP-4 chains, raw
@@ -130,19 +122,8 @@ CASES = [
     ("OPLS-UA 2024 + 1990 terms: polyoxytetramethylene trimer (vacuum)", ("smiles", "CCCCOCCCCOCCCCOCCCC"), "oplsua2024", "types", []),
     ("OPLS-UA 2024 + 1986 / 1990 terms: ethanol, 1-propanol, 2-propanol, tert-butanol, diethyl ether (vacuum)",
      ("smiles", "CCO.CCCO.CC(C)O.CC(C)(C)O.CCOCC"), "oplsua2024", "types", []),
-    ("GROMOS 54A7 (building blocks) peptide GAFKWDR (vacuum)", ("peptide", "GAFKWDR"), "gromos54a7-gromacs", "keep", []),
-    ("GROMOS 54A7 (building blocks) water, methanol, DMSO, chloroform, urea, TFE (vacuum)", ("smiles", "O.CO.CS(C)=O.ClC(Cl)Cl.NC(N)=O.OCC(F)(F)F"),
-     "gromos54a7-gromacs", "keep", []),
-    ("CHARMM19 (toppar, united atom) peptide GAFKW (vacuum)", ("peptide", "GAFKW"), "charmm19-toppar", "gasteiger", []),
-    ("CHARMM22 (toppar) peptide GAFKW (vacuum)", ("peptide", "GAFKW"), "charmm22-prot-toppar", "gasteiger", []),
     ("CGenFF (toppar) toluene (vacuum)", ("smiles", "Cc1ccccc1", os.path.join(FF, "cgenff-toppar.json")), "cgenff-toppar", "gasteiger", []),
     ("CGenFF (toppar) N-methylacetamide (vacuum)", ("smiles", "CNC(C)=O", os.path.join(FF, "cgenff-toppar.json")), "cgenff-toppar", "gasteiger", []),
-    ("CHARMM36 lipids (toppar) short phosphatidylcholine (vacuum)", ("smiles", "C[N+](C)(C)CCOP(=O)([O-])OCC(OC(=O)CCC)COC(=O)CCC"),
-     "charmm36-lipid-toppar", "qeq", []),
-    ("CHARMM36 carbohydrates (toppar) beta-D-glucose (vacuum)", ("smiles", "OC[C@H]1O[C@@H](O)[C@H](O)[C@@H](O)[C@@H]1O"),
-     "charmm36-carb-toppar", "gasteiger", []),
-    ("CHARMM36 nucleic acids (toppar) thymidine (vacuum)", ("smiles", "CC1=CN([C@H]2C[C@H](O)[C@@H](CO)O2)C(=O)NC1=O"),
-     "charmm36-nucl-toppar", "gasteiger", []),
     ("PCFF polystyrene (class II: refused)", ("file", PS), "pcff", "types", []),
     ("UFF polystyrene (inversions: refused)", ("file", PS), "uff", "types", []),
 ]
