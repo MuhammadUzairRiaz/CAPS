@@ -1430,3 +1430,59 @@ TEST(FFDef, BanduraKubickiSurfaceSites) {
   ASSERT_NE(os, nullptr);
   EXPECT_DOUBLE_EQ(os->params[0], 449223.3);
 }
+
+// CL&P's deep-eutectic-solvent set from Padua's des.ff (bench/ff/convert_fftool.py, bench/typing/make_clandp_des_rules.py):
+// each DES component typed whole, at its integer charge with des.ff's type charges, every bonded term found; the
+// components des.ff cannot make neutral stay untyped; des.ff's kJ/mol numbers in place (k/2 constants, V2/2 impropers);
+// a four-connected P on carbons is perceived as phosphonium (+1)
+TEST(FFDef, ClandpDesComponentsTypedWhole) {
+  const FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/clandp-des.json");
+  auto typed = [&](const std::string& smi, std::map<std::string, int>* count = nullptr) {
+    System s = build_molecule(smi).system;
+    std::string ch = "types";
+    prepare_for_forcefield(s, def, ch);
+    const TypingResult tr = assign_types(s, def);
+    if (count)
+      for (const auto& t : tr.types) ++(*count)[t];
+    if (tr.untyped) return std::make_pair(tr.untyped, 0.0);
+    ParamReport rep;
+    const ForceField f = parameterize(s, def, tr.types, "types", &rep, false);
+    EXPECT_TRUE(rep.missing.empty()) << smi << ": " << (rep.missing.empty() ? "" : rep.missing[0]);
+    double q = 0;
+    for (double x : f.charge) q += x;
+    int formal = 0;
+    for (int c : perceive(s).charge) formal += c;
+    EXPECT_NEAR(q, formal, 1e-9) << smi;
+    return std::make_pair(0, q);
+  };
+  const std::vector<std::pair<std::string, int>> whole = {
+      {"C[N+](C)(C)CCO", 1}, {"CCCC[N+](CCCC)(CCCC)CCCC", 1}, {"CC[NH+](CC)CCO", 1}, {"CCCC[P+](CCCC)(CCCC)CCCC", 1},
+      {"C[N+](C)(C)CC(=O)[O-]", 0}, {"[Cl-]", -1}, {"[Br-]", -1}, {"CCC(=O)[O-]", -1}, {"NC(N)=O", 0}, {"CCO", 0},
+      {"OCCO", 0}, {"OCC(O)CO", 0}, {"CC(=O)O", 0}, {"OC(=O)CCC(=O)O", 0}, {"CC(=O)CCC(=O)O", 0}, {"CC(C)=O", 0}};
+  for (const auto& [smi, q] : whole) {
+    const auto r = typed(smi);
+    EXPECT_EQ(r.first, 0) << smi;
+    EXPECT_NEAR(r.second, q, 1e-9) << smi;
+  }
+  for (const std::string smi : {"CO", "OC(=O)CC(=O)O", "OC(=O)C(=O)O", "CC(O)C(=O)O", "CC[NH3+]"})
+    EXPECT_GT(typed(smi).first, 0) << smi;
+  std::map<std::string, int> c;   // cholinium as Padua's cholinium.xyz labels it
+  typed("C[N+](C)(C)CCO", &c);
+  EXPECT_EQ(c, (std::map<std::string, int>{{"N4", 1}, {"C1", 3}, {"C1A", 1}, {"COL", 1}, {"H1", 11}, {"HC", 2}, {"OH", 1}, {"HO", 1}}));
+  c.clear();
+  typed("OCC(O)CO", &c);
+  EXPECT_EQ(c, (std::map<std::string, int>{{"CTO", 2}, {"CSO", 1}, {"H1O", 5}, {"OHT", 3}, {"HOT", 3}}));
+  c.clear();
+  typed("C[N+](C)(C)CC(=O)[O-]", &c);
+  EXPECT_EQ(c["N4B"], 1);
+  EXPECT_EQ(c["C2C"], 1);
+  auto rule = [&](const std::vector<FFRule>& v, const std::string& name) {
+    const auto p = std::find_if(v.begin(), v.end(), [&](const FFRule& x) { return x.name == name; });
+    EXPECT_NE(p, v.end()) << name;
+    return p == v.end() ? std::vector<double>(4, 0.0) : p->params;
+  };
+  EXPECT_NEAR(rule(def.dihedrals, "OH-CT-CT-NT")[0], -44.0515 / 4.184, 1e-12);
+  EXPECT_NEAR(rule(def.bonds, "C-N")[0], 4100.3 / 2 / 4.184, 1e-12);
+  EXPECT_NEAR(rule(def.impropers, "N-N-C-O")[0], 87.864 / 2 / 4.184, 1e-12);
+  EXPECT_DOUBLE_EQ(def.type("CU")->charge, 0.142);
+}

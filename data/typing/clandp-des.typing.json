@@ -1,0 +1,291 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "CL&P DES (deep-eutectic solvents)",
+ "unknown_types": "untyped",
+ "description": "CAPS rules for des.ff's types by DES component (bench/typing/make_clandp_des_rules.py), checked against CL&P's own molecule files",
+ "rules": [
+  {
+   "type": "CT",
+   "smarts": "[CX4H3;!$(*~[!#6;!#1]);!$(*-[CX3](=[OX1])-[OX2H1])]",
+   "priority": 0,
+   "description": "alkane CH3 (also on a ketone C)"
+  },
+  {
+   "type": "CS",
+   "smarts": "[CX4H2;!$(*~[!#6;!#1]);!$(*-[CX3](=[OX1])-[OX2H1])]",
+   "priority": 0,
+   "description": "alkane CH2 (also next to a ketone C)"
+  },
+  {
+   "type": "HC",
+   "smarts": "[H][CX4]",
+   "priority": 0,
+   "description": "H on an alkane C"
+  },
+  {
+   "type": "N4",
+   "smarts": "[#7X4H0]",
+   "priority": 3,
+   "description": "quaternary ammonium N"
+  },
+  {
+   "type": "N3",
+   "smarts": "[#7X4H1]",
+   "priority": 3,
+   "description": "protonated tertiary amine N (R3NH+)"
+  },
+  {
+   "type": "H3",
+   "smarts": "[H][#7X4H1]",
+   "priority": 3,
+   "description": "H on R3NH+"
+  },
+  {
+   "type": "C1",
+   "smarts": "[CX4H3;$(*-[#7X4])]",
+   "priority": 3,
+   "description": "methyl on the ammonium N"
+  },
+  {
+   "type": "C1A",
+   "smarts": "[CX4H2;$(*-[#7X4])]",
+   "priority": 3,
+   "description": "CH2 on the ammonium N"
+  },
+  {
+   "type": "C2",
+   "smarts": "[CX4H2;$(*-[CX4H2]-[$([#7X4]),$([#15X4;!$(*~[!#6])])]);!$(*~[!#6;!#1])]",
+   "priority": 2,
+   "description": "CH2 next to the cation's first carbon"
+  },
+  {
+   "type": "CE",
+   "smarts": "[CX4H3;$(*-[CX4H2]-[#7X4])]",
+   "priority": 3,
+   "description": "an ethyl's CH3 on the ammonium N"
+  },
+  {
+   "type": "H1",
+   "smarts": "[H][CX4;$(*-[$([#7X4]),$([#15X4;!$(*~[!#6])])])]",
+   "priority": 3,
+   "description": "H on a carbon bonded to the ammonium N or phosphonium P"
+  },
+  {
+   "type": "P3",
+   "smarts": "[#15X4;!$(*~[!#6])]",
+   "priority": 4,
+   "description": "phosphonium P"
+  },
+  {
+   "type": "C1P",
+   "smarts": "[CX4;$(*-[#15X4;!$(*~[!#6])])]",
+   "priority": 4,
+   "description": "carbon on the phosphonium P"
+  },
+  {
+   "type": "COL",
+   "smarts": "[CX4H2;$(*-[OX2H1]);$(*-[CX4]-[#7X4])]",
+   "priority": 5,
+   "description": "CH2-OH of cholinium (next to the ammonium's first carbon)"
+  },
+  {
+   "type": "N4B",
+   "smarts": "[#7X4H0;$(*-[CX4H2]-[CX3](~[OX1])~[OX1])]",
+   "priority": 5,
+   "description": "betaine N"
+  },
+  {
+   "type": "HC",
+   "smarts": "[H][CX4;$(*-[CX3](~[OX1])~[OX1])]",
+   "priority": 6,
+   "description": "H on a carbon bonded to a carboxylate C (betaine's CH2 included)"
+  },
+  {
+   "type": "Cl",
+   "smarts": "[Cl;X0]",
+   "priority": 5,
+   "description": "chloride"
+  },
+  {
+   "type": "Br",
+   "smarts": "[Br;X0]",
+   "priority": 5,
+   "description": "bromide"
+  },
+  {
+   "type": "CO2",
+   "smarts": "[CX3;$(*(~[OX1])~[OX1])]",
+   "priority": 5,
+   "description": "carboxylate C"
+  },
+  {
+   "type": "O2",
+   "smarts": "[OX1;$(*~[CX3]~[OX1])]",
+   "priority": 5,
+   "description": "carboxylate O"
+  },
+  {
+   "type": "CTA",
+   "smarts": "[CX4H3;$(*-[CX3](~[OX1])~[OX1])]",
+   "priority": 5,
+   "description": "acetate CH3"
+  },
+  {
+   "type": "C2C",
+   "smarts": "[CX4H2;$(*-[CX3](~[OX1])~[OX1])]",
+   "priority": 6,
+   "description": "CH2 on a carboxylate (betaine's CH2 included)"
+  },
+  {
+   "type": "C3C",
+   "smarts": "[CX4H1;$(*-[CX3](~[OX1])~[OX1]);!$(*~[!#6;!#1])]",
+   "priority": 5,
+   "description": "CH on a carboxylate"
+  },
+  {
+   "type": "CU",
+   "smarts": "[CX3;$(*(=[OX1])(-[NX3H2])-[NX3H2])]",
+   "priority": 5,
+   "description": "urea C"
+  },
+  {
+   "type": "OU",
+   "smarts": "[OX1;$(*=[CX3](-[NX3H2])-[NX3H2])]",
+   "priority": 5,
+   "description": "urea O"
+  },
+  {
+   "type": "NU",
+   "smarts": "[NX3H2;$(*-[CX3](=[OX1])-[NX3H2])]",
+   "priority": 5,
+   "description": "urea N"
+  },
+  {
+   "type": "HU",
+   "smarts": "[H][NX3H2;$(*-[CX3](=[OX1])-[NX3H2])]",
+   "priority": 5,
+   "description": "urea H"
+  },
+  {
+   "type": "OH",
+   "smarts": "[OX2H1;$(*-[CX4])]",
+   "priority": 4,
+   "description": "alcohol O (mono alcohols, cholinium)"
+  },
+  {
+   "type": "HO",
+   "smarts": "[H][OX2H1;$(*-[CX4])]",
+   "priority": 4,
+   "description": "alcohol H"
+  },
+  {
+   "type": "CTO",
+   "smarts": "[CX4H2;$(*-[OX2H1]);!$(*-[CX3]=[OX1]);!$(*-[CX4]-[#7X4]);!$(*-[#7X4])]",
+   "priority": 4,
+   "description": "CH2-OH"
+  },
+  {
+   "type": "C2O",
+   "smarts": "[CX4H1;$(*-[OX2H1]);!$(*-[CX3]=[OX1]);!$(*~[!#6;!#1;!$([OX2H1])])]",
+   "priority": 4,
+   "description": "CH-OH of a mono alcohol"
+  },
+  {
+   "type": "OHG",
+   "smarts": "[OX2H1;$(*-[CX4]-[CX4]-[OX2H1]),$(*-[CX4]-[CX4]-[CX4]-[OX2H1]),$(*-[CX4]-[CX4]-[CX4]-[CX4]-[OX2H1])]",
+   "priority": 6,
+   "description": "diol O",
+   "not_in_molecule": [
+    "[CX4](-[OX2H1])-[CX4](-[OX2H1])-[CX4]-[OX2H1]"
+   ]
+  },
+  {
+   "type": "HOG",
+   "smarts": "[H][OX2H1;$(*-[CX4]-[CX4]-[OX2H1]),$(*-[CX4]-[CX4]-[CX4]-[OX2H1]),$(*-[CX4]-[CX4]-[CX4]-[CX4]-[OX2H1])]",
+   "priority": 6,
+   "description": "diol H",
+   "not_in_molecule": [
+    "[CX4](-[OX2H1])-[CX4](-[OX2H1])-[CX4]-[OX2H1]"
+   ]
+  },
+  {
+   "type": "OHT",
+   "smarts": "[OX2H1;$(*-[CX4])]",
+   "priority": 7,
+   "description": "triol O",
+   "in_molecule": [
+    "[CX4](-[OX2H1])-[CX4](-[OX2H1])-[CX4]-[OX2H1]"
+   ]
+  },
+  {
+   "type": "HOT",
+   "smarts": "[H][OX2H1;$(*-[CX4])]",
+   "priority": 7,
+   "description": "triol H",
+   "in_molecule": [
+    "[CX4](-[OX2H1])-[CX4](-[OX2H1])-[CX4]-[OX2H1]"
+   ]
+  },
+  {
+   "type": "CSO",
+   "smarts": "[CX4H1;$(*-[OX2H1;$(*-[CX4]-[CX4]-[OX2H1]),$(*-[CX4]-[CX4]-[CX4]-[OX2H1]),$(*-[CX4]-[CX4]-[CX4]-[CX4]-[OX2H1])]);!$(*-[CX3]=[OX1]);!$(*~[!#6;!#1;!$([OX2H1])])]",
+   "priority": 6,
+   "description": "CH-OH of a diol or triol"
+  },
+  {
+   "type": "H1O",
+   "smarts": "[H][CX4;$(*-[OX2H1;$(*-[CX4]-[CX4]-[OX2H1]),$(*-[CX4]-[CX4]-[CX4]-[OX2H1]),$(*-[CX4]-[CX4]-[CX4]-[CX4]-[OX2H1])]);!$(*-[CX3]=[OX1])]",
+   "priority": 6,
+   "description": "H on a carbon holding a diol / triol OH"
+  },
+  {
+   "type": "CO2",
+   "smarts": "[CX3;$(*(=[OX1])(-[OX2H1])-[CX4])]",
+   "priority": 6,
+   "description": "carboxylic acid C (on an sp3 C)"
+  },
+  {
+   "type": "O3",
+   "smarts": "[OX1;$(*=[CX3]-[OX2H1])]",
+   "priority": 6,
+   "description": "carboxylic acid =O"
+  },
+  {
+   "type": "OOH",
+   "smarts": "[OX2H1;$(*-[CX3]=[OX1])]",
+   "priority": 6,
+   "description": "carboxylic acid OH"
+  },
+  {
+   "type": "HOO",
+   "smarts": "[H][OX2H1;$(*-[CX3]=[OX1])]",
+   "priority": 6,
+   "description": "carboxylic acid H"
+  },
+  {
+   "type": "CXT",
+   "smarts": "[CX4H3;$(*-[CX3](=[OX1])-[OX2H1])]",
+   "priority": 6,
+   "description": "acetic acid CH3"
+  },
+  {
+   "type": "CX",
+   "smarts": "[CX4H2;$(*-[CX3](=[OX1])-[OX2H1]);!$(*(-[CX3](=[OX1])-[OX2H1])-[CX3](=[OX1])-[OX2H1]);!$(*~[!#6;!#1])]",
+   "priority": 6,
+   "description": "CH2 next to a COOH (not between two)"
+  },
+  {
+   "type": "CK",
+   "smarts": "[CX3;$(*=[OX1]);$(*(-[CX4])-[CX4])]",
+   "priority": 5,
+   "description": "ketone C"
+  },
+  {
+   "type": "OK",
+   "smarts": "[OX1;$(*=[CX3](-[CX4])-[CX4])]",
+   "priority": 5,
+   "description": "ketone O"
+  }
+ ]
+}

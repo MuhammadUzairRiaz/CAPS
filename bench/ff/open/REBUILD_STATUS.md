@@ -29,7 +29,7 @@ State of 2026-10-13 (branch `ff-rebuild-rest`, commits 1053f7a2 and b2ee52e2; th
 | opls2020 | OPLS2020.par | oplsaa2024 | as above | yes | as above | other session (OPLS) |
 | opls-aam | OPLS_AAM.par | oplsaam-jorgensen | Jorgensen lab `top_opls_aam.inp`, `par_opls_aam.inp` | yes (`opls-aam`) | CC BY 4.0 | done (other session) |
 | opls-clp | OPLS_CL_P.par | clandp | Padua's `il.ff` (github.com/paduagroup/clandp) | yes (`clandp-dl` is the reference only) | MIT | other session (CL&P) |
-| opls-des | OPLS_DES.par | (clandp-des, in progress) | Doherty & Acevedo, J. Phys. Chem. B 122, 9982 (2018) | yes (`opls-des-dl` reference) | - | other session (DES) |
+| opls-des | OPLS_DES.par | clandp-des | Padua's `des.ff` of 2025/12/19 (github.com/paduagroup/clandp), CL&P's DES set; DL_FIELD's file was Doherty & Acevedo's OPLS-DES, J. Phys. Chem. B 122, 9982 (2018), a different parameter set (charges scaled by 0.8, refitted Lennard-Jones) whose own files (github.com/orlandoacevedo/DES, GPL 3) are local in `opls-des-dl/DES-master` and not converted | yes (`clandp-dl/clandp-master/des.ff`) | MIT | done (section 3) |
 | trappe-ua | TRAPPE_UA.par | trappe-ua-umn, trappe-ua-foyer | TraPPE database (trappe.oit.umn.edu); foyer `trappe-ua.xml` | yes (`trappe-site`, `foyer-trappe`) | published parameters; MIT (foyer) | done (other session) |
 | **trappe-eh** | TRAPPE_EH.par | **trappe-eh-umn** | TraPPE database, EH family (Rai & Siepmann, J. Phys. Chem. B 111, 10790 (2007) and the later EH papers) | yes (`trappe-site`) | published parameters, cited per term | **done here** |
 | **misc** | MISC_FF.par | **omalley2013-alkanes, plant2007-methanol, ramsahye2005-nay (chloroform), peguin2009-hfa134a** | the four papers (see section 3) | yes (`papers/c3cp52653d.pdf`, `jp0674524.pdf`, `jp046958o.pdf`, `jp806213w.pdf`) | published parameters | **done here** (one torsion paper missing) |
@@ -57,6 +57,7 @@ per-paper libraries above.
 | oplsaa2024, oplsua2024 | Jorgensen's BOSS files (J. Phys. Chem. B 128, 250 (2024) SI) | published SI tables | original source (OPLS session) |
 | oplsaam-jorgensen | Jorgensen lab CHARMM-format files | CC BY 4.0 | original source |
 | clandp | Padua's `il.ff` | MIT | original source |
+| clandp-des | Padua's `des.ff` | MIT | original source |
 | dreiding1990 | the 1990 paper | published parameters | original source |
 | trappe-ua-umn, trappe-ua-foyer | TraPPE database; foyer `trappe-ua.xml` | published parameters; MIT | original source |
 | **trappe-eh-umn** | TraPPE database, EH models | published parameters | original source (this branch) |
@@ -77,6 +78,7 @@ per-paper libraries above.
 | MISC: chloroform in NaY | ramsahye2005-nay (existing) | `make_ramsahye2005.py` | `chloroform3` 5 / 5 atoms | agrees (existing case) | - | existing |
 | MISC: HFA134a | peguin2009-hfa134a | `make_zeolite_sorbates.py` | `HFA_134a` 8 / 8 atoms | agrees | agrees | same |
 | TraPPE-EH | trappe-eh-umn | `bench/ff/make_trappe_eh.py SITE_DIR --check` | 9 templates, 94 / 94 atoms (17 carry the key of a symmetry-equivalent position); the database's own 65 models 848 / 848 sites | agrees (flexible and rigid sets) | agrees | `FFDef.TrappeEhModelsTypedAsThemselves` |
+| CL&P deep-eutectic solvents | clandp-des | `bench/ff/convert_fftool.py des.ff` (47 types, 16 bonds, 30 angles, 44 dihedrals, 6 impropers), `bench/typing/make_clandp_des_rules.py` (45 rules) | not comparable: DL_FIELD's OPLS_DES is Acevedo's set. Against Padua's own files (`validate_fftool_types.py`): the 14 whose types des.ff defines (cholinium.xyz, N1110, N1111, N2220, N2222, N4444, P1111, P66614, c1c1pyrr, c3c1pyrr, c4c1pyrr, Cl, Br, oac) 362 / 362 atoms, each at its integer charge; 29 DES components typed whole and neutral or at their ion charge, 7 that des.ff cannot make neutral left untyped (`check_clandp_des_components.py`) | agrees: reline and glyceline boxes (608 and 600 atoms, periodic) and a vacuum set of 10 components, energy terms 1.0e-7 to 3.8e-7, forces <= 1.9e-5 kcal/mol/A, virial <= 2.2e-6 (exact styles); native styles bonded and vdW 1.6e-8 to 3.8e-7 | agrees: reline and glyceline with PME 6.9e-6 and 3.3e-5, vacuum set 5.0e-6 | `FFDef.ClandpDesComponentsTypedWhole`, python_bindings |
 | binary oxides: MgO (Catlow, Faux & Norgett 1976) | catlow1976-mgo | `bench/ff/make_catlow1976_mgo.py` | `magnesium_oxide3` 2 / 2 atoms | agrees (rock-salt MgO, model 1 and the model 2 overlay) | - (Buckingham) | `FFDef.InorganicSetsFromTheirPapers` |
 | binary oxides: rutile (Catlow, Freeman & Royle 1985) | catlow1985-rutile | `bench/ff/make_catlow1985_rutile.py` | `rutile1` 6 / 6 atoms | agrees (rutile, Ti and O shells) | - | same |
 | binary oxides: ZrO2 (Khan, Islam & Bates 1998) | khan1998-zro2 | `bench/ff/make_khan1998_zro2.py` | `zirconium(iv)_oxide1` 6 / 6 atoms | agrees (cubic ZrO2) | - | same |
@@ -163,6 +165,8 @@ Bandura & Kubicki 2003 (10.1021/jp034093t), Khan, Islam & Bates 1998 (10.1039/a8
 - The rutile quartic convention (K w^4/24): Catlow & James 1982 has no quartic term; R. James's 1979 thesis.
 - Bi2O3 (Walther & Zahn): their 2015 paper.
 - The O'Malley alkane torsion: Raj, Sastre & Catlow 1999 does not hold it; the source O'Malley & Catlow meant is unknown.
-- Families handled by other sessions: OPLS (2005 / 2020 / 2024), PCFF, COMPASS, CVFF, ClayFF, CL&P / DES.
+- Families handled by other sessions: OPLS (2005 / 2020 / 2024), PCFF, COMPASS, CVFF, ClayFF, CL&P.
+- Acevedo's OPLS-DES (the parameters DL_FIELD's OPLS_DES held) is not rebuilt: its own GROMACS files are local
+  (`opls-des-dl/DES-master`, GPL 3); clandp-des covers the same mixtures with CL&P's parameters.
 - `bench/typing/sweep_dlfield.sh` still sweeps the converted files where they exist on disk; the rebuilt libraries are
   checked with `validate_typing.py --map` as above.
