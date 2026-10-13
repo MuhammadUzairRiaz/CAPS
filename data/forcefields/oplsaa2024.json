@@ -69395,12 +69395,12 @@
    ],
    "style": "opls",
    "params": [
-    -9.939,
-    1.1926,
-    4.3076,
-    0.0018
+    -8.9844,
+    1.2957,
+    2.6732,
+    -0.0448
    ],
-   "comment": "CAPS fit (QM): CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf2__CA-CA-CY-HC 1.05, tf2__CA-CA-CY-O$ 0.62 kcal/mol; ridge 0.003; fragment tf2__CA-CA-CY-HC, tf2__CA-CA-CY-O$"
+   "comment": "CAPS fit (QM): CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf2__CA-CA-CY-HC 1.05, tf2__CA-CA-CY-O$ 0.70 kcal/mol; ridge 0.001; fragment tf2__CA-CA-CY-HC, tf2__CA-CA-CY-O$"
   },
   {
    "name": "CA-CA-NT-CA",
@@ -69446,12 +69446,12 @@
    ],
    "style": "opls",
    "params": [
-    2.0929,
-    0.5206,
-    -1.665,
-    -0.7253
+    2.7302,
+    -0.1703,
+    -1.3472,
+    -0.8303
    ],
-   "comment": "CAPS fit (QM): CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf2__CA-OS-CT-CY 0.69 kcal/mol; ridge 0.001; fragment tf2__CA-OS-CT-CY"
+   "comment": "CAPS fit (QM): CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf2__CA-OS-CT-CY 0.60 kcal/mol; ridge 0.001; fragment tf2__CA-OS-CT-CY"
   },
   {
    "name": "CY-CY-CT-OS",
@@ -69463,12 +69463,12 @@
    ],
    "style": "opls",
    "params": [
-    -0.7897,
-    2.1703,
-    4.9409,
-    0.1495
+    -0.5625,
+    2.1135,
+    4.8985,
+    0.1537
    ],
-   "comment": "CAPS fit (QM): CAPS fit (QM), joint over 3 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf2__CY-CY-CT-OS 0.42, tf2__HC-CY-CT-OS 0.25, tf2__O$-CY-CT-OS 0.26 kcal/mol; ridge 0.001; fragment tf2__CY-CY-CT-OS, tf2__HC-CY-CT-OS, tf2__O$-CY-CT-OS"
+   "comment": "CAPS fit (QM): CAPS fit (QM), joint over 3 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf2__CY-CY-CT-OS 0.37, tf2__HC-CY-CT-OS 0.22, tf2__O$-CY-CT-OS 0.23 kcal/mol; ridge 0.001; fragment tf2__CY-CY-CT-OS, tf2__HC-CY-CT-OS, tf2__O$-CY-CT-OS"
   },
   {
    "name": "O$-CY-CT-OS",
@@ -69480,12 +69480,12 @@
    ],
    "style": "opls",
    "params": [
-    0.4614,
-    0.2907,
-    7.5348,
-    -0.0804
+    0.9666,
+    0.177,
+    7.4602,
+    -0.0463
    ],
-   "comment": "CAPS fit (QM): CAPS fit (QM), joint over 3 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf2__CY-CY-CT-OS 0.42, tf2__HC-CY-CT-OS 0.25, tf2__O$-CY-CT-OS 0.26 kcal/mol; ridge 0.001; fragment tf2__CY-CY-CT-OS, tf2__HC-CY-CT-OS, tf2__O$-CY-CT-OS"
+   "comment": "CAPS fit (QM): CAPS fit (QM), joint over 3 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf2__CY-CY-CT-OS 0.37, tf2__HC-CY-CT-OS 0.22, tf2__O$-CY-CT-OS 0.23 kcal/mol; ridge 0.001; fragment tf2__CY-CY-CT-OS, tf2__HC-CY-CT-OS, tf2__O$-CY-CT-OS"
   },
   {
    "name": "CF-CT-CF-CT",
@@ -69633,10 +69633,10 @@
    ],
    "style": "opls",
    "params": [
-    1.9386,
-    -0.6246,
-    0.0158,
-    0.141
+    1.365,
+    -0.5557,
+    0.0094,
+    0.1382
    ],
    "comment": "CAPS fit (QM): CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tfall__CF-CT-CT-F 0.08, tfall__CF-CT-CT-HC 0.07 kcal/mol; ridge 0.001; fragment tfall__CF-CT-CT-F, tfall__CF-CT-CT-HC"
   },
@@ -69701,12 +69701,12 @@
    ],
    "style": "opls",
    "params": [
-    6.9919,
-    -1.4248,
-    -2.3891,
-    -2.0792
+    6.1715,
+    -1.2937,
+    -2.0987,
+    -2.2372
    ],
-   "comment": "CAPS fit (QM): CAPS fit (QM), joint over 3 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tfall__CT-CF-CT-CT 0.38, tfall__CT-CF-CT-HC 0.32, tfall__CT-CT-CF-F 0.32 kcal/mol; ridge 0.01; fragment tfall__CT-CF-CT-CT, tfall__CT-CF-CT-HC, tfall__CT-CT-CF-F"
+   "comment": "CAPS fit (QM): CAPS fit (QM), joint over 3 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tfall__CT-CF-CT-CT 0.34, tfall__CT-CF-CT-HC 0.28, tfall__CT-CT-CF-F 0.29 kcal/mol; ridge 0.01; fragment tfall__CT-CF-CT-CT, tfall__CT-CF-CT-HC, tfall__CT-CT-CF-F"
   },
   {
    "name": "CT-CT-CF-F",
@@ -69718,12 +69718,12 @@
    ],
    "style": "opls",
    "params": [
-    7.4725,
-    -2.4644,
-    2.0347,
-    -1.6806
+    6.32,
+    -2.2266,
+    1.925,
+    -1.7637
    ],
-   "comment": "CAPS fit (QM): CAPS fit (QM), joint over 3 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tfall__CT-CF-CT-CT 0.38, tfall__CT-CF-CT-HC 0.32, tfall__CT-CT-CF-F 0.32 kcal/mol; ridge 0.01; fragment tfall__CT-CF-CT-CT, tfall__CT-CF-CT-HC, tfall__CT-CT-CF-F"
+   "comment": "CAPS fit (QM): CAPS fit (QM), joint over 3 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tfall__CT-CF-CT-CT 0.34, tfall__CT-CF-CT-HC 0.28, tfall__CT-CT-CF-F 0.29 kcal/mol; ridge 0.01; fragment tfall__CT-CF-CT-CT, tfall__CT-CF-CT-HC, tfall__CT-CT-CF-F"
   },
   {
    "name": "CT-CO-OH-HO",
