@@ -73,12 +73,12 @@ def main():
          "--ff", ff, "--seed", seed], log)
     eq = os.path.join(out, "equil.data")
     run([CAPS, "equilibrate", g, "-o", eq, "--protocol", "larsen21", "--tfinal", T, "--scale", arg("--scale", "1"),
-         "--seed", seed, "--log", os.path.join(out, "equil.csv")], log)
+         "--seed", seed, "--log", os.path.join(out, "equil.csv"), "--ff", ff], log)   # --ff: not taken from the data file
     prod = os.path.join(out, "prod.data")
     traj = os.path.join(out, "prod.lammpstrj")
     run([CAPS, "md", eq, "-o", prod, "--steps", arg("--prod", "1000000"), "--dt", "1", "--temp", T, "--thermostat", "bussi",
          "--barostat", "crescale", "--pressure", "1", "--pme", "--cutoff", "12", "--thermo", "1000", "--threads", threads,
-         "--log", os.path.join(out, "prod.csv"), "--dump", traj, "--every", "10000"], log)
+         "--log", os.path.join(out, "prod.csv"), "--dump", traj, "--every", "10000", "--ff", ff], log)
     rows = list(csv.DictReader(open(os.path.join(out, "prod.csv"))))
     rho = [float(r["density_g_cm3"]) for r in rows]
     rho = rho[len(rho) // 5:]   # the first fifth relaxes from the equilibration
