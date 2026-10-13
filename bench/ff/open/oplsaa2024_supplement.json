@@ -647,6 +647,20 @@
    "charge": 0.305,
    "description": "benzyl ester alkoxy C (492 0.250 + 0.055)",
    "reason": "the benzyl alcohol increment of the table (ring C 221 at -0.055 for benzene's -0.115, the carbinol C +0.055 over an alcohol's: 218 0.200 against 157 0.145) applied to an ester alkoxy C"
+  },
+  {
+   "name": "caps_epx_ch",
+   "lj_from": "opls_1027",
+   "charge": 0.225,
+   "description": "epoxide CH bearing an aryl (1027 0.170 + 0.055)",
+   "reason": "the benzyl alcohol increment of the table (ring C 221 at -0.055 for benzene's -0.115, the carbinol C +0.055 over an alcohol's: 218 0.200 against 157 0.145) applied to an epoxide C that bears an aryl"
+  },
+  {
+   "name": "caps_epx_c",
+   "lj_from": "opls_1028",
+   "charge": 0.255,
+   "description": "epoxide C bearing an aryl (1028 0.200 + 0.055)",
+   "reason": "the benzyl alcohol increment of the table (ring C 221 at -0.055 for benzene's -0.115, the carbinol C +0.055 over an alcohol's: 218 0.200 against 157 0.145) applied to an epoxide C that bears an aryl"
   }
  ],
  "dihedrals": [
@@ -1346,13 +1360,13 @@
     "CA"
    ],
    "params": [
-    4.8799,
-    0.1124,
-    0.7252,
-    0.1021
+    5.0671,
+    0.1285,
+    0.9619,
+    0.1001
    ],
    "source": "CAPS fit (QM)",
-   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf2__CA-CA-CT-CA 0.11 kcal/mol; ridge 0.001; fragment tf2__CA-CA-CT-CA"
+   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf2__CA-CA-CT-CA 0.12 kcal/mol; ridge 0.001; fragment tf2__CA-CA-CT-CA"
   },
   {
    "match": [
@@ -1522,10 +1536,10 @@
     "CA"
    ],
    "params": [
-    -1.53,
-    -1.5702,
-    0.3797,
-    -0.2833
+    -0.9703,
+    -1.5743,
+    0.3065,
+    -0.2969
    ],
    "source": "CAPS fit (QM)",
    "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf7__C-OS-CT-CA 0.11 kcal/mol; ridge 0.001; fragment tf7__C-OS-CT-CA"
@@ -1849,6 +1863,86 @@
    ],
    "source": "CAPS fit (QM)",
    "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tfall__HC-CT-CY-HC 0.19 kcal/mol; ridge 0.001; fragment tfall__HC-CT-CY-HC"
+  },
+  {
+   "match": [
+    "HC",
+    "CY",
+    "CT",
+    "OS"
+   ],
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "zero; the heavy-atom torsions about the same bond carry the profile of a 24-point MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L) scan of a 40-atom fragment (tf2__CY-CY-CT-OS, joint fit); fragment tf2__CY-CY-CT-OS"
+  },
+  {
+   "match": [
+    "CF",
+    "CT",
+    "CT",
+    "HC"
+   ],
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "zero; the heavy-atom torsions about the same bond carry the profile of a 24-point MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L) scan of a 14-atom fragment (tfall__CF-CT-CT-F, joint fit); fragment tfall__CF-CT-CT-F"
+  },
+  {
+   "match": [
+    "CO",
+    "OS",
+    "CO",
+    "HC"
+   ],
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "zero; the heavy-atom torsions about the same bond carry the profile of a 14-point MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L) scan of a 20-atom fragment (tfall__CO-OS-CO-HC, joint fit); fragment tfall__CO-OS-CO-HC"
+  },
+  {
+   "match": [
+    "HC",
+    "CO",
+    "CT",
+    "OH"
+   ],
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "zero; the heavy-atom torsions about the same bond carry the profile of a 24-point MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L) scan of a 14-atom fragment (tfall__HC-CO-CT-OH, joint fit); fragment tfall__HC-CO-CT-OH"
+  },
+  {
+   "match": [
+    "CT",
+    "CT",
+    "CY",
+    "HC"
+   ],
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "zero; the heavy-atom torsions about the same bond carry the profile of a 24-point MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L) scan of a 21-atom fragment (tfall__HC-CT-CY-HC, joint fit); fragment tfall__HC-CT-CY-HC"
   }
  ]
 }

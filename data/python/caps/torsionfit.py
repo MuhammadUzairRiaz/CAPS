@@ -665,7 +665,8 @@ def fit():
         wts = [0.2 if q - min(eqm) > 10 else 1.0 for q in eqm]
         if "--joint" in sys.argv:   # one fit over every scan of the plan below
             joint.append({"dir": s["dir"], "keys": keys, "rows": rows, "y": y, "w": wts, "eqm": eqm, "emm": emm,
-                          "emm_full": emm_full, "pts": pts, "atoms": len(s["elements"])})
+                          "emm_full": emm_full, "pts": pts, "atoms": len(s["elements"]),
+                          "zeroed": [k for k in zeroed if not (k in forced and k not in listed)]})
             continue
         # the smallest ridge that keeps every V within a physical bound (10 kcal/mol): none for a well-posed fit, just
         # enough where torsions about the bond turn together (--ridge fixes it)
@@ -768,6 +769,19 @@ def fit():
                               "fit": {"fragment": ", ".join(dirs), "joint": True, "scan": []}})
                 print(f"{'-'.join(k)} (joint, {len(dirs)} scans, ridge {lam:g}): V = {V}; RMS "
                       + ", ".join(f"{d} {rms_by[d]:.2f}" for d in dirs))
+    if joint:   # the H-ended classes the heavy-atom torsions stand in for: zero, unless another scan fits them
+        fitted_k = {tuple(r["match"]) for r in rules}
+        for j in joint:
+            for k in j["zeroed"]:
+                m = tuple(x.replace("*", "\\*") for x in k)
+                if m in fitted_k:
+                    continue
+                fitted_k.add(m)
+                rules.append({"name": "-".join(k), "match": list(m), "style": "opls", "params": [0.0, 0.0, 0.0, 0.0],
+                              "comment": f"CAPS fit (QM): zero; the heavy-atom torsions about the same bond carry the profile of a "
+                                         f"{len(j['pts'])}-point {plan['level']} scan of a {j['atoms']}-atom fragment ({j['dir']}, joint fit)",
+                              "fit": {"fragment": j["dir"], "zeroed": True, "scan": []}})
+                print(f"{'-'.join(k)}: zero (the heavy-atom torsions about this bond carry the profile; {j['dir']})")
     out = arg("--out", os.path.join(work, "fitted_torsions.json"))
     json.dump({"format": "caps-forcefield", "format_version": 1, "name": "CAPS-fitted torsions", "atom_types": [],
                "dihedrals": rules, "notes": [f"torsions CAPS fitted to {plan['level']} rotational profiles "
