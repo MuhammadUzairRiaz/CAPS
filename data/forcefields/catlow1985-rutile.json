@@ -164,7 +164,7 @@
  "notes": [
   "built by CAPS (bench/ff/make_catlow1985_rutile.py) from the paper's Table IVa",
   "Ti and O shells; Ti-Ti Coulomb only",
-  "the quartic core-shell constant 1.1e5 (footnote c, printed in eV/A^5) is read as K w^4/24 with K in eV/A^4; the paper prints no expression for it",
+  "the quartic core-shell constant 1.1e5 (footnote c, printed in eV/A^5) is read as K w^4/24 with K in eV/A^4; the paper prints no expression for it; Catlow & James 1982, the earlier rutile model, is harmonic only and does not settle it",
   "the paper states no cut-off; 10 A is CAPS's choice",
   "the paper's alpha-quartz set (Table Ia) is sanders1984-sio2",
   "shells carry 10 % of the ion's mass (adiabatic core-shell)"

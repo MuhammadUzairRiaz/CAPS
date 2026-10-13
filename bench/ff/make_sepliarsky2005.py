@@ -17,9 +17,13 @@ PbTiO3 is transcribed but not written by default. With the form section 2 states
 +141 eV per formula unit (a = 3.97 A), i.e. unbound. The Pb-O and Ti-O rows read the same way are physical (without
 Pb-Ti, -146.9 eV per formula unit with its minimum near a = 3.85-3.9 A, the LDA lattice constant the set was fitted to),
 while reading all three rows as Buckingham terms leaves no minimum between 3.8 and 4.15 A. The Pb-Ti row (or its form)
-is misprinted in the review; the parameterisation is in M. Sepliarsky, R. E. Cohen, AIP Conf. Proc. 626, 36 (2002) and
-M. Sepliarsky, Z. Wu, A. Asthagiri, R. E. Cohen, Ferroelectrics 301, 55 (2004) (refs. 27, 28), not here.
-SEPLIARSKY_SETS=knt,bst,pt writes it anyway (for checking the Rydberg form; not for use).
+is misprinted in the review. The review's refs. 27 and 28 do not settle it: M. Sepliarsky, R. E. Cohen, AIP Conf.
+Proc. 626, 36 (2002) prints no parameters and is an earlier set (Buckingham A-O, B-O, O-O only, 20 parameters);
+M. Sepliarsky, Z. Wu, A. Asthagiri, R. E. Cohen, Ferroelectrics 301, 55 (2004) is the review's set (Rydberg A-B, A-O,
+B-O, Buckingham O-O, 23 parameters, the spring c2 w^2/2 + c4 w^4/24) but prints no parameters either and no Rydberg
+expression. Its Fig. 1 (cubic E(V), minimum near 58.8 A^3, about +0.12 eV at 62.4 A^3) is matched by no reading of the
+Pb-Ti row tried (as printed: unbound; dropped, rho = 1/2.4201, or Buckingham: minima near 57.5 A^3 and +0.34 eV at
+62.4 A^3). SEPLIARSKY_SETS=knt,bst,pt writes it anyway (for checking the Rydberg form; not for use).
 
 usage: [SEPLIARSKY_SETS=knt,bst] make_sepliarsky2005.py [DATA_DIR]
 """
@@ -84,7 +88,7 @@ doc = {"format": "caps-forcefield", "format_version": 1, "name": "Ferroelectric 
                  "every ion a core and a shell; short-range terms between shells; pairs Table 1 does not list are Coulomb only",
                  "core-shell V(w) = c2 w^2/2 + c4 w^4/24 (section 2) as a class II bond: K2 = c2/2, K4 = c4/24",
                  "K(Nb,Ta)O3 and (Ba,Sr)TiO3: Buckingham pairs (section 2); each set typed by composition (K with Nb / Ta; Ba / Sr with Ti)",
-                 "PbTiO3 is left out: Table 1's Pb-Ti row read as the stated Rydberg form (A + C r) exp(-r/rho) makes cubic PbTiO3 unbound (+141 eV per formula unit); the original parameter papers (Sepliarsky & Cohen 2002; Sepliarsky et al. 2004) are needed",
+                 "PbTiO3 is left out: Table 1's Pb-Ti row read as the stated Rydberg form (A + C r) exp(-r/rho) makes cubic PbTiO3 unbound (+141 eV per formula unit); Sepliarsky & Cohen 2002 and Sepliarsky et al. 2004, the original papers, print no parameter table",
                  "the review states no cut-off; 10 A is CAPS's choice",
                  "Ta-O A 1046.63 eV and Nb-O 1036.63 eV as Table 1 prints them",
                  "shells carry 10 % of the ion's mass (adiabatic core-shell)"],
