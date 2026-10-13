@@ -3675,7 +3675,7 @@
     0.0,
     0.0
    ],
-   "comment": "ethylene glycol HG-CG-CG-HG: zero; Table S6 lists only the two heavy-atom torsions of ref. 3"
+   "comment": "ethylene glycol HG-CG-CG-HG: zero; Table S6 lists only the two heavy-atom torsions of ref. 3, and ref. 3 (Szefczyk & Cordeiro 2011, Table 2, p. 3016) has no other torsion"
   },
   {
    "name": "HG_etg-CG_etg-CG_etg-OG_etg",
@@ -3692,7 +3692,7 @@
     0.0,
     0.0
    ],
-   "comment": "ethylene glycol HG-CG-CG-OG: zero; Table S6 lists only the two heavy-atom torsions of ref. 3"
+   "comment": "ethylene glycol HG-CG-CG-OG: zero; Table S6 lists only the two heavy-atom torsions of ref. 3, and ref. 3 (Szefczyk & Cordeiro 2011, Table 2, p. 3016) has no other torsion"
   },
   {
    "name": "HG_etg-CG_etg-OG_etg-HO_etg",
@@ -3709,7 +3709,7 @@
     0.0,
     0.0
    ],
-   "comment": "ethylene glycol HG-CG-OG-HO: zero; Table S6 lists only the two heavy-atom torsions of ref. 3"
+   "comment": "ethylene glycol HG-CG-OG-HO: zero; Table S6 lists only the two heavy-atom torsions of ref. 3, and ref. 3 (Szefczyk & Cordeiro 2011, Table 2, p. 3016) has no other torsion"
   }
  ],
  "impropers": [
@@ -3799,7 +3799,7 @@
   "charges as the SI prints them, built for a +-0.8 e ion scaling: choline +0.8, chloride -0.8, every HBD neutral",
   "choline chloride's charges and Lennard-Jones terms refitted to reline's ND/EPSR structure; the HBDs' non-bonded terms tuned against choline chloride: for DES mixtures only, not the pure HBD liquids (paper p. 9984)",
   "HBD bonds, bends and torsions as the SI's Tables S5 and S6 print them (OPLS-AA's, ethylene glycol's torsions from Szefczyk & Cordeiro 2011); choline's from OPLS-2009IL (Table S2, S3)",
-  "ethylene glycol: Table S6 lists only OH-CG-CG-OH and CG-CG-OH-HO (Szefczyk & Cordeiro's); its hydrogen torsions H-C-C-H, H-C-C-O and H-C-O-H are zero",
+  "ethylene glycol: Table S6 lists only OH-CG-CG-OH and CG-CG-OH-HO; its hydrogen torsions H-C-C-H, H-C-C-O and H-C-O-H are zero, as in Szefczyk & Cordeiro 2011, whose model has only the O-C-C-O and C-C-O-H torsions (Table 2, p. 3016). Their Table 2 values (2.993 -0.654 2.820 and 0.396 -0.750 1.028 kcal/mol) differ from the SI's rows; the SI's are used",
   "rows X-c-X-X of Tables S3 and S6 read as impropers on c, V2 / 2 (1 - cos 2 phi), every triple of its neighbours (four on choline's N); the all-zero X-CM-X-X and X-CT-X-X left out; no improper for phenol's ring or levulinic acid's carbonyls (none listed)",
   "levulinic acid's bend HO-CB-CZ (Table S5) read as OH-CB-CZ; ethylene glycol's OPLS-AA class names in Table S5 (CT, HC) and the O called OH in Table S6 and Scheme S2 read as Table S4's CG, HG, OG",
   "urea's HC (cis to O) and HT (trans) have identical terms; CAPS's rules assign HT to every urea H, and the H-N-H bend (HC-N-HT, Table S5) is matched as H?-N-H?",
