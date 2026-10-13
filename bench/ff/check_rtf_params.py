@@ -6,12 +6,13 @@ and handed to caps ff apply, with the topology's own atom types (default) or wit
 residue passes when:
   * its charges sum to an integer, the one its RESI line gives;
   * every bond, angle and dihedral has a parameter of its own (none missing, none taken from an analogous type);
-  * every improper the residue's IMPR records list is there (the same four atoms; one whose parameter is zero adds
-    nothing and is not expected).
-Impropers CAPS adds beyond those are counted apart: CAPS applies a parameter-file improper wherever its types match,
-CHARMM only where the residue's IMPR records ask for one.
+  * every improper the residue's IMPR records list is there, as many times as listed (the same four atoms; one whose
+    parameter is zero adds nothing and is not expected).
+Impropers CAPS adds beyond those are counted apart (a library without "improper_placement" applies a parameter-file
+improper wherever its types match; CHARMM only where the residue's IMPR records ask for one), and so are impropers
+whose atoms are in the IMPR record's order.
 
-usage: check_rtf_params.py TOP.rtf FF.json [--auto RULES.json] [--only RESI,...] [--all]
+usage: check_rtf_params.py TOP.rtf FF.json [--auto RULES.json] [--only RESI,...] [--all] [--keep DIR]
 """
 import collections, json, os, re, subprocess, sys, tempfile
 
@@ -60,8 +61,9 @@ def residues(path):
     return res
 
 
-work = tempfile.mkdtemp()
-counts, failures, extra = collections.Counter(), [], {}
+work = arg("--keep") or tempfile.mkdtemp()
+os.makedirs(work, exist_ok=True)
+counts, failures, extra, totals = collections.Counter(), [], {}, collections.Counter()
 for r in residues(rtf):
     if only and r["name"] not in only:
         continue
@@ -96,14 +98,28 @@ for r in residues(rtf):
         why.append("missing: " + "; ".join(re.findall(r"^  (.+)$", out.split("missing parameters", 1)[1], re.M)[:4]))
     if m := re.search(r"(\d+) interactions \(\d+ kinds\) have no entry", out):
         why.append(f"{m.group(1)} terms by analogy")
-    got = {frozenset(map(int, l.split()[1:5])) for l in out.splitlines() if l.startswith("improper ")}
+    got_q = [tuple(map(int, l.split()[1:5])) for l in out.splitlines() if l.startswith("improper ")]
+    got = collections.Counter(frozenset(q) for q in got_q)
     tmap = {a.upper(): t for a, t, _ in r["atoms"]}
-    want = {frozenset(idx[x.upper()] + 1 for x in quad) for quad in r["impr"]
-            if all(x.upper() in idx for x in quad) and not zero_improper([tmap[x.upper()] for x in quad])}
-    if not p.returncode and want - got:
-        why.append(f"impropers: {len(want - got)} of the topology's missing")
-    if not p.returncode and got - want:
-        extra[r["name"]] = len(got - want)
+    want_q = [tuple(idx[x.upper()] + 1 for x in quad) for quad in r["impr"]
+              if all(x.upper() in idx for x in quad) and not zero_improper([tmap[x.upper()] for x in quad])]
+    want = collections.Counter(frozenset(q) for q in want_q)
+    if not p.returncode:
+        miss, more = sum((want - got).values()), sum((got - want).values())
+        totals["listed"] += sum(want.values())
+        totals["missing"] += miss
+        totals["extra"] += more
+        # the same atom order as the IMPR record (or that order backwards, the same torsion)
+        same = [q in got_q or q[::-1] in got_q for q in want_q]
+        totals["same order"] += sum(same)
+        if "--all" in sys.argv and not all(same):
+            print(f"  order {r['name']}: IMPR " + "; ".join(" ".join(names[i - 1] for i in q) for q, ok in zip(want_q, same) if not ok)
+                  + " | CAPS " + "; ".join(" ".join(names[i - 1] for i in q) for q in got_q if frozenset(q) in
+                                           {frozenset(w) for w, ok in zip(want_q, same) if not ok}))
+        if miss:
+            why.append(f"impropers: {miss} of the topology's missing")
+        if more:
+            extra[r["name"]] = more
     counts["checked"] += 1
     if why:
         failures.append((r["name"], why))
@@ -113,6 +129,8 @@ for r in residues(rtf):
 print(f"{os.path.basename(rtf)} with {os.path.basename(ffjson)} ({'CAPS typing ' + os.path.basename(auto) if auto else 'the topology types'}): "
       f"{counts['complete']} of {counts['checked']} residues complete (integer charge, every bonded term, every improper the topology lists)"
       + "".join(f" · {k} {v}" for k, v in counts.items() if k.startswith("skipped")))
+print(f"  impropers: {totals['listed']} listed by the residues' IMPR records (zero ones aside), {totals['missing']} missing, "
+      f"{totals['extra']} extra; {totals['same order']} in the IMPR record's atom order")
 if extra:
     print(f"  extra impropers (a parameter-file improper the residue's IMPR records do not list): {sum(extra.values())} in {len(extra)} residues"
           + (": " + ", ".join(f"{k} {v}" for k, v in extra.items()) if "--all" in sys.argv else ""))

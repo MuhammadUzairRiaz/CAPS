@@ -460,6 +460,32 @@ TEST(Typing, Cgenff2a5FromThePaperSI) {
   EXPECT_EQ(rep.estimated_terms, 0);
   EXPECT_FALSE(ff.urey_bradley.empty());
   EXPECT_FALSE(ff.lj14_types.empty());
+  // impropers only where the topology's IMPR records put them: none on toluene (the file's CG2R61 X X HGR61, which
+  // no residue lists, used to go on every ring CH), the amide C and N of N-methylacetamide as RESI NMA lists them
+  EXPECT_TRUE(def.improper_placement);
+  EXPECT_TRUE(ff.impropers.empty());
+  EXPECT_TRUE(ff.impropers_harmonic.empty());
+  const System nma = mol({"C", "N", "C", "O", "C"}, {3, 1, 0, 0, 3}, {{0, 1}, {1, 2}, {2, 3}, {2, 4}});
+  const TypingResult tn = assign_types(nma, d2);
+  ASSERT_EQ(tn.untyped, 0);
+  ParamReport rn;
+  const ForceField fn = parameterize(nma, d2, tn.types, "gasteiger", &rn);
+  ASSERT_EQ(fn.impropers_harmonic.size(), 2u);
+  EXPECT_EQ(fn.impropers_harmonic[0].i, 1u);   // N  C  CAY(the N methyl)  HN: NG2S1 X X HGP1, centre first
+  EXPECT_EQ(fn.impropers_harmonic[1].i, 2u);   // C  CH3  N  O: CG2O1 X X OG2D1
+  EXPECT_DOUBLE_EQ(fn.impropers_harmonic[1].k2, 120.0);
+  // the placement survives writing the library out and reading it back
+  const std::string tmp = (std::filesystem::temp_directory_path() / "caps_cgenff2a5_roundtrip.json").string();
+  save_forcefield(def, tmp);
+  FFDef back = load_forcefield(tmp);
+  std::filesystem::remove(tmp);
+  EXPECT_EQ(back.improper_sites.size(), def.improper_sites.size());
+  EXPECT_EQ(back.impropers_unlisted, def.impropers_unlisted);
+  size_t exc = 0, exc_back = 0;
+  for (const auto& st : def.improper_sites) exc += st.exceptions.size();
+  for (const auto& st : back.improper_sites) exc_back += st.exceptions.size();
+  EXPECT_EQ(exc_back, exc);
+  EXPECT_GT(exc, 0u);
 }
 
 TEST(Typing, CgenffAndOpls) {

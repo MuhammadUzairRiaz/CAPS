@@ -341,7 +341,9 @@ ENTRIES["cgenff-2a5-jcc2010"] = (
     "and sulfoxide types; the SI's top_all36_cgenff.rtf typed as it types itself for 7471 / 7505 atoms, 371 / 388 residues "
     "(bench/ff/validate_rtf_types.py; the other 34 atoms are 2a5 assignments that later releases revised, as CAPS's rules "
     "follow, or residues later releases dropped); every residue complete at its integer charge with no missing bonded term, "
-    "388 / 388 with the topology's types and 387 / 388 with CAPS's (PRAL: one aldehyde improper, bench/ff/check_rtf_params.py); "
+    "388 / 388 with the topology's types and 386 / 388 with CAPS's (PRAL and GABD, where CAPS's types differ from 2a5's, each "
+    "lack one improper, bench/ff/check_rtf_params.py); impropers only where the residues' IMPR records put them (the "
+    "library's improper_placement, convert_charmm_prm.py --impropers-from-rtf): the 323 they list, 0 missing, 0 extra; "
     "LAMMPS and GROMACS reproduce CAPS's energies (Urey-Bradley, 1-4 Lennard-Jones)",
     ("CGenFF 2a5 (2010)", "cgenff_2a5", 23), [])
 cat_path = os.path.join(FF, "catalogue.json")
