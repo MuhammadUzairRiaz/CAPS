@@ -725,6 +725,12 @@
    "description": "H on ester alkoxy C"
   },
   {
+   "type": "221",
+   "smarts": "c[CX4;$(*[OX2][CX3](=[OX1])[#6,#1])]",
+   "priority": 7,
+   "description": "ring C of a benzyl ester (as a benzyl alcohol's, 221)"
+  },
+  {
    "type": "267",
    "smarts": "[CX3](=[OX1])[OX2H1]",
    "priority": 7,

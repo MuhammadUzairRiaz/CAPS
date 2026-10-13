@@ -756,6 +756,30 @@
    "description": "H on ester alkoxy C"
   },
   {
+   "type": "caps_bze_ch2",
+   "smarts": "[CX4H2;$(*c);$(*[OX2][CX3](=[OX1])[#6,#1])]",
+   "priority": 7,
+   "description": "benzyl ester alkoxy C (CH2)"
+  },
+  {
+   "type": "caps_bze_ch",
+   "smarts": "[CX4H1;$(*c);$(*[OX2][CX3](=[OX1])[#6,#1])]",
+   "priority": 7,
+   "description": "benzyl ester alkoxy C (CH)"
+  },
+  {
+   "type": "caps_bze_c",
+   "smarts": "[CX4H0;$(*c);$(*[OX2][CX3](=[OX1])[#6,#1])]",
+   "priority": 7,
+   "description": "benzyl ester alkoxy C (C)"
+  },
+  {
+   "type": "opls_221",
+   "smarts": "c[CX4;$(*[OX2][CX3](=[OX1])[#6,#1])]",
+   "priority": 7,
+   "description": "ring C of a benzyl ester (as a benzyl alcohol's, 221)"
+  },
+  {
    "type": "opls_267",
    "smarts": "[CX3](=[OX1])[OX2H1]",
    "priority": 7,

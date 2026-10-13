@@ -714,41 +714,60 @@ def fit():
                                      f"{len(pts)}-point {plan['level']} scan of a {len(s['elements'])}-atom fragment (RMS {rms:.2f} kcal/mol)",
                           "fit": {"fragment": s["dir"], "zeroed": True, "scan": []}})
             print(f"{'-'.join(k)}: zero (the heavy-atom torsions about this bond carry the profile)")
-    if joint:   # --joint: shared V1-V4 for every class over all the scans, one constant per scan
-        K = sorted({k for j in joint for k in j["keys"]})
-        A, Y, W = [], [], []
-        for n, j in enumerate(joint):
-            for r, yy, ww in zip(j["rows"], j["y"], j["w"]):
-                row = [1.0 if m == n else 0.0 for m in range(len(joint))]
-                for k in K:
-                    row += r[1 + 4 * j["keys"].index(k): 5 + 4 * j["keys"].index(k)] if k in j["keys"] else [0.0] * 4
-                A.append(row)
-                Y.append(yy)
-                W.append(ww)
-        nc = len(joint)
-        for lam in [1e-3, 3e-3, 0.01, 0.03, 0.1, 0.3, 0.5]:
-            # the ridge on the V columns only (lstsq leaves column 0 alone; shift the constants out of its reach)
-            M = [[sum(W[r] ** 2 * A[r][i] * A[r][jj] for r in range(len(A))) + ((lam if i >= nc else 0.0) + 1e-9 if i == jj else 0.0)
-                  for jj in range(len(A[0]))] for i in range(len(A[0]))]
-            bvec = [sum(W[r] ** 2 * A[r][i] * Y[r] for r in range(len(A))) for i in range(len(A[0]))]
-            sol = lstsq_solve(M, bvec)
-            if max(abs(v) for v in sol[nc:]) <= 10.0:
-                break
-        rms_by = {}
-        for n, j in enumerate(joint):
-            idx = [i for i, row in enumerate(A) if row[n] == 1.0]
-            f = [sum(a * x for a, x in zip(A[i], sol)) for i in idx]
-            rms_by[j["dir"]] = math.sqrt(sum((f[t] - Y[i]) ** 2 for t, i in enumerate(idx)) / len(idx))
-        for m, k in enumerate(K):
-            V = [round(float(v), 4) for v in sol[nc + 4 * m: nc + 4 * m + 4]]
-            refit = k in forced
-            dirs = [j["dir"] for j in joint if k in j["keys"]]
-            rules.append({"name": "-".join(k), "match": [x.replace("*", "\\*") for x in k], "style": "opls", "params": V,
-                          "comment": f"CAPS {'refit' if refit else 'fit'} (QM), joint over {len(dirs)} scans: {plan['level']}; RMS "
-                                     + ", ".join(f"{d} {rms_by[d]:.2f}" for d in dirs) + " kcal/mol"
-                                     + (f"; ridge {lam:g}" if lam else ""),
-                          "fit": {"fragment": ", ".join(dirs), "joint": True, "scan": []}})
-            print(f"{'-'.join(k)} (joint, {len(dirs)} scans): V = {V}; RMS " + ", ".join(f"{d} {rms_by[d]:.2f}" for d in dirs))
+    if joint:   # --joint: shared V1-V4 for every class over the scans that contain it, one constant per scan
+        # scans linked through a shared class form one group, solved on its own with its own ridge: a single ill-posed
+        # class (two torsions 180 deg apart about one bond) then cannot damp the well-defined classes of other scans
+        groups, left = [], list(range(len(joint)))
+        while left:
+            grp = [left.pop(0)]
+            keys = set(joint[grp[0]]["keys"])
+            grew = True
+            while grew:
+                grew = False
+                for n in list(left):
+                    if keys & set(joint[n]["keys"]):
+                        grp.append(n)
+                        keys |= set(joint[n]["keys"])
+                        left.remove(n)
+                        grew = True
+            groups.append(sorted(grp))
+        for grp in groups:
+            G = [joint[n] for n in grp]
+            K = sorted({k for j in G for k in j["keys"]})
+            A, Y, W = [], [], []
+            for n, j in enumerate(G):
+                for r, yy, ww in zip(j["rows"], j["y"], j["w"]):
+                    row = [1.0 if m == n else 0.0 for m in range(len(G))]
+                    for k in K:
+                        row += r[1 + 4 * j["keys"].index(k): 5 + 4 * j["keys"].index(k)] if k in j["keys"] else [0.0] * 4
+                    A.append(row)
+                    Y.append(yy)
+                    W.append(ww)
+            nc = len(G)
+            for lam in [1e-3, 3e-3, 0.01, 0.03, 0.1, 0.3, 0.5]:
+                # the ridge on the V columns only, never on the constants
+                M = [[sum(W[r] ** 2 * A[r][i] * A[r][jj] for r in range(len(A))) + ((lam if i >= nc else 0.0) + 1e-9 if i == jj else 0.0)
+                      for jj in range(len(A[0]))] for i in range(len(A[0]))]
+                bvec = [sum(W[r] ** 2 * A[r][i] * Y[r] for r in range(len(A))) for i in range(len(A[0]))]
+                sol = lstsq_solve(M, bvec)
+                if max(abs(v) for v in sol[nc:]) <= 10.0:
+                    break
+            rms_by = {}
+            for n, j in enumerate(G):
+                idx = [i for i, row in enumerate(A) if row[n] == 1.0]
+                f = [sum(a * x for a, x in zip(A[i], sol)) for i in idx]
+                rms_by[j["dir"]] = math.sqrt(sum((f[t] - Y[i]) ** 2 for t, i in enumerate(idx)) / len(idx))
+            for m, k in enumerate(K):
+                V = [round(float(v), 4) for v in sol[nc + 4 * m: nc + 4 * m + 4]]
+                refit = k in forced
+                dirs = [j["dir"] for j in G if k in j["keys"]]
+                rules.append({"name": "-".join(k), "match": [x.replace("*", "\\*") for x in k], "style": "opls", "params": V,
+                              "comment": f"CAPS {'refit' if refit else 'fit'} (QM), joint over {len(dirs)} scans: {plan['level']}; RMS "
+                                         + ", ".join(f"{d} {rms_by[d]:.2f}" for d in dirs) + " kcal/mol"
+                                         + (f"; ridge {lam:g}" if lam else ""),
+                              "fit": {"fragment": ", ".join(dirs), "joint": True, "scan": []}})
+                print(f"{'-'.join(k)} (joint, {len(dirs)} scans, ridge {lam:g}): V = {V}; RMS "
+                      + ", ".join(f"{d} {rms_by[d]:.2f}" for d in dirs))
     out = arg("--out", os.path.join(work, "fitted_torsions.json"))
     json.dump({"format": "caps-forcefield", "format_version": 1, "name": "CAPS-fitted torsions", "atom_types": [],
                "dihedrals": rules, "notes": [f"torsions CAPS fitted to {plan['level']} rotational profiles "
