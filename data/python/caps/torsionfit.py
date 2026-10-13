@@ -3,7 +3,7 @@
     python -m caps.torsionfit prepare STRUCTURE[,STRUCTURE...] FF.json WORKDIR [--engine orca|psi4] [--step 15] [--radius 2]
                                     [--level oplsaa-l|dlpno] [--nprocs 1] [--classes A-B-C-D,... [--only]]
     python -m caps.torsionfit fill WORKDIR      (after collect: the points prepare skipped, from finished neighbours)
-    python -m caps.torsionfit fit WORKDIR [--out overlay.json] [--refit] [--ridge 0.5]
+    python -m caps.torsionfit fit WORKDIR [--out overlay.json] [--refit] [--ridge 0.5] [--joint]
     python -m caps.torsionfit collect WORKDIR
     python -m caps.torsionfit fit WORKDIR [--out overlay.json]
 
@@ -40,6 +40,7 @@ LEVELS = {
 }
 ORCA_OPT, ORCA_SP, LEVEL = LEVELS["oplsaa-l"]
 Z = {"H": 1, "C": 6, "N": 7, "O": 8, "F": 9, "Si": 14, "P": 15, "S": 16, "Cl": 17, "Br": 35, "I": 53}
+COV = {"H": 0.32, "C": 0.75, "N": 0.71, "O": 0.64, "F": 0.60, "Si": 1.14, "P": 1.09, "S": 1.04, "Cl": 1.00, "Br": 1.17, "I": 1.36}
 CAP_BOND = {"C": 1.09, "N": 1.01, "O": 0.96, "S": 1.34, "Si": 1.48, "P": 1.42}
 
 
@@ -485,6 +486,22 @@ def fill():
     print(f"{len(jobs)} new points (jobs_fill.txt; array 1-{len(jobs)}); {left} still without a start geometry")
 
 
+def lstsq_solve(M, b):
+    """M x = b by Gauss-Jordan with partial pivoting"""
+    n = len(M)
+    M = [list(r) for r in M]
+    b = list(b)
+    for c in range(n):
+        p = max(range(c, n), key=lambda r: abs(M[r][c]))
+        M[c], M[p], b[c], b[p] = M[p], M[c], b[p], b[c]
+        for r in range(n):
+            if r != c and M[c][c]:
+                f = M[r][c] / M[c][c]
+                M[r] = [M[r][k] - f * M[c][k] for k in range(n)]
+                b[r] -= f * b[c]
+    return [b[i] / M[i][i] if M[i][i] else 0.0 for i in range(n)]
+
+
 def lstsq(A, y, w, ridge=0.0):
     """weighted least squares by the normal equations; `ridge` (kcal^-2 mol^2 scale of the normal matrix) pulls every
     column but the first (the constant) towards zero, so torsions that turn together about one bond (an O and a C on
@@ -520,8 +537,28 @@ def fit():
         json.dump({"format": "caps-forcefield", "format_version": 1, "name": "forced classes at zero", "atom_types": [],
                    "dihedrals": [{"name": "-".join(k), "match": list(k), "style": "opls", "params": [0, 0, 0, 0]}
                                  for k in sorted(forced)]}, open(zero, "w"), indent=1)
+    joint = []
     for s in plan["scans"]:
         pts = [p for p in s["points"] if "E_qm" in p]
+        # a point whose optimisation broke the fragment (started near a clash, a bond stretched apart or two unbonded
+        # atoms squeezed together, or more than 30 kcal/mol above the scan's lowest point) is not the molecule any more:
+        # left out and named
+        good, bad = [], []
+        emin = min((p["E_qm"] for p in pts), default=0.0)
+        for p in pts:
+            if (p["E_qm"] - emin) * 627.509474 > 30.0:   # far above any torsion barrier of these fragments
+                bad.append(p)
+                continue
+            P = p["positions"]
+            bl = all(norm(sub(P[a], P[b])) < 1.25 * (COV.get(s["elements"][a], 0.8) + COV.get(s["elements"][b], 0.8)) for a, b in s["bonds"])
+            fnb0 = neighbours(len(s["elements"]), [tuple(b) for b in s["bonds"]])
+            near = [set(fnb0[i]) | {z for y in fnb0[i] for z in fnb0[y]} for i in range(len(P))]
+            closest = min((norm(sub(P[i], P[j])) for i in range(len(P)) for j in range(i) if j not in near[i]), default=9.0)
+            (good if bl and closest > 1.4 else bad).append(p)
+        if bad:
+            print(f"{'-'.join(s['classes'])}: {len(bad)} point(s) left out, the optimised fragment broken: "
+                  + ", ".join(f"{p['phi']:+.0f}" for p in bad))
+        pts = good
         if len(pts) < 8:
             print(f"{'-'.join(s['classes'])}: {len(pts)} points finished, not fitted")
             continue
@@ -561,6 +598,10 @@ def fit():
             rows.append(row)
         y = [q - m for q, m in zip(eqm, emm)]
         wts = [0.2 if q - min(eqm) > 10 else 1.0 for q in eqm]
+        if "--joint" in sys.argv:   # one fit over every scan of the plan below
+            joint.append({"dir": s["dir"], "keys": keys, "rows": rows, "y": y, "w": wts, "eqm": eqm, "emm": emm,
+                          "emm_full": emm_full, "pts": pts, "atoms": len(s["elements"])})
+            continue
         # the smallest ridge that keeps every V within a physical bound (10 kcal/mol): none for a well-posed fit, just
         # enough where torsions about the bond turn together (--ridge fixes it)
         lam_used = None
@@ -606,6 +647,41 @@ def fit():
                                      f"{len(pts)}-point {plan['level']} scan of a {len(s['elements'])}-atom fragment (RMS {rms:.2f} kcal/mol)",
                           "fit": {"fragment": s["dir"], "zeroed": True, "scan": []}})
             print(f"{'-'.join(k)}: zero (the heavy-atom torsions about this bond carry the profile)")
+    if joint:   # --joint: shared V1-V4 for every class over all the scans, one constant per scan
+        K = sorted({k for j in joint for k in j["keys"]})
+        A, Y, W = [], [], []
+        for n, j in enumerate(joint):
+            for r, yy, ww in zip(j["rows"], j["y"], j["w"]):
+                row = [1.0 if m == n else 0.0 for m in range(len(joint))]
+                for k in K:
+                    row += r[1 + 4 * j["keys"].index(k): 5 + 4 * j["keys"].index(k)] if k in j["keys"] else [0.0] * 4
+                A.append(row)
+                Y.append(yy)
+                W.append(ww)
+        nc = len(joint)
+        for lam in [0.0, 1e-4, 1e-3, 3e-3, 0.01, 0.03, 0.1, 0.3, 0.5]:
+            # the ridge on the V columns only (lstsq leaves column 0 alone; shift the constants out of its reach)
+            M = [[sum(W[r] ** 2 * A[r][i] * A[r][jj] for r in range(len(A))) + ((lam if i >= nc else 0.0) + 1e-9 if i == jj else 0.0)
+                  for jj in range(len(A[0]))] for i in range(len(A[0]))]
+            bvec = [sum(W[r] ** 2 * A[r][i] * Y[r] for r in range(len(A))) for i in range(len(A[0]))]
+            sol = lstsq_solve(M, bvec)
+            if max(abs(v) for v in sol[nc:]) <= 10.0:
+                break
+        rms_by = {}
+        for n, j in enumerate(joint):
+            idx = [i for i, row in enumerate(A) if row[n] == 1.0]
+            f = [sum(a * x for a, x in zip(A[i], sol)) for i in idx]
+            rms_by[j["dir"]] = math.sqrt(sum((f[t] - Y[i]) ** 2 for t, i in enumerate(idx)) / len(idx))
+        for m, k in enumerate(K):
+            V = [round(float(v), 4) for v in sol[nc + 4 * m: nc + 4 * m + 4]]
+            refit = k in forced
+            dirs = [j["dir"] for j in joint if k in j["keys"]]
+            rules.append({"name": "-".join(k), "match": [x.replace("*", "\\*") for x in k], "style": "opls", "params": V,
+                          "comment": f"CAPS {'refit' if refit else 'fit'} (QM), joint over {len(dirs)} scans: {plan['level']}; RMS "
+                                     + ", ".join(f"{d} {rms_by[d]:.2f}" for d in dirs) + " kcal/mol"
+                                     + (f"; ridge {lam:g}" if lam else ""),
+                          "fit": {"fragment": ", ".join(dirs), "joint": True, "scan": []}})
+            print(f"{'-'.join(k)} (joint, {len(dirs)} scans): V = {V}; RMS " + ", ".join(f"{d} {rms_by[d]:.2f}" for d in dirs))
     out = arg("--out", os.path.join(work, "fitted_torsions.json"))
     json.dump({"format": "caps-forcefield", "format_version": 1, "name": "CAPS-fitted torsions", "atom_types": [],
                "dihedrals": rules, "notes": [f"torsions CAPS fitted to {plan['level']} rotational profiles "
