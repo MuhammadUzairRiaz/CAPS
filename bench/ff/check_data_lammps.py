@@ -39,6 +39,9 @@ work = arg("--keep", "") or tempfile.mkdtemp()
 os.makedirs(work, exist_ok=True)
 
 # (label, structure source, force field, charges, typing: "rules" or "keys")
+# chemistry a library leaves untyped on purpose (it has no numbers for it): CAPS refusing it is the intended result
+UNTYPED_BY_DESIGN = {"OPLS-AA phthalimide": "the 2024 table has no aryl or N-substituted imide types (make_oplsaa_rules.py)"}
+
 CASES = [
     ("PCFF favipiravir (class II + class I)", ("template", "PCFF", "favipiravir"), "pcff", "types", "rules"),
     ("PCFF acetylcholine (N+)", ("template", "PCFF", "acetylcholine"), "pcff", "types", "rules"),
@@ -779,7 +782,8 @@ for case in CASES:
     if r.returncode or "missing parameters" in r.stdout:
         why = (r.stderr.strip().splitlines() or r.stdout.strip().splitlines() or ["?"])[-1]
         # CHARMM's force switch and 1-4 terms exist in CHARMM's own styles only (lj/charmmfsw): refused in the exact mode
-        expected = "1-4 Lennard-Jones" in why or ("CHARMM's own LAMMPS styles only" in why and not NATIVE)
+        expected = ("1-4 Lennard-Jones" in why or ("CHARMM's own LAMMPS styles only" in why and not NATIVE)
+                    or ("match no typing rule" in why and label in UNTYPED_BY_DESIGN))
         rows.append((label, ("refused, as intended: " if expected else "CAPS failed: ") + why[:150], "", ""))
         fails += 0 if expected else 1
         continue
