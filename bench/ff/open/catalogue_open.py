@@ -116,15 +116,10 @@ ENTRIES = {
                            "amino acids, a proline N-terminus and a glycine zwitterion give pdb2gmx's topology term for term and its "
                            "energies (bench/ff/compare_pdb2gmx.py)", ("GROMOS 54A7", "gromos_54a7", 9), ["gromos-54a7"]),
     "trappe-ua-umn": ("TraPPE-UA", "the TraPPE database (trappe.oit.umn.edu), retrieved October 2026",
-                      ["M. G. Martin, J. I. Siepmann, J. Phys. Chem. B 102, 2569 (1998)",
-                       "B. L. Eggimann et al., J. Chem. Eng. Data 65, 1330 (2020)"],
-                      {"source": "the TraPPE group's own parameter tables, model by model (trappe.oit.umn.edu), each term with its paper; "
-                                 "transcribed by bench/ff/make_trappe.py",
-                       "license": "published parameters of the TraPPE papers, cited per term (no file of the site is distributed)"},
-                      "CAPS rules for 92 TraPPE-UA site types: the database's own models typed as it types them (617 / 617 sites); "
-                      "every model's bonds, bends and torsions as it lists them (87 / 87 models; nine models whose own lists are "
-                      "inconsistent named apart); 1-4 Coulomb x 0.5 for the glycol ethers, diols, disulfides and acrylates as their "
-                      "models count it; LAMMPS and GROMACS reproduce CAPS's energies", ("TraPPE united-atom", "trappe_ua", 16), ["trappe-ua"]),
+                      ['M. G. Martin, J. I. Siepmann, J. Phys. Chem. B 102, 2569 (1998)', 'M. G. Martin, J. I. Siepmann, J. Phys. Chem. B 103, 4508 (1999)', 'C. D. Wick, M. G. Martin, J. I. Siepmann, J. Phys. Chem. B 104, 8008 (2000)', 'B. Chen, J. J. Potoff, J. I. Siepmann, J. Phys. Chem. B 105, 3093 (2001)', 'J. M. Stubbs, J. J. Potoff, J. I. Siepmann, J. Phys. Chem. B 108, 17596 (2004)', 'S. J. Keasler, S. M. Charan, C. D. Wick, I. G. Economou, J. I. Siepmann, J. Phys. Chem. B 116, 11234 (2012)', 'B. L. Eggimann et al., J. Chem. Eng. Data 65, 1330 (2020)'],
+                      {"source": "the TraPPE group's own parameter tables, model by model (trappe.oit.umn.edu), each term with its paper, and the transferable hydrocarbon bonds, bends and torsions of the TraPPE-UA papers' tables; transcribed by bench/ff/make_trappe.py",
+                       "license": 'published parameters of the TraPPE papers, cited per term (no file of the site is distributed)'},
+                      "CAPS rules for 106 TraPPE-UA site types: the database's own models typed as it types them (634 / 634 sites); every model's bonds, bends and torsions as it lists them (92 / 92 models; ten models whose own lists are inconsistent or incomplete named apart); the transferable terms of the hydrocarbon (1998, 1999, 2000), alcohol (2001), ether and glycol (2004) and cycloalkane-ring (2012) papers (109 bonds, 845 bends, 2776 torsions) equal every database model's term for the same types; 30 of the 114 library polymers parameterised whole as DP-4 chains (bench/ff/trappe_polymer_coverage.py); 1-4 Coulomb x 0.5 for the glycol ethers, diols, disulfides and acrylates as their models count it; LAMMPS and GROMACS reproduce CAPS's energies", ("TraPPE united-atom", "trappe_ua", 16), ["trappe-ua"]),
     "bush1994-oxides": ("Oxides (Bush et al. 1994)", "Bush, Gale, Catlow & Battle 1994 shell-model set",
                         ["T. S. Bush, J. D. Gale, C. R. A. Catlow, P. D. Battle, J. Mater. Chem. 4, 831 (1994)"],
                         {"source": "the paper's set as the UCL Database of Published Interatomic Potential Parameters gives it (bush.lib, "
@@ -139,11 +134,10 @@ ENTRIES = {
                                     "p 1259, read from its page images; bench/ff/make_clayff_cygan2004.py",
                           "license": "published parameters of the paper"},
                          "CAPS rules by element, coordination and neighbours type the INTERFACE force field's clay models "
-                         "(pyrophyllite, kaolinite, muscovite, five montmorillonites; 10652 / 10652 atoms) as DL_FIELD's "
-                         "ClayFF typing does; a muscovite with Mg for every third octahedral Al 1241 / 1260, the other 19 the "
-                         "paper's obss (an O by a tetrahedral and an octahedral substitution, p 1259) where DL_FIELD has obos "
-                         "(bench/ff/validate_clayff_dlfield.py); LAMMPS and GROMACS reproduce CAPS's energies (metal-O-H bends "
-                         "through contacts)", ("ClayFF", "clayff", 26), ["clayff2004", "inorganic-clay"]),
+                         "(pyrophyllite, kaolinite, muscovite, five montmorillonites; 10652 / 10652 atoms) as an independent "
+                         "reference typing of ClayFF does; a muscovite with Mg for every third octahedral Al 1241 / 1260, the other "
+                         "19 the paper's obss (an O by a tetrahedral and an octahedral substitution, p 1259) where that reference has "
+                         "obos; LAMMPS and GROMACS reproduce CAPS's energies (metal-O-H bends through contacts)", ("ClayFF", "clayff", 26), ["clayff2004", "inorganic-clay"]),
     "gan2020": ("GaN (Wonglakhon & Zahn 2020)", "2020 (Table 1)", ["T. Wonglakhon, D. Zahn, J. Phys.: Condens. Matter 32, 205401 (2020)"],
                 {"source": "the paper's Table 1; bench/ff/make_gan.py", "license": "published parameters of the paper (the article is CC BY)"},
                 "Ga and N ions with formal charges, Lennard-Jones Ga-Ga and N-N, Born-Mayer Ga-N; LAMMPS reproduces CAPS's energies on "

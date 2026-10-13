@@ -139,7 +139,7 @@
    "type": "c5",
    "smarts": "[c;$(c1[n]c[n]c1),$(c1[n]cc[n]1);!$(c[nX2])]",
    "priority": 1,
-   "description": "imidazole C bonded only to N-H, not to the pyridine-like N (DL_FIELD's PCFF: furan, oxazole and indole carbons stay cp)"
+   "description": "imidazole C bonded only to N-H, not to the pyridine-like N (furan, oxazole and indole carbons stay cp)"
   },
   {
    "type": "ci",
@@ -612,7 +612,7 @@
    "type": "c",
    "smarts": "[CX4][F,Cl,Br,I]",
    "priority": 2,
-   "description": "sp3 C on a halogen (DL_FIELD's PCFF)"
+   "description": "sp3 C on a halogen"
   },
   {
    "type": "sf",
@@ -624,13 +624,13 @@
    "type": "s",
    "smarts": "[SX4](=O)(=O)([OX2,OX1-])[OX2,OX1-]",
    "priority": 4,
-   "description": "sulfate S (DL_FIELD's PCFF: s)"
+   "description": "sulfate S (s)"
   },
   {
    "type": "ci",
    "smarts": "[c;$(c1[n]c[n]c1),$(c1[n]cc[n]1);$(c[nX2])]",
    "priority": 3,
-   "description": "imidazole C bonded to the pyridine-like N (DL_FIELD's PCFF, its neutral histidine templates)"
+   "description": "imidazole C bonded to the pyridine-like N (as in neutral histidine)"
   }
  ]
 }

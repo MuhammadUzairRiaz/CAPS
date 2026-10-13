@@ -1732,7 +1732,7 @@
     "pairs": 109,
     "bonds": 235,
     "angles": 1069,
-    "dihedrals": 2986,
+    "dihedrals": 2990,
     "impropers": 0
    },
    "typing": {
@@ -1797,7 +1797,7 @@
    },
    "typing": {
     "rules": "typing/clayff-cygan2004.typing.json",
-    "evidence": "CAPS rules by element, coordination and neighbours type the INTERFACE force field's clay models (pyrophyllite, kaolinite, muscovite, five montmorillonites; 10652 / 10652 atoms) as DL_FIELD's ClayFF typing does; a muscovite with Mg for every third octahedral Al 1241 / 1260, the other 19 the paper's obss (an O by a tetrahedral and an octahedral substitution, p 1259) where DL_FIELD has obos (bench/ff/validate_clayff_dlfield.py); LAMMPS and GROMACS reproduce CAPS's energies (metal-O-H bends through contacts)"
+    "evidence": "CAPS rules by element, coordination and neighbours type the INTERFACE force field's clay models (pyrophyllite, kaolinite, muscovite, five montmorillonites; 10652 / 10652 atoms) as an independent reference typing of ClayFF does; a muscovite with Mg for every third octahedral Al 1241 / 1260, the other 19 the paper's obss (an O by a tetrahedral and an octahedral substitution, p 1259) where that reference has obos; LAMMPS and GROMACS reproduce CAPS's energies (metal-O-H bends through contacts)"
    },
    "list": {
     "label": "ClayFF",
