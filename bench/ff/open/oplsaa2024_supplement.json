@@ -12,6 +12,18 @@
    ],
    "source": "E. K. Watkins, W. L. Jorgensen, J. Phys. Chem. A 105, 4118 (2001), Table 2",
    "reason": "the paper's perfluoroalkane carbons are class CT (the 2024 files' CF): a fluorinated carbon bonded to a hydrocarbon carbon is its CT-CT, 268.0 / 1.529 (the 2024 files' CF-CF)"
+  },
+  {
+   "match": [
+    "C=",
+    "Cl"
+   ],
+   "params": [
+    300.0,
+    1.725
+   ],
+   "source": "the 2024 .sb's chloroalkene terms (wlj): CM-Cl",
+   "reason": "a diene's central carbon (class C=) is the same sp2 carbon as an alkene CM; the files give C= its own terms only toward carbon and H, so the Cl takes CM's"
   }
  ],
  "angles": [
@@ -170,6 +182,32 @@
    ],
    "source": "CAPS fit (QM)",
    "reason": "B3LYP-D3BJ/def2-TZVP relaxed scan of (Z)-2-chloro-2-butene (9 points), E = K (theta - theta0)^2, RMS 0.01 kcal/mol"
+  },
+  {
+   "match": [
+    "CM",
+    "C=",
+    "Cl"
+   ],
+   "params": [
+    75.0,
+    121.5
+   ],
+   "source": "the 2024 .sb's chloroalkene terms (wlj): CM-CM-Cl",
+   "reason": "a diene's central carbon (class C=) is the same sp2 carbon as an alkene CM; the files give C= its own terms only toward carbon and H, so the Cl takes CM's"
+  },
+  {
+   "match": [
+    "C=",
+    "C=",
+    "Cl"
+   ],
+   "params": [
+    75.0,
+    121.5
+   ],
+   "source": "the 2024 .sb's chloroalkene terms (wlj): CM-CM-Cl",
+   "reason": "a diene's central carbon (class C=) is the same sp2 carbon as an alkene CM; the files give C= its own terms only toward carbon and H, so the Cl takes CM's"
   }
  ],
  "atom_types": [
@@ -221,6 +259,13 @@
    "charge": 0.0,
    "description": "S between two S in a polysulfide",
    "reason": "each S bonded to a carbon carries the disulfide S charge (203, -0.2175) against its carbon group (213-216, +0.2175); an S bonded only to S has no such partner, so 0"
+  },
+  {
+   "name": "caps_c_dienecl",
+   "lj_from": "opls_178",
+   "charge": 0.12,
+   "description": "C(Cl) of chloroprene, a conjugated diene central carbon",
+   "reason": "the class and Lennard-Jones of the diene central C 178; +0.12 balances its chloroalkene Cl 226 (-0.12), as the table's 399 (R-CCl=) does"
   }
  ],
  "dihedrals": [
@@ -239,6 +284,22 @@
    ],
    "source": "E. K. Watkins, W. L. Jorgensen, J. Phys. Chem. A 105, 4118 (2001), Table 5 (general F-CT-CT-F)",
    "reason": "the paper's fluorinated carbons are all class CT (the 2024 files' CF for a perfluorinated carbon, CT for a CHF / CH2F carbon); an F-C-C-F torsion between two fluorinated carbons takes its general term"
+  },
+  {
+   "match": [
+    "Cl",
+    "C=",
+    "CM",
+    "HC"
+   ],
+   "params": [
+    0.0,
+    14.0,
+    0.0,
+    0.0
+   ],
+   "source": "the 2024 .par's chloroalkene torsion Cl-CM-CM-HC (type 222)",
+   "reason": "a twist about a C=C double bond; at a diene's central carbon (C=) it is the same double bond, so it takes the table's chloroalkene term"
   }
  ]
 }
