@@ -53,6 +53,18 @@
    "description": "alkene C (H2C=)"
   },
   {
+   "type": "150",
+   "smarts": "[CX3H1;!$(*~[!#6;!#1]);$(*=[CX3]);$(*-[CX3]=[CX3])]",
+   "priority": 3,
+   "description": "conjugated diene central C (=CH-CH=)"
+  },
+  {
+   "type": "178",
+   "smarts": "[CX3H0;!$(*~[!#6;!#1]);$(*=[CX3]);$(*-[CX3]=[CX3])]",
+   "priority": 3,
+   "description": "conjugated diene central C (=CR-RC=)"
+  },
+  {
    "type": "144",
    "smarts": "[H][CX3]=[CX3]",
    "priority": 1,

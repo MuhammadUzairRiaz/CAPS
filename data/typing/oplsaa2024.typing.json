@@ -54,6 +54,18 @@
    "description": "alkene C (H2C=)"
   },
   {
+   "type": "opls_150",
+   "smarts": "[CX3H1;!$(*~[!#6;!#1]);$(*=[CX3]);$(*-[CX3]=[CX3])]",
+   "priority": 3,
+   "description": "conjugated diene central C (=CH-CH=)"
+  },
+  {
+   "type": "opls_178",
+   "smarts": "[CX3H0;!$(*~[!#6;!#1]);$(*=[CX3]);$(*-[CX3]=[CX3])]",
+   "priority": 3,
+   "description": "conjugated diene central C (=CR-RC=)"
+  },
+  {
    "type": "opls_144",
    "smarts": "[H][CX3]=[CX3]",
    "priority": 1,
@@ -1522,6 +1534,12 @@
    "smarts": "[CX3H0;!$(*(Cl)Cl)]([Cl])([CX4])=[CX3]",
    "priority": 7,
    "description": "chloroalkene C with an alkyl group (R-CCl=, chloroprene): CM, +0.12 e"
+  },
+  {
+   "type": "caps_c_dienecl",
+   "smarts": "[CX3H0;!$(*(Cl)Cl)]([Cl])(-[CX3]=[CX3])=[CX3]",
+   "priority": 8,
+   "description": "chloroprene C(Cl), a diene central C"
   },
   {
    "type": "opls_226",

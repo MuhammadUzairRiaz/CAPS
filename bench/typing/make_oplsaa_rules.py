@@ -47,6 +47,12 @@ add(140, 0, "[H][CX4]", "H on sp3 C")
 add(141, 1, f"[CX3H0;{HC_ONLY}]=[CX3]", "alkene C (R2C=)")
 add(142, 1, f"[CX3H1;{HC_ONLY}]=[CX3]", "alkene C (RHC=)")
 add(143, 1, f"[CX3H2;{HC_ONLY}]=[CX3]", "alkene C (H2C=)")
+# conjugated dienes (1,3-butadiene, isoprene): the two central carbons are the table's C= class, 150 (=CH-CH=, -0.115
+# with its H 144) and 178 (=CR-RC=, 0.000), whose CM-C=-C= bends and diene torsions the files have; the ends stay
+# 143 / 142 / 141. Isolated double bonds (the diene rubbers' units) do not match
+DIENE = "$(*-[CX3]=[CX3])"
+add(150, 3, f"[CX3H1;{HC_ONLY};$(*=[CX3]);{DIENE}]", "conjugated diene central C (=CH-CH=)", True)
+add(178, 3, f"[CX3H0;{HC_ONLY};$(*=[CX3]);{DIENE}]", "conjugated diene central C (=CR-RC=)", True)
 add(144, 1, "[H][CX3]=[CX3]", "alkene H")
 add(145, 1, f"[c;{HC_ONLY}]", "aromatic C")
 add(146, 1, "[H]c", "aromatic H")
@@ -293,6 +299,9 @@ add(227, 6, "[CX3H1]([Cl])=[CX3]", "chloroalkene C (ClHC=)")
 # with the H's +0.115 gone), so 227's +0.005 becomes +0.12, balancing the Cl's -0.12; the table's CM number with that
 # charge is 399, so its number is used (same class, same bonded and LJ terms as 227)
 add(399, 7, "[CX3H0;!$(*(Cl)Cl)]([Cl])([CX4])=[CX3]", "chloroalkene C with an alkyl group (R-CCl=, chloroprene): CM, +0.12 e")
+# chloroprene itself (CH2=CCl-CH=CH2): the C(Cl) is also a diene central carbon, which no number covers; CAPS's
+# caps_c_dienecl, the C= class and Lennard-Jones of 178 with the +0.12 that balances its Cl 226 (OPLS-AA's increment)
+add("caps_c_dienecl", 8, "[CX3H0;!$(*(Cl)Cl)]([Cl])(-[CX3]=[CX3])=[CX3]", "chloroprene C(Cl), a diene central C", True)
 add(226, 7, "[Cl][CX3;$(*(Cl)Cl)]=[CX3]", "chloroalkene Cl (Cl2C=: 226, as the GROMACS OPLS-AA topologies type 1,1-dichloroethene)")
 add(227, 7, "[CX3;$(*(Cl)Cl)]=[CX3]", "chloroalkene C (Cl2C=: 227)")
 
