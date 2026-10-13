@@ -4,6 +4,7 @@
   convert_charmm_prm.py OUT.json --name NAME --prm par_all36_prot.prm [--prm toppar_water_ions.str ...]
                         [--rtf top_all36_prot.rtf ...] [--reference "..."] [--source "..."] [--version "..."]
                         [--one-torsion-per-bond] [--typing ../typing/ID.typing.json] [--note "..." ...]
+                        [--impropers-from-rtf]
 
 Reads the CHARMM36-format sections of each file in order (ATOMS / MASS, BONDS, ANGLES, DIHEDRALS, IMPROPER, NONBONDED,
 NBFIX; a stream file's read para block too) and writes CAPS's format:
@@ -17,7 +18,15 @@ NBFIX; a stream file's read para block too) and writes CAPS's format:
   X          wildcard, written * (CAPS matches by glob; the name keeps X)
 
 Masses from MASS records (the rtf, or the prm's ATOMS section); the element is the one whose standard mass is nearest.
-CMAP is not represented (noted in the file). Later files override earlier entries with the same types, as CHARMM reads
+CMAP is not represented (noted in the file).
+
+--impropers-from-rtf: CHARMM puts an improper only where a residue's IMPR record lists one, while CAPS (which types by
+SMARTS, without residues) would put one wherever a parameter entry matches. The topology's IMPR records become the
+library's "improper_placement": for every three-connected centre of every residue (no links to other residues), its
+environment (its type and its three neighbours' types) and the impropers the residue lists there (types in IMPR
+order, centre position). Where residues disagree for one environment the most common listing is kept (counted in the
+notes). Parameter entries that no IMPR record uses are listed as unlisted and never applied; at a centre whose
+environment no residue shows, the other entries apply as their types match. Later files override earlier entries with the same types, as CHARMM reads
 them; a duplicate in one file (CHARMM keeps the last) is noted.
 """
 import json, math, re, sys
@@ -233,6 +242,124 @@ doc = {"format": "caps-forcefield", "format_version": 1, "name": arg("--name"), 
        "version": arg("--version", "")}
 if arg("--typing"):
     doc["typing"] = arg("--typing")
+if "--impropers-from-rtf" in sys.argv:
+    import collections, itertools
+    imp_rules = doc["impropers"]
+
+    def charmm_lookup(ty):
+        """the entry CHARMM uses for these four types: without wildcards (forward / backward) first, the last listed"""
+        for wild in (False, True):
+            for e in reversed(imp_rules):
+                if ("*" in e["match"]) != wild:
+                    continue
+                for t in (ty, ty[::-1]):
+                    if all(fnmatch.fnmatchcase(a, m) for a, m in zip(t, e["match"])):
+                        return e["name"]
+        return None
+
+    instances, used, n_res, odd, reordered = [], set(), 0, [], []
+    DEPTH = 16
+
+    def tree(A, nbr, c, d, parent=None):
+        """a centre's environment d bonds out, as CAPS reads it (ffdef.cpp improper_environment): the type, then the sorted
+        environments of its neighbours other than the one it came from"""
+        if d == 0:
+            return A[c]
+        return A[c] + "(" + ",".join(sorted(tree(A, nbr, x, d - 1, c) for x in nbr[c] if x != parent)) + ")"
+    for rtf in many("--rtf"):
+        res, cur = [], None
+        for s_ in lines(rtf):
+            w_ = s_.split()
+            k_ = w_[0].upper()
+            if k_ in ("RESI", "PRES"):
+                cur = {"name": w_[1], "atoms": {}, "bonds": [], "impr": []} if k_ == "RESI" else None
+                if cur is not None:
+                    res.append(cur)
+            elif cur is None:
+                continue
+            elif k_ == "ATOM" and len(w_) >= 3:
+                cur["atoms"][w_[1].upper()] = w_[2]
+            elif k_ in ("BOND", "DOUB", "DOUBLE", "TRIP", "TRIPLE", "AROM"):
+                cur["bonds"] += [(a.upper(), b.upper()) for a, b in zip(w_[1::2], w_[2::2])]
+            elif k_[:4] in ("IMPR", "IMPH"):
+                cur["impr"] += [tuple(x.upper() for x in w_[q:q + 4]) for q in range(1, len(w_) - 3, 4)]
+        for r in res:
+            A = r["atoms"]
+            if any(x[:1] in "+-" for b in r["bonds"] for x in b) or any(t not in types for t in A.values()):
+                continue
+            n_res += 1
+            nbr = collections.defaultdict(set)
+            for a, b in r["bonds"]:
+                nbr[a].add(b), nbr[b].add(a)
+            at = collections.defaultdict(list)
+            for q in r["impr"]:
+                if not all(x in A for x in q):
+                    continue
+                cs = [i for i in range(4) if all(q[j] in nbr[q[i]] for j in range(4) if j != i)]
+                if len(cs) != 1 or len(nbr[q[cs[0]]]) != 3:
+                    odd.append(f"{r['name']} {' '.join(q)}")
+                    continue
+                ty = [A[x] for x in q]
+                at[q[cs[0]]].append((tuple(ty), cs[0]))
+                hit = charmm_lookup(ty)
+                if hit is None:   # an order no entry has (jul17's SAH): the entry CAPS then takes (ffdef.cpp, the same search)
+                    others = sorted(ty[:cs[0]] + ty[cs[0] + 1:])
+                    hit = next((h for cp in (0, 3) for p in itertools.permutations(others)
+                                for h in [charmm_lookup(list(p[:cp]) + [ty[cs[0]]] + list(p[cp:]))] if h), None)
+                    if hit:
+                        reordered.append(f"{r['name']} {' '.join(q)}")
+                used.add(hit)
+            for c in A:
+                if len(nbr[c]) == 3:
+                    instances.append(([tree(A, nbr, c, d) for d in range(1, DEPTH + 1)], tuple(sorted(at.get(c, [])))))
+    # the most common listing for each depth-1 environment (a centre and its three neighbours); then, deeper (the
+    # neighbours' neighbours and so on), an exception wherever the residues showing a deeper environment list otherwise
+    chosen, exceptions, parent_of, site_of, depth_used, left = {}, collections.defaultdict(list), {}, {}, 1, 0
+    for d in range(1, DEPTH + 1):
+        votes = collections.defaultdict(collections.Counter)
+        for keys, listing in instances:
+            votes[keys[d - 1]][listing] += 1
+            site_of[keys[d - 1]] = keys[0]
+            if d > 1:
+                parent_of[keys[d - 1]] = keys[d - 2]
+        for k, cnt in votes.items():
+            top = max(cnt.values())
+            best = [x for x, v in cnt.items() if v == top]
+            inherit = chosen.get(parent_of.get(k)) if d > 1 else None
+            pick = inherit if inherit in best else max(best, key=len)
+            if d > 1 and pick != inherit:
+                exceptions[site_of[k]].append((d, k, pick))
+                depth_used = max(depth_used, d)
+            chosen[k] = pick
+        left = sum(1 for cnt in votes.values() if len(cnt) > 1)
+        if not left:
+            break
+    as_json = lambda listing: [{"types": list(t), "centre": c} for t, c in listing]
+    sites = []
+    for k1 in sorted(k for k in chosen if "(" in k and k.count("(") == 1):
+        best = chosen[k1]
+        centre, nbs = k1[:k1.index("(")], k1[k1.index("(") + 1:-1].split(",")
+        if not best and not exceptions.get(k1):   # a centre without impropers: kept only where some entry could put one
+            if not any(charmm_lookup([centre] + list(q)) or charmm_lookup(list(q) + [centre]) for q in itertools.permutations(nbs)):
+                continue
+        site = {"centre": centre, "neighbours": nbs, "impropers": as_json(best)}
+        if exceptions.get(k1):
+            site["exceptions"] = [{"depth": d, "environment": k, "impropers": as_json(x)} for d, k, x in sorted(exceptions[k1])]
+        sites.append(site)
+    unl = [e["name"] for e in imp_rules if e["name"] not in used]
+    doc["improper_placement"] = {"sites": sites, "unlisted_entries": unl}
+    n_exc = sum(len(v) for v in exceptions.values())
+    doc["notes"].append(f"impropers where the topology's IMPR records put them: {len(sites)} centre environments (a centre's type and "
+                        f"its neighbours') from {n_res} residues of {', '.join(r.split('/')[-1] for r in many('--rtf'))}; where "
+                        f"residues list one environment differently, the most common listing, with {n_exc} exception{'' if n_exc == 1 else 's'} for deeper "
+                        f"environments (up to {depth_used} bonds out) that list otherwise"
+                        + (f" ({left} environments still listed differently at {DEPTH} bonds)" if left else "")
+                        + f"; the {len(unl)} parameter entries no IMPR record uses are never applied")
+    if reordered:
+        doc["notes"].append("IMPR records in an atom order no parameter entry has (CHARMM would stop on them); CAPS takes the "
+                            "atoms in the first order an entry has (the centre first or last): " + "; ".join(reordered))
+    if odd:
+        doc["notes"].append("IMPR records whose centre is not a three-connected atom bonded to the other three, left out: " + "; ".join(odd))
 if "--one-torsion-per-bond" in sys.argv:   # CHARMM19: "a single dihedral per bond rather than multiple torsions"
     doc["torsion_selection"] = "one_per_bond"
     doc["torsion_single_h"] = ["[#7X3;$(*-[#6]=[#8X1])]"]   # toph19: one torsion on an amide NH2, every H elsewhere

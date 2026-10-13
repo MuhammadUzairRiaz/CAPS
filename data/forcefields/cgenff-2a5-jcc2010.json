@@ -73200,8 +73200,2772 @@
   "parameter values as published in the Supporting Information of Vanommeslaeghe et al. 2010; CAPS's conversion",
   "the file's NONBONDED line asks for an energy switch of the Lennard-Jones from 10 to 12 A (vswitch) and shifted electrostatics; CAPS uses CHARMM's force switch over the same range (vfswitch, as later CGenFF releases ask for) and long-range electrostatics",
   "no water or ions: the Supporting Information's files define none (TIP3P comes with the CHARMM36 libraries)",
-  "atom types added in later CGenFF releases (thiocarbonyl, sulfone, sulfoxide, thiophosphate, epoxide, cyclobutyl, beta-lactam N, bipyrrole and N-aryl ring types, the terminal alkyne CG1T2) are not in 2a5; its typing rules leave them out"
+  "atom types added in later CGenFF releases (thiocarbonyl, sulfone, sulfoxide, thiophosphate, epoxide, cyclobutyl, beta-lactam N, bipyrrole and N-aryl ring types, the terminal alkyne CG1T2) are not in 2a5; its typing rules leave them out",
+  "impropers where the topology's IMPR records put them: 97 centre environments (a centre's type and its neighbours') from 388 residues of top_all36_cgenff.rtf; where residues list one environment differently, the most common listing, with 71 exceptions for deeper environments (up to 6 bonds out) that list otherwise; the 13 parameter entries no IMPR record uses are never applied"
  ],
  "version": "2a5 (J. Comput. Chem. 2010 Supporting Information)",
- "typing": "../typing/cgenff-2a5-jcc2010.typing.json"
+ "typing": "../typing/cgenff-2a5-jcc2010.typing.json",
+ "improper_placement": {
+  "sites": [
+   {
+    "centre": "CG2D1",
+    "neighbours": [
+     "CG2D1O",
+     "CG321",
+     "HGA4"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2D1",
+       "CG2D1O",
+       "CG321",
+       "HGA4"
+      ],
+      "centre": 0
+     }
+    ],
+    "exceptions": [
+     {
+      "depth": 2,
+      "environment": "CG2D1(CG2D1O(HGA4,OG3R60),CG321(CG2D1,HGA2,HGA2),HGA4())",
+      "impropers": []
+     }
+    ]
+   },
+   {
+    "centre": "CG2D1O",
+    "neighbours": [
+     "CG2D1",
+     "HGA4",
+     "NG301"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2D1O",
+       "NG301",
+       "CG2D1",
+       "HGA4"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "CG2D1O",
+    "neighbours": [
+     "CG2D1",
+     "HGA4",
+     "NG311"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2D1O",
+       "NG311",
+       "CG2D1",
+       "HGA4"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "CG2D1O",
+    "neighbours": [
+     "CG2D1",
+     "HGA4",
+     "OG3R60"
+    ],
+    "impropers": []
+   },
+   {
+    "centre": "CG2D1O",
+    "neighbours": [
+     "CG2DC1",
+     "HGA4",
+     "NG2R61"
+    ],
+    "impropers": []
+   },
+   {
+    "centre": "CG2D1O",
+    "neighbours": [
+     "CG2DC1",
+     "HGA4",
+     "NG301"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2D1O",
+       "CG2DC1",
+       "NG301",
+       "HGA4"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "CG2D1O",
+    "neighbours": [
+     "CG2DC1",
+     "HGA4",
+     "NG311"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2D1O",
+       "CG2DC1",
+       "NG311",
+       "HGA4"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "CG2D1O",
+    "neighbours": [
+     "CG2DC1",
+     "HGA4",
+     "OG3R60"
+    ],
+    "impropers": []
+   },
+   {
+    "centre": "CG2D2",
+    "neighbours": [
+     "CG2D2",
+     "HGA5",
+     "HGA5"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2D2",
+       "CG2D2",
+       "HGA5",
+       "HGA5"
+      ],
+      "centre": 0
+     },
+     {
+      "types": [
+       "CG2D2",
+       "CG2D2",
+       "HGA5",
+       "HGA5"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "CG2N1",
+    "neighbours": [
+     "NG2D1",
+     "NG311",
+     "NG321"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2N1",
+       "NG321",
+       "NG2D1",
+       "NG311"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "CG2N1",
+    "neighbours": [
+     "NG2D1",
+     "NG321",
+     "NG321"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2N1",
+       "NG321",
+       "NG321",
+       "NG2D1"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "CG2N1",
+    "neighbours": [
+     "NG2P1",
+     "NG2P1",
+     "NG2P1"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2N1",
+       "NG2P1",
+       "NG2P1",
+       "NG2P1"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "CG2N2",
+    "neighbours": [
+     "CG2R61",
+     "NG2P1",
+     "NG2P1"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2N2",
+       "NG2P1",
+       "NG2P1",
+       "CG2R61"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "CG2N2",
+    "neighbours": [
+     "CG331",
+     "NG2P1",
+     "NG2P1"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2N2",
+       "NG2P1",
+       "NG2P1",
+       "CG331"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "CG2O1",
+    "neighbours": [
+     "CG2DC1",
+     "NG2S2",
+     "OG2D1"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2O1",
+       "CG2DC1",
+       "NG2S2",
+       "OG2D1"
+      ],
+      "centre": 0
+     },
+     {
+      "types": [
+       "CG2O1",
+       "NG2S2",
+       "CG2DC1",
+       "OG2D1"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "CG2O1",
+    "neighbours": [
+     "CG2DC2",
+     "NG2S1",
+     "OG2D1"
+    ],
+    "impropers": []
+   },
+   {
+    "centre": "CG2O1",
+    "neighbours": [
+     "CG2R61",
+     "NG2S1",
+     "OG2D1"
+    ],
+    "impropers": []
+   },
+   {
+    "centre": "CG2O1",
+    "neighbours": [
+     "CG2R61",
+     "NG2S2",
+     "OG2D1"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2O1",
+       "CG2R61",
+       "NG2S2",
+       "OG2D1"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "CG2O1",
+    "neighbours": [
+     "CG2R62",
+     "NG2S2",
+     "OG2D1"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2O1",
+       "CG2R62",
+       "NG2S2",
+       "OG2D1"
+      ],
+      "centre": 0
+     },
+     {
+      "types": [
+       "CG2O1",
+       "NG2S2",
+       "CG2R62",
+       "OG2D1"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "CG2O1",
+    "neighbours": [
+     "CG311",
+     "NG2S1",
+     "OG2D1"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2O1",
+       "CG311",
+       "NG2S1",
+       "OG2D1"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "CG2O1",
+    "neighbours": [
+     "CG321",
+     "NG2S1",
+     "OG2D1"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2O1",
+       "CG321",
+       "NG2S1",
+       "OG2D1"
+      ],
+      "centre": 0
+     }
+    ],
+    "exceptions": [
+     {
+      "depth": 2,
+      "environment": "CG2O1(CG321(CG321,HGA2,HGA2),NG2S1(HGP1,NG2D1),OG2D1())",
+      "impropers": []
+     },
+     {
+      "depth": 3,
+      "environment": "CG2O1(CG321(CG321(CG2O1,HGA2,HGA2),HGA2(),HGA2()),NG2S1(CG2R61(CG2R61,CG2R61),HGP1()),OG2D1())",
+      "impropers": []
+     }
+    ]
+   },
+   {
+    "centre": "CG2O1",
+    "neighbours": [
+     "CG321",
+     "NG2S2",
+     "OG2D1"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2O1",
+       "CG321",
+       "NG2S2",
+       "OG2D1"
+      ],
+      "centre": 0
+     },
+     {
+      "types": [
+       "CG2O1",
+       "NG2S2",
+       "CG321",
+       "OG2D1"
+      ],
+      "centre": 0
+     }
+    ],
+    "exceptions": [
+     {
+      "depth": 2,
+      "environment": "CG2O1(CG321(CG321,HGA2,HGA2),NG2S2(HGP1,HGP1),OG2D1())",
+      "impropers": [
+       {
+        "types": [
+         "CG2O1",
+         "CG321",
+         "NG2S2",
+         "OG2D1"
+        ],
+        "centre": 0
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "centre": "CG2O1",
+    "neighbours": [
+     "CG331",
+     "NG2S0",
+     "OG2D1"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2O1",
+       "CG331",
+       "NG2S0",
+       "OG2D1"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "CG2O1",
+    "neighbours": [
+     "CG331",
+     "NG2S1",
+     "OG2D1"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2O1",
+       "CG331",
+       "NG2S1",
+       "OG2D1"
+      ],
+      "centre": 0
+     }
+    ],
+    "exceptions": [
+     {
+      "depth": 2,
+      "environment": "CG2O1(CG331(HGA3,HGA3,HGA3),NG2S1(CG321,HGP1),OG2D1())",
+      "impropers": []
+     },
+     {
+      "depth": 2,
+      "environment": "CG2O1(CG331(HGA3,HGA3,HGA3),NG2S1(HGP1,NG2D1),OG2D1())",
+      "impropers": []
+     },
+     {
+      "depth": 3,
+      "environment": "CG2O1(CG331(HGA3(),HGA3(),HGA3()),NG2S1(CG2R61(CG2R61,CG2R61),HGP1()),OG2D1())",
+      "impropers": []
+     },
+     {
+      "depth": 4,
+      "environment": "CG2O1(CG331(HGA3(),HGA3(),HGA3()),NG2S1(CG2R61(CG2R61(CG2R61,HGR61),CG2R61(HGR62,NG2R60)),HGP1()),OG2D1())",
+      "impropers": [
+       {
+        "types": [
+         "CG2O1",
+         "CG331",
+         "NG2S1",
+         "OG2D1"
+        ],
+        "centre": 0
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "centre": "CG2O1",
+    "neighbours": [
+     "CG331",
+     "NG2S2",
+     "OG2D1"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2O1",
+       "CG331",
+       "NG2S2",
+       "OG2D1"
+      ],
+      "centre": 0
+     },
+     {
+      "types": [
+       "CG2O1",
+       "NG2S2",
+       "CG331",
+       "OG2D1"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "CG2O1",
+    "neighbours": [
+     "CG3C51",
+     "NG2S1",
+     "OG2D1"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2O1",
+       "CG3C51",
+       "NG2S1",
+       "OG2D1"
+      ],
+      "centre": 0
+     },
+     {
+      "types": [
+       "CG2O1",
+       "NG2S1",
+       "CG3C51",
+       "OG2D1"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "CG2O1",
+    "neighbours": [
+     "CG3C51",
+     "NG2S2",
+     "OG2D1"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2O1",
+       "CG3C51",
+       "NG2S2",
+       "OG2D1"
+      ],
+      "centre": 0
+     },
+     {
+      "types": [
+       "CG2O1",
+       "NG2S2",
+       "CG3C51",
+       "OG2D1"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "CG2O1",
+    "neighbours": [
+     "CG3C53",
+     "NG2S2",
+     "OG2D1"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2O1",
+       "CG3C53",
+       "NG2S2",
+       "OG2D1"
+      ],
+      "centre": 0
+     },
+     {
+      "types": [
+       "CG2O1",
+       "NG2S2",
+       "CG3C53",
+       "OG2D1"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "CG2O1",
+    "neighbours": [
+     "HGR52",
+     "NG2S2",
+     "OG2D1"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2O1",
+       "HGR52",
+       "NG2S2",
+       "OG2D1"
+      ],
+      "centre": 0
+     },
+     {
+      "types": [
+       "CG2O1",
+       "NG2S2",
+       "HGR52",
+       "OG2D1"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "CG2O2",
+    "neighbours": [
+     "CG321",
+     "OG2D1",
+     "OG302"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2O2",
+       "OG302",
+       "CG321",
+       "OG2D1"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "CG2O2",
+    "neighbours": [
+     "CG321",
+     "OG2D1",
+     "OG311"
+    ],
+    "impropers": []
+   },
+   {
+    "centre": "CG2O2",
+    "neighbours": [
+     "CG331",
+     "OG2D1",
+     "OG302"
+    ],
+    "impropers": [],
+    "exceptions": [
+     {
+      "depth": 2,
+      "environment": "CG2O2(CG331(HGA3,HGA3,HGA3),OG2D1(),OG302(CG331))",
+      "impropers": [
+       {
+        "types": [
+         "CG2O2",
+         "OG302",
+         "CG331",
+         "OG2D1"
+        ],
+        "centre": 0
+       }
+      ]
+     },
+     {
+      "depth": 3,
+      "environment": "CG2O2(CG331(HGA3(),HGA3(),HGA3()),OG2D1(),OG302(CG321(CG324,HGA2,HGA2)))",
+      "impropers": [
+       {
+        "types": [
+         "CG2O2",
+         "OG302",
+         "CG331",
+         "OG2D1"
+        ],
+        "centre": 0
+       }
+      ]
+     },
+     {
+      "depth": 3,
+      "environment": "CG2O2(CG331(HGA3(),HGA3(),HGA3()),OG2D1(),OG302(CG321(CG331,HGA2,HGA2)))",
+      "impropers": [
+       {
+        "types": [
+         "CG2O2",
+         "OG302",
+         "CG331",
+         "OG2D1"
+        ],
+        "centre": 0
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "centre": "CG2O2",
+    "neighbours": [
+     "CG331",
+     "OG2D1",
+     "OG311"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2O2",
+       "CG331",
+       "OG311",
+       "OG2D1"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "CG2O3",
+    "neighbours": [
+     "CG2D1",
+     "OG2D2",
+     "OG2D2"
+    ],
+    "impropers": []
+   },
+   {
+    "centre": "CG2O3",
+    "neighbours": [
+     "CG2DC2",
+     "OG2D2",
+     "OG2D2"
+    ],
+    "impropers": []
+   },
+   {
+    "centre": "CG2O3",
+    "neighbours": [
+     "CG2O5",
+     "OG2D2",
+     "OG2D2"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2O3",
+       "CG2O5",
+       "OG2D2",
+       "OG2D2"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "CG2O3",
+    "neighbours": [
+     "CG2R61",
+     "OG2D2",
+     "OG2D2"
+    ],
+    "impropers": [],
+    "exceptions": [
+     {
+      "depth": 3,
+      "environment": "CG2O3(CG2R61(CG2R61(CG2R61,HGR61),CG2R61(HGR62,NG2R60)),OG2D2(),OG2D2())",
+      "impropers": [
+       {
+        "types": [
+         "CG2O3",
+         "CG2R61",
+         "OG2D2",
+         "OG2D2"
+        ],
+        "centre": 0
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "centre": "CG2O3",
+    "neighbours": [
+     "CG301",
+     "OG2D2",
+     "OG2D2"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2O3",
+       "CG301",
+       "OG2D2",
+       "OG2D2"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "CG2O3",
+    "neighbours": [
+     "CG311",
+     "OG2D2",
+     "OG2D2"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2O3",
+       "CG311",
+       "OG2D2",
+       "OG2D2"
+      ],
+      "centre": 0
+     }
+    ],
+    "exceptions": [
+     {
+      "depth": 5,
+      "environment": "CG2O3(CG311(CG321(CG321(CG2O1(NG2S1,OG2D1),HGA2(),HGA2()),HGA2(),HGA2()),HGA1(),NG2S1(CG2O1(CG321(CG321,HGA2,HGA2),OG2D1()),HGP1())),OG2D2(),OG2D2())",
+      "impropers": []
+     }
+    ]
+   },
+   {
+    "centre": "CG2O3",
+    "neighbours": [
+     "CG314",
+     "OG2D2",
+     "OG2D2"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "OG2D2",
+       "CG314",
+       "OG2D2",
+       "CG2O3"
+      ],
+      "centre": 3
+     }
+    ]
+   },
+   {
+    "centre": "CG2O3",
+    "neighbours": [
+     "CG321",
+     "OG2D2",
+     "OG2D2"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2O3",
+       "CG321",
+       "OG2D2",
+       "OG2D2"
+      ],
+      "centre": 0
+     }
+    ],
+    "exceptions": [
+     {
+      "depth": 3,
+      "environment": "CG2O3(CG321(CG321(CG2R61,HGA2,HGA2),HGA2(),HGA2()),OG2D2(),OG2D2())",
+      "impropers": []
+     }
+    ]
+   },
+   {
+    "centre": "CG2O3",
+    "neighbours": [
+     "CG331",
+     "OG2D2",
+     "OG2D2"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2O3",
+       "CG331",
+       "OG2D2",
+       "OG2D2"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "CG2O3",
+    "neighbours": [
+     "HGR52",
+     "OG2D2",
+     "OG2D2"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2O3",
+       "OG2D2",
+       "OG2D2",
+       "HGR52"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "CG2O4",
+    "neighbours": [
+     "CG2D1",
+     "HGR52",
+     "OG2D1"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2O4",
+       "CG2D1",
+       "OG2D1",
+       "HGR52"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "CG2O4",
+    "neighbours": [
+     "CG2DC2",
+     "HGR52",
+     "OG2D1"
+    ],
+    "impropers": []
+   },
+   {
+    "centre": "CG2O4",
+    "neighbours": [
+     "CG2R61",
+     "HGR52",
+     "OG2D1"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2O4",
+       "CG2R61",
+       "OG2D1",
+       "HGR52"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "CG2O4",
+    "neighbours": [
+     "CG321",
+     "HGR52",
+     "OG2D1"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2O4",
+       "CG321",
+       "OG2D1",
+       "HGR52"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "CG2O4",
+    "neighbours": [
+     "CG331",
+     "HGR52",
+     "OG2D1"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2O4",
+       "CG331",
+       "OG2D1",
+       "HGR52"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "CG2O5",
+    "neighbours": [
+     "CG2O3",
+     "CG2R61",
+     "OG2D3"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2O5",
+       "CG2R61",
+       "CG2O3",
+       "OG2D3"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "CG2O5",
+    "neighbours": [
+     "CG2R61",
+     "CG311",
+     "OG2D3"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2O5",
+       "CG2R61",
+       "CG311",
+       "OG2D3"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "CG2O5",
+    "neighbours": [
+     "CG2R61",
+     "CG331",
+     "OG2D3"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2O5",
+       "CG2R61",
+       "CG331",
+       "OG2D3"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "CG2O5",
+    "neighbours": [
+     "CG331",
+     "CG331",
+     "OG2D3"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2O5",
+       "CG331",
+       "CG331",
+       "OG2D3"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "CG2O6",
+    "neighbours": [
+     "NG2S2",
+     "NG2S2",
+     "OG2D1"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "OG2D1",
+       "NG2S2",
+       "NG2S2",
+       "CG2O6"
+      ],
+      "centre": 3
+     }
+    ]
+   },
+   {
+    "centre": "CG2O6",
+    "neighbours": [
+     "OG2D2",
+     "OG2D2",
+     "OG2D2"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2O6",
+       "OG2D2",
+       "OG2D2",
+       "OG2D2"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "CG2R51",
+    "neighbours": [
+     "CG2R51",
+     "HGR52",
+     "NG2R50"
+    ],
+    "impropers": [],
+    "exceptions": [
+     {
+      "depth": 2,
+      "environment": "CG2R51(CG2R51(CG321,NG2R51),HGR52(),NG2R50(CG2R53))",
+      "impropers": [
+       {
+        "types": [
+         "CG2R51",
+         "CG2R51",
+         "NG2R50",
+         "HGR52"
+        ],
+        "centre": 0
+       }
+      ]
+     },
+     {
+      "depth": 2,
+      "environment": "CG2R51(CG2R51(CG331,NG2R51),HGR52(),NG2R50(CG2R53))",
+      "impropers": [
+       {
+        "types": [
+         "CG2R51",
+         "CG2R51",
+         "NG2R50",
+         "HGR52"
+        ],
+        "centre": 0
+       }
+      ]
+     },
+     {
+      "depth": 2,
+      "environment": "CG2R51(CG2R51(HGR52,NG2R51),HGR52(),NG2R50(CG2R53))",
+      "impropers": [
+       {
+        "types": [
+         "CG2R51",
+         "CG2R51",
+         "NG2R50",
+         "HGR52"
+        ],
+        "centre": 0
+       },
+       {
+        "types": [
+         "CG2R51",
+         "NG2R50",
+         "CG2R51",
+         "HGR52"
+        ],
+        "centre": 0
+       }
+      ]
+     },
+     {
+      "depth": 5,
+      "environment": "CG2R51(CG2R51(HGR52(),NG2R51(CG2R53(HGR52(),NG2R50(CG2R51)),CG3C51(CG3C52(CG3C51,HGA2,HGA2),HGA1(),OG3C51(CG3C51)))),HGR52(),NG2R50(CG2R53(HGR52(),NG2R51(CG2R51(CG2R51,HGR52),CG3C51(CG3C52,HGA1,OG3C51)))))",
+      "impropers": []
+     },
+     {
+      "depth": 6,
+      "environment": "CG2R51(CG2R51(HGR52(),NG2R51(CG2R53(HGR52(),NG2R50(CG2R51(CG2R51,HGR52))),CG3C51(CG3C52(CG3C51(CG3C51,HGA1,OG303),HGA2(),HGA2()),HGA1(),OG3C51(CG3C51(CG321,CG3C51,HGA1))))),HGR52(),NG2R50(CG2R53(HGR52(),NG2R51(CG2R51(CG2R51(HGR52,NG2R50),HGR52()),CG3C51(CG3C52(CG3C51,HGA2,HGA2),HGA1(),OG3C51(CG3C51))))))",
+      "impropers": [
+       {
+        "types": [
+         "CG2R51",
+         "CG2R51",
+         "NG2R50",
+         "HGR52"
+        ],
+        "centre": 0
+       },
+       {
+        "types": [
+         "CG2R51",
+         "NG2R50",
+         "CG2R51",
+         "HGR52"
+        ],
+        "centre": 0
+       }
+      ]
+     },
+     {
+      "depth": 6,
+      "environment": "CG2R51(CG2R51(HGR52(),NG2R51(CG2R53(HGR52(),NG2R50(CG2R51(CG2R51,HGR52))),CG3C51(CG3C52(CG3C51(CG3C51,HGA1,OG311),HGA2(),HGA2()),HGA1(),OG3C51(CG3C51(CG321,CG3C51,HGA1))))),HGR52(),NG2R50(CG2R53(HGR52(),NG2R51(CG2R51(CG2R51(HGR52,NG2R50),HGR52()),CG3C51(CG3C52(CG3C51,HGA2,HGA2),HGA1(),OG3C51(CG3C51))))))",
+      "impropers": [
+       {
+        "types": [
+         "CG2R51",
+         "CG2R51",
+         "NG2R50",
+         "HGR52"
+        ],
+        "centre": 0
+       },
+       {
+        "types": [
+         "CG2R51",
+         "NG2R50",
+         "CG2R51",
+         "HGR52"
+        ],
+        "centre": 0
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "centre": "CG2R51",
+    "neighbours": [
+     "CG2R51",
+     "HGR52",
+     "NG2R51"
+    ],
+    "impropers": [],
+    "exceptions": [
+     {
+      "depth": 2,
+      "environment": "CG2R51(CG2R51(HGR52,NG2R50),HGR52(),NG2R51(CG2R53,CG3C51))",
+      "impropers": [
+       {
+        "types": [
+         "CG2R51",
+         "CG2R51",
+         "NG2R51",
+         "HGR52"
+        ],
+        "centre": 0
+       },
+       {
+        "types": [
+         "CG2R51",
+         "NG2R51",
+         "CG2R51",
+         "HGR52"
+        ],
+        "centre": 0
+       }
+      ]
+     },
+     {
+      "depth": 2,
+      "environment": "CG2R51(CG2R51(HGR52,NG2R50),HGR52(),NG2R51(CG2R53,HGP1))",
+      "impropers": [
+       {
+        "types": [
+         "CG2R51",
+         "CG2R51",
+         "NG2R51",
+         "HGR52"
+        ],
+        "centre": 0
+       },
+       {
+        "types": [
+         "CG2R51",
+         "NG2R51",
+         "CG2R51",
+         "HGR52"
+        ],
+        "centre": 0
+       }
+      ]
+     },
+     {
+      "depth": 4,
+      "environment": "CG2R51(CG2R51(HGR52(),NG2R50(CG2R53(HGR52,NG2R51))),HGR52(),NG2R51(CG2R53(HGR52(),NG2R50(CG2R51)),CG3C51(CG3C52(CG3C51,HGA2,HGA2),HGA1(),OG3C51(CG3C51))))",
+      "impropers": []
+     },
+     {
+      "depth": 5,
+      "environment": "CG2R51(CG2R51(HGR52(),NG2R50(CG2R53(HGR52(),NG2R51(CG2R51,CG3C51)))),HGR52(),NG2R51(CG2R53(HGR52(),NG2R50(CG2R51(CG2R51,HGR52))),CG3C51(CG3C52(CG3C51(CG3C51,HGA1,OG303),HGA2(),HGA2()),HGA1(),OG3C51(CG3C51(CG321,CG3C51,HGA1)))))",
+      "impropers": [
+       {
+        "types": [
+         "CG2R51",
+         "CG2R51",
+         "NG2R51",
+         "HGR52"
+        ],
+        "centre": 0
+       },
+       {
+        "types": [
+         "CG2R51",
+         "NG2R51",
+         "CG2R51",
+         "HGR52"
+        ],
+        "centre": 0
+       }
+      ]
+     },
+     {
+      "depth": 5,
+      "environment": "CG2R51(CG2R51(HGR52(),NG2R50(CG2R53(HGR52(),NG2R51(CG2R51,CG3C51)))),HGR52(),NG2R51(CG2R53(HGR52(),NG2R50(CG2R51(CG2R51,HGR52))),CG3C51(CG3C52(CG3C51(CG3C51,HGA1,OG311),HGA2(),HGA2()),HGA1(),OG3C51(CG3C51(CG321,CG3C51,HGA1)))))",
+      "impropers": [
+       {
+        "types": [
+         "CG2R51",
+         "CG2R51",
+         "NG2R51",
+         "HGR52"
+        ],
+        "centre": 0
+       },
+       {
+        "types": [
+         "CG2R51",
+         "NG2R51",
+         "CG2R51",
+         "HGR52"
+        ],
+        "centre": 0
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "centre": "CG2R51",
+    "neighbours": [
+     "CG2R51",
+     "HGR52",
+     "NG2R52"
+    ],
+    "impropers": []
+   },
+   {
+    "centre": "CG2R53",
+    "neighbours": [
+     "CG3C52",
+     "NG2R53",
+     "OG2D1"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2R53",
+       "CG3C52",
+       "NG2R53",
+       "OG2D1"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "CG2R53",
+    "neighbours": [
+     "HGR52",
+     "NG2R50",
+     "NG2R51"
+    ],
+    "impropers": [],
+    "exceptions": [
+     {
+      "depth": 2,
+      "environment": "CG2R53(HGR52(),NG2R50(CG2R51),NG2R51(CG2R51,CG3C51))",
+      "impropers": [
+       {
+        "types": [
+         "CG2R53",
+         "NG2R50",
+         "NG2R51",
+         "HGR52"
+        ],
+        "centre": 0
+       },
+       {
+        "types": [
+         "CG2R53",
+         "NG2R51",
+         "NG2R50",
+         "HGR52"
+        ],
+        "centre": 0
+       }
+      ]
+     },
+     {
+      "depth": 2,
+      "environment": "CG2R53(HGR52(),NG2R50(CG2R51),NG2R51(CG2R51,HGP1))",
+      "impropers": [
+       {
+        "types": [
+         "CG2R53",
+         "NG2R51",
+         "NG2R50",
+         "HGR52"
+        ],
+        "centre": 0
+       }
+      ]
+     },
+     {
+      "depth": 3,
+      "environment": "CG2R53(HGR52(),NG2R50(CG2R51(CG2R51,HGR52)),NG2R51(CG2R51(CG2R51,HGR52),HGP1()))",
+      "impropers": [
+       {
+        "types": [
+         "CG2R53",
+         "NG2R50",
+         "NG2R51",
+         "HGR52"
+        ],
+        "centre": 0
+       },
+       {
+        "types": [
+         "CG2R53",
+         "NG2R51",
+         "NG2R50",
+         "HGR52"
+        ],
+        "centre": 0
+       }
+      ]
+     },
+     {
+      "depth": 4,
+      "environment": "CG2R53(HGR52(),NG2R50(CG2R51(CG2R51(HGR52,NG2R51),HGR52())),NG2R51(CG2R51(CG2R51(HGR52,NG2R50),HGR52()),CG3C51(CG3C52(CG3C51,HGA2,HGA2),HGA1(),OG3C51(CG3C51))))",
+      "impropers": []
+     },
+     {
+      "depth": 5,
+      "environment": "CG2R53(HGR52(),NG2R50(CG2R51(CG2R51(HGR52(),NG2R51(CG2R53,CG3C51)),HGR52())),NG2R51(CG2R51(CG2R51(HGR52(),NG2R50(CG2R53)),HGR52()),CG3C51(CG3C52(CG3C51(CG3C51,HGA1,OG303),HGA2(),HGA2()),HGA1(),OG3C51(CG3C51(CG321,CG3C51,HGA1)))))",
+      "impropers": [
+       {
+        "types": [
+         "CG2R53",
+         "NG2R50",
+         "NG2R51",
+         "HGR52"
+        ],
+        "centre": 0
+       },
+       {
+        "types": [
+         "CG2R53",
+         "NG2R51",
+         "NG2R50",
+         "HGR52"
+        ],
+        "centre": 0
+       }
+      ]
+     },
+     {
+      "depth": 5,
+      "environment": "CG2R53(HGR52(),NG2R50(CG2R51(CG2R51(HGR52(),NG2R51(CG2R53,CG3C51)),HGR52())),NG2R51(CG2R51(CG2R51(HGR52(),NG2R50(CG2R53)),HGR52()),CG3C51(CG3C52(CG3C51(CG3C51,HGA1,OG311),HGA2(),HGA2()),HGA1(),OG3C51(CG3C51(CG321,CG3C51,HGA1)))))",
+      "impropers": [
+       {
+        "types": [
+         "CG2R53",
+         "NG2R50",
+         "NG2R51",
+         "HGR52"
+        ],
+        "centre": 0
+       },
+       {
+        "types": [
+         "CG2R53",
+         "NG2R51",
+         "NG2R50",
+         "HGR52"
+        ],
+        "centre": 0
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "centre": "CG2R61",
+    "neighbours": [
+     "CG2R61",
+     "CG2R61",
+     "HGR61"
+    ],
+    "impropers": []
+   },
+   {
+    "centre": "CG2R61",
+    "neighbours": [
+     "CG2R61",
+     "CG2R67",
+     "HGR61"
+    ],
+    "impropers": []
+   },
+   {
+    "centre": "CG2R61",
+    "neighbours": [
+     "CG2R61",
+     "CG2RC0",
+     "HGR61"
+    ],
+    "impropers": []
+   },
+   {
+    "centre": "CG2R62",
+    "neighbours": [
+     "CG2R62",
+     "CG2R62",
+     "HGR63"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2R62",
+       "CG2R62",
+       "CG2R62",
+       "HGR63"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "CG2R62",
+    "neighbours": [
+     "CG2R62",
+     "CG2R63",
+     "CG331"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG331",
+       "CG2R63",
+       "CG2R62",
+       "CG2R62"
+      ],
+      "centre": 3
+     }
+    ],
+    "exceptions": [
+     {
+      "depth": 3,
+      "environment": "CG2R62(CG2R62(HGR62(),NG2R61(CG2R63,CG331)),CG2R63(NG2R61(CG2R63,HGP1),OG2D4()),CG331(HGA3(),HGA3(),HGA3()))",
+      "impropers": [
+       {
+        "types": [
+         "CG2R62",
+         "CG2R63",
+         "CG2R62",
+         "CG331"
+        ],
+        "centre": 0
+       }
+      ]
+     },
+     {
+      "depth": 4,
+      "environment": "CG2R62(CG2R62(HGR62(),NG2R61(CG2R63(NG2R61,OG2D4),CG3C51(CG3C52,HGA1,OG3C51))),CG2R63(NG2R61(CG2R63(NG2R61,OG2D4),HGP1()),OG2D4()),CG331(HGA3(),HGA3(),HGA3()))",
+      "impropers": [
+       {
+        "types": [
+         "CG2R62",
+         "CG2R63",
+         "CG2R62",
+         "CG331"
+        ],
+        "centre": 0
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "centre": "CG2R62",
+    "neighbours": [
+     "CG2R62",
+     "CG2R63",
+     "HGR62"
+    ],
+    "impropers": []
+   },
+   {
+    "centre": "CG2R62",
+    "neighbours": [
+     "CG2R62",
+     "CG2R64",
+     "HGR62"
+    ],
+    "impropers": []
+   },
+   {
+    "centre": "CG2R62",
+    "neighbours": [
+     "CG2R62",
+     "HGR62",
+     "NG2R61"
+    ],
+    "impropers": []
+   },
+   {
+    "centre": "CG2R62",
+    "neighbours": [
+     "CG2R62",
+     "HGR63",
+     "NG2R61"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2R62",
+       "NG2R61",
+       "CG2R62",
+       "HGR63"
+      ],
+      "centre": 0
+     }
+    ],
+    "exceptions": [
+     {
+      "depth": 2,
+      "environment": "CG2R62(CG2R62(CG2O1,CG2R62),HGR63(),NG2R61(CG2R62,CG3C53))",
+      "impropers": [
+       {
+        "types": [
+         "CG2R62",
+         "CG2R62",
+         "NG2R61",
+         "HGR63"
+        ],
+        "centre": 0
+       }
+      ]
+     },
+     {
+      "depth": 2,
+      "environment": "CG2R62(CG2R62(CG2O1,CG2R62),HGR63(),NG2R61(CG2R62,HGP2))",
+      "impropers": [
+       {
+        "types": [
+         "CG2R62",
+         "CG2R62",
+         "NG2R61",
+         "HGR63"
+        ],
+        "centre": 0
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "centre": "CG2R63",
+    "neighbours": [
+     "CG2R62",
+     "NG2R61",
+     "OG2D4"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2R63",
+       "NG2R61",
+       "CG2R62",
+       "OG2D4"
+      ],
+      "centre": 0
+     }
+    ],
+    "exceptions": [
+     {
+      "depth": 2,
+      "environment": "CG2R63(CG2R62(CG2R62,CG331),NG2R61(CG2R63,HGP1),OG2D4())",
+      "impropers": [
+       {
+        "types": [
+         "OG2D4",
+         "NG2R61",
+         "CG2R62",
+         "CG2R63"
+        ],
+        "centre": 3
+       }
+      ]
+     },
+     {
+      "depth": 4,
+      "environment": "CG2R63(CG2R62(CG2R62(HGR62(),NG2R61(CG2R63,CG331)),CG331(HGA3(),HGA3(),HGA3())),NG2R61(CG2R63(NG2R61(CG2R62,CG331),OG2D4()),HGP1()),OG2D4())",
+      "impropers": [
+       {
+        "types": [
+         "CG2R63",
+         "NG2R61",
+         "CG2R62",
+         "OG2D4"
+        ],
+        "centre": 0
+       }
+      ]
+     },
+     {
+      "depth": 5,
+      "environment": "CG2R63(CG2R62(CG2R62(HGR62(),NG2R61(CG2R63(NG2R61,OG2D4),CG3C51(CG3C52,HGA1,OG3C51))),CG331(HGA3(),HGA3(),HGA3())),NG2R61(CG2R63(NG2R61(CG2R62(CG2R62,HGR62),CG3C51(CG3C52,HGA1,OG3C51)),OG2D4()),HGP1()),OG2D4())",
+      "impropers": [
+       {
+        "types": [
+         "CG2R63",
+         "NG2R61",
+         "CG2R62",
+         "OG2D4"
+        ],
+        "centre": 0
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "centre": "CG2R63",
+    "neighbours": [
+     "CG2RC0",
+     "NG2R61",
+     "OG2D4"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2R63",
+       "NG2R61",
+       "CG2RC0",
+       "OG2D4"
+      ],
+      "centre": 0
+     }
+    ],
+    "exceptions": [
+     {
+      "depth": 4,
+      "environment": "CG2R63(CG2RC0(CG2RC0(NG2R51(CG2R53,CG3RC1),NG2R62(CG2R64)),NG2R50(CG2R53(HGR52,NG2R51))),NG2R61(CG2R64(NG2R62(CG2RC0),NG2S3(HGP4,HGP4)),HGP1()),OG2D4())",
+      "impropers": [
+       {
+        "types": [
+         "OG2D4",
+         "NG2R61",
+         "CG2RC0",
+         "CG2R63"
+        ],
+        "centre": 3
+       }
+      ]
+     },
+     {
+      "depth": 5,
+      "environment": "CG2R63(CG2RC0(CG2RC0(NG2R51(CG2R53(HGR52,NG2R50),CG3C51(CG3C52,CG3RC1,HGA1)),NG2R62(CG2R64(NG2R61,NG2S3))),NG2R50(CG2R53(HGR52(),NG2R51(CG2RC0,CG3C51)))),NG2R61(CG2R64(NG2R62(CG2RC0(CG2RC0,NG2R51)),NG2S3(HGP4(),HGP4())),HGP1()),OG2D4())",
+      "impropers": [
+       {
+        "types": [
+         "OG2D4",
+         "NG2R61",
+         "CG2RC0",
+         "CG2R63"
+        ],
+        "centre": 3
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "centre": "CG2R63",
+    "neighbours": [
+     "NG2R61",
+     "NG2R61",
+     "OG2D4"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2R63",
+       "NG2R61",
+       "NG2R61",
+       "OG2D4"
+      ],
+      "centre": 0
+     }
+    ],
+    "exceptions": [
+     {
+      "depth": 2,
+      "environment": "CG2R63(NG2R61(CG2R62,CG3RC1),NG2R61(CG2R63,HGP1),OG2D4())",
+      "impropers": [
+       {
+        "types": [
+         "OG2D4",
+         "NG2R61",
+         "NG2R61",
+         "CG2R63"
+        ],
+        "centre": 3
+       }
+      ]
+     },
+     {
+      "depth": 3,
+      "environment": "CG2R63(NG2R61(CG2R62(CG2R62,HGR62),CG3C51(CG3C52,CG3RC1,HGA1)),NG2R61(CG2R63(CG2R62,OG2D4),HGP1()),OG2D4())",
+      "impropers": [
+       {
+        "types": [
+         "OG2D4",
+         "NG2R61",
+         "NG2R61",
+         "CG2R63"
+        ],
+        "centre": 3
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "centre": "CG2R63",
+    "neighbours": [
+     "NG2R61",
+     "NG2R62",
+     "OG2D4"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2R63",
+       "NG2R61",
+       "NG2R62",
+       "OG2D4"
+      ],
+      "centre": 0
+     }
+    ],
+    "exceptions": [
+     {
+      "depth": 2,
+      "environment": "CG2R63(NG2R61(CG2R62,CG3RC1),NG2R62(CG2R64),OG2D4())",
+      "impropers": [
+       {
+        "types": [
+         "OG2D4",
+         "NG2R61",
+         "NG2R62",
+         "CG2R63"
+        ],
+        "centre": 3
+       }
+      ]
+     },
+     {
+      "depth": 3,
+      "environment": "CG2R63(NG2R61(CG2R62(CG2R62,HGR62),CG3C51(CG3C52,CG3RC1,HGA1)),NG2R62(CG2R64(CG2R62,NG2S3)),OG2D4())",
+      "impropers": [
+       {
+        "types": [
+         "OG2D4",
+         "NG2R61",
+         "NG2R62",
+         "CG2R63"
+        ],
+        "centre": 3
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "centre": "CG2R64",
+    "neighbours": [
+     "CG2R62",
+     "NG2R62",
+     "NG2S3"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2R64",
+       "NG2R62",
+       "CG2R62",
+       "NG2S3"
+      ],
+      "centre": 0
+     }
+    ],
+    "exceptions": [
+     {
+      "depth": 4,
+      "environment": "CG2R64(CG2R62(CG2R62(HGR62(),NG2R61(CG2R63,CG3RC1)),HGR62()),NG2R62(CG2R63(NG2R61(CG2R62,CG3RC1),OG2D4())),NG2S3(HGP4(),HGP4()))",
+      "impropers": [
+       {
+        "types": [
+         "NG2S3",
+         "NG2R62",
+         "CG2R62",
+         "CG2R64"
+        ],
+        "centre": 3
+       }
+      ]
+     },
+     {
+      "depth": 5,
+      "environment": "CG2R64(CG2R62(CG2R62(HGR62(),NG2R61(CG2R63(NG2R62,OG2D4),CG3C51(CG3C52,CG3RC1,HGA1))),HGR62()),NG2R62(CG2R63(NG2R61(CG2R62(CG2R62,HGR62),CG3C51(CG3C52,CG3RC1,HGA1)),OG2D4())),NG2S3(HGP4(),HGP4()))",
+      "impropers": [
+       {
+        "types": [
+         "NG2S3",
+         "NG2R62",
+         "CG2R62",
+         "CG2R64"
+        ],
+        "centre": 3
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "centre": "CG2R64",
+    "neighbours": [
+     "CG2RC0",
+     "NG2R62",
+     "NG2S3"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2R64",
+       "NG2R62",
+       "CG2RC0",
+       "NG2S3"
+      ],
+      "centre": 0
+     }
+    ],
+    "exceptions": [
+     {
+      "depth": 4,
+      "environment": "CG2R64(CG2RC0(CG2RC0(NG2R51(CG2R53,CG3RC1),NG2R62(CG2R64)),NG2R50(CG2R53(HGR52,NG2R51))),NG2R62(CG2R64(HGR62(),NG2R62(CG2RC0))),NG2S3(HGP4(),HGP4()))",
+      "impropers": [
+       {
+        "types": [
+         "NG2S3",
+         "NG2R62",
+         "CG2RC0",
+         "CG2R64"
+        ],
+        "centre": 3
+       }
+      ]
+     },
+     {
+      "depth": 5,
+      "environment": "CG2R64(CG2RC0(CG2RC0(NG2R51(CG2R53(HGR52,NG2R50),CG3C51(CG3C52,CG3RC1,HGA1)),NG2R62(CG2R64(HGR62,NG2R62))),NG2R50(CG2R53(HGR52(),NG2R51(CG2RC0,CG3C51)))),NG2R62(CG2R64(HGR62(),NG2R62(CG2RC0(CG2RC0,NG2R51)))),NG2S3(HGP4(),HGP4()))",
+      "impropers": [
+       {
+        "types": [
+         "NG2S3",
+         "NG2R62",
+         "CG2RC0",
+         "CG2R64"
+        ],
+        "centre": 3
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "centre": "CG2R64",
+    "neighbours": [
+     "NG2R61",
+     "NG2R62",
+     "NG2S3"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "CG2R64",
+       "NG2R62",
+       "NG2R61",
+       "NG2S3"
+      ],
+      "centre": 0
+     }
+    ],
+    "exceptions": [
+     {
+      "depth": 4,
+      "environment": "CG2R64(NG2R61(CG2R63(CG2RC0(CG2RC0,NG2R50),OG2D4()),HGP1()),NG2R62(CG2RC0(CG2RC0(CG2R63,NG2R50),NG2R51(CG2R53,CG3RC1))),NG2S3(HGP4(),HGP4()))",
+      "impropers": [
+       {
+        "types": [
+         "NG2S3",
+         "NG2R62",
+         "NG2R61",
+         "CG2R64"
+        ],
+        "centre": 3
+       }
+      ]
+     },
+     {
+      "depth": 5,
+      "environment": "CG2R64(NG2R61(CG2R63(CG2RC0(CG2RC0(NG2R51,NG2R62),NG2R50(CG2R53)),OG2D4()),HGP1()),NG2R62(CG2RC0(CG2RC0(CG2R63(NG2R61,OG2D4),NG2R50(CG2R53)),NG2R51(CG2R53(HGR52,NG2R50),CG3C51(CG3C52,CG3RC1,HGA1)))),NG2S3(HGP4(),HGP4()))",
+      "impropers": [
+       {
+        "types": [
+         "NG2S3",
+         "NG2R62",
+         "NG2R61",
+         "CG2R64"
+        ],
+        "centre": 3
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "centre": "NG2P1",
+    "neighbours": [
+     "CG2N1",
+     "CG334",
+     "HGP2"
+    ],
+    "impropers": []
+   },
+   {
+    "centre": "NG2P1",
+    "neighbours": [
+     "CG2N1",
+     "HGP2",
+     "HGP2"
+    ],
+    "impropers": []
+   },
+   {
+    "centre": "NG2P1",
+    "neighbours": [
+     "CG2N2",
+     "HGP2",
+     "HGP2"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "NG2P1",
+       "HGP2",
+       "HGP2",
+       "CG2N2"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "NG2R51",
+    "neighbours": [
+     "CG2R51",
+     "CG2R53",
+     "CG3C51"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "NG2R51",
+       "CG2R51",
+       "CG2R53",
+       "CG3C51"
+      ],
+      "centre": 0
+     },
+     {
+      "types": [
+       "NG2R51",
+       "CG2R53",
+       "CG2R51",
+       "CG3C51"
+      ],
+      "centre": 0
+     }
+    ],
+    "exceptions": [
+     {
+      "depth": 3,
+      "environment": "NG2R51(CG2R51(CG2R51(HGR52,NG2R50),HGR52()),CG2R53(HGR52(),NG2R50(CG2R51)),CG3C51(CG3C52(CG3C51,HGA2,HGA2),HGA1(),OG3C51(CG3C51)))",
+      "impropers": []
+     },
+     {
+      "depth": 4,
+      "environment": "NG2R51(CG2R51(CG2R51(HGR52(),NG2R50(CG2R53)),HGR52()),CG2R53(HGR52(),NG2R50(CG2R51(CG2R51,HGR52))),CG3C51(CG3C52(CG3C51(CG3C51,HGA1,OG303),HGA2(),HGA2()),HGA1(),OG3C51(CG3C51(CG321,CG3C51,HGA1))))",
+      "impropers": [
+       {
+        "types": [
+         "NG2R51",
+         "CG2R51",
+         "CG2R53",
+         "CG3C51"
+        ],
+        "centre": 0
+       },
+       {
+        "types": [
+         "NG2R51",
+         "CG2R53",
+         "CG2R51",
+         "CG3C51"
+        ],
+        "centre": 0
+       }
+      ]
+     },
+     {
+      "depth": 4,
+      "environment": "NG2R51(CG2R51(CG2R51(HGR52(),NG2R50(CG2R53)),HGR52()),CG2R53(HGR52(),NG2R50(CG2R51(CG2R51,HGR52))),CG3C51(CG3C52(CG3C51(CG3C51,HGA1,OG311),HGA2(),HGA2()),HGA1(),OG3C51(CG3C51(CG321,CG3C51,HGA1))))",
+      "impropers": [
+       {
+        "types": [
+         "NG2R51",
+         "CG2R51",
+         "CG2R53",
+         "CG3C51"
+        ],
+        "centre": 0
+       },
+       {
+        "types": [
+         "NG2R51",
+         "CG2R53",
+         "CG2R51",
+         "CG3C51"
+        ],
+        "centre": 0
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "centre": "NG2R51",
+    "neighbours": [
+     "CG2R51",
+     "CG2R53",
+     "HGP1"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "NG2R51",
+       "CG2R51",
+       "CG2R53",
+       "HGP1"
+      ],
+      "centre": 0
+     }
+    ],
+    "exceptions": [
+     {
+      "depth": 2,
+      "environment": "NG2R51(CG2R51(CG2R51,HGR52),CG2R53(HGR52,NG2R50),HGP1())",
+      "impropers": [
+       {
+        "types": [
+         "NG2R51",
+         "CG2R51",
+         "CG2R53",
+         "HGP1"
+        ],
+        "centre": 0
+       },
+       {
+        "types": [
+         "NG2R51",
+         "CG2R53",
+         "CG2R51",
+         "HGP1"
+        ],
+        "centre": 0
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "centre": "NG2R51",
+    "neighbours": [
+     "CG2R53",
+     "CG2RC0",
+     "HGP1"
+    ],
+    "impropers": []
+   },
+   {
+    "centre": "NG2R52",
+    "neighbours": [
+     "CG2R51",
+     "CG2R53",
+     "HGP2"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "NG2R52",
+       "CG2R51",
+       "CG2R53",
+       "HGP2"
+      ],
+      "centre": 0
+     },
+     {
+      "types": [
+       "NG2R52",
+       "CG2R53",
+       "CG2R51",
+       "HGP2"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "NG2R61",
+    "neighbours": [
+     "CG2R62",
+     "CG2R62",
+     "HGP2"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "NG2R61",
+       "CG2R62",
+       "CG2R62",
+       "HGP2"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "NG2R61",
+    "neighbours": [
+     "CG2R63",
+     "CG2R63",
+     "HGP1"
+    ],
+    "impropers": []
+   },
+   {
+    "centre": "NG2R61",
+    "neighbours": [
+     "CG2R63",
+     "CG2R64",
+     "HGP1"
+    ],
+    "impropers": []
+   },
+   {
+    "centre": "NG2S0",
+    "neighbours": [
+     "CG2O1",
+     "CG3C51",
+     "CG3C52"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "NG2S0",
+       "CG2O1",
+       "CG3C51",
+       "CG3C52"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "NG2S1",
+    "neighbours": [
+     "CG2O1",
+     "CG2R61",
+     "HGP1"
+    ],
+    "impropers": [],
+    "exceptions": [
+     {
+      "depth": 2,
+      "environment": "NG2S1(CG2O1(CG331,OG2D1),CG2R61(CG2R61,NG2R60),HGP1())",
+      "impropers": [
+       {
+        "types": [
+         "NG2S1",
+         "CG2O1",
+         "CG2R61",
+         "HGP1"
+        ],
+        "centre": 0
+       }
+      ]
+     },
+     {
+      "depth": 3,
+      "environment": "NG2S1(CG2O1(CG331(HGA3,HGA3,HGA3),OG2D1()),CG2R61(CG2R61(CG2R61,HGR61),CG2R61(HGR62,NG2R60)),HGP1())",
+      "impropers": [
+       {
+        "types": [
+         "NG2S1",
+         "CG2O1",
+         "CG2R61",
+         "HGP1"
+        ],
+        "centre": 0
+       }
+      ]
+     },
+     {
+      "depth": 4,
+      "environment": "NG2S1(CG2O1(CG321(CG321(CG311,HGA2,HGA2),HGA2(),HGA2()),OG2D1()),CG2R61(CG2R61(CG2R61(CG2R61,HGR61),HGR61()),CG2R61(CG2R61(CG2R61,HGR62),HGR61())),HGP1())",
+      "impropers": [
+       {
+        "types": [
+         "NG2S1",
+         "CG2O1",
+         "CG2R61",
+         "HGP1"
+        ],
+        "centre": 0
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "centre": "NG2S1",
+    "neighbours": [
+     "CG2O1",
+     "CG311",
+     "HGP1"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "NG2S1",
+       "CG2O1",
+       "CG311",
+       "HGP1"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "NG2S1",
+    "neighbours": [
+     "CG2O1",
+     "CG321",
+     "HGP1"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "NG2S1",
+       "CG2O1",
+       "CG321",
+       "HGP1"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "NG2S1",
+    "neighbours": [
+     "CG2O1",
+     "CG331",
+     "HGP1"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "NG2S1",
+       "CG2O1",
+       "CG331",
+       "HGP1"
+      ],
+      "centre": 0
+     }
+    ],
+    "exceptions": [
+     {
+      "depth": 2,
+      "environment": "NG2S1(CG2O1(CG2DC2,OG2D1),CG331(HGA3,HGA3,HGA3),HGP1())",
+      "impropers": []
+     },
+     {
+      "depth": 2,
+      "environment": "NG2S1(CG2O1(CG3C51,OG2D1),CG331(HGA3,HGA3,HGA3),HGP1())",
+      "impropers": []
+     }
+    ]
+   },
+   {
+    "centre": "NG2S1",
+    "neighbours": [
+     "CG2O1",
+     "HGP1",
+     "NG2D1"
+    ],
+    "impropers": []
+   },
+   {
+    "centre": "NG2S2",
+    "neighbours": [
+     "CG2O1",
+     "HGP1",
+     "HGP1"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "NG2S2",
+       "CG2O1",
+       "HGP1",
+       "HGP1"
+      ],
+      "centre": 0
+     },
+     {
+      "types": [
+       "NG2S2",
+       "CG2O1",
+       "HGP1",
+       "HGP1"
+      ],
+      "centre": 0
+     }
+    ],
+    "exceptions": [
+     {
+      "depth": 2,
+      "environment": "NG2S2(CG2O1(CG2R61,OG2D1),HGP1(),HGP1())",
+      "impropers": []
+     },
+     {
+      "depth": 2,
+      "environment": "NG2S2(CG2O1(CG3C51,OG2D1),HGP1(),HGP1())",
+      "impropers": [
+       {
+        "types": [
+         "NG2S2",
+         "CG2O1",
+         "HGP1",
+         "HGP1"
+        ],
+        "centre": 0
+       }
+      ]
+     },
+     {
+      "depth": 2,
+      "environment": "NG2S2(CG2O1(CG3C53,OG2D1),HGP1(),HGP1())",
+      "impropers": [
+       {
+        "types": [
+         "NG2S2",
+         "CG2O1",
+         "HGP1",
+         "HGP1"
+        ],
+        "centre": 0
+       }
+      ]
+     },
+     {
+      "depth": 2,
+      "environment": "NG2S2(CG2O1(HGR52,OG2D1),HGP1(),HGP1())",
+      "impropers": []
+     },
+     {
+      "depth": 3,
+      "environment": "NG2S2(CG2O1(CG321(CG321,HGA2,HGA2),OG2D1()),HGP1(),HGP1())",
+      "impropers": [
+       {
+        "types": [
+         "NG2S2",
+         "CG2O1",
+         "HGP1",
+         "HGP1"
+        ],
+        "centre": 0
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "centre": "NG2S2",
+    "neighbours": [
+     "CG2O6",
+     "HGP1",
+     "HGP1"
+    ],
+    "impropers": []
+   },
+   {
+    "centre": "NG2S3",
+    "neighbours": [
+     "CG2R61",
+     "HGP4",
+     "HGP4"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "NG2S3",
+       "CG2R61",
+       "HGP4",
+       "HGP4"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "NG2S3",
+    "neighbours": [
+     "CG2R64",
+     "HGP4",
+     "HGP4"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "NG2S3",
+       "CG2R64",
+       "HGP4",
+       "HGP4"
+      ],
+      "centre": 0
+     }
+    ],
+    "exceptions": [
+     {
+      "depth": 2,
+      "environment": "NG2S3(CG2R64(NG2R61,NG2R62),HGP4(),HGP4())",
+      "impropers": [
+       {
+        "types": [
+         "NG2S3",
+         "HGP4",
+         "CG2R64",
+         "HGP4"
+        ],
+        "centre": 0
+       }
+      ]
+     },
+     {
+      "depth": 5,
+      "environment": "NG2S3(CG2R64(CG2R62(CG2R62(HGR62(),NG2R61(CG2R63,CG3RC1)),HGR62()),NG2R62(CG2R63(NG2R61(CG2R62,CG3RC1),OG2D4()))),HGP4(),HGP4())",
+      "impropers": [
+       {
+        "types": [
+         "HGP4",
+         "CG2R64",
+         "HGP4",
+         "NG2S3"
+        ],
+        "centre": 3
+       }
+      ]
+     },
+     {
+      "depth": 5,
+      "environment": "NG2S3(CG2R64(CG2RC0(CG2RC0(NG2R51(CG2R53,CG3RC1),NG2R62(CG2R64)),NG2R50(CG2R53(HGR52,NG2R51))),NG2R62(CG2R64(HGR62(),NG2R62(CG2RC0)))),HGP4(),HGP4())",
+      "impropers": [
+       {
+        "types": [
+         "HGP4",
+         "CG2R64",
+         "HGP4",
+         "NG2S3"
+        ],
+        "centre": 3
+       }
+      ]
+     },
+     {
+      "depth": 5,
+      "environment": "NG2S3(CG2R64(NG2R61(CG2R63(CG2RC0(CG2RC0,NG2R50),OG2D4()),HGP1()),NG2R62(CG2RC0(CG2RC0(CG2R63,NG2R50),NG2R51(CG2R53,CG3RC1)))),HGP4(),HGP4())",
+      "impropers": [
+       {
+        "types": [
+         "HGP4",
+         "HGP4",
+         "CG2R64",
+         "NG2S3"
+        ],
+        "centre": 3
+       }
+      ]
+     },
+     {
+      "depth": 6,
+      "environment": "NG2S3(CG2R64(CG2R62(CG2R62(HGR62(),NG2R61(CG2R63(NG2R62,OG2D4),CG3C51(CG3C52,CG3RC1,HGA1))),HGR62()),NG2R62(CG2R63(NG2R61(CG2R62(CG2R62,HGR62),CG3C51(CG3C52,CG3RC1,HGA1)),OG2D4()))),HGP4(),HGP4())",
+      "impropers": [
+       {
+        "types": [
+         "HGP4",
+         "CG2R64",
+         "HGP4",
+         "NG2S3"
+        ],
+        "centre": 3
+       }
+      ]
+     },
+     {
+      "depth": 6,
+      "environment": "NG2S3(CG2R64(CG2RC0(CG2RC0(NG2R51(CG2R53(HGR52,NG2R50),CG3C51(CG3C52,CG3RC1,HGA1)),NG2R62(CG2R64(HGR62,NG2R62))),NG2R50(CG2R53(HGR52(),NG2R51(CG2RC0,CG3C51)))),NG2R62(CG2R64(HGR62(),NG2R62(CG2RC0(CG2RC0,NG2R51))))),HGP4(),HGP4())",
+      "impropers": [
+       {
+        "types": [
+         "HGP4",
+         "CG2R64",
+         "HGP4",
+         "NG2S3"
+        ],
+        "centre": 3
+       }
+      ]
+     },
+     {
+      "depth": 6,
+      "environment": "NG2S3(CG2R64(NG2R61(CG2R63(CG2RC0(CG2RC0(NG2R51,NG2R62),NG2R50(CG2R53)),OG2D4()),HGP1()),NG2R62(CG2RC0(CG2RC0(CG2R63(NG2R61,OG2D4),NG2R50(CG2R53)),NG2R51(CG2R53(HGR52,NG2R50),CG3C51(CG3C52,CG3RC1,HGA1))))),HGP4(),HGP4())",
+      "impropers": [
+       {
+        "types": [
+         "HGP4",
+         "HGP4",
+         "CG2R64",
+         "NG2S3"
+        ],
+        "centre": 3
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "centre": "NG311",
+    "neighbours": [
+     "CG2N1",
+     "CG331",
+     "HGPAM1"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "NG311",
+       "CG331",
+       "CG2N1",
+       "HGPAM1"
+      ],
+      "centre": 0
+     }
+    ]
+   },
+   {
+    "centre": "NG321",
+    "neighbours": [
+     "CG2N1",
+     "HGPAM2",
+     "HGPAM2"
+    ],
+    "impropers": [
+     {
+      "types": [
+       "NG321",
+       "HGPAM2",
+       "HGPAM2",
+       "CG2N1"
+      ],
+      "centre": 0
+     }
+    ]
+   }
+  ],
+  "unlisted_entries": [
+   "CG2N1-NG2D1-NG321-NG311",
+   "CG2O3-X-X-CG311",
+   "CG2O3-X-X-CG321",
+   "CG2O3-X-X-CG331",
+   "CG2O4-CG2DC2-OG2D1-HGR52",
+   "CG2R61-X-X-HGR61",
+   "CG2R62-X-X-HGR62",
+   "NG2R51-CG2R53-CG2RC0-HGP1",
+   "NG2R61-CG2R62-CG2R62-HGP1",
+   "NG2R61-X-X-HGP1",
+   "NG2S3-CG2R62-NG2R61-CG2R64",
+   "OG311-CG2RC0-NG2R62-CG2R63",
+   "HGR52-CG2R51-NG2R52-CG2R51"
+  ]
+ }
 }

@@ -388,6 +388,43 @@ void save_forcefield(const FFDef& ff, const std::string& path) {
   if (ff.improper_reversible) j["improper_reversible"] = true;
   if (ff.improper_all_explicit) j["improper_all_explicit"] = true;
   if (ff.improper_max_neighbours) j["improper_max_neighbours"] = ff.improper_max_neighbours;
+  if (ff.improper_placement) {
+    Json ip = Json::object(), sites = Json::array(), unl = Json::array();
+    for (const auto& s : ff.improper_sites) {
+      Json o = Json::object(), nb = Json::array();
+      o["centre"] = s.centre;
+      for (const auto& x : s.neighbours) nb.push_back(x);
+      o["neighbours"] = nb;
+      auto listing = [](const std::vector<std::pair<std::vector<std::string>, int>>& L) {
+        Json im = Json::array();
+        for (const auto& [types, cpos] : L) {
+          Json q = Json::object(), t = Json::array();
+          for (const auto& x : types) t.push_back(x);
+          q["types"] = t;
+          q["centre"] = double(cpos);
+          im.push_back(q);
+        }
+        return im;
+      };
+      o["impropers"] = listing(s.impropers);
+      if (!s.exceptions.empty()) {
+        Json ex = Json::array();
+        for (const auto& e : s.exceptions) {
+          Json q = Json::object();
+          q["depth"] = double(e.depth);
+          q["environment"] = e.environment;
+          q["impropers"] = listing(e.impropers);
+          ex.push_back(q);
+        }
+        o["exceptions"] = ex;
+      }
+      sites.push_back(o);
+    }
+    for (const auto& x : ff.impropers_unlisted) unl.push_back(x);
+    ip["sites"] = sites;
+    ip["unlisted_entries"] = unl;
+    j["improper_placement"] = ip;
+  }
   if (ff.wildcard_torsion_scaling != "none") j["wildcard_torsion_scaling"] = ff.wildcard_torsion_scaling;
   if (!ff.charge_increments_from.empty()) j["charge_increments_from"] = ff.charge_increments_from;
   if (ff.ion_charge_scale != 1.0) j["ion_charge_scale"] = ff.ion_charge_scale;
@@ -572,6 +609,40 @@ FFDef load_forcefield(const std::string& path) {
   ff.improper_reversible = j.has("improper_reversible") && j["improper_reversible"].boolean();
   ff.improper_all_explicit = j.has("improper_all_explicit") && j["improper_all_explicit"].boolean();
   ff.improper_max_neighbours = int(j.num("improper_max_neighbours", 0));
+  if (j.has("improper_placement")) {
+    const Json& ip = j["improper_placement"];
+    ff.improper_placement = true;
+    if (ip.has("sites"))
+      for (const auto& o : ip["sites"].items()) {
+        FFDef::ImproperSite s;
+        s.centre = o["centre"].str();
+        for (const auto& x : o["neighbours"].items()) s.neighbours.push_back(x.str());
+        std::sort(s.neighbours.begin(), s.neighbours.end());
+        auto listing = [](const Json& L) {
+          std::vector<std::pair<std::vector<std::string>, int>> out;
+          for (const auto& q : L.items()) {
+            std::vector<std::string> t;
+            for (const auto& x : q["types"].items()) t.push_back(x.str());
+            const int cpos = int(q.num("centre", 0));
+            if (t.size() != 4 || cpos < 0 || cpos > 3) throw FFError("improper_placement: a site's improper needs four types and a centre 0-3");
+            out.push_back({t, cpos});
+          }
+          return out;
+        };
+        if (o.has("impropers")) s.impropers = listing(o["impropers"]);
+        if (o.has("exceptions"))
+          for (const auto& q : o["exceptions"].items()) {
+            FFDef::ImproperSite::Exception e;
+            e.depth = int(q.num("depth", 2));
+            e.environment = q["environment"].str();
+            if (q.has("impropers")) e.impropers = listing(q["impropers"]);
+            s.exceptions.push_back(std::move(e));
+          }
+        ff.improper_sites.push_back(std::move(s));
+      }
+    if (ip.has("unlisted_entries"))
+      for (const auto& x : ip["unlisted_entries"].items()) ff.impropers_unlisted.push_back(x.str());
+  }
   ff.wildcard_torsion_scaling = j.text("wildcard_torsion_scaling", ff.wildcard_torsion_scaling);
   ff.charge_increments_from = j.text("charge_increments_from", ff.charge_increments_from);
   ff.ion_charge_scale = j.num("ion_charge_scale", 1.0);
@@ -653,6 +724,8 @@ FFDef load_forcefield(const std::string& path) {
     if (j.has("missing_bond_increment")) base.missing_increment_zero = ff.missing_increment_zero;
     if (j.has("improper_matched_order")) base.improper_matched_order = ff.improper_matched_order;
     if (j.has("improper_max_neighbours")) base.improper_max_neighbours = ff.improper_max_neighbours;
+    if (j.has("improper_placement"))
+      base.improper_placement = true, base.improper_sites = ff.improper_sites, base.impropers_unlisted = ff.impropers_unlisted;
     if (j.has("timestep")) base.timestep = ff.timestep;
     if (j.has("torsion_rules")) base.torsion_rules = ff.torsion_rules;
     if (j.has("hbonds")) base.hbonds = ff.hbonds;
@@ -2489,10 +2562,107 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
       }
     }
   }
+  // CHARMM: impropers where the topology's IMPR records place them (FFDef::improper_placement)
+  const std::set<std::string> unlisted(def.impropers_unlisted.begin(), def.impropers_unlisted.end());
   for (uint32_t c = 0; def.oop_scheme != "msi2lmp" && c < n; ++c) {
     const auto& nbc = nb[c];
     if (nbc.size() < 3) continue;
     if (def.improper_max_neighbours > 0 && int(nbc.size()) > def.improper_max_neighbours) continue;
+    if (def.improper_placement && nbc.size() == 3 && !use_topo) {
+      std::vector<std::string> key = {T[nbc[0]], T[nbc[1]], T[nbc[2]]};
+      std::sort(key.begin(), key.end());
+      const FFDef::ImproperSite* site = nullptr;
+      for (const auto& st : def.improper_sites)
+        if (st.centre == T[c] && st.neighbours == key) { site = &st; break; }
+      if (site) {
+        // a deeper environment the topology lists otherwise: the deepest that matches
+        const std::vector<std::pair<std::vector<std::string>, int>>* chosen = &site->impropers;
+        if (!site->exceptions.empty()) {
+          std::function<std::string(uint32_t, int, int64_t)> env = [&](uint32_t a, int d, int64_t from) {
+            if (d == 0) return T[a];
+            std::vector<std::string> sub;
+            for (uint32_t x : nb[a])
+              if (int64_t(x) != from) sub.push_back(env(x, d - 1, int64_t(a)));
+            std::sort(sub.begin(), sub.end());
+            std::string out = T[a] + "(";
+            for (size_t k = 0; k < sub.size(); ++k) out += (k ? "," : "") + sub[k];
+            return out + ")";
+          };
+          int deepest = 0;
+          for (const auto& e : site->exceptions) deepest = std::max(deepest, e.depth);
+          for (int d = 2; d <= deepest; ++d) {
+            const std::string key = env(c, d, -1);
+            for (const auto& e : site->exceptions)
+              if (e.depth == d && e.environment == key) chosen = &e.impropers;
+          }
+        }
+        if (!chosen->empty()) ff.impropers_dlpoly_ok = false;   // the DL_POLY writer takes ff.impropers
+        for (const auto& [qt, cp] : *chosen) {
+          // the neighbours in the positions whose types they have (equal types: in index order)
+          std::array<uint32_t, 3> o = {nbc[0], nbc[1], nbc[2]};
+          std::sort(o.begin(), o.end());
+          std::array<uint32_t, 4> q4{};
+          bool fit = false;
+          do {
+            fit = true;
+            for (int pos = 0, k = 0; pos < 4; ++pos) {
+              q4[size_t(pos)] = pos == cp ? c : o[size_t(k++)];
+              if (T[q4[size_t(pos)]] != qt[size_t(pos)]) fit = false;
+            }
+          } while (!fit && std::next_permutation(o.begin(), o.end()));
+          if (!fit) continue;
+          // CHARMM's lookup: an entry without wildcards (forward or backward) before one with them; the last listed wins
+          const FFRule* r = nullptr;
+          auto charmm_lookup = [&](const std::array<uint32_t, 4>& a) {
+            const std::vector<const std::string*> fw = {&T[a[0]], &T[a[1]], &T[a[2]], &T[a[3]]}, bw = {fw[3], fw[2], fw[1], fw[0]};
+            const FFRule* hit = nullptr;
+            for (int wild = 0; wild < 2 && !hit; ++wild)
+              for (size_t ri = def.impropers.size(); ri-- > 0 && !hit;) {
+                const auto& R = def.impropers[ri];
+                const bool w = std::find(R.match.begin(), R.match.end(), std::string("*")) != R.match.end();
+                if (R.match.size() == 4 && w == bool(wild) && (match_fw(R.match, fw) || match_fw(R.match, bw))) hit = &R;
+              }
+            return hit;
+          };
+          r = charmm_lookup(q4);
+          if (!r) {
+            // an IMPR record in an order no entry has (jul17's RESI SAH: OT1 CA OT2 C), which CHARMM itself would
+            // refuse: the atoms in the first order an entry has, the centre first or last
+            std::array<uint32_t, 3> out{};
+            for (int pos = 0, k = 0; pos < 4; ++pos)
+              if (pos != cp) out[size_t(k++)] = q4[size_t(pos)];
+            std::sort(out.begin(), out.end());
+            for (int cpos2 : {0, 3}) {
+              std::array<uint32_t, 3> o2 = out;
+              do {
+                std::array<uint32_t, 4> a{};
+                for (int pos = 0, k = 0; pos < 4; ++pos) a[size_t(pos)] = pos == cpos2 ? c : o2[size_t(k++)];
+                if ((r = charmm_lookup(a))) { q4 = a; break; }
+              } while (std::next_permutation(o2.begin(), o2.end()));
+              if (r) break;
+            }
+          }
+          if (!r) {
+            missing("improper " + shown(T, {q4[0], q4[1], q4[2], q4[3]}));
+            continue;
+          }
+          const std::string st = r->style.empty() ? def.improper_style : r->style;
+          const auto& p = r->params;
+          if (st == "fourier") {
+            const int m = p.empty() ? 0 : int(p[0]);
+            for (int q = 0; q < m; ++q)
+              if (p.at(1 + 3 * q) != 0)
+                ff.impropers.push_back({q4[0], q4[1], q4[2], q4[3], p.at(1 + 3 * q), int(p.at(2 + 3 * q)), p.at(3 + 3 * q) * kDeg});
+          } else if (st == "harmonic") {
+            if (p.at(0) != 0) ff.impropers_harmonic.push_back({q4[0], q4[1], q4[2], q4[3], p.at(0), p.at(1) * kDeg});
+          } else {
+            throw FFError("improper style '" + st + "' (" + r->name + ") is not supported with improper_placement");
+          }
+          rep.used["improper " + r->name]++;
+        }
+        continue;
+      }
+    }
     for (size_t x = 0; x < nbc.size(); ++x)
       for (size_t y = x + 1; y < nbc.size(); ++y)
         for (size_t z = y + 1; z < nbc.size(); ++z) {
@@ -2513,7 +2683,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
             const std::vector<std::string>& N = pass == 0 ? T : pass == 1 ? Ni : Ni2;
             for (size_t ri = def.impropers.size(); ri-- > 0 && !best;) {
               const auto& r = def.impropers[ri];
-              if (r.match.size() != 4) continue;
+              if (r.match.size() != 4 || unlisted.count(r.name)) continue;
               static constexpr int kPerm[6][3] = {{0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 0, 1}, {2, 1, 0}};
               for (const auto& pi : kPerm) {
                 const std::array<uint32_t, 3> pm = {o[pi[0]], o[pi[1]], o[pi[2]]};
@@ -2611,7 +2781,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
             static constexpr int kPerm2[6][3] = {{0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 0, 1}, {2, 1, 0}};
             for (size_t ri = def.impropers.size(); ri-- > 0;) {
               const auto& r = def.impropers[ri];
-              if (&r == best || r.match.size() != 4 || !explicit_rule(r)) continue;
+              if (&r == best || r.match.size() != 4 || !explicit_rule(r) || unlisted.count(r.name)) continue;
               for (const auto& pi : kPerm2) {
                 const std::array<uint32_t, 3> pm = {o[pi[0]], o[pi[1]], o[pi[2]]};
                 std::vector<const std::string*> ty(4);

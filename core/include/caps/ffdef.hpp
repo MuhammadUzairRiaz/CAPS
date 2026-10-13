@@ -140,6 +140,29 @@ struct FFDef {
   bool improper_all_explicit = false;
   // Only centres with at most this many neighbours get impropers (3: planar centres); 0 = any.
   int improper_max_neighbours = 0;
+  // CHARMM places an improper only where a residue's IMPR record lists one ("improper_placement", derived from the
+  // topology files by bench/ff/convert_charmm_prm.py --impropers-from-rtf). A centre with three neighbours whose types
+  // (centre, and the three sorted) form a listed site gets exactly that site's impropers, each with its atoms in the
+  // IMPR order (types; the centre at `centre`), its parameter looked up as CHARMM does (exact entries forward or
+  // backward, then wildcard ones); a listed site with no impropers gets none. A centre whose environment no topology
+  // shows falls back to the matching rules, without the entries no IMPR record ever uses (impropers_unlisted).
+  struct ImproperSite {
+    std::string centre;
+    std::vector<std::string> neighbours;   // sorted
+    std::vector<std::pair<std::vector<std::string>, int>> impropers;   // types in IMPR order, centre position
+    // deeper environments the topology lists otherwise: (depth, environment, impropers); the deepest that matches
+    // wins. An environment d bonds out: the type, then "(" the sorted environments (d - 1) of its neighbours other
+    // than the one it came from, comma-separated ")"
+    struct Exception {
+      int depth = 2;
+      std::string environment;
+      std::vector<std::pair<std::vector<std::string>, int>> impropers;
+    };
+    std::vector<Exception> exceptions;
+  };
+  bool improper_placement = false;
+  std::vector<ImproperSite> improper_sites;
+  std::vector<std::string> impropers_unlisted;   // rule names
   // Torsions whose rule has a wildcard end get K divided by (connections − 1) of the neighbouring central atom,
   // per wildcard end (msi2lmp): "msi2lmp"; "torsions": a rule with both ends wild over the torsions that exist about
   // the bond (a three-membered ring has fewer); "none".

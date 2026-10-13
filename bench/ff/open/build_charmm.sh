@@ -18,7 +18,7 @@ python3 $C $O/charmm36-nucl-toppar.json --name "CHARMM36 nucleic acids (toppar)"
 python3 $C $O/charmm36-carb-toppar.json --name "CHARMM36 carbohydrates (toppar)" --prm $T/par_all36_carb.prm --prm $W $(streams carb) --rtf $T/top_all36_carb.rtf \
   --reference "O. Guvench et al., J. Chem. Theory Comput. 7, 3162 (2011)" --version "toppar_c36_jul17" --typing ../typing/charmm36-carb-toppar.typing.json
 python3 $C $O/cgenff-toppar.json --name "CGenFF (toppar)" --prm $T/par_all36_cgenff.prm --prm $W --rtf $T/top_all36_cgenff.rtf \
-  --reference "K. Vanommeslaeghe et al., J. Comput. Chem. 31, 671 (2010)" --version "toppar_c36_jul17 (CGenFF 3.0.1 / 4.0)" --typing ../typing/cgenff-toppar.typing.json
+  --reference "K. Vanommeslaeghe et al., J. Comput. Chem. 31, 671 (2010)" --version "toppar_c36_jul17 (CGenFF 3.0.1 / 4.0)" --typing ../typing/cgenff-toppar.typing.json --impropers-from-rtf
 python3 $C $O/charmm22-prot-toppar.json --name "CHARMM22 proteins (toppar)" --prm $T/par_all22_prot.prm --prm $W --rtf $T/top_all22_prot.rtf \
   --reference "$REF" --version "toppar_c36_jul17" --typing ../typing/charmm22-prot-toppar.typing.json
 python3 $C $O/charmm19-toppar.json --name "CHARMM19 (toppar)" --prm $T/param19.inp --rtf $T/toph19.inp --one-torsion-per-bond \

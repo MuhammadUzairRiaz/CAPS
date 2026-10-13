@@ -382,6 +382,17 @@ class _Field:
         return rep
 
 
+_FF_FALLBACK = {"cgenff": "cgenff-2a5-jcc2010"}
+_FF_SAID: set = set()
+
+
+def _say_forcefield(ff: str, used: str, why: str) -> None:
+    """which library a short name with a fallback took, once per name (on stderr, as caps ff says it)"""
+    if ff.lower() not in _FF_SAID:
+        _FF_SAID.add(ff.lower())
+        sys.stderr.write(f"force field {ff}: {used}{why}\n")
+
+
 def _forcefield_path(ff: str) -> str:
     if ff.lower() == "uff" or os.path.exists(ff):
         return ff if ff.lower() != "uff" else "uff"
@@ -396,7 +407,15 @@ def _forcefield_path(ff: str) -> str:
     name = aliases.get(ff.lower(), ff)
     p = lib / (name + ".json")
     if p.exists():
+        if ff.lower() in _FF_FALLBACK:
+            _say_forcefield(ff, name, "")
         return str(p)
+    # a short name whose first library is built only on the user's machine: the published one when it is absent
+    # (cgenff: the local toppar build, else CGenFF 2a5 from the 2010 paper's SI, in the repository), as caps ff does
+    fb = _FF_FALLBACK.get(ff.lower())
+    if fb and (lib / (fb + ".json")).exists():
+        _say_forcefield(ff, fb, f" ({name} is not built here: bench/ff/open/build_charmm.sh builds it)")
+        return str(lib / (fb + ".json"))
     raise CapsError(f"unknown force field {ff!r} (a library id such as gaff2, a caps-forcefield JSON path, or uff)")
 
 

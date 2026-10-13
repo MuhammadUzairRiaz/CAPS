@@ -127,10 +127,27 @@ std::string ff_path(const std::string& s0) {
   std::string lower = s0;
   for (auto& c : lower) c = char(std::tolower((unsigned char)c));
   auto al = alias.find(lower);
-  for (const std::string& s : al == alias.end() ? std::vector<std::string>{s0} : std::vector<std::string>{s0, al->second})
+  // a short name whose first library is built only on the user's machine: the published one when it is absent
+  // (cgenff: the local toppar build, else CGenFF 2a5 from the 2010 paper's SI, in the repository)
+  static const std::map<std::string, std::string> fallback = {{"cgenff", "cgenff-2a5-jcc2010"}};
+  auto fb = fallback.find(lower);
+  std::vector<std::string> tries = {s0};
+  if (al != alias.end()) tries.push_back(al->second);
+  if (fb != fallback.end()) tries.push_back(fb->second);
+  for (const std::string& s : tries)
     for (const auto& root : caps_roots())
       for (const std::string& name : {s, s + ".json"})
-        if (std::filesystem::exists(root + "/data/forcefields/" + name)) return root + "/data/forcefields/" + name;
+        if (std::filesystem::exists(root + "/data/forcefields/" + name)) {
+          if (s != s0 && fb != fallback.end()) {   // say which one a short name with a fallback took (once)
+            static std::set<std::string> said;
+            if (said.insert(lower).second)
+              std::fprintf(stderr, "force field %s: %s%s\n", s0.c_str(), s.c_str(),
+                           (s == fb->second && al != alias.end()
+                                ? " (" + al->second + " is not built here: bench/ff/open/build_charmm.sh builds it)"
+                                : std::string("")).c_str());
+          }
+          return root + "/data/forcefields/" + name;
+        }
   return s0;
 }
 
