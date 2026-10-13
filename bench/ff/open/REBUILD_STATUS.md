@@ -29,7 +29,7 @@ State of 2026-10-13 (branch `ff-rebuild-rest`, commits 1053f7a2 and b2ee52e2; th
 | opls2020 | OPLS2020.par | oplsaa2024 | as above | yes | as above | other session (OPLS) |
 | opls-aam | OPLS_AAM.par | oplsaam-jorgensen | Jorgensen lab `top_opls_aam.inp`, `par_opls_aam.inp` | yes (`opls-aam`) | CC BY 4.0 | done (other session) |
 | opls-clp | OPLS_CL_P.par | clandp | Padua's `il.ff` (github.com/paduagroup/clandp) | yes (`clandp-dl` is the reference only) | MIT | other session (CL&P) |
-| opls-des | OPLS_DES.par | oplsdes-doherty2018 (the set DL_FIELD's file held); clandp-des (CL&P's DES set) | oplsdes-doherty2018: Doherty & Acevedo, J. Phys. Chem. B 122, 9982 (2018) and its SI (Tables S1-S6, Schemes S1-S2), transcribed; Acevedo's own GROMACS files (github.com/orlandoacevedo/DES, GPL 3, local in `opls-des-dl/DES-master`) are an accuracy reference only, nothing taken from them. clandp-des: Padua's `des.ff` of 2025/12/19 (github.com/paduagroup/clandp) | yes (`papers/jp8b06647.pdf`, `papers/jp8b06647_si_001.pdf`; `clandp-dl/clandp-master/des.ff`) | published parameters; MIT | done (section 3) |
+| opls-des | OPLS_DES.par | oplsdes-doherty2018 (the set DL_FIELD's file held); clandp-des (CL&P's DES set) | oplsdes-doherty2018: Doherty & Acevedo, J. Phys. Chem. B 122, 9982 (2018) and its SI (Tables S1-S6, Schemes S1-S2), transcribed; Acevedo's own GROMACS files (github.com/orlandoacevedo/DES, GPL 3, local in `opls-des-dl/DES-master`) are an accuracy reference only, nothing taken from them. clandp-des: Padua's `des.ff` of 2025/12/19 (github.com/paduagroup/clandp) | yes (`papers/jp8b06647.pdf`, `papers/jp8b06647_si_001.pdf`, `papers/jp109914s.pdf` (its ref. 3); `clandp-dl/clandp-master/des.ff`) | published parameters; MIT | done (section 3) |
 | trappe-ua | TRAPPE_UA.par | trappe-ua-umn, trappe-ua-foyer | TraPPE database (trappe.oit.umn.edu); foyer `trappe-ua.xml` | yes (`trappe-site`, `foyer-trappe`) | published parameters; MIT (foyer) | done (other session) |
 | **trappe-eh** | TRAPPE_EH.par | **trappe-eh-umn** | TraPPE database, EH family (Rai & Siepmann, J. Phys. Chem. B 111, 10790 (2007) and the later EH papers) | yes (`trappe-site`) | published parameters, cited per term | **done here** |
 | **misc** | MISC_FF.par | **omalley2013-alkanes, plant2007-methanol, ramsahye2005-nay (chloroform), peguin2009-hfa134a** | the four papers (see section 3) | yes (`papers/c3cp52653d.pdf`, `jp0674524.pdf`, `jp046958o.pdf`, `jp806213w.pdf`) | published parameters | **done here** (one torsion paper missing) |
@@ -182,7 +182,11 @@ terms tuned for DES mixtures only; GROMACS with a 16 A cut-off. The SI prints ev
 comes from another library. Readings: ethylene glycol's rows in OPLS-AA class names (CT, HC) and its O called OH are
 Table S4's CG, HG, OG; levulinic acid's bend "HO-CB-CZ" is OH-CB-CZ; the X-c-X-X rows are impropers on c (centre second,
 every triple of neighbours); the all-zero X-CM-X-X and X-CT-X-X are left out; ethylene glycol's block lists only
-OG-CG-CG-OG and CG-CG-OG-HO, so its H-C-C-H, H-C-C-O and H-C-O-H torsions are zero (both references have none either);
+OG-CG-CG-OG and CG-CG-OG-HO, so its H-C-C-H, H-C-C-O and H-C-O-H torsions are zero (both references have none either,
+and the SI's ref. 3, Szefczyk & Cordeiro, J. Phys. Chem. B 115, 3013 (2011), confirms it: its Table 2 holds only
+OG-CG-CG-OG and CG-CG-OG-HO, and p. 3016 says the model has three torsions, one O-C-C-O and two C-C-O-H, fitted to
+RHF/6-31G(d) scans; its values, 2.993 / -0.654 / 2.820 and 0.396 / -0.750 / 1.028 kcal/mol, are not the SI's rows,
+3.887 / -1.192 / 3.206 and 0.413 / -0.754 / 1.028, and the SI's are kept as the set the paper ran);
 urea's HC and HT carry identical terms and CAPS types both HT. The type-charge check takes the library's
 `ion_charge_scale` 0.8 (new FFDef field) so the scaled ions count as whole.
 
@@ -232,9 +236,9 @@ Bandura & Kubicki 2003 (10.1021/jp034093t), Khan, Islam & Bates 1998 (10.1039/a8
 - The O'Malley alkane torsion: Raj, Sastre & Catlow 1999 does not hold it; the source O'Malley & Catlow meant is unknown.
 - Families handled by other sessions: OPLS (2005 / 2020 / 2024), PCFF, COMPASS, CVFF, ClayFF, CL&P.
 - Acevedo's OPLS-DES is rebuilt from the paper as oplsdes-doherty2018 (section 3); its GPL 3 files stay a reference.
-  Open readings, all recorded in the generator: ethylene glycol's hydrogen torsions (zero: the SI lists none; OPLS-AA
-  would give 0.300 / 0.468 / 0.352 kcal/mol), the order of the outer atoms in the impropers (the SI writes only
-  X-c-X-X), and the improper on choline's four-connected N (four triples, as the X-NA-X-X row reads). Szefczyk &
-  Cordeiro, J. Phys. Chem. B 115, 3013 (2011) (ethylene glycol's torsions) would settle the first; not local.
+  Open readings, all recorded in the generator: the order of the outer atoms in the impropers (the SI writes only
+  X-c-X-X) and the improper on choline's four-connected N (four triples, as the X-NA-X-X row reads). Ethylene glycol's
+  hydrogen torsions are settled: zero, as in Szefczyk & Cordeiro, J. Phys. Chem. B 115, 3013 (2011), Table 2 and
+  p. 3016 (read, `papers/jp109914s.pdf`), whose model has no torsion but O-C-C-O and C-C-O-H.
 - `bench/typing/sweep_dlfield.sh` still sweeps the converted files where they exist on disk; the rebuilt libraries are
   checked with `validate_typing.py --map` as above.
