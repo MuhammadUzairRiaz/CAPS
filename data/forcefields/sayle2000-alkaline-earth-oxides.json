@@ -1,0 +1,199 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "MgO, CaO, SrO, BaO rigid ions (Sayle & Watson 2000)",
+ "source": "D. C. Sayle, G. W. Watson, Phys. Chem. Chem. Phys. 2, 5491 (2000), Table 1",
+ "references": [
+  "D. C. Sayle, G. W. Watson, Phys. Chem. Chem. Phys. 2, 5491 (2000)"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "buck/coul/long",
+  "bond": "harmonic",
+  "angle": "harmonic",
+  "dihedral": "fourier",
+  "improper": "fourier"
+ },
+ "mixing": "geometric",
+ "special_lj": [
+  0,
+  0,
+  1
+ ],
+ "special_coul": [
+  0,
+  0,
+  1
+ ],
+ "cutoff": 10.0,
+ "atom_types": [
+  {
+   "name": "Mg_sw",
+   "element": "Mg",
+   "mass": 24.305,
+   "charge": 2.0,
+   "description": "Mg2+, rigid ion (formal charge)"
+  },
+  {
+   "name": "Ca_sw",
+   "element": "Ca",
+   "mass": 40.078,
+   "charge": 2.0,
+   "description": "Ca2+, rigid ion (formal charge)"
+  },
+  {
+   "name": "Sr_sw",
+   "element": "Sr",
+   "mass": 87.62,
+   "charge": 2.0,
+   "description": "Sr2+, rigid ion (formal charge)"
+  },
+  {
+   "name": "Ba_sw",
+   "element": "Ba",
+   "mass": 137.327,
+   "charge": 2.0,
+   "description": "Ba2+, rigid ion (formal charge)"
+  },
+  {
+   "name": "O_sw",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -2.0,
+   "description": "O2-, rigid ion (formal charge)"
+  }
+ ],
+ "pairs": [
+  {
+   "name": "Mg_sw",
+   "match": [
+    "Mg_sw"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ca_sw",
+   "match": [
+    "Ca_sw"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Sr_sw",
+   "match": [
+    "Sr_sw"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ba_sw",
+   "match": [
+    "Ba_sw"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_sw",
+   "match": [
+    "O_sw"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Mg_sw-O_sw",
+   "match": [
+    "Mg_sw",
+    "O_sw"
+   ],
+   "style": "buck",
+   "params": [
+    32941.992818,
+    0.2945,
+    0.0
+   ],
+   "comment": "Mg2+-O2- A 1428.5 eV, rho 0.2945 A, C 0.0 eV A^6 (Table 1)"
+  },
+  {
+   "name": "Ca_sw-O_sw",
+   "match": [
+    "Ca_sw",
+    "O_sw"
+   ],
+   "style": "buck",
+   "params": [
+    27746.4513536,
+    0.3375,
+    0.0
+   ],
+   "comment": "Ca2+-O2- A 1203.2 eV, rho 0.3375 A, C 0.0 eV A^6 (Table 1)"
+  },
+  {
+   "name": "Sr_sw-O_sw",
+   "match": [
+    "Sr_sw",
+    "O_sw"
+   ],
+   "style": "buck",
+   "params": [
+    32284.767200000002,
+    0.35,
+    0.0
+   ],
+   "comment": "Sr2+-O2- A 1400.0 eV, rho 0.35 A, C 0.0 eV A^6 (Table 1)"
+  },
+  {
+   "name": "Ba_sw-O_sw",
+   "match": [
+    "Ba_sw",
+    "O_sw"
+   ],
+   "style": "buck",
+   "params": [
+    21485.5125716,
+    0.3949,
+    0.0
+   ],
+   "comment": "Ba2+-O2- A 931.7 eV, rho 0.3949 A, C 0.0 eV A^6 (Table 1)"
+  },
+  {
+   "name": "O_sw-O_sw",
+   "match": [
+    "O_sw",
+    "O_sw"
+   ],
+   "style": "buck",
+   "params": [
+    524950.314672,
+    0.149,
+    642.92807824
+   ],
+   "comment": "O2--O2- A 22764.0 eV, rho 0.149 A, C 27.88 eV A^6 (Table 1)"
+  }
+ ],
+ "bonds": [],
+ "angles": [],
+ "dihedrals": [],
+ "impropers": [],
+ "notes": [
+  "built by CAPS (bench/ff/make_sayle2000.py) from the paper's Table 1",
+  "rigid ions with formal charges (the paper's rigid-ion approximation of Lewis & Catlow's set); cation-cation Coulomb only",
+  "one set for the four oxides and their interfaces; short-range cut-off 10.0 A (Table 1 caption)"
+ ],
+ "version": "2000 (Table 1)",
+ "typing": "../typing/sayle2000-alkaline-earth-oxides.typing.json"
+}

@@ -1,0 +1,82 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "MgO, CaO, SrO, BaO rigid ions (Sayle & Watson 2000)",
+ "unknown_types": "untyped",
+ "bonds": "defined",
+ "description": "Mg, Ca, Sr, Ba and O of the rock-salt oxides (bench/ff/make_sayle2000.py)",
+ "rules": [
+  {
+   "type": "Mg_sw",
+   "smarts": "[#12]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "description": "Mg2+ in its oxide"
+  },
+  {
+   "type": "Ca_sw",
+   "smarts": "[#20]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "description": "Ca2+ in its oxide"
+  },
+  {
+   "type": "Sr_sw",
+   "smarts": "[#38]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "description": "Sr2+ in its oxide"
+  },
+  {
+   "type": "Ba_sw",
+   "smarts": "[#56]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "description": "Ba2+ in its oxide"
+  },
+  {
+   "type": "O_sw",
+   "smarts": "[#8]",
+   "priority": 0,
+   "requires": [
+    "Mg"
+   ],
+   "description": "O2- in an alkaline-earth oxide (with Mg)"
+  },
+  {
+   "type": "O_sw",
+   "smarts": "[#8]",
+   "priority": 0,
+   "requires": [
+    "Ca"
+   ],
+   "description": "O2- in an alkaline-earth oxide (with Ca)"
+  },
+  {
+   "type": "O_sw",
+   "smarts": "[#8]",
+   "priority": 0,
+   "requires": [
+    "Sr"
+   ],
+   "description": "O2- in an alkaline-earth oxide (with Sr)"
+  },
+  {
+   "type": "O_sw",
+   "smarts": "[#8]",
+   "priority": 0,
+   "requires": [
+    "Ba"
+   ],
+   "description": "O2- in an alkaline-earth oxide (with Ba)"
+  }
+ ]
+}
