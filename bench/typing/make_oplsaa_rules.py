@@ -165,6 +165,11 @@ add(473, 7, "[OX2;$(O[CX3](=[OX1])[#6,#1]);$(Oc)]", "ester -O- (phenyl ester)")
 add(473, 7, "[OX2;$(O[CX3](=[OX1])[#6,#1]);$(O[CX3]=[CX3])]", "ester -O- (vinyl ester)")
 add(142, 7, "[CX3H1;$(*[OX2][CX3]=[OX1])]=[CX3]", "vinyl ester C(O)= (RHC=)")
 add(141, 7, "[CX3H0;$(*[OX2][CX3]=[OX1])]=[CX3]", "vinyl ester C(O)= (R2C=)")
+# the 2024 library: that carbon charged as the phenyl ester's C(ipso) 472 (+0.135) balances the ester group (465 0.49,
+# 466 -0.41, 473 -0.215, R 0): =CH-O +0.135, C +0.020 with its H 0.115; =CR-O C +0.135 (142 / 141 leave vinyl acetate
+# at -0.135 e); class CM and the Lennard-Jones of 142 / 141
+add("caps_cm_ves", 8, "[CX3H1;$(*[OX2][CX3]=[OX1])]=[CX3]", "vinyl ester C(O)= (RHC=), charged as the phenyl ester C(ipso)", True)
+add("caps_cm_ves0", 8, "[CX3H0;$(*[OX2][CX3]=[OX1])]=[CX3]", "vinyl ester C(O)= (R2C=), charged as the phenyl ester C(ipso)", True)
 add(467, 7, "[OX2;$(O([CX3]=[OX1])[CX3]=[OX1])]", "anhydride -O-")
 add(472, 7, "c[OX2][CX3](=[OX1])[#6,#1]", "phenyl ester C(ipso)")
 by_h((468, 490, 491, 492), 6, "$(*[OX2][CX3](=[OX1])[#6,#1])", "ester alkoxy C")
@@ -245,6 +250,11 @@ add(262, 6, "[NX1]#[CX2][CX3]=[CX3]", "conjugated nitrile N (acrylonitrile)")
 add(261, 6, "[CX2](#[NX1])[CX3]=[CX3]", "conjugated nitrile C (acrylonitrile)")
 add(260, 6, "[CX3;$(*[CX2]#[NX1])]=[CX3]", "alkene C carrying a nitrile (the benzonitrile ipso C, as the GROMACS OPLS-AA topologies type acrylonitrile)")
 add(140, 7, "[H][CX3;$(*[CX2]#[NX1])]=[CX3]", "H on that C (140, as those topologies)")
+# the 2024 library: that C as the alkene carbon it is (class CM: the files' CM-CZ, CM-CM-CZ and CZ-CM-HC terms and
+# enyne torsions), its H the alkene H, charged by benzonitrile's own increment (CN -0.035 against its ipso C +0.035):
+# =CH- +0.035, C -0.080 with H 0.115, so the molecule is neutral (260 with 140 leaves it at +0.06 e)
+add("caps_cm_cn", 7, "[CX3;$(*[CX2]#[NX1])]=[CX3]", "alkene C carrying a nitrile (acrylonitrile)", True)
+add("caps_hc_cn", 8, "[H][CX3;$(*[CX2]#[NX1])]=[CX3]", "H on that C", True)
 
 # ---------------------------------------------------------------- halogens (one halogen per carbon; CX2 / CX3 groups only when perfluorinated)
 ONEX = lambda X: f"$(*[{X}]);!$(*([{X}])[{X}]);!$(*[F,Cl,Br,I;!{X}])"

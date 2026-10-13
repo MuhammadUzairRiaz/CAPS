@@ -702,6 +702,18 @@
    "description": "vinyl ester C(O)= (R2C=)"
   },
   {
+   "type": "caps_cm_ves",
+   "smarts": "[CX3H1;$(*[OX2][CX3]=[OX1])]=[CX3]",
+   "priority": 8,
+   "description": "vinyl ester C(O)= (RHC=), charged as the phenyl ester C(ipso)"
+  },
+  {
+   "type": "caps_cm_ves0",
+   "smarts": "[CX3H0;$(*[OX2][CX3]=[OX1])]=[CX3]",
+   "priority": 8,
+   "description": "vinyl ester C(O)= (R2C=), charged as the phenyl ester C(ipso)"
+  },
+  {
    "type": "opls_467",
    "smarts": "[OX2;$(O([CX3]=[OX1])[CX3]=[OX1])]",
    "priority": 7,
@@ -1228,6 +1240,18 @@
    "smarts": "[H][CX3;$(*[CX2]#[NX1])]=[CX3]",
    "priority": 7,
    "description": "H on that C (140, as those topologies)"
+  },
+  {
+   "type": "caps_cm_cn",
+   "smarts": "[CX3;$(*[CX2]#[NX1])]=[CX3]",
+   "priority": 7,
+   "description": "alkene C carrying a nitrile (acrylonitrile)"
+  },
+  {
+   "type": "caps_hc_cn",
+   "smarts": "[H][CX3;$(*[CX2]#[NX1])]=[CX3]",
+   "priority": 8,
+   "description": "H on that C"
   },
   {
    "type": "opls_151",
