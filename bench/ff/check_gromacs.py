@@ -26,7 +26,7 @@ import math, os, re, shutil, subprocess, sys, tempfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, HERE)
-import template_pdb
+import template_pdb, mix_box
 
 CAPS = os.path.join(ROOT, "build", "cli", "caps")
 GMX = os.environ.get("GMX", shutil.which("gmx") or "gmx")
@@ -77,6 +77,12 @@ CASES = [
     ("OPLS-AA 2024 (Jorgensen) isoprene, ethylbenzene, ester, PVA unit (vacuum)", ("smiles", "CC=C(C)CC.CCc1ccccc1.CCOC(=O)C.CC(O)CC(O)C"), "oplsaa2024", "types", []),
     ("OPLS-AA/M (Jorgensen lab) peptide GHWRKD (vacuum)", ("peptide", "GHWRKD"), "oplsaam-jorgensen", "types", []),
     ("CL&P (il.ff) [C4C1im][NTf2] (vacuum)", ("smiles", "CCCCn1cc[n+](C)c1.FC(F)(F)S(=O)(=O)[N-]S(=O)(=O)C(F)(F)F"), "clandp", "types", []),
+    ("CL&P DES (des.ff) reline, 16 choline chloride + 32 urea, PME", ("mix-box", [("C[N+](C)(C)CCO", 16), ("[Cl-]", 16), ("NC(N)=O", 32)], 30,
+     os.path.join(FF, "clandp-des.json")), "clandp-des", "types", PME),
+    ("CL&P DES (des.ff) glyceline, 12 choline chloride + 24 glycerol, PME", ("mix-box", [("C[N+](C)(C)CCO", 12), ("[Cl-]", 12), ("OCC(O)CO", 24)], 30,
+     os.path.join(FF, "clandp-des.json")), "clandp-des", "types", PME),
+    ("CL&P DES (des.ff) betaine, P4444 Br, levulinic acid, ethylene glycol (vacuum)", ("smiles", "C[N+](C)(C)CC(=O)[O-].CCCC[P+](CCCC)(CCCC)CCCC.[Br-].CC(=O)CCC(=O)O.OCCO",
+     os.path.join(FF, "clandp-des.json")), "clandp-des", "types", []),
     ("GAFF 1.81 (gaff.dat) ester, epoxide, amide, thioether (vacuum)", ("smiles", "CCOC(=O)C.C1CO1.CC(=O)NC.CSC"), "gaff-1.81-ambertools", "gasteiger", []),
     ("GAFF2 2.11 (gaff211.dat) isoprene, styrene (vacuum)", ("smiles", "CC=C(C)CC.C=Cc1ccccc1"), "gaff2-2.11-ambertools", "gasteiger", []),
     ("CHARMM36 (toppar) peptide GAFKW (vacuum; CMAP not represented)", ("peptide", "GAFKW"), "charmm36-prot-toppar", "gasteiger", []),
@@ -153,6 +159,8 @@ def structure(src, base):
                         "--molecules", src[3], "--tolerance", "2.6"],
                        capture_output=True, check=True)
         return out
+    if src[0] == "mix-box":   # a periodic mixture: [(SMILES, count)], cube edge, the force field the molecules are cleaned up with
+        return mix_box.build(CAPS, src[1], src[2], os.path.join(work, base + ".xyz"), src[3] if len(src) > 3 else None)
     if src[0] == "smiles":   # a molecule CAPS builds from SMILES
         out = os.path.join(work, base + ".mol2")
         # cleaned up with the force field under test (a raw embedding leaves steep 1-4 contacts that single-precision

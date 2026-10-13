@@ -6,7 +6,10 @@ A .zmat gives each atom its type and its first reference atom (the bond), and "c
 positions (bonds from CAPS's perception). Elements come from the force field's types. CAPS types each molecule and the
 result is compared atom by atom.
 
-usage: validate_fftool_types.py FF.json RULES.json FILE.zmat|FILE.xyz ... [--all] [--show N] [--deviations FILE]
+usage: validate_fftool_types.py FF.json RULES.json FILE.zmat|FILE.xyz ... [--all] [--show N] [--deviations FILE] [--list]
+
+Each molecule's labels, with the library's type charges, must add up to an integer charge (reported otherwise); --list
+names the molecules tested (a file whose labels the library does not all define is skipped).
 
 --deviations: a JSON file {"molecules": {name: evidence}} of molecule files whose own labels are wrong, reported apart.
 """
@@ -62,6 +65,7 @@ def read_zmat(path):
 
 total = right = 0
 confusion, wrong, failed, skipped = collections.Counter(), [], [], collections.Counter()
+tested_names, fractional = [], []
 for f in files:
     name = os.path.basename(f).rsplit(".", 1)[0]
     if f.endswith(".zmat"):
@@ -102,6 +106,10 @@ for f in files:
         continue
     total += len(types)
     right += len(types) - len(bad)
+    tested_names.append(name)
+    q = sum(by_name[t].get("charge", 0.0) for t in types)   # the file's own labels with the library's type charges
+    if abs(q - round(q)) > 1e-6:
+        fractional.append((name, q))
     for _, e, g in bad:
         confusion[(e, g)] += 1
     if bad:
@@ -109,6 +117,10 @@ for f in files:
 tested = len(files) - sum(skipped.values()) - len(failed) - len(deviating)
 print(f"{right}/{total} atoms ({total and right / total * 100:.1f} %) as the files type them, {tested - len(wrong)} of {tested} molecules fully right"
       + ("" if not skipped else " · skipped: " + ", ".join(f"{k} {v}" for k, v in skipped.items())) + (f" · {len(failed)} failed" if failed else ""))
+print(f"  {len(tested_names) - len(fractional)} of {len(tested_names)} molecules at an integer charge with the library's type charges"
+      + "".join(f"; {n} {q:+.4f}" for n, q in fractional))
+if "--list" in sys.argv:
+    print("  tested: " + " ".join(tested_names))
 for name, bad in deviating:
     print(f"  deviation {name}: {len(bad)} atoms differ; the file: {deviations[name]}")
 for (e, g), k in equivalent.items():

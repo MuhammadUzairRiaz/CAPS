@@ -66,6 +66,17 @@ ENTRIES = {
                "CAPS rules for CL&P's types by ion family (bench/typing/make_clandp_rules.py): CL&P's own ion files (.zmat, .xyz) "
                "typed as they type them, 1165 / 1165 atoms in 55 molecules (P111i4's two swapped labels listed; CT2 and CS, the same "
                "parameters, counted as one)", ("CL&P ionic liquids", "opls_cl_p", 12), ["opls-clp"]),
+    "clandp-des": ("CL&P DES (deep-eutectic solvents)", "des.ff of 2025/12/19 (github.com/paduagroup/clandp)",
+                   ["J. N. Canongia Lopes, A. A. H. Padua, Theor. Chem. Acc. 131, 1129 (2012)",
+                    "W. L. Jorgensen, D. S. Maxwell, J. Tirado-Rives, J. Am. Chem. Soc. 118, 11225 (1996)"],
+                   {"source": "des.ff, github.com/paduagroup/clandp", "license": "MIT (Copyright (c) 2019 Agilio Padua)"},
+                   "CAPS rules for des.ff's types by DES component (bench/typing/make_clandp_des_rules.py): CL&P's own molecule "
+                   "files whose types des.ff defines (cholinium.xyz, the ammonium and phosphonium ions, Cl, Br, acetate) typed as "
+                   "they type them, 362 / 362 atoms in 14 molecules, each at its integer charge; 29 DES components (cholinium, "
+                   "ammonium, phosphonium, betaine, halides, carboxylates, urea, alcohols, diols, glycerol, carboxylic acids, "
+                   "levulinic acid, ketones) typed whole and neutral or at their ion charge (bench/ff/check_clandp_des_components.py); "
+                   "those des.ff's charges cannot make neutral (methanol, malonic and oxalic acid) left untyped",
+                   ("CL&P deep-eutectic solvents", "opls_des", 13), ["opls-des"]),
     "dreiding1990": ("DREIDING", "Mayo, Olafson, Goddard 1990 (Table I and the paper's rules)",
                      ["S. L. Mayo, B. D. Olafson, W. A. Goddard III, J. Phys. Chem. 94, 8897 (1990)"],
                      {"source": "the paper: J. Phys. Chem. 94, 8897 (1990), Table I (radii, angles, van der Waals) and its rules for "

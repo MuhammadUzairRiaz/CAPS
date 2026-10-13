@@ -21,7 +21,7 @@ import collections, json, math, os, re, subprocess, sys, tempfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, HERE)
-import template_pdb, ionic_pdb
+import template_pdb, ionic_pdb, mix_box
 
 CAPS = os.path.join(ROOT, "build", "cli", "caps")
 LMP = os.environ.get("LMP", os.path.expanduser("~/lammps/build-class2/lmp"))
@@ -221,6 +221,16 @@ CASES = [
     # CL&P ionic liquids from il.ff: an imidazolium / NTf2 pair, pyrrolidinium dicyanamide, ethylsulfate (charges of the types)
     ("CL&P (il.ff): [C4C1im][NTf2], [C4C1pyrr][dca], ethylsulfate, BF4; nudged off linear", ("smiles-nudged", "CCCCn1cc[n+](C)c1.FC(F)(F)S(=O)(=O)[N-]S(=O)(=O)C(F)(F)F.CCCC[N+]1(C)CCCC1.N#C[N-]C#N.CCOS(=O)(=O)[O-].F[B-](F)(F)F"),
      "clandp", "types", "rules"),
+    # CL&P DES from des.ff: reline (choline chloride + 2 urea) and glyceline (choline chloride + 2 glycerol) as periodic
+    # boxes; the other components (betaine, a phosphonium, a carboxylate, carboxylic and keto acids, diols, an alcohol)
+    # in vacuum
+    ("CL&P DES (des.ff): reline, 16 choline chloride + 32 urea (periodic)", ("mix-box", [("C[N+](C)(C)CCO", 16), ("[Cl-]", 16), ("NC(N)=O", 32)], 30, "clandp-des"),
+     "clandp-des", "types", "rules"),
+    ("CL&P DES (des.ff): glyceline, 12 choline chloride + 24 glycerol (periodic)", ("mix-box", [("C[N+](C)(C)CCO", 12), ("[Cl-]", 12), ("OCC(O)CO", 24)], 30, "clandp-des"),
+     "clandp-des", "types", "rules"),
+    ("CL&P DES (des.ff): betaine, P4444 Br, N2220 acetate, levulinic and succinic acid, ethylene glycol, ethanol, acetone; nudged",
+     ("smiles-nudged", "C[N+](C)(C)CC(=O)[O-].CCCC[P+](CCCC)(CCCC)CCCC.[Br-].CC[NH+](CC)CC.CC(=O)[O-].CC(=O)CCC(=O)O.OC(=O)CCC(=O)O.OCCO.CCO.CC(C)=O"),
+     "clandp-des", "types", "rules"),
     ("GAFF 1.81 (gaff.dat): ester, epoxide, amide, thioether", ("smiles", "CCOC(=O)C.C1CO1.CC(=O)NC.CSC"), "gaff-1.81-ambertools", "gasteiger", "rules"),
     ("GAFF2 2.11 (gaff211.dat): isoprene, styrene, nitrile; nudged off linear", ("smiles-nudged", "CC=C(C)CC.C=Cc1ccccc1.CCC#N"), "gaff2-2.11-ambertools", "gasteiger", "rules"),
     ("GAFF2 2.2.20 (gaff2.dat): polystyrene melt (periodic)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "gaff2-2.2.20-ambertools", "gasteiger", "rules"),
@@ -376,6 +386,8 @@ def structure(src, base):
         out = os.path.join(work, base + ".pdb")
         subprocess.run([CAPS, "solvate", "-o", out, "--edge", str(src[2]), "--solvent", src[1], "--no-ions"], capture_output=True, check=True)
         return out, None
+    if kind == "mix-box":   # a periodic mixture: [(SMILES, count)], cube edge, the force field the molecules are cleaned up with
+        return mix_box.build(CAPS, src[1], src[2], os.path.join(work, base + ".xyz"), ff_file(src[3]) if len(src) > 3 else None), None
     if kind == "water-box":   # N waters packed 2 Å apart (and 2 Å from the cell faces), in a periodic cube of edge L
         n, edge = src[1], src[2]
         w, box = os.path.join(work, base + ".w.xyz"), os.path.join(work, base + ".xyz")
