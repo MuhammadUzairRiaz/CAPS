@@ -3018,7 +3018,8 @@ int main(int argc, char** argv) {
         if (!s0.unwrapped) make_molecules_whole(s0);
         ff = cli_forcefield(s0, o);
         ao.ff = &ff;
-        if (o.count("--cutoff")) ao.energy.cutoff = std::stod(o["--cutoff"]);
+        // --cutoff, else the force field's own cut-off (OPLS-AA 2024: 12 Å), as relax and md take it
+        run_cutoff(ao.energy, ff, o, false);
       }
       if (o.count("--temp")) ao.temperature = std::stod(o["--temp"]);
       if (o.count("--viscosity")) ao.viscosity = std::stod(o["--viscosity"]);   // mPa·s: Yeh–Hummer correction of D (with --temp)
