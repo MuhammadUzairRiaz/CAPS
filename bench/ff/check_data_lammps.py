@@ -3,7 +3,9 @@
 
 For each case: CAPS assigns the force field (caps ff apply), writes the data file and the matching LAMMPS input
 (-o, --lammps-input) and its own forces; LAMMPS runs that input (run 0); every energy term and every atomic force are
-compared, and the six components of the virial tensor (LAMMPS compute pressure NULL virial). The cases cover class I (CVFF, OPLS-AA, GAFF), class II with class I torsions in one file (DL_FIELD's PCFF
+compared, and the six components of the virial tensor (LAMMPS compute pressure NULL virial). Each data file is also read back
+by CAPS alone (caps ff apply case.data --ff file, the force field caps relax / md / equilibrate use without --ff): its energy
+terms must equal those of the force field that wrote it, or the file must be refused where it cannot hold the whole force field. The cases cover class I (CVFF, OPLS-AA, GAFF), class II with class I torsions in one file (DL_FIELD's PCFF
 and COMPASS: hybrid styles with skip lines in the class II sections), DREIDING (umbrella inversions), ionic crystals
 (Buckingham pairs, periodic; QEq charges, as DL_FIELD keeps ionic charges in its templates and Gasteiger–Marsili has no parameters for the metals), a periodic polymer melt (tail corrections), mW water (Stillinger–Weber three-body term, pair_style sw), and CHARMM-type force fields, whose separate
 1-4 Lennard-Jones parameters LAMMPS cannot reproduce without switching (the writer refuses them; reported as such).
@@ -14,7 +16,7 @@ its Ewald sum (kspace_style ewald): both converge to the same electrostatics; on
 usage: check_data_lammps.py [--only substring] [--keep DIR] [--pme]
 Needs LMP (default ~/lammps/build-class2/lmp) with CLASS2, MOLECULE, EXTRA-MOLECULE, EXTRA-PAIR, MANYBODY and MOFFF.
 """
-import collections, math, os, re, subprocess, sys, tempfile
+import collections, json, math, os, re, subprocess, sys, tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
@@ -279,6 +281,51 @@ OVERLAY = """{"format": "caps-forcefield", "version": 1, "name": "class I test o
  "dihedrals": [{"name": "test c4-c4-c4-c4", "match": ["c4~*", "c4~*", "c4~*", "c4~*"], "style": "fourier", "params": [2, 0.4, 1, 0.0, 0.2, 3, 0.0]}],
  "impropers": [{"name": "test ipso", "match": ["c3a~*", "c3a~*", "c3a~*", "c4~*"], "style": "cvff", "params": [8.0, -1, 2]}]}
 """
+
+
+def energy_terms(out):
+    m = re.search(r"energy \(kcal/mol\): bond (\S+)  angle (\S+)  dihedral (\S+)  improper (\S+)  vdW (\S+)  Coulomb (\S+)", out)
+    return dict(zip(["bond", "angle", "dihedral", "improper", "vdw", "coulomb"], map(float, m.groups())))
+
+
+def read_back(apply_cmd, d, ffj, extra, tol):
+    """The force field CAPS rebuilds from a data file alone (caps ff apply DATA --ff file, as caps relax / md / equilibrate
+    use it without --ff): its energy terms against those of the force field that wrote the file. The data file is written
+    as caps ff apply -o writes it without an input file (pair coefficients in it, not in the input). Files that cannot hold
+    the whole force field (hydrogen bonds, many-body terms, TIP4P sites, metal units ...) must be refused. Both sides are
+    compared without the tail correction: a molecule with no cell gets a periodic box in the data file, so the tail term
+    would apply on one side only."""
+    data = os.path.join(d, "own.data")
+    write, k = [], 0
+    while k < len(apply_cmd):
+        if apply_cmd[k] in ("-o", "--lammps-input", "--forces"):
+            k += 2
+            continue
+        write.append(apply_cmd[k])
+        k += 1
+    w = subprocess.run(write + ["-o", data, "--no-tail"], capture_output=True, text=True)
+    if w.returncode:
+        why = (w.stderr.strip().splitlines() or ["?"])[-1]
+        if "different 1-4 scalings" in why:   # such force fields have no data file of their own
+            return "read back: no data file alone (different 1-4 scalings by group)", True
+        return "READ BACK: writing the data file failed: " + why[:150], False
+    ce = energy_terms(w.stdout)
+    cut = json.load(open(ffj)).get("cutoff", 10.0) if ffj != "uff" else 10.0
+    cmd = [CAPS, "ff", "apply", data, "--ff", "file", "--cutoff", str(cut), "--no-tail"]
+    for k, a in enumerate(extra):
+        if a in ("--no-tail", "--pme"):
+            cmd.append(a)
+        elif a in ("--cutoff", "--dsf-alpha", "--ewald-rtol", "--pme-spacing", "--pme-order") and k + 1 < len(extra):
+            cmd += [a, extra[k + 1]]
+    r = subprocess.run(cmd, capture_output=True, text=True)
+    if r.returncode:
+        why = (r.stderr.strip().splitlines() or ["?"])[-1]
+        if "cannot use as they are" in why:
+            return "read back: refused (" + why.split("cannot use as they are: ", 1)[-1].split(". Give --ff")[0] + ")", True
+        return "READ BACK FAILED: " + why[:150], False
+    rb = energy_terms(r.stdout)
+    d = max(abs(rb[k] - ce[k]) / max(1.0, abs(ce[k])) for k in ce)
+    return (f"read back {d:.1e}" if d < tol else f"READ BACK DIFFERS {d:.1e}: " + " ".join(f"{k} {ce[k]:.6f}/{rb[k]:.6f}" for k in ce)), d < tol
 
 
 def ff_file(fid):
@@ -714,6 +761,9 @@ for case in CASES:
         continue
     m = re.search(r"energy \(kcal/mol\): bond (\S+)  angle (\S+)  dihedral (\S+)  improper (\S+)  vdW (\S+)  Coulomb (\S+)", r.stdout)
     ce = dict(zip(["bond", "angle", "dihedral", "improper", "vdw", "coulomb"], map(float, m.groups())))
+    rb_note, rb_ok = read_back(cmd, d, ffj, case_extra + (["--pme", "--ewald-rtol", "1e-9", "--pme-spacing", "0.3", "--pme-order", "8"] if PME else []),
+                             1e-4 if NATIVE else 1e-6)   # native files hold charges at six decimals
+    fails += 0 if rb_ok else 1
     cf = {int(w[0]): tuple(map(float, w[1:4])) for w in (l.split() for l in open(os.path.join(d, "caps_f.txt"))) if len(w) == 4}
     try:
         le, lf, lpairs, lg = lammps(os.path.join(d, "case.in"), os.path.join(d, "f.dump"))
@@ -755,14 +805,14 @@ for case in CASES:
         de = max(abs(ce[k] - lm[k]) / max(1.0, abs(ce[k])) for k in ce if k != "coulomb")
         ok = de < 1e-5
         rows.append((label, f"{'ok' if ok else 'DIFFERS'} · bonded and van der Waals terms {de:.1e} (relative); Coulomb CAPS DSF {ce['coulomb']:.3f} / LAMMPS "
-                     f"{lm['coulomb']:.3f} kcal/mol", " · ".join(l.strip() for l in open(os.path.join(d, "case.in")) if re.match(r"(bond|angle|dihedral|improper|pair|kspace)_style", l)),
+                     f"{lm['coulomb']:.3f} kcal/mol · " + rb_note, " · ".join(l.strip() for l in open(os.path.join(d, "case.in")) if re.match(r"(bond|angle|dihedral|improper|pair|kspace)_style", l)),
                      " ".join(f"{k} {ce[k]:.4f}/{lm[k]:.4f}" for k in ce if abs(ce[k]) > 0 or abs(lm[k]) > 0)))
         fails += 0 if ok else 1
         continue
     ok = de < 1e-5 and df < 1e-3 and dw < 1e-5
     fails += 0 if ok else 1
     rows.append((label, f"{'ok' if ok else 'DIFFERS'} · energy terms {de:.1e} (relative) · forces {df:.1e} kcal/mol/Å · virial tensor {dw:.1e} (relative)" +
-                 (f" · {len(clamped)} atoms of flat harmonic impropers left out of the forces (LAMMPS clamps there)" if clamped else ""), styles,
+                 (f" · {len(clamped)} atoms of flat harmonic impropers left out of the forces (LAMMPS clamps there)" if clamped else "") + " · " + rb_note, styles,
                  " ".join(f"{k} {ce[k]:.4f}/{lm[k]:.4f}" for k in ce if abs(ce[k]) > 0 or abs(lm[k]) > 0)))
 
 for label, res, styles, terms in rows:

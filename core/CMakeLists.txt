@@ -28,6 +28,7 @@ add_library(caps_core STATIC
   src/nbnxm_avx2.cpp
   src/relax.cpp
   src/lammps_data.cpp
+  src/lammps_read_ff.cpp
   src/gromacs.cpp
   src/chipair.cpp
   src/dynamics.cpp

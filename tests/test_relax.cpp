@@ -9,10 +9,14 @@
 #include <map>
 #include <random>
 
+#include "caps/ffdef.hpp"
 #include "caps/field.hpp"
 #include "caps/grow.hpp"
 #include "caps/io.hpp"
+#include "caps/molecule.hpp"
 #include "caps/relax.hpp"
+#include "caps/typing.hpp"
+#include "caps/uff.hpp"
 
 using namespace caps;
 
@@ -585,4 +589,142 @@ TEST(LammpsData, ProtocolStages) {
   EXPECT_NE(a.find("# production: 20 ps NPT at 300 K, 1 atm"), std::string::npos);
   EXPECT_NE(a.find("variable        n equal ceil(20000*${scale})"), std::string::npos);
   EXPECT_EQ(notes.size(), 1u);
+}
+
+namespace {
+
+// copies of one molecule from SMILES on an n × n × n grid in a cubic cell of edge `edge`, positions at three decimals (as a
+// PDB holds them), so the data file's six decimals hold them exactly
+System molecule_box(const std::string& smiles, int n, double edge) {
+  const System m = build_molecule(smiles).system;
+  System s;
+  s.cell.a = {edge, 0, 0}, s.cell.b = {0, edge, 0}, s.cell.c = {0, 0, edge};
+  Vec3 c{0, 0, 0};
+  for (const auto& a : m.atoms) c = c + a.pos * (1.0 / double(m.atoms.size()));
+  const double h = edge / n;
+  for (int x = 0; x < n; ++x)
+    for (int y = 0; y < n; ++y)
+      for (int z = 0; z < n; ++z) {
+        const uint32_t base = uint32_t(s.atoms.size());
+        for (Atom a : m.atoms) {
+          a.pos = a.pos - c + Vec3{(x + 0.5) * h, (y + 0.5) * h, (z + 0.5) * h};
+          for (auto& v : a.pos) v = std::round(v * 1000) / 1000;
+          a.mol = int64_t(s.atoms.size() / m.atoms.size()) + 1;
+          s.atoms.push_back(a);
+        }
+        for (const auto& b : m.bonds) s.bonds.push_back({b.i + base, b.j + base, b.order});
+      }
+  s.has_mol = true;
+  return s;
+}
+
+ForceField library_field(const System& s, const std::string& name, const std::string& charges) {
+  const FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/" + name + ".json");
+  const TypingResult t = assign_types(s, def);
+  EXPECT_EQ(t.untyped, 0) << name;
+  return parameterize(s, def, t.types, charges);
+}
+
+EnergyTerms terms_of(const System& s, const ForceField& ff, const EnergyOptions& e) {
+  Evaluator ev(ff, e);
+  std::vector<double> x, f;
+  for (const auto& a : s.atoms) x.insert(x.end(), a.pos.begin(), a.pos.end());
+  return ev.compute(x, s.cell, f);
+}
+
+void expect_same_terms(const EnergyTerms& a, const EnergyTerms& b, const std::string& what, double tol = 1e-9) {
+  const std::pair<const char*, std::pair<double, double>> t[] = {{"bond", {a.bond, b.bond}}, {"angle", {a.angle, b.angle}}, {"dihedral", {a.dihedral, b.dihedral}},
+                                                                  {"improper", {a.improper, b.improper}}, {"vdW", {a.vdw, b.vdw}}, {"Coulomb", {a.coulomb, b.coulomb}}};
+  for (const auto& [name, v] : t) EXPECT_NEAR(v.first, v.second, tol * std::max(1.0, std::fabs(v.first))) << what << ": " << name;
+}
+
+std::string data_path(const std::string& name) { return (std::filesystem::temp_directory_path() / ("caps_ownff_" + name + ".data")).string(); }
+
+}  // namespace
+
+// A data file CAPS wrote with a force field carries that force field: relax without one given uses the file's own
+// coefficients, charges and 1-4 weights (OPLS-AA 2024's 0.5 / 0.5), not the built-in GAFF / UFF
+TEST(LammpsData, RelaxUsesTheForceFieldTheFileHolds) {
+  System s = molecule_box("CC#N", 3, 13.5);   // 27 acetonitrile molecules
+  const ForceField ff = library_field(s, "oplsaa2024", "types");
+  EnergyOptions e;
+  e.cutoff = 6.5;
+  const EnergyTerms want = terms_of(s, ff, e);
+  const std::string path = data_path("acetonitrile");
+  write_lammps_data_ff(s, ff, e, path);
+  const System r = read_lammps_data(path);
+  ASSERT_TRUE(r.forcefield) << r.forcefield_error;
+  EXPECT_EQ(r.forcefield->name, ff.name);
+  EXPECT_EQ(r.forcefield->lj14, 0.5);
+  EXPECT_EQ(r.forcefield->coul14, 0.5);
+  EXPECT_EQ(default_forcefield(r).name, ff.name);
+  expect_same_terms(want, terms_of(r, *r.forcefield, e), "acetonitrile read back");
+  System q = r;
+  RelaxOptions o;
+  o.energy = e;
+  o.pushoff = false;
+  o.max_iterations = 3;
+  RelaxReport rep;
+  relax(q, o, &rep);
+  EXPECT_EQ(rep.field, ff.name);
+  expect_same_terms(want, rep.initial, "relax's starting energy");
+}
+
+// Every bonded and pair style CAPS writes reads back as the same terms: OPLS-AA torsions and impropers, PCFF's class II
+// cross terms, CVFF's impropers, UFF's Fourier bends and inversions, DREIDING's umbrella inversions
+TEST(LammpsData, ForceFieldStylesReadBack) {
+  struct Case { const char* smiles; const char* ff; const char* charges; };
+  for (const Case& c : {Case{"CC(=O)NC", "oplsaa2024", "types"}, Case{"CC(=O)NC", "pcff-frc", "types"}, Case{"CC(=O)NC", "cvff-frc", "types"},
+                        Case{"CC(=O)OCc1ccccc1", "dreiding1990", "gasteiger"}, Case{"CC(=O)OCc1ccccc1", "uff", ""}}) {
+    const System s = molecule_box(c.smiles, 2, 16);
+    const ForceField ff = std::string(c.ff) == "uff" ? assign_uff(s) : library_field(s, c.ff, c.charges);
+    EnergyOptions e;
+    e.cutoff = 7.5;
+    LammpsStyle st;
+    st.full_precision = true;   // Gasteiger charges kept whole
+    const std::string path = data_path(c.ff);
+    write_lammps_data_ff(s, ff, e, path, true, st);
+    const System r = read_lammps_data(path);
+    ASSERT_TRUE(r.forcefield) << c.ff << ": " << r.forcefield_error;
+    expect_same_terms(terms_of(s, ff, e), terms_of(r, *r.forcefield, e), c.ff);
+    const ForceField& g = *r.forcefield;   // term by term, kind by kind
+    const auto kinds = [](const ForceField& f) {
+      return std::vector<size_t>{f.bonds.size(), f.bonds2.size(), f.angles.size(), f.angles2.size(), f.angles_x.size(), f.dihedrals.size(),
+                                 f.dihedrals2.size(), f.impropers.size(), f.impropers2.size(), f.inversions.size()};
+    };
+    EXPECT_EQ(kinds(ff), kinds(g)) << c.ff;
+  }
+}
+
+// What CAPS cannot rebuild is refused, not replaced by GAFF or UFF: a force field with DREIDING hydrogen bonds (in the
+// LAMMPS input, not the data file), a file without CAPS's record of its 1-4 weights. A file with no coefficients is a
+// structure and still gets the built-in force field.
+TEST(LammpsData, ForceFieldsTheFileCannotHoldAreRefused) {
+  const System s = molecule_box("CC(=O)NC", 2, 16);
+  const std::string hb = data_path("dreiding_hbond");
+  write_lammps_data_ff(s, library_field(s, "dreiding1990", "gasteiger"), EnergyOptions{}, hb);
+  const System r = read_lammps_data(hb);
+  EXPECT_FALSE(r.forcefield);
+  EXPECT_NE(r.forcefield_error.find("hydrogen bonds"), std::string::npos) << r.forcefield_error;
+  EXPECT_THROW(default_forcefield(r), FieldError);
+
+  const std::string opls = data_path("opls_nma"), other = data_path("no_record");
+  write_lammps_data_ff(s, library_field(s, "oplsaa2024", "types"), EnergyOptions{}, opls);
+  {
+    std::ifstream in(opls);
+    std::ofstream out(other);
+    for (std::string line; std::getline(in, line);)
+      if (line.rfind("# caps-ff", 0) != 0) out << line << "\n";
+  }
+  const System o = read_lammps_data(other);
+  EXPECT_FALSE(o.forcefield);
+  EXPECT_NE(o.forcefield_error.find("1-4 weights"), std::string::npos) << o.forcefield_error;
+  EXPECT_THROW(default_forcefield(o), FieldError);
+
+  const std::string plain = data_path("structure");
+  write_lammps_data(s, plain);
+  const System p = read_lammps_data(plain);
+  EXPECT_FALSE(p.forcefield);
+  EXPECT_TRUE(p.forcefield_error.empty());
+  EXPECT_NO_THROW(default_forcefield(p));
 }
