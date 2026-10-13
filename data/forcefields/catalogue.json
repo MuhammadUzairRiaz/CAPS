@@ -260,36 +260,6 @@
    }
   },
   {
-   "id": "opls-des",
-   "name": "OPLS-DES deep eutectic solvents",
-   "version": "2018",
-   "references": [
-    "B. Doherty, O. Acevedo, J. Phys. Chem. B 122, 9982 (2018)"
-   ],
-   "origin": "converted",
-   "source_file": "OPLS_DES.par",
-   "status": "converted",
-   "notes": "same forms as OPLS 2005; not yet compared with the original distribution.",
-   "file": "opls-des.json",
-   "counts": {
-    "atom_types": 57,
-    "pairs": 52,
-    "bonds": 46,
-    "angles": 67,
-    "dihedrals": 61,
-    "impropers": 6
-   },
-   "typing": {
-    "rules": "typing/opls-des.typing.json",
-    "evidence": "CAPS rules from OPLS-DES deep eutectic solvents's type definitions (bench/typing/make_opls_family_rules.py)"
-   },
-   "list": {
-    "label": "OPLS deep-eutectic solvents",
-    "key": "opls_des",
-    "order": 13
-   }
-  },
-  {
    "id": "charmm",
    "name": "CHARMM",
    "version": "",
@@ -1584,6 +1554,37 @@
     "label": "CL&P ionic liquids",
     "key": "opls_cl_p",
     "order": 12
+   }
+  },
+  {
+   "id": "clandp-des",
+   "name": "CL&P DES (deep-eutectic solvents)",
+   "version": "des.ff of 2025/12/19 (github.com/paduagroup/clandp)",
+   "references": [
+    "J. N. Canongia Lopes, A. A. H. Padua, Theor. Chem. Acc. 131, 1129 (2012)",
+    "W. L. Jorgensen, D. S. Maxwell, J. Tirado-Rives, J. Am. Chem. Soc. 118, 11225 (1996)"
+   ],
+   "origin": "built from source",
+   "source": "des.ff, github.com/paduagroup/clandp",
+   "license": "MIT (Copyright (c) 2019 Agilio Padua)",
+   "status": "validated",
+   "file": "clandp-des.json",
+   "counts": {
+    "atom_types": 47,
+    "pairs": 47,
+    "bonds": 16,
+    "angles": 30,
+    "dihedrals": 44,
+    "impropers": 6
+   },
+   "typing": {
+    "rules": "typing/clandp-des.typing.json",
+    "evidence": "CAPS rules for des.ff's types by DES component (bench/typing/make_clandp_des_rules.py): CL&P's own molecule files whose types des.ff defines (cholinium.xyz, the ammonium and phosphonium ions, Cl, Br, acetate) typed as they type them, 362 / 362 atoms in 14 molecules, each at its integer charge; 29 DES components (cholinium, ammonium, phosphonium, betaine, halides, carboxylates, urea, alcohols, diols, glycerol, carboxylic acids, levulinic acid, ketones) typed whole and neutral or at their ion charge (bench/ff/check_clandp_des_components.py); those des.ff's charges cannot make neutral (methanol, malonic and oxalic acid) left untyped"
+   },
+   "list": {
+    "label": "CL&P deep-eutectic solvents",
+    "key": "opls_des",
+    "order": 13
    }
   },
   {

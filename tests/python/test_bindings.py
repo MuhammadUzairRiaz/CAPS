@@ -200,16 +200,13 @@ if _have("trappe-ua"):   # a library CAPS has not rebuilt from its own source ye
           f"field: TraPPE-UA on polyethylene · {len(ua['atoms'])} sites, types {sorted(types)}")
 else:
     print("skip " + ['trappe-ua'][0] + ": not in this checkout")
-# OPLS descendants: reline (choline chloride + 2 urea) in OPLS-DES, an imidazolium NTf2 in CL&P, polyethylene in L-OPLS
-if _have("opls-des"):   # a library CAPS has not rebuilt from its own source yet: skipped when absent
-    reline = caps.build.smiles("C[N+](C)(C)CCO.NC(N)=O.NC(N)=O.[Cl-]", forcefield="uff").field.assign("opls-des")
-    il = caps.build.smiles("CCCCn1cc[n+](C)c1.FC(F)(F)S(=O)(=O)[N-]S(=O)(=O)C(F)(F)F", forcefield="uff").field.assign("clandp")
-    lopls = caps.polymer("*CC*", dp=8, chains=1, density=0.3, seed=3).field.assign("loplsaa2024-moltemplate")
-    ltypes = {a["type"].split("_")[0] for a in lopls["atoms"]}
-    check(reline["complete"] and il["complete"] and lopls["complete"] and {"54L", "57L", "60LCH2"} <= ltypes,
-          f"field: OPLS-DES reline, CL&P [C4mim][NTf2], L-OPLS polyethylene ({sorted(ltypes)})")
-else:
-    print("skip " + ['opls-des'][0] + ": not in this checkout")
+# OPLS descendants: reline (choline chloride + 2 urea) in CL&P DES (des.ff), an imidazolium NTf2 in CL&P, polyethylene in L-OPLS
+reline = caps.build.smiles("C[N+](C)(C)CCO.NC(N)=O.NC(N)=O.[Cl-]", forcefield="uff").field.assign("clandp-des")
+il = caps.build.smiles("CCCCn1cc[n+](C)c1.FC(F)(F)S(=O)(=O)[N-]S(=O)(=O)C(F)(F)F", forcefield="uff").field.assign("clandp")
+lopls = caps.polymer("*CC*", dp=8, chains=1, density=0.3, seed=3).field.assign("loplsaa2024-moltemplate")
+ltypes = {a["type"].split("_")[0] for a in lopls["atoms"]}
+check(reline["complete"] and abs(reline["net_charge"]) < 1e-9 and il["complete"] and lopls["complete"] and {"54L", "57L", "60LCH2"} <= ltypes,
+      f"field: CL&P DES reline, CL&P [C4mim][NTf2], L-OPLS polyethylene ({sorted(ltypes)})")
 # OPLS 2020: the bond / angle supplement on OPLS 2005, typed with OPLS 2005's rules; the 2020 values replace 2005's
 if _have("opls2020"):   # a library CAPS has not rebuilt from its own source yet: skipped when absent
     o20 = caps.build.smiles("CC(=O)OCc1ccccc1", forcefield="uff")

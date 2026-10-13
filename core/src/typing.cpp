@@ -200,6 +200,16 @@ Perception perceive(const System& s) {
     if (lone && target[i] >= 0 && z[i] != 1) { target[i] = -1; p.charge[i] = ion_charge(z[i]); }
     if (lone && target[i] < 0) p.charge[i] = ion_charge(z[i]);
     if (z[i] == 7 && deg[i] == 4) p.charge[i] = 1;
+    // phosphonium: four-connected P bonded to C and H only (R4P+; phosphates, phosphine oxides and P-halides have
+    // an O or a halogen on the P and keep P(V))
+    if (z[i] == 15 && deg[i] == 4 && p.implicit_h[i] == 0) {
+      bool ch = true;
+      for (size_t e : inc[i]) {
+        const uint32_t o = edges[e].i == i ? edges[e].j : edges[e].i;
+        ch = ch && (z[o] == 6 || z[o] == 1);
+      }
+      if (ch) { target[i] = 4; p.charge[i] = 1; }
+    }
     if (z[i] == 7 && deg[i] == 3) {
       int term_o = 0;
       for (size_t e : inc[i]) {
