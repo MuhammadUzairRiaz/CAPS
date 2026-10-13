@@ -296,6 +296,12 @@ CASES = [
     ("OPLS-UA 2024 + 1984 terms: polypropylene tetramer", ("smiles", "CC(C)CC(C)CC(C)CC(C)C"), "oplsua2024", "types", "rules"),
     ("OPLS-UA 2024 + 1984 terms: 1,4-polybutadiene trimer (cis, trans, cis)", ("smiles", "C/C=C\\CC/C=C/CC/C=C\\C"), "oplsua2024", "types", "rules"),
     ("OPLS-UA 2024 + 1984 terms: cis-1,4-polyisoprene trimer", ("smiles", "C/C=C(C)\\CC/C=C(C)\\CC/C=C(C)\\C"), "oplsua2024", "types", "rules"),
+    # alcohol and ether terms from Jorgensen 1986 and Briggs, Matsui & Jorgensen 1990 (poly(ethylene oxide) has no O-C-C-O
+    # torsion in either paper and stays incomplete)
+    ("OPLS-UA 2024 + 1986 terms: poly(vinyl alcohol) tetramer", ("smiles", "CC(O)CC(O)CC(O)CC(O)C"), "oplsua2024", "types", "rules"),
+    ("OPLS-UA 2024 + 1990 terms: polyoxytetramethylene trimer", ("smiles", "CCCCOCCCCOCCCCOCCCC"), "oplsua2024", "types", "rules"),
+    ("OPLS-UA 2024 + 1986 / 1990 terms: ethanol, 1-propanol, 2-propanol, tert-butanol, diethyl ether", ("smiles", "CCO.CCCO.CC(C)O.CC(C)(C)O.CCOCC"),
+     "oplsua2024", "types", "rules"),
     # coarse-grained: MARTINI (lj/gromacs + coul/gromacs, dielectric 15, cosine/squared angles, 1-3 and 1-4 pairs kept)
     # and SDK (lj/sdk 9-6 / 12-4, angle sdk with its 1-3 repulsion), bead molecules and water beads in periodic boxes
     ("MARTINI DPPC + POPE + ions + water (periodic)", ("cg-box", "martini-moltemplate", [("template", "DPPC", 6), ("template", "POPE", 4),
