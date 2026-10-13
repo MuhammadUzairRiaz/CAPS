@@ -1,0 +1,2463 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "CL&P DES (deep-eutectic solvents)",
+ "source": "des.ff",
+ "references": [
+  "J. N. Canongia Lopes, A. A. H. Padua, Theor. Chem. Acc. 131, 1129 (2012)"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "lj/cut/coul/long",
+  "bond": "harmonic",
+  "angle": "harmonic",
+  "dihedral": "opls",
+  "improper": "cvff"
+ },
+ "mixing": "geometric",
+ "special_lj": [
+  0,
+  0,
+  0.5
+ ],
+ "special_coul": [
+  0,
+  0,
+  0.5
+ ],
+ "cutoff": 12,
+ "improper_order": "center3_sorted",
+ "equivalence": "replace",
+ "atom_types": [
+  {
+   "name": "C1",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.17,
+   "equivalence": {
+    "bond": "CT",
+    "angle": "CT",
+    "dihedral": "CT",
+    "improper": "CT"
+   }
+  },
+  {
+   "name": "C1A",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.17,
+   "equivalence": {
+    "bond": "CT",
+    "angle": "CT",
+    "dihedral": "CT",
+    "improper": "CT"
+   }
+  },
+  {
+   "name": "C2",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.01,
+   "equivalence": {
+    "bond": "CT",
+    "angle": "CT",
+    "dihedral": "CT",
+    "improper": "CT"
+   }
+  },
+  {
+   "name": "CE",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.05,
+   "equivalence": {
+    "bond": "CT",
+    "angle": "CT",
+    "dihedral": "CT",
+    "improper": "CT"
+   }
+  },
+  {
+   "name": "CS",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.12,
+   "equivalence": {
+    "bond": "CT",
+    "angle": "CT",
+    "dihedral": "CT",
+    "improper": "CT"
+   }
+  },
+  {
+   "name": "CT",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.18,
+   "equivalence": {
+    "bond": "CT",
+    "angle": "CT",
+    "dihedral": "CT",
+    "improper": "CT"
+   }
+  },
+  {
+   "name": "CQ",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.06,
+   "equivalence": {
+    "bond": "CT",
+    "angle": "CT",
+    "dihedral": "CT",
+    "improper": "CT"
+   }
+  },
+  {
+   "name": "HC",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.06,
+   "equivalence": {
+    "bond": "HC",
+    "angle": "HC",
+    "dihedral": "HC",
+    "improper": "HC"
+   }
+  },
+  {
+   "name": "H1",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.13,
+   "equivalence": {
+    "bond": "HC",
+    "angle": "HC",
+    "dihedral": "HC",
+    "improper": "HC"
+   }
+  },
+  {
+   "name": "N4",
+   "element": "N",
+   "mass": 14.007,
+   "charge": 0.12,
+   "equivalence": {
+    "bond": "NT",
+    "angle": "NT",
+    "dihedral": "NT",
+    "improper": "NT"
+   }
+  },
+  {
+   "name": "N3",
+   "element": "N",
+   "mass": 14.007,
+   "charge": 0.03,
+   "equivalence": {
+    "bond": "NT",
+    "angle": "NT",
+    "dihedral": "NT",
+    "improper": "NT"
+   }
+  },
+  {
+   "name": "H3",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.31,
+   "equivalence": {
+    "bond": "HN",
+    "angle": "HN",
+    "dihedral": "HN",
+    "improper": "HN"
+   }
+  },
+  {
+   "name": "N4B",
+   "element": "N",
+   "mass": 14.007,
+   "charge": 0.34,
+   "equivalence": {
+    "bond": "NT",
+    "angle": "NT",
+    "dihedral": "NT",
+    "improper": "NT"
+   }
+  },
+  {
+   "name": "P3",
+   "element": "P",
+   "mass": 30.974,
+   "charge": 0.68,
+   "equivalence": {
+    "bond": "PT",
+    "angle": "PT",
+    "dihedral": "PT",
+    "improper": "PT"
+   }
+  },
+  {
+   "name": "C1P",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.31,
+   "equivalence": {
+    "bond": "CT",
+    "angle": "CT",
+    "dihedral": "CT",
+    "improper": "CT"
+   }
+  },
+  {
+   "name": "C1B",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.31,
+   "equivalence": {
+    "bond": "CT",
+    "angle": "CT",
+    "dihedral": "CT",
+    "improper": "CT"
+   }
+  },
+  {
+   "name": "Cl",
+   "element": "Cl",
+   "mass": 35.453,
+   "charge": -1.0,
+   "equivalence": {
+    "bond": "Cl",
+    "angle": "Cl",
+    "dihedral": "Cl",
+    "improper": "Cl"
+   }
+  },
+  {
+   "name": "Br",
+   "element": "Br",
+   "mass": 79.904,
+   "charge": -1.0,
+   "equivalence": {
+    "bond": "Br",
+    "angle": "Br",
+    "dihedral": "Br",
+    "improper": "Br"
+   }
+  },
+  {
+   "name": "CTO",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.145,
+   "equivalence": {
+    "bond": "CT",
+    "angle": "CT",
+    "dihedral": "CT",
+    "improper": "CT"
+   }
+  },
+  {
+   "name": "C2O",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.205,
+   "equivalence": {
+    "bond": "CT",
+    "angle": "CT",
+    "dihedral": "CT",
+    "improper": "CT"
+   }
+  },
+  {
+   "name": "OH",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -0.683,
+   "equivalence": {
+    "bond": "OH",
+    "angle": "OH",
+    "dihedral": "OH",
+    "improper": "OH"
+   }
+  },
+  {
+   "name": "HO",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.418,
+   "equivalence": {
+    "bond": "HO",
+    "angle": "HO",
+    "dihedral": "HO",
+    "improper": "HO"
+   }
+  },
+  {
+   "name": "COL",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.275,
+   "equivalence": {
+    "bond": "CT",
+    "angle": "CT",
+    "dihedral": "CT",
+    "improper": "CT"
+   }
+  },
+  {
+   "name": "OHC",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -0.563,
+   "equivalence": {
+    "bond": "OH",
+    "angle": "OH",
+    "dihedral": "OH",
+    "improper": "OH"
+   }
+  },
+  {
+   "name": "HOC",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.298,
+   "equivalence": {
+    "bond": "HO",
+    "angle": "HO",
+    "dihedral": "HO",
+    "improper": "HO"
+   }
+  },
+  {
+   "name": "CU",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.142,
+   "equivalence": {
+    "bond": "C",
+    "angle": "C",
+    "dihedral": "C",
+    "improper": "C"
+   }
+  },
+  {
+   "name": "OU",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -0.39,
+   "equivalence": {
+    "bond": "O",
+    "angle": "O",
+    "dihedral": "O",
+    "improper": "O"
+   }
+  },
+  {
+   "name": "NU",
+   "element": "N",
+   "mass": 14.007,
+   "charge": -0.542,
+   "equivalence": {
+    "bond": "N",
+    "angle": "N",
+    "dihedral": "N",
+    "improper": "N"
+   }
+  },
+  {
+   "name": "HU",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.333,
+   "equivalence": {
+    "bond": "H",
+    "angle": "H",
+    "dihedral": "H",
+    "improper": "H"
+   }
+  },
+  {
+   "name": "O2",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -0.8,
+   "equivalence": {
+    "bond": "O2",
+    "angle": "O2",
+    "dihedral": "O2",
+    "improper": "O2"
+   }
+  },
+  {
+   "name": "CO2",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.7,
+   "equivalence": {
+    "bond": "CO",
+    "angle": "CO",
+    "dihedral": "CO",
+    "improper": "CO"
+   }
+  },
+  {
+   "name": "CTA",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.28,
+   "equivalence": {
+    "bond": "CT",
+    "angle": "CT",
+    "dihedral": "CT",
+    "improper": "CT"
+   }
+  },
+  {
+   "name": "C2C",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.22,
+   "equivalence": {
+    "bond": "CT",
+    "angle": "CT",
+    "dihedral": "CT",
+    "improper": "CT"
+   }
+  },
+  {
+   "name": "C3C",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.16,
+   "equivalence": {
+    "bond": "CT",
+    "angle": "CT",
+    "dihedral": "CT",
+    "improper": "CT"
+   }
+  },
+  {
+   "name": "O3",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -0.44,
+   "equivalence": {
+    "bond": "O3",
+    "angle": "O3",
+    "dihedral": "O3",
+    "improper": "O3"
+   }
+  },
+  {
+   "name": "OOH",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -0.53,
+   "equivalence": {
+    "bond": "OH",
+    "angle": "OH",
+    "dihedral": "OH",
+    "improper": "OH"
+   }
+  },
+  {
+   "name": "HOO",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.45,
+   "equivalence": {
+    "bond": "HO",
+    "angle": "HO",
+    "dihedral": "HO",
+    "improper": "HO"
+   }
+  },
+  {
+   "name": "CX",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.3,
+   "equivalence": {
+    "bond": "CT",
+    "angle": "CT",
+    "dihedral": "CT",
+    "improper": "CT"
+   }
+  },
+  {
+   "name": "CXT",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.36,
+   "equivalence": {
+    "bond": "CT",
+    "angle": "CT",
+    "dihedral": "CT",
+    "improper": "CT"
+   }
+  },
+  {
+   "name": "CK",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.47,
+   "equivalence": {
+    "bond": "CK",
+    "angle": "CK",
+    "dihedral": "CK",
+    "improper": "CK"
+   }
+  },
+  {
+   "name": "OK",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -0.47,
+   "equivalence": {
+    "bond": "OK",
+    "angle": "OK",
+    "dihedral": "OK",
+    "improper": "OK"
+   }
+  },
+  {
+   "name": "H1O",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.06,
+   "equivalence": {
+    "bond": "HC",
+    "angle": "HC",
+    "dihedral": "HC",
+    "improper": "HC"
+   }
+  },
+  {
+   "name": "CSO",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.205,
+   "equivalence": {
+    "bond": "CT",
+    "angle": "CT",
+    "dihedral": "CT",
+    "improper": "CT"
+   }
+  },
+  {
+   "name": "OHG",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -0.7,
+   "equivalence": {
+    "bond": "OH",
+    "angle": "OH",
+    "dihedral": "OH",
+    "improper": "OH"
+   }
+  },
+  {
+   "name": "HOG",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.435,
+   "equivalence": {
+    "bond": "HO",
+    "angle": "HO",
+    "dihedral": "HO",
+    "improper": "HO"
+   }
+  },
+  {
+   "name": "OHT",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -0.73,
+   "equivalence": {
+    "bond": "OH",
+    "angle": "OH",
+    "dihedral": "OH",
+    "improper": "OH"
+   }
+  },
+  {
+   "name": "HOT",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.465,
+   "equivalence": {
+    "bond": "HO",
+    "angle": "HO",
+    "dihedral": "HO",
+    "improper": "HO"
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "name": "C1",
+   "match": [
+    "C1"
+   ],
+   "params": [
+    0.06599904397705544,
+    3.5
+   ]
+  },
+  {
+   "name": "C1A",
+   "match": [
+    "C1A"
+   ],
+   "params": [
+    0.06599904397705544,
+    3.5
+   ]
+  },
+  {
+   "name": "C2",
+   "match": [
+    "C2"
+   ],
+   "params": [
+    0.06599904397705544,
+    3.5
+   ]
+  },
+  {
+   "name": "CE",
+   "match": [
+    "CE"
+   ],
+   "params": [
+    0.06599904397705544,
+    3.5
+   ]
+  },
+  {
+   "name": "CS",
+   "match": [
+    "CS"
+   ],
+   "params": [
+    0.06599904397705544,
+    3.5
+   ]
+  },
+  {
+   "name": "CT",
+   "match": [
+    "CT"
+   ],
+   "params": [
+    0.06599904397705544,
+    3.5
+   ]
+  },
+  {
+   "name": "CQ",
+   "match": [
+    "CQ"
+   ],
+   "params": [
+    0.06599904397705544,
+    3.5
+   ]
+  },
+  {
+   "name": "HC",
+   "match": [
+    "HC"
+   ],
+   "params": [
+    0.029999999999999995,
+    2.5
+   ]
+  },
+  {
+   "name": "H1",
+   "match": [
+    "H1"
+   ],
+   "params": [
+    0.029999999999999995,
+    2.5
+   ]
+  },
+  {
+   "name": "N4",
+   "match": [
+    "N4"
+   ],
+   "params": [
+    0.17,
+    3.25
+   ]
+  },
+  {
+   "name": "N3",
+   "match": [
+    "N3"
+   ],
+   "params": [
+    0.17,
+    3.25
+   ]
+  },
+  {
+   "name": "H3",
+   "match": [
+    "H3"
+   ],
+   "params": [
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "name": "N4B",
+   "match": [
+    "N4B"
+   ],
+   "params": [
+    0.17,
+    3.25
+   ]
+  },
+  {
+   "name": "P3",
+   "match": [
+    "P3"
+   ],
+   "params": [
+    0.19999999999999998,
+    3.74
+   ]
+  },
+  {
+   "name": "C1P",
+   "match": [
+    "C1P"
+   ],
+   "params": [
+    0.06599904397705544,
+    3.5
+   ]
+  },
+  {
+   "name": "C1B",
+   "match": [
+    "C1B"
+   ],
+   "params": [
+    0.06599904397705544,
+    3.5
+   ]
+  },
+  {
+   "name": "Cl",
+   "match": [
+    "Cl"
+   ],
+   "params": [
+    0.11778919694072656,
+    4.417
+   ]
+  },
+  {
+   "name": "Br",
+   "match": [
+    "Br"
+   ],
+   "params": [
+    0.09,
+    4.624
+   ]
+  },
+  {
+   "name": "CTO",
+   "match": [
+    "CTO"
+   ],
+   "params": [
+    0.06599904397705544,
+    3.5
+   ]
+  },
+  {
+   "name": "C2O",
+   "match": [
+    "C2O"
+   ],
+   "params": [
+    0.06599904397705544,
+    3.5
+   ]
+  },
+  {
+   "name": "OH",
+   "match": [
+    "OH"
+   ],
+   "params": [
+    0.17,
+    3.12
+   ]
+  },
+  {
+   "name": "HO",
+   "match": [
+    "HO"
+   ],
+   "params": [
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "name": "COL",
+   "match": [
+    "COL"
+   ],
+   "params": [
+    0.06599904397705544,
+    3.5
+   ]
+  },
+  {
+   "name": "OHC",
+   "match": [
+    "OHC"
+   ],
+   "params": [
+    0.17,
+    3.12
+   ]
+  },
+  {
+   "name": "HOC",
+   "match": [
+    "HOC"
+   ],
+   "params": [
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "name": "CU",
+   "match": [
+    "CU"
+   ],
+   "params": [
+    0.105,
+    3.5
+   ]
+  },
+  {
+   "name": "OU",
+   "match": [
+    "OU"
+   ],
+   "params": [
+    0.21,
+    2.96
+   ]
+  },
+  {
+   "name": "NU",
+   "match": [
+    "NU"
+   ],
+   "params": [
+    0.17,
+    3.25
+   ]
+  },
+  {
+   "name": "HU",
+   "match": [
+    "HU"
+   ],
+   "params": [
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "name": "O2",
+   "match": [
+    "O2"
+   ],
+   "params": [
+    0.21,
+    2.96
+   ]
+  },
+  {
+   "name": "CO2",
+   "match": [
+    "CO2"
+   ],
+   "params": [
+    0.105,
+    3.75
+   ]
+  },
+  {
+   "name": "CTA",
+   "match": [
+    "CTA"
+   ],
+   "params": [
+    0.06599904397705544,
+    3.5
+   ]
+  },
+  {
+   "name": "C2C",
+   "match": [
+    "C2C"
+   ],
+   "params": [
+    0.06599904397705544,
+    3.5
+   ]
+  },
+  {
+   "name": "C3C",
+   "match": [
+    "C3C"
+   ],
+   "params": [
+    0.06599904397705544,
+    3.5
+   ]
+  },
+  {
+   "name": "O3",
+   "match": [
+    "O3"
+   ],
+   "params": [
+    0.21,
+    2.96
+   ]
+  },
+  {
+   "name": "OOH",
+   "match": [
+    "OOH"
+   ],
+   "params": [
+    0.17,
+    3.0
+   ]
+  },
+  {
+   "name": "HOO",
+   "match": [
+    "HOO"
+   ],
+   "params": [
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "name": "CX",
+   "match": [
+    "CX"
+   ],
+   "params": [
+    0.06599904397705544,
+    3.5
+   ]
+  },
+  {
+   "name": "CXT",
+   "match": [
+    "CXT"
+   ],
+   "params": [
+    0.06599904397705544,
+    3.5
+   ]
+  },
+  {
+   "name": "CK",
+   "match": [
+    "CK"
+   ],
+   "params": [
+    0.105,
+    3.75
+   ]
+  },
+  {
+   "name": "OK",
+   "match": [
+    "OK"
+   ],
+   "params": [
+    0.21,
+    2.96
+   ]
+  },
+  {
+   "name": "H1O",
+   "match": [
+    "H1O"
+   ],
+   "params": [
+    0.029999999999999995,
+    2.5
+   ]
+  },
+  {
+   "name": "CSO",
+   "match": [
+    "CSO"
+   ],
+   "params": [
+    0.06599904397705544,
+    3.5
+   ]
+  },
+  {
+   "name": "OHG",
+   "match": [
+    "OHG"
+   ],
+   "params": [
+    0.17,
+    3.12
+   ]
+  },
+  {
+   "name": "HOG",
+   "match": [
+    "HOG"
+   ],
+   "params": [
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "name": "OHT",
+   "match": [
+    "OHT"
+   ],
+   "params": [
+    0.17,
+    3.12
+   ]
+  },
+  {
+   "name": "HOT",
+   "match": [
+    "HOT"
+   ],
+   "params": [
+    0.0,
+    1.0
+   ]
+  }
+ ],
+ "bonds": [
+  {
+   "name": "HC-CT",
+   "match": [
+    "HC",
+    "CT"
+   ],
+   "style": "harmonic",
+   "params": [
+    339.98565965583174,
+    1.09
+   ],
+   "comment": "constrained in the source"
+  },
+  {
+   "name": "CT-CT",
+   "match": [
+    "CT",
+    "CT"
+   ],
+   "style": "harmonic",
+   "params": [
+    267.92543021032503,
+    1.529
+   ]
+  },
+  {
+   "name": "NT-CT",
+   "match": [
+    "NT",
+    "CT"
+   ],
+   "style": "harmonic",
+   "params": [
+    382.0028680688336,
+    1.448
+   ]
+  },
+  {
+   "name": "HN-NT",
+   "match": [
+    "HN",
+    "NT"
+   ],
+   "style": "harmonic",
+   "params": [
+    434.0344168260038,
+    1.01
+   ],
+   "comment": "constrained in the source"
+  },
+  {
+   "name": "PT-CT",
+   "match": [
+    "PT",
+    "CT"
+   ],
+   "style": "harmonic",
+   "params": [
+    424.23518164435944,
+    1.81
+   ]
+  },
+  {
+   "name": "CT-OH",
+   "match": [
+    "CT",
+    "OH"
+   ],
+   "style": "harmonic",
+   "params": [
+    320.00478011472273,
+    1.41
+   ]
+  },
+  {
+   "name": "HO-OH",
+   "match": [
+    "HO",
+    "OH"
+   ],
+   "style": "harmonic",
+   "params": [
+    552.9995219885277,
+    0.945
+   ],
+   "comment": "constrained in the source"
+  },
+  {
+   "name": "C-O",
+   "match": [
+    "C",
+    "O"
+   ],
+   "style": "harmonic",
+   "params": [
+    570.0047801147227,
+    1.229
+   ]
+  },
+  {
+   "name": "C-N",
+   "match": [
+    "C",
+    "N"
+   ],
+   "style": "harmonic",
+   "params": [
+    489.99760994263863,
+    1.335
+   ]
+  },
+  {
+   "name": "N-H",
+   "match": [
+    "N",
+    "H"
+   ],
+   "style": "harmonic",
+   "params": [
+    433.9985659655831,
+    1.01
+   ],
+   "comment": "constrained in the source"
+  },
+  {
+   "name": "CO-O2",
+   "match": [
+    "CO",
+    "O2"
+   ],
+   "style": "harmonic",
+   "params": [
+    655.9512428298278,
+    1.25
+   ]
+  },
+  {
+   "name": "CT-CO",
+   "match": [
+    "CT",
+    "CO"
+   ],
+   "style": "harmonic",
+   "params": [
+    317.04110898661565,
+    1.522
+   ]
+  },
+  {
+   "name": "CO-O3",
+   "match": [
+    "CO",
+    "O3"
+   ],
+   "style": "harmonic",
+   "params": [
+    570.0047801147227,
+    1.229
+   ]
+  },
+  {
+   "name": "CO-OH",
+   "match": [
+    "CO",
+    "OH"
+   ],
+   "style": "harmonic",
+   "params": [
+    449.99999999999994,
+    1.364
+   ],
+   "comment": "constrained in the source"
+  },
+  {
+   "name": "CK-OK",
+   "match": [
+    "CK",
+    "OK"
+   ],
+   "style": "harmonic",
+   "params": [
+    570.0047801147227,
+    1.229
+   ]
+  },
+  {
+   "name": "CT-CK",
+   "match": [
+    "CT",
+    "CK"
+   ],
+   "style": "harmonic",
+   "params": [
+    317.04110898661565,
+    1.522
+   ]
+  }
+ ],
+ "angles": [
+  {
+   "name": "CT-CT-CT",
+   "match": [
+    "CT",
+    "CT",
+    "CT"
+   ],
+   "style": "harmonic",
+   "params": [
+    58.35325047801147,
+    112.7
+   ]
+  },
+  {
+   "name": "CT-CT-HC",
+   "match": [
+    "CT",
+    "CT",
+    "HC"
+   ],
+   "style": "harmonic",
+   "params": [
+    37.5,
+    110.7
+   ]
+  },
+  {
+   "name": "HC-CT-HC",
+   "match": [
+    "HC",
+    "CT",
+    "HC"
+   ],
+   "style": "harmonic",
+   "params": [
+    32.994741873804976,
+    107.8
+   ]
+  },
+  {
+   "name": "NT-CT-CT",
+   "match": [
+    "NT",
+    "CT",
+    "CT"
+   ],
+   "style": "harmonic",
+   "params": [
+    56.20219885277247,
+    109.5
+   ]
+  },
+  {
+   "name": "CT-NT-CT",
+   "match": [
+    "CT",
+    "NT",
+    "CT"
+   ],
+   "style": "harmonic",
+   "params": [
+    51.80449330783939,
+    107.2
+   ]
+  },
+  {
+   "name": "HC-CT-NT",
+   "match": [
+    "HC",
+    "CT",
+    "NT"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.002390057361374,
+    109.5
+   ]
+  },
+  {
+   "name": "HN-NT-CT",
+   "match": [
+    "HN",
+    "NT",
+    "CT"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.002390057361374,
+    109.5
+   ]
+  },
+  {
+   "name": "NT-CT-CO",
+   "match": [
+    "NT",
+    "CT",
+    "CO"
+   ],
+   "style": "harmonic",
+   "params": [
+    80.0,
+    111.2
+   ]
+  },
+  {
+   "name": "CT-PT-CT",
+   "match": [
+    "CT",
+    "PT",
+    "CT"
+   ],
+   "style": "harmonic",
+   "params": [
+    72.63384321223708,
+    109.5
+   ]
+  },
+  {
+   "name": "HC-CT-PT",
+   "match": [
+    "HC",
+    "CT",
+    "PT"
+   ],
+   "style": "harmonic",
+   "params": [
+    46.59416826003824,
+    110.1
+   ]
+  },
+  {
+   "name": "CT-CT-PT",
+   "match": [
+    "CT",
+    "CT",
+    "PT"
+   ],
+   "style": "harmonic",
+   "params": [
+    60.838910133843214,
+    115.2
+   ]
+  },
+  {
+   "name": "CT-CT-OH",
+   "match": [
+    "CT",
+    "CT",
+    "OH"
+   ],
+   "style": "harmonic",
+   "params": [
+    49.99999999999999,
+    109.5
+   ]
+  },
+  {
+   "name": "HC-CT-OH",
+   "match": [
+    "HC",
+    "CT",
+    "OH"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.002390057361374,
+    109.5
+   ]
+  },
+  {
+   "name": "CT-OH-HO",
+   "match": [
+    "CT",
+    "OH",
+    "HO"
+   ],
+   "style": "harmonic",
+   "params": [
+    54.995219885277244,
+    108.5
+   ]
+  },
+  {
+   "name": "N-C-O",
+   "match": [
+    "N",
+    "C",
+    "O"
+   ],
+   "style": "harmonic",
+   "params": [
+    79.99521988527724,
+    122.9
+   ]
+  },
+  {
+   "name": "N-C-N",
+   "match": [
+    "N",
+    "C",
+    "N"
+   ],
+   "style": "harmonic",
+   "params": [
+    70.00478011472275,
+    114.2
+   ]
+  },
+  {
+   "name": "C-N-H",
+   "match": [
+    "C",
+    "N",
+    "H"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.002390057361374,
+    119.8
+   ]
+  },
+  {
+   "name": "H-N-H",
+   "match": [
+    "H",
+    "N",
+    "H"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.002390057361374,
+    120.0
+   ]
+  },
+  {
+   "name": "O2-CO-O2",
+   "match": [
+    "O2",
+    "CO",
+    "O2"
+   ],
+   "style": "harmonic",
+   "params": [
+    79.99521988527724,
+    126.0
+   ]
+  },
+  {
+   "name": "CT-CO-O2",
+   "match": [
+    "CT",
+    "CO",
+    "O2"
+   ],
+   "style": "harmonic",
+   "params": [
+    70.00478011472275,
+    117.0
+   ]
+  },
+  {
+   "name": "HC-CT-CO",
+   "match": [
+    "HC",
+    "CT",
+    "CO"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.002390057361374,
+    109.5
+   ]
+  },
+  {
+   "name": "CT-CT-CO",
+   "match": [
+    "CT",
+    "CT",
+    "CO"
+   ],
+   "style": "harmonic",
+   "params": [
+    63.00191204588911,
+    111.1
+   ]
+  },
+  {
+   "name": "CT-CO-O3",
+   "match": [
+    "CT",
+    "CO",
+    "O3"
+   ],
+   "style": "harmonic",
+   "params": [
+    79.99521988527724,
+    120.4
+   ]
+  },
+  {
+   "name": "CT-CO-OH",
+   "match": [
+    "CT",
+    "CO",
+    "OH"
+   ],
+   "style": "harmonic",
+   "params": [
+    70.00478011472275,
+    108.0
+   ]
+  },
+  {
+   "name": "O3-CO-OH",
+   "match": [
+    "O3",
+    "CO",
+    "OH"
+   ],
+   "style": "harmonic",
+   "params": [
+    79.99521988527724,
+    121.0
+   ]
+  },
+  {
+   "name": "CO-OH-HO",
+   "match": [
+    "CO",
+    "OH",
+    "HO"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.002390057361374,
+    113.0
+   ]
+  },
+  {
+   "name": "CT-CK-OK",
+   "match": [
+    "CT",
+    "CK",
+    "OK"
+   ],
+   "style": "harmonic",
+   "params": [
+    79.99521988527724,
+    120.4
+   ]
+  },
+  {
+   "name": "CT-CK-CT",
+   "match": [
+    "CT",
+    "CK",
+    "CT"
+   ],
+   "style": "harmonic",
+   "params": [
+    70.00478011472275,
+    116.0
+   ]
+  },
+  {
+   "name": "CK-CT-HC",
+   "match": [
+    "CK",
+    "CT",
+    "HC"
+   ],
+   "style": "harmonic",
+   "params": [
+    35.002390057361374,
+    109.5
+   ]
+  },
+  {
+   "name": "CK-CT-CT",
+   "match": [
+    "CK",
+    "CT",
+    "CT"
+   ],
+   "style": "harmonic",
+   "params": [
+    63.00191204588911,
+    111.1
+   ]
+  }
+ ],
+ "dihedrals": [
+  {
+   "name": "HC-CT-CT-HC",
+   "match": [
+    "HC",
+    "CT",
+    "CT",
+    "HC"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.3,
+    0.0
+   ]
+  },
+  {
+   "name": "CT-CT-CT-HC",
+   "match": [
+    "CT",
+    "CT",
+    "CT",
+    "HC"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.3,
+    0.0
+   ]
+  },
+  {
+   "name": "CT-CT-CT-CT",
+   "match": [
+    "CT",
+    "CT",
+    "CT",
+    "CT"
+   ],
+   "style": "opls",
+   "params": [
+    1.2999999999999998,
+    -0.049999999999999996,
+    0.19999999999999998,
+    0.0
+   ]
+  },
+  {
+   "name": "HC-CT-CT-NT",
+   "match": [
+    "HC",
+    "CT",
+    "CT",
+    "NT"
+   ],
+   "style": "opls",
+   "params": [
+    -1.013001912045889,
+    -0.70901051625239,
+    0.4729923518164436,
+    0.0
+   ]
+  },
+  {
+   "name": "CT-CT-CT-NT",
+   "match": [
+    "CT",
+    "CT",
+    "CT",
+    "NT"
+   ],
+   "style": "opls",
+   "params": [
+    2.391993307839388,
+    -0.6739961759082217,
+    0.55,
+    0.0
+   ]
+  },
+  {
+   "name": "CT-NT-CT-CT",
+   "match": [
+    "CT",
+    "NT",
+    "CT",
+    "CT"
+   ],
+   "style": "opls",
+   "params": [
+    0.4159894837476099,
+    -0.1280114722753346,
+    0.6950047801147228,
+    0.0
+   ]
+  },
+  {
+   "name": "HC-CT-NT-CT",
+   "match": [
+    "HC",
+    "CT",
+    "NT",
+    "CT"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.5599904397705545,
+    0.0
+   ]
+  },
+  {
+   "name": "HN-NT-CT-HC",
+   "match": [
+    "HN",
+    "NT",
+    "CT",
+    "HC"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.39999999999999997,
+    0.0
+   ]
+  },
+  {
+   "name": "HN-NT-CT-CT",
+   "match": [
+    "HN",
+    "NT",
+    "CT",
+    "CT"
+   ],
+   "style": "opls",
+   "params": [
+    -0.1900095602294455,
+    -0.4169933078393881,
+    0.41799713193116633,
+    0.0
+   ]
+  },
+  {
+   "name": "CT-NT-CT-CO",
+   "match": [
+    "CT",
+    "NT",
+    "CT",
+    "CO"
+   ],
+   "style": "opls",
+   "params": [
+    0.4160133843212237,
+    -0.12798757170172084,
+    0.6950047801147228,
+    0.0
+   ]
+  },
+  {
+   "name": "NT-CT-CO-O2",
+   "match": [
+    "NT",
+    "CT",
+    "CO",
+    "O2"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "OH-CT-CT-NT",
+   "match": [
+    "OH",
+    "CT",
+    "CT",
+    "NT"
+   ],
+   "style": "opls",
+   "params": [
+    -10.52856118546845,
+    -1.298972275334608,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "CT-PT-CT-HC",
+   "match": [
+    "CT",
+    "PT",
+    "CT",
+    "HC"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.2215583173996176,
+    0.0
+   ]
+  },
+  {
+   "name": "CT-PT-CT-CT",
+   "match": [
+    "CT",
+    "PT",
+    "CT",
+    "CT"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.27079349904397704,
+    0.0
+   ]
+  },
+  {
+   "name": "PT-CT-CT-HC",
+   "match": [
+    "PT",
+    "CT",
+    "CT",
+    "HC"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.1111376673040153,
+    0.0
+   ]
+  },
+  {
+   "name": "PT-CT-CT-CT",
+   "match": [
+    "PT",
+    "CT",
+    "CT",
+    "CT"
+   ],
+   "style": "opls",
+   "params": [
+    -0.7762906309751434,
+    0.23613766730401528,
+    -0.1708891013384321,
+    0.0
+   ]
+  },
+  {
+   "name": "HC-CT-OH-HO",
+   "match": [
+    "HC",
+    "CT",
+    "OH",
+    "HO"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.45,
+    0.0
+   ]
+  },
+  {
+   "name": "CT-CT-OH-HO",
+   "match": [
+    "CT",
+    "CT",
+    "OH",
+    "HO"
+   ],
+   "style": "opls",
+   "params": [
+    -0.35599904397705545,
+    -0.17399617590822178,
+    0.4919933078393881,
+    0.0
+   ]
+  },
+  {
+   "name": "HC-CT-CT-OH",
+   "match": [
+    "HC",
+    "CT",
+    "CT",
+    "OH"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.4679971319311663,
+    0.0
+   ]
+  },
+  {
+   "name": "OH-CT-CT-OH",
+   "match": [
+    "OH",
+    "CT",
+    "CT",
+    "OH"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    -2.3499999999999996,
+    0.2880019120458891,
+    0.0
+   ]
+  },
+  {
+   "name": "CT-CT-CT-OH",
+   "match": [
+    "CT",
+    "CT",
+    "CT",
+    "OH"
+   ],
+   "style": "opls",
+   "params": [
+    1.7109942638623328,
+    -0.5,
+    0.6630019120458891,
+    0.0
+   ]
+  },
+  {
+   "name": "H-N-C-O",
+   "match": [
+    "H",
+    "N",
+    "C",
+    "O"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    4.8999999999999995,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "H-N-C-N",
+   "match": [
+    "H",
+    "N",
+    "C",
+    "N"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    4.8999999999999995,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "HC-CT-CO-O2",
+   "match": [
+    "HC",
+    "CT",
+    "CO",
+    "O2"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "CT-CT-CO-O2",
+   "match": [
+    "CT",
+    "CT",
+    "CO",
+    "O2"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.8200047801147227,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "CO-CT-CT-HC",
+   "match": [
+    "CO",
+    "CT",
+    "CT",
+    "HC"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    -0.09999999999999999,
+    0.0
+   ]
+  },
+  {
+   "name": "CO-CT-CT-CT",
+   "match": [
+    "CO",
+    "CT",
+    "CT",
+    "CT"
+   ],
+   "style": "opls",
+   "params": [
+    -2.059990439770554,
+    -0.3130019120458891,
+    0.3150095602294455,
+    0.0
+   ]
+  },
+  {
+   "name": "CT-CO-OH-HO",
+   "match": [
+    "CT",
+    "CO",
+    "OH",
+    "HO"
+   ],
+   "style": "opls",
+   "params": [
+    1.5,
+    5.5,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "HO-OH-CO-O3",
+   "match": [
+    "HO",
+    "OH",
+    "CO",
+    "O3"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    5.5,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "CT-CT-CO-OH",
+   "match": [
+    "CT",
+    "CT",
+    "CO",
+    "OH"
+   ],
+   "style": "opls",
+   "params": [
+    1.0,
+    0.5460086042065009,
+    0.45,
+    0.0
+   ]
+  },
+  {
+   "name": "HC-CT-CO-OH",
+   "match": [
+    "HC",
+    "CT",
+    "CO",
+    "OH"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "CT-CT-CO-O3",
+   "match": [
+    "CT",
+    "CT",
+    "CO",
+    "O3"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.5460086042065009,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "HC-CT-CO-O3",
+   "match": [
+    "HC",
+    "CT",
+    "CO",
+    "O3"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "CO-CT-OH-HO",
+   "match": [
+    "CO",
+    "CT",
+    "OH",
+    "HO"
+   ],
+   "style": "opls",
+   "params": [
+    -0.35599904397705545,
+    -0.17399617590822178,
+    0.4919933078393881,
+    0.0
+   ]
+  },
+  {
+   "name": "OH-CT-CO-OH",
+   "match": [
+    "OH",
+    "CT",
+    "CO",
+    "OH"
+   ],
+   "style": "opls",
+   "params": [
+    9.065965583173996,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "OH-CT-CO-O3",
+   "match": [
+    "OH",
+    "CT",
+    "CO",
+    "O3"
+   ],
+   "style": "opls",
+   "params": [
+    9.065965583173996,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "CO-CT-CT-CO",
+   "match": [
+    "CO",
+    "CT",
+    "CT",
+    "CO"
+   ],
+   "style": "opls",
+   "params": [
+    -2.059990439770554,
+    -0.3130019120458891,
+    0.3150095602294455,
+    0.0
+   ]
+  },
+  {
+   "name": "CK-CT-CT-CT",
+   "match": [
+    "CK",
+    "CT",
+    "CT",
+    "CT"
+   ],
+   "style": "opls",
+   "params": [
+    -1.697012428298279,
+    -0.45599904397705543,
+    0.5849904397705544,
+    0.0
+   ]
+  },
+  {
+   "name": "CK-CT-CT-HC",
+   "match": [
+    "CK",
+    "CT",
+    "CT",
+    "HC"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    -0.07600382409177821,
+    0.0
+   ]
+  },
+  {
+   "name": "CT-CT-CK-OK",
+   "match": [
+    "CT",
+    "CT",
+    "CK",
+    "OK"
+   ],
+   "style": "opls",
+   "params": [
+    -0.2770076481835564,
+    1.2280114722753346,
+    -0.6940009560229445,
+    0.0
+   ]
+  },
+  {
+   "name": "HC-CT-CK-OK",
+   "match": [
+    "HC",
+    "CT",
+    "CK",
+    "OK"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "CT-CK-CT-CT",
+   "match": [
+    "CT",
+    "CK",
+    "CT",
+    "CT"
+   ],
+   "style": "opls",
+   "params": [
+    1.453991395793499,
+    -0.14400095602294455,
+    -0.7749999999999999,
+    0.0
+   ]
+  },
+  {
+   "name": "CT-CK-CT-HC",
+   "match": [
+    "CT",
+    "CK",
+    "CT",
+    "HC"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.275,
+    0.0
+   ]
+  },
+  {
+   "name": "CO-CT-CT-CK",
+   "match": [
+    "CO",
+    "CT",
+    "CT",
+    "CK"
+   ],
+   "style": "opls",
+   "params": [
+    -2.059990439770554,
+    -0.3130019120458891,
+    0.3150095602294455,
+    0.0
+   ]
+  }
+ ],
+ "impropers": [
+  {
+   "name": "H-H-N-C",
+   "match": [
+    "H",
+    "H",
+    "N",
+    "C"
+   ],
+   "style": "cvff",
+   "params": [
+    1.0,
+    -1,
+    2
+   ]
+  },
+  {
+   "name": "N-N-C-O",
+   "match": [
+    "N",
+    "N",
+    "C",
+    "O"
+   ],
+   "style": "cvff",
+   "params": [
+    10.5,
+    -1,
+    2
+   ]
+  },
+  {
+   "name": "CT-O2-CO-O2",
+   "match": [
+    "CT",
+    "O2",
+    "CO",
+    "O2"
+   ],
+   "style": "cvff",
+   "params": [
+    10.5,
+    -1,
+    2
+   ]
+  },
+  {
+   "name": "O2-O2-CO-CA",
+   "match": [
+    "O2",
+    "O2",
+    "CO",
+    "CA"
+   ],
+   "style": "cvff",
+   "params": [
+    10.5,
+    -1,
+    2
+   ]
+  },
+  {
+   "name": "CT-O3-CO-OH",
+   "match": [
+    "CT",
+    "O3",
+    "CO",
+    "OH"
+   ],
+   "style": "cvff",
+   "params": [
+    10.5,
+    -1,
+    2
+   ]
+  },
+  {
+   "name": "CT-OK-CK-CT",
+   "match": [
+    "CT",
+    "OK",
+    "CK",
+    "CT"
+   ],
+   "style": "cvff",
+   "params": [
+    10.5,
+    -1,
+    2
+   ]
+  }
+ ],
+ "notes": [
+  "converted by CAPS (bench/ff/convert_fftool.py) from des.ff"
+ ],
+ "version": "des.ff 2025/12/19",
+ "typing": "../typing/clandp-des.typing.json"
+}
