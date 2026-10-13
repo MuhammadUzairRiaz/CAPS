@@ -179,9 +179,60 @@ def listed_missing(structure, ffjson, cl):
     for line in (r.stdout + r.stderr).splitlines():
         m = re.match(r"^\s+dihedral\s+(.+)$", line)
         if m:
-            key = tuple(cl.get(t, t) for t in re.findall(r"(\S+?)\(", m.group(1)))
+            names = re.findall(r"(\S+?)\(", m.group(1)) or m.group(1).split()   # a united-atom type has no (class)
+            key = tuple(cl.get(t, t) for t in names)
             out.add(min(key, key[::-1]))
     return out
+
+
+# ------------------------------------------------------------------ united-atom force fields
+# A united-atom force field folds each H into its carbon, so the data file CAPS writes has one site per heavy atom. The
+# QM fragment still needs its hydrogens: prepare cuts it from the all-atom structure (bonds from an all-atom typing,
+# DREIDING, whose parameters are not used) and fit reads the united-atom types back onto the heavy atoms by position
+AA_FF = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "forcefields", "dreiding1990.json")
+
+
+def all_atom(structure, out):
+    """elements, positions and bonds of the structure with every H"""
+    r = subprocess.run([caps_binary(), "ff", "apply", structure, "--ff", AA_FF, "--charges", "gasteiger", "--allow-missing",
+                        "-o", out], capture_output=True, text=True)
+    if r.returncode:
+        raise RuntimeError((r.stderr or r.stdout).strip().splitlines()[-1])
+    _, masses, pos, bonds, _ = read_data(out)
+    return [element_of_mass(m) for m in masses], pos, bonds
+
+
+def united_atom(structure, ffjson):
+    """whether CAPS folds this structure's hydrogens into their carbons with this force field"""
+    r = subprocess.run([caps_binary(), "ff", "apply", structure, "--ff", ffjson, "--charges", "types", "--allow-missing",
+                        "-o", os.devnull], capture_output=True, text=True)
+    return "is united-atom" in r.stdout + r.stderr
+
+
+def site_map(pos_aa, el_aa, pos_ua):
+    """all-atom index -> united-atom site index (None for an H folded into a site), by position"""
+    m = []
+    for i, (e, p) in enumerate(zip(el_aa, pos_aa)):
+        if e == "H":
+            m.append(None)
+            continue
+        j = min(range(len(pos_ua)), key=lambda k: sum((p[t] - pos_ua[k][t]) ** 2 for t in range(3)))
+        if sum((p[t] - pos_ua[j][t]) ** 2 for t in range(3)) > 1e-4:
+            raise RuntimeError(f"united-atom site for atom {i + 1} ({e}) not found")
+        m.append(j)
+    return m
+
+
+def onto_atoms(m, types_ua, have_ua):
+    """the united-atom types and present torsions in all-atom numbering (None / left out for H)"""
+    types = [types_ua[j] if j is not None else None for j in m]
+    back = {j: i for i, j in enumerate(m) if j is not None}
+    have = set()
+    for q in have_ua:
+        if all(x in back for x in q):
+            qa = tuple(back[x] for x in q)
+            have.add(min(qa, qa[::-1]))
+    return types, have
 
 
 # ------------------------------------------------------------------ geometry
@@ -339,10 +390,17 @@ def prepare():
         caps_apply(structure, ffjson, data)
         types, masses, pos, bonds, have = read_data(data)
         el = [element_of_mass(m) for m in masses]
+        if united_atom(structure, ffjson):   # cut and scan the all-atom molecule, typed through its united-atom sites
+            el_aa, pos_aa, bonds_aa = all_atom(structure, os.path.join(work, f"structure{n}.aa.data"))
+            if len(el_aa) > len(el):
+                types, have = onto_atoms(site_map(pos_aa, el_aa, pos), types, have)
+                el, pos, bonds = el_aa, pos_aa, bonds_aa
         nb = neighbours(len(el), bonds)
         mols.append((types, pos, el, nb))
         listed = listed_missing(structure, ffjson, cl)
         for q in propers(nb):
+            if any(types[x] is None for x in q):   # an H folded into a united-atom site
+                continue
             key = tuple(cl.get(types[x], types[x]) for x in q)
             key = min(key, key[::-1])
             if key not in forced and (q in have or key not in listed):   # present, or all zero in the force field
@@ -370,7 +428,9 @@ def prepare():
                 caps_apply(m2, ffjson, fdata)
             except RuntimeError:   # the cut left atoms CAPS cannot type: a larger fragment
                 continue
-            ftypes = read_data(fdata)[0]
+            ftypes, _, fpos_s, _, _ = read_data(fdata)
+            if len(ftypes) < len(fel):   # united-atom: the site types onto the fragment's heavy atoms
+                ftypes = onto_atoms(site_map(fpos, fel, fpos_s), ftypes, set())[0]
             # the torsion's atoms and their neighbours keep the structure's types
             check = {x for x in (a, b, c, d)} | set(nb[b]) | set(nb[c])
             if all(x in idx and ftypes[idx[x]] == types[x] for x in check):
@@ -635,10 +695,15 @@ def fit():
                 emm_full.append(caps_apply(m2, ffjson, os.path.join(work, p["dir"], "opt_full.data")))
             eqm.append(p["E_qm"] * 627.509474)
             types, _, pos, _, have = read_data(data)
+            if len(types) < len(s["elements"]):   # united-atom: site types onto the fragment's heavy atoms
+                types, have = onto_atoms(site_map(p["positions"], s["elements"], pos), types, have)
+                pos = p["positions"]
             if groups is None:   # the missing torsions round the central bond, by class
                 groups = {}
                 listed = listed_missing(m2, ffjson, cl)
                 for q in propers(fnb) - have:
+                    if any(types[x] is None for x in q):   # an H folded into a united-atom site
+                        continue
                     if {q[1], q[2]} == {b, c}:
                         key = tuple(cl.get(types[x], types[x]) for x in q)
                         if min(key, key[::-1]) not in listed and min(key, key[::-1]) not in forced:
