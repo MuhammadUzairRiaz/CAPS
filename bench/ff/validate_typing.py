@@ -185,6 +185,8 @@ def write_mol2(path, name, m, caps=None, sugar=False):
                     el = f"CH{nh}"   # the mol2 type column, which CAPS reads as the site name
             if SHELLS and key_of.get(t) in SHELLS:
                 lab, el = el, key_of[t]   # a shell: named by its type, as CAPS names the shells it adds
+            elif SHELL_OF_KEY and key_of.get(t) in SHELL_OF_KEY:   # --map: the library's own shell type for the reference's key
+                lab, el = el, SHELL_OF_KEY[key_of[t]]
             f.write(f"{i + 1} {lab} {i * 1.5:.3f} 0.000 0.000 {el} 1 MOL 0.0\n")
         f.write("@<TRIPOS>BOND\n")
         for k, (i, j) in enumerate(sorted(bonds)):
@@ -234,6 +236,8 @@ CAP = "--cap-open" in sys.argv
 TYPE_MAP = {}
 if "--map" in sys.argv:
     TYPE_MAP = __import__("json").load(open(os.path.join(ROOT, "bench", "typing", "reference_type_maps.json")))[arg("--map", "")]["map"]
+# a rebuilt shell model names its shells itself: the reference's shell key -> the library's shell type
+SHELL_OF_KEY = {TYPE_MAP[x]: x for x in SHELLS if x in TYPE_MAP}
 # --deviations FILE: atoms where the library's template contradicts the force field's own typer (antechamber for GAFF),
 # each with its evidence: reported as explained, not counted right
 DEV, EXCLUDED = {}, {}
