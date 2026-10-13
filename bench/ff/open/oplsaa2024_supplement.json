@@ -260,6 +260,58 @@
    ],
    "source": "the 2024 .sb's CT-CT-N* (an alkyl C on an aromatic N)",
    "reason": "poly(N-vinylcarbazole)'s backbone CH on the carbazole N"
+  },
+  {
+   "match": [
+    "S",
+    "S",
+    "S"
+   ],
+   "params": [
+    55.56,
+    107.56
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "B3LYP-D3BJ/def2-TZVP relaxed scan of dimethyl trisulfide (9 points), E = K (theta - theta0)^2, RMS 0.03 kcal/mol"
+  },
+  {
+   "match": [
+    "CM",
+    "CT",
+    "S"
+   ],
+   "params": [
+    42.91,
+    112.7
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "B3LYP-D3BJ/def2-TZVP relaxed scan of allyl methyl disulfide (9 points), E = K (theta - theta0)^2, RMS 0.01 kcal/mol"
+  },
+  {
+   "match": [
+    "CM",
+    "C",
+    "OS"
+   ],
+   "params": [
+    43.18,
+    108.37
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "B3LYP-D3BJ/def2-TZVP relaxed scan of methyl methacrylate (9 points), E = K (theta - theta0)^2, RMS 0.01 kcal/mol"
+  },
+  {
+   "match": [
+    "Cl",
+    "CT",
+    "CY"
+   ],
+   "params": [
+    62.35,
+    111.49
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "B3LYP-D3BJ/def2-TZVP relaxed scan of epichlorohydrin (9 points), E = K (theta - theta0)^2, RMS 0.04 kcal/mol"
   }
  ],
  "atom_types": [
