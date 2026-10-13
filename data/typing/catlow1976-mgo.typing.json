@@ -1,0 +1,46 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "MgO (Catlow, Faux & Norgett 1976)",
+ "unknown_types": "untyped",
+ "bonds": "defined",
+ "shells": {
+  "O_c76m1c": "O_c76m1s",
+  "O_c76m2c": "O_c76m2s"
+ },
+ "description": "Mg and O of magnesium oxide (bench/ff/make_catlow1976_mgo.py); model 2 is an overlay",
+ "rules": [
+  {
+   "type": "Mg_c76m1",
+   "smarts": "[#12]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "description": "Mg in MgO (model 1)"
+  },
+  {
+   "type": "O_c76m1c",
+   "smarts": "[#8]",
+   "priority": 0,
+   "requires": [
+    "Mg"
+   ],
+   "description": "O in MgO (model 1)"
+  },
+  {
+   "type": "O_c76m1s",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O_c76m1s",
+   "description": "shell of O_c76m1c"
+  },
+  {
+   "type": "O_c76m2s",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O_c76m2s",
+   "description": "shell of O_c76m2c"
+  }
+ ]
+}

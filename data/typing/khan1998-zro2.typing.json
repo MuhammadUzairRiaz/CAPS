@@ -1,0 +1,46 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "ZrO2 (Khan, Islam & Bates 1998)",
+ "unknown_types": "untyped",
+ "bonds": "defined",
+ "shells": {
+  "Zr_k98c": "Zr_k98s",
+  "O_k98c": "O_k98s"
+ },
+ "description": "Zr and O of zirconia (bench/ff/make_khan1998_zro2.py)",
+ "rules": [
+  {
+   "type": "Zr_k98c",
+   "smarts": "[#40]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "description": "Zr in zirconia"
+  },
+  {
+   "type": "O_k98c",
+   "smarts": "[#8]",
+   "priority": 0,
+   "requires": [
+    "Zr"
+   ],
+   "description": "O in zirconia"
+  },
+  {
+   "type": "Zr_k98s",
+   "smarts": "[#40]",
+   "priority": 99,
+   "atom_name": "Zr_k98s",
+   "description": "shell of Zr_k98c"
+  },
+  {
+   "type": "O_k98s",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O_k98s",
+   "description": "shell of O_k98c"
+  }
+ ]
+}
