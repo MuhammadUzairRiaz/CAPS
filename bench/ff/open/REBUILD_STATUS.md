@@ -29,7 +29,7 @@ State of 2026-10-13 (branch `ff-rebuild-rest`, commits 1053f7a2 and b2ee52e2; th
 | opls2020 | OPLS2020.par | oplsaa2024 | as above | yes | as above | other session (OPLS) |
 | opls-aam | OPLS_AAM.par | oplsaam-jorgensen | Jorgensen lab `top_opls_aam.inp`, `par_opls_aam.inp` | yes (`opls-aam`) | CC BY 4.0 | done (other session) |
 | opls-clp | OPLS_CL_P.par | clandp | Padua's `il.ff` (github.com/paduagroup/clandp) | yes (`clandp-dl` is the reference only) | MIT | other session (CL&P) |
-| opls-des | OPLS_DES.par | oplsdes-doherty2018 (the set DL_FIELD's file held); clandp-des (CL&P's DES set) | oplsdes-doherty2018: Doherty & Acevedo, J. Phys. Chem. B 122, 9982 (2018) and its SI (Tables S1-S6, Schemes S1-S2), transcribed; Acevedo's own GROMACS files (github.com/orlandoacevedo/DES, GPL 3, local in `opls-des-dl/DES-master`) are an accuracy reference only, nothing taken from them. clandp-des: Padua's `des.ff` of 2025/12/19 (github.com/paduagroup/clandp) | yes (`papers/jp8b06647.pdf`, `papers/jp8b06647_si_001.pdf`; `clandp-dl/clandp-master/des.ff`) | published parameters; MIT | done (section 3) |
+| opls-des | OPLS_DES.par | oplsdes-doherty2018 (the set DL_FIELD's file held); clandp-des (CL&P's DES set) | oplsdes-doherty2018: Doherty & Acevedo, J. Phys. Chem. B 122, 9982 (2018) and its SI (Tables S1-S6, Schemes S1-S2), transcribed; Acevedo's own GROMACS files (github.com/orlandoacevedo/DES, GPL 3, local in `opls-des-dl/DES-master`) are an accuracy reference only, nothing taken from them. clandp-des: Padua's `des.ff` of 2025/12/19 (github.com/paduagroup/clandp) | yes (`papers/jp8b06647.pdf`, `papers/jp8b06647_si_001.pdf`, `papers/jp109914s.pdf` (its ref. 3); `clandp-dl/clandp-master/des.ff`) | published parameters; MIT | done (section 3) |
 | trappe-ua | TRAPPE_UA.par | trappe-ua-umn, trappe-ua-foyer | TraPPE database (trappe.oit.umn.edu); foyer `trappe-ua.xml`; the transferable hydrocarbon tables of Martin & Siepmann 1998, 1999 and Wick, Martin & Siepmann 2000 | yes (`trappe-site`, `foyer-trappe`, `papers/jp972543+.pdf`, `jp984742e.pdf`, `jp001044x.pdf`) | published parameters; MIT (foyer) | done (other session); transferable terms **added here** |
 | **trappe-eh** | TRAPPE_EH.par | **trappe-eh-umn** | TraPPE database, EH family (Rai & Siepmann, J. Phys. Chem. B 111, 10790 (2007) and the later EH papers) | yes (`trappe-site`) | published parameters, cited per term | **done here** |
 | **misc** | MISC_FF.par | **omalley2013-alkanes, plant2007-methanol, ramsahye2005-nay (chloroform), peguin2009-hfa134a** | the four papers (see section 3) | yes (`papers/c3cp52653d.pdf`, `jp0674524.pdf`, `jp046958o.pdf`, `jp806213w.pdf`) | published parameters | **done here** (one torsion paper missing) |
@@ -55,6 +55,7 @@ per-paper libraries above.
 | gaff-1.81-ambertools, gaff2-2.11-ambertools, gaff2-2.2.20-ambertools, amber-ff03-ambertools, amber-ff14sb-ambertools | AmberTools 23.6 `dat/leap/parm` | public domain | original source |
 | oplsaa-gromacs, gromos54a7-gromacs | GROMACS `oplsaa.ff`, `gromos54a7.ff` | LGPL 2.1 | original source |
 | oplsaa2024, oplsua2024 | Jorgensen's BOSS files (J. Phys. Chem. B 128, 250 (2024) SI) | published SI tables | original source (OPLS session) |
+| **oplsua2024 (1984 terms)** | the hydrocarbon terms the 2024 file lacks, from Jorgensen, Madura & Swenson, J. Am. Chem. Soc. 106, 6638 (1984), Tables I and II (`bench/ff/open/oplsua2024_supplement.json`) | published parameters | original source (this branch) |
 | oplsaam-jorgensen | Jorgensen lab CHARMM-format files | CC BY 4.0 | original source |
 | clandp | Padua's `il.ff` | MIT | original source |
 | clandp-des | Padua's `des.ff` | MIT | original source |
@@ -81,6 +82,7 @@ per-paper libraries above.
 | TraPPE-EH | trappe-eh-umn | `bench/ff/make_trappe_eh.py SITE_DIR --check` | 9 templates, 94 / 94 atoms (17 carry the key of a symmetry-equivalent position); the database's own 65 models 848 / 848 sites | agrees (flexible and rigid sets) | agrees | `FFDef.TrappeEhModelsTypedAsThemselves` |
 | TraPPE-UA: transferable hydrocarbon terms | trappe-ua-umn | `bench/ff/make_trappe.py SITE_DIR --check`: 31 bonds, 132 bends, 213 torsions over CH3 / CH2 / CH / C (sp3), CH2= / CH= / C= and aromatic CH / R-C, each citing its table; every one equals the database models' term for the same types (21 bond, 32 bend, 46 torsion parameter sets; 6 rigid-model K 0 terms kept) | not compared (the database's own models: 634 / 634 sites, 92 / 92 models' bonded terms, ten models' own lists named apart); polymer library DP 4 (`bench/ff/trappe_polymer_coverage.py`): 18 / 114 complete and neutral, 4 before | agrees: polypropylene, cis- and trans-1,4-polybutadiene, polystyrene, polyisobutylene DP 4, energy terms 1.1e-7 to 3.7e-7, forces <= 7.5e-9 kcal/mol/A (exact styles); native styles 1.1e-7 to 3.7e-7 | agrees: the same five chains, one per periodic cell, 4.8e-6 to 3.1e-5 | `FFDef.TrappeUaTransferableHydrocarbonTerms` |
 | CL&P deep-eutectic solvents | clandp-des | `bench/ff/convert_fftool.py des.ff` (47 types, 16 bonds, 30 angles, 44 dihedrals, 6 impropers), `bench/typing/make_clandp_des_rules.py` (45 rules) | not comparable: DL_FIELD's OPLS_DES is Acevedo's set. Against Padua's own files (`validate_fftool_types.py`): the 14 whose types des.ff defines (cholinium.xyz, N1110, N1111, N2220, N2222, N4444, P1111, P66614, c1c1pyrr, c3c1pyrr, c4c1pyrr, Cl, Br, oac) 362 / 362 atoms, each at its integer charge; 29 DES components typed whole and neutral or at their ion charge, 7 that des.ff cannot make neutral left untyped (`check_clandp_des_components.py`) | agrees: reline and glyceline boxes (608 and 600 atoms, periodic) and a vacuum set of 10 components, energy terms 1.0e-7 to 3.8e-7, forces <= 1.9e-5 kcal/mol/A, virial <= 2.2e-6 (exact styles); native styles bonded and vdW 1.6e-8 to 3.8e-7 | agrees: reline and glyceline with PME 6.9e-6 and 3.3e-5, vacuum set 5.0e-6 | `FFDef.ClandpDesComponentsTypedWhole`, python_bindings |
+| OPLS-UA hydrocarbons (Jorgensen, Madura & Swenson 1984) | oplsua2024 | `bench/ff/make_oplsua2024.py` with `bench/ff/open/oplsua2024_supplement.json` (33 bends, 420 torsions added where the 2024 file has none, each citing its table) | typing unchanged (the 2024 file's 29 united-atom types, 44 rules); polymer library, DP-4 chains (`polymer_coverage.py data/forcefields/oplsua2024.json`): 22 / 114 complete and neutral (was 1, polyethylene), every hydrocarbon of the library; 6 ethers and alcohols lack 2024 ether / alcohol torsions; 86 untyped (no united-atom type in the 2024 file) | agrees: polypropylene tetramer, 1,4-polybutadiene and cis-1,4-polyisoprene trimers, energy terms 3.2e-7 to 5.0e-7, forces <= 7.3e-9 kcal/mol/A, virial <= 2.7e-8, read back exact | agrees: the same three, 1.5e-5 to 4.2e-5 | `FFDef.OplsUa1984HydrocarbonTerms` |
 | OPLS-DES (Doherty & Acevedo 2018) | oplsdes-doherty2018 | `bench/ff/make_opls_des_doherty2018.py` (54 types, 48 bonds, 68 angles, 66 dihedrals, 5 impropers, every term citing its SI table), `bench/typing/make_oplsdes_doherty2018_rules.py` (53 rules) | the SI's Schemes S1-S2: the paper's 9 molecules 102 / 102 atoms by parameters, 100 by name (urea's cis H, HC, typed HT: identical terms), choline +0.8, chloride -0.8, HBDs 0, no missing term; 12 other molecules left untyped (`check_oplsdes_doherty2018_components.py`). Against DL_FIELD's OPLS_DES templates and Acevedo's GROMACS files (references only, `compare_oplsdes_doherty2018.py`): see below | agrees: reline (16 ChCl + 32 urea) and glyceline (12 + 24) in 34 A boxes, a vacuum set of the other HBDs; energy terms 2.2e-8 to 6.4e-8, forces <= 9.9e-6 kcal/mol/A, virial <= 7.8e-7 (exact styles); native bonded and vdW the same | agrees: reline (48 + 96) and glyceline (24 + 48) in 38 A boxes with PME, 1.4e-6 and 4.0e-5; vacuum set 4.8e-5 | `FFDef.OplsDesDoherty2018FromThePaper` |
 | binary oxides: MgO (Catlow, Faux & Norgett 1976) | catlow1976-mgo | `bench/ff/make_catlow1976_mgo.py` | `magnesium_oxide3` 2 / 2 atoms | agrees (rock-salt MgO, model 1 and the model 2 overlay) | - (Buckingham) | `FFDef.InorganicSetsFromTheirPapers` |
 | binary oxides: rutile (Catlow, Freeman & Royle 1985) | catlow1985-rutile | `bench/ff/make_catlow1985_rutile.py` | `rutile1` 6 / 6 atoms | agrees (rutile, Ti and O shells) | - | same |
@@ -165,6 +167,32 @@ Notes on the inorganic sets (terms against DL_FIELD's .par: `python3 bench/ff/co
   within 2.6 A of the hydroxyl O; the Morse constant -A is dropped. Charges are Table 9's, so a hydroxylated slab is not
   exactly neutral (the paper's own scheme).
 
+**OPLS-UA hydrocarbon terms (oplsua2024).** The 2024 OPLS parameter file keeps the united-atom types of the 1984
+paper (66-77) but only some of their bonded terms: its UA torsions are the later "UA alkanes" line (C2-C2-C2-C2,
+C2-CH-C2-C2 ...) and its jtr 5-14-91 hydrocarbon block, so polypropylene's CH-CH2 torsions, everything about a C=C in
+polybutadiene and the polyisoprenes, and the bends at an sp3 carbon next to an sp2 one were missing. They come from
+W. L. Jorgensen, J. D. Madura, C. J. Swenson, J. Am. Chem. Soc. 106, 6638 (1984), through a supplement the generator
+expands over the classes each entry names, adding a term only where the 2024 file has none (the 2024 file wins; its own
+terms are unchanged, polyethylene's energy is the same as before):
+- Table II, isopentane (V1 1.526, V2 0.533, V3 -3.453, one function of the CH-CH2 rotation, phi = 0 with the CH2's
+  carbon gauche to both carbons on the CH): written per torsion as V1 1.526, V2 -0.533, V3 1.7265 on each of the two
+  C-CH-CH2-C torsions (they sit at phi +- 60, so V1' = V1, V2' = -V2, V3' = -V3/2 give the paper's function up to a
+  constant), for every X-CH-C2-Y.
+- Table II, 1-butene (V1 0.343, V2 -0.436, V3 -1.121) for C=C-C(sp3)-X; Table II, other n-alkanes (1.411, -0.271,
+  3.145) for the remaining sp3-sp3 torsions. The paper's V0 are constants and left out.
+- Table I gives bond angles only (the paper holds them fixed): C-C4-C 112.0 and C-C3-C 124.0 degrees, with the 2024
+  file's force constants for UA bends at sp3 (63.0) and sp2 carbons (70.0). The 2024 block puts the C=C-C bends it
+  lists at 118 degrees; those stay, so a polyisoprene has 118 at its C= and 124 at its CH=.
+- Not in the paper, recorded as such in the supplement: torsions about C=C (the paper simulates the 2-butenes as rigid
+  isomers) take the 2024 file's alkene line ??-CM-CM-?? (V2 14.0 per torsion); the torsion from a C= carbon's
+  single-bonded substituent (isoprene's CH3-C(=)-CH2-CH2) is zero, as the 1-butene function carries the whole rotation
+  on the C=C-C-C torsion.
+- The paper fitted its torsions with fixed bonds and angles, no 1-4 Lennard-Jones and a weak C-C term beyond 1-4
+  (sigma 4 A, epsilon 0.0074 kcal/mol); here they run with the 2024 file's flexible bonds and 1-4 x 0.5.
+- The ether and alcohol torsions the 2024 file lacks (C2-C2-OS-C2, OH-C2-CH-OH ...) are outside the hydrocarbon paper
+  and stay missing. `check_data_lammps.py` now takes an overlay's cut-off from the file it extends (the read-back check
+  used 10 A for OPLS-UA's 12 A).
+
 **OPLS-DES (oplsdes-doherty2018).** Built from B. Doherty, O. Acevedo, J. Phys. Chem. B 122, 9982 (2018) and its SI
 only. The paper: OPLS-AA form, geometric mixing, 1-4 pairs x 0.5, charges built for +-0.8 e ions (the SI prints them
 scaled), choline chloride's charges and Lennard-Jones refitted to reline's ND/EPSR structure, choline's bonded terms from
@@ -173,7 +201,11 @@ terms tuned for DES mixtures only; GROMACS with a 16 A cut-off. The SI prints ev
 comes from another library. Readings: ethylene glycol's rows in OPLS-AA class names (CT, HC) and its O called OH are
 Table S4's CG, HG, OG; levulinic acid's bend "HO-CB-CZ" is OH-CB-CZ; the X-c-X-X rows are impropers on c (centre second,
 every triple of neighbours); the all-zero X-CM-X-X and X-CT-X-X are left out; ethylene glycol's block lists only
-OG-CG-CG-OG and CG-CG-OG-HO, so its H-C-C-H, H-C-C-O and H-C-O-H torsions are zero (both references have none either);
+OG-CG-CG-OG and CG-CG-OG-HO, so its H-C-C-H, H-C-C-O and H-C-O-H torsions are zero (both references have none either,
+and the SI's ref. 3, Szefczyk & Cordeiro, J. Phys. Chem. B 115, 3013 (2011), confirms it: its Table 2 holds only
+OG-CG-CG-OG and CG-CG-OG-HO, and p. 3016 says the model has three torsions, one O-C-C-O and two C-C-O-H, fitted to
+RHF/6-31G(d) scans; its values, 2.993 / -0.654 / 2.820 and 0.396 / -0.750 / 1.028 kcal/mol, are not the SI's rows,
+3.887 / -1.192 / 3.206 and 0.413 / -0.754 / 1.028, and the SI's are kept as the set the paper ran);
 urea's HC and HT carry identical terms and CAPS types both HT. The type-charge check takes the library's
 `ion_charge_scale` 0.8 (new FFDef field) so the scaled ions count as whole.
 
@@ -223,9 +255,9 @@ Bandura & Kubicki 2003 (10.1021/jp034093t), Khan, Islam & Bates 1998 (10.1039/a8
 - The O'Malley alkane torsion: Raj, Sastre & Catlow 1999 does not hold it; the source O'Malley & Catlow meant is unknown.
 - Families handled by other sessions: OPLS (2005 / 2020 / 2024), PCFF, COMPASS, CVFF, ClayFF, CL&P.
 - Acevedo's OPLS-DES is rebuilt from the paper as oplsdes-doherty2018 (section 3); its GPL 3 files stay a reference.
-  Open readings, all recorded in the generator: ethylene glycol's hydrogen torsions (zero: the SI lists none; OPLS-AA
-  would give 0.300 / 0.468 / 0.352 kcal/mol), the order of the outer atoms in the impropers (the SI writes only
-  X-c-X-X), and the improper on choline's four-connected N (four triples, as the X-NA-X-X row reads). Szefczyk &
-  Cordeiro, J. Phys. Chem. B 115, 3013 (2011) (ethylene glycol's torsions) would settle the first; not local.
+  Open readings, all recorded in the generator: the order of the outer atoms in the impropers (the SI writes only
+  X-c-X-X) and the improper on choline's four-connected N (four triples, as the X-NA-X-X row reads). Ethylene glycol's
+  hydrogen torsions are settled: zero, as in Szefczyk & Cordeiro, J. Phys. Chem. B 115, 3013 (2011), Table 2 and
+  p. 3016 (read, `papers/jp109914s.pdf`), whose model has no torsion but O-C-C-O and C-C-O-H.
 - `bench/typing/sweep_dlfield.sh` still sweeps the converted files where they exist on disk; the rebuilt libraries are
   checked with `validate_typing.py --map` as above.

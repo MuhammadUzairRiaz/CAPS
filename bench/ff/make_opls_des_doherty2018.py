@@ -21,9 +21,14 @@ What the paper says the force field is (pp. 9983-9984):
 Every number below is transcribed from the SI's tables; each block names its table. The SI prints the HBDs' bonded terms
 itself (Tables S5, S6), so none is taken from another file, with these exceptions and readings:
   - Ethylene glycol: Table S6 (footnote a, ref. 3) lists only OH-CG-CG-OH and CG-CG-OH-HO, where every other molecule's
-    block lists all its torsions, zero ones included. Read as the model's only torsions: the hydrogen torsions
-    HG-CG-CG-HG, HG-CG-CG-OG and HG-CG-OG-HO are written as zero (OPLS-AA's 0.300, 0.468 and 0.352 kcal/mol, as the
-    SI's glycerol rows hold them, are not added).
+    block lists all its torsions, zero ones included. Ref. 3 (Szefczyk & Cordeiro 2011) confirms these are the model's
+    only torsions: its Table 2 gives OG-CG-CG-OG and CG-CG-OG-HO alone, and p. 3016 says "only three dihedral angles
+    are present, one for the O-C-C-O angle and two for the C-C-O-H angles"; they were fitted to RHF/6-31G(d) scans with
+    no other torsion in the force field. So the hydrogen torsions HG-CG-CG-HG, HG-CG-CG-OG and HG-CG-OG-HO are zero
+    (OPLS-AA's 0.300, 0.468 and 0.352 kcal/mol, as the SI's glycerol rows hold them, are not added). The SI's two rows
+    are not ref. 3's numbers (Table 2 in kJ/mol: OG-CG-CG-OG 12.521 -2.736 11.800, i.e. 2.993 -0.654 2.820 kcal/mol, for
+    the SI's 3.887 -1.192 3.206; CG-CG-OG-HO 1.656 -3.139 4.300, i.e. 0.396 -0.750 1.028, for 0.413 -0.754 1.028); the
+    SI's are kept, being the set the paper ran.
   - Ethylene glycol's rows use other names than Table S4 and Scheme S2: Table S5's bonds are in OPLS-AA class names
     (OG-HO, CT-OG, CT-CT, HC-CT) and Table S6 and Scheme S2 call the O "OH". Read as Table S4's OG, CG, HG, HO.
   - Levulinic acid: Table S5 prints the bend "HO-CB-CZ" (108.0, 70); HO is not bonded to CB. Read as OH-CB-CZ, OPLS-AA's
@@ -208,7 +213,8 @@ TORSIONS = {
                           ("HT-N-C-N", 0.000, 4.900, 0.000), ("HC-N-C-N", 0.000, 4.900, 0.000),
                           ("X-C-X-X", 0.000, 21.000, 0.000), ("X-N-X-X", 0.000, 5.000, 0.000)]),
 }
-# Ethylene glycol's hydrogen torsions: Table S6 lists none (only the two heavy-atom torsions of ref. 3): zero
+# Ethylene glycol's hydrogen torsions: Table S6 lists none, and ref. 3 (Szefczyk & Cordeiro 2011, Table 2 and p. 3016)
+# has no torsion but O-C-C-O and C-C-O-H: zero
 ZERO = {"ethylene glycol": ["HG-CG-CG-HG", "HG-CG-CG-OG", "HG-CG-OG-HO"]}
 
 
@@ -259,7 +265,8 @@ def main():
         for lab in rows:
             m = [tn(mol, t) for t in lab.split("-")]
             dihedrals.append({"name": "-".join(m), "match": m, "style": "opls", "params": [0.0, 0.0, 0.0, 0.0],
-                              "comment": f"{mol} {lab}: zero; Table S6 lists only the two heavy-atom torsions of ref. 3"})
+                              "comment": f"{mol} {lab}: zero; Table S6 lists only the two heavy-atom torsions of ref. 3, "
+                                         "and ref. 3 (Szefczyk & Cordeiro 2011, Table 2, p. 3016) has no other torsion"})
     doc = {
         "format": "caps-forcefield", "format_version": 1,
         "name": "OPLS-DES (Doherty & Acevedo 2018)",
@@ -280,8 +287,10 @@ def main():
             "terms tuned against choline chloride: for DES mixtures only, not the pure HBD liquids (paper p. 9984)",
             "HBD bonds, bends and torsions as the SI's Tables S5 and S6 print them (OPLS-AA's, ethylene glycol's torsions "
             "from Szefczyk & Cordeiro 2011); choline's from OPLS-2009IL (Table S2, S3)",
-            "ethylene glycol: Table S6 lists only OH-CG-CG-OH and CG-CG-OH-HO (Szefczyk & Cordeiro's); its hydrogen torsions "
-            "H-C-C-H, H-C-C-O and H-C-O-H are zero",
+            "ethylene glycol: Table S6 lists only OH-CG-CG-OH and CG-CG-OH-HO; its hydrogen torsions H-C-C-H, H-C-C-O and "
+            "H-C-O-H are zero, as in Szefczyk & Cordeiro 2011, whose model has only the O-C-C-O and C-C-O-H torsions (Table 2, "
+            "p. 3016). Their Table 2 values (2.993 -0.654 2.820 and 0.396 -0.750 1.028 kcal/mol) differ from the SI's rows; "
+            "the SI's are used",
             "rows X-c-X-X of Tables S3 and S6 read as impropers on c, V2 / 2 (1 - cos 2 phi), every triple of its neighbours "
             "(four on choline's N); the all-zero X-CM-X-X and X-CT-X-X left out; no improper for phenol's ring or "
             "levulinic acid's carbonyls (none listed)",
