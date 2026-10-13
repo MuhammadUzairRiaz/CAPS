@@ -1048,6 +1048,22 @@
    ],
    "source": "CAPS fit (QM)",
    "reason": "zero; the heavy-atom torsions about the same bond carry the profile of a 24-point MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L) scan of a 10-atom fragment (RMS 0.08 kcal/mol); fragment CY-CY-CT-Cl"
+  },
+  {
+   "match": [
+    "CM",
+    "CT",
+    "CT",
+    "CM"
+   ],
+   "params": [
+    -0.5409,
+    -0.0324,
+    -0.0136,
+    -0.2392
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 17-point scan of a 28-atom fragment, RMS 0.08 kcal/mol (the force field's own: 0.23); fragment CM-CT-CT-CM"
   }
  ]
 }

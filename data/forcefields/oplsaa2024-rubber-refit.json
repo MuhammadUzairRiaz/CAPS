@@ -1,0 +1,50 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "OPLS-AA 2024 rubber backbone refits (CAPS refit, QM)",
+ "source": "CAPS fits to RI-MP2/cc-pVTZ//HF/6-31G** relaxed torsion scans (the OPLS-AA/L level) of rubber backbone fragments",
+ "units": "real",
+ "atom_types": [],
+ "dihedrals": [
+  {
+   "name": "CM-CM-CT-CT",
+   "match": [
+    "CM",
+    "CM",
+    "CT",
+    "CT"
+   ],
+   "style": "opls",
+   "params": [
+    -2.4515,
+    1.3739,
+    -0.7866,
+    0.2021
+   ],
+   "comment": "CAPS refit (QM), joint over 4 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS cisPI/CM-CM-CT-CT 0.32, transPI/CM-CM-CT-CT 0.43, cisBR/CM-CM-CT-CT 0.38, CR/CM-CM-CT-CT 0.45 kcal/mol"
+  },
+  {
+   "name": "CT-CT-CT-CZ",
+   "match": [
+    "CT",
+    "CT",
+    "CT",
+    "CZ"
+   ],
+   "style": "opls",
+   "params": [
+    -1.4321,
+    0.5968,
+    0.5355,
+    0.0339
+   ],
+   "comment": "CAPS refit (QM): MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 22-point scan of a 19-atom fragment, RMS 0.25 kcal/mol (the force field's own: 0.73)"
+  }
+ ],
+ "notes": [
+  "An opt-in overlay on oplsaa2024 (caps ff apply --ff oplsaa2024 --overlay oplsaa2024-rubber-refit.json): it replaces OPLS-AA 2024's own values for these classes; the base library is unchanged.",
+  "CM-CM-CT-CT: one set of V1-V4 fitted jointly to the cis-1,4-polyisoprene, trans-1,4-polyisoprene, cis-1,4-polybutadiene and polychloroprene backbone scans (one constant per scan); RMS 0.32 / 0.43 / 0.38 / 0.45 kcal/mol against OPLS-AA 2024's own 0.55 / 0.78 / 1.00 / 0.82.",
+  "CT-CT-CT-CZ: the nitrile side of NBR (2-methylbutanenitrile-like fragment); RMS 0.25 kcal/mol against OPLS-AA 2024's own 0.73.",
+  "Not refitted, as OPLS-AA 2024's own values already follow QM: CT-CT-CT-CT in EPDM (0.30) and polyisobutylene (0.16), CA-CA-CT-CT at the styrene unit of SBR (0.28)."
+ ]
+}
