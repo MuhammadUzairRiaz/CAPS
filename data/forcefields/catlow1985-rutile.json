@@ -1,0 +1,174 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "Rutile (Catlow, Freeman & Royle 1985)",
+ "source": "C. R. A. Catlow, C. M. Freeman, R. L. Royle, Physica B+C 131, 1 (1985), Table IVa",
+ "references": [
+  "C. R. A. Catlow, C. M. Freeman, R. L. Royle, Physica B+C 131, 1 (1985)"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "buck/coul/long",
+  "bond": "class2",
+  "angle": "harmonic",
+  "dihedral": "fourier",
+  "improper": "fourier"
+ },
+ "mixing": "geometric",
+ "special_lj": [
+  0,
+  0,
+  1
+ ],
+ "special_coul": [
+  0,
+  0,
+  1
+ ],
+ "cutoff": 10,
+ "atom_types": [
+  {
+   "name": "Ti_cfrc",
+   "element": "Ti",
+   "mass": 43.0803,
+   "charge": 1.11,
+   "description": "Ti4+ core (Z 4.0 - Y1 2.89; Table IVa)"
+  },
+  {
+   "name": "Ti_cfrs",
+   "element": "Ti",
+   "mass": 4.7867,
+   "charge": 2.89,
+   "description": "Ti4+ shell (Table IVa)"
+  },
+  {
+   "name": "O_cfrc",
+   "element": "O",
+   "mass": 14.3991,
+   "charge": 0.53,
+   "description": "O2- core (-Z/2 - Y2 -2.53; Table IVa)"
+  },
+  {
+   "name": "O_cfrs",
+   "element": "O",
+   "mass": 1.5999,
+   "charge": -2.53,
+   "description": "O2- shell (Table IVa)"
+  }
+ ],
+ "pairs": [
+  {
+   "name": "Ti_cfrc",
+   "match": [
+    "Ti_cfrc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ti_cfrs",
+   "match": [
+    "Ti_cfrs"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_cfrc",
+   "match": [
+    "O_cfrc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_cfrs",
+   "match": [
+    "O_cfrs"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ti_cfrs-O_cfrs",
+   "match": [
+    "Ti_cfrs",
+    "O_cfrs"
+   ],
+   "style": "buck",
+   "params": [
+    17392.2653016,
+    0.3879,
+    0.0
+   ],
+   "comment": "Ti-O A12 754.2 eV, rho12 0.3879 A (Table IVa, footnote a)"
+  },
+  {
+   "name": "O_cfrs-O_cfrs",
+   "match": [
+    "O_cfrs",
+    "O_cfrs"
+   ],
+   "style": "buck",
+   "params": [
+    524957.2328364,
+    0.149,
+    642.92807824
+   ],
+   "comment": "O-O A22 22764.3 eV, rho22 0.149 A, C22 27.88 eV A^6 (Table IVa, footnote b)"
+  }
+ ],
+ "bonds": [
+  {
+   "name": "Ti_cfrc-Ti_cfrs",
+   "match": [
+    "Ti_cfrc",
+    "Ti_cfrs"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    430.0792202,
+    0.0,
+    105694.17833333333
+   ],
+   "comment": "spring 37.3 eV/A^2 (1/2 K w^2) and quartic 110000 (read as K w^4/24) (Table IVa, footnote c)"
+  },
+  {
+   "name": "O_cfrc-O_cfrs",
+   "match": [
+    "O_cfrc",
+    "O_cfrs"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    996.2156736000001,
+    0.0,
+    105694.17833333333
+   ],
+   "comment": "spring 86.4 eV/A^2 (1/2 K w^2) and quartic 110000 (read as K w^4/24) (Table IVa, footnote c)"
+  }
+ ],
+ "angles": [],
+ "dihedrals": [],
+ "impropers": [],
+ "notes": [
+  "built by CAPS (bench/ff/make_catlow1985_rutile.py) from the paper's Table IVa",
+  "Ti and O shells; Ti-Ti Coulomb only",
+  "the quartic core-shell constant 1.1e5 (footnote c, printed in eV/A^5) is read as K w^4/24 with K in eV/A^4; the paper prints no expression for it",
+  "the paper states no cut-off; 10 A is CAPS's choice",
+  "the paper's alpha-quartz set (Table Ia) is sanders1984-sio2",
+  "shells carry 10 % of the ion's mass (adiabatic core-shell)"
+ ],
+ "version": "1985 (Table IVa)",
+ "typing": "../typing/catlow1985-rutile.typing.json"
+}
