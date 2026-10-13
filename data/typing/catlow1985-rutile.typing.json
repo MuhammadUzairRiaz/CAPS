@@ -1,0 +1,46 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "Rutile (Catlow, Freeman & Royle 1985)",
+ "unknown_types": "untyped",
+ "bonds": "defined",
+ "shells": {
+  "Ti_cfrc": "Ti_cfrs",
+  "O_cfrc": "O_cfrs"
+ },
+ "description": "Ti and O of rutile (bench/ff/make_catlow1985_rutile.py)",
+ "rules": [
+  {
+   "type": "Ti_cfrc",
+   "smarts": "[#22]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "description": "Ti in rutile"
+  },
+  {
+   "type": "O_cfrc",
+   "smarts": "[#8]",
+   "priority": 0,
+   "requires": [
+    "Ti"
+   ],
+   "description": "O in rutile"
+  },
+  {
+   "type": "Ti_cfrs",
+   "smarts": "[#22]",
+   "priority": 99,
+   "atom_name": "Ti_cfrs",
+   "description": "shell of Ti_cfrc"
+  },
+  {
+   "type": "O_cfrs",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O_cfrs",
+   "description": "shell of O_cfrc"
+  }
+ ]
+}

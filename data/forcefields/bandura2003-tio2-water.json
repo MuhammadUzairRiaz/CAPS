@@ -1,0 +1,1199 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "TiO2-H2O (Bandura & Kubicki 2003)",
+ "source": "A. V. Bandura, J. D. Kubicki, J. Phys. Chem. B 107, 11072 (2003), Tables 2, 3, 5, 6, 9, 10",
+ "references": [
+  "A. V. Bandura, J. D. Kubicki, J. Phys. Chem. B 107, 11072 (2003)"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "lj/cut/coul/long",
+  "bond": "harmonic",
+  "angle": "harmonic",
+  "dihedral": "fourier",
+  "improper": "fourier"
+ },
+ "mixing": "geometric",
+ "special_lj": [
+  0,
+  0,
+  1
+ ],
+ "special_coul": [
+  0,
+  0,
+  1
+ ],
+ "cutoff": 9.6,
+ "angle_contacts": 2.6,
+ "atom_types": [
+  {
+   "name": "Ti_bk",
+   "element": "Ti",
+   "mass": 47.867,
+   "charge": 2.196,
+   "description": "Ti, bulk (Table 9, Matsui & Akaogi's value)"
+  },
+  {
+   "name": "TiV_bk",
+   "element": "Ti",
+   "mass": 47.867,
+   "charge": 2.156,
+   "description": "5-fold surface Ti (Table 9 TiV)"
+  },
+  {
+   "name": "TiVI_bk",
+   "element": "Ti",
+   "mass": 47.867,
+   "charge": 2.156,
+   "description": "6-fold surface Ti (Table 9 TiVI)"
+  },
+  {
+   "name": "TiVIoh_bk",
+   "element": "Ti",
+   "mass": 47.867,
+   "charge": 2.156,
+   "description": "6-fold Ti holding a terminal hydroxyl (Table 9 TiVIoh)"
+  },
+  {
+   "name": "O_bk",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -1.098,
+   "description": "O, bulk; also Ou, the 3-fold O under the surface Ti layer (Table 9)"
+  },
+  {
+   "name": "Os_bk",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -1.098,
+   "description": "3-fold O in the surface Ti layer (Table 9 Os)"
+  },
+  {
+   "name": "Ob_bk",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -1.018,
+   "description": "bridging O (Table 9 Ob)"
+  },
+  {
+   "name": "Obh_bk",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -0.964,
+   "description": "bridging hydroxyl O (Table 9 Obh)"
+  },
+  {
+   "name": "Ooh_bk",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -0.939,
+   "description": "terminal hydroxyl O (Table 9 Ooh)"
+  },
+  {
+   "name": "Hbh_bk",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.455,
+   "description": "bridging hydroxyl H (Table 9 Hbh)"
+  },
+  {
+   "name": "Hoh_bk",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.43,
+   "description": "terminal hydroxyl H (Table 9 Hoh)"
+  },
+  {
+   "name": "Ow_bk",
+   "element": "O",
+   "mass": 15.999,
+   "charge": -0.8476,
+   "description": "water O (SPC/E, Table 3 footnote a)"
+  },
+  {
+   "name": "Hw_bk",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.4238,
+   "description": "water H (SPC/E, Table 3 footnote a)"
+  }
+ ],
+ "pairs": [
+  {
+   "name": "Ti_bk",
+   "match": [
+    "Ti_bk"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "TiV_bk",
+   "match": [
+    "TiV_bk"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "TiVI_bk",
+   "match": [
+    "TiVI_bk"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "TiVIoh_bk",
+   "match": [
+    "TiVIoh_bk"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_bk",
+   "match": [
+    "O_bk"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Os_bk",
+   "match": [
+    "Os_bk"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ob_bk",
+   "match": [
+    "Ob_bk"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Obh_bk",
+   "match": [
+    "Obh_bk"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ooh_bk",
+   "match": [
+    "Ooh_bk"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Hbh_bk",
+   "match": [
+    "Hbh_bk"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Hoh_bk",
+   "match": [
+    "Hoh_bk"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ow_bk",
+   "match": [
+    "Ow_bk"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Hw_bk",
+   "match": [
+    "Hw_bk"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ti_bk-Ti_bk",
+   "match": [
+    "Ti_bk",
+    "Ti_bk"
+   ],
+   "style": "buck",
+   "params": [
+    717647.4,
+    0.154,
+    121.0676
+   ],
+   "comment": "A 717647.4 kcal/mol, rho 0.154 A, C 121.0676 kcal/mol A^6 (Table 2 Ti-Ti)"
+  },
+  {
+   "name": "Ti_bk-TiV_bk",
+   "match": [
+    "Ti_bk",
+    "TiV_bk"
+   ],
+   "style": "buck",
+   "params": [
+    717647.4,
+    0.154,
+    121.0676
+   ],
+   "comment": "A 717647.4 kcal/mol, rho 0.154 A, C 121.0676 kcal/mol A^6 (Table 2 Ti-Ti)"
+  },
+  {
+   "name": "Ti_bk-TiVI_bk",
+   "match": [
+    "Ti_bk",
+    "TiVI_bk"
+   ],
+   "style": "buck",
+   "params": [
+    717647.4,
+    0.154,
+    121.0676
+   ],
+   "comment": "A 717647.4 kcal/mol, rho 0.154 A, C 121.0676 kcal/mol A^6 (Table 2 Ti-Ti)"
+  },
+  {
+   "name": "Ti_bk-TiVIoh_bk",
+   "match": [
+    "Ti_bk",
+    "TiVIoh_bk"
+   ],
+   "style": "buck",
+   "params": [
+    717647.4,
+    0.154,
+    121.0676
+   ],
+   "comment": "A 717647.4 kcal/mol, rho 0.154 A, C 121.0676 kcal/mol A^6 (Table 2 Ti-Ti)"
+  },
+  {
+   "name": "Ti_bk-O_bk",
+   "match": [
+    "Ti_bk",
+    "O_bk"
+   ],
+   "style": "buck",
+   "params": [
+    391049.1,
+    0.194,
+    290.3317
+   ],
+   "comment": "A 391049.1 kcal/mol, rho 0.194 A, C 290.3317 kcal/mol A^6 (Table 2 Ti-O)"
+  },
+  {
+   "name": "Ti_bk-Os_bk",
+   "match": [
+    "Ti_bk",
+    "Os_bk"
+   ],
+   "style": "buck",
+   "params": [
+    449223.3,
+    0.194,
+    290.3317
+   ],
+   "comment": "A 449223.3 kcal/mol, rho 0.194 A, C 290.3317 kcal/mol A^6 (Table 10 Ti^c-Os, rho and C Table 2's)"
+  },
+  {
+   "name": "Ti_bk-Ob_bk",
+   "match": [
+    "Ti_bk",
+    "Ob_bk"
+   ],
+   "style": "buck",
+   "params": [
+    391049.1,
+    0.194,
+    290.3317
+   ],
+   "comment": "A 391049.1 kcal/mol, rho 0.194 A, C 290.3317 kcal/mol A^6 (Table 2 Ti-O)"
+  },
+  {
+   "name": "Ti_bk-Obh_bk",
+   "match": [
+    "Ti_bk",
+    "Obh_bk"
+   ],
+   "style": "buck",
+   "params": [
+    391049.1,
+    0.194,
+    290.3317
+   ],
+   "comment": "A 391049.1 kcal/mol, rho 0.194 A, C 290.3317 kcal/mol A^6 (Table 2 Ti-O)"
+  },
+  {
+   "name": "Ti_bk-Ooh_bk",
+   "match": [
+    "Ti_bk",
+    "Ooh_bk"
+   ],
+   "style": "buck",
+   "params": [
+    391049.1,
+    0.194,
+    290.3317
+   ],
+   "comment": "A 391049.1 kcal/mol, rho 0.194 A, C 290.3317 kcal/mol A^6 (Table 2 Ti-O)"
+  },
+  {
+   "name": "Ti_bk-Ow_bk",
+   "match": [
+    "Ti_bk",
+    "Ow_bk"
+   ],
+   "style": "buck",
+   "params": [
+    28593.02,
+    0.265,
+    148.0
+   ],
+   "comment": "A 28593.02 kcal/mol, rho 0.265 A, C 148.0 kcal/mol A^6 (Table 2 Ti-O(H2))"
+  },
+  {
+   "name": "TiV_bk-TiV_bk",
+   "match": [
+    "TiV_bk",
+    "TiV_bk"
+   ],
+   "style": "buck",
+   "params": [
+    717647.4,
+    0.154,
+    121.0676
+   ],
+   "comment": "A 717647.4 kcal/mol, rho 0.154 A, C 121.0676 kcal/mol A^6 (Table 2 Ti-Ti)"
+  },
+  {
+   "name": "TiV_bk-TiVI_bk",
+   "match": [
+    "TiV_bk",
+    "TiVI_bk"
+   ],
+   "style": "buck",
+   "params": [
+    717647.4,
+    0.154,
+    121.0676
+   ],
+   "comment": "A 717647.4 kcal/mol, rho 0.154 A, C 121.0676 kcal/mol A^6 (Table 2 Ti-Ti)"
+  },
+  {
+   "name": "TiV_bk-TiVIoh_bk",
+   "match": [
+    "TiV_bk",
+    "TiVIoh_bk"
+   ],
+   "style": "buck",
+   "params": [
+    717647.4,
+    0.154,
+    121.0676
+   ],
+   "comment": "A 717647.4 kcal/mol, rho 0.154 A, C 121.0676 kcal/mol A^6 (Table 2 Ti-Ti)"
+  },
+  {
+   "name": "TiV_bk-O_bk",
+   "match": [
+    "TiV_bk",
+    "O_bk"
+   ],
+   "style": "buck",
+   "params": [
+    391049.1,
+    0.194,
+    290.3317
+   ],
+   "comment": "A 391049.1 kcal/mol, rho 0.194 A, C 290.3317 kcal/mol A^6 (Table 2 Ti-O)"
+  },
+  {
+   "name": "TiV_bk-Os_bk",
+   "match": [
+    "TiV_bk",
+    "Os_bk"
+   ],
+   "style": "buck",
+   "params": [
+    449223.3,
+    0.194,
+    290.3317
+   ],
+   "comment": "A 449223.3 kcal/mol, rho 0.194 A, C 290.3317 kcal/mol A^6 (Table 10 Ti^c-Os, rho and C Table 2's)"
+  },
+  {
+   "name": "TiV_bk-Ob_bk",
+   "match": [
+    "TiV_bk",
+    "Ob_bk"
+   ],
+   "style": "buck",
+   "params": [
+    391049.1,
+    0.194,
+    290.3317
+   ],
+   "comment": "A 391049.1 kcal/mol, rho 0.194 A, C 290.3317 kcal/mol A^6 (Table 2 Ti-O)"
+  },
+  {
+   "name": "TiV_bk-Obh_bk",
+   "match": [
+    "TiV_bk",
+    "Obh_bk"
+   ],
+   "style": "buck",
+   "params": [
+    391049.1,
+    0.194,
+    290.3317
+   ],
+   "comment": "A 391049.1 kcal/mol, rho 0.194 A, C 290.3317 kcal/mol A^6 (Table 2 Ti-O)"
+  },
+  {
+   "name": "TiV_bk-Ooh_bk",
+   "match": [
+    "TiV_bk",
+    "Ooh_bk"
+   ],
+   "style": "buck",
+   "params": [
+    391049.1,
+    0.194,
+    290.3317
+   ],
+   "comment": "A 391049.1 kcal/mol, rho 0.194 A, C 290.3317 kcal/mol A^6 (Table 2 Ti-O)"
+  },
+  {
+   "name": "TiV_bk-Ow_bk",
+   "match": [
+    "TiV_bk",
+    "Ow_bk"
+   ],
+   "style": "buck",
+   "params": [
+    28593.02,
+    0.265,
+    148.0
+   ],
+   "comment": "A 28593.02 kcal/mol, rho 0.265 A, C 148.0 kcal/mol A^6 (Table 2 Ti-O(H2))"
+  },
+  {
+   "name": "TiVI_bk-TiVI_bk",
+   "match": [
+    "TiVI_bk",
+    "TiVI_bk"
+   ],
+   "style": "buck",
+   "params": [
+    717647.4,
+    0.154,
+    121.0676
+   ],
+   "comment": "A 717647.4 kcal/mol, rho 0.154 A, C 121.0676 kcal/mol A^6 (Table 2 Ti-Ti)"
+  },
+  {
+   "name": "TiVI_bk-TiVIoh_bk",
+   "match": [
+    "TiVI_bk",
+    "TiVIoh_bk"
+   ],
+   "style": "buck",
+   "params": [
+    717647.4,
+    0.154,
+    121.0676
+   ],
+   "comment": "A 717647.4 kcal/mol, rho 0.154 A, C 121.0676 kcal/mol A^6 (Table 2 Ti-Ti)"
+  },
+  {
+   "name": "TiVI_bk-O_bk",
+   "match": [
+    "TiVI_bk",
+    "O_bk"
+   ],
+   "style": "buck",
+   "params": [
+    391049.1,
+    0.194,
+    290.3317
+   ],
+   "comment": "A 391049.1 kcal/mol, rho 0.194 A, C 290.3317 kcal/mol A^6 (Table 2 Ti-O)"
+  },
+  {
+   "name": "TiVI_bk-Os_bk",
+   "match": [
+    "TiVI_bk",
+    "Os_bk"
+   ],
+   "style": "buck",
+   "params": [
+    449223.3,
+    0.194,
+    290.3317
+   ],
+   "comment": "A 449223.3 kcal/mol, rho 0.194 A, C 290.3317 kcal/mol A^6 (Table 10 Ti^c-Os, rho and C Table 2's)"
+  },
+  {
+   "name": "TiVI_bk-Ob_bk",
+   "match": [
+    "TiVI_bk",
+    "Ob_bk"
+   ],
+   "style": "buck",
+   "params": [
+    391049.1,
+    0.194,
+    290.3317
+   ],
+   "comment": "A 391049.1 kcal/mol, rho 0.194 A, C 290.3317 kcal/mol A^6 (Table 2 Ti-O)"
+  },
+  {
+   "name": "TiVI_bk-Obh_bk",
+   "match": [
+    "TiVI_bk",
+    "Obh_bk"
+   ],
+   "style": "buck",
+   "params": [
+    391049.1,
+    0.194,
+    290.3317
+   ],
+   "comment": "A 391049.1 kcal/mol, rho 0.194 A, C 290.3317 kcal/mol A^6 (Table 2 Ti-O)"
+  },
+  {
+   "name": "TiVI_bk-Ooh_bk",
+   "match": [
+    "TiVI_bk",
+    "Ooh_bk"
+   ],
+   "style": "buck",
+   "params": [
+    391049.1,
+    0.194,
+    290.3317
+   ],
+   "comment": "A 391049.1 kcal/mol, rho 0.194 A, C 290.3317 kcal/mol A^6 (Table 2 Ti-O)"
+  },
+  {
+   "name": "TiVI_bk-Ow_bk",
+   "match": [
+    "TiVI_bk",
+    "Ow_bk"
+   ],
+   "style": "buck",
+   "params": [
+    28593.02,
+    0.265,
+    148.0
+   ],
+   "comment": "A 28593.02 kcal/mol, rho 0.265 A, C 148.0 kcal/mol A^6 (Table 2 Ti-O(H2))"
+  },
+  {
+   "name": "TiVIoh_bk-TiVIoh_bk",
+   "match": [
+    "TiVIoh_bk",
+    "TiVIoh_bk"
+   ],
+   "style": "buck",
+   "params": [
+    717647.4,
+    0.154,
+    121.0676
+   ],
+   "comment": "A 717647.4 kcal/mol, rho 0.154 A, C 121.0676 kcal/mol A^6 (Table 2 Ti-Ti)"
+  },
+  {
+   "name": "TiVIoh_bk-O_bk",
+   "match": [
+    "TiVIoh_bk",
+    "O_bk"
+   ],
+   "style": "buck",
+   "params": [
+    391049.1,
+    0.194,
+    290.3317
+   ],
+   "comment": "A 391049.1 kcal/mol, rho 0.194 A, C 290.3317 kcal/mol A^6 (Table 2 Ti-O)"
+  },
+  {
+   "name": "TiVIoh_bk-Os_bk",
+   "match": [
+    "TiVIoh_bk",
+    "Os_bk"
+   ],
+   "style": "buck",
+   "params": [
+    449223.3,
+    0.194,
+    290.3317
+   ],
+   "comment": "A 449223.3 kcal/mol, rho 0.194 A, C 290.3317 kcal/mol A^6 (Table 10 Ti^c-Os, rho and C Table 2's)"
+  },
+  {
+   "name": "TiVIoh_bk-Ob_bk",
+   "match": [
+    "TiVIoh_bk",
+    "Ob_bk"
+   ],
+   "style": "buck",
+   "params": [
+    391049.1,
+    0.194,
+    290.3317
+   ],
+   "comment": "A 391049.1 kcal/mol, rho 0.194 A, C 290.3317 kcal/mol A^6 (Table 2 Ti-O)"
+  },
+  {
+   "name": "TiVIoh_bk-Obh_bk",
+   "match": [
+    "TiVIoh_bk",
+    "Obh_bk"
+   ],
+   "style": "buck",
+   "params": [
+    391049.1,
+    0.194,
+    290.3317
+   ],
+   "comment": "A 391049.1 kcal/mol, rho 0.194 A, C 290.3317 kcal/mol A^6 (Table 2 Ti-O)"
+  },
+  {
+   "name": "TiVIoh_bk-Ooh_bk",
+   "match": [
+    "TiVIoh_bk",
+    "Ooh_bk"
+   ],
+   "style": "buck",
+   "params": [
+    315480.8,
+    0.194,
+    290.3317
+   ],
+   "comment": "A 315480.8 kcal/mol, rho 0.194 A, C 290.3317 kcal/mol A^6 (Table 10 TiVIoh-Ooh = Table 2 Ti-O^b)"
+  },
+  {
+   "name": "TiVIoh_bk-Ow_bk",
+   "match": [
+    "TiVIoh_bk",
+    "Ow_bk"
+   ],
+   "style": "buck",
+   "params": [
+    28593.02,
+    0.265,
+    148.0
+   ],
+   "comment": "A 28593.02 kcal/mol, rho 0.265 A, C 148.0 kcal/mol A^6 (Table 2 Ti-O(H2))"
+  },
+  {
+   "name": "O_bk-O_bk",
+   "match": [
+    "O_bk",
+    "O_bk"
+   ],
+   "style": "buck",
+   "params": [
+    271716.3,
+    0.234,
+    696.8883
+   ],
+   "comment": "A 271716.3 kcal/mol, rho 0.234 A, C 696.8883 kcal/mol A^6 (Table 2 O-O)"
+  },
+  {
+   "name": "O_bk-Os_bk",
+   "match": [
+    "O_bk",
+    "Os_bk"
+   ],
+   "style": "buck",
+   "params": [
+    570799.0,
+    0.234,
+    696.8883
+   ],
+   "comment": "A 570799.0 kcal/mol, rho 0.234 A, C 696.8883 kcal/mol A^6 (Table 10 O^d-Os, rho and C Table 2's)"
+  },
+  {
+   "name": "O_bk-Ob_bk",
+   "match": [
+    "O_bk",
+    "Ob_bk"
+   ],
+   "style": "buck",
+   "params": [
+    271716.3,
+    0.234,
+    696.8883
+   ],
+   "comment": "A 271716.3 kcal/mol, rho 0.234 A, C 696.8883 kcal/mol A^6 (Table 2 O-O)"
+  },
+  {
+   "name": "O_bk-Obh_bk",
+   "match": [
+    "O_bk",
+    "Obh_bk"
+   ],
+   "style": "buck",
+   "params": [
+    271716.3,
+    0.234,
+    696.8883
+   ],
+   "comment": "A 271716.3 kcal/mol, rho 0.234 A, C 696.8883 kcal/mol A^6 (Table 2 O-O)"
+  },
+  {
+   "name": "O_bk-Ooh_bk",
+   "match": [
+    "O_bk",
+    "Ooh_bk"
+   ],
+   "style": "buck",
+   "params": [
+    271716.3,
+    0.234,
+    696.8883
+   ],
+   "comment": "A 271716.3 kcal/mol, rho 0.234 A, C 696.8883 kcal/mol A^6 (Table 2 O-O)"
+  },
+  {
+   "name": "Os_bk-Os_bk",
+   "match": [
+    "Os_bk",
+    "Os_bk"
+   ],
+   "style": "buck",
+   "params": [
+    150150.9,
+    0.234,
+    696.8883
+   ],
+   "comment": "A 150150.9 kcal/mol, rho 0.234 A, C 696.8883 kcal/mol A^6 (Table 10 Os-Os, rho and C Table 2's)"
+  },
+  {
+   "name": "Os_bk-Ob_bk",
+   "match": [
+    "Os_bk",
+    "Ob_bk"
+   ],
+   "style": "buck",
+   "params": [
+    570799.0,
+    0.234,
+    696.8883
+   ],
+   "comment": "A 570799.0 kcal/mol, rho 0.234 A, C 696.8883 kcal/mol A^6 (Table 10 O^d-Os, rho and C Table 2's)"
+  },
+  {
+   "name": "Os_bk-Obh_bk",
+   "match": [
+    "Os_bk",
+    "Obh_bk"
+   ],
+   "style": "buck",
+   "params": [
+    570799.0,
+    0.234,
+    696.8883
+   ],
+   "comment": "A 570799.0 kcal/mol, rho 0.234 A, C 696.8883 kcal/mol A^6 (Table 10 O^d-Os, rho and C Table 2's)"
+  },
+  {
+   "name": "Os_bk-Ooh_bk",
+   "match": [
+    "Os_bk",
+    "Ooh_bk"
+   ],
+   "style": "buck",
+   "params": [
+    570799.0,
+    0.234,
+    696.8883
+   ],
+   "comment": "A 570799.0 kcal/mol, rho 0.234 A, C 696.8883 kcal/mol A^6 (Table 10 O^d-Os, rho and C Table 2's)"
+  },
+  {
+   "name": "Ob_bk-Ob_bk",
+   "match": [
+    "Ob_bk",
+    "Ob_bk"
+   ],
+   "style": "buck",
+   "params": [
+    271716.3,
+    0.234,
+    696.8883
+   ],
+   "comment": "A 271716.3 kcal/mol, rho 0.234 A, C 696.8883 kcal/mol A^6 (Table 2 O-O)"
+  },
+  {
+   "name": "Ob_bk-Obh_bk",
+   "match": [
+    "Ob_bk",
+    "Obh_bk"
+   ],
+   "style": "buck",
+   "params": [
+    271716.3,
+    0.234,
+    696.8883
+   ],
+   "comment": "A 271716.3 kcal/mol, rho 0.234 A, C 696.8883 kcal/mol A^6 (Table 2 O-O)"
+  },
+  {
+   "name": "Ob_bk-Ooh_bk",
+   "match": [
+    "Ob_bk",
+    "Ooh_bk"
+   ],
+   "style": "buck",
+   "params": [
+    271716.3,
+    0.234,
+    696.8883
+   ],
+   "comment": "A 271716.3 kcal/mol, rho 0.234 A, C 696.8883 kcal/mol A^6 (Table 2 O-O)"
+  },
+  {
+   "name": "Obh_bk-Obh_bk",
+   "match": [
+    "Obh_bk",
+    "Obh_bk"
+   ],
+   "style": "buck",
+   "params": [
+    271716.3,
+    0.234,
+    696.8883
+   ],
+   "comment": "A 271716.3 kcal/mol, rho 0.234 A, C 696.8883 kcal/mol A^6 (Table 2 O-O)"
+  },
+  {
+   "name": "Obh_bk-Ooh_bk",
+   "match": [
+    "Obh_bk",
+    "Ooh_bk"
+   ],
+   "style": "buck",
+   "params": [
+    271716.3,
+    0.234,
+    696.8883
+   ],
+   "comment": "A 271716.3 kcal/mol, rho 0.234 A, C 696.8883 kcal/mol A^6 (Table 2 O-O)"
+  },
+  {
+   "name": "Ooh_bk-Ooh_bk",
+   "match": [
+    "Ooh_bk",
+    "Ooh_bk"
+   ],
+   "style": "buck",
+   "params": [
+    271716.3,
+    0.234,
+    696.8883
+   ],
+   "comment": "A 271716.3 kcal/mol, rho 0.234 A, C 696.8883 kcal/mol A^6 (Table 2 O-O)"
+  },
+  {
+   "name": "O_bk-Ow_bk",
+   "match": [
+    "O_bk",
+    "Ow_bk"
+   ],
+   "params": [
+    0.15539,
+    3.1655413252962536
+   ],
+   "comment": "SPC/E O-O: eps 0.15539 kcal/mol, r_min 3.5532 A (sigma 3.165541 A) (Table 3; O(H2)-O(Ti) as H2O-OH2, section 4)"
+  },
+  {
+   "name": "Os_bk-Ow_bk",
+   "match": [
+    "Os_bk",
+    "Ow_bk"
+   ],
+   "params": [
+    0.15539,
+    3.1655413252962536
+   ],
+   "comment": "SPC/E O-O: eps 0.15539 kcal/mol, r_min 3.5532 A (sigma 3.165541 A) (Table 3; O(H2)-O(Ti) as H2O-OH2, section 4)"
+  },
+  {
+   "name": "Ob_bk-Ow_bk",
+   "match": [
+    "Ob_bk",
+    "Ow_bk"
+   ],
+   "params": [
+    0.15539,
+    3.1655413252962536
+   ],
+   "comment": "SPC/E O-O: eps 0.15539 kcal/mol, r_min 3.5532 A (sigma 3.165541 A) (Table 3; O(H2)-O(Ti) as H2O-OH2, section 4)"
+  },
+  {
+   "name": "Obh_bk-Ow_bk",
+   "match": [
+    "Obh_bk",
+    "Ow_bk"
+   ],
+   "params": [
+    0.15539,
+    3.1655413252962536
+   ],
+   "comment": "SPC/E O-O: eps 0.15539 kcal/mol, r_min 3.5532 A (sigma 3.165541 A) (Table 3; O(H2)-O(Ti) as H2O-OH2, section 4)"
+  },
+  {
+   "name": "Ooh_bk-Ow_bk",
+   "match": [
+    "Ooh_bk",
+    "Ow_bk"
+   ],
+   "params": [
+    0.15539,
+    3.1655413252962536
+   ],
+   "comment": "SPC/E O-O: eps 0.15539 kcal/mol, r_min 3.5532 A (sigma 3.165541 A) (Table 3; O(H2)-O(Ti) as H2O-OH2, section 4)"
+  },
+  {
+   "name": "Ow_bk-Ow_bk",
+   "match": [
+    "Ow_bk",
+    "Ow_bk"
+   ],
+   "params": [
+    0.15539,
+    3.1655413252962536
+   ],
+   "comment": "SPC/E O-O: eps 0.15539 kcal/mol, r_min 3.5532 A (sigma 3.165541 A) (Table 3; O(H2)-O(Ti) as H2O-OH2, section 4)"
+  }
+ ],
+ "bonds": [
+  {
+   "name": "Ow_bk-Hw_bk",
+   "match": [
+    "Ow_bk",
+    "Hw_bk"
+   ],
+   "style": "morse",
+   "params": [
+    101.905,
+    2.347,
+    1.0
+   ],
+   "comment": "(H)O-H Morse A 101.905 kcal/mol, alpha 2.3470 1/A, r0 1.00 A (Table 5; the constant -A left out)"
+  },
+  {
+   "name": "Obh_bk-Hbh_bk",
+   "match": [
+    "Obh_bk",
+    "Hbh_bk"
+   ],
+   "style": "morse",
+   "params": [
+    125.094,
+    2.2682,
+    0.95
+   ],
+   "comment": "(Ti)O-H Morse A 125.094 kcal/mol, alpha 2.2682 1/A, r0 0.95 A (Table 5, Fleming et al.'s; the constant -A left out)"
+  },
+  {
+   "name": "Ooh_bk-Hoh_bk",
+   "match": [
+    "Ooh_bk",
+    "Hoh_bk"
+   ],
+   "style": "morse",
+   "params": [
+    125.094,
+    2.2682,
+    0.95
+   ],
+   "comment": "(Ti)O-H Morse A 125.094 kcal/mol, alpha 2.2682 1/A, r0 0.95 A (Table 5, Fleming et al.'s; the constant -A left out)"
+  }
+ ],
+ "angles": [
+  {
+   "name": "Hw_bk-Ow_bk-Hw_bk",
+   "match": [
+    "Hw_bk",
+    "Ow_bk",
+    "Hw_bk"
+   ],
+   "style": "harmonic",
+   "params": [
+    51.5225,
+    109.47
+   ],
+   "comment": "H-O-H 1/2 k2 (theta - theta0)^2, k2 103.045 kcal/(mol rad^2), theta0 109.47 (Table 6)"
+  },
+  {
+   "name": "Ti_bk-Obh_bk-Hbh_bk",
+   "match": [
+    "Ti_bk",
+    "Obh_bk",
+    "Hbh_bk"
+   ],
+   "style": "harmonic",
+   "params": [
+    7.068,
+    90.85
+   ],
+   "comment": "Ti-O-H 1/2 k2 (theta - theta0)^2, k2 14.136 kcal/(mol rad^2), theta0 90.85 (Table 6)"
+  },
+  {
+   "name": "Ti_bk-Ooh_bk-Hoh_bk",
+   "match": [
+    "Ti_bk",
+    "Ooh_bk",
+    "Hoh_bk"
+   ],
+   "style": "harmonic",
+   "params": [
+    7.068,
+    90.85
+   ],
+   "comment": "Ti-O-H 1/2 k2 (theta - theta0)^2, k2 14.136 kcal/(mol rad^2), theta0 90.85 (Table 6)"
+  },
+  {
+   "name": "TiV_bk-Obh_bk-Hbh_bk",
+   "match": [
+    "TiV_bk",
+    "Obh_bk",
+    "Hbh_bk"
+   ],
+   "style": "harmonic",
+   "params": [
+    7.068,
+    90.85
+   ],
+   "comment": "Ti-O-H 1/2 k2 (theta - theta0)^2, k2 14.136 kcal/(mol rad^2), theta0 90.85 (Table 6)"
+  },
+  {
+   "name": "TiV_bk-Ooh_bk-Hoh_bk",
+   "match": [
+    "TiV_bk",
+    "Ooh_bk",
+    "Hoh_bk"
+   ],
+   "style": "harmonic",
+   "params": [
+    7.068,
+    90.85
+   ],
+   "comment": "Ti-O-H 1/2 k2 (theta - theta0)^2, k2 14.136 kcal/(mol rad^2), theta0 90.85 (Table 6)"
+  },
+  {
+   "name": "TiVI_bk-Obh_bk-Hbh_bk",
+   "match": [
+    "TiVI_bk",
+    "Obh_bk",
+    "Hbh_bk"
+   ],
+   "style": "harmonic",
+   "params": [
+    7.068,
+    90.85
+   ],
+   "comment": "Ti-O-H 1/2 k2 (theta - theta0)^2, k2 14.136 kcal/(mol rad^2), theta0 90.85 (Table 6)"
+  },
+  {
+   "name": "TiVI_bk-Ooh_bk-Hoh_bk",
+   "match": [
+    "TiVI_bk",
+    "Ooh_bk",
+    "Hoh_bk"
+   ],
+   "style": "harmonic",
+   "params": [
+    7.068,
+    90.85
+   ],
+   "comment": "Ti-O-H 1/2 k2 (theta - theta0)^2, k2 14.136 kcal/(mol rad^2), theta0 90.85 (Table 6)"
+  },
+  {
+   "name": "TiVIoh_bk-Obh_bk-Hbh_bk",
+   "match": [
+    "TiVIoh_bk",
+    "Obh_bk",
+    "Hbh_bk"
+   ],
+   "style": "harmonic",
+   "params": [
+    7.068,
+    90.85
+   ],
+   "comment": "Ti-O-H 1/2 k2 (theta - theta0)^2, k2 14.136 kcal/(mol rad^2), theta0 90.85 (Table 6)"
+  },
+  {
+   "name": "TiVIoh_bk-Ooh_bk-Hoh_bk",
+   "match": [
+    "TiVIoh_bk",
+    "Ooh_bk",
+    "Hoh_bk"
+   ],
+   "style": "harmonic",
+   "params": [
+    7.068,
+    90.85
+   ],
+   "comment": "Ti-O-H 1/2 k2 (theta - theta0)^2, k2 14.136 kcal/(mol rad^2), theta0 90.85 (Table 6)"
+  }
+ ],
+ "dihedrals": [],
+ "impropers": [],
+ "notes": [
+  "built by CAPS (bench/ff/make_bandura2003.py) from the paper's Tables 2, 3, 5, 6, 9 and 10",
+  "Ti and O are rigid ions; every Ti-O, Ti-Ti and O-O interaction a Buckingham pair (Table 2, Table 10 for the surface)",
+  "Table 10's Ti^c (any Ti) and O^d (any oxide O) read as every Ti and every oxide O type; water O takes SPC/E's O-O with every O",
+  "surface sites by neighbours (CAPS's reading of Table 9's names): TiV five-fold, TiVI holds a bridging O, TiVIoh a terminal OH, Os a 3-fold O on a TiV / TiVIoh",
+  "Morse O-H without the constant -A of Table 5's expression; bends 1/2 k2 (theta - theta0)^2 written as K = k2/2",
+  "Ti-O-H bends on the Ti within 2.6 A of the hydroxyl O (no Ti-O bond is made; the distance is CAPS's)",
+  "1-2 and 1-3 pairs excluded: no Coulomb inside a hydroxyl or a water molecule; Ti-H across Ti-O-H kept (section 3)",
+  "van der Waals cut-off 9.6 A (section 1)"
+ ],
+ "version": "2003",
+ "typing": "../typing/bandura2003-tio2-water.typing.json"
+}

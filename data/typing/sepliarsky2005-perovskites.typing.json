@@ -1,0 +1,200 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "Ferroelectric perovskites (Sepliarsky et al. 2005)",
+ "unknown_types": "untyped",
+ "bonds": "defined",
+ "shells": {
+  "K_kntc": "K_knts",
+  "Nb_kntc": "Nb_knts",
+  "Ta_kntc": "Ta_knts",
+  "O_kntc": "O_knts",
+  "Ba_bstc": "Ba_bsts",
+  "Sr_bstc": "Sr_bsts",
+  "Ti_bstc": "Ti_bsts",
+  "O_bstc": "O_bsts"
+ },
+ "description": "ABO3 perovskites by composition (bench/ff/make_sepliarsky2005.py)",
+ "rules": [
+  {
+   "type": "K_kntc",
+   "smarts": "[#19]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "excludes": [
+    "Ba",
+    "Sr",
+    "Ti",
+    "Pb"
+   ],
+   "description": "K in K(Nb,Ta)O3"
+  },
+  {
+   "type": "Nb_kntc",
+   "smarts": "[#41]",
+   "priority": 0,
+   "requires": [
+    "K",
+    "O"
+   ],
+   "excludes": [
+    "Ba",
+    "Sr",
+    "Ti",
+    "Pb"
+   ],
+   "description": "Nb in K(Nb,Ta)O3"
+  },
+  {
+   "type": "Ta_kntc",
+   "smarts": "[#73]",
+   "priority": 0,
+   "requires": [
+    "K",
+    "O"
+   ],
+   "excludes": [
+    "Ba",
+    "Sr",
+    "Ti",
+    "Pb"
+   ],
+   "description": "Ta in K(Nb,Ta)O3"
+  },
+  {
+   "type": "O_kntc",
+   "smarts": "[#8]",
+   "priority": 0,
+   "requires": [
+    "K"
+   ],
+   "excludes": [
+    "Ba",
+    "Sr",
+    "Ti",
+    "Pb"
+   ],
+   "description": "O in K(Nb,Ta)O3"
+  },
+  {
+   "type": "Ba_bstc",
+   "smarts": "[#56]",
+   "priority": 0,
+   "requires": [
+    "O",
+    "Ti"
+   ],
+   "excludes": [
+    "K",
+    "Nb",
+    "Ta",
+    "Pb"
+   ],
+   "description": "Ba in (Ba,Sr)TiO3"
+  },
+  {
+   "type": "Sr_bstc",
+   "smarts": "[#38]",
+   "priority": 0,
+   "requires": [
+    "O",
+    "Ti"
+   ],
+   "excludes": [
+    "K",
+    "Nb",
+    "Ta",
+    "Pb"
+   ],
+   "description": "Sr in (Ba,Sr)TiO3"
+  },
+  {
+   "type": "Ti_bstc",
+   "smarts": "[#22]",
+   "priority": 0,
+   "requires": [
+    "O"
+   ],
+   "excludes": [
+    "K",
+    "Nb",
+    "Ta",
+    "Pb"
+   ],
+   "description": "Ti in (Ba,Sr)TiO3"
+  },
+  {
+   "type": "O_bstc",
+   "smarts": "[#8]",
+   "priority": 0,
+   "requires": [
+    "Ti"
+   ],
+   "excludes": [
+    "K",
+    "Nb",
+    "Ta",
+    "Pb"
+   ],
+   "description": "O in (Ba,Sr)TiO3"
+  },
+  {
+   "type": "K_knts",
+   "smarts": "[#19]",
+   "priority": 99,
+   "atom_name": "K_knts",
+   "description": "shell of K_kntc"
+  },
+  {
+   "type": "Nb_knts",
+   "smarts": "[#41]",
+   "priority": 99,
+   "atom_name": "Nb_knts",
+   "description": "shell of Nb_kntc"
+  },
+  {
+   "type": "Ta_knts",
+   "smarts": "[#73]",
+   "priority": 99,
+   "atom_name": "Ta_knts",
+   "description": "shell of Ta_kntc"
+  },
+  {
+   "type": "O_knts",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O_knts",
+   "description": "shell of O_kntc"
+  },
+  {
+   "type": "Ba_bsts",
+   "smarts": "[#56]",
+   "priority": 99,
+   "atom_name": "Ba_bsts",
+   "description": "shell of Ba_bstc"
+  },
+  {
+   "type": "Sr_bsts",
+   "smarts": "[#38]",
+   "priority": 99,
+   "atom_name": "Sr_bsts",
+   "description": "shell of Sr_bstc"
+  },
+  {
+   "type": "Ti_bsts",
+   "smarts": "[#22]",
+   "priority": 99,
+   "atom_name": "Ti_bsts",
+   "description": "shell of Ti_bstc"
+  },
+  {
+   "type": "O_bsts",
+   "smarts": "[#8]",
+   "priority": 99,
+   "atom_name": "O_bsts",
+   "description": "shell of O_bstc"
+  }
+ ]
+}

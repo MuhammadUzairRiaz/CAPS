@@ -1,0 +1,554 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "Ferroelectric perovskites (Sepliarsky et al. 2005)",
+ "source": "M. Sepliarsky, A. Asthagiri, S. R. Phillpot, M. G. Stachiotti, R. L. Migoni, Curr. Opin. Solid State Mater. Sci. 9, 107 (2005), Table 1",
+ "references": [
+  "M. Sepliarsky, A. Asthagiri, S. R. Phillpot, M. G. Stachiotti, R. L. Migoni, Curr. Opin. Solid State Mater. Sci. 9, 107 (2005)"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "buck/coul/long",
+  "bond": "class2",
+  "angle": "harmonic",
+  "dihedral": "fourier",
+  "improper": "fourier"
+ },
+ "mixing": "geometric",
+ "special_lj": [
+  0,
+  0,
+  1
+ ],
+ "special_coul": [
+  0,
+  0,
+  1
+ ],
+ "cutoff": 10,
+ "atom_types": [
+  {
+   "name": "K_kntc",
+   "element": "K",
+   "mass": 35.1882,
+   "charge": 1.2394,
+   "description": "K core, K(Nb,Ta)O3 (Table 1)"
+  },
+  {
+   "name": "K_knts",
+   "element": "K",
+   "mass": 3.9098,
+   "charge": -0.4189,
+   "description": "K shell, K(Nb,Ta)O3 (Table 1)"
+  },
+  {
+   "name": "Nb_kntc",
+   "element": "Nb",
+   "mass": 83.61540000000001,
+   "charge": -2.9878,
+   "description": "Nb core, K(Nb,Ta)O3 (Table 1)"
+  },
+  {
+   "name": "Nb_knts",
+   "element": "Nb",
+   "mass": 9.290600000000001,
+   "charge": 7.8265,
+   "description": "Nb shell, K(Nb,Ta)O3 (Table 1)"
+  },
+  {
+   "name": "Ta_kntc",
+   "element": "Ta",
+   "mass": 162.85320000000002,
+   "charge": -2.9878,
+   "description": "Ta core, K(Nb,Ta)O3 (Table 1)"
+  },
+  {
+   "name": "Ta_knts",
+   "element": "Ta",
+   "mass": 18.094800000000003,
+   "charge": 7.8265,
+   "description": "Ta shell, K(Nb,Ta)O3 (Table 1)"
+  },
+  {
+   "name": "O_kntc",
+   "element": "O",
+   "mass": 14.3991,
+   "charge": 1.1236,
+   "description": "O core, K(Nb,Ta)O3 (Table 1)"
+  },
+  {
+   "name": "O_knts",
+   "element": "O",
+   "mass": 1.5999,
+   "charge": -3.01,
+   "description": "O shell, K(Nb,Ta)O3 (Table 1)"
+  },
+  {
+   "name": "Ba_bstc",
+   "element": "Ba",
+   "mass": 123.5943,
+   "charge": 5.62,
+   "description": "Ba core, (Ba,Sr)TiO3 (Table 1)"
+  },
+  {
+   "name": "Ba_bsts",
+   "element": "Ba",
+   "mass": 13.732700000000001,
+   "charge": -3.76,
+   "description": "Ba shell, (Ba,Sr)TiO3 (Table 1)"
+  },
+  {
+   "name": "Sr_bstc",
+   "element": "Sr",
+   "mass": 78.858,
+   "charge": 5.62,
+   "description": "Sr core, (Ba,Sr)TiO3 (Table 1)"
+  },
+  {
+   "name": "Sr_bsts",
+   "element": "Sr",
+   "mass": 8.762,
+   "charge": -3.76,
+   "description": "Sr shell, (Ba,Sr)TiO3 (Table 1)"
+  },
+  {
+   "name": "Ti_bstc",
+   "element": "Ti",
+   "mass": 43.0803,
+   "charge": 4.76,
+   "description": "Ti core, (Ba,Sr)TiO3 (Table 1)"
+  },
+  {
+   "name": "Ti_bsts",
+   "element": "Ti",
+   "mass": 4.7867,
+   "charge": -1.58,
+   "description": "Ti shell, (Ba,Sr)TiO3 (Table 1)"
+  },
+  {
+   "name": "O_bstc",
+   "element": "O",
+   "mass": 14.3991,
+   "charge": 0.91,
+   "description": "O core, (Ba,Sr)TiO3 (Table 1)"
+  },
+  {
+   "name": "O_bsts",
+   "element": "O",
+   "mass": 1.5999,
+   "charge": -2.59,
+   "description": "O shell, (Ba,Sr)TiO3 (Table 1)"
+  }
+ ],
+ "pairs": [
+  {
+   "name": "K_kntc",
+   "match": [
+    "K_kntc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "K_knts",
+   "match": [
+    "K_knts"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Nb_kntc",
+   "match": [
+    "Nb_kntc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Nb_knts",
+   "match": [
+    "Nb_knts"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ta_kntc",
+   "match": [
+    "Ta_kntc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ta_knts",
+   "match": [
+    "Ta_knts"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_kntc",
+   "match": [
+    "O_kntc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_knts",
+   "match": [
+    "O_knts"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ba_bstc",
+   "match": [
+    "Ba_bstc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ba_bsts",
+   "match": [
+    "Ba_bsts"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Sr_bstc",
+   "match": [
+    "Sr_bstc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Sr_bsts",
+   "match": [
+    "Sr_bsts"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ti_bstc",
+   "match": [
+    "Ti_bstc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Ti_bsts",
+   "match": [
+    "Ti_bsts"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_bstc",
+   "match": [
+    "O_bstc"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_bsts",
+   "match": [
+    "O_bsts"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "K_knts-O_knts",
+   "match": [
+    "K_knts",
+    "O_knts"
+   ],
+   "style": "buck",
+   "params": [
+    2879626.89649712,
+    0.195,
+    0.0
+   ],
+   "comment": "K-O A 124872.44 eV, rho 0.195 A, C 0.0 eV A^6: A exp(-r/rho) - C/r^6 (K(Nb,Ta)O3, Table 1)"
+  },
+  {
+   "name": "Nb_knts-O_knts",
+   "match": [
+    "Nb_knts",
+    "O_knts"
+   ],
+   "style": "buck",
+   "params": [
+    23905.255873240003,
+    0.39,
+    0.0
+   ],
+   "comment": "Nb-O A 1036.63 eV, rho 0.39 A, C 0.0 eV A^6: A exp(-r/rho) - C/r^6 (K(Nb,Ta)O3, Table 1)"
+  },
+  {
+   "name": "Ta_knts-O_knts",
+   "match": [
+    "Ta_knts",
+    "O_knts"
+   ],
+   "style": "buck",
+   "params": [
+    24135.861353240005,
+    0.39,
+    0.0
+   ],
+   "comment": "Ta-O A 1046.63 eV, rho 0.39 A, C 0.0 eV A^6: A exp(-r/rho) - C/r^6 (K(Nb,Ta)O3, Table 1)"
+  },
+  {
+   "name": "O_knts-O_knts",
+   "match": [
+    "O_knts",
+    "O_knts"
+   ],
+   "style": "buck",
+   "params": [
+    83023.96854248001,
+    0.2834,
+    4612.1096
+   ],
+   "comment": "O-O A 3600.26 eV, rho 0.2834 A, C 200.0 eV A^6: A exp(-r/rho) - C/r^6 (K(Nb,Ta)O3, Table 1)"
+  },
+  {
+   "name": "Ba_bsts-O_bsts",
+   "match": [
+    "Ba_bsts",
+    "O_bsts"
+   ],
+   "style": "buck",
+   "params": [
+    24474.1595924,
+    0.374,
+    0.0
+   ],
+   "comment": "Ba-O A 1061.3 eV, rho 0.374 A, C 0.0 eV A^6: A exp(-r/rho) - C/r^6 ((Ba,Sr)TiO3, Table 1)"
+  },
+  {
+   "name": "Sr_bsts-O_bsts",
+   "match": [
+    "Sr_bsts",
+    "O_bsts"
+   ],
+   "style": "buck",
+   "params": [
+    3858.4908913599998,
+    0.4949,
+    0.0
+   ],
+   "comment": "Sr-O A 167.32 eV, rho 0.4949 A, C 0.0 eV A^6: A exp(-r/rho) - C/r^6 ((Ba,Sr)TiO3, Table 1)"
+  },
+  {
+   "name": "Ti_bsts-O_bsts",
+   "match": [
+    "Ti_bsts",
+    "O_bsts"
+   ],
+   "style": "buck",
+   "params": [
+    86936.65172164,
+    0.2589,
+    0.0
+   ],
+   "comment": "Ti-O A 3769.93 eV, rho 0.2589 A, C 0.0 eV A^6: A exp(-r/rho) - C/r^6 ((Ba,Sr)TiO3, Table 1)"
+  },
+  {
+   "name": "O_bsts-O_bsts",
+   "match": [
+    "O_bsts",
+    "O_bsts"
+   ],
+   "style": "buck",
+   "params": [
+    109306.99752,
+    0.2686,
+    3689.68768
+   ],
+   "comment": "O-O A 4740.0 eV, rho 0.2686 A, C 160.0 eV A^6: A exp(-r/rho) - C/r^6 ((Ba,Sr)TiO3, Table 1)"
+  }
+ ],
+ "bonds": [
+  {
+   "name": "K_kntc-K_knts",
+   "match": [
+    "K_kntc",
+    "K_knts"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    2594.31165,
+    0.0,
+    0.0
+   ],
+   "comment": "c2 225.0 eV/A^2, c4 0.0 eV/A^4: c2 w^2/2 + c4 w^4/24 (K(Nb,Ta)O3, Table 1)"
+  },
+  {
+   "name": "Nb_kntc-Nb_knts",
+   "match": [
+    "Nb_kntc",
+    "Nb_knts"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    2890.29378358,
+    0.0,
+    384.3424666666667
+   ],
+   "comment": "c2 250.67 eV/A^2, c4 400.0 eV/A^4: c2 w^2/2 + c4 w^4/24 (K(Nb,Ta)O3, Table 1)"
+  },
+  {
+   "name": "Ta_kntc-Ta_knts",
+   "match": [
+    "Ta_kntc",
+    "Ta_knts"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    3401.4308300000002,
+    0.0,
+    384.3424666666667
+   ],
+   "comment": "c2 295.0 eV/A^2, c4 400.0 eV/A^4: c2 w^2/2 + c4 w^4/24 (K(Nb,Ta)O3, Table 1)"
+  },
+  {
+   "name": "O_kntc-O_knts",
+   "match": [
+    "O_kntc",
+    "O_knts"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    864.7705500000001,
+    0.0,
+    1441.2842500000002
+   ],
+   "comment": "c2 75.0 eV/A^2, c4 1500.0 eV/A^4: c2 w^2/2 + c4 w^4/24 (K(Nb,Ta)O3, Table 1)"
+  },
+  {
+   "name": "Ba_bstc-Ba_bsts",
+   "match": [
+    "Ba_bstc",
+    "Ba_bsts"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    2903.3229932000004,
+    0.0,
+    0.0
+   ],
+   "comment": "c2 251.8 eV/A^2, c4 0.0 eV/A^4: c2 w^2/2 + c4 w^4/24 ((Ba,Sr)TiO3, Table 1)"
+  },
+  {
+   "name": "Sr_bstc-Sr_bsts",
+   "match": [
+    "Sr_bstc",
+    "Sr_bsts"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    7186.8197842,
+    0.0,
+    0.0
+   ],
+   "comment": "c2 623.3 eV/A^2, c4 0.0 eV/A^4: c2 w^2/2 + c4 w^4/24 ((Ba,Sr)TiO3, Table 1)"
+  },
+  {
+   "name": "Ti_bstc-Ti_bsts",
+   "match": [
+    "Ti_bstc",
+    "Ti_bsts"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    3712.748228,
+    0.0,
+    480.42808333333335
+   ],
+   "comment": "c2 322.0 eV/A^2, c4 500.0 eV/A^4: c2 w^2/2 + c4 w^4/24 ((Ba,Sr)TiO3, Table 1)"
+  },
+  {
+   "name": "O_bstc-O_bsts",
+   "match": [
+    "O_bstc",
+    "O_bsts"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    357.438494,
+    0.0,
+    3843.424666666667
+   ],
+   "comment": "c2 31.0 eV/A^2, c4 4000.0 eV/A^4: c2 w^2/2 + c4 w^4/24 ((Ba,Sr)TiO3, Table 1)"
+  }
+ ],
+ "angles": [],
+ "dihedrals": [],
+ "impropers": [],
+ "notes": [
+  "built by CAPS (bench/ff/make_sepliarsky2005.py) from the paper's Table 1 (signs as the rendered table prints them)",
+  "every ion a core and a shell; short-range terms between shells; pairs Table 1 does not list are Coulomb only",
+  "core-shell V(w) = c2 w^2/2 + c4 w^4/24 (section 2) as a class II bond: K2 = c2/2, K4 = c4/24",
+  "K(Nb,Ta)O3 and (Ba,Sr)TiO3: Buckingham pairs (section 2); each set typed by composition (K with Nb / Ta; Ba / Sr with Ti)",
+  "PbTiO3 is left out: Table 1's Pb-Ti row read as the stated Rydberg form (A + C r) exp(-r/rho) makes cubic PbTiO3 unbound (+141 eV per formula unit); the original parameter papers (Sepliarsky & Cohen 2002; Sepliarsky et al. 2004) are needed",
+  "the review states no cut-off; 10 A is CAPS's choice",
+  "Ta-O A 1046.63 eV and Nb-O 1036.63 eV as Table 1 prints them",
+  "shells carry 10 % of the ion's mass (adiabatic core-shell)"
+ ],
+ "version": "2005 (Table 1)",
+ "typing": "../typing/sepliarsky2005-perovskites.typing.json"
+}

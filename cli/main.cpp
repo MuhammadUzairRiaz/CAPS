@@ -2482,7 +2482,7 @@ int main(int argc, char** argv) {
           for (const auto& u : f.urey_bradley) std::printf("ub %u %u  %.10g %.10g\n", u.i + 1, u.k + 1, u.kub, u.r0);
           for (const auto& [ab, pf] : f.pair_func)
             std::printf("pairfunc %s %s  %s %.10g %.10g %.10g\n", f.type_names[ab.first].c_str(), f.type_names[ab.second].c_str(),
-                        pf.form == 1 ? "buck" : "morse", pf.a, pf.b, pf.c);
+                        pf.form == 1 ? "buck" : pf.form == kPairRydberg ? "rydberg" : "morse", pf.a, pf.b, pf.c);
           {
             ForceField f14;
             f14.mixing = f.mixing;

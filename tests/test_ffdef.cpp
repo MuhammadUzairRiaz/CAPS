@@ -259,8 +259,8 @@ TEST(FFDef, ImportsDlfieldPcff) {
   EXPECT_NEAR(hc->mass, 1.00797, 1e-6);   // not the 12.0115 typo of HC_benzyl
 }
 
-// Morse / GROMOS bonds, cosine-squared and linear-cosine angles, Urey–Bradley, planar inversions, Buckingham pairs
-// and separate 1-4 Lennard-Jones: forces are the gradient of the energy.
+// Morse / GROMOS bonds, cosine-squared and linear-cosine angles, Urey–Bradley, planar inversions, Buckingham and Rydberg
+// pairs and separate 1-4 Lennard-Jones: forces are the gradient of the energy.
 TEST(FieldForms, ForcesMatchFiniteDifferences) {
   const System s = small_cell(2, 3, 0.25);
   ForceField ff = assign_gaff(s);
@@ -285,6 +285,8 @@ TEST(FieldForms, ForcesMatchFiniteDifferences) {
     if (nb[c].size() == 3) ff.inversions.push_back({c, nb[c][0], nb[c][1], nb[c][2], r(10, 50), 0.0, 1});
   const int nt = int(ff.lj.size());
   ff.pair_func[{0, nt - 1}] = {1, 5000.0, 0.3, 20.0};
+  ASSERT_GT(nt, 2);
+  ff.pair_func[{1, nt - 1}] = {kPairRydberg, 3000.0, 0.35, -150.0};   // (A + C r) e^(−r/ρ), C < 0 as PbTiO3's Ti-O
   for (const auto& p : ff.lj) ff.lj14_types.push_back({p.eps * 0.5, p.sigma * 0.9});
   ff.lj14 = 1.0;
   std::vector<double> x = flat(s);
@@ -1317,4 +1319,114 @@ TEST(FFDef, TrappeEhModelsTypedAsThemselves) {
   std::string ch = "types";
   prepare_for_forcefield(t, def, ch);
   EXPECT_GT(assign_types(t, def).untyped, 0);
+}
+
+// Inorganic sets from their papers (bench/ff/make_catlow1976_mgo.py, make_catlow1985_rutile.py, make_khan1998_zro2.py,
+// make_sayle2000.py, make_sepliarsky2005.py): each crystal typed whole, every pair and spring found, neutral, and the
+// tables' numbers in place (eV to kcal/mol); the quartic core-shell springs as class II K4 = c4/24
+TEST(FFDef, InorganicSetsFromTheirPapers) {
+  constexpr double EV = 23.060548;
+  const std::string dir = std::string(CAPS_SOURCE_DIR) + "/data/forcefields/";
+  struct Case { const char* ff; const char* group; double a, c; std::vector<CrystalSite> sites; };
+  const std::vector<Case> cases = {
+      {"catlow1976-mgo", "F m -3 m", 4.212, 4.212, {{"Mg1", 12, {0, 0, 0}}, {"O1", 8, {0.5, 0.5, 0.5}}}},
+      {"khan1998-zro2", "F m -3 m", 5.07, 5.07, {{"Zr1", 40, {0, 0, 0}}, {"O1", 8, {0.25, 0.25, 0.25}}}},
+      {"sayle2000-alkaline-earth-oxides", "F m -3 m", 5.52, 5.52, {{"Ba1", 56, {0, 0, 0}}, {"O1", 8, {0.5, 0.5, 0.5}}}},
+      {"catlow1985-rutile", "P 42/m n m", 4.594, 2.959, {{"Ti1", 22, {0, 0, 0}}, {"O1", 8, {0.3053, 0.3053, 0}}}},
+      {"sepliarsky2005-perovskites", "P m -3 m", 4.0, 4.0, {{"K1", 19, {0, 0, 0}}, {"Nb1", 41, {0.5, 0.5, 0.5}}, {"O1", 8, {0.5, 0.5, 0}}}},
+      {"sepliarsky2005-perovskites", "P m -3 m", 3.905, 3.905, {{"Sr1", 38, {0, 0, 0}}, {"Ti1", 22, {0.5, 0.5, 0.5}}, {"O1", 8, {0.5, 0.5, 0}}}},
+  };
+  for (const auto& c : cases) {
+    const FFDef def = load_forcefield(dir + c.ff + ".json");
+    CrystalSpec spec;
+    spec.space_group = c.group;
+    spec.a = spec.b = c.a;
+    spec.c = c.c;
+    spec.sites = c.sites;
+    spec.supercell = {2, 2, 2};
+    System s = build_crystal(spec);
+    s.bonds = perceive_bonds(s);
+    std::string ch = "types";
+    prepare_for_forcefield(s, def, ch);
+    const TypingResult tr = assign_types(s, def);
+    ASSERT_EQ(tr.untyped, 0) << c.ff << " " << c.sites[0].label;
+    ParamReport rep;
+    const ForceField ff = parameterize(s, def, tr.types, ch, &rep, false);
+    EXPECT_TRUE(rep.missing.empty()) << c.ff << " " << c.sites[0].label;
+    double q = 0;
+    for (double x : ff.charge) q += x;
+    EXPECT_NEAR(q, 0.0, 1e-9) << c.ff << " " << c.sites[0].label;
+  }
+  auto pair = [&](const FFDef& d, const std::string& name) {
+    const auto p = std::find_if(d.pairs.begin(), d.pairs.end(), [&](const FFRule& x) { return x.name == name; });
+    EXPECT_NE(p, d.pairs.end()) << name;
+    return p == d.pairs.end() ? std::vector<double>(4, 0.0) : p->params;
+  };
+  auto bond = [&](const FFDef& d, const std::string& name) {
+    const auto p = std::find_if(d.bonds.begin(), d.bonds.end(), [&](const FFRule& x) { return x.name == name; });
+    EXPECT_NE(p, d.bonds.end()) << name;
+    return p == d.bonds.end() ? std::vector<double>(4, 0.0) : p->params;
+  };
+  const FFDef mgo = load_forcefield(dir + "catlow1976-mgo.json");   // Table 1, model 1
+  EXPECT_NEAR(pair(mgo, "Mg_c76m1-O_c76m1s")[0], 1152.0 * EV, 1e-9);
+  EXPECT_NEAR(pair(mgo, "O_c76m1s-O_c76m1s")[2], 28.96 * EV, 1e-9);
+  EXPECT_NEAR(bond(mgo, "O_c76m1c-O_c76m1s")[1], 38.03 / 2 * EV, 1e-9);
+  EXPECT_DOUBLE_EQ(mgo.type("O_c76m1s")->charge, -2.62);
+  const FFDef rut = load_forcefield(dir + "catlow1985-rutile.json");   // Table IVa: K 37.3 / 86.4, quartic 1.1e5
+  EXPECT_NEAR(bond(rut, "Ti_cfrc-Ti_cfrs")[1], 37.3 / 2 * EV, 1e-9);
+  EXPECT_NEAR(bond(rut, "O_cfrc-O_cfrs")[3], 1.1e5 / 24 * EV, 1e-6);
+  EXPECT_NEAR(rut.type("Ti_cfrc")->charge + rut.type("Ti_cfrs")->charge, 4.0, 1e-12);
+  const FFDef zr = load_forcefield(dir + "khan1998-zro2.json");
+  EXPECT_NEAR(pair(zr, "Zr_k98s-O_k98s")[0], 985.869 * EV, 1e-9);
+  EXPECT_DOUBLE_EQ(zr.type("Zr_k98s")->charge, 1.35);
+  const FFDef sw = load_forcefield(dir + "sayle2000-alkaline-earth-oxides.json");
+  EXPECT_NEAR(pair(sw, "Mg_sw-O_sw")[1], 0.2945, 1e-12);
+  EXPECT_NEAR(pair(sw, "O_sw-O_sw")[0], 22764.0 * EV, 1e-9);
+  const FFDef sp = load_forcefield(dir + "sepliarsky2005-perovskites.json");
+  EXPECT_NEAR(pair(sp, "K_knts-O_knts")[0], 124872.44 * EV, 1e-6);
+  EXPECT_NEAR(bond(sp, "O_bstc-O_bsts")[3], 4000.0 / 24 * EV, 1e-9);
+  EXPECT_EQ(sp.type("Pb_ptc"), nullptr);   // PbTiO3 withheld: Table 1's Pb-Ti row makes the crystal unbound (make_sepliarsky2005.py)
+  EXPECT_DOUBLE_EQ(sp.type("Nb_kntc")->charge, -2.9878);
+}
+
+// Bandura & Kubicki's hydroxylated rutile (110) (tests/data/rutile110_hydroxylated.pdb, bench/ff/make_bandura2003.py
+// --test-slab): Table 9's surface sites from the neighbours, Ti-O bonds dropped, the O-H Morse bonds kept, Ti-O-H bends
+// by distance, Table 10's surface pairs
+TEST(FFDef, BanduraKubickiSurfaceSites) {
+  const FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/bandura2003-tio2-water.json");
+  Trajectory t = read_pdb(std::string(CAPS_SOURCE_DIR) + "/tests/data/rutile110_hydroxylated.pdb");
+  System s = t.topology;
+  s.bonds = perceive_bonds(s);
+  std::string ch = "types";
+  prepare_for_forcefield(s, def, ch);
+  const TypingResult tr = assign_types(s, def);
+  ASSERT_EQ(tr.untyped, 0);
+  std::map<std::string, int> n;
+  for (const auto& x : tr.types) n[x]++;
+  // two surfaces of 2 x 3 cells: 6 TiV and 6 TiVI each; on top one TiV holds an OH, one a water; one bridging O protonated
+  EXPECT_EQ(n["TiV_bk"], 11);
+  EXPECT_EQ(n["TiVIoh_bk"], 1);
+  EXPECT_EQ(n["TiVI_bk"], 12);
+  EXPECT_EQ(n["Ti_bk"], 12);
+  EXPECT_EQ(n["Os_bk"], 24);   // the in-plane O of the two surface Ti layers
+  EXPECT_EQ(n["Ob_bk"], 11);
+  EXPECT_EQ(n["Obh_bk"], 1);
+  EXPECT_EQ(n["Ooh_bk"], 1);
+  EXPECT_EQ(n["Ow_bk"], 1);
+  EXPECT_EQ(n["O_bk"], 36);
+  ParamReport rep;
+  const ForceField ff = parameterize(s, def, tr.types, ch, &rep, false);
+  EXPECT_TRUE(rep.missing.empty());
+  EXPECT_EQ(ff.bonds_x.size(), 4u);   // Morse: the two hydroxyls' O-H and water's two
+  ASSERT_EQ(ff.angles.size(), 4u);    // water's H-O-H; Ti-Obh-H twice, Ti-Ooh-H once
+  for (const auto& a : ff.angles) {
+    const bool water = tr.types[a.j] == "Ow_bk";
+    EXPECT_NEAR(a.kt, water ? 103.045 / 2 : 14.136 / 2, 1e-12);
+    if (!water) EXPECT_EQ(s.atoms[a.i].element == 22 ? s.atoms[a.k].element : s.atoms[a.i].element, 1);
+  }
+  const FFRule* os = nullptr;
+  for (const auto& r : def.pairs)
+    if (r.name == "TiV_bk-Os_bk") os = &r;
+  ASSERT_NE(os, nullptr);
+  EXPECT_DOUBLE_EQ(os->params[0], 449223.3);
 }

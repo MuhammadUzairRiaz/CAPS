@@ -1,0 +1,174 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "ZrO2 (Khan, Islam & Bates 1998)",
+ "source": "M. S. Khan, M. S. Islam, D. R. Bates, J. Mater. Chem. 8, 2299 (1998), Table 1",
+ "references": [
+  "M. S. Khan, M. S. Islam, D. R. Bates, J. Mater. Chem. 8, 2299 (1998)"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "buck/coul/long",
+  "bond": "class2",
+  "angle": "harmonic",
+  "dihedral": "fourier",
+  "improper": "fourier"
+ },
+ "mixing": "geometric",
+ "special_lj": [
+  0,
+  0,
+  1
+ ],
+ "special_coul": [
+  0,
+  0,
+  1
+ ],
+ "cutoff": 10.254,
+ "atom_types": [
+  {
+   "name": "Zr_k98c",
+   "element": "Zr",
+   "mass": 82.1016,
+   "charge": 2.65,
+   "description": "Zr core (Z 4 - Y 1.35; Table 1(ii))"
+  },
+  {
+   "name": "Zr_k98s",
+   "element": "Zr",
+   "mass": 9.1224,
+   "charge": 1.35,
+   "description": "Zr shell (Table 1(ii))"
+  },
+  {
+   "name": "O_k98c",
+   "element": "O",
+   "mass": 14.3991,
+   "charge": 0.077,
+   "description": "O core (Z -2 - Y -2.077; Table 1(ii))"
+  },
+  {
+   "name": "O_k98s",
+   "element": "O",
+   "mass": 1.5999,
+   "charge": -2.077,
+   "description": "O shell (Table 1(ii))"
+  }
+ ],
+ "pairs": [
+  {
+   "name": "Zr_k98c",
+   "match": [
+    "Zr_k98c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Zr_k98s",
+   "match": [
+    "Zr_k98s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_k98c",
+   "match": [
+    "O_k98c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_k98s",
+   "match": [
+    "O_k98s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Zr_k98s-O_k98s",
+   "match": [
+    "Zr_k98s",
+    "O_k98s"
+   ],
+   "style": "buck",
+   "params": [
+    22734.679396212003,
+    0.376,
+    0.0
+   ],
+   "comment": "Zr-O A 985.869 eV, rho 0.376 A, C 0.0 eV A^6 (Table 1(i))"
+  },
+  {
+   "name": "O_k98s-O_k98s",
+   "match": [
+    "O_k98s",
+    "O_k98s"
+   ],
+   "style": "buck",
+   "params": [
+    524957.2328364,
+    0.149,
+    643.15868372
+   ],
+   "comment": "O-O A 22764.3 eV, rho 0.149 A, C 27.89 eV A^6 (Table 1(i))"
+  }
+ ],
+ "bonds": [
+  {
+   "name": "Zr_k98c-Zr_k98s",
+   "match": [
+    "Zr_k98c",
+    "Zr_k98s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    1955.7304850579999,
+    0.0,
+    0.0
+   ],
+   "comment": "Zr core-shell spring k 169.617 eV/A^2, 1/2 k r^2 (Table 1(ii))"
+  },
+  {
+   "name": "O_k98c-O_k98s",
+   "match": [
+    "O_k98c",
+    "O_k98s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    314.66117746,
+    0.0,
+    0.0
+   ],
+   "comment": "O core-shell spring k 27.29 eV/A^2, 1/2 k r^2 (Table 1(ii))"
+  }
+ ],
+ "angles": [],
+ "dihedrals": [],
+ "impropers": [],
+ "notes": [
+  "built by CAPS (bench/ff/make_khan1998_zro2.py) from the paper's Table 1",
+  "formal charges (eq. 1); Zr and O shells (Table 1(ii)), the springs 1/2 k r^2 (k the harmonic force constant)",
+  "Zr-Zr is Coulomb only: Table 1 lists no Zr-Zr term",
+  "cut-off 10.254 A (Table 1 note)",
+  "the paper's MD used this set without shells; the shell model is the one Table 1 gives",
+  "shells carry 10 % of the ion's mass (adiabatic core-shell)"
+ ],
+ "version": "1998 (Table 1)",
+ "typing": "../typing/khan1998-zro2.typing.json"
+}

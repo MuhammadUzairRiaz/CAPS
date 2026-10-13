@@ -5,7 +5,8 @@ Commit 860a126b stopped tracking 32 libraries (and their typing files) that had 
 published source (paper, official parameter file or the authors' database). DL_FIELD stays on the developer's machine
 as an accuracy reference for typing and energies only; no number in a rebuilt library comes from it.
 
-State of 2026-10-13 (branch `ff-rebuild-rest`, commits 1053f7a2 and b2ee52e2). "Local" means the source is in `~/project/ff-sources/`.
+State of 2026-10-13 (branch `ff-rebuild-rest`, commits 1053f7a2 and b2ee52e2; the inorganic sets of section 4 on branch
+`inorg-papers`). "Local" means the source is in `~/project/ff-sources/`.
 
 ## 1. The 32 libraries removed in 860a126b
 
@@ -34,10 +35,10 @@ State of 2026-10-13 (branch `ff-rebuild-rest`, commits 1053f7a2 and b2ee52e2). "
 | **misc** | MISC_FF.par | **omalley2013-alkanes, plant2007-methanol, ramsahye2005-nay (chloroform), peguin2009-hfa134a** | the four papers (see section 3) | yes (`papers/c3cp52653d.pdf`, `jp0674524.pdf`, `jp046958o.pdf`, `jp806213w.pdf`) | published parameters | **done here** (one torsion paper missing) |
 | inorganic-binary-halides | INORGANIC_binary_halides.par | catlow1977-halides | Catlow, Diller & Norgett, J. Phys. C 10, 1395 (1977) | yes | published parameters | done |
 | inorganic-binary-misc | INORGANIC_binary_misc.par | gan2020 | Wonglakhon & Zahn, J. Phys.: Condens. Matter 32, 205401 (2020) | yes | CC BY | done |
-| inorganic-binary-oxides | INORGANIC_binary_oxides.par | bush1994-oxides, lewis-catlow1985-oxides, catlow1977-uo2, matsui1991-tio2, sanders1984-sio2 | the papers of DL_FIELD's refs 1-6 | yes | published parameters | partly done: six sets wait on papers (section 4) |
+| inorganic-binary-oxides | INORGANIC_binary_oxides.par | bush1994-oxides, lewis-catlow1985-oxides, catlow1977-uo2, matsui1991-tio2, sanders1984-sio2, **catlow1976-mgo, catlow1985-rutile, khan1998-zro2, sayle2000-alkaline-earth-oxides, bandura2003-tio2-water** | the papers of DL_FIELD's refs 1-11 | yes | published parameters | done but Bi2O3: Walther & Zahn 2018 prints no parameters (section 4) |
 | inorganic-clay | INORGANIC_clay.par | clayff2004 | Cygan, Liang & Kalinichev, J. Phys. Chem. B 108, 1255 (2004) | yes | published parameters | done (other session) |
 | inorganic-glass | INORGANIC_glass.par | teter-glass, tilocca2006-sm, vogel2003-lipo3 | Cormack 2002, Du 2009, Okhotnikov 2013, Tilocca 2006, Vogel 2003 | yes | published parameters | done |
-| inorganic-ternary-oxides | INORGANIC_ternary_oxides.par | xiao2011-caco3, gunn2012-pyrochlore, la-perovskites | Xiao 2011, Gunn 2012, Cherry 1995, Read 1999 | yes | published parameters | partly done: Sepliarsky's perovskites wait on the paper (section 4) |
+| inorganic-ternary-oxides | INORGANIC_ternary_oxides.par | xiao2011-caco3, gunn2012-pyrochlore, la-perovskites, **sepliarsky2005-perovskites** | Xiao 2011, Gunn 2012, Cherry 1995, Read 1999, Sepliarsky 2005 | yes | published parameters | done but PbTiO3: its Pb-Ti row is misprinted (section 4) |
 | inorganic-zeolite | INORGANIC_zeolite.par | forester1997-silicalite, schroder1992-zeolite, ramsahye2005-nay, sanders1984-sio2 | the four papers | yes | published parameters | done |
 | inorganic-zeolite-hill-sauer | INORGANIC_zeolite_Hill_Sauer.par | hill-sauer1995 | Hill & Sauer, J. Phys. Chem. 98, 1238 (1994); 99, 9536 (1995) | yes | published parameters | done |
 
@@ -61,7 +62,7 @@ per-paper libraries above.
 | **trappe-eh-umn** | TraPPE database, EH models | published parameters | original source (this branch) |
 | **omalley2013-alkanes, plant2007-methanol, peguin2009-hfa134a** | the papers' tables | published parameters | original source (this branch) |
 | bush1994-oxides | Bush et al. 1994 as the UCL database of published potentials transcribes it | published parameters | original paper's set, transcribed via the UCL database |
-| catlow1977-halides, catlow1977-uo2, lewis-catlow1985-oxides, matsui1991-tio2, sanders1984-sio2, gan2020, clayff2004, teter-glass, tilocca2006-sm, vogel2003-lipo3, xiao2011-caco3, gunn2012-pyrochlore, la-perovskites, schroder1992-zeolite, ramsahye2005-nay, forester1997-silicalite, hill-sauer1995 | each paper's tables | published parameters | original source |
+| catlow1977-halides, catlow1977-uo2, lewis-catlow1985-oxides, matsui1991-tio2, sanders1984-sio2, catlow1976-mgo, catlow1985-rutile, khan1998-zro2, sayle2000-alkaline-earth-oxides, sepliarsky2005-perovskites, bandura2003-tio2-water, gan2020, clayff2004, teter-glass, tilocca2006-sm, vogel2003-lipo3, xiao2011-caco3, gunn2012-pyrochlore, la-perovskites, schroder1992-zeolite, ramsahye2005-nay, forester1997-silicalite, hill-sauer1995 | each paper's tables | published parameters | original source |
 | *-moltemplate (COMPASS published subset, GAFF, GAFF2, OPLS-AA 2008 / 2024, L-OPLS, DREIDING, TraPPE 1998, SDK, MARTINI 2.0 and its .prm sets, Dry MARTINI, Cooke-Deserno, graphene, SPC/E, TIP3P, mW and the water templates) | moltemplate's force-field files | MIT (moltemplate) | third-party conversion of the published sets |
 | martini22-proteins | vermouth-martinize `force_fields/martini22` | Apache 2.0 | original distribution |
 | martini3 | `martini_v3.0.0.itp` (cgmartini.nl) | as distributed by the Martini group | original distribution |
@@ -76,8 +77,15 @@ per-paper libraries above.
 | MISC: chloroform in NaY | ramsahye2005-nay (existing) | `make_ramsahye2005.py` | `chloroform3` 5 / 5 atoms | agrees (existing case) | - | existing |
 | MISC: HFA134a | peguin2009-hfa134a | `make_zeolite_sorbates.py` | `HFA_134a` 8 / 8 atoms | agrees | agrees | same |
 | TraPPE-EH | trappe-eh-umn | `bench/ff/make_trappe_eh.py SITE_DIR --check` | 9 templates, 94 / 94 atoms (17 carry the key of a symmetry-equivalent position); the database's own 65 models 848 / 848 sites | agrees (flexible and rigid sets) | agrees | `FFDef.TrappeEhModelsTypedAsThemselves` |
+| binary oxides: MgO (Catlow, Faux & Norgett 1976) | catlow1976-mgo | `bench/ff/make_catlow1976_mgo.py` | `magnesium_oxide3` 2 / 2 atoms | agrees (rock-salt MgO, model 1 and the model 2 overlay) | - (Buckingham) | `FFDef.InorganicSetsFromTheirPapers` |
+| binary oxides: rutile (Catlow, Freeman & Royle 1985) | catlow1985-rutile | `bench/ff/make_catlow1985_rutile.py` | `rutile1` 6 / 6 atoms | agrees (rutile, Ti and O shells) | - | same |
+| binary oxides: ZrO2 (Khan, Islam & Bates 1998) | khan1998-zro2 | `bench/ff/make_khan1998_zro2.py` | `zirconium(iv)_oxide1` 6 / 6 atoms | agrees (cubic ZrO2) | - | same |
+| binary oxides: MgO, CaO, SrO, BaO (Sayle & Watson 2000) | sayle2000-alkaline-earth-oxides | `bench/ff/make_sayle2000.py` | `magnesium_oxide4`, `calcium_oxide2`, `strontium_oxide2`, `barium_oxide2` 8 / 8 atoms | agrees (MgO, BaO) | - | same |
+| binary oxides: TiO2 surfaces and water (Bandura & Kubicki 2003) | bandura2003-tio2-water | `bench/ff/make_bandura2003.py` (`--test-slab` writes `tests/data/rutile110_hydroxylated.pdb`) | DL_FIELD's `TiO2_hydroxylated1` template is empty: nothing to compare | agrees (hydroxylated rutile (110) slab with water) | - | `FFDef.BanduraKubickiSurfaceSites` |
+| ternary oxides: K(Nb,Ta)O3, (Ba,Sr)TiO3 (Sepliarsky et al. 2005) | sepliarsky2005-perovskites | `bench/ff/make_sepliarsky2005.py` | `barium_titanate1`, `strontium_titanate1`, `potassium_tantalate1`, `potassium_niobate1` 40 / 40 atoms (and `lead_titanate1` 10 / 10 with the withheld PbTiO3 set) | agrees (cubic KNbO3, KTaO3, BaTiO3, SrTiO3) | - | `FFDef.InorganicSetsFromTheirPapers` |
 
 Typing commands: `python3 bench/ff/validate_typing.py MISC_FF data/forcefields/ID.json data/typing/ID.typing.json --map ID --only TEMPLATE`
+(INORGANIC_binary_oxides / INORGANIC_ternary_oxides for the oxides; a rebuilt shell model's shells are named through the map)
 and `... TRAPPE_EH data/forcefields/trappe-eh-umn.json data/typing/trappe-eh-umn.typing.json --map trappe-eh-umn`; the
 type maps are in `bench/typing/reference_type_maps.json` (the TraPPE-EH map is derived by matching each DL_FIELD
 template's graph onto the database model, `make_trappe_eh.py --dl-map`, without CAPS's typing).
@@ -98,24 +106,62 @@ Notes on the rebuilt sets:
 - A core fix came with the O'Malley framework: a pair term with its own cut-off (Buckingham within 10 A under a 13 A
   global cut-off) no longer adds minus its shift beyond that cut-off (`core/src/field.cpp`).
 
-## 4. Papers needed (not local)
+Notes on the inorganic sets (terms against DL_FIELD's .par: `python3 bench/ff/compare_inorganic_par.py ID ...`):
 
-| needed for | citation | DOI |
-|---|---|---|
-| O'Malley & Catlow's all-atom alkane torsion | N. Raj, G. Sastre, C. R. A. Catlow, J. Phys. Chem. B 103, 11007-11015 (1999) | 10.1021/jp991434h (to confirm) |
-| methanol / faujasite as rigid ions (DL_FIELD's second reference for methanol2 and faujasite2) | A. J. O'Malley et al., Phys. Chem. Chem. Phys. 18, 17294 (2016) | to confirm |
-| BaTiO3, SrTiO3, PbTiO3, KTaO3, KNbO3 shell models | M. Sepliarsky, A. Asthagiri, S. R. Phillpot, M. G. Stachiotti, R. L. Migoni, Curr. Opin. Solid State Mater. Sci. 9, 107-113 (2005) | 10.1016/j.cossms.2006.01.001 (to confirm). `papers/1-s2.0-S1359028606000271-main.pdf` is another article of that issue (Kolasinski's editorial), not this one |
-| MgO rigid-ion model (DL_FIELD's magnesium_oxide3) | C. R. A. Catlow, I. D. Faux, M. J. Norgett, J. Phys. C: Solid State Phys. 9, 419 (1976) | 10.1088/0022-3719/9/3/008 (to confirm) |
-| rutile and alpha-quartz (rutile1, silicon_dioxide1) | C. R. A. Catlow, C. M. Freeman, R. L. Royle, Physica B+C 131, 1 (1985) | 10.1016/0378-4363(85)90134-3 (to confirm) |
-| hydroxylated TiO2 surface (TiO2_hydroxylated1) | A. V. Bandura, J. D. Kubicki, J. Phys. Chem. B 107, 11072 (2003) | 10.1021/jp034093r (to confirm) |
-| Bi2O3 (bismuth(iii)_oxide1) | M. Walther, D. Zahn, Chem. Phys. Lett. 691, 87 (2018); DL_FIELD's set came from a FIELD file the authors sent, so the paper may not hold every term | to confirm |
-| ZrO2 (zirconium(iv)_oxide1) | M. S. Khan, M. S. Islam, D. R. Bates, J. Mater. Chem. 8, 2299 (1998) | to confirm |
-| MgO, CaO, SrO, BaO rigid ions (magnesium_oxide4, calcium/strontium/barium_oxide2) | D. C. Sayle, G. W. Watson, Phys. Chem. Chem. Phys. 2, 5491 (2000) | to confirm |
+- catlow1976-mgo: Table 1(b), 1(c). Mg-O and O-O equal DL_FIELD's `Mg3` / `O10` terms; the paper's model is a shell
+  model with only the anion polarisable (Y- -2.62, K- 38.03 for model 1), DL_FIELD's `magnesium_oxide3` a rigid ion
+  (O -2.0, no shell): the paper's model is written. At the perfect lattice (shells on their cores) both give the same
+  energy, -40.82 eV per MgO at r0 = 2.106 A (the paper's cohesive energy 40.85 eV). Model 2 is an overlay; the breathing
+  shell model has no CAPS form and is not written.
+- catlow1985-rutile: Table IVa. Pairs, charges and harmonic springs equal DL_FIELD's `rutile1`; the footnote's quartic
+  constant 1.1e5 (printed in eV/A^5) DL_FIELD keeps only as a comment (k4 0), CAPS writes it as K w^4/24 with K in
+  eV/A^4: the paper gives no expression, the 1/24 is the anharmonic-shell convention of the same group's codes and of
+  Sepliarsky's Table 1. Only shell displacements feel it (none at the perfect lattice). The paper's alpha-quartz set
+  (Table Ia) is sanders1984-sio2, every number equal; DL_FIELD's `silicon_dioxide1` is that set.
+- khan1998-zro2: Table 1; every term and charge equal DL_FIELD's (8 / 8). Cubic ZrO2 at a = 5.07 A: -109.76 eV per
+  ZrO2, the paper's lattice energy (Table 2).
+- sayle2000-alkaline-earth-oxides: Table 1; every term equals DL_FIELD's (10 / 10). Formal-charge rigid ions.
+- sepliarsky2005-perovskites: Table 1 (signs from the rendered table; the PDF text layer drops the minus signs).
+  K(Nb,Ta)O3 and (Ba,Sr)TiO3: 42 terms equal DL_FIELD's, charges and springs included (k4 as c4 of c4 w^4/24, as
+  DL_FIELD's header writes it). Each cubic cell has its energy minimum near its lattice constant (BaTiO3 3.95-4.0 A,
+  SrTiO3 3.905 A, KNbO3 3.97 A, KTaO3 3.99 A). PbTiO3 is withheld: section 2 states its Pb-Ti, Pb-O and Ti-O pairs
+  are Rydberg terms (A + C r) exp(-r/rho). Read that way, Pb-O and Ti-O behave (without Pb-Ti, cubic PbTiO3 has its
+  minimum near a = 3.85-3.9 A, the LDA lattice constant the set was fitted to), but the Pb-Ti row (0.09 + 12.57 r)
+  exp(-r/2.4201) is +10.5 eV per pair at 3.4 A and makes the crystal unbound (+141 eV per formula unit at a = 3.97 A).
+  DL_FIELD writes all three rows as Buckingham A exp(-r/rho) - C/r^6; then there is no minimum between 3.8 and 4.15 A,
+  so that reading is wrong too. CAPS now evaluates Rydberg pairs (`rydberg` pair style, pair_func form 3; LAMMPS as
+  `table spline` sections in caps_rydberg.table, which reproduced CAPS's energies and forces on tetragonal PbTiO3 to
+  9e-6 / 2e-5 kcal/mol/A during the check), so the set can be written (`SEPLIARSKY_SETS=knt,bst,pt`) once the Pb-Ti
+  row is read from the original papers (section 4).
+- bandura2003-tio2-water: Tables 2, 3, 5, 6, 9, 10 (kcal/mol). DL_FIELD has no template and no terms for it. Surface
+  sites by neighbours, CAPS's reading of Table 9's names: TiV a Ti with five oxide O (a water O on it not counted),
+  TiVIoh a Ti holding a terminal OH, TiVI a Ti holding a bridging O, Os a 3-fold O between a TiV / TiVIoh and a TiVI
+  (the in-plane O of the surface Ti layer); Ou keeps the bulk O's charge and terms. Table 10's Ti^c and O^d ("any
+  type") are every Ti and every oxide O. Ti-O bonds carry no term and are dropped after typing (bond perception also
+  links Ti to Ti 2.96 A apart, so the counts are of O neighbours, by recursive SMARTS); the Ti-O-H bends take the Ti
+  within 2.6 A of the hydroxyl O; the Morse constant -A is dropped. Charges are Table 9's, so a hydroxylated slab is not
+  exactly neutral (the paper's own scheme).
+
+## 4. Papers needed
+
+| needed for | citation | DOI | state |
+|---|---|---|---|
+| O'Malley & Catlow's all-atom alkane torsion | N. Raj, G. Sastre, C. R. A. Catlow, J. Phys. Chem. B 103, 11007-11015 (1999) | 10.1021/jp991314f | read (`papers/jp991314f.pdf`): it has no torsion term (Table 3 lists bonds and bends only), so the torsion O'Malley & Catlow cite is not there. Still unresolved; omalley2013-alkanes keeps its zero torsion |
+| methanol / faujasite as rigid ions (DL_FIELD's second reference for methanol2 and faujasite2) | A. J. O'Malley et al., Phys. Chem. Chem. Phys. 18, 17294 (2016) | to confirm | not local |
+| PbTiO3's Pb-Ti term (Sepliarsky 2005 Table 1 row misprinted, section 3 notes) | M. Sepliarsky, R. E. Cohen, AIP Conf. Proc. 626, 36 (2002); M. Sepliarsky, Z. Wu, A. Asthagiri, R. E. Cohen, Ferroelectrics 301, 55 (2004) | 10.1063/1.1499550 (to confirm); 10.1080/00150190490454495 (to confirm) | not local; K(Nb,Ta)O3 and (Ba,Sr)TiO3 are done from the review (`papers/1-s2.0-S1359028606000416-main.pdf`, doi 10.1016/j.cossms.2006.05.002) |
+| Bi2O3 (bismuth(iii)_oxide1) | M. Walther, D. Zahn, Eur. J. Inorg. Chem. 2015, 1178 (their ref. 11) | 10.1002/ejic.201403141 (to confirm) | Walther & Zahn, Chem. Phys. Lett. 691, 87 (2018) (`papers/1-s2.0-S0009261417310060-main.pdf`, doi 10.1016/j.cplett.2017.10.064) is read: it prints no parameters, only "the same set of force field parameters was employed [11]". Not built |
+| the quartic core-shell expression of Catlow, Freeman & Royle's rutile (to confirm the K w^4/24 reading) | C. R. A. Catlow, R. James, Proc. R. Soc. Lond. A 384, 157 (1982); R. James, PhD thesis, University of London (1979) | 10.1098/rspa.1982.0153 (to confirm) | not local; the library uses K w^4/24 |
+
+The other sets of the former section 4 are built from their papers (now local in `~/project/ff-sources/papers/`):
+Catlow, Faux & Norgett 1976 (doi 10.1088/0022-3719/9/3/008), Catlow, Freeman & Royle 1985 (10.1016/0378-4363(85)90134-2),
+Bandura & Kubicki 2003 (10.1021/jp034093t), Khan, Islam & Bates 1998 (10.1039/a803917h), Sayle & Watson 2000
+(10.1039/b006587k).
 
 ## 5. What is left
 
-- The binary-oxide and ternary-oxide sets of section 4, once their papers are here.
-- The O'Malley alkane torsion (Raj, Sastre & Catlow 1999).
+- PbTiO3 (Sepliarsky): the Pb-Ti row from Sepliarsky & Cohen 2002 / Sepliarsky et al. 2004.
+- Bi2O3 (Walther & Zahn): their 2015 paper.
+- The O'Malley alkane torsion: Raj, Sastre & Catlow 1999 does not hold it; the source O'Malley & Catlow meant is unknown.
 - Families handled by other sessions: OPLS (2005 / 2020 / 2024), PCFF, COMPASS, CVFF, ClayFF, CL&P / DES.
 - `bench/typing/sweep_dlfield.sh` still sweeps the converted files where they exist on disk; the rebuilt libraries are
   checked with `validate_typing.py --map` as above.

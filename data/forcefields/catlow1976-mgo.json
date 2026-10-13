@@ -1,0 +1,237 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "MgO (Catlow, Faux & Norgett 1976)",
+ "source": "C. R. A. Catlow, I. D. Faux, M. J. Norgett, J. Phys. C: Solid State Phys. 9, 419 (1976), Table 1(b), 1(c)",
+ "references": [
+  "C. R. A. Catlow, I. D. Faux, M. J. Norgett, J. Phys. C: Solid State Phys. 9, 419 (1976)"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "buck/coul/long",
+  "bond": "class2",
+  "angle": "harmonic",
+  "dihedral": "fourier",
+  "improper": "fourier"
+ },
+ "mixing": "geometric",
+ "special_lj": [
+  0,
+  0,
+  1
+ ],
+ "special_coul": [
+  0,
+  0,
+  1
+ ],
+ "cutoff": 10,
+ "atom_types": [
+  {
+   "name": "Mg_c76m1",
+   "element": "Mg",
+   "mass": 24.305,
+   "charge": 2.0,
+   "description": "Mg2+, rigid ion, model 1 (Table 1(b): Z = 2)"
+  },
+  {
+   "name": "O_c76m1c",
+   "element": "O",
+   "mass": 14.3991,
+   "charge": 0.62,
+   "description": "O2- core, model 1 (-2 - Y-, Table 1(c) Y- -2.62)"
+  },
+  {
+   "name": "O_c76m1s",
+   "element": "O",
+   "mass": 1.5999,
+   "charge": -2.62,
+   "description": "O2- shell, model 1 (Table 1(c))"
+  },
+  {
+   "name": "Mg_c76m2",
+   "element": "Mg",
+   "mass": 24.305,
+   "charge": 2.0,
+   "description": "Mg2+, rigid ion, model 2 (Table 1(b): Z = 2)"
+  },
+  {
+   "name": "O_c76m2c",
+   "element": "O",
+   "mass": 14.3991,
+   "charge": 0.06,
+   "description": "O2- core, model 2 (-2 - Y-, Table 1(c) Y- -2.06)"
+  },
+  {
+   "name": "O_c76m2s",
+   "element": "O",
+   "mass": 1.5999,
+   "charge": -2.06,
+   "description": "O2- shell, model 2 (Table 1(c))"
+  }
+ ],
+ "pairs": [
+  {
+   "name": "Mg_c76m1",
+   "match": [
+    "Mg_c76m1"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_c76m1c",
+   "match": [
+    "O_c76m1c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_c76m1s",
+   "match": [
+    "O_c76m1s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Mg_c76m1-O_c76m1s",
+   "match": [
+    "Mg_c76m1",
+    "O_c76m1s"
+   ],
+   "style": "buck",
+   "params": [
+    26565.751296000002,
+    0.3065,
+    0.0
+   ],
+   "comment": "Mg-O A+- 1152.0 eV, rho+- 0.3065 A (Table 1(b), model 1)"
+  },
+  {
+   "name": "O_c76m1s-O_c76m1s",
+   "match": [
+    "O_c76m1s",
+    "O_c76m1s"
+   ],
+   "style": "buck",
+   "params": [
+    524858.07248,
+    0.149,
+    667.83347008
+   ],
+   "comment": "O-O A-- 22760.0 eV, rho-- 0.149 A, C-- 28.96 eV A^6 (Table 1(b), model 1)"
+  },
+  {
+   "name": "Mg_c76m2",
+   "match": [
+    "Mg_c76m2"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_c76m2c",
+   "match": [
+    "O_c76m2c"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "O_c76m2s",
+   "match": [
+    "O_c76m2s"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "Mg_c76m2-O_c76m2s",
+   "match": [
+    "Mg_c76m2",
+    "O_c76m2s"
+   ],
+   "style": "buck",
+   "params": [
+    12773.2375372,
+    0.3664,
+    0.0
+   ],
+   "comment": "Mg-O A+- 553.9 eV, rho+- 0.3664 A (Table 1(b), model 2)"
+  },
+  {
+   "name": "O_c76m2s-O_c76m2s",
+   "match": [
+    "O_c76m2s",
+    "O_c76m2s"
+   ],
+   "style": "buck",
+   "params": [
+    524858.07248,
+    0.149,
+    5885.0518495999995
+   ],
+   "comment": "O-O A-- 22760.0 eV, rho-- 0.149 A, C-- 255.2 eV A^6 (Table 1(b), model 2)"
+  }
+ ],
+ "bonds": [
+  {
+   "name": "O_c76m1c-O_c76m1s",
+   "match": [
+    "O_c76m1c",
+    "O_c76m1s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    438.49632022000003,
+    0.0,
+    0.0
+   ],
+   "comment": "O core-shell spring K- 38.03 eV/A^2, 1/2 K- r^2 (Table 1(c), model 1)"
+  },
+  {
+   "name": "O_c76m2c-O_c76m2s",
+   "match": [
+    "O_c76m2c",
+    "O_c76m2s"
+   ],
+   "style": "class2",
+   "params": [
+    0.0,
+    211.00401420000003,
+    0.0,
+    0.0
+   ],
+   "comment": "O core-shell spring K- 18.3 eV/A^2, 1/2 K- r^2 (Table 1(c), model 2)"
+  }
+ ],
+ "angles": [],
+ "dihedrals": [],
+ "impropers": [],
+ "notes": [
+  "built by CAPS (bench/ff/make_catlow1976_mgo.py) from the paper's Table 1(b) and 1(c)",
+  "model 1 (fitted to r0, C11 - C12, C44) by default; model 2 (fitted to r0, C11, C12) is the overlay 'model2'",
+  "Mg rigid (+2), O a shell model: only the anion is polarisable (section 2.1); Mg-Mg Coulomb only",
+  "the spring is read as 1/2 K- r^2 (the paper gives K- in eV A^-2 without the energy expression)",
+  "the breathing shell model (BSM) is not written: CAPS has no breathing-shell term",
+  "the paper states no cut-off; 10 A is CAPS's choice",
+  "shells carry 10 % of the ion's mass (adiabatic core-shell)"
+ ],
+ "version": "1976 (Table 1, models 1 and 2)",
+ "typing": "../typing/catlow1976-mgo.typing.json"
+}

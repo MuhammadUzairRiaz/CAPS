@@ -1636,9 +1636,10 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
       for (size_t b = a; b < ff.type_names.size(); ++b)
         if ((glob_match(r.match[0], vdw_name[a]) && glob_match(r.match[1], vdw_name[b])) ||
             (glob_match(r.match[1], vdw_name[a]) && glob_match(r.match[0], vdw_name[b]))) {
-          if (r.style == "buck" || r.style == "born" || r.style == "morse") {
+          if (r.style == "buck" || r.style == "born" || r.style == "morse" || r.style == "rydberg") {
             if (r.params.size() < 3) throw FFError("pair " + r.name + ": " + r.style + " needs 3 parameters");
-            ff.pair_func[{int(a), int(b)}] = {r.style == "morse" ? 2 : 1, r.params[0], r.params[1], r.params[2], r.params.size() > 3 ? r.params[3] : 0.0};   // 4th: the pair's own cut-off
+            const int form = r.style == "morse" ? 2 : r.style == "rydberg" ? kPairRydberg : 1;
+            ff.pair_func[{int(a), int(b)}] = {form, r.params[0], r.params[1], r.params[2], r.params.size() > 3 ? r.params[3] : 0.0};   // 4th: the pair's own cut-off
           } else if (int f = sdk_form(r.style)) {
             ff.pair_func[{int(a), int(b)}] = {f, r.params[0], r.params[1], 0};
           } else if (r.style == "cosine/squared") {

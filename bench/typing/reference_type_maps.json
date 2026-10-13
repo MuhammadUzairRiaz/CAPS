@@ -89,5 +89,68 @@
    "N5_141a": "N1_9",
    "H3_141d": "H6_9"
   }
+ },
+ "catlow1976-mgo": {
+  "lib": "INORGANIC_binary_oxides",
+  "map": {
+   "Mg_c76m1": "Mg3",
+   "O_c76m1c": "O10",
+   "O_c76m1s": "O10"
+  }
+ },
+ "khan1998-zro2": {
+  "lib": "INORGANIC_binary_oxides",
+  "map": {
+   "Zr_k98c": "Zr1c",
+   "Zr_k98s": "Zr1s",
+   "O_k98c": "O10c",
+   "O_k98s": "O10s"
+  }
+ },
+ "sayle2000-alkaline-earth-oxides": {
+  "lib": "INORGANIC_binary_oxides",
+  "map": {
+   "Mg_sw": "Mg4",
+   "Ca_sw": "Ca2",
+   "Sr_sw": "Sr2",
+   "Ba_sw": "Ba2",
+   "O_sw": "O13"
+  }
+ },
+ "catlow1985-rutile": {
+  "lib": "INORGANIC_binary_oxides",
+  "map": {
+   "Ti_cfrc": "Ti2c",
+   "Ti_cfrs": "Ti2s",
+   "O_cfrc": "O6c",
+   "O_cfrs": "O6s"
+  }
+ },
+ "sepliarsky2005-perovskites": {
+  "lib": "INORGANIC_ternary_oxides",
+  "map": {
+   "Ba_bstc": "Ba1c",
+   "Ba_bsts": "Ba1s",
+   "Sr_bstc": "Sr1c",
+   "Sr_bsts": "Sr1s",
+   "Ti_bstc": "Ti1c",
+   "Ti_bsts": "Ti1s",
+   "O_bstc": "O2c",
+   "O_bsts": "O2s",
+   "Pb_ptc": "Pb1c",
+   "Pb_pts": "Pb1s",
+   "Ti_ptc": "Ti2c",
+   "Ti_pts": "Ti2s",
+   "O_ptc": "O3c",
+   "O_pts": "O3s",
+   "K_kntc": "K1c",
+   "K_knts": "K1s",
+   "Nb_kntc": "Nb1c",
+   "Nb_knts": "Nb1s",
+   "Ta_kntc": "Ta1c",
+   "Ta_knts": "Ta1s",
+   "O_kntc": "O4c",
+   "O_knts": "O4s"
+  }
  }
 }
