@@ -456,6 +456,7 @@ ForceField cli_forcefield(System& s0, std::map<std::string, std::string>& o, boo
     return assign_uff(s0, uo);
   }
   FFDef def = load_forcefield(ff_path(o["--ff"]));
+  if (o.count("--overlay")) merge_forcefield(def, load_forcefield(o["--overlay"]));   // as caps ff apply: relax, md, equilibrate
   if (o.count("--typing")) load_typing(def, o["--typing"]);
   if (needs_prepare(def)) {   // united atom, shells, ionic bonds: the structure the force field describes
     std::string ch = o.count("--charges") ? o["--charges"] : (file_charges(s0) ? "keep" : "auto");

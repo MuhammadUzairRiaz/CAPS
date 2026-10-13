@@ -1,0 +1,21 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "nitrile Lennard-Jones trial B (CAPS, on OPLS-AA 2024)",
+ "atom_types": [],
+ "pairs": [
+  {
+   "name": "opls_753",
+   "match": [
+    "opls_753"
+   ],
+   "params": [
+    0.3,
+    3.2
+   ]
+  }
+ ],
+ "notes": [
+  "A trial for the liquid test: OPLS-AA 2024's nitrile N 753 (epsilon 0.17 kcal/mol, sigma 3.20 A) and C 754 (0.066, 3.30) left acetonitrile and propionitrile 3.6-3.8 % too light and 0.8-0.9 kcal/mol too weakly bound."
+ ]
+}

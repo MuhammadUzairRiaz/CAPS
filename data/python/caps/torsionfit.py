@@ -1,7 +1,7 @@
 """Torsion parameters a force field lacks, fitted to quantum-chemical rotational profiles.
 
     python -m caps.torsionfit prepare STRUCTURE[,STRUCTURE...] FF.json WORKDIR [--engine orca|psi4] [--step 15] [--radius 2]
-                                    [--level oplsaa-l|dlpno] [--nprocs 1] [--classes A-B-C-D,... [--only]]
+                                    [--level oplsaa-l|dlpno] [--nprocs 1] [--classes A-B-C-D,... [--only]] [--hold-neighbours]
     python -m caps.torsionfit fill WORKDIR      (after collect: the points prepare skipped, from finished neighbours)
     python -m caps.torsionfit fit WORKDIR [--out overlay.json] [--refit] [--ridge 0.5] [--joint]
     python -m caps.torsionfit collect WORKDIR
@@ -240,14 +240,31 @@ def fragment(el, pos, nb, b, c, radius):
     return keep, idx, fel, fpos, fbonds
 
 
-def orca_input(el, pos, quad, charge=0, mult=1, level="oplsaa-l", nprocs=1):
+def held_neighbours(el, nb, quad):
+    """--hold-neighbours: for each other bond b-n at an end b of the central bond (n a heavy atom with a heavy neighbour
+    m), the torsion c-b-n-m, held at its starting value while the central bond turns; so where two bonds through one
+    atom turn together (an anhydride's C-O-C), each scan turns one of them"""
+    a, b, c, d = quad
+    out = []
+    for x, y in ((b, c), (c, b)):
+        for n in nb[x]:
+            if n == y or el[n] == "H":
+                continue
+            m = next((m for m in nb[n] if m != x and el[m] != "H"), None)
+            if m is not None:
+                out.append((y, x, n, m))
+    return out
+
+
+def orca_input(el, pos, quad, charge=0, mult=1, level="oplsaa-l", nprocs=1, hold=()):
     a, b, c, d = quad
     opt, sp, _ = LEVELS[level]
     xyz = "\n".join(f"{e} {p[0]:.6f} {p[1]:.6f} {p[2]:.6f}" for e, p in zip(el, pos))
     mem = "" if level == "oplsaa-l" else "%maxcore 6000\n"   # local coupled cluster wants more memory per core
     if nprocs > 1:   # ORCA starts its own MPI processes: the job needs as many tasks (--ntasks)
         mem += f"%pal nprocs {nprocs} end\n"
-    head = f"{opt}\n{mem}%geom Constraints {{ D {a} {b} {c} {d} C }} end end\n* xyz {charge} {mult}\n{xyz}\n*\n"
+    cons = "".join(f" {{ D {w} {x} {y} {z} C }}" for w, x, y, z in [(a, b, c, d)] + list(hold))
+    head = f"{opt}\n{mem}%geom Constraints{cons} end end\n* xyz {charge} {mult}\n{xyz}\n*\n"
     if level != "oplsaa-l":
         return head
     return head + f"\n$new_job\n{sp}\n{mem}* xyzfile {charge} {mult} point.xyz\n"
@@ -334,6 +351,7 @@ def prepare():
             continue
         quad = [idx[a], idx[b], idx[c], idx[d]]
         fnb = neighbours(len(fel), fbonds)
+        hold = held_neighbours(fel, fnb, quad) if "--hold-neighbours" in sys.argv else []
         moving = side(fnb, quad[2], quad[1])
         if len(moving) > len(fel) / 2:   # turn the smaller half (the same dihedral change, fewer clashes)
             moving = side(fnb, quad[1], quad[2])
@@ -343,7 +361,8 @@ def prepare():
         moving = sorted(moving)
         phi0 = dihedral(fpos, *quad)
         skipped = 0
-        scan = {"classes": key, "dir": os.path.relpath(fdir, work), "quad": quad, "elements": fel, "bonds": fbonds, "points": []}
+        scan = {"classes": key, "dir": os.path.relpath(fdir, work), "quad": quad, "elements": fel, "bonds": fbonds, "points": [],
+                "hold": [list(h) for h in hold]}
         for k in range(0, 360, step):
             target = -180 + k
             p = rotate(fpos, moving, quad[1], quad[2], sign * (target - phi0))
@@ -356,7 +375,7 @@ def prepare():
             os.makedirs(pdir, exist_ok=True)
             rel = os.path.relpath(pdir, work)   # jobs.txt and plan.json name points relative to WORKDIR: copy it anywhere
             if engine == "orca":
-                open(os.path.join(pdir, "point.inp"), "w").write(orca_input(fel, p, quad, level=level, nprocs=nprocs))
+                open(os.path.join(pdir, "point.inp"), "w").write(orca_input(fel, p, quad, level=level, nprocs=nprocs, hold=hold))
                 if level != "oplsaa-l":
                     open(os.path.join(pdir, "point_sp.inp"), "w").write(orca_sp_input(level=level, nprocs=nprocs))
                 jobs.append(f"cd {rel} && \"${{ORCA:-orca}}\" point.inp > point.out")
@@ -469,7 +488,8 @@ def fill():
                     pdir = os.path.join(work, s["dir"], f"p{target:+04d}")
                     os.makedirs(pdir, exist_ok=True)
                     rel = os.path.relpath(pdir, work)
-                    open(os.path.join(pdir, "point.inp"), "w").write(orca_input(el, p, quad, level=level, nprocs=nprocs))
+                    open(os.path.join(pdir, "point.inp"), "w").write(orca_input(el, p, quad, level=level, nprocs=nprocs,
+                                                                                hold=[tuple(h) for h in s.get("hold", [])]))
                     if level != "oplsaa-l":
                         open(os.path.join(pdir, "point_sp.inp"), "w").write(orca_sp_input(level=level, nprocs=nprocs))
                     jobs.append(f"cd {rel} && \"${{ORCA:-orca}}\" point.inp > point.out")
