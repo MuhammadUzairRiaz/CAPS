@@ -29,8 +29,9 @@ CAPS never fills a torsion without saying so: these are CAPS's fits, not the for
 import json, math, os, re, shutil, subprocess, sys
 
 # --level: the OPLS-AA/L level (the default, as the scans CAPS fitted first), or a higher one for checking or refitting
-# (geometries from a range-separated hybrid with dispersion, energies from local coupled cluster). The functional's own
-# D3 is part of its name, so nothing of it carries into the single point after $new_job
+# (geometries from a range-separated hybrid with dispersion, energies from local coupled cluster). After $new_job ORCA
+# keeps the first job's dispersion, which it refuses with coupled cluster, so the dlpno single point is a separate run
+# (point_sp.inp, on point.xyz), written next to point.inp; the run scripts run it after the optimisation
 LEVELS = {
     "oplsaa-l": ("! HF 6-31G** Opt TightSCF", "! RI-MP2 cc-pVTZ cc-pVTZ/C TightSCF",
                  "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L)"),
@@ -245,8 +246,16 @@ def orca_input(el, pos, quad, charge=0, mult=1, level="oplsaa-l", nprocs=1):
     mem = "" if level == "oplsaa-l" else "%maxcore 6000\n"   # local coupled cluster wants more memory per core
     if nprocs > 1:   # ORCA starts its own MPI processes: the job needs as many tasks (--ntasks)
         mem += f"%pal nprocs {nprocs} end\n"
-    return (f"{opt}\n{mem}%geom Constraints {{ D {a} {b} {c} {d} C }} end end\n* xyz {charge} {mult}\n{xyz}\n*\n\n"
-            f"$new_job\n{sp}\n{mem}* xyzfile {charge} {mult} point.xyz\n")
+    head = f"{opt}\n{mem}%geom Constraints {{ D {a} {b} {c} {d} C }} end end\n* xyz {charge} {mult}\n{xyz}\n*\n"
+    if level != "oplsaa-l":
+        return head
+    return head + f"\n$new_job\n{sp}\n{mem}* xyzfile {charge} {mult} point.xyz\n"
+
+
+def orca_sp_input(charge=0, mult=1, level="dlpno", nprocs=1):
+    """the separate single point of a level whose first job's dispersion must not reach it (point_sp.inp)"""
+    mem = "%maxcore 6000\n" + (f"%pal nprocs {nprocs} end\n" if nprocs > 1 else "")
+    return f"{LEVELS[level][1]}\n{mem}* xyzfile {charge} {mult} point.xyz\n"
 
 
 def psi4_input(el, pos, quad, charge=0, mult=1):
@@ -347,6 +356,8 @@ def prepare():
             rel = os.path.relpath(pdir, work)   # jobs.txt and plan.json name points relative to WORKDIR: copy it anywhere
             if engine == "orca":
                 open(os.path.join(pdir, "point.inp"), "w").write(orca_input(fel, p, quad, level=level, nprocs=nprocs))
+                if level != "oplsaa-l":
+                    open(os.path.join(pdir, "point_sp.inp"), "w").write(orca_sp_input(level=level, nprocs=nprocs))
                 jobs.append(f"cd {rel} && \"${{ORCA:-orca}}\" point.inp > point.out")
             else:
                 open(os.path.join(pdir, "point.in"), "w").write(psi4_input(fel, p, quad))
@@ -375,6 +386,17 @@ def read_point(pdir, engine):
         if not (os.path.exists(out) and os.path.exists(xyz)):
             return None
         text = open(out, errors="replace").read()
+        sp = os.path.join(pdir, "point_sp.out")
+        if os.path.exists(os.path.join(pdir, "point_sp.inp")):   # a separate single point: its energy, the optimisation's geometry
+            if not os.path.exists(sp) or "OPTIMIZATION RUN DONE" not in text or "did not converge" in text:
+                return None
+            stext = open(sp, errors="replace").read()
+            if "ORCA TERMINATED NORMALLY" not in stext or not re.search(r"E\(CCSD\(T\)\)", stext):
+                return None
+            e = float(re.findall(r"FINAL SINGLE POINT ENERGY\s+(-?\d+\.\d+)", stext)[-1])
+            lines = open(xyz).read().splitlines()[2:]
+            w = [l.split() for l in lines if l.strip()]
+            return e, [x[0] for x in w], [tuple(map(float, x[1:4])) for x in w]
         # ORCA also ends normally after an optimisation that ran out of cycles: such a point is not used, nor one
         # whose correlated single point is missing
         if ("ORCA TERMINATED NORMALLY" not in text or "OPTIMIZATION RUN DONE" not in text
@@ -447,6 +469,8 @@ def fill():
                     os.makedirs(pdir, exist_ok=True)
                     rel = os.path.relpath(pdir, work)
                     open(os.path.join(pdir, "point.inp"), "w").write(orca_input(el, p, quad, level=level, nprocs=nprocs))
+                    if level != "oplsaa-l":
+                        open(os.path.join(pdir, "point_sp.inp"), "w").write(orca_sp_input(level=level, nprocs=nprocs))
                     jobs.append(f"cd {rel} && \"${{ORCA:-orca}}\" point.inp > point.out")
                     s["points"].append({"phi": target, "dir": rel, "closest_nonbonded": round(close, 3), "seed": seed["phi"]})
                     have.add(target)
