@@ -222,7 +222,7 @@ if __name__ == "__main__":
     if "martini3" in ids:
         cat["forcefields"][ids.index("martini3")] = entry
     else:
-        cat["forcefields"].insert(ids.index("martini22-proteins") + 1, entry)
+        cat["forcefields"].insert(ids.index("martini-aminoacids") + 1 if "martini-aminoacids" in ids else len(ids), entry)
     json.dump(cat, open(cat_p, "w"), ensure_ascii=False, indent=1)
     print(f"{table}: {len(types)} types, {len(pairs)} pairs ({missing} type pairs without an entry), {os.path.getsize(table)} bytes")
     print(f"{len(mols)} molecules")

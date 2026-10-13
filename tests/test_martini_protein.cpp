@@ -88,16 +88,6 @@ TEST(MartiniProtein, MatchesMartinize2) {
   double worst = 0;
   for (size_t k = 0; k < cg.atoms.size(); ++k) worst = std::max(worst, norm(cg.atoms[k].pos - pos.atoms[k].pos));
   EXPECT_LT(worst, 0.005);
-  // Martini 2.2's own bead types and pairs (martini_v2.2.itp): every bead typed and every pair found, AC1 / AC2 included
-  FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/martini22-proteins.json");
-  System s = open_file(kRef + "1ico_aa.pdb").frame(0);
-  std::string ch = "auto";
-  prepare_for_forcefield(s, def, ch);
-  const TypingResult tr = assign_types(s, def);
-  EXPECT_EQ(tr.untyped, 0);
-  ParamReport pr;
-  EXPECT_NO_THROW(parameterize(s, def, tr.types, ch, &pr, false));
-  EXPECT_TRUE(pr.missing.empty());
 }
 
 // Helices by the .ff's rules on CAPS's own helical peptide: helix-end bead types, helix constraints, 96° / 700 BBB angles in
@@ -118,20 +108,6 @@ TEST(MartiniProtein, HelixRules) {
   EXPECT_GT(helix_constraints, 8);
   EXPECT_GT(dihedrals, 8);
   EXPECT_GT(core_angles, 5);
-  FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/martini22-proteins.json");
-  System s = aa;
-  std::string ch = "auto";
-  prepare_for_forcefield(s, def, ch);
-  ASSERT_TRUE(s.topology);
-  const TypingResult tr = assign_types(s, def);
-  EXPECT_EQ(tr.untyped, 0);
-  ParamReport pr;
-  const ForceField ff = parameterize(s, def, tr.types, ch, &pr, false);
-  EXPECT_EQ(ff.dihedrals.size(), size_t(dihedrals));
-  std::vector<double> x, f;
-  for (const auto& a : s.atoms) x.insert(x.end(), {a.pos[0], a.pos[1], a.pos[2]});
-  Evaluator ev(ff, EnergyOptions{});
-  EXPECT_TRUE(std::isfinite(ev.compute(x, s.cell, f).total()));
 }
 
 namespace {

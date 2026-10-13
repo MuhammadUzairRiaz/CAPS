@@ -1034,47 +1034,6 @@ TEST(FFDef, OneTorsionPerBond) {
   std::filesystem::remove(path);
 }
 
-// GROMOS 54A7 by its building blocks (aminoacids.rtp and the termini, as pdb2gmx applies them): an all-atom peptide is
-// folded to united atoms, each residue recognised, its types, charges and coded terms taken from the block. The counts
-// are pdb2gmx's own for the same peptide (bench/ff/compare_pdb2gmx.py: same topology and energies); rigid solvents
-// (water, chloroform) take their blocks' constraint bonds
-TEST(FFDef, GromosBuildingBlocksAsPdb2gmx) {
-  const std::string path = std::string(CAPS_SOURCE_DIR) + "/data/forcefields/gromos54a7-gromacs.json";
-  const FFDef def = load_forcefield(path);
-  PeptideOptions po;
-  po.sequence = "GAFKWDR";
-  System s = build_peptide(po);
-  std::string ch = "auto";
-  const std::string note = prepare_for_forcefield(s, def, ch);
-  EXPECT_NE(note.find("7 residues recognised"), std::string::npos) << note;
-  ASSERT_TRUE(s.topology);
-  EXPECT_EQ(s.atoms.size(), 91u);
-  EXPECT_EQ(s.topology->bonds.size(), 93u);
-  EXPECT_EQ(s.topology->angles.size(), 140u);
-  EXPECT_EQ(s.topology->pairs14.size(), 115u);
-  size_t impropers = 0;
-  for (const auto& d : s.topology->dihedrals) impropers += d.form == 2;
-  EXPECT_EQ(impropers, 56u);
-  double q = 0;
-  for (const auto& a : s.atoms) q += a.charge;
-  EXPECT_NEAR(q, 1.0, 1e-9);   // K+, R+, D−; NH3+ and COO− termini
-  const TypingResult tr = assign_types(s, def);
-  ParamReport rep;
-  const ForceField ff = parameterize(s, def, tr.types, "keep", &rep, false);
-  EXPECT_TRUE(rep.missing.empty());
-  EXPECT_EQ(ff.bonds_x.size(), 93u);
-  EXPECT_EQ(ff.pairs14.size(), 115u);
-  // chloroform: its H kept, the block's H–Cl and Cl–Cl constraint bonds in place of C–H
-  BuildOptions bo;
-  bo.forcefield = "uff";
-  System c = build_molecule("ClC(Cl)Cl", bo).system;
-  ch = "auto";
-  prepare_for_forcefield(c, def, ch);
-  ASSERT_EQ(c.atoms.size(), 5u);
-  EXPECT_EQ(c.bonds.size(), 9u);
-  EXPECT_EQ(c.atoms[0].resname, "CHCL3");
-}
-
 // ClayFF from its paper (Cygan, Liang & Kalinichev, J. Phys. Chem. B 108, 1255 (2004); bench/ff/make_clayff_cygan2004.py):
 // every charge, Do and Ro of Table 1 and every term of Table 2 (p 1259), as an independent transcription here; Do, Ro as
 // Lennard-Jones epsilon = Do, sigma = Ro / 2^(1/6), Lorentz-Berthelot (Eqs. 4-5). Brucite (data/crystals) is typed mgh /

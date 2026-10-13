@@ -121,9 +121,9 @@ std::string ff_path(const std::string& s0) {
   static const std::map<std::string, std::string> alias = {
       {"gaff2", "gaff2-2.2.20-ambertools"}, {"gaff", "gaff-1.81-ambertools"}, {"opls", "oplsaa2024"}, {"pcff", "pcff-frc"},
       {"opls-ua", "oplsua2024"}, {"oplsua", "oplsua2024"}, {"compass", "compass-frc"}, {"cvff", "cvff-frc"},
-      {"amber", "amber-ff14sb-ambertools"}, {"charmm", "charmm36-prot-toppar"}, {"dreiding", "dreiding1990"}, {"cgenff", "cgenff-toppar"},
-      {"charmm19", "charmm19-toppar"}, {"trappe-ua", "trappe-ua-umn"}, {"trappe", "trappe-ua-umn"}, {"gromos", "gromos54a7-gromacs"},
-      {"gromos54a7", "gromos54a7-gromacs"}, {"clayff", "clayff-cygan2004"}, {"clayff2004", "clayff-cygan2004"}, {"trappe-eh", "trappe-eh-umn"}};
+      {"dreiding", "dreiding1990"}, {"cgenff", "cgenff-toppar"},
+      {"trappe-ua", "trappe-ua-umn"}, {"trappe", "trappe-ua-umn"},
+      {"clayff", "clayff-cygan2004"}, {"clayff2004", "clayff-cygan2004"}, {"trappe-eh", "trappe-eh-umn"}};
   std::string lower = s0;
   for (auto& c : lower) c = char(std::tolower((unsigned char)c));
   auto al = alias.find(lower);

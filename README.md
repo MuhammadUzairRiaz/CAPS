@@ -57,7 +57,7 @@ program, on your own computer.
 - A library of more than 60 force-field files, each with its own atom typing and native charges:
   - **Class II:** PCFF and COMPASS
   - **OPLS:** OPLS-AA (2005, 2020, 2024)
-  - **Other all-atom:** GAFF / GAFF2, AMBER, CHARMM, CVFF, DREIDING, GROMOS and UFF, which covers every element
+  - **Other all-atom:** GAFF / GAFF2, CVFF, DREIDING and UFF, which covers every element
   - **United-atom:** TraPPE-UA
   - **Inorganic:** IFF, ClayFF and inorganic sets for oxides, clays, glasses and zeolites
   - **Coarse-grained:** Martini, SDK and DPD
