@@ -284,6 +284,11 @@ CASES = [
     ("TraPPE-UA (TraPPE database): hexane, DME (1-4 Coulomb x 0.5), methyl methacrylate, ethanol, propionitrile, cis-2-butene", ("smiles", "CCCCCC.COCCOC.CC(=C)C(=O)OC.CCO.CCC#N.C/C=C\\C"),
      "trappe-ua-umn", "types", "rules"),
     ("TraPPE-UA alkanes (moltemplate): dodecane", ("smiles", "CCCCCCCCCCCC"), "trappe1998-moltemplate", "keep", "rules"),
+    # OPLS-UA: the 2024 file's united-atom types with the 1984 paper's terms where the file has none
+    # (bench/ff/open/oplsua2024_supplement.json): CH-CH2 torsions (isopentane), C=C-C-C (1-butene), bends by Table I
+    ("OPLS-UA 2024 + 1984 terms: polypropylene tetramer", ("smiles", "CC(C)CC(C)CC(C)CC(C)C"), "oplsua2024", "types", "rules"),
+    ("OPLS-UA 2024 + 1984 terms: 1,4-polybutadiene trimer (cis, trans, cis)", ("smiles", "C/C=C\\CC/C=C/CC/C=C\\C"), "oplsua2024", "types", "rules"),
+    ("OPLS-UA 2024 + 1984 terms: cis-1,4-polyisoprene trimer", ("smiles", "C/C=C(C)\\CC/C=C(C)\\CC/C=C(C)\\C"), "oplsua2024", "types", "rules"),
     # coarse-grained: MARTINI (lj/gromacs + coul/gromacs, dielectric 15, cosine/squared angles, 1-3 and 1-4 pairs kept)
     # and SDK (lj/sdk 9-6 / 12-4, angle sdk with its 1-3 repulsion), bead molecules and water beads in periodic boxes
     ("MARTINI DPPC + POPE + ions + water (periodic)", ("cg-box", "martini-moltemplate", [("template", "DPPC", 6), ("template", "POPE", 4),
@@ -356,7 +361,13 @@ def read_back(apply_cmd, d, ffj, extra, tol):
             return "read back: no data file alone (different 1-4 scalings by group)", True
         return "READ BACK: writing the data file failed: " + why[:150], False
     ce = energy_terms(w.stdout)
-    cut = json.load(open(ffj)).get("cutoff", 10.0) if ffj != "uff" else 10.0
+    cut = 10.0
+    if ffj != "uff":   # an overlay (OPLS-UA on OPLS-AA 2024) takes the cut-off of the file it extends unless it sets its own
+        j = json.load(open(ffj))
+        while "cutoff" not in j and "extends" in j:
+            ffj = os.path.join(os.path.dirname(ffj), j["extends"])
+            j = json.load(open(ffj))
+        cut = j.get("cutoff", 10.0)
     cmd = [CAPS, "ff", "apply", data, "--ff", "file", "--cutoff", str(cut), "--no-tail"]
     for k, a in enumerate(extra):
         if a in ("--no-tail", "--pme"):
