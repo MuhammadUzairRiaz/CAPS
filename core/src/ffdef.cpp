@@ -390,6 +390,7 @@ void save_forcefield(const FFDef& ff, const std::string& path) {
   if (ff.improper_max_neighbours) j["improper_max_neighbours"] = ff.improper_max_neighbours;
   if (ff.wildcard_torsion_scaling != "none") j["wildcard_torsion_scaling"] = ff.wildcard_torsion_scaling;
   if (!ff.charge_increments_from.empty()) j["charge_increments_from"] = ff.charge_increments_from;
+  if (ff.ion_charge_scale != 1.0) j["ion_charge_scale"] = ff.ion_charge_scale;
   if (!ff.torsion_rules.empty()) j["torsion_rules"] = ff.torsion_rules;
   if (ff.angle_contacts > 0) j["angle_contacts"] = ff.angle_contacts;
   if (!ff.hbonds.terms.empty()) {
@@ -573,6 +574,7 @@ FFDef load_forcefield(const std::string& path) {
   ff.improper_max_neighbours = int(j.num("improper_max_neighbours", 0));
   ff.wildcard_torsion_scaling = j.text("wildcard_torsion_scaling", ff.wildcard_torsion_scaling);
   ff.charge_increments_from = j.text("charge_increments_from", ff.charge_increments_from);
+  ff.ion_charge_scale = j.num("ion_charge_scale", 1.0);
   ff.torsion_rules = j.text("torsion_rules");
   ff.angle_contacts = j.num("angle_contacts", 0);
   if (j.has("hbonds")) {

@@ -147,6 +147,9 @@ struct FFDef {
   // Charges "increments": the force field named here (a file beside this one, e.g. "opls2005.json") types the
   // structure and gives its bond-increment charges, used with this force field's types (see companion_charges).
   std::string charge_increments_from;
+  // Ions carry their formal charge times this (OPLS-DES: +-0.8 e, "ion_charge_scale": 0.8); the type-charge check
+  // compares a structure's net charge with its formal charge times this.
+  double ion_charge_scale = 1.0;
   // "dreiding1990": a torsion no rule lists takes DREIDING's own rule by the hybridisation of its central atoms (Mayo,
   // Olafson, Goddard 1990, cases a-j), its barrier divided over the torsions about the bond
   std::string torsion_rules;

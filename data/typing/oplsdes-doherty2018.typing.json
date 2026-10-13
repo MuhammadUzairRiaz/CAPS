@@ -1,0 +1,483 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "OPLS-DES (Doherty & Acevedo 2018)",
+ "unknown_types": "untyped",
+ "description": "CAPS rules for OPLS-DES's molecules as the SI's Schemes S1 and S2 type them, each rule only inside its own whole molecule (bench/typing/make_oplsdes_doherty2018_rules.py)",
+ "rules": [
+  {
+   "type": "NA",
+   "smarts": "[#7X4]",
+   "priority": 5,
+   "description": "N (choline)",
+   "in_molecule": [
+    "[CX4H3][#7X4]([CX4H3])([CX4H3])[CX4H2][CX4H2][OX2H1]"
+   ]
+  },
+  {
+   "type": "CA",
+   "smarts": "[CX4H3]",
+   "priority": 5,
+   "description": "methyl C (choline)",
+   "in_molecule": [
+    "[CX4H3][#7X4]([CX4H3])([CX4H3])[CX4H2][CX4H2][OX2H1]"
+   ]
+  },
+  {
+   "type": "CS",
+   "smarts": "[CX4H2]-[#7]",
+   "priority": 5,
+   "description": "CH2 on N (choline)",
+   "in_molecule": [
+    "[CX4H3][#7X4]([CX4H3])([CX4H3])[CX4H2][CX4H2][OX2H1]"
+   ]
+  },
+  {
+   "type": "CW",
+   "smarts": "[CX4H2]-[#8]",
+   "priority": 5,
+   "description": "CH2 on O (choline)",
+   "in_molecule": [
+    "[CX4H3][#7X4]([CX4H3])([CX4H3])[CX4H2][CX4H2][OX2H1]"
+   ]
+  },
+  {
+   "type": "OY",
+   "smarts": "[OX2]",
+   "priority": 5,
+   "description": "hydroxyl O (choline)",
+   "in_molecule": [
+    "[CX4H3][#7X4]([CX4H3])([CX4H3])[CX4H2][CX4H2][OX2H1]"
+   ]
+  },
+  {
+   "type": "HY",
+   "smarts": "[H][#8]",
+   "priority": 5,
+   "description": "hydroxyl H (choline)",
+   "in_molecule": [
+    "[CX4H3][#7X4]([CX4H3])([CX4H3])[CX4H2][CX4H2][OX2H1]"
+   ]
+  },
+  {
+   "type": "HA",
+   "smarts": "[H][CX4H3]",
+   "priority": 5,
+   "description": "H on a methyl (choline)",
+   "in_molecule": [
+    "[CX4H3][#7X4]([CX4H3])([CX4H3])[CX4H2][CX4H2][OX2H1]"
+   ]
+  },
+  {
+   "type": "HS",
+   "smarts": "[H][CX4H2]-[#7]",
+   "priority": 5,
+   "description": "H on the CH2 on N (choline)",
+   "in_molecule": [
+    "[CX4H3][#7X4]([CX4H3])([CX4H3])[CX4H2][CX4H2][OX2H1]"
+   ]
+  },
+  {
+   "type": "HW",
+   "smarts": "[H][CX4H2]-[#8]",
+   "priority": 5,
+   "description": "H on the CH2 on O (choline)",
+   "in_molecule": [
+    "[CX4H3][#7X4]([CX4H3])([CX4H3])[CX4H2][CX4H2][OX2H1]"
+   ]
+  },
+  {
+   "type": "Cl",
+   "smarts": "[Cl;X0]",
+   "priority": 5,
+   "description": "chloride"
+  },
+  {
+   "type": "OG_etg",
+   "smarts": "[OX2]",
+   "priority": 5,
+   "description": "O (OH in Scheme S2) (ethylene glycol)",
+   "in_molecule": [
+    "[OX2H1][CX4H2][CX4H2][OX2H1]"
+   ]
+  },
+  {
+   "type": "HO_etg",
+   "smarts": "[H][#8]",
+   "priority": 5,
+   "description": "hydroxyl H (ethylene glycol)",
+   "in_molecule": [
+    "[OX2H1][CX4H2][CX4H2][OX2H1]"
+   ]
+  },
+  {
+   "type": "CG_etg",
+   "smarts": "[#6]",
+   "priority": 5,
+   "description": "C (ethylene glycol)",
+   "in_molecule": [
+    "[OX2H1][CX4H2][CX4H2][OX2H1]"
+   ]
+  },
+  {
+   "type": "HG_etg",
+   "smarts": "[H][#6]",
+   "priority": 5,
+   "description": "H on C (ethylene glycol)",
+   "in_molecule": [
+    "[OX2H1][CX4H2][CX4H2][OX2H1]"
+   ]
+  },
+  {
+   "type": "CM_gly",
+   "smarts": "[CX4H1]",
+   "priority": 5,
+   "description": "central CH (glycerol)",
+   "in_molecule": [
+    "[OX2H1][CX4H2][CX4H1]([OX2H1])[CX4H2][OX2H1]"
+   ]
+  },
+  {
+   "type": "CB_gly",
+   "smarts": "[CX4H2]",
+   "priority": 5,
+   "description": "terminal CH2 (glycerol)",
+   "in_molecule": [
+    "[OX2H1][CX4H2][CX4H1]([OX2H1])[CX4H2][OX2H1]"
+   ]
+  },
+  {
+   "type": "OM_gly",
+   "smarts": "[OX2]-[CX4H1]",
+   "priority": 5,
+   "description": "O on the central C (glycerol)",
+   "in_molecule": [
+    "[OX2H1][CX4H2][CX4H1]([OX2H1])[CX4H2][OX2H1]"
+   ]
+  },
+  {
+   "type": "OH_gly",
+   "smarts": "[OX2]-[CX4H2]",
+   "priority": 5,
+   "description": "O on a terminal C (glycerol)",
+   "in_molecule": [
+    "[OX2H1][CX4H2][CX4H1]([OX2H1])[CX4H2][OX2H1]"
+   ]
+  },
+  {
+   "type": "HM_gly",
+   "smarts": "[H][#8]-[CX4H1]",
+   "priority": 5,
+   "description": "H on the central O (glycerol)",
+   "in_molecule": [
+    "[OX2H1][CX4H2][CX4H1]([OX2H1])[CX4H2][OX2H1]"
+   ]
+  },
+  {
+   "type": "HO_gly",
+   "smarts": "[H][#8]-[CX4H2]",
+   "priority": 5,
+   "description": "H on a terminal O (glycerol)",
+   "in_molecule": [
+    "[OX2H1][CX4H2][CX4H1]([OX2H1])[CX4H2][OX2H1]"
+   ]
+  },
+  {
+   "type": "HZ_gly",
+   "smarts": "[H][CX4H1]",
+   "priority": 5,
+   "description": "H on the central C (glycerol)",
+   "in_molecule": [
+    "[OX2H1][CX4H2][CX4H1]([OX2H1])[CX4H2][OX2H1]"
+   ]
+  },
+  {
+   "type": "HC_gly",
+   "smarts": "[H][CX4H2]",
+   "priority": 5,
+   "description": "H on a terminal C (glycerol)",
+   "in_molecule": [
+    "[OX2H1][CX4H2][CX4H1]([OX2H1])[CX4H2][OX2H1]"
+   ]
+  },
+  {
+   "type": "CB_lev",
+   "smarts": "[CX3]-[OX2]",
+   "priority": 5,
+   "description": "carboxyl C (levulinic acid)",
+   "in_molecule": [
+    "[CX4H3][CX3](=[OX1])[CX4H2][CX4H2][CX3](=[OX1])[OX2H1]"
+   ]
+  },
+  {
+   "type": "OB_lev",
+   "smarts": "[OX1]=[CX3]-[OX2]",
+   "priority": 5,
+   "description": "carboxyl =O (levulinic acid)",
+   "in_molecule": [
+    "[CX4H3][CX3](=[OX1])[CX4H2][CX4H2][CX3](=[OX1])[OX2H1]"
+   ]
+  },
+  {
+   "type": "OH_lev",
+   "smarts": "[OX2]",
+   "priority": 5,
+   "description": "carboxyl OH (levulinic acid)",
+   "in_molecule": [
+    "[CX4H3][CX3](=[OX1])[CX4H2][CX4H2][CX3](=[OX1])[OX2H1]"
+   ]
+  },
+  {
+   "type": "HO_lev",
+   "smarts": "[H][#8]",
+   "priority": 5,
+   "description": "carboxyl H (levulinic acid)",
+   "in_molecule": [
+    "[CX4H3][CX3](=[OX1])[CX4H2][CX4H2][CX3](=[OX1])[OX2H1]"
+   ]
+  },
+  {
+   "type": "CD_lev",
+   "smarts": "[CX3;!$(*-[OX2])]",
+   "priority": 5,
+   "description": "ketone C (levulinic acid)",
+   "in_molecule": [
+    "[CX4H3][CX3](=[OX1])[CX4H2][CX4H2][CX3](=[OX1])[OX2H1]"
+   ]
+  },
+  {
+   "type": "OC_lev",
+   "smarts": "[OX1]=[CX3;!$(*-[OX2])]",
+   "priority": 5,
+   "description": "ketone O (levulinic acid)",
+   "in_molecule": [
+    "[CX4H3][CX3](=[OX1])[CX4H2][CX4H2][CX3](=[OX1])[OX2H1]"
+   ]
+  },
+  {
+   "type": "CZ_lev",
+   "smarts": "[CX4H2]-[CX3]-[OX2]",
+   "priority": 5,
+   "description": "CH2 on the carboxyl C (levulinic acid)",
+   "in_molecule": [
+    "[CX4H3][CX3](=[OX1])[CX4H2][CX4H2][CX3](=[OX1])[OX2H1]"
+   ]
+  },
+  {
+   "type": "CF_lev",
+   "smarts": "[CX4H2]-[CX3;!$(*-[OX2])]",
+   "priority": 5,
+   "description": "CH2 on the ketone C (levulinic acid)",
+   "in_molecule": [
+    "[CX4H3][CX3](=[OX1])[CX4H2][CX4H2][CX3](=[OX1])[OX2H1]"
+   ]
+  },
+  {
+   "type": "CT_lev",
+   "smarts": "[CX4H3]",
+   "priority": 5,
+   "description": "methyl C (levulinic acid)",
+   "in_molecule": [
+    "[CX4H3][CX3](=[OX1])[CX4H2][CX4H2][CX3](=[OX1])[OX2H1]"
+   ]
+  },
+  {
+   "type": "HZ_lev",
+   "smarts": "[H][CX4H2]-[CX3]-[OX2]",
+   "priority": 5,
+   "description": "H on CZ (levulinic acid)",
+   "in_molecule": [
+    "[CX4H3][CX3](=[OX1])[CX4H2][CX4H2][CX3](=[OX1])[OX2H1]"
+   ]
+  },
+  {
+   "type": "HF_lev",
+   "smarts": "[H][CX4H2]-[CX3;!$(*-[OX2])]",
+   "priority": 5,
+   "description": "H on CF (levulinic acid)",
+   "in_molecule": [
+    "[CX4H3][CX3](=[OX1])[CX4H2][CX4H2][CX3](=[OX1])[OX2H1]"
+   ]
+  },
+  {
+   "type": "HT_lev",
+   "smarts": "[H][CX4H3]",
+   "priority": 5,
+   "description": "H on the methyl (levulinic acid)",
+   "in_molecule": [
+    "[CX4H3][CX3](=[OX1])[CX4H2][CX4H2][CX3](=[OX1])[OX2H1]"
+   ]
+  },
+  {
+   "type": "CD_mal",
+   "smarts": "[CX3]",
+   "priority": 5,
+   "description": "carboxyl C (malonic acid)",
+   "in_molecule": [
+    "[OX2H1][CX3](=[OX1])[CX4H2][CX3](=[OX1])[OX2H1]"
+   ]
+  },
+  {
+   "type": "OD_mal",
+   "smarts": "[OX1]",
+   "priority": 5,
+   "description": "carboxyl =O (malonic acid)",
+   "in_molecule": [
+    "[OX2H1][CX3](=[OX1])[CX4H2][CX3](=[OX1])[OX2H1]"
+   ]
+  },
+  {
+   "type": "OH_mal",
+   "smarts": "[OX2]",
+   "priority": 5,
+   "description": "carboxyl OH (malonic acid)",
+   "in_molecule": [
+    "[OX2H1][CX3](=[OX1])[CX4H2][CX3](=[OX1])[OX2H1]"
+   ]
+  },
+  {
+   "type": "HO_mal",
+   "smarts": "[H][#8]",
+   "priority": 5,
+   "description": "carboxyl H (malonic acid)",
+   "in_molecule": [
+    "[OX2H1][CX3](=[OX1])[CX4H2][CX3](=[OX1])[OX2H1]"
+   ]
+  },
+  {
+   "type": "CT_mal",
+   "smarts": "[CX4]",
+   "priority": 5,
+   "description": "CH2 (malonic acid)",
+   "in_molecule": [
+    "[OX2H1][CX3](=[OX1])[CX4H2][CX3](=[OX1])[OX2H1]"
+   ]
+  },
+  {
+   "type": "HC_mal",
+   "smarts": "[H][#6]",
+   "priority": 5,
+   "description": "H on the CH2 (malonic acid)",
+   "in_molecule": [
+    "[OX2H1][CX3](=[OX1])[CX4H2][CX3](=[OX1])[OX2H1]"
+   ]
+  },
+  {
+   "type": "CD_ox",
+   "smarts": "[CX3]",
+   "priority": 5,
+   "description": "C (oxalic acid)",
+   "in_molecule": [
+    "[OX2H1][CX3](=[OX1])[CX3](=[OX1])[OX2H1]"
+   ]
+  },
+  {
+   "type": "OD_ox",
+   "smarts": "[OX1]",
+   "priority": 5,
+   "description": "=O (oxalic acid)",
+   "in_molecule": [
+    "[OX2H1][CX3](=[OX1])[CX3](=[OX1])[OX2H1]"
+   ]
+  },
+  {
+   "type": "OH_ox",
+   "smarts": "[OX2]",
+   "priority": 5,
+   "description": "OH (oxalic acid)",
+   "in_molecule": [
+    "[OX2H1][CX3](=[OX1])[CX3](=[OX1])[OX2H1]"
+   ]
+  },
+  {
+   "type": "HO_ox",
+   "smarts": "[H][#8]",
+   "priority": 5,
+   "description": "H (oxalic acid)",
+   "in_molecule": [
+    "[OX2H1][CX3](=[OX1])[CX3](=[OX1])[OX2H1]"
+   ]
+  },
+  {
+   "type": "CO_phe",
+   "smarts": "[c]-[OX2]",
+   "priority": 5,
+   "description": "ring C holding the OH (phenol)",
+   "in_molecule": [
+    "[OX2H1][cX3]1[cX3H1][cX3H1][cX3H1][cX3H1][cX3H1]1"
+   ]
+  },
+  {
+   "type": "CB_phe",
+   "smarts": "[cH1]",
+   "priority": 5,
+   "description": "ring CH (phenol)",
+   "in_molecule": [
+    "[OX2H1][cX3]1[cX3H1][cX3H1][cX3H1][cX3H1][cX3H1]1"
+   ]
+  },
+  {
+   "type": "HB_phe",
+   "smarts": "[H][c]",
+   "priority": 5,
+   "description": "ring H (phenol)",
+   "in_molecule": [
+    "[OX2H1][cX3]1[cX3H1][cX3H1][cX3H1][cX3H1][cX3H1]1"
+   ]
+  },
+  {
+   "type": "OH_phe",
+   "smarts": "[OX2]",
+   "priority": 5,
+   "description": "O (phenol)",
+   "in_molecule": [
+    "[OX2H1][cX3]1[cX3H1][cX3H1][cX3H1][cX3H1][cX3H1]1"
+   ]
+  },
+  {
+   "type": "HO_phe",
+   "smarts": "[H][#8]",
+   "priority": 5,
+   "description": "hydroxyl H (phenol)",
+   "in_molecule": [
+    "[OX2H1][cX3]1[cX3H1][cX3H1][cX3H1][cX3H1][cX3H1]1"
+   ]
+  },
+  {
+   "type": "C_urea",
+   "smarts": "[CX3]",
+   "priority": 5,
+   "description": "C (urea)",
+   "in_molecule": [
+    "[NX3H2][CX3](=[OX1])[NX3H2]"
+   ]
+  },
+  {
+   "type": "O_urea",
+   "smarts": "[OX1]",
+   "priority": 5,
+   "description": "O (urea)",
+   "in_molecule": [
+    "[NX3H2][CX3](=[OX1])[NX3H2]"
+   ]
+  },
+  {
+   "type": "N_urea",
+   "smarts": "[NX3]",
+   "priority": 5,
+   "description": "N (urea)",
+   "in_molecule": [
+    "[NX3H2][CX3](=[OX1])[NX3H2]"
+   ]
+  },
+  {
+   "type": "HT_urea",
+   "smarts": "[H][#7]",
+   "priority": 5,
+   "description": "H on N (Scheme S2's HT and HC, the same terms; a graph cannot tell cis from trans) (urea)",
+   "in_molecule": [
+    "[NX3H2][CX3](=[OX1])[NX3H2]"
+   ]
+  }
+ ]
+}
