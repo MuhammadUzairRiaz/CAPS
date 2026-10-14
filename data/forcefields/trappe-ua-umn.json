@@ -20061,6 +20061,1410 @@
    "comment": "CAPS's transfer, not a TraPPE term: no TraPPE paper or model defines a torsion about a trisubstituted C=C (the CH=C(CH3) of polyisoprene); a rotation scan through the pi bond cannot be fitted, so the double bond keeps its configuration by Wick, Martin & Siepmann, J. Phys. Chem. B 104, 8008 (2000) Table 4's CHx-(CH)=(CH)-CHy cis / trans term, with the database's x 2 as for the disubstituted bonds"
   },
   {
+   "name": "CH2_13-CH2_3-C_99-O_100 (CAPS fit)",
+   "match": [
+    "CH2_13",
+    "CH2_3",
+    "C_99",
+    "O_100"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    0.96235,
+    1,
+    0.0,
+    -1.19535,
+    2,
+    180.0,
+    0.9203,
+    3,
+    0.0,
+    0.0013,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH2_13-CH2_3-C_99-O_100 0.16, tf20__CH2_13-CH2_3-C_99-O_101 0.16 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH2_13-CH2_3-C_99-O_101 (CAPS fit)",
+   "match": [
+    "CH2_13",
+    "CH2_3",
+    "C_99",
+    "O_101"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    1.33835,
+    1,
+    0.0,
+    1.3534,
+    2,
+    180.0,
+    1.018,
+    3,
+    0.0,
+    0.06245,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH2_13-CH2_3-C_99-O_100 0.16, tf20__CH2_13-CH2_3-C_99-O_101 0.16 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH2_13-CH_18-O_101-C_99 (CAPS fit)",
+   "match": [
+    "CH2_13",
+    "CH_18",
+    "O_101",
+    "C_99"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    -2.68115,
+    1,
+    0.0,
+    2.4811,
+    2,
+    180.0,
+    -1.49995,
+    3,
+    0.0,
+    -0.2562,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH2_13-CH_18-O_101-C_99 0.95 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH2_3-CH_18-O_101-C_99 (CAPS fit)",
+   "match": [
+    "CH2_3",
+    "CH_18",
+    "O_101",
+    "C_99"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    -0.8053,
+    1,
+    0.0,
+    0.4275,
+    2,
+    180.0,
+    0.0517,
+    3,
+    0.0,
+    -0.2021,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH2_3-CH_18-O_101-C_99 0.38, tf20__CH3_2-CH_18-O_101-C_99 0.41 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH3_2-CH_18-O_101-C_99 (CAPS fit)",
+   "match": [
+    "CH3_2",
+    "CH_18",
+    "O_101",
+    "C_99"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    -0.03535,
+    1,
+    0.0,
+    0.56905,
+    2,
+    180.0,
+    0.34485,
+    3,
+    0.0,
+    -0.33055,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH2_13-CH_18-O_101-C_99 0.95, tf20__CH3_2-CH_18-O_101-C_99 0.41 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH2_17-CH_10-C_89-CH_88 (CAPS fit)",
+   "match": [
+    "CH2_17",
+    "CH_10",
+    "C_89",
+    "CH_88"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    -0.25605,
+    1,
+    0.0,
+    -1.77925,
+    2,
+    180.0,
+    -0.7182,
+    3,
+    0.0,
+    0.46195,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH2_17-CH_10-C_89-CH_88 0.35, tf20__CH_88-C_89-CH_10-O_6 0.41 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH_88-C_89-CH_10-O_6 (CAPS fit)",
+   "match": [
+    "CH_88",
+    "C_89",
+    "CH_10",
+    "O_6"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    -0.0936,
+    1,
+    0.0,
+    -1.1111,
+    2,
+    180.0,
+    1.2111,
+    3,
+    0.0,
+    0.44845,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH2_17-CH_10-C_89-CH_88 0.35, tf20__CH_88-C_89-CH_10-O_6 0.41 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH2_17-CH_18-C_89-CH_88 (CAPS fit)",
+   "match": [
+    "CH2_17",
+    "CH_18",
+    "C_89",
+    "CH_88"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    -0.90075,
+    1,
+    0.0,
+    -0.69815,
+    2,
+    180.0,
+    -1.62645,
+    3,
+    0.0,
+    0.04745,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH2_17-CH_18-C_89-CH_88 0.41 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH3_2-CH_18-C_89-CH_88 (CAPS fit)",
+   "match": [
+    "CH3_2",
+    "CH_18",
+    "C_89",
+    "CH_88"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    1.0386,
+    1,
+    0.0,
+    -0.10315,
+    2,
+    180.0,
+    -1.0238,
+    3,
+    0.0,
+    0.18735,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH3_2-CH_18-C_89-CH_88 0.13, tf20__CH_88-C_89-CH_18-O_20 0.18 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH_88-C_89-CH_18-O_20 (CAPS fit)",
+   "match": [
+    "CH_88",
+    "C_89",
+    "CH_18",
+    "O_20"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    -1.41505,
+    1,
+    0.0,
+    0.18445,
+    2,
+    180.0,
+    0.72645,
+    3,
+    0.0,
+    0.0552,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 3 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH2_17-CH_18-C_89-CH_88 0.41, tf20__CH3_2-CH_18-C_89-CH_88 0.13, tf20__CH_88-C_89-CH_18-O_20 0.18 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH2_17-O_101-C_99-CH2_3 (CAPS fit)",
+   "match": [
+    "CH2_17",
+    "O_101",
+    "C_99",
+    "CH2_3"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    1.75465,
+    1,
+    0.0,
+    2.3052,
+    2,
+    180.0,
+    0.27425,
+    3,
+    0.0,
+    0.11655,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH2_17-O_101-C_99-CH2_3 0.09 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH2_17-O_101-C_99-CH3_2 (CAPS fit)",
+   "match": [
+    "CH2_17",
+    "O_101",
+    "C_99",
+    "CH3_2"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    1.8368,
+    1,
+    0.0,
+    2.36005,
+    2,
+    180.0,
+    0.34945,
+    3,
+    0.0,
+    0.10215,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH2_17-O_101-C_99-CH3_2 0.08 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH2_29-CH_30-CH_4-CH2_3 (CAPS fit)",
+   "match": [
+    "CH2_29",
+    "CH_30",
+    "CH_4",
+    "CH2_3"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    0.18415,
+    1,
+    0.0,
+    -0.1902,
+    2,
+    180.0,
+    -0.67375,
+    3,
+    0.0,
+    0.3799,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH2_29-CH_30-CH_4-CH2_3 0.66, tf20__CH2_29-CH_30-CH_4-CH3_2 0.15 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH2_29-CH_30-CH_4-CH3_2 (CAPS fit)",
+   "match": [
+    "CH2_29",
+    "CH_30",
+    "CH_4",
+    "CH3_2"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    0.0048,
+    1,
+    0.0,
+    0.0454,
+    2,
+    180.0,
+    -0.8266,
+    3,
+    0.0,
+    0.32605,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH2_29-CH_30-CH_4-CH3_2 0.15 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH2_29-C_31-CH2_3-CH_4 (CAPS fit)",
+   "match": [
+    "CH2_29",
+    "C_31",
+    "CH2_3",
+    "CH_4"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    -1.3331,
+    1,
+    0.0,
+    0.5688,
+    2,
+    180.0,
+    1.9899,
+    3,
+    0.0,
+    1.28565,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH2_29-C_31-CH2_3-CH_4 0.33, tf20__CH3_2-C_31-CH2_3-CH_4 0.52 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH3_2-C_31-CH2_3-CH_4 (CAPS fit)",
+   "match": [
+    "CH3_2",
+    "C_31",
+    "CH2_3",
+    "CH_4"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    -0.1778,
+    1,
+    0.0,
+    -1.2158,
+    2,
+    180.0,
+    3.4192,
+    3,
+    0.0,
+    -0.9984,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH2_29-C_31-CH2_3-CH_4 0.33, tf20__CH3_2-C_31-CH2_3-CH_4 0.52 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH2_29-C_31-CH_4-CH2_3 (CAPS fit)",
+   "match": [
+    "CH2_29",
+    "C_31",
+    "CH_4",
+    "CH2_3"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    -0.95615,
+    1,
+    0.0,
+    0.72265,
+    2,
+    180.0,
+    -0.4855,
+    3,
+    0.0,
+    1.0144,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH2_29-C_31-CH_4-CH2_3 0.48, tf20__CH2_3-CH_4-C_31-CH3_2 0.56 kcal/mol; ridge 0.03"
+  },
+  {
+   "name": "CH2_3-CH_4-C_31-CH3_2 (CAPS fit)",
+   "match": [
+    "CH2_3",
+    "CH_4",
+    "C_31",
+    "CH3_2"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    -0.0066,
+    1,
+    0.0,
+    -2.13145,
+    2,
+    180.0,
+    0.33315,
+    3,
+    0.0,
+    -1.11265,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH2_29-C_31-CH_4-CH2_3 0.48, tf20__CH2_3-CH_4-C_31-CH3_2 0.56 kcal/mol; ridge 0.03"
+  },
+  {
+   "name": "CH2_3-CH2_3-C_31-CH3_2 (CAPS fit)",
+   "match": [
+    "CH2_3",
+    "CH2_3",
+    "C_31",
+    "CH3_2"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    -0.3043,
+    1,
+    0.0,
+    -1.63845,
+    2,
+    180.0,
+    1.88265,
+    3,
+    0.0,
+    0.3638,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH2_3-CH2_3-C_31-CH3_2 0.17, tf20__CH2_3-CH2_3-C_31-CH_30 0.08 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH2_3-CH2_3-C_31-CH_30 (CAPS fit)",
+   "match": [
+    "CH2_3",
+    "CH2_3",
+    "C_31",
+    "CH_30"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    -1.28045,
+    1,
+    0.0,
+    0.91735,
+    2,
+    180.0,
+    0.4811,
+    3,
+    0.0,
+    -0.207,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH2_3-CH2_3-C_31-CH3_2 0.17, tf20__CH2_3-CH2_3-C_31-CH_30 0.08 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH2_3-CH2_3-C_99-O_100 (CAPS fit)",
+   "match": [
+    "CH2_3",
+    "CH2_3",
+    "C_99",
+    "O_100"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    -0.4072,
+    1,
+    0.0,
+    0.0326,
+    2,
+    180.0,
+    0.34295,
+    3,
+    0.0,
+    0.0897,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH2_3-CH2_3-C_99-O_100 0.00, tf20__CH2_3-CH2_3-C_99-O_101 0.01 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH2_3-CH2_3-C_99-O_101 (CAPS fit)",
+   "match": [
+    "CH2_3",
+    "CH2_3",
+    "C_99",
+    "O_101"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    0.03985,
+    1,
+    0.0,
+    -0.04215,
+    2,
+    180.0,
+    0.4287,
+    3,
+    0.0,
+    -0.01975,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH2_3-CH2_3-C_99-O_100 0.00, tf20__CH2_3-CH2_3-C_99-O_101 0.01 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH2_3-CH_4-C_23-CH3_2 (CAPS fit)",
+   "match": [
+    "CH2_3",
+    "CH_4",
+    "C_23",
+    "CH3_2"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    -1.5619,
+    1,
+    0.0,
+    -0.56645,
+    2,
+    180.0,
+    1.02515,
+    3,
+    0.0,
+    0.44615,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 4 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH2_3-CH_4-C_23-CH3_2 0.23, tf20__CH2_3-CH_4-C_23-O_24 0.16, tf20__CH3_2-CH_4-C_23-CH3_2 0.33, tf20__CH3_2-CH_4-C_23-O_24 0.32 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH2_3-CH_4-C_23-O_24 (CAPS fit)",
+   "match": [
+    "CH2_3",
+    "CH_4",
+    "C_23",
+    "O_24"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    -2.56235,
+    1,
+    0.0,
+    0.33535,
+    2,
+    180.0,
+    0.81585,
+    3,
+    0.0,
+    -0.17245,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 4 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH2_3-CH_4-C_23-CH3_2 0.23, tf20__CH2_3-CH_4-C_23-O_24 0.16, tf20__CH3_2-CH_4-C_23-CH3_2 0.33, tf20__CH3_2-CH_4-C_23-O_24 0.32 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH3_2-CH_4-C_23-CH3_2 (CAPS fit)",
+   "match": [
+    "CH3_2",
+    "CH_4",
+    "C_23",
+    "CH3_2"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    1.9435,
+    1,
+    0.0,
+    -0.93515,
+    2,
+    180.0,
+    0.24825,
+    3,
+    0.0,
+    0.92715,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH3_2-CH_4-C_23-CH3_2 0.33, tf20__CH3_2-CH_4-C_23-O_24 0.32 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH3_2-CH_4-C_23-O_24 (CAPS fit)",
+   "match": [
+    "CH3_2",
+    "CH_4",
+    "C_23",
+    "O_24"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    1.1837,
+    1,
+    0.0,
+    0.7237,
+    2,
+    180.0,
+    0.1763,
+    3,
+    0.0,
+    -0.701,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH3_2-CH_4-C_23-CH3_2 0.33, tf20__CH3_2-CH_4-C_23-O_24 0.32 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH2_3-CH_4-C_99-O_100 (CAPS fit)",
+   "match": [
+    "CH2_3",
+    "CH_4",
+    "C_99",
+    "O_100"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    -0.6803,
+    1,
+    0.0,
+    -0.111,
+    2,
+    180.0,
+    0.1614,
+    3,
+    0.0,
+    0.19375,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 4 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH2_3-CH_4-C_99-O_100 0.01, tf20__CH2_3-CH_4-C_99-O_101 0.01, tf20__CH3_2-CH_4-C_99-O_100 0.01, tf20__CH3_2-CH_4-C_99-O_101 0.01 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH2_3-CH_4-C_99-O_101 (CAPS fit)",
+   "match": [
+    "CH2_3",
+    "CH_4",
+    "C_99",
+    "O_101"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    -0.2056,
+    1,
+    0.0,
+    -0.2766,
+    2,
+    180.0,
+    0.26075,
+    3,
+    0.0,
+    0.0444,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 4 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH2_3-CH_4-C_99-O_100 0.01, tf20__CH2_3-CH_4-C_99-O_101 0.01, tf20__CH3_2-CH_4-C_99-O_100 0.01, tf20__CH3_2-CH_4-C_99-O_101 0.01 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH3_2-CH_4-C_99-O_100 (CAPS fit)",
+   "match": [
+    "CH3_2",
+    "CH_4",
+    "C_99",
+    "O_100"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    -0.53925,
+    1,
+    0.0,
+    -0.281,
+    2,
+    180.0,
+    0.1623,
+    3,
+    0.0,
+    0.1984,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 4 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH2_3-CH_4-C_99-O_100 0.01, tf20__CH2_3-CH_4-C_99-O_101 0.01, tf20__CH3_2-CH_4-C_99-O_100 0.01, tf20__CH3_2-CH_4-C_99-O_101 0.01 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH3_2-CH_4-C_99-O_101 (CAPS fit)",
+   "match": [
+    "CH3_2",
+    "CH_4",
+    "C_99",
+    "O_101"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    -0.1039,
+    1,
+    0.0,
+    0.12175,
+    2,
+    180.0,
+    0.14835,
+    3,
+    0.0,
+    0.0356,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 4 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH2_3-CH_4-C_99-O_100 0.01, tf20__CH2_3-CH_4-C_99-O_101 0.01, tf20__CH3_2-CH_4-C_99-O_100 0.01, tf20__CH3_2-CH_4-C_99-O_101 0.01 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH2_3-C_23-CH2_3-CH3_2 (CAPS fit)",
+   "match": [
+    "CH2_3",
+    "C_23",
+    "CH2_3",
+    "CH3_2"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    -0.0321,
+    1,
+    0.0,
+    -1.74755,
+    2,
+    180.0,
+    1.73225,
+    3,
+    0.0,
+    0.4123,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH2_3-C_23-CH2_3-CH3_2 0.06, tf20__CH3_2-CH2_3-C_23-O_24 0.06 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH3_2-CH2_3-C_23-O_24 (CAPS fit)",
+   "match": [
+    "CH3_2",
+    "CH2_3",
+    "C_23",
+    "O_24"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    -0.96285,
+    1,
+    0.0,
+    1.8647,
+    2,
+    180.0,
+    1.5929,
+    3,
+    0.0,
+    -0.2998,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH2_3-C_23-CH2_3-CH3_2 0.06, tf20__CH3_2-CH2_3-C_23-O_24 0.06 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH2_3-C_5-C_99-O_100 (CAPS fit)",
+   "match": [
+    "CH2_3",
+    "C_5",
+    "C_99",
+    "O_100"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    -0.526,
+    1,
+    0.0,
+    1.3333,
+    2,
+    180.0,
+    0.2751,
+    3,
+    0.0,
+    -0.2312,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 4 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH2_3-C_5-C_99-O_100 0.07, tf20__CH2_3-C_5-C_99-O_101 0.10, tf20__CH3_2-C_5-C_99-O_100 0.08, tf20__CH3_2-C_5-C_99-O_101 0.09 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH2_3-C_5-C_99-O_101 (CAPS fit)",
+   "match": [
+    "CH2_3",
+    "C_5",
+    "C_99",
+    "O_101"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    -2.45495,
+    1,
+    0.0,
+    -0.3446,
+    2,
+    180.0,
+    0.33825,
+    3,
+    0.0,
+    0.2126,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 4 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH2_3-C_5-C_99-O_100 0.07, tf20__CH2_3-C_5-C_99-O_101 0.10, tf20__CH3_2-C_5-C_99-O_100 0.08, tf20__CH3_2-C_5-C_99-O_101 0.09 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH3_2-C_5-C_99-O_100 (CAPS fit)",
+   "match": [
+    "CH3_2",
+    "C_5",
+    "C_99",
+    "O_100"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    1.63945,
+    1,
+    0.0,
+    0.0039,
+    2,
+    180.0,
+    0.00575,
+    3,
+    0.0,
+    0.1096,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 4 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH2_3-C_5-C_99-O_100 0.07, tf20__CH2_3-C_5-C_99-O_101 0.10, tf20__CH3_2-C_5-C_99-O_100 0.08, tf20__CH3_2-C_5-C_99-O_101 0.09 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH3_2-C_5-C_99-O_101 (CAPS fit)",
+   "match": [
+    "CH3_2",
+    "C_5",
+    "C_99",
+    "O_101"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    -0.38615,
+    1,
+    0.0,
+    0.73815,
+    2,
+    180.0,
+    0.00095,
+    3,
+    0.0,
+    -0.0364,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 4 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH2_3-C_5-C_99-O_100 0.07, tf20__CH2_3-C_5-C_99-O_101 0.10, tf20__CH3_2-C_5-C_99-O_100 0.08, tf20__CH3_2-C_5-C_99-O_101 0.09 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH2_3-C_99-O_101-CH3_16 (CAPS fit)",
+   "match": [
+    "CH2_3",
+    "C_99",
+    "O_101",
+    "CH3_16"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    1.96515,
+    1,
+    0.0,
+    2.378,
+    2,
+    180.0,
+    0.31555,
+    3,
+    0.0,
+    0.14535,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH2_3-C_99-O_101-CH3_16 0.12 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH2_3-C_99-O_101-CH_18 (CAPS fit)",
+   "match": [
+    "CH2_3",
+    "C_99",
+    "O_101",
+    "CH_18"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    0.96015,
+    1,
+    0.0,
+    -0.11,
+    2,
+    180.0,
+    1.4591,
+    3,
+    0.0,
+    -0.3383,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH2_3-C_99-O_101-CH_18 0.32, tf20__CH_18-O_101-C_99-O_100 0.50 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH3_2-C_99-O_101-CH_18 (CAPS fit)",
+   "match": [
+    "CH3_2",
+    "C_99",
+    "O_101",
+    "CH_18"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    1.1858,
+    1,
+    0.0,
+    0.1382,
+    2,
+    180.0,
+    1.46765,
+    3,
+    0.0,
+    -0.3626,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH3_2-C_99-O_101-CH_18 0.18 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH_18-O_101-C_99-O_100 (CAPS fit)",
+   "match": [
+    "CH_18",
+    "O_101",
+    "C_99",
+    "O_100"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    -1.5655,
+    1,
+    0.0,
+    4.9652,
+    2,
+    180.0,
+    1.02025,
+    3,
+    0.0,
+    0.5397,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 3 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH2_3-C_99-O_101-CH_18 0.32, tf20__CH3_2-C_99-O_101-CH_18 0.18, tf20__CH_18-O_101-C_99-O_100 0.50 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH3_16-O_101-C_99-CH_4 (CAPS fit)",
+   "match": [
+    "CH3_16",
+    "O_101",
+    "C_99",
+    "CH_4"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    1.92935,
+    1,
+    0.0,
+    2.16645,
+    2,
+    180.0,
+    0.4526,
+    3,
+    0.0,
+    -0.20445,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH3_16-O_101-C_99-CH_4 0.49 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH3_16-O_101-C_99-C_5 (CAPS fit)",
+   "match": [
+    "CH3_16",
+    "O_101",
+    "C_99",
+    "C_5"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    0.163,
+    1,
+    0.0,
+    2.88745,
+    2,
+    180.0,
+    -0.0747,
+    3,
+    0.0,
+    0.1685,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH3_16-O_101-C_99-C_5 0.55 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH3_2-CH2_3-C_99-O_100 (CAPS fit)",
+   "match": [
+    "CH3_2",
+    "CH2_3",
+    "C_99",
+    "O_100"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    -0.44285,
+    1,
+    0.0,
+    0.0829,
+    2,
+    180.0,
+    0.3301,
+    3,
+    0.0,
+    0.1008,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH3_2-CH2_3-C_99-O_100 0.01, tf20__CH3_2-CH2_3-C_99-O_101 0.01 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH3_2-CH2_3-C_99-O_101 (CAPS fit)",
+   "match": [
+    "CH3_2",
+    "CH2_3",
+    "C_99",
+    "O_101"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    0.0663,
+    1,
+    0.0,
+    0.0602,
+    2,
+    180.0,
+    0.43965,
+    3,
+    0.0,
+    -0.03255,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH3_2-CH2_3-C_99-O_100 0.01, tf20__CH3_2-CH2_3-C_99-O_101 0.01 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH3_2-CH_18-CH2_13-CH_21 (CAPS fit)",
+   "match": [
+    "CH3_2",
+    "CH_18",
+    "CH2_13",
+    "CH_21"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    0.5453,
+    1,
+    0.0,
+    -0.17495,
+    2,
+    180.0,
+    2.5241,
+    3,
+    0.0,
+    -0.12895,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH3_2-CH_18-CH2_13-CH_21 0.59, tf20__CH_21-CH2_13-CH_18-O_101 0.54 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH_21-CH2_13-CH_18-O_101 (CAPS fit)",
+   "match": [
+    "CH_21",
+    "CH2_13",
+    "CH_18",
+    "O_101"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    -0.86685,
+    1,
+    0.0,
+    -0.52135,
+    2,
+    180.0,
+    -0.38725,
+    3,
+    0.0,
+    -0.09215,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH3_2-CH_18-CH2_13-CH_21 0.59, tf20__CH_21-CH2_13-CH_18-O_101 0.54 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH3_2-CH_18-CH2_3-C_99 (CAPS fit)",
+   "match": [
+    "CH3_2",
+    "CH_18",
+    "CH2_3",
+    "C_99"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    1.37085,
+    1,
+    0.0,
+    0.4438,
+    2,
+    180.0,
+    -2.0493,
+    3,
+    0.0,
+    -0.7491,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH3_2-CH_18-CH2_3-C_99 0.71, tf20__C_99-CH2_3-CH_18-O_101 0.70 kcal/mol; ridge 0.03"
+  },
+  {
+   "name": "C_99-CH2_3-CH_18-O_101 (CAPS fit)",
+   "match": [
+    "C_99",
+    "CH2_3",
+    "CH_18",
+    "O_101"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    -2.4699,
+    1,
+    0.0,
+    1.8848,
+    2,
+    180.0,
+    2.97435,
+    3,
+    0.0,
+    -0.16055,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH3_2-CH_18-CH2_3-C_99 0.71, tf20__C_99-CH2_3-CH_18-O_101 0.70 kcal/mol; ridge 0.03"
+  },
+  {
+   "name": "CH_4-CH2_3-CH2_50-C_47 (CAPS fit)",
+   "match": [
+    "CH_4",
+    "CH2_3",
+    "CH2_50",
+    "C_47"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    -0.81025,
+    1,
+    0.0,
+    0.18665,
+    2,
+    180.0,
+    1.6761,
+    3,
+    0.0,
+    0.0408,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH_4-CH2_3-CH2_50-C_47 0.12 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH_88-C_89-CH2_17-O_101 (CAPS fit)",
+   "match": [
+    "CH_88",
+    "C_89",
+    "CH2_17",
+    "O_101"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    0.8823,
+    1,
+    0.0,
+    -0.4232,
+    2,
+    180.0,
+    -1.34195,
+    3,
+    0.0,
+    0.0638,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__CH_88-C_89-CH2_17-O_101 0.19 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "O_20-CH_18-CH2_9-O_6 (CAPS fit)",
+   "match": [
+    "O_20",
+    "CH_18",
+    "CH2_9",
+    "O_6"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    1.9998,
+    1,
+    0.0,
+    0.0137,
+    2,
+    180.0,
+    1.45685,
+    3,
+    0.0,
+    -0.19735,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf20__O_20-CH_18-CH2_9-O_6 0.67 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH2_13-CH2_3-C_23-CH2_3 (CAPS fit)",
+   "match": [
+    "CH2_13",
+    "CH2_3",
+    "C_23",
+    "CH2_3"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    3.78575,
+    1,
+    0.0,
+    -0.21275,
+    2,
+    180.0,
+    1.04015,
+    3,
+    0.0,
+    -2.9569,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf21__CH2_13-CH2_3-C_23-CH2_3 0.34, tf21__CH2_13-CH2_3-C_23-O_24 0.37 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH2_13-CH2_3-C_23-O_24 (CAPS fit)",
+   "match": [
+    "CH2_13",
+    "CH2_3",
+    "C_23",
+    "O_24"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    2.87895,
+    1,
+    0.0,
+    0.2903,
+    2,
+    180.0,
+    1.276,
+    3,
+    0.0,
+    2.83405,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf21__CH2_13-CH2_3-C_23-CH2_3 0.34, tf21__CH2_13-CH2_3-C_23-O_24 0.37 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "CH2_3-CH2_3-C_23-CH2_3 (CAPS fit)",
+   "match": [
+    "CH2_3",
+    "CH2_3",
+    "C_23",
+    "CH2_3"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    -0.51305,
+    1,
+    0.0,
+    0.0972,
+    2,
+    180.0,
+    -0.59035,
+    3,
+    0.0,
+    0.0815,
+    4,
+    180.0
+   ],
+   "comment": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS tf21__CH2_3-CH2_3-C_23-CH2_3 0.36 kcal/mol; ridge 0.001"
+  },
+  {
    "name": "X-CH2_110-CH2_110-X",
    "match": [
     "*",
