@@ -28,6 +28,7 @@ struct TemplateAtom {
   bool aromatic = false;        // in an aromatic six-ring (a phenol's ring carbon, not a carboxyl carbon)
   std::vector<int> bonded;      // map numbers of pattern atoms it is bonded to (defined earlier)
   std::vector<int> no_neighbour;   // elements it must not be bonded to (no_neighbour=S: an allylic carbon not yet sulfurated)
+  int heavy_max = -1;              // at most this many non-hydrogen neighbours (heavy<=2: an allylic CH2 / CH not yet crosslinked)
 };
 
 // Atom-mapped reaction template. Text form (one statement per line, '#' comments):
@@ -55,6 +56,7 @@ struct ReactionTemplate {
   std::vector<int> remove;
   std::vector<int> sites;       // map atoms that make up one counted reactive group
   std::vector<int> byproduct;   // map atoms that leave as a small molecule (removed or kept, as the run chooses)
+  std::vector<int> once;        // map atoms that may form a bond only once in a run ("once 1 4": one crosslink per carbon)
   double weight = 1.0;          // relative rate when a run selects among templates by weight
   bool keep_charges = false;    // "charges keep": the atoms keep their charges, a deleted atom's joins its partner (net charge
                                 // conserved); default "charges forcefield": recomputed for the new chemistry
