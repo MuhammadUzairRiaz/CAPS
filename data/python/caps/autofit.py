@@ -340,6 +340,14 @@ def main():
     report["missing_before"] = {k: ["-".join(n) for n in v] if k in ("bond", "angle", "dihedral") else v for k, v in miss.items()}
     if miss["untyped"]:
         raise SystemExit("untyped atoms: give the types first (caps ff type --explain); " + "; ".join(miss["untyped"]))
+    chk = os.path.join(work, "geometry.data")
+    T.caps_apply(structure, ffjson, chk)
+    _, masses, pos, bonds, _ = T.read_data(chk)
+    el = [T.element_of_mass(m) for m in masses]
+    long = [(a, b) for a, b in bonds if math.dist(pos[a], pos[b]) > 1.25 * (T.COV.get(el[a], 0.8) + T.COV.get(el[b], 0.8))]
+    if long:
+        raise SystemExit(f"{len(long)} bond(s) far longer than covalent (e.g. atoms {long[0][0] + 1}-{long[0][1] + 1}, "
+                         f"{math.dist(pos[long[0][0]], pos[long[0][1]]):.2f} A): relax the structure first (an unrelaxed React product)")
     extra = {"bonds": [], "angles": [], "dihedrals": []}
     current = ffjson
     for kind, key in (("bond", "bonds"), ("angle", "angles")):
