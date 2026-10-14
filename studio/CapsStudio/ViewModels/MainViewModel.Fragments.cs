@@ -21,7 +21,7 @@ public sealed class FragmentItem : ObservableObject
     public string Icon => Category switch
     {
         "Rings" => Name.Contains("Cyclo") ? "hex" : "ring",
-        "Monomers" => "grow", "Solvents" => "flask", "Ions" => "atom", "Amino acids" => "link", "Rubber additives" => "flask",
+        "Monomers" => "grow", "Solvents" => "flask", "Ions" => "atom", "Rubber additives" => "flask",
         _ => Name is "Methyl" or "Ethyl" ? "atom" : "link",
     };
     /// <summary>The SMILES with each * written as a hydrogen (a stand-in the builder can embed).</summary>
@@ -65,7 +65,7 @@ public sealed record FragmentCategory(string Name, int Count)
 }
 
 /// <summary>Fragment library (design/boards/FragmentLibrary): rings, functional groups, monomers (NR, BR, CR, silicone …),
-/// amino acids, bases, sugars, solvents, ions and rubber additives (cure agents, accelerators, antioxidants, silane
+/// sugars, solvents, ions and rubber additives (cure agents, accelerators, antioxidants, silane
 /// coupling agents), plus the user's own; attach to the picked atom or place beside the structure.</summary>
 public sealed partial class MainViewModel
 {

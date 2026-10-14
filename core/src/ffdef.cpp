@@ -1,6 +1,6 @@
 // CAPS force-field definitions: JSON format, moltemplate import, and parameter assignment.
 #include "caps/ffdef.hpp"
-#include "caps/martini_protein.hpp"
+#include "caps/martini3_molecules.hpp"
 #include "caps/charges.hpp"
 #include "caps/resolution.hpp"
 #include "caps/typing.hpp"
@@ -152,10 +152,6 @@ void load_typing(FFDef& ff, const std::string& path) {
   if (j.has("unbonded_types"))
     for (const auto& x : j["unbonded_types"].items()) ff.unbonded_types.push_back(x.str());
   ff.coarse_grained = ff.coarse_grained || (j.has("coarse_grained") && j["coarse_grained"].boolean());
-  if (j.has("martini_protein")) {
-    const std::filesystem::path f(j["martini_protein"].str());
-    ff.martini_protein = (f.is_absolute() ? f : std::filesystem::path(path).parent_path() / f).lexically_normal().string();
-  }
   if (j.has("martini_small_molecules")) {
     const std::filesystem::path f(j["martini_small_molecules"].str());
     ff.martini_small = (f.is_absolute() ? f : std::filesystem::path(path).parent_path() / f).lexically_normal().string();
@@ -377,7 +373,6 @@ void save_forcefield(const FFDef& ff, const std::string& path) {
     auto rel = [&](const std::string& f) { return std::filesystem::path(f).lexically_proximate(dir).generic_string(); };
     if (!ff.pair_table.empty()) j["pair_table"] = rel(ff.pair_table);
     if (!ff.molecule_templates_path.empty()) j["molecule_templates"] = rel(ff.molecule_templates_path);
-    if (ff.residue_templates) j["residue_templates"] = *ff.residue_templates;
     if (ff.constraint_kj != 1e6) j["constraint_k"] = ff.constraint_kj;
   }
   j["improper_order"] = ff.improper_order;
@@ -551,7 +546,6 @@ FFDef load_forcefield(const std::string& path) {
     };
     if (j.has("pair_table")) ff.pair_table = rel(j["pair_table"].str());
     ff.constraint_kj = j.num("constraint_k", ff.constraint_kj);
-    if (j.has("residue_templates")) ff.residue_templates = std::make_shared<const Json>(j["residue_templates"]);
     if (j.has("molecule_templates")) {
       ff.molecule_templates_path = rel(j["molecule_templates"].str());
       std::ifstream mf(ff.molecule_templates_path);
@@ -646,7 +640,6 @@ FFDef load_forcefield(const std::string& path) {
     if (!ff.bead_templates.empty()) base.bead_templates = ff.bead_templates;
     if (!ff.pair_table.empty()) base.pair_table = ff.pair_table;
     if (ff.molecule_templates) base.molecule_templates = ff.molecule_templates, base.molecule_templates_path = ff.molecule_templates_path;
-    if (ff.residue_templates) base.residue_templates = ff.residue_templates;
     merge_forcefield(base, ff);
     // how impropers are formed, when the overlay says (MARTINI's amino acids: GROMACS type-2 order, centre second)
     if (j.has("improper_order")) base.improper_order = ff.improper_order;
@@ -1776,7 +1769,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
   auto missing = [&](const std::string& what) {
     if (std::find(rep.missing.begin(), rep.missing.end(), what) == rep.missing.end()) rep.missing.push_back(what);
   };
-  // an explicit topology (a Martini protein, as martinize writes it): its bonded terms as given, none looked up
+  // an explicit topology (a Martini 3 molecule, a GROMACS .itp): its bonded terms as given, none looked up
   static const std::vector<Bond> kNoBonds;
   bool use_topo = false;
   if (s.topology && s.topology->natoms == n) {
@@ -2803,13 +2796,7 @@ std::string prepare_core(System& s, const FFDef& ff, std::string& charges);
 }  // namespace
 
 std::string prepare_for_forcefield(System& s, const FFDef& ff, std::string& charges) {
-  if (ff.residue_templates) charges = "keep";   // the building blocks' own charges, nothing computed for the folding
   std::string note = prepare_core(s, ff, charges);
-  if (ff.residue_templates) {
-    const std::string r = apply_residue_templates(s, ff);
-    charges = "keep";
-    note += (note.empty() ? "" : "; ") + r;
-  }
   if (ff.site_rules.empty()) return note;
   // the model's massless sites, each right after the last atom of its molecule (a molecule stays contiguous), unless
   // already there
@@ -2912,27 +2899,14 @@ std::string prepare_core(System& s, const FFDef& ff, std::string& charges) {
     if (s.topology) charges = "keep";
     return note;
   }
-  if (!ff.martini_protein.empty() && std::any_of(s.atoms.begin(), s.atoms.end(), [](const Atom& a) { return a.element > 0; })) {
-    // an all-atom protein: Martini beads with the model's explicit topology, DSSP for the secondary structure
-    MartiniProteinReport rep;
+  if (!ff.martini_small.empty() && std::any_of(s.atoms.begin(), s.atoms.end(), [](const Atom& a) { return a.element > 0; })) {
+    // an all-atom structure: Martini 3's small molecules by graph, with their explicit topology
     const size_t before = s.atoms.size();
-    if (is_martini3_model(ff.martini_protein)) {
-      // Martini 3: martinize2's defaults (DSSP, side-chain fix, charged termini, no elastic network)
-      Martini3Options mo;
-      mo.constraint_kj = ff.constraint_kj;
-      s = ff.martini_small.empty() ? martini3_protein(s, mo, ff.martini_protein, &rep) : martini3_all_atom(s, mo, ff.martini_protein, ff.martini_small, &rep, ff.molecule_templates.get());
-      charges = "keep";
-      note = std::to_string(before) + " atoms mapped onto " + std::to_string(rep.beads) + " Martini 3 beads";
-      if (rep.residues)
-        note += " (" + std::to_string(rep.residues) + " amino acids as martinize2 maps them: secondary structure by DSSP " + rep.cg_ss +
-                "; side-chain fix on; no elastic network — caps martini --martini 3 --elastic writes one)";
-      for (const auto& n : rep.notes) note += "; " + n;
-      return note;
-    }
-    s = martini22_protein(s, "", ff.martini_protein, &rep);
-    charges = "keep";   // the beads' charges are the model's (termini and charged side chains)
-    note = std::to_string(before) + " atoms of " + std::to_string(rep.residues) + " residues mapped onto " + std::to_string(rep.beads) +
-           " Martini 2.2 protein beads with martinize's topology (secondary structure by DSSP: " + rep.cg_ss + ")";
+    std::vector<std::string> notes;
+    s = martini3_all_atom(s, ff.martini_small, ff.constraint_kj, &notes);
+    charges = "keep";
+    note = std::to_string(before) + " atoms mapped onto " + std::to_string(s.atoms.size()) + " Martini 3 beads";
+    for (const auto& n : notes) note += "; " + n;
     return note;
   }
   if (!ff.bead_rules.empty() || !ff.bead_groups.empty()) {

@@ -14,7 +14,6 @@ public partial class BlendPage : PageBase
     private void OnNano(object? s, RoutedEventArgs e) => Vm.OpenNano();
     private void OnSolvation(object? s, RoutedEventArgs e) => Vm.OpenSolvation();
     private void OnCrystal(object? s, RoutedEventArgs e) => Vm.OpenCrystal();
-    private void OnBio(object? s, RoutedEventArgs e) => Vm.OpenBio();
     private void OnCancel(object? s, RoutedEventArgs e) => Vm.CancelBlend();
     private void OnAddBuilderChain(object? s, RoutedEventArgs e) => Vm.AddBuilderChainToBlend();
     private void OnAdd(object? s, RoutedEventArgs e) => Vm.AddBlendRow();

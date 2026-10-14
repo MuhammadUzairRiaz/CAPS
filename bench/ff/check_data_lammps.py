@@ -195,8 +195,7 @@ CASES = [
     # CHARMM in its own styles (Urey-Bradley angles, multi-term torsions, periodic impropers, separate 1-4 LJ; run with
     # --native), GAFF / GAFF2 typed by antechamber's rules
     ("CGenFF toppar: toluene, N-methylacetamide, ethyl acetate", ("smiles", "Cc1ccccc1.CC(=O)NC.CCOC(=O)C"), "cgenff-toppar", "gasteiger", "rules"),
-    # OPLS-AA from GROMACS's oplsaa.ff (type charges): a peptide with its own C alpha, Arg, His, Trp types; small organics
-    ("OPLS-AA (GROMACS oplsaa.ff): peptide GHWRK", ("peptide", "GHWRK"), "oplsaa-gromacs", "types", "rules"),
+    # OPLS-AA from GROMACS's oplsaa.ff (type charges): small organics
     ("OPLS-AA (GROMACS oplsaa.ff): isoprene, ethylbenzene, ester, disulfide, phenol", ("smiles", "CC=C(C)CC.CCc1ccccc1.CCOC(=O)C.CSSC.Oc1ccccc1"),
      "oplsaa-gromacs", "types", "rules"),
     # OPLS-AA 2024 from Jorgensen's own files (type charges)
@@ -501,10 +500,6 @@ def structure(src, base):
                 if len(w) >= 4:
                     lines[i] = " ".join([w[0]] + ["%.5f" % (float(x) + rng.uniform(-0.03, 0.03)) for x in w[1:4]] + w[4:])
             open(out, "w").write("\n".join(lines))
-        return out, None
-    if kind == "peptide":   # an all-atom peptide from CAPS's builder
-        out = os.path.join(work, base + ".pdb")
-        subprocess.run([CAPS, "peptide", src[1], "-o", out] + list(src[2:]), capture_output=True, check=True)
         return out, None
     if kind in ("smiles", "smiles-nudged"):   # built and cleaned up by CAPS with UFF (or the force field a third item names)
         m = os.path.join(work, base + ".mol2")

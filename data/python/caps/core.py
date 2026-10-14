@@ -3,10 +3,10 @@
     import caps
     doc = caps.open("PS_melt.data")
     print(doc.summary())
-    pep = caps.build.peptide("AEAAAKEAAAKA", structure="HHHHHHHHHHHH")
-    pep.field.assign("uff")            # or a force field id from the library, e.g. "gaff2"
-    pep.relax(ftol=0.5)
-    pep.save("peptide.data")
+    ps = caps.polymer("[*]CC([*])c1ccccc1", dp=20, chains=4, density=0.9)
+    ps.field.assign("gaff2")           # a force field id from the library, or "uff"
+    ps.relax(ftol=0.5)
+    ps.save("ps.data")
 
 The library is found through CAPS_LIB (a path to libcaps), next to the Studio, or in the build tree.
 """
@@ -195,7 +195,7 @@ def _declare(L: C.CDLL) -> None:
         "caps_field_assign": ([P, S, S, I], I), "caps_field_assign_groups": ([P, S], I), "caps_field_file_available": ([P], I), "caps_kg_backmap": ([P, S, S, B, I], P), "caps_cg_map": ([P, S, B, I], P), "caps_cg_from_polymer": ([S, S, P, P, B, I], P), "caps_field_report": ([P, B, I], I), "caps_field_import": ([P, S], I), "caps_field_import_ex": ([P, S, S], I), "caps_field_set_options": ([P, S], I), "caps_fragment_smiles": ([P, S, B, I], I), "caps_dft_run": ([S, S, S, B, I], I), "caps_dft_help": ([S, B, I], I), "caps_cg_run": ([S, S, S, B, I], I), "caps_cg_help": ([S, B, I], I), "caps_smarts_count": ([S, S], I),
         "caps_build_smiles": ([S, S, C.POINTER(_BuildOpts), B, I], P),
         "caps_build_beads": ([S, S, C.c_uint64, B, I], P), "caps_bead_templates": ([S, B, I], I),
-        "caps_peptide_build": ([S, B, I], P), "caps_crystal_build": ([S, B, I], P), "caps_nano_build": ([S, B, I], P),
+        "caps_crystal_build": ([S, B, I], P), "caps_nano_build": ([S, B, I], P),
         "caps_kg_build": ([S, B, I], P), "caps_martini_melt": ([S, P, P, B, I], P), "caps_kg_lammps": ([P, S, S, D, D], I),
         "caps_solvate": ([P, S, P, P, B, I], P),
         "caps_edit": ([P, S, B, I], I), "caps_undo": ([P, I], I), "caps_select": ([P, S, B, I], I), "caps_selection": ([P, B, I], I),
@@ -1691,14 +1691,6 @@ class build:
         rep = _report()
         ff = _forcefield_path(forcefield) if forcefield else None
         d = Document(library().caps_build_beads(_enc(text), _enc(ff), seed, rep, len(rep)), text)
-        d.report = rep.value.decode()
-        return d
-
-    @staticmethod
-    def peptide(sequence: str, structure: str = "", n_term: str = "NH3+", c_term: str = "COO-", ph: float = 7.0, cleanup: bool = True) -> Document:
-        rep = _report()
-        spec = {"sequence": sequence, "structure": structure, "n_term": n_term, "c_term": c_term, "ph": ph, "cleanup": cleanup}
-        d = Document(library().caps_peptide_build(_enc(json.dumps(spec)), rep, len(rep)), "peptide")
         d.report = rep.value.decode()
         return d
 

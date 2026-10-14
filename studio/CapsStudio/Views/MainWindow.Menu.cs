@@ -137,7 +137,6 @@ public partial class MainWindow
                 Page("Lattice parameters & supercell…", 58)),
             Page("Surface / slab…", 14),
             Page("Nanostructure…", 15),
-            Page("Biomolecule…", 30),
             Sep(),
             Page("Density calculator…", 56),
             Page("Model resolution (united atom, CG)…", 67)));

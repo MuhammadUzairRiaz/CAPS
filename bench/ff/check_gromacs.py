@@ -66,7 +66,6 @@ CASES = [
      ("file", os.path.expanduser("~/iff-ref/INTERFACE_FF_1_5/MODEL_DATABASE/CLAY_MINERALS/mont0_333_Na_15_cell.car")),
      "iff-cvff", "keep", PME + ["--cutoff", "9", "--no-tail"]),
     # the libraries built from their original sources on this machine (bench/ff/open), on molecules CAPS builds itself
-    ("OPLS-AA (GROMACS oplsaa.ff) peptide GHWRK (vacuum)", ("peptide", "GHWRK"), "oplsaa-gromacs", "types", []),
     ("OPLS-AA (GROMACS oplsaa.ff) isoprene, ethylbenzene, ester (vacuum)", ("smiles", "CC=C(C)CC.CCc1ccccc1.CCOC(=O)C"), "oplsaa-gromacs", "types", []),
     ("OPLS-AA 2024 (Jorgensen) isoprene, ethylbenzene, ester, PVA unit (vacuum)", ("smiles", "CC=C(C)CC.CCc1ccccc1.CCOC(=O)C.CC(O)CC(O)C"), "oplsaa2024", "types", []),
     ("CL&P (il.ff) [C4C1im][NTf2] (vacuum)", ("smiles", "CCCCn1cc[n+](C)c1.FC(F)(F)S(=O)(=O)[N-]S(=O)(=O)C(F)(F)F"), "clandp", "types", []),
@@ -185,10 +184,6 @@ def structure(src, base):
         out = os.path.join(work, base + ".xyz")
         subprocess.run([CAPS, "grow", "--units", src[1], "--chains", "1", "--dp", str(src[2]), "--density", "0.005", "--seed", str(src[3]),
                         "-o", out], capture_output=True, check=True)
-        return out
-    if src[0] == "peptide":   # a peptide CAPS builds from its sequence
-        out = os.path.join(work, base + ".pdb")
-        subprocess.run([CAPS, "peptide", src[1], "-o", out], capture_output=True, check=True)
         return out
     if src[0] == "nano":
         out = os.path.join(work, base + ".data")

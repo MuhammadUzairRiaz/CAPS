@@ -280,21 +280,6 @@ internal static class Screenshot
             }
             if (kv[0] == "crystalsuper") { w.ViewModel.CrystalSupercell = kv[1].Replace('x', '×'); for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); } }
             if (kv[0] == "crystalquery") { w.ViewModel.CrystalQuery = kv[1]; Dispatcher.UIThread.RunJobs(); }
-            if (kv[0] == "bio")   // bio=1: the Biomolecule builder (the board's peptide); bio=SEQUENCE sets the sequence
-            {
-                w.ViewModel.OpenBio();
-                if (kv[1] != "1") w.ViewModel.BioSequence = kv[1];
-                for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
-            }
-            if (kv[0] == "bioss")   // bioss=FROM-TO:K selects residues FROM..TO (1-based) and applies structure K (0 helix 1 strand 2 PPII 3 coil)
-            {
-                var parts = kv[1].Split(':');
-                var range = parts[0].Split('-').Select(int.Parse).ToArray();
-                w.ViewModel.SelectResidue(w.ViewModel.BioCells[range[0] - 1], false);
-                w.ViewModel.SelectResidue(w.ViewModel.BioCells[range[^1] - 1], true);
-                w.ViewModel.BioType = int.Parse(parts[1]);
-                for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
-            }
             if (kv[0] == "solvation")   // solvation=1: the Solvation builder around the open structure (or pure solvent); solvation=ID picks a solvent
             {
                 w.ViewModel.OpenSolvation();
@@ -747,16 +732,6 @@ internal static class Screenshot
                 w.ViewModel.PinMeasurement();
             }
             if (kv[0] == "tool") w.ViewModel.EditTool = int.Parse(kv[1]);
-            if (kv[0] == "nucleic")   // nucleic=SEQ: the Biomolecule builder's nucleic-acid panel with a strand built
-            {
-                w.ViewModel.OpenBio();
-                w.ViewModel.BioNucleic = true;
-                w.ViewModel.NaSequence = kv[1];
-                var t = w.ViewModel.BuildNucleic();
-                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); }
-                w.ViewModel.OpenBio();
-                for (int k = 0; k < 30; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
-            }
             if (kv[0] == "restraint")   // restraint=I,J: pick two atoms (indices from 0) and add their distance as a restraint
             {
                 var ij = kv[1].Split(',');
