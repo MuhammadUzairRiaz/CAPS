@@ -16,6 +16,39 @@
     3.2
    ],
    "comment": "CAPS refit (exp): nitrile N (RCN) epsilon 0.17 -> 0.25 kcal/mol, sigma 3.20 A kept. Acetonitrile density +0.82 %, dHvap -0.12 kcal/mol; propionitrile -0.59 %, -0.15 (with the 2024 value: -3.21 % / -0.80 and -3.21 % / -0.83). Best of four trials (bench/ff/open/nitrile_lj, trial A)"
+  },
+  {
+   "name": "opls_203",
+   "match": [
+    "opls_203"
+   ],
+   "params": [
+    0.275,
+    3.5
+   ],
+   "comment": "CAPS refit (exp): disulfide S epsilon 0.355 -> 0.275 kcal/mol, sigma 3.60 -> 3.50 A (OPLS-AA 2024 gives 203 the sulfide S 202's values; the sulfides themselves stay within 0.35 kcal/mol and are not changed). Dimethyl disulfide density +0.03 %, dHvap +0.01 kcal/mol; diethyl disulfide dHvap +0.05 (with the 2024 value: +2.49 % / +1.74 and dHvap +1.75). Best of six trials (bench/ff/open/disulfide_lj, trial S6)"
+  },
+  {
+   "name": "caps_s_poly",
+   "match": [
+    "caps_s_poly"
+   ],
+   "params": [
+    0.275,
+    3.5
+   ],
+   "comment": "as opls_203 (CAPS's polysulfide S takes 203's Lennard-Jones): CAPS refit (exp): disulfide S epsilon 0.355 -> 0.275 kcal/mol, sigma 3.60 -> 3.50 A (OPLS-AA 2024 gives 203 the sulfide S 202's values; the sulfides themselves stay within 0.35 kcal/mol and are not changed). Dimethyl disulfide density +0.03 %, dHvap +0.01 kcal/mol; diethyl disulfide dHvap +0.05 (with the 2024 value: +2.49 % / +1.74 and dHvap +1.75). Best of six trials (bench/ff/open/disulfide_lj, trial S6)"
+  },
+  {
+   "name": "caps_s_ssh",
+   "match": [
+    "caps_s_ssh"
+   ],
+   "params": [
+    0.275,
+    3.5
+   ],
+   "comment": "as opls_203 (CAPS's persulfide S takes 203's Lennard-Jones): CAPS refit (exp): disulfide S epsilon 0.355 -> 0.275 kcal/mol, sigma 3.60 -> 3.50 A (OPLS-AA 2024 gives 203 the sulfide S 202's values; the sulfides themselves stay within 0.35 kcal/mol and are not changed). Dimethyl disulfide density +0.03 %, dHvap +0.01 kcal/mol; diethyl disulfide dHvap +0.05 (with the 2024 value: +2.49 % / +1.74 and dHvap +1.75). Best of six trials (bench/ff/open/disulfide_lj, trial S6)"
   }
  ],
  "notes": [
