@@ -1,0 +1,437 @@
+[
+ {
+  "env": "1e61496e0218",
+  "status": "missing",
+  "elements": [
+   "C",
+   "H",
+   "S"
+  ],
+  "atoms": 21,
+  "heavy": 9,
+  "classes": [
+   "CM-CT-CT-CM",
+   "CM-CT-CT-HC",
+   "CM-CT-CT-S",
+   "HC-CT-CT-HC",
+   "HC-CT-CT-S"
+  ],
+  "example": "sulfur_allylic: NR + H2S2",
+  "files": [
+   "1e61496e0218_0.xyz",
+   "1e61496e0218_1.xyz",
+   "1e61496e0218_2.xyz"
+  ]
+ },
+ {
+  "env": "2d9204ae7408",
+  "status": "CAPS fit",
+  "elements": [
+   "C",
+   "H",
+   "O",
+   "S"
+  ],
+  "atoms": 21,
+  "heavy": 11,
+  "classes": [
+   "CA-CA-SY-CA",
+   "CA-CA-SY-OY"
+  ],
+  "example": "P071 Polyethersulfone",
+  "files": [
+   "2d9204ae7408_0.xyz"
+  ]
+ },
+ {
+  "env": "12f9bb3a1aa1",
+  "status": "published",
+  "elements": [
+   "C",
+   "H",
+   "S"
+  ],
+  "atoms": 15,
+  "heavy": 3,
+  "classes": [
+   "HC-CT-CT-HC",
+   "HC-CT-CT-SH"
+  ],
+  "example": "polysulfide_allylic: NR + TESPT",
+  "files": [
+   "12f9bb3a1aa1_0.xyz",
+   "12f9bb3a1aa1_1.xyz",
+   "12f9bb3a1aa1_2.xyz"
+  ]
+ },
+ {
+  "env": "5436f7288227",
+  "status": "published",
+  "elements": [
+   "C",
+   "H",
+   "O",
+   "Si"
+  ],
+  "atoms": 15,
+  "heavy": 5,
+  "classes": [
+   "CT-Si-CT-HC",
+   "H-Si-CT-HC",
+   "HC-CT-Si-OS"
+  ],
+  "example": "P201 Polydimethylsiloxane (silicone rubber)",
+  "files": [
+   "5436f7288227_0.xyz",
+   "5436f7288227_1.xyz",
+   "5436f7288227_2.xyz"
+  ]
+ },
+ {
+  "env": "b5a4db729a66",
+  "status": "CAPS fit",
+  "elements": [
+   "C",
+   "Cl",
+   "H"
+  ],
+  "atoms": 16,
+  "heavy": 7,
+  "classes": [
+   "CM-CT-CT-CM",
+   "CM-CT-CT-HC",
+   "HC-CT-CT-HC"
+  ],
+  "example": "P097 Polychloroprene",
+  "files": [
+   "b5a4db729a66_0.xyz",
+   "b5a4db729a66_1.xyz",
+   "b5a4db729a66_2.xyz"
+  ]
+ },
+ {
+  "env": "04a86f7325d8",
+  "status": "CAPS fit",
+  "elements": [
+   "C",
+   "F",
+   "H"
+  ],
+  "atoms": 20,
+  "heavy": 10,
+  "classes": [
+   "CF-CT-CF-CT",
+   "CF-CT-CF-F",
+   "CT-CF-CT-HC",
+   "F-CF-CT-HC"
+  ],
+  "example": "P007 Polyvinylidene fluoride",
+  "files": [
+   "04a86f7325d8_0.xyz",
+   "04a86f7325d8_1.xyz",
+   "04a86f7325d8_2.xyz"
+  ]
+ },
+ {
+  "env": "017cb631254b",
+  "status": "published",
+  "elements": [
+   "C",
+   "F",
+   "H"
+  ],
+  "atoms": 14,
+  "heavy": 6,
+  "classes": [
+   "CT-CT-CT-F",
+   "CT-CT-CT-HC",
+   "F-CT-CT-HC",
+   "HC-CT-CT-HC"
+  ],
+  "example": "P003 Polyvinyl fluoride",
+  "files": [
+   "017cb631254b_0.xyz",
+   "017cb631254b_1.xyz",
+   "017cb631254b_2.xyz"
+  ]
+ },
+ {
+  "env": "bafc1feb3458",
+  "status": "CAPS fit",
+  "elements": [
+   "C",
+   "H",
+   "N"
+  ],
+  "atoms": 20,
+  "heavy": 9,
+  "classes": [
+   "CA-CA-NT-CA",
+   "CA-CA-NT-H"
+  ],
+  "example": "P074 Polyaniline",
+  "files": [
+   "bafc1feb3458_0.xyz"
+  ]
+ },
+ {
+  "env": "0c21215f9fbc",
+  "status": "published",
+  "elements": [
+   "C",
+   "H",
+   "N",
+   "O"
+  ],
+  "atoms": 18,
+  "heavy": 7,
+  "classes": [
+   "C-CT-CT-CT",
+   "C-CT-CT-HC",
+   "CT-CT-CT-HC",
+   "HC-CT-CT-HC"
+  ],
+  "example": "P017 Nylon 6,6",
+  "files": [
+   "0c21215f9fbc_0.xyz",
+   "0c21215f9fbc_1.xyz",
+   "0c21215f9fbc_2.xyz"
+  ]
+ },
+ {
+  "env": "28b4350afaa5",
+  "status": "missing",
+  "elements": [
+   "C",
+   "H",
+   "O"
+  ],
+  "atoms": 12,
+  "heavy": 6,
+  "classes": [
+   "C-CT-OH-HO",
+   "CT-CT-OH-HO",
+   "HC-CT-OH-HO"
+  ],
+  "example": "CC(O)C(=O)O",
+  "files": [
+   "28b4350afaa5_0.xyz",
+   "28b4350afaa5_1.xyz",
+   "28b4350afaa5_2.xyz"
+  ]
+ },
+ {
+  "env": "25f69b4b786e",
+  "status": "missing",
+  "elements": [
+   "C",
+   "H",
+   "N"
+  ],
+  "atoms": 19,
+  "heavy": 8,
+  "classes": [
+   "CM-CT-CT-CT",
+   "CM-CT-CT-CZ",
+   "CM-CT-CT-HC",
+   "CT-CT-CT-HC",
+   "CZ-CT-CT-HC",
+   "HC-CT-CT-HC"
+  ],
+  "example": "C003 Acrylonitrile\u2013butadiene\u2013styrene terpolymer (random, 1 : 1 : 2 units)",
+  "files": [
+   "25f69b4b786e_0.xyz",
+   "25f69b4b786e_1.xyz",
+   "25f69b4b786e_2.xyz"
+  ]
+ },
+ {
+  "env": "d6a9403e9f8e",
+  "status": "missing",
+  "elements": [
+   "C",
+   "H",
+   "S"
+  ],
+  "atoms": 20,
+  "heavy": 10,
+  "classes": [
+   "CM-CT-CT-CM",
+   "CM-CT-CT-HC",
+   "CM-CT-CT-S",
+   "HC-CT-CT-HC",
+   "HC-CT-CT-S",
+   "S-CT-CT-S"
+  ],
+  "example": "sulfur_allylic: BR + H2S2",
+  "files": [
+   "d6a9403e9f8e_0.xyz",
+   "d6a9403e9f8e_1.xyz",
+   "d6a9403e9f8e_2.xyz"
+  ]
+ },
+ {
+  "env": "80aadeb03aec",
+  "status": "CAPS fit",
+  "elements": [
+   "C",
+   "H",
+   "O"
+  ],
+  "atoms": 9,
+  "heavy": 5,
+  "classes": [
+   "CM-C-OH-HO",
+   "HO-OH-C-O"
+  ],
+  "example": "OC(=O)/C=C\\C(=O)O",
+  "files": [
+   "80aadeb03aec_0.xyz",
+   "80aadeb03aec_1.xyz",
+   "80aadeb03aec_2.xyz"
+  ]
+ },
+ {
+  "env": "6169ddde3018",
+  "status": "CAPS fit",
+  "elements": [
+   "C",
+   "H"
+  ],
+  "atoms": 21,
+  "heavy": 7,
+  "classes": [
+   "CM-CT-CT-CT",
+   "CT-CT-CT-HC"
+  ],
+  "example": "C106 Butyl rubber (IIR, 2 mol % isoprene)",
+  "files": [
+   "6169ddde3018_0.xyz",
+   "6169ddde3018_1.xyz",
+   "6169ddde3018_2.xyz"
+  ]
+ },
+ {
+  "env": "9acf7b60a1eb",
+  "status": "published",
+  "elements": [
+   "C",
+   "H",
+   "O"
+  ],
+  "atoms": 8,
+  "heavy": 4,
+  "classes": [
+   "HC-CT-C-O",
+   "HC-CT-C-OH"
+  ],
+  "example": "CC(=O)O",
+  "files": [
+   "9acf7b60a1eb_0.xyz",
+   "9acf7b60a1eb_1.xyz",
+   "9acf7b60a1eb_2.xyz"
+  ]
+ },
+ {
+  "env": "5c152cc1c0bc",
+  "status": "published",
+  "elements": [
+   "C",
+   "H"
+  ],
+  "atoms": 21,
+  "heavy": 7,
+  "classes": [
+   "CM-CM-CT-CT",
+   "CM-CM-CT-HC",
+   "CT-CT-CM-HC",
+   "HC-CM-CT-HC"
+  ],
+  "example": "P205 1,2-Polybutadiene (vinyl)",
+  "files": [
+   "5c152cc1c0bc_0.xyz",
+   "5c152cc1c0bc_1.xyz",
+   "5c152cc1c0bc_2.xyz"
+  ]
+ },
+ {
+  "env": "ecc5383e426f",
+  "status": "published",
+  "elements": [
+   "C",
+   "H"
+  ],
+  "atoms": 20,
+  "heavy": 6,
+  "classes": [
+   "CT-CT-CT-CT",
+   "CT-CT-CT-HC",
+   "HC-CT-CT-HC"
+  ],
+  "example": "P023 Poly(vinyl octyl ether)",
+  "files": [
+   "ecc5383e426f_0.xyz",
+   "ecc5383e426f_1.xyz",
+   "ecc5383e426f_2.xyz"
+  ]
+ },
+ {
+  "env": "1432e8b58b5f",
+  "status": "published",
+  "elements": [
+   "C",
+   "H",
+   "O"
+  ],
+  "atoms": 17,
+  "heavy": 7,
+  "classes": [
+   "C-OS-CT-CT",
+   "C-OS-CT-HC"
+  ],
+  "example": "P034 Poly(butyl acrylate)",
+  "files": [
+   "1432e8b58b5f_0.xyz",
+   "1432e8b58b5f_1.xyz",
+   "1432e8b58b5f_2.xyz"
+  ]
+ },
+ {
+  "env": "26c2b9aa445d",
+  "status": "CAPS fit",
+  "elements": [
+   "C",
+   "H"
+  ],
+  "atoms": 27,
+  "heavy": 11,
+  "classes": [
+   "CA-CA-CT-CA",
+   "CA-CA-CT-CT"
+  ],
+  "example": "P073 Polysulfone",
+  "files": [
+   "26c2b9aa445d_0.xyz"
+  ]
+ },
+ {
+  "env": "faae5059d9bf",
+  "status": "published",
+  "elements": [
+   "C",
+   "H"
+  ],
+  "atoms": 23,
+  "heavy": 9,
+  "classes": [
+   "CA-CT-CT-HC",
+   "CT-CT-CT-HC"
+  ],
+  "example": "P073 Polysulfone",
+  "files": [
+   "faae5059d9bf_0.xyz",
+   "faae5059d9bf_1.xyz",
+   "faae5059d9bf_2.xyz"
+  ]
+ }
+]

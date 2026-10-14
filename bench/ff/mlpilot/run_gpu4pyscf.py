@@ -2,7 +2,10 @@
 """Energy and forces of xyz files on one GPU with GPU4PySCF: wB97M-D3(BJ)/def2-TZVPPD, density-fitted
 (def2-universal-jkfit), a (99, 590) grid, SCF converged to 1e-10 Eh.
 
-    run_gpu4pyscf.py OUTDIR FILE.xyz [FILE.xyz ...]
+    run_gpu4pyscf.py OUTDIR FILE.xyz [FILE.xyz ...] [--grid 99,590] [--no-df]
+
+--grid sets the radial and angular points per atom; --no-df computes the exact Coulomb and exchange integrals instead
+of density fitting them (slower; for checking what the fit costs).
 
 The xyz comment line gives charge=... mult=... . Each file gives OUTDIR/<name>.json: energy (Eh), forces (Eh/bohr,
 the negative gradient), the dispersion energy, SCF convergence and the wall time of the SCF and of the gradient.
@@ -13,7 +16,12 @@ import json, os, sys, time
 import pyscf
 from gpu4pyscf.dft import rks
 
-LEVEL = "wB97M-D3(BJ)/def2-TZVPPD, DF def2-universal-jkfit, grid (99,590), GPU4PySCF"
+GRID = (99, 590)
+DF = True
+
+
+def level():
+    return f"wB97M-D3(BJ)/def2-TZVPPD, {'DF def2-universal-jkfit' if DF else 'no DF'}, grid {GRID}, GPU4PySCF"
 
 
 def run(path, outdir):
@@ -25,8 +33,10 @@ def run(path, outdir):
     meta = dict(w.split("=", 1) for w in lines[1].split() if "=" in w)
     mol = pyscf.M(atom="\n".join(lines[2:2 + n]), basis="def2-tzvppd", charge=int(meta.get("charge", 0)),
                   spin=int(meta.get("mult", 1)) - 1, verbose=0, max_memory=50000)
-    mf = rks.RKS(mol, xc="wb97m-d3bj").density_fit(auxbasis="def2-universal-jkfit")
-    mf.grids.atom_grid = (99, 590)
+    mf = rks.RKS(mol, xc="wb97m-d3bj")
+    if DF:
+        mf = mf.density_fit(auxbasis="def2-universal-jkfit")
+    mf.grids.atom_grid = GRID
     mf.conv_tol = 1e-10
     t0 = time.time()
     e = float(mf.kernel())
@@ -34,7 +44,7 @@ def run(path, outdir):
     g = mf.Gradients().kernel()
     t2 = time.time()
     g = g.get() if hasattr(g, "get") else g   # a CuPy array
-    json.dump({"file": os.path.basename(path), "level": LEVEL, "energy_Eh": e, "converged": bool(mf.converged),
+    json.dump({"file": os.path.basename(path), "level": level(), "energy_Eh": e, "converged": bool(mf.converged),
                "dispersion_Eh": float(mf.scf_summary.get("dispersion", 0.0)),
                "forces_Eh_per_bohr": [[-float(x) for x in row] for row in g],
                "atoms": n, "nao": int(mol.nao), "scf_s": round(t1 - t0, 2), "grad_s": round(t2 - t1, 2)},
@@ -43,9 +53,17 @@ def run(path, outdir):
 
 
 if __name__ == "__main__":
-    os.makedirs(sys.argv[1], exist_ok=True)
-    for p in sys.argv[2:]:
+    args = sys.argv[1:]
+    if "--grid" in args:
+        k = args.index("--grid")
+        GRID = tuple(int(x) for x in args[k + 1].split(","))
+        del args[k:k + 2]
+    if "--no-df" in args:
+        DF = False
+        args.remove("--no-df")
+    os.makedirs(args[0], exist_ok=True)
+    for p in args[1:]:
         try:
-            run(p, sys.argv[1])
+            run(p, args[0])
         except Exception as ex:   # one bad fragment does not stop the others
             print(f"{os.path.basename(p)}: FAILED {ex}", flush=True)
