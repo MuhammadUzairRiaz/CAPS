@@ -5,8 +5,9 @@
 
 For the fragment's rotatable bond (b-c, from the census) the dihedral a-b-c-d (a, d: the first heavy neighbours, else
 H) is turned in STEP-degree steps round the full circle from its starting value. Each point starts from the previous
-relaxed one turned by STEP and is optimised by AIMNet2 with the dihedral held (ASE FixInternals, BFGS to 0.05 eV/A, at
-most 300 steps): a relaxed scan. Each relaxed point also gets one distorted copy (every atom displaced by a normal
+relaxed one turned by STEP and is optimised by AIMNet2 with the dihedral held (ASE FixInternals, BFGS to 0.05 eV/A with
+steps of at most 0.1 A, at most 300 steps): a relaxed scan. A point where the constraint cannot be kept is skipped
+and the scan goes on from the last good point. Each relaxed point also gets one distorted copy (every atom displaced by a normal
 deviate of RATTLE A), so the training set has forces away from the minima. A point whose bonds changed in the
 optimisation (a bond stretched past 1.4 x the covalent radii, or two atoms more than two bonds apart closer than their
 covalent radii), or a copy with two atoms under 0.75 A apart, is left out.
@@ -82,15 +83,19 @@ def scan(trainset, env, central, calc):
     near = [set(nb[i]) | {k for j in nb[i] for k in nb[j]} for i in range(len(el))]   # 1-2 and 1-3 neighbours
     rng = np.random.default_rng(zlib.crc32(env.encode()))
     phi0 = atoms.get_dihedral(a, b, c, d)
-    frames, current = [], atoms.copy()
+    frames, current, skipped = [], atoms.copy(), 0
     for k in range(int(round(360 / STEP))):
         phi = (phi0 + k * STEP) % 360
         x = current.copy()
         x.set_dihedral(a, b, c, d, phi, indices=moving)
         x.set_constraint(FixInternals(dihedrals_deg=[[phi, [a, b, c, d]]]))
         x.calc = calc
-        opt = BFGS(x, logfile=None)
-        conv = bool(opt.run(fmax=0.05, steps=300))
+        opt = BFGS(x, logfile=None, maxstep=0.1)   # short steps: the dihedral constraint follows them
+        try:
+            conv = bool(opt.run(fmax=0.05, steps=300))
+        except Exception:   # the constraint could not be satisfied after a step: this point only is left out
+            skipped += 1
+            continue
         x.set_constraint()
         if changed(x, bonds, near):   # the optimisation broke or made a bond: not this fragment any more
             continue
