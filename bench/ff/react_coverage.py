@@ -106,6 +106,10 @@ def main():
             try:
                 d = cure(template, mols, box, target)
                 summary = d.react_summary()
+                if arg("--save"):
+                    # products for fitting need real geometry: a cure without relaxation leaves each new bond as long
+                    # as the capture distance (a C-N of 4.9 A), and every scan point then reads as a broken fragment
+                    d.relax(max_iterations=3000)
                 res = check(d)
             except Exception as e:   # the cure or the assignment failed: reported as such
                 res, summary = {"complete": False, "error": str(e)[:300], "missing": [], "untyped": -1, "net_charge": 0.0}, {}

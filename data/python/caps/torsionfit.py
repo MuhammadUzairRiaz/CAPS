@@ -489,7 +489,7 @@ def prepare():
           f"not scanned: {len(plan['not_scanned'])}")
     for s in plan["scans"]:
         print(f"  {'-'.join(s['classes'])}: fragment of {len(s['elements'])} atoms, closest non-bonded pair over the scan "
-              f"{min(p['closest_nonbonded'] for p in s['points']):.2f} A" + (f", {s['skipped_points']} points clash (not run)" if s["skipped_points"] else ""))
+              f"{min((p['closest_nonbonded'] for p in s['points']), default=float('nan')):.2f} A" + (f", {s['skipped_points']} points clash (not run)" if s["skipped_points"] else ""))
     for s in plan["not_scanned"]:
         print(f"  {'-'.join(s['classes'])}: not scanned ({s['why']})")
 

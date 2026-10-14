@@ -2466,6 +2466,22 @@
    ],
    "source": "CAPS fit (QM)",
    "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS HC-CM-C-OS 0.05 kcal/mol; ridge 0.001 (methyl acrylate: no cis partner, so no intramolecular H-bond or clash; against the maleate scans RMS 0.9-1.6, from MM's cis COOH/ester electrostatics and second-group flips, not this torsion); fragment HC-CM-C-OS"
+  },
+  {
+   "match": [
+    "CA",
+    "OS",
+    "CT",
+    "CT"
+   ],
+   "params": [
+    -1.4262,
+    0.6416,
+    -1.1198,
+    -0.4427
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L). 1-phenoxy-2-propanol, neighbours held at the minimum (aryl ring planar, CH(OH) side anti; 24 points) and 1-phenoxy-3-(methylamino)-2-propanol fully relaxed (the network's environment; 22 points, ring stays planar). RMS below 10 kcal/mol 0.46 on both; free scan 0.46 overall; the held scan's 16-21 kcal/mol barrier (the CH(OH) side forced through the eclipsed clash) 2.4. A fit to the held scan alone (V1 -5.54) missed the relaxed profile by 2.1 kcal/mol; a free scan of 1-phenoxy-2-propanol itself flips the ring between 0 and 85 deg and mixes conformers; fragment held/CA-OS-CT-CT, free/CA-OS-CT-CT"
   }
  ],
  "charge_corrections": [
