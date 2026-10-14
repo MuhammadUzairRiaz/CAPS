@@ -8,7 +8,7 @@ Reads TRAINSET/confs/<env>.xyz and appends one JSON line per conformer to TRAINS
 Eh, forces in Eh/bohr, convergence, timings). Frames already in the file are skipped, so a task that ran out of time
 is resubmitted as it is. An SCF that does not converge is written with converged false and left out of training.
 """
-import json, os, sys, time
+import io, json, os, sys, time
 
 import pyscf
 from ase.io import read
@@ -30,7 +30,8 @@ def run_env(trainset, env):
                 done.add(json.loads(line)["frame"])
             except (ValueError, KeyError):   # a line cut short when the job was stopped
                 pass
-    frames = read(src, index=":", format="extxyz")
+    text = open(src).read().replace("# done\n", "")   # the completion mark is not extended xyz
+    frames = read(io.StringIO(text), index=":", format="extxyz") if text.strip() else []
     for k, at in enumerate(frames):
         if k in done:
             continue
