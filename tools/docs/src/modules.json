@@ -715,63 +715,6 @@
    ]
   },
   {
-   "slug": "biomolecule",
-   "title": "Biomolecule",
-   "stage": "build",
-   "where": [
-    "Build",
-    "Biomolecule…"
-   ],
-   "card": "Peptides from a sequence with their secondary structure, termini and protonation; DNA and RNA strands.",
-   "lede": "Build an all-atom peptide from its one-letter sequence — helix, strand, PPII or coil, with termini and protonation at a pH — or a DNA or RNA strand.",
-   "input": "A one-letter sequence or a FASTA file.",
-   "output": "An all-atom peptide or strand, cleaned up with UFF.",
-   "shots": [
-    {
-     "img": "26_biomolecule.jpg",
-     "cap": "**Biomolecule builder**: a 30-residue peptide, α-helix for residues 1–22 and coil for 23–30, with the sequence, the per-residue structure and the termini."
-    }
-   ],
-   "steps": [
-    {
-     "t": "Choose the mode",
-     "d": [
-      "[[Peptide]] (default) or [[Nucleic acid]]."
-     ]
-    },
-    {
-     "t": "Enter the sequence",
-     "d": [
-      "One-letter codes, or [[Import FASTA]]. For a strand: DNA or RNA, written 5′ → 3′."
-     ]
-    },
-    {
-     "t": "Set the secondary structure",
-     "d": [
-      "α-helix, β-strand, PPII or coil, or your own φ, ψ and ω."
-     ]
-    },
-    {
-     "t": "Termini and state",
-     "d": [
-      "N-terminus NH₃⁺, NH₂ or acetyl; C-terminus COO⁻, COOH or N-methyl amide; side chains at pH 7, 4 or 10, or neutral; UFF clean-up or the placed geometry."
-     ]
-    },
-    {
-     "t": "Build",
-     "d": [
-      "[[Build peptide]] or [[Build strand]]; it opens as a new structure."
-     ]
-    }
-   ],
-   "cli": "caps peptide AEAAAKEAAAKA -o peptide.pdb --helix --ph 7",
-   "python": "from caps import build\n\np = build.peptide(\"AEAAAKEAAAKA\", structure=\"HHHHHHHHHHHH\")\np.save(\"peptide.pdb\")",
-   "next": [
-    "solvation",
-    "force-field"
-   ]
-  },
-  {
    "slug": "force-field",
    "title": "Force field",
    "stage": "prepare",

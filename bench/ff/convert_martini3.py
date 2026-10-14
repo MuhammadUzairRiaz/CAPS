@@ -203,12 +203,11 @@ if __name__ == "__main__":
                     f"{len(mols)} molecules from the parameter files as templates with their topologies (FLEXIBLE variants: stiff bonds for constraints)"]}
     json.dump(ff, open(os.path.join(ROOT, "data", "forcefields", "martini3.json"), "w"), ensure_ascii=False, indent=1)
     rules = [{"type": t, "smarts": "*", "atom_name": t, "priority": 0} for t in names]
-    # all-atom proteins become Martini 3 beads as martinize2 makes them (data/martini/martini3-protein.json, from
-    # vermouth's martini3001 files by bench/ff/convert_vermouth_martini3.py)
+    # all-atom small molecules become Martini 3 beads by vermouth's mappings (data/martini/martini3-small-molecules.json,
+    # bench/ff/convert_vermouth_martini3_small.py)
     tdoc = {"format": "caps-typing", "version": 1, "forcefield": "Martini 3", "coarse_grained": True, "unknown_types": "untyped",
-            "martini_protein": "../martini/martini3-protein.json",
             "martini_small_molecules": "../martini/martini3-small-molecules.json",
-            "description": "Martini 3 beads typed by name (bench/ff/convert_martini3.py); all-atom proteins mapped as martinize2 maps them, small molecules by vermouth's mappings",
+            "description": "Martini 3 beads typed by name (bench/ff/convert_martini3.py); all-atom small molecules mapped by vermouth's mappings",
             "rules": rules}
     json.dump(tdoc, open(os.path.join(ROOT, "data", "typing", "martini3.typing.json"), "w"), ensure_ascii=False, separators=(",", ":"))
     cat_p = os.path.join(ROOT, "data", "forcefields", "catalogue.json")
@@ -222,7 +221,7 @@ if __name__ == "__main__":
     if "martini3" in ids:
         cat["forcefields"][ids.index("martini3")] = entry
     else:
-        cat["forcefields"].insert(ids.index("martini22-proteins") + 1, entry)
+        cat["forcefields"].insert(ids.index("martini-aminoacids") + 1 if "martini-aminoacids" in ids else len(ids), entry)
     json.dump(cat, open(cat_p, "w"), ensure_ascii=False, indent=1)
     print(f"{table}: {len(types)} types, {len(pairs)} pairs ({missing} type pairs without an entry), {os.path.getsize(table)} bytes")
     print(f"{len(mols)} molecules")

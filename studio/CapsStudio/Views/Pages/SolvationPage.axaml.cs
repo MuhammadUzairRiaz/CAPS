@@ -22,7 +22,6 @@ public partial class SolvationPage : PageBase
     private void OnCrystal(object? s, RoutedEventArgs e) => Vm.OpenCrystal();
     private void OnSurface(object? s, RoutedEventArgs e) => Vm.OpenSurface();
     private void OnNano(object? s, RoutedEventArgs e) => Vm.OpenNano();
-    private void OnBio(object? s, RoutedEventArgs e) => Vm.OpenBio();
     private void OnCancel(object? s, RoutedEventArgs e) => Vm.SetModule(8);
     private async void OnSolvate(object? s, RoutedEventArgs e) => await Vm.Solvate();
     private void OnCg(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.OpenCg();

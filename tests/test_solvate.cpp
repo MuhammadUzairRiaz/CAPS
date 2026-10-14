@@ -6,7 +6,7 @@
 #include <sstream>
 
 #include "caps/pack.hpp"
-#include "caps/peptide.hpp"
+#include "caps/molecule.hpp"
 #include "caps/solvate.hpp"
 #include "caps/io.hpp"
 #include "caps/relax.hpp"
@@ -40,10 +40,8 @@ TEST(Solvate, PlanCountsWaterAndSalt) {
 }
 
 TEST(Solvate, NeutralisesAChargedSolute) {
-  PeptideOptions po;
-  po.sequence = "GKKKG";   // +3: NH3+ COO− cancel, three Lys+
-  po.cleanup = false;
-  const System pep = build_peptide(po);
+  // +3: a branched triamine fully protonated (a curing agent's ammonium form), Gasteiger charges summing to +3
+  const System pep = build_molecule("[NH3+]CCCCCC(CCCC[NH3+])CCCCCC[NH3+]").system;
   SolvateOptions o;
   o.shape = 2;
   o.padding = 6;

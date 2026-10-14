@@ -31,7 +31,6 @@ public partial class NanoPage : PageBase
     private void OnSurface(object? s, RoutedEventArgs e) => Vm.OpenSurface();
     private void OnSolvation(object? s, RoutedEventArgs e) => Vm.OpenSolvation();
     private void OnCrystal(object? s, RoutedEventArgs e) => Vm.OpenCrystal();
-    private void OnBio(object? s, RoutedEventArgs e) => Vm.OpenBio();
     private void OnCancel(object? s, RoutedEventArgs e) => Vm.SetModule(8);
     private async void OnBuild(object? s, RoutedEventArgs e) => await Vm.BuildNano();
     private void OnCg(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.OpenCg();

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Check CAPS's automatic typing against the atom types in a GROMACS residue topology (.rtp: aminoacids.rtp of
-oplsaa.ff, gromos54a7.ff ...), whose residues the force field's developers typed.
+oplsaa.ff ...), whose residues the force field's developers typed.
 
 Each residue becomes a mol2 file with its bonds but no bond orders; a bond to the previous or next residue (-C, +N,
 -O3', +P ...) is capped as validate_rtf_types.py caps it (an acetyl for -C, an N-methyl amide for +N, a methoxy for a

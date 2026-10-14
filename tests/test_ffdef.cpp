@@ -17,9 +17,8 @@
 #include "caps/field.hpp"
 #include "caps/grow.hpp"
 #include "caps/io.hpp"
-#include "caps/martini_protein.hpp"
+#include "caps/martini3_molecules.hpp"
 #include "caps/molecule.hpp"
-#include "caps/peptide.hpp"
 #include "caps/resolution.hpp"
 #include "caps/spacegroup.hpp"
 #include "caps/typing.hpp"
@@ -630,32 +629,47 @@ TEST(CoarseGrained, Martini3SmallMoleculesByGraph) {
   check_cg_forces(m3, cg, "keep");
 }
 
-// Martini 3 phospholipids from all-atom lipids by their building blocks: POPC, DPPC and POPS built by CAPS from
-// SMILES are recognised (head, tail lengths, where the double bonds are) and typed through the force field
-TEST(CoarseGrained, Martini3LipidsByBuildingBlocks) {
+// A GROMACS topology read back: the .itp CAPS writes for Martini 3 small molecules (toluene, anthracene with its virtual
+// sites) gives the same explicit topology again (every bond and constraint, angle, dihedral and exclusion)
+TEST(GromacsTopology, ReadsMartini3ItpBack) {
   const std::string dir = std::string(CAPS_SOURCE_DIR) + "/data/";
-  const FFDef m3 = load_forcefield(dir + "forcefields/martini3.json");
-  ASSERT_TRUE(m3.molecule_templates);
-  const std::string pal = "CCCCCCCCCCCCCCC";
-  const std::string ole = "CCCCCCC/C=C\\CCCCCCCC";
-  const std::vector<std::pair<std::string, std::string>> lipids = {
-      {"POPC", pal + "C(=O)OC[C@H](COP(=O)([O-])OCC[N+](C)(C)C)OC(=O)" + ole},
-      {"DPPC", pal + "C(=O)OC[C@H](COP(=O)([O-])OCC[N+](C)(C)C)OC(=O)" + pal},
-      {"POPS", pal + "C(=O)OC[C@H](COP(=O)([O-])OC[C@H]([NH3+])C(=O)[O-])OC(=O)" + ole}};
-  for (const auto& [name, smi] : lipids) {
-    const System aa = build_molecule(smi).system;
-    std::vector<std::string> notes;
-    const System cg = martini3_lipids(aa, *m3.molecule_templates, 1e6, nullptr, &notes);
-    ASSERT_EQ(notes.size(), 1u) << name;
-    EXPECT_NE(notes[0].find("1 " + name), std::string::npos) << notes[0];
-    EXPECT_EQ(cg.atoms.size(), 12u) << name;
-    System s = aa;
-    std::string ch = "auto";
-    prepare_for_forcefield(s, m3, ch);
-    ASSERT_TRUE(s.topology) << name;
-    const TypingResult tr = assign_types(s, m3);
-    EXPECT_EQ(tr.untyped, 0) << name;
+  System box;
+  box.cell.a = {40, 0, 0};
+  box.cell.b = {0, 40, 0};
+  box.cell.c = {0, 0, 40};
+  int k = 0;
+  for (const char* smi : {"Cc1ccccc1", "c1ccc2cc3ccccc3cc2c1"}) {
+    System s = build_molecule(smi).system;
+    int64_t mol = ++k;
+    const uint32_t off = uint32_t(box.atoms.size());
+    for (auto a : s.atoms) {
+      a.pos = a.pos + Vec3{10.0 * k, 12.0 * k, 20};
+      a.mol = mol;
+      box.atoms.push_back(a);
+    }
+    for (auto b : s.bonds) box.bonds.push_back({b.i + off, b.j + off, b.order});
   }
+  box.bonds_from_file = true;
+  const System cg = martini3_small_molecules(box, dir + "martini/martini3-small-molecules.json");
+  ASSERT_TRUE(cg.topology);
+  const std::string path = (std::filesystem::temp_directory_path() / "caps_m3_readback.itp").string();
+  {
+    std::ofstream f(path);
+    f << martini3_itp(cg);
+  }
+  const System T = read_gromacs_topology(path);
+  std::filesystem::remove(path);
+  ASSERT_TRUE(T.topology);
+  EXPECT_EQ(T.atoms.size(), cg.atoms.size());
+  auto bonds = [](const ExplicitTopology& t) {
+    std::multiset<std::tuple<uint32_t, uint32_t, long, long>> s;
+    for (const auto& b : t.bonds) s.insert({std::min(b.i, b.j), std::max(b.i, b.j), std::lround(b.r0 * 100), std::lround(b.k * 100)});
+    return s;
+  };
+  EXPECT_EQ(bonds(*T.topology), bonds(*cg.topology));
+  EXPECT_EQ(T.topology->angles.size(), cg.topology->angles.size());
+  EXPECT_EQ(T.topology->dihedrals.size(), cg.topology->dihedrals.size());
+  EXPECT_EQ(T.topology->vsites.size(), cg.topology->vsites.size());
 }
 
 // GROMACS's combined bending–torsion (dihedral function 11, Martini 3 polymer backbones): k sin³θ1 sin³θ2 Σ a_n cos^n φ,
@@ -1032,47 +1046,6 @@ TEST(FFDef, OneTorsionPerBond) {
   ff = parameterize(s, def, types, "keep", &rep, false);
   EXPECT_EQ(ff.dihedrals.size(), 10u);
   std::filesystem::remove(path);
-}
-
-// GROMOS 54A7 by its building blocks (aminoacids.rtp and the termini, as pdb2gmx applies them): an all-atom peptide is
-// folded to united atoms, each residue recognised, its types, charges and coded terms taken from the block. The counts
-// are pdb2gmx's own for the same peptide (bench/ff/compare_pdb2gmx.py: same topology and energies); rigid solvents
-// (water, chloroform) take their blocks' constraint bonds
-TEST(FFDef, GromosBuildingBlocksAsPdb2gmx) {
-  const std::string path = std::string(CAPS_SOURCE_DIR) + "/data/forcefields/gromos54a7-gromacs.json";
-  const FFDef def = load_forcefield(path);
-  PeptideOptions po;
-  po.sequence = "GAFKWDR";
-  System s = build_peptide(po);
-  std::string ch = "auto";
-  const std::string note = prepare_for_forcefield(s, def, ch);
-  EXPECT_NE(note.find("7 residues recognised"), std::string::npos) << note;
-  ASSERT_TRUE(s.topology);
-  EXPECT_EQ(s.atoms.size(), 91u);
-  EXPECT_EQ(s.topology->bonds.size(), 93u);
-  EXPECT_EQ(s.topology->angles.size(), 140u);
-  EXPECT_EQ(s.topology->pairs14.size(), 115u);
-  size_t impropers = 0;
-  for (const auto& d : s.topology->dihedrals) impropers += d.form == 2;
-  EXPECT_EQ(impropers, 56u);
-  double q = 0;
-  for (const auto& a : s.atoms) q += a.charge;
-  EXPECT_NEAR(q, 1.0, 1e-9);   // K+, R+, D−; NH3+ and COO− termini
-  const TypingResult tr = assign_types(s, def);
-  ParamReport rep;
-  const ForceField ff = parameterize(s, def, tr.types, "keep", &rep, false);
-  EXPECT_TRUE(rep.missing.empty());
-  EXPECT_EQ(ff.bonds_x.size(), 93u);
-  EXPECT_EQ(ff.pairs14.size(), 115u);
-  // chloroform: its H kept, the block's H–Cl and Cl–Cl constraint bonds in place of C–H
-  BuildOptions bo;
-  bo.forcefield = "uff";
-  System c = build_molecule("ClC(Cl)Cl", bo).system;
-  ch = "auto";
-  prepare_for_forcefield(c, def, ch);
-  ASSERT_EQ(c.atoms.size(), 5u);
-  EXPECT_EQ(c.bonds.size(), 9u);
-  EXPECT_EQ(c.atoms[0].resname, "CHCL3");
 }
 
 // ClayFF from its paper (Cygan, Liang & Kalinichev, J. Phys. Chem. B 108, 1255 (2004); bench/ff/make_clayff_cygan2004.py):

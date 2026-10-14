@@ -67,7 +67,6 @@ const Cite kCites[] = {
     {"jorgensen1983", "@article{jorgensen1983,\n  author = {Jorgensen, W. L. and Chandrasekhar, J. and Madura, J. D. and Impey, R. W. and Klein, M. L.},\n  title = {Comparison of simple potential functions for simulating liquid water},\n  journal = {J. Chem. Phys.}, volume = {79}, pages = {926--935}, year = {1983}, doi = {10.1063/1.445869}\n}"},
     {"berendsen1987", "@article{berendsen1987,\n  author = {Berendsen, H. J. C. and Grigera, J. R. and Straatsma, T. P.},\n  title = {The missing term in effective pair potentials},\n  journal = {J. Phys. Chem.}, volume = {91}, pages = {6269--6271}, year = {1987}, doi = {10.1021/j100308a038}\n}"},
     {"hall1981", "@article{hall1981,\n  author = {Hall, S. R.},\n  title = {Space-group notation with an explicit origin},\n  journal = {Acta Cryst. A}, volume = {37}, pages = {517--525}, year = {1981}, doi = {10.1107/S0567739481001228}\n}"},
-    {"engh1991", "@article{engh1991,\n  author = {Engh, R. A. and Huber, R.},\n  title = {Accurate bond and angle parameters for {X}-ray protein structure refinement},\n  journal = {Acta Cryst. A}, volume = {47}, pages = {392--400}, year = {1991}, doi = {10.1107/S0108767391001071}\n}"},
     {"rosenbluth1955", "@article{rosenbluth1955,\n  author = {Rosenbluth, M. N. and Rosenbluth, A. W.},\n  title = {Monte {C}arlo calculation of the average extension of molecular chains},\n  journal = {J. Chem. Phys.}, volume = {23}, pages = {356--359}, year = {1955}, doi = {10.1063/1.1741967}\n}"},
     {"theodorou1985", "@article{theodorou1985,\n  author = {Theodorou, D. N. and Suter, U. W.},\n  title = {Detailed molecular structure of a vinyl polymer glass},\n  journal = {Macromolecules}, volume = {18}, pages = {1467--1478}, year = {1985}, doi = {10.1021/ma00149a018}\n}"},
     {"siepmann1992", "@article{siepmann1992,\n  author = {Siepmann, J. I. and Frenkel, D.},\n  title = {Configurational bias {M}onte {C}arlo: a new sampling scheme for flexible chains},\n  journal = {Mol. Phys.}, volume = {75}, pages = {59--70}, year = {1992}, doi = {10.1080/00268979200100061}\n}"},
@@ -421,9 +420,6 @@ std::string methods_text(const Manifest& m, std::vector<std::string>* refs, cons
       built = true;
     } else if (e == "crystal.build") {
       t = "The crystal was built from its space group" + cite({"hall1981"}) + " and asymmetric unit.";
-      built = true;
-    } else if (e == "bio.peptide") {
-      t = "The peptide " + param(s, "sequence") + " was built from its sequence with standard backbone geometry" + cite({"engh1991", "parsons2005"}) + ".";
       built = true;
     } else if (e == "edit.builder") {
       t = "The structure was edited by hand in the builder (" + param(s, "operations") + " operations).";
