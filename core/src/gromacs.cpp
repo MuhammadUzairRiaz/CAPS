@@ -210,6 +210,21 @@ std::string gromacs_mdp(const System& s, const ForceField& ff, const EnergyOptio
     m << "rvdw-switch              = " << ff.lj_inner / 10 << "\n";
   } else {
     m << "vdw-modifier             = " << (tail ? "None" : "Potential-shift") << "\n";
+    if (tail) {
+      // A plain cut-off leaves the LJ energy finite at r_c, which GROMACS's automatic Verlet buffer does not account
+      // for: its dynamically pruned list (0.001 nm inner buffer) drops pairs just inside r_c between prunes, the pressure
+      // comes out too high and NPT densities too low (PMMA melt at 413 K: 1.038 against 1.050 in CAPS and LAMMPS).
+      // A fixed 0.2 nm buffer rebuilt every 10 steps, as LAMMPS's 2 Å skin, gives 1.052. A cell narrower than
+      // 2 (r_c + 0.2 nm) takes what fits (GROMACS needs rlist under half the cell), rebuilt that much more often
+      double buffer = 0.2;
+      if (cell) {
+        const Cell& c = s.cell;
+        buffer = std::clamp(std::min({c.a[0], c.b[1], c.c[2]}) / 20 - e.cutoff / 10 - 0.001, 0.0, 0.2);
+      }
+      m << "verlet-buffer-tolerance  = -1          ; fixed pair-list buffer: see the comment in CAPS's gromacs.cpp\n";
+      m << "rlist                    = " << fmt("%.4g", e.cutoff / 10 + buffer) << "\n";
+      m << "nstlist                  = " << std::max(1, int(10 * buffer / 0.2)) << "\n";
+    }
   }
   m << "DispCorr                 = " << (tail && cell ? "AllEnerPres" : "no") << "\n";
   if (ff.dielectric != 1 && e.coulomb) m << "epsilon-r                = " << ff.dielectric << "\n";
