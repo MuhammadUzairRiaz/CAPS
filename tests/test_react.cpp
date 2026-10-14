@@ -1268,3 +1268,65 @@ TEST(React, BondReactMaleateOplsAa2024ChargeSums) {
   }
   std::filesystem::remove_all(dir);
 }
+
+// Small rings and doubly sulfurated carbons are not what these cures make: two C–C links picked in one cycle between
+// neighbouring CH2 pairs of the same two chains closed a cyclobutane (the path rule saw only the topology before the
+// cycle), and an allylic CH2 that had one sulfur took a second. With the path rule on each cycle's own picks and
+// min_path 7 between the leaving hydrogens no ring under six forms; sulfur_allylic's no_neighbour=S keeps one S per carbon
+TEST(React, NoSmallRingsNorDoublySulfuratedCarbons) {
+  ChainSpec spec;
+  spec.units = {{"cis-1,4-isoprene", "[*]C/C=C(C)\\C[*]"}};
+  spec.dp = 8;
+  GrowOptions g;
+  g.chains = 6;
+  g.density = 0.6;
+  auto smallest_ring = [](const System& s) {
+    std::vector<std::vector<uint32_t>> nb(s.atoms.size());
+    for (const auto& b : s.bonds) nb[b.i].push_back(b.j), nb[b.j].push_back(b.i);
+    int best = 99;
+    for (const auto& b : s.bonds) {   // a ring through this bond: the shortest other path between its ends, plus one
+      std::vector<int> d(s.atoms.size(), -1);
+      std::vector<uint32_t> q{b.i};
+      d[b.i] = 0;
+      for (size_t h = 0; h < q.size() && d[b.j] < 0; ++h)
+        for (uint32_t v : nb[q[h]])
+          if (d[v] < 0 && !(q[h] == b.i && v == b.j) && d[q[h]] < 6) { d[v] = d[q[h]] + 1; q.push_back(v); }
+      if (d[b.j] > 0) best = std::min(best, d[b.j] + 1);
+    }
+    return best;
+  };
+  for (const char* name : {"cc_crosslink", "peroxide_allylic"}) {
+    System s = grow_chains(spec, g);
+    ReactOptions r;
+    r.templates = parse_templates(builtin_template(name));
+    r.relax = false;
+    r.max_cycles = 60;
+    r.max_per_cycle = 8;
+    ReactReport rep;
+    react(s, r, &rep);
+    EXPECT_GT(rep.reactions, 3) << name;
+    EXPECT_GE(smallest_ring(s), 6) << name;
+  }
+  System s = grow_chains(spec, g);
+  PackReport pr;
+  s = insert_molecules(s, build_molecule("SS").system, 12, PackOptions{}, &pr);
+  ReactOptions r;
+  r.templates = parse_templates(builtin_template("sulfur_allylic"));
+  r.relax = false;
+  r.max_cycles = 60;
+  r.max_per_cycle = 8;
+  ReactReport rep;
+  react(s, r, &rep);
+  EXPECT_GT(rep.reactions, 4);
+  std::vector<std::vector<uint32_t>> nb(s.atoms.size());
+  for (const auto& b : s.bonds) nb[b.i].push_back(b.j), nb[b.j].push_back(b.i);
+  for (uint32_t i = 0; i < s.atoms.size(); ++i) {
+    if (s.atoms[i].element != 6) continue;
+    int sulfur = 0;
+    for (uint32_t j : nb[i]) sulfur += s.atoms[j].element == 16;
+    EXPECT_LE(sulfur, 1) << "carbon " << i;
+  }
+  // the template text round-trips the new condition (bond/react writes it back)
+  EXPECT_NE(builtin_template("sulfur_allylic").find("no_neighbour=S"), std::string::npos);
+  EXPECT_THROW(parse_templates("reaction x\natom 1 C no_neighbour=Qq\natom 2 C\ninitiators 1 2\nform 1 2\n"), ReactError);
+}
