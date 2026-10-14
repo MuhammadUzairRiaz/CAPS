@@ -1,0 +1,86 @@
+85 missing torsion classes: 85 scans, 2004 QM points (jobs.txt; array 1-2004); not scanned: 0
+  C-CT-CT-NT: fragment of 14 atoms, closest non-bonded pair over the scan 1.57 A
+  C-CT-CT-OS: fragment of 16 atoms, closest non-bonded pair over the scan 1.42 A
+  C-CT-OH-HO: fragment of 15 atoms, closest non-bonded pair over the scan 2.07 A
+  C-CT-OS-C: fragment of 17 atoms, closest non-bonded pair over the scan 1.13 A, 2 points clash (not run)
+  C-N-CT-CA: fragment of 22 atoms, closest non-bonded pair over the scan 1.46 A
+  C-OS-CT-CA: fragment of 21 atoms, closest non-bonded pair over the scan 1.10 A, 3 points clash (not run)
+  CA-C-CA-CA: fragment of 24 atoms, closest non-bonded pair over the scan 1.14 A
+  CA-C-N-CT: fragment of 24 atoms, closest non-bonded pair over the scan 1.37 A
+  CA-CA-CT-CA: fragment of 25 atoms, closest non-bonded pair over the scan 2.29 A
+  CA-CA-CY-O$: fragment of 21 atoms, closest non-bonded pair over the scan 1.53 A
+  CA-CA-NT-CA: fragment of 24 atoms, closest non-bonded pair over the scan 1.72 A
+  CA-CA-SY-CA: fragment of 25 atoms, closest non-bonded pair over the scan 1.67 A
+  CA-CT-CT-CA: fragment of 28 atoms, closest non-bonded pair over the scan 1.20 A
+  CA-CT-CT-CM: fragment of 25 atoms, closest non-bonded pair over the scan 1.89 A
+  CA-CT-CT-OS: fragment of 23 atoms, closest non-bonded pair over the scan 2.13 A
+  CA-CT-NT-CA: fragment of 27 atoms, closest non-bonded pair over the scan 1.81 A
+  CA-CT-NT-H: fragment of 27 atoms, closest non-bonded pair over the scan 1.81 A
+  CA-CT-OS-CT: fragment of 25 atoms, closest non-bonded pair over the scan 1.04 A, 1 points clash (not run)
+  CA-NT-CT-CT: fragment of 24 atoms, closest non-bonded pair over the scan 1.10 A, 2 points clash (not run)
+  CA-NT-CT-CY: fragment of 25 atoms, closest non-bonded pair over the scan 1.70 A
+  CA-OS-CT-CT: fragment of 23 atoms, closest non-bonded pair over the scan 1.00 A, 5 points clash (not run)
+  CA-OS-CT-CY: fragment of 21 atoms, closest non-bonded pair over the scan 1.17 A, 1 points clash (not run)
+  CF-CT-CF-CT: fragment of 17 atoms, closest non-bonded pair over the scan 1.53 A
+  CF-CT-CF-F: fragment of 14 atoms, closest non-bonded pair over the scan 1.96 A
+  CF-CT-CT-F: fragment of 17 atoms, closest non-bonded pair over the scan 2.15 A
+  CF-CT-CT-HC: fragment of 14 atoms, closest non-bonded pair over the scan 2.12 A
+  CM-C-OH-HO: fragment of 11 atoms, closest non-bonded pair over the scan 1.91 A
+  CM-C-OS-CT: fragment of 14 atoms, closest non-bonded pair over the scan 2.29 A
+  CM-CM-C-OS: fragment of 14 atoms, closest non-bonded pair over the scan 1.03 A, 4 points clash (not run)
+  CM-CT-CT-CM: fragment of 16 atoms, closest non-bonded pair over the scan 1.79 A
+  CM-CT-CT-CT: fragment of 25 atoms, closest non-bonded pair over the scan 1.90 A
+  CM-CT-CT-CY: fragment of 17 atoms, closest non-bonded pair over the scan 1.19 A
+  CM-CT-CT-CZ: fragment of 16 atoms, closest non-bonded pair over the scan 1.09 A, 1 points clash (not run)
+  CO-CT-OH-HO: fragment of 14 atoms, closest non-bonded pair over the scan 1.85 A
+  CO-CT-OS-CT: fragment of 17 atoms, closest non-bonded pair over the scan 1.11 A
+  CO-OS-CO-CT: fragment of 17 atoms, closest non-bonded pair over the scan 1.35 A
+  CO-OS-CO-HC: fragment of 11 atoms, closest non-bonded pair over the scan 1.89 A
+  CO-OS-CO-OH: fragment of 11 atoms, closest non-bonded pair over the scan 1.89 A
+  CO-OS-CO-OS: fragment of 14 atoms, closest non-bonded pair over the scan 1.28 A, 7 points clash (not run)
+  CO-OS-CT-CT: fragment of 16 atoms, closest non-bonded pair over the scan 1.64 A
+  CT-CF-CT-CT: fragment of 17 atoms, closest non-bonded pair over the scan 1.22 A
+  CT-CF-CT-F: fragment of 17 atoms, closest non-bonded pair over the scan 1.53 A
+  CT-CF-CT-HC: fragment of 17 atoms, closest non-bonded pair over the scan 1.22 A
+  CT-CO-OH-HO: fragment of 13 atoms, closest non-bonded pair over the scan 1.61 A
+  CT-CT-CF-F: fragment of 17 atoms, closest non-bonded pair over the scan 1.20 A
+  CT-CT-CM-Cl: fragment of 19 atoms, closest non-bonded pair over the scan 1.52 A
+  CT-CT-CT-CY: fragment of 18 atoms, closest non-bonded pair over the scan 1.73 A
+  CT-CT-CT-NA: fragment of 34 atoms, closest non-bonded pair over the scan 1.13 A, 5 points clash (not run)
+  CT-CT-CY-CT: fragment of 23 atoms, closest non-bonded pair over the scan 1.18 A
+  CT-CT-CY-CY: fragment of 17 atoms, closest non-bonded pair over the scan 1.72 A
+  CT-CT-CY-HC: fragment of 17 atoms, closest non-bonded pair over the scan 1.72 A
+  CT-CT-CY-O$: fragment of 17 atoms, closest non-bonded pair over the scan 1.72 A
+  CT-NT-CT-CY: fragment of 25 atoms, closest non-bonded pair over the scan 1.70 A
+  CT-OS-CT-CY: fragment of 17 atoms, closest non-bonded pair over the scan 1.48 A
+  CY-CT-CT-CY: fragment of 21 atoms, closest non-bonded pair over the scan 1.42 A
+  CY-CT-CT-HC: fragment of 17 atoms, closest non-bonded pair over the scan 1.20 A
+  CY-CY-CT-NT: fragment of 25 atoms, closest non-bonded pair over the scan 1.68 A
+  CY-CY-CT-OS: fragment of 14 atoms, closest non-bonded pair over the scan 1.56 A
+  Cl-CM-CT-HC: fragment of 19 atoms, closest non-bonded pair over the scan 1.51 A
+  Cl-CT-CT-OH: fragment of 13 atoms, closest non-bonded pair over the scan 2.19 A
+  Cl-CT-CT-OS: fragment of 15 atoms, closest non-bonded pair over the scan 1.85 A
+  F-CF-CT-HC: fragment of 17 atoms, closest non-bonded pair over the scan 1.20 A
+  HC-CM-C-OH: fragment of 11 atoms, closest non-bonded pair over the scan 2.29 A
+  HC-CM-C-OS: fragment of 14 atoms, closest non-bonded pair over the scan 1.37 A, 5 points clash (not run)
+  HC-CO-CT-HC: fragment of 13 atoms, closest non-bonded pair over the scan 2.20 A
+  HC-CO-CT-OH: fragment of 14 atoms, closest non-bonded pair over the scan 1.87 A
+  HC-CO-CT-OS: fragment of 17 atoms, closest non-bonded pair over the scan 2.17 A
+  HC-CO-OH-HO: fragment of 11 atoms, closest non-bonded pair over the scan 2.16 A
+  HC-CT-CO-OH: fragment of 13 atoms, closest non-bonded pair over the scan 2.20 A
+  HC-CT-CT-NA: fragment of 34 atoms, closest non-bonded pair over the scan 1.96 A
+  HC-CT-CY-HC: fragment of 17 atoms, closest non-bonded pair over the scan 1.73 A
+  HC-CT-CY-O$: fragment of 17 atoms, closest non-bonded pair over the scan 1.72 A
+  HC-CY-CT-NT: fragment of 25 atoms, closest non-bonded pair over the scan 1.71 A
+  HC-CY-CT-OS: fragment of 14 atoms, closest non-bonded pair over the scan 1.55 A
+  NT-CT-CT-OS: fragment of 17 atoms, closest non-bonded pair over the scan 2.23 A
+  NT-CT-CY-O$: fragment of 25 atoms, closest non-bonded pair over the scan 1.70 A
+  O$-CY-CT-OS: fragment of 14 atoms, closest non-bonded pair over the scan 1.55 A
+  OH-C-CT-OH: fragment of 12 atoms, closest non-bonded pair over the scan 2.21 A
+  OH-C-CT-OS: fragment of 14 atoms, closest non-bonded pair over the scan 2.01 A
+  OH-CO-CT-OH: fragment of 14 atoms, closest non-bonded pair over the scan 1.87 A
+  OH-CO-CT-OS: fragment of 17 atoms, closest non-bonded pair over the scan 2.17 A
+  OH-CT-C-OS: fragment of 15 atoms, closest non-bonded pair over the scan 2.21 A
+  OH-CT-CO-OS: fragment of 14 atoms, closest non-bonded pair over the scan 1.87 A
+  OS-C-CT-OS: fragment of 17 atoms, closest non-bonded pair over the scan 2.01 A
+  OS-CO-CT-OS: fragment of 17 atoms, closest non-bonded pair over the scan 2.17 A
