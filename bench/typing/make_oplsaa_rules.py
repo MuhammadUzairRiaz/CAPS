@@ -130,6 +130,16 @@ add(180, 7, f"{ACO[:-1]};$(O[CX4][OX2]);!$(O[CX4][OX2H1])]", "acetal ether O (th
 add(186, 7, f"{ACO[:-1]};$(O[CX4][OX2H1])]", "hemiacetal ether O")
 add(187, 7, f"[OX2H1;$(O[CX4]{ACO})]", "hemiacetal O(H)")
 add(188, 7, f"[H][OX2H1;$(O[CX4]{ACO})]", "hemiacetal H(O)")
+# the 2024 library: the acetal O 186 (-0.33) on every acetal C. The table's dimethoxymethane is neutral that way: the
+# acetal C group (189 0.06 + 2 x 190 0.10, or 193 0.16 + 194 0.10, or 197 0.26) gives +0.13 to each of its two O and a
+# methoxy or ethoxy group (181 + 3 x 185, 182 + 2 x 185) +0.20, against 186's -0.33; the hemiacetal C (191 0.195 + 2 x
+# 192 0.10) gives its ether O the same +0.13 beside its O-H (-0.265). With the dialkyl ether O 180 (-0.40) each alkoxy
+# end of a polyacetal was -0.07 e (poly(methylene oxide)'s CH3-O-CH2-O-, poly(acetaldehyde)'s ethyl ether end)
+add(186, 8, f"{ACO[:-1]};$(O[CX4][OX2]);!$(O[CX4][OX2H1])]", "acetal ether O (the acetal / hemiacetal O 186, as the 2024 table's dimethoxymethane)", True)
+# an O between two acetal (or acetal and hemiacetal) C, the backbone O of a polyacetal, has no number: it takes +0.13
+# from each acetal C group, so CAPS's caps_os_acac at -0.26 (class OS and Lennard-Jones of 186); with 186 each such O
+# left -0.07 e
+add("caps_os_acac", 9, f"{ACO[:-1]};$(O([CX4][OX2])[CX4][OX2])]", "O between two acetal C (polyacetal backbone, 1,3,5-trioxane)", True)
 
 # ---------------------------------------------------------------- carbonyls: aldehydes, ketones
 add(277, 5, "[CX3H1](=[OX1])[#6]", "aldehyde C")
@@ -230,6 +240,12 @@ add(987, 7, f"[NX3H0;$(*{AMC})](c)[CX4]", "tertiary N-alkyl-N-aryl amide N")
 add(988, 7, f"c[NX3H0;$(*{AMC})][CX4]", "ring C on a tertiary N-alkyl amide N")
 by_h((242, 244, 229, 230), 6, f"$(*[NX3H1]{AMC})", "C on secondary amide N")
 by_h((243, 245, 246, None), 6, f"$(*[NX3H0]{AMC})", "C on tertiary amide N")
+# N-benzyl secondary amides (poly(xylylene) amides such as poly(p-xylylene sebacamide)): no numbers; by the table's
+# benzyl increment (the benzyl amines 919-921 / 924 and benzyl alcohols 218-220 each +0.055 over the plain C, the ring
+# C 221 at -0.055 for benzene's -0.115), the C on N +0.055 over 244 / 229 / 230 (CAPS's caps_bza_*: CH2 0.135, CH
+# 0.195, C 0.255) and the ring C 221; with 145 and 244 each N-benzyl amide was -0.115 e
+by_h((None, "caps_bza_ch2", "caps_bza_ch", "caps_bza_c"), 7, f"$(*c);$(*[NX3H1]{AMC})", "benzyl C on a secondary amide N")
+add(221, 7, f"c[CX4;$(*[NX3H1]{AMC})]", "ring C of an N-benzyl amide (as a benzyl amine's, 221)", True)
 
 # ---------------------------------------------------------------- amines and anilines
 AMN = "!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])"
@@ -245,6 +261,14 @@ add(911, 5, f"[H][CX4][NX3;{AMN}]", "H on C bonded to an amine N")
 add(916, 6, f"c[NX3H2;{AMN}]", "aniline C(NH2)")
 add(917, 6, f"c[NX3H1;{AMN}]", "N-alkylaniline C(N)")
 add(918, 6, f"c[NX3H0;{AMN}]", "N,N-dialkylaniline C(N)")
+# benzyl amines: the table's own numbers, the benzylic C 919 / 920 / 921 (CH2NH2, CHRNH2, CR2NH2), 924 (CH2NHR) and 989
+# (CH2NR2), each +0.055 over the amine's 906 / 912 / 913 / 907 / 908, with the ring C 221 (-0.055); its H stay 911. With
+# 145 on that ring C and the plain amine C each benzyl amine was -0.115 e (polyaniline's CH2 linker, the primary amine
+# end of poly(p-xylylene sebacamide)). An aryl or second benzylic C on the N (N-benzylaniline) is the R of CH2NHR
+by_h((None, 919, 920, 921), 6, f"$(*c);$(*[NX3H2;{AMN}])", "benzyl amine C (primary)")
+add(924, 6, f"[CX4H2;$(*c);$(*[NX3H1;{AMN}])]", "benzyl amine C (CH2NHR)")
+add(989, 6, f"[CX4H2;$(*c);$(*[NX3H0;{AMN}])]", "benzyl amine C (CH2NR2)")
+add(221, 7, [f"c[CX4;$(*[NX3H2;{AMN}])]", f"c[CX4H2;$(*[NX3;{AMN}])]"], "ring C of a benzyl amine (221)", True)
 
 # ---------------------------------------------------------------- nitriles
 add(753, 6, "[NX1]#[CX2][CX4]", "nitrile N")

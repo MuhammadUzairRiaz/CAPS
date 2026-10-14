@@ -527,6 +527,12 @@
    "description": "hemiacetal H(O)"
   },
   {
+   "type": "186",
+   "smarts": "[OX2H0;!$(O[#6]=[O,S,N]);!$(O[Si]);!$(Oc);$(O[CX4][OX2]);!$(O[CX4][OX2H1])]",
+   "priority": 8,
+   "description": "acetal ether O (the acetal / hemiacetal O 186, as the 2024 table's dimethoxymethane)"
+  },
+  {
    "type": "277",
    "smarts": "[CX3H1](=[OX1])[#6]",
    "priority": 5,
@@ -1025,6 +1031,12 @@
    "description": "C on tertiary amide N (CH)"
   },
   {
+   "type": "221",
+   "smarts": "c[CX4;$(*[NX3H1][CX3;$(*(=[OX1])[NX3]);!$(*([NX3])[NX3]);!$(*[OX2]);!$(*[NX3][CX3]=[OX1])])]",
+   "priority": 7,
+   "description": "ring C of an N-benzyl amide (as a benzyl amine's, 221)"
+  },
+  {
    "type": "900",
    "smarts": "[NX3H2;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])][CX4,c]",
    "priority": 5,
@@ -1137,6 +1149,48 @@
    "smarts": "c[NX3H0;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])]",
    "priority": 6,
    "description": "N,N-dialkylaniline C(N)"
+  },
+  {
+   "type": "919",
+   "smarts": "[CX4H2;$(*c);$(*[NX3H2;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])])]",
+   "priority": 6,
+   "description": "benzyl amine C (primary) (CH2)"
+  },
+  {
+   "type": "920",
+   "smarts": "[CX4H1;$(*c);$(*[NX3H2;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])])]",
+   "priority": 6,
+   "description": "benzyl amine C (primary) (CH)"
+  },
+  {
+   "type": "921",
+   "smarts": "[CX4H0;$(*c);$(*[NX3H2;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])])]",
+   "priority": 6,
+   "description": "benzyl amine C (primary) (C)"
+  },
+  {
+   "type": "924",
+   "smarts": "[CX4H2;$(*c);$(*[NX3H1;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])])]",
+   "priority": 6,
+   "description": "benzyl amine C (CH2NHR)"
+  },
+  {
+   "type": "989",
+   "smarts": "[CX4H2;$(*c);$(*[NX3H0;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])])]",
+   "priority": 6,
+   "description": "benzyl amine C (CH2NR2)"
+  },
+  {
+   "type": "221",
+   "smarts": "c[CX4;$(*[NX3H2;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])])]",
+   "priority": 7,
+   "description": "ring C of a benzyl amine (221)"
+  },
+  {
+   "type": "221",
+   "smarts": "c[CX4H2;$(*[NX3;!$(*[CX3]=[OX1,SX1,NX2]);!$(*[SX4]);!$(*[NX2,NX1])])]",
+   "priority": 7,
+   "description": "ring C of a benzyl amine (221)"
   },
   {
    "type": "753",
