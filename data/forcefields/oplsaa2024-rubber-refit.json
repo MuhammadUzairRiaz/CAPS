@@ -16,12 +16,12 @@
    ],
    "style": "opls",
    "params": [
-    -3.0727,
-    1.742,
-    -1.1576,
-    0.5695
+    -2.3216,
+    1.5826,
+    -0.8693,
+    0.1047
    ],
-   "comment": "CAPS refit (QM), joint over the four diene scans with every barrier point (RI-MP2/cc-pVTZ//HF/6-31G**, 24 points each): RMS cis-polyisoprene 0.61, trans-polyisoprene 0.62, cis-polybutadiene 0.42, polychloroprene 0.76 kcal/mol; OPLS-AA 2024's own CM-CM-CT-CT on the same scans 1.65, 1.66, 1.36, 0.83"
+   "comment": "CAPS refit (QM) at DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP, joint over the four diene scans: RMS cis-polyisoprene 0.37, trans-polyisoprene 0.49, cis-polybutadiene 0.40, polychloroprene 0.53 kcal/mol; OPLS-AA 2024's own CM-CM-CT-CT on the same scans 0.50, 0.75, 1.02, 0.80. (At RI-MP2/cc-pVTZ//HF/6-31G** the 2024 term looked worse, 1.65 / 1.66 / 1.36 / 0.83, and an MP2 refit made cis-polybutadiene worse against DLPNO, 1.26; this overlay follows the higher level.)"
   },
   {
    "name": "CT-CT-CT-CZ",
@@ -33,18 +33,16 @@
    ],
    "style": "opls",
    "params": [
-    -1.4249,
-    0.5514,
-    0.5175,
-    0.0703
+    -1.1096,
+    0.5434,
+    0.4472,
+    -0.1267
    ],
-   "comment": "CAPS refit (QM) of nitrile butadiene rubber's CT-CT-CT-CZ (RI-MP2/cc-pVTZ//HF/6-31G**, 24 points): RMS 0.25 kcal/mol; OPLS-AA 2024's own 0.73"
+   "comment": "CAPS refit (QM) of NBR's CT-CT-CT-CZ at DLPNO-CCSD(T)/cc-pVTZ//wB97X-D3/def2-TZVP: RMS 0.31 kcal/mol; OPLS-AA 2024's own 0.65"
   }
  ],
  "notes": [
-  "An opt-in overlay on oplsaa2024 (caps ff apply --ff oplsaa2024 --overlay oplsaa2024-rubber-refit.json): it replaces OPLS-AA 2024's own values for these classes; the base library is unchanged.",
-  "CM-CM-CT-CT: one set of V1-V4 fitted jointly to the cis-1,4-polyisoprene, trans-1,4-polyisoprene, cis-1,4-polybutadiene and polychloroprene backbone scans (one constant per scan); RMS 0.32 / 0.43 / 0.38 / 0.45 kcal/mol against OPLS-AA 2024's own 0.55 / 0.78 / 1.00 / 0.82.",
-  "CT-CT-CT-CZ: the nitrile side of NBR (2-methylbutanenitrile-like fragment); RMS 0.25 kcal/mol against OPLS-AA 2024's own 0.73.",
-  "Not refitted, as OPLS-AA 2024's own values already follow QM: CT-CT-CT-CT in EPDM (0.30) and polyisobutylene (0.16), CA-CA-CT-CT at the styrene unit of SBR (0.28)."
+  "optional overlay on oplsaa2024.json for diene and nitrile rubbers (caps ff apply --overlay oplsaa2024-rubber-refit.json); the base library keeps the 2024 values",
+  "fitted to DLPNO-CCSD(T) relaxed scans, the higher of the two levels CAPS ran; the cis-polyisoprene scan had 13 of 15 points when fitted"
  ]
 }
