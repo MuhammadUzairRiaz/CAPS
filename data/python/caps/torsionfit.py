@@ -417,7 +417,9 @@ def prepare():
         if in_ring(nb, b, c):   # the central bond in a ring: it cannot turn freely
             plan["not_scanned"].append({"classes": key, "why": "the central bond is in a ring"})
             continue
-        for rad in range(radius, radius + 3):   # the smallest fragment that keeps the types
+        # the smallest fragment that keeps the types, growing up to the whole molecule: a cut that leaves atoms the
+        # force field's rules cannot type (OPLS-AA 2024's strict ether and ester carbons) needs a wider fragment
+        for rad in range(radius, radius + max(3, len(el))):
             keep, idx, fel, fpos, fbonds = fragment(el, pos, nb, b, c, rad)
             fdir = os.path.join(work, "-".join(key).replace("*", "x"))
             os.makedirs(fdir, exist_ok=True)
