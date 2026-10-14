@@ -49,6 +49,17 @@
     3.5
    ],
    "comment": "as opls_203 (CAPS's persulfide S takes 203's Lennard-Jones): CAPS refit (exp): disulfide S epsilon 0.355 -> 0.275 kcal/mol, sigma 3.60 -> 3.50 A (OPLS-AA 2024 gives 203 the sulfide S 202's values; the sulfides themselves stay within 0.35 kcal/mol and are not changed). Dimethyl disulfide density +0.03 %, dHvap +0.01 kcal/mol; diethyl disulfide dHvap +0.05 (with the 2024 value: +2.49 % / +1.74 and dHvap +1.75). Best of six trials (bench/ff/open/disulfide_lj, trial S6)"
+  },
+  {
+   "name": "opls_468",
+   "match": [
+    "opls_468"
+   ],
+   "params": [
+    0.075,
+    3.5
+   ],
+   "comment": "CAPS refit (exp): ester methoxy C epsilon 0.066 -> 0.075 kcal/mol, sigma 3.50 A kept. Methyl acetate and methyl methacrylate both carry 468 and move together, so this shares the error: methyl acetate density -1.73 %, dHvap -0.34 kcal/mol; methyl methacrylate +0.31 %, +0.22 (with the 2024 value: -2.35 % / -0.59 and -0.22 % / -0.04). Five trials (bench/ff/open/methoxy_lj, trial M5); PMMA's methoxy C is 468 too"
   }
  ],
  "notes": [
