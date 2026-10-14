@@ -619,7 +619,7 @@ class Document:
               relax_iterations: int = 500, md_ps: float = 0.0, temperature: float = 500.0, cutoff: float = 10.0, seed: int = 1,
               during_md: bool = False, between_chains: bool = False, keep_byproducts: bool = False, weights=None,
               auto_capture: bool = False, capture_max: float = 0.0, capture_step: float = 0.0, crosslinks=None,
-              default_field: bool = False, sites_per_chain: int = 0) -> str:
+              default_field: bool = False, sites_per_chain: int = 0, remove_unreacted: bool = False) -> str:
         """Crosslinks the current frame cycle by cycle (Polymatic-style; REACTER-style capture and probability) with
         reaction templates: built-in names ("cc_crosslink", "sulfur_allylic", "peroxide_allylic", "polysulfide_allylic",
         "epoxy_amine_primary", "enr_acid_ester", "ester_condensation", "anhydride_alcohol", …; see reaction_templates()) or
@@ -629,7 +629,9 @@ class Document:
         relative rate per template (else the closest pairs first); auto_capture widens the capture when no pair is found.
         The assigned force field types and relaxes every cycle and is re-assigned to the product (default_field=True:
         the built-in default, the assignment dropped). sites_per_chain: at most this many of each chain's reactive sites react
-        (react_sites() counts them). Returns the report; network numbers in react_summary()."""
+        (react_sites() counts them). remove_unreacted: afterwards, molecules made only of S and H (a sulfur donor that never
+        reacted: H2S, H-S-S-H, H2Sx) leave the cell; how many is in the report and in removed_unreacted. Returns the report;
+        network numbers in react_summary()."""
         names = [templates] if isinstance(templates, str) else list(templates)
         text = "\n".join(reaction_template(t) if "\n" not in t and t.strip() in reaction_templates() else t for t in names)
         kind, value = (0, 0.0) if crosslinks is None else (self._TARGETS[crosslinks[0]], float(crosslinks[1]))
@@ -641,7 +643,41 @@ class Document:
         if library().caps_react(self._h, _enc(text), C.byref(o), None, None, rep, len(rep)) < 0:
             raise _error()
         self.report = rep.value.decode()
+        self.removed_unreacted = {"molecules": 0, "atoms": 0}
+        if remove_unreacted:
+            gone = self._donors_left()
+            if gone:
+                self.edit(op="delete", atoms=[a for m in gone for a in m])
+            self.removed_unreacted = {"molecules": len(gone), "atoms": sum(len(m) for m in gone)}
+            self.report += (f"\nremoved {len(gone)} unreacted sulfur donor molecule(s) ({self.removed_unreacted['atoms']} atoms): "
+                            "molecules of S and H only")
         return self.report
+
+    def _donors_left(self) -> list:
+        """atom indices (from 0) of each molecule made only of S and H (an unreacted sulfur donor)"""
+        import builtins, os, tempfile   # this module's open() is CAPS's own
+        fd, path = tempfile.mkstemp(suffix=".data")
+        os.close(fd)
+        try:
+            self.save(path)
+            sec, mass, mol, typ = "", {}, {}, {}
+            for raw in builtins.open(path):
+                line = raw.split("#")[0].strip()
+                if not line:
+                    continue
+                if line[0].isalpha():   # a section header (Masses, Atoms, PairIJ Coeffs ...)
+                    sec = line
+                    continue
+                w = line.split()
+                if sec == "Masses" and len(w) >= 2:
+                    mass[int(w[0])] = float(w[1])
+                elif sec == "Atoms" and len(w) >= 7:
+                    mol.setdefault(int(w[1]), []).append(int(w[0]) - 1)
+                    typ[int(w[0]) - 1] = int(w[2])
+        finally:
+            os.remove(path)
+        sh = lambda m: abs(m - 32.06) < 0.1 or abs(m - 1.008) < 0.01
+        return [atoms for atoms in mol.values() if all(sh(mass[typ[a]]) for a in atoms) and any(abs(mass[typ[a]] - 32.06) < 0.1 for a in atoms)]
 
     def react_sites(self, templates) -> dict:
         """Each chain's reactive sites for the templates (built-in names or text, as for react()): chains [{chain, sites,
