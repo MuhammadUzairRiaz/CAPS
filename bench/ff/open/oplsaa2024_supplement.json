@@ -674,6 +674,34 @@
    "charge": 0.255,
    "description": "epoxide C bearing an aryl (1028 0.200 + 0.055)",
    "reason": "the benzyl alcohol increment of the table (ring C 221 at -0.055 for benzene's -0.115, the carbinol C +0.055 over an alcohol's: 218 0.200 against 157 0.145) applied to an epoxide C that bears an aryl"
+  },
+  {
+   "name": "caps_os_acac",
+   "lj_from": "opls_186",
+   "charge": -0.26,
+   "description": "O between two acetal C (polyacetal backbone)",
+   "reason": "each acetal C group carries +0.26 (189 0.06 + 2 x 190 0.10; 193 0.16 + 194 0.10; 197 0.26) shared by its two O, +0.13 each, as the table's dimethoxymethane balances (two methoxy groups 181 + 3 x 185 at +0.20 and the acetal group +0.26 against two 186 at -0.33); the hemiacetal C (191 0.195 + 2 x 192 0.10, beside its O-H 187 + 188 at -0.265) gives its ether O the same +0.13. An O between two such C: -0.26"
+  },
+  {
+   "name": "caps_bza_ch2",
+   "lj_from": "opls_244",
+   "charge": 0.135,
+   "description": "benzyl CH2 on a secondary amide N (244 0.080 + 0.055)",
+   "reason": "the table's benzyl increment (the benzyl amines 919 / 920 / 921 and 924 each +0.055 over the amine C 906 / 912 / 913 and 907, the benzyl alcohols 218 / 219 / 220 +0.055 over 157 / 158 / 159, with the ring C 221 at -0.055 for benzene's -0.115) applied to the C on a secondary amide N"
+  },
+  {
+   "name": "caps_bza_ch",
+   "lj_from": "opls_229",
+   "charge": 0.195,
+   "description": "benzyl CH on a secondary amide N (229 0.140 + 0.055)",
+   "reason": "the table's benzyl increment (the benzyl amines 919 / 920 / 921 and 924 each +0.055 over the amine C 906 / 912 / 913 and 907, the benzyl alcohols 218 / 219 / 220 +0.055 over 157 / 158 / 159, with the ring C 221 at -0.055 for benzene's -0.115) applied to the C on a secondary amide N"
+  },
+  {
+   "name": "caps_bza_c",
+   "lj_from": "opls_230",
+   "charge": 0.255,
+   "description": "benzyl C on a secondary amide N (230 0.200 + 0.055)",
+   "reason": "the table's benzyl increment (the benzyl amines 919 / 920 / 921 and 924 each +0.055 over the amine C 906 / 912 / 913 and 907, the benzyl alcohols 218 / 219 / 220 +0.055 over 157 / 158 / 159, with the ring C 221 at -0.055 for benzene's -0.115) applied to the C on a secondary amide N"
   }
  ],
  "dihedrals": [
