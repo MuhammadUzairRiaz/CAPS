@@ -215,7 +215,35 @@ def cut_fragment(el, pos, nb, rings, b, c, radius, box=None):
         close = min((math.dist(fpos[i], fpos[j]) for i in range(len(fpos)) for j in range(i + 1, len(fpos))), default=9)
         if close < 0.9:
             problem = f"two atoms {close:.2f} A apart"
+    if not problem:
+        crushed = smallest_sp3_angle(fel, fpos, fbonds)
+        if crushed < 85:
+            problem = f"an sp3 carbon angle of {crushed:.0f} deg"
     return keep, idx, fel, fpos, fbonds, problem
+
+
+def smallest_sp3_angle(fel, fpos, fbonds):
+    """the smallest bond angle at a four-coordinate carbon, three-membered rings left out (an epoxide's 60 degrees are
+    real): under about 85 degrees the carbon is inverted or crushed, a structure no cure should give"""
+    nb = [set() for _ in fel]
+    for i, j in fbonds:
+        nb[i].add(j)
+        nb[j].add(i)
+    worst = 180.0
+    for c, e in enumerate(fel):
+        if e != "C" or len(nb[c]) != 4:
+            continue
+        ring = sorted(nb[c])
+        for x in range(4):
+            for y in range(x + 1, 4):
+                a, b = ring[x], ring[y]
+                if b in nb[a]:
+                    continue
+                u = [fpos[a][k] - fpos[c][k] for k in range(3)]
+                v = [fpos[b][k] - fpos[c][k] for k in range(3)]
+                cosang = sum(u[k] * v[k] for k in range(3)) / (math.dist(fpos[a], fpos[c]) * math.dist(fpos[b], fpos[c]))
+                worst = min(worst, math.degrees(math.acos(max(-1.0, min(1.0, cosang)))))
+    return worst
 
 
 def environment(types, nb, rings, b, c, radius):

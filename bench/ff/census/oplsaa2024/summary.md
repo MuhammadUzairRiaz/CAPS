@@ -6,7 +6,7 @@ Structures typed: 211 (21 copolymer, 114 polymer, 38 product, 38 reactant); fail
 |---|---|---|---|---|
 | torsion classes | 256 | 75 | 14 | 345 |
 | rotor environments | 1107 | 152 | 22 | 1281 |
-| of them heavy-atom rotors | 861 | 135 | 20 | 1016 |
+| of them heavy-atom rotors | 857 | 135 | 20 | 1012 |
 | bond classes | - | 0 | 0 | - |
 | angle classes | - | 5 | 4 | - |
 
@@ -15,9 +15,9 @@ Structures typed: 211 (21 copolymer, 114 polymer, 38 product, 38 reactant); fail
 - One relaxed scan per rotor environment, 24 points each (15 degrees).
 - Library (environments the published table does not cover): 174 scans, 4176 QM points.
 - Training set (every environment, published ones included): 1281 scans, 30744 QM points before distorted conformers are added.
-- Fragment size: median 8 heavy atoms, largest 65.
-- Fragments with a problem (left out of a campaign): 10 (7 two atoms 0.70 A apart, 3 two atoms 0.86 A apart).
-- Environments seen once: 738 (many are chain ends or one crosslink site; the ones seen often are the backbones).
+- Fragment size: median 8 heavy atoms, largest 85.
+- Fragments with a problem (left out of a campaign): 15 (8 an sp3 carbon angle of 38 deg, 6 an sp3 carbon angle of 85 deg, 1 over 80 atoms).
+- Environments seen once: 746 (many are chain ends or one crosslink site; the ones seen often are the backbones).
 
 ## Missing torsion classes
 
@@ -28,7 +28,7 @@ Structures typed: 211 (21 copolymer, 114 polymer, 38 product, 38 reactant); fail
 - CA-NT-CT-CY (10x; C(c1ccc(N(CC2CO2)CC2CO2)cc1)c1ccc(N(CC2CO2)CC2CO2)cc1, epoxy_amine_primary: TGDDM + DDS)
 - CM-CT-CT-CZ (3x; C003 Acrylonitrile–butadiene–styrene terpolymer (random, 1 : 1 : 2 units), C105 NBR (33 wt % acrylonitrile))
 - CT-NT-CT-CY (10x; C(c1ccc(N(CC2CO2)CC2CO2)cc1)c1ccc(N(CC2CO2)CC2CO2)cc1, epoxy_amine_primary: TGDDM + DDS)
-- CT-OS-CT-CY (4x; CCCCOCC1CO1, epoxy_amine_primary: butyl glycidyl ether + ethylenediamine)
+- CT-OS-CT-CY (5x; CCCCOCC1CO1, epoxy_amine_primary: butyl glycidyl ether + ethylenediamine)
 - CY-CY-CT-NT (10x; C(c1ccc(N(CC2CO2)CC2CO2)cc1)c1ccc(N(CC2CO2)CC2CO2)cc1, epoxy_amine_primary: TGDDM + DDS)
 - HC-CY-CT-NT (10x; C(c1ccc(N(CC2CO2)CC2CO2)cc1)c1ccc(N(CC2CO2)CC2CO2)cc1, epoxy_amine_primary: TGDDM + DDS)
 - NT-CT-CT-OS (8x; CC(N)COCC(C)OCC(C)N, epoxy_amine_primary: DGEBA + Jeffamine D230 (n=2))

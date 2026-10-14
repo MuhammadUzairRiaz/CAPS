@@ -1,0 +1,8 @@
+# environments left out when the training set is assembled: their census fragment has a crushed or inverted sp3
+# carbon (smallest bond angle outside three-membered rings), from React cures before 51bc1da7
+840550f042a0 cc_crosslink: PE, 67 deg
+89a6bc86e864 cc_crosslink: PE, 67 deg
+4328ddc6ffbf cc_crosslink: PE, 67 deg
+53c9c7fb321e cc_crosslink: PE, 67 deg
+933ae646e8c8 peroxide_allylic: SBR, 40 deg
+fa51960eac65 peroxide_allylic: SBR, 40 deg
