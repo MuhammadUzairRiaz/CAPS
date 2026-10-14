@@ -299,6 +299,30 @@ TEST(Gromacs, TopologyUnitsExclusionsAndRefusals) {
   EXPECT_NE(top.find("[ nonbond_params ]"), std::string::npos);
   EXPECT_NE(mdp.find("coulombtype              = PME"), std::string::npos);
   EXPECT_NE(mdp.find("DispCorr                 = AllEnerPres"), std::string::npos);
+  // a plain LJ cut-off with tail corrections: a fixed pair-list buffer (GROMACS's automatic one, pruned to 0.001 nm,
+  // drops pairs just inside r_c and left an NPT PMMA melt 1.1 % less dense than CAPS and LAMMPS)
+  EXPECT_NE(mdp.find("vdw-modifier             = None"), std::string::npos);
+  EXPECT_NE(mdp.find("verlet-buffer-tolerance  = -1"), std::string::npos);
+  {   // rlist between r_c and r_c + 0.2 nm and under half the cell; nstlist 10 for the full buffer, less for less
+    const auto at = mdp.find("rlist                    = ");
+    ASSERT_NE(at, std::string::npos) << mdp;
+    const double rlist = std::stod(mdp.substr(at + 27));
+    const double w = std::min({s.cell.a[0], s.cell.b[1], s.cell.c[2]}) / 10;
+    EXPECT_GE(rlist, e.cutoff / 10);
+    EXPECT_LE(rlist, e.cutoff / 10 + 0.2 + 1e-9);
+    if (w / 2 > e.cutoff / 10) EXPECT_LT(rlist, w / 2);   // a cell under 2 r_c is flagged in the notes and keeps rlist = r_c
+    else EXPECT_DOUBLE_EQ(rlist, e.cutoff / 10);
+    const auto nl = mdp.find("nstlist                  = ");
+    ASSERT_NE(nl, std::string::npos);
+    EXPECT_EQ(std::stoi(mdp.substr(nl + 27)), std::max(1, int(10 * (rlist - e.cutoff / 10) / 0.2 + 1e-6)));
+  }
+  {   // shifted LJ (no tail): GROMACS's own buffer is right, nothing forced
+    EnergyOptions shifted = e;
+    shifted.tail = false;
+    const std::string m2 = gromacs_mdp(s, ff, shifted);
+    EXPECT_NE(m2.find("Potential-shift"), std::string::npos);
+    EXPECT_EQ(m2.find("verlet-buffer-tolerance"), std::string::npos);
+  }
   // the same notes without writing
   EXPECT_EQ(gromacs_notes(s, ff, e), notes);
   // forms GROMACS lacks are refused

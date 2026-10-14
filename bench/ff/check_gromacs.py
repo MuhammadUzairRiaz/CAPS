@@ -68,6 +68,10 @@ CASES = [
     # the libraries built from their original sources on this machine (bench/ff/open), on molecules CAPS builds itself
     ("OPLS-AA (GROMACS oplsaa.ff) isoprene, ethylbenzene, ester (vacuum)", ("smiles", "CC=C(C)CC.CCc1ccccc1.CCOC(=O)C"), "oplsaa-gromacs", "types", []),
     ("OPLS-AA 2024 (Jorgensen) isoprene, ethylbenzene, ester, PVA unit (vacuum)", ("smiles", "CC=C(C)CC.CCc1ccccc1.CCOC(=O)C.CC(O)CC(O)C"), "oplsaa2024", "types", []),
+    # PMMA in a periodic cell (quaternary backbone C, alpha-methyl, methyl ester, OPLS impropers): the melt whose GROMACS
+    # density came out 1.1 % below CAPS's and LAMMPS's
+    ("OPLS-AA 2024 PMMA trimers, PME", ("mix-box", [("COC(=O)C(C)(C)CC(C)(C(=O)OC)CC(C)(C)C(=O)OC", 14)], 28,
+     os.path.join(FF, "oplsaa2024.json")), "oplsaa2024", "types", PME),
     ("CL&P (il.ff) [C4C1im][NTf2] (vacuum)", ("smiles", "CCCCn1cc[n+](C)c1.FC(F)(F)S(=O)(=O)[N-]S(=O)(=O)C(F)(F)F"), "clandp", "types", []),
     ("CL&P DES (des.ff) reline, 16 choline chloride + 32 urea, PME", ("mix-box", [("C[N+](C)(C)CCO", 16), ("[Cl-]", 16), ("NC(N)=O", 32)], 30,
      os.path.join(FF, "clandp-des.json")), "clandp-des", "types", PME),
