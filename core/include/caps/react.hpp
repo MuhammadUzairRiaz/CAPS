@@ -27,6 +27,7 @@ struct TemplateAtom {
   bool not_aromatic = false;    // not in an aromatic six-ring
   bool aromatic = false;        // in an aromatic six-ring (a phenol's ring carbon, not a carboxyl carbon)
   std::vector<int> bonded;      // map numbers of pattern atoms it is bonded to (defined earlier)
+  std::vector<int> no_neighbour;   // elements it must not be bonded to (no_neighbour=S: an allylic carbon not yet sulfurated)
 };
 
 // Atom-mapped reaction template. Text form (one statement per line, '#' comments):

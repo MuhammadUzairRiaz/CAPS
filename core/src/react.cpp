@@ -41,7 +41,7 @@ const std::map<std::string, std::string>& builtins() {
        "initiators 3 4   # the leaving hydrogens: close H pairs mean C–H bonds pointing at each other\n"
        "capture 3.0\n"
        "probability 1.0\n"
-       "min_path 6\n"
+       "min_path 7   # between the leaving hydrogens: the carbons at least 5 bonds apart, no ring under six\n"
        "form 1 2\n"
        "form 3 4   # the two hydrogens leave together as H2\n"
        "byproduct 3 4\n"
@@ -55,7 +55,7 @@ const std::map<std::string, std::string>& builtins() {
        "initiators 3 4\n"
        "capture 3.0\n"
        "probability 1.0\n"
-       "min_path 6\n"
+       "min_path 7   # between the leaving hydrogens: the carbons at least 5 bonds apart, no ring under six\n"
        "form 1 2\n"
        "form 3 4\n"
        "byproduct 3 4\n"
@@ -63,7 +63,7 @@ const std::map<std::string, std::string>& builtins() {
       {"sulfur_allylic",
        "reaction sulfur_allylic   # accelerated sulfur cure (disulfide-donor model): an allylic C–H of a diene rubber and an\n"
        "                          # S–H end of H–S–S–H (or a growing C–S–S–H) form C–S, H2 released; two in turn give C–S–S–C\n"
-       "atom 1 C degree=4 H>=1 not_aromatic   # the allylic carbon\n"
+       "atom 1 C degree=4 H>=1 not_aromatic no_neighbour=S   # the allylic carbon, not yet sulfurated (one crosslink per carbon)\n"
        "atom 2 C degree=3 not_aromatic bonded 1   # its double-bond neighbour\n"
        "atom 3 H bonded 1\n"
        "atom 4 S degree=2 H>=1  # an S–H end of the sulfur donor (H2S: a monosulfide C–S–C in two steps)\n"
@@ -79,7 +79,7 @@ const std::map<std::string, std::string>& builtins() {
       {"polysulfide_allylic",
        "reaction polysulfide_allylic   # a silane's polysulfide (TESPT, TESPD) couples to a diene rubber: an S–S bond opens, one\n"
        "                               # sulfur bonds to an allylic carbon, that carbon's hydrogen moves to the other (S–H)\n"
-       "atom 1 C degree=4 H>=1 not_aromatic   # the allylic carbon\n"
+       "atom 1 C degree=4 H>=1 not_aromatic no_neighbour=S   # the allylic carbon, not yet sulfurated\n"
        "atom 2 C degree=3 not_aromatic bonded 1   # its double-bond neighbour\n"
        "atom 3 H bonded 1\n"
        "atom 4 S degree=2\n"
@@ -103,7 +103,7 @@ const std::map<std::string, std::string>& builtins() {
        "initiators 3 6   # the leaving hydrogens\n"
        "capture 3.0\n"
        "probability 1.0\n"
-       "min_path 6\n"
+       "min_path 7   # between the leaving hydrogens: the carbons at least 5 bonds apart, no ring under six\n"
        "form 1 4\n"
        "form 3 6   # written as H2: in a real cure the peroxide's radicals take the hydrogens (cumyl alcohol from DCP)\n"
        "byproduct 3 6\n"
@@ -268,6 +268,11 @@ std::vector<ReactionTemplate> parse_templates(const std::string& text) {
         else if (k.rfind("H<=", 0) == 0) a.h_max = std::stoi(k.substr(3));
         else if (k.rfind("H=", 0) == 0) a.h_min = a.h_max = std::stoi(k.substr(2));
         else if (k.rfind("degree=", 0) == 0) a.degree = std::stoi(k.substr(7));
+        else if (k.rfind("no_neighbour=", 0) == 0) {
+          const int z = element_from_symbol(k.substr(13));
+          if (z <= 0) throw bad("unknown element in '" + k + "'");
+          a.no_neighbour.push_back(z);
+        }
         else if (k == "bonded") {
           for (++i; i < w.size(); ++i) {
             const int m = integer(i);
@@ -404,6 +409,9 @@ bool fits(const TemplateAtom& t, const System& s, const Chem& c, uint32_t i) {
   if (t.ring3 && !c.ring3[i]) return false;
   if (t.not_aromatic && c.aromatic[i]) return false;
   if (t.aromatic && !c.aromatic[i]) return false;
+  for (int z : t.no_neighbour)
+    for (uint32_t j : c.nb[i])
+      if (s.atoms[j].element == z) return false;
   return true;
 }
 
@@ -1119,6 +1127,23 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
     std::vector<std::pair<uint32_t, uint32_t>> link_bonds;   // formed bonds of the links chosen this cycle
     std::vector<LinkRecord> pending;                          // this cycle's link records
     std::vector<std::pair<int64_t, std::pair<int64_t, int64_t>>> pending_attach;
+    // bonds chosen this cycle that stay in the network (not a leaving H2 / H2O): the path rule below sees them, so two
+    // links picked in one cycle cannot close a ring the rule forbids (two neighbouring CH2 pairs of the same two chains
+    // linked together made a cyclobutane)
+    std::vector<std::vector<uint32_t>> cycle_nb(s.atoms.size());
+    auto near_now = [&](uint32_t a, uint32_t b, int limit) {
+      if (limit <= 1) return false;
+      std::vector<std::pair<uint32_t, int>> q{{a, 0}};
+      std::set<uint32_t> seen{a};
+      for (size_t h = 0; h < q.size(); ++h) {
+        auto [u, d] = q[h];
+        if (u == b) return true;
+        if (d + 1 >= limit) continue;
+        for (uint32_t v : nb[u]) if (seen.insert(v).second) q.push_back({v, d + 1});
+        for (uint32_t v : cycle_nb[u]) if (seen.insert(v).second) q.push_back({v, d + 1});
+      }
+      return false;
+    };
     auto take = [&](const Match& m) {
       if (uni(rng) > o.templates[m.reaction].probability) return false;
       for (uint32_t a : m.atoms) if (busy.count(a)) return false;
@@ -1127,6 +1152,10 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
       const auto oa = owners(at(t.init_a), nb, tag, polymer, formed), ob = owners(at(t.init_b), nb, tag, polymer, formed);
       const bool same = meet(oa, ob);
       if (o.between_chains && same) return false;
+      {   // the template's path rule on the topology with this cycle's earlier picks (min_path 0: at least 3 bonds apart)
+        const int limit = t.min_path > 0 ? t.min_path : 3;
+        if (near_now(at(t.init_a), at(t.init_b), limit)) return false;
+      }
       const bool link = !oa.empty() && !ob.empty() && !same;
       if (link && rep.target_crosslinks > 0 && rep.crosslinks + links >= rep.target_crosslinks) return false;   // the target is met
       // each chain's own sites: at most sites_per_chain react (the template's site atoms on a chain)
@@ -1142,7 +1171,12 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
       }
       for (uint32_t a : m.atoms) busy.insert(a);
       for (const auto& [c, k] : uses) site_used[c] += k;
-      for (auto [x, y] : t.form) { formed.insert({at(x), at(y)}); formed.insert({at(y), at(x)}); }
+      for (auto [x, y] : t.form) {
+        formed.insert({at(x), at(y)});
+        formed.insert({at(y), at(x)});
+        const auto leaves = [&](int mp) { return std::count(t.byproduct.begin(), t.byproduct.end(), mp) || std::count(t.remove.begin(), t.remove.end(), mp); };
+        if (!leaves(x) && !leaves(y)) { cycle_nb[at(x)].push_back(at(y)); cycle_nb[at(y)].push_back(at(x)); }
+      }
       links += link;
       intra += same && !oa.empty();
       if (link) for (auto [x, y] : t.form) link_bonds.push_back({at(x), at(y)});

@@ -1238,6 +1238,7 @@ std::string template_text(const ReactionTemplate& t) {
     if (a.ring3) o << " ring3";
     if (a.not_aromatic) o << " not_aromatic";
     if (a.aromatic) o << " aromatic";
+    for (int z : a.no_neighbour) o << " no_neighbour=" << element(z).symbol;
     if (a.h_min >= 0 && a.h_min == a.h_max) o << " H=" << a.h_min;
     else {
       if (a.h_min >= 0) o << " H>=" << a.h_min;

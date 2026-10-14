@@ -157,6 +157,7 @@ std::string reaction_smarts(const ReactionTemplate& t) {
     if (a.ring3) q += ";r3";
     if (a.not_aromatic) q += ";A";
     if (a.aromatic) q += ";a";
+    for (int z : a.no_neighbour) q += ";!$(*~[#" + std::to_string(z) + "])";   // SMARTS: no neighbour of that element
     return q + ":" + std::to_string(m) + "]";
   };
   std::set<Edge> post = pre;
