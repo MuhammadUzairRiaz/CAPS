@@ -1,0 +1,41 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "disulfide Lennard-Jones trial S3 (CAPS, on OPLS-AA 2024)",
+ "atom_types": [],
+ "pairs": [
+  {
+   "name": "opls_203",
+   "match": [
+    "opls_203"
+   ],
+   "params": [
+    0.2,
+    3.6
+   ]
+  },
+  {
+   "name": "caps_s_poly",
+   "match": [
+    "caps_s_poly"
+   ],
+   "params": [
+    0.2,
+    3.6
+   ]
+  },
+  {
+   "name": "caps_s_ssh",
+   "match": [
+    "caps_s_ssh"
+   ],
+   "params": [
+    0.2,
+    3.6
+   ]
+  }
+ ],
+ "notes": [
+  "A trial for the liquid test: OPLS-AA 2024 gives the disulfide S 203 the sulfide S 202's Lennard-Jones (epsilon 0.355 kcal/mol, sigma 3.60 A); dimethyl disulfide came out 2.5 % too dense and 1.74 kcal/mol too strongly bound while the sulfides are within 0.35 kcal/mol. CAPS's polysulfide and persulfide S (caps_s_poly, caps_s_ssh) take 203's Lennard-Jones and move with it."
+ ]
+}

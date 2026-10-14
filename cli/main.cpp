@@ -276,7 +276,7 @@ int usage() {
                "  caps ff import-dlf LIB/NAME.par -o FF.json    convert a DL_FIELD library (.par + .sf + .bci)\n"
                "  caps ff info FF.json                           types, rules, styles, references\n"
                "  caps ff type FILE --ff FF.json [--typing RULES.json] [-o TYPES.txt] [--explain]   assign atom types from SMARTS rules\n"
-               "  caps ff apply FILE --ff FF.json [-o OUT.data [--lammps-input OUT.in [--lammps-run check|minimize|nvt|npt --temp 300 --press 1 --dt FS (default: the force field's, Martini 20, else 0.5) --steps N] [--moltemplate SYSTEM.lt]]] [--gromacs STEM] [--dlpoly DIR] [--overlay USER.json] [--types TYPES.txt] [--charges auto|keep|types|gasteiger]\n"
+               "  caps ff apply FILE --ff FF.json [-o OUT.data [--lammps-input OUT.in [--lammps-run check|minimize|nvt|npt --temp 300 --press 1 --dt FS (default: the force field's, Martini 20, else 0.5) --steps N] [--moltemplate SYSTEM.lt]]] [--gromacs STEM] [--dlpoly DIR] [--overlay USER.json[,MORE.json]] [--types TYPES.txt] [--charges auto|keep|types|gasteiger]\n"
                "               [--lammps-style native|exact] [--hybrid] [--kspace auto|pppm|ewald|dsf|cut] [--kspace-accuracy 1e-4] [--lammps-cutoff Å] [--units auto|real|metal]\n"
                "               [--list] [-o OUT.data]   parameters for a structure whose atoms carry type names (or TYPES.txt)\n";
   return 2;
@@ -422,6 +422,15 @@ System load(const std::string& path, const std::map<std::string, std::string>& o
   return s;
 }
 
+// --overlay A.json[,B.json …]: each overlay merged in turn onto the force field, a later file's terms over an earlier's
+void merge_overlays(FFDef& def, const std::string& list) {
+  for (std::stringstream ss(list); ss.good();) {
+    std::string p;
+    std::getline(ss, p, ',');
+    if (!p.empty()) merge_forcefield(def, load_forcefield(p));
+  }
+}
+
 // The force field for commands that take --ff FF.json [--typing RULES] [--charges MODE]: typed by the force field's
 // rules (or the atom names in the file); without --ff the built-in GAFF of C and H.
 ForceField cli_forcefield(System& s0, std::map<std::string, std::string>& o, bool quiet = false) {
@@ -467,7 +476,7 @@ ForceField cli_forcefield(System& s0, std::map<std::string, std::string>& o, boo
     return assign_uff(s0, uo);
   }
   FFDef def = load_forcefield(ff_path(o["--ff"]));
-  if (o.count("--overlay")) merge_forcefield(def, load_forcefield(o["--overlay"]));   // as caps ff apply: relax, md, equilibrate
+  if (o.count("--overlay")) merge_overlays(def, o["--overlay"]);   // as caps ff apply: relax, md, equilibrate
   if (o.count("--typing")) load_typing(def, o["--typing"]);
   if (needs_prepare(def)) {   // united atom, shells, ionic bonds: the structure the force field describes
     std::string ch = o.count("--charges") ? o["--charges"] : (file_charges(s0) ? "keep" : "auto");
@@ -2229,7 +2238,7 @@ int main(int argc, char** argv) {
           for (const auto& n : f.notes) std::printf("%s\n", n.c_str());
         } else {
           FFDef ff = load_forcefield(ff_path(o["--ff"]));
-          if (o.count("--overlay")) merge_forcefield(ff, load_forcefield(o["--overlay"]));
+          if (o.count("--overlay")) merge_overlays(ff, o["--overlay"]);
           if (o.count("--typing"))
             for (std::stringstream ts(o["--typing"]); ts.good();) {   // several files: comma-separated, later ones on top
               std::string f;

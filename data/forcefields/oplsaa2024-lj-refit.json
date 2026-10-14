@@ -1,0 +1,24 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "OPLS-AA 2024 Lennard-Jones refits (CAPS refit, exp)",
+ "source": "CAPS refits to liquid densities and heats of vaporisation at 298.15 K (NIST ThermoML / WebBook), with CAPS's own NPT MD (bench/ff/liquid_validate.py)",
+ "units": "real",
+ "atom_types": [],
+ "pairs": [
+  {
+   "name": "opls_753",
+   "match": [
+    "opls_753"
+   ],
+   "params": [
+    0.25,
+    3.2
+   ],
+   "comment": "CAPS refit (exp): nitrile N (RCN) epsilon 0.17 -> 0.25 kcal/mol, sigma 3.20 A kept. Acetonitrile density +0.82 %, dHvap -0.12 kcal/mol; propionitrile -0.59 %, -0.15 (with the 2024 value: -3.21 % / -0.80 and -3.21 % / -0.83). Best of four trials (bench/ff/open/nitrile_lj, trial A)"
+  }
+ ],
+ "notes": [
+  "optional overlay on oplsaa2024.json (caps ff apply --overlay oplsaa2024-lj-refit.json, or with the rubber refits: --overlay oplsaa2024-rubber-refit.json,oplsaa2024-lj-refit.json); the base library keeps the 2024 values"
+ ]
+}
