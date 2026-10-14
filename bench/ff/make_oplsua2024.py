@@ -162,7 +162,7 @@ def valid(t):
 
 
 def pattern(kind, c):
-    return f"*_b*_a{c}_d*_i*" if kind == "angles" else f"*_b*_a*_d{c}_i*"
+    return {"bonds": f"*_b{c}_a*_d*_i*", "angles": f"*_b*_a{c}_d*_i*"}.get(kind, f"*_b*_a*_d{c}_i*")
 
 
 def base_has(kind, t):
@@ -174,10 +174,10 @@ def base_has(kind, t):
     return False
 
 
-added = {"angles": [], "dihedrals": []}
+added = {"bonds": [], "angles": [], "dihedrals": []}
 for kind in added:
     seen = set()
-    for e in sup[kind]:
+    for e in sup.get(kind, []):
         for t in itertools.product(*[classes(x) for x in e["match"]]):
             key = min(t, t[::-1])
             if key in seen or not valid(key):
@@ -209,7 +209,7 @@ ff = {"format": "caps-forcefield", "format_version": 1, "name": "OPLS-UA (2024 p
                 "(1,2-dimethoxyethane, 2-methoxyethanol, acetal and glycidyl-ether fragments) with the united-atom model evaluated on "
                 "them (caps.torsionfit), each comment giving its RMS; hydroxyl torsions whose scans are dominated by an intramolecular "
                 "OH...O hydrogen bond (RMS over 1.1 kcal/mol) are not fitted and stay missing"],
-      "pairs": caps_pairs, "angles": added["angles"], "dihedrals": added["dihedrals"],
+      "pairs": caps_pairs, "bonds": added["bonds"], "angles": added["angles"], "dihedrals": added["dihedrals"],
       "typing": "../typing/oplsua2024.typing.json"}
 json.dump(ff, open(os.path.join(DATA, "forcefields", "oplsua2024.json"), "w"), ensure_ascii=False, indent=1)
 doc = {"format": "caps-typing", "version": 1, "forcefield": "OPLS-UA (2024 parameter file)",

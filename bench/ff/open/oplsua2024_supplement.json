@@ -139,6 +139,110 @@
    ],
    "source": "the 2024 file's all-atom acetal bends OS-CO-OS and OS-CO-OH (92.6 / 111.55; 'ACETAL - wlj 2/93')",
    "reason": "CAPS's transfer to the united-atom acetal and hemiacetal carbon (poly(methylene oxide), hemiacetal ends): none of the 1984, 1986 or 1990 papers has an O-C-O bend"
+  },
+  {
+   "match": [
+    "S",
+    "S~",
+    "S"
+   ],
+   "params": [
+    62,
+    98.9
+   ],
+   "source": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it",
+   "reason": "by_analogy: C2-S~-C3 62 / 98.9 (the C-S-C bend) for any two sp3 carbons on a sulfide S",
+   "sulfur_rubber": true
+  },
+  {
+   "match": [
+    "S",
+    "S~",
+    [
+     "S~",
+     "SH"
+    ]
+   ],
+   "params": [
+    68,
+    103.7
+   ],
+   "source": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it",
+   "reason": "by_analogy: C2-S~-S~ 68 / 103.7 (the C-S-S bend) for any sp3 carbon, also to a persulfide S",
+   "sulfur_rubber": true
+  },
+  {
+   "match": [
+    "A",
+    "S",
+    "S~"
+   ],
+   "params": [
+    50,
+    114.7
+   ],
+   "source": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it",
+   "reason": "by_analogy: C2-C2-S~ 50 / 114.7 (the C-C-S bend) for any carbon on an sp3 carbon bonded to S",
+   "sulfur_rubber": true
+  },
+  {
+   "match": [
+    "A",
+    "S",
+    "SH"
+   ],
+   "params": [
+    50,
+    114.7
+   ],
+   "source": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it",
+   "reason": "by_analogy: the C-C-S bend C2-C2-S~ 50 / 114.7 for a thiol S too (the 2024 file has no C-C-SH united-atom bend)",
+   "sulfur_rubber": true
+  },
+  {
+   "match": [
+    "S",
+    "SH",
+    "HS"
+   ],
+   "params": [
+    44,
+    96
+   ],
+   "source": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it",
+   "reason": "by_analogy: C2-SH-HS 44 / 96 (the C-S-H bend) for any sp3 carbon",
+   "sulfur_rubber": true
+  },
+  {
+   "match": [
+    "S~",
+    "SH",
+    "HS"
+   ],
+   "params": [
+    49.78,
+    98.19
+   ],
+   "source": "CAPS's QM fit in OPLS-AA 2024 (bench/ff/open/oplsaa2024_supplement.json)",
+   "reason": "by_analogy: the S-S-H bend S-S-HS, B3LYP-D3BJ/def2-TZVP scan of CH3SSH (no H on carbon in it, so the united-atom model changes nothing)",
+   "sulfur_rubber": true
+  },
+  {
+   "match": [
+    "S~",
+    "S~",
+    [
+     "S~",
+     "SH"
+    ]
+   ],
+   "params": [
+    55.56,
+    107.56
+   ],
+   "source": "CAPS's QM fit in OPLS-AA 2024 (bench/ff/open/oplsaa2024_supplement.json)",
+   "reason": "by_analogy: the S-S-S bend S-S-S, B3LYP-D3BJ/def2-TZVP scan of dimethyl trisulfide (sulfur only)",
+   "sulfur_rubber": true
   }
  ],
  "dihedrals": [
@@ -400,6 +504,494 @@
    ],
    "source": "CAPS fit (QM)",
    "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS 108_bOS_aOS_dOS_iOS-110_bC2_aC2_dC2_iC2-108_bOS_aOS_dOS_iOS-110_bC2_aC2_dC2_iC2 1.03 kcal/mol; ridge 0.001"
+  },
+  {
+   "match": [
+    "S~",
+    "S~",
+    "S~",
+    [
+     "S~",
+     "SH"
+    ]
+   ],
+   "params": [
+    1.7068,
+    -3.2552,
+    1.0071,
+    0.4435
+   ],
+   "source": "CAPS's QM fit in OPLS-AA 2024 (bench/ff/open/oplsaa2024_supplement.json)",
+   "reason": "by_analogy: S-S-S-S, MP2/cc-pVTZ//HF/6-31G** (sulfur only)",
+   "sulfur_rubber": true
+  },
+  {
+   "match": [
+    "S",
+    "S~",
+    "S~",
+    [
+     "S~",
+     "SH"
+    ]
+   ],
+   "params": [
+    1.233,
+    -5.6005,
+    1.6661,
+    0.1222
+   ],
+   "source": "CAPS's QM fit in OPLS-AA 2024 (bench/ff/open/oplsaa2024_supplement.json)",
+   "reason": "by_analogy: CT-S-S-S, MP2/cc-pVTZ//HF/6-31G** (the C-S-S-S torsion; the carbon's H fold in, no H-C-S-S term needed)",
+   "sulfur_rubber": true
+  },
+  {
+   "match": [
+    "S",
+    "S~",
+    "SH",
+    "HS"
+   ],
+   "params": [
+    0.9286,
+    -5.7148,
+    1.0193,
+    0.1777
+   ],
+   "source": "CAPS's QM fit in OPLS-AA 2024 (bench/ff/open/oplsaa2024_supplement.json)",
+   "reason": "by_analogy: CT-S-S-HS, MP2/cc-pVTZ//HF/6-31G** of CH3SSH",
+   "sulfur_rubber": true
+  },
+  {
+   "match": [
+    "HS",
+    "SH",
+    "SH",
+    "HS"
+   ],
+   "params": [
+    1.6094,
+    -5.9124,
+    0.5565,
+    0.201
+   ],
+   "source": "CAPS's QM fit in OPLS-AA 2024 (bench/ff/open/oplsaa2024_supplement.json)",
+   "reason": "by_analogy: HS-S-S-HS of HSSH (sulfur and H only)",
+   "sulfur_rubber": true
+  },
+  {
+   "match": [
+    "A",
+    "S",
+    "SH",
+    "HS"
+   ],
+   "params": [
+    -0.2067,
+    -0.0733,
+    1.2167,
+    0.0
+   ],
+   "source": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III",
+   "reason": "rotation about the C-S bond of ethanethiol (V0 0.2100 dropped, a constant): one C-C-S-H torsion, so the function is the torsion's own; eq 2 of the paper is the OPLS form, coefficients taken as printed"
+  },
+  {
+   "match": [
+    "A",
+    "S",
+    "S~",
+    "S"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "source": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III",
+   "reason": "rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "match": [
+    "S",
+    "S~",
+    "S~",
+    "S"
+   ],
+   "params": [
+    1.582,
+    -8.67,
+    2.008,
+    0.0
+   ],
+   "source": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III",
+   "reason": "rotation about the S-S bond of dimethyl disulfide (V0 7.0100 dropped, a constant)"
+  },
+  {
+   "match": [
+    "A",
+    "S",
+    "S~",
+    [
+     "S~",
+     "SH"
+    ]
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "source": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III",
+   "reason": "by_analogy: the paper has no C-C-S-S rotation; the C-C-S-C function of ethyl methyl sulfide (the S-S group's S in place of the methyl)",
+   "sulfur_rubber": true
+  },
+  {
+   "match": [
+    "C3",
+    "C7",
+    "C2",
+    "SH"
+   ],
+   "params": [
+    0.8309,
+    -0.5587,
+    0.5907,
+    0.586
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-SH 0.16, CT-CM-CT-SH 0.15 kcal/mol; ridge 0.1; all-atom QM scan CM-CM-CT-SH, CT-CM-CT-SH, MM with OPLS-UA",
+   "sulfur_rubber": true
+  },
+  {
+   "match": [
+    "C8",
+    "C7",
+    "C2",
+    "SH"
+   ],
+   "params": [
+    -1.1285,
+    0.3453,
+    -0.4004,
+    0.5005
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-SH 0.16, CT-CM-CT-SH 0.15 kcal/mol; ridge 0.1; all-atom QM scan CM-CM-CT-SH, CT-CM-CT-SH, MM with OPLS-UA",
+   "sulfur_rubber": true
+  },
+  {
+   "match": [
+    "C8",
+    "C2",
+    "CH",
+    "S~"
+   ],
+   "params": [
+    2.9374,
+    -0.3552,
+    2.9847,
+    -0.107
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-S 1.57 kcal/mol; ridge 0.1; all-atom QM scan CM-CT-CT-S, MM with OPLS-UA",
+   "sulfur_rubber": true
+  },
+  {
+   "match": [
+    "C7",
+    "C2",
+    "CH",
+    "SH"
+   ],
+   "params": [
+    4.9279,
+    0.846,
+    1.2927,
+    -0.328
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-SH 1.48 kcal/mol; ridge 0.1; all-atom QM scan CM-CT-CT-SH, MM with OPLS-UA",
+   "sulfur_rubber": true
+  },
+  {
+   "match": [
+    "C3",
+    "C7",
+    "CH",
+    "S~"
+   ],
+   "params": [
+    0.4072,
+    0.7211,
+    0.5701,
+    0.6029
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CT-CM-CT-S 1.04 kcal/mol; ridge 0.1; all-atom QM scan CT-CM-CT-S, MM with OPLS-UA",
+   "sulfur_rubber": true
+  },
+  {
+   "match": [
+    "C8",
+    "C7",
+    "CH",
+    "S~"
+   ],
+   "params": [
+    -0.4196,
+    -0.0456,
+    -0.216,
+    0.8839
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CT-CM-CT-S 1.04 kcal/mol; ridge 0.1; all-atom QM scan CT-CM-CT-S, MM with OPLS-UA",
+   "sulfur_rubber": true
+  },
+  {
+   "match": [
+    "C7",
+    "C8",
+    "CH",
+    "SH"
+   ],
+   "params": [
+    2.8487,
+    -1.3743,
+    -0.6473,
+    -0.4039
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS HC-CM-CT-SH 0.74 kcal/mol; ridge 0.1; all-atom QM scan HC-CM-CT-SH, MM with OPLS-UA",
+   "sulfur_rubber": true
+  },
+  {
+   "match": [
+    "C9",
+    "C8",
+    "C2",
+    "S~"
+   ],
+   "params": [
+    -1.606,
+    0.0343,
+    -2.8834,
+    0.2444
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-S 0.28 kcal/mol; ridge 0.001; all-atom QM scan CM-CM-CT-S, MM with OPLS-UA",
+   "sulfur_rubber": true
+  },
+  {
+   "match": [
+    "S",
+    "D",
+    "S",
+    "SH"
+   ],
+   "params": [
+    0.8309,
+    -0.5587,
+    0.5907,
+    0.586
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "by_analogy: the C3-C7-C2-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-SH 0.16, CT-CM-CT-SH 0.15 kcal/mol; ridge 0.1; all-atom QM scan CM-CM-CT-SH, CT-CM-CT-SH, MM with OPLS-UA",
+   "sulfur_rubber": true
+  },
+  {
+   "match": [
+    "D",
+    "S",
+    "S",
+    "S~"
+   ],
+   "params": [
+    2.9374,
+    -0.3552,
+    2.9847,
+    -0.107
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "by_analogy: the C8-C2-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-S 1.57 kcal/mol; ridge 0.1; all-atom QM scan CM-CT-CT-S, MM with OPLS-UA",
+   "sulfur_rubber": true
+  },
+  {
+   "match": [
+    "D",
+    "S",
+    "S",
+    "SH"
+   ],
+   "params": [
+    4.9279,
+    0.846,
+    1.2927,
+    -0.328
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "by_analogy: the C7-C2-CH-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-SH 1.48 kcal/mol; ridge 0.1; all-atom QM scan CM-CT-CT-SH, MM with OPLS-UA",
+   "sulfur_rubber": true
+  },
+  {
+   "match": [
+    "S",
+    "D",
+    "S",
+    "S~"
+   ],
+   "params": [
+    0.4072,
+    0.7211,
+    0.5701,
+    0.6029
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "by_analogy: the C3-C7-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CT-CM-CT-S 1.04 kcal/mol; ridge 0.1; all-atom QM scan CT-CM-CT-S, MM with OPLS-UA",
+   "sulfur_rubber": true
+  },
+  {
+   "match": [
+    "D",
+    "D",
+    "S",
+    "SH"
+   ],
+   "params": [
+    2.8487,
+    -1.3743,
+    -0.6473,
+    -0.4039
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "by_analogy: the C7-C8-CH-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS HC-CM-CT-SH 0.74 kcal/mol; ridge 0.1; all-atom QM scan HC-CM-CT-SH, MM with OPLS-UA",
+   "sulfur_rubber": true
+  },
+  {
+   "match": [
+    "D",
+    "D",
+    "S",
+    "S~"
+   ],
+   "params": [
+    -1.606,
+    0.0343,
+    -2.8834,
+    0.2444
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "by_analogy: the C9-C8-C2-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-S 0.28 kcal/mol; ridge 0.001; all-atom QM scan CM-CM-CT-S, MM with OPLS-UA",
+   "sulfur_rubber": true
+  },
+  {
+   "match": [
+    "S~",
+    "S~",
+    "SH",
+    "HS"
+   ],
+   "params": [
+    1.0304,
+    -5.4084,
+    0.7829,
+    0.3561
+   ],
+   "source": "CAPS's QM fit in OPLS-AA 2024 (bench/ff/open/oplsaa2024_supplement.json)",
+   "reason": "by_analogy: HS-S-S-S, MP2/cc-pVTZ//HF/6-31G** scan of HSSSH-type fragment (sulfur and H only, the same sites in the united-atom model)",
+   "sulfur_rubber": true
+  },
+  {
+   "match": [
+    "C3",
+    "C2",
+    "C2",
+    "S~"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA"
+  },
+  {
+   "match": [
+    "S",
+    "S",
+    "S",
+    "S~"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "by_analogy: the C3-C2-C2-S~ fit for any carbon of the same kind; MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA",
+   "sulfur_rubber": true
+  },
+  {
+   "match": [
+    "S~",
+    "S",
+    "S",
+    "S~"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "by_analogy: the C3-C2-C2-S~ fit (dipropyl sulfide) for a C-C bond with a sulfur on each carbon; MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA",
+   "sulfur_rubber": true
+  }
+ ],
+ "bonds": [
+  {
+   "match": [
+    "S",
+    "S~"
+   ],
+   "params": [
+    222,
+    1.81
+   ],
+   "source": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it",
+   "reason": "by_analogy: C2-S~ / C3-S~ 222 / 1.81 for every sp3 carbon on a sulfide or disulfide S (the 1986 paper uses one C-S bond for any alkyl group; the crosslink CH has no entry)",
+   "sulfur_rubber": true
+  },
+  {
+   "match": [
+    "S",
+    "SH"
+   ],
+   "params": [
+    222,
+    1.81
+   ],
+   "source": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it",
+   "reason": "by_analogy: C2-SH / C3-SH 222 / 1.81 for every sp3 carbon on a thiol S",
+   "sulfur_rubber": true
+  },
+  {
+   "match": [
+    "S~",
+    "SH"
+   ],
+   "params": [
+    166,
+    2.038
+   ],
+   "source": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it",
+   "reason": "by_analogy: the disulfide S-S bond S~-S~ 166 / 2.038 for an S-S bond to a persulfide S-H sulfur",
+   "sulfur_rubber": true
   }
  ]
 }

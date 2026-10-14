@@ -1668,6 +1668,33 @@ TEST(FFDef, OplsUaAlcoholEtherTerms) {
   EXPECT_EQ(rule(def.dihedrals, "OS-C2-C2-OS"), (std::vector<double>{2.0063, -1.8941, 4.0419, -0.1512}));  // CAPS fit (QM), DME
 }
 
+// OPLS-UA sulfur (Jorgensen, J. Phys. Chem. 90, 6379 (1986)): thiols, sulfides and disulfides typed, neutral and complete,
+// the C-S and S-S rotations as Table III prints them
+TEST(FFDef, OplsUaSulfurTerms) {
+  const FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/oplsua2024.json");
+  for (const std::string smi : {"CCS", "CCSC", "CCSCC", "CSSC", "CCSSCC", "CCCSCCC"}) {
+    System s = build_molecule(smi).system;
+    std::string ch = "types";
+    prepare_for_forcefield(s, def, ch);
+    const TypingResult tr = assign_types(s, def);
+    EXPECT_EQ(tr.untyped, 0) << smi;
+    ParamReport rep;
+    const ForceField f = parameterize(s, def, tr.types, ch, &rep, false);
+    double q = 0;
+    for (double x : f.charge) q += x;
+    EXPECT_NEAR(q, 0.0, 1e-9) << smi;
+    EXPECT_TRUE(rep.missing.empty()) << smi << ": " << (rep.missing.empty() ? "" : rep.missing[0]);
+  }
+  auto rule = [&](const std::string& name) {
+    const auto p = std::find_if(def.dihedrals.begin(), def.dihedrals.end(), [&](const FFRule& x) { return x.name == name; });
+    EXPECT_NE(p, def.dihedrals.end()) << name;
+    return p == def.dihedrals.end() ? std::vector<double>(4, 0.0) : p->params;
+  };
+  EXPECT_EQ(rule("C3-C2-SH-HS"), (std::vector<double>{-0.2067, -0.0733, 1.2167, 0.0}));   // ethanethiol
+  EXPECT_EQ(rule("C2-S~-C2-C3"), (std::vector<double>{1.46, -1.073, 2.31, 0.0}));         // diethyl sulfide
+  EXPECT_EQ(rule("C3-S~-S~-C3"), (std::vector<double>{1.582, -8.67, 2.008, 0.0}));        // dimethyl disulfide
+}
+
 // OPLS-DES from Doherty & Acevedo's paper and SI only (bench/ff/make_opls_des_doherty2018.py,
 // bench/typing/make_oplsdes_doherty2018_rules.py): the paper's nine molecules typed as Schemes S1 and S2 type them, choline
 // and chloride at +-0.8 e (ion_charge_scale), the HBDs neutral, every bonded term found; molecules outside the set
