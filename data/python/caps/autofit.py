@@ -356,11 +356,26 @@ def main():
     extra = {"bonds": [], "angles": [], "dihedrals": []}
     current = ffjson
     for kind, key in (("bond", "bonds"), ("angle", "angles")):
+        cl = class_of(ffjson, kind)
+        seen = set()
         for names in miss[kind]:
+            k = tuple(cl.get(n, n) for n in names)
+            k = min(k, k[::-1])
+            if k in seen:   # one term per class (two type triples of the same classes: one parameter set)
+                continue
+            seen.add(k)
             try:
                 rule, rms = fit_stretch_or_bend(structure, current, work, names, kind, model)
             except Exception as e:   # reported, never filled with a guess
                 report["not_fitted"].append({"term": f"{kind} {'-'.join(names)}", "why": str(e)[:300]})
+                continue
+            K, x0 = rule["params"]
+            sane = (20 <= K <= 250 and 90 <= x0 <= 150) if kind == "angle" else (100 <= K <= 1500 and 0.8 <= x0 <= 2.6)
+            if not sane or rms > 0.5:
+                rule["needs_qm"] = True
+                rule["comment"] += f"; needs QM: {'outside the physical range' if not sane else 'a poor fit'}"
+                report["not_fitted"].append({"term": f"{kind} {'-'.join(names)}", "why": f"auto-fit K {K:.1f}, x0 {x0:.2f}, RMS {rms:.2f}: "
+                                             + ("outside the physical range (a bend in a fused ring cannot be scanned alone)" if not sane else "a poor fit")})
                 continue
             extra[key].append(rule)
             print(f"{kind:8s} {rule['name']:24s} K {rule['params'][0]:9.3f}  x0 {rule['params'][1]:9.4f}  RMS {rms:.2f}")
@@ -371,7 +386,15 @@ def main():
         for line in log.splitlines():
             if " V = " in line or "zero" in line:
                 print("torsion  " + line)
-        extra["dihedrals"] = rules
+        good = []
+        for r_ in rules:
+            m = re.search(r"RMS[^0-9]*([\d.]+)", r_["comment"])
+            rms = float(m.group(1)) if m else 0.0
+            if rms > 1.0:
+                report["not_fitted"].append({"term": "dihedral " + r_["name"], "why": f"auto-fit RMS {rms:.2f} kcal/mol: needs QM"})
+                continue
+            good.append(r_)
+        extra["dihedrals"] = good
         for n in not_scanned:
             report["not_fitted"].append({"term": "dihedral " + "-".join(n["classes"]), "why": n["why"]})
     overlay = {"format": "caps-forcefield", "format_version": 1, "name": f"CAPS auto-fit (AIMNet2) for {os.path.basename(structure)}",
