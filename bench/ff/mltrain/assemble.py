@@ -6,8 +6,10 @@
 Reads TRAINSET/manifest.json, TRAINSET/exclude.txt, TRAINSET/confs/<env>.xyz and TRAINSET/dft/<env>.jsonl and writes
 DIR/train.xyz and DIR/test.xyz (extended xyz: REF_energy in eV, REF_forces in eV/A, and per frame env, kind, angle,
 level and config_type) plus DIR/summary.json. Left out: excluded environments, SCFs that did not converge and frames
-with no DFT line, conformers with a force component over MAX_FORCE eV/A, and conformers of a double-bond rotor
-twisted more than PLANAR degrees from planar. The test set holds out whole environments (a fraction --test of them, chosen with --seed), so it
+with no DFT line, conformers with a force component over MAX_FORCE eV/A, conformers of a double-bond rotor twisted
+more than PLANAR degrees from planar, relaxed scan points more than MAX_ABOVE kcal/mol above their fragment's lowest
+(with their distorted copies), and conformers that fail sound() (atoms too close, bonds out of range). The environment
+is written as env_<id>: a bare id such as 8e0738e4401a would be read back as a number. The test set holds out whole environments (a fraction --test of them, chosen with --seed), so it
 measures the model on chemistry it has not seen, not on a neighbouring conformer of a training one.
 """
 import io, json, os, random, sys
@@ -19,10 +21,30 @@ from ase.io import read, write
 
 MAX_FORCE = 20.0          # eV/A: a conformer with a larger force component is an extreme distortion MD never visits
 PLANAR = 30.0             # degrees: how far a double-bond rotor may be twisted from planar and stay in the set
+MAX_ABOVE = 40.0          # kcal/mol: a relaxed scan point this far above its fragment's lowest is an artefact (no
+                          # single-bond torsion has such a barrier); it goes, with its distorted copy
+EV_KCAL = 23.0605478
 DOUBLE = {("C", "C"): 1.40, ("C", "N"): 1.34, ("N", "N"): 1.30, ("C", "S"): 1.68, ("C", "O"): 1.28, ("N", "O"): 1.28}
 HARTREE_EV = 27.211386245988
 BOHR_A = 0.529177210903
 arg = lambda k, d=None: sys.argv[sys.argv.index(k) + 1] if k in sys.argv else d
+
+
+def sound(at):
+    """no two atoms under 0.85 A, no X-H bond under 0.90 A, no C-C bond outside 1.15-1.70 A (bonds: within 1.25 x the
+    covalent radii): a distorted copy that breaks these is not a molecule any MD visits"""
+    from ase.data import covalent_radii
+    d = at.get_all_distances()
+    np.fill_diagonal(d, 9.0)
+    if d.min() < 0.85:
+        return False
+    r = covalent_radii[at.numbers]
+    sym = at.get_chemical_symbols()
+    for i, j in zip(*np.where(np.triu(d < 1.25 * (r[:, None] + r[None, :]), 1))):
+        pair = {sym[i], sym[j]}
+        if ("H" in pair and d[i, j] < 0.90) or (pair == {"C"} and not 1.15 <= d[i, j] <= 1.70):
+            return False
+    return True
 
 
 def double_rotor(ts, env, central):
@@ -55,7 +77,7 @@ def main():
     test = set(rng.sample(sorted(envs), max(1, int(len(envs) * float(arg("--test", "0.1"))))))
     frames = {"train": [], "test": []}
     stats = {"environments": 0, "frames": 0, "unconverged": 0, "no_dft": 0, "no_df_level": 0, "missing_env": [],
-             "large_force": 0, "twisted_double_bond": 0, "double_bond_rotors": []}
+             "large_force": 0, "twisted_double_bond": 0, "double_bond_rotors": [], "above_window": 0, "unsound": 0}
     for env in envs:
         src, dft = os.path.join(ts, "confs", env + ".xyz"), os.path.join(ts, "dft", env + ".jsonl")
         if not (os.path.exists(src) and os.path.exists(dft)):
@@ -71,6 +93,10 @@ def main():
             except (ValueError, KeyError):
                 pass
         double = double_rotor(ts, env, central[env])
+        rel = [d["energy_Eh"] for k, d in lines.items() if d.get("kind") == "relaxed" and d["converged"]]
+        floor = min(rel) if rel else None
+        bad_angles = {d.get("angle") for d in lines.values() if d.get("kind") == "relaxed" and floor is not None
+                      and (d["energy_Eh"] - floor) * HARTREE_EV * EV_KCAL > MAX_ABOVE}
         if double:
             stats["double_bond_rotors"].append(env)
         n = 0
@@ -87,11 +113,17 @@ def main():
                 if min(phi, abs(phi - 180), 360 - phi) > PLANAR:
                     stats["twisted_double_bond"] += 1
                     continue
+            if d.get("angle") in bad_angles:
+                stats["above_window"] += 1
+                continue
+            if not sound(at):
+                stats["unsound"] += 1
+                continue
             if np.abs(d["forces_Eh_per_bohr"]).max() * HARTREE_EV / BOHR_A > MAX_FORCE:
                 stats["large_force"] += 1
                 continue
             a = Atoms(at.get_chemical_symbols(), positions=at.positions)
-            a.info.update({"REF_energy": d["energy_Eh"] * HARTREE_EV, "env": env, "kind": d.get("kind"),
+            a.info.update({"REF_energy": d["energy_Eh"] * HARTREE_EV, "env": "env_" + env, "kind": d.get("kind"),
                            "angle": d.get("angle"), "level": d["level"], "config_type": "Default"})
             a.arrays["REF_forces"] = np.array(d["forces_Eh_per_bohr"]) * (HARTREE_EV / BOHR_A)
             stats["no_df_level"] += "no DF" in d["level"]
