@@ -1330,3 +1330,44 @@ TEST(React, NoSmallRingsNorDoublySulfuratedCarbons) {
   EXPECT_NE(builtin_template("sulfur_allylic").find("no_neighbour=S"), std::string::npos);
   EXPECT_THROW(parse_templates("reaction x\natom 1 C no_neighbour=Qq\natom 2 C\ninitiators 1 2\nform 1 2\n"), ReactError);
 }
+
+// A C-C crosslink must not leave a carbon inverted (its H on the same side as its heavy neighbours, the C-H squeezed):
+// EPDM's norbornene cage CH2 gave H-C-C 71 deg and a 0.86 A C-H when several stretched new bonds were relaxed together.
+// The leaving H is the one pointing at the partner, and an H pulled through its carbon is put back after each relaxation
+TEST(React, NoInvertedCarbonsAfterCrosslinking) {
+  for (const char* smi : {"CCCC(C)CCCC1CC2CC1C(=CC)C2", "C/C(C)=C\\CC/C(C)=C\\CC/C(C)=C\\C"}) {
+    Region b;
+    b.kind = Region::InsideBox;
+    b.a = {0, 0, 0};
+    b.b = {22, 22, 22};
+    PackOptions po;
+    po.cell.a = {22, 0, 0};
+    po.cell.b = {0, 22, 0};
+    po.cell.c = {0, 0, 22};
+    po.seed = 2;
+    System s = pack({{"M", build_molecule(smi).system, 6, {b}}}, po);
+    ReactOptions r;
+    r.templates = parse_templates(builtin_template("cc_crosslink"));
+    r.relax = true;
+    r.max_cycles = 40;
+    r.max_per_cycle = 8;
+    ReactReport rep;
+    react(s, r, &rep);
+    EXPECT_GT(rep.reactions, 3) << smi;
+    std::vector<std::vector<uint32_t>> nb(s.atoms.size());
+    for (const auto& b : s.bonds) nb[b.i].push_back(b.j), nb[b.j].push_back(b.i);
+    for (uint32_t c = 0; c < s.atoms.size(); ++c) {
+      if (s.atoms[c].element != 6 || nb[c].size() != 4) continue;
+      for (uint32_t h : nb[c]) {
+        if (s.atoms[h].element != 1) continue;
+        const Vec3 ch = s.cell.minimum_image(s.atoms[h].pos - s.atoms[c].pos);
+        EXPECT_GT(norm(ch), 1.0) << smi << " C" << c;
+        for (uint32_t x : nb[c]) {
+          if (s.atoms[x].element == 1) continue;
+          const Vec3 cx = s.cell.minimum_image(s.atoms[x].pos - s.atoms[c].pos);
+          EXPECT_GT(std::acos(dot(ch, cx) / norm(ch) / norm(cx)) * 180 / M_PI, 80.0) << smi << " C" << c;
+        }
+      }
+    }
+  }
+}

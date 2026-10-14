@@ -732,6 +732,55 @@ std::vector<std::vector<uint32_t>> site_groups(const System& s, const ReactionTe
   return {groups.begin(), groups.end()};
 }
 
+// A carbon left inverted by a reaction: its hydrogen on the same side as its heavy neighbours (H-C-C 71 deg, the C-H
+// squeezed to 0.86 A in an EPDM C-C crosslink), which no minimisation undoes since the H would have to pass through the
+// carbon. Several stretched new bonds relaxed together can drag an H through its carbon, and a bond can form on the face of
+// the H that stays. The hydrogens of an sp3 carbon with an H within 90 deg of a heavy neighbour are put back where the heavy
+// neighbours leave room: one H opposite the three, two in the plane bisecting the two. `only`: the atoms to look at (else all).
+// Returns how many carbons were repaired
+int repair_inverted_hydrogens(System& s, const std::vector<uint32_t>* only = nullptr) {
+  const size_t n = s.atoms.size();
+  std::vector<std::vector<uint32_t>> nbr(n);
+  for (const auto& b : s.bonds) nbr[b.i].push_back(b.j), nbr[b.j].push_back(b.i);
+  auto sep = [&](uint32_t from, uint32_t to) {
+    const Vec3 d = s.atoms[to].pos - s.atoms[from].pos;
+    return s.cell.valid() ? s.cell.minimum_image(d) : d;
+  };
+  std::vector<uint32_t> all;
+  if (!only) for (uint32_t i = 0; i < n; ++i) all.push_back(i);
+  int repaired = 0;
+  for (uint32_t c : only ? *only : all) {
+    if (c >= n || s.atoms[c].element != 6 || nbr[c].size() != 4) continue;
+    std::vector<uint32_t> hs, heavy;
+    for (uint32_t j : nbr[c]) (s.atoms[j].element == 1 ? hs : heavy).push_back(j);
+    if (hs.empty() || hs.size() > 2) continue;
+    bool inverted = false;
+    for (uint32_t h : hs)
+      for (uint32_t x : heavy) {
+        const Vec3 a = sep(c, h), b = sep(c, x);
+        if (dot(a, b) > 0) inverted = true;   // H-C-X under 90 deg
+      }
+    if (!inverted) continue;
+    Vec3 sum{0, 0, 0};
+    for (uint32_t x : heavy) { const Vec3 u = sep(c, x); sum = sum + u * (1.0 / norm(u)); }
+    if (norm(sum) < 1e-6) continue;
+    const Vec3 away = sum * (-1.0 / norm(sum));
+    const double r = 1.09;
+    if (hs.size() == 1) {
+      s.atoms[hs[0]].pos = s.atoms[c].pos + away * r;
+    } else {
+      Vec3 nrm = cross(sep(c, heavy[0]), sep(c, heavy[1]));
+      if (norm(nrm) < 1e-6) continue;
+      nrm = nrm * (1.0 / norm(nrm));
+      const double half = 54.75 * M_PI / 180.0;   // half the H-C-H angle of a tetrahedral CH2
+      s.atoms[hs[0]].pos = s.atoms[c].pos + (away * std::cos(half) + nrm * std::sin(half)) * r;
+      s.atoms[hs[1]].pos = s.atoms[c].pos + (away * std::cos(half) - nrm * std::sin(half)) * r;
+    }
+    ++repaired;
+  }
+  return repaired;
+}
+
 int apply_matches(System& s, const std::vector<ReactionTemplate>& templates, const std::vector<Match>& matches, bool keep_byproducts,
                   int* byproducts, std::vector<int64_t>* tag, std::vector<int64_t>* carry) {
   const size_t n = s.atoms.size();
@@ -746,6 +795,7 @@ int apply_matches(System& s, const std::vector<ReactionTemplate>& templates, con
   std::vector<double> q(n);
   for (size_t i = 0; i < n; ++i) q[i] = s.atoms[i].charge;
   std::vector<std::pair<uint32_t, std::vector<uint32_t>>> gone;   // deleted atom, its partners before the reaction
+  std::vector<uint32_t> centres;                                   // atoms that formed a bond: their hydrogens are checked below
   for (const auto& m : matches) {
     bool free = true;
     for (uint32_t a : m.atoms) free = free && !used[a];
@@ -766,8 +816,48 @@ int apply_matches(System& s, const std::vector<ReactionTemplate>& templates, con
         if (e.first == at(a) || e.second == at(a)) partners.push_back(e.first == at(a) ? e.second : e.first);
       gone.push_back({at(a), partners});
     }
+    // the new bond goes where a hydrogen leaves: on a CH2 the template may take the H that started nearest the other side's
+    // H while the H that stays points at the new partner (a cage CH2 of EPDM's norbornene). The two H are the same atom
+    // kind, so when the staying one is nearer the partner's direction they swap places; otherwise the bond forms on the
+    // face of the staying H and leaves the carbon inverted
+    {
+      std::set<uint32_t> out;
+      for (int a : leaving) out.insert(at(a));
+      auto dir = [&](uint32_t from, uint32_t to) {
+        const Vec3 d = s.atoms[to].pos - s.atoms[from].pos;
+        const Vec3 e = s.cell.valid() ? s.cell.minimum_image(d) : d;
+        const double L = norm(e);
+        return L > 1e-9 ? e * (1.0 / L) : e;
+      };
+      for (auto [x, y] : t.form) {
+        const uint32_t ax = at(x), ay = at(y);
+        if (out.count(ax) || out.count(ay)) continue;   // a bond within a leaving group
+        for (auto [c, p] : {std::pair<uint32_t, uint32_t>{ax, ay}, std::pair<uint32_t, uint32_t>{ay, ax}}) {
+          std::vector<uint32_t> stay, go;
+          for (const auto& e : bonds) {
+            if (e.first != c && e.second != c) continue;
+            const uint32_t h = e.first == c ? e.second : e.first;
+            if (s.atoms[h].element != 1) continue;
+            (out.count(h) ? go : stay).push_back(h);
+          }
+          if (go.empty() || stay.empty()) continue;
+          const Vec3 up = dir(c, p);
+          for (uint32_t g : go)
+            for (uint32_t& h : stay)
+              if (dot(dir(c, h), up) > dot(dir(c, g), up) + 1e-9) {
+                const Vec3 gp = s.atoms[g].pos;
+                s.atoms[g].pos = s.atoms[h].pos;
+                s.atoms[h].pos = gp;
+              }
+        }
+      }
+    }
     for (auto [a, b] : t.brk) bonds.erase(key(at(a), at(b)));
-    for (auto [a, b] : t.form) bonds.insert(key(at(a), at(b)));
+    for (auto [a, b] : t.form) {
+      bonds.insert(key(at(a), at(b)));
+      centres.push_back(at(a));
+      centres.push_back(at(b));
+    }
     for (auto [h, x] : t.move) {
       const uint32_t hi = at(h), xi = at(x);
       for (auto it = bonds.begin(); it != bonds.end();) it = (it->first == hi || it->second == hi) ? bonds.erase(it) : std::next(it);
@@ -824,6 +914,11 @@ int apply_matches(System& s, const std::vector<ReactionTemplate>& templates, con
     *carry = std::move(kept);
   }
   for (size_t i = 0; i < s.atoms.size(); ++i) s.atoms[i].id = int64_t(i + 1);
+  {
+    std::vector<uint32_t> kept_centres;
+    for (uint32_t c : centres) if (remap[c] >= 0) kept_centres.push_back(uint32_t(remap[c]));
+    repair_inverted_hydrogens(s, &kept_centres);
+  }
   s.velocities.clear();
   s.has_charges = keep && applied > 0;   // else charges are recomputed for the new chemistry
   s.bonds_from_file = true;
@@ -1001,6 +1096,10 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
     RelaxReport rr;
     try {
       relax(s, r, &rr);
+      // stretched new bonds relaxed together can pull a hydrogen through its carbon: put it back and relax again
+      RelaxOptions again = r;
+      again.max_iterations = std::max(3 * o.relax_iterations, 2000);   // the repaired centre and its strained neighbours settle
+      for (int pass = 0; pass < 5 && repair_inverted_hydrogens(s) > 0; ++pass) relax(s, again, &rr);
     } catch (const FieldError& e) {
       throw ReactError(std::string("cannot relax after the reaction: ") + e.what() +
                        ". Run with relaxation off (topology only) or add parameters for these atoms.");
