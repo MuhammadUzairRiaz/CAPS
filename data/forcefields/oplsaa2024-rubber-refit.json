@@ -16,12 +16,12 @@
    ],
    "style": "opls",
    "params": [
-    -2.4614,
-    1.3381,
-    -0.807,
-    0.2403
+    -3.0727,
+    1.742,
+    -1.1576,
+    0.5695
    ],
-   "comment": "CAPS refit (QM), joint over 4 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS cisPI/CM-CM-CT-CT 0.33, transPI/CM-CM-CT-CT 0.48, cisBR/CM-CM-CT-CT 0.41, CR/CM-CM-CT-CT 0.43 kcal/mol; ridge 0.001"
+   "comment": "CAPS refit (QM), joint over the four diene scans with every barrier point (RI-MP2/cc-pVTZ//HF/6-31G**, 24 points each): RMS cis-polyisoprene 0.61, trans-polyisoprene 0.62, cis-polybutadiene 0.42, polychloroprene 0.76 kcal/mol; OPLS-AA 2024's own CM-CM-CT-CT on the same scans 1.65, 1.66, 1.36, 0.83"
   },
   {
    "name": "CT-CT-CT-CZ",
@@ -33,12 +33,12 @@
    ],
    "style": "opls",
    "params": [
-    -1.4313,
-    0.5968,
-    0.5352,
-    0.0341
+    -1.4249,
+    0.5514,
+    0.5175,
+    0.0703
    ],
-   "comment": "CAPS refit (QM): MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 22-point scan of a 19-atom fragment, RMS 0.25 kcal/mol (the force field's own: 0.73)"
+   "comment": "CAPS refit (QM) of nitrile butadiene rubber's CT-CT-CT-CZ (RI-MP2/cc-pVTZ//HF/6-31G**, 24 points): RMS 0.25 kcal/mol; OPLS-AA 2024's own 0.73"
   }
  ],
  "notes": [
