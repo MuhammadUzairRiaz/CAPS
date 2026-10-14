@@ -16,12 +16,12 @@
    ],
    "style": "opls",
    "params": [
-    -2.3216,
-    1.5826,
-    -0.8693,
-    0.1047
+    -2.5819,
+    1.7496,
+    -0.9953,
+    0.1416
    ],
-   "comment": "CAPS refit (QM) at DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP, joint over the four diene scans: RMS cis-polyisoprene 0.37, trans-polyisoprene 0.49, cis-polybutadiene 0.40, polychloroprene 0.53 kcal/mol; OPLS-AA 2024's own CM-CM-CT-CT on the same scans 0.50, 0.75, 1.02, 0.80. (At RI-MP2/cc-pVTZ//HF/6-31G** the 2024 term looked worse, 1.65 / 1.66 / 1.36 / 0.83, and an MP2 refit made cis-polybutadiene worse against DLPNO, 1.26; this overlay follows the higher level.)"
+   "comment": "CAPS refit (QM) at DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP, joint over the four complete diene scans: RMS cis-polyisoprene 0.44, trans-polyisoprene 0.49, cis-polybutadiene 0.38, polychloroprene 0.56 kcal/mol; OPLS-AA 2024's own CM-CM-CT-CT on the same scans 0.95, 0.75, 1.02, 0.80. (At RI-MP2/cc-pVTZ//HF/6-31G** the 2024 term looked worse, 1.65 / 1.66 / 1.36 / 0.83, and an MP2 refit made cis-polybutadiene worse against DLPNO, 1.26; this overlay follows the higher level.)"
   },
   {
    "name": "CT-CT-CT-CZ",
@@ -42,7 +42,6 @@
   }
  ],
  "notes": [
-  "optional overlay on oplsaa2024.json for diene and nitrile rubbers (caps ff apply --overlay oplsaa2024-rubber-refit.json); the base library keeps the 2024 values",
-  "fitted to DLPNO-CCSD(T) relaxed scans, the higher of the two levels CAPS ran; the cis-polyisoprene scan had 13 of 15 points when fitted"
+  "optional overlay on oplsaa2024.json for diene and nitrile rubbers (caps ff apply --overlay oplsaa2024-rubber-refit.json); the base library keeps the 2024 values"
  ]
 }
