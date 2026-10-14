@@ -150,6 +150,12 @@ if arg("--supplement"):   # terms the files lack, each from the OPLS-AA paper th
     # atom types for environments the .par has no number for, named caps_*: the class and LJ of the number named in
     # lj_from, the charge from OPLS-AA's own group increments (or a CAPS CM5 derivation), each with its reason
     names = {t["name"] for t in types}
+    # a charge of the .par that breaks its own group series (a transcription slip), corrected with the evidence; the
+    # description keeps the file's value
+    for c in sup.get("charge_corrections", []):
+        t = next(x for x in types if x["name"] == c["name"])
+        t["description"] += f" (CAPS: charge {c['charge']:+.4f}, the file's {t['charge']:+.4f} corrected: {c['reason']})"
+        t["charge"] = c["charge"]
     for t in sup.get("atom_types", []):
         if t["name"] in names:
             continue

@@ -2284,8 +2284,8 @@
    "name": "opls_211",
    "element": "C",
    "mass": 12.011,
-   "charge": 0.1175,
-   "description": "all-atom C: CH, sulfides OPLS-AA/L",
+   "charge": 0.1075,
+   "description": "all-atom C: CH, sulfides OPLS-AA/L (CAPS: charge +0.1075, the file's +0.1175 corrected: all-atom C: CH on a sulfide S. The sulfide carbons 209 / 210 / 212 with their H (0.06 each) sum to +0.1675 against the S's -0.335 (202); the file's +0.1175 gives the CH +0.1775, so every C-S-CH sulfide was +0.01 e. +0.1075 completes the series, and GROMACS's oplsaa.ff has 0.107 for opls_211 (the disulfide CH, 215 +0.1575, sums to +0.2175 as its series does))",
    "equivalence": {
     "bond": "CT",
     "angle": "CT",
