@@ -6,3 +6,20 @@
 53c9c7fb321e cc_crosslink: PE, 67 deg
 933ae646e8c8 peroxide_allylic: SBR, 40 deg
 fa51960eac65 peroxide_allylic: SBR, 40 deg
+# environments React no longer makes after 21a27d10 (one crosslink per carbon in a run): their carbon was crosslinked twice
+003f3bab48ff sulfur_allylic: SBR + H2S2
+0b0cfe23bf4a sulfur_allylic: SBR + H2S2
+1966ad2d6275 sulfur_allylic: SBR + H2S2
+1edf617326eb polysulfide_allylic: NR + TESPT
+22ca6b0a4d0d sulfur_allylic: BR + H2S2
+2833e1d5411b sulfur_allylic: SBR + H2S2
+2cf328c16a3c sulfur_allylic: SBR + H2S2
+2fa183769267 polysulfide_allylic: NR + TESPT
+413e9a98d0f4 polysulfide_allylic: NR + TESPT
+4511a7a2ad52 sulfur_allylic: BR + H2S2
+503aac99eb5d sulfur_allylic: SBR + H2S2
+51bc9857262e cc_crosslink: EPDM
+5daeff2b2069 polysulfide_allylic: NR + TESPT
+94b8c557514a sulfur_allylic: SBR + H2S2
+c3a0159a0d5c sulfur_allylic: SBR + H2S2
+f00fd549f445 sulfur_allylic: BR + H2S2
