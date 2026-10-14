@@ -4,6 +4,7 @@ where it comes from, then the library is rebuilt with bench/ff/convert_boss_opls
 
     merge_fits.py SUPPLEMENT.json torsions FITTED_TORSIONS.json [...]      (caps.torsionfit fit output)
     merge_fits.py SUPPLEMENT.json angle FIT.json [...]                     (bench/ff/fit_angle_scan.py --json output)
+    merge_fits.py SUPPLEMENT.json bond FIT.json [...]                      (bench/ff/fit_angle_scan.py --bond --json output)
 
 A term already in the supplement from a paper is kept (a paper's value wins over a CAPS fit); an earlier CAPS fit of
 the same class is replaced. Refits of classes the force field has ("CAPS refit") are not merged: they stay overlays.
@@ -48,6 +49,21 @@ def main():
             lst.append({"match": m, "params": [d["K"], d["theta0"]], "source": "CAPS fit (QM)",
                         "reason": f"{d['level']} relaxed scan of {d['molecule']} ({d['points']} points), "
                                   f"E = K (theta - theta0)^2, RMS {d['rms']:.2f} kcal/mol"})
+            n += 1
+    elif kind == "bond":
+        lst = S.setdefault("bonds", [])
+        for f in files:
+            d = json.load(open(f))
+            m = d["class"].split("-")
+            km = tuple(sorted(m))
+            old = next((t for t in lst if tuple(sorted(t["match"])) == km), None)
+            if old and not old["source"].startswith("CAPS fit"):
+                continue
+            if old:
+                lst.remove(old)
+            lst.append({"match": m, "params": [d["K"], d["r0"]], "source": "CAPS fit (QM)",
+                        "reason": f"{d['level']} relaxed scan of the bond in {d['molecule']} ({d['points']} points), "
+                                  f"E = K (r - r0)^2, RMS {d['rms']:.2f} kcal/mol"})
             n += 1
     else:
         raise SystemExit(__doc__)

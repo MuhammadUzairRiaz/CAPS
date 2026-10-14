@@ -24,6 +24,18 @@
    ],
    "source": "the 2024 .sb's chloroalkene terms (wlj): CM-Cl",
    "reason": "a diene's central carbon (class C=) is the same sp2 carbon as an alkene CM; the files give C= its own terms only toward carbon and H, so the Cl takes CM's"
+  },
+  {
+   "match": [
+    "S",
+    "HS"
+   ],
+   "params": [
+    283.12,
+    1.3504
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "B3LYP-D3BJ/def2-TZVP relaxed scan of the bond in methyl hydrodisulfide (7 points), E = K (r - r0)^2, RMS 0.02 kcal/mol"
   }
  ],
  "angles": [
@@ -377,6 +389,32 @@
    ],
    "source": "CAPS fit (QM)",
    "reason": "B3LYP-D3BJ/def2-TZVP relaxed scan of acrylic acid (9 points), E = K (theta - theta0)^2, RMS 0.01 kcal/mol"
+  },
+  {
+   "match": [
+    "S",
+    "S",
+    "HS"
+   ],
+   "params": [
+    49.78,
+    98.19
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "B3LYP-D3BJ/def2-TZVP relaxed scan of methyl hydrodisulfide (9 points), E = K (theta - theta0)^2, RMS 0.01 kcal/mol"
+  },
+  {
+   "match": [
+    "CM",
+    "CT",
+    "SH"
+   ],
+   "params": [
+    50.0,
+    111.13
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "B3LYP-D3BJ/def2-TZVP relaxed scan of pent-3-ene-2-thiol (9 points), E = K (theta - theta0)^2, RMS 0.02 kcal/mol"
   }
  ],
  "atom_types": [
@@ -2496,6 +2534,38 @@
    ],
    "source": "CAPS fit (QM)",
    "reason": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L). 1-phenoxy-2-propanol, neighbours held at the minimum (aryl ring planar, CH(OH) side anti; 24 points) and 1-phenoxy-3-(methylamino)-2-propanol fully relaxed (the network's environment; 22 points, ring stays planar). RMS below 10 kcal/mol 0.46 on both; free scan 0.46 overall; the held scan's 16-21 kcal/mol barrier (the CH(OH) side forced through the eclipsed clash) 2.4. A fit to the held scan alone (V1 -5.54) missed the relaxed profile by 2.1 kcal/mol; a free scan of 1-phenoxy-2-propanol itself flips the ring between 0 and 85 deg and mixes conformers; fragment held/CA-OS-CT-CT, free/CA-OS-CT-CT"
+  },
+  {
+   "match": [
+    "CT",
+    "S",
+    "S",
+    "HS"
+   ],
+   "params": [
+    0.9286,
+    -5.7148,
+    1.0193,
+    0.1777
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CT-S-S-HS 0.03 kcal/mol; ridge 0.001; fragment CT-S-S-HS"
+  },
+  {
+   "match": [
+    "HS",
+    "S",
+    "S",
+    "HS"
+   ],
+   "params": [
+    1.6094,
+    -5.9124,
+    0.5565,
+    0.201
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS HS-S-S-HS 0.00 kcal/mol; ridge 0.001; fragment HS-S-S-HS"
   }
  ],
  "charge_corrections": [
