@@ -19,6 +19,8 @@
 #include "caps/molecule.hpp"
 #include "caps/grow.hpp"
 #include "caps/relax.hpp"
+#include "caps/ffdef.hpp"
+#include "caps/typing.hpp"
 
 using namespace caps;
 
@@ -1028,7 +1030,7 @@ TEST(React, SitesPerChainAreCountedAndCapped) {
 // changes partner carries a distance constraint, every reaction has stabilize_steps, and the Rmax raise compares the
 // absolute Rmax with its limit
 namespace {
-struct MolFile { int atoms = 0; std::vector<std::pair<int, int>> bonds; std::vector<std::string> type_names; };
+struct MolFile { int atoms = 0; std::vector<std::pair<int, int>> bonds; std::vector<std::string> type_names; std::vector<double> charges; };
 MolFile read_mol_file(const std::string& path) {
   std::ifstream f(path);
   MolFile m;
@@ -1042,6 +1044,7 @@ MolFile read_mol_file(const std::string& path) {
     if (w.size() == 2 && w[1] == "atoms") { m.atoms = std::stoi(w[0]); continue; }
     if (w.size() == 1 && std::isalpha(static_cast<unsigned char>(w[0][0]))) { sec = w[0]; continue; }
     if (sec == "Bonds" && w.size() >= 4) m.bonds.push_back({std::stoi(w[2]), std::stoi(w[3])});
+    if (sec == "Charges" && w.size() >= 2) m.charges.push_back(std::stod(w[1]));
     if (sec == "Types" && w.size() >= 2) {
       const auto c = line.find('#');
       std::string name = c == std::string::npos ? "" : line.substr(c + 1);
@@ -1223,5 +1226,45 @@ TEST(React, BondReactAnhydrideAlcoholAndEpoxide) {
   const auto rep = write_bond_react(s, t, uff, dir, "mah", bo);
   check_bond_react_set(dir, "mah", rep, 3.5);
   if (std::getenv("CAPS_TEST_VERBOSE")) { for (const auto& n : rep.notes) std::printf("note: %s\n", n.c_str()); for (const auto& v : rep.variants) std::printf("%s %s %d atoms\n", v.name.c_str(), v.step.c_str(), v.pre_atoms); }
+  std::filesystem::remove_all(dir);
+}
+
+// The same MAH / ENR-50 set typed with OPLS-AA 2024: every pre / post template pair keeps its charge sum (the anhydride's
+// caps_anh_* charges before, the half-ester's ester and acid types after), each template complete
+TEST(React, BondReactMaleateOplsAa2024ChargeSums) {
+  System s = enr_chains(2, 6, 41);
+  PackReport pr;
+  s = insert_molecules(s, build_molecule("OCCCCO").system, 3, PackOptions{}, &pr);
+  s = insert_molecules(s, build_molecule("O=C1OC(=O)C=C1").system, 4, PackOptions{}, &pr);
+  const FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/oplsaa2024.json");
+  auto opls = [&](const System& x) {
+    System y = x;
+    std::string ch = "types";
+    prepare_for_forcefield(y, def, ch);
+    const TypingResult t = assign_types(y, def);
+    EXPECT_EQ(t.untyped, 0);
+    ParamReport rep;
+    auto f = std::make_shared<const ForceField>(parameterize(y, def, t.types, ch, &rep, false));
+    EXPECT_TRUE(rep.missing.empty()) << (rep.missing.empty() ? "" : rep.missing[0]);
+    return f;
+  };
+  const auto dir = (std::filesystem::temp_directory_path() / "caps_br_mah_opls").string();
+  std::filesystem::remove_all(dir);
+  BondReactOptions bo;
+  bo.between_chains = true;
+  bo.mol_ids = "molmap";
+  const auto t = parse_templates(builtin_template("anhydride_alcohol") + "\n" + builtin_template("enr_acid_ester"));
+  const auto rep = write_bond_react(s, t, opls, dir, "mah", bo);
+  ASSERT_FALSE(rep.variants.empty());
+  for (const auto& v : rep.variants) {
+    const std::string base = dir + "/mah_" + v.name;
+    const MolFile pre = read_mol_file(base + "_pre.mol"), post = read_mol_file(base + "_post.mol");
+    ASSERT_EQ(int(pre.charges.size()), pre.atoms) << v.name;
+    ASSERT_EQ(int(post.charges.size()), post.atoms) << v.name;
+    double qa = 0, qb = 0;
+    for (double q : pre.charges) qa += q;
+    for (double q : post.charges) qb += q;
+    EXPECT_NEAR(qa, qb, 1e-6) << v.name;
+  }
   std::filesystem::remove_all(dir);
 }
