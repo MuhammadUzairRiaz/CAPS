@@ -80,6 +80,21 @@ add(91, 5, "[CX4H2][SX2H0;!$(*[#16])][CX4]", "CH2 on a sulfide S")
 add(85, 6, "[SX2H0]([CX4])[SX2H0]", "disulfide S")
 add(92, 6, "[CX4H3][SX2H0][SX2H0]", "CH3 on a disulfide S")
 add(93, 6, "[CX4H2][SX2H0][SX2H0]", "CH2 on a disulfide S")
+# sulfur-cured rubber (CAPS): sites the 1986 table has no number for, by the table's own rule. A carbon on an S carries
+# the charge that balances that S whatever its H count (CH3 and CH2 on a sulfide S both +0.235, on a disulfide S both
+# +0.30, on a thiol S both +0.18), so the allylic CH of a crosslinked diene does too, with the Lennard-Jones of the 1984
+# sp3 CH (73); a polysulfide's middle S (bonded to two S) has no carbon to balance and carries 0 with the disulfide S's
+# Lennard-Jones (85); a persulfide end S-S-H keeps the thiol H (87, +0.27) and its S is -0.27, the S-H group neutral,
+# with the thiol S's Lennard-Jones (83). Each is marked by_analogy in its description (CAPS_UA below)
+add(85, 7, "[SX2H0]([CX4])[SX2]", "disulfide S (also next to a persulfide S-H)")
+add(92, 7, "[CX4H3][SX2H0][SX2]", "CH3 on a disulfide S (also next to a persulfide S-H)")
+add(93, 7, "[CX4H2][SX2H0][SX2]", "CH2 on a disulfide S (also next to a persulfide S-H)")
+add("caps_ua_ch_s1", 7, "[CX4H1][SX2H0;!$(*[#16])][CX4]", "CH on a sulfide S (an allylic crosslink carbon)")
+add("caps_ua_ch_s2", 7, "[CX4H1][SX2H0][SX2]", "CH on an S bonded to S (disulfide, polysulfide or persulfide)")
+add("caps_ua_ch_sh", 7, "[CX4H1][SX2H1]", "CH on a thiol S")
+add("caps_ua_s_poly", 7, "[SX2H0]([SX2])[SX2]", "S between two S (a polysulfide's middle S)")
+add("caps_ua_s_ssh", 7, "[SX2H1][SX2]", "persulfide S-H sulfur (bonded to S and H)")
+add(87, 7, "[H][SX2H1][SX2]", "H on a persulfide S (the thiol H)")
 # nitriles (1988): acetonitrile's CH3 only
 add(94, 5, "[NX1]#[CX2][CX4H3]", "nitrile N")
 add(95, 5, "[CX2](#[NX1])[CX4H3]", "nitrile C")
@@ -101,6 +116,27 @@ for n, h in sorted(UA_H.items()):
     a = dict(names[str(n)])
     a["mass"] = round(MC + h * MH, 4)
     types.append(a)
+# CAPS's united-atom types: (name, class, the table number whose Lennard-Jones it takes, mass, charge, description)
+CAPS_UA = [
+    ("caps_ua_ch_s1", "CH", 73, MC + MH, 0.235, "CH on a sulfide S (by_analogy: the 1986 table's carbon-on-sulfide charge "
+     "+0.235, which CH3 90 and CH2 91 share, with the 1984 sp3 CH's Lennard-Jones 73)"),
+    ("caps_ua_ch_s2", "CH", 73, MC + MH, 0.30, "CH on an S bonded to S (by_analogy: the carbon-on-disulfide charge +0.30 of "
+     "CH3 92 and CH2 93, with the sp3 CH's Lennard-Jones 73)"),
+    ("caps_ua_ch_sh", "CH", 73, MC + MH, 0.18, "CH on a thiol S (by_analogy: the carbon-on-thiol charge +0.18 of CH3 88 and "
+     "CH2 89, with the sp3 CH's Lennard-Jones 73)"),
+    ("caps_ua_s_poly", "S~", 85, 32.06, 0.0, "S between two S, a polysulfide's middle S (by_analogy: the disulfide S's "
+     "Lennard-Jones 85; each end S is balanced by its carbon, so the middle S carries 0)"),
+    ("caps_ua_s_ssh", "SH", 83, 32.06, -0.27, "persulfide S-H sulfur (by_analogy: the thiol S's Lennard-Jones 83; with the "
+     "thiol H 87 (+0.27) the S-H group is neutral, the rest of the chain balanced by the disulfide numbers)"),
+]
+pairs_base = {p["match"][0]: p["params"] for p in base["pairs"] if len(p["match"]) == 1}
+caps_pairs = []
+for name, cls, lj, mass, q, desc in CAPS_UA:
+    ref = names[str(lj)]
+    full = f"{name}_b{cls}_a{cls}_d{cls}_i{cls}"
+    types.append({"name": full, "element": ref["element"], "mass": round(mass, 4), "charge": q, "description": f"CAPS {desc}"})
+    caps_pairs.append({"match": [full], "params": list(pairs_base[ref["name"]])})
+    names[name] = types[-1]
 rules = []
 for r in R:
     t = names.get(r["type"])
@@ -173,7 +209,7 @@ ff = {"format": "caps-forcefield", "format_version": 1, "name": "OPLS-UA (2024 p
                 "(1,2-dimethoxyethane, 2-methoxyethanol, acetal and glycidyl-ether fragments) with the united-atom model evaluated on "
                 "them (caps.torsionfit), each comment giving its RMS; hydroxyl torsions whose scans are dominated by an intramolecular "
                 "OH...O hydrogen bond (RMS over 1.1 kcal/mol) are not fitted and stay missing"],
-      "angles": added["angles"], "dihedrals": added["dihedrals"],
+      "pairs": caps_pairs, "angles": added["angles"], "dihedrals": added["dihedrals"],
       "typing": "../typing/oplsua2024.typing.json"}
 json.dump(ff, open(os.path.join(DATA, "forcefields", "oplsua2024.json"), "w"), ensure_ascii=False, indent=1)
 doc = {"format": "caps-typing", "version": 1, "forcefield": "OPLS-UA (2024 parameter file)",

@@ -214,6 +214,41 @@
    "mass": 14.027,
    "charge": 0.22,
    "description": "moltemplate @atom:723 · C  - C2   | CH2 alkyl bromide (UA)"
+  },
+  {
+   "name": "caps_ua_ch_s1_bCH_aCH_dCH_iCH",
+   "element": "C",
+   "mass": 13.019,
+   "charge": 0.235,
+   "description": "CAPS CH on a sulfide S (by_analogy: the 1986 table's carbon-on-sulfide charge +0.235, which CH3 90 and CH2 91 share, with the 1984 sp3 CH's Lennard-Jones 73)"
+  },
+  {
+   "name": "caps_ua_ch_s2_bCH_aCH_dCH_iCH",
+   "element": "C",
+   "mass": 13.019,
+   "charge": 0.3,
+   "description": "CAPS CH on an S bonded to S (by_analogy: the carbon-on-disulfide charge +0.30 of CH3 92 and CH2 93, with the sp3 CH's Lennard-Jones 73)"
+  },
+  {
+   "name": "caps_ua_ch_sh_bCH_aCH_dCH_iCH",
+   "element": "C",
+   "mass": 13.019,
+   "charge": 0.18,
+   "description": "CAPS CH on a thiol S (by_analogy: the carbon-on-thiol charge +0.18 of CH3 88 and CH2 89, with the sp3 CH's Lennard-Jones 73)"
+  },
+  {
+   "name": "caps_ua_s_poly_bS~_aS~_dS~_iS~",
+   "element": "S",
+   "mass": 32.06,
+   "charge": 0.0,
+   "description": "CAPS S between two S, a polysulfide's middle S (by_analogy: the disulfide S's Lennard-Jones 85; each end S is balanced by its carbon, so the middle S carries 0)"
+  },
+  {
+   "name": "caps_ua_s_ssh_bSH_aSH_dSH_iSH",
+   "element": "S",
+   "mass": 32.06,
+   "charge": -0.27,
+   "description": "CAPS persulfide S-H sulfur (by_analogy: the thiol S's Lennard-Jones 83; with the thiol H 87 (+0.27) the S-H group is neutral, the rest of the chain balanced by the disulfide numbers)"
   }
  ],
  "version": "2024",
@@ -223,6 +258,53 @@
   "62 bends and 601 torsions the 2024 file lacks for united-atom hydrocarbons, alcohols and ethers, from Jorgensen, Madura & Swenson, J. Am. Chem. Soc. 106, 6638 (1984), Tables I and II; Jorgensen, J. Phys. Chem. 90, 1276 (1986), Tables II and III; Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), Table II and p. 960 (bench/ff/open/oplsua2024_supplement.json; each term's comment names its table and anything taken from the 2024 file); the 2024 file's own terms win",
   "the papers' torsions were fit with fixed bond lengths and angles, no 1-4 Lennard-Jones and weak terms beyond 1-4 (1984 eq 3: C-C sigma 4 A, epsilon 0.0074; 1986: HO-CH3 sigma 2.6 A, epsilon 0.008; 1990 eq 3: sigma 2.745 A, epsilon 0.008 kcal/mol); here they run with the 2024 file's flexible bonds and its 1-4 x 0.5 scaling",
   "none of the three papers has a torsion about a C-C bond between two oxygens (O-C-C-O: poly(ethylene oxide), glycols) or an O-C-O acetal term; those are CAPS's fits to RI-MP2/cc-pVTZ//HF/6-31G** relaxed scans of all-atom fragments (1,2-dimethoxyethane, 2-methoxyethanol, acetal and glycidyl-ether fragments) with the united-atom model evaluated on them (caps.torsionfit), each comment giving its RMS; hydroxyl torsions whose scans are dominated by an intramolecular OH...O hydrogen bond (RMS over 1.1 kcal/mol) are not fitted and stay missing"
+ ],
+ "pairs": [
+  {
+   "match": [
+    "caps_ua_ch_s1_bCH_aCH_dCH_iCH"
+   ],
+   "params": [
+    0.08,
+    3.85
+   ]
+  },
+  {
+   "match": [
+    "caps_ua_ch_s2_bCH_aCH_dCH_iCH"
+   ],
+   "params": [
+    0.08,
+    3.85
+   ]
+  },
+  {
+   "match": [
+    "caps_ua_ch_sh_bCH_aCH_dCH_iCH"
+   ],
+   "params": [
+    0.08,
+    3.85
+   ]
+  },
+  {
+   "match": [
+    "caps_ua_s_poly_bS~_aS~_dS~_iS~"
+   ],
+   "params": [
+    0.25,
+    3.55
+   ]
+  },
+  {
+   "match": [
+    "caps_ua_s_ssh_bSH_aSH_dSH_iSH"
+   ],
+   "params": [
+    0.25,
+    3.55
+   ]
+  }
  ],
  "angles": [
   {

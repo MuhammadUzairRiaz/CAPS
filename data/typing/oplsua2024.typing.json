@@ -205,6 +205,60 @@
    "description": "CH2 on a disulfide S"
   },
   {
+   "type": "85_bS~_aS~_dS~_iS~",
+   "smarts": "[SX2H0]([CX4])[SX2]",
+   "priority": 7,
+   "description": "disulfide S (also next to a persulfide S-H)"
+  },
+  {
+   "type": "92_bC3_aC3_dC3_iC3",
+   "smarts": "[CX4H3][SX2H0][SX2]",
+   "priority": 7,
+   "description": "CH3 on a disulfide S (also next to a persulfide S-H)"
+  },
+  {
+   "type": "93_bC2_aC2_dC2_iC2",
+   "smarts": "[CX4H2][SX2H0][SX2]",
+   "priority": 7,
+   "description": "CH2 on a disulfide S (also next to a persulfide S-H)"
+  },
+  {
+   "type": "caps_ua_ch_s1_bCH_aCH_dCH_iCH",
+   "smarts": "[CX4H1][SX2H0;!$(*[#16])][CX4]",
+   "priority": 7,
+   "description": "CH on a sulfide S (an allylic crosslink carbon)"
+  },
+  {
+   "type": "caps_ua_ch_s2_bCH_aCH_dCH_iCH",
+   "smarts": "[CX4H1][SX2H0][SX2]",
+   "priority": 7,
+   "description": "CH on an S bonded to S (disulfide, polysulfide or persulfide)"
+  },
+  {
+   "type": "caps_ua_ch_sh_bCH_aCH_dCH_iCH",
+   "smarts": "[CX4H1][SX2H1]",
+   "priority": 7,
+   "description": "CH on a thiol S"
+  },
+  {
+   "type": "caps_ua_s_poly_bS~_aS~_dS~_iS~",
+   "smarts": "[SX2H0]([SX2])[SX2]",
+   "priority": 7,
+   "description": "S between two S (a polysulfide's middle S)"
+  },
+  {
+   "type": "caps_ua_s_ssh_bSH_aSH_dSH_iSH",
+   "smarts": "[SX2H1][SX2]",
+   "priority": 7,
+   "description": "persulfide S-H sulfur (bonded to S and H)"
+  },
+  {
+   "type": "87_bHS_aHS_dHS_iHS",
+   "smarts": "[H][SX2H1][SX2]",
+   "priority": 7,
+   "description": "H on a persulfide S (the thiol H)"
+  },
+  {
    "type": "94_bNZ_aNZ_dNZ_iNZ",
    "smarts": "[NX1]#[CX2][CX4H3]",
    "priority": 5,
