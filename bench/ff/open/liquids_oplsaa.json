@@ -297,6 +297,15 @@
    "T": 298.15,
    "P_atm": 1.0,
    "rho_start": 1.0748
+  },
+  {
+   "name": "diethyl disulfide",
+   "smiles": "CCSSCC",
+   "atoms_per_molecule": 16,
+   "n": 312,
+   "T": 298.15,
+   "P_atm": 1.0,
+   "rho_start": 0.99
   }
  ]
 }
