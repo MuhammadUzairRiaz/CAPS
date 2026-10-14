@@ -199,14 +199,16 @@ def census(ff="oplsaa2024", out=None, only="", react=True, copolymers=True, radi
             st = max((status(k) for k in keys), key=RANK.get)
             e = envs.get(h)
             if e is None:
-                keep, _, fel, fpos, fbonds = fragment(el, pos, nb, b, c, radius)
-                write_mol2(os.path.join(out, "fragments", f"{h}.mol2"), fel, fpos, fbonds, name=f"env {h} from {name}")
+                keep, idx, fel, fpos, fbonds = fragment(el, pos, nb, b, c, radius)
+                central = [idx[b] + 1, idx[c] + 1]   # the rotatable bond in the fragment's numbering
+                write_mol2(os.path.join(out, "fragments", f"{h}.mol2"), fel, fpos, fbonds,
+                           name=f"env {h} bond {central[0]}-{central[1]} from {name}")
                 try:
                     smi = doc.fragment_smiles([x for x in keep if el[x] != "H"])   # 0-based; it adds the H itself
                 except Exception:
                     smi = ""
                 heavy = (any(el[x] != "H" for x in nb[b] if x != c) and any(el[x] != "H" for x in nb[c] if x != b))
-                e = envs[h] = {"env": h, "status": st, "central": [types[b], types[c]],
+                e = envs[h] = {"env": h, "status": st, "central": [types[b], types[c]], "central_atoms": central,
                                "classes": sorted("-".join(k) for k in keys), "count": 0, "structures": set(),
                                "example": name, "fragment_smiles": smi, "fragment_atoms": len(fel),
                                "fragment_heavy": sum(1 for x in fel if x != "H"), "heavy_rotor": heavy,
