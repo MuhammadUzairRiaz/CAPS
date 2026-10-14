@@ -413,10 +413,12 @@ def prepare():
     jobs = []
     for key, (n, qs) in sorted(missing.items()):
         types, pos, el, nb = mols[n]
-        a, b, c, d = qs[0]
-        if in_ring(nb, b, c):   # the central bond in a ring: it cannot turn freely
-            plan["not_scanned"].append({"classes": key, "why": "the central bond is in a ring"})
-            continue
+        # an occurrence whose central bond is not in a ring, if there is one; else one in a ring, scanned only if a
+        # fragment cuts the ring open (a crosslinked network's loops, a cyclic sulfide: the bond turns freely in the
+        # open fragment)
+        free = [q for q in qs if not in_ring(nb, q[1], q[2])]
+        a, b, c, d = (free or qs)[0]
+        ring_only = not free
         # the smallest fragment that keeps the types, growing up to the whole molecule: a cut that leaves atoms the
         # force field's rules cannot type (OPLS-AA 2024's strict ether and ester carbons) needs a wider fragment
         for rad in range(radius, radius + max(3, len(el))):
@@ -435,10 +437,13 @@ def prepare():
                 ftypes = onto_atoms(site_map(fpos, fel, fpos_s), ftypes, set())[0]
             # the torsion's atoms and their neighbours keep the structure's types
             check = {x for x in (a, b, c, d)} | set(nb[b]) | set(nb[c])
+            if ring_only and in_ring(neighbours(len(fel), fbonds), idx.get(b, -1), idx.get(c, -1)):
+                continue   # the fragment still closes the ring
             if all(x in idx and ftypes[idx[x]] == types[x] for x in check):
                 break
         else:
-            plan["not_scanned"].append({"classes": key, "why": "no fragment keeps the structure's types"})
+            plan["not_scanned"].append({"classes": key, "why": "the central bond is in a ring in every occurrence and no "
+                                        "fragment that keeps the types opens it" if ring_only else "no fragment keeps the structure's types"})
             continue
         quad = [idx[a], idx[b], idx[c], idx[d]]
         fnb = neighbours(len(fel), fbonds)

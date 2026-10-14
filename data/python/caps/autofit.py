@@ -82,6 +82,10 @@ def missing_terms(structure, ffjson):
         os.remove(tmp)
     text = r.stdout + r.stderr
     out = {"bond": [], "angle": [], "dihedral": [], "untyped": [], "charge": []}
+    # a failure that is not a report of missing terms (typing rules not found, unreadable structure) must never read as
+    # "nothing missing"
+    if r.returncode and not re.search(r"no parameters for|match no typing rule|charges add up", text):
+        raise RuntimeError("caps ff apply failed: " + (text.strip().splitlines() or ["(no output)"])[-1])
     for line in text.splitlines():
         m = re.match(r"^\s+(bond|angle|dihedral)\s+(.+)$", line)
         if m:
@@ -187,12 +191,15 @@ def fit_stretch_or_bend(structure, ffjson, work, names, kind, model):
     rows, eai, emm, done = [], [], [], []
     for target in grid:
         a = a0.copy()
-        if kind == "bond":
-            a.set_distance(q[0], q[1], target, fix=0.5)
-            e, p = relax(fel, a.get_positions(), model, bonds=[tuple(q)])
-        else:
-            a.set_angle(q[0], q[1], q[2], target)
-            e, p = relax(fel, a.get_positions(), model, angles=[tuple(q)])
+        try:
+            if kind == "bond":
+                a.set_distance(q[0], q[1], target, fix=0.5)
+                e, p = relax(fel, a.get_positions(), model, bonds=[tuple(q)])
+            else:
+                a.set_angle(q[0], q[1], q[2], target)
+                e, p = relax(fel, a.get_positions(), model, angles=[tuple(q)])
+        except Exception:   # the constraint solver gave up on this point: left out
+            continue
         m2 = os.path.join(work, f"{label}_{len(done)}.mol2")
         T.write_mol2(m2, fel, p, [tuple(b) for b in fbonds])
         emm.append(T.caps_apply(m2, ffjson, os.path.join(work, f"{label}_{len(done)}.data")))
@@ -245,10 +252,14 @@ def run_points(work, model, only_new=False):
     n = 0
     for s in plan["scans"]:
         for p in s["points"]:
-            if "E_qm" in p:
+            if "E_qm" in p or "failed" in p:
                 continue
             el, pos = parse_inp(os.path.join(work, p["dir"], "point.inp"))
-            e, newpos = relax(el, pos, model, dihedrals=[tuple(s["quad"])] + held(s))
+            try:
+                e, newpos = relax(el, pos, model, dihedrals=[tuple(s["quad"])] + held(s))
+            except Exception as err:   # ASE's constraint solver gave up on this start: the point is left out, as a QM point that failed
+                p["failed"] = str(err)[:200]
+                continue
             p["E_qm"] = e / EV_KCAL / HARTREE_EV   # hartree, as torsionfit reads a QM point
             p["positions"] = newpos
             n += 1
@@ -272,7 +283,8 @@ def fit_torsions(structure, ffjson, work, model, step, hold):
     torsionfit("prepare", structure, ffjson, tw, "--step", str(step), *(["--hold-neighbours"] if hold else []))
     plan = json.load(open(os.path.join(tw, "plan.json")))
     if not plan["scans"]:
-        return [], plan.get("not_scanned", [])
+        return [], plan.get("not_scanned", []), ""
+
     run_points(tw, model)
     for _ in range(3):   # clashing angles: rebuilt from the nearest finished geometry, as torsionfit fill does for QM
         out = torsionfit("fill", tw)
@@ -307,6 +319,9 @@ MODEL_LABEL = "wB97M-D3"
 
 def combined_ff(ffjson, extra, path):
     d = json.load(open(ffjson))
+    # a library names its typing rules relative to itself (../typing/...): the copy keeps the absolute path
+    if isinstance(d.get("typing"), str) and not os.path.isabs(d["typing"]):
+        d["typing"] = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(ffjson)), d["typing"]))
     for kind in ("bonds", "angles", "dihedrals"):
         d.setdefault(kind, [])
         d[kind] = [r for r in d[kind] if r.get("match") not in [e["match"] for e in extra.get(kind, [])]] + extra.get(kind, [])

@@ -5,7 +5,10 @@ crosslinkers are in it too), the product typed with the force field, and untyped
 molecules are listed. A force field that is "complete" on the polymer library can still lack the terms a reaction
 creates (an aryl glycidyl ether opened by an amine, a maleate half-ester): this finds them before a user does.
 
-    react_coverage.py [--ff oplsaa2024] [--only TEMPLATE_OR_CASE] [--json out.json]
+    react_coverage.py [--ff oplsaa2024] [--only TEMPLATE_OR_CASE] [--json out.json] [--save DIR]
+
+--save DIR writes each product that is not complete (DIR/<case>.data, with its cell) for python -m caps.autofit
+(bench/ff/autofit_sweep.py runs it over all of them).
 
 Exit 0 only when every case is complete and neutral. The missing terms are listed once each with the cases that need
 them; the torsions among them go to QM with python -m caps.torsionfit prepare (on a product fragment).
@@ -108,6 +111,11 @@ def main():
                 res, summary = {"complete": False, "error": str(e)[:300], "missing": [], "untyped": -1, "net_charge": 0.0}, {}
             res.update({"case": label, "template": template, "crosslinks": summary.get("crosslinks")})
             ok = res["complete"] and abs(res["net_charge"]) < 1e-6 and res["untyped"] == 0
+            if not ok and arg("--save") and "error" not in res:
+                os.makedirs(arg("--save"), exist_ok=True)
+                slug = "".join(c if c.isalnum() else "_" for c in label).strip("_")
+                res["structure"] = os.path.join(os.path.abspath(arg("--save")), slug + ".data")
+                d.save(res["structure"])
             print(f"{'ok  ' if ok else 'GAP '} {label}: untyped {res['untyped']}, missing {len(res['missing'])}, "
                   f"net charge {res['net_charge']:+.3f}" + (f", crosslinks {res['crosslinks']}" if res.get("crosslinks") is not None else "")
                   + (f"  [{res['error']}]" if "error" in res else ""))
