@@ -220,9 +220,9 @@
  "status": "converted",
  "notes": [
   "the united-atom carbon sites carry their hydrogens' mass (CH4 16.043, CH3 15.035, CH2 14.027, CH 13.019)",
-  "56 bends and 595 torsions the 2024 file lacks for united-atom hydrocarbons, alcohols and ethers, from Jorgensen, Madura & Swenson, J. Am. Chem. Soc. 106, 6638 (1984), Tables I and II; Jorgensen, J. Phys. Chem. 90, 1276 (1986), Tables II and III; Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), Table II and p. 960 (bench/ff/open/oplsua2024_supplement.json; each term's comment names its table and anything taken from the 2024 file); the 2024 file's own terms win",
+  "62 bends and 601 torsions the 2024 file lacks for united-atom hydrocarbons, alcohols and ethers, from Jorgensen, Madura & Swenson, J. Am. Chem. Soc. 106, 6638 (1984), Tables I and II; Jorgensen, J. Phys. Chem. 90, 1276 (1986), Tables II and III; Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), Table II and p. 960 (bench/ff/open/oplsua2024_supplement.json; each term's comment names its table and anything taken from the 2024 file); the 2024 file's own terms win",
   "the papers' torsions were fit with fixed bond lengths and angles, no 1-4 Lennard-Jones and weak terms beyond 1-4 (1984 eq 3: C-C sigma 4 A, epsilon 0.0074; 1986: HO-CH3 sigma 2.6 A, epsilon 0.008; 1990 eq 3: sigma 2.745 A, epsilon 0.008 kcal/mol); here they run with the 2024 file's flexible bonds and its 1-4 x 0.5 scaling",
-  "no torsion about a C-C bond between two oxygens (O-C-C-O: poly(ethylene oxide), glycols) and no O-C-O acetal terms: none of the three papers has one, so they are reported missing"
+  "none of the three papers has a torsion about a C-C bond between two oxygens (O-C-C-O: poly(ethylene oxide), glycols) or an O-C-O acetal term; those are CAPS's fits to RI-MP2/cc-pVTZ//HF/6-31G** relaxed scans of all-atom fragments (1,2-dimethoxyethane, 2-methoxyethanol, acetal and glycidyl-ether fragments) with the united-atom model evaluated on them (caps.torsionfit), each comment giving its RMS; hydroxyl torsions whose scans are dominated by an intramolecular OH...O hydrogen bond (RMS over 1.1 kcal/mol) are not fitted and stay missing"
  ],
  "angles": [
   {
@@ -952,6 +952,84 @@
     108.0
    ],
    "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table II (CCO 108.0 deg); K from the 2024 file: the paper's fixed C-C-O angle of the alcohols; K = 80.0 the 2024 file's constant for its UA C-C-OH bends. The 2024 file's own C-C-OH bends (109.5 deg) stay"
+  },
+  {
+   "name": "OS-C2-OS",
+   "match": [
+    "*_b*_aOS_d*_i*",
+    "*_b*_aC2_d*_i*",
+    "*_b*_aOS_d*_i*"
+   ],
+   "params": [
+    92.6,
+    111.55
+   ],
+   "comment": "the 2024 file's all-atom acetal bends OS-CO-OS and OS-CO-OH (92.6 / 111.55; 'ACETAL - wlj 2/93'): CAPS's transfer to the united-atom acetal and hemiacetal carbon (poly(methylene oxide), hemiacetal ends): none of the 1984, 1986 or 1990 papers has an O-C-O bend"
+  },
+  {
+   "name": "OS-CH-OS",
+   "match": [
+    "*_b*_aOS_d*_i*",
+    "*_b*_aCH_d*_i*",
+    "*_b*_aOS_d*_i*"
+   ],
+   "params": [
+    92.6,
+    111.55
+   ],
+   "comment": "the 2024 file's all-atom acetal bends OS-CO-OS and OS-CO-OH (92.6 / 111.55; 'ACETAL - wlj 2/93'): CAPS's transfer to the united-atom acetal and hemiacetal carbon (poly(methylene oxide), hemiacetal ends): none of the 1984, 1986 or 1990 papers has an O-C-O bend"
+  },
+  {
+   "name": "OS-CT-OS",
+   "match": [
+    "*_b*_aOS_d*_i*",
+    "*_b*_aCT_d*_i*",
+    "*_b*_aOS_d*_i*"
+   ],
+   "params": [
+    92.6,
+    111.55
+   ],
+   "comment": "the 2024 file's all-atom acetal bends OS-CO-OS and OS-CO-OH (92.6 / 111.55; 'ACETAL - wlj 2/93'): CAPS's transfer to the united-atom acetal and hemiacetal carbon (poly(methylene oxide), hemiacetal ends): none of the 1984, 1986 or 1990 papers has an O-C-O bend"
+  },
+  {
+   "name": "OH-C2-OS",
+   "match": [
+    "*_b*_aOH_d*_i*",
+    "*_b*_aC2_d*_i*",
+    "*_b*_aOS_d*_i*"
+   ],
+   "params": [
+    92.6,
+    111.55
+   ],
+   "comment": "the 2024 file's all-atom acetal bends OS-CO-OS and OS-CO-OH (92.6 / 111.55; 'ACETAL - wlj 2/93'): CAPS's transfer to the united-atom acetal and hemiacetal carbon (poly(methylene oxide), hemiacetal ends): none of the 1984, 1986 or 1990 papers has an O-C-O bend"
+  },
+  {
+   "name": "OH-CH-OS",
+   "match": [
+    "*_b*_aOH_d*_i*",
+    "*_b*_aCH_d*_i*",
+    "*_b*_aOS_d*_i*"
+   ],
+   "params": [
+    92.6,
+    111.55
+   ],
+   "comment": "the 2024 file's all-atom acetal bends OS-CO-OS and OS-CO-OH (92.6 / 111.55; 'ACETAL - wlj 2/93'): CAPS's transfer to the united-atom acetal and hemiacetal carbon (poly(methylene oxide), hemiacetal ends): none of the 1984, 1986 or 1990 papers has an O-C-O bend"
+  },
+  {
+   "name": "OH-CT-OS",
+   "match": [
+    "*_b*_aOH_d*_i*",
+    "*_b*_aCT_d*_i*",
+    "*_b*_aOS_d*_i*"
+   ],
+   "params": [
+    92.6,
+    111.55
+   ],
+   "comment": "the 2024 file's all-atom acetal bends OS-CO-OS and OS-CO-OH (92.6 / 111.55; 'ACETAL - wlj 2/93'): CAPS's transfer to the united-atom acetal and hemiacetal carbon (poly(methylene oxide), hemiacetal ends): none of the 1984, 1986 or 1990 papers has an O-C-O bend"
   }
  ],
  "dihedrals": [
@@ -10474,6 +10552,102 @@
     0.0
    ],
    "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2): rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "name": "OS-C2-C2-OS",
+   "match": [
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    2.0063,
+    -1.8941,
+    4.0419,
+    -0.1512
+   ],
+   "comment": "CAPS fit (QM): CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS 108_bOS_aOS_dOS_iOS-110_bC2_aC2_dC2_iC2-110_bC2_aC2_dC2_iC2-108_bOS_aOS_dOS_iOS 0.04 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "OH-C2-C2-OS",
+   "match": [
+    "*_b*_a*_dOH_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    2.5534,
+    -1.547,
+    4.0876,
+    -0.1316
+   ],
+   "comment": "CAPS fit (QM): CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS 108_bOS_aOS_dOS_iOS-110_bC2_aC2_dC2_iC2-81_bC2_aC2_dC2_iC2-78_bOH_aOH_dOH_iOH 0.06 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "OS-C2-CH-OS",
+   "match": [
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    -0.6744,
+    -0.342,
+    2.1024,
+    0.1571
+   ],
+   "comment": "CAPS fit (QM): CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS 108_bOS_aOS_dOS_iOS-106_bCH_aCH_dCH_iCH-110_bC2_aC2_dC2_iC2-108_bOS_aOS_dOS_iOS 0.76 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "OH-CH-C2-OS",
+   "match": [
+    "*_b*_a*_dOH_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    5.9403,
+    -1.0822,
+    0.6832,
+    0.612
+   ],
+   "comment": "CAPS fit (QM): CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS 108_bOS_aOS_dOS_iOS-106_bCH_aCH_dCH_iCH-110_bC2_aC2_dC2_iC2-108_bOS_aOS_dOS_iOS 0.76, 108_bOS_aOS_dOS_iOS-110_bC2_aC2_dC2_iC2-106_bCH_aCH_dCH_iCH-78_bOH_aOH_dOH_iOH 0.98 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "C3-OS-C2-OS",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    -6.7183,
+    0.0723,
+    1.7582,
+    0.0258
+   ],
+   "comment": "CAPS fit (QM): CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS 108_bOS_aOS_dOS_iOS-110_bC2_aC2_dC2_iC2-108_bOS_aOS_dOS_iOS-109_bC3_aC3_dC3_iC3 0.35 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "C2-OS-C2-OS",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dOS_i*"
+   ],
+   "params": [
+    -7.7062,
+    -3.5229,
+    3.2525,
+    2.011
+   ],
+   "comment": "CAPS fit (QM): CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS 108_bOS_aOS_dOS_iOS-110_bC2_aC2_dC2_iC2-108_bOS_aOS_dOS_iOS-110_bC2_aC2_dC2_iC2 1.03 kcal/mol; ridge 0.001"
   }
  ],
  "typing": "../typing/oplsua2024.typing.json"

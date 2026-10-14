@@ -1649,14 +1649,12 @@ TEST(FFDef, OplsUaAlcoholEtherTerms) {
     apply(smi, rep);
     EXPECT_TRUE(rep.missing.empty()) << smi << ": " << (rep.missing.empty() ? "" : rep.missing[0]);
   }
-  std::string why;
-  try {
+  // PEO: none of the papers has O-C-C-O; CAPS's fit to a 1,2-dimethoxyethane scan (RMS 0.04 kcal/mol) completes it
+  {
     ParamReport peo;
-    apply("CCOCCOCCOCC", peo);
-  } catch (const std::exception& e) {
-    why = e.what();
+    EXPECT_NO_THROW(apply("CCOCCOCCOCC", peo));
+    EXPECT_TRUE(peo.missing.empty());
   }
-  EXPECT_NE(why.find("108_bOS_aOS_dOS_iOS 110_bC2_aC2_dC2_iC2 110_bC2_aC2_dC2_iC2 108_bOS_aOS_dOS_iOS"), std::string::npos) << why;
   auto rule = [&](const std::vector<FFRule>& v, const std::string& name) {
     const auto p = std::find_if(v.begin(), v.end(), [&](const FFRule& x) { return x.name == name; });
     EXPECT_NE(p, v.end()) << name;
@@ -1667,6 +1665,7 @@ TEST(FFDef, OplsUaAlcoholEtherTerms) {
   EXPECT_EQ(rule(def.dihedrals, "CH-C2-CH-OH"), (std::vector<double>{0.702, -0.212, 3.06, 0.0}));       // 1986 1-propanol
   EXPECT_EQ(rule(def.angles, "C2-OS-CH"), (std::vector<double>{100.0, 112.0}));                          // 1990 Table II
   EXPECT_EQ(rule(def.dihedrals, "C2_C2_OH_HO"), (std::vector<double>{0.3, 0.0, 1.3, 0.0}));              // the 2024 file's, kept
+  EXPECT_EQ(rule(def.dihedrals, "OS-C2-C2-OS"), (std::vector<double>{2.0063, -1.8941, 4.0419, -0.1512}));  // CAPS fit (QM), DME
 }
 
 // OPLS-DES from Doherty & Acevedo's paper and SI only (bench/ff/make_opls_des_doherty2018.py,

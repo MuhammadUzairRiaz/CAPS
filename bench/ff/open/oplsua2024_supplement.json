@@ -113,6 +113,32 @@
    ],
    "source": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table II (COH 108.5 deg); K from the 2024 file",
    "reason": "the paper's fixed C-O-H angle; K = 55.0 the 2024 file's constant for its UA C-OH-HO bends (at the same 108.5 deg)"
+  },
+  {
+   "match": [
+    "OS",
+    "S",
+    "OS"
+   ],
+   "params": [
+    92.6,
+    111.55
+   ],
+   "source": "the 2024 file's all-atom acetal bends OS-CO-OS and OS-CO-OH (92.6 / 111.55; 'ACETAL - wlj 2/93')",
+   "reason": "CAPS's transfer to the united-atom acetal and hemiacetal carbon (poly(methylene oxide), hemiacetal ends): none of the 1984, 1986 or 1990 papers has an O-C-O bend"
+  },
+  {
+   "match": [
+    "OS",
+    "S",
+    "OH"
+   ],
+   "params": [
+    92.6,
+    111.55
+   ],
+   "source": "the 2024 file's all-atom acetal bends OS-CO-OS and OS-CO-OH (92.6 / 111.55; 'ACETAL - wlj 2/93')",
+   "reason": "CAPS's transfer to the united-atom acetal and hemiacetal carbon (poly(methylene oxide), hemiacetal ends): none of the 1984, 1986 or 1990 papers has an O-C-O bend"
   }
  ],
  "dihedrals": [
@@ -278,6 +304,102 @@
    ],
    "source": "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986), Table III (1-propanol C1-C2)",
    "reason": "rotation about a C-C bond next to an oxygen, the C-C-C-O torsion of 1-propanol (its 1-5 Lennard-Jones term between HO and CH3, sigma 2.6 A, epsilon 0.008 kcal/mol, is not added); also taken for an ether O (the 1990 paper turns only C-O bonds; the 2024 file gives alcohol and ether O one C-C-C-O? line)"
+  },
+  {
+   "match": [
+    "OS",
+    "C2",
+    "C2",
+    "OS"
+   ],
+   "params": [
+    2.0063,
+    -1.8941,
+    4.0419,
+    -0.1512
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS 108_bOS_aOS_dOS_iOS-110_bC2_aC2_dC2_iC2-110_bC2_aC2_dC2_iC2-108_bOS_aOS_dOS_iOS 0.04 kcal/mol; ridge 0.001"
+  },
+  {
+   "match": [
+    "OS",
+    "C2",
+    "C2",
+    "OH"
+   ],
+   "params": [
+    2.5534,
+    -1.547,
+    4.0876,
+    -0.1316
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS 108_bOS_aOS_dOS_iOS-110_bC2_aC2_dC2_iC2-81_bC2_aC2_dC2_iC2-78_bOH_aOH_dOH_iOH 0.06 kcal/mol; ridge 0.001"
+  },
+  {
+   "match": [
+    "OS",
+    "CH",
+    "C2",
+    "OS"
+   ],
+   "params": [
+    -0.6744,
+    -0.342,
+    2.1024,
+    0.1571
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS 108_bOS_aOS_dOS_iOS-106_bCH_aCH_dCH_iCH-110_bC2_aC2_dC2_iC2-108_bOS_aOS_dOS_iOS 0.76 kcal/mol; ridge 0.001"
+  },
+  {
+   "match": [
+    "OS",
+    "C2",
+    "CH",
+    "OH"
+   ],
+   "params": [
+    5.9403,
+    -1.0822,
+    0.6832,
+    0.612
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS 108_bOS_aOS_dOS_iOS-106_bCH_aCH_dCH_iCH-110_bC2_aC2_dC2_iC2-108_bOS_aOS_dOS_iOS 0.76, 108_bOS_aOS_dOS_iOS-110_bC2_aC2_dC2_iC2-106_bCH_aCH_dCH_iCH-78_bOH_aOH_dOH_iOH 0.98 kcal/mol; ridge 0.001"
+  },
+  {
+   "match": [
+    "OS",
+    "C2",
+    "OS",
+    "C3"
+   ],
+   "params": [
+    -6.7183,
+    0.0723,
+    1.7582,
+    0.0258
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS 108_bOS_aOS_dOS_iOS-110_bC2_aC2_dC2_iC2-108_bOS_aOS_dOS_iOS-109_bC3_aC3_dC3_iC3 0.35 kcal/mol; ridge 0.001"
+  },
+  {
+   "match": [
+    "OS",
+    "C2",
+    "OS",
+    "C2"
+   ],
+   "params": [
+    -7.7062,
+    -3.5229,
+    3.2525,
+    2.011
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS 108_bOS_aOS_dOS_iOS-110_bC2_aC2_dC2_iC2-108_bOS_aOS_dOS_iOS-110_bC2_aC2_dC2_iC2 1.03 kcal/mol; ridge 0.001"
   }
  ]
 }

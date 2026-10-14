@@ -168,8 +168,11 @@ ff = {"format": "caps-forcefield", "format_version": 1, "name": "OPLS-UA (2024 p
                 "the papers' torsions were fit with fixed bond lengths and angles, no 1-4 Lennard-Jones and weak terms beyond "
                 "1-4 (1984 eq 3: C-C sigma 4 A, epsilon 0.0074; 1986: HO-CH3 sigma 2.6 A, epsilon 0.008; 1990 eq 3: sigma "
                 "2.745 A, epsilon 0.008 kcal/mol); here they run with the 2024 file's flexible bonds and its 1-4 x 0.5 scaling",
-                "no torsion about a C-C bond between two oxygens (O-C-C-O: poly(ethylene oxide), glycols) and no O-C-O "
-                "acetal terms: none of the three papers has one, so they are reported missing"],
+                "none of the three papers has a torsion about a C-C bond between two oxygens (O-C-C-O: poly(ethylene oxide), glycols) "
+                "or an O-C-O acetal term; those are CAPS's fits to RI-MP2/cc-pVTZ//HF/6-31G** relaxed scans of all-atom fragments "
+                "(1,2-dimethoxyethane, 2-methoxyethanol, acetal and glycidyl-ether fragments) with the united-atom model evaluated on "
+                "them (caps.torsionfit), each comment giving its RMS; hydroxyl torsions whose scans are dominated by an intramolecular "
+                "OH...O hydrogen bond (RMS over 1.1 kcal/mol) are not fitted and stay missing"],
       "angles": added["angles"], "dihedrals": added["dihedrals"],
       "typing": "../typing/oplsua2024.typing.json"}
 json.dump(ff, open(os.path.join(DATA, "forcefields", "oplsua2024.json"), "w"), ensure_ascii=False, indent=1)
