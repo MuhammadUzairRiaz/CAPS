@@ -8,7 +8,6 @@
 #include "caps/crystal.hpp"
 #include "caps/elements.hpp"
 #include "caps/molecule.hpp"
-#include "caps/peptide.hpp"
 #include "caps/render.hpp"
 #include "caps/polymer.hpp"
 
@@ -63,10 +62,7 @@ TEST(Appearance, AccessibleSurfaceOfOneAtom) {
 }
 
 TEST(Appearance, ExcludedSurfaceLiesBetween) {
-  PeptideOptions po;
-  po.sequence = "GAG";
-  po.cleanup = false;
-  const System pep = build_peptide(po);
+  const System pep = build_molecule("[NH3+]CCCCCC(=O)NCCCCCC([O-])=O").system;   // a nylon-6 dimer zwitterion
   SurfaceOptions o;
   o.spacing = 0.4;
   const double sas = surface_mesh(pep, o).area();
@@ -95,11 +91,7 @@ TEST(Appearance, TetrahedraOfQuartz) {
 }
 
 TEST(Appearance, RendersMixedStylesAndMeshes) {
-  PeptideOptions po;
-  po.sequence = "AEAAAKA";
-  po.structure = "HHHHHHH";
-  po.cleanup = false;
-  const System pep = build_peptide(po);
+  const System pep = build_molecule("CCCCCCCCOC(=O)c1ccccc1C(=O)OCCCCCCCC").system;   // dioctyl phthalate
   RenderOptions ro;
   ro.width = 160, ro.height = 120;
   ro.atom_style.assign(pep.atoms.size(), uint8_t(Style::Wireframe));

@@ -39,7 +39,6 @@ add_library(caps_core STATIC
   src/react.cpp
   src/json.cpp
   src/ffdef.cpp
-  src/residue_templates.cpp
   src/param_import.cpp
   src/dlfield.cpp
   src/typing.cpp
@@ -53,7 +52,6 @@ add_library(caps_core STATIC
   src/uff.cpp
   src/crystal.cpp
   src/spacegroup.cpp
-  src/peptide.cpp
   src/solvate.cpp
   src/water.cpp
   src/ffio.cpp
@@ -116,8 +114,7 @@ add_library(caps_core STATIC
   src/polystats.cpp
   src/resolution.cpp
   src/beads.cpp
-  src/martini_protein.cpp
-  src/martini3_protein.cpp
+  src/martini3_molecules.cpp
   src/gromacs_top.cpp
   src/amber.cpp
   src/cg_map.cpp

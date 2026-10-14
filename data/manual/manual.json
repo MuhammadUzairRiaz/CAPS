@@ -1233,7 +1233,7 @@
      "—, 1/Å"
     ]
    ],
-   "when": "Solvating rubbers, fillers or biomolecules, water uptake and sorption, hydrated interfaces. TIP5P reproduces water's density maximum near 4 °C; it exports to GROMACS only (LAMMPS has no five-site water). Four-site models export to LAMMPS with the tip4p pair styles (M left out, its charge on O) and to GROMACS with M as a virtual site.",
+   "when": "Solvating rubbers, fillers or other solutes, water uptake and sorption, hydrated interfaces. TIP5P reproduces water's density maximum near 4 °C; it exports to GROMACS only (LAMMPS has no five-site water). Four-site models export to LAMMPS with the tip4p pair styles (M left out, its charge on O) and to GROMACS with M as a virtual site.",
    "tested": "tests/test_solvate.cpp Water.ModelsGeometryAndSites (TIP4P/2005's M 0.1546 Å from O, LAMMPS tip4p styles); Water.Tip5pLonePairsForcesAndVirial (lone pairs at 0.70 Å and 109.47° away from the hydrogens, GROMACS's a and c, forces against finite differences, the virial against −dE/dλ: 0.98082 with the λ² term, 0.634 without); TIP5P in GROMACS on 512 waters: Coulomb 34.371 against CAPS's 34.382 kcal/mol (PME), Lennard-Jones with its tail 6162.68 against 6162.69",
    "deviation": "rigid models are run with SHAKE/RATTLE on CAPS's side (GROMACS uses SETTLE); bond and angle constants are given only for flexible runs",
    "tex": "M = (1-\\alpha)\\,O + \\tfrac{\\alpha}{2}(H_1 + H_2), \\qquad \\alpha = \\frac{d_{OM}}{r_{OH}\\cos(\\theta/2)} \\\\ L_\\pm = O + a\\,(\\mathbf{r}_1 + \\mathbf{r}_2) \\pm c\\,(\\mathbf{r}_1 \\times \\mathbf{r}_2), \\qquad a = -\\frac{d_{OL}\\cos(\\phi/2)}{2 r_{OH}\\cos(\\theta/2)}, \\qquad c = \\frac{d_{OL}\\sin(\\phi/2)}{r_{OH}^2 \\sin\\theta}"

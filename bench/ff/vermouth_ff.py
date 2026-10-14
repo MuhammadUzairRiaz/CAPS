@@ -1,31 +1,21 @@
 #!/usr/bin/env python3
-"""Martini 3 proteins for CAPS, from vermouth-martinize (github.com/marrink-lab/vermouth-martinize, Apache-2.0):
-force_fields/martini3001/{05-aminoacids,10-modifications,15-links_M3,20-links_M3_IDR}.ff and
-mappings/martini3001/*.charmm36.map + modifications.charmm36.mapping.
+"""vermouth-martinize's file readers (github.com/marrink-lab/vermouth-martinize, Apache-2.0), as
+bench/ff/convert_vermouth_martini3_small.py uses them for Martini 3's small molecules.
 
 The .ff files are read as vermouth reads them (vermouth/ffinput.py): macros substituted in the text; blocks with their
 atoms, interactions (dihedrals of function 2 become impropers) and the edges their bonds, constraints, angles and proper
-dihedrals make (unless "edge": false); modifications with the attributes they replace; links with their nodes (the link's
-own attributes applied to every node, "+" / "-" / ">" prefixes as the order), edges, non-edges, patterns, molecule meta,
-interactions to add and interactions to remove, parameters measured from the structure (dihphase). CAPS applies the links
-in file order with vermouth's matching rules (core/src/martini3_protein.cpp).
+dihedrals make (unless "edge": false); modifications and links with their attributes. read_map reads a .map file: per
+bead the atoms it holds with their weights.
 
 Attribute values: strings, numbers, booleans, null; a "A|B" choice becomes {"$choice": ["A", "B"]}.
 A measured parameter becomes {"$effector": "dihphase", "keys": [...], "format": ".01f"}.
 
-The mappings become, per residue, the heavy atoms of each bead with their weight (0 for "!" entries) and the weight of the
-hydrogens on each heavy atom (the map's hydrogens are attached by CHARMM's naming: HB1 / HB2 on CB, HD1 on CD1 or ND1 ...);
-the modification mappings add the terminal atoms (OXT, the extra hydrogens on N) to the backbone bead.
-
-usage: convert_vermouth_martini3.py [VERMOUTH_REF_DIR]   (default ~/vermouth-ref, the downloaded files)
+(The Martini 3 protein converter that used these readers was removed on 2026-10-14: CAPS focuses on polymers,
+crystals and materials.)
 """
 import glob, json, os, re, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-SRC = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser("~/vermouth-ref")
-FFDIR = os.path.join(SRC, "force_fields", "martini3001")
-MAPDIR = os.path.join(SRC, "mappings", "martini3001")
-FILES = ["05-aminoacids.ff", "10-modifications.ff", "15-links_M3.ff", "20-links_M3_IDR.ff"]
 NATOMS = {"bonds": 2, "constraints": 2, "pairs": 2, "angles": 3, "dihedrals": 4, "impropers": 4, "cmap": 5,
           "virtual_sites2": 3, "virtual_sites3": 4, "virtual_sites4": 5}
 EDGE_TYPES = ("bonds", "angles", "dihedrals", "cmap", "constraints")
@@ -368,97 +358,3 @@ def read_map(path):
             ent += [[b[1:], 0.0] for b in dict.fromkeys(w[2:]) if b.startswith("!")]
             atoms.append([w[1], ent])
     return name, beads, atoms
-
-
-def residue_mapping(path, block):
-    name, _, atoms = read_map(path)
-    heavy = [a for a, _ in atoms if not a.startswith("H")]
-    # heavy atoms: [name, [[bead, weight], ...]]; h: the hydrogens on each heavy atom, [[bead, weight], ...] (every
-    # hydrogen the map lists on that atom weighs the same; hydrogens the map weighs 0 contribute nothing)
-    out = {"beads": [a["atomname"] for a in block["atoms"]], "heavy": [], "h": {}}
-    hw = {}
-    for a, ent in atoms:
-        if a.startswith("H"):
-            x = heavy_of(a, heavy)
-            if x is None:
-                raise SystemExit(f"{path}: no heavy atom for {a}")
-            live = tuple(sorted((b, round(w, 12)) for b, w in ent if w > 0))
-            hw.setdefault(x, set()).add(live)
-        else:
-            out["heavy"].append([a, ent])
-    for x, s in hw.items():
-        if len(s) > 1:
-            raise SystemExit(f"{path}: the hydrogens on {x} weigh differently: {s}")
-        out["h"][x] = [list(e) for e in next(iter(s))]
-    return name, out
-
-
-def mod_mappings(path):
-    """terminal modifications: the atoms they add to beads (beyond the residue's own)"""
-    out, cur, sec = {}, None, None
-    for raw in open(path):
-        l = raw.split(";")[0].strip()
-        m = re.match(r"^\[\s*(.+?)\s*\]$", l)
-        if m:
-            sec = m.group(1).lower()
-            continue
-        if not l:
-            continue
-        w = l.split()
-        if sec == "to blocks":
-            cur = out.setdefault(w[0], [])
-        elif sec == "atoms" or sec == "mapping":
-            if len(w) >= 2 and not w[0].startswith("charmm") and cur is not None:
-                cur.append([w[-2], w[-1]])
-    return out
-
-
-def main():
-    out = {"format": "caps-vermouth-model", "version": 1, "model": "Martini 3 proteins (martini3001)",
-           "source": "vermouth-martinize (github.com/marrink-lab/vermouth-martinize, Apache-2.0): force_fields/martini3001/"
-                     "05-aminoacids.ff, 10-modifications.ff, 15-links_M3.ff, 20-links_M3_IDR.ff; mappings/martini3001/*.charmm36.map, "
-                     "modifications.charmm36.mapping; dssp/dssp.py",
-           "references": ["P. C. T. Souza et al., Nat. Methods 18, 382 (2021)",
-                          "P. C. T. Souza et al., Martini 3 protein models (scfix, IDP: Nat. Commun. 2024)",
-                          "P. C. Kroon et al., Martinize2 and Vermouth, eLife 12, RP90627 (2023)"],
-           "units": "GROMACS: nm, kJ/mol, degrees; parameters as the .ff writes them",
-           "variables": {"center_weight": "mass", "bb_atomname": "BB"}, "blocks": {}, "modifications": {}, "links": []}
-    for f in FILES:
-        read_ff(os.path.join(FFDIR, f), out)
-    # the secondary-structure conversion is vermouth's, the same for every Martini version (dssp/dssp.py)
-    m22 = json.load(open(os.path.join(ROOT, "data", "martini", "martini22-protein.json")))
-    out["ss"] = m22["ss"]
-    out["mapping"] = {}
-    for path in sorted(glob.glob(os.path.join(MAPDIR, "*.charmm36.map"))):
-        name, _, _ = read_map(path)
-        if name not in out["blocks"] or out["blocks"][name]["atoms"][0].get("atomname") != "BB":
-            continue   # small molecules (their own work) and residues without a Martini 3 block
-        rname, mp = residue_mapping(path, out["blocks"][name])
-        out["mapping"][rname] = mp
-    mm = mod_mappings(os.path.join(MAPDIR, "modifications.charmm36.mapping"))
-    out["mod_mapping"] = {k: v for k, v in mm.items() if k in out["modifications"]}
-    # the hydrogens a modification mapping puts in a bead with weight 1, by the heavy atom they sit on (LYS-HZ3 and
-    # LYS-LSN put CE's hydrogens in SC2, which the residue's own map weighs 0)
-    out["mod_h"] = {}
-    for k, v in out["mod_mapping"].items():
-        # hydrogens attach to the residue's own heavy atoms (LYS-HZ3: LYS's), the termini's to the backbone's
-        resn = k.split("-")[0]
-        own = [a for a, _ in out["mapping"][resn]["heavy"]] if resn in out["mapping"] else ["N", "CA", "C", "O"]
-        heavy = list(dict.fromkeys([a for a, _ in v if not a.startswith("H")] + own))
-        hs = {}
-        for a, b in v:
-            if a.startswith("H"):
-                x = heavy_of(a, heavy)
-                if x is None:
-                    raise SystemExit(f"modification {k}: no heavy atom for {a}")
-                hs[x] = b
-        out["mod_h"][k] = hs
-    dst = os.path.join(ROOT, "data", "martini", "martini3-protein.json")
-    json.dump(out, open(dst, "w"), indent=1)
-    nlinks = len(out["links"])
-    print(f"{len(out['blocks'])} blocks, {len(out['modifications'])} modifications, {nlinks} links, "
-          f"{len(out['mapping'])} residue mappings -> {os.path.relpath(dst, ROOT)} ({os.path.getsize(dst) // 1024} kB)")
-
-
-if __name__ == "__main__":
-    main()

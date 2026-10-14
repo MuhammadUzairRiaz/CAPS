@@ -6,7 +6,7 @@
 #include <filesystem>
 
 #include "caps/io.hpp"
-#include "caps/peptide.hpp"
+#include "caps/molecule.hpp"
 #include "caps/trajectory.hpp"
 
 using namespace caps;
@@ -47,11 +47,7 @@ TEST(Trajectory, ReadsBothLogStyles) {
 }
 
 TEST(Trajectory, SeriesFollowTheChainAndTheLog) {
-  PeptideOptions po;
-  po.sequence = "GAGAGAGA";
-  po.structure = "PPPPPPPP";
-  po.cleanup = false;
-  System pep = build_peptide(po);
+  System pep = build_molecule("CCCCCCCCCCCCCCCCCCCC").system;   // icosane
   pep.cell.a = {60, 0, 0}, pep.cell.b = {0, 60, 0}, pep.cell.c = {0, 0, 60};
   Trajectory t;
   t.topology = pep;

@@ -550,7 +550,6 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_file_checks")] public static extern int FileChecks(IntPtr doc, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_insert_molecules")] public static extern int InsertMolecules(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string smiles, int count, double tolerance, ulong seed, byte[] report, int cap);
     [DllImport(Lib, EntryPoint = "caps_set_held_molecule")] public static extern void SetHeldMolecule(IntPtr doc, long mol);
-    [DllImport(Lib, EntryPoint = "caps_set_ph")] public static extern void SetPh(IntPtr doc, double ph);
     [DllImport(Lib, EntryPoint = "caps_set_restraints")] public static extern int SetRestraints(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json);
     [DllImport(Lib, EntryPoint = "caps_held_molecule")] public static extern long HeldMolecule(IntPtr doc);
     [DllImport(Lib, EntryPoint = "caps_set_fixed_atoms")] public static extern int SetFixedAtoms(IntPtr doc, int[]? atoms, int n);
@@ -561,9 +560,6 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_set_fixed_axes")] public static extern int SetFixedAxes(IntPtr doc, int axes);
     [DllImport(Lib, EntryPoint = "caps_fixed_axes")] public static extern int FixedAxes(IntPtr doc);
     [DllImport(Lib, EntryPoint = "caps_fixed_atoms")] public static extern int FixedAtoms(IntPtr doc, int[]? atoms, int cap);
-    [DllImport(Lib, EntryPoint = "caps_peptide_info")] public static extern int PeptideInfo([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[]? json, int cap);
-    [DllImport(Lib, EntryPoint = "caps_peptide_build")] public static extern IntPtr PeptideBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[] report, int cap);
-    [DllImport(Lib, EntryPoint = "caps_fasta_sequence")] public static extern int FastaSequence([MarshalAs(UnmanagedType.LPUTF8Str)] string text, byte[]? seq, int cap);
     [DllImport(Lib, EntryPoint = "caps_element_number")] public static extern int ElementNumber([MarshalAs(UnmanagedType.LPUTF8Str)] string symbol);
     [DllImport(Lib, EntryPoint = "caps_element_info")] private static extern int ElementInfo(int z, out double mass, out double covalent, out double vdw, out uint rgb);
     public static double ElementMass(int z) => ElementInfo(z, out var m, out _, out _, out _) == 0 ? m : 0;
@@ -991,18 +987,6 @@ public sealed class CapsDocument : IDisposable
         if (doc == null) return JsonCallOnce((b, c) => Native.EwaldParams(IntPtr.Zero, json, b, c));
         lock (doc._lock) { doc.Alive(); return JsonCallOnce((b, c) => Native.EwaldParams(doc._h, json, b, c)); }
     }
-    /// <summary>What a peptide spec builds, without the clean-up (caps_peptide_info).</summary>
-    public static string PeptideInfo(string options) => JsonCallOnce((b, c) => Native.PeptideInfo(options, b, c));
-    /// <summary>The sequence of the first record of a FASTA text (caps_fasta_sequence).</summary>
-    public static string FastaSequence(string text) => JsonCall((b, c) => Native.FastaSequence(text, b, c));
-    /// <summary>An all-atom peptide (caps_peptide_build).</summary>
-    public static (CapsDocument Doc, string Report) PeptideBuild(string options, string label)
-    {
-        var report = new byte[4096];
-        var h = Native.PeptideBuild(options, report, report.Length);
-        if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
-        return (new CapsDocument(h, label), System.Text.Encoding.UTF8.GetString(report).TrimEnd('\0').Trim());
-    }
     /// <summary>Solvents and salts for the solvation builder (caps_solvent_library).</summary>
     public static string SolventLibrary() => JsonCall(Native.SolventLibrary);
     /// <summary>The box and counts of a solvation, without packing (caps_solvate_plan); solute may be null.</summary>
@@ -1249,8 +1233,6 @@ public sealed class CapsDocument : IDisposable
 
     /// <summary>Holds molecule `mol` in place in Relax (0: none).</summary>
     public void SetHeldMolecule(long mol) { using (Hold()) Native.SetHeldMolecule(H, mol); }
-    /// <summary>Add hydrogens by pH (amino-acid residues); a negative pH goes back to neutral valences.</summary>
-    public void SetPh(double ph) { using (Hold()) Native.SetPh(H, ph); }
     /// <summary>Distance restraints for Relax (JSON [{i, j, r0, k}], indices from 0); "[]" clears them.</summary>
     public int SetRestraints(string json) { using (Hold()) { var n = Native.SetRestraints(H, json); if (n < 0) throw new InvalidOperationException(Native.LastError()); return n; } }
     public long HeldMolecule() { using (Hold()) return Native.HeldMolecule(H); }

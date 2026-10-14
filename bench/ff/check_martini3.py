@@ -34,12 +34,6 @@ CASES = [
      [("CYTO", 3), ("GUAN", 3), ("THYM", 3), ("URAC", 3), ("MIND", 3), ("TXE", 3), ("PCRE", 3), ("BIM", 3), ("W", 600)]),
     ("Every Martini 3 molecule template once", 90, [(k, 1) for k in sorted(MOLS)] + [("W", 1200)]),
 ]
-# all-atom proteins mapped as martinize2 maps them (vermouth's Martini 3 tests; the files' own cells)
-VREF = os.path.expanduser("~/vermouth-ref/tests-m3/tier-1")
-PROTEINS = [("Ubiquitin 1UBQ, all-atom -> Martini 3 (restricted-bending backbone, side-chain fix dihedrals)", os.path.join(VREF, "1UBQ", "aa.pdb")),
-            ("Lysozyme 3LZT, all-atom -> Martini 3 (tryptophan virtual sites, exclusions, impropers)", os.path.join(VREF, "lysozyme", "aa.pdb")),
-            ("Lysozyme as martinize2 wrote it (cg.pdb + topol.top read by CAPS; elastic network 500)",
-             (os.path.join(VREF, "lysozyme", "martinize2", "cg.pdb"), os.path.join(VREF, "lysozyme", "martinize2", "topol.top")))]
 
 
 def gmx(d, stem):
@@ -117,16 +111,12 @@ if not only or only.lower() in SMALL[0].lower():
     open(os.path.join(d, "box.inp"), "w").write("\n".join(inp) + "\n")
     subprocess.run([CAPS, "pack", "box.inp", "-o", "box.data", "--quiet"], cwd=d, capture_output=True, text=True, check=True)
     CASES.append((SMALL[0], None, os.path.join(d, "box.data")))
-for label, pdb in PROTEINS:
-    if (only and only.lower() not in label.lower()) or not os.path.exists(pdb if isinstance(pdb, str) else pdb[0]):
-        continue
-    CASES.append((label, None, pdb))
 for label, edge, content in CASES:
     if only and only.lower() not in label.lower():
         continue
     d = os.path.join(work, re.sub(r"[^a-z0-9]+", "_", label.lower()).strip("_")[:40])
     os.makedirs(d, exist_ok=True)
-    if edge is None:   # a protein: mapped and typed straight from the all-atom file
+    if edge is None:   # an all-atom file: mapped and typed straight from it
         content_file, content = content, []
     inp = [f"tolerance 4.3", "output box.data", f"pbc 0 0 0 {edge} {edge} {edge}", "seed 7"]
     bad = None
@@ -183,8 +173,8 @@ for label, edge, content in CASES:
     stiff = stiff_bonds(d, (edge or 80) / 10)
     pairs = [(a, tuple(x / 41.84 for x in b), stiff[i]) for i, (a, b) in enumerate(zip(cf, gf)) if any(a)] if len(cf) == len(gf) else []
     df = max((math.dist(a, b) for a, b, _ in pairs), default=float("inf"))
-    # plus 1e-4 of the force itself: a mapped protein, not relaxed, has beads under 1e5 kcal/mol/A from stretched stiff
-    # bonds and near-straight restricted-bending angles, which single precision carries to ~4e-5
+    # plus 1e-4 of the force itself: a mapped structure, not relaxed, can have beads under 1e5 kcal/mol/A from stretched
+    # stiff bonds and near-straight restricted-bending angles, which single precision carries to ~4e-5
     worst = max((math.dist(a, b) / (5e-3 + t + 1e-4 * math.hypot(*a)) for a, b, t in pairs), default=float("inf"))
     # the charges are the molecules' own (ions of the same bead type, Na+ / Cl-, told apart)
     want_q = sum(n * sum(a["charge"] for a in MOLS[t]["atoms"]) for t, n in content) if edge is not None else charge[0]

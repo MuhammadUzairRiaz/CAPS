@@ -8,7 +8,7 @@ uses: ff info · ff type · ff apply
 
 ## The library
 
-CAPS ships its force fields as JSON files in `data/forcefields`: OPLS-AA (2005, 2020, 2024), PCFF and COMPASS (class II), CVFF, GAFF and GAFF2, AMBER, CHARMM, DREIDING, TraPPE, UFF, inorganic and clay sets, Martini and others. Commands accept a library name or a path.
+CAPS ships its force fields as JSON files in `data/forcefields`: OPLS-AA (2005, 2020, 2024), PCFF and COMPASS (class II), CVFF, GAFF and GAFF2, DREIDING, TraPPE, UFF, inorganic and clay sets, Martini and others. Commands accept a library name or a path.
 
 ```bash
 caps ff info opls2005        # types, typing rules, styles and references

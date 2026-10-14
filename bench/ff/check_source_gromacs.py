@@ -9,7 +9,7 @@ parameter up itself (impropers keep CAPS's, as GROMACS's own come from residue t
 the force field's own program, or a term GROMACS has no parameter for (grompp names it).
 
 usage: check_source_gromacs.py FF_ID GMX_FF_DIR STRUCTURE|SMILES... [--charges types] [--keep DIR]
-       e.g. check_source_gromacs.py oplsaa-gromacs oplsaa.ff "CCOC(=O)C" peptide:GHWRK
+       e.g. check_source_gromacs.py oplsaa-gromacs oplsaa.ff "CCOC(=O)C" "Cc1ccccc1"
 Needs GMX (default gmx on PATH); GMX_FF_DIR is looked up in GMXLIB / GROMACS's share/top.
 """
 import os, re, shutil, subprocess, sys, tempfile
@@ -77,10 +77,7 @@ fails = 0
 for k, it in enumerate(items):
     d = os.path.join(work, f"case{k}")
     os.makedirs(d, exist_ok=True)
-    if it.startswith("peptide:"):
-        s = os.path.join(d, "in.pdb")
-        subprocess.run([CAPS, "peptide", it.split(":", 1)[1], "-o", s], capture_output=True, check=True)
-    elif os.path.exists(it):
+    if os.path.exists(it):
         s = it
     else:
         s = os.path.join(d, "in.mol2")
