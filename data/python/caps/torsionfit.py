@@ -294,6 +294,14 @@ def side(nb, start, block):
 
 
 # ------------------------------------------------------------------ prepare
+Z = {"H": 1, "B": 5, "C": 6, "N": 7, "O": 8, "F": 9, "Si": 14, "P": 15, "S": 16, "Cl": 17, "Br": 35, "I": 53}
+
+
+def closed_shell(fel, charge=0):
+    """an even electron count: the QM inputs are singlets"""
+    return (sum(Z.get(e, 0) for e in fel) - charge) % 2 == 0
+
+
 def read_box(path):
     """the orthogonal cell edges of a LAMMPS data file (None where it has none)"""
     box = [None, None, None]
@@ -323,6 +331,43 @@ def fragment(el, pos, nb, b, c, radius, box=None):
             if y not in dist and dist[x] < radius:
                 dist[y] = dist[x] + 1
                 todo.append(y)
+    # never cut where a capping H would be wrong: through a bond between two unsaturated atoms (C=C, aromatic, C=O: an H
+    # there leaves a radical) or through a small ring (two caps land on one spot, 0.5 A apart, and every scan point reads
+    # as a clash); such neighbours join the fragment, until nothing changes
+    def unsaturated(a):
+        n = len(nb[a])
+        return {"C": n < 4, "N": n < 3, "O": n < 2, "S": n < 2}.get(el[a], False)
+    def small_ring(a, y, limit=8):
+        """the atoms of the smallest ring through bond a-y of at most `limit` atoms, else None"""
+        prev, todo = {y: None}, [y]
+        while todo:
+            x = todo.pop(0)
+            for z in nb[x]:
+                if (x, z) in ((y, a), (a, y)) or z in prev:
+                    continue
+                prev[z] = x
+                if z == a:
+                    ring, w = [], a
+                    while w is not None:
+                        ring.append(w)
+                        w = prev[w]
+                    return ring if len(ring) <= limit else None
+                todo.append(z)
+            if len(prev) > 64:
+                break
+        return None
+    grew = True
+    while grew:
+        grew = False
+        for a in list(dist):
+            for y in nb[a]:
+                if y in dist:
+                    continue
+                add = [y] if unsaturated(a) and unsaturated(y) else (small_ring(a, y) or [])
+                for z in add:
+                    if z not in dist:
+                        dist[z] = dist[a] + 1
+                        grew = True
     keep = sorted(dist)
     idx = {a: k for k, a in enumerate(keep)}
     local = {a: list(pos[a]) for a in keep}
@@ -465,6 +510,8 @@ def prepare():
             ftypes, _, fpos_s, _, _ = read_data(fdata)
             if len(ftypes) < len(fel):   # united-atom: the site types onto the fragment's heavy atoms
                 ftypes = onto_atoms(site_map(fpos, fel, fpos_s), ftypes, set())[0]
+            if not closed_shell(fel):   # a radical would be run as a singlet: a larger fragment
+                continue
             # the torsion's atoms and their neighbours keep the structure's types
             check = {x for x in (a, b, c, d)} | set(nb[b]) | set(nb[c])
             if ring_only and in_ring(neighbours(len(fel), fbonds), idx.get(b, -1), idx.get(c, -1)):

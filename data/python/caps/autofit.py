@@ -124,6 +124,8 @@ def fragment_around(structure, ffjson, work, atoms, label):
     check = set(atoms) | {y for x in atoms for y in nb[x]}
     for rad in range(1, max(4, len(el))):
         keep, idx, fel, fpos, fbonds = T.fragment(el, pos, nb, atoms[0], atoms[1], rad, box)
+        if not T.closed_shell(fel):
+            continue
         m2 = os.path.join(work, label + ".fragment.mol2")
         T.write_mol2(m2, fel, fpos, fbonds)
         try:
