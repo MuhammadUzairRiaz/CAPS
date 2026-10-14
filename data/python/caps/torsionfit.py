@@ -894,7 +894,7 @@ def fit():
                     Y.append(yy)
                     W.append(ww)
             nc = len(G)
-            for lam in [1e-3, 3e-3, 0.01, 0.03, 0.1, 0.3, 0.5]:
+            for lam in ([float(arg("--ridge"))] if arg("--ridge") else [1e-3, 3e-3, 0.01, 0.03, 0.1, 0.3, 0.5]):   # --ridge as above
                 # the ridge on the V columns only, never on the constants
                 M = [[sum(W[r] ** 2 * A[r][i] * A[r][jj] for r in range(len(A))) + ((lam if i >= nc else 0.0) + 1e-9 if i == jj else 0.0)
                       for jj in range(len(A[0]))] for i in range(len(A[0]))]

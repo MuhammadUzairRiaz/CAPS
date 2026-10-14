@@ -255,7 +255,7 @@
  "status": "converted",
  "notes": [
   "the united-atom carbon sites carry their hydrogens' mass (CH4 16.043, CH3 15.035, CH2 14.027, CH 13.019)",
-  "62 bends and 601 torsions the 2024 file lacks for united-atom hydrocarbons, alcohols and ethers, from Jorgensen, Madura & Swenson, J. Am. Chem. Soc. 106, 6638 (1984), Tables I and II; Jorgensen, J. Phys. Chem. 90, 1276 (1986), Tables II and III; Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), Table II and p. 960 (bench/ff/open/oplsua2024_supplement.json; each term's comment names its table and anything taken from the 2024 file); the 2024 file's own terms win",
+  "110 bends and 908 torsions the 2024 file lacks for united-atom hydrocarbons, alcohols and ethers, from Jorgensen, Madura & Swenson, J. Am. Chem. Soc. 106, 6638 (1984), Tables I and II; Jorgensen, J. Phys. Chem. 90, 1276 (1986), Tables II and III; Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), Table II and p. 960 (bench/ff/open/oplsua2024_supplement.json; each term's comment names its table and anything taken from the 2024 file); the 2024 file's own terms win",
   "the papers' torsions were fit with fixed bond lengths and angles, no 1-4 Lennard-Jones and weak terms beyond 1-4 (1984 eq 3: C-C sigma 4 A, epsilon 0.0074; 1986: HO-CH3 sigma 2.6 A, epsilon 0.008; 1990 eq 3: sigma 2.745 A, epsilon 0.008 kcal/mol); here they run with the 2024 file's flexible bonds and its 1-4 x 0.5 scaling",
   "none of the three papers has a torsion about a C-C bond between two oxygens (O-C-C-O: poly(ethylene oxide), glycols) or an O-C-O acetal term; those are CAPS's fits to RI-MP2/cc-pVTZ//HF/6-31G** relaxed scans of all-atom fragments (1,2-dimethoxyethane, 2-methoxyethanol, acetal and glycidyl-ether fragments) with the united-atom model evaluated on them (caps.torsionfit), each comment giving its RMS; hydroxyl torsions whose scans are dominated by an intramolecular OH...O hydrogen bond (RMS over 1.1 kcal/mol) are not fitted and stay missing"
  ],
@@ -304,6 +304,44 @@
     0.25,
     3.55
    ]
+  }
+ ],
+ "bonds": [
+  {
+   "name": "CH-S~",
+   "match": [
+    "*_bCH_a*_d*_i*",
+    "*_bS~_a*_d*_i*"
+   ],
+   "params": [
+    222,
+    1.81
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: C2-S~ / C3-S~ 222 / 1.81 for every sp3 carbon on a sulfide or disulfide S (the 1986 paper uses one C-S bond for any alkyl group; the crosslink CH has no entry)"
+  },
+  {
+   "name": "CH-SH",
+   "match": [
+    "*_bCH_a*_d*_i*",
+    "*_bSH_a*_d*_i*"
+   ],
+   "params": [
+    222,
+    1.81
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: C2-SH / C3-SH 222 / 1.81 for every sp3 carbon on a thiol S"
+  },
+  {
+   "name": "SH-S~",
+   "match": [
+    "*_bSH_a*_d*_i*",
+    "*_bS~_a*_d*_i*"
+   ],
+   "params": [
+    166,
+    2.038
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: the disulfide S-S bond S~-S~ 166 / 2.038 for an S-S bond to a persulfide S-H sulfur"
   }
  ],
  "angles": [
@@ -1112,6 +1150,630 @@
     111.55
    ],
    "comment": "the 2024 file's all-atom acetal bends OS-CO-OS and OS-CO-OH (92.6 / 111.55; 'ACETAL - wlj 2/93'): CAPS's transfer to the united-atom acetal and hemiacetal carbon (poly(methylene oxide), hemiacetal ends): none of the 1984, 1986 or 1990 papers has an O-C-O bend"
+  },
+  {
+   "name": "C3-S~-C3",
+   "match": [
+    "*_b*_aC3_d*_i*",
+    "*_b*_aS~_d*_i*",
+    "*_b*_aC3_d*_i*"
+   ],
+   "params": [
+    62,
+    98.9
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: C2-S~-C3 62 / 98.9 (the C-S-C bend) for any two sp3 carbons on a sulfide S"
+  },
+  {
+   "name": "C3-S~-CH",
+   "match": [
+    "*_b*_aC3_d*_i*",
+    "*_b*_aS~_d*_i*",
+    "*_b*_aCH_d*_i*"
+   ],
+   "params": [
+    62,
+    98.9
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: C2-S~-C3 62 / 98.9 (the C-S-C bend) for any two sp3 carbons on a sulfide S"
+  },
+  {
+   "name": "C3-S~-CT",
+   "match": [
+    "*_b*_aC3_d*_i*",
+    "*_b*_aS~_d*_i*",
+    "*_b*_aCT_d*_i*"
+   ],
+   "params": [
+    62,
+    98.9
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: C2-S~-C3 62 / 98.9 (the C-S-C bend) for any two sp3 carbons on a sulfide S"
+  },
+  {
+   "name": "C2-S~-C2",
+   "match": [
+    "*_b*_aC2_d*_i*",
+    "*_b*_aS~_d*_i*",
+    "*_b*_aC2_d*_i*"
+   ],
+   "params": [
+    62,
+    98.9
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: C2-S~-C3 62 / 98.9 (the C-S-C bend) for any two sp3 carbons on a sulfide S"
+  },
+  {
+   "name": "C2-S~-CH",
+   "match": [
+    "*_b*_aC2_d*_i*",
+    "*_b*_aS~_d*_i*",
+    "*_b*_aCH_d*_i*"
+   ],
+   "params": [
+    62,
+    98.9
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: C2-S~-C3 62 / 98.9 (the C-S-C bend) for any two sp3 carbons on a sulfide S"
+  },
+  {
+   "name": "C2-S~-CT",
+   "match": [
+    "*_b*_aC2_d*_i*",
+    "*_b*_aS~_d*_i*",
+    "*_b*_aCT_d*_i*"
+   ],
+   "params": [
+    62,
+    98.9
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: C2-S~-C3 62 / 98.9 (the C-S-C bend) for any two sp3 carbons on a sulfide S"
+  },
+  {
+   "name": "CH-S~-CH",
+   "match": [
+    "*_b*_aCH_d*_i*",
+    "*_b*_aS~_d*_i*",
+    "*_b*_aCH_d*_i*"
+   ],
+   "params": [
+    62,
+    98.9
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: C2-S~-C3 62 / 98.9 (the C-S-C bend) for any two sp3 carbons on a sulfide S"
+  },
+  {
+   "name": "CH-S~-CT",
+   "match": [
+    "*_b*_aCH_d*_i*",
+    "*_b*_aS~_d*_i*",
+    "*_b*_aCT_d*_i*"
+   ],
+   "params": [
+    62,
+    98.9
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: C2-S~-C3 62 / 98.9 (the C-S-C bend) for any two sp3 carbons on a sulfide S"
+  },
+  {
+   "name": "C3-S~-SH",
+   "match": [
+    "*_b*_aC3_d*_i*",
+    "*_b*_aS~_d*_i*",
+    "*_b*_aSH_d*_i*"
+   ],
+   "params": [
+    68,
+    103.7
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: C2-S~-S~ 68 / 103.7 (the C-S-S bend) for any sp3 carbon, also to a persulfide S"
+  },
+  {
+   "name": "C2-S~-SH",
+   "match": [
+    "*_b*_aC2_d*_i*",
+    "*_b*_aS~_d*_i*",
+    "*_b*_aSH_d*_i*"
+   ],
+   "params": [
+    68,
+    103.7
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: C2-S~-S~ 68 / 103.7 (the C-S-S bend) for any sp3 carbon, also to a persulfide S"
+  },
+  {
+   "name": "CH-S~-S~",
+   "match": [
+    "*_b*_aCH_d*_i*",
+    "*_b*_aS~_d*_i*",
+    "*_b*_aS~_d*_i*"
+   ],
+   "params": [
+    68,
+    103.7
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: C2-S~-S~ 68 / 103.7 (the C-S-S bend) for any sp3 carbon, also to a persulfide S"
+  },
+  {
+   "name": "CH-S~-SH",
+   "match": [
+    "*_b*_aCH_d*_i*",
+    "*_b*_aS~_d*_i*",
+    "*_b*_aSH_d*_i*"
+   ],
+   "params": [
+    68,
+    103.7
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: C2-S~-S~ 68 / 103.7 (the C-S-S bend) for any sp3 carbon, also to a persulfide S"
+  },
+  {
+   "name": "CT-S~-SH",
+   "match": [
+    "*_b*_aCT_d*_i*",
+    "*_b*_aS~_d*_i*",
+    "*_b*_aSH_d*_i*"
+   ],
+   "params": [
+    68,
+    103.7
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: C2-S~-S~ 68 / 103.7 (the C-S-S bend) for any sp3 carbon, also to a persulfide S"
+  },
+  {
+   "name": "C3-C2-S~",
+   "match": [
+    "*_b*_aC3_d*_i*",
+    "*_b*_aC2_d*_i*",
+    "*_b*_aS~_d*_i*"
+   ],
+   "params": [
+    50,
+    114.7
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: C2-C2-S~ 50 / 114.7 (the C-C-S bend) for any carbon on an sp3 carbon bonded to S"
+  },
+  {
+   "name": "C3-CH-S~",
+   "match": [
+    "*_b*_aC3_d*_i*",
+    "*_b*_aCH_d*_i*",
+    "*_b*_aS~_d*_i*"
+   ],
+   "params": [
+    50,
+    114.7
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: C2-C2-S~ 50 / 114.7 (the C-C-S bend) for any carbon on an sp3 carbon bonded to S"
+  },
+  {
+   "name": "C3-CT-S~",
+   "match": [
+    "*_b*_aC3_d*_i*",
+    "*_b*_aCT_d*_i*",
+    "*_b*_aS~_d*_i*"
+   ],
+   "params": [
+    50,
+    114.7
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: C2-C2-S~ 50 / 114.7 (the C-C-S bend) for any carbon on an sp3 carbon bonded to S"
+  },
+  {
+   "name": "C2-CH-S~",
+   "match": [
+    "*_b*_aC2_d*_i*",
+    "*_b*_aCH_d*_i*",
+    "*_b*_aS~_d*_i*"
+   ],
+   "params": [
+    50,
+    114.7
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: C2-C2-S~ 50 / 114.7 (the C-C-S bend) for any carbon on an sp3 carbon bonded to S"
+  },
+  {
+   "name": "C2-CT-S~",
+   "match": [
+    "*_b*_aC2_d*_i*",
+    "*_b*_aCT_d*_i*",
+    "*_b*_aS~_d*_i*"
+   ],
+   "params": [
+    50,
+    114.7
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: C2-C2-S~ 50 / 114.7 (the C-C-S bend) for any carbon on an sp3 carbon bonded to S"
+  },
+  {
+   "name": "CH-CH-S~",
+   "match": [
+    "*_b*_aCH_d*_i*",
+    "*_b*_aCH_d*_i*",
+    "*_b*_aS~_d*_i*"
+   ],
+   "params": [
+    50,
+    114.7
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: C2-C2-S~ 50 / 114.7 (the C-C-S bend) for any carbon on an sp3 carbon bonded to S"
+  },
+  {
+   "name": "CH-CT-S~",
+   "match": [
+    "*_b*_aCH_d*_i*",
+    "*_b*_aCT_d*_i*",
+    "*_b*_aS~_d*_i*"
+   ],
+   "params": [
+    50,
+    114.7
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: C2-C2-S~ 50 / 114.7 (the C-C-S bend) for any carbon on an sp3 carbon bonded to S"
+  },
+  {
+   "name": "CT-C2-S~",
+   "match": [
+    "*_b*_aCT_d*_i*",
+    "*_b*_aC2_d*_i*",
+    "*_b*_aS~_d*_i*"
+   ],
+   "params": [
+    50,
+    114.7
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: C2-C2-S~ 50 / 114.7 (the C-C-S bend) for any carbon on an sp3 carbon bonded to S"
+  },
+  {
+   "name": "CT-CH-S~",
+   "match": [
+    "*_b*_aCT_d*_i*",
+    "*_b*_aCH_d*_i*",
+    "*_b*_aS~_d*_i*"
+   ],
+   "params": [
+    50,
+    114.7
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: C2-C2-S~ 50 / 114.7 (the C-C-S bend) for any carbon on an sp3 carbon bonded to S"
+  },
+  {
+   "name": "C7-C2-S~",
+   "match": [
+    "*_b*_aC7_d*_i*",
+    "*_b*_aC2_d*_i*",
+    "*_b*_aS~_d*_i*"
+   ],
+   "params": [
+    50,
+    114.7
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: C2-C2-S~ 50 / 114.7 (the C-C-S bend) for any carbon on an sp3 carbon bonded to S"
+  },
+  {
+   "name": "C7-CH-S~",
+   "match": [
+    "*_b*_aC7_d*_i*",
+    "*_b*_aCH_d*_i*",
+    "*_b*_aS~_d*_i*"
+   ],
+   "params": [
+    50,
+    114.7
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: C2-C2-S~ 50 / 114.7 (the C-C-S bend) for any carbon on an sp3 carbon bonded to S"
+  },
+  {
+   "name": "C7-CT-S~",
+   "match": [
+    "*_b*_aC7_d*_i*",
+    "*_b*_aCT_d*_i*",
+    "*_b*_aS~_d*_i*"
+   ],
+   "params": [
+    50,
+    114.7
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: C2-C2-S~ 50 / 114.7 (the C-C-S bend) for any carbon on an sp3 carbon bonded to S"
+  },
+  {
+   "name": "C8-C2-S~",
+   "match": [
+    "*_b*_aC8_d*_i*",
+    "*_b*_aC2_d*_i*",
+    "*_b*_aS~_d*_i*"
+   ],
+   "params": [
+    50,
+    114.7
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: C2-C2-S~ 50 / 114.7 (the C-C-S bend) for any carbon on an sp3 carbon bonded to S"
+  },
+  {
+   "name": "C8-CH-S~",
+   "match": [
+    "*_b*_aC8_d*_i*",
+    "*_b*_aCH_d*_i*",
+    "*_b*_aS~_d*_i*"
+   ],
+   "params": [
+    50,
+    114.7
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: C2-C2-S~ 50 / 114.7 (the C-C-S bend) for any carbon on an sp3 carbon bonded to S"
+  },
+  {
+   "name": "C8-CT-S~",
+   "match": [
+    "*_b*_aC8_d*_i*",
+    "*_b*_aCT_d*_i*",
+    "*_b*_aS~_d*_i*"
+   ],
+   "params": [
+    50,
+    114.7
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: C2-C2-S~ 50 / 114.7 (the C-C-S bend) for any carbon on an sp3 carbon bonded to S"
+  },
+  {
+   "name": "C3-C2-SH",
+   "match": [
+    "*_b*_aC3_d*_i*",
+    "*_b*_aC2_d*_i*",
+    "*_b*_aSH_d*_i*"
+   ],
+   "params": [
+    50,
+    114.7
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: the C-C-S bend C2-C2-S~ 50 / 114.7 for a thiol S too (the 2024 file has no C-C-SH united-atom bend)"
+  },
+  {
+   "name": "C3-CH-SH",
+   "match": [
+    "*_b*_aC3_d*_i*",
+    "*_b*_aCH_d*_i*",
+    "*_b*_aSH_d*_i*"
+   ],
+   "params": [
+    50,
+    114.7
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: the C-C-S bend C2-C2-S~ 50 / 114.7 for a thiol S too (the 2024 file has no C-C-SH united-atom bend)"
+  },
+  {
+   "name": "C3-CT-SH",
+   "match": [
+    "*_b*_aC3_d*_i*",
+    "*_b*_aCT_d*_i*",
+    "*_b*_aSH_d*_i*"
+   ],
+   "params": [
+    50,
+    114.7
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: the C-C-S bend C2-C2-S~ 50 / 114.7 for a thiol S too (the 2024 file has no C-C-SH united-atom bend)"
+  },
+  {
+   "name": "C2-C2-SH",
+   "match": [
+    "*_b*_aC2_d*_i*",
+    "*_b*_aC2_d*_i*",
+    "*_b*_aSH_d*_i*"
+   ],
+   "params": [
+    50,
+    114.7
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: the C-C-S bend C2-C2-S~ 50 / 114.7 for a thiol S too (the 2024 file has no C-C-SH united-atom bend)"
+  },
+  {
+   "name": "C2-CH-SH",
+   "match": [
+    "*_b*_aC2_d*_i*",
+    "*_b*_aCH_d*_i*",
+    "*_b*_aSH_d*_i*"
+   ],
+   "params": [
+    50,
+    114.7
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: the C-C-S bend C2-C2-S~ 50 / 114.7 for a thiol S too (the 2024 file has no C-C-SH united-atom bend)"
+  },
+  {
+   "name": "C2-CT-SH",
+   "match": [
+    "*_b*_aC2_d*_i*",
+    "*_b*_aCT_d*_i*",
+    "*_b*_aSH_d*_i*"
+   ],
+   "params": [
+    50,
+    114.7
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: the C-C-S bend C2-C2-S~ 50 / 114.7 for a thiol S too (the 2024 file has no C-C-SH united-atom bend)"
+  },
+  {
+   "name": "CH-CH-SH",
+   "match": [
+    "*_b*_aCH_d*_i*",
+    "*_b*_aCH_d*_i*",
+    "*_b*_aSH_d*_i*"
+   ],
+   "params": [
+    50,
+    114.7
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: the C-C-S bend C2-C2-S~ 50 / 114.7 for a thiol S too (the 2024 file has no C-C-SH united-atom bend)"
+  },
+  {
+   "name": "CH-CT-SH",
+   "match": [
+    "*_b*_aCH_d*_i*",
+    "*_b*_aCT_d*_i*",
+    "*_b*_aSH_d*_i*"
+   ],
+   "params": [
+    50,
+    114.7
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: the C-C-S bend C2-C2-S~ 50 / 114.7 for a thiol S too (the 2024 file has no C-C-SH united-atom bend)"
+  },
+  {
+   "name": "CT-C2-SH",
+   "match": [
+    "*_b*_aCT_d*_i*",
+    "*_b*_aC2_d*_i*",
+    "*_b*_aSH_d*_i*"
+   ],
+   "params": [
+    50,
+    114.7
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: the C-C-S bend C2-C2-S~ 50 / 114.7 for a thiol S too (the 2024 file has no C-C-SH united-atom bend)"
+  },
+  {
+   "name": "CT-CH-SH",
+   "match": [
+    "*_b*_aCT_d*_i*",
+    "*_b*_aCH_d*_i*",
+    "*_b*_aSH_d*_i*"
+   ],
+   "params": [
+    50,
+    114.7
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: the C-C-S bend C2-C2-S~ 50 / 114.7 for a thiol S too (the 2024 file has no C-C-SH united-atom bend)"
+  },
+  {
+   "name": "C7-C2-SH",
+   "match": [
+    "*_b*_aC7_d*_i*",
+    "*_b*_aC2_d*_i*",
+    "*_b*_aSH_d*_i*"
+   ],
+   "params": [
+    50,
+    114.7
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: the C-C-S bend C2-C2-S~ 50 / 114.7 for a thiol S too (the 2024 file has no C-C-SH united-atom bend)"
+  },
+  {
+   "name": "C7-CH-SH",
+   "match": [
+    "*_b*_aC7_d*_i*",
+    "*_b*_aCH_d*_i*",
+    "*_b*_aSH_d*_i*"
+   ],
+   "params": [
+    50,
+    114.7
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: the C-C-S bend C2-C2-S~ 50 / 114.7 for a thiol S too (the 2024 file has no C-C-SH united-atom bend)"
+  },
+  {
+   "name": "C7-CT-SH",
+   "match": [
+    "*_b*_aC7_d*_i*",
+    "*_b*_aCT_d*_i*",
+    "*_b*_aSH_d*_i*"
+   ],
+   "params": [
+    50,
+    114.7
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: the C-C-S bend C2-C2-S~ 50 / 114.7 for a thiol S too (the 2024 file has no C-C-SH united-atom bend)"
+  },
+  {
+   "name": "C8-C2-SH",
+   "match": [
+    "*_b*_aC8_d*_i*",
+    "*_b*_aC2_d*_i*",
+    "*_b*_aSH_d*_i*"
+   ],
+   "params": [
+    50,
+    114.7
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: the C-C-S bend C2-C2-S~ 50 / 114.7 for a thiol S too (the 2024 file has no C-C-SH united-atom bend)"
+  },
+  {
+   "name": "C8-CH-SH",
+   "match": [
+    "*_b*_aC8_d*_i*",
+    "*_b*_aCH_d*_i*",
+    "*_b*_aSH_d*_i*"
+   ],
+   "params": [
+    50,
+    114.7
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: the C-C-S bend C2-C2-S~ 50 / 114.7 for a thiol S too (the 2024 file has no C-C-SH united-atom bend)"
+  },
+  {
+   "name": "C8-CT-SH",
+   "match": [
+    "*_b*_aC8_d*_i*",
+    "*_b*_aCT_d*_i*",
+    "*_b*_aSH_d*_i*"
+   ],
+   "params": [
+    50,
+    114.7
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: the C-C-S bend C2-C2-S~ 50 / 114.7 for a thiol S too (the 2024 file has no C-C-SH united-atom bend)"
+  },
+  {
+   "name": "CH-SH-HS",
+   "match": [
+    "*_b*_aCH_d*_i*",
+    "*_b*_aSH_d*_i*",
+    "*_b*_aHS_d*_i*"
+   ],
+   "params": [
+    44,
+    96
+   ],
+   "comment": "Jorgensen, J. Phys. Chem. 90, 6379 (1986), as the 2024 file gives it: by_analogy: C2-SH-HS 44 / 96 (the C-S-H bend) for any sp3 carbon"
+  },
+  {
+   "name": "HS-SH-S~",
+   "match": [
+    "*_b*_aHS_d*_i*",
+    "*_b*_aSH_d*_i*",
+    "*_b*_aS~_d*_i*"
+   ],
+   "params": [
+    49.78,
+    98.19
+   ],
+   "comment": "CAPS's QM fit in OPLS-AA 2024 (bench/ff/open/oplsaa2024_supplement.json): by_analogy: the S-S-H bend S-S-HS, B3LYP-D3BJ/def2-TZVP scan of CH3SSH (no H on carbon in it, so the united-atom model changes nothing)"
+  },
+  {
+   "name": "S~-S~-S~",
+   "match": [
+    "*_b*_aS~_d*_i*",
+    "*_b*_aS~_d*_i*",
+    "*_b*_aS~_d*_i*"
+   ],
+   "params": [
+    55.56,
+    107.56
+   ],
+   "comment": "CAPS's QM fit in OPLS-AA 2024 (bench/ff/open/oplsaa2024_supplement.json): by_analogy: the S-S-S bend S-S-S, B3LYP-D3BJ/def2-TZVP scan of dimethyl trisulfide (sulfur only)"
+  },
+  {
+   "name": "SH-S~-S~",
+   "match": [
+    "*_b*_aSH_d*_i*",
+    "*_b*_aS~_d*_i*",
+    "*_b*_aS~_d*_i*"
+   ],
+   "params": [
+    55.56,
+    107.56
+   ],
+   "comment": "CAPS's QM fit in OPLS-AA 2024 (bench/ff/open/oplsaa2024_supplement.json): by_analogy: the S-S-S bend S-S-S, B3LYP-D3BJ/def2-TZVP scan of dimethyl trisulfide (sulfur only)"
   }
  ],
  "dihedrals": [
@@ -10730,6 +11392,4918 @@
     2.011
    ],
    "comment": "CAPS fit (QM): CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS 108_bOS_aOS_dOS_iOS-110_bC2_aC2_dC2_iC2-108_bOS_aOS_dOS_iOS-110_bC2_aC2_dC2_iC2 1.03 kcal/mol; ridge 0.001"
+  },
+  {
+   "name": "S~-S~-S~-S~",
+   "match": [
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    1.7068,
+    -3.2552,
+    1.0071,
+    0.4435
+   ],
+   "comment": "CAPS's QM fit in OPLS-AA 2024 (bench/ff/open/oplsaa2024_supplement.json): by_analogy: S-S-S-S, MP2/cc-pVTZ//HF/6-31G** (sulfur only)"
+  },
+  {
+   "name": "SH-S~-S~-S~",
+   "match": [
+    "*_b*_a*_dSH_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    1.7068,
+    -3.2552,
+    1.0071,
+    0.4435
+   ],
+   "comment": "CAPS's QM fit in OPLS-AA 2024 (bench/ff/open/oplsaa2024_supplement.json): by_analogy: S-S-S-S, MP2/cc-pVTZ//HF/6-31G** (sulfur only)"
+  },
+  {
+   "name": "C3-S~-S~-S~",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    1.233,
+    -5.6005,
+    1.6661,
+    0.1222
+   ],
+   "comment": "CAPS's QM fit in OPLS-AA 2024 (bench/ff/open/oplsaa2024_supplement.json): by_analogy: CT-S-S-S, MP2/cc-pVTZ//HF/6-31G** (the C-S-S-S torsion; the carbon's H fold in, no H-C-S-S term needed)"
+  },
+  {
+   "name": "C3-S~-S~-SH",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    1.233,
+    -5.6005,
+    1.6661,
+    0.1222
+   ],
+   "comment": "CAPS's QM fit in OPLS-AA 2024 (bench/ff/open/oplsaa2024_supplement.json): by_analogy: CT-S-S-S, MP2/cc-pVTZ//HF/6-31G** (the C-S-S-S torsion; the carbon's H fold in, no H-C-S-S term needed)"
+  },
+  {
+   "name": "C2-S~-S~-S~",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    1.233,
+    -5.6005,
+    1.6661,
+    0.1222
+   ],
+   "comment": "CAPS's QM fit in OPLS-AA 2024 (bench/ff/open/oplsaa2024_supplement.json): by_analogy: CT-S-S-S, MP2/cc-pVTZ//HF/6-31G** (the C-S-S-S torsion; the carbon's H fold in, no H-C-S-S term needed)"
+  },
+  {
+   "name": "C2-S~-S~-SH",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    1.233,
+    -5.6005,
+    1.6661,
+    0.1222
+   ],
+   "comment": "CAPS's QM fit in OPLS-AA 2024 (bench/ff/open/oplsaa2024_supplement.json): by_analogy: CT-S-S-S, MP2/cc-pVTZ//HF/6-31G** (the C-S-S-S torsion; the carbon's H fold in, no H-C-S-S term needed)"
+  },
+  {
+   "name": "CH-S~-S~-S~",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    1.233,
+    -5.6005,
+    1.6661,
+    0.1222
+   ],
+   "comment": "CAPS's QM fit in OPLS-AA 2024 (bench/ff/open/oplsaa2024_supplement.json): by_analogy: CT-S-S-S, MP2/cc-pVTZ//HF/6-31G** (the C-S-S-S torsion; the carbon's H fold in, no H-C-S-S term needed)"
+  },
+  {
+   "name": "CH-S~-S~-SH",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    1.233,
+    -5.6005,
+    1.6661,
+    0.1222
+   ],
+   "comment": "CAPS's QM fit in OPLS-AA 2024 (bench/ff/open/oplsaa2024_supplement.json): by_analogy: CT-S-S-S, MP2/cc-pVTZ//HF/6-31G** (the C-S-S-S torsion; the carbon's H fold in, no H-C-S-S term needed)"
+  },
+  {
+   "name": "CT-S~-S~-S~",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    1.233,
+    -5.6005,
+    1.6661,
+    0.1222
+   ],
+   "comment": "CAPS's QM fit in OPLS-AA 2024 (bench/ff/open/oplsaa2024_supplement.json): by_analogy: CT-S-S-S, MP2/cc-pVTZ//HF/6-31G** (the C-S-S-S torsion; the carbon's H fold in, no H-C-S-S term needed)"
+  },
+  {
+   "name": "CT-S~-S~-SH",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    1.233,
+    -5.6005,
+    1.6661,
+    0.1222
+   ],
+   "comment": "CAPS's QM fit in OPLS-AA 2024 (bench/ff/open/oplsaa2024_supplement.json): by_analogy: CT-S-S-S, MP2/cc-pVTZ//HF/6-31G** (the C-S-S-S torsion; the carbon's H fold in, no H-C-S-S term needed)"
+  },
+  {
+   "name": "C3-S~-SH-HS",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dSH_i*",
+    "*_b*_a*_dHS_i*"
+   ],
+   "params": [
+    0.9286,
+    -5.7148,
+    1.0193,
+    0.1777
+   ],
+   "comment": "CAPS's QM fit in OPLS-AA 2024 (bench/ff/open/oplsaa2024_supplement.json): by_analogy: CT-S-S-HS, MP2/cc-pVTZ//HF/6-31G** of CH3SSH"
+  },
+  {
+   "name": "C2-S~-SH-HS",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dSH_i*",
+    "*_b*_a*_dHS_i*"
+   ],
+   "params": [
+    0.9286,
+    -5.7148,
+    1.0193,
+    0.1777
+   ],
+   "comment": "CAPS's QM fit in OPLS-AA 2024 (bench/ff/open/oplsaa2024_supplement.json): by_analogy: CT-S-S-HS, MP2/cc-pVTZ//HF/6-31G** of CH3SSH"
+  },
+  {
+   "name": "CH-S~-SH-HS",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dSH_i*",
+    "*_b*_a*_dHS_i*"
+   ],
+   "params": [
+    0.9286,
+    -5.7148,
+    1.0193,
+    0.1777
+   ],
+   "comment": "CAPS's QM fit in OPLS-AA 2024 (bench/ff/open/oplsaa2024_supplement.json): by_analogy: CT-S-S-HS, MP2/cc-pVTZ//HF/6-31G** of CH3SSH"
+  },
+  {
+   "name": "CT-S~-SH-HS",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dSH_i*",
+    "*_b*_a*_dHS_i*"
+   ],
+   "params": [
+    0.9286,
+    -5.7148,
+    1.0193,
+    0.1777
+   ],
+   "comment": "CAPS's QM fit in OPLS-AA 2024 (bench/ff/open/oplsaa2024_supplement.json): by_analogy: CT-S-S-HS, MP2/cc-pVTZ//HF/6-31G** of CH3SSH"
+  },
+  {
+   "name": "HS-SH-SH-HS",
+   "match": [
+    "*_b*_a*_dHS_i*",
+    "*_b*_a*_dSH_i*",
+    "*_b*_a*_dSH_i*",
+    "*_b*_a*_dHS_i*"
+   ],
+   "params": [
+    1.6094,
+    -5.9124,
+    0.5565,
+    0.201
+   ],
+   "comment": "CAPS's QM fit in OPLS-AA 2024 (bench/ff/open/oplsaa2024_supplement.json): by_analogy: HS-S-S-HS of HSSH (sulfur and H only)"
+  },
+  {
+   "name": "C3-C2-SH-HS",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dSH_i*",
+    "*_b*_a*_dHS_i*"
+   ],
+   "params": [
+    -0.2067,
+    -0.0733,
+    1.2167,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bond of ethanethiol (V0 0.2100 dropped, a constant): one C-C-S-H torsion, so the function is the torsion's own; eq 2 of the paper is the OPLS form, coefficients taken as printed"
+  },
+  {
+   "name": "C3-CH-SH-HS",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dSH_i*",
+    "*_b*_a*_dHS_i*"
+   ],
+   "params": [
+    -0.2067,
+    -0.0733,
+    1.2167,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bond of ethanethiol (V0 0.2100 dropped, a constant): one C-C-S-H torsion, so the function is the torsion's own; eq 2 of the paper is the OPLS form, coefficients taken as printed"
+  },
+  {
+   "name": "C3-CT-SH-HS",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dSH_i*",
+    "*_b*_a*_dHS_i*"
+   ],
+   "params": [
+    -0.2067,
+    -0.0733,
+    1.2167,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bond of ethanethiol (V0 0.2100 dropped, a constant): one C-C-S-H torsion, so the function is the torsion's own; eq 2 of the paper is the OPLS form, coefficients taken as printed"
+  },
+  {
+   "name": "C2-C2-SH-HS",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dSH_i*",
+    "*_b*_a*_dHS_i*"
+   ],
+   "params": [
+    -0.2067,
+    -0.0733,
+    1.2167,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bond of ethanethiol (V0 0.2100 dropped, a constant): one C-C-S-H torsion, so the function is the torsion's own; eq 2 of the paper is the OPLS form, coefficients taken as printed"
+  },
+  {
+   "name": "C2-CH-SH-HS",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dSH_i*",
+    "*_b*_a*_dHS_i*"
+   ],
+   "params": [
+    -0.2067,
+    -0.0733,
+    1.2167,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bond of ethanethiol (V0 0.2100 dropped, a constant): one C-C-S-H torsion, so the function is the torsion's own; eq 2 of the paper is the OPLS form, coefficients taken as printed"
+  },
+  {
+   "name": "C2-CT-SH-HS",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dSH_i*",
+    "*_b*_a*_dHS_i*"
+   ],
+   "params": [
+    -0.2067,
+    -0.0733,
+    1.2167,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bond of ethanethiol (V0 0.2100 dropped, a constant): one C-C-S-H torsion, so the function is the torsion's own; eq 2 of the paper is the OPLS form, coefficients taken as printed"
+  },
+  {
+   "name": "CH-C2-SH-HS",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dSH_i*",
+    "*_b*_a*_dHS_i*"
+   ],
+   "params": [
+    -0.2067,
+    -0.0733,
+    1.2167,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bond of ethanethiol (V0 0.2100 dropped, a constant): one C-C-S-H torsion, so the function is the torsion's own; eq 2 of the paper is the OPLS form, coefficients taken as printed"
+  },
+  {
+   "name": "CH-CH-SH-HS",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dSH_i*",
+    "*_b*_a*_dHS_i*"
+   ],
+   "params": [
+    -0.2067,
+    -0.0733,
+    1.2167,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bond of ethanethiol (V0 0.2100 dropped, a constant): one C-C-S-H torsion, so the function is the torsion's own; eq 2 of the paper is the OPLS form, coefficients taken as printed"
+  },
+  {
+   "name": "CH-CT-SH-HS",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dSH_i*",
+    "*_b*_a*_dHS_i*"
+   ],
+   "params": [
+    -0.2067,
+    -0.0733,
+    1.2167,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bond of ethanethiol (V0 0.2100 dropped, a constant): one C-C-S-H torsion, so the function is the torsion's own; eq 2 of the paper is the OPLS form, coefficients taken as printed"
+  },
+  {
+   "name": "CT-C2-SH-HS",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dSH_i*",
+    "*_b*_a*_dHS_i*"
+   ],
+   "params": [
+    -0.2067,
+    -0.0733,
+    1.2167,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bond of ethanethiol (V0 0.2100 dropped, a constant): one C-C-S-H torsion, so the function is the torsion's own; eq 2 of the paper is the OPLS form, coefficients taken as printed"
+  },
+  {
+   "name": "CT-CH-SH-HS",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dSH_i*",
+    "*_b*_a*_dHS_i*"
+   ],
+   "params": [
+    -0.2067,
+    -0.0733,
+    1.2167,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bond of ethanethiol (V0 0.2100 dropped, a constant): one C-C-S-H torsion, so the function is the torsion's own; eq 2 of the paper is the OPLS form, coefficients taken as printed"
+  },
+  {
+   "name": "C7-C2-SH-HS",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dSH_i*",
+    "*_b*_a*_dHS_i*"
+   ],
+   "params": [
+    -0.2067,
+    -0.0733,
+    1.2167,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bond of ethanethiol (V0 0.2100 dropped, a constant): one C-C-S-H torsion, so the function is the torsion's own; eq 2 of the paper is the OPLS form, coefficients taken as printed"
+  },
+  {
+   "name": "C7-CH-SH-HS",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dSH_i*",
+    "*_b*_a*_dHS_i*"
+   ],
+   "params": [
+    -0.2067,
+    -0.0733,
+    1.2167,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bond of ethanethiol (V0 0.2100 dropped, a constant): one C-C-S-H torsion, so the function is the torsion's own; eq 2 of the paper is the OPLS form, coefficients taken as printed"
+  },
+  {
+   "name": "C7-CT-SH-HS",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dSH_i*",
+    "*_b*_a*_dHS_i*"
+   ],
+   "params": [
+    -0.2067,
+    -0.0733,
+    1.2167,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bond of ethanethiol (V0 0.2100 dropped, a constant): one C-C-S-H torsion, so the function is the torsion's own; eq 2 of the paper is the OPLS form, coefficients taken as printed"
+  },
+  {
+   "name": "C8-C2-SH-HS",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dSH_i*",
+    "*_b*_a*_dHS_i*"
+   ],
+   "params": [
+    -0.2067,
+    -0.0733,
+    1.2167,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bond of ethanethiol (V0 0.2100 dropped, a constant): one C-C-S-H torsion, so the function is the torsion's own; eq 2 of the paper is the OPLS form, coefficients taken as printed"
+  },
+  {
+   "name": "C8-CH-SH-HS",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dSH_i*",
+    "*_b*_a*_dHS_i*"
+   ],
+   "params": [
+    -0.2067,
+    -0.0733,
+    1.2167,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bond of ethanethiol (V0 0.2100 dropped, a constant): one C-C-S-H torsion, so the function is the torsion's own; eq 2 of the paper is the OPLS form, coefficients taken as printed"
+  },
+  {
+   "name": "C8-CT-SH-HS",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dSH_i*",
+    "*_b*_a*_dHS_i*"
+   ],
+   "params": [
+    -0.2067,
+    -0.0733,
+    1.2167,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bond of ethanethiol (V0 0.2100 dropped, a constant): one C-C-S-H torsion, so the function is the torsion's own; eq 2 of the paper is the OPLS form, coefficients taken as printed"
+  },
+  {
+   "name": "C3-C2-S~-C3",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dC3_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C2-S~-C2-C3",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC3_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C3-C2-S~-CH",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C3-C2-S~-CT",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C3-CH-S~-C3",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dC3_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C2-S~-CH-C3",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC3_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C3-CH-S~-CH",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C3-CH-S~-CT",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C3-CT-S~-C3",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dC3_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C2-S~-CT-C3",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC3_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C3-CT-S~-CH",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C3-CT-S~-CT",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C2-C2-S~-C3",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dC3_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C2-C2-S~-C2",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dC2_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C2-C2-S~-CH",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C2-C2-S~-CT",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C2-CH-S~-C3",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dC3_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C2-CH-S~-C2",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dC2_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C2-CH-S~-CH",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C2-CH-S~-CT",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C2-CT-S~-C3",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dC3_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C2-CT-S~-C2",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dC2_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C2-CT-S~-CH",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C2-CT-S~-CT",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C3-S~-C2-CH",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C2-S~-C2-CH",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "CH-C2-S~-CH",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "CH-C2-S~-CT",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C3-S~-CH-CH",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C2-S~-CH-CH",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "CH-CH-S~-CH",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "CH-CH-S~-CT",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C3-S~-CT-CH",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C2-S~-CT-CH",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "CH-CT-S~-CH",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "CH-CT-S~-CT",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C3-S~-C2-CT",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C2-S~-C2-CT",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "CH-S~-C2-CT",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "CT-C2-S~-CT",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C3-S~-CH-CT",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C2-S~-CH-CT",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "CH-S~-CH-CT",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "CT-CH-S~-CT",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C3-S~-CT-CT",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C2-S~-CT-CT",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "CH-S~-CT-CT",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C3-S~-C2-C7",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC7_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C2-S~-C2-C7",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC7_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C7-C2-S~-CH",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C7-C2-S~-CT",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C3-S~-CH-C7",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC7_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C2-S~-CH-C7",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC7_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C7-CH-S~-CH",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C7-CH-S~-CT",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C3-S~-CT-C7",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC7_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C2-S~-CT-C7",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC7_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C7-CT-S~-CH",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C7-CT-S~-CT",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C3-S~-C2-C8",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC8_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C2-S~-C2-C8",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC8_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C8-C2-S~-CH",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C8-C2-S~-CT",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C3-S~-CH-C8",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC8_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C2-S~-CH-C8",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC8_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C8-CH-S~-CH",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C8-CH-S~-CT",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C3-S~-CT-C8",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC8_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C2-S~-CT-C8",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC8_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C8-CT-S~-CH",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C8-CT-S~-CT",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the C-S bonds of ethyl methyl sulfide and diethyl sulfide (one Fourier series per C-C-S-C dihedral, as the paper states); the paper's extra 1-5 methyl-methyl Lennard-Jones term in diethyl sulfide is not added"
+  },
+  {
+   "name": "C3-S~-S~-C3",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dC3_i*"
+   ],
+   "params": [
+    1.582,
+    -8.67,
+    2.008,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the S-S bond of dimethyl disulfide (V0 7.0100 dropped, a constant)"
+  },
+  {
+   "name": "C2-S~-S~-C3",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dC3_i*"
+   ],
+   "params": [
+    1.582,
+    -8.67,
+    2.008,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the S-S bond of dimethyl disulfide (V0 7.0100 dropped, a constant)"
+  },
+  {
+   "name": "C3-S~-S~-CH",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    1.582,
+    -8.67,
+    2.008,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the S-S bond of dimethyl disulfide (V0 7.0100 dropped, a constant)"
+  },
+  {
+   "name": "C3-S~-S~-CT",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    1.582,
+    -8.67,
+    2.008,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the S-S bond of dimethyl disulfide (V0 7.0100 dropped, a constant)"
+  },
+  {
+   "name": "C2-S~-S~-C2",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dC2_i*"
+   ],
+   "params": [
+    1.582,
+    -8.67,
+    2.008,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the S-S bond of dimethyl disulfide (V0 7.0100 dropped, a constant)"
+  },
+  {
+   "name": "C2-S~-S~-CH",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    1.582,
+    -8.67,
+    2.008,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the S-S bond of dimethyl disulfide (V0 7.0100 dropped, a constant)"
+  },
+  {
+   "name": "C2-S~-S~-CT",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    1.582,
+    -8.67,
+    2.008,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the S-S bond of dimethyl disulfide (V0 7.0100 dropped, a constant)"
+  },
+  {
+   "name": "CH-S~-S~-CH",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCH_i*"
+   ],
+   "params": [
+    1.582,
+    -8.67,
+    2.008,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the S-S bond of dimethyl disulfide (V0 7.0100 dropped, a constant)"
+  },
+  {
+   "name": "CH-S~-S~-CT",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCT_i*"
+   ],
+   "params": [
+    1.582,
+    -8.67,
+    2.008,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: rotation about the S-S bond of dimethyl disulfide (V0 7.0100 dropped, a constant)"
+  },
+  {
+   "name": "C3-C2-S~-S~",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: by_analogy: the paper has no C-C-S-S rotation; the C-C-S-C function of ethyl methyl sulfide (the S-S group's S in place of the methyl)"
+  },
+  {
+   "name": "C3-C2-S~-SH",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: by_analogy: the paper has no C-C-S-S rotation; the C-C-S-C function of ethyl methyl sulfide (the S-S group's S in place of the methyl)"
+  },
+  {
+   "name": "C3-CH-S~-S~",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: by_analogy: the paper has no C-C-S-S rotation; the C-C-S-C function of ethyl methyl sulfide (the S-S group's S in place of the methyl)"
+  },
+  {
+   "name": "C3-CH-S~-SH",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: by_analogy: the paper has no C-C-S-S rotation; the C-C-S-C function of ethyl methyl sulfide (the S-S group's S in place of the methyl)"
+  },
+  {
+   "name": "C3-CT-S~-S~",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: by_analogy: the paper has no C-C-S-S rotation; the C-C-S-C function of ethyl methyl sulfide (the S-S group's S in place of the methyl)"
+  },
+  {
+   "name": "C3-CT-S~-SH",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: by_analogy: the paper has no C-C-S-S rotation; the C-C-S-C function of ethyl methyl sulfide (the S-S group's S in place of the methyl)"
+  },
+  {
+   "name": "C2-C2-S~-S~",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: by_analogy: the paper has no C-C-S-S rotation; the C-C-S-C function of ethyl methyl sulfide (the S-S group's S in place of the methyl)"
+  },
+  {
+   "name": "C2-C2-S~-SH",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: by_analogy: the paper has no C-C-S-S rotation; the C-C-S-C function of ethyl methyl sulfide (the S-S group's S in place of the methyl)"
+  },
+  {
+   "name": "C2-CH-S~-S~",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: by_analogy: the paper has no C-C-S-S rotation; the C-C-S-C function of ethyl methyl sulfide (the S-S group's S in place of the methyl)"
+  },
+  {
+   "name": "C2-CH-S~-SH",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: by_analogy: the paper has no C-C-S-S rotation; the C-C-S-C function of ethyl methyl sulfide (the S-S group's S in place of the methyl)"
+  },
+  {
+   "name": "C2-CT-S~-S~",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: by_analogy: the paper has no C-C-S-S rotation; the C-C-S-C function of ethyl methyl sulfide (the S-S group's S in place of the methyl)"
+  },
+  {
+   "name": "C2-CT-S~-SH",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: by_analogy: the paper has no C-C-S-S rotation; the C-C-S-C function of ethyl methyl sulfide (the S-S group's S in place of the methyl)"
+  },
+  {
+   "name": "CH-C2-S~-S~",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: by_analogy: the paper has no C-C-S-S rotation; the C-C-S-C function of ethyl methyl sulfide (the S-S group's S in place of the methyl)"
+  },
+  {
+   "name": "CH-C2-S~-SH",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: by_analogy: the paper has no C-C-S-S rotation; the C-C-S-C function of ethyl methyl sulfide (the S-S group's S in place of the methyl)"
+  },
+  {
+   "name": "CH-CH-S~-S~",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: by_analogy: the paper has no C-C-S-S rotation; the C-C-S-C function of ethyl methyl sulfide (the S-S group's S in place of the methyl)"
+  },
+  {
+   "name": "CH-CH-S~-SH",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: by_analogy: the paper has no C-C-S-S rotation; the C-C-S-C function of ethyl methyl sulfide (the S-S group's S in place of the methyl)"
+  },
+  {
+   "name": "CH-CT-S~-S~",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: by_analogy: the paper has no C-C-S-S rotation; the C-C-S-C function of ethyl methyl sulfide (the S-S group's S in place of the methyl)"
+  },
+  {
+   "name": "CH-CT-S~-SH",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: by_analogy: the paper has no C-C-S-S rotation; the C-C-S-C function of ethyl methyl sulfide (the S-S group's S in place of the methyl)"
+  },
+  {
+   "name": "CT-C2-S~-S~",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: by_analogy: the paper has no C-C-S-S rotation; the C-C-S-C function of ethyl methyl sulfide (the S-S group's S in place of the methyl)"
+  },
+  {
+   "name": "CT-C2-S~-SH",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: by_analogy: the paper has no C-C-S-S rotation; the C-C-S-C function of ethyl methyl sulfide (the S-S group's S in place of the methyl)"
+  },
+  {
+   "name": "CT-CH-S~-S~",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: by_analogy: the paper has no C-C-S-S rotation; the C-C-S-C function of ethyl methyl sulfide (the S-S group's S in place of the methyl)"
+  },
+  {
+   "name": "CT-CH-S~-SH",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: by_analogy: the paper has no C-C-S-S rotation; the C-C-S-C function of ethyl methyl sulfide (the S-S group's S in place of the methyl)"
+  },
+  {
+   "name": "CT-CT-S~-SH",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: by_analogy: the paper has no C-C-S-S rotation; the C-C-S-C function of ethyl methyl sulfide (the S-S group's S in place of the methyl)"
+  },
+  {
+   "name": "C7-C2-S~-S~",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: by_analogy: the paper has no C-C-S-S rotation; the C-C-S-C function of ethyl methyl sulfide (the S-S group's S in place of the methyl)"
+  },
+  {
+   "name": "C7-C2-S~-SH",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: by_analogy: the paper has no C-C-S-S rotation; the C-C-S-C function of ethyl methyl sulfide (the S-S group's S in place of the methyl)"
+  },
+  {
+   "name": "C7-CH-S~-S~",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: by_analogy: the paper has no C-C-S-S rotation; the C-C-S-C function of ethyl methyl sulfide (the S-S group's S in place of the methyl)"
+  },
+  {
+   "name": "C7-CH-S~-SH",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: by_analogy: the paper has no C-C-S-S rotation; the C-C-S-C function of ethyl methyl sulfide (the S-S group's S in place of the methyl)"
+  },
+  {
+   "name": "C7-CT-S~-S~",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: by_analogy: the paper has no C-C-S-S rotation; the C-C-S-C function of ethyl methyl sulfide (the S-S group's S in place of the methyl)"
+  },
+  {
+   "name": "C7-CT-S~-SH",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: by_analogy: the paper has no C-C-S-S rotation; the C-C-S-C function of ethyl methyl sulfide (the S-S group's S in place of the methyl)"
+  },
+  {
+   "name": "C8-C2-S~-S~",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: by_analogy: the paper has no C-C-S-S rotation; the C-C-S-C function of ethyl methyl sulfide (the S-S group's S in place of the methyl)"
+  },
+  {
+   "name": "C8-C2-S~-SH",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: by_analogy: the paper has no C-C-S-S rotation; the C-C-S-C function of ethyl methyl sulfide (the S-S group's S in place of the methyl)"
+  },
+  {
+   "name": "C8-CH-S~-S~",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: by_analogy: the paper has no C-C-S-S rotation; the C-C-S-C function of ethyl methyl sulfide (the S-S group's S in place of the methyl)"
+  },
+  {
+   "name": "C8-CH-S~-SH",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: by_analogy: the paper has no C-C-S-S rotation; the C-C-S-C function of ethyl methyl sulfide (the S-S group's S in place of the methyl)"
+  },
+  {
+   "name": "C8-CT-S~-S~",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: by_analogy: the paper has no C-C-S-S rotation; the C-C-S-C function of ethyl methyl sulfide (the S-S group's S in place of the methyl)"
+  },
+  {
+   "name": "C8-CT-S~-SH",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    1.46,
+    -1.073,
+    2.31,
+    0.0
+   ],
+   "comment": "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986), Table III: by_analogy: the paper has no C-C-S-S rotation; the C-C-S-C function of ethyl methyl sulfide (the S-S group's S in place of the methyl)"
+  },
+  {
+   "name": "C3-C7-C2-SH",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    0.8309,
+    -0.5587,
+    0.5907,
+    0.586
+   ],
+   "comment": "CAPS fit (QM): CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-SH 0.16, CT-CM-CT-SH 0.15 kcal/mol; ridge 0.1; all-atom QM scan CM-CM-CT-SH, CT-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C8-C7-C2-SH",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    -1.1285,
+    0.3453,
+    -0.4004,
+    0.5005
+   ],
+   "comment": "CAPS fit (QM): CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-SH 0.16, CT-CM-CT-SH 0.15 kcal/mol; ridge 0.1; all-atom QM scan CM-CM-CT-SH, CT-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C8-C2-CH-S~",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    2.9374,
+    -0.3552,
+    2.9847,
+    -0.107
+   ],
+   "comment": "CAPS fit (QM): CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-S 1.57 kcal/mol; ridge 0.1; all-atom QM scan CM-CT-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C7-C2-CH-SH",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    4.9279,
+    0.846,
+    1.2927,
+    -0.328
+   ],
+   "comment": "CAPS fit (QM): CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-SH 1.48 kcal/mol; ridge 0.1; all-atom QM scan CM-CT-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C3-C7-CH-S~",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    0.4072,
+    0.7211,
+    0.5701,
+    0.6029
+   ],
+   "comment": "CAPS fit (QM): CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CT-CM-CT-S 1.04 kcal/mol; ridge 0.1; all-atom QM scan CT-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C8-C7-CH-S~",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -0.4196,
+    -0.0456,
+    -0.216,
+    0.8839
+   ],
+   "comment": "CAPS fit (QM): CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CT-CM-CT-S 1.04 kcal/mol; ridge 0.1; all-atom QM scan CT-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C7-C8-CH-SH",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    2.8487,
+    -1.3743,
+    -0.6473,
+    -0.4039
+   ],
+   "comment": "CAPS fit (QM): CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS HC-CM-CT-SH 0.74 kcal/mol; ridge 0.1; all-atom QM scan HC-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C9-C8-C2-S~",
+   "match": [
+    "*_b*_a*_dC9_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.606,
+    0.0343,
+    -2.8834,
+    0.2444
+   ],
+   "comment": "CAPS fit (QM): CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-S 0.28 kcal/mol; ridge 0.001; all-atom QM scan CM-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C3-C7-CH-SH",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    0.8309,
+    -0.5587,
+    0.5907,
+    0.586
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-C2-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-SH 0.16, CT-CM-CT-SH 0.15 kcal/mol; ridge 0.1; all-atom QM scan CM-CM-CT-SH, CT-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C3-C7-CT-SH",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    0.8309,
+    -0.5587,
+    0.5907,
+    0.586
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-C2-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-SH 0.16, CT-CM-CT-SH 0.15 kcal/mol; ridge 0.1; all-atom QM scan CM-CM-CT-SH, CT-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C3-C8-C2-SH",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    0.8309,
+    -0.5587,
+    0.5907,
+    0.586
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-C2-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-SH 0.16, CT-CM-CT-SH 0.15 kcal/mol; ridge 0.1; all-atom QM scan CM-CM-CT-SH, CT-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C3-C8-CH-SH",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    0.8309,
+    -0.5587,
+    0.5907,
+    0.586
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-C2-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-SH 0.16, CT-CM-CT-SH 0.15 kcal/mol; ridge 0.1; all-atom QM scan CM-CM-CT-SH, CT-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C3-C8-CT-SH",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    0.8309,
+    -0.5587,
+    0.5907,
+    0.586
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-C2-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-SH 0.16, CT-CM-CT-SH 0.15 kcal/mol; ridge 0.1; all-atom QM scan CM-CM-CT-SH, CT-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C2-C7-C2-SH",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    0.8309,
+    -0.5587,
+    0.5907,
+    0.586
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-C2-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-SH 0.16, CT-CM-CT-SH 0.15 kcal/mol; ridge 0.1; all-atom QM scan CM-CM-CT-SH, CT-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C2-C7-CH-SH",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    0.8309,
+    -0.5587,
+    0.5907,
+    0.586
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-C2-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-SH 0.16, CT-CM-CT-SH 0.15 kcal/mol; ridge 0.1; all-atom QM scan CM-CM-CT-SH, CT-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C2-C7-CT-SH",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    0.8309,
+    -0.5587,
+    0.5907,
+    0.586
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-C2-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-SH 0.16, CT-CM-CT-SH 0.15 kcal/mol; ridge 0.1; all-atom QM scan CM-CM-CT-SH, CT-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C2-C8-C2-SH",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    0.8309,
+    -0.5587,
+    0.5907,
+    0.586
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-C2-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-SH 0.16, CT-CM-CT-SH 0.15 kcal/mol; ridge 0.1; all-atom QM scan CM-CM-CT-SH, CT-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C2-C8-CH-SH",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    0.8309,
+    -0.5587,
+    0.5907,
+    0.586
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-C2-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-SH 0.16, CT-CM-CT-SH 0.15 kcal/mol; ridge 0.1; all-atom QM scan CM-CM-CT-SH, CT-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C2-C8-CT-SH",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    0.8309,
+    -0.5587,
+    0.5907,
+    0.586
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-C2-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-SH 0.16, CT-CM-CT-SH 0.15 kcal/mol; ridge 0.1; all-atom QM scan CM-CM-CT-SH, CT-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "CH-C7-C2-SH",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    0.8309,
+    -0.5587,
+    0.5907,
+    0.586
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-C2-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-SH 0.16, CT-CM-CT-SH 0.15 kcal/mol; ridge 0.1; all-atom QM scan CM-CM-CT-SH, CT-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "CH-C7-CH-SH",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    0.8309,
+    -0.5587,
+    0.5907,
+    0.586
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-C2-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-SH 0.16, CT-CM-CT-SH 0.15 kcal/mol; ridge 0.1; all-atom QM scan CM-CM-CT-SH, CT-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "CH-C7-CT-SH",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    0.8309,
+    -0.5587,
+    0.5907,
+    0.586
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-C2-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-SH 0.16, CT-CM-CT-SH 0.15 kcal/mol; ridge 0.1; all-atom QM scan CM-CM-CT-SH, CT-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "CH-C8-C2-SH",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    0.8309,
+    -0.5587,
+    0.5907,
+    0.586
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-C2-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-SH 0.16, CT-CM-CT-SH 0.15 kcal/mol; ridge 0.1; all-atom QM scan CM-CM-CT-SH, CT-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "CH-C8-CH-SH",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    0.8309,
+    -0.5587,
+    0.5907,
+    0.586
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-C2-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-SH 0.16, CT-CM-CT-SH 0.15 kcal/mol; ridge 0.1; all-atom QM scan CM-CM-CT-SH, CT-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "CH-C8-CT-SH",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    0.8309,
+    -0.5587,
+    0.5907,
+    0.586
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-C2-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-SH 0.16, CT-CM-CT-SH 0.15 kcal/mol; ridge 0.1; all-atom QM scan CM-CM-CT-SH, CT-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "CT-C7-C2-SH",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    0.8309,
+    -0.5587,
+    0.5907,
+    0.586
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-C2-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-SH 0.16, CT-CM-CT-SH 0.15 kcal/mol; ridge 0.1; all-atom QM scan CM-CM-CT-SH, CT-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "CT-C7-CH-SH",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    0.8309,
+    -0.5587,
+    0.5907,
+    0.586
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-C2-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-SH 0.16, CT-CM-CT-SH 0.15 kcal/mol; ridge 0.1; all-atom QM scan CM-CM-CT-SH, CT-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "CT-C7-CT-SH",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    0.8309,
+    -0.5587,
+    0.5907,
+    0.586
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-C2-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-SH 0.16, CT-CM-CT-SH 0.15 kcal/mol; ridge 0.1; all-atom QM scan CM-CM-CT-SH, CT-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "CT-C8-C2-SH",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    0.8309,
+    -0.5587,
+    0.5907,
+    0.586
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-C2-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-SH 0.16, CT-CM-CT-SH 0.15 kcal/mol; ridge 0.1; all-atom QM scan CM-CM-CT-SH, CT-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "CT-C8-CH-SH",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    0.8309,
+    -0.5587,
+    0.5907,
+    0.586
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-C2-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-SH 0.16, CT-CM-CT-SH 0.15 kcal/mol; ridge 0.1; all-atom QM scan CM-CM-CT-SH, CT-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "CT-C8-CT-SH",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    0.8309,
+    -0.5587,
+    0.5907,
+    0.586
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-C2-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-SH 0.16, CT-CM-CT-SH 0.15 kcal/mol; ridge 0.1; all-atom QM scan CM-CM-CT-SH, CT-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C7-C2-C2-S~",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    2.9374,
+    -0.3552,
+    2.9847,
+    -0.107
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C8-C2-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-S 1.57 kcal/mol; ridge 0.1; all-atom QM scan CM-CT-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C7-C2-CH-S~",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    2.9374,
+    -0.3552,
+    2.9847,
+    -0.107
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C8-C2-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-S 1.57 kcal/mol; ridge 0.1; all-atom QM scan CM-CT-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C7-C2-CT-S~",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    2.9374,
+    -0.3552,
+    2.9847,
+    -0.107
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C8-C2-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-S 1.57 kcal/mol; ridge 0.1; all-atom QM scan CM-CT-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C7-CH-C2-S~",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    2.9374,
+    -0.3552,
+    2.9847,
+    -0.107
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C8-C2-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-S 1.57 kcal/mol; ridge 0.1; all-atom QM scan CM-CT-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C7-CH-CH-S~",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    2.9374,
+    -0.3552,
+    2.9847,
+    -0.107
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C8-C2-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-S 1.57 kcal/mol; ridge 0.1; all-atom QM scan CM-CT-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C7-CH-CT-S~",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    2.9374,
+    -0.3552,
+    2.9847,
+    -0.107
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C8-C2-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-S 1.57 kcal/mol; ridge 0.1; all-atom QM scan CM-CT-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C7-CT-C2-S~",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    2.9374,
+    -0.3552,
+    2.9847,
+    -0.107
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C8-C2-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-S 1.57 kcal/mol; ridge 0.1; all-atom QM scan CM-CT-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C7-CT-CH-S~",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    2.9374,
+    -0.3552,
+    2.9847,
+    -0.107
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C8-C2-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-S 1.57 kcal/mol; ridge 0.1; all-atom QM scan CM-CT-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C7-CT-CT-S~",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    2.9374,
+    -0.3552,
+    2.9847,
+    -0.107
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C8-C2-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-S 1.57 kcal/mol; ridge 0.1; all-atom QM scan CM-CT-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C8-C2-C2-S~",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    2.9374,
+    -0.3552,
+    2.9847,
+    -0.107
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C8-C2-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-S 1.57 kcal/mol; ridge 0.1; all-atom QM scan CM-CT-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C8-C2-CT-S~",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    2.9374,
+    -0.3552,
+    2.9847,
+    -0.107
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C8-C2-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-S 1.57 kcal/mol; ridge 0.1; all-atom QM scan CM-CT-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C8-CH-C2-S~",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    2.9374,
+    -0.3552,
+    2.9847,
+    -0.107
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C8-C2-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-S 1.57 kcal/mol; ridge 0.1; all-atom QM scan CM-CT-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C8-CH-CH-S~",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    2.9374,
+    -0.3552,
+    2.9847,
+    -0.107
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C8-C2-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-S 1.57 kcal/mol; ridge 0.1; all-atom QM scan CM-CT-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C8-CH-CT-S~",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    2.9374,
+    -0.3552,
+    2.9847,
+    -0.107
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C8-C2-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-S 1.57 kcal/mol; ridge 0.1; all-atom QM scan CM-CT-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C8-CT-C2-S~",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    2.9374,
+    -0.3552,
+    2.9847,
+    -0.107
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C8-C2-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-S 1.57 kcal/mol; ridge 0.1; all-atom QM scan CM-CT-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C8-CT-CH-S~",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    2.9374,
+    -0.3552,
+    2.9847,
+    -0.107
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C8-C2-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-S 1.57 kcal/mol; ridge 0.1; all-atom QM scan CM-CT-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C8-CT-CT-S~",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    2.9374,
+    -0.3552,
+    2.9847,
+    -0.107
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C8-C2-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-S 1.57 kcal/mol; ridge 0.1; all-atom QM scan CM-CT-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C7-C2-C2-SH",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    4.9279,
+    0.846,
+    1.2927,
+    -0.328
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C7-C2-CH-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-SH 1.48 kcal/mol; ridge 0.1; all-atom QM scan CM-CT-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C7-C2-CT-SH",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    4.9279,
+    0.846,
+    1.2927,
+    -0.328
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C7-C2-CH-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-SH 1.48 kcal/mol; ridge 0.1; all-atom QM scan CM-CT-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C7-CH-C2-SH",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    4.9279,
+    0.846,
+    1.2927,
+    -0.328
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C7-C2-CH-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-SH 1.48 kcal/mol; ridge 0.1; all-atom QM scan CM-CT-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C7-CH-CH-SH",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    4.9279,
+    0.846,
+    1.2927,
+    -0.328
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C7-C2-CH-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-SH 1.48 kcal/mol; ridge 0.1; all-atom QM scan CM-CT-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C7-CH-CT-SH",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    4.9279,
+    0.846,
+    1.2927,
+    -0.328
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C7-C2-CH-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-SH 1.48 kcal/mol; ridge 0.1; all-atom QM scan CM-CT-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C7-CT-C2-SH",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    4.9279,
+    0.846,
+    1.2927,
+    -0.328
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C7-C2-CH-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-SH 1.48 kcal/mol; ridge 0.1; all-atom QM scan CM-CT-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C7-CT-CH-SH",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    4.9279,
+    0.846,
+    1.2927,
+    -0.328
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C7-C2-CH-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-SH 1.48 kcal/mol; ridge 0.1; all-atom QM scan CM-CT-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C7-CT-CT-SH",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    4.9279,
+    0.846,
+    1.2927,
+    -0.328
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C7-C2-CH-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-SH 1.48 kcal/mol; ridge 0.1; all-atom QM scan CM-CT-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C8-C2-C2-SH",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    4.9279,
+    0.846,
+    1.2927,
+    -0.328
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C7-C2-CH-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-SH 1.48 kcal/mol; ridge 0.1; all-atom QM scan CM-CT-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C8-C2-CH-SH",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    4.9279,
+    0.846,
+    1.2927,
+    -0.328
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C7-C2-CH-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-SH 1.48 kcal/mol; ridge 0.1; all-atom QM scan CM-CT-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C8-C2-CT-SH",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    4.9279,
+    0.846,
+    1.2927,
+    -0.328
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C7-C2-CH-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-SH 1.48 kcal/mol; ridge 0.1; all-atom QM scan CM-CT-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C8-CH-C2-SH",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    4.9279,
+    0.846,
+    1.2927,
+    -0.328
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C7-C2-CH-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-SH 1.48 kcal/mol; ridge 0.1; all-atom QM scan CM-CT-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C8-CH-CH-SH",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    4.9279,
+    0.846,
+    1.2927,
+    -0.328
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C7-C2-CH-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-SH 1.48 kcal/mol; ridge 0.1; all-atom QM scan CM-CT-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C8-CH-CT-SH",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    4.9279,
+    0.846,
+    1.2927,
+    -0.328
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C7-C2-CH-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-SH 1.48 kcal/mol; ridge 0.1; all-atom QM scan CM-CT-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C8-CT-C2-SH",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    4.9279,
+    0.846,
+    1.2927,
+    -0.328
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C7-C2-CH-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-SH 1.48 kcal/mol; ridge 0.1; all-atom QM scan CM-CT-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C8-CT-CH-SH",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    4.9279,
+    0.846,
+    1.2927,
+    -0.328
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C7-C2-CH-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-SH 1.48 kcal/mol; ridge 0.1; all-atom QM scan CM-CT-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C8-CT-CT-SH",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    4.9279,
+    0.846,
+    1.2927,
+    -0.328
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C7-C2-CH-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-SH 1.48 kcal/mol; ridge 0.1; all-atom QM scan CM-CT-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C3-C7-C2-S~",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    0.4072,
+    0.7211,
+    0.5701,
+    0.6029
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CT-CM-CT-S 1.04 kcal/mol; ridge 0.1; all-atom QM scan CT-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C3-C7-CT-S~",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    0.4072,
+    0.7211,
+    0.5701,
+    0.6029
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CT-CM-CT-S 1.04 kcal/mol; ridge 0.1; all-atom QM scan CT-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C3-C8-C2-S~",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    0.4072,
+    0.7211,
+    0.5701,
+    0.6029
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CT-CM-CT-S 1.04 kcal/mol; ridge 0.1; all-atom QM scan CT-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C3-C8-CH-S~",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    0.4072,
+    0.7211,
+    0.5701,
+    0.6029
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CT-CM-CT-S 1.04 kcal/mol; ridge 0.1; all-atom QM scan CT-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C3-C8-CT-S~",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    0.4072,
+    0.7211,
+    0.5701,
+    0.6029
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CT-CM-CT-S 1.04 kcal/mol; ridge 0.1; all-atom QM scan CT-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C2-C7-C2-S~",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    0.4072,
+    0.7211,
+    0.5701,
+    0.6029
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CT-CM-CT-S 1.04 kcal/mol; ridge 0.1; all-atom QM scan CT-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C2-C7-CH-S~",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    0.4072,
+    0.7211,
+    0.5701,
+    0.6029
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CT-CM-CT-S 1.04 kcal/mol; ridge 0.1; all-atom QM scan CT-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C2-C7-CT-S~",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    0.4072,
+    0.7211,
+    0.5701,
+    0.6029
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CT-CM-CT-S 1.04 kcal/mol; ridge 0.1; all-atom QM scan CT-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C2-C8-C2-S~",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    0.4072,
+    0.7211,
+    0.5701,
+    0.6029
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CT-CM-CT-S 1.04 kcal/mol; ridge 0.1; all-atom QM scan CT-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C2-C8-CH-S~",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    0.4072,
+    0.7211,
+    0.5701,
+    0.6029
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CT-CM-CT-S 1.04 kcal/mol; ridge 0.1; all-atom QM scan CT-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C2-C8-CT-S~",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    0.4072,
+    0.7211,
+    0.5701,
+    0.6029
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CT-CM-CT-S 1.04 kcal/mol; ridge 0.1; all-atom QM scan CT-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "CH-C7-C2-S~",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    0.4072,
+    0.7211,
+    0.5701,
+    0.6029
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CT-CM-CT-S 1.04 kcal/mol; ridge 0.1; all-atom QM scan CT-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "CH-C7-CH-S~",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    0.4072,
+    0.7211,
+    0.5701,
+    0.6029
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CT-CM-CT-S 1.04 kcal/mol; ridge 0.1; all-atom QM scan CT-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "CH-C7-CT-S~",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    0.4072,
+    0.7211,
+    0.5701,
+    0.6029
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CT-CM-CT-S 1.04 kcal/mol; ridge 0.1; all-atom QM scan CT-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "CH-C8-C2-S~",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    0.4072,
+    0.7211,
+    0.5701,
+    0.6029
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CT-CM-CT-S 1.04 kcal/mol; ridge 0.1; all-atom QM scan CT-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "CH-C8-CH-S~",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    0.4072,
+    0.7211,
+    0.5701,
+    0.6029
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CT-CM-CT-S 1.04 kcal/mol; ridge 0.1; all-atom QM scan CT-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "CH-C8-CT-S~",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    0.4072,
+    0.7211,
+    0.5701,
+    0.6029
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CT-CM-CT-S 1.04 kcal/mol; ridge 0.1; all-atom QM scan CT-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "CT-C7-C2-S~",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    0.4072,
+    0.7211,
+    0.5701,
+    0.6029
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CT-CM-CT-S 1.04 kcal/mol; ridge 0.1; all-atom QM scan CT-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "CT-C7-CH-S~",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    0.4072,
+    0.7211,
+    0.5701,
+    0.6029
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CT-CM-CT-S 1.04 kcal/mol; ridge 0.1; all-atom QM scan CT-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "CT-C7-CT-S~",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    0.4072,
+    0.7211,
+    0.5701,
+    0.6029
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CT-CM-CT-S 1.04 kcal/mol; ridge 0.1; all-atom QM scan CT-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "CT-C8-C2-S~",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    0.4072,
+    0.7211,
+    0.5701,
+    0.6029
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CT-CM-CT-S 1.04 kcal/mol; ridge 0.1; all-atom QM scan CT-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "CT-C8-CH-S~",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    0.4072,
+    0.7211,
+    0.5701,
+    0.6029
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CT-CM-CT-S 1.04 kcal/mol; ridge 0.1; all-atom QM scan CT-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "CT-C8-CT-S~",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    0.4072,
+    0.7211,
+    0.5701,
+    0.6029
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C7-CH-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CT-CM-CT-S 1.04 kcal/mol; ridge 0.1; all-atom QM scan CT-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C7-C7-C2-SH",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    2.8487,
+    -1.3743,
+    -0.6473,
+    -0.4039
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C7-C8-CH-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS HC-CM-CT-SH 0.74 kcal/mol; ridge 0.1; all-atom QM scan HC-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C7-C7-CH-SH",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    2.8487,
+    -1.3743,
+    -0.6473,
+    -0.4039
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C7-C8-CH-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS HC-CM-CT-SH 0.74 kcal/mol; ridge 0.1; all-atom QM scan HC-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C7-C7-CT-SH",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    2.8487,
+    -1.3743,
+    -0.6473,
+    -0.4039
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C7-C8-CH-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS HC-CM-CT-SH 0.74 kcal/mol; ridge 0.1; all-atom QM scan HC-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C7-C8-C2-SH",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    2.8487,
+    -1.3743,
+    -0.6473,
+    -0.4039
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C7-C8-CH-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS HC-CM-CT-SH 0.74 kcal/mol; ridge 0.1; all-atom QM scan HC-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C7-C8-CT-SH",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    2.8487,
+    -1.3743,
+    -0.6473,
+    -0.4039
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C7-C8-CH-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS HC-CM-CT-SH 0.74 kcal/mol; ridge 0.1; all-atom QM scan HC-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C8-C7-CH-SH",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    2.8487,
+    -1.3743,
+    -0.6473,
+    -0.4039
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C7-C8-CH-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS HC-CM-CT-SH 0.74 kcal/mol; ridge 0.1; all-atom QM scan HC-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C8-C7-CT-SH",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    2.8487,
+    -1.3743,
+    -0.6473,
+    -0.4039
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C7-C8-CH-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS HC-CM-CT-SH 0.74 kcal/mol; ridge 0.1; all-atom QM scan HC-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C8-C8-C2-SH",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    2.8487,
+    -1.3743,
+    -0.6473,
+    -0.4039
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C7-C8-CH-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS HC-CM-CT-SH 0.74 kcal/mol; ridge 0.1; all-atom QM scan HC-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C8-C8-CH-SH",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    2.8487,
+    -1.3743,
+    -0.6473,
+    -0.4039
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C7-C8-CH-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS HC-CM-CT-SH 0.74 kcal/mol; ridge 0.1; all-atom QM scan HC-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C8-C8-CT-SH",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    2.8487,
+    -1.3743,
+    -0.6473,
+    -0.4039
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C7-C8-CH-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS HC-CM-CT-SH 0.74 kcal/mol; ridge 0.1; all-atom QM scan HC-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C9-C7-C2-SH",
+   "match": [
+    "*_b*_a*_dC9_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    2.8487,
+    -1.3743,
+    -0.6473,
+    -0.4039
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C7-C8-CH-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS HC-CM-CT-SH 0.74 kcal/mol; ridge 0.1; all-atom QM scan HC-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C9-C7-CH-SH",
+   "match": [
+    "*_b*_a*_dC9_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    2.8487,
+    -1.3743,
+    -0.6473,
+    -0.4039
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C7-C8-CH-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS HC-CM-CT-SH 0.74 kcal/mol; ridge 0.1; all-atom QM scan HC-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C9-C7-CT-SH",
+   "match": [
+    "*_b*_a*_dC9_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    2.8487,
+    -1.3743,
+    -0.6473,
+    -0.4039
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C7-C8-CH-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS HC-CM-CT-SH 0.74 kcal/mol; ridge 0.1; all-atom QM scan HC-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C9-C8-C2-SH",
+   "match": [
+    "*_b*_a*_dC9_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    2.8487,
+    -1.3743,
+    -0.6473,
+    -0.4039
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C7-C8-CH-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS HC-CM-CT-SH 0.74 kcal/mol; ridge 0.1; all-atom QM scan HC-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C9-C8-CH-SH",
+   "match": [
+    "*_b*_a*_dC9_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    2.8487,
+    -1.3743,
+    -0.6473,
+    -0.4039
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C7-C8-CH-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS HC-CM-CT-SH 0.74 kcal/mol; ridge 0.1; all-atom QM scan HC-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C9-C8-CT-SH",
+   "match": [
+    "*_b*_a*_dC9_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dSH_i*"
+   ],
+   "params": [
+    2.8487,
+    -1.3743,
+    -0.6473,
+    -0.4039
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C7-C8-CH-SH fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS HC-CM-CT-SH 0.74 kcal/mol; ridge 0.1; all-atom QM scan HC-CM-CT-SH, MM with OPLS-UA"
+  },
+  {
+   "name": "C7-C7-C2-S~",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.606,
+    0.0343,
+    -2.8834,
+    0.2444
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C9-C8-C2-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-S 0.28 kcal/mol; ridge 0.001; all-atom QM scan CM-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C7-C7-CH-S~",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.606,
+    0.0343,
+    -2.8834,
+    0.2444
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C9-C8-C2-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-S 0.28 kcal/mol; ridge 0.001; all-atom QM scan CM-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C7-C7-CT-S~",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.606,
+    0.0343,
+    -2.8834,
+    0.2444
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C9-C8-C2-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-S 0.28 kcal/mol; ridge 0.001; all-atom QM scan CM-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C7-C8-C2-S~",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.606,
+    0.0343,
+    -2.8834,
+    0.2444
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C9-C8-C2-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-S 0.28 kcal/mol; ridge 0.001; all-atom QM scan CM-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C7-C8-CH-S~",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.606,
+    0.0343,
+    -2.8834,
+    0.2444
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C9-C8-C2-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-S 0.28 kcal/mol; ridge 0.001; all-atom QM scan CM-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C7-C8-CT-S~",
+   "match": [
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.606,
+    0.0343,
+    -2.8834,
+    0.2444
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C9-C8-C2-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-S 0.28 kcal/mol; ridge 0.001; all-atom QM scan CM-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C8-C7-C2-S~",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.606,
+    0.0343,
+    -2.8834,
+    0.2444
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C9-C8-C2-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-S 0.28 kcal/mol; ridge 0.001; all-atom QM scan CM-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C8-C7-CT-S~",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.606,
+    0.0343,
+    -2.8834,
+    0.2444
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C9-C8-C2-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-S 0.28 kcal/mol; ridge 0.001; all-atom QM scan CM-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C8-C8-C2-S~",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.606,
+    0.0343,
+    -2.8834,
+    0.2444
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C9-C8-C2-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-S 0.28 kcal/mol; ridge 0.001; all-atom QM scan CM-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C8-C8-CH-S~",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.606,
+    0.0343,
+    -2.8834,
+    0.2444
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C9-C8-C2-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-S 0.28 kcal/mol; ridge 0.001; all-atom QM scan CM-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C8-C8-CT-S~",
+   "match": [
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.606,
+    0.0343,
+    -2.8834,
+    0.2444
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C9-C8-C2-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-S 0.28 kcal/mol; ridge 0.001; all-atom QM scan CM-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C9-C7-C2-S~",
+   "match": [
+    "*_b*_a*_dC9_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.606,
+    0.0343,
+    -2.8834,
+    0.2444
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C9-C8-C2-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-S 0.28 kcal/mol; ridge 0.001; all-atom QM scan CM-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C9-C7-CH-S~",
+   "match": [
+    "*_b*_a*_dC9_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.606,
+    0.0343,
+    -2.8834,
+    0.2444
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C9-C8-C2-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-S 0.28 kcal/mol; ridge 0.001; all-atom QM scan CM-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C9-C7-CT-S~",
+   "match": [
+    "*_b*_a*_dC9_i*",
+    "*_b*_a*_dC7_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.606,
+    0.0343,
+    -2.8834,
+    0.2444
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C9-C8-C2-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-S 0.28 kcal/mol; ridge 0.001; all-atom QM scan CM-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C9-C8-CH-S~",
+   "match": [
+    "*_b*_a*_dC9_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.606,
+    0.0343,
+    -2.8834,
+    0.2444
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C9-C8-C2-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-S 0.28 kcal/mol; ridge 0.001; all-atom QM scan CM-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "C9-C8-CT-S~",
+   "match": [
+    "*_b*_a*_dC9_i*",
+    "*_b*_a*_dC8_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.606,
+    0.0343,
+    -2.8834,
+    0.2444
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C9-C8-C2-S~ fit for any carbon of the same kind; CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-S 0.28 kcal/mol; ridge 0.001; all-atom QM scan CM-CM-CT-S, MM with OPLS-UA"
+  },
+  {
+   "name": "HS-SH-S~-S~",
+   "match": [
+    "*_b*_a*_dHS_i*",
+    "*_b*_a*_dSH_i*",
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    1.0304,
+    -5.4084,
+    0.7829,
+    0.3561
+   ],
+   "comment": "CAPS's QM fit in OPLS-AA 2024 (bench/ff/open/oplsaa2024_supplement.json): by_analogy: HS-S-S-S, MP2/cc-pVTZ//HF/6-31G** scan of HSSSH-type fragment (sulfur and H only, the same sites in the united-atom model)"
+  },
+  {
+   "name": "C3-C2-C2-S~",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "comment": "CAPS fit (QM): MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA"
+  },
+  {
+   "name": "C3-C2-CH-S~",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C2-C2-S~ fit for any carbon of the same kind; MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA"
+  },
+  {
+   "name": "C3-C2-CT-S~",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C2-C2-S~ fit for any carbon of the same kind; MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA"
+  },
+  {
+   "name": "C3-CH-C2-S~",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C2-C2-S~ fit for any carbon of the same kind; MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA"
+  },
+  {
+   "name": "C3-CH-CH-S~",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C2-C2-S~ fit for any carbon of the same kind; MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA"
+  },
+  {
+   "name": "C3-CH-CT-S~",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C2-C2-S~ fit for any carbon of the same kind; MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA"
+  },
+  {
+   "name": "C3-CT-C2-S~",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C2-C2-S~ fit for any carbon of the same kind; MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA"
+  },
+  {
+   "name": "C3-CT-CH-S~",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C2-C2-S~ fit for any carbon of the same kind; MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA"
+  },
+  {
+   "name": "C3-CT-CT-S~",
+   "match": [
+    "*_b*_a*_dC3_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C2-C2-S~ fit for any carbon of the same kind; MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA"
+  },
+  {
+   "name": "C2-C2-C2-S~",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C2-C2-S~ fit for any carbon of the same kind; MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA"
+  },
+  {
+   "name": "C2-C2-CH-S~",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C2-C2-S~ fit for any carbon of the same kind; MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA"
+  },
+  {
+   "name": "C2-C2-CT-S~",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C2-C2-S~ fit for any carbon of the same kind; MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA"
+  },
+  {
+   "name": "C2-CH-C2-S~",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C2-C2-S~ fit for any carbon of the same kind; MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA"
+  },
+  {
+   "name": "C2-CH-CH-S~",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C2-C2-S~ fit for any carbon of the same kind; MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA"
+  },
+  {
+   "name": "C2-CH-CT-S~",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C2-C2-S~ fit for any carbon of the same kind; MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA"
+  },
+  {
+   "name": "C2-CT-C2-S~",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C2-C2-S~ fit for any carbon of the same kind; MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA"
+  },
+  {
+   "name": "C2-CT-CH-S~",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C2-C2-S~ fit for any carbon of the same kind; MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA"
+  },
+  {
+   "name": "C2-CT-CT-S~",
+   "match": [
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C2-C2-S~ fit for any carbon of the same kind; MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA"
+  },
+  {
+   "name": "CH-C2-C2-S~",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C2-C2-S~ fit for any carbon of the same kind; MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA"
+  },
+  {
+   "name": "CH-C2-CH-S~",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C2-C2-S~ fit for any carbon of the same kind; MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA"
+  },
+  {
+   "name": "CH-C2-CT-S~",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C2-C2-S~ fit for any carbon of the same kind; MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA"
+  },
+  {
+   "name": "CH-CH-C2-S~",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C2-C2-S~ fit for any carbon of the same kind; MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA"
+  },
+  {
+   "name": "CH-CH-CH-S~",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C2-C2-S~ fit for any carbon of the same kind; MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA"
+  },
+  {
+   "name": "CH-CH-CT-S~",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C2-C2-S~ fit for any carbon of the same kind; MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA"
+  },
+  {
+   "name": "CH-CT-C2-S~",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C2-C2-S~ fit for any carbon of the same kind; MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA"
+  },
+  {
+   "name": "CH-CT-CH-S~",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C2-C2-S~ fit for any carbon of the same kind; MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA"
+  },
+  {
+   "name": "CH-CT-CT-S~",
+   "match": [
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C2-C2-S~ fit for any carbon of the same kind; MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA"
+  },
+  {
+   "name": "CT-C2-C2-S~",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C2-C2-S~ fit for any carbon of the same kind; MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA"
+  },
+  {
+   "name": "CT-C2-CH-S~",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C2-C2-S~ fit for any carbon of the same kind; MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA"
+  },
+  {
+   "name": "CT-C2-CT-S~",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C2-C2-S~ fit for any carbon of the same kind; MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA"
+  },
+  {
+   "name": "CT-CH-C2-S~",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C2-C2-S~ fit for any carbon of the same kind; MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA"
+  },
+  {
+   "name": "CT-CH-CH-S~",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C2-C2-S~ fit for any carbon of the same kind; MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA"
+  },
+  {
+   "name": "CT-CH-CT-S~",
+   "match": [
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C2-C2-S~ fit for any carbon of the same kind; MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA"
+  },
+  {
+   "name": "S~-C2-C2-S~",
+   "match": [
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C2-C2-S~ fit (dipropyl sulfide) for a C-C bond with a sulfur on each carbon; MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA"
+  },
+  {
+   "name": "S~-C2-CH-S~",
+   "match": [
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C2-C2-S~ fit (dipropyl sulfide) for a C-C bond with a sulfur on each carbon; MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA"
+  },
+  {
+   "name": "S~-C2-CT-S~",
+   "match": [
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dC2_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C2-C2-S~ fit (dipropyl sulfide) for a C-C bond with a sulfur on each carbon; MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA"
+  },
+  {
+   "name": "S~-CH-CH-S~",
+   "match": [
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C2-C2-S~ fit (dipropyl sulfide) for a C-C bond with a sulfur on each carbon; MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA"
+  },
+  {
+   "name": "S~-CH-CT-S~",
+   "match": [
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCH_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C2-C2-S~ fit (dipropyl sulfide) for a C-C bond with a sulfur on each carbon; MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA"
+  },
+  {
+   "name": "S~-CT-CT-S~",
+   "match": [
+    "*_b*_a*_dS~_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dCT_i*",
+    "*_b*_a*_dS~_i*"
+   ],
+   "params": [
+    -1.2194,
+    0.2021,
+    3.4215,
+    -0.475
+   ],
+   "comment": "CAPS fit (QM): by_analogy: the C3-C2-C2-S~ fit (dipropyl sulfide) for a C-C bond with a sulfur on each carbon; MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L), 24-point scan of a 15-atom fragment, RMS 0.20 kcal/mol; all-atom QM scan 68_bC3_aC3_dC3_iC3-71_bC2_aC2_dC2_iC2-91_bC2_aC2_dC2_iC2-84_bS~_aS~_dS~_iS~, MM with OPLS-UA"
   }
  ],
  "typing": "../typing/oplsua2024.typing.json"

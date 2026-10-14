@@ -2566,6 +2566,150 @@
    ],
    "source": "CAPS fit (QM)",
    "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS HS-S-S-HS 0.00 kcal/mol; ridge 0.001; fragment HS-S-S-HS"
+  },
+  {
+   "match": [
+    "CM",
+    "CM",
+    "CT",
+    "SH"
+   ],
+   "params": [
+    0.1396,
+    0.517,
+    -1.6569,
+    0.0541
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 3 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-SH 0.19, CT-CM-CT-SH 0.17, HC-CM-CT-SH 0.79 kcal/mol; ridge 0.001; fragment CM-CM-CT-SH, CT-CM-CT-SH, HC-CM-CT-SH"
+  },
+  {
+   "match": [
+    "CT",
+    "CM",
+    "CT",
+    "SH"
+   ],
+   "params": [
+    6.0538,
+    -0.2733,
+    0.7395,
+    0.1658
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-CT-SH 0.19, CT-CM-CT-SH 0.17 kcal/mol; ridge 0.001; fragment CM-CM-CT-SH, CT-CM-CT-SH"
+  },
+  {
+   "match": [
+    "CM",
+    "CT",
+    "CT",
+    "S"
+   ],
+   "params": [
+    1.1415,
+    -0.6954,
+    0.3864,
+    -0.2532
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-S 0.60 kcal/mol; ridge 0.001; fragment CM-CT-CT-S"
+  },
+  {
+   "match": [
+    "CM",
+    "CT",
+    "CT",
+    "SH"
+   ],
+   "params": [
+    -1.0359,
+    1.3806,
+    -0.4478,
+    -0.8092
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-SH 0.26 kcal/mol; ridge 0.001; fragment CM-CT-CT-SH"
+  },
+  {
+   "match": [
+    "CM",
+    "CT",
+    "SH",
+    "HS"
+   ],
+   "params": [
+    -1.3991,
+    -0.0432,
+    0.3064,
+    -0.051
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-SH-HS 0.33 kcal/mol; ridge 0.001; fragment CM-CT-SH-HS"
+  },
+  {
+   "match": [
+    "CT",
+    "CM",
+    "CT",
+    "S"
+   ],
+   "params": [
+    4.4387,
+    1.9658,
+    0.074,
+    0.289
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CT-CM-CT-S 0.55 kcal/mol; ridge 0.001; fragment CT-CM-CT-S"
+  },
+  {
+   "match": [
+    "HS",
+    "S",
+    "S",
+    "S"
+   ],
+   "params": [
+    1.0304,
+    -5.4084,
+    0.7829,
+    0.3561
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS HS-S-S-S 0.19 kcal/mol; ridge 0.001; fragment HS-S-S-S"
+  },
+  {
+   "match": [
+    "HC",
+    "CM",
+    "CT",
+    "SH"
+   ],
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "zero; the heavy-atom torsions about the same bond carry the profile of a 24-point MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L) scan of a 23-atom fragment (HC-CM-CT-SH, joint fit); fragment HC-CM-CT-SH"
+  },
+  {
+   "match": [
+    "S",
+    "CT",
+    "CT",
+    "S"
+   ],
+   "params": [
+    -1.565,
+    -0.009,
+    -0.45,
+    0.0
+   ],
+   "source": "the 2024 file's CT-CT-CT-S (BOSS type 052, sulfide all-atom, Met OPLS-AA/M)",
+   "reason": "by_analogy: no S-CT-CT-S in the file; a C-C bond with a sulfide S on each carbon (vicinal sulfuration in a sulfur-cured diene) takes the C-C-C-S function; wants a QM scan"
   }
  ],
  "charge_corrections": [
