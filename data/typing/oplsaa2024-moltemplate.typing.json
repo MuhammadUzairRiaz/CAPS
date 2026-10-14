@@ -1655,6 +1655,18 @@
    "description": "thiol S"
   },
   {
+   "type": "201",
+   "smarts": "[SX2H2]",
+   "priority": 6,
+   "description": "S in H2S"
+  },
+  {
+   "type": "205",
+   "smarts": "[H][SX2H2]",
+   "priority": 6,
+   "description": "H in H2S"
+  },
+  {
    "type": "204",
    "smarts": "[H][SX2H1]",
    "priority": 5,

@@ -1800,6 +1800,18 @@
    "description": "thiol S"
   },
   {
+   "type": "opls_201",
+   "smarts": "[SX2H2]",
+   "priority": 6,
+   "description": "S in H2S"
+  },
+  {
+   "type": "opls_205",
+   "smarts": "[H][SX2H2]",
+   "priority": 6,
+   "description": "H in H2S"
+  },
+  {
    "type": "opls_204",
    "smarts": "[H][SX2H1]",
    "priority": 5,
