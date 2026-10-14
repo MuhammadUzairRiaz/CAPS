@@ -185,6 +185,13 @@ add(141, 7, "[CX3H0;$(*[OX2][CX3]=[OX1])]=[CX3]", "vinyl ester C(O)= (R2C=)")
 add("caps_cm_ves", 8, "[CX3H1;$(*[OX2][CX3]=[OX1])]=[CX3]", "vinyl ester C(O)= (RHC=), charged as the phenyl ester C(ipso)", True)
 add("caps_cm_ves0", 8, "[CX3H0;$(*[OX2][CX3]=[OX1])]=[CX3]", "vinyl ester C(O)= (R2C=), charged as the phenyl ester C(ipso)", True)
 add(467, 7, "[OX2;$(O([CX3]=[OX1])[CX3]=[OX1])]", "anhydride -O-")
+# anhydrides: the ester types leave C(=O)-O-C(=O) at -0.170 e. CAPS's own types (classes and Lennard-Jones of 465 / 466 /
+# 467) by 1.27 x CM5 on maleic, succinic and acetic anhydride, the C balancing the group (bench/ff/open/oplsaa2024_supplement.json);
+# an opened anhydride (half-ester, acid) matches none of these and takes the ester and acid types
+ANH = "$(*(=[OX1])[OX2][CX3]=[OX1])"
+add("caps_anh_c", 9, f"[CX3;{ANH}]", "anhydride C=O", True)
+add("caps_anh_o", 9, f"[OX1]=[CX3;{ANH}]", "anhydride =O", True)
+add("caps_anh_os", 9, "[OX2;$(O([CX3]=[OX1])[CX3]=[OX1])]", "anhydride -O-", True)
 add(472, 7, "c[OX2][CX3](=[OX1])[#6,#1]", "phenyl ester C(ipso)")
 by_h((468, 490, 491, 492), 6, "$(*[OX2][CX3](=[OX1])[#6,#1])", "ester alkoxy C")
 add(469, 6, "[H][CX4][OX2][CX3](=[OX1])[#6,#1]", "H on ester alkoxy C")

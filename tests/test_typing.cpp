@@ -618,3 +618,30 @@ TEST(Typing, CompanionChargesFromOpls2005) {
   const ForceField f5 = parameterize(s, o5, t5.types, "types", &r5, false);
   for (size_t i = 0; i < q.size(); ++i) EXPECT_NEAR(q[i], f5.charge[i], 1e-12);
 }
+
+#include "caps/molecule.hpp"
+
+// OPLS-AA 2024 on maleic anhydride (MAH), maleic acid, the maleate esters and the other anhydrides: every atom typed,
+// every term found (CAPS's QM fits for the maleate torsions, the CM-C-OH bend and the MAH ring torsion) and each
+// molecule neutral (the anhydride's own caps_anh_* charges; the ester types 465-467 leave it at -0.17 e). An opened
+// anhydride, the half-ester, takes the ordinary ester and acid types again
+TEST(Typing, OplsAa2024MaleateComplete) {
+  const FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/oplsaa2024.json");
+  for (const std::string smi : {"O=C1C=CC(=O)O1", "OC(=O)/C=C\\C(=O)O", "COC(=O)/C=C\\C(=O)O", "COC(=O)/C=C\\C(=O)OC",
+                                "O=C1CCC(=O)O1", "CC(=O)OC(C)=O", "CCC(C)OC(=O)/C=C\\C(=O)OCCCCO"}) {
+    System s = build_molecule(smi).system;
+    std::string ch = "types";
+    prepare_for_forcefield(s, def, ch);
+    const TypingResult tr = assign_types(s, def);
+    EXPECT_EQ(tr.untyped, 0) << smi;
+    ParamReport rep;
+    const ForceField f = parameterize(s, def, tr.types, ch, &rep, false);
+    EXPECT_TRUE(rep.missing.empty()) << smi << ": " << (rep.missing.empty() ? "" : rep.missing[0]);
+    double q = 0;
+    for (double x : f.charge) q += x;
+    EXPECT_NEAR(q, 0.0, 1e-9) << smi;
+    const bool anhydride = smi.find("O1") != std::string::npos || smi == "CC(=O)OC(C)=O";
+    const bool anh_types = std::any_of(tr.types.begin(), tr.types.end(), [](const std::string& t) { return t.rfind("caps_anh", 0) == 0; });
+    EXPECT_EQ(anh_types, anhydride) << smi;   // the half-ester and the acid: ester and acid types only
+  }
+}

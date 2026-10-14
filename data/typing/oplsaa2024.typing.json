@@ -738,6 +738,24 @@
    "description": "anhydride -O-"
   },
   {
+   "type": "caps_anh_c",
+   "smarts": "[CX3;$(*(=[OX1])[OX2][CX3]=[OX1])]",
+   "priority": 9,
+   "description": "anhydride C=O"
+  },
+  {
+   "type": "caps_anh_o",
+   "smarts": "[OX1]=[CX3;$(*(=[OX1])[OX2][CX3]=[OX1])]",
+   "priority": 9,
+   "description": "anhydride =O"
+  },
+  {
+   "type": "caps_anh_os",
+   "smarts": "[OX2;$(O([CX3]=[OX1])[CX3]=[OX1])]",
+   "priority": 9,
+   "description": "anhydride -O-"
+  },
+  {
    "type": "opls_472",
    "smarts": "c[OX2][CX3](=[OX1])[#6,#1]",
    "priority": 7,
