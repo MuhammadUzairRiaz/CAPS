@@ -266,20 +266,13 @@ struct FFDef {
   // structure without one (same bead types in the same order, same bonds). Loaded with the force field.
   std::string molecule_templates_path;
   std::shared_ptr<const Json> molecule_templates;
-  // Building blocks (force-field file "residue_templates": GROMOS's aminoacids.rtp with its termini, bench/ff/convert_gromos.py):
-  // residues recognised in the structure take their types, charges and every bonded term from the block, as pdb2gmx
-  // applies them (apply_residue_templates)
-  std::shared_ptr<const Json> residue_templates;
   // Every pair's Lennard-Jones terms from a table (force-field file "pair_table": gzip text, "T name mass" and
   // "P a b sigma(nm) epsilon(kJ/mol)"; Martini 3's 355,746 pairs): no mixing rule, a pair not listed has no LJ
   std::string pair_table;
   // stiff bonds for constraints of molecule templates (kJ/mol/nm², "constraint_k")
   double constraint_kj = 1e6;
-  // Martini proteins (typing file "martini_protein": the model's JSON): an all-atom protein becomes beads with the
-  // model's explicit topology (martini22_protein; DSSP for the secondary structure)
-  std::string martini_protein;
   // Martini 3 small molecules (typing file "martini_small_molecules"): all-atom molecules matched by graph to the model's
-  // CHARMM residues become their beads (martini3_small_molecules)
+  // CHARMM residues become their beads (martini3_all_atom)
   std::string martini_small;
   // Bond-order variants (DREIDING): a base type may have variants that differ only in which bonds get which force
   // constant (moltemplate's C_2 / C_2_b1 / C_2_b2, C_R / C_R_b1; the other file's C_2 / C_2S, C_R / C_RS). After the rules,
@@ -360,15 +353,10 @@ struct ParamReport {
 // else QEq) and summed into the sites, so the caller then uses charges "keep" (charges is updated). Returns a note
 // when it converted, "" otherwise.
 std::string prepare_for_forcefield(System& s, const FFDef& ff, std::string& charges);
-// The force field's building blocks (FFDef::residue_templates) on a structure: every residue recognised by its atoms and
-// bonds (elements, connectivity, the links to its neighbours), its atoms named and typed as the block, charges set, and
-// an explicit topology with the block's terms (and those its neighbours list across the link), the exclusions within
-// nrexcl bonds and the 1-4 pairs. Returns a note; throws FFError naming atoms no block covers.
-std::string apply_residue_templates(System& s, const FFDef& ff);
 // Does the force field change the structure before typing (united atom, shells, ionic bonds)?
 inline bool needs_prepare(const FFDef& ff) {
   return ff.united_atom || !ff.shells.empty() || ff.keep_defined_bonds || !ff.unbonded_types.empty() || ff.coarse_grained || !ff.bead_rules.empty() || !ff.bead_groups.empty() ||
-         !ff.martini_protein.empty() || !ff.site_rules.empty();
+         !ff.martini_small.empty() || !ff.site_rules.empty();
 }
 
 // "N atoms match no typing rule of FF", or for a coarse-grained force field that maps atoms onto beads, that they are in

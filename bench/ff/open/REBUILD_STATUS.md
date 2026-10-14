@@ -8,26 +8,32 @@ as an accuracy reference for typing and energies only; no number in a rebuilt li
 State of 2026-10-13 (branch `ff-rebuild-rest`, commits 1053f7a2 and b2ee52e2; the inorganic sets of section 4 on branch
 `inorg-papers`). "Local" means the source is in `~/project/ff-sources/`.
 
+**2026-10-14, removed by decision: CAPS focuses on polymers, crystals and materials.** The biomolecular libraries
+(those that build proteins, nucleic acids, lipids and carbohydrates) left the repository with their typing rules,
+generators and checks: amber-ff03-ambertools, amber-ff14sb-ambertools, gromos54a7-gromacs, martini22-proteins,
+oplsaam-jorgensen, and the typing of the locally built charmm36-prot / -lipid / -nucl / -carb-toppar,
+charmm22-prot-toppar, charmm19-toppar and glycam06j-ambertools. GAFF / GAFF2, CGenFF and the CG models stay.
+
 ## 1. The 32 libraries removed in 860a126b
 
 | removed library | was | rebuilt as | original source | local | licence of the source | status |
 |---|---|---|---|---|---|---|
-| amber | AMBER.par | amber-ff03-ambertools, amber-ff14sb-ambertools | AmberTools 23.6 `dat/leap/parm` (parm99, parm10, frcmod.ff03 / ff14SB / OL15) | yes (`ambertools-23.6`) | public domain | done (other session) |
+| amber | AMBER.par | amber-ff03-ambertools, amber-ff14sb-ambertools | AmberTools 23.6 `dat/leap/parm` (parm99, parm10, frcmod.ff03 / ff14SB / OL15) | yes (`ambertools-23.6`) | public domain | done (other session); removed 2026-10-14 by decision (biomolecular) |
 | gaff-amber16 | AMBER16_gaff.par | gaff-1.81-ambertools | AmberTools `gaff.dat` | yes | public domain | done (other session) |
 | gaff-amber25 | AMBER25_gaff.par | gaff2-2.2.20-ambertools (and gaff2-2.11) | AmberTools `gaff2.dat`, `gaff211.dat` | yes | public domain | done (other session) |
-| charmm | CHARMM.par | charmm36-*-toppar | MacKerell lab `toppar_c36_jul17` | yes (`charmm-toppar-jul17`) | no licence stated: built locally, never committed | done (other session) |
-| charmm19 | CHARMM19.par | charmm19-toppar | `toppar_c36_jul17` (param19 / toph19) | yes | as above | done (other session) |
-| charmm22-prot | CHARMM22_prot.par | charmm22-prot-toppar | `toppar_c36_jul17` | yes | as above | done (other session) |
-| charmm36-carb / -lipid / -nucl / -prot | CHARMM36_*.par | charmm36-carb/-lipid/-nucl/-prot-toppar | `toppar_c36_jul17` | yes | as above | done (other session) |
+| charmm | CHARMM.par | charmm36-*-toppar | MacKerell lab `toppar_c36_jul17` | yes (`charmm-toppar-jul17`) | no licence stated: built locally, never committed | done (other session); removed 2026-10-14 by decision (biomolecular) |
+| charmm19 | CHARMM19.par | charmm19-toppar | `toppar_c36_jul17` (param19 / toph19) | yes | as above | done (other session); removed 2026-10-14 by decision (biomolecular) |
+| charmm22-prot | CHARMM22_prot.par | charmm22-prot-toppar | `toppar_c36_jul17` | yes | as above | done (other session); removed 2026-10-14 by decision (biomolecular) |
+| charmm36-carb / -lipid / -nucl / -prot | CHARMM36_*.par | charmm36-carb/-lipid/-nucl/-prot-toppar | `toppar_c36_jul17` | yes | as above | done (other session); removed 2026-10-14 by decision (biomolecular) |
 | cgenff | CHARMM36_cgenff.par | cgenff-2a5-jcc2010 (published); cgenff-toppar (local only) | v2a5: Supporting Information of Vanommeslaeghe et al., J. Comput. Chem. 31, 671 (2010), doi:10.1002/jcc.21367 (`par_all36_cgenff.prm`, `top_all36_cgenff.rtf`); later versions: `toppar_c36_jul17` (CGenFF 4.x) | yes (`cgenff-jcc2010-si`, `charmm-toppar-jul17`) | SI: the paper's published parameter values; toppar: no licence stated, built locally, never committed | v2a5 built from the paper's SI and published (`bench/ff/open/build_cgenff_si.sh`; SI RTF 7471 / 7505 atoms, 371 / 388 residues as it types them; 388 / 388 residues complete; impropers only where the IMPR records put them, 323 / 323 with 0 extra); later versions (jul17 4.x) local only via toppar |
 | pcff | PCFF.par | pcff-frc | `pcff.frc` | - | - | other session |
 | compass | COMPASS.par | compass-frc | `compass_published.frc`; H. Sun, J. Phys. Chem. B 102, 7338 (1998) | - | - | other session |
 | cvff | CVFF.par | cvff-frc | `cvff.frc` | - | - | other session |
 | dreiding | DREIDING.par | dreiding1990 | Mayo, Olafson & Goddard, J. Phys. Chem. 94, 8897 (1990) | yes (`papers/j100389a010.pdf`) | published parameters | done (other session) |
-| gromos-54a7 | GROMOS_G54A7.par | gromos54a7-gromacs | GROMACS `share/top/gromos54a7.ff` | yes (GROMACS) | LGPL 2.1 | done (other session) |
+| gromos-54a7 | GROMOS_G54A7.par | gromos54a7-gromacs | GROMACS `share/top/gromos54a7.ff` | yes (GROMACS) | LGPL 2.1 | done (other session); removed 2026-10-14 by decision (biomolecular) |
 | opls2005 | OPLS2005.par | oplsaa2024 (and oplsaa-gromacs) | Jorgensen's BOSS files, J. Phys. Chem. B 128, 250 (2024) SI; GROMACS `oplsaa.ff` | yes | SI tables; LGPL 2.1 | other session (OPLS) |
 | opls2020 | OPLS2020.par | oplsaa2024 | as above | yes | as above | other session (OPLS) |
-| opls-aam | OPLS_AAM.par | oplsaam-jorgensen | Jorgensen lab `top_opls_aam.inp`, `par_opls_aam.inp` | yes (`opls-aam`) | CC BY 4.0 | done (other session) |
+| opls-aam | OPLS_AAM.par | oplsaam-jorgensen | Jorgensen lab `top_opls_aam.inp`, `par_opls_aam.inp` | yes (`opls-aam`) | CC BY 4.0 | done (other session); removed 2026-10-14 by decision (biomolecular) |
 | opls-clp | OPLS_CL_P.par | clandp | Padua's `il.ff` (github.com/paduagroup/clandp) | yes (`clandp-dl` is the reference only) | MIT | other session (CL&P) |
 | opls-des | OPLS_DES.par | oplsdes-doherty2018 (the set DL_FIELD's file held); clandp-des (CL&P's DES set) | oplsdes-doherty2018: Doherty & Acevedo, J. Phys. Chem. B 122, 9982 (2018) and its SI (Tables S1-S6, Schemes S1-S2), transcribed; Acevedo's own GROMACS files (github.com/orlandoacevedo/DES, GPL 3, local in `opls-des-dl/DES-master`) are an accuracy reference only, nothing taken from them. clandp-des: Padua's `des.ff` of 2025/12/19 (github.com/paduagroup/clandp) | yes (`papers/jp8b06647.pdf`, `papers/jp8b06647_si_001.pdf`, `papers/jp109914s.pdf` (its ref. 3); `clandp-dl/clandp-master/des.ff`) | published parameters; MIT | done (section 3) |
 | trappe-ua | TRAPPE_UA.par | trappe-ua-umn, trappe-ua-foyer | TraPPE database (trappe.oit.umn.edu); foyer `trappe-ua.xml`; the transferable tables of Martin & Siepmann 1998, 1999, Wick, Martin & Siepmann 2000, Chen, Potoff & Siepmann 2001, Stubbs, Potoff & Siepmann 2004 and Keasler et al. 2012 | yes (`trappe-site`, `foyer-trappe`, `papers/jp972543+.pdf`, `jp984742e.pdf`, `jp001044x.pdf`, `jp003882x.pdf`, `jp049459w.pdf`, `jp302975c.pdf`) | published parameters; MIT (foyer) | done (other session); transferable terms **added here** |
@@ -52,11 +58,10 @@ per-paper libraries above.
 |---|---|---|---|
 | pcff-frc, cvff-frc, compass-frc | BIOVIA `.frc` files (`pcff.frc`, `cvff.frc`, `compass_published.frc`) | handled by the class II session | other session |
 | iff-pcff, iff-cvff | INTERFACE FF 1.5 `.frc` files (Heinz et al., Langmuir 29, 1754 (2013)) | as distributed by the Heinz group | original source |
-| gaff-1.81-ambertools, gaff2-2.11-ambertools, gaff2-2.2.20-ambertools, amber-ff03-ambertools, amber-ff14sb-ambertools | AmberTools 23.6 `dat/leap/parm` | public domain | original source |
-| oplsaa-gromacs, gromos54a7-gromacs | GROMACS `oplsaa.ff`, `gromos54a7.ff` | LGPL 2.1 | original source |
+| gaff-1.81-ambertools, gaff2-2.11-ambertools, gaff2-2.2.20-ambertools | AmberTools 23.6 `dat/leap/parm` | public domain | original source |
+| oplsaa-gromacs | GROMACS `oplsaa.ff` | LGPL 2.1 | original source |
 | oplsaa2024, oplsua2024 | Jorgensen's BOSS files (J. Phys. Chem. B 128, 250 (2024) SI) | published SI tables | original source (OPLS session) |
 | **oplsua2024 (1984, 1986, 1990 terms)** | the hydrocarbon, alcohol and ether terms the 2024 file lacks, from Jorgensen, Madura & Swenson, J. Am. Chem. Soc. 106, 6638 (1984), Tables I and II; Jorgensen, J. Phys. Chem. 90, 1276 (1986), Tables II and III; Briggs, Matsui & Jorgensen, J. Comput. Chem. 11, 958 (1990), Table II and p. 960 (`bench/ff/open/oplsua2024_supplement.json`) | published parameters | original source |
-| oplsaam-jorgensen | Jorgensen lab CHARMM-format files | CC BY 4.0 | original source |
 | clandp | Padua's `il.ff` | MIT | original source |
 | clandp-des | Padua's `des.ff` | MIT | original source |
 | oplsdes-doherty2018 | Doherty & Acevedo 2018, the paper's SI tables | published parameters | original source (Acevedo's GPL 3 files are the reference only) |
@@ -67,9 +72,8 @@ per-paper libraries above.
 | bush1994-oxides | Bush et al. 1994 as the UCL database of published potentials transcribes it | published parameters | original paper's set, transcribed via the UCL database |
 | catlow1977-halides, catlow1977-uo2, lewis-catlow1985-oxides, matsui1991-tio2, sanders1984-sio2, catlow1976-mgo, catlow1985-rutile, khan1998-zro2, sayle2000-alkaline-earth-oxides, sepliarsky2005-perovskites, bandura2003-tio2-water, gan2020, clayff2004, teter-glass, tilocca2006-sm, vogel2003-lipo3, xiao2011-caco3, gunn2012-pyrochlore, la-perovskites, schroder1992-zeolite, ramsahye2005-nay, forester1997-silicalite, hill-sauer1995 | each paper's tables | published parameters | original source |
 | *-moltemplate (COMPASS published subset, GAFF, GAFF2, OPLS-AA 2008 / 2024, L-OPLS, DREIDING, TraPPE 1998, SDK, MARTINI 2.0 and its .prm sets, Dry MARTINI, Cooke-Deserno, graphene, SPC/E, TIP3P, mW and the water templates) | moltemplate's force-field files | MIT (moltemplate) | third-party conversion of the published sets |
-| martini22-proteins | vermouth-martinize `force_fields/martini22` | Apache 2.0 | original distribution |
 | martini3 | `martini_v3.0.0.itp` (cgmartini.nl) | as distributed by the Martini group | original distribution |
-| glycam*-ambertools, *-toppar | AmberTools GLYCAM (own copyright), CHARMM toppar (no licence) | - | built locally, never committed (`.gitignore`) |
+| cgenff-toppar | CHARMM toppar (no licence) | - | built locally, never committed (`.gitignore`) |
 
 ## 3. Families rebuilt on this branch
 

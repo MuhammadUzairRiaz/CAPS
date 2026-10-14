@@ -29,7 +29,6 @@
         <Button Classes="builder" Content="Crystal" Click="OnCrystal" />
         <Button Classes="builder" Content="Surface" Click="OnSurface" />
         <Button Classes="builder" Content="Nanostructure" Click="OnNano" />
-        <Button Classes="builder" Content="Biomolecule" Click="OnBio" />
         <Button Classes="builder" Content="Solvation" Click="OnSolvation" />
         <Button Classes="builder" Content="Coarse-grained" Click="OnCg" />
       </StackPanel>

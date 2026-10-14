@@ -703,34 +703,6 @@
    }
   },
   {
-   "id": "martini22-proteins",
-   "name": "Martini 2.2 proteins",
-   "version": "2.2",
-   "references": [
-    "S. J. Marrink et al., J. Phys. Chem. B 111, 7812 (2007)",
-    "L. Monticelli et al., J. Chem. Theory Comput. 4, 819 (2008)",
-    "D. H. de Jong et al., J. Chem. Theory Comput. 9, 687 (2013)",
-    "P. C. Kroon et al., Martinize2 and Vermouth, eLife 12, RP90627 (2023)"
-   ],
-   "origin": "vermouth-martinize",
-   "source_file": "force_fields/martini22/05-aminoacids.ff",
-   "status": "converted",
-   "notes": "proteins mapped as martinize2 does (term by term identical on vermouth's martini22 test), DSSP included; Martini 2.2's bead types and pairs (martini_v2.2.itp)",
-   "file": "martini22-proteins.json",
-   "counts": {
-    "atom_types": 39,
-    "pairs": 780,
-    "bonds": 0,
-    "angles": 0,
-    "dihedrals": 0,
-    "impropers": 0
-   },
-   "typing": {
-    "rules": "typing/martini22-proteins.typing.json",
-    "evidence": "bench/ff/check_martini_protein.py: identical to martinize2 (types, charges, every term, positions)"
-   }
-  },
-  {
    "id": "martini3",
    "name": "Martini 3",
    "version": "3.0.0",
@@ -1373,69 +1345,6 @@
    }
   },
   {
-   "id": "amber-ff03-ambertools",
-   "name": "AMBER ff03",
-   "version": "parm99.dat + frcmod.ff03",
-   "references": [
-    "Y. Duan et al., J. Comput. Chem. 24, 1999 (2003)",
-    "J. Wang, P. Cieplak, P. A. Kollman, J. Comput. Chem. 21, 1049 (2000)"
-   ],
-   "origin": "built from source",
-   "source": "AmberTools 23.6, dat/leap/parm (ambermd.org)",
-   "license": "public domain (AmberTools LICENSE: the parameter files in dat/leap/parm have been placed in the public domain by their authors)",
-   "status": "validated",
-   "file": "amber-ff03-ambertools.json",
-   "counts": {
-    "atom_types": 63,
-    "pairs": 61,
-    "bonds": 115,
-    "angles": 282,
-    "dihedrals": 120,
-    "impropers": 38
-   },
-   "typing": {
-    "rules": "typing/amber-ff03-ambertools.typing.json",
-    "evidence": "CAPS rules in AMBER's own type names (bench/typing/make_amber_rules.py); AmberTools' residue libraries all_amino03.lib, all_aminont94.lib, all_aminoct94.lib and all_nucleic94.lib typed as the libraries type them: 2270 / 2270 atoms, 111 / 111 residues (bench/ff/validate_off_types.py)"
-   },
-   "list": {
-    "label": "AMBER ff03",
-    "key": "amber",
-    "order": 17
-   }
-  },
-  {
-   "id": "amber-ff14sb-ambertools",
-   "name": "AMBER ff14SB / OL15 / OL3",
-   "version": "ff14SB proteins, OL15 DNA, OL3 RNA (parm10.dat + frcmod.ff14SB + frcmod.DNA.OL15)",
-   "references": [
-    "J. A. Maier et al., J. Chem. Theory Comput. 11, 3696 (2015)",
-    "M. Zgarbova et al., J. Chem. Theory Comput. 11, 5723 (2015)",
-    "M. Zgarbova et al., J. Chem. Theory Comput. 7, 2886 (2011)"
-   ],
-   "origin": "built from source",
-   "source": "AmberTools 23.6, dat/leap/parm (ambermd.org)",
-   "license": "public domain (AmberTools LICENSE: the parameter files in dat/leap/parm have been placed in the public domain by their authors)",
-   "status": "validated",
-   "file": "amber-ff14sb-ambertools.json",
-   "counts": {
-    "atom_types": 67,
-    "pairs": 65,
-    "bonds": 194,
-    "angles": 541,
-    "dihedrals": 363,
-    "impropers": 79
-   },
-   "typing": {
-    "rules": "typing/amber-ff14sb-ambertools.typing.json",
-    "evidence": "CAPS rules in AMBER's own type names (bench/typing/make_amber_rules.py ff14sb); AmberTools' residue libraries amino12, aminont12, aminoct12, DNA.OL15 and RNA typed as the libraries type them: 2288 / 2288 atoms, 111 / 111 residues (bench/ff/validate_off_types.py)"
-   },
-   "list": {
-    "label": "AMBER ff14SB",
-    "key": "amber14sb",
-    "order": 16
-   }
-  },
-  {
    "id": "oplsaa-gromacs",
    "name": "OPLS-AA (GROMACS oplsaa.ff)",
    "version": "OPLS-AA/L as GROMACS distributes it (oplsaa.ff)",
@@ -1495,37 +1404,6 @@
     "label": "OPLS-AA 2024",
     "key": "oplsaa2024",
     "order": 4
-   }
-  },
-  {
-   "id": "oplsaam-jorgensen",
-   "name": "OPLS-AA/M",
-   "version": "OPLS-AA/M of June 2015 (the Jorgensen lab's CHARMM-format files)",
-   "references": [
-    "M. J. Robertson, J. Tirado-Rives, W. L. Jorgensen, J. Chem. Theory Comput. 11, 3499 (2015)",
-    "W. L. Jorgensen, D. S. Maxwell, J. Tirado-Rives, J. Am. Chem. Soc. 118, 11225 (1996)"
-   ],
-   "origin": "built from source",
-   "source": "top_opls_aam.inp and par_opls_aam.inp, jorgensenresearch.com/opls-aa-m",
-   "license": "CC BY 4.0 (the Jorgensen lab: free for anyone to use, including commercially, with attribution)",
-   "status": "validated",
-   "file": "oplsaam-jorgensen.json",
-   "counts": {
-    "atom_types": 78,
-    "pairs": 78,
-    "bonds": 159,
-    "angles": 437,
-    "dihedrals": 817,
-    "impropers": 105
-   },
-   "typing": {
-    "rules": "typing/oplsaam-jorgensen.typing.json",
-    "evidence": "CAPS's OPLS-AA rules in OPLS-AA/M's names plus the protein and terminal types (bench/typing/make_oplsaam_rules.py): the file's own topology typed as it types it, 508 / 508 atoms, its 25 residues and 11 terminal patches (bench/ff/validate_rtf_types.py --patches)"
-   },
-   "list": {
-    "label": "OPLS-AA/M",
-    "key": "opls_aam",
-    "order": 11
    }
   },
   {
@@ -1676,37 +1554,6 @@
    "typing": {
     "rules": "typing/trappe-ua-foyer.typing.json",
     "evidence": "CAPS rules for foyer's eleven united-atom types (alkane and alcohol CHn, O, H); its Ryckaert-Bellemans torsions written exactly as Fourier terms; LAMMPS and GROMACS reproduce CAPS's energies. Torsions foyer's file lacks (CHn-CH2-CH-OH and similar, C-C between branched centres) are reported missing"
-   }
-  },
-  {
-   "id": "gromos54a7-gromacs",
-   "name": "GROMOS 54A7",
-   "version": "54A7 as GROMACS distributes it (gromos54a7.ff)",
-   "references": [
-    "N. Schmid et al., Eur. Biophys. J. 40, 843 (2011)",
-    "C. Oostenbrink et al., J. Comput. Chem. 25, 1656 (2004)"
-   ],
-   "origin": "built from source",
-   "source": "GROMACS share/top/gromos54a7.ff (ffnonbonded.itp, ffbonded.itp, atomtypes.atp, aminoacids.rtp, .n.tdb, .c.tdb)",
-   "license": "GNU LGPL 2.1 (part of GROMACS)",
-   "status": "validated",
-   "file": "gromos54a7-gromacs.json",
-   "counts": {
-    "atom_types": 56,
-    "pairs": 1541,
-    "bonds": 0,
-    "angles": 0,
-    "dihedrals": 0,
-    "impropers": 0
-   },
-   "typing": {
-    "rules": "typing/gromos54a7-gromacs.typing.json",
-    "evidence": "a building-block force field: CAPS recognises the residues of aminoacids.rtp (with the termini of the .tdb files) in a structure and takes their types, charges and coded terms as pdb2gmx does; peptides of all 20 amino acids, a proline N-terminus and a glycine zwitterion give pdb2gmx's topology term for term and its energies (bench/ff/compare_pdb2gmx.py)"
-   },
-   "list": {
-    "label": "GROMOS 54A7",
-    "key": "gromos_54a7",
-    "order": 9
    }
   },
   {
@@ -2594,97 +2441,6 @@
    }
   },
   {
-   "id": "charmm36-prot-toppar",
-   "name": "CHARMM36 proteins",
-   "version": "toppar_c36_jul17 (par_all36_prot.prm, top_all36_prot.rtf, its streams)",
-   "references": [
-    "R. B. Best et al., J. Chem. Theory Comput. 8, 3257 (2012)",
-    "A. D. MacKerell Jr. et al., J. Phys. Chem. B 102, 3586 (1998)"
-   ],
-   "origin": "built from source",
-   "source": "CHARMM force-field files toppar_c36_jul17.tgz (mackerell.umaryland.edu)",
-   "license": "no licence stated with the files: built on the user's machine by bench/ff/open/build_charmm.sh, never distributed",
-   "status": "validated",
-   "file": "charmm36-prot-toppar.json",
-   "counts": {
-    "atom_types": 111,
-    "pairs": 115,
-    "bonds": 257,
-    "angles": 755,
-    "dihedrals": 1176,
-    "impropers": 75
-   },
-   "typing": {
-    "rules": "typing/charmm36-prot-toppar.typing.json",
-    "evidence": "the topology's own residues typed as it types them (bench/ff/validate_rtf_types.py --cap-links): top_all36_prot.rtf 391 / 391 atoms, 24 / 24 residues"
-   },
-   "list": {
-    "label": "CHARMM36",
-    "key": "charmm36",
-    "order": 7
-   }
-  },
-  {
-   "id": "charmm22-prot-toppar",
-   "name": "CHARMM22 proteins",
-   "version": "toppar_c36_jul17 (par_all22_prot.prm, top_all22_prot.rtf)",
-   "references": [
-    "A. D. MacKerell Jr. et al., J. Phys. Chem. B 102, 3586 (1998)"
-   ],
-   "origin": "built from source",
-   "source": "CHARMM force-field files toppar_c36_jul17.tgz (mackerell.umaryland.edu)",
-   "license": "no licence stated with the files: built on the user's machine by bench/ff/open/build_charmm.sh, never distributed",
-   "status": "validated",
-   "file": "charmm22-prot-toppar.json",
-   "counts": {
-    "atom_types": 62,
-    "pairs": 66,
-    "bonds": 125,
-    "angles": 325,
-    "dihedrals": 382,
-    "impropers": 34
-   },
-   "typing": {
-    "rules": "typing/charmm22-prot-toppar.typing.json",
-    "evidence": "the topology's own residues typed as it types them (bench/ff/validate_rtf_types.py --cap-links): top_all22_prot.rtf 381 / 381 atoms, 23 / 23 residues"
-   },
-   "list": {
-    "label": "CHARMM22 protein",
-    "key": "charmm22_prot",
-    "order": 21
-   }
-  },
-  {
-   "id": "charmm36-carb-toppar",
-   "name": "CHARMM36 carbohydrates",
-   "version": "toppar_c36_jul17 (par_all36_carb.prm, top_all36_carb.rtf, its streams)",
-   "references": [
-    "O. Guvench et al., J. Chem. Theory Comput. 7, 3162 (2011)"
-   ],
-   "origin": "built from source",
-   "source": "CHARMM force-field files toppar_c36_jul17.tgz (mackerell.umaryland.edu)",
-   "license": "no licence stated with the files: built on the user's machine by bench/ff/open/build_charmm.sh, never distributed",
-   "status": "validated",
-   "file": "charmm36-carb-toppar.json",
-   "counts": {
-    "atom_types": 72,
-    "pairs": 76,
-    "bonds": 199,
-    "angles": 694,
-    "dihedrals": 1503,
-    "impropers": 26
-   },
-   "typing": {
-    "rules": "typing/charmm36-carb-toppar.typing.json",
-    "evidence": "the topology's own residues typed as it types them (bench/ff/validate_rtf_types.py --cap-links): top_all36_carb.rtf 1786 / 1786 atoms, 75 / 75 residues"
-   },
-   "list": {
-    "label": "CHARMM36 carbohydrate",
-    "key": "charmm36_carb",
-    "order": 22
-   }
-  },
-  {
    "id": "cgenff-toppar",
    "name": "CHARMM36 CGenFF",
    "version": "toppar_c36_jul17 (par_all36_cgenff.prm, top_all36_cgenff.rtf: CGenFF 3.0.1 / 4.0)",
@@ -2712,96 +2468,6 @@
     "label": "CHARMM36 CGenFF",
     "key": "charmm36_cgenff",
     "order": 23
-   }
-  },
-  {
-   "id": "charmm36-lipid-toppar",
-   "name": "CHARMM36 lipids",
-   "version": "toppar_c36_jul17 (par_all36_lipid.prm, top_all36_lipid.rtf, its streams)",
-   "references": [
-    "J. B. Klauda et al., J. Phys. Chem. B 114, 7830 (2010)"
-   ],
-   "origin": "built from source",
-   "source": "CHARMM force-field files toppar_c36_jul17.tgz (mackerell.umaryland.edu)",
-   "license": "no licence stated with the files: built on the user's machine by bench/ff/open/build_charmm.sh, never distributed",
-   "status": "validated",
-   "file": "charmm36-lipid-toppar.json",
-   "counts": {
-    "atom_types": 48,
-    "pairs": 59,
-    "bonds": 84,
-    "angles": 255,
-    "dihedrals": 275,
-    "impropers": 5
-   },
-   "typing": {
-    "rules": "typing/charmm36-lipid-toppar.typing.json",
-    "evidence": "the topology's own residues typed as it types them (bench/ff/validate_rtf_types.py --cap-links): top_all36_lipid.rtf 4224 / 4224 atoms, 35 / 35 residues"
-   },
-   "list": {
-    "label": "CHARMM36 lipid",
-    "key": "charmm36_lipid",
-    "order": 24
-   }
-  },
-  {
-   "id": "charmm36-nucl-toppar",
-   "name": "CHARMM36 nucleic acids",
-   "version": "toppar_c36_jul17 (par_all36_na.prm, top_all36_na.rtf, its streams)",
-   "references": [
-    "K. Hart et al., J. Chem. Theory Comput. 8, 348 (2012)"
-   ],
-   "origin": "built from source",
-   "source": "CHARMM force-field files toppar_c36_jul17.tgz (mackerell.umaryland.edu)",
-   "license": "no licence stated with the files: built on the user's machine by bench/ff/open/build_charmm.sh, never distributed",
-   "status": "validated",
-   "file": "charmm36-nucl-toppar.json",
-   "counts": {
-    "atom_types": 97,
-    "pairs": 101,
-    "bonds": 192,
-    "angles": 541,
-    "dihedrals": 982,
-    "impropers": 43
-   },
-   "typing": {
-    "rules": "typing/charmm36-nucl-toppar.typing.json",
-    "evidence": "the topology's own residues typed as it types them (bench/ff/validate_rtf_types.py --cap-links): top_all36_na.rtf 161 / 161 atoms, 5 / 5 residues"
-   },
-   "list": {
-    "label": "CHARMM36 nucleic acid",
-    "key": "charmm36_nucl",
-    "order": 25
-   }
-  },
-  {
-   "id": "charmm19-toppar",
-   "name": "CHARMM19 (united atom)",
-   "version": "param19 / toph19 (toppar_c36_jul17)",
-   "references": [
-    "E. Neria, S. Fischer, M. Karplus, J. Chem. Phys. 105, 1902 (1996)"
-   ],
-   "origin": "built from source",
-   "source": "CHARMM force-field files toppar_c36_jul17.tgz (mackerell.umaryland.edu)",
-   "license": "no licence stated with the files: built on the user's machine by bench/ff/open/build_charmm.sh, never distributed",
-   "status": "validated",
-   "file": "charmm19-toppar.json",
-   "counts": {
-    "atom_types": 29,
-    "pairs": 32,
-    "bonds": 70,
-    "angles": 191,
-    "dihedrals": 41,
-    "impropers": 43
-   },
-   "typing": {
-    "rules": "typing/charmm19-toppar.typing.json",
-    "evidence": "the topology's own residues typed as it types them (bench/ff/validate_rtf_types.py --cap-links): toph19.inp 319 / 319 atoms, 36 / 36 residues (--united); one torsion per bond as toph19 lists them, 103 / 104 central bonds (bench/ff/validate_rtf_torsions.py; TRP's cross-ring terms left out)"
-   },
-   "list": {
-    "label": "CHARMM19",
-    "key": "charmm19",
-    "order": 20
    }
   },
   {

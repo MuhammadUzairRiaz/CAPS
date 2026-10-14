@@ -132,7 +132,6 @@ public sealed partial class MainViewModel
             "crystal.build" => ("Crystal builder", 29),
             "nano.build" or "nano.embed" or "nano.pore" => ("Nanostructure builder", 15),
             "surface.build" or "interface.build" or "build.stack" => ("Surface builder", 14),
-            "bio.peptide" => ("Biomolecule builder", 30),
             "solvate.pack" => ("Solvation", 31),
             "cg.build" or "cg.kremer_grest" or "cg.martini_melt" => ("Coarse-grained builder", 44),
             "io.read" or "io.import" => ("File", 8),
@@ -176,10 +175,10 @@ public sealed partial class MainViewModel
                 if (bs != null) { ApplyBlendSettings(bs); it.BuildSettings ??= bs; } else OpenBlend();
                 if (bs == null) { Status = $"{it.Name} records no blend settings: the page shows the last ones used"; return; }
                 break;
-            case 29 or 15 or 14 or 30 or 31 or 44:
+            case 29 or 15 or 14 or 31 or 44:
                 if (module == 29) OpenCrystal(); else if (module == 15) OpenNano(); else if (module == 14) OpenSurface();
-                else if (module == 30) OpenBio(); else if (module == 31) OpenSolvation(); else OpenCg();
-                var page = module switch { 29 => "crystal", 15 => "nano", 14 => "surface", 30 => "bio", 31 => "solvation", _ => "cg" };
+                else if (module == 31) OpenSolvation(); else OpenCg();
+                var page = module switch { 29 => "crystal", 15 => "nano", 14 => "surface", 31 => "solvation", _ => "cg" };
                 if (it.BuildSettings is { } snap && (string?)snap["page"] == page) ApplyPageSnapshot(snap);
                 else { Status = $"{label}: {it.Name} was built before CAPS kept the builder's settings — the page shows the last ones used"; return; }
                 break;

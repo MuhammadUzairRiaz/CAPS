@@ -28,7 +28,6 @@
 #include "caps/elements.hpp"
 #include "caps/ffdef.hpp"
 #include "caps/ffio.hpp"
-#include "caps/martini_protein.hpp"
 #include "caps/typing.hpp"
 #include "caps/uff.hpp"
 #include "caps/checks.hpp"
@@ -39,13 +38,13 @@
 #include "caps/cluster_job.hpp"
 #include "caps/dft_commands.hpp"
 #include "caps/spacegroup.hpp"
-#include "caps/peptide.hpp"
 #include "caps/solvate.hpp"
 #include "caps/nano.hpp"
 #include "caps/properties.hpp"
 #include "caps/equilibrate.hpp"
 #include "caps/grow.hpp"
 #include "caps/io.hpp"
+#include "caps/martini3_molecules.hpp"
 #include "caps/live.hpp"
 #include "caps/mechanics.hpp"
 #include "caps/molecule.hpp"
@@ -121,9 +120,9 @@ std::string ff_path(const std::string& s0) {
   static const std::map<std::string, std::string> alias = {
       {"gaff2", "gaff2-2.2.20-ambertools"}, {"gaff", "gaff-1.81-ambertools"}, {"opls", "oplsaa2024"}, {"pcff", "pcff-frc"},
       {"opls-ua", "oplsua2024"}, {"oplsua", "oplsua2024"}, {"compass", "compass-frc"}, {"cvff", "cvff-frc"},
-      {"amber", "amber-ff14sb-ambertools"}, {"charmm", "charmm36-prot-toppar"}, {"dreiding", "dreiding1990"}, {"cgenff", "cgenff-toppar"},
-      {"charmm19", "charmm19-toppar"}, {"trappe-ua", "trappe-ua-umn"}, {"trappe", "trappe-ua-umn"}, {"gromos", "gromos54a7-gromacs"},
-      {"gromos54a7", "gromos54a7-gromacs"}, {"clayff", "clayff-cygan2004"}, {"clayff2004", "clayff-cygan2004"}, {"trappe-eh", "trappe-eh-umn"}};
+      {"dreiding", "dreiding1990"}, {"cgenff", "cgenff-toppar"},
+      {"trappe-ua", "trappe-ua-umn"}, {"trappe", "trappe-ua-umn"},
+      {"clayff", "clayff-cygan2004"}, {"clayff2004", "clayff-cygan2004"}, {"trappe-eh", "trappe-eh-umn"}};
   std::string lower = s0;
   for (auto& c : lower) c = char(std::tolower((unsigned char)c));
   auto al = alias.find(lower);
@@ -224,9 +223,6 @@ int usage() {
                "               [--supercell 2,2,2] [--primitive] [--symmetrize] [--tolerance 0.01]   a crystal from a space group\n"
                "  caps crystal CRYSTAL.cif --find-symmetry [--tolerance 0.1]   its space group and asymmetric unit\n"
                "  caps crystal --groups [QUERY]    the 530 space-group settings (key, number, Hermann–Mauguin, Hall)\n"
-               "  caps peptide SEQUENCE|FILE.fasta -o OUT.pdb|mol2|xyz|data [--helix | --strand | --ppii | --structure HHHHCCC]\n"
-               "               [--n-term NH3+|NH2|ACE] [--c-term COO-|COOH|NME] [--ph 7] [--neutral] [--no-cleanup] [--seed 1]\n"
-               "                                   an all-atom peptide: backbone from φ/ψ/ω, side chains at the pH, UFF clean-up\n"
                "  caps solvate [SOLUTE] -o OUT [--edge 30 | --box a,b,c | --padding 10] [--solvent water|toluene|…] [--model TIP4P/2005]\n"
                "               [--salt NaCl --conc 0.15 | --neutralise | --ions 3,6 | --no-ions] [--molecules N] [--tolerance 2] [--solvents]\n"
                "                                   solvent and ions packed around a solute (CAPS Pack)\n"
@@ -237,10 +233,8 @@ int usage() {
                "  caps nano    tube [--n 10 --m 10 --length 25 --finite] | sheet [--lx 20 --ly 20 --layers 1 --flake] |\n"
                "               particle CRYSTAL.cif [--shape sphere|cube|octahedron|cuboctahedron|truncated-octahedron|icosahedron|rod|cone|frustum|tetrahedron|pyramid|hemisphere|fibre\n               --radius 12 --height 24 --top-ratio 0.5 --length 20 --passivate]\n"
                "               [--units SMILES --chains 10 --dp 20 --density 0.9]   -o OUT   fillers, alone or in a polymer matrix\n"
-               "  caps dssp    PROTEIN.pdb                      DSSP secondary structure (and Martini's codes)\n"
-               "  caps martini PROTEIN.pdb -o CG.data [--itp CG.itp] [--ss LETTERS|C|none]   Martini 2.2 protein (martinize's rules);\n"
-               "               --martini 3 [--noscfix] [--nt] [--extdih] [--cys none] [--idr 1:24] [--elastic --ef 700 --el 0 --eu 0.9\n"
-               "               --ea 0 --ep 1 --es 0 --em 0 --ermd 2 --eunit molecule|chain|all]   Martini 3 protein (martinize2's options)\n"
+               "  caps martini FILE -o CG.data [--itp CG.itp] [--centre geometric|mass]   Martini 3 small molecules mapped from\n"
+               "               an all-atom structure (vermouth's mappings); water, ions and other molecules left out\n"
                "  caps pore    slit [--width 10 --layers 1 --lx 26 --ly 22 --vacuum] | cylinder CRYSTAL.cif [--width 14 --wall 6 --length 20 --passivate] |\n"
                "               framework CRYSTAL.cif [--supercell 2,2,2]   [--fluid SMILES --count N --tolerance 2 --seed 1] -o OUT   a fluid in a pore\n"
                "  caps pull    FILE [--normal | --axis x|y|z] [--distance 10] [--rate 5] [--spring 10] [--temp 300] [--surface 1] [--csv OUT]\n"
@@ -327,28 +321,28 @@ std::vector<std::string> glob_files(const std::string& pattern) {
 const std::set<std::string>& known_options() {
   static const std::set<std::string> k = {
     "--all", "--allow-missing", "--auto-scale", "--axis", "--barostat", "--bci", "--beads", "--bg", "--bibtex",
-    "--block", "--blocks", "--born", "--born-every", "--born-strain", "--box", "--box-relax", "--c-term",
+    "--block", "--blocks", "--born", "--born-every", "--born-strain", "--box", "--box-relax",
     "--capture", "--cell", "--centre", "--chains", "--charges", "--colour", "--comfortable", "--compare",
-    "--components", "--conc", "--constraint-solver", "--constraints", "--configs", "--conformers", "--count", "--csv", "--cutoff", "--cycles", "--cys",
-    "--density", "--deterministic", "--distance", "--dp", "--dq", "--dr", "--droplet", "--dt", "--dump", "--ea",
-    "--edge", "--ef", "--el", "--elastic", "--em", "--ep", "--eq-ps", "--equilibrate", "--ermd", "--dlpoly", "--es",
-    "--escalate", "--eu", "--eunit", "--every", "--every-ps", "--ewald-rtol", "--exclude-mol", "--explain",
-    "--extdih", "--fa", "--fb", "--ff", "--film", "--film-density", "--find-symmetry", "--finite", "--first",
+    "--components", "--conc", "--constraint-solver", "--constraints", "--configs", "--conformers", "--count", "--csv", "--cutoff", "--cycles",
+    "--density", "--deterministic", "--distance", "--dp", "--dq", "--dr", "--droplet", "--dt", "--dump",
+    "--edge", "--eq-ps", "--equilibrate", "--dlpoly",
+    "--escalate", "--every", "--every-ps", "--ewald-rtol", "--exclude-mol", "--explain",
+    "--fa", "--fb", "--ff", "--film", "--film-density", "--find-symmetry", "--finite", "--first",
     "--amber", "--digits", "--dsf-alpha", "--fit", "--fix-mol", "--fixed-lateral", "--flake", "--fluid", "--forcefields", "--forces", "--frame",
-    "--frame-ps", "--from", "--ftol", "--gap", "--grid", "--gromacs", "--group", "--groups", "--helix", "--hkl", "--hmr",
-    "--hold", "--hybrid", "--idr", "--include-input", "--input", "--insert", "--inter", "--ions", "--iterations",
-    "--itp", "--json", "--kspace", "--kspace-accuracy", "--lammps-cutoff", "--units", "--lammps-input", "--lammps-run", "--moltemplate",
+    "--frame-ps", "--from", "--ftol", "--gap", "--grid", "--gromacs", "--group", "--groups", "--hkl", "--hmr",
+    "--hold", "--hybrid", "--include-input", "--input", "--insert", "--inter", "--ions", "--itp", "--iterations",
+    "--json", "--kspace", "--kspace-accuracy", "--lammps-cutoff", "--units", "--lammps-input", "--lammps-run", "--moltemplate",
     "--lammps-style", "--last", "--layers", "--length", "--list", "--list-templates", "--log", "--lx", "--ly", "--m",
     "--martini", "--max-blocks", "--max-torsions", "--moves", "--max-strain", "--md-ps", "--method", "--methods", "--model", "--molecule-size",
-    "--molecules", "--n", "--n-term", "--names", "--neutral", "--neutralise", "--new-velocities", "--no-cell",
-    "--no-cleanup", "--no-coulomb", "--no-ions", "--no-orthogonal", "--no-pbc", "--no-pushoff", "--no-relax",
-    "--no-tail", "--normal", "--noscfix", "--nt", "--out", "--overlay", "--padding", "--pair", "--particles",
-    "--ops", "--ops-file", "--checkpoint-every", "--checkpoint", "--resume", "--resume-at", "--bench-json", "--resume-points", "--resume-curve", "--height", "--top-ratio", "--passivate", "--pattern", "--per-cycle", "--perspective", "--pfinal", "--ph", "--pitch", "--pmax", "--pme",
-    "--pme-order", "--pme-spacing", "--ppii", "--precision", "--press", "--pressure", "--primitive", "--print-protocol", "--probe", "--progress-file",
+    "--molecules", "--n", "--names", "--neutralise", "--new-velocities", "--no-cell",
+    "--no-coulomb", "--no-ions", "--no-orthogonal", "--no-pbc", "--no-pushoff", "--no-relax",
+    "--no-tail", "--normal", "--out", "--overlay", "--padding", "--pair", "--particles",
+    "--ops", "--ops-file", "--checkpoint-every", "--checkpoint", "--resume", "--resume-at", "--bench-json", "--resume-points", "--resume-curve", "--height", "--top-ratio", "--passivate", "--pattern", "--per-cycle", "--perspective", "--pfinal", "--pitch", "--pmax", "--pme",
+    "--pme-order", "--pme-spacing", "--precision", "--press", "--pressure", "--primitive", "--print-protocol", "--probe", "--progress-file",
     "--props", "--protocol", "--ps", "--qdirect", "--qmax", "--quick", "--quiet", "--radius", "--ramp", "--rate",
     "--ratio", "--repeats", "--report", "--rmax", "--salt", "--samples", "--scale", "--seed", "--sequence", "--sf",
-    "--shape", "--sites", "--size", "--skin", "--slabs", "--solvent", "--solvents", "--spring", "--ss", "--step",
-    "--steps", "--strain", "--strand", "--stride", "--structure", "--style", "--supercell", "--surface",
+    "--shape", "--sites", "--size", "--skin", "--slabs", "--solvent", "--solvents", "--spring", "--step",
+    "--steps", "--strain", "--stride", "--style", "--supercell", "--surface",
     "--symmetrize", "--table", "--tacticity", "--target", "--tau-p", "--tau-t", "--temp", "--template",
     "--termination", "--tfinal", "--thermo", "--thermostat", "--thigh", "--threads", "--timestep-fs", "--tlow",
     "--tmax", "--to", "--tol", "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing", "--units",
@@ -382,8 +376,8 @@ bool is_cli_switch(const std::string& a) {
   return a == "--no-cell" || a == "--inter" || a == "--perspective" || a == "--trans" || a == "--escalate" ||
          a == "--box-relax" || a == "--no-pushoff" || a == "--no-coulomb" || a == "--quiet" || a == "--new-velocities" ||
          a == "--until-converged" || a == "--print-protocol" || a == "--no-pbc" ||
-         a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" || a == "--include-input" || a == "--primitive" || a == "--symmetrize" || a == "--find-symmetry" || a == "--groups" || a == "--neutral" || a == "--no-cleanup" || a == "--helix" || a == "--strand" || a == "--ppii" || a == "--neutralise" || a == "--no-ions" || a == "--solvents" || a == "--bibtex" || a == "--json" || a == "--deterministic" || a == "--vacuum" || a == "--methods" ||
-         a == "--noscfix" || a == "--nt" || a == "--extdih" || a == "--elastic" || a == "--hybrid" || a == "--resume";
+         a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" || a == "--include-input" || a == "--primitive" || a == "--symmetrize" || a == "--find-symmetry" || a == "--groups" || a == "--neutralise" || a == "--no-ions" || a == "--solvents" || a == "--bibtex" || a == "--json" || a == "--deterministic" || a == "--vacuum" || a == "--methods" ||
+         a == "--hybrid" || a == "--resume";
 }
 
 std::map<std::string, std::string> parse(int argc, char** argv, int from, std::vector<std::string>& pos) {
@@ -1493,50 +1487,6 @@ int main(int argc, char** argv) {
     for (const auto& [n, h] : m->inputs) std::printf("input          %-20s %s\n", n.c_str(), h.c_str());
     return 0;
   }
-  if (cmd == "peptide") {
-    try {
-      if (pos.empty() || !o.count("-o")) return usage();
-      PeptideOptions po;
-      const auto ext = std::filesystem::path(pos[0]).extension().string();
-      if (std::filesystem::exists(pos[0]) || ext == ".fasta" || ext == ".fa") {
-        std::ifstream in(pos[0]);
-        if (!in) throw std::runtime_error("cannot read " + pos[0]);
-        po.sequence = parse_fasta(std::string(std::istreambuf_iterator<char>(in), {}));
-      } else {
-        po.sequence = pos[0];
-      }
-      std::string clean;
-      for (char c : po.sequence) if (std::isalpha(static_cast<unsigned char>(c))) clean += c;
-      if (o.count("--structure")) po.structure = o["--structure"];
-      else if (o.count("--helix")) po.structure = std::string(clean.size(), 'H');
-      else if (o.count("--strand")) po.structure = std::string(clean.size(), 'E');
-      else if (o.count("--ppii")) po.structure = std::string(clean.size(), 'P');
-      if (o.count("--n-term")) po.n_term = o["--n-term"];
-      if (o.count("--c-term")) po.c_term = o["--c-term"];
-      if (po.n_term != "NH3+" && po.n_term != "NH2" && po.n_term != "ACE") throw std::invalid_argument("--n-term NH3+, NH2 or ACE");
-      if (po.c_term != "COO-" && po.c_term != "COOH" && po.c_term != "NME") throw std::invalid_argument("--c-term COO-, COOH or NME");
-      if (o.count("--ph")) po.ph = std::stod(o["--ph"]);
-      po.neutral = o.count("--neutral") > 0;
-      po.cleanup = !o.count("--no-cleanup");
-      if (o.count("--seed")) po.seed = std::stoull(o["--seed"]);
-      PeptideReport rep;
-      const System s = build_peptide(po, &rep);
-      for (const auto& n : s.notes) std::printf("%s\n", n.c_str());
-      std::printf("structure %s\n", rep.structure.c_str());
-      const std::string out = o["-o"];
-      auto ends = [&](const char* e) { return out.size() > 4 && out.substr(out.size() - 4) == e; };
-      if (ends(".pdb")) write_pdb(s, out);
-      else if (ends(".xyz")) write_xyz(s, out);
-      else if (ends("mol2")) write_mol2(s, out);
-      else if (ends(".car")) write_car(s, out);
-      else write_lammps_data(s, out);
-      std::printf("wrote %s\n", out.c_str());
-      return 0;
-    } catch (const std::exception& e) {
-      std::fprintf(stderr, "caps peptide: %s\n", e.what());
-      return 1;
-    }
-  }
   if (cmd == "crystal") {
     try {
       if (o.count("--groups")) {
@@ -2109,90 +2059,31 @@ int main(int argc, char** argv) {
       return 1;
     }
   }
-  if (cmd == "dssp" || cmd == "martini") {
-    // DSSP secondary structure, and Martini 2.2 proteins (beads with martinize's topology)
+  if (cmd == "martini") {
+    // Martini 3 small molecules: every molecule of an all-atom structure that is one of the model's molecules becomes its
+    // beads with the explicit topology; water and ions are left out, other molecules too (listed)
     try {
-      if (pos.empty()) return usage();
-      std::string data;
+      if (pos.empty() || !o.count("-o")) return usage();
+      std::string mdir;
       for (const std::string& root : caps_roots())
-        if (!root.empty() && std::filesystem::exists(root + "/data/martini/martini22-protein.json")) { data = root + "/data/martini/martini22-protein.json"; break; }
-      System aa = load(pos[0], o);
-      {   // bonds from the file and from distances (martinize2's -bonds-from both: a PDB's CONECT may list only disulfides)
-        std::set<std::pair<uint32_t, uint32_t>> have;
-        for (const auto& b : aa.bonds) have.insert({std::min(b.i, b.j), std::max(b.i, b.j)});
-        for (const auto& b : perceive_bonds(aa))
-          if (have.insert({std::min(b.i, b.j), std::max(b.i, b.j)}).second) aa.bonds.push_back(b);
-      }
-      if (cmd == "dssp") {
-        const std::string ss = dssp(aa);
-        std::printf("%s\n", ss.c_str());
-        if (!data.empty()) std::printf("%s  (Martini)\n", dssp_to_martini(ss, data).c_str());
-        return 0;
-      }
-      if (data.empty()) throw std::runtime_error("data/martini/martini22-protein.json not found (set CAPS_HOME)");
-      if (!o.count("-o")) return usage();
-      if (o.count("--martini") && o["--martini"] == "3") {   // Martini 3 (martinize2 -ff martini3001), its options
-        const std::string data3 = std::filesystem::path(data).parent_path().string() + "/martini3-protein.json";
-        Martini3Options mo;
-        if (o.count("--ss")) mo.ss = o["--ss"] == "none" ? "-" : o["--ss"];
-        mo.scfix = !o.count("--noscfix");
-        mo.neutral_termini = o.count("--nt") > 0;
-        mo.extdih = o.count("--extdih") > 0;
-        mo.disulfides = !(o.count("--cys") && o["--cys"] == "none");
-        if (o.count("--idr")) {
-          std::istringstream is(o["--idr"]);
-          for (std::string r; std::getline(is, r, ',');) {
-            const auto c = r.find(':');
-            if (c == std::string::npos) throw std::runtime_error("--idr takes FIRST:LAST[,FIRST:LAST…]");
-            mo.idr.push_back({std::stoll(r.substr(0, c)), std::stoll(r.substr(c + 1))});
-          }
-        }
-        mo.elastic = o.count("--elastic") > 0;
-        if (o.count("--ef")) mo.ef = std::stod(o["--ef"]);
-        if (o.count("--el")) mo.el = std::stod(o["--el"]);
-        if (o.count("--eu")) mo.eu = std::stod(o["--eu"]);
-        if (o.count("--ea")) mo.ea = std::stod(o["--ea"]);
-        if (o.count("--ep")) mo.ep = std::stod(o["--ep"]);
-        if (o.count("--es")) mo.es = std::stod(o["--es"]);
-        if (o.count("--em")) mo.em = std::stod(o["--em"]);
-        if (o.count("--ermd")) mo.ermd = std::stoi(o["--ermd"]);
-        if (o.count("--eunit")) mo.eunit = o["--eunit"];
-        mo.refuse_unmatched = false;   // an explicit mapping: what matches nothing is left out, and listed
-        if (o.count("--centre")) mo.small_geometric = o["--centre"] != "mass";   // small molecules: geometry (default) or mass
-        MartiniProteinReport rep;
-        const std::string mdir = std::filesystem::path(data).parent_path().string();
-        Json tpl;
-        {
-          std::ifstream tf(mdir + "/martini3-molecules.json");
-          std::stringstream ts;
-          ts << tf.rdbuf();
-          tpl = Json::parse(ts.str())["molecules"];
-        }
-        const System cg = martini3_all_atom(aa, mo, data3, mdir + "/martini3-small-molecules.json", &rep, &tpl);
-        write_lammps_data(cg, o["-o"]);
-        if (o.count("--itp")) {
-          std::ofstream f(o["--itp"]);
-          f << "; Martini 3 protein written by CAPS; secondary structure " << rep.cg_ss << "\n" << martini3_itp(cg, mo.constraint_kj);
-        }
-        for (const auto& n : rep.notes) std::printf("%s\n", n.c_str());
-        std::printf("%d residues, %d chains -> %d beads; %zu bonds, %zu angles, %zu dihedrals, %zu virtual sites; %d disulfides\nDSSP    %s\nMartini %s\nwrote %s\n",
-                    rep.residues, rep.chains, rep.beads, cg.topology->bonds.size(), cg.topology->angles.size(), cg.topology->dihedrals.size(),
-                    cg.topology->vsites.size(), rep.disulfides, rep.dssp.c_str(), rep.cg_ss.c_str(), o["-o"].c_str());
-        return 0;
-      }
-      MartiniProteinReport rep;
-      const System cg = martini22_protein(aa, o.count("--ss") ? o["--ss"] : "", data, &rep);
+        if (!root.empty() && std::filesystem::exists(root + "/data/martini/martini3-small-molecules.json")) { mdir = root + "/data/martini"; break; }
+      if (mdir.empty()) throw std::runtime_error("data/martini/martini3-small-molecules.json not found (set CAPS_HOME)");
+      if (o.count("--martini") && o["--martini"] != "3") throw std::runtime_error("only Martini 3 small molecules are mapped (--martini 3)");
+      const System aa = load(pos[0], o);
+      const bool geometric = !(o.count("--centre") && o["--centre"] == "mass");   // geometry (default) or mass
+      std::vector<std::string> notes;
+      const System cg = martini3_all_atom(aa, mdir + "/martini3-small-molecules.json", 1e6, &notes, geometric, false);
       write_lammps_data(cg, o["-o"]);
       if (o.count("--itp")) {
         std::ofstream f(o["--itp"]);
-        f << "; Martini 2.2 protein written by CAPS; secondary structure " << rep.cg_ss << "\n" << martini_itp(cg, data);
+        f << "; Martini 3 molecules written by CAPS\n" << martini3_itp(cg);
       }
-      std::printf("%d residues, %d chains -> %d beads; %zu bonds, %zu angles, %zu dihedrals; %d disulfides\nDSSP    %s\nMartini %s\nwrote %s\n",
-                  rep.residues, rep.chains, rep.beads, cg.topology->bonds.size(), cg.topology->angles.size(), cg.topology->dihedrals.size(),
-                  rep.disulfides, rep.dssp.c_str(), rep.cg_ss.c_str(), o["-o"].c_str());
+      for (const auto& n : notes) std::printf("%s\n", n.c_str());
+      std::printf("%zu atoms -> %zu beads; %zu bonds, %zu angles, %zu dihedrals, %zu virtual sites\nwrote %s\n", aa.atoms.size(), cg.atoms.size(),
+                  cg.topology->bonds.size(), cg.topology->angles.size(), cg.topology->dihedrals.size(), cg.topology->vsites.size(), o["-o"].c_str());
       return 0;
     } catch (const std::exception& e) {
-      std::fprintf(stderr, "caps %s: %s\n", cmd.c_str(), e.what());
+      std::fprintf(stderr, "caps martini: %s\n", e.what());
       return 1;
     }
   }

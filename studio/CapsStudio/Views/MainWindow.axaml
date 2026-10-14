@@ -192,7 +192,7 @@
             </Panel>
           </Button>
           <Rectangle Classes="vsep" Margin="6,0" />
-          <Button Classes="modtab" Classes.on="{Binding IsBuildRail}" Click="OnModuleBuild" ToolTip.Tip="Build molecules, polymers, crystals, surfaces, nanostructures and biomolecules">
+          <Button Classes="modtab" Classes.on="{Binding IsBuildRail}" Click="OnModuleBuild" ToolTip.Tip="Build molecules, polymers, crystals, surfaces and nanostructures">
             <Panel>
               <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
                 <local:Icon Kind="flask" Size="16" VerticalAlignment="Center" />
@@ -2936,8 +2936,6 @@
       <pages:TrajectoryPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsTrajectory}" />
       <!-- Solvation builder (design/boards/SolvationBuilder) -->
       <pages:SolvationPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsSolvation}" />
-      <!-- Biomolecule builder (design/boards/BioBuilder) -->
-      <pages:BioPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsBio}" />
       <!-- Crystal builder (design/boards/CrystalBuilder) -->
       <pages:CrystalPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsCrystal}" />
       <!-- Nanostructure builder (design/boards/NanoBuilder, Nanoparticle) -->

@@ -115,7 +115,7 @@ public sealed partial class MainViewModel
     }
 
     /// <summary>The rail's Build and Export entries light up for their pages.</summary>
-    public bool IsBuildRail => _module is 13 or 14 or 15 or 16 or 29 or 30 or 31 or 44 or 60;
+    public bool IsBuildRail => _module is 13 or 14 or 15 or 16 or 29 or 31 or 44 or 60;
     public bool IsExportRail => _module is 68 or 21 or 18 or 26 or 54;
 
     // ---------------------------------------------------------------- the force field in Grow and Pack

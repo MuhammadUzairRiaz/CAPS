@@ -191,7 +191,7 @@ public sealed partial class MainViewModel
             {
                 string S(string k) => e.TryGetProperty(k, out var v) && v.ValueKind == System.Text.Json.JsonValueKind.String ? v.GetString()! : "";
                 var id = S("id");
-                if (!id.StartsWith("martini", StringComparison.Ordinal) || id is "martini-aminoacids" or "martini22-proteins") continue;   // proteins: the Biomolecule builder
+                if (!id.StartsWith("martini", StringComparison.Ordinal) || id is "martini-aminoacids") continue;   // amino acids: not a polymer model
                 if (!e.TryGetProperty("typing", out var t) || t.ValueKind != System.Text.Json.JsonValueKind.Object) continue;
                 r.Add(new FfEntry(id, S("name"), S("version"), S("status"), System.IO.Path.Combine(dir, S("file")), true));
             }

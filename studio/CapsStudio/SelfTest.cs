@@ -19,7 +19,7 @@ internal static class SelfTest
         }
         Console.WriteLine($"info Python: {(MainViewModel.PythonAvailable ? MainViewModel.PythonExe : "none")}");
 
-        Check(Native.AbiVersion() == 68, "native ABI version 68");
+        Check(Native.AbiVersion() == 69, "native ABI version 69");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -1839,20 +1839,18 @@ internal static class SelfTest
             vm.SetModule(8);
         }
 
-        // Biomolecule builder: the board's peptide, a β-strand applied to a selection, built with the UFF clean-up
-        vm.OpenBio();
-        Check(vm.BioCells.Count == 30 && vm.BioSegments.Count == 2 && vm.BioSegments[0] == "α-helix 1–22", $"bio: {vm.BioCountText} · {vm.BioSegmentsText}");
-        vm.SelectResidue(vm.BioCells[24], false);
-        vm.SelectResidue(vm.BioCells[27], true);
-        vm.BioType = 1;
-        Check(vm.BioSegments.Count == 4 && vm.BioSegments[2] == "β-strand 25–28", "bio: strand on 25–28 → " + vm.BioSegmentsText);
-        vm.BioNTerm = 2;
-        vm.BioCTerm = 2;
-        vm.BuildPeptide().GetAwaiter().GetResult();
-        var psum = vm.Document?.Summary();
-        Check(psum is { } pepSum && pepSum.Atoms > 300 && vm.Status.Contains("30 residues") && !vm.BioHasError, $"bio: built {psum?.Atoms} atoms · {vm.Status} {vm.BioError}");
+        // A chiral solute for the solvation and appearance checks: an L-lactide oligomer of 24 units (24 S centres)
+        {
+            var (pla, _) = CapsDocument.BuildSmiles("O" + string.Concat(Enumerable.Repeat("[C@@H](C)C(=O)O", 24)), "uff", 1, 1, "PLLA 24-mer");
+            var plaPath = Path.Combine(Path.GetTempPath(), "caps_selftest_plla.mol2");
+            pla.Save(plaPath);
+            pla.Dispose();
+            vm.Open(plaPath);
+            var psum = vm.Document?.Summary();
+            Check(psum is { } plaSum && plaSum.Atoms > 200 && plaSum.Molecules == 1, $"oligolactide opened: {psum?.Atoms} atoms");
+        }
 
-        // Solvation builder: the peptide just built in TIP3P water with 0.15 M NaCl, 6 Å padding
+        // Solvation builder: the oligolactide just opened in TIP3P water with 0.15 M NaCl, 6 Å padding
         vm.OpenSolvation();
         vm.SolvWaterModel = "TIP3P";
         vm.SolvPadding = 6;
@@ -1861,7 +1859,7 @@ internal static class SelfTest
         var wsum = vm.Document?.Summary();
         Check(wsum is { } solvSum && solvSum.Atoms > 2000 && vm.Title.Contains("water") && vm.SolvStages.All(st => st.IsDone), $"solvation: {vm.Title} · {wsum?.Atoms} atoms · {vm.SolvError} {vm.Status}");
 
-        // Appearance: a style layer, colour by charge, a surface and R/S labels on the solvated peptide
+        // Appearance: a style layer, colour by charge, a surface and R/S labels on the solvated oligolactide
         vm.SetModule(8);
         vm.AppearanceOpen = true;
         vm.AppTarget = 1;
@@ -1877,7 +1875,7 @@ internal static class SelfTest
             var area = look["surface"]?["area"]?.GetValue<double>() ?? 0;
             Check(area > 500 && (look["styles"]?["space_filling"]?.GetValue<double>() ?? 0) > 100, $"appearance: excluded surface {area:0} Å² · {look["styles"]?.ToJsonString()}");
             var rs = System.Text.Json.Nodes.JsonNode.Parse(adoc.AtomLabels("rs"))!.AsArray().Count(x => x?.GetValue<string>() == "S");
-            Check(rs >= 20, $"appearance: {rs} S centres labelled (L residues)");
+            Check(rs >= 20, $"appearance: {rs} S centres labelled (L-lactide units)");
             // labels: every atom and bond kind answers; the first four still switch their kinds; the style follows the settings
             var bad = vm.AtomLabelKinds.Where(k => { try { return System.Text.Json.Nodes.JsonNode.Parse(adoc.AtomLabels(k.Id))!.AsArray().Count != adoc.Summary().Atoms; } catch { return true; } })
                 .Concat(vm.BondLabelKinds.Where(k => { try { return System.Text.Json.Nodes.JsonNode.Parse(adoc.BondLabels(k.Id))!["labels"]!.AsArray().Count != adoc.Summary().Bonds; } catch { return true; } }))
@@ -1888,7 +1886,7 @@ internal static class SelfTest
             var lk = vm.LabelLook;
             var bondOrders = System.Text.Json.Nodes.JsonNode.Parse(adoc.BondLabels("chemical"))!["labels"]!.AsArray().Select(x => x!.GetValue<string>()).Distinct().ToList();
             Check(vm.AtomLabelKinds.Count >= 30 && vm.BondLabelKinds.Count >= 12 && bad.Count == 0 && chargeOn && lk.Font == "IBM Plex Sans" && lk.Size == 14
-                  && lk.AtomArgb == 0xFF123456 && bondOrders.Contains("C=O") && bondOrders.Contains("N–H"),
+                  && lk.AtomArgb == 0xFF123456 && bondOrders.Contains("C=O") && bondOrders.Contains("O–H"),
                   $"labels: {vm.AtomLabelKinds.Count} atom and {vm.BondLabelKinds.Count} bond kinds, failing [{string.Join(",", bad)}] · style {lk} · bonds {string.Join(" ", bondOrders.Take(8))}");
             vm.LabelCharge = false; vm.LabelFont = 0; vm.LabelSize = 10.5m; vm.AtomLabelColour = 0;
             adoc.SetAppearance("{\"active\":false}");
@@ -2111,7 +2109,7 @@ internal static class SelfTest
             var water = vm.QuickFragments.First(f => f.Name == "Water");
             vm.UseFragment(water, false).GetAwaiter().GetResult();
             var nf2 = vm.Document!.Summary().Atoms;
-            Check(vm.QuickFragments.Count == 9 && nf1 == nf0 + 3 && nf2 == nf1 + 3 && vm.FragmentCategories.Count >= 10,
+            Check(vm.QuickFragments.Count == 9 && nf1 == nf0 + 3 && nf2 == nf1 + 3 && vm.FragmentCategories.Count >= 9,
                   $"fragments: {vm.FragmentCategories.Count} categories · methyl {nf0}→{nf1} · water →{nf2} · {vm.FragmentError}");
             vm.UndoEdit(false);
             // exact geometry from the live monitor: a C–H bond picked, set to 1.200 Å (the hydrogen moves), undone
@@ -4078,21 +4076,6 @@ internal static class SelfTest
             vm.SetModule(8);
         }
 
-        // Add hydrogens by pH: a peptide built at pH 7, stripped of its hydrogens, gets them back at pH 7
-        {
-            var (pep, _) = CapsDocument.PeptideBuild("{\"sequence\":\"KDEHRYCA\",\"ph\":7,\"cleanup\":false}", "pH peptide");
-            var h0 = pep.Summary().Atoms;
-            pep.Select("{\"mode\":\"element\",\"pattern\":\"H\"}");
-            pep.Edit("{\"op\":\"delete\",\"atoms\":\"selection\"}");
-            var heavy = pep.Summary().Atoms;
-            pep.SetPh(7);
-            var plan = System.Text.Json.Nodes.JsonNode.Parse(pep.HydrogenPlan())!;
-            pep.Edit("{\"op\":\"add_h\",\"atoms\":\"\"}");
-            var h1 = pep.Summary().Atoms;
-            Check(h1 == h0, $"add hydrogens at pH 7: {heavy} heavy → {h1} atoms (built {h0}) · plan net formal charge {(double?)plan["net_charge"]}");
-            pep.Dispose();
-        }
-
         // Model resolution › backmap: the melt's beads saved and read back, the atoms carried onto them and relaxed
         {
             vm.Open(Path.Combine(dir, "ps_melt.data"));
@@ -4297,26 +4280,6 @@ internal static class SelfTest
                   $"OPLS 2005 charges with OPLS-AA 2024 types: before complete {chBefore.Complete}, offered '{chBefore.CompanionChargesText}' · after complete {vm.Field.Complete}");
             vm.Field.ChargeMode = 0;
             vm.Open(Path.Combine(dir, "ps_melt.data"));
-        }
-
-        // Biomolecule › nucleic acid: a DNA strand of 6 nt (D-sugars kept, 3′ phosphate), then RNA
-        {
-            vm.OpenBio();
-            vm.BioNucleic = true;
-            vm.NaSequence = "ACGTTA";
-            vm.BuildNucleic().GetAwaiter().GetResult();
-            var dna = vm.Document!.Summary();
-            int Oxygens() { var n = 0; for (var i = 0; i < vm.Document!.Summary().Atoms; ++i) n += vm.Document!.Atom(i).Element == 8 ? 1 : 0; return n; }
-            var oDna = Oxygens();
-            vm.NaRna = true;   // T becomes U
-            var rnaSeq = vm.NaSequence;
-            vm.BuildNucleic().GetAwaiter().GetResult();
-            var rna = vm.Document!.Summary();
-            var oRna = Oxygens();   // one 2′-OH per nucleotide
-            Check(dna.Molecules == 1 && dna.Atoms > 150 && rnaSeq == "ACGUUA" && oRna == oDna + 6 && vm.Title.StartsWith("RNA"),
-                  $"nucleic acid: DNA {dna.Atoms} atoms ({oDna} O), RNA {rnaSeq} {rna.Atoms} atoms ({oRna} O) · {vm.Status}");
-            vm.BioNucleic = false;
-            vm.NaRna = false;
         }
 
         {

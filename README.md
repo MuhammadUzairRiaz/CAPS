@@ -49,7 +49,6 @@ program, on your own computer.
 | **Crystals and surfaces** | CIF import, the 230 space groups (530 settings), supercells, slabs cleaved along any (hkl) with every termination listed, and nanowires. |
 | **Nanostructures** | Graphene sheets and flakes, (n, m) carbon nanotubes, and particles of many shapes cut from any crystal, with optional passivation. |
 | **Packing and solvation** | Molecules packed into boxes, spheres, cylinders and half-spaces. Solutes solvated with water (TIP3P, SPC/E, TIP4P/2005, …) or organic solvents, with salt or neutralising ions. |
-| **Peptides** | All-atom peptides from a sequence, with a chosen secondary structure and protonation at a given pH. |
 | **Coarse-grained** | Kremer–Grest bead-spring melts, DPD, and coarse-grained models from all-atom structures. |
 
 ### Force fields
@@ -57,7 +56,7 @@ program, on your own computer.
 - A library of more than 60 force-field files, each with its own atom typing and native charges:
   - **Class II:** PCFF and COMPASS
   - **OPLS:** OPLS-AA (2005, 2020, 2024)
-  - **Other all-atom:** GAFF / GAFF2, AMBER, CHARMM, CVFF, DREIDING, GROMOS and UFF, which covers every element
+  - **Other all-atom:** GAFF / GAFF2, CVFF, DREIDING and UFF, which covers every element
   - **United-atom:** TraPPE-UA
   - **Inorganic:** IFF, ClayFF and inorganic sets for oxides, clays, glasses and zeolites
   - **Coarse-grained:** Martini, SDK and DPD

@@ -24,18 +24,6 @@ ENTRIES = {
     "gaff2-2.2.20-ambertools": ("GAFF2", "2.2.20 (gaff2.dat, March 2021)", [GAFF], AMBERTOOLS,
                                 "CAPS rules in the order of antechamber's ATOMTYPE_GFF2.DEF (AmberTools 23.6), with its ring classes and "
                                 "conjugated pairs (bench/typing/make_gaff_rules.py)", ("GAFF2", "gaff2", 18), ["gaff-amber25"]),
-    "amber-ff03-ambertools": ("AMBER ff03", "parm99.dat + frcmod.ff03",
-                              ["Y. Duan et al., J. Comput. Chem. 24, 1999 (2003)", "J. Wang, P. Cieplak, P. A. Kollman, J. Comput. Chem. 21, 1049 (2000)"],
-                              AMBERTOOLS, "CAPS rules in AMBER's own type names (bench/typing/make_amber_rules.py); AmberTools' residue "
-                              "libraries all_amino03.lib, all_aminont94.lib, all_aminoct94.lib and all_nucleic94.lib typed as the "
-                              "libraries type them: 2270 / 2270 atoms, 111 / 111 residues (bench/ff/validate_off_types.py)",
-                              ("AMBER ff03", "amber", 17), ["amber"]),
-    "amber-ff14sb-ambertools": ("AMBER ff14SB / OL15 / OL3", "ff14SB proteins, OL15 DNA, OL3 RNA (parm10.dat + frcmod.ff14SB + frcmod.DNA.OL15)",
-                                ["J. A. Maier et al., J. Chem. Theory Comput. 11, 3696 (2015)", "M. Zgarbova et al., J. Chem. Theory Comput. 11, 5723 (2015)",
-                                 "M. Zgarbova et al., J. Chem. Theory Comput. 7, 2886 (2011)"], AMBERTOOLS,
-                                "CAPS rules in AMBER's own type names (bench/typing/make_amber_rules.py ff14sb); AmberTools' residue libraries "
-                                "amino12, aminont12, aminoct12, DNA.OL15 and RNA typed as the libraries type them: 2288 / 2288 atoms, 111 / 111 "
-                                "residues (bench/ff/validate_off_types.py)", ("AMBER ff14SB", "amber14sb", 16), []),
     "oplsaa-gromacs": ("OPLS-AA (GROMACS oplsaa.ff)", "OPLS-AA/L as GROMACS distributes it (oplsaa.ff)",
                        ["W. L. Jorgensen, D. S. Maxwell, J. Tirado-Rives, J. Am. Chem. Soc. 118, 11225 (1996)",
                         "G. A. Kaminski, R. A. Friesner, J. Tirado-Rives, W. L. Jorgensen, J. Phys. Chem. B 105, 6474 (2001)"],
@@ -52,14 +40,6 @@ ENTRIES = {
                    "every term equals moltemplate's independent conversion of the same files except CT-CT-OH-HO, where that conversion "
                    "applies trifluoroethanol's torsion to every alcohol (bench/ff/convert_boss_opls.py applies the general line)",
                    ("OPLS-AA 2024", "oplsaa2024", 4), ["opls2020"]),
-    "oplsaam-jorgensen": ("OPLS-AA/M", "OPLS-AA/M of June 2015 (the Jorgensen lab's CHARMM-format files)",
-                          ["M. J. Robertson, J. Tirado-Rives, W. L. Jorgensen, J. Chem. Theory Comput. 11, 3499 (2015)",
-                           "W. L. Jorgensen, D. S. Maxwell, J. Tirado-Rives, J. Am. Chem. Soc. 118, 11225 (1996)"],
-                          {"source": "top_opls_aam.inp and par_opls_aam.inp, jorgensenresearch.com/opls-aa-m",
-                           "license": "CC BY 4.0 (the Jorgensen lab: free for anyone to use, including commercially, with attribution)"},
-                          "CAPS's OPLS-AA rules in OPLS-AA/M's names plus the protein and terminal types (bench/typing/make_oplsaam_rules.py): "
-                          "the file's own topology typed as it types it, 508 / 508 atoms, its 25 residues and 11 terminal patches "
-                          "(bench/ff/validate_rtf_types.py --patches)", ("OPLS-AA/M", "opls_aam", 11), ["opls-aam"]),
     "clandp": ("CL&P (ionic liquids)", "il.ff of 2026/04/16 (github.com/paduagroup/clandp)",
                ["J. N. Canongia Lopes, A. A. H. Padua, Theor. Chem. Acc. 131, 1129 (2012)"],
                {"source": "il.ff, github.com/paduagroup/clandp", "license": "MIT (Copyright (c) 2019 Agilio Padua)"},
@@ -107,14 +87,6 @@ ENTRIES = {
                         "written exactly as Fourier terms; LAMMPS and GROMACS reproduce CAPS's energies. Torsions foyer's file lacks "
                         "(CHn-CH2-CH-OH and similar, C-C between branched centres) are reported missing",
                         ("TraPPE united-atom", "trappe_ua", 16), ["trappe-ua"]),
-    "gromos54a7-gromacs": ("GROMOS 54A7", "54A7 as GROMACS distributes it (gromos54a7.ff)",
-                           ["N. Schmid et al., Eur. Biophys. J. 40, 843 (2011)", "C. Oostenbrink et al., J. Comput. Chem. 25, 1656 (2004)"],
-                           {"source": "GROMACS share/top/gromos54a7.ff (ffnonbonded.itp, ffbonded.itp, atomtypes.atp, aminoacids.rtp, .n.tdb, .c.tdb)",
-                            "license": "GNU LGPL 2.1 (part of GROMACS)"},
-                           "a building-block force field: CAPS recognises the residues of aminoacids.rtp (with the termini of the .tdb "
-                           "files) in a structure and takes their types, charges and coded terms as pdb2gmx does; peptides of all 20 "
-                           "amino acids, a proline N-terminus and a glycine zwitterion give pdb2gmx's topology term for term and its "
-                           "energies (bench/ff/compare_pdb2gmx.py)", ("GROMOS 54A7", "gromos_54a7", 9), ["gromos-54a7"]),
     "trappe-ua-umn": ("TraPPE-UA", "the TraPPE database (trappe.oit.umn.edu), retrieved October 2026",
                       ['M. G. Martin, J. I. Siepmann, J. Phys. Chem. B 102, 2569 (1998)', 'M. G. Martin, J. I. Siepmann, J. Phys. Chem. B 103, 4508 (1999)', 'C. D. Wick, M. G. Martin, J. I. Siepmann, J. Phys. Chem. B 104, 8008 (2000)', 'B. Chen, J. J. Potoff, J. I. Siepmann, J. Phys. Chem. B 105, 3093 (2001)', 'J. M. Stubbs, J. J. Potoff, J. I. Siepmann, J. Phys. Chem. B 108, 17596 (2004)', 'S. J. Keasler, S. M. Charan, C. D. Wick, I. G. Economou, J. I. Siepmann, J. Phys. Chem. B 116, 11234 (2012)', 'B. L. Eggimann et al., J. Chem. Eng. Data 65, 1330 (2020)'],
                       {"source": "the TraPPE group's own parameter tables, model by model (trappe.oit.umn.edu), each term with its paper, and the transferable hydrocarbon bonds, bends and torsions of the TraPPE-UA papers' tables; transcribed by bench/ff/make_trappe.py",
@@ -305,29 +277,10 @@ ENTRIES = {
 }
 RTF = "the topology's own residues typed as it types them (bench/ff/validate_rtf_types.py --cap-links): "
 for fid, name, version, refs, evidence, listing, replaces in (
-        ("charmm36-prot-toppar", "CHARMM36 proteins", "toppar_c36_jul17 (par_all36_prot.prm, top_all36_prot.rtf, its streams)",
-         ["R. B. Best et al., J. Chem. Theory Comput. 8, 3257 (2012)", "A. D. MacKerell Jr. et al., J. Phys. Chem. B 102, 3586 (1998)"],
-         RTF + "top_all36_prot.rtf 391 / 391 atoms, 24 / 24 residues", ("CHARMM36", "charmm36", 7), ["charmm36-prot"]),
-        ("charmm22-prot-toppar", "CHARMM22 proteins", "toppar_c36_jul17 (par_all22_prot.prm, top_all22_prot.rtf)",
-         ["A. D. MacKerell Jr. et al., J. Phys. Chem. B 102, 3586 (1998)"],
-         RTF + "top_all22_prot.rtf 381 / 381 atoms, 23 / 23 residues", ("CHARMM22 protein", "charmm22_prot", 21), ["charmm22-prot"]),
-        ("charmm36-carb-toppar", "CHARMM36 carbohydrates", "toppar_c36_jul17 (par_all36_carb.prm, top_all36_carb.rtf, its streams)",
-         ["O. Guvench et al., J. Chem. Theory Comput. 7, 3162 (2011)"],
-         RTF + "top_all36_carb.rtf 1786 / 1786 atoms, 75 / 75 residues", ("CHARMM36 carbohydrate", "charmm36_carb", 22), ["charmm36-carb"]),
         ("cgenff-toppar", "CHARMM36 CGenFF", "toppar_c36_jul17 (par_all36_cgenff.prm, top_all36_cgenff.rtf: CGenFF 3.0.1 / 4.0)",
          ["K. Vanommeslaeghe et al., J. Comput. Chem. 31, 671 (2010)"],
          RTF + "top_all36_cgenff.rtf 9872 / 9872 atoms, 519 / 519 residues (residues with lone pairs left out)",
-         ("CHARMM36 CGenFF", "charmm36_cgenff", 23), ["cgenff"]),
-        ("charmm36-lipid-toppar", "CHARMM36 lipids", "toppar_c36_jul17 (par_all36_lipid.prm, top_all36_lipid.rtf, its streams)",
-         ["J. B. Klauda et al., J. Phys. Chem. B 114, 7830 (2010)"],
-         RTF + "top_all36_lipid.rtf 4224 / 4224 atoms, 35 / 35 residues", ("CHARMM36 lipid", "charmm36_lipid", 24), ["charmm36-lipid"]),
-        ("charmm36-nucl-toppar", "CHARMM36 nucleic acids", "toppar_c36_jul17 (par_all36_na.prm, top_all36_na.rtf, its streams)",
-         ["K. Hart et al., J. Chem. Theory Comput. 8, 348 (2012)"],
-         RTF + "top_all36_na.rtf 161 / 161 atoms, 5 / 5 residues", ("CHARMM36 nucleic acid", "charmm36_nucl", 25), ["charmm36-nucl"]),
-        ("charmm19-toppar", "CHARMM19 (united atom)", "param19 / toph19 (toppar_c36_jul17)",
-         ["E. Neria, S. Fischer, M. Karplus, J. Chem. Phys. 105, 1902 (1996)"],
-         RTF + "toph19.inp 319 / 319 atoms, 36 / 36 residues (--united); one torsion per bond as toph19 lists them, 103 / 104 central "
-         "bonds (bench/ff/validate_rtf_torsions.py; TRP's cross-ring terms left out)", ("CHARMM19", "charmm19", 20), ["charmm19"])):
+         ("CHARMM36 CGenFF", "charmm36_cgenff", 23), ["cgenff"]),):
     ENTRIES[fid] = (name, version, refs, CHARMM, evidence, listing, replaces)
 # CGenFF v. 2a5, the version published with the CGenFF paper, from its Supporting Information (bench/ff/open/build_cgenff_si.sh)
 ENTRIES["cgenff-2a5-jcc2010"] = (
@@ -349,6 +302,11 @@ ENTRIES["cgenff-2a5-jcc2010"] = (
 cat_path = os.path.join(FF, "catalogue.json")
 cat = json.load(open(cat_path))
 fl = cat["forcefields"]
+# biomolecular force fields removed on 2026-10-14 (CAPS focuses on polymers, crystals and materials): their entries go
+REMOVED = {"amber-ff03-ambertools", "amber-ff14sb-ambertools", "oplsaam-jorgensen", "gromos54a7-gromacs", "martini22-proteins",
+           "charmm36-prot-toppar", "charmm22-prot-toppar", "charmm36-carb-toppar", "charmm36-lipid-toppar",
+           "charmm36-nucl-toppar", "charmm19-toppar"}
+fl[:] = [x for x in fl if x["id"] not in REMOVED]
 for fid, (name, version, refs, lic, evidence, listing, replaces) in ENTRIES.items():
     path = os.path.join(FF, fid + ".json")
     e = {"id": fid, "name": name, "version": version, "references": refs, "origin": "built from source", **lic,

@@ -42,7 +42,7 @@ struct Atom {
   int type = 0;          // numeric type, 0 = none
   std::string name;      // type or atom name from the file
   std::string resname;   // residue name (GROMACS, PDB)
-  int64_t resid = 0;     // residue number (GROMACS, PDB, the peptide builder), 0 = none
+  int64_t resid = 0;     // residue number (GROMACS, PDB), 0 = none
   int element = 0;       // atomic number, 0 = unknown
   double charge = 0.0;
   Vec3 pos{0, 0, 0};     // Å, as read (may be unwrapped)
@@ -65,7 +65,7 @@ struct TypeInfo {
   std::string label;     // e.g. "c3" from "1 12.011 # c3"
 };
 
-// A molecule topology given term by term (a coarse-grained protein, as martinize writes one): parameterize uses these
+// A molecule topology given term by term (a Martini 3 molecule, a GROMACS .itp): parameterize uses these
 // bonded terms, with their own parameters, in place of rule lookups; the non-bonded terms still come from the types.
 // Units as LAMMPS real: bonds K (r − r0)² (kcal/mol/Å², Å); angles form 0 harmonic K (θ − θ0)², 1 cosine/squared
 // K (cos θ − cos θ0)², 5 restricted bending K (cos θ − cos θ0)² / sin² θ; dihedrals form 1 (and 9, GROMACS's multiple form) K [1 + cos(nφ − φ0)], form 2
@@ -90,7 +90,7 @@ struct ExplicitTopology {
   std::vector<double> masses;   // per atom when the molecule sets them (NaN: the type's), else empty
   std::vector<std::array<uint32_t, 2>> pairs14;   // 1-4 pairs with the force field's 1-4 Lennard-Jones and Coulomb scale
   std::vector<std::string> types;   // per atom, when the topology names the force-field types (building blocks), else empty
-  std::string source;   // "Martini 2.2 protein (martinize rules)"
+  std::string source;   // "Martini 3 molecule"
 };
 
 struct System {

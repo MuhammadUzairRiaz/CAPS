@@ -72,7 +72,6 @@
 #include "caps/cg_rules.hpp"
 #include "caps/dft_commands.hpp"
 #include "caps/spacegroup.hpp"
-#include "caps/peptide.hpp"
 #include "caps/solvate.hpp"
 #include "caps/appearance.hpp"
 #include "caps/trajectory.hpp"
@@ -189,7 +188,6 @@ struct caps_doc {
   std::vector<int64_t> rigid_mols;     // v62: molecules written as rigid bodies in LAMMPS inputs
   std::vector<caps::RelaxOptions::Restraint> restraints;   // distance restraints for caps_relax
   std::vector<caps::RelaxOptions::DihedralRestraint> dihedral_restraints;   // and dihedral ones
-  double ph = -1;         // Add hydrogens: residues protonated at this pH (< 0: neutral valences)
   std::unique_ptr<caps::Pipeline> pipeline;        // caps_pipeline_set: steps run on every shown frame
   std::unique_ptr<caps::PipelineState> pstate;     // its result for the current frame
   // results cached per frame (design/boards/PipelineSteps "results cached per frame"): kept while the pipeline and the
@@ -199,7 +197,7 @@ struct caps_doc {
   bool pstate_cached = false;
   std::vector<int32_t> shown_of;                   // frame index → first shown particle (−1: deleted)
   std::array<int, 3> cell_repeats{1, 1, 1};        // caps_crystal_build: a supercell of this many unit cells
-  std::vector<caps::Segment> overlay;              // caps_peptide_build with ribbon: tubes drawn with the atoms (no pipeline)
+  std::vector<caps::Segment> overlay;              // tubes drawn with the atoms (no pipeline)
   caps::Scene scene;                               // caps_render_scene: the arrays the caller reads until the next call
   caps_live_fn live_fn = nullptr;             // caps_set_live: snapshots of a running caps_md / caps_equilibrate
   void* live_user = nullptr;
@@ -1500,7 +1498,6 @@ caps_doc* caps_shadow(caps_doc* d) {
     sd->look.ramp = d->look.ramp;
     sd->selection = d->selection;
     sd->cell_repeats = d->cell_repeats;
-    sd->ph = d->ph;
     sd->held_mol = d->held_mol;
     sd->fixed_atoms = d->fixed_atoms;
     sd->fixed_axes = d->fixed_axes;
@@ -3576,7 +3573,7 @@ int32_t caps_field_assign(caps_doc* d, const char* ff_path, const char* rules_pa
         F->file_has_charges = true;
         F->prep_notes.push_back(note);
       }
-      // the model's own charges (a Martini protein's, a molecule template's), whether or not the structure changed
+      // the model's own charges (a Martini molecule's, a molecule template's), whether or not the structure changed
       if (ch == "keep" && F->auto_charges && F->base.united_atom) F->ua_summed = true;   // still automatic: types' own charges where they carry them
       else if (ch == "keep") F->charges = "keep", F->auto_charges = false;
     }
@@ -7481,10 +7478,6 @@ extern "C" int32_t caps_file_checks(caps_doc* d, char* json, int32_t cap) {
   }
 }
 
-extern "C" void caps_set_ph(caps_doc* d, double ph) {
-  if (d) d->ph = ph;
-}
-
 extern "C" int32_t caps_set_restraints(caps_doc* d, const char* json) {
   if (!d) return -1;
   int32_t n = 0;
@@ -7820,106 +7813,6 @@ extern "C" int32_t caps_crystal_find_symmetry(const char* spec_json, const char*
     j["error"] = std::string(e.what());
   }
   return report_out(j.dump(0), json, cap);
-}
-
-// ---------------------------------------------------------------- peptides (v20)
-
-namespace {
-
-caps::PeptideOptions peptide_options(const caps::Json& j) {
-  caps::PeptideOptions o;
-  o.sequence = j.text("sequence");
-  o.structure = j.text("structure");
-  auto tri = [&](const char* k, std::array<double, 3>& t) {
-    if (j.has(k) && j[k].is_array() && j[k].size() >= 2)
-      for (size_t q = 0; q < 3 && q < j[k].size(); ++q) t[q] = j[k][q].number();
-  };
-  tri("helix", o.helix);
-  tri("strand", o.strand);
-  tri("ppii", o.ppii);
-  o.n_term = j.text("n_term", "NH3+");
-  o.c_term = j.text("c_term", "COO-");
-  o.ph = j.num("ph", 7.0);
-  auto flag = [&](const char* k, bool def) {
-    if (!j.has(k)) return def;
-    return j[k].kind() == caps::Json::Bool ? j[k].boolean() : j[k].number() != 0;
-  };
-  o.neutral = flag("neutral", false);
-  o.cleanup = flag("cleanup", true);
-  o.seed = uint64_t(j.num("seed", 1));
-  return o;
-}
-
-// A tube through the CA atoms (Catmull–Rom, six pieces per residue) coloured by secondary structure.
-std::vector<caps::Segment> peptide_ribbon(const caps::System& s, const std::string& ss) {
-  std::vector<caps::Vec3> ca;
-  for (const auto& a : s.atoms) if (a.name == "CA" && a.resname != "ACE" && a.resname != "NME") ca.push_back(a.pos);
-  std::vector<caps::Segment> out;
-  if (ca.size() < 2) return out;
-  auto colour = [&](size_t i) -> unsigned {
-    const char c = i < ss.size() ? ss[i] : 'C';
-    return c == 'H' ? 0xE07A5F : c == 'E' ? 0x6FA8DC : c == 'P' ? 0x9B7BD6 : 0x8A9097;
-  };
-  auto radius = [&](size_t i) { const char c = i < ss.size() ? ss[i] : 'C'; return c == 'H' ? 0.9 : c == 'E' ? 0.7 : 0.35; };
-  for (size_t i = 0; i + 1 < ca.size(); ++i) {
-    const caps::Vec3 &p0 = ca[i ? i - 1 : 0], &p1 = ca[i], &p2 = ca[i + 1], &p3 = ca[std::min(i + 2, ca.size() - 1)];
-    caps::Vec3 prev = p1;
-    for (int k = 1; k <= 6; ++k) {
-      const double t = k / 6.0, t2 = t * t, t3 = t2 * t;
-      caps::Vec3 q;
-      for (int d = 0; d < 3; ++d)
-        q[d] = 0.5 * (2 * p1[d] + (-p0[d] + p2[d]) * t + (2 * p0[d] - 5 * p1[d] + 4 * p2[d] - p3[d]) * t2 + (-p0[d] + 3 * p1[d] - 3 * p2[d] + p3[d]) * t3);
-      caps::Segment seg;
-      seg.a = prev, seg.b = q;
-      const size_t owner = k <= 3 ? i : i + 1;
-      seg.rgb = colour(owner);
-      seg.radius = radius(owner);
-      out.push_back(seg);
-      prev = q;
-    }
-  }
-  return out;
-}
-
-}  // namespace
-
-extern "C" int32_t caps_peptide_info(const char* options_json, char* json, int32_t cap) {
-  caps::Json j = caps::Json::object();
-  try {
-    caps::PeptideOptions o = peptide_options(caps::Json::parse(options_json && *options_json ? options_json : "{}"));
-    o.cleanup = false;
-    caps::PeptideReport rep;
-    caps::build_peptide(o, &rep);
-    j["ok"] = true;
-    j["residues"] = double(rep.residues), j["atoms"] = double(rep.atoms), j["charge"] = double(rep.charge);
-    j["formula"] = rep.formula, j["mass"] = rep.mass, j["smiles"] = rep.smiles, j["structure"] = rep.structure;
-  } catch (const std::exception& e) {
-    j["ok"] = false;
-    j["error"] = std::string(e.what());
-  }
-  return report_out(j.dump(0), json, cap);
-}
-
-extern "C" caps_doc* caps_peptide_build(const char* options_json, char* report, int32_t cap) {
-  try {
-    const caps::Json j = caps::Json::parse(options_json && *options_json ? options_json : "{}");
-    caps::PeptideReport rep;
-    const caps::System s = caps::build_peptide(peptide_options(j), &rep);
-    std::string notes;
-    for (const auto& n : s.notes) notes += n + "\n";
-    report_out(notes, report, cap);
-    caps_doc* d = doc_of(s);
-    prov_step(d, "bio.peptide", "peptide from its sequence, backbone placed by NeRF", json_params(options_json), "", {"engh1991", "parsons2005"});
-    if (j.has("ribbon") && (j["ribbon"].kind() == caps::Json::Bool ? j["ribbon"].boolean() : j["ribbon"].number() != 0)) d->overlay = peptide_ribbon(s, rep.structure);
-    return d;
-  } catch (const std::exception& e) {
-    g_error = e.what();
-    return nullptr;
-  }
-}
-
-extern "C" int32_t caps_fasta_sequence(const char* text, char* seq, int32_t cap) {
-  return report_out(caps::parse_fasta(text ? text : ""), seq, cap);
 }
 
 // ---------------------------------------------------------------- solvation (v20)
@@ -8536,11 +8429,10 @@ extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t c
       if (!at.empty()) { m.assign(s.atoms.size(), 0); for (uint32_t a : at) m[a] = 1; }
       const size_t before = s.atoms.size();
       if (needs_geometry_orders(s)) geometry_orders(s);   // orders never assigned: from the heavy atoms' geometry
-      const double ph = j.has("ph") ? j["ph"].number() : d->ph;
-      const int k = ph >= 0 ? caps::add_hydrogens_at_ph(s, ph, m) : caps::add_hydrogens(s, m);
+      const int k = caps::add_hydrogens(s, m);
       if (k == 0) throw std::invalid_argument("no atom lacks hydrogens");
       for (size_t i = before; i < s.atoms.size(); ++i) added.push_back(double(i));
-      what = "Add " + std::to_string(k) + " hydrogens" + (ph >= 0 ? " at pH " + std::to_string(ph).substr(0, 4) : "");
+      what = "Add " + std::to_string(k) + " hydrogens";
     } else if (op == "invert") {
       const uint32_t c = uint32_t(j.num("centre", -1));
       caps::invert_centre(s, c);
@@ -8587,10 +8479,6 @@ extern "C" int32_t caps_edit(caps_doc* d, const char* json, char* out, int32_t c
       if (f.pattern == "atoms") for (uint32_t a : atoms_of(d, j)) f.atoms.push_back(a);
       const auto fr = caps::functionalize(s, f);
       what = fr.notes.empty() ? "Functionalised" : fr.notes.front();
-    } else if (op == "phosphate_ends") {   // P–H (a strand's 3′ cap) → P–OH
-      const int k = caps::hydroxylate_phosphorus(s);
-      if (k == 0) throw std::invalid_argument("no hydrogen on phosphorus");
-      what = "Phosphate ends: " + std::to_string(k) + " P–H to P–OH";
     } else if (op == "type_element") {   // {type, element, mass?}: every atom of a type made this element; the type is kept
       const int t = int(j.num("type", 0));
       const int z = element_of(j.text("element"));
@@ -11363,11 +11251,7 @@ extern "C" int32_t caps_hydrogen_plan(caps_doc* d, char* out, int32_t cap) {
     caps::System perceived;
     const bool geo = needs_geometry_orders(d->frame);
     if (geo) perceived = d->frame, geometry_orders(perceived);
-    if (d->ph >= 0) {   // residues protonated at the pH first: their formal charges change what each atom lacks
-      if (!geo) perceived = d->frame;
-      caps::protonate_residues(perceived, d->ph);
-    }
-    const auto& s = geo || d->ph >= 0 ? perceived : d->frame;
+    const auto& s = geo ? perceived : d->frame;
     std::vector<char> sel;
     if (d->selection.size() == s.atoms.size() && std::any_of(d->selection.begin(), d->selection.end(), [](char c) { return c != 0; })) sel = d->selection;
     const auto rows = caps::hydrogen_plan(s, sel);

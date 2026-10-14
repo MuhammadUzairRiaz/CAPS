@@ -84,7 +84,7 @@ TEST(Provenance, BibtexForEveryCitedMethod) {
   EXPECT_NE(bib.find("doi = {10.1063/1.2408420}"), std::string::npos);
   // every key the C API cites is in the table
   for (const char* k : {"abascal2005", "auhl2003", "berendsen1984", "berendsen1987", "bernetti2020", "bitzek2006", "bussi2007", "cordero2008",
-                        "engh1991", "essmann1995", "fennell2006", "gasteiger1980", "hall1981", "jorgensen1983", "larsen2011", "liu1989",
+                        "essmann1995", "fennell2006", "gasteiger1980", "hall1981", "jorgensen1983", "larsen2011", "liu1989",
                         "martinez2009", "matsumoto1998", "parsons2005", "polak1969", "rappe1991", "rappe1992", "swope1982", "wang2004"})
     EXPECT_TRUE(known_citation(k)) << k;
 }

@@ -25,7 +25,6 @@ public partial class CgPage : PageBase
     private void OnCrystal(object? s, RoutedEventArgs e) => Vm.OpenCrystal();
     private void OnSurface(object? s, RoutedEventArgs e) => Vm.OpenSurface();
     private void OnNano(object? s, RoutedEventArgs e) => Vm.OpenNano();
-    private void OnBio(object? s, RoutedEventArgs e) => Vm.OpenBio();
     private void OnSolvation(object? s, RoutedEventArgs e) => Vm.OpenSolvation();
     private async void OnBuild(object? s, RoutedEventArgs e) { if (Vm.CgIsMartini) await Vm.BuildMartini(); else if (Vm.CgIsMapped) await Vm.BuildMappedCg(); else Vm.BuildCg(); }
     private async void OnMapOpen(object? s, RoutedEventArgs e) => await Vm.MapOpenStructure();

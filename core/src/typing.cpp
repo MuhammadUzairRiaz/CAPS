@@ -1201,7 +1201,7 @@ TypingResult assign_types(const System& s, const FFDef& ff, const std::vector<st
     return assign_types(t, ff, context);
   }
   if (s.topology && s.topology->types.size() == s.atoms.size() && s.topology->natoms == s.atoms.size()) {
-    // building blocks: the types the topology names (apply_residue_templates)
+    // a topology that names every atom's type: those types
     TypingResult r;
     r.types = s.topology->types;
     r.why.assign(s.atoms.size(), s.topology->source);

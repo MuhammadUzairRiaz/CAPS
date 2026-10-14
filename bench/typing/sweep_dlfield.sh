@@ -8,14 +8,13 @@
 cd "$(dirname "$0")/../.."
 R=${1:-docs/paper/runs/checks_1012}
 CH="water_spce?=data/typing/charmm-spc.typing.json;water_tip3p=data/typing/charmm-tip3p.typing.json;water_tip3p_pme=data/typing/charmm-tip3p-pme.typing.json"
-AM="water_tip3p=data/typing/amber-tip3p.typing.json;water_tip3p_pme=data/typing/amber-tip3p-pme.typing.json"
 CV="water_tip3p=data/typing/cvff-tip3p.typing.json;water_spce?=data/typing/cvff-spc.typing.json"
 GA="water_tip3p_c=data/typing/gaff-tip3p-c.typing.json;water_tip3p_pme=data/typing/gaff-tip3p-pme.typing.json;water_spce?=data/typing/gaff-spc.typing.json"
 DR="water_tip3p=data/typing/dreiding-tip3p.typing.json;water_tip3p_pme=data/typing/dreiding-tip3p-pme.typing.json"
 OP="water_tip3p_c=data/typing/opls-tip3p-c.typing.json;water_spce?=data/typing/opls-spc.typing.json"
 while read lib ff ov; do
   [ -z "$lib" ] && continue
-  case "$ov" in charmm) o="$CH";; amber) o="$AM";; cvff) o="$CV";; opls) o="$OP";; dreiding) o="$DR";; gaff) o="$GA";; *) o="";; esac
+  case "$ov" in charmm) o="$CH";; cvff) o="$CV";; opls) o="$OP";; dreiding) o="$DR";; gaff) o="$GA";; *) o="";; esac
   for f in data/typing/sets/$ff/*.typing.json; do   # other potential sets (inorganic): each overlay on its own template
     [ -f "$f" ] && o="${o:+$o;}$(basename "$f" .typing.json)=$f"
   done
@@ -34,20 +33,11 @@ COMPASS compass
 COMPASS compass-frc
 CVFF cvff cvff
 OPLS2005 opls2005 opls
-AMBER amber amber
 AMBER16_gaff gaff-amber16 gaff
 AMBER25_gaff gaff-amber25 gaff
 CHARMM charmm charmm
-CHARMM19 charmm19
-CHARMM22_prot charmm22-prot charmm
-CHARMM36_prot charmm36-prot charmm
-CHARMM36_lipid charmm36-lipid charmm
-CHARMM36_nucl charmm36-nucl charmm
-CHARMM36_carb charmm36-carb charmm
 CHARMM36_cgenff cgenff charmm
 DREIDING dreiding dreiding
-GROMOS_G54A7 gromos-54a7
-OPLS_AAM opls-aam opls
 OPLS_CL_P opls-clp opls
 OPLS_DES opls-des
 TRAPPE_EH trappe-eh

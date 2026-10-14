@@ -1,9 +1,0 @@
-{
- "description": "Residues of AmberTools' GLYCAM_06j-1.prep whose own entry contradicts the rest of the file; bench/ff/validate_off_types.py --deviations reports them apart from the matches.",
- "residues": {
-  "4AE": "H5 and O5 take H5 itself as their reference atom (row 16: '16 H5 ... E 16 13 10'), so the prep bonds O5 to H5 and leaves C5 with three neighbours; 0AE and 2AE are complete",
-  "WdR": "O3 hangs on C2 (row 21 references atom 18, C2) instead of C3, which gives C2 five neighbours; 0dR, 2dR, 3dR place O3 on C3",
-  "3dR": "the C6 methyl H are typed H1 where every sibling (0dR, 2dR, WdR ...) and every other 6-deoxy residue types them Hc (no O or N on C6)",
-  "YGa": "the C3 and C6 H are typed H1 on carbons carrying no O or N (Hc in every other deoxy residue), with C-H bonds of 1.021 and 1.013 A"
- }
-}

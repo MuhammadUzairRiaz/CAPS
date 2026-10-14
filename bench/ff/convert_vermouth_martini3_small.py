@@ -21,7 +21,7 @@ import glob, json, os, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, HERE)
-import convert_vermouth_martini3 as vm   # the .ff reader and .map reader
+import vermouth_ff as vm   # the .ff reader and .map reader
 
 SRC = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser("~/vermouth-ref")
 

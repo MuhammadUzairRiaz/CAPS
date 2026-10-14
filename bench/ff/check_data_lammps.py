@@ -194,26 +194,12 @@ CASES = [
     # the libraries CAPS builds from the force fields' own files (bench/ff/open: CHARMM's toppar, AmberTools' dat/leap/parm):
     # CHARMM in its own styles (Urey-Bradley angles, multi-term torsions, periodic impropers, separate 1-4 LJ; run with
     # --native), GAFF / GAFF2 typed by antechamber's rules
-    ("CHARMM36 toppar: peptide GAFKW (Urey-Bradley, 1-4 LJ)", ("peptide", "GAFKW"), "charmm36-prot-toppar", "gasteiger", "rules"),
-    ("CHARMM22 toppar: peptide GAFKW", ("peptide", "GAFKW"), "charmm22-prot-toppar", "gasteiger", "rules"),
     ("CGenFF toppar: toluene, N-methylacetamide, ethyl acetate", ("smiles", "Cc1ccccc1.CC(=O)NC.CCOC(=O)C"), "cgenff-toppar", "gasteiger", "rules"),
     # CGenFF v. 2a5 from the 2010 paper's Supporting Information (SI residues TOLU, ETAC, UREA, DMSO and an amide; QEq charges, as Gasteiger-Marsili has none for S=O):
     # Urey-Bradley angles, multi-term torsions, harmonic impropers, separate 1-4 LJ
     ("CGenFF 2a5 (JCC 2010 SI): toluene, N-methylacetamide, ethyl acetate, urea, DMSO", ("smiles", "Cc1ccccc1.CC(=O)NC.CCOC(=O)C.NC(N)=O.CS(C)=O"),
      "cgenff-2a5-jcc2010", "qeq", "rules"),
-    ("CHARMM36 carbohydrates toppar: glucose", ("smiles", "OC[C@H]1O[C@H](O)[C@H](O)[C@@H](O)[C@@H]1O"), "charmm36-carb-toppar", "gasteiger", "rules"),
-    ("CHARMM36 nucleic acids toppar: thymidine", ("smiles", "CC1=CN([C@H]2C[C@H](O)[C@@H](CO)O2)C(=O)NC1=O"), "charmm36-nucl-toppar", "gasteiger", "rules"),
-    ("CHARMM36 lipids toppar: phosphatidylcholine", ("smiles", "CCCCCCCC(=O)OC[C@H](COP(=O)([O-])OCC[N+](C)(C)C)OC(=O)CCCCCCC"), "charmm36-lipid-toppar", "qeq", "rules"),
-    # CHARMM19 (param19 / toph19, united atom: only polar H and formyl H explicit; 1-4 Coulomb x 0.4)
-    ("CHARMM19 toppar (united atom): peptide GAFKW", ("peptide", "GAFKW"), "charmm19-toppar", "gasteiger", "rules"),
-    ("AMBER ff03: peptide GAFKW", ("peptide", "GAFKW"), "amber-ff03-ambertools", "gasteiger", "rules"),
-    ("AMBER ff03: thymidine (N*, CM, CT / H2 sugar)", ("smiles-nudged", "CC1=CN([C@H]2C[C@H](O)[C@@H](CO)O2)C(=O)NC1=O"), "amber-ff03-ambertools", "gasteiger", "rules"),
-    # GLYCAM06j (its 1-4 terms unscaled): a methyl glucoside and a beta-1,4 disaccharide
-    ("GLYCAM06j: methyl alpha-D-glucopyranoside, cellobiose", ("smiles", "CO[C@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O.OC[C@H]1O[C@@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)O[C@@H]2CO)[C@H](O)[C@@H](O)[C@@H]1O"),
-     "glycam06j-ambertools", "gasteiger", "rules"),
-    ("AMBER ff14SB: peptide GAFKWDR (CX, 2C / 3C, C8, CO)", ("peptide", "GAFKWDR"), "amber-ff14sb-ambertools", "gasteiger", "rules"),
-    # OPLS-AA from GROMACS's oplsaa.ff (type charges): a peptide with its own C alpha, Arg, His, Trp types; small organics
-    ("OPLS-AA (GROMACS oplsaa.ff): peptide GHWRK", ("peptide", "GHWRK"), "oplsaa-gromacs", "types", "rules"),
+    # OPLS-AA from GROMACS's oplsaa.ff (type charges): small organics
     ("OPLS-AA (GROMACS oplsaa.ff): isoprene, ethylbenzene, ester, disulfide, phenol", ("smiles", "CC=C(C)CC.CCc1ccccc1.CCOC(=O)C.CSSC.Oc1ccccc1"),
      "oplsaa-gromacs", "types", "rules"),
     # OPLS-AA 2024 from Jorgensen's own files (type charges)
@@ -224,7 +210,6 @@ CASES = [
     # the paper's torsion rules, planar inversions, hydrogen bonds
     ("DREIDING (Mayo 1990): butadienyl amide, benzene ring, phenol, nitrile", ("smiles", "C=CC=CCC(=O)NCc1ccccc1O.CCC#N"), "dreiding1990", "gasteiger", "rules"),
     ("DREIDING (Mayo 1990) ethanol liquid: hydrogen bonds (periodic)", ("solvent-box", "ethanol", 26), "dreiding1990", "gasteiger", "rules"),
-    ("OPLS-AA/M (Jorgensen lab): peptide GHWRKD", ("peptide", "GHWRKD"), "oplsaam-jorgensen", "types", "rules"),
     # CL&P ionic liquids from il.ff: an imidazolium / NTf2 pair, pyrrolidinium dicyanamide, ethylsulfate (charges of the types)
     ("CL&P (il.ff): [C4C1im][NTf2], [C4C1pyrr][dca], ethylsulfate, BF4; nudged off linear", ("smiles-nudged", "CCCCn1cc[n+](C)c1.FC(F)(F)S(=O)(=O)[N-]S(=O)(=O)C(F)(F)F.CCCC[N+]1(C)CCCC1.N#C[N-]C#N.CCOS(=O)(=O)[O-].F[B-](F)(F)F"),
      "clandp", "types", "rules"),
@@ -325,12 +310,6 @@ CASES = [
     ("MARTINI amino acids: HIS, PHE, TYR, TRP (impropers), ARG, ASP, LYS + water (periodic)",
      ("cg-box", "martini-aminoacids", [("template", t, 3) for t in ("HIS", "PHE", "TYR", "TRP", "ARG", "ASP", "LYS")] + [("beads", "[P4]", 100)], 40.0),
      "martini-aminoacids", "keep", "rules"),
-    ("Martini 2.2 protein: AK helix (DSSP; helix constraints, BBB angles, backbone dihedrals)", ("peptide", "AEAAAKEAAAKEAAAKA", "--helix"),
-     "martini22-proteins", "keep", "rules"),
-    ("Martini 2.2 protein: aromatic helix (W, Y, F, H ring constraints and impropers, charged termini)", ("peptide", "AEAWAKEAYAKEAFAKHA", "--helix"),
-     "martini22-proteins", "keep", "rules"),
-    ("Martini 2.2 protein: 1ICO beta-hairpin (VAL, ILE as AC1 / AC2; elastic bonds, disulfide)", ("file", os.path.join(ROOT, "tests", "data", "vermouth", "1ico_aa.pdb")),
-     "martini22-proteins", "keep", "rules"),
     ("SDK DMPC + DMPE + water (periodic)", ("cg-box", "sdk-moltemplate", [("beads", "[NC][PH][GL]([EST1][CM][CM][CM][CT2])[EST2][CM][CM][CM][CT2]", 6),
                                                                      ("beads", "[NH][PHE][GL]([EST1][CM][CM][CM][CT2])[EST2][CM][CM][CM][CT2]", 4),
                                                                      ("beads", "[W]", 120)], 36.0),
@@ -525,10 +504,6 @@ def structure(src, base):
                 if len(w) >= 4:
                     lines[i] = " ".join([w[0]] + ["%.5f" % (float(x) + rng.uniform(-0.03, 0.03)) for x in w[1:4]] + w[4:])
             open(out, "w").write("\n".join(lines))
-        return out, None
-    if kind == "peptide":   # an all-atom peptide from CAPS's builder
-        out = os.path.join(work, base + ".pdb")
-        subprocess.run([CAPS, "peptide", src[1], "-o", out] + list(src[2:]), capture_output=True, check=True)
         return out, None
     if kind in ("smiles", "smiles-nudged"):   # built and cleaned up by CAPS with UFF (or the force field a third item names)
         m = os.path.join(work, base + ".mol2")

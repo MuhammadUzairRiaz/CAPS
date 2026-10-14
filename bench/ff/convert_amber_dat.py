@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""A CAPS force-field file from AMBER's own parameter files (AmberTools dat/leap/parm: gaff.dat, gaff2.dat, parm99.dat,
+"""A CAPS force-field file from AMBER's own parameter files (AmberTools dat/leap/parm: gaff.dat, gaff2.dat,
 frcmod.*), which AmberTools' LICENSE states "have been placed in the public domain by their authors".
 
-  convert_amber_dat.py OUT.json --name NAME --dat gaff2.dat [--frcmod frcmod.ff03 ...] [--reference "..."] [--version "..."]
+  convert_amber_dat.py OUT.json --name NAME --dat gaff2.dat [--frcmod FILE.frcmod ...] [--reference "..."] [--version "..."]
                      [--typing ../typing/ID.typing.json] [--scale14 LJ COUL]
 
 The .dat sections, in order and separated by blank lines: atom types (name, mass), the hydrophilic list, bonds, angles,
@@ -84,7 +84,7 @@ def read_dat(path):
         more, last = False, None
         while i < len(L) and L[i].strip():
             names, rest = keyfields(L[i], n)
-            if section == "dihedrals" and more and not any(names):   # a further term of the last key (GLYCAM leaves the names blank)
+            if section == "dihedrals" and more and not any(names):   # a further term of the last key (a file may leave the names blank)
                 names = last
             last = names
             if section == "bonds":
@@ -146,7 +146,7 @@ def read_frcmod(path):
             pairs[w[0]] = {"name": w[0], "match": [wild(w[0])], "params": [float(w[2]), 2 * float(w[1]) / SIG]}
 
 
-for i, a in enumerate(sys.argv):   # in the order given, each overriding the last (leap: parm99, frcmod.ff03, then GLYCAM)
+for i, a in enumerate(sys.argv):   # in the order given, each overriding the last (as leap loads them)
     if a == "--dat":
         read_dat(sys.argv[i + 1])
     elif a == "--frcmod":
@@ -154,7 +154,7 @@ for i, a in enumerate(sys.argv):   # in the order given, each overriding the las
 for t, base in equiv.items():   # nonbonded equivalences: the type takes its base type's Lennard-Jones
     if t not in pairs and base in pairs:
         pairs[t] = {"name": t, "match": [wild(t)], "params": list(pairs[base]["params"]), "comment": f"Lennard-Jones of {base} (equivalence)"}
-# 1-4 scaling: AMBER's 0.5 / 1/1.2 unless the source sets its own (GLYCAM: SCEE = SCNB = 1, --scale14 1 1)
+# 1-4 scaling: AMBER's 0.5 / 1/1.2 unless the source sets its own (--scale14 LJ COUL: the divisors, as SCNB SCEE)
 LJ14, COUL14 = (1 / float(sys.argv[sys.argv.index("--scale14") + 1]), 1 / float(sys.argv[sys.argv.index("--scale14") + 2])) \
     if "--scale14" in sys.argv else (0.5, 1 / 1.2)
 for d in dihedrals.values():

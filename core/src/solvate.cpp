@@ -72,7 +72,7 @@ void extent(const System& s, Vec3& lo, Vec3& hi) {
 
 const std::vector<SolventInfo>& solvent_library() {
   static const std::vector<SolventInfo> lib = {
-      {"water", "Water", "O", 0.997, "hydrated fillers, latex, biomolecules"},
+      {"water", "Water", "O", 0.997, "hydrated fillers, latex, polar polymers"},
       {"toluene", "Toluene", "Cc1ccccc1", 0.862, "swelling of NR, BR and SBR (Flory–Rehner crosslink density)"},
       {"cyclohexane", "Cyclohexane", "C1CCCCC1", 0.774, "swelling of non-polar rubbers"},
       {"hexane", "n-Hexane", "CCCCCC", 0.655, "extraction, swelling of EPDM"},
