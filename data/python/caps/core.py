@@ -764,7 +764,7 @@ class Document:
         def element(m):
             return min((abs(m - mm), e) for e, mm in (("H", 1.008), ("C", 12.011), ("N", 14.007), ("O", 15.999), ("Si", 28.086),
                                                        ("S", 32.06), ("Cl", 35.45)))[1]
-        el = [element(mass[typ[i]]) for i in range(len(typ))]
+        el = [element(mass[typ[i]]) if typ[i] in mass else "?" for i in range(len(typ))]
         return el, bonds
 
     def sulfur_bridges(self, ring_limit: int = 8) -> dict:
