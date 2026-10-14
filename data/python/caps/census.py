@@ -4,7 +4,7 @@
 
 builds the chemistry CAPS is meant for: every polymer of the library as a DP-3 oligomer, every copolymer of the library
 with each unit next to each other, the reactants of CAPS React's worked cases (curatives, crosslinkers, hardeners) and
-their products cured to full conversion (as bench/ff/react_coverage.py cures them). Each structure is typed with the
+their products cured to full conversion and relaxed (bench/ff/react_coverage.py's cure, relaxed=True). Each structure is typed with the
 force field, and the census lists
 
   torsion classes    every proper torsion by the class names the force field looks torsions up with, and where its
@@ -26,13 +26,18 @@ summary.md (the counts and the campaign size) and fragments/<env>.mol2.
 import collections, hashlib, importlib.util, json, math, os, sys, tempfile
 
 from . import core as caps
-from .torsionfit import arg, classes, element_of_mass, fragment, in_ring, neighbours, propers, read_data, write_mol2
+from .torsionfit import (CAP_BOND, arg, classes, element_of_mass, in_ring, min_image, neighbours, propers, read_box,
+                         read_data, write_mol2)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
 CAPS_FIT = ("CAPS fit", "CAPS auto-fit")
 RANK = {"published": 0, "CAPS fit": 1, "missing": 2}
 SCAN_POINTS = 24   # a 15 degree scan, as caps.torsionfit prepare writes it
+VALENCE = {"H": 1, "C": 4, "N": 3, "O": 2, "S": 2, "Si": 4, "P": 3, "F": 1, "Cl": 1, "Br": 1, "I": 1}
+Z = {"H": 1, "C": 6, "N": 7, "O": 8, "F": 9, "Si": 14, "P": 15, "S": 16, "Cl": 17, "Br": 35, "I": 53}
+SMALL_RING = 8     # rings up to this size are kept whole; larger cycles (a crosslinked network's) are cut
+MAX_FRAGMENT = 80  # atoms; a fragment that would grow past this is cut where it stands and marked
 
 
 # ------------------------------------------------------------------ the force field, with and without CAPS's fits
@@ -102,7 +107,8 @@ def structures(react=True, copolymers=True):
                     seen.add(smi)
                     yield "reactant", smi, lambda s=smi: caps.build.smiles(s)
         for template, name, mols, box in cases:
-            yield "product", f"{template}: {name}", lambda t=template, m=mols, b=box: cure(t, m, b, 1.0)
+            # cured as a real run cures (relaxed every cycle): the products' geometries are cut into QM fragments
+            yield "product", f"{template}: {name}", lambda t=template, m=mols, b=box: cure(t, m, b, 1.0, relaxed=True)
 
 
 # ------------------------------------------------------------------ environments
@@ -110,15 +116,106 @@ def ring_atoms(nb):
     return {x for x in range(len(nb)) for y in nb[x] if in_ring(nb, x, y)}
 
 
-def linear(pos, nb, x):
+def linear(pos, nb, x, box=None):
     """an atom whose two bonds are collinear (an sp carbon): no torsion turns about it"""
     if len(nb[x]) != 2:
         return False
     a, c = nb[x]
-    u = [pos[a][k] - pos[x][k] for k in range(3)]
-    v = [pos[c][k] - pos[x][k] for k in range(3)]
+    u = min_image([pos[a][k] - pos[x][k] for k in range(3)], box)
+    v = min_image([pos[c][k] - pos[x][k] for k in range(3)], box)
     cosang = sum(u[k] * v[k] for k in range(3)) / (math.sqrt(sum(t * t for t in u)) * math.sqrt(sum(t * t for t in v)))
     return cosang < math.cos(math.radians(170))
+
+
+def small_rings(nb, limit=SMALL_RING):
+    """the smallest ring through each ring bond, up to `limit` atoms, as sets of atoms"""
+    out = set()
+    for u in range(len(nb)):
+        for v in nb[u]:
+            if u > v:
+                continue
+            prev, todo = {u: None}, [u]   # breadth-first from u to v without the bond u-v
+            while todo and v not in prev:
+                nxt = []
+                for x in todo:
+                    for y in nb[x]:
+                        if y not in prev and not (x == u and y == v):
+                            prev[y] = x
+                            nxt.append(y)
+                todo = nxt
+                if len(prev) > 4000:
+                    break
+            if v in prev:
+                path, x = [], v
+                while x is not None:
+                    path.append(x)
+                    x = prev[x]
+                if len(path) <= limit:
+                    out.add(frozenset(path))
+    return out
+
+
+def cut_fragment(el, pos, nb, rings, b, c, radius, box=None):
+    """the QM model of rotor b-c: the atoms within `radius` bonds, grown until no small ring is cut in two and no bond
+    between two unsaturated atoms (fewer neighbours than their valence: a double, triple or aromatic bond) is cut, with
+    every hydrogen of a kept atom; each remaining cut bond (a single bond) capped by H along the bond. A cut through a
+    ring or a double bond puts two caps on one spot or leaves a radical, which no QM code agrees on. box (the cell
+    edges): the fragment is made whole round b, each atom at the image nearest the atom it was reached from (a
+    crosslinked network loops through the cell, so unwrapped positions leave some bonds a box length long).
+    Returns keep, idx, elements, positions, bonds and a problem string ("" when the fragment is sound)."""
+    unsat = lambda x: VALENCE.get(el[x], 0) > len(nb[x])
+    dist = {b: 0, c: 0}
+    todo = [b, c]
+    while todo:
+        x = todo.pop(0)
+        for y in nb[x]:
+            if y not in dist and dist[x] < radius:
+                dist[y] = dist[x] + 1
+                todo.append(y)
+    keep, problem, grown = set(dist), "", True
+    while grown and len(keep) <= MAX_FRAGMENT:
+        grown = False
+        for r in rings:
+            if r & keep and not r <= keep:
+                keep |= r
+                grown = True
+        for x in list(keep):
+            for y in nb[x]:
+                # a bond between two unsaturated atoms, or an atom two kept atoms bond to (two caps on one spot)
+                if y not in keep and el[y] != "H" and ((unsat(x) and unsat(y)) or sum(z in keep for z in nb[y]) > 1):
+                    keep.add(y)
+                    grown = True
+    if len(keep) > MAX_FRAGMENT:
+        problem = f"over {MAX_FRAGMENT} atoms"
+    keep |= {y for x in list(keep) for y in nb[x] if el[y] == "H"}
+    whole, todo = {b: list(pos[b])}, [b]   # the fragment made whole round b
+    while todo:
+        x = todo.pop()
+        for y in nb[x]:
+            if y in keep and y not in whole:
+                d = min_image([pos[y][k] - pos[x][k] for k in range(3)], box)
+                whole[y] = [whole[x][k] + d[k] for k in range(3)]
+                todo.append(y)
+    keep = sorted(whole)
+    idx = {a: k for k, a in enumerate(keep)}
+    fel, fpos, fbonds = [el[a] for a in keep], [whole[a] for a in keep], []
+    for a in keep:
+        for y in nb[a]:
+            if y in idx and idx[a] < idx[y]:
+                fbonds.append((idx[a], idx[y]))
+            elif y not in idx:
+                v = min_image([pos[y][k] - pos[a][k] for k in range(3)], box)
+                n = math.sqrt(sum(t * t for t in v))
+                fel.append("H")
+                fpos.append([whole[a][k] + v[k] / n * CAP_BOND.get(el[a], 1.09) for k in range(3)])
+                fbonds.append((idx[a], len(fel) - 1))
+    if not problem and sum(Z.get(x, 0) for x in fel) % 2:
+        problem = "odd electron count"
+    if not problem:
+        close = min((math.dist(fpos[i], fpos[j]) for i in range(len(fpos)) for j in range(i + 1, len(fpos))), default=9)
+        if close < 0.9:
+            problem = f"two atoms {close:.2f} A apart"
+    return keep, idx, fel, fpos, fbonds, problem
 
 
 def environment(types, nb, rings, b, c, radius):
@@ -161,15 +258,19 @@ def census(ff="oplsaa2024", out=None, only="", react=True, copolymers=True, radi
             data = os.path.join(work, "s.data")
             doc.save(data)
             types_file, masses, pos, bonds, _ = read_data(data)
+            box = read_box(data)
         except Exception as e:   # the build, the cure or the assignment failed: listed, not counted
             rows.append({"kind": kind, "name": name, "error": str(e)[:300]})
             log(f"FAIL {kind}: {name}: {str(e)[:120]}")
             continue
         atoms = r_full.get("atoms", [])
         types = [a.get("type") or "" for a in atoms] if len(atoms) == len(masses) else types_file
-        el = [element_of_mass(m) for m in masses]
+        # the element of each typed atom (a data file's mass can stand for a type that is not the atom's element)
+        el = ([a.get("el") or element_of_mass(m) for a, m in zip(atoms, masses)] if len(atoms) == len(masses)
+              else [element_of_mass(m) for m in masses])
         nb = neighbours(len(el), bonds)
         rings = ring_atoms(nb)
+        small = small_rings(nb)
         miss_full, miss_pub = missing_terms(r_full, cl), missing_terms(r_pub, cl)
         for k in ("bond", "angle"):
             other[k]["missing"] |= miss_full[k]
@@ -192,14 +293,14 @@ def census(ff="oplsaa2024", out=None, only="", react=True, copolymers=True, radi
             n_tors += 1
         n_rot = 0
         for (b, c), keys in by_bond.items():
-            if in_ring(nb, b, c) or len(nb[b]) < 2 or len(nb[c]) < 2 or linear(pos, nb, b) or linear(pos, nb, c):
+            if in_ring(nb, b, c) or len(nb[b]) < 2 or len(nb[c]) < 2 or linear(pos, nb, b, box) or linear(pos, nb, c, box):
                 continue
             n_rot += 1
             h = environment(types, nb, rings, b, c, radius)
             st = max((status(k) for k in keys), key=RANK.get)
             e = envs.get(h)
             if e is None:
-                keep, idx, fel, fpos, fbonds = fragment(el, pos, nb, b, c, radius)
+                keep, idx, fel, fpos, fbonds, problem = cut_fragment(el, pos, nb, small, b, c, radius, box)
                 central = [idx[b] + 1, idx[c] + 1]   # the rotatable bond in the fragment's numbering
                 write_mol2(os.path.join(out, "fragments", f"{h}.mol2"), fel, fpos, fbonds,
                            name=f"env {h} bond {central[0]}-{central[1]} from {name}")
@@ -212,7 +313,7 @@ def census(ff="oplsaa2024", out=None, only="", react=True, copolymers=True, radi
                                "classes": sorted("-".join(k) for k in keys), "count": 0, "structures": set(),
                                "example": name, "fragment_smiles": smi, "fragment_atoms": len(fel),
                                "fragment_heavy": sum(1 for x in fel if x != "H"), "heavy_rotor": heavy,
-                               "elements": sorted(set(fel))}
+                               "elements": sorted(set(fel)), "problem": problem}
             e["count"] += 1
             e["structures"].add(name)
             if RANK[st] > RANK[e["status"]]:
@@ -256,6 +357,8 @@ def write(out, ff, full, radius, rows, tclass, envs, other):
          f"- Training set (every environment, published ones included): {len(envs)} scans, "
          f"{len(envs) * SCAN_POINTS} QM points before distorted conformers are added.",
          f"- Fragment size: median {med} heavy atoms, largest {heavy[-1] if heavy else 0}.",
+         f"- Fragments with a problem (left out of a campaign): {sum(1 for e in envs.values() if e['problem'])} "
+         f"({', '.join(f'{n} {p}' for p, n in collections.Counter(e['problem'].split(' (')[0] for e in envs.values() if e['problem']).most_common())}).",
          f"- Environments seen once: {sum(1 for e in envs.values() if e['count'] == 1)} (many are chain ends or one "
          f"crosslink site; the ones seen often are the backbones).",
          "", "## Missing torsion classes", ""]
