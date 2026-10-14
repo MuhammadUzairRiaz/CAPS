@@ -659,7 +659,7 @@ TEST(LammpsData, RelaxUsesTheForceFieldTheFileHolds) {
   EXPECT_EQ(r.forcefield->coul14, 0.5);
   EXPECT_EQ(r.forcefield->native_cutoff, 12.0);   // the force field's own cut-off, which relax / md / equilibrate take without --cutoff
   EXPECT_EQ(default_forcefield(r).name, ff.name);
-  expect_same_terms(want, terms_of(r, *r.forcefield, e), "acetonitrile read back");
+  expect_same_terms(want, terms_of(r, *r.forcefield, e), "acetonitrile read back", 2e-5);   // mixed pairs written at six decimals
   System q = r;
   RelaxOptions o;
   o.energy = e;
@@ -668,7 +668,7 @@ TEST(LammpsData, RelaxUsesTheForceFieldTheFileHolds) {
   RelaxReport rep;
   relax(q, o, &rep);
   EXPECT_EQ(rep.field, ff.name);
-  expect_same_terms(want, rep.initial, "relax's starting energy");
+  expect_same_terms(want, rep.initial, "relax's starting energy", 2e-5);
 }
 
 // Every bonded and pair style CAPS writes reads back as the same terms: OPLS-AA torsions and impropers, PCFF's class II
