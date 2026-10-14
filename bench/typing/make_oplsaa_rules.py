@@ -380,6 +380,11 @@ add(203, 6, "[SX2]([#6])[SX2]", "disulfide S")
 # and Lennard-Jones of 203)
 add("caps_s_poly", 7, "[SX2]([SX2])[SX2]", "S between two S (polysulfide)", True)
 add(200, 5, "[SX2H1][CX4]", "thiol S")
+# a persulfide S-H (C-S-S-H: a sulfur donor that reacted at one end; H-S-S-H left over): CAPS's own types, the R-S- part
+# keeps the disulfide numbers (203 with its carbon group) and the S-H group is neutral by 1.27 x CM5 (oplsaa2024_supplement.json)
+add("caps_s_ssh", 8, "[SX2H1][SX2]", "persulfide S-H sulfur (S bonded to S and H)", True)
+add("caps_hs_ssh", 8, "[H][SX2H1][SX2]", "H on a persulfide S", True)
+add(203, 7, "[SX2]([#6])[SX2H1]", "the inner S of a persulfide R-S-S-H (disulfide S)")
 # H2S, as the 2024 table types it (201 S -0.47, 205 H +0.235; JPC 90, 6379 (1986)): a sulfur donor left over after a cure
 add(201, 6, "[SX2H2]", "S in H2S")
 add(205, 6, "[H][SX2H2]", "H in H2S")
