@@ -294,8 +294,27 @@ def side(nb, start, block):
 
 
 # ------------------------------------------------------------------ prepare
-def fragment(el, pos, nb, b, c, radius):
-    """atoms within `radius` bonds of b or c; cut bonds capped by H along the bond"""
+def read_box(path):
+    """the orthogonal cell edges of a LAMMPS data file (None where it has none)"""
+    box = [None, None, None]
+    for raw in open(path):
+        m = re.match(r"^\s*(\S+)\s+(\S+)\s+([xyz])lo\s+[xyz]hi", raw)
+        if m:
+            box["xyz".index(m.group(3))] = float(m.group(2)) - float(m.group(1))
+        if raw.strip().startswith("Atoms"):
+            break
+    return box if all(box) else None
+
+
+def min_image(v, box):
+    return [v[k] - box[k] * round(v[k] / box[k]) for k in range(3)] if box else list(v)
+
+
+def fragment(el, pos, nb, b, c, radius, box=None):
+    """atoms within `radius` bonds of b or c; cut bonds capped by H along the bond. box (the cell edges): the fragment
+    is made whole round b, each atom at the image nearest the atom it was reached from. A crosslinked network loops
+    through the periodic cell, so unwrap() leaves some bonds of it a box length long; a small fragment cannot span the
+    cell and comes out whole"""
     dist = {b: 0, c: 0}
     todo = [b, c]
     while todo:
@@ -306,16 +325,27 @@ def fragment(el, pos, nb, b, c, radius):
                 todo.append(y)
     keep = sorted(dist)
     idx = {a: k for k, a in enumerate(keep)}
-    fel, fpos, fbonds = [el[a] for a in keep], [list(pos[a]) for a in keep], []
+    local = {a: list(pos[a]) for a in keep}
+    if box:
+        local = {b: list(pos[b])}
+        stack = [b]
+        while stack:
+            x = stack.pop()
+            for y in nb[x]:
+                if y in idx and y not in local:
+                    d = min_image(sub(pos[y], pos[x]), box)
+                    local[y] = [local[x][k] + d[k] for k in range(3)]
+                    stack.append(y)
+    fel, fpos, fbonds = [el[a] for a in keep], [list(local[a]) for a in keep], []
     for a in keep:
         for y in nb[a]:
             if y in idx and idx[a] < idx[y]:
                 fbonds.append((idx[a], idx[y]))
             elif y not in idx:   # a cut bond: H on the kept atom, along the bond
-                v = sub(pos[y], pos[a])
+                v = min_image(sub(pos[y], pos[a]), box)
                 L = CAP_BOND.get(el[a], 1.09)
                 fel.append("H")
-                fpos.append([pos[a][k] + v[k] / norm(v) * L for k in range(3)])
+                fpos.append([local[a][k] + v[k] / norm(v) * L for k in range(3)])
                 fbonds.append((idx[a], len(fel) - 1))
     return keep, idx, fel, fpos, fbonds
 
@@ -396,7 +426,7 @@ def prepare():
                 types, have = onto_atoms(site_map(pos_aa, el_aa, pos), types, have)
                 el, pos, bonds = el_aa, pos_aa, bonds_aa
         nb = neighbours(len(el), bonds)
-        mols.append((types, pos, el, nb))
+        mols.append((types, pos, el, nb, read_box(data)))
         listed = listed_missing(structure, ffjson, cl)
         for q in propers(nb):
             if any(types[x] is None for x in q):   # an H folded into a united-atom site
@@ -412,7 +442,7 @@ def prepare():
             "not_scanned": [], "forced": ["-".join(k) for k in sorted(forced)], "nprocs": nprocs}
     jobs = []
     for key, (n, qs) in sorted(missing.items()):
-        types, pos, el, nb = mols[n]
+        types, pos, el, nb, box = mols[n]
         # an occurrence whose central bond is not in a ring, if there is one; else one in a ring, scanned only if a
         # fragment cuts the ring open (a crosslinked network's loops, a cyclic sulfide: the bond turns freely in the
         # open fragment)
@@ -422,7 +452,7 @@ def prepare():
         # the smallest fragment that keeps the types, growing up to the whole molecule: a cut that leaves atoms the
         # force field's rules cannot type (OPLS-AA 2024's strict ether and ester carbons) needs a wider fragment
         for rad in range(radius, radius + max(3, len(el))):
-            keep, idx, fel, fpos, fbonds = fragment(el, pos, nb, b, c, rad)
+            keep, idx, fel, fpos, fbonds = fragment(el, pos, nb, b, c, rad, box)
             fdir = os.path.join(work, "-".join(key).replace("*", "x"))
             os.makedirs(fdir, exist_ok=True)
             m2 = os.path.join(fdir, "fragment.mol2")

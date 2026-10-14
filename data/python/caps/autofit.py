@@ -118,11 +118,12 @@ def fragment_around(structure, ffjson, work, atoms, label):
     data = os.path.join(work, label + ".structure.data")
     T.caps_apply(structure, ffjson, data)
     types, masses, pos, bonds, _ = T.read_data(data)
+    box = T.read_box(data)
     el = [T.element_of_mass(m) for m in masses]
     nb = T.neighbours(len(el), bonds)
     check = set(atoms) | {y for x in atoms for y in nb[x]}
     for rad in range(1, max(4, len(el))):
-        keep, idx, fel, fpos, fbonds = T.fragment(el, pos, nb, atoms[0], atoms[1], rad)
+        keep, idx, fel, fpos, fbonds = T.fragment(el, pos, nb, atoms[0], atoms[1], rad, box)
         m2 = os.path.join(work, label + ".fragment.mol2")
         T.write_mol2(m2, fel, fpos, fbonds)
         try:
@@ -343,11 +344,13 @@ def main():
     chk = os.path.join(work, "geometry.data")
     T.caps_apply(structure, ffjson, chk)
     _, masses, pos, bonds, _ = T.read_data(chk)
+    box = T.read_box(chk)
     el = [T.element_of_mass(m) for m in masses]
-    long = [(a, b) for a, b in bonds if math.dist(pos[a], pos[b]) > 1.25 * (T.COV.get(el[a], 0.8) + T.COV.get(el[b], 0.8))]
+    blen = lambda a, b: T.norm(T.min_image(T.sub(pos[a], pos[b]), box))   # periodic: a network loops through the cell
+    long = [(a, b) for a, b in bonds if blen(a, b) > 1.25 * (T.COV.get(el[a], 0.8) + T.COV.get(el[b], 0.8))]
     if long:
         raise SystemExit(f"{len(long)} bond(s) far longer than covalent (e.g. atoms {long[0][0] + 1}-{long[0][1] + 1}, "
-                         f"{math.dist(pos[long[0][0]], pos[long[0][1]]):.2f} A): relax the structure first (an unrelaxed React product)")
+                         f"{blen(*long[0]):.2f} A): relax the structure first (an unrelaxed React product)")
     extra = {"bonds": [], "angles": [], "dihedrals": []}
     current = ffjson
     for kind, key in (("bond", "bonds"), ("angle", "angles")):
