@@ -82,11 +82,14 @@ CASES = [
 TWO_STEP = {"epoxy_amine_secondary": ["epoxy_amine_primary", "epoxy_amine_secondary"]}
 
 
-def cure(template, mols, box, target):
+def cure(template, mols, box, target, relaxed=False):
+    """relaxed: as a real run cures (relaxed every cycle, capture widened only to 6 A), for products whose geometry is
+    used; the default, for typing alone, skips the relaxation and widens the capture to 12 A, which at full conversion
+    can bond atoms no geometry can bring together"""
     d = caps.pack(mols, box=float(box))
     names = TWO_STEP.get(template, [template]) if "after the primary" in str(mols) or template in TWO_STEP else [template]
-    d.react(names, cycles=80, per_cycle=8, target=target, relax=False, default_field=True, auto_capture=True,
-            capture_max=12.0, capture_step=1.0, keep_byproducts=False, seed=3)
+    d.react(names, cycles=80, per_cycle=8, target=target, relax=relaxed, default_field=True, auto_capture=True,
+            capture_max=6.0 if relaxed else 12.0, capture_step=1.0 if not relaxed else 0.5, keep_byproducts=False, seed=3)
     return d
 
 
@@ -104,7 +107,7 @@ def main():
         for target in (0.5, 1.0):
             label = f"{template}: {name} @ {int(target * 100)} %"
             try:
-                d = cure(template, mols, box, target)
+                d = cure(template, mols, box, target, relaxed=bool(arg("--save")))
                 summary = d.react_summary()
                 if arg("--save"):
                     # products for fitting need real geometry: a cure without relaxation leaves each new bond as long
