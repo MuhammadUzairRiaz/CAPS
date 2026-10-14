@@ -478,7 +478,7 @@ ForceField cli_forcefield(System& s0, std::map<std::string, std::string>& o, boo
   std::vector<std::string> types;
   if (!def.typing.empty()) {
     const TypingResult tr = assign_types(s0, def);
-    if (tr.untyped) throw std::runtime_error(untyped_message(def, s0, tr.untyped));
+    if (tr.untyped) throw std::runtime_error(untyped_message(def, s0, tr.untyped, &tr.types));
     types = tr.types;
   } else {
     for (const auto& a : s0.atoms) types.push_back(a.name);

@@ -1205,13 +1205,54 @@ int sdk_form(const std::string& st) {
   return 0;
 }
 
-std::string untyped_message(const FFDef& ff, const System& s, int untyped) {
+std::vector<std::string> untyped_motifs(const System& s, const std::vector<std::string>& types) {
+  const size_t n = s.atoms.size();
+  std::vector<std::vector<uint32_t>> nb(n);
+  for (const auto& b : s.bonds) if (b.i < n && b.j < n) nb[b.i].push_back(b.j), nb[b.j].push_back(b.i);
+  std::map<std::string, int> count;
+  for (size_t i = 0; i < n && i < types.size(); ++i) {
+    if (!types[i].empty()) continue;
+    std::vector<std::string> heavy;
+    int h = 0;
+    for (uint32_t j : nb[i]) {
+      if (s.atoms[j].element == 1) ++h;
+      else heavy.push_back(element(s.atoms[j].element).symbol);
+    }
+    std::sort(heavy.begin(), heavy.end());
+    std::string m = std::string(element(s.atoms[i].element).symbol) + (heavy.empty() ? std::string(" with no heavy neighbour") : " bonded to ");
+    for (size_t k = 0; k < heavy.size(); ++k) m += (k ? ", " : "") + heavy[k];
+    if (h) m += " (" + std::to_string(h) + " H)";
+    ++count[m];
+  }
+  std::vector<std::pair<int, std::string>> v;
+  for (const auto& [m, c] : count) v.push_back({c, m});
+  std::sort(v.begin(), v.end(), [](const auto& a, const auto& b) { return a.first != b.first ? a.first > b.first : a.second < b.second; });
+  std::vector<std::string> out;
+  for (const auto& [c, m] : v) out.push_back(std::to_string(c) + " x " + m);
+  return out;
+}
+
+std::string out_of_domain(const FFDef& ff, const System& s, const std::vector<std::string>& types) {
+  const auto m = untyped_motifs(s, types);
+  if (m.empty()) return "";
+  std::string list;
+  for (size_t k = 0; k < m.size() && k < 8; ++k) list += (k ? "; " : "") + m[k];
+  if (m.size() > 8) list += "; and " + std::to_string(m.size() - 8) + " more";
+  std::string r = "outside " + ff.name + ": it has no types for " + list;
+  if (ff.united_atom)
+    r += ". A united-atom force field covers only the groups its papers parameterised; an all-atom one types more (OPLS-AA 2024 "
+         "types NBR, CR, SBR and PDMS completely)";
+  return r;
+}
+
+std::string untyped_message(const FFDef& ff, const System& s, int untyped, const std::vector<std::string>* types) {
   const bool atoms = std::any_of(s.atoms.begin(), s.atoms.end(), [](const Atom& a) { return a.element > 0; });
   if ((!ff.bead_rules.empty() || !ff.bead_groups.empty()) && atoms)
     return std::to_string(untyped) + " atoms are in molecules " + ff.name + "'s bead fragments cannot cover exactly (each heavy atom in one bead; " +
            "chain ends and groups without a bead type stay atoms)";
   if (ff.coarse_grained && atoms)
     return std::to_string(untyped) + " sites are atoms, not beads: " + ff.name + " types bead structures (build them from its templates or bead SMILES)";
+  if (types) return std::to_string(untyped) + " atoms match no typing rule: " + out_of_domain(ff, s, *types);
   return std::to_string(untyped) + " atoms match no typing rule of " + ff.name;
 }
 

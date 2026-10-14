@@ -1172,6 +1172,12 @@ void field_run(caps_doc* d) {
   r["atoms"] = atoms;
   r["typed"] = double(n - size_t(untyped));
   r["untyped"] = double(untyped);
+  if (untyped) {   // the untyped groups once each, and what that means for this force field
+    caps::Json mot = caps::Json::array();
+    for (const auto& m : caps::untyped_motifs(s, F.types)) mot.push_back(m);
+    r["untyped_motifs"] = mot;
+    r["out_of_domain"] = caps::out_of_domain(def, s, F.types);
+  }
   r["overridden"] = double(overridden);
   r["ambiguous"] = double(F.typing.ambiguous);
   r["net_charge"] = qsum;

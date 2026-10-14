@@ -419,7 +419,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
         std::vector<std::string> types;
         if (!def.typing.empty()) {
           const TypingResult tr = assign_types(sys, def);
-          if (tr.untyped) throw RecipeError(3, untyped_message(def, sys, tr.untyped));
+          if (tr.untyped) throw RecipeError(3, untyped_message(def, sys, tr.untyped, &tr.types));
           types = tr.types;
         } else {
           for (const auto& a : sys.atoms) types.push_back(a.name);

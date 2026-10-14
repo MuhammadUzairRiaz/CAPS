@@ -361,7 +361,14 @@ inline bool needs_prepare(const FFDef& ff) {
 
 // "N atoms match no typing rule of FF", or for a coarse-grained force field that maps atoms onto beads, that they are in
 // molecules its bead fragments cannot cover.
-std::string untyped_message(const FFDef& ff, const System& s, int untyped);
+std::string untyped_message(const FFDef& ff, const System& s, int untyped, const std::vector<std::string>* types = nullptr);
+// The untyped atoms grouped by environment, each once with its count ("16 x C bonded to C, C, N (1 H)"), most first:
+// a rubber outside a force field's chemistry (NBR's nitrile, CR's vinyl chloride, PDMS's siloxane in OPLS-UA) reads as
+// a few motifs, not atom by atom
+std::vector<std::string> untyped_motifs(const System& s, const std::vector<std::string>& types);
+// One sentence for a structure with untyped atoms: the force field has no types for these groups, and for a united-atom
+// one the all-atom and other united-atom libraries that cover more chemistry
+std::string out_of_domain(const FFDef& ff, const System& s, const std::vector<std::string>& types);
 
 // A bead structure for a coarse-grained force field: `text` is one of its bead templates by name, or bead SMILES.
 // Bond lengths come from the force field's bond terms (typed by bead name), masses from its types; the result is a

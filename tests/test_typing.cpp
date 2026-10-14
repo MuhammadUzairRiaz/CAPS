@@ -645,3 +645,22 @@ TEST(Typing, OplsAa2024MaleateComplete) {
     EXPECT_EQ(anh_types, anhydride) << smi;   // the half-ester and the acid: ester and acid types only
   }
 }
+
+// A rubber outside a united-atom force field: the untyped atoms are reported once per environment, not atom by atom,
+// with what to use instead (OPLS-UA has no nitrile on a CH backbone, no vinyl chloride, no siloxane)
+TEST(Typing, OutOfDomainNamesTheMotifsOnce) {
+  const FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/oplsua2024.json");
+  System s = build_molecule("CC(C#N)CC(C#N)CC(C#N)C").system;   // three acrylonitrile units
+  std::string ch = "types";
+  prepare_for_forcefield(s, def, ch);
+  const TypingResult tr = assign_types(s, def);
+  ASSERT_GT(tr.untyped, 0);
+  const auto m = untyped_motifs(s, tr.types);
+  ASSERT_FALSE(m.empty());
+  EXPECT_LE(m.size(), 3u);   // a nitrile C and N (and perhaps its CH): a few motifs, not one line per atom
+  EXPECT_NE(m[0].find("3 x "), std::string::npos) << m[0];
+  const std::string why = out_of_domain(def, s, tr.types);
+  EXPECT_NE(why.find("outside"), std::string::npos);
+  EXPECT_NE(why.find("OPLS-AA 2024"), std::string::npos);
+  EXPECT_NE(untyped_message(def, s, tr.untyped, &tr.types).find("bonded to"), std::string::npos);
+}
