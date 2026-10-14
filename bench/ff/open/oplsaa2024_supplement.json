@@ -2467,5 +2467,12 @@
    "source": "CAPS fit (QM)",
    "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS HC-CM-C-OS 0.05 kcal/mol; ridge 0.001 (methyl acrylate: no cis partner, so no intramolecular H-bond or clash; against the maleate scans RMS 0.9-1.6, from MM's cis COOH/ester electrostatics and second-group flips, not this torsion); fragment HC-CM-C-OS"
   }
+ ],
+ "charge_corrections": [
+  {
+   "name": "opls_211",
+   "charge": 0.1075,
+   "reason": "all-atom C: CH on a sulfide S. The sulfide carbons 209 / 210 / 212 with their H (0.06 each) sum to +0.1675 against the S's -0.335 (202); the file's +0.1175 gives the CH +0.1775, so every C-S-CH sulfide was +0.01 e. +0.1075 completes the series, and GROMACS's oplsaa.ff has 0.107 for opls_211 (the disulfide CH, 215 +0.1575, sums to +0.2175 as its series does)"
+  }
  ]
 }
