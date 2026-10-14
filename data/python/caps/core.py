@@ -729,8 +729,92 @@ class Document:
 
     def react_summary(self) -> dict:
         """The network of the last react(): chains, crosslinks (links between chains), target, density (mol/m³),
-        per_chain, mc (g/mol), byproducts, the force field during and after the run."""
-        return _json_call(library().caps_react_summary, self._h)
+        per_chain, mc (g/mol), byproducts, the force field during and after the run. With sulfur in the structure also
+        "sulfur": sulfur_bridges()."""
+        r = _json_call(library().caps_react_summary, self._h)
+        sb = self.sulfur_bridges()
+        if sb["sulfur_atoms"]:
+            r["sulfur"] = sb
+        return r
+
+    def _graph(self):
+        """elements and bonds of the current frame (indices from 0)"""
+        import builtins, os, tempfile   # this module's open() is CAPS's own
+        fd, path = tempfile.mkstemp(suffix=".data")
+        os.close(fd)
+        try:
+            self.save(path)
+            sec, mass, typ, bonds = "", {}, {}, []
+            for raw in builtins.open(path):
+                line = raw.split("#")[0].strip()
+                if not line:
+                    continue
+                if line[0].isalpha():
+                    sec = line
+                    continue
+                w = line.split()
+                if sec == "Masses" and len(w) >= 2:
+                    mass[int(w[0])] = float(w[1])
+                elif sec.startswith("Atoms") and len(w) >= 7:
+                    typ[int(w[0]) - 1] = int(w[2])
+                elif sec == "Bonds" and len(w) >= 4:
+                    bonds.append((int(w[2]) - 1, int(w[3]) - 1))
+        finally:
+            os.remove(path)
+        def element(m):
+            return min((abs(m - mm), e) for e, mm in (("H", 1.008), ("C", 12.011), ("N", 14.007), ("O", 15.999), ("Si", 28.086),
+                                                       ("S", 32.06), ("Cl", 35.45)))[1]
+        el = [element(mass[typ[i]]) for i in range(len(typ))]
+        return el, bonds
+
+    def sulfur_bridges(self, ring_limit: int = 8) -> dict:
+        """Sulfur in the structure by kind and rank (a rank is the number of S in a run of S-S bonds): bridges (both ends
+        on carbon; a crosslink S1 monosulfide, S2 disulfide ... S8), cyclic sulfides (both ends on carbons joined by a path
+        of at most ring_limit bonds outside the S run: a small ring on one chain, not a crosslink), pendant groups (one
+        end on carbon, the other S-H) and free donors (no carbon: H2S, H2Sx). Returns {"bridges": {rank: n},
+        "cyclic": {rank: n}, "pendant": {rank: n}, "free": {rank: n}, "sulfur_atoms": n, "mean_bridge_rank"}"""
+        el, bonds = self._graph()
+        nb = [[] for _ in el]
+        for a, b in bonds:
+            nb[a].append(b), nb[b].append(a)
+        seen, out = set(), {"bridges": {}, "cyclic": {}, "pendant": {}, "free": {}}
+        for s0 in range(len(el)):
+            if el[s0] != "S" or s0 in seen:
+                continue
+            run, todo = [], [s0]
+            seen.add(s0)
+            while todo:   # the connected run of S atoms
+                x = todo.pop()
+                run.append(x)
+                for y in nb[x]:
+                    if el[y] == "S" and y not in seen:
+                        seen.add(y)
+                        todo.append(y)
+            carbons = [y for x in run for y in nb[x] if el[y] == "C"]
+            rank = len(run)
+            if not carbons:
+                kind = "free"
+            elif len(carbons) == 1:
+                kind = "pendant"
+            else:
+                a, b = carbons[0], carbons[1]   # a path between the two carbons that avoids the S run: a small ring
+                rs, dist, todo = set(run), {a: 0}, [a]
+                while todo:
+                    x = todo.pop(0)
+                    if dist[x] >= ring_limit:
+                        continue
+                    for y in nb[x]:
+                        if y not in dist and y not in rs:
+                            dist[y] = dist[x] + 1
+                            todo.append(y)
+                kind = "cyclic" if b in dist else "bridges"
+            out[kind][rank] = out[kind].get(rank, 0) + 1
+        nb_ = sum(out["bridges"].values())
+        out["sulfur_atoms"] = sum(1 for e in el if e == "S")
+        out["mean_bridge_rank"] = round(sum(k * v for k, v in out["bridges"].items()) / nb_, 3) if nb_ else 0.0
+        for k in ("bridges", "cyclic", "pendant", "free"):
+            out[k] = {f"S{r}": n for r, n in sorted(out[k].items())}
+        return out
 
     # editing, selection, analysis
     def edit(self, **op) -> dict:
