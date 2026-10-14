@@ -1,3 +1,7 @@
+#!/bin/bash
+# The training set of CAPS's own ML potential on Capella: one task per tasks/NN.txt, one H100 each.
+# Conformers (AIMNet2 relaxed scans + distorted copies), then GPU4PySCF energies and forces for all of them.
+# Everything (inputs, results, logs, caches, scratch) is in the horse workspace; nothing is written to $HOME.
 # Resubmitting continues where a task stopped.
 #   cd $WS/trainset && sbatch alpha_trainset.sbatch
 #SBATCH --job-name=caps-ml-trainset

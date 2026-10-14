@@ -23,3 +23,13 @@ fa51960eac65 peroxide_allylic: SBR, 40 deg
 94b8c557514a sulfur_allylic: SBR + H2S2
 c3a0159a0d5c sulfur_allylic: SBR + H2S2
 f00fd549f445 sulfur_allylic: BR + H2S2
+# fragments over 100 atoms (crosslink cages): one conformer takes hours with def2-TZVPPD, and a torsion training set does not need them
+5259c1861095 cc_crosslink: EPDM, 111 atoms
+0b54c21efc3f cc_crosslink_any: PP, 168 atoms
+8a15eef0cd08 cc_crosslink_any: PP, 168 atoms
+770d51a22146 cc_crosslink_any: PP, 168 atoms
+0a233d016e57 cc_crosslink_any: PP, 168 atoms
+46fca85b30b0 cc_crosslink_any: PP, 168 atoms
+63777820929b cc_crosslink_any: PP, 168 atoms
+cff03b1d317a cc_crosslink_any: PP, 168 atoms
+d6705e45ee00 cc_crosslink_any: PP, 168 atoms
