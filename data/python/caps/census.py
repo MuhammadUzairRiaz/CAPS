@@ -10,7 +10,8 @@ force field, and the census lists
   torsion classes    every proper torsion by the class names the force field looks torsions up with, and where its
                      parameters come from: "published" (the force field's own table), "CAPS fit" (a QM or AIMNet2 fit
                      CAPS added to the library, marked in its comment) or "missing"
-  rotor environments every rotatable bond (not in a ring, not through a linear atom, a neighbour on both ends) keyed by
+  rotor environments every rotatable bond (not in a ring, not a double bond, not through a linear atom, a neighbour on
+                     both ends) keyed by
                      its chemical environment: the force-field types of the atoms within RADIUS bonds of the bond, ring
                      membership and cut bonds, hashed Weisfeiler-Lehman style so that the same environment in two
                      molecules is one key. One QM scan of the bond fits every torsion about it, so the number of
@@ -114,6 +115,19 @@ def structures(react=True, copolymers=True):
 # ------------------------------------------------------------------ environments
 def ring_atoms(nb):
     return {x for x in range(len(nb)) for y in nb[x] if in_ring(nb, x, y)}
+
+
+DOUBLE = {("C", "C"): 1.40, ("C", "N"): 1.34, ("N", "N"): 1.30, ("C", "S"): 1.68, ("C", "O"): 1.28, ("N", "O"): 1.28}
+
+
+def double_bond(el, pos, b, c, box=None):
+    """is b-c a double bond, by length (the structure has no bond orders)? A C=C is about 1.34 A, a single bond between
+    two sp2 carbons (butadiene's middle bond, styrene's ring-vinyl bond) 1.46 A; a double bond is not a rotor"""
+    key = tuple(sorted((el[b], el[c])))
+    if key not in DOUBLE:
+        return False
+    v = min_image([pos[c][k] - pos[b][k] for k in range(3)], box)
+    return math.sqrt(sum(t * t for t in v)) < DOUBLE[key]
 
 
 def linear(pos, nb, x, box=None):
@@ -321,7 +335,8 @@ def census(ff="oplsaa2024", out=None, only="", react=True, copolymers=True, radi
             n_tors += 1
         n_rot = 0
         for (b, c), keys in by_bond.items():
-            if in_ring(nb, b, c) or len(nb[b]) < 2 or len(nb[c]) < 2 or linear(pos, nb, b, box) or linear(pos, nb, c, box):
+            if (in_ring(nb, b, c) or len(nb[b]) < 2 or len(nb[c]) < 2 or linear(pos, nb, b, box) or linear(pos, nb, c, box)
+                    or double_bond(el, pos, b, c, box)):
                 continue
             n_rot += 1
             h = environment(types, nb, rings, b, c, radius)
