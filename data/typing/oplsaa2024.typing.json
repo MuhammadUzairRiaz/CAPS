@@ -1800,6 +1800,24 @@
    "description": "thiol S"
   },
   {
+   "type": "caps_s_ssh",
+   "smarts": "[SX2H1][SX2]",
+   "priority": 8,
+   "description": "persulfide S-H sulfur (S bonded to S and H)"
+  },
+  {
+   "type": "caps_hs_ssh",
+   "smarts": "[H][SX2H1][SX2]",
+   "priority": 8,
+   "description": "H on a persulfide S"
+  },
+  {
+   "type": "opls_203",
+   "smarts": "[SX2]([#6])[SX2H1]",
+   "priority": 7,
+   "description": "the inner S of a persulfide R-S-S-H (disulfide S)"
+  },
+  {
    "type": "opls_201",
    "smarts": "[SX2H2]",
    "priority": 6,

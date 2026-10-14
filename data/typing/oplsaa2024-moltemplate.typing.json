@@ -1655,6 +1655,12 @@
    "description": "thiol S"
   },
   {
+   "type": "203",
+   "smarts": "[SX2]([#6])[SX2H1]",
+   "priority": 7,
+   "description": "the inner S of a persulfide R-S-S-H (disulfide S)"
+  },
+  {
    "type": "201",
    "smarts": "[SX2H2]",
    "priority": 6,
