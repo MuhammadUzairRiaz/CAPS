@@ -45,6 +45,7 @@ const std::map<std::string, std::string>& builtins() {
        "form 1 2\n"
        "form 3 4   # the two hydrogens leave together as H2\n"
        "byproduct 3 4\n"
+       "once 1 2   # each carbon forms one crosslink in a run (an allylic CH3 that reacted is a CH2 that would qualify again)\n"
        "sites 1\n"},
       {"cc_crosslink_any",
        "reaction cc_crosslink_any   # C–C crosslink of any two sp3 C–H carbons (CH3, CH2 or CH: PP's tertiary CH too); two H leave\n"
@@ -59,6 +60,7 @@ const std::map<std::string, std::string>& builtins() {
        "form 1 2\n"
        "form 3 4\n"
        "byproduct 3 4\n"
+       "once 1 2   # each carbon forms one crosslink in a run (an allylic CH3 that reacted is a CH2 that would qualify again)\n"
        "sites 1\n"},
       {"sulfur_allylic",
        "reaction sulfur_allylic   # accelerated sulfur cure (disulfide-donor model): an allylic C–H of a diene rubber and an\n"
@@ -75,6 +77,7 @@ const std::map<std::string, std::string>& builtins() {
        "form 1 4\n"
        "form 3 5   # the two hydrogens leave as H2 (H2S in a real accelerated cure; the mass balance is the same for the network)\n"
        "byproduct 3 5\n"
+       "once 1   # each carbon forms one crosslink in a run (an allylic CH3 that reacted is a CH2 that would qualify again)\n"
        "sites 4   # the donor's S–H ends\n"},
       {"polysulfide_allylic",
        "reaction polysulfide_allylic   # a silane's polysulfide (TESPT, TESPD) couples to a diene rubber: an S–S bond opens, one\n"
@@ -94,10 +97,10 @@ const std::map<std::string, std::string>& builtins() {
        "sites 4 5   # one S–S bond\n"},
       {"peroxide_allylic",
        "reaction peroxide_allylic   # peroxide cure of a diene rubber: C–C crosslink between allylic carbons, H2 released\n"
-       "atom 1 C degree=4 H>=1 not_aromatic\n"
+       "atom 1 C degree=4 H>=1 heavy<=2 not_aromatic   # an allylic CH2 / CH not yet crosslinked (one link per carbon)\n"
        "atom 2 C degree=3 not_aromatic bonded 1\n"
        "atom 3 H bonded 1\n"
-       "atom 4 C degree=4 H>=1 not_aromatic\n"
+       "atom 4 C degree=4 H>=1 heavy<=2 not_aromatic\n"
        "atom 5 C degree=3 not_aromatic bonded 4\n"
        "atom 6 H bonded 4\n"
        "initiators 3 6   # the leaving hydrogens\n"
@@ -107,6 +110,7 @@ const std::map<std::string, std::string>& builtins() {
        "form 1 4\n"
        "form 3 6   # written as H2: in a real cure the peroxide's radicals take the hydrogens (cumyl alcohol from DCP)\n"
        "byproduct 3 6\n"
+       "once 1 4   # each carbon forms one crosslink in a run (an allylic CH3 that reacted is a CH2 that would qualify again)\n"
        "sites 1\n"},
       {"enr_acid_ester",
        "reaction enr_acid_ester   # epoxidised natural rubber (trisubstituted epoxide) + carboxylic acid → β-hydroxy ester: the acid\n"
@@ -268,6 +272,7 @@ std::vector<ReactionTemplate> parse_templates(const std::string& text) {
         else if (k.rfind("H<=", 0) == 0) a.h_max = std::stoi(k.substr(3));
         else if (k.rfind("H=", 0) == 0) a.h_min = a.h_max = std::stoi(k.substr(2));
         else if (k.rfind("degree=", 0) == 0) a.degree = std::stoi(k.substr(7));
+        else if (k.rfind("heavy<=", 0) == 0) a.heavy_max = std::stoi(k.substr(7));
         else if (k.rfind("no_neighbour=", 0) == 0) {
           const int z = element_from_symbol(k.substr(13));
           if (z <= 0) throw bad("unknown element in '" + k + "'");
@@ -300,6 +305,7 @@ std::vector<ReactionTemplate> parse_templates(const std::string& text) {
     else if (w[0] == "move") t->move.push_back({integer(1), integer(2)});
     else if (w[0] == "delete") { for (size_t i = 1; i < w.size(); ++i) t->remove.push_back(integer(i)); }
     else if (w[0] == "byproduct") { for (size_t i = 1; i < w.size(); ++i) t->byproduct.push_back(integer(i)); }
+    else if (w[0] == "once") { for (size_t i = 1; i < w.size(); ++i) t->once.push_back(integer(i)); }
     else if (w[0] == "weight") t->weight = real(1);
     else throw bad("does not understand '" + w[0] + "'");
   }
@@ -412,6 +418,7 @@ bool fits(const TemplateAtom& t, const System& s, const Chem& c, uint32_t i) {
   for (int z : t.no_neighbour)
     for (uint32_t j : c.nb[i])
       if (s.atoms[j].element == z) return false;
+  if (t.heavy_max >= 0 && int(c.nb[i].size()) - c.hcount[i] > t.heavy_max) return false;
   return true;
 }
 
@@ -1163,6 +1170,7 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
   };
 
   std::vector<char> linked(s.atoms.size(), 0);   // atoms of the bonds that joined two chains
+  std::vector<char> reacted(s.atoms.size(), 0);  // atoms that formed a bond in this run (a template's "once" atoms react once)
   std::map<int64_t, int> site_used;                // each chain's sites that have reacted (sites_per_chain)
   if (o.sites_per_chain > 0) {
     char b[300];
@@ -1192,6 +1200,7 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
     const std::vector<int64_t> keep_carry = carry;
     const std::map<int64_t, int> keep_site_used = site_used;
     const std::vector<char> keep_linked = linked;
+    const std::vector<char> keep_reacted = reacted;
     const int reactions_before = rep.reactions, stall_before = stall, links_before = rep.crosslinks, intra_before = rep.intrachain,
               byproducts_before = rep.byproducts;
     const double extra_before = extra;
@@ -1248,6 +1257,7 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
       for (uint32_t a : m.atoms) if (busy.count(a)) return false;
       const ReactionTemplate& t = o.templates[m.reaction];
       auto at = [&](int map) { for (size_t q = 0; q < t.atoms.size(); ++q) if (t.atoms[q].map == map) return m.atoms[q]; return m.atoms[0]; };
+      for (int mp : t.once) if (at(mp) < reacted.size() && reacted[at(mp)]) return false;   // it formed its bond already
       const auto oa = owners(at(t.init_a), nb, tag, polymer, formed), ob = owners(at(t.init_b), nb, tag, polymer, formed);
       const bool same = meet(oa, ob);
       if (o.between_chains && same) return false;
@@ -1347,9 +1357,17 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
         if (!o.keep_byproducts) for (int a : t.byproduct) gone[at(a)] = 1;
       }
       for (auto [x, y] : link_bonds) linked[x] = linked[y] = 1;
-      std::vector<char> next;
-      for (size_t i = 0; i < linked.size(); ++i) if (!gone[i]) next.push_back(linked[i]);
+      for (const auto& m : chosen) {   // every atom that formed a bond and stays
+        const ReactionTemplate& t = o.templates[m.reaction];
+        auto at = [&](int map) { for (size_t q = 0; q < t.atoms.size(); ++q) if (t.atoms[q].map == map) return m.atoms[q]; return m.atoms[0]; };
+        for (auto [x, y] : t.form) {
+          if (!gone[at(x)] && !gone[at(y)]) reacted[at(x)] = reacted[at(y)] = 1;
+        }
+      }
+      std::vector<char> next, next_r;
+      for (size_t i = 0; i < linked.size(); ++i) if (!gone[i]) next.push_back(linked[i]), next_r.push_back(reacted[i]);
       linked = std::move(next);
+      reacted = std::move(next_r);
     }
     applied = chosen.empty() ? 0 : apply_matches(s, o.templates, chosen, o.keep_byproducts, &rep.byproducts, &tag, &carry);
     // links join chains across the cell walls: every molecule (now the network) whole again, so each cycle's frame and the
@@ -1413,6 +1431,7 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
       carry = keep_carry;
       site_used = keep_site_used;
       linked = keep_linked;
+      reacted = keep_reacted;
       rep.reactions = reactions_before;
       rep.crosslinks = links_before;
       rep.intrachain = intra_before;

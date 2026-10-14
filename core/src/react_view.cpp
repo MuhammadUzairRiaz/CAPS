@@ -158,6 +158,11 @@ std::string reaction_smarts(const ReactionTemplate& t) {
     if (a.not_aromatic) q += ";A";
     if (a.aromatic) q += ";a";
     for (int z : a.no_neighbour) q += ";!$(*~[#" + std::to_string(z) + "])";   // SMARTS: no neighbour of that element
+    if (a.heavy_max >= 0) {   // SMARTS: not more than heavy_max non-hydrogen neighbours
+      std::string br;
+      for (int k = 0; k <= a.heavy_max; ++k) br += "(~[!#1])";
+      q += ";!$(*" + br + ")";
+    }
     return q + ":" + std::to_string(m) + "]";
   };
   std::set<Edge> post = pre;

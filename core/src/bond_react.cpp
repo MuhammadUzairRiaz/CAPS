@@ -1239,6 +1239,7 @@ std::string template_text(const ReactionTemplate& t) {
     if (a.not_aromatic) o << " not_aromatic";
     if (a.aromatic) o << " aromatic";
     for (int z : a.no_neighbour) o << " no_neighbour=" << element(z).symbol;
+    if (a.heavy_max >= 0) o << " heavy<=" << a.heavy_max;
     if (a.h_min >= 0 && a.h_min == a.h_max) o << " H=" << a.h_min;
     else {
       if (a.h_min >= 0) o << " H>=" << a.h_min;
@@ -1261,6 +1262,7 @@ std::string template_text(const ReactionTemplate& t) {
   if (!t.remove.empty()) { o << "delete"; for (int d : t.remove) o << " " << d; o << "\n"; }
   if (!t.byproduct.empty()) { o << "byproduct"; for (int d : t.byproduct) o << " " << d; o << "\n"; }
   if (!t.sites.empty()) { o << "sites"; for (int d : t.sites) o << " " << d; o << "\n"; }
+  if (!t.once.empty()) { o << "once"; for (int d : t.once) o << " " << d; o << "\n"; }
   if (t.weight != 1.0) o << "weight " << t.weight << "\n";
   if (t.keep_charges) o << "charges keep\n";
   return o.str();
