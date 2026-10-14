@@ -351,6 +351,19 @@
    ],
    "source": "the 2024 .sb's ester bends C-OS-CA and C-OS-CT (83 / 116.9)",
    "reason": "a vinyl ester's C(=O)-O-C= (vinyl acetate) is the ester O between a carbonyl C and an sp2 carbon, as phenyl acetate's C-OS-CA; the files give the ester O one bend toward an alkyl and an aryl carbon, so it takes that one"
+  },
+  {
+   "match": [
+    "CT",
+    "C",
+    "CM"
+   ],
+   "params": [
+    70.0,
+    116.0
+   ],
+   "source": "the 2024 .sb's ketone bends CT-C-CT, CT-C-CA and C=-C-CT (each 70.0 / 116.0)",
+   "reason": "a ketone C between a methyl and a vinyl C (methyl vinyl ketone); the table gives the same bend for every C-C(=O)-C it lists"
   }
  ],
  "atom_types": [
@@ -1943,6 +1956,86 @@
    ],
    "source": "CAPS fit (QM)",
    "reason": "zero; the heavy-atom torsions about the same bond carry the profile of a 24-point MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L) scan of a 21-atom fragment (tfall__HC-CT-CY-HC, joint fit); fragment tfall__HC-CT-CY-HC"
+  },
+  {
+   "match": [
+    "C",
+    "OS",
+    "C",
+    "CT"
+   ],
+   "params": [
+    9.0098,
+    6.4474,
+    -1.2903,
+    -0.5097
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS C-OS-C-CT 1.13, C-OS-C-O 0.56 kcal/mol; ridge 0.001; fragment C-OS-C-CT, C-OS-C-O"
+  },
+  {
+   "match": [
+    "C",
+    "OS",
+    "C",
+    "O"
+   ],
+   "params": [
+    6.1462,
+    2.5919,
+    -2.2231,
+    0.5649
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS C-OS-C-CT 1.13, C-OS-C-O 0.56 kcal/mol; ridge 0.001; fragment C-OS-C-CT, C-OS-C-O"
+  },
+  {
+   "match": [
+    "CM",
+    "C",
+    "CT",
+    "HC"
+   ],
+   "params": [
+    0.0,
+    0.0,
+    0.0835,
+    0.0
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-C-CT-HC 0.03 kcal/mol; ridge 0.001; fragment CM-C-CT-HC"
+  },
+  {
+   "match": [
+    "CM",
+    "CM",
+    "C",
+    "CT"
+   ],
+   "params": [
+    1.21,
+    -0.3919,
+    0.0888,
+    -0.053
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CM-C-CT 0.18, CT-C-CM-HC 0.18 kcal/mol; ridge 0.001; fragment CM-CM-C-CT, CT-C-CM-HC"
+  },
+  {
+   "match": [
+    "CT",
+    "C",
+    "CM",
+    "HC"
+   ],
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "zero; the heavy-atom torsions about the same bond carry the profile of a 24-point MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L) scan of a 11-atom fragment (CM-CM-C-CT, joint fit); fragment CM-CM-C-CT"
   }
  ]
 }
