@@ -44,13 +44,10 @@ struct Digits {
   ~Digits() { full_digits = old; }
 };
 
-// A number six decimals cannot hold exactly (one CAPS derived: a mixed σ, σ from R*, AMBER's PK / IDIVF) keeps 15
-// significant digits even in the native styles, so LAMMPS evaluates the parameters CAPS does; the force field's own
-// numbers (1.090, 340.0, 0.4615) read as six decimals.
-bool six_decimals_exact(double x) { return std::fabs(x - std::round(x * 1e6) / 1e6) <= 1e-12 * std::max(1.0, std::fabs(x)); }
-
+// Every number at six decimals, whatever it came from (the force field's own, a mixed pair, a QM fit, AMBER's PK /
+// IDIVF): one format through the whole file
 void fmt_coef(char* b, size_t n, double x) {
-  if (full_digits || !six_decimals_exact(x)) std::snprintf(b, n, " %.15g", x == 0 ? 0.0 : x);
+  if (full_digits) std::snprintf(b, n, " %.15g", x == 0 ? 0.0 : x);
   else if (x != 0 && std::fabs(x) < 1e-3) std::snprintf(b, n, " %.6e", x);
   else std::snprintf(b, n, " %.6f", x == 0 ? 0.0 : x);   // no "-0.000000"
 }
