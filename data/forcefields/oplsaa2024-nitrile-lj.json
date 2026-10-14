@@ -1,0 +1,25 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "OPLS-AA 2024 nitrile N Lennard-Jones (CAPS, optional overlay)",
+ "atom_types": [],
+ "pairs": [
+  {
+   "name": "opls_753",
+   "match": [
+    "opls_753"
+   ],
+   "params": [
+    0.25,
+    3.2
+   ],
+   "comment": "nitrile N: epsilon 0.17 -> 0.25 kcal/mol, sigma 3.20 A unchanged (CAPS's liquid fit, not Jorgensen's value)"
+  }
+ ],
+ "notes": [
+  "optional overlay on oplsaa2024.json (caps ff apply --overlay); the base library keeps the 2024 file's value",
+  "OPLS-AA 2024 as published leaves acetonitrile and propionitrile 3.2 % too light and 0.80 / 0.83 kcal/mol too weakly bound against NIST (298.15 K, 1 atm; 416-molecule boxes, PME, 12 A, 100 ps + 200 ps NPT, 1 ns gas); four trial sets were run",
+  "this set: acetonitrile 0.783 g/cm3 (+0.8 %), dHvap 7.82 kcal/mol (-0.12); propionitrile 0.772 g/cm3 (-0.6 %), 8.48 kcal/mol (-0.16)",
+  "the other trials: N epsilon 0.25 with sigma 3.10 A (+3.2 / +1.6 % density) and two with a stronger nitrile C, all denser than experiment"
+ ]
+}
