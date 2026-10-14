@@ -31,12 +31,14 @@ def arg(k, d=None):
     return sys.argv[sys.argv.index(k) + 1] if k in sys.argv else d
 
 
-def run(cmd, log):
+def run(cmd, log, ok=(0,)):
+    """ok: the exit codes that pass (caps relax's 3 is a minimisation stopped by its iteration limit, the structure written:
+    enough to start MD from)"""
     with open(log, "a") as f:
         f.write("$ " + " ".join(cmd) + "\n")
         f.flush()   # before the command's own output
         r = subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT)
-    if r.returncode:
+    if r.returncode not in ok:
         raise SystemExit(f"failed: {' '.join(cmd)} (see {log})")
 
 
@@ -100,7 +102,7 @@ def main():
     run([CAPS, "ff", "apply", box, "--ff", ff, "--charges", "types", "-o", liq] + ov, log)
     # relax and md run on the force field the data file holds (written by caps ff apply with the overlay), at its own
     # cut-off; a file whose force field CAPS cannot rebuild stops them
-    run([CAPS, "relax", liq, "-o", os.path.join(out, "liq_min.data")], log)
+    run([CAPS, "relax", liq, "-o", os.path.join(out, "liq_min.data")], log, ok=(0, 3))
     md = ["--temp", str(T), "--thermostat", "bussi", "--barostat", "crescale", "--pressure", arg("--pressure", "1"), "--pme",
           "--dt", "1", "--thermo", "100"] + th
     run([CAPS, "md", os.path.join(out, "liq_min.data"), "-o", os.path.join(out, "liq_eq.data"), "--steps", str(eq),

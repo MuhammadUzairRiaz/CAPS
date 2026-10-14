@@ -1,0 +1,22 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "ester methoxy C Lennard-Jones trial M5 (CAPS, on OPLS-AA 2024)",
+ "atom_types": [],
+ "pairs": [
+  {
+   "name": "opls_468",
+   "match": [
+    "opls_468"
+   ],
+   "params": [
+    0.075,
+    3.5
+   ]
+  }
+ ],
+ "notes": [
+  "A trial for the liquid test: methyl acetate came out 2.35 % too light and 0.59 kcal/mol too weakly bound with OPLS-AA 2024's methoxy C 468 (epsilon 0.066 kcal/mol, sigma 3.50 A); methyl methacrylate, which shares 468, was within 0.22 % and 0.04 kcal/mol, so every trial is run on both.",
+  "M5: interpolated between the 2024 value and M1 (0.085) to share the error between methyl acetate and methyl methacrylate, which both carry 468 and move together"
+ ]
+}
