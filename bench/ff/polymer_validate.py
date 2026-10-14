@@ -3,7 +3,7 @@
 force field (the polymers' counterpart of liquid_validate.py).
 
     polymer_validate.py ID --ff FF.json --out DIR [--atoms 6000] [--dp 0] [--temp 298.15] [--scale 1] [--prod 1000000]
-                        [--threads 8] [--seed 1] [--json result.json]
+                        [--threads 8] [--seed 1] [--overlay OV.json[,MORE.json]] [--json result.json]
 
 build    chains of the library's repeat unit (data/polymers/library.json) grown with the force field's typing at
          0.5 g/cm3, as many as fit --atoms (DP from --dp, else about 20 repeat units a chain, at least 4 chains)
@@ -60,6 +60,9 @@ def main():
     P = next(p for p in lib if p["id"] == pid)
     ff, out = os.path.abspath(arg("--ff")), os.path.abspath(arg("--out"))
     T, threads, seed = arg("--temp", "298.15"), arg("--threads", "8"), arg("--seed", "1")
+    # overlays on the force field (a refit on trial): on every step that evaluates it; the same seed gives the same grown
+    # cell as a run without, so the two compare pair-wise
+    ov = ["--overlay", ",".join(os.path.abspath(x) for x in arg("--overlay").split(","))] if arg("--overlay") else []
     os.makedirs(out, exist_ok=True)
     log = os.path.join(out, "run.log")
     na = unit_atoms(P["smiles"], log, out)
@@ -80,20 +83,20 @@ def main():
                 raise
     eq = os.path.join(out, "equil.data")
     run([CAPS, "equilibrate", g, "-o", eq, "--protocol", "larsen21", "--tfinal", T, "--scale", arg("--scale", "1"),
-         "--seed", seed, "--log", os.path.join(out, "equil.csv"), "--ff", ff], log)   # --ff: not taken from the data file
+         "--seed", seed, "--log", os.path.join(out, "equil.csv"), "--ff", ff] + ov, log)
     prod = os.path.join(out, "prod.data")
     traj = os.path.join(out, "prod.lammpstrj")
     run([CAPS, "md", eq, "-o", prod, "--steps", arg("--prod", "1000000"), "--dt", "1", "--temp", T, "--thermostat", "bussi",
          "--barostat", "crescale", "--pressure", "1", "--pme", "--cutoff", "12", "--thermo", "1000", "--threads", threads,
-         "--log", os.path.join(out, "prod.csv"), "--dump", traj, "--every", "10000", "--ff", ff], log)
+         "--log", os.path.join(out, "prod.csv"), "--dump", traj, "--every", "10000", "--ff", ff] + ov, log)
     rows = list(csv.DictReader(open(os.path.join(out, "prod.csv"))))
     rho = [float(r["density_g_cm3"]) for r in rows]
     rho = rho[len(rho) // 5:]   # the first fifth relaxes from the equilibration
     rm, re_ = block(rho)
     aj = os.path.join(out, "analyze.json")
-    run([CAPS, "analyze", traj, "--topology", eq, "--props", "density,ced,delta", "--ff", ff, "--json", aj], log)
+    run([CAPS, "analyze", traj, "--topology", eq, "--props", "density,ced,delta", "--ff", ff, "--json", aj] + ov, log)
     props = {p["id"]: p for p in json.load(open(aj))}   # caps analyze --json: a list of properties by id
-    res = {"id": pid, "name": P["name"], "ff": os.path.basename(ff), "chains": chains, "dp": dp,
+    res = {"id": pid, "name": P["name"], "ff": os.path.basename(ff) + "".join(" + " + os.path.basename(x) for x in (arg("--overlay") or "").split(",") if x), "chains": chains, "dp": dp,
            "atoms": chains * (dp * na + 2), "T": float(T), "density": round(rm, 4), "density_err": round(re_, 4),
            "ced": props.get("ced", {}).get("value"), "ced_err": props.get("ced", {}).get("error"),
            "ced_unit": props.get("ced", {}).get("unit"), "delta": props.get("delta", {}).get("value"),
