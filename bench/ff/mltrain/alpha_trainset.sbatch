@@ -12,7 +12,7 @@
 #SBATCH --cpus-per-task=6
 #SBATCH --gres=gpu:1
 #SBATCH --mem=110G
-#SBATCH --time=12:00:00
+#SBATCH --time=24:00:00
 #SBATCH --array=0-39
 #SBATCH --output=/data/horse/ws/muri912g-caps-ml/logs/trainset-%A_%a.out
 
