@@ -1566,7 +1566,7 @@
    "atoms": 176,
    "untyped": 0,
    "torsions": 828,
-   "rotors": 12,
+   "rotors": 13,
    "complete": true
   },
   {
@@ -1581,9 +1581,9 @@
   {
    "kind": "product",
    "name": "cc_crosslink: EPDM",
-   "atoms": 240,
+   "atoms": 238,
    "untyped": 0,
-   "torsions": 1077,
+   "torsions": 1086,
    "rotors": 24,
    "complete": true
   },
@@ -1599,9 +1599,9 @@
   {
    "kind": "product",
    "name": "cc_crosslink_any: PE + PP",
-   "atoms": 97,
+   "atoms": 101,
    "untyped": 0,
-   "torsions": 1251,
+   "torsions": 1233,
    "rotors": 0,
    "complete": true
   },
@@ -1617,10 +1617,10 @@
   {
    "kind": "product",
    "name": "sulfur_allylic: BR + H2S2",
-   "atoms": 132,
-   "untyped": 2,
-   "torsions": 306,
-   "rotors": 35,
+   "atoms": 130,
+   "untyped": 1,
+   "torsions": 313,
+   "rotors": 29,
    "complete": false
   },
   {
@@ -1629,7 +1629,7 @@
    "atoms": 166,
    "untyped": 7,
    "torsions": 384,
-   "rotors": 29,
+   "rotors": 28,
    "complete": false
   },
   {
@@ -1638,7 +1638,7 @@
    "atoms": 308,
    "untyped": 32,
    "torsions": 390,
-   "rotors": 62,
+   "rotors": 61,
    "complete": false
   },
   {
@@ -1653,27 +1653,27 @@
   {
    "kind": "product",
    "name": "peroxide_allylic: NR",
-   "atoms": 134,
+   "atoms": 132,
    "untyped": 0,
-   "torsions": 1008,
+   "torsions": 1017,
    "rotors": 0,
    "complete": true
   },
   {
    "kind": "product",
    "name": "peroxide_allylic: BR",
-   "atoms": 130,
+   "atoms": 122,
    "untyped": 0,
-   "torsions": 675,
+   "torsions": 711,
    "rotors": 0,
    "complete": true
   },
   {
    "kind": "product",
    "name": "peroxide_allylic: SBR",
-   "atoms": 190,
+   "atoms": 184,
    "untyped": 0,
-   "torsions": 705,
+   "torsions": 732,
    "rotors": 12,
    "complete": false
   },
@@ -1871,8 +1871,8 @@
    "name": "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine",
    "atoms": 174,
    "untyped": 0,
-   "torsions": 405,
-   "rotors": 54,
+   "torsions": 399,
+   "rotors": 51,
    "complete": false
   },
   {
@@ -2902,7 +2902,7 @@
   {
    "class": "CA-CT-CT-CT",
    "status": "published",
-   "count": 66,
+   "count": 70,
    "structures": [
     "C002 Styrene\u2013butadiene rubber (SBR, 23.5 wt % styrene)",
     "C003 Acrylonitrile\u2013butadiene\u2013styrene terpolymer (random, 1 : 1 : 2 units)",
@@ -2914,7 +2914,7 @@
   {
    "class": "CA-CT-CT-HC",
    "status": "published",
-   "count": 571,
+   "count": 568,
    "structures": [
     "C002 Styrene\u2013butadiene rubber (SBR, 23.5 wt % styrene)",
     "C003 Acrylonitrile\u2013butadiene\u2013styrene terpolymer (random, 1 : 1 : 2 units)",
@@ -2934,7 +2934,7 @@
   {
    "class": "CA-CT-CT-S",
    "status": "published",
-   "count": 6,
+   "count": 5,
    "structures": [
     "sulfur_allylic: SBR + H2S2"
    ]
@@ -3275,7 +3275,7 @@
   {
    "class": "CM-CM-CT-CT",
    "status": "published",
-   "count": 655,
+   "count": 672,
    "structures": [
     "C/C(C)=C\\CC/C(C)=C\\CC/C(C)=C\\C",
     "C/C=C\\CC/C=C\\CC/C=C\\C",
@@ -3287,7 +3287,7 @@
   {
    "class": "CM-CM-CT-HC",
    "status": "published",
-   "count": 1281,
+   "count": 1263,
    "structures": [
     "C/C(C)=C\\CC/C(C)=C\\CC/C(C)=C\\C",
     "C/C=C\\CC/C=C\\CC/C=C\\C",
@@ -3299,7 +3299,7 @@
   {
    "class": "CM-CM-CT-S",
    "status": "published",
-   "count": 43,
+   "count": 44,
    "structures": [
     "polysulfide_allylic: BR + TESPD",
     "polysulfide_allylic: NR + TESPT",
@@ -3319,7 +3319,7 @@
   {
    "class": "CM-CT-CT-CM",
    "status": "CAPS fit",
-   "count": 211,
+   "count": 219,
    "structures": [
     "C/C(C)=C\\CC/C(C)=C\\CC/C(C)=C\\C",
     "C/C=C\\CC/C=C\\CC/C=C\\C",
@@ -3331,7 +3331,7 @@
   {
    "class": "CM-CT-CT-CT",
    "status": "CAPS fit",
-   "count": 616,
+   "count": 672,
    "structures": [
     "C002 Styrene\u2013butadiene rubber (SBR, 23.5 wt % styrene)",
     "C003 Acrylonitrile\u2013butadiene\u2013styrene terpolymer (random, 1 : 1 : 2 units)",
@@ -3364,7 +3364,7 @@
   {
    "class": "CM-CT-CT-HC",
    "status": "published",
-   "count": 830,
+   "count": 807,
    "structures": [
     "C/C(C)=C\\CC/C(C)=C\\CC/C(C)=C\\C",
     "C/C=C\\CC/C=C\\CC/C=C\\C",
@@ -3376,7 +3376,7 @@
   {
    "class": "CM-CT-CT-S",
    "status": "published",
-   "count": 17,
+   "count": 19,
    "structures": [
     "polysulfide_allylic: BR + TESPD",
     "polysulfide_allylic: NR + TESPT",
@@ -3396,7 +3396,7 @@
   {
    "class": "CM-CT-S-S",
    "status": "published",
-   "count": 34,
+   "count": 36,
    "structures": [
     "sulfur_allylic: BR + H2S2",
     "sulfur_allylic: NR + H2S2",
@@ -3683,7 +3683,7 @@
   {
    "class": "CT-CM-CT-CT",
    "status": "published",
-   "count": 246,
+   "count": 249,
    "structures": [
     "C/C(C)=C\\CC/C(C)=C\\CC/C(C)=C\\C",
     "C001 Epoxidised natural rubber (50 %)",
@@ -3695,7 +3695,7 @@
   {
    "class": "CT-CM-CT-HC",
    "status": "published",
-   "count": 649,
+   "count": 647,
    "structures": [
     "C/C(C)=C\\CC/C(C)=C\\CC/C(C)=C\\C",
     "C001 Epoxidised natural rubber (50 %)",
@@ -3707,7 +3707,7 @@
   {
    "class": "CT-CM-CT-S",
    "status": "published",
-   "count": 16,
+   "count": 15,
    "structures": [
     "polysulfide_allylic: NR + TESPT",
     "sulfur_allylic: NR + H2S2"
@@ -3830,7 +3830,7 @@
   {
    "class": "CT-CT-CM-HC",
    "status": "published",
-   "count": 402,
+   "count": 416,
    "structures": [
     "C/C(C)=C\\CC/C(C)=C\\CC/C(C)=C\\C",
     "C/C=C\\CC/C=C\\CC/C=C\\C",
@@ -3842,7 +3842,7 @@
   {
    "class": "CT-CT-CT-CT",
    "status": "published",
-   "count": 4396,
+   "count": 4425,
    "structures": [
     "C002 Styrene\u2013butadiene rubber (SBR, 23.5 wt % styrene)",
     "C003 Acrylonitrile\u2013butadiene\u2013styrene terpolymer (random, 1 : 1 : 2 units)",
@@ -3892,7 +3892,7 @@
   {
    "class": "CT-CT-CT-HC",
    "status": "published",
-   "count": 7751,
+   "count": 7750,
    "structures": [
     "C002 Styrene\u2013butadiene rubber (SBR, 23.5 wt % styrene)",
     "C003 Acrylonitrile\u2013butadiene\u2013styrene terpolymer (random, 1 : 1 : 2 units)",
@@ -3924,7 +3924,7 @@
   {
    "class": "CT-CT-CT-NT",
    "status": "published",
-   "count": 59,
+   "count": 58,
    "structures": [
     "C1CCNCC1",
     "CC1(C)CC(N)CC(C)(CN)C1",
@@ -3948,7 +3948,7 @@
   {
    "class": "CT-CT-CT-OS",
    "status": "published",
-   "count": 238,
+   "count": 237,
    "structures": [
     "C005 Ethylene\u2013vinyl acetate (EVA, 18 wt % vinyl acetate)",
     "C112 PBSA, poly(butylene succinate-co-adipate) (BS:BA 80:20 mol)",
@@ -3960,7 +3960,7 @@
   {
    "class": "CT-CT-CT-S",
    "status": "published",
-   "count": 6,
+   "count": 5,
    "structures": [
     "sulfur_allylic: SBR + H2S2"
    ]
@@ -4048,7 +4048,7 @@
   {
    "class": "CT-CT-NT-CT",
    "status": "published",
-   "count": 55,
+   "count": 53,
    "structures": [
     "C1CCNCC1",
     "NCCNCCN",
@@ -4072,7 +4072,7 @@
   {
    "class": "CT-CT-OH-HO",
    "status": "published",
-   "count": 172,
+   "count": 170,
    "structures": [
     "C112 PBSA, poly(butylene succinate-co-adipate) (BS:BA 80:20 mol)",
     "C113 PBAT, poly(butylene adipate-co-terephthalate) (BA:BT 50:50 mol)",
@@ -4084,7 +4084,7 @@
   {
    "class": "CT-CT-OS-CT",
    "status": "published",
-   "count": 139,
+   "count": 138,
    "structures": [
     "CC(N)COCC(C)OCC(C)N",
     "CCCCOCC1CO1",
@@ -4096,7 +4096,7 @@
   {
    "class": "CT-CT-S-CT",
    "status": "published",
-   "count": 5,
+   "count": 6,
    "structures": [
     "polysulfide_allylic: BR + TESPD",
     "polysulfide_allylic: NR + TESPT"
@@ -4158,7 +4158,7 @@
   {
    "class": "CT-CY-CY-HC",
    "status": "published",
-   "count": 196,
+   "count": 198,
    "structures": [
     "C(c1ccc(N(CC2CO2)CC2CO2)cc1)c1ccc(N(CC2CO2)CC2CO2)cc1",
     "C001 Epoxidised natural rubber (50 %)",
@@ -4170,7 +4170,7 @@
   {
    "class": "CT-CY-CY-O$",
    "status": "published",
-   "count": 153,
+   "count": 154,
    "structures": [
     "C(c1ccc(N(CC2CO2)CC2CO2)cc1)c1ccc(N(CC2CO2)CC2CO2)cc1",
     "C001 Epoxidised natural rubber (50 %)",
@@ -4182,7 +4182,7 @@
   {
    "class": "CT-CY-O$-CY",
    "status": "published",
-   "count": 153,
+   "count": 154,
    "structures": [
     "C(c1ccc(N(CC2CO2)CC2CO2)cc1)c1ccc(N(CC2CO2)CC2CO2)cc1",
     "C001 Epoxidised natural rubber (50 %)",
@@ -4224,7 +4224,7 @@
   {
    "class": "CT-NT-CT-HC",
    "status": "published",
-   "count": 121,
+   "count": 117,
    "structures": [
     "C(c1ccc(N(CC2CO2)CC2CO2)cc1)c1ccc(N(CC2CO2)CC2CO2)cc1",
     "C1CCNCC1",
@@ -4275,7 +4275,7 @@
   {
    "class": "CT-OS-CT-CY",
    "status": "missing",
-   "count": 4,
+   "count": 5,
    "structures": [
     "CCCCOCC1CO1",
     "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine"
@@ -4296,7 +4296,7 @@
   {
    "class": "CT-S-CT-HC",
    "status": "published",
-   "count": 13,
+   "count": 12,
    "structures": [
     "polysulfide_allylic: BR + TESPD",
     "polysulfide_allylic: NR + TESPT"
@@ -4305,7 +4305,7 @@
   {
    "class": "CT-S-S-CT",
    "status": "published",
-   "count": 19,
+   "count": 20,
    "structures": [
     "CCO[Si](OCC)(OCC)CCCSSCCC[Si](OCC)(OCC)OCC",
     "polysulfide_allylic: BR + TESPD",
@@ -4385,7 +4385,7 @@
   {
    "class": "CY-CY-CT-HC",
    "status": "published",
-   "count": 349,
+   "count": 351,
    "structures": [
     "C(c1ccc(N(CC2CO2)CC2CO2)cc1)c1ccc(N(CC2CO2)CC2CO2)cc1",
     "C001 Epoxidised natural rubber (50 %)",
@@ -4406,7 +4406,7 @@
   {
    "class": "CY-CY-CT-OS",
    "status": "CAPS fit",
-   "count": 53,
+   "count": 54,
    "structures": [
     "CC(C)(c1ccc(OCC2CO2)cc1)c1ccc(OCC2CO2)cc1",
     "CCCCOCC1CO1",
@@ -4426,7 +4426,7 @@
   {
    "class": "CY-O$-CY-HC",
    "status": "published",
-   "count": 217,
+   "count": 220,
    "structures": [
     "C(c1ccc(N(CC2CO2)CC2CO2)cc1)c1ccc(N(CC2CO2)CC2CO2)cc1",
     "C001 Epoxidised natural rubber (50 %)",
@@ -4745,7 +4745,7 @@
   {
    "class": "HC-CM-CT-HC",
    "status": "published",
-   "count": 609,
+   "count": 593,
    "structures": [
     "C/C(C)=C\\CC/C(C)=C\\CC/C(C)=C\\C",
     "C/C=C\\CC/C=C\\CC/C=C\\C",
@@ -4757,9 +4757,10 @@
   {
    "class": "HC-CM-CT-S",
    "status": "published",
-   "count": 27,
+   "count": 29,
    "structures": [
     "polysulfide_allylic: BR + TESPD",
+    "polysulfide_allylic: NR + TESPT",
     "sulfur_allylic: BR + H2S2",
     "sulfur_allylic: NR + H2S2",
     "sulfur_allylic: SBR + H2S2"
@@ -4877,7 +4878,7 @@
   {
    "class": "HC-CT-CT-HC",
    "status": "published",
-   "count": 6964,
+   "count": 6946,
    "structures": [
     "C/C(C)=C\\CC/C(C)=C\\CC/C(C)=C\\C",
     "C/C=C\\CC/C=C\\CC/C=C\\C",
@@ -4909,7 +4910,7 @@
   {
    "class": "HC-CT-CT-NT",
    "status": "published",
-   "count": 192,
+   "count": 191,
    "structures": [
     "C1CCNCC1",
     "CC(N)COCC(C)OCC(C)N",
@@ -4921,7 +4922,7 @@
   {
    "class": "HC-CT-CT-OH",
    "status": "published",
-   "count": 321,
+   "count": 317,
    "structures": [
     "C112 PBSA, poly(butylene succinate-co-adipate) (BS:BA 80:20 mol)",
     "C113 PBAT, poly(butylene adipate-co-terephthalate) (BA:BT 50:50 mol)",
@@ -4933,7 +4934,7 @@
   {
    "class": "HC-CT-CT-OS",
    "status": "published",
-   "count": 581,
+   "count": 580,
    "structures": [
     "C005 Ethylene\u2013vinyl acetate (EVA, 18 wt % vinyl acetate)",
     "C112 PBSA, poly(butylene succinate-co-adipate) (BS:BA 80:20 mol)",
@@ -4945,7 +4946,7 @@
   {
    "class": "HC-CT-CT-S",
    "status": "published",
-   "count": 55,
+   "count": 58,
    "structures": [
     "CCO[Si](OCC)(OCC)CCCSSCCC[Si](OCC)(OCC)OCC",
     "CCO[Si](OCC)(OCC)CCCSSSSCCC[Si](OCC)(OCC)OCC",
@@ -4966,7 +4967,7 @@
   {
    "class": "HC-CT-CY-HC",
    "status": "CAPS fit",
-   "count": 194,
+   "count": 196,
    "structures": [
     "C(c1ccc(N(CC2CO2)CC2CO2)cc1)c1ccc(N(CC2CO2)CC2CO2)cc1",
     "C001 Epoxidised natural rubber (50 %)",
@@ -4978,7 +4979,7 @@
   {
    "class": "HC-CT-CY-O$",
    "status": "CAPS fit",
-   "count": 341,
+   "count": 343,
    "structures": [
     "C(c1ccc(N(CC2CO2)CC2CO2)cc1)c1ccc(N(CC2CO2)CC2CO2)cc1",
     "C001 Epoxidised natural rubber (50 %)",
@@ -5002,7 +5003,7 @@
   {
    "class": "HC-CT-OH-HO",
    "status": "published",
-   "count": 189,
+   "count": 188,
    "structures": [
     "C112 PBSA, poly(butylene succinate-co-adipate) (BS:BA 80:20 mol)",
     "C113 PBAT, poly(butylene adipate-co-terephthalate) (BA:BT 50:50 mol)",
@@ -5014,7 +5015,7 @@
   {
    "class": "HC-CT-S-S",
    "status": "published",
-   "count": 58,
+   "count": 62,
    "structures": [
     "CCO[Si](OCC)(OCC)CCCSSCCC[Si](OCC)(OCC)OCC",
     "CCO[Si](OCC)(OCC)CCCSSSSCCC[Si](OCC)(OCC)OCC",
@@ -5060,7 +5061,7 @@
   {
    "class": "HC-CY-CT-OS",
    "status": "CAPS fit",
-   "count": 53,
+   "count": 54,
    "structures": [
     "CC(C)(c1ccc(OCC2CO2)cc1)c1ccc(OCC2CO2)cc1",
     "CCCCOCC1CO1",
@@ -5072,7 +5073,7 @@
   {
    "class": "HC-CY-CY-HC",
    "status": "published",
-   "count": 148,
+   "count": 150,
    "structures": [
     "C(c1ccc(N(CC2CO2)CC2CO2)cc1)c1ccc(N(CC2CO2)CC2CO2)cc1",
     "CC(C)(c1ccc(OCC2CO2)cc1)c1ccc(OCC2CO2)cc1",
@@ -5084,7 +5085,7 @@
   {
    "class": "HC-CY-CY-O$",
    "status": "published",
-   "count": 217,
+   "count": 220,
    "structures": [
     "C(c1ccc(N(CC2CO2)CC2CO2)cc1)c1ccc(N(CC2CO2)CC2CO2)cc1",
     "C001 Epoxidised natural rubber (50 %)",
@@ -5138,7 +5139,7 @@
   {
    "class": "NT-CT-CT-OH",
    "status": "published",
-   "count": 19,
+   "count": 18,
    "structures": [
     "epoxy_amine_primary: DGEBA + DDM (aromatic amine)",
     "epoxy_amine_primary: DGEBA + DDS (aromatic sulfone amine)",
@@ -5186,7 +5187,7 @@
   {
    "class": "O$-CY-CT-OS",
    "status": "CAPS fit",
-   "count": 53,
+   "count": 54,
    "structures": [
     "CC(C)(c1ccc(OCC2CO2)cc1)c1ccc(OCC2CO2)cc1",
     "CCCCOCC1CO1",
@@ -5260,7 +5261,7 @@
   {
    "class": "OH-CT-CT-OS",
    "status": "published",
-   "count": 42,
+   "count": 41,
    "structures": [
     "P014 Polyethylene oxide",
     "P045 Poly(ethylene terephthalate)",
@@ -5439,6 +5440,38 @@
    "problem": ""
   },
   {
+   "env": "aae78a9a812e",
+   "status": "missing",
+   "central": [
+    "opls_180",
+    "opls_182"
+   ],
+   "central_atoms": [
+    3,
+    4
+   ],
+   "classes": [
+    "CT-OS-CT-CY",
+    "CT-OS-CT-HC"
+   ],
+   "count": 5,
+   "structures": [
+    "CCCCOCC1CO1",
+    "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine"
+   ],
+   "example": "CCCCOCC1CO1",
+   "fragment_smiles": "C(COCC1CO1)*",
+   "fragment_atoms": 17,
+   "fragment_heavy": 7,
+   "heavy_rotor": true,
+   "elements": [
+    "C",
+    "H",
+    "O"
+   ],
+   "problem": ""
+  },
+  {
    "env": "ace6a5067c5e",
    "status": "missing",
    "central": [
@@ -5466,38 +5499,6 @@
    "fragment_smiles": "CC(O)C(=O)O",
    "fragment_atoms": 12,
    "fragment_heavy": 6,
-   "heavy_rotor": true,
-   "elements": [
-    "C",
-    "H",
-    "O"
-   ],
-   "problem": ""
-  },
-  {
-   "env": "aae78a9a812e",
-   "status": "missing",
-   "central": [
-    "opls_180",
-    "opls_182"
-   ],
-   "central_atoms": [
-    3,
-    4
-   ],
-   "classes": [
-    "CT-OS-CT-CY",
-    "CT-OS-CT-HC"
-   ],
-   "count": 4,
-   "structures": [
-    "CCCCOCC1CO1",
-    "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine"
-   ],
-   "example": "CCCCOCC1CO1",
-   "fragment_smiles": "C(COCC1CO1)*",
-   "fragment_atoms": 17,
-   "fragment_heavy": 7,
    "heavy_rotor": true,
    "elements": [
     "C",
@@ -6446,7 +6447,7 @@
     "CM-CT-CT-HC",
     "HC-CT-CT-HC"
    ],
-   "count": 21,
+   "count": 20,
    "structures": [
     "C/C=C\\CC/C=C\\CC/C=C\\C",
     "C104 High-cis BR (97 % cis, 2 % trans, 1 % vinyl)",
@@ -6767,6 +6768,42 @@
    "problem": ""
   },
   {
+   "env": "cba4ce82fc10",
+   "status": "CAPS fit",
+   "central": [
+    "opls_182",
+    "opls_1027"
+   ],
+   "central_atoms": [
+    3,
+    4
+   ],
+   "classes": [
+    "CY-CY-CT-HC",
+    "CY-CY-CT-OS",
+    "HC-CT-CY-HC",
+    "HC-CT-CY-O$",
+    "HC-CY-CT-OS",
+    "O$-CY-CT-OS"
+   ],
+   "count": 5,
+   "structures": [
+    "CCCCOCC1CO1",
+    "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine"
+   ],
+   "example": "CCCCOCC1CO1",
+   "fragment_smiles": "C(OCC1CO1)*",
+   "fragment_atoms": 14,
+   "fragment_heavy": 6,
+   "heavy_rotor": true,
+   "elements": [
+    "C",
+    "H",
+    "O"
+   ],
+   "problem": ""
+  },
+  {
    "env": "db9c2907b382",
    "status": "CAPS fit",
    "central": [
@@ -6934,42 +6971,6 @@
    "fragment_smiles": "C(C(O)CCC=C(*)*)(*)(*)*",
    "fragment_atoms": 19,
    "fragment_heavy": 7,
-   "heavy_rotor": true,
-   "elements": [
-    "C",
-    "H",
-    "O"
-   ],
-   "problem": ""
-  },
-  {
-   "env": "cba4ce82fc10",
-   "status": "CAPS fit",
-   "central": [
-    "opls_182",
-    "opls_1027"
-   ],
-   "central_atoms": [
-    3,
-    4
-   ],
-   "classes": [
-    "CY-CY-CT-HC",
-    "CY-CY-CT-OS",
-    "HC-CT-CY-HC",
-    "HC-CT-CY-O$",
-    "HC-CY-CT-OS",
-    "O$-CY-CT-OS"
-   ],
-   "count": 4,
-   "structures": [
-    "CCCCOCC1CO1",
-    "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine"
-   ],
-   "example": "CCCCOCC1CO1",
-   "fragment_smiles": "C(OCC1CO1)*",
-   "fragment_atoms": 14,
-   "fragment_heavy": 6,
    "heavy_rotor": true,
    "elements": [
     "C",
@@ -12961,41 +12962,6 @@
    "problem": ""
   },
   {
-   "env": "3d994d828e0f",
-   "status": "published",
-   "central": [
-    "opls_907",
-    "opls_906"
-   ],
-   "central_atoms": [
-    3,
-    4
-   ],
-   "classes": [
-    "HC-CT-CT-HC",
-    "HC-CT-CT-NT",
-    "NT-CT-CT-NT"
-   ],
-   "count": 13,
-   "structures": [
-    "NCCNCCN",
-    "epoxy_amine_primary: DGEBA + DETA",
-    "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine",
-    "epoxy_amine_secondary: DGEBA + DETA (after the primary step)"
-   ],
-   "example": "NCCNCCN",
-   "fragment_smiles": "C(NCCN)*",
-   "fragment_atoms": 15,
-   "fragment_heavy": 5,
-   "heavy_rotor": true,
-   "elements": [
-    "C",
-    "H",
-    "N"
-   ],
-   "problem": ""
-  },
-  {
    "env": "de420675df8b",
    "status": "published",
    "central": [
@@ -13025,40 +12991,6 @@
     "C",
     "H",
     "O"
-   ],
-   "problem": ""
-  },
-  {
-   "env": "df9c9deadf55",
-   "status": "published",
-   "central": [
-    "opls_906",
-    "opls_900"
-   ],
-   "central_atoms": [
-    3,
-    4
-   ],
-   "classes": [
-    "CT-CT-NT-H",
-    "H-NT-CT-HC"
-   ],
-   "count": 13,
-   "structures": [
-    "NCCNCCN",
-    "epoxy_amine_primary: DGEBA + DETA",
-    "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine",
-    "epoxy_amine_secondary: DGEBA + DETA (after the primary step)"
-   ],
-   "example": "NCCNCCN",
-   "fragment_smiles": "N(CCN)*",
-   "fragment_atoms": 12,
-   "fragment_heavy": 4,
-   "heavy_rotor": false,
-   "elements": [
-    "C",
-    "H",
-    "N"
    ],
    "problem": ""
   },
@@ -13093,6 +13025,41 @@
     "C",
     "H",
     "O"
+   ],
+   "problem": ""
+  },
+  {
+   "env": "3d994d828e0f",
+   "status": "published",
+   "central": [
+    "opls_907",
+    "opls_906"
+   ],
+   "central_atoms": [
+    3,
+    4
+   ],
+   "classes": [
+    "HC-CT-CT-HC",
+    "HC-CT-CT-NT",
+    "NT-CT-CT-NT"
+   ],
+   "count": 12,
+   "structures": [
+    "NCCNCCN",
+    "epoxy_amine_primary: DGEBA + DETA",
+    "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine",
+    "epoxy_amine_secondary: DGEBA + DETA (after the primary step)"
+   ],
+   "example": "NCCNCCN",
+   "fragment_smiles": "C(NCCN)*",
+   "fragment_atoms": 15,
+   "fragment_heavy": 5,
+   "heavy_rotor": true,
+   "elements": [
+    "C",
+    "H",
+    "N"
    ],
    "problem": ""
   },
@@ -13197,6 +13164,40 @@
     "C",
     "H",
     "O"
+   ],
+   "problem": ""
+  },
+  {
+   "env": "df9c9deadf55",
+   "status": "published",
+   "central": [
+    "opls_906",
+    "opls_900"
+   ],
+   "central_atoms": [
+    3,
+    4
+   ],
+   "classes": [
+    "CT-CT-NT-H",
+    "H-NT-CT-HC"
+   ],
+   "count": 12,
+   "structures": [
+    "NCCNCCN",
+    "epoxy_amine_primary: DGEBA + DETA",
+    "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine",
+    "epoxy_amine_secondary: DGEBA + DETA (after the primary step)"
+   ],
+   "example": "NCCNCCN",
+   "fragment_smiles": "N(CCN)*",
+   "fragment_atoms": 12,
+   "fragment_heavy": 4,
+   "heavy_rotor": false,
+   "elements": [
+    "C",
+    "H",
+    "N"
    ],
    "problem": ""
   },
@@ -13383,6 +13384,37 @@
     "O"
    ],
    "problem": ""
+  },
+  {
+   "env": "840550f042a0",
+   "status": "published",
+   "central": [
+    "opls_135",
+    "opls_137"
+   ],
+   "central_atoms": [
+    62,
+    63
+   ],
+   "classes": [
+    "CT-CT-CT-HC",
+    "HC-CT-CT-HC"
+   ],
+   "count": 11,
+   "structures": [
+    "cc_crosslink: EPDM",
+    "cc_crosslink: PE"
+   ],
+   "example": "cc_crosslink: PE",
+   "fragment_smiles": "C1(C2C(C3C4C1C1C(C3*)C3C(C5C1C(C43)C(CC5)*)*)C1C(C3C2C2C1C1C4C5C(C(C)C1C1C6C4C(C4C(C7CC8C4C4C(C9C6C(C4C(C8CC7)*)C(C1C9)*)*)*)*)C(C2CC53)*)*)*",
+   "fragment_atoms": 136,
+   "fragment_heavy": 58,
+   "heavy_rotor": false,
+   "elements": [
+    "C",
+    "H"
+   ],
+   "problem": "an sp3 carbon angle of 85 deg"
   },
   {
    "env": "accf80f98190",
@@ -13619,37 +13651,6 @@
     "C",
     "H",
     "O"
-   ],
-   "problem": ""
-  },
-  {
-   "env": "840550f042a0",
-   "status": "published",
-   "central": [
-    "opls_135",
-    "opls_137"
-   ],
-   "central_atoms": [
-    1,
-    2
-   ],
-   "classes": [
-    "CT-CT-CT-HC",
-    "HC-CT-CT-HC"
-   ],
-   "count": 10,
-   "structures": [
-    "cc_crosslink: EPDM",
-    "cc_crosslink: PE"
-   ],
-   "example": "cc_crosslink: PE",
-   "fragment_smiles": "CC1C2C3C4C5C1C1C6C4C(C4C7C(C8C9C%10C7C7C(C%11C%12C(C(C%13C(C%12)C(C3%11)C(C(C3C%11C5C6C(C(C1%11)CC%133)*)*)*)C(C%10C4C(C1C3CCC(C(C93)CC1)*)*)*)*)C(C1C2C7C(CC1)C8*)*)*)*",
-   "fragment_atoms": 143,
-   "fragment_heavy": 61,
-   "heavy_rotor": false,
-   "elements": [
-    "C",
-    "H"
    ],
    "problem": ""
   },
@@ -14125,6 +14126,37 @@
    "problem": ""
   },
   {
+   "env": "89a6bc86e864",
+   "status": "published",
+   "central": [
+    "opls_137",
+    "opls_135"
+   ],
+   "central_atoms": [
+    91,
+    92
+   ],
+   "classes": [
+    "CT-CT-CT-HC",
+    "HC-CT-CT-HC"
+   ],
+   "count": 8,
+   "structures": [
+    "cc_crosslink: EPDM",
+    "cc_crosslink: PE"
+   ],
+   "example": "cc_crosslink: PE",
+   "fragment_smiles": "C1(C2C(C3C4C1C1C(C3*)C3C(C5C1C(C43)C(CC5)*)*)C1C(C3C2C2C1C1C4C5C(C(C1C1C6C4C(C4C(C7CC8C4C4C(C9C6C(C4C(C8CC7)*)C(C1C9)*)*)*)*)*)C(C2CC53)C)*)*",
+   "fragment_atoms": 136,
+   "fragment_heavy": 58,
+   "heavy_rotor": false,
+   "elements": [
+    "C",
+    "H"
+   ],
+   "problem": "an sp3 carbon angle of 85 deg"
+  },
+  {
    "env": "d83c8dd8f668",
    "status": "published",
    "central": [
@@ -14269,37 +14301,6 @@
    "problem": ""
   },
   {
-   "env": "89a6bc86e864",
-   "status": "published",
-   "central": [
-    "opls_135",
-    "opls_137"
-   ],
-   "central_atoms": [
-    83,
-    84
-   ],
-   "classes": [
-    "CT-CT-CT-HC",
-    "HC-CT-CT-HC"
-   ],
-   "count": 7,
-   "structures": [
-    "cc_crosslink: EPDM",
-    "cc_crosslink: PE"
-   ],
-   "example": "cc_crosslink: PE",
-   "fragment_smiles": "C1(C2C3C4C5C1C1C6C4C(C4C7C(C8C9C%10C7C7C(C%11C%12C(C(C%13C(C%12)C(C3%11)C(C(C3C%11C5C6C(C(C1%11)CC%133)*)*)*)C(C%10C4C(C1C3CCC(C(C93)CC1)*)*)*)*)C(C)C1C2C7C(CC1)C8*)*)*)*",
-   "fragment_atoms": 143,
-   "fragment_heavy": 61,
-   "heavy_rotor": false,
-   "elements": [
-    "C",
-    "H"
-   ],
-   "problem": ""
-  },
-  {
    "env": "aef84e0314ae",
    "status": "published",
    "central": [
@@ -14367,39 +14368,6 @@
     "C",
     "H",
     "O"
-   ],
-   "problem": ""
-  },
-  {
-   "env": "d6a6c7937d28",
-   "status": "published",
-   "central": [
-    "opls_142",
-    "opls_135"
-   ],
-   "central_atoms": [
-    16,
-    17
-   ],
-   "classes": [
-    "CM-CM-CT-HC",
-    "HC-CM-CT-HC"
-   ],
-   "count": 7,
-   "structures": [
-    "C109 EPDM (55 wt % ethylene, 40.5 wt % propylene, 4.5 wt % ENB)",
-    "CCCC(C)CCCC1CC2CC1C(=CC)C2",
-    "P209 Ethylidene norbornene unit (ENB, 2,3-exo,exo addition through the ring double bond)",
-    "cc_crosslink: EPDM"
-   ],
-   "example": "P209 Ethylidene norbornene unit (ENB, 2,3-exo,exo addition through the ring double bond)",
-   "fragment_smiles": "C1(C2CC(C(C1*)C2)=CC)*",
-   "fragment_atoms": 23,
-   "fragment_heavy": 9,
-   "heavy_rotor": false,
-   "elements": [
-    "C",
-    "H"
    ],
    "problem": ""
   },
@@ -14915,6 +14883,36 @@
    "problem": ""
   },
   {
+   "env": "5259c1861095",
+   "status": "published",
+   "central": [
+    "opls_142",
+    "opls_135"
+   ],
+   "central_atoms": [
+    26,
+    27
+   ],
+   "classes": [
+    "CM-CM-CT-HC",
+    "HC-CM-CT-HC"
+   ],
+   "count": 6,
+   "structures": [
+    "cc_crosslink: EPDM"
+   ],
+   "example": "cc_crosslink: EPDM",
+   "fragment_smiles": "C1(C2C(C(CC1*)C1C3C2C2C4C(C(C(C5C6C7C8C9C%10C(C(C(C(C%10C%10C(C%11CC(C%10*)C%10C%12C8C%11C%10C(=C*)C%12C54)*)*)*)C7C9C6=CC)*)*)C3C2C1=C*)*)*)*",
+   "fragment_atoms": 111,
+   "fragment_heavy": 49,
+   "heavy_rotor": false,
+   "elements": [
+    "C",
+    "H"
+   ],
+   "problem": ""
+  },
+  {
    "env": "5697327c05ad",
    "status": "published",
    "central": [
@@ -14946,6 +14944,36 @@
     "O"
    ],
    "problem": ""
+  },
+  {
+   "env": "60f123f774cc",
+   "status": "published",
+   "central": [
+    "opls_141",
+    "opls_142"
+   ],
+   "central_atoms": [
+    12,
+    13
+   ],
+   "classes": [
+    "CT-CM-CM-CT",
+    "CT-CM-CM-HC"
+   ],
+   "count": 6,
+   "structures": [
+    "cc_crosslink: EPDM"
+   ],
+   "example": "cc_crosslink: EPDM",
+   "fragment_smiles": "C1(C2C(CC3C1C1C4C5C6C1C(=CC)C5C1C(C5C(C7C1C1C(C8CC(C1*)C1C9C%10C%11C7C7C5C%11C(C7=C*)C5C(C7C(C(C5C9C(C1C8%10)=C*)C1C5C8C(C(CC(C8*)C8C5C7C1C8=C*)C1CC5C7C1C(=C*)C5C1C5C4C(C4C(C6C(C2C34)*)*)C1C(=C*)C75)*)*)*)*)*)*)*)*",
+   "fragment_atoms": 187,
+   "fragment_heavy": 85,
+   "heavy_rotor": true,
+   "elements": [
+    "C",
+    "H"
+   ],
+   "problem": "over 80 atoms"
   },
   {
    "env": "776e87935f25",
@@ -15320,6 +15348,38 @@
     "C",
     "H",
     "O"
+   ],
+   "problem": ""
+  },
+  {
+   "env": "d6a6c7937d28",
+   "status": "published",
+   "central": [
+    "opls_142",
+    "opls_135"
+   ],
+   "central_atoms": [
+    16,
+    17
+   ],
+   "classes": [
+    "CM-CM-CT-HC",
+    "HC-CM-CT-HC"
+   ],
+   "count": 6,
+   "structures": [
+    "C109 EPDM (55 wt % ethylene, 40.5 wt % propylene, 4.5 wt % ENB)",
+    "CCCC(C)CCCC1CC2CC1C(=CC)C2",
+    "P209 Ethylidene norbornene unit (ENB, 2,3-exo,exo addition through the ring double bond)"
+   ],
+   "example": "P209 Ethylidene norbornene unit (ENB, 2,3-exo,exo addition through the ring double bond)",
+   "fragment_smiles": "C1(C2CC(C(C1*)C2)=CC)*",
+   "fragment_atoms": 23,
+   "fragment_heavy": 9,
+   "heavy_rotor": false,
+   "elements": [
+    "C",
+    "H"
    ],
    "problem": ""
   },
@@ -15762,36 +15822,6 @@
    "problem": ""
   },
   {
-   "env": "5259c1861095",
-   "status": "published",
-   "central": [
-    "opls_142",
-    "opls_135"
-   ],
-   "central_atoms": [
-    91,
-    92
-   ],
-   "classes": [
-    "CM-CM-CT-HC",
-    "HC-CM-CT-HC"
-   ],
-   "count": 5,
-   "structures": [
-    "cc_crosslink: EPDM"
-   ],
-   "example": "cc_crosslink: EPDM",
-   "fragment_smiles": "C1(C2C(CC3C1C1C4C5C(C1C(=C*)C35)C1C(C(CC2C1*)C1C4C2C3C4C5C(C6C7C(CC(C8C7C7C9C(C(C7C(=CC)C9C5C6C4=C*)*)C4C5C6C(C(C(CC6*)*)C6C4C8C(C56)=C*)*)*)*)C2C(C13)=C*)*)*)*",
-   "fragment_atoms": 145,
-   "fragment_heavy": 65,
-   "heavy_rotor": false,
-   "elements": [
-    "C",
-    "H"
-   ],
-   "problem": "two atoms 0.86 A apart"
-  },
-  {
    "env": "544ec8ae3855",
    "status": "published",
    "central": [
@@ -15858,36 +15888,6 @@
     "H"
    ],
    "problem": ""
-  },
-  {
-   "env": "60f123f774cc",
-   "status": "published",
-   "central": [
-    "opls_141",
-    "opls_142"
-   ],
-   "central_atoms": [
-    68,
-    69
-   ],
-   "classes": [
-    "CT-CM-CM-CT",
-    "CT-CM-CM-HC"
-   ],
-   "count": 5,
-   "structures": [
-    "cc_crosslink: EPDM"
-   ],
-   "example": "cc_crosslink: EPDM",
-   "fragment_smiles": "C1(C2C(CC3C1C1C4C5C(C1C(=C*)C35)C1C(C(CC2C1*)C1C4C2C3C4C5C(C6C7C(CC(C8C7C7C9C(C(C7C(=C*)C9C5C6C4=C*)*)C4C5C6C(C(C(CC6*)*)C6C4C8C(C56)=C*)*)*)*)C2C(C13)=CC)*)*)*",
-   "fragment_atoms": 145,
-   "fragment_heavy": 65,
-   "heavy_rotor": true,
-   "elements": [
-    "C",
-    "H"
-   ],
-   "problem": "two atoms 0.86 A apart"
   },
   {
    "env": "6e7c09d51671",
@@ -16191,6 +16191,38 @@
     "C",
     "H",
     "N",
+    "O"
+   ],
+   "problem": ""
+  },
+  {
+   "env": "be6a89c173e0",
+   "status": "published",
+   "central": [
+    "opls_182",
+    "opls_180"
+   ],
+   "central_atoms": [
+    3,
+    4
+   ],
+   "classes": [
+    "CT-CT-OS-CT",
+    "CT-OS-CT-HC"
+   ],
+   "count": 5,
+   "structures": [
+    "CCCCOCC1CO1",
+    "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine"
+   ],
+   "example": "CCCCOCC1CO1",
+   "fragment_smiles": "C(CCOCC1CO1)*",
+   "fragment_atoms": 20,
+   "fragment_heavy": 8,
+   "heavy_rotor": true,
+   "elements": [
+    "C",
+    "H",
     "O"
    ],
    "problem": ""
@@ -16537,36 +16569,6 @@
     "Si"
    ],
    "problem": ""
-  },
-  {
-   "env": "19d7be3e9242",
-   "status": "published",
-   "central": [
-    "opls_137",
-    "opls_135"
-   ],
-   "central_atoms": [
-    102,
-    103
-   ],
-   "classes": [
-    "CT-CT-CT-HC",
-    "HC-CT-CT-HC"
-   ],
-   "count": 4,
-   "structures": [
-    "cc_crosslink: EPDM"
-   ],
-   "example": "cc_crosslink: EPDM",
-   "fragment_smiles": "C1(C2C(CC3C1C1C4C5C(C1C(=C*)C35)C1C(C(CC2C1*)C1C4C2C3C4C5C(C6C7C(CC(C8C7C7C9C(C(C7C(=C*)C9C5C6C4=C*)*)C4C5C6C(C(C(C)CC6*)C6C4C8C(C56)=C*)*)*)*)C2C(C13)=C*)*)*)*",
-   "fragment_atoms": 145,
-   "fragment_heavy": 65,
-   "heavy_rotor": false,
-   "elements": [
-    "C",
-    "H"
-   ],
-   "problem": "two atoms 0.86 A apart"
   },
   {
    "env": "1a69a0b42b32",
@@ -17169,6 +17171,38 @@
    "elements": [
     "C",
     "H"
+   ],
+   "problem": ""
+  },
+  {
+   "env": "5022f1c6b95f",
+   "status": "published",
+   "central": [
+    "opls_900",
+    "opls_906"
+   ],
+   "central_atoms": [
+    1,
+    2
+   ],
+   "classes": [
+    "CT-CT-NT-H",
+    "H-NT-CT-HC"
+   ],
+   "count": 4,
+   "structures": [
+    "NCCN",
+    "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine"
+   ],
+   "example": "NCCN",
+   "fragment_smiles": "NCCN",
+   "fragment_atoms": 12,
+   "fragment_heavy": 4,
+   "heavy_rotor": false,
+   "elements": [
+    "C",
+    "H",
+    "N"
    ],
    "problem": ""
   },
@@ -18415,38 +18449,6 @@
    "problem": ""
   },
   {
-   "env": "be6a89c173e0",
-   "status": "published",
-   "central": [
-    "opls_182",
-    "opls_180"
-   ],
-   "central_atoms": [
-    3,
-    4
-   ],
-   "classes": [
-    "CT-CT-OS-CT",
-    "CT-OS-CT-HC"
-   ],
-   "count": 4,
-   "structures": [
-    "CCCCOCC1CO1",
-    "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine"
-   ],
-   "example": "CCCCOCC1CO1",
-   "fragment_smiles": "C(CCOCC1CO1)*",
-   "fragment_atoms": 20,
-   "fragment_heavy": 8,
-   "heavy_rotor": true,
-   "elements": [
-    "C",
-    "H",
-    "O"
-   ],
-   "problem": ""
-  },
-  {
    "env": "bf1214ae71c1",
    "status": "published",
    "central": [
@@ -19013,75 +19015,6 @@
    "problem": ""
   },
   {
-   "env": "08a40992bbaa",
-   "status": "published",
-   "central": [
-    "opls_182",
-    "opls_158"
-   ],
-   "central_atoms": [
-    3,
-    4
-   ],
-   "classes": [
-    "CT-CT-CT-HC",
-    "CT-CT-CT-OS",
-    "HC-CT-CT-HC",
-    "HC-CT-CT-OH",
-    "HC-CT-CT-OS",
-    "OH-CT-CT-OS"
-   ],
-   "count": 3,
-   "structures": [
-    "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine"
-   ],
-   "example": "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine",
-   "fragment_smiles": "C(OCC(CN*)O)*",
-   "fragment_atoms": 18,
-   "fragment_heavy": 7,
-   "heavy_rotor": true,
-   "elements": [
-    "C",
-    "H",
-    "N",
-    "O"
-   ],
-   "problem": ""
-  },
-  {
-   "env": "0bd0a36f01c1",
-   "status": "published",
-   "central": [
-    "opls_901",
-    "opls_907"
-   ],
-   "central_atoms": [
-    6,
-    7
-   ],
-   "classes": [
-    "CT-CT-NT-CT",
-    "CT-CT-NT-H",
-    "CT-NT-CT-HC",
-    "H-NT-CT-HC"
-   ],
-   "count": 3,
-   "structures": [
-    "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine"
-   ],
-   "example": "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine",
-   "fragment_smiles": "C(CNCCN)(*)*",
-   "fragment_atoms": 18,
-   "fragment_heavy": 6,
-   "heavy_rotor": true,
-   "elements": [
-    "C",
-    "H",
-    "N"
-   ],
-   "problem": ""
-  },
-  {
    "env": "0d4d3331c7a7",
    "status": "published",
    "central": [
@@ -19172,38 +19105,6 @@
    "elements": [
     "C",
     "H"
-   ],
-   "problem": ""
-  },
-  {
-   "env": "2056532be69d",
-   "status": "published",
-   "central": [
-    "opls_142",
-    "opls_135"
-   ],
-   "central_atoms": [
-    4,
-    5
-   ],
-   "classes": [
-    "CM-CM-CT-HC",
-    "HC-CM-CT-HC"
-   ],
-   "count": 3,
-   "structures": [
-    "sulfur_allylic: BR + H2S2",
-    "sulfur_allylic: SBR + H2S2"
-   ],
-   "example": "sulfur_allylic: BR + H2S2",
-   "fragment_smiles": "C1(C(C=CC)SS1)*",
-   "fragment_atoms": 15,
-   "fragment_heavy": 7,
-   "heavy_rotor": false,
-   "elements": [
-    "C",
-    "H",
-    "S"
    ],
    "problem": ""
   },
@@ -19429,42 +19330,6 @@
    "elements": [
     "C",
     "H",
-    "O"
-   ],
-   "problem": ""
-  },
-  {
-   "env": "2cb9f9c03d08",
-   "status": "published",
-   "central": [
-    "opls_158",
-    "opls_907"
-   ],
-   "central_atoms": [
-    3,
-    4
-   ],
-   "classes": [
-    "CT-CT-CT-HC",
-    "CT-CT-CT-NT",
-    "HC-CT-CT-HC",
-    "HC-CT-CT-NT",
-    "HC-CT-CT-OH",
-    "NT-CT-CT-OH"
-   ],
-   "count": 3,
-   "structures": [
-    "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine"
-   ],
-   "example": "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine",
-   "fragment_smiles": "O(CC(CNC*)O)*",
-   "fragment_atoms": 18,
-   "fragment_heavy": 7,
-   "heavy_rotor": true,
-   "elements": [
-    "C",
-    "H",
-    "N",
     "O"
    ],
    "problem": ""
@@ -19857,40 +19722,6 @@
    "problem": ""
   },
   {
-   "env": "4eac05e08b9f",
-   "status": "published",
-   "central": [
-    "opls_907",
-    "opls_901"
-   ],
-   "central_atoms": [
-    3,
-    12
-   ],
-   "classes": [
-    "CT-CT-NT-CT",
-    "CT-CT-NT-H",
-    "CT-NT-CT-HC",
-    "H-NT-CT-HC"
-   ],
-   "count": 3,
-   "structures": [
-    "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine"
-   ],
-   "example": "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine",
-   "fragment_smiles": "C(C(CNCC*)O)*",
-   "fragment_atoms": 20,
-   "fragment_heavy": 7,
-   "heavy_rotor": true,
-   "elements": [
-    "C",
-    "H",
-    "N",
-    "O"
-   ],
-   "problem": ""
-  },
-  {
    "env": "4f42ed392e8d",
    "status": "published",
    "central": [
@@ -20058,6 +19889,37 @@
    "problem": ""
   },
   {
+   "env": "608510853769",
+   "status": "published",
+   "central": [
+    "opls_515",
+    "opls_145"
+   ],
+   "central_atoms": [
+    4,
+    5
+   ],
+   "classes": [
+    "CA-CA-CT-CT",
+    "CA-CA-CT-HC"
+   ],
+   "count": 3,
+   "structures": [
+    "sulfur_allylic: SBR + H2S2"
+   ],
+   "example": "sulfur_allylic: SBR + H2S2",
+   "fragment_smiles": "C(=CCC(c1ccccc1)C1C=CCSS1)*",
+   "fragment_atoms": 32,
+   "fragment_heavy": 16,
+   "heavy_rotor": true,
+   "elements": [
+    "C",
+    "H",
+    "S"
+   ],
+   "problem": ""
+  },
+  {
    "env": "614f92562079",
    "status": "published",
    "central": [
@@ -20221,37 +20083,6 @@
    "problem": ""
   },
   {
-   "env": "70140dc202ba",
-   "status": "published",
-   "central": [
-    "opls_182",
-    "opls_180"
-   ],
-   "central_atoms": [
-    3,
-    4
-   ],
-   "classes": [
-    "CT-CT-OS-CT",
-    "CT-OS-CT-HC"
-   ],
-   "count": 3,
-   "structures": [
-    "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine"
-   ],
-   "example": "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine",
-   "fragment_smiles": "C(CCOCC(*)*)*",
-   "fragment_atoms": 18,
-   "fragment_heavy": 6,
-   "heavy_rotor": true,
-   "elements": [
-    "C",
-    "H",
-    "O"
-   ],
-   "problem": ""
-  },
-  {
    "env": "76312c981b91",
    "status": "published",
    "central": [
@@ -20349,33 +20180,40 @@
    "problem": ""
   },
   {
-   "env": "8516ab721ca1",
+   "env": "859e45729af2",
    "status": "published",
    "central": [
-    "opls_180",
-    "opls_182"
+    "opls_515",
+    "opls_215"
    ],
    "central_atoms": [
-    3,
-    4
+    4,
+    11
    ],
    "classes": [
-    "CT-CT-OS-CT",
-    "CT-OS-CT-HC"
+    "CA-CT-CT-CM",
+    "CA-CT-CT-HC",
+    "CA-CT-CT-S",
+    "CM-CT-CT-CT",
+    "CM-CT-CT-HC",
+    "CT-CT-CT-HC",
+    "CT-CT-CT-S",
+    "HC-CT-CT-HC",
+    "HC-CT-CT-S"
    ],
    "count": 3,
    "structures": [
-    "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine"
+    "sulfur_allylic: SBR + H2S2"
    ],
-   "example": "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine",
-   "fragment_smiles": "C(COCC(C*)O)*",
-   "fragment_atoms": 19,
-   "fragment_heavy": 7,
+   "example": "sulfur_allylic: SBR + H2S2",
+   "fragment_smiles": "C(=CCC(c1ccccc1)C1C=CCSS1)*",
+   "fragment_atoms": 32,
+   "fragment_heavy": 16,
    "heavy_rotor": true,
    "elements": [
     "C",
     "H",
-    "O"
+    "S"
    ],
    "problem": ""
   },
@@ -20448,6 +20286,41 @@
    "problem": ""
   },
   {
+   "env": "8db223eddb27",
+   "status": "published",
+   "central": [
+    "opls_515",
+    "opls_136"
+   ],
+   "central_atoms": [
+    5,
+    12
+   ],
+   "classes": [
+    "CA-CT-CT-CM",
+    "CA-CT-CT-HC",
+    "CM-CT-CT-CT",
+    "CM-CT-CT-HC",
+    "CT-CT-CT-HC",
+    "HC-CT-CT-HC"
+   ],
+   "count": 3,
+   "structures": [
+    "sulfur_allylic: SBR + H2S2"
+   ],
+   "example": "sulfur_allylic: SBR + H2S2",
+   "fragment_smiles": "C1(C=CC(C(c2ccccc2)CC=C*)SS1)*",
+   "fragment_atoms": 32,
+   "fragment_heavy": 16,
+   "heavy_rotor": true,
+   "elements": [
+    "C",
+    "H",
+    "S"
+   ],
+   "problem": ""
+  },
+  {
    "env": "8f216a7c4703",
    "status": "published",
    "central": [
@@ -20509,38 +20382,6 @@
    "elements": [
     "C",
     "H"
-   ],
-   "problem": ""
-  },
-  {
-   "env": "954c7eebfc6d",
-   "status": "published",
-   "central": [
-    "opls_158",
-    "opls_154"
-   ],
-   "central_atoms": [
-    3,
-    5
-   ],
-   "classes": [
-    "CT-CT-OH-HO",
-    "HC-CT-OH-HO"
-   ],
-   "count": 3,
-   "structures": [
-    "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine"
-   ],
-   "example": "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine",
-   "fragment_smiles": "O(CC(CN*)O)*",
-   "fragment_atoms": 15,
-   "fragment_heavy": 6,
-   "heavy_rotor": false,
-   "elements": [
-    "C",
-    "H",
-    "N",
-    "O"
    ],
    "problem": ""
   },
@@ -21584,6 +21425,108 @@
    "problem": ""
   },
   {
+   "env": "07c2697fa1bc",
+   "status": "published",
+   "central": [
+    "opls_136",
+    "opls_142"
+   ],
+   "central_atoms": [
+    2,
+    3
+   ],
+   "classes": [
+    "CM-CM-CT-CT",
+    "CM-CM-CT-HC",
+    "CT-CT-CM-HC",
+    "HC-CM-CT-HC"
+   ],
+   "count": 2,
+   "structures": [
+    "CC/C=C\\CC(c1ccccc1)C/C=C\\C",
+    "sulfur_allylic: SBR + H2S2"
+   ],
+   "example": "CC/C=C\\CC(c1ccccc1)C/C=C\\C",
+   "fragment_smiles": "CCC=CC*",
+   "fragment_atoms": 15,
+   "fragment_heavy": 5,
+   "heavy_rotor": true,
+   "elements": [
+    "C",
+    "H"
+   ],
+   "problem": ""
+  },
+  {
+   "env": "08a40992bbaa",
+   "status": "published",
+   "central": [
+    "opls_182",
+    "opls_158"
+   ],
+   "central_atoms": [
+    3,
+    4
+   ],
+   "classes": [
+    "CT-CT-CT-HC",
+    "CT-CT-CT-OS",
+    "HC-CT-CT-HC",
+    "HC-CT-CT-OH",
+    "HC-CT-CT-OS",
+    "OH-CT-CT-OS"
+   ],
+   "count": 2,
+   "structures": [
+    "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine"
+   ],
+   "example": "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine",
+   "fragment_smiles": "C(OCC(CN*)O)*",
+   "fragment_atoms": 18,
+   "fragment_heavy": 7,
+   "heavy_rotor": true,
+   "elements": [
+    "C",
+    "H",
+    "N",
+    "O"
+   ],
+   "problem": ""
+  },
+  {
+   "env": "09fb1dd44c4a",
+   "status": "published",
+   "central": [
+    "opls_906",
+    "opls_906"
+   ],
+   "central_atoms": [
+    2,
+    3
+   ],
+   "classes": [
+    "HC-CT-CT-HC",
+    "HC-CT-CT-NT",
+    "NT-CT-CT-NT"
+   ],
+   "count": 2,
+   "structures": [
+    "NCCN",
+    "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine"
+   ],
+   "example": "NCCN",
+   "fragment_smiles": "NCCN",
+   "fragment_atoms": 12,
+   "fragment_heavy": 4,
+   "heavy_rotor": true,
+   "elements": [
+    "C",
+    "H",
+    "N"
+   ],
+   "problem": ""
+  },
+  {
    "env": "0a2c9d42516d",
    "status": "published",
    "central": [
@@ -21623,8 +21566,8 @@
     "opls_203"
    ],
    "central_atoms": [
-    6,
-    12
+    3,
+    11
    ],
    "classes": [
     "CM-CT-S-S",
@@ -21635,7 +21578,7 @@
     "sulfur_allylic: BR + H2S2"
    ],
    "example": "sulfur_allylic: BR + H2S2",
-   "fragment_smiles": "C(SSCC=C*)*",
+   "fragment_smiles": "C(=CCSSC*)*",
    "fragment_atoms": 14,
    "fragment_heavy": 6,
    "heavy_rotor": true,
@@ -21710,6 +21653,39 @@
     "C",
     "H",
     "O"
+   ],
+   "problem": ""
+  },
+  {
+   "env": "0bd0a36f01c1",
+   "status": "published",
+   "central": [
+    "opls_901",
+    "opls_907"
+   ],
+   "central_atoms": [
+    6,
+    7
+   ],
+   "classes": [
+    "CT-CT-NT-CT",
+    "CT-CT-NT-H",
+    "CT-NT-CT-HC",
+    "H-NT-CT-HC"
+   ],
+   "count": 2,
+   "structures": [
+    "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine"
+   ],
+   "example": "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine",
+   "fragment_smiles": "C(CNCCN)(*)*",
+   "fragment_atoms": 18,
+   "fragment_heavy": 6,
+   "heavy_rotor": true,
+   "elements": [
+    "C",
+    "H",
+    "N"
    ],
    "problem": ""
   },
@@ -21978,41 +21954,6 @@
    "problem": ""
   },
   {
-   "env": "13f9d9321123",
-   "status": "published",
-   "central": [
-    "opls_142",
-    "opls_215"
-   ],
-   "central_atoms": [
-    3,
-    4
-   ],
-   "classes": [
-    "CM-CM-CT-CT",
-    "CM-CM-CT-HC",
-    "CM-CM-CT-S",
-    "CT-CT-CM-HC",
-    "HC-CM-CT-HC",
-    "HC-CM-CT-S"
-   ],
-   "count": 2,
-   "structures": [
-    "sulfur_allylic: BR + H2S2"
-   ],
-   "example": "sulfur_allylic: BR + H2S2",
-   "fragment_smiles": "C(C=CC1C(C=C*)SS1)*",
-   "fragment_atoms": 19,
-   "fragment_heavy": 9,
-   "heavy_rotor": true,
-   "elements": [
-    "C",
-    "H",
-    "S"
-   ],
-   "problem": ""
-  },
-  {
    "env": "163054db2dbd",
    "status": "published",
    "central": [
@@ -22275,10 +22216,10 @@
    "problem": ""
   },
   {
-   "env": "22ca6b0a4d0d",
+   "env": "2056532be69d",
    "status": "published",
    "central": [
-    "opls_214",
+    "opls_135",
     "opls_142"
    ],
    "central_atoms": [
@@ -22287,23 +22228,53 @@
    ],
    "classes": [
     "CM-CM-CT-HC",
-    "CM-CM-CT-S",
-    "HC-CM-CT-HC",
-    "HC-CM-CT-S"
+    "HC-CM-CT-HC"
    ],
    "count": 2,
    "structures": [
     "sulfur_allylic: BR + H2S2"
    ],
    "example": "sulfur_allylic: BR + H2S2",
-   "fragment_smiles": "C(C=CC(*)*)SS",
-   "fragment_atoms": 14,
-   "fragment_heavy": 6,
-   "heavy_rotor": true,
+   "fragment_smiles": "CC=CC1C(SS1)*",
+   "fragment_atoms": 15,
+   "fragment_heavy": 7,
+   "heavy_rotor": false,
    "elements": [
     "C",
     "H",
     "S"
+   ],
+   "problem": ""
+  },
+  {
+   "env": "234ca14ff5aa",
+   "status": "published",
+   "central": [
+    "opls_142",
+    "opls_142"
+   ],
+   "central_atoms": [
+    3,
+    4
+   ],
+   "classes": [
+    "CT-CM-CM-CT",
+    "CT-CM-CM-HC",
+    "HC-CM-CM-HC"
+   ],
+   "count": 2,
+   "structures": [
+    "CC/C=C\\CC(c1ccccc1)C/C=C\\C",
+    "sulfur_allylic: SBR + H2S2"
+   ],
+   "example": "CC/C=C\\CC(c1ccccc1)C/C=C\\C",
+   "fragment_smiles": "CCC=CCC(*)*",
+   "fragment_atoms": 18,
+   "fragment_heavy": 6,
+   "heavy_rotor": true,
+   "elements": [
+    "C",
+    "H"
    ],
    "problem": ""
   },
@@ -22575,38 +22546,6 @@
    "problem": ""
   },
   {
-   "env": "29fb6df1db55",
-   "status": "published",
-   "central": [
-    "opls_142",
-    "opls_142"
-   ],
-   "central_atoms": [
-    2,
-    3
-   ],
-   "classes": [
-    "CT-CM-CM-CT",
-    "CT-CM-CM-HC",
-    "HC-CM-CM-HC"
-   ],
-   "count": 2,
-   "structures": [
-    "sulfur_allylic: BR + H2S2"
-   ],
-   "example": "sulfur_allylic: BR + H2S2",
-   "fragment_smiles": "C(C=CC1C(SS1)*)S*",
-   "fragment_atoms": 16,
-   "fragment_heavy": 8,
-   "heavy_rotor": true,
-   "elements": [
-    "C",
-    "H",
-    "S"
-   ],
-   "problem": ""
-  },
-  {
    "env": "2ad7b484f1a2",
    "status": "published",
    "central": [
@@ -22634,6 +22573,42 @@
    "elements": [
     "C",
     "H"
+   ],
+   "problem": ""
+  },
+  {
+   "env": "2cb9f9c03d08",
+   "status": "published",
+   "central": [
+    "opls_158",
+    "opls_907"
+   ],
+   "central_atoms": [
+    3,
+    4
+   ],
+   "classes": [
+    "CT-CT-CT-HC",
+    "CT-CT-CT-NT",
+    "HC-CT-CT-HC",
+    "HC-CT-CT-NT",
+    "HC-CT-CT-OH",
+    "NT-CT-CT-OH"
+   ],
+   "count": 2,
+   "structures": [
+    "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine"
+   ],
+   "example": "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine",
+   "fragment_smiles": "O(CC(CNC*)O)*",
+   "fragment_atoms": 18,
+   "fragment_heavy": 7,
+   "heavy_rotor": true,
+   "elements": [
+    "C",
+    "H",
+    "N",
+    "O"
    ],
    "problem": ""
   },
@@ -23137,8 +23112,8 @@
     "opls_135"
    ],
    "central_atoms": [
-    30,
-    31
+    118,
+    119
    ],
    "classes": [
     "CT-CT-CT-HC",
@@ -23149,15 +23124,15 @@
     "cc_crosslink: PE"
    ],
    "example": "cc_crosslink: PE",
-   "fragment_smiles": "C1(C2C3C4C5C1C1C6C4C(C4C7C(C8C9C%10C7C7C(C%11C%12C(C(C%13C(C%12)C(C3%11)C(C)C(C3C%11C5C6C(C(C1%11)CC%133)*)C)C(C%10C4C(C1C3CCC(C(C93)CC1)*)*)*)*)C(C1C2C7C(CC1)C8*)*)*)*)*",
-   "fragment_atoms": 146,
-   "fragment_heavy": 62,
+   "fragment_smiles": "C1(C2C3C4C5C1C1C(C4C(C)C(C4C6C7C(C8C9C%10C(C(C(C9)CC8)*)C(C8C9C%11C%12C(C(C9C9C3C(C3C2C9C(CC%113)C%12*)*)C2C8C6C(C(C%107)*)CC24)*)*)*)C)C2C(C3C1C(C52)C(CC3)*)*)*",
+   "fragment_atoms": 143,
+   "fragment_heavy": 61,
    "heavy_rotor": false,
    "elements": [
     "C",
     "H"
    ],
-   "problem": ""
+   "problem": "an sp3 carbon angle of 85 deg"
   },
   {
    "env": "43aa81e36c43",
@@ -23315,33 +23290,36 @@
    "problem": ""
   },
   {
-   "env": "5022f1c6b95f",
+   "env": "4eac05e08b9f",
    "status": "published",
    "central": [
-    "opls_900",
-    "opls_906"
+    "opls_907",
+    "opls_901"
    ],
    "central_atoms": [
-    1,
-    2
+    3,
+    12
    ],
    "classes": [
+    "CT-CT-NT-CT",
     "CT-CT-NT-H",
+    "CT-NT-CT-HC",
     "H-NT-CT-HC"
    ],
    "count": 2,
    "structures": [
-    "NCCN"
+    "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine"
    ],
-   "example": "NCCN",
-   "fragment_smiles": "NCCN",
-   "fragment_atoms": 12,
-   "fragment_heavy": 4,
-   "heavy_rotor": false,
+   "example": "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine",
+   "fragment_smiles": "C(C(CNCC*)O)*",
+   "fragment_atoms": 20,
+   "fragment_heavy": 7,
+   "heavy_rotor": true,
    "elements": [
     "C",
     "H",
-    "N"
+    "N",
+    "O"
    ],
    "problem": ""
   },
@@ -23595,38 +23573,6 @@
    "problem": ""
   },
   {
-   "env": "5932d9565c96",
-   "status": "published",
-   "central": [
-    "opls_142",
-    "opls_142"
-   ],
-   "central_atoms": [
-    3,
-    4
-   ],
-   "classes": [
-    "CT-CM-CM-CT",
-    "CT-CM-CM-HC",
-    "HC-CM-CM-HC"
-   ],
-   "count": 2,
-   "structures": [
-    "sulfur_allylic: BR + H2S2"
-   ],
-   "example": "sulfur_allylic: BR + H2S2",
-   "fragment_smiles": "C1(C(C=CCC*)SS1)*",
-   "fragment_atoms": 18,
-   "fragment_heavy": 8,
-   "heavy_rotor": true,
-   "elements": [
-    "C",
-    "H",
-    "S"
-   ],
-   "problem": ""
-  },
-  {
    "env": "5969d5fd3eff",
    "status": "published",
    "central": [
@@ -23817,37 +23763,6 @@
    "elements": [
     "C",
     "H"
-   ],
-   "problem": ""
-  },
-  {
-   "env": "608510853769",
-   "status": "published",
-   "central": [
-    "opls_515",
-    "opls_145"
-   ],
-   "central_atoms": [
-    5,
-    6
-   ],
-   "classes": [
-    "CA-CA-CT-CT",
-    "CA-CA-CT-HC"
-   ],
-   "count": 2,
-   "structures": [
-    "sulfur_allylic: SBR + H2S2"
-   ],
-   "example": "sulfur_allylic: SBR + H2S2",
-   "fragment_smiles": "C1(C=CC(C(c2ccccc2)CC=C*)SS1)*",
-   "fragment_atoms": 32,
-   "fragment_heavy": 16,
-   "heavy_rotor": true,
-   "elements": [
-    "C",
-    "H",
-    "S"
    ],
    "problem": ""
   },
@@ -24138,6 +24053,36 @@
    "problem": ""
   },
   {
+   "env": "6b4330cf6a5e",
+   "status": "published",
+   "central": [
+    "opls_515",
+    "opls_145"
+   ],
+   "central_atoms": [
+    50,
+    51
+   ],
+   "classes": [
+    "CA-CA-CT-CT",
+    "CA-CA-CT-HC"
+   ],
+   "count": 2,
+   "structures": [
+    "peroxide_allylic: SBR"
+   ],
+   "example": "peroxide_allylic: SBR",
+   "fragment_smiles": "C12(C=CC34C(C56C=CC7C8(C=CC55C(C7C=CC68C6(C=CC3*)C(C37C=CC46C15C=CC31C2(C=CC2(C1c1ccccc1)C1(C=CC3C(C71C=CC23)*)*)*)*)*)*)*)*",
+   "fragment_atoms": 95,
+   "fragment_heavy": 51,
+   "heavy_rotor": true,
+   "elements": [
+    "C",
+    "H"
+   ],
+   "problem": "an sp3 carbon angle of 38 deg"
+  },
+  {
    "env": "6c39074ff630",
    "status": "published",
    "central": [
@@ -24298,6 +24243,37 @@
    "problem": ""
   },
   {
+   "env": "70140dc202ba",
+   "status": "published",
+   "central": [
+    "opls_182",
+    "opls_180"
+   ],
+   "central_atoms": [
+    3,
+    4
+   ],
+   "classes": [
+    "CT-CT-OS-CT",
+    "CT-OS-CT-HC"
+   ],
+   "count": 2,
+   "structures": [
+    "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine"
+   ],
+   "example": "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine",
+   "fragment_smiles": "C(CCOCC(*)*)*",
+   "fragment_atoms": 18,
+   "fragment_heavy": 6,
+   "heavy_rotor": true,
+   "elements": [
+    "C",
+    "H",
+    "O"
+   ],
+   "problem": ""
+  },
+  {
    "env": "70aa154c15f4",
    "status": "published",
    "central": [
@@ -24360,40 +24336,6 @@
     "C",
     "H",
     "O"
-   ],
-   "problem": ""
-  },
-  {
-   "env": "78af1d77f34b",
-   "status": "published",
-   "central": [
-    "opls_136",
-    "opls_211"
-   ],
-   "central_atoms": [
-    3,
-    4
-   ],
-   "classes": [
-    "CM-CT-CT-CM",
-    "CM-CT-CT-HC",
-    "CM-CT-CT-S",
-    "HC-CT-CT-HC",
-    "HC-CT-CT-S"
-   ],
-   "count": 2,
-   "structures": [
-    "polysulfide_allylic: NR + TESPT"
-   ],
-   "example": "polysulfide_allylic: NR + TESPT",
-   "fragment_smiles": "C(=CCC1C(CS1)=C*)(*)*",
-   "fragment_atoms": 18,
-   "fragment_heavy": 8,
-   "heavy_rotor": true,
-   "elements": [
-    "C",
-    "H",
-    "S"
    ],
    "problem": ""
   },
@@ -24555,6 +24497,37 @@
    "problem": ""
   },
   {
+   "env": "8516ab721ca1",
+   "status": "published",
+   "central": [
+    "opls_180",
+    "opls_182"
+   ],
+   "central_atoms": [
+    3,
+    4
+   ],
+   "classes": [
+    "CT-CT-OS-CT",
+    "CT-OS-CT-HC"
+   ],
+   "count": 2,
+   "structures": [
+    "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine"
+   ],
+   "example": "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine",
+   "fragment_smiles": "C(COCC(C*)O)*",
+   "fragment_atoms": 19,
+   "fragment_heavy": 7,
+   "heavy_rotor": true,
+   "elements": [
+    "C",
+    "H",
+    "O"
+   ],
+   "problem": ""
+  },
+  {
    "env": "8583f06e1e55",
    "status": "published",
    "central": [
@@ -24579,44 +24552,6 @@
    "fragment_smiles": "C1C(CSS1)=CCCC(=C*)*",
    "fragment_atoms": 22,
    "fragment_heavy": 10,
-   "heavy_rotor": true,
-   "elements": [
-    "C",
-    "H",
-    "S"
-   ],
-   "problem": ""
-  },
-  {
-   "env": "859e45729af2",
-   "status": "published",
-   "central": [
-    "opls_215",
-    "opls_515"
-   ],
-   "central_atoms": [
-    4,
-    5
-   ],
-   "classes": [
-    "CA-CT-CT-CM",
-    "CA-CT-CT-HC",
-    "CA-CT-CT-S",
-    "CM-CT-CT-CT",
-    "CM-CT-CT-HC",
-    "CT-CT-CT-HC",
-    "CT-CT-CT-S",
-    "HC-CT-CT-HC",
-    "HC-CT-CT-S"
-   ],
-   "count": 2,
-   "structures": [
-    "sulfur_allylic: SBR + H2S2"
-   ],
-   "example": "sulfur_allylic: SBR + H2S2",
-   "fragment_smiles": "C1(C=CC(C(c2ccccc2)CC=C*)SS1)*",
-   "fragment_atoms": 32,
-   "fragment_heavy": 16,
    "heavy_rotor": true,
    "elements": [
     "C",
@@ -24790,41 +24725,6 @@
    "problem": ""
   },
   {
-   "env": "897dae234290",
-   "status": "published",
-   "central": [
-    "opls_142",
-    "opls_215"
-   ],
-   "central_atoms": [
-    3,
-    4
-   ],
-   "classes": [
-    "CM-CM-CT-CT",
-    "CM-CM-CT-HC",
-    "CM-CM-CT-S",
-    "CT-CT-CM-HC",
-    "HC-CM-CT-HC",
-    "HC-CM-CT-S"
-   ],
-   "count": 2,
-   "structures": [
-    "sulfur_allylic: BR + H2S2"
-   ],
-   "example": "sulfur_allylic: BR + H2S2",
-   "fragment_smiles": "C(C=CC1C(C=C*)SS1)*",
-   "fragment_atoms": 19,
-   "fragment_heavy": 9,
-   "heavy_rotor": true,
-   "elements": [
-    "C",
-    "H",
-    "S"
-   ],
-   "problem": ""
-  },
-  {
    "env": "8ac041feae16",
    "status": "published",
    "central": [
@@ -24950,46 +24850,11 @@
    "problem": ""
   },
   {
-   "env": "8db223eddb27",
-   "status": "published",
-   "central": [
-    "opls_515",
-    "opls_136"
-   ],
-   "central_atoms": [
-    5,
-    12
-   ],
-   "classes": [
-    "CA-CT-CT-CM",
-    "CA-CT-CT-HC",
-    "CM-CT-CT-CT",
-    "CM-CT-CT-HC",
-    "CT-CT-CT-HC",
-    "HC-CT-CT-HC"
-   ],
-   "count": 2,
-   "structures": [
-    "sulfur_allylic: SBR + H2S2"
-   ],
-   "example": "sulfur_allylic: SBR + H2S2",
-   "fragment_smiles": "C1(C=CC(C(c2ccccc2)CC=C*)SS1)*",
-   "fragment_atoms": 32,
-   "fragment_heavy": 16,
-   "heavy_rotor": true,
-   "elements": [
-    "C",
-    "H",
-    "S"
-   ],
-   "problem": ""
-  },
-  {
    "env": "8deae7500339",
    "status": "published",
    "central": [
-    "opls_215",
-    "opls_142"
+    "opls_142",
+    "opls_215"
    ],
    "central_atoms": [
     4,
@@ -25008,7 +24873,7 @@
     "sulfur_allylic: BR + H2S2"
    ],
    "example": "sulfur_allylic: BR + H2S2",
-   "fragment_smiles": "C(=CC1C(C=CC2C(SS2)*)SS1)*",
+   "fragment_smiles": "C1(C(C=CC2C(C=C*)SS2)SS1)*",
    "fragment_atoms": 22,
    "fragment_heavy": 12,
    "heavy_rotor": true,
@@ -25183,37 +25048,6 @@
    "problem": ""
   },
   {
-   "env": "933ae646e8c8",
-   "status": "published",
-   "central": [
-    "opls_135",
-    "opls_137"
-   ],
-   "central_atoms": [
-    1,
-    2
-   ],
-   "classes": [
-    "CM-CT-CT-HC",
-    "CT-CT-CT-HC",
-    "HC-CT-CT-HC"
-   ],
-   "count": 2,
-   "structures": [
-    "peroxide_allylic: SBR"
-   ],
-   "example": "peroxide_allylic: SBR",
-   "fragment_smiles": "CC1C=CC2C(C1C=CC2)*",
-   "fragment_atoms": 24,
-   "fragment_heavy": 10,
-   "heavy_rotor": false,
-   "elements": [
-    "C",
-    "H"
-   ],
-   "problem": ""
-  },
-  {
    "env": "94c97a9e8cb9",
    "status": "published",
    "central": [
@@ -25249,6 +25083,38 @@
    "problem": ""
   },
   {
+   "env": "954c7eebfc6d",
+   "status": "published",
+   "central": [
+    "opls_158",
+    "opls_154"
+   ],
+   "central_atoms": [
+    3,
+    5
+   ],
+   "classes": [
+    "CT-CT-OH-HO",
+    "HC-CT-OH-HO"
+   ],
+   "count": 2,
+   "structures": [
+    "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine"
+   ],
+   "example": "epoxy_amine_primary: butyl glycidyl ether + ethylenediamine",
+   "fragment_smiles": "O(CC(CN*)O)*",
+   "fragment_atoms": 15,
+   "fragment_heavy": 6,
+   "heavy_rotor": false,
+   "elements": [
+    "C",
+    "H",
+    "N",
+    "O"
+   ],
+   "problem": ""
+  },
+  {
    "env": "95bbd4ae639b",
    "status": "published",
    "central": [
@@ -25278,36 +25144,6 @@
     "O"
    ],
    "problem": ""
-  },
-  {
-   "env": "96fbeb6060c3",
-   "status": "published",
-   "central": [
-    "opls_135",
-    "opls_139"
-   ],
-   "central_atoms": [
-    1,
-    2
-   ],
-   "classes": [
-    "CM-CT-CT-HC",
-    "CT-CT-CT-HC"
-   ],
-   "count": 2,
-   "structures": [
-    "peroxide_allylic: SBR"
-   ],
-   "example": "peroxide_allylic: SBR",
-   "fragment_smiles": "CC12C=CC3C(C4C=CC5C6(C=CC78C9(C=CC%10%11C(CC=CC3%10C19C=CC71C6(C=CC2(C5(C8*)C=CC4%11)C1*)*)*)*)*)*",
-   "fragment_atoms": 73,
-   "fragment_heavy": 37,
-   "heavy_rotor": false,
-   "elements": [
-    "C",
-    "H"
-   ],
-   "problem": "two atoms 0.70 A apart"
   },
   {
    "env": "98b8a9f2cf52",
@@ -25769,39 +25605,6 @@
    "problem": ""
   },
   {
-   "env": "b679f64baa15",
-   "status": "published",
-   "central": [
-    "opls_142",
-    "opls_136"
-   ],
-   "central_atoms": [
-    4,
-    5
-   ],
-   "classes": [
-    "CM-CM-CT-CT",
-    "CM-CM-CT-HC",
-    "CT-CT-CM-HC",
-    "HC-CM-CT-HC"
-   ],
-   "count": 2,
-   "structures": [
-    "polysulfide_allylic: NR + TESPT"
-   ],
-   "example": "polysulfide_allylic: NR + TESPT",
-   "fragment_smiles": "C1(C(CS1)=CCCC(=C*)*)*",
-   "fragment_atoms": 21,
-   "fragment_heavy": 9,
-   "heavy_rotor": true,
-   "elements": [
-    "C",
-    "H",
-    "S"
-   ],
-   "problem": ""
-  },
-  {
    "env": "b6b675a67cb9",
    "status": "published",
    "central": [
@@ -26056,37 +25859,6 @@
    "elements": [
     "C",
     "H"
-   ],
-   "problem": ""
-  },
-  {
-   "env": "c059d37c0481",
-   "status": "published",
-   "central": [
-    "opls_141",
-    "opls_142"
-   ],
-   "central_atoms": [
-    3,
-    5
-   ],
-   "classes": [
-    "CT-CM-CM-CT",
-    "CT-CM-CM-HC"
-   ],
-   "count": 2,
-   "structures": [
-    "polysulfide_allylic: NR + TESPT"
-   ],
-   "example": "polysulfide_allylic: NR + TESPT",
-   "fragment_smiles": "C(C1C(CS1)=CCC*)*",
-   "fragment_atoms": 20,
-   "fragment_heavy": 8,
-   "heavy_rotor": true,
-   "elements": [
-    "C",
-    "H",
-    "S"
    ],
    "problem": ""
   },
@@ -26795,39 +26567,6 @@
    "problem": ""
   },
   {
-   "env": "e5af2ff30205",
-   "status": "published",
-   "central": [
-    "opls_136",
-    "opls_142"
-   ],
-   "central_atoms": [
-    4,
-    5
-   ],
-   "classes": [
-    "CM-CM-CT-CT",
-    "CM-CM-CT-HC",
-    "CT-CT-CM-HC",
-    "HC-CM-CT-HC"
-   ],
-   "count": 2,
-   "structures": [
-    "sulfur_allylic: BR + H2S2"
-   ],
-   "example": "sulfur_allylic: BR + H2S2",
-   "fragment_smiles": "C(=CCCC=CC1C(SS1)*)*",
-   "fragment_atoms": 22,
-   "fragment_heavy": 10,
-   "heavy_rotor": true,
-   "elements": [
-    "C",
-    "H",
-    "S"
-   ],
-   "problem": ""
-  },
-  {
    "env": "e68e6625fa41",
    "status": "published",
    "central": [
@@ -26997,8 +26736,8 @@
     "opls_142"
    ],
    "central_atoms": [
-    2,
-    3
+    3,
+    4
    ],
    "classes": [
     "CT-CM-CM-CT",
@@ -27010,7 +26749,7 @@
     "sulfur_allylic: BR + H2S2"
    ],
    "example": "sulfur_allylic: BR + H2S2",
-   "fragment_smiles": "CC=CC1C(SS1)*",
+   "fragment_smiles": "C1(C(C=CC)SS1)*",
    "fragment_atoms": 15,
    "fragment_heavy": 7,
    "heavy_rotor": true,
@@ -27115,6 +26854,36 @@
    "problem": ""
   },
   {
+   "env": "f12be3e67418",
+   "status": "published",
+   "central": [
+    "opls_515",
+    "opls_145"
+   ],
+   "central_atoms": [
+    64,
+    65
+   ],
+   "classes": [
+    "CA-CA-CT-CT",
+    "CA-CA-CT-HC"
+   ],
+   "count": 2,
+   "structures": [
+    "peroxide_allylic: SBR"
+   ],
+   "example": "peroxide_allylic: SBR",
+   "fragment_smiles": "C12(C=CC34C(C56C=CC7C8(C=CC55C(C7C=CC68C6(C=CC3*)C(C37C=CC46C15C=CC31C2(C=CC2(C1*)C1(C=CC3C(c4ccccc4)C71C=CC23)*)*)*)*)*)*)*",
+   "fragment_atoms": 95,
+   "fragment_heavy": 51,
+   "heavy_rotor": true,
+   "elements": [
+    "C",
+    "H"
+   ],
+   "problem": "an sp3 carbon angle of 38 deg"
+  },
+  {
    "env": "f82899defb51",
    "status": "published",
    "central": [
@@ -27142,68 +26911,6 @@
    "elements": [
     "C",
     "H"
-   ],
-   "problem": ""
-  },
-  {
-   "env": "fa51960eac65",
-   "status": "published",
-   "central": [
-    "opls_515",
-    "opls_145"
-   ],
-   "central_atoms": [
-    5,
-    6
-   ],
-   "classes": [
-    "CA-CA-CT-CT",
-    "CA-CA-CT-HC"
-   ],
-   "count": 2,
-   "structures": [
-    "peroxide_allylic: SBR"
-   ],
-   "example": "peroxide_allylic: SBR",
-   "fragment_smiles": "C1(C=CC2C(c3ccccc3)C1C=CC2)*",
-   "fragment_atoms": 31,
-   "fragment_heavy": 15,
-   "heavy_rotor": true,
-   "elements": [
-    "C",
-    "H"
-   ],
-   "problem": ""
-  },
-  {
-   "env": "003f3bab48ff",
-   "status": "published",
-   "central": [
-    "opls_142",
-    "opls_142"
-   ],
-   "central_atoms": [
-    4,
-    5
-   ],
-   "classes": [
-    "CT-CM-CM-CT",
-    "CT-CM-CM-HC",
-    "HC-CM-CM-HC"
-   ],
-   "count": 1,
-   "structures": [
-    "sulfur_allylic: SBR + H2S2"
-   ],
-   "example": "sulfur_allylic: SBR + H2S2",
-   "fragment_smiles": "C1(C(C(C=CC)SS1)*)*",
-   "fragment_atoms": 18,
-   "fragment_heavy": 8,
-   "heavy_rotor": true,
-   "elements": [
-    "C",
-    "H",
-    "S"
    ],
    "problem": ""
   },
@@ -27339,6 +27046,37 @@
     "H",
     "N",
     "O"
+   ],
+   "problem": ""
+  },
+  {
+   "env": "016e74f26513",
+   "status": "published",
+   "central": [
+    "opls_141",
+    "opls_135"
+   ],
+   "central_atoms": [
+    3,
+    4
+   ],
+   "classes": [
+    "CM-CM-CT-HC",
+    "CT-CM-CT-HC"
+   ],
+   "count": 1,
+   "structures": [
+    "polysulfide_allylic: NR + TESPT"
+   ],
+   "example": "polysulfide_allylic: NR + TESPT",
+   "fragment_smiles": "C(C1C(C)=CC(S1)*)*",
+   "fragment_atoms": 17,
+   "fragment_heavy": 7,
+   "heavy_rotor": false,
+   "elements": [
+    "C",
+    "H",
+    "S"
    ],
    "problem": ""
   },
@@ -27501,36 +27239,6 @@
     "O"
    ],
    "problem": ""
-  },
-  {
-   "env": "036321a1afee",
-   "status": "published",
-   "central": [
-    "opls_135",
-    "opls_139"
-   ],
-   "central_atoms": [
-    53,
-    54
-   ],
-   "classes": [
-    "CM-CT-CT-HC",
-    "CT-CT-CT-HC"
-   ],
-   "count": 1,
-   "structures": [
-    "peroxide_allylic: SBR"
-   ],
-   "example": "peroxide_allylic: SBR",
-   "fragment_smiles": "C12(C=CC3C(C4C=CC5C6(C)C=CC78C9(C=CC%10%11C(CC=CC3%10C19C=CC71C6(C)C=CC2(C5(C8*)C=CC4%11)C1*)*)*)*)*",
-   "fragment_atoms": 76,
-   "fragment_heavy": 38,
-   "heavy_rotor": false,
-   "elements": [
-    "C",
-    "H"
-   ],
-   "problem": "two atoms 0.70 A apart"
   },
   {
    "env": "03a7e0c5788a",
@@ -27910,38 +27618,6 @@
    "problem": ""
   },
   {
-   "env": "07c2697fa1bc",
-   "status": "published",
-   "central": [
-    "opls_136",
-    "opls_142"
-   ],
-   "central_atoms": [
-    2,
-    3
-   ],
-   "classes": [
-    "CM-CM-CT-CT",
-    "CM-CM-CT-HC",
-    "CT-CT-CM-HC",
-    "HC-CM-CT-HC"
-   ],
-   "count": 1,
-   "structures": [
-    "CC/C=C\\CC(c1ccccc1)C/C=C\\C"
-   ],
-   "example": "CC/C=C\\CC(c1ccccc1)C/C=C\\C",
-   "fragment_smiles": "CCC=CC*",
-   "fragment_atoms": 15,
-   "fragment_heavy": 5,
-   "heavy_rotor": true,
-   "elements": [
-    "C",
-    "H"
-   ],
-   "problem": ""
-  },
-  {
    "env": "08126f88dd05",
    "status": "published",
    "central": [
@@ -28006,68 +27682,6 @@
    "problem": ""
   },
   {
-   "env": "09ee0fc15412",
-   "status": "published",
-   "central": [
-    "opls_135",
-    "opls_139"
-   ],
-   "central_atoms": [
-    34,
-    35
-   ],
-   "classes": [
-    "CM-CT-CT-HC",
-    "CT-CT-CT-HC"
-   ],
-   "count": 1,
-   "structures": [
-    "peroxide_allylic: SBR"
-   ],
-   "example": "peroxide_allylic: SBR",
-   "fragment_smiles": "C12(C=CC3C(C4C=CC5C6(C)C=CC78C9(C=CC%10%11C(CC=CC3%10C19C=CC71C6(C)C=CC2(C5(C8*)C=CC4%11)C1*)*)*)*)*",
-   "fragment_atoms": 76,
-   "fragment_heavy": 38,
-   "heavy_rotor": false,
-   "elements": [
-    "C",
-    "H"
-   ],
-   "problem": "two atoms 0.70 A apart"
-  },
-  {
-   "env": "09fb1dd44c4a",
-   "status": "published",
-   "central": [
-    "opls_906",
-    "opls_906"
-   ],
-   "central_atoms": [
-    2,
-    3
-   ],
-   "classes": [
-    "HC-CT-CT-HC",
-    "HC-CT-CT-NT",
-    "NT-CT-CT-NT"
-   ],
-   "count": 1,
-   "structures": [
-    "NCCN"
-   ],
-   "example": "NCCN",
-   "fragment_smiles": "NCCN",
-   "fragment_atoms": 12,
-   "fragment_heavy": 4,
-   "heavy_rotor": true,
-   "elements": [
-    "C",
-    "H",
-    "N"
-   ],
-   "problem": ""
-  },
-  {
    "env": "0a7c2b30b347",
    "status": "published",
    "central": [
@@ -28098,39 +27712,6 @@
     "C",
     "H",
     "N"
-   ],
-   "problem": ""
-  },
-  {
-   "env": "0b0cfe23bf4a",
-   "status": "published",
-   "central": [
-    "opls_136",
-    "opls_142"
-   ],
-   "central_atoms": [
-    2,
-    3
-   ],
-   "classes": [
-    "CM-CM-CT-CT",
-    "CM-CM-CT-HC",
-    "CT-CT-CM-HC",
-    "HC-CM-CT-HC"
-   ],
-   "count": 1,
-   "structures": [
-    "sulfur_allylic: SBR + H2S2"
-   ],
-   "example": "sulfur_allylic: SBR + H2S2",
-   "fragment_smiles": "CCC=CC1C(C(SS1)*)*",
-   "fragment_atoms": 21,
-   "fragment_heavy": 9,
-   "heavy_rotor": true,
-   "elements": [
-    "C",
-    "H",
-    "S"
    ],
    "problem": ""
   },
@@ -28834,6 +28415,41 @@
    "problem": ""
   },
   {
+   "env": "13f9d9321123",
+   "status": "published",
+   "central": [
+    "opls_142",
+    "opls_215"
+   ],
+   "central_atoms": [
+    3,
+    4
+   ],
+   "classes": [
+    "CM-CM-CT-CT",
+    "CM-CM-CT-HC",
+    "CM-CM-CT-S",
+    "CT-CT-CM-HC",
+    "HC-CM-CT-HC",
+    "HC-CM-CT-S"
+   ],
+   "count": 1,
+   "structures": [
+    "sulfur_allylic: BR + H2S2"
+   ],
+   "example": "sulfur_allylic: BR + H2S2",
+   "fragment_smiles": "C(C=CC1C(C=C*)SS1)*",
+   "fragment_atoms": 19,
+   "fragment_heavy": 9,
+   "heavy_rotor": true,
+   "elements": [
+    "C",
+    "H",
+    "S"
+   ],
+   "problem": ""
+  },
+  {
    "env": "144857ccb552",
    "status": "published",
    "central": [
@@ -29448,6 +29064,36 @@
    "problem": ""
   },
   {
+   "env": "19d7be3e9242",
+   "status": "published",
+   "central": [
+    "opls_137",
+    "opls_135"
+   ],
+   "central_atoms": [
+    3,
+    4
+   ],
+   "classes": [
+    "CT-CT-CT-HC",
+    "HC-CT-CT-HC"
+   ],
+   "count": 1,
+   "structures": [
+    "cc_crosslink: EPDM"
+   ],
+   "example": "cc_crosslink: EPDM",
+   "fragment_smiles": "C1(C2C(C)CC3C1C1C4C5C(C1C(=C*)C5*)C1C(C(C3C2C1*)C1C4C2C3C4C5CC(C(C5C2C(C13)=C*)C4=C*)*)*)*",
+   "fragment_atoms": 83,
+   "fragment_heavy": 37,
+   "heavy_rotor": false,
+   "elements": [
+    "C",
+    "H"
+   ],
+   "problem": ""
+  },
+  {
    "env": "1a00e562074d",
    "status": "published",
    "central": [
@@ -29486,8 +29132,8 @@
     "opls_145"
    ],
    "central_atoms": [
-    53,
-    54
+    20,
+    21
    ],
    "classes": [
     "CA-CA-CT-CT",
@@ -29498,15 +29144,48 @@
     "peroxide_allylic: SBR"
    ],
    "example": "peroxide_allylic: SBR",
-   "fragment_smiles": "C12(C=CC3C(C4C=CC5C6(C=CC78C9(C=CC%10%11C(CC=CC3%10C19C=CC71C6(C=CC2(C5(C8*)C=CC4%11)C1c1ccccc1)*)*)*)*)*)*",
-   "fragment_atoms": 80,
-   "fragment_heavy": 42,
+   "fragment_smiles": "C12(C=CC34C(C56C=CC7C8(C=CC55C(C7C=CC68C6(C=CC3*)C(c3ccccc3)C37C=CC46C15C=CC31C2(C=CC2(C1*)C1(C=CC3C(C71C=CC23)*)*)*)*)*)*)*",
+   "fragment_atoms": 95,
+   "fragment_heavy": 51,
    "heavy_rotor": true,
    "elements": [
     "C",
     "H"
    ],
-   "problem": "two atoms 0.70 A apart"
+   "problem": "an sp3 carbon angle of 38 deg"
+  },
+  {
+   "env": "1ac00f0ea9b9",
+   "status": "published",
+   "central": [
+    "opls_136",
+    "opls_142"
+   ],
+   "central_atoms": [
+    4,
+    5
+   ],
+   "classes": [
+    "CM-CM-CT-CT",
+    "CM-CM-CT-HC",
+    "CT-CT-CM-HC",
+    "HC-CM-CT-HC"
+   ],
+   "count": 1,
+   "structures": [
+    "sulfur_allylic: BR + H2S2"
+   ],
+   "example": "sulfur_allylic: BR + H2S2",
+   "fragment_smiles": "C(=CC(CC=CC*)S*)*",
+   "fragment_atoms": 20,
+   "fragment_heavy": 8,
+   "heavy_rotor": true,
+   "elements": [
+    "C",
+    "H",
+    "S"
+   ],
+   "problem": ""
   },
   {
    "env": "1aefbe0bad97",
@@ -29664,37 +29343,6 @@
    "fragment_smiles": "C=1(CSSC(C1)CC(C)=C*)*",
    "fragment_atoms": 22,
    "fragment_heavy": 10,
-   "heavy_rotor": true,
-   "elements": [
-    "C",
-    "H",
-    "S"
-   ],
-   "problem": ""
-  },
-  {
-   "env": "1edf617326eb",
-   "status": "published",
-   "central": [
-    "opls_141",
-    "opls_142"
-   ],
-   "central_atoms": [
-    3,
-    5
-   ],
-   "classes": [
-    "CT-CM-CM-CT",
-    "CT-CM-CM-HC"
-   ],
-   "count": 1,
-   "structures": [
-    "polysulfide_allylic: NR + TESPT"
-   ],
-   "example": "polysulfide_allylic: NR + TESPT",
-   "fragment_smiles": "C(CC(CS*)=CC)*",
-   "fragment_atoms": 19,
-   "fragment_heavy": 7,
    "heavy_rotor": true,
    "elements": [
     "C",
@@ -29896,33 +29544,35 @@
    "problem": ""
   },
   {
-   "env": "234ca14ff5aa",
+   "env": "22ca6b0a4d0d",
    "status": "published",
    "central": [
-    "opls_142",
+    "opls_214",
     "opls_142"
    ],
    "central_atoms": [
-    3,
-    4
+    1,
+    2
    ],
    "classes": [
-    "CT-CM-CM-CT",
-    "CT-CM-CM-HC",
-    "HC-CM-CM-HC"
+    "CM-CM-CT-HC",
+    "CM-CM-CT-S",
+    "HC-CM-CT-HC",
+    "HC-CM-CT-S"
    ],
    "count": 1,
    "structures": [
-    "CC/C=C\\CC(c1ccccc1)C/C=C\\C"
+    "sulfur_allylic: BR + H2S2"
    ],
-   "example": "CC/C=C\\CC(c1ccccc1)C/C=C\\C",
-   "fragment_smiles": "CCC=CCC(*)*",
-   "fragment_atoms": 18,
+   "example": "sulfur_allylic: BR + H2S2",
+   "fragment_smiles": "C(C=CC(*)*)SS",
+   "fragment_atoms": 14,
    "fragment_heavy": 6,
    "heavy_rotor": true,
    "elements": [
     "C",
-    "H"
+    "H",
+    "S"
    ],
    "problem": ""
   },
@@ -30282,37 +29932,6 @@
    "problem": ""
   },
   {
-   "env": "2833e1d5411b",
-   "status": "published",
-   "central": [
-    "opls_515",
-    "opls_145"
-   ],
-   "central_atoms": [
-    4,
-    5
-   ],
-   "classes": [
-    "CA-CA-CT-CT",
-    "CA-CA-CT-HC"
-   ],
-   "count": 1,
-   "structures": [
-    "sulfur_allylic: SBR + H2S2"
-   ],
-   "example": "sulfur_allylic: SBR + H2S2",
-   "fragment_smiles": "C(=CC1C(c2ccccc2)C(C=C*)SS1)*",
-   "fragment_atoms": 29,
-   "fragment_heavy": 15,
-   "heavy_rotor": true,
-   "elements": [
-    "C",
-    "H",
-    "S"
-   ],
-   "problem": ""
-  },
-  {
    "env": "28daf36c717a",
    "status": "published",
    "central": [
@@ -30473,6 +30092,38 @@
    "problem": ""
   },
   {
+   "env": "29fb6df1db55",
+   "status": "published",
+   "central": [
+    "opls_142",
+    "opls_142"
+   ],
+   "central_atoms": [
+    3,
+    4
+   ],
+   "classes": [
+    "CT-CM-CM-CT",
+    "CT-CM-CM-HC",
+    "HC-CM-CM-HC"
+   ],
+   "count": 1,
+   "structures": [
+    "sulfur_allylic: BR + H2S2"
+   ],
+   "example": "sulfur_allylic: BR + H2S2",
+   "fragment_smiles": "C1(C(C=CCS*)SS1)*",
+   "fragment_atoms": 16,
+   "fragment_heavy": 8,
+   "heavy_rotor": true,
+   "elements": [
+    "C",
+    "H",
+    "S"
+   ],
+   "problem": ""
+  },
+  {
    "env": "2a9067665592",
    "status": "published",
    "central": [
@@ -30563,6 +30214,39 @@
    "elements": [
     "C",
     "H"
+   ],
+   "problem": ""
+  },
+  {
+   "env": "2ba9b10fe0be",
+   "status": "published",
+   "central": [
+    "opls_136",
+    "opls_141"
+   ],
+   "central_atoms": [
+    5,
+    6
+   ],
+   "classes": [
+    "CM-CM-CT-CT",
+    "CM-CM-CT-HC",
+    "CT-CM-CT-CT",
+    "CT-CM-CT-HC"
+   ],
+   "count": 1,
+   "structures": [
+    "polysulfide_allylic: NR + TESPT"
+   ],
+   "example": "polysulfide_allylic: NR + TESPT",
+   "fragment_smiles": "C1(C(=CC(CC(CS*)=CC)S1)*)*",
+   "fragment_atoms": 25,
+   "fragment_heavy": 11,
+   "heavy_rotor": true,
+   "elements": [
+    "C",
+    "H",
+    "S"
    ],
    "problem": ""
   },
@@ -30692,38 +30376,6 @@
     "C",
     "H",
     "O"
-   ],
-   "problem": ""
-  },
-  {
-   "env": "2cf328c16a3c",
-   "status": "published",
-   "central": [
-    "opls_142",
-    "opls_142"
-   ],
-   "central_atoms": [
-    3,
-    4
-   ],
-   "classes": [
-    "CT-CM-CM-CT",
-    "CT-CM-CM-HC",
-    "HC-CM-CM-HC"
-   ],
-   "count": 1,
-   "structures": [
-    "sulfur_allylic: SBR + H2S2"
-   ],
-   "example": "sulfur_allylic: SBR + H2S2",
-   "fragment_smiles": "CCC=CC1C(C(SS1)*)*",
-   "fragment_atoms": 21,
-   "fragment_heavy": 9,
-   "heavy_rotor": true,
-   "elements": [
-    "C",
-    "H",
-    "S"
    ],
    "problem": ""
   },
@@ -30916,39 +30568,6 @@
     "C",
     "H",
     "O"
-   ],
-   "problem": ""
-  },
-  {
-   "env": "2fa183769267",
-   "status": "published",
-   "central": [
-    "opls_141",
-    "opls_210"
-   ],
-   "central_atoms": [
-    3,
-    4
-   ],
-   "classes": [
-    "CM-CM-CT-HC",
-    "CM-CM-CT-S",
-    "CT-CM-CT-HC",
-    "CT-CM-CT-S"
-   ],
-   "count": 1,
-   "structures": [
-    "polysulfide_allylic: NR + TESPT"
-   ],
-   "example": "polysulfide_allylic: NR + TESPT",
-   "fragment_smiles": "C(CC(CSC*)=CC)*",
-   "fragment_atoms": 22,
-   "fragment_heavy": 8,
-   "heavy_rotor": true,
-   "elements": [
-    "C",
-    "H",
-    "S"
    ],
    "problem": ""
   },
@@ -31177,6 +30796,36 @@
     "O"
    ],
    "problem": ""
+  },
+  {
+   "env": "33550d6ae26a",
+   "status": "published",
+   "central": [
+    "opls_135",
+    "opls_139"
+   ],
+   "central_atoms": [
+    60,
+    61
+   ],
+   "classes": [
+    "CM-CT-CT-HC",
+    "CT-CT-CT-HC"
+   ],
+   "count": 1,
+   "structures": [
+    "peroxide_allylic: SBR"
+   ],
+   "example": "peroxide_allylic: SBR",
+   "fragment_smiles": "C12(C=CC34C(C56C=CC7C8(C=CC55C(C7C=CC68C6(C=CC3*)C(C37C=CC46C15C=CC31C2(C=CC2(C1*)C1(C)C=CC3C(C71C=CC23)*)*)*)*)*)*)*",
+   "fragment_atoms": 88,
+   "fragment_heavy": 46,
+   "heavy_rotor": false,
+   "elements": [
+    "C",
+    "H"
+   ],
+   "problem": "an sp3 carbon angle of 38 deg"
   },
   {
    "env": "33b25d863987",
@@ -31722,6 +31371,36 @@
     "O"
    ],
    "problem": ""
+  },
+  {
+   "env": "3a141a0c9bf9",
+   "status": "published",
+   "central": [
+    "opls_135",
+    "opls_139"
+   ],
+   "central_atoms": [
+    50,
+    51
+   ],
+   "classes": [
+    "CM-CT-CT-HC",
+    "CT-CT-CT-HC"
+   ],
+   "count": 1,
+   "structures": [
+    "peroxide_allylic: SBR"
+   ],
+   "example": "peroxide_allylic: SBR",
+   "fragment_smiles": "CC12C=CC34C(C56C=CC7C8(C=CC55C(C7C=CC68C6(C=CC3*)C(C37C=CC46C15C=CC31C2(C)C=CC2(C1*)C1(C=CC3C(C71C=CC23)*)*)*)*)*)*",
+   "fragment_atoms": 91,
+   "fragment_heavy": 47,
+   "heavy_rotor": false,
+   "elements": [
+    "C",
+    "H"
+   ],
+   "problem": "an sp3 carbon angle of 38 deg"
   },
   {
    "env": "3ae9a1bbcc49",
@@ -32583,38 +32262,6 @@
    "problem": ""
   },
   {
-   "env": "413e9a98d0f4",
-   "status": "published",
-   "central": [
-    "opls_136",
-    "opls_136"
-   ],
-   "central_atoms": [
-    5,
-    6
-   ],
-   "classes": [
-    "CM-CT-CT-CM",
-    "CM-CT-CT-HC",
-    "HC-CT-CT-HC"
-   ],
-   "count": 1,
-   "structures": [
-    "polysulfide_allylic: NR + TESPT"
-   ],
-   "example": "polysulfide_allylic: NR + TESPT",
-   "fragment_smiles": "C1(C(CS1)=CCCC(C*)=C*)*",
-   "fragment_atoms": 24,
-   "fragment_heavy": 10,
-   "heavy_rotor": true,
-   "elements": [
-    "C",
-    "H",
-    "S"
-   ],
-   "problem": ""
-  },
-  {
    "env": "416b046b851e",
    "status": "published",
    "central": [
@@ -32902,38 +32549,6 @@
    "problem": ""
   },
   {
-   "env": "4511a7a2ad52",
-   "status": "published",
-   "central": [
-    "opls_136",
-    "opls_142"
-   ],
-   "central_atoms": [
-    4,
-    5
-   ],
-   "classes": [
-    "CM-CM-CT-CT",
-    "CM-CM-CT-HC",
-    "CT-CT-CM-HC",
-    "HC-CM-CT-HC"
-   ],
-   "count": 1,
-   "structures": [
-    "sulfur_allylic: BR + H2S2"
-   ],
-   "example": "sulfur_allylic: BR + H2S2",
-   "fragment_smiles": "C(=CCCC=CC*)*",
-   "fragment_atoms": 19,
-   "fragment_heavy": 7,
-   "heavy_rotor": true,
-   "elements": [
-    "C",
-    "H"
-   ],
-   "problem": ""
-  },
-  {
    "env": "45b075b13a71",
    "status": "published",
    "central": [
@@ -33087,6 +32702,36 @@
     "O"
    ],
    "problem": ""
+  },
+  {
+   "env": "481445ab17e4",
+   "status": "published",
+   "central": [
+    "opls_135",
+    "opls_139"
+   ],
+   "central_atoms": [
+    1,
+    2
+   ],
+   "classes": [
+    "CM-CT-CT-HC",
+    "CT-CT-CT-HC"
+   ],
+   "count": 1,
+   "structures": [
+    "peroxide_allylic: SBR"
+   ],
+   "example": "peroxide_allylic: SBR",
+   "fragment_smiles": "CC12C=CC34C(C56C=CC7C8(C=CC55C(C7C=CC68C6(C=CC3*)C(C37C=CC46C15C=CC31C2(C)C=CC2(C1*)C1(C=CC3C(C71C=CC23)*)*)*)*)*)*",
+   "fragment_atoms": 91,
+   "fragment_heavy": 47,
+   "heavy_rotor": false,
+   "elements": [
+    "C",
+    "H"
+   ],
+   "problem": "an sp3 carbon angle of 38 deg"
   },
   {
    "env": "488f4b0ef39b",
@@ -33826,36 +33471,6 @@
    "problem": ""
   },
   {
-   "env": "51bc9857262e",
-   "status": "published",
-   "central": [
-    "opls_141",
-    "opls_142"
-   ],
-   "central_atoms": [
-    24,
-    25
-   ],
-   "classes": [
-    "CT-CM-CM-CT",
-    "CT-CM-CM-HC"
-   ],
-   "count": 1,
-   "structures": [
-    "cc_crosslink: EPDM"
-   ],
-   "example": "cc_crosslink: EPDM",
-   "fragment_smiles": "C1(C(C(C2C(C1*)C1C(C3C2C(C1*)C1C2CC3C1C(=CC)C2)*)*)*)*",
-   "fragment_atoms": 51,
-   "fragment_heavy": 21,
-   "heavy_rotor": true,
-   "elements": [
-    "C",
-    "H"
-   ],
-   "problem": ""
-  },
-  {
    "env": "51f40bb1c262",
    "status": "published",
    "central": [
@@ -33977,32 +33592,35 @@
    "problem": ""
   },
   {
-   "env": "53c9c7fb321e",
+   "env": "52b95d0ef015",
    "status": "published",
    "central": [
-    "opls_135",
-    "opls_137"
+    "opls_141",
+    "opls_210"
    ],
    "central_atoms": [
-    105,
-    106
+    6,
+    7
    ],
    "classes": [
-    "CT-CT-CT-HC",
-    "HC-CT-CT-HC"
+    "CM-CM-CT-HC",
+    "CM-CM-CT-S",
+    "CT-CM-CT-HC",
+    "CT-CM-CT-S"
    ],
    "count": 1,
    "structures": [
-    "cc_crosslink: PE"
+    "polysulfide_allylic: NR + TESPT"
    ],
-   "example": "cc_crosslink: PE",
-   "fragment_smiles": "C1(C2C3C4C5C1C1C6C4C(C4C7C(C8C9C%10C7C7C(C%11C%12C(C(C%13C(C%12)C(C3%11)C(C(C3C%11C5C6C(C(C1%11)CC%133)*)*)*)C(C%10C4C(C1C3CCC(C)C(C93)CC1)*)*)*)C(C1C2C7C(CC1)C8*)*)*)*)*",
-   "fragment_atoms": 143,
-   "fragment_heavy": 61,
-   "heavy_rotor": false,
+   "example": "polysulfide_allylic: NR + TESPT",
+   "fragment_smiles": "C1(C(=CC(CC(CSC*)=CC)S1)*)*",
+   "fragment_atoms": 28,
+   "fragment_heavy": 12,
+   "heavy_rotor": true,
    "elements": [
     "C",
-    "H"
+    "H",
+    "S"
    ],
    "problem": ""
   },
@@ -34486,6 +34104,38 @@
    "problem": ""
   },
   {
+   "env": "5932d9565c96",
+   "status": "published",
+   "central": [
+    "opls_142",
+    "opls_142"
+   ],
+   "central_atoms": [
+    3,
+    4
+   ],
+   "classes": [
+    "CT-CM-CM-CT",
+    "CT-CM-CM-HC",
+    "HC-CM-CM-HC"
+   ],
+   "count": 1,
+   "structures": [
+    "sulfur_allylic: BR + H2S2"
+   ],
+   "example": "sulfur_allylic: BR + H2S2",
+   "fragment_smiles": "C(CC=CC1C(SS1)*)*",
+   "fragment_atoms": 18,
+   "fragment_heavy": 8,
+   "heavy_rotor": true,
+   "elements": [
+    "C",
+    "H",
+    "S"
+   ],
+   "problem": ""
+  },
+  {
    "env": "5a3531db2109",
    "status": "published",
    "central": [
@@ -34830,39 +34480,6 @@
    "fragment_smiles": "C1C(CSS1)=CC1C(C=2CSSC(C2)*)SS1",
    "fragment_atoms": 28,
    "fragment_heavy": 16,
-   "heavy_rotor": true,
-   "elements": [
-    "C",
-    "H",
-    "S"
-   ],
-   "problem": ""
-  },
-  {
-   "env": "5daeff2b2069",
-   "status": "published",
-   "central": [
-    "opls_136",
-    "opls_141"
-   ],
-   "central_atoms": [
-    6,
-    7
-   ],
-   "classes": [
-    "CM-CM-CT-CT",
-    "CM-CM-CT-HC",
-    "CT-CM-CT-CT",
-    "CT-CM-CT-HC"
-   ],
-   "count": 1,
-   "structures": [
-    "polysulfide_allylic: NR + TESPT"
-   ],
-   "example": "polysulfide_allylic: NR + TESPT",
-   "fragment_smiles": "C1(C(CS1)=CCCC(CS*)=CC)*",
-   "fragment_atoms": 28,
-   "fragment_heavy": 12,
    "heavy_rotor": true,
    "elements": [
     "C",
@@ -35865,6 +35482,68 @@
    "problem": ""
   },
   {
+   "env": "69d94ac0277f",
+   "status": "published",
+   "central": [
+    "opls_136",
+    "opls_135"
+   ],
+   "central_atoms": [
+    51,
+    52
+   ],
+   "classes": [
+    "CT-CT-CT-HC",
+    "HC-CT-CT-HC"
+   ],
+   "count": 1,
+   "structures": [
+    "cc_crosslink: PE"
+   ],
+   "example": "cc_crosslink: PE",
+   "fragment_smiles": "C1(C2C(C3C4C1C1C(C3*)C3C(C5C1C(C43)C(CC5)CC)*)C1C(C3C2C2C1C1C4C5C(C(C1C1C6C4C(C4C(C7CC8C4C4C(C9C6C(C4C(C8CC7)*)C(C1C9)*)*)*)*)*)C(C2CC53)*)*)*",
+   "fragment_atoms": 139,
+   "fragment_heavy": 59,
+   "heavy_rotor": false,
+   "elements": [
+    "C",
+    "H"
+   ],
+   "problem": "an sp3 carbon angle of 85 deg"
+  },
+  {
+   "env": "6a1ad6ae2be9",
+   "status": "published",
+   "central": [
+    "opls_142",
+    "opls_142"
+   ],
+   "central_atoms": [
+    3,
+    4
+   ],
+   "classes": [
+    "CT-CM-CM-CT",
+    "CT-CM-CM-HC",
+    "HC-CM-CM-HC"
+   ],
+   "count": 1,
+   "structures": [
+    "sulfur_allylic: BR + H2S2"
+   ],
+   "example": "sulfur_allylic: BR + H2S2",
+   "fragment_smiles": "C(CC=CCS*)(*)*",
+   "fragment_atoms": 16,
+   "fragment_heavy": 6,
+   "heavy_rotor": true,
+   "elements": [
+    "C",
+    "H",
+    "S"
+   ],
+   "problem": ""
+  },
+  {
    "env": "6a64bf2980f0",
    "status": "published",
    "central": [
@@ -36055,36 +35734,6 @@
     "O"
    ],
    "problem": ""
-  },
-  {
-   "env": "6b4330cf6a5e",
-   "status": "published",
-   "central": [
-    "opls_515",
-    "opls_145"
-   ],
-   "central_atoms": [
-    38,
-    39
-   ],
-   "classes": [
-    "CA-CA-CT-CT",
-    "CA-CA-CT-HC"
-   ],
-   "count": 1,
-   "structures": [
-    "peroxide_allylic: SBR"
-   ],
-   "example": "peroxide_allylic: SBR",
-   "fragment_smiles": "C12(C=CC3C(C4C=CC5C6(C=CC78C9(C=CC%10%11C(CC=CC3%10C19C=CC71C6(C=CC2(C5(C8c2ccccc2)C=CC4%11)C1*)*)*)*)*)*)*",
-   "fragment_atoms": 80,
-   "fragment_heavy": 42,
-   "heavy_rotor": true,
-   "elements": [
-    "C",
-    "H"
-   ],
-   "problem": "two atoms 0.70 A apart"
   },
   {
    "env": "6bb7ad878ee1",
@@ -36702,6 +36351,36 @@
    "problem": ""
   },
   {
+   "env": "756f7fccc1ee",
+   "status": "published",
+   "central": [
+    "opls_135",
+    "opls_139"
+   ],
+   "central_atoms": [
+    31,
+    32
+   ],
+   "classes": [
+    "CM-CT-CT-HC",
+    "CT-CT-CT-HC"
+   ],
+   "count": 1,
+   "structures": [
+    "peroxide_allylic: SBR"
+   ],
+   "example": "peroxide_allylic: SBR",
+   "fragment_smiles": "C12(C=CC34C(C56C=CC7C8(C)C=CC55C(C7C=CC68C6(C=CC3*)C(C37C=CC46C15C=CC31C2(C=CC2(C1*)C1(C=CC3C(C71C=CC23)*)*)*)*)*)*)*",
+   "fragment_atoms": 88,
+   "fragment_heavy": 46,
+   "heavy_rotor": false,
+   "elements": [
+    "C",
+    "H"
+   ],
+   "problem": "an sp3 carbon angle of 38 deg"
+  },
+  {
    "env": "7638e96868a0",
    "status": "published",
    "central": [
@@ -36943,6 +36622,40 @@
    "example": "polysulfide_allylic: BR + TESPD",
    "fragment_smiles": "C(C(C=C*)SCCC*)*",
    "fragment_atoms": 22,
+   "fragment_heavy": 8,
+   "heavy_rotor": true,
+   "elements": [
+    "C",
+    "H",
+    "S"
+   ],
+   "problem": ""
+  },
+  {
+   "env": "78af1d77f34b",
+   "status": "published",
+   "central": [
+    "opls_136",
+    "opls_211"
+   ],
+   "central_atoms": [
+    3,
+    4
+   ],
+   "classes": [
+    "CM-CT-CT-CM",
+    "CM-CT-CT-HC",
+    "CM-CT-CT-S",
+    "HC-CT-CT-HC",
+    "HC-CT-CT-S"
+   ],
+   "count": 1,
+   "structures": [
+    "polysulfide_allylic: NR + TESPT"
+   ],
+   "example": "polysulfide_allylic: NR + TESPT",
+   "fragment_smiles": "C(=CCC1C(CS1)=C*)(*)*",
+   "fragment_atoms": 18,
    "fragment_heavy": 8,
    "heavy_rotor": true,
    "elements": [
@@ -37309,6 +37022,40 @@
    "problem": ""
   },
   {
+   "env": "7d4ab845cff2",
+   "status": "published",
+   "central": [
+    "opls_215",
+    "opls_136"
+   ],
+   "central_atoms": [
+    3,
+    4
+   ],
+   "classes": [
+    "CM-CT-CT-CM",
+    "CM-CT-CT-HC",
+    "CM-CT-CT-S",
+    "HC-CT-CT-HC",
+    "HC-CT-CT-S"
+   ],
+   "count": 1,
+   "structures": [
+    "sulfur_allylic: BR + H2S2"
+   ],
+   "example": "sulfur_allylic: BR + H2S2",
+   "fragment_smiles": "C(=CC(CC=C*)SS*)*",
+   "fragment_atoms": 18,
+   "fragment_heavy": 8,
+   "heavy_rotor": true,
+   "elements": [
+    "C",
+    "H",
+    "S"
+   ],
+   "problem": ""
+  },
+  {
    "env": "7e1e526c6e16",
    "status": "published",
    "central": [
@@ -37650,7 +37397,7 @@
     "polysulfide_allylic: NR + TESPT"
    ],
    "example": "polysulfide_allylic: NR + TESPT",
-   "fragment_smiles": "CC(CS)=CCC1C(CS1)=C*",
+   "fragment_smiles": "CC(CS)=CCC1C(=CC(S1)*)*",
    "fragment_atoms": 25,
    "fragment_heavy": 11,
    "heavy_rotor": true,
@@ -38082,6 +37829,41 @@
     "C",
     "F",
     "H"
+   ],
+   "problem": ""
+  },
+  {
+   "env": "897dae234290",
+   "status": "published",
+   "central": [
+    "opls_215",
+    "opls_142"
+   ],
+   "central_atoms": [
+    4,
+    5
+   ],
+   "classes": [
+    "CM-CM-CT-CT",
+    "CM-CM-CT-HC",
+    "CM-CM-CT-S",
+    "CT-CT-CM-HC",
+    "HC-CM-CT-HC",
+    "HC-CM-CT-S"
+   ],
+   "count": 1,
+   "structures": [
+    "sulfur_allylic: BR + H2S2"
+   ],
+   "example": "sulfur_allylic: BR + H2S2",
+   "fragment_smiles": "C(=CC1C(C=CC*)SS1)*",
+   "fragment_atoms": 19,
+   "fragment_heavy": 9,
+   "heavy_rotor": true,
+   "elements": [
+    "C",
+    "H",
+    "S"
    ],
    "problem": ""
   },
@@ -38819,6 +38601,37 @@
    "problem": ""
   },
   {
+   "env": "933ae646e8c8",
+   "status": "published",
+   "central": [
+    "opls_135",
+    "opls_137"
+   ],
+   "central_atoms": [
+    1,
+    2
+   ],
+   "classes": [
+    "CM-CT-CT-HC",
+    "CT-CT-CT-HC",
+    "HC-CT-CT-HC"
+   ],
+   "count": 1,
+   "structures": [
+    "peroxide_allylic: SBR"
+   ],
+   "example": "peroxide_allylic: SBR",
+   "fragment_smiles": "CC1C=CC2C(C1C=CC2)*",
+   "fragment_atoms": 24,
+   "fragment_heavy": 10,
+   "heavy_rotor": false,
+   "elements": [
+    "C",
+    "H"
+   ],
+   "problem": ""
+  },
+  {
    "env": "938d15bb7b31",
    "status": "published",
    "central": [
@@ -38879,41 +38692,6 @@
     "C",
     "H",
     "O"
-   ],
-   "problem": ""
-  },
-  {
-   "env": "94b8c557514a",
-   "status": "published",
-   "central": [
-    "opls_142",
-    "opls_215"
-   ],
-   "central_atoms": [
-    3,
-    4
-   ],
-   "classes": [
-    "CM-CM-CT-CT",
-    "CM-CM-CT-HC",
-    "CM-CM-CT-S",
-    "CT-CT-CM-HC",
-    "HC-CM-CT-HC",
-    "HC-CM-CT-S"
-   ],
-   "count": 1,
-   "structures": [
-    "sulfur_allylic: SBR + H2S2"
-   ],
-   "example": "sulfur_allylic: SBR + H2S2",
-   "fragment_smiles": "C(C=CC1C(c2ccccc2)C(SS1)*)*",
-   "fragment_atoms": 28,
-   "fragment_heavy": 14,
-   "heavy_rotor": true,
-   "elements": [
-    "C",
-    "H",
-    "S"
    ],
    "problem": ""
   },
@@ -38981,36 +38759,6 @@
     "O"
    ],
    "problem": ""
-  },
-  {
-   "env": "9560f6a7fcae",
-   "status": "published",
-   "central": [
-    "opls_515",
-    "opls_145"
-   ],
-   "central_atoms": [
-    5,
-    6
-   ],
-   "classes": [
-    "CA-CA-CT-CT",
-    "CA-CA-CT-HC"
-   ],
-   "count": 1,
-   "structures": [
-    "peroxide_allylic: SBR"
-   ],
-   "example": "peroxide_allylic: SBR",
-   "fragment_smiles": "C12(C=CC3C(c4ccccc4)C4C=CC5C6(C=CC78C9(C=CC%10%11C(CC=CC3%10C19C=CC71C6(C=CC2(C5(C8*)C=CC4%11)C1*)*)*)*)*)*",
-   "fragment_atoms": 80,
-   "fragment_heavy": 42,
-   "heavy_rotor": true,
-   "elements": [
-    "C",
-    "H"
-   ],
-   "problem": "two atoms 0.70 A apart"
   },
   {
    "env": "95a12d979712",
@@ -40076,6 +39824,37 @@
    "problem": ""
   },
   {
+   "env": "a52625fe8f84",
+   "status": "published",
+   "central": [
+    "opls_135",
+    "opls_137"
+   ],
+   "central_atoms": [
+    16,
+    17
+   ],
+   "classes": [
+    "CM-CT-CT-HC",
+    "CT-CT-CT-HC",
+    "HC-CT-CT-HC"
+   ],
+   "count": 1,
+   "structures": [
+    "peroxide_allylic: SBR"
+   ],
+   "example": "peroxide_allylic: SBR",
+   "fragment_smiles": "C12(C=CC34C(C56C=CC7C8(C=CC55C(C7C=CC68C6(C=CC3C)C(C37C=CC46C15C=CC31C2(C=CC2(C1*)C1(C=CC3C(C71C=CC23)*)*)*)*)*)*)*)*",
+   "fragment_atoms": 88,
+   "fragment_heavy": 46,
+   "heavy_rotor": false,
+   "elements": [
+    "C",
+    "H"
+   ],
+   "problem": "an sp3 carbon angle of 38 deg"
+  },
+  {
    "env": "a543389a2a04",
    "status": "published",
    "central": [
@@ -41003,6 +40782,36 @@
    "problem": ""
   },
   {
+   "env": "b394e4e66e05",
+   "status": "published",
+   "central": [
+    "opls_135",
+    "opls_137"
+   ],
+   "central_atoms": [
+    19,
+    20
+   ],
+   "classes": [
+    "CT-CT-CT-HC",
+    "HC-CT-CT-HC"
+   ],
+   "count": 1,
+   "structures": [
+    "cc_crosslink: PE"
+   ],
+   "example": "cc_crosslink: PE",
+   "fragment_smiles": "C1(C2C(C3C4C1C1C(C3*)C3C(C5C1C(C43)C(CC5)*)*)C1C(C3C2C2C1C1C4C5C(C(C1C1C6C4C(C4C(C)C7CC8C4C4C(C9C6C(C4C(C8CC7)*)C(C1C9)*)*)*)*)C(C2CC53)*)*)*",
+   "fragment_atoms": 136,
+   "fragment_heavy": 58,
+   "heavy_rotor": false,
+   "elements": [
+    "C",
+    "H"
+   ],
+   "problem": "an sp3 carbon angle of 85 deg"
+  },
+  {
    "env": "b3bba8aae30b",
    "status": "published",
    "central": [
@@ -41230,6 +41039,39 @@
    "elements": [
     "C",
     "H"
+   ],
+   "problem": ""
+  },
+  {
+   "env": "b679f64baa15",
+   "status": "published",
+   "central": [
+    "opls_142",
+    "opls_136"
+   ],
+   "central_atoms": [
+    4,
+    5
+   ],
+   "classes": [
+    "CM-CM-CT-CT",
+    "CM-CM-CT-HC",
+    "CT-CT-CM-HC",
+    "HC-CM-CT-HC"
+   ],
+   "count": 1,
+   "structures": [
+    "polysulfide_allylic: NR + TESPT"
+   ],
+   "example": "polysulfide_allylic: NR + TESPT",
+   "fragment_smiles": "C1(C(CS1)=CCCC(=C*)*)*",
+   "fragment_atoms": 21,
+   "fragment_heavy": 9,
+   "heavy_rotor": true,
+   "elements": [
+    "C",
+    "H",
+    "S"
    ],
    "problem": ""
   },
@@ -41899,6 +41741,37 @@
    "problem": ""
   },
   {
+   "env": "c059d37c0481",
+   "status": "published",
+   "central": [
+    "opls_141",
+    "opls_142"
+   ],
+   "central_atoms": [
+    3,
+    5
+   ],
+   "classes": [
+    "CT-CM-CM-CT",
+    "CT-CM-CM-HC"
+   ],
+   "count": 1,
+   "structures": [
+    "polysulfide_allylic: NR + TESPT"
+   ],
+   "example": "polysulfide_allylic: NR + TESPT",
+   "fragment_smiles": "C(C1C(CS1)=CCC*)*",
+   "fragment_atoms": 20,
+   "fragment_heavy": 8,
+   "heavy_rotor": true,
+   "elements": [
+    "C",
+    "H",
+    "S"
+   ],
+   "problem": ""
+  },
+  {
    "env": "c077e4a70823",
    "status": "published",
    "central": [
@@ -42124,41 +41997,6 @@
     "C",
     "H",
     "O"
-   ],
-   "problem": ""
-  },
-  {
-   "env": "c3a0159a0d5c",
-   "status": "published",
-   "central": [
-    "opls_215",
-    "opls_142"
-   ],
-   "central_atoms": [
-    9,
-    10
-   ],
-   "classes": [
-    "CM-CM-CT-CT",
-    "CM-CM-CT-HC",
-    "CM-CM-CT-S",
-    "CT-CT-CM-HC",
-    "HC-CM-CT-HC",
-    "HC-CM-CT-S"
-   ],
-   "count": 1,
-   "structures": [
-    "sulfur_allylic: SBR + H2S2"
-   ],
-   "example": "sulfur_allylic: SBR + H2S2",
-   "fragment_smiles": "C1(C(c2ccccc2)C(C=CC)SS1)*",
-   "fragment_atoms": 28,
-   "fragment_heavy": 14,
-   "heavy_rotor": true,
-   "elements": [
-    "C",
-    "H",
-    "S"
    ],
    "problem": ""
   },
@@ -42606,6 +42444,40 @@
     "C",
     "H",
     "O"
+   ],
+   "problem": ""
+  },
+  {
+   "env": "cae62e1fc02c",
+   "status": "published",
+   "central": [
+    "opls_136",
+    "opls_211"
+   ],
+   "central_atoms": [
+    3,
+    4
+   ],
+   "classes": [
+    "CM-CT-CT-CM",
+    "CM-CT-CT-HC",
+    "CM-CT-CT-S",
+    "HC-CT-CT-HC",
+    "HC-CT-CT-S"
+   ],
+   "count": 1,
+   "structures": [
+    "polysulfide_allylic: NR + TESPT"
+   ],
+   "example": "polysulfide_allylic: NR + TESPT",
+   "fragment_smiles": "C(=CCC1C(C)=CC(S1)*)(*)*",
+   "fragment_atoms": 21,
+   "fragment_heavy": 9,
+   "heavy_rotor": true,
+   "elements": [
+    "C",
+    "H",
+    "S"
    ],
    "problem": ""
   },
@@ -44672,6 +44544,37 @@
    "problem": ""
   },
   {
+   "env": "e2fee11022cc",
+   "status": "published",
+   "central": [
+    "opls_141",
+    "opls_142"
+   ],
+   "central_atoms": [
+    6,
+    8
+   ],
+   "classes": [
+    "CT-CM-CM-CT",
+    "CT-CM-CM-HC"
+   ],
+   "count": 1,
+   "structures": [
+    "polysulfide_allylic: NR + TESPT"
+   ],
+   "example": "polysulfide_allylic: NR + TESPT",
+   "fragment_smiles": "C1(C(=CC(CC(CS*)=CC)S1)*)*",
+   "fragment_atoms": 25,
+   "fragment_heavy": 11,
+   "heavy_rotor": true,
+   "elements": [
+    "C",
+    "H",
+    "S"
+   ],
+   "problem": ""
+  },
+  {
    "env": "e3598787986c",
    "status": "published",
    "central": [
@@ -45088,6 +44991,39 @@
    "problem": ""
   },
   {
+   "env": "e5af2ff30205",
+   "status": "published",
+   "central": [
+    "opls_136",
+    "opls_142"
+   ],
+   "central_atoms": [
+    4,
+    5
+   ],
+   "classes": [
+    "CM-CM-CT-CT",
+    "CM-CM-CT-HC",
+    "CT-CT-CM-HC",
+    "HC-CM-CT-HC"
+   ],
+   "count": 1,
+   "structures": [
+    "sulfur_allylic: BR + H2S2"
+   ],
+   "example": "sulfur_allylic: BR + H2S2",
+   "fragment_smiles": "C(=CCCC=CC1C(SS1)*)*",
+   "fragment_atoms": 22,
+   "fragment_heavy": 10,
+   "heavy_rotor": true,
+   "elements": [
+    "C",
+    "H",
+    "S"
+   ],
+   "problem": ""
+  },
+  {
    "env": "e71127ee4c86",
    "status": "published",
    "central": [
@@ -45283,6 +45219,40 @@
    "problem": ""
   },
   {
+   "env": "eb2c294ba064",
+   "status": "published",
+   "central": [
+    "opls_211",
+    "opls_136"
+   ],
+   "central_atoms": [
+    4,
+    5
+   ],
+   "classes": [
+    "CM-CT-CT-CM",
+    "CM-CT-CT-HC",
+    "CM-CT-CT-S",
+    "HC-CT-CT-HC",
+    "HC-CT-CT-S"
+   ],
+   "count": 1,
+   "structures": [
+    "polysulfide_allylic: NR + TESPT"
+   ],
+   "example": "polysulfide_allylic: NR + TESPT",
+   "fragment_smiles": "C1(C(=CC(CC(C*)=C*)S1)*)*",
+   "fragment_atoms": 21,
+   "fragment_heavy": 9,
+   "heavy_rotor": true,
+   "elements": [
+    "C",
+    "H",
+    "S"
+   ],
+   "problem": ""
+  },
+  {
    "env": "eb6713b38998",
    "status": "published",
    "central": [
@@ -45313,6 +45283,37 @@
     "O"
    ],
    "problem": ""
+  },
+  {
+   "env": "ebd16ed633ac",
+   "status": "published",
+   "central": [
+    "opls_137",
+    "opls_136"
+   ],
+   "central_atoms": [
+    50,
+    51
+   ],
+   "classes": [
+    "CT-CT-CT-CT",
+    "CT-CT-CT-HC",
+    "HC-CT-CT-HC"
+   ],
+   "count": 1,
+   "structures": [
+    "cc_crosslink: PE"
+   ],
+   "example": "cc_crosslink: PE",
+   "fragment_smiles": "C1(C2C(C3C4C1C1C(C3*)C3C(C5C1C(C43)C(CC5)CC)*)C1C(C3C2C2C1C1C4C5C(C(C1C1C6C4C(C4C(C7CC8C4C4C(C9C6C(C4C(C8CC7)*)C(C1C9)*)*)*)*)*)C(C2CC53)*)*)*",
+   "fragment_atoms": 139,
+   "fragment_heavy": 59,
+   "heavy_rotor": true,
+   "elements": [
+    "C",
+    "H"
+   ],
+   "problem": "an sp3 carbon angle of 85 deg"
   },
   {
    "env": "ec0b6f4cdda4",
@@ -45559,7 +45560,7 @@
     "polysulfide_allylic: NR + TESPT"
    ],
    "example": "polysulfide_allylic: NR + TESPT",
-   "fragment_smiles": "CC(C*)=CCC1C(CS1)=C*",
+   "fragment_smiles": "CC(C*)=CCC1C(=CC(S1)*)*",
    "fragment_atoms": 24,
    "fragment_heavy": 10,
    "heavy_rotor": true,
@@ -45604,68 +45605,6 @@
     "O"
    ],
    "problem": ""
-  },
-  {
-   "env": "f00fd549f445",
-   "status": "published",
-   "central": [
-    "opls_142",
-    "opls_142"
-   ],
-   "central_atoms": [
-    3,
-    4
-   ],
-   "classes": [
-    "CT-CM-CM-CT",
-    "CT-CM-CM-HC",
-    "HC-CM-CM-HC"
-   ],
-   "count": 1,
-   "structures": [
-    "sulfur_allylic: BR + H2S2"
-   ],
-   "example": "sulfur_allylic: BR + H2S2",
-   "fragment_smiles": "C(CC=CCS*)*",
-   "fragment_atoms": 16,
-   "fragment_heavy": 6,
-   "heavy_rotor": true,
-   "elements": [
-    "C",
-    "H",
-    "S"
-   ],
-   "problem": ""
-  },
-  {
-   "env": "f112976918a6",
-   "status": "published",
-   "central": [
-    "opls_515",
-    "opls_145"
-   ],
-   "central_atoms": [
-    22,
-    23
-   ],
-   "classes": [
-    "CA-CA-CT-CT",
-    "CA-CA-CT-HC"
-   ],
-   "count": 1,
-   "structures": [
-    "peroxide_allylic: SBR"
-   ],
-   "example": "peroxide_allylic: SBR",
-   "fragment_smiles": "C12(C=CC3C(C4C=CC5C6(C=CC78C9(C=CC%10%11C(c%12ccccc%12)CC=CC3%10C19C=CC71C6(C=CC2(C5(C8*)C=CC4%11)C1*)*)*)*)*)*",
-   "fragment_atoms": 80,
-   "fragment_heavy": 42,
-   "heavy_rotor": true,
-   "elements": [
-    "C",
-    "H"
-   ],
-   "problem": "two atoms 0.70 A apart"
   },
   {
    "env": "f1bba8536fd2",
@@ -45952,6 +45891,39 @@
    "elements": [
     "C",
     "H"
+   ],
+   "problem": ""
+  },
+  {
+   "env": "f3dd74814163",
+   "status": "published",
+   "central": [
+    "opls_142",
+    "opls_136"
+   ],
+   "central_atoms": [
+    3,
+    4
+   ],
+   "classes": [
+    "CM-CM-CT-CT",
+    "CM-CM-CT-HC",
+    "CT-CT-CM-HC",
+    "HC-CM-CT-HC"
+   ],
+   "count": 1,
+   "structures": [
+    "sulfur_allylic: SBR + H2S2"
+   ],
+   "example": "sulfur_allylic: SBR + H2S2",
+   "fragment_smiles": "C(C=CCC(c1ccccc1)C1C=CCSS1)*",
+   "fragment_atoms": 35,
+   "fragment_heavy": 17,
+   "heavy_rotor": true,
+   "elements": [
+    "C",
+    "H",
+    "S"
    ],
    "problem": ""
   },
@@ -46727,6 +46699,36 @@
     "C",
     "H",
     "O"
+   ],
+   "problem": ""
+  },
+  {
+   "env": "fa51960eac65",
+   "status": "published",
+   "central": [
+    "opls_515",
+    "opls_145"
+   ],
+   "central_atoms": [
+    5,
+    6
+   ],
+   "classes": [
+    "CA-CA-CT-CT",
+    "CA-CA-CT-HC"
+   ],
+   "count": 1,
+   "structures": [
+    "peroxide_allylic: SBR"
+   ],
+   "example": "peroxide_allylic: SBR",
+   "fragment_smiles": "C1(C=CC2C(c3ccccc3)C1C=CC2)*",
+   "fragment_atoms": 31,
+   "fragment_heavy": 15,
+   "heavy_rotor": true,
+   "elements": [
+    "C",
+    "H"
    ],
    "problem": ""
   },
