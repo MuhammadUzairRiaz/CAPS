@@ -1,0 +1,1446 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "OPLS-AA 2024 torsions refitted at DLPNO-CCSD(T) (CAPS refit, QM)",
+ "source": "CAPS fits to DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP relaxed torsion scans (15 degrees, ORCA 6.0.1) of the census fragments, fitted against CAPS's MM energy with caps.torsionfit fit --refit --joint",
+ "units": "real",
+ "atom_types": [],
+ "dihedrals": [
+  {
+   "name": "C-CT-CT-OS",
+   "match": [
+    "C",
+    "CT",
+    "CT",
+    "OS"
+   ],
+   "style": "opls",
+   "params": [
+    -2.5523,
+    0.7563,
+    -0.3926,
+    -0.0449
+   ],
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS C-CT-CT-OS 0.26 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "C-CT-CT-OS",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "C-CT-OS-C",
+   "match": [
+    "C",
+    "CT",
+    "OS",
+    "C"
+   ],
+   "style": "opls",
+   "params": [
+    -7.5514,
+    3.3026,
+    0.4486,
+    -1.3815
+   ],
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS C-CT-OS-C 0.77 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "C-CT-OS-C",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "C-N-CT-CA",
+   "match": [
+    "C",
+    "N",
+    "CT",
+    "CA"
+   ],
+   "style": "opls",
+   "params": [
+    -2.6198,
+    -1.5581,
+    -0.1602,
+    -1.3346
+   ],
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS C-N-CT-CA 0.32 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "C-N-CT-CA",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "C-OS-CT-CA",
+   "match": [
+    "C",
+    "OS",
+    "CT",
+    "CA"
+   ],
+   "style": "opls",
+   "params": [
+    -0.3878,
+    -1.5516,
+    0.6105,
+    -0.7013
+   ],
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS C-OS-CT-CA 0.11 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "C-OS-CT-CA",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CA-C-CA-CA",
+   "match": [
+    "CA",
+    "C",
+    "CA",
+    "CA"
+   ],
+   "style": "opls",
+   "params": [
+    2.3353,
+    0.5306,
+    3.2114,
+    -0.2333
+   ],
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CA-C-CA-CA 0.24 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CA-C-CA-CA",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CA-C-N-CT",
+   "match": [
+    "CA",
+    "C",
+    "N",
+    "CT"
+   ],
+   "style": "opls",
+   "params": [
+    -0.8448,
+    -2.924,
+    1.6727,
+    1.5069
+   ],
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CA-C-N-CT 0.97 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CA-C-N-CT",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CA-CA-CT-CA",
+   "match": [
+    "CA",
+    "CA",
+    "CT",
+    "CA"
+   ],
+   "style": "opls",
+   "params": [
+    0.878,
+    0.3361,
+    -3.0273,
+    0.0135
+   ],
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CA-CA-CT-CA 0.15 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CA-CA-CT-CA",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CA-CA-NT-CA",
+   "match": [
+    "CA",
+    "CA",
+    "NT",
+    "CA"
+   ],
+   "style": "opls",
+   "params": [
+    7.9162,
+    0.0751,
+    3.0268,
+    0.4635
+   ],
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CA-CA-NT-CA 0.39 kcal/mol; ridge 0.003",
+   "fit": {
+    "fragment": "CA-CA-NT-CA",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CA-CA-SY-CA",
+   "match": [
+    "CA",
+    "CA",
+    "SY",
+    "CA"
+   ],
+   "style": "opls",
+   "params": [
+    1.6774,
+    -0.2991,
+    -0.302,
+    0.0078
+   ],
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CA-CA-SY-CA 0.04 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CA-CA-SY-CA",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CA-CT-CT-CA",
+   "match": [
+    "CA",
+    "CT",
+    "CT",
+    "CA"
+   ],
+   "style": "opls",
+   "params": [
+    -1.6759,
+    0.4902,
+    0.6274,
+    -0.2245
+   ],
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CA-CT-CT-CA 0.06 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CA-CT-CT-CA",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CA-CT-CT-CM",
+   "match": [
+    "CA",
+    "CT",
+    "CT",
+    "CM"
+   ],
+   "style": "opls",
+   "params": [
+    -0.5425,
+    0.0808,
+    1.1257,
+    -0.1809
+   ],
+   "comment": "CAPS refit (QM), joint over 2 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CA-CT-CT-CM 0.17, CM-CT-CT-CT 0.11 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CA-CT-CT-CM, CM-CT-CT-CT",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CM-CT-CT-CT",
+   "match": [
+    "CM",
+    "CT",
+    "CT",
+    "CT"
+   ],
+   "style": "opls",
+   "params": [
+    0.3244,
+    0.1721,
+    -0.5536,
+    -0.3183
+   ],
+   "comment": "CAPS refit (QM), joint over 3 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CA-CT-CT-CM 0.17, CM-CT-CT-CT 0.11, CM-CT-CT-CZ 0.16 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CA-CT-CT-CM, CM-CT-CT-CT, CM-CT-CT-CZ",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CM-CT-CT-CZ",
+   "match": [
+    "CM",
+    "CT",
+    "CT",
+    "CZ"
+   ],
+   "style": "opls",
+   "params": [
+    -0.8238,
+    0.2766,
+    1.2056,
+    -0.1156
+   ],
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CM-CT-CT-CZ 0.16 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CM-CT-CT-CZ",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CA-CT-CT-OS",
+   "match": [
+    "CA",
+    "CT",
+    "CT",
+    "OS"
+   ],
+   "style": "opls",
+   "params": [
+    0.5185,
+    0.8703,
+    1.1873,
+    0.2318
+   ],
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CA-CT-CT-OS 0.57 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CA-CT-CT-OS",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CA-CT-NT-CA",
+   "match": [
+    "CA",
+    "CT",
+    "NT",
+    "CA"
+   ],
+   "style": "opls",
+   "params": [
+    -3.5598,
+    -0.2362,
+    -0.2895,
+    -0.2062
+   ],
+   "comment": "CAPS refit (QM), joint over 2 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CA-CT-NT-CA 0.69, CA-CT-NT-H 0.99 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CA-CT-NT-CA, CA-CT-NT-H",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CA-CT-OS-CT",
+   "match": [
+    "CA",
+    "CT",
+    "OS",
+    "CT"
+   ],
+   "style": "opls",
+   "params": [
+    0.1173,
+    -0.1825,
+    0.9809,
+    -0.0747
+   ],
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CA-CT-OS-CT 0.39 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CA-CT-OS-CT",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CA-NT-CT-CY",
+   "match": [
+    "CA",
+    "NT",
+    "CT",
+    "CY"
+   ],
+   "style": "opls",
+   "params": [
+    2.1237,
+    0.5583,
+    0.6043,
+    -0.5712
+   ],
+   "comment": "CAPS refit (QM), joint over 2 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CA-NT-CT-CY 0.55, CT-NT-CT-CY 0.62 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CA-NT-CT-CY, CT-NT-CT-CY",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CT-NT-CT-CY",
+   "match": [
+    "CT",
+    "NT",
+    "CT",
+    "CY"
+   ],
+   "style": "opls",
+   "params": [
+    2.4134,
+    0.9556,
+    0.8107,
+    0.2448
+   ],
+   "comment": "CAPS refit (QM), joint over 2 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CA-NT-CT-CY 0.55, CT-NT-CT-CY 0.62 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CA-NT-CT-CY, CT-NT-CT-CY",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CA-OS-CT-CT",
+   "match": [
+    "CA",
+    "OS",
+    "CT",
+    "CT"
+   ],
+   "style": "opls",
+   "params": [
+    -1.2945,
+    0.773,
+    -1.1431,
+    -0.3969
+   ],
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CA-OS-CT-CT 0.54 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CA-OS-CT-CT",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CA-OS-CT-CY",
+   "match": [
+    "CA",
+    "OS",
+    "CT",
+    "CY"
+   ],
+   "style": "opls",
+   "params": [
+    -0.2891,
+    -0.1747,
+    -0.9739,
+    -0.1263
+   ],
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CA-OS-CT-CY 0.31 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CA-OS-CT-CY",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CF-CT-CF-CT",
+   "match": [
+    "CF",
+    "CT",
+    "CF",
+    "CT"
+   ],
+   "style": "opls",
+   "params": [
+    -5.4662,
+    5.7528,
+    -0.8392,
+    1.5778
+   ],
+   "comment": "CAPS refit (QM), joint over 2 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CF-CT-CF-CT 0.17, CT-CF-CT-F 0.13 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CF-CT-CF-CT, CT-CF-CT-F",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CF-CT-CF-F",
+   "match": [
+    "CF",
+    "CT",
+    "CF",
+    "F"
+   ],
+   "style": "opls",
+   "params": [
+    -4.1674,
+    7.6228,
+    0.7468,
+    1.093
+   ],
+   "comment": "CAPS refit (QM), joint over 3 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CF-CT-CF-CT 0.17, CF-CT-CF-F 0.19, CT-CF-CT-F 0.13 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CF-CT-CF-CT, CF-CT-CF-F, CT-CF-CT-F",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CT-CF-CT-F",
+   "match": [
+    "CT",
+    "CF",
+    "CT",
+    "F"
+   ],
+   "style": "opls",
+   "params": [
+    -4.244,
+    0.4715,
+    1.1037,
+    0.8797
+   ],
+   "comment": "CAPS refit (QM), joint over 2 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CF-CT-CF-CT 0.17, CT-CF-CT-F 0.13 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CF-CT-CF-CT, CT-CF-CT-F",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CF-CT-CT-F",
+   "match": [
+    "CF",
+    "CT",
+    "CT",
+    "F"
+   ],
+   "style": "opls",
+   "params": [
+    -2.9059,
+    0.6796,
+    0.2563,
+    -0.0573
+   ],
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CF-CT-CT-F 0.69 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CF-CT-CT-F",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CF-CT-CT-HC",
+   "match": [
+    "CF",
+    "CT",
+    "CT",
+    "HC"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.2036,
+    0.0
+   ],
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CF-CT-CT-HC 0.05 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CF-CT-CT-HC",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CM-C-OH-HO",
+   "match": [
+    "CM",
+    "C",
+    "OH",
+    "HO"
+   ],
+   "style": "opls",
+   "params": [
+    3.3921,
+    4.2337,
+    0.2027,
+    -0.3738
+   ],
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CM-C-OH-HO 0.95 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CM-C-OH-HO",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CM-C-OS-CT",
+   "match": [
+    "CM",
+    "C",
+    "OS",
+    "CT"
+   ],
+   "style": "opls",
+   "params": [
+    1.1062,
+    6.3131,
+    1.4508,
+    0.1135
+   ],
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CM-C-OS-CT 0.10 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CM-C-OS-CT",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CM-CM-C-OS",
+   "match": [
+    "CM",
+    "CM",
+    "C",
+    "OS"
+   ],
+   "style": "opls",
+   "params": [
+    0.8284,
+    -1.919,
+    1.8366,
+    -0.7448
+   ],
+   "comment": "CAPS refit (QM), joint over 2 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CM-CM-C-OS 0.23, HC-CM-C-OS 0.28 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CM-CM-C-OS, HC-CM-C-OS",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CM-CT-CT-CM",
+   "match": [
+    "CM",
+    "CT",
+    "CT",
+    "CM"
+   ],
+   "style": "opls",
+   "params": [
+    -0.4681,
+    0.2667,
+    -0.1379,
+    -0.2684
+   ],
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CM-CT-CT-CM 0.32 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CM-CT-CT-CM",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CM-CT-CT-CY",
+   "match": [
+    "CM",
+    "CT",
+    "CT",
+    "CY"
+   ],
+   "style": "opls",
+   "params": [
+    -0.8579,
+    0.8071,
+    -0.7496,
+    -0.2122
+   ],
+   "comment": "CAPS refit (QM), joint over 2 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CM-CT-CT-CY 0.52, CY-CT-CT-HC 0.52 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CM-CT-CT-CY, CY-CT-CT-HC",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CO-CT-OH-HO",
+   "match": [
+    "CO",
+    "CT",
+    "OH",
+    "HO"
+   ],
+   "style": "opls",
+   "params": [
+    -1.0264,
+    -0.8031,
+    0.4366,
+    -0.5941
+   ],
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CO-CT-OH-HO 0.35 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CO-CT-OH-HO",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CO-CT-OS-CT",
+   "match": [
+    "CO",
+    "CT",
+    "OS",
+    "CT"
+   ],
+   "style": "opls",
+   "params": [
+    -2.7438,
+    0.6529,
+    -0.2489,
+    -0.3188
+   ],
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CO-CT-OS-CT 0.96 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CO-CT-OS-CT",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CO-OS-CO-CT",
+   "match": [
+    "CO",
+    "OS",
+    "CO",
+    "CT"
+   ],
+   "style": "opls",
+   "params": [
+    -0.7247,
+    0.9028,
+    3.1778,
+    -0.0689
+   ],
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CO-OS-CO-CT 0.58 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CO-OS-CO-CT",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CO-OS-CO-OH",
+   "match": [
+    "CO",
+    "OS",
+    "CO",
+    "OH"
+   ],
+   "style": "opls",
+   "params": [
+    -2.3154,
+    -2.0456,
+    -2.7499,
+    0.8959
+   ],
+   "comment": "CAPS refit (QM), joint over 3 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CO-OS-CO-CT 0.58, CO-OS-CO-HC 1.22, CO-OS-CO-OH 1.64 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CO-OS-CO-CT, CO-OS-CO-HC, CO-OS-CO-OH",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CO-OS-CT-CT",
+   "match": [
+    "CO",
+    "OS",
+    "CT",
+    "CT"
+   ],
+   "style": "opls",
+   "params": [
+    -2.6508,
+    0.0726,
+    -1.4753,
+    -0.174
+   ],
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CO-OS-CT-CT 0.70 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CO-OS-CT-CT",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CT-CF-CT-CT",
+   "match": [
+    "CT",
+    "CF",
+    "CT",
+    "CT"
+   ],
+   "style": "opls",
+   "params": [
+    1.2703,
+    2.0344,
+    -4.6623,
+    -0.8089
+   ],
+   "comment": "CAPS refit (QM), joint over 4 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CT-CF-CT-CT 0.12, CT-CF-CT-HC 0.14, CT-CT-CF-F 0.14, F-CF-CT-HC 0.13 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CT-CF-CT-CT, CT-CF-CT-HC, CT-CT-CF-F, F-CF-CT-HC",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CT-CT-CF-F",
+   "match": [
+    "CT",
+    "CT",
+    "CF",
+    "F"
+   ],
+   "style": "opls",
+   "params": [
+    1.2211,
+    2.2181,
+    3.6599,
+    -0.5394
+   ],
+   "comment": "CAPS refit (QM), joint over 4 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CT-CF-CT-CT 0.12, CT-CF-CT-HC 0.14, CT-CT-CF-F 0.14, F-CF-CT-HC 0.13 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CT-CF-CT-CT, CT-CF-CT-HC, CT-CT-CF-F, F-CF-CT-HC",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CT-CO-OH-HO",
+   "match": [
+    "CT",
+    "CO",
+    "OH",
+    "HO"
+   ],
+   "style": "opls",
+   "params": [
+    -1.639,
+    -0.5428,
+    0.887,
+    0.3987
+   ],
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CT-CO-OH-HO 0.23 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CT-CO-OH-HO",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "HC-CO-OH-HO",
+   "match": [
+    "HC",
+    "CO",
+    "OH",
+    "HO"
+   ],
+   "style": "opls",
+   "params": [
+    -1.3114,
+    0.0643,
+    0.442,
+    0.5224
+   ],
+   "comment": "CAPS refit (QM), joint over 2 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CT-CO-OH-HO 0.23, HC-CO-OH-HO 0.84 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CT-CO-OH-HO, HC-CO-OH-HO",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CT-CT-CM-Cl",
+   "match": [
+    "CT",
+    "CT",
+    "CM",
+    "Cl"
+   ],
+   "style": "opls",
+   "params": [
+    0.5442,
+    -0.068,
+    1.4512,
+    0.0504
+   ],
+   "comment": "CAPS refit (QM), joint over 2 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CT-CT-CM-Cl 0.04, Cl-CM-CT-HC 0.04 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CT-CT-CM-Cl, Cl-CM-CT-HC",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CT-CT-CT-CY",
+   "match": [
+    "CT",
+    "CT",
+    "CT",
+    "CY"
+   ],
+   "style": "opls",
+   "params": [
+    0.6141,
+    -0.0003,
+    1.0583,
+    -0.2045
+   ],
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CT-CT-CT-CY 0.06 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CT-CT-CT-CY",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CT-CT-CT-NA",
+   "match": [
+    "CT",
+    "CT",
+    "CT",
+    "NA"
+   ],
+   "style": "opls",
+   "params": [
+    -0.4607,
+    0.4021,
+    0.2412,
+    -0.3472
+   ],
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CT-CT-CT-NA 0.16 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CT-CT-CT-NA",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CT-CT-CY-CT",
+   "match": [
+    "CT",
+    "CT",
+    "CY",
+    "CT"
+   ],
+   "style": "opls",
+   "params": [
+    0.2652,
+    -0.5587,
+    -0.5939,
+    -0.4204
+   ],
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CT-CT-CY-CT 0.37 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CT-CT-CY-CT",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CT-CT-CY-CY",
+   "match": [
+    "CT",
+    "CT",
+    "CY",
+    "CY"
+   ],
+   "style": "opls",
+   "params": [
+    -0.4272,
+    0.6057,
+    3.4812,
+    0.078
+   ],
+   "comment": "CAPS refit (QM), joint over 6 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CT-CT-CY-CT 0.37, CT-CT-CY-CY 0.11, CT-CT-CY-HC 0.08, CT-CT-CY-O$ 0.10, HC-CT-CY-HC 0.08, HC-CT-CY-O$ 0.08 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CT-CT-CY-CT, CT-CT-CY-CY, CT-CT-CY-HC, CT-CT-CY-O$, HC-CT-CY-HC, HC-CT-CY-O$",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CT-CT-CY-O$",
+   "match": [
+    "CT",
+    "CT",
+    "CY",
+    "O$"
+   ],
+   "style": "opls",
+   "params": [
+    0.0795,
+    0.1447,
+    5.6512,
+    0.0403
+   ],
+   "comment": "CAPS refit (QM), joint over 6 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CT-CT-CY-CT 0.37, CT-CT-CY-CY 0.11, CT-CT-CY-HC 0.08, CT-CT-CY-O$ 0.10, HC-CT-CY-HC 0.08, HC-CT-CY-O$ 0.08 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CT-CT-CY-CT, CT-CT-CY-CY, CT-CT-CY-HC, CT-CT-CY-O$, HC-CT-CY-HC, HC-CT-CY-O$",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CT-OS-CT-CY",
+   "match": [
+    "CT",
+    "OS",
+    "CT",
+    "CY"
+   ],
+   "style": "opls",
+   "params": [
+    -1.0901,
+    -0.0023,
+    -0.1423,
+    -0.1476
+   ],
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CT-OS-CT-CY 0.23 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CT-OS-CT-CY",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CY-CT-CT-CY",
+   "match": [
+    "CY",
+    "CT",
+    "CT",
+    "CY"
+   ],
+   "style": "opls",
+   "params": [
+    0.2702,
+    0.5911,
+    0.6551,
+    -0.0762
+   ],
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CY-CT-CT-CY 0.11 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CY-CT-CT-CY",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CY-CY-CT-NT",
+   "match": [
+    "CY",
+    "CY",
+    "CT",
+    "NT"
+   ],
+   "style": "opls",
+   "params": [
+    -0.3599,
+    2.5179,
+    2.3672,
+    0.0768
+   ],
+   "comment": "CAPS refit (QM), joint over 3 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CY-CY-CT-NT 0.25, HC-CY-CT-NT 0.28, NT-CT-CY-O$ 0.27 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CY-CY-CT-NT, HC-CY-CT-NT, NT-CT-CY-O$",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "NT-CT-CY-O$",
+   "match": [
+    "NT",
+    "CT",
+    "CY",
+    "O$"
+   ],
+   "style": "opls",
+   "params": [
+    0.0331,
+    1.4964,
+    4.7145,
+    -0.319
+   ],
+   "comment": "CAPS refit (QM), joint over 3 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CY-CY-CT-NT 0.25, HC-CY-CT-NT 0.28, NT-CT-CY-O$ 0.27 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CY-CY-CT-NT, HC-CY-CT-NT, NT-CT-CY-O$",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "CY-CY-CT-OS",
+   "match": [
+    "CY",
+    "CY",
+    "CT",
+    "OS"
+   ],
+   "style": "opls",
+   "params": [
+    -0.1156,
+    1.6412,
+    4.1661,
+    0.252
+   ],
+   "comment": "CAPS refit (QM), joint over 3 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CY-CY-CT-OS 0.17, HC-CY-CT-OS 0.13, O$-CY-CT-OS 0.19 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CY-CY-CT-OS, HC-CY-CT-OS, O$-CY-CT-OS",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "O$-CY-CT-OS",
+   "match": [
+    "O$",
+    "CY",
+    "CT",
+    "OS"
+   ],
+   "style": "opls",
+   "params": [
+    0.4348,
+    1.0925,
+    6.6616,
+    -0.015
+   ],
+   "comment": "CAPS refit (QM), joint over 3 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CY-CY-CT-OS 0.17, HC-CY-CT-OS 0.13, O$-CY-CT-OS 0.19 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "CY-CY-CT-OS, HC-CY-CT-OS, O$-CY-CT-OS",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "Cl-CT-CT-OH",
+   "match": [
+    "Cl",
+    "CT",
+    "CT",
+    "OH"
+   ],
+   "style": "opls",
+   "params": [
+    6.3814,
+    0.5007,
+    0.2468,
+    1.1109
+   ],
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS Cl-CT-CT-OH 1.00 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "Cl-CT-CT-OH",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "Cl-CT-CT-OS",
+   "match": [
+    "Cl",
+    "CT",
+    "CT",
+    "OS"
+   ],
+   "style": "opls",
+   "params": [
+    1.7256,
+    -1.4719,
+    0.7046,
+    -0.0418
+   ],
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS Cl-CT-CT-OS 0.23 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "Cl-CT-CT-OS",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "HC-CM-C-OH",
+   "match": [
+    "HC",
+    "CM",
+    "C",
+    "OH"
+   ],
+   "style": "opls",
+   "params": [
+    2.5498,
+    3.5812,
+    0.7051,
+    0.9314
+   ],
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS HC-CM-C-OH 0.07 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "HC-CM-C-OH",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "HC-CO-CT-HC",
+   "match": [
+    "HC",
+    "CO",
+    "CT",
+    "HC"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    -1.4326,
+    0.0
+   ],
+   "comment": "CAPS refit (QM), joint over 2 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS HC-CO-CT-HC 0.12, HC-CT-CO-OH 0.14 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "HC-CO-CT-HC, HC-CT-CO-OH",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "HC-CT-CO-OH",
+   "match": [
+    "HC",
+    "CT",
+    "CO",
+    "OH"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    1.831,
+    0.0
+   ],
+   "comment": "CAPS refit (QM), joint over 2 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS HC-CO-CT-HC 0.12, HC-CT-CO-OH 0.14 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "HC-CO-CT-HC, HC-CT-CO-OH",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "OH-CT-CO-OS",
+   "match": [
+    "OH",
+    "CT",
+    "CO",
+    "OS"
+   ],
+   "style": "opls",
+   "params": [
+    3.1483,
+    -1.1314,
+    0.3414,
+    -0.2398
+   ],
+   "comment": "CAPS refit (QM), joint over 3 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS HC-CO-CT-OH 0.38, OH-CO-CT-OH 0.47, OH-CT-CO-OS 0.40 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "HC-CO-CT-OH, OH-CO-CT-OH, OH-CT-CO-OS",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "OH-CO-CT-OS",
+   "match": [
+    "OH",
+    "CO",
+    "CT",
+    "OS"
+   ],
+   "style": "opls",
+   "params": [
+    6.1583,
+    -2.1286,
+    4.736,
+    0.5521
+   ],
+   "comment": "CAPS refit (QM), joint over 3 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS HC-CO-CT-OS 0.28, OH-CO-CT-OS 0.27, OS-CO-CT-OS 0.24 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "HC-CO-CT-OS, OH-CO-CT-OS, OS-CO-CT-OS",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "OS-CO-CT-OS",
+   "match": [
+    "OS",
+    "CO",
+    "CT",
+    "OS"
+   ],
+   "style": "opls",
+   "params": [
+    1.785,
+    -0.5561,
+    -2.6774,
+    -0.0435
+   ],
+   "comment": "CAPS refit (QM), joint over 3 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS HC-CO-CT-OS 0.28, OH-CO-CT-OS 0.27, OS-CO-CT-OS 0.24 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "HC-CO-CT-OS, OH-CO-CT-OS, OS-CO-CT-OS",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "NT-CT-CT-OS",
+   "match": [
+    "NT",
+    "CT",
+    "CT",
+    "OS"
+   ],
+   "style": "opls",
+   "params": [
+    5.534,
+    -2.4737,
+    1.3476,
+    -0.0199
+   ],
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS NT-CT-CT-OS 0.36 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "NT-CT-CT-OS",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "OH-C-CT-OH",
+   "match": [
+    "OH",
+    "C",
+    "CT",
+    "OH"
+   ],
+   "style": "opls",
+   "params": [
+    2.7741,
+    0.5532,
+    0.2967,
+    -0.0817
+   ],
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS OH-C-CT-OH 0.42 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "OH-C-CT-OH",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "OH-C-CT-OS",
+   "match": [
+    "OH",
+    "C",
+    "CT",
+    "OS"
+   ],
+   "style": "opls",
+   "params": [
+    1.4008,
+    2.4903,
+    -0.1372,
+    -0.644
+   ],
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS OH-C-CT-OS 0.64 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "OH-C-CT-OS",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "OH-CT-C-OS",
+   "match": [
+    "OH",
+    "CT",
+    "C",
+    "OS"
+   ],
+   "style": "opls",
+   "params": [
+    0.6666,
+    -1.1426,
+    2.1589,
+    -2.1952
+   ],
+   "comment": "CAPS fit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS OH-CT-C-OS 0.46 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "OH-CT-C-OS",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "OS-C-CT-OS",
+   "match": [
+    "OS",
+    "C",
+    "CT",
+    "OS"
+   ],
+   "style": "opls",
+   "params": [
+    0.7494,
+    1.9341,
+    0.8823,
+    -0.8161
+   ],
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS OS-C-CT-OS 0.58 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "OS-C-CT-OS",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "HC-CY-CT-NT",
+   "match": [
+    "HC",
+    "CY",
+    "CT",
+    "NT"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "comment": "CAPS fit (QM): zero; the heavy-atom torsions about the same bond carry the profile of a 24-point DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP scan of a 25-atom fragment (CY-CY-CT-NT, joint fit)",
+   "fit": {
+    "fragment": "CY-CY-CT-NT",
+    "zeroed": true,
+    "scan": []
+   }
+  }
+ ],
+ "notes": [
+  "optional overlay on oplsaa2024.json (caps ff apply --overlay oplsaa2024-dlpno.json); the base library keeps its own values, and the rubber backbone overlay (oplsaa2024-rubber-refit.json) can be loaded with it (they share no class)",
+  "65 torsion classes: the census's classes outside OPLS-AA 2024's published table (CAPS's earlier MP2 / machine-learned fits, and classes the table lacks), each scanned on its smallest sound census fragment; fit RMS at most 1.0 kcal/mol and every |V| at most 8 kcal/mol",
+  "held back, keeping oplsaa2024.json's values (refitted around them): C-CT-CT-NT (V1 of 10.5 kcal/mol in the first fit (an MM/QM electrostatics difference taken up by the torsion)); CA-CA-CY-O$ (V1 of 8.5 kcal/mol and RMS 1.11 in the first fit); OH-CO-CT-OH (V1 of 10.0 kcal/mol in the first fit); CO-OS-CO-OS (RMS 1.45 kcal/mol (polyoxymethylene acetal)); CO-OS-CO-HC (RMS 1.44 kcal/mol beside CO-OS-CO-OS); C-CT-OH-HO (the scan broke: a proton moved in 20 of 24 constrained optimisations (lactic acid)); OH-CT-C-OS (the scan broke: a proton moved in 14 of 24 constrained optimisations (lactic acid)); HC-CT-CT-NA (its DLPNO points (a 34-atom carbazole fragment) were still running); CA-NT-CT-CT (RMS 1.06 kcal/mol, above the 1.0 limit (a class OPLS-AA 2024 lacks; caps ff complete fills it per structure))",
+  "CAPS's own MACE model reproduces these DLPNO-CCSD(T) scans to 0.28 kcal/mol (median RMSE of the relative energies over 85 scans; bench/ff/mltrain/dlpno_library/mace_vs_dlpno.json)"
+ ]
+}
