@@ -3,12 +3,18 @@
 force field (the polymers' counterpart of liquid_validate.py).
 
     polymer_validate.py ID --ff FF.json --out DIR [--atoms 6000] [--dp 0] [--temp 298.15] [--scale 1] [--prod 1000000]
-                        [--threads 8] [--seed 1] [--overlay OV.json[,MORE.json]] [--json result.json]
+                        [--threads 8] [--seed 1] [--overlay OV.json[,MORE.json]]
+                        [--anneal T_MELT [--melt-ps 1000] [--hold-ps 400] [--step 25]] [--json result.json]
 
 build    chains of the library's repeat unit (data/polymers/library.json) grown with the force field's typing at
          0.5 g/cm3, as many as fit --atoms (DP from --dp, else about 20 repeat units a chain, at least 4 chains)
 equil    Larsen's 21-step compression/decompression protocol (caps equilibrate --protocol larsen21, --scale shortens
          every stage) ending at --temp and 1 atm
+anneal   (--anneal T_MELT) NPT at 1 atm: --melt-ps at T_MELT, then down to --temp in --step K steps of --hold-ps each
+         (25 K / 400 ps: 62.5 K/ns). A glass keeps the density of the temperature where it fell out of equilibrium, so
+         Larsen's quench (600 -> 300 K in about 60 ps) leaves it light (PMMA 1.083 g/cm3, against 1.10 from 125 K/ns steps);
+         each hold's density (last half) is reported, the melt holds against a melt PVT table separating force-field error
+         from cooling history
 prod     NPT at --temp and 1 atm (--prod steps, 1 fs, PME), frames every 10 ps
 result   density (mean and block error over the production run) and the cohesive energy density and Hildebrand
          solubility parameter delta = sqrt(CED) from the production frames (caps analyze --props density,ced,delta:
@@ -84,6 +90,29 @@ def main():
     eq = os.path.join(out, "equil.data")
     run([CAPS, "equilibrate", g, "-o", eq, "--protocol", "larsen21", "--tfinal", T, "--scale", arg("--scale", "1"),
          "--seed", seed, "--log", os.path.join(out, "equil.csv"), "--ff", ff] + ov, log)
+    holds = []
+    if arg("--anneal"):
+        tm, step = float(arg("--anneal")), float(arg("--step", "25"))
+        melt_ps, hold_ps = float(arg("--melt-ps", "1000")), float(arg("--hold-ps", "400"))
+        lines = [f"npt {melt_ps:g} ps T {tm:g} P 1 atm # melt {tm:g} K"]
+        t = tm - step
+        while t > float(T) + step / 2:   # the last step lands on --temp itself (325, 298.15 rather than 325, 300, 298.15)
+            lines.append(f"npt {hold_ps:g} ps T {t:g} P 1 atm # hold {t:g} K")
+            t -= step
+        lines.append(f"npt {hold_ps:g} ps T {float(T):g} P 1 atm # hold {float(T):g} K")
+        proto = os.path.join(out, "anneal.txt")
+        open(proto, "w").write("\n".join(lines) + "\n")
+        an = os.path.join(out, "annealed.data")
+        run([CAPS, "equilibrate", eq, "-o", an, "--protocol", proto, "--seed", seed, "--log", os.path.join(out, "anneal.csv"),
+             "--threads", threads, "--ff", ff] + ov, log)
+        # each stage's density over its last half: the melt holds for a PVT comparison, the glass line below Tg
+        rows_a = list(csv.DictReader(open(os.path.join(out, "anneal.csv"))))
+        for lab in dict.fromkeys(r["stage"] for r in rows_a):
+            v = [float(r["density_g_cm3"]) for r in rows_a if r["stage"] == lab]
+            m, e = block(v[len(v) // 2:])
+            holds.append({"stage": lab, "T": float(rows_a[[r["stage"] for r in rows_a].index(lab)]["target_K"]), "density": round(m, 4),
+                          "density_err": round(e, 4)})
+        eq = an
     prod = os.path.join(out, "prod.data")
     traj = os.path.join(out, "prod.lammpstrj")
     run([CAPS, "md", eq, "-o", prod, "--steps", arg("--prod", "1000000"), "--dt", "1", "--temp", T, "--thermostat", "bussi",
@@ -101,6 +130,9 @@ def main():
            "ced": props.get("ced", {}).get("value"), "ced_err": props.get("ced", {}).get("error"),
            "ced_unit": props.get("ced", {}).get("unit"), "delta": props.get("delta", {}).get("value"),
            "delta_err": props.get("delta", {}).get("error"), "delta_unit": props.get("delta", {}).get("unit")}
+    if holds:
+        res["anneal"] = {"t_melt": float(arg("--anneal")), "melt_ps": float(arg("--melt-ps", "1000")), "hold_ps": float(arg("--hold-ps", "400")),
+                         "step_K": float(arg("--step", "25")), "holds": holds}
     print(json.dumps(res))
     if arg("--json"):
         json.dump(res, open(arg("--json"), "w"), indent=1)
