@@ -27,7 +27,12 @@ class Potential {
   Potential(const Potential&) = delete;
   Potential& operator=(const Potential&) = delete;
   // a non-periodic molecule: atomic numbers and positions (Å). Throws when an element is outside the model's.
-  Result evaluate(const std::vector<int>& z, const std::vector<std::array<double, 3>>& pos) const;
+  Result evaluate(const std::vector<int>& z, const std::vector<std::array<double, 3>>& pos, bool fast = false) const;
+  // several molecules in one call of the model (one batched graph): far less overhead per molecule than one call each
+  std::vector<Result> evaluate_batch(const std::vector<std::vector<int>>& z,
+                                     const std::vector<std::vector<std::array<double, 3>>>& pos, bool fast = false) const;
+  // fast: the model in single precision (1.5x faster on a CPU; forces within 0.1 meV/A of double precision, the energy
+  // within a few meV absolute): for the steps of a relaxation, which only its forces drive
   double cutoff() const;                       // Å
   const std::vector<int>& elements() const;    // the atomic numbers the model was trained on
   bool covers(const std::vector<int>& z) const;
@@ -55,7 +60,7 @@ struct RelaxResult {
 // the value of a Hold's coordinate in a geometry (Å or radians; a dihedral in (-pi, pi])
 double hold_value(const Hold& h, const std::vector<std::array<double, 3>>& pos);
 
-// L-BFGS minimisation on the potential (ASE's settings) with each Hold kept exactly at its target (the force projected
+// L-BFGS minimisation on the potential (ASE's settings; the steps in single precision, the energy at the end in double) with each Hold kept exactly at its target (the force projected
 // off the held coordinates, the geometry brought back onto them after each step, as ASE's FixInternals does); stops when
 // no atom's projected force exceeds fmax eV/Å, or after max_steps. k is unused (kept for the signature).
 RelaxResult relax(const Potential& pot, const std::vector<int>& z, std::vector<std::array<double, 3>> pos,

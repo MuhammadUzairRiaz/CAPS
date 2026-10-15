@@ -350,7 +350,7 @@ const std::set<std::string>& known_options() {
     "--ops", "--ops-file", "--checkpoint-every", "--checkpoint", "--resume", "--resume-at", "--bench-json", "--resume-points", "--resume-curve", "--height", "--top-ratio", "--passivate", "--pattern", "--per-cycle", "--perspective", "--pfinal", "--pitch", "--pmax", "--pme",
     "--pme-order", "--pme-spacing", "--precision", "--press", "--pressure", "--primitive", "--print-protocol", "--probe", "--progress-file",
     "--props", "--protocol", "--ps", "--qdirect", "--qmax", "--quick", "--quiet", "--radius", "--ramp", "--rate",
-    "--ratio", "--repeats", "--report", "--rmax", "--salt", "--samples", "--scale", "--seed", "--sequence", "--sf",
+    "--ratio", "--batch", "--repeats", "--report", "--rmax", "--salt", "--samples", "--scale", "--seed", "--sequence", "--sf",
     "--shape", "--sites", "--size", "--skin", "--slabs", "--solvent", "--solvents", "--spring", "--step",
     "--steps", "--strain", "--stride", "--style", "--supercell", "--surface",
     "--symmetrize", "--table", "--tacticity", "--target", "--tau-p", "--tau-t", "--temp", "--template",
@@ -2239,6 +2239,20 @@ int main(int argc, char** argv) {
         for (int e : pot.elements()) std::fprintf(stderr, " %s", element(e).symbol);
         std::fprintf(stderr, "; this structure has others\n");
         return 3;
+      }
+      if (o.count("--repeats")) {
+        // caps ml eval FILE --repeats N [--batch K] [--threads T]: timing, N calls of K copies of the molecule each
+        const int reps = std::stoi(o["--repeats"]), k = o.count("--batch") ? std::stoi(o["--batch"]) : 1;
+        if (o.count("--threads")) caps::ml::set_threads(std::stoi(o["--threads"]));
+        std::vector<std::vector<int>> zb(k, z);
+        std::vector<std::vector<std::array<double, 3>>> pb(k, xyz);
+        (void)pot.evaluate_batch(zb, pb);   // warm-up (the first call compiles the graph)
+        const auto t0 = std::chrono::steady_clock::now();
+        double check = 0;
+        for (int r = 0; r < reps; ++r) check += pot.evaluate_batch(zb, pb).at(0).energy;
+        const double dt = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+        std::printf("batch %d: %.2f ms per call, %.2f ms per molecule (energy %.10f eV)\n", k, 1e3 * dt / reps, 1e3 * dt / (reps * k), check / reps);
+        return 0;
       }
       const auto r = pot.evaluate(z, xyz);
       double fmax = 0, frms = 0;
