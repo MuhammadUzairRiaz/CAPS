@@ -29,7 +29,8 @@ Potential::Potential(const std::string&) {
                            "-DTorch_DIR=<torch>/share/cmake/Torch to use the machine-learned potential");
 }
 Potential::~Potential() = default;
-Result Potential::evaluate(const std::vector<int>&, const std::vector<std::array<double, 3>>&) const { return {}; }
+Result Potential::evaluate(const std::vector<int>&, const std::vector<std::array<double, 3>>&, bool) const { return {}; }
+std::vector<Result> Potential::evaluate_batch(const std::vector<std::vector<int>>&, const std::vector<std::vector<std::array<double, 3>>>&, bool) const { return {}; }
 double Potential::cutoff() const { return 0; }
 const std::vector<int>& Potential::elements() const { static const std::vector<int> none; return none; }
 bool Potential::covers(const std::vector<int>&) const { return false; }
@@ -47,6 +48,8 @@ void set_threads(int n) {
 
 struct Potential::Impl {
   mutable torch::jit::Module module;
+  mutable torch::jit::Module single;   // the same model in single precision (made on first use)
+  mutable bool has_single = false;
   mutable std::mutex lock;    // one evaluation at a time: a TorchScript module is not reentrant
   double r_max = 0;
   std::vector<int> z;         // the model's elements, in its node_attrs order
@@ -54,6 +57,13 @@ struct Potential::Impl {
 };
 
 Potential::Potential(const std::string& path) : p_(std::make_unique<Impl>()) {
+  // libtorch's intra-op threads: 4 was fastest for fragments of 20-30 atoms on a 10-core Mac (76 ms a call, against 89 with
+  // 1 and 113 with 10); set_threads() before the first Potential overrides it
+  static const bool once = [] {
+    if (at::get_num_threads() > 4) at::set_num_threads(4);
+    return true;
+  }();
+  (void)once;
   try {
     p_->module = torch::jit::load(path, torch::kCPU);
   } catch (const std::exception& e) {
@@ -80,34 +90,59 @@ bool Potential::covers(const std::vector<int>& z) const {
   return true;
 }
 
-Result Potential::evaluate(const std::vector<int>& z, const std::vector<std::array<double, 3>>& pos) const {
-  const int64_t n = static_cast<int64_t>(z.size());
-  if (n == 0 || pos.size() != z.size()) throw std::runtime_error("ml::Potential: no atoms, or positions and elements differ in number");
-  if (!covers(z)) throw std::runtime_error("the machine-learned potential does not cover an element of this structure");
+Result Potential::evaluate(const std::vector<int>& z, const std::vector<std::array<double, 3>>& pos, bool fast) const {
+  return evaluate_batch({z}, {pos}, fast).at(0);
+}
+
+std::vector<Result> Potential::evaluate_batch(const std::vector<std::vector<int>>& zs,
+                                              const std::vector<std::vector<std::array<double, 3>>>& ps, bool fast) const {
+  const int64_t B = static_cast<int64_t>(zs.size());
+  if (B == 0) return {};
+  if (ps.size() != zs.size()) throw std::runtime_error("ml::Potential: as many position sets as element sets are needed");
+  int64_t n = 0;
+  for (int64_t g = 0; g < B; ++g) {
+    if (zs[g].empty() || zs[g].size() != ps[g].size()) throw std::runtime_error("ml::Potential: no atoms, or positions and elements differ in number");
+    if (!covers(zs[g])) throw std::runtime_error("the machine-learned potential does not cover an element of this structure");
+    n += static_cast<int64_t>(zs[g].size());
+  }
   const auto f64 = torch::TensorOptions().dtype(torch::kFloat64);
   const auto i64 = torch::TensorOptions().dtype(torch::kLong);
   const int64_t ne = static_cast<int64_t>(p_->z.size());
   auto positions = torch::empty({n, 3}, f64);
   auto node_attrs = torch::zeros({n, ne}, f64);
+  auto batch = torch::empty({n}, i64);
+  auto ptr = torch::empty({B + 1}, i64);
   auto pa = positions.accessor<double, 2>();
   auto na = node_attrs.accessor<double, 2>();
-  for (int64_t i = 0; i < n; ++i) {
-    for (int k = 0; k < 3; ++k) pa[i][k] = pos[i][k];
-    na[i][p_->index.at(z[i])] = 1.0;
-  }
-  // directed edges within the cutoff (all pairs: fragments are small)
+  auto ba = batch.accessor<int64_t, 1>();
+  auto pt = ptr.accessor<int64_t, 1>();
   std::vector<int64_t> snd, rcv;
   const double rc2 = p_->r_max * p_->r_max;
-  for (int64_t i = 0; i < n; ++i)
-    for (int64_t j = 0; j < n; ++j) {
-      if (i == j) continue;
-      double d2 = 0;
-      for (int k = 0; k < 3; ++k) d2 += (pos[i][k] - pos[j][k]) * (pos[i][k] - pos[j][k]);
-      if (d2 < rc2) {
-        snd.push_back(i);
-        rcv.push_back(j);
-      }
+  int64_t off = 0;
+  for (int64_t g = 0; g < B; ++g) {
+    pt[g] = off;
+    const auto& z = zs[g];
+    const auto& pos = ps[g];
+    const int64_t m = static_cast<int64_t>(z.size());
+    for (int64_t i = 0; i < m; ++i) {
+      for (int k = 0; k < 3; ++k) pa[off + i][k] = pos[i][k];
+      na[off + i][p_->index.at(z[i])] = 1.0;
+      ba[off + i] = g;
     }
+    // directed edges within the cutoff, all pairs (fragments are small)
+    for (int64_t i = 0; i < m; ++i)
+      for (int64_t j = 0; j < m; ++j) {
+        if (i == j) continue;
+        double d2 = 0;
+        for (int k = 0; k < 3; ++k) d2 += (pos[i][k] - pos[j][k]) * (pos[i][k] - pos[j][k]);
+        if (d2 < rc2) {
+          snd.push_back(off + i);
+          rcv.push_back(off + j);
+        }
+      }
+    off += m;
+  }
+  pt[B] = off;
   const int64_t e = static_cast<int64_t>(snd.size());
   auto edge_index = torch::empty({2, e}, i64);
   auto ea = edge_index.accessor<int64_t, 2>();
@@ -121,42 +156,57 @@ Result Potential::evaluate(const std::vector<int>& z, const std::vector<std::arr
   d.insert("edge_index", edge_index);
   d.insert("shifts", torch::zeros({e, 3}, f64));
   d.insert("unit_shifts", torch::zeros({e, 3}, f64));
-  d.insert("cell", torch::zeros({3, 3}, f64));
-  d.insert("rcell", torch::zeros({3, 3}, f64));
-  d.insert("volume", torch::zeros({1}, f64));
-  d.insert("pbc", torch::zeros({1, 3}, torch::TensorOptions().dtype(torch::kBool)));
-  d.insert("batch", torch::zeros({n}, i64));
-  d.insert("ptr", torch::tensor({int64_t(0), n}, i64));
-  d.insert("head", torch::zeros({1}, i64));
-  // labels and weights: unused in inference, expected by the compiled graph
-  d.insert("energy", torch::zeros({1}, f64));
+  d.insert("cell", torch::zeros({3 * B, 3}, f64));
+  d.insert("rcell", torch::zeros({3 * B, 3}, f64));
+  d.insert("volume", torch::zeros({B}, f64));
+  d.insert("pbc", torch::zeros({B, 3}, torch::TensorOptions().dtype(torch::kBool)));
+  d.insert("batch", batch);
+  d.insert("ptr", ptr);
+  d.insert("head", torch::zeros({B}, i64));
+  // labels and weights: unused in inference, expected by the compiled graph (one per molecule, or per atom)
+  d.insert("energy", torch::zeros({B}, f64));
   d.insert("forces", torch::zeros({n, 3}, f64));
-  d.insert("stress", torch::zeros({1, 3, 3}, f64));
-  d.insert("virials", torch::zeros({1, 3, 3}, f64));
-  d.insert("dipole", torch::zeros({1, 3}, f64));
-  d.insert("polarizability", torch::zeros({1, 3, 3}, f64));
+  d.insert("stress", torch::zeros({B, 3, 3}, f64));
+  d.insert("virials", torch::zeros({B, 3, 3}, f64));
+  d.insert("dipole", torch::zeros({B, 3}, f64));
+  d.insert("polarizability", torch::zeros({B, 3, 3}, f64));
   d.insert("charges", torch::zeros({n}, f64));
   d.insert("density_coefficients", torch::zeros({n, 1}, f64));
-  d.insert("total_charge", torch::zeros({1}, f64));
-  d.insert("total_spin", torch::ones({1}, f64));
-  d.insert("elec_temp", torch::zeros({1}, f64));
-  d.insert("fermi_level", torch::zeros({1}, f64));
-  d.insert("external_field", torch::zeros({1, 3}, f64));
+  d.insert("total_charge", torch::zeros({B}, f64));
+  d.insert("total_spin", torch::ones({B}, f64));
+  d.insert("elec_temp", torch::zeros({B}, f64));
+  d.insert("fermi_level", torch::zeros({B}, f64));
+  d.insert("external_field", torch::zeros({B, 3}, f64));
   for (const char* w : {"weight", "energy_weight", "forces_weight", "stress_weight", "virials_weight", "charges_weight"})
-    d.insert(w, torch::ones({1}, f64));
-  d.insert("dipole_weight", torch::ones({1, 3}, f64));
-  d.insert("polarizability_weight", torch::ones({1, 3, 3}, f64));
+    d.insert(w, torch::ones({B}, f64));
+  d.insert("dipole_weight", torch::ones({B, 3}, f64));
+  d.insert("polarizability_weight", torch::ones({B, 3, 3}, f64));
 
-  std::lock_guard<std::mutex> g(p_->lock);
+  std::lock_guard<std::mutex> lk(p_->lock);
+  torch::jit::Module* m = &p_->module;
+  if (fast) {
+    if (!p_->has_single) {
+      p_->single = p_->module.clone();
+      p_->single.to(torch::kFloat32);
+      p_->has_single = true;
+    }
+    m = &p_->single;
+    c10::Dict<std::string, torch::Tensor> d32;
+    for (const auto& kv : d) d32.insert(kv.key(), kv.value().scalar_type() == torch::kFloat64 ? kv.value().to(torch::kFloat32) : kv.value());
+    d = d32;
+  }
   std::vector<torch::jit::IValue> args{d, false, true};   // training = false, compute_force = true
-  auto out = p_->module.forward(args).toGenericDict();
-  Result r;
-  r.energy = out.at("energy").toTensor().item<double>();
+  auto out = m->forward(args).toGenericDict();
+  auto en = out.at("energy").toTensor().to(torch::kFloat64).contiguous();
   auto f = out.at("forces").toTensor().to(torch::kFloat64).contiguous();
+  auto eacc = en.accessor<double, 1>();
   auto fa = f.accessor<double, 2>();
-  r.forces.resize(n);
-  for (int64_t i = 0; i < n; ++i) r.forces[i] = {fa[i][0], fa[i][1], fa[i][2]};
-  return r;
+  std::vector<Result> res(B);
+  for (int64_t g = 0; g < B; ++g) {
+    res[g].energy = eacc[g];
+    for (int64_t i = pt[g]; i < pt[g + 1]; ++i) res[g].forces.push_back({fa[i][0], fa[i][1], fa[i][2]});
+  }
+  return res;
 }
 
 #endif
@@ -290,8 +340,8 @@ RelaxResult relax(const Potential& pot, const std::vector<int>& z, std::vector<s
     }
   };
   enforce(x);
-  auto force = [&](const std::vector<V>& at, double* e) {   // the projected force, flat
-    Result r = pot.evaluate(z, at);
+  auto force = [&](const std::vector<V>& at, double* e) {   // the projected force, flat (single precision steps)
+    Result r = pot.evaluate(z, at, true);
     *e = r.energy;
     std::vector<double> f = flat(r.forces);
     project(f, grads(at));
@@ -348,7 +398,8 @@ RelaxResult relax(const Potential& pot, const std::vector<int>& z, std::vector<s
     enforce(x);
     f = force(x, &e);
   }
-  out.energy = e;
+  out.energy = pot.evaluate(z, x).energy;   // the energy that is reported and fitted: double precision
+  (void)e;
   out.pos = x;
   for (const auto& h : holds) out.held.push_back(coordinate(h, x, nullptr));
   return out;
