@@ -422,6 +422,7 @@ CompleteReport complete_forcefield(const System& s, const FFDef& ff, const Compl
       const int lim = kind == "bond" ? 3 : 4;
       std::vector<std::vector<double>> A;
       std::vector<double> y, w;
+      std::vector<CompleteTerm::Point> pts;
       for (int st = -lim; st <= lim; ++st) {
         std::vector<Vec3> x = x0;
         if (kind == "bond") {   // both atoms moved half the change along the bond
@@ -448,6 +449,14 @@ CompleteReport complete_forcefield(const System& s, const FFDef& ff, const Compl
         A.push_back({s2, s1, 1.0});
         y.push_back(r.energy * kEvKcal - emm);
         w.push_back(1.0);
+        const double v = kind == "bond" ? norm(r.pos[fq[0]] - r.pos[fq[1]]) : angle(r.pos, fq[0], fq[1], fq[2]) * 180.0 / kPi;
+        pts.push_back({v, r.energy * kEvKcal, emm, r.converged});
+      }
+      {
+        double a = 1e300, b = 1e300;
+        for (const auto& p : pts) { a = std::min(a, p.e_ml); b = std::min(b, p.e_mm); }
+        for (auto& p : pts) { p.e_ml -= a; p.e_mm -= b; }
+        term.scan = pts;
       }
       // E = K sum (x - x0)^2 + const = K sum x^2 - 2 K x0 sum x + const
       const auto sol = lsq(A, y, w, {0, 0, 0});
@@ -533,28 +542,49 @@ CompleteReport complete_forcefield(const System& s, const FFDef& ff, const Compl
         near[i].insert(j);
         for (int k : fnb[j]) near[i].insert(k);
       }
+    // sequential scans round the full circle from the relaxed start, forward and backward: each point starts from the
+    // last relaxed one turned to the next angle (small turns, few clashes), and at each angle the lower of the two
+    // relaxed energies is kept, so a scan that followed one hydrogen-bond pattern past where another is lower does not
+    // leave a jump in the profile
     std::vector<std::vector<double>> A;
     std::vector<double> y, e_ml;
-    for (int t = -180; t < 180; t += opt.step) {
-      std::vector<Vec3> x = x0;
-      Vec3 axis = x[c] - x[b];
-      axis = axis * (1.0 / norm(axis));
-      const double delta = t * kPi / 180.0 - phi0;
-      for (int a : moving) x[a] = rotate(x[a], x[c], axis, sign * delta);
-      bool clash = false;
-      for (size_t i = 0; i < x.size() && !clash; ++i)
-        for (size_t j = i + 1; j < x.size(); ++j)
-          if (!near[i].count(static_cast<int>(j)) && norm(x[i] - x[j]) < 1.0) { clash = true; break; }
-      if (clash) continue;
-      ml::Hold h;
-      h.n = 4;
-      for (int k = 0; k < 4; ++k) h.idx[k] = quad[k];
-      const auto r = relaxed(f, x, {h});
+    std::vector<CompleteTerm::Point> pts;
+    std::vector<std::vector<double>> rows;
+    std::vector<double> ys;
+    const int npts = (360 + opt.step - 1) / opt.step;
+    std::vector<int> have(npts, 0);
+    std::vector<ml::RelaxResult> best(npts);
+    for (int dir : {1, -1}) {
+      std::vector<Vec3> last = x0;
+      for (int k = 0; k < npts; ++k) {
+        const int slot = ((dir * k) % npts + npts) % npts;
+        const double target = phi0 + dir * k * opt.step * kPi / 180.0;
+        std::vector<Vec3> x = last;
+        Vec3 axis = x[c] - x[b];
+        axis = axis * (1.0 / norm(axis));
+        const double delta = target - dihedral(x, quad[0], quad[1], quad[2], quad[3]);
+        for (int a : moving) x[a] = rotate(x[a], x[c], axis, sign * delta);
+        bool clash = false;
+        for (size_t i = 0; i < x.size() && !clash; ++i)
+          for (size_t j = i + 1; j < x.size(); ++j)
+            if (!near[i].count(static_cast<int>(j)) && norm(x[i] - x[j]) < 1.0) { clash = true; break; }
+        if (clash) continue;
+        ml::Hold h;
+        h.n = 4;
+        for (int q4 = 0; q4 < 4; ++q4) h.idx[q4] = quad[q4];
+        const auto r = relaxed(f, x, {h});
+        last = r.pos;
+        if (!have[slot] || r.energy < best[slot].energy) { best[slot] = r; have[slot] = 1; }
+      }
+    }
+    for (int slot = 0; slot < npts; ++slot) {
+      if (!have[slot]) continue;
+      const auto& r = best[slot];
       const double emm = mm_energy(f, ft, r.pos);
       std::vector<double> row;
-      for (const auto& k : group) {   // CAPS's OPLS form: 1/2 V1 (1 + cos) + 1/2 V2 (1 - cos 2) + 1/2 V3 (1 + cos 3) + 1/2 V4 (1 - cos 4)
+      for (const auto& kk : group) {   // CAPS's OPLS form: 1/2 V1 (1 + cos) + 1/2 V2 (1 - cos 2) + 1/2 V3 (1 + cos 3) + 1/2 V4 (1 - cos 4)
         double s1 = 0, s2 = 0, s3 = 0, s4 = 0;
-        for (const auto& o : occ[k]) {
+        for (const auto& o : occ[kk]) {
           const double p = dihedral(r.pos, o[0], o[1], o[2], o[3]);
           s1 += 0.5 * (1 + std::cos(p));
           s2 += 0.5 * (1 - std::cos(2 * p));
@@ -564,9 +594,23 @@ CompleteReport complete_forcefield(const System& s, const FFDef& ff, const Compl
         row.insert(row.end(), {s1, s2, s3, s4});
       }
       row.push_back(1.0);
-      A.push_back(row);
-      y.push_back(r.energy * kEvKcal - emm);
-      e_ml.push_back(r.energy * kEvKcal);
+      rows.push_back(row);
+      ys.push_back(r.energy * kEvKcal - emm);
+      pts.push_back({dihedral(r.pos, quad[0], quad[1], quad[2], quad[3]) * 180.0 / kPi, r.energy * kEvKcal, emm, r.converged});
+    }
+    {
+      double a0 = 1e300, b0 = 1e300;
+      for (const auto& p : pts) { a0 = std::min(a0, p.e_ml); b0 = std::min(b0, p.e_mm); }
+      for (size_t i = 0; i < pts.size(); ++i) {
+        pts[i].e_ml -= a0;
+        pts[i].e_mm -= b0;
+        pts[i].used = pts[i].e_ml <= opt.window && pts[i].e_mm <= opt.window;
+        if (pts[i].used) {
+          A.push_back(rows[i]);
+          y.push_back(ys[i]);
+          e_ml.push_back(pts[i].e_ml);
+        }
+      }
     }
     for (const auto& k : group) done.insert(k);
     if (A.size() < 6) {
@@ -578,7 +622,10 @@ CompleteReport complete_forcefield(const System& s, const FFDef& ff, const Compl
     const double emin = *std::min_element(e_ml.begin(), e_ml.end());
     std::vector<double> w;
     for (double e : e_ml) w.push_back(e - emin > 10 ? 0.2 : 1.0);
-    std::vector<double> ridge(A[0].size(), 0.001);
+    // classes about one bond share terms the scan cannot tell apart (their cos 3 phi terms are the same function when
+    // their dihedrals differ by 120 degrees): a ridge of 0.05 then splits them evenly, the smallest V that fit the
+    // profile; one class alone keeps a ridge of 0.001
+    std::vector<double> ridge(A[0].size(), group.size() > 1 ? 0.05 : 0.001);
     ridge.back() = 0;
     const auto sol = lsq(A, y, w, ridge);
     double rss = 0;
@@ -590,7 +637,7 @@ CompleteReport complete_forcefield(const System& s, const FFDef& ff, const Compl
     const double rms = std::sqrt(rss / static_cast<double>(A.size()));
     for (size_t g = 0; g < group.size(); ++g) {
       CompleteTerm term{"dihedral", group[g], "fitted", {sol[4 * g], sol[4 * g + 1], sol[4 * g + 2], sol[4 * g + 3]}, rms,
-                        static_cast<int>(A.size()), static_cast<int>(f.z.size()), ""};
+                        static_cast<int>(A.size()), static_cast<int>(f.z.size()), "", pts};
       if (rms > opt.torsion_rms_max) {
         term.status = "rejected";
         term.why = "a poor fit (RMS " + fmt(rms) + " kcal/mol)";
