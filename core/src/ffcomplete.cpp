@@ -6,9 +6,11 @@
 #include <array>
 #include <cmath>
 #include <map>
+#include <memory>
 #include <set>
 #include <sstream>
 #include <stdexcept>
+#include <thread>
 
 #include "caps/elements.hpp"
 #include "caps/field.hpp"
@@ -302,6 +304,7 @@ CompleteReport complete_forcefield(const System& s, const FFDef& ff, const Compl
   const Nb nb = neighbours(s.atoms.size(), s.bonds);
   const auto rings = small_rings(nb);
   ml::Potential pot(opt.model);
+  std::unique_ptr<ml::Potential> pot2;   // a second copy, for the backward torsion scan run alongside the forward one
   const std::string label = "CAPS MACE v1, " + opt.model.substr(opt.model.find_last_of("/\\") + 1);
 
   // one term per class, in fitting order (bonds, angles, dihedrals); other kinds are reported
@@ -552,9 +555,11 @@ CompleteReport complete_forcefield(const System& s, const FFDef& ff, const Compl
     std::vector<std::vector<double>> rows;
     std::vector<double> ys;
     const int npts = (360 + opt.step - 1) / opt.step;
-    std::vector<int> have(npts, 0);
-    std::vector<ml::RelaxResult> best(npts);
-    for (int dir : {1, -1}) {
+    // the two directions run at once, each with its own copy of the model
+    std::vector<std::vector<int>> have(2, std::vector<int>(npts, 0));
+    std::vector<std::vector<ml::RelaxResult>> got(2, std::vector<ml::RelaxResult>(npts));
+    if (!pot2) pot2 = std::make_unique<ml::Potential>(opt.model);
+    auto chain = [&](int dir, const ml::Potential& P, std::vector<int>& hv, std::vector<ml::RelaxResult>& gv) {
       std::vector<Vec3> last = x0;
       for (int k = 0; k < npts; ++k) {
         const int slot = ((dir * k) % npts + npts) % npts;
@@ -572,14 +577,20 @@ CompleteReport complete_forcefield(const System& s, const FFDef& ff, const Compl
         ml::Hold h;
         h.n = 4;
         for (int q4 = 0; q4 < 4; ++q4) h.idx[q4] = quad[q4];
-        const auto r = relaxed(f, x, {h});
+        h.target = ml::hold_value(h, x);
+        const auto r = ml::relax(P, f.z, x, {h}, opt.fmax, opt.max_steps);
         last = r.pos;
-        if (!have[slot] || r.energy < best[slot].energy) { best[slot] = r; have[slot] = 1; }
+        gv[slot] = r;
+        hv[slot] = 1;
       }
-    }
+    };
+    std::thread back([&] { chain(-1, *pot2, have[1], got[1]); });
+    chain(1, pot, have[0], got[0]);
+    back.join();
     for (int slot = 0; slot < npts; ++slot) {
-      if (!have[slot]) continue;
-      const auto& r = best[slot];
+      if (!have[0][slot] && !have[1][slot]) continue;
+      const int pick = !have[1][slot] ? 0 : !have[0][slot] ? 1 : (got[1][slot].energy < got[0][slot].energy ? 1 : 0);
+      const auto& r = got[pick][slot];
       const double emm = mm_energy(f, ft, r.pos);
       std::vector<double> row;
       for (const auto& kk : group) {   // CAPS's OPLS form: 1/2 V1 (1 + cos) + 1/2 V2 (1 - cos 2) + 1/2 V3 (1 + cos 3) + 1/2 V4 (1 - cos 4)
