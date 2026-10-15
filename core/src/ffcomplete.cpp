@@ -214,6 +214,8 @@ std::string join(const std::vector<std::string>& v) {
   return s;
 }
 
+double six(double x) { return std::round(x * 1e6) / 1e6; }   // coefficients are written to six decimals
+
 std::string fmt(double x, int p = 2) {
   char b[64];
   std::snprintf(b, sizeof b, "%.*f", p, x);
@@ -471,7 +473,7 @@ CompleteReport complete_forcefield(const System& s, const FFDef& ff, const Compl
       rule.name = join(m.classes);
       rule.match = m.classes;
       rule.style = "harmonic";
-      rule.params = {K, xv};
+      rule.params = {six(K), six(xv)};
       rule.comment = "CAPS ff complete (" + label + "): " + std::to_string(term.points) + "-point relaxed scan of the " + kind +
                      " in a " + std::to_string(term.fragment_atoms) + "-atom fragment, RMS " + fmt(term.rms) + " kcal/mol";
       (kind == "bond" ? ov.bonds : ov.angles).push_back(rule);
@@ -600,7 +602,7 @@ CompleteReport complete_forcefield(const System& s, const FFDef& ff, const Compl
       rule.name = join(group[g]);
       rule.match = group[g];
       rule.style = "opls";
-      rule.params = term.params;
+      rule.params = {six(term.params[0]), six(term.params[1]), six(term.params[2]), six(term.params[3])};
       rule.comment = "CAPS ff complete (" + label + "): " + std::to_string(term.points) + "-point relaxed scan about the " +
                      group[g][1] + "-" + group[g][2] + " bond in a " + std::to_string(term.fragment_atoms) + "-atom fragment, " +
                      std::to_string(group.size()) + " class(es) fitted together, RMS " + fmt(rms) + " kcal/mol";
