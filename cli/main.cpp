@@ -2313,6 +2313,17 @@ int main(int argc, char** argv) {
             e["points"] = Json(t.points);
             e["fragment_atoms"] = Json(t.fragment_atoms);
             if (!t.why.empty()) e["why"] = t.why;
+            Json sc = Json::array();
+            for (const auto& p : t.scan) {
+              Json q = Json::array();
+              q.push_back(Json(p.value));
+              q.push_back(Json(p.e_ml));
+              q.push_back(Json(p.e_mm));
+              q.push_back(Json(p.converged));
+              q.push_back(Json(p.used));
+              sc.push_back(q);
+            }
+            e["scan"] = sc;   // [value, E_model, E_MM without the term, converged, used in the fit], energies relative to their lowest
             terms.push_back(e);
           }
           Json mb = Json::array(), ma = Json::array();

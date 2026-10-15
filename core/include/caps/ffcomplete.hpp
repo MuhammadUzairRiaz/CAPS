@@ -26,6 +26,8 @@ struct CompleteOptions {
   int max_steps = 400;
   double torsion_rms_max = 1.0;   // kcal/mol: a poorer torsion fit is reported, not written
   double stretch_rms_max = 0.5;   // kcal/mol, bonds and angles
+  double window = 30.0;           // kcal/mol: a torsion point this far above its scan's lowest, in the model or in MM
+                                  // without the term, is a clash rather than the torsion's profile and is not fitted
 };
 
 struct CompleteTerm {
@@ -36,6 +38,10 @@ struct CompleteTerm {
   double rms = 0;                    // kcal/mol
   int points = 0, fragment_atoms = 0;
   std::string why;                   // for rejected / not_fitted
+  // the scan, point by point: the scanned value (Å or degrees), the model's energy and the MM energy without the term
+  // (kcal/mol, each relative to its own lowest point), the relaxation's convergence
+  struct Point { double value, e_ml, e_mm; bool converged; bool used = true; };   // used: in the fit (see window)
+  std::vector<Point> scan;
 };
 
 struct CompleteReport {
