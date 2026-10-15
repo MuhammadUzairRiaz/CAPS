@@ -11,10 +11,13 @@
 #include <fstream>
 #include <iterator>
 #include <iostream>
+#include <atomic>
 #include <map>
+#include <memory>
 #include <set>
 #include <sstream>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "caps/amber.hpp"
@@ -275,6 +278,7 @@ int usage() {
                "               [--no-relax] [--md-ps 0] [--temp 300] [--seed 1] [--fa 2 --fb 4 --ratio 1] [--list-templates] [--quiet]\n"
                "  caps ml eval FILE [--model M.model] [--json OUT.json]   energy (eV) and forces (eV/A) of a molecule from CAPS's\n"
                "               machine-learned potential (data/ml/caps-mace-v1.model; a build with -DCAPS_WITH_TORCH=ON)\n"
+               "  caps ml relax JOBS.json -o OUT.json [--model M.model]   constrained relaxations (bonds / angles / dihedrals held)\n"
                "  caps ff import-lt FILE.lt -o FF.json          convert a moltemplate force field into the CAPS format\n"
                "  caps ff import-dlf LIB/NAME.par -o FF.json    convert a DL_FIELD library (.par + .sf + .bci)\n"
                "  caps ff info FF.json                           types, rules, styles, references\n"
@@ -515,6 +519,48 @@ void run_cutoff(EnergyOptions& e, const ForceField& ff, std::map<std::string, st
   e.cutoff = ff.native_cutoff > 0 ? ff.native_cutoff : 10.0;
   if (!quiet)
     std::printf("cut-off: %g Å (%s; --cutoff for another)\n", e.cutoff, ff.native_cutoff > 0 ? "the force field's own" : "the default, the force field gives none");
+}
+
+// one job of caps ml relax: {"elements", "positions", "hold", "fmax", "steps"} -> {"energy_ev", "positions", "held"
+// (A / degrees), "converged", "steps"} or {"error"}
+Json relax_job(const caps::ml::Potential& pot, const Json& job) {
+  Json r = Json::object();
+  try {
+    std::vector<int> z;
+    std::vector<std::array<double, 3>> xyz;
+    for (const Json& e : job["elements"].items()) z.push_back(element_from_symbol(e.str()));
+    for (const Json& p : job["positions"].items()) xyz.push_back({p[0].number(), p[1].number(), p[2].number()});
+    std::vector<caps::ml::Hold> holds;
+    if (job.has("hold"))
+      for (const Json& h : job["hold"].items()) {
+        caps::ml::Hold hd;
+        hd.n = static_cast<int>(h.size());
+        if (hd.n < 2 || hd.n > 4) throw std::runtime_error("a held coordinate has 2, 3 or 4 atoms");
+        for (int k = 0; k < hd.n; ++k) hd.idx[k] = static_cast<int>(h[k].number());
+        hd.target = caps::ml::hold_value(hd, xyz);
+        holds.push_back(hd);
+      }
+    const double fmax = job.has("fmax") ? job["fmax"].number() : 0.01;
+    const int steps = job.has("steps") ? static_cast<int>(job["steps"].number()) : 400;
+    const auto res = caps::ml::relax(pot, z, xyz, holds, fmax, steps);
+    r["energy_ev"] = res.energy;
+    Json ps = Json::array();
+    for (const auto& p : res.pos) {
+      Json v = Json::array();
+      for (double c : p) v.push_back(Json(c));
+      ps.push_back(v);
+    }
+    r["positions"] = ps;
+    Json hv = Json::array();
+    for (size_t k = 0; k < holds.size(); ++k)
+      hv.push_back(Json(holds[k].n == 2 ? res.held[k] : res.held[k] * 180.0 / M_PI));
+    r["held"] = hv;
+    r["converged"] = Json(res.converged);
+    r["steps"] = Json(static_cast<double>(res.steps));
+  } catch (const std::exception& e) {
+    r["error"] = std::string(e.what());
+  }
+  return r;
 }
 
 // caps run RECIPE.yaml: every stage on one line as it runs ([k/n] stage · detail · state, a bar while it works), or one
@@ -2138,12 +2184,45 @@ int main(int argc, char** argv) {
   if (cmd == "ml") {
     // caps ml eval FILE: CAPS's machine-learned potential on one molecule (non-periodic), natively through libtorch
     try {
-      if (pos.size() < 2 || pos[0] != "eval") return usage();
+      if (pos.size() < 2 || (pos[0] != "eval" && pos[0] != "relax")) return usage();
       std::string model = o.count("--model") ? o["--model"] : "";
       if (model.empty())
         for (const auto& r : caps_roots())
           if (!r.empty() && std::filesystem::exists(r + "/data/ml/caps-mace-v1.model")) { model = r + "/data/ml/caps-mace-v1.model"; break; }
       if (model.empty()) throw std::runtime_error("data/ml/caps-mace-v1.model not found: give --model");
+      if (pos[0] == "relax") {
+        // caps ml relax JOBS.json -o OUT.json: a batch of constrained relaxations in one process (the model loaded once).
+        // JOBS: {"jobs": [{"elements": ["C", ...], "positions": [[x, y, z], ...], "hold": [[i, j], [i, j, k], [i, j, k, l]],
+        // "fmax": 0.01, "steps": 400}]}, atoms 0-based; each held coordinate stays at its value in the given positions.
+        // OUT: {"model": ..., "results": [{"energy_ev", "positions", "held" (A / degrees), "converged", "steps"} | {"error"}]}
+        if (!o.count("-o")) return usage();
+        std::ifstream jf(pos[1]);
+        const Json jobs = Json::parse(std::string((std::istreambuf_iterator<char>(jf)), std::istreambuf_iterator<char>()));
+        const auto& list = jobs["jobs"].items();
+        // the jobs are independent: --threads N workers (default: the machine's cores, at most one per job), each with
+        // its own copy of the model and libtorch held to one thread, so the workers do not compete
+        int workers = o.count("--threads") ? std::stoi(o["--threads"]) : static_cast<int>(std::thread::hardware_concurrency());
+        workers = std::max(1, std::min<int>(workers, static_cast<int>(list.size())));
+        caps::ml::set_threads(workers > 1 ? 1 : 0);
+        std::vector<std::unique_ptr<caps::ml::Potential>> pots;
+        for (int w = 0; w < workers; ++w) pots.push_back(std::make_unique<caps::ml::Potential>(model));
+        std::vector<Json> rs(list.size());
+        std::atomic<size_t> next{0};
+        auto work = [&](int w) {
+          for (size_t i = next++; i < list.size(); i = next++) rs[i] = relax_job(*pots[w], list[i]);
+        };
+        std::vector<std::thread> pool;
+        for (int w = 1; w < workers; ++w) pool.emplace_back(work, w);
+        work(0);
+        for (auto& t : pool) t.join();
+        Json results = Json::array();
+        for (auto& r : rs) results.push_back(r);
+        Json out = Json::object();
+        out["model"] = model;
+        out["results"] = results;
+        std::ofstream(o["-o"]) << out.dump_exact(0) << "\n";
+        return 0;
+      }
       System s = load(pos[1], o);
       std::vector<int> z;
       std::vector<std::array<double, 3>> xyz;
