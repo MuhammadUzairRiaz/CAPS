@@ -3,7 +3,7 @@
     python -m caps.torsionfit prepare STRUCTURE[,STRUCTURE...] FF.json WORKDIR [--engine orca|psi4] [--step 15] [--radius 2]
                                     [--level oplsaa-l|dlpno] [--nprocs 1] [--classes A-B-C-D,... [--only]] [--hold-neighbours]
     python -m caps.torsionfit fill WORKDIR      (after collect: the points prepare skipped, from finished neighbours)
-    python -m caps.torsionfit fit WORKDIR [--out overlay.json] [--refit] [--ridge 0.5] [--joint]
+    python -m caps.torsionfit fit WORKDIR [--out overlay.json] [--refit] [--ridge 0.5] [--joint [--boltzmann T]]
     python -m caps.torsionfit collect WORKDIR
     python -m caps.torsionfit fit WORKDIR [--out overlay.json]
 
@@ -864,6 +864,16 @@ def fit():
                                      f"{len(pts)}-point {plan['level']} scan of a {len(s['elements'])}-atom fragment (RMS {rms:.2f} kcal/mol)",
                           "fit": {"fragment": s["dir"], "zeroed": True, "scan": []}})
             print(f"{'-'.join(k)}: zero (the heavy-atom torsions about this bond carry the profile)")
+    if joint and arg("--boltzmann"):
+        # --boltzmann T (K): points weighted by their Boltzmann factor at T from their absolute QM energy over every scan of
+        # the fit (floor 0.01, so the high wall still shapes the terms a little), not by their height within their own scan:
+        # where two torsions about neighbouring bonds couple through space (an anhydride's two acyl groups), no per-bond
+        # term fits every held state, and the fit should follow the conformers a liquid at T visits
+        RT = 0.0019872043 * float(arg("--boltzmann"))
+        e0 = min(q for j in joint for q in j["eqm"])
+        for j in joint:
+            j["w"] = [math.sqrt(max(math.exp(-(q - e0) / RT), 0.01)) for q in j["eqm"]]
+            j["e0"] = e0
     if joint:   # --joint: shared V1-V4 for every class over the scans that contain it, one constant per scan
         # scans linked through a shared class form one group, solved on its own with its own ridge: a single ill-posed
         # class (two torsions 180 deg apart about one bond) then cannot damp the well-defined classes of other scans
@@ -903,10 +913,14 @@ def fit():
                 if max(abs(v) for v in sol[nc:]) <= 10.0:
                     break
             rms_by = {}
+            low = []   # --boltzmann: the residuals of the points within 3 kcal/mol of the lowest QM point, every scan
             for n, j in enumerate(G):
                 idx = [i for i, row in enumerate(A) if row[n] == 1.0]
                 f = [sum(a * x for a, x in zip(A[i], sol)) for i in idx]
                 rms_by[j["dir"]] = math.sqrt(sum((f[t] - Y[i]) ** 2 for t, i in enumerate(idx)) / len(idx))
+                if "e0" in j:
+                    low += [f[t] - Y[i] for t, i in enumerate(idx) if j["eqm"][t] - j["e0"] <= 3.0]
+            rms_low = math.sqrt(sum(x * x for x in low) / len(low)) if low else None
             for m, k in enumerate(K):
                 V = [round(float(v), 4) for v in sol[nc + 4 * m: nc + 4 * m + 4]]
                 refit = k in forced
@@ -914,10 +928,13 @@ def fit():
                 rules.append({"name": "-".join(k), "match": [x.replace("*", "\\*") for x in k], "style": "opls", "params": V,
                               "comment": f"CAPS {'refit' if refit else 'fit'} (QM), joint over {len(dirs)} scans: {plan['level']}; RMS "
                                          + ", ".join(f"{d} {rms_by[d]:.2f}" for d in dirs) + " kcal/mol"
-                                         + (f"; ridge {lam:g}" if lam else ""),
+                                         + (f"; ridge {lam:g}" if lam else "")
+                                         + (f"; Boltzmann-weighted at {arg('--boltzmann')} K, RMS {rms_low:.2f} kcal/mol over the "
+                                            f"{len(low)} points within 3 kcal/mol of the lowest" if rms_low is not None else ""),
                               "fit": {"fragment": ", ".join(dirs), "joint": True, "scan": []}})
                 print(f"{'-'.join(k)} (joint, {len(dirs)} scans, ridge {lam:g}): V = {V}; RMS "
-                      + ", ".join(f"{d} {rms_by[d]:.2f}" for d in dirs))
+                      + ", ".join(f"{d} {rms_by[d]:.2f}" for d in dirs)
+                      + (f"; within 3 kcal/mol of the lowest point ({len(low)}): {rms_low:.2f}" if rms_low is not None else ""))
     if joint:   # the H-ended classes the heavy-atom torsions stand in for: zero, unless another scan fits them
         fitted_k = {tuple(r["match"]) for r in rules}
         for j in joint:
