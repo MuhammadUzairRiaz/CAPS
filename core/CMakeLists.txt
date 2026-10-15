@@ -1,5 +1,6 @@
 add_library(caps_core STATIC
   src/live.cpp
+  src/mlpot.cpp
   src/cluster_job.cpp
   src/elements.cpp
   src/labels.cpp
@@ -131,6 +132,12 @@ add_library(caps_core STATIC
 )
 target_include_directories(caps_core PUBLIC include)
 target_link_libraries(caps_core PUBLIC ZLIB::ZLIB Threads::Threads)
+# the machine-learned potential: only src/mlpot.cpp sees libtorch (its headers need C++20, as the rest of CAPS uses)
+if(CAPS_WITH_TORCH)
+  find_package(Torch REQUIRED)
+  target_link_libraries(caps_core PUBLIC ${TORCH_LIBRARIES})
+  set_source_files_properties(src/mlpot.cpp PROPERTIES COMPILE_DEFINITIONS CAPS_WITH_TORCH)
+endif()
 # the commit the build came from (caps --version, the Studio's check of a cluster's caps): -DCAPS_COMMIT=… for a source
 # archive, else git; a new commit re-runs the configure step through the files git updates
 if(NOT CAPS_COMMIT)
