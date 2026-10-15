@@ -56,6 +56,7 @@
 #include "caps/react.hpp"
 #include "caps/relax.hpp"
 #include "caps/render.hpp"
+#include "caps/ffcomplete.hpp"
 #include "caps/mlpot.hpp"
 #include "caps/provenance.hpp"
 #include "caps/recipe.hpp"
@@ -279,6 +280,8 @@ int usage() {
                "  caps ml eval FILE [--model M.model] [--json OUT.json]   energy (eV) and forces (eV/A) of a molecule from CAPS's\n"
                "               machine-learned potential (data/ml/caps-mace-v1.model; a build with -DCAPS_WITH_TORCH=ON)\n"
                "  caps ml relax JOBS.json -o OUT.json [--model M.model]   constrained relaxations (bonds / angles / dihedrals held)\n"
+               "  caps ff complete FILE --ff FF.json -o OVERLAY.json [--report R.json] [--model M.model] [--step 15]\n"
+               "               the bonded terms FF lacks for FILE, found and fitted with CAPS's machine-learned potential\n"
                "  caps ff import-lt FILE.lt -o FF.json          convert a moltemplate force field into the CAPS format\n"
                "  caps ff import-dlf LIB/NAME.par -o FF.json    convert a DL_FIELD library (.par + .sf + .bci)\n"
                "  caps ff info FF.json                           types, rules, styles, references\n"
@@ -2270,6 +2273,62 @@ int main(int argc, char** argv) {
     try {
       if (pos.empty()) return usage();
       const std::string sub = pos[0];
+      if (sub == "complete") {
+        // caps ff complete FILE --ff FF.json -o OVERLAY.json [--report REPORT.json] [--model M.model] [--step 15]: the
+        // bonded terms the force field lacks for FILE, found and fitted with CAPS's machine-learned potential
+        if (pos.size() < 2 || !o.count("--ff") || !o.count("-o")) return usage();
+        std::string model = o.count("--model") ? o["--model"] : "";
+        if (model.empty())
+          for (const auto& r : caps_roots())
+            if (!r.empty() && std::filesystem::exists(r + "/data/ml/caps-mace-v1.model")) { model = r + "/data/ml/caps-mace-v1.model"; break; }
+        if (model.empty()) throw std::runtime_error("data/ml/caps-mace-v1.model not found: give --model");
+        System s = load(pos[1], o);
+        FFDef ff = load_forcefield(ff_path(o["--ff"]));
+        CompleteOptions co;
+        co.model = model;
+        if (o.count("--step")) co.step = std::stoi(o["--step"]);
+        const auto rep = complete_forcefield(s, ff, co, [](const std::string& m) { std::printf("%s\n", m.c_str()); std::fflush(stdout); });
+        save_forcefield(rep.overlay, o["-o"]);
+        int fitted = 0;
+        for (const auto& t : rep.terms) fitted += t.status == "fitted";
+        std::printf("%s: %zu missing before, %d fitted, %zu missing after; complete %s\nwrote %s\n", ff.name.c_str(),
+                    rep.missing_before.size(), fitted, rep.missing_after.size(), rep.complete ? "yes" : "no", o["-o"].c_str());
+        for (const auto& t : rep.terms)
+          if (t.status != "fitted") {
+            std::string c;
+            for (size_t k = 0; k < t.classes.size(); ++k) c += (k ? "-" : "") + t.classes[k];
+            std::printf("  %s %s %s: %s\n", t.status.c_str(), t.kind.c_str(), c.c_str(), t.why.c_str());
+          }
+        if (o.count("--report")) {
+          Json j = Json::object(), terms = Json::array();
+          for (const auto& t : rep.terms) {
+            Json e = Json::object(), cl = Json::array(), pa = Json::array();
+            e["kind"] = t.kind;
+            for (const auto& c : t.classes) cl.push_back(Json(c));
+            e["classes"] = cl;
+            e["status"] = t.status;
+            for (double p : t.params) pa.push_back(Json(p));
+            e["params"] = pa;
+            e["rms_kcal"] = t.rms;
+            e["points"] = Json(t.points);
+            e["fragment_atoms"] = Json(t.fragment_atoms);
+            if (!t.why.empty()) e["why"] = t.why;
+            terms.push_back(e);
+          }
+          Json mb = Json::array(), ma = Json::array();
+          for (const auto& m : rep.missing_before) mb.push_back(Json(m));
+          for (const auto& m : rep.missing_after) ma.push_back(Json(m));
+          j["structure"] = pos[1];
+          j["forcefield"] = ff.name;
+          j["model"] = model;
+          j["missing_before"] = mb;
+          j["missing_after"] = ma;
+          j["terms"] = terms;
+          j["complete"] = Json(rep.complete);
+          std::ofstream(o["--report"]) << j.dump(1) << "\n";
+        }
+        return rep.complete ? 0 : 3;
+      }
       if (sub == "import-dlf") {
         // caps ff import-dlf LIB/PCFF.par [--sf LIB/PCFF.sf] [--bci LIB/PCFF.bci] -o FF.json (sf / bci found next to the .par by default)
         if (pos.size() < 2 || !o.count("-o")) return usage();
