@@ -1881,38 +1881,6 @@
   },
   {
    "match": [
-    "C",
-    "OS",
-    "C",
-    "CT"
-   ],
-   "params": [
-    9.0098,
-    6.4474,
-    -1.2903,
-    -0.5097
-   ],
-   "source": "CAPS fit (QM)",
-   "reason": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS C-OS-C-CT 1.13, C-OS-C-O 0.56 kcal/mol; ridge 0.001; fragment C-OS-C-CT, C-OS-C-O"
-  },
-  {
-   "match": [
-    "C",
-    "OS",
-    "C",
-    "O"
-   ],
-   "params": [
-    6.1462,
-    2.5919,
-    -2.2231,
-    0.5649
-   ],
-   "source": "CAPS fit (QM)",
-   "reason": "CAPS fit (QM), joint over 2 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS C-OS-C-CT 1.13, C-OS-C-O 0.56 kcal/mol; ridge 0.001; fragment C-OS-C-CT, C-OS-C-O"
-  },
-  {
-   "match": [
     "CM",
     "C",
     "CT",
@@ -2710,6 +2678,38 @@
    ],
    "source": "the 2024 file's CT-CT-CT-S (BOSS type 052, sulfide all-atom, Met OPLS-AA/M)",
    "reason": "by_analogy: no S-CT-CT-S in the file; a C-C bond with a sulfide S on each carbon (vicinal sulfuration in a sulfur-cured diene) takes the C-C-C-S function; wants a QM scan"
+  },
+  {
+   "match": [
+    "C",
+    "OS",
+    "C",
+    "CT"
+   ],
+   "params": [
+    -4.5489,
+    4.934,
+    -0.1813,
+    -0.7978
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 4 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS C-OS-C-CT_hold180 0.33, C-OS-C-O_hold180 0.34, C-OS-C-CT_hold0 3.38, C-OS-C-O_hold0 3.37 kcal/mol; ridge 0.001; Boltzmann-weighted at 298 K, RMS 0.36 kcal/mol over the 62 points within 3 kcal/mol of the lowest; fragment C-OS-C-CT_hold180, C-OS-C-O_hold180, C-OS-C-CT_hold0, C-OS-C-O_hold0"
+  },
+  {
+   "match": [
+    "C",
+    "OS",
+    "C",
+    "O"
+   ],
+   "params": [
+    -2.4982,
+    -1.341,
+    -0.5479,
+    1.7555
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 4 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS C-OS-C-CT_hold180 0.33, C-OS-C-O_hold180 0.34, C-OS-C-CT_hold0 3.38, C-OS-C-O_hold0 3.37 kcal/mol; ridge 0.001; Boltzmann-weighted at 298 K, RMS 0.36 kcal/mol over the 62 points within 3 kcal/mol of the lowest; fragment C-OS-C-CT_hold180, C-OS-C-O_hold180, C-OS-C-CT_hold0, C-OS-C-O_hold0"
   }
  ],
  "charge_corrections": [
