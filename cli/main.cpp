@@ -11,10 +11,13 @@
 #include <fstream>
 #include <iterator>
 #include <iostream>
+#include <atomic>
 #include <map>
+#include <memory>
 #include <set>
 #include <sstream>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "caps/amber.hpp"
@@ -53,6 +56,8 @@
 #include "caps/react.hpp"
 #include "caps/relax.hpp"
 #include "caps/render.hpp"
+#include "caps/ffcomplete.hpp"
+#include "caps/mlpot.hpp"
 #include "caps/provenance.hpp"
 #include "caps/recipe.hpp"
 #include "caps/yaml.hpp"
@@ -272,6 +277,11 @@ int usage() {
                "  caps contacts FILE [--tol 2.0] [--no-pbc] [--molecule-size N]   smallest distance between atoms of different molecules\n"
                "  caps react   FILE -o OUT [--template NAME|FILE.txt ...] [--capture Å] [--per-cycle 10] [--cycles 100] [--target 1.0]\n"
                "               [--no-relax] [--md-ps 0] [--temp 300] [--seed 1] [--fa 2 --fb 4 --ratio 1] [--list-templates] [--quiet]\n"
+               "  caps ml eval FILE [--model M.model] [--json OUT.json]   energy (eV) and forces (eV/A) of a molecule from CAPS's\n"
+               "               machine-learned potential (data/ml/caps-mace-v1.model; a build with -DCAPS_WITH_TORCH=ON)\n"
+               "  caps ml relax JOBS.json -o OUT.json [--model M.model]   constrained relaxations (bonds / angles / dihedrals held)\n"
+               "  caps ff complete FILE --ff FF.json -o OVERLAY.json [--report R.json] [--model M.model] [--step 15]\n"
+               "               the bonded terms FF lacks for FILE, found and fitted with CAPS's machine-learned potential\n"
                "  caps ff import-lt FILE.lt -o FF.json          convert a moltemplate force field into the CAPS format\n"
                "  caps ff import-dlf LIB/NAME.par -o FF.json    convert a DL_FIELD library (.par + .sf + .bci)\n"
                "  caps ff info FF.json                           types, rules, styles, references\n"
@@ -340,7 +350,7 @@ const std::set<std::string>& known_options() {
     "--ops", "--ops-file", "--checkpoint-every", "--checkpoint", "--resume", "--resume-at", "--bench-json", "--resume-points", "--resume-curve", "--height", "--top-ratio", "--passivate", "--pattern", "--per-cycle", "--perspective", "--pfinal", "--pitch", "--pmax", "--pme",
     "--pme-order", "--pme-spacing", "--precision", "--press", "--pressure", "--primitive", "--print-protocol", "--probe", "--progress-file",
     "--props", "--protocol", "--ps", "--qdirect", "--qmax", "--quick", "--quiet", "--radius", "--ramp", "--rate",
-    "--ratio", "--repeats", "--report", "--rmax", "--salt", "--samples", "--scale", "--seed", "--sequence", "--sf",
+    "--ratio", "--batch", "--repeats", "--report", "--rmax", "--salt", "--samples", "--scale", "--seed", "--sequence", "--sf",
     "--shape", "--sites", "--size", "--skin", "--slabs", "--solvent", "--solvents", "--spring", "--step",
     "--steps", "--strain", "--stride", "--style", "--supercell", "--surface",
     "--symmetrize", "--table", "--tacticity", "--target", "--tau-p", "--tau-t", "--temp", "--template",
@@ -512,6 +522,48 @@ void run_cutoff(EnergyOptions& e, const ForceField& ff, std::map<std::string, st
   e.cutoff = ff.native_cutoff > 0 ? ff.native_cutoff : 10.0;
   if (!quiet)
     std::printf("cut-off: %g Å (%s; --cutoff for another)\n", e.cutoff, ff.native_cutoff > 0 ? "the force field's own" : "the default, the force field gives none");
+}
+
+// one job of caps ml relax: {"elements", "positions", "hold", "fmax", "steps"} -> {"energy_ev", "positions", "held"
+// (A / degrees), "converged", "steps"} or {"error"}
+Json relax_job(const caps::ml::Potential& pot, const Json& job) {
+  Json r = Json::object();
+  try {
+    std::vector<int> z;
+    std::vector<std::array<double, 3>> xyz;
+    for (const Json& e : job["elements"].items()) z.push_back(element_from_symbol(e.str()));
+    for (const Json& p : job["positions"].items()) xyz.push_back({p[0].number(), p[1].number(), p[2].number()});
+    std::vector<caps::ml::Hold> holds;
+    if (job.has("hold"))
+      for (const Json& h : job["hold"].items()) {
+        caps::ml::Hold hd;
+        hd.n = static_cast<int>(h.size());
+        if (hd.n < 2 || hd.n > 4) throw std::runtime_error("a held coordinate has 2, 3 or 4 atoms");
+        for (int k = 0; k < hd.n; ++k) hd.idx[k] = static_cast<int>(h[k].number());
+        hd.target = caps::ml::hold_value(hd, xyz);
+        holds.push_back(hd);
+      }
+    const double fmax = job.has("fmax") ? job["fmax"].number() : 0.01;
+    const int steps = job.has("steps") ? static_cast<int>(job["steps"].number()) : 400;
+    const auto res = caps::ml::relax(pot, z, xyz, holds, fmax, steps);
+    r["energy_ev"] = res.energy;
+    Json ps = Json::array();
+    for (const auto& p : res.pos) {
+      Json v = Json::array();
+      for (double c : p) v.push_back(Json(c));
+      ps.push_back(v);
+    }
+    r["positions"] = ps;
+    Json hv = Json::array();
+    for (size_t k = 0; k < holds.size(); ++k)
+      hv.push_back(Json(holds[k].n == 2 ? res.held[k] : res.held[k] * 180.0 / M_PI));
+    r["held"] = hv;
+    r["converged"] = Json(res.converged);
+    r["steps"] = Json(static_cast<double>(res.steps));
+  } catch (const std::exception& e) {
+    r["error"] = std::string(e.what());
+  }
+  return r;
 }
 
 // caps run RECIPE.yaml: every stage on one line as it runs ([k/n] stage · detail · state, a bar while it works), or one
@@ -2132,10 +2184,176 @@ int main(int argc, char** argv) {
       return 2;
     }
   }
+  if (cmd == "ml") {
+    // caps ml eval FILE: CAPS's machine-learned potential on one molecule (non-periodic), natively through libtorch
+    try {
+      if (pos.size() < 2 || (pos[0] != "eval" && pos[0] != "relax")) return usage();
+      std::string model = o.count("--model") ? o["--model"] : "";
+      if (model.empty())
+        for (const auto& r : caps_roots())
+          if (!r.empty() && std::filesystem::exists(r + "/data/ml/caps-mace-v1.model")) { model = r + "/data/ml/caps-mace-v1.model"; break; }
+      if (model.empty()) throw std::runtime_error("data/ml/caps-mace-v1.model not found: give --model");
+      if (pos[0] == "relax") {
+        // caps ml relax JOBS.json -o OUT.json: a batch of constrained relaxations in one process (the model loaded once).
+        // JOBS: {"jobs": [{"elements": ["C", ...], "positions": [[x, y, z], ...], "hold": [[i, j], [i, j, k], [i, j, k, l]],
+        // "fmax": 0.01, "steps": 400}]}, atoms 0-based; each held coordinate stays at its value in the given positions.
+        // OUT: {"model": ..., "results": [{"energy_ev", "positions", "held" (A / degrees), "converged", "steps"} | {"error"}]}
+        if (!o.count("-o")) return usage();
+        std::ifstream jf(pos[1]);
+        const Json jobs = Json::parse(std::string((std::istreambuf_iterator<char>(jf)), std::istreambuf_iterator<char>()));
+        const auto& list = jobs["jobs"].items();
+        // the jobs are independent: --threads N workers (default: the machine's cores, at most one per job), each with
+        // its own copy of the model and libtorch held to one thread, so the workers do not compete
+        int workers = o.count("--threads") ? std::stoi(o["--threads"]) : static_cast<int>(std::thread::hardware_concurrency());
+        workers = std::max(1, std::min<int>(workers, static_cast<int>(list.size())));
+        caps::ml::set_threads(workers > 1 ? 1 : 0);
+        std::vector<std::unique_ptr<caps::ml::Potential>> pots;
+        for (int w = 0; w < workers; ++w) pots.push_back(std::make_unique<caps::ml::Potential>(model));
+        std::vector<Json> rs(list.size());
+        std::atomic<size_t> next{0};
+        auto work = [&](int w) {
+          for (size_t i = next++; i < list.size(); i = next++) rs[i] = relax_job(*pots[w], list[i]);
+        };
+        std::vector<std::thread> pool;
+        for (int w = 1; w < workers; ++w) pool.emplace_back(work, w);
+        work(0);
+        for (auto& t : pool) t.join();
+        Json results = Json::array();
+        for (auto& r : rs) results.push_back(r);
+        Json out = Json::object();
+        out["model"] = model;
+        out["results"] = results;
+        std::ofstream(o["-o"]) << out.dump_exact(0) << "\n";
+        return 0;
+      }
+      System s = load(pos[1], o);
+      std::vector<int> z;
+      std::vector<std::array<double, 3>> xyz;
+      for (const auto& a : s.atoms) {
+        z.push_back(a.element);
+        xyz.push_back(a.pos);
+      }
+      caps::ml::Potential pot(model);
+      if (!pot.covers(z)) {
+        std::fprintf(stderr, "caps ml: the model covers only");
+        for (int e : pot.elements()) std::fprintf(stderr, " %s", element(e).symbol);
+        std::fprintf(stderr, "; this structure has others\n");
+        return 3;
+      }
+      if (o.count("--repeats")) {
+        // caps ml eval FILE --repeats N [--batch K] [--threads T]: timing, N calls of K copies of the molecule each
+        const int reps = std::stoi(o["--repeats"]), k = o.count("--batch") ? std::stoi(o["--batch"]) : 1;
+        if (o.count("--threads")) caps::ml::set_threads(std::stoi(o["--threads"]));
+        std::vector<std::vector<int>> zb(k, z);
+        std::vector<std::vector<std::array<double, 3>>> pb(k, xyz);
+        (void)pot.evaluate_batch(zb, pb);   // warm-up (the first call compiles the graph)
+        const auto t0 = std::chrono::steady_clock::now();
+        double check = 0;
+        for (int r = 0; r < reps; ++r) check += pot.evaluate_batch(zb, pb).at(0).energy;
+        const double dt = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+        std::printf("batch %d: %.2f ms per call, %.2f ms per molecule (energy %.10f eV)\n", k, 1e3 * dt / reps, 1e3 * dt / (reps * k), check / reps);
+        return 0;
+      }
+      const auto r = pot.evaluate(z, xyz);
+      double fmax = 0, frms = 0;
+      for (const auto& f : r.forces) {
+        const double m = std::sqrt(f[0] * f[0] + f[1] * f[1] + f[2] * f[2]);
+        fmax = std::max(fmax, m);
+        frms += m * m;
+      }
+      frms = std::sqrt(frms / std::max<size_t>(1, r.forces.size()));
+      std::printf("model       %s (cutoff %.1f A)\natoms       %zu\nenergy      %.10f eV\nforce       rms %.6f, max %.6f eV/A\n",
+                  model.c_str(), pot.cutoff(), z.size(), r.energy, frms, fmax);
+      if (o.count("--json")) {
+        Json j = Json::object();
+        j["model"] = model;
+        j["energy_ev"] = r.energy;
+        Json fs = Json::array();
+        for (const auto& f : r.forces) {
+          Json v = Json::array();
+          for (double c : f) v.push_back(Json(c));
+          fs.push_back(v);
+        }
+        j["forces_ev_per_a"] = fs;
+        std::ofstream(o["--json"]) << j.dump(1) << "\n";
+      }
+      return 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps ml: %s\n", e.what());
+      return 1;
+    }
+  }
   if (cmd == "ff") {
     try {
       if (pos.empty()) return usage();
       const std::string sub = pos[0];
+      if (sub == "complete") {
+        // caps ff complete FILE --ff FF.json -o OVERLAY.json [--report REPORT.json] [--model M.model] [--step 15]: the
+        // bonded terms the force field lacks for FILE, found and fitted with CAPS's machine-learned potential
+        if (pos.size() < 2 || !o.count("--ff") || !o.count("-o")) return usage();
+        std::string model = o.count("--model") ? o["--model"] : "";
+        if (model.empty())
+          for (const auto& r : caps_roots())
+            if (!r.empty() && std::filesystem::exists(r + "/data/ml/caps-mace-v1.model")) { model = r + "/data/ml/caps-mace-v1.model"; break; }
+        if (model.empty()) throw std::runtime_error("data/ml/caps-mace-v1.model not found: give --model");
+        System s = load(pos[1], o);
+        FFDef ff = load_forcefield(ff_path(o["--ff"]));
+        CompleteOptions co;
+        co.model = model;
+        if (o.count("--step")) co.step = std::stoi(o["--step"]);
+        const auto rep = complete_forcefield(s, ff, co, [](const std::string& m) { std::printf("%s\n", m.c_str()); std::fflush(stdout); });
+        save_forcefield(rep.overlay, o["-o"]);
+        int fitted = 0;
+        for (const auto& t : rep.terms) fitted += t.status == "fitted";
+        std::printf("%s: %zu missing before, %d fitted, %zu missing after; complete %s\nwrote %s\n", ff.name.c_str(),
+                    rep.missing_before.size(), fitted, rep.missing_after.size(), rep.complete ? "yes" : "no", o["-o"].c_str());
+        for (const auto& t : rep.terms)
+          if (t.status != "fitted") {
+            std::string c;
+            for (size_t k = 0; k < t.classes.size(); ++k) c += (k ? "-" : "") + t.classes[k];
+            std::printf("  %s %s %s: %s\n", t.status.c_str(), t.kind.c_str(), c.c_str(), t.why.c_str());
+          }
+        if (o.count("--report")) {
+          Json j = Json::object(), terms = Json::array();
+          for (const auto& t : rep.terms) {
+            Json e = Json::object(), cl = Json::array(), pa = Json::array();
+            e["kind"] = t.kind;
+            for (const auto& c : t.classes) cl.push_back(Json(c));
+            e["classes"] = cl;
+            e["status"] = t.status;
+            for (double p : t.params) pa.push_back(Json(p));
+            e["params"] = pa;
+            e["rms_kcal"] = t.rms;
+            e["points"] = Json(t.points);
+            e["fragment_atoms"] = Json(t.fragment_atoms);
+            if (!t.why.empty()) e["why"] = t.why;
+            Json sc = Json::array();
+            for (const auto& p : t.scan) {
+              Json q = Json::array();
+              q.push_back(Json(p.value));
+              q.push_back(Json(p.e_ml));
+              q.push_back(Json(p.e_mm));
+              q.push_back(Json(p.converged));
+              q.push_back(Json(p.used));
+              sc.push_back(q);
+            }
+            e["scan"] = sc;   // [value, E_model, E_MM without the term, converged, used in the fit], energies relative to their lowest
+            terms.push_back(e);
+          }
+          Json mb = Json::array(), ma = Json::array();
+          for (const auto& m : rep.missing_before) mb.push_back(Json(m));
+          for (const auto& m : rep.missing_after) ma.push_back(Json(m));
+          j["structure"] = pos[1];
+          j["forcefield"] = ff.name;
+          j["model"] = model;
+          j["missing_before"] = mb;
+          j["missing_after"] = ma;
+          j["terms"] = terms;
+          j["complete"] = Json(rep.complete);
+          std::ofstream(o["--report"]) << j.dump(1) << "\n";
+        }
+        return rep.complete ? 0 : 3;
+      }
       if (sub == "import-dlf") {
         // caps ff import-dlf LIB/PCFF.par [--sf LIB/PCFF.sf] [--bci LIB/PCFF.bci] -o FF.json (sf / bci found next to the .par by default)
         if (pos.size() < 2 || !o.count("-o")) return usage();

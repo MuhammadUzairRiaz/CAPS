@@ -14,6 +14,9 @@ option(CAPS_BUILD_TESTS "Build unit tests" ON)
 # Code for the build machine's own processor (-march=native, e.g. AVX2 / AVX-512 on a cluster node): faster MD there, but
 # the binary may not run on an older processor, so installers leave it off. Makes no difference on Apple silicon.
 option(CAPS_NATIVE "Optimise for the build machine's processor (not for installers)" OFF)
+# CAPS's machine-learned potential (data/ml) evaluated in the core through libtorch (caps ml, caps ff complete):
+# -DCAPS_WITH_TORCH=ON -DTorch_DIR=<torch>/share/cmake/Torch (a PyTorch install's, or a libtorch download's)
+option(CAPS_WITH_TORCH "Build the machine-learned potential (needs libtorch)" OFF)
 if(CAPS_NATIVE AND NOT MSVC)
   include(CheckCXXCompilerFlag)
   check_cxx_compiler_flag(-march=native CAPS_HAS_MARCH_NATIVE)
