@@ -53,6 +53,7 @@
 #include "caps/react.hpp"
 #include "caps/relax.hpp"
 #include "caps/render.hpp"
+#include "caps/mlpot.hpp"
 #include "caps/provenance.hpp"
 #include "caps/recipe.hpp"
 #include "caps/yaml.hpp"
@@ -272,6 +273,8 @@ int usage() {
                "  caps contacts FILE [--tol 2.0] [--no-pbc] [--molecule-size N]   smallest distance between atoms of different molecules\n"
                "  caps react   FILE -o OUT [--template NAME|FILE.txt ...] [--capture Å] [--per-cycle 10] [--cycles 100] [--target 1.0]\n"
                "               [--no-relax] [--md-ps 0] [--temp 300] [--seed 1] [--fa 2 --fb 4 --ratio 1] [--list-templates] [--quiet]\n"
+               "  caps ml eval FILE [--model M.model] [--json OUT.json]   energy (eV) and forces (eV/A) of a molecule from CAPS's\n"
+               "               machine-learned potential (data/ml/caps-mace-v1.model; a build with -DCAPS_WITH_TORCH=ON)\n"
                "  caps ff import-lt FILE.lt -o FF.json          convert a moltemplate force field into the CAPS format\n"
                "  caps ff import-dlf LIB/NAME.par -o FF.json    convert a DL_FIELD library (.par + .sf + .bci)\n"
                "  caps ff info FF.json                           types, rules, styles, references\n"
@@ -2130,6 +2133,58 @@ int main(int argc, char** argv) {
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps pack: %s\n", e.what());
       return 2;
+    }
+  }
+  if (cmd == "ml") {
+    // caps ml eval FILE: CAPS's machine-learned potential on one molecule (non-periodic), natively through libtorch
+    try {
+      if (pos.size() < 2 || pos[0] != "eval") return usage();
+      std::string model = o.count("--model") ? o["--model"] : "";
+      if (model.empty())
+        for (const auto& r : caps_roots())
+          if (!r.empty() && std::filesystem::exists(r + "/data/ml/caps-mace-v1.model")) { model = r + "/data/ml/caps-mace-v1.model"; break; }
+      if (model.empty()) throw std::runtime_error("data/ml/caps-mace-v1.model not found: give --model");
+      System s = load(pos[1], o);
+      std::vector<int> z;
+      std::vector<std::array<double, 3>> xyz;
+      for (const auto& a : s.atoms) {
+        z.push_back(a.element);
+        xyz.push_back(a.pos);
+      }
+      caps::ml::Potential pot(model);
+      if (!pot.covers(z)) {
+        std::fprintf(stderr, "caps ml: the model covers only");
+        for (int e : pot.elements()) std::fprintf(stderr, " %s", element(e).symbol);
+        std::fprintf(stderr, "; this structure has others\n");
+        return 3;
+      }
+      const auto r = pot.evaluate(z, xyz);
+      double fmax = 0, frms = 0;
+      for (const auto& f : r.forces) {
+        const double m = std::sqrt(f[0] * f[0] + f[1] * f[1] + f[2] * f[2]);
+        fmax = std::max(fmax, m);
+        frms += m * m;
+      }
+      frms = std::sqrt(frms / std::max<size_t>(1, r.forces.size()));
+      std::printf("model       %s (cutoff %.1f A)\natoms       %zu\nenergy      %.10f eV\nforce       rms %.6f, max %.6f eV/A\n",
+                  model.c_str(), pot.cutoff(), z.size(), r.energy, frms, fmax);
+      if (o.count("--json")) {
+        Json j = Json::object();
+        j["model"] = model;
+        j["energy_ev"] = r.energy;
+        Json fs = Json::array();
+        for (const auto& f : r.forces) {
+          Json v = Json::array();
+          for (double c : f) v.push_back(Json(c));
+          fs.push_back(v);
+        }
+        j["forces_ev_per_a"] = fs;
+        std::ofstream(o["--json"]) << j.dump(1) << "\n";
+      }
+      return 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps ml: %s\n", e.what());
+      return 1;
     }
   }
   if (cmd == "ff") {
