@@ -1,0 +1,1490 @@
+{
+ "summary": {
+  "caps_mace": {
+   "environments": 122,
+   "rmse_median": 0.154,
+   "rmse_p90": 0.408,
+   "rmse_max": 0.92,
+   "within_0.5": 117,
+   "within_1.0": 122,
+   "barrier_error_median": 0.143,
+   "barrier_error_max": 2.179
+  },
+  "aimnet2": {
+   "environments": 122,
+   "rmse_median": 0.349,
+   "rmse_p90": 0.634,
+   "rmse_max": 1.304,
+   "within_0.5": 90,
+   "within_1.0": 119,
+   "barrier_error_median": 0.385,
+   "barrier_error_max": 3.261
+  }
+ },
+ "environments": {
+  "env_dc1c75f40184": {
+   "points": 24,
+   "dft_barrier": 6.862,
+   "caps_mace": {
+    "rmse": 0.2463134325530451,
+    "barrier_error": -0.6639808963557332
+   },
+   "aimnet2": {
+    "rmse": 0.47640531555210575,
+    "barrier_error": -0.3820380462126636
+   }
+  },
+  "env_42cd718b4ff2": {
+   "points": 24,
+   "dft_barrier": 5.347,
+   "caps_mace": {
+    "rmse": 0.08732894739172588,
+    "barrier_error": -0.046107161145473086
+   },
+   "aimnet2": {
+    "rmse": 0.6016383570873197,
+    "barrier_error": 0.4415715680324057
+   }
+  },
+  "env_95ecebdbfe1b": {
+   "points": 24,
+   "dft_barrier": 7.815,
+   "caps_mace": {
+    "rmse": 0.3626524020526332,
+    "barrier_error": -0.7115129698512872
+   },
+   "aimnet2": {
+    "rmse": 0.3173290922736439,
+    "barrier_error": -0.29342425256038407
+   }
+  },
+  "env_cba4ce82fc10": {
+   "points": 24,
+   "dft_barrier": 5.8,
+   "caps_mace": {
+    "rmse": 0.38675642934621324,
+    "barrier_error": -0.40512286990027313
+   },
+   "aimnet2": {
+    "rmse": 0.3509699422869974,
+    "barrier_error": -0.7421683305351898
+   }
+  },
+  "env_0cf1542d30e7": {
+   "points": 24,
+   "dft_barrier": 9.598,
+   "caps_mace": {
+    "rmse": 0.1916638058395972,
+    "barrier_error": -0.267008530368134
+   },
+   "aimnet2": {
+    "rmse": 0.31251048300081197,
+    "barrier_error": -0.5646609271747476
+   }
+  },
+  "env_2356f4d62a46": {
+   "points": 24,
+   "dft_barrier": 4.66,
+   "caps_mace": {
+    "rmse": 0.19212535666825473,
+    "barrier_error": -0.11541275838073162
+   },
+   "aimnet2": {
+    "rmse": 0.3617097623956098,
+    "barrier_error": 0.30682267100461313
+   }
+  },
+  "env_daee8407ec74": {
+   "points": 24,
+   "dft_barrier": 5.719,
+   "caps_mace": {
+    "rmse": 0.23123743478831912,
+    "barrier_error": -0.6424136651242387
+   },
+   "aimnet2": {
+    "rmse": 0.8974567253286949,
+    "barrier_error": -2.103413842002086
+   }
+  },
+  "env_88b57f8b023d": {
+   "points": 24,
+   "dft_barrier": 8.035,
+   "caps_mace": {
+    "rmse": 0.25903057290050374,
+    "barrier_error": -0.39265066792351977
+   },
+   "aimnet2": {
+    "rmse": 0.3862945432673092,
+    "barrier_error": -0.6905770795727886
+   }
+  },
+  "env_a89b064bb807": {
+   "points": 24,
+   "dft_barrier": 2.882,
+   "caps_mace": {
+    "rmse": 0.06797627861582571,
+    "barrier_error": 0.10427054742558228
+   },
+   "aimnet2": {
+    "rmse": 0.18860279161334578,
+    "barrier_error": 0.28566266873770374
+   }
+  },
+  "env_b70ba49ee74d": {
+   "points": 24,
+   "dft_barrier": 3.943,
+   "caps_mace": {
+    "rmse": 0.12871197914416474,
+    "barrier_error": -0.0629180986296225
+   },
+   "aimnet2": {
+    "rmse": 0.6997226336983559,
+    "barrier_error": -0.7539812245173185
+   }
+  },
+  "env_b73060046316": {
+   "points": 24,
+   "dft_barrier": 7.322,
+   "caps_mace": {
+    "rmse": 0.28237553133130905,
+    "barrier_error": 0.0030327951138948706
+   },
+   "aimnet2": {
+    "rmse": 0.6325722958417968,
+    "barrier_error": 0.11722253531138449
+   }
+  },
+  "env_c477bf5d60fc": {
+   "points": 24,
+   "dft_barrier": 11.512,
+   "caps_mace": {
+    "rmse": 0.42066721950603564,
+    "barrier_error": -0.6418029299527781
+   },
+   "aimnet2": {
+    "rmse": 0.5159269152075167,
+    "barrier_error": -0.20207388230136125
+   }
+  },
+  "env_ca3030c4d0c9": {
+   "points": 24,
+   "dft_barrier": 11.329,
+   "caps_mace": {
+    "rmse": 0.26052760892510873,
+    "barrier_error": -0.35544634938350406
+   },
+   "aimnet2": {
+    "rmse": 0.4451447669418724,
+    "barrier_error": -0.1432617379216694
+   }
+  },
+  "env_d9f83e5e7970": {
+   "points": 24,
+   "dft_barrier": 8.965,
+   "caps_mace": {
+    "rmse": 0.3227897738030905,
+    "barrier_error": -0.5449499286374255
+   },
+   "aimnet2": {
+    "rmse": 0.6457664046476457,
+    "barrier_error": -0.8192925547102643
+   }
+  },
+  "env_c82c22e486f0": {
+   "points": 24,
+   "dft_barrier": 4.74,
+   "caps_mace": {
+    "rmse": 0.09306046768052512,
+    "barrier_error": -0.1682812415773176
+   },
+   "aimnet2": {
+    "rmse": 0.27100388974322376,
+    "barrier_error": -0.5289373788505642
+   }
+  },
+  "env_d693681fe756": {
+   "points": 24,
+   "dft_barrier": 4.587,
+   "caps_mace": {
+    "rmse": 0.11168939139813666,
+    "barrier_error": -0.19431897080301752
+   },
+   "aimnet2": {
+    "rmse": 0.332415366951462,
+    "barrier_error": 0.27959135254941003
+   }
+  },
+  "env_480f546df4ab": {
+   "points": 24,
+   "dft_barrier": 2.881,
+   "caps_mace": {
+    "rmse": 0.0793286213177143,
+    "barrier_error": 0.09923825711758649
+   },
+   "aimnet2": {
+    "rmse": 0.31323436878188643,
+    "barrier_error": -0.4065392108643717
+   }
+  },
+  "env_a435a71c2794": {
+   "points": 24,
+   "dft_barrier": 5.966,
+   "caps_mace": {
+    "rmse": 0.45965821212721514,
+    "barrier_error": -0.09776537549719944
+   },
+   "aimnet2": {
+    "rmse": 0.527279379934978,
+    "barrier_error": 0.11172491451768884
+   }
+  },
+  "env_7dc8791e9a25": {
+   "points": 24,
+   "dft_barrier": 7.426,
+   "caps_mace": {
+    "rmse": 0.23046317736864524,
+    "barrier_error": -0.2751490190827992
+   },
+   "aimnet2": {
+    "rmse": 0.4911508839565153,
+    "barrier_error": -0.588712517621123
+   }
+  },
+  "env_f5c2ca35810a": {
+   "points": 24,
+   "dft_barrier": 4.213,
+   "caps_mace": {
+    "rmse": 0.15417554453022925,
+    "barrier_error": -0.07921351485036077
+   },
+   "aimnet2": {
+    "rmse": 0.18670671451861162,
+    "barrier_error": -0.2518073808336889
+   }
+  },
+  "env_0a234bb18e84": {
+   "points": 24,
+   "dft_barrier": 6.366,
+   "caps_mace": {
+    "rmse": 0.13666715675610108,
+    "barrier_error": 0.15995584139843633
+   },
+   "aimnet2": {
+    "rmse": 0.18192481710771452,
+    "barrier_error": -0.12160047568448196
+   }
+  },
+  "env_417d8cf4e526": {
+   "points": 24,
+   "dft_barrier": 6.894,
+   "caps_mace": {
+    "rmse": 0.4896862202601907,
+    "barrier_error": -0.503175919993855
+   },
+   "aimnet2": {
+    "rmse": 0.5347543909315852,
+    "barrier_error": -1.325821384840383
+   }
+  },
+  "env_544ec8ae3855": {
+   "points": 24,
+   "dft_barrier": 2.468,
+   "caps_mace": {
+    "rmse": 0.020822297517344848,
+    "barrier_error": -0.028321261947984677
+   },
+   "aimnet2": {
+    "rmse": 0.10261325525068866,
+    "barrier_error": 0.034335723696263365
+   }
+  },
+  "env_78e9683cbca7": {
+   "points": 24,
+   "dft_barrier": 7.565,
+   "caps_mace": {
+    "rmse": 0.14673041113098573,
+    "barrier_error": -0.08330034895183314
+   },
+   "aimnet2": {
+    "rmse": 0.7874019526625793,
+    "barrier_error": -0.9050321963525789
+   }
+  },
+  "env_93bd9265b360": {
+   "points": 24,
+   "dft_barrier": 5.614,
+   "caps_mace": {
+    "rmse": 0.17259908153184278,
+    "barrier_error": -0.19452651500648788
+   },
+   "aimnet2": {
+    "rmse": 0.2586357525377237,
+    "barrier_error": -0.31728060237204847
+   }
+  },
+  "env_30b940013ae1": {
+   "points": 24,
+   "dft_barrier": 6.678,
+   "caps_mace": {
+    "rmse": 0.18859744807056475,
+    "barrier_error": -0.005399508690977939
+   },
+   "aimnet2": {
+    "rmse": 0.6339603639488612,
+    "barrier_error": -0.14936444485692224
+   }
+  },
+  "env_4a859192521f": {
+   "points": 24,
+   "dft_barrier": 6.384,
+   "caps_mace": {
+    "rmse": 0.3966888465903039,
+    "barrier_error": -0.9009276199322134
+   },
+   "aimnet2": {
+    "rmse": 0.46678997191178634,
+    "barrier_error": -0.07225255512351936
+   }
+  },
+  "env_9004abe96c43": {
+   "points": 24,
+   "dft_barrier": 14.549,
+   "caps_mace": {
+    "rmse": 0.12667003130298266,
+    "barrier_error": -0.054011963486766845
+   },
+   "aimnet2": {
+    "rmse": 0.2933864495179228,
+    "barrier_error": 0.35590164707447514
+   }
+  },
+  "env_90b3d4d2c21d": {
+   "points": 24,
+   "dft_barrier": 10.963,
+   "caps_mace": {
+    "rmse": 0.41067611076667415,
+    "barrier_error": -0.00017222970227770418
+   },
+   "aimnet2": {
+    "rmse": 0.7498507845327846,
+    "barrier_error": -0.1289899254308171
+   }
+  },
+  "env_bc1256fb56f8": {
+   "points": 24,
+   "dft_barrier": 6.353,
+   "caps_mace": {
+    "rmse": 0.23648993099091,
+    "barrier_error": -0.21249553375988217
+   },
+   "aimnet2": {
+    "rmse": 0.3494762384553092,
+    "barrier_error": -0.8008220658116887
+   }
+  },
+  "env_d2832eea76fb": {
+   "points": 24,
+   "dft_barrier": 2.548,
+   "caps_mace": {
+    "rmse": 0.007105369397806338,
+    "barrier_error": 0.0025682591862237203
+   },
+   "aimnet2": {
+    "rmse": 0.11681264967567405,
+    "barrier_error": -0.22385162046628748
+   }
+  },
+  "env_f039aa784278": {
+   "points": 24,
+   "dft_barrier": 7.674,
+   "caps_mace": {
+    "rmse": 0.062590788409637,
+    "barrier_error": 0.0989057772630213
+   },
+   "aimnet2": {
+    "rmse": 0.25495002721012344,
+    "barrier_error": -0.8301431091764062
+   }
+  },
+  "env_50933fb43b6e": {
+   "points": 24,
+   "dft_barrier": 8.288,
+   "caps_mace": {
+    "rmse": 0.17799488197215094,
+    "barrier_error": 0.22661184419300362
+   },
+   "aimnet2": {
+    "rmse": 0.4814869567610139,
+    "barrier_error": -0.5603019848007591
+   }
+  },
+  "env_67067e9f3caa": {
+   "points": 24,
+   "dft_barrier": 4.173,
+   "caps_mace": {
+    "rmse": 0.07899861713186423,
+    "barrier_error": -0.15961604527182072
+   },
+   "aimnet2": {
+    "rmse": 0.3313705351650081,
+    "barrier_error": -0.569140379781742
+   }
+  },
+  "env_9a5d495b9dc0": {
+   "points": 24,
+   "dft_barrier": 4.385,
+   "caps_mace": {
+    "rmse": 0.1870441545634334,
+    "barrier_error": -0.3115758311303578
+   },
+   "aimnet2": {
+    "rmse": 0.31439979392379996,
+    "barrier_error": 0.06815894647313403
+   }
+  },
+  "env_cec26652b421": {
+   "points": 24,
+   "dft_barrier": 4.761,
+   "caps_mace": {
+    "rmse": 0.101419923527395,
+    "barrier_error": -0.1344720662692982
+   },
+   "aimnet2": {
+    "rmse": 0.4440745052071389,
+    "barrier_error": -0.31247818464012855
+   }
+  },
+  "env_e5f8d8b21c02": {
+   "points": 24,
+   "dft_barrier": 5.831,
+   "caps_mace": {
+    "rmse": 0.05814506351576031,
+    "barrier_error": -0.1679405926703863
+   },
+   "aimnet2": {
+    "rmse": 0.5046665259831814,
+    "barrier_error": -1.0080264555797562
+   }
+  },
+  "env_0c37e24479ef": {
+   "points": 24,
+   "dft_barrier": 2.136,
+   "caps_mace": {
+    "rmse": 0.03703535041277389,
+    "barrier_error": -0.056892881949892615
+   },
+   "aimnet2": {
+    "rmse": 0.13403791472514678,
+    "barrier_error": 0.209335443817789
+   }
+  },
+  "env_16b76593c8eb": {
+   "points": 24,
+   "dft_barrier": 3.186,
+   "caps_mace": {
+    "rmse": 0.22626706623577847,
+    "barrier_error": 0.4141356643494465
+   },
+   "aimnet2": {
+    "rmse": 0.1975635892542352,
+    "barrier_error": 0.10932512761991031
+   }
+  },
+  "env_335182dc8504": {
+   "points": 24,
+   "dft_barrier": 23.092,
+   "caps_mace": {
+    "rmse": 0.3724064009159752,
+    "barrier_error": 0.3800997941731339
+   },
+   "aimnet2": {
+    "rmse": 1.2921321053460657,
+    "barrier_error": -3.260748592811403
+   }
+  },
+  "env_410ef48ef2a8": {
+   "points": 24,
+   "dft_barrier": 4.393,
+   "caps_mace": {
+    "rmse": 0.1287904839009332,
+    "barrier_error": 0.018364135133420056
+   },
+   "aimnet2": {
+    "rmse": 0.3946844101587952,
+    "barrier_error": -0.8670896497816241
+   }
+  },
+  "env_556ce5c18d9a": {
+   "points": 24,
+   "dft_barrier": 5.858,
+   "caps_mace": {
+    "rmse": 0.06277895844465714,
+    "barrier_error": -0.18045971608407996
+   },
+   "aimnet2": {
+    "rmse": 0.47319472030390086,
+    "barrier_error": -1.026949516879724
+   }
+  },
+  "env_58a91edc4e10": {
+   "points": 6,
+   "dft_barrier": 3.123,
+   "caps_mace": {
+    "rmse": 0.1472470590081517,
+    "barrier_error": -0.14416358691519493
+   },
+   "aimnet2": {
+    "rmse": 0.48153451004567116,
+    "barrier_error": -0.5857741632921103
+   }
+  },
+  "env_5969d5fd3eff": {
+   "points": 24,
+   "dft_barrier": 9.613,
+   "caps_mace": {
+    "rmse": 0.4878375010752495,
+    "barrier_error": 0.10455139445218009
+   },
+   "aimnet2": {
+    "rmse": 0.3432298794022253,
+    "barrier_error": -1.004412276268864
+   }
+  },
+  "env_5a6450d47cc5": {
+   "points": 24,
+   "dft_barrier": 6.766,
+   "caps_mace": {
+    "rmse": 0.1546871708161328,
+    "barrier_error": -0.024862262500745302
+   },
+   "aimnet2": {
+    "rmse": 0.35245013944499237,
+    "barrier_error": 0.28858052227825226
+   }
+  },
+  "env_633d90b64ebf": {
+   "points": 24,
+   "dft_barrier": 5.239,
+   "caps_mace": {
+    "rmse": 0.13595610266796623,
+    "barrier_error": -0.13958760163181072
+   },
+   "aimnet2": {
+    "rmse": 0.29395839907997506,
+    "barrier_error": -0.1423807806196944
+   }
+  },
+  "env_83d79efebc10": {
+   "points": 24,
+   "dft_barrier": 5.289,
+   "caps_mace": {
+    "rmse": 0.15900382069525548,
+    "barrier_error": -0.27106772188718864
+   },
+   "aimnet2": {
+    "rmse": 0.15993926026095487,
+    "barrier_error": -0.2830104894036811
+   }
+  },
+  "env_8471d0495620": {
+   "points": 24,
+   "dft_barrier": 5.791,
+   "caps_mace": {
+    "rmse": 0.2071072342163111,
+    "barrier_error": -0.3880523347622251
+   },
+   "aimnet2": {
+    "rmse": 0.22953848894922968,
+    "barrier_error": 0.26030621366782025
+   }
+  },
+  "env_95bbd4ae639b": {
+   "points": 24,
+   "dft_barrier": 3.427,
+   "caps_mace": {
+    "rmse": 0.025853200777727618,
+    "barrier_error": 0.0026521010191746797
+   },
+   "aimnet2": {
+    "rmse": 0.23533709190278843,
+    "barrier_error": 0.3497974600011866
+   }
+  },
+  "env_a4808522d54a": {
+   "points": 24,
+   "dft_barrier": 2.397,
+   "caps_mace": {
+    "rmse": 0.08862376836391359,
+    "barrier_error": -0.1510348835662163
+   },
+   "aimnet2": {
+    "rmse": 0.3426716097077669,
+    "barrier_error": -0.6161178457530228
+   }
+  },
+  "env_b7fffd25a887": {
+   "points": 24,
+   "dft_barrier": 6.211,
+   "caps_mace": {
+    "rmse": 0.1339621914207559,
+    "barrier_error": 0.12042471113659392
+   },
+   "aimnet2": {
+    "rmse": 0.32385184954606844,
+    "barrier_error": 0.6044903419120686
+   }
+  },
+  "env_c059d37c0481": {
+   "points": 6,
+   "dft_barrier": 4.048,
+   "caps_mace": {
+    "rmse": 0.2203742579129088,
+    "barrier_error": -0.1296213814441387
+   },
+   "aimnet2": {
+    "rmse": 0.9102967079003916,
+    "barrier_error": -1.4677491417940205
+   }
+  },
+  "env_cc1fa446de7a": {
+   "points": 24,
+   "dft_barrier": 4.984,
+   "caps_mace": {
+    "rmse": 0.10917442418093987,
+    "barrier_error": -0.04076650125949399
+   },
+   "aimnet2": {
+    "rmse": 0.4434938438949363,
+    "barrier_error": 0.28255937025236566
+   }
+  },
+  "env_df9b699658a8": {
+   "points": 24,
+   "dft_barrier": 5.272,
+   "caps_mace": {
+    "rmse": 0.09331918794245449,
+    "barrier_error": 0.02119484929096327
+   },
+   "aimnet2": {
+    "rmse": 0.2253839642649828,
+    "barrier_error": -0.6292499242516012
+   }
+  },
+  "env_e312809ed1ba": {
+   "points": 24,
+   "dft_barrier": 1.677,
+   "caps_mace": {
+    "rmse": 0.304147170840448,
+    "barrier_error": -0.45293078687129573
+   },
+   "aimnet2": {
+    "rmse": 0.6950021235126504,
+    "barrier_error": -0.6242111495623184
+   }
+  },
+  "env_ec98c045ebcc": {
+   "points": 24,
+   "dft_barrier": 11.894,
+   "caps_mace": {
+    "rmse": 0.920172575590143,
+    "barrier_error": -2.178649690754094
+   },
+   "aimnet2": {
+    "rmse": 0.5580564246576186,
+    "barrier_error": -0.19960918455958065
+   }
+  },
+  "env_ed7b0793915f": {
+   "points": 24,
+   "dft_barrier": 3.829,
+   "caps_mace": {
+    "rmse": 0.11723540955791707,
+    "barrier_error": 0.13515136799835448
+   },
+   "aimnet2": {
+    "rmse": 0.19137229769314687,
+    "barrier_error": 0.2784458429524843
+   }
+  },
+  "env_057314b09f5c": {
+   "points": 6,
+   "dft_barrier": 4.112,
+   "caps_mace": {
+    "rmse": 0.08659077972802288,
+    "barrier_error": -0.08407698127106134
+   },
+   "aimnet2": {
+    "rmse": 1.1453907242457653,
+    "barrier_error": -1.7459467125017896
+   }
+  },
+  "env_09fb1dd44c4a": {
+   "points": 24,
+   "dft_barrier": 5.062,
+   "caps_mace": {
+    "rmse": 0.2587183785855637,
+    "barrier_error": 0.08534402349356629
+   },
+   "aimnet2": {
+    "rmse": 0.690175840433618,
+    "barrier_error": -0.3394075875710323
+   }
+  },
+  "env_0bb1e57f3ec8": {
+   "points": 24,
+   "dft_barrier": 1.202,
+   "caps_mace": {
+    "rmse": 0.049014177032665376,
+    "barrier_error": 0.00709683745544476
+   },
+   "aimnet2": {
+    "rmse": 0.07281731049613002,
+    "barrier_error": 0.01237552542252196
+   }
+  },
+  "env_0c4f3a18f839": {
+   "points": 24,
+   "dft_barrier": 3.191,
+   "caps_mace": {
+    "rmse": 0.03530128300775542,
+    "barrier_error": 0.02306603206721025
+   },
+   "aimnet2": {
+    "rmse": 0.11133004403022877,
+    "barrier_error": -0.07392614920387697
+   }
+  },
+  "env_0c568fa19658": {
+   "points": 24,
+   "dft_barrier": 2.648,
+   "caps_mace": {
+    "rmse": 0.13141782101450783,
+    "barrier_error": 0.05064269133603938
+   },
+   "aimnet2": {
+    "rmse": 0.4037964891686277,
+    "barrier_error": -0.08471180880778162
+   }
+  },
+  "env_0df214687b16": {
+   "points": 24,
+   "dft_barrier": 6.693,
+   "caps_mace": {
+    "rmse": 0.22539402130464223,
+    "barrier_error": 0.08022152358369361
+   },
+   "aimnet2": {
+    "rmse": 0.25747071038774794,
+    "barrier_error": 0.04966996224603193
+   }
+  },
+  "env_10bc61659e8c": {
+   "points": 24,
+   "dft_barrier": 2.898,
+   "caps_mace": {
+    "rmse": 0.045629555655973944,
+    "barrier_error": -0.08422414244098197
+   },
+   "aimnet2": {
+    "rmse": 0.226067103824153,
+    "barrier_error": -0.3888559583964244
+   }
+  },
+  "env_1972cafdde92": {
+   "points": 24,
+   "dft_barrier": 9.806,
+   "caps_mace": {
+    "rmse": 0.41527773293266573,
+    "barrier_error": -0.13337738380540998
+   },
+   "aimnet2": {
+    "rmse": 0.5286329299068244,
+    "barrier_error": 1.198766572730948
+   }
+  },
+  "env_26380bb983e7": {
+   "points": 24,
+   "dft_barrier": 14.779,
+   "caps_mace": {
+    "rmse": 0.3348987688188601,
+    "barrier_error": 0.1677504930887146
+   },
+   "aimnet2": {
+    "rmse": 0.7099638209729177,
+    "barrier_error": -0.8054831678618637
+   }
+  },
+  "env_27da251129ac": {
+   "points": 24,
+   "dft_barrier": 7.566,
+   "caps_mace": {
+    "rmse": 0.3145262607433982,
+    "barrier_error": -0.5363587899893796
+   },
+   "aimnet2": {
+    "rmse": 0.4311943307773619,
+    "barrier_error": 0.6338635166016191
+   }
+  },
+  "env_28f4981c3230": {
+   "points": 24,
+   "dft_barrier": 5.855,
+   "caps_mace": {
+    "rmse": 0.13098915305779585,
+    "barrier_error": -0.04376766225056006
+   },
+   "aimnet2": {
+    "rmse": 0.3494308595272525,
+    "barrier_error": -0.624212276088052
+   }
+  },
+  "env_2b68fffddcf8": {
+   "points": 24,
+   "dft_barrier": 3.044,
+   "caps_mace": {
+    "rmse": 0.055092936483473735,
+    "barrier_error": 0.041738664569820116
+   },
+   "aimnet2": {
+    "rmse": 0.22660647537808676,
+    "barrier_error": 0.2295792465769999
+   }
+  },
+  "env_35dd8af50c35": {
+   "points": 24,
+   "dft_barrier": 12.798,
+   "caps_mace": {
+    "rmse": 0.16383719218685702,
+    "barrier_error": 0.2268727845669165
+   },
+   "aimnet2": {
+    "rmse": 0.3308545253011576,
+    "barrier_error": 0.4943554974943627
+   }
+  },
+  "env_3fbfa5795550": {
+   "points": 24,
+   "dft_barrier": 1.883,
+   "caps_mace": {
+    "rmse": 0.09939927887815982,
+    "barrier_error": 0.029283378390399406
+   },
+   "aimnet2": {
+    "rmse": 0.46785640516403887,
+    "barrier_error": 0.0055487949114247925
+   }
+  },
+  "env_4e0a732112b9": {
+   "points": 24,
+   "dft_barrier": 17.301,
+   "caps_mace": {
+    "rmse": 0.29816194714322747,
+    "barrier_error": 0.14200001232092063
+   },
+   "aimnet2": {
+    "rmse": 0.6200290965138421,
+    "barrier_error": -0.9120222464168712
+   }
+  },
+  "env_4e1bda62d6d5": {
+   "points": 24,
+   "dft_barrier": 4.44,
+   "caps_mace": {
+    "rmse": 0.12140932393570716,
+    "barrier_error": -0.05351082549805053
+   },
+   "aimnet2": {
+    "rmse": 0.29916718268399883,
+    "barrier_error": 0.25580635899437265
+   }
+  },
+  "env_523b1c1f2089": {
+   "points": 7,
+   "dft_barrier": 5.256,
+   "caps_mace": {
+    "rmse": 0.02415148214782159,
+    "barrier_error": 0.03315209985283385
+   },
+   "aimnet2": {
+    "rmse": 0.2704828386533343,
+    "barrier_error": -0.3523977928297741
+   }
+  },
+  "env_565d666ecac1": {
+   "points": 24,
+   "dft_barrier": 10.293,
+   "caps_mace": {
+    "rmse": 0.21051308195318214,
+    "barrier_error": -0.15945693655738857
+   },
+   "aimnet2": {
+    "rmse": 0.4362924542236564,
+    "barrier_error": -0.29596764007101584
+   }
+  },
+  "env_57a57a21f54f": {
+   "points": 24,
+   "dft_barrier": 3.884,
+   "caps_mace": {
+    "rmse": 0.060960259430152666,
+    "barrier_error": -0.09098394939132692
+   },
+   "aimnet2": {
+    "rmse": 0.2098808812967519,
+    "barrier_error": -0.4593290576066078
+   }
+  },
+  "env_5af58c043e23": {
+   "points": 24,
+   "dft_barrier": 12.055,
+   "caps_mace": {
+    "rmse": 0.4448804927391693,
+    "barrier_error": -1.1286630490044782
+   },
+   "aimnet2": {
+    "rmse": 0.4059357341286159,
+    "barrier_error": -0.8902912765827296
+   }
+  },
+  "env_5dc48572287e": {
+   "points": 24,
+   "dft_barrier": 7.785,
+   "caps_mace": {
+    "rmse": 0.30652075602373857,
+    "barrier_error": 0.25683558255714
+   },
+   "aimnet2": {
+    "rmse": 0.26249941089241713,
+    "barrier_error": 0.362038368031425
+   }
+  },
+  "env_67af89bbda0b": {
+   "points": 24,
+   "dft_barrier": 8.202,
+   "caps_mace": {
+    "rmse": 0.10381591058505232,
+    "barrier_error": 0.025205515932153588
+   },
+   "aimnet2": {
+    "rmse": 0.22286554046970083,
+    "barrier_error": -0.38918394408194334
+   }
+  },
+  "env_6d3d6732804e": {
+   "points": 24,
+   "dft_barrier": 5.785,
+   "caps_mace": {
+    "rmse": 0.04395355647131403,
+    "barrier_error": -0.05785316648763672
+   },
+   "aimnet2": {
+    "rmse": 0.2556927342397334,
+    "barrier_error": 0.5232147831999123
+   }
+  },
+  "env_6f38bd509332": {
+   "points": 24,
+   "dft_barrier": 7.371,
+   "caps_mace": {
+    "rmse": 0.08562823035706646,
+    "barrier_error": -0.1640276372454661
+   },
+   "aimnet2": {
+    "rmse": 0.317914840027058,
+    "barrier_error": -0.4607925485552897
+   }
+  },
+  "env_72b48d51be10": {
+   "points": 24,
+   "dft_barrier": 7.332,
+   "caps_mace": {
+    "rmse": 0.21014081711199062,
+    "barrier_error": -0.07384709915317078
+   },
+   "aimnet2": {
+    "rmse": 0.43989062451183514,
+    "barrier_error": -0.0722333134968629
+   }
+  },
+  "env_7740889d46ac": {
+   "points": 24,
+   "dft_barrier": 5.583,
+   "caps_mace": {
+    "rmse": 0.29590089296502825,
+    "barrier_error": -0.04967923653608519
+   },
+   "aimnet2": {
+    "rmse": 0.5489439695830296,
+    "barrier_error": 0.5934069197359166
+   }
+  },
+  "env_87d7cb3f6448": {
+   "points": 24,
+   "dft_barrier": 6.92,
+   "caps_mace": {
+    "rmse": 0.09383004961032375,
+    "barrier_error": -0.12323907242409682
+   },
+   "aimnet2": {
+    "rmse": 0.3094802621961371,
+    "barrier_error": -0.4472331150152504
+   }
+  },
+  "env_88d89253155c": {
+   "points": 24,
+   "dft_barrier": 6.237,
+   "caps_mace": {
+    "rmse": 0.2646403401896735,
+    "barrier_error": -0.29392653597190854
+   },
+   "aimnet2": {
+    "rmse": 0.27472982177975225,
+    "barrier_error": -0.3114509684458815
+   }
+  },
+  "env_8b4fddfc5223": {
+   "points": 24,
+   "dft_barrier": 5.011,
+   "caps_mace": {
+    "rmse": 0.19474778984393373,
+    "barrier_error": -0.395430366543561
+   },
+   "aimnet2": {
+    "rmse": 0.23262762858099728,
+    "barrier_error": -0.3736296663982248
+   }
+  },
+  "env_8c11f67b4b31": {
+   "points": 24,
+   "dft_barrier": 6.96,
+   "caps_mace": {
+    "rmse": 0.18475771807916985,
+    "barrier_error": -0.2331338511709511
+   },
+   "aimnet2": {
+    "rmse": 0.564705062643294,
+    "barrier_error": 0.5559902552897444
+   }
+  },
+  "env_920155433728": {
+   "points": 24,
+   "dft_barrier": 4.168,
+   "caps_mace": {
+    "rmse": 0.19052385799548777,
+    "barrier_error": -0.23864097769667802
+   },
+   "aimnet2": {
+    "rmse": 0.2689402011831824,
+    "barrier_error": 0.33644099358753987
+   }
+  },
+  "env_96b07fcfab91": {
+   "points": 24,
+   "dft_barrier": 6.755,
+   "caps_mace": {
+    "rmse": 0.1097430442129364,
+    "barrier_error": -0.1061503675702733
+   },
+   "aimnet2": {
+    "rmse": 0.4218484337632729,
+    "barrier_error": 0.4100694441042858
+   }
+  },
+  "env_9903589772db": {
+   "points": 24,
+   "dft_barrier": 9.755,
+   "caps_mace": {
+    "rmse": 0.2512587492074415,
+    "barrier_error": 0.15960946002923215
+   },
+   "aimnet2": {
+    "rmse": 0.30425414197998446,
+    "barrier_error": -0.9757806006918184
+   }
+  },
+  "env_9a20fad51428": {
+   "points": 24,
+   "dft_barrier": 7.895,
+   "caps_mace": {
+    "rmse": 0.1630357984270535,
+    "barrier_error": -0.2008679011839165
+   },
+   "aimnet2": {
+    "rmse": 0.2999909321812411,
+    "barrier_error": 0.3346428614077581
+   }
+  },
+  "env_a0af566528a8": {
+   "points": 24,
+   "dft_barrier": 8.969,
+   "caps_mace": {
+    "rmse": 0.1875981149166616,
+    "barrier_error": -0.3626597320000311
+   },
+   "aimnet2": {
+    "rmse": 0.17284696386769982,
+    "barrier_error": 0.08003531155608812
+   }
+  },
+  "env_a0b48ea1762a": {
+   "points": 24,
+   "dft_barrier": 5.554,
+   "caps_mace": {
+    "rmse": 0.1874754189171751,
+    "barrier_error": 0.167785517883698
+   },
+   "aimnet2": {
+    "rmse": 0.3684907580268666,
+    "barrier_error": -0.7665387484021355
+   }
+  },
+  "env_a4044449d78c": {
+   "points": 24,
+   "dft_barrier": 5.754,
+   "caps_mace": {
+    "rmse": 0.4096420688074712,
+    "barrier_error": -0.273234902446041
+   },
+   "aimnet2": {
+    "rmse": 0.4467078136288798,
+    "barrier_error": 0.7348397810485574
+   }
+  },
+  "env_aa2732a87bcc": {
+   "points": 24,
+   "dft_barrier": 6.467,
+   "caps_mace": {
+    "rmse": 0.5028300641008361,
+    "barrier_error": -0.7817704963906422
+   },
+   "aimnet2": {
+    "rmse": 0.43726524192679583,
+    "barrier_error": -0.7624177049322896
+   }
+  },
+  "env_ac65159e87b0": {
+   "points": 24,
+   "dft_barrier": 9.728,
+   "caps_mace": {
+    "rmse": 0.15385570182882657,
+    "barrier_error": -0.15823719291632976
+   },
+   "aimnet2": {
+    "rmse": 0.3259943745439869,
+    "barrier_error": 0.5608755505375136
+   }
+  },
+  "env_ad95c2ebcae2": {
+   "points": 24,
+   "dft_barrier": 2.661,
+   "caps_mace": {
+    "rmse": 0.09653646059914532,
+    "barrier_error": -0.06206204054137521
+   },
+   "aimnet2": {
+    "rmse": 0.16144097804571597,
+    "barrier_error": 0.06216190757621831
+   }
+  },
+  "env_ae2edf3a0f1f": {
+   "points": 24,
+   "dft_barrier": 5.825,
+   "caps_mace": {
+    "rmse": 0.7647567841394761,
+    "barrier_error": -1.1880857087539178
+   },
+   "aimnet2": {
+    "rmse": 0.5425718739172557,
+    "barrier_error": -0.5706536780506202
+   }
+  },
+  "env_b1c3bbe05bf2": {
+   "points": 24,
+   "dft_barrier": 0.89,
+   "caps_mace": {
+    "rmse": 0.09170726608849261,
+    "barrier_error": 0.1322458642100932
+   },
+   "aimnet2": {
+    "rmse": 0.23157795408763704,
+    "barrier_error": 0.2215447076579451
+   }
+  },
+  "env_bdf63dfddf26": {
+   "points": 24,
+   "dft_barrier": 8.723,
+   "caps_mace": {
+    "rmse": 0.08516489518000037,
+    "barrier_error": -0.10563738040250747
+   },
+   "aimnet2": {
+    "rmse": 0.5042136013317208,
+    "barrier_error": -0.9527261567052294
+   }
+  },
+  "env_c0a05b699a25": {
+   "points": 24,
+   "dft_barrier": 5.545,
+   "caps_mace": {
+    "rmse": 0.09182335929855477,
+    "barrier_error": -0.20918793757176068
+   },
+   "aimnet2": {
+    "rmse": 0.12956093552497586,
+    "barrier_error": 0.09228129360823356
+   }
+  },
+  "env_c2eadb23edc4": {
+   "points": 24,
+   "dft_barrier": 2.813,
+   "caps_mace": {
+    "rmse": 0.1451723936857532,
+    "barrier_error": 0.21650245250918543
+   },
+   "aimnet2": {
+    "rmse": 0.31872310632113454,
+    "barrier_error": 0.24116394170599387
+   }
+  },
+  "env_c5c2cc57a5a6": {
+   "points": 24,
+   "dft_barrier": 8.306,
+   "caps_mace": {
+    "rmse": 0.13583214339027333,
+    "barrier_error": -0.19160023660045233
+   },
+   "aimnet2": {
+    "rmse": 0.5773016395152848,
+    "barrier_error": -0.3272627674542887
+   }
+  },
+  "env_c841b555be2a": {
+   "points": 24,
+   "dft_barrier": 7.034,
+   "caps_mace": {
+    "rmse": 0.33900159898552584,
+    "barrier_error": -0.09006857520970346
+   },
+   "aimnet2": {
+    "rmse": 0.448917314105031,
+    "barrier_error": 0.41783100959617503
+   }
+  },
+  "env_cae6063ae32e": {
+   "points": 24,
+   "dft_barrier": 4.759,
+   "caps_mace": {
+    "rmse": 0.07275774793634816,
+    "barrier_error": -0.11168808879581515
+   },
+   "aimnet2": {
+    "rmse": 0.4685133908701027,
+    "barrier_error": -0.5857555758691824
+   }
+  },
+  "env_cc2f5e388535": {
+   "points": 24,
+   "dft_barrier": 1.135,
+   "caps_mace": {
+    "rmse": 0.042194126794397276,
+    "barrier_error": -0.06995688494216856
+   },
+   "aimnet2": {
+    "rmse": 0.1137311535235326,
+    "barrier_error": -0.06929719623755193
+   }
+  },
+  "env_cdbd99046785": {
+   "points": 24,
+   "dft_barrier": 6.295,
+   "caps_mace": {
+    "rmse": 0.1643557977598749,
+    "barrier_error": -0.09764732591083014
+   },
+   "aimnet2": {
+    "rmse": 0.40733225871666645,
+    "barrier_error": -0.30078416217274473
+   }
+  },
+  "env_cf1762f1295a": {
+   "points": 24,
+   "dft_barrier": 5.173,
+   "caps_mace": {
+    "rmse": 0.07314129768197913,
+    "barrier_error": 0.08401097674574132
+   },
+   "aimnet2": {
+    "rmse": 0.22049415813016676,
+    "barrier_error": 0.13063640545959743
+   }
+  },
+  "env_d1f0c7b67906": {
+   "points": 24,
+   "dft_barrier": 2.269,
+   "caps_mace": {
+    "rmse": 0.030850553615291446,
+    "barrier_error": -0.055425867378382065
+   },
+   "aimnet2": {
+    "rmse": 0.305736324723245,
+    "barrier_error": -0.18889276415265854
+   }
+  },
+  "env_d9c901e98a0c": {
+   "points": 24,
+   "dft_barrier": 15.266,
+   "caps_mace": {
+    "rmse": 0.7046181079869829,
+    "barrier_error": -0.24992146563779016
+   },
+   "aimnet2": {
+    "rmse": 1.3037148220161339,
+    "barrier_error": -1.2282224052814446
+   }
+  },
+  "env_d9c9b80d63c3": {
+   "points": 24,
+   "dft_barrier": 8.144,
+   "caps_mace": {
+    "rmse": 0.13665938660752758,
+    "barrier_error": -0.16486595037216567
+   },
+   "aimnet2": {
+    "rmse": 0.3321037617037321,
+    "barrier_error": 0.5243458821937406
+   }
+  },
+  "env_db0009104f36": {
+   "points": 24,
+   "dft_barrier": 7.939,
+   "caps_mace": {
+    "rmse": 0.23229034255034514,
+    "barrier_error": -0.3805803680126054
+   },
+   "aimnet2": {
+    "rmse": 0.5097554336307133,
+    "barrier_error": -0.6629388022490392
+   }
+  },
+  "env_dd2276fa4f36": {
+   "points": 24,
+   "dft_barrier": 7.877,
+   "caps_mace": {
+    "rmse": 0.5609169227516956,
+    "barrier_error": -0.3243771589091571
+   },
+   "aimnet2": {
+    "rmse": 0.5312396922857779,
+    "barrier_error": 0.8153732048172202
+   }
+  },
+  "env_ddee703187ef": {
+   "points": 24,
+   "dft_barrier": 17.301,
+   "caps_mace": {
+    "rmse": 0.23965871823639204,
+    "barrier_error": 0.3649903223398425
+   },
+   "aimnet2": {
+    "rmse": 0.5383015759609171,
+    "barrier_error": 0.993694047929921
+   }
+  },
+  "env_e3598787986c": {
+   "points": 24,
+   "dft_barrier": 6.614,
+   "caps_mace": {
+    "rmse": 0.27357759021302364,
+    "barrier_error": 0.07370853338382943
+   },
+   "aimnet2": {
+    "rmse": 0.583663086738024,
+    "barrier_error": -0.1906297122810381
+   }
+  },
+  "env_eb6713b38998": {
+   "points": 24,
+   "dft_barrier": 5.454,
+   "caps_mace": {
+    "rmse": 0.13761944378297555,
+    "barrier_error": 0.17635265877770223
+   },
+   "aimnet2": {
+    "rmse": 0.2743326754258576,
+    "barrier_error": -0.6242835600492107
+   }
+  },
+  "env_edd64959feac": {
+   "points": 24,
+   "dft_barrier": 4.935,
+   "caps_mace": {
+    "rmse": 0.11167061589103645,
+    "barrier_error": -0.24902149102016402
+   },
+   "aimnet2": {
+    "rmse": 0.18762203750161763,
+    "barrier_error": -0.31972584329961506
+   }
+  },
+  "env_f36d1c022c21": {
+   "points": 24,
+   "dft_barrier": 6.436,
+   "caps_mace": {
+    "rmse": 0.24744913945378114,
+    "barrier_error": -0.3224872415602844
+   },
+   "aimnet2": {
+    "rmse": 0.5188069935909964,
+    "barrier_error": -0.8460430878926868
+   }
+  },
+  "env_f40e2b5d9323": {
+   "points": 24,
+   "dft_barrier": 7.474,
+   "caps_mace": {
+    "rmse": 0.09844498202715697,
+    "barrier_error": -0.15951912922180966
+   },
+   "aimnet2": {
+    "rmse": 0.21774647711331876,
+    "barrier_error": -0.24123293551365776
+   }
+  },
+  "env_f5281ec7b6b0": {
+   "points": 24,
+   "dft_barrier": 6.257,
+   "caps_mace": {
+    "rmse": 0.09669137603355851,
+    "barrier_error": -0.14035573047707484
+   },
+   "aimnet2": {
+    "rmse": 0.4982485686752125,
+    "barrier_error": 0.5626854428221195
+   }
+  },
+  "env_f901ce57b5bb": {
+   "points": 24,
+   "dft_barrier": 2.426,
+   "caps_mace": {
+    "rmse": 0.06316759385617386,
+    "barrier_error": 0.07876816566183953
+   },
+   "aimnet2": {
+    "rmse": 0.06760993301292921,
+    "barrier_error": 0.1518566329558495
+   }
+  },
+  "env_fbcbe9931ba9": {
+   "points": 24,
+   "dft_barrier": 3.246,
+   "caps_mace": {
+    "rmse": 0.06927442581682962,
+    "barrier_error": -0.1350820321137851
+   },
+   "aimnet2": {
+    "rmse": 0.11671394978667425,
+    "barrier_error": 0.11924311810999733
+   }
+  }
+ }
+}
