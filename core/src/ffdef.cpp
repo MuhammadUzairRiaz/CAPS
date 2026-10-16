@@ -506,6 +506,8 @@ void save_forcefield(const FFDef& ff, const std::string& path) {
 std::vector<double> companion_charges(const System& s, const FFDef& def, const std::string& ff_path, std::string* note) {
   if (def.charge_increments_from.empty()) throw FFError(def.name + " names no force field for bond-increment charges");
   const std::filesystem::path src = std::filesystem::path(ff_path).parent_path() / def.charge_increments_from;
+  // a companion that is not installed beside the force field is no companion (CAPS ships no library it does not own)
+  if (!std::filesystem::exists(src)) throw FFError(def.name + "'s companion " + def.charge_increments_from + " is not installed");
   const FFDef other = load_forcefield(src.string());
   if (other.bond_increments.empty()) throw FFError(other.name + " has no bond increments");
   const TypingResult tr = assign_types(s, other);

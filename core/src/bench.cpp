@@ -851,12 +851,12 @@ void t15(BenchTable& t, const BenchOptions& o) {
 void t18(BenchTable& t, const BenchOptions& o) {
   step(o, "T18", "recipe", 0);
   Json r = Json::parse(R"({"recipe": 1, "name": "pbs", "build": {"polymer": {"units": ["[*]OCCCCOC(=O)CCC(=O)[*]"], "dp": 3, "chains": 1, "tacticity": "atactic", "sequence": "homopolymer"}},
-                         "grow": {"density": 0.1, "seed": 1}, "type": {"forcefield": "opls2005"}})");
+                         "grow": {"density": 0.1, "seed": 1}, "type": {"forcefield": "oplsaa2024"}})");
   RecipeOptions ro;
   ro.forcefield_dir = o.forcefields;
   const auto res = run_recipe(r, ro);
   const bool has_ff = res.field && res.field->charge.size() == res.system.atoms.size();
-  t.rows.push_back({{"polymer(forcefield = opls2005) keeps its force field", has_ff ? res.forcefield : "none", has_ff ? "pass" : "fail"}, has_ff ? "pass" : "fail"});
+  t.rows.push_back({{"polymer(forcefield = oplsaa2024) keeps its force field", has_ff ? res.forcefield : "none", has_ff ? "pass" : "fail"}, has_ff ? "pass" : "fail"});
   double dq = has_ff ? 0 : 1;
   if (has_ff)
     for (size_t i = 0; i < res.system.atoms.size(); ++i) dq = std::max(dq, std::fabs(res.system.atoms[i].charge - res.field->charge[i]));
@@ -866,8 +866,8 @@ void t18(BenchTable& t, const BenchOptions& o) {
   std::string label;
   for (const auto& st : res.manifest.steps)
     if (st.engine == "field.assign") label = st.summary;
-  const bool named = label.find("bond increments") != std::string::npos;
-  t.rows.push_back({{"OPLS 2005 charges named as bond increments", label, named ? "pass" : "fail"}, named ? "pass" : "fail"});
+  const bool named = label.find("charges from the force field") != std::string::npos;   // OPLS-AA 2024's own charges, said as such
+  t.rows.push_back({{"the provenance names the charges used", label, named ? "pass" : "fail"}, named ? "pass" : "fail"});
   t.note = "The issues reported with the PBS/PBSA/PBAT cells: export after polymer(forcefield=…) asked for a force field; the recipe and Field described one set of charges in two ways.";
 }
 }  // namespace
