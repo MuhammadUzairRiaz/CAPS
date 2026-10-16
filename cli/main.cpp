@@ -178,8 +178,8 @@ int usage() {
                "               diffusion: [--fit 0.2:0.5] [--viscosity ETA (mPa·s) --temp T (Yeh–Hummer finite-size correction)]\n"
                "               interfaces (zprofile, adhesion, interaction, orientation): [--surface 1-3,7 (molecule ids; 1)] [--axis x|y|z (z)] [--zbin 0.5]\n"
                "  caps elastic FILE [--topology DATA] [--method strain|fluct|fluct-run] [--configs N] [--strain 1e-4] [--temp T] [--ps 100] [--ff FF.json] [--json OUT]\n"
-               "  caps tensile DATA -o OUT.data [--axis x] [--rate 1e-3] [--strain 0.2] [--temp 300] [--fixed-lateral] [--ff FF.json] [--csv DIR]\n"
-               "  caps tg DATA -o OUT.data [--from 500 --to 200 --step 20 --ps 100] [--ff FF.json] [--csv DIR]   |   caps tg --fit TABLE.csv\n"
+               "  caps tensile DATA -o OUT.data [--axis x] [--rate 1e-3] [--strain 0.2] [--temp 300] [--fixed-lateral] [--precision mixed|double] [--ff FF.json] [--csv DIR]\n"
+               "  caps tg DATA -o OUT.data [--from 500 --to 200 --step 20 --ps 100] [--precision mixed|double] [--ff FF.json] [--csv DIR]   |   caps tg --fit TABLE.csv\n"
                "  caps frames  FILE OUT.lammpstrj|dcd|xyz|pdb|gro|trr [--topology DATA] [--first N] [--last N] [--stride N]   (read thinned)\n"
                "  caps convert FILE OUT.data|xyz|pdb|mol2|car|gro|sdf|cif|vasp|POSCAR [--topology DATA]   (.car: with its .mdf)\n"
                "  caps edit    FILE --ops 'OP ARGS; OP ARGS …' | --ops-file OPS.txt -o OUT   edits in order, atoms numbered from 1:\n"
@@ -711,7 +711,7 @@ void electrostatics(EnergyOptions& e, std::map<std::string, std::string>& o) {
   if (o.count("--dsf-alpha")) e.dsf_alpha = std::stod(o["--dsf-alpha"]);
 }
 
-// --precision mixed|double (MD and equilibration): plain pair terms in single precision with SIMD (the default), or all in
+// --precision mixed|double (MD, equilibration, Tg scans and tensile pulls): plain pair terms in single precision with SIMD (the default), or all in
 // double
 void precision(EnergyOptions& e, std::map<std::string, std::string>& o) {
   e.mixed = true;
@@ -2829,6 +2829,7 @@ int main(int argc, char** argv) {
       to.field = ff;
       if (o.count("--cutoff")) to.energy.cutoff = std::stod(o["--cutoff"]);
       electrostatics(to.energy, o);
+      precision(to.energy, o);
       if (o.count("--threads")) to.energy.threads = std::stoi(o["--threads"]);
       if (o.count("--axis")) to.axis = axis_of(o["--axis"]);
       if (o.count("--rate")) to.rate = std::stod(o["--rate"]);
@@ -2999,6 +3000,7 @@ int main(int argc, char** argv) {
       co.field = ff;
       if (o.count("--cutoff")) co.energy.cutoff = std::stod(o["--cutoff"]);
       electrostatics(co.energy, o);
+      precision(co.energy, o);
       if (o.count("--threads")) co.energy.threads = std::stoi(o["--threads"]);
       if (o.count("--from")) co.t_start = std::stod(o["--from"]);
       if (o.count("--to")) co.t_end = std::stod(o["--to"]);

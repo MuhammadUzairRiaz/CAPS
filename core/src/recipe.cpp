@@ -1145,6 +1145,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           CoolingOptions co;
           co.field = ff;
           co.energy = energy;
+          co.energy.mixed = true;   // MD in mixed precision, as the md step
           co.t_start = num(T, "t_start", co.t_start);
           co.t_end = num(T, "t_end", co.t_end);
           co.t_step = num(T, "t_step", co.t_step);
