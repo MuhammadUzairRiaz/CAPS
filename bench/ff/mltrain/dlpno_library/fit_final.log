@@ -3,7 +3,6 @@ C-CT-OH-HO: 20 point(s) left out, the optimised fragment broken: -165, -120, -10
 C-CT-OH-HO: 4 points finished, not fitted
 CA-CA-CY-O$: no missing torsion about this bond
 CO-OS-CO-OS: no missing torsion about this bond
-HC-CT-CT-NA: no missing torsion about this bond
 OH-CT-C-OS: 14 point(s) left out, the optimised fragment broken: -180, -60, -45, -30, -15, +0, +15, +45, +60, +75, +120, +135, +150, +165
 C-CT-CT-OS (joint, 1 scans, ridge 0.001): V = [-2.5523, 0.7563, -0.3926, -0.0449]; RMS C-CT-CT-OS 0.26
 C-CT-OS-C (joint, 1 scans, ridge 0.001): V = [-7.5514, 3.3026, 0.4486, -1.3815]; RMS C-CT-OS-C 0.77
@@ -47,7 +46,7 @@ CT-CO-OH-HO (joint, 1 scans, ridge 0.001): V = [-1.639, -0.5428, 0.887, 0.3987];
 HC-CO-OH-HO (joint, 2 scans, ridge 0.001): V = [-1.3114, 0.0643, 0.442, 0.5224]; RMS CT-CO-OH-HO 0.23, HC-CO-OH-HO 0.84
 CT-CT-CM-Cl (joint, 2 scans, ridge 0.001): V = [0.5442, -0.068, 1.4512, 0.0504]; RMS CT-CT-CM-Cl 0.04, Cl-CM-CT-HC 0.04
 CT-CT-CT-CY (joint, 1 scans, ridge 0.001): V = [0.6141, -0.0003, 1.0583, -0.2045]; RMS CT-CT-CT-CY 0.06
-CT-CT-CT-NA (joint, 1 scans, ridge 0.001): V = [-0.4607, 0.4021, 0.2412, -0.3472]; RMS CT-CT-CT-NA 0.16
+CT-CT-CT-NA (joint, 1 scans, ridge 0.001): V = [-0.4438, 0.3978, 0.4303, -0.3471]; RMS CT-CT-CT-NA 0.17
 CT-CT-CY-CT (joint, 1 scans, ridge 0.001): V = [0.2652, -0.5587, -0.5939, -0.4204]; RMS CT-CT-CY-CT 0.37
 CT-CT-CY-CY (joint, 6 scans, ridge 0.001): V = [-0.4272, 0.6057, 3.4812, 0.078]; RMS CT-CT-CY-CT 0.37, CT-CT-CY-CY 0.11, CT-CT-CY-HC 0.08, CT-CT-CY-O$ 0.10, HC-CT-CY-HC 0.08, HC-CT-CY-O$ 0.08
 CT-CT-CY-O$ (joint, 6 scans, ridge 0.001): V = [0.0795, 0.1447, 5.6512, 0.0403]; RMS CT-CT-CY-CT 0.37, CT-CT-CY-CY 0.11, CT-CT-CY-HC 0.08, CT-CT-CY-O$ 0.10, HC-CT-CY-HC 0.08, HC-CT-CY-O$ 0.08
@@ -65,10 +64,11 @@ HC-CT-CO-OH (joint, 2 scans, ridge 0.001): V = [0.0, 0.0, 1.831, 0.0]; RMS HC-CO
 OH-CT-CO-OS (joint, 3 scans, ridge 0.001): V = [3.1483, -1.1314, 0.3414, -0.2398]; RMS HC-CO-CT-OH 0.38, OH-CO-CT-OH 0.47, OH-CT-CO-OS 0.40
 OH-CO-CT-OS (joint, 3 scans, ridge 0.001): V = [6.1583, -2.1286, 4.736, 0.5521]; RMS HC-CO-CT-OS 0.28, OH-CO-CT-OS 0.27, OS-CO-CT-OS 0.24
 OS-CO-CT-OS (joint, 3 scans, ridge 0.001): V = [1.785, -0.5561, -2.6774, -0.0435]; RMS HC-CO-CT-OS 0.28, OH-CO-CT-OS 0.27, OS-CO-CT-OS 0.24
+HC-CT-CT-NA (joint, 1 scans, ridge 0.001): V = [0.0, 0.0, 0.0082, 0.0]; RMS HC-CT-CT-NA 0.03
 NT-CT-CT-OS (joint, 1 scans, ridge 0.001): V = [5.534, -2.4737, 1.3476, -0.0199]; RMS NT-CT-CT-OS 0.36
 OH-C-CT-OH (joint, 1 scans, ridge 0.001): V = [2.7741, 0.5532, 0.2967, -0.0817]; RMS OH-C-CT-OH 0.42
 OH-C-CT-OS (joint, 1 scans, ridge 0.001): V = [1.4008, 2.4903, -0.1372, -0.644]; RMS OH-C-CT-OS 0.64
 OH-CT-C-OS (joint, 1 scans, ridge 0.001): V = [0.6666, -1.1426, 2.1589, -2.1952]; RMS OH-CT-C-OS 0.46
 OS-C-CT-OS (joint, 1 scans, ridge 0.001): V = [0.7494, 1.9341, 0.8823, -0.8161]; RMS OS-C-CT-OS 0.58
 HC-CY-CT-NT: zero (the heavy-atom torsions about this bond carry the profile; CY-CY-CT-NT)
-wrote /private/tmp/claude-501/-Users-uzair-project-CAPS/833d0897-67f5-4603-829a-bb0e1d900513/scratchpad/dlpno-lib/dlpno_fit3.json: 66 torsions (caps ff apply --overlay /private/tmp/claude-501/-Users-uzair-project-CAPS/833d0897-67f5-4603-829a-bb0e1d900513/scratchpad/dlpno-lib/dlpno_fit3.json)
+wrote /private/tmp/claude-501/-Users-uzair-project-CAPS/833d0897-67f5-4603-829a-bb0e1d900513/scratchpad/dlpno-lib/dlpno_fit4.json: 67 torsions (caps ff apply --overlay /private/tmp/claude-501/-Users-uzair-project-CAPS/833d0897-67f5-4603-829a-bb0e1d900513/scratchpad/dlpno-lib/dlpno_fit4.json)
