@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
-"""CAPS typing rules for COMPASS (Sun, J. Phys. Chem. B 102, 7338 (1998)) in the library's two COMPASS files:
-compass (diagonal terms, with extension types for alkenes, ketones, amines, halogens ...) and
+"""CAPS typing rules for COMPASS (Sun, J. Phys. Chem. B 102, 7338 (1998)) for the library's
 compass-published-moltemplate (the published subset with every class II cross term).
 
 The rules follow the published type definitions: c4 a generic sp3 carbon, c43 / c44 sp3 carbons with three / four
 heavy atoms attached, c4o the carbon alpha to an oxygen, c41o / c43o the carbons of methanol / secondary alcohols,
 c3a aromatic carbon, c3' a carbonyl carbon with one polar substituent (ester, acid, amide), o2e / o2s / o2h ether,
 ester and hydroxyl oxygens, o1= a carbonyl (or NO2 / SO2) oxygen, o2z and si4c siloxanes, h1 / h1o non-polar and
-polar hydrogens. Extension types of the diagonal file are ranked the same way. One rule set serves both files:
+polar hydrogens. Rules for further types (alkenes, ketones, amines, halogens) are ranked the same way;
 "unknown_types": "untyped", so a type the published subset lacks (ketone c3o, amide h1n, halogens) leaves its atoms
-untyped instead of letting a more general rule take them. Charges come from each file's bond increments.
+untyped instead of letting a more general rule take them. Charges come from the file's bond increments.
 
 usage: make_compass_rules.py [DATA_DIR]
 """
@@ -83,12 +82,12 @@ add("cl14", 2, "[Cl][CX4;$(*(Cl)(Cl)(Cl)Cl)]", "Cl on a C with four halogens")
 
 # the published file spells two names differently
 SPELL = {"compass-published-moltemplate": {"c3'": "c3prime", "o1=*": "o1=star"}}
-LABEL = {"compass": "COMPASS (diagonal terms)", "compass-published-moltemplate": "COMPASS (published subset, full class II)"}
+LABEL = {"compass-published-moltemplate": "COMPASS (published subset, full class II)"}
 
 if __name__ == "__main__":
     cat_p = os.path.join(DATA, "forcefields", "catalogue.json")
     cat = json.load(open(cat_p))
-    for target in ("compass", "compass-published-moltemplate"):
+    for target in ("compass-published-moltemplate",):
         ff_p = os.path.join(DATA, "forcefields", target + ".json")
         ff = json.load(open(ff_p))
         have = {t["name"] for t in ff["atom_types"]} | {t["name"].split("~")[0] for t in ff["atom_types"]}

@@ -162,7 +162,7 @@ internal static class SelfTest
             Check(!vm.Field.Assigned && vm.ForceFieldLine.StartsWith("Force field: built-in"), "clear: " + vm.ForceFieldLine);
             Check(vm.Document.Atom(0).Name.Length > 0, $"clear restores the file's types (atom 1 {vm.Document.Atom(0).Name}, type {typedAs} while assigned)");
         }
-        // Force fields by group: the melt's first five chains and the rest, each GAFF2; then OPLS 2005 for the rest, refused
+        // Force fields by group: the melt's first five chains and the rest, each GAFF2; then OPLS-AA 2024 for the rest, refused
         // for its 1-4 scaling until the first group's is taken; a crystal under Tersoff's silicon (a literature potential)
         if (gaff >= 0)
         {
@@ -306,19 +306,6 @@ internal static class SelfTest
             Check(MainViewModel.DeBruijnPairs("AB") == "AABBA" && MainViewModel.DeBruijnPairs("ABC").Length == 10, $"junction sequence: {MainViewModel.DeBruijnPairs("AB")} · {MainViewModel.DeBruijnPairs("ABC")}");
         }
 
-        // Automatic charges: OPLS 2005's own        // Automatic charges: OPLS 2005's own — charge keys and its bond charge increments (no Gasteiger stand-in)
-        var opls = vm.Field.Library.ToList().FindIndex(x => x.Id == "opls2005");
-        if (opls >= 0)
-        {
-            vm.Field.FfIndex = opls;
-            vm.Field.ChargeMode = 0;
-            vm.Field.Assign().GetAwaiter().GetResult();
-            var rep = vm.Document!.FieldReport();
-            Check(vm.Field.Assigned && vm.Field.Complete && rep.Contains("charges from bond increments", StringComparison.Ordinal) &&
-                  !rep.Contains("Gasteiger", StringComparison.Ordinal) && rep.Contains("\"ck\"", StringComparison.Ordinal),
-                  $"Field OPLS-AA 2005 with automatic charges: {vm.Field.TypedText} · {vm.Field.MissingText} {vm.Field.Log}");
-            vm.Field.Clear().GetAwaiter().GetResult();
-        }
         // Coverage: OPLS-AA 2024 by type number types polystyrene completely and neutrally; the library check lists the others
         var opls24 = vm.Field.Library.ToList().FindIndex(x => x.Id == "oplsaa2024");
         if (opls24 >= 0)

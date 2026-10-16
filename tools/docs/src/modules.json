@@ -776,7 +776,7 @@
    "tips": [
     "Class II force fields (PCFF, COMPASS) go to LAMMPS only: GROMACS has no class II functional form, and the Export page says so instead of writing an approximate file."
    ],
-   "cli": "# types from the rules, then the parameters and the decks\ncaps ff type cell.data --ff opls2005 -o types.txt --explain\ncaps ff apply cell.data --ff opls2005 --types types.txt \\\n    -o cell_ff.data --lammps-input cell.in --gromacs cell",
+   "cli": "# types from the rules, then the parameters and the decks\ncaps ff type cell.data --ff oplsaa2024 -o types.txt --explain\ncaps ff apply cell.data --ff oplsaa2024 --types types.txt \\\n    -o cell_ff.data --lammps-input cell.in --gromacs cell",
    "python": "import caps\n\nd = caps.open(\"cell.data\")\nreport = d.field.assign(\"pcff\")          # types, charges and every term\nprint(report)",
    "next": [
     "minimise",
@@ -1078,10 +1078,10 @@
     }
    ],
    "tips": [
-    "PCFF gives epoxide ring angles general values, about 108 kcal/mol of strain per ENR epoxide; the Force field step says so. For epoxidised rubber, GAFF or OPLS 2005 describe the ring properly."
+    "PCFF gives epoxide ring angles general values, about 108 kcal/mol of strain per ENR epoxide; the Force field step says so. For epoxidised rubber, GAFF describes the ring properly."
    ],
    "cli": "caps react --list-templates\ncaps react cell.data -o network.data --template cc_crosslink \\\n    --cycles 50 --per-cycle 5 --target 0.3 --temp 500 --seed 1",
-   "python": "import caps\n\nd = caps.polymer(\"*CC(C)=CC*\", dp=10, chains=6, density=0.6, seed=1)  # cis-1,4-polyisoprene\nd.relax(max_iterations=300)\nd.field.assign(\"opls2005\")\nprint(d.react(\"peroxide_allylic\", cycles=5, per_cycle=4, target=0.3, seed=1))\nd.save(\"nr_xl.data\")",
+   "python": "import caps\n\nd = caps.polymer(\"*CC(C)=CC*\", dp=10, chains=6, density=0.6, seed=1)  # cis-1,4-polyisoprene\nd.relax(max_iterations=300)\nd.field.assign(\"oplsaa2024\")\nprint(d.react(\"peroxide_allylic\", cycles=5, per_cycle=4, target=0.3, seed=1))\nd.save(\"nr_xl.data\")",
    "next": [
     "analyze",
     "export"
@@ -1470,7 +1470,7 @@
     }
    ],
    "cli": "caps ff apply cell.data --ff pcff -o cell.data --lammps-input cell.in \\\n    --lammps-run npt --temp 300 --press 1 --steps 100000",
-   "python": "import caps\n\nd = caps.open(\"cell.data\")\nd.field.assign(\"opls2005\")\nd.export_engines(\"engines\", stem=\"cell\", run=\"npt\", temperature=300, steps=100000)",
+   "python": "import caps\n\nd = caps.open(\"cell.data\")\nd.field.assign(\"oplsaa2024\")\nd.export_engines(\"engines\", stem=\"cell\", run=\"npt\", temperature=300, steps=100000)",
    "next": [
     "jobs",
     "project"

@@ -1567,8 +1567,8 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
   };
   // with second-choice names: exact rules by the first names, exact by the second; then wildcard
   // rules by the second names, then by the first — the most specific wildcard rule (fewest X) first, ties the last in
-  // file order. (Checked term by term against the reference's own output: an ether C whose dihedral equivalent is
-  // second-tier only takes X-OS-CT-X, not X-OS-CO-X; N-CYA-CYA-HC takes HC-CT-CT-X, not X-CYA-CYA-X.)
+  // file order. (So an ether C whose dihedral equivalent is second-tier only takes X-OS-CT-X, not X-OS-CO-X;
+  // N-CYA-CYA-HC takes HC-CT-CT-X, not X-CYA-CYA-X.)
   auto most_specific = [&](const std::vector<FFRule>& rules, const std::vector<const std::string*>& ty, bool* rev) -> const FFRule* {
     std::vector<const std::string*> rv(ty.rbegin(), ty.rend());
     const FFRule* best = nullptr;
@@ -3298,7 +3298,7 @@ std::vector<std::string> ring_angle_notes(const System& s, const ForceField& ff)
   std::snprintf(b, sizeof b,
                 "%d angle terms in %zu three-membered rings (epoxides, …) have θ0 up to %.1f° where the ring's angles are about 60°: %s gives "
                 "them general parameters, about %.0f kcal/mol of strain per ring at this geometry — unphysical for the unreacted rings. For "
-                "epoxidised rubber use a force field with three-ring parameters (GAFF cx/op, OPLS 2005 C3T/O3T), or import ring parameters",
+                "epoxidised rubber use a force field with three-ring parameters (GAFF cx/op), or import ring parameters",
                 bad, rings.size(), worst / kDegree, ff.name.c_str(), energy / double(rings.size()));
   return {b};
 }
