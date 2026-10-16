@@ -19,7 +19,7 @@ internal static class SelfTest
         }
         Console.WriteLine($"info Python: {(MainViewModel.PythonAvailable ? MainViewModel.PythonExe : "none")}");
 
-        Check(Native.AbiVersion() == 69, "native ABI version 69");
+        Check(Native.AbiVersion() == 70, "native ABI version 70");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -330,6 +330,26 @@ internal static class SelfTest
             vm.Field.CheckCoverage().GetAwaiter().GetResult();
             Check(complete24 && vm.Field.Alternatives.Any(a => a.Id == "pcff-frc") && !vm.Field.HasUntypedGroups && !vm.Field.HasBalanceNote,
                   $"Field OPLS-AA 2024 by number: complete {complete24} · {vm.Field.TypedText} · {vm.Field.MissingText} · alternatives {string.Join(", ", vm.Field.Alternatives.Select(a => a.Id))} · {vm.Field.CoverageNote}");
+            // overlays (caps ff apply --overlay): the library's for OPLS-AA 2024 listed; switching one on merges it into the
+            // assignment (the report lists it) and the command line carries it; off again, gone
+            var lj = vm.Field.Overlays.FirstOrDefault(o => o.File == "oplsaa2024-lj-refit.json");
+            var listed = vm.Field.Overlays.Count;
+            if (lj != null) lj.On = true;
+            for (var i = 0; i < 200 && vm.Field.Working; i++) Thread.Sleep(25);
+            Thread.Sleep(100);
+            for (var i = 0; i < 200 && vm.Field.Working; i++) Thread.Sleep(25);
+            var held = vm.Document!.FieldOverlays().Contains("oplsaa2024-lj-refit.json");
+            var cmd = vm.Field.ApplyCommand;
+            if (lj != null) lj.On = false;
+            for (var i = 0; i < 200 && vm.Field.Working; i++) Thread.Sleep(25);
+            Thread.Sleep(100);
+            for (var i = 0; i < 200 && vm.Field.Working; i++) Thread.Sleep(25);
+            Check(lj != null && listed >= 2 && held && cmd.Contains("--overlay") && cmd.Contains("oplsaa2024-lj-refit.json") && !vm.Document!.FieldOverlays().Contains("lj-refit")
+                  && vm.Field.Complete && (vm.Field.CliArgs() ?? "").Contains("--ff"),
+                  $"Field overlays: {listed} listed · merged {held} · command '{cmd}' · {vm.Field.Log}");
+            // caps ff complete: offered with its availability said plainly (a build without libtorch says so)
+            Check(FieldViewModel.MlNoteStatic.Length > 0 && (FieldViewModel.MlAvailable || FieldViewModel.MlNoteStatic.Contains("CAPS_WITH_TORCH")),
+                  $"ff complete availability: model {FieldViewModel.MlAvailable}");
             vm.Field.Clear().GetAwaiter().GetResult();
         }
         // UFF from the same library: every atom typed from its bonds (polystyrene: C_3, C_R, H_)
@@ -776,6 +796,15 @@ internal static class SelfTest
             vm.RunReact().GetAwaiter().GetResult();
             var cured = System.Text.RegularExpressions.Regex.Match(vm.RxLog, @"^(\d+) reactions");
             Check(cured.Success && int.Parse(cured.Groups[1].Value) > 0, $"sulfur cure: {vm.RxLog.Split('\n')[0]}");
+            // the network summary carries the core's sulfur census; the page as caps react names the template and options
+            {
+                vm.RxRemoveUnreacted = true;
+                var cmd = vm.ReactCommand();
+                vm.RxRemoveUnreacted = false;
+                Check(vm.RxNetworkText.Contains("Sulfur: bridges") && cmd.Contains("caps react ") && cmd.Contains("--template sulfur_allylic") && cmd.Contains("--remove-unreacted")
+                      && cmd.Contains("--no-relax") && cmd.Contains("--cycles 6") && vm.Document!.SulfurBridges().Contains("sulfur_atoms"),
+                      $"React command and sulfur census: {cmd.Split('\n').Last(l => l.Length > 0)} · {vm.RxNetworkText.Split('\n').FirstOrDefault(l => l.StartsWith("Sulfur"))}");
+            }
             // Edit its reaction: the reaction that made this network back on React — kept with it, else from its provenance
             {
                 var rxItem = vm.ActiveItem!;
@@ -1187,6 +1216,30 @@ internal static class SelfTest
                 }
                 PyCheck(results.All(r => r.Split(' ')[1] == "0") && scripts[0].Item2.Contains("doc.relax(") && scripts[1].Item2.Contains("doc.md(steps=50"),
                       "copy as Python: " + string.Join(" · ", results));
+                // Copy command: the Relax and Dynamics commands run with the caps command line on the same file (a build
+                // tree's cli/caps beside capi/, or CAPS_CLI), the shell lines as copied
+                var capsCli = Environment.GetEnvironmentVariable("CAPS_CLI") is { Length: > 0 } c0 ? c0
+                    : Path.GetFullPath(Path.Combine(Path.GetDirectoryName(MainViewModel.NativeLibraryPath) ?? ".", "..", "cli", OperatingSystem.IsWindows() ? "caps.exe" : "caps"));
+                if (File.Exists(capsCli) && !OperatingSystem.IsWindows())
+                {
+                    var cmdResults = new List<string>();
+                    foreach (var (name, text) in new[] { ("relax", vm.RelaxCommand()), ("md", vm.MdCommand()) })
+                    {
+                        var body = text.Replace("caps relax structure.data", $"caps relax '{pySaved}'").Replace("caps md structure.data", $"caps md '{pySaved}'")
+                                       .Replace("--iterations 5000", "--iterations 50");
+                        var file = Path.Combine(outDir, $"caps-selftest-{name}.sh");
+                        File.WriteAllText(file, $"caps() {{ '{capsCli}' \"$@\"; }}\n" + body);
+                        var psi = new System.Diagnostics.ProcessStartInfo("/bin/bash") { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, WorkingDirectory = outDir };
+                        psi.ArgumentList.Add(file);
+                        using var proc = System.Diagnostics.Process.Start(psi)!;
+                        var err = proc.StandardError.ReadToEndAsync();
+                        proc.StandardOutput.ReadToEnd();
+                        proc.WaitForExit(120000);
+                        cmdResults.Add($"{name} {proc.ExitCode}{(proc.ExitCode is not (0 or 3) ? " " + err.Result.Trim().Split('\n').LastOrDefault() : "")}");
+                    }
+                    Check(cmdResults.All(r => r.Split(' ')[1] is "0" or "3"), "copy command (caps CLI): " + string.Join(" · ", cmdResults));
+                }
+                else Console.WriteLine("skip copy command: no caps command line beside the library (set CAPS_CLI)");
                 vm.MdStepsD = steps;
             }
 
@@ -3070,6 +3123,11 @@ internal static class SelfTest
             Check(ok, $"coarse-grained: 100 beads, 95 bonds, deck written · {rep}");
         }
 
+        // Reaction template editor: the atom conditions and run rules of a template shown as the text writes them
+        {
+            vm.OpenTemplateEditor("sulfur_allylic");
+            Check(vm.TemplateConditions.Contains("no_neighbour=S") && vm.TemplateConditions.Contains("once"), $"template conditions: {vm.TemplateConditions.Replace("\n", " · ")}");
+        }
         // Reaction template editor: the epoxy–amine templates pass their checks; a broken edit is flagged
         {
             vm.OpenTemplateEditor("epoxy_amine_primary");

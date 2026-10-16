@@ -425,7 +425,9 @@ public sealed partial class FieldViewModel : ObservableObject
         }
         Recorder?.Invoke($"doc.field.assign(\"{e.File.Replace("\\", "/")}\", charges=\"{(mode switch { 1 => "forcefield", 2 => "gasteiger", 3 => "keep", 4 => "qeq", 5 => "increments", _ => "auto" })}\")");
         _assignedId = e.Id;
-        return Do("Assigned", d => d.FieldAssign(e.File, null, CoreCharges(mode)));
+        var chosen = ChosenOverlays;
+        if (chosen.Count > 0) Recorder?.Invoke($"doc.field.set_overlays([{string.Join(", ", chosen.Select(p => "\"" + Path.GetFileNameWithoutExtension(p) + "\""))}])");
+        return Do("Assigned", d => ApplyChosenOverlays(d, d.FieldAssign(e.File, null, CoreCharges(mode))));
     }
 
     private string _assignedId = "";
@@ -525,6 +527,8 @@ public sealed partial class FieldViewModel : ObservableObject
         Entered.Clear();
         Raise(nameof(HasEntered));
         Notes.Clear();
+        UntypedMotifs = "";
+        OutOfDomain = "";
         _fftypes.Clear();
         SelectedRow = null;
         ForceFieldName = "";
@@ -663,6 +667,9 @@ public sealed partial class FieldViewModel : ObservableObject
         else EnergyText = "";
         Complete = r.GetProperty("complete").GetBoolean();
         Assigned = true;
+        ReadOverlays(r);
+        ReadMotifs(r);
+        Raise(nameof(CanComplete));
         Log = Complete ? $"{ForceFieldName}: every atom typed and every parameter found. Relax, Dynamics, Equilibrate and LAMMPS data use it now."
                        : $"{ForceFieldName}: {UntypedText}, {MissingText}. Relax and Dynamics are blocked until these are complete; CAPS does not guess parameters.";
         Raise(nameof(RunLine));

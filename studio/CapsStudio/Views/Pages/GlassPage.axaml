@@ -12,6 +12,7 @@
     <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
       <DockPanel>
         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Button Click="OnCopyCommand" IsEnabled="{Binding HasDocument}" ToolTip.Tip="The cooling scan as caps tg (temperatures, hold, precision; the recipe keeps every setting)"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="terminal" Size="14" VerticalAlignment="Center" /><TextBlock Text="Copy command" VerticalAlignment="Center" /></StackPanel></Button>
           <Button Click="OnRecipe" IsEnabled="{Binding HasDocument}" ToolTip.Tip="The cooling scan as a YAML recipe (caps run)"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="save" Size="14" VerticalAlignment="Center" /><TextBlock Text="Save as recipe" VerticalAlignment="Center" /></StackPanel></Button>
           <Button Click="OnQueue" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Run after the current run ends (Jobs shows the queue); it uses this page's settings at its turn">
             <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="jobs" Size="14" VerticalAlignment="Center" /><TextBlock Text="Queue" VerticalAlignment="Center" /></StackPanel>
@@ -54,6 +55,8 @@
               </Grid>
               <StackPanel Spacing="6"><TextBlock Text="Barostat (Bussi thermostat)" Classes="label" />
                 <ComboBox ItemsSource="{x:Static vm:AnalyzeViewModel.TgBarostats}" SelectedIndex="{Binding Analyze.TgBarostat}" HorizontalAlignment="Stretch" /></StackPanel>
+              <CheckBox Classes="toggle" Content="Double precision (pair terms too)" IsChecked="{Binding Analyze.MechDouble}"
+                        ToolTip.Tip="Off: pair terms in single precision with SIMD and sums in double (mixed, caps tg's default, about twice as fast); on: all in double (--precision double)" />
               <TextBlock Text="TG FROM" Classes="h3" Margin="0,6,0,0" />
               <Grid ColumnDefinitions="*,110" ColumnSpacing="10">
                 <StackPanel Spacing="6"><TextBlock Text="Property" Classes="label" />
