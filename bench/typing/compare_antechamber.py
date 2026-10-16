@@ -4,16 +4,15 @@
   compare_antechamber.py prepare SET.smi OUTDIR [--caps build/cli/caps]
       builds each molecule with `caps build` (3D, explicit hydrogens), writes OUTDIR/NAME.mol2 with element symbols in the
       atom-type column and CAPS's bond orders (what antechamber reads), and CAPS's own types: NAME.gaff.types (GAFF,
-      gaff-amber16), NAME.gaff2.types (GAFF2, gaff-amber25) and NAME.gaff2mt.types (GAFF2 on moltemplate's gaff2.lt, which
-      has no c5/c6 parameters, so CAPS types those carbons c3 there). Also OUTDIR/run_antechamber.sh.
+      gaff-amber16) and NAME.gaff2.types (GAFF2, gaff-amber25). Also OUTDIR/run_antechamber.sh.
   bash OUTDIR/run_antechamber.sh          (where AmberTools is: antechamber -at gaff / gaff2, atom order kept)
   compare_antechamber.py compare OUTDIR [--show 50]
       reads NAME.ac_gaff.mol2 and NAME.ac_gaff2.mol2 and lists every atom whose types differ.
 """
 import argparse, os, re, subprocess, sys
 
-TAGS = (("gaff", "gaff-amber16"), ("gaff2", "gaff-amber25"), ("gaff2mt", "gaff2-moltemplate"))
-REF = {"gaff": "gaff", "gaff2": "gaff2", "gaff2mt": "gaff2"}   # antechamber's -at for each CAPS entry
+TAGS = (("gaff", "gaff-amber16"), ("gaff2", "gaff-amber25"))
+REF = {"gaff": "gaff", "gaff2": "gaff2"}   # antechamber's -at for each CAPS entry
 SYM = {"CL": "Cl", "BR": "Br", "SI": "Si", "NA": "Na", "MG": "Mg"}
 
 
@@ -95,7 +94,6 @@ EXPLAINED = [
     (lambda tag, mol, x, y: mol == "cyclooctatetraene" and {x, y} == {"cc", "cd"},
      "antechamber re-assigns the Kekule structure; both alternate cc/cd by their own bond orders (CAPS keeps the file's)"),
     (lambda tag, mol, x, y: tag == "gaff" and x in ("op", "oq") and y == "os", "AmberTools 16 GAFF parameters have no op / oq"),
-    (lambda tag, mol, x, y: tag == "gaff2mt" and x in ("c5", "c6") and y == "c3", "moltemplate gaff2.lt has no c5 / c6"),
 ]
 
 

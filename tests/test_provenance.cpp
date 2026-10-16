@@ -4,6 +4,7 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <sstream>
 
 #include "caps/provenance.hpp"
 
@@ -386,6 +387,7 @@ units: '[*:1]CC[*:2]'
   EXPECT_THROW(yaml_parse("a: {b: 1\n"), std::invalid_argument);
 }
 
+#include "caps/json.hpp"
 #include "caps/recipe.hpp"
 #include "caps/yaml.hpp"
 
@@ -441,13 +443,25 @@ TEST(Recipe, SulfurCureTypedWithPcff) {
                caps::RecipeError);
 }
 
-// type.fill_from: OPLS-AA 2024 lacks the CM–CT–CT–CM torsion of polyisoprene (so does GROMACS's oplsaa.ff); CAPS's
-// own MP2 fit of it (caps.torsionfit, tests/data/fitted_cm_ct_ct_cm.json) fills it, only where 2024 has none, and the
+// type.fill_from: the 2024 BOSS files lack the CM–CT–CT–CM torsion of polyisoprene (so does GROMACS's oplsaa.ff; CAPS's
+// oplsaa2024.json carries its own fit, taken out here so the 2024 files' gap shows); CAPS's MP2 fit of it
+// (caps.torsionfit, tests/data/fitted_cm_ct_ct_cm.json) fills it, only where the force field has none, and the
 // provenance says how many terms; without it the recipe stops with missing parameters (exit 3)
 TEST(Recipe, FillGapsFromAnotherForceField) {
   const std::string lib = std::string(CAPS_SOURCE_DIR) + "/data/forcefields/";
+  std::ifstream in(lib + "oplsaa2024.json");
+  std::stringstream text;
+  text << in.rdbuf();
+  caps::Json ff = caps::Json::parse(text.str());
+  caps::Json kept = caps::Json::array();
+  for (const auto& r : ff["dihedrals"].items())
+    if (r["name"].str() != "CM-CT-CT-CM") kept.push_back(r);
+  ff["dihedrals"] = kept;
+  ff["typing"] = std::string(CAPS_SOURCE_DIR) + "/data/typing/oplsaa2024.typing.json";
+  const std::string gap = (std::filesystem::temp_directory_path() / "caps_oplsaa2024_gap.json").string();
+  std::ofstream(gap) << ff.dump_exact(1);
   auto yaml = [&](const std::string& fill) {
-    return caps::yaml_parse("build:\n  polymer: { smiles: \"[*]C/C=C(C)\\\\C[*]\", dp: 6, chains: 1 }\ntype: { forcefield: " + lib + "oplsaa2024-moltemplate.json" + fill + " }\n");
+    return caps::yaml_parse("build:\n  polymer: { smiles: \"[*]C/C=C(C)\\\\C[*]\", dp: 6, chains: 1 }\ntype: { forcefield: " + gap + fill + " }\n");
   };
   caps::RecipeOptions o;
   int code = 0;
@@ -459,6 +473,7 @@ TEST(Recipe, FillGapsFromAnotherForceField) {
     if (st.engine == "field.assign")
       for (const auto& [k, v] : st.params) said |= k == "gaps filled from" && v.find("CAPS-fitted torsions") != std::string::npos && v.find(" terms") != std::string::npos;
   EXPECT_TRUE(said);
+  std::filesystem::remove(gap);
 }
 
 // md with bonds to hydrogen held by LINCS: the manifest names the solver and cites Hess et al.; an unknown solver is an

@@ -118,7 +118,28 @@ const std::vector<std::string>& caps_roots() {
   return roots;
 }
 
-// A force field by path, or by its library name (opls2005, pcff, compass, gaff2-moltemplate …) from data/forcefields.
+// A library id from a neutral short name its catalogue entry lists under "aliases" (spce, tip3p, martini …): the first
+// entry naming it whose file is installed, so the name follows whichever library provides the model
+std::string catalogue_alias(const std::string& root, const std::string& lower) {
+  std::ifstream in(root + "/data/forcefields/catalogue.json");
+  if (!in) return "";
+  std::stringstream ss;
+  ss << in.rdbuf();
+  try {
+    const Json cat = Json::parse(ss.str());
+    for (const auto& e : cat["forcefields"].items()) {
+      if (!e.has("aliases") || !e.has("file") || !e["file"].is_string()) continue;
+      for (const auto& a : e["aliases"].items()) {
+        std::string x = a.str();
+        for (auto& c : x) c = char(std::tolower((unsigned char)c));
+        if (x == lower && std::filesystem::exists(root + "/data/forcefields/" + e["file"].str())) return e["file"].str();
+      }
+    }
+  } catch (const std::exception&) {}
+  return "";
+}
+
+// A force field by path, or by its library name (pcff, compass, gaff2, oplsaa2024 …) from data/forcefields.
 std::string ff_path(const std::string& s0) {
   if (s0.empty() || std::filesystem::exists(s0)) return s0;
   // the short names of the libraries rebuilt from their own sources (as caps.core._forcefield_path in Python)
@@ -152,6 +173,8 @@ std::string ff_path(const std::string& s0) {
           }
           return root + "/data/forcefields/" + name;
         }
+  for (const auto& root : caps_roots())
+    if (const std::string f = catalogue_alias(root, lower); !f.empty()) return root + "/data/forcefields/" + f;
   return s0;
 }
 

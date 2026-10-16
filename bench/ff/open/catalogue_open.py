@@ -35,10 +35,9 @@ ENTRIES = {
                    ["W. L. Jorgensen, D. S. Maxwell, J. Tirado-Rives, J. Am. Chem. Soc. 118, 11225 (1996)",
                     "W. L. Jorgensen et al., J. Phys. Chem. B 128, 250 (2024)"],
                    {"source": "supporting information jp3c06602_si_002.txt (.par) and jp3c06602_si_003.txt (.sb), pubs.acs.org/doi/suppl/10.1021/acs.jpcb.3c06602",
-                    "license": "published parameter tables of the paper's supporting information (moltemplate, MIT, redistributes them as public domain)"},
-                   "CAPS's OPLS-AA rules by type number (bench/typing/make_oplsaa_rules.py) in opls_NNN names; on the polymer library "
-                   "every term equals moltemplate's independent conversion of the same files except CT-CT-OH-HO, where that conversion "
-                   "applies trifluoroethanol's torsion to every alcohol (bench/ff/convert_boss_opls.py applies the general line)",
+                    "license": "published parameter tables of the paper's supporting information"},
+                   "CAPS's OPLS-AA rules by type number (bench/typing/make_oplsaa_rules.py) in opls_NNN names; where the .par gives a "
+                   "torsion again for particular molecules, the first, general line is applied (bench/ff/convert_boss_opls.py)",
                    ("OPLS-AA 2024", "oplsaa2024", 4), ["opls2020"]),
     "clandp": ("CL&P (ionic liquids)", "il.ff of 2026/04/16 (github.com/paduagroup/clandp)",
                ["J. N. Canongia Lopes, A. A. H. Padua, Theor. Chem. Acc. 131, 1129 (2012)"],

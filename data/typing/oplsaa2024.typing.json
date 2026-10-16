@@ -3,7 +3,7 @@
  "version": 1,
  "forcefield": "OPLS-AA 2024 (Jorgensen)",
  "unknown_types": "untyped",
- "description": "CAPS's OPLS-AA rules in opls_NNN names for the library built from Jorgensen's 2024 BOSS files (bench/typing/make_opls_gromacs_rules.py)",
+ "description": "CAPS's OPLS-AA rules in opls_NNN names for the library built from Jorgensen's 2024 BOSS files (bench/typing/make_oplsaa_rules.py)",
  "rules": [
   {
    "type": "opls_135",

@@ -7,319 +7,319 @@
  "united_atom": true,
  "rules": [
   {
-   "type": "66_bC4_aC4_dC4_iC4",
+   "type": "opls_066",
    "smarts": "[CX4H4]",
    "priority": 0,
    "description": "CH4"
   },
   {
-   "type": "67_bC3_aC3_dC3_iC3",
+   "type": "opls_067",
    "smarts": "[CX4H3;!$(*~[!#6;!#1]);$(*[#6D1])]",
    "priority": 0,
    "description": "CH3 on a carbon with 1 carbon(s) (ethane)"
   },
   {
-   "type": "68_bC3_aC3_dC3_iC3",
+   "type": "opls_068",
    "smarts": "[CX4H3;!$(*~[!#6;!#1]);$(*[#6D2])]",
    "priority": 0,
    "description": "CH3 on a carbon with 2 carbon(s) (n-alkane)"
   },
   {
-   "type": "69_bC3_aC3_dC3_iC3",
+   "type": "opls_069",
    "smarts": "[CX4H3;!$(*~[!#6;!#1]);$(*[#6D3])]",
    "priority": 0,
    "description": "CH3 on a carbon with 3 carbon(s) (isobutane)"
   },
   {
-   "type": "70_bC3_aC3_dC3_iC3",
+   "type": "opls_070",
    "smarts": "[CX4H3;!$(*~[!#6;!#1]);$(*[#6D4])]",
    "priority": 0,
    "description": "CH3 on a carbon with 4 carbon(s) (neopentane)"
   },
   {
-   "type": "71_bC2_aC2_dC2_iC2",
+   "type": "opls_071",
    "smarts": "[CX4H2;!$(*~[!#6;!#1])]",
    "priority": 0,
    "description": "CH2 (sp3)"
   },
   {
-   "type": "73_bCH_aCH_dCH_iCH",
+   "type": "opls_073",
    "smarts": "[CX4H1;!$(*~[!#6;!#1])]",
    "priority": 0,
    "description": "CH (sp3)"
   },
   {
-   "type": "76_bCT_aCT_dCT_iCT",
+   "type": "opls_076",
    "smarts": "[CX4H0;!$(*~[!#6;!#1])]",
    "priority": 0,
    "description": "C (sp3)"
   },
   {
-   "type": "72_bC9_aC9_dC9_iC9",
+   "type": "opls_072",
    "smarts": "[CX3H2;!$(*~[!#6;!#1])]=[#6]",
    "priority": 1,
    "description": "CH2= (sp2, 1-alkene)"
   },
   {
-   "type": "74_bC8_aC8_dC8_iC8",
+   "type": "opls_074",
    "smarts": "[CX3H1;!$(*~[!#6;!#1])]=[#6]",
    "priority": 1,
    "description": "CH= (sp2, 2-alkene)"
   },
   {
-   "type": "77_bC7_aC7_dC7_iC7",
+   "type": "opls_077",
    "smarts": "[CX3H0;!$(*~[!#6;!#1])]=[#6]",
    "priority": 1,
    "description": "C= (sp2, isobutene)"
   },
   {
-   "type": "75_bCD_aCD_dCD_iCD",
+   "type": "opls_075",
    "smarts": "[cH1;!$(*~[!#6;!#1])]",
    "priority": 1,
    "description": "aromatic CH (benzenoid)"
   },
   {
-   "type": "78_bOH_aOH_dOH_iOH",
+   "type": "opls_078",
    "smarts": "[OX2H1][CX4]",
    "priority": 5,
    "description": "alcohol O"
   },
   {
-   "type": "79_bHO_aHO_dHO_iHO",
+   "type": "opls_079",
    "smarts": "[H][OX2H1][CX4]",
    "priority": 5,
    "description": "alcohol H(O)"
   },
   {
-   "type": "80_bC3_aC3_dC3_iC3",
+   "type": "opls_080",
    "smarts": "[CX4H3][OX2H1]",
    "priority": 5,
    "description": "CH3 on an alcohol O"
   },
   {
-   "type": "81_bC2_aC2_dC2_iC2",
+   "type": "opls_081",
    "smarts": "[CX4H2][OX2H1]",
    "priority": 5,
    "description": "CH2 on an alcohol O"
   },
   {
-   "type": "106_bCH_aCH_dCH_iCH",
+   "type": "opls_106",
    "smarts": "[CX4H1][OX2H1]",
    "priority": 5,
    "description": "CH on an alcohol O"
   },
   {
-   "type": "107_bCT_aCT_dCT_iCT",
+   "type": "opls_107",
    "smarts": "[CX4H0][OX2H1]",
    "priority": 5,
    "description": "C on an alcohol O"
   },
   {
-   "type": "108_bOS_aOS_dOS_iOS",
+   "type": "opls_108",
    "smarts": "[OX2H0]([CX4])[CX4]",
    "priority": 5,
    "description": "ether O"
   },
   {
-   "type": "109_bC3_aC3_dC3_iC3",
+   "type": "opls_109",
    "smarts": "[CX4H3][OX2H0][CX4]",
    "priority": 5,
    "description": "CH3 on an ether O"
   },
   {
-   "type": "110_bC2_aC2_dC2_iC2",
+   "type": "opls_110",
    "smarts": "[CX4H2][OX2H0][CX4]",
    "priority": 5,
    "description": "CH2 on an ether O"
   },
   {
-   "type": "82_bSH_aSH_dSH_iSH",
+   "type": "opls_082",
    "smarts": "[SX2H2]",
    "priority": 5,
    "description": "S in H2S"
   },
   {
-   "type": "86_bHS_aHS_dHS_iHS",
+   "type": "opls_086",
    "smarts": "[H][SX2H2]",
    "priority": 5,
    "description": "H in H2S"
   },
   {
-   "type": "83_bSH_aSH_dSH_iSH",
+   "type": "opls_083",
    "smarts": "[SX2H1][CX4]",
    "priority": 5,
    "description": "thiol S"
   },
   {
-   "type": "87_bHS_aHS_dHS_iHS",
+   "type": "opls_087",
    "smarts": "[H][SX2H1][CX4]",
    "priority": 5,
    "description": "thiol H(S)"
   },
   {
-   "type": "88_bC3_aC3_dC3_iC3",
+   "type": "opls_088",
    "smarts": "[CX4H3][SX2H1]",
    "priority": 5,
    "description": "CH3 on a thiol S"
   },
   {
-   "type": "89_bC2_aC2_dC2_iC2",
+   "type": "opls_089",
    "smarts": "[CX4H2][SX2H1]",
    "priority": 5,
    "description": "CH2 on a thiol S"
   },
   {
-   "type": "84_bS~_aS~_dS~_iS~",
+   "type": "opls_084",
    "smarts": "[SX2H0]([CX4])[CX4]",
    "priority": 5,
    "description": "sulfide S"
   },
   {
-   "type": "90_bC3_aC3_dC3_iC3",
+   "type": "opls_090",
    "smarts": "[CX4H3][SX2H0;!$(*[#16])][CX4]",
    "priority": 5,
    "description": "CH3 on a sulfide S"
   },
   {
-   "type": "91_bC2_aC2_dC2_iC2",
+   "type": "opls_091",
    "smarts": "[CX4H2][SX2H0;!$(*[#16])][CX4]",
    "priority": 5,
    "description": "CH2 on a sulfide S"
   },
   {
-   "type": "85_bS~_aS~_dS~_iS~",
+   "type": "opls_085",
    "smarts": "[SX2H0]([CX4])[SX2H0]",
    "priority": 6,
    "description": "disulfide S"
   },
   {
-   "type": "92_bC3_aC3_dC3_iC3",
+   "type": "opls_092",
    "smarts": "[CX4H3][SX2H0][SX2H0]",
    "priority": 6,
    "description": "CH3 on a disulfide S"
   },
   {
-   "type": "93_bC2_aC2_dC2_iC2",
+   "type": "opls_093",
    "smarts": "[CX4H2][SX2H0][SX2H0]",
    "priority": 6,
    "description": "CH2 on a disulfide S"
   },
   {
-   "type": "85_bS~_aS~_dS~_iS~",
+   "type": "opls_085",
    "smarts": "[SX2H0]([CX4])[SX2]",
    "priority": 7,
    "description": "disulfide S (also next to a persulfide S-H)"
   },
   {
-   "type": "92_bC3_aC3_dC3_iC3",
+   "type": "opls_092",
    "smarts": "[CX4H3][SX2H0][SX2]",
    "priority": 7,
    "description": "CH3 on a disulfide S (also next to a persulfide S-H)"
   },
   {
-   "type": "93_bC2_aC2_dC2_iC2",
+   "type": "opls_093",
    "smarts": "[CX4H2][SX2H0][SX2]",
    "priority": 7,
    "description": "CH2 on a disulfide S (also next to a persulfide S-H)"
   },
   {
-   "type": "caps_ua_ch_s1_bCH_aCH_dCH_iCH",
+   "type": "caps_ua_ch_s1",
    "smarts": "[CX4H1][SX2H0;!$(*[#16])][CX4]",
    "priority": 7,
    "description": "CH on a sulfide S (an allylic crosslink carbon)"
   },
   {
-   "type": "caps_ua_ch_s2_bCH_aCH_dCH_iCH",
+   "type": "caps_ua_ch_s2",
    "smarts": "[CX4H1][SX2H0][SX2]",
    "priority": 7,
    "description": "CH on an S bonded to S (disulfide, polysulfide or persulfide)"
   },
   {
-   "type": "caps_ua_ch_sh_bCH_aCH_dCH_iCH",
+   "type": "caps_ua_ch_sh",
    "smarts": "[CX4H1][SX2H1]",
    "priority": 7,
    "description": "CH on a thiol S"
   },
   {
-   "type": "caps_ua_s_poly_bS~_aS~_dS~_iS~",
+   "type": "caps_ua_s_poly",
    "smarts": "[SX2H0]([SX2])[SX2]",
    "priority": 7,
    "description": "S between two S (a polysulfide's middle S)"
   },
   {
-   "type": "caps_ua_s_ssh_bSH_aSH_dSH_iSH",
+   "type": "caps_ua_s_ssh",
    "smarts": "[SX2H1][SX2]",
    "priority": 7,
    "description": "persulfide S-H sulfur (bonded to S and H)"
   },
   {
-   "type": "87_bHS_aHS_dHS_iHS",
+   "type": "opls_087",
    "smarts": "[H][SX2H1][SX2]",
    "priority": 7,
    "description": "H on a persulfide S (the thiol H)"
   },
   {
-   "type": "94_bNZ_aNZ_dNZ_iNZ",
+   "type": "opls_094",
    "smarts": "[NX1]#[CX2][CX4H3]",
    "priority": 5,
    "description": "nitrile N"
   },
   {
-   "type": "95_bCZ_aCZ_dCZ_iCZ",
+   "type": "opls_095",
    "smarts": "[CX2](#[NX1])[CX4H3]",
    "priority": 5,
    "description": "nitrile C"
   },
   {
-   "type": "96_bC3_aC3_dC3_iC3",
+   "type": "opls_096",
    "smarts": "[CX4H3][CX2]#[NX1]",
    "priority": 5,
    "description": "CH3 on a nitrile C"
   },
   {
-   "type": "118_bC2_aC2_dC2_iC2",
+   "type": "opls_118",
    "smarts": "[CX4H2](Cl)Cl",
    "priority": 5,
    "description": "CH2 in CH2Cl2"
   },
   {
-   "type": "119_bCl_aCl_dCl_iCl",
+   "type": "opls_119",
    "smarts": "Cl[CX4H2]Cl",
    "priority": 5,
    "description": "Cl in CH2Cl2"
   },
   {
-   "type": "120_bCH_aCH_dCH_iCH",
+   "type": "opls_120",
    "smarts": "[CX4H1](Cl)(Cl)Cl",
    "priority": 5,
    "description": "CH in CHCl3"
   },
   {
-   "type": "121_bCl_aCl_dCl_iCl",
+   "type": "opls_121",
    "smarts": "Cl[CX4H1](Cl)Cl",
    "priority": 5,
    "description": "Cl in CHCl3"
   },
   {
-   "type": "122_bCT_aCT_dCT_iCT",
+   "type": "opls_122",
    "smarts": "[CX4H0](Cl)(Cl)(Cl)Cl",
    "priority": 5,
    "description": "C in CCl4"
   },
   {
-   "type": "123_bCl_aCl_dCl_iCl",
+   "type": "opls_123",
    "smarts": "Cl[CX4H0](Cl)(Cl)Cl",
    "priority": 5,
    "description": "Cl in CCl4"
   },
   {
-   "type": "722_bBr_aBr_dBr_iBr",
+   "type": "opls_722",
    "smarts": "[Br][CX4H2]",
    "priority": 5,
    "description": "alkyl Br"
   },
   {
-   "type": "723_bC2_aC2_dC2_iC2",
+   "type": "opls_723",
    "smarts": "[CX4H2][Br]",
    "priority": 5,
    "description": "CH2 on an alkyl Br"

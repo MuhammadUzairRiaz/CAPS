@@ -18,10 +18,10 @@ std::string lower(std::string s) {
 }  // namespace
 
 const std::vector<WaterModel>& water_models() {
-  // constants for a flexible run of a rigid model: LAMMPS Howto_tip3p's (TIP3P and TIP4P families), moltemplate's
-  // spce.lt (SPC, SPC/E); only SPC/Fw's are the model's own (Wu, Tepper & Voth: k/2 (r − r0)², so K = k/2)
+  // constants for a flexible run of a rigid model: LAMMPS Howto_tip3p's (TIP3P and TIP4P families), stiff springs that
+  // hold the geometry (SPC, SPC/E); only SPC/Fw's are the model's own (Wu, Tepper & Voth: k/2 (r − r0)², so K = k/2)
   const std::string tip_k = "LAMMPS Howto_tip3p (K 450 kcal/mol/Å², 55 kcal/mol/rad²); the model is rigid";
-  const std::string spc_k = "moltemplate spce.lt (K 600 kcal/mol/Å², 75 kcal/mol/rad²); the model is rigid";
+  const std::string spc_k = "stiff springs that hold the geometry (K 600 kcal/mol/Å², 75 kcal/mol/rad²); the model is rigid";
   static const std::vector<WaterModel> m = {
       {"spc", "SPC", "H. J. C. Berendsen, J. P. M. Postma, W. F. van Gunsteren, J. Hermans, in Intermolecular Forces (Reidel, 1981), p. 331",
        "berendsen1981", 3, 1.0, 109.47, 0.41, -0.82, 0, 0.1553, 3.166, 0, 0, true, 600, 75, spc_k, ""},
@@ -36,7 +36,7 @@ const std::vector<WaterModel>& water_models() {
        0.417, -0.834, 0, 0.1521, 3.1507, 0.0460, 0.4, true, 450, 55, tip_k, "hydrogens with Lennard-Jones (ε 0.046 kcal/mol, σ 0.4 Å), as CHARMM uses it"},
       {"tip3p-ew", "TIP3P-Ew", "D. J. Price, C. L. Brooks III, J. Chem. Phys. 121, 10096 (2004)", "price2004", 3, 0.9572, 104.52, 0.415,
        -0.830, 0, 0.102, 3.188, 0, 0, true, 450, 55, tip_k,
-       "charges −0.830 / 0.415 as moltemplate's tip3p_2004.lt gives them (LAMMPS's Howto_tip3p lists the TIP3P charges −0.834 / 0.417 for it)"},
+       "charges −0.830 / 0.415 as Price & Brooks give them (LAMMPS's Howto_tip3p lists the TIP3P charges −0.834 / 0.417 for it)"},
       {"tip4p", "TIP4P", "W. L. Jorgensen, J. Chandrasekhar, J. D. Madura, R. W. Impey, M. L. Klein, J. Chem. Phys. 79, 926 (1983)", "jorgensen1983",
        4, 0.9572, 104.52, 0.520, -1.040, 0.15, 0.1550, 3.1536, 0, 0, true, 450, 55, tip_k, ""},
       {"tip4p-ew", "TIP4P-Ew", "H. W. Horn, W. C. Swope, J. W. Pitera, J. D. Madura, T. J. Dick, G. L. Hura, T. Head-Gordon, J. Chem. Phys. 120, 9665 (2004)",

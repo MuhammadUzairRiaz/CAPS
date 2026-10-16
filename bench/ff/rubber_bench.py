@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.join(ROOT, "data", "python"))
 import caps  # noqa: E402
 
 arg = lambda k, d=None: sys.argv[sys.argv.index(k) + 1] if k in sys.argv else d
-FFS = (arg("--ff") or "oplsua2024,oplsaa2024,oplsaa2024-moltemplate,oplsaa2008-moltemplate").split(",")
+FFS = (arg("--ff") or "oplsua2024,oplsaa2024").split(",")
 ONLY = arg("--only", "")
 LMP = arg("--lmp") or shutil.which("lmp") or os.path.expanduser("~/.local/bin/lmp")
 work = arg("--keep") or tempfile.mkdtemp(prefix="rubber_bench_")
