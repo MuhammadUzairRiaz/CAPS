@@ -169,7 +169,7 @@ int usage() {
                "  caps info    FILE [--topology DATA]\n"
                "  caps render  FILE -o OUT.png|OUT.svg [--topology DATA] [--frame N] [--size WxH]\n"
                "               [--bg dark|white|transparent] [--colour molecule|element|type|distance]\n"
-               "               [--style ball|space|sticks|noh|backbone] [--yaw DEG] [--pitch DEG] [--zoom Z] [--no-cell]\n"
+               "               [--style ball|space|sticks|noh|backbone] [--yaw DEG] [--pitch DEG] [--zoom Z] [--no-cell] [--wrap]\n"
                "  caps shape   FILE [--topology DATA]          per-molecule Rg and shape\n"
                "  caps rdf     FILE [--topology DATA] [--rmax 12] [--dr 0.2] [--pair C-C] [--inter]\n"
                "  caps analyze FILE [--topology DATA] [--props density,rdf,sq,xray,neutron,rg,ree,cn,persistence,msd,diffusion,\n"
@@ -344,7 +344,7 @@ const std::set<std::string>& known_options() {
     "--json", "--kspace", "--kspace-accuracy", "--lammps-cutoff", "--units", "--lammps-input", "--lammps-run", "--moltemplate",
     "--lammps-style", "--last", "--layers", "--length", "--list", "--list-templates", "--log", "--lx", "--ly", "--m",
     "--martini", "--max-blocks", "--max-torsions", "--moves", "--max-strain", "--md-ps", "--method", "--methods", "--model", "--molecule-size",
-    "--molecules", "--n", "--names", "--neutralise", "--new-velocities", "--no-cell",
+    "--molecules", "--n", "--names", "--neutralise", "--new-velocities", "--no-cell", "--wrap",
     "--no-coulomb", "--no-ions", "--no-orthogonal", "--no-pbc", "--no-pushoff", "--no-relax",
     "--no-tail", "--normal", "--out", "--overlay", "--padding", "--pair", "--particles",
     "--ops", "--ops-file", "--checkpoint-every", "--checkpoint", "--resume", "--resume-at", "--bench-json", "--resume-points", "--resume-curve", "--height", "--top-ratio", "--passivate", "--pattern", "--per-cycle", "--perspective", "--pfinal", "--pitch", "--pmax", "--pme",
@@ -383,7 +383,7 @@ std::string closest_option(const std::string& a) {
 
 // Options without a value (the rest take the next word)
 bool is_cli_switch(const std::string& a) {
-  return a == "--no-cell" || a == "--inter" || a == "--perspective" || a == "--trans" || a == "--escalate" ||
+  return a == "--no-cell" || a == "--wrap" || a == "--inter" || a == "--perspective" || a == "--trans" || a == "--escalate" ||
          a == "--box-relax" || a == "--no-pushoff" || a == "--no-coulomb" || a == "--quiet" || a == "--new-velocities" ||
          a == "--until-converged" || a == "--print-protocol" || a == "--no-pbc" ||
          a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" || a == "--include-input" || a == "--primitive" || a == "--symmetrize" || a == "--find-symmetry" || a == "--groups" || a == "--neutralise" || a == "--no-ions" || a == "--solvents" || a == "--bibtex" || a == "--json" || a == "--deterministic" || a == "--vacuum" || a == "--methods" ||
@@ -3367,6 +3367,25 @@ int main(int argc, char** argv) {
       const std::string st = o.count("--style") ? o["--style"] : "ball";
       opt.style = st == "space" ? Style::SpaceFilling : st == "sticks" ? Style::Sticks : st == "noh" ? Style::NoHydrogens : st == "backbone" ? Style::Backbone : Style::BallAndStick;
       opt.show_cell = !o.count("--no-cell");
+      // --wrap: atoms folded into the cell as in the simulation box; bonds across the boundary are not drawn; each chain
+      // keeps its colour (taken from the whole molecules, before the bonds are cut)
+      if (o.count("--wrap") && s.cell.valid()) {
+        if (opt.colour_by == ColourBy::Molecule) {
+          const auto mol = s.molecules();
+          opt.colours.resize(s.atoms.size());
+          for (size_t i = 0; i < s.atoms.size(); ++i) {
+            unsigned c = molecule_colour(mol[i]);
+            if (s.atoms[i].element == 1) {   // hydrogens lighter, as the renderer draws them
+              unsigned r = c >> 16 & 255, g = c >> 8 & 255, b = c & 255;
+              r += unsigned(0.55 * (255 - r)), g += unsigned(0.55 * (255 - g)), b += unsigned(0.55 * (255 - b));
+              c = r << 16 | g << 8 | b;
+            }
+            opt.colours[i] = c;
+          }
+        }
+        for (auto& a : s.atoms) a.pos = s.cell.wrap(a.pos);
+        std::erase_if(s.bonds, [&](const Bond& b) { return norm(s.atoms[b.i].pos - s.atoms[b.j].pos) > 4.0; });
+      }
       if (out.size() > 4 && out.substr(out.size() - 4) == ".svg") {
         std::ofstream f(out);
         f << render_svg(s, cam, opt);
