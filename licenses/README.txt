@@ -11,3 +11,7 @@ Element names and mass numbers (core/src/element_extra.inc)
 
 Pauling electronegativities and electron configurations (core/src/element_extra.inc)
   Blue Obelisk Data Repository (MIT licence), as distributed with VTK 9.6.1: see BlueObelisk-MIT.txt.
+
+Libraries shipped inside the installers built with CAPS's ML potential (caps ml, caps ff complete)
+  libtorch / PyTorch 2.14.1 (BSD-3-Clause, with the third-party notices of its LICENSE file): see PyTorch-BSD-3.txt.
+  CAPS's model data/ml/caps-mace-v1.model is CAPS's own, trained by CAPS (MACE architecture, Batatia et al., MIT licence).
