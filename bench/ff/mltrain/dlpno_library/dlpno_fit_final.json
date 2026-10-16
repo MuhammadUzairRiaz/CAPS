@@ -938,12 +938,12 @@
    ],
    "style": "opls",
    "params": [
-    -0.4607,
-    0.4021,
-    0.2412,
-    -0.3472
+    -0.4438,
+    0.3978,
+    0.4303,
+    -0.3471
    ],
-   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CT-CT-CT-NA 0.16 kcal/mol; ridge 0.001",
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CT-CT-CT-NA 0.17 kcal/mol; ridge 0.001",
    "fit": {
     "fragment": "CT-CT-CT-NA",
     "joint": true,
@@ -1320,6 +1320,28 @@
    "comment": "CAPS refit (QM), joint over 3 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS HC-CO-CT-OS 0.28, OH-CO-CT-OS 0.27, OS-CO-CT-OS 0.24 kcal/mol; ridge 0.001",
    "fit": {
     "fragment": "HC-CO-CT-OS, OH-CO-CT-OS, OS-CO-CT-OS",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
+   "name": "HC-CT-CT-NA",
+   "match": [
+    "HC",
+    "CT",
+    "CT",
+    "NA"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0082,
+    0.0
+   ],
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS HC-CT-CT-NA 0.03 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "HC-CT-CT-NA",
     "joint": true,
     "scan": []
    }

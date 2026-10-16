@@ -918,12 +918,12 @@
    ],
    "style": "opls",
    "params": [
-    -0.4607,
-    0.4021,
-    0.2412,
-    -0.3472
+    -0.4438,
+    0.3978,
+    0.4303,
+    -0.3471
    ],
-   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CT-CT-CT-NA 0.16 kcal/mol; ridge 0.001",
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS CT-CT-CT-NA 0.17 kcal/mol; ridge 0.001",
    "fit": {
     "fragment": "CT-CT-CT-NA",
     "joint": true,
@@ -1305,6 +1305,28 @@
    }
   },
   {
+   "name": "HC-CT-CT-NA",
+   "match": [
+    "HC",
+    "CT",
+    "CT",
+    "NA"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    0.0,
+    0.0082,
+    0.0
+   ],
+   "comment": "CAPS refit (QM), joint over 1 scans: DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP; RMS HC-CT-CT-NA 0.03 kcal/mol; ridge 0.001",
+   "fit": {
+    "fragment": "HC-CT-CT-NA",
+    "joint": true,
+    "scan": []
+   }
+  },
+  {
    "name": "NT-CT-CT-OS",
    "match": [
     "NT",
@@ -1439,8 +1461,8 @@
  ],
  "notes": [
   "optional overlay on oplsaa2024.json (caps ff apply --overlay oplsaa2024-dlpno.json); the base library keeps its own values, and the rubber backbone overlay (oplsaa2024-rubber-refit.json) can be loaded with it (they share no class)",
-  "65 torsion classes: the census's classes outside OPLS-AA 2024's published table (CAPS's earlier MP2 / machine-learned fits, and classes the table lacks), each scanned on its smallest sound census fragment; fit RMS at most 1.0 kcal/mol and every |V| at most 8 kcal/mol",
-  "held back, keeping oplsaa2024.json's values (refitted around them): C-CT-CT-NT (V1 of 10.5 kcal/mol in the first fit (an MM/QM electrostatics difference taken up by the torsion)); CA-CA-CY-O$ (V1 of 8.5 kcal/mol and RMS 1.11 in the first fit); OH-CO-CT-OH (V1 of 10.0 kcal/mol in the first fit); CO-OS-CO-OS (RMS 1.45 kcal/mol (polyoxymethylene acetal)); CO-OS-CO-HC (RMS 1.44 kcal/mol beside CO-OS-CO-OS); C-CT-OH-HO (the scan broke: a proton moved in 20 of 24 constrained optimisations (lactic acid)); OH-CT-C-OS (the scan broke: a proton moved in 14 of 24 constrained optimisations (lactic acid)); HC-CT-CT-NA (its DLPNO points (a 34-atom carbazole fragment) were still running); CA-NT-CT-CT (RMS 1.06 kcal/mol, above the 1.0 limit (a class OPLS-AA 2024 lacks; caps ff complete fills it per structure))",
+  "66 torsion classes: the census's classes outside OPLS-AA 2024's published table (CAPS's earlier MP2 / machine-learned fits, and classes the table lacks), each scanned on its smallest sound census fragment; fit RMS at most 1.0 kcal/mol and every |V| at most 8 kcal/mol",
+  "held back, keeping oplsaa2024.json's values (refitted around them): C-CT-CT-NT (V1 of 10.5 kcal/mol in the first fit (an MM/QM electrostatics difference taken up by the torsion)); CA-CA-CY-O$ (V1 of 8.5 kcal/mol and RMS 1.11 in the first fit); OH-CO-CT-OH (V1 of 10.0 kcal/mol in the first fit); CO-OS-CO-OS (RMS 1.45 kcal/mol (polyoxymethylene acetal)); CO-OS-CO-HC (RMS 1.44 kcal/mol beside CO-OS-CO-OS); C-CT-OH-HO (the scan broke: a proton moved in 20 of 24 constrained optimisations (lactic acid)); OH-CT-C-OS (the scan broke: a proton moved in 14 of 24 constrained optimisations (lactic acid)) were still running); CA-NT-CT-CT (RMS 1.06 kcal/mol, above the 1.0 limit (a class OPLS-AA 2024 lacks; caps ff complete fills it per structure))",
   "CAPS's own MACE model reproduces these DLPNO-CCSD(T) scans to 0.28 kcal/mol (median RMSE of the relative energies over 85 scans; bench/ff/mltrain/dlpno_library/mace_vs_dlpno.json)"
  ]
 }
