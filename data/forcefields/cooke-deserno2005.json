@@ -1,0 +1,164 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "Cooke-Kremer-Deserno lipid model",
+ "source": "I. R. Cooke, K. Kremer, M. Deserno, Phys. Rev. E 72, 011506 (2005), equations 1-4 (arXiv:cond-mat/0502418)",
+ "references": [
+  "I. R. Cooke, K. Kremer, M. Deserno, Phys. Rev. E 72, 011506 (2005)"
+ ],
+ "units": "lj",
+ "styles": {
+  "pair": "cosine/squared",
+  "bond": "fene",
+  "angle": "harmonic",
+  "dihedral": "opls",
+  "improper": "cvff"
+ },
+ "mixing": "arithmetic",
+ "special_lj": [
+  0,
+  1,
+  1
+ ],
+ "special_coul": [
+  0,
+  1,
+  1
+ ],
+ "cutoff": 2.722462048309373,
+ "pair_settings": {
+  "model_cutoff": true
+ },
+ "angle_terms": "if_defined",
+ "torsion_terms": "if_defined",
+ "atom_types": [
+  {
+   "name": "H",
+   "element": "",
+   "mass": 1.0,
+   "charge": 0.0,
+   "description": "head bead"
+  },
+  {
+   "name": "T",
+   "element": "",
+   "mass": 1.0,
+   "charge": 0.0,
+   "description": "tail bead next to the head"
+  },
+  {
+   "name": "TE",
+   "element": "",
+   "mass": 1.0,
+   "charge": 0.0,
+   "description": "end tail bead (T's pair terms)",
+   "equivalence": {
+    "vdw": "T"
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "name": "H-H",
+   "match": [
+    "H"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    1.0,
+    1.0663389458939043,
+    1.0663389458939043,
+    1
+   ],
+   "comment": "Eq. 1, WCA with b = 0.95"
+  },
+  {
+   "name": "H-T",
+   "match": [
+    "H",
+    "T"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    1.0,
+    1.0663389458939043,
+    1.0663389458939043,
+    1
+   ],
+   "comment": "Eq. 1, WCA with b = 0.95"
+  },
+  {
+   "name": "T-T",
+   "match": [
+    "T"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    1.0,
+    1.122462048309373,
+    2.722462048309373,
+    1
+   ],
+   "comment": "Eq. 1 (WCA, b = 1) and Eq. 4 (cos^2 attraction, w_c = 1.6)"
+  }
+ ],
+ "bonds": [
+  {
+   "name": "H-T",
+   "match": [
+    "H",
+    "T"
+   ],
+   "style": "fene",
+   "params": [
+    30.0,
+    1.5,
+    1.0,
+    0.95
+   ],
+   "comment": "Eq. 2: k 30, r_inf 1.5; the pair's WCA (b 0.95)"
+  },
+  {
+   "name": "T-TE",
+   "match": [
+    "T",
+    "TE"
+   ],
+   "style": "fene",
+   "params": [
+    30.0,
+    1.5,
+    1.0,
+    1.0
+   ],
+   "comment": "Eq. 2: k 30, r_inf 1.5; the pair's WCA (b 1)"
+  },
+  {
+   "name": "H-TE",
+   "match": [
+    "H",
+    "TE"
+   ],
+   "style": "harmonic",
+   "params": [
+    5.0,
+    4.0
+   ],
+   "comment": "Eq. 3: (1/2) 10 (r - 4)^2"
+  }
+ ],
+ "angles": [],
+ "dihedrals": [],
+ "impropers": [],
+ "bead_templates": {
+  "lipid": "[H]1[T][TE]1"
+ },
+ "notes": [
+  "built by CAPS (bench/ff/make_cooke_deserno.py) from the paper's equations 1-4",
+  "w_c = 1.6 sigma (the paper's bending-rigidity state at k_B T = 1.1 epsilon); the T-T cutoff is r_c + w_c",
+  "reduced units (sigma = epsilon = m = 1): CAPS reads the numbers as A, kcal/mol, g/mol; scale lengths, energies and times yourself"
+ ],
+ "version": "2005",
+ "status": "validated",
+ "typing": "../typing/cooke-deserno2005.typing.json"
+}

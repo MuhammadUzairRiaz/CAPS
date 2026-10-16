@@ -2773,6 +2773,32 @@
     "key": "noble_gases",
     "order": 33
    }
+  },
+  {
+   "id": "cooke-deserno2005",
+   "name": "Cooke-Kremer-Deserno lipid model",
+   "version": "2005",
+   "references": [
+    "I. R. Cooke, K. Kremer, M. Deserno, Phys. Rev. E 72, 011506 (2005)"
+   ],
+   "origin": "built from source",
+   "source": "I. R. Cooke, K. Kremer, M. Deserno, Phys. Rev. E 72, 011506 (2005), equations 1-4 (arXiv:cond-mat/0502418); bench/ff/make_cooke_deserno.py",
+   "license": "published model of the paper (its equations)",
+   "status": "validated",
+   "notes": "three-bead lipids, implicit solvent, w_c = 1.6; LAMMPS equals CAPS's energy (bench/ff/check_data_lammps.py)",
+   "file": "cooke-deserno2005.json",
+   "typing": {
+    "rules": "typing/cooke-deserno2005.typing.json",
+    "evidence": "beads typed by name"
+   },
+   "counts": {
+    "atom_types": 3,
+    "pairs": 3,
+    "bonds": 3,
+    "angles": 0,
+    "dihedrals": 0,
+    "impropers": 0
+   }
   }
  ],
  "list_note": "The force fields the Studio lists, one per force field (entries without \"list\" stay loadable by id for recipes and scripts)"
