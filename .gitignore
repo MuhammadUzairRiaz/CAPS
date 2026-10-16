@@ -22,8 +22,7 @@ __pycache__/
 packaging/icon/caps.iconset/
 
 
-# Local files, not part of CAPS.
-# Kept on the developer's machine only, until they are rebuilt from the original published sources.
+# Local reference libraries (local only): kept on the developer's machine only, never committed.
 /data/forcefields/pcff.json
 /data/forcefields/compass.json
 /data/forcefields/cvff.json

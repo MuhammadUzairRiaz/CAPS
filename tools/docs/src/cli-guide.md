@@ -32,7 +32,7 @@ The format follows the extension, both ways:
 |---|---|---|
 | Structures | `.data` (LAMMPS), `.pdb`, `.xyz`, `.mol2`, `.sdf`/`.mol`, `.cif`, `.car`/`.mdf`, `.gro` + `.top`, `.vasp`/`POSCAR`/`CONTCAR`, AMBER `prmtop` with coordinates | the same, chosen by `-o` |
 | Trajectories | LAMMPS dump (`.lammpstrj`), `.dcd`, `.xtc`, `.trr`, multi-frame `.xyz`, AMBER NetCDF / `mdcrd` | `caps frames` writes `.lammpstrj`, `.dcd`, `.xyz`, `.pdb`, `.gro`, `.trr` |
-| Force fields | CAPS force-field JSON (`data/forcefields`), or a library name such as `opls2005`, `pcff`, `compass` | LAMMPS data + input, GROMACS `.top`/`.itp`/`.gro`/`.mdp`, DL_POLY |
+| Force fields | CAPS force-field JSON (`data/forcefields`), or a library name such as `oplsaa2024`, `pcff`, `compass` | LAMMPS data + input, GROMACS `.top`/`.itp`/`.gro`/`.mdp`, DL_POLY |
 | Recipes, pipelines | YAML or JSON | — |
 
 A trajectory carries no bonds, so commands that read one take `--topology DATA` (the data file of the same atoms). `-o` names the output; a folder for the commands that write several files.

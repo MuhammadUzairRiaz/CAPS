@@ -1,5 +1,5 @@
-// CAPS DL_POLY export: FIELD, CONFIG and a generic CONTROL for DL_POLY 4 (units kcal), in the conventions the DL_POLY
-// force-field tools write them: harmonic terms as ½k (k twice the force field's k), class II bonds and angles as
+// CAPS DL_POLY export: FIELD, CONFIG and a generic CONTROL for DL_POLY 4 (units kcal), in DL_POLY's own
+// conventions: harmonic terms as ½k (k twice the force field's k), class II bonds and angles as
 // "quar" (2K2, 3K3, 4K4), torsions as "cos" A [1 + cos(mφ − δ)] (OPLS triples as "cos3"), the 1-4 scale factors on one
 // dihedral term per 1-4 pair (a zero-amplitude term when the force field has no torsion there), inversions with the
 // centre first, and every van der Waals type pair written out ("lj", "nm" 9-6 for class II, "buck").

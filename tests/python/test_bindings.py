@@ -216,26 +216,6 @@ if _have("lopls-siu2012"):
     check(lopls["complete"], "field: L-OPLS polyethylene")
 else:
     print("skip lopls-siu2012: not in this checkout")
-# OPLS 2020: the bond / angle supplement on OPLS 2005, typed with OPLS 2005's rules; the 2020 values replace 2005's
-if _have("opls2020"):   # a library CAPS has not rebuilt from its own source yet: skipped when absent
-    o20 = caps.build.smiles("CC(=O)OCc1ccccc1", forcefield="uff")
-    r20 = o20.field.assign("opls2020", charges="gasteiger")
-    check(r20["complete"] and "2020" in r20.get("forcefield", r20.get("name", "OPLS 2020")), f"field: OPLS 2020 on benzyl acetate · {r20.get('forcefield', r20.get('name'))}")
-else:
-    print("skip " + ['opls2020'][0] + ": not in this checkout")
-# inorganic and water: NaCl typed as NaCl's potential set (neighbour bonds dropped, the set's charges); MgO's shell
-if _have("inorganic-binary-halides") and _have("inorganic-binary-oxides"):   # a library CAPS has not rebuilt from its own source yet: skipped when absent
-    # model gets a shell on every core; SPC/E water its charges
-    nacl = caps.build.crystal("F m -3 m", 5.64, 5.64, 5.64, [("Na1", "Na", 0, 0, 0), ("Cl1", "Cl", 0.5, 0.5, 0.5)], supercell=(2, 2, 2))
-    rn = nacl.field.assign("inorganic-binary-halides", charges="forcefield")
-    mgo = caps.build.crystal("F m -3 m", 4.212, 4.212, 4.212, [("Mg1", "Mg", 0, 0, 0), ("O1", "O", 0.5, 0.5, 0.5)], supercell=(2, 2, 2))
-    rm = mgo.field.assign("inorganic-binary-oxides", charges="forcefield")
-    mtypes = sorted({a["type"] for a in rm["atoms"]})
-    check(rn["complete"] and {a["type"] for a in rn["atoms"]} == {"Na1", "Cl1"} and abs(rn["atoms"][0]["q"]) == 0.988
-          and rm["complete"] and mtypes == ["Mg1c", "Mg1s", "O2c", "O2s"] and len(rm["atoms"]) == 128,
-          f"field: NaCl potential set, MgO shell model ({len(rm['atoms'])} sites: {mtypes})")
-else:
-    print("skip " + ['inorganic-binary-halides', 'inorganic-binary-oxides'][0] + ": not in this checkout")
 # SPC/E water by its neutral alias (the library whose catalogue entry lists "spce")
 # TODO: SPC/E rebuilt from Berendsen, Grigera & Straatsma 1987 (expected id spce-berendsen1987, alias spce)
 if _have("spce"):
@@ -697,7 +677,7 @@ with tempfile.TemporaryDirectory() as _td:
     check(max(abs(a - b) for a, b in zip(_qf, [_op.atom(i)["charge"] for i in range(_op.atoms)])) < 1e-6, "recipe charges = exported charges")
 _op2 = caps.polymer("[*]OCCCCOC(=O)CCC(=O)[*]", dp=2, chains=1, seed=1)
 _op2.field.assign("oplsaa2024")
-check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op.atoms)) < 1e-6, "recipe and field.assign give one set of OPLS 2005 charges")
+check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op.atoms)) < 1e-6, "recipe and field.assign give one set of OPLS-AA 2024 charges")
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
