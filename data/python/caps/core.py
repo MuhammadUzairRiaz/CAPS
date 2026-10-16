@@ -414,7 +414,12 @@ def _forcefield_path(ff: str) -> str:
                "compass": "compass-frc", "cvff": "cvff-frc",
                "dreiding": "dreiding1990", "cgenff": "cgenff-toppar", "trappe-ua": "trappe-ua-umn",
                 "trappe": "trappe-ua-umn", "clayff": "clayff-cygan2004", "clayff2004": "clayff-cygan2004",
-                "trappe-eh": "trappe-eh-umn"}
+                "trappe-eh": "trappe-eh-umn",
+                # water models and the CG lipid model by their usual names (the libraries built from their papers)
+                "spc": "spc-berendsen1981", "spce": "spce-berendsen1987", "tip3p": "tip3p-jorgensen1983",
+                "tip3p-charmm": "tip3p-charmm-mackerell1998", "tip4p": "tip4p-jorgensen1983", "tip4p2005": "tip4p2005-abascal2005",
+                "tip5p": "tip5p-mahoney2000", "opc": "opc-izadi2014", "opc3": "opc3-izadi2016", "mw": "mw-molinero2009",
+                "cooke-deserno": "cooke-deserno2005"}
     name = aliases.get(ff.lower(), ff)
     p = lib / (name + ".json")
     if not p.exists():
@@ -1338,7 +1343,7 @@ def protocol_text(name: str, temperature: float = 300.0, t_max: float = 600.0, p
 
 def water_models() -> list:
     """The water models CAPS has (SPC, SPC/E, SPC/Fw, TIP3P and its CHARMM and Ewald forms, TIP4P, TIP4P-Ew, TIP4P/2005,
-    TIP4P/Ice, OPC): id, name, citation, sites, geometry, charges and Lennard-Jones. Apply one with
+    TIP4P/Ice, TIP5P, OPC, OPC3): id, name, citation, sites, geometry, charges and Lennard-Jones. Apply one with
     doc.edit(op="water_model", model=id) and type the waters with it by a group {"molecules": "water", "water": id}."""
     return _json_call(library().caps_water_models)
 

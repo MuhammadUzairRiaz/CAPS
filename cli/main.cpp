@@ -148,7 +148,12 @@ std::string ff_path(const std::string& s0) {
       {"opls-ua", "oplsua2024"}, {"oplsua", "oplsua2024"}, {"compass", "compass-frc"}, {"cvff", "cvff-frc"},
       {"dreiding", "dreiding1990"}, {"cgenff", "cgenff-toppar"},
       {"trappe-ua", "trappe-ua-umn"}, {"trappe", "trappe-ua-umn"},
-      {"clayff", "clayff-cygan2004"}, {"clayff2004", "clayff-cygan2004"}, {"trappe-eh", "trappe-eh-umn"}};
+      {"clayff", "clayff-cygan2004"}, {"clayff2004", "clayff-cygan2004"}, {"trappe-eh", "trappe-eh-umn"},
+      // water models and the CG lipid model by their usual names (the libraries built from their papers)
+      {"spc", "spc-berendsen1981"}, {"spce", "spce-berendsen1987"}, {"tip3p", "tip3p-jorgensen1983"},
+      {"tip3p-charmm", "tip3p-charmm-mackerell1998"}, {"tip4p", "tip4p-jorgensen1983"}, {"tip4p2005", "tip4p2005-abascal2005"},
+      {"tip5p", "tip5p-mahoney2000"}, {"opc", "opc-izadi2014"}, {"opc3", "opc3-izadi2016"}, {"mw", "mw-molinero2009"},
+      {"cooke-deserno", "cooke-deserno2005"}};
   std::string lower = s0;
   for (auto& c : lower) c = char(std::tolower((unsigned char)c));
   auto al = alias.find(lower);

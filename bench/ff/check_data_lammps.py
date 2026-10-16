@@ -277,8 +277,8 @@ CASES = [
      "oplsua2024", "types", "rules"),
     # coarse-grained: MARTINI (lj/gromacs + coul/gromacs, dielectric 15, cosine/squared angles, 1-3 and 1-4 pairs kept)
     # and SDK (lj/sdk 9-6 / 12-4, angle sdk with its 1-3 repulsion), bead molecules and water beads in periodic boxes;
-    # mW water (pair_style sw). Each library by the neutral alias its catalogue entry lists; skipped until it is there
-    # (TODO: the models rebuilt from their papers)
+    # Cooke-Kremer-Deserno lipids; mW water (pair_style sw). MARTINI 2 and SDK by a neutral alias a catalogue entry lists,
+    # skipped until they are rebuilt from their papers (TODO: their papers are not in hand yet)
     ("MARTINI DPPC + POPE + ions + water (periodic)", ("cg-box", "martini", [("template", "DPPC", 6), ("template", "POPE", 4),
                                                    ("template", "NA+", 5), ("template", "CL-", 5), ("template", "W", 150)], 42.0),
      "martini", "keep", "rules"),
@@ -299,10 +299,10 @@ CASES = [
     ("SDK SDS + Na+ + water (periodic, relative permittivity 80)", ("cg-box", "sdk", [("beads", "[SO4][CM][CM][CM][CT]", 8),
                                                                    ("beads", "[SOD]", 8), ("beads", "[W]", 120)], 38.0),
      "sdk", "types", "rules"),
-    ("Cooke-Deserno lipids (cosine/squared, FENE; periodic)", ("cg-box", "cooke-deserno", [("template", "lipid", 60)], 16.0),
-     "cooke-deserno", "types", "rules"),
+    ("Cooke-Kremer-Deserno 2005 lipids from the paper (cosine/squared, FENE with WCA; periodic)", ("cg-box", "cooke-deserno2005", [("template", "lipid", 60)], 16.0),
+     "cooke-deserno2005", "types", "rules"),
     # mW water: all-atom water packed by CAPS, one Stillinger–Weber site per molecule (pair_style sw with a .sw file)
-    ("mW water (Stillinger-Weber, periodic, 480 sites)", ("water-box", 480, 24.84), "mw", "types", "rules"),
+    ("mW water (Stillinger-Weber, periodic, 480 sites)", ("water-box", 480, 24.84), "mw-molinero2009", "types", "rules"),
 ]
 
 

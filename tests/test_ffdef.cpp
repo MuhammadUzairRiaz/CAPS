@@ -316,7 +316,7 @@ TEST(FieldForms, ForcesMatchFiniteDifferences) {
 // mW water: the Stillinger–Weber two- and three-body forces and the virial are the energy's derivatives (sites on a
 // jittered lattice at liquid density, pairs and triplets across the periodic faces)
 TEST(FieldForms, StillingerWeberForcesMatchFiniteDifferences) {
-  // TODO: mW water rebuilt from Molinero & Moore 2009 (expected id mw-molinero2009)
+  // mW water from Molinero & Moore 2009 (bench/ff/make_water_models.py)
   const std::string mw = library_file({"mw-molinero2009"});
   if (mw.empty()) GTEST_SKIP() << "no mW water library yet (mw-molinero2009)";
   FFDef def = load_forcefield(mw);
@@ -432,8 +432,8 @@ void check_cg_forces(const FFDef& def, System s, const std::string& charges) {
 
 TEST(FieldForms, CoarseGrainedForcesMatchFiniteDifferences) {
   const std::string dir = std::string(CAPS_SOURCE_DIR) + "/data/forcefields/";
-  // TODO: MARTINI 2, its amino acids, SDK and Cooke-Deserno rebuilt from their papers (expected ids martini2-marrink2007,
-  // martini2-aminoacids-monticelli2008, sdk-shinoda2007, cooke-deserno2005); each part runs once its library is there
+  // Cooke-Kremer-Deserno from the paper (cooke-deserno2005). TODO: MARTINI 2, its amino acids and SDK once rebuilt from
+  // their papers (not in hand yet; expected ids martini2-marrink2007, martini2-aminoacids-monticelli2008, sdk-shinoda2007)
   if (const std::string f = library_file({"martini2-marrink2007"}); !f.empty()) {
     const FFDef martini = load_forcefield(f);
     check_cg_forces(martini, cg_box(martini, {{"DPPC", 3}, {"NA+", 2}, {"CL-", 2}, {"W", 30}}, 36.0, 3), "keep");
