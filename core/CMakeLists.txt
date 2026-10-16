@@ -42,7 +42,6 @@ add_library(caps_core STATIC
   src/json.cpp
   src/ffdef.cpp
   src/param_import.cpp
-  src/dlfield.cpp
   src/typing.cpp
   src/example_typing.cpp
   src/render.cpp

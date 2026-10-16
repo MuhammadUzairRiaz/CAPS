@@ -15,7 +15,7 @@ Known msi2lmp behaviour CAPS does not copy (reported, not counted as differences
     3.9738, for the amide N of N,N-dimethylacrylamide and N-vinylpyrrolidone, where c n c c_1 gives -5.1828);
     CAPS keeps the centre second (reported as DIFFERS in eimp only); the same reversal puts c= c c= h's -6.5349 on the
     C=C carbons of polybutadiene, polyisoprene and polychloroprene (CAPS: 0, pcff.frc has no c=-centred entry for them):
-    over the polymer library these are the only differences (bench/typing/dlfield_deviations.json, "parameters");
+    over the polymer library these are the only differences;
   · angle-angle reference angles written θ_ijk, θ_kjl, θ_ijl, where LAMMPS improper class2 reads θ_ijk, θ_ijl, θ_kjl
     (CAPS writes LAMMPS's order; msi2lmp's file is put in LAMMPS's order before the comparison).
 

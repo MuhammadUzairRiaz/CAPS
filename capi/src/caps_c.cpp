@@ -965,7 +965,7 @@ void field_run(caps_doc* d) {
   } else if (!untyped) {
     if (F.auto_charges) {
       // the force field's own charges when its types carry them; libraries that keep charges on molecule templates
-      // (DL_FIELD's OPLS-AA, GAFF, CHARMM) have none per type, and then Gasteiger–Marsili, said in the report
+      // (some OPLS-AA, GAFF and CHARMM libraries) have none per type, and then Gasteiger–Marsili, said in the report
       try {
         F.ff = std::make_shared<caps::ForceField>(caps::parameterize(s, def, F.types, "types", &F.rep, true));
         F.charges = "types";
@@ -973,7 +973,7 @@ void field_run(caps_doc* d) {
         for (const auto& m : F.rep.missing)
           if (m.rfind("bond increment", 0) == 0) throw caps::FFError(def.name + " has no charge for type pair " + m.substr(15) + " (no bond increment)");
         // fixed per-type charges that miss the formal charge (a group OPLS-AA's charges do not close): the companion
-        // force field's bond-increment charges when it names one (OPLS-AA 2024 → OPLS 2005), said in the report
+        // force field's bond-increment charges when it names one, said in the report
         if (!def.charge_increments_from.empty()) {
           double net = 0;
           for (double q : F.ff->charge) net += q;
@@ -1041,7 +1041,7 @@ void field_run(caps_doc* d) {
         }
       }
     } else if (F.charges == "increments") {
-      // another force field's bond-increment charges (OPLS 2005's for OPLS-AA 2024) with this one's types
+      // another force field's bond-increment charges with this one's types
       std::string note;
       caps::System sq = s;
       const auto q = caps::companion_charges(s, def, F.ff_path, &note);

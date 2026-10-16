@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """OPLS-AA by type number on the polymer library: every oligomer typed with data/typing/oplsaa2024.typing.json
 and parameterised with the OPLS-AA 2024 table; each molecule must be fully typed, have every parameter and be neutral
-(OPLS-AA's group charges balance). Where a reference directory holds another program's OPLS charges for the same xyz
-(bench/ff/compare_polymers.py --keep DIR), the charges are compared atom by atom.
+(OPLS-AA's group charges balance).
 
-usage: check_oplsaa_numbers.py MOLDIR [--ref DIR] [--ff oplsaa2024]
+usage: check_oplsaa_numbers.py MOLDIR [--ff oplsaa2024]
 """
 import glob, json, os, re, subprocess, sys
 
@@ -13,7 +12,6 @@ ROOT = os.path.dirname(os.path.dirname(HERE))
 CAPS = os.path.join(ROOT, "build", "cli", "caps")
 arg = lambda k, d: sys.argv[sys.argv.index(k) + 1] if k in sys.argv else d
 MOLDIR = sys.argv[1]
-REF = arg("--ref", "")
 FF = arg("--ff", "oplsaa2024")
 CHARGES = arg("--charges", "types")   # types: the force field's own (neutrality is then checked); auto for force fields without
 ffj = os.path.join(ROOT, "data", "forcefields", FF + ".json")
@@ -60,18 +58,12 @@ for xyz in sorted(glob.glob(os.path.join(MOLDIR, "*.xyz"))):
         continue
     q = charges(out)
     net = sum(q)
-    ref = ""
-    rp = os.path.join(REF, f"{pid}__opls2005", "dlfield", "lammps1.data") if REF else ""
-    if rp and os.path.exists(rp):
-        rq = charges(rp)
-        if len(rq) == len(q):
-            ref = f" · largest difference from the reference charges {max(abs(a - b) for a, b in zip(q, rq)):.3f} e"
     if abs(net) > 1e-3 and CHARGES == "types":
         charged += 1
-        rows.append((pid, "charged", f"net charge {net:+.3f} e{ref}"))
+        rows.append((pid, "charged", f"net charge {net:+.3f} e"))
     else:
         ok += 1
-        rows.append((pid, "ok", f"neutral{ref}"))
+        rows.append((pid, "ok", "neutral"))
 for pid, kind, why in rows:
     print(f"{pid} {names.get(pid, '')[:32]:32s} {kind:8s} {why}")
 print(f"\n{ok} neutral and complete · {charged} typed but not neutral · {untyped} with untyped atoms · {missing} with missing parameters (of {len(rows)})")

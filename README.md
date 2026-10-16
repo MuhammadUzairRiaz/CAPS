@@ -235,7 +235,7 @@ A recipe describes a whole build in one file. This one is [`examples/nr_equilibr
 recipe: 1
 name: nr_melt
 build:       { polymer: { smiles: "[*]C/C=C(C)\\C[*]", dp: 40, chains: 10 } }
-type:        { forcefield: opls2005 }
+type:        { forcefield: oplsaa2024 }
 grow:        { density: 0.5, seed: 1 }
 relax:       { method: lbfgs, fmax: 0.5 }
 equilibrate: { protocol: larsen21, t_max: 600, t_final: 300, p_max: 50000 }
@@ -264,7 +264,7 @@ Run `caps` with no arguments to list every command.
 ```python
 import caps
 
-doc = caps.polymer("*CC(*)c1ccccc1", dp=20, chains=4, density=0.5, forcefield="opls2005")  # atactic polystyrene
+doc = caps.polymer("*CC(*)c1ccccc1", dp=20, chains=4, density=0.5, forcefield="oplsaa2024")  # atactic polystyrene
 doc.relax(ftol=1.0)
 for prop in doc.analyze("density,rg"):
     print(prop["name"], prop["value"], prop["unit"])

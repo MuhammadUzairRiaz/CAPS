@@ -306,7 +306,6 @@ int usage() {
                "  caps ff complete FILE --ff FF.json -o OVERLAY.json [--report R.json] [--model M.model] [--step 15]\n"
                "               the bonded terms FF lacks for FILE, found and fitted with CAPS's machine-learned potential\n"
                "  caps ff import-lt FILE.lt -o FF.json          convert a moltemplate force field into the CAPS format\n"
-               "  caps ff import-dlf LIB/NAME.par -o FF.json    convert a DL_FIELD library (.par + .sf + .bci)\n"
                "  caps ff info FF.json                           types, rules, styles, references\n"
                "  caps ff type FILE --ff FF.json [--typing RULES.json] [-o TYPES.txt] [--explain]   assign atom types from SMARTS rules\n"
                "  caps ff apply FILE --ff FF.json [-o OUT.data [--lammps-input OUT.in [--lammps-run check|minimize|nvt|npt --temp 300 --press 1 --dt FS (default: the force field's, Martini 20, else 0.5) --steps N] [--moltemplate SYSTEM.lt]]] [--gromacs STEM] [--dlpoly DIR] [--overlay USER.json[,MORE.json]] [--types TYPES.txt] [--charges auto|keep|types|gasteiger]\n"
@@ -353,7 +352,7 @@ std::vector<std::string> glob_files(const std::string& pattern) {
 // options the commands look up.
 const std::set<std::string>& known_options() {
   static const std::set<std::string> k = {
-    "--all", "--allow-missing", "--auto-scale", "--axis", "--barostat", "--bci", "--beads", "--bg", "--bibtex",
+    "--all", "--allow-missing", "--auto-scale", "--axis", "--barostat", "--beads", "--bg", "--bibtex",
     "--block", "--blocks", "--born", "--born-every", "--born-strain", "--box", "--box-relax",
     "--capture", "--cell", "--centre", "--chains", "--charges", "--colour", "--comfortable", "--compare",
     "--components", "--conc", "--constraint-solver", "--constraints", "--configs", "--conformers", "--count", "--csv", "--cutoff", "--cycles",
@@ -373,7 +372,7 @@ const std::set<std::string>& known_options() {
     "--ops", "--ops-file", "--checkpoint-every", "--checkpoint", "--resume", "--resume-at", "--bench-json", "--resume-points", "--resume-curve", "--height", "--top-ratio", "--passivate", "--pattern", "--per-cycle", "--perspective", "--pfinal", "--pitch", "--pmax", "--pme",
     "--pme-order", "--pme-spacing", "--precision", "--press", "--pressure", "--primitive", "--print-protocol", "--probe", "--progress-file",
     "--props", "--protocol", "--ps", "--qdirect", "--qmax", "--quick", "--quiet", "--radius", "--ramp", "--rate",
-    "--ratio", "--batch", "--repeats", "--report", "--rmax", "--salt", "--samples", "--scale", "--seed", "--sequence", "--sf",
+    "--ratio", "--batch", "--repeats", "--report", "--rmax", "--salt", "--samples", "--scale", "--seed", "--sequence",
     "--shape", "--sites", "--size", "--skin", "--slabs", "--solvent", "--solvents", "--spring", "--step",
     "--steps", "--strain", "--stride", "--style", "--supercell", "--surface",
     "--symmetrize", "--table", "--tacticity", "--target", "--tau-p", "--tau-t", "--temp", "--template",
@@ -2377,21 +2376,6 @@ int main(int argc, char** argv) {
         }
         return rep.complete ? 0 : 3;
       }
-      if (sub == "import-dlf") {
-        // caps ff import-dlf LIB/PCFF.par [--sf LIB/PCFF.sf] [--bci LIB/PCFF.bci] -o FF.json (sf / bci found next to the .par by default)
-        if (pos.size() < 2 || !o.count("-o")) return usage();
-        const std::string par = pos[1], stem = par.substr(0, par.size() - 4);
-        auto exists = [](const std::string& f) { return std::ifstream(f).good(); };
-        const std::string sf = o.count("--sf") ? o["--sf"] : exists(stem + ".sf") ? stem + ".sf" : "";
-        const std::string bci = o.count("--bci") ? o["--bci"] : exists(stem + ".bci") ? stem + ".bci" : "";
-        FFDef ff = import_dlfield(par, sf, bci);
-        save_forcefield(ff, o["-o"]);
-        std::printf("%s: %zu types, %zu pair, %zu bond, %zu angle, %zu dihedral, %zu improper rules, %zu bond increments · wrote %s\n", ff.name.c_str(),
-                    ff.types.size(), ff.pairs.size(), ff.bonds.size(), ff.angles.size(), ff.dihedrals.size(), ff.impropers.size(),
-                    ff.bond_increments.size(), o["-o"].c_str());
-        for (const auto& n : ff.notes) std::printf("  %s\n", n.c_str());
-        return 0;
-      }
       if (sub == "import-lt") {
         if (pos.size() < 2 || !o.count("-o")) return usage();
         FFDef ff = import_moltemplate(pos[1]);
@@ -2578,7 +2562,7 @@ int main(int argc, char** argv) {
           }
           if (charges != "types" || !f.charge.size()) f = parameterize(s, ff, types, charges, &rep, o.count("--allow-missing"));
           // automatic charges: per-type charges that miss the formal charge give way to the companion force field's
-          // bond-increment charges when it names one (OPLS-AA 2024 -> OPLS 2005), as a recipe does
+          // bond-increment charges when it names one, as a recipe does
           if (auto_charges && charges == "types" && !ff.charge_increments_from.empty()) {
             double net = 0;
             for (double q : f.charge) net += q;

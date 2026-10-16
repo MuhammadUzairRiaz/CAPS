@@ -245,28 +245,6 @@ TEST(IO, Mol2RoundTripKeepsTypesChargesAndBondOrders) {
   std::filesystem::remove(path);
 }
 
-// the reference library's folder: $DLF_HOME/lib, else ~/project/dl_f_4.13/lib (tests skip when it is not there)
-static std::string dlf_lib() {
-  if (const char* d = std::getenv("DLF_HOME")) return std::string(d) + "/lib";
-  const char* h = std::getenv("HOME");
-  return std::string(h ? h : ".") + "/project/dl_f_4.13/lib";
-}
-
-// DL_FIELD's PCFF converts with equivalences, bond increments and the cff91_auto tables.
-TEST(FFDef, ImportsDlfieldPcff) {
-  const std::string par = dlf_lib() + "/PCFF.par";
-  if (!std::filesystem::exists(par)) GTEST_SKIP() << "DL_FIELD not installed";
-  const FFDef ff = import_dlfield(par, dlf_lib() + "/PCFF.sf", dlf_lib() + "/PCFF.bci");
-  EXPECT_EQ(ff.mixing, "sixthpower");
-  EXPECT_FALSE(ff.auto_dihedrals.empty());
-  EXPECT_FALSE(ff.bond_increments.empty());
-  const FFType* hc = ff.type("hc");
-  ASSERT_NE(hc, nullptr);
-  EXPECT_EQ(hc->equiv.at("vdw"), "h");
-  EXPECT_EQ(hc->element, 1);
-  EXPECT_NEAR(hc->mass, 1.00797, 1e-6);   // not the 12.0115 typo of HC_benzyl
-}
-
 // Morse / GROMOS bonds, cosine-squared and linear-cosine angles, Urey–Bradley, planar inversions, Buckingham and Rydberg
 // pairs and separate 1-4 Lennard-Jones: forces are the gradient of the energy.
 TEST(FieldForms, ForcesMatchFiniteDifferences) {
@@ -596,23 +574,6 @@ TEST(FieldForms, VacuumPairsMatchALargePeriodicBox) {
   const double ep = per.compute(x, big, g).total();
   EXPECT_NEAR(ev, ep, 1e-9 * std::max(1.0, std::fabs(ep)));
   for (size_t k = 0; k < f.size(); ++k) EXPECT_NEAR(f[k], g[k], 1e-9) << k;
-}
-
-// CHARMM libraries keep their separate 1-4 van der Waals and Urey–Bradley terms through save / load.
-TEST(FFDef, DlfieldCharmmKeepsOneFourAndUreyBradley) {
-  const std::string par = dlf_lib() + "/CHARMM36_cgenff.par";
-  if (!std::filesystem::exists(par)) GTEST_SKIP() << "DL_FIELD not installed";
-  const FFDef ff = import_dlfield(par, dlf_lib() + "/CHARMM36_cgenff.sf");
-  const std::string path = (std::filesystem::temp_directory_path() / "caps_cgenff_test.json").string();
-  save_forcefield(ff, path);
-  const FFDef back = load_forcefield(path);
-  std::filesystem::remove(path);
-  bool lj14 = false, ub = false;
-  for (const auto& r : back.pairs) lj14 = lj14 || (r.match.size() == 1 && r.match[0] == "OG2D1" && r.cross.count("lj14"));
-  for (const auto& r : back.angles) ub = ub || (r.style == "charmm" && r.params.size() == 4 && r.params[2] > 0);
-  EXPECT_TRUE(lj14);
-  EXPECT_TRUE(ub);
-  EXPECT_DOUBLE_EQ(back.special_lj[2], 1.0);
 }
 
 // Martini 3 small molecules from all-atom structures, by graph: CAPS's own toluene and anthracene (its atom names, not

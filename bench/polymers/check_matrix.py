@@ -16,7 +16,7 @@ bead models), library entries without a parameter file (aliases, templates) and 
 for yet are listed and skipped with the reason. Failures print CAPS's own reason (untyped atoms, missing
 parameters) so each can be traced to a typing rule or a parameter the library lacks.
 
-usage: python3 bench/polymers/check_matrix.py [--ff substring] [--polymer substring] [--engine lammps|gromacs] [--fill-from FF] [--jobs 8] [--keep DIR] [--json OUT]
+usage: python3 bench/polymers/check_matrix.py [--ff substring | =exact-id] [--polymer substring] [--engine lammps|gromacs] [--fill-from FF] [--jobs 8] [--keep DIR] [--json OUT]
 """
 import json, math, os, re, subprocess, sys, tempfile
 from concurrent.futures import ProcessPoolExecutor
@@ -281,7 +281,10 @@ def case(job):
         open(rp, "w").write(recipe(pid, spec, ffid, "gromacs", chains=12))
     else:
         open(rp, "w").write(recipe(pid, spec, ffid))
-    r = subprocess.run([CAPS, "run", rp, "--out", d, "--threads", "1"], capture_output=True, text=True, timeout=600)
+    try:
+        r = subprocess.run([CAPS, "run", rp, "--out", d, "--threads", "1"], capture_output=True, text=True, timeout=600)
+    except subprocess.TimeoutExpired:   # a cell CAPS cannot build in 10 minutes is a failure of its own, not the end of the sweep
+        return pid, pname, ffid, "fail-timeout", "caps run did not finish in 600 s"
     out = r.stdout + r.stderr
     engine = "GROMACS" if ENGINE == "gromacs" else "LAMMPS"
     if r.returncode and "no exact LAMMPS form" in out:   # separate 1-4 Lennard-Jones (CHARMM, GROMOS): GROMACS writes it exactly
@@ -314,7 +317,8 @@ def case(job):
 
 
 if __name__ == "__main__":
-    ffs = [f for f in forcefields() if ONLY_FF.lower() in f[0].lower()]
+    # --ff NAME matches any id containing NAME; --ff =NAME only that id
+    ffs = [f for f in forcefields() if (f[0].lower() == ONLY_FF[1:].lower() if ONLY_FF.startswith("=") else ONLY_FF.lower() in f[0].lower())]
     polys = [p for p in polymers() if ONLY_P.lower() in (p[0] + " " + p[1]).lower()]
     skipped = [(fid, why) for fid, _, why in ffs if why]
     jobs = [(pid, pname, spec, fid) for fid, _, why in ffs if not why for pid, pname, spec in polys]

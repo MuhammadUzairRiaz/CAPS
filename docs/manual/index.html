@@ -215,7 +215,7 @@ dialog img{max-width:96vw;max-height:94vh;display:block;border-radius:6px;cursor
     <li><div>Press <span class="ui">Crosslink</span>. The live view shows each chain in its own colour with the new links highlighted. The links plot shows progress against the target, and <b>Network</b> reports target vs achieved, ν, Mc, DC, loops and the force field before and after.</div></li>
     <li><div>To run the reaction in LAMMPS, use <span class="ui">Write fix bond/react files…</span>. It writes pre/post templates and map files cut from your cell and typed with your force field, a data file holding every type the reaction creates, and an input with the fix. Run <code>lmp -in react.in</code>.</div></li>
   </ol>
-  <div class="note">CAPS checks the force field. PCFF's main table gives epoxide ring angles general values (104.5–111°), about 108 kcal/mol of strain per ENR epoxide, and the Force field step says so. For epoxidised rubber, GAFF (cx/op) or OPLS 2005 (C3T/O3T) describe the ring properly.</div>
+  <div class="note">CAPS checks the force field. PCFF's main table gives epoxide ring angles general values (104.5–111°), about 108 kcal/mol of strain per ENR epoxide, and the Force field step says so. For epoxidised rubber, GAFF (cx/op) describes the ring properly.</div>
   <figure><button type="button" aria-label="Enlarge"><img src="img/16_react.jpg" alt="React page after crosslinking PCFF polyethylene" loading="lazy"></button>
     <figcaption><b>React.</b> Ten PCFF polyethylene chains crosslinked between chains to one link per chain. The live view keeps each chain's colour and circles the links. Network: 5 of 5 links, DC 3.33 %, PCFF re-assigned.</figcaption></figure>
 </section>
