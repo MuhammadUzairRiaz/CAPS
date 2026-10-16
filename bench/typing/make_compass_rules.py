@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-"""CAPS typing rules for COMPASS (Sun, J. Phys. Chem. B 102, 7338 (1998)) in the library's two COMPASS files:
-compass (diagonal terms, with extension types for alkenes, ketones, amines, halogens ...) and
-compass-published-moltemplate (the published subset with every class II cross term).
+"""CAPS typing rules for COMPASS (Sun, J. Phys. Chem. B 102, 7338 (1998)) in the library's COMPASS file compass
+(diagonal terms, with extension types for alkenes, ketones, amines, halogens ...).
 
 The rules follow the published type definitions: c4 a generic sp3 carbon, c43 / c44 sp3 carbons with three / four
 heavy atoms attached, c4o the carbon alpha to an oxygen, c41o / c43o the carbons of methanol / secondary alcohols,
@@ -81,14 +80,13 @@ add("cl1", 0, "[Cl][CX4;!$(*(Cl)[Cl,F,Br,I])]", "Cl on a C with one halogen")
 add("cl12", 1, "[Cl][CX4;$(*(Cl)[Cl,F,Br,I]);!$(*(Cl)(Cl)(Cl)Cl)]", "Cl on a C with two or three halogens")
 add("cl14", 2, "[Cl][CX4;$(*(Cl)(Cl)(Cl)Cl)]", "Cl on a C with four halogens")
 
-# the published file spells two names differently
-SPELL = {"compass-published-moltemplate": {"c3'": "c3prime", "o1=*": "o1=star"}}
-LABEL = {"compass": "COMPASS (diagonal terms)", "compass-published-moltemplate": "COMPASS (published subset, full class II)"}
+SPELL = {}
+LABEL = {"compass": "COMPASS (diagonal terms)"}
 
 if __name__ == "__main__":
     cat_p = os.path.join(DATA, "forcefields", "catalogue.json")
     cat = json.load(open(cat_p))
-    for target in ("compass", "compass-published-moltemplate"):
+    for target in ("compass",):
         ff_p = os.path.join(DATA, "forcefields", target + ".json")
         ff = json.load(open(ff_p))
         have = {t["name"] for t in ff["atom_types"]} | {t["name"].split("~")[0] for t in ff["atom_types"]}

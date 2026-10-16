@@ -12,7 +12,7 @@ CAPS = os.path.join(ROOT, "build", "cli", "caps")
 LMP = os.environ.get("LMP", os.path.expanduser("~/lammps/build-class2/lmp"))
 MT = os.environ.get("MOLTEMPLATE", os.path.expanduser("~/moltemplate/moltemplate/scripts/moltemplate.sh"))
 arg = lambda k, d: sys.argv[sys.argv.index(k) + 1] if k in sys.argv else d
-FFS = arg("--ff", "pcff-frc,compass-frc,cvff-frc,oplsaa2024-moltemplate,opls2005,gaff-amber25,dreiding").split(",")
+FFS = arg("--ff", "pcff-frc,compass-frc,cvff-frc,oplsaa2024,opls2005,gaff-amber25,dreiding").split(",")
 WORK = arg("--keep", "") or tempfile.mkdtemp(prefix="caps_lt_")
 THERMO = "thermo_style custom step pe ebond eangle edihed eimp evdwl ecoul elong\nthermo_modify format float %.8f\nrun 0\n"
 

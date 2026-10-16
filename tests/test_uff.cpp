@@ -37,7 +37,7 @@ TEST(Uff, TableCoversEveryElementToLawrencium) {
   EXPECT_TRUE(is_uff("uff"));
   EXPECT_TRUE(is_uff("UFF"));
   EXPECT_TRUE(is_uff("/some/where/uff.json"));
-  EXPECT_FALSE(is_uff("gaff2-moltemplate.json"));
+  EXPECT_FALSE(is_uff("gaff2-2.2.20-ambertools.json"));
   // every element as a dichloride takes a label of its own element
   for (int z = 3; z <= 103; ++z) {
     System s;

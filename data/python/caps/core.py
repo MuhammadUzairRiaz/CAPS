@@ -393,6 +393,19 @@ def _say_forcefield(ff: str, used: str, why: str) -> None:
         sys.stderr.write(f"force field {ff}: {used}{why}\n")
 
 
+def _catalogue_alias(lib: Path, ff: str) -> Optional[str]:
+    """a library by a neutral short name its catalogue entry lists under "aliases" (spce, tip3p, martini ...): the first
+    entry naming it whose file is installed, so the name follows whichever library provides the model"""
+    try:
+        cat = json.loads((lib / "catalogue.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    for e in cat.get("forcefields", []):
+        if ff.lower() in [a.lower() for a in e.get("aliases", [])] and isinstance(e.get("file"), str) and (lib / e["file"]).exists():
+            return e["file"][: -len(".json")] if e["file"].endswith(".json") else e["file"]
+    return None
+
+
 def _forcefield_path(ff: str) -> str:
     if ff.lower() == "uff" or os.path.exists(ff):
         return ff if ff.lower() != "uff" else "uff"
@@ -406,6 +419,9 @@ def _forcefield_path(ff: str) -> str:
                 "trappe-eh": "trappe-eh-umn"}
     name = aliases.get(ff.lower(), ff)
     p = lib / (name + ".json")
+    if not p.exists():
+        name = _catalogue_alias(lib, ff) or name
+        p = lib / (name + ".json")
     if p.exists():
         if ff.lower() in _FF_FALLBACK:
             _say_forcefield(ff, name, "")
@@ -1878,10 +1894,11 @@ class build:
         return d
 
     @staticmethod
-    def martini_melt(repeat: str, repeats: int = 20, chains: int = 20, density: float = 1.0, forcefield: str = "martini-moltemplate",
+    def martini_melt(repeat: str, repeats: int = 20, chains: int = 20, density: float = 1.0, forcefield: str = "martini",
                      seed: int = 1, tolerance: float = 3.0) -> Document:
         """A MARTINI polymer melt: chains of `repeats` × the repeat unit's bead SMILES ("[C1]", "[SN0]" …) packed, the
-        MARTINI force field (a library id or a path) assigned and the cell compressed to the density (g/cm³) with it."""
+        MARTINI force field (a library id or a path; "martini" is the library whose catalogue entry lists that alias)
+        assigned and the cell compressed to the density (g/cm³) with it."""
         o = {"forcefield": _forcefield_path(forcefield), "repeat": repeat, "repeats": repeats, "chains": chains, "density": density,
              "seed": seed, "tolerance": tolerance}
         rep = _report()

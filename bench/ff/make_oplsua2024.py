@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """OPLS-UA from the 2024 OPLS parameter file: data/forcefields/oplsua2024.json and data/typing/oplsua2024.typing.json.
 
-The 2024 OPLS parameter file (Jorgensen et al., J. Phys. Chem. B 2024, supporting information; as converted in
-oplsaa2024-moltemplate.json) keeps the united-atom types of the original OPLS (types 66-134: Jorgensen, Madura & Swenson,
+The 2024 OPLS parameter file (Jorgensen et al., J. Phys. Chem. B 2024, supporting information; as CAPS converts it in
+data/forcefields/oplsaa2024.json, bench/ff/convert_boss_opls.py) keeps the united-atom types of the original OPLS (types 66-134: Jorgensen, Madura & Swenson,
 J. Am. Chem. Soc. 106, 6638 (1984) for hydrocarbons; alcohols J. Phys. Chem. 90, 1276 (1986); sulfur J. Phys. Chem. 90,
 6379 (1986); ethers J. Comput. Chem. 11, 958 (1990); nitriles Mol. Phys. 63, 547 (1988); chloromethanes J. Phys. Chem.
 94, 1683 (1990); and 722-723 alkyl bromide), with their bonded terms by class (C2, C3, CH, C8, C9, CD ...) and UA
 torsions. This overlay extends the OPLS-AA 2024 file (the same parameters) and gives each united-atom carbon site its
-mass with its hydrogens (the converted file lists 12.011 for every carbon type); its typing rules fold hydrogens on
+mass with its hydrogens (the converted file lists 12.011 for every carbon type), keeping its bonded classes (the
+equivalences of oplsaa2024.json); its typing rules fold hydrogens on
 carbon into their carbons (united_atom) and type the sites by element, hydrogen count and neighbours.
 
 A CH3 site takes its type by the number of carbons on the carbon it is bonded to, as the 1984 paper defines it (ethane
@@ -20,9 +21,11 @@ papers that define the types (1984 hydrocarbons, 1986 alcohols, 1990 ethers) thr
 bench/ff/open/oplsua2024_supplement.json: each entry, cited by table, is expanded over the classes it names and added
 only where the 2024 file has no term.
 
+Regeneration order: bench/ff/convert_boss_opls.py (data/forcefields/oplsaa2024.json), then this script.
+
 usage: make_oplsua2024.py [DATA_DIR] [--supplement FILE]
 """
-import fnmatch, itertools, json, os, sys
+import itertools, json, os, re, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 ARGS = sys.argv[1:]
@@ -32,7 +35,7 @@ if "--supplement" in ARGS:
     SUPPLEMENT = ARGS[i + 1]
     del ARGS[i:i + 2]
 DATA = ARGS[0] if ARGS else os.path.join(ROOT, "data")
-BASE = os.path.join(DATA, "forcefields", "oplsaa2024-moltemplate.json")
+BASE = os.path.join(DATA, "forcefields", "oplsaa2024.json")
 MC, MH = 12.011, 1.008
 
 # united-atom carbon sites of the table and the hydrogens each carries (from the table's own descriptions)
@@ -109,8 +112,17 @@ add(123, 5, "Cl[CX4H0](Cl)(Cl)Cl", "Cl in CCl4")
 add(722, 5, "[Br][CX4H2]", "alkyl Br")
 add(723, 5, "[CX4H2][Br]", "CH2 on an alkyl Br")
 
+# the supplement writes the sulfide / disulfide S class as S~ (its own "S" is the group of sp3 carbons); the 2024 .par,
+# and so oplsaa2024.json, names that class S
+CLASS = {"S~": "S"}
+
+
+def cls_name(c):
+    return CLASS.get(c, c)
+
+
 base = json.load(open(BASE))
-names = {a["name"].split("_")[0]: a for a in base["atom_types"]}
+names = {str(int(a["name"][5:])): a for a in base["atom_types"] if re.fullmatch(r"opls_\d+", a["name"])}
 types = []
 for n, h in sorted(UA_H.items()):
     a = dict(names[str(n)])
@@ -124,7 +136,7 @@ CAPS_UA = [
      "CH3 92 and CH2 93, with the sp3 CH's Lennard-Jones 73)"),
     ("caps_ua_ch_sh", "CH", 73, MC + MH, 0.18, "CH on a thiol S (by_analogy: the carbon-on-thiol charge +0.18 of CH3 88 and "
      "CH2 89, with the sp3 CH's Lennard-Jones 73)"),
-    ("caps_ua_s_poly", "S~", 85, 32.06, 0.0, "S between two S, a polysulfide's middle S (by_analogy: the disulfide S's "
+    ("caps_ua_s_poly", "S", 85, 32.06, 0.0, "S between two S, a polysulfide's middle S (by_analogy: the disulfide S's "
      "Lennard-Jones 85; each end S is balanced by its carbon, so the middle S carries 0)"),
     ("caps_ua_s_ssh", "SH", 83, 32.06, -0.27, "persulfide S-H sulfur (by_analogy: the thiol S's Lennard-Jones 83; with the "
      "thiol H 87 (+0.27) the S-H group is neutral, the rest of the chain balanced by the disulfide numbers)"),
@@ -133,9 +145,9 @@ pairs_base = {p["match"][0]: p["params"] for p in base["pairs"] if len(p["match"
 caps_pairs = []
 for name, cls, lj, mass, q, desc in CAPS_UA:
     ref = names[str(lj)]
-    full = f"{name}_b{cls}_a{cls}_d{cls}_i{cls}"
-    types.append({"name": full, "element": ref["element"], "mass": round(mass, 4), "charge": q, "description": f"CAPS {desc}"})
-    caps_pairs.append({"match": [full], "params": list(pairs_base[ref["name"]])})
+    types.append({"name": name, "element": ref["element"], "mass": round(mass, 4), "charge": q, "description": f"CAPS {desc}",
+                  "equivalence": {k: cls for k in ("bond", "angle", "dihedral", "improper")}})
+    caps_pairs.append({"name": name, "match": [name], "params": list(pairs_base[ref["name"]])})
     names[name] = types[-1]
 rules = []
 for r in R:
@@ -151,7 +163,7 @@ CL = sup["classes"]
 
 
 def classes(x):
-    return CL.get(x, [x]) if isinstance(x, str) else x
+    return [cls_name(c) for c in (CL.get(x, [x]) if isinstance(x, str) else x)]
 
 
 def valid(t):
@@ -161,15 +173,32 @@ def valid(t):
     return (t[0] != "C9" or t[1] in CL["D"]) and (t[-1] != "C9" or t[-2] in CL["D"])
 
 
-def pattern(kind, c):
-    return {"bonds": f"*_b{c}_a*_d*_i*", "angles": f"*_b*_a{c}_d*_i*"}.get(kind, f"*_b*_a*_d{c}_i*")
+def glob(p):
+    # CAPS's term patterns: '*' any run, '?' one character, '\\' makes the next character literal (C\\* is the class C*)
+    out, i = "", 0
+    while i < len(p):
+        if p[i] == "\\" and i + 1 < len(p):
+            out += re.escape(p[i + 1])
+            i += 2
+            continue
+        out += ".*" if p[i] == "*" else "." if p[i] == "?" else re.escape(p[i])
+        i += 1
+    return re.compile(out + r"\Z")
+
+
+# the 2024 file's own terms: oplsaa2024.json also carries CAPS's all-atom supplement (bench/ff/open/oplsaa2024_supplement.json),
+# which does not stop a united-atom paper's term from being added (the overlay's term, later, wins over it)
+AA_SUP = os.path.join(ROOT, "bench", "ff", "open", "oplsaa2024_supplement.json")
+aa_sup = json.load(open(AA_SUP))
+AA_ADDED = {(kind, "-".join(e["match"]), f"{e['source']}: {e['reason']}") for kind in ("bonds", "angles", "dihedrals")
+            for e in aa_sup.get(kind, [])}
 
 
 def base_has(kind, t):
-    names = [f"0_b{c}_a{c}_d{c}_i{c}" for c in t]
     for r in base[kind]:
-        if len(r["match"]) == len(t) and any(all(fnmatch.fnmatchcase(n, p) for n, p in zip(seq, r["match"]))
-                                             for seq in (names, names[::-1])):
+        if (kind, r["name"], r.get("comment")) in AA_ADDED:
+            continue
+        if len(r["match"]) == len(t) and any(all(glob(p).match(c) for c, p in zip(seq, r["match"])) for seq in (t, t[::-1])):
             return True
     return False
 
@@ -185,7 +214,7 @@ for kind in added:
             seen.add(key)
             if base_has(kind, key):
                 continue
-            added[kind].append({"name": "-".join(key), "match": [pattern(kind, c) for c in key], "params": list(e["params"]),
+            added[kind].append({"name": "-".join(key), "match": list(key), "params": list(e["params"]),
                                 "comment": f"{e['source']}: {e['reason']}"})
 
 ff = {"format": "caps-forcefield", "format_version": 1, "name": "OPLS-UA (2024 parameter file)",
@@ -194,7 +223,7 @@ ff = {"format": "caps-forcefield", "format_version": 1, "name": "OPLS-UA (2024 p
                      "W. L. Jorgensen, J. D. Madura, C. J. Swenson, J. Am. Chem. Soc. 106, 6638 (1984)",
                      "W. L. Jorgensen, J. Phys. Chem. 90, 1276 (1986)", "W. L. Jorgensen, J. Phys. Chem. 90, 6379 (1986)",
                      "J. M. Briggs, T. Matsui, W. L. Jorgensen, J. Comput. Chem. 11, 958 (1990)"],
-      "extends": "oplsaa2024-moltemplate.json", "atom_types": types, "version": "2024", "status": "converted",
+      "extends": "oplsaa2024.json", "atom_types": types, "version": "2024", "status": "converted",
       "notes": ["the united-atom carbon sites carry their hydrogens' mass (CH4 16.043, CH3 15.035, CH2 14.027, CH 13.019)",
                 f"{len(added['angles'])} bends and {len(added['dihedrals'])} torsions the 2024 file lacks for united-atom "
                 "hydrocarbons, alcohols and ethers, from Jorgensen, Madura & Swenson, J. Am. Chem. Soc. 106, 6638 (1984), "

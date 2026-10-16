@@ -191,14 +191,14 @@ public sealed partial class MainViewModel
             {
                 string S(string k) => e.TryGetProperty(k, out var v) && v.ValueKind == System.Text.Json.JsonValueKind.String ? v.GetString()! : "";
                 var id = S("id");
-                if (!id.StartsWith("martini", StringComparison.Ordinal) || id is "martini-aminoacids") continue;   // amino acids: not a polymer model
+                if (!id.StartsWith("martini", StringComparison.Ordinal) || id.Contains("aminoacids")) continue;   // amino acids: not a polymer model
                 if (!e.TryGetProperty("typing", out var t) || t.ValueKind != System.Text.Json.JsonValueKind.Object) continue;
                 r.Add(new FfEntry(id, S("name"), S("version"), S("status"), System.IO.Path.Combine(dir, S("file")), true));
             }
         }
         catch { }
-        // MARTINI 2.0 first: the polymer mappings in the examples are MARTINI 2
-        return r.OrderBy(x => x.Id == "martini-moltemplate" ? 0 : x.Id == "martini-polymers" ? 1 : 2).ToList();
+        // MARTINI 2 first: the polymer mappings in the examples are MARTINI 2 (its polymer set next)
+        return r.OrderBy(x => x.Id.StartsWith("martini3", StringComparison.Ordinal) ? 2 : x.Id.Contains("polymers") ? 1 : 0).ToList();
     }
     private int _mtFf;
     public int MtFfIndex { get => _mtFf; set => Set(ref _mtFf, value); }
@@ -206,8 +206,8 @@ public sealed partial class MainViewModel
                                                    "[C1][C3] · two apolar beads per unit (write your own mapping)"];
     private string _mtRepeat = "[C1]";
     public string MtRepeat { get => _mtRepeat; set => Set(ref _mtRepeat, value ?? ""); }
-    public int MtExample { get => -1; set { if (value >= 0 && value < MtExamples.Length) { MtRepeat = MtExamples[value].Split(' ')[0]; if (value == 1) SelectMartini("martini-polymers"); } } }
-    private void SelectMartini(string id) { var k = MtForceFields.FindIndex(e => e.Id == id); if (k >= 0) MtFfIndex = k; }
+    public int MtExample { get => -1; set { if (value >= 0 && value < MtExamples.Length) { MtRepeat = MtExamples[value].Split(' ')[0]; if (value == 1) SelectMartini("polymers"); } } }
+    private void SelectMartini(string part) { var k = MtForceFields.FindIndex(e => e.Id.Contains(part)); if (k >= 0) MtFfIndex = k; }
     private decimal _mtRepeats = 20, _mtChains = 40, _mtDensity = 0.9m, _mtSeed = 1;
     public decimal MtRepeats { get => _mtRepeats; set => Set(ref _mtRepeats, Math.Clamp(Math.Round(value), 1, 5000)); }
     public decimal MtChains { get => _mtChains; set => Set(ref _mtChains, Math.Clamp(Math.Round(value), 1, 20000)); }
@@ -329,8 +329,7 @@ public sealed partial class MainViewModel
             KeepPageSettings("cg");   // Edit brings the page back as it was for this structure
             GrownUnsaved = true;
             CgBackmapLog = report;
-            var ff = Field.Library.ToList().FindIndex(x => x.Id == "gaff2-moltemplate");
-            if (ff < 0) ff = Field.Library.ToList().FindIndex(x => x.Id == "gaff2-2.2.20-ambertools");
+            var ff = Field.Library.ToList().FindIndex(x => x.Id == "gaff2-2.2.20-ambertools");
             if (ff >= 0) { Field.FfIndex = ff; await Field.Assign(); }
             Status = "Backmapped: " + report.Split('\n').FirstOrDefault() + (ff >= 0 ? " · " + Field.ForceFieldName + " assigned" : "");
         }

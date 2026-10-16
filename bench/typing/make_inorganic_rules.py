@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""CAPS typing rules for the library's inorganic and water force fields.
+"""CAPS typing rules for the library's inorganic force fields.
 
 Compound-specific potential sets (binary halides and oxides, ternary oxides, glasses, zeolites, GaN) are typed from the
 force field's own compound templates: each atom of a compound gets that compound's type when the structure holds the
@@ -9,7 +9,7 @@ takes the general set (rutile and anatase cannot be told apart by composition); 
 Field step. Shell models declare their core → shell pairs ("shells"): CAPS puts a shell on every core it types.
 
 The Hill-Sauer zeolite field (Hill & Sauer, J. Phys. Chem. 98, 1238 (1994); 99, 9536 (1995)) types by coordination and
-neighbours. Water models: O and H of water. ClayFF is not here: its library and rules come from the paper
+neighbours. ClayFF is not here: its library and rules come from the paper
 (bench/ff/make_clayff_cygan2004.py, data/typing/clayff-cygan2004.typing.json).
 
 usage: make_inorganic_rules.py [SOURCE_LIB_DIR]
@@ -128,10 +128,6 @@ def hill_sauer():
             rule("H_OS", 1, "[H][O;$(*[Si]);!$(*[Al])]", "silanol hydrogen"), rule("H_OA", 1, "[H][O;$(*[Al]);!$(*[Si])]", "aluminol hydrogen")]
 
 
-def water(o, h):
-    return [rule(o, 0, "[OX2H2]", "water oxygen"), rule(h, 0, "[H][OX2H2]", "water hydrogen")]
-
-
 def write(fid, rules, label, extra):
     ff_p = os.path.join(DATA, "forcefields", fid + ".json")
     ff = json.load(open(ff_p))
@@ -178,9 +174,7 @@ if __name__ == "__main__":
             json.dump(doc, open(out, "w"), ensure_ascii=False, indent=1)
         made[fid] = f"{len(rules)} rules, {len(chosen)} compounds" + (f", {len(shells)} shelled cores" if shells else "") + \
                     (f", {len(alternatives)} other potential sets as overlays (typing/sets/{fid})" if alternatives else "")
-    for fid, rules, label in (("inorganic-zeolite-hill-sauer", hill_sauer(), "Hill-Sauer zeolite field"),
-                              ("spce-moltemplate", water("O", "H"), "SPC/E water"), ("tip3p-1983-moltemplate", water("O", "H"), "TIP3P water (1983)"),
-                              ("tip3p-2004-moltemplate", water("O", "H"), "TIP3P water (2004)")):
+    for fid, rules, label in (("inorganic-zeolite-hill-sauer", hill_sauer(), "Hill-Sauer zeolite field"),):
         if not have(fid):
             print(f"{fid}: no data/forcefields/{fid}.json here, skipped")
             continue

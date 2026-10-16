@@ -176,17 +176,13 @@ CASES = [
     ("CVFF from cvff.frc: phenol, ethyl acetate, N-methylacetamide", ("smiles", "Oc1ccccc1.CCOC(=O)C.CC(=O)NC"), "cvff-frc", "types", "rules"),
     ("Polystyrene melt, COMPASS from compass_published.frc (periodic)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "compass-frc", "types", "rules"),
     ("COMPASS from compass_published.frc: propylbenzene, ester-ether", ("smiles", "CCCc1ccccc1.COCCOC(=O)C"), "compass-frc", "types", "rules"),
-    # every bonded kind hybrid: COMPASS (class II with all cross terms) plus an overlay turning one angle, one torsion
-    # and one improper type into class I forms, so each class II section carries skip lines. (The improper is cvff,
-    # K[1 − cos 2φ]: smooth. A harmonic improper with χ0 = 0 on a class II centre-second quadruple sits at χ ≈ 180°,
-    # a cusp of K(χ − χ0)² where the two programs take different one-sided slopes.)
-    ("COMPASS polystyrene + class I overlay (hybrid in every kind)", ("compass-ps",), "compass-published-moltemplate", "types", "keys"),
-    # OPLS-AA with its numbered types and their own charges (the 2024 and BOSS 2008 files), L-OPLS for long alkyl chains:
-    # rubber-relevant groups — trisubstituted alkene (isoprene), styrene, nitrile, ester, chloroalkene, disulfide
-    ("OPLS-AA 2024: isoprene, ethylbenzene, nitrile, ester, disulfide", ("smiles", "CC=C(C)CC.CCc1ccccc1.CCC#N.CCOC(=O)C.CSSC"), "oplsaa2024-moltemplate", "types", "rules"),
-    ("OPLS-AA 2024 polystyrene melt (periodic)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "oplsaa2024-moltemplate", "types", "rules"),
-    ("OPLS-AA 2008 (BOSS 4.8): isoprene, chloroethene, NBR nitrile (R2CH-CN); nudged off linear", ("smiles-nudged", "CC=C(C)CC.CC=CCl.CCC(C#N)CC"), "oplsaa2008-moltemplate", "types", "rules"),
-    ("L-OPLS 2024: hexadecane", ("smiles", "CCCCCCCCCCCCCCCC"), "loplsaa2024-moltemplate", "types", "rules"),
+    # hybrid bonded kinds: COMPASS (class II with all cross terms) plus an overlay turning one angle and one torsion type
+    # into class I forms, so those class II sections carry skip lines. (The overlay's cvff improper stays class II here:
+    # compass-frc places its out-of-plane terms as msi2lmp does, oop_scheme msi2lmp.)
+    ("COMPASS polystyrene + class I overlay (hybrid angles and torsions)", ("compass-ps",), "compass-frc", "types", "keys"),
+    # OPLS-AA 2024 with its numbered types and their own charges: rubber-relevant groups — trisubstituted alkene
+    # (isoprene), styrene, nitrile, ester, disulfide
+    ("OPLS-AA 2024: isoprene, ethylbenzene, nitrile, ester, disulfide", ("smiles", "CC=C(C)CC.CCc1ccccc1.CCC#N.CCOC(=O)C.CSSC"), "oplsaa2024", "types", "rules"),
     ("CGenFF methane template (separate 1-4 LJ)", ("template", "CHARMM36_cgenff", "toluene"), "cgenff", "gasteiger", "rules"),
     # CHARMM in its own styles: lj/charmmfsw (force switch 10-12 Å, pairs in the switching shell), the 1-4 pairs with
     # their own ε14 / σ14 through dihedral charmmfsw weights (a phenyl ring's para pairs reached by two torsions once)
@@ -285,7 +281,6 @@ CASES = [
     ("TraPPE-UA (transferable) PIBVE, poly(isobutyl vinyl ether) DP 4", ("grow", "[*]CC([*])OCC(C)C", 4, 3), "trappe-ua-umn", "types", "rules"),
     ("TraPPE-UA (transferable) PVCH, poly(vinyl cyclohexane) DP 4 (six-membered ring)", ("grow", "[*]CC([*])C1CCCCC1", 4, 3), "trappe-ua-umn", "types", "rules"),
     ("TraPPE-UA (transferable) PVCP, poly(vinyl cyclopentane) DP 4 (five-membered ring)", ("grow", "[*]CC([*])C1CCCC1", 4, 3), "trappe-ua-umn", "types", "rules"),
-    ("TraPPE-UA alkanes (moltemplate): dodecane", ("smiles", "CCCCCCCCCCCC"), "trappe1998-moltemplate", "keep", "rules"),
     # OPLS-UA: the 2024 file's united-atom types with the 1984 paper's terms where the file has none
     # (bench/ff/open/oplsua2024_supplement.json): CH-CH2 torsions (isopentane), C=C-C-C (1-butene), bends by Table I
     ("OPLS-UA 2024 + 1984 terms: polypropylene tetramer", ("smiles", "CC(C)CC(C)CC(C)CC(C)C"), "oplsua2024", "types", "rules"),
@@ -298,10 +293,12 @@ CASES = [
     ("OPLS-UA 2024 + 1986 / 1990 terms: ethanol, 1-propanol, 2-propanol, tert-butanol, diethyl ether", ("smiles", "CCO.CCCO.CC(C)O.CC(C)(C)O.CCOCC"),
      "oplsua2024", "types", "rules"),
     # coarse-grained: MARTINI (lj/gromacs + coul/gromacs, dielectric 15, cosine/squared angles, 1-3 and 1-4 pairs kept)
-    # and SDK (lj/sdk 9-6 / 12-4, angle sdk with its 1-3 repulsion), bead molecules and water beads in periodic boxes
-    ("MARTINI DPPC + POPE + ions + water (periodic)", ("cg-box", "martini-moltemplate", [("template", "DPPC", 6), ("template", "POPE", 4),
+    # and SDK (lj/sdk 9-6 / 12-4, angle sdk with its 1-3 repulsion), bead molecules and water beads in periodic boxes;
+    # mW water (pair_style sw). Each library by the neutral alias its catalogue entry lists; skipped until it is there
+    # (TODO: the models rebuilt from their papers)
+    ("MARTINI DPPC + POPE + ions + water (periodic)", ("cg-box", "martini", [("template", "DPPC", 6), ("template", "POPE", 4),
                                                    ("template", "NA+", 5), ("template", "CL-", 5), ("template", "W", 150)], 42.0),
-     "martini-moltemplate", "keep", "rules"),
+     "martini", "keep", "rules"),
     ("MARTINI polymers: PEO (torsions) + water (periodic)", ("cg-box", "martini-polymers", [("template", "PEO", 3), ("beads", "[P4]", 120)], 44.0),
      "martini-polymers", "keep", "rules"),
     ("MARTINI sugars: sucrose, maltose, glucose + water (periodic)", ("cg-box", "martini-sugars", [("template", "SUCR", 4), ("template", "MALT", 4),
@@ -310,29 +307,26 @@ CASES = [
     ("MARTINI amino acids: HIS, PHE, TYR, TRP (impropers), ARG, ASP, LYS + water (periodic)",
      ("cg-box", "martini-aminoacids", [("template", t, 3) for t in ("HIS", "PHE", "TYR", "TRP", "ARG", "ASP", "LYS")] + [("beads", "[P4]", 100)], 40.0),
      "martini-aminoacids", "keep", "rules"),
-    ("SDK DMPC + DMPE + water (periodic)", ("cg-box", "sdk-moltemplate", [("beads", "[NC][PH][GL]([EST1][CM][CM][CM][CT2])[EST2][CM][CM][CM][CT2]", 6),
-                                                                     ("beads", "[NH][PHE][GL]([EST1][CM][CM][CM][CT2])[EST2][CM][CM][CM][CT2]", 4),
-                                                                     ("beads", "[W]", 120)], 36.0),
-     "sdk-moltemplate", "types", "rules"),
-    ("SDK C12E8 + water (periodic)", ("cg-box", "sdk-moltemplate", [("beads", "[OA]" + "[EO]" * 8 + "[CM][CM][CM][CT2]", 6), ("beads", "[W]", 120)], 40.0),
-     "sdk-moltemplate", "types", "rules"),
-    ("SDK SDS + Na+ + water (periodic, relative permittivity 80)", ("cg-box", "sdk-moltemplate", [("beads", "[SO4][CM][CM][CM][CT]", 8),
+    ("SDK DMPC + DMPE + water (periodic)", ("cg-box", "sdk", [("beads", "[NC][PH][GL]([EST1][CM][CM][CM][CT2])[EST2][CM][CM][CM][CT2]", 6),
+                                                         ("beads", "[NH][PHE][GL]([EST1][CM][CM][CM][CT2])[EST2][CM][CM][CM][CT2]", 4),
+                                                         ("beads", "[W]", 120)], 36.0),
+     "sdk", "types", "rules"),
+    ("SDK C12E8 + water (periodic)", ("cg-box", "sdk", [("beads", "[OA]" + "[EO]" * 8 + "[CM][CM][CM][CT2]", 6), ("beads", "[W]", 120)], 40.0),
+     "sdk", "types", "rules"),
+    ("SDK SDS + Na+ + water (periodic, relative permittivity 80)", ("cg-box", "sdk", [("beads", "[SO4][CM][CM][CM][CT]", 8),
                                                                    ("beads", "[SOD]", 8), ("beads", "[W]", 120)], 38.0),
-     "sdk-moltemplate", "types", "rules"),
-    ("Cooke-Deserno lipids (cosine/squared, FENE; periodic)", ("cg-box", "cooke-deserno-moltemplate", [("template", "lipid", 60)], 16.0),
-     "cooke-deserno-moltemplate", "types", "rules"),
-    # DREIDING's hydrogen bond (hbond/dreiding/lj, moltemplate's DREIDING): water typed O_3_hd / H_HB, every O-H···O within
-    # 6.5 Å and past 90°, switched from 6 Å
-    ("DREIDING (moltemplate) water: hydrogen bonds (periodic, 480 molecules)", ("water-box", 480, 24.84), "dreiding-moltemplate", "gasteiger", "rules"),
+     "sdk", "types", "rules"),
+    ("Cooke-Deserno lipids (cosine/squared, FENE; periodic)", ("cg-box", "cooke-deserno", [("template", "lipid", 60)], 16.0),
+     "cooke-deserno", "types", "rules"),
     # mW water: all-atom water packed by CAPS, one Stillinger–Weber site per molecule (pair_style sw with a .sw file)
-    ("mW water (Stillinger-Weber, periodic, 480 sites)", ("water-box", 480, 24.84), "mw-moltemplate", "types", "rules"),
+    ("mW water (Stillinger-Weber, periodic, 480 sites)", ("water-box", 480, 24.84), "mw", "types", "rules"),
 ]
 
 
 OVERLAY = """{"format": "caps-forcefield", "version": 1, "name": "class I test overlay", "atom_types": [],
- "angles": [{"name": "test c4-c4-c4", "match": ["c4~*", "c4~*", "c4~*"], "style": "harmonic", "params": [60.0, 112.0]}],
- "dihedrals": [{"name": "test c4-c4-c4-c4", "match": ["c4~*", "c4~*", "c4~*", "c4~*"], "style": "fourier", "params": [2, 0.4, 1, 0.0, 0.2, 3, 0.0]}],
- "impropers": [{"name": "test ipso", "match": ["c3a~*", "c3a~*", "c3a~*", "c4~*"], "style": "cvff", "params": [8.0, -1, 2]}]}
+ "angles": [{"name": "test c4-c4-c4", "match": ["c4", "c4", "c4"], "style": "harmonic", "params": [60.0, 112.0]}],
+ "dihedrals": [{"name": "test c4-c4-c4-c4", "match": ["c4", "c4", "c4", "c4"], "style": "fourier", "params": [2, 0.4, 1, 0.0, 0.2, 3, 0.0]}],
+ "impropers": [{"name": "test ipso", "match": ["c3a", "c3a", "c3a", "c4"], "style": "cvff", "params": [8.0, -1, 2]}]}
 """
 
 
@@ -391,6 +385,10 @@ def ff_file(fid):
     if fid == "uff":   # built in: typed from elements and bonds
         return "uff"
     p = os.path.join(FF, fid + ".json")
+    if not os.path.exists(p):   # a neutral alias (spce, martini, mw ...) the catalogue entry of a library lists
+        for e in json.load(open(os.path.join(FF, "catalogue.json")))["forcefields"]:
+            if fid in e.get("aliases", []) and isinstance(e.get("file"), str) and os.path.exists(os.path.join(FF, e["file"])):
+                return os.path.join(FF, e["file"])
     return p if os.path.exists(p) else None
 
 

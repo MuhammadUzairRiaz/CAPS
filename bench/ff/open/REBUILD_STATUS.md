@@ -71,7 +71,6 @@ per-paper libraries above.
 | **omalley2013-alkanes, plant2007-methanol, peguin2009-hfa134a** | the papers' tables | published parameters | original source (this branch) |
 | bush1994-oxides | Bush et al. 1994 as the UCL database of published potentials transcribes it | published parameters | original paper's set, transcribed via the UCL database |
 | catlow1977-halides, catlow1977-uo2, lewis-catlow1985-oxides, matsui1991-tio2, sanders1984-sio2, catlow1976-mgo, catlow1985-rutile, khan1998-zro2, sayle2000-alkaline-earth-oxides, sepliarsky2005-perovskites, bandura2003-tio2-water, gan2020, clayff2004, teter-glass, tilocca2006-sm, vogel2003-lipo3, xiao2011-caco3, gunn2012-pyrochlore, la-perovskites, schroder1992-zeolite, ramsahye2005-nay, forester1997-silicalite, hill-sauer1995 | each paper's tables | published parameters | original source |
-| *-moltemplate (COMPASS published subset, GAFF, GAFF2, OPLS-AA 2008 / 2024, L-OPLS, DREIDING, TraPPE 1998, SDK, MARTINI 2.0 and its .prm sets, Dry MARTINI, Cooke-Deserno, graphene, SPC/E, TIP3P, mW and the water templates) | moltemplate's force-field files | MIT (moltemplate) | third-party conversion of the published sets |
 | martini3 | `martini_v3.0.0.itp` (cgmartini.nl) | as distributed by the Martini group | original distribution |
 | cgenff-toppar | CHARMM toppar (no licence) | - | built locally, never committed (`.gitignore`) |
 
