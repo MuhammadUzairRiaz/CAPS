@@ -254,8 +254,9 @@ struct FFDef {
   // from the force field's sources (force-field file "bead_templates"), for build_beads.
   // Massless charge sites a model adds to a molecule (TraPPE N2's centre: force-field file "virtual_sites": smarts, type,
   // from = pattern atoms, w = weights): added by prepare_for_forcefield as atoms of element 0 named by the type, typed by
-  // a rule on that name, and made virtual sites Σ w x_from by parameterize (excluded from their molecule).
-  struct SiteRule { std::string smarts, type; std::vector<int> from; std::vector<double> w; };
+  // a rule on that name, and made virtual sites Σ w x_from by parameterize (excluded from their molecule). "c" (1/Å, three
+  // atoms in from) adds c (r_01 × r_02), out of the plane of the three atoms: TIP5P's lone pairs (GROMACS's 3out sites).
+  struct SiteRule { std::string smarts, type; std::vector<int> from; std::vector<double> w; double c = 0; };
   std::vector<SiteRule> site_rules;
   bool coarse_grained = false;
   std::vector<BeadRule> bead_rules;

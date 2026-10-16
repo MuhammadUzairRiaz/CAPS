@@ -1,0 +1,109 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "SPC/E water",
+ "source": "GROMACS share/top/gromos43a1.ff (spc.itp, spce.itp, ffnonbonded.itp; GNU LGPL 2.1): spce.itp (OW -0.8476, H 0.4238; SPC's geometry), OW C6 0.0026173456, C12 2.634129e-06; the same charges in Izadi & Onufriev 2016, Table II",
+ "references": [
+  "H. J. C. Berendsen, J. R. Grigera, T. P. Straatsma, J. Phys. Chem. 91, 6269 (1987)"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "lj/cut/coul/long",
+  "bond": "harmonic",
+  "angle": "harmonic",
+  "dihedral": "opls",
+  "improper": "cvff"
+ },
+ "mixing": "geometric",
+ "special_lj": [
+  0,
+  0,
+  0
+ ],
+ "special_coul": [
+  0,
+  0,
+  0
+ ],
+ "cutoff": 10,
+ "atom_types": [
+  {
+   "name": "OW",
+   "element": "O",
+   "mass": 15.9994,
+   "charge": -0.8476,
+   "description": "SPC/E oxygen"
+  },
+  {
+   "name": "HW",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.4238,
+   "description": "SPC/E hydrogen"
+  }
+ ],
+ "pairs": [
+  {
+   "name": "OW",
+   "match": [
+    "OW"
+   ],
+   "params": [
+    0.15539371030909704,
+    3.165648283720967
+   ],
+   "comment": "O-O Lennard-Jones: q_H 0.4238 e, r_OH 1.0 A, H-O-H 109.47 deg, SPC's Lennard-Jones"
+  },
+  {
+   "name": "HW",
+   "match": [
+    "HW"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "no Lennard-Jones on H"
+  }
+ ],
+ "bonds": [
+  {
+   "name": "OW-HW",
+   "match": [
+    "OW",
+    "HW"
+   ],
+   "style": "harmonic",
+   "params": [
+    412.2848948374761,
+    1.0
+   ],
+   "comment": "GROMOS's FLEXIBLE SPC constants (spc.itp: k_b 345000 kJ/mol/nm^2, k_theta 383 kJ/mol/rad^2) at the model's geometry; the model is rigid, they serve a flexible run only"
+  }
+ ],
+ "angles": [
+  {
+   "name": "HW-OW-HW",
+   "match": [
+    "HW",
+    "OW",
+    "HW"
+   ],
+   "style": "harmonic",
+   "params": [
+    45.769598470363285,
+    109.47
+   ],
+   "comment": "GROMOS's FLEXIBLE SPC constants (spc.itp: k_b 345000 kJ/mol/nm^2, k_theta 383 kJ/mol/rad^2) at the model's geometry; the model is rigid, they serve a flexible run only"
+  }
+ ],
+ "dihedrals": [],
+ "impropers": [],
+ "notes": [
+  "built by CAPS (bench/ff/make_water_models.py) from GROMACS share/top/gromos43a1.ff (spc.itp, spce.itp, ffnonbonded.itp; GNU LGPL 2.1): spce.itp (OW -0.8476, H 0.4238; SPC's geometry), OW C6 0.0026173456, C12 2.634129e-06; the same charges in Izadi & Onufriev 2016, Table II",
+  "rigid model: run it with its bonds and angle constrained (SHAKE / RATTLE in LAMMPS, SETTLE in GROMACS)"
+ ],
+ "version": "1987",
+ "status": "validated",
+ "typing": "../typing/spce-berendsen1987.typing.json"
+}

@@ -88,7 +88,7 @@ TEST(Solvate, WaterModelsAndErrors) {
 // Water models: every one neutral; TIP4P/2005 puts M 0.1546 Å from O on the bisector with the model's geometry, a
 // three-site model takes it away again; LAMMPS files leave M out with its charge on O and the tip4p style
 TEST(Water, ModelsGeometryAndSites) {
-  EXPECT_EQ(caps::water_models().size(), 12u);
+  EXPECT_EQ(caps::water_models().size(), 13u);
   for (const auto& m : caps::water_models()) EXPECT_NEAR(2 * m.q_h + (m.sites == 5 ? 2 : 1) * m.q_neg, 0.0, 1e-9) << m.name;
   caps::System s;
   {

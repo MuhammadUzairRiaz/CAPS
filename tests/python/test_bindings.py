@@ -216,8 +216,7 @@ if _have("lopls-siu2012"):
     check(lopls["complete"], "field: L-OPLS polyethylene")
 else:
     print("skip lopls-siu2012: not in this checkout")
-# SPC/E water by its neutral alias (the library whose catalogue entry lists "spce")
-# TODO: SPC/E rebuilt from Berendsen, Grigera & Straatsma 1987 (expected id spce-berendsen1987, alias spce)
+# SPC/E water by its short name (spce-berendsen1987, from Berendsen, Grigera & Straatsma 1987)
 if _have("spce"):
     w = caps.build.smiles("O", forcefield="uff").field.assign("spce", charges="forcefield")
     check(w["complete"] and abs(w["atoms"][0]["q"] + 0.8476) < 1e-9, "field: SPC/E water")
@@ -231,7 +230,7 @@ check(hfa["complete"] and ipn["complete"] and {a["type"] for a in hfa["atoms"]} 
       and abs(sum(a["q"] for a in hfa["atoms"])) < 1e-9 and abs(sum(a["q"] for a in ipn["atoms"])) < 1e-9,
       "field: zeolite sorbates (HFA-134a, 2,2-dimethylbutane)")
 # mW: a water box becomes one Stillinger–Weber site per molecule (the document converted, undoable), which relaxes
-# TODO: mW rebuilt from Molinero & Moore 2009 (expected id mw-molinero2009, alias mw)
+# mW by its short name (mw-molinero2009, from Molinero & Moore 2009)
 if _have("mw"):
     wb = caps.build.solvate(None, shape="cube", edge=20, water_model="SPC/E", ion_mode=0)
     nw = wb.summary()["molecules"]
@@ -241,8 +240,8 @@ if _have("mw"):
 else:
     print("skip mw: not in this checkout")
 # coarse-grained: MARTINI's DPPC template (typed by bead name, charges kept); SDK maps all-atom DMPC onto its beads
-# TODO: MARTINI 2 (and its polymer, sugar and amino-acid sets) and SDK rebuilt from their papers (expected aliases
-# martini, martini-polymers, martini-sugars, martini-aminoacids, sdk); each check runs once its library is there
+# TODO: MARTINI 2 (and its polymer, sugar and amino-acid sets) and SDK, once rebuilt from their papers (not in hand yet;
+# looked up by the aliases martini, martini-polymers, martini-sugars, martini-aminoacids, sdk in a catalogue entry)
 if _have("martini") and _have("sdk"):
     tpl = caps.bead_templates("martini")
     dppc = caps.build.beads("DPPC", forcefield="martini")
