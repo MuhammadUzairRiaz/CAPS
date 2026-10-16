@@ -231,3 +231,28 @@ TEST(GasLibraries, NobleGasesAsPublished) {
     EXPECT_EQ(t.ff.charge[size_t(k)], 0.0);
   }
 }
+
+// The Cooke-Kremer-Deserno lipid (Phys. Rev. E 72, 011506 (2005)): the paper's FENE bonds (k 30, r_inf 1.5), the
+// straightening spring (k_bend 10 for (1/2) k (r - 4)^2) and its pair terms (WCA b 0.95 / 1, cos^2 attraction of width 1.6)
+TEST(CgLibraries, CookeDesernoAsPublished) {
+  const FFDef def = load_forcefield(lib("cooke-deserno2005"));
+  const double r6 = std::pow(2.0, 1.0 / 6);
+  ASSERT_EQ(def.pairs.size(), 3u);
+  for (const auto& p : def.pairs) {
+    const bool tt = p.name == "T-T";
+    EXPECT_NEAR(p.params[1], (tt ? 1.0 : 0.95) * r6, 1e-12) << p.name;
+    EXPECT_NEAR(p.params[2], (tt ? r6 + 1.6 : 0.95 * r6), 1e-12) << p.name;
+  }
+  int fene = 0;
+  for (const auto& b : def.bonds) {
+    if (b.style == "fene") {
+      EXPECT_DOUBLE_EQ(b.params[0], 30.0);
+      EXPECT_DOUBLE_EQ(b.params[1], 1.5);
+      ++fene;
+    } else {
+      EXPECT_DOUBLE_EQ(b.params[0], 5.0);
+      EXPECT_DOUBLE_EQ(b.params[1], 4.0);
+    }
+  }
+  EXPECT_EQ(fene, 2);
+}
