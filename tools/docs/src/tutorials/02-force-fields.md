@@ -8,10 +8,10 @@ uses: ff info · ff type · ff apply
 
 ## The library
 
-CAPS ships its force fields as JSON files in `data/forcefields`: OPLS-AA (2005, 2020, 2024), PCFF and COMPASS (class II), CVFF, GAFF and GAFF2, DREIDING, TraPPE, UFF, inorganic and clay sets, Martini and others. Commands accept a library name or a path.
+CAPS ships its force fields as JSON files in `data/forcefields`: OPLS-AA 2024 and OPLS-UA, PCFF and COMPASS (class II), CVFF, GAFF and GAFF2, DREIDING, TraPPE, UFF, inorganic and clay sets, Martini and others. Commands accept a library name or a path.
 
 ```bash
-caps ff info opls2005        # types, typing rules, styles and references
+caps ff info oplsaa2024        # types, typing rules, styles and references
 caps ff info pcff
 ```
 
@@ -20,7 +20,7 @@ caps ff info pcff
 Typing rules are SMARTS patterns: each atom gets the type of the most specific rule it matches. `caps ff type` writes one type per atom and reports atoms left untyped or matched ambiguously.
 
 ```bash
-caps ff type ps_md.data --ff opls2005 -o types.txt
+caps ff type ps_md.data --ff oplsaa2024 -o types.txt
 ```
 
 ```text
@@ -35,7 +35,7 @@ wrote types.txt
 `caps ff apply` looks up every bond, angle, dihedral and improper and the pair coefficients, assigns charges (with `--charges auto`, the force field's own scheme: fixed charges per type or bond increments), and writes the files for each engine:
 
 ```bash
-caps ff apply ps_md.data --ff opls2005 --types types.txt -o ps_opls.data \
+caps ff apply ps_md.data --ff oplsaa2024 --types types.txt -o ps_opls.data \
   --lammps-input ps_opls.in --lammps-run npt --steps 5000 --gromacs ps_opls
 ```
 
