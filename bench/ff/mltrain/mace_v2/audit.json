@@ -1,0 +1,245 @@
+{
+ "frames": 56064,
+ "environments": 1302,
+ "elements": [
+  "C",
+  "Cl",
+  "F",
+  "H",
+  "N",
+  "O",
+  "S",
+  "Si"
+ ],
+ "limits": {
+  "barrier_kcal": 40.0,
+  "composition_ev_per_atom": 0.5,
+  "relaxed_force_ev_a": 5.0,
+  "closest_a": 0.85
+ },
+ "fails": {
+  "barrier": 0,
+  "composition": 0,
+  "relaxed": 0,
+  "geometry": 0,
+  "bonds": 0,
+  "duplicates": 0
+ },
+ "worst": {
+  "barrier": [
+   [
+    30.215,
+    "env_c75d60f2e949"
+   ],
+   [
+    25.236,
+    "env_053d87405a55"
+   ],
+   [
+    24.822,
+    "env_29cc8f8161e1"
+   ],
+   [
+    23.904,
+    "env_2c3fdd150926"
+   ],
+   [
+    23.092,
+    "env_335182dc8504"
+   ],
+   [
+    22.627,
+    "env_9ebae0bed4fb"
+   ],
+   [
+    22.21,
+    "env_3bb84ddb18b6"
+   ],
+   [
+    21.979,
+    "env_3663e4a7bca3"
+   ],
+   [
+    21.285,
+    "env_db9c2907b382"
+   ],
+   [
+    21.23,
+    "env_6bb7ad878ee1"
+   ]
+  ],
+  "composition": [
+   [
+    0.306,
+    "env_07caee487a19",
+    "rattled"
+   ],
+   [
+    0.293,
+    "env_0f2305273ff8",
+    "rattled"
+   ],
+   [
+    0.283,
+    "env_4016efb0f7fb",
+    "rattled"
+   ],
+   [
+    0.28,
+    "env_4016efb0f7fb",
+    "rattled"
+   ],
+   [
+    0.276,
+    "env_a80a0f69b020",
+    "rattled"
+   ],
+   [
+    0.273,
+    "env_8d0f0bb160ca",
+    "rattled"
+   ],
+   [
+    0.272,
+    "env_cba4ce82fc10",
+    "rattled"
+   ],
+   [
+    0.262,
+    "env_fec8432f52fd",
+    "rattled"
+   ],
+   [
+    0.259,
+    "env_ac21f1d9f5b9",
+    "rattled"
+   ],
+   [
+    0.257,
+    "env_4016efb0f7fb",
+    "rattled"
+   ]
+  ],
+  "relaxed": [
+   [
+    2.005,
+    "env_58f0df5e70bd",
+    "325.57"
+   ],
+   [
+    1.491,
+    "env_053d87405a55",
+    "255.0"
+   ],
+   [
+    1.381,
+    "env_13f9d9321123",
+    "41.1"
+   ],
+   [
+    1.317,
+    "env_5816470219e6",
+    "75.36"
+   ],
+   [
+    1.295,
+    "env_8f49e90de70a",
+    "321.76"
+   ],
+   [
+    1.294,
+    "env_41bcb9ef7747",
+    "84.09"
+   ],
+   [
+    1.293,
+    "env_1d4b12b8fe73",
+    "27.77"
+   ],
+   [
+    1.256,
+    "env_c75d60f2e949",
+    "279.71"
+   ],
+   [
+    1.254,
+    "env_58f0df5e70bd",
+    "145.57"
+   ],
+   [
+    1.228,
+    "env_41bcb9ef7747",
+    "69.09"
+   ]
+  ],
+  "geometry": [
+   [
+    0.9,
+    "env_064b1ac47a9b",
+    "rattled",
+    "22.72"
+   ],
+   [
+    0.9,
+    "env_3117605c4d47",
+    "rattled",
+    "181.95"
+   ],
+   [
+    0.9,
+    "env_fef70285f42e",
+    "rattled",
+    "105.58"
+   ],
+   [
+    0.9,
+    "env_6918e1bce0e1",
+    "rattled",
+    "323.69"
+   ],
+   [
+    0.9,
+    "env_89484d2f557e",
+    "rattled",
+    "324.91"
+   ],
+   [
+    0.9,
+    "env_9a672df0c49d",
+    "rattled",
+    "125.52"
+   ],
+   [
+    0.9,
+    "env_7fe24e9685d6",
+    "rattled",
+    "160.67"
+   ],
+   [
+    0.9,
+    "env_99421580a276",
+    "rattled",
+    "86.61"
+   ],
+   [
+    0.9,
+    "env_7638e96868a0",
+    "rattled",
+    "245.08"
+   ],
+   [
+    0.9,
+    "env_27bd34a43c59",
+    "rattled",
+    "81.05"
+   ]
+  ],
+  "bonds": []
+ },
+ "barrier_percentiles_kcal": [
+  5.9,
+  12.1,
+  19.9
+ ],
+ "composition_rmse_ev_per_atom": 0.0636
+}
