@@ -725,6 +725,14 @@ def lstsq(A, y, w, ridge=0.0):
     return [b[i] / M[i][i] if M[i][i] else 0.0 for i in range(n)]
 
 
+def torsion_terms(pos, quads, methyl):
+    """the OPLS Fourier basis summed over a class's torsions at one geometry (V3 only for a CH3 rotor's H)"""
+    phis = [math.radians(dihedral(pos, *q)) for q in quads]
+    t = [sum(0.5 * (1 + math.cos(f)) for f in phis), sum(0.5 * (1 - math.cos(2 * f)) for f in phis),
+         sum(0.5 * (1 + math.cos(3 * f)) for f in phis), sum(0.5 * (1 - math.cos(4 * f)) for f in phis)]
+    return [0.0, 0.0, t[2], 0.0] if methyl else t
+
+
 def fit():
     work = os.path.abspath(sys.argv[2])
     plan = json.load(open(os.path.join(work, "plan.json")))
@@ -783,39 +791,43 @@ def fit():
                 types, have = onto_atoms(site_map(p["positions"], s["elements"], pos), types, have)
                 pos = p["positions"]
             if groups is None:   # the missing torsions round the central bond, by class
-                groups = {}
+                groups, off = {}, {}
                 listed = listed_missing(m2, ffjson, cl)
                 for q in propers(fnb) - have:
                     if any(types[x] is None for x in q):   # an H folded into a united-atom site
                         continue
-                    if {q[1], q[2]} == {b, c}:
-                        key = tuple(cl.get(types[x], types[x]) for x in q)
-                        if min(key, key[::-1]) not in listed and min(key, key[::-1]) not in forced:
-                            continue
-                        groups.setdefault(min(key, key[::-1]), []).append(q)
+                    key = tuple(cl.get(types[x], types[x]) for x in q)
+                    if min(key, key[::-1]) not in listed and min(key, key[::-1]) not in forced:
+                        continue
+                    # the missing (or refitted) torsions about the fragment's other bonds: zero in E_mm, they turn as
+                    # the scan relaxes; --joint fits them with the scan of their own bond and counts them here too
+                    (groups if {q[1], q[2]} == {b, c} else off).setdefault(min(key, key[::-1]), []).append(q)
+                offrows = []
                 # heavy-atom torsions carry the profile when there are any: one ending in H stays zero (OPLS-AA's own
                 # practice; its H torsions are mostly small) and is written as such, so the force field is complete
                 heavy = [k for k in groups if not (k[0].startswith("H") or k[3].startswith("H"))]
                 zeroed = sorted(k for k in groups if heavy and k not in heavy)
                 keys = sorted(heavy) if heavy else sorted(groups)
             row = [1.0]
-            for k in keys:
-                phis = [math.radians(dihedral(pos, *q)) for q in groups[k]]
-                terms = [sum(0.5 * (1 + math.cos(f)) for f in phis), sum(0.5 * (1 - math.cos(2 * f)) for f in phis),
-                         sum(0.5 * (1 + math.cos(3 * f)) for f in phis), sum(0.5 * (1 - math.cos(4 * f)) for f in phis)]
-                if rotor(k, groups[k], s["elements"], fnb):   # a CH3 rotor's H: V3 only, as OPLS-AA's methyl torsions
-                    terms = [0.0, 0.0, terms[2], 0.0]
-                row += terms
+            for k in keys:   # a CH3 rotor's H: V3 only, as OPLS-AA's methyl torsions
+                row += torsion_terms(pos, groups[k], rotor(k, groups[k], s["elements"], fnb))
             rows.append(row)
+            # with them the classes about the scanned bond held at zero here (an H-ended class beside heavy-atom ones):
+            # where another scan fits one, the overlay gives it that value in this fragment too
+            others = {**off, **{k: groups[k] for k in groups if k not in keys}}
+            offrows.append({k: torsion_terms(pos, q, rotor(k, q, s["elements"], fnb)) for k, q in others.items()})
         if not keys:   # nothing about this bond is missing (any more): nothing to fit
             print(f"{s['dir']}: no missing torsion about this bond")
             continue
         y = [q - m for q, m in zip(eqm, emm)]
         wts = [0.2 if q - min(eqm) > 10 else 1.0 for q in eqm]
         if "--joint" in sys.argv:   # one fit over every scan of the plan below
-            joint.append({"dir": s["dir"], "keys": keys, "rows": rows, "y": y, "w": wts, "eqm": eqm, "emm": emm,
+            joint.append({"dir": s["dir"], "keys": keys, "rows": rows, "off": offrows, "y": y, "w": wts, "eqm": eqm, "emm": emm,
                           "emm_full": emm_full, "pts": pts, "atoms": len(s["elements"]),
-                          "zeroed": [k for k in zeroed if not (k in forced and k not in listed)]})
+                          # a refitted class zeroed here was zero in the fit (zero_forced.json): written as such with
+                          # --refit, or the force field's own value would come back on top of the fitted terms
+                          "zeroed": [k for k in zeroed
+                                     if not (k in forced and k not in listed and "--refit" not in sys.argv)]})
             continue
         # the smallest ridge that keeps every V within a physical bound (10 kcal/mol): none for a well-posed fit, just
         # enough where torsions about the bond turn together (--ridge fixes it)
@@ -857,7 +869,7 @@ def fit():
                           "fit": fitrec})
             print(f"{'-'.join(k)}: V = {V} (RMS {rms:.2f} kcal/mol over {len(pts)} points)")
         for k in zeroed:
-            if k in forced and k not in listed:
+            if k in forced and k not in listed and "--refit" not in sys.argv:   # as the joint fit's zeroed above
                 continue
             rules.append({"name": "-".join(k), "match": [x.replace("*", "\\*") for x in k], "style": "opls", "params": [0.0, 0.0, 0.0, 0.0],
                           "comment": f"CAPS fit (QM): zero; the heavy-atom torsions about the same bond carry the profile of a "
@@ -877,29 +889,38 @@ def fit():
     if joint:   # --joint: shared V1-V4 for every class over the scans that contain it, one constant per scan
         # scans linked through a shared class form one group, solved on its own with its own ridge: a single ill-posed
         # class (two torsions 180 deg apart about one bond) then cannot damp the well-defined classes of other scans
+        # a class fitted from its own bond's scan that also sits on another bond of a fragment counts in that
+        # fragment's scan as well (it turns as the scan relaxes): the overlay then gives each fragment the MM energy
+        # the fit saw. Classes zeroed or held back elsewhere stay out (zero here, as in the overlay, or the base value)
+        fitted_all = {k for j in joint for k in j["keys"]}
+        for j in joint:
+            j["cols"] = list(j["keys"]) + sorted({k for o in j["off"] for k in o if k in fitted_all} - set(j["keys"]))
         groups, left = [], list(range(len(joint)))
         while left:
             grp = [left.pop(0)]
-            keys = set(joint[grp[0]]["keys"])
+            keys = set(joint[grp[0]]["cols"])
             grew = True
             while grew:
                 grew = False
                 for n in list(left):
-                    if keys & set(joint[n]["keys"]):
+                    if keys & set(joint[n]["cols"]):
                         grp.append(n)
-                        keys |= set(joint[n]["keys"])
+                        keys |= set(joint[n]["cols"])
                         left.remove(n)
                         grew = True
             groups.append(sorted(grp))
         for grp in groups:
             G = [joint[n] for n in grp]
-            K = sorted({k for j in G for k in j["keys"]})
+            K = sorted({k for j in G for k in j["cols"]})
             A, Y, W = [], [], []
             for n, j in enumerate(G):
-                for r, yy, ww in zip(j["rows"], j["y"], j["w"]):
+                for r, o, yy, ww in zip(j["rows"], j["off"], j["y"], j["w"]):
                     row = [1.0 if m == n else 0.0 for m in range(len(G))]
                     for k in K:
-                        row += r[1 + 4 * j["keys"].index(k): 5 + 4 * j["keys"].index(k)] if k in j["keys"] else [0.0] * 4
+                        if k in j["keys"]:
+                            row += r[1 + 4 * j["keys"].index(k): 5 + 4 * j["keys"].index(k)]
+                        else:
+                            row += o[k] if k in j["cols"] else [0.0] * 4
                     A.append(row)
                     Y.append(yy)
                     W.append(ww)

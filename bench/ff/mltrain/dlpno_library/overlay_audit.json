@@ -1,0 +1,835 @@
+{
+ "about": "each DLPNO-CCSD(T)/cc-pVTZ//wB97X-D3/def2-TZVP torsion scan of the library against CAPS's model (data/ml/caps-mace-v1.model) and CAPS's MM energy of OPLS-AA 2024 with and without the oplsaa2024-dlpno.json overlay, at the DLPNO geometries; RMS of the relative energies in kcal/mol (a constant removed). Two lactic-acid scans whose optimisations broke are not included. bench/ff/mltrain/figures/collect.py profiles",
+ "scans": [
+  {
+   "scan": "C-CT-CT-NT",
+   "points": 24,
+   "fragment_atoms": 14,
+   "dlpno_span": 9.368,
+   "in_overlay": false,
+   "rms_caps_model": 0.311,
+   "rms_opls_with_overlay": 1.134,
+   "rms_opls_alone": 1.134
+  },
+  {
+   "scan": "C-CT-CT-OS",
+   "points": 24,
+   "fragment_atoms": 16,
+   "dlpno_span": 5.001,
+   "in_overlay": true,
+   "rms_caps_model": 0.242,
+   "rms_opls_with_overlay": 0.255,
+   "rms_opls_alone": 1.049
+  },
+  {
+   "scan": "C-CT-OS-C",
+   "points": 22,
+   "fragment_atoms": 17,
+   "dlpno_span": 7.999,
+   "in_overlay": false,
+   "rms_caps_model": 0.25,
+   "rms_opls_with_overlay": 1.212,
+   "rms_opls_alone": 1.212
+  },
+  {
+   "scan": "C-N-CT-CA",
+   "points": 24,
+   "fragment_atoms": 22,
+   "dlpno_span": 8.059,
+   "in_overlay": true,
+   "rms_caps_model": 0.235,
+   "rms_opls_with_overlay": 0.322,
+   "rms_opls_alone": 0.445
+  },
+  {
+   "scan": "C-OS-CT-CA",
+   "points": 21,
+   "fragment_atoms": 21,
+   "dlpno_span": 8.079,
+   "in_overlay": true,
+   "rms_caps_model": 0.228,
+   "rms_opls_with_overlay": 0.11,
+   "rms_opls_alone": 0.25
+  },
+  {
+   "scan": "CA-C-CA-CA",
+   "points": 24,
+   "fragment_atoms": 24,
+   "dlpno_span": 2.749,
+   "in_overlay": true,
+   "rms_caps_model": 0.127,
+   "rms_opls_with_overlay": 0.2,
+   "rms_opls_alone": 0.333
+  },
+  {
+   "scan": "CA-C-N-CT",
+   "points": 24,
+   "fragment_atoms": 24,
+   "dlpno_span": 11.284,
+   "in_overlay": true,
+   "rms_caps_model": 0.494,
+   "rms_opls_with_overlay": 0.95,
+   "rms_opls_alone": 1.077
+  },
+  {
+   "scan": "CA-CA-CT-CA",
+   "points": 24,
+   "fragment_atoms": 25,
+   "dlpno_span": 0.401,
+   "in_overlay": true,
+   "rms_caps_model": 0.033,
+   "rms_opls_with_overlay": 0.135,
+   "rms_opls_alone": 0.198
+  },
+  {
+   "scan": "CA-CA-CY-O$",
+   "points": 24,
+   "fragment_atoms": 21,
+   "dlpno_span": 5.889,
+   "in_overlay": false,
+   "rms_caps_model": 0.369,
+   "rms_opls_with_overlay": 1.119,
+   "rms_opls_alone": 1.119
+  },
+  {
+   "scan": "CA-CA-NT-CA",
+   "points": 24,
+   "fragment_atoms": 24,
+   "dlpno_span": 1.919,
+   "in_overlay": true,
+   "rms_caps_model": 0.191,
+   "rms_opls_with_overlay": 0.409,
+   "rms_opls_alone": 0.365
+  },
+  {
+   "scan": "CA-CA-SY-CA",
+   "points": 24,
+   "fragment_atoms": 25,
+   "dlpno_span": 2.791,
+   "in_overlay": true,
+   "rms_caps_model": 0.385,
+   "rms_opls_with_overlay": 0.046,
+   "rms_opls_alone": 0.08
+  },
+  {
+   "scan": "CA-CT-CT-CA",
+   "points": 24,
+   "fragment_atoms": 28,
+   "dlpno_span": 5.582,
+   "in_overlay": true,
+   "rms_caps_model": 0.344,
+   "rms_opls_with_overlay": 0.062,
+   "rms_opls_alone": 0.135
+  },
+  {
+   "scan": "CA-CT-CT-CM",
+   "points": 24,
+   "fragment_atoms": 25,
+   "dlpno_span": 5.032,
+   "in_overlay": true,
+   "rms_caps_model": 0.107,
+   "rms_opls_with_overlay": 0.169,
+   "rms_opls_alone": 0.498
+  },
+  {
+   "scan": "CA-CT-CT-OS",
+   "points": 24,
+   "fragment_atoms": 23,
+   "dlpno_span": 8.559,
+   "in_overlay": true,
+   "rms_caps_model": 0.224,
+   "rms_opls_with_overlay": 0.574,
+   "rms_opls_alone": 0.76
+  },
+  {
+   "scan": "CA-CT-NT-CA",
+   "points": 24,
+   "fragment_atoms": 27,
+   "dlpno_span": 6.314,
+   "in_overlay": true,
+   "rms_caps_model": 0.184,
+   "rms_opls_with_overlay": 0.689,
+   "rms_opls_alone": 1.188
+  },
+  {
+   "scan": "CA-CT-NT-H",
+   "points": 24,
+   "fragment_atoms": 27,
+   "dlpno_span": 3.254,
+   "in_overlay": true,
+   "rms_caps_model": 0.188,
+   "rms_opls_with_overlay": 0.986,
+   "rms_opls_alone": 1.368
+  },
+  {
+   "scan": "CA-CT-OS-CT",
+   "points": 23,
+   "fragment_atoms": 25,
+   "dlpno_span": 6.505,
+   "in_overlay": true,
+   "rms_caps_model": 0.231,
+   "rms_opls_with_overlay": 0.385,
+   "rms_opls_alone": 0.467
+  },
+  {
+   "scan": "CA-NT-CT-CT",
+   "points": 22,
+   "fragment_atoms": 24,
+   "dlpno_span": 8.25,
+   "in_overlay": false,
+   "rms_caps_model": 0.229,
+   "rms_opls_with_overlay": 2.007,
+   "rms_opls_alone": 2.007
+  },
+  {
+   "scan": "CA-NT-CT-CY",
+   "points": 24,
+   "fragment_atoms": 25,
+   "dlpno_span": 5.097,
+   "in_overlay": true,
+   "rms_caps_model": 0.157,
+   "rms_opls_with_overlay": 0.458,
+   "rms_opls_alone": 1.013
+  },
+  {
+   "scan": "CA-OS-CT-CT",
+   "points": 19,
+   "fragment_atoms": 23,
+   "dlpno_span": 8.44,
+   "in_overlay": true,
+   "rms_caps_model": 0.321,
+   "rms_opls_with_overlay": 0.543,
+   "rms_opls_alone": 0.548
+  },
+  {
+   "scan": "CA-OS-CT-CY",
+   "points": 23,
+   "fragment_atoms": 21,
+   "dlpno_span": 6.347,
+   "in_overlay": true,
+   "rms_caps_model": 0.17,
+   "rms_opls_with_overlay": 0.183,
+   "rms_opls_alone": 1.361
+  },
+  {
+   "scan": "CF-CT-CF-CT",
+   "points": 24,
+   "fragment_atoms": 17,
+   "dlpno_span": 6.759,
+   "in_overlay": true,
+   "rms_caps_model": 0.36,
+   "rms_opls_with_overlay": 0.219,
+   "rms_opls_alone": 0.661
+  },
+  {
+   "scan": "CF-CT-CF-F",
+   "points": 24,
+   "fragment_atoms": 14,
+   "dlpno_span": 3.888,
+   "in_overlay": true,
+   "rms_caps_model": 0.185,
+   "rms_opls_with_overlay": 0.191,
+   "rms_opls_alone": 0.949
+  },
+  {
+   "scan": "CF-CT-CT-F",
+   "points": 24,
+   "fragment_atoms": 17,
+   "dlpno_span": 5.119,
+   "in_overlay": true,
+   "rms_caps_model": 0.157,
+   "rms_opls_with_overlay": 0.633,
+   "rms_opls_alone": 1.909
+  },
+  {
+   "scan": "CF-CT-CT-HC",
+   "points": 24,
+   "fragment_atoms": 14,
+   "dlpno_span": 2.682,
+   "in_overlay": true,
+   "rms_caps_model": 0.091,
+   "rms_opls_with_overlay": 0.23,
+   "rms_opls_alone": 0.186
+  },
+  {
+   "scan": "CM-C-OH-HO",
+   "points": 24,
+   "fragment_atoms": 11,
+   "dlpno_span": 12.072,
+   "in_overlay": true,
+   "rms_caps_model": 0.415,
+   "rms_opls_with_overlay": 0.195,
+   "rms_opls_alone": 0.784
+  },
+  {
+   "scan": "CM-C-OS-CT",
+   "points": 24,
+   "fragment_atoms": 14,
+   "dlpno_span": 13.496,
+   "in_overlay": true,
+   "rms_caps_model": 0.286,
+   "rms_opls_with_overlay": 0.17,
+   "rms_opls_alone": 0.304
+  },
+  {
+   "scan": "CM-CM-C-OS",
+   "points": 20,
+   "fragment_atoms": 14,
+   "dlpno_span": 4.768,
+   "in_overlay": true,
+   "rms_caps_model": 0.202,
+   "rms_opls_with_overlay": 0.177,
+   "rms_opls_alone": 1.254
+  },
+  {
+   "scan": "CM-CT-CT-CM",
+   "points": 24,
+   "fragment_atoms": 16,
+   "dlpno_span": 5.336,
+   "in_overlay": true,
+   "rms_caps_model": 0.146,
+   "rms_opls_with_overlay": 0.201,
+   "rms_opls_alone": 0.264
+  },
+  {
+   "scan": "CM-CT-CT-CT",
+   "points": 24,
+   "fragment_atoms": 25,
+   "dlpno_span": 4.994,
+   "in_overlay": true,
+   "rms_caps_model": 0.107,
+   "rms_opls_with_overlay": 0.114,
+   "rms_opls_alone": 0.456
+  },
+  {
+   "scan": "CM-CT-CT-CY",
+   "points": 24,
+   "fragment_atoms": 17,
+   "dlpno_span": 6.516,
+   "in_overlay": true,
+   "rms_caps_model": 0.152,
+   "rms_opls_with_overlay": 0.213,
+   "rms_opls_alone": 0.56
+  },
+  {
+   "scan": "CM-CT-CT-CZ",
+   "points": 23,
+   "fragment_atoms": 16,
+   "dlpno_span": 4.828,
+   "in_overlay": true,
+   "rms_caps_model": 0.13,
+   "rms_opls_with_overlay": 0.163,
+   "rms_opls_alone": 0.445
+  },
+  {
+   "scan": "CO-CT-OH-HO",
+   "points": 24,
+   "fragment_atoms": 14,
+   "dlpno_span": 3.17,
+   "in_overlay": true,
+   "rms_caps_model": 0.139,
+   "rms_opls_with_overlay": 0.401,
+   "rms_opls_alone": 2.098
+  },
+  {
+   "scan": "CO-CT-OS-CT",
+   "points": 24,
+   "fragment_atoms": 17,
+   "dlpno_span": 8.196,
+   "in_overlay": true,
+   "rms_caps_model": 0.248,
+   "rms_opls_with_overlay": 0.33,
+   "rms_opls_alone": 0.875
+  },
+  {
+   "scan": "CO-OS-CO-CT",
+   "points": 24,
+   "fragment_atoms": 17,
+   "dlpno_span": 7.187,
+   "in_overlay": true,
+   "rms_caps_model": 0.313,
+   "rms_opls_with_overlay": 0.452,
+   "rms_opls_alone": 0.558
+  },
+  {
+   "scan": "CO-OS-CO-HC",
+   "points": 24,
+   "fragment_atoms": 11,
+   "dlpno_span": 6.216,
+   "in_overlay": false,
+   "rms_caps_model": 0.317,
+   "rms_opls_with_overlay": 1.736,
+   "rms_opls_alone": 1.929
+  },
+  {
+   "scan": "CO-OS-CO-OH",
+   "points": 24,
+   "fragment_atoms": 11,
+   "dlpno_span": 7.673,
+   "in_overlay": false,
+   "rms_caps_model": 0.356,
+   "rms_opls_with_overlay": 1.765,
+   "rms_opls_alone": 1.999
+  },
+  {
+   "scan": "CO-OS-CO-OS",
+   "points": 17,
+   "fragment_atoms": 14,
+   "dlpno_span": 6.569,
+   "in_overlay": false,
+   "rms_caps_model": 0.37,
+   "rms_opls_with_overlay": 1.905,
+   "rms_opls_alone": 1.904
+  },
+  {
+   "scan": "CO-OS-CT-CT",
+   "points": 24,
+   "fragment_atoms": 16,
+   "dlpno_span": 6.342,
+   "in_overlay": true,
+   "rms_caps_model": 0.161,
+   "rms_opls_with_overlay": 0.533,
+   "rms_opls_alone": 0.57
+  },
+  {
+   "scan": "CT-CF-CT-CT",
+   "points": 24,
+   "fragment_atoms": 17,
+   "dlpno_span": 6.421,
+   "in_overlay": true,
+   "rms_caps_model": 0.188,
+   "rms_opls_with_overlay": 0.286,
+   "rms_opls_alone": 0.399
+  },
+  {
+   "scan": "CT-CF-CT-F",
+   "points": 24,
+   "fragment_atoms": 17,
+   "dlpno_span": 6.83,
+   "in_overlay": true,
+   "rms_caps_model": 0.356,
+   "rms_opls_with_overlay": 0.162,
+   "rms_opls_alone": 0.598
+  },
+  {
+   "scan": "CT-CF-CT-HC",
+   "points": 24,
+   "fragment_atoms": 17,
+   "dlpno_span": 6.528,
+   "in_overlay": true,
+   "rms_caps_model": 0.182,
+   "rms_opls_with_overlay": 0.268,
+   "rms_opls_alone": 0.394
+  },
+  {
+   "scan": "CT-CO-OH-HO",
+   "points": 24,
+   "fragment_atoms": 13,
+   "dlpno_span": 3.565,
+   "in_overlay": true,
+   "rms_caps_model": 0.109,
+   "rms_opls_with_overlay": 0.299,
+   "rms_opls_alone": 0.138
+  },
+  {
+   "scan": "CT-CT-CF-F",
+   "points": 24,
+   "fragment_atoms": 17,
+   "dlpno_span": 6.292,
+   "in_overlay": true,
+   "rms_caps_model": 0.19,
+   "rms_opls_with_overlay": 0.259,
+   "rms_opls_alone": 0.449
+  },
+  {
+   "scan": "CT-CT-CM-Cl",
+   "points": 24,
+   "fragment_atoms": 19,
+   "dlpno_span": 4.194,
+   "in_overlay": true,
+   "rms_caps_model": 0.139,
+   "rms_opls_with_overlay": 0.054,
+   "rms_opls_alone": 0.074
+  },
+  {
+   "scan": "CT-CT-CT-CY",
+   "points": 24,
+   "fragment_atoms": 18,
+   "dlpno_span": 5.092,
+   "in_overlay": true,
+   "rms_caps_model": 0.111,
+   "rms_opls_with_overlay": 0.06,
+   "rms_opls_alone": 0.198
+  },
+  {
+   "scan": "CT-CT-CT-NA",
+   "points": 19,
+   "fragment_atoms": 34,
+   "dlpno_span": 5.564,
+   "in_overlay": true,
+   "rms_caps_model": 0.162,
+   "rms_opls_with_overlay": 0.171,
+   "rms_opls_alone": 0.219
+  },
+  {
+   "scan": "CT-CT-CY-CT",
+   "points": 24,
+   "fragment_atoms": 23,
+   "dlpno_span": 5.488,
+   "in_overlay": true,
+   "rms_caps_model": 0.127,
+   "rms_opls_with_overlay": 0.43,
+   "rms_opls_alone": 0.485
+  },
+  {
+   "scan": "CT-CT-CY-CY",
+   "points": 24,
+   "fragment_atoms": 17,
+   "dlpno_span": 3.371,
+   "in_overlay": true,
+   "rms_caps_model": 0.196,
+   "rms_opls_with_overlay": 0.1,
+   "rms_opls_alone": 0.529
+  },
+  {
+   "scan": "CT-CT-CY-HC",
+   "points": 24,
+   "fragment_atoms": 17,
+   "dlpno_span": 3.525,
+   "in_overlay": true,
+   "rms_caps_model": 0.201,
+   "rms_opls_with_overlay": 0.09,
+   "rms_opls_alone": 0.504
+  },
+  {
+   "scan": "CT-CT-CY-O$",
+   "points": 24,
+   "fragment_atoms": 17,
+   "dlpno_span": 3.518,
+   "in_overlay": true,
+   "rms_caps_model": 0.2,
+   "rms_opls_with_overlay": 0.119,
+   "rms_opls_alone": 0.514
+  },
+  {
+   "scan": "CT-NT-CT-CY",
+   "points": 24,
+   "fragment_atoms": 25,
+   "dlpno_span": 3.361,
+   "in_overlay": true,
+   "rms_caps_model": 0.244,
+   "rms_opls_with_overlay": 0.601,
+   "rms_opls_alone": 1.125
+  },
+  {
+   "scan": "CT-OS-CT-CY",
+   "points": 24,
+   "fragment_atoms": 17,
+   "dlpno_span": 5.838,
+   "in_overlay": true,
+   "rms_caps_model": 0.116,
+   "rms_opls_with_overlay": 0.232,
+   "rms_opls_alone": 0.498
+  },
+  {
+   "scan": "CY-CT-CT-CY",
+   "points": 24,
+   "fragment_atoms": 21,
+   "dlpno_span": 5.314,
+   "in_overlay": true,
+   "rms_caps_model": 0.249,
+   "rms_opls_with_overlay": 0.232,
+   "rms_opls_alone": 0.599
+  },
+  {
+   "scan": "CY-CT-CT-HC",
+   "points": 24,
+   "fragment_atoms": 17,
+   "dlpno_span": 6.396,
+   "in_overlay": true,
+   "rms_caps_model": 0.155,
+   "rms_opls_with_overlay": 0.23,
+   "rms_opls_alone": 0.539
+  },
+  {
+   "scan": "CY-CY-CT-NT",
+   "points": 24,
+   "fragment_atoms": 25,
+   "dlpno_span": 3.687,
+   "in_overlay": true,
+   "rms_caps_model": 0.276,
+   "rms_opls_with_overlay": 0.218,
+   "rms_opls_alone": 1.211
+  },
+  {
+   "scan": "CY-CY-CT-OS",
+   "points": 24,
+   "fragment_atoms": 14,
+   "dlpno_span": 4.882,
+   "in_overlay": true,
+   "rms_caps_model": 0.361,
+   "rms_opls_with_overlay": 0.117,
+   "rms_opls_alone": 0.564
+  },
+  {
+   "scan": "Cl-CM-CT-HC",
+   "points": 24,
+   "fragment_atoms": 19,
+   "dlpno_span": 4.209,
+   "in_overlay": true,
+   "rms_caps_model": 0.135,
+   "rms_opls_with_overlay": 0.057,
+   "rms_opls_alone": 0.084
+  },
+  {
+   "scan": "Cl-CT-CT-OH",
+   "points": 24,
+   "fragment_atoms": 13,
+   "dlpno_span": 10.511,
+   "in_overlay": true,
+   "rms_caps_model": 0.383,
+   "rms_opls_with_overlay": 0.988,
+   "rms_opls_alone": 2.921
+  },
+  {
+   "scan": "Cl-CT-CT-OS",
+   "points": 24,
+   "fragment_atoms": 15,
+   "dlpno_span": 7.805,
+   "in_overlay": true,
+   "rms_caps_model": 0.151,
+   "rms_opls_with_overlay": 0.232,
+   "rms_opls_alone": 0.647
+  },
+  {
+   "scan": "F-CF-CT-HC",
+   "points": 24,
+   "fragment_atoms": 17,
+   "dlpno_span": 6.411,
+   "in_overlay": true,
+   "rms_caps_model": 0.185,
+   "rms_opls_with_overlay": 0.251,
+   "rms_opls_alone": 0.453
+  },
+  {
+   "scan": "HC-CM-C-OH",
+   "points": 24,
+   "fragment_atoms": 11,
+   "dlpno_span": 3.613,
+   "in_overlay": true,
+   "rms_caps_model": 0.292,
+   "rms_opls_with_overlay": 0.109,
+   "rms_opls_alone": 0.887
+  },
+  {
+   "scan": "HC-CM-C-OS",
+   "points": 19,
+   "fragment_atoms": 14,
+   "dlpno_span": 3.051,
+   "in_overlay": true,
+   "rms_caps_model": 0.177,
+   "rms_opls_with_overlay": 0.252,
+   "rms_opls_alone": 1.381
+  },
+  {
+   "scan": "HC-CO-CT-HC",
+   "points": 24,
+   "fragment_atoms": 13,
+   "dlpno_span": 2.837,
+   "in_overlay": true,
+   "rms_caps_model": 0.068,
+   "rms_opls_with_overlay": 0.13,
+   "rms_opls_alone": 0.264
+  },
+  {
+   "scan": "HC-CO-CT-OH",
+   "points": 24,
+   "fragment_atoms": 14,
+   "dlpno_span": 8.705,
+   "in_overlay": true,
+   "rms_caps_model": 0.278,
+   "rms_opls_with_overlay": 0.289,
+   "rms_opls_alone": 2.139
+  },
+  {
+   "scan": "HC-CO-CT-OS",
+   "points": 24,
+   "fragment_atoms": 17,
+   "dlpno_span": 10.174,
+   "in_overlay": true,
+   "rms_caps_model": 0.221,
+   "rms_opls_with_overlay": 0.291,
+   "rms_opls_alone": 1.118
+  },
+  {
+   "scan": "HC-CO-OH-HO",
+   "points": 24,
+   "fragment_atoms": 11,
+   "dlpno_span": 6.607,
+   "in_overlay": true,
+   "rms_caps_model": 0.2,
+   "rms_opls_with_overlay": 0.634,
+   "rms_opls_alone": 1.159
+  },
+  {
+   "scan": "HC-CT-CO-OH",
+   "points": 24,
+   "fragment_atoms": 13,
+   "dlpno_span": 2.837,
+   "in_overlay": false,
+   "rms_caps_model": 0.071,
+   "rms_opls_with_overlay": 0.148,
+   "rms_opls_alone": 0.247
+  },
+  {
+   "scan": "HC-CT-CT-NA",
+   "points": 24,
+   "fragment_atoms": 34,
+   "dlpno_span": 2.171,
+   "in_overlay": true,
+   "rms_caps_model": 0.069,
+   "rms_opls_with_overlay": 0.033,
+   "rms_opls_alone": 0.107
+  },
+  {
+   "scan": "HC-CT-CY-HC",
+   "points": 24,
+   "fragment_atoms": 17,
+   "dlpno_span": 3.503,
+   "in_overlay": true,
+   "rms_caps_model": 0.196,
+   "rms_opls_with_overlay": 0.093,
+   "rms_opls_alone": 0.486
+  },
+  {
+   "scan": "HC-CT-CY-O$",
+   "points": 24,
+   "fragment_atoms": 17,
+   "dlpno_span": 3.456,
+   "in_overlay": true,
+   "rms_caps_model": 0.195,
+   "rms_opls_with_overlay": 0.107,
+   "rms_opls_alone": 0.494
+  },
+  {
+   "scan": "HC-CY-CT-NT",
+   "points": 24,
+   "fragment_atoms": 25,
+   "dlpno_span": 3.623,
+   "in_overlay": true,
+   "rms_caps_model": 0.283,
+   "rms_opls_with_overlay": 0.244,
+   "rms_opls_alone": 1.21
+  },
+  {
+   "scan": "HC-CY-CT-OS",
+   "points": 24,
+   "fragment_atoms": 14,
+   "dlpno_span": 4.848,
+   "in_overlay": true,
+   "rms_caps_model": 0.358,
+   "rms_opls_with_overlay": 0.089,
+   "rms_opls_alone": 0.53
+  },
+  {
+   "scan": "NT-CT-CT-OS",
+   "points": 24,
+   "fragment_atoms": 17,
+   "dlpno_span": 7.432,
+   "in_overlay": true,
+   "rms_caps_model": 0.22,
+   "rms_opls_with_overlay": 0.356,
+   "rms_opls_alone": 2.225
+  },
+  {
+   "scan": "NT-CT-CY-O$",
+   "points": 24,
+   "fragment_atoms": 25,
+   "dlpno_span": 3.621,
+   "in_overlay": true,
+   "rms_caps_model": 0.288,
+   "rms_opls_with_overlay": 0.232,
+   "rms_opls_alone": 1.207
+  },
+  {
+   "scan": "O$-CY-CT-OS",
+   "points": 24,
+   "fragment_atoms": 14,
+   "dlpno_span": 4.757,
+   "in_overlay": true,
+   "rms_caps_model": 0.347,
+   "rms_opls_with_overlay": 0.152,
+   "rms_opls_alone": 0.513
+  },
+  {
+   "scan": "OH-C-CT-OH",
+   "points": 24,
+   "fragment_atoms": 12,
+   "dlpno_span": 4.804,
+   "in_overlay": true,
+   "rms_caps_model": 0.142,
+   "rms_opls_with_overlay": 0.422,
+   "rms_opls_alone": 1.091
+  },
+  {
+   "scan": "OH-C-CT-OS",
+   "points": 24,
+   "fragment_atoms": 14,
+   "dlpno_span": 3.33,
+   "in_overlay": false,
+   "rms_caps_model": 0.195,
+   "rms_opls_with_overlay": 1.478,
+   "rms_opls_alone": 1.478
+  },
+  {
+   "scan": "OH-CO-CT-OH",
+   "points": 24,
+   "fragment_atoms": 14,
+   "dlpno_span": 12.109,
+   "in_overlay": false,
+   "rms_caps_model": 0.301,
+   "rms_opls_with_overlay": 0.44,
+   "rms_opls_alone": 2.035
+  },
+  {
+   "scan": "OH-CO-CT-OS",
+   "points": 24,
+   "fragment_atoms": 17,
+   "dlpno_span": 10.196,
+   "in_overlay": true,
+   "rms_caps_model": 0.248,
+   "rms_opls_with_overlay": 0.253,
+   "rms_opls_alone": 1.064
+  },
+  {
+   "scan": "OH-CT-CO-OS",
+   "points": 24,
+   "fragment_atoms": 14,
+   "dlpno_span": 8.72,
+   "in_overlay": true,
+   "rms_caps_model": 0.267,
+   "rms_opls_with_overlay": 0.281,
+   "rms_opls_alone": 1.972
+  },
+  {
+   "scan": "OS-C-CT-OS",
+   "points": 24,
+   "fragment_atoms": 17,
+   "dlpno_span": 3.227,
+   "in_overlay": false,
+   "rms_caps_model": 0.2,
+   "rms_opls_with_overlay": 1.573,
+   "rms_opls_alone": 1.573
+  },
+  {
+   "scan": "OS-CO-CT-OS",
+   "points": 24,
+   "fragment_atoms": 17,
+   "dlpno_span": 10.176,
+   "in_overlay": true,
+   "rms_caps_model": 0.22,
+   "rms_opls_with_overlay": 0.295,
+   "rms_opls_alone": 1.117
+  }
+ ]
+}

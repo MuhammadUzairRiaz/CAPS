@@ -1,10 +1,9 @@
 # CAPS's machine-learned potential
 
-`caps-mace-v1.model` is CAPS's own MACE model. The C++ core evaluates it through libtorch (`caps ml eval FILE`, in a
-build with `-DCAPS_WITH_TORCH=ON`), with no Python; `python -m caps.autofit` uses it to fit the bonded terms a force field
-lacks, in place of a quantum-chemistry run (`--model caps-mace`, or `--model auto`, the default, for fragments of its
-elements). It runs on a CPU: about 0.1 s per energy and force evaluation of a 20-atom fragment on an Apple M-series
-Mac.
+`caps-mace-v1.model` is CAPS's own MACE model. The C++ core evaluates it through libtorch (`caps ml eval FILE`,
+`caps ml relax`, in a build with `-DCAPS_WITH_TORCH=ON`), with no Python; `caps ff complete` and `python -m caps.autofit`
+use it to fit the bonded terms a force field lacks, in place of a quantum-chemistry run. It runs on a CPU: about 0.1 s
+per energy and force evaluation of a 20-atom fragment on an Apple M-series Mac.
 
 | | |
 |---|---|
@@ -17,9 +16,9 @@ Mac.
 | Torsion profiles | 122 held-out fragments: RMSE median 0.15, 90th percentile 0.41, largest 0.92 kcal/mol; all within 1 kcal/mol; barrier error median 0.14 kcal/mol (AIMNet2 on the same conformers: 0.35 / 0.63 / 1.30, barrier 0.39) |
 
 The test fragments come from the same chemistry as the training fragments (polymers, rubbers, curatives and crosslinks),
-held out by fragment. Outside that chemistry, or for other elements, `--model auto` falls back to AIMNet2, and every
-fitted term names the potential it came from.
+held out by fragment. A fragment with an element outside the model is reported, never fitted: its scan is written as
+QM input for the cluster instead. Every fitted term names the model it came from.
 
 Licence: the model is part of CAPS and under CAPS's licence (BSD 3-Clause, `LICENSE`). It was trained by CAPS on
 CAPS's own DFT data with the MACE code (MIT, github.com/ACEsuit/mace); no third-party weights are in it. Running it
-needs `mace-torch` (MIT), installed with pip, which is not part of CAPS.
+needs only libtorch (BSD-3, linked into a `-DCAPS_WITH_TORCH=ON` build); no Python package.
