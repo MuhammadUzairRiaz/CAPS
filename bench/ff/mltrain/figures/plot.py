@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """The six presentation figures of CAPS's ML parameter engine, from the results files and collect.py's outputs.
 
-    plot.py DATA_DIR OUT_DIR
+    plot.py DATA_DIR OUT_DIR [--model v1]
 
-DATA_DIR holds parity_v1.npz, profiles_all.json (collect.py) and the caps ff complete reports and timings
+DATA_DIR holds parity.npz, profiles_all.json (collect.py, with the model the figures are for) and the caps ff complete reports and timings
 (sbr/tgddm/lactic .report.json, .log with /usr/bin/time -p). The rest is read from bench/ff: the census, the v1
-training summary and torsion test, the DLPNO overlay and its audit (overlay_audit.json). Writes fig1..fig6 as PNG (300 dpi) and PDF.
+training summary and torsion test of --model (bench/ff/mltrain/mace_<model>), the DLPNO overlay and its audit (overlay_audit.json). Writes fig1..fig6 as PNG (300 dpi) and PDF.
 """
 import json, os, re, sys
 
@@ -305,15 +305,16 @@ def main():
               "torsion": row("torsion classes"), "rotor": row("rotor environments")}
     census["envs"] = sum(census["rotor"])
     census["classes"] = sum(census["torsion"])
-    summary = json.load(open(os.path.join(BENCH, "mltrain", "mace_v1", "summary.json")))
+    ver = sys.argv[sys.argv.index("--model") + 1] if "--model" in sys.argv else "v1"
+    summary = json.load(open(os.path.join(BENCH, "mltrain", "mace_" + ver, "summary.json")))
     plan = json.load(open(os.path.join(BENCH, "mltrain", "dlpno_library", "plan.json")))
     n_dlpno = sum(len(s["points"]) for s in plan["scans"])
     ov = json.load(open(os.path.join(BENCH, "..", "..", "data", "forcefields", "oplsaa2024-dlpno.json")))
     fig1_workflow(out, census, summary, n_dlpno, sum(1 for d in ov["dihedrals"] if not d.get("fit", {}).get("zeroed")))
-    fig2_parity(out, os.path.join(data, "parity_v1.npz"))
+    fig2_parity(out, os.path.join(data, "parity.npz"))
     labels = json.load(open(os.path.join(data, "profile_labels.json")))
     fig3_profiles(out, json.load(open(os.path.join(data, "profiles_all.json"))), labels)
-    fig4_accuracy(out, json.load(open(os.path.join(BENCH, "mltrain", "mace_v1", "torsions.json"))),
+    fig4_accuracy(out, json.load(open(os.path.join(BENCH, "mltrain", "mace_" + ver, "torsions.json"))),
                   json.load(open(os.path.join(BENCH, "mltrain", "dlpno_library", "overlay_audit.json"))))
     fc = json.load(open(os.path.join(data, "complete.json")))
     fig5_speed(out, fc.pop("_python_s"), fc.pop("_native_s"), fc)

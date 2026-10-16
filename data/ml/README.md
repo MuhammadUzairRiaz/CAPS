@@ -22,3 +22,9 @@ QM input for the cluster instead. Every fitted term names the model it came from
 Licence: the model is part of CAPS and under CAPS's licence (BSD 3-Clause, `LICENSE`). It was trained by CAPS on
 CAPS's own DFT data with the MACE code (MIT, github.com/ACEsuit/mace); no third-party weights are in it. Running it
 needs only libtorch (BSD-3, linked into a `-DCAPS_WITH_TORCH=ON` build); no Python package.
+
+A v2 model (2026-10-16: round 2's fragments added, 1,302 fragments, 50,511 conformers) was trained and tested against
+v1 and is not shipped. On the same held-out fragments it is slightly better (forces 14.5 against 15.9 meV/A, torsion
+profiles 0.149 against 0.154 kcal/mol median), but the parameters `caps ff complete` fits with it are not: on 21
+fragments with a DLPNO-CCSD(T) scan, 17 against v1's 18 within 1 kcal/mol of DLPNO, mean RMS 0.69 against 0.65, and
+clearly worse on the TGDDM amine torsions (`bench/ff/mltrain/mace_v2`).
