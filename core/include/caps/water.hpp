@@ -1,5 +1,7 @@
-// Water models: the SPC and TIP families (and OPC), each with the geometry, charges and Lennard-Jones parameters of its
-// publication, as LAMMPS's own tables give them (docs.lammps.org Howto_spc, Howto_tip3p, Howto_tip4p) where they do.
+// Water models: the SPC and TIP families (and OPC, OPC3), each with the geometry, charges and Lennard-Jones parameters of its
+// publication. bench/ff/make_water_models.py lists where each number was read (the paper, a paper of the same authors, or
+// the authors' own distribution) and writes the same models as force-field libraries; TIP3P-Ew, TIP4P-Ew, TIP4P/Ice and
+// SPC/Fw, whose papers are not yet in hand, keep the values of LAMMPS's Howto pages (docs.lammps.org) until checked.
 //
 // Three-site models carry their charges on O and H. Four-site models (TIP4P, TIP4P-Ew, TIP4P/2005, TIP4P/Ice, OPC) put
 // the negative charge on a massless site M on the H–O–H bisector, d_OM from O: CAPS adds M as an atom of its own after

@@ -1,0 +1,28 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "TIP4P/2005 water",
+ "unknown_types": "untyped",
+ "description": "CAPS rules for TIP4P/2005 water (bench/ff/make_water_models.py): water's O and H; the massless sites are added by the force field",
+ "rules": [
+  {
+   "type": "OW",
+   "smarts": "[OX2H2]",
+   "priority": 0,
+   "description": "water oxygen"
+  },
+  {
+   "type": "HW",
+   "smarts": "[H][OX2H2]",
+   "priority": 0,
+   "description": "water hydrogen"
+  },
+  {
+   "type": "MW",
+   "smarts": "[#0]",
+   "atom_name": "MW",
+   "priority": 0,
+   "description": "the M site (added by CAPS on the bisector)"
+  }
+ ]
+}

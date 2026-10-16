@@ -1208,7 +1208,7 @@
    ],
    "id": "water-models",
    "title": "Water models and their massless sites",
-   "summary": "Three-site models (SPC, SPC/E, SPC/Fw, TIP3P and its variants) carry their charges on O and H. Four-site models (TIP4P, TIP4P-Ew, TIP4P/2005, TIP4P/Ice, OPC) move the negative charge to a massless site M on the H–O–H bisector. TIP5P puts it on two massless lone pairs L out of the molecular plane, on the side away from the hydrogens. The sites are placed from O and H at every evaluation and their forces handed back to them by the chain rule; for the out-of-plane lone pairs the cross product adds one more term to the virial.",
+   "summary": "Three-site models (SPC, SPC/E, SPC/Fw, TIP3P and its variants, OPC3) carry their charges on O and H. Four-site models (TIP4P, TIP4P-Ew, TIP4P/2005, TIP4P/Ice, OPC) move the negative charge to a massless site M on the H–O–H bisector. TIP5P puts it on two massless lone pairs L out of the molecular plane, on the side away from the hydrogens. The sites are placed from O and H at every evaluation and their forces handed back to them by the chain rule; for the out-of-plane lone pairs the cross product adds one more term to the virial.",
    "equation": "M = (1 − α) O + α/2 (H₁ + H₂), α = d_OM / (r_OH cos(θ/2));  L± = O + a (r₁ + r₂) ± c (r₁ × r₂), a = −d_OL cos(φ/2) / (2 r_OH cos(θ/2)), c = d_OL sin(φ/2) / (r_OH² sin θ);  W gains Σ s·F_L with s = c (r₁ × r₂)",
    "equation_note": "r₁, r₂ the O–H vectors, θ the H–O–H angle, φ the L–O–L angle; for TIP5P (r_OH 0.9572 Å, θ 104.52°, d_OL 0.70 Å, φ 109.47°) a = −0.344908 and c = 0.64438 Å⁻¹, GROMACS's virtual_sites3 function 4 (c in nm⁻¹ = 6.4438); the cross part scales as λ² when the atoms are scaled by λ, hence the extra virial term",
    "symbols": [

@@ -1,0 +1,28 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "TIP5P water",
+ "unknown_types": "untyped",
+ "description": "CAPS rules for TIP5P water (bench/ff/make_water_models.py): water's O and H; the massless sites are added by the force field",
+ "rules": [
+  {
+   "type": "OW",
+   "smarts": "[OX2H2]",
+   "priority": 0,
+   "description": "water oxygen"
+  },
+  {
+   "type": "HW",
+   "smarts": "[H][OX2H2]",
+   "priority": 0,
+   "description": "water hydrogen"
+  },
+  {
+   "type": "LP",
+   "smarts": "[#0]",
+   "atom_name": "LP",
+   "priority": 0,
+   "description": "a lone pair (added by CAPS)"
+  }
+ ]
+}

@@ -1,0 +1,109 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "OPC3 water",
+ "source": "the paper's Table II (PMC4991989)",
+ "references": [
+  "S. Izadi, A. V. Onufriev, J. Chem. Phys. 145, 074501 (2016)"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "lj/cut/coul/long",
+  "bond": "harmonic",
+  "angle": "harmonic",
+  "dihedral": "opls",
+  "improper": "cvff"
+ },
+ "mixing": "arithmetic",
+ "special_lj": [
+  0,
+  0,
+  0
+ ],
+ "special_coul": [
+  0,
+  0,
+  0
+ ],
+ "cutoff": 10,
+ "atom_types": [
+  {
+   "name": "OW",
+   "element": "O",
+   "mass": 15.9994,
+   "charge": -0.89517,
+   "description": "OPC3 oxygen"
+  },
+  {
+   "name": "HW",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.447585,
+   "description": "OPC3 hydrogen"
+  }
+ ],
+ "pairs": [
+  {
+   "name": "OW",
+   "match": [
+    "OW"
+   ],
+   "params": [
+    0.16340583173996176,
+    3.17427
+   ],
+   "comment": "O-O Lennard-Jones: q 0.447585 e, l 0.97888 A, theta 109.47 deg, sigma 3.17427 A, epsilon 0.68369 kJ/mol"
+  },
+  {
+   "name": "HW",
+   "match": [
+    "HW"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "no Lennard-Jones on H"
+  }
+ ],
+ "bonds": [
+  {
+   "name": "OW-HW",
+   "match": [
+    "OW",
+    "HW"
+   ],
+   "style": "harmonic",
+   "params": [
+    412.2848948374761,
+    0.97888
+   ],
+   "comment": "GROMOS's FLEXIBLE SPC constants (spc.itp: k_b 345000 kJ/mol/nm^2, k_theta 383 kJ/mol/rad^2) at the model's geometry; the model is rigid, they serve a flexible run only"
+  }
+ ],
+ "angles": [
+  {
+   "name": "HW-OW-HW",
+   "match": [
+    "HW",
+    "OW",
+    "HW"
+   ],
+   "style": "harmonic",
+   "params": [
+    45.769598470363285,
+    109.47
+   ],
+   "comment": "GROMOS's FLEXIBLE SPC constants (spc.itp: k_b 345000 kJ/mol/nm^2, k_theta 383 kJ/mol/rad^2) at the model's geometry; the model is rigid, they serve a flexible run only"
+  }
+ ],
+ "dihedrals": [],
+ "impropers": [],
+ "notes": [
+  "built by CAPS (bench/ff/make_water_models.py) from the paper's Table II (PMC4991989)",
+  "rigid model: run it with its bonds and angle constrained (SHAKE / RATTLE in LAMMPS, SETTLE in GROMACS)"
+ ],
+ "version": "2016",
+ "status": "validated",
+ "typing": "../typing/opc3-izadi2016.typing.json"
+}

@@ -1,0 +1,162 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "TIP5P water",
+ "source": "M. W. Mahoney, W. L. Jorgensen, J. Chem. Phys. 112, 8910 (2000), Table I (TIP5P column)",
+ "references": [
+  "M. W. Mahoney, W. L. Jorgensen, J. Chem. Phys. 112, 8910 (2000)"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "lj/cut/coul/long",
+  "bond": "harmonic",
+  "angle": "harmonic",
+  "dihedral": "opls",
+  "improper": "cvff"
+ },
+ "mixing": "geometric",
+ "special_lj": [
+  0,
+  0,
+  0
+ ],
+ "special_coul": [
+  0,
+  0,
+  0
+ ],
+ "cutoff": 10,
+ "atom_types": [
+  {
+   "name": "OW",
+   "element": "O",
+   "mass": 15.9994,
+   "charge": 0.0,
+   "description": "TIP5P oxygen"
+  },
+  {
+   "name": "HW",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.241,
+   "description": "TIP5P hydrogen"
+  },
+  {
+   "name": "LP",
+   "element": "",
+   "mass": 0.0,
+   "charge": -0.241,
+   "description": "TIP5P lone pair (massless, 0.7 A from O, L-O-L 109.47 deg)"
+  }
+ ],
+ "pairs": [
+  {
+   "name": "OW",
+   "match": [
+    "OW"
+   ],
+   "params": [
+    0.16,
+    3.12
+   ],
+   "comment": "O-O Lennard-Jones: q_H 0.241 e (each lone pair -0.241 e), sigma 3.12 A, epsilon 0.16 kcal/mol, r_OH 0.9572 A, H-O-H 104.52 deg, r_OL 0.70 A, L-O-L 109.47 deg"
+  },
+  {
+   "name": "HW",
+   "match": [
+    "HW"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "no Lennard-Jones on H"
+  },
+  {
+   "name": "LP",
+   "match": [
+    "LP"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "charge only"
+  }
+ ],
+ "bonds": [
+  {
+   "name": "OW-HW",
+   "match": [
+    "OW",
+    "HW"
+   ],
+   "style": "harmonic",
+   "params": [
+    450.0,
+    0.9572
+   ],
+   "comment": "CHARMM's TIP3P constants (toppar_water_ions.str: HT-OT 450.0, HT-OT-HT 55.0) at the model's geometry; the model is rigid, they serve a flexible run only"
+  }
+ ],
+ "angles": [
+  {
+   "name": "HW-OW-HW",
+   "match": [
+    "HW",
+    "OW",
+    "HW"
+   ],
+   "style": "harmonic",
+   "params": [
+    55.0,
+    104.52
+   ],
+   "comment": "CHARMM's TIP3P constants (toppar_water_ions.str: HT-OT 450.0, HT-OT-HT 55.0) at the model's geometry; the model is rigid, they serve a flexible run only"
+  }
+ ],
+ "dihedrals": [],
+ "impropers": [],
+ "notes": [
+  "built by CAPS (bench/ff/make_water_models.py) from M. W. Mahoney, W. L. Jorgensen, J. Chem. Phys. 112, 8910 (2000), Table I (TIP5P column)",
+  "rigid model: run it with its bonds and angle constrained (SHAKE / RATTLE in LAMMPS, SETTLE in GROMACS)",
+  "five sites: GROMACS writes the lone pairs as virtual_sites3 (3out); LAMMPS has no style for them"
+ ],
+ "version": "2000",
+ "status": "validated",
+ "typing": "../typing/tip5p-mahoney2000.typing.json",
+ "virtual_sites": [
+  {
+   "smarts": "[OX2H2]([H])[H]",
+   "type": "LP",
+   "from": [
+    0,
+    1,
+    2
+   ],
+   "w": [
+    1.6898165257594535,
+    -0.34490826287972676,
+    -0.34490826287972676
+   ],
+   "c": 0.6443790349267559,
+   "comment": "L = O + b (r_OH1 + r_OH2) + c (r_OH1 x r_OH2), b = -0.344908263, c = 0.644379035 1/A"
+  },
+  {
+   "smarts": "[OX2H2]([H])[H]",
+   "type": "LP",
+   "from": [
+    0,
+    1,
+    2
+   ],
+   "w": [
+    1.6898165257594535,
+    -0.34490826287972676,
+    -0.34490826287972676
+   ],
+   "c": -0.6443790349267559,
+   "comment": "L = O + b (r_OH1 + r_OH2) - c (r_OH1 x r_OH2), b = -0.344908263, c = 0.644379035 1/A"
+  }
+ ]
+}

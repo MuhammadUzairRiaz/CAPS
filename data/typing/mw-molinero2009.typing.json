@@ -1,0 +1,26 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "mW water (monatomic, Stillinger-Weber)",
+ "united_atom": true,
+ "united_atom_hosts": [
+  "O"
+ ],
+ "unknown_types": "untyped",
+ "description": "CAPS rules for mW water (bench/ff/make_water_models.py): each water becomes one site at its oxygen",
+ "rules": [
+  {
+   "type": "MW",
+   "smarts": "[O;H2;X2]",
+   "priority": 0,
+   "description": "a water molecule (its oxygen, both hydrogens folded in)"
+  },
+  {
+   "type": "MW",
+   "smarts": "[O;X0]",
+   "atom_name": "MW",
+   "priority": 0,
+   "description": "an mW site read back (a site named MW)"
+  }
+ ]
+}

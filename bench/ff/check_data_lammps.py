@@ -304,6 +304,8 @@ CASES = [
      "sdk-moltemplate", "types", "rules"),
     ("Cooke-Deserno lipids (cosine/squared, FENE; periodic)", ("cg-box", "cooke-deserno-moltemplate", [("template", "lipid", 60)], 16.0),
      "cooke-deserno-moltemplate", "types", "rules"),
+    ("Cooke-Kremer-Deserno 2005 lipids from the paper (cosine/squared, FENE with WCA; periodic)", ("cg-box", "cooke-deserno2005", [("template", "lipid", 60)], 16.0),
+     "cooke-deserno2005", "types", "rules"),
     # DREIDING's hydrogen bond (hbond/dreiding/lj, moltemplate's DREIDING): water typed O_3_hd / H_HB, every O-H···O within
     # 6.5 Å and past 90°, switched from 6 Å
     ("DREIDING (moltemplate) water: hydrogen bonds (periodic, 480 molecules)", ("water-box", 480, 24.84), "dreiding-moltemplate", "gasteiger", "rules"),

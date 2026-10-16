@@ -1276,7 +1276,7 @@ public sealed class CapsDocument : IDisposable
     public static string PipelineFromYaml(string yaml) => Sized((b, c) => Native.PipelineFromYaml(yaml, b, c));
     /// <summary>What a file holds before opening it (scans a dump for its frames: call off the UI thread).</summary>
     public static string InspectFile(string path, string? topology) => Sized((b, c) => Native.InspectFile(path, topology, b, c));
-    /// <summary>The water models (SPC, SPC/E, SPC/Fw, the TIP3P and TIP4P families, OPC) as JSON.</summary>
+    /// <summary>The water models (SPC, SPC/E, SPC/Fw, the TIP3P and TIP4P families, TIP5P, OPC, OPC3) as JSON.</summary>
     public static string WaterModelsJson() => Sized((b, c) => Native.WaterModels(b, c));
     /// <summary>Pack input as the CAPS form (toCaps) or packmol's; throws with the line of a mistake.</summary>
     public static string PackConvert(string text, bool toCaps) => Sized((b, c) => Native.PackConvert(text, toCaps ? 1 : 0, b, c));
