@@ -113,7 +113,7 @@ const std::vector<Cmd>& table() {
         {"t_lo", "150", "decks: the cooling scan's end (K)"},
         {"t_step", "25", "decks: the cooling scan's step (K)"},
         {"units", "", "sample-chain: repeat-unit SMILES with two *, comma-separated (several: alternating, or --sequence)"},
-        {"forcefield", "opls2005", "sample-chain: the all-atom force field"},
+        {"forcefield", "oplsaa2024", "sample-chain: the all-atom force field"},
         {"chains", "1", "sample-chain: independent chains (each grown and run on its own)"},
         {"frame_every", "200", "sample-chain: steps between mapped frames"},
         {"equilibrate", "", "sample-chain: steps before frames are kept (default a fifth of the run)"},
@@ -760,7 +760,7 @@ void cgfit_nonbonded(const std::string& mode, const Json& a, const std::vector<s
     build["polymer"] = poly;
     const double steps = N(a, "steps", 20000), dt = N(a, "dt", 1.0);
     const int every = int(N(a, "frame_every", 200));
-    const std::string ffname = S(a, "forcefield", "opls2005");
+    const std::string ffname = S(a, "forcefield", "oplsaa2024");
     std::vector<std::vector<Vec3>> beads_frames;
     std::vector<Cell> cells;
     CgMapping m0;

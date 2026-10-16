@@ -35,8 +35,8 @@ public sealed class AppSettings
     public List<string> PipelineExpressions { get; set; } =
         ["Type == 2", "Type == 2 && Position.Z > 13", "Charge < -0.05", "MoleculeIdentifier == 3", "Element == \"H\" && Position.X < 10", "Monomer <= 2 || Monomer >= 7"];
     private string _forceField = "gaff2-2.2.20-ambertools";
-    /// <summary>A library id; ids saved before the force fields got CAPS's own names drop their old suffix.</summary>
-    public string ForceField { get => _forceField; set => _forceField = value.EndsWith("-dlfield", StringComparison.Ordinal) ? value[..^8] : value; }
+    /// <summary>A library id.</summary>
+    public string ForceField { get => _forceField; set => _forceField = value; }
     public int Electrostatics { get; set; }               // 0 damped shifted force, 1 particle-mesh Ewald
     public bool LjTail { get; set; } = true;              // LJ long-range tail correction in Dynamics and Equilibrate
     public double EwaldRtol { get; set; } = 1e-5;

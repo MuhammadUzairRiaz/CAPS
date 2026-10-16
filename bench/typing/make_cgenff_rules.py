@@ -2,8 +2,7 @@
 """Write CAPS typing rules for CGenFF (CHARMM General Force Field; data/typing/cgenff.typing.json).
 
 The types follow CGenFF's own definitions (the comments of top_all36_cgenff.rtf: e.g. CG331 aliphatic C for methyl
-group, HGA6 aliphatic H on fluorinated C, NG2S1 peptide nitrogen). Where DL_FIELD's templates deviate from them
-(generic HA for alkane H in older templates, S_sulphate as SG301) the CGenFF definition is kept.
+group, HGA6 aliphatic H on fluorinated C, NG2S1 peptide nitrogen).
 
 usage: make_cgenff_rules.py OUTDIR
 """

@@ -1536,7 +1536,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
   };
   const auto Nb = names_for("bond"), Na = names_for("angle"), Nd = names_for("dihedral"), Ni = names_for("improper"),
              Nq = names_for("increment");
-  // second-choice equivalents (DL_FIELD "bond2_" etc.): the first names where a type has none
+  // second-choice equivalents ("bond2_" etc.): the first names where a type has none
   auto names2 = [&](const char* kind, const std::vector<std::string>& first) {
     std::vector<std::string> v = first;
     bool any = false;
@@ -1565,7 +1565,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
       if (const FFRule* r = last_match(rules, raw, true, rev)) return r;
     return last_match(rules, eq, true, rev);
   };
-  // with second-choice names (the DL-derived files): exact rules by the first names, exact by the second; then wildcard
+  // with second-choice names: exact rules by the first names, exact by the second; then wildcard
   // rules by the second names, then by the first — the most specific wildcard rule (fewest X) first, ties the last in
   // file order. (Checked term by term against the reference's own output: an ether C whose dihedral equivalent is
   // second-tier only takes X-OS-CT-X, not X-OS-CO-X; N-CYA-CYA-HC takes HC-CT-CT-X, not X-CYA-CYA-X.)
@@ -1960,7 +1960,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
         bool rev = false;
         const FFRule* r = lookup12(def.angles, Na, Na2, {i, j, k}, &rev);
         // octahedral / square-planar centres: a rule with θ0 = 90° also matches the trans pairs (θ ≈ 180°), which
-        // must carry no angle term (as DL_FIELD writes them); decided from the structure's geometry
+        // must carry no angle term; decided from the structure's geometry
         if (r && (r->style.empty() ? def.angle_style : r->style) == "harmonic" && r->params.size() >= 2 && std::fabs(r->params[1] - 90.0) < 5.0) {
           const Vec3 u = s.atoms[i].pos - s.atoms[j].pos, v = s.atoms[k].pos - s.atoms[j].pos;
           const double c = dot(u, v) / (norm(u) * norm(v));
@@ -2262,7 +2262,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
           }
           const std::string st = r->style.empty() ? def.dihedral_style : r->style;
           const auto& p = r->params;
-          // msi2lmp / DL_FIELD (CVFF): a wildcard end spreads the barrier over the torsions about the central bond
+          // msi2lmp (CVFF): a wildcard end spreads the barrier over the torsions about the central bond
           double scale = 1;
           // automatic (cvff_auto) torsions already hold per-torsion values: not scaled
           if (def.wildcard_torsion_scaling != "none" && r->match.size() == 4 && r->name.rfind("auto", 0) != 0) {
@@ -2701,9 +2701,9 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
       for (size_t y = x + 1; y < nbc.size(); ++y)
         for (size_t z = y + 1; z < nbc.size(); ++z) {
           std::array<uint32_t, 3> o = {nbc[x], nbc[y], nbc[z]};
-          // DL_FIELD / msi2lmp try the outer atoms in the order of the structure's bond list; others sort them
+          // msi2lmp tries the outer atoms in the order of the structure's bond list; others sort them
           const bool by_type = def.improper_order == "center3_type_sorted";
-          if (by_type)   // AMBER (tleap) and DL_FIELD: outer atoms by type name, ties in bond-list order
+          if (by_type)   // AMBER (tleap): outer atoms by type name, ties in bond-list order
             std::stable_sort(o.begin(), o.end(), [&](uint32_t a, uint32_t b) { return T[a] < T[b]; });
           else if (!def.improper_matched_order)
             std::sort(o.begin(), o.end());
@@ -2733,12 +2733,12 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
               }
             }
           }
-          // The DL_POLY files of the DL-derived force fields (equivalences replace names, impropers keep the rule's atom
-          // order): explicit rules before wildcard ones; the outer atoms read by index, backwards, then in any other
+          // The DL_POLY files of force fields whose equivalences replace names and whose impropers keep the rule's atom
+          // order: explicit rules before wildcard ones; the outer atoms read by index, backwards, then in any other
           // order, each against the rules from the last; the first fit is written in the rule's order (a wildcard rule
           // with the outer atoms by index). Their LAMMPS files may use another order, sometimes from another rule.
-          const bool dl_derived = def.improper_matched_order && def.equivalence == "replace" && !by_type;
-          if (best && dl_derived && ff.impropers_dlpoly_ok) {
+          const bool replace_ordered = def.improper_matched_order && def.equivalence == "replace" && !by_type;
+          if (best && replace_ordered && ff.impropers_dlpoly_ok) {
             std::array<uint32_t, 3> sa = o;
             std::sort(sa.begin(), sa.end());
             static constexpr int kPermF[6][3] = {{0, 1, 2}, {2, 1, 0}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 0, 1}};
@@ -2780,7 +2780,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
             }   // other forms (inversions, class II, harmonic) are not in ff.impropers: written from their own lists
             ff.impropers_dlpoly_set = true;
           }
-          // written with the centre second (the DL-derived OPLS files): the neighbour with the highest index goes last
+          // written with the centre second (OPLS libraries that do so): the neighbour with the highest index goes last
           // when a rule allows it there, the other two in ascending order — the order those files' terms are written in
           if (best && def.improper_written == "center2" && cpos == 2) {
             const std::vector<std::string>& N = found_pass == 0 ? T : found_pass == 1 ? Ni : Ni2;

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Compare CAPS's automatic typing with Materials Studio's, as recorded in msi2lmp data files (the Masses comments
 give each numeric type's force-field type). An independent check: these structures were typed by Accelrys'
-own rules, not by DL_FIELD's templates.
+own rules.
 
 usage: compare_msi_types.py FF.json RULES.json DATA [DATA ...]
 """

@@ -397,8 +397,6 @@ def _forcefield_path(ff: str) -> str:
     if ff.lower() == "uff" or os.path.exists(ff):
         return ff if ff.lower() != "uff" else "uff"
     lib = Path(__file__).resolve().parents[1].parent / "forcefields"
-    if ff.endswith("-dlfield"):   # library ids before the force fields got CAPS's own names
-        ff = ff[: -len("-dlfield")]
     aliases = {"gaff2": "gaff2-2.2.20-ambertools", "gaff": "gaff-1.81-ambertools", "opls": "oplsaa2024", "pcff": "pcff-frc", "oplsaa2024": "oplsaa2024", "opls-ua": "oplsua2024", "oplsua": "oplsua2024",
                "compass": "compass-frc", "cvff": "cvff-frc",
                "dreiding": "dreiding1990", "cgenff": "cgenff-toppar", "trappe-ua": "trappe-ua-umn",

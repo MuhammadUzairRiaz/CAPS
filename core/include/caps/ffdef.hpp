@@ -35,9 +35,9 @@ struct FFType {
   int priority = 0;                    // among matching rules not overridden, the highest priority wins
   std::string source;                  // literature reference or origin of the parameters
   // Equivalences: the type name used when looking up one kind of parameter ("vdw", "bond", "angle",
-  // "dihedral", "improper", "increment"), as DL_FIELD's EQUIVALENCE and the .frc #equivalence tables.
+  // "dihedral", "improper", "increment"), as the .frc #equivalence tables.
   std::map<std::string, std::string> equiv;
-  std::vector<std::string> aliases;    // other names for this type (DL_FIELD atom types, moltemplate short names)
+  std::vector<std::string> aliases;    // other names for this type (source-library atom types, moltemplate short names)
 };
 
 // A typing rule: atoms matching the SMARTS (first pattern atom = the atom typed) get `type`. Among the rules that match
@@ -121,20 +121,20 @@ struct FFDef {
   // How improper quadruples are formed and ordered (moltemplate symmetry plugins):
   //   "center3_sorted"  centre in position 3, the others sorted by atom index (AMBER / GAFF, gaff_imp.py)
   //   "center1_sorted"  centre in position 1, the others sorted by atom index (OPLS, cenIsortJKL.py)
-  //   "center3_type_sorted"  centre third, the others by type name then bond order (AMBER tleap, DL_FIELD)
+  //   "center3_type_sorted"  centre third, the others by type name then bond order (AMBER tleap)
   //   "center2_sorted"  centre in position 2 (class II, cenJsortIKL); the outer atoms keep the order of the
   //                     matching rule, since the angle-angle terms depend on it
   std::string improper_order = "center3_sorted";
   // How a matched improper is written (and evaluated): "" as matched; "center2": the matched quartet i j C l written
-  // i C j l (the DL-derived OPLS files: their rules put the centre third, their LAMMPS terms second; their DL_POLY
-  // FIELD terms are j i C l, which write_dlpoly reproduces)
+  // i C j l (libraries whose rules put the centre third and
+  // their LAMMPS terms second; their DL_POLY FIELD terms are j i C l, which write_dlpoly reproduces)
   std::string improper_written;
-  // How equivalences are used: "replace" (DL_FIELD: look up by the equivalent name only) or "fallback"
+  // How equivalences are used: "replace" (look up by the equivalent name only) or "fallback"
   // (msi2lmp: the type's own name first, then the equivalent).
   std::string equivalence = "replace";
-  // Impropers keep the outer atoms in the order the rule matched them (DL_FIELD, msi2lmp) rather than sorted.
+  // Impropers keep the outer atoms in the order the rule matched them (msi2lmp) rather than sorted.
   bool improper_matched_order = false;
-  // Improper rules may also match their atom pattern read backwards (DL_FIELD's torsion-type impropers).
+  // Improper rules may also match their atom pattern read backwards (torsion-type impropers).
   bool improper_reversible = false;
   // Every explicit (wildcard-free) improper rule that matches a centre applies, not just the best one (CHARMM).
   bool improper_all_explicit = false;
@@ -326,12 +326,6 @@ FFDef import_frcmod(const std::string& path);
 // Urey–Bradley part noted), [ dihedraltypes ] 1, 9 (fourier), 4 (periodic improper) and 2 (harmonic improper) of a
 // .itp or .top, in kcal/mol and Å; other functions are listed in references as not imported.
 FFDef import_gromacs_params(const std::string& path);
-
-// DL_FIELD force-field libraries: NAME.par (parameters), NAME.sf (atom types; templates are not converted yet)
-// and NAME.bci (bond charge increments), as shipped in DL_FIELD's lib/ directory. Parameters are converted to
-// CAPS units (kcal/mol, Å, degrees) and LAMMPS functional forms as DL_FIELD itself writes them for LAMMPS.
-// Families not yet interpreted throw FFError naming the family.
-FFDef import_dlfield(const std::string& par, const std::string& sf = "", const std::string& bci = "");
 
 bool glob_match(const std::string& pattern, const std::string& text);
 std::string glob_escape(const std::string& name);   // a pattern that matches exactly this name

@@ -319,8 +319,6 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
       return;
     }
     std::string name = text(T, "forcefield", "default");
-    // library ids before the force fields got CAPS's own names ("opls2005-dlfield" is now "opls2005")
-    if (name.size() > 8 && name.compare(name.size() - 8, 8, "-dlfield") == 0) name.resize(name.size() - 8);
     std::string charges = text(T, "charges", "auto");
     std::string companion_note;   // charges "increments": whose charges they are
     bool increments = false;      // the force field's own charges are bond increments (OPLS 2005, PCFF, COMPASS)

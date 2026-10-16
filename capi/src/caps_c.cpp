@@ -965,7 +965,7 @@ void field_run(caps_doc* d) {
   } else if (!untyped) {
     if (F.auto_charges) {
       // the force field's own charges when its types carry them; libraries that keep charges on molecule templates
-      // (DL_FIELD's OPLS-AA, GAFF, CHARMM) have none per type, and then Gasteiger–Marsili, said in the report
+      // (some OPLS-AA, GAFF and CHARMM libraries) have none per type, and then Gasteiger–Marsili, said in the report
       try {
         F.ff = std::make_shared<caps::ForceField>(caps::parameterize(s, def, F.types, "types", &F.rep, true));
         F.charges = "types";

@@ -4,8 +4,8 @@
 //
 // Within each part every term is that force field's own, its unlike Lennard-Jones pairs by its own mixing rule. Between
 // parts the pairs follow the cross rule chosen here — ε geometric or arithmetic, σ arithmetic or geometric, or the
-// sixth-power rule for both (as DL_FIELD's "multiple potentials" asks for the rule between different force fields,
-// with no default) — or explicit ε, σ given for a pair of types. Every cross pair is written out explicitly, so the
+// sixth-power rule for both (there is no default: the rule between different force fields
+// must be chosen) — or explicit ε, σ given for a pair of types. Every cross pair is written out explicitly, so the
 // engine files carry exactly what CAPS computes.
 //
 // What one simulation cannot hold is refused with the reason, never approximated silently:
