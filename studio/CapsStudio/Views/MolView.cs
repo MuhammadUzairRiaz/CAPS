@@ -9,7 +9,9 @@ using CapsStudio.Interop;
 namespace CapsStudio.Views;
 
 /// <summary>A small 3D view of a document with its own camera (the molecule builder's preview): ball and stick,
-/// coloured by element; drag rotates, the wheel zooms, double-click resets.</summary>
+/// coloured by element; drag rotates, the wheel zooms, double-click resets. With UseGpu (the full view) it draws through
+/// a GlMolView as the main view does: the scene is built once per content or look change and turning the view only
+/// sends the camera; the CPU renderer stays the fallback (no OpenGL, surfaces) and makes the PNG exports.</summary>
 public sealed class MolView : Control
 {
     private CapsDocument? _doc;
@@ -61,7 +63,8 @@ public sealed class MolView : Control
     {
         if (!double.IsFinite(f) || f <= 0) return;
         _cam.Zoom = Math.Clamp(_cam.Zoom * f, 0.1, 40);
-        Refresh();
+        Interacting();
+        RefreshView();
         CameraChanged?.Invoke(_cam);
     }
 
@@ -133,20 +136,43 @@ public sealed class MolView : Control
     private Point? _pa, _pb;
 
     /// <summary>The view's camera (the split view keeps two views on one camera).</summary>
-    public CapsCamera Camera { get => _cam; set { _cam = value; Refresh(); } }
+    public CapsCamera Camera { get => _cam; set { _cam = value; RefreshView(); } }
     /// <summary>Raised when a drag or the wheel moves the camera.</summary>
     public event Action<CapsCamera>? CameraChanged;
     /// <summary>A click (not a drag) on an atom: its index, −1 for none.</summary>
     public event Action<int>? AtomClicked;
     private bool _moved;
 
+    /// <summary>Milliseconds the last frame took (the GPU view: the larger of its CPU work and its GPU time).</summary>
+    public double LastFrameMs { get; private set; }
+    /// <summary>Frames made since the view started, and the pixel size of the last.</summary>
+    public long Frames { get; private set; }
+    public (int W, int H) FramePixels { get; private set; }
+    /// <summary>Raised after each frame with its time (the view benchmark).</summary>
+    public event Action<double>? FrameDone;
+    private void Frame(double ms, int w, int h)
+    {
+        LastFrameMs = ms;
+        Frames++;
+        FramePixels = (w, h);
+        FrameDone?.Invoke(ms);
+    }
+
     public void Reset()
     {
         _cam = new CapsCamera { Yaw = 0.55, Pitch = 0.40, Zoom = 1.0 };
-        Refresh();
+        RefreshView();
     }
 
+    /// <summary>The content or the look may have changed (atoms, wrap, appearance): the GPU scene is built again.</summary>
     public void Refresh()
+    {
+        _sceneDirty = true;
+        RefreshView();
+    }
+
+    /// <summary>Only the camera or the overlays changed: the GPU view turns the scene it has (the CPU view renders).</summary>
+    public void RefreshView()
     {
         _requested++;
         if (!_busy) _ = Loop();
@@ -155,7 +181,171 @@ public sealed class MolView : Control
     protected override void OnSizeChanged(SizeChangedEventArgs e)
     {
         base.OnSizeChanged(e);
-        Refresh();
+        RefreshView();
+    }
+
+    // ---- the GPU path (UseGpu): a GlMolView under an overlay for labels and the dashed line
+    private GlMolView? _gl;
+    private MolOverlay? _overlay;
+    private CapsSceneData? _scene;
+    private CapsDocument? _sceneDoc;
+    private CapsRenderOpts _sceneLook;
+    private bool _sceneDirty = true, _cpuOnly, _gpuShown;
+    private CapsCamera _lastCam;
+    private CapsRenderOpts _lastOpt;
+    private bool _haveLast, _idStale;
+    private Avalonia.Threading.DispatcherTimer? _idle, _interact;
+    private byte[] _buf = [], _pickBuf = [];
+    private readonly WriteableBitmap?[] _frames = new WriteableBitmap?[2];
+    private bool _flip;
+
+    /// <summary>Draw on the GPU (OpenGL) where it is available; the CPU renderer otherwise.</summary>
+    public bool UseGpu
+    {
+        get => _gl != null;
+        set
+        {
+            if (value == (_gl != null)) return;
+            if (value)
+            {
+                _gl = new GlMolView { IsHitTestVisible = false };
+                _gl.ReadyChanged += () => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    if (_gl == null) return;
+                    if (!_gl.Ready && _gl.Status != "starting") { _gl.IsVisible = false; _gpuShown = false; }
+                    RefreshView();
+                });
+                _gl.FitStale += RefreshView;
+                _overlay = new MolOverlay(this);
+                VisualChildren.Add(_gl); LogicalChildren.Add(_gl);
+                VisualChildren.Add(_overlay); LogicalChildren.Add(_overlay);
+            }
+            else
+            {
+                VisualChildren.Remove(_gl!); LogicalChildren.Remove(_gl!);
+                VisualChildren.Remove(_overlay!); LogicalChildren.Remove(_overlay!);
+                _gl = null; _overlay = null; _scene = null; _sceneDoc = null; _gpuShown = false;
+            }
+            InvalidateMeasure();
+            Refresh();
+        }
+    }
+
+    /// <summary>Whether labels are on (UseGpu): when the view stops, the CPU id buffer is made once so labels behind
+    /// atoms hide.</summary>
+    public Func<bool>? NeedsIdBuffer { get; set; }
+
+    /// <summary>The last frames came from the GPU view.</summary>
+    public bool UsingGpu => _gpuShown;
+    /// <summary>Frames the GPU view has drawn (the view benchmark).</summary>
+    public long GpuFramesDrawn => _gl?.FramesDrawn ?? 0;
+
+    /// <summary>A frame on the GPU: the scene (built only when the document, its content or the look changed), then the
+    /// camera. False when the CPU has to draw (no OpenGL yet, or a scene only the CPU renderer draws).</summary>
+    private async Task<bool> GpuFrame(CapsDocument doc, CapsCamera cam, int w, int h, double scale, System.Diagnostics.Stopwatch fsw)
+    {
+        if (_gl is not { Ready: true } gl) return false;
+        var opt = Options(w, h, 1);
+        var look = opt with { Width = 0, Height = 0, Supersample = 0 };
+        if (_sceneDirty || !ReferenceEquals(doc, _sceneDoc) || !look.Equals(_sceneLook))
+        {
+            _sceneDirty = false;   // a change during the build marks it again
+            CapsSceneData? sc;
+            try { sc = await Task.Run(() => doc.RenderScene(opt)); } catch { sc = null; }   // disposed meanwhile: a newer document follows
+            if (sc == null) { _scene = null; _sceneDoc = null; return false; }
+            _sceneDoc = doc;
+            _sceneLook = look;
+            _cpuOnly = sc.CpuOnly;   // surfaces, polyhedra, colour-vision preview: the CPU draws them
+            _scene = _cpuOnly ? null : sc;
+            if (_scene != null) gl.SetScene(_scene);
+        }
+        if (_scene == null || !ReferenceEquals(doc, _doc)) return false;
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        if (!gl.IsVisible) gl.IsVisible = true;
+        gl.SetView(_scene.Fit(cam, w, h));   // from the scene: no call into the document
+        if (!_gpuShown)
+        {
+            _gpuShown = true;
+            var old = _bmp; _bmp = null;   // nothing of the CPU view under a transparent background
+            if (old != null && Array.IndexOf(_frames, old) < 0) old.Dispose();
+            InvalidateVisual();
+        }
+        var cpuOpt = Options(w, h, scale >= 1.5 ? 1 : 2);   // as the CPU view would draw it: labels and picks
+        _lastCam = cam; _lastOpt = cpuOpt; _haveLast = true; _idStale = true;
+        Overlays(doc, cam, cpuOpt, scale);
+        _overlay?.InvalidateVisual();
+        if (NeedsIdBuffer?.Invoke() == true) RestartIdle();
+        LastFrameMs = Math.Max(sw.Elapsed.TotalMilliseconds + gl.LastFrameMs, gl.GpuFrameMs);   // CPU work or GPU drawing, whichever limits
+        return true;
+    }
+
+    /// <summary>Labels and the dashed line for this camera.</summary>
+    private void Overlays(CapsDocument doc, CapsCamera cam, CapsRenderOpts opt, double scale)
+    {
+        _pa = _pb = null;
+        _labels = null;
+        if (LabelSource != null)
+            try { _labels = LabelSource(doc, cam, opt, scale); } catch { }
+        if (LineA >= 0 && LineB >= 0)
+            try
+            {
+                var n = Math.Max(LineA, LineB) + 1;
+                var p = doc.ProjectAtoms(cam, opt, (int)doc.Summary().Atoms);
+                if (3 * n <= p.Length) { _pa = new Point(p[3 * LineA] / scale, p[3 * LineA + 1] / scale); _pb = new Point(p[3 * LineB] / scale, p[3 * LineB + 1] / scale); }
+            }
+            catch { }
+    }
+
+    /// <summary>Once the view rests: the CPU id buffer for the GPU view's camera (off the UI thread), then the labels
+    /// from it.</summary>
+    private void RestartIdle()
+    {
+        if (_idle == null)
+        {
+            _idle = new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
+            _idle.Tick += async (_, _) =>
+            {
+                _idle!.Stop();
+                if (!_idStale || _busy || !_haveLast || _doc is not { } doc) return;
+                var cam = _lastCam;
+                var opt = _lastOpt;
+                var n = opt.Width * opt.Height * 4;
+                if (_pickBuf.Length != n) _pickBuf = new byte[n];
+                var buf = _pickBuf;
+                try { await Task.Run(() => doc.Render(cam, opt, buf)); } catch { return; }
+                if (!ReferenceEquals(doc, _doc) || !SameCamera(cam, _lastCam)) return;   // moved meanwhile: the next rest does it
+                _idStale = false;
+                Overlays(doc, cam, opt, VisualRoot?.RenderScaling ?? 1);
+                _overlay?.InvalidateVisual();
+            };
+        }
+        _idle.Stop();
+        _idle.Start();
+    }
+
+    private static bool SameCamera(in CapsCamera a, in CapsCamera b) =>
+        a.Yaw == b.Yaw && a.Pitch == b.Pitch && a.Zoom == b.Zoom && a.PanX == b.PanX && a.PanY == b.PanY && a.Perspective == b.Perspective;
+
+    /// <summary>The view is moving: a very large scene drops its supersampling until it stops.</summary>
+    private void Interacting()
+    {
+        if (_gl is not { Ready: true } gl) return;
+        gl.Interacting = true;
+        _interact ??= new Avalonia.Threading.DispatcherTimer(TimeSpan.FromMilliseconds(180), Avalonia.Threading.DispatcherPriority.Background, (_, _) =>
+        {
+            _interact!.Stop();
+            if (_gl == null) return;
+            _gl.Interacting = false;
+            _gl.RequestNextFrameRendering();
+        });
+        _interact.Stop();
+        _interact.Start();
+    }
+
+    /// <summary>Labels and the dashed line above the GPU view.</summary>
+    private sealed class MolOverlay(MolView owner) : Control
+    {
+        public override void Render(DrawingContext ctx) => owner.DrawOverlay(ctx);
     }
 
     private async Task Loop()
@@ -166,39 +356,54 @@ public sealed class MolView : Control
             while (_rendered != _requested)
             {
                 var ticket = _requested;
+                var fsw = System.Diagnostics.Stopwatch.StartNew();
                 var doc = _doc;
                 var scale = VisualRoot?.RenderScaling ?? 1;
                 var w = (int)(Math.Max(16, Bounds.Width) * scale);
                 var h = (int)(Math.Max(16, Bounds.Height) * scale);
-                if (doc == null || Bounds.Width < 16) { _bmp = null; InvalidateVisual(); _rendered = ticket; break; }
-                var opt = Options(w, h, scale >= 1.5 ? 1 : 2);
+                if (doc == null || Bounds.Width < 16)
+                {
+                    _bmp = null; _labels = null; _pa = _pb = null; _haveLast = false;
+                    if (_gl != null) { _scene = null; _sceneDoc = null; _gpuShown = false; _gl.IsVisible = _gl.Ready || _gl.Status == "starting"; }
+                    InvalidateVisual(); _overlay?.InvalidateVisual(); _rendered = ticket; break;
+                }
                 var cam = _cam;
-                var buf = new byte[w * h * 4];
+                if (await GpuFrame(doc, cam, w, h, scale, fsw))
+                {
+                    _rendered = ticket;
+                    Frame(LastFrameMs, w, h);
+                    continue;
+                }
+                if (!ReferenceEquals(doc, _doc)) continue;   // another document came while the scene was built: it is drawn next
+                _gpuShown = false;
+                if (_gl is { Ready: true, IsVisible: true }) _gl.IsVisible = false;   // a scene only the CPU draws (OpenGL still starting: it stays shown)
+                var opt = Options(w, h, scale >= 1.5 ? 1 : 2);
+                // the pixel buffer and two bitmaps are kept while the size holds (a drag renders many frames; new
+                // buffers of several MB each time keep the garbage collector busy)
+                if (_buf.Length != w * h * 4) _buf = new byte[w * h * 4];
+                var buf = _buf;
                 try { await Task.Run(() => doc.Render(cam, opt, buf)); }
                 catch { _rendered = ticket; break; }   // disposed while rendering: a newer document follows
                 // 96 dpi, so the bitmap's size is its pixel size and DrawImage below takes all of it into the bounds (at
                 // 96 × scale on a Retina screen only its top-left quarter was drawn, twice as large)
-                var bmp = new WriteableBitmap(new PixelSize(w, h), new Vector(96, 96), PixelFormat.Rgba8888, AlphaFormat.Unpremul);
+                var slot = _flip ? 1 : 0;
+                _flip = !_flip;
+                var bmp = _frames[slot];
+                if (bmp == null || bmp.PixelSize.Width != w || bmp.PixelSize.Height != h)
+                {
+                    if (bmp != null && !ReferenceEquals(_bmp, bmp)) bmp.Dispose();
+                    bmp = _frames[slot] = new WriteableBitmap(new PixelSize(w, h), new Vector(96, 96), PixelFormat.Rgba8888, AlphaFormat.Unpremul);
+                }
                 using (var fb = bmp.Lock())
                     for (var y = 0; y < h; y++)
                         System.Runtime.InteropServices.Marshal.Copy(buf, y * w * 4, fb.Address + y * fb.RowBytes, w * 4);
-                var old = _bmp;
                 _bmp = bmp;
-                old?.Dispose();
-                _pa = _pb = null;
-                _labels = null;
-                if (LabelSource != null)
-                    try { _labels = LabelSource(doc, cam, opt, scale); } catch { }
-                if (LineA >= 0 && LineB >= 0)
-                    try
-                    {
-                        var n = Math.Max(LineA, LineB) + 1;
-                        var p = doc.ProjectAtoms(cam, opt, (int)doc.Summary().Atoms);
-                        if (3 * n <= p.Length) { _pa = new Point(p[3 * LineA] / scale, p[3 * LineA + 1] / scale); _pb = new Point(p[3 * LineB] / scale, p[3 * LineB + 1] / scale); }
-                    }
-                    catch { }
+                Overlays(doc, cam, opt, scale);
+                _lastCam = cam; _lastOpt = opt; _haveLast = true; _idStale = false;
                 InvalidateVisual();
+                _overlay?.InvalidateVisual();
                 _rendered = ticket;
+                Frame(fsw.Elapsed.TotalMilliseconds, w, h);
             }
         }
         finally { _busy = false; }
@@ -208,6 +413,11 @@ public sealed class MolView : Control
     {
         ctx.FillRectangle(Tokens.Brush("Bg0B"), new Rect(Bounds.Size));
         if (_bmp != null) ctx.DrawImage(_bmp, new Rect(0, 0, _bmp.PixelSize.Width, _bmp.PixelSize.Height), new Rect(0, 0, Bounds.Width, Bounds.Height));
+        if (_overlay == null) DrawOverlay(ctx);   // with the GPU view: above it, in the overlay
+    }
+
+    private void DrawOverlay(DrawingContext ctx)
+    {
         if (_labels is { } lb) LabelDrawing.Draw(ctx, lb.Labels, lb.Style);
         if (_pa is Point a && _pb is Point b)
         {
@@ -256,7 +466,8 @@ public sealed class MolView : Control
         }
         _last = p;
         _moved = true;
-        Refresh();
+        Interacting();
+        RefreshView();
         CameraChanged?.Invoke(_cam);
     }
 
@@ -267,7 +478,8 @@ public sealed class MolView : Control
         {
             var pt = e.GetPosition(this);
             var scale = VisualRoot?.RenderScaling ?? 1;
-            try { AtomClicked(_doc.Pick((int)(pt.X * scale), (int)(pt.Y * scale))); } catch { }
+            // the GPU view: the view ray against the atoms for the camera shown (nothing rendered); the CPU view: its id buffer
+            try { AtomClicked(_gpuShown && _haveLast ? _doc.PickAt(_lastCam, _lastOpt, (int)(pt.X * scale), (int)(pt.Y * scale)) : _doc.Pick((int)(pt.X * scale), (int)(pt.Y * scale))); } catch { }
         }
         _drag = false;
         _moved = false;

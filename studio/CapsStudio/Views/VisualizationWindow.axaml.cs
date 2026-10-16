@@ -29,6 +29,10 @@ public partial class VisualizationWindow : Window
         AvaloniaXamlLoader.Load(this);
         if (vm == null) return;
         var view = this.FindControl<MolView>("View")!;
+        // on the GPU as the main view (Settings › GPU view): the scene is built when the structure or the look changes,
+        // and turning only sends the camera (the CPU renderer redrew every pixel of the full screen for each move)
+        view.UseGpu = vm.GpuView;
+        view.NeedsIdBuffer = () => vm.AnyLabels;
         var style = this.FindControl<ComboBox>("StyleBox")!;
         var colour = this.FindControl<ComboBox>("ColourBox")!;
         var back = this.FindControl<ComboBox>("BackBox")!;
@@ -63,7 +67,7 @@ public partial class VisualizationWindow : Window
         // labels: the Studio's label settings, drawn on this window's structure and camera
         this.FindControl<LabelSettings>("LabelPanel")!.DataContext = vm;
         view.LabelSource = (d, c, o, sc) => (vm.ViewLabelsFor(d, c, o, sc), vm.LabelLook);
-        Action relabel = () => view.Refresh();
+        Action relabel = () => view.RefreshView();   // the labels' settings: the scene itself is this window's own
         vm.RenderRequested += relabel;
         if (live) vm.PropertyChanged += OnVm;
         Closed += (_, _) =>
@@ -76,6 +80,9 @@ public partial class VisualizationWindow : Window
         Show(Source());
         Opened += (_, _) => { Activate(); WindowState = WindowState.FullScreen; };   // after it opens (macOS ignores it before)
     }
+
+    /// <summary>The window's 3D view (the view benchmark drives its camera).</summary>
+    internal MolView BenchView => this.FindControl<MolView>("View")!;
 
     private void OnVm(object? s, System.ComponentModel.PropertyChangedEventArgs e)
     {
