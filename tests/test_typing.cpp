@@ -348,7 +348,7 @@ TEST(Typing, OplsAa2024AsTheGromacsTopologies) {
   // dichloromethane: Cl 151, C 152, H 153 (formerly left untyped: the table has no CH2Cl2 numbers)
   const TypingResult dcm = type_with("oplsaa2024", mol({"C", "Cl", "Cl"}, {2, 0, 0}, {{0, 1}, {0, 2}}));
   EXPECT_EQ(dcm.untyped, 0);
-  EXPECT_EQ(num(dcm.types[0]), "152");
+  EXPECT_EQ(dcm.types[0], "caps_ch2cl2");   // 152's class with the charge that balances two Cl (the library's supplement)
   EXPECT_EQ(num(dcm.types[1]), "151");
   EXPECT_EQ(num(dcm.types[3]), "153");
   // diethyl sulfide: CH2 on S 210, CH3 135 (the sulfide C pattern asked the S for three neighbours)
