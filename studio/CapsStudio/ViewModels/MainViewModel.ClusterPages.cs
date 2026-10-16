@@ -93,7 +93,7 @@ public sealed partial class MainViewModel
         var cmds = new List<string>();
         if (_mechTensile)
             cmds.Add($"caps tensile structure.caps.data -o tensile.data --axis {(a.TensAxis >= 3 ? "xyz" : AxisName(a.TensAxis))} --rate {N(a.TensRateD)} --strain {N(a.TensMaxD)} " +
-                     $"--temp {N(a.TensTD)}{(a.TensFixed ? " --fixed-lateral" : "")} --json tensile.json --csv curves");
+                     $"--temp {N(a.TensTD)}{(a.TensFixed ? " --fixed-lateral" : "")}{(a.MechDouble ? " --precision double" : "")} --json tensile.json --csv curves");
         cmds.Add($"caps elastic structure.caps.data --method {(_mechMethod == 0 ? "strain" : "fluct-run")} --strain {N(a.CijStrainD)} --configs {N(a.CijConfigsD)} --temp {N(a.TensTD)} --json elastic.json");
         return SubmitCommandJob("Mechanics", -1, _ => string.Join(" && ", cmds), true, stem: "tensile");
     }

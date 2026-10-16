@@ -14,6 +14,9 @@
         <Button Click="OnSave" IsEnabled="{Binding HasDocument}">
           <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="save" Size="16" VerticalAlignment="Center" /><TextBlock Text="Save network…" VerticalAlignment="Center" /></StackPanel>
         </Button>
+        <Button Click="OnCopyCommand" ToolTip.Tip="This run as the caps command line runs it: the same options, defaults and engine">
+          <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="terminal" Size="16" VerticalAlignment="Center" /><TextBlock Text="Copy command" VerticalAlignment="Center" /></StackPanel>
+        </Button>
         <Button Click="OnCopyPython" ToolTip.Tip="This run on the open structure as a Python script (the caps package), with these settings">
           <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="copy" Size="16" VerticalAlignment="Center" /><TextBlock Text="Copy as Python" VerticalAlignment="Center" /></StackPanel>
         </Button>
@@ -124,6 +127,8 @@
                 </StackPanel>
                 <CheckBox Classes="toggle" Content="Keep byproducts (H₂, H₂O) as molecules in the cell" IsChecked="{Binding RxKeepByproducts}"
                           ToolTip.Tip="Off: the leaving atoms are removed; on: they stay as their own molecules (the force field must describe them)" />
+                <CheckBox Classes="toggle" Content="Remove unreacted sulfur donors afterwards" IsChecked="{Binding RxRemoveUnreacted}"
+                          ToolTip.Tip="After the cure, molecules made only of S and H (H₂S, H–Sx–H that never reacted) leave the cell; the summary counts them (caps react --remove-unreacted)" />
                 <CheckBox Classes="toggle" Content="Retype with a force field after every cycle" IsChecked="{Binding RxUseField}" />
                 <StackPanel Spacing="4" IsVisible="{Binding RxUseField}">
                   <TextBlock Text="Force field for the reaction" Classes="label" />
