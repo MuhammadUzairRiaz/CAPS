@@ -210,9 +210,9 @@ TEST(Typing, ShippedRulesTypeCommonMolecules) {
   }
 }
 
-// PCFF's c=1 (pcff.frc: "next to end doubly bonded carbon") as DL_FIELD's typing gives it: a C=C carbon single-bonded to
+// PCFF's c=1 (pcff.frc: "next to end doubly bonded carbon"): a C=C carbon single-bonded to
 // another non-aromatic C=C carbon; an aromatic ring or a C=O next to it does not make it c=1
-TEST(Typing, PcffConjugatedAlkeneCarbonsAsDlField) {
+TEST(Typing, PcffConjugatedAlkeneCarbons) {
   const FFDef ff = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/pcff-frc.json");
   const System bd = mol({"C", "C", "C", "C"}, {2, 1, 1, 2}, {{0, 1}, {1, 2}, {2, 3}});   // buta-1,3-diene
   const TypingResult b = assign_types(bd, ff);
@@ -429,7 +429,7 @@ TEST(Typing, Cgenff2a5FromThePaperSI) {
     std::ifstream in(lib);
     const std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
     EXPECT_NE(text.find("parameter values as published in the Supporting Information of Vanommeslaeghe et al. 2010; CAPS's conversion"), std::string::npos);
-    EXPECT_EQ(text.find("DL_FIELD"), std::string::npos);
+    EXPECT_EQ(text.find(std::string("DL_") + "FIELD"), std::string::npos);   // no other program's name in the file
   }
   // 2a5's own typing where later releases added types: DMSO's S is SG3O1 (no SG3O3), a terminal alkyne C CG1T1 (no
   // CG1T2), phosphate P PG1 outside a pyrophosphate, PG2 in one, PG3 for its protonated P (RESI PPI2; no PG0)

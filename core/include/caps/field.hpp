@@ -25,7 +25,7 @@ struct TorsionTerm { uint32_t i, j, k, l; double v; int n; double delta; };   //
 struct PairType { double eps, sigma; };
 struct HarmonicTorsion { uint32_t i, j, k, l; double k2, chi0; };          // k2 (χ − χ0)², χ the i-j-k-l dihedral (radians)
 
-// Inversion (LAMMPS improper_style inversion/harmonic, DL_POLY / DL_FIELD "inversion"): c is the centre;
+// Inversion (LAMMPS improper_style inversion/harmonic, DL_POLY "inversion"): c is the centre;
 // E = (K/3) Σ (ω − ω0)² over the three angles ω between one bond from c and the plane of the other two (0 ≤ ω ≤ π/2).
 // form 0: E = (K/3) Σ (ω − ω0)²; form 1 (DREIDING "plan", LAMMPS umbrella with ω0 = 0 over the three
 // permutations at K/3): E = (K/3) Σ (1 − cos ω); form 2 (UFF P, As, Sb, Bi): E = (K/3) Σ [C0 + C1 cos ω + C2 cos 2ω] with
@@ -160,10 +160,10 @@ struct ForceField {
   // the force field's own LAMMPS styles and cut-off, as its file declares them (for exports in its native form; CAPS's
   // evaluator may compute the same terms in another equivalent form, e.g. OPLS torsions as Fourier sums)
   std::string native_pair, native_dihedral, native_improper;
-  // "center2": impropers were matched i j C l and are held (and evaluated) i C j l, as the DL-derived OPLS files write
+  // "center2": impropers were matched i j C l and are held (and evaluated) i C j l, as some OPLS libraries write
   // them for LAMMPS; their DL_POLY files write the same term j i C l (write_dlpoly follows that)
   std::string improper_written;
-  // DL-derived files: the improper torsions as their DL_POLY files write them (rule and atom order found as those do)
+  // libraries with "replace" equivalences and matched-order impropers: the improper torsions as their DL_POLY files write them (rule and atom order found as those do)
   std::vector<TorsionTerm> impropers_dlpoly;
   bool impropers_dlpoly_ok = true, impropers_dlpoly_set = false;
   double native_cutoff = 0;

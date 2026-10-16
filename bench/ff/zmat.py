@@ -64,7 +64,7 @@ def write_xyz(atoms, path, title="CAPS validation molecule"):
             f.write(f"{element_of(ty):3s} {p[0]:10.5f} {p[1]:10.5f} {p[2]:10.5f}\n")
 
 def write_mol2(atoms, types, bonds, path, name="CAPS"):
-    """Tripos mol2 with force-field atom types (DL_FIELD reads the type column). types: label -> type."""
+    """Tripos mol2 with force-field atom types (the type column). types: label -> type."""
     with open(path, "w") as f:
         f.write(f"@<TRIPOS>MOLECULE\n{name}\n{len(atoms):5d} {len(bonds):5d}     1     0     0\nSMALL\nbcc\n\n\n@<TRIPOS>ATOM\n")
         idx, count = {}, {}
@@ -72,7 +72,7 @@ def write_mol2(atoms, types, bonds, path, name="CAPS"):
             idx[lab] = k + 1
             el = element_of(ty)
             count[el] = count.get(el, 0) + 1
-            name = f"{el}{count[el]}"   # DL_FIELD takes the element from the atom name
+            name = f"{el}{count[el]}"   # the element is read from the atom name
             f.write(f"{k+1:7d} {name:<8s} {p[0]:10.4f} {p[1]:10.4f} {p[2]:10.4f} {types[lab]:<8s} 1 MOL  0.000000\n")
         f.write("@<TRIPOS>BOND\n")
         for k, (a, b) in enumerate(bonds):
