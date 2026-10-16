@@ -1,0 +1,4 @@
+{"_python_s": 782.0, "_native_s": 109.6,
+ "SBR": {"seconds": 56.2, "fitted": 1, "before": 1, "after": 0},
+ "TGDDM + DDS": {"seconds": 245.1, "fitted": 6, "before": 7, "after": 0},
+ "lactic acid": {"seconds": 59.2, "fitted": 2, "before": 3, "after": 1, "note": "(O-H rotor: needs QM)"}}
