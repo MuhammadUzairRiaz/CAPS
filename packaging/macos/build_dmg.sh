@@ -4,6 +4,8 @@
 # Signing: ad hoc by default (runs on this Mac; Gatekeeper warns elsewhere). With CAPS_CODESIGN_ID="Developer ID
 # Application: …" the app is signed with the hardened runtime; with CAPS_NOTARY_PROFILE (xcrun notarytool
 # store-credentials) the .dmg is also notarised and stapled.
+# CAPS's own ML potential (caps ml, caps ff complete, caps.autofit): with CAPS_TORCH_DIR=<libtorch or a PyTorch
+# install's torch/ folder> the core is built with -DCAPS_WITH_TORCH=ON and libtorch's libraries go inside the app.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 ARCH="${1:-$(uname -m)}"
@@ -17,8 +19,13 @@ export DOTNET_CLI_TELEMETRY_OPTOUT=1
 rm -rf "$WORK" && mkdir -p "$WORK" "$OUT"
 
 echo "== native core ($ARCH, macOS 14+)"
+TORCH_ARGS=()
+if [ -n "${CAPS_TORCH_DIR:-}" ]; then
+  TORCH_ARGS=(-DCAPS_WITH_TORCH=ON -DTorch_DIR="$CAPS_TORCH_DIR/share/cmake/Torch")
+  echo "   with CAPS's ML potential (libtorch from $CAPS_TORCH_DIR)"
+fi
 cmake -S "$ROOT" -B "$WORK/native" -DCMAKE_BUILD_TYPE=Release -DCAPS_BUILD_TESTS=OFF \
-      -DCMAKE_OSX_ARCHITECTURES="$ARCH" -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 > "$WORK/cmake.log"
+      -DCMAKE_OSX_ARCHITECTURES="$ARCH" -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 "${TORCH_ARGS[@]}" > "$WORK/cmake.log"
 cmake --build "$WORK/native" -j "$(sysctl -n hw.ncpu)" > "$WORK/build.log"
 
 echo "== Studio (.NET, self-contained, $RID)"
@@ -29,6 +36,16 @@ echo "== app bundle"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp -R "$WORK/publish/." "$APP/Contents/MacOS/"
 cp "$WORK/native/cli/caps" "$APP/Contents/MacOS/caps"
+if [ -n "${CAPS_TORCH_DIR:-}" ]; then
+  # libtorch next to caps and libcaps; both find it through @loader_path
+  for lib in libtorch.dylib libtorch_cpu.dylib libc10.dylib libomp.dylib; do cp "$CAPS_TORCH_DIR/lib/$lib" "$APP/Contents/MacOS/"; done
+  for bin in "$APP/Contents/MacOS/caps" "$APP/Contents/MacOS/"libcaps*.dylib; do
+    install_name_tool -add_rpath @loader_path "$bin" 2>/dev/null || true
+    # the build tree's libtorch path is not shipped: the app uses only its own copy
+    install_name_tool -delete_rpath "$CAPS_TORCH_DIR/lib" "$bin" 2>/dev/null || true
+  done
+  cp "$ROOT/licenses/PyTorch-BSD-3.txt" "$APP/Contents/MacOS/" 2>/dev/null || true
+fi
 cp "$ROOT/packaging/icon/caps.icns" "$APP/Contents/Resources/"
 mkdir -p "$APP/Contents/Resources/data"
 # every data folder (force fields, typing, polymers, crystals, reactions, manual, python …): a new one is never left out

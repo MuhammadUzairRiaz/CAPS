@@ -239,7 +239,7 @@
    "origin": "converted",
    "source_file": "OPLS2005.par",
    "status": "validated",
-   "notes": "validated term by term for ester, propylbenzene and siloxane including impropers on distorted geometries.",
+   "notes": "validated term by term for ester, propylbenzene and siloxane including impropers on distorted geometries. Not distributed with CAPS (converted from DL_FIELD's library, or CHARMM's toppar): loadable by id only where the file is present locally.",
    "file": "opls2005.json",
    "typing": {
     "rules": "typing/opls2005.typing.json",
@@ -252,11 +252,6 @@
     "angles": 3565,
     "dihedrals": 2847,
     "impropers": 330
-   },
-   "list": {
-    "label": "OPLS 2005",
-    "key": "opls2005",
-    "order": 3
    }
   },
   {
@@ -269,7 +264,7 @@
    "origin": "converted",
    "source_file": "CHARMM.par",
    "status": "validated",
-   "notes": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): 48 of 48 buildable templates identical; CAPS adds impropers only at centres reference templates leave out.",
+   "notes": "checked term by term against the reference DL_POLY FIELD file (bench/ff/validate_family.py): 48 of 48 buildable templates identical; CAPS adds impropers only at centres reference templates leave out. Not distributed with CAPS (converted from DL_FIELD's library, or CHARMM's toppar): loadable by id only where the file is present locally.",
    "file": "charmm.json",
    "counts": {
     "atom_types": 129,
@@ -282,11 +277,6 @@
    "typing": {
     "rules": "typing/charmm.typing.json",
     "evidence": "CAPS rules from CHARMM (library set)'s type definitions (bench/typing/make_biomolecular_rules.py)"
-   },
-   "list": {
-    "label": "CHARMM",
-    "key": "charmm",
-    "order": 19
    }
   },
   {
@@ -297,7 +287,7 @@
    "origin": "converted",
    "source_file": "INORGANIC_binary_oxides.par",
    "status": "validated",
-   "notes": "17 of 17 buildable templates plus the alpha-Al2O3 and MgO shell-model examples: Buckingham pairs and core-shell springs identical.",
+   "notes": "17 of 17 buildable templates plus the alpha-Al2O3 and MgO shell-model examples: Buckingham pairs and core-shell springs identical. Not distributed with CAPS (converted from DL_FIELD's library, or CHARMM's toppar): loadable by id only where the file is present locally.",
    "file": "inorganic-binary-oxides.json",
    "counts": {
     "atom_types": 81,
@@ -310,11 +300,6 @@
    "typing": {
     "rules": "typing/inorganic-binary-oxides.typing.json",
     "evidence": "CAPS rules (bench/typing/make_inorganic_rules.py): 82 rules, 23 compounds, 19 shelled cores, 10 other potential sets as overlays (typing/sets/inorganic-binary-oxides)"
-   },
-   "list": {
-    "label": "Binary oxides",
-    "key": "inorganic_binary_oxide",
-    "order": 28
    }
   },
   {
@@ -325,7 +310,7 @@
    "origin": "converted",
    "source_file": "INORGANIC_ternary_oxides.par",
    "status": "validated",
-   "notes": "12 of 12 perovskite / pyrochlore templates: Buckingham pairs and quartic core-shell springs identical (the reference FIELD file runs large spring constants together).",
+   "notes": "12 of 12 perovskite / pyrochlore templates: Buckingham pairs and quartic core-shell springs identical (the reference FIELD file runs large spring constants together). Not distributed with CAPS (converted from DL_FIELD's library, or CHARMM's toppar): loadable by id only where the file is present locally.",
    "file": "inorganic-ternary-oxides.json",
    "counts": {
     "atom_types": 44,
@@ -338,11 +323,6 @@
    "typing": {
     "rules": "typing/inorganic-ternary-oxides.typing.json",
     "evidence": "CAPS rules (bench/typing/make_inorganic_rules.py): 71 rules, 13 compounds, 18 shelled cores"
-   },
-   "list": {
-    "label": "Ternary oxides",
-    "key": "inorganic_ternary_oxide",
-    "order": 31
    }
   },
   {
@@ -353,7 +333,7 @@
    "origin": "converted",
    "source_file": "INORGANIC_zeolite.par",
    "status": "validated",
-   "notes": "4 of 4 silicalite / faujasite templates identical.",
+   "notes": "4 of 4 silicalite / faujasite templates identical. Not distributed with CAPS (converted from DL_FIELD's library, or CHARMM's toppar): loadable by id only where the file is present locally.",
    "file": "inorganic-zeolite.json",
    "counts": {
     "atom_types": 17,
@@ -366,11 +346,6 @@
    "typing": {
     "rules": "typing/inorganic-zeolite.typing.json",
     "evidence": "CAPS rules (bench/typing/make_inorganic_rules.py): 11 rules, 3 compounds, 2 other potential sets as overlays (typing/sets/inorganic-zeolite)"
-   },
-   "list": {
-    "label": "Zeolite",
-    "key": "inorganic_zeolite",
-    "order": 32
    }
   },
   {
@@ -2464,11 +2439,7 @@
     "rules": "typing/cgenff-toppar.typing.json",
     "evidence": "the topology's own residues typed as it types them (bench/ff/validate_rtf_types.py --cap-links): top_all36_cgenff.rtf 9872 / 9872 atoms, 519 / 519 residues (residues with lone pairs left out)"
    },
-   "list": {
-    "label": "CHARMM36 CGenFF",
-    "key": "charmm36_cgenff",
-    "order": 23
-   }
+   "notes": "Not distributed with CAPS (converted from DL_FIELD's library, or CHARMM's toppar): loadable by id only where the file is present locally."
   },
   {
    "id": "cgenff-2a5-jcc2010",

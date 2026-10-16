@@ -600,6 +600,23 @@ add("caps_pdms_ho", 8, f"[H][OX2H1;$(O{SILOX})]", "H of that silanol", True)
 add("caps_pdms_hsi", 8, f"[H]{SILOX}", "H on a siloxane Si", True)
 add("caps_pdms_c", 8, f"[CX4H3;$(*{SILOX})]", "CH3 on a siloxane Si", True)
 add("caps_pdms_hc", 8, f"[H][CX4H3;$(*{SILOX})]", "H of a CH3 on a siloxane Si", True)
+# alkoxysilanes (silane coupling agents such as TESPT / TESPD, TEOS): the table's silyl ether types cover a Si with one
+# O only. CAPS types charged by 1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on B3LYP-D3BJ/def2-TZVP geometries of
+# propyl- and methyltriethoxysilane, propyltrimethoxysilane, dimethyldiethoxysilane and TEOS); one charge per alkoxy
+# unit (O + alpha C + H) and per alkyl unit on Si fitted to the three Si charges, so any mix is neutral; classes and
+# Lennard-Jones of the table's Si 1075, OS 1078, ether C 181 / 182 and H 185, C on Si 1065 / 1066 and H 140
+AOS = "[OX2;$(O[CX4])]"
+ASI = f"[SiX4;$(*({AOS}){AOS});!$(*[OX2][SiX4]);!$(*[OX2H1])]"
+add("caps_aos_si4", 8, f"[SiX4;$(*({AOS})({AOS})({AOS}){AOS})]", "Si with four alkoxy O (tetraalkoxysilane)", True)
+add("caps_aos_si3", 8, f"[SiX4;$(*({AOS})({AOS})({AOS})[CX4])]", "Si with three alkoxy O and an alkyl C (trialkoxysilane)", True)
+add("caps_aos_si2", 8, f"[SiX4;$(*({AOS})({AOS})([CX4])[CX4])]", "Si with two alkoxy O and two alkyl C (dialkoxysilane)", True)
+add("caps_aos_o", 8, f"[OX2;$(O([CX4]){ASI})]", "alkoxy O on a di-, tri- or tetraalkoxysilane Si", True)
+add("caps_aos_co2", 8, f"[CX4H2;$(*[OX2]{ASI})]", "CH2 of an alkoxy group on Si (ethoxy)", True)
+add("caps_aos_co3", 8, f"[CX4H3;$(*[OX2]{ASI})]", "CH3 of a methoxy group on Si", True)
+add("caps_aos_hco", 8, f"[H][CX4;$(*[OX2]{ASI})]", "H on the alkoxy C next to O", True)
+add("caps_aos_cs2", 8, f"[CX4H2;$(*{ASI})]", "CH2 on an alkoxysilane Si", True)
+add("caps_aos_cs3", 8, f"[CX4H3;$(*{ASI})]", "CH3 on an alkoxysilane Si", True)
+add("caps_aos_hcs", 8, f"[H][CX4;$(*{ASI})]", "H on a C bonded to an alkoxysilane Si", True)
 add("caps_cbz_ct2", 8, f"[CX4H2;$(*{CBZ})]", "CH2 on a carbazole N (a chain end, or N-ethyl / N-vinyl-derived)", True)
 add("caps_cbz_hc", 8, f"[H][CX4;$(*{CBZ})]", "H on that CH / CH2", True)
 

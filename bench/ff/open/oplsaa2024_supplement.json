@@ -788,6 +788,76 @@
    "charge": 0.1507,
    "description": "H on a persulfide S (R-S-S-H, H-S-S-H)",
    "reason": "the class (HS) and Lennard-Jones of the thiol H 204; 1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on B3LYP-D3BJ/def2-TZVP geometries): H(S) +0.1495 in CH3SSH, +0.1486 in CH3CH2SSH, +0.1540 in HSSH, mean +0.1507"
+  },
+  {
+   "name": "caps_aos_si4",
+   "lj_from": "opls_1075",
+   "charge": 0.5812,
+   "description": "Si with four alkoxy O",
+   "reason": "1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on B3LYP-D3BJ/def2-TZVP geometries of propyl- and methyltriethoxysilane, propyltrimethoxysilane, dimethyldiethoxysilane and tetraethoxysilane, equivalent atoms averaged); alkoxy unit O + C + H -0.1453 and alkyl unit C + H on Si -0.0318, least squares to the three Si charges (CM5 +0.3555 / +0.4654 / +0.5825), so every mix of alkoxy and alkyl groups on Si is neutral; CM5 +0.5825"
+  },
+  {
+   "name": "caps_aos_si3",
+   "lj_from": "opls_1075",
+   "charge": 0.4677,
+   "description": "Si with three alkoxy O and an alkyl C",
+   "reason": "1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on B3LYP-D3BJ/def2-TZVP geometries of propyl- and methyltriethoxysilane, propyltrimethoxysilane, dimethyldiethoxysilane and tetraethoxysilane, equivalent atoms averaged); alkoxy unit O + C + H -0.1453 and alkyl unit C + H on Si -0.0318, least squares to the three Si charges (CM5 +0.3555 / +0.4654 / +0.5825), so every mix of alkoxy and alkyl groups on Si is neutral; CM5 +0.4654 (mean of three molecules)"
+  },
+  {
+   "name": "caps_aos_si2",
+   "lj_from": "opls_1075",
+   "charge": 0.3542,
+   "description": "Si with two alkoxy O and two alkyl C",
+   "reason": "1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on B3LYP-D3BJ/def2-TZVP geometries of propyl- and methyltriethoxysilane, propyltrimethoxysilane, dimethyldiethoxysilane and tetraethoxysilane, equivalent atoms averaged); alkoxy unit O + C + H -0.1453 and alkyl unit C + H on Si -0.0318, least squares to the three Si charges (CM5 +0.3555 / +0.4654 / +0.5825), so every mix of alkoxy and alkyl groups on Si is neutral; CM5 +0.3555"
+  },
+  {
+   "name": "caps_aos_o",
+   "lj_from": "opls_1078",
+   "charge": -0.3988,
+   "description": "alkoxy O on an alkoxysilane Si",
+   "reason": "1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on B3LYP-D3BJ/def2-TZVP geometries of propyl- and methyltriethoxysilane, propyltrimethoxysilane, dimethyldiethoxysilane and tetraethoxysilane, equivalent atoms averaged); mean over the five molecules (-0.392 to -0.405)"
+  },
+  {
+   "name": "caps_aos_co2",
+   "lj_from": "opls_182",
+   "charge": 0.0207,
+   "description": "CH2 of an alkoxy group on Si",
+   "reason": "1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on B3LYP-D3BJ/def2-TZVP geometries of propyl- and methyltriethoxysilane, propyltrimethoxysilane, dimethyldiethoxysilane and tetraethoxysilane, equivalent atoms averaged); alkoxy unit O + C + H -0.1453 and alkyl unit C + H on Si -0.0318, least squares to the three Si charges (CM5 +0.3555 / +0.4654 / +0.5825), so every mix of alkoxy and alkyl groups on Si is neutral; CM5 -0.0313, set by the alkoxy unit"
+  },
+  {
+   "name": "caps_aos_co3",
+   "lj_from": "opls_181",
+   "charge": -0.0957,
+   "description": "CH3 of a methoxy group on Si",
+   "reason": "1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on B3LYP-D3BJ/def2-TZVP geometries of propyl- and methyltriethoxysilane, propyltrimethoxysilane, dimethyldiethoxysilane and tetraethoxysilane, equivalent atoms averaged); alkoxy unit O + C + H -0.1453 and alkyl unit C + H on Si -0.0318, least squares to the three Si charges (CM5 +0.3555 / +0.4654 / +0.5825), so every mix of alkoxy and alkyl groups on Si is neutral; CM5 -0.1142, set by the alkoxy unit"
+  },
+  {
+   "name": "caps_aos_hco",
+   "lj_from": "opls_185",
+   "charge": 0.1164,
+   "description": "H on the alkoxy C of an alkoxysilane",
+   "reason": "1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on B3LYP-D3BJ/def2-TZVP geometries of propyl- and methyltriethoxysilane, propyltrimethoxysilane, dimethyldiethoxysilane and tetraethoxysilane, equivalent atoms averaged); mean of the ethoxy H (methoxy H 0.1178)"
+  },
+  {
+   "name": "caps_aos_cs2",
+   "lj_from": "opls_1066",
+   "charge": -0.2672,
+   "description": "CH2 on an alkoxysilane Si",
+   "reason": "1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on B3LYP-D3BJ/def2-TZVP geometries of propyl- and methyltriethoxysilane, propyltrimethoxysilane, dimethyldiethoxysilane and tetraethoxysilane, equivalent atoms averaged); alkoxy unit O + C + H -0.1453 and alkyl unit C + H on Si -0.0318, least squares to the three Si charges (CM5 +0.3555 / +0.4654 / +0.5825), so every mix of alkoxy and alkyl groups on Si is neutral; CM5 -0.2416, set by the alkyl unit"
+  },
+  {
+   "name": "caps_aos_cs3",
+   "lj_from": "opls_1065",
+   "charge": -0.3849,
+   "description": "CH3 on an alkoxysilane Si",
+   "reason": "1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on B3LYP-D3BJ/def2-TZVP geometries of propyl- and methyltriethoxysilane, propyltrimethoxysilane, dimethyldiethoxysilane and tetraethoxysilane, equivalent atoms averaged); alkoxy unit O + C + H -0.1453 and alkyl unit C + H on Si -0.0318, least squares to the three Si charges (CM5 +0.3555 / +0.4654 / +0.5825), so every mix of alkoxy and alkyl groups on Si is neutral; CM5 -0.3413, set by the alkyl unit"
+  },
+  {
+   "name": "caps_aos_hcs",
+   "lj_from": "opls_140",
+   "charge": 0.1177,
+   "description": "H on a C bonded to an alkoxysilane Si",
+   "reason": "1.27 x CM5 (M06-2X/6-311+G(2df,2p) Hirshfeld on B3LYP-D3BJ/def2-TZVP geometries of propyl- and methyltriethoxysilane, propyltrimethoxysilane, dimethyldiethoxysilane and tetraethoxysilane, equivalent atoms averaged); mean of the CH2 H (CH3 H 0.1161)"
   }
  ],
  "dihedrals": [

@@ -113,6 +113,8 @@ public sealed partial class FieldViewModel : ObservableObject
                 // (other copies of the same force field) stay loadable by id for recipes and scripts
                 if (!e.TryGetProperty("list", out var l) || l.ValueKind != JsonValueKind.Object) continue;
                 if (!e.TryGetProperty("file", out var f) || f.ValueKind != JsonValueKind.String) continue;
+                // an entry whose file is not installed (a library kept only on a development machine) is not offered
+                if (!File.Exists(Path.Combine(dir, f.GetString()!))) continue;
                 var typing = e.TryGetProperty("typing", out var t) && t.ValueKind == JsonValueKind.Object;
                 list.Add((l.TryGetProperty("order", out var o) ? o.GetInt32() : 999,
                           new FfEntry(Str(e, "id"), Str(l, "label"), Str(e, "version"), Str(e, "status"), Path.Combine(dir, f.GetString()!), typing, Str(l, "key"))));
