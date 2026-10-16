@@ -52,6 +52,7 @@ public partial class App : Application
             _main = w;
             var args = desktop.Args ?? [];
             if (args.Length > 0) w.OpenOnStart(args[0], args.Length > 1 ? args[1] : null);
+            if (ViewBench.Active) ViewBench.Start(w, () => desktop.Shutdown());
             // macOS hands a double-clicked file (a .capsproj, a structure) to the running app, not as an argument
             if (TryGetFeature(typeof(IActivatableLifetime)) is IActivatableLifetime act)
                 act.Activated += (_, e) =>
