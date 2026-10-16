@@ -458,6 +458,24 @@ rs = rx.react_summary()
 check(rs["chains"] == 8 and rs["crosslinks"] == rs["target"] == 4 and rs["byproducts"] == 4 and rs["field"].startswith("PCFF")
       and rs["field_after"].endswith("complete") and rx.field.report()["complete"],
       f"react with PCFF: {rs['crosslinks']}/{rs['target']} links · ν {rs['density']:.0f} mol/m³ · Mc {rs['mc']:.0f} g/mol · after: {rs['field_after']}")
+# the CLI's options through the same core path (ABI 70): unreacted sulfur donors removed in the core, the sulfur census
+# in the summary, overlays on an assignment, precision on md
+sr = caps.polymer("[*]C/C=C(C)\\C[*]", dp=8, chains=3, density=0.6, seed=2)
+sr.insert("SS", 10)
+sr.react("sulfur_allylic", cycles=3, per_cycle=2, relax=False, default_field=True, remove_unreacted=True)
+ss = sr.react_summary()
+check(sr.removed_unreacted["molecules"] > 0 and ss["removed_unreacted"] == sr.removed_unreacted["molecules"] and "sulfur" in ss
+      and not ss["sulfur"]["free"] and ss["sulfur"] == sr.sulfur_bridges(), f"remove_unreacted in the core: {sr.removed_unreacted} · {ss.get('sulfur')}")
+ov = caps.forcefield_overlays("oplsaa2024")
+check(any(o["file"] == "oplsaa2024-lj-refit.json" for o in ov) and all(o["base"] == "oplsaa2024" for o in ov), f"overlays: {[o['file'] for o in ov]}")
+check(isinstance(caps.ml_available(), bool), "ml_available")
+po = caps.polymer("*CC*", dp=6, chains=1, seed=1)
+po.field.assign("oplsaa2024")
+rep_ov = po.field.set_overlays(["oplsaa2024-lj-refit"])
+check(rep_ov["complete"] and len(po.field.overlays()) == 1 and po.field.overlays()[0].endswith("oplsaa2024-lj-refit.json"), "field overlays")
+po.field.set_overlays([])
+check(po.field.overlays() == [], "overlays cleared")
+print("ok   React remove_unreacted / sulfur census in the core; library overlays")
 # a crosslinked cell's bonds stay short when unwrapped: every molecule whole in the document React leaves (a saved data
 # file then has consistent image flags)
 import math, tempfile
@@ -670,7 +688,7 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 69, "ABI 69")
+check(caps.abi_version() == 70, "ABI 70")
 _pbs = caps.polymer("[*]OCCCCOC(=O)CCC(=O)[*]", dp=4, chains=2, seed=3)
 _cgd = _pbs.cg_map(rules="ester-cut")
 check(_cgd.atoms == 16, f"ester cut: 16 beads ({_cgd.atoms})")
