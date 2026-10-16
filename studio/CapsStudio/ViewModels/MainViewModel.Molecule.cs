@@ -128,7 +128,7 @@ public sealed partial class MainViewModel
             try
             {
                 using var js = JsonDocument.Parse(File.ReadAllText(Path.Combine(dir, "catalogue.json")));
-                var order = new[] { "gaff2-2.2.20-ambertools", "gaff-1.81-ambertools", "opls2005", "cgenff", "pcff-frc", "cvff-frc" };
+                var order = new[] { "gaff2-2.2.20-ambertools", "gaff-1.81-ambertools", "oplsaa2024", "cgenff-2a5-jcc2010", "pcff-frc", "cvff-frc" };
                 var found = new Dictionary<string, CleanChoice>();
                 foreach (var e in js.RootElement.GetProperty("forcefields").EnumerateArray())
                 {
