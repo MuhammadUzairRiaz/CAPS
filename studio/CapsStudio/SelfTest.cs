@@ -287,18 +287,18 @@ internal static class SelfTest
             vm.OpenUnitTyping();
             var exampleAtoms = vm.UtAtoms.Count;
             var roles = vm.UtAtoms.Select(a => a.RoleKind).Distinct().Count();
-            var bodyCh = vm.UtAtoms.FirstOrDefault(a => a.RoleKind == 1 && a.Auto.StartsWith("515_", StringComparison.Ordinal));
+            var bodyCh = vm.UtAtoms.FirstOrDefault(a => a.RoleKind == 1 && (a.Auto.StartsWith("515_", StringComparison.Ordinal) || a.Auto == "opls_515"));
             var applied = "";
             if (bodyCh != null)
             {
                 vm.UtSelected = bodyCh;
-                vm.UtTypeSelected = vm.UtTypes.FirstOrDefault(t => t.Name.StartsWith("137_", StringComparison.Ordinal));
+                vm.UtTypeSelected = vm.UtTypes.FirstOrDefault(t => t.Name.StartsWith("137_", StringComparison.Ordinal) || t.Name == "opls_137");
                 vm.AssignUnitType();
                 vm.ApplyUnitTyping();
                 applied = vm.UtStatus;
             }
             var rep = vm.Document!.FieldReport();
-            var count137 = System.Text.RegularExpressions.Regex.Matches(rep, "\"type\": ?\"137_").Count;
+            var count137 = System.Text.RegularExpressions.Regex.Matches(rep, "\"type\": ?\"(137_|opls_137\")").Count;
             Check(exampleAtoms == 50 && roles == 3 && bodyCh != null && vm.UtUntyped == 0 && count137 == 60 && applied.Contains("atoms of the structure typed from the example"),
                   $"type by hand: {exampleAtoms} example atoms, {roles} roles, 137 on {count137} melt atoms · {applied} {vm.UtStatus}");
             vm.Field.Clear().GetAwaiter().GetResult();
@@ -4301,26 +4301,43 @@ internal static class SelfTest
             vm.EqTarget = 0;
         }
 
-        // Field › Fill from OPLS 2005: natural rubber under OPLS-AA 2024 lacks the CM-CT-CT-CM torsion; one click borrows
-        // it (and only what is missing) from OPLS 2005 by the shared OPLS classes
+        // Field › Fill from CAPS's OPLS-AA 2024 fits: a copy of OPLS-AA 2024 without its CM-CM-CT-CT torsion (with CAPS's
+        // rubber refit overlay beside it) leaves natural rubber with that term missing; one click fills it, and only what is
+        // missing, from the overlay. Nothing comes from a library CAPS does not ship
         {
+            var lib = Paths.ForceFields!;
+            var tdir = Path.Combine(outDir, "fill-lib");
+            Directory.CreateDirectory(tdir);
+            var ffj = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(Path.Combine(lib, "oplsaa2024.json")))!.AsObject();
+            ffj["typing"] = Path.GetFullPath(Path.Combine(lib, (string)ffj["typing"]!));
+            var dih = ffj["dihedrals"]!.AsArray();
+            foreach (var d in dih.Where(d => (string?)d!["name"] == "CM-CM-CT-CT").ToList()) dih.Remove(d);
+            ffj["name"] = "OPLS-AA 2024 (without CM-CM-CT-CT)";
+            File.WriteAllText(Path.Combine(tdir, "oplsaa2024.json"), ffj.ToJsonString());
+            File.Copy(Path.Combine(lib, "oplsaa2024-rubber-refit.json"), Path.Combine(tdir, "oplsaa2024-rubber-refit.json"), true);
+            File.WriteAllText(Path.Combine(tdir, "catalogue.json"), "{\"forcefields\": [{\"id\": \"oplsaa2024\", \"file\": \"oplsaa2024.json\"}]}");
+            var entry = new FfEntry("oplsaa2024", "OPLS-AA 2024 (test copy)", "", "", Path.Combine(tdir, "oplsaa2024.json"), true);
+            vm.Field.Library.Add(entry);
             var (nrDoc, _) = CapsDocument.GrowChains("{\"units\":[{\"name\":\"isoprene\",\"smiles\":\"[*]C/C(C)=C\\\\C[*]\"}],\"dp\":4}",
                 new CapsGrowOpts { Chains = 1, Dp = 0, Seed = 1, Density = 0.02, ContactScale = -0.8, Curve = 1 }, null, "nr");
             var nrFile = Path.Combine(outDir, "nr_fill.data");
             nrDoc.Save(nrFile);
             nrDoc.Dispose();
             vm.Open(nrFile);
-            vm.Field.FfIndex = vm.Field.Library.ToList().FindIndex(x => x.Id == "oplsaa2024");
+            vm.Field.FfIndex = vm.Field.Library.Count - 1;
             vm.Field.Assign().GetAwaiter().GetResult();
-            var fillBefore = (vm.Field.Complete, vm.Field.CanFillSuggested, vm.Field.FillSuggestedText);
+            var fillBefore = (vm.Field.Complete, vm.Field.CanFillSuggested, vm.Field.FillSuggestedText, vm.Field.MissingText);
             vm.Field.FillSuggested().GetAwaiter().GetResult();
-            Check(!fillBefore.Complete && fillBefore.CanFillSuggested && fillBefore.FillSuggestedText == "Fill from OPLS 2005" && vm.Field.Complete && !vm.Field.CanFillSuggested,
-                  $"fill from OPLS 2005: before complete {fillBefore.Complete}, offered '{fillBefore.FillSuggestedText}' · after complete {vm.Field.Complete} · {vm.Field.EstimatedText}");
+            var rep = vm.Document!.FieldReport();
+            Check(!fillBefore.Complete && fillBefore.CanFillSuggested && fillBefore.FillSuggestedText == "Fill from CAPS's OPLS-AA 2024 fits" && vm.Field.Complete
+                  && !vm.Field.CanFillSuggested && rep.Contains("rubber-refit"),
+                  $"fill from CAPS's OPLS-AA 2024 fits: before complete {fillBefore.Complete} ({fillBefore.MissingText}), offered '{fillBefore.FillSuggestedText}' · after complete {vm.Field.Complete} · {vm.Field.EstimatedText}");
+            vm.Field.Library.Remove(entry);
             vm.Open(Path.Combine(dir, "ps_melt.data"));
         }
 
-        // Field › Use OPLS 2005's charges: poly(2-vinylpyridine) under OPLS-AA 2024 — the substituted pyridine's fixed
-        // charges do not balance; OPLS 2005's bond-increment charges do, with OPLS-AA 2024's types kept
+        // Charges: poly(2-vinylpyridine) under the shipped OPLS-AA 2024 types complete and neutral by its own charges; no
+        // charge choice borrows from another library
         {
             var (pvp, _) = CapsDocument.GrowChains("{\"units\":[{\"name\":\"2-vinylpyridine\",\"smiles\":\"[*]CC([*])c1ccccn1\"}],\"dp\":4}",
                 new CapsGrowOpts { Chains = 1, Dp = 0, Seed = 1, Density = 0.02, ContactScale = -0.8, Curve = 1 }, null, "p2vp");
@@ -4331,11 +4348,8 @@ internal static class SelfTest
             vm.Field.ChargeMode = 1;
             vm.Field.FfIndex = vm.Field.Library.ToList().FindIndex(x => x.Id == "oplsaa2024");
             vm.Field.Assign().GetAwaiter().GetResult();
-            var chBefore = (vm.Field.Complete, vm.Field.CanUseCompanionCharges, vm.Field.CompanionChargesText);
-            vm.Field.UseCompanionCharges().GetAwaiter().GetResult();
-            var pvpRep = vm.Document!.FieldReport();
-            Check(!chBefore.Complete && chBefore.CanUseCompanionCharges && vm.Field.Complete && pvpRep.Contains("OPLS 2005's own, from its bond increments") && pvpRep.Contains("\"520_"),
-                  $"OPLS 2005 charges with OPLS-AA 2024 types: before complete {chBefore.Complete}, offered '{chBefore.CompanionChargesText}' · after complete {vm.Field.Complete}");
+            Check(vm.Field.Complete && !vm.Field.ChargeOdd && FieldViewModel.ChargeModes.Length == 5 && !FieldViewModel.ChargeModes.Any(m => m.Contains("increments", StringComparison.OrdinalIgnoreCase)),
+                  $"OPLS-AA 2024 charges on P2VP: complete {vm.Field.Complete} · {vm.Field.ChargeText} · charge choices {FieldViewModel.ChargeModes.Length}");
             vm.Field.ChargeMode = 0;
             vm.Open(Path.Combine(dir, "ps_melt.data"));
         }

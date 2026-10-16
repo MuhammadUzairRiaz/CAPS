@@ -755,10 +755,6 @@ public partial class MainWindow : Window
     private async void OnFieldAddRule(object? s, RoutedEventArgs e) { if (!_vm.Busy) await _vm.Field.AddRule(); }
     private async void OnFieldRemoveRules(object? s, RoutedEventArgs e) { if (!_vm.Busy) await _vm.Field.RemoveRules(); }
 
-    private async void OnFieldCompanionCharges(object? s, RoutedEventArgs e)
-    {
-        if (!_vm.Busy) await _vm.Field.UseCompanionCharges();
-    }
 
     private void OnSetMeasured(object? s, RoutedEventArgs e) => _vm.SetMeasured();
     private void OnFullView(object? s, RoutedEventArgs e) => OpenFullView(false);
