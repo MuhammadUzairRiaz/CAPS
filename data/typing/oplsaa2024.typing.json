@@ -3066,6 +3066,66 @@
    "description": "H of a CH3 on a siloxane Si"
   },
   {
+   "type": "caps_aos_si4",
+   "smarts": "[SiX4;$(*([OX2;$(O[CX4])])([OX2;$(O[CX4])])([OX2;$(O[CX4])])[OX2;$(O[CX4])])]",
+   "priority": 8,
+   "description": "Si with four alkoxy O (tetraalkoxysilane)"
+  },
+  {
+   "type": "caps_aos_si3",
+   "smarts": "[SiX4;$(*([OX2;$(O[CX4])])([OX2;$(O[CX4])])([OX2;$(O[CX4])])[CX4])]",
+   "priority": 8,
+   "description": "Si with three alkoxy O and an alkyl C (trialkoxysilane)"
+  },
+  {
+   "type": "caps_aos_si2",
+   "smarts": "[SiX4;$(*([OX2;$(O[CX4])])([OX2;$(O[CX4])])([CX4])[CX4])]",
+   "priority": 8,
+   "description": "Si with two alkoxy O and two alkyl C (dialkoxysilane)"
+  },
+  {
+   "type": "caps_aos_o",
+   "smarts": "[OX2;$(O([CX4])[SiX4;$(*([OX2;$(O[CX4])])[OX2;$(O[CX4])]);!$(*[OX2][SiX4]);!$(*[OX2H1])])]",
+   "priority": 8,
+   "description": "alkoxy O on a di-, tri- or tetraalkoxysilane Si"
+  },
+  {
+   "type": "caps_aos_co2",
+   "smarts": "[CX4H2;$(*[OX2][SiX4;$(*([OX2;$(O[CX4])])[OX2;$(O[CX4])]);!$(*[OX2][SiX4]);!$(*[OX2H1])])]",
+   "priority": 8,
+   "description": "CH2 of an alkoxy group on Si (ethoxy)"
+  },
+  {
+   "type": "caps_aos_co3",
+   "smarts": "[CX4H3;$(*[OX2][SiX4;$(*([OX2;$(O[CX4])])[OX2;$(O[CX4])]);!$(*[OX2][SiX4]);!$(*[OX2H1])])]",
+   "priority": 8,
+   "description": "CH3 of a methoxy group on Si"
+  },
+  {
+   "type": "caps_aos_hco",
+   "smarts": "[H][CX4;$(*[OX2][SiX4;$(*([OX2;$(O[CX4])])[OX2;$(O[CX4])]);!$(*[OX2][SiX4]);!$(*[OX2H1])])]",
+   "priority": 8,
+   "description": "H on the alkoxy C next to O"
+  },
+  {
+   "type": "caps_aos_cs2",
+   "smarts": "[CX4H2;$(*[SiX4;$(*([OX2;$(O[CX4])])[OX2;$(O[CX4])]);!$(*[OX2][SiX4]);!$(*[OX2H1])])]",
+   "priority": 8,
+   "description": "CH2 on an alkoxysilane Si"
+  },
+  {
+   "type": "caps_aos_cs3",
+   "smarts": "[CX4H3;$(*[SiX4;$(*([OX2;$(O[CX4])])[OX2;$(O[CX4])]);!$(*[OX2][SiX4]);!$(*[OX2H1])])]",
+   "priority": 8,
+   "description": "CH3 on an alkoxysilane Si"
+  },
+  {
+   "type": "caps_aos_hcs",
+   "smarts": "[H][CX4;$(*[SiX4;$(*([OX2;$(O[CX4])])[OX2;$(O[CX4])]);!$(*[OX2][SiX4]);!$(*[OX2H1])])]",
+   "priority": 8,
+   "description": "H on a C bonded to an alkoxysilane Si"
+  },
+  {
    "type": "caps_cbz_ct2",
    "smarts": "[CX4H2;$(*[n;r5;$(n1c2ccccc2c2ccccc12)])]",
    "priority": 8,
