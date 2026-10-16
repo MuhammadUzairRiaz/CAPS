@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """How well do ML potentials reproduce the DFT torsion profiles of fragments they never saw?
 
-    eval_torsions.py TEST.xyz MODEL.model [--out DIR] [--aimnet]
+    eval_torsions.py TEST.xyz MODEL.model [--out DIR] [--aimnet] [--device cuda|cpu]
 
 For each environment in TEST.xyz (held out of training whole), the relaxed scan points' energies relative to the
 environment's lowest DFT point, against the same from the CAPS MACE model and (with --aimnet) AIMNet2. Per
@@ -40,7 +40,7 @@ def main():
     test, model = sys.argv[1], sys.argv[2]
     out = arg("--out", os.path.dirname(os.path.abspath(test)))
     from mace.calculators import MACECalculator
-    calcs = {"caps_mace": MACECalculator(model_paths=model, device="cuda", default_dtype="float64")}
+    calcs = {"caps_mace": MACECalculator(model_paths=model, device=arg("--device", "cuda"), default_dtype="float64")}
     if "--aimnet" in sys.argv:
         from aimnet.calculators import AIMNet2ASE
         calcs["aimnet2"] = AIMNet2ASE("aimnet2")
