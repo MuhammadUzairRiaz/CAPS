@@ -118,7 +118,7 @@ const std::vector<std::string>& caps_roots() {
   return roots;
 }
 
-// A force field by path, or by its library name (opls2005, pcff, compass, gaff2-moltemplate …) from data/forcefields.
+// A force field by path, or by its library name (oplsaa2024, pcff, compass, gaff2-moltemplate …) from data/forcefields.
 std::string ff_path(const std::string& s0) {
   if (s0.empty() || std::filesystem::exists(s0)) return s0;
   // the short names of the libraries rebuilt from their own sources (as caps.core._forcefield_path in Python)

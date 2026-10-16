@@ -48,8 +48,8 @@
 <span class="p">$</span> caps md ps_min.data -o ps_md.data --steps 2000 --barostat berendsen --dump ps.lammpstrj --every 200
 <span class="p">$</span> caps analyze ps.lammpstrj --topology ps_md.data --props density,rg
 <span class="m"># the same cell for LAMMPS and GROMACS with OPLS-AA</span>
-<span class="p">$</span> caps ff type ps_md.data --ff opls2005 -o types.txt
-<span class="p">$</span> caps ff apply ps_md.data --ff opls2005 --types types.txt -o ps.data --lammps-input ps.in --gromacs ps
+<span class="p">$</span> caps ff type ps_md.data --ff oplsaa2024 -o types.txt
+<span class="p">$</span> caps ff apply ps_md.data --ff oplsaa2024 --types types.txt -o ps.data --lammps-input ps.in --gromacs ps
 <span class="ok">wrote ps.top, ps.gro and ps.mdp</span></pre>
 </div>
 

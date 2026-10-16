@@ -167,7 +167,7 @@ struct FFDef {
   // per wildcard end (msi2lmp): "msi2lmp"; "torsions": a rule with both ends wild over the torsions that exist about
   // the bond (a three-membered ring has fewer); "none".
   std::string wildcard_torsion_scaling = "none";
-  // Charges "increments": the force field named here (a file beside this one, e.g. "opls2005.json") types the
+  // Charges "increments": the force field named here (a file beside this one, e.g. a companion library shipped beside it) types the
   // structure and gives its bond-increment charges, used with this force field's types (see companion_charges).
   std::string charge_increments_from;
   // Ions carry their formal charge times this (OPLS-DES: +-0.8 e, "ion_charge_scale": 0.8); the type-charge check

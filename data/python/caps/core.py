@@ -288,7 +288,7 @@ class _Field:
         return self.report()
 
     def assign(self, forcefield: str = "uff", charges: str = "auto") -> dict:
-        """Types every atom and looks up every parameter: a force-field id from the library (gaff2, opls2005 …), a path
+        """Types every atom and looks up every parameter: a force-field id from the library (gaff2, oplsaa2024 …), a path
         to a caps-forcefield JSON, "uff", or "file" (the force field an AMBER prmtop carried; a prmtop opens with it). charges: auto (the force field's, else Gasteiger) | forcefield | gasteiger | keep | qeq | increments (bond increments by the types' numbers: OPLS-AA 2024 with OPLS 2005's)."""
         # "file": the force field the structure's own file carried (an AMBER prmtop), every term as the file gives it
         path = "file" if forcefield == "file" else _forcefield_path(forcefield)
@@ -709,7 +709,7 @@ class Document:
         per template and environment _pre.mol, _post.mol, _map.txt, typed with the force field before and after the
         reaction. Options:
           stem, radius, variants, keep_byproducts, between_chains, weights, nevery, rmax, temperature, steps, dt, seed;
-          forcefield: type the reactions with this force field (a library id such as opls2005, pcff, compass, or a path)
+          forcefield: type the reactions with this force field (a library id such as oplsaa2024, pcff, compass, or a path)
             instead of the assigned one, charges: auto | forcefield | gasteiger | qeq;
           lammps_styles (native: the force field's own styles, as export_engines | exact), kspace (auto | pppm | ewald |
             dsf | cut), kspace_accuracy, lammps_cutoff — the same force-field part as export_engines writes;

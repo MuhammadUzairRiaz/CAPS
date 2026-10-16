@@ -21,7 +21,7 @@ import caps
 
 d = caps.polymer("*CC(C)=CC*", dp=10, chains=6, density=0.6, seed=1)   # cis-1,4-polyisoprene
 d.relax(max_iterations=300)
-d.field.assign("opls2005")
+d.field.assign("oplsaa2024")
 ```
 
 `caps.reaction_templates()` lists the built-in chemistry: C–C crosslinks, accelerated sulfur and peroxide cures of diene rubbers, silane polysulfides, epoxy–amine, epoxidised natural rubber with acids, anhydride–alcohol, esterification. `caps.reaction_template("peroxide_allylic")` prints one, with a comment on every atom.
@@ -29,7 +29,7 @@ d.field.assign("opls2005")
 ## 2a. Export for LAMMPS fix bond/react
 
 ```python
-r = d.bond_react("peroxide_allylic", "xl_lammps", forcefield="opls2005")
+r = d.bond_react("peroxide_allylic", "xl_lammps", forcefield="oplsaa2024")
 print(r["notes"])
 ```
 
