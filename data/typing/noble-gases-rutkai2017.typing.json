@@ -1,0 +1,33 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "Noble gases (Rutkai et al. 2017)",
+ "unknown_types": "untyped",
+ "description": "CAPS rules for the noble gases (bench/ff/make_noble_gases.py): one unbonded atom each",
+ "rules": [
+  {
+   "type": "Ne",
+   "smarts": "[Ne;X0]",
+   "priority": 0,
+   "description": "neon"
+  },
+  {
+   "type": "Ar",
+   "smarts": "[Ar;X0]",
+   "priority": 0,
+   "description": "argon"
+  },
+  {
+   "type": "Kr",
+   "smarts": "[Kr;X0]",
+   "priority": 0,
+   "description": "krypton"
+  },
+  {
+   "type": "Xe",
+   "smarts": "[Xe;X0]",
+   "priority": 0,
+   "description": "xenon"
+  }
+ ]
+}

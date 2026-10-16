@@ -2741,6 +2741,38 @@
     "impropers": 0
    },
    "group": "water"
+  },
+  {
+   "id": "noble-gases-rutkai2017",
+   "name": "Noble gases (Rutkai et al. 2017)",
+   "version": "2017",
+   "references": [
+    "G. Rutkai, M. Thol, R. Span, J. Vrabec, Mol. Phys. 115, 1104 (2017), doi:10.1080/00268976.2016.1246760"
+   ],
+   "origin": "built from source",
+   "source": "G. Rutkai, M. Thol, R. Span, J. Vrabec, Mol. Phys. 115, 1104 (2017), doi:10.1080/00268976.2016.1246760, Table 1 (LJ column); bench/ff/make_noble_gases.py",
+   "license": "published parameters of the paper",
+   "status": "validated",
+   "notes": "Ne, Ar, Kr, Xe as single Lennard-Jones sites; LAMMPS equals CAPS's energy (bench/ff/check_gas_libraries.py)",
+   "file": "noble-gases-rutkai2017.json",
+   "typing": {
+    "rules": "typing/noble-gases-rutkai2017.typing.json",
+    "evidence": "each noble-gas atom by its element"
+   },
+   "counts": {
+    "atom_types": 4,
+    "pairs": 4,
+    "bonds": 0,
+    "angles": 0,
+    "dihedrals": 0,
+    "impropers": 0
+   },
+   "group": "gas",
+   "list": {
+    "label": "Noble gases (Ne, Ar, Kr, Xe)",
+    "key": "noble_gases",
+    "order": 33
+   }
   }
  ],
  "list_note": "The force fields the Studio lists, one per force field (entries without \"list\" stay loadable by id for recipes and scripts)"

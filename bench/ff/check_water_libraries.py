@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The water libraries built from their sources (bench/ff/make_water_models.py) against
+"""The water and gas libraries built from their sources (bench/ff/make_water_models.py, make_noble_gases.py) against
 their papers, LAMMPS and GROMACS.
 
 For each water library: a box of waters in the model's own geometry (r_OH, H-O-H) is typed by the library, which adds
@@ -11,7 +11,7 @@ the massless sites; then
      energy, the dispersion correction left out of both (their definitions differ);
   4. with --density: GROMACS NPT at 298 K and 1 bar, rigid (constraints = h-angles), 512 waters, 5000 steps of 2 fs, the mean density of
      the last half; a short check (10 ps), not a converged density.
-mW (Stillinger-Weber): LAMMPS against CAPS (no electrostatics).
+mW (Stillinger-Weber) and the noble gases: LAMMPS against CAPS (no electrostatics).
 
     PYTHONPATH=data/python CAPS_LIB=build/capi/libcaps.dylib python3 bench/ff/check_water_libraries.py [--density] [--only id]
 Needs lmp (~/.local/bin/lmp, KSPACE, MOLECULE, MANYBODY) and gmx.
@@ -23,6 +23,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, HERE)
 import make_water_models as W
+import make_noble_gases as G
 import caps
 
 LMP = os.environ.get("LMP", os.path.expanduser("~/.local/bin/lmp"))
@@ -235,5 +236,15 @@ for fid, m in W.MODELS.items():
 if not only or "mw" in only:
     d = water_xyz(os.path.join(work, "mw.xyz"), 0.9572, 104.52, 343, 21.8)
     check_plain("mw-molinero2009", d, "343 mW sites (Stillinger-Weber)")
+if not only or "noble" in only:
+    gd = os.path.join(work, "gas")
+    os.makedirs(gd, exist_ok=True)
+    mols = []
+    for el in G.GASES:
+        p = os.path.join(gd, el + ".xyz")
+        open(p, "w").write(f"1\n{el}\n{el} 0 0 0\n")
+        mols.append((p, 100))
+    d = caps.pack(molecules=mols, box=30.0, tolerance=3.0, seed=3)
+    check_plain(G.FID, d, "100 each of Ne, Ar, Kr, Xe (Lorentz-Berthelot cross terms)")
 print(f"{'all agree' if not fails else f'{fails} failed'} (work: {work})")
 sys.exit(1 if fails else 0)

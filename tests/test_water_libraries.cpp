@@ -208,3 +208,26 @@ TEST(WaterLibraries, MonatomicWater) {
   EXPECT_DOUBLE_EQ(p[1], 2.3925);
   EXPECT_DOUBLE_EQ(p[3], 23.15);
 }
+
+// Noble gases (Rutkai, Thol, Span & Vrabec 2017, Table 1): Ne, Ar, Kr, Xe as Lennard-Jones atoms with the paper's
+// epsilon/k_B and sigma, unlike pairs by Lorentz-Berthelot
+TEST(GasLibraries, NobleGasesAsPublished) {
+  System s;
+  const char* el[4] = {"Ne", "Ar", "Kr", "Xe"};
+  const int z[4] = {10, 18, 36, 54};
+  const double ek[4] = {33.921, 116.79, 162.58, 226.14}, sg[4] = {2.801, 3.3952, 3.6274, 3.949};
+  for (int k = 0; k < 4; ++k) {
+    Atom a;
+    a.element = z[k], a.pos = {5.0 * k, 0, 0}, a.mol = k + 1, a.name = el[k], a.id = k + 1;
+    s.atoms.push_back(a);
+  }
+  s.has_mol = true;
+  Typed t = assign("noble-gases-rutkai2017", s);
+  for (int k = 0; k < 4; ++k) {
+    EXPECT_EQ(t.types[size_t(k)], el[k]);
+    const auto& lj = t.ff.lj[size_t(t.ff.type_index[size_t(k)])];
+    EXPECT_NEAR(lj.eps, ek[k] * kKB, 1e-12) << el[k];
+    EXPECT_NEAR(lj.sigma, sg[k], 1e-12) << el[k];
+    EXPECT_EQ(t.ff.charge[size_t(k)], 0.0);
+  }
+}
