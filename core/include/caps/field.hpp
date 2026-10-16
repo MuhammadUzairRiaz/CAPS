@@ -244,7 +244,7 @@ struct EnergyOptions {
   int parts = 3;
   // Mixed precision: plain pair terms (12-6 or 9-6 Lennard-Jones with PME, DSF or no charges) by a cluster pair kernel in
   // single precision with SIMD, sums and everything else in double (as GROMACS). Energies agree with double precision to
-  // about 1e-6 relative; MD and equilibration use it, single-point energies and tests keep double.
+  // about 1e-6 relative; MD, equilibration, Tg scans and tensile pulls use it, single-point energies and tests keep double.
   bool mixed = false;
 };
 

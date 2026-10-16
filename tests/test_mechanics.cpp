@@ -280,6 +280,33 @@ TEST(Mechanics, TensileModulusOfColdCrystal) {
   EXPECT_NE(r3.method.find("x, y and z"), std::string::npos);
 }
 
+// caps tensile and caps tg run their MD with the mixed-precision pair kernel, as caps md: the pull gives the same curve
+// and modulus as in double precision
+TEST(Mechanics, TensileMixedPrecisionAsDouble) {
+  auto ff = argon_ff(108);
+  TensileOptions o;
+  o.field = ff;
+  o.energy = lj_only();
+  o.energy.cutoff = 7.9;
+  o.axis = 0;
+  o.rate = 5e-4;
+  o.max_strain = 0.02;
+  o.temperature = 2;
+  o.dt = 5;
+  o.tau_p = 500;
+  o.thermostat = Thermostat::Langevin;
+  o.tau_t = 500;
+  o.fit_strain = 0.02;
+  o.sample_every = 20;
+  System sd = argon(3, 5.3), sm = sd;
+  const TensileResult d = run_tensile(sd, o);
+  o.energy.mixed = true;
+  const TensileResult m = run_tensile(sm, o);
+  ASSERT_EQ(m.curve.size(), d.curve.size());
+  EXPECT_NEAR(m.modulus, d.modulus, 0.01 * std::fabs(d.modulus));
+  EXPECT_NEAR(m.curve.back().stress, d.curve.back().stress, 0.01 * std::fabs(d.curve.back().stress) + 1.0);
+}
+
 // Green–Kubo viscosity: an Ornstein–Uhlenbeck stress (variance σ², relaxation τ) in the three off-diagonal components
 // integrates to η = V/(10 kT) · 6 σ² τ; the full protocol runs on a small cell and gives a positive viscosity
 TEST(Mechanics, GreenKuboViscosity) {
