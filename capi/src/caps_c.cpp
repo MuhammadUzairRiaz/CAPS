@@ -2291,6 +2291,9 @@ caps_doc* doc_of_system(caps::System sys, const caps_doc* from, const std::strin
 // applied to s (on a scratch document; this one is not changed), else the built-in force field.
 caps::ForceField field_for_extended(caps_doc* d, const caps::System& s) {
   if (!d->field) return default_ff(s);
+  // the force field a file carried (a CAPS data file's coefficients, an AMBER prmtop) or a model built with the structure
+  // describes those atoms only: with molecules added the whole takes the built-in force field, as with no assignment
+  if (d->field->ff_path == "file" || !d->field->model.empty()) return default_ff(s);
   std::unique_ptr<caps_doc> t(doc_of_system(s, d, "scratch", "", {}));
   t->field = std::make_unique<FieldState>(*d->field);
   field_run(t.get());
