@@ -32,7 +32,7 @@
     --lammps-run npt --temp 300 --press 1 --steps 100000</code></pre></div></div><div class="tabpanel" data-panel="1" hidden><div class="code" data-lang="Python"><pre><code>import caps
 
 d = caps.open(&quot;cell.data&quot;)
-d.field.assign(&quot;opls2005&quot;)
+d.field.assign(&quot;oplsaa2024&quot;)
 d.export_engines(&quot;engines&quot;, stem=&quot;cell&quot;, run=&quot;npt&quot;, temperature=300, steps=100000)</code></pre></div></div>
 <h2 id="next">Where to go next</h2><div class="cards next"><a class="card shot-card" href="jobs.html"><img src="../manual/img/23_jobs.jpg" alt="" loading="lazy" width="1440" height="900"><span class="num"><i class="dot st-out"></i>Analyse &amp; export</span><b>Jobs</b><span>Every run, local or on a SLURM / PBS cluster, with live progress, logs and recovery hints.</span></a><a class="card shot-card" href="project.html"><img src="../manual/img/20_project.jpg" alt="" loading="lazy" width="1440" height="900"><span class="num"><i class="dot st-out"></i>Analyse &amp; export</span><b>Project &amp; methods</b><span>A results table for every structure and a methods section with BibTeX, written from provenance.</span></a></div>
 <h2 id="read">Read more</h2><div class="cards minis"><a class="card mini" href="../tutorials/force-fields.html"><span class="num">Tutorial</span><b>Force fields and export</b></a></div>

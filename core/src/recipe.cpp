@@ -321,7 +321,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
     std::string name = text(T, "forcefield", "default");
     std::string charges = text(T, "charges", "auto");
     std::string companion_note;   // charges "increments": whose charges they are
-    bool increments = false;      // the force field's own charges are bond increments (OPLS 2005, PCFF, COMPASS)
+    bool increments = false;      // the force field's own charges are bond increments (PCFF, COMPASS)
     ff.reset();
     try {
       if (name == "default" && sys.forcefield && sys.forcefield->charge.size() == sys.atoms.size()) {
@@ -374,7 +374,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
         FFDef def = load_forcefield(path);
         if (!typing.empty()) load_typing(def, typing);
         // fill_from: another force field's bond, angle and dihedral rules, used only where this one has none (as Field's
-        // "Fill gaps from…": OPLS-AA 2024 has no CM–CT–CT–CM torsion, OPLS 2005 does); what was borrowed is reported
+        // "Fill gaps from…"); what was borrowed is reported
         filled_from.clear();
         if (T.has("fill_from")) {
           std::vector<std::string> donors;
@@ -450,7 +450,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
         }
         if (!ff) ff = std::make_shared<ForceField>(parameterize(sys, def, types, charges, &rep, false));
         // automatic charges: fixed per-type charges that miss the formal charge give way to the companion force
-        // field's bond-increment charges when it names one (OPLS-AA 2024 → OPLS 2005)
+        // field's bond-increment charges when it names one
         if (auto_charges && charges == "types" && !def.charge_increments_from.empty()) {
           double net = 0;
           for (double q : ff->charge) net += q;
