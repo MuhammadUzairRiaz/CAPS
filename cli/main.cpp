@@ -2539,7 +2539,7 @@ int main(int argc, char** argv) {
           }
           if (charges != "types" || !f.charge.size()) f = parameterize(s, ff, types, charges, &rep, o.count("--allow-missing"));
           // automatic charges: per-type charges that miss the formal charge give way to the companion force field's
-          // bond-increment charges when it names one (OPLS-AA 2024 -> OPLS 2005), as a recipe does
+          // bond-increment charges when it names one, as a recipe does
           if (auto_charges && charges == "types" && !ff.charge_increments_from.empty()) {
             double net = 0;
             for (double q : f.charge) net += q;

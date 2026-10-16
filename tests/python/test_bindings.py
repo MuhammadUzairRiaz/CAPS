@@ -647,7 +647,7 @@ with tempfile.TemporaryDirectory() as _td:
     check(max(abs(a - b) for a, b in zip(_qf, [_op.atom(i)["charge"] for i in range(_op.atoms)])) < 1e-6, "recipe charges = exported charges")
 _op2 = caps.polymer("[*]OCCCCOC(=O)CCC(=O)[*]", dp=2, chains=1, seed=1)
 _op2.field.assign("oplsaa2024")
-check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op.atoms)) < 1e-6, "recipe and field.assign give one set of OPLS 2005 charges")
+check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op.atoms)) < 1e-6, "recipe and field.assign give one set of OPLS-AA 2024 charges")
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types

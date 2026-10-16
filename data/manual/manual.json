@@ -1635,35 +1635,33 @@
    "tex": "h = \\sqrt{d_\\mathrm{MS}^2 - R^2}\\ \\text{ above the hollow's centre } (R\\text{: its distance to the three atoms}), \\qquad d_\\mathrm{SS} \\ge \\sqrt{3}\\,d_\\mathrm{MM}"
   },
   {
-   "id": "opls-bci",
+   "id": "bond-increments",
    "group": "Force fields",
-   "title": "OPLS charges from bond increments",
-   "summary": "OPLS 2005 gives each atom a charge key (an OPLS number chosen by its chemical environment) and each bonded pair of keys an increment that moves charge from one atom to the other. Summing over the bonds gives charges that balance bond by bond, so every molecule keeps its formal charge. OPLS-AA 2024's fixed per-type charges sometimes do not add up where two groups meet (a substituted ring, a benzylic junction); CAPS then uses OPLS 2005's typing and increments for the charges, and OPLS-AA 2024's types for everything else, and says so.",
-   "equation": "q_i = Σ_j δ_ij over the atoms j bonded to i,   δ_ji = −δ_ij,   δ from the OPLS 2005 table by the pair's keys (its first entry for a pair)",
-   "equation_note": "OPLS 2005 as in Banks et al. 2005",
+   "title": "Charges from bond increments",
+   "summary": "Class II and CVFF force fields (PCFF, COMPASS, CVFF and IFF from their .frc files) give each bonded pair of atom types an increment that moves charge from one atom to the other. Summing over the bonds gives charges that balance bond by bond, so every neutral molecule stays neutral and a charged group keeps its formal charge. CAPS assigns them whenever the force field carries a bond-increment table and the charges are the force field's own.",
+   "equation": "q_i = Σ_j δ_ij over the atoms j bonded to i,   δ_ji = −δ_ij,   δ from the force field's bond-increment table by the pair's types (or their increment equivalences)",
+   "equation_note": "the .frc #bond_increments convention",
    "symbols": [
-    [
-     "key",
-     "the atom's OPLS number from its environment",
-     "charge rules in the OPLS 2005 typing file"
-    ],
     [
      "δ_ij",
      "bond charge increment",
-     "6179 pairs"
+     "the force field's #bond_increments table"
+    ],
+    [
+     "type",
+     "the atom's force-field type",
+     "its increment equivalence where the file gives one"
     ]
    ],
-   "when": "Automatic whenever OPLS-AA 2024's own charges miss the formal charge; by hand with Field › Use OPLS 2005's charges or charges \"increments\" in recipes and Python.",
-   "cites": [
-    "banks2005"
-   ],
-   "source": "core/src/ffdef.cpp (parameterize, companion_charges)",
-   "tested": "Typing.Opls2005ChargesFromBondIncrements · Typing.CompanionChargesFromOpls2005",
-   "deviation": "charges verified against the reference program's OPLS 2005 on 110 polymers; the combination with OPLS-AA 2024 parameters is CAPS's choice",
+   "when": "Automatic for a force field with a bond-increment table when the charges are its own (charges \"types\" or auto).",
+   "cites": [],
+   "source": "core/src/ffdef.cpp (parameterize)",
+   "tested": "FFDef.IffSilicaAndMetalsByRule",
+   "deviation": "none: the increments are applied as the .frc file lists them",
    "engines": [
     "field.assign"
    ],
-   "tex": "q_i = \\sum_{j \\text{ bonded to } i}\\delta_{ij}, \\qquad \\delta_{ji} = -\\delta_{ij}, \\qquad \\delta \\text{ from the OPLS 2005 table by the pair's keys (its first entry for a pair)}"
+   "tex": "q_i = \\sum_{j \\text{ bonded to } i}\\delta_{ij}, \\qquad \\delta_{ji} = -\\delta_{ij}"
   },
   {
    "id": "ff-by-group",
@@ -1695,7 +1693,7 @@
    ],
    "source": "core/src/ffmerge.cpp · core/src/manybody.cpp · capi caps_field_assign_groups · data/potentials",
    "tested": "FFMerge.SameForceFieldInTwoPartsIsExact · FFMerge.DifferentFamiliesAreRefusedOrMergedAsAsked · FFMerge.ManyBodyGroup · FFMerge.PotentialLibrary · FFMerge.AireboWritesMetalUnits · FFMerge.MeamMapsLibraryEntries",
-   "deviation": "Si Tersoff slab under hexane: LAMMPS van der Waals beside Tersoff equals CAPS's for GAFF2 (366.6761), OPLS 2005 (296.6776), PCFF (133.1490 / 133.149) and COMPASS (84.3140 / 84.3139 kcal/mol); GAFF2 + OPLS polystyrene in GROMACS 573.546, LAMMPS 573.549 kcal/mol; (6,6) nanotube under AIREBO in hexane, metal units: van der Waals beside AIREBO GAFF2 3.49464, PCFF 16.67939, COMPASS 1.26178, OPLS 2005 −2.13761 kcal/mol in LAMMPS and CAPS; PS melt real vs metal export identical to 1e-9 in bonded and van der Waals terms; AIREBO, AIREBO-M, REBO in real units with CAPS's converted file: energy equal to the metal run ×23.060549 to 1e-13, forces to 2e-12 kcal/mol/Å, pressure to every digit; MEAM (SiC set) in the composite equals the slab alone (atom_style atomic) to 1e-10 eV, van der Waals beside it equals CAPS's (GAFF2 366.67611, PCFF 133.14904 kcal/mol)",
+   "deviation": "Si Tersoff slab under hexane: LAMMPS van der Waals beside Tersoff equals CAPS's for GAFF2 (366.6761), PCFF (133.1490 / 133.149) and COMPASS (84.3140 / 84.3139 kcal/mol); GAFF2 + OPLS polystyrene in GROMACS 573.546, LAMMPS 573.549 kcal/mol; (6,6) nanotube under AIREBO in hexane, metal units: van der Waals beside AIREBO GAFF2 3.49464, PCFF 16.67939, COMPASS 1.26178 kcal/mol in LAMMPS and CAPS; PS melt real vs metal export identical to 1e-9 in bonded and van der Waals terms; AIREBO, AIREBO-M, REBO in real units with CAPS's converted file: energy equal to the metal run ×23.060549 to 1e-13, forces to 2e-12 kcal/mol/Å, pressure to every digit; MEAM (SiC set) in the composite equals the slab alone (atom_style atomic) to 1e-10 eV, van der Waals beside it equals CAPS's (GAFF2 366.67611, PCFF 133.14904 kcal/mol)",
    "engines": [
     "field.assign.groups"
    ],
