@@ -818,8 +818,8 @@ internal static class SelfTest
                 vm.RxBrTargets = "50, 100";
                 vm.RxBrLimitingD = 2;
                 vm.RxBrMolIdsIndex = 2;
-                // typed with a library force field chosen on the page (OPLS-AA 2005), not the structure's assignment
-                vm.RxBrFfIndex = 1 + vm.Field.Library.Where(e => e.AutoTyping).ToList().FindIndex(e => e.Id == "opls2005");
+                // typed with a library force field chosen on the page (OPLS-AA 2024), not the structure's assignment
+                vm.RxBrFfIndex = 1 + vm.Field.Library.Where(e => e.AutoTyping).ToList().FindIndex(e => e.Id == "oplsaa2024");
                 var okBr = vm.ExportBondReact(brDir).GetAwaiter().GetResult();
                 var deck = okBr ? File.ReadAllText(Path.Combine(brDir, vm.RxBrStem + ".in")) : "";
                 Check(okBr ? deck.Contains("reset_mol_ids molmap") && deck.Contains("variable        tgt index 50 100") && deck.Contains("crosslink_progress.dat")
@@ -1495,7 +1495,7 @@ internal static class SelfTest
             vm.NewPackInput();
             vm.AddPackMolecule("O=C1OC(=O)C=C1", "MAH").GetAwaiter().GetResult();
             vm.SetPackRowCount(vm.PackItems.Count - 1, 3);
-            vm.PackFfIndex = vm.Field.Library.ToList().FindIndex(e => e.Id == "opls2005");
+            vm.PackFfIndex = vm.Field.Library.ToList().FindIndex(e => e.Id == "oplsaa2024");
             vm.PackAssignField = true;
             vm.RunPack().GetAwaiter().GetResult();
             for (int k = 0; k < 400 && vm.Field.Working; ++k) Thread.Sleep(25);
@@ -1980,7 +1980,7 @@ internal static class SelfTest
             vm.GrowAssignField = false;
             vm.Grow().GetAwaiter().GetResult();
             var uaBefore = vm.Document!.Summary().Atoms;
-            vm.Field.FfIndex = vm.Field.Library.ToList().FindIndex(e => e.Id == "trappe-ua");
+            vm.Field.FfIndex = vm.Field.Library.ToList().FindIndex(e => e.Id == "trappe-ua-umn");
             vm.Field.ChargeMode = 0;
             vm.Field.Assign().GetAwaiter().GetResult();
             var uaAfter = vm.Document!.Summary().Atoms;
@@ -2845,7 +2845,7 @@ internal static class SelfTest
             vm.BuildNano().GetAwaiter().GetResult();
             var ua = vm.Document!.Summary().Atoms;
             var uffPore = vm.Field.Library.ToList().FindIndex(x => x.Id == "uff");
-            var trPore = vm.Field.Library.ToList().FindIndex(x => x.Id == "trappe-ua");
+            var trPore = vm.Field.Library.ToList().FindIndex(x => x.Id == "trappe-ua-umn");
             vm.Field.GroupMode = true;   // suggests groups of its own: replaced by these two
             vm.Field.Groups.Clear();
             vm.Field.Groups.Add(new FieldGroupRow(vm.Field) { Name = "walls", Molecules = "1", FfIndex = uffPore });
@@ -3978,7 +3978,7 @@ internal static class SelfTest
             // with an all-atom force field: by component
             if (ua)
             {
-                vm.GrowFfIndex = vm.Field.Library.ToList().FindIndex(e => e.Id == "opls2005");
+                vm.GrowFfIndex = vm.Field.Library.ToList().FindIndex(e => e.Id == "oplsaa2024");
                 vm.Grow().GetAwaiter().GetResult();
                 for (int k = 0; k < 400 && vm.Field.Working; ++k) Thread.Sleep(25);
                 vm.ExportFieldLammps(Path.Combine(gDir, "grown.data")).GetAwaiter().GetResult();
