@@ -2470,6 +2470,277 @@
     "key": "cgenff_2a5",
     "order": 23
    }
+  },
+  {
+   "id": "spc-berendsen1981",
+   "name": "SPC water",
+   "version": "1981",
+   "references": [
+    "H. J. C. Berendsen, J. P. M. Postma, W. F. van Gunsteren, J. Hermans, in Intermolecular Forces, ed. B. Pullman (Reidel, Dordrecht, 1981), p. 331"
+   ],
+   "origin": "built from source",
+   "source": "GROMACS share/top/gromos43a1.ff (spc.itp, spce.itp, ffnonbonded.itp; GNU LGPL 2.1): spc.itp (OW -0.82, H 0.41; settles d_OH 0.1 nm, d_HH 0.16330 nm), OW C6 0.0026173456, C12 2.634129e-06",
+   "license": "published parameters of the paper",
+   "status": "validated",
+   "notes": "SPC: 3-site rigid water; geometry and charges reproduced exactly, LAMMPS and GROMACS energies equal CAPS's (bench/ff/check_water_libraries.py)",
+   "file": "spc-berendsen1981.json",
+   "typing": {
+    "rules": "typing/spc-berendsen1981.typing.json",
+    "evidence": "water's O and H by SMARTS; massless sites added and placed by the force field"
+   },
+   "counts": {
+    "atom_types": 2,
+    "pairs": 2,
+    "bonds": 1,
+    "angles": 1,
+    "dihedrals": 0,
+    "impropers": 0
+   },
+   "group": "water"
+  },
+  {
+   "id": "spce-berendsen1987",
+   "name": "SPC/E water",
+   "version": "1987",
+   "references": [
+    "H. J. C. Berendsen, J. R. Grigera, T. P. Straatsma, J. Phys. Chem. 91, 6269 (1987)"
+   ],
+   "origin": "built from source",
+   "source": "GROMACS share/top/gromos43a1.ff (spc.itp, spce.itp, ffnonbonded.itp; GNU LGPL 2.1): spce.itp (OW -0.8476, H 0.4238; SPC's geometry), OW C6 0.0026173456, C12 2.634129e-06; the same charges in Izadi & Onufriev 2016, Table II",
+   "license": "published parameters of the paper",
+   "status": "validated",
+   "notes": "SPC/E: 3-site rigid water; geometry and charges reproduced exactly, LAMMPS and GROMACS energies equal CAPS's (bench/ff/check_water_libraries.py)",
+   "file": "spce-berendsen1987.json",
+   "typing": {
+    "rules": "typing/spce-berendsen1987.typing.json",
+    "evidence": "water's O and H by SMARTS; massless sites added and placed by the force field"
+   },
+   "counts": {
+    "atom_types": 2,
+    "pairs": 2,
+    "bonds": 1,
+    "angles": 1,
+    "dihedrals": 0,
+    "impropers": 0
+   },
+   "group": "water"
+  },
+  {
+   "id": "tip3p-jorgensen1983",
+   "name": "TIP3P water",
+   "version": "1983",
+   "references": [
+    "W. L. Jorgensen, J. Chandrasekhar, J. D. Madura, R. W. Impey, M. L. Klein, J. Chem. Phys. 79, 926 (1983)"
+   ],
+   "origin": "built from source",
+   "source": "M. W. Mahoney, W. L. Jorgensen, J. Chem. Phys. 112, 8910 (2000), Table I (TIP3P column)",
+   "license": "published parameters of the paper",
+   "status": "validated",
+   "notes": "TIP3P: 3-site rigid water; geometry and charges reproduced exactly, LAMMPS and GROMACS energies equal CAPS's (bench/ff/check_water_libraries.py)",
+   "file": "tip3p-jorgensen1983.json",
+   "typing": {
+    "rules": "typing/tip3p-jorgensen1983.typing.json",
+    "evidence": "water's O and H by SMARTS; massless sites added and placed by the force field"
+   },
+   "counts": {
+    "atom_types": 2,
+    "pairs": 2,
+    "bonds": 1,
+    "angles": 1,
+    "dihedrals": 0,
+    "impropers": 0
+   },
+   "group": "water"
+  },
+  {
+   "id": "tip3p-charmm-mackerell1998",
+   "name": "TIP3P water (CHARMM, hydrogen Lennard-Jones)",
+   "version": "1998",
+   "references": [
+    "A. D. MacKerell Jr. et al., J. Phys. Chem. B 102, 3586 (1998)",
+    "W. L. Jorgensen, J. Chandrasekhar, J. D. Madura, R. W. Impey, M. L. Klein, J. Chem. Phys. 79, 926 (1983)"
+   ],
+   "origin": "built from source",
+   "source": "CHARMM toppar_water_ions.str (toppar_c36_jul17): RESI TIP3 (OT -0.834, HT 0.417), OT epsilon -0.1521 Rmin/2 1.7682, HT epsilon -0.046 Rmin/2 0.2245; the same numbers in GROMACS share/top/charmm27.ff (LGPL 2.1)",
+   "license": "published parameters of the paper",
+   "status": "validated",
+   "notes": "TIP3P (CHARMM): 3-site rigid water; geometry and charges reproduced exactly, LAMMPS and GROMACS energies equal CAPS's (bench/ff/check_water_libraries.py)",
+   "file": "tip3p-charmm-mackerell1998.json",
+   "typing": {
+    "rules": "typing/tip3p-charmm-mackerell1998.typing.json",
+    "evidence": "water's O and H by SMARTS; massless sites added and placed by the force field"
+   },
+   "counts": {
+    "atom_types": 2,
+    "pairs": 2,
+    "bonds": 1,
+    "angles": 1,
+    "dihedrals": 0,
+    "impropers": 0
+   },
+   "group": "water"
+  },
+  {
+   "id": "tip4p-jorgensen1983",
+   "name": "TIP4P water",
+   "version": "1983",
+   "references": [
+    "W. L. Jorgensen, J. Chandrasekhar, J. D. Madura, R. W. Impey, M. L. Klein, J. Chem. Phys. 79, 926 (1983)"
+   ],
+   "origin": "built from source",
+   "source": "M. W. Mahoney, W. L. Jorgensen, J. Chem. Phys. 112, 8910 (2000), Table I (TIP4P column)",
+   "license": "published parameters of the paper",
+   "status": "validated",
+   "notes": "TIP4P: 4-site rigid water; geometry and charges reproduced exactly, LAMMPS and GROMACS energies equal CAPS's (bench/ff/check_water_libraries.py)",
+   "file": "tip4p-jorgensen1983.json",
+   "typing": {
+    "rules": "typing/tip4p-jorgensen1983.typing.json",
+    "evidence": "water's O and H by SMARTS; massless sites added and placed by the force field"
+   },
+   "counts": {
+    "atom_types": 3,
+    "pairs": 3,
+    "bonds": 1,
+    "angles": 1,
+    "dihedrals": 0,
+    "impropers": 0
+   },
+   "group": "water"
+  },
+  {
+   "id": "tip4p2005-abascal2005",
+   "name": "TIP4P/2005 water",
+   "version": "2005",
+   "references": [
+    "J. L. F. Abascal, C. Vega, J. Chem. Phys. 123, 234505 (2005)"
+   ],
+   "origin": "built from source",
+   "source": "C. Vega, J. L. F. Abascal, M. M. Conde, J. L. Aragones, Faraday Discuss. 141, 251 (2009), Table I (the model's authors; arXiv:0901.1803): the original paper is not yet in hand",
+   "license": "published parameters of the paper",
+   "status": "validated",
+   "notes": "TIP4P/2005: 4-site rigid water; geometry and charges reproduced exactly, LAMMPS and GROMACS energies equal CAPS's (bench/ff/check_water_libraries.py)",
+   "file": "tip4p2005-abascal2005.json",
+   "typing": {
+    "rules": "typing/tip4p2005-abascal2005.typing.json",
+    "evidence": "water's O and H by SMARTS; massless sites added and placed by the force field"
+   },
+   "counts": {
+    "atom_types": 3,
+    "pairs": 3,
+    "bonds": 1,
+    "angles": 1,
+    "dihedrals": 0,
+    "impropers": 0
+   },
+   "group": "water"
+  },
+  {
+   "id": "tip5p-mahoney2000",
+   "name": "TIP5P water",
+   "version": "2000",
+   "references": [
+    "M. W. Mahoney, W. L. Jorgensen, J. Chem. Phys. 112, 8910 (2000)"
+   ],
+   "origin": "built from source",
+   "source": "M. W. Mahoney, W. L. Jorgensen, J. Chem. Phys. 112, 8910 (2000), Table I (TIP5P column)",
+   "license": "published parameters of the paper",
+   "status": "validated",
+   "notes": "TIP5P: 5-site rigid water; geometry and charges reproduced exactly, LAMMPS and GROMACS energies equal CAPS's (bench/ff/check_water_libraries.py)",
+   "file": "tip5p-mahoney2000.json",
+   "typing": {
+    "rules": "typing/tip5p-mahoney2000.typing.json",
+    "evidence": "water's O and H by SMARTS; massless sites added and placed by the force field"
+   },
+   "counts": {
+    "atom_types": 3,
+    "pairs": 3,
+    "bonds": 1,
+    "angles": 1,
+    "dihedrals": 0,
+    "impropers": 0
+   },
+   "group": "water"
+  },
+  {
+   "id": "opc-izadi2014",
+   "name": "OPC water",
+   "version": "2014",
+   "references": [
+    "S. Izadi, R. Anandakrishnan, A. V. Onufriev, J. Phys. Chem. Lett. 5, 3863 (2014)"
+   ],
+   "origin": "built from source",
+   "source": "the paper's Table 2 (PMC4226301)",
+   "license": "published parameters of the paper",
+   "status": "validated",
+   "notes": "OPC: 4-site rigid water; geometry and charges reproduced exactly, LAMMPS and GROMACS energies equal CAPS's (bench/ff/check_water_libraries.py)",
+   "file": "opc-izadi2014.json",
+   "typing": {
+    "rules": "typing/opc-izadi2014.typing.json",
+    "evidence": "water's O and H by SMARTS; massless sites added and placed by the force field"
+   },
+   "counts": {
+    "atom_types": 3,
+    "pairs": 3,
+    "bonds": 1,
+    "angles": 1,
+    "dihedrals": 0,
+    "impropers": 0
+   },
+   "group": "water"
+  },
+  {
+   "id": "opc3-izadi2016",
+   "name": "OPC3 water",
+   "version": "2016",
+   "references": [
+    "S. Izadi, A. V. Onufriev, J. Chem. Phys. 145, 074501 (2016)"
+   ],
+   "origin": "built from source",
+   "source": "the paper's Table II (PMC4991989)",
+   "license": "published parameters of the paper",
+   "status": "validated",
+   "notes": "OPC3: 3-site rigid water; geometry and charges reproduced exactly, LAMMPS and GROMACS energies equal CAPS's (bench/ff/check_water_libraries.py)",
+   "file": "opc3-izadi2016.json",
+   "typing": {
+    "rules": "typing/opc3-izadi2016.typing.json",
+    "evidence": "water's O and H by SMARTS; massless sites added and placed by the force field"
+   },
+   "counts": {
+    "atom_types": 2,
+    "pairs": 2,
+    "bonds": 1,
+    "angles": 1,
+    "dihedrals": 0,
+    "impropers": 0
+   },
+   "group": "water"
+  },
+  {
+   "id": "mw-molinero2009",
+   "name": "mW water (monatomic, Stillinger-Weber)",
+   "version": "2009",
+   "references": [
+    "V. Molinero, E. B. Moore, J. Phys. Chem. B 113, 4008 (2009)"
+   ],
+   "origin": "built from source",
+   "source": "the paper (arXiv:0809.2811, the accepted manuscript), section II",
+   "license": "published parameters of the paper",
+   "status": "validated",
+   "notes": "mW: one Stillinger-Weber site per water; LAMMPS's pair sw equals CAPS's energy (bench/ff/check_water_libraries.py)",
+   "file": "mw-molinero2009.json",
+   "typing": {
+    "rules": "typing/mw-molinero2009.typing.json",
+    "evidence": "each water one site at its oxygen (united atom, hydrogens folded in)"
+   },
+   "counts": {
+    "atom_types": 1,
+    "pairs": 1,
+    "bonds": 0,
+    "angles": 0,
+    "dihedrals": 0,
+    "impropers": 0
+   },
+   "group": "water"
   }
  ],
  "list_note": "The force fields the Studio lists, one per force field (entries without \"list\" stay loadable by id for recipes and scripts)"
