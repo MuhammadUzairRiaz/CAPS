@@ -64,13 +64,17 @@ def run_env(trainset, env):
                 pass
     text = open(src).read().replace("# done\n", "")   # the completion mark is not extended xyz
     frames = read(io.StringIO(text), index=":", format="extxyz") if text.strip() else []
+    # once density fitting has run out of memory for this fragment, its other conformers go straight to the exact
+    # integrals (a 51-atom fragment on a 40 GB A100 spent minutes per conformer finding that out again); a resumed run
+    # learns it from the lines already written
+    no_df = any("no DF" in line for line in open(out)) if os.path.exists(out) else False
     for k, at in enumerate(frames):
         if k in done:
             continue
         # a large fragment's density-fitting tensor does not fit on the GPU: those are computed with the exact
         # integrals from the start (the whole fragment at one setting), and any conformer that still runs out of
         # memory is retried so; each line says which setting it used
-        df = len(at) <= DF_MAX_ATOMS
+        df = len(at) <= DF_MAX_ATOMS and not no_df
         try:
             e, g, conv, t_scf, t_grad = point(at, df)
         except Exception as ex:
@@ -79,6 +83,7 @@ def run_env(trainset, env):
                 continue
             free_gpu()
             df = False
+            no_df = True
             try:
                 e, g, conv, t_scf, t_grad = point(at, df)
             except Exception as ex2:

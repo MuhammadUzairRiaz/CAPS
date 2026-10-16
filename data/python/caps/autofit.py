@@ -456,8 +456,9 @@ def main():
                 print("torsion  " + line)
         good = []
         for r_ in rules:
-            m = re.search(r"RMS[^0-9]*([\d.]+)", r_["comment"])
-            rms = float(m.group(1)) if m else 0.0
+            # a joint fit lists one RMS per scan ("RMS A-B-C-D 0.59, E-F-G-H 1.59 kcal/mol"): the worst one decides
+            m = re.search(r"RMS (.*?)kcal/mol", r_["comment"])
+            rms = max((float(x) for x in re.findall(r"(?<![\w.-])(\d+\.\d+)", m.group(1))), default=0.0) if m else 0.0
             if rms > 1.0:
                 report["not_fitted"].append({"term": "dihedral " + r_["name"], "why": f"auto-fit RMS {rms:.2f} kcal/mol: needs QM"})
                 continue
