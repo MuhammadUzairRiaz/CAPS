@@ -13,6 +13,7 @@
 #include <thread>
 
 #include "caps/elements.hpp"
+#include "caps/json.hpp"
 #include "caps/field.hpp"
 #include "caps/mlpot.hpp"
 #include "caps/typing.hpp"
@@ -681,6 +682,47 @@ CompleteReport complete_forcefield(const System& s, const FFDef& ff, const Compl
   rep.missing_after = after.missing;
   rep.complete = after.missing.empty();
   return rep;
+}
+
+std::string complete_report_json(const CompleteReport& rep, const std::string& structure, const std::string& forcefield,
+                                 const std::string& model) {
+  Json j = Json::object(), terms = Json::array();
+  for (const auto& t : rep.terms) {
+    Json e = Json::object(), cl = Json::array(), pa = Json::array();
+    e["kind"] = t.kind;
+    for (const auto& c : t.classes) cl.push_back(Json(c));
+    e["classes"] = cl;
+    e["status"] = t.status;
+    for (double p : t.params) pa.push_back(Json(p));
+    e["params"] = pa;
+    e["rms_kcal"] = t.rms;
+    e["points"] = Json(t.points);
+    e["fragment_atoms"] = Json(t.fragment_atoms);
+    if (!t.why.empty()) e["why"] = t.why;
+    Json sc = Json::array();
+    for (const auto& p : t.scan) {
+      Json q = Json::array();
+      q.push_back(Json(p.value));
+      q.push_back(Json(p.e_ml));
+      q.push_back(Json(p.e_mm));
+      q.push_back(Json(p.converged));
+      q.push_back(Json(p.used));
+      sc.push_back(q);
+    }
+    e["scan"] = sc;   // [value, E_model, E_MM without the term, converged, used in the fit], energies relative to their lowest
+    terms.push_back(e);
+  }
+  Json mb = Json::array(), ma = Json::array();
+  for (const auto& m : rep.missing_before) mb.push_back(Json(m));
+  for (const auto& m : rep.missing_after) ma.push_back(Json(m));
+  j["structure"] = structure;
+  j["forcefield"] = forcefield;
+  j["model"] = model;
+  j["missing_before"] = mb;
+  j["missing_after"] = ma;
+  j["terms"] = terms;
+  j["complete"] = Json(rep.complete);
+  return j.dump(1);
 }
 
 }  // namespace caps

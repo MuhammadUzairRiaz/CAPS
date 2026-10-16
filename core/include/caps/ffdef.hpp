@@ -300,6 +300,19 @@ void load_typing(FFDef& ff, const std::string& path);
 void save_forcefield(const FFDef& ff, const std::string& path);
 // Appends the overlay's types and rules after the base's (so they win), replacing types of the same name.
 void merge_forcefield(FFDef& base, const FFDef& overlay);
+// --overlay A.json[,B.json …] (caps ff apply, relax, md, equilibrate, react; the Studio's Field overlays): each file merged
+// in turn onto def, a later file's rules over an earlier's. Empty entries are skipped.
+void merge_overlays(FFDef& def, const std::string& comma_separated_paths);
+
+// The overlay files of a force-field library folder: caps-forcefield files with no catalogue.json entry and no atom types
+// of their own (parameter refits such as oplsaa2024-lj-refit.json, oplsaa2024-dlpno.json). base is the catalogue id the
+// file name starts with ("oplsaa2024" for oplsaa2024-dlpno.json; the longest that matches), "" when none does.
+struct OverlayInfo {
+  std::string file, path, name, base;
+  int pairs = 0, bonds = 0, angles = 0, dihedrals = 0, impropers = 0;
+  std::vector<std::string> notes;
+};
+std::vector<OverlayInfo> library_overlays(const std::string& dir);
 
 // Gap filling: the bond, angle and dihedral rules of `donor` usable where `base` defines nothing (impropers are never
 // borrowed — an absent improper is not a gap). For a moltemplate OPLS-AA base (numbered types 136_bCT_aCT_dCT_iCT) the
@@ -398,5 +411,12 @@ std::vector<std::string> ring_angle_notes(const System& s, const ForceField& ff)
 
 ForceField parameterize(const System& s, const FFDef& ff, const std::vector<std::string>& types, const std::string& charges,
                         ParamReport* report = nullptr, bool allow_missing = false);
+// Charges "auto" (the Studio's automatic and caps ff apply's default) and "increments", for every command that takes
+// --charges: auto is the force field's per-type charges, else Gasteiger–Marsili, else QEq, and when the per-type charges
+// miss the formal charge, the companion force field's bond-increment charges (charge_increments_from: OPLS-AA 2024 ->
+// OPLS 2005); increments is the companion's always. s takes the companion charges when they are used. Other modes go
+// straight to parameterize. said (optional): the lines that say which charges were used.
+ForceField parameterize_charges(System& s, const FFDef& ff, const std::vector<std::string>& types, const std::string& charges,
+                                const std::string& ff_path, ParamReport* rep, bool allow_missing, std::vector<std::string>* said = nullptr);
 
 }  // namespace caps

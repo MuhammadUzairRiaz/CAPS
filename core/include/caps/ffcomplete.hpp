@@ -54,4 +54,10 @@ struct CompleteReport {
 CompleteReport complete_forcefield(const System& s, const FFDef& ff, const CompleteOptions& opt,
                                    const std::function<void(const std::string&)>& log = {});
 
+// The report as JSON, the same for caps ff complete --report and the C API (caps_ff_complete): {structure, forcefield,
+// model, missing_before[], missing_after[], terms[{kind, classes[], status, params[], rms_kcal, points, fragment_atoms,
+// why, scan[[value, E_model, E_MM without the term, converged, used]]}], complete}.
+std::string complete_report_json(const CompleteReport& rep, const std::string& structure, const std::string& forcefield,
+                                 const std::string& model);
+
 }  // namespace caps
