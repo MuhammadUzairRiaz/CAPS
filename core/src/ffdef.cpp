@@ -657,8 +657,10 @@ FFDef load_forcefield(const std::string& path) {
       r.smarts = o.text("smarts"), r.type = o.text("type");
       for (const auto& x : o["from"].items()) r.from.push_back(int(x.number()));
       for (const auto& x : o["w"].items()) r.w.push_back(x.number());
+      r.c = o.num("c", 0);
       if (r.smarts.empty() || r.type.empty() || r.from.empty() || r.from.size() != r.w.size())
         throw FFError("a virtual site needs smarts, type, and as many weights as atoms in from");
+      if (r.c != 0 && r.from.size() != 3) throw FFError("a virtual site out of the plane (c) needs three atoms in from");
       Smarts check(r.smarts);
       ff.site_rules.push_back(r);
     }
@@ -2922,7 +2924,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
       for (uint32_t i = 0; i < n; ++i) {
         if (used[i] || types_in[i] != r.type || s.atoms[i].element != 0) continue;
         if (norm(s.cell.valid() ? s.cell.minimum_image(s.atoms[i].pos - pos) : s.atoms[i].pos - pos) > 0.05) continue;
-        VirtualSite vs{i, {}, r.w, 0};
+        VirtualSite vs{i, {}, r.w, r.c};
         for (int q : r.from) vs.from.push_back(e[size_t(q)]);
         ff.vsites.push_back(vs);
         ff.mass[i] = 0;
@@ -3000,6 +3002,11 @@ Vec3 site_position(const System& s, const FFDef::SiteRule& r, const std::vector<
     Vec3 d = s.atoms[e[size_t(r.from[q])]].pos - ref;
     if (s.cell.valid()) d = s.cell.minimum_image(d);
     c = c + (ref + d) * r.w[q];
+  }
+  if (r.c != 0 && r.from.size() == 3) {   // out of the plane: c (r_01 × r_02)
+    Vec3 u = s.atoms[e[size_t(r.from[1])]].pos - ref, w = s.atoms[e[size_t(r.from[2])]].pos - ref;
+    if (s.cell.valid()) u = s.cell.minimum_image(u), w = s.cell.minimum_image(w);
+    c = c + cross(u, w) * r.c;
   }
   return c;
 }

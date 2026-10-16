@@ -1322,7 +1322,7 @@ def protocol_text(name: str, temperature: float = 300.0, t_max: float = 600.0, p
 
 def water_models() -> list:
     """The water models CAPS has (SPC, SPC/E, SPC/Fw, TIP3P and its CHARMM and Ewald forms, TIP4P, TIP4P-Ew, TIP4P/2005,
-    TIP4P/Ice, OPC): id, name, citation, sites, geometry, charges and Lennard-Jones. Apply one with
+    TIP4P/Ice, TIP5P, OPC, OPC3): id, name, citation, sites, geometry, charges and Lennard-Jones. Apply one with
     doc.edit(op="water_model", model=id) and type the waters with it by a group {"molecules": "water", "water": id}."""
     return _json_call(library().caps_water_models)
 
