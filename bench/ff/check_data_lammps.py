@@ -705,6 +705,7 @@ def lammps_hbond_offset(d):
 
 DSF = re.compile(r"(?:^|\s)(?:lj/cut/)?coul/dsf (\S+) (\S+)")
 LONG = re.compile(r"(?:^|\s)(?:lj/cut/|lj/class2/)?coul/long (\S+)")
+CSLONG = re.compile(r"(?:^|\s)\S*coul/long/cs\s+([0-9.eE+-]+)(?:\s+([0-9.eE+-]+))?")
 
 def dsf_self_repeat(d):
     """LAMMPS's coul/dsf adds each atom's self energy -(e_shift/2 + a/sqrt(pi)) q^2 in every coul/dsf sub-style
@@ -763,7 +764,7 @@ def erfc_offset(d, pairs, g_ewald):
         elif sec == "a" and len(w) >= 7:
             q[int(w[0])] = float(w[3])
     off = 0.0
-    for i, j, r in pairs:
+    for i, j, r, *_ in pairs:
         if r < rc and q[i] and q[j]:
             t = 1 / (1 + 0.3275911 * a * r)
             erfc_as = t * (0.254829592 + t * (-0.284496736 + t * (1.421413741 + t * (-1.453152027 + t * 1.061405429)))) * math.exp(-a * a * r * r)
@@ -772,19 +773,82 @@ def erfc_offset(d, pairs, g_ewald):
             off += q[i] * q[j] * (erfc_as - math.erfc(a * r)) / r
     return qqrd2e * off
 
+def cs_long_offset(d, pairs, g):
+    """The same for CORESHELL's long-range styles (buck/coul/long/cs, born/coul/long/cs, coul/long/cs ...; pair_modify
+    table 0): their erfc is a polynomial of their own (pair_coul_long_cs.cpp: EWALD_P, B0-B5) at r^2 + 1e-20, and a
+    pair LAMMPS treats as special (a 1-2, 1-3 or 1-4 pair by the bonds with a Coulomb weight w < 1, no separation
+    component beyond half the box: Domain::minimum_image_check) is taken at r + 1e-6: q_i q_j [erfc - (1 - w)] / (r + 1e-6).
+    The exact terms are q_i q_j erfc(gr) / r and q_i q_j [w - erf(gr)] / r, whose limit for a shell on its core is
+    -q_i q_j 2g/sqrt(pi)."""
+    inp = open(os.path.join(d, "case.in")).read()
+    ps = next((l for l in inp.splitlines() if l.startswith("pair_style")), "")
+    m = CSLONG.search(ps)
+    if not pairs or not m or not g:
+        return 0.0
+    rc = float(m.group(2) or m.group(1))
+    sb = re.search(r"^special_bonds\s.*?(?:lj/coul|coul)\s+(\S+)\s+(\S+)\s+(\S+)", inp, re.M)
+    w = [float(x) for x in sb.groups()] if sb else [0.0, 0.0, 0.0]
+    diel = re.search(r"^dielectric\s+(\S+)", inp, re.M)
+    qqrd2e = (14.399645 if re.search(r"^units\s+metal", inp, re.M) else 332.06371) / (float(diel.group(1)) if diel else 1.0)
+    q, nb, half, sec = {}, collections.defaultdict(set), [], None
+    for l in open(os.path.join(d, "case.data")):
+        x = l.split("#")[0].split()
+        if len(x) == 4 and x[2] in ("xlo", "ylo", "zlo"):
+            half.append((float(x[1]) - float(x[0])) / 2)
+        elif l.startswith("Atoms"):
+            sec = "a"
+        elif l.startswith("Bonds"):
+            sec = "b"
+        elif l[:1].isalpha():
+            sec = None
+        elif sec == "a" and len(x) >= 7:
+            q[int(x[0])] = float(x[3])
+        elif sec == "b" and len(x) == 4:
+            nb[int(x[2])].add(int(x[3]))
+            nb[int(x[3])].add(int(x[2]))
+    def weight(i, j):   # the Coulomb weight of i-j by its bond distance (1 when further than 1-4)
+        level = {i}
+        seen = {i}
+        for k in range(3):
+            level = {b for a in level for b in nb[a]} - seen
+            if j in level:
+                return w[k]
+            seen |= level
+        return 1.0
+    P, B = 9.95473818e-1, (-0.1335096380159268, -2.57839507e-1, -1.37203639e-1, -8.88822059e-3, -5.80844129e-3, 1.14652755e-1)
+    def erfc_cs(x):
+        t = 1 / (1 + P * x)
+        u = 1 - t
+        return t * (1 + u * (B[0] + u * (B[1] + u * (B[2] + u * (B[3] + u * (B[4] + u * B[5])))))) * math.exp(-x * x)
+    off = 0.0
+    for i, j, r, dx, dy, dz in pairs:
+        if r * r >= rc * rc or not (q[i] and q[j]):
+            continue
+        qq = q[i] * q[j]
+        rl = math.sqrt(r * r + 1e-20)
+        f = 1.0 if any(abs(c) > h for c, h in zip((dx, dy, dz), half)) else weight(i, j)
+        if f < 1:
+            R = rl + 1e-6
+            lmp = qq * (erfc_cs(g * R) - (1 - f)) / R
+            exact = qq * (f * math.erfc(g * r) / r - (1 - f) * math.erf(g * r) / r) if r > 1e-8 else -qq * 2 * g / math.sqrt(math.pi)
+        else:
+            lmp, exact = qq * erfc_cs(g * rl) / rl, qq * math.erfc(g * r) / r
+        off += lmp - exact
+    return qqrd2e * off
+
 def lammps(infile, dump):
     txt = open(infile).read()
-    # coul/dsf and coul/long: every pair of LAMMPS's list with its distance, for its erfc (erfc_offset); coul/long
-    # without LAMMPS's 12-bit Coulomb table, whose interpolation is ~1e-7 off. The core-shell styles (born/coul/dsf/cs,
-    # coul/long/cs) and TIP4P keep theirs, as their core-shell pairs sit at r = 1e-10 A
+    # coul/dsf, coul/long and the CORESHELL long-range styles: every pair of LAMMPS's list with its separation, for its
+    # erfc (erfc_offset, cs_long_offset); the long-range ones without LAMMPS's 12-bit Coulomb table, whose interpolation
+    # is ~1e-7 off. born/coul/dsf/cs and TIP4P keep theirs
     pdump = dump + ".pairs"
     ps = next((l for l in txt.splitlines() if l.startswith("pair_style")), "")
-    dsf = (DSF.search(ps) or LONG.search(ps)) is not None
+    dsf = (DSF.search(ps) or LONG.search(ps) or CSLONG.search(ps)) is not None
     if dsf:
-        if LONG.search(ps):
+        if LONG.search(ps) or CSLONG.search(ps):
             txt = txt.replace("run 0", "pair_modify table 0\nrun 0", 1)
-        txt = txt.replace("run 0", f"compute caps_pp all property/local patom1 patom2\ncompute caps_pd all pair/local dist\n"
-                          f"dump caps_pl all local 1 {pdump} c_caps_pp[1] c_caps_pp[2] c_caps_pd\ndump_modify caps_pl format float %.12g\nrun 0", 1)
+        txt = txt.replace("run 0", f"compute caps_pp all property/local patom1 patom2\ncompute caps_pd all pair/local dist dx dy dz\n"
+                          f"dump caps_pl all local 1 {pdump} c_caps_pp[1] c_caps_pp[2] c_caps_pd[1] c_caps_pd[2] c_caps_pd[3] c_caps_pd[4]\ndump_modify caps_pl format float %.12g\nrun 0", 1)
     txt = txt.replace("run 0", f"run 0\nwrite_dump all custom {dump} id fx fy fz modify sort id format float %.10f")
     # virial pressure tensor (no kinetic part) and the volume, for the virial tensor W = P V / nktv2p
     txt = re.sub(r"thermo_style custom (.*)", r"compute pv all pressure NULL virial\nthermo_style custom \1 vol c_pv[1] c_pv[2] c_pv[3] c_pv[4] c_pv[5] c_pv[6]", txt)
@@ -806,8 +870,8 @@ def lammps(infile, dump):
     if dsf:
         for l in open(pdump).read().split("ITEM: ENTRIES")[1].splitlines()[1:]:
             w = l.split()
-            if len(w) == 3:
-                pairs.append((int(w[0]), int(w[1]), float(w[2])))
+            if len(w) == 6:
+                pairs.append((int(w[0]), int(w[1]), *map(float, w[2:])))
     g = re.search(r"G vector \(1/distance\) = (\S+)", r.stdout)
     return e, f, pairs, float(g.group(1)) if g else 0.0
 
@@ -873,7 +937,7 @@ for case in CASES:
     if c0:
         lm["dihedral"] += float(c0.group(1))
     # LAMMPS's coul/dsf and coul/long real-space energy with the exact erfc, as CAPS's
-    lm["coulomb"] -= erfc_offset(d, lpairs, lg)
+    lm["coulomb"] -= erfc_offset(d, lpairs, lg) + cs_long_offset(d, lpairs, lg)
     lm["coulomb"] -= dsf_self_repeat(d)
     # with PME both codes reach the Ewald limit only to their discretisation (CAPS's grid, LAMMPS's k-space cut-off; the
     # real-space erfc is exact on both sides after erfc_offset): the Coulomb term is compared to 1e-3 kcal/mol absolute there
