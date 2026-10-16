@@ -646,6 +646,29 @@ TEST(Typing, OplsAa2024MaleateComplete) {
   }
 }
 
+// Alkoxysilanes (silane coupling agents TESPT / TESPD, TEOS, methoxy and dialkoxy silanes): CAPS's caps_aos types,
+// charged by 1.27 x CM5 with one charge per alkoxy and per alkyl unit on Si, so any mix is neutral; Si carries as many
+// alkoxy O as its type says. The Si-O torsions are fitted apart, so only typing and charge are checked here
+TEST(Typing, OplsAa2024AlkoxysilanesNeutral) {
+  const FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/oplsaa2024.json");
+  const std::vector<std::pair<std::string, std::string>> cases = {
+      {"CCO[Si](OCC)(OCC)CCCSSSSCCC[Si](OCC)(OCC)OCC", "caps_aos_si3"}, {"CCO[Si](OCC)(OCC)CCCSSCCC[Si](OCC)(OCC)OCC", "caps_aos_si3"},
+      {"CCO[Si](OCC)(OCC)OCC", "caps_aos_si4"}, {"C[Si](C)(OCC)OCC", "caps_aos_si2"}, {"CO[Si](OC)(OC)CCCS", "caps_aos_si3"}};
+  for (const auto& [smi, si] : cases) {
+    System s = build_molecule(smi).system;
+    std::string ch = "types";
+    prepare_for_forcefield(s, def, ch);
+    const TypingResult tr = assign_types(s, def);
+    EXPECT_EQ(tr.untyped, 0) << smi;
+    ParamReport rep;
+    const ForceField f = parameterize(s, def, tr.types, ch, &rep, true);
+    double q = 0;
+    for (double x : f.charge) q += x;
+    EXPECT_NEAR(q, 0.0, 1e-9) << smi;
+    EXPECT_TRUE(std::find(tr.types.begin(), tr.types.end(), si) != tr.types.end()) << smi << " has no " << si;
+  }
+}
+
 // A rubber outside a united-atom force field: the untyped atoms are reported once per environment, not atom by atom,
 // with what to use instead (OPLS-UA has no nitrile on a CH backbone, no vinyl chloride, no siloxane)
 TEST(Typing, OutOfDomainNamesTheMotifsOnce) {

@@ -72,6 +72,8 @@ public sealed unsafe class GlMolView : OpenGlControlBase
     /// <summary>Milliseconds the GPU took to draw the latest measured frame (0 when the driver cannot time it); read a
     /// frame or two late, so measuring never stalls the view.</summary>
     public double GpuFrameMs { get; private set; }
+    /// <summary>Frames drawn since the control started (the view benchmark counts the frames a second it delivers).</summary>
+    public long FramesDrawn { get; private set; }
 
     /// <summary>A new scene (content changed): uploaded at the next frame.</summary>
     public void SetScene(CapsSceneData scene)
@@ -179,6 +181,7 @@ public sealed unsafe class GlMolView : OpenGlControlBase
     protected override void OnOpenGlRender(GlInterface gl, int fb)
     {
         if (!Ready) return;
+        FramesDrawn++;
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var query = BeginGpuTimer(gl);
         if (_pending != null) { Upload(gl, _pending); _scene = _pending; _pending = null; }

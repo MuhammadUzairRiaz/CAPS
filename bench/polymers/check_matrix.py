@@ -16,7 +16,7 @@ bead models), library entries without a parameter file (aliases, templates) and 
 for yet are listed and skipped with the reason. Failures print CAPS's own reason (untyped atoms, missing
 parameters) so each can be traced to a typing rule or a parameter the library lacks.
 
-usage: python3 bench/polymers/check_matrix.py [--ff substring] [--polymer substring] [--fill-from FF] [--jobs 8] [--keep DIR] [--json OUT]
+usage: python3 bench/polymers/check_matrix.py [--ff substring] [--polymer substring] [--engine lammps|gromacs] [--fill-from FF] [--jobs 8] [--keep DIR] [--json OUT]
 """
 import json, math, os, re, subprocess, sys, tempfile
 from concurrent.futures import ProcessPoolExecutor
@@ -28,6 +28,7 @@ LMP = os.environ.get("LMP", os.path.expanduser("~/lammps/build-class2/lmp"))
 GMX = os.environ.get("GMX", "/opt/homebrew/bin/gmx")
 arg = lambda k, d: sys.argv[sys.argv.index(k) + 1] if k in sys.argv else d
 ONLY_FF, ONLY_P = arg("--ff", ""), arg("--polymer", "")
+ENGINE = arg("--engine", "lammps")   # --engine gromacs: every cell written and checked in GROMACS instead
 FILL = arg("--fill-from", "")   # another force field's rules where the tested one has none (type.fill_from)
 JOBS = int(arg("--jobs", "8"))
 WORK = arg("--keep", "") or tempfile.mkdtemp(prefix="caps_matrix_")
@@ -277,10 +278,13 @@ def case(job):
     d = os.path.join(WORK, f"{pid}__{ffid}")
     os.makedirs(d, exist_ok=True)
     rp = os.path.join(d, "r.yaml")
-    open(rp, "w").write(recipe(pid, spec, ffid))
+    if ENGINE == "gromacs":   # every cell through GROMACS (12 chains: the cell at least twice the cut-off)
+        open(rp, "w").write(recipe(pid, spec, ffid, "gromacs", chains=12))
+    else:
+        open(rp, "w").write(recipe(pid, spec, ffid))
     r = subprocess.run([CAPS, "run", rp, "--out", d, "--threads", "1"], capture_output=True, text=True, timeout=600)
     out = r.stdout + r.stderr
-    engine = "LAMMPS"
+    engine = "GROMACS" if ENGINE == "gromacs" else "LAMMPS"
     if r.returncode and "no exact LAMMPS form" in out:   # separate 1-4 Lennard-Jones (CHARMM, GROMOS): GROMACS writes it exactly
         open(rp, "w").write(recipe(pid, spec, ffid, "gromacs", chains=12))   # GROMACS needs a cell at least twice the cut-off
         r = subprocess.run([CAPS, "run", rp, "--out", d, "--threads", "1"], capture_output=True, text=True, timeout=600)
