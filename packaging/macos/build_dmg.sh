@@ -41,6 +41,8 @@ if [ -n "${CAPS_TORCH_DIR:-}" ]; then
   for lib in libtorch.dylib libtorch_cpu.dylib libc10.dylib libomp.dylib; do cp "$CAPS_TORCH_DIR/lib/$lib" "$APP/Contents/MacOS/"; done
   for bin in "$APP/Contents/MacOS/caps" "$APP/Contents/MacOS/"libcaps*.dylib; do
     install_name_tool -add_rpath @loader_path "$bin" 2>/dev/null || true
+    # the build tree's libtorch path is not shipped: the app uses only its own copy
+    install_name_tool -delete_rpath "$CAPS_TORCH_DIR/lib" "$bin" 2>/dev/null || true
   done
   cp "$ROOT/licenses/PyTorch-BSD-3.txt" "$APP/Contents/MacOS/" 2>/dev/null || true
 fi
