@@ -63,6 +63,7 @@
   }
  ],
  "notes": [
-  "optional overlay on oplsaa2024.json (caps ff apply --overlay oplsaa2024-lj-refit.json, or with the rubber refits: --overlay oplsaa2024-rubber-refit.json,oplsaa2024-lj-refit.json); the base library keeps the 2024 values"
+  "optional overlay on oplsaa2024.json (caps ff apply --overlay oplsaa2024-lj-refit.json, or with the rubber refits: --overlay oplsaa2024-rubber-refit.json,oplsaa2024-lj-refit.json); the base library keeps the 2024 values",
+  "known limit, not refitted: glassy polymers (PMMA, PS, PVAc, PET) come out 3.5-8 % below their experimental glass density with OPLS-AA 2024 and this overlay; their melts are already 2-5 % light while the monomer liquids are right (bench/ff/open/oplsaa2024_glass_density_limitation.md)"
  ]
 }
