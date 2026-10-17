@@ -13,6 +13,8 @@
 #include <functional>
 #include <limits>
 #include <map>
+#include <mutex>
+#include <tuple>
 #include <optional>
 #include <numeric>
 #include <random>
@@ -271,7 +273,7 @@ std::optional<std::vector<Vec3>> ring_backbone_trimer(const MolGraph& g, const P
   return pos;
 }
 
-Template make_template(const std::string& name, const std::string& smiles, const std::string& ff, uint64_t seed, std::vector<std::string>& notes,
+Template make_template_uncached(const std::string& name, const std::string& smiles, const std::string& ff, uint64_t seed, std::vector<std::string>& notes,
                        bool reversed = false) {
   const Parsed P = parse_unit(smiles, reversed);
   MolGraph g = capped(P);
@@ -625,6 +627,31 @@ Template make_template(const std::string& name, const std::string& smiles, const
   return T;
 }
 
+// Templates by (name, SMILES, force field, seed, direction), with the notes their making gave: a unit is embedded and
+// minimised once per process, not again for every growth (the type stage's probe chain, the contact-scale probe, a
+// regrowth at another scale, the next cell of the same polymer); a bicyclic unit's trimer minimisation takes seconds.
+Template make_template(const std::string& name, const std::string& smiles, const std::string& ff, uint64_t seed, std::vector<std::string>& notes,
+                       bool reversed = false) {
+  using Key = std::tuple<std::string, std::string, std::string, uint64_t, bool>;
+  static std::mutex mu;
+  static std::map<Key, std::pair<Template, std::vector<std::string>>> cache;
+  const Key key{name, smiles, ff, seed, reversed};
+  {
+    std::lock_guard<std::mutex> lock(mu);
+    if (auto it = cache.find(key); it != cache.end()) {
+      notes.insert(notes.end(), it->second.second.begin(), it->second.second.end());
+      return it->second.first;
+    }
+  }
+  std::vector<std::string> made;
+  Template t = make_template_uncached(name, smiles, ff, seed, made, reversed);
+  notes.insert(notes.end(), made.begin(), made.end());
+  std::lock_guard<std::mutex> lock(mu);
+  if (cache.size() >= 512) cache.clear();
+  cache.emplace(key, std::make_pair(t, std::move(made)));
+  return t;
+}
+
 // ---- the cell: every atom placed so far, all chains, with a periodic cell list
 // Each bin keeps its atoms' records (position, element, chain, local index) side by side, so a neighbour search reads
 // one contiguous block per bin instead of four scattered arrays; the per-id arrays stay for lookups by id.
@@ -713,9 +740,15 @@ struct ChainState {
   std::vector<std::vector<int>> adj;
   std::vector<int> unit_start;   // local index of each placed unit's head
   std::vector<double> unit_lnw;  // Rosenbluth methods: ln(Σ w / k) of each placed unit's step
+  std::vector<double> unit_scale; // the contact scale each placed unit was checked at (below the cell's: eased)
   int backtracks = 0, fails = 0, starts = 0;
   int reach = 0, stuck = 0;             // the most units placed since this start; failed steps since that grew
   int cuts = 0;                         // times cut back to half since this start
+  int ease = 0, ease_fails = 0, ease_until = 0;   // eased contact limits (GrowOptions::ease_floor): level, failures, until unit
+  int eased = 0;                       // times this chain eased its limits (each holds them longer, up to 12 units)
+  int reach_ever = 0;                  // the most units placed over all starts
+  int cap_gid = -1;                    // cell id of the head's end-cap hydrogen, kept clear while the cell grows
+  int tail_cap_gid = -1;               // and of the tail's, once the chain is complete
   bool done = false;
   // branched molecules (star, comb, branched): a chain hung on an atom of another, grown once that chain (and the arm
   // before it on the same molecule) is complete
@@ -1233,6 +1266,15 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
   rep.box = L;
   rep.density = mass / (0.602214076 * vol);
   const double scale = o.contact_scale > 0 ? o.contact_scale : 1.0;
+  // eased limits for a stuck chain: contact scales below the cell's, down to the floor
+  std::vector<double> ease_levels;
+  if (o.ease_floor > 0)
+    for (double x : {0.9, 0.8, 0.7, 0.6, 0.5, 0.4})
+      if (x < scale - 1e-9 && x >= o.ease_floor - 1e-9) ease_levels.push_back(x);
+  rep.contact_scale = rep.min_scale = scale;
+  // failures (without getting further) before a chain eases its limits a level: 12 in a melt (0.8 g/cm³ and more),
+  // up to 52 in a dilute cell, where backing up finds room at the full limits
+  const int ease_after = 12 + int(std::lround(40 * std::clamp((0.8 - rep.density) / 0.5, 0.0, 1.0)));
   // contact limits as the polystyrene grower's (C–C 3.0, C–H 2.45, H–H 2.0 Å), from Bondi radii for other elements
   // (a negative element is an arm's reserved head: a carbon with room for its hydrogens, 0.5 Å more)
   auto limit = [&](int a, int b) {
@@ -1323,7 +1365,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     for (double r : {1.53, 2.9}) {
       const Vec3 x = par.pos[size_t(P)] + d * r;
       cell.near(x, [&](int id) {
-        if (cell.chain[size_t(id)] == parent && near_p.count(cell.local[size_t(id)])) return;
+        if (cell.chain[size_t(id)] == parent && near_p.count(cell.local[size_t(id)] >= 0 ? cell.local[size_t(id)] : -2 - cell.local[size_t(id)])) return;
         room = std::min(room, norm(cell.mi(x - cell.x[size_t(id)])) - limit(6, cell.z[size_t(id)]));
       });
     }
@@ -1338,6 +1380,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     if (ch.core && par.parent < 0 && !par.cap_taken) {
       P = par.unit_start[0];
       par.cap_taken = true;
+      if (par.cap_gid >= 0) cell.kill(par.cap_gid), par.cap_gid = -1;   // the arm's head goes where the cap was
       ch.anchor_dir = unitv(par.pos[2] - par.pos[size_t(P)]);
     } else {
       std::set<int> taken;   // units already carrying a side chain of this parent
@@ -1433,8 +1476,13 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
         if (seen.emplace(w, d + 1).second) q.push_back(w);
     }
     ch.pdist.clear();
-    for (const auto& [node, d] : seen)
-      if (const int g = C[size_t(node.first)].gid[size_t(node.second)]; g >= 0) ch.pdist[g] = d;
+    for (const auto& [node, d] : seen) {
+      const auto& nc = C[size_t(node.first)];
+      if (const int g = nc.gid[size_t(node.second)]; g >= 0) ch.pdist[g] = d;
+      // the end caps of the atoms nearby, one bond further
+      if (d < 4 && nc.cap_gid >= 0 && !nc.unit_start.empty() && node.second == nc.unit_start.front()) ch.pdist[nc.cap_gid] = d + 1;
+      if (d < 4 && nc.tail_cap_gid >= 0 && node.second == nc.unit_start.back() + T[size_t(nc.seq.back())].tail) ch.pdist[nc.tail_cap_gid] = d + 1;
+    }
     for (const auto& e : C)
       if (e.reserve >= 0 && e.mol == ch.mol)
         if (auto it = seen.find({e.parent, e.anchor}); it != seen.end() && it->second < 4) ch.pdist[e.reserve] = it->second + 1;
@@ -1451,8 +1499,10 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     if (n_arms) unresolve_arms(ci);
     for (size_t i = 3; i < ch.gid.size(); ++i)
       if (ch.gid[i] >= 0) cell.kill(ch.gid[i]);
+    if (ch.cap_gid >= 0) cell.kill(ch.cap_gid), ch.cap_gid = -1;
     ch.pos.clear(), ch.z.clear(), ch.tparent.clear(), ch.gid.clear(), ch.unit_of.clear(), ch.sp2.clear(), ch.donor.clear(), ch.exo.clear(), ch.backbone.clear(), ch.adj.clear(), ch.unit_start.clear();
     ch.unit_lnw.clear();
+    ch.unit_scale.clear();
     if (ch.parent >= 0) {   // an arm: the ghosts are its anchor atom and the two atoms before it in the parent
       if (!ch.started) begin_arm(ci);
       const auto& par = C[size_t(ch.parent)];
@@ -1516,8 +1566,29 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     }
     // three ghosts: a start point and a random frame (the head bonds to ghost 2)
     Vec3 s{U(rng) * Lv[0], U(rng) * Lv[1], film ? z_lo + 1 + U(rng) * std::max(0.0, z_hi - z_lo - 2) : U(rng) * Lv[2]};
+    auto draw_start = [&] {
+      Vec3 q{U(rng) * Lv[0], U(rng) * Lv[1], film ? z_lo + 1 + U(rng) * std::max(0.0, z_hi - z_lo - 2) : U(rng) * Lv[2]};
+      for (int tries = 0; (sphere || cyl) && region(q) < 1.0 && tries < 1000; ++tries)   // a start inside the allowed region
+        q = {U(rng) * Lv[0], U(rng) * Lv[1], film ? z_lo + 1 + U(rng) * std::max(0.0, z_hi - z_lo - 2) : U(rng) * Lv[2]};
+      return q;
+    };
     for (int tries = 0; (sphere || cyl) && region(s) < 1.0 && tries < 1000; ++tries)   // a start inside the allowed region
       s = {U(rng) * Lv[0], U(rng) * Lv[1], film ? z_lo + 1 + U(rng) * std::max(0.0, z_hi - z_lo - 2) : U(rng) * Lv[2]};
+    // in a crowded cell, the roomiest of a few start points (the nearest atom farthest away): a chain started in a gap
+    // fails less at its first units; the first point with 3 Å of room is taken as it is
+    {
+      auto room = [&](const Vec3& q) {
+        double r = 9.0;
+        cell.near(q, [&](int id) { r = std::min(r, norm(cell.mi(q - cell.x[size_t(id)]))); });
+        return r;
+      };
+      double best_room = room(s);
+      for (int tries = 0; best_room < 3.0 && tries < 15; ++tries) {
+        const Vec3 q = draw_start();
+        const double r = room(q);
+        if (r > best_room) best_room = r, s = q;
+      }
+    }
     Vec3 u{Nd(rng), Nd(rng), Nd(rng)};
     u = unitv(u);
     // the start direction under the aligning field too: drawn with probability ∝ exp(s P₂) (rejection)
@@ -1546,6 +1617,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
       const int from = ch.unit_start.back();
       ch.unit_start.pop_back();
       if (!ch.unit_lnw.empty()) ch.unit_lnw.pop_back();
+      if (!ch.unit_scale.empty()) ch.unit_scale.pop_back();
       for (int i = int(ch.pos.size()) - 1; i >= from; --i) {
         if (ch.gid[size_t(i)] >= 0) cell.kill(ch.gid[size_t(i)]);
         for (int w : ch.adj[size_t(i)]) {
@@ -1556,11 +1628,15 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
       ch.pos.resize(size_t(from)), ch.z.resize(size_t(from)), ch.tparent.resize(size_t(from)), ch.gid.resize(size_t(from));
       ch.unit_of.resize(size_t(from)), ch.sp2.resize(size_t(from)), ch.donor.resize(size_t(from)), ch.exo.resize(size_t(from)), ch.backbone.resize(size_t(from)), ch.adj.resize(size_t(from));
     }
+    if (ch.unit_start.empty() && ch.cap_gid >= 0) cell.kill(ch.cap_gid), ch.cap_gid = -1;
   };
 
+  // extended draws (a long flexible unit none of whose trials fitted): sp3–sp3 torsions mostly trans
+  bool extended = false;
   auto draw = [&](int kind, double t0) {
     switch (kind) {
       case 0: {
+        if (extended) return (U(rng) < 0.85 ? kPi : U(rng) < 0.5 ? kPi / 3 : -kPi / 3) + Nd(rng) * 15 * kPi / 180;
         // mostly staggered (trans, gauche±), sometimes anywhere: crowded units (methacrylates) need the room between
         if (gauche && U(rng) < 0.3) return (U(rng) * 2 - 1) * kPi;
         const double c = gauche ? std::array<double, 3>{kPi, kPi / 3, -kPi / 3}[size_t(U(rng) * 3) % 3] : kPi;
@@ -1586,6 +1662,13 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
   };
 
   // one growth step of chain ci: place its next unit (best of the trials) or back up
+  long units_total = 0;
+  for (const auto& ch : C) units_total += long(ch.seq.size());
+  long floor_fails = 0;   // failed steps at the lowest open eased limits, all chains
+  // eased levels open to the chains: down to 0.6 at first, all of them for a ring backbone (its rigid units need them)
+  int open_levels = int(std::count_if(ease_levels.begin(), ease_levels.end(), [](double x) { return x >= 0.6 - 1e-9; }));
+  for (const auto& tp : T)
+    if (tp.ring_backbone) open_levels = int(ease_levels.size());
   auto advance = [&](int ci) {
     // units with more than three torsions that move heavy atoms (long side chains: butyl, hexyl esters) have many more
     // ways to be placed than the trials sample: twice the trials for each one beyond three, at most eight times
@@ -1595,6 +1678,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     const Template& t = T[size_t(ch.seq[size_t(k)])];
     const bool mir = ch.mirror[size_t(k)];
     const int base = int(ch.pos.size());
+    const double ef = ch.ease > 0 ? ease_levels[size_t(ch.ease - 1)] / scale : 1.0;   // eased limits of a stuck chain
     const int prev_tail = k == 0 ? 2 : ch.unit_start.back() + T[size_t(ch.seq[size_t(k - 1)])].tail;
     const double link = k == 0 ? t.head_bond : t.head_bond + T[size_t(ch.seq[size_t(k - 1)])].tail_bond - 1.53;
     const double link_angle = k == 0 ? 1.95 : T[size_t(ch.seq[size_t(k - 1)])].tail_angle;
@@ -1682,6 +1766,14 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     std::vector<uint8_t> ntl(nloc, 0);
     for (const auto& [w, d] : near_tail)
       if (w >= 0 && size_t(w) < nloc) ntl[size_t(w)] = uint8_t(d + 1);
+    // bond distance + 1 from a table by a cell atom's local index (0: farther); a head's end cap (local −2 − head) is
+    // one bond beyond its head
+    auto bond_lut = [](const uint8_t* v, size_t n, int loc) -> int {
+      if (loc >= 0) return size_t(loc) < n ? int(v[loc]) : 0;
+      const int h = -2 - loc;
+      if (h < 0 || size_t(h) >= n || !v[h]) return 0;
+      return int(v[h]) + 1;
+    };
     // an arm or a grafted chain: bond distance from each new atom to the chain's head (then + 1 to the anchor), for the
     // parent's or substrate's atoms nearby
     std::vector<int> dhead(size_t(t.n), 99);
@@ -1778,7 +1870,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
         const bool stop = cell.near_until(x, [&](const Cell3::Rec& r) {
           double f = 1.0;
           if (r.chain == ci) {
-            const int dd = r.local >= 0 && size_t(r.local) < ea_n ? int(ea[r.local]) : 0;
+            const int dd = bond_lut(ea, ea_n, r.local);
             if (dd) {
               if (dd - 1 <= 3) return false;
               f = dd - 1 == 4 ? 0.85 : 0.9;
@@ -1791,7 +1883,8 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
               f = tot == 4 ? 0.85 : 0.9;
             }
           }
-          const double lim = lrow[(r.z + 128) & 255];
+          if (r.local <= -2) f *= 0.9;   // an end cap (a stand-in hydrogen the relax will settle): 90 % of the limit
+          const double lim = lrow[(r.z + 128) & 255] * ef;
           const double reach = worst + f * lim;   // farther pairs cannot lower the margin
           const Vec3 dv = cell.mi(x - r.x);
           const double d2 = dot(dv, dv);
@@ -1804,7 +1897,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
         for (int b = 0; b < a; ++b)
           if (const int dd = int(exl[size_t(b)][size_t(base + a)]); dd == 0 || dd - 1 > 3) {
             const double f = dd == 0 ? 1.0 : dd - 1 == 4 ? 0.85 : 0.9;
-            const double m = norm(cell.mi(trial[size_t(b)] - x)) - f * limitc(t.z[size_t(b)], t.z[size_t(a)]);
+            const double m = norm(cell.mi(trial[size_t(b)] - x)) - f * (limitc(t.z[size_t(b)], t.z[size_t(a)]) * ef);
             if (m < worst) worst = m;
           }
         return worst <= best_m;
@@ -1830,12 +1923,52 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
       // look ahead: the next unit's head must have room at this unit's free valence (else the chain folds into itself)
       // the last unit: its tail cap (a hydrogen at 1.09 Å) goes there, and needs room as well
       const bool last = k + 1 == int(ch.seq.size());
-      if (t.tail_fixed) {
-        auto tp = [&](int local) { return local >= 0 ? trial[size_t(local)] : ch.pos[size_t(pt)]; };
-        Vec3 e1, e2, e3;
-        frame(trial[size_t(t.tail)], tp(t.r1), tp(t.r2), e1, e2, e3);
-        const Vec3 dir = unitv(e1 * t.tf[0] + e2 * t.tf[1] + e3 * (mir ? -t.tf[2] : t.tf[2]));
-        const Vec3 nx = trial[size_t(t.tail)] + dir * (last ? 1.09 : 1.53);
+      // a free chain's first unit: its head's end cap (a hydrogen toward the start, put in the cell with the unit) needs
+      // room too, against the cell and the unit's own atoms (one bond beyond the head), at 90 % of the limits as caps are
+      // checked throughout
+      const bool head_cap = k == 0 && ch.parent < 0 && ch.ext_anchor < 0 && !ch.cap_taken;
+      Vec3 hcap{};
+      if (head_cap) {
+        hcap = trial[0] + unitv(ch.pos[2] - trial[0]) * 1.09;
+        const double* hrow = limit_row(1);
+        worst = std::min(worst, region(hcap));
+        if (worst <= best_m) return worst;
+        if (cell.near_until(hcap, [&](const Cell3::Rec& r) {
+              const double m = norm(cell.mi(hcap - r.x)) - 0.9 * (hrow[(r.z + 128) & 255] * ef);
+              if (m < worst) worst = m;
+              return worst <= best_m;
+            }))
+          return worst;
+        for (int b = 1; b < t.n; ++b) {
+          const int d0 = int(exl[0][size_t(base + b)]);   // the head's bond distance to b, + 1 (0: farther)
+          if (d0 && d0 <= 3) continue;                     // within three bonds of the cap
+          const double f = 0.9 * (d0 == 0 ? 1.0 : d0 == 4 ? 0.85 : 0.9);
+          const double m = norm(cell.mi(hcap - trial[size_t(b)])) - f * (hrow[(t.z[size_t(b)] + 128) & 255] * ef);
+          if (m < worst) worst = m;
+        }
+        if (worst <= best_m) return worst;
+      }
+      // the next unit's head (or, for the last unit, the tail's end cap) where the tail's free valence points; a tail
+      // without a fixed free valence gets its cap trans to the bond before it, as the cell's writer puts it
+      if (t.tail_fixed || last) {
+        Vec3 dir{0, 0, 0}, nx;
+        if (t.tail_fixed) {
+          auto tp = [&](int local) { return local >= 0 ? trial[size_t(local)] : ch.pos[size_t(pt)]; };
+          Vec3 e1, e2, e3;
+          frame(trial[size_t(t.tail)], tp(t.r1), tp(t.r2), e1, e2, e3);
+          dir = unitv(e1 * t.tf[0] + e2 * t.tf[1] + e3 * (mir ? -t.tf[2] : t.tf[2]));
+          nx = trial[size_t(t.tail)] + dir * (last ? 1.09 : 1.53);
+        } else {
+          const auto& rt = t.ref[size_t(t.tail)];
+          nx = place(P(rt[1]), P(rt[0]), trial[size_t(t.tail)], 1.09, t.tail_angle, kPi);
+        }
+        if (head_cap && last) {   // a one-unit chain: its two caps
+          const int dht = t.tail == 0 ? 0 : int(exl[0][size_t(base + t.tail)]) - 1;
+          if (dht + 2 > 3) {
+            const double m = norm(cell.mi(nx - hcap)) - (dht + 2 == 4 ? 0.85 : 1.0) * (limit_row(1)[(1 + 128) & 255] * ef);
+            if (m < worst) worst = m;
+          }
+        }
         // past a quaternary tail the next head's hydrogens are crowded as well: the head probe with their room (−6)
         const int probe = last ? 1 : tail_quaternary ? -6 : 6;
         const double* prow = limit_row(probe);
@@ -1846,7 +1979,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
         if (cell.near_until(nx, [&](const Cell3::Rec& r) {
               double f = 1.0;
               if (r.chain == ci) {
-                const int dd = r.local >= 0 && size_t(r.local) < nt_n ? int(nt[r.local]) : 0;
+                const int dd = bond_lut(nt, nt_n, r.local);
                 if (dd) {
                   if (dd - 1 <= 3) return false;
                   f = dd - 1 == 4 ? 0.85 : 0.9;
@@ -1859,14 +1992,14 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
                   f = tot == 4 ? 0.85 : 0.9;
                 }
               }
-              const double m = norm(cell.mi(nx - r.x)) - f * prow[(r.z + 128) & 255];
+              const double m = norm(cell.mi(nx - r.x)) - f * (prow[(r.z + 128) & 255] * ef);
               if (m < worst) worst = m;
               return worst <= best_m;
             }))
           return worst;
         for (int b = 0; b < t.n; ++b)
           if (const int dd = int(nt[size_t(base + b)]); dd == 0 || dd - 1 > 3) {
-            const double m = norm(cell.mi(nx - trial[size_t(b)])) - (dd == 0 ? 1.0 : dd - 1 == 4 ? 0.85 : 0.9) * prow[(t.z[size_t(b)] + 128) & 255];
+            const double m = norm(cell.mi(nx - trial[size_t(b)])) - (dd == 0 ? 1.0 : dd - 1 == 4 ? 0.85 : 0.9) * (prow[(t.z[size_t(b)] + 128) & 255] * ef);
             if (m < worst) worst = m;
           }
         // deeper look-ahead (GrowOptions::lookahead bonds): points further along the free valence need room too — against
@@ -1882,7 +2015,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
             if (cell.near_until(q, [&](const Cell3::Rec& r) {
                   if (r.chain == ci && r.local >= recent) return false;
                   if ((ch.parent >= 0 || ch.ext_anchor >= 0) && ch.pdist.count(r.id)) return false;   // an arm's junction, a graft site
-                  const double m = norm(cell.mi(q - r.x)) - 0.8 * crow[(r.z + 128) & 255];
+                  const double m = norm(cell.mi(q - r.x)) - 0.8 * (crow[(r.z + 128) & 255] * ef);
                   if (m < worst) worst = m;
                   return worst <= best_m;
                 }))
@@ -1947,6 +2080,28 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
           best_root = root_t;
           if (!orienting && o.comfortable > 0 && worst >= o.comfortable) break;
         }
+      }
+      // every trial outside the limits for a long flexible unit (more than three torsions moving heavy atoms: nylons,
+      // polyesters of long diols and diacids, long side chains): with a third of its torsions gauche and some anywhere,
+      // such a unit folds onto itself or the unit before it in nearly every trial; the same number of trials again with
+      // its sp3 torsions mostly trans, the roomiest kept
+      if (best_m < o.accept && t.heavy_groups > 3 && !t.ring_backbone) {
+        extended = true;
+        for (int tr = 0; tr < trials; ++tr) {
+          const double root_t = draw(root_kind, 0);
+          for (size_t gi = 0; gi < gv.size(); ++gi) gv[gi] = drawg(gi);
+          for (int a = 1; a < t.n; ++a)
+            if (t.group[size_t(a)] >= 0 && t.group_kind[size_t(t.group[size_t(a)])] == 1 && t.offset[size_t(a)] == 0.0) gv[size_t(t.group[size_t(a)])] += t.tor[size_t(a)];
+          const double worst = score(root_t, gv, best_m, trial);
+          if (worst > best_m) {
+            best_m = worst;
+            best = trial;
+            best_gv = gv;
+            best_root = root_t;
+            if (worst >= o.accept + 0.3) break;   // room enough: no need to look further
+          }
+        }
+        extended = false;
       }
       // every trial outside the limits: a narrow feasible window the mostly staggered draws miss (the cis links of a
       // ring backbone such as 2,3-exo,exo norbornenes, crowded junctions) — a wide search of the same step before backing
@@ -2013,7 +2168,7 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
           cell.near_until(x, [&](const Cell3::Rec& r) {
             int bonds = 99;
             if (r.chain == ci) {
-              const int dd = r.local >= 0 && size_t(r.local) < ea.size() ? int(ea[size_t(r.local)]) : 0;
+              const int dd = bond_lut(ea.data(), ea.size(), r.local);
               if (dd) {
                 if (dd - 1 <= 3) return false;
                 bonds = dd - 1;
@@ -2042,45 +2197,55 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
         if (kind != 0) return 0.0;
         return 0.5 * 1.411 * (1 + std::cos(phi)) - 0.5 * 0.271 * (1 - std::cos(2 * phi)) + 0.5 * 3.145 * (1 + std::cos(3 * phi));
       };
-      // the torsions of every trial drawn first (the same draws as one at a time), the trials then placed, checked and
-      // weighed independently (in parallel when there is a pool), and kept in their order
-      std::vector<double> roots(static_cast<size_t>(trials));
-      std::vector<std::vector<double>> gvs(static_cast<size_t>(trials), gv);
-      for (int tr = 0; tr < trials; ++tr) {
-        roots[size_t(tr)] = draw(root_kind, 0);
-        auto& g = gvs[size_t(tr)];
-        for (size_t gi = 0; gi < g.size(); ++gi) g[gi] = drawg(gi);
-        for (int a = 1; a < t.n; ++a)
-          if (t.group[size_t(a)] >= 0 && t.group_kind[size_t(t.group[size_t(a)])] == 1 && t.offset[size_t(a)] == 0.0) g[size_t(t.group[size_t(a)])] += t.tor[size_t(a)];
-      }
-      std::vector<std::vector<Vec3>> placed(static_cast<size_t>(trials));
-      std::vector<double> tm(static_cast<size_t>(trials)), te(static_cast<size_t>(trials)), tp2(static_cast<size_t>(trials));
-      auto evaluate = [&](size_t q, std::vector<Vec3>& buf) {
-        tm[q] = score(roots[q], gvs[q], o.accept, buf);
-        if (tm[q] < o.accept) return;
-        double E = trial_energy(buf) + (next_dir ? 0.0 : tors_energy(root_kind, roots[q]));
-        for (size_t gi = 0; gi < gvs[q].size(); ++gi) {
-          const int kind = int(gi) == t.link_group ? link_kind : t.group_kind[gi];
-          E += tors_energy(kind, gvs[q][gi] + (kind == 0 ? t.bb_offset[gi] : 0.0));
-        }
-        te[q] = E;
-        tp2[q] = orienting ? chord_p2(buf) : 0.0;
-        placed[q] = buf;
-      };
-      if (pool && trials >= 32)
-        pool->run(size_t(trials), [&](int, size_t b, size_t e) {
-          std::vector<Vec3> buf(size_t(t.n));
-          for (size_t q = b; q < e; ++q) evaluate(q, buf);
-        });
-      else
-        for (size_t q = 0; q < size_t(trials); ++q) evaluate(q, trial);
       std::vector<std::vector<Vec3>> kept;
       std::vector<double> kept_e, kept_m, kept_root, kept_p2;
       std::vector<std::vector<double>> kept_gv;
-      for (size_t q = 0; q < size_t(trials); ++q) {
-        if (tm[q] < o.accept) continue;
-        kept.push_back(std::move(placed[q])), kept_e.push_back(te[q]), kept_m.push_back(tm[q]), kept_root.push_back(roots[q]), kept_gv.push_back(gvs[q]);
-        kept_p2.push_back(tp2[q]);
+      auto batch = [&] {
+        // the torsions of every trial drawn first (the same draws as one at a time), the trials then placed, checked and
+        // weighed independently (in parallel when there is a pool), and kept in their order
+        std::vector<double> roots(static_cast<size_t>(trials));
+        std::vector<std::vector<double>> gvs(static_cast<size_t>(trials), gv);
+        for (int tr = 0; tr < trials; ++tr) {
+          roots[size_t(tr)] = draw(root_kind, 0);
+          auto& g = gvs[size_t(tr)];
+          for (size_t gi = 0; gi < g.size(); ++gi) g[gi] = drawg(gi);
+          for (int a = 1; a < t.n; ++a)
+            if (t.group[size_t(a)] >= 0 && t.group_kind[size_t(t.group[size_t(a)])] == 1 && t.offset[size_t(a)] == 0.0) g[size_t(t.group[size_t(a)])] += t.tor[size_t(a)];
+        }
+        std::vector<std::vector<Vec3>> placed(static_cast<size_t>(trials));
+        std::vector<double> tm(static_cast<size_t>(trials)), te(static_cast<size_t>(trials)), tp2(static_cast<size_t>(trials));
+        auto evaluate = [&](size_t q, std::vector<Vec3>& buf) {
+          tm[q] = score(roots[q], gvs[q], o.accept, buf);
+          if (tm[q] < o.accept) return;
+          double E = trial_energy(buf) + (next_dir ? 0.0 : tors_energy(root_kind, roots[q]));
+          for (size_t gi = 0; gi < gvs[q].size(); ++gi) {
+            const int kind = int(gi) == t.link_group ? link_kind : t.group_kind[gi];
+            E += tors_energy(kind, gvs[q][gi] + (kind == 0 ? t.bb_offset[gi] : 0.0));
+          }
+          te[q] = E;
+          tp2[q] = orienting ? chord_p2(buf) : 0.0;
+          placed[q] = buf;
+        };
+        if (pool && trials >= 32)
+          pool->run(size_t(trials), [&](int, size_t b, size_t e) {
+            std::vector<Vec3> buf(size_t(t.n));
+            for (size_t q = b; q < e; ++q) evaluate(q, buf);
+          });
+        else
+          for (size_t q = 0; q < size_t(trials); ++q) evaluate(q, trial);
+        for (size_t q = 0; q < size_t(trials); ++q) {
+          if (tm[q] < o.accept) continue;
+          kept.push_back(std::move(placed[q])), kept_e.push_back(te[q]), kept_m.push_back(tm[q]), kept_root.push_back(roots[q]), kept_gv.push_back(gvs[q]);
+          kept_p2.push_back(tp2[q]);
+        }
+      };
+      batch();
+      // none within the limits for a long flexible unit: the trials again with its sp3 torsions mostly trans (as the
+      // best-of-k method does), weighed the same way
+      if (kept.empty() && t.heavy_groups > 3 && !t.ring_backbone) {
+        extended = true;
+        batch();
+        extended = false;
       }
       if (!kept.empty()) {
         const double emin = *std::min_element(kept_e.begin(), kept_e.end());
@@ -2098,6 +2263,27 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     if (best_m < o.accept) {
       ++ch.fails;
       ++rep.backtracks;
+      // eased limits: a chain stuck at one spot (or that cannot start) tries the same step with its contact limits a
+      // step lower, rather than backing up into the same jam again and again; in a dilute cell only after its escapes
+      // (backing up 2, 4 units) failed too, in a dense one sooner; a ring backbone, whose rigid units often need it
+      // everywhere and whose steps are costly, at once
+      // the levels below 0.6 open to all chains only once the cell has failed many times at the lowest open level (a
+      // request near or above the melt's own density); at the lowest level of all every failure counts against a
+      // budget for the cell: past it the cell is fuller than growth one unit at a time can fill, and saying so beats
+      // trying for minutes
+      if (!ease_levels.empty() && ch.ease == open_levels && ++floor_fails > (open_levels < int(ease_levels.size()) ? 300 + 2 * units_total : 2000 + 10 * units_total)) {
+        if (open_levels < int(ease_levels.size())) ++open_levels, floor_fails = 0;
+        else
+          throw GrowError("the chains find no room even with the contact limits eased to " + std::to_string(ease_levels.back()).substr(0, 4) + " (" +
+                        std::to_string(floor_fails) + " failed steps): " + std::to_string(rep.density).substr(0, 5) +
+                        " g/cm³ is more than chains grown one unit at a time can fill; grow at a lower density and compress (relax with a target density)");
+      }
+      if (!ease_levels.empty() && ch.ease < open_levels && ++ch.ease_fails >= (t.ring_backbone ? 2 : ease_after)) {
+        ++ch.ease, ch.ease_fails = 0;
+        ch.eased = std::min(ch.eased + 1, 4);
+        ch.ease_until = std::max(ch.reach_ever, k) + 3 * ch.eased;   // a chain that needs it again and again keeps it longer
+        return;
+      }
       const int limit_bt = o.max_backtracks > 0 ? o.max_backtracks : 40 * std::max(1, spec.dp);
       // out of backtracks with a long piece placed: back to half its length (three times) before a new start, which would
       // throw away all of it; each cut counts as a start against max_restarts
@@ -2115,6 +2301,14 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
         if (ch.starts > o.max_restarts)
           throw GrowError((ch.parent >= 0 ? "an arm of molecule " + std::to_string(ch.mol + 1) : "chain " + std::to_string(ci + 1)) + " could not be placed after " +
                           std::to_string(o.max_restarts) + " restarts; lower the density or the contact scale");
+        // eased to the lowest limits and still starting again and again: the cell is fuller than sequential growth can
+        // fill (a request above the melt's own density); say so now rather than after hundreds of restarts (short chains,
+        // whose starts are cheap, get more of them)
+        if (!ease_levels.empty() && open_levels == int(ease_levels.size()) && ch.ease == open_levels && ch.starts > std::max(30, 400 / std::max(1, int(ch.seq.size()))))
+          throw GrowError((ch.parent >= 0 ? "an arm of molecule " + std::to_string(ch.mol + 1) : "chain " + std::to_string(ci + 1)) +
+                          " finds no room even with the contact limits eased to " + std::to_string(ease_levels.back()).substr(0, 4) + " after " +
+                          std::to_string(ch.starts) + " starts: " + std::to_string(rep.density).substr(0, 5) +
+                          " g/cm³ is more than chains grown one unit at a time can fill; grow at a lower density and compress (relax with a target density)");
         ++rep.restarts;
         start_chain(ci);
         return;
@@ -2129,10 +2323,15 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     }
     ch.fails = std::max(0, ch.fails - 1);
     if (k + 1 > ch.reach) ch.reach = k + 1, ch.stuck = 0;
+    if (k + 1 > ch.reach_ever) ch.reach_ever = k + 1, ch.ease_fails = 0;   // further than ever: no longer stuck
+    if (ch.ease > 0) {   // placed with eased limits: back up a level some units past the jam
+      if (k + 1 >= ch.ease_until) --ch.ease, ch.ease_until = k + 1 + 3 * ch.eased;
+    }
     ++steps_placed;
     rep.worst_margin = std::min(rep.worst_margin, best_m);
     ch.unit_start.push_back(base);
     ch.unit_lnw.push_back(step_lnw);
+    ch.unit_scale.push_back(scale * ef);
     for (int a = 0; a < t.n; ++a) {
       const int idx = base + a;
       ch.pos.push_back(best[size_t(a)]);
@@ -2148,9 +2347,20 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     }
     for (const auto& b : t.bonds) ch.adj[size_t(base + b[0])].push_back(base + b[1]), ch.adj[size_t(base + b[1])].push_back(base + b[0]);
     if (k > 0) ch.adj[size_t(base)].push_back(pt), ch.adj[size_t(pt)].push_back(base);
+    // the head's end cap (a hydrogen toward the start, added when the cell is written) takes its place in the cell
+    // now, so later units and other chains keep clear of it; its local index is −2 − the head's (its bond distances
+    // are the head's plus one)
+    if (k == 0 && ch.parent < 0 && ch.ext_anchor < 0 && !ch.cap_taken && ch.cap_gid < 0)
+      ch.cap_gid = cell.add(ch.pos[size_t(base)] + unitv(ch.pos[2] - ch.pos[size_t(base)]) * 1.09, 1, ci, -2 - base);
     if (k == 0 && (arch == Architecture::Star || arch == Architecture::Dendrimer) && ch.parent < 0) resolve_anchors(ci, true);   // the core's places, before the chain folds back
     if (int(ch.unit_start.size()) == int(ch.seq.size())) {
       ch.done = true;
+      // the tail's end cap (where a next unit would go) takes its place in the cell, as the head's did
+      const int tail = ch.unit_start.back() + t.tail;
+      const int tp = ch.tparent[size_t(tail)], tgp = ch.tparent[size_t(tp)];
+      const auto fv = free_valence(ci, k);
+      const Vec3 tpos = fv ? ch.pos[size_t(tail)] + *fv * 1.09 : place(ch.pos[size_t(tgp)], ch.pos[size_t(tp)], ch.pos[size_t(tail)], 1.09, t.tail_angle, kPi);
+      ch.tail_cap_gid = cell.add(tpos, 1, ci, -2 - tail);
       if (n_arms) resolve_anchors(ci);   // its arms' places are kept from now on
     }
   };
@@ -2158,8 +2368,6 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
   for (int c = 0; c < nchains; ++c) start_chain(c);
   const int nstates = int(C.size());
   int finished = 0;
-  long units_total = 0;
-  for (const auto& ch : C) units_total += long(ch.seq.size());
   auto last_snap = std::chrono::steady_clock::now() - std::chrono::hours(1);
   auto snapshot = [&] {   // the chains so far, for a live view
     System p;
@@ -2356,6 +2564,20 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
   rep.notes.insert(rep.notes.begin(), units_text + " · " + std::to_string(s.atoms.size()) + " atoms · " + cb +
                                           " · " + std::to_string(rep.density).substr(0, 5) + " g/cm³" + (film ? " in the film" : ""));
   if (o.substrate) rep.notes.push_back(std::to_string(o.substrate->atoms.size()) + " substrate atoms kept fixed while growing (molecule 1)");
+  {   // the units of the cell placed with eased limits (where a chain was stuck)
+    long units = 0;
+    for (const auto& ch : C)
+      for (double x : ch.unit_scale) {
+        ++units;
+        if (x < scale - 1e-6) ++rep.eased_steps, rep.min_scale = std::min(rep.min_scale, x);
+      }
+    if (rep.eased_steps > 0) {
+      char b[240];
+      std::snprintf(b, sizeof b, "%d of %ld units placed with eased contact limits (down to scale %.2f) where a chain was stuck; relax with push-off before dynamics",
+                    rep.eased_steps, units, rep.min_scale);
+      rep.notes.push_back(b);
+    }
+  }
   {   // ⟨P₂⟩ of the backbone chords (tail to tail of successive units) against the axis
     double sp = 0;
     long np = 0;
@@ -2451,14 +2673,50 @@ System grow_chains(const ChainSpec& spec, const GrowOptions& o, GrowReport* repo
   if (ring_backbone) steps.insert(steps.end(), {0.5, 0.45});
   for (double x : steps)
     if (x < scales.front() - 1e-9) scales.push_back(x);
-  for (size_t k = 0; k < scales.size(); ++k) {
+  // the eased limits of a stuck chain go down to 0.4 of the full ones: the last chains of a cell near a melt's own
+  // density (nylon 6,6 at 1.1 g/cm³) find no tube through the others at 0.5, and do at 0.4
+  const double floor = 0.4;
+  // The scale the units themselves allow: one short chain alone in a roomy cell, at each scale in turn with a small
+  // budget. Where even that fails the unit cannot meet itself at those limits (rigid or crowded units), and the cell
+  // starts at the first scale that works rather than jamming every chain at the stricter ones.
+  size_t first = 0;
+  if (scales.size() > 1) {
+    ChainSpec one = spec;
+    one.dp = std::clamp(spec.dp, 1, 10);
+    one.chain_dp.clear();
+    one.architecture = Architecture::Linear;
+    one.head_cap.clear(), one.tail_cap.clear();
+    GrowOptions p;
+    p.chains = 1;
+    p.seed = o.seed;
+    p.trials = o.trials;
+    p.threads = o.threads;
+    p.curve = o.curve;
+    p.method = 0;
+    p.density = 0.02;
+    p.max_restarts = 1;
+    p.max_backtracks = 8;
+    p.escape = false;
+    for (; first + 1 < scales.size(); ++first) {
+      p.contact_scale = scales[first];
+      try {
+        grow_chains_once(one, p, nullptr);
+        break;
+      } catch (const GrowError&) {
+      }
+    }
+  }
+  std::string first_error;
+  for (size_t k = first; k < scales.size(); ++k) {
     GrowOptions g = o;
     g.auto_scale = false;
     g.contact_scale = scales[k];
-    if (k + 1 < scales.size()) {   // give up early on the stricter limits: the next scale is quick where these jam
-      g.max_restarts = std::min(o.max_restarts, 5);
+    // the first try eases the limits of a stuck chain where it is stuck (the rest of the cell keeps them); only if that
+    // fails, the whole cell at the lower scales
+    if (k == first) g.ease_floor = floor;
+    else {   // the whole cell at a lower scale: a few quick tries each
       if (g.max_backtracks <= 0) g.max_backtracks = std::min(1500, 20 * std::max(1, spec.dp));
-      g.escape = false;   // quick tries: a jam there is cheaper to settle at the next scale
+      g.max_restarts = std::min(o.max_restarts, 10);
     }
     try {
       System s = grow_chains_once(spec, g, report);
@@ -2469,7 +2727,9 @@ System grow_chains(const ChainSpec& spec, const GrowOptions& o, GrowReport* repo
       }
       return s;
     } catch (const GrowError& e) {
-      if (k + 1 == scales.size() || std::string(e.what()) == "cancelled") throw;
+      if (std::string(e.what()) == "cancelled") throw;
+      if (k == first) first_error = e.what();   // the eased try's reason is the one to give
+      if (k + 1 == scales.size()) throw GrowError(first_error);
     }
   }
   throw GrowError("no contact scale worked");
