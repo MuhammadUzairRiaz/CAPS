@@ -585,7 +585,7 @@ TEST(Typing, OplsAa2024MaleateComplete) {
 
 // Alkoxysilanes (silane coupling agents TESPT / TESPD, TEOS, methoxy and dialkoxy silanes): CAPS's caps_aos types,
 // charged by 1.27 x CM5 with one charge per alkoxy and per alkyl unit on Si, so any mix is neutral; Si carries as many
-// alkoxy O as its type says. The Si-O torsions are fitted apart, so only typing and charge are checked here
+// alkoxy O as its type says; complete with the Si-O torsions fitted to MP2 scans (tf31)
 TEST(Typing, OplsAa2024AlkoxysilanesNeutral) {
   const FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/oplsaa2024.json");
   const std::vector<std::pair<std::string, std::string>> cases = {
@@ -598,7 +598,8 @@ TEST(Typing, OplsAa2024AlkoxysilanesNeutral) {
     const TypingResult tr = assign_types(s, def);
     EXPECT_EQ(tr.untyped, 0) << smi;
     ParamReport rep;
-    const ForceField f = parameterize(s, def, tr.types, ch, &rep, true);
+    const ForceField f = parameterize(s, def, tr.types, ch, &rep, false);
+    EXPECT_TRUE(rep.missing.empty()) << smi;
     double q = 0;
     for (double x : f.charge) q += x;
     EXPECT_NEAR(q, 0.0, 1e-9) << smi;
