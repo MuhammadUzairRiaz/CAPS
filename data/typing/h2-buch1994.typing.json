@@ -1,0 +1,22 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "H2 (one Lennard-Jones site, Buch 1994)",
+ "unknown_types": "untyped",
+ "description": "CAPS rules for H2 (one Lennard-Jones site, Buch 1994) (bench/ff/make_gas_models.py)",
+ "rules": [
+  {
+   "type": "H_h2",
+   "smarts": "[#1][#1]",
+   "priority": 0,
+   "description": "a hydrogen of H2"
+  },
+  {
+   "type": "M_h2",
+   "smarts": "[#0]",
+   "atom_name": "M_h2",
+   "priority": 0,
+   "description": "H2's centre (added by CAPS)"
+  }
+ ]
+}

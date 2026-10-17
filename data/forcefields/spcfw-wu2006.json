@@ -1,0 +1,109 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "SPC/Fw water (flexible)",
+ "source": "the paper's Table I (SPC/Fw)",
+ "references": [
+  "Y. Wu, H. L. Tepper, G. A. Voth, J. Chem. Phys. 124, 024503 (2006)"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "lj/cut/coul/long",
+  "bond": "harmonic",
+  "angle": "harmonic",
+  "dihedral": "opls",
+  "improper": "cvff"
+ },
+ "mixing": "geometric",
+ "special_lj": [
+  0,
+  0,
+  0
+ ],
+ "special_coul": [
+  0,
+  0,
+  0
+ ],
+ "cutoff": 10,
+ "atom_types": [
+  {
+   "name": "OW",
+   "element": "O",
+   "mass": 15.9994,
+   "charge": -0.82,
+   "description": "SPC/Fw oxygen"
+  },
+  {
+   "name": "HW",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.41,
+   "description": "SPC/Fw hydrogen"
+  }
+ ],
+ "pairs": [
+  {
+   "name": "OW",
+   "match": [
+    "OW"
+   ],
+   "params": [
+    0.1554253,
+    3.165492
+   ],
+   "comment": "O-O Lennard-Jones: q_O -0.82 e, q_H 0.41 e, epsilon_OO 0.1554253 kcal/mol, sigma_OO 3.165492 A, r_OH 1.012 A, H-O-H 113.24 deg"
+  },
+  {
+   "name": "HW",
+   "match": [
+    "HW"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "no Lennard-Jones on H"
+  }
+ ],
+ "bonds": [
+  {
+   "name": "OW-HW",
+   "match": [
+    "OW",
+    "HW"
+   ],
+   "style": "harmonic",
+   "params": [
+    529.581,
+    1.012
+   ],
+   "comment": "the model's own (Table I: k_b 1059.162 kcal/mol/A^2, k_a 75.90 kcal/mol/rad^2 for k/2 (x - x0)^2, so LAMMPS's K = k/2)"
+  }
+ ],
+ "angles": [
+  {
+   "name": "HW-OW-HW",
+   "match": [
+    "HW",
+    "OW",
+    "HW"
+   ],
+   "style": "harmonic",
+   "params": [
+    37.95,
+    113.24
+   ],
+   "comment": "the model's own (Table I: k_b 1059.162 kcal/mol/A^2, k_a 75.90 kcal/mol/rad^2 for k/2 (x - x0)^2, so LAMMPS's K = k/2)"
+  }
+ ],
+ "dihedrals": [],
+ "impropers": [],
+ "notes": [
+  "built by CAPS (bench/ff/make_water_models.py) from the paper's Table I (SPC/Fw)",
+  "flexible model: run it without constraints"
+ ],
+ "version": "2006",
+ "status": "validated",
+ "typing": "../typing/spcfw-wu2006.typing.json"
+}

@@ -5,10 +5,13 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <map>
+#include <tuple>
 #include <vector>
 
 #include "caps/ffdef.hpp"
 #include "caps/field.hpp"
+#include "caps/molecule.hpp"
 #include "caps/relax.hpp"
 #include "caps/typing.hpp"
 #include "caps/water.hpp"
@@ -61,16 +64,23 @@ Typed assign(const std::string& id, System s) {
 
 // the published numbers (bench/ff/make_water_models.py names where each was read)
 struct Model { const char* id; const char* caps_model; double q_h, r_oh, theta, sigma, eps, d_om, d_ol, theta_l, eps_h, sigma_h; };
-const double spc_sigma = 10 * std::pow(2.634129e-06 / 0.0026173456, 1.0 / 6), spc_eps = 0.0026173456 * 0.0026173456 / (4 * 2.634129e-06) / 4.184;
+// SPC and SPC/E: -(A/r)^6 + (B/r)^12, A 0.37122 (kJ/mol)^(1/6) nm, B 0.3428 (kJ/mol)^(1/12) nm (Berendsen 1987, eq 18);
+// TIP3P and TIP4P: A/r^12 - C/r^6 in kcal/mol and A (Jorgensen 1983, Table I)
+const double spc_c6 = std::pow(0.37122, 6), spc_c12 = std::pow(0.3428, 12);
+const double spc_sigma = 10 * std::pow(spc_c12 / spc_c6, 1.0 / 6), spc_eps = spc_c6 * spc_c6 / (4 * spc_c12) / 4.184;
 const double rmin = std::pow(2.0, 1.0 / 6);
 const std::vector<Model> kModels = {
     {"spc-berendsen1981", "spc", 0.41, 1.0, 109.47, spc_sigma, spc_eps, 0, 0, 0, 0, 0},
     {"spce-berendsen1987", "spce", 0.4238, 1.0, 109.47, spc_sigma, spc_eps, 0, 0, 0, 0, 0},
-    {"tip3p-jorgensen1983", "tip3p", 0.417, 0.9572, 104.52, 3.15061, 0.1521, 0, 0, 0, 0, 0},
+    {"tip3p-jorgensen1983", "tip3p", 0.417, 0.9572, 104.52, std::pow(582.0e3 / 595.0, 1.0 / 6), 595.0 * 595.0 / (4 * 582.0e3), 0, 0, 0, 0, 0},
     {"tip3p-charmm-mackerell1998", "tip3p-charmm", 0.417, 0.9572, 104.52, 2 * 1.7682 / rmin, 0.1521, 0, 0, 0, 0.046, 2 * 0.2245 / rmin},
-    {"tip4p-jorgensen1983", "tip4p", 0.520, 0.9572, 104.52, 3.15365, 0.1550, 0.15, 0, 0, 0, 0},
+    {"tip3p-pme-price2004", "tip3p-ew", 0.415, 0.9572, 104.52, 3.188, 0.102, 0, 0, 0, 0, 0},
+    {"tip4p-jorgensen1983", "tip4p", 0.520, 0.9572, 104.52, std::pow(600.0e3 / 610.0, 1.0 / 6), 610.0 * 610.0 / (4 * 600.0e3), 0.15, 0, 0, 0, 0},
+    {"tip4pew-horn2004", "tip4p-ew", 0.52422, 0.9572, 104.52, 3.16435, 0.162750, 0.125, 0, 0, 0, 0},
     {"tip4p2005-abascal2005", "tip4p2005", 0.5564, 0.9572, 104.52, 3.1589, 93.2 * kKB, 0.1546, 0, 0, 0, 0},
+    {"tip4pice-abascal2005", "tip4p-ice", 0.5897, 0.9572, 104.52, 3.1668, 106.1 * kKB, 0.1577, 0, 0, 0, 0},
     {"tip5p-mahoney2000", "tip5p", 0.241, 0.9572, 104.52, 3.12, 0.16, 0, 0.70, 109.47, 0, 0},
+    {"spcfw-wu2006", "spcfw", 0.41, 1.012, 113.24, 3.165492, 0.1554253, 0, 0, 0, 0, 0},
     {"opc-izadi2014", "opc", 0.6791, 0.8724, 103.6, 3.16655, 0.89036 / 4.184, 0.1594, 0, 0, 0, 0},
     {"opc3-izadi2016", "opc3", 0.447585, 0.97888, 109.47, 3.17427, 0.68369 / 4.184, 0, 0, 0, 0, 0},
 };
@@ -255,4 +265,103 @@ TEST(CgLibraries, CookeDesernoAsPublished) {
     }
   }
   EXPECT_EQ(fene, 2);
+}
+
+// CO2 (EPM2, Harris & Yung 1995, Table 1): the charges, the paper's own C-O cross term, the 1.149 A bond and the bend; and
+// H2 (Buch 1994; Darkrim & Levesque 1998): the two hydrogens with a massless centre midway carrying the Lennard-Jones
+// (and Darkrim-Levesque's -2q against q on each proton, q = 2 Q / d^2 from the paper's quadrupole 0.615e-26 esu cm^2)
+TEST(GasLibraries, Co2AndH2AsPublished) {
+  {
+    System s;
+    const Vec3 c{5, 5, 5};
+    for (int k = -1; k <= 1; ++k) {
+      Atom a;
+      a.element = k == 0 ? 6 : 8, a.pos = c + Vec3{1.149 * k, 0, 0}, a.mol = 1, a.id = int64_t(s.atoms.size()) + 1;
+      s.atoms.push_back(a);
+    }
+    s.bonds = {{1, 0, 2}, {1, 2, 2}};
+    s.has_mol = true;
+    Typed t = assign("epm2-harris1995", s);
+    EXPECT_NEAR(t.ff.charge[1], 0.6512, 1e-12);
+    EXPECT_NEAR(t.ff.charge[0] + t.ff.charge[1] + t.ff.charge[2], 0.0, 1e-12);
+    const FFDef def = load_forcefield(lib("epm2-harris1995"));
+    bool cross = false;
+    for (const auto& p : def.pairs)
+      if (p.match.size() == 2) {
+        cross = true;
+        EXPECT_NEAR(p.params[0], 47.588 * kKB, 1e-12);
+        EXPECT_NEAR(p.params[1], 2.892, 1e-12);
+      }
+    EXPECT_TRUE(cross);
+    for (const auto& b : t.ff.bonds) EXPECT_NEAR(b.r0, 1.149, 1e-12);
+    ASSERT_EQ(t.ff.angles.size(), 1u);
+    EXPECT_NEAR(t.ff.angles[0].theta0 * 180 / kPi, 180.0, 1e-9);
+  }
+  const double e_esu = 4.803204712570263e-10, q_dl = 2 * 0.615e-26 / std::pow(0.741e-8, 2) / e_esu;
+  for (const auto& [id, ek, sg, q] : std::vector<std::tuple<std::string, double, double, double>>{
+           {"h2-buch1994", 34.2, 2.96, 0.0}, {"h2-darkrim1998", 36.7, 2.958, q_dl}}) {
+    System s;
+    for (int k = 0; k < 2; ++k) {
+      Atom a;
+      a.element = 1, a.pos = {5 + 0.741 * k, 5, 5}, a.mol = 1, a.id = k + 1;
+      s.atoms.push_back(a);
+    }
+    s.bonds = {{0, 1, 1}};
+    s.has_mol = true;
+    Typed t = assign(id, s);
+    ASSERT_EQ(t.s.atoms.size(), 3u) << id;
+    ASSERT_EQ(t.ff.vsites.size(), 1u) << id;
+    const uint32_t m = t.ff.vsites[0].site;
+    EXPECT_NEAR(norm(t.s.atoms[m].pos - Vec3{5.3705, 5, 5}), 0.0, 1e-9) << id;
+    const auto& lj = t.ff.lj[size_t(t.ff.type_index[m])];
+    EXPECT_NEAR(lj.eps, ek * kKB, 1e-12) << id;
+    EXPECT_NEAR(lj.sigma, sg, 1e-12) << id;
+    EXPECT_NEAR(t.ff.charge[m], -2 * q, 1e-12) << id;
+    EXPECT_NEAR(t.ff.charge[0], q, 1e-12) << id;
+  }
+  EXPECT_NEAR(q_dl, 0.4664, 1e-4);
+}
+
+// L-OPLS (Siu, Pluhackova & Boeckmann 2012, Table 2) on OPLS-AA 2024: a chain's CH3, CH2 and alkene CH with their
+// L-OPLS charges and Lennard-Jones (each group neutral), the CH2 next to a carboxyl left to OPLS-AA 2024, and the
+// refitted CT-CT-CT-CT torsion (Fourier 2.697394, -0.896807, 0.74567 kJ/mol)
+TEST(OrganicLibraries, LoplsAsPublished) {
+  std::map<std::string, int> seen;
+  for (const char* smi : {"CCCCCCCCCCCCCCCC", "CCCCCCCC/C=C\\CCCCCCCC(=O)O"}) {
+    Typed t = assign("lopls-siu2012", build_molecule(smi).system);
+    double q = 0;
+    for (size_t i = 0; i < t.s.atoms.size(); ++i) {
+      q += t.ff.charge[i];
+      seen[t.types[i]]++;
+      const std::string& ty = t.types[i];
+      const auto& lj = t.ff.lj[size_t(t.ff.type_index[i])];
+      if (ty == "lopls_135") EXPECT_NEAR(t.ff.charge[i], -0.222, 1e-12);
+      if (ty == "lopls_136") EXPECT_NEAR(t.ff.charge[i], -0.148, 1e-12);
+      if (ty == "lopls_142") EXPECT_NEAR(t.ff.charge[i], -0.160, 1e-12);
+      if (ty == "lopls_144") EXPECT_NEAR(t.ff.charge[i], 0.160, 1e-12);
+      if (ty == "lopls_140b") EXPECT_NEAR(lj.eps, 0.110 / 4.184, 1e-12);
+      if (ty == "lopls_136") EXPECT_NEAR(lj.sigma, 3.5, 1e-12);
+    }
+    EXPECT_NEAR(q, 0.0, 1e-9) << smi;
+    if (std::string(smi).size() == 16) {
+      int ct = 0;
+      for (const auto& d : t.ff.dihedrals) {
+        if (t.types[d.i][0] == 'H' || t.types[d.l][0] == 'H' || t.types[d.j] == "lopls_135" || t.types[d.k] == "lopls_135") continue;
+        if (t.s.atoms[d.i].element != 6 || t.s.atoms[d.l].element != 6) continue;
+        // opls K1..K3 as cosine terms: n = 1, 2, 3 with V = K (kcal/mol)
+        if (d.n == 1) {
+          EXPECT_NEAR(d.v, 2.697394 / 4.184 / 2, 1e-9);
+          ++ct;
+        }
+      }
+      EXPECT_GT(ct, 0);
+    }
+  }
+  EXPECT_GT(seen["lopls_135"], 0);
+  EXPECT_GT(seen["lopls_136"], 0);
+  EXPECT_GT(seen["lopls_140"], 0);
+  EXPECT_GT(seen["lopls_140b"], 0);
+  EXPECT_GT(seen["lopls_142"], 0);
+  EXPECT_GT(seen["lopls_144"], 0);
+  EXPECT_GT(seen["opls_136"], 0);   // the CH2 next to the carboxyl stays OPLS-AA 2024's
 }

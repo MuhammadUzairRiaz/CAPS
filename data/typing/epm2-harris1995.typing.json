@@ -1,0 +1,21 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "CO2 (EPM2, Harris & Yung 1995)",
+ "unknown_types": "untyped",
+ "description": "CAPS rules for CO2 (EPM2, Harris & Yung 1995) (bench/ff/make_gas_models.py)",
+ "rules": [
+  {
+   "type": "C_co2",
+   "smarts": "[CX2](=[OX1])=[OX1]",
+   "priority": 0,
+   "description": "O=[C]=O"
+  },
+  {
+   "type": "O_co2",
+   "smarts": "[OX1]=[CX2]=[OX1]",
+   "priority": 0,
+   "description": "[O]=C=O"
+  }
+ ]
+}

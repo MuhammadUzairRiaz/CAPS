@@ -2,7 +2,7 @@
  "format": "caps-forcefield",
  "format_version": 1,
  "name": "TIP3P water (CHARMM, hydrogen Lennard-Jones)",
- "source": "CHARMM toppar_water_ions.str (toppar_c36_jul17): RESI TIP3 (OT -0.834, HT 0.417), OT epsilon -0.1521 Rmin/2 1.7682, HT epsilon -0.046 Rmin/2 0.2245; the same numbers in GROMACS share/top/charmm27.ff (LGPL 2.1)",
+ "source": "A. D. MacKerell Jr. et al., J. Phys. Chem. B 102, 3586 (1998), Supporting Information (appendix tables: OT-HT, HT-OT-HT, OT and HT Lennard-Jones); TIP3P's charges (Jorgensen et al. 1983, Table I)",
  "references": [
   "A. D. MacKerell Jr. et al., J. Phys. Chem. B 102, 3586 (1998)",
   "W. L. Jorgensen, J. Chandrasekhar, J. D. Madura, R. W. Impey, M. L. Klein, J. Chem. Phys. 79, 926 (1983)"
@@ -53,7 +53,7 @@
     0.1521,
     3.150574226831496
    ],
-   "comment": "O-O Lennard-Jones: q_H 0.417 e, O epsilon 0.1521 kcal/mol Rmin/2 1.7682 A, H epsilon 0.046 kcal/mol Rmin/2 0.2245 A, r_OH 0.9572 A, H-O-H 104.52 deg"
+   "comment": "O-O Lennard-Jones: q_H 0.417 e, O epsilon 0.1521 kcal/mol Rmin/2 1.7682 A, H epsilon 0.0460 kcal/mol Rmin/2 0.2245 A, r_OH 0.9572 A, H-O-H 104.52 deg"
   },
   {
    "name": "HW",
@@ -79,7 +79,7 @@
     450.0,
     0.9572
    ],
-   "comment": "CHARMM's own: HT-OT 450.0 kcal/mol/A^2, HT-OT-HT 55.0 kcal/mol/rad^2 (toppar_water_ions.str); the model is rigid in CHARMM (SHAKE)"
+   "comment": "CHARMM's own (MacKerell et al. 1998, SI: OT-HT 450.00 kcal/mol/A^2, HT-OT-HT 55.00 kcal/mol/rad^2); the model is rigid in CHARMM (SHAKE)"
   }
  ],
  "angles": [
@@ -95,13 +95,13 @@
     55.0,
     104.52
    ],
-   "comment": "CHARMM's own: HT-OT 450.0 kcal/mol/A^2, HT-OT-HT 55.0 kcal/mol/rad^2 (toppar_water_ions.str); the model is rigid in CHARMM (SHAKE)"
+   "comment": "CHARMM's own (MacKerell et al. 1998, SI: OT-HT 450.00 kcal/mol/A^2, HT-OT-HT 55.00 kcal/mol/rad^2); the model is rigid in CHARMM (SHAKE)"
   }
  ],
  "dihedrals": [],
  "impropers": [],
  "notes": [
-  "built by CAPS (bench/ff/make_water_models.py) from CHARMM toppar_water_ions.str (toppar_c36_jul17): RESI TIP3 (OT -0.834, HT 0.417), OT epsilon -0.1521 Rmin/2 1.7682, HT epsilon -0.046 Rmin/2 0.2245; the same numbers in GROMACS share/top/charmm27.ff (LGPL 2.1)",
+  "built by CAPS (bench/ff/make_water_models.py) from A. D. MacKerell Jr. et al., J. Phys. Chem. B 102, 3586 (1998), Supporting Information (appendix tables: OT-HT, HT-OT-HT, OT and HT Lennard-Jones); TIP3P's charges (Jorgensen et al. 1983, Table I)",
   "rigid model: run it with its bonds and angle constrained (SHAKE / RATTLE in LAMMPS, SETTLE in GROMACS)"
  ],
  "version": "1998",

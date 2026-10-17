@@ -49,7 +49,7 @@ def main():
              "notes": "Ne, Ar, Kr, Xe as single Lennard-Jones sites; LAMMPS equals CAPS's energy (bench/ff/check_gas_libraries.py)",
              "file": FID + ".json", "typing": {"rules": f"typing/{FID}.typing.json", "evidence": "each noble-gas atom by its element"},
              "counts": {"atom_types": len(doc["atom_types"]), "pairs": len(doc["pairs"]), "bonds": 0, "angles": 0, "dihedrals": 0, "impropers": 0},
-             "group": "gas", "list": {"label": "Noble gases (Ne, Ar, Kr, Xe)", "key": "noble_gases", "order": 33}}
+             "group": "gas", "aliases": ["noble-gases"], "list": {"label": "Noble gases (Ne, Ar, Kr, Xe)", "key": "noble_gases", "order": 33}}
     cat_p = os.path.join(DATA, "forcefields", "catalogue.json")
     cat = json.load(open(cat_p))
     cat["forcefields"] = [e for e in cat["forcefields"] if e["id"] != FID] + [entry]

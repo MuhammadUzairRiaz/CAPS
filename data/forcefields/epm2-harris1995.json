@@ -1,0 +1,121 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "CO2 (EPM2, Harris & Yung 1995)",
+ "source": "J. G. Harris, K. H. Yung, J. Phys. Chem. 99, 12021 (1995), Table 1 (EPM2)",
+ "references": [
+  "J. G. Harris, K. H. Yung, J. Phys. Chem. 99, 12021 (1995)"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "lj/cut/coul/long",
+  "bond": "harmonic",
+  "angle": "harmonic",
+  "dihedral": "opls",
+  "improper": "cvff"
+ },
+ "mixing": "arithmetic",
+ "special_lj": [
+  0,
+  0,
+  0
+ ],
+ "special_coul": [
+  0,
+  0,
+  0
+ ],
+ "cutoff": 12,
+ "atom_types": [
+  {
+   "name": "C_co2",
+   "element": "C",
+   "mass": 12.011,
+   "charge": 0.6512,
+   "description": "CO2 carbon (EPM2)"
+  },
+  {
+   "name": "O_co2",
+   "element": "O",
+   "mass": 15.9994,
+   "charge": -0.3256,
+   "description": "CO2 oxygen (EPM2)"
+  }
+ ],
+ "pairs": [
+  {
+   "name": "C_co2",
+   "match": [
+    "C_co2"
+   ],
+   "params": [
+    0.0558980697547,
+    2.757
+   ],
+   "comment": "epsilon_CC/k 28.129 K, sigma_CC 2.757 A"
+  },
+  {
+   "name": "O_co2",
+   "match": [
+    "O_co2"
+   ],
+   "params": [
+    0.1599838565801,
+    3.033
+   ],
+   "comment": "epsilon_OO/k 80.507 K, sigma_OO 3.033 A"
+  },
+  {
+   "name": "C_co2-O_co2",
+   "match": [
+    "C_co2",
+    "O_co2"
+   ],
+   "params": [
+    0.09456707822839999,
+    2.892
+   ],
+   "comment": "epsilon_CO/k 47.588 K, sigma_CO 2.892 A (the paper's own cross term)"
+  }
+ ],
+ "bonds": [
+  {
+   "name": "C_co2-O_co2",
+   "match": [
+    "C_co2",
+    "O_co2"
+   ],
+   "style": "harmonic",
+   "params": [
+    0.0,
+    1.149
+   ],
+   "comment": "l_CO 1.149 A; rigid bonds: run the molecule rigid"
+  }
+ ],
+ "angles": [
+  {
+   "name": "O_co2-C_co2-O_co2",
+   "match": [
+    "O_co2",
+    "C_co2",
+    "O_co2"
+   ],
+   "style": "harmonic",
+   "params": [
+    147.7055449330784,
+    180.0
+   ],
+   "comment": "k_theta 1236 kJ/mol/rad^2 for (1/2) k (theta - 180)^2 (the flexible EPM2), LAMMPS K = k/2"
+  }
+ ],
+ "dihedrals": [],
+ "impropers": [],
+ "notes": [
+  "built by CAPS (bench/ff/make_gas_models.py) from J. G. Harris, K. H. Yung, J. Phys. Chem. 99, 12021 (1995), Table 1 (EPM2)",
+  "bonds rigid (constant 0: constrain them or run the molecule as a rigid body), the bend flexible as the paper's flexible model"
+ ],
+ "typing": "../typing/epm2-harris1995.typing.json",
+ "version": "1995",
+ "status": "validated"
+}

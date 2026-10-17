@@ -58,7 +58,7 @@ def main():
              "source": doc["source"] + "; bench/ff/make_cooke_deserno.py", "license": "published model of the paper (its equations)",
              "status": "validated", "notes": f"three-bead lipids, implicit solvent, w_c = {WC}; LAMMPS equals CAPS's energy (bench/ff/check_data_lammps.py)",
              "file": FID + ".json", "typing": {"rules": f"typing/{FID}.typing.json", "evidence": "beads typed by name"},
-             "counts": {"atom_types": 3, "pairs": 3, "bonds": 3, "angles": 0, "dihedrals": 0, "impropers": 0}}
+             "counts": {"atom_types": 3, "pairs": 3, "bonds": 3, "angles": 0, "dihedrals": 0, "impropers": 0}, "group": "cg", "aliases": ["cooke-deserno"]}
     cat_p = os.path.join(DATA, "forcefields", "catalogue.json")
     cat = json.load(open(cat_p))
     cat["forcefields"] = [e for e in cat["forcefields"] if e["id"] != FID] + [entry]

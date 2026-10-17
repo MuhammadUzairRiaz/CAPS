@@ -1,0 +1,301 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "L-OPLS (Siu, Pluhackova & Boeckmann 2012) on OPLS-AA 2024",
+ "source": "S. W. I. Siu, K. Pluhackova, R. A. Boeckmann, J. Chem. Theory Comput. 8, 1459 (2012), Table 2",
+ "references": [
+  "S. W. I. Siu, K. Pluhackova, R. A. Boeckmann, J. Chem. Theory Comput. 8, 1459 (2012)"
+ ],
+ "extends": "oplsaa2024.json",
+ "atom_types": [
+  {
+   "name": "lopls_135",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.222,
+   "description": "L-OPLS CT in CH3 (Table 2, CTCH3)",
+   "equivalence": {
+    "bond": "CT",
+    "angle": "CT",
+    "dihedral": "CT",
+    "improper": "CT"
+   },
+   "smarts": "[CX4H3;!$(*~[!#6;!#1]);!$(*~[#6;$(*~[!#6;!#1])]);!$(*~a)]",
+   "priority": 9
+  },
+  {
+   "name": "lopls_136",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.148,
+   "description": "L-OPLS CT in CH2 (Table 2, CTCH2)",
+   "equivalence": {
+    "bond": "CT",
+    "angle": "CT",
+    "dihedral": "CT",
+    "improper": "CT"
+   },
+   "smarts": "[CX4H2;!$(*~[!#6;!#1]);!$(*~[#6;$(*~[!#6;!#1])]);!$(*~a)]",
+   "priority": 9
+  },
+  {
+   "name": "lopls_142",
+   "element": "C",
+   "mass": 12.011,
+   "charge": -0.16,
+   "description": "L-OPLS CM in -CH= (Table 2, CMCH)",
+   "equivalence": {
+    "bond": "CM",
+    "angle": "CM",
+    "dihedral": "CM",
+    "improper": "CM"
+   },
+   "smarts": "[CX3H1;!$(*~[!#6;!#1]);!$(*~[#6;$(*~[!#6;!#1])]);!$(*~a)]=[CX3]",
+   "priority": 9
+  },
+  {
+   "name": "lopls_140",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.074,
+   "description": "L-OPLS HC on CH3 (Table 2, HCCH3)",
+   "equivalence": {
+    "bond": "HC",
+    "angle": "HC",
+    "dihedral": "HC",
+    "improper": "HC"
+   },
+   "smarts": "[H][CX4H3;!$(*~[!#6;!#1]);!$(*~[#6;$(*~[!#6;!#1])]);!$(*~a)]",
+   "priority": 9
+  },
+  {
+   "name": "lopls_140b",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.074,
+   "description": "L-OPLS HC on CH2 (Table 2, HCCH2)",
+   "equivalence": {
+    "bond": "HC",
+    "angle": "HC",
+    "dihedral": "HC",
+    "improper": "HC"
+   },
+   "smarts": "[H][CX4H2;!$(*~[!#6;!#1]);!$(*~[#6;$(*~[!#6;!#1])]);!$(*~a)]",
+   "priority": 9
+  },
+  {
+   "name": "lopls_144",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.16,
+   "description": "L-OPLS HC on -CH= (Table 2, HCCH)",
+   "equivalence": {
+    "bond": "HC",
+    "angle": "HC",
+    "dihedral": "HC",
+    "improper": "HC"
+   },
+   "smarts": "[H][CX3H1;!$(*~[!#6;!#1]);!$(*~[#6;$(*~[!#6;!#1])]);!$(*~a)]=[CX3]",
+   "priority": 9
+  }
+ ],
+ "pairs": [
+  {
+   "name": "lopls_135",
+   "match": [
+    "lopls_135"
+   ],
+   "params": [
+    0.066,
+    3.5
+   ],
+   "comment": "Table 2: sigma 0.35 nm, epsilon 0.276144 kJ/mol"
+  },
+  {
+   "name": "lopls_136",
+   "match": [
+    "lopls_136"
+   ],
+   "params": [
+    0.066,
+    3.5
+   ],
+   "comment": "Table 2: sigma 0.35 nm, epsilon 0.276144 kJ/mol"
+  },
+  {
+   "name": "lopls_142",
+   "match": [
+    "lopls_142"
+   ],
+   "params": [
+    0.076,
+    3.55
+   ],
+   "comment": "Table 2: sigma 0.355 nm, epsilon 0.317984 kJ/mol"
+  },
+  {
+   "name": "lopls_140",
+   "match": [
+    "lopls_140"
+   ],
+   "params": [
+    0.029999999999999995,
+    2.5
+   ],
+   "comment": "Table 2: sigma 0.25 nm, epsilon 0.125520 kJ/mol"
+  },
+  {
+   "name": "lopls_140b",
+   "match": [
+    "lopls_140b"
+   ],
+   "params": [
+    0.026290630975143402,
+    2.5
+   ],
+   "comment": "Table 2: sigma 0.25 nm, epsilon 0.110000 kJ/mol"
+  },
+  {
+   "name": "lopls_144",
+   "match": [
+    "lopls_144"
+   ],
+   "params": [
+    0.029999999999999995,
+    2.42
+   ],
+   "comment": "Table 2: sigma 0.242 nm, epsilon 0.125520 kJ/mol"
+  }
+ ],
+ "bonds": [],
+ "angles": [],
+ "dihedrals": [
+  {
+   "name": "CT-CT-CT-CT",
+   "match": [
+    "CT",
+    "CT",
+    "CT",
+    "CT"
+   ],
+   "style": "opls",
+   "params": [
+    0.6446926386233269,
+    -0.214342017208413,
+    0.17821940726577437,
+    0.0
+   ],
+   "comment": "Table 2 (Fourier, kJ/mol: 2.697394 -0.896807 0.74567), hexane C5-C8-C11-C14"
+  },
+  {
+   "name": "??-CM-CM-??",
+   "match": [
+    "??",
+    "CM",
+    "CM",
+    "??"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    12.25026290630975,
+    0.0,
+    0.0
+   ],
+   "comment": "Table 2 (Fourier, kJ/mol: 0.0 51.2551 0.0), cis-3-hexene C5-C8-C10-C12 (X-CM-CM-X)"
+  },
+  {
+   "name": "CM-CM-CT-CT",
+   "match": [
+    "CM",
+    "CM",
+    "CT",
+    "CT"
+   ],
+   "style": "opls",
+   "params": [
+    -0.8050121892925429,
+    0.3218905353728489,
+    -0.10327688814531548,
+    0.0
+   ],
+   "comment": "Table 2 (Fourier, kJ/mol: -3.368171 1.34679 -0.4321105), cis-2-hexene C5-C7-C9-C12"
+  },
+  {
+   "name": "CM-CT-CT-CT",
+   "match": [
+    "CM",
+    "CT",
+    "CT",
+    "CT"
+   ],
+   "style": "opls",
+   "params": [
+    0.4821902485659656,
+    0.13436830783938813,
+    0.17774617590822178,
+    0.0
+   ],
+   "comment": "Table 2 (Fourier, kJ/mol: 2.017484 0.562197 0.74369), cis-2-hexene C7-C9-C12-C15"
+  },
+  {
+   "name": "CT-CM-CM-CT",
+   "match": [
+    "CT",
+    "CM",
+    "CM",
+    "CT"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    12.25026290630975,
+    0.0,
+    0.0
+   ],
+   "comment": "Table 2's X-CM-CM-X, for OPLS-AA 2024's hydrocarbon-specific entry"
+  },
+  {
+   "name": "CT-CM-CM-HC",
+   "match": [
+    "CT",
+    "CM",
+    "CM",
+    "HC"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    12.25026290630975,
+    0.0,
+    0.0
+   ],
+   "comment": "Table 2's X-CM-CM-X, for OPLS-AA 2024's hydrocarbon-specific entry"
+  },
+  {
+   "name": "HC-CM-CM-HC",
+   "match": [
+    "HC",
+    "CM",
+    "CM",
+    "HC"
+   ],
+   "style": "opls",
+   "params": [
+    0.0,
+    12.25026290630975,
+    0.0,
+    0.0
+   ],
+   "comment": "Table 2's X-CM-CM-X, for OPLS-AA 2024's hydrocarbon-specific entry"
+  }
+ ],
+ "impropers": [],
+ "notes": [
+  "built by CAPS (bench/ff/make_lopls.py) from the paper's Table 2 as an overlay on oplsaa2024.json",
+  "L-OPLS types for CH3, CH2 and alkene CH of hydrocarbon chains (neutral groups); everything else is OPLS-AA 2024",
+  "the four torsions replace OPLS-AA 2024's for their OPLS torsion types"
+ ],
+ "version": "2012",
+ "status": "validated"
+}

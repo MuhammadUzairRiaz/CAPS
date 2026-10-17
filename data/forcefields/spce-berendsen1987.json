@@ -2,7 +2,7 @@
  "format": "caps-forcefield",
  "format_version": 1,
  "name": "SPC/E water",
- "source": "GROMACS share/top/gromos43a1.ff (spc.itp, spce.itp, ffnonbonded.itp; GNU LGPL 2.1): spce.itp (OW -0.8476, H 0.4238; SPC's geometry), OW C6 0.0026173456, C12 2.634129e-06; the same charges in Izadi & Onufriev 2016, Table II",
+ "source": "H. J. C. Berendsen, J. R. Grigera, T. P. Straatsma, J. Phys. Chem. 91, 6269 (1987), p 6271 (SPC/E: charges -0.8476 / +0.4238, SPC's geometry and eq 18 A 0.37122, B 0.3428)",
  "references": [
   "H. J. C. Berendsen, J. R. Grigera, T. P. Straatsma, J. Phys. Chem. 91, 6269 (1987)"
  ],
@@ -49,10 +49,10 @@
     "OW"
    ],
    "params": [
-    0.15539371030909704,
-    3.165648283720967
+    0.15539425927790346,
+    3.1655578901998815
    ],
-   "comment": "O-O Lennard-Jones: q_H 0.4238 e, r_OH 1.0 A, H-O-H 109.47 deg, SPC's Lennard-Jones"
+   "comment": "O-O Lennard-Jones: q_H 0.4238 e, r_OH 1.0 A, H-O-H 109.47 deg, A 0.37122 (kJ/mol)^(1/6) nm, B 0.3428 (kJ/mol)^(1/12) nm"
   },
   {
    "name": "HW",
@@ -100,7 +100,7 @@
  "dihedrals": [],
  "impropers": [],
  "notes": [
-  "built by CAPS (bench/ff/make_water_models.py) from GROMACS share/top/gromos43a1.ff (spc.itp, spce.itp, ffnonbonded.itp; GNU LGPL 2.1): spce.itp (OW -0.8476, H 0.4238; SPC's geometry), OW C6 0.0026173456, C12 2.634129e-06; the same charges in Izadi & Onufriev 2016, Table II",
+  "built by CAPS (bench/ff/make_water_models.py) from H. J. C. Berendsen, J. R. Grigera, T. P. Straatsma, J. Phys. Chem. 91, 6269 (1987), p 6271 (SPC/E: charges -0.8476 / +0.4238, SPC's geometry and eq 18 A 0.37122, B 0.3428)",
   "rigid model: run it with its bonds and angle constrained (SHAKE / RATTLE in LAMMPS, SETTLE in GROMACS)"
  ],
  "version": "1987",

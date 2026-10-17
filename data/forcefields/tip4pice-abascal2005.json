@@ -1,0 +1,144 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "TIP4P/Ice water",
+ "source": "the paper's Table II; TIP4P's geometry",
+ "references": [
+  "J. L. F. Abascal, E. Sanz, R. Garcia Fernandez, C. Vega, J. Chem. Phys. 122, 234511 (2005)"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "lj/cut/coul/long",
+  "bond": "harmonic",
+  "angle": "harmonic",
+  "dihedral": "opls",
+  "improper": "cvff"
+ },
+ "mixing": "arithmetic",
+ "special_lj": [
+  0,
+  0,
+  0
+ ],
+ "special_coul": [
+  0,
+  0,
+  0
+ ],
+ "cutoff": 10,
+ "atom_types": [
+  {
+   "name": "OW",
+   "element": "O",
+   "mass": 15.9994,
+   "charge": 0.0,
+   "description": "TIP4P/Ice oxygen"
+  },
+  {
+   "name": "HW",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.5897,
+   "description": "TIP4P/Ice hydrogen"
+  },
+  {
+   "name": "MW",
+   "element": "",
+   "mass": 0.0,
+   "charge": -1.1794,
+   "description": "TIP4P/Ice M site (massless, 0.1577 A from O on the bisector)"
+  }
+ ],
+ "pairs": [
+  {
+   "name": "OW",
+   "match": [
+    "OW"
+   ],
+   "params": [
+    0.21084237623,
+    3.1668
+   ],
+   "comment": "O-O Lennard-Jones: q_H 0.5897 e, sigma 3.1668 A, epsilon/k_B 106.1 K, d_OM 0.1577 A, r_OH 0.9572 A, H-O-H 104.52 deg"
+  },
+  {
+   "name": "HW",
+   "match": [
+    "HW"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "no Lennard-Jones on H"
+  },
+  {
+   "name": "MW",
+   "match": [
+    "MW"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "charge only"
+  }
+ ],
+ "bonds": [
+  {
+   "name": "OW-HW",
+   "match": [
+    "OW",
+    "HW"
+   ],
+   "style": "harmonic",
+   "params": [
+    450.0,
+    0.9572
+   ],
+   "comment": "CHARMM's TIP3P constants (MacKerell et al. 1998, SI: OT-HT 450.00, HT-OT-HT 55.00) at the model's geometry; the model is rigid, they serve a flexible run only"
+  }
+ ],
+ "angles": [
+  {
+   "name": "HW-OW-HW",
+   "match": [
+    "HW",
+    "OW",
+    "HW"
+   ],
+   "style": "harmonic",
+   "params": [
+    55.0,
+    104.52
+   ],
+   "comment": "CHARMM's TIP3P constants (MacKerell et al. 1998, SI: OT-HT 450.00, HT-OT-HT 55.00) at the model's geometry; the model is rigid, they serve a flexible run only"
+  }
+ ],
+ "dihedrals": [],
+ "impropers": [],
+ "notes": [
+  "built by CAPS (bench/ff/make_water_models.py) from the paper's Table II; TIP4P's geometry",
+  "rigid model: run it with its bonds and angle constrained (SHAKE / RATTLE in LAMMPS, SETTLE in GROMACS)"
+ ],
+ "version": "2005",
+ "status": "validated",
+ "typing": "../typing/tip4pice-abascal2005.typing.json",
+ "virtual_sites": [
+  {
+   "smarts": "[OX2H2]([H])[H]",
+   "type": "MW",
+   "from": [
+    0,
+    1,
+    2
+   ],
+   "w": [
+    0.7308332982689929,
+    0.13458335086550358,
+    0.13458335086550358
+   ],
+   "comment": "M = (1 - a) O + a/2 (H1 + H2), a = d_OM / (r_OH cos(theta/2)) = 0.269166702"
+  }
+ ]
+}

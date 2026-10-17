@@ -18,16 +18,20 @@ std::string lower(std::string s) {
 }  // namespace
 
 const std::vector<WaterModel>& water_models() {
-  // Constants for a flexible run of a rigid model (not the model's own): CHARMM's TIP3P bond and angle (toppar_water_ions.str:
-  // HT-OT 450 kcal/mol/Å², HT-OT-HT 55 kcal/mol/rad²) for the TIP and OPC models, GROMOS's FLEXIBLE SPC (spc.itp: 345000
+  // Constants for a flexible run of a rigid model (not the model's own): CHARMM's TIP3P bond and angle (MacKerell et al.
+  // 1998, Supporting Information: OT-HT 450 kcal/mol/Å², HT-OT-HT 55 kcal/mol/rad²) for the TIP and OPC models, GROMOS's FLEXIBLE SPC (spc.itp: 345000
   // kJ/mol/nm², 383 kJ/mol/rad² for k/2 (x − x0)², so K = k/2) for SPC, SPC/E and OPC3; only SPC/Fw's are the model's own
   // (Wu, Tepper & Voth: k/2 (r − r0)², so K = k/2). The numbers of each model and where they were read are listed in
   // bench/ff/make_water_models.py, which writes the same models as force-field libraries (data/forcefields).
   const std::string tip_k = "CHARMM's TIP3P constants (K 450 kcal/mol/Å², 55 kcal/mol/rad²); the model is rigid";
   const std::string spc_k = "GROMOS's flexible SPC constants (k 345000 kJ/mol/nm², 383 kJ/mol/rad²); the model is rigid";
   const double spc_kb = 345000 / 4.184 / 100 / 2, spc_ka = 383 / 4.184 / 2;
-  // SPC's Lennard-Jones as GROMOS gives it: C6 0.0026173456 kJ nm⁶/mol, C12 2.634129e-06 kJ nm¹²/mol
-  const double spc_sigma = 10 * std::pow(2.634129e-06 / 0.0026173456, 1.0 / 6), spc_eps = 0.0026173456 * 0.0026173456 / (4 * 2.634129e-06) / 4.184;
+  // SPC's and SPC/E's Lennard-Jones (Berendsen, Grigera & Straatsma 1987, eq 18): −(A/r)⁶ + (B/r)¹², A 0.37122 (kJ/mol)^(1/6) nm,
+  // B 0.3428 (kJ/mol)^(1/12) nm; TIP3P's and TIP4P's A/r¹² − C/r⁶ (Jorgensen et al. 1983, Table I) in kcal/mol and Å
+  const double c6 = std::pow(0.37122, 6), c12 = std::pow(0.3428, 12);
+  const double spc_sigma = 10 * std::pow(c12 / c6, 1.0 / 6), spc_eps = c6 * c6 / (4 * c12) / 4.184;
+  const double tip3p_sigma = std::pow(582.0e3 / 595.0, 1.0 / 6), tip3p_eps = 595.0 * 595.0 / (4 * 582.0e3);
+  const double tip4p_sigma = std::pow(600.0e3 / 610.0, 1.0 / 6), tip4p_eps = 610.0 * 610.0 / (4 * 600.0e3);
   const double rmin = std::pow(2.0, 1.0 / 6);
   static const std::vector<WaterModel> m = {
       {"spc", "SPC", "H. J. C. Berendsen, J. P. M. Postma, W. F. van Gunsteren, J. Hermans, in Intermolecular Forces (Reidel, 1981), p. 331",
@@ -38,15 +42,15 @@ const std::vector<WaterModel>& water_models() {
        0.1554253, 3.165492, 0, 0, false, 1059.162 / 2, 75.90 / 2,
        "the model's own: k_b 1059.162 kcal/mol/Å², k_θ 75.90 kcal/mol/rad² for k/2 (x − x0)²", "flexible: run without constraints"},
       {"tip3p", "TIP3P", "W. L. Jorgensen, J. Chandrasekhar, J. D. Madura, R. W. Impey, M. L. Klein, J. Chem. Phys. 79, 926 (1983)", "jorgensen1983",
-       3, 0.9572, 104.52, 0.417, -0.834, 0, 0.1521, 3.15061, 0, 0, true, 450, 55, tip_k, ""},
+       3, 0.9572, 104.52, 0.417, -0.834, 0, tip3p_eps, tip3p_sigma, 0, 0, true, 450, 55, tip_k, "A 582.0e3 kcal Å¹²/mol, C 595.0 kcal Å⁶/mol"},
       {"tip3p-charmm", "TIP3P (CHARMM)", "A. D. MacKerell Jr. et al., J. Phys. Chem. B 102, 3586 (1998)", "mackerell1998", 3, 0.9572, 104.52,
        0.417, -0.834, 0, 0.1521, 2 * 1.7682 / rmin, 0.0460, 2 * 0.2245 / rmin, true, 450, 55, tip_k,
-       "CHARMM's toppar_water_ions.str: hydrogens with Lennard-Jones (ε 0.046 kcal/mol, Rmin/2 0.2245 Å), O Rmin/2 1.7682 Å"},
+       "the paper's Supporting Information: hydrogens with Lennard-Jones (ε 0.046 kcal/mol, Rmin/2 0.2245 Å), O Rmin/2 1.7682 Å"},
       {"tip3p-ew", "TIP3P-Ew", "D. J. Price, C. L. Brooks III, J. Chem. Phys. 121, 10096 (2004)", "price2004", 3, 0.9572, 104.52, 0.415,
        -0.830, 0, 0.102, 3.188, 0, 0, true, 450, 55, tip_k,
-       "ε 0.102 kcal/mol, σ 3.188 Å, charges −0.830 / 0.415; to be checked against the paper (not yet in hand)"},
+       "the paper's model B (TIP3P-PME): ε 0.102 kcal/mol, σ 3.188 Å, charges −0.830 / 0.415, no hydrogen Lennard-Jones"},
       {"tip4p", "TIP4P", "W. L. Jorgensen, J. Chandrasekhar, J. D. Madura, R. W. Impey, M. L. Klein, J. Chem. Phys. 79, 926 (1983)", "jorgensen1983",
-       4, 0.9572, 104.52, 0.520, -1.040, 0.15, 0.1550, 3.15365, 0, 0, true, 450, 55, tip_k, ""},
+       4, 0.9572, 104.52, 0.520, -1.040, 0.15, tip4p_eps, tip4p_sigma, 0, 0, true, 450, 55, tip_k, "A 600.0e3 kcal Å¹²/mol, C 610.0 kcal Å⁶/mol"},
       {"tip4p-ew", "TIP4P-Ew", "H. W. Horn, W. C. Swope, J. W. Pitera, J. D. Madura, T. J. Dick, G. L. Hura, T. Head-Gordon, J. Chem. Phys. 120, 9665 (2004)",
        "horn2004", 4, 0.9572, 104.52, 0.52422, -1.04844, 0.125, 0.16275, 3.16435, 0, 0, true, 450, 55, tip_k, ""},
       {"tip4p2005", "TIP4P/2005", "J. L. F. Abascal, C. Vega, J. Chem. Phys. 123, 234505 (2005)", "abascal2005", 4, 0.9572, 104.52, 0.5564,

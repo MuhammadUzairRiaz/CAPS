@@ -1453,10 +1453,11 @@
    "name": "SPC water",
    "version": "1981",
    "references": [
-    "H. J. C. Berendsen, J. P. M. Postma, W. F. van Gunsteren, J. Hermans, in Intermolecular Forces, ed. B. Pullman (Reidel, Dordrecht, 1981), p. 331"
+    "H. J. C. Berendsen, J. P. M. Postma, W. F. van Gunsteren, J. Hermans, in Intermolecular Forces, ed. B. Pullman (Reidel, Dordrecht, 1981), p. 331",
+    "H. J. C. Berendsen, J. R. Grigera, T. P. Straatsma, J. Phys. Chem. 91, 6269 (1987)"
    ],
    "origin": "built from source",
-   "source": "GROMACS share/top/gromos43a1.ff (spc.itp, spce.itp, ffnonbonded.itp; GNU LGPL 2.1): spc.itp (OW -0.82, H 0.41; settles d_OH 0.1 nm, d_HH 0.16330 nm), OW C6 0.0026173456, C12 2.634129e-06",
+   "source": "H. J. C. Berendsen, J. R. Grigera, T. P. Straatsma, J. Phys. Chem. 91, 6269 (1987), p 6270 (SPC as its authors restate it: O-H 0.1 nm, tetrahedral H-O-H, charges -0.82 / +0.41, eq 18 A 0.37122, B 0.3428)",
    "license": "published parameters of the paper",
    "status": "validated",
    "notes": "SPC: 3-site rigid water; geometry and charges reproduced exactly, LAMMPS and GROMACS energies equal CAPS's (bench/ff/check_water_libraries.py)",
@@ -1473,7 +1474,10 @@
     "dihedrals": 0,
     "impropers": 0
    },
-   "group": "water"
+   "group": "water",
+   "aliases": [
+    "spc"
+   ]
   },
   {
    "id": "spce-berendsen1987",
@@ -1483,7 +1487,7 @@
     "H. J. C. Berendsen, J. R. Grigera, T. P. Straatsma, J. Phys. Chem. 91, 6269 (1987)"
    ],
    "origin": "built from source",
-   "source": "GROMACS share/top/gromos43a1.ff (spc.itp, spce.itp, ffnonbonded.itp; GNU LGPL 2.1): spce.itp (OW -0.8476, H 0.4238; SPC's geometry), OW C6 0.0026173456, C12 2.634129e-06; the same charges in Izadi & Onufriev 2016, Table II",
+   "source": "H. J. C. Berendsen, J. R. Grigera, T. P. Straatsma, J. Phys. Chem. 91, 6269 (1987), p 6271 (SPC/E: charges -0.8476 / +0.4238, SPC's geometry and eq 18 A 0.37122, B 0.3428)",
    "license": "published parameters of the paper",
    "status": "validated",
    "notes": "SPC/E: 3-site rigid water; geometry and charges reproduced exactly, LAMMPS and GROMACS energies equal CAPS's (bench/ff/check_water_libraries.py)",
@@ -1500,7 +1504,11 @@
     "dihedrals": 0,
     "impropers": 0
    },
-   "group": "water"
+   "group": "water",
+   "aliases": [
+    "spce",
+    "spc/e"
+   ]
   },
   {
    "id": "tip3p-jorgensen1983",
@@ -1510,7 +1518,7 @@
     "W. L. Jorgensen, J. Chandrasekhar, J. D. Madura, R. W. Impey, M. L. Klein, J. Chem. Phys. 79, 926 (1983)"
    ],
    "origin": "built from source",
-   "source": "M. W. Mahoney, W. L. Jorgensen, J. Chem. Phys. 112, 8910 (2000), Table I (TIP3P column)",
+   "source": "W. L. Jorgensen, J. Chandrasekhar, J. D. Madura, R. W. Impey, M. L. Klein, J. Chem. Phys. 79, 926 (1983), Table I (TIP3P)",
    "license": "published parameters of the paper",
    "status": "validated",
    "notes": "TIP3P: 3-site rigid water; geometry and charges reproduced exactly, LAMMPS and GROMACS energies equal CAPS's (bench/ff/check_water_libraries.py)",
@@ -1527,7 +1535,10 @@
     "dihedrals": 0,
     "impropers": 0
    },
-   "group": "water"
+   "group": "water",
+   "aliases": [
+    "tip3p"
+   ]
   },
   {
    "id": "tip3p-charmm-mackerell1998",
@@ -1538,7 +1549,7 @@
     "W. L. Jorgensen, J. Chandrasekhar, J. D. Madura, R. W. Impey, M. L. Klein, J. Chem. Phys. 79, 926 (1983)"
    ],
    "origin": "built from source",
-   "source": "CHARMM toppar_water_ions.str (toppar_c36_jul17): RESI TIP3 (OT -0.834, HT 0.417), OT epsilon -0.1521 Rmin/2 1.7682, HT epsilon -0.046 Rmin/2 0.2245; the same numbers in GROMACS share/top/charmm27.ff (LGPL 2.1)",
+   "source": "A. D. MacKerell Jr. et al., J. Phys. Chem. B 102, 3586 (1998), Supporting Information (appendix tables: OT-HT, HT-OT-HT, OT and HT Lennard-Jones); TIP3P's charges (Jorgensen et al. 1983, Table I)",
    "license": "published parameters of the paper",
    "status": "validated",
    "notes": "TIP3P (CHARMM): 3-site rigid water; geometry and charges reproduced exactly, LAMMPS and GROMACS energies equal CAPS's (bench/ff/check_water_libraries.py)",
@@ -1555,7 +1566,41 @@
     "dihedrals": 0,
     "impropers": 0
    },
-   "group": "water"
+   "group": "water",
+   "aliases": [
+    "tip3p-charmm"
+   ]
+  },
+  {
+   "id": "tip3p-pme-price2004",
+   "name": "TIP3P water for Ewald (Price & Brooks, TIP3P-PME)",
+   "version": "2004",
+   "references": [
+    "D. J. Price, C. L. Brooks III, J. Chem. Phys. 121, 10096 (2004)"
+   ],
+   "origin": "built from source",
+   "source": "the paper's Table I, model B (TIP3P-PME); TIP3P's geometry",
+   "license": "published parameters of the paper",
+   "status": "validated",
+   "notes": "TIP3P-PME: 3-site rigid water; geometry and charges reproduced exactly, LAMMPS and GROMACS energies equal CAPS's (bench/ff/check_water_libraries.py)",
+   "file": "tip3p-pme-price2004.json",
+   "typing": {
+    "rules": "typing/tip3p-pme-price2004.typing.json",
+    "evidence": "water's O and H by SMARTS; massless sites added and placed by the force field"
+   },
+   "counts": {
+    "atom_types": 2,
+    "pairs": 2,
+    "bonds": 1,
+    "angles": 1,
+    "dihedrals": 0,
+    "impropers": 0
+   },
+   "group": "water",
+   "aliases": [
+    "tip3p-pme",
+    "tip3p-ew"
+   ]
   },
   {
    "id": "tip4p-jorgensen1983",
@@ -1565,7 +1610,7 @@
     "W. L. Jorgensen, J. Chandrasekhar, J. D. Madura, R. W. Impey, M. L. Klein, J. Chem. Phys. 79, 926 (1983)"
    ],
    "origin": "built from source",
-   "source": "M. W. Mahoney, W. L. Jorgensen, J. Chem. Phys. 112, 8910 (2000), Table I (TIP4P column)",
+   "source": "W. L. Jorgensen, J. Chandrasekhar, J. D. Madura, R. W. Impey, M. L. Klein, J. Chem. Phys. 79, 926 (1983), Table I (TIP4P)",
    "license": "published parameters of the paper",
    "status": "validated",
    "notes": "TIP4P: 4-site rigid water; geometry and charges reproduced exactly, LAMMPS and GROMACS energies equal CAPS's (bench/ff/check_water_libraries.py)",
@@ -1582,7 +1627,41 @@
     "dihedrals": 0,
     "impropers": 0
    },
-   "group": "water"
+   "group": "water",
+   "aliases": [
+    "tip4p"
+   ]
+  },
+  {
+   "id": "tip4pew-horn2004",
+   "name": "TIP4P-Ew water",
+   "version": "2004",
+   "references": [
+    "H. W. Horn, W. C. Swope, J. W. Pitera, J. D. Madura, T. J. Dick, G. L. Hura, T. Head-Gordon, J. Chem. Phys. 120, 9665 (2004)"
+   ],
+   "origin": "built from source",
+   "source": "the paper's Table I and its supporting information (EPAPS E-JCPSA6-120-512415: the parameter table)",
+   "license": "published parameters of the paper",
+   "status": "validated",
+   "notes": "TIP4P-Ew: 4-site rigid water; geometry and charges reproduced exactly, LAMMPS and GROMACS energies equal CAPS's (bench/ff/check_water_libraries.py)",
+   "file": "tip4pew-horn2004.json",
+   "typing": {
+    "rules": "typing/tip4pew-horn2004.typing.json",
+    "evidence": "water's O and H by SMARTS; massless sites added and placed by the force field"
+   },
+   "counts": {
+    "atom_types": 3,
+    "pairs": 3,
+    "bonds": 1,
+    "angles": 1,
+    "dihedrals": 0,
+    "impropers": 0
+   },
+   "group": "water",
+   "aliases": [
+    "tip4pew",
+    "tip4p-ew"
+   ]
   },
   {
    "id": "tip4p2005-abascal2005",
@@ -1592,7 +1671,7 @@
     "J. L. F. Abascal, C. Vega, J. Chem. Phys. 123, 234505 (2005)"
    ],
    "origin": "built from source",
-   "source": "C. Vega, J. L. F. Abascal, M. M. Conde, J. L. Aragones, Faraday Discuss. 141, 251 (2009), Table I (the model's authors; arXiv:0901.1803): the original paper is not yet in hand",
+   "source": "the paper's Table I; TIP4P's geometry",
    "license": "published parameters of the paper",
    "status": "validated",
    "notes": "TIP4P/2005: 4-site rigid water; geometry and charges reproduced exactly, LAMMPS and GROMACS energies equal CAPS's (bench/ff/check_water_libraries.py)",
@@ -1609,7 +1688,43 @@
     "dihedrals": 0,
     "impropers": 0
    },
-   "group": "water"
+   "group": "water",
+   "aliases": [
+    "tip4p2005",
+    "tip4p/2005"
+   ]
+  },
+  {
+   "id": "tip4pice-abascal2005",
+   "name": "TIP4P/Ice water",
+   "version": "2005",
+   "references": [
+    "J. L. F. Abascal, E. Sanz, R. Garcia Fernandez, C. Vega, J. Chem. Phys. 122, 234511 (2005)"
+   ],
+   "origin": "built from source",
+   "source": "the paper's Table II; TIP4P's geometry",
+   "license": "published parameters of the paper",
+   "status": "validated",
+   "notes": "TIP4P/Ice: 4-site rigid water; geometry and charges reproduced exactly, LAMMPS and GROMACS energies equal CAPS's (bench/ff/check_water_libraries.py)",
+   "file": "tip4pice-abascal2005.json",
+   "typing": {
+    "rules": "typing/tip4pice-abascal2005.typing.json",
+    "evidence": "water's O and H by SMARTS; massless sites added and placed by the force field"
+   },
+   "counts": {
+    "atom_types": 3,
+    "pairs": 3,
+    "bonds": 1,
+    "angles": 1,
+    "dihedrals": 0,
+    "impropers": 0
+   },
+   "group": "water",
+   "aliases": [
+    "tip4p-ice",
+    "tip4pice",
+    "tip4p/ice"
+   ]
   },
   {
    "id": "tip5p-mahoney2000",
@@ -1636,7 +1751,41 @@
     "dihedrals": 0,
     "impropers": 0
    },
-   "group": "water"
+   "group": "water",
+   "aliases": [
+    "tip5p"
+   ]
+  },
+  {
+   "id": "spcfw-wu2006",
+   "name": "SPC/Fw water (flexible)",
+   "version": "2006",
+   "references": [
+    "Y. Wu, H. L. Tepper, G. A. Voth, J. Chem. Phys. 124, 024503 (2006)"
+   ],
+   "origin": "built from source",
+   "source": "the paper's Table I (SPC/Fw)",
+   "license": "published parameters of the paper",
+   "status": "validated",
+   "notes": "SPC/Fw: 3-site flexible water; geometry and charges reproduced exactly, LAMMPS and GROMACS energies equal CAPS's (bench/ff/check_water_libraries.py)",
+   "file": "spcfw-wu2006.json",
+   "typing": {
+    "rules": "typing/spcfw-wu2006.typing.json",
+    "evidence": "water's O and H by SMARTS; massless sites added and placed by the force field"
+   },
+   "counts": {
+    "atom_types": 2,
+    "pairs": 2,
+    "bonds": 1,
+    "angles": 1,
+    "dihedrals": 0,
+    "impropers": 0
+   },
+   "group": "water",
+   "aliases": [
+    "spcfw",
+    "spc/fw"
+   ]
   },
   {
    "id": "opc-izadi2014",
@@ -1663,7 +1812,10 @@
     "dihedrals": 0,
     "impropers": 0
    },
-   "group": "water"
+   "group": "water",
+   "aliases": [
+    "opc"
+   ]
   },
   {
    "id": "opc3-izadi2016",
@@ -1690,7 +1842,10 @@
     "dihedrals": 0,
     "impropers": 0
    },
-   "group": "water"
+   "group": "water",
+   "aliases": [
+    "opc3"
+   ]
   },
   {
    "id": "mw-molinero2009",
@@ -1717,7 +1872,101 @@
     "dihedrals": 0,
     "impropers": 0
    },
-   "group": "water"
+   "group": "water",
+   "aliases": [
+    "mw"
+   ]
+  },
+  {
+   "id": "epm2-harris1995",
+   "name": "CO2 (EPM2, Harris & Yung 1995)",
+   "version": "1995",
+   "references": [
+    "J. G. Harris, K. H. Yung, J. Phys. Chem. 99, 12021 (1995)"
+   ],
+   "origin": "built from source",
+   "source": "J. G. Harris, K. H. Yung, J. Phys. Chem. 99, 12021 (1995), Table 1 (EPM2); bench/ff/make_gas_models.py",
+   "license": "published parameters of the paper",
+   "status": "validated",
+   "notes": "bonds rigid (constant 0: constrain them or run the molecule as a rigid body), the bend flexible as the paper's flexible model",
+   "file": "epm2-harris1995.json",
+   "typing": {
+    "rules": "typing/epm2-harris1995.typing.json",
+    "evidence": "CO2 three sites, charges and Lennard-Jones of Table 1 (EPM2)"
+   },
+   "counts": {
+    "atom_types": 2,
+    "pairs": 3,
+    "bonds": 1,
+    "angles": 1,
+    "dihedrals": 0,
+    "impropers": 0
+   },
+   "group": "gas",
+   "aliases": [
+    "epm2",
+    "co2-epm2"
+   ]
+  },
+  {
+   "id": "h2-buch1994",
+   "name": "H2 (one Lennard-Jones site, Buch 1994)",
+   "version": "1994",
+   "references": [
+    "V. Buch, J. Chem. Phys. 100, 7610 (1994)"
+   ],
+   "origin": "built from source",
+   "source": "V. Buch, J. Chem. Phys. 100, 7610 (1994), section II A; bench/ff/make_gas_models.py",
+   "license": "published parameters of the paper",
+   "status": "validated",
+   "notes": "the centre is a massless virtual site: GROMACS writes it as one, LAMMPS has no form for it",
+   "file": "h2-buch1994.json",
+   "typing": {
+    "rules": "typing/h2-buch1994.typing.json",
+    "evidence": "H2 by its two hydrogens; the centre added by the force field"
+   },
+   "counts": {
+    "atom_types": 2,
+    "pairs": 2,
+    "bonds": 1,
+    "angles": 0,
+    "dihedrals": 0,
+    "impropers": 0
+   },
+   "group": "gas",
+   "aliases": [
+    "h2-buch"
+   ]
+  },
+  {
+   "id": "h2-darkrim1998",
+   "name": "H2 with its quadrupole (Darkrim & Levesque 1998)",
+   "version": "1998",
+   "references": [
+    "F. Darkrim, D. Levesque, J. Chem. Phys. 109, 4981 (1998)"
+   ],
+   "origin": "built from source",
+   "source": "F. Darkrim, D. Levesque, J. Chem. Phys. 109, 4981 (1998), p 4982; bench/ff/make_gas_models.py",
+   "license": "published parameters of the paper",
+   "status": "validated",
+   "notes": "the centre is a massless virtual site: GROMACS writes it as one, LAMMPS has no form for it",
+   "file": "h2-darkrim1998.json",
+   "typing": {
+    "rules": "typing/h2-darkrim1998.typing.json",
+    "evidence": "H2 by its two hydrogens; the centre added by the force field"
+   },
+   "counts": {
+    "atom_types": 2,
+    "pairs": 2,
+    "bonds": 1,
+    "angles": 0,
+    "dihedrals": 0,
+    "impropers": 0
+   },
+   "group": "gas",
+   "aliases": [
+    "h2-darkrim"
+   ]
   },
   {
    "id": "noble-gases-rutkai2017",
@@ -1745,6 +1994,9 @@
     "impropers": 0
    },
    "group": "gas",
+   "aliases": [
+    "noble-gases"
+   ],
    "list": {
     "label": "Noble gases (Ne, Ar, Kr, Xe)",
     "key": "noble_gases",
@@ -1775,6 +2027,46 @@
     "angles": 0,
     "dihedrals": 0,
     "impropers": 0
+   },
+   "group": "cg",
+   "aliases": [
+    "cooke-deserno"
+   ]
+  },
+  {
+   "id": "lopls-siu2012",
+   "name": "L-OPLS (Siu, Pluhackova & Boeckmann 2012) on OPLS-AA 2024",
+   "version": "2012",
+   "references": [
+    "S. W. I. Siu, K. Pluhackova, R. A. Boeckmann, J. Chem. Theory Comput. 8, 1459 (2012)"
+   ],
+   "origin": "built from source",
+   "source": "S. W. I. Siu, K. Pluhackova, R. A. Boeckmann, J. Chem. Theory Comput. 8, 1459 (2012), Table 2; overlay on oplsaa2024; bench/ff/make_lopls.py",
+   "license": "published parameters of the paper",
+   "status": "validated",
+   "notes": "long hydrocarbon chains (alkanes, alkenes, lipid tails) with L-OPLS's charges, Lennard-Jones and torsions; the rest of a molecule as OPLS-AA 2024 (bench/ff/check_lopls.py)",
+   "file": "lopls-siu2012.json",
+   "typing": {
+    "rules": "typing/oplsaa2024.typing.json",
+    "evidence": "OPLS-AA 2024's rules, with the six L-OPLS chain types ahead of them (their SMARTS in the library)"
+   },
+   "counts": {
+    "atom_types": 6,
+    "pairs": 6,
+    "bonds": 0,
+    "angles": 0,
+    "dihedrals": 7,
+    "impropers": 0
+   },
+   "group": "organic",
+   "aliases": [
+    "lopls",
+    "l-opls"
+   ],
+   "list": {
+    "label": "L-OPLS (long hydrocarbons)",
+    "key": "lopls",
+    "order": 7
    }
   }
  ],

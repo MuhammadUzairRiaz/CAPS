@@ -1,0 +1,21 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "SPC/Fw water (flexible)",
+ "unknown_types": "untyped",
+ "description": "CAPS rules for SPC/Fw water (bench/ff/make_water_models.py): water's O and H; three sites",
+ "rules": [
+  {
+   "type": "OW",
+   "smarts": "[OX2H2]",
+   "priority": 0,
+   "description": "water oxygen"
+  },
+  {
+   "type": "HW",
+   "smarts": "[H][OX2H2]",
+   "priority": 0,
+   "description": "water hydrogen"
+  }
+ ]
+}
