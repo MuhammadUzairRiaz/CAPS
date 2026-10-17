@@ -11,6 +11,11 @@
 #include <sstream>
 #include <stdexcept>
 #include <thread>
+#include <filesystem>
+#include <cstdlib>
+#ifndef _WIN32
+#include <dlfcn.h>
+#endif
 
 #include "caps/elements.hpp"
 #include "caps/field.hpp"
@@ -278,13 +283,29 @@ Vec3 rotate(const Vec3& p, const Vec3& origin, const Vec3& axis, double t) {   /
 
 CompleteReport complete_forcefield(const System& s, const FFDef& ff, const CompleteOptions& opt,
                                    const std::function<void(const std::string&)>& log) {
-  auto say = [&](const std::string& m) { if (log) log(m); };
-  CompleteReport rep;
   const TypingResult tr = assign_types(s, ff);
   if (tr.untyped) throw std::runtime_error(std::to_string(tr.untyped) + " atom(s) match no typing rule of " + ff.name);
-  const auto& types = tr.types;
+  return complete_forcefield(s, ff, tr.types, opt, log);
+}
+
+CompleteReport complete_forcefield(const System& s, const FFDef& ff, const std::vector<std::string>& types, const CompleteOptions& opt,
+                                   const std::function<void(const std::string&)>& log) {
+  auto say = [&](const std::string& m) { if (log) log(m); };
+  CompleteReport rep;
+  if (types.size() != s.atoms.size()) throw std::runtime_error("complete_forcefield: one type per atom is needed");
+  for (const auto& t : types)
+    if (t.empty()) throw std::runtime_error("an atom has no type: CAPS ML fits parameters, not types");
+  // the MM energy of the scans takes the force field's own charges, or Gasteiger-Marsili where its types carry none
+  std::string qmode = "types";
   ParamReport pr;
-  (void)parameterize(s, ff, types, "types", &pr, true);
+  try {
+    (void)parameterize(s, ff, types, qmode, &pr, true);
+  } catch (const FFError& e) {
+    if (std::string(e.what()).find("has no charge for type") == std::string::npos) throw;
+    qmode = "gasteiger";
+    pr = ParamReport{};
+    (void)parameterize(s, ff, types, qmode, &pr, true);
+  }
   rep.missing_before = pr.missing;
   if (pr.missing.empty()) {
     rep.complete = true;
@@ -329,7 +350,7 @@ CompleteReport complete_forcefield(const System& s, const FFDef& ff, const Compl
     System fs = f.sys;
     for (size_t k = 0; k < x.size(); ++k) fs.atoms[k].pos = x[k];
     ParamReport r;
-    const ForceField fld = parameterize(fs, current, ftypes, "types", &r, true);
+    const ForceField fld = parameterize(fs, current, ftypes, qmode, &r, true);
     Evaluator ev(fld, eo);
     std::vector<double> flat(3 * x.size()), g;
     for (size_t k = 0; k < x.size(); ++k)
@@ -488,6 +509,7 @@ CompleteReport complete_forcefield(const System& s, const FFDef& ff, const Compl
       rule.params = {six(K), six(xv)};
       rule.comment = "CAPS ff complete (" + label + "): " + std::to_string(term.points) + "-point relaxed scan of the " + kind +
                      " in a " + std::to_string(term.fragment_atoms) + "-atom fragment, RMS " + fmt(term.rms) + " kcal/mol";
+      rule.source = ml_source(opt.model, term.rms);
       (kind == "bond" ? ov.bonds : ov.angles).push_back(rule);
       current = ff;
       merge_forcefield(current, ov);
@@ -664,6 +686,7 @@ CompleteReport complete_forcefield(const System& s, const FFDef& ff, const Compl
       rule.comment = "CAPS ff complete (" + label + "): " + std::to_string(term.points) + "-point relaxed scan about the " +
                      group[g][1] + "-" + group[g][2] + " bond in a " + std::to_string(term.fragment_atoms) + "-atom fragment, " +
                      std::to_string(group.size()) + " class(es) fitted together, RMS " + fmt(rms) + " kcal/mol";
+      rule.source = ml_source(opt.model, rms);
       ov.dihedrals.push_back(rule);
       rep.terms.push_back(term);
       say("dihedral " + join(group[g]) + ": V = [" + fmt(term.params[0], 4) + ", " + fmt(term.params[1], 4) + ", " +
@@ -677,10 +700,94 @@ CompleteReport complete_forcefield(const System& s, const FFDef& ff, const Compl
   FFDef merged = ff;
   merge_forcefield(merged, ov);
   ParamReport after;
-  (void)parameterize(s, merged, types, "types", &after, true);
+  (void)parameterize(s, merged, types, qmode, &after, true);
   rep.missing_after = after.missing;
   rep.complete = after.missing.empty();
   return rep;
+}
+
+bool ml_engine_available() { return ml::available(); }
+
+std::string ml_engine_missing_message() {
+  return "this CAPS was built without its ML engine (libtorch), so it cannot fill missing terms with CAPS ML: use a CAPS "
+         "built with -DCAPS_WITH_TORCH=ON (the released packages are), or assign without completion and give the missing "
+         "terms another way";
+}
+
+bool parse_complete_option(const std::string& v) {
+  if (v == "ml") return true;
+  if (v.empty() || v == "none" || v == "off" || v == "no") return false;
+  throw std::invalid_argument("complete: '" + v + "' (ml, or none)");
+}
+
+namespace {
+std::string module_dir() {   // the directory of the CAPS library (or program) this code is in
+#ifndef _WIN32
+  Dl_info info;
+  if (dladdr(reinterpret_cast<const void*>(&ml_engine_available), &info) && info.dli_fname) {
+    std::error_code ec;
+    const auto p = std::filesystem::weakly_canonical(std::filesystem::path(info.dli_fname), ec);
+    return (ec ? std::filesystem::path(info.dli_fname) : p).parent_path().string();
+  }
+#endif
+  return "";
+}
+}  // namespace
+
+std::string find_ml_model(const std::vector<std::string>& near) {
+  namespace fs = std::filesystem;
+  std::error_code ec;
+  const std::string file = "caps-mace-v1.model";
+  if (const char* m = std::getenv("CAPS_ML_MODEL"); m && *m && fs::exists(m, ec)) return m;
+  std::vector<fs::path> roots;
+  if (const char* h = std::getenv("CAPS_HOME"); h && *h) roots.push_back(h);
+  for (const auto& n : near) {   // a force field in data/forcefields: data/ml beside it (a few levels up at most)
+    if (n.empty()) continue;
+    fs::path p = fs::absolute(fs::path(n), ec);
+    for (int up = 0; up < 4 && !p.empty() && p.has_parent_path() && p != p.parent_path(); ++up) {
+      p = p.parent_path();
+      if (fs::exists(p / "ml" / file, ec)) return (p / "ml" / file).string();
+      roots.push_back(p);
+    }
+  }
+  if (const std::string d = module_dir(); !d.empty()) {
+    const fs::path m(d);
+    roots.insert(roots.end(), {m, m.parent_path() / "Resources", m.parent_path(), m.parent_path().parent_path()});
+  }
+#ifdef CAPS_SOURCE_ROOT
+  roots.push_back(CAPS_SOURCE_ROOT);
+#endif
+  roots.push_back(".");
+  for (const auto& r : roots)
+    if (fs::exists(r / "data" / "ml" / file, ec)) return (r / "data" / "ml" / file).string();
+  return "";
+}
+
+MlFill fill_missing_with_ml(const System& s, FFDef& def, const std::vector<std::string>& types, const CompleteOptions& opt0,
+                            const std::function<void(const std::string&)>& log) {
+  if (!ml::available()) throw std::runtime_error(ml_engine_missing_message());
+  CompleteOptions opt = opt0;
+  if (opt.model.empty()) opt.model = find_ml_model();
+  std::error_code ec;
+  if (opt.model.empty() || !std::filesystem::exists(opt.model, ec))
+    throw std::runtime_error("CAPS's ML model (data/ml/caps-mace-v1.model) was not found" + (opt.model.empty() ? std::string() : " at " + opt.model) +
+                             ": set CAPS_ML_MODEL or CAPS_HOME, or give the model's path");
+  MlFill out;
+  out.report = complete_forcefield(s, def, types, opt, log);
+  const FFDef& ov = out.report.overlay;
+  out.fitted = int(ov.bonds.size() + ov.angles.size() + ov.dihedrals.size());
+  if (out.fitted) merge_forcefield(def, ov);
+  auto classes = [](const std::vector<std::string>& v) {
+    std::string r;
+    for (const auto& c : v) r += (r.empty() ? "" : "-") + c;
+    return r;
+  };
+  for (const auto* rules : {&ov.bonds, &ov.angles, &ov.dihedrals})
+    for (const auto& r : *rules)
+      out.fitted_terms.push_back(std::string(rules == &ov.bonds ? "bond " : rules == &ov.angles ? "angle " : "dihedral ") + classes(r.match) + " · " + r.source);
+  for (const auto& t : out.report.terms)
+    if (t.status != "fitted") out.left.push_back(t.kind + " " + classes(t.classes) + ": " + (t.status == "rejected" ? "fit rejected, " : "not fitted, ") + t.why);
+  return out;
 }
 
 }  // namespace caps

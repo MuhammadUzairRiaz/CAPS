@@ -157,6 +157,11 @@ ForceField merge_forcefields(size_t natoms, const std::vector<FFPart>& parts, co
     }
     auto A = [&](uint32_t local) { return P.atoms[local]; };
     for (auto t : F.bonds) { t.i = A(t.i), t.j = A(t.j); M.bonds.push_back(t); }
+    for (auto ts : F.term_sources) {   // CAPS ML's terms keep their source in the merged force field
+      for (auto& t : ts.terms)
+        for (auto& a : t) a = A(a);
+      M.term_sources.push_back(std::move(ts));
+    }
     for (auto t : F.angles) { t.i = A(t.i), t.j = A(t.j), t.k = A(t.k); M.angles.push_back(t); }
     for (auto t : F.dihedrals) { t.i = A(t.i), t.j = A(t.j), t.k = A(t.k), t.l = A(t.l); M.dihedrals.push_back(t); }
     for (auto t : F.impropers) { t.i = A(t.i), t.j = A(t.j), t.k = A(t.k), t.l = A(t.l); M.impropers.push_back(t); }

@@ -28,6 +28,7 @@
 #include "caps/equilibrate.hpp"
 #include "caps/polystats.hpp"
 #include "caps/ffdef.hpp"
+#include "caps/ffcomplete.hpp"
 #include "caps/field.hpp"
 #include "caps/grow.hpp"
 #include "caps/io.hpp"
@@ -187,6 +188,12 @@ RecipeCheck check_recipe(const Json& r) {
       } else if (st == "type") {
         if (J.has("file") && r.has("react")) throw RecipeError(2, "type: a force field file holds for the structure as it is; react changes it — give a library force field instead");
         info.summary = J.has("file") ? "force field read whole from " + text(J, "file", "") : text(J, "forcefield", "default") + " · charges " + text(J, "charges", "auto");
+        try {
+          if (parse_complete_option(text(J, "complete", ""))) {
+            if (J.has("file")) throw RecipeError(2, "type: complete: ml fills a library force field's gaps, not a force field read whole from a file");
+            info.summary += ml_engine_available() ? " · missing terms fitted by CAPS ML" : " · complete: ml needs CAPS's ML engine, which this build lacks";
+          }
+        } catch (const std::invalid_argument& e) { throw RecipeError(2, std::string("type.") + e.what()); }
       } else if (st == "grow") {
         info.summary = (J.has("box") ? "box " + g6(num(J, "box", 0)) + " Å" : "ρ " + g6(num(J, "density", 0.5)) + " g/cm³") + " · seed " + g6(num(J, "seed", 1)) +
                        " · best of " + g6(num(J, "trials", 120)) + " trials";
@@ -289,6 +296,11 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
   std::shared_ptr<const ForceField> ff;
   std::string filled_from;   // type.fill_from: the force fields gaps were filled from
   int filled_terms = 0;
+  // type.complete: ml: the rules CAPS ML fitted so far in this run (a later typing, of the grown cell after one chain,
+  // fits only what is still missing), what they are and what could not be filled
+  FFDef ml_overlay;
+  std::vector<std::string> ml_fitted, ml_left;
+  std::string ml_model;
   std::string ffname = "built-in default (GAFF for C and H, UFF otherwise)";
   if (!o.sha256.empty())
     res.manifest.steps.push_back(step("recipe.run", "recipe " + res.name, {{"recipe", res.name}, {"sha256", o.sha256}, {"stages", std::to_string(n)}}, "", {}));
@@ -404,6 +416,8 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           }
           prepend_fill(def, fill);
         }
+        bool complete_ml = false;
+        try { complete_ml = parse_complete_option(text(T, "complete", "")); } catch (const std::invalid_argument& e) { throw RecipeError(2, std::string("type.") + e.what()); }
         for (const auto& [id, rules_path] : family) {   // newest first; the first whose types all exist in this force field
           if (!typing.empty()) break;
           try {
@@ -423,6 +437,25 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           types = tr.types;
         } else {
           for (const auto& a : sys.atoms) types.push_back(a.name);
+        }
+        if (complete_ml) {   // the bonded terms the force field lacks, fitted by CAPS ML (each rule carries its source)
+          if (!ml_engine_available()) throw RecipeError(2, "type: complete: ml: " + ml_engine_missing_message());
+          if (!ml_overlay.bonds.empty() || !ml_overlay.angles.empty() || !ml_overlay.dihedrals.empty()) merge_forcefield(def, ml_overlay);
+          CompleteOptions co;
+          co.model = !o.ml_model.empty() ? o.ml_model : find_ml_model({path, o.forcefield_dir.empty() ? std::string() : (std::filesystem::path(o.forcefield_dir) / "catalogue.json").string()});
+          ml_model = co.model;
+          const MlFill f = fill_missing_with_ml(sys, def, types, co, [&](const std::string& m) {
+            if (!o.progress) return;
+            const int ti = int(std::find(stages.begin(), stages.end(), "type") - stages.begin());
+            o.progress(RecipeEvent{ti < n ? ti + 1 : 0, n, "type", "CAPS ML: " + m, "running", 0.0});
+          });
+          for (const auto* src : {&f.report.overlay.bonds, &f.report.overlay.angles, &f.report.overlay.dihedrals}) {
+            auto& dst = src == &f.report.overlay.bonds ? ml_overlay.bonds : src == &f.report.overlay.angles ? ml_overlay.angles : ml_overlay.dihedrals;
+            dst.insert(dst.end(), src->begin(), src->end());
+          }
+          ml_overlay.name = "CAPS ML";
+          ml_fitted.insert(ml_fitted.end(), f.fitted_terms.begin(), f.fitted_terms.end());
+          ml_left = f.left;
         }
         ParamReport rep;
         if (charges == "increments") {   // another force field's bond-increment charges with these types
@@ -473,7 +506,9 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           }
         }
         increments = charges == "types" && !def.bond_increments.empty();
-        if (!rep.missing.empty()) throw RecipeError(3, std::to_string(rep.missing.size()) + " parameters missing in " + def.name + " (first: " + rep.missing.front() + ")");
+        if (!rep.missing.empty())
+          throw RecipeError(3, std::to_string(rep.missing.size()) + " parameters missing in " + def.name + " (first: " + rep.missing.front() + ")" +
+                                   (complete_ml && !ml_left.empty() ? "; CAPS ML could not fill " + ml_left.front() : std::string()));
         ffname = def.name + (ua.empty() ? "" : " (united-atom: hydrogens on carbon folded into their carbons)");
         filled_terms = 0;
         for (const auto& [rule, count] : rep.used)
@@ -491,10 +526,25 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
     KeyValues kv = {{"force field", ffname}, {"charges", ch}};
     if (!borrowed.empty()) kv.push_back({"typing rules", borrowed});
     if (!filled_from.empty()) kv.push_back({"gaps filled from", filled_from + " (" + std::to_string(filled_terms) + " terms where " + ffname.substr(0, ffname.find(" (gaps")) + " has none)"});
+    if (!ml_fitted.empty()) kv.push_back({"CAPS ML", std::to_string(ml_fitted.size()) + " parameter set(s) fitted where the force field has none (field.complete_ml)"});
     bool found = false;
     for (auto& ps : res.manifest.steps)
       if (ps.engine == "field.assign") { ps = step("field.assign", ffname + " · charges " + ch, kv, "", c); found = true; }
     if (!found) res.manifest.steps.push_back(step("field.assign", ffname + " · charges " + ch, kv, "", c));
+    if (!ml_fitted.empty() || !ml_left.empty()) {   // each term CAPS ML fitted, with its source (and what it could not)
+      KeyValues mk = {{"model", ml_model}};
+      for (const auto& t : ml_fitted) {
+        const size_t dot = t.find(" · ");
+        mk.push_back({dot == std::string::npos ? t : t.substr(0, dot), dot == std::string::npos ? "" : t.substr(dot + 4)});
+      }
+      for (const auto& t : ml_left) mk.push_back({"still missing", t});
+      const ProvStep ms = step("field.complete_ml", std::to_string(ml_fitted.size()) + " parameter set(s) fitted by CAPS ML where the force field has none", mk, "", {},
+                               {{"Estimated parameters", std::to_string(ml_fitted.size()) + " bonded parameter set(s) from CAPS ML (caps ff complete)"}});
+      bool had = false;
+      for (auto& ps : res.manifest.steps)
+        if (ps.engine == "field.complete_ml") { ps = ms; had = true; }
+      if (!had) res.manifest.steps.push_back(ms);
+    }
     // the structure carries the charges the force field gives (what the engine files hold)
     if (ff && ff->charge.size() == sys.atoms.size()) {
       for (size_t i = 0; i < sys.atoms.size(); ++i) sys.atoms[i].charge = ff->charge[i];

@@ -2209,6 +2209,16 @@ ForceField subset_forcefield(const ForceField& ff, const std::vector<uint32_t>& 
     for (uint32_t a : atoms) s.sw.atom.push_back(a < ff.sw.atom.size() ? ff.sw.atom[a] : 0);
   }
   for (const auto& t : ff.bonds) if (in({t.i, t.j})) s.bonds.push_back({m(t.i), m(t.j), t.k, t.r0});
+  for (const auto& ts : ff.term_sources) {   // CAPS ML's terms keep their source
+    ForceField::TermSource k{ts.kind, ts.classes, ts.source, {}};
+    for (const auto& t : ts.terms)
+      if (std::all_of(t.begin(), t.end(), [&](uint32_t x) { return map[x] >= 0; })) {
+        std::vector<uint32_t> v;
+        for (uint32_t x : t) v.push_back(m(x));
+        k.terms.push_back(std::move(v));
+      }
+    if (!k.terms.empty()) s.term_sources.push_back(std::move(k));
+  }
   for (const auto& t : ff.angles) if (in({t.i, t.j, t.k})) s.angles.push_back({m(t.i), m(t.j), m(t.k), t.kt, t.theta0});
   for (const auto& t : ff.dihedrals) if (in({t.i, t.j, t.k, t.l})) s.dihedrals.push_back({m(t.i), m(t.j), m(t.k), m(t.l), t.v, t.n, t.delta});
   for (const auto& t : ff.impropers) if (in({t.i, t.j, t.k, t.l})) s.impropers.push_back({m(t.i), m(t.j), m(t.k), m(t.l), t.v, t.n, t.delta});

@@ -283,9 +283,21 @@ Json rules_json(const std::vector<FFRule>& rules) {
       o[g] = q;
     }
     if (!r.comment.empty()) o["comment"] = r.comment;
+    if (!r.source.empty()) o["source"] = r.source;
     a.push_back(o);
   }
   return a;
+}
+
+// the source of a rule from an overlay caps ff complete wrote before rules carried one, read from its comment
+// ("CAPS ff complete (CAPS MACE v1, caps-mace-v1.model): ..., RMS 0.31 kcal/mol")
+std::string ml_source_from_comment(const std::string& c) {
+  const size_t a = c.find(", "), b = c.find("):");
+  const std::string model = a != std::string::npos && b != std::string::npos && b > a ? c.substr(a + 2, b - a - 2) : "";
+  const size_t r = c.rfind("RMS ");
+  double rms = std::nan("");
+  if (r != std::string::npos) try { rms = std::stod(c.substr(r + 4)); } catch (...) {}
+  return ml_source(model, rms);
 }
 
 std::vector<FFRule> rules_from(const Json& a) {
@@ -297,11 +309,14 @@ std::vector<FFRule> rules_from(const Json& a) {
     r.style = o.text("style");
     for (const auto& v : o["params"].items()) r.params.push_back(v.number());
     // named parameter groups: class II cross terms, separate 1-4 van der Waals, alternative forms (DREIDING)
-    static const std::set<std::string> plain = {"name", "match", "style", "params", "comment"};
+    static const std::set<std::string> plain = {"name", "match", "style", "params", "comment", "source"};
     for (const auto& [g, v] : o.members())
       if (!plain.count(g) && v.is_array())
         for (const auto& x : v.items()) r.cross[g].push_back(x.number());
     r.comment = o.text("comment");
+    r.source = o.text("source");
+    // an overlay caps ff complete wrote before rules carried their source: its comment says where the term came from
+    if (r.source.empty() && r.comment.rfind("CAPS ff complete (CAPS MACE", 0) == 0) r.source = ml_source_from_comment(r.comment);
     out.push_back(std::move(r));
   }
   return out;
@@ -745,6 +760,21 @@ FFDef load_forcefield(const std::string& path) {
   for (const auto& t : ff.types)
     if (!t.smarts.empty()) ff.typing.push_back({t.name, t.smarts, t.description, t.overrides, t.priority});
   return ff;
+}
+
+std::string ml_source(const std::string& model_path, double rms_kcal) {
+  const std::string file = model_path.substr(model_path.find_last_of("/\\") + 1);
+  // the reference level the model was trained on (data/ml/README.md); another model file is named as it is
+  std::string what = file == "caps-mace-v1.model" ? "CAPS MACE v1, wB97M-D3(BJ)/def2-TZVPPD reference"
+                     : file.empty()               ? "CAPS MACE"
+                                                  : "model " + file;
+  std::string s = "CAPS ML (" + what + ")";
+  if (std::isfinite(rms_kcal)) {
+    char b[48];
+    std::snprintf(b, sizeof b, ", RMS %.2f kcal/mol", rms_kcal);
+    s += b;
+  }
+  return s;
 }
 
 void merge_forcefield(FFDef& base, const FFDef& ov) {
@@ -1642,6 +1672,18 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
             }
     return nullptr;
   };
+  // a rule with a source of its own (FFRule::source: CAPS ML's fitted terms): the source on each term it gives
+  std::map<const FFRule*, size_t> source_slot;
+  auto sourced = [&](const FFRule* r, const char* kind, std::vector<uint32_t> atoms) {
+    if (!r || r->source.empty()) return;
+    auto [it, fresh] = source_slot.emplace(r, ff.term_sources.size());
+    if (fresh) {
+      std::string c;
+      for (const auto& m : r->match) c += (c.empty() ? "" : "-") + m;
+      ff.term_sources.push_back({kind, c, r->source, {}});
+    }
+    ff.term_sources[it->second].terms.push_back(std::move(atoms));
+  };
   auto estimated = [&](const std::string& what) {
     ++rep.estimated_terms;
     if (std::find(rep.estimated.begin(), rep.estimated.end(), what) == rep.estimated.end()) rep.estimated.push_back(what);
@@ -1922,6 +1964,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
     if (!r) r = auto_lookup(def.auto_bonds, {&Ab[b.i], &Ab[b.j]}, nullptr);
     if (std::string u; !r && (r = analog(def.bonds, Nb, {b.i, b.j}, nullptr, &u))) estimated("bond " + shown(Nb, {b.i, b.j}) + " as " + u);
     if (!r) { missing("bond " + shown(Nb, {b.i, b.j})); continue; }
+    sourced(r, "bond", {b.i, b.j});
     const std::string st = r->style.empty() ? def.bond_style : r->style;
     if (st == "class2" && r->params.size() >= 4) {
       ff.bonds2.push_back({b.i, b.j, r->params[0], r->params[1], r->params[2], r->params[3]});
@@ -1984,6 +2027,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
           }
           continue;
         }
+        sourced(r, "angle", {i, j, k});
         const std::string st = r->style.empty() ? def.angle_style : r->style;
         if (st == "cosine") {   // K (1 + cos θ), minimum at 180°
           ff.angles_x.push_back({i, j, k, 2, r->params.at(0), kPi});
@@ -2260,6 +2304,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
             }
             continue;
           }
+          sourced(r, "dihedral", {i, j, k, l});
           const std::string st = r->style.empty() ? def.dihedral_style : r->style;
           const auto& p = r->params;
           // msi2lmp / DL_FIELD (CVFF): a wildcard end spreads the barrier over the torsions about the central bond

@@ -133,6 +133,8 @@ add_library(caps_core STATIC
 )
 target_include_directories(caps_core PUBLIC include)
 target_link_libraries(caps_core PUBLIC ZLIB::ZLIB Threads::Threads)
+# caps ff complete looks for data/ml/caps-mace-v1.model in the source tree last (a build run from where it was built)
+set_source_files_properties(src/ffcomplete.cpp PROPERTIES COMPILE_DEFINITIONS "CAPS_SOURCE_ROOT=\"${PROJECT_SOURCE_DIR}\"")
 # the machine-learned potential: only src/mlpot.cpp sees libtorch (its headers need C++20, as the rest of CAPS uses)
 if(CAPS_WITH_TORCH)
   find_package(Torch REQUIRED)

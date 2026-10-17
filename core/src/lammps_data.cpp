@@ -81,6 +81,8 @@ std::string num(std::initializer_list<double> v) {
   return r;
 }
 
+}  // namespace
+
 // Charges at six decimals, each molecule's total kept: the rounding left over goes onto its atom of largest |q| (so a
 // neutral molecule stays neutral to 1e-6 e and the cell to the same, as PPPM needs)
 std::vector<double> charges_six_decimals(const std::vector<double>& q, const std::vector<int64_t>& mol) {
@@ -101,6 +103,8 @@ std::vector<double> charges_six_decimals(const std::vector<double>& q, const std
   return r;
 }
 
+namespace {
+
 // One kind of bonded term (bonds, angles, dihedrals or impropers) with its types, sub-styles and class II sections.
 struct Kind {
   Kind(std::string n, std::vector<std::string> c) : name(std::move(n)), cross(std::move(c)) {}
@@ -111,11 +115,14 @@ struct Kind {
     std::string style, coef;
     std::vector<std::string> cross;        // per cross section (class2 only)
     std::string label;
+    std::string source;                    // a term with a source of its own (CAPS ML): what the line says beside the label
+    std::string comment() const { return source.empty() ? label : label + "  " + source; }
   };
   std::vector<Type> types;
   std::map<std::string, int> ids;
   std::vector<int> term_type;
   std::vector<std::vector<uint32_t>> term_atoms;
+  const TermSourceIndex* sources = nullptr;   // while the layout is built: the rules' sources by term
 
   void add(const std::string& style, const std::string& coef, std::vector<std::string> cross_coef, std::vector<uint32_t> atoms,
            const std::string& label) {
@@ -123,8 +130,17 @@ struct Kind {
     for (const auto& c : cross_coef) key += "|" + c;
     auto [it, fresh] = ids.emplace(key, int(types.size()) + 1);
     if (fresh) {
-      types.push_back({style, coef, std::move(cross_coef), label});
+      types.push_back({style, coef, std::move(cross_coef), label, ""});
       if (std::find(styles.begin(), styles.end(), style) == styles.end()) styles.push_back(style);
+    }
+    if (sources) {   // CAPS ML's terms: the type says so (also when it shares its coefficients with another term)
+      std::string k = name;
+      for (auto& ch : k) ch = char(std::tolower(static_cast<unsigned char>(ch)));
+      if (const auto* ts = sources->find(k, atoms)) {
+        auto& ty = types[size_t(it->second - 1)];
+        const std::string note = term_source_note(*ts);
+        if (ty.source.find(note) == std::string::npos) ty.source += (ty.source.empty() ? "" : "; ") + note;
+      }
     }
     term_type.push_back(it->second);
     term_atoms.push_back(std::move(atoms));
@@ -215,7 +231,8 @@ Layout build(const System& s, const ForceField& ff, const LammpsStyle& st = {}) 
   L.native = st.native;
   L.charmm = charmm;
   L.force_hybrid = st.hybrid;
-  for (Kind* k : {&L.bonds, &L.angles, &L.dihedrals, &L.impropers}) k->force_hybrid = st.hybrid;
+  const TermSourceIndex sources(ff);
+  for (Kind* k : {&L.bonds, &L.angles, &L.dihedrals, &L.impropers}) k->force_hybrid = st.hybrid, k->sources = sources.empty() ? nullptr : &sources;
   const auto& T = ff.atom_type;
   auto lab = [&](std::initializer_list<uint32_t> a) {
     std::string r;
@@ -525,6 +542,7 @@ Layout build(const System& s, const ForceField& ff, const LammpsStyle& st = {}) 
     if (L.gromacs || L.charmm) throw FieldError(ff.name + ": DREIDING hydrogen bonds with this pair style have no LAMMPS form");
     L.pair_hybrid = true;   // hbond/dreiding/lj overlays the Lennard-Jones and Coulomb pairs
   }
+  for (Kind* k : {&L.bonds, &L.angles, &L.dihedrals, &L.impropers}) k->sources = nullptr;   // the index lives only while the layout is built
   return L;
 }
 
@@ -1168,7 +1186,7 @@ void write_lammps_data_ff(const System& s, const ForceField& ff0, const EnergyOp
       out << w;
     }
     for (size_t k = 0; k < left.size(); ++k) out << (k ? ", " : "# caps-ff not-in-file ") << left[k];
-    if (!left.empty()) out << "\n";
+    if (!left.empty()) out << "\n";    for (const auto& l : term_source_header(ff)) out << "# " << l << "\n";   // the terms CAPS ML fitted
   }
   out << "\n";
   out << na << " atoms\n";
@@ -1217,13 +1235,13 @@ void write_lammps_data_ff(const System& s, const ForceField& ff0, const EnergyOp
     if (k->types.empty()) continue;
     out << "\n" << k->name << " Coeffs  # " << (k->hybrid() ? std::string("hybrid") : k->style_line()) << "\n\n";
     for (size_t t = 0; t < k->types.size(); ++t)
-      out << t + 1 << (k->hybrid() ? " " + k->types[t].style : "") << k->types[t].coef << "  # " << k->types[t].label << "\n";
+      out << t + 1 << (k->hybrid() ? " " + k->types[t].style : "") << k->types[t].coef << "  # " << k->types[t].comment() << "\n";
     if (!k->has("class2")) continue;
     for (size_t sec = 0; sec < k->cross.size(); ++sec) {
       out << "\n" << k->cross[sec] << " Coeffs\n\n";
       for (size_t t = 0; t < k->types.size(); ++t) {
         const auto& ty = k->types[t];
-        if (ty.style == "class2") out << t + 1 << (k->hybrid() ? " class2" : "") << ty.cross[sec] << "  # " << ty.label << "\n";
+        if (ty.style == "class2") out << t + 1 << (k->hybrid() ? " class2" : "") << ty.cross[sec] << "  # " << ty.comment() << "\n";
         else out << t + 1 << " skip  # " << ty.label << " (" << ty.style << ")\n";
       }
     }
@@ -1566,9 +1584,11 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
   char b[400];
   out << "# LAMMPS input written by CAPS: " << clean_title(s.title, ff.name) << " · " << ff.name << "\n";
   if (st.native)
-    out << "# " << ff.name << " in its own LAMMPS styles" << (st.hybrid ? " (hybrid form)" : "") << "\n\n";
+    out << "# " << ff.name << " in its own LAMMPS styles" << (st.hybrid ? " (hybrid form)" : "") << "\n";
   else
-    out << "# the same force field and cut-offs CAPS uses (energies and forces checked against LAMMPS: bench/ff/check_data_lammps.py)\n\n";
+    out << "# the same force field and cut-offs CAPS uses (energies and forces checked against LAMMPS: bench/ff/check_data_lammps.py)\n";
+  for (const auto& l : term_source_header(ff)) out << "# " << l << "\n";   // the terms CAPS ML fitted (marked in the data file)
+  out << "\n";
   // a structure without a cell sits in a 100 Å box (as in the data file): periodic, but too large for images to interact
   if (metal)
     out << "# units metal: energies in eV (every parameter of the force field divided by 23.060549, LAMMPS's own factor), time in ps,\n"

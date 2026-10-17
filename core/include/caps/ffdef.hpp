@@ -72,7 +72,16 @@ struct FFRule {
   std::vector<double> params;
   std::map<std::string, std::vector<double>> cross;
   std::string comment;
+  // Where the parameters came from when it is not the force field's own publication, carried onto every term the rule
+  // gives (ForceField::term_sources) and written beside those terms in the exported files: "CAPS ML (CAPS MACE v1,
+  // wB97M-D3(BJ)/def2-TZVPPD reference), RMS 0.31 kcal/mol" for a term caps ff complete fitted. JSON "source".
+  std::string source;
 };
+
+// The source of a term CAPS ML fitted (caps ff complete, or an assignment with completion "ml"): the model and its
+// reference level, and the fit's RMS: "CAPS ML (CAPS MACE v1, wB97M-D3(BJ)/def2-TZVPPD reference), RMS 0.31 kcal/mol".
+std::string ml_source(const std::string& model_path, double rms_kcal);
+inline bool is_ml_source(const std::string& source) { return source.rfind("CAPS ML", 0) == 0; }
 
 struct FFDef {
   std::string name, version, source;
