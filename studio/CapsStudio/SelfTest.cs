@@ -505,8 +505,11 @@ internal static class SelfTest
         }
         {
             // checkpoints: an NVE run stopped at step 350 continues from its checkpoint at 300 to the same end as one
-            // uninterrupted run (same state and velocities; NVE has no random numbers)
-            var nve = mdOpts with { Thermostat = 0, Steps = 1000, CheckpointEvery = 100, FrameEvery = 1000, NewVelocities = 0 };
+            // uninterrupted run (same state and velocities; NVE has no random numbers). Double precision on one thread:
+            // the mixed-precision pair kernel sums forces in single precision, so a neighbour list rebuilt at another
+            // step after the restart changes the rounding, which grows to about 1e-6 A in 700 steps (more on more
+            // threads); that is not what this checks
+            var nve = mdOpts with { Thermostat = 0, Steps = 1000, CheckpointEvery = 100, FrameEvery = 1000, NewVelocities = 0, Threads = 1, Precision = 1 };
             using var a1 = cell.Copy("checkpoint a");
             using var b1 = cell.Copy("checkpoint b");
             a1.Md(nve, null);
