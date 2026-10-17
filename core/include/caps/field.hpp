@@ -212,6 +212,32 @@ struct ForceField {
   } hbond;
   std::vector<VirtualSite> vsites;
   std::vector<std::string> notes;
+  // Terms whose parameters came from a rule with a source of its own (FFRule::source: the terms CAPS ML fitted), one
+  // entry per rule: its kind (bond, angle, dihedral), its classes ("CA-CT-CT-CM"), the source and the atoms of every term
+  // it gave, in the term's order. The LAMMPS and GROMACS writers put the source beside those terms' coefficients.
+  struct TermSource {
+    std::string kind, classes, source;
+    std::vector<std::vector<uint32_t>> terms;
+  };
+  std::vector<TermSource> term_sources;
+};
+
+// What an exported file writes beside a term with a source: "CAPS ML: CA-CT-CT-CM, RMS 0.31 kcal/mol" (the full source,
+// model and reference level, is in the file's header)
+std::string term_source_note(const ForceField::TermSource& t);
+// The header lines (without the comment character) that list the terms with a source: how many, and each rule's classes,
+// count and full source; empty when there are none
+std::vector<std::string> term_source_header(const ForceField& ff);
+
+// The rules' sources by term (ForceField::term_sources), looked up by kind and atoms in either direction.
+class TermSourceIndex {
+ public:
+  explicit TermSourceIndex(const ForceField& ff);
+  const ForceField::TermSource* find(const std::string& kind, std::vector<uint32_t> atoms) const;
+  bool empty() const { return at_.empty(); }
+ private:
+  const ForceField* ff_;
+  std::map<std::pair<std::string, std::vector<uint32_t>>, size_t> at_;
 };
 
 // Types every atom of `s` (C and H only in this slice) and assigns GAFF parameters. Charges are kept from the

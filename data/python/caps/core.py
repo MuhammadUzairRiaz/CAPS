@@ -229,6 +229,15 @@ def abi_version() -> int:
     return library().caps_abi_version()
 
 
+def build_info() -> dict:
+    """The library's version, commit and whether it has CAPS's ML engine ("ml_engine": completion by CAPS ML, a build
+    with libtorch)."""
+    L = library()
+    fn = L.caps_build_info
+    fn.argtypes, fn.restype = [C.c_char_p, C.c_int32], C.c_int32
+    return _json_call(fn)
+
+
 def ml_available() -> bool:
     """Whether this build has CAPS's machine-learned potential (caps ff complete, caps ml; -DCAPS_WITH_TORCH=ON)."""
     return library().caps_ml_available() == 1
@@ -287,26 +296,39 @@ class _Field:
             raise _error()
         return self.report()
 
-    def assign(self, forcefield: str = "uff", charges: str = "auto") -> dict:
+    def assign(self, forcefield: str = "uff", charges: str = "auto", complete: Optional[str] = None) -> dict:
         """Types every atom and looks up every parameter: a force-field id from the library (gaff2, oplsaa2024 …), a path
-        to a caps-forcefield JSON, "uff", or "file" (the force field an AMBER prmtop carried; a prmtop opens with it). charges: auto (the force field's, else Gasteiger) | forcefield | gasteiger | keep | qeq | increments (bond-increment charges from the library the force field names in charge_increments_from)."""
+        to a caps-forcefield JSON, "uff", or "file" (the force field an AMBER prmtop carried; a prmtop opens with it). charges: auto (the force field's, else Gasteiger) | forcefield | gasteiger | keep | qeq | increments (bond-increment charges from the library the force field names in charge_increments_from).
+        complete="ml": the bonded terms the force field lacks for this structure are fitted by CAPS ML (caps ff complete)
+        and the assignment goes on; every such term is marked "CAPS ML" in the exported LAMMPS and GROMACS files and listed
+        in the report's "ml" entry. A term the model cannot fit stays missing with its reason; charges and untyped atoms
+        are not ML's to fill. Off by default; a CAPS built without its ML engine raises an error when asked."""
         # "file": the force field the structure's own file carried (an AMBER prmtop), every term as the file gives it
         path = "file" if forcefield == "file" else _forcefield_path(forcefield)
         code = {"forcefield": 0, "gasteiger": 1, "keep": 2, "qeq": 3, "auto": 4, "increments": 5}[charges]
         rc = library().caps_field_assign(self._doc._h, _enc(path), None, code)
         if rc < 0:
             raise _error()
+        if complete is not None:
+            return self.set_options(complete=complete)
         rep = _json_call(library().caps_field_report, self._doc._h)
         rep["complete"] = rc == 0
         return rep
 
-    def set_options(self, zero_ring3_torsions: Optional[bool] = None) -> dict:
+    def set_options(self, zero_ring3_torsions: Optional[bool] = None, complete: Optional[str] = None,
+                    ml_model: Optional[str] = None) -> dict:
         """Options of the assignment, kept with it: zero_ring3_torsions=True makes a dihedral with no parameters whose atoms
         close a three-membered ring (an epoxide, aziridine or cyclopropane) a zero term, reported as such instead of missing —
-        what LAMMPS does with a moltemplate file that has no rule for it (OPLS-AA 2024 gives none through an epoxide O)."""
+        what LAMMPS does with a moltemplate file that has no rule for it (OPLS-AA 2024 gives none through an epoxide O).
+        complete="ml" fills the missing bonded terms with CAPS ML ("none" reports them again); ml_model: another model file
+        than data/ml/caps-mace-v1.model."""
         o = {}
         if zero_ring3_torsions is not None:
             o["zero_ring3_torsions"] = bool(zero_ring3_torsions)
+        if complete is not None:
+            o["complete"] = str(complete)
+        if ml_model is not None:
+            o["ml_model"] = str(ml_model)
         rc = library().caps_field_set_options(self._doc._h, _enc(json.dumps(o)))
         if rc < 0:
             raise _error()

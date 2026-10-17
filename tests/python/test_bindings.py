@@ -555,7 +555,7 @@ _d = _tf.mkdtemp()
 mx.export_engines(_d, stem="mx", run="check")
 _in = open(os.path.join(_d, "mx.in")).read()
 _top = "".join(open(os.path.join(_d, f)).read() for f in os.listdir(_d) if f.endswith((".top", ".itp")))
-check("pair lj/cut 1 special lj 0.0 0.0 0.500000" in _in and "special coul 0.0 0.0 0.833333" in _in and re.search(r"^\s*\d+\s+\d+\s+2\s+0\.5 ", _top, re.M) is not None,
+check("pair lj/cut 1 special lj 0.0 0.0 0.500000" in _in and "special coul 0.0 0.0 0.833333" in _in and re.search(r"^\s*\d+\s+\d+\s+2\s+0\.500000 ", _top, re.M) is not None,
       "own 1-4 scalings: LAMMPS per-part special weights, GROMACS function-2 pairs")
 # the assigned force field written whole and read back on the same structure: same energy, groups kept
 _ffp = os.path.join(_tf.mkdtemp(), "mx.ff.json")
@@ -695,7 +695,7 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 70, "ABI 70")
+check(caps.abi_version() == 71, "ABI 71")
 _pbs = caps.polymer("[*]OCCCCOC(=O)CCC(=O)[*]", dp=4, chains=2, seed=3)
 _cgd = _pbs.cg_map(rules="ester-cut")
 check(_cgd.atoms == 16, f"ester cut: 16 beads ({_cgd.atoms})")

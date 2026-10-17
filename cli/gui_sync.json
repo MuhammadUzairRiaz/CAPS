@@ -130,7 +130,8 @@
     "--ff": "page",
     "--overlay": "ViewModels/FieldViewModel.Sync.cs|FieldSetOverlays",
     "--charges": "page",
-    "--csv": "page"
+    "--csv": "page",
+    "--complete": "ViewModels/FieldViewModel.cs|CompleteMl"
    }
   },
   "tg": {
@@ -150,7 +151,8 @@
     "--overlay": "ViewModels/FieldViewModel.Sync.cs|FieldSetOverlays",
     "--charges": "page",
     "--csv": "page",
-    "--fit": "partial: the page fits its own scan (two lines, free hinge or ranges); fitting a CSV table written elsewhere is the command line's"
+    "--fit": "partial: the page fits its own scan (two lines, free hinge or ranges); fitting a CSV table written elsewhere is the command line's",
+    "--complete": "ViewModels/FieldViewModel.cs|CompleteMl"
    }
   },
   "frames": {
@@ -889,7 +891,8 @@
     "--ff": "page",
     "--charges": "page",
     "--overlay": "ViewModels/FieldViewModel.Sync.cs|FieldSetOverlays",
-    "--quiet": "cli: terminal output only"
+    "--quiet": "cli: terminal output only",
+    "--complete": "ViewModels/FieldViewModel.cs|CompleteMl"
    }
   },
   "cbmc": {
@@ -948,7 +951,8 @@
     "--checkpoint-every": "partial: the Studio checkpoints automatically (about 50 per run) and continues a stopped run (caps_checkpoint)",
     "--checkpoint": "partial: kept in the document (caps_checkpoint), not as a file",
     "--progress-file": "cli: progress lines for batch jobs; the Studio follows them on a cluster (Jobs)",
-    "--resume": "Views/Pages/DynamicsPage.axaml|MdContinueLabel"
+    "--resume": "Views/Pages/DynamicsPage.axaml|MdContinueLabel",
+    "--complete": "ViewModels/FieldViewModel.cs|CompleteMl"
    }
   },
   "equilibrate": {
@@ -991,7 +995,8 @@
     "--precision": "Views/Pages/DynamicsPage.axaml|MdDoublePrecision",
     "--overlay": "ViewModels/FieldViewModel.Sync.cs|FieldSetOverlays",
     "--log": "partial: the thermo rows are kept with the run and exported from the plots; no CSV path option",
-    "--quiet": "cli: terminal output only"
+    "--quiet": "cli: terminal output only",
+    "--complete": "ViewModels/FieldViewModel.cs|CompleteMl"
    }
   },
   "chains": {
@@ -1074,7 +1079,8 @@
     "--summary": "ViewModels/MainViewModel.ReactNet.cs|ReactSummary()",
     "--overlay": "ViewModels/FieldViewModel.Sync.cs|FieldSetOverlays",
     "--list-templates": "Views/Pages/ReactPage.axaml|RxBuiltinLabels",
-    "--quiet": "cli: terminal output only"
+    "--quiet": "cli: terminal output only",
+    "--complete": "ViewModels/FieldViewModel.cs|CompleteMl"
    }
   },
   "ml eval": {
@@ -1108,7 +1114,7 @@
     "--ff": "page",
     "--overlay": "ViewModels/FieldViewModel.Sync.cs|FieldSetOverlays",
     "--report": "page",
-    "--model": "partial: the Studio uses data/ml/caps-mace-v1.model beside the force fields",
+    "--model": "partial: the Studio uses CAPS's model where the core finds it (find_ml_model: beside the force-field library, CAPS_HOME, the app)",
     "--step": "partial: the Studio scans at the default 15°"
    }
   },
@@ -1153,7 +1159,8 @@
     "caps_field_assign",
     "caps_field_set_overlays",
     "caps_export_engines",
-    "caps_gromacs"
+    "caps_gromacs",
+    "caps_field_set_options"
    ],
    "options": {
     "--ff": "page",
@@ -1175,7 +1182,9 @@
     "--units": "page",
     "--list": "page",
     "--overlay": "ViewModels/FieldViewModel.Sync.cs|FieldSetOverlays",
-    "--moltemplate": "partial: the Export center writes LAMMPS, GROMACS and DL_POLY; moltemplate output is the command line's"
+    "--moltemplate": "partial: the Export center writes LAMMPS, GROMACS and DL_POLY; moltemplate output is the command line's",
+    "--complete": "ViewModels/FieldViewModel.cs|CompleteMl",
+    "--model": "partial: the Studio uses CAPS's model where the core finds it (find_ml_model: beside the force-field library, CAPS_HOME, the app)"
    }
   },
   "ff overlays": {

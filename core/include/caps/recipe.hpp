@@ -52,6 +52,7 @@ struct RecipeOptions {
   std::string base_dir = ".";        // relative paths in the recipe
   std::string out_dir = ".";         // exported files
   std::string forcefield_dir;        // the library (catalogue.json) for force-field names
+  std::string ml_model;              // type: { complete: ml }: CAPS's model ("" data/ml/caps-mace-v1.model beside the library)
   long long seed = -1;               // ≥ 0 overrides every seed of the recipe
   int threads = 0;                   // 0: automatic
   std::string sha256;                // of the recipe's text: recorded as the manifest's first step, so every run names its recipe

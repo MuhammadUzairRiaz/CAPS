@@ -16,7 +16,10 @@ bead models), library entries without a parameter file (aliases, templates) and 
 for yet are listed and skipped with the reason. Failures print CAPS's own reason (untyped atoms, missing
 parameters) so each can be traced to a typing rule or a parameter the library lacks.
 
-usage: python3 bench/polymers/check_matrix.py [--ff substring | =exact-id] [--polymer substring] [--engine lammps|gromacs] [--fill-from FF] [--jobs 8] [--keep DIR] [--json OUT]
+With --complete ml the type step fills the bonded terms a force field lacks with CAPS ML (type: { complete: ml }; a
+CAPS built with libtorch, CAPS_BIN=build-ml/cli/caps): a cell then fails at typing only for what the model cannot fit.
+
+usage: python3 bench/polymers/check_matrix.py [--ff substring | =exact-id] [--polymer substring] [--engine lammps|gromacs] [--fill-from FF] [--complete ml] [--jobs 8] [--keep DIR] [--json OUT]
 """
 import json, math, os, re, subprocess, sys, tempfile
 from concurrent.futures import ProcessPoolExecutor
@@ -30,6 +33,8 @@ arg = lambda k, d: sys.argv[sys.argv.index(k) + 1] if k in sys.argv else d
 ONLY_FF, ONLY_P = arg("--ff", ""), arg("--polymer", "")
 ENGINE = arg("--engine", "lammps")   # --engine gromacs: every cell written and checked in GROMACS instead
 FILL = arg("--fill-from", "")   # another force field's rules where the tested one has none (type.fill_from)
+COMPLETE = arg("--complete", "")   # "ml": the missing bonded terms fitted by CAPS ML (type.complete)
+TIMEOUT = 7200 if COMPLETE else 600   # seconds per caps run; fitting torsions with the model takes longer
 JOBS = int(arg("--jobs", "8"))
 WORK = arg("--keep", "") or tempfile.mkdtemp(prefix="caps_matrix_")
 
@@ -73,7 +78,7 @@ def recipe(pid, spec, ff, export="lammps", chains=3):
         lines.append(f"    sequence: {spec['sequence']}")
         if "weights" in spec:
             lines.append("    weights: [" + ", ".join(str(w) for w in spec["weights"]) + "]")
-    lines += ["    dp: 10", f"    chains: {chains}", f"type: {{ forcefield: {ff}, charges: auto{', fill_from: ' + FILL if FILL else ''} }}", "grow: { density: 0.3, seed: 7 }",
+    lines += ["    dp: 10", f"    chains: {chains}", f"type: {{ forcefield: {ff}, charges: auto{', fill_from: ' + FILL if FILL else ''}{', complete: ' + COMPLETE if COMPLETE else ''} }}", "grow: { density: 0.3, seed: 7 }",
               "relax: { method: lbfgs, fmax: 1.0 }", f"export: [{export}]"]
     return "\n".join(lines) + "\n"
 
@@ -273,6 +278,13 @@ def lammps_energy(d, stem):
 
 
 def case(job):
+    try:
+        return _case(job)
+    except subprocess.TimeoutExpired as e:   # one slow cell is a result, not the end of the matrix
+        return job[0], job[1], job[3], "fail-timeout", f"no result within {e.timeout:.0f} s"
+
+
+def _case(job):
     pid, pname, spec, ffid = job
     d = os.path.join(WORK, f"{pid}__{ffid}")
     os.makedirs(d, exist_ok=True)
@@ -282,14 +294,14 @@ def case(job):
     else:
         open(rp, "w").write(recipe(pid, spec, ffid))
     try:
-        r = subprocess.run([CAPS, "run", rp, "--out", d, "--threads", "1"], capture_output=True, text=True, timeout=600)
-    except subprocess.TimeoutExpired:   # a cell CAPS cannot build in 10 minutes is a failure of its own, not the end of the sweep
-        return pid, pname, ffid, "fail-timeout", "caps run did not finish in 600 s"
+        r = subprocess.run([CAPS, "run", rp, "--out", d, "--threads", "1"], capture_output=True, text=True, timeout=TIMEOUT)
+    except subprocess.TimeoutExpired:   # a cell CAPS cannot build in time is a failure of its own, not the end of the sweep
+        return pid, pname, ffid, "fail-timeout", f"caps run did not finish in {TIMEOUT} s"
     out = r.stdout + r.stderr
     engine = "GROMACS" if ENGINE == "gromacs" else "LAMMPS"
     if r.returncode and "no exact LAMMPS form" in out:   # separate 1-4 Lennard-Jones (CHARMM, GROMOS): GROMACS writes it exactly
         open(rp, "w").write(recipe(pid, spec, ffid, "gromacs", chains=12))   # GROMACS needs a cell at least twice the cut-off
-        r = subprocess.run([CAPS, "run", rp, "--out", d, "--threads", "1"], capture_output=True, text=True, timeout=600)
+        r = subprocess.run([CAPS, "run", rp, "--out", d, "--threads", "1"], capture_output=True, text=True, timeout=TIMEOUT)
         out = r.stdout + r.stderr
         engine = "GROMACS"
     if r.returncode:

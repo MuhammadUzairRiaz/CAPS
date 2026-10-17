@@ -19,7 +19,7 @@ internal static class SelfTest
         }
         Console.WriteLine($"info Python: {(MainViewModel.PythonAvailable ? MainViewModel.PythonExe : "none")}");
 
-        Check(Native.AbiVersion() == 70, "native ABI version 70");
+        Check(Native.AbiVersion() == 71, "native ABI version 71");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -4848,7 +4848,7 @@ internal static class SelfTest
             vm.Field.WaterModelIndex = FieldViewModel.Waters.FindIndex(w => w.Id == "tip4p2005") + 1;
             vm.Field.Assign().GetAwaiter().GetResult();
             var atoms = vm.Document?.Summary().Atoms ?? 0;
-            Check(atoms == 4 && vm.Field.ForceFieldName.Contains("TIP4P/2005", StringComparison.Ordinal) && FieldViewModel.Waters.Count == 12,
+            Check(atoms == 4 && vm.Field.ForceFieldName.Contains("TIP4P/2005", StringComparison.Ordinal) && FieldViewModel.Waters.Count == 13,
                   $"water model: {atoms} atoms · {vm.Field.ForceFieldName} · {FieldViewModel.Waters.Count} models · {vm.Field.Log}");
             vm.Field.WaterModelIndex = 0;
         }

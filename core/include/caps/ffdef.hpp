@@ -72,7 +72,16 @@ struct FFRule {
   std::vector<double> params;
   std::map<std::string, std::vector<double>> cross;
   std::string comment;
+  // Where the parameters came from when it is not the force field's own publication, carried onto every term the rule
+  // gives (ForceField::term_sources) and written beside those terms in the exported files: "CAPS ML (CAPS MACE v1,
+  // wB97M-D3(BJ)/def2-TZVPPD reference), RMS 0.31 kcal/mol" for a term caps ff complete fitted. JSON "source".
+  std::string source;
 };
+
+// The source of a term CAPS ML fitted (caps ff complete, or an assignment with completion "ml"): the model and its
+// reference level, and the fit's RMS: "CAPS ML (CAPS MACE v1, wB97M-D3(BJ)/def2-TZVPPD reference), RMS 0.31 kcal/mol".
+std::string ml_source(const std::string& model_path, double rms_kcal);
+inline bool is_ml_source(const std::string& source) { return source.rfind("CAPS ML", 0) == 0; }
 
 struct FFDef {
   std::string name, version, source;
@@ -306,8 +315,8 @@ void merge_forcefield(FFDef& base, const FFDef& overlay);
 void merge_overlays(FFDef& def, const std::string& comma_separated_paths);
 
 // The overlay files of a force-field library folder: caps-forcefield files with no catalogue.json entry and no atom types
-// of their own (parameter refits such as oplsaa2024-lj-refit.json, oplsaa2024-dlpno.json). base is the catalogue id the
-// file name starts with ("oplsaa2024" for oplsaa2024-dlpno.json; the longest that matches), "" when none does.
+// of their own (parameter refits such as oplsaa2024-lj-refit.json). base is the catalogue id the file name starts with
+// ("oplsaa2024" for oplsaa2024-lj-refit.json; the longest that matches), "" when none does.
 struct OverlayInfo {
   std::string file, path, name, base;
   int pairs = 0, bonds = 0, angles = 0, dihedrals = 0, impropers = 0;
@@ -409,8 +418,8 @@ ForceField parameterize(const System& s, const FFDef& ff, const std::vector<std:
 // Charges "auto" (the Studio's automatic and caps ff apply's default) and "increments", for every command that takes
 // --charges: auto is the force field's per-type charges, else Gasteiger–Marsili, else QEq, and when the per-type charges
 // miss the formal charge, the companion force field's bond-increment charges (charge_increments_from); increments is the
-// companion's always. s takes the companion charges when they are used. Other modes go straight to parameterize. said
-// (optional): the lines that say which charges were used.
+// companion's always. s takes the companion charges when they are used. Other modes go straight to parameterize.
+// said (optional): the lines that say which charges were used.
 ForceField parameterize_charges(System& s, const FFDef& ff, const std::vector<std::string>& types, const std::string& charges,
                                 const std::string& ff_path, ParamReport* rep, bool allow_missing, std::vector<std::string>* said = nullptr);
 

@@ -122,12 +122,16 @@ public sealed partial class FieldViewModel
         OutOfDomain = r.TryGetProperty("out_of_domain", out var d) && d.ValueKind == JsonValueKind.String ? d.GetString() ?? "" : "";
     }
 
-    // ---- caps ff complete: the bonded terms the force field lacks, fitted with CAPS's model (a libtorch build only)
+    // ---- CAPS ML, two ways (a libtorch build only; caps_ml_available, the same check as caps_build_info's "ml_engine"):
+    // "Fit missing terms" fits now and saves an overlay file (caps ff complete, caps_ff_complete); the checkbox "Fill
+    // missing terms with CAPS ML at every assignment" fits whatever is missing each time the force field is assigned
+    // (--complete ml, caps_field_set_options {"complete": "ml"}). Both are off with MlMissingNote in a build without it.
     public static bool MlAvailable { get; } = SafeMl();
     private static bool SafeMl() { try { return CapsDocument.MlAvailable; } catch { return false; } }
+    public const string MlMissingNote = "This build of CAPS has no ML engine (it was built without CAPS_WITH_TORCH), so missing terms cannot be fitted here. Build CAPS with -DCAPS_WITH_TORCH=ON, or run caps ff complete from such a build and add its overlay with Import.";
     public static string MlNoteStatic => MlAvailable
-        ? "CAPS finds every bond, angle and torsion the force field lacks for this structure, scans each on a fragment with its machine-learned potential and fits the term; the fit is written as an overlay and merged (caps ff complete)."
-        : "This build of CAPS has no machine-learned model (it was built without CAPS_WITH_TORCH), so missing terms cannot be fitted here. Build CAPS with -DCAPS_WITH_TORCH=ON, or run caps ff complete from such a build and add its overlay with Import.";
+        ? "Fit missing terms: CAPS finds every bond, angle and torsion the force field lacks for this structure, scans each on a fragment with its machine-learned potential and fits the term, now, and saves the fit as an overlay file that is merged (caps ff complete). To have this done at every assignment instead, tick \"Fill missing terms with CAPS ML at every assignment\" under Missing before run."
+        : MlMissingNote;
     public bool CanComplete => MlAvailable && Assigned && HasMissing && !IsGrouped && Selected is { Id: not "uff" } && NotWorking;
     private string _completeText = "";
     public string CompleteText { get => _completeText; private set => Set(ref _completeText, value); }
@@ -168,7 +172,8 @@ public sealed partial class FieldViewModel
         if (e == null) return null;
         var overlays = ChosenOverlays.Concat(ExtraOverlays).ToList();
         var charges = _chargeMode switch { 1 => "types", 2 => "gasteiger", 3 => "keep", 4 => "qeq", 5 => "increments", _ => "auto" };
-        return $" --ff {Quote(e.Id == "uff" ? "uff" : e.File)}" + (overlays.Count > 0 ? " --overlay " + Quote(string.Join(",", overlays)) : "") + $" --charges {charges}";
+        return $" --ff {Quote(e.Id == "uff" ? "uff" : e.File)}" + (overlays.Count > 0 ? " --overlay " + Quote(string.Join(",", overlays)) : "") + $" --charges {charges}" +
+               (CompleteMl ? " --complete ml" : "");
     }
 
     /// <summary>The assignment as the command line runs it (caps ff apply; the same --ff, --overlay and --charges take
@@ -182,7 +187,7 @@ public sealed partial class FieldViewModel
             var overlays = ChosenOverlays.Concat(ExtraOverlays).ToList();
             var charges = _chargeMode switch { 1 => "types", 2 => "gasteiger", 3 => "keep", 4 => "qeq", 5 => "increments", _ => "auto" };
             return $"caps ff apply STRUCTURE --ff {Quote(ff)}" + (overlays.Count > 0 ? " --overlay " + Quote(string.Join(",", overlays)) : "") +
-                   $" --charges {charges} -o STRUCTURE.data";
+                   $" --charges {charges}" + (CompleteMl ? " --complete ml" : "") + " -o STRUCTURE.data";
         }
     }
     internal static string Quote(string s) => s.Length > 0 && s.All(c => char.IsLetterOrDigit(c) || "/._-,:=+@".Contains(c)) ? s : "'" + s.Replace("'", "'\\''") + "'";
