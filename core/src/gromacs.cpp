@@ -570,7 +570,11 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
   }
   itp.close();
   top << "\n#include \"" << itp_name << "\"\n";
-  top << "\n[ system ]\n" << title << "\n\n[ molecules ]\n; name  count\n";
+  // the system's name: a line GROMACS reads as a directive if it starts with '[' (a SMILES title such as [H][H])
+  std::string sysname = title;
+  for (auto& c : sysname) if (c == '[' || c == ']' || c == ';') c = ' ';
+  sysname.erase(0, sysname.find_first_not_of(' '));
+  top << "\n[ system ]\n" << (sysname.empty() ? std::string("CAPS") : sysname) << "\n\n[ molecules ]\n; name  count\n";
   for (const auto& r : runs) top << kname[size_t(r.first)] << "  " << r.second << "\n";
   top.close();
 
