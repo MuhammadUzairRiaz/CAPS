@@ -295,7 +295,7 @@ def markdown(text: str) -> tuple[str, list[tuple[int, str, str]], dict]:
 # ---------------------------------------------------------------------------------------------------------- page shell
 NAV = [("index.html", "Home"), ("modules/index.html", "Modules"), ("cli/index.html", "CLI guide"), ("cli/reference.html", "Command reference"),
        ("tutorials/index.html", "Tutorials"), ("theory/index.html", "Theory"), ("python.html", "Python"),
-       ("manual/index.html", "Studio tour")]
+       ("manual/index.html", "Studio tour"), ("whatsnew.html", "What's new")]
 RELEASES = REPO + "/releases/latest"
 VERSION = re.search(r"project\(CAPS VERSION ([0-9.]+)", (ROOT / "CMakeLists.txt").read_text()).group(1)
 MARK = ('<svg class="mark" viewBox="0 0 30 30" aria-hidden="true"><path d="M15 2 L26.3 8.5 L26.3 21.5 L15 28 L3.7 21.5 L3.7 8.5 Z" '
@@ -421,6 +421,14 @@ def build_guide(out: Path, summary: dict[str, str]) -> None:
             f'<h1>{html.escape(meta.get("title", "CLI guide"))}</h1><p>{inline(meta.get("lede", ""))}</p></header>')
     (out / "cli" / "index.html").write_text(page("cli/index.html", "CAPS CLI guide", hero + body, toc_from(toc), maths=True,
                                                  desc=meta.get("lede", "")))
+
+
+def build_whatsnew(out: Path) -> None:
+    """whatsnew.html: what each release adds and removes (tools/docs/src/whatsnew.md)"""
+    body, toc, meta = markdown((SRC / "whatsnew.md").read_text())
+    hero = (f'<header class="hero"><p class="eyebrow">{html.escape(meta.get("eyebrow", "Releases"))}</p>'
+            f'<h1>{html.escape(meta.get("title", "What is new"))}</h1><p>{inline(meta.get("lede", ""))}</p></header>')
+    (out / "whatsnew.html").write_text(page("whatsnew.html", "What's new in CAPS", hero + body, toc_from(toc), desc=meta.get("lede", "")))
 
 
 def build_tutorials(out: Path) -> None:
@@ -720,6 +728,7 @@ def main() -> None:
     summary = build_reference(a.caps, out)
     build_guide(out, summary)
     build_tutorials(out)
+    build_whatsnew(out)
     build_theory(out, Refs(a.lib))
     build_python(out, a.lib)
     modules = build_modules(out)

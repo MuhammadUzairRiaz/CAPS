@@ -853,7 +853,10 @@
     "--blocks": "page",
     "--pattern": "page",
     "--ff": "page",
-    "--auto-scale": "page"
+    "--auto-scale": "page",
+    "--method": "page",
+    "--lookahead": "page",
+    "--threads": "page"
    }
   },
   "field": {
