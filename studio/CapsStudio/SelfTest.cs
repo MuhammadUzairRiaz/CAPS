@@ -953,7 +953,8 @@ internal static class SelfTest
             vm.OpenUnitTyping();
             var exUntyped = vm.UtUntyped;
             if (exUntyped == 0) vm.ApplyUnitTyping();
-            for (var k = 0; k < 400 && vm.Field.Working; ++k) { Avalonia.Threading.Dispatcher.UIThread.RunJobs(); Thread.Sleep(25); }
+            // the typing runs off the UI thread: wait for its status (up to a minute on a loaded machine), not only the flag
+            for (var k = 0; k < 2400 && (vm.Field.Working || !vm.UtStatus.Contains("typed from the example")); ++k) { Avalonia.Threading.Dispatcher.UIThread.RunJobs(); Thread.Sleep(25); }
             Avalonia.Threading.Dispatcher.UIThread.RunJobs();
             var deck = vm.Field.Assigned ? vm.Document!.LammpsInput("system.data") : "";
             Check(exUntyped == 0 && vm.Field.Assigned && vm.UtStatus.Contains("film") && vm.UtStatus.Contains("typed from the example") &&
