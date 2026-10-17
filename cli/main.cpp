@@ -287,6 +287,7 @@ int usage() {
                "  caps ff info FF.json                           types, rules, styles, references\n"
                "  caps ff type FILE --ff FF.json [--typing RULES.json] [-o TYPES.txt] [--explain]   assign atom types from SMARTS rules\n"
                "  caps ff apply FILE --ff FF.json [-o OUT.data [--lammps-input OUT.in [--lammps-run check|minimize|nvt|npt --temp 300 --press 1 --dt FS (default: the force field's, Martini 20, else 0.5) --steps N] [--moltemplate SYSTEM.lt]]] [--gromacs STEM] [--dlpoly DIR] [--overlay USER.json[,MORE.json]] [--types TYPES.txt] [--charges auto|keep|types|gasteiger]\n"
+               "               [--complete ml [--model M.model]]   (terms the force field lacks fitted by CAPS ML, marked as such in every file)\n"
                "               [--lammps-style native|exact] [--hybrid] [--kspace auto|pppm|ewald|dsf|cut] [--kspace-accuracy 1e-4] [--lammps-cutoff Å] [--units auto|real|metal]\n"
                "               [--list] [-o OUT.data]   parameters for a structure whose atoms carry type names (or TYPES.txt)\n";
   return 2;
@@ -332,7 +333,7 @@ const std::set<std::string>& known_options() {
   static const std::set<std::string> k = {
     "--all", "--allow-missing", "--auto-scale", "--axis", "--barostat", "--bci", "--beads", "--bg", "--bibtex",
     "--block", "--blocks", "--born", "--born-every", "--born-strain", "--box", "--box-relax",
-    "--capture", "--cell", "--centre", "--chains", "--charges", "--colour", "--comfortable", "--compare",
+    "--capture", "--cell", "--centre", "--chains", "--charges", "--colour", "--comfortable", "--compare", "--complete",
     "--components", "--conc", "--constraint-solver", "--constraints", "--configs", "--conformers", "--count", "--csv", "--cutoff", "--cycles",
     "--density", "--deterministic", "--distance", "--dp", "--dq", "--dr", "--droplet", "--dt", "--dump",
     "--edge", "--eq-ps", "--equilibrate", "--dlpoly",
@@ -441,6 +442,53 @@ void merge_overlays(FFDef& def, const std::string& list) {
   }
 }
 
+// --complete ml (caps ff apply, relax, md, equilibrate): the bonded terms the force field lacks for the structure, fitted
+// by CAPS ML and merged onto it before the assignment goes on (caps/ffcomplete.hpp). Off unless asked, so a result stays
+// what the force field alone gives. Prints what was fitted and what is still missing (with the reason).
+bool completion_asked(std::map<std::string, std::string>& o) { return o.count("--complete") && parse_complete_option(o["--complete"]); }
+
+std::string cli_ml_model(std::map<std::string, std::string>& o, const std::string& ffpath) {
+  if (o.count("--model")) return o["--model"];
+  std::string m = find_ml_model({ffpath});
+  if (m.empty())
+    for (const auto& r : caps_roots())
+      if (!r.empty() && std::filesystem::exists(r + "/data/ml/caps-mace-v1.model")) { m = r + "/data/ml/caps-mace-v1.model"; break; }
+  return m;
+}
+
+MlFill cli_complete_ml(const System& s, FFDef& def, const std::vector<std::string>& types, std::map<std::string, std::string>& o,
+                       const std::string& ffpath, bool quiet) {
+  if (!ml_engine_available()) throw std::runtime_error(ml_engine_missing_message());
+  CompleteOptions co;
+  co.model = cli_ml_model(o, ffpath);
+  if (o.count("--step")) co.step = std::stoi(o["--step"]);
+  auto log = [&](const std::string& m) { if (!quiet) { std::printf("  CAPS ML: %s\n", m.c_str()); std::fflush(stdout); } };
+  MlFill f = fill_missing_with_ml(s, def, types, co, log);
+  if (!quiet) {
+    if (f.report.missing_before.empty()) std::printf("CAPS ML: nothing missing in %s for this structure\n", def.name.c_str());
+    else std::printf("CAPS ML: %d parameter set(s) fitted where %s has none; %zu still missing\n", f.fitted, def.name.c_str(), f.report.missing_after.size());
+    for (const auto& t : f.fitted_terms) std::printf("  fitted %s\n", t.c_str());
+    for (const auto& t : f.left) std::printf("  left: %s\n", t.c_str());
+  }
+  return f;
+}
+
+// The provenance step of a completion: the model, each fitted term with its source, what was left
+ProvStep ml_prov_step(const MlFill& f, const std::string& model) {
+  ProvStep p;
+  p.engine = "field.complete_ml";
+  p.summary = std::to_string(f.fitted) + " parameter set(s) fitted by CAPS ML where the force field has none";
+  p.params.push_back({"model", model});
+  for (const auto& t : f.fitted_terms) {
+    const size_t dot = t.find(" · ");
+    p.params.push_back({dot == std::string::npos ? t : t.substr(0, dot), dot == std::string::npos ? "" : t.substr(dot + 4)});
+  }
+  for (const auto& t : f.left) p.params.push_back({"still missing", t});
+  p.approximations.push_back({"Estimated parameters", f.fitted ? std::to_string(f.fitted) + " bonded parameter set(s) from CAPS ML (caps ff complete)" : "none"});
+  p.time = now_iso();
+  return p;
+}
+
 // The force field for commands that take --ff FF.json [--typing RULES] [--charges MODE]: typed by the force field's
 // rules (or the atom names in the file); without --ff the built-in GAFF of C and H.
 ForceField cli_forcefield(System& s0, std::map<std::string, std::string>& o, bool quiet = false) {
@@ -502,6 +550,7 @@ ForceField cli_forcefield(System& s0, std::map<std::string, std::string>& o, boo
   } else {
     for (const auto& a : s0.atoms) types.push_back(a.name);
   }
+  if (completion_asked(o)) (void)cli_complete_ml(s0, def, types, o, ff_path(o["--ff"]), quiet);
   ParamReport rep;
   if (!o.count("--charges") && file_charges(s0) && !quiet)
     std::fprintf(stderr, "charges: the file's own charges are kept, not %s's (--charges auto gives the force field's own)\n", def.name.c_str());
@@ -2442,6 +2491,10 @@ int main(int argc, char** argv) {
         ParamReport rep;
         double cutoff = 10.0;
         const bool own = o["--ff"] == "file";   // the force field the file carries (an AMBER prmtop)
+        MlFill ml_fill;                          // --complete ml: what CAPS ML fitted
+        std::string ml_model;
+        bool ml_ran = false;
+        if ((own || uff) && completion_asked(o)) throw std::runtime_error("--complete ml fills a library force field's gaps (--ff NAME or FF.json), not UFF's or a file's own");
         if (own) {
           if (!s.forcefield || s.forcefield->charge.size() != s.atoms.size())
             throw std::runtime_error(!s.forcefield_error.empty() ? s.forcefield_error
@@ -2524,6 +2577,11 @@ int main(int argc, char** argv) {
             }
           } else {
             for (const auto& a : s.atoms) types.push_back(a.name);
+          }
+          if (completion_asked(o)) {
+            ml_model = cli_ml_model(o, ff_path(o["--ff"]));
+            ml_fill = cli_complete_ml(s, ff, types, o, ff_path(o["--ff"]), false);
+            ml_ran = true;
           }
           std::string charges = o.count("--charges") ? o["--charges"] : (file_charges(s) ? "keep" : "auto");
           const bool auto_charges = charges == "auto";
@@ -2736,6 +2794,21 @@ int main(int argc, char** argv) {
           if (o.count("--cutoff")) dop.cutoff = std::stod(o["--cutoff"]);
           for (const auto& n : write_dlpoly(s, f, o["--dlpoly"], dop)) std::printf("dlpoly: %s\n", n.c_str());
           std::printf("wrote %s/FIELD, CONFIG and CONTROL\n", o["--dlpoly"].c_str());
+        }
+        if (ml_ran) {   // the provenance beside the files: the assignment and each term CAPS ML fitted, with its source
+          Manifest m;
+          ProvStep a;
+          a.engine = "field.assign";
+          a.summary = f.name + " · " + std::to_string(rep.missing.size()) + " parameters missing after completion";
+          a.params = {{"force field", std::filesystem::path(ff_path(o["--ff"])).filename().string()}, {"completion", "ml"}};
+          a.time = now_iso();
+          m.steps.push_back(a);
+          m.steps.push_back(ml_prov_step(ml_fill, ml_model));
+          for (const std::string& out : {o.count("-o") ? o["-o"] : std::string(), o.count("--gromacs") ? o["--gromacs"] + ".top" : std::string()})
+            if (!out.empty()) {
+              write_manifest(m, out);
+              std::printf("wrote %s\n", sidecar_path(out).c_str());
+            }
         }
         return rep.missing.empty() ? 0 : 3;
       }

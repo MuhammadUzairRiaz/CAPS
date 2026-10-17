@@ -170,6 +170,14 @@ std::string forcefield_to_json(const ForceField& ff) {
     return o;
   });
   j["notes"] = strings(ff.notes);
+  if (!ff.term_sources.empty())   // the terms whose parameters have a source of their own (CAPS ML's)
+    j["term_sources"] = rows(ff.term_sources, [](const ForceField::TermSource& t) {
+      Json o = Json::object(), terms = Json::array();
+      o["kind"] = Json(t.kind), o["classes"] = Json(t.classes), o["source"] = Json(t.source);
+      for (const auto& a : t.terms) terms.push_back(numbers(a));
+      o["terms"] = terms;
+      return o;
+    });
   return j.dump_exact(0);
 }
 
@@ -290,6 +298,15 @@ ForceField forcefield_from_json(const std::string& text) {
     return v;
   });
   f.notes = read_strings(j, "notes");
+  read_rows(j, "term_sources", f.term_sources, [](const Json& r) {
+    ForceField::TermSource t{r.text("kind", ""), r.text("classes", ""), r.text("source", ""), {}};
+    for (const auto& a : at(r, "terms").items()) {
+      std::vector<uint32_t> v;
+      for (const auto& x : a.items()) v.push_back(uint32_t(x.number()));
+      t.terms.push_back(std::move(v));
+    }
+    return t;
+  });
   const size_t na = size_t(j.num("atoms", double(f.type_index.size())));
   if (f.type_index.size() != na || f.charge.size() != na || f.mass.size() != na) throw FieldError("force field file: per-atom lists of different lengths");
   return f;
