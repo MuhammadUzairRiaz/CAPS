@@ -2068,6 +2068,116 @@
     "key": "lopls",
     "order": 7
    }
+  },
+  {
+   "id": "martini2-marrink2007",
+   "name": "MARTINI 2.0",
+   "version": "2007",
+   "references": [
+    "S. J. Marrink, H. J. Risselada, S. Yefimov, D. P. Tieleman, A. H. de Vries, J. Phys. Chem. B 111, 7812 (2007)"
+   ],
+   "origin": "built from source",
+   "source": "S. J. Marrink, H. J. Risselada, S. Yefimov, D. P. Tieleman, A. H. de Vries, J. Phys. Chem. B 111, 7812 (2007), Table 1 and sections 2.2-2.8; bench/ff/make_martini2.py",
+   "license": "published parameters of the paper(s)",
+   "status": "validated",
+   "notes": "37 bead types, every pair from the paper's interaction matrix; templates W, WF, NA+, CL-, DOD, HD, OCO, CLF, ETH, CHEX, DPPC, DLPC, DCPC, DOPC, POPC, DPPE, DOPE, POPE",
+   "file": "martini2-marrink2007.json",
+   "typing": {
+    "rules": "typing/martini2-marrink2007.typing.json",
+    "evidence": "beads typed by name"
+   },
+   "counts": {
+    "atom_types": 37,
+    "pairs": 703,
+    "bonds": 3,
+    "angles": 3,
+    "dihedrals": 0,
+    "impropers": 0
+   },
+   "group": "cg",
+   "aliases": [
+    "martini",
+    "martini2"
+   ],
+   "list": {
+    "label": "MARTINI 2",
+    "key": "martini2",
+    "order": 37
+   }
+  },
+  {
+   "id": "drymartini-arnarez2015",
+   "name": "Dry Martini (implicit solvent)",
+   "version": "2015",
+   "references": [
+    "C. Arnarez, J. J. Uusitalo, M. F. Masman, H. I. Ingolfsson, D. H. de Jong, M. N. Melo, X. Periole, A. H. de Vries, S. J. Marrink, J. Chem. Theory Comput. 11, 260 (2015)",
+    "S. J. Marrink, H. J. Risselada, S. Yefimov, D. P. Tieleman, A. H. de Vries, J. Phys. Chem. B 111, 7812 (2007)"
+   ],
+   "origin": "built from source",
+   "source": "C. Arnarez, J. J. Uusitalo, M. F. Masman, H. I. Ingolfsson, D. H. de Jong, M. N. Melo, X. Periole, A. H. de Vries, S. J. Marrink, J. Chem. Theory Comput. 11, 260 (2015), Table 1 and section 3.1; MARTINI 2.0's bonded terms otherwise; bench/ff/make_martini2.py",
+   "license": "published parameters of the paper(s)",
+   "status": "validated",
+   "notes": "36 bead types, every pair from the paper's interaction matrix; templates NA+, CL-, DOD, HD, OCO, CLF, ETH, CHEX, DPPC, DLPC, DCPC, DOPC, POPC, DPPE, DOPE, POPE",
+   "file": "drymartini-arnarez2015.json",
+   "typing": {
+    "rules": "typing/drymartini-arnarez2015.typing.json",
+    "evidence": "beads typed by name"
+   },
+   "counts": {
+    "atom_types": 36,
+    "pairs": 666,
+    "bonds": 5,
+    "angles": 4,
+    "dihedrals": 0,
+    "impropers": 0
+   },
+   "group": "cg",
+   "aliases": [
+    "drymartini",
+    "dry-martini"
+   ],
+   "list": {
+    "label": "Dry Martini",
+    "key": "drymartini",
+    "order": 38
+   }
+  },
+  {
+   "id": "sdk-shinoda2007",
+   "name": "SDK (Shinoda, DeVane & Klein 2007, 2010)",
+   "version": "2007 / 2010",
+   "references": [
+    "W. Shinoda, R. DeVane, M. L. Klein, Mol. Simul. 33, 27 (2007)",
+    "W. Shinoda, R. DeVane, M. L. Klein, J. Phys. Chem. B 114, 6836 (2010)"
+   ],
+   "origin": "built from source",
+   "source": "W. Shinoda, R. DeVane, M. L. Klein, Mol. Simul. 33, 27 (2007), Tables 1, 4-6; W. Shinoda, R. DeVane, M. L. Klein, J. Phys. Chem. B 114, 6836 (2010), Tables 2-5; bench/ff/make_sdk.py",
+   "license": "published parameters of the papers",
+   "status": "validated",
+   "notes": "15 segments (water, alkanes, PEG, phospholipids), 91 pairs as tabulated; LAMMPS equals CAPS (bench/ff/check_data_lammps.py)",
+   "file": "sdk-shinoda2007.json",
+   "typing": {
+    "rules": "typing/sdk-shinoda2007.typing.json",
+    "evidence": "beads by name; all-atom lipids, alkanes and PEG mapped by segment"
+   },
+   "counts": {
+    "atom_types": 15,
+    "pairs": 91,
+    "bonds": 26,
+    "angles": 36,
+    "dihedrals": 0,
+    "impropers": 0
+   },
+   "group": "cg",
+   "aliases": [
+    "sdk",
+    "spica"
+   ],
+   "list": {
+    "label": "SDK (Shinoda-DeVane-Klein)",
+    "key": "sdk",
+    "order": 39
+   }
   }
  ],
  "list_note": "The force fields the Studio lists, one per force field (entries without \"list\" stay loadable by id for recipes and scripts)"

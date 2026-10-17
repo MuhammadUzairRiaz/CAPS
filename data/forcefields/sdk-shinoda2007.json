@@ -1,0 +1,2179 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "SDK (Shinoda, DeVane & Klein 2007, 2010)",
+ "source": "W. Shinoda, R. DeVane, M. L. Klein, Mol. Simul. 33, 27 (2007), Tables 1, 4-6; W. Shinoda, R. DeVane, M. L. Klein, J. Phys. Chem. B 114, 6836 (2010), Tables 2-5",
+ "references": [
+  "W. Shinoda, R. DeVane, M. L. Klein, Mol. Simul. 33, 27 (2007)",
+  "W. Shinoda, R. DeVane, M. L. Klein, J. Phys. Chem. B 114, 6836 (2010)"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "lj/sdk/coul/long",
+  "bond": "harmonic",
+  "angle": "sdk",
+  "dihedral": "fourier",
+  "improper": "cvff"
+ },
+ "mixing": "arithmetic",
+ "special_lj": [
+  0,
+  0,
+  1
+ ],
+ "special_coul": [
+  0,
+  0,
+  1
+ ],
+ "cutoff": 15.0,
+ "timestep": 10,
+ "pair_settings": {
+  "model_cutoff": true,
+  "dielectric": 80.0
+ },
+ "angle_terms": "if_defined",
+ "torsion_terms": "if_defined",
+ "atom_types": [
+  {
+   "name": "W",
+   "element": "",
+   "mass": 54.0462,
+   "charge": 0.0,
+   "description": "(H2O)3 (W. Shinoda, R. DeVane, M. L. Klein, Mol. Simul. 33, 27 (2007))"
+  },
+  {
+   "name": "CT",
+   "element": "",
+   "mass": 43.089,
+   "charge": 0.0,
+   "description": "CH3CH2CH2- (W. Shinoda, R. DeVane, M. L. Klein, Mol. Simul. 33, 27 (2007))"
+  },
+  {
+   "name": "CM",
+   "element": "",
+   "mass": 42.081,
+   "charge": 0.0,
+   "description": "-CH2CH2CH2- (W. Shinoda, R. DeVane, M. L. Klein, Mol. Simul. 33, 27 (2007))"
+  },
+  {
+   "name": "CT2",
+   "element": "",
+   "mass": 29.062,
+   "charge": 0.0,
+   "description": "CH3CH2- (W. Shinoda, R. DeVane, M. L. Klein, Mol. Simul. 33, 27 (2007))"
+  },
+  {
+   "name": "EOT",
+   "element": "",
+   "mass": 45.0614,
+   "charge": 0.0,
+   "description": "CH3-O-CH2- (W. Shinoda, R. DeVane, M. L. Klein, Mol. Simul. 33, 27 (2007))"
+  },
+  {
+   "name": "EO",
+   "element": "",
+   "mass": 44.0534,
+   "charge": 0.0,
+   "description": "-CH2-O-CH2- (W. Shinoda, R. DeVane, M. L. Klein, Mol. Simul. 33, 27 (2007))"
+  },
+  {
+   "name": "OA",
+   "element": "",
+   "mass": 31.0344,
+   "charge": 0.0,
+   "description": "HOCH2- (W. Shinoda, R. DeVane, M. L. Klein, Mol. Simul. 33, 27 (2007))"
+  },
+  {
+   "name": "NC",
+   "element": "",
+   "mass": 87.166,
+   "charge": 1.0,
+   "description": "-CH2CH2-N-(CH3)3 (+1) (W. Shinoda, R. DeVane, M. L. Klein, J. Phys. Chem. B 114, 6836 (2010))"
+  },
+  {
+   "name": "NH",
+   "element": "",
+   "mass": 45.085,
+   "charge": 1.0,
+   "description": "-CH2CH2-NH3 (+1) (W. Shinoda, R. DeVane, M. L. Klein, J. Phys. Chem. B 114, 6836 (2010))"
+  },
+  {
+   "name": "PH",
+   "element": "",
+   "mass": 94.9714,
+   "charge": -1.0,
+   "description": "-PO4- (-1) (W. Shinoda, R. DeVane, M. L. Klein, J. Phys. Chem. B 114, 6836 (2010))"
+  },
+  {
+   "name": "PHE",
+   "element": "",
+   "mass": 94.9714,
+   "charge": -1.0,
+   "description": "-PO4- (-1), PE head group (W. Shinoda, R. DeVane, M. L. Klein, J. Phys. Chem. B 114, 6836 (2010))"
+  },
+  {
+   "name": "GL",
+   "element": "",
+   "mass": 41.073,
+   "charge": 0.0,
+   "description": "-CH2CH-CH2- (W. Shinoda, R. DeVane, M. L. Klein, J. Phys. Chem. B 114, 6836 (2010))"
+  },
+  {
+   "name": "EST1",
+   "element": "",
+   "mass": 58.0368,
+   "charge": 0.0,
+   "description": "-CH2CO2- (sn-2 chain) (W. Shinoda, R. DeVane, M. L. Klein, J. Phys. Chem. B 114, 6836 (2010))"
+  },
+  {
+   "name": "EST2",
+   "element": "",
+   "mass": 58.0368,
+   "charge": 0.0,
+   "description": "-CH2CO2- (sn-1 chain) (W. Shinoda, R. DeVane, M. L. Klein, J. Phys. Chem. B 114, 6836 (2010))"
+  },
+  {
+   "name": "CMD2",
+   "element": "",
+   "mass": 26.038,
+   "charge": 0.0,
+   "description": "-HC=CH- (cis) (W. Shinoda, R. DeVane, M. L. Klein, J. Phys. Chem. B 114, 6836 (2010))"
+  }
+ ],
+ "pairs": [
+  {
+   "name": "W-W",
+   "match": [
+    "W"
+   ],
+   "style": "lj12_4",
+   "params": [
+    0.895,
+    4.371
+   ],
+   "comment": "2007 Table 6: LJ12-4"
+  },
+  {
+   "name": "CT-CT",
+   "match": [
+    "CT"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.469,
+    4.585
+   ],
+   "comment": "2007 Table 6: LJ9-6"
+  },
+  {
+   "name": "CT-CM",
+   "match": [
+    "CT",
+    "CM"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.444,
+    4.5455
+   ],
+   "comment": "2007 Table 6: LJ9-6"
+  },
+  {
+   "name": "CM-CM",
+   "match": [
+    "CM"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.42,
+    4.506
+   ],
+   "comment": "2007 Table 6: LJ9-6"
+  },
+  {
+   "name": "W-CT",
+   "match": [
+    "W",
+    "CT"
+   ],
+   "style": "lj12_4",
+   "params": [
+    0.36,
+    4.478
+   ],
+   "comment": "2007 Table 6: LJ12-4"
+  },
+  {
+   "name": "W-CM",
+   "match": [
+    "W",
+    "CM"
+   ],
+   "style": "lj12_4",
+   "params": [
+    0.34,
+    4.4385
+   ],
+   "comment": "2007 Table 6: LJ12-4"
+  },
+  {
+   "name": "CT2-CT2",
+   "match": [
+    "CT2"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.312,
+    4.221
+   ],
+   "comment": "2007 Table 6: LJ9-6"
+  },
+  {
+   "name": "CT2-CM",
+   "match": [
+    "CT2",
+    "CM"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.362,
+    4.3635
+   ],
+   "comment": "2007 Table 6: LJ9-6"
+  },
+  {
+   "name": "W-CT2",
+   "match": [
+    "W",
+    "CT2"
+   ],
+   "style": "lj12_4",
+   "params": [
+    0.29,
+    4.296
+   ],
+   "comment": "2007 Table 6: LJ12-4"
+  },
+  {
+   "name": "OA-OA",
+   "match": [
+    "OA"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.4491,
+    3.713
+   ],
+   "comment": "2007 Table 6: LJ9-6"
+  },
+  {
+   "name": "EOT-EOT",
+   "match": [
+    "EOT"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.437,
+    4.25
+   ],
+   "comment": "2007 Table 6: LJ9-6"
+  },
+  {
+   "name": "EO-EO",
+   "match": [
+    "EO"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.405,
+    4.25
+   ],
+   "comment": "2007 Table 6: LJ9-6"
+  },
+  {
+   "name": "EO-EOT",
+   "match": [
+    "EO",
+    "EOT"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.42,
+    4.25
+   ],
+   "comment": "2007 Table 6: LJ9-6"
+  },
+  {
+   "name": "EO-OA",
+   "match": [
+    "EO",
+    "OA"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.44,
+    3.89
+   ],
+   "comment": "2007 Table 6: LJ9-6"
+  },
+  {
+   "name": "EO-CT",
+   "match": [
+    "EO",
+    "CT"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.41,
+    4.34
+   ],
+   "comment": "2007 Table 6: LJ9-6"
+  },
+  {
+   "name": "EO-CM",
+   "match": [
+    "EO",
+    "CM"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.377,
+    4.274
+   ],
+   "comment": "2007 Table 6: LJ9-6"
+  },
+  {
+   "name": "EO-CT2",
+   "match": [
+    "EO",
+    "CT2"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.37,
+    4.14
+   ],
+   "comment": "2007 Table 6: LJ9-6"
+  },
+  {
+   "name": "W-OA",
+   "match": [
+    "W",
+    "OA"
+   ],
+   "style": "lj12_4",
+   "params": [
+    0.7,
+    3.95
+   ],
+   "comment": "2007 Table 6: LJ12-4"
+  },
+  {
+   "name": "W-EO",
+   "match": [
+    "W",
+    "EO"
+   ],
+   "style": "lj12_4",
+   "params": [
+    0.57,
+    4.31
+   ],
+   "comment": "2007 Table 6: LJ12-4"
+  },
+  {
+   "name": "CT-OA",
+   "match": [
+    "CT",
+    "OA"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.4372,
+    4.033
+   ],
+   "comment": "2007 Table 6: LJ9-6"
+  },
+  {
+   "name": "CM-OA",
+   "match": [
+    "CM",
+    "OA"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.365,
+    3.987
+   ],
+   "comment": "2007 Table 6: LJ9-6"
+  },
+  {
+   "name": "CT2-OA",
+   "match": [
+    "CT2",
+    "OA"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.38,
+    3.84
+   ],
+   "comment": "2007 Table 6: LJ9-6"
+  },
+  {
+   "name": "PH-CM",
+   "match": [
+    "PH",
+    "CM"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.3,
+    4.953
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "PH-CT",
+   "match": [
+    "PH",
+    "CT"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.32,
+    4.9925
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "NC-CM",
+   "match": [
+    "NC",
+    "CM"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.4,
+    5.128
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "NC-CT",
+   "match": [
+    "NC",
+    "CT"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.42,
+    5.1675
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "PH-W",
+   "match": [
+    "PH",
+    "W"
+   ],
+   "style": "lj12_4",
+   "params": [
+    1.0,
+    4.03
+   ],
+   "comment": "2010 Table 5: LJ12-4"
+  },
+  {
+   "name": "NC-W",
+   "match": [
+    "NC",
+    "W"
+   ],
+   "style": "lj12_4",
+   "params": [
+    0.9,
+    4.61
+   ],
+   "comment": "2010 Table 5: LJ12-4"
+  },
+  {
+   "name": "PH-PH",
+   "match": [
+    "PH"
+   ],
+   "style": "lj9_6",
+   "params": [
+    1.4,
+    5.4
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "NC-NC",
+   "match": [
+    "NC"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.7,
+    5.75
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "NC-PH",
+   "match": [
+    "NC",
+    "PH"
+   ],
+   "style": "lj9_6",
+   "params": [
+    1.15,
+    4.2
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "GL-GL",
+   "match": [
+    "GL"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.42,
+    4.506
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "GL-EST1",
+   "match": [
+    "GL",
+    "EST1"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.47,
+    4.403
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "GL-EST2",
+   "match": [
+    "GL",
+    "EST2"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.47,
+    4.403
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "GL-CM",
+   "match": [
+    "GL",
+    "CM"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.42,
+    4.506
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "GL-CT",
+   "match": [
+    "GL",
+    "CT"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.444,
+    4.5455
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "GL-W",
+   "match": [
+    "GL",
+    "W"
+   ],
+   "style": "lj12_4",
+   "params": [
+    0.64,
+    4.4385
+   ],
+   "comment": "2010 Table 5: LJ12-4"
+  },
+  {
+   "name": "GL-CT2",
+   "match": [
+    "GL",
+    "CT2"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.362,
+    4.3635
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "PH-CT2",
+   "match": [
+    "PH",
+    "CT2"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.28,
+    4.8105
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "NC-CT2",
+   "match": [
+    "NC",
+    "CT2"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.32,
+    4.9855
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "CMD2-GL",
+   "match": [
+    "CMD2",
+    "GL"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.312,
+    4.2555
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "CMD2-EST1",
+   "match": [
+    "CMD2",
+    "EST1"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.44,
+    4.005
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "CMD2-EST2",
+   "match": [
+    "CMD2",
+    "EST2"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.44,
+    4.005
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "PH-CMD2",
+   "match": [
+    "PH",
+    "CMD2"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.3,
+    4.7025
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "NC-CMD2",
+   "match": [
+    "NC",
+    "CMD2"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.35,
+    4.8775
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "GL-NC",
+   "match": [
+    "GL",
+    "NC"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.65,
+    4.62
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "GL-PH",
+   "match": [
+    "GL",
+    "PH"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.3,
+    4.75
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "EST1-NC",
+   "match": [
+    "EST1",
+    "NC"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.75,
+    4.475
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "EST2-NC",
+   "match": [
+    "EST2",
+    "NC"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.75,
+    4.475
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "EST1-PH",
+   "match": [
+    "EST1",
+    "PH"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.5,
+    4.55
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "EST2-PH",
+   "match": [
+    "EST2",
+    "PH"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.5,
+    4.55
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "PHE-PHE",
+   "match": [
+    "PHE"
+   ],
+   "style": "lj9_6",
+   "params": [
+    1.4,
+    4.6
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "PHE-CM",
+   "match": [
+    "PHE",
+    "CM"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.3,
+    4.953
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "PHE-CMD2",
+   "match": [
+    "PHE",
+    "CMD2"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.3,
+    4.7025
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "PHE-CT",
+   "match": [
+    "PHE",
+    "CT"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.32,
+    4.9925
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "PHE-CT2",
+   "match": [
+    "PHE",
+    "CT2"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.28,
+    4.8105
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "PHE-GL",
+   "match": [
+    "PHE",
+    "GL"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.3,
+    4.75
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "PHE-EST1",
+   "match": [
+    "PHE",
+    "EST1"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.5,
+    4.55
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "PHE-EST2",
+   "match": [
+    "PHE",
+    "EST2"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.5,
+    4.55
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "PHE-W",
+   "match": [
+    "PHE",
+    "W"
+   ],
+   "style": "lj12_4",
+   "params": [
+    1.0,
+    4.03
+   ],
+   "comment": "2010 Table 5: LJ12-4"
+  },
+  {
+   "name": "NH-CM",
+   "match": [
+    "NH",
+    "CM"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.33,
+    4.553
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "NH-CMD2",
+   "match": [
+    "NH",
+    "CMD2"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.3,
+    4.3025
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "NH-CT2",
+   "match": [
+    "NH",
+    "CT2"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.32,
+    4.4105
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "NH-CT",
+   "match": [
+    "NH",
+    "CT"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.34,
+    4.5925
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "NH-NH",
+   "match": [
+    "NH"
+   ],
+   "style": "lj9_6",
+   "params": [
+    1.1,
+    4.6
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "NH-PHE",
+   "match": [
+    "NH",
+    "PHE"
+   ],
+   "style": "lj9_6",
+   "params": [
+    1.2,
+    3.8
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "NH-GL",
+   "match": [
+    "NH",
+    "GL"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.75,
+    4.19
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "NH-EST1",
+   "match": [
+    "NH",
+    "EST1"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.85,
+    4.11
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "NH-EST2",
+   "match": [
+    "NH",
+    "EST2"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.85,
+    4.11
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "NH-W",
+   "match": [
+    "NH",
+    "W"
+   ],
+   "style": "lj12_4",
+   "params": [
+    0.8,
+    3.95
+   ],
+   "comment": "2010 Table 5: LJ12-4"
+  },
+  {
+   "name": "PH-PHE",
+   "match": [
+    "PH",
+    "PHE"
+   ],
+   "style": "lj9_6",
+   "params": [
+    1.4,
+    5.0
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "NH-PH",
+   "match": [
+    "NH",
+    "PH"
+   ],
+   "style": "lj9_6",
+   "params": [
+    1.2,
+    3.8
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "NC-PHE",
+   "match": [
+    "NC",
+    "PHE"
+   ],
+   "style": "lj9_6",
+   "params": [
+    1.15,
+    4.2
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "NC-NH",
+   "match": [
+    "NC",
+    "NH"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.88,
+    5.175
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "CMD2-CMD2",
+   "match": [
+    "CMD2"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.232,
+    4.005
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "CMD2-CT",
+   "match": [
+    "CMD2",
+    "CT"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.33,
+    4.295
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "CMD2-CT2",
+   "match": [
+    "CMD2",
+    "CT2"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.269,
+    4.113
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "CMD2-CM",
+   "match": [
+    "CMD2",
+    "CM"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.312,
+    4.2555
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "CMD2-W",
+   "match": [
+    "CMD2",
+    "W"
+   ],
+   "style": "lj12_4",
+   "params": [
+    0.27,
+    4.188
+   ],
+   "comment": "2010 Table 5: LJ12-4"
+  },
+  {
+   "name": "EST1-CM",
+   "match": [
+    "EST1",
+    "CM"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.47,
+    4.403
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "EST2-CM",
+   "match": [
+    "EST2",
+    "CM"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.47,
+    4.403
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "EST1-CT",
+   "match": [
+    "EST1",
+    "CT"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.47,
+    4.4425
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "EST2-CT",
+   "match": [
+    "EST2",
+    "CT"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.47,
+    4.4425
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "EST1-CT2",
+   "match": [
+    "EST1",
+    "CT2"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.39,
+    4.2605
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "EST2-CT2",
+   "match": [
+    "EST2",
+    "CT2"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.39,
+    4.2605
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "EST1-EST1",
+   "match": [
+    "EST1"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.495,
+    4.3
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "EST1-EST2",
+   "match": [
+    "EST1",
+    "EST2"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.495,
+    4.3
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "EST2-EST2",
+   "match": [
+    "EST2"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.495,
+    4.3
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  },
+  {
+   "name": "EST1-W",
+   "match": [
+    "EST1",
+    "W"
+   ],
+   "style": "lj12_4",
+   "params": [
+    0.82,
+    4.29
+   ],
+   "comment": "2010 Table 5: LJ12-4"
+  },
+  {
+   "name": "EST2-W",
+   "match": [
+    "EST2",
+    "W"
+   ],
+   "style": "lj12_4",
+   "params": [
+    0.82,
+    4.29
+   ],
+   "comment": "2010 Table 5: LJ12-4"
+  },
+  {
+   "name": "CT2-CT",
+   "match": [
+    "CT2",
+    "CT"
+   ],
+   "style": "lj9_6",
+   "params": [
+    0.383,
+    4.403
+   ],
+   "comment": "2010 Table 5: LJ9-6"
+  }
+ ],
+ "bonds": [
+  {
+   "name": "CT-CT",
+   "match": [
+    "CT",
+    "CT"
+   ],
+   "style": "harmonic",
+   "params": [
+    6.955,
+    3.71
+   ],
+   "comment": "2007 Table 4"
+  },
+  {
+   "name": "CM-CM",
+   "match": [
+    "CM",
+    "CM"
+   ],
+   "style": "harmonic",
+   "params": [
+    6.16,
+    3.64
+   ],
+   "comment": "2007 Table 4"
+  },
+  {
+   "name": "CM-CT",
+   "match": [
+    "CM",
+    "CT"
+   ],
+   "style": "harmonic",
+   "params": [
+    6.16,
+    3.65
+   ],
+   "comment": "2007 Table 4"
+  },
+  {
+   "name": "CT2-CM",
+   "match": [
+    "CT2",
+    "CM"
+   ],
+   "style": "harmonic",
+   "params": [
+    9.0,
+    3.13
+   ],
+   "comment": "2007 Table 4"
+  },
+  {
+   "name": "OA-OA",
+   "match": [
+    "OA",
+    "OA"
+   ],
+   "style": "harmonic",
+   "params": [
+    63.0,
+    2.16
+   ],
+   "comment": "2007 Table 4"
+  },
+  {
+   "name": "EOT-EOT",
+   "match": [
+    "EOT",
+    "EOT"
+   ],
+   "style": "harmonic",
+   "params": [
+    5.5,
+    3.33
+   ],
+   "comment": "2007 Table 4"
+  },
+  {
+   "name": "EOT-EO",
+   "match": [
+    "EOT",
+    "EO"
+   ],
+   "style": "harmonic",
+   "params": [
+    5.4,
+    3.34
+   ],
+   "comment": "2007 Table 4"
+  },
+  {
+   "name": "EO-EO",
+   "match": [
+    "EO",
+    "EO"
+   ],
+   "style": "harmonic",
+   "params": [
+    4.9,
+    3.28
+   ],
+   "comment": "2007 Table 4"
+  },
+  {
+   "name": "EO-OA",
+   "match": [
+    "EO",
+    "OA"
+   ],
+   "style": "harmonic",
+   "params": [
+    15.0,
+    2.79
+   ],
+   "comment": "2007 Table 4"
+  },
+  {
+   "name": "CT-EO",
+   "match": [
+    "CT",
+    "EO"
+   ],
+   "style": "harmonic",
+   "params": [
+    7.1,
+    3.61
+   ],
+   "comment": "2007 Table 4"
+  },
+  {
+   "name": "CM-EO",
+   "match": [
+    "CM",
+    "EO"
+   ],
+   "style": "harmonic",
+   "params": [
+    7.1,
+    3.56
+   ],
+   "comment": "2007 Table 4"
+  },
+  {
+   "name": "CT2-EO",
+   "match": [
+    "CT2",
+    "EO"
+   ],
+   "style": "harmonic",
+   "params": [
+    10.0,
+    3.07
+   ],
+   "comment": "2007 Table 4"
+  },
+  {
+   "name": "CT-OA",
+   "match": [
+    "CT",
+    "OA"
+   ],
+   "style": "harmonic",
+   "params": [
+    6.955,
+    3.05
+   ],
+   "comment": "2007 Table 4"
+  },
+  {
+   "name": "CM-OA",
+   "match": [
+    "CM",
+    "OA"
+   ],
+   "style": "harmonic",
+   "params": [
+    7.5,
+    3.01
+   ],
+   "comment": "2007 Table 4"
+  },
+  {
+   "name": "CT2-OA",
+   "match": [
+    "CT2",
+    "OA"
+   ],
+   "style": "harmonic",
+   "params": [
+    14.0,
+    2.53
+   ],
+   "comment": "2007 Table 4"
+  },
+  {
+   "name": "NC-PH",
+   "match": [
+    "NC",
+    "PH"
+   ],
+   "style": "harmonic",
+   "params": [
+    4.8,
+    4.25
+   ],
+   "comment": "2010 Table 3"
+  },
+  {
+   "name": "PH-CM",
+   "match": [
+    "PH",
+    "CM"
+   ],
+   "style": "harmonic",
+   "params": [
+    12.0,
+    3.69
+   ],
+   "comment": "2010 Table 3"
+  },
+  {
+   "name": "PH-GL",
+   "match": [
+    "PH",
+    "GL"
+   ],
+   "style": "harmonic",
+   "params": [
+    8.9,
+    3.52
+   ],
+   "comment": "2010 Table 3"
+  },
+  {
+   "name": "GL-EST1",
+   "match": [
+    "GL",
+    "EST1"
+   ],
+   "style": "harmonic",
+   "params": [
+    30.0,
+    2.88
+   ],
+   "comment": "2010 Table 3"
+  },
+  {
+   "name": "GL-EST2",
+   "match": [
+    "GL",
+    "EST2"
+   ],
+   "style": "harmonic",
+   "params": [
+    8.4,
+    3.48
+   ],
+   "comment": "2010 Table 3"
+  },
+  {
+   "name": "EST1-CM",
+   "match": [
+    "EST1",
+    "CM"
+   ],
+   "style": "harmonic",
+   "params": [
+    4.7,
+    3.55
+   ],
+   "comment": "2010 Table 3"
+  },
+  {
+   "name": "EST2-CM",
+   "match": [
+    "EST2",
+    "CM"
+   ],
+   "style": "harmonic",
+   "params": [
+    5.1,
+    3.61
+   ],
+   "comment": "2010 Table 3"
+  },
+  {
+   "name": "NH-PHE",
+   "match": [
+    "NH",
+    "PHE"
+   ],
+   "style": "harmonic",
+   "params": [
+    9.4,
+    3.6
+   ],
+   "comment": "2010 Table 3"
+  },
+  {
+   "name": "PHE-GL",
+   "match": [
+    "PHE",
+    "GL"
+   ],
+   "style": "harmonic",
+   "params": [
+    8.9,
+    3.52
+   ],
+   "comment": "2010 Table 3"
+  },
+  {
+   "name": "CMD2-CM",
+   "match": [
+    "CMD2",
+    "CM"
+   ],
+   "style": "harmonic",
+   "params": [
+    8.0,
+    3.03
+   ],
+   "comment": "2010 Table 3"
+  },
+  {
+   "name": "CT-CMD2",
+   "match": [
+    "CT",
+    "CMD2"
+   ],
+   "style": "harmonic",
+   "params": [
+    8.0,
+    3.09
+   ],
+   "comment": "2010 Table 3"
+  }
+ ],
+ "angles": [
+  {
+   "name": "CM-CM-CM",
+   "match": [
+    "CM",
+    "CM",
+    "CM"
+   ],
+   "style": "sdk",
+   "params": [
+    1.19,
+    173.0
+   ],
+   "comment": "2007 Table 5 (with the 1-3 correction of 2010 eq 3)"
+  },
+  {
+   "name": "CM-CM-CT",
+   "match": [
+    "CM",
+    "CM",
+    "CT"
+   ],
+   "style": "sdk",
+   "params": [
+    1.19,
+    175.0
+   ],
+   "comment": "2007 Table 5 (with the 1-3 correction of 2010 eq 3)"
+  },
+  {
+   "name": "CT2-CM-CM",
+   "match": [
+    "CT2",
+    "CM",
+    "CM"
+   ],
+   "style": "sdk",
+   "params": [
+    1.6,
+    172.0
+   ],
+   "comment": "2007 Table 5 (with the 1-3 correction of 2010 eq 3)"
+  },
+  {
+   "name": "CT2-CM-CT2",
+   "match": [
+    "CT2",
+    "CM",
+    "CT2"
+   ],
+   "style": "sdk",
+   "params": [
+    1.7,
+    173.0
+   ],
+   "comment": "2007 Table 5 (with the 1-3 correction of 2010 eq 3)"
+  },
+  {
+   "name": "CT-CM-CT",
+   "match": [
+    "CT",
+    "CM",
+    "CT"
+   ],
+   "style": "sdk",
+   "params": [
+    1.093,
+    175.5
+   ],
+   "comment": "2007 Table 5 (with the 1-3 correction of 2010 eq 3)"
+  },
+  {
+   "name": "EO-EO-EOT",
+   "match": [
+    "EO",
+    "EO",
+    "EOT"
+   ],
+   "style": "sdk",
+   "params": [
+    3.5,
+    135.0
+   ],
+   "comment": "2007 Table 5 (with the 1-3 correction of 2010 eq 3)"
+  },
+  {
+   "name": "EO-EO-EO",
+   "match": [
+    "EO",
+    "EO",
+    "EO"
+   ],
+   "style": "sdk",
+   "params": [
+    3.4,
+    132.0
+   ],
+   "comment": "2007 Table 5 (with the 1-3 correction of 2010 eq 3)"
+  },
+  {
+   "name": "EOT-EO-EOT",
+   "match": [
+    "EOT",
+    "EO",
+    "EOT"
+   ],
+   "style": "sdk",
+   "params": [
+    3.5,
+    134.0
+   ],
+   "comment": "2007 Table 5 (with the 1-3 correction of 2010 eq 3)"
+  },
+  {
+   "name": "OA-EO-OA",
+   "match": [
+    "OA",
+    "EO",
+    "OA"
+   ],
+   "style": "sdk",
+   "params": [
+    6.6,
+    131.0
+   ],
+   "comment": "2007 Table 5 (with the 1-3 correction of 2010 eq 3)"
+  },
+  {
+   "name": "EO-EO-OA",
+   "match": [
+    "EO",
+    "EO",
+    "OA"
+   ],
+   "style": "sdk",
+   "params": [
+    3.0,
+    131.0
+   ],
+   "comment": "2007 Table 5 (with the 1-3 correction of 2010 eq 3)"
+  },
+  {
+   "name": "CT-EO-EO",
+   "match": [
+    "CT",
+    "EO",
+    "EO"
+   ],
+   "style": "sdk",
+   "params": [
+    2.2,
+    145.0
+   ],
+   "comment": "2007 Table 5 (with the 1-3 correction of 2010 eq 3)"
+  },
+  {
+   "name": "CT2-CM-EO",
+   "match": [
+    "CT2",
+    "CM",
+    "EO"
+   ],
+   "style": "sdk",
+   "params": [
+    1.3,
+    178.0
+   ],
+   "comment": "2007 Table 5 (with the 1-3 correction of 2010 eq 3)"
+  },
+  {
+   "name": "CM-EO-CM",
+   "match": [
+    "CM",
+    "EO",
+    "CM"
+   ],
+   "style": "sdk",
+   "params": [
+    1.8,
+    171.0
+   ],
+   "comment": "2007 Table 5 (with the 1-3 correction of 2010 eq 3)"
+  },
+  {
+   "name": "CT2-EO-CT2",
+   "match": [
+    "CT2",
+    "EO",
+    "CT2"
+   ],
+   "style": "sdk",
+   "params": [
+    2.6,
+    165.0
+   ],
+   "comment": "2007 Table 5 (with the 1-3 correction of 2010 eq 3)"
+  },
+  {
+   "name": "OA-EO-CT2",
+   "match": [
+    "OA",
+    "EO",
+    "CT2"
+   ],
+   "style": "sdk",
+   "params": [
+    4.0,
+    146.0
+   ],
+   "comment": "2007 Table 5 (with the 1-3 correction of 2010 eq 3)"
+  },
+  {
+   "name": "CM-CM-EO",
+   "match": [
+    "CM",
+    "CM",
+    "EO"
+   ],
+   "style": "sdk",
+   "params": [
+    1.5,
+    172.0
+   ],
+   "comment": "2007 Table 5 (with the 1-3 correction of 2010 eq 3)"
+  },
+  {
+   "name": "CM-EO-EO",
+   "match": [
+    "CM",
+    "EO",
+    "EO"
+   ],
+   "style": "sdk",
+   "params": [
+    3.2,
+    146.0
+   ],
+   "comment": "2007 Table 5 (with the 1-3 correction of 2010 eq 3)"
+  },
+  {
+   "name": "CT2-CM-OA",
+   "match": [
+    "CT2",
+    "CM",
+    "OA"
+   ],
+   "style": "sdk",
+   "params": [
+    1.8,
+    166.0
+   ],
+   "comment": "2007 Table 5 (with the 1-3 correction of 2010 eq 3)"
+  },
+  {
+   "name": "NC-PH-CM",
+   "match": [
+    "NC",
+    "PH",
+    "CM"
+   ],
+   "style": "sdk",
+   "params": [
+    3.3,
+    112.0
+   ],
+   "comment": "2010 Table 4 (with the 1-3 correction of 2010 eq 3)"
+  },
+  {
+   "name": "PH-CM-CM",
+   "match": [
+    "PH",
+    "CM",
+    "CM"
+   ],
+   "style": "sdk",
+   "params": [
+    1.1,
+    178.0
+   ],
+   "comment": "2010 Table 4 (with the 1-3 correction of 2010 eq 3)"
+  },
+  {
+   "name": "NC-PH-GL",
+   "match": [
+    "NC",
+    "PH",
+    "GL"
+   ],
+   "style": "sdk",
+   "params": [
+    3.1,
+    112.0
+   ],
+   "comment": "2010 Table 4 (with the 1-3 correction of 2010 eq 3)"
+  },
+  {
+   "name": "PH-GL-EST1",
+   "match": [
+    "PH",
+    "GL",
+    "EST1"
+   ],
+   "style": "sdk",
+   "params": [
+    1.4,
+    124.0
+   ],
+   "comment": "2010 Table 4 (with the 1-3 correction of 2010 eq 3)"
+  },
+  {
+   "name": "PH-GL-EST2",
+   "match": [
+    "PH",
+    "GL",
+    "EST2"
+   ],
+   "style": "sdk",
+   "params": [
+    2.0,
+    138.0
+   ],
+   "comment": "2010 Table 4 (with the 1-3 correction of 2010 eq 3)"
+  },
+  {
+   "name": "GL-EST1-CM",
+   "match": [
+    "GL",
+    "EST1",
+    "CM"
+   ],
+   "style": "sdk",
+   "params": [
+    0.8,
+    168.0
+   ],
+   "comment": "2010 Table 4 (with the 1-3 correction of 2010 eq 3)"
+  },
+  {
+   "name": "GL-EST2-CM",
+   "match": [
+    "GL",
+    "EST2",
+    "CM"
+   ],
+   "style": "sdk",
+   "params": [
+    0.8,
+    172.0
+   ],
+   "comment": "2010 Table 4 (with the 1-3 correction of 2010 eq 3)"
+  },
+  {
+   "name": "EST1-GL-EST2",
+   "match": [
+    "EST1",
+    "GL",
+    "EST2"
+   ],
+   "style": "sdk",
+   "params": [
+    1.0,
+    95.0
+   ],
+   "comment": "2010 Table 4 (with the 1-3 correction of 2010 eq 3)"
+  },
+  {
+   "name": "EST1-CM-CM",
+   "match": [
+    "EST1",
+    "CM",
+    "CM"
+   ],
+   "style": "sdk",
+   "params": [
+    1.0,
+    178.0
+   ],
+   "comment": "2010 Table 4 (with the 1-3 correction of 2010 eq 3)"
+  },
+  {
+   "name": "EST2-CM-CM",
+   "match": [
+    "EST2",
+    "CM",
+    "CM"
+   ],
+   "style": "sdk",
+   "params": [
+    1.0,
+    178.0
+   ],
+   "comment": "2010 Table 4 (with the 1-3 correction of 2010 eq 3)"
+  },
+  {
+   "name": "NH-PHE-GL",
+   "match": [
+    "NH",
+    "PHE",
+    "GL"
+   ],
+   "style": "sdk",
+   "params": [
+    4.0,
+    102.0
+   ],
+   "comment": "2010 Table 4 (with the 1-3 correction of 2010 eq 3)"
+  },
+  {
+   "name": "PHE-GL-EST1",
+   "match": [
+    "PHE",
+    "GL",
+    "EST1"
+   ],
+   "style": "sdk",
+   "params": [
+    1.4,
+    124.0
+   ],
+   "comment": "2010 Table 4 (with the 1-3 correction of 2010 eq 3)"
+  },
+  {
+   "name": "PHE-GL-EST2",
+   "match": [
+    "PHE",
+    "GL",
+    "EST2"
+   ],
+   "style": "sdk",
+   "params": [
+    2.0,
+    138.0
+   ],
+   "comment": "2010 Table 4 (with the 1-3 correction of 2010 eq 3)"
+  },
+  {
+   "name": "CT2-CM-CT",
+   "match": [
+    "CT2",
+    "CM",
+    "CT"
+   ],
+   "style": "sdk",
+   "params": [
+    1.6,
+    172.0
+   ],
+   "comment": "2010 Table 4 (with the 1-3 correction of 2010 eq 3)"
+  },
+  {
+   "name": "CT-CMD2-CT",
+   "match": [
+    "CT",
+    "CMD2",
+    "CT"
+   ],
+   "style": "sdk",
+   "params": [
+    7.7,
+    116.0
+   ],
+   "comment": "2010 Table 4 (with the 1-3 correction of 2010 eq 3)"
+  },
+  {
+   "name": "CT2-CMD2-CT2",
+   "match": [
+    "CT2",
+    "CMD2",
+    "CT2"
+   ],
+   "style": "sdk",
+   "params": [
+    12.0,
+    110.0
+   ],
+   "comment": "2010 Table 4 (with the 1-3 correction of 2010 eq 3)"
+  },
+  {
+   "name": "CMD2-CM-CM",
+   "match": [
+    "CMD2",
+    "CM",
+    "CM"
+   ],
+   "style": "sdk",
+   "params": [
+    1.9,
+    161.0
+   ],
+   "comment": "2010 Table 4 (with the 1-3 correction of 2010 eq 3)"
+  },
+  {
+   "name": "CM-CMD2-CM",
+   "match": [
+    "CM",
+    "CMD2",
+    "CM"
+   ],
+   "style": "sdk",
+   "params": [
+    6.0,
+    110.0
+   ],
+   "comment": "2010 Table 4 (with the 1-3 correction of 2010 eq 3)"
+  }
+ ],
+ "dihedrals": [],
+ "impropers": [],
+ "bead_templates": {
+  "W": "[W]",
+  "DMPC": "[NC+1][PH-1][GL]([EST1][CM][CM][CM][CT2])[EST2][CM][CM][CM][CT2]",
+  "DPPC": "[NC+1][PH-1][GL]([EST1][CM][CM][CM][CM][CT])[EST2][CM][CM][CM][CM][CT]",
+  "DMPE": "[NH+1][PHE-1][GL]([EST1][CM][CM][CM][CT2])[EST2][CM][CM][CM][CT2]",
+  "C12E8": "[OA][EO][EO][EO][EO][EO][EO][EO][EO][CM][CM][CM][CT2]",
+  "DOD": "[CT][CM][CM][CT]"
+ },
+ "notes": [
+  "built by CAPS (bench/ff/make_sdk.py) from the 2007 and 2010 papers' tables",
+  "LJ12-4 for pairs with W, LJ9-6 for the others; every pair as listed (no mixing); cut-off 15 A",
+  "Coulomb without truncation (Ewald, as the 2010 paper); relative permittivity 80 is CAPS's choice (the papers do not print it)",
+  "masses from the segments' formulas"
+ ],
+ "version": "2007 / 2010",
+ "status": "validated",
+ "typing": "../typing/sdk-shinoda2007.typing.json"
+}

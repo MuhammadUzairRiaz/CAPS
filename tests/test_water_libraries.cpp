@@ -365,3 +365,42 @@ TEST(OrganicLibraries, LoplsAsPublished) {
   EXPECT_GT(seen["lopls_144"], 0);
   EXPECT_GT(seen["opls_136"], 0);   // the CH2 next to the carboxyl stays OPLS-AA 2024's
 }
+
+// MARTINI 2.0 (Marrink et al. 2007, Table 1 and section 2) and Dry Martini (Arnarez et al. 2015, Table 1): pairs at the
+// matrix's levels (P4-P4 level I, C1-C1 IV, Q0-C1 IX with sigma 0.62 nm, ring pairs at 0.43 nm and 75 %, the antifreeze
+// BP4-P4 at level O and 0.57 nm; dry: P4-P4 VI, C1-C1 II, Q-Q at 0.60 nm), bonds 0.47 nm / 1250 kJ mol-1 nm-2; SDK (Shinoda
+// et al. 2007, 2010): W-W LJ12-4 0.895 kcal/mol 4.371 A, CM-CM LJ9-6 0.420 4.506, NC +1, PH -1
+TEST(CgLibraries, MartiniDryMartiniAndSdkAsPublished) {
+  auto pair = [](const FFDef& d, const std::string& a, const std::string& b) {
+    for (const auto& p : d.pairs)
+      if ((p.match.size() == 1 && a == b && p.match[0] == a) ||
+          (p.match.size() == 2 && ((p.match[0] == a && p.match[1] == b) || (p.match[0] == b && p.match[1] == a))))
+        return std::make_pair(p.params[0] * 4.184, p.params[1] / 10);   // kJ/mol, nm
+    return std::make_pair(-1.0, -1.0);
+  };
+  const FFDef m = load_forcefield(lib("martini2-marrink2007"));
+  EXPECT_NEAR(pair(m, "P4", "P4").first, 5.0, 1e-9);
+  EXPECT_NEAR(pair(m, "C1", "C1").first, 3.5, 1e-9);
+  EXPECT_NEAR(pair(m, "Q0", "C1").second, 0.62, 1e-9);
+  EXPECT_NEAR(pair(m, "SC1", "SC1").first, 0.75 * 3.5, 1e-9);
+  EXPECT_NEAR(pair(m, "SC1", "SC1").second, 0.43, 1e-9);
+  EXPECT_NEAR(pair(m, "SC1", "C1").second, 0.47, 1e-9);
+  EXPECT_NEAR(pair(m, "BP4", "P4").first, 5.6, 1e-9);
+  EXPECT_NEAR(pair(m, "BP4", "P4").second, 0.57, 1e-9);
+  EXPECT_NEAR(pair(m, "Nda", "P4").first, 4.0, 1e-9);   // level III
+  EXPECT_NEAR(pair(m, "C3", "P1").first, 3.5, 1e-9);    // level IV
+  EXPECT_NEAR(m.bonds[0].params[0] * 2 * 4.184 * 100, 1250, 1e-9);
+  EXPECT_NEAR(m.bonds[0].params[1], 4.7, 1e-12);
+  const FFDef d = load_forcefield(lib("drymartini-arnarez2015"));
+  EXPECT_NEAR(pair(d, "P4", "P4").first, 2.7, 1e-9);
+  EXPECT_NEAR(pair(d, "C1", "C1").first, 4.5, 1e-9);
+  EXPECT_NEAR(pair(d, "Qa", "Qd").second, 0.60, 1e-9);
+  EXPECT_NEAR(pair(d, "P1", "Qda").first, 0.5, 1e-9);   // level XII
+  EXPECT_NEAR(pair(d, "P1", "P5").first, 1.5, 1e-9);    // level X
+  EXPECT_NEAR(pair(d, "Q0", "C1").second, 0.62, 1e-9);
+  const FFDef s = load_forcefield(lib("sdk-shinoda2007"));
+  EXPECT_NEAR(pair(s, "W", "W").first / 4.184, 0.895, 1e-12);
+  EXPECT_NEAR(pair(s, "CM", "CM").second * 10, 4.506, 1e-12);
+  EXPECT_EQ(s.type("NC")->charge, 1.0);
+  EXPECT_EQ(s.type("PH")->charge, -1.0);
+}

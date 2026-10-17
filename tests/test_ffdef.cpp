@@ -432,14 +432,14 @@ void check_cg_forces(const FFDef& def, System s, const std::string& charges) {
 
 TEST(FieldForms, CoarseGrainedForcesMatchFiniteDifferences) {
   const std::string dir = std::string(CAPS_SOURCE_DIR) + "/data/forcefields/";
-  // Cooke-Kremer-Deserno from the paper (cooke-deserno2005). TODO: MARTINI 2, its amino acids and SDK once rebuilt from
-  // their papers (not in hand yet; expected ids martini2-marrink2007, martini2-aminoacids-monticelli2008, sdk-shinoda2007)
-  if (const std::string f = library_file({"martini2-marrink2007"}); !f.empty()) {
-    const FFDef martini = load_forcefield(f);
+  // MARTINI 2, Dry Martini, SDK and Cooke-Kremer-Deserno from their papers. TODO: MARTINI 2's amino acids once rebuilt
+  // from their paper (expected id martini2-aminoacids-monticelli2008)
+  {
+    const FFDef martini = load_forcefield(dir + "martini2-marrink2007.json");
     check_cg_forces(martini, cg_box(martini, {{"DPPC", 3}, {"NA+", 2}, {"CL-", 2}, {"W", 30}}, 36.0, 3), "keep");
-  }
-  if (const std::string f = library_file({"sdk-shinoda2007"}); !f.empty()) {
-    const FFDef sdk = load_forcefield(f);
+    const FFDef dry = load_forcefield(dir + "drymartini-arnarez2015.json");
+    check_cg_forces(dry, cg_box(dry, {{"POPE", 3}, {"NA+", 2}, {"CL-", 2}}, 30.0, 4), "keep");
+    const FFDef sdk = load_forcefield(dir + "sdk-shinoda2007.json");
     check_cg_forces(sdk, cg_box(sdk, {{"[NC][PH][GL]([EST1][CM][CM][CT2])[EST2][CM][CM][CT2]", 3}, {"[W]", 30}}, 32.0, 5), "types");
   }
   if (const std::string f = library_file({"martini2-aminoacids-monticelli2008"}); !f.empty()) {
@@ -525,10 +525,7 @@ TEST(CoarseGrained, BeadSmilesParse) {
 // SDK: all-atom alkanes tile into CT / CT2 ends and CM between for every chain length; DMPC maps onto Shinoda's
 // thirteen beads with the esters told apart by their GL bond lengths
 TEST(CoarseGrained, SdkMapsAllAtomStructures) {
-  // TODO: SDK rebuilt from Shinoda, DeVane & Klein 2007 (expected id sdk-shinoda2007)
-  const std::string f = library_file({"sdk-shinoda2007"});
-  if (f.empty()) GTEST_SKIP() << "no SDK library yet (sdk-shinoda2007)";
-  const FFDef sdk = load_forcefield(f);
+  const FFDef sdk = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/sdk-shinoda2007.json");
   auto map = [&](const std::string& smiles) {
     System s = build_molecule(smiles, {}).system;
     std::string ch = "auto";
@@ -542,9 +539,8 @@ TEST(CoarseGrained, SdkMapsAllAtomStructures) {
   EXPECT_EQ(map(std::string(14, 'C')), (std::map<std::string, int>{{"CM", 3}, {"CT", 1}, {"CT2", 1}}));
   EXPECT_EQ(map("CCCCCCCCCCCCCC(=O)OCC(COP(=O)([O-])OCC[N+](C)(C)C)OC(=O)CCCCCCCCCCCCC"),
             (std::map<std::string, int>{{"CM", 6}, {"CT", 2}, {"EST1", 1}, {"EST2", 1}, {"GL", 1}, {"NC", 1}, {"PH", 1}}));
-  // the LAMMPS SDK examples' own topologies: C12E8 (OA, 8 EO, 3 CM, CT2) and SDS (SO4, 3 CM, CT)
+  // C12E8 (OA, 8 EO, 3 CM, CT2), the 2007 paper's surfactant family
   EXPECT_EQ(map("CCCCCCCCCCCCOCCOCCOCCOCCOCCOCCOCCOCCO"), (std::map<std::string, int>{{"CM", 3}, {"CT2", 1}, {"EO", 8}, {"OA", 1}}));
-  EXPECT_EQ(map("CCCCCCCCCCCCOS(=O)(=O)[O-]"), (std::map<std::string, int>{{"CM", 3}, {"CT", 1}, {"SO4", 1}}));
 }
 
 // A structure in vacuum sees every pair within the cut-off, however wide it is (the neighbour bins are half the list

@@ -278,11 +278,14 @@ CASES = [
      "oplsua2024", "types", "rules"),
     # coarse-grained: MARTINI (lj/gromacs + coul/gromacs, dielectric 15, cosine/squared angles, 1-3 and 1-4 pairs kept)
     # and SDK (lj/sdk 9-6 / 12-4, angle sdk with its 1-3 repulsion), bead molecules and water beads in periodic boxes;
-    # Cooke-Kremer-Deserno lipids; mW water (pair_style sw). MARTINI 2 and SDK by a neutral alias a catalogue entry lists,
-    # skipped until they are rebuilt from their papers (TODO: their papers are not in hand yet)
+    # Cooke-Kremer-Deserno lipids; mW water (pair_style sw). MARTINI 2 (martini2-marrink2007), Dry Martini
+    # (drymartini-arnarez2015) and SDK (sdk-shinoda2007) by the neutral aliases their catalogue entries list
     ("MARTINI DPPC + POPE + ions + water (periodic)", ("cg-box", "martini", [("template", "DPPC", 6), ("template", "POPE", 4),
                                                    ("template", "NA+", 5), ("template", "CL-", 5), ("template", "W", 150)], 42.0),
      "martini", "keep", "rules"),
+    ("Dry Martini DPPC + POPE + ions (implicit solvent, periodic)", ("cg-box", "drymartini", [("template", "DPPC", 8), ("template", "POPE", 6),
+                                                   ("template", "NA+", 4), ("template", "CL-", 4)], 36.0),
+     "drymartini", "keep", "rules"),
     ("MARTINI polymers: PEO (torsions) + water (periodic)", ("cg-box", "martini-polymers", [("template", "PEO", 3), ("beads", "[P4]", 120)], 44.0),
      "martini-polymers", "keep", "rules"),
     ("MARTINI sugars: sucrose, maltose, glucose + water (periodic)", ("cg-box", "martini-sugars", [("template", "SUCR", 4), ("template", "MALT", 4),
@@ -297,9 +300,7 @@ CASES = [
      "sdk", "types", "rules"),
     ("SDK C12E8 + water (periodic)", ("cg-box", "sdk", [("beads", "[OA]" + "[EO]" * 8 + "[CM][CM][CM][CT2]", 6), ("beads", "[W]", 120)], 40.0),
      "sdk", "types", "rules"),
-    ("SDK SDS + Na+ + water (periodic, relative permittivity 80)", ("cg-box", "sdk", [("beads", "[SO4][CM][CM][CM][CT]", 8),
-                                                                   ("beads", "[SOD]", 8), ("beads", "[W]", 120)], 38.0),
-     "sdk", "types", "rules"),
+    # SDS (SO4, SOD) is not in the 2007 / 2010 papers' tables, so not in sdk-shinoda2007
     ("Cooke-Kremer-Deserno 2005 lipids from the paper (cosine/squared, FENE with WCA; periodic)", ("cg-box", "cooke-deserno2005", [("template", "lipid", 60)], 16.0),
      "cooke-deserno2005", "types", "rules"),
     # mW water: all-atom water packed by CAPS, one Stillinger–Weber site per molecule (pair_style sw with a .sw file)
