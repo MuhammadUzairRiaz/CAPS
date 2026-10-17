@@ -3841,6 +3841,9 @@
                       <Button Content="Enter manually (estimated)" Click="OnFieldAddRule" IsEnabled="{Binding Field.CanEnterRule}" />
                       <Button Content="Remove added" Click="OnFieldRemoveRules" IsVisible="{Binding Field.HasEntered}" />
                     </WrapPanel>
+                    <CheckBox Content="Fill missing terms with CAPS ML" IsChecked="{Binding Field.CompleteMl}" IsEnabled="{Binding Field.MlAvailable}"
+                              ToolTip.Tip="{Binding Field.MlTip}" ToolTip.ShowOnDisabled="True" />
+                    <TextBlock Text="{Binding Field.MlText}" Classes="dim" FontSize="11" TextWrapping="Wrap" IsVisible="{Binding Field.MlText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                     <CheckBox Content="Torsions across three-membered rings with no parameters: zero" IsChecked="{Binding Field.ZeroRing3Torsions}"
                               ToolTip.Tip="An epoxide, aziridine or cyclopropane: a dihedral the force field gives no term for is a zero term, listed in the report, instead of missing — what LAMMPS does with a moltemplate file that has no rule for it (OPLS-AA 2024 has none through an epoxide O). A modelling choice, not the force field's" />
                     <ItemsControl ItemsSource="{Binding Field.Entered}">
