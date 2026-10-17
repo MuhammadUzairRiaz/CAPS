@@ -39,6 +39,15 @@ Vec3 place(const Vec3& a, const Vec3& b, const Vec3& c, double bond, double ang,
   return c + bc * d2[0] + m * d2[1] + n * d2[2];
 }
 
+// the same with cos and sin of the angle given (constant for a template atom; only the torsion changes per trial)
+Vec3 place_cs(const Vec3& a, const Vec3& b, const Vec3& c, double bond, double cos_ang, double sin_ang, double tor) {
+  const Vec3 bc = unitv(c - b);
+  const Vec3 n = unitv(cross(b - a, bc));
+  const Vec3 m = cross(n, bc);
+  const double d0 = -bond * cos_ang, d1 = bond * sin_ang * std::cos(tor), d2 = bond * sin_ang * std::sin(tor);
+  return c + bc * d0 + m * d1 + n * d2;
+}
+
 double angle_at(const Vec3& a, const Vec3& b, const Vec3& c) {
   const Vec3 u = unitv(a - b), v = unitv(c - b);
   return std::acos(std::clamp(dot(u, v), -1.0, 1.0));
@@ -617,10 +626,16 @@ Template make_template(const std::string& name, const std::string& smiles, const
 }
 
 // ---- the cell: every atom placed so far, all chains, with a periodic cell list
+// Each bin keeps its atoms' records (position, element, chain, local index) side by side, so a neighbour search reads
+// one contiguous block per bin instead of four scattered arrays; the per-id arrays stay for lookups by id.
 struct Cell3 {
+  struct Rec {
+    Vec3 x;
+    int z, chain, local, id;
+  };
   double L[3] = {0, 0, 0}, cs[3] = {4, 4, 4};
   int nc[3] = {1, 1, 1};
-  std::vector<std::vector<int>> bins;
+  std::vector<std::vector<Rec>> bins;
   std::vector<Vec3> x;        // by id
   std::vector<int> z, chain, local;   // chain −1: a fixed substrate atom
   std::vector<char> alive;
@@ -637,31 +652,55 @@ struct Cell3 {
   int add(const Vec3& p, int zz, int ch, int loc) {
     const int id = int(x.size());
     x.push_back(p), z.push_back(zz), chain.push_back(ch), local.push_back(loc), alive.push_back(1);
-    bins[size_t(bin_of(p))].push_back(id);
+    bins[size_t(bin_of(p))].push_back({p, zz, ch, loc, id});
     return id;
   }
   void kill(int id) {
     alive[size_t(id)] = 0;
     auto& b = bins[size_t(bin_of(x[size_t(id)]))];
-    b.erase(std::remove(b.begin(), b.end(), id), b.end());
+    b.erase(std::remove_if(b.begin(), b.end(), [id](const Rec& r) { return r.id == id; }), b.end());
   }
   Vec3 mi(Vec3 d) const {
     for (int k = 0; k < 3; ++k) d[k] -= L[k] * std::round(d[k] / L[k]);
     return d;
   }
+  // the bins around p, in a fixed order (every bin along a short axis)
+  int around(const Vec3& p, int* out) const {
+    int ix[3][3], cnt[3];   // the bin indices along each axis, wrapped
+    for (int k = 0; k < 3; ++k) {
+      if (nc[k] < 3) {
+        cnt[k] = nc[k];
+        for (int i = 0; i < nc[k]; ++i) ix[k][i] = i;
+      } else {
+        const int w = wi(k, p[k]);
+        cnt[k] = 3;
+        ix[k][0] = w == 0 ? nc[k] - 1 : w - 1, ix[k][1] = w, ix[k][2] = w + 1 == nc[k] ? 0 : w + 1;
+      }
+    }
+    int n = 0;
+    for (int i = 0; i < cnt[0]; ++i)
+      for (int j = 0; j < cnt[1]; ++j) {
+        const int row = (ix[0][i] * nc[1] + ix[1][j]) * nc[2];
+        for (int k = 0; k < cnt[2]; ++k) out[n++] = row + ix[2][k];
+      }
+    return n;
+  }
   template <class F>
   void near(const Vec3& p, F&& f) const {
-    int lo[3], hi[3];
-    for (int k = 0; k < 3; ++k) {
-      if (nc[k] < 3) lo[k] = 0, hi[k] = nc[k] - 1;   // every bin along a short axis
-      else lo[k] = wi(k, p[k]) - 1, hi[k] = wi(k, p[k]) + 1;
-    }
-    for (int i = lo[0]; i <= hi[0]; ++i)
-      for (int j = lo[1]; j <= hi[1]; ++j)
-        for (int k = lo[2]; k <= hi[2]; ++k) {
-          const int xi = (i + nc[0]) % nc[0], yj = (j + nc[1]) % nc[1], zk = (k + nc[2]) % nc[2];
-          for (int id : bins[size_t((xi * nc[1] + yj) * nc[2] + zk)]) f(id);
-        }
+    int b[27];
+    const int n = around(p, b);
+    for (int q = 0; q < n; ++q)
+      for (const Rec& r : bins[size_t(b[q])]) f(r.id);
+  }
+  // the records around p until f returns true (stop)
+  template <class F>
+  bool near_until(const Vec3& p, F&& f) const {
+    int b[27];
+    const int n = around(p, b);
+    for (int q = 0; q < n; ++q)
+      for (const Rec& r : bins[size_t(b[q])])
+        if (f(r)) return true;
+    return false;
   }
 };
 
@@ -1208,14 +1247,13 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     if (r < 0) r = limit(a, b);
     return r;
   };
-  // trials scored in parallel (GrowOptions::threads): the limit cache is filled first, the scoring only reads it
+  // the cache filled up front: the scoring (in parallel too, GrowOptions::threads) only reads it, a row per element
+  for (int a = -118; a <= 118; ++a)
+    for (int b = -118; b <= 118; ++b) limitc(a, b);
+  auto limit_row = [&](int a) { return &limit_cache[size_t((a + 128) & 255) * 256]; };
   const int nthreads = o.threads > 0 ? o.threads : std::min(8, int(std::max(1u, std::thread::hardware_concurrency())));
   std::unique_ptr<ThreadPool> pool;
-  if (nthreads > 1 && o.method == 0 && o.trials >= 32) {
-    for (int a = -118; a <= 118; ++a)
-      for (int b = -118; b <= 118; ++b) limitc(a, b);
-    pool = std::make_unique<ThreadPool>(nthreads);
-  }
+  if (nthreads > 1 && o.trials >= 32) pool = std::make_unique<ThreadPool>(nthreads);
   Cell3 cell;
   cell.init(Lv, o.method == 2 ? std::max(6.0, scale * 0.86 * 2 * 2.3) : scale * 0.86 * 2 * 2.3);   // LJ energies reach 6 Å
   // Rosenbluth methods: UFF van der Waals by element (method 2), kT
@@ -1229,6 +1267,23 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     uff_vdw(z, x, d);
     return uff_by_z[z] = {x, d};
   };
+  // UFF pair terms by element pair (x, D and the energy at the 6 Å cut) for every pair the growth can meet, filled
+  // here so the trials (in parallel too) only read them
+  struct LJ { double x, dd, cut; };
+  std::map<std::pair<int, int>, LJ> lj_pairs;
+  if (o.method == 2) {
+    std::set<int> zs{-6, 1, 6};
+    for (const auto& tp : T) zs.insert(tp.z.begin(), tp.z.end());
+    if (o.substrate) for (const auto& at : o.substrate->atoms) zs.insert(at.element);
+    for (int za : zs)
+      for (int zb : zs) {
+        const auto [xa, da] = uff_of(za);
+        const auto [xb, db] = uff_of(zb);
+        const double x = std::sqrt(xa * xb), dd = std::sqrt(da * db);
+        const double q6 = std::pow(x / 6.0, 6);
+        lj_pairs[{za, zb}] = LJ{x, dd, dd * (q6 * q6 - 2 * q6)};
+      }
+  }
   if (o.substrate)
     for (size_t i = 0; i < o.substrate->atoms.size(); ++i) cell.add(o.substrate->atoms[i].pos, o.substrate->atoms[i].element, -1, int(i));
   // a film: heights outside [z_lo, z_hi] count as contacts
@@ -1627,7 +1682,6 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     std::vector<uint8_t> ntl(nloc, 0);
     for (const auto& [w, d] : near_tail)
       if (w >= 0 && size_t(w) < nloc) ntl[size_t(w)] = uint8_t(d + 1);
-    auto lut = [](const std::vector<uint8_t>& v, int loc) { return loc >= 0 && size_t(loc) < v.size() ? int(v[size_t(loc)]) : 0; };
     // an arm or a grafted chain: bond distance from each new atom to the chain's head (then + 1 to the anchor), for the
     // parent's or substrate's atoms nearby
     std::vector<int> dhead(size_t(t.n), 99);
@@ -1681,6 +1735,12 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
       const int kind = int(gi) == t.link_group ? link_kind : t.group_kind[gi];
       return draw(kind, 0) - (kind == 0 ? t.bb_offset[gi] : 0.0);
     };
+    // the bond angle of each atom this step (the link's, an opened head's), as cosine and sine
+    std::vector<double> cos_ang(size_t(t.n)), sin_ang(size_t(t.n));
+    for (int a = 0; a < t.n; ++a) {
+      const double ang = a == 0 ? link_angle : a == 1 && head_ang > 0 ? head_ang : t.ang[size_t(a)];
+      cos_ang[size_t(a)] = std::cos(ang), sin_ang[size_t(a)] = std::sin(ang);
+    }
     // places the unit's atoms for a root torsion and group torsions, and returns the worst contact margin (Å); stops
     // counting once the margin is below `floor`
     auto score = [&](double root_t, const std::vector<double>& gv, double floor, std::vector<Vec3>& trial) {   // trial: the buffer placed into
@@ -1689,21 +1749,68 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
         const int a = absref(local);
         return a >= base ? trial[size_t(a - base)] : ch.pos[size_t(a)];
       };
-      for (int a = 0; a < t.n; ++a) {
+      auto place_atom = [&](int a) {
         const auto& r = t.ref[size_t(a)];
         if (a == 0 && next_dir) {   // the previous tail's free valence
           trial[0] = ch.pos[size_t(pt)] + *next_dir * link;
-          continue;
+          return;
         }
-        double tor, bond = t.bond[size_t(a)], ang = t.ang[size_t(a)];
-        if (a == 0) tor = root_t, bond = link, ang = link_angle;
+        double tor, bond = t.bond[size_t(a)];
+        if (a == 0) tor = root_t, bond = link;
         else if (t.group[size_t(a)] >= 0) tor = gv[size_t(t.group[size_t(a)])] + t.offset[size_t(a)];
         else tor = t.tor[size_t(a)];
-        if (a == 1 && head_ang > 0) ang = head_ang;
         if (mir) tor = -tor;
-        trial[size_t(a)] = place(P(r[2]), P(r[1]), P(r[0]), bond, ang, tor);
-      }
+        trial[size_t(a)] = place_cs(P(r[2]), P(r[1]), P(r[0]), bond, cos_ang[size_t(a)], sin_ang[size_t(a)], tor);
+      };
+      // worst margin against everything placed, and within the unit beyond three bonds; once it is at or below the
+      // floor the trial cannot win, and the search stops (the value returned is then only known to be ≤ floor)
+      double worst = 1e9;
+      // atom a against the cell and against the unit's atoms before it (each pair once, with the lower atom's bond
+      // distances); true: at or below the floor
+      auto check = [&](int a) {
+        const Vec3& x = trial[size_t(a)];
+        worst = std::min(worst, region(x));
+        if (worst <= best_m) return true;
+        const uint8_t* ea = exl[size_t(a)].data();
+        const size_t ea_n = exl[size_t(a)].size();
+        const double* lrow = limit_row(t.z[size_t(a)]);
+        const int dha = dhead[size_t(a)];
+        const bool stop = cell.near_until(x, [&](const Cell3::Rec& r) {
+          double f = 1.0;
+          if (r.chain == ci) {
+            const int dd = r.local >= 0 && size_t(r.local) < ea_n ? int(ea[r.local]) : 0;
+            if (dd) {
+              if (dd - 1 <= 3) return false;
+              f = dd - 1 == 4 ? 0.85 : 0.9;
+            }
+          } else if (dha <= 3) {   // across an arm's junction
+            const auto it = ch.pdist.find(r.id);
+            if (it != ch.pdist.end()) {
+              const int tot = dha + 1 + it->second;   // branch points are crowded, as quaternary carbons are
+              if (tot <= 3) return false;
+              f = tot == 4 ? 0.85 : 0.9;
+            }
+          }
+          const double lim = lrow[(r.z + 128) & 255];
+          const double reach = worst + f * lim;   // farther pairs cannot lower the margin
+          const Vec3 dv = cell.mi(x - r.x);
+          const double d2 = dot(dv, dv);
+          if (reach > 0 && d2 >= reach * reach) return false;
+          const double m = std::sqrt(d2) - f * lim;
+          if (m < worst) worst = m;
+          return worst <= best_m;
+        });
+        if (stop) return true;
+        for (int b = 0; b < a; ++b)
+          if (const int dd = int(exl[size_t(b)][size_t(base + a)]); dd == 0 || dd - 1 > 3) {
+            const double f = dd == 0 ? 1.0 : dd - 1 == 4 ? 0.85 : 0.9;
+            const double m = norm(cell.mi(trial[size_t(b)] - x)) - f * limitc(t.z[size_t(b)], t.z[size_t(a)]);
+            if (m < worst) worst = m;
+          }
+        return worst <= best_m;
+      };
       if (head_ang > 0) {   // the opened CH₂'s hydrogens: symmetric about its C–C–C plane, H–C–H 107°, each on its side
+        for (int a = 0; a < t.n; ++a) place_atom(a);
         const Vec3 c = trial[0], ua = unitv(ch.pos[size_t(pt)] - c), ub = unitv(trial[1] - c);
         const Vec3 bis = unitv(ua + ub) * -1.0, nrm = unitv(cross(ua, ub));
         const double half = 0.5 * 107.0 * kPi / 180;
@@ -1712,48 +1819,18 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
           const double sd = i == 0 ? side : -side;
           trial[size_t(head_h[i])] = c + (bis * std::cos(half) + nrm * (sd * std::sin(half))) * t.bond[size_t(head_h[i])];
         }
-      }
-      // worst margin against everything placed, and within the unit beyond three bonds
-      double worst = 1e9;
-      for (int a = 0; a < t.n && worst > best_m; ++a) {
-        const Vec3& x = trial[size_t(a)];
-        worst = std::min(worst, region(x));
-        const auto& ea = exl[size_t(a)];
-        const int za = t.z[size_t(a)];
-        cell.near(x, [&](int id) {
-          double f = 1.0;
-          if (cell.chain[size_t(id)] == ci) {
-            const int dd = lut(ea, cell.local[size_t(id)]);
-            if (dd) {
-              if (dd - 1 <= 3) return;
-              f = dd - 1 == 4 ? 0.85 : 0.9;
-            }
-          } else if (dhead[size_t(a)] <= 3) {   // across an arm's junction
-            const auto it = ch.pdist.find(id);
-            if (it != ch.pdist.end()) {
-              const int tot = dhead[size_t(a)] + 1 + it->second;   // branch points are crowded, as quaternary carbons are
-              if (tot <= 3) return;
-              f = tot == 4 ? 0.85 : 0.9;
-            }
-          }
-          const double reach = worst + f * limitc(za, cell.z[size_t(id)]);   // farther pairs cannot lower the margin
-          const Vec3 dv = cell.mi(x - cell.x[size_t(id)]);
-          const double d2 = dot(dv, dv);
-          if (reach > 0 && d2 >= reach * reach) return;
-          const double m = std::sqrt(d2) - f * limitc(za, cell.z[size_t(id)]);
-          if (m < worst) worst = m;
-        });
-        for (int b = a + 1; b < t.n; ++b)
-          if (const int dd = int(ea[size_t(base + b)]); dd == 0 || dd - 1 > 3) {
-            const double f = dd == 0 ? 1.0 : dd - 1 == 4 ? 0.85 : 0.9;
-            const double m = norm(cell.mi(x - trial[size_t(b)])) - f * limitc(za, t.z[size_t(b)]);
-            if (m < worst) worst = m;
-          }
+        for (int a = 0; a < t.n; ++a)
+          if (check(a)) return worst;
+      } else {   // each atom checked as it is placed: a trial that clashes early is not placed any further
+        for (int a = 0; a < t.n; ++a) {
+          place_atom(a);
+          if (check(a)) return worst;
+        }
       }
       // look ahead: the next unit's head must have room at this unit's free valence (else the chain folds into itself)
       // the last unit: its tail cap (a hydrogen at 1.09 Å) goes there, and needs room as well
       const bool last = k + 1 == int(ch.seq.size());
-      if (worst > best_m && t.tail_fixed) {
+      if (t.tail_fixed) {
         auto tp = [&](int local) { return local >= 0 ? trial[size_t(local)] : ch.pos[size_t(pt)]; };
         Vec3 e1, e2, e3;
         frame(trial[size_t(t.tail)], tp(t.r1), tp(t.r2), e1, e2, e3);
@@ -1761,29 +1838,35 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
         const Vec3 nx = trial[size_t(t.tail)] + dir * (last ? 1.09 : 1.53);
         // past a quaternary tail the next head's hydrogens are crowded as well: the head probe with their room (−6)
         const int probe = last ? 1 : tail_quaternary ? -6 : 6;
+        const double* prow = limit_row(probe);
         worst = std::min(worst, region(nx));
-        cell.near(nx, [&](int id) {
-          double f = 1.0;
-          if (cell.chain[size_t(id)] == ci) {
-            const int dd = lut(ntl, cell.local[size_t(id)]);
-            if (dd) {
-              if (dd - 1 <= 3) return;
-              f = dd - 1 == 4 ? 0.85 : 0.9;
-            }
-          } else if (dhead_next <= 3) {
-            const auto it = ch.pdist.find(id);
-            if (it != ch.pdist.end()) {
-              const int tot = dhead_next + 1 + it->second;
-              if (tot <= 3) return;
-              f = tot == 4 ? 0.85 : 0.9;
-            }
-          }
-          const double m = norm(cell.mi(nx - cell.x[size_t(id)])) - f * limitc(probe, cell.z[size_t(id)]);
-          if (m < worst) worst = m;
-        });
+        if (worst <= best_m) return worst;
+        const uint8_t* nt = ntl.data();
+        const size_t nt_n = ntl.size();
+        if (cell.near_until(nx, [&](const Cell3::Rec& r) {
+              double f = 1.0;
+              if (r.chain == ci) {
+                const int dd = r.local >= 0 && size_t(r.local) < nt_n ? int(nt[r.local]) : 0;
+                if (dd) {
+                  if (dd - 1 <= 3) return false;
+                  f = dd - 1 == 4 ? 0.85 : 0.9;
+                }
+              } else if (dhead_next <= 3) {
+                const auto it = ch.pdist.find(r.id);
+                if (it != ch.pdist.end()) {
+                  const int tot = dhead_next + 1 + it->second;
+                  if (tot <= 3) return false;
+                  f = tot == 4 ? 0.85 : 0.9;
+                }
+              }
+              const double m = norm(cell.mi(nx - r.x)) - f * prow[(r.z + 128) & 255];
+              if (m < worst) worst = m;
+              return worst <= best_m;
+            }))
+          return worst;
         for (int b = 0; b < t.n; ++b)
-          if (const int dd = int(ntl[size_t(base + b)]); dd == 0 || dd - 1 > 3) {
-            const double m = norm(cell.mi(nx - trial[size_t(b)])) - (dd == 0 ? 1.0 : dd - 1 == 4 ? 0.85 : 0.9) * limitc(probe, t.z[size_t(b)]);
+          if (const int dd = int(nt[size_t(base + b)]); dd == 0 || dd - 1 > 3) {
+            const double m = norm(cell.mi(nx - trial[size_t(b)])) - (dd == 0 ? 1.0 : dd - 1 == 4 ? 0.85 : 0.9) * prow[(t.z[size_t(b)] + 128) & 255];
             if (m < worst) worst = m;
           }
         // deeper look-ahead (GrowOptions::lookahead bonds): points further along the free valence need room too — against
@@ -1791,15 +1874,19 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
         // not step into a pocket it cannot leave
         if (!last && o.lookahead > 1) {
           const int recent = k >= 2 ? ch.unit_start[size_t(k - 2)] : 0;
+          const double* crow = limit_row(6);
           for (int j = 2; j <= o.lookahead && worst > best_m; ++j) {
             const Vec3 q = nx + dir * (1.53 * (j - 1));
             worst = std::min(worst, region(q));
-            cell.near(q, [&](int id) {
-              if (cell.chain[size_t(id)] == ci && cell.local[size_t(id)] >= recent) return;
-              if ((ch.parent >= 0 || ch.ext_anchor >= 0) && ch.pdist.count(id)) return;   // an arm's junction, a graft site
-              const double m = norm(cell.mi(q - cell.x[size_t(id)])) - 0.8 * limitc(6, cell.z[size_t(id)]);
-              if (m < worst) worst = m;
-            });
+            if (worst <= best_m) return worst;
+            if (cell.near_until(q, [&](const Cell3::Rec& r) {
+                  if (r.chain == ci && r.local >= recent) return false;
+                  if ((ch.parent >= 0 || ch.ext_anchor >= 0) && ch.pdist.count(r.id)) return false;   // an arm's junction, a graft site
+                  const double m = norm(cell.mi(q - r.x)) - 0.8 * crow[(r.z + 128) & 255];
+                  if (m < worst) worst = m;
+                  return worst <= best_m;
+                }))
+              return worst;
           }
         }
       }
@@ -1909,41 +1996,42 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
       // Rosenbluth: every trial within the contact limits weighted by exp(−E/kT); one drawn by its weight
       auto pair_energy = [&](int za, int zb, double d, int bonds) {
         if (o.method == 1) {   // soft spheres: 20 kcal/mol (1 − d/limit)² inside the limit
-          const double lim = (bonds == 4 ? 0.85 : bonds >= 5 && bonds <= 7 ? 0.9 : 1.0) * limit(za, zb);
+          const double lim = (bonds == 4 ? 0.85 : bonds >= 5 && bonds <= 7 ? 0.9 : 1.0) * limitc(za, zb);
           return d < lim ? 20.0 * (1 - d / lim) * (1 - d / lim) : 0.0;
         }
         if (d >= 6.0) return 0.0;   // UFF: D [(x/r)¹² − 2 (x/r)⁶], geometric means, shifted to zero at 6 Å
-        const auto [xa, da] = uff_of(za);
-        const auto [xb, db] = uff_of(zb);
-        const double x = std::sqrt(xa * xb), dd = std::sqrt(da * db);
-        auto lj = [&](double r) { const double q = std::pow(x / r, 6); return dd * (q * q - 2 * q); };
-        return lj(std::max(d, 0.5)) - lj(6.0);
+        const LJ& p = lj_pairs.find({za, zb})->second;
+        const double q = std::pow(p.x / std::max(d, 0.5), 6);
+        return p.dd * (q * q - 2 * q) - p.cut;
       };
-      auto trial_energy = [&] {
+      // bond distances (+ 1) from the unit's atoms, as the scoring reads them
+      auto trial_energy = [&](const std::vector<Vec3>& trial) {
         double E = 0;
         for (int a = 0; a < t.n; ++a) {
           const Vec3& x = trial[size_t(a)];
-          cell.near(x, [&](int id) {
+          const std::vector<uint8_t>& ea = exl[size_t(a)];
+          cell.near_until(x, [&](const Cell3::Rec& r) {
             int bonds = 99;
-            if (cell.chain[size_t(id)] == ci) {
-              const auto it = excl[size_t(a)].find(cell.local[size_t(id)]);
-              if (it != excl[size_t(a)].end()) {
-                if (it->second <= 3) return;
-                bonds = it->second;
+            if (r.chain == ci) {
+              const int dd = r.local >= 0 && size_t(r.local) < ea.size() ? int(ea[size_t(r.local)]) : 0;
+              if (dd) {
+                if (dd - 1 <= 3) return false;
+                bonds = dd - 1;
               }
             } else if (dhead[size_t(a)] <= 3) {
-              const auto it = ch.pdist.find(id);
+              const auto it = ch.pdist.find(r.id);
               if (it != ch.pdist.end()) {
                 bonds = dhead[size_t(a)] + 1 + it->second;
-                if (bonds <= 3) return;
+                if (bonds <= 3) return false;
               }
             }
-            E += pair_energy(t.z[size_t(a)], cell.z[size_t(id)], norm(cell.mi(x - cell.x[size_t(id)])), bonds);
+            E += pair_energy(t.z[size_t(a)], r.z, norm(cell.mi(x - r.x)), bonds);
+            return false;
           });
           for (int b2 = a + 1; b2 < t.n; ++b2) {
-            const auto it = excl[size_t(a)].find(base + b2);
-            if (it != excl[size_t(a)].end() && it->second <= 3) continue;
-            E += pair_energy(t.z[size_t(a)], t.z[size_t(b2)], norm(cell.mi(x - trial[size_t(b2)])), it == excl[size_t(a)].end() ? 99 : it->second);
+            const int dd = int(ea[size_t(base + b2)]);
+            if (dd && dd - 1 <= 3) continue;
+            E += pair_energy(t.z[size_t(a)], t.z[size_t(b2)], norm(cell.mi(x - trial[size_t(b2)])), dd == 0 ? 99 : dd - 1);
           }
         }
         return E;
@@ -1954,23 +2042,45 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
         if (kind != 0) return 0.0;
         return 0.5 * 1.411 * (1 + std::cos(phi)) - 0.5 * 0.271 * (1 - std::cos(2 * phi)) + 0.5 * 3.145 * (1 + std::cos(3 * phi));
       };
+      // the torsions of every trial drawn first (the same draws as one at a time), the trials then placed, checked and
+      // weighed independently (in parallel when there is a pool), and kept in their order
+      std::vector<double> roots(static_cast<size_t>(trials));
+      std::vector<std::vector<double>> gvs(static_cast<size_t>(trials), gv);
+      for (int tr = 0; tr < trials; ++tr) {
+        roots[size_t(tr)] = draw(root_kind, 0);
+        auto& g = gvs[size_t(tr)];
+        for (size_t gi = 0; gi < g.size(); ++gi) g[gi] = drawg(gi);
+        for (int a = 1; a < t.n; ++a)
+          if (t.group[size_t(a)] >= 0 && t.group_kind[size_t(t.group[size_t(a)])] == 1 && t.offset[size_t(a)] == 0.0) g[size_t(t.group[size_t(a)])] += t.tor[size_t(a)];
+      }
+      std::vector<std::vector<Vec3>> placed(static_cast<size_t>(trials));
+      std::vector<double> tm(static_cast<size_t>(trials)), te(static_cast<size_t>(trials)), tp2(static_cast<size_t>(trials));
+      auto evaluate = [&](size_t q, std::vector<Vec3>& buf) {
+        tm[q] = score(roots[q], gvs[q], o.accept, buf);
+        if (tm[q] < o.accept) return;
+        double E = trial_energy(buf) + (next_dir ? 0.0 : tors_energy(root_kind, roots[q]));
+        for (size_t gi = 0; gi < gvs[q].size(); ++gi) {
+          const int kind = int(gi) == t.link_group ? link_kind : t.group_kind[gi];
+          E += tors_energy(kind, gvs[q][gi] + (kind == 0 ? t.bb_offset[gi] : 0.0));
+        }
+        te[q] = E;
+        tp2[q] = orienting ? chord_p2(buf) : 0.0;
+        placed[q] = buf;
+      };
+      if (pool && trials >= 32)
+        pool->run(size_t(trials), [&](int, size_t b, size_t e) {
+          std::vector<Vec3> buf(size_t(t.n));
+          for (size_t q = b; q < e; ++q) evaluate(q, buf);
+        });
+      else
+        for (size_t q = 0; q < size_t(trials); ++q) evaluate(q, trial);
       std::vector<std::vector<Vec3>> kept;
       std::vector<double> kept_e, kept_m, kept_root, kept_p2;
       std::vector<std::vector<double>> kept_gv;
-      for (int tr = 0; tr < trials; ++tr) {
-        const double root_t = draw(root_kind, 0);
-        for (size_t gi = 0; gi < gv.size(); ++gi) gv[gi] = drawg(gi);
-        for (int a = 1; a < t.n; ++a)
-          if (t.group[size_t(a)] >= 0 && t.group_kind[size_t(t.group[size_t(a)])] == 1 && t.offset[size_t(a)] == 0.0) gv[size_t(t.group[size_t(a)])] += t.tor[size_t(a)];
-        const double m = score(root_t, gv, o.accept, trial);
-        if (m < o.accept) continue;
-        double E = trial_energy() + (next_dir ? 0.0 : tors_energy(root_kind, root_t));
-        for (size_t gi = 0; gi < gv.size(); ++gi) {
-          const int kind = int(gi) == t.link_group ? link_kind : t.group_kind[gi];
-          E += tors_energy(kind, gv[gi] + (kind == 0 ? t.bb_offset[gi] : 0.0));
-        }
-        kept.push_back(trial), kept_e.push_back(E), kept_m.push_back(m), kept_root.push_back(root_t), kept_gv.push_back(gv);
-        kept_p2.push_back(orienting ? chord_p2(trial) : 0.0);
+      for (size_t q = 0; q < size_t(trials); ++q) {
+        if (tm[q] < o.accept) continue;
+        kept.push_back(std::move(placed[q])), kept_e.push_back(te[q]), kept_m.push_back(tm[q]), kept_root.push_back(roots[q]), kept_gv.push_back(gvs[q]);
+        kept_p2.push_back(tp2[q]);
       }
       if (!kept.empty()) {
         const double emin = *std::min_element(kept_e.begin(), kept_e.end());
