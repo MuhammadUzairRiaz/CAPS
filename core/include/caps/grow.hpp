@@ -74,9 +74,15 @@ struct GrowOptions {
   // method adds 0.25 s P₂ Å to a trial's contact margin (among trials within the limits). s = 0 (or no axis): isotropic.
   std::array<double, 3> orient_axis{0, 0, 0};
   double orient_strength = 0;
-  // grow_chains: when a chain cannot be placed, try again at contact scales 0.85, 0.75, 0.7, 0.6 of the full limits
-  // (dense cells and films, long side chains); Relax with push-off afterwards
+  // grow_chains: chains stuck in a crowd ease their own limits (ease_floor 0.4, only where stuck), after a short
+  // probe chain has found the scale the units themselves allow; only if that fails the whole cell is grown again at
+  // contact scales 0.85, 0.75, 0.7, 0.6 of the full limits. grow (polystyrene): the cell grown again at those scales.
+  // Relax with push-off afterwards
   bool auto_scale = false;
+  // grow_chains: when > 0, a chain that keeps failing at one spot eases its own contact limits a step at a time (0.9,
+  // 0.8 … of the full limits, down to this fraction) for its next few units, then back to the full limits; the rest
+  // of the cell keeps the full limits. auto_scale turns it on (down to 0.4)
+  double ease_floor = 0;
   // grow_chains: a chain stuck in a pocket backs up further (2 … 64 units) and, out of backtracks, is cut to half its
   // length (three times) before a new start; auto_scale turns it off for its quick tries at the stricter scales
   bool escape = true;
@@ -104,6 +110,9 @@ struct GrowReport {
   double density = 0.0;
   double ln_rosenbluth = 0.0;            // Rosenbluth methods: mean over chains of ln W (W = Π_steps Σ w / k)
   double orientation = 0.0;              // ⟨P₂⟩ of the units' backbone chords against orient_axis (z when none is given)
+  double contact_scale = 1.0;            // the contact scale the cell was grown at
+  double min_scale = 1.0;                // the lowest contact scale any growth step was placed at (eased steps)
+  int eased_steps = 0;                   // units of the cell placed with eased limits (GrowOptions::ease_floor)
   std::vector<std::string> notes;
 };
 

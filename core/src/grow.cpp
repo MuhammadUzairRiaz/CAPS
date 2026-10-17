@@ -456,7 +456,8 @@ std::vector<double> gasteiger_ch(const System& s, const std::vector<char>& aroma
   return q;
 }
 
-System grow(const GrowOptions& o, GrowReport* report) {
+namespace {
+System grow_once(const GrowOptions& o, GrowReport* report) {
   if (o.polymer != "polystyrene") throw std::invalid_argument("unknown polymer '" + o.polymer + "' (this build has polystyrene)");
   if (o.chains < 1 || o.dp < 2) throw std::invalid_argument("need at least one chain of at least two units");
   const double L = o.box > 0 ? o.box : box_for_density(o);
@@ -567,6 +568,39 @@ System grow(const GrowOptions& o, GrowReport* report) {
   s.notes = rep.notes;
   if (report) *report = rep;
   return s;
+}
+
+}  // namespace
+
+System grow(const GrowOptions& o, GrowReport* report) {
+  if (!o.auto_scale) return grow_once(o, report);
+  // automatic contact scale: the requested one first, then 0.85, 0.75, 0.7, 0.6 of the full limits, each but the last
+  // given up after a few restarts (a crowded cell jams at the stricter limits, and a lower scale is quick)
+  std::vector<double> scales = {o.contact_scale};
+  for (double x : {0.85, 0.75, 0.7, 0.6})
+    if (x < o.contact_scale - 1e-9) scales.push_back(x);
+  for (size_t k = 0; k < scales.size(); ++k) {
+    GrowOptions g = o;
+    g.auto_scale = false;
+    g.contact_scale = scales[k];
+    if (k + 1 < scales.size()) g.max_restarts = std::min(o.max_restarts, 8);
+    try {
+      System s = grow_once(g, report);
+      if (k > 0) {
+        const std::string n = "grown at contact scale " + std::to_string(scales[k]).substr(0, 4) + " (" + std::to_string(scales[0]).substr(0, 4) +
+                              " was too crowded); relax with push-off before dynamics";
+        s.notes.push_back(n);
+        if (report) report->notes.push_back(n);
+      }
+      return s;
+    } catch (const GrowError& e) {
+      if (std::string(e.what()) == "cancelled") throw;
+      if (k + 1 == scales.size())
+        throw GrowError(std::string(e.what()) + " (also at contact scale " + std::to_string(scales[k]).substr(0, 4) +
+                        "); the repeat-unit grower (caps grow --units '*CC(*)c1ccccc1') eases the limits only where a chain is stuck and fills denser cells");
+    }
+  }
+  throw GrowError("no contact scale worked");
 }
 
 }  // namespace caps

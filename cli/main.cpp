@@ -248,7 +248,9 @@ int usage() {
                "  caps grow    -o OUT.data|OUT.pdb|OUT.xyz [--chains 10] [--dp 8] [--density 0.5 | --box 33]\n"
                "               [--tacticity atactic|isotactic|syndiotactic] [--seed 1] [--trans] [--scale 1.0]\n"
                "               [--units '*CC(*)c1ccccc1,*CC(*)(C)C(=O)OC' --sequence homopolymer|alternating|block|random|shuffled|gradient|pattern\n"
-               "                --weights 0.7,0.3 --blocks 20,20 --pattern AAB --ff FF.json] [--auto-scale]   any repeat units (else polystyrene)\n"
+               "                --weights 0.7,0.3 --blocks 20,20 --pattern AAB --ff FF.json --method trials|rosenbluth|rosenbluth_lj\n"
+               "                --threads N --lookahead 1]   any repeat units (else polystyrene); the contact scale is automatic\n"
+               "                (lowered only where a chain is stuck) unless --scale fixes it\n"
                "  caps field   FILE [--topology DATA] [--forces OUT.txt]   the structure's force field (below): types, terms, energy (and per-atom forces)\n"
                "  caps relax   FILE -o OUT.data|OUT.pdb|OUT.xyz [--method lbfgs|cg|sd|fire] [--ftol 0.5] [--iterations 5000]\n"
                "               [--density 1.05] [--step 0.06] [--box-relax] [--pressure 1] [--no-pushoff] [--cutoff Å]\n"
@@ -343,7 +345,7 @@ const std::set<std::string>& known_options() {
     "--hold", "--hybrid", "--include-input", "--input", "--insert", "--inter", "--ions", "--itp", "--iterations",
     "--json", "--kspace", "--kspace-accuracy", "--lammps-cutoff", "--units", "--lammps-input", "--lammps-run", "--moltemplate",
     "--lammps-style", "--last", "--layers", "--length", "--list", "--list-templates", "--log", "--lx", "--ly", "--m",
-    "--martini", "--max-blocks", "--max-torsions", "--moves", "--max-strain", "--md-ps", "--method", "--methods", "--model", "--molecule-size",
+    "--lookahead", "--martini", "--max-blocks", "--max-torsions", "--moves", "--max-strain", "--md-ps", "--method", "--methods", "--model", "--molecule-size",
     "--molecules", "--n", "--names", "--neutralise", "--new-velocities", "--no-cell", "--wrap",
     "--no-coulomb", "--no-ions", "--no-orthogonal", "--no-pbc", "--no-pushoff", "--no-relax",
     "--no-tail", "--normal", "--out", "--overlay", "--padding", "--pair", "--particles",
@@ -1407,7 +1409,7 @@ int main(int argc, char** argv) {
       if (o.count("--trials")) g.trials = std::stoi(o["--trials"]);
       if (o.count("--comfortable")) g.comfortable = std::stod(o["--comfortable"]);
       g.escalate = o.count("--escalate");
-      g.auto_scale = o.count("--auto-scale");
+      g.auto_scale = o.count("--auto-scale") || !o.count("--scale");   // automatic unless --scale fixes it
       if (!o.count("-o")) return usage();
       GrowReport rep;
       System s;
@@ -1431,6 +1433,13 @@ int main(int argc, char** argv) {
         if (o.count("--blocks")) for (const auto& b : split(o["--blocks"])) spec.blocks.push_back(std::stoi(b));
         if (o.count("--pattern")) spec.pattern = o["--pattern"];
         if (o.count("--ff")) spec.forcefield = o["--ff"];
+        if (o.count("--method")) {
+          const std::string m = o["--method"];
+          if (m != "trials" && m != "rosenbluth" && m != "rosenbluth_lj") throw std::invalid_argument("--method trials|rosenbluth|rosenbluth_lj");
+          g.method = m == "rosenbluth" ? 1 : m == "rosenbluth_lj" ? 2 : 0;
+        }
+        if (o.count("--threads")) g.threads = std::stoi(o["--threads"]);
+        if (o.count("--lookahead")) g.lookahead = std::clamp(std::stoi(o["--lookahead"]), 1, 4);
         s = grow_chains(spec, g, &rep);
       } else
         s = grow(g, &rep);
