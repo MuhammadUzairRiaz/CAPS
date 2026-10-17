@@ -1,0 +1,1225 @@
+{
+ "format": "caps-cli-gui-sync/1",
+ "about": "Every caps command and option and its place in CAPS Studio (and the C API entry points the Studio calls). An option is 'page' (on the command's page, the anchor of the command), FILE|TEXT (a Studio file under studio/CapsStudio and a text it must contain), 'partial: why' or 'cli: why' (no Studio control, and why). shared: the Studio calls the same command layer. tests/test_cli_gui_sync.py fails when the CLI gains a command or option this file does not place.",
+ "commands": {
+  "info": {
+   "status": "gui",
+   "studio": "Studio › Molecule inspector (summary of the open structure)",
+   "where": "ViewModels/MainViewModel.Figure.cs|Summary()",
+   "capi": [
+    "caps_summary_get"
+   ],
+   "options": {
+    "--topology": "Views/Pages/OpenPage.axaml|topology joined from the data file"
+   }
+  },
+  "render": {
+   "status": "gui",
+   "studio": "Export › Figure (image of the view)",
+   "where": "ViewModels/MainViewModel.Figure.cs|ExportImage(",
+   "capi": [
+    "caps_export_image",
+    "caps_set_wrap"
+   ],
+   "options": {
+    "--topology": "page",
+    "--frame": "page",
+    "--size": "page",
+    "--bg": "page",
+    "--colour": "page",
+    "--style": "page",
+    "--yaw": "page",
+    "--pitch": "page",
+    "--zoom": "page",
+    "--no-cell": "page",
+    "--wrap": "Interop/Native.cs|SetWrap(bool wrap)"
+   }
+  },
+  "shape": {
+   "status": "gui",
+   "studio": "Studio › Molecules table (Rg, κ²)",
+   "where": "ViewModels/MainViewModel.cs|MoleculeRow",
+   "capi": [
+    "caps_molecules"
+   ],
+   "options": {
+    "--topology": "page"
+   }
+  },
+  "rdf": {
+   "status": "gui",
+   "studio": "Analyze › Properties (g(r))",
+   "where": "ViewModels/AnalyzeViewModel.cs|rdf",
+   "capi": [
+    "caps_analyze"
+   ],
+   "options": {
+    "--topology": "page",
+    "--rmax": "page",
+    "--dr": "page",
+    "--pair": "page",
+    "--inter": "page"
+   }
+  },
+  "analyze": {
+   "status": "gui",
+   "studio": "Analyze › Properties, Scattering, Diffusion, Interface",
+   "where": "ViewModels/AnalyzeViewModel.cs|Analyze(",
+   "capi": [
+    "caps_analyze",
+    "caps_analyze_ex"
+   ],
+   "options": {
+    "--topology": "page",
+    "--props": "page",
+    "--first": "page",
+    "--last": "page",
+    "--stride": "page",
+    "--frame-ps": "page",
+    "--timestep-fs": "page",
+    "--pair": "page",
+    "--inter": "page",
+    "--qmax": "page",
+    "--dq": "page",
+    "--qdirect": "page",
+    "--probe": "page",
+    "--grid": "page",
+    "--ff": "page",
+    "--json": "page",
+    "--csv": "page",
+    "--fit": "page",
+    "--viscosity": "page",
+    "--temp": "page",
+    "--surface": "page",
+    "--axis": "page",
+    "--zbin": "page"
+   }
+  },
+  "elastic": {
+   "status": "gui",
+   "studio": "Analyze › Mechanics (elastic constants)",
+   "where": "ViewModels/AnalyzeViewModel.cs|cij_",
+   "capi": [
+    "caps_analyze_ex"
+   ],
+   "options": {
+    "--topology": "page",
+    "--method": "page",
+    "--configs": "page",
+    "--strain": "page",
+    "--temp": "page",
+    "--ps": "page",
+    "--ff": "page",
+    "--json": "page"
+   }
+  },
+  "tensile": {
+   "status": "gui",
+   "studio": "Analyze › Mechanics (stress–strain)",
+   "where": "ViewModels/AnalyzeViewModel.cs|\"tensile\"",
+   "capi": [
+    "caps_analyze_ex"
+   ],
+   "options": {
+    "--axis": "page",
+    "--rate": "page",
+    "--strain": "page",
+    "--temp": "page",
+    "--fixed-lateral": "page",
+    "--precision": "ViewModels/AnalyzeViewModel.cs|MechDouble",
+    "--ff": "page",
+    "--overlay": "ViewModels/FieldViewModel.Sync.cs|FieldSetOverlays",
+    "--charges": "page",
+    "--csv": "page"
+   }
+  },
+  "tg": {
+   "status": "gui",
+   "studio": "Analyze › Glass transition",
+   "where": "Views/Pages/GlassPage.axaml|Run cooling",
+   "capi": [
+    "caps_analyze_ex"
+   ],
+   "options": {
+    "--from": "page",
+    "--to": "page",
+    "--step": "page",
+    "--ps": "page",
+    "--precision": "Views/Pages/GlassPage.axaml|Analyze.MechDouble",
+    "--ff": "page",
+    "--overlay": "ViewModels/FieldViewModel.Sync.cs|FieldSetOverlays",
+    "--charges": "page",
+    "--csv": "page",
+    "--fit": "partial: the page fits its own scan (two lines, free hinge or ranges); fitting a CSV table written elsewhere is the command line's"
+   }
+  },
+  "frames": {
+   "status": "gui",
+   "studio": "Studio › Trajectory (save frames)",
+   "where": "ViewModels/MainViewModel.cs|SaveTrajectory(",
+   "capi": [
+    "caps_save_trajectory",
+    "caps_open_frames"
+   ],
+   "options": {
+    "--topology": "page",
+    "--first": "page",
+    "--last": "page",
+    "--stride": "page"
+   }
+  },
+  "convert": {
+   "status": "gui",
+   "studio": "Export › Data (save as)",
+   "where": "ViewModels/MainViewModel.cs|public void SaveDocument(string path)",
+   "capi": [
+    "caps_save"
+   ],
+   "options": {
+    "--topology": "page"
+   }
+  },
+  "edit": {
+   "status": "gui",
+   "studio": "Studio › editing tools (build, delete, bond, torsion, supercell …)",
+   "where": "ViewModels/MainViewModel.Edit.cs|Edit(",
+   "capi": [
+    "caps_edit"
+   ],
+   "options": {
+    "--ops": "page",
+    "--ops-file": "partial: edits are made one by one in the view and recorded by the macro recorder; a file of edit statements is the command line's"
+   }
+  },
+  "provenance": {
+   "status": "gui",
+   "studio": "Jobs › Provenance",
+   "where": "ViewModels/MainViewModel.Provenance.cs|Provenance()",
+   "capi": [
+    "caps_provenance"
+   ],
+   "options": {
+    "--json": "page",
+    "--bibtex": "page",
+    "--methods": "page",
+    "--compare": "page"
+   }
+  },
+  "bench": {
+   "status": "gui",
+   "studio": "Bench",
+   "where": "ViewModels/MainViewModel.Bench.cs|RunBench",
+   "capi": [
+    "caps_bench_run",
+    "caps_bench_list"
+   ],
+   "options": {
+    "--all": "page",
+    "--repeats": "page",
+    "--quick": "page",
+    "--out": "page",
+    "--samples": "page"
+   }
+  },
+  "build": {
+   "status": "gui",
+   "studio": "Studio › Molecule builder (SMILES, conformers); Builders › Coarse-grained (--beads, --template)",
+   "where": "ViewModels/MainViewModel.Molecule.cs|ScheduleBuild",
+   "capi": [
+    "caps_build_smiles",
+    "caps_build_beads"
+   ],
+   "options": {
+    "--conformers": "page",
+    "--seed": "page",
+    "--ff": "page",
+    "--all": "page"
+   }
+  },
+  "check": {
+   "status": "gui",
+   "studio": "Studio › File checks",
+   "where": "ViewModels/MainViewModel.Checks.cs|FileChecks",
+   "capi": [
+    "caps_file_checks"
+   ],
+   "options": {
+    "--topology": "page",
+    "--report": "page"
+   }
+  },
+  "pipeline": {
+   "status": "gui",
+   "studio": "Analyze › Visualize (pipeline)",
+   "where": "ViewModels/MainViewModel.Export.cs|SetPipeline(",
+   "capi": [
+    "caps_pipeline_set"
+   ],
+   "options": {
+    "--topology": "page",
+    "--steps": "page",
+    "--frame": "page",
+    "--table": "page",
+    "--particles": "page",
+    "--out": "page",
+    "--branch": "page",
+    "--help": "cli: the command line's own help text"
+   }
+  },
+  "sheet": {
+   "status": "gui",
+   "studio": "DFT workbench (Sheets, Adsorption DFT, DFT runs, results)",
+   "where": "ViewModels/MainViewModel.Dft.cs|Dft(",
+   "capi": [
+    "caps_dft_run",
+    "caps_dft_help"
+   ],
+   "note": "one command layer (caps/dft_commands.hpp) behind the CLI, the C API and the Studio: the same options by construction",
+   "options": "shared"
+  },
+  "terminate": {
+   "status": "gui",
+   "studio": "DFT workbench (Sheets, Adsorption DFT, DFT runs, results)",
+   "where": "ViewModels/MainViewModel.Dft.cs|Dft(",
+   "capi": [
+    "caps_dft_run",
+    "caps_dft_help"
+   ],
+   "note": "one command layer (caps/dft_commands.hpp) behind the CLI, the C API and the Studio: the same options by construction",
+   "options": "shared"
+  },
+  "validate": {
+   "status": "gui",
+   "studio": "DFT workbench (Sheets, Adsorption DFT, DFT runs, results)",
+   "where": "ViewModels/MainViewModel.Dft.cs|Dft(",
+   "capi": [
+    "caps_dft_run",
+    "caps_dft_help"
+   ],
+   "note": "one command layer (caps/dft_commands.hpp) behind the CLI, the C API and the Studio: the same options by construction",
+   "options": "shared"
+  },
+  "adsorb-dft": {
+   "status": "gui",
+   "studio": "DFT workbench (Sheets, Adsorption DFT, DFT runs, results)",
+   "where": "ViewModels/MainViewModel.Dft.cs|Dft(",
+   "capi": [
+    "caps_dft_run",
+    "caps_dft_help"
+   ],
+   "note": "one command layer (caps/dft_commands.hpp) behind the CLI, the C API and the Studio: the same options by construction",
+   "options": "shared"
+  },
+  "vasp-set": {
+   "status": "gui",
+   "studio": "DFT workbench (Sheets, Adsorption DFT, DFT runs, results)",
+   "where": "ViewModels/MainViewModel.Dft.cs|Dft(",
+   "capi": [
+    "caps_dft_run",
+    "caps_dft_help"
+   ],
+   "note": "one command layer (caps/dft_commands.hpp) behind the CLI, the C API and the Studio: the same options by construction",
+   "options": "shared"
+  },
+  "vasp-conv": {
+   "status": "gui",
+   "studio": "DFT workbench (Sheets, Adsorption DFT, DFT runs, results)",
+   "where": "ViewModels/MainViewModel.Dft.cs|Dft(",
+   "capi": [
+    "caps_dft_run",
+    "caps_dft_help"
+   ],
+   "note": "one command layer (caps/dft_commands.hpp) behind the CLI, the C API and the Studio: the same options by construction",
+   "options": "shared"
+  },
+  "vasp-scan": {
+   "status": "gui",
+   "studio": "DFT workbench (Sheets, Adsorption DFT, DFT runs, results)",
+   "where": "ViewModels/MainViewModel.Dft.cs|Dft(",
+   "capi": [
+    "caps_dft_run",
+    "caps_dft_help"
+   ],
+   "note": "one command layer (caps/dft_commands.hpp) behind the CLI, the C API and the Studio: the same options by construction",
+   "options": "shared"
+  },
+  "vasp-derived": {
+   "status": "gui",
+   "studio": "DFT workbench (Sheets, Adsorption DFT, DFT runs, results)",
+   "where": "ViewModels/MainViewModel.Dft.cs|Dft(",
+   "capi": [
+    "caps_dft_run",
+    "caps_dft_help"
+   ],
+   "note": "one command layer (caps/dft_commands.hpp) behind the CLI, the C API and the Studio: the same options by construction",
+   "options": "shared"
+  },
+  "vasp-jobs": {
+   "status": "gui",
+   "studio": "DFT workbench (Sheets, Adsorption DFT, DFT runs, results)",
+   "where": "ViewModels/MainViewModel.Dft.cs|Dft(",
+   "capi": [
+    "caps_dft_run",
+    "caps_dft_help"
+   ],
+   "note": "one command layer (caps/dft_commands.hpp) behind the CLI, the C API and the Studio: the same options by construction",
+   "options": "shared"
+  },
+  "vasp-check": {
+   "status": "gui",
+   "studio": "DFT workbench (Sheets, Adsorption DFT, DFT runs, results)",
+   "where": "ViewModels/MainViewModel.Dft.cs|Dft(",
+   "capi": [
+    "caps_dft_run",
+    "caps_dft_help"
+   ],
+   "note": "one command layer (caps/dft_commands.hpp) behind the CLI, the C API and the Studio: the same options by construction",
+   "options": "shared"
+  },
+  "vasp-progress": {
+   "status": "gui",
+   "studio": "DFT workbench (Sheets, Adsorption DFT, DFT runs, results)",
+   "where": "ViewModels/MainViewModel.Dft.cs|Dft(",
+   "capi": [
+    "caps_dft_run",
+    "caps_dft_help"
+   ],
+   "note": "one command layer (caps/dft_commands.hpp) behind the CLI, the C API and the Studio: the same options by construction",
+   "options": "shared"
+  },
+  "vasp-health": {
+   "status": "gui",
+   "studio": "DFT workbench (Sheets, Adsorption DFT, DFT runs, results)",
+   "where": "ViewModels/MainViewModel.Dft.cs|Dft(",
+   "capi": [
+    "caps_dft_run",
+    "caps_dft_help"
+   ],
+   "note": "one command layer (caps/dft_commands.hpp) behind the CLI, the C API and the Studio: the same options by construction",
+   "options": "shared"
+  },
+  "vasp-bind": {
+   "status": "gui",
+   "studio": "DFT workbench (Sheets, Adsorption DFT, DFT runs, results)",
+   "where": "ViewModels/MainViewModel.Dft.cs|Dft(",
+   "capi": [
+    "caps_dft_run",
+    "caps_dft_help"
+   ],
+   "note": "one command layer (caps/dft_commands.hpp) behind the CLI, the C API and the Studio: the same options by construction",
+   "options": "shared"
+  },
+  "vasp-analyze": {
+   "status": "gui",
+   "studio": "DFT workbench (Sheets, Adsorption DFT, DFT runs, results)",
+   "where": "ViewModels/MainViewModel.Dft.cs|Dft(",
+   "capi": [
+    "caps_dft_run",
+    "caps_dft_help"
+   ],
+   "note": "one command layer (caps/dft_commands.hpp) behind the CLI, the C API and the Studio: the same options by construction",
+   "options": "shared"
+  },
+  "job profile": {
+   "status": "gui",
+   "studio": "Settings › Compute & remote; Jobs (cluster runs)",
+   "where": "ViewModels/MainViewModel.Cluster.cs|caps job",
+   "capi": [
+    "caps_job_template",
+    "caps_host_presets"
+   ],
+   "note": "the Studio runs caps job itself on the host (the same program and options)",
+   "options": "shared"
+  },
+  "job new": {
+   "status": "gui",
+   "studio": "Settings › Compute & remote; Jobs (cluster runs)",
+   "where": "ViewModels/MainViewModel.Cluster.cs|caps job",
+   "capi": [
+    "caps_job_template",
+    "caps_host_presets"
+   ],
+   "note": "the Studio runs caps job itself on the host (the same program and options)",
+   "options": "shared"
+  },
+  "job status": {
+   "status": "gui",
+   "studio": "Settings › Compute & remote; Jobs (cluster runs)",
+   "where": "ViewModels/MainViewModel.Cluster.cs|caps job",
+   "capi": [
+    "caps_job_template",
+    "caps_host_presets"
+   ],
+   "note": "the Studio runs caps job itself on the host (the same program and options)",
+   "options": "shared"
+  },
+  "job tail": {
+   "status": "gui",
+   "studio": "Settings › Compute & remote; Jobs (cluster runs)",
+   "where": "ViewModels/MainViewModel.Cluster.cs|caps job",
+   "capi": [
+    "caps_job_template",
+    "caps_host_presets"
+   ],
+   "note": "the Studio runs caps job itself on the host (the same program and options)",
+   "options": "shared"
+  },
+  "job poll": {
+   "status": "gui",
+   "studio": "Settings › Compute & remote; Jobs (cluster runs)",
+   "where": "ViewModels/MainViewModel.Cluster.cs|caps job",
+   "capi": [
+    "caps_job_template",
+    "caps_host_presets"
+   ],
+   "note": "the Studio runs caps job itself on the host (the same program and options)",
+   "options": "shared"
+  },
+  "job collect": {
+   "status": "gui",
+   "studio": "Settings › Compute & remote; Jobs (cluster runs)",
+   "where": "ViewModels/MainViewModel.Cluster.cs|caps job",
+   "capi": [
+    "caps_job_template",
+    "caps_host_presets"
+   ],
+   "note": "the Studio runs caps job itself on the host (the same program and options)",
+   "options": "shared"
+  },
+  "job cancel": {
+   "status": "gui",
+   "studio": "Settings › Compute & remote; Jobs (cluster runs)",
+   "where": "ViewModels/MainViewModel.Cluster.cs|caps job",
+   "capi": [
+    "caps_job_template",
+    "caps_host_presets"
+   ],
+   "note": "the Studio runs caps job itself on the host (the same program and options)",
+   "options": "shared"
+  },
+  "job resume": {
+   "status": "gui",
+   "studio": "Settings › Compute & remote; Jobs (cluster runs)",
+   "where": "ViewModels/MainViewModel.Cluster.cs|caps job",
+   "capi": [
+    "caps_job_template",
+    "caps_host_presets"
+   ],
+   "note": "the Studio runs caps job itself on the host (the same program and options)",
+   "options": "shared"
+  },
+  "job list": {
+   "status": "gui",
+   "studio": "Settings › Compute & remote; Jobs (cluster runs)",
+   "where": "ViewModels/MainViewModel.Cluster.cs|caps job",
+   "capi": [
+    "caps_job_template",
+    "caps_host_presets"
+   ],
+   "note": "the Studio runs caps job itself on the host (the same program and options)",
+   "options": "shared"
+  },
+  "job scaling": {
+   "status": "gui",
+   "studio": "Settings › Compute & remote; Jobs (cluster runs)",
+   "where": "ViewModels/MainViewModel.Cluster.cs|caps job",
+   "capi": [
+    "caps_job_template",
+    "caps_host_presets"
+   ],
+   "note": "the Studio runs caps job itself on the host (the same program and options)",
+   "options": "shared"
+  },
+  "cgmap": {
+   "status": "gui",
+   "studio": "Coarse-grain workflow page",
+   "where": "ViewModels/MainViewModel.Coarse.cs|Cg",
+   "capi": [
+    "caps_cg_run",
+    "caps_cg_help"
+   ],
+   "note": "one command layer (caps/cg_commands.hpp) behind the CLI, the C API and the Studio",
+   "options": "shared"
+  },
+  "cgfit": {
+   "status": "gui",
+   "studio": "Coarse-grain workflow page",
+   "where": "ViewModels/MainViewModel.Coarse.cs|Cg",
+   "capi": [
+    "caps_cg_run",
+    "caps_cg_help"
+   ],
+   "note": "one command layer (caps/cg_commands.hpp) behind the CLI, the C API and the Studio",
+   "options": "shared"
+  },
+  "cgbuild": {
+   "status": "gui",
+   "studio": "Coarse-grain workflow page",
+   "where": "ViewModels/MainViewModel.Coarse.cs|Cg",
+   "capi": [
+    "caps_cg_run",
+    "caps_cg_help"
+   ],
+   "note": "one command layer (caps/cg_commands.hpp) behind the CLI, the C API and the Studio",
+   "options": "shared"
+  },
+  "ppa": {
+   "status": "gui",
+   "studio": "Coarse-grain workflow page",
+   "where": "ViewModels/MainViewModel.Coarse.cs|Cg",
+   "capi": [
+    "caps_cg_run",
+    "caps_cg_help"
+   ],
+   "note": "one command layer (caps/cg_commands.hpp) behind the CLI, the C API and the Studio",
+   "options": "shared"
+  },
+  "mech": {
+   "status": "gui",
+   "studio": "Coarse-grain workflow page",
+   "where": "ViewModels/MainViewModel.Coarse.cs|Cg",
+   "capi": [
+    "caps_cg_run",
+    "caps_cg_help"
+   ],
+   "note": "one command layer (caps/cg_commands.hpp) behind the CLI, the C API and the Studio",
+   "options": "shared"
+  },
+  "cgdyn": {
+   "status": "gui",
+   "studio": "Coarse-grain workflow page",
+   "where": "ViewModels/MainViewModel.Coarse.cs|Cg",
+   "capi": [
+    "caps_cg_run",
+    "caps_cg_help"
+   ],
+   "note": "one command layer (caps/cg_commands.hpp) behind the CLI, the C API and the Studio",
+   "options": "shared"
+  },
+  "backmap": {
+   "status": "gui",
+   "studio": "Coarse-grain workflow page",
+   "where": "ViewModels/MainViewModel.Coarse.cs|Cg",
+   "capi": [
+    "caps_cg_run",
+    "caps_cg_help"
+   ],
+   "note": "one command layer (caps/cg_commands.hpp) behind the CLI, the C API and the Studio",
+   "options": "shared"
+  },
+  "bundle": {
+   "status": "gui",
+   "studio": "Export › Figure bundle",
+   "where": "ViewModels/MainViewModel.Bundle.cs|Bundle",
+   "capi": [
+    "caps_bundle_write"
+   ],
+   "options": {
+    "--topology": "page",
+    "--steps": "page",
+    "--include-input": "page",
+    "--frame": "page"
+   }
+  },
+  "reproduce": {
+   "status": "partial",
+   "studio": "Export › Figure bundle (shows the caps reproduce command for the bundle)",
+   "where": "ViewModels/MainViewModel.Bundle.cs|caps reproduce",
+   "note": "the Studio writes bundles and gives the command that reproduces one; the rebuild and hash comparison run on the command line",
+   "options": {}
+  },
+  "run": {
+   "status": "gui",
+   "studio": "Jobs › Recipes (a recipe); Analyze › Batch (a pipeline over many inputs)",
+   "where": "ViewModels/MainViewModel.Recipe.cs|Recipe",
+   "capi": [
+    "caps_recipe_run"
+   ],
+   "options": {
+    "--seed": "page",
+    "--threads": "page",
+    "--out": "page",
+    "--json": "page",
+    "--log": "page",
+    "--dump": "page",
+    "--input": "ViewModels/MainViewModel.Batch.cs|Glob(",
+    "--frame": "page",
+    "--csv": "page",
+    "--branch": "page"
+   }
+  },
+  "crystal": {
+   "status": "gui",
+   "studio": "Builders › Crystal",
+   "where": "ViewModels/MainViewModel.Crystal.cs|Crystal",
+   "capi": [
+    "caps_crystal_build",
+    "caps_space_groups"
+   ],
+   "options": {
+    "--group": "page",
+    "--cell": "page",
+    "--sites": "page",
+    "--supercell": "page",
+    "--primitive": "page",
+    "--symmetrize": "page",
+    "--tolerance": "page",
+    "--find-symmetry": "page",
+    "--groups": "page"
+   }
+  },
+  "solvate": {
+   "status": "gui",
+   "studio": "Builders › Solvation",
+   "where": "ViewModels/MainViewModel.Solvation.cs|Solvate(",
+   "capi": [
+    "caps_solvate"
+   ],
+   "options": {
+    "--edge": "page",
+    "--box": "page",
+    "--padding": "page",
+    "--solvent": "page",
+    "--model": "page",
+    "--salt": "page",
+    "--conc": "page",
+    "--neutralise": "page",
+    "--ions": "page",
+    "--no-ions": "page",
+    "--molecules": "page",
+    "--tolerance": "page",
+    "--solvents": "page"
+   }
+  },
+  "surface": {
+   "status": "gui",
+   "studio": "Builders › Surface",
+   "where": "ViewModels/MainViewModel.Surface.cs|Surface",
+   "capi": [
+    "caps_surface_build",
+    "caps_surface_terminations"
+   ],
+   "options": {
+    "--hkl": "page",
+    "--layers": "page",
+    "--termination": "page",
+    "--vacuum": "page",
+    "--supercell": "page",
+    "--no-orthogonal": "page",
+    "--max-strain": "page",
+    "--passivate": "page",
+    "--list": "page"
+   }
+  },
+  "interface": {
+   "status": "gui",
+   "studio": "Builders › Surface › polymer film",
+   "where": "ViewModels/MainViewModel.Interface.cs|Interface",
+   "capi": [
+    "caps_interface_build"
+   ],
+   "options": {
+    "--units": "page",
+    "--film": "page",
+    "--film-density": "page",
+    "--chains": "page",
+    "--dp": "page",
+    "--gap": "page",
+    "--vacuum": "page",
+    "--sequence": "page",
+    "--ff": "page"
+   }
+  },
+  "nano": {
+   "status": "gui",
+   "studio": "Builders › Nanostructure",
+   "where": "ViewModels/MainViewModel.Nano.cs|Nano",
+   "capi": [
+    "caps_nano_build"
+   ],
+   "options": {
+    "--n": "page",
+    "--m": "page",
+    "--length": "page",
+    "--finite": "page",
+    "--lx": "page",
+    "--ly": "page",
+    "--layers": "page",
+    "--flake": "page",
+    "--shape": "page",
+    "--radius": "page",
+    "--height": "page",
+    "--top-ratio": "page",
+    "--passivate": "page",
+    "--units": "page",
+    "--chains": "page",
+    "--dp": "page",
+    "--density": "page"
+   }
+  },
+  "martini": {
+   "status": "partial",
+   "studio": "Builders › Coarse-grained (Martini 3 molecules)",
+   "where": "ViewModels/MainViewModel.Cg.cs|Martini",
+   "capi": [
+    "caps_martini_melt"
+   ],
+   "note": "the Studio builds Martini melts of its own templates; mapping an arbitrary all-atom file to Martini 3 is the command line's",
+   "options": {
+    "--itp": "partial: the Studio writes GROMACS files from Export (the .itp beside the topology); not this command's own .itp of the mapping",
+    "--centre": "cli: bead centres by mass or geometry are this command's choice; the Studio maps with the geometric centre"
+   }
+  },
+  "pore": {
+   "status": "gui",
+   "studio": "Builders › Pore",
+   "where": "ViewModels/MainViewModel.Pore.cs|Pore",
+   "capi": [
+    "caps_pore_build"
+   ],
+   "options": {
+    "--width": "page",
+    "--layers": "page",
+    "--lx": "page",
+    "--ly": "page",
+    "--vacuum": "page",
+    "--wall": "page",
+    "--length": "page",
+    "--passivate": "page",
+    "--supercell": "page",
+    "--fluid": "page",
+    "--count": "page",
+    "--tolerance": "page",
+    "--seed": "page"
+   }
+  },
+  "pull": {
+   "status": "gui",
+   "studio": "Analyze › Interface (pull test)",
+   "where": "ViewModels/AnalyzeViewModel.cs|pull_normal",
+   "capi": [
+    "caps_analyze_ex"
+   ],
+   "options": {
+    "--normal": "page",
+    "--axis": "page",
+    "--distance": "page",
+    "--rate": "page",
+    "--temp": "page",
+    "--surface": "page",
+    "--csv": "page",
+    "--spring": "cli: the pull spring constant is fixed at the command line's default in the Studio"
+   }
+  },
+  "blend": {
+   "status": "gui",
+   "studio": "Builders › Polymer › Blend",
+   "where": "ViewModels/MainViewModel.Blend.cs|Blend",
+   "capi": [
+    "caps_grow_blend"
+   ],
+   "options": {
+    "--components": "page",
+    "--weights": "page",
+    "--chains": "page",
+    "--dp": "page",
+    "--density": "page",
+    "--slabs": "page",
+    "--droplet": "page"
+   }
+  },
+  "grow": {
+   "status": "gui",
+   "studio": "Builders › Grow / Polymer",
+   "where": "ViewModels/MainViewModel.cs|GrowChains(",
+   "capi": [
+    "caps_grow",
+    "caps_grow_chains"
+   ],
+   "options": {
+    "--chains": "page",
+    "--dp": "page",
+    "--density": "page",
+    "--box": "page",
+    "--tacticity": "page",
+    "--seed": "page",
+    "--trans": "page",
+    "--scale": "page",
+    "--units": "page",
+    "--sequence": "page",
+    "--weights": "page",
+    "--blocks": "page",
+    "--pattern": "page",
+    "--ff": "page",
+    "--auto-scale": "page"
+   }
+  },
+  "field": {
+   "status": "gui",
+   "studio": "Force field › Typing report",
+   "where": "ViewModels/FieldViewModel.cs|FieldReport()",
+   "capi": [
+    "caps_field_assign",
+    "caps_field_report",
+    "caps_energy_terms"
+   ],
+   "options": {
+    "--topology": "page",
+    "--forces": "cli: per-atom forces written to a text file (a check for developers); the Studio shows the energy by term"
+   }
+  },
+  "relax": {
+   "status": "gui",
+   "studio": "Relax",
+   "where": "ViewModels/MainViewModel.cs|doc.Relax(",
+   "capi": [
+    "caps_relax"
+   ],
+   "options": {
+    "--method": "page",
+    "--ftol": "page",
+    "--iterations": "page",
+    "--density": "page",
+    "--step": "page",
+    "--box-relax": "page",
+    "--pressure": "page",
+    "--no-pushoff": "page",
+    "--cutoff": "page",
+    "--no-coulomb": "page",
+    "--ff": "page",
+    "--charges": "page",
+    "--overlay": "ViewModels/FieldViewModel.Sync.cs|FieldSetOverlays",
+    "--quiet": "cli: terminal output only"
+   }
+  },
+  "cbmc": {
+   "status": "gui",
+   "studio": "Equilibrate › CBMC regrowth",
+   "where": "ViewModels/MainViewModel.cs|doc.Cbmc(",
+   "capi": [
+    "caps_cbmc"
+   ],
+   "options": {
+    "--moves": "page",
+    "--trials": "page",
+    "--max-torsions": "page",
+    "--temp": "page",
+    "--cutoff": "page",
+    "--seed": "page",
+    "--ff": "page",
+    "--no-coulomb": "page"
+   }
+  },
+  "md": {
+   "status": "gui",
+   "studio": "Dynamics",
+   "where": "ViewModels/MainViewModel.cs|copy.Md(",
+   "capi": [
+    "caps_md",
+    "caps_checkpoint"
+   ],
+   "options": {
+    "--steps": "page",
+    "--dt": "page",
+    "--temp": "page",
+    "--thermostat": "page",
+    "--tau-t": "page",
+    "--barostat": "page",
+    "--pressure": "page",
+    "--tau-p": "page",
+    "--constraints": "page",
+    "--constraint-solver": "page",
+    "--hmr": "page",
+    "--seed": "page",
+    "--new-velocities": "page",
+    "--dump": "page",
+    "--every": "page",
+    "--cutoff": "page",
+    "--no-coulomb": "page",
+    "--ff": "page",
+    "--charges": "page",
+    "--precision": "Views/Pages/DynamicsPage.axaml|MdDoublePrecision",
+    "--overlay": "ViewModels/FieldViewModel.Sync.cs|FieldSetOverlays",
+    "--thermo": "partial: the Studio picks the thermo interval from the run length (steps / 400, 10 … 1000)",
+    "--log": "partial: the thermo rows are kept with the run and exported from the plots; no CSV path option",
+    "--skin": "cli: the neighbour-list skin is the core's default in the Studio",
+    "--threads": "Views/Pages/SettingsPage.axaml|Threads",
+    "--quiet": "cli: terminal output only",
+    "--checkpoint-every": "partial: the Studio checkpoints automatically (about 50 per run) and continues a stopped run (caps_checkpoint)",
+    "--checkpoint": "partial: kept in the document (caps_checkpoint), not as a file",
+    "--progress-file": "cli: progress lines for batch jobs; the Studio follows them on a cluster (Jobs)",
+    "--resume": "Views/Pages/DynamicsPage.axaml|MdContinueLabel"
+   }
+  },
+  "equilibrate": {
+   "status": "gui",
+   "studio": "Equilibrate",
+   "where": "ViewModels/MainViewModel.cs|doc.Equilibrate(",
+   "capi": [
+    "caps_equilibrate",
+    "caps_protocol_text"
+   ],
+   "options": {
+    "--protocol": "page",
+    "--print-protocol": "page",
+    "--tfinal": "page",
+    "--tmax": "page",
+    "--pfinal": "page",
+    "--pmax": "page",
+    "--scale": "page",
+    "--cycles": "page",
+    "--tlow": "page",
+    "--thigh": "page",
+    "--ramp": "page",
+    "--hold": "page",
+    "--until-converged": "page",
+    "--block": "page",
+    "--max-blocks": "page",
+    "--dt": "page",
+    "--thermostat": "page",
+    "--tau-t": "page",
+    "--barostat": "page",
+    "--tau-p": "page",
+    "--seed": "page",
+    "--dump": "page",
+    "--every-ps": "page",
+    "--constraints": "page",
+    "--hmr": "page",
+    "--cutoff": "page",
+    "--ff": "page",
+    "--charges": "page",
+    "--precision": "Views/Pages/DynamicsPage.axaml|MdDoublePrecision",
+    "--overlay": "ViewModels/FieldViewModel.Sync.cs|FieldSetOverlays",
+    "--log": "partial: the thermo rows are kept with the run and exported from the plots; no CSV path option",
+    "--quiet": "cli: terminal output only"
+   }
+  },
+  "chains": {
+   "status": "gui",
+   "studio": "Analyze › Chains",
+   "where": "ViewModels/MainViewModel.RowSeventeen.cs|RunChips(\"ree\", \"rg\", \"cn\")",
+   "capi": [
+    "caps_analyze"
+   ],
+   "options": {
+    "--topology": "page"
+   }
+  },
+  "pack": {
+   "status": "gui",
+   "studio": "Packing › Molecules & regions",
+   "where": "ViewModels/MainViewModel.cs|CapsDocument.Pack(",
+   "capi": [
+    "caps_pack"
+   ],
+   "options": {
+    "--threads": "Views/Pages/SettingsPage.axaml|Threads",
+    "--quiet": "cli: terminal output only"
+   }
+  },
+  "contacts": {
+   "status": "partial",
+   "studio": "Studio › File checks (close contacts)",
+   "where": "ViewModels/MainViewModel.Checks.cs|FileChecks",
+   "capi": [
+    "caps_file_checks"
+   ],
+   "options": {
+    "--tol": "partial: the checks use the core's contact tolerance",
+    "--no-pbc": "cli: the Studio always uses the cell when there is one",
+    "--molecule-size": "cli: a filter of the command's report"
+   }
+  },
+  "react": {
+   "status": "gui",
+   "studio": "React › Crosslinking (and React › Template editor)",
+   "where": "ViewModels/MainViewModel.cs|doc.React(",
+   "capi": [
+    "caps_react",
+    "caps_react_summary",
+    "caps_sulfur_bridges",
+    "caps_reaction_template",
+    "caps_template_view"
+   ],
+   "options": {
+    "--capture": "page",
+    "--per-cycle": "page",
+    "--cycles": "page",
+    "--target": "page",
+    "--no-relax": "page",
+    "--relax-iterations": "page",
+    "--md-ps": "page",
+    "--temp": "page",
+    "--seed": "page",
+    "--cutoff": "page",
+    "--no-coulomb": "page",
+    "--ff": "page",
+    "--charges": "page",
+    "--fa": "page",
+    "--fb": "page",
+    "--ratio": "page",
+    "--template": "Views/Pages/ReactPage.axaml|RxText",
+    "--during-md": "Views/Pages/ReactPage.axaml|RxDuringMd",
+    "--between-chains": "Views/Pages/ReactPage.axaml|RxBetweenChains",
+    "--crosslinks": "Views/Pages/ReactPage.axaml|RxTargetKind",
+    "--sites-per-chain": "Views/Pages/ReactPage.axaml|RxSitesPerChainD",
+    "--weights": "Views/Pages/ReactPage.axaml|RxByWeights",
+    "--auto-capture": "Views/Pages/ReactPage.axaml|RxAutoCapture",
+    "--capture-max": "Views/Pages/ReactPage.axaml|RxCaptureMaxD",
+    "--capture-step": "partial: the Studio widens by the core's 0.5 Å step",
+    "--keep-byproducts": "Views/Pages/ReactPage.axaml|RxKeepByproducts",
+    "--insert": "Views/Pages/ReactPage.axaml|RxInsertSmiles",
+    "--count": "Views/Pages/ReactPage.axaml|RxInsertCount",
+    "--remove-unreacted": "Views/Pages/ReactPage.axaml|RxRemoveUnreacted",
+    "--summary": "ViewModels/MainViewModel.ReactNet.cs|ReactSummary()",
+    "--overlay": "ViewModels/FieldViewModel.Sync.cs|FieldSetOverlays",
+    "--list-templates": "Views/Pages/ReactPage.axaml|RxBuiltinLabels",
+    "--quiet": "cli: terminal output only"
+   }
+  },
+  "ml eval": {
+   "status": "cli",
+   "studio": "—",
+   "where": "",
+   "note": "a developer check of CAPS's machine-learned potential on one molecule; the Studio uses the model through Fit missing terms (caps ff complete)",
+   "options": {
+    "--model": "cli: a developer check of the model",
+    "--json": "cli: a developer check of the model"
+   }
+  },
+  "ml relax": {
+   "status": "cli",
+   "studio": "—",
+   "where": "",
+   "note": "batch constrained relaxations for the torsion-fitting tools (bench/ff); no Studio counterpart by design",
+   "options": {
+    "--model": "cli: batch input for the torsion-fitting tools"
+   }
+  },
+  "ff complete": {
+   "status": "gui",
+   "studio": "Force field › Missing bonded terms · Fit missing terms",
+   "where": "ViewModels/FieldViewModel.Sync.cs|FfComplete(",
+   "capi": [
+    "caps_ff_complete",
+    "caps_ml_available"
+   ],
+   "options": {
+    "--ff": "page",
+    "--overlay": "ViewModels/FieldViewModel.Sync.cs|FieldSetOverlays",
+    "--report": "page",
+    "--model": "partial: the Studio uses data/ml/caps-mace-v1.model beside the force fields",
+    "--step": "partial: the Studio scans at the default 15°"
+   }
+  },
+  "ff import-lt": {
+   "status": "gui",
+   "studio": "Force field › Import parameters (a moltemplate .lt)",
+   "where": "ViewModels/FieldViewModel.cs|FieldImport(",
+   "capi": [
+    "caps_field_import"
+   ],
+   "options": {}
+  },
+  "ff info": {
+   "status": "partial",
+   "studio": "Force field (the library choice and its note)",
+   "where": "ViewModels/FieldViewModel.cs|FfNote",
+   "capi": [
+    "caps_field_info"
+   ],
+   "note": "the Studio shows a force field's version and status; the full listing of types and rules is the command line's",
+   "options": {}
+  },
+  "ff type": {
+   "status": "gui",
+   "studio": "Force field › Typing report (why each atom has its type)",
+   "where": "ViewModels/FieldViewModel.cs|Why",
+   "capi": [
+    "caps_field_assign",
+    "caps_field_report"
+   ],
+   "options": {
+    "--ff": "page",
+    "--typing": "partial: the Studio types with the force field's own rules (Type by hand for overrides)",
+    "--explain": "page"
+   }
+  },
+  "ff apply": {
+   "status": "gui",
+   "studio": "Force field (assign) and Export › Data / Export center (LAMMPS, GROMACS, DL_POLY)",
+   "where": "ViewModels/MainViewModel.ExportDialog.cs|ExportEngines",
+   "capi": [
+    "caps_field_assign",
+    "caps_field_set_overlays",
+    "caps_export_engines",
+    "caps_gromacs"
+   ],
+   "options": {
+    "--ff": "page",
+    "--types": "page",
+    "--charges": "page",
+    "--lammps-input": "page",
+    "--lammps-run": "page",
+    "--temp": "page",
+    "--press": "page",
+    "--dt": "page",
+    "--steps": "page",
+    "--gromacs": "page",
+    "--dlpoly": "page",
+    "--lammps-style": "page",
+    "--hybrid": "page",
+    "--kspace": "page",
+    "--kspace-accuracy": "page",
+    "--lammps-cutoff": "page",
+    "--units": "page",
+    "--list": "page",
+    "--overlay": "ViewModels/FieldViewModel.Sync.cs|FieldSetOverlays",
+    "--moltemplate": "partial: the Export center writes LAMMPS, GROMACS and DL_POLY; moltemplate output is the command line's"
+   }
+  },
+  "ff overlays": {
+   "status": "gui",
+   "studio": "Force field › Overlays",
+   "where": "ViewModels/FieldViewModel.Sync.cs|ForcefieldOverlays(",
+   "capi": [
+    "caps_forcefield_overlays"
+   ],
+   "options": {
+    "--overlay": "page"
+   }
+  }
+ },
+ "hidden_options": {
+  "--allow-missing": "cli: caps ff apply writes a data file with missing terms for inspection; the Studio blocks runs until complete",
+  "--amber": "cli: caps ff apply's AMBER topology output (a developer check)",
+  "--batch": "cli: caps ml eval --repeats timing",
+  "--beads": "gui: caps build --beads (Builders › Coarse-grained)",
+  "--bench-json": "cli: caps bench machine-readable output",
+  "--born": "cli: caps elastic Born term (developer check)",
+  "--born-every": "cli: caps elastic Born term (developer check)",
+  "--born-strain": "cli: caps elastic Born term (developer check)",
+  "--comfortable": "cli: caps job scaling",
+  "--deterministic": "cli: caps md / bench reproducibility switch for tests",
+  "--digits": "cli: caps ff apply --list precision",
+  "--dsf-alpha": "partial: damped shifted force alpha; the Studio uses the core's default",
+  "--eq-ps": "gui: caps pull --eq-ps (Analyze › Interface, NVT first)",
+  "--equilibrate": "cli: caps tensile / elastic pre-run switch",
+  "--escalate": "cli: caps job resubmission",
+  "--ewald-rtol": "partial: PME accuracy; the Studio's Settings › Electrostatics sets PME with the core's tolerance",
+  "--exclude-mol": "gui: Analyze excludes the held surface (caps_analyze_opts.group exclude-held)",
+  "--fix-mol": "gui: Studio › hold a molecule (caps_set_fixed_atoms)",
+  "--forcefields": "cli: caps bench library folder",
+  "--martini": "cli: caps build --martini",
+  "--names": "cli: caps ff type output format",
+  "--no-tail": "partial: tail corrections follow the force field in the Studio",
+  "--perspective": "gui: Export › Figure perspective view (caps_camera.fov_deg)",
+  "--pme": "gui: Settings › Electrostatics (PME)",
+  "--pme-order": "partial: the core's PME order",
+  "--pme-spacing": "partial: the core's PME grid spacing",
+  "--resume-at": "cli: caps job resume",
+  "--resume-curve": "cli: caps job resume",
+  "--resume-points": "cli: caps job resume",
+  "--volume": "cli: caps analyze free-volume output switch"
+ }
+}

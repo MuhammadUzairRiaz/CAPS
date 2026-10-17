@@ -87,6 +87,10 @@ public sealed partial class MainViewModel
     public bool TemplateHasError => _tplError.Length > 0;
     public string TemplateTestText { get => _tplTest; private set => Set(ref _tplTest, value); }
     public string TemplateInfo { get => _tplInfo; private set => Set(ref _tplInfo, value); }
+    private string _tplConditions = "";
+    /// <summary>Each pattern atom's conditions and the template's run rules, as the text writes them.</summary>
+    public string TemplateConditions { get => _tplConditions; private set { if (Set(ref _tplConditions, value)) Raise(nameof(HasTemplateConditions)); } }
+    public bool HasTemplateConditions => _tplConditions.Length > 0;
     public bool TemplateChecksPass => TemplateChecks.Count > 0 && TemplateChecks.All(c => c.Ok);
     public string TemplateChecksChip => TemplateChecksPass ? "pass" : $"{TemplateChecks.Count(c => !c.Ok)} to fix";
     public string TemplateFooter => $"Template {_tplIndex + 1} of {Math.Max(1, TemplateTabs.Count)}" + (TemplateTabs.Count > 1 ? " · " + string.Join(", ", TemplateTabs) : "");
@@ -159,6 +163,17 @@ public sealed partial class MainViewModel
             var init = (JsonArray)v["initiators"]!;
             TemplateInfo = $"initiators {init[0]} and {init[1]} · capture {v["capture"]!.GetValue<double>():0.0#} Å · probability {v["probability"]!.GetValue<double>():0.##} · " +
                            (v["min_path"]!.GetValue<int>() is var mp && mp > 0 ? $"at least {mp} bonds apart or in different molecules" : "initiators in different molecules");
+            // the atom conditions and run rules of the text (no_neighbour, heavy<=, H=, degree=, once, sites, byproduct …)
+            static string Maps(JsonNode? a) => a is JsonArray x && x.Count > 0 ? string.Join(" ", x.Select(m => m!.ToString())) : "";
+            var cond = new List<string>();
+            foreach (var c in v["conditions"]?.AsArray() ?? [])
+                if (c != null) cond.Add($"{(string?)c["atom"]}: {string.Join(" ", (c["conditions"]?.AsArray() ?? []).Select(x => (string?)x))}");
+            if (Maps(v["once"]) is { Length: > 0 } once) cond.Add($"once {once}: these atoms form a bond only once in a run");
+            if (Maps(v["sites"]) is { Length: > 0 } sites) cond.Add($"sites {sites}: the group counted for conversion");
+            if (Maps(v["byproduct"]) is { Length: > 0 } bp) cond.Add($"byproduct {bp}: leaves as a small molecule");
+            if ((double?)v["weight"] is { } w && Math.Abs(w - 1) > 1e-12) cond.Add($"weight {w:0.###} against the other templates");
+            if ((string?)v["charges"] == "keep") cond.Add("charges keep: the atoms keep their charges");
+            TemplateConditions = string.Join("\n", cond);
         }
         foreach (var n in new[] { nameof(TemplateChecksPass), nameof(TemplateChecksChip), nameof(TemplateFooter) }) Raise(n);
         TemplateDrawn?.Invoke();

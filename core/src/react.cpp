@@ -19,6 +19,7 @@
 #include "caps/analysis.hpp"
 #include "caps/dynamics.hpp"
 #include "caps/elements.hpp"
+#include "caps/json.hpp"
 #include "caps/relax.hpp"
 #include "cell_list.hpp"
 
@@ -1508,6 +1509,22 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
   if (rep.byproducts)
     rep.notes.push_back(std::to_string(rep.byproducts) + (o.keep_byproducts ? " byproduct molecules kept in the cell" : " byproduct molecules removed"));
   rep.notes.push_back("force field during the run: " + rep.field);
+  if (o.remove_unreacted) {   // sulfur donors that never reacted leave the cell (with their chain and carry labels)
+    std::vector<char> gone;
+    rep.removed_unreacted = remove_unreacted_donors(s, &rep.removed_unreacted_atoms, &gone);
+    if (rep.removed_unreacted) {
+      auto prune = [&](std::vector<int64_t>& v) {
+        if (v.size() != gone.size()) return;
+        std::vector<int64_t> kept;
+        for (size_t i = 0; i < v.size(); ++i) if (!gone[i]) kept.push_back(v[i]);
+        v = std::move(kept);
+      };
+      prune(tag);
+      prune(carry);
+    }
+    rep.notes.push_back("removed " + std::to_string(rep.removed_unreacted) + " unreacted sulfur donor molecule(s) (" +
+                        std::to_string(rep.removed_unreacted_atoms) + " atoms): molecules of S and H only");
+  }
   rep.chains_after = tag;
   // each atom keeps the molecule it started in (a byproduct kept as a molecule: a new id), so a network written and read
   // back still knows its chains
@@ -1526,6 +1543,152 @@ void react(System& s, const ReactOptions& o, ReactReport* rep_out) {
   if (s.cell.valid()) make_molecules_whole(s);
   s.unwrapped = true;
   if (rep_out) *rep_out = std::move(rep);
+}
+
+int remove_unreacted_donors(System& s, int* atoms, std::vector<char>* removed) {
+  const size_t n = s.atoms.size();
+  // molecules by the bonds as they are (not the file's molecule ids)
+  std::vector<size_t> root(n);
+  std::iota(root.begin(), root.end(), size_t(0));
+  std::function<size_t(size_t)> find = [&](size_t x) { while (root[x] != x) x = root[x] = root[root[x]]; return x; };
+  for (const auto& b : s.bonds) root[find(b.i)] = find(b.j);
+  std::map<size_t, std::pair<bool, bool>> mol;   // root -> (only S and H, has an S)
+  for (size_t i = 0; i < n; ++i) {
+    auto& m = mol.try_emplace(find(i), true, false).first->second;
+    const int z = s.atoms[i].element;
+    if (z != 1 && z != 16) m.first = false;
+    if (z == 16) m.second = true;
+  }
+  std::vector<char> gone(n, 0);
+  int count = 0, nat = 0;
+  for (const auto& [r, m] : mol) if (m.first && m.second) ++count;
+  for (size_t i = 0; i < n; ++i) {
+    const auto& m = mol[find(i)];
+    if (m.first && m.second) gone[i] = 1, ++nat;
+  }
+  if (count) {
+    std::vector<int64_t> map(n, -1);
+    std::vector<Atom> kept;
+    for (size_t i = 0; i < n; ++i)
+      if (!gone[i]) { map[i] = int64_t(kept.size()); kept.push_back(s.atoms[i]); }
+    std::vector<Bond> bonds;
+    for (const auto& b : s.bonds)
+      if (map[b.i] >= 0 && map[b.j] >= 0) bonds.push_back({uint32_t(map[b.i]), uint32_t(map[b.j]), b.order});
+    if (s.velocities.size() == n) {
+      std::vector<Vec3> v;
+      for (size_t i = 0; i < n; ++i) if (!gone[i]) v.push_back(s.velocities[i]);
+      s.velocities = std::move(v);
+    }
+    s.atoms = std::move(kept);
+    s.bonds = std::move(bonds);
+    for (size_t i = 0; i < s.atoms.size(); ++i) s.atoms[i].id = int64_t(i + 1);
+    s.has_mol = false;
+    const auto ids = s.molecules();
+    for (size_t i = 0; i < s.atoms.size(); ++i) s.atoms[i].mol = ids[i] + 1;
+    s.has_mol = true;
+  }
+  if (atoms) *atoms = nat;
+  if (removed) *removed = std::move(gone);
+  return count;
+}
+
+SulfurCensus sulfur_census(const System& s, int ring_limit) {
+  const size_t n = s.atoms.size();
+  std::vector<std::vector<uint32_t>> nb(n);
+  for (const auto& b : s.bonds) nb[b.i].push_back(b.j), nb[b.j].push_back(b.i);
+  auto el = [&](size_t i) { return s.atoms[i].element; };
+  SulfurCensus out;
+  std::vector<char> seen(n, 0);
+  int bridges = 0, bridge_atoms = 0;
+  for (size_t s0 = 0; s0 < n; ++s0) {
+    if (el(s0) != 16) continue;
+    ++out.sulfur_atoms;
+    if (seen[s0]) continue;
+    std::vector<uint32_t> run, todo{uint32_t(s0)};   // the connected run of S atoms
+    seen[s0] = 1;
+    while (!todo.empty()) {
+      const uint32_t x = todo.back();
+      todo.pop_back();
+      run.push_back(x);
+      for (uint32_t y : nb[x])
+        if (el(y) == 16 && !seen[y]) seen[y] = 1, todo.push_back(y);
+    }
+    std::vector<uint32_t> carbons;
+    for (uint32_t x : run) for (uint32_t y : nb[x]) if (el(y) == 6) carbons.push_back(y);
+    const int rank = int(run.size());
+    std::map<int, int>* kind = &out.free;
+    if (carbons.size() == 1) kind = &out.pendant;
+    else if (carbons.size() >= 2) {
+      // a path between the first two carbons that avoids the S run, at most ring_limit bonds: a small ring, not a bridge
+      const std::set<uint32_t> rs(run.begin(), run.end());
+      std::map<uint32_t, int> dist{{carbons[0], 0}};
+      std::vector<uint32_t> queue{carbons[0]};
+      for (size_t q = 0; q < queue.size(); ++q) {
+        const uint32_t x = queue[q];
+        if (dist[x] >= ring_limit) continue;
+        for (uint32_t y : nb[x])
+          if (!dist.count(y) && !rs.count(y)) dist[y] = dist[x] + 1, queue.push_back(y);
+      }
+      kind = dist.count(carbons[1]) ? &out.cyclic : &out.bridges;
+      if (kind == &out.bridges) ++bridges, bridge_atoms += rank;
+    }
+    ++(*kind)[rank];
+  }
+  out.mean_bridge_rank = bridges ? std::round(1000.0 * bridge_atoms / bridges) / 1000.0 : 0.0;
+  return out;
+}
+
+std::string sulfur_census_json(const SulfurCensus& c) {
+  Json j = Json::object();
+  auto ranks = [](const std::map<int, int>& m) {
+    Json o = Json::object();
+    for (const auto& [r, n] : m) o["S" + std::to_string(r)] = double(n);
+    return o;
+  };
+  j["bridges"] = ranks(c.bridges);
+  j["cyclic"] = ranks(c.cyclic);
+  j["pendant"] = ranks(c.pendant);
+  j["free"] = ranks(c.free);
+  j["sulfur_atoms"] = double(c.sulfur_atoms);
+  j["mean_bridge_rank"] = c.mean_bridge_rank;
+  return j.dump();
+}
+
+std::string react_summary_json(const ReactReport& rep, const System& s) {
+  Json j = Json::object();
+  j["chains"] = double(rep.chains);
+  j["crosslinks"] = double(rep.crosslinks);
+  j["intrachain"] = double(rep.intrachain);
+  j["byproducts"] = double(rep.byproducts);
+  j["target"] = double(rep.target_crosslinks);
+  j["volume"] = rep.volume;
+  j["chain_mass"] = rep.chain_mass;
+  j["density"] = rep.density;
+  j["per_chain"] = rep.per_chain;
+  j["mc"] = rep.mc;
+  j["monomers"] = double(rep.monomers);
+  j["degree"] = rep.degree;
+  j["reactions"] = double(rep.reactions);
+  j["initial_sites"] = double(rep.initial_sites);
+  j["conversion"] = rep.cycles.empty() ? 0.0 : rep.cycles.back().conversion;
+  j["field"] = rep.field;
+  Json links = Json::array();
+  for (const auto& lr : rep.links) {
+    Json x = Json::object();
+    x["cycle"] = double(lr.cycle), x["reaction"] = lr.reaction;
+    x["chain_a"] = double(lr.chain_a), x["unit_a"] = double(lr.unit_a), x["chain_b"] = double(lr.chain_b), x["unit_b"] = double(lr.unit_b);
+    x["via"] = double(lr.via), x["via_name"] = lr.via_name;
+    links.push_back(x);
+  }
+  j["links"] = links;
+  Json notes = Json::array();
+  for (const auto& n : rep.notes) notes.push_back(n);
+  j["notes"] = notes;
+  j["removed_unreacted"] = double(rep.removed_unreacted);
+  j["removed_unreacted_atoms"] = double(rep.removed_unreacted_atoms);
+  const SulfurCensus sc = sulfur_census(s);
+  if (sc.sulfur_atoms) j["sulfur"] = Json::parse(sulfur_census_json(sc));
+  return j.dump();
 }
 
 }  // namespace caps

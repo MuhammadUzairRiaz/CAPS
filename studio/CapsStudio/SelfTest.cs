@@ -19,7 +19,7 @@ internal static class SelfTest
         }
         Console.WriteLine($"info Python: {(MainViewModel.PythonAvailable ? MainViewModel.PythonExe : "none")}");
 
-        Check(Native.AbiVersion() == 69, "native ABI version 69");
+        Check(Native.AbiVersion() == 70, "native ABI version 70");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -287,18 +287,18 @@ internal static class SelfTest
             vm.OpenUnitTyping();
             var exampleAtoms = vm.UtAtoms.Count;
             var roles = vm.UtAtoms.Select(a => a.RoleKind).Distinct().Count();
-            var bodyCh = vm.UtAtoms.FirstOrDefault(a => a.RoleKind == 1 && a.Auto.StartsWith("515_", StringComparison.Ordinal));
+            var bodyCh = vm.UtAtoms.FirstOrDefault(a => a.RoleKind == 1 && (a.Auto.StartsWith("515_", StringComparison.Ordinal) || a.Auto == "opls_515"));
             var applied = "";
             if (bodyCh != null)
             {
                 vm.UtSelected = bodyCh;
-                vm.UtTypeSelected = vm.UtTypes.FirstOrDefault(t => t.Name.StartsWith("137_", StringComparison.Ordinal));
+                vm.UtTypeSelected = vm.UtTypes.FirstOrDefault(t => t.Name.StartsWith("137_", StringComparison.Ordinal) || t.Name == "opls_137");
                 vm.AssignUnitType();
                 vm.ApplyUnitTyping();
                 applied = vm.UtStatus;
             }
             var rep = vm.Document!.FieldReport();
-            var count137 = System.Text.RegularExpressions.Regex.Matches(rep, "\"type\": ?\"137_").Count;
+            var count137 = System.Text.RegularExpressions.Regex.Matches(rep, "\"type\": ?\"(137_|opls_137\")").Count;
             Check(exampleAtoms == 50 && roles == 3 && bodyCh != null && vm.UtUntyped == 0 && count137 == 60 && applied.Contains("atoms of the structure typed from the example"),
                   $"type by hand: {exampleAtoms} example atoms, {roles} roles, 137 on {count137} melt atoms · {applied} {vm.UtStatus}");
             vm.Field.Clear().GetAwaiter().GetResult();
@@ -317,6 +317,26 @@ internal static class SelfTest
             vm.Field.CheckCoverage().GetAwaiter().GetResult();
             Check(complete24 && vm.Field.Alternatives.Any(a => a.Id == "pcff-frc") && !vm.Field.HasUntypedGroups && !vm.Field.HasBalanceNote,
                   $"Field OPLS-AA 2024 by number: complete {complete24} · {vm.Field.TypedText} · {vm.Field.MissingText} · alternatives {string.Join(", ", vm.Field.Alternatives.Select(a => a.Id))} · {vm.Field.CoverageNote}");
+            // overlays (caps ff apply --overlay): the library's for OPLS-AA 2024 listed; switching one on merges it into the
+            // assignment (the report lists it) and the command line carries it; off again, gone
+            var lj = vm.Field.Overlays.FirstOrDefault(o => o.File == "oplsaa2024-lj-refit.json");
+            var listed = vm.Field.Overlays.Count;
+            if (lj != null) lj.On = true;
+            for (var i = 0; i < 200 && vm.Field.Working; i++) Thread.Sleep(25);
+            Thread.Sleep(100);
+            for (var i = 0; i < 200 && vm.Field.Working; i++) Thread.Sleep(25);
+            var held = vm.Document!.FieldOverlays().Contains("oplsaa2024-lj-refit.json");
+            var cmd = vm.Field.ApplyCommand;
+            if (lj != null) lj.On = false;
+            for (var i = 0; i < 200 && vm.Field.Working; i++) Thread.Sleep(25);
+            Thread.Sleep(100);
+            for (var i = 0; i < 200 && vm.Field.Working; i++) Thread.Sleep(25);
+            Check(lj != null && listed >= 2 && held && cmd.Contains("--overlay") && cmd.Contains("oplsaa2024-lj-refit.json") && !vm.Document!.FieldOverlays().Contains("lj-refit")
+                  && vm.Field.Complete && (vm.Field.CliArgs() ?? "").Contains("--ff"),
+                  $"Field overlays: {listed} listed · merged {held} · command '{cmd}' · {vm.Field.Log}");
+            // caps ff complete: offered with its availability said plainly (a build without libtorch says so)
+            Check(FieldViewModel.MlNoteStatic.Length > 0 && (FieldViewModel.MlAvailable || FieldViewModel.MlNoteStatic.Contains("CAPS_WITH_TORCH")),
+                  $"ff complete availability: model {FieldViewModel.MlAvailable}");
             vm.Field.Clear().GetAwaiter().GetResult();
         }
         // UFF from the same library: every atom typed from its bonds (polystyrene: C_3, C_R, H_)
@@ -763,6 +783,15 @@ internal static class SelfTest
             vm.RunReact().GetAwaiter().GetResult();
             var cured = System.Text.RegularExpressions.Regex.Match(vm.RxLog, @"^(\d+) reactions");
             Check(cured.Success && int.Parse(cured.Groups[1].Value) > 0, $"sulfur cure: {vm.RxLog.Split('\n')[0]}");
+            // the network summary carries the core's sulfur census; the page as caps react names the template and options
+            {
+                vm.RxRemoveUnreacted = true;
+                var cmd = vm.ReactCommand();
+                vm.RxRemoveUnreacted = false;
+                Check(vm.RxNetworkText.Contains("Sulfur: bridges") && cmd.Contains("caps react ") && cmd.Contains("--template sulfur_allylic") && cmd.Contains("--remove-unreacted")
+                      && cmd.Contains("--no-relax") && cmd.Contains("--cycles 6") && vm.Document!.SulfurBridges().Contains("sulfur_atoms"),
+                      $"React command and sulfur census: {cmd.Split('\n').Last(l => l.Length > 0)} · {vm.RxNetworkText.Split('\n').FirstOrDefault(l => l.StartsWith("Sulfur"))}");
+            }
             // Edit its reaction: the reaction that made this network back on React — kept with it, else from its provenance
             {
                 var rxItem = vm.ActiveItem!;
@@ -911,7 +940,8 @@ internal static class SelfTest
             vm.OpenUnitTyping();
             var exUntyped = vm.UtUntyped;
             if (exUntyped == 0) vm.ApplyUnitTyping();
-            for (var k = 0; k < 400 && vm.Field.Working; ++k) { Avalonia.Threading.Dispatcher.UIThread.RunJobs(); Thread.Sleep(25); }
+            // the typing runs off the UI thread: wait for its status (up to a minute on a loaded machine), not only the flag
+            for (var k = 0; k < 2400 && (vm.Field.Working || !vm.UtStatus.Contains("typed from the example")); ++k) { Avalonia.Threading.Dispatcher.UIThread.RunJobs(); Thread.Sleep(25); }
             Avalonia.Threading.Dispatcher.UIThread.RunJobs();
             var deck = vm.Field.Assigned ? vm.Document!.LammpsInput("system.data") : "";
             Check(exUntyped == 0 && vm.Field.Assigned && vm.UtStatus.Contains("film") && vm.UtStatus.Contains("typed from the example") &&
@@ -1174,6 +1204,30 @@ internal static class SelfTest
                 }
                 PyCheck(results.All(r => r.Split(' ')[1] == "0") && scripts[0].Item2.Contains("doc.relax(") && scripts[1].Item2.Contains("doc.md(steps=50"),
                       "copy as Python: " + string.Join(" · ", results));
+                // Copy command: the Relax and Dynamics commands run with the caps command line on the same file (a build
+                // tree's cli/caps beside capi/, or CAPS_CLI), the shell lines as copied
+                var capsCli = Environment.GetEnvironmentVariable("CAPS_CLI") is { Length: > 0 } c0 ? c0
+                    : Path.GetFullPath(Path.Combine(Path.GetDirectoryName(MainViewModel.NativeLibraryPath) ?? ".", "..", "cli", OperatingSystem.IsWindows() ? "caps.exe" : "caps"));
+                if (File.Exists(capsCli) && !OperatingSystem.IsWindows())
+                {
+                    var cmdResults = new List<string>();
+                    foreach (var (name, text) in new[] { ("relax", vm.RelaxCommand()), ("md", vm.MdCommand()) })
+                    {
+                        var body = text.Replace("caps relax structure.data", $"caps relax '{pySaved}'").Replace("caps md structure.data", $"caps md '{pySaved}'")
+                                       .Replace("--iterations 5000", "--iterations 50");
+                        var file = Path.Combine(outDir, $"caps-selftest-{name}.sh");
+                        File.WriteAllText(file, $"caps() {{ '{capsCli}' \"$@\"; }}\n" + body);
+                        var psi = new System.Diagnostics.ProcessStartInfo("/bin/bash") { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, WorkingDirectory = outDir };
+                        psi.ArgumentList.Add(file);
+                        using var proc = System.Diagnostics.Process.Start(psi)!;
+                        var err = proc.StandardError.ReadToEndAsync();
+                        proc.StandardOutput.ReadToEnd();
+                        proc.WaitForExit(120000);
+                        cmdResults.Add($"{name} {proc.ExitCode}{(proc.ExitCode is not (0 or 3) ? " " + err.Result.Trim().Split('\n').LastOrDefault() : "")}");
+                    }
+                    Check(cmdResults.All(r => r.Split(' ')[1] is "0" or "3"), "copy command (caps CLI): " + string.Join(" · ", cmdResults));
+                }
+                else Console.WriteLine("skip copy command: no caps command line beside the library (set CAPS_CLI)");
                 vm.MdStepsD = steps;
             }
 
@@ -3057,6 +3111,11 @@ internal static class SelfTest
             Check(ok, $"coarse-grained: 100 beads, 95 bonds, deck written · {rep}");
         }
 
+        // Reaction template editor: the atom conditions and run rules of a template shown as the text writes them
+        {
+            vm.OpenTemplateEditor("sulfur_allylic");
+            Check(vm.TemplateConditions.Contains("no_neighbour=S") && vm.TemplateConditions.Contains("once"), $"template conditions: {vm.TemplateConditions.Replace("\n", " · ")}");
+        }
         // Reaction template editor: the epoxy–amine templates pass their checks; a broken edit is flagged
         {
             vm.OpenTemplateEditor("epoxy_amine_primary");
@@ -4230,26 +4289,43 @@ internal static class SelfTest
             vm.EqTarget = 0;
         }
 
-        // Field › Fill from OPLS 2005: natural rubber under OPLS-AA 2024 lacks the CM-CT-CT-CM torsion; one click borrows
-        // it (and only what is missing) from OPLS 2005 by the shared OPLS classes
+        // Field › Fill from CAPS's OPLS-AA 2024 fits: a copy of OPLS-AA 2024 without its CM-CM-CT-CT torsion (with CAPS's
+        // rubber refit overlay beside it) leaves natural rubber with that term missing; one click fills it, and only what is
+        // missing, from the overlay. Nothing comes from a library CAPS does not ship
         {
+            var lib = Paths.ForceFields!;
+            var tdir = Path.Combine(outDir, "fill-lib");
+            Directory.CreateDirectory(tdir);
+            var ffj = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(Path.Combine(lib, "oplsaa2024.json")))!.AsObject();
+            ffj["typing"] = Path.GetFullPath(Path.Combine(lib, (string)ffj["typing"]!));
+            var dih = ffj["dihedrals"]!.AsArray();
+            foreach (var d in dih.Where(d => (string?)d!["name"] == "CM-CM-CT-CT").ToList()) dih.Remove(d);
+            ffj["name"] = "OPLS-AA 2024 (without CM-CM-CT-CT)";
+            File.WriteAllText(Path.Combine(tdir, "oplsaa2024.json"), ffj.ToJsonString());
+            File.Copy(Path.Combine(lib, "oplsaa2024-rubber-refit.json"), Path.Combine(tdir, "oplsaa2024-rubber-refit.json"), true);
+            File.WriteAllText(Path.Combine(tdir, "catalogue.json"), "{\"forcefields\": [{\"id\": \"oplsaa2024\", \"file\": \"oplsaa2024.json\"}]}");
+            var entry = new FfEntry("oplsaa2024", "OPLS-AA 2024 (test copy)", "", "", Path.Combine(tdir, "oplsaa2024.json"), true);
+            vm.Field.Library.Add(entry);
             var (nrDoc, _) = CapsDocument.GrowChains("{\"units\":[{\"name\":\"isoprene\",\"smiles\":\"[*]C/C(C)=C\\\\C[*]\"}],\"dp\":4}",
                 new CapsGrowOpts { Chains = 1, Dp = 0, Seed = 1, Density = 0.02, ContactScale = -0.8, Curve = 1 }, null, "nr");
             var nrFile = Path.Combine(outDir, "nr_fill.data");
             nrDoc.Save(nrFile);
             nrDoc.Dispose();
             vm.Open(nrFile);
-            vm.Field.FfIndex = vm.Field.Library.ToList().FindIndex(x => x.Id == "oplsaa2024");
+            vm.Field.FfIndex = vm.Field.Library.Count - 1;
             vm.Field.Assign().GetAwaiter().GetResult();
-            var fillBefore = (vm.Field.Complete, vm.Field.CanFillSuggested, vm.Field.FillSuggestedText);
+            var fillBefore = (vm.Field.Complete, vm.Field.CanFillSuggested, vm.Field.FillSuggestedText, vm.Field.MissingText);
             vm.Field.FillSuggested().GetAwaiter().GetResult();
-            Check(!fillBefore.Complete && fillBefore.CanFillSuggested && fillBefore.FillSuggestedText == "Fill from OPLS 2005" && vm.Field.Complete && !vm.Field.CanFillSuggested,
-                  $"fill from OPLS 2005: before complete {fillBefore.Complete}, offered '{fillBefore.FillSuggestedText}' · after complete {vm.Field.Complete} · {vm.Field.EstimatedText}");
+            var rep = vm.Document!.FieldReport();
+            Check(!fillBefore.Complete && fillBefore.CanFillSuggested && fillBefore.FillSuggestedText == "Fill from CAPS's OPLS-AA 2024 fits" && vm.Field.Complete
+                  && !vm.Field.CanFillSuggested && rep.Contains("rubber-refit"),
+                  $"fill from CAPS's OPLS-AA 2024 fits: before complete {fillBefore.Complete} ({fillBefore.MissingText}), offered '{fillBefore.FillSuggestedText}' · after complete {vm.Field.Complete} · {vm.Field.EstimatedText}");
+            vm.Field.Library.Remove(entry);
             vm.Open(Path.Combine(dir, "ps_melt.data"));
         }
 
-        // Field › Use OPLS 2005's charges: poly(2-vinylpyridine) under OPLS-AA 2024 — the substituted pyridine's fixed
-        // charges do not balance; OPLS 2005's bond-increment charges do, with OPLS-AA 2024's types kept
+        // Charges: poly(2-vinylpyridine) under the shipped OPLS-AA 2024 types complete and neutral by its own charges; no
+        // charge choice borrows from another library
         {
             var (pvp, _) = CapsDocument.GrowChains("{\"units\":[{\"name\":\"2-vinylpyridine\",\"smiles\":\"[*]CC([*])c1ccccn1\"}],\"dp\":4}",
                 new CapsGrowOpts { Chains = 1, Dp = 0, Seed = 1, Density = 0.02, ContactScale = -0.8, Curve = 1 }, null, "p2vp");
@@ -4260,11 +4336,8 @@ internal static class SelfTest
             vm.Field.ChargeMode = 1;
             vm.Field.FfIndex = vm.Field.Library.ToList().FindIndex(x => x.Id == "oplsaa2024");
             vm.Field.Assign().GetAwaiter().GetResult();
-            var chBefore = (vm.Field.Complete, vm.Field.CanUseCompanionCharges, vm.Field.CompanionChargesText);
-            vm.Field.UseCompanionCharges().GetAwaiter().GetResult();
-            var pvpRep = vm.Document!.FieldReport();
-            Check(!chBefore.Complete && chBefore.CanUseCompanionCharges && vm.Field.Complete && pvpRep.Contains("OPLS 2005's own, from its bond increments") && pvpRep.Contains("\"520_"),
-                  $"OPLS 2005 charges with OPLS-AA 2024 types: before complete {chBefore.Complete}, offered '{chBefore.CompanionChargesText}' · after complete {vm.Field.Complete}");
+            Check(vm.Field.Complete && !vm.Field.ChargeOdd && FieldViewModel.ChargeModes.Length == 5 && !FieldViewModel.ChargeModes.Any(m => m.Contains("increments", StringComparison.OrdinalIgnoreCase)),
+                  $"OPLS-AA 2024 charges on P2VP: complete {vm.Field.Complete} · {vm.Field.ChargeText} · charge choices {FieldViewModel.ChargeModes.Length}");
             vm.Field.ChargeMode = 0;
             vm.Open(Path.Combine(dir, "ps_melt.data"));
         }

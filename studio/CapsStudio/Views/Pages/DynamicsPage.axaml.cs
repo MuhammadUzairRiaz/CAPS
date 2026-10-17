@@ -65,6 +65,7 @@ public partial class DynamicsPage : PageBase
         catch (Exception ex) { Vm.Status = "Could not write the deck: " + ex.Message; }
     }
 
+    private void OnCopyCommand(object? s, Avalonia.Interactivity.RoutedEventArgs e) => CopyCommand(Vm.MdCommand, "dynamics run");
     private async void OnCopyPython(object? s, RoutedEventArgs e)
     {
         var clip = TopLevel.GetTopLevel(this)?.Clipboard;

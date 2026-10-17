@@ -697,6 +697,17 @@ public partial class MainWindow : Window
     private async void OnFieldAssign(object? s, RoutedEventArgs e) { if (!_vm.Busy) await _vm.Field.Assign(); }
     private async void OnFieldClear(object? s, RoutedEventArgs e) { if (!_vm.Busy) await _vm.Field.Clear(); }
     private async void OnFieldUseFile(object? s, RoutedEventArgs e) { if (!_vm.Busy) await _vm.Field.UseFileForceField(); }
+    private async void OnFieldCompleteModel(object? s, RoutedEventArgs e) { if (!_vm.Busy) await _vm.Field.CompleteWithModel(_vm.DocumentPath); }
+    private async void OnCopyTensileCommand(object? s, RoutedEventArgs e)
+    {
+        if (Clipboard != null) await Clipboard.SetTextAsync(_vm.TensileCommand());
+        _vm.Status = "Copied the tensile pull as a caps command";
+    }
+    private async void OnCopyFieldCommand(object? s, RoutedEventArgs e)
+    {
+        if (Clipboard != null) await Clipboard.SetTextAsync(_vm.Field.ApplyCommand.Replace("STRUCTURE", _vm.CliStructure));
+        _vm.Status = "Copied the assignment as a caps command";
+    }
     private void OnApplyCoordination(object? s, RoutedEventArgs e) => _vm.ApplyCoordination();
     private async void OnFieldAssignGroups(object? s, RoutedEventArgs e) { if (!_vm.Busy) await _vm.Field.AssignGroups(); }
     private void OnFieldGroupAdd(object? s, RoutedEventArgs e) => _vm.Field.AddGroup();
@@ -744,10 +755,6 @@ public partial class MainWindow : Window
     private async void OnFieldAddRule(object? s, RoutedEventArgs e) { if (!_vm.Busy) await _vm.Field.AddRule(); }
     private async void OnFieldRemoveRules(object? s, RoutedEventArgs e) { if (!_vm.Busy) await _vm.Field.RemoveRules(); }
 
-    private async void OnFieldCompanionCharges(object? s, RoutedEventArgs e)
-    {
-        if (!_vm.Busy) await _vm.Field.UseCompanionCharges();
-    }
 
     private void OnSetMeasured(object? s, RoutedEventArgs e) => _vm.SetMeasured();
     private void OnFullView(object? s, RoutedEventArgs e) => OpenFullView(false);

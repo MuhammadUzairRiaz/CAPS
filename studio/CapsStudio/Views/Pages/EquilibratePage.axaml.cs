@@ -37,6 +37,7 @@ public partial class EquilibratePage : PageBase
         };
     }
 
+    private void OnCopyCommand(object? s, Avalonia.Interactivity.RoutedEventArgs e) => CopyCommand(Vm.EqCommand, "equilibration");
     private async void OnRun(object? s, RoutedEventArgs e) { if (Vm.RunsRemote) await Vm.SubmitRemote("Equilibrate"); else await Vm.RunEquilibrate(); }
     private void OnQueue(object? s, RoutedEventArgs e) => Vm.QueueEquilibrate();
     private void OnPause(object? s, RoutedEventArgs e) => Vm.TogglePause();

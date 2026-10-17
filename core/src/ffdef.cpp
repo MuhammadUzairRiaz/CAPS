@@ -6,6 +6,7 @@
 #include "caps/typing.hpp"
 #include "caps/qeq.hpp"
 
+#include <cctype>
 #include <cstdio>
 #include <filesystem>
 #include <memory>
@@ -505,6 +506,8 @@ void save_forcefield(const FFDef& ff, const std::string& path) {
 std::vector<double> companion_charges(const System& s, const FFDef& def, const std::string& ff_path, std::string* note) {
   if (def.charge_increments_from.empty()) throw FFError(def.name + " names no force field for bond-increment charges");
   const std::filesystem::path src = std::filesystem::path(ff_path).parent_path() / def.charge_increments_from;
+  // a companion that is not installed beside the force field is no companion (CAPS ships no library it does not own)
+  if (!std::filesystem::exists(src)) throw FFError(def.name + "'s companion " + def.charge_increments_from + " is not installed");
   const FFDef other = load_forcefield(src.string());
   if (other.bond_increments.empty()) throw FFError(other.name + " has no bond increments");
   const TypingResult tr = assign_types(s, other);
@@ -747,6 +750,138 @@ FFDef load_forcefield(const std::string& path) {
   for (const auto& t : ff.types)
     if (!t.smarts.empty()) ff.typing.push_back({t.name, t.smarts, t.description, t.overrides, t.priority});
   return ff;
+}
+
+void merge_overlays(FFDef& def, const std::string& list) {
+  for (std::stringstream ss(list); ss.good();) {
+    std::string p;
+    std::getline(ss, p, ',');
+    while (!p.empty() && std::isspace(static_cast<unsigned char>(p.back()))) p.pop_back();
+    while (!p.empty() && std::isspace(static_cast<unsigned char>(p.front()))) p.erase(p.begin());
+    if (!p.empty()) merge_forcefield(def, load_forcefield(p));
+  }
+}
+
+ForceField parameterize_charges(System& s, const FFDef& ff, const std::vector<std::string>& types, const std::string& charges_in,
+                                const std::string& ff_path, ParamReport* rep_out, bool allow_missing, std::vector<std::string>* said) {
+  ParamReport rep;
+  auto say = [&](const std::string& t) { if (said) said->push_back(t); };
+  std::string charges = charges_in;
+  if (charges == "increments") {   // the companion force field's bond-increment charges, always
+    std::string note;
+    const auto q = companion_charges(s, ff, ff_path, &note);
+    for (size_t i = 0; i < s.atoms.size(); ++i) s.atoms[i].charge = q[i];
+    s.has_charges = true;
+    ForceField f = parameterize(s, ff, types, "keep", &rep, allow_missing);
+    say("charges: " + (note.rfind("charges: ", 0) == 0 ? note.substr(9) : note));
+    if (rep_out) *rep_out = std::move(rep);
+    return f;
+  }
+  if (charges != "auto") {
+    ForceField f = parameterize(s, ff, types, charges, &rep, allow_missing);
+    if (rep_out) *rep_out = std::move(rep);
+    return f;
+  }
+  ForceField f;
+  try {
+    f = parameterize(s, ff, types, "types", &rep, allow_missing);
+    charges = "types";
+  } catch (const FFError& e) {
+    // no charges on its types, or a bond without an increment (pcff.frc has none for an alkoxysilane's o-sio)
+    const std::string msg = e.what();
+    const bool no_increment = msg.find("bond increment") != std::string::npos;
+    if (msg.find("has no charge for type") == std::string::npos && !no_increment) throw;
+    const std::string why = no_increment ? "has no bond increment for " + msg.substr(msg.find("bond increment") + 15, msg.find('\n', msg.find("bond increment")) - msg.find("bond increment") - 15)
+                                         : "has no charges on its types";
+    rep = ParamReport{};
+    charges = "gasteiger";
+    try {
+      ParamReport probe;
+      (void)parameterize(s, ff, types, "gasteiger", &probe, true);
+      say("charges: " + ff.name + " " + why + "; Gasteiger–Marsili charges used");
+    } catch (const std::exception&) {   // Gasteiger–Marsili has no parameters for this structure (S=O, metals): QEq
+      charges = "qeq";
+      say("charges: " + ff.name + " " + why + " and Gasteiger–Marsili none for this structure; QEq charges used");
+    }
+    f = parameterize(s, ff, types, charges, &rep, allow_missing);
+  }
+  // per-type charges that miss the formal charge give way to the companion force field's bond-increment charges when it
+  // names one (OPLS-AA 2024 -> OPLS 2005), as a recipe and the Studio do
+  if (charges == "types" && !ff.charge_increments_from.empty()) {
+    double net = 0;
+    for (double q : f.charge) net += q;
+    int formal = 0;
+    for (int fc : perceive(s).charge) formal += fc;
+    if (std::fabs(net - formal) > 1e-3) {
+      char b[160];
+      std::snprintf(b, sizeof b, "charges: %s's own charges sum to %+.4f e, not %+d", ff.name.c_str(), net, formal);
+      try {
+        std::string note;
+        const auto q = companion_charges(s, ff, ff_path, &note);
+        System sq = s;
+        for (size_t i = 0; i < sq.atoms.size(); ++i) sq.atoms[i].charge = q[i];
+        sq.has_charges = true;
+        ParamReport rep2;
+        ForceField f2 = parameterize(sq, ff, types, "keep", &rep2, allow_missing);
+        s = std::move(sq);
+        f = std::move(f2);
+        rep = std::move(rep2);
+        say(std::string(b) + "; used instead: " + (note.rfind("charges: ", 0) == 0 ? note.substr(9) : note));
+      } catch (const FFError& e) {
+        say(std::string(b) + " (" + e.what() + ")");
+      }
+    }
+  }
+  if (rep_out) *rep_out = std::move(rep);
+  return f;
+}
+
+std::vector<OverlayInfo> library_overlays(const std::string& dir) {
+  namespace fs = std::filesystem;
+  std::vector<OverlayInfo> out;
+  std::set<std::string> listed, ids;
+  {
+    std::ifstream cf(fs::path(dir) / "catalogue.json");
+    if (cf) {
+      std::stringstream ss;
+      ss << cf.rdbuf();
+      const Json c = Json::parse(ss.str());
+      if (c.has("forcefields"))
+        for (const auto& e : c["forcefields"].items()) {
+          if (e.has("file") && e["file"].kind() == Json::String) listed.insert(e["file"].str());
+          if (e.has("id") && e["id"].kind() == Json::String) ids.insert(e["id"].str());
+        }
+    }
+  }
+  std::error_code ec;
+  std::vector<fs::path> files;
+  for (const auto& e : fs::directory_iterator(dir, ec))
+    if (e.is_regular_file() && e.path().extension() == ".json" && e.path().filename() != "catalogue.json") files.push_back(e.path());
+  std::sort(files.begin(), files.end());
+  for (const auto& f : files) {
+    const std::string file = f.filename().string();
+    if (listed.count(file)) continue;
+    std::ifstream in(f);
+    std::stringstream ss;
+    ss << in.rdbuf();
+    Json j;
+    try { j = Json::parse(ss.str()); } catch (const std::exception&) { continue; }
+    if (j.kind() != Json::Object || !j.has("format") || j["format"].kind() != Json::String || j["format"].str() != "caps-forcefield") continue;
+    if (j.has("atom_types") && j["atom_types"].kind() == Json::Array && !j["atom_types"].items().empty()) continue;
+    OverlayInfo o;
+    o.file = file;
+    o.path = f.string();
+    o.name = j.has("name") && j["name"].kind() == Json::String ? j["name"].str() : file;
+    for (const auto& id : ids)
+      if (file.size() > id.size() + 1 && file.compare(0, id.size(), id) == 0 && file[id.size()] == '-' && id.size() > o.base.size()) o.base = id;
+    auto count = [&](const char* k) { return j.has(k) && j[k].kind() == Json::Array ? int(j[k].items().size()) : 0; };
+    o.pairs = count("pairs"), o.bonds = count("bonds"), o.angles = count("angles"), o.dihedrals = count("dihedrals"), o.impropers = count("impropers");
+    if (j.has("notes") && j["notes"].kind() == Json::Array)
+      for (const auto& n : j["notes"].items()) if (n.kind() == Json::String) o.notes.push_back(n.str());
+    if (o.pairs + o.bonds + o.angles + o.dihedrals + o.impropers == 0) continue;
+    out.push_back(std::move(o));
+  }
+  return out;
 }
 
 void merge_forcefield(FFDef& base, const FFDef& ov) {

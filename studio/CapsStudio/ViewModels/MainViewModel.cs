@@ -1743,6 +1743,7 @@ public sealed partial class MainViewModel : ObservableObject
         NewVelocities = resume == null && _mdNewVelocities ? 1 : 0, Seed = (ulong)(_mdSeed = MdSeedChoice.Take()),
         ThermoEvery = (int)Math.Clamp(_mdSteps / 400, 10, 1000), FrameEvery = _mdFrameEvery,
         Cutoff = _relaxCutoff, Coulomb = _relaxCoulomb ? 1 : 0, Tail = TailFlag, Respa = RespaSteps, Constraints = _mdConstraints, ConstraintAlgorithm = _mdConstraintSolver, Hmr = HmrMass,
+        Precision = _mdDouble ? 1 : 0,
     };
 
     private async Task RunMd((long Offset, long Steps)? resume, CapsMdOpts? preset = null, int? ensemble = null)
@@ -1967,6 +1968,7 @@ public sealed partial class MainViewModel : ObservableObject
         Dt = _mdDt, Thermostat = _mdThermostat + 1, Barostat = _mdBarostat + 1, TauT = _mdTauT, TauP = _mdTauP, Seed = (ulong)(_mdSeed = MdSeedChoice.Take()),
         Cutoff = _relaxCutoff, Coulomb = _relaxCoulomb ? 1 : 0, Tail = TailFlag,
         FramePs = 10, ThermoPs = 0.5, UntilConverged = (until ?? _eqUntil) ? 1 : 0, BlockPs = _eqBlock, MaxBlocks = _eqMaxBlocks, Constraints = _mdConstraints, ConstraintAlgorithm = _mdConstraintSolver, Hmr = HmrMass,
+        Precision = _mdDouble ? 1 : 0,
     };
 
     private (string Text, CapsEquilOpts Opts, bool Target) _eqRun;   // the last run, for the macro recorder
@@ -2680,6 +2682,7 @@ public sealed partial class MainViewModel : ObservableObject
         AutoCapture = _rxAutoCapture ? 1 : 0, CaptureMax = _rxCaptureMax, CaptureStep = 0.5,
         TargetKind = _rxTargetKind, TargetValue = _rxTargetKind == 0 ? 0 : _rxTargetValue,
         SitesPerChain = (int)_rxSitesPer,
+        RemoveUnreacted = _rxRemoveUnreacted ? 1 : 0,
     };
 
     public async Task RunReact() => await RunReact(null, null);

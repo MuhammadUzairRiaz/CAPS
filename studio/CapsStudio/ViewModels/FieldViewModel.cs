@@ -89,8 +89,7 @@ public sealed partial class FieldViewModel : ObservableObject
     public FfEntry? Selected => _ffIndex >= 0 && _ffIndex < Library.Count ? Library[_ffIndex] : null;
     public string FfNote => Selected is { } e ? $"{e.Version} · {e.Status}" + (e.AutoTyping ? " · automatic typing" : " · types must be the atom names in the file") : "";
     /// <summary>Index 0 is automatic (core mode 4); the others are core modes 0–3 in order.</summary>
-    public static readonly string[] ChargeModes = ["Automatic (force field, else Gasteiger)", "From the force field", "Gasteiger–Marsili", "Keep the file's charges", "QEq (every element)",
-                                                   "Bond increments (OPLS numbers)"];
+    public static readonly string[] ChargeModes = ["Automatic (force field, else Gasteiger)", "From the force field", "Gasteiger–Marsili", "Keep the file's charges", "QEq (every element)"];
     private static int CoreCharges(int ui) => ui == 0 ? 4 : ui == 5 ? 5 : ui - 1;
     public static int CoreChargesOf(int ui) => CoreCharges(ui);
     private int _chargeMode;
@@ -427,7 +426,9 @@ public sealed partial class FieldViewModel : ObservableObject
         }
         Recorder?.Invoke($"doc.field.assign(\"{e.File.Replace("\\", "/")}\", charges=\"{(mode switch { 1 => "forcefield", 2 => "gasteiger", 3 => "keep", 4 => "qeq", 5 => "increments", _ => "auto" })}\")");
         _assignedId = e.Id;
-        return Do("Assigned", d => d.FieldAssign(e.File, null, CoreCharges(mode)));
+        var chosen = ChosenOverlays;
+        if (chosen.Count > 0) Recorder?.Invoke($"doc.field.set_overlays([{string.Join(", ", chosen.Select(p => "\"" + Path.GetFileNameWithoutExtension(p) + "\""))}])");
+        return Do("Assigned", d => ApplyChosenOverlays(d, d.FieldAssign(e.File, null, CoreCharges(mode))));
     }
 
     private string _assignedId = "";
@@ -441,34 +442,49 @@ public sealed partial class FieldViewModel : ObservableObject
         _assignedId = "file";
         return Do("Assigned", d => d.FieldAssign("file", null, 2));
     }
-    /// <summary>The OPLS force fields share OPLS 2005's atom classes: their missing bonds, angles and torsions can be
-    /// borrowed from it (only where they define none, each borrowed term listed).</summary>
-    private FfEntry? FillSource => HasMissing && _assignedId != "opls2005" && _assignedId.Contains("opls", StringComparison.Ordinal)
-        ? Library.FirstOrDefault(x => x.Id == "opls2005") : null;
-    public bool CanFillSuggested => FillSource != null;
-    public string FillSuggestedText => FillSource is { } f ? $"Fill from {f.Name}" : "";
-    public string FillSuggestedTip => FillSource is { } f
-        ? $"Bonds, angles and torsions {ForceFieldName} lacks, taken from {f.Name} by the atom classes they share — only where {ForceFieldName} defines none; every borrowed term is listed and counted in the provenance"
-        : "";
-    public Task FillSuggested() => FillSource is { } f ? FillGaps(f.File) : Task.CompletedTask;
-
-    /// <summary>OPLS-AA's fixed per-type charges leave a group unbalanced (a substituted ring, a junction between two
-    /// groups): OPLS 2005 types the same structure and gives its own charges from bond increments, which balance bond by
-    /// bond; this force field's types and parameters stay.</summary>
-    private bool _chargeImbalance;
-    private FfEntry? ChargeSource => _chargeImbalance && _chargeMode != 5 && _assignedId != "opls2005" && _assignedId.Contains("opls", StringComparison.Ordinal)
-        ? Library.FirstOrDefault(x => x.Id == "opls2005") : null;
-    public bool CanUseCompanionCharges => ChargeSource != null;
-    public string CompanionChargesText => ChargeSource is { } f ? $"Use {f.Name}'s charges" : "";
-    public string CompanionChargesTip => ChargeSource is { } f
-        ? $"{ForceFieldName}'s fixed charges do not add up to the formal charge here. {f.Name} types the same structure and gives its own charges from bond increments (they balance bond by bond); {ForceFieldName}'s types and parameters stay."
-        : "";
-    public Task UseCompanionCharges()
+    /// <summary>The assigned force field's own refits shipped with CAPS (its overlays in the library folder: for OPLS-AA 2024
+    /// the DLPNO-CCSD(T) torsions, the rubber backbone refits and any autofit overlay present), used to fill the bonds,
+    /// angles and torsions it lacks — only where it defines none, each filled term listed. Only files that are installed.</summary>
+    private List<string> FillSources()
     {
-        if (ChargeSource == null) return Task.CompletedTask;
-        ChargeMode = 5;
-        return Assign();
+        if (!HasMissing || !Assigned || IsGrouped || Library.FirstOrDefault(x => x.Id == _assignedId) is not { } e || e.Id == "uff") return [];
+        var dir = Path.GetDirectoryName(e.File);
+        if (string.IsNullOrEmpty(dir) || !File.Exists(Path.Combine(dir, "catalogue.json"))) return [];
+        try
+        {
+            var j = System.Text.Json.Nodes.JsonNode.Parse(CapsDocument.ForcefieldOverlays(dir, e.Id));
+            return (j?["overlays"]?.AsArray() ?? [])
+                .Where(o => o != null && new[] { "bonds", "angles", "dihedrals" }.Sum(k => (int?)o["kinds"]?[k] ?? 0) > 0)
+                .Select(o => (string?)o!["path"] ?? "").Where(File.Exists).ToList();
+        }
+        catch { return []; }
     }
+    private string FfShortName => System.Text.RegularExpressions.Regex.Replace(ForceFieldName, @"\s*\(.*\)\s*$", "");
+    public bool CanFillSuggested => FillSources().Count > 0;
+    public string FillSuggestedText => CanFillSuggested ? $"Fill from CAPS's {FfShortName} fits" : "";
+    public string FillSuggestedTip => FillSources() is { Count: > 0 } f
+        ? $"The bonds, angles and torsions {ForceFieldName} lacks here, taken from CAPS's own fits to it ({string.Join(", ", f.Select(Path.GetFileName))}) — only where {ForceFieldName} defines none; every filled term is listed and counted in the provenance"
+        : "";
+    public Task FillSuggested()
+    {
+        var sources = FillSources();
+        if (sources.Count == 0) return Task.CompletedTask;
+        foreach (var p in sources) Recorder?.Invoke($"doc.field.fill_gaps(\"{p.Replace("\\", "/")}\")");
+        return Do($"Filled from CAPS's {FfShortName} fits", d =>
+        {
+            var complete = false;
+            foreach (var p in sources)
+            {
+                try { complete = d.FieldFillGaps(p); }
+                catch (InvalidOperationException) { }   // a fit with no class this structure uses
+            }
+            return complete;
+        });
+    }
+
+    // a structure whose fixed per-type charges do not add up to its formal charge: said plainly in the missing list (the
+    // core's "charges:" line, the residual per molecule); CAPS borrows no charges from another library
+    private bool _chargeImbalance;
 
     public Task ApplyOverride()
     {
@@ -527,6 +543,8 @@ public sealed partial class FieldViewModel : ObservableObject
         Entered.Clear();
         Raise(nameof(HasEntered));
         Notes.Clear();
+        UntypedMotifs = "";
+        OutOfDomain = "";
         _fftypes.Clear();
         SelectedRow = null;
         ForceFieldName = "";
@@ -573,12 +591,11 @@ public sealed partial class FieldViewModel : ObservableObject
         UntypedText = $"{untyped:N0} untyped";
         MissingText = missing.Count == 1 ? "1 missing term" : $"{missing.Count:N0} missing terms";
         var filled = r.TryGetProperty("filled", out var fl) ? fl.GetDouble() : 0;
-        EstimatedText = $"{estimated:N0} estimated" + (imported > 0 ? $" · {imported:N0} imported" : "") + (filled > 0 ? $" · {filled:N0} filled from another force field" : "");
+        EstimatedText = $"{estimated:N0} estimated" + (imported > 0 ? $" · {imported:N0} imported" : "") + (filled > 0 ? $" · {filled:N0} filled where the force field had none" : "");
         HasUntyped = untyped > 0;
         HasMissing = missing.Count > 0;
         _chargeImbalance = missing.Any(m => m.StartsWith("charges:", StringComparison.Ordinal));
         Raise(nameof(CanFillSuggested)); Raise(nameof(FillSuggestedText)); Raise(nameof(FillSuggestedTip));
-        Raise(nameof(CanUseCompanionCharges)); Raise(nameof(CompanionChargesText)); Raise(nameof(CompanionChargesTip));
         HasEstimated = estimated > 0;
         if (r.GetProperty("has_charges").GetBoolean())
         {
@@ -665,6 +682,9 @@ public sealed partial class FieldViewModel : ObservableObject
         else EnergyText = "";
         Complete = r.GetProperty("complete").GetBoolean();
         Assigned = true;
+        ReadOverlays(r);
+        ReadMotifs(r);
+        Raise(nameof(CanComplete));
         Log = Complete ? $"{ForceFieldName}: every atom typed and every parameter found. Relax, Dynamics, Equilibrate and LAMMPS data use it now."
                        : $"{ForceFieldName}: {UntypedText}, {MissingText}. Relax and Dynamics are blocked until these are complete; CAPS does not guess parameters.";
         Raise(nameof(RunLine));
