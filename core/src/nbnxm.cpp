@@ -11,6 +11,11 @@
 #include <string>
 #include <type_traits>
 #include <vector>
+#if defined(__x86_64__) && defined(__GNUC__)
+#include <cpuid.h>
+#elif defined(_M_X64) && defined(_MSC_VER)
+#include <intrin.h>
+#endif
 
 namespace caps::nbnxm {
 
@@ -592,15 +597,48 @@ void shift_virial(const List& L, const std::vector<double>& fsh, double W[9]) {
 }
 
 namespace {
+#if (defined(__x86_64__) && defined(__GNUC__)) || (defined(_M_X64) && defined(_MSC_VER))
+// AVX2 and FMA from CPUID itself, and the OS saving the YMM registers on a context switch (OSXSAVE, then XCR0 bits 1
+// and 2). Not __builtin_cpu_supports: with MinGW-w64 GCC it read false on a processor with AVX2, so Windows ran the
+// four-lane kernel.
+bool cpu_has_avx2_fma() {
+  unsigned a = 0, b = 0, c = 0, d = 0;
+#if defined(_MSC_VER) && !defined(__clang__)
+  int r[4];
+  __cpuid(r, 0);
+  if (r[0] < 7) return false;
+  __cpuid(r, 1);
+  c = unsigned(r[2]);
+#else
+  if (__get_cpuid_max(0, nullptr) < 7) return false;
+  __cpuid(1, a, b, c, d);
+#endif
+  const bool fma = c & (1u << 12), osxsave = c & (1u << 27), avx = c & (1u << 28);
+  if (!(fma && osxsave && avx)) return false;
+#if defined(_MSC_VER) && !defined(__clang__)
+  const unsigned long long xcr0 = _xgetbv(0);
+  __cpuidex(r, 7, 0);
+  b = unsigned(r[1]);
+#else
+  unsigned lo = 0, hi = 0;
+  __asm__ volatile("xgetbv" : "=a"(lo), "=d"(hi) : "c"(0));
+  const unsigned long long xcr0 = (static_cast<unsigned long long>(hi) << 32) | lo;
+  __cpuid_count(7, 0, a, b, c, d);
+#endif
+  if ((xcr0 & 0x6) != 0x6) return false;   // XMM and YMM state
+  return b & (1u << 5);                     // AVX2
+}
+#endif
+
 // AVX2 and FMA when built in and the processor reports them; CAPS_SIMD=sse2 keeps the four-lane kernel (to compare),
 // CAPS_SIMD=avx2 takes the eight-lane one whatever the processor reports (an emulator that runs AVX2 without saying so)
 bool use_avx2() {
   static const bool on = [] {
-#if (defined(__x86_64__) || defined(_M_X64)) && defined(__GNUC__)
+#if (defined(__x86_64__) && defined(__GNUC__)) || (defined(_M_X64) && defined(_MSC_VER))
     const char* env = std::getenv("CAPS_SIMD");
     if (env && std::string(env) == "sse2") return false;
     if (env && std::string(env) == "avx2") return avx2_built();
-    return avx2_built() && __builtin_cpu_supports("avx2") && __builtin_cpu_supports("fma");
+    return avx2_built() && cpu_has_avx2_fma();
 #else
     return false;
 #endif

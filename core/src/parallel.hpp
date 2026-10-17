@@ -12,9 +12,13 @@
 
 namespace caps {
 
+// Windows: asks for full speed (no power throttling) for the process, once; elsewhere nothing (power.cpp)
+void prefer_fast_cores();
+
 class ThreadPool {
  public:
   explicit ThreadPool(int n) : n_(std::max(1, n)) {
+    prefer_fast_cores();
     for (int t = 1; t < n_; ++t) workers_.emplace_back([this, t] { loop(t); });
   }
   ~ThreadPool() {

@@ -28,6 +28,7 @@ add_library(caps_core STATIC
   src/field.cpp
   src/nbnxm.cpp
   src/nbnxm_avx2.cpp
+  src/power.cpp
   src/relax.cpp
   src/lammps_data.cpp
   src/lammps_read_ff.cpp
