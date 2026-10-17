@@ -238,7 +238,7 @@ else:
     print("skip mw: not in this checkout")
 # coarse-grained: MARTINI's DPPC template (typed by bead name, charges kept); SDK maps all-atom DMPC onto its beads
 # MARTINI 2 (martini2-marrink2007) and SDK (sdk-shinoda2007) from their papers, by the aliases martini and sdk; the MARTINI
-# polymer, sugar and amino-acid sets are not rebuilt yet (aliases martini-polymers, martini-sugars, martini-aminoacids)
+# sugar and amino-acid sets are not rebuilt yet (aliases martini-sugars, martini-aminoacids)
 if True:
     tpl = caps.bead_templates("martini")
     dppc = caps.build.beads("DPPC", forcefield="martini")
@@ -250,13 +250,15 @@ if True:
           f"coarse-grained: MARTINI DPPC template ({len(tpl)} templates), SDK DMPC mapped ({dmpc.atoms} beads)")
 else:
     print("skip martini / sdk: not in this checkout")
-if _have("martini-polymers") and _have("martini-sugars"):
-    peo = caps.build.beads("PEO", forcefield="martini-polymers")
-    suc = caps.build.beads("SUCR", forcefield="martini-sugars")
-    rp, ru = peo.field.assign("martini-polymers", charges="keep"), suc.field.assign("martini-sugars", charges="keep")
-    check(rp["complete"] and ru["complete"] and peo.atoms == 37, f"MARTINI overlays: PEO {peo.atoms} beads, sucrose {suc.atoms} beads")
-else:
-    print("skip martini-polymers / martini-sugars: not in this checkout")
+# MARTINI 2 polymers (martini2-polymers: PEO from Lee et al. 2009, polystyrene from Rossi et al. 2011), templates and all-atom
+# chains mapped onto them; the sugar set is not rebuilt yet (alias martini-sugars)
+peo = caps.build.beads("PEO36", forcefield="martini-polymers")
+rp = peo.field.assign("martini-polymers", charges="keep")
+psa = caps.polymer("*CC(*)c1ccccc1", dp=10, chains=1, density=0.3, seed=2)
+rps = psa.field.assign("martini-polymers", charges="keep")
+check(rp["complete"] and peo.atoms == 36 and rps["complete"] and psa.atoms == 40
+      and {a["type"] for a in rps["atoms"]} == {"SC1PS", "SC4PS"},
+      f"MARTINI polymers: PEO {peo.atoms} beads, all-atom polystyrene DP 10 mapped to {psa.atoms} beads")
 if _have("martini-aminoacids"):
     trp = caps.build.beads("TRP", forcefield="martini-aminoacids")
     rt = trp.field.assign("martini-aminoacids", charges="keep")
@@ -419,8 +421,8 @@ with tempfile.TemporaryDirectory() as td:
     ko = kg.export_engines(td, run="nvt", steps=1000)
     kg_deck = open(os.path.join(td, "system.in")).read()
 check(kg_rep["complete"] and "units lj" in kg_deck and "gromacs_error" in ko, f"CG melts: {kg_rep['forcefield']}")
-if _have("martini-polymers"):   # TODO: MARTINI 2 polymers rebuilt from their paper (alias martini-polymers)
-    mt = caps.build.martini_melt("[SN0]", repeats=10, chains=10, density=1.1, forcefield="martini-polymers")
+if True:   # MARTINI 2 polymers (alias martini-polymers): a PEO melt of Lee et al. 2009's beads
+    mt = caps.build.martini_melt("[PEO]", repeats=10, chains=10, density=1.1, forcefield="martini-polymers")
     mt_rep = caps.core._json_call(caps.library().caps_field_report, mt._h)
     check(mt_rep["complete"] and abs(json.loads(mt.report)["density"] - 1.1) < 1e-6,
           f"CG melts: {mt_rep['forcefield']} at {json.loads(mt.report)['density']:.3f} g/cm³")

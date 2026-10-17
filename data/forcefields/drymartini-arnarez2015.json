@@ -5,7 +5,8 @@
  "source": "C. Arnarez, J. J. Uusitalo, M. F. Masman, H. I. Ingolfsson, D. H. de Jong, M. N. Melo, X. Periole, A. H. de Vries, S. J. Marrink, J. Chem. Theory Comput. 11, 260 (2015), Table 1 and section 3.1; MARTINI 2.0's bonded terms otherwise",
  "references": [
   "C. Arnarez, J. J. Uusitalo, M. F. Masman, H. I. Ingolfsson, D. H. de Jong, M. N. Melo, X. Periole, A. H. de Vries, S. J. Marrink, J. Chem. Theory Comput. 11, 260 (2015)",
-  "S. J. Marrink, H. J. Risselada, S. Yefimov, D. P. Tieleman, A. H. de Vries, J. Phys. Chem. B 111, 7812 (2007)"
+  "S. J. Marrink, H. J. Risselada, S. Yefimov, D. P. Tieleman, A. H. de Vries, J. Phys. Chem. B 111, 7812 (2007)",
+  "S. J. Marrink, A. H. de Vries, A. E. Mark, J. Phys. Chem. B 108, 750 (2004)"
  ],
  "units": "real",
  "styles": {
@@ -8357,6 +8358,20 @@
     120.0
    ],
    "comment": "cis double bond (Marrink 2007, section 2.3)"
+  },
+  {
+   "name": "Qa-Na-Na",
+   "match": [
+    "Qa",
+    "Na",
+    "Na"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    2.987571701720841,
+    120.0
+   ],
+   "comment": "the glycerol backbone PO4-GL1-GL2 (Marrink, de Vries & Mark 2004, section 3.3.1)"
   },
   {
    "name": "SC1-SC1-SC1",

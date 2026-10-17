@@ -1867,7 +1867,7 @@ class build:
     @staticmethod
     def martini_melt(repeat: str, repeats: int = 20, chains: int = 20, density: float = 1.0, forcefield: str = "martini",
                      seed: int = 1, tolerance: float = 3.0) -> Document:
-        """A MARTINI polymer melt: chains of `repeats` × the repeat unit's bead SMILES ("[C1]", "[SN0]" …) packed, the
+        """A MARTINI polymer melt: chains of `repeats` × the repeat unit's bead SMILES ("[C1]", "[PEO]" …) packed, the
         MARTINI force field (a library id or a path; "martini" is the library whose catalogue entry lists that alias)
         assigned and the cell compressed to the density (g/cm³) with it."""
         o = {"forcefield": _forcefield_path(forcefield), "repeat": repeat, "repeats": repeats, "chains": chains, "density": density,

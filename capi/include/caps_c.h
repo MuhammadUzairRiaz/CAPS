@@ -822,7 +822,7 @@ caps_doc* caps_pore_build(const char* options_json, char* report, int32_t cap);
    report {box, closest, r2_per_bond}. caps_kg_lammps writes STEM.data and STEM.in (push-off, then FENE + WCA; steps ≤ 0:
    20 000 and 100 000). */
 caps_doc* caps_kg_build(const char* options_json, char* report, int32_t cap);
-/* v39 MARTINI polymer melt: {forcefield: path (MARTINI), repeat: bead SMILES of the repeat unit ([SN0], [C1] …), repeats,
+/* v39 MARTINI polymer melt: {forcefield: path (MARTINI), repeat: bead SMILES of the repeat unit ([PEO], [C1] …), repeats,
    chains, density (g/cm³), tolerance (Å, 3), seed}. One chain built from the repeat, `chains` copies packed at a quarter
    of the density, the MARTINI force field assigned, the cell compressed to the density with it; the melt comes back
    assigned (ready for Relax, Dynamics, GROMACS and LAMMPS). progress gets (stage, stages, 0). Report: {beads,

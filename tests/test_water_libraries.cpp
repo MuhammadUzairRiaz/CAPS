@@ -404,3 +404,62 @@ TEST(CgLibraries, MartiniDryMartiniAndSdkAsPublished) {
   EXPECT_EQ(s.type("NC")->charge, 1.0);
   EXPECT_EQ(s.type("PH")->charge, -1.0);
 }
+
+// MARTINI 2 polymers (Lee et al. 2009, Table 1; Rossi et al. 2011, Tables 2 and 4, B-mapping) on MARTINI 2.0: PEO-PEO 4.3 A
+// and 3.375 kJ/mol, PEO-P4 4.7 A and 4.0, the 3.30 A bond (17000 kJ mol-1 nm-2) and 130 deg angle, the four-term dihedral;
+// polystyrene's SC4PS ring beads (0.41 nm, 2.4 kJ/mol among themselves), its B-B bond (0.25 nm, 8000); all-atom PEO and
+// polystyrene mapped onto them; MARTINI 2.0's lipids with the 2004 paper's PO4-GL1-GL2 angle at 120 deg
+TEST(CgLibraries, Martini2PolymersAsPublished) {
+  const FFDef p = load_forcefield(lib("martini2-polymers"));
+  auto pair = [&](const std::string& a, const std::string& b) {
+    std::pair<double, double> r{-1, -1};
+    for (const auto& x : p.pairs)   // the last listed wins (the overlay's after the base's)
+      if ((x.match.size() == 1 && a == b && x.match[0] == a) ||
+          (x.match.size() == 2 && ((x.match[0] == a && x.match[1] == b) || (x.match[0] == b && x.match[1] == a))))
+        r = {x.params[0] * 4.184, x.params[1] / 10};
+    return r;
+  };
+  EXPECT_NEAR(pair("PEO", "PEO").first, 3.375, 1e-9);
+  EXPECT_NEAR(pair("PEO", "PEO").second, 0.43, 1e-12);
+  EXPECT_NEAR(pair("PEO", "P4").first, 4.0, 1e-9);
+  EXPECT_NEAR(pair("PEO", "P4").second, 0.47, 1e-12);
+  EXPECT_NEAR(pair("SC4PS", "SC4PS").first, 2.4, 1e-9);
+  EXPECT_NEAR(pair("SC4PS", "SC4PS").second, 0.41, 1e-12);
+  EXPECT_NEAR(pair("SC4PS", "SC1").first, 0.75 * 3.1, 1e-9);   // Rossi 2011 Table 4: B-R 2.325
+  for (const auto& b : p.bonds) {
+    if (b.name == "PEO-PEO") {
+      EXPECT_NEAR(b.params[0] * 2 * 4.184 * 100, 17000, 1e-6);
+      EXPECT_NEAR(b.params[1], 3.30, 1e-12);
+    }
+    if (b.name == "SC1PS-SC1PS") {
+      EXPECT_NEAR(b.params[0] * 2 * 4.184 * 100, 8000, 1e-6);
+      EXPECT_NEAR(b.params[1], 2.5, 1e-12);
+    }
+  }
+  int dih = 0;
+  for (const auto& d : p.dihedrals)
+    if (d.name == "PEO-PEO-PEO-PEO") {
+      ++dih;
+      EXPECT_NEAR(d.params[1] * 4.184, 1.96, 1e-9);
+      EXPECT_NEAR(d.params[10] * 4.184, 0.12, 1e-9);
+    }
+  EXPECT_EQ(dih, 1);
+  // all-atom chains onto beads: polystyrene DP 4 (H ends): 4 backbone beads, 12 ring beads; PEO DP 6: 6 beads
+  for (const auto& [smi, want] : std::vector<std::pair<std::string, size_t>>{{"CC(c1ccccc1)CC(c1ccccc1)CC(c1ccccc1)CC(c1ccccc1)", 16},
+                                                                              {"CCOCCOCCOCCOCCOCCO", 6}}) {
+    System s = build_molecule(smi).system;
+    std::string ch = "keep";
+    prepare_for_forcefield(s, p, ch);
+    EXPECT_EQ(s.atoms.size(), want) << smi;
+    EXPECT_EQ(assign_types(s, p).untyped, 0) << smi;
+  }
+  // MARTINI 2.0's PO4-GL1-GL2 angle (Marrink 2004, section 3.3.1)
+  const FFDef m = load_forcefield(lib("martini2-marrink2007"));
+  bool glycerol = false;
+  for (const auto& a : m.angles)
+    if (a.match == std::vector<std::string>{"Qa", "Na", "Na"}) {
+      glycerol = true;
+      EXPECT_NEAR(a.params[1], 120.0, 1e-12);
+    }
+  EXPECT_TRUE(glycerol);
+}
