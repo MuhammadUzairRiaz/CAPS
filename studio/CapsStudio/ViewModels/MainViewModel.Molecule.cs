@@ -281,6 +281,11 @@ public sealed partial class MainViewModel
                 }
             }
             catch { }
+        // MARTINI 2 first (the builder's default and its templates), then Dry MARTINI, SDK and Cooke–Deserno, whatever their
+        // order in the catalogue
+        static int Rank(string file) => file.StartsWith("martini", StringComparison.Ordinal) ? 0 : file.StartsWith("drymartini", StringComparison.Ordinal) ? 1
+                                       : file.StartsWith("sdk", StringComparison.Ordinal) ? 2 : 3;
+        r = r.OrderBy(x => Rank(x.File)).ToList();
         r.Add(("Martini 3", "martini3.json"));
         return r.ToArray();
     }

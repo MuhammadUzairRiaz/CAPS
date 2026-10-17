@@ -1979,7 +1979,7 @@
    "source": "G. Rutkai, M. Thol, R. Span, J. Vrabec, Mol. Phys. 115, 1104 (2017), doi:10.1080/00268976.2016.1246760, Table 1 (LJ column); bench/ff/make_noble_gases.py",
    "license": "published parameters of the paper",
    "status": "validated",
-   "notes": "Ne, Ar, Kr, Xe as single Lennard-Jones sites; LAMMPS equals CAPS's energy (bench/ff/check_gas_libraries.py)",
+   "notes": "Ne, Ar, Kr, Xe as single Lennard-Jones sites; LAMMPS equals CAPS's energy (bench/ff/check_water_libraries.py)",
    "file": "noble-gases-rutkai2017.json",
    "typing": {
     "rules": "typing/noble-gases-rutkai2017.typing.json",
