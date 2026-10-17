@@ -46,7 +46,7 @@ def main():
     json.dump(typing, open(os.path.join(DATA, "typing", FID + ".typing.json"), "w"), indent=1, ensure_ascii=False)
     entry = {"id": FID, "name": doc["name"], "version": "2017", "references": [REF], "origin": "built from source",
              "source": doc["source"] + "; bench/ff/make_noble_gases.py", "license": "published parameters of the paper", "status": "validated",
-             "notes": "Ne, Ar, Kr, Xe as single Lennard-Jones sites; LAMMPS equals CAPS's energy (bench/ff/check_gas_libraries.py)",
+             "notes": "Ne, Ar, Kr, Xe as single Lennard-Jones sites; LAMMPS equals CAPS's energy (bench/ff/check_water_libraries.py)",
              "file": FID + ".json", "typing": {"rules": f"typing/{FID}.typing.json", "evidence": "each noble-gas atom by its element"},
              "counts": {"atom_types": len(doc["atom_types"]), "pairs": len(doc["pairs"]), "bonds": 0, "angles": 0, "dihedrals": 0, "impropers": 0},
              "group": "gas", "aliases": ["noble-gases"], "list": {"label": "Noble gases (Ne, Ar, Kr, Xe)", "key": "noble_gases", "order": 33}}
