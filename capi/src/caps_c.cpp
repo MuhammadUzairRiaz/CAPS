@@ -2414,7 +2414,12 @@ extern "C" int32_t caps_adsorption(caps_doc* d, const char* json, caps_stage_fn 
     d->traj = std::move(t);
     d->current = d->traj.frames() - 1;
     refresh(d);
-    if (added && d->field) field_run(d);   // the assignment now over the adsorbates too
+    if (added && d->field) {
+      // the assignment now over the adsorbates too; a force field the file carried (or a model's) describes the old atoms
+      // only, so it ends (the run used the built-in force field, field_for_extended)
+      if (d->field->ff_path == "file" || !d->field->model.empty()) d->field.reset();
+      else field_run(d);
+    }
     caps::KeyValues pr = {{"adsorbates", std::to_string(rep.components.size()) + " components"},
                           {"annealing", std::to_string(o.cycles) + " cycles of " + std::to_string(o.steps) + " steps, " + g6(o.t_high) + " → " + g6(o.t_low) + " K"},
                           {"adsorption energy", g6(rep.adsorption_energy) + " kcal/mol (rigid)"},
