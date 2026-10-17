@@ -44,6 +44,9 @@ struct Case {
 Case phenylbutene() {
   Case c;
   c.def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/oplsaa2024.json");
+  // OPLS-AA 2024 has CA-CT-CT-CM since the copolymer junction fit (tf32): take it out of this copy, so the test keeps a
+  // missing torsion whatever the library covers
+  std::erase_if(c.def.dihedrals, [](const FFRule& r) { return r.name == "CA-CT-CT-CM" || r.name == "CM-CT-CT-CA"; });
   c.s = build_molecule("C=CCCc1ccccc1").system;
   const TypingResult tr = assign_types(c.s, c.def);
   EXPECT_EQ(tr.untyped, 0);
@@ -92,7 +95,7 @@ TEST(FfComplete, SourceFollowsTheTerms) {
   Case c = phenylbutene();
   ParamReport rep;
   (void)parameterize(c.s, c.def, c.types, "types", &rep, true);
-  ASSERT_FALSE(rep.missing.empty()) << "OPLS-AA 2024 now has CM-CT-CT-CA: pick another missing torsion for this test";
+  ASSERT_FALSE(rep.missing.empty());
   const FFDef ov = fake_ml_overlay(rep);
   ASSERT_FALSE(ov.dihedrals.empty());
   FFDef def = c.def;
