@@ -210,12 +210,9 @@ else:
 reline = caps.build.smiles("C[N+](C)(C)CCO.NC(N)=O.NC(N)=O.[Cl-]", forcefield="uff").field.assign("clandp-des")
 il = caps.build.smiles("CCCCn1cc[n+](C)c1.FC(F)(F)S(=O)(=O)[N-]S(=O)(=O)C(F)(F)F", forcefield="uff").field.assign("clandp")
 check(reline["complete"] and abs(reline["net_charge"]) < 1e-9 and il["complete"], "field: CL&P DES reline, CL&P [C4mim][NTf2]")
-# TODO: L-OPLS rebuilt from Siu, Pluhackova & Boeckmann 2012 (expected id lopls-siu2012)
-if _have("lopls-siu2012"):
-    lopls = caps.polymer("*CC*", dp=8, chains=1, density=0.3, seed=3).field.assign("lopls-siu2012")
-    check(lopls["complete"], "field: L-OPLS polyethylene")
-else:
-    print("skip lopls-siu2012: not in this checkout")
+# L-OPLS (lopls-siu2012, from Siu, Pluhackova & Boeckmann 2012, Table 2, on OPLS-AA 2024)
+lopls = caps.polymer("*CC*", dp=8, chains=1, density=0.3, seed=3).field.assign("lopls-siu2012")
+check(lopls["complete"], "field: L-OPLS polyethylene")
 # SPC/E water by its short name (spce-berendsen1987, from Berendsen, Grigera & Straatsma 1987)
 if _have("spce"):
     w = caps.build.smiles("O", forcefield="uff").field.assign("spce", charges="forcefield")
@@ -240,9 +237,9 @@ if _have("mw"):
 else:
     print("skip mw: not in this checkout")
 # coarse-grained: MARTINI's DPPC template (typed by bead name, charges kept); SDK maps all-atom DMPC onto its beads
-# TODO: MARTINI 2 (and its polymer, sugar and amino-acid sets) and SDK, once rebuilt from their papers (not in hand yet;
-# looked up by the aliases martini, martini-polymers, martini-sugars, martini-aminoacids, sdk in a catalogue entry)
-if _have("martini") and _have("sdk"):
+# MARTINI 2 (martini2-marrink2007) and SDK (sdk-shinoda2007) from their papers, by the aliases martini and sdk; the MARTINI
+# polymer, sugar and amino-acid sets are not rebuilt yet (aliases martini-polymers, martini-sugars, martini-aminoacids)
+if True:
     tpl = caps.bead_templates("martini")
     dppc = caps.build.beads("DPPC", forcefield="martini")
     rd = dppc.field.assign("martini", charges="keep")

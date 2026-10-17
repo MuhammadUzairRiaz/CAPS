@@ -1,0 +1,193 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "SDK (Shinoda, DeVane & Klein 2007, 2010)",
+ "coarse_grained": true,
+ "unknown_types": "untyped",
+ "description": "CAPS rules for SDK (bench/ff/make_sdk.py): beads typed by name; all-atom structures mapped onto the papers' segments (every heavy atom in one bead, hydrogens with their atom)",
+ "beads": [
+  {
+   "type": "NC",
+   "smarts": "[CH2X4][CH2X4][NX4+]([CH3X4])([CH3X4])[CH3X4]",
+   "description": "-CH2CH2-N(CH3)3, +1 (choline)"
+  },
+  {
+   "type": "NH",
+   "smarts": "[CH2X4][CH2X4][N;$([NX4+;H3]),$([NX3;H2])]",
+   "description": "-CH2CH2-NH3, +1 (ethanolamine)"
+  },
+  {
+   "type": "PHE",
+   "smarts": "[OX2;$(O[CH2X4][CH2X4][N;$([NX4+;H3]),$([NX3;H2])])][PX4](~[OX1])(~[OX1])~[OX2]",
+   "description": "-PO4-, -1, of a PE head group"
+  },
+  {
+   "type": "PH",
+   "smarts": "[OX2][PX4](~[OX1])(~[OX1])~[OX2]",
+   "description": "-PO4-, -1"
+  },
+  {
+   "type": "GL",
+   "smarts": "[CH2X4;$(*O)][CH1X4;$(*O)][CH2X4;$(*O)]",
+   "description": "-CH2CH-CH2- (glycerol)"
+  },
+  {
+   "types": [
+    "EST1",
+    "EST2"
+   ],
+   "smarts": "[CH2X4][CX3](=[OX1])[OX2]",
+   "description": "-CH2CO2- (the two ester beads, told apart by their bond lengths to GL, 2.88 and 3.48 A)"
+  },
+  {
+   "type": "CMD2",
+   "smarts": "[CH1X3]=[CH1X3]",
+   "description": "-HC=CH- (cis)"
+  },
+  {
+   "type": "CT",
+   "smarts": "[CH3X4][CH2X4][CH2X4]",
+   "description": "CH3CH2CH2-"
+  },
+  {
+   "type": "CT2",
+   "smarts": "[CH3X4][CH2X4]",
+   "description": "CH3CH2-"
+  },
+  {
+   "type": "EOT",
+   "smarts": "[CH3X4][OX2][CH2X4]",
+   "description": "CH3-O-CH2-"
+  },
+  {
+   "type": "EO",
+   "smarts": "[CH2X4][OX2][CH2X4]",
+   "description": "-CH2-O-CH2-"
+  },
+  {
+   "type": "OA",
+   "smarts": "[CH2X4][OX2H1]",
+   "description": "HOCH2-"
+  },
+  {
+   "type": "CM",
+   "smarts": "[CH2X4][CH2X4][CH2X4]",
+   "description": "-CH2CH2CH2-"
+  }
+ ],
+ "bead_groups": [
+  {
+   "type": "W",
+   "molecule": "[OH2]",
+   "count": 3,
+   "description": "(H2O)3: three nearest waters"
+  }
+ ],
+ "rules": [
+  {
+   "type": "W",
+   "smarts": "*",
+   "atom_name": "W",
+   "priority": 0,
+   "description": "a bead named W"
+  },
+  {
+   "type": "CT",
+   "smarts": "*",
+   "atom_name": "CT",
+   "priority": 0,
+   "description": "a bead named CT"
+  },
+  {
+   "type": "CM",
+   "smarts": "*",
+   "atom_name": "CM",
+   "priority": 0,
+   "description": "a bead named CM"
+  },
+  {
+   "type": "CT2",
+   "smarts": "*",
+   "atom_name": "CT2",
+   "priority": 0,
+   "description": "a bead named CT2"
+  },
+  {
+   "type": "EOT",
+   "smarts": "*",
+   "atom_name": "EOT",
+   "priority": 0,
+   "description": "a bead named EOT"
+  },
+  {
+   "type": "EO",
+   "smarts": "*",
+   "atom_name": "EO",
+   "priority": 0,
+   "description": "a bead named EO"
+  },
+  {
+   "type": "OA",
+   "smarts": "*",
+   "atom_name": "OA",
+   "priority": 0,
+   "description": "a bead named OA"
+  },
+  {
+   "type": "NC",
+   "smarts": "*",
+   "atom_name": "NC",
+   "priority": 0,
+   "description": "a bead named NC"
+  },
+  {
+   "type": "NH",
+   "smarts": "*",
+   "atom_name": "NH",
+   "priority": 0,
+   "description": "a bead named NH"
+  },
+  {
+   "type": "PH",
+   "smarts": "*",
+   "atom_name": "PH",
+   "priority": 0,
+   "description": "a bead named PH"
+  },
+  {
+   "type": "PHE",
+   "smarts": "*",
+   "atom_name": "PHE",
+   "priority": 0,
+   "description": "a bead named PHE"
+  },
+  {
+   "type": "GL",
+   "smarts": "*",
+   "atom_name": "GL",
+   "priority": 0,
+   "description": "a bead named GL"
+  },
+  {
+   "type": "EST1",
+   "smarts": "*",
+   "atom_name": "EST1",
+   "priority": 0,
+   "description": "a bead named EST1"
+  },
+  {
+   "type": "EST2",
+   "smarts": "*",
+   "atom_name": "EST2",
+   "priority": 0,
+   "description": "a bead named EST2"
+  },
+  {
+   "type": "CMD2",
+   "smarts": "*",
+   "atom_name": "CMD2",
+   "priority": 0,
+   "description": "a bead named CMD2"
+  }
+ ]
+}

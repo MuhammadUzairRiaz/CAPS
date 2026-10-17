@@ -1,0 +1,269 @@
+{
+ "format": "caps-typing",
+ "version": 1,
+ "forcefield": "MARTINI 2.0",
+ "coarse_grained": true,
+ "unknown_types": "untyped",
+ "description": "CAPS rules for MARTINI 2.0 (bench/ff/make_martini2.py): beads typed by name (bead templates or files that name their sites by bead type)",
+ "rules": [
+  {
+   "type": "Qda",
+   "smarts": "*",
+   "atom_name": "Qda",
+   "priority": 0,
+   "description": "a bead named Qda"
+  },
+  {
+   "type": "Qd",
+   "smarts": "*",
+   "atom_name": "Qd",
+   "priority": 0,
+   "description": "a bead named Qd"
+  },
+  {
+   "type": "Qa",
+   "smarts": "*",
+   "atom_name": "Qa",
+   "priority": 0,
+   "description": "a bead named Qa"
+  },
+  {
+   "type": "Q0",
+   "smarts": "*",
+   "atom_name": "Q0",
+   "priority": 0,
+   "description": "a bead named Q0"
+  },
+  {
+   "type": "P5",
+   "smarts": "*",
+   "atom_name": "P5",
+   "priority": 0,
+   "description": "a bead named P5"
+  },
+  {
+   "type": "P4",
+   "smarts": "*",
+   "atom_name": "P4",
+   "priority": 0,
+   "description": "a bead named P4"
+  },
+  {
+   "type": "P3",
+   "smarts": "*",
+   "atom_name": "P3",
+   "priority": 0,
+   "description": "a bead named P3"
+  },
+  {
+   "type": "P2",
+   "smarts": "*",
+   "atom_name": "P2",
+   "priority": 0,
+   "description": "a bead named P2"
+  },
+  {
+   "type": "P1",
+   "smarts": "*",
+   "atom_name": "P1",
+   "priority": 0,
+   "description": "a bead named P1"
+  },
+  {
+   "type": "Nda",
+   "smarts": "*",
+   "atom_name": "Nda",
+   "priority": 0,
+   "description": "a bead named Nda"
+  },
+  {
+   "type": "Nd",
+   "smarts": "*",
+   "atom_name": "Nd",
+   "priority": 0,
+   "description": "a bead named Nd"
+  },
+  {
+   "type": "Na",
+   "smarts": "*",
+   "atom_name": "Na",
+   "priority": 0,
+   "description": "a bead named Na"
+  },
+  {
+   "type": "N0",
+   "smarts": "*",
+   "atom_name": "N0",
+   "priority": 0,
+   "description": "a bead named N0"
+  },
+  {
+   "type": "C5",
+   "smarts": "*",
+   "atom_name": "C5",
+   "priority": 0,
+   "description": "a bead named C5"
+  },
+  {
+   "type": "C4",
+   "smarts": "*",
+   "atom_name": "C4",
+   "priority": 0,
+   "description": "a bead named C4"
+  },
+  {
+   "type": "C3",
+   "smarts": "*",
+   "atom_name": "C3",
+   "priority": 0,
+   "description": "a bead named C3"
+  },
+  {
+   "type": "C2",
+   "smarts": "*",
+   "atom_name": "C2",
+   "priority": 0,
+   "description": "a bead named C2"
+  },
+  {
+   "type": "C1",
+   "smarts": "*",
+   "atom_name": "C1",
+   "priority": 0,
+   "description": "a bead named C1"
+  },
+  {
+   "type": "SQda",
+   "smarts": "*",
+   "atom_name": "SQda",
+   "priority": 0,
+   "description": "a bead named SQda"
+  },
+  {
+   "type": "SQd",
+   "smarts": "*",
+   "atom_name": "SQd",
+   "priority": 0,
+   "description": "a bead named SQd"
+  },
+  {
+   "type": "SQa",
+   "smarts": "*",
+   "atom_name": "SQa",
+   "priority": 0,
+   "description": "a bead named SQa"
+  },
+  {
+   "type": "SQ0",
+   "smarts": "*",
+   "atom_name": "SQ0",
+   "priority": 0,
+   "description": "a bead named SQ0"
+  },
+  {
+   "type": "SP5",
+   "smarts": "*",
+   "atom_name": "SP5",
+   "priority": 0,
+   "description": "a bead named SP5"
+  },
+  {
+   "type": "SP4",
+   "smarts": "*",
+   "atom_name": "SP4",
+   "priority": 0,
+   "description": "a bead named SP4"
+  },
+  {
+   "type": "SP3",
+   "smarts": "*",
+   "atom_name": "SP3",
+   "priority": 0,
+   "description": "a bead named SP3"
+  },
+  {
+   "type": "SP2",
+   "smarts": "*",
+   "atom_name": "SP2",
+   "priority": 0,
+   "description": "a bead named SP2"
+  },
+  {
+   "type": "SP1",
+   "smarts": "*",
+   "atom_name": "SP1",
+   "priority": 0,
+   "description": "a bead named SP1"
+  },
+  {
+   "type": "SNda",
+   "smarts": "*",
+   "atom_name": "SNda",
+   "priority": 0,
+   "description": "a bead named SNda"
+  },
+  {
+   "type": "SNd",
+   "smarts": "*",
+   "atom_name": "SNd",
+   "priority": 0,
+   "description": "a bead named SNd"
+  },
+  {
+   "type": "SNa",
+   "smarts": "*",
+   "atom_name": "SNa",
+   "priority": 0,
+   "description": "a bead named SNa"
+  },
+  {
+   "type": "SN0",
+   "smarts": "*",
+   "atom_name": "SN0",
+   "priority": 0,
+   "description": "a bead named SN0"
+  },
+  {
+   "type": "SC5",
+   "smarts": "*",
+   "atom_name": "SC5",
+   "priority": 0,
+   "description": "a bead named SC5"
+  },
+  {
+   "type": "SC4",
+   "smarts": "*",
+   "atom_name": "SC4",
+   "priority": 0,
+   "description": "a bead named SC4"
+  },
+  {
+   "type": "SC3",
+   "smarts": "*",
+   "atom_name": "SC3",
+   "priority": 0,
+   "description": "a bead named SC3"
+  },
+  {
+   "type": "SC2",
+   "smarts": "*",
+   "atom_name": "SC2",
+   "priority": 0,
+   "description": "a bead named SC2"
+  },
+  {
+   "type": "SC1",
+   "smarts": "*",
+   "atom_name": "SC1",
+   "priority": 0,
+   "description": "a bead named SC1"
+  },
+  {
+   "type": "BP4",
+   "smarts": "*",
+   "atom_name": "BP4",
+   "priority": 0,
+   "description": "a bead named BP4"
+  }
+ ]
+}

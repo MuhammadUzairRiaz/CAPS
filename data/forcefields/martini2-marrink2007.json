@@ -1,0 +1,8815 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "MARTINI 2.0",
+ "source": "S. J. Marrink, H. J. Risselada, S. Yefimov, D. P. Tieleman, A. H. de Vries, J. Phys. Chem. B 111, 7812 (2007), Table 1 and sections 2.2-2.8",
+ "references": [
+  "S. J. Marrink, H. J. Risselada, S. Yefimov, D. P. Tieleman, A. H. de Vries, J. Phys. Chem. B 111, 7812 (2007)"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "lj/gromacs/coul/gromacs",
+  "bond": "harmonic",
+  "angle": "cosine/squared",
+  "dihedral": "charmm",
+  "improper": "cvff"
+ },
+ "mixing": "arithmetic",
+ "special_lj": [
+  0,
+  1,
+  1
+ ],
+ "special_coul": [
+  0,
+  1,
+  1
+ ],
+ "cutoff": 12.0,
+ "timestep": 20,
+ "pair_settings": {
+  "lj_inner": 9.0,
+  "coul_inner": 1e-06,
+  "dielectric": 15.0,
+  "model_cutoff": true
+ },
+ "angle_terms": "if_defined",
+ "torsion_terms": "if_defined",
+ "atom_types": [
+  {
+   "name": "Qda",
+   "element": "",
+   "mass": 72.0,
+   "charge": 0.0,
+   "description": "bead Qda"
+  },
+  {
+   "name": "Qd",
+   "element": "",
+   "mass": 72.0,
+   "charge": 0.0,
+   "description": "bead Qd"
+  },
+  {
+   "name": "Qa",
+   "element": "",
+   "mass": 72.0,
+   "charge": 0.0,
+   "description": "bead Qa"
+  },
+  {
+   "name": "Q0",
+   "element": "",
+   "mass": 72.0,
+   "charge": 0.0,
+   "description": "bead Q0"
+  },
+  {
+   "name": "P5",
+   "element": "",
+   "mass": 72.0,
+   "charge": 0.0,
+   "description": "bead P5"
+  },
+  {
+   "name": "P4",
+   "element": "",
+   "mass": 72.0,
+   "charge": 0.0,
+   "description": "bead P4"
+  },
+  {
+   "name": "P3",
+   "element": "",
+   "mass": 72.0,
+   "charge": 0.0,
+   "description": "bead P3"
+  },
+  {
+   "name": "P2",
+   "element": "",
+   "mass": 72.0,
+   "charge": 0.0,
+   "description": "bead P2"
+  },
+  {
+   "name": "P1",
+   "element": "",
+   "mass": 72.0,
+   "charge": 0.0,
+   "description": "bead P1"
+  },
+  {
+   "name": "Nda",
+   "element": "",
+   "mass": 72.0,
+   "charge": 0.0,
+   "description": "bead Nda"
+  },
+  {
+   "name": "Nd",
+   "element": "",
+   "mass": 72.0,
+   "charge": 0.0,
+   "description": "bead Nd"
+  },
+  {
+   "name": "Na",
+   "element": "",
+   "mass": 72.0,
+   "charge": 0.0,
+   "description": "bead Na"
+  },
+  {
+   "name": "N0",
+   "element": "",
+   "mass": 72.0,
+   "charge": 0.0,
+   "description": "bead N0"
+  },
+  {
+   "name": "C5",
+   "element": "",
+   "mass": 72.0,
+   "charge": 0.0,
+   "description": "bead C5"
+  },
+  {
+   "name": "C4",
+   "element": "",
+   "mass": 72.0,
+   "charge": 0.0,
+   "description": "bead C4"
+  },
+  {
+   "name": "C3",
+   "element": "",
+   "mass": 72.0,
+   "charge": 0.0,
+   "description": "bead C3"
+  },
+  {
+   "name": "C2",
+   "element": "",
+   "mass": 72.0,
+   "charge": 0.0,
+   "description": "bead C2"
+  },
+  {
+   "name": "C1",
+   "element": "",
+   "mass": 72.0,
+   "charge": 0.0,
+   "description": "bead C1"
+  },
+  {
+   "name": "SQda",
+   "element": "",
+   "mass": 72.0,
+   "charge": 0.0,
+   "description": "ring bead SQda"
+  },
+  {
+   "name": "SQd",
+   "element": "",
+   "mass": 72.0,
+   "charge": 0.0,
+   "description": "ring bead SQd"
+  },
+  {
+   "name": "SQa",
+   "element": "",
+   "mass": 72.0,
+   "charge": 0.0,
+   "description": "ring bead SQa"
+  },
+  {
+   "name": "SQ0",
+   "element": "",
+   "mass": 72.0,
+   "charge": 0.0,
+   "description": "ring bead SQ0"
+  },
+  {
+   "name": "SP5",
+   "element": "",
+   "mass": 72.0,
+   "charge": 0.0,
+   "description": "ring bead SP5"
+  },
+  {
+   "name": "SP4",
+   "element": "",
+   "mass": 72.0,
+   "charge": 0.0,
+   "description": "ring bead SP4"
+  },
+  {
+   "name": "SP3",
+   "element": "",
+   "mass": 72.0,
+   "charge": 0.0,
+   "description": "ring bead SP3"
+  },
+  {
+   "name": "SP2",
+   "element": "",
+   "mass": 72.0,
+   "charge": 0.0,
+   "description": "ring bead SP2"
+  },
+  {
+   "name": "SP1",
+   "element": "",
+   "mass": 72.0,
+   "charge": 0.0,
+   "description": "ring bead SP1"
+  },
+  {
+   "name": "SNda",
+   "element": "",
+   "mass": 72.0,
+   "charge": 0.0,
+   "description": "ring bead SNda"
+  },
+  {
+   "name": "SNd",
+   "element": "",
+   "mass": 72.0,
+   "charge": 0.0,
+   "description": "ring bead SNd"
+  },
+  {
+   "name": "SNa",
+   "element": "",
+   "mass": 72.0,
+   "charge": 0.0,
+   "description": "ring bead SNa"
+  },
+  {
+   "name": "SN0",
+   "element": "",
+   "mass": 72.0,
+   "charge": 0.0,
+   "description": "ring bead SN0"
+  },
+  {
+   "name": "SC5",
+   "element": "",
+   "mass": 72.0,
+   "charge": 0.0,
+   "description": "ring bead SC5"
+  },
+  {
+   "name": "SC4",
+   "element": "",
+   "mass": 72.0,
+   "charge": 0.0,
+   "description": "ring bead SC4"
+  },
+  {
+   "name": "SC3",
+   "element": "",
+   "mass": 72.0,
+   "charge": 0.0,
+   "description": "ring bead SC3"
+  },
+  {
+   "name": "SC2",
+   "element": "",
+   "mass": 72.0,
+   "charge": 0.0,
+   "description": "ring bead SC2"
+  },
+  {
+   "name": "SC1",
+   "element": "",
+   "mass": 72.0,
+   "charge": 0.0,
+   "description": "ring bead SC1"
+  },
+  {
+   "name": "BP4",
+   "element": "",
+   "mass": 72.0,
+   "charge": 0.0,
+   "description": "antifreeze bead BP4"
+  }
+ ],
+ "pairs": [
+  {
+   "name": "Qda-Qda",
+   "match": [
+    "Qda"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qda-Qd",
+   "match": [
+    "Qda",
+    "Qd"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qda-Qa",
+   "match": [
+    "Qda",
+    "Qa"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qda-Q0",
+   "match": [
+    "Qda",
+    "Q0"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qda-P5",
+   "match": [
+    "Qda",
+    "P5"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qda-P4",
+   "match": [
+    "Qda",
+    "P4"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qda-P3",
+   "match": [
+    "Qda",
+    "P3"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qda-P2",
+   "match": [
+    "Qda",
+    "P2"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qda-P1",
+   "match": [
+    "Qda",
+    "P1"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qda-Nda",
+   "match": [
+    "Qda",
+    "Nda"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qda-Nd",
+   "match": [
+    "Qda",
+    "Nd"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qda-Na",
+   "match": [
+    "Qda",
+    "Na"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qda-N0",
+   "match": [
+    "Qda",
+    "N0"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qda-C5",
+   "match": [
+    "Qda",
+    "C5"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qda-C4",
+   "match": [
+    "Qda",
+    "C4"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qda-C3",
+   "match": [
+    "Qda",
+    "C3"
+   ],
+   "params": [
+    0.5497131931166347,
+    4.699999999999999
+   ],
+   "comment": "level VII (2.3000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qda-C2",
+   "match": [
+    "Qda",
+    "C2"
+   ],
+   "params": [
+    0.4780114722753346,
+    6.2
+   ],
+   "comment": "level IX (2.0000 kJ/mol, 0.62 nm)"
+  },
+  {
+   "name": "Qda-C1",
+   "match": [
+    "Qda",
+    "C1"
+   ],
+   "params": [
+    0.4780114722753346,
+    6.2
+   ],
+   "comment": "level IX (2.0000 kJ/mol, 0.62 nm)"
+  },
+  {
+   "name": "Qda-SQda",
+   "match": [
+    "Qda",
+    "SQda"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qda-SQd",
+   "match": [
+    "Qda",
+    "SQd"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qda-SQa",
+   "match": [
+    "Qda",
+    "SQa"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qda-SQ0",
+   "match": [
+    "Qda",
+    "SQ0"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qda-SP5",
+   "match": [
+    "Qda",
+    "SP5"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qda-SP4",
+   "match": [
+    "Qda",
+    "SP4"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qda-SP3",
+   "match": [
+    "Qda",
+    "SP3"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qda-SP2",
+   "match": [
+    "Qda",
+    "SP2"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qda-SP1",
+   "match": [
+    "Qda",
+    "SP1"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qda-SNda",
+   "match": [
+    "Qda",
+    "SNda"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qda-SNd",
+   "match": [
+    "Qda",
+    "SNd"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qda-SNa",
+   "match": [
+    "Qda",
+    "SNa"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qda-SN0",
+   "match": [
+    "Qda",
+    "SN0"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qda-SC5",
+   "match": [
+    "Qda",
+    "SC5"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qda-SC4",
+   "match": [
+    "Qda",
+    "SC4"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qda-SC3",
+   "match": [
+    "Qda",
+    "SC3"
+   ],
+   "params": [
+    0.5497131931166347,
+    4.699999999999999
+   ],
+   "comment": "level VII (2.3000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qda-SC2",
+   "match": [
+    "Qda",
+    "SC2"
+   ],
+   "params": [
+    0.4780114722753346,
+    6.2
+   ],
+   "comment": "level IX (2.0000 kJ/mol, 0.62 nm)"
+  },
+  {
+   "name": "Qda-SC1",
+   "match": [
+    "Qda",
+    "SC1"
+   ],
+   "params": [
+    0.4780114722753346,
+    6.2
+   ],
+   "comment": "level IX (2.0000 kJ/mol, 0.62 nm)"
+  },
+  {
+   "name": "Qda-BP4",
+   "match": [
+    "Qda",
+    "BP4"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qd-Qd",
+   "match": [
+    "Qd"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qd-Qa",
+   "match": [
+    "Qd",
+    "Qa"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qd-Q0",
+   "match": [
+    "Qd",
+    "Q0"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qd-P5",
+   "match": [
+    "Qd",
+    "P5"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qd-P4",
+   "match": [
+    "Qd",
+    "P4"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qd-P3",
+   "match": [
+    "Qd",
+    "P3"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qd-P2",
+   "match": [
+    "Qd",
+    "P2"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qd-P1",
+   "match": [
+    "Qd",
+    "P1"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qd-Nda",
+   "match": [
+    "Qd",
+    "Nda"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qd-Nd",
+   "match": [
+    "Qd",
+    "Nd"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qd-Na",
+   "match": [
+    "Qd",
+    "Na"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qd-N0",
+   "match": [
+    "Qd",
+    "N0"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qd-C5",
+   "match": [
+    "Qd",
+    "C5"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qd-C4",
+   "match": [
+    "Qd",
+    "C4"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qd-C3",
+   "match": [
+    "Qd",
+    "C3"
+   ],
+   "params": [
+    0.5497131931166347,
+    4.699999999999999
+   ],
+   "comment": "level VII (2.3000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qd-C2",
+   "match": [
+    "Qd",
+    "C2"
+   ],
+   "params": [
+    0.4780114722753346,
+    6.2
+   ],
+   "comment": "level IX (2.0000 kJ/mol, 0.62 nm)"
+  },
+  {
+   "name": "Qd-C1",
+   "match": [
+    "Qd",
+    "C1"
+   ],
+   "params": [
+    0.4780114722753346,
+    6.2
+   ],
+   "comment": "level IX (2.0000 kJ/mol, 0.62 nm)"
+  },
+  {
+   "name": "Qd-SQda",
+   "match": [
+    "Qd",
+    "SQda"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qd-SQd",
+   "match": [
+    "Qd",
+    "SQd"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qd-SQa",
+   "match": [
+    "Qd",
+    "SQa"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qd-SQ0",
+   "match": [
+    "Qd",
+    "SQ0"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qd-SP5",
+   "match": [
+    "Qd",
+    "SP5"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qd-SP4",
+   "match": [
+    "Qd",
+    "SP4"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qd-SP3",
+   "match": [
+    "Qd",
+    "SP3"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qd-SP2",
+   "match": [
+    "Qd",
+    "SP2"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qd-SP1",
+   "match": [
+    "Qd",
+    "SP1"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qd-SNda",
+   "match": [
+    "Qd",
+    "SNda"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qd-SNd",
+   "match": [
+    "Qd",
+    "SNd"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qd-SNa",
+   "match": [
+    "Qd",
+    "SNa"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qd-SN0",
+   "match": [
+    "Qd",
+    "SN0"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qd-SC5",
+   "match": [
+    "Qd",
+    "SC5"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qd-SC4",
+   "match": [
+    "Qd",
+    "SC4"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qd-SC3",
+   "match": [
+    "Qd",
+    "SC3"
+   ],
+   "params": [
+    0.5497131931166347,
+    4.699999999999999
+   ],
+   "comment": "level VII (2.3000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qd-SC2",
+   "match": [
+    "Qd",
+    "SC2"
+   ],
+   "params": [
+    0.4780114722753346,
+    6.2
+   ],
+   "comment": "level IX (2.0000 kJ/mol, 0.62 nm)"
+  },
+  {
+   "name": "Qd-SC1",
+   "match": [
+    "Qd",
+    "SC1"
+   ],
+   "params": [
+    0.4780114722753346,
+    6.2
+   ],
+   "comment": "level IX (2.0000 kJ/mol, 0.62 nm)"
+  },
+  {
+   "name": "Qd-BP4",
+   "match": [
+    "Qd",
+    "BP4"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qa-Qa",
+   "match": [
+    "Qa"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qa-Q0",
+   "match": [
+    "Qa",
+    "Q0"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qa-P5",
+   "match": [
+    "Qa",
+    "P5"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qa-P4",
+   "match": [
+    "Qa",
+    "P4"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qa-P3",
+   "match": [
+    "Qa",
+    "P3"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qa-P2",
+   "match": [
+    "Qa",
+    "P2"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qa-P1",
+   "match": [
+    "Qa",
+    "P1"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qa-Nda",
+   "match": [
+    "Qa",
+    "Nda"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qa-Nd",
+   "match": [
+    "Qa",
+    "Nd"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qa-Na",
+   "match": [
+    "Qa",
+    "Na"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qa-N0",
+   "match": [
+    "Qa",
+    "N0"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qa-C5",
+   "match": [
+    "Qa",
+    "C5"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qa-C4",
+   "match": [
+    "Qa",
+    "C4"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qa-C3",
+   "match": [
+    "Qa",
+    "C3"
+   ],
+   "params": [
+    0.5497131931166347,
+    4.699999999999999
+   ],
+   "comment": "level VII (2.3000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qa-C2",
+   "match": [
+    "Qa",
+    "C2"
+   ],
+   "params": [
+    0.4780114722753346,
+    6.2
+   ],
+   "comment": "level IX (2.0000 kJ/mol, 0.62 nm)"
+  },
+  {
+   "name": "Qa-C1",
+   "match": [
+    "Qa",
+    "C1"
+   ],
+   "params": [
+    0.4780114722753346,
+    6.2
+   ],
+   "comment": "level IX (2.0000 kJ/mol, 0.62 nm)"
+  },
+  {
+   "name": "Qa-SQda",
+   "match": [
+    "Qa",
+    "SQda"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qa-SQd",
+   "match": [
+    "Qa",
+    "SQd"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qa-SQa",
+   "match": [
+    "Qa",
+    "SQa"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qa-SQ0",
+   "match": [
+    "Qa",
+    "SQ0"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qa-SP5",
+   "match": [
+    "Qa",
+    "SP5"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qa-SP4",
+   "match": [
+    "Qa",
+    "SP4"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qa-SP3",
+   "match": [
+    "Qa",
+    "SP3"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qa-SP2",
+   "match": [
+    "Qa",
+    "SP2"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qa-SP1",
+   "match": [
+    "Qa",
+    "SP1"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qa-SNda",
+   "match": [
+    "Qa",
+    "SNda"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qa-SNd",
+   "match": [
+    "Qa",
+    "SNd"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qa-SNa",
+   "match": [
+    "Qa",
+    "SNa"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qa-SN0",
+   "match": [
+    "Qa",
+    "SN0"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qa-SC5",
+   "match": [
+    "Qa",
+    "SC5"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qa-SC4",
+   "match": [
+    "Qa",
+    "SC4"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qa-SC3",
+   "match": [
+    "Qa",
+    "SC3"
+   ],
+   "params": [
+    0.5497131931166347,
+    4.699999999999999
+   ],
+   "comment": "level VII (2.3000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Qa-SC2",
+   "match": [
+    "Qa",
+    "SC2"
+   ],
+   "params": [
+    0.4780114722753346,
+    6.2
+   ],
+   "comment": "level IX (2.0000 kJ/mol, 0.62 nm)"
+  },
+  {
+   "name": "Qa-SC1",
+   "match": [
+    "Qa",
+    "SC1"
+   ],
+   "params": [
+    0.4780114722753346,
+    6.2
+   ],
+   "comment": "level IX (2.0000 kJ/mol, 0.62 nm)"
+  },
+  {
+   "name": "Qa-BP4",
+   "match": [
+    "Qa",
+    "BP4"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Q0-Q0",
+   "match": [
+    "Q0"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Q0-P5",
+   "match": [
+    "Q0",
+    "P5"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Q0-P4",
+   "match": [
+    "Q0",
+    "P4"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Q0-P3",
+   "match": [
+    "Q0",
+    "P3"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Q0-P2",
+   "match": [
+    "Q0",
+    "P2"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Q0-P1",
+   "match": [
+    "Q0",
+    "P1"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Q0-Nda",
+   "match": [
+    "Q0",
+    "Nda"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Q0-Nd",
+   "match": [
+    "Q0",
+    "Nd"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Q0-Na",
+   "match": [
+    "Q0",
+    "Na"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Q0-N0",
+   "match": [
+    "Q0",
+    "N0"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Q0-C5",
+   "match": [
+    "Q0",
+    "C5"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Q0-C4",
+   "match": [
+    "Q0",
+    "C4"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Q0-C3",
+   "match": [
+    "Q0",
+    "C3"
+   ],
+   "params": [
+    0.5497131931166347,
+    4.699999999999999
+   ],
+   "comment": "level VII (2.3000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Q0-C2",
+   "match": [
+    "Q0",
+    "C2"
+   ],
+   "params": [
+    0.4780114722753346,
+    6.2
+   ],
+   "comment": "level IX (2.0000 kJ/mol, 0.62 nm)"
+  },
+  {
+   "name": "Q0-C1",
+   "match": [
+    "Q0",
+    "C1"
+   ],
+   "params": [
+    0.4780114722753346,
+    6.2
+   ],
+   "comment": "level IX (2.0000 kJ/mol, 0.62 nm)"
+  },
+  {
+   "name": "Q0-SQda",
+   "match": [
+    "Q0",
+    "SQda"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Q0-SQd",
+   "match": [
+    "Q0",
+    "SQd"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Q0-SQa",
+   "match": [
+    "Q0",
+    "SQa"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Q0-SQ0",
+   "match": [
+    "Q0",
+    "SQ0"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Q0-SP5",
+   "match": [
+    "Q0",
+    "SP5"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Q0-SP4",
+   "match": [
+    "Q0",
+    "SP4"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Q0-SP3",
+   "match": [
+    "Q0",
+    "SP3"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Q0-SP2",
+   "match": [
+    "Q0",
+    "SP2"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Q0-SP1",
+   "match": [
+    "Q0",
+    "SP1"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Q0-SNda",
+   "match": [
+    "Q0",
+    "SNda"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Q0-SNd",
+   "match": [
+    "Q0",
+    "SNd"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Q0-SNa",
+   "match": [
+    "Q0",
+    "SNa"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Q0-SN0",
+   "match": [
+    "Q0",
+    "SN0"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Q0-SC5",
+   "match": [
+    "Q0",
+    "SC5"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Q0-SC4",
+   "match": [
+    "Q0",
+    "SC4"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Q0-SC3",
+   "match": [
+    "Q0",
+    "SC3"
+   ],
+   "params": [
+    0.5497131931166347,
+    4.699999999999999
+   ],
+   "comment": "level VII (2.3000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Q0-SC2",
+   "match": [
+    "Q0",
+    "SC2"
+   ],
+   "params": [
+    0.4780114722753346,
+    6.2
+   ],
+   "comment": "level IX (2.0000 kJ/mol, 0.62 nm)"
+  },
+  {
+   "name": "Q0-SC1",
+   "match": [
+    "Q0",
+    "SC1"
+   ],
+   "params": [
+    0.4780114722753346,
+    6.2
+   ],
+   "comment": "level IX (2.0000 kJ/mol, 0.62 nm)"
+  },
+  {
+   "name": "Q0-BP4",
+   "match": [
+    "Q0",
+    "BP4"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P5-P5",
+   "match": [
+    "P5"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P5-P4",
+   "match": [
+    "P5",
+    "P4"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P5-P3",
+   "match": [
+    "P5",
+    "P3"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P5-P2",
+   "match": [
+    "P5",
+    "P2"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P5-P1",
+   "match": [
+    "P5",
+    "P1"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P5-Nda",
+   "match": [
+    "P5",
+    "Nda"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P5-Nd",
+   "match": [
+    "P5",
+    "Nd"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P5-Na",
+   "match": [
+    "P5",
+    "Na"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P5-N0",
+   "match": [
+    "P5",
+    "N0"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P5-C5",
+   "match": [
+    "P5",
+    "C5"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P5-C4",
+   "match": [
+    "P5",
+    "C4"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P5-C3",
+   "match": [
+    "P5",
+    "C3"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P5-C2",
+   "match": [
+    "P5",
+    "C2"
+   ],
+   "params": [
+    0.5497131931166347,
+    4.699999999999999
+   ],
+   "comment": "level VII (2.3000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P5-C1",
+   "match": [
+    "P5",
+    "C1"
+   ],
+   "params": [
+    0.4780114722753346,
+    4.699999999999999
+   ],
+   "comment": "level VIII (2.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P5-SQda",
+   "match": [
+    "P5",
+    "SQda"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P5-SQd",
+   "match": [
+    "P5",
+    "SQd"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P5-SQa",
+   "match": [
+    "P5",
+    "SQa"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P5-SQ0",
+   "match": [
+    "P5",
+    "SQ0"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P5-SP5",
+   "match": [
+    "P5",
+    "SP5"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P5-SP4",
+   "match": [
+    "P5",
+    "SP4"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P5-SP3",
+   "match": [
+    "P5",
+    "SP3"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P5-SP2",
+   "match": [
+    "P5",
+    "SP2"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P5-SP1",
+   "match": [
+    "P5",
+    "SP1"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P5-SNda",
+   "match": [
+    "P5",
+    "SNda"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P5-SNd",
+   "match": [
+    "P5",
+    "SNd"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P5-SNa",
+   "match": [
+    "P5",
+    "SNa"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P5-SN0",
+   "match": [
+    "P5",
+    "SN0"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P5-SC5",
+   "match": [
+    "P5",
+    "SC5"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P5-SC4",
+   "match": [
+    "P5",
+    "SC4"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P5-SC3",
+   "match": [
+    "P5",
+    "SC3"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P5-SC2",
+   "match": [
+    "P5",
+    "SC2"
+   ],
+   "params": [
+    0.5497131931166347,
+    4.699999999999999
+   ],
+   "comment": "level VII (2.3000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P5-SC1",
+   "match": [
+    "P5",
+    "SC1"
+   ],
+   "params": [
+    0.4780114722753346,
+    4.699999999999999
+   ],
+   "comment": "level VIII (2.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P5-BP4",
+   "match": [
+    "P5",
+    "BP4"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P4-P4",
+   "match": [
+    "P4"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P4-P3",
+   "match": [
+    "P4",
+    "P3"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P4-P2",
+   "match": [
+    "P4",
+    "P2"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P4-P1",
+   "match": [
+    "P4",
+    "P1"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P4-Nda",
+   "match": [
+    "P4",
+    "Nda"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P4-Nd",
+   "match": [
+    "P4",
+    "Nd"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P4-Na",
+   "match": [
+    "P4",
+    "Na"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P4-N0",
+   "match": [
+    "P4",
+    "N0"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P4-C5",
+   "match": [
+    "P4",
+    "C5"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P4-C4",
+   "match": [
+    "P4",
+    "C4"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P4-C3",
+   "match": [
+    "P4",
+    "C3"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P4-C2",
+   "match": [
+    "P4",
+    "C2"
+   ],
+   "params": [
+    0.5497131931166347,
+    4.699999999999999
+   ],
+   "comment": "level VII (2.3000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P4-C1",
+   "match": [
+    "P4",
+    "C1"
+   ],
+   "params": [
+    0.4780114722753346,
+    4.699999999999999
+   ],
+   "comment": "level VIII (2.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P4-SQda",
+   "match": [
+    "P4",
+    "SQda"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P4-SQd",
+   "match": [
+    "P4",
+    "SQd"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P4-SQa",
+   "match": [
+    "P4",
+    "SQa"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P4-SQ0",
+   "match": [
+    "P4",
+    "SQ0"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P4-SP5",
+   "match": [
+    "P4",
+    "SP5"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P4-SP4",
+   "match": [
+    "P4",
+    "SP4"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P4-SP3",
+   "match": [
+    "P4",
+    "SP3"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P4-SP2",
+   "match": [
+    "P4",
+    "SP2"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P4-SP1",
+   "match": [
+    "P4",
+    "SP1"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P4-SNda",
+   "match": [
+    "P4",
+    "SNda"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P4-SNd",
+   "match": [
+    "P4",
+    "SNd"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P4-SNa",
+   "match": [
+    "P4",
+    "SNa"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P4-SN0",
+   "match": [
+    "P4",
+    "SN0"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P4-SC5",
+   "match": [
+    "P4",
+    "SC5"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P4-SC4",
+   "match": [
+    "P4",
+    "SC4"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P4-SC3",
+   "match": [
+    "P4",
+    "SC3"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P4-SC2",
+   "match": [
+    "P4",
+    "SC2"
+   ],
+   "params": [
+    0.5497131931166347,
+    4.699999999999999
+   ],
+   "comment": "level VII (2.3000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P4-SC1",
+   "match": [
+    "P4",
+    "SC1"
+   ],
+   "params": [
+    0.4780114722753346,
+    4.699999999999999
+   ],
+   "comment": "level VIII (2.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P4-BP4",
+   "match": [
+    "P4",
+    "BP4"
+   ],
+   "params": [
+    1.3384321223709368,
+    5.699999999999999
+   ],
+   "comment": "antifreeze BP4-P4: level O, sigma 0.57 nm (section 2.5) (5.6000 kJ/mol, 0.57 nm)"
+  },
+  {
+   "name": "P3-P3",
+   "match": [
+    "P3"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P3-P2",
+   "match": [
+    "P3",
+    "P2"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P3-P1",
+   "match": [
+    "P3",
+    "P1"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P3-Nda",
+   "match": [
+    "P3",
+    "Nda"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P3-Nd",
+   "match": [
+    "P3",
+    "Nd"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P3-Na",
+   "match": [
+    "P3",
+    "Na"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P3-N0",
+   "match": [
+    "P3",
+    "N0"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P3-C5",
+   "match": [
+    "P3",
+    "C5"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P3-C4",
+   "match": [
+    "P3",
+    "C4"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P3-C3",
+   "match": [
+    "P3",
+    "C3"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P3-C2",
+   "match": [
+    "P3",
+    "C2"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P3-C1",
+   "match": [
+    "P3",
+    "C1"
+   ],
+   "params": [
+    0.5497131931166347,
+    4.699999999999999
+   ],
+   "comment": "level VII (2.3000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P3-SQda",
+   "match": [
+    "P3",
+    "SQda"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P3-SQd",
+   "match": [
+    "P3",
+    "SQd"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P3-SQa",
+   "match": [
+    "P3",
+    "SQa"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P3-SQ0",
+   "match": [
+    "P3",
+    "SQ0"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P3-SP5",
+   "match": [
+    "P3",
+    "SP5"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P3-SP4",
+   "match": [
+    "P3",
+    "SP4"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P3-SP3",
+   "match": [
+    "P3",
+    "SP3"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P3-SP2",
+   "match": [
+    "P3",
+    "SP2"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P3-SP1",
+   "match": [
+    "P3",
+    "SP1"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P3-SNda",
+   "match": [
+    "P3",
+    "SNda"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P3-SNd",
+   "match": [
+    "P3",
+    "SNd"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P3-SNa",
+   "match": [
+    "P3",
+    "SNa"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P3-SN0",
+   "match": [
+    "P3",
+    "SN0"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P3-SC5",
+   "match": [
+    "P3",
+    "SC5"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P3-SC4",
+   "match": [
+    "P3",
+    "SC4"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P3-SC3",
+   "match": [
+    "P3",
+    "SC3"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P3-SC2",
+   "match": [
+    "P3",
+    "SC2"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P3-SC1",
+   "match": [
+    "P3",
+    "SC1"
+   ],
+   "params": [
+    0.5497131931166347,
+    4.699999999999999
+   ],
+   "comment": "level VII (2.3000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P3-BP4",
+   "match": [
+    "P3",
+    "BP4"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P2-P2",
+   "match": [
+    "P2"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P2-P1",
+   "match": [
+    "P2",
+    "P1"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P2-Nda",
+   "match": [
+    "P2",
+    "Nda"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P2-Nd",
+   "match": [
+    "P2",
+    "Nd"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P2-Na",
+   "match": [
+    "P2",
+    "Na"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P2-N0",
+   "match": [
+    "P2",
+    "N0"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P2-C5",
+   "match": [
+    "P2",
+    "C5"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P2-C4",
+   "match": [
+    "P2",
+    "C4"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P2-C3",
+   "match": [
+    "P2",
+    "C3"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P2-C2",
+   "match": [
+    "P2",
+    "C2"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P2-C1",
+   "match": [
+    "P2",
+    "C1"
+   ],
+   "params": [
+    0.5497131931166347,
+    4.699999999999999
+   ],
+   "comment": "level VII (2.3000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P2-SQda",
+   "match": [
+    "P2",
+    "SQda"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P2-SQd",
+   "match": [
+    "P2",
+    "SQd"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P2-SQa",
+   "match": [
+    "P2",
+    "SQa"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P2-SQ0",
+   "match": [
+    "P2",
+    "SQ0"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P2-SP5",
+   "match": [
+    "P2",
+    "SP5"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P2-SP4",
+   "match": [
+    "P2",
+    "SP4"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P2-SP3",
+   "match": [
+    "P2",
+    "SP3"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P2-SP2",
+   "match": [
+    "P2",
+    "SP2"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P2-SP1",
+   "match": [
+    "P2",
+    "SP1"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P2-SNda",
+   "match": [
+    "P2",
+    "SNda"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P2-SNd",
+   "match": [
+    "P2",
+    "SNd"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P2-SNa",
+   "match": [
+    "P2",
+    "SNa"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P2-SN0",
+   "match": [
+    "P2",
+    "SN0"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P2-SC5",
+   "match": [
+    "P2",
+    "SC5"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P2-SC4",
+   "match": [
+    "P2",
+    "SC4"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P2-SC3",
+   "match": [
+    "P2",
+    "SC3"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P2-SC2",
+   "match": [
+    "P2",
+    "SC2"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P2-SC1",
+   "match": [
+    "P2",
+    "SC1"
+   ],
+   "params": [
+    0.5497131931166347,
+    4.699999999999999
+   ],
+   "comment": "level VII (2.3000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P2-BP4",
+   "match": [
+    "P2",
+    "BP4"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P1-P1",
+   "match": [
+    "P1"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P1-Nda",
+   "match": [
+    "P1",
+    "Nda"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P1-Nd",
+   "match": [
+    "P1",
+    "Nd"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P1-Na",
+   "match": [
+    "P1",
+    "Na"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P1-N0",
+   "match": [
+    "P1",
+    "N0"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P1-C5",
+   "match": [
+    "P1",
+    "C5"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P1-C4",
+   "match": [
+    "P1",
+    "C4"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P1-C3",
+   "match": [
+    "P1",
+    "C3"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P1-C2",
+   "match": [
+    "P1",
+    "C2"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P1-C1",
+   "match": [
+    "P1",
+    "C1"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P1-SQda",
+   "match": [
+    "P1",
+    "SQda"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P1-SQd",
+   "match": [
+    "P1",
+    "SQd"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P1-SQa",
+   "match": [
+    "P1",
+    "SQa"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P1-SQ0",
+   "match": [
+    "P1",
+    "SQ0"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P1-SP5",
+   "match": [
+    "P1",
+    "SP5"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P1-SP4",
+   "match": [
+    "P1",
+    "SP4"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P1-SP3",
+   "match": [
+    "P1",
+    "SP3"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P1-SP2",
+   "match": [
+    "P1",
+    "SP2"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P1-SP1",
+   "match": [
+    "P1",
+    "SP1"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P1-SNda",
+   "match": [
+    "P1",
+    "SNda"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P1-SNd",
+   "match": [
+    "P1",
+    "SNd"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P1-SNa",
+   "match": [
+    "P1",
+    "SNa"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P1-SN0",
+   "match": [
+    "P1",
+    "SN0"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P1-SC5",
+   "match": [
+    "P1",
+    "SC5"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P1-SC4",
+   "match": [
+    "P1",
+    "SC4"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P1-SC3",
+   "match": [
+    "P1",
+    "SC3"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P1-SC2",
+   "match": [
+    "P1",
+    "SC2"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P1-SC1",
+   "match": [
+    "P1",
+    "SC1"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "P1-BP4",
+   "match": [
+    "P1",
+    "BP4"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nda-Nda",
+   "match": [
+    "Nda"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nda-Nd",
+   "match": [
+    "Nda",
+    "Nd"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nda-Na",
+   "match": [
+    "Nda",
+    "Na"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nda-N0",
+   "match": [
+    "Nda",
+    "N0"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nda-C5",
+   "match": [
+    "Nda",
+    "C5"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nda-C4",
+   "match": [
+    "Nda",
+    "C4"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nda-C3",
+   "match": [
+    "Nda",
+    "C3"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nda-C2",
+   "match": [
+    "Nda",
+    "C2"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nda-C1",
+   "match": [
+    "Nda",
+    "C1"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nda-SQda",
+   "match": [
+    "Nda",
+    "SQda"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nda-SQd",
+   "match": [
+    "Nda",
+    "SQd"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nda-SQa",
+   "match": [
+    "Nda",
+    "SQa"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nda-SQ0",
+   "match": [
+    "Nda",
+    "SQ0"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nda-SP5",
+   "match": [
+    "Nda",
+    "SP5"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nda-SP4",
+   "match": [
+    "Nda",
+    "SP4"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nda-SP3",
+   "match": [
+    "Nda",
+    "SP3"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nda-SP2",
+   "match": [
+    "Nda",
+    "SP2"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nda-SP1",
+   "match": [
+    "Nda",
+    "SP1"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nda-SNda",
+   "match": [
+    "Nda",
+    "SNda"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nda-SNd",
+   "match": [
+    "Nda",
+    "SNd"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nda-SNa",
+   "match": [
+    "Nda",
+    "SNa"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nda-SN0",
+   "match": [
+    "Nda",
+    "SN0"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nda-SC5",
+   "match": [
+    "Nda",
+    "SC5"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nda-SC4",
+   "match": [
+    "Nda",
+    "SC4"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nda-SC3",
+   "match": [
+    "Nda",
+    "SC3"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nda-SC2",
+   "match": [
+    "Nda",
+    "SC2"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nda-SC1",
+   "match": [
+    "Nda",
+    "SC1"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nda-BP4",
+   "match": [
+    "Nda",
+    "BP4"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nd-Nd",
+   "match": [
+    "Nd"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nd-Na",
+   "match": [
+    "Nd",
+    "Na"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nd-N0",
+   "match": [
+    "Nd",
+    "N0"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nd-C5",
+   "match": [
+    "Nd",
+    "C5"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nd-C4",
+   "match": [
+    "Nd",
+    "C4"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nd-C3",
+   "match": [
+    "Nd",
+    "C3"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nd-C2",
+   "match": [
+    "Nd",
+    "C2"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nd-C1",
+   "match": [
+    "Nd",
+    "C1"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nd-SQda",
+   "match": [
+    "Nd",
+    "SQda"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nd-SQd",
+   "match": [
+    "Nd",
+    "SQd"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nd-SQa",
+   "match": [
+    "Nd",
+    "SQa"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nd-SQ0",
+   "match": [
+    "Nd",
+    "SQ0"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nd-SP5",
+   "match": [
+    "Nd",
+    "SP5"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nd-SP4",
+   "match": [
+    "Nd",
+    "SP4"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nd-SP3",
+   "match": [
+    "Nd",
+    "SP3"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nd-SP2",
+   "match": [
+    "Nd",
+    "SP2"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nd-SP1",
+   "match": [
+    "Nd",
+    "SP1"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nd-SNda",
+   "match": [
+    "Nd",
+    "SNda"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nd-SNd",
+   "match": [
+    "Nd",
+    "SNd"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nd-SNa",
+   "match": [
+    "Nd",
+    "SNa"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nd-SN0",
+   "match": [
+    "Nd",
+    "SN0"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nd-SC5",
+   "match": [
+    "Nd",
+    "SC5"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nd-SC4",
+   "match": [
+    "Nd",
+    "SC4"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nd-SC3",
+   "match": [
+    "Nd",
+    "SC3"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nd-SC2",
+   "match": [
+    "Nd",
+    "SC2"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nd-SC1",
+   "match": [
+    "Nd",
+    "SC1"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Nd-BP4",
+   "match": [
+    "Nd",
+    "BP4"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Na-Na",
+   "match": [
+    "Na"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Na-N0",
+   "match": [
+    "Na",
+    "N0"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Na-C5",
+   "match": [
+    "Na",
+    "C5"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Na-C4",
+   "match": [
+    "Na",
+    "C4"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Na-C3",
+   "match": [
+    "Na",
+    "C3"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Na-C2",
+   "match": [
+    "Na",
+    "C2"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Na-C1",
+   "match": [
+    "Na",
+    "C1"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Na-SQda",
+   "match": [
+    "Na",
+    "SQda"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Na-SQd",
+   "match": [
+    "Na",
+    "SQd"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Na-SQa",
+   "match": [
+    "Na",
+    "SQa"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Na-SQ0",
+   "match": [
+    "Na",
+    "SQ0"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Na-SP5",
+   "match": [
+    "Na",
+    "SP5"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Na-SP4",
+   "match": [
+    "Na",
+    "SP4"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Na-SP3",
+   "match": [
+    "Na",
+    "SP3"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Na-SP2",
+   "match": [
+    "Na",
+    "SP2"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Na-SP1",
+   "match": [
+    "Na",
+    "SP1"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Na-SNda",
+   "match": [
+    "Na",
+    "SNda"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Na-SNd",
+   "match": [
+    "Na",
+    "SNd"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Na-SNa",
+   "match": [
+    "Na",
+    "SNa"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Na-SN0",
+   "match": [
+    "Na",
+    "SN0"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Na-SC5",
+   "match": [
+    "Na",
+    "SC5"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Na-SC4",
+   "match": [
+    "Na",
+    "SC4"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Na-SC3",
+   "match": [
+    "Na",
+    "SC3"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Na-SC2",
+   "match": [
+    "Na",
+    "SC2"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Na-SC1",
+   "match": [
+    "Na",
+    "SC1"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "Na-BP4",
+   "match": [
+    "Na",
+    "BP4"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "N0-N0",
+   "match": [
+    "N0"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "N0-C5",
+   "match": [
+    "N0",
+    "C5"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "N0-C4",
+   "match": [
+    "N0",
+    "C4"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "N0-C3",
+   "match": [
+    "N0",
+    "C3"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "N0-C2",
+   "match": [
+    "N0",
+    "C2"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "N0-C1",
+   "match": [
+    "N0",
+    "C1"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "N0-SQda",
+   "match": [
+    "N0",
+    "SQda"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "N0-SQd",
+   "match": [
+    "N0",
+    "SQd"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "N0-SQa",
+   "match": [
+    "N0",
+    "SQa"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "N0-SQ0",
+   "match": [
+    "N0",
+    "SQ0"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "N0-SP5",
+   "match": [
+    "N0",
+    "SP5"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "N0-SP4",
+   "match": [
+    "N0",
+    "SP4"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "N0-SP3",
+   "match": [
+    "N0",
+    "SP3"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "N0-SP2",
+   "match": [
+    "N0",
+    "SP2"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "N0-SP1",
+   "match": [
+    "N0",
+    "SP1"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "N0-SNda",
+   "match": [
+    "N0",
+    "SNda"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "N0-SNd",
+   "match": [
+    "N0",
+    "SNd"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "N0-SNa",
+   "match": [
+    "N0",
+    "SNa"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "N0-SN0",
+   "match": [
+    "N0",
+    "SN0"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "N0-SC5",
+   "match": [
+    "N0",
+    "SC5"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "N0-SC4",
+   "match": [
+    "N0",
+    "SC4"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "N0-SC3",
+   "match": [
+    "N0",
+    "SC3"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "N0-SC2",
+   "match": [
+    "N0",
+    "SC2"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "N0-SC1",
+   "match": [
+    "N0",
+    "SC1"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "N0-BP4",
+   "match": [
+    "N0",
+    "BP4"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C5-C5",
+   "match": [
+    "C5"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C5-C4",
+   "match": [
+    "C5",
+    "C4"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C5-C3",
+   "match": [
+    "C5",
+    "C3"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C5-C2",
+   "match": [
+    "C5",
+    "C2"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C5-C1",
+   "match": [
+    "C5",
+    "C1"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C5-SQda",
+   "match": [
+    "C5",
+    "SQda"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C5-SQd",
+   "match": [
+    "C5",
+    "SQd"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C5-SQa",
+   "match": [
+    "C5",
+    "SQa"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C5-SQ0",
+   "match": [
+    "C5",
+    "SQ0"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C5-SP5",
+   "match": [
+    "C5",
+    "SP5"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C5-SP4",
+   "match": [
+    "C5",
+    "SP4"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C5-SP3",
+   "match": [
+    "C5",
+    "SP3"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C5-SP2",
+   "match": [
+    "C5",
+    "SP2"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C5-SP1",
+   "match": [
+    "C5",
+    "SP1"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C5-SNda",
+   "match": [
+    "C5",
+    "SNda"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C5-SNd",
+   "match": [
+    "C5",
+    "SNd"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C5-SNa",
+   "match": [
+    "C5",
+    "SNa"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C5-SN0",
+   "match": [
+    "C5",
+    "SN0"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C5-SC5",
+   "match": [
+    "C5",
+    "SC5"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C5-SC4",
+   "match": [
+    "C5",
+    "SC4"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C5-SC3",
+   "match": [
+    "C5",
+    "SC3"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C5-SC2",
+   "match": [
+    "C5",
+    "SC2"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C5-SC1",
+   "match": [
+    "C5",
+    "SC1"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C5-BP4",
+   "match": [
+    "C5",
+    "BP4"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C4-C4",
+   "match": [
+    "C4"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C4-C3",
+   "match": [
+    "C4",
+    "C3"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C4-C2",
+   "match": [
+    "C4",
+    "C2"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C4-C1",
+   "match": [
+    "C4",
+    "C1"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C4-SQda",
+   "match": [
+    "C4",
+    "SQda"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C4-SQd",
+   "match": [
+    "C4",
+    "SQd"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C4-SQa",
+   "match": [
+    "C4",
+    "SQa"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C4-SQ0",
+   "match": [
+    "C4",
+    "SQ0"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C4-SP5",
+   "match": [
+    "C4",
+    "SP5"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C4-SP4",
+   "match": [
+    "C4",
+    "SP4"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C4-SP3",
+   "match": [
+    "C4",
+    "SP3"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C4-SP2",
+   "match": [
+    "C4",
+    "SP2"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C4-SP1",
+   "match": [
+    "C4",
+    "SP1"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C4-SNda",
+   "match": [
+    "C4",
+    "SNda"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C4-SNd",
+   "match": [
+    "C4",
+    "SNd"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C4-SNa",
+   "match": [
+    "C4",
+    "SNa"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C4-SN0",
+   "match": [
+    "C4",
+    "SN0"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C4-SC5",
+   "match": [
+    "C4",
+    "SC5"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C4-SC4",
+   "match": [
+    "C4",
+    "SC4"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C4-SC3",
+   "match": [
+    "C4",
+    "SC3"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C4-SC2",
+   "match": [
+    "C4",
+    "SC2"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C4-SC1",
+   "match": [
+    "C4",
+    "SC1"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C4-BP4",
+   "match": [
+    "C4",
+    "BP4"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C3-C3",
+   "match": [
+    "C3"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C3-C2",
+   "match": [
+    "C3",
+    "C2"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C3-C1",
+   "match": [
+    "C3",
+    "C1"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C3-SQda",
+   "match": [
+    "C3",
+    "SQda"
+   ],
+   "params": [
+    0.5497131931166347,
+    4.699999999999999
+   ],
+   "comment": "level VII (2.3000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C3-SQd",
+   "match": [
+    "C3",
+    "SQd"
+   ],
+   "params": [
+    0.5497131931166347,
+    4.699999999999999
+   ],
+   "comment": "level VII (2.3000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C3-SQa",
+   "match": [
+    "C3",
+    "SQa"
+   ],
+   "params": [
+    0.5497131931166347,
+    4.699999999999999
+   ],
+   "comment": "level VII (2.3000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C3-SQ0",
+   "match": [
+    "C3",
+    "SQ0"
+   ],
+   "params": [
+    0.5497131931166347,
+    4.699999999999999
+   ],
+   "comment": "level VII (2.3000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C3-SP5",
+   "match": [
+    "C3",
+    "SP5"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C3-SP4",
+   "match": [
+    "C3",
+    "SP4"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C3-SP3",
+   "match": [
+    "C3",
+    "SP3"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C3-SP2",
+   "match": [
+    "C3",
+    "SP2"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C3-SP1",
+   "match": [
+    "C3",
+    "SP1"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C3-SNda",
+   "match": [
+    "C3",
+    "SNda"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C3-SNd",
+   "match": [
+    "C3",
+    "SNd"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C3-SNa",
+   "match": [
+    "C3",
+    "SNa"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C3-SN0",
+   "match": [
+    "C3",
+    "SN0"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C3-SC5",
+   "match": [
+    "C3",
+    "SC5"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C3-SC4",
+   "match": [
+    "C3",
+    "SC4"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C3-SC3",
+   "match": [
+    "C3",
+    "SC3"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C3-SC2",
+   "match": [
+    "C3",
+    "SC2"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C3-SC1",
+   "match": [
+    "C3",
+    "SC1"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C3-BP4",
+   "match": [
+    "C3",
+    "BP4"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C2-C2",
+   "match": [
+    "C2"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C2-C1",
+   "match": [
+    "C2",
+    "C1"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C2-SQda",
+   "match": [
+    "C2",
+    "SQda"
+   ],
+   "params": [
+    0.4780114722753346,
+    6.2
+   ],
+   "comment": "level IX (2.0000 kJ/mol, 0.62 nm)"
+  },
+  {
+   "name": "C2-SQd",
+   "match": [
+    "C2",
+    "SQd"
+   ],
+   "params": [
+    0.4780114722753346,
+    6.2
+   ],
+   "comment": "level IX (2.0000 kJ/mol, 0.62 nm)"
+  },
+  {
+   "name": "C2-SQa",
+   "match": [
+    "C2",
+    "SQa"
+   ],
+   "params": [
+    0.4780114722753346,
+    6.2
+   ],
+   "comment": "level IX (2.0000 kJ/mol, 0.62 nm)"
+  },
+  {
+   "name": "C2-SQ0",
+   "match": [
+    "C2",
+    "SQ0"
+   ],
+   "params": [
+    0.4780114722753346,
+    6.2
+   ],
+   "comment": "level IX (2.0000 kJ/mol, 0.62 nm)"
+  },
+  {
+   "name": "C2-SP5",
+   "match": [
+    "C2",
+    "SP5"
+   ],
+   "params": [
+    0.5497131931166347,
+    4.699999999999999
+   ],
+   "comment": "level VII (2.3000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C2-SP4",
+   "match": [
+    "C2",
+    "SP4"
+   ],
+   "params": [
+    0.5497131931166347,
+    4.699999999999999
+   ],
+   "comment": "level VII (2.3000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C2-SP3",
+   "match": [
+    "C2",
+    "SP3"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C2-SP2",
+   "match": [
+    "C2",
+    "SP2"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C2-SP1",
+   "match": [
+    "C2",
+    "SP1"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C2-SNda",
+   "match": [
+    "C2",
+    "SNda"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C2-SNd",
+   "match": [
+    "C2",
+    "SNd"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C2-SNa",
+   "match": [
+    "C2",
+    "SNa"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C2-SN0",
+   "match": [
+    "C2",
+    "SN0"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C2-SC5",
+   "match": [
+    "C2",
+    "SC5"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C2-SC4",
+   "match": [
+    "C2",
+    "SC4"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C2-SC3",
+   "match": [
+    "C2",
+    "SC3"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C2-SC2",
+   "match": [
+    "C2",
+    "SC2"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C2-SC1",
+   "match": [
+    "C2",
+    "SC1"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C2-BP4",
+   "match": [
+    "C2",
+    "BP4"
+   ],
+   "params": [
+    0.5497131931166347,
+    4.699999999999999
+   ],
+   "comment": "level VII (2.3000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C1-C1",
+   "match": [
+    "C1"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C1-SQda",
+   "match": [
+    "C1",
+    "SQda"
+   ],
+   "params": [
+    0.4780114722753346,
+    6.2
+   ],
+   "comment": "level IX (2.0000 kJ/mol, 0.62 nm)"
+  },
+  {
+   "name": "C1-SQd",
+   "match": [
+    "C1",
+    "SQd"
+   ],
+   "params": [
+    0.4780114722753346,
+    6.2
+   ],
+   "comment": "level IX (2.0000 kJ/mol, 0.62 nm)"
+  },
+  {
+   "name": "C1-SQa",
+   "match": [
+    "C1",
+    "SQa"
+   ],
+   "params": [
+    0.4780114722753346,
+    6.2
+   ],
+   "comment": "level IX (2.0000 kJ/mol, 0.62 nm)"
+  },
+  {
+   "name": "C1-SQ0",
+   "match": [
+    "C1",
+    "SQ0"
+   ],
+   "params": [
+    0.4780114722753346,
+    6.2
+   ],
+   "comment": "level IX (2.0000 kJ/mol, 0.62 nm)"
+  },
+  {
+   "name": "C1-SP5",
+   "match": [
+    "C1",
+    "SP5"
+   ],
+   "params": [
+    0.4780114722753346,
+    4.699999999999999
+   ],
+   "comment": "level VIII (2.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C1-SP4",
+   "match": [
+    "C1",
+    "SP4"
+   ],
+   "params": [
+    0.4780114722753346,
+    4.699999999999999
+   ],
+   "comment": "level VIII (2.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C1-SP3",
+   "match": [
+    "C1",
+    "SP3"
+   ],
+   "params": [
+    0.5497131931166347,
+    4.699999999999999
+   ],
+   "comment": "level VII (2.3000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C1-SP2",
+   "match": [
+    "C1",
+    "SP2"
+   ],
+   "params": [
+    0.5497131931166347,
+    4.699999999999999
+   ],
+   "comment": "level VII (2.3000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C1-SP1",
+   "match": [
+    "C1",
+    "SP1"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C1-SNda",
+   "match": [
+    "C1",
+    "SNda"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C1-SNd",
+   "match": [
+    "C1",
+    "SNd"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C1-SNa",
+   "match": [
+    "C1",
+    "SNa"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C1-SN0",
+   "match": [
+    "C1",
+    "SN0"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C1-SC5",
+   "match": [
+    "C1",
+    "SC5"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C1-SC4",
+   "match": [
+    "C1",
+    "SC4"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C1-SC3",
+   "match": [
+    "C1",
+    "SC3"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C1-SC2",
+   "match": [
+    "C1",
+    "SC2"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C1-SC1",
+   "match": [
+    "C1",
+    "SC1"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "C1-BP4",
+   "match": [
+    "C1",
+    "BP4"
+   ],
+   "params": [
+    0.4780114722753346,
+    4.699999999999999
+   ],
+   "comment": "level VIII (2.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "SQda-SQda",
+   "match": [
+    "SQda"
+   ],
+   "params": [
+    1.0038240917782024,
+    4.3
+   ],
+   "comment": "level O, ring pair: sigma 0.43 nm, 75 % epsilon (4.2000 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQda-SQd",
+   "match": [
+    "SQda",
+    "SQd"
+   ],
+   "params": [
+    1.0038240917782024,
+    4.3
+   ],
+   "comment": "level O, ring pair: sigma 0.43 nm, 75 % epsilon (4.2000 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQda-SQa",
+   "match": [
+    "SQda",
+    "SQa"
+   ],
+   "params": [
+    1.0038240917782024,
+    4.3
+   ],
+   "comment": "level O, ring pair: sigma 0.43 nm, 75 % epsilon (4.2000 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQda-SQ0",
+   "match": [
+    "SQda",
+    "SQ0"
+   ],
+   "params": [
+    0.8066443594646271,
+    4.3
+   ],
+   "comment": "level II, ring pair: sigma 0.43 nm, 75 % epsilon (3.3750 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQda-SP5",
+   "match": [
+    "SQda",
+    "SP5"
+   ],
+   "params": [
+    1.0038240917782024,
+    4.3
+   ],
+   "comment": "level O, ring pair: sigma 0.43 nm, 75 % epsilon (4.2000 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQda-SP4",
+   "match": [
+    "SQda",
+    "SP4"
+   ],
+   "params": [
+    1.0038240917782024,
+    4.3
+   ],
+   "comment": "level O, ring pair: sigma 0.43 nm, 75 % epsilon (4.2000 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQda-SP3",
+   "match": [
+    "SQda",
+    "SP3"
+   ],
+   "params": [
+    1.0038240917782024,
+    4.3
+   ],
+   "comment": "level O, ring pair: sigma 0.43 nm, 75 % epsilon (4.2000 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQda-SP2",
+   "match": [
+    "SQda",
+    "SP2"
+   ],
+   "params": [
+    0.8962715105162523,
+    4.3
+   ],
+   "comment": "level I, ring pair: sigma 0.43 nm, 75 % epsilon (3.7500 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQda-SP1",
+   "match": [
+    "SQda",
+    "SP1"
+   ],
+   "params": [
+    0.8962715105162523,
+    4.3
+   ],
+   "comment": "level I, ring pair: sigma 0.43 nm, 75 % epsilon (3.7500 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQda-SNda",
+   "match": [
+    "SQda",
+    "SNda"
+   ],
+   "params": [
+    0.8962715105162523,
+    4.3
+   ],
+   "comment": "level I, ring pair: sigma 0.43 nm, 75 % epsilon (3.7500 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQda-SNd",
+   "match": [
+    "SQda",
+    "SNd"
+   ],
+   "params": [
+    0.8962715105162523,
+    4.3
+   ],
+   "comment": "level I, ring pair: sigma 0.43 nm, 75 % epsilon (3.7500 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQda-SNa",
+   "match": [
+    "SQda",
+    "SNa"
+   ],
+   "params": [
+    0.8962715105162523,
+    4.3
+   ],
+   "comment": "level I, ring pair: sigma 0.43 nm, 75 % epsilon (3.7500 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQda-SN0",
+   "match": [
+    "SQda",
+    "SN0"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "level IV, ring pair: sigma 0.43 nm, 75 % epsilon (2.6250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQda-SC5",
+   "match": [
+    "SQda",
+    "SC5"
+   ],
+   "params": [
+    0.5556883365200765,
+    4.3
+   ],
+   "comment": "level V, ring pair: sigma 0.43 nm, 75 % epsilon (2.3250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQda-SC4",
+   "match": [
+    "SQda",
+    "SC4"
+   ],
+   "params": [
+    0.4839866156787764,
+    4.3
+   ],
+   "comment": "level VI, ring pair: sigma 0.43 nm, 75 % epsilon (2.0250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQda-SC3",
+   "match": [
+    "SQda",
+    "SC3"
+   ],
+   "params": [
+    0.41228489483747605,
+    4.3
+   ],
+   "comment": "level VII, ring pair: sigma 0.43 nm, 75 % epsilon (1.7250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQda-SC2",
+   "match": [
+    "SQda",
+    "SC2"
+   ],
+   "params": [
+    0.35850860420650094,
+    6.2
+   ],
+   "comment": "level IX, ring pair: 75 % epsilon (1.5000 kJ/mol, 0.62 nm)"
+  },
+  {
+   "name": "SQda-SC1",
+   "match": [
+    "SQda",
+    "SC1"
+   ],
+   "params": [
+    0.35850860420650094,
+    6.2
+   ],
+   "comment": "level IX, ring pair: 75 % epsilon (1.5000 kJ/mol, 0.62 nm)"
+  },
+  {
+   "name": "SQda-BP4",
+   "match": [
+    "SQda",
+    "BP4"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "SQd-SQd",
+   "match": [
+    "SQd"
+   ],
+   "params": [
+    0.8962715105162523,
+    4.3
+   ],
+   "comment": "level I, ring pair: sigma 0.43 nm, 75 % epsilon (3.7500 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQd-SQa",
+   "match": [
+    "SQd",
+    "SQa"
+   ],
+   "params": [
+    1.0038240917782024,
+    4.3
+   ],
+   "comment": "level O, ring pair: sigma 0.43 nm, 75 % epsilon (4.2000 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQd-SQ0",
+   "match": [
+    "SQd",
+    "SQ0"
+   ],
+   "params": [
+    0.8066443594646271,
+    4.3
+   ],
+   "comment": "level II, ring pair: sigma 0.43 nm, 75 % epsilon (3.3750 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQd-SP5",
+   "match": [
+    "SQd",
+    "SP5"
+   ],
+   "params": [
+    1.0038240917782024,
+    4.3
+   ],
+   "comment": "level O, ring pair: sigma 0.43 nm, 75 % epsilon (4.2000 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQd-SP4",
+   "match": [
+    "SQd",
+    "SP4"
+   ],
+   "params": [
+    1.0038240917782024,
+    4.3
+   ],
+   "comment": "level O, ring pair: sigma 0.43 nm, 75 % epsilon (4.2000 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQd-SP3",
+   "match": [
+    "SQd",
+    "SP3"
+   ],
+   "params": [
+    1.0038240917782024,
+    4.3
+   ],
+   "comment": "level O, ring pair: sigma 0.43 nm, 75 % epsilon (4.2000 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQd-SP2",
+   "match": [
+    "SQd",
+    "SP2"
+   ],
+   "params": [
+    0.8962715105162523,
+    4.3
+   ],
+   "comment": "level I, ring pair: sigma 0.43 nm, 75 % epsilon (3.7500 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQd-SP1",
+   "match": [
+    "SQd",
+    "SP1"
+   ],
+   "params": [
+    0.8962715105162523,
+    4.3
+   ],
+   "comment": "level I, ring pair: sigma 0.43 nm, 75 % epsilon (3.7500 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQd-SNda",
+   "match": [
+    "SQd",
+    "SNda"
+   ],
+   "params": [
+    0.8962715105162523,
+    4.3
+   ],
+   "comment": "level I, ring pair: sigma 0.43 nm, 75 % epsilon (3.7500 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQd-SNd",
+   "match": [
+    "SQd",
+    "SNd"
+   ],
+   "params": [
+    0.7170172084130019,
+    4.3
+   ],
+   "comment": "level III, ring pair: sigma 0.43 nm, 75 % epsilon (3.0000 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQd-SNa",
+   "match": [
+    "SQd",
+    "SNa"
+   ],
+   "params": [
+    0.8962715105162523,
+    4.3
+   ],
+   "comment": "level I, ring pair: sigma 0.43 nm, 75 % epsilon (3.7500 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQd-SN0",
+   "match": [
+    "SQd",
+    "SN0"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "level IV, ring pair: sigma 0.43 nm, 75 % epsilon (2.6250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQd-SC5",
+   "match": [
+    "SQd",
+    "SC5"
+   ],
+   "params": [
+    0.5556883365200765,
+    4.3
+   ],
+   "comment": "level V, ring pair: sigma 0.43 nm, 75 % epsilon (2.3250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQd-SC4",
+   "match": [
+    "SQd",
+    "SC4"
+   ],
+   "params": [
+    0.4839866156787764,
+    4.3
+   ],
+   "comment": "level VI, ring pair: sigma 0.43 nm, 75 % epsilon (2.0250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQd-SC3",
+   "match": [
+    "SQd",
+    "SC3"
+   ],
+   "params": [
+    0.41228489483747605,
+    4.3
+   ],
+   "comment": "level VII, ring pair: sigma 0.43 nm, 75 % epsilon (1.7250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQd-SC2",
+   "match": [
+    "SQd",
+    "SC2"
+   ],
+   "params": [
+    0.35850860420650094,
+    6.2
+   ],
+   "comment": "level IX, ring pair: 75 % epsilon (1.5000 kJ/mol, 0.62 nm)"
+  },
+  {
+   "name": "SQd-SC1",
+   "match": [
+    "SQd",
+    "SC1"
+   ],
+   "params": [
+    0.35850860420650094,
+    6.2
+   ],
+   "comment": "level IX, ring pair: 75 % epsilon (1.5000 kJ/mol, 0.62 nm)"
+  },
+  {
+   "name": "SQd-BP4",
+   "match": [
+    "SQd",
+    "BP4"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "SQa-SQa",
+   "match": [
+    "SQa"
+   ],
+   "params": [
+    0.8962715105162523,
+    4.3
+   ],
+   "comment": "level I, ring pair: sigma 0.43 nm, 75 % epsilon (3.7500 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQa-SQ0",
+   "match": [
+    "SQa",
+    "SQ0"
+   ],
+   "params": [
+    0.8066443594646271,
+    4.3
+   ],
+   "comment": "level II, ring pair: sigma 0.43 nm, 75 % epsilon (3.3750 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQa-SP5",
+   "match": [
+    "SQa",
+    "SP5"
+   ],
+   "params": [
+    1.0038240917782024,
+    4.3
+   ],
+   "comment": "level O, ring pair: sigma 0.43 nm, 75 % epsilon (4.2000 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQa-SP4",
+   "match": [
+    "SQa",
+    "SP4"
+   ],
+   "params": [
+    1.0038240917782024,
+    4.3
+   ],
+   "comment": "level O, ring pair: sigma 0.43 nm, 75 % epsilon (4.2000 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQa-SP3",
+   "match": [
+    "SQa",
+    "SP3"
+   ],
+   "params": [
+    1.0038240917782024,
+    4.3
+   ],
+   "comment": "level O, ring pair: sigma 0.43 nm, 75 % epsilon (4.2000 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQa-SP2",
+   "match": [
+    "SQa",
+    "SP2"
+   ],
+   "params": [
+    0.8962715105162523,
+    4.3
+   ],
+   "comment": "level I, ring pair: sigma 0.43 nm, 75 % epsilon (3.7500 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQa-SP1",
+   "match": [
+    "SQa",
+    "SP1"
+   ],
+   "params": [
+    0.8962715105162523,
+    4.3
+   ],
+   "comment": "level I, ring pair: sigma 0.43 nm, 75 % epsilon (3.7500 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQa-SNda",
+   "match": [
+    "SQa",
+    "SNda"
+   ],
+   "params": [
+    0.8962715105162523,
+    4.3
+   ],
+   "comment": "level I, ring pair: sigma 0.43 nm, 75 % epsilon (3.7500 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQa-SNd",
+   "match": [
+    "SQa",
+    "SNd"
+   ],
+   "params": [
+    0.8962715105162523,
+    4.3
+   ],
+   "comment": "level I, ring pair: sigma 0.43 nm, 75 % epsilon (3.7500 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQa-SNa",
+   "match": [
+    "SQa",
+    "SNa"
+   ],
+   "params": [
+    0.7170172084130019,
+    4.3
+   ],
+   "comment": "level III, ring pair: sigma 0.43 nm, 75 % epsilon (3.0000 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQa-SN0",
+   "match": [
+    "SQa",
+    "SN0"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "level IV, ring pair: sigma 0.43 nm, 75 % epsilon (2.6250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQa-SC5",
+   "match": [
+    "SQa",
+    "SC5"
+   ],
+   "params": [
+    0.5556883365200765,
+    4.3
+   ],
+   "comment": "level V, ring pair: sigma 0.43 nm, 75 % epsilon (2.3250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQa-SC4",
+   "match": [
+    "SQa",
+    "SC4"
+   ],
+   "params": [
+    0.4839866156787764,
+    4.3
+   ],
+   "comment": "level VI, ring pair: sigma 0.43 nm, 75 % epsilon (2.0250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQa-SC3",
+   "match": [
+    "SQa",
+    "SC3"
+   ],
+   "params": [
+    0.41228489483747605,
+    4.3
+   ],
+   "comment": "level VII, ring pair: sigma 0.43 nm, 75 % epsilon (1.7250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQa-SC2",
+   "match": [
+    "SQa",
+    "SC2"
+   ],
+   "params": [
+    0.35850860420650094,
+    6.2
+   ],
+   "comment": "level IX, ring pair: 75 % epsilon (1.5000 kJ/mol, 0.62 nm)"
+  },
+  {
+   "name": "SQa-SC1",
+   "match": [
+    "SQa",
+    "SC1"
+   ],
+   "params": [
+    0.35850860420650094,
+    6.2
+   ],
+   "comment": "level IX, ring pair: 75 % epsilon (1.5000 kJ/mol, 0.62 nm)"
+  },
+  {
+   "name": "SQa-BP4",
+   "match": [
+    "SQa",
+    "BP4"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "SQ0-SQ0",
+   "match": [
+    "SQ0"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "level IV, ring pair: sigma 0.43 nm, 75 % epsilon (2.6250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQ0-SP5",
+   "match": [
+    "SQ0",
+    "SP5"
+   ],
+   "params": [
+    0.8962715105162523,
+    4.3
+   ],
+   "comment": "level I, ring pair: sigma 0.43 nm, 75 % epsilon (3.7500 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQ0-SP4",
+   "match": [
+    "SQ0",
+    "SP4"
+   ],
+   "params": [
+    1.0038240917782024,
+    4.3
+   ],
+   "comment": "level O, ring pair: sigma 0.43 nm, 75 % epsilon (4.2000 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQ0-SP3",
+   "match": [
+    "SQ0",
+    "SP3"
+   ],
+   "params": [
+    0.8962715105162523,
+    4.3
+   ],
+   "comment": "level I, ring pair: sigma 0.43 nm, 75 % epsilon (3.7500 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQ0-SP2",
+   "match": [
+    "SQ0",
+    "SP2"
+   ],
+   "params": [
+    0.8066443594646271,
+    4.3
+   ],
+   "comment": "level II, ring pair: sigma 0.43 nm, 75 % epsilon (3.3750 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQ0-SP1",
+   "match": [
+    "SQ0",
+    "SP1"
+   ],
+   "params": [
+    0.7170172084130019,
+    4.3
+   ],
+   "comment": "level III, ring pair: sigma 0.43 nm, 75 % epsilon (3.0000 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQ0-SNda",
+   "match": [
+    "SQ0",
+    "SNda"
+   ],
+   "params": [
+    0.7170172084130019,
+    4.3
+   ],
+   "comment": "level III, ring pair: sigma 0.43 nm, 75 % epsilon (3.0000 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQ0-SNd",
+   "match": [
+    "SQ0",
+    "SNd"
+   ],
+   "params": [
+    0.7170172084130019,
+    4.3
+   ],
+   "comment": "level III, ring pair: sigma 0.43 nm, 75 % epsilon (3.0000 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQ0-SNa",
+   "match": [
+    "SQ0",
+    "SNa"
+   ],
+   "params": [
+    0.7170172084130019,
+    4.3
+   ],
+   "comment": "level III, ring pair: sigma 0.43 nm, 75 % epsilon (3.0000 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQ0-SN0",
+   "match": [
+    "SQ0",
+    "SN0"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "level IV, ring pair: sigma 0.43 nm, 75 % epsilon (2.6250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQ0-SC5",
+   "match": [
+    "SQ0",
+    "SC5"
+   ],
+   "params": [
+    0.5556883365200765,
+    4.3
+   ],
+   "comment": "level V, ring pair: sigma 0.43 nm, 75 % epsilon (2.3250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQ0-SC4",
+   "match": [
+    "SQ0",
+    "SC4"
+   ],
+   "params": [
+    0.4839866156787764,
+    4.3
+   ],
+   "comment": "level VI, ring pair: sigma 0.43 nm, 75 % epsilon (2.0250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQ0-SC3",
+   "match": [
+    "SQ0",
+    "SC3"
+   ],
+   "params": [
+    0.41228489483747605,
+    4.3
+   ],
+   "comment": "level VII, ring pair: sigma 0.43 nm, 75 % epsilon (1.7250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SQ0-SC2",
+   "match": [
+    "SQ0",
+    "SC2"
+   ],
+   "params": [
+    0.35850860420650094,
+    6.2
+   ],
+   "comment": "level IX, ring pair: 75 % epsilon (1.5000 kJ/mol, 0.62 nm)"
+  },
+  {
+   "name": "SQ0-SC1",
+   "match": [
+    "SQ0",
+    "SC1"
+   ],
+   "params": [
+    0.35850860420650094,
+    6.2
+   ],
+   "comment": "level IX, ring pair: 75 % epsilon (1.5000 kJ/mol, 0.62 nm)"
+  },
+  {
+   "name": "SQ0-BP4",
+   "match": [
+    "SQ0",
+    "BP4"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "SP5-SP5",
+   "match": [
+    "SP5"
+   ],
+   "params": [
+    1.0038240917782024,
+    4.3
+   ],
+   "comment": "level O, ring pair: sigma 0.43 nm, 75 % epsilon (4.2000 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP5-SP4",
+   "match": [
+    "SP5",
+    "SP4"
+   ],
+   "params": [
+    1.0038240917782024,
+    4.3
+   ],
+   "comment": "level O, ring pair: sigma 0.43 nm, 75 % epsilon (4.2000 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP5-SP3",
+   "match": [
+    "SP5",
+    "SP3"
+   ],
+   "params": [
+    1.0038240917782024,
+    4.3
+   ],
+   "comment": "level O, ring pair: sigma 0.43 nm, 75 % epsilon (4.2000 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP5-SP2",
+   "match": [
+    "SP5",
+    "SP2"
+   ],
+   "params": [
+    1.0038240917782024,
+    4.3
+   ],
+   "comment": "level O, ring pair: sigma 0.43 nm, 75 % epsilon (4.2000 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP5-SP1",
+   "match": [
+    "SP5",
+    "SP1"
+   ],
+   "params": [
+    1.0038240917782024,
+    4.3
+   ],
+   "comment": "level O, ring pair: sigma 0.43 nm, 75 % epsilon (4.2000 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP5-SNda",
+   "match": [
+    "SP5",
+    "SNda"
+   ],
+   "params": [
+    0.8962715105162523,
+    4.3
+   ],
+   "comment": "level I, ring pair: sigma 0.43 nm, 75 % epsilon (3.7500 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP5-SNd",
+   "match": [
+    "SP5",
+    "SNd"
+   ],
+   "params": [
+    0.8962715105162523,
+    4.3
+   ],
+   "comment": "level I, ring pair: sigma 0.43 nm, 75 % epsilon (3.7500 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP5-SNa",
+   "match": [
+    "SP5",
+    "SNa"
+   ],
+   "params": [
+    0.8962715105162523,
+    4.3
+   ],
+   "comment": "level I, ring pair: sigma 0.43 nm, 75 % epsilon (3.7500 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP5-SN0",
+   "match": [
+    "SP5",
+    "SN0"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "level IV, ring pair: sigma 0.43 nm, 75 % epsilon (2.6250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP5-SC5",
+   "match": [
+    "SP5",
+    "SC5"
+   ],
+   "params": [
+    0.5556883365200765,
+    4.3
+   ],
+   "comment": "level V, ring pair: sigma 0.43 nm, 75 % epsilon (2.3250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP5-SC4",
+   "match": [
+    "SP5",
+    "SC4"
+   ],
+   "params": [
+    0.4839866156787764,
+    4.3
+   ],
+   "comment": "level VI, ring pair: sigma 0.43 nm, 75 % epsilon (2.0250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP5-SC3",
+   "match": [
+    "SP5",
+    "SC3"
+   ],
+   "params": [
+    0.4839866156787764,
+    4.3
+   ],
+   "comment": "level VI, ring pair: sigma 0.43 nm, 75 % epsilon (2.0250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP5-SC2",
+   "match": [
+    "SP5",
+    "SC2"
+   ],
+   "params": [
+    0.41228489483747605,
+    4.3
+   ],
+   "comment": "level VII, ring pair: sigma 0.43 nm, 75 % epsilon (1.7250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP5-SC1",
+   "match": [
+    "SP5",
+    "SC1"
+   ],
+   "params": [
+    0.35850860420650094,
+    4.3
+   ],
+   "comment": "level VIII, ring pair: sigma 0.43 nm, 75 % epsilon (1.5000 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP5-BP4",
+   "match": [
+    "SP5",
+    "BP4"
+   ],
+   "params": [
+    1.3384321223709368,
+    4.699999999999999
+   ],
+   "comment": "level O (5.6000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "SP4-SP4",
+   "match": [
+    "SP4"
+   ],
+   "params": [
+    0.8962715105162523,
+    4.3
+   ],
+   "comment": "level I, ring pair: sigma 0.43 nm, 75 % epsilon (3.7500 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP4-SP3",
+   "match": [
+    "SP4",
+    "SP3"
+   ],
+   "params": [
+    0.8962715105162523,
+    4.3
+   ],
+   "comment": "level I, ring pair: sigma 0.43 nm, 75 % epsilon (3.7500 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP4-SP2",
+   "match": [
+    "SP4",
+    "SP2"
+   ],
+   "params": [
+    0.8066443594646271,
+    4.3
+   ],
+   "comment": "level II, ring pair: sigma 0.43 nm, 75 % epsilon (3.3750 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP4-SP1",
+   "match": [
+    "SP4",
+    "SP1"
+   ],
+   "params": [
+    0.8066443594646271,
+    4.3
+   ],
+   "comment": "level II, ring pair: sigma 0.43 nm, 75 % epsilon (3.3750 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP4-SNda",
+   "match": [
+    "SP4",
+    "SNda"
+   ],
+   "params": [
+    0.7170172084130019,
+    4.3
+   ],
+   "comment": "level III, ring pair: sigma 0.43 nm, 75 % epsilon (3.0000 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP4-SNd",
+   "match": [
+    "SP4",
+    "SNd"
+   ],
+   "params": [
+    0.7170172084130019,
+    4.3
+   ],
+   "comment": "level III, ring pair: sigma 0.43 nm, 75 % epsilon (3.0000 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP4-SNa",
+   "match": [
+    "SP4",
+    "SNa"
+   ],
+   "params": [
+    0.7170172084130019,
+    4.3
+   ],
+   "comment": "level III, ring pair: sigma 0.43 nm, 75 % epsilon (3.0000 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP4-SN0",
+   "match": [
+    "SP4",
+    "SN0"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "level IV, ring pair: sigma 0.43 nm, 75 % epsilon (2.6250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP4-SC5",
+   "match": [
+    "SP4",
+    "SC5"
+   ],
+   "params": [
+    0.5556883365200765,
+    4.3
+   ],
+   "comment": "level V, ring pair: sigma 0.43 nm, 75 % epsilon (2.3250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP4-SC4",
+   "match": [
+    "SP4",
+    "SC4"
+   ],
+   "params": [
+    0.4839866156787764,
+    4.3
+   ],
+   "comment": "level VI, ring pair: sigma 0.43 nm, 75 % epsilon (2.0250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP4-SC3",
+   "match": [
+    "SP4",
+    "SC3"
+   ],
+   "params": [
+    0.4839866156787764,
+    4.3
+   ],
+   "comment": "level VI, ring pair: sigma 0.43 nm, 75 % epsilon (2.0250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP4-SC2",
+   "match": [
+    "SP4",
+    "SC2"
+   ],
+   "params": [
+    0.41228489483747605,
+    4.3
+   ],
+   "comment": "level VII, ring pair: sigma 0.43 nm, 75 % epsilon (1.7250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP4-SC1",
+   "match": [
+    "SP4",
+    "SC1"
+   ],
+   "params": [
+    0.35850860420650094,
+    4.3
+   ],
+   "comment": "level VIII, ring pair: sigma 0.43 nm, 75 % epsilon (1.5000 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP4-BP4",
+   "match": [
+    "SP4",
+    "BP4"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "SP3-SP3",
+   "match": [
+    "SP3"
+   ],
+   "params": [
+    0.8962715105162523,
+    4.3
+   ],
+   "comment": "level I, ring pair: sigma 0.43 nm, 75 % epsilon (3.7500 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP3-SP2",
+   "match": [
+    "SP3",
+    "SP2"
+   ],
+   "params": [
+    0.8066443594646271,
+    4.3
+   ],
+   "comment": "level II, ring pair: sigma 0.43 nm, 75 % epsilon (3.3750 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP3-SP1",
+   "match": [
+    "SP3",
+    "SP1"
+   ],
+   "params": [
+    0.8066443594646271,
+    4.3
+   ],
+   "comment": "level II, ring pair: sigma 0.43 nm, 75 % epsilon (3.3750 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP3-SNda",
+   "match": [
+    "SP3",
+    "SNda"
+   ],
+   "params": [
+    0.8066443594646271,
+    4.3
+   ],
+   "comment": "level II, ring pair: sigma 0.43 nm, 75 % epsilon (3.3750 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP3-SNd",
+   "match": [
+    "SP3",
+    "SNd"
+   ],
+   "params": [
+    0.8066443594646271,
+    4.3
+   ],
+   "comment": "level II, ring pair: sigma 0.43 nm, 75 % epsilon (3.3750 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP3-SNa",
+   "match": [
+    "SP3",
+    "SNa"
+   ],
+   "params": [
+    0.8066443594646271,
+    4.3
+   ],
+   "comment": "level II, ring pair: sigma 0.43 nm, 75 % epsilon (3.3750 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP3-SN0",
+   "match": [
+    "SP3",
+    "SN0"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "level IV, ring pair: sigma 0.43 nm, 75 % epsilon (2.6250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP3-SC5",
+   "match": [
+    "SP3",
+    "SC5"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "level IV, ring pair: sigma 0.43 nm, 75 % epsilon (2.6250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP3-SC4",
+   "match": [
+    "SP3",
+    "SC4"
+   ],
+   "params": [
+    0.5556883365200765,
+    4.3
+   ],
+   "comment": "level V, ring pair: sigma 0.43 nm, 75 % epsilon (2.3250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP3-SC3",
+   "match": [
+    "SP3",
+    "SC3"
+   ],
+   "params": [
+    0.5556883365200765,
+    4.3
+   ],
+   "comment": "level V, ring pair: sigma 0.43 nm, 75 % epsilon (2.3250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP3-SC2",
+   "match": [
+    "SP3",
+    "SC2"
+   ],
+   "params": [
+    0.4839866156787764,
+    4.3
+   ],
+   "comment": "level VI, ring pair: sigma 0.43 nm, 75 % epsilon (2.0250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP3-SC1",
+   "match": [
+    "SP3",
+    "SC1"
+   ],
+   "params": [
+    0.41228489483747605,
+    4.3
+   ],
+   "comment": "level VII, ring pair: sigma 0.43 nm, 75 % epsilon (1.7250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP3-BP4",
+   "match": [
+    "SP3",
+    "BP4"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "SP2-SP2",
+   "match": [
+    "SP2"
+   ],
+   "params": [
+    0.8066443594646271,
+    4.3
+   ],
+   "comment": "level II, ring pair: sigma 0.43 nm, 75 % epsilon (3.3750 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP2-SP1",
+   "match": [
+    "SP2",
+    "SP1"
+   ],
+   "params": [
+    0.8066443594646271,
+    4.3
+   ],
+   "comment": "level II, ring pair: sigma 0.43 nm, 75 % epsilon (3.3750 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP2-SNda",
+   "match": [
+    "SP2",
+    "SNda"
+   ],
+   "params": [
+    0.8066443594646271,
+    4.3
+   ],
+   "comment": "level II, ring pair: sigma 0.43 nm, 75 % epsilon (3.3750 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP2-SNd",
+   "match": [
+    "SP2",
+    "SNd"
+   ],
+   "params": [
+    0.8066443594646271,
+    4.3
+   ],
+   "comment": "level II, ring pair: sigma 0.43 nm, 75 % epsilon (3.3750 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP2-SNa",
+   "match": [
+    "SP2",
+    "SNa"
+   ],
+   "params": [
+    0.8066443594646271,
+    4.3
+   ],
+   "comment": "level II, ring pair: sigma 0.43 nm, 75 % epsilon (3.3750 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP2-SN0",
+   "match": [
+    "SP2",
+    "SN0"
+   ],
+   "params": [
+    0.7170172084130019,
+    4.3
+   ],
+   "comment": "level III, ring pair: sigma 0.43 nm, 75 % epsilon (3.0000 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP2-SC5",
+   "match": [
+    "SP2",
+    "SC5"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "level IV, ring pair: sigma 0.43 nm, 75 % epsilon (2.6250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP2-SC4",
+   "match": [
+    "SP2",
+    "SC4"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "level IV, ring pair: sigma 0.43 nm, 75 % epsilon (2.6250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP2-SC3",
+   "match": [
+    "SP2",
+    "SC3"
+   ],
+   "params": [
+    0.5556883365200765,
+    4.3
+   ],
+   "comment": "level V, ring pair: sigma 0.43 nm, 75 % epsilon (2.3250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP2-SC2",
+   "match": [
+    "SP2",
+    "SC2"
+   ],
+   "params": [
+    0.4839866156787764,
+    4.3
+   ],
+   "comment": "level VI, ring pair: sigma 0.43 nm, 75 % epsilon (2.0250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP2-SC1",
+   "match": [
+    "SP2",
+    "SC1"
+   ],
+   "params": [
+    0.41228489483747605,
+    4.3
+   ],
+   "comment": "level VII, ring pair: sigma 0.43 nm, 75 % epsilon (1.7250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP2-BP4",
+   "match": [
+    "SP2",
+    "BP4"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "SP1-SP1",
+   "match": [
+    "SP1"
+   ],
+   "params": [
+    0.8066443594646271,
+    4.3
+   ],
+   "comment": "level II, ring pair: sigma 0.43 nm, 75 % epsilon (3.3750 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP1-SNda",
+   "match": [
+    "SP1",
+    "SNda"
+   ],
+   "params": [
+    0.8066443594646271,
+    4.3
+   ],
+   "comment": "level II, ring pair: sigma 0.43 nm, 75 % epsilon (3.3750 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP1-SNd",
+   "match": [
+    "SP1",
+    "SNd"
+   ],
+   "params": [
+    0.8066443594646271,
+    4.3
+   ],
+   "comment": "level II, ring pair: sigma 0.43 nm, 75 % epsilon (3.3750 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP1-SNa",
+   "match": [
+    "SP1",
+    "SNa"
+   ],
+   "params": [
+    0.8066443594646271,
+    4.3
+   ],
+   "comment": "level II, ring pair: sigma 0.43 nm, 75 % epsilon (3.3750 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP1-SN0",
+   "match": [
+    "SP1",
+    "SN0"
+   ],
+   "params": [
+    0.7170172084130019,
+    4.3
+   ],
+   "comment": "level III, ring pair: sigma 0.43 nm, 75 % epsilon (3.0000 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP1-SC5",
+   "match": [
+    "SP1",
+    "SC5"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "level IV, ring pair: sigma 0.43 nm, 75 % epsilon (2.6250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP1-SC4",
+   "match": [
+    "SP1",
+    "SC4"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "level IV, ring pair: sigma 0.43 nm, 75 % epsilon (2.6250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP1-SC3",
+   "match": [
+    "SP1",
+    "SC3"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "level IV, ring pair: sigma 0.43 nm, 75 % epsilon (2.6250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP1-SC2",
+   "match": [
+    "SP1",
+    "SC2"
+   ],
+   "params": [
+    0.5556883365200765,
+    4.3
+   ],
+   "comment": "level V, ring pair: sigma 0.43 nm, 75 % epsilon (2.3250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP1-SC1",
+   "match": [
+    "SP1",
+    "SC1"
+   ],
+   "params": [
+    0.4839866156787764,
+    4.3
+   ],
+   "comment": "level VI, ring pair: sigma 0.43 nm, 75 % epsilon (2.0250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SP1-BP4",
+   "match": [
+    "SP1",
+    "BP4"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "level II (4.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "SNda-SNda",
+   "match": [
+    "SNda"
+   ],
+   "params": [
+    0.8066443594646271,
+    4.3
+   ],
+   "comment": "level II, ring pair: sigma 0.43 nm, 75 % epsilon (3.3750 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SNda-SNd",
+   "match": [
+    "SNda",
+    "SNd"
+   ],
+   "params": [
+    0.8066443594646271,
+    4.3
+   ],
+   "comment": "level II, ring pair: sigma 0.43 nm, 75 % epsilon (3.3750 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SNda-SNa",
+   "match": [
+    "SNda",
+    "SNa"
+   ],
+   "params": [
+    0.8066443594646271,
+    4.3
+   ],
+   "comment": "level II, ring pair: sigma 0.43 nm, 75 % epsilon (3.3750 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SNda-SN0",
+   "match": [
+    "SNda",
+    "SN0"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "level IV, ring pair: sigma 0.43 nm, 75 % epsilon (2.6250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SNda-SC5",
+   "match": [
+    "SNda",
+    "SC5"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "level IV, ring pair: sigma 0.43 nm, 75 % epsilon (2.6250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SNda-SC4",
+   "match": [
+    "SNda",
+    "SC4"
+   ],
+   "params": [
+    0.5556883365200765,
+    4.3
+   ],
+   "comment": "level V, ring pair: sigma 0.43 nm, 75 % epsilon (2.3250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SNda-SC3",
+   "match": [
+    "SNda",
+    "SC3"
+   ],
+   "params": [
+    0.4839866156787764,
+    4.3
+   ],
+   "comment": "level VI, ring pair: sigma 0.43 nm, 75 % epsilon (2.0250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SNda-SC2",
+   "match": [
+    "SNda",
+    "SC2"
+   ],
+   "params": [
+    0.4839866156787764,
+    4.3
+   ],
+   "comment": "level VI, ring pair: sigma 0.43 nm, 75 % epsilon (2.0250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SNda-SC1",
+   "match": [
+    "SNda",
+    "SC1"
+   ],
+   "params": [
+    0.4839866156787764,
+    4.3
+   ],
+   "comment": "level VI, ring pair: sigma 0.43 nm, 75 % epsilon (2.0250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SNda-BP4",
+   "match": [
+    "SNda",
+    "BP4"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "SNd-SNd",
+   "match": [
+    "SNd"
+   ],
+   "params": [
+    0.7170172084130019,
+    4.3
+   ],
+   "comment": "level III, ring pair: sigma 0.43 nm, 75 % epsilon (3.0000 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SNd-SNa",
+   "match": [
+    "SNd",
+    "SNa"
+   ],
+   "params": [
+    0.8066443594646271,
+    4.3
+   ],
+   "comment": "level II, ring pair: sigma 0.43 nm, 75 % epsilon (3.3750 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SNd-SN0",
+   "match": [
+    "SNd",
+    "SN0"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "level IV, ring pair: sigma 0.43 nm, 75 % epsilon (2.6250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SNd-SC5",
+   "match": [
+    "SNd",
+    "SC5"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "level IV, ring pair: sigma 0.43 nm, 75 % epsilon (2.6250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SNd-SC4",
+   "match": [
+    "SNd",
+    "SC4"
+   ],
+   "params": [
+    0.5556883365200765,
+    4.3
+   ],
+   "comment": "level V, ring pair: sigma 0.43 nm, 75 % epsilon (2.3250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SNd-SC3",
+   "match": [
+    "SNd",
+    "SC3"
+   ],
+   "params": [
+    0.4839866156787764,
+    4.3
+   ],
+   "comment": "level VI, ring pair: sigma 0.43 nm, 75 % epsilon (2.0250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SNd-SC2",
+   "match": [
+    "SNd",
+    "SC2"
+   ],
+   "params": [
+    0.4839866156787764,
+    4.3
+   ],
+   "comment": "level VI, ring pair: sigma 0.43 nm, 75 % epsilon (2.0250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SNd-SC1",
+   "match": [
+    "SNd",
+    "SC1"
+   ],
+   "params": [
+    0.4839866156787764,
+    4.3
+   ],
+   "comment": "level VI, ring pair: sigma 0.43 nm, 75 % epsilon (2.0250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SNd-BP4",
+   "match": [
+    "SNd",
+    "BP4"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "SNa-SNa",
+   "match": [
+    "SNa"
+   ],
+   "params": [
+    0.7170172084130019,
+    4.3
+   ],
+   "comment": "level III, ring pair: sigma 0.43 nm, 75 % epsilon (3.0000 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SNa-SN0",
+   "match": [
+    "SNa",
+    "SN0"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "level IV, ring pair: sigma 0.43 nm, 75 % epsilon (2.6250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SNa-SC5",
+   "match": [
+    "SNa",
+    "SC5"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "level IV, ring pair: sigma 0.43 nm, 75 % epsilon (2.6250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SNa-SC4",
+   "match": [
+    "SNa",
+    "SC4"
+   ],
+   "params": [
+    0.5556883365200765,
+    4.3
+   ],
+   "comment": "level V, ring pair: sigma 0.43 nm, 75 % epsilon (2.3250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SNa-SC3",
+   "match": [
+    "SNa",
+    "SC3"
+   ],
+   "params": [
+    0.4839866156787764,
+    4.3
+   ],
+   "comment": "level VI, ring pair: sigma 0.43 nm, 75 % epsilon (2.0250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SNa-SC2",
+   "match": [
+    "SNa",
+    "SC2"
+   ],
+   "params": [
+    0.4839866156787764,
+    4.3
+   ],
+   "comment": "level VI, ring pair: sigma 0.43 nm, 75 % epsilon (2.0250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SNa-SC1",
+   "match": [
+    "SNa",
+    "SC1"
+   ],
+   "params": [
+    0.4839866156787764,
+    4.3
+   ],
+   "comment": "level VI, ring pair: sigma 0.43 nm, 75 % epsilon (2.0250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SNa-BP4",
+   "match": [
+    "SNa",
+    "BP4"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "level III (4.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "SN0-SN0",
+   "match": [
+    "SN0"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "level IV, ring pair: sigma 0.43 nm, 75 % epsilon (2.6250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SN0-SC5",
+   "match": [
+    "SN0",
+    "SC5"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "level IV, ring pair: sigma 0.43 nm, 75 % epsilon (2.6250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SN0-SC4",
+   "match": [
+    "SN0",
+    "SC4"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "level IV, ring pair: sigma 0.43 nm, 75 % epsilon (2.6250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SN0-SC3",
+   "match": [
+    "SN0",
+    "SC3"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "level IV, ring pair: sigma 0.43 nm, 75 % epsilon (2.6250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SN0-SC2",
+   "match": [
+    "SN0",
+    "SC2"
+   ],
+   "params": [
+    0.5556883365200765,
+    4.3
+   ],
+   "comment": "level V, ring pair: sigma 0.43 nm, 75 % epsilon (2.3250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SN0-SC1",
+   "match": [
+    "SN0",
+    "SC1"
+   ],
+   "params": [
+    0.4839866156787764,
+    4.3
+   ],
+   "comment": "level VI, ring pair: sigma 0.43 nm, 75 % epsilon (2.0250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SN0-BP4",
+   "match": [
+    "SN0",
+    "BP4"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "level IV (3.5000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "SC5-SC5",
+   "match": [
+    "SC5"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "level IV, ring pair: sigma 0.43 nm, 75 % epsilon (2.6250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SC5-SC4",
+   "match": [
+    "SC5",
+    "SC4"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "level IV, ring pair: sigma 0.43 nm, 75 % epsilon (2.6250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SC5-SC3",
+   "match": [
+    "SC5",
+    "SC3"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "level IV, ring pair: sigma 0.43 nm, 75 % epsilon (2.6250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SC5-SC2",
+   "match": [
+    "SC5",
+    "SC2"
+   ],
+   "params": [
+    0.5556883365200765,
+    4.3
+   ],
+   "comment": "level V, ring pair: sigma 0.43 nm, 75 % epsilon (2.3250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SC5-SC1",
+   "match": [
+    "SC5",
+    "SC1"
+   ],
+   "params": [
+    0.5556883365200765,
+    4.3
+   ],
+   "comment": "level V, ring pair: sigma 0.43 nm, 75 % epsilon (2.3250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SC5-BP4",
+   "match": [
+    "SC5",
+    "BP4"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "level V (3.1000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "SC4-SC4",
+   "match": [
+    "SC4"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "level IV, ring pair: sigma 0.43 nm, 75 % epsilon (2.6250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SC4-SC3",
+   "match": [
+    "SC4",
+    "SC3"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "level IV, ring pair: sigma 0.43 nm, 75 % epsilon (2.6250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SC4-SC2",
+   "match": [
+    "SC4",
+    "SC2"
+   ],
+   "params": [
+    0.5556883365200765,
+    4.3
+   ],
+   "comment": "level V, ring pair: sigma 0.43 nm, 75 % epsilon (2.3250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SC4-SC1",
+   "match": [
+    "SC4",
+    "SC1"
+   ],
+   "params": [
+    0.5556883365200765,
+    4.3
+   ],
+   "comment": "level V, ring pair: sigma 0.43 nm, 75 % epsilon (2.3250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SC4-BP4",
+   "match": [
+    "SC4",
+    "BP4"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "SC3-SC3",
+   "match": [
+    "SC3"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "level IV, ring pair: sigma 0.43 nm, 75 % epsilon (2.6250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SC3-SC2",
+   "match": [
+    "SC3",
+    "SC2"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "level IV, ring pair: sigma 0.43 nm, 75 % epsilon (2.6250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SC3-SC1",
+   "match": [
+    "SC3",
+    "SC1"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "level IV, ring pair: sigma 0.43 nm, 75 % epsilon (2.6250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SC3-BP4",
+   "match": [
+    "SC3",
+    "BP4"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "level VI (2.7000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "SC2-SC2",
+   "match": [
+    "SC2"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "level IV, ring pair: sigma 0.43 nm, 75 % epsilon (2.6250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SC2-SC1",
+   "match": [
+    "SC2",
+    "SC1"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "level IV, ring pair: sigma 0.43 nm, 75 % epsilon (2.6250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SC2-BP4",
+   "match": [
+    "SC2",
+    "BP4"
+   ],
+   "params": [
+    0.5497131931166347,
+    4.699999999999999
+   ],
+   "comment": "level VII (2.3000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "SC1-SC1",
+   "match": [
+    "SC1"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "level IV, ring pair: sigma 0.43 nm, 75 % epsilon (2.6250 kJ/mol, 0.43 nm)"
+  },
+  {
+   "name": "SC1-BP4",
+   "match": [
+    "SC1",
+    "BP4"
+   ],
+   "params": [
+    0.4780114722753346,
+    4.699999999999999
+   ],
+   "comment": "level VIII (2.0000 kJ/mol, 0.47 nm)"
+  },
+  {
+   "name": "BP4-BP4",
+   "match": [
+    "BP4"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "level I (5.0000 kJ/mol, 0.47 nm)"
+  }
+ ],
+ "bonds": [
+  {
+   "name": "*-*",
+   "match": [
+    "*",
+    "*"
+   ],
+   "style": "harmonic",
+   "params": [
+    1.4937858508604205,
+    4.699999999999999
+   ],
+   "comment": "standard bond (section 2.3)"
+  },
+  {
+   "name": "Na-Na",
+   "match": [
+    "Na",
+    "Na"
+   ],
+   "style": "harmonic",
+   "params": [
+    1.4937858508604205,
+    3.7
+   ],
+   "comment": "glycerol backbone 0.37 nm (section 2.8.3)"
+  },
+  {
+   "name": "SC1-SC1",
+   "match": [
+    "SC1",
+    "SC1"
+   ],
+   "style": "harmonic",
+   "params": [
+    5.975143403441682,
+    3.0
+   ],
+   "comment": "cyclohexane ring (section 2.8.1)"
+  }
+ ],
+ "angles": [
+  {
+   "name": "*-*-*",
+   "match": [
+    "*",
+    "*",
+    "*"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    2.987571701720841,
+    180.0
+   ],
+   "comment": "standard angle (section 2.3)"
+  },
+  {
+   "name": "C1-C3-C1",
+   "match": [
+    "C1",
+    "C3",
+    "C1"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    5.3776290630975145,
+    120.0
+   ],
+   "comment": "cis double bond (section 2.3)"
+  },
+  {
+   "name": "SC1-SC1-SC1",
+   "match": [
+    "SC1",
+    "SC1",
+    "SC1"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    0.0,
+    60.0
+   ],
+   "comment": "the cyclohexane triangle: no angle term (its beads are all bonded)"
+  }
+ ],
+ "dihedrals": [],
+ "impropers": [],
+ "bead_templates": {
+  "W": "[P4]",
+  "WF": "[BP4]",
+  "NA+": "[Qd+1]",
+  "CL-": "[Qa-1]",
+  "DOD": "[C1][C1][C1]",
+  "HD": "[C1][C1][C1][C1]",
+  "OCO": "[C1][P1]",
+  "CLF": "[C4]",
+  "ETH": "[N0]",
+  "CHEX": "[SC1]1[SC1][SC1]1",
+  "DPPC": "[Q0+1][Qa-1][Na]([C1][C1][C1][C1])[Na][C1][C1][C1][C1]",
+  "DLPC": "[Q0+1][Qa-1][Na]([C1][C1][C1])[Na][C1][C1][C1]",
+  "DCPC": "[Q0+1][Qa-1][Na]([C1][C1])[Na][C1][C1]",
+  "DOPC": "[Q0+1][Qa-1][Na]([C1][C1][C3][C1][C1])[Na][C1][C1][C3][C1][C1]",
+  "POPC": "[Q0+1][Qa-1][Na]([C1][C1][C3][C1][C1])[Na][C1][C1][C1][C1]",
+  "DPPE": "[Qd+1][Qa-1][Na]([C1][C1][C1][C1])[Na][C1][C1][C1][C1]",
+  "DOPE": "[Qd+1][Qa-1][Na]([C1][C1][C3][C1][C1])[Na][C1][C1][C3][C1][C1]",
+  "POPE": "[Qd+1][Qa-1][Na]([C1][C1][C3][C1][C1])[Na][C1][C1][C1][C1]"
+ },
+ "notes": [
+  "built by CAPS (bench/ff/make_martini2.py) from S. J. Marrink, H. J. Risselada, S. Yefimov, D. P. Tieleman, A. H. de Vries, J. Phys. Chem. B 111, 7812 (2007), Table 1 and sections 2.2-2.8",
+  "shifted LJ (from 0.9 nm) and Coulomb (from 0, epsilon_r 15) to 1.2 nm, as GROMACS's shift functions; masses 72 amu",
+  "single-atom ions: Qd (cation) and Qa (anion) with full charges (CAPS's choice of Q subtype; the paper says Q beads)"
+ ],
+ "version": "2007",
+ "status": "validated",
+ "typing": "../typing/martini2-marrink2007.typing.json"
+}
