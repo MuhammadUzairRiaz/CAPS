@@ -1,0 +1,1149 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "MARTINI 2 polymers (PEO, polystyrene)",
+ "source": "H. Lee, A. H. de Vries, S. J. Marrink, R. W. Pastor, J. Phys. Chem. B 113, 13186 (2009), Table 1; G. Rossi, L. Monticelli, S. R. Puisto, I. Vattulainen, T. Ala-Nissila, Soft Matter 7, 698 (2011), Tables 2 and 4 (B-mapping)",
+ "references": [
+  "H. Lee, A. H. de Vries, S. J. Marrink, R. W. Pastor, J. Phys. Chem. B 113, 13186 (2009)",
+  "G. Rossi, L. Monticelli, S. R. Puisto, I. Vattulainen, T. Ala-Nissila, Soft Matter 7, 698 (2011)"
+ ],
+ "extends": "martini2-marrink2007.json",
+ "atom_types": [
+  {
+   "name": "PEO",
+   "element": "",
+   "mass": 72.0,
+   "charge": 0.0,
+   "description": "PEO monomer -CH2-O-CH2- (Lee et al. 2009)"
+  },
+  {
+   "name": "SC4PS",
+   "element": "",
+   "mass": 72.0,
+   "charge": 0.0,
+   "description": "polystyrene ring bead (Rossi et al. 2011, SC4 PS)"
+  },
+  {
+   "name": "SC1PS",
+   "element": "",
+   "mass": 72.0,
+   "charge": 0.0,
+   "equivalence": {
+    "vdw": "SC1"
+   },
+   "description": "polystyrene backbone bead: SC1's non-bonded terms (Rossi et al. 2011), its own bonded terms (cyclohexane's SC1 keeps MARTINI 2.0's)"
+  }
+ ],
+ "pairs": [
+  {
+   "name": "PEO-PEO",
+   "match": [
+    "PEO"
+   ],
+   "params": [
+    0.8066443594646271,
+    4.3
+   ],
+   "comment": "Lee 2009 Table 1: 4.3 A, 3.375 kJ/mol"
+  },
+  {
+   "name": "PEO-Qda",
+   "match": [
+    "PEO",
+    "Qda"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "as SNa (Lee 2009, section 2)"
+  },
+  {
+   "name": "PEO-Qd",
+   "match": [
+    "PEO",
+    "Qd"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "as SNa (Lee 2009, section 2)"
+  },
+  {
+   "name": "PEO-Qa",
+   "match": [
+    "PEO",
+    "Qa"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "as SNa (Lee 2009, section 2)"
+  },
+  {
+   "name": "PEO-Q0",
+   "match": [
+    "PEO",
+    "Q0"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "as SNa (Lee 2009, section 2)"
+  },
+  {
+   "name": "PEO-P5",
+   "match": [
+    "PEO",
+    "P5"
+   ],
+   "params": [
+    1.1950286806883366,
+    4.699999999999999
+   ],
+   "comment": "as SNa (Lee 2009, section 2)"
+  },
+  {
+   "name": "PEO-P4",
+   "match": [
+    "PEO",
+    "P4"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.7
+   ],
+   "comment": "Lee 2009 Table 1: PEO-W 4.7 A, 4.0 kJ/mol"
+  },
+  {
+   "name": "PEO-P3",
+   "match": [
+    "PEO",
+    "P3"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "as SNa (Lee 2009, section 2)"
+  },
+  {
+   "name": "PEO-P2",
+   "match": [
+    "PEO",
+    "P2"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "as SNa (Lee 2009, section 2)"
+  },
+  {
+   "name": "PEO-P1",
+   "match": [
+    "PEO",
+    "P1"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "as SNa (Lee 2009, section 2)"
+  },
+  {
+   "name": "PEO-Nda",
+   "match": [
+    "PEO",
+    "Nda"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "as SNa (Lee 2009, section 2)"
+  },
+  {
+   "name": "PEO-Nd",
+   "match": [
+    "PEO",
+    "Nd"
+   ],
+   "params": [
+    1.0755258126195029,
+    4.699999999999999
+   ],
+   "comment": "as SNa (Lee 2009, section 2)"
+  },
+  {
+   "name": "PEO-Na",
+   "match": [
+    "PEO",
+    "Na"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.699999999999999
+   ],
+   "comment": "as SNa (Lee 2009, section 2)"
+  },
+  {
+   "name": "PEO-N0",
+   "match": [
+    "PEO",
+    "N0"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "as SNa (Lee 2009, section 2)"
+  },
+  {
+   "name": "PEO-C5",
+   "match": [
+    "PEO",
+    "C5"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "as SNa (Lee 2009, section 2)"
+  },
+  {
+   "name": "PEO-C4",
+   "match": [
+    "PEO",
+    "C4"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "as SNa (Lee 2009, section 2)"
+  },
+  {
+   "name": "PEO-C3",
+   "match": [
+    "PEO",
+    "C3"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "as SNa (Lee 2009, section 2)"
+  },
+  {
+   "name": "PEO-C2",
+   "match": [
+    "PEO",
+    "C2"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "as SNa (Lee 2009, section 2)"
+  },
+  {
+   "name": "PEO-C1",
+   "match": [
+    "PEO",
+    "C1"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "as SNa (Lee 2009, section 2)"
+  },
+  {
+   "name": "PEO-SQda",
+   "match": [
+    "PEO",
+    "SQda"
+   ],
+   "params": [
+    0.8962715105162523,
+    4.3
+   ],
+   "comment": "as SNa (Lee 2009, section 2)"
+  },
+  {
+   "name": "PEO-SQd",
+   "match": [
+    "PEO",
+    "SQd"
+   ],
+   "params": [
+    0.8962715105162523,
+    4.3
+   ],
+   "comment": "as SNa (Lee 2009, section 2)"
+  },
+  {
+   "name": "PEO-SQa",
+   "match": [
+    "PEO",
+    "SQa"
+   ],
+   "params": [
+    0.7170172084130019,
+    4.3
+   ],
+   "comment": "as SNa (Lee 2009, section 2)"
+  },
+  {
+   "name": "PEO-SQ0",
+   "match": [
+    "PEO",
+    "SQ0"
+   ],
+   "params": [
+    0.7170172084130019,
+    4.3
+   ],
+   "comment": "as SNa (Lee 2009, section 2)"
+  },
+  {
+   "name": "PEO-SP5",
+   "match": [
+    "PEO",
+    "SP5"
+   ],
+   "params": [
+    0.8962715105162523,
+    4.3
+   ],
+   "comment": "as SNa (Lee 2009, section 2)"
+  },
+  {
+   "name": "PEO-SP4",
+   "match": [
+    "PEO",
+    "SP4"
+   ],
+   "params": [
+    0.7170172084130019,
+    4.3
+   ],
+   "comment": "as SNa (Lee 2009, section 2)"
+  },
+  {
+   "name": "PEO-SP3",
+   "match": [
+    "PEO",
+    "SP3"
+   ],
+   "params": [
+    0.8066443594646271,
+    4.3
+   ],
+   "comment": "as SNa (Lee 2009, section 2)"
+  },
+  {
+   "name": "PEO-SP2",
+   "match": [
+    "PEO",
+    "SP2"
+   ],
+   "params": [
+    0.8066443594646271,
+    4.3
+   ],
+   "comment": "as SNa (Lee 2009, section 2)"
+  },
+  {
+   "name": "PEO-SP1",
+   "match": [
+    "PEO",
+    "SP1"
+   ],
+   "params": [
+    0.8066443594646271,
+    4.3
+   ],
+   "comment": "as SNa (Lee 2009, section 2)"
+  },
+  {
+   "name": "PEO-SNda",
+   "match": [
+    "PEO",
+    "SNda"
+   ],
+   "params": [
+    0.8066443594646271,
+    4.3
+   ],
+   "comment": "as SNa (Lee 2009, section 2)"
+  },
+  {
+   "name": "PEO-SNd",
+   "match": [
+    "PEO",
+    "SNd"
+   ],
+   "params": [
+    0.8066443594646271,
+    4.3
+   ],
+   "comment": "as SNa (Lee 2009, section 2)"
+  },
+  {
+   "name": "PEO-SNa",
+   "match": [
+    "PEO",
+    "SNa"
+   ],
+   "params": [
+    0.7170172084130019,
+    4.3
+   ],
+   "comment": "as SNa (Lee 2009, section 2)"
+  },
+  {
+   "name": "PEO-SN0",
+   "match": [
+    "PEO",
+    "SN0"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "as SNa (Lee 2009, section 2)"
+  },
+  {
+   "name": "PEO-SC5",
+   "match": [
+    "PEO",
+    "SC5"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "as SNa (Lee 2009, section 2)"
+  },
+  {
+   "name": "PEO-SC4",
+   "match": [
+    "PEO",
+    "SC4"
+   ],
+   "params": [
+    0.5556883365200765,
+    4.3
+   ],
+   "comment": "as SNa (Lee 2009, section 2)"
+  },
+  {
+   "name": "PEO-SC3",
+   "match": [
+    "PEO",
+    "SC3"
+   ],
+   "params": [
+    0.4839866156787764,
+    4.3
+   ],
+   "comment": "as SNa (Lee 2009, section 2)"
+  },
+  {
+   "name": "PEO-SC2",
+   "match": [
+    "PEO",
+    "SC2"
+   ],
+   "params": [
+    0.4839866156787764,
+    4.3
+   ],
+   "comment": "as SNa (Lee 2009, section 2)"
+  },
+  {
+   "name": "PEO-SC1",
+   "match": [
+    "PEO",
+    "SC1"
+   ],
+   "params": [
+    0.4839866156787764,
+    4.3
+   ],
+   "comment": "as SNa (Lee 2009, section 2)"
+  },
+  {
+   "name": "PEO-BP4",
+   "match": [
+    "PEO",
+    "BP4"
+   ],
+   "params": [
+    0.9560229445506692,
+    4.7
+   ],
+   "comment": "Lee 2009 Table 1: PEO-W 4.7 A, 4.0 kJ/mol"
+  },
+  {
+   "name": "PEO-SC4PS",
+   "match": [
+    "PEO",
+    "SC4PS"
+   ],
+   "params": [
+    0.5556883365200765,
+    4.3
+   ],
+   "comment": "as SNa-SC4"
+  },
+  {
+   "name": "SC4PS-SC4PS",
+   "match": [
+    "SC4PS"
+   ],
+   "params": [
+    0.5736137667304014,
+    4.1
+   ],
+   "comment": "Rossi 2011 Table 4: 0.41 nm, 2.4 kJ/mol"
+  },
+  {
+   "name": "SC4PS-Qda",
+   "match": [
+    "SC4PS",
+    "Qda"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "as SC4 (Rossi 2011, section 2.4)"
+  },
+  {
+   "name": "SC4PS-Qd",
+   "match": [
+    "SC4PS",
+    "Qd"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "as SC4 (Rossi 2011, section 2.4)"
+  },
+  {
+   "name": "SC4PS-Qa",
+   "match": [
+    "SC4PS",
+    "Qa"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "as SC4 (Rossi 2011, section 2.4)"
+  },
+  {
+   "name": "SC4PS-Q0",
+   "match": [
+    "SC4PS",
+    "Q0"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "as SC4 (Rossi 2011, section 2.4)"
+  },
+  {
+   "name": "SC4PS-P5",
+   "match": [
+    "SC4PS",
+    "P5"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "as SC4 (Rossi 2011, section 2.4)"
+  },
+  {
+   "name": "SC4PS-P4",
+   "match": [
+    "SC4PS",
+    "P4"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "as SC4 (Rossi 2011, section 2.4)"
+  },
+  {
+   "name": "SC4PS-P3",
+   "match": [
+    "SC4PS",
+    "P3"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "as SC4 (Rossi 2011, section 2.4)"
+  },
+  {
+   "name": "SC4PS-P2",
+   "match": [
+    "SC4PS",
+    "P2"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "as SC4 (Rossi 2011, section 2.4)"
+  },
+  {
+   "name": "SC4PS-P1",
+   "match": [
+    "SC4PS",
+    "P1"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "as SC4 (Rossi 2011, section 2.4)"
+  },
+  {
+   "name": "SC4PS-Nda",
+   "match": [
+    "SC4PS",
+    "Nda"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "as SC4 (Rossi 2011, section 2.4)"
+  },
+  {
+   "name": "SC4PS-Nd",
+   "match": [
+    "SC4PS",
+    "Nd"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "as SC4 (Rossi 2011, section 2.4)"
+  },
+  {
+   "name": "SC4PS-Na",
+   "match": [
+    "SC4PS",
+    "Na"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "as SC4 (Rossi 2011, section 2.4)"
+  },
+  {
+   "name": "SC4PS-N0",
+   "match": [
+    "SC4PS",
+    "N0"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "as SC4 (Rossi 2011, section 2.4)"
+  },
+  {
+   "name": "SC4PS-C5",
+   "match": [
+    "SC4PS",
+    "C5"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "as SC4 (Rossi 2011, section 2.4)"
+  },
+  {
+   "name": "SC4PS-C4",
+   "match": [
+    "SC4PS",
+    "C4"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "as SC4 (Rossi 2011, section 2.4)"
+  },
+  {
+   "name": "SC4PS-C3",
+   "match": [
+    "SC4PS",
+    "C3"
+   ],
+   "params": [
+    0.8365200764818356,
+    4.699999999999999
+   ],
+   "comment": "as SC4 (Rossi 2011, section 2.4)"
+  },
+  {
+   "name": "SC4PS-C2",
+   "match": [
+    "SC4PS",
+    "C2"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "as SC4 (Rossi 2011, section 2.4)"
+  },
+  {
+   "name": "SC4PS-C1",
+   "match": [
+    "SC4PS",
+    "C1"
+   ],
+   "params": [
+    0.7409177820267686,
+    4.699999999999999
+   ],
+   "comment": "as SC4 (Rossi 2011, section 2.4)"
+  },
+  {
+   "name": "SC4PS-SQda",
+   "match": [
+    "SC4PS",
+    "SQda"
+   ],
+   "params": [
+    0.4839866156787764,
+    4.3
+   ],
+   "comment": "as SC4 (Rossi 2011, section 2.4)"
+  },
+  {
+   "name": "SC4PS-SQd",
+   "match": [
+    "SC4PS",
+    "SQd"
+   ],
+   "params": [
+    0.4839866156787764,
+    4.3
+   ],
+   "comment": "as SC4 (Rossi 2011, section 2.4)"
+  },
+  {
+   "name": "SC4PS-SQa",
+   "match": [
+    "SC4PS",
+    "SQa"
+   ],
+   "params": [
+    0.4839866156787764,
+    4.3
+   ],
+   "comment": "as SC4 (Rossi 2011, section 2.4)"
+  },
+  {
+   "name": "SC4PS-SQ0",
+   "match": [
+    "SC4PS",
+    "SQ0"
+   ],
+   "params": [
+    0.4839866156787764,
+    4.3
+   ],
+   "comment": "as SC4 (Rossi 2011, section 2.4)"
+  },
+  {
+   "name": "SC4PS-SP5",
+   "match": [
+    "SC4PS",
+    "SP5"
+   ],
+   "params": [
+    0.4839866156787764,
+    4.3
+   ],
+   "comment": "as SC4 (Rossi 2011, section 2.4)"
+  },
+  {
+   "name": "SC4PS-SP4",
+   "match": [
+    "SC4PS",
+    "SP4"
+   ],
+   "params": [
+    0.4839866156787764,
+    4.3
+   ],
+   "comment": "as SC4 (Rossi 2011, section 2.4)"
+  },
+  {
+   "name": "SC4PS-SP3",
+   "match": [
+    "SC4PS",
+    "SP3"
+   ],
+   "params": [
+    0.5556883365200765,
+    4.3
+   ],
+   "comment": "as SC4 (Rossi 2011, section 2.4)"
+  },
+  {
+   "name": "SC4PS-SP2",
+   "match": [
+    "SC4PS",
+    "SP2"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "as SC4 (Rossi 2011, section 2.4)"
+  },
+  {
+   "name": "SC4PS-SP1",
+   "match": [
+    "SC4PS",
+    "SP1"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "as SC4 (Rossi 2011, section 2.4)"
+  },
+  {
+   "name": "SC4PS-SNda",
+   "match": [
+    "SC4PS",
+    "SNda"
+   ],
+   "params": [
+    0.5556883365200765,
+    4.3
+   ],
+   "comment": "as SC4 (Rossi 2011, section 2.4)"
+  },
+  {
+   "name": "SC4PS-SNd",
+   "match": [
+    "SC4PS",
+    "SNd"
+   ],
+   "params": [
+    0.5556883365200765,
+    4.3
+   ],
+   "comment": "as SC4 (Rossi 2011, section 2.4)"
+  },
+  {
+   "name": "SC4PS-SNa",
+   "match": [
+    "SC4PS",
+    "SNa"
+   ],
+   "params": [
+    0.5556883365200765,
+    4.3
+   ],
+   "comment": "as SC4 (Rossi 2011, section 2.4)"
+  },
+  {
+   "name": "SC4PS-SN0",
+   "match": [
+    "SC4PS",
+    "SN0"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "as SC4 (Rossi 2011, section 2.4)"
+  },
+  {
+   "name": "SC4PS-SC5",
+   "match": [
+    "SC4PS",
+    "SC5"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "as SC4 (Rossi 2011, section 2.4)"
+  },
+  {
+   "name": "SC4PS-SC4",
+   "match": [
+    "SC4PS",
+    "SC4"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "as SC4 (Rossi 2011, section 2.4)"
+  },
+  {
+   "name": "SC4PS-SC3",
+   "match": [
+    "SC4PS",
+    "SC3"
+   ],
+   "params": [
+    0.6273900573613767,
+    4.3
+   ],
+   "comment": "as SC4 (Rossi 2011, section 2.4)"
+  },
+  {
+   "name": "SC4PS-SC2",
+   "match": [
+    "SC4PS",
+    "SC2"
+   ],
+   "params": [
+    0.5556883365200765,
+    4.3
+   ],
+   "comment": "as SC4 (Rossi 2011, section 2.4)"
+  },
+  {
+   "name": "SC4PS-SC1",
+   "match": [
+    "SC4PS",
+    "SC1"
+   ],
+   "params": [
+    0.5556883365200765,
+    4.3
+   ],
+   "comment": "as SC4 (Rossi 2011, section 2.4)"
+  },
+  {
+   "name": "SC4PS-BP4",
+   "match": [
+    "SC4PS",
+    "BP4"
+   ],
+   "params": [
+    0.6453154875717018,
+    4.699999999999999
+   ],
+   "comment": "as SC4 (Rossi 2011, section 2.4)"
+  }
+ ],
+ "bonds": [
+  {
+   "name": "PEO-PEO",
+   "match": [
+    "PEO",
+    "PEO"
+   ],
+   "style": "harmonic",
+   "params": [
+    20.31548757170172,
+    3.3
+   ],
+   "comment": "Lee 2009 Table 1"
+  },
+  {
+   "name": "SC1PS-SC1PS",
+   "match": [
+    "SC1PS",
+    "SC1PS"
+   ],
+   "style": "harmonic",
+   "params": [
+    9.560229445506693,
+    2.5
+   ],
+   "comment": "Rossi 2011 Table 2, B-B (B-mapping)"
+  },
+  {
+   "name": "SC1PS-SC4PS",
+   "match": [
+    "SC1PS",
+    "SC4PS"
+   ],
+   "style": "harmonic",
+   "params": [
+    1195.0286806883364,
+    2.17
+   ],
+   "comment": "Rossi 2011 Table 2, B-R 0.217 nm, constrained (a stiff bond here)"
+  },
+  {
+   "name": "SC4PS-SC4PS",
+   "match": [
+    "SC4PS",
+    "SC4PS"
+   ],
+   "style": "harmonic",
+   "params": [
+    1195.0286806883364,
+    2.7
+   ],
+   "comment": "Rossi 2011 Table 2, R-R 0.27 nm, constrained (a stiff bond here)"
+  }
+ ],
+ "angles": [
+  {
+   "name": "PEO-PEO-PEO",
+   "match": [
+    "PEO",
+    "PEO",
+    "PEO"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    10.15774378585086,
+    130.0
+   ],
+   "comment": "Lee 2009 Table 1: 130 deg, 85 kJ/mol, (1/2) K (cos - cos0)^2"
+  },
+  {
+   "name": "SC1PS-SC1PS-SC1PS",
+   "match": [
+    "SC1PS",
+    "SC1PS",
+    "SC1PS"
+   ],
+   "style": "harmonic",
+   "params": [
+    2.987571701720841,
+    170.0
+   ],
+   "comment": "Rossi 2011 Table 2, B-B-B"
+  },
+  {
+   "name": "SC4PS-SC1PS-SC1PS",
+   "match": [
+    "SC4PS",
+    "SC1PS",
+    "SC1PS"
+   ],
+   "style": "harmonic",
+   "params": [
+    5.3776290630975145,
+    125.0
+   ],
+   "comment": "Rossi 2011 Table 2, R-B-B"
+  },
+  {
+   "name": "SC1PS-SC4PS-SC4PS",
+   "match": [
+    "SC1PS",
+    "SC4PS",
+    "SC4PS"
+   ],
+   "style": "harmonic",
+   "params": [
+    23.900573613766728,
+    156.0
+   ],
+   "comment": "Rossi 2011 Table 2, B-R-R"
+  },
+  {
+   "name": "SC4PS-SC4PS-SC4PS",
+   "match": [
+    "SC4PS",
+    "SC4PS",
+    "SC4PS"
+   ],
+   "style": "harmonic",
+   "params": [
+    0.0,
+    60.0
+   ],
+   "comment": "the ring triangle: no angle term (constrained bonds)"
+  }
+ ],
+ "dihedrals": [
+  {
+   "name": "PEO-PEO-PEO-PEO",
+   "match": [
+    "PEO",
+    "PEO",
+    "PEO",
+    "PEO"
+   ],
+   "style": "fourier",
+   "params": [
+    4,
+    0.46845124282982786,
+    1,
+    180.0,
+    0.043021032504780114,
+    2,
+    0.0,
+    0.07887189292543022,
+    3,
+    0.0,
+    0.028680688336520075,
+    4,
+    0.0
+   ],
+   "comment": "Lee 2009 Table 1: K (1 + cos(n phi - phi0)), 1.96 / 0.18 / 0.33 / 0.12 kJ/mol for n 1-4"
+  }
+ ],
+ "impropers": [],
+ "bead_templates": {
+  "W": "[P4]",
+  "WF": "[BP4]",
+  "NA+": "[Qd+1]",
+  "CL-": "[Qa-1]",
+  "DOD": "[C1][C1][C1]",
+  "HD": "[C1][C1][C1][C1]",
+  "OCO": "[C1][P1]",
+  "CLF": "[C4]",
+  "ETH": "[N0]",
+  "CHEX": "[SC1]1[SC1][SC1]1",
+  "DPPC": "[Q0+1][Qa-1][Na]([C1][C1][C1][C1])[Na][C1][C1][C1][C1]",
+  "DLPC": "[Q0+1][Qa-1][Na]([C1][C1][C1])[Na][C1][C1][C1]",
+  "DCPC": "[Q0+1][Qa-1][Na]([C1][C1])[Na][C1][C1]",
+  "DOPC": "[Q0+1][Qa-1][Na]([C1][C1][C3][C1][C1])[Na][C1][C1][C3][C1][C1]",
+  "POPC": "[Q0+1][Qa-1][Na]([C1][C1][C3][C1][C1])[Na][C1][C1][C1][C1]",
+  "DPPE": "[Qd+1][Qa-1][Na]([C1][C1][C1][C1])[Na][C1][C1][C1][C1]",
+  "DOPE": "[Qd+1][Qa-1][Na]([C1][C1][C3][C1][C1])[Na][C1][C1][C3][C1][C1]",
+  "POPE": "[Qd+1][Qa-1][Na]([C1][C1][C3][C1][C1])[Na][C1][C1][C1][C1]",
+  "PEO9": "[PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO]",
+  "PEO18": "[PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO]",
+  "PEO36": "[PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO][PEO]",
+  "PS10": "[SC1PS]([SC4PS]1[SC4PS][SC4PS]1)[SC1PS]([SC4PS]2[SC4PS][SC4PS]2)[SC1PS]([SC4PS]3[SC4PS][SC4PS]3)[SC1PS]([SC4PS]4[SC4PS][SC4PS]4)[SC1PS]([SC4PS]5[SC4PS][SC4PS]5)[SC1PS]([SC4PS]6[SC4PS][SC4PS]6)[SC1PS]([SC4PS]7[SC4PS][SC4PS]7)[SC1PS]([SC4PS]8[SC4PS][SC4PS]8)[SC1PS]([SC4PS]9[SC4PS][SC4PS]9)[SC1PS]([SC4PS]1[SC4PS][SC4PS]1)"
+ },
+ "notes": [
+  "built by CAPS (bench/ff/make_martini2_polymers.py) from the papers' tables as an overlay on martini2-marrink2007",
+  "PEO interacts with other beads as SNa (the paper's proposal); polystyrene's ring beads as SC4 except among themselves",
+  "polystyrene's constrained bonds are stiff bonds (1e6 kJ mol-1 nm-2): use a short time step or constrain them",
+  "angle styles: cosine/squared (MARTINI, PEO) and harmonic (polystyrene, as the paper)"
+ ],
+ "version": "2009 / 2011",
+ "status": "validated",
+ "typing": "../typing/martini2-polymers.typing.json"
+}

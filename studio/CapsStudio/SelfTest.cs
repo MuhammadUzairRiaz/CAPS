@@ -1686,7 +1686,7 @@ internal static class SelfTest
                   $"KG backmap to polystyrene: refused in reduced units {reducedRefused} · {bm?.Atoms} atoms · {vm.Field.ForceFieldName} · {vm.CgBackmapLog.Replace("\n", " / ")} {vm.CgError}");
             vm.CgUnits = 0;
             vm.CgChains = 10; vm.CgBeads = 20;
-            // MARTINI: PEO chains of SN0 beads with the library's MARTINI 2 polymers, packed and compressed to 1.1 g/cm³
+            // MARTINI: PEO chains of Lee et al. 2009's PEO beads with the library's MARTINI 2 polymers, packed and compressed to 1.1 g/cm³
             vm.OpenCg();
             vm.CgModel = 1;
             vm.MtExample = 1;

@@ -4,7 +4,8 @@
  "name": "MARTINI 2.0",
  "source": "S. J. Marrink, H. J. Risselada, S. Yefimov, D. P. Tieleman, A. H. de Vries, J. Phys. Chem. B 111, 7812 (2007), Table 1 and sections 2.2-2.8",
  "references": [
-  "S. J. Marrink, H. J. Risselada, S. Yefimov, D. P. Tieleman, A. H. de Vries, J. Phys. Chem. B 111, 7812 (2007)"
+  "S. J. Marrink, H. J. Risselada, S. Yefimov, D. P. Tieleman, A. H. de Vries, J. Phys. Chem. B 111, 7812 (2007)",
+  "S. J. Marrink, A. H. de Vries, A. E. Mark, J. Phys. Chem. B 108, 750 (2004)"
  ],
  "units": "real",
  "styles": {
@@ -8766,6 +8767,20 @@
     120.0
    ],
    "comment": "cis double bond (section 2.3)"
+  },
+  {
+   "name": "Qa-Na-Na",
+   "match": [
+    "Qa",
+    "Na",
+    "Na"
+   ],
+   "style": "cosine/squared",
+   "params": [
+    2.987571701720841,
+    120.0
+   ],
+   "comment": "the glycerol backbone PO4-GL1-GL2 (Marrink, de Vries & Mark 2004, section 3.3.1)"
   },
   {
    "name": "SC1-SC1-SC1",

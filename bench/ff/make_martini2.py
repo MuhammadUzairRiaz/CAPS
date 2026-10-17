@@ -13,6 +13,9 @@ repository; the cgmartini.nl .itp files are not used):
                             ether N0; cyclohexane three SC1, 0.3 nm, 5000 kJ mol-1 nm-2; PC head Q0 + Qa, PE head Qd + Qa,
                             glycerol two Na 0.37 nm apart, tails of four C1 per 16 carbons, oleoyl C1 C1 C3 C1 C1; ions Q
                             beads with full charges)
+  MARRINK2004               S. J. Marrink, A. H. de Vries, A. E. Mark, J. Phys. Chem. B 108, 750 (2004), section 3.3.1: the
+                            lipid angles the 2007 paper keeps (GLYC-C1-C2 and PO4-GLYC-C1 180 deg, PO4-GLYC-GLYC 120 deg,
+                            25 kJ mol-1)
   drymartini-arnarez2015    C. Arnarez et al., J. Chem. Theory Comput. 11, 260 (2015): Table 1 (the implicit-solvent
                             interaction matrix and levels X-XII, epsilon 1.5 / 1.0 / 0.5 kJ/mol; Q-Q sigma 0.60 nm, level IX
                             0.62 nm, ring beads as in MARTINI), section 3.1 (head bond 0.45 nm, tail bonds 0.48 nm, saturated
@@ -32,6 +35,7 @@ KJ = 4.184
 TYPES = ["Qda", "Qd", "Qa", "Q0", "P5", "P4", "P3", "P2", "P1", "Nda", "Nd", "Na", "N0", "C5", "C4", "C3", "C2", "C1"]
 LEVEL = {"O": 5.6, "I": 5.0, "II": 4.5, "III": 4.0, "IV": 3.5, "V": 3.1, "VI": 2.7, "VII": 2.3, "VIII": 2.0, "IX": 2.0,
          "X": 1.5, "XI": 1.0, "XII": 0.5}
+MARRINK2004 = "S. J. Marrink, A. H. de Vries, A. E. Mark, J. Phys. Chem. B 108, 750 (2004)"
 MARRINK = "S. J. Marrink, H. J. Risselada, S. Yefimov, D. P. Tieleman, A. H. de Vries, J. Phys. Chem. B 111, 7812 (2007)"
 ARNAREZ = ("C. Arnarez, J. J. Uusitalo, M. F. Masman, H. I. Ingolfsson, D. H. de Jong, M. N. Melo, X. Periole, A. H. de Vries, "
            "S. J. Marrink, J. Chem. Theory Comput. 11, 260 (2015)")
@@ -149,6 +153,7 @@ def library(fid, name, ref, source, levels, dry):
         angles = [angle(["*", "*", "*"], 180.0, 25, "standard angle (Marrink 2007, section 2.3)"),
                   angle(["*", "C?", "*"], 180.0, 35, "saturated tails 35 kJ/mol (section 3.1)"),
                   angle(["C1", "C3", "C1"], 120.0, 45, "cis double bond (Marrink 2007, section 2.3)"),
+                  angle(["Qa", "Na", "Na"], 120.0, 25, "the glycerol backbone PO4-GL1-GL2 (Marrink, de Vries & Mark 2004, section 3.3.1)"),
                   angle(["SC1", "SC1", "SC1"], 60.0, 0, "the cyclohexane triangle: no angle term (its beads are all bonded)")]
     else:
         bonds = [bond(["*", "*"], 0.47, 1250, "standard bond (section 2.3)"),
@@ -156,8 +161,9 @@ def library(fid, name, ref, source, levels, dry):
                  bond(["SC1", "SC1"], 0.30, 5000, "cyclohexane ring (section 2.8.1)")]
         angles = [angle(["*", "*", "*"], 180.0, 25, "standard angle (section 2.3)"),
                   angle(["C1", "C3", "C1"], 120.0, 45, "cis double bond (section 2.3)"),
+                  angle(["Qa", "Na", "Na"], 120.0, 25, "the glycerol backbone PO4-GL1-GL2 (Marrink, de Vries & Mark 2004, section 3.3.1)"),
                   angle(["SC1", "SC1", "SC1"], 60.0, 0, "the cyclohexane triangle: no angle term (its beads are all bonded)")]
-    doc = {"format": "caps-forcefield", "format_version": 1, "name": name, "source": source, "references": [ref] if not dry else [ref, MARRINK],
+    doc = {"format": "caps-forcefield", "format_version": 1, "name": name, "source": source, "references": [ref, MARRINK2004] if not dry else [ref, MARRINK, MARRINK2004],
            "units": "real",
            "styles": {"pair": "lj/gromacs/coul/gromacs", "bond": "harmonic", "angle": "cosine/squared", "dihedral": "charmm", "improper": "cvff"},
            "mixing": "arithmetic", "special_lj": [0, 1, 1], "special_coul": [0, 1, 1], "cutoff": 12.0, "timestep": 20,

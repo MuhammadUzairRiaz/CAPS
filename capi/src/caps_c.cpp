@@ -9783,10 +9783,10 @@ extern "C" caps_doc* caps_martini_melt(const char* options_json, caps_progress_f
     const double density = j.num("density", 1.0), tol = j.num("tolerance", 3.0);
     const uint64_t seed = uint64_t(j.num("seed", 1));
     if (ff_path.empty()) throw std::runtime_error("choose the MARTINI force field");
-    if (repeat.empty()) throw std::runtime_error("give the repeat unit as bead SMILES, e.g. [SN0] (PEO) or [C1] (four CH2 per bead)");
+    if (repeat.empty()) throw std::runtime_error("give the repeat unit as bead SMILES, e.g. [PEO] (MARTINI 2 polymers) or [C1] (four CH2 per bead)");
     if (n < 1 || chains < 1 || density <= 0) throw std::runtime_error("repeats, chains and the density must be positive");
     const caps::FFDef def = caps::load_forcefield(ff_path);
-    {   // every bead of the repeat must be a type of this force field ([SN0], [Qd+1]: the name before a charge)
+    {   // every bead of the repeat must be a type of this force field ([PEO], [Qd+1]: the name before a charge)
       std::string missing;
       for (size_t a = repeat.find('['); a != std::string::npos; a = repeat.find('[', a + 1)) {
         const size_t b = repeat.find(']', a);
@@ -9800,7 +9800,7 @@ extern "C" caps_doc* caps_martini_melt(const char* options_json, caps_progress_f
       }
       if (!missing.empty()) {
         missing.pop_back();
-        throw std::runtime_error(def.name + " has no bead type" + missing + " (MARTINI 2 names such as C1, SN0 are not Martini 3's; choose the force field the mapping is written for)");
+        throw std::runtime_error(def.name + " has no bead type" + missing + " (MARTINI 2 names such as C1, PEO are not Martini 3's; choose the force field the mapping is written for)");
       }
     }
     std::string chain_text;

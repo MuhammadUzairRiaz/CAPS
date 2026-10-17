@@ -202,7 +202,7 @@ public sealed partial class MainViewModel
     }
     private int _mtFf;
     public int MtFfIndex { get => _mtFf; set => Set(ref _mtFf, value); }
-    public static readonly string[] MtExamples = ["[C1] · 4 CH₂ per bead (polyethylene-like; MARTINI 2)", "[SN0] · poly(ethylene oxide) (Lee et al. 2009; MARTINI 2 polymers)",
+    public static readonly string[] MtExamples = ["[C1] · 4 CH₂ per bead (polyethylene-like; MARTINI 2)", "[PEO] · poly(ethylene oxide) (Lee et al. 2009; MARTINI 2 polymers)",
                                                    "[C1][C3] · two apolar beads per unit (write your own mapping)"];
     private string _mtRepeat = "[C1]";
     public string MtRepeat { get => _mtRepeat; set => Set(ref _mtRepeat, value ?? ""); }
