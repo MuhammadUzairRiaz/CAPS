@@ -2780,6 +2780,38 @@
    ],
    "source": "CAPS fit (QM)",
    "reason": "CAPS fit (QM), joint over 4 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS C-OS-C-CT_hold180 0.33, C-OS-C-O_hold180 0.34, C-OS-C-CT_hold0 3.38, C-OS-C-O_hold0 3.37 kcal/mol; ridge 0.001; Boltzmann-weighted at 298 K, RMS 0.36 kcal/mol over the 62 points within 3 kcal/mol of the lowest; fragment C-OS-C-CT_hold180, C-OS-C-O_hold180, C-OS-C-CT_hold0, C-OS-C-O_hold0"
+  },
+  {
+   "match": [
+    "CA",
+    "CT",
+    "CT",
+    "CM"
+   ],
+   "params": [
+    -0.2282,
+    0.0833,
+    0.6502,
+    -0.3198
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CA-CT-CT-CM 0.41 kcal/mol; ridge 0.001; fragment CA-CT-CT-CM"
+  },
+  {
+   "match": [
+    "CM",
+    "CT",
+    "CT",
+    "CZ"
+   ],
+   "params": [
+    -0.5186,
+    0.1054,
+    0.7483,
+    -0.2132
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-CZ 0.35 kcal/mol; ridge 0.001; fragment CM-CT-CT-CZ"
   }
  ],
  "charge_corrections": [
