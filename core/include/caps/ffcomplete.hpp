@@ -53,6 +53,45 @@ struct CompleteReport {
 
 CompleteReport complete_forcefield(const System& s, const FFDef& ff, const CompleteOptions& opt,
                                    const std::function<void(const std::string&)>& log = {});
+// with the structure's types given (an assignment typed by hand, or a .car file's types kept)
+CompleteReport complete_forcefield(const System& s, const FFDef& ff, const std::vector<std::string>& types, const CompleteOptions& opt,
+                                   const std::function<void(const std::string&)>& log = {});
+
+// ------------------------------------------------------------------ completion during an assignment
+// Opt-in ("caps ff apply --complete ml", a recipe's type: { complete: ml }, the Field step's "Fill missing terms with
+// CAPS ML"): after typing, the bonded terms the force field lacks are fitted by caps ff complete and merged onto it, and
+// the assignment goes on. Each fitted rule carries its source (FFRule::source, ml_source), which follows its terms into
+// the exported files. A term the model cannot fit, or whose fit fails the quality gate, stays missing with its reason;
+// charges and untyped atoms are never ML's to fill.
+
+// whether this CAPS has its ML engine (a build with -DCAPS_WITH_TORCH=ON)
+bool ml_engine_available();
+// what a build without it says when completion is asked for
+std::string ml_engine_missing_message();
+
+// CAPS's model, data/ml/caps-mace-v1.model: $CAPS_ML_MODEL, else under $CAPS_HOME, near the given paths (a force field's
+// file in data/forcefields: its library's data/ml), beside the CAPS library or program (and its ../Resources: the macOS
+// app), or in the source tree. "" when not found.
+std::string find_ml_model(const std::vector<std::string>& near = {});
+// The model to use: `given` when not empty, else find_ml_model(near); throws std::runtime_error naming where to put it
+// when there is none. Shared by caps ff complete (the CLI, caps_ff_complete) and completion during an assignment.
+std::string resolve_ml_model(const std::string& given, const std::vector<std::string>& near = {});
+
+struct MlFill {
+  int fitted = 0;                          // rules CAPS ML added
+  std::vector<std::string> fitted_terms;   // "dihedral CA-CT-CT-CM · CAPS ML (...), RMS 0.31 kcal/mol"
+  std::vector<std::string> left;           // what is still missing, with the reason ("dihedral X-Y-Z-W: a poor fit (RMS 1.40 kcal/mol)")
+  CompleteReport report;
+  std::string model;                       // the model file used
+};
+
+// Fits what `def` lacks for `s` (typed `types`) with CAPS ML and merges the fitted rules onto `def`. Throws
+// std::runtime_error with ml_engine_missing_message() in a build without the ML engine, and when the model is not found.
+MlFill fill_missing_with_ml(const System& s, FFDef& def, const std::vector<std::string>& types, const CompleteOptions& opt,
+                            const std::function<void(const std::string&)>& log = {});
+// The completion option's values: "ml" (fill with CAPS ML) or "none" / "off" / "" (report what is missing). Throws
+// std::invalid_argument for anything else.
+bool parse_complete_option(const std::string& value);
 
 // The report as JSON, the same for caps ff complete --report and the C API (caps_ff_complete): {structure, forcefield,
 // model, missing_before[], missing_after[], terms[{kind, classes[], status, params[], rms_kcal, points, fragment_atoms,

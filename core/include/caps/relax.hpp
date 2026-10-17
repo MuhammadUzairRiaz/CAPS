@@ -250,6 +250,9 @@ std::string lammps_shake_fix(const System& s, const ForceField& ff, const Energy
 // GROMACS cannot compute exactly the same (DSF becomes PME; no cell). Throws FieldError for forms GROMACS lacks (class
 // II, inversions, 9-6 or Buckingham pairs).
 std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& stem);
+// Charges at six decimals, each molecule's total kept (the rounding left over on its atom of largest |q|), as the
+// LAMMPS and GROMACS writers put them in their files; mol: each atom's molecule
+std::vector<double> charges_six_decimals(const std::vector<double>& q, const std::vector<int64_t>& mol);
 // The notes alone (nothing written); throws as write_gromacs does.
 std::vector<std::string> gromacs_notes(const System& s, const ForceField& ff, const EnergyOptions& e);
 // The .mdp non-bonded settings alone (cut-offs, modifiers, dispersion correction, electrostatics).

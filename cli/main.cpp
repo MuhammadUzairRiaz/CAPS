@@ -206,8 +206,8 @@ int usage() {
                "               diffusion: [--fit 0.2:0.5] [--viscosity ETA (mPa·s) --temp T (Yeh–Hummer finite-size correction)]\n"
                "               interfaces (zprofile, adhesion, interaction, orientation): [--surface 1-3,7 (molecule ids; 1)] [--axis x|y|z (z)] [--zbin 0.5]\n"
                "  caps elastic FILE [--topology DATA] [--method strain|fluct|fluct-run] [--configs N] [--strain 1e-4] [--temp T] [--ps 100] [--ff FF.json] [--json OUT]\n"
-               "  caps tensile DATA -o OUT.data [--axis x] [--rate 1e-3] [--strain 0.2] [--temp 300] [--fixed-lateral] [--precision mixed|double] [--ff FF.json [--overlay OV.json] [--charges MODE]] [--csv DIR]\n"
-               "  caps tg DATA -o OUT.data [--from 500 --to 200 --step 20 --ps 100] [--precision mixed|double] [--ff FF.json [--overlay OV.json] [--charges MODE]] [--csv DIR]   |   caps tg --fit TABLE.csv\n"
+               "  caps tensile DATA -o OUT.data [--axis x] [--rate 1e-3] [--strain 0.2] [--temp 300] [--fixed-lateral] [--precision mixed|double] [--ff FF.json [--overlay OV.json] [--charges MODE] [--complete ml]] [--csv DIR]\n"
+               "  caps tg DATA -o OUT.data [--from 500 --to 200 --step 20 --ps 100] [--precision mixed|double] [--ff FF.json [--overlay OV.json] [--charges MODE] [--complete ml]] [--csv DIR]   |   caps tg --fit TABLE.csv\n"
                "  caps frames  FILE OUT.lammpstrj|dcd|xyz|pdb|gro|trr [--topology DATA] [--first N] [--last N] [--stride N]   (read thinned)\n"
                "  caps convert FILE OUT.data|xyz|pdb|mol2|car|gro|sdf|cif|vasp|POSCAR [--topology DATA]   (.car: with its .mdf)\n"
                "  caps edit    FILE --ops 'OP ARGS; OP ARGS …' | --ops-file OPS.txt -o OUT   edits in order, atoms numbered from 1:\n"
@@ -280,7 +280,7 @@ int usage() {
                "  caps field   FILE [--topology DATA] [--forces OUT.txt]   the structure's force field (below): types, terms, energy (and per-atom forces)\n"
                "  caps relax   FILE -o OUT.data|OUT.pdb|OUT.xyz [--method lbfgs|cg|sd|fire] [--ftol 0.5] [--iterations 5000]\n"
                "               [--density 1.05] [--step 0.06] [--box-relax] [--pressure 1] [--no-pushoff] [--cutoff Å]\n"
-               "               [--no-coulomb] [--ff FF.json [--overlay OV.json[,MORE.json]] [--charges auto|types|gasteiger|keep|qeq|increments]] [--quiet]\n"
+               "               [--no-coulomb] [--ff FF.json [--overlay OV.json[,MORE.json]] [--charges auto|types|gasteiger|keep|qeq|increments] [--complete ml]] [--quiet]\n"
                "               (.data output carries the force field for LAMMPS)\n"
                "               without --ff (relax, md, equilibrate, field): the force field a data file CAPS wrote holds (its coefficients,\n"
                "               charges and 1-4 weights; refused when CAPS cannot rebuild it from the file), else GAFF (C and H) or UFF;\n"
@@ -290,7 +290,7 @@ int usage() {
                "  caps md      FILE -o OUT.data [--steps 10000] [--dt 1] [--temp 300] [--thermostat bussi|langevin|nose-hoover|none]\n"
                "               [--tau-t 100] [--barostat none|crescale|berendsen|mtk] [--pressure 1] [--tau-p 1000]\n"
                "               [--constraints none|h-bonds|all-bonds] [--constraint-solver shake|lincs] [--hmr 3.024] [--seed 1] [--new-velocities] [--thermo 100] [--dump TRAJ.lammpstrj --every 1000]\n"
-               "               [--log thermo.csv] [--cutoff Å] [--skin 1.5] [--threads N] [--no-coulomb] [--precision mixed|double] [--ff FF.json [--overlay OV.json] [--charges MODE]] [--quiet]\n"
+               "               [--log thermo.csv] [--cutoff Å] [--skin 1.5] [--threads N] [--no-coulomb] [--precision mixed|double] [--ff FF.json [--overlay OV.json] [--charges MODE] [--complete ml]] [--quiet]\n"
                "               [--checkpoint-every N [--checkpoint OUT.restart.data]]   the full state every N steps\n"
                "               [--progress-file progress.jsonl]   one JSON line per thermo row (default in a SLURM job)\n"
                "               caps md OUT.restart.data --resume --steps TOTAL -o OUT   continues from a checkpoint\n"
@@ -299,7 +299,7 @@ int usage() {
                "               [--cycles 3] [--tlow 300] [--thigh 600] [--ramp 50] [--hold 50]   (annealing, ps)\n"
                "               [--until-converged] [--block 20] [--max-blocks 20] [--dt 1] [--thermostat bussi|langevin|nose-hoover] [--tau-t 100]\n"
                "               [--barostat crescale|berendsen|mtk] [--tau-p 1000] [--seed 1] [--dump TRAJ.lammpstrj --every-ps 10] [--log thermo.csv]\n"
-               "               [--precision mixed|double] [--constraints h-bonds] [--hmr 3.024] [--cutoff Å] [--ff FF.json [--overlay OV.json] [--charges MODE]] [--quiet]\n"
+               "               [--precision mixed|double] [--constraints h-bonds] [--hmr 3.024] [--cutoff Å] [--ff FF.json [--overlay OV.json] [--charges MODE] [--complete ml]] [--quiet]\n"
                "               (mixed: pair terms in single precision\n"
                "               with SIMD, as GROMACS; --hmr: hydrogens at that mass, taken from their bonded atoms, for steps past 2 fs)\n"
                "  caps chains  FILE [--topology DATA]          backbones and mean-square internal distances\n"
@@ -307,7 +307,7 @@ int usage() {
                "  caps contacts FILE [--tol 2.0] [--no-pbc] [--molecule-size N]   smallest distance between atoms of different molecules\n"
                "  caps react   FILE -o OUT [--template NAME|FILE.txt ...] [--capture Å] [--per-cycle 10] [--cycles 100] [--target 1.0]\n"
                "               [--no-relax] [--relax-iterations 500] [--md-ps 0] [--during-md] [--temp 300] [--seed 1] [--cutoff Å] [--no-coulomb]\n"
-               "               [--ff FF.json [--overlay OV.json] [--charges MODE]] [--between-chains] [--crosslinks links|per-chain|density|mc|degree:VALUE]\n"
+               "               [--ff FF.json [--overlay OV.json] [--charges MODE] [--complete ml]] [--between-chains] [--crosslinks links|per-chain|density|mc|degree:VALUE]\n"
                "               [--sites-per-chain N] [--weights 2,1] [--auto-capture [--capture-max 8] [--capture-step 0.5]] [--keep-byproducts]\n"
                "               [--insert SMILES --count N] [--remove-unreacted] [--summary NET.json] [--fa 2 --fb 4 --ratio 1] [--list-templates] [--quiet]\n"
                "  caps ml eval FILE [--model M.model] [--json OUT.json]   energy (eV) and forces (eV/A) of a molecule from CAPS's\n"
@@ -320,6 +320,7 @@ int usage() {
                "  caps ff overlays [FF_ID]                       the library's overlays (parameter refits) for --overlay\n"
                "  caps ff type FILE --ff FF.json [--typing RULES.json] [-o TYPES.txt] [--explain]   assign atom types from SMARTS rules\n"
                "  caps ff apply FILE --ff FF.json [-o OUT.data [--lammps-input OUT.in [--lammps-run check|minimize|nvt|npt --temp 300 --press 1 --dt FS (default: the force field's, Martini 20, else 0.5) --steps N] [--moltemplate SYSTEM.lt]]] [--gromacs STEM] [--dlpoly DIR] [--overlay USER.json[,MORE.json]] [--types TYPES.txt] [--charges auto|keep|types|gasteiger]\n"
+               "               [--complete ml [--model M.model]]   (terms the force field lacks fitted by CAPS ML, marked as such in every file)\n"
                "               [--lammps-style native|exact] [--hybrid] [--kspace auto|pppm|ewald|dsf|cut] [--kspace-accuracy 1e-4] [--lammps-cutoff Å] [--units auto|real|metal]\n"
                "               [--list] [-o OUT.data]   parameters for a structure whose atoms carry type names (or TYPES.txt)\n";
   return 2;
@@ -366,7 +367,7 @@ const std::set<std::string>& known_options() {
     "--all", "--allow-missing", "--auto-capture", "--auto-scale", "--between-chains", "--capture-max", "--capture-step", "--crosslinks",
     "--during-md", "--keep-byproducts", "--relax-iterations", "--remove-unreacted", "--sites-per-chain", "--summary", "--axis", "--barostat", "--beads", "--bg", "--bibtex",
     "--block", "--blocks", "--born", "--branch", "--born-every", "--born-strain", "--box", "--box-relax",
-    "--capture", "--cell", "--centre", "--chains", "--charges", "--colour", "--comfortable", "--compare",
+    "--capture", "--cell", "--centre", "--chains", "--charges", "--colour", "--comfortable", "--compare", "--complete",
     "--components", "--conc", "--constraint-solver", "--constraints", "--configs", "--conformers", "--count", "--csv", "--cutoff", "--cycles",
     "--density", "--deterministic", "--distance", "--dp", "--dq", "--dr", "--droplet", "--dt", "--dump",
     "--edge", "--eq-ps", "--equilibrate", "--dlpoly",
@@ -468,6 +469,55 @@ System load(const std::string& path, const std::map<std::string, std::string>& o
 }
 
 
+// --complete ml (caps ff apply, relax, md, equilibrate): the bonded terms the force field lacks for the structure, fitted
+// by CAPS ML and merged onto it before the assignment goes on (caps/ffcomplete.hpp). Off unless asked, so a result stays
+// what the force field alone gives. Prints what was fitted and what is still missing (with the reason).
+bool completion_asked(std::map<std::string, std::string>& o) { return o.count("--complete") && parse_complete_option(o["--complete"]); }
+
+// --model M.model, else CAPS's model found as the core finds it (find_ml_model: beside the force field's library, CAPS_HOME,
+// the program), else under one of the CAPS roots; throws (resolve_ml_model) when there is none. caps ml, caps ff complete
+// and --complete ml all take their model from here.
+std::string cli_ml_model(std::map<std::string, std::string>& o, const std::string& ffpath = "") {
+  std::string m = o.count("--model") ? o["--model"] : find_ml_model({ffpath});
+  if (m.empty())
+    for (const auto& r : caps_roots())
+      if (!r.empty() && std::filesystem::exists(r + "/data/ml/caps-mace-v1.model")) { m = r + "/data/ml/caps-mace-v1.model"; break; }
+  return resolve_ml_model(m, {ffpath});
+}
+
+MlFill cli_complete_ml(const System& s, FFDef& def, const std::vector<std::string>& types, std::map<std::string, std::string>& o,
+                       const std::string& ffpath, bool quiet) {
+  if (!ml_engine_available()) throw std::runtime_error(ml_engine_missing_message());
+  CompleteOptions co;
+  co.model = cli_ml_model(o, ffpath);
+  if (o.count("--step")) co.step = std::stoi(o["--step"]);
+  auto log = [&](const std::string& m) { if (!quiet) { std::printf("  CAPS ML: %s\n", m.c_str()); std::fflush(stdout); } };
+  MlFill f = fill_missing_with_ml(s, def, types, co, log);
+  if (!quiet) {
+    if (f.report.missing_before.empty()) std::printf("CAPS ML: nothing missing in %s for this structure\n", def.name.c_str());
+    else std::printf("CAPS ML: %d parameter set(s) fitted where %s has none; %zu still missing\n", f.fitted, def.name.c_str(), f.report.missing_after.size());
+    for (const auto& t : f.fitted_terms) std::printf("  fitted %s\n", t.c_str());
+    for (const auto& t : f.left) std::printf("  left: %s\n", t.c_str());
+  }
+  return f;
+}
+
+// The provenance step of a completion: the model, each fitted term with its source, what was left
+ProvStep ml_prov_step(const MlFill& f, const std::string& model) {
+  ProvStep p;
+  p.engine = "field.complete_ml";
+  p.summary = std::to_string(f.fitted) + " parameter set(s) fitted by CAPS ML where the force field has none";
+  p.params.push_back({"model", model});
+  for (const auto& t : f.fitted_terms) {
+    const size_t dot = t.find(" · ");
+    p.params.push_back({dot == std::string::npos ? t : t.substr(0, dot), dot == std::string::npos ? "" : t.substr(dot + 4)});
+  }
+  for (const auto& t : f.left) p.params.push_back({"still missing", t});
+  p.approximations.push_back({"Estimated parameters", f.fitted ? std::to_string(f.fitted) + " bonded parameter set(s) from CAPS ML (caps ff complete)" : "none"});
+  p.time = now_iso();
+  return p;
+}
+
 // The force field for commands that take --ff FF.json [--typing RULES] [--charges MODE]: typed by the force field's
 // rules (or the atom names in the file); without --ff the built-in GAFF of C and H.
 ForceField cli_forcefield(System& s0, std::map<std::string, std::string>& o, bool quiet = false) {
@@ -529,6 +579,7 @@ ForceField cli_forcefield(System& s0, std::map<std::string, std::string>& o, boo
   } else {
     for (const auto& a : s0.atoms) types.push_back(a.name);
   }
+  if (completion_asked(o)) (void)cli_complete_ml(s0, def, types, o, ff_path(o["--ff"]), quiet);
   ParamReport rep;
   if (!o.count("--charges") && file_charges(s0) && !quiet)
     std::fprintf(stderr, "charges: the file's own charges are kept, not %s's (--charges auto gives the force field's own)\n", def.name.c_str());
@@ -2219,11 +2270,7 @@ int main(int argc, char** argv) {
     // caps ml eval FILE: CAPS's machine-learned potential on one molecule (non-periodic), natively through libtorch
     try {
       if (pos.size() < 2 || (pos[0] != "eval" && pos[0] != "relax")) return usage();
-      std::string model = o.count("--model") ? o["--model"] : "";
-      if (model.empty())
-        for (const auto& r : caps_roots())
-          if (!r.empty() && std::filesystem::exists(r + "/data/ml/caps-mace-v1.model")) { model = r + "/data/ml/caps-mace-v1.model"; break; }
-      if (model.empty()) throw std::runtime_error("data/ml/caps-mace-v1.model not found: give --model");
+      const std::string model = cli_ml_model(o);
       if (pos[0] == "relax") {
         // caps ml relax JOBS.json -o OUT.json: a batch of constrained relaxations in one process (the model loaded once).
         // JOBS: {"jobs": [{"elements": ["C", ...], "positions": [[x, y, z], ...], "hold": [[i, j], [i, j, k], [i, j, k, l]],
@@ -2322,11 +2369,8 @@ int main(int argc, char** argv) {
         // caps ff complete FILE --ff FF.json -o OVERLAY.json [--report REPORT.json] [--model M.model] [--step 15]: the
         // bonded terms the force field lacks for FILE, found and fitted with CAPS's machine-learned potential
         if (pos.size() < 2 || !o.count("--ff") || !o.count("-o")) return usage();
-        std::string model = o.count("--model") ? o["--model"] : "";
-        if (model.empty())
-          for (const auto& r : caps_roots())
-            if (!r.empty() && std::filesystem::exists(r + "/data/ml/caps-mace-v1.model")) { model = r + "/data/ml/caps-mace-v1.model"; break; }
-        if (model.empty()) throw std::runtime_error("data/ml/caps-mace-v1.model not found: give --model");
+        if (!ml_engine_available()) throw std::runtime_error(ml_engine_missing_message());
+        const std::string model = cli_ml_model(o, ff_path(o["--ff"]));
         System s = load(pos[1], o);
         FFDef ff = load_forcefield(ff_path(o["--ff"]));
         if (o.count("--overlay")) merge_overlays(ff, o["--overlay"]);   // complete the force field as it will run
@@ -2439,6 +2483,10 @@ int main(int argc, char** argv) {
         ParamReport rep;
         double cutoff = 10.0;
         const bool own = o["--ff"] == "file";   // the force field the file carries (an AMBER prmtop)
+        MlFill ml_fill;                          // --complete ml: what CAPS ML fitted
+        std::string ml_model;
+        bool ml_ran = false;
+        if ((own || uff) && completion_asked(o)) throw std::runtime_error("--complete ml fills a library force field's gaps (--ff NAME or FF.json), not UFF's or a file's own");
         if (own) {
           if (!s.forcefield || s.forcefield->charge.size() != s.atoms.size())
             throw std::runtime_error(!s.forcefield_error.empty() ? s.forcefield_error
@@ -2521,6 +2569,11 @@ int main(int argc, char** argv) {
             }
           } else {
             for (const auto& a : s.atoms) types.push_back(a.name);
+          }
+          if (completion_asked(o)) {
+            ml_fill = cli_complete_ml(s, ff, types, o, ff_path(o["--ff"]), false);
+            ml_model = ml_fill.model;
+            ml_ran = true;
           }
           std::string charges = o.count("--charges") ? o["--charges"] : (file_charges(s) ? "keep" : "auto");
           if (!o.count("--charges") && charges == "keep")
@@ -2691,6 +2744,21 @@ int main(int argc, char** argv) {
           if (o.count("--cutoff")) dop.cutoff = std::stod(o["--cutoff"]);
           for (const auto& n : write_dlpoly(s, f, o["--dlpoly"], dop)) std::printf("dlpoly: %s\n", n.c_str());
           std::printf("wrote %s/FIELD, CONFIG and CONTROL\n", o["--dlpoly"].c_str());
+        }
+        if (ml_ran) {   // the provenance beside the files: the assignment and each term CAPS ML fitted, with its source
+          Manifest m;
+          ProvStep a;
+          a.engine = "field.assign";
+          a.summary = f.name + " · " + std::to_string(rep.missing.size()) + " parameters missing after completion";
+          a.params = {{"force field", std::filesystem::path(ff_path(o["--ff"])).filename().string()}, {"completion", "ml"}};
+          a.time = now_iso();
+          m.steps.push_back(a);
+          m.steps.push_back(ml_prov_step(ml_fill, ml_model));
+          for (const std::string& out : {o.count("-o") ? o["-o"] : std::string(), o.count("--gromacs") ? o["--gromacs"] + ".top" : std::string()})
+            if (!out.empty()) {
+              write_manifest(m, out);
+              std::printf("wrote %s\n", sidecar_path(out).c_str());
+            }
         }
         return rep.missing.empty() ? 0 : 3;
       }

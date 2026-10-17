@@ -64,6 +64,47 @@ const LjParam& lj_of(const std::string& t) {
 
 }  // namespace
 
+std::string term_source_note(const ForceField::TermSource& t) {
+  if (t.source.rfind("CAPS ML", 0) == 0) {
+    const size_t r = t.source.find(", RMS ");
+    return "CAPS ML: " + t.classes + (r == std::string::npos ? std::string() : t.source.substr(r));
+  }
+  return t.classes + " from " + t.source;
+}
+
+std::vector<std::string> term_source_header(const ForceField& ff) {
+  std::vector<std::string> out;
+  if (ff.term_sources.empty()) return out;
+  size_t terms = 0, ml = 0;
+  for (const auto& t : ff.term_sources) {
+    terms += t.terms.size();
+    ml += t.source.rfind("CAPS ML", 0) == 0;
+  }
+  const size_t sets = ff.term_sources.size();
+  out.push_back(std::to_string(terms) + (terms == 1 ? " term" : " terms") + " of " + std::to_string(sets) + (sets == 1 ? " parameter set" : " parameter sets") +
+                (ml == sets ? " fitted by CAPS ML (CAPS's machine-learned potential, caps ff complete) where " + ff.name + " has none"
+                            : " not from " + ff.name + "'s own publication") +
+                "; each such coefficient line says so:");
+  for (const auto& t : ff.term_sources)
+    out.push_back("  " + t.kind + " " + t.classes + " (" + std::to_string(t.terms.size()) + (t.terms.size() == 1 ? " term" : " terms") + "): " + t.source);
+  return out;
+}
+
+TermSourceIndex::TermSourceIndex(const ForceField& ff) : ff_(&ff) {
+  for (size_t k = 0; k < ff.term_sources.size(); ++k)
+    for (auto t : ff.term_sources[k].terms) {
+      if (!t.empty() && t.back() < t.front()) std::reverse(t.begin(), t.end());
+      at_.emplace(std::make_pair(ff.term_sources[k].kind, std::move(t)), k);
+    }
+}
+
+const ForceField::TermSource* TermSourceIndex::find(const std::string& kind, std::vector<uint32_t> atoms) const {
+  if (at_.empty()) return nullptr;
+  if (!atoms.empty() && atoms.back() < atoms.front()) std::reverse(atoms.begin(), atoms.end());
+  auto it = at_.find({kind, atoms});
+  return it == at_.end() ? nullptr : &ff_->term_sources[it->second];
+}
+
 ForceField assign_gaff(const System& s) {
   ForceField ff;
   ff.name = "GAFF 1.81 (hydrocarbon subset: c3, ca, hc, ha)";

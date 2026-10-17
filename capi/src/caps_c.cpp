@@ -42,6 +42,7 @@
 #include "caps/example_typing.hpp"
 #include "caps/equilibrate.hpp"
 #include "caps/ffdef.hpp"
+#include "caps/ffcomplete.hpp"
 #include "caps/grow.hpp"
 #include "caps/io.hpp"
 #include "caps/mechanics.hpp"
@@ -141,6 +142,15 @@ struct FieldState {
   std::string model;                         // a model's own force field built with the structure (Kremer–Grest), as JSON
   std::string mixing;                        // v47: the mixing rule for unlike Lennard-Jones pairs in place of the force field's ("" its own)
   bool zero_ring3_torsions = false;          // v64: dihedrals with no parameters across a three-membered ring are zero (opt-in)
+  // caps_field_set_options {"complete": "ml"}: the bonded terms the force field lacks fitted by CAPS ML (opt-in). The
+  // fitted rules are kept (an assignment run again fits only what is new), with what was fitted, what could not be and why
+  bool complete_ml = false;
+  std::string ml_model;                      // "" data/ml/caps-mace-v1.model beside the force field's library
+  caps::FFDef ml;                            // the rules CAPS ML fitted for this force field
+  std::vector<std::string> ml_fitted, ml_left;
+  std::set<std::string> ml_tried;            // missing terms already given to CAPS ML (not fitted again at every run)
+  std::string ml_error;
+
   std::string rules_path;                    // v70: typing rules given in place of the force field's own ("" its own)
   std::vector<std::string> overlays;         // v70: overlay files merged onto the base in turn (caps ff apply --overlay)
 };
@@ -906,6 +916,35 @@ void field_run_groups(caps_doc* d);
 void field_run_model(caps_doc* d);
 void install_file_field(caps_doc* d);
 
+// "complete": "ml": what the force field lacks for the structure, fitted by CAPS ML once and merged onto def (the rules
+// carry their source into every export); a term it cannot fit stays missing, with the reason in the report
+void field_complete_ml(FieldState& F, caps::FFDef& def, const caps::System& s) {
+  if (!caps::ml_engine_available()) { F.ml_error = caps::ml_engine_missing_message(); return; }
+  if (!F.ml.bonds.empty() || !F.ml.angles.empty() || !F.ml.dihedrals.empty()) caps::merge_forcefield(def, F.ml);
+  caps::ParamReport probe;
+  (void)caps::parameterize(s, def, F.types, "keep", &probe, true);
+  bool fresh = false;
+  for (const auto& m : probe.missing)
+    if ((m.rfind("bond ", 0) == 0 || m.rfind("angle ", 0) == 0 || m.rfind("dihedral ", 0) == 0) && !F.ml_tried.count(m)) fresh = true;
+  if (!fresh) return;
+  caps::CompleteOptions co;
+  co.model = !F.ml_model.empty() ? F.ml_model : caps::find_ml_model({F.ff_path});
+  try {
+    const caps::MlFill f = caps::fill_missing_with_ml(s, def, F.types, co);
+    for (const auto* src : {&f.report.overlay.bonds, &f.report.overlay.angles, &f.report.overlay.dihedrals}) {
+      auto& dst = src == &f.report.overlay.bonds ? F.ml.bonds : src == &f.report.overlay.angles ? F.ml.angles : F.ml.dihedrals;
+      dst.insert(dst.end(), src->begin(), src->end());
+    }
+    F.ml.name = "CAPS ML";
+    F.ml_fitted.insert(F.ml_fitted.end(), f.fitted_terms.begin(), f.fitted_terms.end());
+    F.ml_left = f.left;
+    F.ml_error.clear();
+  } catch (const std::exception& e) {
+    F.ml_error = e.what();
+  }
+  for (const auto& m : probe.missing) F.ml_tried.insert(m);
+}
+
 void field_run(caps_doc* d) {
   if (!d->field->groups.empty()) { field_run_groups(d); return; }
   if (!d->field->model.empty()) { field_run_model(d); return; }
@@ -959,6 +998,7 @@ void field_run(caps_doc* d) {
   F.rep = caps::ParamReport{};
   if (car_kept) F.rep.notes.push_back(std::to_string(car_kept) + " atoms keep the force-field types of the .car file; the typing rules gave the others");
   F.ff.reset();
+  if (!untyped && !uff && F.complete_ml) field_complete_ml(F, def, s);
   if (!untyped && uff) {
     caps::UffOptions uo;
     uo.keep_charges = F.charges == "keep";
@@ -1208,6 +1248,18 @@ void field_run(caps_doc* d) {
   }
   r["filled"] = double(filled);
   r["filled_terms"] = filled_terms;
+  {   // completion by CAPS ML (caps_field_set_options {"complete": "ml"}): what was fitted, what could not be, and why
+    caps::Json ml = caps::Json::object(), fit = caps::Json::array(), left = caps::Json::array();
+    for (const auto& x : F.ml_fitted) fit.push_back(x);
+    for (const auto& x : F.ml_left) left.push_back(x);
+    ml["on"] = F.complete_ml;
+    ml["available"] = caps::ml_engine_available();
+    ml["fitted"] = fit;
+    ml["left"] = left;
+    ml["terms"] = double(F.ff ? [&] { size_t c = 0; for (const auto& t : F.ff->term_sources) c += t.terms.size(); return c; }() : 0);
+    if (!F.ml_error.empty()) ml["error"] = F.ml_error;
+    r["ml"] = ml;
+  }
   estimated += F.rep.estimated_terms;   // by analogy (the force field's "analogies"), each listed below
   r["estimated"] = double(estimated);
   r["imported"] = double(imported);
@@ -3560,6 +3612,8 @@ int32_t caps_field_assign(caps_doc* d, const char* ff_path, const char* rules_pa
       F->file_has_charges = d->field->file_has_charges;
       F->extra = d->field->extra.name.empty() && d->field->base.name == F->base.name ? d->field->extra : caps::FFDef{};
       F->zero_ring3_torsions = d->field->zero_ring3_torsions;   // the structure's choice stays with it
+      F->complete_ml = d->field->complete_ml, F->ml_model = d->field->ml_model;   // so does completion by CAPS ML
+      if (d->field->base.name == F->base.name) F->ml = d->field->ml, F->ml_fitted = d->field->ml_fitted, F->ml_tried = d->field->ml_tried;
     } else {
       for (const auto& a : d->traj.topology.atoms) {
         F->file_types.push_back({a.type, a.name});
@@ -3701,25 +3755,19 @@ int32_t caps_forcefield_overlays(const char* dir, const char* base_id, char* jso
   });
 }
 
-int32_t caps_ml_available(void) { return caps::ml::available() ? 1 : 0; }
+int32_t caps_ml_available(void) { return caps::ml_engine_available() ? 1 : 0; }
 
 int32_t caps_ff_complete(caps_doc* d, const char* ff_path, const char* options_json, caps_stage_fn progress, void* user, char* report, int32_t cap) {
   int32_t result = 1;
   const int32_t rc = guard([&] {
     namespace fs = std::filesystem;
     const caps::Json o = caps::Json::parse(options_json && *options_json ? options_json : "{}");
-    if (!caps::ml::available())
-      throw std::runtime_error("this build of CAPS has no machine-learned model: caps ff complete needs a build with -DCAPS_WITH_TORCH=ON (libtorch)");
+    if (!caps::ml_engine_available()) throw std::runtime_error(caps::ml_engine_missing_message());
     const std::string ffp = ff_path ? ff_path : "";
     if (ffp.empty() || caps::is_uff(ffp)) throw caps::FFError("give the force field to complete (a caps-forcefield file)");
     const std::string overlay = o.text("overlay", "");
     if (overlay.empty()) throw std::invalid_argument("options.overlay: the file the fitted terms are written to");
-    std::string model = o.text("model", "");
-    if (model.empty()) {   // data/ml beside data/forcefields
-      const fs::path guess = fs::path(ffp).parent_path().parent_path() / "ml" / "caps-mace-v1.model";
-      if (fs::exists(guess)) model = guess.string();
-    }
-    if (model.empty()) throw std::runtime_error("data/ml/caps-mace-v1.model not found beside the force fields: give options.model");
+    const std::string model = caps::resolve_ml_model(o.text("model", ""), {ffp});   // the same lookup as completion during assignment
     caps::FFDef ff = caps::load_forcefield(ffp);
     // the overlays the assignment already has, when it is this force field (as caps ff complete --overlay)
     if (d->field && d->field->ff_path == ffp)
@@ -4092,6 +4140,13 @@ int32_t caps_field_set_options(caps_doc* d, const char* options) {
     if (!d->field) throw caps::FFError("assign a force field first");
     const caps::Json o = caps::Json::parse(options && *options ? options : "{}");
     if (o.has("zero_ring3_torsions") && o["zero_ring3_torsions"].kind() == caps::Json::Bool) d->field->zero_ring3_torsions = o["zero_ring3_torsions"].boolean();
+    if (o.has("complete")) {   // "ml": fill the missing bonded terms with CAPS ML; "none": report them
+      const bool on = caps::parse_complete_option(o["complete"].str());
+      if (on && !caps::ml_engine_available()) throw std::runtime_error(caps::ml_engine_missing_message());
+      if (on && !d->field->groups.empty()) throw caps::FFError("completion by CAPS ML applies to one force field for the whole structure, not to an assignment by group");
+      d->field->complete_ml = on;
+    }
+    if (o.has("ml_model") && o["ml_model"].kind() == caps::Json::String) d->field->ml_model = o["ml_model"].str();
     field_run(d);
     refresh(d);
     return d->field->complete ? 0 : 1;
@@ -11792,6 +11847,7 @@ extern "C" int32_t caps_build_info(char* json, int32_t cap) {
   caps::Json j = caps::Json::object();
   j["version"] = std::string(caps::version_string());
   j["commit"] = std::string(caps::commit_string());
+  j["ml_engine"] = caps::ml_engine_available();   // CAPS ML (libtorch) built in: completion of missing terms is offered
   return report_out(j.dump(0), json, cap);
 }
 extern "C" int32_t caps_job_template(const char* scheduler, char* text, int32_t cap) {

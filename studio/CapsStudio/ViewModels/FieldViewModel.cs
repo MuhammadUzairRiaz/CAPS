@@ -178,6 +178,26 @@ public sealed partial class FieldViewModel : ObservableObject
                    d => d.FieldSetOptions(value ? "{\"zero_ring3_torsions\":true}" : "{\"zero_ring3_torsions\":false}"));
         }
     }
+    // opt-in: the bonded terms the force field lacks fitted by CAPS ML (caps_field_set_options {"complete": "ml"}); every
+    // such term is marked "CAPS ML" in the exported LAMMPS and GROMACS files. A build without the ML engine says so.
+    private bool _completeMl, _loadingCompleteMl;
+    private string _mlText = "";
+    public bool CompleteMl
+    {
+        get => _completeMl;
+        set
+        {
+            if (!Set(ref _completeMl, value)) return;
+            Raise(nameof(ApplyCommand));
+            if (_loadingCompleteMl) return;
+            _ = Do(value ? "Missing terms: fitted by CAPS ML" : "Missing terms: reported, not fitted",
+                   d => d.FieldSetOptions(value ? "{\"complete\":\"ml\"}" : "{\"complete\":\"none\"}"));
+        }
+    }
+    public string MlText { get => _mlText; private set => Set(ref _mlText, value); }
+    public string MlTip => MlAvailable
+        ? "At every assignment (and again when it is run with other charges or rules), the bonds, angles and torsions this force field has no parameters for are fitted with CAPS's machine-learned potential (CAPS MACE v1, trained on wB97M-D3(BJ)/def2-TZVPPD) by relaxed scans of a fragment and kept with the assignment, no file written (caps ff apply --complete ml); a fit that fails the quality check stays missing. Each such term is marked CAPS ML in the LAMMPS and GROMACS files. Charges and untyped atoms are not filled. Takes a minute or more per term. To fit once and keep the result as an overlay file, use Fit missing terms."
+        : MlMissingNote;
     public string TypedText { get => _typedText; private set => Set(ref _typedText, value); }
     public string UntypedText { get => _untypedText; private set => Set(ref _untypedText, value); }
     public string MissingText { get => _missingText; private set => Set(ref _missingText, value); }
@@ -577,6 +597,19 @@ public sealed partial class FieldViewModel : ObservableObject
         _loadingZeroRing3 = true;
         ZeroRing3Torsions = r.TryGetProperty("zero_ring3_torsions", out var z3) && z3.ValueKind == JsonValueKind.True;
         _loadingZeroRing3 = false;
+        if (r.TryGetProperty("ml", out var ml) && ml.ValueKind == JsonValueKind.Object)
+        {
+            _loadingCompleteMl = true;
+            CompleteMl = ml.TryGetProperty("on", out var on) && on.ValueKind == JsonValueKind.True;
+            _loadingCompleteMl = false;
+            var fitted = ml.TryGetProperty("fitted", out var f) ? f.EnumerateArray().Select(x => x.GetString() ?? "").ToList() : new List<string>();
+            var left = ml.TryGetProperty("left", out var l) ? l.EnumerateArray().Select(x => x.GetString() ?? "").ToList() : new List<string>();
+            var err = ml.TryGetProperty("error", out var e) ? e.GetString() ?? "" : "";
+            MlText = !MlAvailable ? MlMissingNote
+                   : err.Length > 0 && CompleteMl ? "CAPS ML: " + err
+                   : !CompleteMl || (fitted.Count == 0 && left.Count == 0) ? ""
+                   : string.Join("\n", fitted.Select(x => "fitted " + x).Concat(left.Select(x => "not filled: " + x)));
+        }
         MixingRule = Str(r, "mixing") switch
         {
             "arithmetic" => "Lorentz–Berthelot (arithmetic σ)", "geometric" => "geometric σ and ε (OPLS)", "sixthpower" => "sixth power (class II)",
