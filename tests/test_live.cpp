@@ -3,6 +3,7 @@
 // the thread count a cluster job gives (CAPS_THREADS, then SLURM_CPUS_PER_TASK).
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>

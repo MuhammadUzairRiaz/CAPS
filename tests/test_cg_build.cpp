@@ -3,6 +3,7 @@
 // files, the equilibration deck.
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <cmath>
 #include <filesystem>
 #include <fstream>

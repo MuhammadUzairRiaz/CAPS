@@ -3,6 +3,7 @@
 // list for several systems, the exact-cover and anchor forms, and the streaming dump mapper on a shuffled, wrapped dump.
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <cmath>
 #include <filesystem>
 #include <fstream>
