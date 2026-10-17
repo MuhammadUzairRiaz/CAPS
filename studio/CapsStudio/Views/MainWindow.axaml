@@ -3269,6 +3269,10 @@
                     <TextBlock Text="NPT first (ps)" Classes="dim" />
                     <NumericUpDown Value="{Binding Analyze.EqPsD}" Minimum="0" Increment="10" FormatString="0" />
                     <CheckBox Content="Lateral faces fixed (uniaxial strain)" IsChecked="{Binding Analyze.TensFixed}" />
+                    <CheckBox Content="Double precision (pair terms too; caps tensile --precision double)" IsChecked="{Binding Analyze.MechDouble}" />
+                    <Button Classes="small" HorizontalAlignment="Left" Click="OnCopyTensileCommand" ToolTip.Tip="The pull as caps tensile, with these settings">
+                      <StackPanel Orientation="Horizontal" Spacing="6"><local:Icon Kind="terminal" Size="13" VerticalAlignment="Center" /><TextBlock Text="Copy command" VerticalAlignment="Center" /></StackPanel>
+                    </Button>
                   </StackPanel>
                   <StackPanel Spacing="6" IsVisible="{Binding Analyze.PullOn}">
                     <TextBlock Text="PULL TEST (interface)" Classes="h3" Margin="0,6,0,0" />
@@ -3631,6 +3635,50 @@
             <TextBlock Text="{Binding Field.MixingRule}" FontSize="11.5" TextWrapping="Wrap" MaxWidth="1100" VerticalAlignment="Center"
                        ToolTip.Tip="Within a force field: its own rule (OPLS geometric ε and σ; AMBER, GAFF, CHARMM Lorentz–Berthelot; PCFF, COMPASS sixth power). Between groups with different force fields: their common rule, else the class II sixth-power rule when a class II force field is in, else Lorentz–Berthelot; a rule chosen under Force fields by group wins. Every pair is written out explicitly in the LAMMPS input" />
           </StackPanel>
+          <!-- overlays, untyped motifs, the model's fill and the command line: the Field step as caps ff apply / ff complete run it -->
+          <Border BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="10" Background="{DynamicResource Bg1B}" Padding="14,10" Margin="0,0,0,12"
+                  IsVisible="{Binding !Field.GroupMode}" IsEnabled="{Binding Field.NotWorking}">
+            <StackPanel Spacing="8">
+              <StackPanel Spacing="4" IsVisible="{Binding Field.HasOverlays}">
+                <TextBlock Text="OVERLAYS" Classes="h3" ToolTip.Tip="Parameter refits merged onto the force field before typing, each later file over the earlier (caps ff apply, relax, md, react --overlay)" />
+                <ItemsControl ItemsSource="{Binding Field.Overlays}">
+                  <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemSpacing="14" LineSpacing="4" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:FieldOverlayRow">
+                      <CheckBox IsChecked="{Binding On}" ToolTip.Tip="{Binding Tip}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                          <TextBlock Text="{Binding Name}" FontSize="12" />
+                          <TextBlock Text="{Binding Kinds}" Classes="dim" FontSize="11" VerticalAlignment="Center" />
+                        </StackPanel>
+                      </CheckBox>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Text="{Binding Field.ExtraOverlayText}" Classes="dim" FontSize="11" IsVisible="{Binding Field.HasExtraOverlays}" />
+              </StackPanel>
+              <Border Classes="inset" IsVisible="{Binding Field.HasMotifs}">
+                <StackPanel Spacing="4">
+                  <TextBlock Text="OUTSIDE THIS FORCE FIELD" Classes="h3" />
+                  <TextBlock Text="{Binding Field.UntypedMotifs}" Classes="mono" FontSize="11" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding Field.OutOfDomain}" Classes="dim" TextWrapping="Wrap" />
+                </StackPanel>
+              </Border>
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" IsVisible="{Binding Field.HasMissing}">
+                <StackPanel Spacing="2">
+                  <TextBlock Text="Missing bonded terms · CAPS's model" FontWeight="SemiBold" FontSize="12.5" />
+                  <TextBlock Text="{x:Static vm:FieldViewModel.MlNoteStatic}" Classes="dim" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding Field.CompleteText}" Classes="mono" FontSize="11" TextWrapping="Wrap" />
+                </StackPanel>
+                <Button Grid.Column="1" Content="Fit missing terms" Click="OnFieldCompleteModel" IsEnabled="{Binding Field.CanComplete}" VerticalAlignment="Top"
+                        ToolTip.Tip="caps ff complete: every missing bond, angle and torsion scanned on a fragment with CAPS's model and fitted; the overlay is merged" />
+              </Grid>
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <TextBlock Text="{Binding Field.ApplyCommand}" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" VerticalAlignment="Center"
+                           ToolTip.Tip="The same assignment on the command line (relax, md, equilibrate and react take the same --ff, --overlay and --charges)" />
+                <Button Grid.Column="1" Classes="small" Content="Copy command" Click="OnCopyFieldCommand" />
+              </Grid>
+            </StackPanel>
+          </Border>
           </StackPanel>
 
           <!-- body -->
@@ -3834,9 +3882,9 @@
                       <TextBlock Text="{Binding Field.EntryHint}" Classes="dim" TextWrapping="Wrap" />
                     </StackPanel>
                     <WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="8">
-                      <Button Content="{Binding Field.CompanionChargesText}" Classes="primary" Click="OnFieldCompanionCharges" IsVisible="{Binding Field.CanUseCompanionCharges}" ToolTip.Tip="{Binding Field.CompanionChargesTip}" />
                       <Button Content="{Binding Field.FillSuggestedText}" Classes="primary" Click="OnFieldFillSuggested" IsVisible="{Binding Field.CanFillSuggested}" ToolTip.Tip="{Binding Field.FillSuggestedTip}" />
-                      <Button Content="Fill gaps from…" Click="OnFieldFill" ToolTip.Tip="Another force field's bonds, angles and torsions used only where this one defines none; every borrowed term is listed; impropers are never borrowed" />
+                      <!-- the machine-learned fill of the assignment (a C API flag, its own switch) sits here, beside the fill from CAPS's fits -->
+                      <Button Content="Fill gaps from…" Click="OnFieldFill" ToolTip.Tip="Another force-field file's bonds, angles and torsions used only where this one defines none; every borrowed term is listed; impropers are never borrowed" />
                       <Button Content="Import parameters…" Click="OnFieldImport" ToolTip.Tip="caps-forcefield JSON, moltemplate .lt, AMBER frcmod or a GROMACS .itp/.top ([ *types ] sections); its rules are added over the force field" />
                       <Button Content="Enter manually (estimated)" Click="OnFieldAddRule" IsEnabled="{Binding Field.CanEnterRule}" />
                       <Button Content="Remove added" Click="OnFieldRemoveRules" IsVisible="{Binding Field.HasEntered}" />

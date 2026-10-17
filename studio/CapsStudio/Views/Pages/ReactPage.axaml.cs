@@ -77,6 +77,7 @@ public partial class ReactPage : PageBase
     }
     private void OnTemplateEditor(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.OpenTemplateEditor();
 
+    private void OnCopyCommand(object? s, Avalonia.Interactivity.RoutedEventArgs e) => CopyCommand(Vm.ReactCommand, "crosslinking");
     private async void OnCopyPython(object? s, RoutedEventArgs e)
     {
         var clip = TopLevel.GetTopLevel(this)?.Clipboard;

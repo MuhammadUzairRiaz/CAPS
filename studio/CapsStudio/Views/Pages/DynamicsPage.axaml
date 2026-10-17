@@ -19,6 +19,9 @@
         <Button Click="OnContinue" IsVisible="{Binding MdCanContinue}" IsEnabled="{Binding Idle}" ToolTip.Tip="{Binding MdCheckpointText}">
           <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="play" Size="15" VerticalAlignment="Center" /><TextBlock Text="{Binding MdContinueLabel}" VerticalAlignment="Center" /></StackPanel>
         </Button>
+        <Button Click="OnCopyCommand" ToolTip.Tip="This run as the caps command line runs it: the same options, defaults and engine">
+          <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="terminal" Size="16" VerticalAlignment="Center" /><TextBlock Text="Copy command" VerticalAlignment="Center" /></StackPanel>
+        </Button>
         <Button Click="OnCopyPython" ToolTip.Tip="This run on the open structure as a Python script (the caps package), with these settings">
           <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="copy" Size="16" VerticalAlignment="Center" /><TextBlock Text="Copy as Python" VerticalAlignment="Center" /></StackPanel>
         </Button>
@@ -71,6 +74,8 @@
                             IsEnabled="{Binding MdHasConstraints}"
                             ToolTip.Tip="How the positions are put back on the constraints each step: SHAKE (iterative, as LAMMPS fix shake) or LINCS (Hess et al. 1997, as GROMACS); both give the same trajectory to the tolerance, velocities by RATTLE. Equilibrate uses the same choice" />
                 </Grid>
+                <CheckBox Classes="toggle" Content="Double precision (pair terms too)" IsChecked="{Binding MdDoublePrecision}"
+                          ToolTip.Tip="Off: plain pair terms in single precision with SIMD, sums in double (mixed, as GROMACS; caps md's default); on: everything in double (--precision double). Equilibrate uses the same choice" />
                 <CheckBox Classes="toggle" Content="Heavier hydrogens (3.024 u)" IsChecked="{Binding MdHmr}"
                           ToolTip.Tip="Hydrogen mass repartitioning: each hydrogen takes mass from the atom it is bonded to, so the total mass and every equilibrium average stay the same while hydrogens move slower. With bonds to hydrogen held, Δt can go to 3 fs (measured on polystyrene; 4 fs does not hold the energy). Equilibrate uses it too" />
                 <Grid ColumnDefinitions="2*,*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="4" IsEnabled="{Binding MdHasThermostat}">

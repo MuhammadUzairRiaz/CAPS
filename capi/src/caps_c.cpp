@@ -58,6 +58,8 @@
 #include "caps/properties.hpp"
 #include "caps/bond_react.hpp"
 #include "caps/react.hpp"
+#include "caps/ffcomplete.hpp"
+#include "caps/mlpot.hpp"
 #include "caps/relax.hpp"
 #include "caps/render.hpp"
 #include "caps/typing.hpp"
@@ -139,6 +141,8 @@ struct FieldState {
   std::string model;                         // a model's own force field built with the structure (Kremer–Grest), as JSON
   std::string mixing;                        // v47: the mixing rule for unlike Lennard-Jones pairs in place of the force field's ("" its own)
   bool zero_ring3_torsions = false;          // v64: dihedrals with no parameters across a three-membered ring are zero (opt-in)
+  std::string rules_path;                    // v70: typing rules given in place of the force field's own ("" its own)
+  std::vector<std::string> overlays;         // v70: overlay files merged onto the base in turn (caps ff apply --overlay)
 };
 
 // Styles, colours, surfaces and polyhedra of the Studio view (caps_set_appearance), prepared for the current frame.
@@ -1177,6 +1181,11 @@ void field_run(caps_doc* d) {
     for (const auto& m : caps::untyped_motifs(s, F.types)) mot.push_back(m);
     r["untyped_motifs"] = mot;
     r["out_of_domain"] = caps::out_of_domain(def, s, F.types);
+  }
+  {   // v70: the overlays merged onto the force field (caps_field_set_overlays, --overlay)
+    caps::Json ov = caps::Json::array();
+    for (const auto& p : F.overlays) ov.push_back(p);
+    r["overlays"] = ov;
   }
   r["overridden"] = double(overridden);
   r["ambiguous"] = double(F.typing.ambiguous);
@@ -2282,6 +2291,9 @@ caps_doc* doc_of_system(caps::System sys, const caps_doc* from, const std::strin
 // applied to s (on a scratch document; this one is not changed), else the built-in force field.
 caps::ForceField field_for_extended(caps_doc* d, const caps::System& s) {
   if (!d->field) return default_ff(s);
+  // the force field a file carried (a CAPS data file's coefficients, an AMBER prmtop) or a model built with the structure
+  // describes those atoms only: with molecules added the whole takes the built-in force field, as with no assignment
+  if (d->field->ff_path == "file" || !d->field->model.empty()) return default_ff(s);
   std::unique_ptr<caps_doc> t(doc_of_system(s, d, "scratch", "", {}));
   t->field = std::make_unique<FieldState>(*d->field);
   field_run(t.get());
@@ -2402,7 +2414,12 @@ extern "C" int32_t caps_adsorption(caps_doc* d, const char* json, caps_stage_fn 
     d->traj = std::move(t);
     d->current = d->traj.frames() - 1;
     refresh(d);
-    if (added && d->field) field_run(d);   // the assignment now over the adsorbates too
+    if (added && d->field) {
+      // the assignment now over the adsorbates too; a force field the file carried (or a model's) describes the old atoms
+      // only, so it ends (the run used the built-in force field, field_for_extended)
+      if (d->field->ff_path == "file" || !d->field->model.empty()) d->field.reset();
+      else field_run(d);
+    }
     caps::KeyValues pr = {{"adsorbates", std::to_string(rep.components.size()) + " components"},
                           {"annealing", std::to_string(o.cycles) + " cycles of " + std::to_string(o.steps) + " steps, " + g6(o.t_high) + " → " + g6(o.t_low) + " K"},
                           {"adsorption energy", g6(rep.adsorption_energy) + " kcal/mol (rigid)"},
@@ -2693,7 +2710,7 @@ int32_t caps_md(caps_doc* d, const caps_md_opts* o, caps_md_progress_fn progress
     m.energy = elec(m.energy);
     m.energy.tail = o->tail != 0;
     m.energy.threads = o->threads;
-    m.energy.mixed = true;   // MD in mixed precision, as the CLI
+    m.energy.mixed = o->precision != 1;   // MD in mixed precision unless double is asked for, as the CLI's --precision
     m.hmr = std::max(0.0, o->hmr);
     m.respa = std::clamp(o->respa, 1, 16);
     m.constraints = static_cast<caps::ConstraintMode>(std::clamp(o->constraints, 0, 2));
@@ -2868,7 +2885,7 @@ int32_t caps_equilibrate(caps_doc* d, const char* protocol, const caps_equil_opt
     e.md.energy = elec(e.md.energy);
     e.md.energy.tail = o->tail != 0;
     e.md.energy.threads = o->threads;
-    e.md.energy.mixed = true;
+    e.md.energy.mixed = o->precision != 1;   // as caps equilibrate --precision mixed|double
     e.md.hmr = std::max(0.0, o->hmr);
     if (o->frame_ps > 0) e.frame_ps = o->frame_ps;
     if (o->thermo_ps > 0) e.thermo_ps = o->thermo_ps;
@@ -3134,6 +3151,10 @@ int32_t caps_react_summary(caps_doc* d, char* json, int32_t cap) {
   });
 }
 
+int32_t caps_sulfur_bridges(caps_doc* d, int32_t ring_limit, char* json, int32_t cap) {
+  return guard([&] { return report_out(caps::sulfur_census_json(caps::sulfur_census(d->frame, ring_limit > 0 ? ring_limit : 8)), json, cap); });
+}
+
 int32_t caps_bond_react_export(caps_doc* d, const char* templates, const char* dir, const char* options, char* report, int32_t cap) {
   return guard([&] {
     const caps::Json o = caps::Json::parse(options && *options ? options : "{}");
@@ -3357,6 +3378,7 @@ int32_t caps_react(caps_doc* d, const char* templates, const caps_react_opts* o,
     r.target = caps::ReactTarget(o->target_kind);
     r.target_value = o->target_value;
     r.sites_per_chain = std::max(0, o->sites_per_chain);
+    r.remove_unreacted = o->remove_unreacted != 0;
     // the user's force field for every state of the network (a complete assignment is needed from the start)
     const bool use_field = o->field_mode == 0 && d->field;
     if (use_field) {
@@ -3469,36 +3491,9 @@ int32_t caps_react(caps_doc* d, const char* templates, const caps_react_opts* o,
       refresh(d);
     }
     {
-      caps::Json j;
-      j["chains"] = double(rep.chains);
-      j["crosslinks"] = double(rep.crosslinks);
-      j["intrachain"] = double(rep.intrachain);
-      j["byproducts"] = double(rep.byproducts);
-      j["target"] = double(rep.target_crosslinks);
-      j["volume"] = rep.volume;
-      j["chain_mass"] = rep.chain_mass;
-      j["density"] = rep.density;
-      j["per_chain"] = rep.per_chain;
-      j["mc"] = rep.mc;
-      j["monomers"] = double(rep.monomers);
-      j["degree"] = rep.degree;
-      j["reactions"] = double(rep.reactions);
-      j["initial_sites"] = double(rep.initial_sites);
-      j["conversion"] = rep.cycles.empty() ? 0.0 : rep.cycles.back().conversion;
-      j["field"] = rep.field;
+      // the network as caps react --summary writes it (react.hpp react_summary_json), with the force field after the run
+      caps::Json j = caps::Json::parse(caps::react_summary_json(rep, d->traj.frame(d->current)));
       j["field_after"] = after;
-      caps::Json links = caps::Json::array();
-      for (const auto& lr : rep.links) {
-        caps::Json x = caps::Json::object();
-        x["cycle"] = double(lr.cycle), x["reaction"] = lr.reaction;
-        x["chain_a"] = double(lr.chain_a), x["unit_a"] = double(lr.unit_a), x["chain_b"] = double(lr.chain_b), x["unit_b"] = double(lr.unit_b);
-        x["via"] = double(lr.via), x["via_name"] = lr.via_name;
-        links.push_back(x);
-      }
-      j["links"] = links;
-      caps::Json notes = caps::Json::array();
-      for (const auto& n : rep.notes) notes.push_back(n);
-      j["notes"] = notes;
       d->react_json = j.dump();
     }
     if (report && cap > 0) {
@@ -3517,6 +3512,24 @@ int32_t caps_react(caps_doc* d, const char* templates, const caps_react_opts* o,
 
 namespace { void push_undo(caps_doc* d, const std::string& what); }   // below, with the edits
 
+}  // extern "C"
+
+namespace {
+// The assignment's force field as the CLI builds it: the library file (or UFF), the typing rules given in its place, then each
+// overlay merged in turn (cli_forcefield: load_forcefield, merge_overlays, load_typing)
+void load_field_base(FieldState& F) {
+  F.base = caps::is_uff(F.ff_path) ? caps::uff_definition() : caps::load_forcefield(F.ff_path);
+  if (!caps::is_uff(F.ff_path))
+    for (const auto& p : F.overlays) caps::merge_forcefield(F.base, caps::load_forcefield(p));
+  if (!F.rules_path.empty()) {
+    F.base.typing.clear();
+    caps::load_typing(F.base, F.rules_path);
+  }
+}
+}  // namespace
+
+extern "C" {
+
 int32_t caps_field_assign(caps_doc* d, const char* ff_path, const char* rules_path, int32_t charges) {
   return guard([&] {
     if (ff_path && std::string(ff_path) == "file") {   // back to the force field the file carried
@@ -3533,11 +3546,10 @@ int32_t caps_field_assign(caps_doc* d, const char* ff_path, const char* rules_pa
     }
     auto F = std::make_unique<FieldState>();
     F->ff_path = ff_path ? ff_path : "";
-    F->base = caps::is_uff(F->ff_path) ? caps::uff_definition() : caps::load_forcefield(F->ff_path);
-    if (rules_path && *rules_path && !caps::is_uff(F->ff_path)) {
-      F->base.typing.clear();
-      caps::load_typing(F->base, rules_path);
-    }
+    F->rules_path = rules_path && *rules_path && !caps::is_uff(F->ff_path) ? rules_path : "";
+    // the overlays chosen for this force field stay with it when it is assigned again (other charges, rules)
+    if (d->field && d->field->ff_path == F->ff_path) F->overlays = d->field->overlays;
+    load_field_base(*F);
     F->charges = charges == 1 ? "gasteiger" : charges == 2 ? "keep" : charges == 3 ? "qeq" : charges == 5 ? "increments" : "types";
     F->auto_charges = charges == 4;
     // keep the file's types to restore them on clear (and the previous assignment's, if any)
@@ -3626,6 +3638,116 @@ int32_t caps_field_file_available(const caps_doc* d) {
   if (!d) return 0;
   const auto& t = d->traj.topology;
   return t.forcefield && t.forcefield->charge.size() == t.atoms.size() ? 1 : 0;
+}
+
+int32_t caps_field_set_overlays(caps_doc* d, const char* paths) {
+  return guard([&] {
+    if (!d->field) throw caps::FFError("assign a force field first");
+    if (!d->field->groups.empty() || !d->field->model.empty())
+      throw caps::FFError("overlays apply to one force field: this assignment is by group or the structure's own model");
+    if (caps::is_uff(d->field->ff_path)) throw caps::FFError("UFF takes no overlays");
+    std::vector<std::string> list;
+    for (std::stringstream ss(paths ? paths : ""); ss.good();) {
+      std::string p;
+      std::getline(ss, p, ',');
+      while (!p.empty() && std::isspace(static_cast<unsigned char>(p.back()))) p.pop_back();
+      while (!p.empty() && std::isspace(static_cast<unsigned char>(p.front()))) p.erase(p.begin());
+      if (!p.empty()) {
+        caps::load_forcefield(p);   // readable before anything changes
+        list.push_back(p);
+      }
+    }
+    d->field->overlays = list;
+    load_field_base(*d->field);
+    field_run(d);
+    refresh(d);
+    std::string names;
+    for (const auto& p : list) names += (names.empty() ? "" : ", ") + std::filesystem::path(p).filename().string();
+    prov_step(d, "field.overlays", names.empty() ? "no overlays" : names, {{"overlays", names.empty() ? "none" : names}}, "", {}, {});
+    for (const auto& p : list) prov_input(d, p);
+    return d->field->complete ? 0 : 1;
+  });
+}
+
+int32_t caps_field_overlays(caps_doc* d, char* json, int32_t cap) {
+  return guard([&] {
+    caps::Json a = caps::Json::array();
+    if (d->field)
+      for (const auto& p : d->field->overlays) a.push_back(p);
+    return report_out(a.dump(), json, cap);
+  });
+}
+
+int32_t caps_forcefield_overlays(const char* dir, const char* base_id, char* json, int32_t cap) {
+  return guard([&] {
+    const std::string base = base_id ? base_id : "";
+    caps::Json list = caps::Json::array();
+    for (const auto& o : caps::library_overlays(dir ? dir : "")) {
+      if (!base.empty() && o.base != base) continue;
+      caps::Json x = caps::Json::object();
+      x["file"] = o.file, x["path"] = o.path, x["name"] = o.name, x["base"] = o.base;
+      caps::Json k = caps::Json::object();
+      k["pairs"] = double(o.pairs), k["bonds"] = double(o.bonds), k["angles"] = double(o.angles), k["dihedrals"] = double(o.dihedrals),
+      k["impropers"] = double(o.impropers);
+      x["kinds"] = k;
+      caps::Json n = caps::Json::array();
+      for (const auto& t : o.notes) n.push_back(t);
+      x["notes"] = n;
+      list.push_back(x);
+    }
+    caps::Json j = caps::Json::object();
+    j["overlays"] = list;
+    return report_out(j.dump(), json, cap);
+  });
+}
+
+int32_t caps_ml_available(void) { return caps::ml::available() ? 1 : 0; }
+
+int32_t caps_ff_complete(caps_doc* d, const char* ff_path, const char* options_json, caps_stage_fn progress, void* user, char* report, int32_t cap) {
+  int32_t result = 1;
+  const int32_t rc = guard([&] {
+    namespace fs = std::filesystem;
+    const caps::Json o = caps::Json::parse(options_json && *options_json ? options_json : "{}");
+    if (!caps::ml::available())
+      throw std::runtime_error("this build of CAPS has no machine-learned model: caps ff complete needs a build with -DCAPS_WITH_TORCH=ON (libtorch)");
+    const std::string ffp = ff_path ? ff_path : "";
+    if (ffp.empty() || caps::is_uff(ffp)) throw caps::FFError("give the force field to complete (a caps-forcefield file)");
+    const std::string overlay = o.text("overlay", "");
+    if (overlay.empty()) throw std::invalid_argument("options.overlay: the file the fitted terms are written to");
+    std::string model = o.text("model", "");
+    if (model.empty()) {   // data/ml beside data/forcefields
+      const fs::path guess = fs::path(ffp).parent_path().parent_path() / "ml" / "caps-mace-v1.model";
+      if (fs::exists(guess)) model = guess.string();
+    }
+    if (model.empty()) throw std::runtime_error("data/ml/caps-mace-v1.model not found beside the force fields: give options.model");
+    caps::FFDef ff = caps::load_forcefield(ffp);
+    // the overlays the assignment already has, when it is this force field (as caps ff complete --overlay)
+    if (d->field && d->field->ff_path == ffp)
+      for (const auto& p : d->field->overlays) caps::merge_forcefield(ff, caps::load_forcefield(p));
+    caps::CompleteOptions co;
+    co.model = model;
+    if (o.has("step")) co.step = int(o.num("step", 15));
+    const auto rep = caps::complete_forcefield(d->frame, ff, co, [&](const std::string& m) { if (progress) progress(m.c_str(), -1, user); });
+    caps::save_forcefield(rep.overlay, overlay);
+    caps::Json j = caps::Json::parse(caps::complete_report_json(rep, d->frame.title, ff.name, model));
+    j["overlay"] = overlay;
+    int fitted = 0;
+    for (const auto& t : rep.terms) fitted += t.status == "fitted";
+    prov_step(d, "ff.complete", std::to_string(fitted) + " terms fitted with CAPS's model",
+              {{"force field", ff.name}, {"model", fs::path(model).filename().string()}, {"overlay", overlay},
+               {"missing before", std::to_string(rep.missing_before.size())}, {"missing after", std::to_string(rep.missing_after.size())}},
+              "", {}, {});
+    if (o.has("apply") && o["apply"].kind() == caps::Json::Bool && o["apply"].boolean() && d->field && d->field->ff_path == ffp && fitted > 0) {
+      d->field->overlays.push_back(overlay);
+      load_field_base(*d->field);
+      field_run(d);
+      refresh(d);
+    }
+    result = rep.complete ? 0 : 1;
+    report_out(j.dump(), report, cap);   // cut at cap: the run is not repeated for a larger buffer
+    return 0;
+  });
+  return rc < 0 ? rc : result;
 }
 
 int32_t caps_field_assign_groups(caps_doc* d, const char* json) {
@@ -5149,6 +5271,7 @@ int32_t caps_analyze_ex(caps_doc* d, const char* props, const caps_analyze_opts*
         caps::CreepOptions co;
         co.field = ff;
         co.energy = o.energy;
+        co.energy.mixed = mo.precision != 1;   // caps tg --precision mixed (the default) | double
         co.axis = std::clamp(mo.creep_axis, 0, 2);
         if (mo.creep_stress != 0) co.stress = mo.creep_stress;
         if (mo.creep_t > 0) co.temperature = mo.creep_t;
@@ -5216,6 +5339,7 @@ int32_t caps_analyze_ex(caps_doc* d, const char* props, const caps_analyze_opts*
         caps::TensileOptions to;
         to.field = ff;
         to.energy = o.energy;
+        to.energy.mixed = mo.precision != 1;   // caps tensile --precision mixed (the default) | double
         to.axis = std::clamp(mo.axis, 0, 3);   // 3: x, y and z averaged
         if (mo.rate > 0) to.rate = mo.rate;
         if (mo.max_strain > 0) to.max_strain = mo.max_strain;

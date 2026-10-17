@@ -332,6 +332,9 @@ public sealed class AnalyzeViewModel : ObservableObject
     public decimal TensTD { get => (decimal)_tensT; set => Set(ref _tensT, (double)Math.Max(1, value), nameof(TensTD)); }
     public int TensAxis { get => _tensAxis; set => Set(ref _tensAxis, value); }
     public bool TensFixed { get => _tensFixed; set => Set(ref _tensFixed, value); }
+    // tensile and Tg: pair terms in single precision with SIMD (mixed, caps tg / tensile's default) or all in double
+    private bool _mechDouble;
+    public bool MechDouble { get => _mechDouble; set => Set(ref _mechDouble, value); }
     public static readonly string[] Axes = ["x", "y", "z", "x, y, z averaged"];
     public string TensRateText => string.Format(Inv, "{0:0.##e0} s⁻¹", _tensRate * 1e12);
     protected override void OnChanged(string? name) { if (name == nameof(TensRateD)) Raise(nameof(TensRateText)); }
@@ -369,6 +372,7 @@ public sealed class AnalyzeViewModel : ObservableObject
             CreepStress = _crStress, CreepT = _crT, CreepPs = _crPs, CreepEqPs = _crEq > 0 ? _crEq : -1, CreepAxis = _crAxis,
             ConfTrials = _confTrials, ConfMethod = _confMethod, ConfSelection = _confSel ? 1 : 0, ConfWindow = _confWindow, ConfRmsd = _confRmsd,
             ShearLo = _shLo, ShearHi = _shHi, ShearPoints = _shPoints, ShearPs = _shPs, ShearEqPs = _shEq > 0 ? _shEq : -1,
+            Precision = _mechDouble ? 1 : 0,
         };
     }
 

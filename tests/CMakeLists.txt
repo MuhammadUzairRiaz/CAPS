@@ -17,6 +17,10 @@ if(Python3_FOUND)
   add_test(NAME python_bindings COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tests/python/test_bindings.py)
   set_tests_properties(python_bindings PROPERTIES ENVIRONMENT
     "PYTHONPATH=${PROJECT_SOURCE_DIR}/data/python;CAPS_LIB=$<TARGET_FILE:caps_c>;CAPS_SAMPLES=${PROJECT_SOURCE_DIR}/samples")
+  # the command line and CAPS Studio in step: every caps command and option placed in cli/gui_sync.json, the Studio's
+  # "Copy command" options taken by caps, and a React run the same through the C API and the command line
+  add_test(NAME cli_gui_sync COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tests/test_cli_gui_sync.py $<TARGET_FILE:caps_cli> ${PROJECT_SOURCE_DIR})
+  set_tests_properties(cli_gui_sync PROPERTIES ENVIRONMENT "CAPS_LIB=$<TARGET_FILE:caps_c>")
 endif()
 
 # caps job on a fake SLURM cluster (stub sbatch / squeue / sacct / scancel / ws_allocate / ws_release; needs bash)
