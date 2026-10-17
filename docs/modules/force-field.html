@@ -30,8 +30,8 @@
 <h2 id="scripted">The same without the Studio</h2><p class="muted">Every Studio page calls the same core as the <code>caps</code> command and the <code>caps</code> Python package, so a step you clicked can be repeated in a script.</p>
 <div class="tabs" role="tablist"><button role="tab" type="button" aria-selected="true" data-tab="0">Command line</button><button role="tab" type="button" aria-selected="false" data-tab="1">Python</button></div>
 <div class="tabpanel" data-panel="0"><div class="code" data-lang="shell"><pre><code># types from the rules, then the parameters and the decks
-caps ff type cell.data --ff opls2005 -o types.txt --explain
-caps ff apply cell.data --ff opls2005 --types types.txt \
+caps ff type cell.data --ff oplsaa2024 -o types.txt --explain
+caps ff apply cell.data --ff oplsaa2024 --types types.txt \
     -o cell_ff.data --lammps-input cell.in --gromacs cell</code></pre></div></div><div class="tabpanel" data-panel="1" hidden><div class="code" data-lang="Python"><pre><code>import caps
 
 d = caps.open(&quot;cell.data&quot;)

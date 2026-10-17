@@ -5,9 +5,9 @@ For each case: CAPS assigns the force field (caps ff apply), writes the data fil
 (-o, --lammps-input) and its own forces; LAMMPS runs that input (run 0); every energy term and every atomic force are
 compared, and the six components of the virial tensor (LAMMPS compute pressure NULL virial). Each data file is also read back
 by CAPS alone (caps ff apply case.data --ff file, the force field caps relax / md / equilibrate use without --ff): its energy
-terms must equal those of the force field that wrote it, or the file must be refused where it cannot hold the whole force field. The cases cover class I (CVFF, OPLS-AA, GAFF), class II with class I torsions in one file (DL_FIELD's PCFF
-and COMPASS: hybrid styles with skip lines in the class II sections), DREIDING (umbrella inversions), ionic crystals
-(Buckingham pairs, periodic; QEq charges, as DL_FIELD keeps ionic charges in its templates and Gasteiger–Marsili has no parameters for the metals), a periodic polymer melt (tail corrections), mW water (Stillinger–Weber three-body term, pair_style sw), and CHARMM-type force fields, whose separate
+terms must equal those of the force field that wrote it, or the file must be refused where it cannot hold the whole force field. The cases cover class I (CVFF, OPLS-AA, GAFF), class II
+(PCFF, COMPASS; class I overlays give hybrid styles with skip lines in the class II sections), DREIDING (umbrella
+inversions), ionic crystals (Buckingham pairs and core-shell models, periodic), a periodic polymer melt (tail corrections), mW water (Stillinger–Weber three-body term, pair_style sw), and CHARMM-type force fields, whose separate
 1-4 Lennard-Jones parameters LAMMPS cannot reproduce without switching (the writer refuses them; reported as such).
 
 With --pme, CAPS uses particle-mesh Ewald on a fine grid (β from ewald-rtol 1e-9, spacing 0.3 Å, order 8) and LAMMPS
@@ -21,11 +21,10 @@ import collections, json, math, os, re, subprocess, sys, tempfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, HERE)
-import template_pdb, ionic_pdb, mix_box
+import mix_box
 
 CAPS = os.path.join(ROOT, "build", "cli", "caps")
 LMP = os.environ.get("LMP", os.path.expanduser("~/lammps/build-class2/lmp"))
-LIB = os.environ.get("DLFIELD", os.path.expanduser("~/project/dl_f_4.13")) + "/lib"
 FF = os.path.join(ROOT, "data", "forcefields")
 arg = lambda k, d: sys.argv[sys.argv.index(k) + 1] if k in sys.argv else d
 only = arg("--only", "")
@@ -43,29 +42,15 @@ os.makedirs(work, exist_ok=True)
 UNTYPED_BY_DESIGN = {"OPLS-AA phthalimide": "the 2024 table has no aryl or N-substituted imide types (make_oplsaa_rules.py)"}
 
 CASES = [
-    ("PCFF favipiravir (class II + class I)", ("template", "PCFF", "favipiravir"), "pcff", "types", "rules"),
-    ("PCFF acetylcholine (N+)", ("template", "PCFF", "acetylcholine"), "pcff", "types", "rules"),
-    ("PCFF dimethyl carbonate", ("template", "PCFF", "dimethyl_carbonate"), "pcff", "types", "rules"),
-    ("COMPASS (DL_FIELD) first template", ("template-first", "COMPASS", ""), "compass", "types", "keys"),
-    ("CVFF phenol (cvff impropers)", ("template", "CVFF", "phenol"), "cvff", "types", "rules"),
-    ("CVFF ethyl acetate", ("template", "CVFF", "ethylacetate"), "cvff", "types", "rules"),
-    ("OPLS-AA methyl vinyl ketone", ("template", "OPLS2005", "methyl_vinyl_ketone"), "oplsaa2024", "auto", "rules"),
-    ("OPLS-AA phthalimide", ("template", "OPLS2005", "phthalimide"), "oplsaa2024", "auto", "rules"),
-    ("GAFF toluene", ("template", "AMBER16_gaff", "toluene"), "gaff-1.81-ambertools", "gasteiger", "rules"),
-    ("GAFF2 phenol", ("template", "AMBER25_gaff", "phenol"), "gaff2-2.2.20-ambertools", "gasteiger", "rules"),
-    ("DREIDING first template (umbrella inversions)", ("template-first", "DREIDING", ""), "dreiding", "gasteiger", "keys"),
+    ("OPLS-AA methyl vinyl ketone", ("smiles", "C=CC(C)=O"), "oplsaa2024", "auto", "rules"),
+    ("OPLS-AA phthalimide", ("smiles", "O=C1NC(=O)c2ccccc21"), "oplsaa2024", "auto", "rules"),
+    ("GAFF toluene", ("smiles", "Cc1ccccc1"), "gaff-1.81-ambertools", "gasteiger", "rules"),
+    ("GAFF2 phenol", ("smiles", "Oc1ccccc1"), "gaff2-2.2.20-ambertools", "gasteiger", "rules"),
     # DREIDING's own torsion rules (Mayo 1990, cases a-j) where the file lists none: C=C double and conjugated single
     # bonds (polybutadiene, butadiene), sp3 next to sp2 (b / j), biphenyl's ring link (f), the aromatic ring (d)
     ("DREIDING ethanol liquid: hydrogen bonds (periodic, 270 molecules)", ("solvent-box", "ethanol", 26), "dreiding1990", "gasteiger", "rules"),
     ("Polystyrene melt, DREIDING (periodic; sp3-aromatic torsions by DREIDING's rules)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "dreiding1990", "gasteiger", "rules"),
     ("DREIDING rules: cis-polybutadiene fragment, butadiene, biphenyl, methyl acetate", ("smiles", "C/C=C\\CC/C=C\\CC/C=C\\C.C=CC=C.c1ccccc1-c1ccccc1.CC(=O)OC"), "dreiding1990", "gasteiger", "rules"),
-    ("Ionic halides (Buckingham, periodic)", ("ionic-first", "INORGANIC_binary_halides", ""), "inorganic-binary-halides", "qeq", "keys"),
-    # a shell model (core and shell on each ion, a spring between them): CORESHELL's buck/coul/long/cs (born/coul/dsf/cs
-    # in CAPS's own styles, which LAMMPS gives no tail term: compared without one). LAMMPS's /cs styles evaluate each
-    # core-shell pair at r = 1e-10 Å, where 1 - erfc cancels: its Coulomb carries ~1e-5 of that noise; CAPS the exact limit
-    ("SrTiO3 perovskite, core-shell (CORESHELL styles)", ("crystal", ["--group", "P m -3 m", "--cell", "3.905,3.905,3.905", "--sites",
-     "Sr1 Sr 0 0 0; Ti1 Ti 0.5 0.5 0.5; O1 O 0.5 0.5 0", "--supercell", "3,3,3"]), "inorganic-ternary-oxides", "types", "rules", ["--no-tail"]),
-    ("Binary oxides (Buckingham, periodic)", ("ionic-first", "INORGANIC_binary_oxides", ""), "inorganic-binary-oxides", "qeq", "keys"),
     ("Alkali halides (Catlow, Diller & Norgett 1977, set 1): NaCl rock salt, rigid ions", ("crystal", ["--group", "F m -3 m", "--cell", "5.64,5.64,5.64",
      "--sites", "Na1 Na 0 0 0; Cl1 Cl 0.5 0.5 0.5", "--supercell", "3,3,3"]), "catlow1977-halides", "types", "rules", ["--no-tail"]),
     ("Alkali halides (Catlow, Diller & Norgett 1977, set 1): LiF rock salt, rigid ions", ("crystal", ["--group", "F m -3 m", "--cell", "4.03,4.03,4.03",
@@ -80,7 +65,7 @@ CASES = [
      "Ti1 Ti 0 0 0; O1 O 0.3053 0.3053 0", "--supercell", "3,3,5"]), "matsui1991-tio2", "types", "rules", ["--no-tail"]),
     ("Sanders, Leslie & Catlow 1984 (Table 1): alpha-quartz, O shells, O-Si-O bends by distance", ("file", os.path.join(ROOT, "data", "crystals",
      "alpha-quartz.cif")), "sanders1984-sio2", "types", "rules", ["--no-tail"]),
-    # the inorganic sets of section 4 of bench/ff/open/REBUILD_STATUS.md, each from its paper
+    # the inorganic sets, each from its paper
     ("Catlow, Faux & Norgett 1976 MgO (Table 1, model 1): rigid Mg, O shell", ("crystal", ["--group", "F m -3 m", "--cell", "4.212,4.212,4.212", "--sites",
      "Mg1 Mg 0 0 0; O1 O 0.5 0.5 0.5", "--supercell", "3,3,3"]), "catlow1976-mgo", "types", "rules", ["--no-tail"]),
     ("Catlow, Faux & Norgett 1976 MgO (Table 1, model 2 overlay)", ("crystal", ["--group", "F m -3 m", "--cell", "4.212,4.212,4.212", "--sites",
@@ -168,7 +153,6 @@ CASES = [
      "Sr1 Sr 0 0 0; Ti1 Ti 0.5 0.5 0.5; O1 O 0.5 0.5 0", "--supercell", "3,3,3"]), "bush1994-oxides", "types", "rules", ["--no-tail"]),
     ("Bush 1994: corundum (alpha-Al2O3), core-shell", ("file", os.path.join(ROOT, "data", "crystals", "corundum.cif")), "bush1994-oxides", "types", "rules", ["--no-tail"]),
     ("Polystyrene melt, GAFF2 (periodic, 1300 atoms)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "gaff2-2.2.20-ambertools", "gasteiger", "rules"),
-    ("Polystyrene melt, PCFF (periodic, class II + class I)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "pcff", "types", "rules"),
     # CVFF, PCFF and COMPASS from their .frc files (msi2lmp's assignment; check_msi2lmp.py compares with msi2lmp itself)
     ("Polystyrene melt, PCFF from pcff.frc (periodic, full class II)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "pcff-frc", "types", "rules"),
     ("PCFF from pcff.frc: ester, ether, amide, siloxane, amine", ("smiles", "CCOC(=O)C.COCC.CC(=O)NC.C[Si](C)(C)O[Si](C)(C)C.CCN(C)C"), "pcff-frc", "types", "rules"),
@@ -176,21 +160,16 @@ CASES = [
     ("CVFF from cvff.frc: phenol, ethyl acetate, N-methylacetamide", ("smiles", "Oc1ccccc1.CCOC(=O)C.CC(=O)NC"), "cvff-frc", "types", "rules"),
     ("Polystyrene melt, COMPASS from compass_published.frc (periodic)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "compass-frc", "types", "rules"),
     ("COMPASS from compass_published.frc: propylbenzene, ester-ether", ("smiles", "CCCc1ccccc1.COCCOC(=O)C"), "compass-frc", "types", "rules"),
-    # every bonded kind hybrid: COMPASS (class II with all cross terms) plus an overlay turning one angle, one torsion
-    # and one improper type into class I forms, so each class II section carries skip lines. (The improper is cvff,
-    # K[1 − cos 2φ]: smooth. A harmonic improper with χ0 = 0 on a class II centre-second quadruple sits at χ ≈ 180°,
-    # a cusp of K(χ − χ0)² where the two programs take different one-sided slopes.)
-    ("COMPASS polystyrene + class I overlay (hybrid in every kind)", ("compass-ps",), "compass-published-moltemplate", "types", "keys"),
-    # OPLS-AA with its numbered types and their own charges (the 2024 and BOSS 2008 files), L-OPLS for long alkyl chains:
-    # rubber-relevant groups — trisubstituted alkene (isoprene), styrene, nitrile, ester, chloroalkene, disulfide
-    ("OPLS-AA 2024: isoprene, ethylbenzene, nitrile, ester, disulfide", ("smiles", "CC=C(C)CC.CCc1ccccc1.CCC#N.CCOC(=O)C.CSSC"), "oplsaa2024-moltemplate", "types", "rules"),
-    ("OPLS-AA 2024 polystyrene melt (periodic)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "oplsaa2024-moltemplate", "types", "rules"),
-    ("OPLS-AA 2008 (BOSS 4.8): isoprene, chloroethene, NBR nitrile (R2CH-CN); nudged off linear", ("smiles-nudged", "CC=C(C)CC.CC=CCl.CCC(C#N)CC"), "oplsaa2008-moltemplate", "types", "rules"),
-    ("L-OPLS 2024: hexadecane", ("smiles", "CCCCCCCCCCCCCCCC"), "loplsaa2024-moltemplate", "types", "rules"),
-    ("CGenFF methane template (separate 1-4 LJ)", ("template", "CHARMM36_cgenff", "toluene"), "cgenff", "gasteiger", "rules"),
+    # hybrid bonded kinds: COMPASS (class II with all cross terms) plus an overlay turning one angle and one torsion type
+    # into class I forms, so those class II sections carry skip lines. (The overlay's cvff improper stays class II here:
+    # compass-frc places its out-of-plane terms as msi2lmp does, oop_scheme msi2lmp.)
+    ("COMPASS polystyrene + class I overlay (hybrid angles and torsions)", ("compass-ps",), "compass-frc", "types", "keys"),
+    # OPLS-AA 2024 with its numbered types and their own charges: rubber-relevant groups — trisubstituted alkene
+    # (isoprene), styrene, nitrile, ester, disulfide
+    ("OPLS-AA 2024: isoprene, ethylbenzene, nitrile, ester, disulfide", ("smiles", "CC=C(C)CC.CCc1ccccc1.CCC#N.CCOC(=O)C.CSSC"), "oplsaa2024", "types", "rules"),
     # CHARMM in its own styles: lj/charmmfsw (force switch 10-12 Å, pairs in the switching shell), the 1-4 pairs with
     # their own ε14 / σ14 through dihedral charmmfsw weights (a phenyl ring's para pairs reached by two torsions once)
-    ("Polystyrene melt, CGenFF (periodic; lj/charmmfsw, 1-4 by dihedral weights)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "cgenff", "gasteiger", "rules"),
+    ("Polystyrene melt, CGenFF (periodic; lj/charmmfsw, 1-4 by dihedral weights)", ("file", os.path.join(ROOT, "samples", "ps_melt.data")), "cgenff-toppar", "gasteiger", "rules"),
     # the libraries CAPS builds from the force fields' own files (bench/ff/open: CHARMM's toppar, AmberTools' dat/leap/parm):
     # CHARMM in its own styles (Urey-Bradley angles, multi-term torsions, periodic impropers, separate 1-4 LJ; run with
     # --native), GAFF / GAFF2 typed by antechamber's rules
@@ -285,7 +264,6 @@ CASES = [
     ("TraPPE-UA (transferable) PIBVE, poly(isobutyl vinyl ether) DP 4", ("grow", "[*]CC([*])OCC(C)C", 4, 3), "trappe-ua-umn", "types", "rules"),
     ("TraPPE-UA (transferable) PVCH, poly(vinyl cyclohexane) DP 4 (six-membered ring)", ("grow", "[*]CC([*])C1CCCCC1", 4, 3), "trappe-ua-umn", "types", "rules"),
     ("TraPPE-UA (transferable) PVCP, poly(vinyl cyclopentane) DP 4 (five-membered ring)", ("grow", "[*]CC([*])C1CCCC1", 4, 3), "trappe-ua-umn", "types", "rules"),
-    ("TraPPE-UA alkanes (moltemplate): dodecane", ("smiles", "CCCCCCCCCCCC"), "trappe1998-moltemplate", "keep", "rules"),
     # OPLS-UA: the 2024 file's united-atom types with the 1984 paper's terms where the file has none
     # (bench/ff/open/oplsua2024_supplement.json): CH-CH2 torsions (isopentane), C=C-C-C (1-butene), bends by Table I
     ("OPLS-UA 2024 + 1984 terms: polypropylene tetramer", ("smiles", "CC(C)CC(C)CC(C)CC(C)C"), "oplsua2024", "types", "rules"),
@@ -298,10 +276,12 @@ CASES = [
     ("OPLS-UA 2024 + 1986 / 1990 terms: ethanol, 1-propanol, 2-propanol, tert-butanol, diethyl ether", ("smiles", "CCO.CCCO.CC(C)O.CC(C)(C)O.CCOCC"),
      "oplsua2024", "types", "rules"),
     # coarse-grained: MARTINI (lj/gromacs + coul/gromacs, dielectric 15, cosine/squared angles, 1-3 and 1-4 pairs kept)
-    # and SDK (lj/sdk 9-6 / 12-4, angle sdk with its 1-3 repulsion), bead molecules and water beads in periodic boxes
-    ("MARTINI DPPC + POPE + ions + water (periodic)", ("cg-box", "martini-moltemplate", [("template", "DPPC", 6), ("template", "POPE", 4),
+    # and SDK (lj/sdk 9-6 / 12-4, angle sdk with its 1-3 repulsion), bead molecules and water beads in periodic boxes;
+    # Cooke-Kremer-Deserno lipids; mW water (pair_style sw). MARTINI 2 and SDK by a neutral alias a catalogue entry lists,
+    # skipped until they are rebuilt from their papers (TODO: their papers are not in hand yet)
+    ("MARTINI DPPC + POPE + ions + water (periodic)", ("cg-box", "martini", [("template", "DPPC", 6), ("template", "POPE", 4),
                                                    ("template", "NA+", 5), ("template", "CL-", 5), ("template", "W", 150)], 42.0),
-     "martini-moltemplate", "keep", "rules"),
+     "martini", "keep", "rules"),
     ("MARTINI polymers: PEO (torsions) + water (periodic)", ("cg-box", "martini-polymers", [("template", "PEO", 3), ("beads", "[P4]", 120)], 44.0),
      "martini-polymers", "keep", "rules"),
     ("MARTINI sugars: sucrose, maltose, glucose + water (periodic)", ("cg-box", "martini-sugars", [("template", "SUCR", 4), ("template", "MALT", 4),
@@ -310,29 +290,26 @@ CASES = [
     ("MARTINI amino acids: HIS, PHE, TYR, TRP (impropers), ARG, ASP, LYS + water (periodic)",
      ("cg-box", "martini-aminoacids", [("template", t, 3) for t in ("HIS", "PHE", "TYR", "TRP", "ARG", "ASP", "LYS")] + [("beads", "[P4]", 100)], 40.0),
      "martini-aminoacids", "keep", "rules"),
-    ("SDK DMPC + DMPE + water (periodic)", ("cg-box", "sdk-moltemplate", [("beads", "[NC][PH][GL]([EST1][CM][CM][CM][CT2])[EST2][CM][CM][CM][CT2]", 6),
-                                                                     ("beads", "[NH][PHE][GL]([EST1][CM][CM][CM][CT2])[EST2][CM][CM][CM][CT2]", 4),
-                                                                     ("beads", "[W]", 120)], 36.0),
-     "sdk-moltemplate", "types", "rules"),
-    ("SDK C12E8 + water (periodic)", ("cg-box", "sdk-moltemplate", [("beads", "[OA]" + "[EO]" * 8 + "[CM][CM][CM][CT2]", 6), ("beads", "[W]", 120)], 40.0),
-     "sdk-moltemplate", "types", "rules"),
-    ("SDK SDS + Na+ + water (periodic, relative permittivity 80)", ("cg-box", "sdk-moltemplate", [("beads", "[SO4][CM][CM][CM][CT]", 8),
+    ("SDK DMPC + DMPE + water (periodic)", ("cg-box", "sdk", [("beads", "[NC][PH][GL]([EST1][CM][CM][CM][CT2])[EST2][CM][CM][CM][CT2]", 6),
+                                                         ("beads", "[NH][PHE][GL]([EST1][CM][CM][CM][CT2])[EST2][CM][CM][CM][CT2]", 4),
+                                                         ("beads", "[W]", 120)], 36.0),
+     "sdk", "types", "rules"),
+    ("SDK C12E8 + water (periodic)", ("cg-box", "sdk", [("beads", "[OA]" + "[EO]" * 8 + "[CM][CM][CM][CT2]", 6), ("beads", "[W]", 120)], 40.0),
+     "sdk", "types", "rules"),
+    ("SDK SDS + Na+ + water (periodic, relative permittivity 80)", ("cg-box", "sdk", [("beads", "[SO4][CM][CM][CM][CT]", 8),
                                                                    ("beads", "[SOD]", 8), ("beads", "[W]", 120)], 38.0),
-     "sdk-moltemplate", "types", "rules"),
-    ("Cooke-Deserno lipids (cosine/squared, FENE; periodic)", ("cg-box", "cooke-deserno-moltemplate", [("template", "lipid", 60)], 16.0),
-     "cooke-deserno-moltemplate", "types", "rules"),
-    # DREIDING's hydrogen bond (hbond/dreiding/lj, moltemplate's DREIDING): water typed O_3_hd / H_HB, every O-H···O within
-    # 6.5 Å and past 90°, switched from 6 Å
-    ("DREIDING (moltemplate) water: hydrogen bonds (periodic, 480 molecules)", ("water-box", 480, 24.84), "dreiding-moltemplate", "gasteiger", "rules"),
+     "sdk", "types", "rules"),
+    ("Cooke-Kremer-Deserno 2005 lipids from the paper (cosine/squared, FENE with WCA; periodic)", ("cg-box", "cooke-deserno2005", [("template", "lipid", 60)], 16.0),
+     "cooke-deserno2005", "types", "rules"),
     # mW water: all-atom water packed by CAPS, one Stillinger–Weber site per molecule (pair_style sw with a .sw file)
-    ("mW water (Stillinger-Weber, periodic, 480 sites)", ("water-box", 480, 24.84), "mw-moltemplate", "types", "rules"),
+    ("mW water (Stillinger-Weber, periodic, 480 sites)", ("water-box", 480, 24.84), "mw-molinero2009", "types", "rules"),
 ]
 
 
 OVERLAY = """{"format": "caps-forcefield", "version": 1, "name": "class I test overlay", "atom_types": [],
- "angles": [{"name": "test c4-c4-c4", "match": ["c4~*", "c4~*", "c4~*"], "style": "harmonic", "params": [60.0, 112.0]}],
- "dihedrals": [{"name": "test c4-c4-c4-c4", "match": ["c4~*", "c4~*", "c4~*", "c4~*"], "style": "fourier", "params": [2, 0.4, 1, 0.0, 0.2, 3, 0.0]}],
- "impropers": [{"name": "test ipso", "match": ["c3a~*", "c3a~*", "c3a~*", "c4~*"], "style": "cvff", "params": [8.0, -1, 2]}]}
+ "angles": [{"name": "test c4-c4-c4", "match": ["c4", "c4", "c4"], "style": "harmonic", "params": [60.0, 112.0]}],
+ "dihedrals": [{"name": "test c4-c4-c4-c4", "match": ["c4", "c4", "c4", "c4"], "style": "fourier", "params": [2, 0.4, 1, 0.0, 0.2, 3, 0.0]}],
+ "impropers": [{"name": "test ipso", "match": ["c3a", "c3a", "c3a", "c4"], "style": "cvff", "params": [8.0, -1, 2]}]}
 """
 
 
@@ -391,6 +368,10 @@ def ff_file(fid):
     if fid == "uff":   # built in: typed from elements and bonds
         return "uff"
     p = os.path.join(FF, fid + ".json")
+    if not os.path.exists(p):   # a neutral alias (spce, martini, mw ...) the catalogue entry of a library lists
+        for e in json.load(open(os.path.join(FF, "catalogue.json")))["forcefields"]:
+            if fid in e.get("aliases", []) and isinstance(e.get("file"), str) and os.path.exists(os.path.join(FF, e["file"])):
+                return os.path.join(FF, e["file"])
     return p if os.path.exists(p) else None
 
 
@@ -534,46 +515,7 @@ def structure(src, base):
             for t in open(gt):
                 f.write({"c3": "c4", "ca": "c3a", "hc": "h1", "ha": "h1"}[t.strip()] + "\n")
         return ps, tfile
-    lib = src[1]
-    sf = os.path.join(LIB, lib + ".sf")
-    if not os.path.exists(sf):
-        return None, None
-    if kind == "template-first":
-        names = template_pdb.candidates(sf, 30)
-        if not names:
-            return None, None
-        name = names[0]
-    elif kind == "ionic-first":   # rigid-ion templates (no core-shell pairs, whose springs this check does not cover)
-        names = [n for n, m in template_pdb.parse_sf(sf)[2].items()
-                 if ionic_pdb.ionic(m) and not any(re.search(r"[A-Za-z][0-9]*[cs]$", a) for a, _ in m["atoms"])]
-        if not names:
-            return None, None
-        name = names[0]
-    else:
-        name = src[2]
-        mols0 = template_pdb.parse_sf(sf)[2]
-        if name not in mols0:   # this library names it differently: its first small template instead
-            names = template_pdb.candidates(sf, 30)
-            if not names:
-                return None, None
-            name = names[0]
-    pdb = os.path.join(work, base + ".pdb")
-    if kind == "ionic-first":
-        ionic_pdb.build(sf, name, pdb, units=4)
-    else:
-        template_pdb.build(sf, name, pdb)
-    types, keys, mols = template_pdb.parse_sf(sf)
-    key_of = dict(template_pdb.ATOM_KEY)
-    tfile = os.path.join(work, base + ".types")
-    atoms = mols[name]["atoms"]
-    if kind == "ionic-first":   # the builder repeats the formula unit
-        n = sum(1 for l in open(pdb) if l.startswith(("ATOM", "HETATM")))
-        atoms = [atoms[i % len(atoms)] for i in range(n)]
-    with open(tfile, "w") as f:
-        for _, t in atoms:
-            f.write(key_of.get(t, t) + "\n")
-    return pdb, tfile
-
+    raise ValueError(f"unknown structure source {kind}")
 
 
 def harmonic_improper_clamped(d):
@@ -880,7 +822,7 @@ for case in CASES:
     if typing == "keys" and tfile:
         cmd += ["--types", tfile]
     if PME:
-        if src[0] not in ("file", "ionic-first", "cg-box", "crystal"):
+        if src[0] not in ("file", "cg-box", "crystal"):
             continue
         cmd += ["--pme", "--ewald-rtol", "1e-9", "--pme-spacing", "0.3", "--pme-order", "8"]
     if src[0] == "compass-ps":

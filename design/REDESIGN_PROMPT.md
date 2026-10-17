@@ -18,7 +18,7 @@ peer-reviewed literature, and you cite it.
 
 Building a simulation-ready polymer model today means chaining several
 programs: a monomer and chain builder, packmol for packing, LAMMPS or GROMACS
-for minimisation and relaxation, and DL_FIELD or moltemplate for atom typing
+for minimisation and relaxation, and moltemplate or similar tools for atom typing
 and parameters. Each step has its own formats and failure modes, growth often
 uses a generic soft-sphere potential rather than the real force field, and
 nothing records how a model was made.
@@ -90,8 +90,8 @@ parallel strategy, and validation tests.
 - Automatic atom typing with rule files of SMARTS patterns and chemical
   environments, and a report explaining why each atom got its type.
 - A declarative, versioned parameter database (TOML or JSON schema) with a
-  literature source for each parameter set. Import from moltemplate .lt, DL_FIELD
-  .par, and GROMACS .itp files. Export to all of them.
+  literature source for each parameter set. Import from moltemplate .lt
+  and GROMACS .itp files. Export to all of them.
 
 ### 3. CAPS Grow: amorphous chain growth
 - Keep and extend the existing method: Theodorou–Suter growth (Macromolecules
@@ -192,7 +192,7 @@ parallel strategy, and validation tests.
 ### 10. CAPS IO: file writers
 - Write LAMMPS data and input files, GROMACS gro, top, itp and mdp files,
   and PDB, mol2, xyz, extended XYZ, CIF and DCD files. Keep the moltemplate
-  and DL_FIELD formats.
+  format.
 - Input decks written for other engines must reproduce CAPS energies on the
   first step. This is tested automatically.
 

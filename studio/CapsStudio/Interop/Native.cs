@@ -233,6 +233,7 @@ public struct CapsMdOpts
     public double EfieldX, EfieldY, EfieldZ;   // ABI 61: a uniform electric field on the partial charges, V/Å
     public int FullShape;                      // ABI 62: with BoxAnisotropic, the tilts relax too
     public double Hmr;                         // ABI 68: hydrogens at this mass (u), taken from their bonded atoms; 0 off
+    public int Precision;                      // ABI 70: 0 mixed (caps md's default), 1 double (--precision double)
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -270,6 +271,7 @@ public struct CapsEquilOpts
     public IntPtr InternalTarget;     // a target ⟨R²(n)⟩/(n⟨b²⟩) indexed by n (pinned by the caller for the run), or zero
     public int InternalTargetN;
     public double Hmr;                // ABI 68: hydrogen mass repartitioning (u), 0 off
+    public int Precision;             // ABI 70: 0 mixed (caps equilibrate's default), 1 double
 }
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -297,6 +299,8 @@ public struct CapsReactOpts
     public double TargetValue;
     // ABI 59
     public int SitesPerChain;     // at most this many of each chain's reactive sites react (0: no limit)
+    // ABI 70
+    public int RemoveUnreacted;   // molecules of S and H only (unreacted sulfur donors) leave the cell afterwards
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -368,6 +372,8 @@ public struct CapsMechOpts
     // ABI 63: solvation free energy (TI)
     public int SolvMol, SolvCoulWindows, SolvLjWindows;
     public double SolvPs, SolvEqPs, SolvT;
+    // ABI 70: tensile and tg: 0 mixed precision (caps tg / tensile's default), 1 double
+    public int Precision;
 }
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -629,6 +635,15 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_react_sites")] public static extern int ReactSites(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string text, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_reaction_library")] public static extern int ReactionLibrary([MarshalAs(UnmanagedType.LPUTF8Str)] string path, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_react_summary")] public static extern int ReactSummary(IntPtr doc, byte[]? json, int cap);
+    // ABI 70: the CLI's options through the same entry points
+    [DllImport(Lib, EntryPoint = "caps_sulfur_bridges")] public static extern int SulfurBridges(IntPtr doc, int ringLimit, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_field_set_overlays")] public static extern int FieldSetOverlays(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string paths);
+    [DllImport(Lib, EntryPoint = "caps_field_overlays")] public static extern int FieldOverlays(IntPtr doc, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_forcefield_overlays")] public static extern int ForcefieldOverlays([MarshalAs(UnmanagedType.LPUTF8Str)] string dir,
+        [MarshalAs(UnmanagedType.LPUTF8Str)] string baseId, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_ml_available")] public static extern int MlAvailable();
+    [DllImport(Lib, EntryPoint = "caps_ff_complete")] public static extern int FfComplete(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string ffPath,
+        [MarshalAs(UnmanagedType.LPUTF8Str)] string options, CapsAnalyzeProgress? progress, IntPtr user, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_bond_react_export")] public static extern int BondReactExport(IntPtr doc, byte[] templates, [MarshalAs(UnmanagedType.LPUTF8Str)] string dir,
         [MarshalAs(UnmanagedType.LPUTF8Str)] string options, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_bond_react_import")] public static extern int BondReactImport([MarshalAs(UnmanagedType.LPUTF8Str)] string pre,
@@ -1276,7 +1291,7 @@ public sealed class CapsDocument : IDisposable
     public static string PipelineFromYaml(string yaml) => Sized((b, c) => Native.PipelineFromYaml(yaml, b, c));
     /// <summary>What a file holds before opening it (scans a dump for its frames: call off the UI thread).</summary>
     public static string InspectFile(string path, string? topology) => Sized((b, c) => Native.InspectFile(path, topology, b, c));
-    /// <summary>The water models (SPC, SPC/E, SPC/Fw, the TIP3P and TIP4P families, OPC) as JSON.</summary>
+    /// <summary>The water models (SPC, SPC/E, SPC/Fw, the TIP3P and TIP4P families, TIP5P, OPC, OPC3) as JSON.</summary>
     public static string WaterModelsJson() => Sized((b, c) => Native.WaterModels(b, c));
     /// <summary>Pack input as the CAPS form (toCaps) or packmol's; throws with the line of a mistake.</summary>
     public static string PackConvert(string text, bool toCaps) => Sized((b, c) => Native.PackConvert(text, toCaps ? 1 : 0, b, c));
@@ -1779,6 +1794,31 @@ public sealed class CapsDocument : IDisposable
     public bool FieldSetOptions(string json) { using (Hold()) { Alive(); return CheckField(Native.FieldSetOptions(H, json)); } }
     public bool FieldAddRule(string kind, string types, string style, string pars) { using (Hold()) { Alive(); return CheckField(Native.FieldAddRule(H, kind, types, style, pars)); } }
     public bool FieldImport(string path) { using (Hold()) { Alive(); return CheckField(Native.FieldImport(H, path)); } }
+    /// <summary>Overlays merged onto the assigned force field before typing, as --overlay A.json,B.json (ABI 70).</summary>
+    public bool FieldSetOverlays(IEnumerable<string> paths) { using (Hold()) { Alive(); return CheckField(Native.FieldSetOverlays(H, string.Join(",", paths))); } }
+    /// <summary>The assignment's overlays (JSON array of paths).</summary>
+    public string FieldOverlays() { using (Hold()) { Alive(); return Sized((b, c) => Native.FieldOverlays(H, b, c)); } }
+    /// <summary>The library's overlay files (caps ff overlays): JSON {overlays: [{file, path, name, base, kinds, notes}]}.</summary>
+    public static string ForcefieldOverlays(string dir, string baseId = "") => Sized((b, c) => Native.ForcefieldOverlays(dir, baseId, b, c));
+    /// <summary>Whether this build carries CAPS's machine-learned potential (caps ff complete; -DCAPS_WITH_TORCH=ON).</summary>
+    public static bool MlAvailable => Native.MlAvailable() == 1;
+    /// <summary>caps ff complete on the current frame (ABI 70): the report JSON; one run, the report cut at 4 MB.</summary>
+    public string FfComplete(string ffPath, string options, Func<string, bool>? log = null)
+    {
+        using (Hold(longRun: true))
+        {
+            Alive();
+            CapsAnalyzeProgress? cb = log == null ? null : (w, _, _) => log(Marshal.PtrToStringUTF8(w) ?? "") ? 0 : 1;
+            var buf = new byte[1 << 22];
+            var rc = Native.FfComplete(H, ffPath, options, cb, IntPtr.Zero, buf, buf.Length);
+            GC.KeepAlive(cb);
+            Check(rc);
+            var n = Array.IndexOf(buf, (byte)0);
+            return System.Text.Encoding.UTF8.GetString(buf, 0, n < 0 ? buf.Length : n);
+        }
+    }
+    /// <summary>The current frame's sulfur by kind and rank (caps_sulfur_bridges), JSON.</summary>
+    public string SulfurBridges(int ringLimit = 8) { using (Hold()) { Alive(); return Sized((b, c) => Native.SulfurBridges(H, ringLimit, b, c)); } }
     /// <summary>Borrows another file's bonds, angles and torsions only where the assigned force field defines none.</summary>
     public bool FieldFillGaps(string path) { using (Hold()) { Alive(); return CheckField(Native.FieldImportEx(H, path, "{\"mode\":\"fill\"}")); } }
     public bool FieldRemoveRules() { using (Hold()) { Alive(); return CheckField(Native.FieldRemoveRules(H)); } }

@@ -164,7 +164,7 @@ std::vector<std::string> write_dlpoly(const System& s, const ForceField& ff, con
     cross |= d.aat_m != 0 || d.bb13_n != 0;
     if (cross) ++dropped["class II torsion cross terms (middle/end bond–torsion, angle–torsion, angle–angle–torsion, bond–bond 1-3)"];
   }
-  if (ff.impropers_dlpoly_set && ff.impropers_dlpoly_ok) {   // DL-derived files: as their DL_POLY files write them
+  if (ff.impropers_dlpoly_set && ff.impropers_dlpoly_ok) {   // as those libraries' DL_POLY files write them
     group_terms(ff.impropers_dlpoly, false);
     if (ff.improper_written == "center2" && !ff.impropers.empty()) notes.push_back("impropers as this force field's DL_POLY files write them (centre third), which differs from its LAMMPS order (centre second)");
   } else if (ff.improper_written == "center2") {   // held i C j l (their LAMMPS order); their DL_POLY files differ

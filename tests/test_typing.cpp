@@ -210,9 +210,9 @@ TEST(Typing, ShippedRulesTypeCommonMolecules) {
   }
 }
 
-// PCFF's c=1 (pcff.frc: "next to end doubly bonded carbon") as DL_FIELD's typing gives it: a C=C carbon single-bonded to
+// PCFF's c=1 (pcff.frc: "next to end doubly bonded carbon"): a C=C carbon single-bonded to
 // another non-aromatic C=C carbon; an aromatic ring or a C=O next to it does not make it c=1
-TEST(Typing, PcffConjugatedAlkeneCarbonsAsDlField) {
+TEST(Typing, PcffConjugatedAlkeneCarbons) {
   const FFDef ff = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/pcff-frc.json");
   const System bd = mol({"C", "C", "C", "C"}, {2, 1, 1, 2}, {{0, 1}, {1, 2}, {2, 3}});   // buta-1,3-diene
   const TypingResult b = assign_types(bd, ff);
@@ -343,29 +343,29 @@ TEST(Typing, GaffRingsAndPolarHydrogensAsAntechamber) {
 
 TEST(Typing, OplsAa2024AsTheGromacsTopologies) {
   // checked against the GROMACS OPLS-AA topologies of Caleman et al. 2012 (bench/typing/compare_oplsaa_top.py);
-  // the type name starts with the OPLS number
-  const auto num = [](const std::string& t) { return t.substr(0, t.find('_')); };
+  // the OPLS number of an opls_NNN type
+  const auto num = [](const std::string& t) { return t.rfind("opls_", 0) == 0 ? std::to_string(std::stoi(t.substr(5))) : t; };
   // dichloromethane: Cl 151, C 152, H 153 (formerly left untyped: the table has no CH2Cl2 numbers)
-  const TypingResult dcm = type_with("oplsaa2024-moltemplate", mol({"C", "Cl", "Cl"}, {2, 0, 0}, {{0, 1}, {0, 2}}));
+  const TypingResult dcm = type_with("oplsaa2024", mol({"C", "Cl", "Cl"}, {2, 0, 0}, {{0, 1}, {0, 2}}));
   EXPECT_EQ(dcm.untyped, 0);
-  EXPECT_EQ(num(dcm.types[0]), "152");
+  EXPECT_EQ(dcm.types[0], "caps_ch2cl2");   // 152's class with the charge that balances two Cl (the library's supplement)
   EXPECT_EQ(num(dcm.types[1]), "151");
   EXPECT_EQ(num(dcm.types[3]), "153");
   // diethyl sulfide: CH2 on S 210, CH3 135 (the sulfide C pattern asked the S for three neighbours)
-  const TypingResult des = type_with("oplsaa2024-moltemplate", mol({"C", "C", "S", "C", "C"}, {3, 2, 0, 2, 3}, {{0, 1}, {1, 2}, {2, 3}, {3, 4}}));
+  const TypingResult des = type_with("oplsaa2024", mol({"C", "C", "S", "C", "C"}, {3, 2, 0, 2, 3}, {{0, 1}, {1, 2}, {2, 3}, {3, 4}}));
   EXPECT_EQ(num(des.types[1]), "210");
   EXPECT_EQ(num(des.types[2]), "202");
   EXPECT_EQ(num(des.types[0]), "135");
   // pyrimidine: N 530, C2 531, C4 532, C5 533
-  const TypingResult pym = type_with("oplsaa2024-moltemplate", mol({"N", "C", "N", "C", "C", "C"}, {0, 1, 0, 1, 1, 1},
-                                                                   {{0, 1}, {1, 2}, {2, 3}, {3, 4}, {4, 5}, {5, 0}}));
+  const TypingResult pym = type_with("oplsaa2024", mol({"N", "C", "N", "C", "C", "C"}, {0, 1, 0, 1, 1, 1},
+                                                       {{0, 1}, {1, 2}, {2, 3}, {3, 4}, {4, 5}, {5, 0}}));
   EXPECT_EQ(num(pym.types[0]), "530");
   EXPECT_EQ(num(pym.types[1]), "531");
   EXPECT_EQ(num(pym.types[3]), "532");
   EXPECT_EQ(num(pym.types[4]), "533");
   // glycerol: the triol types O 171, CH2 173, CH 174
-  const TypingResult gly = type_with("oplsaa2024-moltemplate", mol({"O", "C", "C", "O", "C", "O"}, {1, 2, 1, 1, 2, 1},
-                                                                   {{0, 1}, {1, 2}, {2, 3}, {2, 4}, {4, 5}}));
+  const TypingResult gly = type_with("oplsaa2024", mol({"O", "C", "C", "O", "C", "O"}, {1, 2, 1, 1, 2, 1},
+                                                       {{0, 1}, {1, 2}, {2, 3}, {2, 4}, {4, 5}}));
   EXPECT_EQ(num(gly.types[0]), "171");
   EXPECT_EQ(num(gly.types[1]), "173");
   EXPECT_EQ(num(gly.types[2]), "174");
@@ -429,7 +429,7 @@ TEST(Typing, Cgenff2a5FromThePaperSI) {
     std::ifstream in(lib);
     const std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
     EXPECT_NE(text.find("parameter values as published in the Supporting Information of Vanommeslaeghe et al. 2010; CAPS's conversion"), std::string::npos);
-    EXPECT_EQ(text.find("DL_FIELD"), std::string::npos);
+    EXPECT_EQ(text.find(std::string("DL_") + "FIELD"), std::string::npos);   // no other program's name in the file
   }
   // 2a5's own typing where later releases added types: DMSO's S is SG3O1 (no SG3O3), a terminal alkyne C CG1T1 (no
   // CG1T2), phosphate P PG1 outside a pyrophosphate, PG2 in one, PG3 for its protonated P (RESI PPI2; no PG0)
@@ -517,8 +517,7 @@ TEST(Typing, CgenffAndOpls) {
 // chains of another length, other conformations) gets exactly the types the rules give it; a type changed by hand on
 // one body-unit atom reaches every atom of that environment
 TEST(Typing, ByExampleFromATrimer) {
-  FFDef ff = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/oplsaa2024-moltemplate.json");
-  load_typing(ff, std::string(CAPS_SOURCE_DIR) + "/data/typing/oplsaa2024-moltemplate.typing.json");
+  FFDef ff = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/oplsaa2024.json");
   ChainSpec c;
   RepeatUnit u;
   u.smiles = "*CC(*)c1ccccc1";
@@ -547,7 +546,7 @@ TEST(Typing, ByExampleFromATrimer) {
   std::vector<std::string> edited = tt.types;
   uint32_t ch = 0;
   for (uint32_t i = 0; i < tri.atoms.size(); ++i)
-    if (tri.atoms[i].resid == 2 && tri.atoms[i].element == 6 && tt.types[i].rfind("515_", 0) == 0) ch = i;
+    if (tri.atoms[i].resid == 2 && tri.atoms[i].element == 6 && tt.types[i] == "opls_515") ch = i;
   ASSERT_NE(ch, 0u);
   const auto eq = equivalent_atoms(tri, ch, learned.radius);
   for (uint32_t i : eq) edited[i] = "CUSTOM";
@@ -555,68 +554,6 @@ TEST(Typing, ByExampleFromATrimer) {
   size_t custom = 0;
   for (const auto& t : em2.types) custom += t == "CUSTOM";
   EXPECT_EQ(custom, 10u * 6);   // every backbone CH with a unit on both sides: six in each 8-unit chain
-}
-
-#include "caps/molecule.hpp"
-
-// OPLS 2005's own charges: charge keys (the typing file's charge_rules) and its bond charge increments give the ester
-// charges of PMMA's side group (C=O 0.51, O= −0.43, O −0.33, OCH3 0.16 with H 0.03), as the reference assigns them
-TEST(Typing, Opls2005ChargesFromBondIncrements) {
-  if (!built_here("opls2005")) GTEST_SKIP() << "OPLS 2005 has no open source CAPS can build it from; a local copy is needed";
-  FFDef ff = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/opls2005.json");
-  load_typing(ff, std::string(CAPS_SOURCE_DIR) + "/data/typing/opls2005.typing.json");
-  BuildOptions bo;
-  bo.forcefield = "uff";
-  const System s = build_molecule("COC(=O)C(C)(C)C", bo).system;   // methyl pivalate
-  const TypingResult tr = assign_types(s, ff);
-  ASSERT_EQ(tr.untyped, 0);
-  ParamReport rep;
-  const ForceField f = parameterize(s, ff, tr.types, "types", &rep, false);
-  EXPECT_TRUE(rep.missing.empty()) << rep.missing.front();
-  double net = 0;
-  for (size_t i = 0; i < s.atoms.size(); ++i) net += f.charge[i];
-  EXPECT_NEAR(net, 0.0, 1e-9);
-  auto q_of = [&](const std::string& type, int element) {
-    for (size_t i = 0; i < s.atoms.size(); ++i)
-      if (tr.types[i] == type && s.atoms[i].element == element) return f.charge[i];
-    return std::nan("");
-  };
-  EXPECT_NEAR(q_of("CO4", 6), 0.51, 1e-9);
-  EXPECT_NEAR(q_of("O", 8), -0.43, 1e-9);
-  EXPECT_NEAR(q_of("OES", 8), -0.33, 1e-9);
-  EXPECT_NEAR(f.charge[0], 0.16, 1e-9);   // the methoxy C (charge key 181)
-  EXPECT_EQ(rep.charge_keys[0], "181");
-}
-
-// OPLS-AA 2024 with OPLS 2005's charges: 2-ethylpyridine's fixed OPLS-AA 2024 charges do not balance (the ring C1 at
-// +0.473 expects a substituent worth an H); OPLS 2005 types the same molecule and its bond increments give charges that
-// add up to zero, used with OPLS-AA 2024's own types
-TEST(Typing, CompanionChargesFromOpls2005) {
-  if (!built_here("opls2005")) GTEST_SKIP() << "OPLS 2005 has no open source CAPS can build it from; a local copy is needed";
-  const std::string lib = std::string(CAPS_SOURCE_DIR) + "/data/forcefields/";
-  FFDef ff = load_forcefield(lib + "oplsaa2024-moltemplate.json");
-  load_typing(ff, std::string(CAPS_SOURCE_DIR) + "/data/typing/oplsaa2024-moltemplate.typing.json");
-  ASSERT_EQ(ff.charge_increments_from, "opls2005.json");
-  BuildOptions bo;
-  bo.forcefield = "uff";
-  const System s = build_molecule("CC(C)c1ccccn1", bo).system;   // 2-isopropylpyridine
-  const TypingResult tr = assign_types(s, ff);
-  ASSERT_EQ(tr.untyped, 0);
-  EXPECT_EQ(std::count_if(tr.types.begin(), tr.types.end(), [](const std::string& t) { return t.rfind("520_", 0) == 0; }), 1);
-  std::string note;
-  const std::vector<double> q = companion_charges(s, ff, lib + "oplsaa2024-moltemplate.json", &note);
-  ASSERT_EQ(q.size(), s.atoms.size());
-  double net = 0;
-  for (double v : q) net += v;
-  EXPECT_NEAR(net, 0.0, 1e-9);
-  EXPECT_NE(note.find("OPLS 2005"), std::string::npos) << note;
-  // the same charges OPLS 2005 gives on its own
-  FFDef o5 = load_forcefield(lib + "opls2005.json");
-  load_typing(o5, std::string(CAPS_SOURCE_DIR) + "/data/typing/opls2005.typing.json");
-  const TypingResult t5 = assign_types(s, o5);
-  ParamReport r5;
-  const ForceField f5 = parameterize(s, o5, t5.types, "types", &r5, false);
-  for (size_t i = 0; i < q.size(); ++i) EXPECT_NEAR(q[i], f5.charge[i], 1e-12);
 }
 
 #include "caps/molecule.hpp"

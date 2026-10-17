@@ -35,9 +35,9 @@ struct FFType {
   int priority = 0;                    // among matching rules not overridden, the highest priority wins
   std::string source;                  // literature reference or origin of the parameters
   // Equivalences: the type name used when looking up one kind of parameter ("vdw", "bond", "angle",
-  // "dihedral", "improper", "increment"), as DL_FIELD's EQUIVALENCE and the .frc #equivalence tables.
+  // "dihedral", "improper", "increment"), as the .frc #equivalence tables.
   std::map<std::string, std::string> equiv;
-  std::vector<std::string> aliases;    // other names for this type (DL_FIELD atom types, moltemplate short names)
+  std::vector<std::string> aliases;    // other names for this type (source-library atom types, moltemplate short names)
 };
 
 // A typing rule: atoms matching the SMARTS (first pattern atom = the atom typed) get `type`. Among the rules that match
@@ -130,20 +130,20 @@ struct FFDef {
   // How improper quadruples are formed and ordered (moltemplate symmetry plugins):
   //   "center3_sorted"  centre in position 3, the others sorted by atom index (AMBER / GAFF, gaff_imp.py)
   //   "center1_sorted"  centre in position 1, the others sorted by atom index (OPLS, cenIsortJKL.py)
-  //   "center3_type_sorted"  centre third, the others by type name then bond order (AMBER tleap, DL_FIELD)
+  //   "center3_type_sorted"  centre third, the others by type name then bond order (AMBER tleap)
   //   "center2_sorted"  centre in position 2 (class II, cenJsortIKL); the outer atoms keep the order of the
   //                     matching rule, since the angle-angle terms depend on it
   std::string improper_order = "center3_sorted";
   // How a matched improper is written (and evaluated): "" as matched; "center2": the matched quartet i j C l written
-  // i C j l (the DL-derived OPLS files: their rules put the centre third, their LAMMPS terms second; their DL_POLY
-  // FIELD terms are j i C l, which write_dlpoly reproduces)
+  // i C j l (libraries whose rules put the centre third and
+  // their LAMMPS terms second; their DL_POLY FIELD terms are j i C l, which write_dlpoly reproduces)
   std::string improper_written;
-  // How equivalences are used: "replace" (DL_FIELD: look up by the equivalent name only) or "fallback"
+  // How equivalences are used: "replace" (look up by the equivalent name only) or "fallback"
   // (msi2lmp: the type's own name first, then the equivalent).
   std::string equivalence = "replace";
-  // Impropers keep the outer atoms in the order the rule matched them (DL_FIELD, msi2lmp) rather than sorted.
+  // Impropers keep the outer atoms in the order the rule matched them (msi2lmp) rather than sorted.
   bool improper_matched_order = false;
-  // Improper rules may also match their atom pattern read backwards (DL_FIELD's torsion-type impropers).
+  // Improper rules may also match their atom pattern read backwards (torsion-type impropers).
   bool improper_reversible = false;
   // Every explicit (wildcard-free) improper rule that matches a centre applies, not just the best one (CHARMM).
   bool improper_all_explicit = false;
@@ -176,7 +176,7 @@ struct FFDef {
   // per wildcard end (msi2lmp): "msi2lmp"; "torsions": a rule with both ends wild over the torsions that exist about
   // the bond (a three-membered ring has fewer); "none".
   std::string wildcard_torsion_scaling = "none";
-  // Charges "increments": the force field named here (a file beside this one, e.g. "opls2005.json") types the
+  // Charges "increments": the force field named here (a file beside this one) types the
   // structure and gives its bond-increment charges, used with this force field's types (see companion_charges).
   std::string charge_increments_from;
   // Ions carry their formal charge times this (OPLS-DES: +-0.8 e, "ion_charge_scale": 0.8); the type-charge check
@@ -235,7 +235,7 @@ struct FFDef {
   // next to the force field; types' own "smarts" become rules after them.
   std::vector<TypingRule> typing;
   // Charge keys (typing file "charge_rules"): where a force field's charges come from bond increments between keys finer
-  // than its types (OPLS 2005: the ether C and the alcohol C are both CT, but their increments are keyed 181 and 157),
+  // than its types (an ether C and an alcohol C can share a type but not their increments),
   // each atom gets a key by these rules (same matching as the typing rules) and bond_increments are looked up by keys
   std::vector<TypingRule> charge_typing;
   std::vector<std::pair<std::string, std::string>> typing_pairs;   // conjugated pairs (GAFF cc/cd, ...), see typing.hpp
@@ -263,8 +263,9 @@ struct FFDef {
   // from the force field's sources (force-field file "bead_templates"), for build_beads.
   // Massless charge sites a model adds to a molecule (TraPPE N2's centre: force-field file "virtual_sites": smarts, type,
   // from = pattern atoms, w = weights): added by prepare_for_forcefield as atoms of element 0 named by the type, typed by
-  // a rule on that name, and made virtual sites Σ w x_from by parameterize (excluded from their molecule).
-  struct SiteRule { std::string smarts, type; std::vector<int> from; std::vector<double> w; };
+  // a rule on that name, and made virtual sites Σ w x_from by parameterize (excluded from their molecule). "c" (1/Å, three
+  // atoms in from) adds c (r_01 × r_02), out of the plane of the three atoms: TIP5P's lone pairs (GROMACS's 3out sites).
+  struct SiteRule { std::string smarts, type; std::vector<int> from; std::vector<double> w; double c = 0; };
   std::vector<SiteRule> site_rules;
   bool coarse_grained = false;
   std::vector<BeadRule> bead_rules;
@@ -301,7 +302,7 @@ struct FFDef {
 FFDef load_forcefield(const std::string& path);
 // Charges "increments" for a force field whose charge_increments_from names another (a file beside ff_path): that
 // force field types the structure by its own rules and gives its charges from its bond increments, which balance bond
-// by bond; they are used with this force field's types and parameters (OPLS-AA 2024 with OPLS 2005's charges). Throws
+// by bond; they are used with this force field's types and parameters (fixed per-type charges replaced by another library's increments). Throws
 // FFError with the reason when it cannot (atoms it cannot type, a bond without an increment).
 std::vector<double> companion_charges(const System& s, const FFDef& def, const std::string& ff_path, std::string* note = nullptr);
 // Reads a "caps-typing" rules file and appends its rules to the force field (types must exist in it).
@@ -309,6 +310,19 @@ void load_typing(FFDef& ff, const std::string& path);
 void save_forcefield(const FFDef& ff, const std::string& path);
 // Appends the overlay's types and rules after the base's (so they win), replacing types of the same name.
 void merge_forcefield(FFDef& base, const FFDef& overlay);
+// --overlay A.json[,B.json …] (caps ff apply, relax, md, equilibrate, react; the Studio's Field overlays): each file merged
+// in turn onto def, a later file's rules over an earlier's. Empty entries are skipped.
+void merge_overlays(FFDef& def, const std::string& comma_separated_paths);
+
+// The overlay files of a force-field library folder: caps-forcefield files with no catalogue.json entry and no atom types
+// of their own (parameter refits such as oplsaa2024-lj-refit.json). base is the catalogue id the file name starts with
+// ("oplsaa2024" for oplsaa2024-lj-refit.json; the longest that matches), "" when none does.
+struct OverlayInfo {
+  std::string file, path, name, base;
+  int pairs = 0, bonds = 0, angles = 0, dihedrals = 0, impropers = 0;
+  std::vector<std::string> notes;
+};
+std::vector<OverlayInfo> library_overlays(const std::string& dir);
 
 // Gap filling: the bond, angle and dihedral rules of `donor` usable where `base` defines nothing (impropers are never
 // borrowed — an absent improper is not a gap). For a moltemplate OPLS-AA base (numbered types 136_bCT_aCT_dCT_iCT) the
@@ -335,12 +349,6 @@ FFDef import_frcmod(const std::string& path);
 // Urey–Bradley part noted), [ dihedraltypes ] 1, 9 (fourier), 4 (periodic improper) and 2 (harmonic improper) of a
 // .itp or .top, in kcal/mol and Å; other functions are listed in references as not imported.
 FFDef import_gromacs_params(const std::string& path);
-
-// DL_FIELD force-field libraries: NAME.par (parameters), NAME.sf (atom types; templates are not converted yet)
-// and NAME.bci (bond charge increments), as shipped in DL_FIELD's lib/ directory. Parameters are converted to
-// CAPS units (kcal/mol, Å, degrees) and LAMMPS functional forms as DL_FIELD itself writes them for LAMMPS.
-// Families not yet interpreted throw FFError naming the family.
-FFDef import_dlfield(const std::string& par, const std::string& sf = "", const std::string& bci = "");
 
 bool glob_match(const std::string& pattern, const std::string& text);
 std::string glob_escape(const std::string& name);   // a pattern that matches exactly this name
@@ -407,5 +415,12 @@ std::vector<std::string> ring_angle_notes(const System& s, const ForceField& ff)
 
 ForceField parameterize(const System& s, const FFDef& ff, const std::vector<std::string>& types, const std::string& charges,
                         ParamReport* report = nullptr, bool allow_missing = false);
+// Charges "auto" (the Studio's automatic and caps ff apply's default) and "increments", for every command that takes
+// --charges: auto is the force field's per-type charges, else Gasteiger–Marsili, else QEq, and when the per-type charges
+// miss the formal charge, the companion force field's bond-increment charges (charge_increments_from); increments is the
+// companion's always. s takes the companion charges when they are used. Other modes go straight to parameterize.
+// said (optional): the lines that say which charges were used.
+ForceField parameterize_charges(System& s, const FFDef& ff, const std::vector<std::string>& types, const std::string& charges,
+                                const std::string& ff_path, ParamReport* rep, bool allow_missing, std::vector<std::string>* said = nullptr);
 
 }  // namespace caps

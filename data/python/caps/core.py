@@ -119,7 +119,7 @@ class _MdOpts(C.Structure):
                 ("coulomb", C.c_int32), ("tail", C.c_int32), ("threads", C.c_int32), ("respa", C.c_int32), ("constraints", C.c_int32),
                 ("step_offset", C.c_int64), ("checkpoint_every", C.c_int64), ("constraint_algorithm", C.c_int32),
                 ("box_anisotropic", C.c_int32), ("box_axes", C.c_int32),
-                ("efield", C.c_double * 3), ("full_shape", C.c_int32), ("hmr", C.c_double)]
+                ("efield", C.c_double * 3), ("full_shape", C.c_int32), ("hmr", C.c_double), ("precision", C.c_int32)]
 
 
 class _EquilOpts(C.Structure):
@@ -128,7 +128,8 @@ class _EquilOpts(C.Structure):
                 ("frame_ps", C.c_double), ("thermo_ps", C.c_double), ("until_converged", C.c_int32), ("block_ps", C.c_double),
                 ("max_blocks", C.c_int32), ("tol_density", C.c_double), ("tol_energy", C.c_double), ("tol_rg", C.c_double),
                 ("constraints", C.c_int32), ("tol_internal", C.c_double), ("constraint_algorithm", C.c_int32),
-                ("internal_target", C.POINTER(C.c_double)), ("internal_target_n", C.c_int32), ("hmr", C.c_double)]
+                ("internal_target", C.POINTER(C.c_double)), ("internal_target_n", C.c_int32), ("hmr", C.c_double),
+                ("precision", C.c_int32)]
 
 
 class _ProtocolParams(C.Structure):
@@ -143,7 +144,8 @@ class _ReactOpts(C.Structure):
                 ("temperature", C.c_double), ("cutoff", C.c_double), ("coulomb", C.c_int32), ("during_md", C.c_int32),
                 ("field_mode", C.c_int32), ("between_chains", C.c_int32), ("keep_byproducts", C.c_int32), ("selection", C.c_int32),
                 ("weights", C.c_char_p), ("auto_capture", C.c_int32), ("capture_max", C.c_double), ("capture_step", C.c_double),
-                ("target_kind", C.c_int32), ("target_value", C.c_double), ("sites_per_chain", C.c_int32)]
+                ("target_kind", C.c_int32), ("target_value", C.c_double), ("sites_per_chain", C.c_int32),
+                ("remove_unreacted", C.c_int32)]
 
 
 class _BuildOpts(C.Structure):
@@ -172,7 +174,7 @@ class _MechOpts(C.Structure):
                 ("creep_stress", C.c_double), ("creep_t", C.c_double), ("creep_ps", C.c_double), ("creep_eq_ps", C.c_double), ("creep_axis", C.c_int32),
                 ("fr_moving", C.c_int32), ("fr_fixed", C.c_int32), ("fr_velocity", C.c_double), ("fr_ps", C.c_double), ("fr_eq_ps", C.c_double), ("fr_t", C.c_double),
                 ("solv_mol", C.c_int32), ("solv_coul_windows", C.c_int32), ("solv_lj_windows", C.c_int32), ("solv_ps", C.c_double), ("solv_eq_ps", C.c_double),
-                ("solv_t", C.c_double)]
+                ("solv_t", C.c_double), ("precision", C.c_int32)]
 
 
 _RecipeProgress = C.CFUNCTYPE(C.c_int32, C.c_int32, C.c_int32, C.c_char_p, C.c_char_p, C.c_char_p, C.c_double, C.c_void_p)
@@ -208,7 +210,9 @@ def _declare(L: C.CDLL) -> None:
         "caps_hydrogen_plan": ([P, B, I], I), "caps_resolution_summary": ([P, S, B, I], I), "caps_resolution_convert": ([P, S, B, I], P),
         "caps_chain_lengths": ([S, B, I], I), "caps_copolymer": ([S, B, I], I), "caps_stereo": ([S, B, I], I),
         "caps_react": ([P, S, C.POINTER(_ReactOpts), P, P, B, I], I), "caps_reaction_template": ([S, B, I], I),
-        "caps_react_summary": ([P, B, I], I), "caps_bond_react_export": ([P, S, S, S, B, I], I),
+        "caps_react_summary": ([P, B, I], I), "caps_sulfur_bridges": ([P, I, B, I], I),
+        "caps_field_set_overlays": ([P, S], I), "caps_field_overlays": ([P, B, I], I), "caps_forcefield_overlays": ([S, S, B, I], I),
+        "caps_ml_available": ([], I), "caps_ff_complete": ([P, S, S, P, P, B, I], I), "caps_bond_react_export": ([P, S, S, S, B, I], I),
         "caps_bond_react_import": ([S, S, S, S, S, D, B, I], I), "caps_reaction_library": ([S, B, I], I), "caps_field_add_rule": ([P, S, S, S, S], I), "caps_energy_terms": ([P, B, I], I), "caps_field_set_mixing": ([P, S], I),
         "caps_insert_molecules": ([P, S, I, D, C.c_uint64, B, I], I),
         "caps_blend_phase": ([S, B, I], I), "caps_solvent_chi": ([S, B, I], I), "caps_ewald_params": ([P, S, B, I], I),
@@ -232,6 +236,18 @@ def build_info() -> dict:
     fn = L.caps_build_info
     fn.argtypes, fn.restype = [C.c_char_p, C.c_int32], C.c_int32
     return _json_call(fn)
+
+
+def ml_available() -> bool:
+    """Whether this build has CAPS's machine-learned potential (caps ff complete, caps ml; -DCAPS_WITH_TORCH=ON)."""
+    return library().caps_ml_available() == 1
+
+
+def forcefield_overlays(base: str = "") -> list:
+    """The overlay files of the force-field library (parameter refits with no atom types of their own), each {file, path,
+    name, base, kinds, notes}; base "oplsaa2024" lists that force field's only."""
+    lib = Path(__file__).resolve().parents[1].parent / "forcefields"
+    return _json_call(lambda buf, n: library().caps_forcefield_overlays(_enc(str(lib)), _enc(base), buf, n))["overlays"]
 
 
 def _error() -> CapsError:
@@ -281,8 +297,8 @@ class _Field:
         return self.report()
 
     def assign(self, forcefield: str = "uff", charges: str = "auto", complete: Optional[str] = None) -> dict:
-        """Types every atom and looks up every parameter: a force-field id from the library (gaff2, opls2005 …), a path
-        to a caps-forcefield JSON, "uff", or "file" (the force field an AMBER prmtop carried; a prmtop opens with it). charges: auto (the force field's, else Gasteiger) | forcefield | gasteiger | keep | qeq | increments (bond increments by the types' numbers: OPLS-AA 2024 with OPLS 2005's).
+        """Types every atom and looks up every parameter: a force-field id from the library (gaff2, oplsaa2024 …), a path
+        to a caps-forcefield JSON, "uff", or "file" (the force field an AMBER prmtop carried; a prmtop opens with it). charges: auto (the force field's, else Gasteiger) | forcefield | gasteiger | keep | qeq | increments (bond-increment charges from the library the force field names in charge_increments_from).
         complete="ml": the bonded terms the force field lacks for this structure are fitted by CAPS ML (caps ff complete)
         and the assignment goes on; every such term is marked "CAPS ML" in the exported LAMMPS and GROMACS files and listed
         in the report's "ml" entry. A term the model cannot fit stays missing with its reason; charges and untyped atoms
@@ -329,6 +345,33 @@ class _Field:
         rep = _json_call(library().caps_field_report, self._doc._h)
         rep["complete"] = rc == 0
         return rep
+
+    def set_overlays(self, overlays) -> dict:
+        """Overlays on the assigned force field, as caps ff apply / relax / md --overlay: each file (a path or a library
+        name such as "oplsaa2024-lj-refit") merged in turn before typing, a later file's rules over an earlier's; kept with
+        the assignment and re-run on every React product. [] or "" none. Returns the report."""
+        names = [overlays] if isinstance(overlays, str) else list(overlays or [])
+        paths = ",".join(_forcefield_path(str(o)) for o in names if str(o))
+        rc = library().caps_field_set_overlays(self._doc._h, _enc(paths))
+        if rc < 0:
+            raise _error()
+        rep = _json_call(library().caps_field_report, self._doc._h)
+        rep["complete"] = rc == 0
+        return rep
+
+    def overlays(self) -> list:
+        """The overlay files of the assignment, in the order they are merged."""
+        return _json_call(library().caps_field_overlays, self._doc._h) or []
+
+    def complete(self, forcefield: str, overlay: str, model: str = "", step: int = 15, apply: bool = True) -> dict:
+        """caps ff complete on the current frame: the bonded terms the force field lacks, found and fitted with CAPS's
+        machine-learned potential (a build with -DCAPS_WITH_TORCH=ON; caps.ml_available() says), written to overlay and,
+        with apply, added to the assignment's overlays when it is that force field. Returns the report (as --report)."""
+        o = {"overlay": str(overlay), "model": model, "step": int(step), "apply": bool(apply)}
+        buf = C.create_string_buffer(1 << 22)   # one run: the report is not asked for again with a larger buffer
+        if library().caps_ff_complete(self._doc._h, _enc(_forcefield_path(forcefield)), _enc(json.dumps(o)), None, None, buf, len(buf)) < 0:
+            raise _error()
+        return json.loads(buf.value.decode())
 
     def add_rule(self, kind: str, types: str, params, style: str = "") -> dict:
         """A parameter entered by hand where the force field has none: kind pair | bond | angle | dihedral | improper, the atom
@@ -415,19 +458,38 @@ def _say_forcefield(ff: str, used: str, why: str) -> None:
         sys.stderr.write(f"force field {ff}: {used}{why}\n")
 
 
+def _catalogue_alias(lib: Path, ff: str) -> Optional[str]:
+    """a library by a neutral short name its catalogue entry lists under "aliases" (spce, tip3p, martini ...): the first
+    entry naming it whose file is installed, so the name follows whichever library provides the model"""
+    try:
+        cat = json.loads((lib / "catalogue.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    for e in cat.get("forcefields", []):
+        if ff.lower() in [a.lower() for a in e.get("aliases", [])] and isinstance(e.get("file"), str) and (lib / e["file"]).exists():
+            return e["file"][: -len(".json")] if e["file"].endswith(".json") else e["file"]
+    return None
+
+
 def _forcefield_path(ff: str) -> str:
     if ff.lower() == "uff" or os.path.exists(ff):
         return ff if ff.lower() != "uff" else "uff"
     lib = Path(__file__).resolve().parents[1].parent / "forcefields"
-    if ff.endswith("-dlfield"):   # library ids before the force fields got CAPS's own names
-        ff = ff[: -len("-dlfield")]
     aliases = {"gaff2": "gaff2-2.2.20-ambertools", "gaff": "gaff-1.81-ambertools", "opls": "oplsaa2024", "pcff": "pcff-frc", "oplsaa2024": "oplsaa2024", "opls-ua": "oplsua2024", "oplsua": "oplsua2024",
                "compass": "compass-frc", "cvff": "cvff-frc",
                "dreiding": "dreiding1990", "cgenff": "cgenff-toppar", "trappe-ua": "trappe-ua-umn",
                 "trappe": "trappe-ua-umn", "clayff": "clayff-cygan2004", "clayff2004": "clayff-cygan2004",
-                "trappe-eh": "trappe-eh-umn"}
+                "trappe-eh": "trappe-eh-umn",
+                # water models and the CG lipid model by their usual names (the libraries built from their papers)
+                "spc": "spc-berendsen1981", "spce": "spce-berendsen1987", "tip3p": "tip3p-jorgensen1983",
+                "tip3p-charmm": "tip3p-charmm-mackerell1998", "tip4p": "tip4p-jorgensen1983", "tip4p2005": "tip4p2005-abascal2005",
+                "tip5p": "tip5p-mahoney2000", "opc": "opc-izadi2014", "opc3": "opc3-izadi2016", "mw": "mw-molinero2009",
+                "cooke-deserno": "cooke-deserno2005"}
     name = aliases.get(ff.lower(), ff)
     p = lib / (name + ".json")
+    if not p.exists():
+        name = _catalogue_alias(lib, ff) or name
+        p = lib / (name + ".json")
     if p.exists():
         if ff.lower() in _FF_FALLBACK:
             _say_forcefield(ff, name, "")
@@ -574,7 +636,7 @@ class Document:
     def md(self, steps: int = 10000, dt: float = 1.0, temperature: float = 300.0, thermostat: str = "bussi", barostat: str = "none",
            pressure: float = 1.0, seed: int = 1, frame_every: int = 1000, thermo_every: int = 100, cutoff: float = 10.0,
            respa: int = 1, constraints: str = "none", constraint_solver: str = "shake", couple_axes: str = "",
-           efield: tuple = (0.0, 0.0, 0.0), full_shape: bool = False, hmr: float = 0.0) -> str:
+           efield: tuple = (0.0, 0.0, 0.0), full_shape: bool = False, hmr: float = 0.0, precision: str = "mixed") -> str:
         """Molecular dynamics from the current frame; the frames recorded become the document's frames. respa > 1: r-RESPA,
         the bonded forces every dt / respa (e.g. dt=2, respa=4 with hydrogens). constraints "h-bonds" (bonds to hydrogen,
         rigid water) or "all-bonds": SHAKE/RATTLE, for dt=2 (the alternative to respa). thermostat "nose-hoover" with
@@ -588,6 +650,7 @@ class Document:
                     {"shake": 0, "lincs": 1}[constraint_solver])
         o.efield[:] = [float(e) for e in efield]   # V/Å on the partial charges (LAMMPS fix efield)
         o.hmr = float(hmr)
+        o.precision = {"mixed": 0, "double": 1}[precision]   # as caps md --precision mixed|double
         if couple_axes:   # "z", "xy" …: those axes coupled on their own to the pressure (Berendsen), the others fixed
             o.box_anisotropic, o.box_axes = 1, sum({"x": 1, "y": 2, "z": 4}[a] for a in set(couple_axes))
         if full_shape:   # every axis on its own and the tilts toward zero shear stress (Berendsen)
@@ -604,7 +667,7 @@ class Document:
                     tau_t: float = 100.0, tau_p: float = 1000.0, seed: int = 1, cutoff: float = 10.0, coulomb: bool = True,
                     frame_ps: float = 10.0, thermo_ps: float = 0.5, until_converged: bool = False, block_ps: float = 20.0,
                     max_blocks: int = 20, constraints: str = "none", constraint_solver: str = "shake", tail: bool = True,
-                    hmr: float = 0.0) -> bool:
+                    hmr: float = 0.0, precision: str = "mixed") -> bool:
         """Runs an equilibration protocol from the current frame: "larsen21" (Larsen et al. 2011, 21 steps: t_max, p_max
         ramps down to temperature and pressure), "annealing" (cycles between t_low and t_high, ramp_ps and hold_ps), "pushoff",
         or protocol text written by hand (one stage per line, as protocol_text gives). until_converged adds NPT blocks of
@@ -617,6 +680,7 @@ class Document:
                        tau_t, tau_p, seed, cutoff, int(coulomb), int(tail), 0, frame_ps, thermo_ps, int(until_converged), block_ps, max_blocks,
                        0.0, 0.0, 0.0, {"none": 0, "h-bonds": 1, "all-bonds": 2}[constraints], 0.0, {"shake": 0, "lincs": 1}[constraint_solver])
         o.hmr = float(hmr)
+        o.precision = {"mixed": 0, "double": 1}[precision]   # as caps equilibrate --precision mixed|double
         rep = _report()
         rc = library().caps_equilibrate(self._h, _enc(text), C.byref(o), None, None, rep, len(rep))
         if rc < 0:
@@ -660,46 +724,14 @@ class Document:
         o = _ReactOpts(int(seed), int(cycles), int(per_cycle), float(target), float(capture), int(relax), int(relax_iterations),
                        float(md_ps), float(temperature), float(cutoff), 1, int(during_md), int(default_field), int(between_chains),
                        int(keep_byproducts), 1 if weights else 0, _enc(",".join(str(w) for w in weights) if weights else ""),
-                       int(auto_capture), float(capture_max), float(capture_step), kind, value, int(sites_per_chain))
+                       int(auto_capture), float(capture_max), float(capture_step), kind, value, int(sites_per_chain), int(remove_unreacted))
         rep = _report()
         if library().caps_react(self._h, _enc(text), C.byref(o), None, None, rep, len(rep)) < 0:
             raise _error()
         self.report = rep.value.decode()
-        self.removed_unreacted = {"molecules": 0, "atoms": 0}
-        if remove_unreacted:
-            gone = self._donors_left()
-            if gone:
-                self.edit(op="delete", atoms=[a for m in gone for a in m])
-            self.removed_unreacted = {"molecules": len(gone), "atoms": sum(len(m) for m in gone)}
-            self.report += (f"\nremoved {len(gone)} unreacted sulfur donor molecule(s) ({self.removed_unreacted['atoms']} atoms): "
-                            "molecules of S and H only")
+        summary = _json_call(library().caps_react_summary, self._h)
+        self.removed_unreacted = {"molecules": int(summary.get("removed_unreacted", 0)), "atoms": int(summary.get("removed_unreacted_atoms", 0))}
         return self.report
-
-    def _donors_left(self) -> list:
-        """atom indices (from 0) of each molecule made only of S and H (an unreacted sulfur donor)"""
-        import builtins, os, tempfile   # this module's open() is CAPS's own
-        fd, path = tempfile.mkstemp(suffix=".data")
-        os.close(fd)
-        try:
-            self.save(path)
-            sec, mass, mol, typ = "", {}, {}, {}
-            for raw in builtins.open(path):
-                line = raw.split("#")[0].strip()
-                if not line:
-                    continue
-                if line[0].isalpha():   # a section header (Masses, Atoms, PairIJ Coeffs ...)
-                    sec = line
-                    continue
-                w = line.split()
-                if sec == "Masses" and len(w) >= 2:
-                    mass[int(w[0])] = float(w[1])
-                elif sec == "Atoms" and len(w) >= 7:
-                    mol.setdefault(int(w[1]), []).append(int(w[0]) - 1)
-                    typ[int(w[0]) - 1] = int(w[2])
-        finally:
-            os.remove(path)
-        sh = lambda m: abs(m - 32.06) < 0.1 or abs(m - 1.008) < 0.01
-        return [atoms for atoms in mol.values() if all(sh(mass[typ[a]]) for a in atoms) and any(abs(mass[typ[a]] - 32.06) < 0.1 for a in atoms)]
 
     def react_sites(self, templates) -> dict:
         """Each chain's reactive sites for the templates (built-in names or text, as for react()): chains [{chain, sites,
@@ -718,7 +750,7 @@ class Document:
         per template and environment _pre.mol, _post.mol, _map.txt, typed with the force field before and after the
         reaction. Options:
           stem, radius, variants, keep_byproducts, between_chains, weights, nevery, rmax, temperature, steps, dt, seed;
-          forcefield: type the reactions with this force field (a library id such as opls2005, pcff, compass, or a path)
+          forcefield: type the reactions with this force field (a library id such as oplsaa2024, pcff, compass, or a path)
             instead of the assigned one, charges: auto | forcefield | gasteiger | qeq;
           lammps_styles (native: the force field's own styles, as export_engines | exact), kspace (auto | pppm | ewald |
             dsf | cut), kspace_accuracy, lammps_cutoff — the same force-field part as export_engines writes;
@@ -751,92 +783,23 @@ class Document:
 
     def react_summary(self) -> dict:
         """The network of the last react(): chains, crosslinks (links between chains), target, density (mol/m³),
-        per_chain, mc (g/mol), byproducts, the force field during and after the run. With sulfur in the structure also
-        "sulfur": sulfur_bridges()."""
-        r = _json_call(library().caps_react_summary, self._h)
-        sb = self.sulfur_bridges()
-        if sb["sulfur_atoms"]:
-            r["sulfur"] = sb
-        return r
-
-    def _graph(self):
-        """elements and bonds of the current frame (indices from 0)"""
-        import builtins, os, tempfile   # this module's open() is CAPS's own
-        fd, path = tempfile.mkstemp(suffix=".data")
-        os.close(fd)
-        try:
-            self.save(path)
-            sec, mass, typ, bonds = "", {}, {}, []
-            for raw in builtins.open(path):
-                line = raw.split("#")[0].strip()
-                if not line:
-                    continue
-                if line[0].isalpha():
-                    sec = line
-                    continue
-                w = line.split()
-                if sec == "Masses" and len(w) >= 2:
-                    mass[int(w[0])] = float(w[1])
-                elif sec.startswith("Atoms") and len(w) >= 7:
-                    typ[int(w[0]) - 1] = int(w[2])
-                elif sec == "Bonds" and len(w) >= 4:
-                    bonds.append((int(w[2]) - 1, int(w[3]) - 1))
-        finally:
-            os.remove(path)
-        def element(m):
-            return min((abs(m - mm), e) for e, mm in (("H", 1.008), ("C", 12.011), ("N", 14.007), ("O", 15.999), ("Si", 28.086),
-                                                       ("S", 32.06), ("Cl", 35.45)))[1]
-        el = [element(mass[typ[i]]) if typ[i] in mass else "?" for i in range(len(typ))]
-        return el, bonds
+        per_chain, mc (g/mol), byproducts, removed_unreacted, the force field during and after the run. With sulfur in the
+        structure also "sulfur": sulfur_bridges()."""
+        return _json_call(library().caps_react_summary, self._h)
 
     def sulfur_bridges(self, ring_limit: int = 8) -> dict:
         """Sulfur in the structure by kind and rank (a rank is the number of S in a run of S-S bonds): bridges (both ends
         on carbon; a crosslink S1 monosulfide, S2 disulfide ... S8), cyclic sulfides (both ends on carbons joined by a path
         of at most ring_limit bonds outside the S run: a small ring on one chain, not a crosslink), pendant groups (one
-        end on carbon, the other S-H) and free donors (no carbon: H2S, H2Sx). Returns {"bridges": {rank: n},
-        "cyclic": {rank: n}, "pendant": {rank: n}, "free": {rank: n}, "sulfur_atoms": n, "mean_bridge_rank"}"""
-        el, bonds = self._graph()
-        nb = [[] for _ in el]
-        for a, b in bonds:
-            nb[a].append(b), nb[b].append(a)
-        seen, out = set(), {"bridges": {}, "cyclic": {}, "pendant": {}, "free": {}}
-        for s0 in range(len(el)):
-            if el[s0] != "S" or s0 in seen:
-                continue
-            run, todo = [], [s0]
-            seen.add(s0)
-            while todo:   # the connected run of S atoms
-                x = todo.pop()
-                run.append(x)
-                for y in nb[x]:
-                    if el[y] == "S" and y not in seen:
-                        seen.add(y)
-                        todo.append(y)
-            carbons = [y for x in run for y in nb[x] if el[y] == "C"]
-            rank = len(run)
-            if not carbons:
-                kind = "free"
-            elif len(carbons) == 1:
-                kind = "pendant"
-            else:
-                a, b = carbons[0], carbons[1]   # a path between the two carbons that avoids the S run: a small ring
-                rs, dist, todo = set(run), {a: 0}, [a]
-                while todo:
-                    x = todo.pop(0)
-                    if dist[x] >= ring_limit:
-                        continue
-                    for y in nb[x]:
-                        if y not in dist and y not in rs:
-                            dist[y] = dist[x] + 1
-                            todo.append(y)
-                kind = "cyclic" if b in dist else "bridges"
-            out[kind][rank] = out[kind].get(rank, 0) + 1
-        nb_ = sum(out["bridges"].values())
-        out["sulfur_atoms"] = sum(1 for e in el if e == "S")
-        out["mean_bridge_rank"] = round(sum(k * v for k, v in out["bridges"].items()) / nb_, 3) if nb_ else 0.0
-        for k in ("bridges", "cyclic", "pendant", "free"):
-            out[k] = {f"S{r}": n for r, n in sorted(out[k].items())}
-        return out
+        end on carbon, the other S-H) and free donors (no carbon: H2S, H2Sx). Returns {"bridges": {"S2": n}, "cyclic",
+        "pendant", "free", "sulfur_atoms", "mean_bridge_rank"} (the core's census, as the Studio and caps react show it)."""
+        lib = library()
+        n = lib.caps_sulfur_bridges(self._h, int(ring_limit), None, 0)
+        if n < 0:
+            raise _error()
+        buf = C.create_string_buffer(n + 1)
+        lib.caps_sulfur_bridges(self._h, int(ring_limit), buf, n + 1)
+        return json.loads(buf.value.decode())
 
     # editing, selection, analysis
     def edit(self, **op) -> dict:
@@ -939,6 +902,8 @@ class Document:
         if "tg" in ids.split(",") or options:   # the run's settings: tg's scan, the temperature of fluct / dielectric / cij_fluct
             m = _MechOpts()
             for k, v in options.items():
+                if k == "precision" and isinstance(v, str):   # tensile, tg: "mixed" (as the CLI's default) | "double"
+                    v = {"mixed": 0, "double": 1}[v]
                 setattr(m, k, v)
             rc = library().caps_analyze_ex(self._h, _enc(ids), C.byref(o), C.byref(m), None, None)
         else:
@@ -1346,7 +1311,7 @@ def protocol_text(name: str, temperature: float = 300.0, t_max: float = 600.0, p
 
 def water_models() -> list:
     """The water models CAPS has (SPC, SPC/E, SPC/Fw, TIP3P and its CHARMM and Ewald forms, TIP4P, TIP4P-Ew, TIP4P/2005,
-    TIP4P/Ice, OPC): id, name, citation, sites, geometry, charges and Lennard-Jones. Apply one with
+    TIP4P/Ice, TIP5P, OPC, OPC3): id, name, citation, sites, geometry, charges and Lennard-Jones. Apply one with
     doc.edit(op="water_model", model=id) and type the waters with it by a group {"molecules": "water", "water": id}."""
     return _json_call(library().caps_water_models)
 
@@ -1900,10 +1865,11 @@ class build:
         return d
 
     @staticmethod
-    def martini_melt(repeat: str, repeats: int = 20, chains: int = 20, density: float = 1.0, forcefield: str = "martini-moltemplate",
+    def martini_melt(repeat: str, repeats: int = 20, chains: int = 20, density: float = 1.0, forcefield: str = "martini",
                      seed: int = 1, tolerance: float = 3.0) -> Document:
         """A MARTINI polymer melt: chains of `repeats` × the repeat unit's bead SMILES ("[C1]", "[SN0]" …) packed, the
-        MARTINI force field (a library id or a path) assigned and the cell compressed to the density (g/cm³) with it."""
+        MARTINI force field (a library id or a path; "martini" is the library whose catalogue entry lists that alias)
+        assigned and the cell compressed to the density (g/cm³) with it."""
         o = {"forcefield": _forcefield_path(forcefield), "repeat": repeat, "repeats": repeats, "chains": chains, "density": density,
              "seed": seed, "tolerance": tolerance}
         rep = _report()

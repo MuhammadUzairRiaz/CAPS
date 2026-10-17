@@ -188,20 +188,22 @@ TEST(FfComplete, ExportersMarkMlTerms) {
   std::filesystem::remove_all(dir);
 }
 
-// Every coefficient GROMACS reads from CAPS's .top and .itp has six decimals (or six significant digits under 0.001), as
-// the LAMMPS files have them
-TEST(Gromacs, SixDecimalsEverywhere) {
+// GROMACS's numbers keep CAPS's precision: nm and kJ/mol quantities at eight decimals (six in nm would be ten times
+// coarser than the LAMMPS files' six in Å), degrees, charges, masses and scalings at six, charges summing to the
+// molecule's charge, and a bond read back equal to CAPS's to 1e-8 nm
+TEST(Gromacs, DecimalsKeepCapsPrecision) {
   Case c = phenylbutene();
   FFDef def = c.def;
   ParamReport rep;
   (void)parameterize(c.s, def, c.types, "types", &rep, true);
   merge_forcefield(def, fake_ml_overlay(rep));
   const ForceField f = parameterize(c.s, def, c.types, "types", nullptr, false);
-  const auto dir = temp_dir("gmx_six");
+  const auto dir = temp_dir("gmx_decimals");
   EnergyOptions e;
   write_gromacs(c.s, f, e, (dir / "g").string());
-  const std::regex six(R"(^-?\d+\.\d{6}$|^-?\d\.\d{6}e[-+]\d+$)");
-  int checked = 0;
+  // nm and kJ/mol at eight decimals (nine significant digits under 0.001); degrees, charges, masses and scalings at six
+  const std::regex six(R"(^-?\d+\.\d{6}$|^-?\d\.\d{6}e[-+]\d+$)"), eight(R"(^-?\d+\.\d{8}$|^-?\d\.\d{8}e[-+]\d+$)");
+  int checked = 0, bonds_read = 0;
   for (const std::string file : {"g.top", "g.itp"}) {
     std::string sec;
     for (std::istringstream in(slurp((dir / file).string())); in.good();) {
@@ -215,17 +217,32 @@ TEST(Gromacs, SixDecimalsEverywhere) {
       std::vector<std::string> w;
       for (std::string x; ws >> x;) w.push_back(x);
       if (w.empty()) continue;
-      // the numbers with a fraction: every one a coefficient, charge or mass
-      static const std::set<std::string> secs = {"defaults", "atomtypes", "nonbond_params", "pairs", "bonds", "angles", "dihedrals", "atoms"};
-      if (!secs.count(sec)) continue;
-      for (const auto& x : w)
-        if (x.find('.') != std::string::npos) {
-          EXPECT_TRUE(std::regex_match(x, six)) << file << " [" << sec << "] " << x << " in: " << l;
+      // which numbers are nm / kJ/mol: by section, the columns after the atom indices and the function
+      size_t first_nm = w.size();   // the first eight-decimal column (the rest are too, multiplicities aside)
+      if (sec == "atomtypes") first_nm = 5;                          // name Z mass charge ptype | sigma eps
+      else if (sec == "nonbond_params") first_nm = 3;                // i j func | sigma eps
+      else if (sec == "bonds") {                                     // i j func | b0 kb
+        first_nm = 3;
+        if (file == "g.itp" && w[2] == "1")
+          for (const auto& t : f.bonds)
+            if (std::to_string(t.i + 1) == w[0] && std::to_string(t.j + 1) == w[1]) {
+              EXPECT_NEAR(std::stod(w[3]), t.r0 / 10, 1e-8) << l;
+              ++bonds_read;
+            }
+      }
+      else if (sec == "pairs") first_nm = w[2] == "2" ? 6 : 3;       // i j 2 fudgeQQ qi qj | sigma eps
+      else if (sec == "angles") first_nm = 5;                        // i j k func theta0 | k …
+      else if (sec == "dihedrals") first_nm = 6;                     // i j k l func phi0 (or 11's k 1) | k …
+      else if (sec != "defaults" && sec != "atoms") continue;
+      for (size_t k = 0; k < w.size(); ++k)
+        if (w[k].find('.') != std::string::npos) {
+          EXPECT_TRUE(std::regex_match(w[k], k >= first_nm ? eight : six)) << file << " [" << sec << "] column " << k << ": " << w[k] << " in: " << l;
           ++checked;
         }
     }
   }
   EXPECT_GT(checked, 200);
+  EXPECT_GT(bonds_read, 5);
   // charges at six decimals keep the molecule neutral
   double q = 0;
   const std::string itp = slurp((dir / "g.itp").string());

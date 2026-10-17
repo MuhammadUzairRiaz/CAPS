@@ -26,11 +26,10 @@ import math, os, re, shutil, subprocess, sys, tempfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, HERE)
-import template_pdb, mix_box
+import mix_box
 
 CAPS = os.path.join(ROOT, "build", "cli", "caps")
 GMX = os.environ.get("GMX", shutil.which("gmx") or "gmx")
-LIB = os.environ.get("DLFIELD", os.path.expanduser("~/project/dl_f_4.13")) + "/lib"
 FF = os.path.join(ROOT, "data", "forcefields")
 arg = lambda k, d: sys.argv[sys.argv.index(k) + 1] if k in sys.argv else d
 only = arg("--only", "")
@@ -43,16 +42,14 @@ PME = ["--pme", "--ewald-rtol", "1e-7", "--pme-spacing", "0.5", "--pme-order", "
 CASES = [
     ("Polystyrene melt, GAFF2, PME (periodic, 1300 atoms)", ("file", PS), "gaff2-2.2.20-ambertools", "gasteiger", PME),
     ("Polystyrene melt, GAFF2, PME, shifted LJ (no tail)", ("file", PS), "gaff2-2.2.20-ambertools", "gasteiger", PME + ["--no-tail"]),
-    ("Polystyrene melt, OPLS-AA, PME", ("file", PS), "opls2005", "gasteiger", PME),
-    ("Polystyrene melt, OPLS-AA 2024 (its own charges), PME", ("file", PS), "oplsaa2024-moltemplate", "types", PME),
-    ("Polystyrene melt, CVFF, PME (cvff impropers)", ("file", PS), "cvff", "types", PME),
+    ("Polystyrene melt, OPLS-AA 2024 (its own charges), PME", ("file", PS), "oplsaa2024", "types", PME),
+    ("Polystyrene melt, CVFF, PME (cvff impropers)", ("file", PS), "cvff-frc", "types", PME),
     ("Polystyrene melt, GAFF2, PME, triclinic cell (xy 0.5, xz 0.3, yz 0.2 Å)", ("tilt", PS), "gaff2-2.2.20-ambertools", "gasteiger", PME),
     ("(6,6) nanotube, GAFF2, PME (bonds cross the cell: periodic-molecules)", ("nano", ["tube", "--n", "6", "--m", "6", "--length", "25"]),
      "gaff2-2.2.20-ambertools", "gasteiger", PME),
-    ("GAFF toluene (vacuum)", ("template", "AMBER16_gaff", "toluene"), "gaff-1.81-ambertools", "gasteiger", []),
-    ("CVFF phenol (vacuum, cvff impropers)", ("template", "CVFF", "phenol"), "cvff", "types", []),
-    ("OPLS-AA methyl vinyl ketone (vacuum)", ("template", "OPLS2005", "methyl_vinyl_ketone"), "opls2005", "gasteiger", []),
-    ("CGenFF toluene (vacuum; separate 1-4 LJ, Urey-Bradley, harmonic impropers)", ("template", "CHARMM36_cgenff", "toluene"), "cgenff", "gasteiger", []),
+    ("GAFF toluene, decane (vacuum)", ("smiles", "Cc1ccccc1.CCCCCCCCCC"), "gaff-1.81-ambertools", "gasteiger", []),
+    ("CVFF phenol, ethyl acetate, N-methylacetamide (vacuum, cvff impropers)", ("smiles", "Oc1ccccc1.CCOC(=O)C.CC(=O)NC"), "cvff-frc", "types", []),
+    ("OPLS-AA methyl vinyl ketone (vacuum)", ("smiles", "C=CC(C)=O"), "oplsaa2024", "types", []),
     # GROMOS in its own settings: reaction field (ε_rf 61) at 1.4 nm, no dispersion correction, C6/C12 (comb-rule 1)
     # ClayFF (Cygan 2004): LAMMPS's ClayFF test structure with its own types, and IFF's Na-montmorillonite typed by CAPS's
     # rules; the M-O-H bends are angles without an M-O bond, so GROMACS keeps M and H interacting as CAPS does. IFF 1.5
@@ -198,18 +195,7 @@ def structure(src, base):
         out = os.path.join(work, base + ".data")
         subprocess.run([CAPS, "nano"] + src[1] + ["-o", out], capture_output=True, check=True)
         return out
-    sf = os.path.join(LIB, src[1] + ".sf")
-    if not os.path.exists(sf):
-        return None
-    name = src[2]
-    if name not in template_pdb.parse_sf(sf)[2]:
-        names = template_pdb.candidates(sf, 30)
-        if not names:
-            return None
-        name = names[0]
-    pdb = os.path.join(work, base + ".pdb")
-    template_pdb.build(sf, name, pdb)
-    return pdb
+    raise ValueError(f"unknown structure source {src[0]}")
 
 
 def gmx(d, stem):

@@ -288,8 +288,8 @@ TEST(Gromacs, TopologyUnitsExclusionsAndRefusals) {
   const auto& b = ff.bonds[0];
   char line[160];
   std::snprintf(line, sizeof line, "%7u %7u 1 %.10g %.10g\n", b.i + 1, b.j + 1, b.r0 / 10, 2 * b.k * 4.184 * 100);
-  // the bond line, numbered within its molecule, at six decimals as every exported coefficient
-  std::snprintf(line, sizeof line, " 1 %.6f %.6f\n", b.r0 / 10, 2 * b.k * 4.184 * 100);
+  // the bond line, numbered within its molecule; nm and kJ/mol at eight decimals (gromacs.cpp: nm8)
+  std::snprintf(line, sizeof line, " 1 %.8f %.8f\n", b.r0 / 10, 2 * b.k * 4.184 * 100);
   std::ifstream fi(stem + ".itp");
   const std::string itp((std::istreambuf_iterator<char>(fi)), {});
   EXPECT_NE(top.find("#include \"caps_gmx_unit.itp\""), std::string::npos);   // molecule types in the .itp

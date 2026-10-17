@@ -28,6 +28,15 @@ using namespace caps;
 
 namespace {
 
+// The first of these library ids whose file is in data/forcefields, else "" (a model being rebuilt from its own papers)
+std::string library_file(std::initializer_list<const char*> ids) {
+  for (const char* id : ids) {
+    const std::string p = std::string(CAPS_SOURCE_DIR) + "/data/forcefields/" + id + ".json";
+    if (std::filesystem::exists(p)) return p;
+  }
+  return "";
+}
+
 System small_cell(int chains, int dp, double density) {
   GrowOptions g;
   g.chains = chains;
@@ -236,28 +245,6 @@ TEST(IO, Mol2RoundTripKeepsTypesChargesAndBondOrders) {
   std::filesystem::remove(path);
 }
 
-// the reference library's folder: $DLF_HOME/lib, else ~/project/dl_f_4.13/lib (tests skip when it is not there)
-static std::string dlf_lib() {
-  if (const char* d = std::getenv("DLF_HOME")) return std::string(d) + "/lib";
-  const char* h = std::getenv("HOME");
-  return std::string(h ? h : ".") + "/project/dl_f_4.13/lib";
-}
-
-// DL_FIELD's PCFF converts with equivalences, bond increments and the cff91_auto tables.
-TEST(FFDef, ImportsDlfieldPcff) {
-  const std::string par = dlf_lib() + "/PCFF.par";
-  if (!std::filesystem::exists(par)) GTEST_SKIP() << "DL_FIELD not installed";
-  const FFDef ff = import_dlfield(par, dlf_lib() + "/PCFF.sf", dlf_lib() + "/PCFF.bci");
-  EXPECT_EQ(ff.mixing, "sixthpower");
-  EXPECT_FALSE(ff.auto_dihedrals.empty());
-  EXPECT_FALSE(ff.bond_increments.empty());
-  const FFType* hc = ff.type("hc");
-  ASSERT_NE(hc, nullptr);
-  EXPECT_EQ(hc->equiv.at("vdw"), "h");
-  EXPECT_EQ(hc->element, 1);
-  EXPECT_NEAR(hc->mass, 1.00797, 1e-6);   // not the 12.0115 typo of HC_benzyl
-}
-
 // Morse / GROMOS bonds, cosine-squared and linear-cosine angles, Urey–Bradley, planar inversions, Buckingham and Rydberg
 // pairs and separate 1-4 Lennard-Jones: forces are the gradient of the energy.
 TEST(FieldForms, ForcesMatchFiniteDifferences) {
@@ -329,7 +316,10 @@ TEST(FieldForms, ForcesMatchFiniteDifferences) {
 // mW water: the Stillinger–Weber two- and three-body forces and the virial are the energy's derivatives (sites on a
 // jittered lattice at liquid density, pairs and triplets across the periodic faces)
 TEST(FieldForms, StillingerWeberForcesMatchFiniteDifferences) {
-  FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/mw-moltemplate.json");
+  // mW water from Molinero & Moore 2009 (bench/ff/make_water_models.py)
+  const std::string mw = library_file({"mw-molinero2009"});
+  if (mw.empty()) GTEST_SKIP() << "no mW water library yet (mw-molinero2009)";
+  FFDef def = load_forcefield(mw);
   System s;
   const int n = 4;
   const double a = 3.1;   // 64 sites in 12.4 Å: 1.00 g/cm³
@@ -442,14 +432,24 @@ void check_cg_forces(const FFDef& def, System s, const std::string& charges) {
 
 TEST(FieldForms, CoarseGrainedForcesMatchFiniteDifferences) {
   const std::string dir = std::string(CAPS_SOURCE_DIR) + "/data/forcefields/";
-  const FFDef martini = load_forcefield(dir + "martini-moltemplate.json");
-  check_cg_forces(martini, cg_box(martini, {{"DPPC", 3}, {"NA+", 2}, {"CL-", 2}, {"W", 30}}, 36.0, 3), "keep");
-  const FFDef sdk = load_forcefield(dir + "sdk-moltemplate.json");
-  check_cg_forces(sdk, cg_box(sdk, {{"[NC][PH][GL]([EST1][CM][CM][CT2])[EST2][CM][CM][CT2]", 3}, {"[W]", 30}}, 32.0, 5), "types");
-  const FFDef aa = load_forcefield(dir + "martini-aminoacids.json");   // harmonic impropers, GROMACS type-2 order
-  check_cg_forces(aa, cg_box(aa, {{"TRP", 2}, {"HIS", 2}, {"PHE", 2}, {"TYR", 2}, {"LYS", 2}, {"ASP", 2}, {"[P4]", 30}}, 36.0, 9), "keep");
-  const FFDef cd = load_forcefield(dir + "cooke-deserno-moltemplate.json");
-  check_cg_forces(cd, cg_box(cd, {{"lipid", 40}}, 12.0, 7, 1.2), "types");
+  // Cooke-Kremer-Deserno from the paper (cooke-deserno2005). TODO: MARTINI 2, its amino acids and SDK once rebuilt from
+  // their papers (not in hand yet; expected ids martini2-marrink2007, martini2-aminoacids-monticelli2008, sdk-shinoda2007)
+  if (const std::string f = library_file({"martini2-marrink2007"}); !f.empty()) {
+    const FFDef martini = load_forcefield(f);
+    check_cg_forces(martini, cg_box(martini, {{"DPPC", 3}, {"NA+", 2}, {"CL-", 2}, {"W", 30}}, 36.0, 3), "keep");
+  }
+  if (const std::string f = library_file({"sdk-shinoda2007"}); !f.empty()) {
+    const FFDef sdk = load_forcefield(f);
+    check_cg_forces(sdk, cg_box(sdk, {{"[NC][PH][GL]([EST1][CM][CM][CT2])[EST2][CM][CM][CT2]", 3}, {"[W]", 30}}, 32.0, 5), "types");
+  }
+  if (const std::string f = library_file({"martini2-aminoacids-monticelli2008"}); !f.empty()) {
+    const FFDef aa = load_forcefield(f);   // harmonic impropers, GROMACS type-2 order
+    check_cg_forces(aa, cg_box(aa, {{"TRP", 2}, {"HIS", 2}, {"PHE", 2}, {"TYR", 2}, {"LYS", 2}, {"ASP", 2}, {"[P4]", 30}}, 36.0, 9), "keep");
+  }
+  if (const std::string f = library_file({"cooke-deserno2005"}); !f.empty()) {
+    const FFDef cd = load_forcefield(f);
+    check_cg_forces(cd, cg_box(cd, {{"lipid", 40}}, 12.0, 7, 1.2), "types");
+  }
   // Martini 3: reaction field (εr 15, εrf ∞), LJ shifted at 11 Å, every pair from the table; its molecules with their
   // own topology: virtual sites (nucleobases, the weighted centre), exclusions, restricted bending (TXE), impropers
   const FFDef m3 = load_forcefield(dir + "martini3.json");
@@ -525,7 +525,10 @@ TEST(CoarseGrained, BeadSmilesParse) {
 // SDK: all-atom alkanes tile into CT / CT2 ends and CM between for every chain length; DMPC maps onto Shinoda's
 // thirteen beads with the esters told apart by their GL bond lengths
 TEST(CoarseGrained, SdkMapsAllAtomStructures) {
-  const FFDef sdk = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/sdk-moltemplate.json");
+  // TODO: SDK rebuilt from Shinoda, DeVane & Klein 2007 (expected id sdk-shinoda2007)
+  const std::string f = library_file({"sdk-shinoda2007"});
+  if (f.empty()) GTEST_SKIP() << "no SDK library yet (sdk-shinoda2007)";
+  const FFDef sdk = load_forcefield(f);
   auto map = [&](const std::string& smiles) {
     System s = build_molecule(smiles, {}).system;
     std::string ch = "auto";
@@ -571,23 +574,6 @@ TEST(FieldForms, VacuumPairsMatchALargePeriodicBox) {
   const double ep = per.compute(x, big, g).total();
   EXPECT_NEAR(ev, ep, 1e-9 * std::max(1.0, std::fabs(ep)));
   for (size_t k = 0; k < f.size(); ++k) EXPECT_NEAR(f[k], g[k], 1e-9) << k;
-}
-
-// CHARMM libraries keep their separate 1-4 van der Waals and Urey–Bradley terms through save / load.
-TEST(FFDef, DlfieldCharmmKeepsOneFourAndUreyBradley) {
-  const std::string par = dlf_lib() + "/CHARMM36_cgenff.par";
-  if (!std::filesystem::exists(par)) GTEST_SKIP() << "DL_FIELD not installed";
-  const FFDef ff = import_dlfield(par, dlf_lib() + "/CHARMM36_cgenff.sf");
-  const std::string path = (std::filesystem::temp_directory_path() / "caps_cgenff_test.json").string();
-  save_forcefield(ff, path);
-  const FFDef back = load_forcefield(path);
-  std::filesystem::remove(path);
-  bool lj14 = false, ub = false;
-  for (const auto& r : back.pairs) lj14 = lj14 || (r.match.size() == 1 && r.match[0] == "OG2D1" && r.cross.count("lj14"));
-  for (const auto& r : back.angles) ub = ub || (r.style == "charmm" && r.params.size() == 4 && r.params[2] > 0);
-  EXPECT_TRUE(lj14);
-  EXPECT_TRUE(ub);
-  EXPECT_DOUBLE_EQ(back.special_lj[2], 1.0);
 }
 
 // Martini 3 small molecules from all-atom structures, by graph: CAPS's own toluene and anthracene (its atom names, not
@@ -928,16 +914,14 @@ TEST(FFDef, IffSilicaAndMetalsByRule) {
   }
 }
 
-// moltemplate's DREIDING gives N_R_b1_d2 (an amide N on a ring) torsions to C_2_b1 only: acetanilide's (an aramid's)
-// carbonyl C takes the variant that has them, and every term is found.
+// DREIDING (Mayo, Olafson & Goddard 1990): acetanilide (an aramid's amide on a ring) is typed and every term is found
 TEST(FFDef, BondOrderVariantsKeepTorsions) {
   System s = build_molecule("CC(=O)Nc1ccccc1").system;
-  const FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/dreiding-moltemplate.json");
+  const FFDef def = load_forcefield(std::string(CAPS_SOURCE_DIR) + "/data/forcefields/dreiding1990.json");
   std::string ch = "gasteiger";
   if (needs_prepare(def)) prepare_for_forcefield(s, def, ch);
   const TypingResult tr = assign_types(s, def);
   ASSERT_EQ(tr.untyped, 0);
-  EXPECT_EQ(tr.types[1], "C_2_b1");
   ParamReport rep;
   (void)parameterize(s, def, tr.types, ch, &rep, false);
   EXPECT_TRUE(rep.missing.empty()) << (rep.missing.empty() ? "" : rep.missing.front());
@@ -1624,8 +1608,8 @@ TEST(FFDef, OplsUa1984HydrocarbonTerms) {
   EXPECT_EQ(rule(def.dihedrals, "C2-C2-C8-C8"), (std::vector<double>{0.343, -0.436, -1.121, 0.0}));
   EXPECT_EQ(rule(def.dihedrals, "C8-C2-C2-C8"), (std::vector<double>{1.411, -0.271, 3.145, 0.0}));
   EXPECT_EQ(rule(def.angles, "C2-C2-C8"), (std::vector<double>{63.0, 112.0}));
-  EXPECT_EQ(rule(def.dihedrals, "C2_C2_C2_C2"), (std::vector<double>{-3.4, 1.25, 3.1, 0.0}));   // the 2024 file's, kept
-  EXPECT_EQ(std::count_if(def.dihedrals.begin(), def.dihedrals.end(), [](const FFRule& r) { return r.name == "C2-C2-C2-C2"; }), 0);
+  EXPECT_EQ(rule(def.dihedrals, "C2-C2-C2-C2"), (std::vector<double>{-3.4, 1.25, 3.1, 0.0}));   // the 2024 file's, kept
+  EXPECT_EQ(std::count_if(def.dihedrals.begin(), def.dihedrals.end(), [](const FFRule& r) { return r.name == "C2-C2-C2-C2"; }), 1);
 }
 
 // OPLS-UA alcohols and ethers: the terms the 2024 file lacks from Jorgensen 1986 (Tables II, III) and Briggs, Matsui &
@@ -1664,7 +1648,8 @@ TEST(FFDef, OplsUaAlcoholEtherTerms) {
   EXPECT_EQ(rule(def.dihedrals, "CH-CH-OH-HO"), (std::vector<double>{0.784, -0.125, 0.3455, 0.0}));     // 1986 2-propanol
   EXPECT_EQ(rule(def.dihedrals, "CH-C2-CH-OH"), (std::vector<double>{0.702, -0.212, 3.06, 0.0}));       // 1986 1-propanol
   EXPECT_EQ(rule(def.angles, "C2-OS-CH"), (std::vector<double>{100.0, 112.0}));                          // 1990 Table II
-  EXPECT_EQ(rule(def.dihedrals, "C2_C2_OH_HO"), (std::vector<double>{0.3, 0.0, 1.3, 0.0}));              // the 2024 file's, kept
+  EXPECT_EQ(rule(def.dihedrals, "C2-C2-OH-HO"), (std::vector<double>{0.3, 0.0, 1.3, 0.0}));              // the 2024 file's, kept
+  EXPECT_EQ(std::count_if(def.dihedrals.begin(), def.dihedrals.end(), [](const FFRule& r) { return r.name == "C2-C2-OH-HO"; }), 1);
   EXPECT_EQ(rule(def.dihedrals, "OS-C2-C2-OS"), (std::vector<double>{2.0063, -1.8941, 4.0419, -0.1512}));  // CAPS fit (QM), DME
 }
 
@@ -1691,8 +1676,8 @@ TEST(FFDef, OplsUaSulfurTerms) {
     return p == def.dihedrals.end() ? std::vector<double>(4, 0.0) : p->params;
   };
   EXPECT_EQ(rule("C3-C2-SH-HS"), (std::vector<double>{-0.2067, -0.0733, 1.2167, 0.0}));   // ethanethiol
-  EXPECT_EQ(rule("C2-S~-C2-C3"), (std::vector<double>{1.46, -1.073, 2.31, 0.0}));         // diethyl sulfide
-  EXPECT_EQ(rule("C3-S~-S~-C3"), (std::vector<double>{1.582, -8.67, 2.008, 0.0}));        // dimethyl disulfide
+  EXPECT_EQ(rule("C2-S-C2-C3"), (std::vector<double>{1.46, -1.073, 2.31, 0.0}));          // diethyl sulfide
+  EXPECT_EQ(rule("C3-S-S-C3"), (std::vector<double>{1.582, -8.67, 2.008, 0.0}));          // dimethyl disulfide
 }
 
 // OPLS-DES from Doherty & Acevedo's paper and SI only (bench/ff/make_opls_des_doherty2018.py,

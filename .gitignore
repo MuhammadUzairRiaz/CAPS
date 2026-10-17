@@ -26,8 +26,7 @@ packaging/icon/caps.iconset/
 /material_studio.png
 MS_information_design/
 
-# Force-field libraries converted from DL_FIELD's library files (STFC licence: no redistribution).
-# Kept on the developer's machine only, until they are rebuilt from the original published sources.
+# Local reference libraries (no redistribution): kept on the developer's machine only, never committed.
 /data/forcefields/pcff.json
 /data/forcefields/compass.json
 /data/forcefields/cvff.json

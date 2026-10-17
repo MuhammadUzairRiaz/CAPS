@@ -46,6 +46,8 @@ public sealed partial class MainViewModel
                   $"seed={_mdSeed}, frame_every={_mdFrameEvery}, cutoff={Num(_relaxCutoff)}");
         if (RespaSteps > 1) sb.Append($", respa={RespaSteps}");
         if (_mdConstraints > 0) sb.Append($", constraints=\"{cons[Math.Clamp(_mdConstraints, 0, 2)]}\", constraint_solver=\"{solver[Math.Clamp(_mdConstraintSolver, 0, 1)]}\"");
+        if (_mdHmr) sb.Append(", hmr=3.024");
+        if (_mdDouble) sb.Append(", precision=\"double\"");
         sb.Append(")\nprint(doc.report)\ndoc.save(\"final.data\")\ndoc.save_trajectory(\"trajectory.lammpstrj\")\n");
         return sb.ToString();
     }
@@ -88,7 +90,7 @@ public sealed partial class MainViewModel
         sb.Append($"report = doc.react(templates, cycles={_rxCycles}, per_cycle={_rxPerCycle}, target={Num(_rxTarget)}, capture={Num(_rxCapture)}, relax={Py(_rxRelax)}, " +
                   $"relax_iterations={_rxRelaxIt}, md_ps={Num(_rxMdPs)}, temperature={Num(_rxTemp)}, cutoff={Num(_relaxCutoff)}, seed={_rxSeed}, " +
                   $"during_md={Py(_rxDuringMd)}, between_chains={Py(_rxBetween)}, keep_byproducts={Py(_rxKeepBy)}, auto_capture={Py(_rxAutoCapture)}, " +
-                  $"capture_max={Num(_rxCaptureMax)}, sites_per_chain={(int)_rxSitesPer}, default_field={Py(!_rxUseField)}" +
+                  $"capture_max={Num(_rxCaptureMax)}, sites_per_chain={(int)_rxSitesPer}, default_field={Py(!_rxUseField)}, remove_unreacted={Py(_rxRemoveUnreacted)}" +
                   (RxSeveral && _rxByWeights ? ", weights=[" + string.Join(", ", RxReactions.Select(r => r.WeightD.ToString(System.Globalization.CultureInfo.InvariantCulture))) + "]" : "") +
                   (_rxTargetKind is >= 1 and <= 5 ? $", crosslinks=(\"{new[] { "", "crosslinks", "per_chain", "density", "mc", "degree" }[_rxTargetKind]}\", {Num(_rxTargetValue)})" : "") + ")\n");
         sb.Append("print(report)\ndoc.save(\"network.data\")\n");

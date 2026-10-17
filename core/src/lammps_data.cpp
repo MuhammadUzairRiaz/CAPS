@@ -1,5 +1,5 @@
 // LAMMPS data files carrying a CAPS force field: every term the evaluator knows, written with the LAMMPS style that
-// computes the same energy. Kinds that mix forms (class II bonds with class I torsions, as in DL_FIELD's PCFF; CVFF
+// computes the same energy. Kinds that mix forms (class II bonds with class I torsions, as in some PCFF libraries; CVFF
 // with harmonic impropers; Morse and harmonic bonds) become hybrid styles, and the class II cross-term sections get
 // "skip" lines for the types of the other sub-styles, as LAMMPS reads them.
 //
@@ -31,7 +31,7 @@ namespace {
 
 constexpr double R2D = 57.29577951308232;
 
-// A coefficient as the force-field tools write them: six fixed decimals ("0.044497", "3.500000"), so the same force
+// A coefficient written with six fixed decimals ("0.044497", "3.500000"), so the same force
 // field reads the same in every file, engine and design tool. A nonzero value under 0.001 (an ε in eV for metal units)
 // keeps six significant digits instead, which six decimals would cut to three.
 // LammpsStyle::full_precision (the exact styles): every number at 15 significant digits instead, so LAMMPS evaluates

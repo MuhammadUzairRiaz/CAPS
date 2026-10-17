@@ -1371,3 +1371,74 @@ TEST(React, NoInvertedCarbonsAfterCrosslinking) {
     }
   }
 }
+
+// remove_unreacted: after a sulfur cure the donors that never reacted (molecules of S and H only) leave the cell, in the
+// core (CLI, C API, Studio and Python share it); the sulfur census classes what stays by kind and rank
+TEST(React, RemoveUnreactedDonorsAndSulfurCensus) {
+  ChainSpec spec;
+  spec.units = {{"cis-1,4-isoprene", "[*]C/C=C(C)\\C[*]"}};
+  spec.dp = 10;
+  GrowOptions g;
+  g.chains = 4;
+  g.density = 0.6;
+  System s = grow_chains(spec, g);
+  PackReport pr;
+  s = insert_molecules(s, build_molecule("SS").system, 12, PackOptions{}, &pr);
+  const size_t before = s.atoms.size();
+  ReactOptions r;
+  r.templates = parse_templates(builtin_template("sulfur_allylic"));
+  r.relax = false;
+  r.max_cycles = 3;
+  r.max_per_cycle = 2;
+  r.remove_unreacted = true;
+  ReactReport rep;
+  react(s, r, &rep);
+  EXPECT_GT(rep.reactions, 0);
+  EXPECT_GT(rep.removed_unreacted, 0);
+  EXPECT_EQ(rep.removed_unreacted_atoms, 4 * rep.removed_unreacted);   // each an H-S-S-H
+  EXPECT_EQ(rep.chains_after.size(), s.atoms.size());
+  EXPECT_LT(s.atoms.size(), before);
+  const SulfurCensus c = sulfur_census(s);
+  EXPECT_TRUE(c.free.empty());   // no donor left
+  int counted = 0;
+  for (const auto* m : {&c.bridges, &c.cyclic, &c.pendant}) for (const auto& [rank, k] : *m) counted += rank * k;
+  EXPECT_EQ(counted, c.sulfur_atoms);
+  EXPECT_EQ(remove_unreacted_donors(s), 0);   // nothing more to remove
+}
+
+TEST(React, SulfurCensusRanks) {
+  // C-S-S-C between two separate carbons (a disulfide bridge), H-S-S-S-H (a free S3 donor), C-S-H (a pendant S1)
+  System s = molecule({{6, {0, 0, 0}}, {16, {1.8, 0, 0}}, {16, {3.8, 0, 0}}, {6, {5.6, 0, 0}},
+                       {1, {10, 0, 0}}, {16, {11.3, 0, 0}}, {16, {13.3, 0, 0}}, {16, {15.3, 0, 0}}, {1, {16.6, 0, 0}},
+                       {6, {20, 0, 0}}, {16, {21.8, 0, 0}}, {1, {23.1, 0, 0}}},
+                      {{0, 1, 1}, {1, 2, 1}, {2, 3, 1}, {4, 5, 1}, {5, 6, 1}, {6, 7, 1}, {7, 8, 1}, {9, 10, 1}, {10, 11, 1}});
+  const SulfurCensus c = sulfur_census(s);
+  EXPECT_EQ(c.sulfur_atoms, 6);
+  EXPECT_EQ(c.bridges.at(2), 1);
+  EXPECT_EQ(c.free.at(3), 1);
+  EXPECT_EQ(c.pendant.at(1), 1);
+  EXPECT_TRUE(c.cyclic.empty());
+  EXPECT_DOUBLE_EQ(c.mean_bridge_rank, 2.0);
+  // the two carbons of the bridge joined by a short path outside the S run: a cyclic sulfide, not a crosslink
+  s.bonds.push_back({0, 3, 1});
+  const SulfurCensus ring = sulfur_census(s);
+  EXPECT_TRUE(ring.bridges.empty());
+  EXPECT_EQ(ring.cyclic.at(2), 1);
+  int atoms = 0;
+  EXPECT_EQ(remove_unreacted_donors(s, &atoms), 1);
+  EXPECT_EQ(atoms, 5);
+  EXPECT_EQ(s.atoms.size(), 7u);
+}
+
+// The template editor's view names every atom condition and run rule of the text (no_neighbour, heavy<=, once …)
+TEST(React, TemplateViewConditions) {
+  const auto t = parse_templates(builtin_template("sulfur_allylic"));
+  ASSERT_FALSE(t.empty());
+  const Json v = Json::parse(template_view(t[0]));
+  bool no_s = false;
+  for (const auto& a : v["conditions"].items())
+    for (const auto& c : a["conditions"].items()) no_s = no_s || c.str() == "no_neighbour=S";
+  EXPECT_TRUE(no_s);
+  EXPECT_FALSE(v["once"].items().empty());
+  EXPECT_EQ(v["charges"].str(), t[0].keep_charges ? "keep" : "forcefield");
+}

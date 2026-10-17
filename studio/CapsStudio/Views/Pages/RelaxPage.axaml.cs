@@ -30,6 +30,7 @@ public partial class RelaxPage : PageBase
     private void OnRemoveRestraint(object? s, RoutedEventArgs e) { if (s is Control { Tag: CapsStudio.ViewModels.RestraintRow r }) Vm.RemoveRestraint(r); }
     private async void OnSave(object? s, RoutedEventArgs e) { if (Window != null) await Window.SaveAsAsync("data", "LAMMPS data"); }
 
+    private void OnCopyCommand(object? s, Avalonia.Interactivity.RoutedEventArgs e) => CopyCommand(Vm.RelaxCommand, "minimisation");
     private async void OnCopyPython(object? s, RoutedEventArgs e)
     {
         var clip = TopLevel.GetTopLevel(this)?.Clipboard;

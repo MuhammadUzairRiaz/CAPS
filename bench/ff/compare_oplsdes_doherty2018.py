@@ -1,18 +1,15 @@
 #!/usr/bin/env python3
-"""OPLS-DES as CAPS built it from the paper (oplsdes-doherty2018) against two references it was not built from:
-Acevedo's own GROMACS files (github.com/orlandoacevedo/DES, GPL 3; a local copy) and DL_FIELD's OPLS_DES library.
-Nothing of either is copied into CAPS: this script reads them where they are and reports agreement.
+"""OPLS-DES as CAPS built it from the paper (oplsdes-doherty2018) against a reference it was not built from:
+Acevedo's own GROMACS files (github.com/orlandoacevedo/DES, GPL 3; a local copy). Nothing of them is copied into CAPS:
+this script reads them where they are and reports agreement.
 
 For each of the paper's molecules, on the reference's own coordinates nudged off their ideal geometry (0.08 A, fixed seed):
   Acevedo's files  CAPS types the molecule and writes a GROMACS topology; per atom the charge and Lennard-Jones terms,
                    per bond, bend and torsion (by atom indices) the parameters are compared with the reference .itp
                    (Fourier coefficients kcal/mol; impropers by their centre), and GROMACS evaluates both topologies
                    on the same coordinates (mdrun -rerun): every energy term.
-  DL_FIELD         DL_FIELD (bench/ff/run_dlfield.py, keyword opls_des) types the same molecule from its own template
-                   (atom names mapped by graph matching) and writes LAMMPS files; LAMMPS evaluates DL_FIELD's and
-                   CAPS's data files with the same plain cut-off pair style; per atom the charge, and every energy term.
 
-usage: compare_oplsdes_doherty2018.py DES_DIR [--dlfield]   (DES_DIR: the DES repository's DES folder, with ITP and PDBs)
+usage: compare_oplsdes_doherty2018.py DES_DIR   (DES_DIR: the DES repository's DES folder, with ITP and PDBs)
 """
 import math, os, random, re, shutil, subprocess, sys, tempfile
 
@@ -21,16 +18,13 @@ ROOT = os.path.dirname(os.path.dirname(HERE))
 CAPS = os.path.join(ROOT, "build", "cli", "caps")
 FF = os.path.join(ROOT, "data", "forcefields", "oplsdes-doherty2018.json")
 GMX = shutil.which("gmx") or "gmx"
-LMP = os.environ.get("LMP", os.path.expanduser("~/lammps/build-class2/lmp"))
 DES = sys.argv[1]
 work = tempfile.mkdtemp()
 KJ = 4.184
-MOLS = [  # name, reference .itp stem, reference .pdb, DL_FIELD molecule (OPLS_DES.sf), its residue key
-    ("choline", "choline", "choline", "choline", "CHO"), ("chloride", "cl", "chloride", "chloride_ion", "CL"),
-    ("ethylene glycol", "ethgly", "ethylene_glycol", "ethylene_glycol", "EGLY"), ("glycerol", "glycerol", "glycerol", "glycerol", "GLCE"),
-    ("levulinic acid", "levulinic", "levulinic", "levulinic_acid", "LEVU"), ("malonic acid", "malonic", "malonic", "malonic_acid", "MALA"),
-    ("oxalic acid", "oxalic", "oxalic_acid", "oxalic_acid", "OXAA"), ("phenol", "phenol", "phenol", "phenol", "PHEN"),
-    ("urea", "urea", "urea", "urea", "UREA")]
+MOLS = [  # name, reference .itp stem, reference .pdb
+    ("choline", "choline", "choline"), ("chloride", "cl", "chloride"), ("ethylene glycol", "ethgly", "ethylene_glycol"),
+    ("glycerol", "glycerol", "glycerol"), ("levulinic acid", "levulinic", "levulinic"), ("malonic acid", "malonic", "malonic"),
+    ("oxalic acid", "oxalic", "oxalic_acid"), ("phenol", "phenol", "phenol"), ("urea", "urea", "urea")]
 
 
 def sections(path):
@@ -204,108 +198,7 @@ def compare_acevedo(name, stem, pdbname):
     return "\n      ".join(out)
 
 
-def read_field(path):
-    """DL_POLY FIELD of one molecule: charges, vdW diagonal (sigma, eps) by type, bonds and angles (r0, k with k the
-    LAMMPS / OPLS constant: DL_POLY's harm is k/2), cos3 terms (V1 V2 V3)"""
-    lines = [l.split() for l in open(path)]
-    out = {"atoms": [], "bonds": {}, "angles": {}, "dih": [], "vdw": {}}
-    k = 0
-    while k < len(lines):
-        w = lines[k]
-        body = lines[k + 1:k + 1 + int(w[1])] if w and w[0] in ("atoms", "bonds", "angles", "dihedral", "vdw") else []
-        if w and w[0] == "atoms":
-            out["atoms"] = [(v[0], float(v[2])) for v in body]
-        elif w and w[0] == "bonds":
-            out["bonds"] = {tuple(sorted((int(v[1]), int(v[2])))): (float(v[4]), float(v[3]) / 2) for v in body}
-        elif w and w[0] == "angles":
-            for v in body:
-                i, j, kk = int(v[1]), int(v[2]), int(v[3])
-                out["angles"][(min(i, kk), j, max(i, kk))] = (float(v[5]), float(v[4]) / 2)
-        elif w and w[0] == "dihedral":
-            out["dih"] = [(tuple(map(int, v[1:5])), [float(x) for x in v[5:8]] + [0.0]) for v in body]
-        elif w and w[0] == "vdw":
-            out["vdw"] = {v[0]: (float(v[4]), float(v[3])) for v in body if v[0] == v[1]}
-        k += 1 + len(body)
-    return out
-
-
-def lammps_energy(d, inp, data):
-    """LAMMPS on one input with the pair style made plain cut-off Coulomb + LJ at 16 A (no kspace): energy terms"""
-    txt = open(os.path.join(d, inp)).read()
-    txt = re.sub(r"kspace_style.*\n", "", txt)
-    txt = re.sub(r"pair_style\s+(hybrid\s+)?lj/cut/coul/\w+\s+[\d.]+", lambda m: f"pair_style {m.group(1) or ''}lj/cut/coul/cut 16.0", txt)
-    txt = txt.replace("lj/cut/coul/long", "lj/cut/coul/cut")
-    txt = re.sub(r"thermo_style.*\n", "thermo_style custom step pe ebond eangle edihed eimp evdwl ecoul\nthermo_modify format float %.10f\n", txt)
-    open(os.path.join(d, "e_" + inp), "w").write(txt)
-    subprocess.run([LMP, "-in", "e_" + inp, "-screen", "none", "-log", "e_" + inp + ".log"], cwd=d, capture_output=True, check=True)
-    log = open(os.path.join(d, "e_" + inp + ".log")).read().splitlines()
-    i = next(k for k, l in enumerate(log) if l.split()[:2] == ["Step", "PotEng"])
-    v = [float(x) for x in log[i + 1].split()]
-    return dict(zip(["bond", "angle", "torsion", "improper", "LJ", "Coulomb"], v[2:]))
-
-
-def compare_dlfield(name, dlmol):
-    d = os.path.join(work, "dl_" + dlmol)
-    os.makedirs(d, exist_ok=True)
-    pdb = os.path.join(d, "mol.pdb")
-    lib = os.path.join(os.environ.get("DLFIELD", os.path.expanduser("~/project/dl_f_4.13")), "lib", "OPLS_DES.sf")
-    subprocess.run([sys.executable, os.path.join(HERE, "template_pdb.py"), lib, dlmol, pdb], capture_output=True, check=True)
-    for extra, sub in ((["--dlpoly"], "field"), ([], "lmp")):
-        subprocess.run([sys.executable, os.path.join(HERE, "run_dlfield.py"), "opls_des", pdb, os.path.join(d, sub)] + extra,
-                       capture_output=True, check=True)
-    r = subprocess.run([CAPS, "ff", "apply", pdb, "--ff", FF, "--charges", "types", "--gromacs", os.path.join(d, "caps"),
-                        "-o", os.path.join(d, "lmp", "caps.data"), "--lammps-input", os.path.join(d, "lmp", "caps.in"),
-                        "--lammps-style", "native"], capture_output=True, text=True)
-    if r.returncode:
-        return f"CAPS failed: {(r.stderr or r.stdout).strip().splitlines()[-1]}"
-    f = read_field(os.path.join(d, "field", "dl_poly.FIELD"))
-    cs, ctop = sections(os.path.join(d, "caps.itp")), sections(os.path.join(d, "caps.top"))
-    cat = {w[0]: (float(w[5]) * 10, float(w[6]) / KJ) for w in ctop["atomtypes"]}
-    n = len(f["atoms"])
-    nq = sum(abs(float(c[6]) - q) < 1e-6 for c, (t, q) in zip(cs["atoms"], f["atoms"]))
-    same = lambda c, t: all(abs(a - b) < 1e-5 for a, b in zip(cat[c[1]], f["vdw"][t]))
-    ljd = {f"{t} = CAPS {c[1]}: sigma, eps DL_FIELD {f['vdw'][t][0]} {f['vdw'][t][1]:.5f}, CAPS {cat[c[1]][0]:.4f} {cat[c[1]][1]:.5f}"
-           for c, (t, q) in zip(cs["atoms"], f["atoms"]) if not same(c, t)}
-    nlj = sum(same(c, t) for c, (t, q) in zip(cs["atoms"], f["atoms"]))
-    out = [f"atoms {n}: charges {nq}/{n}, LJ {nlj}/{n}" + (f" ({'; '.join(sorted(ljd))})" if ljd else "")]
-    cb, ca, ct, ci = bonded_of(cs)
-    bset = set(f["bonds"])
-    ft, fi = {}, {}
-    for q, v in f["dih"]:
-        if all(tuple(sorted(q[a:a + 2])) in bset for a in range(3)):
-            key = q if q[1] < q[2] else q[::-1]
-            ft[key] = [a + b for a, b in zip(ft.get(key, [0.0] * 4), v)]
-        else:
-            c = next(a for a in q if sum(tuple(sorted((a, b))) in bset for b in q if b != a) == 3)
-            fi.setdefault(c, []).append(v)
-    cb = {k: (v[0] * 10, v[1]) for k, v in cb.items()}   # r0 in A
-    out.append(cmpd("bonds", cb, f["bonds"], 2e-3, who="DL_FIELD") + ", " + cmpd("bends", ca, f["angles"], 2e-3, who="DL_FIELD") + ", "
-               + cmpd("torsions", ct, ft, 2e-3, [0.0] * 4, who="DL_FIELD"))
-    if ci or fi:
-        out.append(f"impropers (centre: V2 of each, kcal/mol): CAPS { {cs['atoms'][c - 1][1]: [round(v[1], 4) for _, v in t] for c, t in ci.items()} } "
-                   f"DL_FIELD { {f['atoms'][c - 1][0]: [round(v[1], 4) for v in t] for c, t in fi.items()} }")
-    try:
-        el = lammps_energy(os.path.join(d, "lmp"), "lammps.in", "lammps1.data")
-        ec = lammps_energy(os.path.join(d, "lmp"), "caps.in", "caps.data")
-    except (subprocess.CalledProcessError, StopIteration) as e:
-        out.append(f"LAMMPS failed ({e})")
-        return "\n      ".join(out)
-    out.append("energy CAPS / DL_FIELD (kcal/mol; LAMMPS, LJ + plain Coulomb within 16 A): "
-               + "  ".join(f"{k} {ec[k]:.4f}/{el[k]:.4f}" for k in ec)
-               + f"  total {sum(ec.values()):.4f}/{sum(el.values()):.4f}")
-    return "\n      ".join(out)
-
-
 print(f"OPLS-DES (CAPS, from the paper) against Acevedo's GROMACS files in {DES}")
-for name, stem, pdbname, _, _ in MOLS:
+for name, stem, pdbname in MOLS:
     print(f"  {name}\n      " + compare_acevedo(name, stem, pdbname))
-if "--dlfield" in sys.argv:
-    print("OPLS-DES (CAPS, from the paper) against DL_FIELD's OPLS_DES, on its own molecule templates (bench/ff/template_pdb.py)")
-    for name, _, _, dlmol, _ in MOLS:
-        if dlmol == "chloride_ion":   # a lone ion: nothing intramolecular, and DL_FIELD writes no files for it alone
-            continue
-        try:
-            print(f"  {name}\n      " + compare_dlfield(name, dlmol))
-        except subprocess.CalledProcessError as e:
-            print(f"  {name}: failed ({' '.join(map(str, e.cmd[:4]))})")
 print(f"(work: {work})")

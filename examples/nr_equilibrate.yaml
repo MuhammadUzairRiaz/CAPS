@@ -8,7 +8,7 @@ build:
   polymer: { smiles: "[*]C/C=C(C)\\C[*]", dp: 40, chains: 10 }
 
 # 2. force field (every atom typed, charges from the force field)
-type: { forcefield: opls2005 }
+type: { forcefield: oplsaa2024 }
 
 # 3. grow the chains into a periodic cell at low density
 grow: { density: 0.5, seed: 1 }

@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define CAPS_ABI_VERSION 69  /* v69 the biomolecule builders removed (caps_peptide_info, caps_peptide_build, caps_fasta_sequence, caps_set_ph; the "phosphate_ends" edit): CAPS focuses on polymers, crystals and materials; v68 caps_md_opts / caps_equil_opts .hmr (hydrogen mass repartitioning); v67 cluster jobs: caps_build_info (version, commit), caps_job_template, caps_host_presets; v66 the coarse-graining workflow: caps_cg_run (cgmap …), caps_cg_help; v65 the DFT surface & adsorption workbench: caps_dft_run (sheet, terminate, validate, adsorb-dft, vasp-*), caps_dft_help; v64 caps_field_set_options (zero_ring3_torsions: dihedrals with no parameters across a three-membered ring are zero, opt-in); v63 caps_mech_opts solv_* and protocol solvation (TI, soft-core), EnergyOptions alchemical pairs, tabulated pairs and IBI (cg options "ibi"); v62 caps_set_fixed_axes / caps_fixed_axes (atoms held along some axes), caps_md_opts.full_shape, caps_mech_opts creep_* and conf_*, protocols creep and conformers, caps_conformer_frames; caps_mech_opts.shear_lo/shear_hi/shear_points, analyze_ex protocol nemd (SLLOD η(γ̇)); v61 caps_md_opts.efield (electric field MD), caps_mode_animate and analyze "modes" (normal modes); v60 tags: caps_tags, caps_tag_edit, caps_tag_atoms; v59 caps_react_opts.sites_per_chain, caps_react_sites; v58 layers: caps_layers, caps_set_atom_lock (atom state bit 4); v57 caps_set_atom_state, caps_atom_states (hide and ghost atoms in the view); v56 caps_project_indices; v55 caps_export_scene (POV-Ray, glTF, OBJ), caps_export_image engine raytrace; v54 caps_scene triangles (surfaces and polyhedra on the GPU; cpu_only only for the colour-vision preview); v53 caps_pick_at (picking by the view ray, no render); v52 caps_field_groups_by_example (typing by hand inside a by-group assignment), LAMMPS inputs list each group's types with element and mass; v51 water models (caps_water_models; edit op water_model; field groups "molecules": "water" and "water": model); v50 caps_open_frames (read a frame selection); v49 caps_camera.fov_deg; v48 labels: caps_atom_labels kinds of caps_label_kinds, caps_bond_labels; v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation, appearance, trajectory player, torsion scan, editing, selections; v21 r-RESPA (caps_md_opts.respa), reactions during MD (caps_react_opts.during_md), restraints; v22 GROMACS export (caps_gromacs), χ from pair contacts (caps_chi_contacts); v23 export center (caps_export_engines); v24 coarse-grained beads (caps_build_beads, caps_bead_templates); v25 live view of MD and equilibration (caps_set_live); v26 GPU view (caps_render_scene, caps_view_fit); v27 the scene carries its camera-fit inputs (a view turns while a run holds the document); v28 caps_shadow (a copy of the shown frame the window reads while a run holds the document); v29 bond constraints (caps_md_opts / caps_equil_opts .constraints: SHAKE/RATTLE), typing by example; v30 relax push-off by MD with a ramped force cap (caps_relax_opts.pushoff_ramp_ps …); v31 caps_equil_opts.tol_internal (the internal-distance convergence check), caps_pipeline_export_grid; v32 LINCS (caps_md_opts / caps_equil_opts .constraint_algorithm), an internal-distance target curve (caps_equil_opts.internal_target); v33 CBMC regrowth (caps_cbmc); v34 adsorption locator (caps_adsorption), sorption (caps_sorption); v35 layer stacks (caps_stack_documents), caps_frame_copy, pipeline outputs (caps_pipeline_write_outputs); v36 relax etol / pressure_tol, MD per-axis pressure coupling, fixed atoms (caps_set_fixed_atoms), caps_energy_terms, caps_analyze_opts.group, caps_field_assign_groups; v37 caps_molecule_ids; v38 caps_analyze_opts.radii, electron scattering (analyze id electron); v39 caps_martini_melt, Kremer–Grest melts carry their force field; v40 caps_build_opts.rotor_search, heavy_only; v41 AMBER prmtop topologies carry their force field (caps_field_assign "file", caps_field_file_available); v42 caps_react_cycle.max_force, caps_react returns 2 when a failed cycle kept the completed ones, caps_kg_backmap; v43 caps_cg_map, caps_cg_from_polymer (structure-based CG); v44 caps_analyze_opts.zbin, axis, surface; v47 caps_field_set_mixing; v46 caps_mech_opts tg barostat, tau_t / tau_p, average_from, tg_property, tg_fit, glassy_max, rubbery_min; v45 React with the assigned force field, between chains, crosslink targets, byproducts, weights, auto capture (caps_react_opts), caps_react_summary */
+#define CAPS_ABI_VERSION 71  /* v71 completion during an assignment: caps_field_set_options "complete" ("ml" | "none") and "ml_model", caps_field_report "ml" {on, available, fitted, left, error}, caps_build_info "ml_engine" (the same check as caps_ml_available); v70 the CLI and the Studio in step: caps_react_opts.remove_unreacted, caps_react_summary "sulfur" and "removed_unreacted", caps_sulfur_bridges; caps_field_set_overlays / caps_field_overlays (caps ff apply --overlay), caps_forcefield_overlays; caps_ml_available, caps_ff_complete (caps ff complete); caps_md_opts / caps_equil_opts / caps_mech_opts .precision (--precision mixed|double); caps_template_view lists each atom's conditions and once, sites, byproduct, weight, charges; v69 the biomolecule builders removed (caps_peptide_info, caps_peptide_build, caps_fasta_sequence, caps_set_ph; the "phosphate_ends" edit): CAPS focuses on polymers, crystals and materials; v68 caps_md_opts / caps_equil_opts .hmr (hydrogen mass repartitioning); v67 cluster jobs: caps_build_info (version, commit), caps_job_template, caps_host_presets; v66 the coarse-graining workflow: caps_cg_run (cgmap …), caps_cg_help; v65 the DFT surface & adsorption workbench: caps_dft_run (sheet, terminate, validate, adsorb-dft, vasp-*), caps_dft_help; v64 caps_field_set_options (zero_ring3_torsions: dihedrals with no parameters across a three-membered ring are zero, opt-in); v63 caps_mech_opts solv_* and protocol solvation (TI, soft-core), EnergyOptions alchemical pairs, tabulated pairs and IBI (cg options "ibi"); v62 caps_set_fixed_axes / caps_fixed_axes (atoms held along some axes), caps_md_opts.full_shape, caps_mech_opts creep_* and conf_*, protocols creep and conformers, caps_conformer_frames; caps_mech_opts.shear_lo/shear_hi/shear_points, analyze_ex protocol nemd (SLLOD η(γ̇)); v61 caps_md_opts.efield (electric field MD), caps_mode_animate and analyze "modes" (normal modes); v60 tags: caps_tags, caps_tag_edit, caps_tag_atoms; v59 caps_react_opts.sites_per_chain, caps_react_sites; v58 layers: caps_layers, caps_set_atom_lock (atom state bit 4); v57 caps_set_atom_state, caps_atom_states (hide and ghost atoms in the view); v56 caps_project_indices; v55 caps_export_scene (POV-Ray, glTF, OBJ), caps_export_image engine raytrace; v54 caps_scene triangles (surfaces and polyhedra on the GPU; cpu_only only for the colour-vision preview); v53 caps_pick_at (picking by the view ray, no render); v52 caps_field_groups_by_example (typing by hand inside a by-group assignment), LAMMPS inputs list each group's types with element and mass; v51 water models (caps_water_models; edit op water_model; field groups "molecules": "water" and "water": model); v50 caps_open_frames (read a frame selection); v49 caps_camera.fov_deg; v48 labels: caps_atom_labels kinds of caps_label_kinds, caps_bond_labels; v2 relax, field; v3 md, trajectory; v4 equilibrate, chains; v5 pack; v6 react; v7 CAPS Field; v8 Analyze; v9 mechanics, Tg; v10 LAMMPS input; v11 convergence checks; v12 molecule builder; v13 palette, threads; v14 bench; v15 polymer builder; v16 electrostatics; v17 surfaces, interfaces, held molecule, inserted curatives; v18 progressive open, keyboard focus; v19 ambient occlusion, view scale; v20 space groups, crystal builder, peptides, solvation, appearance, trajectory player, torsion scan, editing, selections; v21 r-RESPA (caps_md_opts.respa), reactions during MD (caps_react_opts.during_md), restraints; v22 GROMACS export (caps_gromacs), χ from pair contacts (caps_chi_contacts); v23 export center (caps_export_engines); v24 coarse-grained beads (caps_build_beads, caps_bead_templates); v25 live view of MD and equilibration (caps_set_live); v26 GPU view (caps_render_scene, caps_view_fit); v27 the scene carries its camera-fit inputs (a view turns while a run holds the document); v28 caps_shadow (a copy of the shown frame the window reads while a run holds the document); v29 bond constraints (caps_md_opts / caps_equil_opts .constraints: SHAKE/RATTLE), typing by example; v30 relax push-off by MD with a ramped force cap (caps_relax_opts.pushoff_ramp_ps …); v31 caps_equil_opts.tol_internal (the internal-distance convergence check), caps_pipeline_export_grid; v32 LINCS (caps_md_opts / caps_equil_opts .constraint_algorithm), an internal-distance target curve (caps_equil_opts.internal_target); v33 CBMC regrowth (caps_cbmc); v34 adsorption locator (caps_adsorption), sorption (caps_sorption); v35 layer stacks (caps_stack_documents), caps_frame_copy, pipeline outputs (caps_pipeline_write_outputs); v36 relax etol / pressure_tol, MD per-axis pressure coupling, fixed atoms (caps_set_fixed_atoms), caps_energy_terms, caps_analyze_opts.group, caps_field_assign_groups; v37 caps_molecule_ids; v38 caps_analyze_opts.radii, electron scattering (analyze id electron); v39 caps_martini_melt, Kremer–Grest melts carry their force field; v40 caps_build_opts.rotor_search, heavy_only; v41 AMBER prmtop topologies carry their force field (caps_field_assign "file", caps_field_file_available); v42 caps_react_cycle.max_force, caps_react returns 2 when a failed cycle kept the completed ones, caps_kg_backmap; v43 caps_cg_map, caps_cg_from_polymer (structure-based CG); v44 caps_analyze_opts.zbin, axis, surface; v47 caps_field_set_mixing; v46 caps_mech_opts tg barostat, tau_t / tau_p, average_from, tg_property, tg_fit, glassy_max, rubbery_min; v45 React with the assigned force field, between chains, crosslink targets, byproducts, weights, auto capture (caps_react_opts), caps_react_summary */
 
 typedef struct caps_doc caps_doc;   /* an opened file: trajectory + current frame + renderer */
 
@@ -168,6 +168,7 @@ typedef struct {
   double efield[3];                /* ABI 61: a uniform electric field on the partial charges, V/Å (LAMMPS fix efield) */
   int32_t full_shape;              /* ABI 62: with box_anisotropic, the tilts follow the shear stresses toward zero (a triclinic cell relaxes) */
   double hmr;                      /* ABI 68: > 0 hydrogens at this mass (u, 3.024 usual), taken from their bonded atoms; 0 off */
+  int32_t precision;               /* ABI 70: 0 mixed (pair terms in single precision with SIMD, the CLI's default), 1 double */
 } caps_md_opts;
 
 typedef struct {
@@ -226,6 +227,7 @@ typedef struct {
   const double* internal_target;           /* ABI 32: a target ⟨R²(n)⟩/(n⟨b²⟩) curve indexed by n (e.g. RIS C_n; 0 entries skipped), or NULL */
   int32_t internal_target_n;               /* its length (n = 0 … internal_target_n − 1) */
   double hmr;                              /* ABI 68: hydrogen mass repartitioning, as caps_md_opts.hmr */
+  int32_t precision;                       /* ABI 70: 0 mixed (the CLI's default), 1 double */
 } caps_equil_opts;
 
 /* Equilibrate progress: (stage, stages, stage label, thermo row, user) -> non-zero cancels. */
@@ -285,6 +287,8 @@ typedef struct {
   double target_value;
   /* v59 */
   int32_t sites_per_chain;         /* at most this many of each chain's reactive sites react (0: no limit) */
+  /* v70 */
+  int32_t remove_unreacted;        /* afterwards, molecules of S and H only (unreacted sulfur donors) leave the cell */
 } caps_react_opts;
 
 /* v59: each chain's reactive sites for the templates (text, or built-in names): {chains: [{chain, sites, units, atoms, mass}],
@@ -317,6 +321,11 @@ int32_t caps_react(caps_doc* d, const char* templates, const caps_react_opts* o,
    chain_mass, density (mol/m³), per_chain, mc (g/mol), reactions, initial_sites, conversion, field, field_after,
    notes[]}. Returns the length needed or -1. */
 int32_t caps_react_summary(caps_doc* d, char* json, int32_t cap);
+/* v70: the summary also has removed_unreacted, removed_unreacted_atoms and, when the network holds sulfur, "sulfur" (as
+   caps_sulfur_bridges). caps_sulfur_bridges: the current frame's sulfur by kind and rank (react.hpp sulfur_census):
+   {bridges: {"S1": n, …}, cyclic, pendant, free, sulfur_atoms, mean_bridge_rank}; ring_limit ≤ 0: 8 bonds. Returns the
+   length needed or -1. */
+int32_t caps_sulfur_bridges(caps_doc* d, int32_t ring_limit, char* json, int32_t cap);
 /* v45: the reactions as a LAMMPS fix bond/react set in dir: STEM.data (every type the reactions create, with its
    coefficients), STEM.in (the force field's styles, the molecule templates, fix bond/react with stabilisation, NVT, the
    reaction counts in thermo), and per template and chemical environment STEM_<name>_<k>_pre.mol, _post.mol, _map.txt —
@@ -356,7 +365,7 @@ int32_t caps_energy_terms(caps_doc* d, char* json, int32_t cap);
 /* CAPS Field. Assigns a force field (a caps-forcefield JSON file; typed by its own rules, or by rules_path when given)
    to the document: types every atom, sets charges (charges: 0 from the force field, 1 Gasteiger, 2 keep the file's, 3 QEq, 4 automatic: the force
    field's when its types carry charges, else Gasteiger, noted in the report; 5 bond increments keyed by each type's
-   number, from the force field's own table or the one its "charge_increments_from" names — OPLS-AA 2024 → OPLS 2005)
+   number, from the force field's own table or the one its "charge_increments_from" names)
    and looks up every parameter. The types are written into the document (colour by type shows them). Relax,
    Dynamics, Equilibrate and LAMMPS data then use this force field; while atoms are untyped or parameters missing they
    refuse to run (CAPS never guesses parameters). Returns 0 when complete, 1 when something is missing, -1 on error. */
@@ -442,7 +451,10 @@ int32_t caps_equivalent_atoms(caps_doc* d, int32_t atom, int32_t radius, char* j
    that style's order. Such terms are reported as estimated. Returns as caps_field_assign. */
 /* v64 options of the assignment, kept with it (re-run on every product): JSON {zero_ring3_torsions: true} — a dihedral with no
    parameters whose atoms close a three-membered ring (epoxide, aziridine, cyclopropane) is zero and reported as such,
-   not missing. Returns 0 complete, 1 incomplete, -1 error. */
+   not missing. v71 {complete: "ml"}: the bonded terms the force field lacks fitted by CAPS ML at every assignment and kept
+   with it (caps ff apply --complete ml; "none" reports them again), {ml_model: PATH} another model file; the report's "ml"
+   entry {on, available, fitted[], left[], error} says what was fitted and what not. Refused, with the reason, in a build
+   without the ML engine (caps_ml_available 0). Returns 0 complete, 1 incomplete, -1 error. */
 int32_t caps_field_set_options(caps_doc* d, const char* options);
 /* v64 the atoms of a SMILES (hydrogens added) where a SMARTS pattern matches with its first atom: the count, -1 on error
    (an unreadable SMILES or SMARTS). */
@@ -458,6 +470,25 @@ int32_t caps_field_import(caps_doc* d, const char* path);
    used only where the force field defines nothing — borrowed parameters, each listed in the report as filled_terms;
    for a moltemplate OPLS-AA force field the file's atom classes become its type patterns)}. */
 int32_t caps_field_import_ex(caps_doc* d, const char* path, const char* options_json);
+/* v70 overlays, as caps ff apply / relax / md --overlay A.json,B.json: each file merged in turn onto the assigned force field
+   before typing (a later file's rules over an earlier's; types and typing rules too), kept with the assignment and re-run
+   on every product (React). paths: comma-separated, "" none. Returns as caps_field_assign. caps_field_overlays: the
+   assignment's overlays as JSON ["path", …]. caps_forcefield_overlays: the overlay files of the library folder dir (no
+   catalogue entry, no atom types of their own) as {overlays: [{file, path, name, base (the catalogue id its name starts
+   with, "" none), kinds: {pairs, bonds, angles, dihedrals, impropers}, notes[]}]}; base_id non-empty: that force field's only. */
+int32_t caps_field_set_overlays(caps_doc* d, const char* paths);
+int32_t caps_field_overlays(caps_doc* d, char* json, int32_t cap);
+int32_t caps_forcefield_overlays(const char* dir, const char* base_id, char* json, int32_t cap);
+/* v70 caps ff complete: 1 when this build has CAPS's machine-learned potential (built with -DCAPS_WITH_TORCH=ON), else 0. */
+int32_t caps_ml_available(void);
+/* v70 caps ff complete on the current frame: the bonded terms ff_path lacks, found and fitted with CAPS's model; the
+   overlay written to options "overlay" (a path; required) and applied (caps_field_set_overlays) when "apply" is true.
+   options JSON {overlay, model ("" data/ml/caps-mace-v1.model beside the data), step (15), apply}. Report JSON as the
+   CLI's --report {structure, forcefield, model, missing_before[], missing_after[], terms[{kind, classes[], status, params[],
+   rms_kcal, points, fragment_atoms, why, scan}], complete, overlay}. Without the model in this build: -1 with
+   caps_last_error saying so. progress (optional) gets each log line with fraction -1; non-zero return is ignored.
+   Returns 0 complete, 1 terms left, -1 error; the report is cut at cap (the run is not repeated: give 4 MB). */
+int32_t caps_ff_complete(caps_doc* d, const char* ff_path, const char* options_json, caps_stage_fn progress, void* user, char* report, int32_t cap);
 /* v47: the mixing rule for unlike Lennard-Jones pairs in place of the force field's own: "arithmetic" (Lorentz–
    Berthelot), "geometric" or "sixthpower" (Waldman–Hagler); "" back to the force field's. Every run and export uses it
    (explicit pair parameters still win) and the report says it is not the published rule. Returns as caps_field_assign. */
@@ -556,6 +587,8 @@ typedef struct {
      solv_lj_windows windows (0: 5 and 13), solv_ps per window (0: 20) after solv_eq_ps (0: 5), at solv_t K (0: temperature) */
   int32_t solv_mol, solv_coul_windows, solv_lj_windows;
   double solv_ps, solv_eq_ps, solv_t;
+  /* v70: tensile, tg, creep, cij_run and the other MD protocols: 0 mixed precision (the CLI's caps tg / tensile default), 1 double */
+  int32_t precision;
 } caps_mech_opts;
 int32_t caps_analyze_ex(caps_doc* d, const char* props, const caps_analyze_opts* o, const caps_mech_opts* m, caps_analyze_progress_fn progress,
                         void* user);
@@ -1304,7 +1337,7 @@ int32_t caps_cg_run(const char* command, const char* args_json, const char* data
 int32_t caps_cg_help(const char* command, char* out, int32_t cap);
 
 /* Cluster jobs (ABI 67, caps/cluster_job.hpp; the host side is the caps job command): the build's version and commit
-   {"version", "commit"}; the built-in job script for a scheduler ("slurm", "pbs", "direct") with its {placeholders}; the
+   {"version", "commit", "ml_engine" (v71: as caps_ml_available)}; the built-in job script for a scheduler ("slurm", "pbs", "direct") with its {placeholders}; the
    generic host presets [{"key", "profile": {…host.json keys…}}]. Each returns the length written (-1 on error). */
 int32_t caps_build_info(char* json, int32_t cap);
 int32_t caps_job_template(const char* scheduler, char* text, int32_t cap);

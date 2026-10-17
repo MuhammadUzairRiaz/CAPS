@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """OPLS-AA atom types of the polymer library against an independent typer: every library polymer as a DP-3 oligomer
-(hydrogen ends) typed by CAPS with OPLS-AA 2024 (data/typing/oplsaa2024-moltemplate.typing.json) and by foyer's OPLS-AA
+(hydrogen ends) typed by CAPS with OPLS-AA 2024 (data/typing/oplsaa2024.typing.json) and by foyer's OPLS-AA
 (MoSDeF, its own SMARTS rules), compared atom by atom on the OPLS type number.
 
 Two interpreters: CAPS's (this one, with data/python on the path) builds and types; foyer's (--foyer-python, a MoSDeF
@@ -55,7 +55,7 @@ def main():
             continue
         try:
             d = caps.polymer(smi, dp=DP)
-            r = d.field.assign("oplsaa2024-moltemplate", "forcefield")
+            r = d.field.assign("oplsaa2024", "forcefield")
             path = os.path.join(OUT, p["id"] + ".mol2")
             d.save(path)
             files[p["id"]] = path

@@ -18,6 +18,7 @@
 #endif
 
 #include "caps/elements.hpp"
+#include "caps/json.hpp"
 #include "caps/field.hpp"
 #include "caps/mlpot.hpp"
 #include "caps/typing.hpp"
@@ -709,9 +710,8 @@ CompleteReport complete_forcefield(const System& s, const FFDef& ff, const std::
 bool ml_engine_available() { return ml::available(); }
 
 std::string ml_engine_missing_message() {
-  return "this CAPS was built without its ML engine (libtorch), so it cannot fill missing terms with CAPS ML: use a CAPS "
-         "built with -DCAPS_WITH_TORCH=ON (the released packages are), or assign without completion and give the missing "
-         "terms another way";
+  return "this CAPS was built without its ML engine (libtorch), so it cannot fit missing terms with CAPS ML: use a CAPS "
+         "built with -DCAPS_WITH_TORCH=ON (the released packages are), or give the missing terms another way";
 }
 
 bool parse_complete_option(const std::string& v) {
@@ -763,16 +763,22 @@ std::string find_ml_model(const std::vector<std::string>& near) {
   return "";
 }
 
+std::string resolve_ml_model(const std::string& given, const std::vector<std::string>& near) {
+  const std::string m = given.empty() ? find_ml_model(near) : given;
+  std::error_code ec;
+  if (m.empty() || !std::filesystem::exists(m, ec))
+    throw std::runtime_error("CAPS's ML model (data/ml/caps-mace-v1.model) was not found" + (m.empty() ? std::string() : " at " + m) +
+                             ": set CAPS_ML_MODEL or CAPS_HOME, or give the model's path");
+  return m;
+}
+
 MlFill fill_missing_with_ml(const System& s, FFDef& def, const std::vector<std::string>& types, const CompleteOptions& opt0,
                             const std::function<void(const std::string&)>& log) {
-  if (!ml::available()) throw std::runtime_error(ml_engine_missing_message());
+  if (!ml_engine_available()) throw std::runtime_error(ml_engine_missing_message());
   CompleteOptions opt = opt0;
-  if (opt.model.empty()) opt.model = find_ml_model();
-  std::error_code ec;
-  if (opt.model.empty() || !std::filesystem::exists(opt.model, ec))
-    throw std::runtime_error("CAPS's ML model (data/ml/caps-mace-v1.model) was not found" + (opt.model.empty() ? std::string() : " at " + opt.model) +
-                             ": set CAPS_ML_MODEL or CAPS_HOME, or give the model's path");
+  opt.model = resolve_ml_model(opt.model);
   MlFill out;
+  out.model = opt.model;
   out.report = complete_forcefield(s, def, types, opt, log);
   const FFDef& ov = out.report.overlay;
   out.fitted = int(ov.bonds.size() + ov.angles.size() + ov.dihedrals.size());
@@ -788,6 +794,47 @@ MlFill fill_missing_with_ml(const System& s, FFDef& def, const std::vector<std::
   for (const auto& t : out.report.terms)
     if (t.status != "fitted") out.left.push_back(t.kind + " " + classes(t.classes) + ": " + (t.status == "rejected" ? "fit rejected, " : "not fitted, ") + t.why);
   return out;
+}
+
+std::string complete_report_json(const CompleteReport& rep, const std::string& structure, const std::string& forcefield,
+                                 const std::string& model) {
+  Json j = Json::object(), terms = Json::array();
+  for (const auto& t : rep.terms) {
+    Json e = Json::object(), cl = Json::array(), pa = Json::array();
+    e["kind"] = t.kind;
+    for (const auto& c : t.classes) cl.push_back(Json(c));
+    e["classes"] = cl;
+    e["status"] = t.status;
+    for (double p : t.params) pa.push_back(Json(p));
+    e["params"] = pa;
+    e["rms_kcal"] = t.rms;
+    e["points"] = Json(t.points);
+    e["fragment_atoms"] = Json(t.fragment_atoms);
+    if (!t.why.empty()) e["why"] = t.why;
+    Json sc = Json::array();
+    for (const auto& p : t.scan) {
+      Json q = Json::array();
+      q.push_back(Json(p.value));
+      q.push_back(Json(p.e_ml));
+      q.push_back(Json(p.e_mm));
+      q.push_back(Json(p.converged));
+      q.push_back(Json(p.used));
+      sc.push_back(q);
+    }
+    e["scan"] = sc;   // [value, E_model, E_MM without the term, converged, used in the fit], energies relative to their lowest
+    terms.push_back(e);
+  }
+  Json mb = Json::array(), ma = Json::array();
+  for (const auto& m : rep.missing_before) mb.push_back(Json(m));
+  for (const auto& m : rep.missing_after) ma.push_back(Json(m));
+  j["structure"] = structure;
+  j["forcefield"] = forcefield;
+  j["model"] = model;
+  j["missing_before"] = mb;
+  j["missing_after"] = ma;
+  j["terms"] = terms;
+  j["complete"] = Json(rep.complete);
+  return j.dump(1);
 }
 
 }  // namespace caps

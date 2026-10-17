@@ -8,6 +8,7 @@ namespace CapsStudio.Views.Pages;
 
 public partial class GlassPage : PageBase
 {
+    private void OnCopyCommand(object? s, Avalonia.Interactivity.RoutedEventArgs e) => CopyCommand(Vm.TgCommand, "cooling scan");
     private MainViewModel? _hooked;
 
     public GlassPage()

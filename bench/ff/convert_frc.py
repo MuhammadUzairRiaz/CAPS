@@ -312,7 +312,7 @@ if os.path.isdir(IFF):   # the INTERFACE force field: PCFF and CVFF with the ino
     convert("cvff_interface_v1_5.frc", 1, "INTERFACE (IFF 1.5, CVFF)", "IFF 1.5 on cvff.frc",
             ["H. Heinz, T.-J. Lin, R. K. Mishra, F. S. Emami, Langmuir 29, 1754 (2013)"], "../typing/cvff.typing.json", "iff-cvff.json", IFF, IFF_EXTRA)
 convert("compass_published.frc", 2, "COMPASS (compass_published.frc, full class II)", "compass_published.frc 1.1",
-        ["H. Sun, J. Phys. Chem. B 102, 7338 (1998)"], "../typing/compass-published-moltemplate.typing.json", "compass-frc.json")
+        ["H. Sun, J. Phys. Chem. B 102, 7338 (1998)"], "../typing/compass-frc.typing.json", "compass-frc.json")
 
 
 # the library catalogue: the .frc conversions listed before the other CVFF / PCFF / COMPASS files

@@ -115,7 +115,7 @@ SUMMARY = {
     "vasp-analyze": "geometry, work function, DOS, Δρ, Bader, frequencies, AIMD, the summary table",
 }
 # words the public pages leave out (CAPS's own names for what it does)
-SCRUB = [re.compile(r"^\s*caps ff import-dlf.*$", re.M)]
+SCRUB: list = []
 
 
 def run(cmd: list[str]) -> str:

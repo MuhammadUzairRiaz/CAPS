@@ -6,6 +6,7 @@
 #include "caps/typing.hpp"
 #include "caps/qeq.hpp"
 
+#include <cctype>
 #include <cstdio>
 #include <filesystem>
 #include <memory>
@@ -520,6 +521,8 @@ void save_forcefield(const FFDef& ff, const std::string& path) {
 std::vector<double> companion_charges(const System& s, const FFDef& def, const std::string& ff_path, std::string* note) {
   if (def.charge_increments_from.empty()) throw FFError(def.name + " names no force field for bond-increment charges");
   const std::filesystem::path src = std::filesystem::path(ff_path).parent_path() / def.charge_increments_from;
+  // a companion that is not installed beside the force field is no companion (CAPS ships no library it does not own)
+  if (!std::filesystem::exists(src)) throw FFError(def.name + "'s companion " + def.charge_increments_from + " is not installed");
   const FFDef other = load_forcefield(src.string());
   if (other.bond_increments.empty()) throw FFError(other.name + " has no bond increments");
   const TypingResult tr = assign_types(s, other);
@@ -672,8 +675,10 @@ FFDef load_forcefield(const std::string& path) {
       r.smarts = o.text("smarts"), r.type = o.text("type");
       for (const auto& x : o["from"].items()) r.from.push_back(int(x.number()));
       for (const auto& x : o["w"].items()) r.w.push_back(x.number());
+      r.c = o.num("c", 0);
       if (r.smarts.empty() || r.type.empty() || r.from.empty() || r.from.size() != r.w.size())
         throw FFError("a virtual site needs smarts, type, and as many weights as atoms in from");
+      if (r.c != 0 && r.from.size() != 3) throw FFError("a virtual site out of the plane (c) needs three atoms in from");
       Smarts check(r.smarts);
       ff.site_rules.push_back(r);
     }
@@ -775,6 +780,138 @@ std::string ml_source(const std::string& model_path, double rms_kcal) {
     s += b;
   }
   return s;
+}
+
+void merge_overlays(FFDef& def, const std::string& list) {
+  for (std::stringstream ss(list); ss.good();) {
+    std::string p;
+    std::getline(ss, p, ',');
+    while (!p.empty() && std::isspace(static_cast<unsigned char>(p.back()))) p.pop_back();
+    while (!p.empty() && std::isspace(static_cast<unsigned char>(p.front()))) p.erase(p.begin());
+    if (!p.empty()) merge_forcefield(def, load_forcefield(p));
+  }
+}
+
+ForceField parameterize_charges(System& s, const FFDef& ff, const std::vector<std::string>& types, const std::string& charges_in,
+                                const std::string& ff_path, ParamReport* rep_out, bool allow_missing, std::vector<std::string>* said) {
+  ParamReport rep;
+  auto say = [&](const std::string& t) { if (said) said->push_back(t); };
+  std::string charges = charges_in;
+  if (charges == "increments") {   // the companion force field's bond-increment charges, always
+    std::string note;
+    const auto q = companion_charges(s, ff, ff_path, &note);
+    for (size_t i = 0; i < s.atoms.size(); ++i) s.atoms[i].charge = q[i];
+    s.has_charges = true;
+    ForceField f = parameterize(s, ff, types, "keep", &rep, allow_missing);
+    say("charges: " + (note.rfind("charges: ", 0) == 0 ? note.substr(9) : note));
+    if (rep_out) *rep_out = std::move(rep);
+    return f;
+  }
+  if (charges != "auto") {
+    ForceField f = parameterize(s, ff, types, charges, &rep, allow_missing);
+    if (rep_out) *rep_out = std::move(rep);
+    return f;
+  }
+  ForceField f;
+  try {
+    f = parameterize(s, ff, types, "types", &rep, allow_missing);
+    charges = "types";
+  } catch (const FFError& e) {
+    // no charges on its types, or a bond without an increment (pcff.frc has none for an alkoxysilane's o-sio)
+    const std::string msg = e.what();
+    const bool no_increment = msg.find("bond increment") != std::string::npos;
+    if (msg.find("has no charge for type") == std::string::npos && !no_increment) throw;
+    const std::string why = no_increment ? "has no bond increment for " + msg.substr(msg.find("bond increment") + 15, msg.find('\n', msg.find("bond increment")) - msg.find("bond increment") - 15)
+                                         : "has no charges on its types";
+    rep = ParamReport{};
+    charges = "gasteiger";
+    try {
+      ParamReport probe;
+      (void)parameterize(s, ff, types, "gasteiger", &probe, true);
+      say("charges: " + ff.name + " " + why + "; Gasteiger–Marsili charges used");
+    } catch (const std::exception&) {   // Gasteiger–Marsili has no parameters for this structure (S=O, metals): QEq
+      charges = "qeq";
+      say("charges: " + ff.name + " " + why + " and Gasteiger–Marsili none for this structure; QEq charges used");
+    }
+    f = parameterize(s, ff, types, charges, &rep, allow_missing);
+  }
+  // per-type charges that miss the formal charge give way to the companion force field's bond-increment charges when it
+  // names one (OPLS-AA 2024 -> OPLS 2005), as a recipe and the Studio do
+  if (charges == "types" && !ff.charge_increments_from.empty()) {
+    double net = 0;
+    for (double q : f.charge) net += q;
+    int formal = 0;
+    for (int fc : perceive(s).charge) formal += fc;
+    if (std::fabs(net - formal) > 1e-3) {
+      char b[160];
+      std::snprintf(b, sizeof b, "charges: %s's own charges sum to %+.4f e, not %+d", ff.name.c_str(), net, formal);
+      try {
+        std::string note;
+        const auto q = companion_charges(s, ff, ff_path, &note);
+        System sq = s;
+        for (size_t i = 0; i < sq.atoms.size(); ++i) sq.atoms[i].charge = q[i];
+        sq.has_charges = true;
+        ParamReport rep2;
+        ForceField f2 = parameterize(sq, ff, types, "keep", &rep2, allow_missing);
+        s = std::move(sq);
+        f = std::move(f2);
+        rep = std::move(rep2);
+        say(std::string(b) + "; used instead: " + (note.rfind("charges: ", 0) == 0 ? note.substr(9) : note));
+      } catch (const FFError& e) {
+        say(std::string(b) + " (" + e.what() + ")");
+      }
+    }
+  }
+  if (rep_out) *rep_out = std::move(rep);
+  return f;
+}
+
+std::vector<OverlayInfo> library_overlays(const std::string& dir) {
+  namespace fs = std::filesystem;
+  std::vector<OverlayInfo> out;
+  std::set<std::string> listed, ids;
+  {
+    std::ifstream cf(fs::path(dir) / "catalogue.json");
+    if (cf) {
+      std::stringstream ss;
+      ss << cf.rdbuf();
+      const Json c = Json::parse(ss.str());
+      if (c.has("forcefields"))
+        for (const auto& e : c["forcefields"].items()) {
+          if (e.has("file") && e["file"].kind() == Json::String) listed.insert(e["file"].str());
+          if (e.has("id") && e["id"].kind() == Json::String) ids.insert(e["id"].str());
+        }
+    }
+  }
+  std::error_code ec;
+  std::vector<fs::path> files;
+  for (const auto& e : fs::directory_iterator(dir, ec))
+    if (e.is_regular_file() && e.path().extension() == ".json" && e.path().filename() != "catalogue.json") files.push_back(e.path());
+  std::sort(files.begin(), files.end());
+  for (const auto& f : files) {
+    const std::string file = f.filename().string();
+    if (listed.count(file)) continue;
+    std::ifstream in(f);
+    std::stringstream ss;
+    ss << in.rdbuf();
+    Json j;
+    try { j = Json::parse(ss.str()); } catch (const std::exception&) { continue; }
+    if (j.kind() != Json::Object || !j.has("format") || j["format"].kind() != Json::String || j["format"].str() != "caps-forcefield") continue;
+    if (j.has("atom_types") && j["atom_types"].kind() == Json::Array && !j["atom_types"].items().empty()) continue;
+    OverlayInfo o;
+    o.file = file;
+    o.path = f.string();
+    o.name = j.has("name") && j["name"].kind() == Json::String ? j["name"].str() : file;
+    for (const auto& id : ids)
+      if (file.size() > id.size() + 1 && file.compare(0, id.size(), id) == 0 && file[id.size()] == '-' && id.size() > o.base.size()) o.base = id;
+    auto count = [&](const char* k) { return j.has(k) && j[k].kind() == Json::Array ? int(j[k].items().size()) : 0; };
+    o.pairs = count("pairs"), o.bonds = count("bonds"), o.angles = count("angles"), o.dihedrals = count("dihedrals"), o.impropers = count("impropers");
+    if (j.has("notes") && j["notes"].kind() == Json::Array)
+      for (const auto& n : j["notes"].items()) if (n.kind() == Json::String) o.notes.push_back(n.str());
+    if (o.pairs + o.bonds + o.angles + o.dihedrals + o.impropers == 0) continue;
+    out.push_back(std::move(o));
+  }
+  return out;
 }
 
 void merge_forcefield(FFDef& base, const FFDef& ov) {
@@ -1566,7 +1703,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
   };
   const auto Nb = names_for("bond"), Na = names_for("angle"), Nd = names_for("dihedral"), Ni = names_for("improper"),
              Nq = names_for("increment");
-  // second-choice equivalents (DL_FIELD "bond2_" etc.): the first names where a type has none
+  // second-choice equivalents ("bond2_" etc.): the first names where a type has none
   auto names2 = [&](const char* kind, const std::vector<std::string>& first) {
     std::vector<std::string> v = first;
     bool any = false;
@@ -1595,10 +1732,10 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
       if (const FFRule* r = last_match(rules, raw, true, rev)) return r;
     return last_match(rules, eq, true, rev);
   };
-  // with second-choice names (the DL-derived files): exact rules by the first names, exact by the second; then wildcard
+  // with second-choice names: exact rules by the first names, exact by the second; then wildcard
   // rules by the second names, then by the first — the most specific wildcard rule (fewest X) first, ties the last in
-  // file order. (Checked term by term against the reference's own output: an ether C whose dihedral equivalent is
-  // second-tier only takes X-OS-CT-X, not X-OS-CO-X; N-CYA-CYA-HC takes HC-CT-CT-X, not X-CYA-CYA-X.)
+  // file order. (So an ether C whose dihedral equivalent is second-tier only takes X-OS-CT-X, not X-OS-CO-X;
+  // N-CYA-CYA-HC takes HC-CT-CT-X, not X-CYA-CYA-X.)
   auto most_specific = [&](const std::vector<FFRule>& rules, const std::vector<const std::string*>& ty, bool* rev) -> const FFRule* {
     std::vector<const std::string*> rv(ty.rbegin(), ty.rend());
     const FFRule* best = nullptr;
@@ -2003,7 +2140,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
         bool rev = false;
         const FFRule* r = lookup12(def.angles, Na, Na2, {i, j, k}, &rev);
         // octahedral / square-planar centres: a rule with θ0 = 90° also matches the trans pairs (θ ≈ 180°), which
-        // must carry no angle term (as DL_FIELD writes them); decided from the structure's geometry
+        // must carry no angle term; decided from the structure's geometry
         if (r && (r->style.empty() ? def.angle_style : r->style) == "harmonic" && r->params.size() >= 2 && std::fabs(r->params[1] - 90.0) < 5.0) {
           const Vec3 u = s.atoms[i].pos - s.atoms[j].pos, v = s.atoms[k].pos - s.atoms[j].pos;
           const double c = dot(u, v) / (norm(u) * norm(v));
@@ -2307,7 +2444,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
           sourced(r, "dihedral", {i, j, k, l});
           const std::string st = r->style.empty() ? def.dihedral_style : r->style;
           const auto& p = r->params;
-          // msi2lmp / DL_FIELD (CVFF): a wildcard end spreads the barrier over the torsions about the central bond
+          // msi2lmp (CVFF): a wildcard end spreads the barrier over the torsions about the central bond
           double scale = 1;
           // automatic (cvff_auto) torsions already hold per-torsion values: not scaled
           if (def.wildcard_torsion_scaling != "none" && r->match.size() == 4 && r->name.rfind("auto", 0) != 0) {
@@ -2746,9 +2883,9 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
       for (size_t y = x + 1; y < nbc.size(); ++y)
         for (size_t z = y + 1; z < nbc.size(); ++z) {
           std::array<uint32_t, 3> o = {nbc[x], nbc[y], nbc[z]};
-          // DL_FIELD / msi2lmp try the outer atoms in the order of the structure's bond list; others sort them
+          // msi2lmp tries the outer atoms in the order of the structure's bond list; others sort them
           const bool by_type = def.improper_order == "center3_type_sorted";
-          if (by_type)   // AMBER (tleap) and DL_FIELD: outer atoms by type name, ties in bond-list order
+          if (by_type)   // AMBER (tleap): outer atoms by type name, ties in bond-list order
             std::stable_sort(o.begin(), o.end(), [&](uint32_t a, uint32_t b) { return T[a] < T[b]; });
           else if (!def.improper_matched_order)
             std::sort(o.begin(), o.end());
@@ -2778,12 +2915,12 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
               }
             }
           }
-          // The DL_POLY files of the DL-derived force fields (equivalences replace names, impropers keep the rule's atom
-          // order): explicit rules before wildcard ones; the outer atoms read by index, backwards, then in any other
+          // The DL_POLY files of force fields whose equivalences replace names and whose impropers keep the rule's atom
+          // order: explicit rules before wildcard ones; the outer atoms read by index, backwards, then in any other
           // order, each against the rules from the last; the first fit is written in the rule's order (a wildcard rule
           // with the outer atoms by index). Their LAMMPS files may use another order, sometimes from another rule.
-          const bool dl_derived = def.improper_matched_order && def.equivalence == "replace" && !by_type;
-          if (best && dl_derived && ff.impropers_dlpoly_ok) {
+          const bool replace_ordered = def.improper_matched_order && def.equivalence == "replace" && !by_type;
+          if (best && replace_ordered && ff.impropers_dlpoly_ok) {
             std::array<uint32_t, 3> sa = o;
             std::sort(sa.begin(), sa.end());
             static constexpr int kPermF[6][3] = {{0, 1, 2}, {2, 1, 0}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 0, 1}};
@@ -2825,7 +2962,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
             }   // other forms (inversions, class II, harmonic) are not in ff.impropers: written from their own lists
             ff.impropers_dlpoly_set = true;
           }
-          // written with the centre second (the DL-derived OPLS files): the neighbour with the highest index goes last
+          // written with the centre second (OPLS libraries that do so): the neighbour with the highest index goes last
           // when a rule allows it there, the other two in ascending order — the order those files' terms are written in
           if (best && def.improper_written == "center2" && cpos == 2) {
             const std::vector<std::string>& N = found_pass == 0 ? T : found_pass == 1 ? Ni : Ni2;
@@ -2967,7 +3104,7 @@ ForceField parameterize(const System& s, const FFDef& def, const std::vector<std
       for (uint32_t i = 0; i < n; ++i) {
         if (used[i] || types_in[i] != r.type || s.atoms[i].element != 0) continue;
         if (norm(s.cell.valid() ? s.cell.minimum_image(s.atoms[i].pos - pos) : s.atoms[i].pos - pos) > 0.05) continue;
-        VirtualSite vs{i, {}, r.w, 0};
+        VirtualSite vs{i, {}, r.w, r.c};
         for (int q : r.from) vs.from.push_back(e[size_t(q)]);
         ff.vsites.push_back(vs);
         ff.mass[i] = 0;
@@ -3045,6 +3182,11 @@ Vec3 site_position(const System& s, const FFDef::SiteRule& r, const std::vector<
     Vec3 d = s.atoms[e[size_t(r.from[q])]].pos - ref;
     if (s.cell.valid()) d = s.cell.minimum_image(d);
     c = c + (ref + d) * r.w[q];
+  }
+  if (r.c != 0 && r.from.size() == 3) {   // out of the plane: c (r_01 × r_02)
+    Vec3 u = s.atoms[e[size_t(r.from[1])]].pos - ref, w = s.atoms[e[size_t(r.from[2])]].pos - ref;
+    if (s.cell.valid()) u = s.cell.minimum_image(u), w = s.cell.minimum_image(w);
+    c = c + cross(u, w) * r.c;
   }
   return c;
 }
@@ -3343,7 +3485,7 @@ std::vector<std::string> ring_angle_notes(const System& s, const ForceField& ff)
   std::snprintf(b, sizeof b,
                 "%d angle terms in %zu three-membered rings (epoxides, …) have θ0 up to %.1f° where the ring's angles are about 60°: %s gives "
                 "them general parameters, about %.0f kcal/mol of strain per ring at this geometry — unphysical for the unreacted rings. For "
-                "epoxidised rubber use a force field with three-ring parameters (GAFF cx/op, OPLS 2005 C3T/O3T), or import ring parameters",
+                "epoxidised rubber use a force field with three-ring parameters (GAFF cx/op), or import ring parameters",
                 bad, rings.size(), worst / kDegree, ff.name.c_str(), energy / double(rings.size()));
   return {b};
 }
