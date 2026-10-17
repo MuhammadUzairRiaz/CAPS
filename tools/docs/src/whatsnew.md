@@ -22,7 +22,7 @@ Every force field in CAPS now comes from its original paper, its supporting info
 
 - Sulfur-cured rubber: persulfide and polysulfide types, the S–S bonds, bends and torsions, and the allylic torsions next to the C=C, fitted to MP2/cc-pVTZ//HF/6-31G** scans. Natural rubber and polybutadiene with S1 to S8 bridges are complete in both force fields.
 - OPLS-UA 2024 gains the sulfur torsions of Jorgensen's 1986 paper (Table III) and united-atom refits of the all-atom scans, and now builds on CAPS's own OPLS-AA 2024 file.
-- Alkoxysilanes (silane coupling agents such as TESPT and TESPD, TEOS, methoxy and dialkoxy silanes) are typed, with charges from 1.27 × CM5 that keep any mix of alkoxy and alkyl groups on Si neutral.
+- Alkoxysilanes (silane coupling agents such as TESPT and TESPD, TEOS, methoxy and dialkoxy silanes) are complete: new types with charges from 1.27 × CM5 that keep any mix of alkoxy and alkyl groups on Si neutral, and Si–O torsions fitted to MP2 scans. TESPT and TESPD crosslink rubber in React with every term in place.
 - Maleic anhydride, maleates and cured DGEBA are complete.
 - Optional overlays: DLPNO-CCSD(T) torsions (`oplsaa2024-dlpno`), a Lennard-Jones refit from liquid data (`oplsaa2024-lj-refit`) and a rubber torsion refit. `caps ff overlays` lists them.
 - All 135 polymers and copolymers of the library build, type, relax and run in LAMMPS and GROMACS with OPLS-AA 2024. The styrene–butadiene and acrylonitrile–butadiene junctions of SBR, NBR and ABS have new torsions fitted to MP2 scans.
