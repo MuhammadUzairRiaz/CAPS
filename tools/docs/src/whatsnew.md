@@ -25,7 +25,7 @@ Every force field in CAPS now comes from its original paper, its supporting info
 - Alkoxysilanes (silane coupling agents such as TESPT and TESPD, TEOS, methoxy and dialkoxy silanes) are typed, with charges from 1.27 × CM5 that keep any mix of alkoxy and alkyl groups on Si neutral.
 - Maleic anhydride, maleates and cured DGEBA are complete.
 - Optional overlays: DLPNO-CCSD(T) torsions (`oplsaa2024-dlpno`), a Lennard-Jones refit from liquid data (`oplsaa2024-lj-refit`) and a rubber torsion refit. `caps ff overlays` lists them.
-- The 135 polymers and copolymers of the library build, type, relax and run in LAMMPS and GROMACS with OPLS-AA 2024 (131 without help; the other four are copolymer junctions that CAPS ML completes).
+- All 135 polymers and copolymers of the library build, type, relax and run in LAMMPS and GROMACS with OPLS-AA 2024. The styrene–butadiene and acrylonitrile–butadiene junctions of SBR, NBR and ABS have new torsions fitted to MP2 scans.
 - Known limit: glassy PMMA, PS, PVAc and PET come out 3–8 % below their measured densities with OPLS-AA 2024, even after a slow anneal. The note `bench/ff/open/oplsaa2024_glass_density_limitation.md` gives the evidence.
 
 ### CAPS ML: missing parameters filled by CAPS's own model
