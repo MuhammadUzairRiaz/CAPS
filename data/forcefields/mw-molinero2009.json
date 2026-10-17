@@ -1,0 +1,72 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "mW water (monatomic, Stillinger-Weber)",
+ "source": "the paper (arXiv:0809.2811, the accepted manuscript), section II",
+ "references": [
+  "V. Molinero, E. B. Moore, J. Phys. Chem. B 113, 4008 (2009)"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "sw",
+  "bond": "harmonic",
+  "angle": "harmonic",
+  "dihedral": "opls",
+  "improper": "cvff"
+ },
+ "mixing": "arithmetic",
+ "special_lj": [
+  0,
+  0,
+  0
+ ],
+ "special_coul": [
+  0,
+  0,
+  0
+ ],
+ "cutoff": 10,
+ "atom_types": [
+  {
+   "name": "MW",
+   "element": "O",
+   "mass": 18.0154,
+   "charge": 0.0,
+   "description": "mW water: one site per molecule at its oxygen, the molecule's mass"
+  }
+ ],
+ "pairs": [
+  {
+   "name": "MW",
+   "match": [
+    "MW"
+   ],
+   "style": "sw",
+   "params": [
+    6.189,
+    2.3925,
+    1.8,
+    23.15,
+    1.2,
+    -0.3333333333333333,
+    7.049556277,
+    0.6022245584,
+    4.0,
+    0.0,
+    0.0
+   ],
+   "comment": "Stillinger-Weber (LAMMPS pair sw: epsilon sigma a lambda gamma cos(theta0) A B p q tol): epsilon 6.189 kcal/mol, sigma 2.3925 A, lambda 23.15 (the paper's section II); a 1.8, gamma 1.2, cos(theta0) -1/3, A 7.049556277, B 0.6022245584, p 4, q 0 (Stillinger-Weber's, as the paper gives them)"
+  }
+ ],
+ "bonds": [],
+ "angles": [],
+ "dihedrals": [],
+ "impropers": [],
+ "notes": [
+  "built by CAPS (bench/ff/make_water_models.py) from the paper",
+  "each water's hydrogens fold into its oxygen: one uncharged site per molecule, no bonds"
+ ],
+ "version": "2009",
+ "status": "validated",
+ "typing": "../typing/mw-molinero2009.typing.json"
+}

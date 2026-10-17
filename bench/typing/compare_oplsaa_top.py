@@ -4,7 +4,7 @@ set of Caleman et al., J. Chem. Theory Comput. 8 (2012) 61 (virtualchemistry.org
 one .top and .gro per molecule with opls_NNN on every atom.
 
   compare_oplsaa_top.py prepare TOPDIR OUTDIR        (needs RDKit: bond orders from the connectivity and net charge)
-  compare_oplsaa_top.py compare OUTDIR [--ff oplsaa2024-moltemplate] [--show 80]
+  compare_oplsaa_top.py compare OUTDIR [--ff oplsaa2024] [--show 80]
 
 prepare writes OUTDIR/NAME.sdf (bond orders from RDKit's DetermineBondOrders on the topology's bonds and charge) and
 OUTDIR/NAME.ref (the opls number of each atom); compare types each sdf with CAPS and compares the numbers atom by atom.
@@ -134,7 +134,7 @@ def compare(out, ff, show):
         n += 1
         if not os.path.exists(tf):
             diffs.append((name, "-", "CAPS failed", "")); continue
-        got = [t.split("_")[0] for t in open(tf).read().split()]   # CAPS's OPLS-AA 2024 names start with the number
+        got = [str(int(t[5:])) if re.fullmatch(r"opls_\d+", t) else t for t in open(tf).read().split()]   # opls_NNN: the number
         good = True
         for i, (x, y) in enumerate(zip(ref, got)):
             tot += 1
@@ -164,4 +164,4 @@ def compare(out, ff, show):
 if sys.argv[1] == "prepare":
     prepare(sys.argv[2], sys.argv[3])
 else:
-    compare(sys.argv[2], arg("--ff", "oplsaa2024-moltemplate"), int(arg("--show", "80")))
+    compare(sys.argv[2], arg("--ff", "oplsaa2024"), int(arg("--show", "80")))

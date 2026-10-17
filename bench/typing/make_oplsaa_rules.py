@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Write CAPS typing rules for OPLS-AA by type number (data/typing/oplsaa2024-moltemplate.typing.json and the 2008 set).
+"""Write CAPS typing rules for OPLS-AA by type number: data/typing/oplsaa2024.typing.json, in the opls_NNN names of
+data/forcefields/oplsaa2024.json (CAPS's library from Jorgensen's 2024 BOSS files).
 
 OPLS-AA (Jorgensen, Maxwell & Tirado-Rives, J. Am. Chem. Soc. 118, 11225 (1996), and its later tables) gives every
 chemical environment its own type number, each with its partial charge; the charges of a functional group and the
@@ -12,11 +13,15 @@ then reports those atoms instead of guessing charges that would not balance.
 Priorities: 0 the plain element and hybridisation (alkane, alkene, benzene C and H); higher values for functional groups
 and the atoms next to them; among matching rules the highest wins.
 
-For the 2024 table; the 2008 (BOSS 4.8) numbering gets these rules mapped by make_oplsaa2008_rules.py.
+The rules (R) are also read by make_opls_gromacs_rules.py, which writes them in GROMACS's names. Regeneration order:
+  1. bench/ff/convert_boss_opls.py   data/forcefields/oplsaa2024.json from the 2024 SI files
+  2. this script                     data/typing/oplsaa2024.typing.json (the 2024 numbers as opls_NNN; TIP3P as 111 / 112)
+  3. make_opls_gromacs_rules.py      data/typing/oplsaa-gromacs.typing.json and its water overlays, from R
+  4. bench/ff/make_oplsua2024.py     the united-atom overlay on oplsaa2024.json (rules of its own)
 
-usage: make_oplsaa_rules.py OUTDIR
+usage: make_oplsaa_rules.py [OUTDIR]
 """
-import json, os, sys
+import json, os, re, sys
 
 R = []
 
@@ -621,27 +626,27 @@ add("caps_cbz_ct2", 8, f"[CX4H2;$(*{CBZ})]", "CH2 on a carbazole N (a chain end,
 add("caps_cbz_hc", 8, f"[H][CX4;$(*{CBZ})]", "H on that CH / CH2", True)
 
 
-def rules_for(ff_json):
-    """the rules whose numbers the force field has (the 2008 table lacks some of the 2024 numbers)"""
-    ff = json.load(open(ff_json))
-    have = {t["name"].split("_b")[0] for t in ff["atom_types"]}
-    keep = [{k: v for k, v in r.items() if k != "only2024"} for r in R if r["type"] in have]
-    return keep, sorted({r["type"] for r in R if r["type"] not in have}, key=lambda t: (not t.isdigit(), int(t) if t.isdigit() else 0, t))
+def opls(t):
+    return "opls_%03d" % int(t) if re.fullmatch(r"\d+", t) else t
 
 
 if __name__ == "__main__":
-    out = sys.argv[1] if len(sys.argv) > 1 else "data/typing"
     root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(root, "data", "typing")
     # the 2024 table's numbers only: BOSS 4.8's 2008 table numbers the same chemistry differently (its 135 is an acetal
-    # carbon, 2024's an alkane CH3), so these rules would type it wrongly; it needs rules of its own
-    for ff, label in (("oplsaa2024-moltemplate", "OPLS-AA (2024 parameter file)"),):
-        rules, missing = rules_for(os.path.join(root, "data", "forcefields", ff + ".json"))
-        doc = {"format": "caps-typing", "version": 1, "forcefield": label,
-               "description": "CAPS rules giving OPLS-AA type numbers by chemical group, with the carbons and hydrogens that balance each group's "
-                              "charge (Jorgensen, Maxwell & Tirado-Rives, J. Am. Chem. Soc. 118, 11225 (1996)). Environments the table has no "
-                              "number for (siloxanes, aryl carbonates, N-alkyl ureas, N-substituted and aryl imides, carbamates) are left untyped and reported. "
-                              "Among matching rules the highest priority wins.",
-               "rules": rules}
-        p = os.path.join(out, ff + ".typing.json")
-        json.dump(doc, open(p, "w"), ensure_ascii=False, indent=1)
-        print(f"{p}: {len(rules)} rules" + (f" (numbers not in this table: {', '.join(missing)})" if missing else ""))
+    # carbon, 2024's an alkane CH3), so these rules would type it wrongly
+    have24 = {t["name"] for t in json.load(open(os.path.join(root, "data", "forcefields", "oplsaa2024.json")))["atom_types"]}
+    WATER = {"9999": "opls_111", "9998": "opls_112"}   # TIP3P as the .par numbers it
+    rules24, lacking = [], set()
+    for r in R:
+        t = WATER.get(r["type"], opls(r["type"]))
+        if t not in have24:
+            lacking.add(t)
+            continue
+        r = {k: v for k, v in r.items() if k != "only2024"}
+        rules24.append({**r, "type": t, **({"overrides": [WATER.get(x, opls(x)) for x in r["overrides"]]} if "overrides" in r else {})})
+    json.dump({"format": "caps-typing", "version": 1, "forcefield": "OPLS-AA 2024 (Jorgensen)", "unknown_types": "untyped",
+               "description": "CAPS's OPLS-AA rules in opls_NNN names for the library built from Jorgensen's 2024 BOSS files "
+                              "(bench/typing/make_oplsaa_rules.py)", "rules": rules24},
+              open(os.path.join(out, "oplsaa2024.typing.json"), "w"), indent=1, ensure_ascii=False)
+    print(f"oplsaa2024: {len(rules24)} rules" + (f", types the file lacks: {sorted(lacking)}" if lacking else ""))

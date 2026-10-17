@@ -166,7 +166,7 @@ public sealed partial class MainViewModel
         _ => "",
     };
     private bool _engLammps = true, _engGromacs = true, _engMinFirst = true, _engBusy, _engMoltemplate, _engDlpoly, _engAmber;
-    /// <summary>Also DL_POLY 4 input (STEM_dlpoly/FIELD, CONFIG, CONTROL) in the conventions of the DL_POLY force-field tools.</summary>
+    /// <summary>Also DL_POLY 4 input (STEM_dlpoly/FIELD, CONFIG, CONTROL) in DL_POLY's own conventions.</summary>
     public bool EngineDlpoly { get => _engDlpoly; set { if (Set(ref _engDlpoly, value)) RefreshEngines(); } }
     /// <summary>STEM.prmtop and STEM.inpcrd for AMBER, OpenMM and ParmEd (a force field AMBER's forms cannot hold is refused with the reason).</summary>
     public bool EngineAmber { get => _engAmber; set { if (Set(ref _engAmber, value)) RefreshEngines(); } }

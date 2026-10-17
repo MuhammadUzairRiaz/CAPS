@@ -1,0 +1,116 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "Noble gases (Rutkai et al. 2017)",
+ "source": "G. Rutkai, M. Thol, R. Span, J. Vrabec, Mol. Phys. 115, 1104 (2017), doi:10.1080/00268976.2016.1246760, Table 1 (LJ column)",
+ "references": [
+  "G. Rutkai, M. Thol, R. Span, J. Vrabec, Mol. Phys. 115, 1104 (2017), doi:10.1080/00268976.2016.1246760"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "lj/cut",
+  "bond": "harmonic",
+  "angle": "harmonic",
+  "dihedral": "opls",
+  "improper": "cvff"
+ },
+ "mixing": "arithmetic",
+ "special_lj": [
+  0,
+  0,
+  0
+ ],
+ "special_coul": [
+  0,
+  0,
+  0
+ ],
+ "cutoff": 12,
+ "atom_types": [
+  {
+   "name": "Ne",
+   "element": "Ne",
+   "mass": 20.1797,
+   "charge": 0.0,
+   "description": "neon (Table 1)"
+  },
+  {
+   "name": "Ar",
+   "element": "Ar",
+   "mass": 39.948,
+   "charge": 0.0,
+   "description": "argon (Table 1)"
+  },
+  {
+   "name": "Kr",
+   "element": "Kr",
+   "mass": 83.798,
+   "charge": 0.0,
+   "description": "krypton (Table 1)"
+  },
+  {
+   "name": "Xe",
+   "element": "Xe",
+   "mass": 131.293,
+   "charge": 0.0,
+   "description": "xenon (Table 1)"
+  }
+ ],
+ "pairs": [
+  {
+   "name": "Ne",
+   "match": [
+    "Ne"
+   ],
+   "params": [
+    0.06740795706029999,
+    2.801
+   ],
+   "comment": "epsilon/k_B 33.921 K, sigma 2.801 A (Table 1, LJ)"
+  },
+  {
+   "name": "Ar",
+   "match": [
+    "Ar"
+   ],
+   "params": [
+    0.232085590197,
+    3.3952
+   ],
+   "comment": "epsilon/k_B 116.79 K, sigma 3.3952 A (Table 1, LJ)"
+  },
+  {
+   "name": "Kr",
+   "match": [
+    "Kr"
+   ],
+   "params": [
+    0.323079675094,
+    3.6274
+   ],
+   "comment": "epsilon/k_B 162.58 K, sigma 3.6274 A (Table 1, LJ)"
+  },
+  {
+   "name": "Xe",
+   "match": [
+    "Xe"
+   ],
+   "params": [
+    0.44938638040199996,
+    3.949
+   ],
+   "comment": "epsilon/k_B 226.14 K, sigma 3.949 A (Table 1, LJ)"
+  }
+ ],
+ "bonds": [],
+ "angles": [],
+ "dihedrals": [],
+ "impropers": [],
+ "notes": [
+  "built by CAPS (bench/ff/make_noble_gases.py) from the paper's Table 1 (the full Lennard-Jones potential, used with long-range corrections in the paper; the truncated-shifted set is not this one)",
+  "unlike pairs: Lorentz-Berthelot, CAPS's choice (the paper fits each gas alone)"
+ ],
+ "version": "2017",
+ "status": "validated",
+ "typing": "../typing/noble-gases-rutkai2017.typing.json"
+}

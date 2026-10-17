@@ -44,7 +44,7 @@ caps provenance rec/ps_cell.data --bibtex > refs.bib
 
 ```text
 The structure was made by the CAPS recipe "ps_cell" (SHA-256 51565067c3c3…), whose steps follow. Atom types were
-assigned from GAFF2 (moltemplate) [1], with Gasteiger charges [2]. 10 chains of 20 repeat units were grown in a
+assigned from GAFF2 [1], with Gasteiger charges [2]. 10 chains of 20 repeat units were grown in a
 periodic cell at an initial density of 0.5 g/cm³ with CAPS 0.1.0, each unit placed from internal coordinates [3] …
 ```
 

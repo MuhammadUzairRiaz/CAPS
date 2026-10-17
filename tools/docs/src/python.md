@@ -25,7 +25,7 @@ import caps
 
 d = caps.polymer("*CC(C)=CC*", dp=10, chains=6, density=0.6, seed=1)   # cis-1,4-polyisoprene
 d.relax(max_iterations=300)
-d.field.assign("opls2005")                     # types and charges from the library
+d.field.assign("oplsaa2024")                     # types and charges from the library
 print(d.react("peroxide_allylic", cycles=5, per_cycle=4, target=0.3, seed=1))
 d.save("nr_xl.data")
 d.export_engines("engines", stem="nr", run="npt", temperature=300, steps=5000)

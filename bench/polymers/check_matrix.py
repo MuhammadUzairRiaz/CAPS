@@ -19,7 +19,7 @@ parameters) so each can be traced to a typing rule or a parameter the library la
 With --complete ml the type step fills the bonded terms a force field lacks with CAPS ML (type: { complete: ml }; a
 CAPS built with libtorch, CAPS_BIN=build-ml/cli/caps): a cell then fails at typing only for what the model cannot fit.
 
-usage: python3 bench/polymers/check_matrix.py [--ff substring] [--polymer substring] [--fill-from FF] [--complete ml] [--jobs 8] [--keep DIR] [--json OUT]
+usage: python3 bench/polymers/check_matrix.py [--ff substring | =exact-id] [--polymer substring] [--engine lammps|gromacs] [--fill-from FF] [--complete ml] [--jobs 8] [--keep DIR] [--json OUT]
 """
 import json, math, os, re, subprocess, sys, tempfile
 from concurrent.futures import ProcessPoolExecutor
@@ -31,15 +31,16 @@ LMP = os.environ.get("LMP", os.path.expanduser("~/lammps/build-class2/lmp"))
 GMX = os.environ.get("GMX", "/opt/homebrew/bin/gmx")
 arg = lambda k, d: sys.argv[sys.argv.index(k) + 1] if k in sys.argv else d
 ONLY_FF, ONLY_P = arg("--ff", ""), arg("--polymer", "")
+ENGINE = arg("--engine", "lammps")   # --engine gromacs: every cell written and checked in GROMACS instead
 FILL = arg("--fill-from", "")   # another force field's rules where the tested one has none (type.fill_from)
 COMPLETE = arg("--complete", "")   # "ml": the missing bonded terms fitted by CAPS ML (type.complete)
+TIMEOUT = 7200 if COMPLETE else 600   # seconds per caps run; fitting torsions with the model takes longer
 JOBS = int(arg("--jobs", "8"))
 WORK = arg("--keep", "") or tempfile.mkdtemp(prefix="caps_matrix_")
 
 # not meant for organic polymers: the reason is printed
-NOT_POLYMER = [(r"^(spce|tip3p|tip5p|mw)", "water model"), (r"^inorganic", "inorganic crystals"),
-               (r"^(martini|drymartini|cooke-deserno)", "coarse-grained beads only (its sources give no atomistic mapping)"), (r"^graphene", "carbon sheets only (no H)"),
-               (r"^(spc_|tip3p_|tip5p_)", "water model on OPLS-AA")]
+NOT_POLYMER = [(r"^(spc|tip3p|tip4p|tip5p|opc|mw)", "water model"), (r"^inorganic", "inorganic crystals"),
+               (r"^(martini|drymartini|cooke-deserno|sdk)", "coarse-grained beads only (its sources give no atomistic mapping)"), (r"^graphene", "carbon sheets only (no H)")]
 
 
 def forcefields():
@@ -288,13 +289,19 @@ def _case(job):
     d = os.path.join(WORK, f"{pid}__{ffid}")
     os.makedirs(d, exist_ok=True)
     rp = os.path.join(d, "r.yaml")
-    open(rp, "w").write(recipe(pid, spec, ffid))
-    r = subprocess.run([CAPS, "run", rp, "--out", d, "--threads", "1"], capture_output=True, text=True, timeout=7200 if COMPLETE else 600)
+    if ENGINE == "gromacs":   # every cell through GROMACS (12 chains: the cell at least twice the cut-off)
+        open(rp, "w").write(recipe(pid, spec, ffid, "gromacs", chains=12))
+    else:
+        open(rp, "w").write(recipe(pid, spec, ffid))
+    try:
+        r = subprocess.run([CAPS, "run", rp, "--out", d, "--threads", "1"], capture_output=True, text=True, timeout=TIMEOUT)
+    except subprocess.TimeoutExpired:   # a cell CAPS cannot build in time is a failure of its own, not the end of the sweep
+        return pid, pname, ffid, "fail-timeout", f"caps run did not finish in {TIMEOUT} s"
     out = r.stdout + r.stderr
-    engine = "LAMMPS"
+    engine = "GROMACS" if ENGINE == "gromacs" else "LAMMPS"
     if r.returncode and "no exact LAMMPS form" in out:   # separate 1-4 Lennard-Jones (CHARMM, GROMOS): GROMACS writes it exactly
         open(rp, "w").write(recipe(pid, spec, ffid, "gromacs", chains=12))   # GROMACS needs a cell at least twice the cut-off
-        r = subprocess.run([CAPS, "run", rp, "--out", d, "--threads", "1"], capture_output=True, text=True, timeout=7200 if COMPLETE else 600)
+        r = subprocess.run([CAPS, "run", rp, "--out", d, "--threads", "1"], capture_output=True, text=True, timeout=TIMEOUT)
         out = r.stdout + r.stderr
         engine = "GROMACS"
     if r.returncode:
@@ -322,7 +329,7 @@ def _case(job):
 
 
 if __name__ == "__main__":
-    # --ff =ID: that force field only (a plain substring also takes oplsaa2024-moltemplate for oplsaa2024)
+    # --ff NAME matches any id containing NAME; --ff =NAME only that id
     ffs = [f for f in forcefields() if (f[0].lower() == ONLY_FF[1:].lower() if ONLY_FF.startswith("=") else ONLY_FF.lower() in f[0].lower())]
     polys = [p for p in polymers() if ONLY_P.lower() in (p[0] + " " + p[1]).lower()]
     skipped = [(fid, why) for fid, _, why in ffs if why]

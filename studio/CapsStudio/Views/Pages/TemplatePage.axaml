@@ -66,6 +66,9 @@
           <Border Classes="chip"><StackPanel Orientation="Horizontal" Spacing="6"><Rectangle Width="14" Height="3" Fill="{DynamicResource ErrB}" VerticalAlignment="Center" /><TextBlock Text="bond broken" /></StackPanel></Border>
         </StackPanel>
         <TextBlock DockPanel.Dock="Top" Text="{Binding TemplateInfo}" FontSize="12" Foreground="{DynamicResource MutedB}" Margin="0,8,0,8" />
+        <TextBlock DockPanel.Dock="Top" Text="{Binding TemplateConditions}" IsVisible="{Binding HasTemplateConditions}" Classes="mono" FontSize="11"
+                   Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" Margin="0,0,0,8"
+                   ToolTip.Tip="What each pattern atom must satisfy and the template's run rules, as the text writes them" />
         <TextBlock DockPanel.Dock="Top" Text="{Binding TemplateError}" IsVisible="{Binding TemplateHasError}" Foreground="{DynamicResource ErrB}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,8" />
         <Border Classes="pane" Padding="2">
           <TextBox Text="{Binding TemplateText}" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="{DynamicResource Mono}" FontSize="12" BorderThickness="0" Background="{DynamicResource Bg0B}" />

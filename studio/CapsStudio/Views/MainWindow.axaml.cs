@@ -697,6 +697,17 @@ public partial class MainWindow : Window
     private async void OnFieldAssign(object? s, RoutedEventArgs e) { if (!_vm.Busy) await _vm.Field.Assign(); }
     private async void OnFieldClear(object? s, RoutedEventArgs e) { if (!_vm.Busy) await _vm.Field.Clear(); }
     private async void OnFieldUseFile(object? s, RoutedEventArgs e) { if (!_vm.Busy) await _vm.Field.UseFileForceField(); }
+    private async void OnFieldCompleteModel(object? s, RoutedEventArgs e) { if (!_vm.Busy) await _vm.Field.CompleteWithModel(_vm.DocumentPath); }
+    private async void OnCopyTensileCommand(object? s, RoutedEventArgs e)
+    {
+        if (Clipboard != null) await Clipboard.SetTextAsync(_vm.TensileCommand());
+        _vm.Status = "Copied the tensile pull as a caps command";
+    }
+    private async void OnCopyFieldCommand(object? s, RoutedEventArgs e)
+    {
+        if (Clipboard != null) await Clipboard.SetTextAsync(_vm.Field.ApplyCommand.Replace("STRUCTURE", _vm.CliStructure));
+        _vm.Status = "Copied the assignment as a caps command";
+    }
     private void OnApplyCoordination(object? s, RoutedEventArgs e) => _vm.ApplyCoordination();
     private async void OnFieldAssignGroups(object? s, RoutedEventArgs e) { if (!_vm.Busy) await _vm.Field.AssignGroups(); }
     private void OnFieldGroupAdd(object? s, RoutedEventArgs e) => _vm.Field.AddGroup();
@@ -744,18 +755,16 @@ public partial class MainWindow : Window
     private async void OnFieldAddRule(object? s, RoutedEventArgs e) { if (!_vm.Busy) await _vm.Field.AddRule(); }
     private async void OnFieldRemoveRules(object? s, RoutedEventArgs e) { if (!_vm.Busy) await _vm.Field.RemoveRules(); }
 
-    private async void OnFieldCompanionCharges(object? s, RoutedEventArgs e)
-    {
-        if (!_vm.Busy) await _vm.Field.UseCompanionCharges();
-    }
 
     private void OnSetMeasured(object? s, RoutedEventArgs e) => _vm.SetMeasured();
     private void OnFullView(object? s, RoutedEventArgs e) => OpenFullView(false);
     /// <summary>The structure (or the running job's live snapshots) alone in a full-screen window.</summary>
-    public void OpenFullView(bool live)
+    public VisualizationWindow? OpenFullView(bool live)
     {
-        if (_vm.Document == null && _vm.RunLiveDoc == null) return;
-        new VisualizationWindow(_vm, live).Show(this);
+        if (_vm.Document == null && _vm.RunLiveDoc == null) return null;
+        var w = new VisualizationWindow(_vm, live);
+        w.Show(this);
+        return w;
     }
 
     private async void OnExportInspectorCsv(object? s, RoutedEventArgs e)
@@ -1237,6 +1246,13 @@ public partial class MainWindow : Window
         a.Yaw == b.Yaw && a.Pitch == b.Pitch && a.Zoom == b.Zoom && a.PanX == b.PanX && a.PanY == b.PanY && a.Perspective == b.Perspective;
 
     private CapsStudio.Interop.CapsSceneData? _gpuScene;
+
+    // ---- the view benchmark (--viewbench): frame times of the main view as the camera turns
+    internal List<double>? BenchFrames;
+    internal bool BenchReady(bool needGpu) => _vm.Document != null && _haveLast && (!needGpu || (ViewGl.Ready && _gpuScene != null));
+    internal GlMolView BenchGl => ViewGl;
+    internal (int W, int H) BenchPixels => (_pixW, _pixH);
+    internal void BenchTurn(double dyaw) { _vm.Camera.Yaw += dyaw; RequestViewRender(); }
     private double _panSpan = 30;
 
     private void ClearOverlays()
@@ -1326,6 +1342,7 @@ public partial class MainWindow : Window
                         var frameMs = Math.Max(gsw.Elapsed.TotalMilliseconds + ViewGl.LastFrameMs, ViewGl.GpuFrameMs);   // CPU work or GPU drawing, whichever limits
                         RenderStat.Text = $"{pw}×{ph} px · GPU{(busy ? src != null ? " · live" : " · run" : "")} · {frameMs:0} ms";
                         _vm.ReportGpuFrame(frameMs);
+                        BenchFrames?.Add(frameMs);
                         _rendered = ticket;
                         continue;
                     }
@@ -1364,6 +1381,7 @@ public partial class MainWindow : Window
                 _pixW = pw; _pixH = ph;
                 RenderStat.Text = $"{pw}×{ph} px · {sw.ElapsedMilliseconds} ms";
                 if (!field && !busy) _vm.ReportFrame(sw.Elapsed.TotalMilliseconds);
+                BenchFrames?.Add(sw.Elapsed.TotalMilliseconds);
                 if (busy) { ClearOverlays(); _rendered = ticket; continue; }   // a snapshot: no labels or picks from it
                 // atom labels (Appearance): the visible atoms' screen positions from this render
                 if (!field)

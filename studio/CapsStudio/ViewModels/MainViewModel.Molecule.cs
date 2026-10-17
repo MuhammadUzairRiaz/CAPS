@@ -260,11 +260,30 @@ public sealed partial class MainViewModel
     /// <summary>Coarse-grained force fields with bead structures: MARTINI (templates from its sources), Dry MARTINI and
     /// SDK (bead SMILES; SDK also maps all-atom structures in the Force field step), Martini 3 (its molecules with their
     /// own topology: solvents, ions, small molecules, sugars, nucleobases, lipids).</summary>
-    public static readonly (string Name, string File)[] CgForceFields =
-        [("MARTINI · lipids", "martini-moltemplate.json"), ("MARTINI · polymers", "martini-polymers.json"),
-         ("MARTINI · solvents", "martini-solvents.json"), ("MARTINI · surfactants", "martini-surfactants.json"),
-         ("MARTINI · sugars", "martini-sugars.json"), ("MARTINI · amino acids", "martini-aminoacids.json"), ("Dry MARTINI", "drymartini-moltemplate.json"), ("SDK", "sdk-moltemplate.json"),
-         ("Cooke–Deserno", "cooke-deserno-moltemplate.json"), ("Martini 3", "martini3.json")];
+    public static readonly (string Name, string File)[] CgForceFields = LoadCgForceFields();
+    /// <summary>The bead force fields the catalogue lists with an installed file (MARTINI 2 and its sets, Dry MARTINI, SDK,
+    /// Cooke–Deserno, as the library provides them), Martini 3 last.</summary>
+    private static (string Name, string File)[] LoadCgForceFields()
+    {
+        var r = new List<(string Name, string File)>();
+        if (Paths.ForceFields is { } dir)
+            try
+            {
+                using var js = System.Text.Json.JsonDocument.Parse(System.IO.File.ReadAllText(System.IO.Path.Combine(dir, "catalogue.json")));
+                foreach (var e in js.RootElement.GetProperty("forcefields").EnumerateArray())
+                {
+                    string S(string k) => e.TryGetProperty(k, out var v) && v.ValueKind == System.Text.Json.JsonValueKind.String ? v.GetString()! : "";
+                    var (id, file) = (S("id"), S("file"));
+                    if (file is "" or "martini3.json" || !System.IO.File.Exists(System.IO.Path.Combine(dir, file))) continue;
+                    if (!(id.StartsWith("martini", StringComparison.Ordinal) || id.StartsWith("drymartini", StringComparison.Ordinal)
+                          || id.StartsWith("sdk", StringComparison.Ordinal) || id.StartsWith("cooke", StringComparison.Ordinal))) continue;
+                    r.Add((S("name") is { Length: > 0 } n ? n : id, file));
+                }
+            }
+            catch { }
+        r.Add(("Martini 3", "martini3.json"));
+        return r.ToArray();
+    }
     public string[] CgFfNames => CgForceFields.Select(f => f.Name).ToArray();
     private int _cgFf;
     private string _cgBeadText = "", _cgTemplate = "";

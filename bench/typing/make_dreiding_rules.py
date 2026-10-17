@@ -1,18 +1,14 @@
 #!/usr/bin/env python3
-"""CAPS typing rules for DREIDING (Mayo, Olafson & Goddard, J. Phys. Chem. 94, 8897 (1990)) in both library files.
+"""CAPS typing rules for DREIDING (Mayo, Olafson & Goddard, J. Phys. Chem. 94, 8897 (1990)) in the library's
+dreiding file (CAPS's own DREIDING, dreiding1990, is written by bench/ff/make_dreiding.py).
 
 DREIDING types an atom by its element and hybridisation only: _3 sp3, _2 sp2, _1 sp, _R an sp2 atom in resonance
 (aromatic rings; amide and aniline N, whose lone pair is conjugated). Its bond constant is 700 n kcal/mol/Å² for bond
-order n (350 n as LAMMPS's harmonic K). Type names only carry the element and hybridisation, so the files add variants
-that give a bond between two sp2 atoms its real order: moltemplate's C_2 / C_2_b1 / C_2_b2, C_R / C_R_b1 ... (a single bond
-between two conjugated atoms is order 1) and the other file's C_2 / C_2S, C_R / C_RS (such a bond is order 1.5). CAPS
-types by the paper's rules, then picks the variants that give every bond the constant of its order (bond_k_per_order,
-conjugated_single_order; the core's refine_bond_order_variants).
-
-moltemplate also encodes, as _dN, the number N of neighbours besides the bond partner that DREIDING's torsion barrier is
-divided by (pyridine N_R_d1, amide N_R_d2; phosphine P_3_d2, phosphate P_3_d3): the rules read it from the atom.
-moltemplate's hydrogen-bonding variants (H_HB, _ha / _hd) are for the explicit hbond/dreiding term and are not
-assigned; the other file bonds O and N only to its H___A, which it gets.
+order n (350 n as LAMMPS's harmonic K). Type names only carry the element and hybridisation, so the file adds variants
+that give a bond between two sp2 atoms its real order: C_2 / C_2S, C_R / C_RS (a single bond between two conjugated
+atoms is order 1.5). CAPS types by the paper's rules, then picks the variants that give every bond the constant of its
+order (bond_k_per_order, conjugated_single_order; the core's refine_bond_order_variants). The file bonds O and N only
+to its H___A, which it gets.
 
 usage: make_dreiding_rules.py [DATA_DIR]
 """
@@ -57,15 +53,6 @@ BASE = [
 ]
 
 FILES = {
-    "dreiding-moltemplate": {
-        "label": "DREIDING (moltemplate)",
-        "name": {"N_R/1": "N_R_d1", "N_R/2": "N_R_d2", "N_2/1": "N_2_d1", "N_2/2": "N_2_d2", "P_3/2": "P_3_d2", "P_3/3": "P_3_d3",
-                 "B_2/1": "B_2_d1", "B_2/2": "B_2_d2"},
-        "variants": {"C_2": ["C_2_b1", "C_2_b2"], "C_1": ["C_1_b1"], "C_R": ["C_R_b1"], "N_R_d2": ["N_R_b1_d2"],
-                     "N_2_d1": ["N_2_b1_d1", "N_2_b2_d1"], "N_2_d2": ["N_2_b1_d2", "N_2_b2_d2"], "O_2": ["O_2_b1", "O_2_b2"],
-                     "B_2_d1": ["B_2_b1_d1", "B_2_b2_d1"], "B_2_d2": ["B_2_b1_d2", "B_2_b2_d2"]},
-        "conjugated_single_order": 1.0,
-    },
     "dreiding": {
         "label": "DREIDING",
         "name": {"H": "H_", "N_R/1": "N_R", "N_R/2": "N_R", "N_2/1": "N_2", "N_2/2": "N_2", "F": "F_", "I": "I_", "Si_3": "Si3",
@@ -115,7 +102,7 @@ if __name__ == "__main__":
         for e in cat["forcefields"]:
             if e["id"] == target:
                 e["typing"] = {"rules": f"typing/{target}.typing.json", "evidence": "CAPS DREIDING rules with bond-order variants (bench/typing/make_dreiding_rules.py)"
-                               + ("" if target == "dreiding-moltemplate" else "; this file lists torsions for common neighbourhoods with the barrier already divided, "
-                                  "so some sp3–sp2 torsions (e.g. next to Cl on an sp2 carbon) are missing: DREIDING (moltemplate) applies the paper's rule to every bond")}
+                               "; this file lists torsions for common neighbourhoods with the barrier already divided, so some sp3–sp2 torsions "
+                               "(e.g. next to Cl on an sp2 carbon) are missing: dreiding1990 applies the paper's rule to every bond"}
         print(f"{out}: {len(rules)} rules; absent from {target}: {', '.join(absent) or 'none'}")
     json.dump(cat, open(cat_p, "w"), ensure_ascii=False, indent=1)

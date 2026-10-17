@@ -44,18 +44,25 @@ std::string fmt(const char* f, double a) {
   return b;
 }
 
-// A coefficient as the LAMMPS writer writes it (fmt_coef in lammps_data.cpp): six fixed decimals ("0.276144",
-// "0.350000"), a nonzero value under 0.001 (GROMOS's C12) with six significant digits instead
-std::string c6(double x) {
-  char b[40];
-  if (x != 0 && std::fabs(x) < 1e-3) std::snprintf(b, sizeof b, "%.6e", x);
-  else std::snprintf(b, sizeof b, "%.6f", x == 0 ? 0.0 : x);   // no "-0.000000"
+// Numbers in the .top and .itp, fixed per kind of quantity (no %g). GROMACS works in nm and kJ/mol: six decimals of a
+// length in nm are 1e-6 nm = 1e-5 Å, ten times coarser than the LAMMPS writer's six decimals in Å, and an energy or
+// force constant in kJ/mol is 4.184 times its kcal/mol value, so six decimals here would move GROMACS's energies and
+// forces off CAPS's own (bench/ff/check_gromacs.py). Lengths, energies, force constants, σ, ε, C6/C12 and Morse β are
+// therefore written with eight decimals (nm8), a nonzero value under 0.001 (GROMOS's C12) with nine significant digits
+// instead. Angles in degrees, charges (charges_six_decimals: each molecule's total kept), masses and the dimensionless
+// 1-4 scalings keep six decimals (c6), as in the LAMMPS files. The LAMMPS writer stays at six.
+std::string fixed_or_sci(double x, int decimals) {
+  char b[48];
+  if (x != 0 && std::fabs(x) < 1e-3) std::snprintf(b, sizeof b, "%.*e", decimals, x);
+  else std::snprintf(b, sizeof b, "%.*f", decimals, x == 0 ? 0.0 : x);   // no "-0.000000"
   return b;
 }
+std::string c6(double x) { return fixed_or_sci(x, 6); }    // degrees, charges, masses, scalings
+std::string nm8(double x) { return fixed_or_sci(x, 8); }   // nm and kJ/mol quantities
 // several, each after a space
-std::string c6s(std::initializer_list<double> v) {
+std::string nm8s(std::initializer_list<double> v) {
   std::string r;
-  for (double x : v) r += " " + c6(x);
+  for (double x : v) r += " " + nm8(x);
   return r;
 }
 
@@ -284,9 +291,9 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
     char t[80];
     if (c6c12) {
       const double s6 = std::pow(sigma / 10, 6);
-      std::snprintf(t, sizeof t, "%s %s", c6(4 * eps * KJ * s6).c_str(), c6(4 * eps * KJ * s6 * s6).c_str());
+      std::snprintf(t, sizeof t, "%s %s", nm8(4 * eps * KJ * s6).c_str(), nm8(4 * eps * KJ * s6 * s6).c_str());
     } else {
-      std::snprintf(t, sizeof t, "%s %s", c6(sigma / 10).c_str(), c6(eps * KJ).c_str());
+      std::snprintf(t, sizeof t, "%s %s", nm8(sigma / 10).c_str(), nm8(eps * KJ).c_str());
     }
     return std::string(t);
   };
@@ -372,13 +379,13 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
   std::set<std::pair<uint32_t, uint32_t>> have;
   auto mark = [&](uint32_t i, uint32_t j) { have.insert({std::min(i, j), std::max(i, j)}); };
   for (const auto& t : ff.bonds) {
-    add(BONDS, {t.i, t.j}, " 1" + c6s({t.r0 / 10, 2 * t.k * KJ * 100}));
+    add(BONDS, {t.i, t.j}, " 1" + nm8s({t.r0 / 10, 2 * t.k * KJ * 100}));
     mark(t.i, t.j);
   }
   for (const auto& t : ff.bonds_x) {
     std::string tail;
-    if (t.form == 1) tail = " 3" + c6s({t.c / 10, t.a * KJ, t.b * 10});   // Morse: b0, D, β
-    else if (t.form == 2) tail = " 2" + c6s({t.b / 10, 4 * t.a * KJ * 1e4});   // GROMOS quartic: kb = 4 K
+    if (t.form == 1) tail = " 3" + nm8s({t.c / 10, t.a * KJ, t.b * 10});   // Morse: b0, D, β
+    else if (t.form == 2) tail = " 2" + nm8s({t.b / 10, 4 * t.a * KJ * 1e4});   // GROMOS quartic: kb = 4 K
     else throw FieldError("bond form " + std::to_string(t.form) + " has no GROMACS function");
     add(BONDS, {t.i, t.j}, tail);
     mark(t.i, t.j);
@@ -398,7 +405,7 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
       const int ta = ff.type_index[p[0]], tb = ff.type_index[p[1]];
       const PairType q = ff.lj14_types.empty() ? mixed_pair(ff, ta, tb) : mixed_pair(f14, ta, tb);
       if (ff.per_pair14()) {   // force fields merged with different 1-4 scalings: each pair its own fudgeQQ, charges and LJ (function 2)
-        add(PAIRS, {p[0], p[1]}, " 2" + c6s({ff.pairs14_coul[k], q6[p[0]], q6[p[1]]}) + " " + lj_pair(q.sigma, ff.pairs14_lj[k] * q.eps));
+        add(PAIRS, {p[0], p[1]}, " 2 " + c6(ff.pairs14_coul[k]) + " " + c6(q6[p[0]]) + " " + c6(q6[p[1]]) + " " + lj_pair(q.sigma, ff.pairs14_lj[k] * q.eps));
       } else
         add(PAIRS, {p[0], p[1]}, " 1 " + lj_pair(q.sigma, ff.lj14 * q.eps));
     }
@@ -415,16 +422,16 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
     auto it = ub.find({std::min(a.i, a.k), std::max(a.i, a.k)});
     if (it != ub.end()) {
       ++ub_used;
-      add(ANGLES, {a.i, a.j, a.k}, " 5" + c6s({a.theta0 * R2D, 2 * a.kt * KJ, it->second->r0 / 10, 2 * it->second->kub * KJ * 100}));
+      add(ANGLES, {a.i, a.j, a.k}, " 5 " + c6(a.theta0 * R2D) + nm8s({2 * a.kt * KJ, it->second->r0 / 10, 2 * it->second->kub * KJ * 100}));
     } else {
-      add(ANGLES, {a.i, a.j, a.k}, " 1" + c6s({a.theta0 * R2D, 2 * a.kt * KJ}));
+      add(ANGLES, {a.i, a.j, a.k}, " 1 " + c6(a.theta0 * R2D) + nm8s({2 * a.kt * KJ}));
     }
   }
   if (ub_used != ub.size()) throw FieldError("a Urey–Bradley term has no angle to join (GROMACS angle function 5 needs one)");
   for (const auto& a : ff.angles_x) {
     std::string tail;
-    if (a.form == 1) tail = " 2" + c6s({a.b * R2D, 2 * a.a * KJ});   // K (cos θ − cos θ0)² = ½ kθ (…)², GROMOS-96 angle
-    else if (a.form == 5) tail = " 10" + c6s({a.b * R2D, 2 * a.a * KJ});   // restricted bending
+    if (a.form == 1) tail = " 2 " + c6(a.b * R2D) + nm8s({2 * a.a * KJ});   // K (cos θ − cos θ0)² = ½ kθ (…)², GROMOS-96 angle
+    else if (a.form == 5) tail = " 10 " + c6(a.b * R2D) + nm8s({2 * a.a * KJ});   // restricted bending
     else throw FieldError("angle form " + std::to_string(a.form) + " has no GROMACS function");
     add(ANGLES, {a.i, a.j, a.k}, tail);
   }
@@ -465,7 +472,7 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
     for (const auto* t : quad[k]) {
       if (t->n < 0) throw FieldError("a torsion with multiplicity < 0 has no GROMACS form");
       // GROMOS's own proper dihedral is function 1, one term per quadruple; several terms need function 9
-      add(DIHEDRALS, {k[0], k[1], k[2], k[3]}, " " + std::to_string(c6c12 && quad[k].size() == 1 ? 1 : 9) + c6s({t->delta * R2D, t->v * KJ}) + " " + std::to_string(t->n));
+      add(DIHEDRALS, {k[0], k[1], k[2], k[3]}, " " + std::to_string(c6c12 && quad[k].size() == 1 ? 1 : 9) + " " + c6(t->delta * R2D) + nm8s({t->v * KJ}) + " " + std::to_string(t->n));
     }
   // impropers: periodic (function 4, AMBER order with the centre third) and harmonic (function 2)
   std::map<std::array<uint32_t, 4>, int> imp_count;
@@ -473,13 +480,13 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
   for (const auto& t : ff.impropers) {
     if (t.n < 0) throw FieldError("an improper with multiplicity < 0 has no GROMACS form");
     const int fn = imp_count[{t.i, t.j, t.k, t.l}] > 1 ? 9 : 4;   // several terms on one quadruple: function 9
-    add(DIHEDRALS, {t.i, t.j, t.k, t.l}, " " + std::to_string(fn) + c6s({t.delta * R2D, t.v * KJ}) + " " + std::to_string(t.n));
+    add(DIHEDRALS, {t.i, t.j, t.k, t.l}, " " + std::to_string(fn) + " " + c6(t.delta * R2D) + nm8s({t.v * KJ}) + " " + std::to_string(t.n));
   }
   for (const auto& t : ff.impropers_harmonic) {
-    add(DIHEDRALS, {t.i, t.j, t.k, t.l}, " 2" + c6s({t.chi0 * R2D, 2 * t.k2 * KJ}));
+    add(DIHEDRALS, {t.i, t.j, t.k, t.l}, " 2 " + c6(t.chi0 * R2D) + nm8s({2 * t.k2 * KJ}));
   }
   for (const auto& t : ff.cbt) {   // combined bending–torsion: k 1, the coefficients in kJ/mol
-    add(DIHEDRALS, {t.i, t.j, t.k, t.l}, " 11 1" + c6s({t.a[0] * KJ, t.a[1] * KJ, t.a[2] * KJ, t.a[3] * KJ, t.a[4] * KJ}));
+    add(DIHEDRALS, {t.i, t.j, t.k, t.l}, " 11 1" + nm8s({t.a[0] * KJ, t.a[1] * KJ, t.a[2] * KJ, t.a[3] * KJ, t.a[4] * KJ}));
   }
   // exclusions: CAPS's own list (nrexcl 0)
   for (uint32_t i = 0; i < ff.excluded.size(); ++i) {

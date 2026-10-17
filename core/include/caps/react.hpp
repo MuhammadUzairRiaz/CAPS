@@ -4,6 +4,7 @@
 #pragma once
 #include <cstdint>
 #include <functional>
+#include <map>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -186,6 +187,9 @@ struct ReactOptions {
   // the report's carry_after holds it for the atoms at the end. Empty: nothing carried
   std::vector<int64_t> carry;
   bool keep_byproducts = false; // byproduct atoms kept as molecules (else removed)
+  // after the run, molecules made only of sulfur and hydrogen with at least one sulfur (a donor that never reacted: H2S,
+  // H-S-S-H, H2Sx) leave the cell; the report counts them (removed_unreacted, removed_unreacted_atoms)
+  bool remove_unreacted = false;
   // at most this many of each chain's reactive sites react (a template's site atoms on that chain; 0: no limit) — e.g. 2 of
   // the 5 epoxides of a 10-unit ENR-50 chain; a site reacting in the template's step on a small molecule is not counted
   int sites_per_chain = 0;
@@ -226,6 +230,7 @@ struct ReactReport {
   // the network: chains (molecules of the start with ≥ 30 atoms and ≥ 20 % of the largest), links between different chains
   // and within one; crosslink density ν = links / (V N_A); strands 2 × links (tetrafunctional junctions); Mc = chain mass / strands
   int chains = 0, crosslinks = 0, intrachain = 0, byproducts = 0;
+  int removed_unreacted = 0, removed_unreacted_atoms = 0;   // ReactOptions::remove_unreacted: donor molecules and their atoms
   int target_crosslinks = 0;    // the target as a number of links (0: a conversion target)
   double volume = 0, chain_mass = 0;   // Å³, g/mol
   double density = 0, per_chain = 0, mc = 0;   // mol/m³, 2 × links / chains, g/mol
@@ -240,6 +245,27 @@ struct ReactReport {
 // Runs cycles of find → react → retype → relax (→ dynamics) until the target conversion, the cycle limit, or no
 // more reactions. `s` is changed in place.
 void react(System& s, const ReactOptions& o, ReactReport* report = nullptr);
+// The network a run left, as JSON (caps react --summary, caps_react_summary): {chains, crosslinks, intrachain, byproducts,
+// target, volume, chain_mass, density (mol/m³), per_chain, mc (g/mol), monomers, degree (%), reactions, initial_sites,
+// conversion, field, links[{cycle, reaction, chain_a, unit_a, chain_b, unit_b, via, via_name}], notes[], removed_unreacted,
+// removed_unreacted_atoms, sulfur (sulfur_census_json of s, when s holds sulfur)}
+std::string react_summary_json(const ReactReport& rep, const System& s);
+
+// Sulfur in a structure by kind and rank (a rank is the number of S in a run of S-S bonds): bridges (both ends on carbon:
+// a crosslink, S1 monosulfide, S2 disulfide ... Sx), cyclic sulfides (both ends on carbons joined by a path of at most
+// ring_limit bonds outside the S run: a small ring on one chain, not a crosslink), pendant groups (one end on carbon, the
+// other S-H) and free donors (no carbon: H2S, H2Sx). Maps are rank -> count.
+struct SulfurCensus {
+  std::map<int, int> bridges, cyclic, pendant, free;
+  int sulfur_atoms = 0;
+  double mean_bridge_rank = 0;   // mean rank of the bridges (0: none)
+};
+SulfurCensus sulfur_census(const System& s, int ring_limit = 8);
+// {bridges: {"S2": n, …}, cyclic, pendant, free, sulfur_atoms, mean_bridge_rank}
+std::string sulfur_census_json(const SulfurCensus& c);
+// Removes the molecules made only of S and H with at least one S (unreacted sulfur donors); returns how many molecules, and
+// in atoms (optional) how many atoms left. removed (optional, one per atom of the input): 1 where an atom was removed.
+int remove_unreacted_donors(System& s, int* atoms = nullptr, std::vector<char>* removed = nullptr);
 
 // The template editor (design/boards/ReactionTemplate): the pattern before and after the reaction as 2D drawings with
 // map numbers, what changes, and checks. JSON {name, pre: {atoms: [{map, symbol, x, y, reacting}], bonds: [[m1, m2]]},

@@ -5,7 +5,6 @@ type definitions (the meaning of every type name in its parameter and topology f
   charmm           the library's generic CHARMM set (CT1-3, CA, CE1/CE2, CD/CC amide / acid, OB, OS, ether CAE/OET ...)
   trappe-ua        Martin & Siepmann (1998) and later TraPPE-UA: CH4 / CH3 / CH2 / CH / C, ring CH2, alkenes, benzene CH / C,
                    alcohol, ether, ketone, thiol / sulfide, nitrile
-  trappe1998-moltemplate   the same united-atom alkane rules (CH2, CH3, CH4)
   trappe-eh        Rai & Siepmann (2007), explicit-hydrogen aromatics: benzene, phenol, pyridine, pyrrole, furan, thiophene
 
 The rules for the biomolecular sets (AMBER, GLYCAM, the CHARMM protein / lipid / carbohydrate / nucleic-acid sets,
@@ -244,7 +243,6 @@ EXTENSIONS = {}
 SETS = {
     "charmm": (charmm(), "CHARMM (library set)", False),
     "trappe-ua": (trappe_ua(), "TraPPE-UA", True),
-    "trappe1998-moltemplate": (trappe_ua(False), "TraPPE-UA alkanes", True),
     "trappe-eh": (trappe_eh(), "TraPPE-EH (explicit-hydrogen aromatics)", False),
 }
 

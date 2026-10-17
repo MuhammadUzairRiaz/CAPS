@@ -667,7 +667,7 @@
    "id": "dlpoly-export",
    "group": "Force fields",
    "title": "DL_POLY export (FIELD, CONFIG, CONTROL)",
-   "summary": "The typed system as DL_POLY 4 input in units of kcal/mol, written the way the DL_POLY force-field tools write it: harmonic bonds and angles with DL_POLY's ½k (twice the force field's k), class II bonds and angles as quartic terms (2K2, 3K3, 4K4), torsions as cos terms (OPLS triples as cos3) with the 1-4 electrostatic and van der Waals scale factors on exactly one term per 1-4 pair (a zero-amplitude term where the force field has no torsion), impropers in the rule's own atom order (explicit rules before wildcards; the outer atoms read by index, backwards, then otherwise), class II out-of-plane terms as harmonic inversions with the centre first, and every van der Waals type pair written out (lj, nm 9-6 for class II, buck). Consecutive identical molecules share one molecular type (nummols N); CONFIG holds the atoms about the cell centre; CONTROL is a generic NVT run with the same cut-off.",
+   "summary": "The typed system as DL_POLY 4 input in units of kcal/mol, in DL_POLY's own conventions: harmonic bonds and angles with DL_POLY's ½k (twice the force field's k), class II bonds and angles as quartic terms (2K2, 3K3, 4K4), torsions as cos terms (OPLS triples as cos3) with the 1-4 electrostatic and van der Waals scale factors on exactly one term per 1-4 pair (a zero-amplitude term where the force field has no torsion), impropers in the rule's own atom order (explicit rules before wildcards; the outer atoms read by index, backwards, then otherwise), class II out-of-plane terms as harmonic inversions with the centre first, and every van der Waals type pair written out (lj, nm 9-6 for class II, buck). Consecutive identical molecules share one molecular type (nummols N); CONFIG holds the atoms about the cell centre; CONTROL is a generic NVT run with the same cut-off.",
    "equation": "harm: ½k(r − r0)² · quar: ½k(r−r0)² + ⅓k′(r−r0)³ + ¼k″(r−r0)⁴ · cos: A[1 + cos(mφ − δ)] · cos3: ½[A1(1+cos φ) + A2(1−cos 2φ) + A3(1+cos 3φ)]",
    "equation_note": "DL_POLY 4 user manual forms",
    "symbols": [
@@ -682,10 +682,10 @@
      "the force field's"
     ]
    ],
-   "when": "To run the same model in DL_POLY. For PCFF, CVFF, COMPASS and OPLS 2005 the FIELD file equals, term for term, the one the DL_POLY force-field tools write for the same structure (bench/ff/check_dlpoly.py: OPLS 2005 110 of 111 polymers, PCFF 104 of 105, CVFF 100 of 110 — the ten where the reference's own amide/sulfone torsions depend on the atom order —, COMPASS 7 of 9; chlorine keeps its standard atomic weight where the reference's templates give 35.065).",
+   "when": "To run the same model in DL_POLY.",
    "cites": [],
    "source": "core/src/dlpoly.cpp (write_dlpoly); impropers_dlpoly in core/src/ffdef.cpp",
-   "tested": "Dlpoly.FieldConfigControl; bench/ff/check_dlpoly.py against the reference FIELD files",
+   "tested": "Dlpoly.FieldConfigControl",
    "deviation": "DL_POLY has no class II cross terms, separate 1-4 Lennard-Jones parameters or combined bending–torsion: those are left out and named in the notes",
    "engines": [],
    "tex": "\\text{harm:}\\ \\ \\tfrac{1}{2}k(r - r_0)^2 \\qquad \\text{quar:}\\ \\ \\tfrac{1}{2}k(r - r_0)^2 + \\tfrac{1}{3}k'(r - r_0)^3 + \\tfrac{1}{4}k''(r - r_0)^4 \\\\ \\text{cos:}\\ \\ A\\left[1 + \\cos(m\\phi - \\delta)\\right] \\qquad \\text{cos3:}\\ \\ \\tfrac{1}{2}\\left[A_1(1 + \\cos\\phi) + A_2(1 - \\cos 2\\phi) + A_3(1 + \\cos 3\\phi)\\right]"
@@ -1208,7 +1208,7 @@
    ],
    "id": "water-models",
    "title": "Water models and their massless sites",
-   "summary": "Three-site models (SPC, SPC/E, SPC/Fw, TIP3P and its variants) carry their charges on O and H. Four-site models (TIP4P, TIP4P-Ew, TIP4P/2005, TIP4P/Ice, OPC) move the negative charge to a massless site M on the H–O–H bisector. TIP5P puts it on two massless lone pairs L out of the molecular plane, on the side away from the hydrogens. The sites are placed from O and H at every evaluation and their forces handed back to them by the chain rule; for the out-of-plane lone pairs the cross product adds one more term to the virial.",
+   "summary": "Three-site models (SPC, SPC/E, SPC/Fw, TIP3P and its variants, OPC3) carry their charges on O and H. Four-site models (TIP4P, TIP4P-Ew, TIP4P/2005, TIP4P/Ice, OPC) move the negative charge to a massless site M on the H–O–H bisector. TIP5P puts it on two massless lone pairs L out of the molecular plane, on the side away from the hydrogens. The sites are placed from O and H at every evaluation and their forces handed back to them by the chain rule; for the out-of-plane lone pairs the cross product adds one more term to the virial.",
    "equation": "M = (1 − α) O + α/2 (H₁ + H₂), α = d_OM / (r_OH cos(θ/2));  L± = O + a (r₁ + r₂) ± c (r₁ × r₂), a = −d_OL cos(φ/2) / (2 r_OH cos(θ/2)), c = d_OL sin(φ/2) / (r_OH² sin θ);  W gains Σ s·F_L with s = c (r₁ × r₂)",
    "equation_note": "r₁, r₂ the O–H vectors, θ the H–O–H angle, φ the L–O–L angle; for TIP5P (r_OH 0.9572 Å, θ 104.52°, d_OL 0.70 Å, φ 109.47°) a = −0.344908 and c = 0.64438 Å⁻¹, GROMACS's virtual_sites3 function 4 (c in nm⁻¹ = 6.4438); the cross part scales as λ² when the atoms are scaled by λ, hence the extra virial term",
    "symbols": [
@@ -1635,35 +1635,33 @@
    "tex": "h = \\sqrt{d_\\mathrm{MS}^2 - R^2}\\ \\text{ above the hollow's centre } (R\\text{: its distance to the three atoms}), \\qquad d_\\mathrm{SS} \\ge \\sqrt{3}\\,d_\\mathrm{MM}"
   },
   {
-   "id": "opls-bci",
+   "id": "bond-increments",
    "group": "Force fields",
-   "title": "OPLS charges from bond increments",
-   "summary": "OPLS 2005 gives each atom a charge key (an OPLS number chosen by its chemical environment) and each bonded pair of keys an increment that moves charge from one atom to the other. Summing over the bonds gives charges that balance bond by bond, so every molecule keeps its formal charge. OPLS-AA 2024's fixed per-type charges sometimes do not add up where two groups meet (a substituted ring, a benzylic junction); CAPS then uses OPLS 2005's typing and increments for the charges, and OPLS-AA 2024's types for everything else, and says so.",
-   "equation": "q_i = Σ_j δ_ij over the atoms j bonded to i,   δ_ji = −δ_ij,   δ from the OPLS 2005 table by the pair's keys (its first entry for a pair)",
-   "equation_note": "OPLS 2005 as in Banks et al. 2005",
+   "title": "Charges from bond increments",
+   "summary": "Class II and CVFF force fields (PCFF, COMPASS, CVFF and IFF from their .frc files) give each bonded pair of atom types an increment that moves charge from one atom to the other. Summing over the bonds gives charges that balance bond by bond, so every neutral molecule stays neutral and a charged group keeps its formal charge. CAPS assigns them whenever the force field carries a bond-increment table and the charges are the force field's own.",
+   "equation": "q_i = Σ_j δ_ij over the atoms j bonded to i,   δ_ji = −δ_ij,   δ from the force field's bond-increment table by the pair's types (or their increment equivalences)",
+   "equation_note": "the .frc #bond_increments convention",
    "symbols": [
-    [
-     "key",
-     "the atom's OPLS number from its environment",
-     "charge rules in the OPLS 2005 typing file"
-    ],
     [
      "δ_ij",
      "bond charge increment",
-     "6179 pairs"
+     "the force field's #bond_increments table"
+    ],
+    [
+     "type",
+     "the atom's force-field type",
+     "its increment equivalence where the file gives one"
     ]
    ],
-   "when": "Automatic whenever OPLS-AA 2024's own charges miss the formal charge; by hand with Field › Use OPLS 2005's charges or charges \"increments\" in recipes and Python.",
-   "cites": [
-    "banks2005"
-   ],
-   "source": "core/src/ffdef.cpp (parameterize, companion_charges)",
-   "tested": "Typing.Opls2005ChargesFromBondIncrements · Typing.CompanionChargesFromOpls2005",
-   "deviation": "charges verified against the reference program's OPLS 2005 on 110 polymers; the combination with OPLS-AA 2024 parameters is CAPS's choice",
+   "when": "Automatic for a force field with a bond-increment table when the charges are its own (charges \"types\" or auto).",
+   "cites": [],
+   "source": "core/src/ffdef.cpp (parameterize)",
+   "tested": "FFDef.IffSilicaAndMetalsByRule",
+   "deviation": "none: the increments are applied as the .frc file lists them",
    "engines": [
     "field.assign"
    ],
-   "tex": "q_i = \\sum_{j \\text{ bonded to } i}\\delta_{ij}, \\qquad \\delta_{ji} = -\\delta_{ij}, \\qquad \\delta \\text{ from the OPLS 2005 table by the pair's keys (its first entry for a pair)}"
+   "tex": "q_i = \\sum_{j \\text{ bonded to } i}\\delta_{ij}, \\qquad \\delta_{ji} = -\\delta_{ij}"
   },
   {
    "id": "ff-by-group",
@@ -1695,7 +1693,7 @@
    ],
    "source": "core/src/ffmerge.cpp · core/src/manybody.cpp · capi caps_field_assign_groups · data/potentials",
    "tested": "FFMerge.SameForceFieldInTwoPartsIsExact · FFMerge.DifferentFamiliesAreRefusedOrMergedAsAsked · FFMerge.ManyBodyGroup · FFMerge.PotentialLibrary · FFMerge.AireboWritesMetalUnits · FFMerge.MeamMapsLibraryEntries",
-   "deviation": "Si Tersoff slab under hexane: LAMMPS van der Waals beside Tersoff equals CAPS's for GAFF2 (366.6761), OPLS 2005 (296.6776), PCFF (133.1490 / 133.149) and COMPASS (84.3140 / 84.3139 kcal/mol); GAFF2 + OPLS polystyrene in GROMACS 573.546, LAMMPS 573.549 kcal/mol; (6,6) nanotube under AIREBO in hexane, metal units: van der Waals beside AIREBO GAFF2 3.49464, PCFF 16.67939, COMPASS 1.26178, OPLS 2005 −2.13761 kcal/mol in LAMMPS and CAPS; PS melt real vs metal export identical to 1e-9 in bonded and van der Waals terms; AIREBO, AIREBO-M, REBO in real units with CAPS's converted file: energy equal to the metal run ×23.060549 to 1e-13, forces to 2e-12 kcal/mol/Å, pressure to every digit; MEAM (SiC set) in the composite equals the slab alone (atom_style atomic) to 1e-10 eV, van der Waals beside it equals CAPS's (GAFF2 366.67611, PCFF 133.14904 kcal/mol)",
+   "deviation": "Si Tersoff slab under hexane: LAMMPS van der Waals beside Tersoff equals CAPS's for GAFF2 (366.6761), PCFF (133.1490 / 133.149) and COMPASS (84.3140 / 84.3139 kcal/mol); GAFF2 + OPLS polystyrene in GROMACS 573.546, LAMMPS 573.549 kcal/mol; (6,6) nanotube under AIREBO in hexane, metal units: van der Waals beside AIREBO GAFF2 3.49464, PCFF 16.67939, COMPASS 1.26178 kcal/mol in LAMMPS and CAPS; PS melt real vs metal export identical to 1e-9 in bonded and van der Waals terms; AIREBO, AIREBO-M, REBO in real units with CAPS's converted file: energy equal to the metal run ×23.060549 to 1e-13, forces to 2e-12 kcal/mol/Å, pressure to every digit; MEAM (SiC set) in the composite equals the slab alone (atom_style atomic) to 1e-10 eV, van der Waals beside it equals CAPS's (GAFF2 366.67611, PCFF 133.14904 kcal/mol)",
    "engines": [
     "field.assign.groups"
    ],

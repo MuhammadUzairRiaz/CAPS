@@ -24,18 +24,18 @@
 <nav class="toc" aria-label="On this page"><h2>On this page</h2><a class="l2" href="#the-library">The library</a><a class="l2" href="#1-assign-types">1. Assign types</a><a class="l2" href="#2-parameters-and-engine-files">2. Parameters and engine files</a><a class="l2" href="#class-ii-force-fields">Class II force fields</a><a class="l2" href="#options-worth-knowing">Options worth knowing</a><a class="l2" href="#next">Next</a></nav>
 <main>
 <header class="hero"><p class="eyebrow">Tutorial 02</p><h1>Force fields and engine inputs</h1><p>Type a structure with OPLS-AA or PCFF, inspect the assignment, and write complete inputs for LAMMPS and GROMACS.</p><div class="strip"><span><i>Time</i> 5 minutes</span><span><i>Level</i> first steps</span><span><i>Uses</i> ff info · ff type · ff apply</span></div></header><h2 id="the-library">The library</h2>
-<p>CAPS ships its force fields as JSON files in <code>data/forcefields</code>: OPLS-AA (2005, 2020, 2024), PCFF and COMPASS (class II), CVFF, GAFF and GAFF2, DREIDING, TraPPE, UFF, inorganic and clay sets, Martini and others. Commands accept a library name or a path.</p>
-<div class="code" data-lang="shell"><pre><code>caps ff info opls2005        # types, typing rules, styles and references
+<p>CAPS ships its force fields as JSON files in <code>data/forcefields</code>: OPLS-AA 2024 and OPLS-UA, PCFF and COMPASS (class II), CVFF, GAFF and GAFF2, DREIDING, TraPPE, UFF, inorganic and clay sets, Martini and others. Commands accept a library name or a path.</p>
+<div class="code" data-lang="shell"><pre><code>caps ff info oplsaa2024        # types, typing rules, styles and references
 caps ff info pcff</code></pre></div>
 <h2 id="1-assign-types">1. Assign types</h2>
 <p>Typing rules are SMARTS patterns: each atom gets the type of the most specific rule it matches. <code>caps ff type</code> writes one type per atom and reports atoms left untyped or matched ambiguously.</p>
-<div class="code" data-lang="shell"><pre><code>caps ff type ps_md.data --ff opls2005 -o types.txt</code></pre></div>
+<div class="code" data-lang="shell"><pre><code>caps ff type ps_md.data --ff oplsaa2024 -o types.txt</code></pre></div>
 <div class="code" data-lang="output"><pre><code>0 untyped, 0 ambiguous
 wrote types.txt</code></pre></div>
 <p><code>--explain</code> prints, for every atom, the rule that won and the ones it beat; use it when a type looks wrong.</p>
 <h2 id="2-parameters-and-engine-files">2. Parameters and engine files</h2>
 <p><code>caps ff apply</code> looks up every bond, angle, dihedral and improper and the pair coefficients, assigns charges (with <code>--charges auto</code>, the force field's own scheme: fixed charges per type or bond increments), and writes the files for each engine:</p>
-<div class="code" data-lang="shell"><pre><code>caps ff apply ps_md.data --ff opls2005 --types types.txt -o ps_opls.data \
+<div class="code" data-lang="shell"><pre><code>caps ff apply ps_md.data --ff oplsaa2024 --types types.txt -o ps_opls.data \
   --lammps-input ps_opls.in --lammps-run npt --steps 5000 --gromacs ps_opls</code></pre></div>
 <div class="code" data-lang="output"><pre><code>wrote ps_opls.in (the force field&#x27;s own styles)
 gromacs: CAPS&#x27;s damped shifted force becomes PME in GROMACS (no DSF there)

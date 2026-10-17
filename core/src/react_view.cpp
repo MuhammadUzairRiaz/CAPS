@@ -291,6 +291,37 @@ std::string template_view(const ReactionTemplate& t) {
   j["capture"] = t.capture;
   j["probability"] = t.probability;
   j["min_path"] = t.min_path;
+  // what each pattern atom must satisfy, in the template's own words (H=2, degree=4, no_neighbour=S, heavy<=2 …)
+  Json conditions = Json::array();
+  for (const auto& a : t.atoms) {
+    std::vector<std::string> c;
+    if (a.h_min >= 0 && a.h_min == a.h_max) c.push_back("H=" + std::to_string(a.h_min));
+    else {
+      if (a.h_min >= 0) c.push_back("H>=" + std::to_string(a.h_min));
+      if (a.h_max >= 0) c.push_back("H<=" + std::to_string(a.h_max));
+    }
+    if (a.degree >= 0) c.push_back("degree=" + std::to_string(a.degree));
+    if (a.heavy_max >= 0) c.push_back("heavy<=" + std::to_string(a.heavy_max));
+    for (int z : a.no_neighbour) c.push_back("no_neighbour=" + std::string(caps::element(z).symbol));
+    if (a.ring3) c.push_back("ring3");
+    if (a.aromatic) c.push_back("aromatic");
+    if (a.not_aromatic) c.push_back("not_aromatic");
+    if (c.empty()) continue;
+    Json o = Json::object();
+    o["map"] = a.map;
+    o["atom"] = sym(a.map);
+    Json list = Json::array();
+    for (auto& x : c) list.push_back(x);
+    o["conditions"] = std::move(list);
+    conditions.push_back(std::move(o));
+  }
+  j["conditions"] = std::move(conditions);
+  auto maps_of = [](const std::vector<int>& v) { Json a = Json::array(); for (int m : v) a.push_back(m); return a; };
+  j["once"] = maps_of(t.once);
+  j["sites"] = maps_of(t.sites);
+  j["byproduct"] = maps_of(t.byproduct);
+  j["weight"] = t.weight;
+  j["charges"] = std::string(t.keep_charges ? "keep" : "forcefield");
   j["smarts"] = reaction_smarts(t);
   return j.dump(0);
 }

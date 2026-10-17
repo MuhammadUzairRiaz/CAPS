@@ -167,6 +167,13 @@ public sealed partial class MainViewModel
                 lines.Add($"  chain {l.ChainA} unit {l.UnitA} — {(l.Via > 0 ? $"{l.ViaName} #{l.Via}" : "direct")} — chain {l.ChainB} unit {l.UnitB}");
             if (RxLinks.Count > 12) lines.Add($"  … {RxLinks.Count - 12} more (the link map shows all)");
             if (by > 0) lines.Add($"{by} byproduct molecules {(_rxKeepBy ? "kept in the cell" : "removed")}");
+            if ((int?)j["removed_unreacted"] is > 0 and var gone) lines.Add($"{gone} unreacted sulfur donor molecules removed ({(int?)j["removed_unreacted_atoms"] ?? 0} atoms)");
+            if (j["sulfur"] is JsonObject sul)
+            {   // the core's sulfur census: bridges by rank (crosslinks), cyclic sulfides, pendant S-H, free donors
+                string Ranks(string k) => sul[k] is JsonObject m && m.Count > 0 ? string.Join(" ", m.Select(p => $"{p.Key}×{(int?)p.Value ?? 0}")) : "—";
+                lines.Add(string.Format(inv, "Sulfur: bridges {0} · mean rank {1:F2} · cyclic {2} · pendant {3} · free {4}", Ranks("bridges"),
+                                        (double?)sul["mean_bridge_rank"] ?? 0, Ranks("cyclic"), Ranks("pendant"), Ranks("free")));
+            }
             lines.Add("Force field during the run: " + ((string?)j["field"] ?? "—"));
             lines.Add("After: " + ((string?)j["field_after"] ?? "—"));
             RxNetworkText = string.Join("\n", lines);

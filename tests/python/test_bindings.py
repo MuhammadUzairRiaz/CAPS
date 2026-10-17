@@ -45,7 +45,13 @@ melt_ff.field.assign("gaff")
 rep_ff = melt_ff.field.import_params(frc)
 check(rep_ff["complete"] and rep_ff["imported"] > 100, f"frcmod import: {rep_ff['imported']} terms from the imported rule")
 br = caps.polymer("[*]C/C=C\\C[*]", dp=6)
-before = br.field.assign(os.path.join(root, "data", "forcefields", "oplsaa2024-moltemplate.json"))["complete"]
+# the 2024 BOSS files lack CM-CT-CT-CM; oplsaa2024.json carries CAPS's own fit of it, taken out here so the gap shows
+_gap = json.load(open(os.path.join(root, "data", "forcefields", "oplsaa2024.json")))
+_gap["dihedrals"] = [r for r in _gap["dihedrals"] if r["name"] != "CM-CT-CT-CM"]
+_gap["typing"] = os.path.join(root, "data", "typing", "oplsaa2024.typing.json")
+_gap_path = os.path.join(tempfile.gettempdir(), "caps_oplsaa2024_gap.json")
+json.dump(_gap, open(_gap_path, "w"))
+before = br.field.assign(_gap_path)["complete"]
 filled = br.field.import_params(os.path.join(root, "tests", "data", "fitted_cm_ct_ct_cm.json"), fill_gaps=True)
 check(not before and filled["complete"] and filled["filled_terms"] == ["dihedral filled: CM-CT-CT-CM × 5"],
       f"OPLS-AA 2024 on polybutadiene: gaps filled from CAPS's fitted torsion only where missing: {filled['filled_terms']}")
@@ -203,32 +209,19 @@ else:
 # OPLS descendants: reline (choline chloride + 2 urea) in CL&P DES (des.ff), an imidazolium NTf2 in CL&P, polyethylene in L-OPLS
 reline = caps.build.smiles("C[N+](C)(C)CCO.NC(N)=O.NC(N)=O.[Cl-]", forcefield="uff").field.assign("clandp-des")
 il = caps.build.smiles("CCCCn1cc[n+](C)c1.FC(F)(F)S(=O)(=O)[N-]S(=O)(=O)C(F)(F)F", forcefield="uff").field.assign("clandp")
-lopls = caps.polymer("*CC*", dp=8, chains=1, density=0.3, seed=3).field.assign("loplsaa2024-moltemplate")
-ltypes = {a["type"].split("_")[0] for a in lopls["atoms"]}
-check(reline["complete"] and abs(reline["net_charge"]) < 1e-9 and il["complete"] and lopls["complete"] and {"54L", "57L", "60LCH2"} <= ltypes,
-      f"field: CL&P DES reline, CL&P [C4mim][NTf2], L-OPLS polyethylene ({sorted(ltypes)})")
-# OPLS 2020: the bond / angle supplement on OPLS 2005, typed with OPLS 2005's rules; the 2020 values replace 2005's
-if _have("opls2020"):   # a library CAPS has not rebuilt from its own source yet: skipped when absent
-    o20 = caps.build.smiles("CC(=O)OCc1ccccc1", forcefield="uff")
-    r20 = o20.field.assign("opls2020", charges="gasteiger")
-    check(r20["complete"] and "2020" in r20.get("forcefield", r20.get("name", "OPLS 2020")), f"field: OPLS 2020 on benzyl acetate · {r20.get('forcefield', r20.get('name'))}")
+check(reline["complete"] and abs(reline["net_charge"]) < 1e-9 and il["complete"], "field: CL&P DES reline, CL&P [C4mim][NTf2]")
+# TODO: L-OPLS rebuilt from Siu, Pluhackova & Boeckmann 2012 (expected id lopls-siu2012)
+if _have("lopls-siu2012"):
+    lopls = caps.polymer("*CC*", dp=8, chains=1, density=0.3, seed=3).field.assign("lopls-siu2012")
+    check(lopls["complete"], "field: L-OPLS polyethylene")
 else:
-    print("skip " + ['opls2020'][0] + ": not in this checkout")
-# inorganic and water: NaCl typed as NaCl's potential set (neighbour bonds dropped, the set's charges); MgO's shell
-if _have("inorganic-binary-halides") and _have("inorganic-binary-oxides"):   # a library CAPS has not rebuilt from its own source yet: skipped when absent
-    # model gets a shell on every core; SPC/E water its charges
-    nacl = caps.build.crystal("F m -3 m", 5.64, 5.64, 5.64, [("Na1", "Na", 0, 0, 0), ("Cl1", "Cl", 0.5, 0.5, 0.5)], supercell=(2, 2, 2))
-    rn = nacl.field.assign("inorganic-binary-halides", charges="forcefield")
-    mgo = caps.build.crystal("F m -3 m", 4.212, 4.212, 4.212, [("Mg1", "Mg", 0, 0, 0), ("O1", "O", 0.5, 0.5, 0.5)], supercell=(2, 2, 2))
-    rm = mgo.field.assign("inorganic-binary-oxides", charges="forcefield")
-    mtypes = sorted({a["type"] for a in rm["atoms"]})
-    w = caps.build.smiles("O", forcefield="uff").field.assign("spce-moltemplate", charges="forcefield")
-    check(rn["complete"] and {a["type"] for a in rn["atoms"]} == {"Na1", "Cl1"} and abs(rn["atoms"][0]["q"]) == 0.988
-          and rm["complete"] and mtypes == ["Mg1c", "Mg1s", "O2c", "O2s"] and len(rm["atoms"]) == 128
-          and w["complete"] and abs(w["atoms"][0]["q"] + 0.8476) < 1e-9,
-          f"field: NaCl potential set, MgO shell model ({len(rm['atoms'])} sites: {mtypes}), SPC/E water")
+    print("skip lopls-siu2012: not in this checkout")
+# SPC/E water by its short name (spce-berendsen1987, from Berendsen, Grigera & Straatsma 1987)
+if _have("spce"):
+    w = caps.build.smiles("O", forcefield="uff").field.assign("spce", charges="forcefield")
+    check(w["complete"] and abs(w["atoms"][0]["q"] + 0.8476) < 1e-9, "field: SPC/E water")
 else:
-    print("skip " + ['inorganic-binary-halides', 'inorganic-binary-oxides'][0] + ": not in this checkout")
+    print("skip spce: not in this checkout")
 # zeolite sorbates from their papers: HFA-134a (Peguin 2009, its two carbons split by charge), an all-atom alkane (O'Malley 2013)
 hfa = caps.build.smiles("FCC(F)(F)F", forcefield="uff").field.assign("peguin2009-hfa134a", charges="forcefield")
 ipn = caps.build.smiles("CCC(C)(C)C", forcefield="uff").field.assign("omalley2013-alkanes", charges="forcefield")
@@ -237,29 +230,43 @@ check(hfa["complete"] and ipn["complete"] and {a["type"] for a in hfa["atoms"]} 
       and abs(sum(a["q"] for a in hfa["atoms"])) < 1e-9 and abs(sum(a["q"] for a in ipn["atoms"])) < 1e-9,
       "field: zeolite sorbates (HFA-134a, 2,2-dimethylbutane)")
 # mW: a water box becomes one Stillinger–Weber site per molecule (the document converted, undoable), which relaxes
-wb = caps.build.solvate(None, shape="cube", edge=20, water_model="SPC/E", ion_mode=0)
-nw = wb.summary()["molecules"]
-rw = wb.field.assign("mw-moltemplate")
-check(rw["complete"] and wb.atoms == nw and {a["type"] for a in rw["atoms"]} == {"MW"} and wb.relax(ftol=1.0) in (0, 1),
-      f"field: mW water ({nw} molecules -> {wb.atoms} Stillinger-Weber sites), relaxed")
+# mW by its short name (mw-molinero2009, from Molinero & Moore 2009)
+if _have("mw"):
+    wb = caps.build.solvate(None, shape="cube", edge=20, water_model="SPC/E", ion_mode=0)
+    nw = wb.summary()["molecules"]
+    rw = wb.field.assign("mw")
+    check(rw["complete"] and wb.atoms == nw and {a["type"] for a in rw["atoms"]} == {"MW"} and wb.relax(ftol=1.0) in (0, 1),
+          f"field: mW water ({nw} molecules -> {wb.atoms} Stillinger-Weber sites), relaxed")
+else:
+    print("skip mw: not in this checkout")
 # coarse-grained: MARTINI's DPPC template (typed by bead name, charges kept); SDK maps all-atom DMPC onto its beads
-tpl = caps.bead_templates("martini-moltemplate")
-dppc = caps.build.beads("DPPC", forcefield="martini-moltemplate")
-rd = dppc.field.assign("martini-moltemplate", charges="keep")
-dmpc = caps.build.smiles("CCCCCCCCCCCCCC(=O)OCC(COP(=O)([O-])OCC[N+](C)(C)C)OC(=O)CCCCCCCCCCCCC", forcefield="")
-rs = dmpc.field.assign("sdk-moltemplate", charges="forcefield")
-check("DPPC" in tpl and dppc.atoms == 12 and rd["complete"] and {a["type"].split("_b")[0] for a in rd["atoms"]} == {"Q0", "Qa", "Na", "C1"}
-      and rs["complete"] and dmpc.atoms == 13 and abs(sum(a["q"] for a in rs["atoms"])) < 1e-9,
-      f"coarse-grained: MARTINI DPPC template ({len(tpl)} templates), SDK DMPC mapped ({dmpc.atoms} beads)")
-# MARTINI overlays from the source's other parameter files: PEO (polymers.prm, torsions), sucrose (sugars.prm)
-peo = caps.build.beads("PEO", forcefield="martini-polymers")
-suc = caps.build.beads("SUCR", forcefield="martini-sugars")
-rp, ru = peo.field.assign("martini-polymers", charges="keep"), suc.field.assign("martini-sugars", charges="keep")
-check(rp["complete"] and ru["complete"] and peo.atoms == 37, f"MARTINI overlays: PEO {peo.atoms} beads, sucrose {suc.atoms} beads")
-trp = caps.build.beads("TRP", forcefield="martini-aminoacids")
-rt = trp.field.assign("martini-aminoacids", charges="keep")
-check(rt["complete"] and trp.atoms == 5 and "ILE" not in caps.bead_templates("martini-aminoacids"),
-      f"MARTINI amino acids: TRP {trp.atoms} beads with its impropers; ILE / LEU / PRO / VAL left out (no AC1 / AC2 parameters)")
+# TODO: MARTINI 2 (and its polymer, sugar and amino-acid sets) and SDK, once rebuilt from their papers (not in hand yet;
+# looked up by the aliases martini, martini-polymers, martini-sugars, martini-aminoacids, sdk in a catalogue entry)
+if _have("martini") and _have("sdk"):
+    tpl = caps.bead_templates("martini")
+    dppc = caps.build.beads("DPPC", forcefield="martini")
+    rd = dppc.field.assign("martini", charges="keep")
+    dmpc = caps.build.smiles("CCCCCCCCCCCCCC(=O)OCC(COP(=O)([O-])OCC[N+](C)(C)C)OC(=O)CCCCCCCCCCCCC", forcefield="")
+    rs = dmpc.field.assign("sdk", charges="forcefield")
+    check("DPPC" in tpl and dppc.atoms == 12 and rd["complete"] and {a["type"].split("_b")[0] for a in rd["atoms"]} == {"Q0", "Qa", "Na", "C1"}
+          and rs["complete"] and dmpc.atoms == 13 and abs(sum(a["q"] for a in rs["atoms"])) < 1e-9,
+          f"coarse-grained: MARTINI DPPC template ({len(tpl)} templates), SDK DMPC mapped ({dmpc.atoms} beads)")
+else:
+    print("skip martini / sdk: not in this checkout")
+if _have("martini-polymers") and _have("martini-sugars"):
+    peo = caps.build.beads("PEO", forcefield="martini-polymers")
+    suc = caps.build.beads("SUCR", forcefield="martini-sugars")
+    rp, ru = peo.field.assign("martini-polymers", charges="keep"), suc.field.assign("martini-sugars", charges="keep")
+    check(rp["complete"] and ru["complete"] and peo.atoms == 37, f"MARTINI overlays: PEO {peo.atoms} beads, sucrose {suc.atoms} beads")
+else:
+    print("skip martini-polymers / martini-sugars: not in this checkout")
+if _have("martini-aminoacids"):
+    trp = caps.build.beads("TRP", forcefield="martini-aminoacids")
+    rt = trp.field.assign("martini-aminoacids", charges="keep")
+    check(rt["complete"] and trp.atoms == 5 and "ILE" not in caps.bead_templates("martini-aminoacids"),
+          f"MARTINI amino acids: TRP {trp.atoms} beads with its impropers; ILE / LEU / PRO / VAL left out (no AC1 / AC2 parameters)")
+else:
+    print("skip martini-aminoacids: not in this checkout")
 # χ from pair contacts: the self-mixing control is 0 within its error; a hydrocarbon against water is far above ½
 ctl = caps.chi_by_contacts("*CC*", "*CC*", samples=200000, pack_trials=1000)
 wat = caps.chi_by_contacts("*CC*", "O", samples=200000, pack_trials=1000)
@@ -414,10 +421,14 @@ kg_rep = kg.field.report() if hasattr(kg.field, "report") else caps.core._json_c
 with tempfile.TemporaryDirectory() as td:
     ko = kg.export_engines(td, run="nvt", steps=1000)
     kg_deck = open(os.path.join(td, "system.in")).read()
-mt = caps.build.martini_melt("[SN0]", repeats=10, chains=10, density=1.1, forcefield="martini-polymers")
-mt_rep = caps.core._json_call(caps.library().caps_field_report, mt._h)
-check(kg_rep["complete"] and "units lj" in kg_deck and "gromacs_error" in ko and mt_rep["complete"] and abs(json.loads(mt.report)["density"] - 1.1) < 1e-6,
-      f"CG melts: {kg_rep['forcefield']} · {mt_rep['forcefield']} at {json.loads(mt.report)['density']:.3f} g/cm³")
+check(kg_rep["complete"] and "units lj" in kg_deck and "gromacs_error" in ko, f"CG melts: {kg_rep['forcefield']}")
+if _have("martini-polymers"):   # TODO: MARTINI 2 polymers rebuilt from their paper (alias martini-polymers)
+    mt = caps.build.martini_melt("[SN0]", repeats=10, chains=10, density=1.1, forcefield="martini-polymers")
+    mt_rep = caps.core._json_call(caps.library().caps_field_report, mt._h)
+    check(mt_rep["complete"] and abs(json.loads(mt.report)["density"] - 1.1) < 1e-6,
+          f"CG melts: {mt_rep['forcefield']} at {json.loads(mt.report)['density']:.3f} g/cm³")
+else:
+    print("skip martini-polymers: not in this checkout")
 # an AMBER prmtop opens with the force field it carries (every term as the file gives it); another, then back to it
 amb_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "amber")
 ph = caps.open(os.path.join(amb_dir, "phenol.prmtop"))
@@ -458,6 +469,24 @@ rs = rx.react_summary()
 check(rs["chains"] == 8 and rs["crosslinks"] == rs["target"] == 4 and rs["byproducts"] == 4 and rs["field"].startswith("PCFF")
       and rs["field_after"].endswith("complete") and rx.field.report()["complete"],
       f"react with PCFF: {rs['crosslinks']}/{rs['target']} links · ν {rs['density']:.0f} mol/m³ · Mc {rs['mc']:.0f} g/mol · after: {rs['field_after']}")
+# the CLI's options through the same core path (ABI 70): unreacted sulfur donors removed in the core, the sulfur census
+# in the summary, overlays on an assignment, precision on md
+sr = caps.polymer("[*]C/C=C(C)\\C[*]", dp=8, chains=3, density=0.6, seed=2)
+sr.insert("SS", 10)
+sr.react("sulfur_allylic", cycles=3, per_cycle=2, relax=False, default_field=True, remove_unreacted=True)
+ss = sr.react_summary()
+check(sr.removed_unreacted["molecules"] > 0 and ss["removed_unreacted"] == sr.removed_unreacted["molecules"] and "sulfur" in ss
+      and not ss["sulfur"]["free"] and ss["sulfur"] == sr.sulfur_bridges(), f"remove_unreacted in the core: {sr.removed_unreacted} · {ss.get('sulfur')}")
+ov = caps.forcefield_overlays("oplsaa2024")
+check(any(o["file"] == "oplsaa2024-lj-refit.json" for o in ov) and all(o["base"] == "oplsaa2024" for o in ov), f"overlays: {[o['file'] for o in ov]}")
+check(isinstance(caps.ml_available(), bool), "ml_available")
+po = caps.polymer("*CC*", dp=6, chains=1, seed=1)
+po.field.assign("oplsaa2024")
+rep_ov = po.field.set_overlays(["oplsaa2024-lj-refit"])
+check(rep_ov["complete"] and len(po.field.overlays()) == 1 and po.field.overlays()[0].endswith("oplsaa2024-lj-refit.json"), "field overlays")
+po.field.set_overlays([])
+check(po.field.overlays() == [], "overlays cleared")
+print("ok   React remove_unreacted / sulfur census in the core; library overlays")
 # a crosslinked cell's bonds stay short when unwrapped: every molecule whole in the document React leaves (a saved data
 # file then has consistent image flags)
 import math, tempfile
@@ -636,13 +665,12 @@ if _have("trappe-ua"):   # a library CAPS has not rebuilt from its own source ye
           f"one TraPPE CO2: C=O {_m.dist(_cp[0], _cp[1]):.4f} Å, O…O {_m.dist(_cp[0], _cp[2]):.4f} Å, charges {[a['q'] for a in _cr['atoms']]}")
 else:
     print("skip " + ['trappe-ua'][0] + ": not in this checkout")
-# OPLS-AA 2024 on an epoxide: no torsion through the epoxide O in the table — missing, or zero when asked (reported)
+# OPLS-AA 2024 on an epoxide: no torsion through the epoxide O in the files — zero (the library's ring3_torsions), reported
 _ep = caps.build.smiles("CC1(C)OC1C")
-_epr = _ep.field.assign("oplsaa2024-moltemplate", "forcefield")
+_epr = _ep.field.assign("oplsaa2024", "forcefield")
 _epz = _ep.field.set_options(zero_ring3_torsions=True)
-_epo = _ep.field.set_options(zero_ring3_torsions=False)
-check(not _epr["complete"] and _epz["complete"] and any("three-membered rings" in n and "zero" in n for n in _epz["notes"]) and not _epo["complete"],
-      f"epoxide ring torsions: missing {len(_epr['missing'])} · zero when asked {_epz['complete']} · back {not _epo['complete']}")
+check(_epr["complete"] and any("three-membered rings" in n and "zero" in n for n in _epr["notes"]) and _epz["complete"],
+      f"epoxide ring torsions zero and reported: {_epr['complete']}")
 # OPLS-UA (2024 file): polyethylene folds to CH3 / CH2 sites with their hydrogens' mass, complete and neutral
 _ua = caps.polymer("[*]CC[*]", dp=10)
 _uar = _ua.field.assign("oplsua2024")
@@ -666,11 +694,11 @@ with tempfile.TemporaryDirectory() as _td:
     check(max(abs(a - b) for a, b in zip(_qf, [_op.atom(i)["charge"] for i in range(_op.atoms)])) < 1e-6, "recipe charges = exported charges")
 _op2 = caps.polymer("[*]OCCCCOC(=O)CCC(=O)[*]", dp=2, chains=1, seed=1)
 _op2.field.assign("oplsaa2024")
-check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op.atoms)) < 1e-6, "recipe and field.assign give one set of OPLS 2005 charges")
+check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op.atoms)) < 1e-6, "recipe and field.assign give one set of OPLS-AA 2024 charges")
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 69, "ABI 69")
+check(caps.abi_version() == 71, "ABI 71")
 _pbs = caps.polymer("[*]OCCCCOC(=O)CCC(=O)[*]", dp=4, chains=2, seed=3)
 _cgd = _pbs.cg_map(rules="ester-cut")
 check(_cgd.atoms == 16, f"ester cut: 16 beads ({_cgd.atoms})")
