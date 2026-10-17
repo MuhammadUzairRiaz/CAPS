@@ -5,6 +5,9 @@
 #   dist/CAPS-<version>-linux-<arch>.tar.gz     (portable)
 # The app lives in /opt/caps (deb) or the AppImage's usr/lib/caps, with data/ and samples/ next to it.
 #   packaging/linux/build.sh [x86_64|aarch64]
+# CAPS's own ML potential (caps ml, caps ff complete, --complete ml): with CAPS_TORCH_DIR=<libtorch, or a PyTorch
+# install's torch/ folder> the core is built with -DCAPS_WITH_TORCH=ON and libtorch's libraries go next to caps
+# (rpath $ORIGIN; needs patchelf)
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 ARCH="${1:-$(uname -m)}"
@@ -18,7 +21,12 @@ export DOTNET_CLI_TELEMETRY_OPTOUT=1
 rm -rf "$WORK" && mkdir -p "$WORK" "$OUT" "$APP"
 
 echo "== native core"
-cmake -S "$ROOT" -B "$WORK/native" -DCMAKE_BUILD_TYPE=Release -DCAPS_BUILD_TESTS=OFF > "$WORK/cmake.log"
+TORCH_ARGS=()
+if [ -n "${CAPS_TORCH_DIR:-}" ]; then
+  TORCH_ARGS=(-DCAPS_WITH_TORCH=ON -DTorch_DIR="$CAPS_TORCH_DIR/share/cmake/Torch")
+  echo "   with CAPS's ML potential (libtorch from $CAPS_TORCH_DIR)"
+fi
+cmake -S "$ROOT" -B "$WORK/native" -DCMAKE_BUILD_TYPE=Release -DCAPS_BUILD_TESTS=OFF "${TORCH_ARGS[@]}" > "$WORK/cmake.log"
 cmake --build "$WORK/native" -j "$(nproc)" > "$WORK/build.log"
 
 echo "== Studio (.NET, self-contained, $RID)"
@@ -33,6 +41,16 @@ cp "$ROOT/LICENSE" "$APP/LICENSE"
 cp -R "$ROOT/samples" "$APP/"
 find "$APP" -maxdepth 1 -name "*.pdb" -delete
 strip "$APP/caps" "$APP/libcaps.so" 2>/dev/null || true
+if [ -n "${CAPS_TORCH_DIR:-}" ]; then
+  # libtorch's libraries (and the OpenMP runtime the CPU build ships with) beside caps and libcaps, found through $ORIGIN
+  for lib in "$CAPS_TORCH_DIR"/lib/libtorch.so "$CAPS_TORCH_DIR"/lib/libtorch_cpu.so "$CAPS_TORCH_DIR"/lib/libc10.so "$CAPS_TORCH_DIR"/lib/libgomp*.so*; do
+    [ -f "$lib" ] && cp "$lib" "$APP/"
+  done
+  for bin in "$APP/caps" "$APP/libcaps.so"; do patchelf --set-rpath '$ORIGIN' "$bin"; done
+  cp "$ROOT/licenses/PyTorch-BSD-3.txt" "$APP/licenses/" 2>/dev/null || true
+  # the ML engine from the staged app alone
+  ( cd "$APP" && env -u LD_LIBRARY_PATH ./caps ml eval samples/water.pdb > "$WORK/mleval.log" 2>&1 ) || { cat "$WORK/mleval.log"; exit 1; }
+fi
 
 echo "== self-test of the staged app"
 "$APP/CapsStudio" --selftest "$APP/samples" "$WORK" | tee "$WORK/selftest.log" | tail -1
