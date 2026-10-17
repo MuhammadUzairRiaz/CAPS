@@ -105,6 +105,13 @@ CASES = [
     ("TraPPE-UA (transferable) PVCP, poly(vinyl cyclopentane) DP 4 (one chain, periodic)", ("grow", "[*]CC([*])C1CCCC1", 4, 5), "trappe-ua-umn", "types", []),
     ("TraPPE (TraPPE database) CO2, N2, NH3, H2S, O2, ethylene oxide, decane (vacuum; charge sites)", ("smiles", "O=C=O.N#N.N.S.O=O.C1CO1.CCCCCCCCCC"),
      "trappe-ua-umn", "types", []),
+    # the libraries built from their papers on this branch: L-OPLS on OPLS-AA 2024, EPM2 CO2, the two H2 models (centre a
+    # virtual site)
+    ("L-OPLS (Siu 2012) on OPLS-AA 2024: hexadecane and oleic acid (vacuum)", ("smiles", "CCCCCCCCCCCCCCCC.CCCCCCCC/C=C\\CCCCCCCC(=O)O"),
+     "lopls-siu2012", "types", []),
+    ("EPM2 CO2 (Harris & Yung 1995; vacuum)", ("smiles", "O=C=O.O=C=O.O=C=O"), "epm2-harris1995", "types", []),
+    ("H2 (Darkrim & Levesque 1998; vacuum; quadrupole charges, centre a virtual site)", ("smiles", "[H][H].[H][H].[H][H]"), "h2-darkrim1998", "types", []),
+    ("H2 (Buch 1994; vacuum; Lennard-Jones on the centre, a virtual site)", ("smiles", "[H][H].[H][H].[H][H]"), "h2-buch1994", "types", []),
     ("TraPPE-EH (TraPPE database) octane, methylamine, acetamide, acetonitrile, nitroethane (vacuum)", ("smiles",
      "CCCCCCCC.CN.CC(N)=O.CC#N.CC[N+](=O)[O-]"), "trappe-eh-umn", "types", []),
     ("TraPPE-EH (TraPPE database) benzene, pyridine, phenol, 2-chlorothiophene, naphthalene (vacuum)", ("smiles",

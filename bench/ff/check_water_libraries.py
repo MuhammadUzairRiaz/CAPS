@@ -86,6 +86,37 @@ def caps_tail(fid, d):
     return e / vol
 
 
+def ewald(pos, q, mol, edge, beta=0.3, rc=15.0, kmax=13):
+    """Coulomb energy (kcal/mol) of point charges in a cube by a plain Ewald sum, molecules' own pairs excluded"""
+    ke = 332.0637132991921
+    n = len(pos)
+    e = -ke * beta / math.sqrt(math.pi) * sum(x * x for x in q)
+    for i in range(n):
+        for j in range(i + 1, n):
+            d = [pos[j][k] - pos[i][k] for k in range(3)]
+            d = [x - edge * round(x / edge) for x in d]
+            r = math.sqrt(sum(x * x for x in d))
+            if mol[i] == mol[j]:
+                e -= ke * q[i] * q[j] * math.erf(beta * r) / r
+            elif r < rc:
+                e += ke * q[i] * q[j] * math.erfc(beta * r) / r
+    vol, tp = edge ** 3, 2 * math.pi / edge
+    er = 0.0
+    for a in range(0, kmax + 1):
+        for b in range(-kmax, kmax + 1):
+            for c in range(-kmax, kmax + 1):
+                if a == 0 and (b < 0 or (b == 0 and c <= 0)):
+                    continue   # half the vectors, each counted twice
+                k2 = tp * tp * (a * a + b * b + c * c)
+                re = im = 0.0
+                for (x, y, z), qi in zip(pos, q):
+                    ph = tp * (a * x + b * y + c * z)
+                    re += qi * math.cos(ph)
+                    im += qi * math.sin(ph)
+                er += 2 * math.exp(-k2 / (4 * beta * beta)) / k2 * (re * re + im * im)
+    return e + ke * 2 * math.pi / vol * er
+
+
 def gmx_run(out, args, inp=None):
     return subprocess.run([GMX, "-quiet"] + args, cwd=out, input=inp, capture_output=True, text=True)
 
@@ -99,7 +130,7 @@ def gromacs_terms(d, out):
     r = gmx_run(out, ["mdrun", "-s", "w.tpr", "-rerun", "w.gro", "-deffnm", "w", "-nt", "4"])
     if r.returncode:
         raise RuntimeError("mdrun: " + (r.stdout + r.stderr).strip().splitlines()[-1][:300])
-    r = gmx_run(out, ["energy", "-f", "w.edr", "-o", "e.xvg"], "Potential\nDisper.-corr.\n\n")
+    r = gmx_run(out, ["energy", "-f", "w.edr", "-o", "e.xvg"], "Potential\nDisper.-corr.\nLJ-(SR)\n\n")
     e = {}
     for l in r.stdout.split("Energy", 1)[-1].splitlines():
         m = re.match(r"^(\S.*?)\s+(-?[\d.]+(?:e[-+]?\d+)?)\s+--", l)
@@ -108,14 +139,15 @@ def gromacs_terms(d, out):
     return e
 
 
-def density(d, out):
-    """GROMACS NPT, 298 K, 1 bar, SETTLE, 5000 x 2 fs: the mean density (kg/m3) of the last half"""
+def density(d, out, flexible=False):
+    """GROMACS NPT, 298 K, 1 bar, 5000 steps: rigid (constraints h-angles) at 2 fs, flexible (SPC/Fw) at 0.5 fs; the mean
+    density (kg/m3) of the last half"""
     d.export_engines(out, stem="w", lammps=False, gromacs=True, run="check", cutoff=0)
     mdp = open(os.path.join(out, "w.mdp")).read()
     keep = [l for l in mdp.splitlines() if l.split("=")[0].strip() in ("cutoff-scheme", "coulombtype", "rcoulomb", "rvdw", "vdwtype", "vdw-modifier",
                                                                        "pme-order", "DispCorr", "pbc")]
-    run = keep + ["integrator = md", "dt = 0.002", "nsteps = 5000", "nstcalcenergy = 10", "nstenergy = 50", "tcoupl = v-rescale", "tc-grps = System",
-                  "tau-t = 0.1", "ref-t = 298", "pcoupl = c-rescale", "tau-p = 1.0", "ref-p = 1.0", "compressibility = 4.5e-5", "constraints = h-angles",
+    run = keep + ["integrator = md", f"dt = {0.0005 if flexible else 0.002}", "nsteps = 5000", "nstcalcenergy = 10", "nstenergy = 50", "tcoupl = v-rescale", "tc-grps = System",
+                  "tau-t = 0.1", "ref-t = 298", "pcoupl = c-rescale", "tau-p = 1.0", "ref-p = 1.0", "compressibility = 4.5e-5", f"constraints = {'none' if flexible else 'h-angles'}",
                   "fourier-spacing = 0.12", "gen-vel = yes", "gen-temp = 298", "gen-seed = 7", "nstxout-compressed = 0"]
     open(os.path.join(out, "npt.mdp"), "w").write("\n".join(run) + "\n")
     r = gmx_run(out, ["grompp", "-f", "npt.mdp", "-c", "w.gro", "-p", "w.top", "-o", "npt.tpr", "-maxwarn", "10"])
@@ -124,7 +156,7 @@ def density(d, out):
     r = gmx_run(out, ["mdrun", "-s", "npt.tpr", "-deffnm", "npt", "-nt", "8"])
     if r.returncode:
         raise RuntimeError("mdrun npt: " + (r.stdout + r.stderr).strip().splitlines()[-1][:300])
-    r = gmx_run(out, ["energy", "-f", "npt.edr", "-o", "rho.xvg", "-b", "5"], "Density\n\n")
+    r = gmx_run(out, ["energy", "-f", "npt.edr", "-o", "rho.xvg", "-b", "1.25" if flexible else "5"], "Density\n\n")
     m = re.search(r"^Density\s+(-?[\d.]+)\s+(\S+)", r.stdout, re.M)
     return float(m.group(1)), float(m.group(2))
 
@@ -200,8 +232,9 @@ def check_model(fid, m):
         line += f"\n{'':28s} GROMACS failed: {ex}"
     if DENSITY:
         try:
-            rho, err = density(d, os.path.join(out, "npt"))
-            line += f"\n{'':28s} density, 512 waters, 298 K, 1 bar, 10 ps NPT (GROMACS, O-H and H-O-H constrained): {rho:.1f} +- {err:.1f} kg/m3 (last 5 ps)"
+            rho, err = density(d, os.path.join(out, "npt"), m.get("flexible", False))
+            how = "2.5 ps NPT (GROMACS, flexible, 0.5 fs)" if m.get("flexible") else "10 ps NPT (GROMACS, O-H and H-O-H constrained)"
+            line += f"\n{'':28s} density, 512 waters, 298 K, 1 bar, {how}: {rho:.1f} +- {err:.1f} kg/m3 (last half)"
         except Exception as ex:
             line += f"\n{'':28s} density run failed: {ex}"
     print(line, flush=True)
@@ -233,6 +266,30 @@ for fid, m in W.MODELS.items():
     if only and only not in fid:
         continue
     check_model(fid, m)
+HORN_SI = os.path.expanduser("~/project/ff-sources/papers/water/horn2004_tip4pew_SI.zip")
+if (not only or "tip4pew" in only) and os.path.exists(HORN_SI):
+    # TIP4P-Ew's own benchmark (the paper's supporting information): 512 waters in a 24.8772889 A cube, the Ewald sum's
+    # four parts add to the configuration's Coulomb energy, -6620.3799 kcal/mol
+    import zipfile
+    z = zipfile.ZipFile(HORN_SI)
+    name = next(n for n in z.namelist() if n.endswith("starting_config_xyz.txt"))
+    xyz = [tuple(map(float, l.split())) for l in z.read(name).decode().splitlines() if len(l.split()) == 3]
+    edge = 2 * 12.43864445
+    p = os.path.join(work, "horn_si.xyz")
+    with open(p, "w") as f:
+        f.write(f"{len(xyz)}\nLattice=\"{edge} 0 0 0 {edge} 0 0 0 {edge}\" Properties=species:S:1:pos:R:3\n")
+        for k, (x, y, z_) in enumerate(xyz):
+            f.write(f"{'O' if k % 3 == 0 else 'H'} {x + edge / 2:.10f} {y + edge / 2:.10f} {z_ + edge / 2:.10f}\n")
+    d = caps.open(p)
+    d.field.assign(os.path.join(FF, "tip4pew-horn2004.json"), charges="forcefield")
+    L.caps_set_electrostatics(1, 1e-9, 0.4, 8)
+    ce = d.energy()["coulomb"]
+    L.caps_set_electrostatics(1, 1e-6, 0.6, 6)
+    ref = -55355.7756 + 54646.1553 - 5961.2003 + 50.4407
+    # not a pass / fail: the paper tapers the real-space sum molecule by molecule between 9.0 and 9.5 A (its section II), a
+    # converged Ewald sum does not; CAPS's PME here is converged (1e-9)
+    print(f"{'tip4pew-horn2004':28s} the paper's SI benchmark (512 waters): Coulomb CAPS {ce:.4f} (converged Ewald) / SI {ref:.4f} "
+          f"kcal/mol (real space tapered at 9.0-9.5 A by molecule): {ce - ref:+.4f}, {abs(ce - ref) / abs(ref):.1e} relative", flush=True)
 if not only or "mw" in only:
     d = water_xyz(os.path.join(work, "mw.xyz"), 0.9572, 104.52, 343, 21.8)
     check_plain("mw-molinero2009", d, "343 mW sites (Stillinger-Weber)")
@@ -246,5 +303,43 @@ if not only or "noble" in only:
         mols.append((p, 100))
     d = caps.pack(molecules=mols, box=30.0, tolerance=3.0, seed=3)
     check_plain(G.FID, d, "100 each of Ne, Ar, Kr, Xe (Lorentz-Berthelot cross terms)")
+if not only or "epm2" in only or "co2" in only:
+    gd = os.path.join(work, "co2")
+    os.makedirs(gd, exist_ok=True)
+    p = os.path.join(gd, "co2.xyz")
+    open(p, "w").write("3\nCO2\nO -1.149 0 0\nC 0 0 0\nO 1.149 0 0\n")
+    d = caps.pack(molecules=[(p, 200)], box=30.0, tolerance=3.0, seed=5)
+    check_plain("epm2-harris1995", d, "200 CO2 (EPM2, PME)")
+for fid in ("h2-buch1994", "h2-darkrim1998"):
+    if only and only not in fid:
+        continue
+    gd = os.path.join(work, fid)
+    os.makedirs(gd, exist_ok=True)
+    p = os.path.join(gd, "h2.sdf")   # with its bond (a bare XYZ leaves two H atoms unbonded)
+    open(p, "w").write("H2\n  CAPS\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n"
+                       "    0.0000    0.0000    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0\n"
+                       "    0.7410    0.0000    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0\n"
+                       "  1  2  1  0  0  0  0  0  0  0  0  0\nM  END\n$$$$\n")
+    d = caps.pack(molecules=[(p, 400)], box=30.0, tolerance=2.5, seed=6)
+    d.field.assign(os.path.join(FF, fid + ".json"), charges="forcefield")
+    try:
+        # van der Waals in GROMACS (the centre's Lennard-Jones on a virtual site); Coulomb against an Ewald sum of this
+        # script's own (single-precision GROMACS cannot resolve the quadrupole's small total from its large parts)
+        L.caps_set_electrostatics(1, 1e-10, 0.3, 8)
+        ev = d.energy()
+        L.caps_set_electrostatics(1, 1e-6, 0.6, 6)
+        g = gromacs_terms(d, gd)
+        gv = g.get("LJ (SR)", 0) + g.get("Disper. corr.", 0)
+        dv = ev["vdw"] - gv
+        at = [d.atom(i) for i in range(d.atoms)]
+        ew = ewald([a["position"] for a in at], [a["charge"] for a in at], [a["molecule"] for a in at], 30.0)
+        dc = ev["coulomb"] - ew
+        bad = abs(dv) > max(0.005, 5e-5 * abs(gv)) or abs(dc) > 1e-4
+        fails += bad
+        print(f"{fid:28s} 400 H2, centre a virtual site: van der Waals GROMACS {gv:.4f} / CAPS {ev['vdw']:.4f} kcal/mol ({dv:+.4f}); "
+              f"Coulomb Ewald {ew:.6f} / CAPS {ev['coulomb']:.6f} kcal/mol ({dc:+.1e}){'  DIFFERS' if bad else ''}", flush=True)
+    except Exception as ex:
+        fails += 1
+        print(f"{fid:28s} failed: {ex}", flush=True)
 print(f"{'all agree' if not fails else f'{fails} failed'} (work: {work})")
 sys.exit(1 if fails else 0)

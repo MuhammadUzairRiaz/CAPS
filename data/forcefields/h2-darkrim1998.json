@@ -1,0 +1,109 @@
+{
+ "format": "caps-forcefield",
+ "format_version": 1,
+ "name": "H2 with its quadrupole (Darkrim & Levesque 1998)",
+ "source": "F. Darkrim, D. Levesque, J. Chem. Phys. 109, 4981 (1998), p 4982",
+ "references": [
+  "F. Darkrim, D. Levesque, J. Chem. Phys. 109, 4981 (1998)"
+ ],
+ "units": "real",
+ "styles": {
+  "pair": "lj/cut/coul/long",
+  "bond": "harmonic",
+  "angle": "harmonic",
+  "dihedral": "opls",
+  "improper": "cvff"
+ },
+ "mixing": "arithmetic",
+ "special_lj": [
+  0,
+  0,
+  0
+ ],
+ "special_coul": [
+  0,
+  0,
+  0
+ ],
+ "cutoff": 12,
+ "atom_types": [
+  {
+   "name": "H_h2",
+   "element": "H",
+   "mass": 1.008,
+   "charge": 0.46637750938842876,
+   "description": "H2 proton"
+  },
+  {
+   "name": "M_h2",
+   "element": "",
+   "mass": 0.0,
+   "charge": -0.9327550187768575,
+   "description": "H2 centre (massless)"
+  }
+ ],
+ "pairs": [
+  {
+   "name": "H_h2",
+   "match": [
+    "H_h2"
+   ],
+   "params": [
+    0.0,
+    0.0
+   ],
+   "comment": "charge only"
+  },
+  {
+   "name": "M_h2",
+   "match": [
+    "M_h2"
+   ],
+   "params": [
+    0.07293039781,
+    2.958
+   ],
+   "comment": "epsilon/k 36.7 K, sigma 2.958 A at the centre"
+  }
+ ],
+ "bonds": [
+  {
+   "name": "H_h2-H_h2",
+   "match": [
+    "H_h2",
+    "H_h2"
+   ],
+   "style": "harmonic",
+   "params": [
+    0.0,
+    0.741
+   ],
+   "comment": "H-H 0.741 A (Darkrim & Levesque: 0.0741 nm); rigid: run the molecule as a rigid body"
+  }
+ ],
+ "angles": [],
+ "dihedrals": [],
+ "impropers": [],
+ "notes": [
+  "built by CAPS (bench/ff/make_gas_models.py) from F. Darkrim, D. Levesque, J. Chem. Phys. 109, 4981 (1998), p 4982",
+  "the centre is a massless virtual site: GROMACS writes it as one, LAMMPS has no form for it"
+ ],
+ "typing": "../typing/h2-darkrim1998.typing.json",
+ "virtual_sites": [
+  {
+   "smarts": "[#1][#1]",
+   "type": "M_h2",
+   "from": [
+    0,
+    1
+   ],
+   "w": [
+    0.5,
+    0.5
+   ],
+   "comment": "H2's centre, midway between the protons"
+  }
+ ],
+ "version": "1998",
+ "status": "validated"
+}

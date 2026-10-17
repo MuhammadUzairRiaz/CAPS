@@ -96,7 +96,7 @@
     450.0,
     0.8724
    ],
-   "comment": "CHARMM's TIP3P constants (toppar_water_ions.str: HT-OT 450.0, HT-OT-HT 55.0) at the model's geometry; the model is rigid, they serve a flexible run only"
+   "comment": "CHARMM's TIP3P constants (MacKerell et al. 1998, SI: OT-HT 450.00, HT-OT-HT 55.00) at the model's geometry; the model is rigid, they serve a flexible run only"
   }
  ],
  "angles": [
@@ -112,7 +112,7 @@
     55.0,
     103.6
    ],
-   "comment": "CHARMM's TIP3P constants (toppar_water_ions.str: HT-OT 450.0, HT-OT-HT 55.0) at the model's geometry; the model is rigid, they serve a flexible run only"
+   "comment": "CHARMM's TIP3P constants (MacKerell et al. 1998, SI: OT-HT 450.00, HT-OT-HT 55.00) at the model's geometry; the model is rigid, they serve a flexible run only"
   }
  ],
  "dihedrals": [],

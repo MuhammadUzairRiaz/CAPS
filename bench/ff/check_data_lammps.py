@@ -44,6 +44,7 @@ UNTYPED_BY_DESIGN = {"OPLS-AA phthalimide": "the 2024 table has no aryl or N-sub
 CASES = [
     ("OPLS-AA methyl vinyl ketone", ("smiles", "C=CC(C)=O"), "oplsaa2024", "auto", "rules"),
     ("OPLS-AA phthalimide", ("smiles", "O=C1NC(=O)c2ccccc21"), "oplsaa2024", "auto", "rules"),
+    ("L-OPLS (Siu 2012) on OPLS-AA 2024: hexadecane and oleic acid", ("smiles", "CCCCCCCCCCCCCCCC.CCCCCCCC/C=C\\CCCCCCCC(=O)O"), "lopls-siu2012", "types", "rules"),
     ("GAFF toluene", ("smiles", "Cc1ccccc1"), "gaff-1.81-ambertools", "gasteiger", "rules"),
     ("GAFF2 phenol", ("smiles", "Oc1ccccc1"), "gaff2-2.2.20-ambertools", "gasteiger", "rules"),
     # DREIDING's own torsion rules (Mayo 1990, cases a-j) where the file lists none: C=C double and conjugated single

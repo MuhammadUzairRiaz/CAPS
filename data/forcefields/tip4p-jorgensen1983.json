@@ -2,7 +2,7 @@
  "format": "caps-forcefield",
  "format_version": 1,
  "name": "TIP4P water",
- "source": "M. W. Mahoney, W. L. Jorgensen, J. Chem. Phys. 112, 8910 (2000), Table I (TIP4P column)",
+ "source": "W. L. Jorgensen, J. Chandrasekhar, J. D. Madura, R. W. Impey, M. L. Klein, J. Chem. Phys. 79, 926 (1983), Table I (TIP4P)",
  "references": [
   "W. L. Jorgensen, J. Chandrasekhar, J. D. Madura, R. W. Impey, M. L. Klein, J. Chem. Phys. 79, 926 (1983)"
  ],
@@ -56,10 +56,10 @@
     "OW"
    ],
    "params": [
-    0.155,
-    3.15365
+    0.15504166666666666,
+    3.1535779419764953
    ],
-   "comment": "O-O Lennard-Jones: q_H 0.520 e, sigma 3.15365 A, epsilon 0.1550 kcal/mol, r_OH 0.9572 A, H-O-H 104.52 deg, r_OM 0.15 A"
+   "comment": "O-O Lennard-Jones: q_H 0.52 e, q_M -1.04 e, A 600.0e3 kcal A^12/mol, C 610.0 kcal A^6/mol, r_OH 0.9572 A, H-O-H 104.52 deg, r_OM 0.15 A"
   },
   {
    "name": "HW",
@@ -96,7 +96,7 @@
     450.0,
     0.9572
    ],
-   "comment": "CHARMM's TIP3P constants (toppar_water_ions.str: HT-OT 450.0, HT-OT-HT 55.0) at the model's geometry; the model is rigid, they serve a flexible run only"
+   "comment": "CHARMM's TIP3P constants (MacKerell et al. 1998, SI: OT-HT 450.00, HT-OT-HT 55.00) at the model's geometry; the model is rigid, they serve a flexible run only"
   }
  ],
  "angles": [
@@ -112,13 +112,13 @@
     55.0,
     104.52
    ],
-   "comment": "CHARMM's TIP3P constants (toppar_water_ions.str: HT-OT 450.0, HT-OT-HT 55.0) at the model's geometry; the model is rigid, they serve a flexible run only"
+   "comment": "CHARMM's TIP3P constants (MacKerell et al. 1998, SI: OT-HT 450.00, HT-OT-HT 55.00) at the model's geometry; the model is rigid, they serve a flexible run only"
   }
  ],
  "dihedrals": [],
  "impropers": [],
  "notes": [
-  "built by CAPS (bench/ff/make_water_models.py) from M. W. Mahoney, W. L. Jorgensen, J. Chem. Phys. 112, 8910 (2000), Table I (TIP4P column)",
+  "built by CAPS (bench/ff/make_water_models.py) from W. L. Jorgensen, J. Chandrasekhar, J. D. Madura, R. W. Impey, M. L. Klein, J. Chem. Phys. 79, 926 (1983), Table I (TIP4P)",
   "rigid model: run it with its bonds and angle constrained (SHAKE / RATTLE in LAMMPS, SETTLE in GROMACS)"
  ],
  "version": "1983",

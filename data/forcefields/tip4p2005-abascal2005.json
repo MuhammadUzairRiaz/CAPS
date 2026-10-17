@@ -2,7 +2,7 @@
  "format": "caps-forcefield",
  "format_version": 1,
  "name": "TIP4P/2005 water",
- "source": "C. Vega, J. L. F. Abascal, M. M. Conde, J. L. Aragones, Faraday Discuss. 141, 251 (2009), Table I (the model's authors; arXiv:0901.1803): the original paper is not yet in hand",
+ "source": "the paper's Table I; TIP4P's geometry",
  "references": [
   "J. L. F. Abascal, C. Vega, J. Chem. Phys. 123, 234505 (2005)"
  ],
@@ -96,7 +96,7 @@
     450.0,
     0.9572
    ],
-   "comment": "CHARMM's TIP3P constants (toppar_water_ions.str: HT-OT 450.0, HT-OT-HT 55.0) at the model's geometry; the model is rigid, they serve a flexible run only"
+   "comment": "CHARMM's TIP3P constants (MacKerell et al. 1998, SI: OT-HT 450.00, HT-OT-HT 55.00) at the model's geometry; the model is rigid, they serve a flexible run only"
   }
  ],
  "angles": [
@@ -112,13 +112,13 @@
     55.0,
     104.52
    ],
-   "comment": "CHARMM's TIP3P constants (toppar_water_ions.str: HT-OT 450.0, HT-OT-HT 55.0) at the model's geometry; the model is rigid, they serve a flexible run only"
+   "comment": "CHARMM's TIP3P constants (MacKerell et al. 1998, SI: OT-HT 450.00, HT-OT-HT 55.00) at the model's geometry; the model is rigid, they serve a flexible run only"
   }
  ],
  "dihedrals": [],
  "impropers": [],
  "notes": [
-  "built by CAPS (bench/ff/make_water_models.py) from C. Vega, J. L. F. Abascal, M. M. Conde, J. L. Aragones, Faraday Discuss. 141, 251 (2009), Table I (the model's authors; arXiv:0901.1803): the original paper is not yet in hand",
+  "built by CAPS (bench/ff/make_water_models.py) from the paper's Table I; TIP4P's geometry",
   "rigid model: run it with its bonds and angle constrained (SHAKE / RATTLE in LAMMPS, SETTLE in GROMACS)"
  ],
  "version": "2005",

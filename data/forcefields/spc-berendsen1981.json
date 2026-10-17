@@ -2,9 +2,10 @@
  "format": "caps-forcefield",
  "format_version": 1,
  "name": "SPC water",
- "source": "GROMACS share/top/gromos43a1.ff (spc.itp, spce.itp, ffnonbonded.itp; GNU LGPL 2.1): spc.itp (OW -0.82, H 0.41; settles d_OH 0.1 nm, d_HH 0.16330 nm), OW C6 0.0026173456, C12 2.634129e-06",
+ "source": "H. J. C. Berendsen, J. R. Grigera, T. P. Straatsma, J. Phys. Chem. 91, 6269 (1987), p 6270 (SPC as its authors restate it: O-H 0.1 nm, tetrahedral H-O-H, charges -0.82 / +0.41, eq 18 A 0.37122, B 0.3428)",
  "references": [
-  "H. J. C. Berendsen, J. P. M. Postma, W. F. van Gunsteren, J. Hermans, in Intermolecular Forces, ed. B. Pullman (Reidel, Dordrecht, 1981), p. 331"
+  "H. J. C. Berendsen, J. P. M. Postma, W. F. van Gunsteren, J. Hermans, in Intermolecular Forces, ed. B. Pullman (Reidel, Dordrecht, 1981), p. 331",
+  "H. J. C. Berendsen, J. R. Grigera, T. P. Straatsma, J. Phys. Chem. 91, 6269 (1987)"
  ],
  "units": "real",
  "styles": {
@@ -49,10 +50,10 @@
     "OW"
    ],
    "params": [
-    0.15539371030909704,
-    3.165648283720967
+    0.15539425927790346,
+    3.1655578901998815
    ],
-   "comment": "O-O Lennard-Jones: q_H 0.41 e, r_OH 1.0 A, H-O-H 109.47 deg, O-O C6 0.0026173456 kJ nm^6/mol, C12 2.634129e-06 kJ nm^12/mol (sigma 3.165648 A, epsilon 0.650167 kJ/mol)"
+   "comment": "O-O Lennard-Jones: q_H 0.41 e, r_OH 1.0 A, H-O-H 109.47 deg, -(A/r)^6 + (B/r)^12 with A 0.37122 (kJ/mol)^(1/6) nm, B 0.3428 (kJ/mol)^(1/12) nm"
   },
   {
    "name": "HW",
@@ -100,7 +101,7 @@
  "dihedrals": [],
  "impropers": [],
  "notes": [
-  "built by CAPS (bench/ff/make_water_models.py) from GROMACS share/top/gromos43a1.ff (spc.itp, spce.itp, ffnonbonded.itp; GNU LGPL 2.1): spc.itp (OW -0.82, H 0.41; settles d_OH 0.1 nm, d_HH 0.16330 nm), OW C6 0.0026173456, C12 2.634129e-06",
+  "built by CAPS (bench/ff/make_water_models.py) from H. J. C. Berendsen, J. R. Grigera, T. P. Straatsma, J. Phys. Chem. 91, 6269 (1987), p 6270 (SPC as its authors restate it: O-H 0.1 nm, tetrahedral H-O-H, charges -0.82 / +0.41, eq 18 A 0.37122, B 0.3428)",
   "rigid model: run it with its bonds and angle constrained (SHAKE / RATTLE in LAMMPS, SETTLE in GROMACS)"
  ],
  "version": "1981",
