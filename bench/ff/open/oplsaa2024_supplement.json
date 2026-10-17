@@ -2812,6 +2812,54 @@
    ],
    "source": "CAPS fit (QM)",
    "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CM-CT-CT-CZ 0.35 kcal/mol; ridge 0.001; fragment CM-CT-CT-CZ"
+  },
+  {
+   "match": [
+    "CT",
+    "CT",
+    "OS",
+    "Si"
+   ],
+   "params": [
+    -3.7692,
+    0.1447,
+    -0.2287,
+    0.0596
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CT-CT-OS-Si 0.21 kcal/mol; ridge 0.001; fragment CT-CT-OS-Si"
+  },
+  {
+   "match": [
+    "CT",
+    "CT",
+    "Si",
+    "OS"
+   ],
+   "params": [
+    0.0,
+    0.0,
+    -0.2067,
+    0.0
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CT-CT-Si-OS 0.26 kcal/mol; ridge 0.001; V1, V2 and V4 set to zero: the three alkoxy O on the trialkoxysilyl Si sit 120 deg apart, so those terms cancel in the scan and are not determined by it (a ridge to 1.0 drives them to zero at the same RMS, 0.25-0.27); only V3 is kept; fragment CT-CT-Si-OS"
+  },
+  {
+   "match": [
+    "CT",
+    "OS",
+    "Si",
+    "OS"
+   ],
+   "params": [
+    0.4557,
+    -1.2303,
+    0.6758,
+    -0.0978
+   ],
+   "source": "CAPS fit (QM)",
+   "reason": "CAPS fit (QM), joint over 1 scans: MP2/cc-pVTZ//HF/6-31G** (as OPLS-AA/L); RMS CT-OS-Si-OS 0.44 kcal/mol; ridge 0.001; fragment CT-OS-Si-OS"
   }
  ],
  "charge_corrections": [
