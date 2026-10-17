@@ -133,25 +133,32 @@ struct Cell3 {
           for (int t : bins[(size_t(xs[a]) * n + ys[b]) * n + zs[c]]) f(t);
   }
 
-  // Worst (distance − limit) over the candidate set, exempting pairs within three bonds.
-  double score(const std::vector<Cand>& cand) const {
+  // Worst (distance − limit) over the candidate set, exempting pairs within three bonds. Once the worst is at or below
+  // `floor` the set cannot be the best one and the search stops (the value returned is then only known to be ≤ floor).
+  mutable std::vector<uint32_t> mark;   // exempt atoms of the current candidate: mark[atom] == stamp
+  mutable uint32_t stamp = 0;
+  double score(const std::vector<Cand>& cand, double floor = -1e300) const {
     double worst = 9.0;
+    if (mark.size() < p.size()) mark.resize(p.size(), 0);
     std::vector<int> excl, frontier, next;
     for (const auto& c : cand) {
+      if (++stamp == 0) std::fill(mark.begin(), mark.end(), 0), stamp = 1;
       excl = c.placed_nb;
       for (int l : c.local_nb) excl.insert(excl.end(), cand[size_t(l)].placed_nb.begin(), cand[size_t(l)].placed_nb.end());
+      for (int x : excl) mark[size_t(x)] = stamp;
       frontier = excl;
       for (int hop = 0; hop < 2; ++hop) {
         next.clear();
         for (int x : frontier)
           for (int y : adj[size_t(x)])
-            if (std::find(excl.begin(), excl.end(), y) == excl.end()) { excl.push_back(y); next.push_back(y); }
+            if (mark[size_t(y)] != stamp) { mark[size_t(y)] = stamp; next.push_back(y); }
         frontier.swap(next);
       }
       around(c.p, [&](int t) {
         const double v = dist(c.p, p[size_t(t)]) - limit(c.e, e[size_t(t)]);
-        if (v < worst && std::find(excl.begin(), excl.end(), t) == excl.end()) worst = v;
+        if (v < worst && mark[size_t(t)] != stamp) worst = v;
       });
+      if (worst <= floor) return worst;
     }
     return worst;
   }
@@ -265,7 +272,7 @@ struct ChainGrower {
       std::vector<Vec3> T = {c0, c0 + ex * 1.53};
       T.push_back(T[1] + ex * (1.53 * std::cos(rad(66))) + ey * (1.53 * std::sin(rad(66))));
       std::vector<Cand> c = {{'C', T[0], {}, {1}}, {'C', T[1], {}, {0, 2}}, {'C', T[2], {}, {1}}};
-      const double sc = cell.score(c);
+      const double sc = cell.score(c, best);
       if (sc > best) { best = sc; B = T; }
       if (sc >= 1.0) break;
     }
@@ -309,7 +316,7 @@ struct ChainGrower {
         for (const auto& x : sb) cand.push_back({'H', x.p, {bid[size_t(jj)]}, {}});
       }
       if (need_next) cand.push_back({'C', nxt, {bid[size_t(jj)]}, {}});
-      const double sc = cell.score(cand);
+      const double sc = cell.score(cand, best_sc);
       if (sc > best_sc) { best_sc = sc; best_next = nxt; best_sub = sb; best_cand = cand; }
       if (sc >= o.comfortable) break;   // plenty of room: stop looking
     }
