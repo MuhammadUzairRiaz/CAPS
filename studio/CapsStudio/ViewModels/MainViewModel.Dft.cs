@@ -111,8 +111,25 @@ public partial class MainViewModel
     private static string F(double v, string f = "0.000") => double.IsFinite(v) ? v.ToString(f, DftInv) : "–";
 
     // ---------------------------------------------------------------- 2D sheets & terminations (module 75)
-    public ObservableCollection<string> SheetPresets { get; } = new();
-    public ObservableCollection<string> TermSpecies { get; } = new();
+    // The preset and termination lists are read the first time anything asks for them, the page's ComboBoxes included:
+    // a ComboBox bound while its list is still empty drops the selected preset (the box shows nothing although
+    // SheetPreset holds "Ti3C2"), and raising SheetPreset again later does not bring it back.
+    private readonly ObservableCollection<string> _sheetPresets = new(), _termSpecies = new();
+    public ObservableCollection<string> SheetPresets { get { LoadSheetLists(); return _sheetPresets; } }
+    public ObservableCollection<string> TermSpecies { get { LoadSheetLists(); return _termSpecies; } }
+    private bool _sheetListsRead;
+    private void LoadSheetLists()
+    {
+        if (_sheetListsRead || DftDataDir.Length == 0) return;
+        _sheetListsRead = true;
+        try
+        {
+            foreach (var s in JsonNode.Parse(File.ReadAllText(Path.Combine(DftDataDir, "sheets", "sheets.json")))!["sheets"]!.AsArray()) _sheetPresets.Add((string?)s!["name"] ?? "");
+            foreach (var t in JsonNode.Parse(File.ReadAllText(Path.Combine(DftDataDir, "sheets", "terminations.json")))!["terminations"]!.AsArray()) _termSpecies.Add((string?)t!["name"] ?? "");
+        }
+        catch (Exception e) { DftStatus = "DFT data: " + e.Message; }
+        if (!_sheetPresets.Contains(_sheetPreset) && _sheetPresets.Count > 0) _sheetPreset = _sheetPresets[0];
+    }
     public static readonly string[] SiteKinds = ["fcc", "hcp", "top", "bridge"];
     public ObservableCollection<TermRow> TopTerms { get; } = new() { new TermRow { Species = "O", Fraction = 1 } };
     public ObservableCollection<TermRow> BottomTerms { get; } = new() { new TermRow { Species = "O", Fraction = 1 } };
@@ -153,18 +170,8 @@ public partial class MainViewModel
 
     public void OpenSheets()
     {
-        if (SheetPresets.Count == 0 && DftDataDir.Length > 0)
-        {
-            try
-            {
-                foreach (var s in JsonNode.Parse(File.ReadAllText(Path.Combine(DftDataDir, "sheets", "sheets.json")))!["sheets"]!.AsArray()) SheetPresets.Add((string?)s!["name"] ?? "");
-                foreach (var t in JsonNode.Parse(File.ReadAllText(Path.Combine(DftDataDir, "sheets", "terminations.json")))!["terminations"]!.AsArray()) TermSpecies.Add((string?)t!["name"] ?? "");
-            }
-            catch (Exception e) { DftStatus = "DFT data: " + e.Message; }
-            if (!SheetPresets.Contains(_sheetPreset) && SheetPresets.Count > 0) _sheetPreset = SheetPresets[0];
-        }
+        LoadSheetLists();
         SetModule(75);
-        Avalonia.Threading.Dispatcher.UIThread.Post(() => Raise(nameof(SheetPreset)));
     }
     public void AddTerm(bool top) => (top ? TopTerms : BottomTerms).Add(new TermRow { Species = "OH", Fraction = 0.25m });
     public void RemoveTerm(TermRow r) { TopTerms.Remove(r); BottomTerms.Remove(r); }
@@ -203,7 +210,9 @@ public partial class MainViewModel
         SheetInfo.Add(new Row("Site in-plane r", F(DNum(r["r_site"]), "0.0000") + " Å"));
         foreach (var n in (sheet["notes"] as JsonArray ?? [])) SheetInfo.Add(new Row("Note", (string?)n ?? ""));
         await LoadSites();
-        try { SlabDoc?.Dispose(); SlabDoc = CapsDocument.Open(SlabPath); } catch (Exception e) { DftStatus = "preview: " + e.Message; }
+        // folded into the cell: the sheet is one molecule bonded through the cell faces, and shown whole it is drawn as a
+        // sheared band reaching out of its cell
+        try { SlabDoc?.Dispose(); SlabDoc = CapsDocument.Open(SlabPath); SlabDoc.SetWrap(true); } catch (Exception e) { DftStatus = "preview: " + e.Message; }
         DftStatus = $"{(string?)r["formula"]} · {SheetValidation}";
         DftCli = (string?)r["command"] ?? DftCli;
         DftChanged?.Invoke();

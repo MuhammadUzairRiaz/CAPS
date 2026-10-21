@@ -1287,7 +1287,7 @@
    "shots": [
     {
      "img": "27_dft_sheets.jpg",
-     "cap": "**2D sheets & terminations**: a Ti₃C₂ sheet with OH on the fcc sites of its top face, the surface-site map and the validation (PASS), with the `caps terminate` line for the same step."
+     "cap": "**2D sheets & terminations**: a 5 × 5 Ti₃C₂ sheet with OH on the fcc sites of both faces (Ti₃C₂(OH)₂, 225 atoms), the surface-site map and the validation (PASS), with the `caps terminate` line for the same step."
     }
    ],
    "steps": [
