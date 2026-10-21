@@ -75,6 +75,8 @@
     {"id": "nylon66-alpha", "name": "Nylon 66, α", "file": "polymers/nylon66-alpha.cif", "use": "nylon 66 crystal", "hkl": [0, 1, 0], "kind": "polymer", "source": "C. W. Bunn & E. V. Garner, Proc. R. Soc. Lond. A 189, 39 (1947)"},
     {"id": "pet", "name": "Poly(ethylene terephthalate), triclinic", "file": "polymers/pet.cif", "use": "PET crystal", "hkl": [1, 0, 0], "kind": "polymer", "source": "R. de P. Daubeny, C. W. Bunn & C. J. Brown, Proc. R. Soc. Lond. A 226, 531 (1954)"},
     {"id": "plla-alpha", "name": "Poly(L-lactide), α", "file": "polymers/plla-alpha.cif", "use": "PLA crystal (10/3 helix, antiparallel chains)", "hkl": [1, 1, 0], "kind": "polymer", "source": "S. Sasaki & T. Asakura, Macromolecules 36, 8385 (2003)"},
-    {"id": "natural-rubber", "name": "Natural rubber (cis-1,4-polyisoprene)", "file": "polymers/natural-rubber.cif", "use": "strain-crystallised natural rubber", "hkl": [0, 1, 0], "kind": "polymer", "source": "Y. Takahashi & T. Kumano, Macromolecules 37, 4860 (2004)"}
+    {"id": "natural-rubber", "name": "Natural rubber (cis-1,4-polyisoprene)", "file": "polymers/natural-rubber.cif", "use": "strain-crystallised natural rubber", "hkl": [0, 1, 0], "kind": "polymer", "source": "Y. Takahashi & T. Kumano, Macromolecules 37, 4860 (2004)"},
+    {"id": "ptfe-iv", "name": "Polytetrafluoroethylene, phase IV (15/7 helix)", "file": "polymers/ptfe-iv.cif", "use": "PTFE crystal between 19 and 30 C (room temperature), the form most used in simulations; VASP and phono3py", "hkl": [1, 0, 0], "kind": "polymer", "source": "E. S. Clark & L. T. Muus, Z. Kristallogr. 117, 119 (1962); chain generated from the helix, not refined"},
+    {"id": "ptfe-ii", "name": "Polytetrafluoroethylene, phase II (13/6 helix)", "file": "polymers/ptfe-ii.cif", "use": "PTFE crystal below 19 C", "hkl": [1, 0, 0], "kind": "polymer", "source": "E. S. Clark & L. T. Muus, Z. Kristallogr. 117, 119 (1962); chain generated from the helix, not refined"}
   ]
 }

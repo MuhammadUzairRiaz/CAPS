@@ -1,0 +1,66 @@
+# Polytetrafluoroethylene, phase II (13/6 helix): E. S. Clark & L. T. Muus, Z. Kristallogr. 117, 119 (1962), doi:10.1524/zkri.1962.117.2-3.119
+# space group P1 (c the chain axis) (No. 1), Z = 13 CF2 per cell; oblique (probably triclinic) cell at 0 C, a' = b' = 5.59 A, c = 16.88 A, gamma = 119.3 deg, p. 121; 13/6 helix on that lattice pp. 123 and 126; no atomic coordinates in the paper
+# coordinates: generated from the helix symmetry and the cited lattice (tools/make_polymer_crystals.py), not refined
+# correction / model: the paper treats the lattice as the periodic arrangement of the chain axes (p. 121) and gives no space group: one chain per cell, written as P1 with alpha = beta = 90 deg (c along the chain axis)
+# correction / model: no atomic coordinates in the paper: the chain is generated from the 13/6 helix and the cited lattice, not refined: 13 CF2 in 6 turns span c exactly (rise 1.2985 A, twist 166.15 deg per CF2), C-C 1.54 A, C-F 1.34 A, F-C-F 108 deg (Hasegawa, Takahashi, Chatani & Tadokoro, Polym. J. 3, 600 (1972), p. 603); this gives C-C-C 115.48 deg, carbon helix radius 0.417 A and fluorine radius 1.619 A (Bunn & Howells, Nature 174, 549 (1954): 116 deg, about 0.42 A and 1.64 +- 0.05 A); one chain on the cell axis, setting angle 25 deg (the paper gives none: the one with the longest shortest F...F between chains, 2.723 A)
+# hydrogens: none (perfluorinated chain)
+# written in P1 with every atom of the paper's cell; 2.3468 g/cm3, shortest contacts beyond 1-3: H...H none below 3.2 A, H...X none below 3.2 A, X...X 2.59 A
+data_ptfe_ii
+_chemical_name_common 'Polytetrafluoroethylene, phase II (13/6 helix)'
+_symmetry_space_group_name_H-M 'P 1'
+_symmetry_Int_Tables_number 1
+_cell_length_a 5.59
+_cell_length_b 5.59
+_cell_length_c 16.88
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 119.3
+_cell_volume 459.9886
+loop_
+_symmetry_equiv_pos_as_xyz
+'x,y,z'
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+C1 C 0.085309 0.036155 0.000000
+C2 C 0.918705 0.983451 0.076923
+C3 C 0.072557 0.995982 0.153846
+C4 C 0.940399 0.024353 0.230769
+C5 C 0.043182 0.956729 0.307692
+C6 C 0.975747 0.059675 0.384615
+C7 C 0.003915 0.927389 0.461538
+C8 C 0.016651 0.081327 0.538462
+C9 C 0.963751 0.914683 0.615385
+C10 C 0.053740 0.084348 0.692308
+C11 C 0.931892 0.921523 0.769231
+C12 C 0.078518 0.068046 0.846154
+C13 C 0.915635 0.946340 0.923077
+F1 F 0.263049 0.305391 0.995078
+F2 F 0.229799 0.903484 0.004922
+F3 F 0.696115 0.734656 0.072001
+F4 F 0.834226 0.169736 0.081845
+F5 F 0.327060 0.209875 0.148924
+F6 F 0.092115 0.766909 0.158768
+F7 F 0.668773 0.857790 0.225847
+F8 F 0.986898 0.282900 0.235691
+F9 F 0.316145 0.066280 0.302770
+F10 F 0.933327 0.683733 0.312614
+F11 F 0.717310 0.013502 0.379693
+F12 F 0.142572 0.331255 0.389537
+F13 F 0.232805 0.907500 0.456617
+F14 F 0.789814 0.673009 0.466460
+F15 F 0.830609 0.166122 0.533540
+F16 F 0.265585 0.303723 0.543383
+F17 F 0.096132 0.769911 0.610463
+F18 F 0.694452 0.737196 0.620307
+F19 F 0.982713 0.280684 0.687386
+F20 F 0.327755 0.206612 0.697230
+F21 F 0.937437 0.685033 0.764309
+F22 F 0.669087 0.861587 0.774153
+F23 F 0.138777 0.330946 0.841232
+F24 F 0.314840 0.062169 0.851076
+F25 F 0.793074 0.672310 0.918155
+F26 F 0.719530 0.017688 0.927999
