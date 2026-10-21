@@ -3594,6 +3594,7 @@ bool property_values(const PipelineState& st, const std::string& name, std::vect
   }
   if (name == "Type" || name == "Particle Type" || name == "ParticleType") return each([&](size_t i) { return double(s.atoms[i].type); });
   if (name == "Element") return each([&](size_t i) { return double(s.atoms[i].element); });
+  if (name == "Tags") return each([&](size_t i) { return double(s.atoms[i].tags); });   // the tags an atom carries, as a bit mask (crystal, amorphous …)
   if (name == "Mass") return each([&](size_t i) { return s.mass_of(s.atoms[i]); });
   if (name == "Charge") return each([&](size_t i) { return s.atoms[i].charge; });
   if (name == "Position.X") return each([&](size_t i) { return s.atoms[i].pos[0]; });

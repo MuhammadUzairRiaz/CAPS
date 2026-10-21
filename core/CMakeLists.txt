@@ -25,6 +25,8 @@ add_library(caps_core STATIC
     src/mechanics.cpp
     src/mech_props.cpp
   src/grow.cpp
+  src/semicrystal.cpp
+  src/thermal.cpp
   src/field.cpp
   src/nbnxm.cpp
   src/nbnxm_avx2.cpp

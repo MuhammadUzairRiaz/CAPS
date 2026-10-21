@@ -1,0 +1,99 @@
+<!-- CAPS Studio › Build › Semicrystalline stack: a crystal lamella of straight stems along z and an amorphous layer of loops,
+     bridges and tails (caps semicrystalline); the cell coloured by its crystal and amorphous groups, the topology report,
+     the density and order profiles along the stack normal and the bridge lengths. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.SemicrystallinePage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="Border.pcard"><Setter Property="Background" Value="{DynamicResource Bg1B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+      <Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="10" /><Setter Property="Padding" Value="16,14" /></Style>
+  </p:PageBase.Styles>
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <v:SeedPicker DataContext="{Binding ScSeed}" ShowLabel="False" VerticalAlignment="Center" Margin="0,0,10,0" />
+          <Button Content="Report of the open cell" Click="OnAnalyse" IsEnabled="{Binding Idle}" ToolTip.Tip="Loops, bridges, tails and crystallinity of the open structure's current frame (after MD too)" />
+          <Button Content="Colour by phase" Click="OnColour" ToolTip.Tip="The view coloured by the tags crystal and amorphous" />
+          <Button Classes="primary" Click="OnBuild" IsEnabled="{Binding Idle}">
+            <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="play" Size="14" VerticalAlignment="Center" /><TextBlock Text="Build stack" VerticalAlignment="Center" /></StackPanel>
+          </Button>
+        </StackPanel>
+        <StackPanel Spacing="3">
+          <TextBlock Text="Semicrystalline stack · lamellae" FontSize="19" FontWeight="SemiBold" />
+          <TextBlock Text="Straight crystalline stems in a lamella; loops, bridges and tails in the amorphous layer between it and its periodic image" FontSize="12.5" Foreground="{DynamicResource MutedB}" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+    <Border DockPanel.Dock="Bottom" Height="28" Padding="22,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+      <TextBlock Text="{Binding ScProgress}" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+    </Border>
+    <Grid v:Panes.Split="True" ColumnDefinitions="400,*,*" ColumnSpacing="14" Margin="22,18">
+      <ScrollViewer>
+        <StackPanel Spacing="14">
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <TextBlock Text="Crystal" FontSize="13.5" FontWeight="SemiBold" />
+              <TextBlock Classes="dim" TextWrapping="Wrap" Text="Polyethylene, orthorhombic Pnam (Bunn 1939): a 7.40, b 4.93, c 2.534 Å, two stems per cell, stems along z" />
+              <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="4">
+                <TextBlock Text="Cells along a" Classes="label" /><TextBlock Grid.Column="1" Text="Cells along b" Classes="label" /><TextBlock Grid.Column="2" Text="Lamella · nm" Classes="label" />
+                <NumericUpDown Grid.Row="1" Value="{Binding ScNx}" Minimum="1" Maximum="20" FormatString="0" />
+                <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding ScNy}" Minimum="1" Maximum="20" FormatString="0" />
+                <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding ScCrystal}" Minimum="0.5" Maximum="50" Increment="0.5" FormatString="0.0#" />
+              </Grid>
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <TextBlock Text="Amorphous layer" FontSize="13.5" FontWeight="SemiBold" />
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="4">
+                <TextBlock Text="Thickness · nm" Classes="label" /><TextBlock Grid.Column="1" Text="Density · g/cm³" Classes="label" />
+                <NumericUpDown Grid.Row="1" Value="{Binding ScAmorphous}" Minimum="0.5" Maximum="50" Increment="0.5" FormatString="0.0#" />
+                <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding ScDensity}" Minimum="0.3" Maximum="1.2" Increment="0.01" FormatString="0.000" />
+              </Grid>
+              <TextBlock Text="Segments (fractions; a loop or bridge takes two stem ends, a tail one)" Classes="label" />
+              <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="4">
+                <TextBlock Text="Loops" Classes="label" /><TextBlock Grid.Column="1" Text="Bridges" Classes="label" /><TextBlock Grid.Column="2" Text="Tails" Classes="label" />
+                <NumericUpDown Grid.Row="1" Value="{Binding ScLoops}" Minimum="0" Maximum="1" Increment="0.05" FormatString="0.00" />
+                <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding ScBridges}" Minimum="0" Maximum="1" Increment="0.05" FormatString="0.00" />
+                <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding ScTails}" Minimum="0" Maximum="1" Increment="0.05" FormatString="0.00" />
+              </Grid>
+              <ComboBox ItemsSource="{x:Static vm:MainViewModel.ScReentries}" SelectedIndex="{Binding ScReentry}" HorizontalAlignment="Stretch" />
+              <CheckBox Content="United atom (count carbons only; assign oplsua2024 in Force field)" IsChecked="{Binding ScUnited}" />
+              <CheckBox Content="Relax: push-off with the crystal held, then minimise" IsChecked="{Binding ScRelax}" />
+              <TextBlock Text="{Binding ScEstimate}" Classes="dim" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard" IsVisible="{Binding ScHasError}">
+            <TextBlock Text="{Binding ScError}" TextWrapping="Wrap" Foreground="{DynamicResource ErrB}" />
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+      <Border Grid.Column="1" Classes="pcard" Padding="0">
+        <Panel Background="{DynamicResource Bg0B}"><v:MolView x:Name="View" /></Panel>
+      </Border>
+      <ScrollViewer Grid.Column="2">
+        <StackPanel Spacing="14">
+          <Border Classes="pcard">
+            <StackPanel Spacing="6">
+              <TextBlock Text="Topology and structure" FontSize="13.5" FontWeight="SemiBold" />
+              <TextBlock Text="{Binding ScSummary}" Classes="mono" TextWrapping="Wrap" />
+              <TextBlock Text="{Binding ScNotes}" Classes="dim" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <TextBlock Text="Density along the stack normal" FontSize="13.5" FontWeight="SemiBold" />
+              <v:LinePlot x:Name="Rho" Height="140" XLabel="z (Å)" YLabel="ρ (g/cm³)" AutoRange="True" />
+              <TextBlock Text="Chain order P2 along the stack normal" FontSize="13.5" FontWeight="SemiBold" />
+              <v:LinePlot x:Name="P2" Height="140" XLabel="z (Å)" YLabel="P2" AutoRange="True" />
+              <TextBlock Text="Bridge lengths" FontSize="13.5" FontWeight="SemiBold" />
+              <v:LinePlot x:Name="Bridges" Height="120" XLabel="CH2 units" YLabel="bridges" AutoRange="True" />
+              <TextBlock Classes="dim" TextWrapping="Wrap" Text="P2 = ⟨(3 cos²θ − 1)/2⟩ of each backbone chord against the stems, averaged over seven chords; an atom is crystalline above the cut. Equilibrate on a cluster: caps semicrystalline --lammps-input writes NVT with the crystal tethered, then NPT." />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+  </DockPanel>
+</p:PageBase>

@@ -170,6 +170,7 @@ public sealed partial class MainViewModel : ObservableObject
                 NamedSets.Clear(); _selCount = 0; Raise(nameof(SelectedCount)); Raise(nameof(SelectedChip)); Dyads.Clear();
                 QueueSelBar();   // the bar, and the hidden / ghosted counts, of the new document
                 PackDocumentChanged();   // Packing's last result belongs to the structure it made
+                Raise(nameof(DpdHasBeads)); Raise(nameof(DpdViewTitle));   // the DPD page shows its run's beads only while they are the open structure
                 _rxAimDc = true;         // a new structure: the crosslinking panel sets the target again
                 _tagOnly = null;
                 Probes.Clear(); ProbeCards.Clear(); Raise(nameof(HasProbes)); Raise(nameof(HasProbeCards));   // probes are a structure's atoms
@@ -330,6 +331,7 @@ public sealed partial class MainViewModel : ObservableObject
             if (_doc == null || !Set(ref _frame, Math.Clamp(value, 0, FrameMax))) return;
             _doc.SetFrame(_frame);
             Raise(nameof(FrameLabel));
+            if (_module == 72) Raise(nameof(DpdViewTitle));
             if (_module == 32) { TrajUpdateValues(); TrajectoryChanged?.Invoke(); }
             if (_ixOpen && _ixLive) RunInteractions();
             if (_module == 34 && _syncFrame) SplitFrameB();
@@ -571,6 +573,8 @@ public sealed partial class MainViewModel : ObservableObject
         [78] = v => v.OpenDftRuns(),
         [79] = v => v.OpenDftResults(),
         [80] = v => v.OpenCgw(),
+        [81] = v => v.OpenSemicrystalline(),
+        [82] = v => v.OpenThermal(),
     };
 
     public void SetModule(int m, [System.Runtime.CompilerServices.CallerMemberName] string caller = "")
@@ -640,6 +644,7 @@ public sealed partial class MainViewModel : ObservableObject
         Raise(nameof(IsAdsorption));
         Raise(nameof(IsSorption));
         Raise(nameof(IsDpd));
+        Raise(nameof(IsSemicrystalline)); Raise(nameof(IsThermal));
         Raise(nameof(IsReader));
         Raise(nameof(IsStudy));
         Raise(nameof(IsSheets)); Raise(nameof(IsAdsorbDft)); Raise(nameof(IsDftJob)); Raise(nameof(IsDftRuns)); Raise(nameof(IsDftResults)); Raise(nameof(IsCgw));
