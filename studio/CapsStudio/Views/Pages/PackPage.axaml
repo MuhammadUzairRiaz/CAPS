@@ -7,7 +7,7 @@
       <StackPanel Spacing="3">
         <TextBlock Text="Packing · CAPS Pack" Classes="title" />
         <v:RemoteRunPanel IsVisible="{Binding RunsRemote}" Margin="0,8,0,0" />
-        <TextBlock Text="Places copies of molecules you already have — solvents, gases, additives, fillers, curatives, pre-built chains — as rigid bodies into an empty box or around the current structure, without overlaps (as Packmol and Materials Studio's Amorphous Cell Packing). It does not make polymer chains: Polymer cell grows those. The packed cell can go straight to Export; Minimise and Dynamics are optional." Classes="muted" TextWrapping="Wrap" MaxWidth="900" />
+        <TextBlock Text="Places copies of molecules you already have — solvents, gases, additives, fillers, curatives, pre-built chains — as rigid bodies into an empty box or around the current structure, without overlaps. It does not make polymer chains: Polymer cell grows those. The packed cell can go straight to Export; Minimise and Dynamics are optional." Classes="muted" TextWrapping="Wrap" MaxWidth="900" />
       </StackPanel>
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
         <Button Click="OnSave" IsVisible="{Binding GrownUnsaved}" ToolTip.Tip="Save the packed cell">
@@ -56,7 +56,7 @@
             </StackPanel>
           </Border>
 
-          <!-- start from an empty box, or around the current structure (Amorphous Cell's Packing) -->
+          <!-- start from an empty box, or around the current structure  -->
           <Border Classes="card">
             <StackPanel>
               <Border Classes="phead"><TextBlock Text="Pack into" Classes="h2" VerticalAlignment="Center" /></Border>

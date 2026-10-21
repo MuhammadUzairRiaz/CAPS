@@ -167,13 +167,73 @@ internal static class Screenshot
                 var parts = kv[1].Split(':');
                 vm.LoadPolymerLibrary();
                 if (vm.PolymerLibrary.FirstOrDefault(e => e.Id == parts[0]) is { } poly) { vm.UseLibrary(poly, null); vm.SendPolymerToGrow(); }
-                vm.GrowChainsD = int.Parse(parts[2], inv); vm.GrowDpD = decimal.Parse(parts[3], inv); vm.GrowDensityD = decimal.Parse(parts[4], inv);
-                vm.Field.FfIndex = vm.Field.Library.ToList().FindIndex(e => e.Id == parts[1]);
+                vm.GrowChainsD = int.Parse(parts[2], inv); vm.GrowDpD = decimal.Parse(parts[3], inv); vm.GrowDensityD = decimal.Parse(parts[4], inv);                vm.Field.FfIndex = vm.Field.Library.ToList().FindIndex(e => e.Id == parts[1]);
                 vm.SetModule(0);
                 var t = vm.Grow();
                 while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); }
                 for (int k = 0; k < 400 && vm.Field.Working; ++k) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(25); }
                 Console.WriteLine($"growcell: {vm.Status} · field {vm.Field.ForceFieldName} incomplete={vm.Field.Incomplete}");
+            }
+            if (kv[0] == "growwrap") w.ViewModel.GrowWrap = kv[1] == "1";   // growwrap=1: the Polymer cell's view folded into the cell
+            if (kv[0] == "blendbuild")   // blendbuild=1: the Blend builder's components grown into one cell, awaited
+            {
+                var t = w.ViewModel.BuildBlend();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+                for (int k = 0; k < 400 && w.ViewModel.Field.Working; ++k) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(25); }
+                for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+                Console.WriteLine("blend: " + w.ViewModel.Status);
+            }
+            if (kv[0] == "solvate")   // solvate=1: the Solvation builder's box packed around the open structure, awaited
+            {
+                var t = w.ViewModel.Solvate();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+                for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+                Console.WriteLine("solvate: " + w.ViewModel.Status);
+            }
+            if (kv[0] == "packinto") { w.ViewModel.SetModule(5); w.ViewModel.PackStart = int.Parse(kv[1]); }   // packinto=1: Pack around the open structure
+            if (kv[0] == "packmol")   // packmol=SMILES*COUNT*NAME[+...]: molecules built from SMILES and added to Pack's input
+            {
+                w.ViewModel.SetModule(5);
+                foreach (var m in kv[1].Split('+'))
+                {
+                    var q = m.Split('*');
+                    w.ViewModel.PackCountD = int.Parse(q[1]);
+                    var t = w.ViewModel.AddPackMolecule(q[0], q.Length > 2 ? q[2] : null);
+                    while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); }
+                }
+                Console.WriteLine("pack input: " + w.ViewModel.Status);
+            }
+            if (kv[0] == "rxinsert")   // rxinsert=SMILES*COUNT: curative molecules inserted into the open cell (React, sulfur cure)
+            {
+                var q = kv[1].Split('*');
+                w.ViewModel.SetModule(6);
+                w.ViewModel.RxInsertSmiles = q[0];
+                w.ViewModel.RxInsertCount = decimal.Parse(q[1], System.Globalization.CultureInfo.InvariantCulture);
+                var t = w.ViewModel.InsertCurative();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); }
+                Console.WriteLine("rxinsert: " + w.ViewModel.Status);
+            }
+            if (kv[0] == "exportpage")   // exportpage=1: Export for the open structure, its checks run
+            {
+                w.ViewModel.OpenExportCenter();
+                w.ViewModel.RefreshEnginesNow();
+                for (int k = 0; k < 60; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
+            if (kv[0] == "graft")   // graft=GROUP:SHARE: Nanostructure › Functional groups grafted at random on the sheet or tube (built first)
+            {
+                var q = kv[1].Split(':');
+                w.ViewModel.FnGroup = q[0];
+                if (q.Length > 1) w.ViewModel.FnFraction = decimal.Parse(q[1], System.Globalization.CultureInfo.InvariantCulture);
+                var t = w.ViewModel.Functionalize();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+                for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+                Console.WriteLine("graft: " + w.ViewModel.Status);
+            }
+            if (kv[0] == "mdevery") w.ViewModel.MdFrameEveryD = decimal.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture);
+            if (kv[0] == "save")   // save=PATH: the open structure written there (a cell for the next picture)
+            {
+                w.ViewModel.Document?.Save(kv[1]);
+                Console.WriteLine("saved " + kv[1]);
             }
             if (kv[0] == "adsorb")   // adsorb=SMILES*COUNT[+SMILES*COUNT]|CYCLES|STEPS: the Adsorption locator on the open structure, awaited
             {
@@ -479,6 +539,13 @@ internal static class Screenshot
                 {
                     case "glass":
                         vm.Analyze.TgFromD = 600; vm.Analyze.TgToD = 300; vm.Analyze.TgStepD = 25; vm.Analyze.TgPsD = 5; vm.Analyze.EqPsD = 5; vm.GtReplicas = 3;   // holds of 5000 steps (1 fs)
+                        if (parts.Length > 7)   // glass:run:FROM:TO:STEP:HOLD_PS:ANNEAL_PS:REPLICAS[:TAU_P] (a short scan)
+                        {
+                            var g = parts.Skip(2).Select(x => decimal.Parse(x, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+                            (vm.Analyze.TgFromD, vm.Analyze.TgToD, vm.Analyze.TgStepD, vm.Analyze.TgPsD, vm.Analyze.EqPsD) = (g[0], g[1], g[2], g[3], g[4]);
+                            vm.GtReplicas = (int)g[5];
+                            if (g.Length > 6) vm.Analyze.TgTauPD = g[6];   // …:TAU_P (fs)
+                        }
                         vm.OpenGlass();
                         if (parts.Length > 1) t = vm.RunGlass();
                         break;
@@ -1102,6 +1169,7 @@ internal static class Screenshot
             if (kv[0] == "view") w.ViewModel.ViewBackgroundMode = int.Parse(kv[1]) == 1 ? 2 : 1;   // view=0 dark, 1 white (the theme when not given)
         }
         Pump();
+        Console.WriteLine("status: " + w.ViewModel.Status);
         var frame = w.CaptureRenderedFrame();
         frame?.Save(output);
         Console.WriteLine(frame == null ? "no frame captured" : $"wrote {output}");
