@@ -323,6 +323,28 @@
    "note": "one command layer (caps/dft_commands.hpp) behind the CLI, the C API and the Studio: the same options by construction",
    "options": "shared"
   },
+  "vasp-relax": {
+   "status": "gui",
+   "studio": "DFT workbench › DFT job (crystal: relaxation chain, phono3py thermal conductivity)",
+   "where": "ViewModels/MainViewModel.Dft.cs|DftCrystal(",
+   "capi": [
+    "caps_dft_run",
+    "caps_dft_help"
+   ],
+   "note": "one command layer (caps/dft_commands.hpp) behind the CLI, the C API and the Studio: the same options by construction",
+   "options": "shared"
+  },
+  "phono3py": {
+   "status": "gui",
+   "studio": "DFT workbench › DFT job (crystal: relaxation chain, phono3py thermal conductivity)",
+   "where": "ViewModels/MainViewModel.Dft.cs|DftCrystal(",
+   "capi": [
+    "caps_dft_run",
+    "caps_dft_help"
+   ],
+   "note": "one command layer (caps/dft_commands.hpp) behind the CLI, the C API and the Studio: the same options by construction",
+   "options": "shared"
+  },
   "vasp-conv": {
    "status": "gui",
    "studio": "DFT workbench (Sheets, Adsorption DFT, DFT runs, results)",

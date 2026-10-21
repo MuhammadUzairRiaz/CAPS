@@ -15,6 +15,7 @@
 #include "caps/dft_analysis.hpp"
 #include "caps/io.hpp"
 #include "caps/molecule.hpp"
+#include "caps/phono3py.hpp"
 #include "caps/provenance.hpp"
 #include "caps/slab2d.hpp"
 #include "caps/trajectory.hpp"
@@ -99,6 +100,39 @@ const std::vector<Cmd>& table() {
         {"gamma", "false", "Γ only (a molecule in a box)"},
         {"pp_dir", "", "your licensed PAW directory"}, {"profile", "slurm-workspace", "cluster profile"}},
        {"caps vasp-set Ti3C2_O.vasp --out structures/Ti3C2_O --pp-dir $PP_DIR"}},
+      {"vasp-relax", "caps vasp-relax CRYSTAL --out DIR [--dimensionality 3d|2d] | caps vasp-relax report DIR",
+       "A crystal unit cell's four-step relaxation (the group VASP guide, ch. 5): relax1 at about 2 × ENMAX with ISIF 3, relax2 at about 3 × ENMAX with ISIF 3, relax3 at relax1's cutoff with ISIF 4, relax4 with ISIF 2; PBE + D3-BJ; one batch script runs them in order, each step's CONTCAR the next POSCAR, stops when a step does not converge and prints the cell and position change of every step. CRYSTAL is a file or a crystal of data/crystals (pe-orthorhombic …). 2D sheets: the cell relaxes in plane only (LATTICE_CONSTRAINTS), k 1 along c, the dipole correction when polar.",
+       {{"out", "", "the case folder (relax1 … relax4, job.slurm)"}, {"label", "", "SYSTEM and the job name (default: the folder name)"},
+        {"dimensionality", "", "3d or 2d (a sheet with vacuum along c); without it a structure with a vacuum gap is refused, never guessed"},
+        {"dipole", "auto", "2d: auto (when the sheet is polar), on, off"},
+        {"encut_factors", "2,3", "relax1 and relax2 ENCUT / ENMAX (rounded up to 10 eV); relax3 and relax4 at relax1's"},
+        {"encuts", "", "one ENCUT per step instead, e.g. the guide's PE example 900,1350,900,900"},
+        {"kdens", "50", "Å: N_i = ceil(kdens / |a_i|), the guide's 50 = KPOINT × lattice vector length"},
+        {"nsw", "200", "ionic steps per attempt (three attempts per step)"},
+        {"pp_dir", "", "your licensed PAW directory: POTCAR and its ENMAX (else data/dft/enmax.json)"},
+        {"profile", "tud-barnard", "cluster profile (data/dft/clusters.json)"}, {"account", "", "Slurm account (e.g. your project)"}},
+       {"caps vasp-relax pe-orthorhombic --out PE_relax --account p_thermo_frc", "caps vasp-relax sheet.vasp --dimensionality 2d --out sheet_relax", "caps vasp-relax report PE_relax"}},
+      {"phono3py", "caps phono3py setup|estimate CRYSTAL --out DIR | check DIR | analyze DIR",
+       "Lattice thermal conductivity with VASP + phono3py (the group guide, ch. 7–8). setup writes POSCAR-unitcell, the single-point INCAR, the supercell KPOINTS and run_step1.sh … run_step7.sh (displacements; fc3 / fc2 job arrays with the vasprun.xml check and restart; check and quota cleanup; FORCES_FC3 / FORCES_FC2; fc3.hdf5 / fc2.hdf5; κ), run_dryrun.sh (a few supercells through the whole chain before any array; sets the arrays' time limits), cleanup.sh and analyze_kappa.py; estimate prints the supercells, the number of displaced supercells (phono3py's own counting rules) and the core-hours, writing nothing. CRYSTAL is a file, a crystal of data/crystals, or a vasp-relax folder (its POSCAR-unitcell and relax4's ENCUT). check counts the finished supercells; analyze reads kappa-m*.hdf5 (through analyze_kappa.py and h5py) or its extract: the κ tensor, along the chain against across, cumulative κ against frequency and mean free path, lifetimes, group velocities; a 2D sheet's κ is rescaled by the cell height over --thickness and its sheet conductance given.",
+       {{"out", "", "setup: the set's folder (with --mode both: full/ and random/ inside)"}, {"label", "", "job names (default: the folder name)"},
+        {"dimensionality", "", "3d or 2d: supercells, k- and q-meshes 1 along c; without it a structure with a vacuum gap is refused"},
+        {"dipole", "auto", "2d: auto (when polar), on, off"},
+        {"thickness", "", "2d: the sheet's effective thickness in Å (e.g. the bulk parent's interlayer distance) for κ of the sheet"},
+        {"mode", "auto", "full (every symmetry-distinct displacement), random (--rd N fitted by symfc), both, auto (random above 3000 fc3 supercells)"},
+        {"rd", "", "random fc3 supercells: a number or auto (phono3py's own estimate; default: a tenth of the full set, at least 50)"}, {"random_seed", "1", "for --rd"},
+        {"cutoff_pair", "", "Å, full set: leave out pairs farther apart (phono3py --cutoff-pair; fewer supercells, less accurate)"},
+        {"dim", "", "fc3 supercell, e.g. 2,2,4 (default: at least --fc3-length Å along each axis)"},
+        {"dim_fc2", "", "fc2 supercell (default: at least --fc2-length Å)"},
+        {"fc3_length", "10", "Å, the fc3 supercell rule (cell heights, 5 % short accepted)"}, {"fc2_length", "15", "Å, the fc2 supercell rule"},
+        {"kdens", "50", "Å, the supercells' k-meshes"}, {"mesh", "", "q-mesh for κ (default: 74 Å / |a_i| across, 405 Å / |a_i| along the chain: the guide's PE 160 15 10)"},
+        {"chain_axis", "auto", "auto (from the bonds), a, b, c or none"},
+        {"ts", "100,200,300,400", "temperatures (K), one κ run"}, {"method", "br", "br (relaxation-time approximation) or lbte (direct solution)"},
+        {"encut", "", "eV (default: relax4's from the vasp-relax folder, else about 2 × ENMAX)"},
+        {"dry_run", "2", "fc3 supercells in run_dryrun.sh (plus one fc2)"}, {"array_limit", "", "at most N array tasks at once (%N)"},
+        {"pp_dir", "", "your licensed PAW directory"}, {"profile", "tud-barnard", "cluster profile"}, {"account", "", "Slurm account"},
+        {"hdf5", "", "analyze: the kappa-m*.hdf5 (default: the newest in DIR)"}, {"python", "", "analyze: the Python with h5py (default: $CAPS_PYTHON, else python3)"}},
+       {"caps phono3py estimate pe-orthorhombic", "caps phono3py setup PE_relax --mode both --out PE_kappa --account p_thermo_frc", "caps phono3py check PE_kappa/full",
+        "caps phono3py analyze PE_kappa/full"}},
       {"vasp-conv", "caps vasp-conv setup|collect CASE",
        "ENCUT and k-mesh convergence single points from a case folder (conv_encut_*, conv_k_*), and the choice: the cheapest setting for which it AND every more expensive one pass (ENCUT: in-plane stress ≤ 1 kB and max force ≤ 0.01 eV/Å; k: E0 ≤ 1 meV/atom and stress ≤ 1 kB).",
        {{"encuts", "400,450,520,600,700,800", "eV"}, {"kmeshes", "6,9,12,15,18", "N × N × 1"}},
@@ -209,6 +243,37 @@ void provenance(const std::string& path, const std::string& engine, const std::s
   m.steps.push_back(st);
   try { write_manifest(m, path); } catch (...) {}
 }
+
+// a crystal of data/crystals (its catalogue id), a vasp-relax folder (its POSCAR-unitcell, else POSCAR), or a file
+System crystal_input(const std::string& in, const std::string& data_dir, std::string* label, Json* chain) {
+  fs::path p(in);
+  if (fs::is_directory(p)) {
+    if (chain && fs::exists(p / "chain.json")) { std::ifstream f(p / "chain.json"); std::stringstream ss; ss << f.rdbuf(); *chain = Json::parse(ss.str()); }
+    for (const char* f : {"POSCAR-unitcell", "POSCAR"}) if (fs::exists(p / f)) { if (label) *label = p.filename().string(); return read_vasp_poscar((p / f).string()); }
+    throw std::invalid_argument(in + " has no POSCAR-unitcell or POSCAR");
+  }
+  if (!fs::exists(p)) {
+    std::ifstream f(data_dir + "/crystals/catalogue.json");
+    std::stringstream ss;
+    ss << f.rdbuf();
+    const Json cat = Json::parse(ss.str());
+    for (const auto& e : cat["crystals"].items())
+      if (e.text("id") == in) { if (label) *label = in; return read_cif(data_dir + "/crystals/" + e.text("file")); }
+    throw std::invalid_argument(in + ": no such file or crystal of data/crystals/catalogue.json");
+  }
+  if (label) *label = p.stem().string();
+  return read_any(in);
+}
+std::array<int, 3> triple(const Json& a, const char* k) {
+  std::array<int, 3> d{0, 0, 0};
+  std::string t = S(a, k);
+  if (t.empty()) return d;
+  for (char& c : t) if (c == ',' || c == 'x') c = ' ';
+  std::stringstream ss(t);
+  for (int i = 0; i < 3; ++i) if (!(ss >> d[size_t(i)]) || d[size_t(i)] < 1) throw std::invalid_argument(std::string("--") + k + " needs three positive integers");
+  return d;
+}
+const std::vector<std::string> kBulkOrder = {"C", "N", "O", "F", "S", "Si", "Ti", "H"};
 
 std::vector<std::string> order_of(const Json& a) {
   auto o = L(a, "order");
@@ -569,6 +634,162 @@ Json dft_run(const std::string& c, const Json& a, const std::string& data_dir) {
     r["set"] = set_result(write_vasp_set(s, out, o));
     r["validation"] = v.status;
     provenance((fs::path(out) / "POSCAR").string(), "dft.vasp_set", "VASP set " + o.label, {{"stages", st}, {"kdens", S(a, "kdens", "45")}, {"profile", o.profile}});
+    return r;
+  }
+  if (c == "vasp-relax") {
+    if (!in.empty() && in[0] == "report") {
+      if (in.size() < 2) throw std::invalid_argument("vasp-relax report DIR");
+      r["report"] = relax_chain_report(in[1]);
+      std::string t;
+      for (const auto& st : r["report"]["steps"].items()) {
+        t += st.text("step") + (st["done"].boolean() ? "  done" : "  not done") + (st.has("E0") ? "  E0 " + std::to_string(st.num("E0", 0)) + " eV" : "");
+        if (st.has("volume_change_percent")) {
+          char b[160];
+          std::snprintf(b, sizeof b, "  volume %+.2f %%, largest shift %.4f A", st.num("volume_change_percent", 0), st.num("max_displacement", 0));
+          t += b;
+        }
+        t += "\n";
+      }
+      r["text"] = t;
+      return r;
+    }
+    if (in.empty()) throw std::invalid_argument("vasp-relax: give the crystal (a file or an id of data/crystals)");
+    const std::string out = S(a, "out");
+    if (out.empty()) throw std::invalid_argument("vasp-relax: --out DIR");
+    std::string label;
+    const System s = group_by_species(crystal_input(in[0], data_dir, &label, nullptr), kBulkOrder);
+    RelaxChainOptions o;
+    o.label = S(a, "label", fs::path(out).filename().string());
+    o.data_dir = data_dir, o.pp_dir = S(a, "pp_dir"), o.profile = S(a, "profile", "tud-barnard"), o.account = S(a, "account");
+    o.kdens = N(a, "kdens", 50), o.nsw = int(N(a, "nsw", 200));
+    o.dimensionality = S(a, "dimensionality"), o.dipole = S(a, "dipole", "auto");
+    if (a.has("encut_factors")) { o.factors.clear(); for (const auto& x : L(a, "encut_factors")) o.factors.push_back(std::stod(x)); }
+    for (const auto& x : L(a, "encuts")) o.encuts.push_back(std::stod(x));
+    const auto res = write_relax_chain(s, out, o);
+    Json j = Json::object();
+    j["dir"] = res.dir, j["enmax"] = res.enmax, j["enmax_source"] = res.enmax_source, j["dimensionality"] = res.dimensionality, j["polar"] = res.polar;
+    Json st = Json::array();
+    std::string t = "relaxation chain " + out + " (" + res.dimensionality + ", " + std::to_string(s.atoms.size()) + " atoms, ENMAX " + std::to_string(int(res.enmax)) + " eV):\n";
+    for (const auto& x : res.steps) {
+      Json e = Json::object();
+      e["name"] = x.name, e["encut"] = x.encut, e["isif"] = x.isif;
+      st.push_back(e);
+      t += "  " + x.name + "  ENCUT " + std::to_string(int(x.encut)) + " eV  ISIF " + std::to_string(x.isif) + "\n";
+    }
+    j["steps"] = st;
+    Json k = Json::array();
+    for (int x : res.kpoints) k.push_back(x);
+    j["kpoints"] = k, j["ranks"] = res.parallel.ranks, j["time"] = res.parallel.time;
+    t += "  k-mesh " + std::to_string(res.kpoints[0]) + " " + std::to_string(res.kpoints[1]) + " " + std::to_string(res.kpoints[2]) + ", " + std::to_string(res.parallel.ranks) + " ranks; submit: sbatch job.slurm\n";
+    Json n = Json::array();
+    for (const auto& x : res.notes) n.push_back(x), t += "  note: " + x + "\n";
+    j["notes"] = n;
+    r["chain"] = j;
+    r["text"] = t;
+    provenance((fs::path(out) / "POSCAR").string(), "dft.vasp_relax", "VASP relaxation chain " + o.label, {{"crystal", in[0]}, {"dimensionality", res.dimensionality}, {"profile", o.profile}});
+    return r;
+  }
+  if (c == "phono3py") {
+    if (in.empty()) throw std::invalid_argument("phono3py setup|estimate CRYSTAL | check DIR | analyze DIR");
+    const std::string act = in[0];
+    if (act == "check") {
+      if (in.size() < 2) throw std::invalid_argument("phono3py check DIR");
+      r["check"] = phono3py_check(in[1]);
+      const Json& k = r["check"];
+      std::string t;
+      for (const char* f : {"fc3", "fc2"}) {
+        const Json& x = k[f];
+        t += std::string(f) + ": " + (x.has("error") ? x.text("error") : std::to_string(int(x.num("done", 0))) + " of " + std::to_string(int(x.num("total", 0))) + " done, " +
+                                                                           std::to_string(int(x.num("failed", 0))) + " failed, " + std::to_string(int(x.num("not_run", 0))) + " not run" +
+                                                                           (x.has("rerun") ? "  (" + x.text("rerun") + ")" : "")) + "\n";
+      }
+      t += k["ready_for_step5"].boolean() ? "ready for run_step5.sh\n" : "not ready for run_step5.sh\n";
+      r["text"] = t;
+      r["ok"] = k["ready_for_step5"].boolean();
+      return r;
+    }
+    if (act == "analyze") {
+      if (in.size() < 2) throw std::invalid_argument("phono3py analyze DIR");
+      const fs::path d = in[1];
+      Json plan = Json::object();
+      if (fs::exists(d / "plan.json")) { std::ifstream f(d / "plan.json"); std::stringstream ss; ss << f.rdbuf(); plan = Json::parse(ss.str()); }
+      fs::path ex = d / "kappa_extract";
+      if (!fs::exists(ex / "kappa_summary.json")) {
+        std::string h5 = S(a, "hdf5");
+        if (h5.empty()) {
+          fs::file_time_type best{};
+          for (const auto& e : fs::directory_iterator(d)) {
+            const std::string n = e.path().filename().string();
+            if (n.rfind("kappa-m", 0) == 0 && e.path().extension() == ".hdf5" && (h5.empty() || e.last_write_time() > best)) h5 = e.path().string(), best = e.last_write_time();
+          }
+        }
+        if (h5.empty()) throw std::invalid_argument(d.string() + ": no kappa_extract/ and no kappa-m*.hdf5 (run run_step7.sh first)");
+        const char* env = std::getenv("CAPS_PYTHON");
+        const std::string py = S(a, "python", env ? env : "python3");
+        std::string script = (d / "analyze_kappa.py").string();
+        if (!fs::exists(script)) throw std::invalid_argument(script + " missing (written by caps phono3py setup)");
+        const std::string cmd = "'" + py + "' '" + script + "' '" + h5 + "' --out '" + ex.string() + "'";
+        if (std::system(cmd.c_str()) != 0 || !fs::exists(ex / "kappa_summary.json"))
+          throw std::runtime_error("analyze_kappa.py failed (it needs h5py and numpy: --python PY or CAPS_PYTHON): " + cmd);
+      }
+      int axis = plan.has("chain_axis") ? int(plan.num("chain_axis", -1)) : -1;
+      const std::string ca = S(a, "chain_axis", "auto");
+      if (ca == "a") axis = 0; else if (ca == "b") axis = 1; else if (ca == "c") axis = 2; else if (ca == "none") axis = -1;
+      const std::string dim = plan.has("dimensionality") ? plan.text("dimensionality") : "3d";
+      const double h = plan.num("cell_height", 0), th = N(a, "thickness", plan.num("thickness", 0));
+      r["analysis"] = analyze_kappa_extract(ex.string(), (d / "kappa_analysis").string(), axis, dim, h, th);
+      std::string t;
+      for (const auto& row : r["analysis"]["temperatures"].items()) {
+        const auto& k = row["kappa_cell"].items();
+        char b[400];
+        std::snprintf(b, sizeof b, "T %4.0f K  kappa xx %.3f yy %.3f zz %.3f W/m/K", row.num("T", 0), k[0].number(), k[1].number(), k[2].number());
+        t += b;
+        if (row.has("along_chain")) { std::snprintf(b, sizeof b, "  along the chain %.3f, across %.3f", row.num("along_chain", 0), row.num("transverse_mean", 0)); t += b; }
+        if (row.has("sheet_conductance_nW_per_K")) { std::snprintf(b, sizeof b, "  sheet G xx %.3f nW/K", row["sheet_conductance_nW_per_K"].items()[0].number()); t += b; }
+        if (row.has("kappa_sheet_xx_yy_xy")) { std::snprintf(b, sizeof b, "  sheet kappa xx %.3f W/m/K", row["kappa_sheet_xx_yy_xy"].items()[0].number()); t += b; }
+        t += "\n";
+      }
+      r["text"] = t + "tables in " + (d / "kappa_analysis").string() + "\n";
+      return r;
+    }
+    if (act != "setup" && act != "estimate") throw std::invalid_argument("phono3py setup|estimate|check|analyze");
+    if (in.size() < 2) throw std::invalid_argument("phono3py " + act + " CRYSTAL (a file, an id of data/crystals or a vasp-relax folder)");
+    std::string label;
+    Json chain = Json::object();
+    const System s = group_by_species(crystal_input(in[1], data_dir, &label, &chain), kBulkOrder);
+    Phono3pyOptions o;
+    o.label = S(a, "label", S(a, "out").empty() ? label : fs::path(S(a, "out")).filename().string());
+    o.data_dir = data_dir, o.pp_dir = S(a, "pp_dir"), o.profile = S(a, "profile", "tud-barnard"), o.account = S(a, "account");
+    o.dim_fc3 = triple(a, "dim"), o.dim_fc2 = triple(a, "dim_fc2"), o.mesh = triple(a, "mesh");
+    o.fc3_length = N(a, "fc3_length", 10), o.fc2_length = N(a, "fc2_length", 15), o.kdens = N(a, "kdens", 50);
+    o.mode = S(a, "mode", "auto"), o.rd_auto = S(a, "rd") == "auto", o.rd = o.rd_auto ? 0 : int(N(a, "rd", 0)), o.cutoff_pair = N(a, "cutoff_pair", 0), o.random_seed = int(N(a, "random_seed", 1));
+    const std::string ca = S(a, "chain_axis", "auto");
+    o.chain_axis = ca == "a" ? 0 : ca == "b" ? 1 : ca == "c" ? 2 : ca == "none" ? -1 : -2;
+    if (a.has("ts")) { o.temperatures.clear(); for (const auto& x : L(a, "ts")) o.temperatures.push_back(std::stod(x)); }
+    o.method = S(a, "method", "br");
+    if (o.method != "br" && o.method != "lbte") throw std::invalid_argument("--method is br or lbte");
+    o.encut = N(a, "encut", 0);
+    if (o.encut <= 0 && chain.has("steps")) for (const auto& st : chain["steps"].items()) if (st.text("name") == "relax4") o.encut = st.num("encut", 0);
+    o.dimensionality = S(a, "dimensionality", chain.has("dimensionality") ? chain.text("dimensionality") : "");
+    o.dipole = S(a, "dipole", "auto"), o.thickness = N(a, "thickness", 0);
+    o.dry_run = int(N(a, "dry_run", 2)), o.array_limit = int(N(a, "array_limit", 0));
+    Json plans = Json::array();
+    std::string t;
+    if (act == "estimate") {
+      const std::vector<std::string> modes = o.mode == "both" || o.mode == "auto" ? std::vector<std::string>{"full", "random"} : std::vector<std::string>{o.mode};
+      for (const auto& m : modes) { const auto p = plan_phono3py(s, o, m); plans.push_back(p.json()); t += p.text(); }
+    } else {
+      const std::string out = S(a, "out");
+      if (out.empty()) throw std::invalid_argument("phono3py setup: --out DIR");
+      const auto res = write_phono3py_set(s, out, o);
+      Json dirs = Json::array();
+      for (size_t k = 0; k < res.dirs.size(); ++k) { plans.push_back(res.plans[k].json()); dirs.push_back(res.dirs[k]); t += res.dirs[k] + ":\n" + res.plans[k].text(); }
+      r["dirs"] = dirs;
+      t += "next: sbatch run_dryrun.sh in each set (README.txt has the order)\n";
+      provenance((fs::path(res.dirs[0]) / "POSCAR-unitcell").string(), "dft.phono3py", "phono3py set " + o.label, {{"crystal", in[1]}, {"mode", o.mode}, {"profile", o.profile}});
+    }
+    r["plans"] = plans;
+    r["text"] = t;
     return r;
   }
   if (c == "vasp-conv") {

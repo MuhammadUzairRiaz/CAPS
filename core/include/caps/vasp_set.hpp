@@ -136,6 +136,71 @@ std::vector<std::string> write_cdd_set(const std::string& complex_dir, const Sys
 std::string write_freq_set(const std::string& case_dir, std::vector<int> free_atoms = {});
 std::string write_aimd_set(const System& start, const std::string& out, const VaspSetOptions& o, double temperature = 300, int nsw = 1000, int segments = 6);
 
+// ---------------------------------------------------------------- bulk crystals: the four-step relaxation chain
+// The group VASP guide's scheme for a crystal unit cell (polymer crystals: PBE + D3-BJ): relax1 at about 2 × ENMAX with
+// ISIF 3 (cell and ions, an initial relaxation), relax2 at about 3 × ENMAX with ISIF 3 (a detailed one), relax3 back at
+// relax1's cutoff with ISIF 4 (fixed volume) and relax4 with ISIF 2 (fixed cell). Each step starts from the previous
+// CONTCAR, unchanged; a step that does not reach the required accuracy stops the chain. The guide's own PE example used
+// 900 / 1350 / 900 / 900 eV (--encuts). k-mesh: N_i = ceil(kdens / |a_i|) along all three axes (kdens 50 Å: the guide's
+// rule of thumb "50 = KPOINT × lattice vector length").
+// 2D sheets (dimensionality 2d): the vacuum is along c (perpendicular to a and b, at least 10 Å, 15 Å recommended), the
+// k-mesh is 1 along c, the cell relaxes in plane only (LATTICE_CONSTRAINTS = .TRUE. .TRUE. .FALSE. with ISIF 3 and 4: VASP
+// ≥ 6.4.3 with IBRION 2, ≥ 6.5.1 with ISIF 4, a bug before 6.5.0 — VASP wiki), and a polar sheet gets the dipole
+// correction along z (IDIPOL 3, LDIPOL, DIPOL at the centre of the atoms). D3-BJ as for 3D.
+struct RelaxStep { std::string name; double encut = 0; int isif = 3; };
+// The vacuum gap along c (Å, between the atoms' planes, through the periodic boundary) and the guess it gives: "2d" when
+// the gap is at least 8 Å, else "3d". Only a hint: the user chooses.
+struct DimensionalityHint { std::string guess; double gap = 0; };
+DimensionalityHint dimensionality_hint(const System& s);
+// The user's choice ("2d", "3d" or "" for none) checked against the structure: no choice and a vacuum gap → an error that
+// asks for one (never a silent guess); 2d needs c perpendicular to a and b and a gap of at least 10 Å (< 15 Å: a note);
+// 3d chosen for a structure with a gap: a note. Returns "2d" or "3d".
+std::string resolve_dimensionality(const System& s, const std::string& chosen, std::vector<std::string>* notes = nullptr);
+// No space-group operation maps z → −z: the sheet has a net dipole along its normal.
+bool polar_along_c(const System& s);
+// ENMAX per element (eV) from data/dft/enmax.json (standard PBE PAW datasets), used when no POTCAR directory is given
+std::map<std::string, double> enmax_table(const std::string& data_dir);
+std::array<int, 3> kmesh_bulk(const System& s, double kdens, bool two_d = false);   // two_d: 1 along c
+std::string kpoints_bulk_text(const System& s, double kdens, const std::string& comment = "", bool two_d = false);
+struct RelaxChainOptions {
+  std::string label, profile = "tud-barnard", pp_dir, data_dir, account;
+  double kdens = 50.0;
+  std::vector<double> factors{2.0, 3.0};   // relax1, relax2 ENCUT / ENMAX (rounded up to 10 eV); relax3, relax4 at relax1's
+  std::vector<double> encuts;              // or one ENCUT per step (eV), e.g. the guide's 900,1350,900,900
+  int nsw = 200;
+  std::string ediff = "1E-6", ediffg = "-1E-2";
+  int ivdw = 12;
+  std::string dimensionality;              // "2d" | "3d" | "" (3d unless the structure has a vacuum gap: then an error)
+  std::string dipole = "auto";             // 2d: auto (when polar) | on | off
+  // set by write_relax_chain from the above
+  bool two_d = false;
+  double dipole_z = -1;
+};
+struct RelaxChainResult {
+  std::string dir;
+  std::vector<std::string> files;
+  double enmax = 0;
+  std::string enmax_source;
+  std::vector<RelaxStep> steps;
+  std::array<int, 3> kpoints{1, 1, 1};
+  ClusterRule parallel;
+  std::string dimensionality = "3d";
+  bool polar = false;
+  double vacuum = 0;
+  std::vector<std::string> notes;
+};
+std::vector<RelaxStep> relax_schedule(double enmax, const RelaxChainOptions& o);
+std::vector<IncarLine> relax_incar_lines(const RelaxStep& st, int atoms, const RelaxChainOptions& o, const ClusterRule& par);
+// One batch script that runs relax1 … relax4 in order in a scratch workspace: each step's CONTCAR becomes the next POSCAR,
+// "reached required accuracy" is checked (up to three attempts from the last geometry), a failure stops the chain, and the
+// cell and atomic position change of each step is printed; the last CONTCAR is copied to POSCAR-unitcell (phono3py's start).
+std::string relax_chain_script(const ClusterProfile& p, const std::string& name, const std::vector<RelaxStep>& steps, int atoms);
+// The case folder: POSCAR, KPOINTS, relax1..relax4/INCAR, job.slurm, make_potcar.sh, POTCAR (with pp_dir), chain.json.
+RelaxChainResult write_relax_chain(const System& s, const std::string& dir, const RelaxChainOptions& o);
+// What a (partly) finished chain did: per step done, converged, final E0, cell lengths and volume before → after, the
+// largest atomic displacement (Å, minimum image).
+Json relax_chain_report(const std::string& dir);
+
 // ---------------------------------------------------------------- job tools (run on the cluster's files)
 struct ToolAction { std::string path, what; long long bytes = 0; };
 // stage folders below `root` that a job may still run (not DONE), skipping `queued` working directories
