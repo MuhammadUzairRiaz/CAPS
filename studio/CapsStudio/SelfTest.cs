@@ -5102,6 +5102,15 @@ internal static class SelfTest
                 vm.WriteJob().GetAwaiter().GetResult();
                 Check(lc != null && lc.Why.Contains("vacuum") && vm.JobMesh.StartsWith("15 × 15 × 1") && File.Exists(Path.Combine(vm.JobOut, "job.slurm")) && vm.JobFiles.Contains("KPOINTS"),
                       $"VASP set designer: {vm.JobIncar.Count} INCAR lines · mesh {vm.JobMesh} · {vm.DftStatus}");
+                // a polymer crystal: the relaxation chain and the phono3py estimate (PE, Bunn 1939)
+                vm.DftCrystalIndex = Math.Max(0, vm.DftCrystals.IndexOf("pe-orthorhombic"));
+                vm.DftDim = 0;
+                vm.JobOut = Path.Combine(outDir, "dft-crystals", "pe");   // outside the DFT folder the run monitor counts below
+                vm.DftCrystal("relax").GetAwaiter().GetResult();
+                var relaxOk = File.Exists(Path.Combine(outDir, "dft-crystals", "pe_relax", "relax4", "INCAR")) && vm.DftCrystalText.Contains("relax2  ENCUT 1200 eV  ISIF 3");
+                vm.DftCrystal("estimate").GetAwaiter().GetResult();
+                Check(relaxOk && vm.DftCrystalText.Contains("15 fc2 supercells") && vm.DftCrystalText.Contains("q-mesh for kappa 10 15 160"),
+                      $"crystal workflows: relax chain {relaxOk} · {vm.DftCrystalText.Split('\n').Skip(2).FirstOrDefault()} · {vm.DftStatus}");
                 // the adsorption set: 5 × 5, the default oligomer
                 vm.OpenAdsorbDft();
                 vm.AdsSlab = ohSlab;
