@@ -198,6 +198,8 @@ def _declare(L: C.CDLL) -> None:
         "caps_build_smiles": ([S, S, C.POINTER(_BuildOpts), B, I], P),
         "caps_build_beads": ([S, S, C.c_uint64, B, I], P), "caps_bead_templates": ([S, B, I], I),
         "caps_crystal_build": ([S, B, I], P), "caps_nano_build": ([S, B, I], P),
+        "caps_semicrystalline_build": ([S, P, P, B, I], P), "caps_semicrystalline_analyse": ([P, B, I], I),
+        "caps_thermal": ([P, S, P, P, B, I], I), "caps_thermal_lammps": ([P, S, S, B, I], I),
         "caps_kg_build": ([S, B, I], P), "caps_martini_melt": ([S, P, P, B, I], P), "caps_kg_lammps": ([P, S, S, D, D], I),
         "caps_solvate": ([P, S, P, P, B, I], P),
         "caps_edit": ([P, S, B, I], I), "caps_undo": ([P, I], I), "caps_select": ([P, S, B, I], I), "caps_selection": ([P, B, I], I),
@@ -780,6 +782,30 @@ class Document:
         """The current frame's energy by term (kcal/mol) with the force field runs use: bond, angle, dihedral, improper, vdw,
         coulomb, total — computed now (a Field report's energy is the one at assignment)."""
         return _json_call(library().caps_energy_terms, self._h)
+
+    def semicrystalline_report(self) -> dict:
+        """Loops, bridges and tails, P2 crystallinity, stem tilt and the density / P2 profiles along z of a lamellar cell
+        (one lamella per cell, stack normal z), read from the current frame (as caps semicrystalline FILE --analyse)."""
+        return _json_call(library().caps_semicrystalline_analyse, self._h)
+
+    def thermal(self, dimensionality: int, method: str = "gk", **options) -> dict:
+        """Thermal conductivity by MD on the current frame with the assigned force field (as caps thermal):
+        dimensionality 3 (bulk) or 2 (a sheet in xy with vacuum along z: in-plane κ over thickness=Å, and the sheet
+        conductance); method "gk" (Green–Kubo) or "nemd" (Müller-Plathe); options temperature, equilibrate_ps, ps, dt,
+        sample_every, corr_ps, axis (0 x, 1 y, 2 z), slabs, swap_every, transient, seed, cutoff, threads. Returns kappa
+        [x, y, z] (W/m/K), error, kappa_mean, running integrals or the slab temperature profile, notes. Keep local runs
+        short: write the inputs for a cluster with thermal_lammps()."""
+        o = dict(options, dimensionality=int(dimensionality), method=method)
+        return _json_call(library().caps_thermal, self._h, _enc(json.dumps(o)), None, None)
+
+    def thermal_lammps(self, path: str, dimensionality: int, method: str = "gk", **options) -> str:
+        """Writes a LAMMPS data file and input (path) for the thermal-conductivity run on a cluster (lammps_ps,
+        lammps_equilibrate_ps set its length); options as thermal()."""
+        o = dict(options, dimensionality=int(dimensionality), method=method)
+        buf = _report()
+        if library().caps_thermal_lammps(self._h, _enc(json.dumps(o)), _enc(path), buf, len(buf)) < 0:
+            raise _error()
+        return buf.value.decode()
 
     def react_summary(self) -> dict:
         """The network of the last react(): chains, crosslinks (links between chains), target, density (mol/m³),
@@ -1875,6 +1901,25 @@ class build:
         rep = _report()
         d = Document(library().caps_martini_melt(_enc(json.dumps(o)), None, None, rep, len(rep)), "MARTINI melt")
         d.report = rep.value.decode()
+        return d
+
+    @staticmethod
+    def semicrystalline(polymer: str = "pe", nx: int = 4, ny: int = 6, crystal_nm: float = 5.0, amorphous_nm: float = 4.0, nc: int = 0,
+                        loops: float = 0.5, bridges: float = 0.2, tails: float = 0.3, reentry: str = "adjacent", density: float = 0.855,
+                        seed: int = 1, united_atom: bool = False, relax: bool = True) -> Document:
+        """A semicrystalline lamellar stack (as caps semicrystalline): a crystal lamella of nx × ny × nc unit cells (nc from
+        crystal_nm when 0) with straight stems along z, and an amorphous layer of amorphous_nm at density (g/cm³) holding
+        loops, bridges and tails in those fractions (per segment); tags "crystal" and "amorphous"; .report holds the
+        counts, length distributions, P2 crystallinity, profiles and stem tilt. united_atom counts carbons only against
+        the 15,000-atom limit (assign oplsua2024 afterwards)."""
+        o = {"polymer": polymer, "nx": nx, "ny": ny, "nc": nc, "crystal_nm": crystal_nm, "amorphous_nm": amorphous_nm, "loops": loops,
+             "bridges": bridges, "tails": tails, "reentry": reentry, "density": density, "seed": seed, "united_atom": united_atom, "relax": relax}
+        rep = C.create_string_buffer(1 << 20)
+        h = library().caps_semicrystalline_build(_enc(json.dumps(o)), None, None, rep, len(rep))
+        if not h:
+            raise _error()
+        d = Document(h, "semicrystalline " + polymer)
+        d.report = json.loads(rep.value.decode())
         return d
 
     @staticmethod
