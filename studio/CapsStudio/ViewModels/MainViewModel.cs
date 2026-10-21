@@ -170,6 +170,7 @@ public sealed partial class MainViewModel : ObservableObject
                 NamedSets.Clear(); _selCount = 0; Raise(nameof(SelectedCount)); Raise(nameof(SelectedChip)); Dyads.Clear();
                 QueueSelBar();   // the bar, and the hidden / ghosted counts, of the new document
                 PackDocumentChanged();   // Packing's last result belongs to the structure it made
+                Raise(nameof(DpdHasBeads)); Raise(nameof(DpdViewTitle));   // the DPD page shows its run's beads only while they are the open structure
                 _rxAimDc = true;         // a new structure: the crosslinking panel sets the target again
                 _tagOnly = null;
                 Probes.Clear(); ProbeCards.Clear(); Raise(nameof(HasProbes)); Raise(nameof(HasProbeCards));   // probes are a structure's atoms
@@ -330,6 +331,7 @@ public sealed partial class MainViewModel : ObservableObject
             if (_doc == null || !Set(ref _frame, Math.Clamp(value, 0, FrameMax))) return;
             _doc.SetFrame(_frame);
             Raise(nameof(FrameLabel));
+            if (_module == 72) Raise(nameof(DpdViewTitle));
             if (_module == 32) { TrajUpdateValues(); TrajectoryChanged?.Invoke(); }
             if (_ixOpen && _ixLive) RunInteractions();
             if (_module == 34 && _syncFrame) SplitFrameB();
