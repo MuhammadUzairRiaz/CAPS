@@ -134,7 +134,7 @@ public sealed partial class MainViewModel
         var tags = (o["tags"] as JsonArray)?.Select(x => (string?)x).ToList() ?? [];
         if (tags.Contains("rubber")) return true;
         if (tags.Contains("not-rubber")) return false;
-        return units.Any(IsRubberUnit);
+        return GuessRubber(units);
     }
 
     private IEnumerable<string> UnitSmiles(JsonObject c) =>
@@ -142,18 +142,31 @@ public sealed partial class MainViewModel
 
     /// <summary>The repeat units of the library's rubbers (each rubber homopolymer, and every unit of a rubber copolymer),
     /// written alike: "[*]" as "*", cis/trans marks dropped (a unit drawn without them is still the same backbone).</summary>
-    private HashSet<string>? _rubberUnits;
+    private HashSet<string>? _rubberUnits, _rubberHomoUnits;
     internal static string UnitKey(string smiles) => smiles.Trim().Replace("[*]", "*").Replace("/", "").Replace("\\", "");
-    public bool IsRubberUnit(string smiles)
+    /// <summary>A unit of one of the library's rubbers; with <paramref name="alone"/>, a unit that is a rubber on its own
+    /// (a rubber homopolymer): styrene is a unit of SBR, but polystyrene is no rubber.</summary>
+    public bool IsRubberUnit(string smiles, bool alone = false)
     {
         if (_rubberUnits == null && PolymerLibrary.Count > 0)
         {
             _rubberUnits = [];
+            _rubberHomoUnits = [];
             foreach (var e in PolymerLibrary.Where(e => e.Rubber && !e.User))
-                foreach (var u in e.Copolymer && e.Preset != null ? UnitSmiles(e.Preset) : [e.Smiles])
-                    if (u.Length > 0) _rubberUnits.Add(UnitKey(u));
+            {
+                var homo = !(e.Copolymer && e.Preset != null);
+                foreach (var u in homo ? [e.Smiles] : UnitSmiles(e.Preset!))
+                    if (u.Length > 0) { _rubberUnits.Add(UnitKey(u)); if (homo) _rubberHomoUnits.Add(UnitKey(u)); }
+            }
         }
-        return smiles.Length > 0 && _rubberUnits != null && _rubberUnits.Contains(UnitKey(smiles));
+        var set = alone ? _rubberHomoUnits : _rubberUnits;
+        return smiles.Length > 0 && set != null && set.Contains(UnitKey(smiles));
+    }
+    /// <summary>The guess for the builder's polymer: one unit must be a rubber on its own, several need one rubber unit.</summary>
+    private bool GuessRubber(IEnumerable<string> units)
+    {
+        var u = units.Where(x => x.Length > 0).ToList();
+        return u.Count == 1 ? IsRubberUnit(u[0], true) : u.Any(x => IsRubberUnit(x));
     }
 
     /// <summary>Whether the polymer on the builder is saved as a rubber: guessed from its units (a unit of one of the
@@ -165,7 +178,7 @@ public sealed partial class MainViewModel
         : "Guessed: no unit is a unit of one of the library's rubbers; tick it when this is a rubber";
     private void GuessPolyRubber()
     {
-        if (!_polyRubberSet) Set(ref _polyRubber, PolyUnits.Any(u => u.Ok && IsRubberUnit(u.Smiles)), nameof(PolySaveRubber));
+        if (!_polyRubberSet) Set(ref _polyRubber, GuessRubber(PolyUnits.Where(u => u.Ok).Select(u => u.Smiles)), nameof(PolySaveRubber));
         Raise(nameof(PolyRubberTip));
     }
 

@@ -47,7 +47,7 @@
    "shots": [
     {
      "img": "01_start.jpg",
-     "cap": "**Start**: the quick box, the six builders, projects, recent files and guided examples."
+     "cap": "**Start**: the quick box, the six builders, projects, the samples made by CAPS and the guided examples."
     }
    ],
    "steps": [
@@ -113,7 +113,7 @@
    "shots": [
     {
      "img": "02_studio.jpg",
-     "cap": "**Studio**: 3D view, project tree, properties, inspector and the analysis tabs along the bottom."
+     "cap": "**Studio** with an atactic polystyrene cell (10 chains × 30 units, 4,820 atoms, OPLS-AA 2024) grown at 0.90 g/cm³ and minimised to 1.05 g/cm³: the cell coloured by chain, the layers and properties on the left, the checks on the right and the intermolecular C–C g(r) of the last frame below."
     }
    ],
    "steps": [
@@ -178,7 +178,7 @@
    "shots": [
     {
      "img": "03_molecule.jpg",
-     "cap": "**Molecule builder**: the 2D sketch, the live 3D preview and the conformers table."
+     "cap": "**Molecule builder** with the accelerator CBS (N-cyclohexyl-2-benzothiazolesulfenamide) typed as SMILES: the 2D sketch, the 3D structure (C₁₃H₁₆N₂S₂, 264.40 g/mol, 33 atoms) and five conformers minimised with GAFF2, with their energies relative to the lowest."
     }
    ],
    "steps": [
@@ -229,7 +229,7 @@
    "shots": [
     {
      "img": "04_polymer.jpg",
-     "cap": "**Polymer builder**: the library on the left, a one-chain preview in the middle, the settings on the right."
+     "cap": "**Polymer builder**: the library on the left, one atactic polystyrene chain of 8 units previewed in the middle (130 atoms, 835 g/mol), the settings on the right."
     },
     {
      "img": "04b_composition.jpg",
@@ -304,7 +304,7 @@
    "shots": [
     {
      "img": "05_grow.jpg",
-     "cap": "**Polymer cell · CAPS Grow**: 10 chains × 30 units, 4,820 atoms at 0.60 g/cm³, with the live growth counters."
+     "cap": "**Polymer cell · CAPS Grow**: 10 atactic polystyrene chains × 30 units, 4,820 atoms grown at 0.90 g/cm³ with no restarts, OPLS-AA 2024 assigned when growing finished; the cell is shown folded into the box."
     }
    ],
    "steps": [
@@ -382,7 +382,7 @@
    "shots": [
     {
      "img": "11_blend.jpg",
-     "cap": "**Blend builder**: components with chains, DP and density, the starting morphology and the cell."
+     "cap": "**Blend builder** result: natural rubber and cis-1,4-polybutadiene, 70:30 by weight at DP 20, grown together into one cell (8 + 4 chains, 2,904 atoms at 0.50 g/cm³), with each chain's Rg in the Molecules tab."
     }
    ],
    "steps": [
@@ -432,7 +432,7 @@
    "shots": [
     {
      "img": "10_pack.jpg",
-     "cap": "**Packing · CAPS Pack**: molecules and regions, the objective and the report."
+     "cap": "**Packing · CAPS Pack**: 12 sulfur S₈ rings and 4 CBS accelerator molecules packed into the free space of a natural-rubber cell (8 chains × 20 units). Every distance is at least 2.034 Å after 60 rounds (target 2 Å); 2,324 atoms at 0.83 g/cm³, GAFF2 assigned molecule by molecule."
     }
    ],
    "steps": [
@@ -498,7 +498,7 @@
    "shots": [
     {
      "img": "21_solvation.jpg",
-     "cap": "**Solvation & ions**: box, solvent model and ions."
+     "cap": "**Solvation & ions**: a poly(ethylene oxide) chain (DP 20) in TIP4P/2005 water with 0.15 mol/L NaCl: 3,016 waters, 8 Na⁺ and 8 Cl⁻, 9,206 atoms at 1.007 g/cm³. The water is ghosted so the chain shows."
     }
    ],
    "steps": [
@@ -606,7 +606,7 @@
    "shots": [
     {
      "img": "15_surface.jpg",
-     "cap": "**Surface & interface builder**: cleave, polymer film and the layer stack."
+     "cap": "**Surface & interface**: an α-quartz (001) slab, hydroxylated, with a cis-1,4-polyisoprene film of 10 chains grown on it (2,570 atoms), open in the Studio."
     }
    ],
    "steps": [
@@ -668,11 +668,11 @@
    "shots": [
     {
      "img": "12_nano_sheet.jpg",
-     "cap": "**Nanostructure**: a graphene sheet with the Functional groups panel."
+     "cap": "**Nanostructure**: a 30 × 30 Å graphene sheet with carboxyl groups grafted at random on 5 % of its sites (17 groups, 404 atoms), coloured by element."
     },
     {
      "img": "13_nano_matrix.jpg",
-     "cap": "**Polymer matrix** switched on: the button becomes Build composite."
+     "cap": "**Polymer matrix**: a (10,10) carbon nanotube (13.56 Å across, 400 atoms) with 10 cis-1,4-polyisoprene chains grown around it, 3,020 atoms at 1.07 g/cm³."
     }
    ],
    "steps": [
@@ -729,7 +729,7 @@
    "shots": [
     {
      "img": "06_field.jpg",
-     "cap": "**Force field · typing report** for a PCFF polystyrene cell: 4,820 atoms typed, 0 missing terms, and the other force fields that also cover it."
+     "cap": "**Force field · typing report** for the grown polystyrene cell with OPLS-AA 2024: 4,820 atoms typed, 0 untyped, 0 missing terms, net charge 0; every atom with its type, charge and the SMARTS rule that typed it, the seven types in 3D and the other force fields that also cover the cell."
     }
    ],
    "steps": [
@@ -814,7 +814,7 @@
    "shots": [
     {
      "img": "07_relax.jpg",
-     "cap": "**Minimise · CAPS Relax** with the live energy and max-force plots."
+     "cap": "**Minimise · CAPS Relax** on the grown polystyrene cell: L-BFGS after a capped-force push-off, compressed from 0.90 to 1.05 g/cm³; the energy and largest-force curves over 1,714 iterations."
     }
    ],
    "steps": [
@@ -882,7 +882,7 @@
    "shots": [
     {
      "img": "09_equilibrate.jpg",
-     "cap": "**Equilibrate · convergence**: density, potential energy and radius of gyration plotted live."
+     "cap": "**Equilibrate** on the minimised polystyrene cell: the Larsen 21-step protocol shortened to 0.002 of its published length (3.1 ps) and two 0.5 ps production blocks, with density, potential energy and ⟨Rg⟩ drawn as they run. 0 of 4 convergence criteria are met: a run this short cannot converge, and the page says so."
     }
    ],
    "steps": [
@@ -952,7 +952,7 @@
    "shots": [
     {
      "img": "08_dynamics.jpg",
-     "cap": "**Dynamics · CAPS Dynamics** with the ensemble, thermostat and barostat settings and live snapshots."
+     "cap": "**Dynamics · CAPS Dynamics**: 2,000 steps of NPT at 300 K and 1 atm on the minimised polystyrene cell (OPLS-AA 2024, 4,820 atoms); temperature and density as they ran (1.050 → 0.924 g/cm³) and the run report."
     }
    ],
    "steps": [
@@ -1025,7 +1025,7 @@
    "shots": [
     {
      "img": "16_react.jpg",
-     "cap": "**React · crosslinking**: ten PCFF polyethylene chains crosslinked between chains, each chain in its own colour with the links circled."
+     "cap": "**React · sulfur vulcanization** of a natural-rubber cell (8 chains × 20 units, GAFF2, 0.85 g/cm³) with 20 H–S–S–H donors inserted: 8 of 8 links between chains in 5 cycles, all disulfide bridges, DC 10 %, ν 623 mol/m³, Mc ≈ 682 g/mol, with the links per cycle, the gel curve and the link map."
     },
     {
      "img": "enr_mah_react.png",
@@ -1361,7 +1361,7 @@
     },
     {
      "img": "22_glass.jpg",
-     "cap": "**Glass transition**: a cooling scan and the two-line fit that gives Tg."
+     "cap": "**Glass transition** on a polyethylene cell (6 chains × 30 units, OPLS-AA 2024, 1,092 atoms): a demonstration scan from 400 to 200 K in 50 K steps of 1 ps each, the specific volume at each temperature and the two-line fit, Tg 250 ± 18 K. A scan this short shows the page at work; a Tg to quote needs holds of nanoseconds and several replicas."
     }
    ],
    "steps": [
@@ -1432,7 +1432,7 @@
    "shots": [
     {
      "img": "19_export.jpg",
-     "cap": "**Export** for the PCFF polystyrene cell: every check green, LAMMPS ready, GROMACS refused for class II with the reason shown."
+     "cap": "**Export** for the minimised OPLS-AA 2024 polystyrene cell: every check green, the LAMMPS data and input files and the GROMACS top, itp, gro and mdp files ready (7 files), with the note that CAPS's damped shifted force becomes PME in GROMACS."
     }
    ],
    "steps": [
@@ -1501,7 +1501,7 @@
    "shots": [
     {
      "img": "23_jobs.jpg",
-     "cap": "**Jobs**: running and finished runs with progress, log and provenance."
+     "cap": "**Jobs** after growing, minimising and simulating the polystyrene cell: the NPT run selected, with its density and temperature curves, its log and its provenance manifest."
     }
    ],
    "steps": [
@@ -1555,7 +1555,7 @@
    "shots": [
     {
      "img": "20_project.jpg",
-     "cap": "**Project**: the results table and the methods section generated from provenance."
+     "cap": "**Project** on a folder of three recipe runs (polystyrene with GAFF2, polyethylene with OPLS-AA 2024, natural rubber with GAFF2): each structure with its picture and status, the results table, and the methods section written from the polystyrene cell's provenance with its references."
     }
    ],
    "steps": [

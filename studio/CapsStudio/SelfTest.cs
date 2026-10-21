@@ -736,7 +736,8 @@ internal static class SelfTest
             var mineEnr = vm.LibraryShown.FirstOrDefault(e => e.User && e.Name == "ENR-50 test alternate");
             Check(guessed && mineEnr is { Rubber: true } && File.ReadAllText(MainViewModel.UserPolymerFile).Contains("\"rubber\""), $"your ENR saved as a rubber and shown under Rubbers + ENR: {savedEnr}");
             // polystyrene is no rubber: saved untagged it is shown by turning the Rubbers filter off
-            if (vm.PolymerLibrary.FirstOrDefault(e => !e.Copolymer && e.Smiles.Contains("c1ccccc1")) is { } psLib)
+            // the library's own polystyrene (styrene is also a unit of SBR, a rubber copolymer: still no rubber alone)
+            if (vm.PolymerLibrary.FirstOrDefault(e => !e.Copolymer && !e.User && e.Name == "Polystyrene") is { } psLib)
             {
                 vm.PolyUnits.Clear(); vm.AddPolyUnit(psLib.Name, psLib.Smiles);
                 vm.PolyName = "PS test";

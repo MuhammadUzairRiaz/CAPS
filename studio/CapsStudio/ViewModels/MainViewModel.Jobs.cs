@@ -87,8 +87,11 @@ public sealed class Job : INotifyPropertyChanged
     public string FolderLabel => $"{Title} · {Started:HH:mm}";
     public int Module { get; init; }
     public string Title { get; init; } = "";
-    public string Document { get; init; } = "";
-    public long Atoms { get; init; }
+    private string _document = "";
+    /// <summary>The structure it ran on; for Grow and Pack, the cell they made once it is made.</summary>
+    public string Document { get => _document; set { _document = value; Raise(nameof(Document)); Raise(nameof(Subtitle)); } }
+    private long _atoms;
+    public long Atoms { get => _atoms; set { _atoms = value; Raise(nameof(Atoms)); Raise(nameof(Subtitle)); } }
     public DateTime Started { get; set; } = DateTime.Now;
     private DateTime? _ended;
     public DateTime? Ended { get => _ended; set { _ended = value; Raise(nameof(Ended)); Raise(nameof(Duration)); } }
@@ -373,7 +376,12 @@ public sealed partial class MainViewModel
             if (job.Status == "done") job.Progress = 1;
             // the reader hears it once, politely (AccessibilityMap: "Growth finished, 20 chains, no close contacts")
             Announcement = $"{job.Title} {(job.Status == "done" ? "finished" : job.Status)}" + (last.Length > 0 ? ". " + last : ".");
-            if (_doc != null && job.Atoms == 0) job.Provenance.Add(new JobFact("result", $"{_doc.Summary().Atoms:N0} atoms"));
+            if (_doc != null && job.Atoms == 0)
+            {
+                job.Provenance.Add(new JobFact("result", $"{_doc.Summary().Atoms:N0} atoms"));
+                // Grow and Pack: the header names the cell they made, not "new cell · 0 atoms"
+                if (job.Status == "done" && job.Document == "new cell") { job.Document = Title; job.Atoms = _doc.Summary().Atoms; }
+            }
             AttachJob(job, _activeItem);   // Grow and Pack: the cell they made
             BuildJobOutputs(job);
             SaveJobs();
