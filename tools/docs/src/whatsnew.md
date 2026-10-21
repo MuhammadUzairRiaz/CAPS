@@ -13,6 +13,18 @@ lede: What changed in CAPS, newest first. Every force field CAPS ships is now bu
 - `caps thermal` computes the thermal conductivity by MD: Green–Kubo from the heat-flux autocorrelation, with the centroid form of the flux for angles, torsions and impropers, or reverse NEMD (Müller-Plathe). You say whether the material is 3D (bulk) or 2D (a sheet with vacuum along z; κ over an effective thickness and the sheet conductance); CAPS does not guess. On one frame the flux equals LAMMPS's `compute heat/flux` on `compute centroid/stress/atom`. On the Lennard-Jones liquid both methods agree with the published values. `--lammps-input` writes the long run for a cluster.
 - In the Studio: **Build › Semicrystalline stack** and **Modules › Thermal conductivity**; in Python `build.semicrystalline()` and `Document.thermal()`; in recipes `build: { semicrystalline: … }` and a `thermal:` stage.
 
+### Polymer crystals for DFT
+
+- A library of polymer unit cells from the original structure papers: orthorhombic and monoclinic PE, iPP α, PEO, PVDF β and α, POM, nylon 6 and nylon 66, PET, PLLA, natural rubber, and PTFE in its room-temperature (15/7 helix) and low-temperature (13/6 helix) forms. Each cell carries its paper's lattice, density and page references. The PTFE chains are generated from the helix symmetry in the cells of Clark & Muus (1962), and the files say so.
+- `caps vasp-relax` writes a four-step VASP relaxation chain (cutoff and cell steps, PBE with D3-BJ) with one batch script that stops when a step does not converge.
+- `caps phono3py setup|estimate|check|analyze` prepares the lattice thermal conductivity from third-order force constants: supercells from the cell heights, full or random displacements, a dry run that sets the array time limits, a cost estimate before anything is submitted, and the analysis of κ along and across the chains. `--dimensionality 2d|3d` handles sheets with vacuum.
+
+### Figures you can put in a paper
+
+- Every plot in the Studio is drawn as a journal figure: a frame with inward ticks, round tick values, axis titles as quantity / unit, real log axes, legends that keep clear of the data, error bars and block averages where CAPS computes them, and fits drawn with their window. Tg shows the glass and melt fits with Tg marked.
+- The DPD page shows the final domains in 3D; the adsorption, sorption and DPD pages report from real runs.
+- The pictures in this manual and on the module pages are taken from real CAPS runs.
+
 ### Force fields from original sources only
 
 Every force field in CAPS now comes from its original paper, its supporting information, or the distribution its authors publish. Each library file says where its numbers came from.
