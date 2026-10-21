@@ -60,6 +60,9 @@
 #include "caps/mlpot.hpp"
 #include "caps/provenance.hpp"
 #include "caps/recipe.hpp"
+#include "caps/semicrystal.hpp"
+#include "caps/tags.hpp"
+#include "caps/thermal.hpp"
 #include "caps/yaml.hpp"
 #ifdef _WIN32
 #include <io.h>
@@ -273,6 +276,11 @@ int usage() {
                "  caps pull    FILE [--normal | --axis x|y|z] [--distance 10] [--rate 5] [--spring 10] [--temp 300] [--surface 1] [--csv OUT]\n"
                "               pull-out / debonding of a film from a held surface: interfacial shear strength, work of separation\n"
                "  caps blend   --components SMILES1,SMILES2 [--weights 0.5,0.5] [--chains 8] [--dp 20] [--density 0.5] [--slabs | --droplet] -o OUT\n"
+               "  caps semicrystalline -o OUT.data [--polymer pe|CELL.cif] [--repeats 4,6] [--crystal 5 (nm) | --crystal-cells 20]\n"
+               "               [--amorphous 4 (nm)] [--loops 0.5 --bridges 0.2 --tails 0.3] [--reentry adjacent|random] [--density 0.855]\n"
+               "               [--seed 1] [--ff oplsaa2024|oplsua2024] [--no-relax] [--report R.json] [--lammps-input IN.lmp] [--gromacs STEM]\n"
+               "               a lamellar stack: crystalline stems, loops, bridges and tails in the amorphous layer (groups crystal, amorphous)\n"
+               "  caps semicrystalline FILE --analyse [--report R.json]   loops, bridges, tails, P2 crystallinity, profiles of any frame\n"
                "  caps grow    -o OUT.data|OUT.pdb|OUT.xyz [--chains 10] [--dp 8] [--density 0.5 | --box 33]\n"
                "               [--tacticity atactic|isotactic|syndiotactic] [--seed 1] [--trans] [--scale 1.0]\n"
                "               [--units '*CC(*)c1ccccc1,*CC(*)(C)C(=O)OC' --sequence homopolymer|alternating|block|random|shuffled|gradient|pattern\n"
@@ -289,6 +297,11 @@ int usage() {
                "               without --cutoff (relax, md, equilibrate): the force field's own cut-off, else 10 Å\n"
                "  caps cbmc    FILE -o OUT.data [--moves 1000] [--trials 8] [--max-torsions 4] [--temp 300] [--cutoff 9] [--seed 1]\n"
                "               [--ff FF] [--no-coulomb]   configurational-bias regrowth of chain ends (Siepmann & Frenkel)\n"
+               "  caps thermal FILE --dimensionality 3d|2d [--method gk|nemd] [--temp 300] [--eq-ps 10] [--ps 100] [--dt 1] [--every 5]\n"
+               "               [--corr-ps 5] [--axis x|y|z] [--layers 20] [--swap-every 100] [--transient 0.3] [--thickness 3.35] [--seed 1]\n"
+               "               [--ff FF] [--json OUT.json] [--lammps-input IN.lmp]   thermal conductivity by MD: Green-Kubo (heat-flux\n"
+               "               autocorrelation, centroid form for bonded terms) or Muller-Plathe NEMD; 2d: a sheet with vacuum along z,\n"
+               "               in-plane only, kappa over an effective thickness and the sheet conductance\n"
                "  caps md      FILE -o OUT.data [--steps 10000] [--dt 1] [--temp 300] [--thermostat bussi|langevin|nose-hoover|none]\n"
                "               [--tau-t 100] [--barostat none|crescale|berendsen|mtk] [--pressure 1] [--tau-p 1000]\n"
                "               [--constraints none|h-bonds|all-bonds] [--constraint-solver shake|lincs] [--hmr 3.024] [--seed 1] [--new-velocities] [--thermo 100] [--dump TRAJ.lammpstrj --every 1000]\n"
@@ -393,6 +406,8 @@ const std::set<std::string>& known_options() {
     "--symmetrize", "--table", "--tacticity", "--target", "--tau-p", "--tau-t", "--temp", "--template",
     "--termination", "--tfinal", "--thermo", "--thermostat", "--thigh", "--threads", "--timestep-fs", "--tlow",
     "--tmax", "--to", "--tol", "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing", "--units",
+    "--polymer", "--crystal", "--crystal-cells", "--amorphous", "--loops", "--bridges", "--tails", "--reentry", "--analyse",
+    "--corr-ps", "--long", "--swap-every", "--transient", "--dimensionality", "--thickness",
     "--until-converged", "--vacuum", "--viscosity", "--volume", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
   return k;
 }
@@ -425,7 +440,7 @@ bool is_cli_switch(const std::string& a) {
          a == "--until-converged" || a == "--print-protocol" || a == "--no-pbc" ||
          a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" || a == "--include-input" || a == "--primitive" || a == "--symmetrize" || a == "--find-symmetry" || a == "--groups" || a == "--neutralise" || a == "--no-ions" || a == "--solvents" || a == "--bibtex" || a == "--json" || a == "--deterministic" || a == "--vacuum" || a == "--methods" ||
          a == "--hybrid" || a == "--resume" || a == "--between-chains" || a == "--keep-byproducts" || a == "--auto-capture" ||
-         a == "--during-md" || a == "--remove-unreacted";
+         a == "--during-md" || a == "--remove-unreacted" || a == "--analyse" || a == "--long";
 }
 
 std::map<std::string, std::string> parse(int argc, char** argv, int from, std::vector<std::string>& pos) {
@@ -1536,6 +1551,121 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps grow: %s\n", e.what());
+      return 1;
+    }
+  }
+  if (cmd == "semicrystalline") {
+    try {
+      auto split = [](const std::string& t) {
+        std::vector<std::string> v;
+        std::stringstream ss(t);
+        for (std::string x; std::getline(ss, x, ',');) v.push_back(x);
+        return v;
+      };
+      auto write_report = [&](const SemicrystallineReport& r, const std::string& path) {
+        std::ofstream f(path);
+        if (!f) throw std::runtime_error("cannot write " + path);
+        f << semicrystalline_json(r) << "\n";
+        std::printf("wrote %s\n", path.c_str());
+      };
+      if (o.count("--analyse")) {
+        if (pos.empty()) return usage();
+        System s = open_file(pos[0]).frame(0);
+        read_tags(s, pos[0]);
+        const SemicrystallineReport r = analyse_semicrystalline(s);
+        std::printf("%s", semicrystalline_summary(r).c_str());
+        if (o.count("--report")) write_report(r, o["--report"]);
+        return 0;
+      }
+      if (!o.count("-o")) return usage();
+      SemicrystallineOptions so;
+      if (o.count("--polymer")) so.polymer = o["--polymer"];
+      if (o.count("--repeats")) {
+        const auto v = split(o["--repeats"]);
+        so.nx = std::stoi(v.at(0)), so.ny = v.size() > 1 ? std::stoi(v[1]) : so.nx;
+      }
+      if (o.count("--crystal")) so.crystal_nm = std::stod(o["--crystal"]);
+      if (o.count("--crystal-cells")) so.nc = std::stoi(o["--crystal-cells"]);
+      if (o.count("--amorphous")) so.amorphous_nm = std::stod(o["--amorphous"]);
+      if (o.count("--loops")) so.loops = std::stod(o["--loops"]);
+      if (o.count("--bridges")) so.bridges = std::stod(o["--bridges"]);
+      if (o.count("--tails")) so.tails = std::stod(o["--tails"]);
+      if (o.count("--reentry")) so.reentry = o["--reentry"];
+      if (o.count("--density")) so.density = std::stod(o["--density"]);
+      if (o.count("--seed")) so.seed = std::stoull(o["--seed"]);
+      const bool quiet = o.count("--quiet");
+      if (o.count("--ff") && !std::filesystem::exists(o["--ff"] + ".json") && !is_uff(o["--ff"])) {
+        try { so.united_atom = load_forcefield(ff_path(o["--ff"])).united_atom; } catch (const std::exception&) {}
+      }
+      so.progress = [&](const std::string& what, double f) {
+        if (!quiet) std::fprintf(stderr, "\r%-40s %3.0f %%", what.c_str(), 100 * std::min(1.0, f));
+        return true;
+      };
+      SemicrystallineReport rep;
+      System s = build_semicrystalline(so, &rep);
+      if (!quiet) std::fprintf(stderr, "\r%-60s\r", "");
+      ForceField ff;
+      const bool typed = o.count("--ff");
+      if (typed) ff = cli_forcefield(s, o, quiet);
+      EnergyOptions e;
+      e.coulomb = !o.count("--no-coulomb");
+      electrostatics(e, o);
+      if (typed) run_cutoff(e, ff, o, quiet);
+      else ff = default_forcefield(s);
+      const auto field = std::make_shared<const ForceField>(ff);
+      if (!o.count("--no-relax")) {
+        relax_semicrystalline(s, field, e, 1.0, [&](const std::string& what, double f) {
+          if (!quiet) std::fprintf(stderr, "\r%-60s %3.0f %%", what.substr(0, 60).c_str(), 100 * std::min(1.0, f));
+          return true;
+        });
+        if (!quiet) std::fprintf(stderr, "\r%-70s\r", "");
+        // the structure after relaxation: order parameter, tilt and profiles again (the topology is the builder's)
+        const SemicrystallineReport a = analyse_semicrystalline(s);
+        rep.crystallinity_p2 = a.crystallinity_p2, rep.tilt_deg = a.tilt_deg, rep.tilt_sd = a.tilt_sd;
+        rep.z = a.z, rep.rho = a.rho, rep.p2 = a.p2;
+        rep.notes.push_back("relaxed: push-off with the crystal held, then everything minimised (" + ff.name + ")");
+      }
+      rep.atoms = s.atoms.size();
+      const std::string out = o["-o"];
+      save_structure(s, ff, e, out);
+      write_tags(s, out);
+      for (const auto& n : rep.notes) std::printf("%s\n", n.c_str());
+      std::printf("%s", semicrystalline_summary(rep).c_str());
+      std::printf("wrote %s (groups crystal, amorphous: %s)\n", out.c_str(), tags_sidecar(out).c_str());
+      write_report(rep, o.count("--report") ? o["--report"] : std::filesystem::path(out).replace_extension(".semicrystalline.json").string());
+      if (o.count("--lammps-input")) {
+        const std::string in = o["--lammps-input"];
+        const std::string data = std::filesystem::path(out).filename().string();
+        LammpsRun run;
+        run.kind = LammpsRun::Kind::None;
+        write_lammps_input(s, ff, e, data, in, 0, false, run);
+        std::ofstream f(in, std::ios::app);
+        f << semicrystalline_lammps_run(SemicrystallineEquilibration{});
+        std::printf("wrote %s (minimise, 200 ps NVT with the crystal tethered, 2 ns NPT)\n", in.c_str());
+      }
+      if (o.count("--gromacs")) {
+        const std::string stem = o["--gromacs"];
+        for (const auto& n : write_gromacs(s, ff, e, stem)) std::printf("gromacs: %s\n", n.c_str());
+        std::ofstream ndx(stem + ".ndx");
+        for (size_t k = 0; k < s.tags.size(); ++k) {
+          ndx << "[ " << tag_group_name(s.tags[k].name) << " ]\n";
+          int col = 0;
+          for (size_t i = 0; i < s.atoms.size(); ++i)
+            if ((s.atoms[i].tags >> k) & 1u) ndx << (i + 1) << (++col % 15 ? " " : "\n");
+          ndx << "\n";
+        }
+        std::ofstream mdp(stem + "_npt.mdp");
+        mdp << "; CAPS semicrystalline stack: NPT at 300 K, 1 bar, each box axis on its own (the lamellae keep their shape)\n"
+            << "integrator = md\ndt = 0.001\nnsteps = 2000000\nnstxout-compressed = 10000\nnstenergy = 1000\n"
+            << "tcoupl = v-rescale\ntc-grps = System\ntau-t = 0.1\nref-t = 300\n"
+            << "pcoupl = c-rescale\npcoupltype = anisotropic\ntau-p = 2.0\nref-p = 1 1 1 0 0 0\ncompressibility = 4.5e-5 4.5e-5 4.5e-5 0 0 0\n"
+            << "gen-vel = yes\ngen-temp = 300\n"
+            << "; non-bonded settings as " << stem << ".mdp (CAPS's matching cut-offs):\n" << gromacs_mdp(s, ff, e);
+        std::printf("wrote %s.top, %s.gro, %s.ndx (crystal, amorphous) and %s_npt.mdp\n", stem.c_str(), stem.c_str(), stem.c_str(), stem.c_str());
+      }
+      return 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps semicrystalline: %s\n", e.what());
       return 1;
     }
   }
@@ -3612,6 +3742,86 @@ int main(int argc, char** argv) {
       }
       for (const auto& n : rep.notes) std::printf("%s\n", n.c_str());
       std::printf("energy change %.3f kcal/mol · %.1f s\nwrote %s\n", rep.energy_change, rep.seconds, out.c_str());
+      return 0;
+    }
+    if (cmd == "thermal") {
+      if (!o.count("--dimensionality")) throw std::invalid_argument("--dimensionality 3d (bulk) or 2d (a sheet with vacuum along z): say which; CAPS does not guess it");
+      ThermalOptions to;
+      const std::string dim = o["--dimensionality"];
+      if (dim != "2d" && dim != "3d" && dim != "2" && dim != "3") throw std::invalid_argument("--dimensionality 2d|3d");
+      to.dimensionality = dim[0] == '2' ? 2 : 3;
+      if (o.count("--thickness")) to.thickness = std::stod(o["--thickness"]);
+      if (o.count("--method")) to.method = o["--method"];
+      if (o.count("--temp")) to.temperature = std::stod(o["--temp"]);
+      if (o.count("--eq-ps")) to.equilibrate_ps = std::stod(o["--eq-ps"]);
+      if (o.count("--ps")) to.ps = std::stod(o["--ps"]);
+      if (o.count("--dt")) to.dt = std::stod(o["--dt"]);
+      if (o.count("--every")) to.sample_every = std::stoi(o["--every"]);
+      if (o.count("--corr-ps")) to.corr_ps = std::stod(o["--corr-ps"]);
+      if (o.count("--axis")) {
+        const std::string a = o["--axis"];
+        to.axis = a == "x" ? 0 : a == "y" ? 1 : a == "z" ? 2 : throw std::invalid_argument("--axis x|y|z");
+      } else if (to.dimensionality == 2) to.axis = 0;
+      if (o.count("--layers")) to.slabs = std::stoi(o["--layers"]);
+      if (o.count("--swap-every")) to.swap_every = std::stoi(o["--swap-every"]);
+      if (o.count("--transient")) to.transient = std::stod(o["--transient"]);
+      if (o.count("--seed")) to.seed = std::stoull(o["--seed"]);
+      if (o.count("--threads")) to.energy.threads = std::stoi(o["--threads"]);
+      to.energy.coulomb = !o.count("--no-coulomb");
+      electrostatics(to.energy, o);
+      const bool quiet = o.count("--quiet");
+      to.field = std::make_shared<ForceField>(cli_forcefield(s, o, quiet));
+      run_cutoff(to.energy, *to.field, o, quiet);
+      if (o.count("--lammps-input")) {   // the long run for the cluster: data file beside the input, κ computed by LAMMPS
+        const std::string in = o["--lammps-input"];
+        const std::string data = std::filesystem::path(in).replace_extension(".data").string();
+        save_structure(s, *to.field, to.energy, data);
+        LammpsRun run;
+        run.kind = LammpsRun::Kind::None;
+        write_lammps_input(s, *to.field, to.energy, std::filesystem::path(data).filename().string(), in, 0, false, run);
+        ThermalLammps q;
+        q.method = to.method, q.temperature = to.temperature, q.dt = to.dt, q.equilibrate_ps = std::max(to.equilibrate_ps, 100.0);
+        q.ps = std::max(to.ps, 2000.0), q.sample_every = to.sample_every, q.corr_ps = to.corr_ps, q.axis = to.axis, q.slabs = to.slabs;
+        q.swap_every = to.swap_every, q.dimensionality = to.dimensionality;
+        q.thickness = to.dimensionality == 2 ? (to.thickness > 0 ? to.thickness : sheet_thickness(s)) : 0;
+        q.kspace = to.energy.electrostatics == EnergyOptions::Electrostatics::PME;
+        std::ofstream f(in, std::ios::app);
+        f << thermal_lammps_run(q);
+        std::printf("wrote %s and %s (%s, %.0f ps equilibration, %.0f ps sampled)\n", in.c_str(), data.c_str(), to.method.c_str(), q.equilibrate_ps, q.ps);
+        if (!o.count("--ps")) return 0;   // only the inputs unless a local run is asked for too
+      }
+      if (std::llround(to.ps * 1000 / to.dt) + std::llround(to.equilibrate_ps * 1000 / to.dt) > 5000 && !o.count("--long"))
+        std::fprintf(stderr, "note: %lld steps; long runs belong on a cluster (--lammps-input writes the inputs)\n",
+                     std::llround((to.ps + to.equilibrate_ps) * 1000 / to.dt));
+      to.progress = [&](const std::string& w, double f) {
+        if (!quiet) std::fprintf(stderr, "\r%-45s %3.0f %%", w.c_str(), 100 * f);
+        return true;
+      };
+      const ThermalResult r = thermal_conductivity(s, to);
+      if (!quiet) std::fprintf(stderr, "\r%-60s\r", "");
+      for (const auto& n : r.notes) std::printf("%s\n", n.c_str());
+      std::printf("%s", thermal_summary(r).c_str());
+      if (o.count("--json")) {
+        Json j = Json::object();
+        j["method"] = Json(r.method), j["dimensionality"] = Json(double(r.dimensionality)), j["thickness"] = Json(r.thickness);
+        Json k = Json::array(), e = Json::array();
+        for (int a = 0; a < 3; ++a) k.push_back(Json(r.kappa[size_t(a)])), e.push_back(Json(r.error[size_t(a)]));
+        j["kappa"] = k, j["error"] = e, j["kappa_mean"] = Json(r.kappa_mean), j["kappa_mean_error"] = Json(r.kappa_mean_error);
+        j["sheet_conductance"] = Json(r.sheet_conductance), j["temperature"] = Json(r.temperature), j["plateau"] = Json(r.plateau);
+        j["flux"] = Json(r.flux), j["gradient"] = Json(r.gradient), j["exchanges"] = Json(double(r.exchanges));
+        Json t = Json::array(), x = Json::array(), tt = Json::array();
+        for (double v : r.t_ps) t.push_back(Json(v));
+        for (double v : r.slab_x) x.push_back(Json(v));
+        for (double v : r.slab_t) tt.push_back(Json(v));
+        j["t_ps"] = t, j["slab_x"] = x, j["slab_t"] = tt;
+        for (int a = 0; a < 3; ++a) {
+          Json run = Json::array();
+          for (double v : r.running[size_t(a)]) run.push_back(Json(v));
+          j[std::string("running_") + char('x' + a)] = run;
+        }
+        std::ofstream(o["--json"]) << j.dump(1) << "\n";
+        std::printf("wrote %s\n", o["--json"].c_str());
+      }
       return 0;
     }
     if (cmd == "md") {
