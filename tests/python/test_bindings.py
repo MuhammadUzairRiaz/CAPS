@@ -702,7 +702,18 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 71, "ABI 71")
+check(caps.abi_version() == 72, "ABI 72")
+
+# semicrystalline stack (ABI 72): a small PE lamella, its report read back from the frame; thermal conductivity needs 2D or 3D
+_sc = caps.build.semicrystalline(nx=2, ny=3, crystal_nm=2.5, amorphous_nm=2.5, relax=False)
+_scr = _sc.semicrystalline_report()
+check(_sc.report["loops"] == _scr["loops"] and _sc.report["bridges"] == _scr["bridges"] and _sc.report["tails"] == 2 * _sc.report["chains"],
+      f"semicrystalline: {_sc.report['loops']} loops, {_sc.report['bridges']} bridges, {_sc.report['tails']} tails")
+try:
+    _sc.thermal(0)
+    check(False, "thermal without a dimensionality")
+except caps.CapsError as e:
+    check("2" in str(e) and "3" in str(e), f"thermal refuses dimensionality 0: {e}")
 _pbs = caps.polymer("[*]OCCCCOC(=O)CCC(=O)[*]", dp=4, chains=2, seed=3)
 _cgd = _pbs.cg_map(rules="ester-cut")
 check(_cgd.atoms == 16, f"ester cut: 16 beads ({_cgd.atoms})")
