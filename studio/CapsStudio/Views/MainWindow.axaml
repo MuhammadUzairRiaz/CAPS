@@ -3388,17 +3388,18 @@
             </Border>
 
             <!-- results -->
-            <Grid Grid.Column="1" RowDefinitions="Auto,*,340" RowSpacing="12">
-              <StackPanel Spacing="6">
+            <!-- the cards in a column beside the figure of the curve chosen, which takes the rest of the page -->
+            <Grid Grid.Column="1" RowDefinitions="Auto,*" ColumnDefinitions="Auto,*" RowSpacing="12" ColumnSpacing="4">
+              <StackPanel Grid.ColumnSpan="2" Spacing="6">
                 <TextBlock Text="{Binding Analyze.Log}" Classes="muted" TextWrapping="Wrap" />
                 <ProgressBar Value="{Binding Analyze.Progress}" Minimum="0" Maximum="1" Height="4" IsVisible="{Binding Analyze.Working}" />
               </StackPanel>
-              <ScrollViewer Grid.Row="1">
+              <ScrollViewer Grid.Row="1" Width="312" HorizontalScrollBarVisibility="Disabled">
                 <ItemsControl ItemsSource="{Binding Analyze.Results}">
                   <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                   <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:ResultCard">
-                      <Border Width="272" Margin="0,0,12,12" Padding="14,12" CornerRadius="10" BorderBrush="{DynamicResource LineB}" BorderThickness="1"
+                      <Border Width="296" Margin="0,0,12,12" Padding="14,12" CornerRadius="10" BorderBrush="{DynamicResource LineB}" BorderThickness="1"
                               Background="{DynamicResource Bg1B}" ToolTip.Tip="{Binding Method}">
                         <StackPanel Spacing="4">
                           <TextBlock Text="{Binding Name}" Classes="dim" />
@@ -3412,6 +3413,7 @@
                             <TextBlock Text="{Binding RefSource}" Classes="dim" FontSize="11" TextWrapping="Wrap" FontStyle="Italic" />
                             <TextBlock Text="{Binding Verdict}" Foreground="{Binding VerdictBrush}" FontSize="11" TextWrapping="Wrap" />
                           </StackPanel>
+                          <local:SciPlot Figure="{Binding Figure}" Compact="True" Height="168" Margin="-4,4,-4,2" IsVisible="{Binding HasFigure}" />
                           <TextBlock Text="{Binding ExtraText}" IsVisible="{Binding HasExtra}" Classes="mono" FontSize="10.5" TextWrapping="Wrap" Foreground="{DynamicResource MutedB}" />
                           <Button Classes="small" Content="Open them as frames in a copy" Click="OnOpenConformers" HorizontalAlignment="Left" IsVisible="{Binding IsConformers}"
                                   ToolTip.Tip="The same search again on a copy of the structure, whose frames become the conformers, lowest first" />
@@ -3429,14 +3431,14 @@
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
               </ScrollViewer>
-              <Border Grid.Row="2" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="10" Background="{DynamicResource Bg1B}" Padding="14,10"
-                      IsVisible="{Binding Analyze.HasResults}">
+              <Border Grid.Row="1" Grid.Column="1" BorderBrush="{DynamicResource LineB}" BorderThickness="1" CornerRadius="10" Background="{DynamicResource Bg1B}" Padding="14,10"
+                      Margin="0,0,0,12" IsVisible="{Binding Analyze.HasResults}">
                 <Grid RowDefinitions="Auto,*,Auto" RowSpacing="6">
                   <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
-                    <TextBlock Text="CURVE" Classes="h3" VerticalAlignment="Center" />
-                    <ComboBox Grid.Column="1" ItemsSource="{Binding Analyze.Curves}" SelectedIndex="{Binding Analyze.CurveIndex}" MinWidth="320" HorizontalAlignment="Left" />
+                    <TextBlock Text="FIGURE" Classes="h3" VerticalAlignment="Center" />
+                    <ComboBox Grid.Column="1" ItemsSource="{Binding Analyze.Curves}" SelectedIndex="{Binding Analyze.CurveIndex}" MinWidth="320" HorizontalAlignment="Stretch" />
                   </Grid>
-                  <local:LinePlot Grid.Row="1" x:Name="PropPlot" AutoRange="True" />
+                  <local:SciPlot Grid.Row="1" x:Name="PropPlot" />
                   <StackPanel Grid.Row="2" Spacing="4" Margin="0,6,0,0">
                     <Grid ColumnDefinitions="*,70,70,70" ColumnSpacing="6">
                       <ComboBox ItemsSource="{x:Static vm:AnalyzeViewModel.FitModels}" SelectedIndex="{Binding Analyze.FitModel}" HorizontalAlignment="Stretch"

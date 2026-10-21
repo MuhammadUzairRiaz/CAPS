@@ -1353,7 +1353,7 @@
    "shots": [
     {
      "img": "18_analyze.jpg",
-     "cap": "**Analyze**: calculations by group, the trajectory window and result cards with their curves."
+     "cap": "**Analyze**: a 3,220-atom atactic polystyrene melt (OPLS-AA 2024, 500 K): the result cards with their figures and, beside them, the cooling curve with the glass and melt fits and Tg."
     },
     {
      "img": "22_glass.jpg",
@@ -1382,7 +1382,7 @@
     {
      "t": "Press Run selected",
      "d": [
-      "Each result is a card with its value, error and curve. [[Compare with]] overlays reference data; [[Export CSV / LaTeX…]] writes the tables."
+      "Each result is a card with its value, error and a small figure of its curve. The figure panel beside the cards draws the one you pick at full size: axes as quantity / unit, legends, block means with the mean ± standard error, fit windows and fits, and Tg marked on the cooling curve. [[Compare with]] overlays reference data; [[Export CSV / LaTeX…]] writes the tables."
      ]
     },
     {

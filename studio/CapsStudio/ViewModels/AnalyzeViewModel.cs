@@ -43,6 +43,9 @@ public sealed class ResultCard
     public string[] Notes { get; init; } = [];
     public (string Key, double Value)[] Extra { get; init; } = [];
     public RefValue? Ref { get; set; }
+    /// <summary>The card's small figure (the property's first curve), null when the property has none.</summary>
+    public CapsStudio.Views.SciFigure? Figure { get; set; }
+    public bool HasFigure => Figure != null;
     // normal modes: the card plays one (1 = the lowest) in a copy of the structure
     public bool IsModes => Id == "modes" && HasValue;
     public bool IsConformers => Id == "conformers" && HasValue;
@@ -105,7 +108,11 @@ public sealed record SeriesItem(string Property, string Label, string XLabel, st
     public bool Markers { get; init; }
     public double[]? OverlayX { get; init; }
     public double[]? OverlayY { get; init; }
-    public override string ToString() => $"{Property} · {Label}";
+    /// <summary>The figure drawn for this entry (AnalyzeFigures): the curve with its companions, fits and marks.</summary>
+    public CapsStudio.Views.SciFigure? Figure { get; init; }
+    /// <summary>What the figure list shows (the core's label when not set; other pages look curves up by Label).</summary>
+    public string? Caption { get; init; }
+    public override string ToString() => $"{Property} · {Caption ?? Label}";
 }
 
 /// <summary>Analyze › Properties: choose calculations, frames and groups, run them on the open trajectory, and read the
@@ -612,6 +619,7 @@ public sealed class AnalyzeViewModel : ObservableObject
         var root = js.RootElement;
         RunInfo = string.Format(Inv, "{0} of {1} frames · {2:N0} atoms", root.GetProperty("frames").GetInt32(), root.GetProperty("of").GetInt32(), root.GetProperty("atoms").GetInt32());
         var m = SelectedRef;
+        var parsed = new List<(ResultCard Card, List<SeriesItem> Raw)>();
         foreach (var p in root.GetProperty("properties").EnumerateArray())
         {
             var id = Str(p, "id");
@@ -626,11 +634,9 @@ public sealed class AnalyzeViewModel : ObservableObject
                 Value = Dbl(p, "value"), Error = Dbl(p, "error"),
                 Ref = m != null && m.Values.TryGetValue(id, out var r) ? r : null,
             };
-            Results.Add(card);
             if (id == "viscosity" && double.IsFinite(card.Value) && card.Value > 0) ViscosityComputed?.Invoke(card.Value);
+            var list = new List<SeriesItem>();
             if (p.TryGetProperty("series", out var ss))
-            {
-                var list = new List<SeriesItem>();
                 foreach (var s in ss.EnumerateArray())
                 {
                     var x = s.GetProperty("x").EnumerateArray().Select(v => v.ValueKind == JsonValueKind.Number ? v.GetDouble() : double.NaN).ToArray();
@@ -638,12 +644,18 @@ public sealed class AnalyzeViewModel : ObservableObject
                     double? refY = id is "rdf" or "sq" or "xray" or "electron" or "neutron" ? 1.0 : id is "relaxation" ? 0.0 : null;
                     list.Add(new SeriesItem(card.Name, Str(s, "label"), Str(s, "x_label"), Str(s, "y_label"), x, y, id == "msd", refY));
                 }
-                if (id == "tg" && list.Count >= 2)          // specific volume as points, the two-line fit through them
-                    list = [list[0] with { Markers = true, OverlayX = list[1].X, OverlayY = list[1].Y, Label = "specific volume and two-line fit" }, .. list.Skip(2)];
-                else if (id == "tensile_modulus" && list.Count >= 2)   // raw stress as points, the smoothed curve through them
-                    list = [list[1] with { Markers = true, OverlayX = list[0].X, OverlayY = list[0].Y, Label = "stress–strain (points) and smoothed" }, .. list.Skip(2)];
-                foreach (var it in list) Curves.Add(it);
-            }
+            parsed.Add((card, list));
+        }
+        // each card with its figure; the curve list holds every figure (one property can give several)
+        var byId = new Dictionary<string, (ResultCard Card, List<SeriesItem> Raw)>();
+        foreach (var e in parsed) byId.TryAdd(e.Card.Id, e);
+        foreach (var (card, raw) in parsed)
+        {
+            var entries = raw.Count > 0 ? AnalyzeFigures.Build(card, raw, byId, 5) : [];
+            if (card.Id == "diffusion" && AnalyzeFigures.Diffusion(card, byId) is { } d) entries.Insert(0, d);
+            card.Figure = entries.FirstOrDefault(en => en.X.Length >= 2)?.Figure;
+            Results.Add(card);
+            foreach (var it in entries) Curves.Add(it);
         }
         Raise(nameof(HasResults));
         CurveIndex = -1;

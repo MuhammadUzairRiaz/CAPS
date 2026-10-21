@@ -31,9 +31,9 @@
           <Border Classes="pcard">
             <StackPanel Spacing="8">
               <TextBlock Text="Mean-squared displacement" FontSize="13.5" FontWeight="SemiBold" />
-              <v:LinePlot x:Name="Msd" Height="240" XLabel="log₁₀ t (ps)" YLabel="log₁₀ MSD (Å²)" AutoRange="True" />
+              <v:SciPlot x:Name="Msd" Height="300" />
               <TextBlock Text="local slope d ln MSD / d ln t" Classes="label" />
-              <v:LinePlot x:Name="Slope" Height="120" XLabel="log₁₀ t (ps)" YLabel="slope" AutoRange="True" />
+              <v:SciPlot x:Name="Slope" Height="190" />
               <TextBlock Classes="dim" TextWrapping="Wrap"
                          Text="Molecule centres, all time origins, the system's drift removed. Fit only where the slope is 1: the shaded window. CAPS warns when it includes the caged or ballistic part." />
               <Border Padding="10,8" CornerRadius="6" Background="{DynamicResource WarnBgB}" IsVisible="{Binding DfHasWarning}">

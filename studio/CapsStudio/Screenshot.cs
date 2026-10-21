@@ -387,7 +387,7 @@ internal static class Screenshot
                 switch (parts[0])
                 {
                     case "glass":
-                        vm.Analyze.TgFromD = 450; vm.Analyze.TgToD = 250; vm.Analyze.TgStepD = 25; vm.Analyze.TgPsD = 5; vm.Analyze.EqPsD = 2; vm.GtReplicas = 3;
+                        vm.Analyze.TgFromD = 600; vm.Analyze.TgToD = 300; vm.Analyze.TgStepD = 25; vm.Analyze.TgPsD = 5; vm.Analyze.EqPsD = 5; vm.GtReplicas = 3;   // holds of 5000 steps (1 fs)
                         vm.OpenGlass();
                         if (parts.Length > 1) t = vm.RunGlass();
                         break;
@@ -956,7 +956,7 @@ internal static class Screenshot
                 var t = w.ViewModel.Field.ApplyOverride();
                 while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
             }
-            // Analyze › Properties: props=density,rdf,...  frameps=X  ref=<material id>  analyze=1 (run)  curve=N
+            // Analyze › Properties: props=density,rdf,...  pair=N inter=1  frameps=X  ref=<material id>  analyze=1 (run)  curve=N
             if (kv[0] == "props")
             {
                 w.ViewModel.SetModule(1);
@@ -964,6 +964,9 @@ internal static class Screenshot
                 var ids = kv[1].Split(',');
                 foreach (var c in w.ViewModel.Analyze.Groups.SelectMany(g => g.Chips)) c.IsOn = ids.Contains(c.Id);
             }
+            if (kv[0] == "eqps") w.ViewModel.Analyze.EqPsD = decimal.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture);   // NPT before the first cooling hold
+            if (kv[0] == "pair") w.ViewModel.Analyze.PairIndex = int.Parse(kv[1]);   // g(r) pair: 1 = C–C
+            if (kv[0] == "inter") w.ViewModel.Analyze.InterOnly = kv[1] == "1";
             if (kv[0] == "frameps") w.ViewModel.Analyze.FramePsD = decimal.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture);
             if (kv[0] == "ref") w.ViewModel.Analyze.RefIndex = w.ViewModel.Analyze.References.ToList().FindIndex(r => r.Id == kv[1]);
             if (kv[0] == "analyze")
@@ -972,6 +975,9 @@ internal static class Screenshot
                 while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
             }
             if (kv[0] == "curve") w.ViewModel.Analyze.CurveIndex = int.Parse(kv[1]);
+            // analyzeexport=DIR writes the results (results.json among them); analyzeload=FILE shows a saved report without running
+            if (kv[0] == "analyzeexport") w.ViewModel.Analyze.Export(kv[1]);
+            if (kv[0] == "analyzeload") w.ViewModel.Analyze.Load(File.ReadAllText(kv[1]));
             // protocol settings: tgset=from:to:step:ps   tensset=rate:max:T
             if (kv[0] == "tgset")
             {

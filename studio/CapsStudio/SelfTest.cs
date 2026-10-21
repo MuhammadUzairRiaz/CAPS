@@ -364,6 +364,18 @@ internal static class SelfTest
             Check(d?.HasRef == true && d.Verdict.Contains("below"), $"compared with experiment: {d?.RefText} · {d?.Verdict}");
             Check(cards.TryGetValue("rg", out var rg) && rg.Value > 2 && rg.Value < 20, $"analyze Rg {rg?.ValueText} Å");
             Check(vm.Analyze.Curves.Count >= 4 && vm.Analyze.Curve != null, $"analyze curves: {vm.Analyze.Curves.Count}");
+            // every card with a curve draws a figure with titled axes (quantity / unit); the MSD on log axes; the density
+            // with its block means and the mean ± standard error band at the card's value
+            Check(vm.Analyze.Results.Where(c => c.Id != "ffv" || c.Figure != null).All(c => c.Figure is { } f && f.XLabel.Length > 0 && f.YLabel.Length > 0 && f.Series.Length > 0),
+                  "analyze cards draw figures: " + string.Join(", ", vm.Analyze.Results.Select(c => c.Id + (c.Figure == null ? " (none)" : ""))));
+            var msdFig = vm.Analyze.Curves.FirstOrDefault(c => c.Property == cards["msd"].Name)?.Figure;
+            Check(msdFig is { XLog: true, YLog: true } && msdFig.XLabel == "*t* / ps" && msdFig.YLabel == "MSD / Å²", $"MSD figure on log axes: {msdFig?.XLabel} · {msdFig?.YLabel}");
+            var dFig = d?.Figure;
+            Check(dFig?.YBand is { } dBand && Math.Abs((dBand.Lo + dBand.Hi) / 2 - d!.Value) < 1e-9 && dFig.Series.Any(x => x.Name.StartsWith("block means", StringComparison.Ordinal))
+                  && dFig.YLabel == "*ρ* / g cm⁻³", $"density figure: block means and mean ± s.e. · {dFig?.YLabel}");
+            Check(AnalyzeFigures.Title("density (g/cm³)") == "*ρ* / g cm⁻³" && AnalyzeFigures.Title("specific volume (cm³/g)") == "*v* / cm³ g⁻¹"
+                  && AnalyzeFigures.Title("C (J/(g·K))") == "*C* / J g⁻¹ K⁻¹" && AnalyzeFigures.Title("force (kcal/mol/Å)") == "*F* / kcal mol⁻¹ Å⁻¹",
+                  "axis titles as quantity / unit: " + AnalyzeFigures.Title("C (J/(g·K))"));
             var adir = Path.Combine(outDir, "analyze_selftest");
             var files = vm.Analyze.Export(adir);
             Check(files >= 6 && File.ReadAllText(Path.Combine(adir, "results.tex")).Contains("\\toprule"), $"analyze export: {files} files");
@@ -385,6 +397,9 @@ internal static class SelfTest
             Check(pc.ContainsKey("tensile_modulus") && pc.ContainsKey("yield") && pc.ContainsKey("tg"), $"protocols: {string.Join(", ", pc.Keys)} · {vm.Analyze.Log}");
             Check(pc.TryGetValue("tg", out var tg) && tg.HasValue, $"tg card: {tg?.ValueText} K ({tg?.NotesText.Split('\n')[0]})");
             Check(vm.Analyze.Curves.Any(c => c.Markers && c.OverlayX != null), "tg and stress–strain curves carry points with a line through them");
+            var tgFig = tg?.Figure;
+            Check(!(tg?.HasValue ?? false) || (tgFig != null && tgFig.Marks.Length == 1 && Math.Abs(tgFig.Marks[0].X - tg.Value) < 1e-9 && tgFig.Series.Count(x => x.Name.EndsWith(" fit", StringComparison.Ordinal)) == 2
+                  && tgFig.XLabel == "*T* / K"), $"tg figure: the glass and melt fits and Tg marked ({tgFig?.Marks.FirstOrDefault()?.Label})");
             Check(vm.Document.Summary().Atoms == atoms0 && vm.Document.Summary().Frames == s.Frames, "protocols leave the document unchanged");
         }
 

@@ -25,6 +25,8 @@ public sealed partial class MainViewModel
     public double[] GtErrors { get; private set; } = [];
     public (double X, double Y)[] GtFit { get; private set; } = [];
     public string GtYLabel { get; private set; } = "specific volume (cm³/g)";
+    /// <summary>The pooled two-line fit for the figure: Tg ± error, the property at Tg and the slopes below and above.</summary>
+    public (double Tg, double Err, double AtTg, double SLow, double SHigh, int Replicas)? GtLines { get; private set; }
     public bool GtHasPoints => GtPoints.Length > 1;
     public event Action? GtChanged;
 
@@ -125,6 +127,7 @@ public sealed partial class MainViewModel
         GtErrors = runs.Count > 1 ? temps.Select((_, i) => Sd(runs.Select(r => r.Points.Length > i ? r.Points[i].V : double.NaN).ToArray())).ToArray() : [];
         GtYLabel = energy ? "potential energy per atom (kcal/mol)" : "specific volume (cm³/g)";
         var ok = runs.Where(r => double.IsFinite(r.Tg)).ToList();
+        GtLines = null;
         if (ok.Count == 0) { GtTg.Value = "—"; GtTg.Caption = "no break in the scan"; GtFit = []; GtReplicaText = ""; GtStatus = $"{runs.Count} replica{(runs.Count == 1 ? "" : "s")} · no break found: widen the temperature range" + (fitRanges ? " or move the ranges" : "") + " · " + log; Raise(nameof(GtHasPoints)); GtChanged?.Invoke(); return; }
         var tg = ok.Average(r => r.Tg);
         var tgErr = ok.Count > 1 ? Sd(ok.Select(r => r.Tg).ToArray()) : ok[0].Err;
@@ -153,6 +156,7 @@ public sealed partial class MainViewModel
         var (lo, hi) = (temps.Min(), temps.Max());
         GtFit = Enumerable.Range(0, 101).Select(k => lo + (hi - lo) * k / 100.0)
                           .Select(T => (T, vtg + sLow * Math.Min(T - tg, 0) + sHigh * Math.Max(T - tg, 0))).ToArray();
+        GtLines = (tg, tgErr, vtg, sLow, sHigh, runs.Count);
         GtReplicaText = ok.Count > 1 ? "Replicas: " + string.Join(" · ", ok.Select(r => r.Tg.ToString("0", inv) + " K")) : "";
         GtStatus = $"{runs.Count} replica{(runs.Count == 1 ? "" : "s")} · {temps.Length} temperatures · {log}";
         Raise(nameof(GtHasPoints));
