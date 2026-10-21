@@ -667,6 +667,7 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
     }
 
     if (o.each_step) o.each_step(et, x, cell, step + o.step_offset);
+    if (o.after_step) o.after_step(x, v, cell, step + o.step_offset);
     if (step % std::max(1, o.thermo_every) == 0 || step == o.steps) emit(step);
     if (o.frame && o.frame_every > 0 && (step % o.frame_every == 0 || step == o.steps)) o.frame(x, cell, step + o.step_offset);
     for (size_t k = 0; k < x.size(); k += 3 * 64)
