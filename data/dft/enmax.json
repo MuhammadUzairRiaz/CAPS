@@ -1,0 +1,21 @@
+{
+ "format": "caps-enmax",
+ "version": 1,
+ "about": "ENMAX (eV) and ZVAL (valence electrons) of the PAW datasets data/dft/potcar_map.json names (H, C, N, O, F: the standard PBE datasets of potpaw_PBE.54/.64; Ti: Ti_pv), for the ENCUT of a relaxation chain written without a POTCAR directory (caps vasp-relax) and the phono3py cost estimate. The POTCAR's own ENMAX and ZVAL are used whenever --pp-dir is given; an element missing here needs --pp-dir (or --encuts).",
+ "enmax": {
+  "H": 250.0,
+  "C": 400.0,
+  "N": 400.0,
+  "O": 400.0,
+  "F": 400.0,
+  "Ti": 222.335
+ },
+ "zval": {
+  "H": 1,
+  "C": 4,
+  "N": 5,
+  "O": 6,
+  "F": 7,
+  "Ti": 10
+ }
+}

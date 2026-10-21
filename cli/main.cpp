@@ -233,6 +233,8 @@ int usage() {
                "  caps validate FILE… [--expect Ti3C2O2]       2D slab checks (exit 1 on FAIL)\n"
                "  caps adsorb-dft SLAB [--from-relaxed] [--supercell 5x5] [--smiles S] --out ROOT\n"
                "  caps vasp-set STRUCTURE --out DIR [--pp-dir PAW] [--profile slurm-workspace]\n"
+               "  caps vasp-relax CRYSTAL --out DIR [--dimensionality 3d|2d] [--encuts 900,1350,900,900] [--account A]   relax1 … relax4 (guide ch. 5)\n"
+               "  caps phono3py setup|estimate CRYSTAL [--out DIR] [--mode full|random|both] [--dimensionality 3d|2d] · phono3py check|analyze DIR   thermal conductivity\n"
                "  caps vasp-conv setup|collect CASE · vasp-scan make|fit · vasp-derived charge|cdd|freq|aimd\n"
                "  caps vasp-jobs submit|update|reset|cleanup|store · vasp-check · vasp-progress · vasp-health · vasp-bind\n"
                "  caps vasp-analyze geom|wf|dos|cdd|bader|freq|md|summary …\n"
