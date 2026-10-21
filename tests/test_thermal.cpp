@@ -58,13 +58,16 @@ SemicrystallineOptions small_stack() {
   o.nx = 3, o.ny = 4, o.nc = 8, o.amorphous_nm = 2.5;
   o.loops = 0.5, o.bridges = 0.2, o.tails = 0.3;
   o.seed = 7;
+  o.data_dir = std::string(CAPS_SOURCE_DIR) + "/data";
   return o;
 }
 
 }  // namespace
 
 TEST(Semicrystalline, PeCellFromBunn) {
-  const PolymerCrystalCell pc = polymer_crystal_cell("pe");
+  const PolymerCrystalCell pc = polymer_crystal_cell("pe", std::string(CAPS_SOURCE_DIR) + "/data");
+  EXPECT_EQ(pc.id, "pe-orthorhombic");
+  EXPECT_NE(pc.source.find("Bunn"), std::string::npos);
   ASSERT_EQ(pc.cell.atoms.size(), 12u);
   EXPECT_NEAR(pc.cell.cell.volume(), 7.40 * 4.93 * 2.534, 1e-9);
   const auto st = find_stems(pc.cell);
@@ -356,4 +359,29 @@ TEST(HeatFlux, LennardJonesGreenKuboAgreesWithNemd) {
   EXPECT_GT(kn, 0.45 * ref);
   EXPECT_LT(kn, 1.8 * ref);
   if (!std::getenv("CAPS_LJ_SEED")) EXPECT_LT(std::max(kg, kn) / std::min(kg, kn), 1.6);
+}
+TEST(Semicrystalline, StemsOfTheLibrarysOtherCrystals) {
+  // the polymer crystal library's cells (data/crystals/polymers): stems found along the chain axis, helices told apart
+  const std::string dir = std::string(CAPS_SOURCE_DIR) + "/data";
+  struct Want { const char* id; size_t stems, backbone; bool helical; int axis; };
+  const Want want[] = {{"pe-orthorhombic", 2, 2, false, 2}, {"ipp-alpha", 4, 6, true, 2}, {"peo", 4, 21, true, 2}, {"pom-orthorhombic", 2, 4, true, 2},
+                       {"pvdf-beta", 2, 2, false, 2}, {"nylon66-alpha", 1, 14, false, 2}, {"natural-rubber", 4, 8, true, 2}};
+  for (const auto& w : want) {
+    const auto st = find_stems(polymer_crystal_cell(w.id, dir).cell);
+    ASSERT_EQ(st.size(), w.stems) << w.id;
+    for (const auto& s : st) {
+      EXPECT_EQ(s.backbone.size(), w.backbone) << w.id;
+      EXPECT_EQ(s.helical, w.helical) << w.id;
+      EXPECT_EQ(s.lattice_axis, w.axis) << w.id;
+    }
+  }
+  // the builder grows polymethylene amorphous layers only so far: a helical iPP stack is refused with the reason
+  SemicrystallineOptions o = small_stack();
+  o.polymer = "ipp-alpha";
+  try {
+    build_semicrystalline(o);
+    ADD_FAILURE() << "iPP built";
+  } catch (const std::invalid_argument& e) {
+    EXPECT_NE(std::string(e.what()).find("helical"), std::string::npos) << e.what();
+  }
 }

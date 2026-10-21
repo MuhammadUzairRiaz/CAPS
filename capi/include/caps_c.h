@@ -1344,7 +1344,8 @@ int32_t caps_job_template(const char* scheduler, char* text, int32_t cap);
 int32_t caps_host_presets(char* json, int32_t cap);
 
 /* Semicrystalline lamellar cells (ABI 72, caps/semicrystal.hpp; caps semicrystalline). caps_semicrystalline_build: options
-   JSON {polymer ("pe" or a unit-cell file), nx, ny, nc (cells along c; 0: crystal_nm), crystal_nm, amorphous_nm, loops,
+   JSON {polymer (a library id, "pe" = "pe-orthorhombic", or a unit-cell file), data_dir (CAPS's data folder, for the
+   polymer crystal library data/crystals/polymers), nx, ny, nc (cells along c; 0: crystal_nm), crystal_nm, amorphous_nm, loops,
    bridges, tails (fractions per segment), reentry ("adjacent" | "random"), density (g/cm³), seed, united_atom, max_atoms,
    relax (push-off with the crystal held, then minimisation, built-in GAFF)}; the document holds the cell with the tags
    "crystal" and "amorphous", report gets the JSON report (format caps-semicrystalline/1). progress(done, total, 0, user)

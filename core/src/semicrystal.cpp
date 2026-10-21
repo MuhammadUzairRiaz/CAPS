@@ -5,6 +5,8 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <filesystem>
+#include <fstream>
 #include <map>
 #include <numeric>
 #include <random>
@@ -118,54 +120,42 @@ std::string formula_of(const System& s, const std::vector<uint32_t>& atoms) {
 // ---------------------------------------------------------------------------------------------------------------
 // Unit cells
 
-PolymerCrystalCell polymer_crystal_cell(const std::string& id) {
+PolymerCrystalCell polymer_crystal_cell(const std::string& id, const std::string& data_dir) {
   PolymerCrystalCell pc;
   std::string low = id;
   for (auto& ch : low) ch = char(std::tolower((unsigned char)ch));
-  if (low == "pe" || low == "polyethylene" || low == "pe-orthorhombic") {
-    // Bunn 1939, Pnam: C at (x, y, 1/4) etc. with x = 0.038, y = 0.065 (p. 491)
-    pc.id = "pe";
-    pc.name = "polyethylene, orthorhombic (Pnam)";
-    pc.source = "C. W. Bunn, Trans. Faraday Soc. 35, 482 (1939): a 7.40, b 4.93, c 2.534 Å; C-C 1.53 Å, C-C-C 112°; hydrogens placed by CAPS (C-H 1.09 Å, H-C-H 109.47°)";
-    System& s = pc.cell;
-    s.title = pc.name;
-    s.cell.a = {7.40, 0, 0};
-    s.cell.b = {0, 4.93, 0};
-    s.cell.c = {0, 0, 2.534};
-    const double fx = 0.038, fy = 0.065;
-    const Vec3 fc[4] = {{fx, 1 - fy, 0.25}, {1 - fx, fy, 0.75}, {0.5 - fx, 0.5 - fy, 0.75}, {0.5 + fx, 0.5 + fy, 0.25}};
-    for (const auto& f : fc) {
-      Atom a;
-      a.element = 6, a.name = "C";
-      a.pos = s.cell.to_cartesian(f);
-      s.atoms.push_back(a);
-    }
-    // hydrogens: each carbon's chain neighbours are the other carbon of its chain at ±c/2 (minimum image along x, y)
-    const Box box{{7.40, 4.93, 2.534}};
-    for (int i = 0; i < 4; ++i) {
-      const int j = i ^ 1;   // 0-1 the corner chain, 2-3 the centre chain
-      const Vec3 c = s.atoms[i].pos;
-      Vec3 d = box.mi(s.atoms[j].pos - c);
-      d[2] = 0.5 * 2.534 * (d[2] >= 0 ? 1 : -1);
-      const Vec3 a = c + d, b = c + Vec3{d[0], d[1], -d[2]};
-      const Vec3 u = unit(unit(c - a) + unit(c - b)), n = unit(cross(a - c, b - c));
-      for (double sg : {1.0, -1.0}) {
-        Atom h;
-        h.element = 1, h.name = "H";
-        h.pos = s.cell.wrap(c + (u * std::cos(kHalfHCH) + n * (sg * std::sin(kHalfHCH))) * kCH);
-        s.atoms.push_back(h);
-      }
-    }
+  // a file: a CIF or any structure with a cell
+  if (std::filesystem::exists(id) && !std::filesystem::is_directory(id)) {
+    pc.id = id;
+    const bool cif = low.size() > 4 && low.substr(low.size() - 4) == ".cif";
+    pc.cell = cif ? read_cif(id) : open_file(id).frame(0);
+    if (!pc.cell.cell.valid()) throw std::invalid_argument(id + ": no unit cell");
+    pc.name = pc.cell.title.empty() ? id : pc.cell.title;
+    pc.source = id;
     return pc;
   }
-  // a file: a CIF or any structure with a cell (the polymer crystal library's entries)
-  pc.id = id;
-  const bool cif = low.size() > 4 && low.substr(low.size() - 4) == ".cif";
-  pc.cell = cif ? read_cif(id) : open_file(id).frame(0);
-  if (!pc.cell.cell.valid()) throw std::invalid_argument(id + ": no unit cell");
-  pc.name = pc.cell.title.empty() ? id : pc.cell.title;
-  pc.source = id;
-  return pc;
+  // an entry of CAPS's polymer crystal library (data/crystals/polymers/polymers.json): its id, or a short name
+  if (low == "pe" || low == "polyethylene") low = "pe-orthorhombic";
+  const std::filesystem::path dir = std::filesystem::path(data_dir) / "crystals" / "polymers";
+  std::ifstream in(dir / "polymers.json");
+  if (data_dir.empty() || !in)
+    throw std::invalid_argument("'" + id + "' is not a file, and the polymer crystal library (data/crystals/polymers) was not found" +
+                                (data_dir.empty() ? std::string() : " under " + data_dir));
+  std::stringstream ss;
+  ss << in.rdbuf();
+  const Json lib = Json::parse(ss.str());
+  std::string ids;
+  for (const auto& e : lib["crystals"].items()) {
+    ids += (ids.empty() ? "" : ", ") + e.text("id");
+    if (e.text("id") != low) continue;
+    pc.id = low;
+    pc.name = e.text("name");
+    pc.source = e.text("source") + (e.has("doi") ? ", doi:" + e.text("doi") : std::string()) + " (CAPS polymer crystal library, " + e.text("file") + ")";
+    pc.cell = read_cif((dir / e.text("file")).string());
+    pc.cell.title = pc.name;
+    return pc;
+  }
+  throw std::invalid_argument("no polymer crystal '" + id + "' in the library (" + ids + ")");
 }
 
 std::vector<CrystalStem> find_stems(const System& s, double tol) {
@@ -208,41 +198,54 @@ std::vector<CrystalStem> find_stems(const System& s, double tol) {
           stack.push_back(l.j);
         } else if (comp[l.j] == id && w != img[l.j]) {   // the chain meets itself one translation away
           const std::array<int, 3> t{w[0] - img[l.j][0], w[1] - img[l.j][1], w[2] - img[l.j][2]};
-          if (!repeats || std::abs(t[2]) < std::abs(trans[2]) || (t[2] != 0 && trans[2] == 0)) trans = t, repeats = true;
+          const int nt = std::abs(t[0]) + std::abs(t[1]) + std::abs(t[2]), nr = std::abs(trans[0]) + std::abs(trans[1]) + std::abs(trans[2]);
+          if (!repeats || nt < nr) trans = t, repeats = true;
         }
       }
     }
     CrystalStem st;
     st.atoms = members;
     st.formula = formula_of(s, members);
-    if (!repeats || trans[0] != 0 || trans[1] != 0 || std::abs(trans[2]) != 1) {
-      out.push_back(st);   // a molecule, or a chain not along c: atoms only, no backbone
+    // a chain repeats with one lattice translation: along a, b or c
+    int ax = -1;
+    if (repeats && std::abs(trans[0]) + std::abs(trans[1]) + std::abs(trans[2]) == 1) ax = trans[0] ? 0 : trans[1] ? 1 : 2;
+    if (ax < 0) {
+      out.push_back(st);   // a molecule, or a chain along no single cell edge: atoms only, no backbone
       continue;
     }
-    st.axis = unit(s.cell.c);
+    st.lattice_axis = ax;
+    const Vec3 edge = ax == 0 ? s.cell.a : ax == 1 ? s.cell.b : s.cell.c;
+    st.axis = unit(edge);
     // backbone: heavy atoms that lie on the path from one cell's chain to the next (their removal splits the chain);
     // found as the heavy atoms with two or more heavy neighbours whose shortest path to their own +c image passes them
-    std::vector<uint32_t> heavy;
-    for (uint32_t i : members) if (s.atoms[i].element > 1) heavy.push_back(i);
+    std::vector<uint32_t> heavy;   // heavy atoms with two heavy neighbours or more (not a methyl, F or carbonyl O)
+    for (uint32_t i : members) {
+      if (s.atoms[i].element <= 1) continue;
+      int hn = 0;
+      for (const auto& l : nb[i]) hn += s.atoms[l.j].element > 1;
+      if (hn >= 2) heavy.push_back(i);
+    }
     // BFS over (atom, image) restricted to heavy atoms from the lowest heavy atom to its +c image
     auto unwrapped = [&](uint32_t i, const std::array<int, 3>& im) {
       return s.atoms[i].pos + s.cell.a * im[0] + s.cell.b * im[1] + s.cell.c * im[2];
     };
     uint32_t start = heavy.empty() ? members[0] : heavy[0];
-    for (uint32_t i : heavy) if (unwrapped(i, img[i])[2] < unwrapped(start, img[start])[2]) start = i;
+    for (uint32_t i : heavy) if (dot(unwrapped(i, img[i]), st.axis) < dot(unwrapped(start, img[start]), st.axis)) start = i;
     using Key = std::pair<uint32_t, std::array<int, 3>>;
     std::map<Key, Key> prev;
     std::vector<Key> q{{start, img[start]}};
     prev[q[0]] = q[0];
-    const Key goal{start, {img[start][0], img[start][1], img[start][2] + 1}};
+    std::array<int, 3> gim = img[start];
+    gim[size_t(ax)] += 1;
+    const Key goal{start, gim};
     bool found = false;
     for (size_t h = 0; h < q.size() && !found; ++h) {
       const Key cur = q[h];
       for (const auto& l : nb[cur.first]) {
-        if (s.atoms[l.j].element <= 1) continue;
+        if (std::find(heavy.begin(), heavy.end(), l.j) == heavy.end()) continue;
         const Key nx{l.j, {cur.second[0] + l.sh[0], cur.second[1] + l.sh[1], cur.second[2] + l.sh[2]}};
         if (prev.count(nx)) continue;
-        if (std::abs(nx.second[2] - img[start][2]) > 2) continue;
+        if (std::abs(nx.second[size_t(ax)] - img[start][size_t(ax)]) > 2) continue;
         prev[nx] = cur;
         if (nx == goal) { found = true; break; }
         q.push_back(nx);
@@ -255,16 +258,31 @@ std::vector<CrystalStem> find_stems(const System& s, double tol) {
       std::reverse(path.begin(), path.end());
       for (const auto& k : path) st.backbone.push_back(k.first);
       // the backbone in order along +c, starting at the lowest atom (already: start is the lowest)
-      // helical: the backbone's projections on the ab plane span more than a line
+      // helical: the backbone's positions across the axis spread in two directions (a planar zig-zag in one)
       if (st.backbone.size() >= 3) {
-        double area = 0;
-        const Vec3 p0 = unwrapped(path[0].first, path[0].second);
-        for (size_t k = 1; k + 1 < path.size(); ++k) {
-          Vec3 u = unwrapped(path[k].first, path[k].second) - p0, v = unwrapped(path[k + 1].first, path[k + 1].second) - p0;
-          u[2] = v[2] = 0;
-          area += std::fabs(cross(u, v)[2]);
+        std::vector<Vec3> q;
+        Vec3 m{0, 0, 0};
+        for (const auto& k : path) {
+          Vec3 p = unwrapped(k.first, k.second);
+          p = p - st.axis * dot(p, st.axis);
+          q.push_back(p);
+          m = m + p;
         }
-        st.helical = area > 0.5;
+        m = m * (1.0 / double(q.size()));
+        double c[3][3] = {{0}};
+        for (const auto& p : q)
+          for (int i2 = 0; i2 < 3; ++i2)
+            for (int j2 = 0; j2 < 3; ++j2) c[i2][j2] += (p[i2] - m[i2]) * (p[j2] - m[j2]) / double(q.size());
+        // the two in-plane eigenvalues: the smaller one is the trace minus the largest; the largest by power iteration
+        Vec3 v{1, 0.3, 0.1};
+        for (int it = 0; it < 60; ++it) {
+          Vec3 w{c[0][0] * v[0] + c[0][1] * v[1] + c[0][2] * v[2], c[1][0] * v[0] + c[1][1] * v[1] + c[1][2] * v[2], c[2][0] * v[0] + c[2][1] * v[1] + c[2][2] * v[2]};
+          if (norm(w) < 1e-12) break;
+          v = unit(w);
+        }
+        const double l1 = dot(v, Vec3{c[0][0] * v[0] + c[0][1] * v[1] + c[0][2] * v[2], c[1][0] * v[0] + c[1][1] * v[1] + c[1][2] * v[2], c[2][0] * v[0] + c[2][1] * v[1] + c[2][2] * v[2]});
+        const double l2 = c[0][0] + c[1][1] + c[2][2] - l1;
+        st.helical = l2 > 0.04;   // more than 0.2 Å RMS across the zig-zag plane
       }
     }
     out.push_back(st);
@@ -289,13 +307,15 @@ struct Seg {
 System build_semicrystalline(const SemicrystallineOptions& o, SemicrystallineReport* report) {
   auto cancelled = [&](const std::string& what, double f) { return o.progress && !o.progress(what, f); };
   SemicrystallineReport R;
-  const PolymerCrystalCell pc = polymer_crystal_cell(o.polymer);
+  const PolymerCrystalCell pc = polymer_crystal_cell(o.polymer, o.data_dir);
   const System& uc = pc.cell;
   const auto stems_uc = find_stems(uc);
   // polymethylene stems only for now: the amorphous segments are grown as CH2 chains
   std::vector<const CrystalStem*> chains;
   for (const auto& st : stems_uc) {
-    if (st.backbone.empty()) throw std::invalid_argument(pc.name + ": a molecule or chain not along c (" + st.formula + ")");
+    if (st.backbone.empty()) throw std::invalid_argument(pc.name + ": a molecule, or a chain along no cell edge (" + st.formula + ")");
+    if (st.lattice_axis != 2)
+      throw std::invalid_argument(pc.name + ": the chains run along " + std::string(1, char('a' + st.lattice_axis)) + "; the lamellar builder takes cells with the chains along c (relabel the cell's edges)");
     int c = 0, h = 0, other = 0;
     for (uint32_t i : st.atoms) (uc.atoms[i].element == 6 ? c : uc.atoms[i].element == 1 ? h : other)++;
     if (other || h != 2 * c || st.backbone.size() != size_t(c))

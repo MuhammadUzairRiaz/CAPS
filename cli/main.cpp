@@ -278,7 +278,7 @@ int usage() {
                "  caps pull    FILE [--normal | --axis x|y|z] [--distance 10] [--rate 5] [--spring 10] [--temp 300] [--surface 1] [--csv OUT]\n"
                "               pull-out / debonding of a film from a held surface: interfacial shear strength, work of separation\n"
                "  caps blend   --components SMILES1,SMILES2 [--weights 0.5,0.5] [--chains 8] [--dp 20] [--density 0.5] [--slabs | --droplet] -o OUT\n"
-               "  caps semicrystalline -o OUT.data [--polymer pe|CELL.cif] [--repeats 4,6] [--crystal 5 (nm) | --crystal-cells 20]\n"
+               "  caps semicrystalline -o OUT.data [--polymer pe|pe-orthorhombic|CELL.cif] [--repeats 4,6] [--crystal 5 (nm) | --crystal-cells 20]\n"
                "               [--amorphous 4 (nm)] [--loops 0.5 --bridges 0.2 --tails 0.3] [--reentry adjacent|random] [--density 0.855]\n"
                "               [--seed 1] [--ff oplsaa2024|oplsua2024] [--no-relax] [--report R.json] [--lammps-input IN.lmp] [--gromacs STEM]\n"
                "               a lamellar stack: crystalline stems, loops, bridges and tails in the amorphous layer (groups crystal, amorphous)\n"
@@ -1582,6 +1582,8 @@ int main(int argc, char** argv) {
       if (!o.count("-o")) return usage();
       SemicrystallineOptions so;
       if (o.count("--polymer")) so.polymer = o["--polymer"];
+      for (const auto& root : caps_roots())   // the polymer crystal library
+        if (std::filesystem::exists(root + "/data/crystals/polymers/polymers.json")) { so.data_dir = root + "/data"; break; }
       if (o.count("--repeats")) {
         const auto v = split(o["--repeats"]);
         so.nx = std::stoi(v.at(0)), so.ny = v.size() > 1 ? std::stoi(v[1]) : so.nx;

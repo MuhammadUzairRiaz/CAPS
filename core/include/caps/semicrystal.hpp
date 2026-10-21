@@ -31,27 +31,28 @@ struct PolymerCrystalCell {
   System cell;   // atoms of one unit cell (fractional positions in [0, 1)), orthorhombic or monoclinic about c
 };
 
-// Built-in unit cells by id: "pe" (orthorhombic polyethylene, Pnam, Bunn, Trans. Faraday Soc. 35, 482 (1939): a 7.40,
-// b 4.93, c 2.534 Å, C at (0.038, 0.935, 1/4) and its Pnam equivalents; hydrogens at 1.09 Å in the H-C-H plane
-// bisecting each C-C-C angle, H-C-H 109.47°). A path instead of an id reads a CIF or any structure file with a cell
-// (the polymer crystal library's entries).
-PolymerCrystalCell polymer_crystal_cell(const std::string& id_or_path);
+// A unit cell from CAPS's polymer crystal library (data_dir/crystals/polymers/polymers.json, each entry a CIF from its
+// paper: "pe-orthorhombic" (alias "pe"), Bunn, Trans. Faraday Soc. 35, 482 (1939), Pnam, a 7.40, b 4.93, c 2.534 Å;
+// "pe-monoclinic", "ipp-alpha", "pvdf-beta" …), or a CIF / structure file with a cell when id_or_path is a file.
+PolymerCrystalCell polymer_crystal_cell(const std::string& id_or_path, const std::string& data_dir);
 
-// Stems of a crystal along c: each chain whose bonds (perceived by distance, through the cell's faces) repeat with a
-// translation of one c. For each stem, the atoms of one cell's repeat, its backbone atoms (the path along the chain) in
-// order along +c, and the backbone bond that leaves the cell through its top face (from backbone.back() to
-// backbone.front() of the next cell up).
+// Stems of a crystal: each chain whose bonds (perceived by distance, through the cell's faces) repeat with a translation
+// of one cell edge (c for the lamellar builder; a or b reported too). For each stem, the atoms of one cell's repeat and
+// its backbone atoms (the shortest path of atoms with two heavy neighbours or more from one cell's chain to the next) in
+// order along the axis; helical when the backbone spreads across the axis in two directions (not a planar zig-zag).
 struct CrystalStem {
   std::vector<uint32_t> atoms;      // atoms of the stem in one unit cell
-  std::vector<uint32_t> backbone;   // backbone atoms in one cell, ordered along +c
-  Vec3 axis{0, 0, 1};               // unit vector of the stem's translation (c)
+  std::vector<uint32_t> backbone;   // backbone atoms in one cell, ordered along the axis
+  Vec3 axis{0, 0, 1};               // unit vector of the stem's translation
+  int lattice_axis = -1;            // the cell edge the chain repeats along: 0 a, 1 b, 2 c (−1: not a chain)
   std::string formula;              // of one cell's repeat ("C2H4")
   bool helical = false;             // the backbone turns about the axis (more than a planar zig-zag)
 };
 std::vector<CrystalStem> find_stems(const System& cell, double bond_tolerance = 0.45);
 
 struct SemicrystallineOptions {
-  std::string polymer = "pe";      // a built-in cell id or a structure file of the unit cell
+  std::string polymer = "pe";      // a library id (pe = pe-orthorhombic) or a structure file of the unit cell
+  std::string data_dir;            // CAPS's data folder (holds crystals/polymers)
   int nx = 4, ny = 6;              // lateral repeats of the unit cell (a, b)
   int nc = 0;                      // cells along c in a lamella; 0: from crystal_nm
   double crystal_nm = 5.0;         // lamella thickness (used when nc == 0)

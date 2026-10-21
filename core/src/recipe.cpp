@@ -796,6 +796,8 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           const Json& C = J["semicrystalline"];
           SemicrystallineOptions so;
           so.polymer = text(C, "polymer", "pe");
+          if (!o.forcefield_dir.empty()) so.data_dir = std::filesystem::absolute(o.forcefield_dir).parent_path().string();
+          if (std::filesystem::exists(path_of(so.polymer))) so.polymer = path_of(so.polymer);
           so.nx = int(num(C, "nx", 4)), so.ny = int(num(C, "ny", 6)), so.nc = int(num(C, "nc", 0));
           so.crystal_nm = num(C, "crystal_nm", 5), so.amorphous_nm = num(C, "amorphous_nm", 4);
           so.loops = num(C, "loops", 0.5), so.bridges = num(C, "bridges", 0.2), so.tails = num(C, "tails", 0.3);

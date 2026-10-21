@@ -6,6 +6,13 @@ lede: What changed in CAPS, newest first. Every force field CAPS ships is now bu
 
 ## October 2026 update (version 0.1.0)
 
+### Semicrystalline stacks and thermal conductivity
+
+- `caps semicrystalline` builds the lamellar cells the papers on semicrystalline polyethylene simulate: a lamella of straight stems along z from the polymer crystal library (orthorhombic PE from Bunn 1939), and an amorphous layer between it and its periodic image holding loops, bridges and tails in the fractions you ask for, at the amorphous density. Every stem runs through the lamella, every chain ends in two tails, and none closes on itself. The cell carries the groups `crystal` and `amorphous`. A report gives the counts, the length of each segment, the crystallinity from the chain order parameter P2, the density and P2 profiles along the stack and the stem tilt; `--analyse` reads the same from any frame after MD. `--lammps-input` writes the cluster equilibration with the crystal tethered first. Cells stay at or below 15,000 atoms; a united-atom force field (`--ff oplsua2024`) counts carbons only, for thicker layers.
+- Stems are found in any cell of the polymer crystal library, straight or helical (iPP, PEO, POM, PVDF, the nylons, PET, PLLA, natural rubber). The amorphous layers are grown for polyethylene so far.
+- `caps thermal` computes the thermal conductivity by MD: Green–Kubo from the heat-flux autocorrelation, with the centroid form of the flux for angles, torsions and impropers, or reverse NEMD (Müller-Plathe). You say whether the material is 3D (bulk) or 2D (a sheet with vacuum along z; κ over an effective thickness and the sheet conductance); CAPS does not guess. On one frame the flux equals LAMMPS's `compute heat/flux` on `compute centroid/stress/atom`. On the Lennard-Jones liquid both methods agree with the published values. `--lammps-input` writes the long run for a cluster.
+- In the Studio: **Build › Semicrystalline stack** and **Modules › Thermal conductivity**; in Python `build.semicrystalline()` and `Document.thermal()`; in recipes `build: { semicrystalline: … }` and a `thermal:` stage.
+
 ### Force fields from original sources only
 
 Every force field in CAPS now comes from its original paper, its supporting information, or the distribution its authors publish. Each library file says where its numbers came from.
