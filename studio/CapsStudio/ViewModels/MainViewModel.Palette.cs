@@ -154,6 +154,8 @@ public sealed partial class MainViewModel
             ("Coarse-grain workflow", 80, "grow", "coarse grain cg mapping beads ester cut boltzmann inversion bonded ibi iterative pair potential g(r) fit lj calibrate tg density melt build equilibrate entanglement ppa z1 ne tension stress strain dynamics msd backmap pbs pbsa pbat polyester"),
             ("Reader (logs, xvg, CSV)", 73, "file", "read text log lammps log.lammps thermo xvg gromacs csv table plot column mdp input follow tail"),
             ("Mesoscale DPD", 72, "grow", "dpd dissipative particle dynamics mesoscale coarse block copolymer microphase lamellae micelle blend morphology chi"),
+            ("Semicrystalline stack", 81, "grow", "semicrystalline lamella lamellar stack crystal amorphous loops bridges tails polyethylene interphase crystallinity"),
+            ("Thermal conductivity", 82, "chart", "thermal conductivity kappa heat flux green kubo nemd muller-plathe 2d sheet 3d bulk"),
             ("Sorption", 71, "chart", "sorption gas uptake solubility henry widom gcmc isotherm permeability co2 methane nitrogen water rubber barrier"),
             ("Adsorption locator", 70, "layers", "adsorption adsorbate substrate surface binding site simulated annealing monte carlo filler gas coupling agent sizing"),
             ("File checks", 17, "check", "problems warnings validation report file errors"),

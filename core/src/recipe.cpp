@@ -1,4 +1,6 @@
 #include "caps/recipe.hpp"
+#include "caps/semicrystal.hpp"
+#include "caps/thermal.hpp"
 #include "caps/live.hpp"
 #include "caps/provenance.hpp"
 #include "caps/dft_commands.hpp"
@@ -47,8 +49,8 @@ using fs_path = std::filesystem::path;
 
 namespace {
 
-const std::vector<std::string> kStages = {"build", "type", "grow", "react", "relax", "cbmc", "equilibrate", "md", "analyze", "export"};   // equilibrated, then production MD
-const std::set<std::string> kTop = {"recipe", "name", "dft", "build", "type", "grow", "react", "relax", "cbmc", "md", "equilibrate", "analyze", "export", "electrostatics", "cutoff", "seed", "threads"};
+const std::vector<std::string> kStages = {"build", "type", "grow", "react", "relax", "cbmc", "equilibrate", "md", "thermal", "analyze", "export"};   // equilibrated, then production MD
+const std::set<std::string> kTop = {"recipe", "name", "dft", "build", "type", "grow", "react", "relax", "cbmc", "md", "equilibrate", "thermal", "analyze", "export", "electrostatics", "cutoff", "seed", "threads"};
 
 std::string g6(double x) { char b[32]; std::snprintf(b, sizeof b, "%.6g", x); return b; }
 double num(const Json& j, const char* k, double def) { return j.is_object() && j.has(k) && j[k].is_number() ? j[k].number() : def; }
@@ -178,12 +180,16 @@ RecipeCheck check_recipe(const Json& r) {
           info.summary = "crystal " + (J["crystal"].has("cif") ? J["crystal"]["cif"].str() : text(J["crystal"], "group", "P 1"));
         } else if (J.has("surface")) {
           info.summary = "surface of " + text(J["surface"], "cif", "?");
+        } else if (J.has("semicrystalline")) {
+          const Json& C = J["semicrystalline"];
+          info.summary = "semicrystalline " + text(C, "polymer", "pe") + " · " + g6(num(C, "nx", 4)) + " × " + g6(num(C, "ny", 6)) + " cells · lamella " +
+                         g6(num(C, "crystal_nm", 5)) + " nm · amorphous " + g6(num(C, "amorphous_nm", 4)) + " nm";
         } else if (J.has("nano")) {
           info.summary = "nano " + text(J["nano"], "kind", "tube");
         } else if (J.has("solvate")) {
           info.summary = "solvate in " + text(J["solvate"], "solvent", "water");
         } else {
-          throw RecipeError(2, "build needs polymer, molecule, pack, file, crystal, surface, nano or solvate");
+          throw RecipeError(2, "build needs polymer, molecule, pack, file, crystal, surface, nano, semicrystalline or solvate");
         }
       } else if (st == "type") {
         if (J.has("file") && r.has("react")) throw RecipeError(2, "type: a force field file holds for the structure as it is; react changes it — give a library force field instead");
@@ -222,6 +228,9 @@ RecipeCheck check_recipe(const Json& r) {
         double ps = 0;
         for (const auto& sg : c.schedule) ps += sg.ps;
         info.summary = c.protocol + " · " + std::to_string(c.schedule.size()) + " steps · " + g6(ps) + " ps";
+      } else if (st == "thermal") {
+        if (!J.has("dimensionality")) throw RecipeError(2, "thermal needs dimensionality: 3 (bulk) or 2 (a sheet with vacuum along z)");
+        info.summary = text(J, "method", "gk") + " · " + g6(num(J, "dimensionality", 3)) + "D · " + g6(num(J, "temperature", 300)) + " K · " + g6(num(J, "ps", 100)) + " ps";
       } else if (st == "analyze") {
         info.summary = J.has("properties") ? list(J["properties"]) : "density";
       } else if (st == "export") {
@@ -781,6 +790,28 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           std::snprintf(b, sizeof b, "(%d %d %d) · %d layers · %.1f Å slab · %zu atoms", so.h, so.k, so.l, so.layers, sr.thickness, s.atoms.size());
           res.manifest.steps.push_back(step("build.surface", b, {{"vacuum", g6(so.vacuum) + " Å"}}, "", {}));
           report(k, st, b, "done", 1);
+        } else if (J.has("semicrystalline")) {
+          // semicrystalline: {polymer, nx, ny, nc | crystal_nm, amorphous_nm, loops, bridges, tails, reentry, density,
+          // united_atom}: a lamellar stack with the groups crystal and amorphous (caps/semicrystal.hpp)
+          const Json& C = J["semicrystalline"];
+          SemicrystallineOptions so;
+          so.polymer = text(C, "polymer", "pe");
+          if (!o.forcefield_dir.empty()) so.data_dir = std::filesystem::absolute(o.forcefield_dir).parent_path().string();
+          if (std::filesystem::exists(path_of(so.polymer))) so.polymer = path_of(so.polymer);
+          so.nx = int(num(C, "nx", 4)), so.ny = int(num(C, "ny", 6)), so.nc = int(num(C, "nc", 0));
+          so.crystal_nm = num(C, "crystal_nm", 5), so.amorphous_nm = num(C, "amorphous_nm", 4);
+          so.loops = num(C, "loops", 0.5), so.bridges = num(C, "bridges", 0.2), so.tails = num(C, "tails", 0.3);
+          so.reentry = text(C, "reentry", "adjacent");
+          so.density = num(C, "density", 0.855);
+          so.united_atom = flag(C, "united_atom", false);
+          so.seed = seed_of(C);
+          SemicrystallineReport sr;
+          try { s = build_semicrystalline(so, &sr); } catch (const std::exception& e) { throw RecipeError(2, "build.semicrystalline: " + std::string(e.what())); }
+          res.manifest.steps.push_back(step("build.semicrystalline", std::to_string(sr.stems) + " stems · " + std::to_string(sr.loops) + " loops · " + std::to_string(sr.bridges) +
+                                                                         " bridges · " + std::to_string(sr.tails) + " tails",
+                                            {{"polymer", so.polymer}, {"atoms", std::to_string(s.atoms.size())}}, seeded(so.seed), {}));
+          report(k, st, std::to_string(s.atoms.size()) + " atoms · " + std::to_string(sr.loops) + " loops, " + std::to_string(sr.bridges) + " bridges, " +
+                            std::to_string(sr.tails) + " tails", "done", 1);
         } else if (J.has("nano")) {
           // nano: {kind: tube | sheet | particle, …}: tube {n, m, length, material, walls, periodic}; sheet {lx, ly,
           // layers, material, periodic}; particle {cif, shape, radius, height, top_ratio, passivate}
@@ -841,7 +872,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
             res.manifest.steps.push_back(step("build.solvate", sr.plan.solvent_name, {{"molecules", std::to_string(sr.plan.solvent)}}, seeded(o.seed), {"martinez2009"}));
           } catch (const std::exception& e) { throw RecipeError(2, "build.solvate: " + std::string(e.what())); }
         } else {
-          throw RecipeError(2, "build needs polymer, molecule, pack, file, crystal, surface, nano or solvate");
+          throw RecipeError(2, "build needs polymer, molecule, pack, file, crystal, surface, nano, semicrystalline or solvate");
         }
       } else if (st == "type") {
         report(k, st, "", "running", 0);
@@ -1178,6 +1209,35 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
                                             {"length", g6(er.ps) + " ps"}, {"force field", ffname}}, seeded(e.md.seed), c, approx(e.md.energy, o.threads)));
           report(k, st, proto + " · " + std::to_string(e.stages.size()) + " stages · " + g6(er.ps) + " ps", "done", 1);
         }
+      } else if (st == "thermal") {
+        // thermal: {dimensionality: 3 | 2, thickness (Å, 2D), method: gk | nemd, temperature, equilibrate_ps, ps, dt,
+        // sample_every, corr_ps, axis, slabs, swap_every, transient}: κ by MD (caps/thermal.hpp), as properties
+        ThermalOptions to;
+        to.field = ff;
+        to.energy = energy;
+        to.dimensionality = int(num(J, "dimensionality", 3));
+        to.thickness = num(J, "thickness", 0);
+        to.method = text(J, "method", "gk");
+        to.temperature = num(J, "temperature", 300);
+        to.equilibrate_ps = num(J, "equilibrate_ps", 10);
+        to.ps = num(J, "ps", 100);
+        to.dt = num(J, "dt", 1);
+        to.sample_every = int(num(J, "sample_every", 5));
+        to.corr_ps = num(J, "corr_ps", 5);
+        to.axis = int(num(J, "axis", to.dimensionality == 2 ? 0 : 2));
+        to.slabs = int(num(J, "slabs", 20));
+        to.swap_every = int(num(J, "swap_every", 100));
+        to.transient = num(J, "transient", 0.3);
+        to.seed = seed_of(J);
+        to.progress = [&](const std::string& w, double f) { report(k, st, w, "running", f); return true; };
+        ThermalResult tr;
+        try { tr = thermal_conductivity(s, to); } catch (const std::exception& ex) { throw RecipeError(4, std::string("thermal: ") + ex.what()); }
+        for (auto& p : thermal_properties(tr)) res.properties.push_back(p);
+        std::string line = thermal_summary(tr);
+        while (!line.empty() && line.back() == '\n') line.pop_back();
+        res.manifest.steps.push_back(step("thermal." + to.method, line, {{"dimensionality", std::to_string(to.dimensionality)},
+                                          {"force field", ffname}}, seeded(to.seed), {}));
+        report(k, st, line, "done", 1);
       } else if (st == "analyze") {
         report(k, st, "", "running", 0);
         std::vector<std::string> ids;

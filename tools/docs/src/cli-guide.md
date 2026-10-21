@@ -70,6 +70,8 @@ Long runs belong on a workstation or a cluster, not inside CAPS. For those, CAPS
 | `in.cg_ppa` + `STEM.ends.in` | `caps ppa … --method lammps` | `lmp -in in.cg_ppa -var DATA equil.data -var OUT ppa`, then `caps ppa MAP equil.data ppa.lammpstrj` |
 | `tension/run_tension.sh`, `in.cg_tensile_*` | `caps mech decks` | `DATA=equil.data bash run_tension.sh`, then `caps mech analyze` |
 | `aa/in.backmap`, `pair_coeffs.in` | `caps backmap` | `lmp -in in.backmap -var DATA backmapped.data -var OUT relaxed`, then `caps backmap check` |
+| `STEM.in` + `STEM.data` (semicrystalline equilibration) | `caps semicrystalline -o STEM.data --lammps-input STEM.in` | `lmp -in STEM.in`: minimisation, 200 ps NVT with the crystal group tethered (`fix spring/self`), 2 ns NPT with each axis on its own |
+| `in.kappa.lmp` + `in.kappa.data` | `caps thermal FILE --dimensionality 3d --method gk --lammps-input in.kappa.lmp` (or `--method nemd`) | `lmp -in in.kappa.lmp`; Green–Kubo writes `kappa.txt` and `J0Jt.dat`, NEMD writes `profile.mp` and `exchanged.txt` |
 | `ROOT/TITLE/KIND-N/job.sh`, `caps-job.json` | `caps job new` | `caps job submit DIR`, or `--submit` at once; `caps job status DIR` follows it |
 | `job.slurm`, `make_potcar.sh`, `INCAR.*`, `KPOINTS` | `caps vasp-set`, `caps adsorb-dft` | `bash make_potcar.sh` (your PAW set), `sbatch job.slurm`; `caps vasp-jobs` submits and tracks many |
 

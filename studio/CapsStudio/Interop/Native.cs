@@ -524,6 +524,10 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_stereo")] public static extern int Stereo([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_blend_phase")] public static extern int BlendPhase([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_solvent_chi")] public static extern int SolventChi([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
+    [DllImport(Lib, EntryPoint = "caps_semicrystalline_build")] public static extern IntPtr SemicrystallineBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsProgress? progress, IntPtr user, byte[]? report, int cap);
+    [DllImport(Lib, EntryPoint = "caps_semicrystalline_analyse")] public static extern int SemicrystallineAnalyse(IntPtr doc, byte[]? report, int cap);
+    [DllImport(Lib, EntryPoint = "caps_thermal")] public static extern int Thermal(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsProgress? progress, IntPtr user, byte[]? outJson, int cap);
+    [DllImport(Lib, EntryPoint = "caps_thermal_lammps")] public static extern int ThermalLammps(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, [MarshalAs(UnmanagedType.LPUTF8Str)] string path, byte[]? outText, int cap);
     [DllImport(Lib, EntryPoint = "caps_dpd")] public static extern IntPtr Dpd([MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsAnalyzeProgress? progress, IntPtr user, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_sorption")] public static extern int Sorption(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsAnalyzeProgress? progress, IntPtr user, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_adsorption")] public static extern int Adsorption(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsAnalyzeProgress? progress, IntPtr user, byte[]? outJson, int cap);
@@ -1233,6 +1237,58 @@ public sealed class CapsDocument : IDisposable
         GC.KeepAlive(cb);
         var report = System.Text.Encoding.UTF8.GetString(buf).TrimEnd('\0').Trim();
         return (h == IntPtr.Zero ? null : new CapsDocument(h, label), report);
+    }
+
+    /// <summary>A semicrystalline lamellar stack (caps_semicrystalline_build): the document and the JSON report; throws on error.</summary>
+    public static (CapsDocument Doc, string Report) Semicrystalline(string json, Func<double, bool>? progress, string label)
+    {
+        CapsProgress? cb = progress == null ? null : (d, t, _, _) => progress(t > 0 ? (double)d / t : 0) ? 0 : 1;
+        var buf = new byte[1 << 20];
+        var h = Native.SemicrystallineBuild(json, cb, IntPtr.Zero, buf, buf.Length);
+        GC.KeepAlive(cb);
+        if (h == IntPtr.Zero) throw new InvalidOperationException(Native.LastError());
+        return (new CapsDocument(h, label), System.Text.Encoding.UTF8.GetString(buf).TrimEnd('\0').Trim());
+    }
+
+    /// <summary>Loops, bridges, tails, crystallinity and profiles of the current frame (caps_semicrystalline_analyse).</summary>
+    public string SemicrystallineReport()
+    {
+        using (Hold())
+        {
+            Alive();
+            var buf = new byte[1 << 20];
+            var n = Native.SemicrystallineAnalyse(H, buf, buf.Length);
+            if (n < 0) throw new InvalidOperationException(Native.LastError());
+            return System.Text.Encoding.UTF8.GetString(buf, 0, Math.Min(n, buf.Length) - 1);
+        }
+    }
+
+    /// <summary>Thermal conductivity by MD on the current frame (caps_thermal): the JSON result; throws on error.</summary>
+    public string Thermal(string json, Func<double, bool>? progress)
+    {
+        CapsProgress? cb = progress == null ? null : (d, t, _, _) => progress(t > 0 ? (double)d / t : 0) ? 0 : 1;
+        using (Hold())
+        {
+            Alive();
+            var buf = new byte[1 << 22];
+            var n = Native.Thermal(H, json, cb, IntPtr.Zero, buf, buf.Length);
+            GC.KeepAlive(cb);
+            if (n < 0) throw new InvalidOperationException(Native.LastError());
+            return System.Text.Encoding.UTF8.GetString(buf, 0, Math.Min(n, buf.Length) - 1);
+        }
+    }
+
+    /// <summary>The LAMMPS data file and input for the same run on a cluster (caps_thermal_lammps).</summary>
+    public string ThermalLammps(string json, string path)
+    {
+        using (Hold())
+        {
+            Alive();
+            var buf = new byte[4096];
+            var n = Native.ThermalLammps(H, json, path, buf, buf.Length);
+            if (n < 0) throw new InvalidOperationException(Native.LastError());
+            return System.Text.Encoding.UTF8.GetString(buf, 0, Math.Min(n, buf.Length) - 1);
+        }
     }
 
     /// <summary>A polymer blend grown component after component (caps_grow_blend).</summary>
