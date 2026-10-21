@@ -5268,6 +5268,24 @@ internal static class SelfTest
         }
         vm.CloseAllStructures();
 
+        {
+            // an accessibility press on a disabled button: Avalonia throws ElementNotEnabledException (on macOS out of the run
+            // loop); the Studio enters the loop again and leaves only when the session exits, with its exit code
+            var off = new Avalonia.Controls.Button { IsEnabled = false };
+            var peer = Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(off);
+            Exception? thrown = null;
+            try { (peer as Avalonia.Automation.Provider.IInvokeProvider)?.Invoke(); } catch (Exception x) { thrown = x; }
+            var loops = 0;
+            Action<int>? exit = null;
+            var code = AxPress.KeepRunning(() => throw new Avalonia.Automation.ElementNotEnabledException(),
+                _ => { if (++loops < 3) throw new Avalonia.Automation.ElementNotEnabledException(); exit!(7); },
+                done => exit = done);
+            var other = false;
+            try { AxPress.KeepRunning(() => throw new InvalidOperationException(), _ => { }, _ => { }); } catch (InvalidOperationException) { other = true; }
+            Check(thrown != null && AxPress.Ignorable(thrown) && code == 7 && loops == 3 && other,
+                $"accessibility press on a disabled button: {thrown?.GetType().Name ?? "no exception"} ignored · loop entered {loops} times · exit code {code} · other errors still raised {other}");
+        }
+
         // last, as it starts the headless platform: the 2D sheets page in a real window shows the active preset after
         // OpenSheets (a ComboBox bound to a list still empty dropped it, and the page showed an empty Preset box)
         {
