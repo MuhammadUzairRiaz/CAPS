@@ -109,7 +109,7 @@ public sealed partial class MainViewModel
             var title = string.Join(" + ", DpdSpecies.Select(r => r.Name)) + " (DPD)";
             var (doc, rep) = await Task.Run(() => CapsDocument.Dpd(json, (st, f) =>
             {
-                Avalonia.Threading.Dispatcher.UIThread.Post(() => DpdProgress = $"{st} · {f * 100:0} %");
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (DpdRunning) DpdProgress = $"{st} · {f * 100:0} %"; });   // a late report must not outlive the run
                 return !ct.IsCancellationRequested;
             }, title));
             var r = JsonNode.Parse(rep)!;
@@ -126,7 +126,11 @@ public sealed partial class MainViewModel
             DpdOrderSeries = ((JsonArray)r["order_series"]!).Select(p => (p![0]!.GetValue<double>(), p[1]!.GetValue<double>())).ToArray();
             DpdNote = string.Join(" · ", ((JsonArray)r["notes"]!).Select(x => (string?)x ?? ""));
             DpdRunning = false;   // the run is over: the frames can open (Show waits for no run)
+            doc.SetWrap(true);    // beads back into the box: the chains are unwrapped and would smear the domains across it
             Show(doc, title);
+            _dpdDoc = doc;
+            Frame = FrameMax;     // the domains at the end, not the random start
+            Raise(nameof(DpdHasBeads)); Raise(nameof(DpdViewTitle));
             GrownUnsaved = true;
             SetModule(72);
             Status = $"DPD: ψ {DpdOrder} · spacing {DpdSpacing} · the frames are open as a new structure";
@@ -135,6 +139,11 @@ public sealed partial class MainViewModel
         catch (Exception e) { DpdError = e.Message; }
         finally { DpdRunning = false; DpdProgress = ""; }
     }
+
+    private CapsDocument? _dpdDoc;
+    /// <summary>The run's beads are the open structure (the page's view shows them).</summary>
+    public bool DpdHasBeads => _dpdDoc != null && ReferenceEquals(_dpdDoc, _doc);
+    public string DpdViewTitle => DpdHasBeads ? $"{Title} · frame {_frame + 1} of {Frames}" : "Beads";
 
     private decimal _dpdAngleK;
     public decimal DpdAngleK { get => _dpdAngleK; set => Set(ref _dpdAngleK, Math.Clamp(value, 0m, 50m)); }

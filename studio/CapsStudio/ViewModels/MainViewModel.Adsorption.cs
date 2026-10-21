@@ -17,7 +17,7 @@ public sealed record AdsComponentRow(string Name, string Molecules, string DeDn)
 public sealed record AdsConfigRow(string Rank, string Energy, string Cycle);
 
 /// <summary>Analyze › Adsorption locator: where adsorbate molecules sit on a substrate, by Monte Carlo simulated
-/// annealing with the assigned force field (core adsorption.hpp; the method of Materials Studio's Adsorption Locator).
+/// annealing with the assigned force field (core adsorption.hpp).
 /// The open structure is the substrate; the adsorbates are built from SMILES and added after it.</summary>
 public sealed partial class MainViewModel
 {
@@ -77,7 +77,7 @@ public sealed partial class MainViewModel
         {
             var res = await Task.Run(() => doc.Adsorption(json, (st, f) =>
             {
-                Avalonia.Threading.Dispatcher.UIThread.Post(() => AdsProgress = $"{st} · {f * 100:0} %");
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (AdsRunning) AdsProgress = $"{st} · {f * 100:0} %"; });   // a late report must not outlive the run
                 return !ct.IsCancellationRequested;
             }));
             var r = JsonNode.Parse(res)!;
