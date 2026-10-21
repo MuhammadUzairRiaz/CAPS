@@ -1,0 +1,41 @@
+# Polyoxymethylene, orthorhombic: G. Carazzolo & M. Mammi, J. Polym. Sci. A 1, 965 (1963), doi:10.1002/pol.1963.100010311
+# space group P212121 (c the chain axis) (No. 19), Z = 4 CH2O per cell; cell and density p. 968; space group p. 969; Table I p. 974 (C and O)
+# correction / model: this paper's structure is the orthorhombic (2/1 helix) form; it gives no coordinates for the common trigonal 9/5 helix form
+# hydrogens: none in the paper; placed by tools/make_polymer_crystals.py (CH2; C-H 1.09 A sp3, 1.08 A sp2, N-H 1.01 A, tetrahedral / in-plane angles)
+# written in P1 with every atom of the paper's cell; 1.5352 g/cm3, shortest contacts beyond 1-3: H...H 2.49 A, H...X 2.51 A, X...X 2.89 A
+data_pom_orthorhombic
+_chemical_name_common 'Polyoxymethylene, orthorhombic'
+_symmetry_space_group_name_H-M 'P 1'
+_symmetry_Int_Tables_number 1
+_cell_length_a 4.77
+_cell_length_b 7.65
+_cell_length_c 3.56
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 129.9062
+loop_
+_symmetry_equiv_pos_as_xyz
+'x,y,z'
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+C1 C 0.367000 0.073000 0.875000
+C2 C 0.133000 0.927000 0.375000
+C3 C 0.633000 0.573000 0.625000
+C4 C 0.867000 0.427000 0.125000
+O1 O 0.133000 0.073000 0.625000
+O2 O 0.367000 0.927000 0.125000
+O3 O 0.867000 0.573000 0.875000
+O4 O 0.633000 0.427000 0.375000
+H1 H 0.361551 0.192695 0.040939
+H2 H 0.559004 0.069657 0.709140
+H3 H 0.940996 0.930343 0.209140
+H4 H 0.138449 0.807305 0.540939
+H5 H 0.638449 0.692695 0.459061
+H6 H 0.440996 0.569657 0.790860
+H7 H 0.059004 0.430343 0.290860
+H8 H 0.861551 0.307305 0.959061

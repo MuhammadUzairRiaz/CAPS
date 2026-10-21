@@ -1,0 +1,590 @@
+{
+ "format": "caps-polymer-crystals",
+ "about": "Polymer crystal unit cells from their original crystal-structure papers (one entry per paper and form): the paper's cell and heavy atoms, hydrogens from the paper or placed geometrically (tools/make_polymer_crystals.py), written in P1. These are DFT unit cells (VASP relaxation, phono3py); large MD cells are built from them. PTFE waits for its structure paper (Bunn & Howells, Nature 174, 549 (1954)).",
+ "crystals": [
+  {
+   "id": "pe-orthorhombic",
+   "name": "Polyethylene, orthorhombic",
+   "polymer": "polyethylene (PE)",
+   "file": "pe-orthorhombic.cif",
+   "source": "C. W. Bunn, Trans. Faraday Soc. 35, 482 (1939)",
+   "doi": "10.1039/tf9393500482",
+   "where": "cell and space group p. 483; carbon positions p. 490 (x = 0.038 a, y = 0.065 b; 0.038, .935, .250 ...)",
+   "space_group": "Pnam",
+   "space_group_number": 62,
+   "cell": {
+    "a": 7.4,
+    "b": 4.93,
+    "c": 2.534,
+    "alpha": 90,
+    "beta": 90,
+    "gamma": 90
+   },
+   "operations": [
+    "x,y,z",
+    "-x,-y,-z",
+    "x,y,1/2-z",
+    "-x,-y,1/2+z",
+    "1/2+x,1/2-y,z",
+    "1/2-x,1/2+y,-z",
+    "1/2-x,1/2+y,1/2+z",
+    "1/2+x,1/2-y,1/2-z"
+   ],
+   "chain_axis": "c",
+   "repeat_unit": "C2H4",
+   "Z": 2,
+   "chains": 2,
+   "atoms": 12,
+   "formula": "C4H8",
+   "density_paper": null,
+   "density": 1.0078,
+   "density_note": "the paper gives no density; 4 CH2 in the paper's cell give 1.008 g/cm3",
+   "hydrogens": "added (tools/make_polymer_crystals.py)",
+   "corrections": [],
+   "min_contacts": {
+    "HH": 2.462,
+    "HX": 2.758
+   },
+   "use": "PE crystal: VASP and phono3py thermal conductivity; the crystalline layers of semicrystalline PE",
+   "hkl": [
+    1,
+    1,
+    0
+   ]
+  },
+  {
+   "id": "pe-monoclinic",
+   "name": "Polyethylene, monoclinic",
+   "polymer": "polyethylene (PE)",
+   "file": "pe-monoclinic.cif",
+   "source": "K. Seto, T. Hara & K. Tanaka, Jpn. J. Appl. Phys. 7, 31 (1968)",
+   "doi": "10.1143/JJAP.7.31",
+   "where": "cell, space group and density p. 32; phi = 90 deg p. 34; no coordinate table in the paper",
+   "space_group": "C2/m (b unique, b the chain axis)",
+   "space_group_number": 12,
+   "cell": {
+    "a": 8.09,
+    "b": 2.53,
+    "c": 4.79,
+    "alpha": 90,
+    "beta": 107.9,
+    "gamma": 90
+   },
+   "operations": [
+    "x,y,z",
+    "-x,y,-z",
+    "-x,-y,-z",
+    "x,-y,z",
+    "1/2+x,1/2+y,z",
+    "1/2-x,1/2+y,-z",
+    "1/2-x,1/2-y,-z",
+    "1/2+x,1/2-y,z"
+   ],
+   "chain_axis": "b",
+   "repeat_unit": "C2H4",
+   "Z": 2,
+   "chains": 2,
+   "atoms": 12,
+   "formula": "C4H8",
+   "density_paper": 0.997,
+   "density": 0.9987,
+   "hydrogens": "added (tools/make_polymer_crystals.py)",
+   "corrections": [
+    "the paper prints no atomic coordinates: C placed from its chain setting (zigzag plane perpendicular to a, phi = 90 deg, p. 34) with the orthorhombic chain geometry it assumes (Bunn 1939: C-C 1.53 A)"
+   ],
+   "min_contacts": {
+    "HH": 2.468,
+    "HX": 2.755
+   },
+   "use": "PE crystal polymorph (strained or drawn PE)",
+   "hkl": [
+    0,
+    0,
+    1
+   ]
+  },
+  {
+   "id": "ipp-alpha",
+   "name": "Isotactic polypropylene, α (α2, ordered)",
+   "polymer": "isotactic polypropylene (iPP)",
+   "file": "ipp-alpha.cif",
+   "source": "M. Hikosaka & T. Seto, Polym. J. 5, 111 (1973)",
+   "doi": "10.1295/polymj.5.111",
+   "where": "cells p. 112 (specimen B: a 6.65, b 20.73, c 6.50 A, beta 98 deg 40 min); Table Ia p. 115 (carbon only)",
+   "space_group": "P21/c (b unique, c the chain axis)",
+   "space_group_number": 14,
+   "cell": {
+    "a": 6.65,
+    "b": 20.73,
+    "c": 6.5,
+    "alpha": 90,
+    "beta": 98.6667,
+    "gamma": 90
+   },
+   "operations": [
+    "x,y,z",
+    "-x,1/2+y,1/2-z",
+    "-x,-y,-z",
+    "x,1/2-y,1/2+z"
+   ],
+   "chain_axis": "c",
+   "repeat_unit": "C3H6",
+   "Z": 12,
+   "chains": 4,
+   "atoms": 108,
+   "formula": "C36H72",
+   "density_paper": null,
+   "density": 0.9466,
+   "density_note": "the paper gives no density; 12 C3H6 in the specimen B cell give 0.947 g/cm3",
+   "hydrogens": "added (tools/make_polymer_crystals.py)",
+   "corrections": [
+    "the appendix's equivalent positions (pp. 126-127) do not fit Table Ia; the standard P21/c positions (x,y,z; -x,1/2+y,1/2-z; -x,-y,-z; x,1/2-y,1/2+z) do: every C-C 1.54 A and the paper's structure factors of Table Ib are reproduced",
+    "the ordered limiting structure alpha2 (all chains up/down as in P21/c); the alpha1 form is the statistical C2/c up/down model of the same coordinates"
+   ],
+   "min_contacts": {
+    "HH": 1.994,
+    "HX": 2.616,
+    "XX": 3.012
+   },
+   "use": "iPP crystal",
+   "hkl": [
+    0,
+    1,
+    0
+   ]
+  },
+  {
+   "id": "peo",
+   "name": "Poly(ethylene oxide), monoclinic",
+   "polymer": "poly(ethylene oxide) (PEO)",
+   "file": "peo.cif",
+   "source": "Y. Takahashi & H. Tadokoro, Macromolecules 6, 672 (1973)",
+   "doi": "10.1021/ma60035a005",
+   "where": "cell and space group p. 672; Table II p. 674 (all atoms, hydrogens included)",
+   "space_group": "P21/a (b unique, c the chain axis)",
+   "space_group_number": 14,
+   "cell": {
+    "a": 8.05,
+    "b": 13.04,
+    "c": 19.48,
+    "alpha": 90,
+    "beta": 125.4,
+    "gamma": 90
+   },
+   "operations": [
+    "x,y,z",
+    "1/2-x,1/2+y,-z",
+    "-x,-y,-z",
+    "1/2+x,1/2-y,z"
+   ],
+   "chain_axis": "c",
+   "repeat_unit": "C2H4O",
+   "Z": 28,
+   "chains": 4,
+   "atoms": 196,
+   "formula": "C56H112O28",
+   "density_paper": null,
+   "density": 1.2288,
+   "density_note": "the paper gives no density; 28 C2H4O in the paper's cell give 1.229 g/cm3",
+   "hydrogens": "paper",
+   "corrections": [],
+   "min_contacts": {
+    "HH": 1.967,
+    "HX": 2.455,
+    "XX": 2.742
+   },
+   "use": "PEO crystal (7/2 helix)",
+   "hkl": [
+    1,
+    2,
+    0
+   ]
+  },
+  {
+   "id": "pvdf-beta",
+   "name": "Poly(vinylidene fluoride), β (form I)",
+   "polymer": "poly(vinylidene fluoride) (PVDF)",
+   "file": "pvdf-beta.cif",
+   "source": "R. Hasegawa, Y. Takahashi, Y. Chatani & H. Tadokoro, Polym. J. 3, 600 (1972)",
+   "doi": "10.1295/polymj.3.600",
+   "where": "cell p. 601; Table I(a) p. 603 (planar zigzag model, hydrogens included); density p. 604",
+   "space_group": "Cm2m (c the chain axis)",
+   "space_group_number": 38,
+   "cell": {
+    "a": 8.58,
+    "b": 4.91,
+    "c": 2.56,
+    "alpha": 90,
+    "beta": 90,
+    "gamma": 90
+   },
+   "operations": [
+    "x,y,z",
+    "-x,y,z",
+    "x,y,-z",
+    "-x,y,-z",
+    "1/2+x,1/2+y,z",
+    "1/2-x,1/2+y,z",
+    "1/2+x,1/2+y,-z",
+    "1/2-x,1/2+y,-z"
+   ],
+   "chain_axis": "c",
+   "repeat_unit": "C2H2F2",
+   "Z": 2,
+   "chains": 2,
+   "atoms": 12,
+   "formula": "C4H4F4",
+   "density_paper": 1.973,
+   "density": 1.9719,
+   "hydrogens": "paper",
+   "corrections": [
+    "F y/b = 0.335 instead of the printed 0.355 (Table I(a)): 0.355 gives C-F 1.40 A and F-C-F 101 deg against the paper's stated C-F 1.34 A and F-C-F 108 deg (p. 603), which give 0.335; the printed form III value (0.330) and the disordered model's F pair (mean 0.332) agree with 0.335",
+    "the ordered planar zigzag model (a), not the statistical +-7 deg model (b)"
+   ],
+   "min_contacts": {
+    "HH": 2.56,
+    "HX": 2.598,
+    "XX": 2.56
+   },
+   "use": "piezoelectric PVDF crystal",
+   "hkl": [
+    1,
+    1,
+    0
+   ]
+  },
+  {
+   "id": "pvdf-alpha",
+   "name": "Poly(vinylidene fluoride), α (form II)",
+   "polymer": "poly(vinylidene fluoride) (PVDF)",
+   "file": "pvdf-alpha.cif",
+   "source": "R. Hasegawa, Y. Takahashi, Y. Chatani & H. Tadokoro, Polym. J. 3, 600 (1972)",
+   "doi": "10.1295/polymj.3.600",
+   "where": "cell and density p. 604; Table III p. 605 (hydrogens included)",
+   "space_group": "P21/c (b unique, c the chain axis)",
+   "space_group_number": 14,
+   "cell": {
+    "a": 4.96,
+    "b": 9.64,
+    "c": 4.62,
+    "alpha": 90,
+    "beta": 90,
+    "gamma": 90
+   },
+   "operations": [
+    "x,y,z",
+    "-x,1/2+y,1/2-z",
+    "-x,-y,-z",
+    "x,1/2-y,1/2+z"
+   ],
+   "chain_axis": "c",
+   "repeat_unit": "C2H2F2",
+   "Z": 4,
+   "chains": 2,
+   "atoms": 24,
+   "formula": "C8H8F8",
+   "density_paper": 1.925,
+   "density": 1.9254,
+   "hydrogens": "paper",
+   "corrections": [],
+   "min_contacts": {
+    "HH": 2.821,
+    "HX": 2.359,
+    "XX": 2.695
+   },
+   "use": "PVDF crystal (TGTG', the common melt-crystallised form)",
+   "hkl": [
+    0,
+    1,
+    0
+   ]
+  },
+  {
+   "id": "pom-orthorhombic",
+   "name": "Polyoxymethylene, orthorhombic",
+   "polymer": "polyoxymethylene (POM)",
+   "file": "pom-orthorhombic.cif",
+   "source": "G. Carazzolo & M. Mammi, J. Polym. Sci. A 1, 965 (1963)",
+   "doi": "10.1002/pol.1963.100010311",
+   "where": "cell and density p. 968; space group p. 969; Table I p. 974 (C and O)",
+   "space_group": "P212121 (c the chain axis)",
+   "space_group_number": 19,
+   "cell": {
+    "a": 4.77,
+    "b": 7.65,
+    "c": 3.56,
+    "alpha": 90,
+    "beta": 90,
+    "gamma": 90
+   },
+   "operations": [
+    "x,y,z",
+    "1/2-x,-y,1/2+z",
+    "-x,1/2+y,1/2-z",
+    "1/2+x,1/2-y,-z"
+   ],
+   "chain_axis": "c",
+   "repeat_unit": "CH2O",
+   "Z": 4,
+   "chains": 2,
+   "atoms": 16,
+   "formula": "C4H8O4",
+   "density_paper": 1.54,
+   "density": 1.5352,
+   "hydrogens": "added (tools/make_polymer_crystals.py)",
+   "corrections": [
+    "this paper's structure is the orthorhombic (2/1 helix) form; it gives no coordinates for the common trigonal 9/5 helix form"
+   ],
+   "min_contacts": {
+    "HH": 2.486,
+    "HX": 2.511,
+    "XX": 2.894
+   },
+   "use": "POM crystal (orthorhombic form)",
+   "hkl": [
+    1,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "nylon6-alpha",
+   "name": "Nylon 6, α",
+   "polymer": "polyamide 6 (nylon 6)",
+   "file": "nylon6-alpha.cif",
+   "source": "D. R. Holmes, C. W. Bunn & D. J. Smith, J. Polym. Sci. 17, 159 (1955)",
+   "doi": "10.1002/pol.1955.120178401",
+   "where": "cell, space group and density p. 161; Table II p. 172 (heavy atoms)",
+   "space_group": "P21 (b unique, b the chain axis)",
+   "space_group_number": 4,
+   "cell": {
+    "a": 9.56,
+    "b": 17.24,
+    "c": 8.01,
+    "alpha": 90,
+    "beta": 67.5,
+    "gamma": 90
+   },
+   "operations": [
+    "x,y,z",
+    "-x,1/2+y,-z"
+   ],
+   "chain_axis": "b",
+   "repeat_unit": "C6H11NO",
+   "Z": 8,
+   "chains": 4,
+   "atoms": 152,
+   "formula": "C48H88N8O8",
+   "density_paper": 1.23,
+   "density": 1.2325,
+   "hydrogens": "added (tools/make_polymer_crystals.py)",
+   "corrections": [
+    "molecule A's O z = -0.027 instead of the printed -0.007 (C=O 1.15 A as printed): molecule B prints -0.027, and molecule C, which the paper says is A displaced by 3/14 b and c/2 (p. 163), prints 0.473 = 0.5 - 0.027",
+    "molecules B and D: the CH2 zigzag phase swapped (x 0.544 <-> 0.460, z +-0.007 <-> -+0.007) so it fits their own N, C and O (as printed N-CH2 is 1.26 A and C(O)-CH2 1.19 A; swapped 1.48 and 1.44 A)"
+   ],
+   "min_contacts": {
+    "HH": 2.186,
+    "HX": 2.477,
+    "XX": 2.824,
+    "hbond": 1.911
+   },
+   "prerelax": {
+    "forcefield": "OPLS-AA 2024",
+    "fixed_cell": true,
+    "heavy_shift_max": 0.592,
+    "heavy_shift_rms": 0.389
+   },
+   "use": "nylon 6 crystal (hydrogen-bonded sheets)",
+   "hkl": [
+    0,
+    0,
+    1
+   ]
+  },
+  {
+   "id": "nylon66-alpha",
+   "name": "Nylon 66, α",
+   "polymer": "polyamide 66 (nylon 66)",
+   "file": "nylon66-alpha.cif",
+   "source": "C. W. Bunn & E. V. Garner, Proc. R. Soc. Lond. A 189, 39 (1947)",
+   "doi": "10.1098/rspa.1947.0028",
+   "where": "cell p. 39 and p. 49; density p. 42; coordinates p. 49 (heavy atoms)",
+   "space_group": "P-1 (c the chain axis)",
+   "space_group_number": 2,
+   "cell": {
+    "a": 4.9,
+    "b": 5.4,
+    "c": 17.2,
+    "alpha": 48.5,
+    "beta": 77,
+    "gamma": 63.5
+   },
+   "operations": [
+    "x,y,z",
+    "-x,-y,-z"
+   ],
+   "chain_axis": "c",
+   "repeat_unit": "C12H22N2O2",
+   "Z": 1,
+   "chains": 1,
+   "atoms": 38,
+   "formula": "C12H22N2O2",
+   "density_paper": 1.24,
+   "density": 1.2389,
+   "hydrogens": "added (tools/make_polymer_crystals.py)",
+   "corrections": [],
+   "min_contacts": {
+    "HH": 2.014,
+    "HX": 2.432,
+    "XX": 2.781,
+    "hbond": 1.9
+   },
+   "use": "nylon 66 crystal",
+   "hkl": [
+    0,
+    1,
+    0
+   ]
+  },
+  {
+   "id": "pet",
+   "name": "Poly(ethylene terephthalate), triclinic",
+   "polymer": "poly(ethylene terephthalate) (PET)",
+   "file": "pet.cif",
+   "source": "R. de P. Daubeny, C. W. Bunn & C. J. Brown, Proc. R. Soc. Lond. A 226, 531 (1954)",
+   "doi": "10.1098/rspa.1954.0273",
+   "where": "cell p. 531 and p. 533; density p. 536; Table 1 p. 538 (heavy atoms)",
+   "space_group": "P-1 (c near the chain axis)",
+   "space_group_number": 2,
+   "cell": {
+    "a": 4.56,
+    "b": 5.94,
+    "c": 10.75,
+    "alpha": 98.5,
+    "beta": 118,
+    "gamma": 112
+   },
+   "operations": [
+    "x,y,z",
+    "-x,-y,-z"
+   ],
+   "chain_axis": "c",
+   "repeat_unit": "C10H8O4",
+   "Z": 1,
+   "chains": 1,
+   "atoms": 22,
+   "formula": "C10H8O4",
+   "density_paper": 1.455,
+   "density": 1.4574,
+   "hydrogens": "added (tools/make_polymer_crystals.py)",
+   "corrections": [],
+   "min_contacts": {
+    "HH": 2.419,
+    "HX": 2.308,
+    "XX": 2.632
+   },
+   "use": "PET crystal",
+   "hkl": [
+    1,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "plla-alpha",
+   "name": "Poly(L-lactide), α",
+   "polymer": "poly(L-lactic acid) (PLLA)",
+   "file": "plla-alpha.cif",
+   "source": "S. Sasaki & T. Asakura, Macromolecules 36, 8385 (2003)",
+   "doi": "10.1021/ma0348674",
+   "where": "cell, space group and density p. 8388; Table 1 p. 8389 (heavy atoms and the methine H)",
+   "space_group": "P212121 (c the chain axis)",
+   "space_group_number": 19,
+   "cell": {
+    "a": 10.66,
+    "b": 6.16,
+    "c": 28.88,
+    "alpha": 90,
+    "beta": 90,
+    "gamma": 90
+   },
+   "operations": [
+    "x,y,z",
+    "-x,-y,1/2+z",
+    "1/2+x,1/2-y,-z",
+    "1/2-x,1/2+y,1/2-z"
+   ],
+   "chain_axis": "c",
+   "repeat_unit": "C3H4O2",
+   "Z": 20,
+   "chains": 2,
+   "atoms": 180,
+   "formula": "C60H80O40",
+   "density_paper": 1.26,
+   "density": 1.262,
+   "hydrogens": "added (tools/make_polymer_crystals.py)",
+   "corrections": [],
+   "min_contacts": {
+    "HH": 2.053,
+    "HX": 2.284,
+    "XX": 2.701
+   },
+   "use": "PLA crystal (10/3 helix, antiparallel chains)",
+   "hkl": [
+    1,
+    1,
+    0
+   ]
+  },
+  {
+   "id": "natural-rubber",
+   "name": "Natural rubber (cis-1,4-polyisoprene)",
+   "polymer": "natural rubber (cis-1,4-polyisoprene)",
+   "file": "natural-rubber.cif",
+   "source": "Y. Takahashi & T. Kumano, Macromolecules 37, 4860 (2004)",
+   "doi": "10.1021/ma0305683",
+   "where": "cell p. 4860 and Fig. 5 p. 4862 (beta 93.1 deg; the abstract prints 94.6); Table 2 p. 4862 (all atoms)",
+   "space_group": "P21/a (b unique, c the chain axis)",
+   "space_group_number": 14,
+   "cell": {
+    "a": 12.41,
+    "b": 8.81,
+    "c": 8.23,
+    "alpha": 90,
+    "beta": 93.1,
+    "gamma": 90
+   },
+   "operations": [
+    "x,y,z",
+    "-x,-y,-z",
+    "1/2+x,1/2-y,z",
+    "1/2-x,1/2+y,-z"
+   ],
+   "chain_axis": "c",
+   "repeat_unit": "C5H8",
+   "Z": 8,
+   "chains": 4,
+   "atoms": 104,
+   "formula": "C40H64",
+   "density_paper": null,
+   "density": 1.0072,
+   "density_note": "the paper gives no density; 8 C5H8 in the paper's cell give 1.007 g/cm3",
+   "hydrogens": "paper",
+   "corrections": [
+    "beta = 93.1 deg (text and Fig. 5) rather than the abstract's 94.6 deg: the coordinates give regular bond lengths with 93.1 deg only",
+    "ordered model: every site holds the Table 2 molecule. The paper refines a statistical structure in which the mirror image about y = 1/8 occupies a site with 33 % weight; a DFT cell needs one orientation"
+   ],
+   "min_contacts": {
+    "HH": 1.847,
+    "HX": 2.515,
+    "XX": 3.002
+   },
+   "use": "strain-crystallised natural rubber",
+   "hkl": [
+    0,
+    1,
+    0
+   ]
+  }
+ ]
+}
