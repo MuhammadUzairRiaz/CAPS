@@ -1,0 +1,94 @@
+<!-- CAPS Studio › Modules › Thermal conductivity: Green–Kubo or reverse NEMD on the open structure (caps thermal), the
+     material's dimensionality said by the user (3D bulk, 2D sheet), short runs here and the LAMMPS inputs for a cluster. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.ThermalPage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="Border.pcard"><Setter Property="Background" Value="{DynamicResource Bg1B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+      <Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="10" /><Setter Property="Padding" Value="16,14" /></Style>
+  </p:PageBase.Styles>
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Button Content="Write LAMMPS inputs…" Click="OnLammps" IsEnabled="{Binding ThCanRun}" />
+          <Button Classes="primary" Click="OnRun" IsEnabled="{Binding Idle}">
+            <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="play" Size="14" VerticalAlignment="Center" /><TextBlock Text="Run here" VerticalAlignment="Center" /></StackPanel>
+          </Button>
+        </StackPanel>
+        <StackPanel Spacing="3">
+          <TextBlock Text="Thermal conductivity · molecular dynamics" FontSize="19" FontWeight="SemiBold" />
+          <TextBlock Text="Heat-flux autocorrelation (Green–Kubo) or kinetic-energy exchanges between slabs (Müller-Plathe) on the open structure" FontSize="12.5" Foreground="{DynamicResource MutedB}" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+    <Border DockPanel.Dock="Bottom" Height="28" Padding="22,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+      <TextBlock Text="{Binding ThProgress}" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+    </Border>
+    <Grid v:Panes.Split="True" ColumnDefinitions="420,*" ColumnSpacing="14" Margin="22,18">
+      <ScrollViewer>
+        <StackPanel Spacing="14">
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <TextBlock Text="Material" FontSize="13.5" FontWeight="SemiBold" />
+              <ComboBox ItemsSource="{x:Static vm:MainViewModel.ThDims}" SelectedIndex="{Binding ThDim}" HorizontalAlignment="Stretch" PlaceholderText="2D or 3D: say which (not guessed)" />
+              <StackPanel Spacing="4" IsVisible="{Binding ThIs2D}">
+                <TextBlock Text="Effective thickness · Å (0: the atoms' extent plus van der Waals radii)" Classes="label" TextWrapping="Wrap" />
+                <NumericUpDown Value="{Binding ThThick}" Minimum="0" Maximum="100" Increment="0.05" FormatString="0.00"
+                               ToolTip.Tip="κ of a sheet depends on this choice; the interlayer spacing of the bulk parent is the usual one (graphite 3.35 Å). The sheet conductance κ·t does not" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <TextBlock Text="Method" FontSize="13.5" FontWeight="SemiBold" />
+              <ComboBox ItemsSource="{x:Static vm:MainViewModel.ThMethods}" SelectedIndex="{Binding ThMethod}" HorizontalAlignment="Stretch" />
+              <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="4">
+                <TextBlock Text="T · K" Classes="label" /><TextBlock Grid.Column="1" Text="NVT first · ps" Classes="label" /><TextBlock Grid.Column="2" Text="Sampled · ps" Classes="label" />
+                <NumericUpDown Grid.Row="1" Value="{Binding ThT}" Minimum="1" Maximum="5000" Increment="10" FormatString="0" />
+                <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding ThEq}" Minimum="0" Increment="1" FormatString="0.##" />
+                <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding ThPs}" Minimum="0.1" Increment="1" FormatString="0.##" />
+                <TextBlock Grid.Row="2" Text="Time step · fs" Classes="label" /><TextBlock Grid.Row="2" Grid.Column="1" Text="Sample every" Classes="label" /><TextBlock Grid.Row="2" Grid.Column="2" Text="Correlation · ps" Classes="label" />
+                <NumericUpDown Grid.Row="3" Value="{Binding ThDt}" Minimum="0.1" Maximum="5" Increment="0.5" FormatString="0.##" />
+                <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding ThEvery}" Minimum="1" FormatString="0 'steps'" />
+                <NumericUpDown Grid.Row="3" Grid.Column="2" Value="{Binding ThCorr}" Minimum="0.01" Increment="0.5" FormatString="0.##" />
+              </Grid>
+              <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="4" IsVisible="{Binding ThNemd}">
+                <TextBlock Text="Flux along" Classes="label" /><TextBlock Grid.Column="1" Text="Slabs" Classes="label" /><TextBlock Grid.Column="2" Text="Exchange every" Classes="label" />
+                <ComboBox Grid.Row="1" ItemsSource="{x:Static vm:MainViewModel.ThAxes}" SelectedIndex="{Binding ThAxis}" HorizontalAlignment="Stretch" />
+                <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding ThSlabs}" Minimum="6" Increment="2" FormatString="0" />
+                <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding ThSwap}" Minimum="1" FormatString="0 'steps'" />
+              </Grid>
+              <TextBlock Text="{Binding ThSteps}" Classes="dim" />
+              <TextBlock Classes="dim" TextWrapping="Wrap" Text="Keep runs here short; κ needs nanoseconds. The LAMMPS inputs run the same method (compute heat/flux on centroid/stress/atom, or fix thermal/conductivity) for as long as you set:" />
+              <Grid ColumnDefinitions="*,140" ColumnSpacing="10">
+                <TextBlock Text="LAMMPS sampled run · ps" Classes="label" VerticalAlignment="Center" />
+                <NumericUpDown Grid.Column="1" Value="{Binding ThLmpPs}" Minimum="1" Increment="500" FormatString="0" />
+              </Grid>
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard" IsVisible="{Binding ThHasError}">
+            <TextBlock Text="{Binding ThError}" TextWrapping="Wrap" Foreground="{DynamicResource ErrB}" />
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+      <ScrollViewer Grid.Column="1">
+        <StackPanel Spacing="14">
+          <Border Classes="pcard">
+            <StackPanel Spacing="6">
+              <TextBlock Text="Result" FontSize="13.5" FontWeight="SemiBold" />
+              <TextBlock Text="{Binding ThResult}" Classes="mono" TextWrapping="Wrap" />
+              <TextBlock Text="{Binding ThNotes}" Classes="dim" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <TextBlock x:Name="CurveTitle" Text="Running integral κ(t) (x solid, y dashed, z dotted) or the slab temperatures" FontSize="13.5" FontWeight="SemiBold" />
+              <v:LinePlot x:Name="Curve" Height="220" XLabel="t (ps) or position (Å)" YLabel="κ (W/m/K) or T (K)" AutoRange="True" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+  </DockPanel>
+</p:PageBase>
