@@ -127,11 +127,12 @@ public sealed class SciPlot : Control
 
     /// <summary>A linear axis over [lo, hi] with about `target` major ticks; the ends snap to the minor step when that wastes
     /// little room, else stay at a small padding past the data.</summary>
-    private static Axis Linear(double lo, double hi, int target, bool pad, double? fixLo, double? fixHi)
+    private static Axis Linear(double lo, double hi, int target, double padLo, double padHi, double? fixLo, double? fixHi)
     {
         if (!(hi > lo)) { var c = double.IsFinite(lo) ? lo : 0; var d = Math.Max(Math.Abs(c) * 0.05, 1e-6); lo = c - d; hi = c + d; }
         var span = hi - lo;
-        if (pad) { lo -= span * 0.04; hi += span * 0.04; }
+        if (lo != 0) lo -= span * padLo;   // an axis that starts at zero stays there
+        hi += span * padHi;
         var step = NiceStep(hi - lo, target);
         var minor = step / (Math.Abs(step / Math.Pow(10, Math.Floor(Math.Log10(step))) - 2) < 1e-9 ? 4 : 5);
         var sLo = Math.Floor(lo / minor + 1e-9) * minor;
@@ -243,15 +244,23 @@ public sealed class SciPlot : Control
         // ranges
         double xlo = left.Min(p => p.x), xhi = left.Max(p => p.x);
         if (hasRight) { xlo = Math.Min(xlo, rightPts.Min(p => p.First)); xhi = Math.Max(xhi, rightPts.Max(p => p.First)); }
+        foreach (var st in series.Where(s => s.Kind == SciKind.Steps && s.X.Length > 1 && !fig.XLog))   // a histogram's outer bins drawn whole
+        {
+            var half = (st.X[1] - st.X[0]) / 2;
+            xlo = Math.Min(xlo, st.X.Min() - half);
+            xhi = Math.Max(xhi, st.X.Max() + half);
+        }
         double ylo = left.Min(p => p.y - p.e), yhi = left.Max(p => p.y + p.e);
         if (fig.RefY is double ry && !fig.YLog) { ylo = Math.Min(ylo, ry); yhi = Math.Max(yhi, ry); }
         if (fig.YBand is { } yb) { ylo = Math.Min(ylo, yb.Lo); yhi = Math.Max(yhi, yb.Hi); }
         if (fig.YZero && !fig.YLog && ylo >= 0 && ylo < 0.3 * (yhi - ylo)) ylo = 0;
         var nX = compact ? 4 : Math.Clamp((int)(b.Width / 110), 4, 8);
         var nY = compact ? 4 : Math.Clamp((int)(b.Height / 60), 3, 7);
-        var xa = fig.XLog ? Logarithmic(xlo, xhi, fig.XMin, fig.XMax) : Linear(xlo, xhi, nX, false, fig.XMin, fig.XMax);
-        var ya = fig.YLog ? Logarithmic(ylo, yhi, fig.YMin, fig.YMax) : Linear(ylo, yhi, nY, !(fig.YZero && ylo == 0), fig.YMin ?? (fig.YZero && ylo == 0 ? 0 : null), fig.YMax);
-        Axis? y2 = hasRight ? Linear(Math.Min(0, rightPts.Min(p => p.Second)), rightPts.Max(p => p.Second), nY, false, null, null) : null;
+        // markers keep clear of the frame: the x axis is padded when points are drawn, the y axis always at the top
+        var xpad = series.Any(s => s.Kind is SciKind.Markers or SciKind.LineMarkers) ? 0.03 : 0;
+        var xa = fig.XLog ? Logarithmic(xlo, xhi, fig.XMin, fig.XMax) : Linear(xlo, xhi, nX, xpad, xpad, fig.XMin, fig.XMax);
+        var ya = fig.YLog ? Logarithmic(ylo, yhi, fig.YMin, fig.YMax) : Linear(ylo, yhi, nY, fig.YZero && ylo == 0 ? 0 : 0.04, 0.04, fig.YMin ?? (fig.YZero && ylo == 0 ? 0 : null), fig.YMax);
+        Axis? y2 = hasRight ? Linear(Math.Min(0, rightPts.Min(p => p.Second)), rightPts.Max(p => p.Second), nY, 0, 0.04, null, null) : null;
 
         // margins from the tick labels and titles
         var yTickW = ya.Major.Select(v => RichWidth(ya.Label(v), fTick)).DefaultIfEmpty(0).Max();
@@ -435,8 +444,20 @@ public sealed class SciPlot : Control
         var boxH = (entries.Length + notes.Length) * rowH + 2 * pad - (rowH - fLegend * 1.2);
         if (boxH > h - 8) return;
         var corners = new[] { new Point(L + w - boxW - 6, T + 6), new Point(L + 6, T + 6), new Point(L + w - boxW - 6, T + h - boxH - 6), new Point(L + 6, T + h - boxH - 6) };
-        var allPts = series.SelectMany(s => s.X.Zip(s.Y, (x, y) => (x, y, s.Right))).Where(p => Ok(p.x, p.y, p.Right))
-            .Select(p => new Point(PX(p.x), p.Right ? PY2(p.y) : PY(p.y))).ToArray();
+        var allPts = new List<Point>();   // the points and the lines between them (a legend should not sit on a line either)
+        foreach (var s in series)
+        {
+            Point? prev = null;
+            for (var i = 0; i < Math.Min(s.X.Length, s.Y.Length); ++i)
+            {
+                if (!Ok(s.X[i], s.Y[i], s.Right)) { prev = null; continue; }
+                var pt = new Point(PX(s.X[i]), s.Right ? PY2(s.Y[i]) : PY(s.Y[i]));
+                if (prev is { } a && s.Kind != SciKind.Markers)
+                    for (var k = 1; k < 8; ++k) allPts.Add(a + (pt - a) * (k / 8.0));
+                allPts.Add(pt);
+                prev = pt;
+            }
+        }
         var markLines = fig.Marks.Where(m => double.IsFinite(m.X) && (!fig.XLog || m.X > 0)).Select(m => PX(m.X)).ToArray();
         int Cost(Point c)
         {

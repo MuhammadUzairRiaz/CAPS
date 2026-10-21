@@ -18,15 +18,17 @@ public partial class SorptionPage : PageBase
             _hooked = vm;
             vm.SorptionChanged += () =>
             {
-                var p = this.FindControl<LinePlot>("Iso")!;
-                p.RefY = null;
                 var sp = vm.SorbSpeciesIsotherms;
-                if (sp.Count >= 2)   // a mixture: the gases' own isotherms (up to three)
+                var iso = vm.SorbIsotherm;
+                SciSeries[] series = sp.Count >= 2   // a mixture: the gases' own isotherms
+                    ? sp.Select((s, i) => new SciSeries(i < vm.SorbSpeciesRows.Count ? vm.SorbSpeciesRows[i].Smiles : $"gas {i + 1}", s.Select(q => q.X).ToArray(), s.Select(q => q.Y).ToArray())
+                        { Kind = SciKind.LineMarkers, Colour = i, Width = 1.2 }).ToArray()
+                    : [new SciSeries("GCMC, ± block error", iso.Select(q => q.X).ToArray(), iso.Select(q => q.Y).ToArray())
+                        { Kind = SciKind.LineMarkers, Width = 1.2, Err = vm.SorbIsothermErr.Length == iso.Length ? vm.SorbIsothermErr : null }];
+                this.FindControl<SciPlot>("Iso")!.Figure = iso.Length == 0 ? null : new SciFigure
                 {
-                    p.SetCompare(sp[0], sp[1]);
-                    if (sp.Count >= 3) p.SetThird(sp[2]);
-                }
-                else p.SetData(vm.SorbIsotherm);
+                    XLabel = "*p* / kPa", YLabel = "uptake / mol kg⁻¹", Series = series, YMin = 0, YZero = true, XMin = 0, Empty = "",
+                };
             };
             vm.SorptionMapChanged += () =>
             {

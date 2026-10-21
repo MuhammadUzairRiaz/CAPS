@@ -60,6 +60,8 @@ public sealed partial class MainViewModel
         }
     }
     public (double X, double Y)[] SorbIsotherm { get; private set; } = [];
+    /// <summary>± of each isotherm point in mol/kg (the loading's block error scaled like the loading).</summary>
+    public double[] SorbIsothermErr { get; private set; } = [];
     public string Sorbate { get => _sorbate; set => Set(ref _sorbate, value ?? ""); }
     public string SorbPreset { get => ""; set { if (value?.Split(" · ")[0] is { Length: > 0 } smi) Sorbate = smi; } }
     public string SorbPressures { get => _sorbPressures; set => Set(ref _sorbPressures, value ?? ""); }
@@ -125,12 +127,14 @@ public sealed partial class MainViewModel
             SorbRows.Clear();
             _sorbMaps.Clear();
             var pts = new List<(double, double)>();
+            var errs = new List<double>();
             foreach (var p in (JsonArray)r["isotherm"]!)
             {
                 double P(string k) => p![k]!.GetValue<double>();
                 SorbRows.Add(new SorbRow(P("pressure_kpa").ToString("0.##", inv), $"{P("loading").ToString("0.##", inv)} ± {P("loading_error").ToString("0.##", inv)}",
                     P("mol_per_kg").ToString("0.###", inv), P("cm3stp_per_cm3").ToString("0.##", inv), P("heat").ToString("0.0", inv)));
                 pts.Add((P("pressure_kpa"), P("mol_per_kg")));
+                errs.Add(P("loading") > 0 ? P("loading_error") * P("mol_per_kg") / P("loading") : double.NaN);
                 if (p!["map"] is JsonObject mp && mp["density"] is JsonArray da)
                     _sorbMaps.Add((P("pressure_kpa"), (int)((double?)mp["grid"] ?? 0), da.Select(v => (double?)v ?? 0).ToArray()));
             }
@@ -141,6 +145,7 @@ public sealed partial class MainViewModel
             Raise(nameof(SorbMapIndex)); Raise(nameof(SorbHasMap));
             SorptionMapChanged?.Invoke();
             SorbIsotherm = pts.ToArray();
+            SorbIsothermErr = errs.ToArray();
             SorbSpeciesRows.Clear();
             SorbSpeciesIsotherms.Clear();
             if (r["species"] is JsonArray spj && spj.Count > 1 && r["isotherm"] is JsonArray isoj)

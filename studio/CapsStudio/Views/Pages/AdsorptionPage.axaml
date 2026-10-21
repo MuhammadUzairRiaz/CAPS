@@ -95,7 +95,7 @@
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
               <TextBlock Text="Energies sampled at the cold end" Classes="label" Margin="0,6,0,0" />
-              <v:LinePlot x:Name="Hist" Height="120" XLabel="E (kcal/mol)" YLabel="samples" AutoRange="True" Bars="True" />
+              <v:SciPlot x:Name="Hist" Height="180" />
               <TextBlock Text="Lowest configurations (frames: the lowest is shown, earlier ones before it)" Classes="label" Margin="0,6,0,0" />
               <ItemsControl ItemsSource="{Binding AdsConfigs}">
                 <ItemsControl.ItemTemplate>
