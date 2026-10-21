@@ -5,3 +5,10 @@
 *.icns binary
 *.ps1 text eol=crlf
 *.iss text eol=crlf
+
+# GitHub language statistics: the website, the design boards and other HTML pages are documentation, not code
+*.html linguist-documentation
+*.htm linguist-documentation
+docs/** linguist-documentation
+design/** linguist-documentation
+site/** linguist-documentation
