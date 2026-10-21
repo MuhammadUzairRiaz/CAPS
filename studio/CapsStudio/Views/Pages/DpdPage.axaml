@@ -126,9 +126,9 @@
               <Border Classes="pcard">
                 <StackPanel Spacing="8">
                   <TextBlock Text="Segregation over the run (0 mixed, 1 separated)" FontSize="13.5" FontWeight="SemiBold" TextWrapping="Wrap" />
-                  <v:LinePlot x:Name="Order" Height="140" XLabel="step" YLabel="ψ" AutoRange="True" />
+                  <v:SciPlot x:Name="Order" Height="170" />
                   <TextBlock Text="Structure factor of the first bead type" FontSize="13.5" FontWeight="SemiBold" TextWrapping="Wrap" />
-                  <v:LinePlot x:Name="Sq" Height="140" XLabel="q (1/r_c)" YLabel="S(q)" AutoRange="True" />
+                  <v:SciPlot x:Name="Sq" Height="190" />
                 </StackPanel>
               </Border>
               <Border Classes="pcard" IsVisible="{Binding DpdDomains, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">

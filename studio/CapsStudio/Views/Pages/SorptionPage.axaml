@@ -82,7 +82,7 @@
           <Border Classes="pcard">
             <StackPanel Spacing="8">
               <TextBlock Text="Isotherm (GCMC)" FontSize="13.5" FontWeight="SemiBold" />
-              <v:LinePlot x:Name="Iso" Height="200" XLabel="p (kPa)" YLabel="mol/kg" AutoRange="True" />
+              <v:SciPlot x:Name="Iso" Height="240" />
               <Grid ColumnDefinitions="*,*,*,*,*">
                 <TextBlock Text="P (KPA)" Classes="h3" /><TextBlock Grid.Column="1" Text="PER CELL" Classes="h3" /><TextBlock Grid.Column="2" Text="MOL/KG" Classes="h3" />
                 <TextBlock Grid.Column="3" Text="CM³(STP)/CM³" Classes="h3" /><TextBlock Grid.Column="4" Text="Q_ST (KCAL/MOL)" Classes="h3" />

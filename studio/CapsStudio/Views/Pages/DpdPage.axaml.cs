@@ -19,12 +19,18 @@ public partial class DpdPage : PageBase
             _hooked = vm;
             vm.DpdChanged += () =>
             {
-                var o = this.FindControl<LinePlot>("Order")!;
-                o.RefY = null;
-                o.SetData(vm.DpdOrderSeries);
-                var q = this.FindControl<LinePlot>("Sq")!;
-                q.RefY = null;
-                q.SetData(vm.DpdSq);
+                var o = vm.DpdOrderSeries;
+                this.FindControl<SciPlot>("Order")!.Figure = o.Length < 2 ? null : new SciFigure
+                {
+                    XLabel = "step", YLabel = "*ψ*", YMin = 0, YZero = true, Empty = "",
+                    Series = [new SciSeries("", o.Select(p => p.X).ToArray(), o.Select(p => p.Y).ToArray()) { Kind = o.Length <= 40 ? SciKind.LineMarkers : SciKind.Line, Width = 1.3 }],
+                };
+                var q = vm.DpdSq;
+                this.FindControl<SciPlot>("Sq")!.Figure = q.Length < 2 ? null : new SciFigure
+                {
+                    XLabel = "*q* / *r*_{c}⁻¹", YLabel = "*S*(*q*)", YMin = 0, YZero = true, Empty = "",
+                    Series = [new SciSeries("", q.Select(p => p.X).ToArray(), q.Select(p => Math.Max(0, p.Y)).ToArray()) { Kind = SciKind.LineMarkers, Width = 1.2 }],
+                };
                 ShowView(vm);
             };
             // another frame, or another structure made active: the view follows while the page is shown
