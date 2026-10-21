@@ -1200,6 +1200,63 @@
    "options": {
     "--overlay": "page"
    }
+  },
+  "semicrystalline": {
+   "status": "gui",
+   "studio": "Build › Semicrystalline stack (lamellae), report and colour by phase",
+   "where": "Views/Pages/SemicrystallinePage.axaml|Semicrystalline stack · lamellae",
+   "capi": [
+    "caps_semicrystalline_build",
+    "caps_semicrystalline_analyse"
+   ],
+   "options": {
+    "--polymer": "partial: the Studio builds polyethylene (Bunn's cell); other unit cells from the command line",
+    "--repeats": "page",
+    "--crystal": "page",
+    "--crystal-cells": "partial: the page sets the lamella in nm (the cells along c follow)",
+    "--amorphous": "page",
+    "--loops": "page",
+    "--bridges": "page",
+    "--tails": "page",
+    "--reentry": "page",
+    "--density": "page",
+    "--seed": "page",
+    "--ff": "partial: the force field is assigned on the Force field page after the build (united atom: the check box counts carbons)",
+    "--no-relax": "Views/Pages/SemicrystallinePage.axaml|Relax: push-off with the crystal held",
+    "--report": "partial: the report is shown on the page; the JSON file from the command line",
+    "--lammps-input": "partial: Export writes LAMMPS files; the equilibration input with the tethered crystal from the command line",
+    "--gromacs": "partial: Export writes GROMACS files; the index of the groups from the command line",
+    "--analyse": "Views/Pages/SemicrystallinePage.axaml|Report of the open cell"
+   }
+  },
+  "thermal": {
+   "status": "gui",
+   "studio": "Modules › Thermal conductivity (Green–Kubo, NEMD; 2D or 3D)",
+   "where": "Views/Pages/ThermalPage.axaml|Thermal conductivity · molecular dynamics",
+   "capi": [
+    "caps_thermal",
+    "caps_thermal_lammps"
+   ],
+   "options": {
+    "--dimensionality": "page",
+    "--thickness": "page",
+    "--method": "page",
+    "--temp": "page",
+    "--eq-ps": "page",
+    "--ps": "page",
+    "--dt": "page",
+    "--every": "page",
+    "--corr-ps": "page",
+    "--axis": "page",
+    "--layers": "page",
+    "--swap-every": "page",
+    "--transient": "cli: the fraction of an NEMD run left out before averaging (0.3 in the Studio)",
+    "--seed": "cli: the Studio's runs start from seed 1",
+    "--ff": "partial: the Studio uses the force field assigned on the Force field page",
+    "--json": "partial: the Studio shows the result on the page",
+    "--lammps-input": "Views/Pages/ThermalPage.axaml|Write LAMMPS inputs",
+    "--long": "cli: quiets the note that a run is longer than a short local check"
+   }
   }
  },
  "hidden_options": {
