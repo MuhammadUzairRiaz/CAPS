@@ -96,8 +96,8 @@
           <Border Classes="pcard" IsVisible="{Binding RecipeHasSchedule}">
             <StackPanel Spacing="8">
               <TextBlock Text="{Binding RecipeProtocol, StringFormat='Temperature and pressure · {0}'}" FontSize="13.5" FontWeight="SemiBold" />
-              <v:LinePlot x:Name="Temp" Height="130" XLabel="time (ps)" YLabel="T (K)" AutoRange="True" />
-              <v:LinePlot x:Name="Pres" Height="110" XLabel="time (ps)" YLabel="log₁₀ P (bar)" AutoRange="True" />
+              <v:SciPlot x:Name="Temp" Height="130" />
+              <v:SciPlot x:Name="Pres" Height="110" />
               <TextBlock Classes="dim" TextWrapping="Wrap" Text="Drawn from the schedule table; P is shown only for NPT steps." />
               <Grid ColumnDefinitions="40,60,*,*,60" Margin="0,6,0,0">
                 <TextBlock Text="#" Classes="h3" /><TextBlock Grid.Column="1" Text="ENS." Classes="h3" /><TextBlock Grid.Column="2" Text="T (K)" Classes="h3" HorizontalAlignment="Right" />

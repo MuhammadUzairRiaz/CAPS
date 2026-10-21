@@ -18,13 +18,8 @@ public partial class OrientationPage : PageBase
             _hooked = vm;
             vm.OrChanged += () =>
             {
-                var f = this.FindControl<LinePlot>("PerFrame")!;
-                f.RefY = null;
-                f.SetData(vm.OrPerFrame);
-                var z = this.FindControl<LinePlot>("AlongZ")!;
-                z.XLabel = $"{vm.Analyze.AxisName} (Å)";
-                z.RefY = 0;
-                z.SetData(vm.OrAlongZ);
+                this.FindControl<SciPlot>("PerFrame")!.Figure = ViewModels.PageFigures.OrderPerFrame(vm.OrPerFrame);
+                this.FindControl<SciPlot>("AlongZ")!.Figure = ViewModels.PageFigures.OrderAlong(vm.Analyze.AxisName, vm.OrAlongZ);
             };
         };
     }

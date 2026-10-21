@@ -67,7 +67,7 @@ public sealed partial class MainViewModel
             var pts = new List<(double, double)>();
             double t = 0;
             var dir = GtTo < GtFrom ? -1 : 1;
-            var unit = GtAnnealPs + GtTemperatures * GtHoldPs >= 1000 ? 1000.0 : 1.0;   // ns, or ps for short scans
+            const double unit = 1;   // ps
             if (GtAnnealPs > 0) { pts.Add((0, GtFrom)); t = GtAnnealPs / unit; pts.Add((t, GtFrom)); }
             for (var k = 0; k < GtTemperatures; ++k)
             {
@@ -79,10 +79,9 @@ public sealed partial class MainViewModel
             return pts.ToArray();
         }
     }
-    public string GtScheduleAxis => GtAnnealPs + GtTemperatures * GtHoldPs >= 1000 ? "time (ns) · one replica" : "time (ps) · one replica";
     public void RaiseGlassPlan()
     {
-        foreach (var n in new[] { nameof(GtTemperaturesText), nameof(GtRateText), nameof(GtTotalText), nameof(GtSchedule), nameof(GtScheduleAxis) }) Raise(n);
+        foreach (var n in new[] { nameof(GtTemperaturesText), nameof(GtRateText), nameof(GtTotalText), nameof(GtSchedule) }) Raise(n);
         GtChanged?.Invoke();
     }
 

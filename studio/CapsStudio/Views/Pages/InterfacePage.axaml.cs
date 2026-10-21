@@ -22,17 +22,10 @@ public partial class InterfacePage : PageBase
             vm.IfChanged += () =>
             {
                 ShowView(vm);
-                var plot = this.FindControl<LinePlot>("Profile")!;
-                plot.RefY = null;
-                plot.XLabel = $"{vm.Analyze.AxisName} (Å) · normal to the surface";
-                plot.Band = vm.IfGapBand;
-                var film = vm.IfSeries.FirstOrDefault(s => s.Label == "film").Data ?? [];
-                var surf = vm.IfSeries.Where(s => s.Label != "film").ToArray();
-                plot.SetCompare(film, surf.Length > 0 ? surf[0].Data : []);
-                plot.SetThird(surf.Length > 1 ? surf[1].Data : []);
-                this.FindControl<TextBlock>("Legend")!.Text = vm.IfSeries.Length == 0 ? "Run to compute the profile."
-                    : "film (solid)" + (surf.Length > 0 ? $" · {surf[0].Label} (dashed)" : "") + (surf.Length > 1 ? $" · {surf[1].Label} (dotted)" : "") +
-                      (vm.IfGapBand != null ? " · shaded: the gap" : "");
+                this.FindControl<SciPlot>("Profile")!.Figure = ViewModels.PageFigures.Interface(vm.Analyze.AxisName, vm.IfSeries, vm.IfGapBand);
+                var legend = this.FindControl<TextBlock>("Legend")!;   // the figure carries its own legend
+                legend.Text = vm.IfSeries.Length == 0 ? "Run to compute the profile." : "";
+                legend.IsVisible = vm.IfSeries.Length == 0;
             };
         };
     }

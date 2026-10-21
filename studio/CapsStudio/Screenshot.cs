@@ -82,7 +82,7 @@ internal static class Screenshot
             if (kv[0] == "dft")   // dft=sheets|ads|job: the DFT pages with the Ti3C2 OH slab built (and its 5 × 5 set, its VASP set)
             {
                 var vm = w.ViewModel;
-                vm.DftRoot = Path.Combine(Path.GetTempPath(), "caps-shot-dft");
+                vm.DftRoot = Path.Combine(OperatingSystem.IsWindows() ? Path.GetTempPath() : "/tmp", "caps-dft");   // a short neutral folder: the picture shows its paths
                 vm.OpenSheets();
                 vm.TopTerms.Clear();
                 vm.TopTerms.Add(new ViewModels.TermRow { Species = "OH", Fraction = 1 });

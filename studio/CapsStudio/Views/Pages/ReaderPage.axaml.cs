@@ -21,12 +21,7 @@ public partial class ReaderPage : PageBase
             _hooked = vm;
             vm.ReaderChanged += () =>
             {
-                var p = this.FindControl<LinePlot>("Plot")!;
-                p.XLabel = vm.ReaderXLabel;
-                p.YLabel = vm.ReaderYLabel;
-                p.RefY = null;
-                if (vm.ReaderFitLine.Length > 0) p.SetWithFit(vm.ReaderCurve, vm.ReaderFitLine);
-                else p.SetData(vm.ReaderCurve);
+                this.FindControl<SciPlot>("Plot")!.Figure = ViewModels.PageFigures.Columns(vm.ReaderXLabel, vm.ReaderYLabel, vm.ReaderCurve, vm.ReaderFitLine);
             };
             vm.ReaderSelect += (start, length) =>
             {

@@ -1465,8 +1465,8 @@
                   </StackPanel>
                 </ScrollViewer>
                 <Grid Grid.Column="1" Width="360" Margin="8,4,12,4" RowDefinitions="*,Auto" IsVisible="{Binding InspectorShowsTables}">
-                  <local:LinePlot x:Name="PipeTablePlot" AutoRange="True" />
-                  <local:LinePlot Grid.Row="1" Height="110" x:Name="PipeTablePlot2" AutoRange="True" IsVisible="{Binding HasPipeSeries2}" />
+                  <local:SciPlot x:Name="PipeTablePlot" />
+                  <local:SciPlot Grid.Row="1" Height="110" x:Name="PipeTablePlot2" IsVisible="{Binding HasPipeSeries2}" />
                 </Grid>
               </Grid>
               <ScrollViewer IsVisible="{Binding InspectorShowsAttributes}">
@@ -1498,7 +1498,7 @@
           <TabControl x:Name="AnalysisTabs" Padding="0" Margin="0,-6,0,0">
             <TabItem Header="g(r)" FontSize="13">
               <Grid ColumnDefinitions="*,220" ColumnSpacing="18">
-                <local:LinePlot x:Name="RdfPlot" XLabel="r (Å)" YLabel="g(r)" />
+                <local:SciPlot x:Name="RdfPlot" />
                 <StackPanel Grid.Column="1" Spacing="8">
                   <TextBlock Text="RADIAL DISTRIBUTION" Classes="h3" />
                   <ComboBox ItemsSource="{Binding RdfPairs}" SelectedIndex="{Binding RdfPairIndex}" HorizontalAlignment="Stretch" />
@@ -1510,15 +1510,15 @@
             </TabItem>
             <TabItem Header="Minimisation" FontSize="13">
               <Grid ColumnDefinitions="*,*" ColumnSpacing="18">
-                <local:LinePlot x:Name="EnergyPlot" XLabel="iteration" YLabel="energy (kcal/mol)" AutoRange="True" />
-                <local:LinePlot Grid.Column="1" x:Name="ForcePlot" XLabel="iteration" YLabel="log₁₀ |F|max · dashed: tolerance" AutoRange="True" />
+                <local:SciPlot x:Name="EnergyPlot" />
+                <local:SciPlot Grid.Column="1" x:Name="ForcePlot" />
               </Grid>
             </TabItem>
             <TabItem Header="Thermo" FontSize="13">
               <Grid ColumnDefinitions="*,*,*" ColumnSpacing="14">
-                <local:LinePlot x:Name="TempPlot" XLabel="time (ps)" YLabel="T (K) · dashed: target" AutoRange="True" />
-                <local:LinePlot Grid.Column="1" x:Name="PressPlot" XLabel="time (ps)" YLabel="pressure (atm)" AutoRange="True" />
-                <local:LinePlot Grid.Column="2" x:Name="DensPlot" XLabel="time (ps)" YLabel="density (g/cm³)" AutoRange="True" />
+                <local:SciPlot x:Name="TempPlot" />
+                <local:SciPlot Grid.Column="1" x:Name="PressPlot" />
+                <local:SciPlot Grid.Column="2" x:Name="DensPlot" />
               </Grid>
             </TabItem>
             <TabItem Header="Molecules" FontSize="13">
@@ -1546,8 +1546,8 @@
             </TabItem>
             <TabItem Header="Network" FontSize="13">
               <Grid ColumnDefinitions="*,*" ColumnSpacing="18">
-                <local:LinePlot x:Name="ConvPlot" XLabel="cycle" YLabel="conversion α" AutoRange="True" />
-                <local:LinePlot Grid.Column="1" x:Name="GelPlot" XLabel="conversion α" YLabel="largest cluster (mass fraction)" AutoRange="True" />
+                <local:SciPlot x:Name="ConvPlot" />
+                <local:SciPlot Grid.Column="1" x:Name="GelPlot" />
               </Grid>
             </TabItem>
             <TabItem Header="Around atom" FontSize="13" x:Name="FocusTab">
@@ -1583,7 +1583,7 @@
             </TabItem>
             <TabItem Header="Chains" FontSize="13">
               <Grid ColumnDefinitions="*,260" ColumnSpacing="18">
-                <local:LinePlot x:Name="ChainPlot" XLabel="n (backbone bonds apart)" YLabel="⟨R²(n)⟩ / (n ⟨b²⟩)" AutoRange="True" />
+                <local:SciPlot x:Name="ChainPlot" />
                 <StackPanel Grid.Column="1" Spacing="8">
                   <TextBlock Text="INTERNAL DISTANCES" Classes="h3" />
                   <TextBlock Text="{Binding ChainNote}" Classes="dim" TextWrapping="Wrap" />
@@ -1888,7 +1888,7 @@
               <StackPanel Spacing="4">
                 <TextBlock Text="SHIFT PER ATOM (Å)" Classes="h3" />
                 <Border Height="120" Background="{DynamicResource Bg0B}" CornerRadius="6" Padding="4">
-                  <local:LinePlot x:Name="ShiftPlot" AutoRange="True" />
+                  <local:SciPlot x:Name="ShiftPlot" />
                 </Border>
               </StackPanel>
               <StackPanel Spacing="4">

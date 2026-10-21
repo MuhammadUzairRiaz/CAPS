@@ -110,7 +110,7 @@
                         </Border>
                         <ComboBox ItemsSource="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).TrajSeriesNames}" SelectedItem="{Binding Series}" MinWidth="200" FontSize="12" />
                       </DockPanel>
-                      <v:LinePlot Height="150" AutoRange="True" XLabel="t (ps)" />
+                      <v:SciPlot Height="150" />
                     </StackPanel>
                   </Border>
                 </DataTemplate>

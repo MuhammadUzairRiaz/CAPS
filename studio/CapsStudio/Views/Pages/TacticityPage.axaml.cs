@@ -24,13 +24,7 @@ public partial class TacticityPage : PageBase
     private void Update(MainViewModel vm)
     {
         this.FindControl<SequenceStrip>("Dyads")!.SetUnits(vm.TsDyads);
-        var chart = this.FindControl<XyChart>("Pentads")!;
-        chart.Categories = vm.TsPentadNames;
-        chart.Set(
-        [
-            new ChartSeries(vm.TsMarkov ? "Markov model" : "Bernoulli model", vm.TsModelPentads.Select((y, i) => ((double)i, y)).ToArray(), "bars", "AccB"),
-            new ChartSeries("this chain", vm.TsChainPentads.Select((y, i) => ((double)i, y)).ToArray(), "bars", "#2271DB"),
-        ]);
+        this.FindControl<SciPlot>("Pentads")!.Figure = ViewModels.PageFigures.Pentads(vm.TsPentadNames, vm.TsModelPentads, vm.TsMarkov ? "Markov model" : "Bernoulli model", vm.TsChainPentads);
         var v = this.FindControl<MolView>("View")!;
         v.DrawStyle = 0;
         if (v.Document != vm.TsDoc) { v.Document = vm.TsDoc; v.Reset(); }

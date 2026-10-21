@@ -37,7 +37,7 @@
             </DockPanel>
             <TextBlock DockPanel.Dock="Bottom" Text="Add a measuring step in Visualize (Coordination &amp; RDF, histogram …) to overlay its table." Classes="dim" FontSize="11" TextWrapping="Wrap"
                        IsVisible="{Binding !CompareTables.Count}" />
-            <v:LinePlot x:Name="ComparePlotView" AutoRange="True" />
+            <v:SciPlot x:Name="ComparePlotView" />
           </DockPanel>
           <DockPanel Grid.Column="1">
             <TextBlock DockPanel.Dock="Top" Text="SAME PIPELINE, TWO INPUTS" Classes="h3" Margin="0,4,0,6" />

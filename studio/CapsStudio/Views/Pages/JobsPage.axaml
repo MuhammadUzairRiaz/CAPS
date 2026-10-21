@@ -238,7 +238,7 @@
                   <TextBlock Text="{Binding CurveA}" Classes="h2" VerticalAlignment="Center" />
                 </DockPanel>
               </Border>
-              <v:LinePlot x:Name="PlotA" Margin="8,0,12,10" />
+              <v:SciPlot x:Name="PlotA" Margin="8,0,12,10" />
             </DockPanel>
           </Border>
           <Border Grid.Column="1" Classes="card" CornerRadius="10" Height="230">
@@ -249,7 +249,7 @@
                   <TextBlock Text="{Binding CurveB}" Classes="h2" VerticalAlignment="Center" />
                 </DockPanel>
               </Border>
-              <v:LinePlot x:Name="PlotB" Margin="8,0,12,10" />
+              <v:SciPlot x:Name="PlotB" Margin="8,0,12,10" />
             </DockPanel>
           </Border>
         </Grid>

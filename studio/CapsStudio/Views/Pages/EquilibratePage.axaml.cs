@@ -10,28 +10,26 @@ public partial class EquilibratePage : PageBase
     public EquilibratePage()
     {
         AvaloniaXamlLoader.Load(this);
-        var rho = this.FindControl<LinePlot>("DensityPlot")!;
-        var e = this.FindControl<LinePlot>("EnergyPlot")!;
-        var rg = this.FindControl<LinePlot>("RgPlot")!;
-        var chain = this.FindControl<LinePlot>("ChainPlot")!;
-        rho.RefY = null; e.RefY = null; rg.RefY = null;
+        var rho = this.FindControl<SciPlot>("DensityPlot")!;
+        var e = this.FindControl<SciPlot>("EnergyPlot")!;
+        var rg = this.FindControl<SciPlot>("RgPlot")!;
+        var chain = this.FindControl<SciPlot>("ChainPlot")!;
         DataContextChanged += (_, _) =>
         {
             if (DataContext is not ViewModels.MainViewModel vm) return;
-            vm.ThermoChanged += () =>
+            // the time series with the protocol's stages and the block means over them
+            void Series()
             {
-                if (!vm.IsEquilibrate && !vm.EqRunning) return;
-                rho.Stages = vm.EqStageBands; e.Stages = vm.EqStageBands;
-                rho.SetData(vm.Thermo.Select(r => (r.TimePs, r.Density)).ToArray());
-                e.SetData(vm.Thermo.Select(r => (r.TimePs, r.Potential)).ToArray());
-            };
+                rho.Figure = ViewModels.PageFigures.ThermoDensity(vm.Thermo, vm.EqStageBands, vm.EqDensityBlocks);
+                e.Figure = ViewModels.PageFigures.ThermoEnergy(vm.Thermo, vm.EqStageBands, vm.EqEnergyBlocks);
+            }
+            vm.ThermoChanged += () => { if (vm.IsEquilibrate || vm.EqRunning) Series(); };
             vm.EqChecksChanged += () =>
             {
-                rg.SetData(vm.EqRgBlocks);
-                rho.SetThird(vm.EqDensityBlocks);   // block means over the time series
-                e.SetThird(vm.EqEnergyBlocks);
+                rg.Figure = ViewModels.PageFigures.RgBlocks(vm.EqRgBlocks);
+                Series();
             };
-            void Draw() { if (vm.ChainReference.Length > 0) chain.SetCompare(vm.ChainCurve, vm.ChainReference); else chain.SetData(vm.ChainCurve); }
+            void Draw() => chain.Figure = ViewModels.PageFigures.ChainCn(vm.ChainCurve, vm.ChainReference, vm.ChainReferenceName);
             vm.PropertyChanged += (_, a) => { if (a.PropertyName is nameof(vm.ChainCurve) or nameof(vm.ChainReference)) Draw(); };
             Draw();
         };

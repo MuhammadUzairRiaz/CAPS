@@ -287,7 +287,7 @@
           <Border Classes="card">
             <Grid RowDefinitions="38,*">
               <Border Classes="phead"><TextBlock Text="Convergence" Classes="h2" VerticalAlignment="Center" /></Border>
-              <v:LinePlot Grid.Row="1" x:Name="ConvPlot" Margin="10,6,12,8" AutoRange="True" XLabel="round" YLabel="log₁₀ penalty" />
+              <v:SciPlot Grid.Row="1" x:Name="ConvPlot" Margin="10,6,12,8" />
             </Grid>
           </Border>
           <Border Grid.Column="1" Classes="card">

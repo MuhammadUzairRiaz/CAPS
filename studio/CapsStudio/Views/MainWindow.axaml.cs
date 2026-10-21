@@ -144,7 +144,7 @@ public partial class MainWindow : Window
         _vm.CompareStatesChanged += () =>
         {
             var sh = _vm.CompareShifts;
-            this.FindControl<LinePlot>("ShiftPlot")?.SetData(sh.Select((y, i) => ((double)(i + 1), y)).ToArray());
+            if (this.FindControl<SciPlot>("ShiftPlot") is { } plot) plot.Figure = PageFigures.Shifts(sh);
         };
         _vm.ViewRequested += RequestViewRender;
         _vm.PropertyChanged += (_, e) =>
@@ -175,22 +175,18 @@ public partial class MainWindow : Window
         _vm.FullViewRequested += live => OpenFullView(live);
         _vm.PipeTableChanged += () =>
         {
-            PipeTablePlot.XLabel = _vm.PipeTableXLabel;
-            PipeTablePlot.YLabel = _vm.PipeTableYLabel;
-            if (_vm.PipeTableHeat is { } heat) { PipeTablePlot.ZLabel = _vm.PipeTableZLabel; PipeTablePlot.SetHeat(heat.X, heat.Y, heat.Z); return; }
+            PipeTablePlot.ClearBrush();
+            if (_vm.PipeTableHeat is { } heat)
+            {
+                PipeTablePlot.Figure = PageFigures.Heat(_vm.PipeTableXLabel, _vm.PipeTableYLabel, _vm.PipeTableZLabel, heat.X, heat.Y, heat.Z);
+                return;
+            }
             var pts = _vm.PipeTableX.Zip(_vm.PipeTableY).Where(p => double.IsFinite(p.Second)).ToArray();
             var w = _vm.PipeTableName?.StartsWith("Time series") == true ? _vm.SeriesWindow : 1;   // the timeline's running mean
-            if (_vm.PipeTableScatter) { PipeTablePlot.RefY = null; PipeTablePlot.SetData(pts, []); }
-            else if (w >= 2) { PipeTablePlot.RefY = null; PipeTablePlot.SetWithFit(pts, MainViewModel.RunningMean(pts, w)); }
-            else { PipeTablePlot.RefY = 1.0; PipeTablePlot.Markers = false; PipeTablePlot.SetData(pts); }
+            PipeTablePlot.Figure = PageFigures.Table(_vm.PipeTableXLabel, _vm.PipeTableYLabel, pts, _vm.PipeTableScatter, w, 0);
             // series 2: its own plot under the first (the two seldom share a scale)
             var pts2 = _vm.PipeTableX.Zip(_vm.PipeTableY2).Where(p => double.IsFinite(p.Second)).ToArray();
-            PipeTablePlot2.XLabel = _vm.PipeTableXLabel;
-            PipeTablePlot2.YLabel = _vm.PipeTableY2Label;
-            PipeTablePlot2.RefY = null;
-            PipeTablePlot2.LineBrush = Tokens.Brush("SelB");
-            if (w >= 2) PipeTablePlot2.SetWithFit(pts2, MainViewModel.RunningMean(pts2, w));
-            else { PipeTablePlot2.Markers = false; PipeTablePlot2.SetData(pts2); }
+            PipeTablePlot2.Figure = PageFigures.Table(_vm.PipeTableXLabel, _vm.PipeTableY2Label, pts2, false, w, 1);
         };
         _vm.RenderOverlayChanged += () => RenderGuide.InvalidateVisual();
         _vm.PropertyChanged += (_, e) =>
@@ -204,39 +200,30 @@ public partial class MainWindow : Window
             {
                 ApplyViewHostBackground();
             }
-            if (e.PropertyName == nameof(MainViewModel.RdfCurve)) RdfPlot.SetData(_vm.RdfCurve.Select(p => (p.R, p.G)).ToArray());
+            if (e.PropertyName == nameof(MainViewModel.RdfCurve)) RdfPlot.Figure = PageFigures.Rdf(_vm.RdfCurve.Select(p => (p.R, p.G)).ToArray());
             if (e.PropertyName == nameof(MainViewModel.Relaxing) && _vm.Relaxing)
             {
-                EnergyPlot.RefY = null;
-                ForcePlot.RefY = Math.Log10((double)(_vm.RelaxFtolD ?? 0.5m));
                 _vm.ShowRdf = true;
                 AnalysisTabs.SelectedIndex = 1;
             }
             if (e.PropertyName == nameof(MainViewModel.MdRunning) && _vm.MdRunning)
             {
-                TempPlot.RefY = (double)(_vm.MdTempD ?? 300m);
-                PressPlot.RefY = _vm.MdHasBarostat ? (double)(_vm.MdPressureD ?? 1m) : null;
-                DensPlot.RefY = null;
+                _thermoTargets = ((double)(_vm.MdTempD ?? 300m), _vm.MdHasBarostat ? (double)(_vm.MdPressureD ?? 1m) : null);
                 _vm.ShowRdf = true;
                 AnalysisTabs.SelectedIndex = 2;
             }
             if (e.PropertyName == nameof(MainViewModel.EqRunning) && _vm.EqRunning)
             {
-                TempPlot.RefY = null;
-                PressPlot.RefY = null;
-                DensPlot.RefY = null;
+                _thermoTargets = (null, null);
                 _vm.ShowRdf = true;
                 AnalysisTabs.SelectedIndex = 2;
             }
             if (e.PropertyName == nameof(MainViewModel.ChainCurve))
             {
-                if (_vm.RisCurve.Length > 0) ChainPlot.SetCompare(_vm.ChainCurve, _vm.RisCurve);
-                else ChainPlot.SetData(_vm.ChainCurve);
+                ChainPlot.Figure = PageFigures.ChainCn(_vm.ChainCurve, _vm.RisCurve, "RIS reference");
             }
             if (e.PropertyName == nameof(MainViewModel.Reacting) && _vm.Reacting)
             {
-                ConvPlot.RefY = null;
-                GelPlot.RefY = null;
                 _vm.ShowRdf = true;
                 AnalysisTabs.SelectedIndex = 4;
             }
@@ -249,20 +236,20 @@ public partial class MainWindow : Window
         _vm.ThermoChanged += () =>
         {
             var t = _vm.Thermo;
-            TempPlot.SetData(t.Select(r => (r.TimePs, r.Temperature)).ToArray());
-            PressPlot.SetData(t.Select(r => (r.TimePs, r.Pressure)).ToArray());
-            DensPlot.SetData(t.Select(r => (r.TimePs, r.Density)).ToArray());
+            TempPlot.Figure = PageFigures.ThermoTemperature(t, _thermoTargets.T);
+            PressPlot.Figure = PageFigures.ThermoPressure(t, _thermoTargets.P);
+            DensPlot.Figure = PageFigures.ThermoDensity(t);
         };
         _vm.ReactChanged += () =>
         {
             var rows = _vm.ReactRows;
-            ConvPlot.SetData(rows.Select(r => ((double)r.Cycle, r.Conversion)).ToArray());
-            GelPlot.SetData(rows.Select(r => (r.Conversion, r.LargestFraction)).ToArray());
+            ConvPlot.Figure = PageFigures.ReactConversion(rows);
+            GelPlot.Figure = PageFigures.ReactGel(rows);
         };
         _vm.RelaxCurvesChanged += () =>
         {
-            EnergyPlot.SetData(_vm.RelaxEnergyCurve);
-            ForcePlot.SetData(_vm.RelaxForceCurve);
+            EnergyPlot.Figure = PageFigures.RelaxEnergy(_vm.RelaxEnergyCurve);
+            ForcePlot.Figure = PageFigures.RelaxForce(_vm.RelaxForceCurve, (double)(_vm.RelaxFtolD ?? 0.5m));
         };
 
         foreach (var host in new[] { ViewHost, FieldViewHost })
@@ -393,6 +380,7 @@ public partial class MainWindow : Window
     }
 
     private bool _focusTabShown;
+    private (double? T, double? P) _thermoTargets;   // the running MD's targets, dashed in the thermo plots
 
     public void OnOpenSample(object? sender, RoutedEventArgs e) => OpenSample("ps");
 

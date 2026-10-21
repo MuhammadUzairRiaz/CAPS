@@ -51,7 +51,7 @@
             <Border BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0" Padding="18,14">
               <StackPanel Spacing="6">
                 <TextBlock Text="COMPOSITION" Classes="h3" />
-                <v:XyChart x:Name="Comp" Height="250" XLabel="f₁ (M₁ in feed)" YLabel="F₁ (M₁ in chain)" XMin="0" XMax="1" YMin="0" YMax="1" ShowLegend="False" />
+                <v:SciPlot x:Name="Comp" Height="250" />
               </StackPanel>
             </Border>
           </StackPanel>

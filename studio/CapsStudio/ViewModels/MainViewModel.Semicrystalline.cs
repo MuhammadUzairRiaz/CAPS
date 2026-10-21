@@ -180,6 +180,8 @@ public sealed partial class MainViewModel
     public string ThNotes { get => _thNotes; private set => Set(ref _thNotes, value); }
     public string ThSteps => string.Format(CultureInfo.InvariantCulture, "{0:N0} steps here", Math.Round((_thEq + _thPs) * 1000 / _thDt));
     public (double X, double Y)[][] ThCurves { get; private set; } = [];
+    /// <summary>The curves are Green–Kubo running integrals (else the NEMD slab temperatures).</summary>
+    public bool ThGreenKubo { get; private set; }
     public event Action? ThChanged;
 
     private string ThermalJson() => new JsonObject
@@ -209,7 +211,8 @@ public sealed partial class MainViewModel
             ThResult = ((string?)r["summary"] ?? "").Trim();
             ThNotes = r["notes"] is JsonArray n ? string.Join(" · ", n.Select(x => (string?)x ?? "")) : "";
             double[] A(JsonNode? a) => a is JsonArray v ? v.Select(x => x!.GetValue<double>()).ToArray() : [];
-            if ((string?)r["method"] == "gk")
+            ThGreenKubo = (string?)r["method"] == "gk";
+            if (ThGreenKubo)
             {
                 var t = A(r["t_ps"]);
                 ThCurves = ((JsonArray)r["running"]!).Select(run => t.Zip(A(run)).Select(p => (p.First, p.Second)).ToArray()).Where(c => c.Length > 0).ToArray();

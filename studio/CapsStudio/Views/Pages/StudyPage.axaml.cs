@@ -19,12 +19,7 @@ public partial class StudyPage : PageBase
             _hooked = vm;
             vm.StudyChanged += () =>
             {
-                var p = this.FindControl<LinePlot>("Plot")!;
-                p.XLabel = vm.StudyXLabel;
-                p.YLabel = vm.StudyYLabel;
-                p.RefY = null;
-                if (vm.StudyFitLine.Length > 0) p.SetWithFit(vm.StudyCurve, vm.StudyFitLine);
-                else p.SetData(vm.StudyCurve);
+                this.FindControl<SciPlot>("Plot")!.Figure = ViewModels.PageFigures.Columns(vm.StudyXLabel, vm.StudyYLabel, vm.StudyCurve, vm.StudyFitLine, markers: true);
             };
         };
     }

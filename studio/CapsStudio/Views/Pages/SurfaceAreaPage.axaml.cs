@@ -21,8 +21,8 @@ public partial class SurfaceAreaPage : PageBase
             vm.SaChanged += () =>
             {
                 Show(vm);
-                var c = this.FindControl<LinePlot>("Conv")!; c.RefY = null; c.SetData(vm.SaCurve);
-                var sp = this.FindControl<LinePlot>("Series")!; sp.RefY = null; sp.SetData(vm.SaSeries);
+                this.FindControl<SciPlot>("Conv")!.Figure = ViewModels.PageFigures.SasaConvergence(vm.SaCurve);
+                this.FindControl<SciPlot>("Series")!.Figure = ViewModels.PageFigures.SasaSeries(vm.SaSeries);
             };
         };
     }

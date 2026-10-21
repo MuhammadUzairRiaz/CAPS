@@ -138,7 +138,7 @@
             <Border Classes="pcard">
               <StackPanel Spacing="6">
                 <TextBlock Text="Beads of each kind" Classes="ctitle" />
-                <v:XyChart x:Name="KindChart" Height="220" YLabel="beads" Empty="map a structure to see its beads" />
+                <v:SciPlot x:Name="KindChart" Height="220" EmptyText="map a structure to see its beads" />
               </StackPanel>
             </Border>
           </StackPanel>
@@ -210,11 +210,11 @@
             <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
               <Border Classes="pcard">
                 <StackPanel Spacing="6"><TextBlock Text="Distribution of the selected term" Classes="ctitle" />
-                  <v:XyChart x:Name="PChart" Height="210" YLabel="P (normalised)" ShowLegend="False" Empty="select a table" /></StackPanel>
+                  <v:SciPlot x:Name="PChart" Height="210" EmptyText="select a table" /></StackPanel>
               </Border>
               <Border Grid.Column="1" Classes="pcard">
                 <StackPanel Spacing="6"><TextBlock Text="Its potential" Classes="ctitle" />
-                  <v:XyChart x:Name="UChart" Height="210" YLabel="U (kcal/mol)" ShowLegend="False" Empty="select a table" /></StackPanel>
+                  <v:SciPlot x:Name="UChart" Height="210" EmptyText="select a table" /></StackPanel>
               </Border>
             </Grid>
           </StackPanel>
@@ -321,13 +321,13 @@
             <Border Classes="pcard">
               <StackPanel Spacing="6">
                 <DockPanel><ComboBox DockPanel.Dock="Right" ItemsSource="{Binding CgwPairKeys}" SelectedItem="{Binding CgwPairKey}" Width="140" /><TextBlock Text="Target g(r) of the pair, per system" Classes="ctitle" VerticalAlignment="Center" /></DockPanel>
-                <v:XyChart x:Name="GrChart" Height="240" XLabel="r (Å)" YLabel="g(r)" Empty="make the targets to see g(r)" />
+                <v:SciPlot x:Name="GrChart" Height="240" EmptyText="make the targets to see g(r)" />
               </StackPanel>
             </Border>
             <Border Classes="pcard">
               <StackPanel Spacing="6">
                 <TextBlock Text="The pair's potential: current table and fit" Classes="ctitle" />
-                <v:XyChart x:Name="PairChart" Height="240" XLabel="r (Å)" YLabel="U (kcal/mol)" Empty="start IBI (or pick a pairs.json) to see the tables" />
+                <v:SciPlot x:Name="PairChart" Height="240" EmptyText="start IBI (or pick a pairs.json) to see the tables" />
               </StackPanel>
             </Border>
           </StackPanel>
@@ -388,7 +388,7 @@
             <Border Classes="pcard">
               <StackPanel Spacing="6">
                 <TextBlock Text="⟨R²(n)⟩/n: the built chains against the all-atom model" Classes="ctitle" />
-                <v:XyChart x:Name="R2Chart" Height="280" XLabel="n (bonds along the chain)" YLabel="⟨R²(n)⟩/n (Å²)" Empty="build a melt to see its chains" />
+                <v:SciPlot x:Name="R2Chart" Height="280" EmptyText="build a melt to see its chains" />
               </StackPanel>
             </Border>
           </StackPanel>
@@ -508,7 +508,7 @@
                     <DataTemplate x:DataType="vm:Row"><StackPanel Spacing="2"><TextBlock Text="{Binding Key}" Classes="label" /><TextBlock Text="{Binding Value}" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap" /></StackPanel></DataTemplate>
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
-                <v:XyChart x:Name="StressChart" Height="300" XLabel="engineering strain" YLabel="σ (MPa)" Empty="analyse a stress_strain.dat (written by the tension decks' runs)" />
+                <v:SciPlot x:Name="StressChart" Height="300" EmptyText="analyse a stress_strain.dat (written by the tension decks' runs)" />
               </StackPanel>
             </Border>
           </Grid>
@@ -539,7 +539,7 @@
                     <DataTemplate x:DataType="vm:Row"><StackPanel Spacing="2"><TextBlock Text="{Binding Key}" Classes="label" /><TextBlock Text="{Binding Value}" FontSize="14" FontWeight="SemiBold" /></StackPanel></DataTemplate>
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
-                <v:XyChart x:Name="DynChart" Height="280" XLabel="log₁₀ t (fs)" YLabel="g (Å²), log scale" LogY="True" Empty="run the dynamics of a CG trajectory" />
+                <v:SciPlot x:Name="DynChart" Height="280" EmptyText="run the dynamics of a CG trajectory" />
               </StackPanel>
             </Border>
           </Grid>

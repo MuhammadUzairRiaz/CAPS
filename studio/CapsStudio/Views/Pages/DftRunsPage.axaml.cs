@@ -20,9 +20,7 @@ public partial class DftRunsPage : PageBase
             vm.DftChanged += () =>
             {
                 if (!vm.IsDftRuns) return;
-                var p = this.FindControl<LinePlot>("Force")!;
-                p.RefY = 0.01;
-                p.SetData(vm.SelectedDftRun?.Fmax.Select((f, i) => ((double)(i + 1), f)).ToArray() ?? []);
+                this.FindControl<SciPlot>("Force")!.Figure = ViewModels.PageFigures.DftForce(vm.SelectedDftRun?.Fmax.ToArray() ?? []);
             };
         };
     }

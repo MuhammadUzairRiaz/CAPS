@@ -102,7 +102,7 @@
                 <TextBlock Text="Per input" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
               </DockPanel>
             </Border>
-            <v:LinePlot x:Name="BatchPlot" Margin="10,6" XLabel="input #" AutoRange="True" />
+            <v:SciPlot x:Name="BatchPlot" Margin="10,6" />
           </DockPanel>
         </Border>
         <Border Grid.Column="2" Classes="card" CornerRadius="10">

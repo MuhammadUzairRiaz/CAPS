@@ -346,8 +346,8 @@ public sealed partial class MainViewModel
                 };
             }
             if (kind is "Dynamics" or "Equilibrate") { job.CurveA = "Density"; job.AxisA = "density (g/cm³)"; job.CurveB = "Temperature"; job.AxisB = "temperature (K)"; job.AxisX = "time (ps)"; }
-            else if (kind == "Relax") { job.CurveA = "Energy"; job.AxisA = "E (kcal/mol)"; job.CurveB = "Largest force"; job.AxisB = "log₁₀ |F|max"; job.AxisX = "iteration"; }
-            else if (kind == "React") { job.CurveA = "Energy after each cycle"; job.AxisA = "E (kcal/mol)"; job.CurveB = "Force before the next cycle"; job.AxisB = "log₁₀ |F|max"; job.AxisX = "reaction cycle"; }
+            else if (kind == "Relax") { job.CurveA = "Energy"; job.AxisA = "E (kcal/mol)"; job.CurveB = "Largest force"; job.AxisB = "largest force (kcal/mol/Å)"; job.AxisX = "iteration"; }
+            else if (kind == "React") { job.CurveA = "Energy after each cycle"; job.AxisA = "E (kcal/mol)"; job.CurveB = "Force before the next cycle"; job.AxisB = "largest force (kcal/mol/Å)"; job.AxisX = "reaction cycle"; }
             _live[kind] = job;
             Jobs.Insert(0, job);
             if (kind is not ("Grow" or "Pack")) AttachJob(job, _activeItem);   // the structure it runs on
@@ -486,7 +486,7 @@ public sealed partial class MainViewModel
         foreach (var r in _rxRows)
         {
             if (r.Energy != 0) j.A.Add((r.Cycle, r.Energy));
-            if (r.MaxForce > 0) j.B.Add((r.Cycle, Math.Log10(r.MaxForce)));
+            if (r.MaxForce > 0) j.B.Add((r.Cycle, r.MaxForce));
         }
         if (_rxCycles > 0) { j.Progress = Math.Min(1, (double)(_rxRows.Count > 0 ? _rxRows[^1].Cycle : 0) / _rxCycles); AnnounceProgress(j); }
         j.CurvesChanged();

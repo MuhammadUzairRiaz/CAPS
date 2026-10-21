@@ -10,17 +10,15 @@ public partial class DynamicsPage : PageBase
     public DynamicsPage()
     {
         AvaloniaXamlLoader.Load(this);
-        var t = this.FindControl<LinePlot>("TPlot")!;
-        var rho = this.FindControl<LinePlot>("RhoPlot")!;
-        rho.RefY = null;
+        var t = this.FindControl<SciPlot>("TPlot")!;
+        var rho = this.FindControl<SciPlot>("RhoPlot")!;
         DataContextChanged += (_, _) =>
         {
             if (DataContext is not ViewModels.MainViewModel vm) return;
             vm.ThermoChanged += () =>
             {
-                t.RefY = (double)(vm.MdTempD ?? 300m);
-                t.SetData(vm.Thermo.Select(r => (r.TimePs, r.Temperature)).ToArray());
-                rho.SetData(vm.Thermo.Select(r => (r.TimePs, r.Density)).ToArray());
+                t.Figure = ViewModels.PageFigures.ThermoTemperature(vm.Thermo, (double)(vm.MdTempD ?? 300m));
+                rho.Figure = ViewModels.PageFigures.ThermoDensity(vm.Thermo);
             };
             vm.PropertyChanged += (_, e) =>
             {

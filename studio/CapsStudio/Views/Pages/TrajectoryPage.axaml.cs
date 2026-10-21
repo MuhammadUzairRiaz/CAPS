@@ -27,15 +27,9 @@ public partial class TrajectoryPage : PageBase
                 preview.Refresh();
                 markers.SetMarkers(vm.TrajRunFrames.Select(f => vm.FrameMax > 0 ? f / (double)vm.FrameMax : 0).ToList());
                 // the plots: their series, colour and the cursor at this frame's time
-                var plots = this.GetVisualDescendants().OfType<LinePlot>().ToList();
+                var plots = this.GetVisualDescendants().OfType<SciPlot>().ToList();
                 for (var k = 0; k < plots.Count && k < vm.TrajPlots.Length; k++)
-                {
-                    plots[k].LineBrush = vm.TrajPlots[k].Colour;
-                    plots[k].RefY = null;
-                    plots[k].YLabel = vm.TrajPlots[k].Series ?? "";
-                    plots[k].CursorX = vm.TrajCursor;
-                    plots[k].SetData(vm.TrajPlots[k].Points);
-                }
+                    plots[k].Figure = ViewModels.PageFigures.TrajectorySeries(vm.TrajPlots[k].Series ?? "", vm.TrajPlots[k].Points, vm.TrajCursor, k);
             };
         };
     }

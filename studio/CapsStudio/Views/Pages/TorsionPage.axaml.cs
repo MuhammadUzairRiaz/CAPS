@@ -12,7 +12,7 @@ public partial class TorsionPage : PageBase
     {
         AvaloniaXamlLoader.Load(this);
         var preview = this.FindControl<MolView>("Preview")!;
-        var plot = this.FindControl<LinePlot>("Plot")!;
+        var plot = this.FindControl<SciPlot>("Plot")!;
         DataContextChanged += (_, _) =>
         {
             if (DataContext is not MainViewModel vm) return;
@@ -27,8 +27,7 @@ public partial class TorsionPage : PageBase
                 preview.LineLabel = vm.TorsionPhiText;
                 preview.Refresh();
                 var curve = vm.TorsionCurve();
-                plot.RefY = null;
-                plot.SetData(curve, curve);
+                plot.Figure = ViewModels.PageFigures.Torsion(curve);
             };
         };
     }

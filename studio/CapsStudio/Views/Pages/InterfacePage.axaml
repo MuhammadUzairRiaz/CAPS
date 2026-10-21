@@ -75,7 +75,7 @@
                 <TextBlock Text="Density profile" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
               </DockPanel>
               <Panel Height="260">
-                <v:LinePlot x:Name="Profile" XLabel="height (Å) · normal to the surface" YLabel="ρ (g/cm³)" AutoRange="True" />
+                <v:SciPlot x:Name="Profile" />
               </Panel>
               <TextBlock x:Name="Legend" Classes="dim" TextWrapping="Wrap" />
             </StackPanel>

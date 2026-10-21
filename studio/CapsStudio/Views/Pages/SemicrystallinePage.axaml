@@ -84,11 +84,11 @@
           <Border Classes="pcard">
             <StackPanel Spacing="8">
               <TextBlock Text="Density along the stack normal" FontSize="13.5" FontWeight="SemiBold" />
-              <v:LinePlot x:Name="Rho" Height="140" XLabel="z (Å)" YLabel="ρ (g/cm³)" AutoRange="True" />
+              <v:SciPlot x:Name="Rho" Height="140" />
               <TextBlock Text="Chain order P2 along the stack normal" FontSize="13.5" FontWeight="SemiBold" />
-              <v:LinePlot x:Name="P2" Height="140" XLabel="z (Å)" YLabel="P2" AutoRange="True" />
+              <v:SciPlot x:Name="P2" Height="140" />
               <TextBlock Text="Bridge lengths" FontSize="13.5" FontWeight="SemiBold" />
-              <v:LinePlot x:Name="Bridges" Height="120" XLabel="CH2 units" YLabel="bridges" AutoRange="True" />
+              <v:SciPlot x:Name="Bridges" Height="120" />
               <TextBlock Classes="dim" TextWrapping="Wrap" Text="P2 = ⟨(3 cos²θ − 1)/2⟩ of each backbone chord against the stems, averaged over seven chords; an atom is crystalline above the cut. Equilibrate on a cluster: caps semicrystalline --lammps-input writes NVT with the crystal tethered, then NPT." />
             </StackPanel>
           </Border>

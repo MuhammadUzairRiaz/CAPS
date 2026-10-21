@@ -26,11 +26,9 @@ public partial class CopolymerPage : PageBase
         var strip = this.FindControl<SequenceStrip>("Strip")!;
         strip.SetUnits(vm.CoSequence);
         var f1 = (double)vm.CoF1;
-        var markers = new System.Collections.Generic.List<ChartMarker> { new(f1, vm.CoF1Model, "AccB") };
-        if (vm.CoAzeotrope is double z) markers.Insert(0, new(z, z, "OkB", "azeotrope", 3.5));
-        this.FindControl<XyChart>("Comp")!.Set(
-            [new ChartSeries("f₁ = F₁", [(0, 0), (1, 1)], "dash", "DimB", 1), new ChartSeries("Mayo–Lewis", vm.CoCurve, "line", "AccB")],
-            markers.ToArray());
+        var points = new System.Collections.Generic.List<SciPoint> { new(f1, vm.CoF1Model, "this feed", 1) };
+        if (vm.CoAzeotrope is double z) points.Insert(0, new(z, z, "azeotrope", 2));
+        this.FindControl<SciPlot>("Comp")!.Figure = ViewModels.PageFigures.Copolymer(vm.CoCurve, points.ToArray());
     }
     private void Show(MainViewModel vm)
     {

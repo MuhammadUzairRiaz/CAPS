@@ -22,6 +22,9 @@ public static class AnalyzeFigures
         ["C(τ)/C(0)"] = "*C*(*τ*) / *C*(0)", ["C_M(t)"] = "*C*_{M}(*t*)", ["α₂"] = "*α*₂", ["CED"] = "CED", ["MSD"] = "MSD",
         ["d ln MSD / d ln t"] = "d ln MSD / d ln *t*", ["⟨u_i · u_{i+k}⟩"] = "⟨**u**_{*i*} · **u**_{*i*+*k*}⟩",
         ["C_n = ⟨R²(n)⟩ / (n ⟨b²⟩)"] = "*C*_{*n*}", ["autocorrelation"] = "autocorrelation", ["probability density"] = "probability density",
+        ["temperature"] = "*T*", ["pressure"] = "*P*", ["volume"] = "*V*", ["energy"] = "*E*", ["E"] = "*E*", ["potential energy"] = "*E*_{pot}", ["potential"] = "*E*_{pot}",
+        ["kinetic energy"] = "*E*_{kin}", ["kinetic"] = "*E*_{kin}", ["total energy"] = "*E*_{tot}", ["total"] = "*E*_{tot}", ["conserved"] = "*E*_{cons}", ["step"] = "step",
+        ["E_pot"] = "*E*_{pot}", ["P"] = "*P*", ["V"] = "*V*", ["radius of gyration"] = "*R*_{g}", ["end-to-end distance"] = "*R*_{ee}", ["largest force"] = "|*F*|_{max}",
     };
 
     /// <summary>"name (unit)" from the core as "symbol / unit" with the unit in powers (g/cm³ → g cm⁻³).</summary>
@@ -43,7 +46,9 @@ public static class AnalyzeFigures
             }
         }
         if (unit.StartsWith("per ", StringComparison.Ordinal)) unit = "1/" + unit[4..];
-        var sym = Symbols.TryGetValue(name, out var s) ? s : name.Length <= 2 && name.All(char.IsLetter) ? "*" + name + "*" : name;
+        var sym = Symbols.TryGetValue(name, out var s) ? s
+            : name.Length > 2 && Symbols.TryGetValue(name.ToLowerInvariant(), out var s2) ? s2   // "Time (ps)", "Temperature (K)" from a table's header
+            : name.Length <= 2 && name.All(char.IsLetter) ? "*" + name + "*" : name;
         if (unit is "" or "arb.") return unit == "arb." ? sym + " / arb. units" : sym;
         if (unit == "relative") return sym + " (relative)";
         return sym + " / " + Unit(unit);

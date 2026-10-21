@@ -48,7 +48,7 @@
           <Border Classes="pcard">
             <StackPanel Spacing="6">
               <TextBlock Text="Binding energies (eV, strongest first)" FontSize="13.5" FontWeight="SemiBold" />
-              <v:LinePlot x:Name="Bind" Height="180" Bars="True" AutoRange="True" XLabel="complex (ranked)" YLabel="E_bind (eV)" EmptyText="no finished complexes" />
+              <v:SciPlot x:Name="Bind" Height="180" EmptyText="no finished complexes" />
               <ItemsControl ItemsSource="{Binding BindRows}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:DftTableRow">
@@ -87,13 +87,13 @@
           <Border Classes="pcard">
             <StackPanel Spacing="6">
               <DockPanel><ComboBox DockPanel.Dock="Right" ItemsSource="{Binding DosGroupNames}" SelectedItem="{Binding DosGroup}" Width="160" /><TextBlock Text="DOS of the best complex" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" /></DockPanel>
-              <v:LinePlot x:Name="Dos" Height="190" AutoRange="True" XLabel="E − E_F (eV)" YLabel="states/eV" EmptyText="no DOSCAR yet" />
+              <v:SciPlot x:Name="Dos" Height="190" EmptyText="no DOSCAR yet" />
             </StackPanel>
           </Border>
           <Border Grid.Column="1" Classes="pcard">
             <StackPanel Spacing="6">
               <TextBlock Text="Planar-averaged potential (work function)" FontSize="13.5" FontWeight="SemiBold" />
-              <v:LinePlot x:Name="Wf" Height="190" AutoRange="True" XLabel="z (Å)" YLabel="V − E_F (eV)" EmptyText="no LOCPOT yet" />
+              <v:SciPlot x:Name="Wf" Height="190" EmptyText="no LOCPOT yet" />
             </StackPanel>
           </Border>
         </Grid>
@@ -101,13 +101,13 @@
           <Border Classes="pcard">
             <StackPanel Spacing="6">
               <TextBlock Text="Charge-density difference: Δρ(z) and the cumulative ΔQ(z)" FontSize="13.5" FontWeight="SemiBold" />
-              <v:LinePlot x:Name="Cdd" Height="190" AutoRange="True" XLabel="z (Å)" YLabel="Δρ (e/Å), ΔQ (e)" EmptyText="no CDD set yet" />
+              <v:SciPlot x:Name="Cdd" Height="190" EmptyText="no CDD set yet" />
             </StackPanel>
           </Border>
           <Border Grid.Column="1" Classes="pcard">
             <StackPanel Spacing="6">
               <TextBlock Text="AIMD: height of the molecule above the surface" FontSize="13.5" FontWeight="SemiBold" />
-              <v:LinePlot x:Name="Md" Height="190" AutoRange="True" XLabel="t (ps)" YLabel="COM height (Å)" EmptyText="no AIMD segments yet" />
+              <v:SciPlot x:Name="Md" Height="190" EmptyText="no AIMD segments yet" />
             </StackPanel>
           </Border>
         </Grid>

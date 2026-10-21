@@ -18,12 +18,8 @@ public partial class RecipesPage : PageBase
             _hooked = vm;
             vm.RecipeChanged += () =>
             {
-                var t = this.FindControl<LinePlot>("Temp")!;
-                t.RefY = null;
-                t.SetData(vm.RecipeT);
-                var p = this.FindControl<LinePlot>("Pres")!;
-                p.RefY = null;
-                p.SetData(vm.RecipeP);
+                this.FindControl<SciPlot>("Temp")!.Figure = ViewModels.PageFigures.RecipeTemperature(vm.RecipeT);
+                this.FindControl<SciPlot>("Pres")!.Figure = ViewModels.PageFigures.RecipePressure(vm.RecipeP, vm.RecipeT.Length > 0 ? vm.RecipeT[^1].X : 0);
             };
         };
     }

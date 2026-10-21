@@ -13,9 +13,8 @@ public partial class PackPage : PageBase
         DataContextChanged += (_, _) =>
         {
             if (DataContext is ViewModels.MainViewModel vm)
-                vm.PackCurveChanged += () => this.FindControl<LinePlot>("ConvPlot")!.SetData(vm.PackCurve.ToArray());
+                vm.PackCurveChanged += () => this.FindControl<SciPlot>("ConvPlot")!.Figure = ViewModels.PageFigures.PackPenalty(vm.PackCurve);
         };
-        this.FindControl<LinePlot>("ConvPlot")!.RefY = null;
     }
     public Decorator Slot => this.FindControl<Decorator>("ViewSlot")!;
 

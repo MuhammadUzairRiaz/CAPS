@@ -11,19 +11,16 @@ public partial class ReactPage : PageBase
     public ReactPage()
     {
         AvaloniaXamlLoader.Load(this);
-        var conv = this.FindControl<LinePlot>("ConvPlot")!;
-        var gel = this.FindControl<LinePlot>("GelPlot")!;
-        conv.RefY = null;
-        gel.RefY = null;
+        var conv = this.FindControl<SciPlot>("ConvPlot")!;
+        var gel = this.FindControl<SciPlot>("GelPlot")!;
         DataContextChanged += (_, _) =>
         {
             if (DataContext is not ViewModels.MainViewModel vm) return;
             vm.ReactChanged += () =>
             {
                 var rows = vm.ReactRows;
-                conv.SetData(rows.Count == 0 ? [] : new[] { (0.0, 0.0) }.Concat(rows.Select(r => ((double)r.Cycle, (double)r.Crosslinks))).ToArray());
-                conv.RefY = rows.Count > 0 && rows[^1].Target > 0 ? rows[^1].Target : null;
-                gel.SetData(rows.Select(r => (r.Conversion, r.LargestFraction)).ToArray());
+                conv.Figure = ViewModels.PageFigures.ReactLinks(rows);
+                gel.Figure = ViewModels.PageFigures.ReactGel(rows);
                 this.FindControl<LinkMap>("LinkMap")!.SetLinks(vm.RxLinks.ToList(), vm.Reacting ? 0 : vm.RxChainCount, vm.RxUnitsPerChain);
                 vm.RaiseGel();
             };

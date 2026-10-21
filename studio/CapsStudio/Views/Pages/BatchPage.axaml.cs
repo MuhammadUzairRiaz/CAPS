@@ -16,11 +16,9 @@ public partial class BatchPage : PageBase
             if (DataContext is not MainViewModel vm) return;
             vm.BatchPlotChanged += () =>
             {
-                var plot = this.FindControl<LinePlot>("BatchPlot");
+                var plot = this.FindControl<SciPlot>("BatchPlot");
                 if (plot == null) return;
-                plot.YLabel = vm.BatchMetricName;
-                var pts = vm.BatchPlotPoints();
-                plot.SetData(pts, pts);
+                plot.Figure = ViewModels.PageFigures.Batch(vm.BatchMetricName ?? "", vm.BatchPlotPoints());
             };
         };
     }

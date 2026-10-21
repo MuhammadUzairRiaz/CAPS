@@ -23,14 +23,7 @@ public partial class BlendPhasePage : PageBase
     }
     private void Update(MainViewModel vm)
     {
-        var markers = vm.BpCritical is { } c ? new[] { new ChartMarker(c.X, c.Y, "TextB", "") } : [];
-        var chart = this.FindControl<XyChart>("Diagram")!;
-        chart.Set(
-        [
-            new ChartSeries("binodal (coexistence)", vm.BpBinodal, "line", "AccB"),
-            new ChartSeries("spinodal", vm.BpSpinodal, "dash", "SelB", 1.6),
-            new ChartSeries("critical point", [], "dots", "TextB"),
-        ], markers, [new ChartGuide(vm.BpTNow, false, "DimB", $"{vm.BpTNow:0} K")]);
+        this.FindControl<SciPlot>("Diagram")!.Figure = ViewModels.PageFigures.BlendPhase(vm.BpBinodal, vm.BpSpinodal, vm.BpCritical, vm.BpTNow);
     }
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {

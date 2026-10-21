@@ -55,7 +55,7 @@
           <Border Classes="pcard">
             <StackPanel Spacing="8">
               <TextBlock Text="Distribution" FontSize="13.5" FontWeight="SemiBold" />
-              <v:LinePlot x:Name="Hist" Height="130" XLabel="q (e)" YLabel="atoms" AutoRange="True" Bars="True" />
+              <v:SciPlot x:Name="Hist" Height="130" />
               <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
                 <StackPanel Spacing="2"><TextBlock Text="Net charge" Classes="label" /><TextBlock Text="{Binding ChargeNet}" Classes="mono" FontSize="13" /></StackPanel>
                 <StackPanel Grid.Column="1" Spacing="2"><TextBlock Text="Target" Classes="label" /><TextBlock Text="{Binding ChargeTarget}" Classes="mono" FontSize="13" TextWrapping="Wrap" /></StackPanel>

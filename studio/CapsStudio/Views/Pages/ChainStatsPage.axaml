@@ -50,14 +50,14 @@
             <Border Classes="pcard">
               <StackPanel Spacing="8">
                 <TextBlock Text="Characteristic ratio" FontSize="13.5" FontWeight="SemiBold" />
-                <v:LinePlot x:Name="Cn" Height="200" XLabel="n (bonds in sub-chain)" YLabel="C_n = ⟨R²ₙ⟩ / n l²" AutoRange="True" />
+                <v:SciPlot x:Name="Cn" Height="200" />
                 <TextBlock Classes="dim" TextWrapping="Wrap" Text="Averaged over every sub-chain of each length (Theodorou &amp; Suter 1985)." />
               </StackPanel>
             </Border>
             <Border Grid.Column="1" Classes="pcard">
               <StackPanel Spacing="8">
                 <TextBlock Text="End-to-end distance" FontSize="13.5" FontWeight="SemiBold" />
-                <v:LinePlot x:Name="Ree" Height="200" XLabel="R_ee (Å)" YLabel="probability density" AutoRange="True" Bars="True" />
+                <v:SciPlot x:Name="Ree" Height="200" />
                 <TextBlock Classes="dim" TextWrapping="Wrap" Text="An ideal Gaussian chain has ⟨R²ₑₑ⟩/⟨R²g⟩ = 6; a few chains are a small sample, so expect scatter." />
               </StackPanel>
             </Border>

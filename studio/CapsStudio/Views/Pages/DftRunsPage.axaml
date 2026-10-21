@@ -65,7 +65,7 @@
           <Border Classes="pcard" IsVisible="{Binding HasDftRun}">
             <StackPanel Spacing="8">
               <TextBlock Text="{Binding SelectedDftRun.Case, FallbackValue=''}" FontSize="13.5" FontWeight="SemiBold" TextWrapping="Wrap" />
-              <v:LinePlot x:Name="Force" Height="150" AutoRange="True" XLabel="ionic step" YLabel="max force (eV/Å)" EmptyText="no forces yet" />
+              <v:SciPlot x:Name="Force" Height="150" EmptyText="no forces yet" />
               <TextBlock Text="{Binding SelectedDftRun.Actions, FallbackValue=''}" FontSize="11.5" TextWrapping="Wrap" Foreground="{DynamicResource WarnB}" />
               <WrapPanel>
                 <Button Classes="small" Margin="0,0,6,6" Click="OnResubmit" ToolTip.Tip="sbatch job.slurm (skips finished and queued folders); on a cluster login node">Resubmit</Button>

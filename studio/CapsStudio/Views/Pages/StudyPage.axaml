@@ -112,7 +112,7 @@
                 <ComboBox Grid.Row="1" ItemsSource="{Binding StudyColumnNames}" SelectedIndex="{Binding StudyX}" HorizontalAlignment="Stretch" />
                 <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding StudyColumnNames}" SelectedIndex="{Binding StudyY}" HorizontalAlignment="Stretch" />
               </Grid>
-              <v:LinePlot x:Name="Plot" Height="240" AutoRange="True" Markers="True" />
+              <v:SciPlot x:Name="Plot" Height="240" />
               <ComboBox ItemsSource="{x:Static vm:CurveFit.Models}" SelectedIndex="{Binding StudyFit}" HorizontalAlignment="Stretch" />
               <TextBlock Text="{Binding StudyFitText}" Classes="mono" FontSize="11" TextWrapping="Wrap" />
             </StackPanel>

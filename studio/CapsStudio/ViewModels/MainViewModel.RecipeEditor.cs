@@ -130,7 +130,8 @@ public partial class MainViewModel
             var ens = (string)g["ensemble"]!;
             t.Add((time, t0));
             t.Add((time + ps, t1));
-            if (ens == "NPT" && bar > 0) { p.Add((time, Math.Log10(bar))); p.Add((time + ps, Math.Log10(bar))); }
+            if (ens == "NPT" && bar > 0) { p.Add((time, bar)); p.Add((time + ps, bar)); }
+            else if (p.Count > 0 && !double.IsNaN(p[^1].Item2)) p.Add((time, double.NaN));   // constant volume: a gap in the pressure line
             time += ps;
             RecipeSchedule.Add(new ScheduleRow((++k).ToString(inv), ens, Math.Abs(t0 - t1) < 1e-9 ? t0.ToString("0", inv) : $"{t0:0}→{t1:0}",
                                                ens == "NPT" ? bar.ToString("N0", inv) : "—", ps.ToString("0.#", inv)));
