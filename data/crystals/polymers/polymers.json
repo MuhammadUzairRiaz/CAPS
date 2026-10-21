@@ -1,6 +1,6 @@
 {
  "format": "caps-polymer-crystals",
- "about": "Polymer crystal unit cells from their original crystal-structure papers (one entry per paper and form): the paper's cell and heavy atoms, hydrogens from the paper or placed geometrically (tools/make_polymer_crystals.py), written in P1. These are DFT unit cells (VASP relaxation, phono3py); large MD cells are built from them. PTFE waits for its structure paper (Bunn & Howells, Nature 174, 549 (1954)).",
+ "about": "Polymer crystal unit cells from their original crystal-structure papers (one entry per paper and form): the paper's cell and heavy atoms, hydrogens from the paper or placed geometrically (tools/make_polymer_crystals.py), written in P1. PTFE's paper gives lattices and helix symmetry only: its chains are generated from the helix and the cited lattice, not refined (see each entry's helix block). These are DFT unit cells (VASP relaxation, phono3py); large MD cells are built from them.",
  "crystals": [
   {
    "id": "pe-orthorhombic",
@@ -583,6 +583,130 @@
    "hkl": [
     0,
     1,
+    0
+   ]
+  },
+  {
+   "id": "ptfe-iv",
+   "name": "Polytetrafluoroethylene, phase IV (15/7 helix)",
+   "polymer": "polytetrafluoroethylene (PTFE)",
+   "file": "ptfe-iv.cif",
+   "source": "E. S. Clark & L. T. Muus, Z. Kristallogr. 117, 119 (1962)",
+   "doi": "10.1524/zkri.1962.117.2-3.119",
+   "where": "hexagonal cell (25 C) p. 121; 15/7 helix packed in P31, one chain per cell, p. 127; no atomic coordinates in the paper",
+   "space_group": "P31 (c the chain axis)",
+   "space_group_number": 144,
+   "cell": {
+    "a": 5.66,
+    "b": 5.66,
+    "c": 19.5,
+    "alpha": 90,
+    "beta": 90,
+    "gamma": 120
+   },
+   "operations": [
+    "x,y,z",
+    "-y,x-y,1/3+z",
+    "y-x,-x,2/3+z"
+   ],
+   "chain_axis": "c",
+   "repeat_unit": "CF2",
+   "Z": 15,
+   "chains": 1,
+   "atoms": 45,
+   "formula": "C15F30",
+   "density_paper": null,
+   "density": 2.3024,
+   "density_note": "the paper gives no density; 15 CF2 in the paper's hexagonal cell give 2.302 g/cm3",
+   "hydrogens": "none",
+   "coordinates": "generated from the helix symmetry and the cited lattice (tools/make_polymer_crystals.py), not refined",
+   "helix": {
+    "units": 15,
+    "turns": 7,
+    "rise": 1.3,
+    "twist_deg": 168.0,
+    "C_radius": 0.4151,
+    "F_radius": 1.6176,
+    "C-C": 1.54,
+    "C-F": 1.34,
+    "F-C-F": 108.0,
+    "C-C-C": 115.561,
+    "setting_angle_deg": 6.0,
+    "interchain_FF": 2.802,
+    "bonds_from": "Hasegawa, Takahashi, Chatani & Tadokoro, Polym. J. 3, 600 (1972), p. 603"
+   },
+   "corrections": [
+    "no atomic coordinates in the paper: the chain is generated from the 15/7 helix and the cited lattice, not refined: 15 CF2 in 7 turns span c exactly (rise 1.3000 A, twist 168.00 deg per CF2), C-C 1.54 A, C-F 1.34 A, F-C-F 108 deg (Hasegawa, Takahashi, Chatani & Tadokoro, Polym. J. 3, 600 (1972), p. 603); this gives C-C-C 115.56 deg, carbon helix radius 0.415 A and fluorine radius 1.618 A (Bunn & Howells, Nature 174, 549 (1954): 116 deg, about 0.42 A and 1.64 +- 0.05 A); one chain on the cell axis, setting angle 6 deg (the paper gives none: the one with the longest shortest F...F between chains, 2.802 A)",
+    "at this setting angle the chain's own twofold axes fall on the lattice's, so the cell also has them: P3112 (No. 151, origin at z = 11/30), which contains the paper's P31"
+   ],
+   "min_contacts": {
+    "XX": 2.603
+   },
+   "use": "PTFE crystal between 19 and 30 C (room temperature), the form most used in simulations; VASP and phono3py",
+   "hkl": [
+    1,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "ptfe-ii",
+   "name": "Polytetrafluoroethylene, phase II (13/6 helix)",
+   "polymer": "polytetrafluoroethylene (PTFE)",
+   "file": "ptfe-ii.cif",
+   "source": "E. S. Clark & L. T. Muus, Z. Kristallogr. 117, 119 (1962)",
+   "doi": "10.1524/zkri.1962.117.2-3.119",
+   "where": "oblique (probably triclinic) cell at 0 C, a' = b' = 5.59 A, c = 16.88 A, gamma = 119.3 deg, p. 121; 13/6 helix on that lattice pp. 123 and 126; no atomic coordinates in the paper",
+   "space_group": "P1 (c the chain axis)",
+   "space_group_number": 1,
+   "cell": {
+    "a": 5.59,
+    "b": 5.59,
+    "c": 16.88,
+    "alpha": 90,
+    "beta": 90,
+    "gamma": 119.3
+   },
+   "operations": [
+    "x,y,z"
+   ],
+   "chain_axis": "c",
+   "repeat_unit": "CF2",
+   "Z": 13,
+   "chains": 1,
+   "atoms": 39,
+   "formula": "C13F26",
+   "density_paper": null,
+   "density": 2.3468,
+   "density_note": "the paper gives no density; 13 CF2 in the paper's oblique cell give 2.347 g/cm3",
+   "hydrogens": "none",
+   "coordinates": "generated from the helix symmetry and the cited lattice (tools/make_polymer_crystals.py), not refined",
+   "helix": {
+    "units": 13,
+    "turns": 6,
+    "rise": 1.298462,
+    "twist_deg": 166.1538,
+    "C_radius": 0.417,
+    "F_radius": 1.6185,
+    "C-C": 1.54,
+    "C-F": 1.34,
+    "F-C-F": 108.0,
+    "C-C-C": 115.482,
+    "setting_angle_deg": 25.0,
+    "interchain_FF": 2.723,
+    "bonds_from": "Hasegawa, Takahashi, Chatani & Tadokoro, Polym. J. 3, 600 (1972), p. 603"
+   },
+   "corrections": [
+    "the paper treats the lattice as the periodic arrangement of the chain axes (p. 121) and gives no space group: one chain per cell, written as P1 with alpha = beta = 90 deg (c along the chain axis)",
+    "no atomic coordinates in the paper: the chain is generated from the 13/6 helix and the cited lattice, not refined: 13 CF2 in 6 turns span c exactly (rise 1.2985 A, twist 166.15 deg per CF2), C-C 1.54 A, C-F 1.34 A, F-C-F 108 deg (Hasegawa, Takahashi, Chatani & Tadokoro, Polym. J. 3, 600 (1972), p. 603); this gives C-C-C 115.48 deg, carbon helix radius 0.417 A and fluorine radius 1.619 A (Bunn & Howells, Nature 174, 549 (1954): 116 deg, about 0.42 A and 1.64 +- 0.05 A); one chain on the cell axis, setting angle 25 deg (the paper gives none: the one with the longest shortest F...F between chains, 2.723 A)"
+   ],
+   "min_contacts": {
+    "XX": 2.586
+   },
+   "use": "PTFE crystal below 19 C",
+   "hkl": [
+    1,
+    0,
     0
    ]
   }

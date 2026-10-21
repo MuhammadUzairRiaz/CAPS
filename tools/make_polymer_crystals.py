@@ -9,6 +9,8 @@ the page they are on. Papers that give only the heavy atoms get their hydrogens 
   sp2 CH (aromatic, two neighbours) C-H 1.08 A, in the plane, opposite the bisector
   NH  (amide N, two neighbours)     N-H 1.01 A, in the C-N-C plane, opposite the bisector
 
+A paper that gives only a lattice and the helix symmetry (PTFE) gets its chain generated from the helix; see ptfe_sites.
+
 The cell is the paper's (the DFT start: VASP relaxes it), the heavy atoms are the paper's (corrections of misprints are
 listed per entry, with the reason), and the cell is written in P1 with every atom, so any CIF reader gets the same
 structure. polymers.json holds what the tests check against: the paper's cell, space group, Z and density.
@@ -212,7 +214,114 @@ CRYSTALS = [
                         "mirror image about y = 1/8 occupies a site with 33 % weight; a DFT cell needs one orientation"],
         "use": "strain-crystallised natural rubber", "hkl": (0, 1, 0),
     },
+    {
+        "id": "ptfe-iv", "name": "Polytetrafluoroethylene, phase IV (15/7 helix)", "polymer": "polytetrafluoroethylene (PTFE)", "repeat": "CF2",
+        "source": "E. S. Clark & L. T. Muus, Z. Kristallogr. 117, 119 (1962)", "doi": "10.1524/zkri.1962.117.2-3.119",
+        "space_group": "P31 (c the chain axis)", "number": 144,
+        "cell": (5.66, 5.66, 19.50, 90, 90, 120), "chain_axis": "c", "Z": 15, "chains": 1,
+        "density": None,
+        "density_note": "the paper gives no density; 15 CF2 in the paper's hexagonal cell give 2.302 g/cm3",
+        "ops": ["x,y,z", "-y,x-y,1/3+z", "y-x,-x,2/3+z"],
+        "sites": "ptfe-iv", "helix": (15, 7),
+        "where": "hexagonal cell (25 C) p. 121; 15/7 helix packed in P31, one chain per cell, p. 127; no atomic coordinates in the paper",
+        "hydrogens": "none",
+        "symmetry_note": ["at this setting angle the chain's own twofold axes fall on the lattice's, so the cell also has them: "
+                          "P3112 (No. 151, origin at z = 11/30), which contains the paper's P31"],
+        "use": "PTFE crystal between 19 and 30 C (room temperature), the form most used in simulations; VASP and phono3py", "hkl": (1, 0, 0),
+    },
+    {
+        "id": "ptfe-ii", "name": "Polytetrafluoroethylene, phase II (13/6 helix)", "polymer": "polytetrafluoroethylene (PTFE)", "repeat": "CF2",
+        "source": "E. S. Clark & L. T. Muus, Z. Kristallogr. 117, 119 (1962)", "doi": "10.1524/zkri.1962.117.2-3.119",
+        "space_group": "P1 (c the chain axis)", "number": 1,
+        "cell": (5.59, 5.59, 16.88, 90, 90, 119.3), "chain_axis": "c", "Z": 13, "chains": 1,
+        "density": None,
+        "density_note": "the paper gives no density; 13 CF2 in the paper's oblique cell give 2.347 g/cm3",
+        "ops": ["x,y,z"],
+        "sites": "ptfe-ii", "helix": (13, 6),
+        "where": "oblique (probably triclinic) cell at 0 C, a' = b' = 5.59 A, c = 16.88 A, gamma = 119.3 deg, p. 121; 13/6 helix on "
+                 "that lattice pp. 123 and 126; no atomic coordinates in the paper",
+        "hydrogens": "none",
+        "corrections": ["the paper treats the lattice as the periodic arrangement of the chain axes (p. 121) and gives no space group: "
+                        "one chain per cell, written as P1 with alpha = beta = 90 deg (c along the chain axis)"],
+        "use": "PTFE crystal below 19 C", "hkl": (1, 0, 0),
+    },
 ]
+
+# ------------------------------------------------------------------------------------------------- PTFE helices
+# Clark & Muus give the lattices and the helix symmetry but no coordinates, so the chain is generated: N CF2 in T turns
+# span exactly c, carbon k sits at (r cos(psi + k phi), r sin(psi + k phi), k c / N) with phi = 2 pi T / N, and r follows
+# from the C-C bond. Bond lengths and F-C-F are those Hasegawa, Takahashi, Chatani & Tadokoro used for their fluoropolymer
+# chain (Polym. J. 3, 600 (1972), p. 603): C-C 1.54 A, C-F 1.34 A, F-C-F 108 deg. The C-C-C angle then follows from the
+# helix (115.6 deg for 15/7; Bunn & Howells, Nature 174, 549 (1954), p. 551, found 116 deg). Each F pair lies in the
+# plane that bisects C-C-C, symmetric about it (the helix's own twofold axis through every C). The setting angle psi of
+# the chain about its axis is not in the paper: it is the one, in 1 deg steps, that gives the longest shortest F...F
+# contact between neighbouring chains.
+HELIX_CC, HELIX_CF, HELIX_FCF = 1.54, 1.34, 108.0
+HELIX_REF = "Hasegawa, Takahashi, Chatani & Tadokoro, Polym. J. 3, 600 (1972), p. 603"
+
+
+def helix_chain(cell, units, turns, psi_deg):
+    L = lattice(*cell)
+    h = cell[2] / units
+    phi = 2 * math.pi * turns / units
+    r = math.sqrt((HELIX_CC ** 2 - h ** 2) / (2 * (1 - math.cos(phi))))
+    psi = math.radians(psi_deg)
+    carbons = [[r * math.cos(psi + k * phi), r * math.sin(psi + k * phi), k * h] for k in range(-1, units + 1)]
+    half = math.radians(HELIX_FCF) / 2
+    sites = []
+    for k in range(1, units + 1):
+        c = carbons[k]
+        u1, u2 = unit(sub(carbons[k - 1], c)), unit(sub(carbons[k + 1], c))
+        bis = unit(mul(add(u1, u2), -1))
+        n = unit(cross(u1, u2))
+        sites.append((f"C{k}", "C", c))
+        for s in (1, -1):
+            sites.append((f"F{k}", "F", add(c, mul(add(mul(bis, math.cos(half)), mul(n, s * math.sin(half))), HELIX_CF))))
+    return L, r, h, phi, [(lab, el, *to_frac(L, p)) for lab, el, p in sites]    # unwrapped: the chain stays whole
+
+
+def interchain_ff(L, sites):
+    """Shortest F...F between the chain and its neighbours (the chain itself is one cell wide)."""
+    fs = [to_cart(L, s[2:]) for s in sites if s[1] == "F"]
+    best = 9.0
+    for i in (-1, 0, 1):
+        for j in (-1, 0, 1):
+            if i or j:
+                for k in (-1, 0, 1):
+                    t = to_cart(L, [i, j, k])
+                    moved = [add(q, t) for q in fs]
+                    best = min(best, min(math.dist(p, q) for p in fs for q in moved))
+    return best
+
+
+HELIX = {}
+
+
+def ptfe_sites(x):
+    units, turns = x["helix"]
+    best = None
+    for i in range(360):
+        psi = float(i)
+        L, r, h, phi, sites = helix_chain(x["cell"], units, turns, psi)
+        d = interchain_ff(L, sites)
+        if best is None or d > best[0] + 1e-9:
+            best = (d, psi)
+    L, r, h, phi, sites = helix_chain(x["cell"], units, turns, best[1])
+    s13 = math.sqrt(2 * r * r * (1 - math.cos(2 * phi)) + 4 * h * h)     # C(k-1)...C(k+1)
+    ccc = math.degrees(math.acos(1 - s13 ** 2 / (2 * HELIX_CC ** 2)))
+    fr = [math.hypot(*to_cart(L, s[2:])[:2]) for s in sites if s[1] == "F"]
+    HELIX[x["id"]] = {"units": units, "turns": turns, "rise": round(h, 6), "twist_deg": round(math.degrees(phi), 4),
+                      "C_radius": round(r, 4), "F_radius": round(sum(fr) / len(fr), 4), "C-C": HELIX_CC, "C-F": HELIX_CF,
+                      "F-C-F": HELIX_FCF, "C-C-C": round(ccc, 3), "setting_angle_deg": best[1],
+                      "interchain_FF": round(best[0], 3), "bonds_from": HELIX_REF}
+    x["corrections"] = list(x.get("corrections", [])) + [
+        f"no atomic coordinates in the paper: the chain is generated from the {units}/{turns} helix and the cited lattice, not refined: "
+        f"{units} CF2 in {turns} turns span c exactly (rise {h:.4f} A, twist {math.degrees(phi):.2f} deg per CF2), C-C {HELIX_CC} A, "
+        f"C-F {HELIX_CF} A, F-C-F {HELIX_FCF:g} deg ({HELIX_REF}); this gives C-C-C {ccc:.2f} deg, carbon helix radius {r:.3f} A "
+        f"and fluorine radius {HELIX[x['id']]['F_radius']:.3f} A (Bunn & Howells, Nature 174, 549 (1954): 116 deg, about 0.42 A "
+        f"and 1.64 +- 0.05 A); one chain on the cell axis, setting angle {best[1]:g} deg (the paper gives none: the one with "
+        f"the longest shortest F...F between chains, {best[0]:.3f} A)"] + x.get("symmetry_note", [])
+    return [(lab, el, *wrap([fx, fy, fz])) for lab, el, fx, fy, fz in sites]
 
 
 def sites_named(key):
@@ -544,10 +653,14 @@ def cif_text(x, L, atoms, mins, rho, vol, order=True):
     a, b, c, al, be, ga = x["cell"]
     lines = [f"# {x['name']}: {x['source']}, doi:{x['doi']}",
              f"# space group {x['space_group']} (No. {x['number']}), Z = {x['Z']} {x['repeat']} per cell; {x['where']}"]
+    if "helix" in x:
+        lines.append("# coordinates: generated from the helix symmetry and the cited lattice (tools/make_polymer_crystals.py), not refined")
     for s in x.get("corrections", []):
         lines.append("# correction / model: " + s)
     h = x["hydrogens"]
-    if h == "paper":
+    if h == "none":
+        lines.append("# hydrogens: none (perfluorinated chain)")
+    elif h == "paper":
         lines.append("# hydrogens: the paper's")
     else:
         kinds = sorted(set(h.values()))
@@ -623,9 +736,12 @@ def prerelax(x, L, atoms):
 def build(x):
     L = lattice(*x["cell"])
     ops = close_group(x["ops"])
-    sites = sites_named(x["sites"]) if isinstance(x["sites"], str) else x["sites"]
+    if "helix" in x:
+        sites = ptfe_sites(x)
+    else:
+        sites = sites_named(x["sites"]) if isinstance(x["sites"], str) else x["sites"]
     atoms = expand(L, ops, sites)
-    if x["hydrogens"] != "paper":
+    if x["hydrogens"] not in ("paper", "none"):
         atoms = place_h(L, atoms, x["hydrogens"])
     x["shift"] = None
     if x.get("prerelax"):
@@ -667,7 +783,9 @@ def main():
             "cell": {"a": x["cell"][0], "b": x["cell"][1], "c": x["cell"][2], "alpha": x["cell"][3], "beta": x["cell"][4], "gamma": x["cell"][5]},
             "operations": x["ops"], "chain_axis": x["chain_axis"], "repeat_unit": x["repeat"], "Z": x["Z"], "chains": x["chains"], "atoms": len(atoms), "formula": f,
             "density_paper": ref, "density": round(rho, 4), **({"density_note": x["density_note"]} if "density_note" in x else {}),
-            "hydrogens": "paper" if x["hydrogens"] == "paper" else "added (tools/make_polymer_crystals.py)",
+            "hydrogens": x["hydrogens"] if x["hydrogens"] in ("paper", "none") else "added (tools/make_polymer_crystals.py)",
+            **({"coordinates": "generated from the helix symmetry and the cited lattice (tools/make_polymer_crystals.py), not refined",
+                "helix": HELIX[x["id"]]} if "helix" in x else {}),
             "corrections": x.get("corrections", []),
             "min_contacts": {k: round(v, 3) for k, v in mins.items() if v < 9},
             **({"prerelax": {"forcefield": "OPLS-AA 2024", "fixed_cell": True, "heavy_shift_max": round(x["shift"][0], 3),
@@ -678,8 +796,9 @@ def main():
         doc = {"format": "caps-polymer-crystals",
                "about": "Polymer crystal unit cells from their original crystal-structure papers (one entry per paper and form): the paper's "
                         "cell and heavy atoms, hydrogens from the paper or placed geometrically (tools/make_polymer_crystals.py), written in P1. "
-                        "These are DFT unit cells (VASP relaxation, phono3py); large MD cells are built from them. PTFE waits for its "
-                        "structure paper (Bunn & Howells, Nature 174, 549 (1954)).",
+                        "PTFE's paper gives lattices and helix symmetry only: its chains are generated from the helix and the cited "
+                        "lattice, not refined (see each entry's helix block). These are DFT unit cells (VASP relaxation, phono3py); "
+                        "large MD cells are built from them.",
                "crystals": meta}
         open(os.path.join(OUT, "polymers.json"), "w").write(json.dumps(doc, indent=1, ensure_ascii=False) + "\n")
         print("wrote", OUT)
