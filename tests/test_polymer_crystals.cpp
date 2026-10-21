@@ -59,7 +59,7 @@ bool bonded(int a, int b, double r) {
 
 TEST(PolymerCrystals, LibraryAgainstPapers) {
   const auto all = entries();
-  ASSERT_GE(all.size(), 12u);
+  ASSERT_GE(all.size(), 14u);
   std::set<std::string> ids;
   for (const Json& e : all) {
     const std::string id = e.text("id");
@@ -176,6 +176,67 @@ TEST(PolymerCrystals, PolyethyleneOrthorhombicGeometry) {
   ASSERT_GT(ncc, 0);
   EXPECT_NEAR(cc / ncc, 1.53, 0.01);
   EXPECT_NEAR(ch / nch, 1.09, 1e-3);
+}
+
+TEST(PolymerCrystals, PtfeHelicesFromClarkMuus) {
+  // Clark & Muus 1962 give the lattices and helix symmetry only; the chain is generated (C-C 1.54, C-F 1.34 A,
+  // F-C-F 108 deg): N CF2 in T turns span c exactly, every C on the cell axis at the helix radius, no F...F below 2.5 A
+  for (const Json& e : entries()) {
+    if (!e.has("helix")) continue;
+    const std::string id = e.text("id");
+    SCOPED_TRACE(id);
+    const Json& h = e["helix"];
+    const System s = read_cif(kDir + "polymers/" + e.text("file"));
+    const int units = int(h.num("units", 0));
+    ASSERT_EQ(int(s.atoms.size()), 3 * units);
+    EXPECT_NEAR(norm(s.cell.c) / units, h.num("rise", 0), 1e-5);
+    // bonds and angles
+    const auto nb = neighbours_pbc(s, 1.7);
+    std::vector<std::vector<Vec3>> bonds(s.atoms.size());
+    for (const auto& n : nb) {
+      const int a = s.atoms[n.i].element, b = s.atoms[n.j].element;
+      if (a == 6 && b == 6) EXPECT_NEAR(n.r, 1.54, 1e-4);
+      if (a == 6 && b == 9) EXPECT_NEAR(n.r, 1.34, 1e-4);
+      if (a == 6) bonds[n.i].push_back(n.d);
+    }
+    int carbons = 0;
+    for (size_t i = 0; i < s.atoms.size(); ++i) {
+      if (s.atoms[i].element != 6) continue;
+      ++carbons;
+      ASSERT_EQ(bonds[i].size(), 4u);
+      std::vector<Vec3> cc, cf;
+      for (size_t k = 0; k < 4; ++k) {
+        const bool f = norm(bonds[i][k]) < 1.45;
+        (f ? cf : cc).push_back(bonds[i][k]);
+      }
+      ASSERT_EQ(cc.size(), 2u);
+      EXPECT_NEAR(angle(cc[0], cc[1]), h.num("C-C-C", 0), 1e-3);
+      EXPECT_NEAR(angle(cf[0], cf[1]), 108.0, 1e-3);
+      // on the helix: distance from the nearest chain axis (the cell's c edges)
+      Vec3 f = s.cell.to_fractional(s.atoms[i].pos);
+      f[0] -= std::round(f[0]);
+      f[1] -= std::round(f[1]);
+      f[2] = 0;
+      EXPECT_NEAR(norm(s.cell.a * f[0] + s.cell.b * f[1]), h.num("C_radius", 0), 1e-4);
+    }
+    EXPECT_EQ(carbons, units);
+    // fluorine contacts beyond the CF2 pair: within the chain (F...F two carbons apart) and between chains
+    double ff = 9;
+    for (const auto& n : neighbours_pbc(s, 3.2))
+      if (s.atoms[n.i].element == 9 && s.atoms[n.j].element == 9 && n.r > 2.2) ff = std::min(ff, n.r);
+    EXPECT_GE(ff, 2.5);
+    // Bunn & Howells 1954: fluorine helix radius 1.64 +- 0.05 A, C-C-C 116 deg
+    EXPECT_NEAR(h.num("F_radius", 0), 1.64, 0.05);
+    EXPECT_NEAR(h.num("C-C-C", 0), 116.0, 1.0);
+  }
+  // phase IV: 15/7 in 19.50 A, 2.302 g/cm3. At its setting angle the chain's own twofold axes fall on the lattice's, so
+  // the cell is P3112 (No. 151, six operations), which contains the paper's P31 (No. 144); find_symmetry reports either
+  const System iv = read_cif(kDir + "polymers/ptfe-iv.cif");
+  EXPECT_NEAR(iv.density(), 2.302, 0.002);
+  const int sg = find_symmetry(iv, 0.01).number;
+  EXPECT_TRUE(sg == 144 || sg == 151) << sg;
+  const System ii = read_cif(kDir + "polymers/ptfe-ii.cif");
+  EXPECT_NEAR(ii.density(), 2.347, 0.002);
 }
 
 TEST(PolymerCrystals, CatalogueLists) {
