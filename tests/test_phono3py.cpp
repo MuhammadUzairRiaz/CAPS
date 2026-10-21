@@ -167,6 +167,29 @@ TEST(Phono3py, ChainAxesAndSupercellRule) {
   EXPECT_EQ(supercell_for_length(pe(), 15.0), (std::array<int, 3>{2, 3, 6}));
   const System nr = read_cif(kPoly + "natural-rubber.cif");
   EXPECT_EQ(chain_axes(nr), std::vector<int>{2});
+  // PTFE phase IV (one 15/7 helix per hexagonal cell, c 19.50 A): the chain along c, one cell along it is already 10 A
+  const System ptfe = read_cif(kPoly + "ptfe-iv.cif");
+  EXPECT_EQ(chain_axes(ptfe), std::vector<int>{2});
+  EXPECT_EQ(supercell_for_length(ptfe, 10.0), (std::array<int, 3>{2, 2, 1}));
+  EXPECT_EQ(supercell_for_length(ptfe, 15.0), (std::array<int, 3>{3, 3, 1}));
+  EXPECT_EQ(crystal_operations(ptfe).size(), 6u);   // P3112: P31 and the helix's twofold axes
+}
+
+TEST(RelaxChain, PtfeAccepted) {
+  // the generated PTFE cells go through the relaxation chain like the papers' cells: C and F at ENMAX 400, k from the cell
+  for (const char* id : {"ptfe-iv", "ptfe-ii"}) {
+    const auto dir = tmpdir(std::string("caps_relax_") + id);
+    RelaxChainOptions o;
+    o.label = id;
+    o.data_dir = kData;
+    o.dimensionality = "3d";
+    const System s = group_by_species(read_cif(kPoly + id + ".cif"), {"C", "F"});
+    const auto r = write_relax_chain(s, dir.string(), o);
+    ASSERT_EQ(r.steps.size(), 4u);
+    EXPECT_DOUBLE_EQ(r.steps[0].encut, 800);
+    EXPECT_EQ(r.kpoints, (std::array<int, 3>{9, 9, 3}));
+    EXPECT_EQ(read_vasp_poscar((dir / "POSCAR").string()).atoms.size(), s.atoms.size());
+  }
 }
 
 TEST(Phono3py, GuidePolyethyleneDisplacementCount) {

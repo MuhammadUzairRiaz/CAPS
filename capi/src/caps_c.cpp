@@ -97,6 +97,8 @@
 #include "caps/json.hpp"
 #include "caps/labels.hpp"
 #include "caps/lattice.hpp"
+#include "caps/semicrystal.hpp"
+#include "caps/thermal.hpp"
 
 #include <map>
 #include <unordered_map>
@@ -11863,4 +11865,130 @@ extern "C" int32_t caps_host_presets(char* json, int32_t cap) {
     a.push_back(e);
   }
   return report_out(a.dump(0), json, cap);
+}
+
+// ---------------------------------------------------------------- semicrystalline cells, thermal conductivity (ABI 72)
+
+extern "C" caps_doc* caps_semicrystalline_build(const char* options_json, caps_progress_fn progress, void* user, char* report, int32_t cap) {
+  try {
+    const caps::Json j = caps::Json::parse(options_json && *options_json ? options_json : "{}");
+    caps::SemicrystallineOptions o;
+    o.polymer = j.text("polymer", "pe");
+    o.data_dir = j.text("data_dir", "");
+    o.nx = int(j.num("nx", 4)), o.ny = int(j.num("ny", 6)), o.nc = int(j.num("nc", 0));
+    o.crystal_nm = j.num("crystal_nm", 5.0), o.amorphous_nm = j.num("amorphous_nm", 4.0);
+    o.loops = j.num("loops", 0.5), o.bridges = j.num("bridges", 0.2), o.tails = j.num("tails", 0.3);
+    o.reentry = j.text("reentry", "adjacent");
+    o.density = j.num("density", 0.855);
+    o.seed = uint64_t(j.num("seed", 1));
+    o.united_atom = j.has("united_atom") && j["united_atom"].boolean();
+    o.max_atoms = size_t(j.num("max_atoms", 15000));
+    if (progress) o.progress = [&](const std::string&, double f) { return progress(int32_t(1000 * std::min(1.0, f)), 1000, 0, user) == 0; };
+    caps::SemicrystallineReport rep;
+    caps::System s = caps::build_semicrystalline(o, &rep);
+    if (!j.has("relax") || j["relax"].boolean()) {
+      caps::relax_semicrystalline(s, nullptr, elec(), 1.0);
+      const caps::SemicrystallineReport a = caps::analyse_semicrystalline(s);
+      rep.crystallinity_p2 = a.crystallinity_p2, rep.tilt_deg = a.tilt_deg, rep.tilt_sd = a.tilt_sd;
+      rep.z = a.z, rep.rho = a.rho, rep.p2 = a.p2;
+      rep.notes.push_back("relaxed with the built-in GAFF: push-off with the crystal held, then everything minimised");
+    }
+    caps_doc* d = doc_of(s);
+    prov_step(d, "build.semicrystalline", "lamellar stack of " + o.polymer + ": " + std::to_string(rep.stems) + " stems, " + std::to_string(rep.loops) + " loops, " +
+                                              std::to_string(rep.bridges) + " bridges, " + std::to_string(rep.tails) + " tails",
+              {{"polymer", o.polymer}, {"repeats", std::to_string(o.nx) + " × " + std::to_string(o.ny) + " × " + std::to_string(rep.nc)},
+               {"amorphous", g6(o.amorphous_nm) + " nm"}, {"fractions", g6(o.loops) + " / " + g6(o.bridges) + " / " + g6(o.tails)},
+               {"reentry", o.reentry}, {"density", g6(o.density) + " g/cm³"}},
+              seeded(o.seed), {});
+    report_out(caps::semicrystalline_json(rep), report, cap);
+    return d;
+  } catch (const std::exception& e) {
+    g_error = e.what();
+    return nullptr;
+  }
+}
+
+extern "C" int32_t caps_semicrystalline_analyse(caps_doc* d, char* report, int32_t cap) {
+  return guard([&] {
+    const caps::System s = d->traj.frame(d->current);
+    return report_out(caps::semicrystalline_json(caps::analyse_semicrystalline(s)), report, cap);
+  });
+}
+
+namespace {
+caps::ThermalOptions thermal_options(caps_doc* d, const caps::Json& j) {
+  caps::ThermalOptions o;
+  if (!j.has("dimensionality")) throw std::runtime_error("say whether the material is 2D (a sheet with vacuum along z) or 3D (bulk): dimensionality 2 or 3");
+  o.dimensionality = int(j.num("dimensionality", 3));
+  o.thickness = j.num("thickness", 0);
+  o.method = j.text("method", "gk");
+  o.temperature = j.num("temperature", 300);
+  o.equilibrate_ps = j.num("equilibrate_ps", 10);
+  o.ps = j.num("ps", 100);
+  o.dt = j.num("dt", 1);
+  o.sample_every = int(j.num("sample_every", 5));
+  o.corr_ps = j.num("corr_ps", 5);
+  o.blocks = int(j.num("blocks", 5));
+  o.axis = int(j.num("axis", o.dimensionality == 2 ? 0 : 2));
+  o.slabs = int(j.num("slabs", 20));
+  o.swap_every = int(j.num("swap_every", 100));
+  o.transient = j.num("transient", 0.3);
+  o.seed = uint64_t(j.num("seed", 1));
+  o.energy = elec();
+  if (j.has("cutoff")) o.energy.cutoff = j.num("cutoff", 10);
+  o.energy.threads = int(j.num("threads", 0));
+  o.field = field_for_run(d);
+  return o;
+}
+}  // namespace
+
+extern "C" int32_t caps_thermal(caps_doc* d, const char* options_json, caps_progress_fn progress, void* user, char* out, int32_t cap) {
+  return guard([&] {
+    const caps::Json j = caps::Json::parse(options_json && *options_json ? options_json : "{}");
+    caps::ThermalOptions o = thermal_options(d, j);
+    if (progress) o.progress = [&](const std::string&, double f) { return progress(int32_t(1000 * std::min(1.0, f)), 1000, 0, user) == 0; };
+    caps::System s = d->traj.frame(d->current);
+    if (d->current + 1 != d->traj.frames()) s.velocities.clear();
+    const caps::ThermalResult r = caps::thermal_conductivity(s, o);
+    caps::Json k = caps::Json::object();
+    auto arr = [](const std::vector<double>& v) { caps::Json a = caps::Json::array(); for (double x : v) a.push_back(caps::Json(x)); return a; };
+    k["method"] = r.method, k["dimensionality"] = double(r.dimensionality), k["thickness"] = r.thickness;
+    k["kappa"] = arr({r.kappa[0], r.kappa[1], r.kappa[2]}), k["error"] = arr({r.error[0], r.error[1], r.error[2]});
+    k["kappa_mean"] = r.kappa_mean, k["kappa_mean_error"] = r.kappa_mean_error, k["sheet_conductance"] = r.sheet_conductance;
+    k["temperature"] = r.temperature, k["plateau"] = r.plateau, k["axis"] = double(r.axis);
+    k["t_ps"] = arr(r.t_ps);
+    caps::Json run = caps::Json::array();
+    for (int a = 0; a < 3; ++a) run.push_back(arr(r.running[size_t(a)]));
+    k["running"] = run;
+    k["slab_x"] = arr(r.slab_x), k["slab_t"] = arr(r.slab_t);
+    k["flux"] = r.flux, k["gradient"] = r.gradient, k["exchanges"] = double(r.exchanges);
+    caps::Json notes = caps::Json::array();
+    for (const auto& n : r.notes) notes.push_back(caps::Json(n));
+    k["notes"] = notes;
+    k["summary"] = caps::thermal_summary(r);
+    return report_out(k.dump(0), out, cap);
+  });
+}
+
+extern "C" int32_t caps_thermal_lammps(caps_doc* d, const char* options_json, const char* path, char* out, int32_t cap) {
+  return guard([&] {
+    const caps::Json j = caps::Json::parse(options_json && *options_json ? options_json : "{}");
+    const caps::ThermalOptions o = thermal_options(d, j);
+    caps::System s = d->traj.frame(d->current);
+    const std::string in = path ? path : "in.kappa.lmp";
+    const std::string data = std::filesystem::path(in).replace_extension(".data").string();
+    const caps::ForceField ff = o.field ? *o.field : caps::default_forcefield(s);
+    caps::write_lammps_data_ff(s, ff, o.energy, data);
+    caps::LammpsRun run;
+    run.kind = caps::LammpsRun::Kind::None;
+    caps::write_lammps_input(s, ff, o.energy, std::filesystem::path(data).filename().string(), in, 0, false, run);
+    caps::ThermalLammps q;
+    q.method = o.method, q.temperature = o.temperature, q.dt = o.dt, q.equilibrate_ps = j.num("lammps_equilibrate_ps", 100);
+    q.ps = j.num("lammps_ps", 2000), q.sample_every = o.sample_every, q.corr_ps = o.corr_ps, q.axis = o.axis, q.slabs = o.slabs;
+    q.swap_every = o.swap_every, q.dimensionality = o.dimensionality;
+    q.thickness = o.dimensionality == 2 ? (o.thickness > 0 ? o.thickness : caps::sheet_thickness(s)) : 0;
+    q.kspace = o.energy.electrostatics == caps::EnergyOptions::Electrostatics::PME;
+    std::ofstream(in, std::ios::app) << caps::thermal_lammps_run(q);
+    return report_out("wrote " + in + " and " + data, out, cap);
+  });
 }

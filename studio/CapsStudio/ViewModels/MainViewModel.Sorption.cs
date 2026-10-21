@@ -112,7 +112,7 @@ public sealed partial class MainViewModel
         {
             var res = await Task.Run(() => doc.Sorption(json, (st, f) =>
             {
-                Avalonia.Threading.Dispatcher.UIThread.Post(() => SorbProgress = $"{st} · {f * 100:0} %");
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (SorbRunning) SorbProgress = $"{st} · {f * 100:0} %"; });   // a late report must not outlive the run
                 return !ct.IsCancellationRequested;
             }));
             var r = JsonNode.Parse(res)!;
