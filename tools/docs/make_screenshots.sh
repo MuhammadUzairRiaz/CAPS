@@ -104,8 +104,9 @@ make() {
     20_project) local P; P="$(project_folder)"; shot 20_project "$P/ps_cell.data" "project=-" "wait=1500" ;;
     # Jobs after a grown, minimised and simulated cell: the last run (2,000 steps NPT) selected with its log and provenance
     23_jobs) shot 23_jobs "" "$PS" "relax=1" "ensemble=2" "mdsteps=2000" "md=1" "jobs=1" "wait=1500" ;;
-    # DFT workbench: a Ti3C2 sheet with OH on the fcc sites of its top face, built and validated
-    27_dft_sheets) shot 27_dft_sheets "" "dft=sheets" "wait=1000" ;;
+    # DFT workbench: a 5 x 5 Ti3C2 sheet with OH on the fcc sites of both faces (one per surface Ti, Ti3C2(OH)2), built and
+    # validated, seen from above at a tilt
+    27_dft_sheets) shot 27_dft_sheets "" "sheetcell=5x5" "dft=sheets" "wait=1000" "pageview=0.25,0.75,1.7" "pagescroll=45" ;;
     # orthorhombic polyethylene (Pnam), a 2 x 3 x 2 supercell
     14_crystal) shot 14_crystal "" "crystal=1" "crystalsuper=2x3x2" "wait=1000" ;;
     # a Kremer-Grest melt of 50 chains x 100 beads, previewed in the builder

@@ -38,8 +38,10 @@ internal static class Screenshot
             Thread.Sleep(30);
         }
         // Extra args (Field: ff=ID charges=N field=1 fieldpick=N fieldset=TYPE): pick=0,1,2  colour=3  style=4  module=0|1|2|3  grow=1  relax=1  mdsteps=N ensemble=0|1|2  md=1  eqprotocol=0|1|2 eqscale=X eq=1  tab=0..4  view=0|1  wrap=1
+        (int Na, int Nb)? sheetCell = null;   // sheetcell=NAxNB (before dft=): the supercell of the terminated slab
         foreach (var kv in args.Skip(3).Select(a => a.Split('=', 2)).Where(p => p.Length == 2))
         {
+            if (kv[0] == "sheetcell") { var n = kv[1].Split('x').Select(int.Parse).ToArray(); sheetCell = (n[0], n.Length > 1 ? n[1] : n[0]); }
             if (kv[0] == "pick") w.PickForTest(kv[1].Split(',').Select(int.Parse).ToArray());
             // layers: layer=ROW:eye|lock|select|expand (ROW an index into the list)
             if (kv[0] == "layer")
@@ -86,8 +88,10 @@ internal static class Screenshot
                 vm.OpenSheets();
                 vm.TopTerms.Clear();
                 vm.TopTerms.Add(new ViewModels.TermRow { Species = "OH", Fraction = 1 });
+                if (sheetCell is { } sc) { vm.SheetNa = sc.Na; vm.SheetNb = sc.Nb; }
                 void Wait(Task t) { while (!t.IsCompleted) { Avalonia.Threading.Dispatcher.UIThread.RunJobs(); Thread.Sleep(10); } }
                 Wait(vm.BuildSlab());
+                vm.Status = vm.DftStatus;   // the slab and its check in the status bar, not where the DFT folder setting was saved
                 if (kv[1] == "ads") { vm.OpenAdsorbDft(); vm.AdsSlab = vm.SlabPath; Wait(vm.BuildAdsorptionSet()); }
                 if (kv[1] == "job") { vm.OpenDftJob(); vm.JobStructure = vm.SlabPath; Wait(vm.PreviewJob()); }
             }

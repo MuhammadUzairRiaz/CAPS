@@ -1,4 +1,7 @@
 using System.Collections.Generic;
+using Avalonia;
+using Avalonia.Headless;
+using Avalonia.VisualTree;
 using CapsStudio.Interop;
 using CapsStudio.ViewModels;
 
@@ -5265,6 +5268,19 @@ internal static class SelfTest
         }
         vm.CloseAllStructures();
 
+        // last, as it starts the headless platform: the 2D sheets page in a real window shows the active preset after
+        // OpenSheets (a ComboBox bound to a list still empty dropped it, and the page showed an empty Preset box)
+        {
+            AppBuilder.Configure<App>().UseSkia().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false }).WithCapsFonts().SetupWithoutStarting();
+            var w = new Views.MainWindow { Width = 1440, Height = 900 };
+            w.Show();
+            w.ViewModel.OpenSheets();
+            for (var i = 0; i < 20; i++) { Avalonia.Threading.Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(15); }
+            var box = w.GetVisualDescendants().OfType<Avalonia.Controls.ComboBox>().FirstOrDefault(c => ReferenceEquals(c.ItemsSource, w.ViewModel.SheetPresets));
+            Check(box != null && box.IsEffectivelyVisible && w.ViewModel.SheetPreset.Length > 0 && Equals(box.SelectedItem, w.ViewModel.SheetPreset),
+                  $"2D sheets page shows the preset: box '{box?.SelectedItem}' · active '{w.ViewModel.SheetPreset}' · {w.ViewModel.SheetPresets.Count} presets");
+            w.Close();
+        }
         Console.WriteLine(fails == 0 ? "all checks passed" : $"{fails} check(s) failed");
         return fails == 0 ? 0 : 1;
     }
