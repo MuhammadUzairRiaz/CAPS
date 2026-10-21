@@ -115,6 +115,9 @@ struct DynamicsOptions {
   // Called after every force evaluation of the trajectory (each MD step) with the energy terms (virial tensor
   // included), positions and cell: for on-the-fly averages such as stress fluctuations.
   std::function<void(const EnergyTerms&, const std::vector<double>&, const Cell&, int64_t)> each_step;
+  // Called at the end of every step with positions, velocities (3N, Å/fs; may be changed: kinetic-energy exchanges of
+  // reverse NEMD), cell and step (with step_offset). A change of velocities is the caller's to account for (NVE only).
+  std::function<void(const std::vector<double>& x, std::vector<double>& v, const Cell&, int64_t step)> after_step;
   // Called for each recorded frame with positions (3N, unwrapped), cell and step.
   std::function<void(const std::vector<double>&, const Cell&, int64_t)> frame;
   // Checkpoints: every checkpoint_every steps (0: none) the full state — positions (3N, unwrapped), velocities (3N,

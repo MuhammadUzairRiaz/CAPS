@@ -10,7 +10,10 @@
 //   type:   { forcefield: gaff2 | uff | default | PATH.json, charges: types | gasteiger | qeq | keep }
 //   grow:   { density: 0.5 (or box: 33), contact_scale: auto | 0.85, trials: 120, curve: true, seed: 1 }
 //   relax:  { method: lbfgs, fmax: 0.5, pushoff: true, target_density: 0 }
+//   (build: { semicrystalline: { polymer: pe, nx: 4, ny: 6, crystal_nm: 5, amorphous_nm: 4, loops: 0.5, bridges: 0.2,
+//             tails: 0.3, reentry: adjacent, density: 0.855, united_atom: false } }: a lamellar stack)
 //   md:     { ps: 100, temperature: 300, ensemble: npt, pressure: 1, dt: 1 }
+//   thermal: { dimensionality: 3 | 2 (required), method: gk | nemd, temperature: 300, ps: 100, thickness: 3.35 (2D) }
 //   equilibrate: { protocol: larsen21, t_max: 600, t_final: 300, p_max: 50000 (bar), time_scale: 1 }
 //   analyze: { properties: [density, rg] }
 //   export: [lammps, gromacs, pdb, xyz, mol2]

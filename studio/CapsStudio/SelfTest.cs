@@ -19,7 +19,7 @@ internal static class SelfTest
         }
         Console.WriteLine($"info Python: {(MainViewModel.PythonAvailable ? MainViewModel.PythonExe : "none")}");
 
-        Check(Native.AbiVersion() == 71, "native ABI version 71");
+        Check(Native.AbiVersion() == 72, "native ABI version 72");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -1391,6 +1391,24 @@ internal static class SelfTest
                   && MainViewModel.ExpandSequence("A2B3") == "AABBB" && vm.Document!.Provenance().Contains("dpd.run"),
                   $"DPD: ψ {vm.DpdOrder} · spacing {vm.DpdSpacing} · kT {vm.DpdKt} · {vm.DpdError}");
             Check(vm.DpdDomains.Contains("domain") && MainViewModel.ExpandSequence("A5(B3)A5") == "AAAAA(BBB)AAAAA", $"DPD domains: {vm.DpdDomains} · branched {MainViewModel.ExpandSequence("A5(B3)A5")}");
+            vm.SetModule(8);
+        }
+
+        // Semicrystalline stack: a small PE lamella (3 × 5 cells, 1.5 nm) with a 2.5 nm amorphous layer; then thermal
+        // conductivity refuses to run until 2D or 3D is chosen, and a 3D Green–Kubo check of 100 steps runs
+        {
+            vm.OpenSemicrystalline();
+            vm.ScNx = 3; vm.ScNy = 5; vm.ScCrystal = 1.5m; vm.ScAmorphous = 2.5m;   // 22 × 25 Å: twice the 10 Å cut-off across
+            vm.BuildSemicrystalline().GetAwaiter().GetResult();
+            Check(!vm.ScHasError && vm.IsSemicrystalline && vm.ScSummary.Contains("loops") && vm.ScRho.Length > 0 && vm.Document!.Provenance().Contains("build.semicrystalline"),
+                  $"semicrystalline stack: {vm.ScSummary.Split('\n')[0]} · {vm.ScError}");
+            vm.OpenThermal();
+            vm.ThDim = -1;
+            vm.RunThermal().GetAwaiter().GetResult();
+            var refused = vm.ThHasError;
+            vm.ThDim = 0; vm.ThEq = 0.02m; vm.ThPs = 0.1m; vm.ThCorr = 0.02m;
+            vm.RunThermal().GetAwaiter().GetResult();
+            Check(refused && !vm.ThHasError && vm.ThResult.Contains("Green–Kubo") && vm.ThCurves.Length == 3, $"thermal conductivity: refused without 2D/3D {refused} · {vm.ThResult} · {vm.ThError}");
             vm.SetModule(8);
         }
 

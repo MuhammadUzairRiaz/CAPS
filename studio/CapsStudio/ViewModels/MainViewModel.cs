@@ -571,6 +571,8 @@ public sealed partial class MainViewModel : ObservableObject
         [78] = v => v.OpenDftRuns(),
         [79] = v => v.OpenDftResults(),
         [80] = v => v.OpenCgw(),
+        [81] = v => v.OpenSemicrystalline(),
+        [82] = v => v.OpenThermal(),
     };
 
     public void SetModule(int m, [System.Runtime.CompilerServices.CallerMemberName] string caller = "")
@@ -640,6 +642,7 @@ public sealed partial class MainViewModel : ObservableObject
         Raise(nameof(IsAdsorption));
         Raise(nameof(IsSorption));
         Raise(nameof(IsDpd));
+        Raise(nameof(IsSemicrystalline)); Raise(nameof(IsThermal));
         Raise(nameof(IsReader));
         Raise(nameof(IsStudy));
         Raise(nameof(IsSheets)); Raise(nameof(IsAdsorbDft)); Raise(nameof(IsDftJob)); Raise(nameof(IsDftRuns)); Raise(nameof(IsDftResults)); Raise(nameof(IsCgw));
