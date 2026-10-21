@@ -1910,13 +1910,15 @@ class build:
     def semicrystalline(polymer: str = "pe", nx: int = 4, ny: int = 6, crystal_nm: float = 5.0, amorphous_nm: float = 4.0, nc: int = 0,
                         loops: float = 0.5, bridges: float = 0.2, tails: float = 0.3, reentry: str = "adjacent", density: float = 0.855,
                         seed: int = 1, united_atom: bool = False, relax: bool = True) -> Document:
-        """A semicrystalline lamellar stack (as caps semicrystalline): a crystal lamella of nx × ny × nc unit cells (nc from
+        """A semicrystalline lamellar stack (as caps semicrystalline): polymer a polymer crystal library id ("pe" =
+        "pe-orthorhombic", Bunn 1939) or a unit-cell file; a crystal lamella of nx × ny × nc unit cells (nc from
         crystal_nm when 0) with straight stems along z, and an amorphous layer of amorphous_nm at density (g/cm³) holding
         loops, bridges and tails in those fractions (per segment); tags "crystal" and "amorphous"; .report holds the
         counts, length distributions, P2 crystallinity, profiles and stem tilt. united_atom counts carbons only against
         the 15,000-atom limit (assign oplsua2024 afterwards)."""
         o = {"polymer": polymer, "nx": nx, "ny": ny, "nc": nc, "crystal_nm": crystal_nm, "amorphous_nm": amorphous_nm, "loops": loops,
-             "bridges": bridges, "tails": tails, "reentry": reentry, "density": density, "seed": seed, "united_atom": united_atom, "relax": relax}
+             "bridges": bridges, "tails": tails, "reentry": reentry, "density": density, "seed": seed, "united_atom": united_atom, "relax": relax,
+             "data_dir": str(_data_dir())}
         rep = C.create_string_buffer(1 << 20)
         h = library().caps_semicrystalline_build(_enc(json.dumps(o)), None, None, rep, len(rep))
         if not h:

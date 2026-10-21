@@ -69,7 +69,7 @@ public sealed partial class MainViewModel
         var inv = CultureInfo.InvariantCulture;
         var json = new JsonObject
         {
-            ["polymer"] = "pe", ["nx"] = (int)_scNx, ["ny"] = (int)_scNy, ["crystal_nm"] = (double)_scCrystal, ["amorphous_nm"] = (double)_scAmorphous,
+            ["polymer"] = "pe", ["data_dir"] = Paths.Data ?? "", ["nx"] = (int)_scNx, ["ny"] = (int)_scNy, ["crystal_nm"] = (double)_scCrystal, ["amorphous_nm"] = (double)_scAmorphous,
             ["loops"] = (double)_scLoops, ["bridges"] = (double)_scBridges, ["tails"] = (double)_scTails, ["reentry"] = _scReentry == 0 ? "adjacent" : "random",
             ["density"] = (double)_scDensity, ["seed"] = ScSeed.Take(), ["united_atom"] = _scUnited, ["relax"] = _scRelax,
         }.ToJsonString();

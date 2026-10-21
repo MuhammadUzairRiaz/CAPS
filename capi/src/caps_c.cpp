@@ -11874,6 +11874,7 @@ extern "C" caps_doc* caps_semicrystalline_build(const char* options_json, caps_p
     const caps::Json j = caps::Json::parse(options_json && *options_json ? options_json : "{}");
     caps::SemicrystallineOptions o;
     o.polymer = j.text("polymer", "pe");
+    o.data_dir = j.text("data_dir", "");
     o.nx = int(j.num("nx", 4)), o.ny = int(j.num("ny", 6)), o.nc = int(j.num("nc", 0));
     o.crystal_nm = j.num("crystal_nm", 5.0), o.amorphous_nm = j.num("amorphous_nm", 4.0);
     o.loops = j.num("loops", 0.5), o.bridges = j.num("bridges", 0.2), o.tails = j.num("tails", 0.3);
