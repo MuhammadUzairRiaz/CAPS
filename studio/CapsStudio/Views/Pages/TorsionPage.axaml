@@ -76,7 +76,7 @@
             <StackPanel>
               <Border Padding="14,14" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
                 <StackPanel Spacing="12">
-                  <v:LinePlot x:Name="Plot" Height="300" AutoRange="True" XLabel="dihedral φ (degrees)" YLabel="E (kcal/mol)" />
+                  <v:SciPlot x:Name="Plot" Height="300" />
                   <StackPanel Orientation="Horizontal" Spacing="8">
                     <Border Classes="chip" Height="22" Padding="8,0"><StackPanel Orientation="Horizontal" Spacing="6"><Ellipse Width="7" Height="7" Fill="{DynamicResource AccB}" VerticalAlignment="Center" /><TextBlock Text="potential" FontSize="11" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" /></StackPanel></Border>
                     <Border Classes="chip" Height="22" Padding="8,0"><StackPanel Orientation="Horizontal" Spacing="6"><Ellipse Width="7" Height="7" Fill="{DynamicResource SelB}" VerticalAlignment="Center" /><TextBlock Text="{Binding TorsionStepChip}" FontSize="11" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" /></StackPanel></Border>

@@ -23,13 +23,8 @@ public partial class PolydispersityPage : PageBase
     }
     private void Chart(MainViewModel vm)
     {
-        var drawn = vm.PdLengths.Select(s => (double.Parse(s, System.Globalization.CultureInfo.InvariantCulture), double.NaN)).ToArray();
-        this.FindControl<XyChart>("Dist")!.Set(
-        [
-            new ChartSeries("number fraction", vm.PdNumber, "line", "SelB"),
-            new ChartSeries("weight fraction", vm.PdWeight, "line", "AccB"),
-            new ChartSeries($"the {drawn.Length} drawn chains", drawn, "dots", "TextB", 2.6),
-        ]);
+        var drawn = vm.PdLengths.Select(s => double.Parse(s, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+        this.FindControl<SciPlot>("Dist")!.Figure = ViewModels.PageFigures.Polydispersity(vm.PdNumber, vm.PdWeight, drawn);
     }
     /// <summary>The grown cell with each chain coloured by its length (only while this page shows).</summary>
     private void Show(MainViewModel vm)

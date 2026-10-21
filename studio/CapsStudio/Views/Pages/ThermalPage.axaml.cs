@@ -20,11 +20,7 @@ public partial class ThermalPage : PageBase
             _hooked = vm;
             vm.ThChanged += () =>
             {
-                var plot = this.FindControl<LinePlot>("Curve")!;
-                plot.RefY = null;
-                var c = vm.ThCurves;
-                plot.SetCompare(c.Length > 0 ? c[0] : [], c.Length > 1 ? c[1] : []);
-                plot.SetThird(c.Length > 2 ? c[2] : []);
+                this.FindControl<SciPlot>("Curve")!.Figure = ViewModels.PageFigures.Thermal(vm.ThCurves, vm.ThGreenKubo);
             };
         };
     }

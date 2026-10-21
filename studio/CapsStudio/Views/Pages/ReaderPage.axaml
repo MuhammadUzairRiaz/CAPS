@@ -46,7 +46,7 @@
                 <ComboBox Grid.Row="1" ItemsSource="{Binding ReaderColumns}" SelectedIndex="{Binding ReaderX}" HorizontalAlignment="Stretch" />
                 <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding ReaderColumns}" SelectedIndex="{Binding ReaderY}" HorizontalAlignment="Stretch" />
               </Grid>
-              <v:LinePlot x:Name="Plot" Height="240" AutoRange="True" />
+              <v:SciPlot x:Name="Plot" Height="240" />
               <Grid ColumnDefinitions="Auto,110,*" ColumnSpacing="8">
                 <TextBlock Text="Average from (%)" Classes="label" VerticalAlignment="Center" />
                 <NumericUpDown Grid.Column="1" Value="{Binding ReaderFromD}" Minimum="0" Maximum="99" Increment="10" FormatString="0" />

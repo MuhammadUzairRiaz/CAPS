@@ -9,17 +9,15 @@ public partial class RelaxPage : PageBase
     public RelaxPage()
     {
         AvaloniaXamlLoader.Load(this);
-        var energy = this.FindControl<LinePlot>("EnergyPlot")!;
-        var force = this.FindControl<LinePlot>("ForcePlot")!;
-        energy.RefY = null;
+        var energy = this.FindControl<SciPlot>("EnergyPlot")!;
+        var force = this.FindControl<SciPlot>("ForcePlot")!;
         DataContextChanged += (_, _) =>
         {
             if (DataContext is not ViewModels.MainViewModel vm) return;
             vm.RelaxCurvesChanged += () =>
             {
-                force.RefY = System.Math.Log10((double)(vm.RelaxFtolD ?? 0.5m));
-                energy.SetData(vm.RelaxEnergyCurve);
-                force.SetData(vm.RelaxForceCurve);
+                energy.Figure = ViewModels.PageFigures.RelaxEnergy(vm.RelaxEnergyCurve);
+                force.Figure = ViewModels.PageFigures.RelaxForce(vm.RelaxForceCurve, (double)(vm.RelaxFtolD ?? 0.5m));
             };
         };
     }

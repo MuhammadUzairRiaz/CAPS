@@ -32,11 +32,8 @@ public partial class SorptionPage : PageBase
             };
             vm.SorptionMapChanged += () =>
             {
-                var m = this.FindControl<LinePlot>("Map")!;
                 var (x, y, z, xl, yl) = vm.SorbMapProjection();
-                m.XLabel = xl;
-                m.YLabel = yl;
-                m.SetHeat(x, y, z);
+                this.FindControl<SciPlot>("Map")!.Figure = x.Length == 0 ? null : ViewModels.PageFigures.Heat(xl, yl, "areal density (1/nm²)", x, y, z);
             };
         };
     }

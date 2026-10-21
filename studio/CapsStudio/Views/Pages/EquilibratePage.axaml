@@ -49,20 +49,19 @@
         <Border Classes="card">
           <Grid RowDefinitions="38,*">
             <Border Classes="phead"><TextBlock Text="Density" Classes="h2" VerticalAlignment="Center" /></Border>
-            <v:LinePlot Grid.Row="1" x:Name="DensityPlot" Margin="10,6,12,8" AutoRange="True" XLabel="time (ps)" YLabel="density (g/cm³)" />
+            <v:SciPlot Grid.Row="1" x:Name="DensityPlot" Margin="10,6,12,8" />
           </Grid>
         </Border>
         <Border Grid.Row="1" Classes="card">
           <Grid RowDefinitions="38,*">
             <Border Classes="phead"><TextBlock Text="Potential energy" Classes="h2" VerticalAlignment="Center" /></Border>
-            <v:LinePlot Grid.Row="1" x:Name="EnergyPlot" Margin="10,6,12,8" AutoRange="True" XLabel="time (ps)" YLabel="E_pot (kcal/mol)" />
+            <v:SciPlot Grid.Row="1" x:Name="EnergyPlot" Margin="10,6,12,8" />
           </Grid>
         </Border>
         <Border Grid.Row="2" Classes="card">
           <Grid RowDefinitions="38,*">
             <Border Classes="phead"><TextBlock Text="Radius of gyration" Classes="h2" VerticalAlignment="Center" /></Border>
-            <v:LinePlot Grid.Row="1" x:Name="RgPlot" Margin="10,6,12,8" AutoRange="True" XLabel="production block" YLabel="⟨Rg⟩ (Å)"
-                        EmptyText="⟨Rg⟩ per production block: switch on “Production blocks until converged”" />
+            <v:SciPlot Grid.Row="1" x:Name="RgPlot" Margin="10,6,12,8" EmptyText="⟨Rg⟩ per production block: switch on “Production blocks until converged”" />
           </Grid>
         </Border>
       </Grid>
@@ -180,7 +179,7 @@
           <Border Classes="card" Height="300">
             <Grid RowDefinitions="38,*,Auto">
               <Border Classes="phead"><TextBlock Text="Mean-square internal distances" Classes="h2" VerticalAlignment="Center" /></Border>
-              <v:LinePlot Grid.Row="1" x:Name="ChainPlot" Margin="10,6,12,4" AutoRange="True" XLabel="n (bonds apart)" YLabel="⟨R²(n)⟩ / (n ⟨b²⟩)" />
+              <v:SciPlot Grid.Row="1" x:Name="ChainPlot" Margin="10,6,12,4" />
               <TextBlock Grid.Row="2" Text="{Binding ChainNote}" Classes="dim" Margin="16,0,16,10" TextWrapping="Wrap" />
             </Grid>
           </Border>

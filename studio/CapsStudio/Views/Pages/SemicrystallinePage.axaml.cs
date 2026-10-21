@@ -21,12 +21,9 @@ public partial class SemicrystallinePage : PageBase
             vm.ScChanged += () =>
             {
                 ShowView(vm);
-                foreach (var (name, data) in new[] { ("Rho", vm.ScRho), ("P2", vm.ScP2), ("Bridges", vm.ScBridgeHist) })
-                {
-                    var plot = this.FindControl<LinePlot>(name)!;
-                    plot.RefY = null;
-                    plot.SetData(data);
-                }
+                this.FindControl<SciPlot>("Rho")!.Figure = ViewModels.PageFigures.SemiDensity(vm.ScRho);
+                this.FindControl<SciPlot>("P2")!.Figure = ViewModels.PageFigures.SemiOrder(vm.ScP2);
+                this.FindControl<SciPlot>("Bridges")!.Figure = ViewModels.PageFigures.SemiBridges(vm.ScBridgeHist);
             };
         };
     }

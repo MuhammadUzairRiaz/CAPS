@@ -21,8 +21,8 @@ public partial class ChainStatsPage : PageBase
             vm.CsChanged += () =>
             {
                 Show(vm);
-                var cn = this.FindControl<LinePlot>("Cn")!; cn.RefY = null; cn.SetData(vm.CsCnCurve);
-                var ree = this.FindControl<LinePlot>("Ree")!; ree.RefY = null; ree.SetData(vm.CsReeHist);
+                this.FindControl<SciPlot>("Cn")!.Figure = ViewModels.PageFigures.ChainCnStats(vm.CsCnCurve);
+                this.FindControl<SciPlot>("Ree")!.Figure = ViewModels.PageFigures.EndToEnd(vm.CsReeHist);
             };
         };
     }

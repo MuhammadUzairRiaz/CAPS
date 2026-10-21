@@ -40,7 +40,7 @@
             </WrapPanel>
             <TextBlock Text="{Binding ScatterText}" FontSize="12" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" LineHeight="18" />
           </StackPanel>
-          <v:LinePlot x:Name="Plot" XLabel="q (Å⁻¹)" YLabel="I(q) · normalised" AutoRange="True" />
+          <v:SciPlot x:Name="Plot" />
         </DockPanel>
       </Border>
       <ScrollViewer Grid.Column="1">

@@ -40,7 +40,7 @@
                 </DockPanel>
               </Border>
               <StackPanel Margin="10,8,14,14" Spacing="8">
-                <v:XyChart x:Name="Curve" Height="250" XLabel="r (Å)" YLabel="erfc(βr) · real-space share" YMin="0" ShowLegend="False" />
+                <v:SciPlot x:Name="Curve" Height="250" />
                 <TextBlock Classes="dim" TextWrapping="Wrap" Margin="6,0,0,0" Text="At the cut-off the real-space term has fallen to the tolerance (red); the rest is carried by the reciprocal-space mesh." />
               </StackPanel>
             </DockPanel>

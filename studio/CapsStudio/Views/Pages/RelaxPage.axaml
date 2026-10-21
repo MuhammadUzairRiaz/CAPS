@@ -109,7 +109,7 @@
               <TextBlock Text="Energy" Classes="h2" VerticalAlignment="Center" />
             </DockPanel>
           </Border>
-          <v:LinePlot Grid.Row="1" x:Name="EnergyPlot" Margin="10,6,12,8" AutoRange="True" XLabel="iteration" YLabel="E (kcal/mol)" />
+          <v:SciPlot Grid.Row="1" x:Name="EnergyPlot" Margin="10,6,12,8" />
         </Grid>
       </Border>
       <Border Grid.Column="2" Classes="card">
@@ -120,7 +120,7 @@
               <TextBlock Text="Max force" Classes="h2" VerticalAlignment="Center" />
             </DockPanel>
           </Border>
-          <v:LinePlot Grid.Row="1" x:Name="ForcePlot" Margin="10,6,12,8" AutoRange="True" XLabel="iteration" YLabel="log₁₀ |F|max (kcal/mol/Å)" />
+          <v:SciPlot Grid.Row="1" x:Name="ForcePlot" Margin="10,6,12,8" />
         </Grid>
       </Border>
 

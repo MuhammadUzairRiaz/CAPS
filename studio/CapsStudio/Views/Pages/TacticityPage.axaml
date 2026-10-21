@@ -105,7 +105,7 @@
             <DockPanel>
               <Border DockPanel.Dock="Top" Classes="phead"><TextBlock Text="Pentads" FontSize="13.5" FontWeight="SemiBold" /></Border>
               <StackPanel Margin="16,10,16,14" Spacing="10">
-                <v:XyChart x:Name="Pentads" Height="250" />
+                <v:SciPlot x:Name="Pentads" Height="250" />
                 <TextBlock Classes="dim" TextWrapping="Wrap" Text="Pentads are what ¹³C NMR resolves. Enter measured pentads and CAPS fits P_m, or first-order Markov P(r|m) and P(m|r) if Bernoulli fails the test mm·rr = (mr/2)²." />
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                   <TextBox Text="{Binding TsMeasured}" Classes="mono" Watermark="measured pentads: mmmm, mmmr, rmmr, mmrr, mmrm, rmrm, rmrr, rrrr, rrrm, mrrm" />

@@ -14,7 +14,7 @@ namespace CapsStudio.Views.Pages;
 
 public partial class JobsPage : PageBase
 {
-    private readonly LinePlot _a, _b;
+    private readonly SciPlot _a, _b;
     private readonly UniformGrid _stages;
     private readonly StackPanel _legend;
     private readonly ProgressBar _bar;
@@ -32,10 +32,8 @@ public partial class JobsPage : PageBase
     public JobsPage()
     {
         AvaloniaXamlLoader.Load(this);
-        _a = this.FindControl<LinePlot>("PlotA")!;
-        _b = this.FindControl<LinePlot>("PlotB")!;
-        _a.AutoRange = _b.AutoRange = true;
-        _a.RefY = _b.RefY = null;
+        _a = this.FindControl<SciPlot>("PlotA")!;
+        _b = this.FindControl<SciPlot>("PlotB")!;
         _stages = this.FindControl<UniformGrid>("StageBar")!;
         _legend = this.FindControl<StackPanel>("StageLegend")!;
         _bar = this.FindControl<ProgressBar>("Bar")!;
@@ -124,11 +122,8 @@ public partial class JobsPage : PageBase
         var j = _watched;
         _curves.IsVisible = j?.HasCurves == true;
         if (j == null) return;
-        _a.XLabel = _b.XLabel = j.AxisX;
-        _a.YLabel = j.AxisA;
-        _b.YLabel = j.AxisB;
-        _a.SetData(j.A.ToArray());
-        _b.SetData(j.B.ToArray());
+        _a.Figure = ViewModels.PageFigures.Monitor(j.AxisX, j.AxisA, j.A.ToArray());
+        _b.Figure = ViewModels.PageFigures.Monitor(j.AxisX, j.AxisB, j.B.ToArray());
     }
 
     /// <summary>The protocol as a row of stages (done, running, remaining), or a plain bar for other runs.</summary>

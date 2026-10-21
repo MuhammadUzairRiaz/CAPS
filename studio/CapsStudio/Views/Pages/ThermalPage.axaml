@@ -84,7 +84,7 @@
           <Border Classes="pcard">
             <StackPanel Spacing="8">
               <TextBlock x:Name="CurveTitle" Text="Running integral κ(t) (x solid, y dashed, z dotted) or the slab temperatures" FontSize="13.5" FontWeight="SemiBold" />
-              <v:LinePlot x:Name="Curve" Height="220" XLabel="t (ps) or position (Å)" YLabel="κ (W/m/K) or T (K)" AutoRange="True" />
+              <v:SciPlot x:Name="Curve" Height="220" />
             </StackPanel>
           </Border>
         </StackPanel>

@@ -23,10 +23,7 @@ public partial class ElectrostaticsPage : PageBase
     {
         var rc = (double)vm.EsCutoff;
         var tol = vm.EsTolValue;
-        this.FindControl<XyChart>("Curve")!.Set(
-            [new ChartSeries("erfc(βr)", vm.EsCurve, "line", "AccB")],
-            vm.EsPme ? [new ChartMarker(rc, tol, "ErrB", "", 4)] : [],
-            [new ChartGuide(rc, true, "DimB", "r_c")]);
+        this.FindControl<SciPlot>("Curve")!.Figure = ViewModels.PageFigures.Electrostatics(vm.EsCurve, rc, tol, vm.EsPme);
     }
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {

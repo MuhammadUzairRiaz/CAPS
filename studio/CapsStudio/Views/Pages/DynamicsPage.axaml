@@ -205,8 +205,8 @@
                   <v:SeedPicker Grid.Column="1" DataContext="{Binding MdSeedChoice}" ShowLabel="False" ToolTip.Tip="Velocities and thermostat noise (also Equilibrate and CBMC)" />
                 </Grid>
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Height="150">
-                  <v:LinePlot x:Name="TPlot" AutoRange="True" XLabel="time (ps)" YLabel="T (K)" />
-                  <v:LinePlot Grid.Column="1" x:Name="RhoPlot" AutoRange="True" XLabel="time (ps)" YLabel="density (g/cm³)" />
+                  <v:SciPlot x:Name="TPlot" />
+                  <v:SciPlot Grid.Column="1" x:Name="RhoPlot" />
                 </Grid>
               </StackPanel>
             </StackPanel>

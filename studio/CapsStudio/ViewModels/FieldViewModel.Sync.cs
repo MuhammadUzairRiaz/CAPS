@@ -184,6 +184,9 @@ public sealed partial class FieldViewModel
         {
             if (Selected is not { } e) return "";
             var ff = e.Id == "uff" ? "uff" : e.File;
+            // a library force field by its name (caps finds it in data/forcefields), so the command carries no local path
+            var dir = Path.GetDirectoryName(ff) ?? "";
+            if (Path.GetFileName(dir) == "forcefields" && Path.GetFileName(Path.GetDirectoryName(dir) ?? "") == "data") ff = Path.GetFileNameWithoutExtension(ff);
             var overlays = ChosenOverlays.Concat(ExtraOverlays).ToList();
             var charges = _chargeMode switch { 1 => "types", 2 => "gasteiger", 3 => "keep", 4 => "qeq", 5 => "increments", _ => "auto" };
             return $"caps ff apply STRUCTURE --ff {Quote(ff)}" + (overlays.Count > 0 ? " --overlay " + Quote(string.Join(",", overlays)) : "") +

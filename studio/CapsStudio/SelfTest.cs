@@ -376,6 +376,63 @@ internal static class SelfTest
             Check(AnalyzeFigures.Title("density (g/cm³)") == "*ρ* / g cm⁻³" && AnalyzeFigures.Title("specific volume (cm³/g)") == "*v* / cm³ g⁻¹"
                   && AnalyzeFigures.Title("C (J/(g·K))") == "*C* / J g⁻¹ K⁻¹" && AnalyzeFigures.Title("force (kcal/mol/Å)") == "*F* / kcal mol⁻¹ Å⁻¹",
                   "axis titles as quantity / unit: " + AnalyzeFigures.Title("C (J/(g·K))"));
+            {
+                // every page figure, on made-up data of the right shape: quantity / unit titles (or a plain name for a count),
+                // round ticks, counts from zero, forces on log axes; and no page draws with the old line plot any more
+                (double X, double Y)[] Ramp(int n, double x0, double dx, Func<double, double> f) => Enumerable.Range(0, n).Select(i => (x0 + i * dx, f(x0 + i * dx))).ToArray();
+                var thermoRows = Enumerable.Range(0, 400).Select(i => new Interop.CapsThermo { TimePs = i * 0.05, Temperature = 300 + 5 * Math.Sin(i), Potential = -5200 + 3 * Math.Cos(i),
+                    Pressure = 40 * Math.Sin(i * 0.3), Density = 0.9612 + 0.002 * Math.Sin(i * 0.1) }).ToList();
+                var cyc = Enumerable.Range(1, 12).Select(i => new Interop.CapsReactCycle { Cycle = i, Crosslinks = 7 * i, Conversion = 0.07 * i, LargestFraction = Math.Min(1, 0.01 * i * i),
+                    ReducedMw = i == 7 ? 9 : i, Target = 80 }).ToList();
+                var force = Ramp(60, 0, 1, x => 300 * Math.Exp(-x / 9));
+                var figs = new (string Name, Views.SciFigure Fig)[]
+                {
+                    ("react links", PageFigures.ReactLinks(cyc)), ("react gel", PageFigures.ReactGel(cyc)), ("react conversion", PageFigures.ReactConversion(cyc)),
+                    ("density", PageFigures.ThermoDensity(thermoRows, [(0, 5, "NVT", false), (5, 20, "NPT", true)], Ramp(4, 2.5, 5, _ => 0.962))),
+                    ("energy", PageFigures.ThermoEnergy(thermoRows)), ("temperature", PageFigures.ThermoTemperature(thermoRows, 300)), ("pressure", PageFigures.ThermoPressure(thermoRows, 1)),
+                    ("Rg blocks", PageFigures.RgBlocks(Ramp(5, 1, 1, _ => 11.2))), ("chain C_n", PageFigures.ChainCn(Ramp(30, 1, 1, n => 8 - 7 / n), Ramp(30, 1, 1, n => 8.5 - 7 / n))),
+                    ("relax energy", PageFigures.RelaxEnergy(Ramp(60, 0, 1, x => -4000 - 900 * (1 - Math.Exp(-x / 8))))), ("relax force", PageFigures.RelaxForce(force, 0.5)),
+                    ("pack", PageFigures.PackPenalty(Ramp(20, 1, 1, x => 1e4 * Math.Exp(-x)))), ("mechanics", PageFigures.Mechanics(Ramp(50, 0, 0.2, x => 0.02 * x), Ramp(2, 0, 2, x => 0.02 * x), 2)),
+                    ("scattering", PageFigures.Scattering(Ramp(100, 0.1, 0.05, q => 1 + Math.Sin(q * 3) / q), Ramp(100, 0.1, 0.05, q => 1 + Math.Cos(q * 3) / q), [])),
+                    ("pores", PageFigures.PoreSizes(Ramp(20, 0.25, 0.5, d => Math.Exp(-d)))), ("C_n", PageFigures.ChainCnStats(Ramp(30, 1, 1, n => 8 - 7 / n))),
+                    ("R_ee", PageFigures.EndToEnd(Ramp(20, 1, 2, r => r * Math.Exp(-r / 10) / 50))), ("charges", PageFigures.Charges(Ramp(20, -0.6, 0.06, q => 40 * Math.Exp(-q * q * 20)))),
+                    ("interface", PageFigures.Interface("z", [("film", Ramp(60, 0, 0.5, z => z < 3 ? 0 : 0.95)), ("surface", Ramp(60, 0, 0.5, z => z < 3 ? 2.2 : 0))], (2.5, 3.2))),
+                    ("order per frame", PageFigures.OrderPerFrame(Ramp(20, 0, 1, t => 0.1 + 0.01 * t))), ("order along z", PageFigures.OrderAlong("z", Ramp(20, 0, 2, z => 0.2 * Math.Sin(z)))),
+                    ("semicrystalline ρ", PageFigures.SemiDensity(Ramp(40, 0, 1, z => 0.85 + 0.15 * Math.Sin(z / 4)))), ("semicrystalline P2", PageFigures.SemiOrder(Ramp(40, 0, 1, z => Math.Sin(z / 4)))),
+                    ("bridges", PageFigures.SemiBridges(Ramp(10, 1, 1, n => 12 - n))),
+                    ("thermal GK", PageFigures.Thermal([Ramp(50, 0, 0.1, t => 0.3 * (1 - Math.Exp(-t))), Ramp(50, 0, 0.1, t => 0.28 * (1 - Math.Exp(-t))), Ramp(50, 0, 0.1, t => 0.31 * (1 - Math.Exp(-t)))], true)),
+                    ("thermal slab", PageFigures.Thermal([Ramp(20, 0, 3, x => 300 + 20 * Math.Abs(Math.Sin(x / 20)))], false)),
+                    ("DFT force", PageFigures.DftForce(force.Select(p => p.Y / 300).ToArray())), ("DFT binding", PageFigures.DftBinding(Ramp(6, 1, 1, k => -1.2 + 0.15 * k))),
+                    ("DOS", PageFigures.DftDos(Ramp(200, -8, 0.08, e => Math.Abs(Math.Sin(e)) * 3), "total")), ("work function", PageFigures.DftWorkFunction(Ramp(100, 0, 0.3, z => 4 * Math.Sin(z / 5)))),
+                    ("CDD", PageFigures.DftCdd(Ramp(100, 0, 0.3, z => 0.01 * Math.Sin(z)), Ramp(100, 0, 0.3, z => 0.02 * z))), ("AIMD", PageFigures.DftMdHeight(Ramp(40, 0, 0.05, t => 3 + 0.1 * Math.Sin(t * 9)))),
+                    ("glass schedule", PageFigures.GlassSchedule([(0, 600), (5, 600), (5, 575), (10, 575)])), ("SASA series", PageFigures.SasaSeries(Ramp(10, 0, 1, _ => 5310))),
+                    ("SASA convergence", PageFigures.SasaConvergence(Ramp(6, 50, 50, n => 5300 + 400 / n))), ("recipe T", PageFigures.RecipeTemperature([(0, 600), (10, 600), (20, 300)])),
+                    ("recipe P", PageFigures.RecipePressure([(0, 1000), (10, 1000), (10, double.NaN), (15, 1), (20, 1)], 20)), ("torsion", PageFigures.Torsion(Ramp(37, -180, 10, p => 1.5 * (1 + Math.Cos(3 * p * Math.PI / 180))))),
+                    ("reader", PageFigures.Columns("Time (ps)", "Temperature (K)", Ramp(20, 0, 1, _ => 300))), ("compare", PageFigures.Compare("r (Å)", "g(r)", Ramp(50, 0, 0.2, r => r), Ramp(50, 0, 0.2, r => r * 0.9))),
+                    ("job force", PageFigures.Monitor("iteration", "largest force (kcal/mol/Å)", force)), ("job density", PageFigures.Monitor("time (ps)", "density (g/cm³)", Ramp(10, 0, 1, _ => 0.96))),
+                    ("batch", PageFigures.Batch("density (g/cm³)", Ramp(5, 1, 1, _ => 0.95))), ("trajectory", PageFigures.TrajectorySeries("Temperature (K)", Ramp(30, 0, 0.5, _ => 300), 4, 0)),
+                    ("rdf", PageFigures.Rdf(Ramp(100, 0, 0.1, r => r < 3 ? 0 : 1 + Math.Sin(r) / r))), ("shifts", PageFigures.Shifts([0.1, 0.4, 0.2, 0.05])),
+                    ("table", PageFigures.Table("r (Å)", "g(r)", Ramp(40, 0, 0.25, r => r), false, 1, 0)), ("heat", PageFigures.Heat("a (Å)", "b (Å)", "areal density (1/nm²)", [0.5, 1.5, 0.5, 1.5], [0.5, 0.5, 1.5, 1.5], [0, 1, 2, 3])),
+                    ("CG kinds", PageFigures.CgKinds(["A", "B"], [("beads", [(0, 40), (1, 25)])])), ("CG P", PageFigures.CgBondedP("r (Å)", Ramp(30, 3, 0.1, r => Math.Exp(-(r - 4.5) * (r - 4.5) * 4)), null)),
+                    ("CG U", PageFigures.CgBondedU("θ (°)", Ramp(30, 90, 3, t => (t - 130) * (t - 130) / 300), null)), ("CG g(r)", PageFigures.CgRdf([("target", Ramp(50, 2, 0.2, r => r < 4 ? 0 : 1))])),
+                    ("CG pair", PageFigures.CgPair(Ramp(40, 3, 0.2, r => 4 * (Math.Pow(4 / r, 12) - Math.Pow(4 / r, 6))), "table", [], "fit")), ("CG R²", PageFigures.CgR2(Ramp(20, 1, 1, n => 30 + n), [])),
+                    ("CG stress", PageFigures.CgStress([("σ_xx", Ramp(20, 0, 0.05, e => 100 * e))])), ("CG dynamics", PageFigures.CgDynamics([("g₁", Ramp(20, 1, 0.2, lt => Math.Pow(10, lt * 0.5)))])),
+                    ("electrostatics", PageFigures.Electrostatics(Ramp(50, 0, 0.3, r => 1 - Math.Tanh(r / 4)), 12, 1e-5, true)),
+                    ("blend", PageFigures.BlendPhase(Ramp(20, 0.05, 0.045, p => 400 + 300 * p * (1 - p)), Ramp(20, 0.05, 0.045, p => 390 + 300 * p * (1 - p)), (0.5, 475), 450)),
+                    ("copolymer", PageFigures.Copolymer(Ramp(21, 0, 0.05, f => f * f), [new Views.SciPoint(0.4, 0.16, "this feed", 1)])),
+                    ("pentads", PageFigures.Pentads(["mmmm", "mmmr", "rmmr"], [0.2, 0.3, 0.5], "Bernoulli model", [0.25, 0.25, 0.5])),
+                    ("polydispersity", PageFigures.Polydispersity(Ramp(30, 10, 5, n => Math.Exp(-n / 50) / 50), Ramp(30, 10, 5, n => n * Math.Exp(-n / 50) / 2500), [40, 60, 90])),
+                };
+                var bad = figs.Select(f => (f.Name, Why: PageFigures.Audit(f.Fig))).Where(f => f.Why.Length > 0).Select(f => f.Name + ": " + f.Why).ToArray();
+                Check(bad.Length == 0, $"page figures ({figs.Length}) titled quantity / unit with round ticks{(bad.Length > 0 ? ": " + string.Join(" | ", bad) : "")}");
+                var counts = new[] { "react links", "pores", "charges", "bridges", "DOS", "CG kinds", "pentads" }.Select(n => figs.First(f => f.Name == n))
+                    .Select(f => (f.Name, Lo: Views.SciPlot.Ticks(f.Fig, 520, 260)?.Y[0] ?? double.NaN)).Where(f => f.Lo != 0).ToArray();
+                Check(counts.Length == 0 && figs.First(f => f.Name == "relax force").Fig.YLog && figs.First(f => f.Name == "pack").Fig.YLog && figs.First(f => f.Name == "job force").Fig.YLog,
+                      "counts and distributions from zero, forces and penalties on log axes" + string.Join(", ", counts.Select(c => $" {c.Name} from {c.Lo}")));
+                Check(Views.SciPlot.RoundTicks([0, 0.25, 0.5, 0.75]) && Views.SciPlot.RoundTicks([-200, 0, 200]) && !Views.SciPlot.RoundTicks([-0.64, 1.2, 3.04]) && !Views.SciPlot.RoundTicks([0, 3, 6]),
+                      "round tick test");
+                Check(Type.GetType("CapsStudio.Views.LinePlot") == null && Type.GetType("CapsStudio.Views.XyChart") == null, "every plot is a SciPlot (LinePlot and XyChart gone)");
+            }
             var adir = Path.Combine(outDir, "analyze_selftest");
             var files = vm.Analyze.Export(adir);
             Check(files >= 6 && File.ReadAllText(Path.Combine(adir, "results.tex")).Contains("\\toprule"), $"analyze export: {files} files");
@@ -802,6 +859,16 @@ internal static class SelfTest
             vm.RunReact().GetAwaiter().GetResult();
             var cured = System.Text.RegularExpressions.Regex.Match(vm.RxLog, @"^(\d+) reactions");
             Check(cured.Success && int.Parse(cured.Groups[1].Value) > 0, $"sulfur cure: {vm.RxLog.Split('\n')[0]}");
+            {
+                // React's figures: links between chains from (0, 0) with titled axes and round ticks; the gel figure over 0 … 1
+                for (var i = 0; i < 20; i++) { Avalonia.Threading.Dispatcher.UIThread.RunJobs(); Thread.Sleep(10); }   // the cycles reach the rows on the UI thread
+                var links = PageFigures.ReactLinks(vm.ReactRows);
+                var gelFig = PageFigures.ReactGel(vm.ReactRows);
+                var lt = Views.SciPlot.Ticks(links, 520, 260);
+                Check(vm.ReactRows.Count > 0 && PageFigures.Audit(links) == "" && PageFigures.Audit(gelFig) == "" && lt is { } ltk && ltk.Y[0] == 0 && ltk.X[0] == 0 && links.Series[0].X[0] == 0
+                      && gelFig.YMin == 0 && gelFig.YMax == 1 && gelFig.XLabel == "conversion *α*",
+                      $"React figures: {vm.ReactRows.Count} cycles · {PageFigures.Audit(links)}{PageFigures.Audit(gelFig)} · y ticks {string.Join(" ", lt?.YText ?? [])}");
+            }
             // the network summary carries the core's sulfur census; the page as caps react names the template and options
             {
                 vm.RxRemoveUnreacted = true;
@@ -2772,6 +2839,16 @@ internal static class SelfTest
             vm.EqUntilConverged = eqUntil0;
             var eqLine = vm.RecordedCommands.FirstOrDefault(c => c.Text.StartsWith("doc.equilibrate("))?.Text ?? "";
             Check(eqLine.Contains("\"nvt 0.04 ps T 300 # hold\"") && eqLine.Contains("dt="), $"macro records equilibration: {eqLine}");
+            {
+                // the thermo figures of that run: time in ps, density and energy with their units, the stage drawn
+                for (var i = 0; i < 20; i++) { Avalonia.Threading.Dispatcher.UIThread.RunJobs(); Thread.Sleep(10); }
+                var rhoFig = PageFigures.ThermoDensity(vm.Thermo, vm.EqStageBands, vm.EqDensityBlocks);
+                var eFig = PageFigures.ThermoEnergy(vm.Thermo, vm.EqStageBands, vm.EqEnergyBlocks);
+                var tFig = PageFigures.ThermoTemperature(vm.Thermo, 300);
+                Check((vm.Thermo.Count < 2 || rhoFig.Series.Length > 0) && rhoFig.XLabel == "*t* / ps" && rhoFig.YLabel == "*ρ* / g cm⁻³" && eFig.YLabel == "*E*_{pot} / kcal mol⁻¹"
+                      && rhoFig.Stages.Length == vm.EqStageBands.Length && tFig.Guides.Length == 1 && new[] { rhoFig, eFig, tFig }.All(f => PageFigures.Audit(f) == ""),
+                      $"equilibration figures: {vm.Thermo.Count} rows · {PageFigures.Audit(rhoFig)}{PageFigures.Audit(eFig)}{PageFigures.Audit(tFig)}");
+            }
             // Target: the open structure — the script takes it with caps.current() and hands a result back, which opens
             vm.NewMacro();
             vm.MacroText = "import caps\n\ndoc = caps.current()\nprint(\"atoms\", doc.atoms)\ncaps.hand_back(doc)\n";

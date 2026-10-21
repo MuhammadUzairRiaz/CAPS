@@ -21,9 +21,7 @@ public partial class ChargesPage : PageBase
             vm.ChargesChanged += () =>
             {
                 ShowView(vm);
-                var h = this.FindControl<LinePlot>("Hist")!;
-                h.RefY = null;
-                h.SetData(vm.ChargeHistogram);
+                this.FindControl<SciPlot>("Hist")!.Figure = ViewModels.PageFigures.Charges(vm.ChargeHistogram);
             };
         };
     }

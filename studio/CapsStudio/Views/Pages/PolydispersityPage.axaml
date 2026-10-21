@@ -63,7 +63,7 @@
                 <TextBlock Text="{Binding PdTitle}" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
               </DockPanel>
             </Border>
-            <v:XyChart x:Name="Dist" Margin="8,6,12,8" XLabel="degree of polymerisation N" YLabel="fraction" />
+            <v:SciPlot x:Name="Dist" Margin="8,6,12,8" />
           </DockPanel>
         </Border>
         <!-- drawn lengths -->

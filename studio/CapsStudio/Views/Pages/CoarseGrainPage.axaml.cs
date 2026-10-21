@@ -10,7 +10,6 @@ namespace CapsStudio.Views.Pages;
 public partial class CoarseGrainPage : PageBase
 {
     private MainViewModel? _hooked;
-    private static readonly string[] Palette = ["AccB", "SelB", "OkB", "WarnB", "ErrB", "MutedB", "TextB"];
 
     public CoarseGrainPage()
     {
@@ -31,46 +30,16 @@ public partial class CoarseGrainPage : PageBase
 
     private void Draw(MainViewModel vm)
     {
-        var kinds = this.FindControl<XyChart>("KindChart")!;
-        kinds.Categories = vm.CgwKindCats;
-        kinds.Set(vm.CgwKindBars.Select((s, i) => new ChartSeries(s.Name, s.Pts, "bars", Palette[i % Palette.Length])).ToArray());
-
-        var p = this.FindControl<XyChart>("PChart")!;
+        this.FindControl<SciPlot>("KindChart")!.Figure = ViewModels.PageFigures.CgKinds(vm.CgwKindCats, vm.CgwKindBars.Select(s => (s.Name, s.Pts)).ToArray());
         var rg = vm.CgwPlotRange;
-        p.XLabel = vm.CgwPlotUnit;
-        p.XMin = rg?.Lo; p.XMax = rg?.Hi;
-        p.Set(vm.CgwPlotP.Length > 0 ? [new ChartSeries("P", vm.CgwPlotP, "line", "AccB")] : []);
-        var u = this.FindControl<XyChart>("UChart")!;
-        u.XLabel = vm.CgwPlotUnit;
-        u.XMin = rg?.Lo; u.XMax = rg?.Hi; u.YMax = rg?.UMax;
+        this.FindControl<SciPlot>("PChart")!.Figure = ViewModels.PageFigures.CgBondedP(vm.CgwPlotUnit, vm.CgwPlotP, rg);
         var uPts = rg is { } r0 ? vm.CgwPlotU.Where(q => q.X >= r0.Lo && q.X <= r0.Hi && q.Y <= r0.UMax * 1.5 + 1).ToArray() : vm.CgwPlotU;
-        u.Set(uPts.Length > 0 ? [new ChartSeries("U", uPts, "line", "SelB")] : []);
-
-        var gr = this.FindControl<XyChart>("GrChart")!;
-        gr.Set(vm.CgwGr.Where(s => s.Value.ContainsKey(vm.CgwPairKey)).Select((s, i) => new ChartSeries(s.Key, s.Value[vm.CgwPairKey], "line", Palette[i % Palette.Length])).ToArray(),
-               guides: vm.CgwGr.Count > 0 ? [new ChartGuide(1, false)] : null);
-        var pair = this.FindControl<XyChart>("PairChart")!;
-        var ps = new List<ChartSeries>();
-        if (vm.CgwPairU.Length > 0) ps.Add(new ChartSeries("table " + Path.GetFileName(Path.GetDirectoryName(vm.CgwPairsPath) ?? ""), vm.CgwPairU, "line", "AccB"));
-        if (vm.CgwFitU.Length > 0) ps.Add(new ChartSeries("fit " + vm.CgwForm, vm.CgwFitU, "dash", "WarnB"));
-        // the repulsive core reaches thousands of kcal/mol: show the well
-        var ys = ps.SelectMany(s => s.Points.Select(q => q.Y)).Where(double.IsFinite).ToArray();
-        pair.YMin = ys.Length > 0 ? Math.Min(-0.1, ys.Min() * 1.3) : null;
-        pair.YMax = ys.Length > 0 ? Math.Max(0.5, -3 * ys.Min()) : null;
-        pair.Set(ps.ToArray(), guides: ps.Count > 0 ? [new ChartGuide(0, false)] : null);
-
-        var r2 = this.FindControl<XyChart>("R2Chart")!;
-        var rs = new List<ChartSeries>();
-        if (vm.CgwR2Built.Length > 0) rs.Add(new ChartSeries("built CG chains", vm.CgwR2Built, "line", "AccB"));
-        if (vm.CgwR2Aa.Length > 0) rs.Add(new ChartSeries("all-atom (mapped)", vm.CgwR2Aa, "dash", "TextB"));
-        r2.Set(rs.ToArray());
-
-        var st = this.FindControl<XyChart>("StressChart")!;
-        st.Set(vm.CgwStress.Select((s, i) => new ChartSeries(s.Name, s.Pts, i == 0 ? "line" : "dash", Palette[i % Palette.Length], i == 0 ? 2.4 : 1.4)).ToArray(),
-               guides: vm.CgwStress.Count > 0 ? [new ChartGuide(0, false)] : null);
-
-        var dyn = this.FindControl<XyChart>("DynChart")!;
-        dyn.Set(vm.CgwDyn.Where(s => s.Pts.Length > 0).Select((s, i) => new ChartSeries(s.Name, s.Pts, "line", Palette[i % Palette.Length])).ToArray());
+        this.FindControl<SciPlot>("UChart")!.Figure = ViewModels.PageFigures.CgBondedU(vm.CgwPlotUnit, uPts, rg);
+        this.FindControl<SciPlot>("GrChart")!.Figure = ViewModels.PageFigures.CgRdf(vm.CgwGr.Where(s => s.Value.ContainsKey(vm.CgwPairKey)).Select(s => (s.Key, s.Value[vm.CgwPairKey])));
+        this.FindControl<SciPlot>("PairChart")!.Figure = ViewModels.PageFigures.CgPair(vm.CgwPairU, "table " + Path.GetFileName(Path.GetDirectoryName(vm.CgwPairsPath) ?? ""), vm.CgwFitU, "fit " + vm.CgwForm);
+        this.FindControl<SciPlot>("R2Chart")!.Figure = ViewModels.PageFigures.CgR2(vm.CgwR2Built, vm.CgwR2Aa);
+        this.FindControl<SciPlot>("StressChart")!.Figure = ViewModels.PageFigures.CgStress(vm.CgwStress.Select(s => (s.Name, s.Pts)));
+        this.FindControl<SciPlot>("DynChart")!.Figure = ViewModels.PageFigures.CgDynamics(vm.CgwDyn.Where(s => s.Pts.Length > 0).Select(s => (s.Name, s.Pts)));
     }
 
     // ---------------------------------------------------------------- pickers (start in the last folder used)

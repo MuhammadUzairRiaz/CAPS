@@ -18,10 +18,7 @@ public partial class MechanicsPage : PageBase
             _hooked = vm;
             vm.MechCurveChanged += () =>
             {
-                var plot = this.FindControl<LinePlot>("Curve")!;
-                plot.RefY = null;
-                plot.Band = vm.MechHasCurve ? (0, vm.MechFitTo) : null;
-                plot.SetWithFit(vm.MechCurve, vm.MechFit);
+                this.FindControl<SciPlot>("Curve")!.Figure = vm.MechHasCurve ? ViewModels.PageFigures.Mechanics(vm.MechCurve, vm.MechFit, vm.MechFitTo) : null;
             };
         };
     }

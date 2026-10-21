@@ -71,14 +71,14 @@
           <Border Classes="pcard" IsVisible="{Binding SaHasSeries}">
             <StackPanel Spacing="8">
               <TextBlock Text="Over the frames" FontSize="13.5" FontWeight="SemiBold" />
-              <v:LinePlot x:Name="Series" Height="140" XLabel="frame" YLabel="SASA (Å²)" AutoRange="True" />
+              <v:SciPlot x:Name="Series" Height="140" />
               <TextBlock Text="{Binding SaSeriesText}" Classes="mono" FontSize="12" />
             </StackPanel>
           </Border>
           <Border Classes="pcard">
             <StackPanel Spacing="8">
               <TextBlock Text="Point-count convergence" FontSize="13.5" FontWeight="SemiBold" />
-              <v:LinePlot x:Name="Conv" Height="140" XLabel="points per atom" YLabel="SASA (Å²)" AutoRange="True" />
+              <v:SciPlot x:Name="Conv" Height="140" />
               <Grid ColumnDefinitions="*,*,*"><TextBlock Text="POINTS" Classes="h3" /><TextBlock Grid.Column="1" Text="SASA (Å²)" Classes="h3" HorizontalAlignment="Right" /><TextBlock Grid.Column="2" Text="Δ VS 400" Classes="h3" HorizontalAlignment="Right" /></Grid>
               <ItemsControl ItemsSource="{Binding SaConvergence}">
                 <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:SasaConvRow">

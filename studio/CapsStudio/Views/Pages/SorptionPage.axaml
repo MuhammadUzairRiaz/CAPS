@@ -129,7 +129,7 @@
                 <ComboBox ItemsSource="{Binding SorbMapPressures}" SelectedIndex="{Binding SorbMapIndex}" HorizontalAlignment="Stretch" />
                 <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:MainViewModel.SorbMapFaces}" SelectedIndex="{Binding SorbMapFace}" HorizontalAlignment="Stretch" />
               </Grid>
-              <v:LinePlot x:Name="Map" Height="260" ZLabel="molecules/nm²" />
+              <v:SciPlot x:Name="Map" Height="260" />
               <TextBlock Text="{Binding SorbMapText}" Classes="dim" TextWrapping="Wrap" />
             </StackPanel>
           </Border>

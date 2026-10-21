@@ -1286,7 +1286,7 @@ public sealed partial class MainViewModel : ObservableObject
                     if (st != lastStage) { lastStage = st; lastIt = 0; }
                     total += Math.Max(0, it - lastIt);
                     lastIt = it;
-                    lock (series) series.Add((total, e, Math.Log10(Math.Max(f, 1e-6))));
+                    lock (series) series.Add((total, e, Math.Max(f, 1e-6)));   // the figure draws it on a log axis
                     if (sw.ElapsedMilliseconds - lastUi > 100)
                     {
                         lastUi = sw.ElapsedMilliseconds;
@@ -2161,6 +2161,8 @@ public sealed partial class MainViewModel : ObservableObject
     };
     /// <summary>The curve the chain plot compares with: the loaded target, else the RIS reference for alkanes.</summary>
     public (double X, double Y)[] ChainReference => _eqTarget == 2 && _eqTargetFile.Length > 0 ? _eqTargetFile : _risCurve;
+    /// <summary>What the reference curve is, for the figure's legend.</summary>
+    public string ChainReferenceName => _eqTarget == 2 && _eqTargetFile.Length > 0 ? "target (file)" : "RIS reference";
 
     /// <summary>Reads a target curve: lines of n and the value (whitespace or comma separated); others are skipped.</summary>
     public void LoadEqTarget(string path)
@@ -2487,7 +2489,7 @@ public sealed partial class MainViewModel : ObservableObject
                         {
                             PackLoop = loop;
                             PackBad = bad;
-                            PackCurve.Add((loop, Math.Log10(Math.Max(f, 1e-12))));
+                            PackCurve.Add((loop, Math.Max(f, 1e-12)));   // drawn on a log axis
                             PackCurveChanged?.Invoke();
                         }
                     });

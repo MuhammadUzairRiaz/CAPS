@@ -226,13 +226,13 @@
                 <TextBlock Text="Links between chains" Classes="h2" VerticalAlignment="Center" />
               </DockPanel>
             </Border>
-            <v:LinePlot Grid.Row="1" x:Name="ConvPlot" Margin="10,6,12,8" AutoRange="True" XLabel="cycle" YLabel="links (dashed: the target)" />
+            <v:SciPlot Grid.Row="1" x:Name="ConvPlot" Margin="10,6,12,8" />
           </Grid>
         </Border>
         <Border Grid.Row="2" Classes="card">
           <Grid RowDefinitions="38,*">
             <Border Classes="phead"><TextBlock Text="Gel point" Classes="h2" VerticalAlignment="Center" /></Border>
-            <v:LinePlot Grid.Row="1" x:Name="GelPlot" Margin="10,6,12,8" AutoRange="True" XLabel="conversion α" YLabel="largest cluster (mass fraction)" />
+            <v:SciPlot Grid.Row="1" x:Name="GelPlot" Margin="10,6,12,8" />
           </Grid>
         </Border>
       </Grid>

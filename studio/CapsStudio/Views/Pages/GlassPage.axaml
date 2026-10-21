@@ -74,7 +74,7 @@
           <Border Classes="pcard">
             <StackPanel Spacing="8">
               <TextBlock Text="Schedule computed from the settings" FontSize="13.5" FontWeight="SemiBold" />
-              <v:LinePlot x:Name="Schedule" Height="150" XLabel="time (ns) · one replica" YLabel="T (K)" AutoRange="True" />
+              <v:SciPlot x:Name="Schedule" Height="150" />
               <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
                 <StackPanel Spacing="2"><TextBlock Text="Temperatures" Classes="label" /><TextBlock Text="{Binding GtTemperaturesText}" Classes="mono" FontSize="15" /></StackPanel>
                 <StackPanel Grid.Column="1" Spacing="2"><TextBlock Text="Cooling rate" Classes="label" /><TextBlock Text="{Binding GtRateText}" Classes="mono" FontSize="13" /></StackPanel>

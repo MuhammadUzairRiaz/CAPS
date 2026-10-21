@@ -20,10 +20,7 @@ public partial class GlassPage : PageBase
             _hooked = vm;
             vm.GtChanged += () =>
             {
-                var sch = this.FindControl<LinePlot>("Schedule")!;
-                sch.RefY = null;
-                sch.XLabel = vm.GtScheduleAxis;
-                sch.SetData(vm.GtSchedule);
+                this.FindControl<SciPlot>("Schedule")!.Figure = ViewModels.PageFigures.GlassSchedule(vm.GtSchedule);
                 this.FindControl<SciPlot>("Vt")!.Figure = vm.GtPoints.Length > 1
                     ? AnalyzeFigures.Cooling(vm.GtPoints, vm.GtErrors, vm.GtLines, vm.GtYLabel.StartsWith("potential", StringComparison.Ordinal)) : null;
             };

@@ -25,9 +25,7 @@ public partial class FreeVolumePage : PageBase
                 view.ShowCell = true;
                 if (view.Document != vm.Document) { view.Document = vm.Document; view.Reset(); }
                 else view.Document = vm.Document;
-                var psd = this.FindControl<LinePlot>("Psd")!;
-                psd.RefY = null;
-                psd.SetData(vm.FvPsd);
+                this.FindControl<SciPlot>("Psd")!.Figure = ViewModels.PageFigures.PoreSizes(vm.FvPsd);
             };
         };
     }

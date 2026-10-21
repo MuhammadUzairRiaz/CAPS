@@ -23,22 +23,11 @@ public partial class DftResultsPage : PageBase
 
     private void Draw(MainViewModel vm)
     {
-        var b = this.FindControl<LinePlot>("Bind")!;
-        b.RefY = 0;
-        b.SetData(vm.BindBars);
-        var d = this.FindControl<LinePlot>("Dos")!;
-        d.RefY = null;
-        d.CursorX = 0;
-        d.SetData(vm.DosGroups.TryGetValue(vm.DosGroup, out var g) ? g : []);
-        var w = this.FindControl<LinePlot>("Wf")!;
-        w.RefY = 0;
-        w.SetData(vm.WfProfile);
-        var c = this.FindControl<LinePlot>("Cdd")!;
-        c.RefY = 0;
-        c.SetCompare(vm.CddProfile, vm.CddCumulative);
-        var m = this.FindControl<LinePlot>("Md")!;
-        m.RefY = null;
-        m.SetData(vm.MdHeight);
+        this.FindControl<SciPlot>("Bind")!.Figure = ViewModels.PageFigures.DftBinding(vm.BindBars);
+        this.FindControl<SciPlot>("Dos")!.Figure = ViewModels.PageFigures.DftDos(vm.DosGroups.TryGetValue(vm.DosGroup, out var g) ? g : [], vm.DosGroup);
+        this.FindControl<SciPlot>("Wf")!.Figure = ViewModels.PageFigures.DftWorkFunction(vm.WfProfile);
+        this.FindControl<SciPlot>("Cdd")!.Figure = ViewModels.PageFigures.DftCdd(vm.CddProfile, vm.CddCumulative);
+        this.FindControl<SciPlot>("Md")!.Figure = ViewModels.PageFigures.DftMdHeight(vm.MdHeight);
     }
 
     private async void OnRefresh(object? s, RoutedEventArgs e) => await Vm.RefreshResults();

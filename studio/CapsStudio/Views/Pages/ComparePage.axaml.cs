@@ -33,12 +33,10 @@ public partial class ComparePage : PageBase
             if (DataContext is not MainViewModel vm) return;
             vm.ComparePlotChanged += () =>
             {
-                var plot = this.FindControl<LinePlot>("ComparePlotView");
+                var plot = this.FindControl<SciPlot>("ComparePlotView");
                 if (plot == null) return;
                 var (a, b, x, y) = vm.ComparePlot();
-                plot.XLabel = x;
-                plot.YLabel = y;
-                plot.SetCompare(a, b);
+                plot.Figure = ViewModels.PageFigures.Compare(x, y, a, b);
             };
         };
     }

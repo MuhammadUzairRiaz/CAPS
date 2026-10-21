@@ -457,7 +457,7 @@ public sealed partial class MainViewModel
             }
         if (any)
         {
-            if (j.CurveA.Length == 0) { j.CurveA = "Temperature"; j.AxisA = "K"; j.CurveB = "Density"; j.AxisB = "g/cm³"; j.AxisX = "time / ps"; }
+            if (j.CurveA.Length == 0) { j.CurveA = "Temperature"; j.AxisA = "temperature (K)"; j.CurveB = "Density"; j.AxisB = "density (g/cm³)"; j.AxisX = "time (ps)"; }
             if (j.A.Count > 20000) j.A.RemoveRange(0, j.A.Count - 20000);
             if (j.B.Count > 20000) j.B.RemoveRange(0, j.B.Count - 20000);
             j.CurvesChanged();

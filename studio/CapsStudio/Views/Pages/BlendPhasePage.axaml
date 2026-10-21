@@ -41,7 +41,7 @@
               </DockPanel>
             </Border>
             <StackPanel Margin="10,8,14,14" Spacing="8">
-              <v:XyChart x:Name="Diagram" Height="380" XLabel="φ_A (polymer A volume fraction)" YLabel="T (K)" XMin="0" XMax="1" />
+              <v:SciPlot x:Name="Diagram" Height="380" />
               <TextBlock Text="{Binding BpNote}" Classes="dim" TextWrapping="Wrap" Margin="6,0,0,0" />
             </StackPanel>
           </DockPanel>
