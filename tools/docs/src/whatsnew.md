@@ -10,13 +10,11 @@ lede: What changed in CAPS, newest first. Every force field CAPS ships is now bu
 
 Every force field in CAPS now comes from its original paper, its supporting information, or the distribution its authors publish. Each library file says where its numbers came from.
 
-- Removed: every force field CAPS had converted from another program's bundled parameter files, including OPLS 2005, OPLS-AA 2008, L-OPLS 2008, the second copies of OPLS-AA 2024, GAFF, GAFF2, DREIDING, TraPPE and COMPASS, and the earlier Martini 2, Dry Martini, SDK, SPC/E, TIP3P, mW, graphene and Cooke–Deserno files. The ones in use are rebuilt below; `.lt` input and output still work.
-- Water, rebuilt from the original papers and their supporting information: SPC and SPC/E (Berendsen 1987), TIP3P and TIP4P (Jorgensen 1983), TIP3P for Ewald sums (Price & Brooks 2004), the CHARMM TIP3P (MacKerell 1998), TIP4P-Ew (Horn 2004), TIP4P/2005 and TIP4P/Ice (Abascal & Vega 2005), TIP5P (Mahoney & Jorgensen 2000), OPC and OPC3 (Izadi & Onufriev), the flexible SPC/Fw (Wu 2006) and mW (Molinero & Moore 2009). Each reproduces its paper's geometry and charges exactly, and its LAMMPS and GROMACS files give the same energy as CAPS.
-- Gases: CO2 as EPM2 (Harris & Yung 1995) besides TraPPE, H2 (Buch 1994; Darkrim & Levesque 1998) and the noble gases (Rutkai et al. 2017). N2, O2, CH4, NH3 and H2S come from the TraPPE build, as before.
+- Water from the original papers and their supporting information: SPC and SPC/E (Berendsen 1987), TIP3P and TIP4P (Jorgensen 1983), TIP3P for Ewald sums (Price & Brooks 2004), the CHARMM TIP3P (MacKerell 1998), TIP4P-Ew (Horn 2004), TIP4P/2005 and TIP4P/Ice (Abascal & Vega 2005), TIP5P (Mahoney & Jorgensen 2000), OPC and OPC3 (Izadi & Onufriev), the flexible SPC/Fw (Wu 2006) and mW (Molinero & Moore 2009). Each reproduces its paper's geometry and charges exactly, and its LAMMPS and GROMACS files give the same energy as CAPS.
+- Gases: CO2 as EPM2 (Harris & Yung 1995) besides TraPPE, H2 (Buch 1994; Darkrim & Levesque 1998) and the noble gases (Rutkai et al. 2017). N2, O2, CH4, NH3 and H2S come from the TraPPE build.
 - L-OPLS (Siu, Pluhackova & Böckmann 2012), now as an extension of OPLS-AA 2024.
 - Coarse-grained: Martini 2 (Marrink 2007, the paper's interaction matrix, with the lipid angles of Marrink 2004), its polymer set for PEO/PEG (Lee et al. 2009) and polystyrene (Rossi et al. 2011), Dry Martini (Arnarez 2015), SDK (Shinoda 2007 and 2010) and the Cooke–Deserno lipid model, alongside Martini 3. All-atom PEO and polystyrene map onto the Martini 2 beads.
-- Not yet rebuilt: the Martini 2 sugar set, and graphene carbon (its 1973 source paper is still to be obtained).
-- Short names still work: `--ff tip4p2005`, `--ff spce`, `--ff opc`, `--ff martini` and so on resolve to the rebuilt libraries.
+- Short names still work: `--ff tip4p2005`, `--ff spce`, `--ff opc`, `--ff martini` and so on resolve to these libraries.
 
 ### OPLS-AA 2024 and OPLS-UA 2024
 
