@@ -19,14 +19,21 @@ public partial class DiffusionPage : PageBase
             _hooked = vm;
             vm.DfChanged += () =>
             {
-                var msd = this.FindControl<LinePlot>("Msd")!;
-                msd.RefY = null;
-                msd.Band = vm.DfWindow;
-                msd.SetData(vm.DfMsd);
-                var slope = this.FindControl<LinePlot>("Slope")!;
-                slope.RefY = 1.0;
-                slope.Band = vm.DfWindow;
-                slope.SetData(vm.DfSlopeCurve);
+                // the curves are kept as log10 values; drawn on logarithmic axes
+                static double P(double v) => Math.Pow(10, v);
+                (double, double, string)? window = vm.DfWindow is { } w ? (P(w.From), P(w.To), "fit window") : null;
+                var msd = vm.DfMsd;
+                this.FindControl<SciPlot>("Msd")!.Figure = msd.Length < 2 ? null : new SciFigure
+                {
+                    XLabel = "*t* / ps", YLabel = "MSD / Å²", XLog = true, YLog = true, XBand = window,
+                    Series = [new SciSeries("chain centres of mass", msd.Select(p => P(p.X)).ToArray(), msd.Select(p => P(p.Y)).ToArray()) { Kind = SciKind.LineMarkers, Width = 1.4 }],
+                };
+                var sl = vm.DfSlopeCurve;
+                this.FindControl<SciPlot>("Slope")!.Figure = sl.Length < 2 ? null : new SciFigure
+                {
+                    XLabel = "*t* / ps", YLabel = "d ln MSD / d ln *t*", XLog = true, RefY = 1, XBand = window,
+                    Series = [new SciSeries("", sl.Select(p => P(p.X)).ToArray(), sl.Select(p => p.Y).ToArray()) { Kind = SciKind.LineMarkers, Width = 1.2 }],
+                };
             };
         };
     }

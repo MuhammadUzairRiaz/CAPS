@@ -669,28 +669,18 @@ public partial class MainWindow : Window
 
     private void ShowCurve(SeriesItem? c)
     {
-        if (c == null) { PropPlot.SetData([]); return; }
-        PropPlot.Markers = false;
-        var pts = Enumerable.Range(0, c.X.Length).Select(k => (X: c.X[k], Y: c.Y[k])).Where(p => double.IsFinite(p.X) && double.IsFinite(p.Y));
-        if (c.LogLog)
+        if (c == null) { PropPlot.Figure = null; return; }
+        var fig = c.Figure ?? new SciFigure
         {
-            pts = pts.Where(p => p.X > 0 && p.Y > 0).Select(p => (Math.Log10(p.X), Math.Log10(p.Y)));
-            PropPlot.XLabel = "log₁₀ " + c.XLabel;
-            PropPlot.YLabel = "log₁₀ " + c.YLabel;
-            PropPlot.RefY = null;
-        }
-        else
+            XLabel = AnalyzeFigures.Title(c.XLabel), YLabel = AnalyzeFigures.Title(c.YLabel), XLog = c.LogLog, YLog = c.LogLog, RefY = c.RefY,
+            Series = [new SciSeries("", c.X, c.Y)],
+        };
+        if (_vm.Analyze.CurrentFit is { } fit && fit.Line.Length > 1)   // the fitted model over the curve (fitted on log10 of both axes for a log–log curve)
         {
-            PropPlot.XLabel = c.XLabel;
-            PropPlot.YLabel = c.YLabel;
-            PropPlot.RefY = c.RefY;
+            var line = c.LogLog ? fit.Line.Select(p => (X: Math.Pow(10, p.X), Y: Math.Pow(10, p.Y))).ToArray() : fit.Line;
+            fig = fig with { Series = [.. fig.Series, new SciSeries("fit: " + fit.Model.Split("  ")[0].ToLowerInvariant(), line.Select(p => p.X).ToArray(), line.Select(p => p.Y).ToArray()) { Kind = SciKind.Dashed, Colour = 3, Width = 1.6 }] };
         }
-        if (c.Markers && c.OverlayX != null && c.OverlayY != null)
-            PropPlot.SetData(pts.ToArray(), Enumerable.Range(0, c.OverlayX.Length).Select(k => (c.OverlayX[k], c.OverlayY[k])).ToArray());
-        else if (_vm.Analyze.CurrentFit is { } fit)
-            PropPlot.SetWithFit(pts.ToArray(), fit.Line);   // the fitted model over the curve
-        else
-            PropPlot.SetData(pts.ToArray());
+        PropPlot.Figure = fig;
     }
 
     // ---------------------------------------------------------------- Field
