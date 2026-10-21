@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
@@ -24,8 +25,29 @@ public partial class DpdPage : PageBase
                 var q = this.FindControl<LinePlot>("Sq")!;
                 q.RefY = null;
                 q.SetData(vm.DpdSq);
+                ShowView(vm);
+            };
+            // another frame, or another structure made active: the view follows while the page is shown
+            vm.PropertyChanged += (_, e) =>
+            {
+                if (IsVisible && e.PropertyName is nameof(MainViewModel.Frame) or nameof(MainViewModel.DpdHasBeads)) ShowView(vm);
             };
         };
+    }
+
+    /// <summary>The run's beads in the page's own view (only while they are the open structure).</summary>
+    private void ShowView(MainViewModel vm)
+    {
+        var view = this.FindControl<MolView>("View")!;
+        var doc = vm.DpdHasBeads ? vm.Document : null;
+        if (view.Document != doc) { view.Document = doc; if (doc != null) view.Reset(); }
+        else if (doc != null) view.Refresh();
+    }
+
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == IsVisibleProperty && IsVisible && DataContext is MainViewModel vm) ShowView(vm);
     }
 
     private async void OnRun(object? s, RoutedEventArgs e) => await Vm.RunDpd();

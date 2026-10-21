@@ -119,6 +119,97 @@ internal static class Screenshot
                 for (int k = 0; k < 60; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
                 Console.WriteLine("cgflow: " + vm.CgwStatus);
             }
+            if (kv[0] == "dpd")   // dpd=SEQ*COUNT[+SEQ*COUNT]|CHI_AB|STEPS: Mesoscale (DPD) run with those species, awaited (e.g. A5B5*600|4.3|20000)
+            {
+                var vm = w.ViewModel;
+                var inv = System.Globalization.CultureInfo.InvariantCulture;
+                var f = kv[1].Split('|');
+                vm.OpenDpd();
+                vm.DpdSpecies.Clear();
+                foreach (var sp in f[0].Split('+'))
+                {
+                    var q = sp.Split('*');
+                    vm.DpdSpecies.Add(new ViewModels.DpdSpeciesRow { Name = q[0], Sequence = q[0], Count = decimal.Parse(q[1], inv) });
+                }
+                vm.DpdChis.Clear();
+                vm.DpdChis.Add(new ViewModels.DpdChiRow { Pair = "AB", Chi = decimal.Parse(f[1], inv) });
+                if (f.Length > 2) vm.DpdSteps = decimal.Parse(f[2], inv);
+                var t = vm.RunDpd();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+                for (int k = 0; k < 80; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+                Console.WriteLine("dpd: " + vm.Status + (vm.DpdHasError ? " · error " + vm.DpdError : "") + " · " + vm.DpdNote + " · " + vm.DpdDomains);
+            }
+            if (kv[0] == "pageview")   // pageview=YAW,PITCH[,ZOOM]: the open page's own structure view turned to that camera
+            {
+                var c = kv[1].Split(',').Select(x => double.Parse(x, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+                foreach (var mv in w.GetVisualDescendants().OfType<Views.MolView>().Where(m => m.Name == "View" && m.IsEffectivelyVisible))
+                    mv.Camera = new Interop.CapsCamera { Yaw = c[0], Pitch = c[1], Zoom = c.Length > 2 ? c[2] : 1.0 };
+                for (int k = 0; k < 60; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
+            if (kv[0] == "pagescroll")   // pagescroll=end: the open page's own scroll viewers to their end (the side panels stay)
+            {
+                for (int k = 0; k < 10; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+                foreach (var pg in w.GetVisualDescendants().OfType<Views.Pages.PageBase>().Where(p => p.IsEffectivelyVisible))
+                    foreach (var sv in pg.GetVisualDescendants().OfType<Avalonia.Controls.ScrollViewer>().Where(v => v.IsEffectivelyVisible && v.Extent.Height > v.Viewport.Height + 1))
+                        sv.Offset = new Avalonia.Vector(0, kv[1] == "end" ? sv.Extent.Height : double.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture));
+                for (int k = 0; k < 30; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
+            if (kv[0] == "sheet")   // sheet=LX,LY,LAYERS (Å, Å, count) on the Nanostructure builder's sheet, before nanobuild=1
+            {
+                var c = kv[1].Split(',').Select(x => decimal.Parse(x, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+                w.ViewModel.SheetLx = c[0]; w.ViewModel.SheetLy = c[1]; w.ViewModel.SheetLayers = c[2];
+                for (int k = 0; k < 20; ++k) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); }
+            }
+            if (kv[0] == "growcell")   // growcell=POLYMER_ID:FF_ID:CHAINS:DP:DENSITY: a library polymer grown into a cell with that force field assigned
+            {
+                var vm = w.ViewModel;
+                var inv = System.Globalization.CultureInfo.InvariantCulture;
+                var parts = kv[1].Split(':');
+                vm.LoadPolymerLibrary();
+                if (vm.PolymerLibrary.FirstOrDefault(e => e.Id == parts[0]) is { } poly) { vm.UseLibrary(poly, null); vm.SendPolymerToGrow(); }
+                vm.GrowChainsD = int.Parse(parts[2], inv); vm.GrowDpD = decimal.Parse(parts[3], inv); vm.GrowDensityD = decimal.Parse(parts[4], inv);
+                vm.Field.FfIndex = vm.Field.Library.ToList().FindIndex(e => e.Id == parts[1]);
+                vm.SetModule(0);
+                var t = vm.Grow();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); }
+                for (int k = 0; k < 400 && vm.Field.Working; ++k) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(25); }
+                Console.WriteLine($"growcell: {vm.Status} · field {vm.Field.ForceFieldName} incomplete={vm.Field.Incomplete}");
+            }
+            if (kv[0] == "adsorb")   // adsorb=SMILES*COUNT[+SMILES*COUNT]|CYCLES|STEPS: the Adsorption locator on the open structure, awaited
+            {
+                var vm = w.ViewModel;
+                var inv = System.Globalization.CultureInfo.InvariantCulture;
+                var f = kv[1].Split('|');
+                vm.OpenAdsorption();
+                vm.AdsRows.Clear();
+                foreach (var a in f[0].Split('+'))
+                {
+                    var q = a.Split('*');
+                    vm.AdsRows.Add(new ViewModels.AdsorbateRow { Smiles = q[0], Count = decimal.Parse(q[1], inv) });
+                }
+                if (f.Length > 1) vm.AdsCyclesD = decimal.Parse(f[1], inv);
+                if (f.Length > 2) vm.AdsStepsD = decimal.Parse(f[2], inv);
+                var t = vm.RunAdsorption();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+                for (int k = 0; k < 80; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+                Console.WriteLine("adsorb: " + vm.Status + (vm.AdsHasError ? " · error " + vm.AdsError : "") + " · " + vm.AdsSplit + " · " + vm.AdsNote);
+            }
+            if (kv[0] == "sorb")   // sorb=SMILES|PRESSURES (kPa, comma-separated)|INSERTIONS|STEPS: Sorption in the open structure, awaited
+            {
+                var vm = w.ViewModel;
+                var inv = System.Globalization.CultureInfo.InvariantCulture;
+                var f = kv[1].Split('|');
+                vm.OpenSorption();
+                vm.Sorbate = f[0];
+                if (f.Length > 1) vm.SorbPressures = f[1].Replace(',', ' ');
+                if (f.Length > 2) vm.SorbInsertD = decimal.Parse(f[2], inv);
+                if (f.Length > 3) vm.SorbStepsD = decimal.Parse(f[3], inv);
+                var t = vm.RunSorption();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+                for (int k = 0; k < 80; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+                Console.WriteLine("sorb: " + vm.Status + (vm.SorbHasError ? " · error " + vm.SorbError : "") + $" · W {vm.SorbW} · mu_ex {vm.SorbMu} · K_H {vm.SorbHenry} · S {vm.SorbS} · " +
+                    string.Join("; ", vm.SorbRows.Select(r => $"{r.Pressure} kPa {r.Loading} ({r.MolKg} mol/kg, {r.Heat} kcal/mol)")) + " · " + vm.SorbNote);
+            }
             if (kv[0] == "figure")   // figure=BG: Export › Figure with that background selected
             {
                 w.ViewModel.OpenFigure();

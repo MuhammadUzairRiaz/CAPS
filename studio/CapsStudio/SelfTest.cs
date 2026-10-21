@@ -1391,6 +1391,9 @@ internal static class SelfTest
                   && MainViewModel.ExpandSequence("A2B3") == "AABBB" && vm.Document!.Provenance().Contains("dpd.run"),
                   $"DPD: ψ {vm.DpdOrder} · spacing {vm.DpdSpacing} · kT {vm.DpdKt} · {vm.DpdError}");
             Check(vm.DpdDomains.Contains("domain") && MainViewModel.ExpandSequence("A5(B3)A5") == "AAAAA(BBB)AAAAA", $"DPD domains: {vm.DpdDomains} · branched {MainViewModel.ExpandSequence("A5(B3)A5")}");
+            // the page's view holds the run's beads at the last frame (the domains, not the random start)
+            Check(vm.DpdHasBeads && vm.Frames > 1 && vm.Frame == vm.FrameMax && vm.DpdViewTitle.Contains($"frame {vm.Frames} of {vm.Frames}"),
+                  $"DPD view: beads {vm.DpdHasBeads} · frame {vm.Frame + 1} of {vm.Frames} · {vm.DpdViewTitle}");
             vm.SetModule(8);
         }
 

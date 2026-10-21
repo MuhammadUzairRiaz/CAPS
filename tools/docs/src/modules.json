@@ -1178,7 +1178,7 @@
    "shots": [
     {
      "img": "24_dpd.jpg",
-     "cap": "**Mesoscale · dissipative particle dynamics**: species, χ between bead types and the segregation over the run."
+     "cap": "**Mesoscale · dissipative particle dynamics**: 600 symmetric A5B5 diblocks (6,000 beads, ρ = 3) with χ_AB = 4.30 (χN = 43), 20,000 steps from a random mix. The last frame shows two lamellar periods (A grey, B red); ψ rises to 0.66 and S(q) peaks at q* = 1.00/r_c, a spacing of 6.3 r_c (41 Å)."
     }
    ],
    "steps": [
@@ -1203,7 +1203,7 @@
     {
      "t": "Press Run DPD",
      "d": [
-      "Follow **Segregation over the run** and the structure factor of the first bead type; the result gives ψ, the domain spacing and the domains at the end."
+      "Follow **Segregation over the run** and the structure factor of the first bead type; the result gives ψ, the domain spacing and the domains at the end, and the page's view shows the beads of the last frame coloured by bead type."
      ]
     }
    ],
@@ -1227,7 +1227,11 @@
    "shots": [
     {
      "img": "25_adsorption.jpg",
-     "cap": "**Adsorption locator**: the adsorbates, the search region and the lowest configurations found."
+     "cap": "**Adsorption locator**: 16 CO₂ annealed above a two-layer graphene slab (30 × 30 Å, 672 fixed atoms, UFF), 3 cycles of 20,000 steps from 10⁴ K to 100 K. The CO₂ lie flat on the top face; adsorption energy −72.27 kcal/mol, dE/dN −4.98 kcal/mol per CO₂, with the energies sampled at the cold end and the lowest configuration of each cycle."
+    },
+    {
+     "img": "25b_sorption.jpg",
+     "cap": "**Sorption**: CO₂ in a cis-1,4-polyisoprene (natural rubber) cell, 8 chains of 20 units at 0.85 g/cm³ with PCFF, 300 K. Widom insertion gives S = 1.79 cm³(STP)/(cm³·atm); the GCMC isotherm at 100, 300, 1000 and 3000 kPa reaches 1.12 mol/kg, with q_st from 4.7 to 4.4 kcal/mol."
     }
    ],
    "steps": [
