@@ -140,7 +140,7 @@ dialog img{max-width:96vw;max-height:94vh;display:block;border-radius:6px;cursor
 <section id="project">
   <h2>Project tree</h2>
   <p class="lede">The Studio's left panel lists every structure in the project.</p>
-  <figure><button type="button" aria-label="Enlarge"><img src="img/13_nano_matrix.jpg" alt="Studio with a graphene sheet, project tree showing edit and delete icons" loading="lazy"></button>
+  <figure><button type="button" aria-label="Enlarge"><img src="img/13_nano_matrix.jpg" alt="Studio with a nanotube in a rubber matrix, project tree showing edit and delete icons" loading="lazy"></button>
     <figcaption><b>Project tree.</b> Each row has <b>Edit</b> (pencil) and <b>Delete</b> (bin). Right-click a row for the same options.</figcaption></figure>
   <ul>
     <li><b>Edit</b> reopens the builder that made the structure, with its settings. A molecule reopens with its SMILES. A grown cell reopens in Polymer cell, a filler in Nanostructure, a slab in Surface, and so on. Structures read from a file open in the Studio's editing tools.</li>
@@ -164,7 +164,7 @@ dialog img{max-width:96vw;max-height:94vh;display:block;border-radius:6px;cursor
   </ol>
   <div class="grid2">
     <figure><button type="button" aria-label="Enlarge"><img src="img/04_polymer.jpg" alt="Polymer builder with styrene" loading="lazy"></button><figcaption><b>Step 1.</b> Polymer builder with styrene, atactic, DP 8 preview.</figcaption></figure>
-    <figure><button type="button" aria-label="Enlarge"><img src="img/05_grow.jpg" alt="Polymer cell grown" loading="lazy"></button><figcaption><b>Step 2.</b> 10 chains × 30 units, 4,820 atoms at 0.60 g/cm³.</figcaption></figure>
+    <figure><button type="button" aria-label="Enlarge"><img src="img/05_grow.jpg" alt="Polymer cell grown" loading="lazy"></button><figcaption><b>Step 2.</b> 10 chains × 30 units, 4,820 atoms grown at 0.90 g/cm³, OPLS-AA 2024 assigned.</figcaption></figure>
   </div>
 </section>
 
@@ -180,8 +180,8 @@ dialog img{max-width:96vw;max-height:94vh;display:block;border-radius:6px;cursor
     <li><div>Carry on as in pipeline 1: <b>Minimise → Equilibrate → Export</b>.</div></li>
   </ol>
   <div class="grid2">
-    <figure><button type="button" aria-label="Enlarge"><img src="img/12_nano_sheet.jpg" alt="Nanostructure builder, graphene sheet" loading="lazy"></button><figcaption><b>Steps 1–3.</b> Graphene sheet with the Functional groups panel and <b>Graft on</b>.</figcaption></figure>
-    <figure><button type="button" aria-label="Enlarge"><img src="img/13_nano_matrix.jpg" alt="Built sheet in the Studio" loading="lazy"></button><figcaption>The built sheet open in the Studio: 160 atoms, made by the Nanostructure builder.</figcaption></figure>
+    <figure><button type="button" aria-label="Enlarge"><img src="img/12_nano_sheet.jpg" alt="Graphene sheet with carboxyl groups grafted" loading="lazy"></button><figcaption><b>Steps 1–3.</b> A 30 × 30 Å graphene sheet with carboxyl grafted on 5 % of its sites (17 groups), coloured by element.</figcaption></figure>
+    <figure><button type="button" aria-label="Enlarge"><img src="img/13_nano_matrix.jpg" alt="Nanotube in a rubber matrix in the Studio" loading="lazy"></button><figcaption><b>Step 4.</b> A (10,10) carbon nanotube with 10 cis-polyisoprene chains grown around it: 3,020 atoms.</figcaption></figure>
   </div>
   <div class="note">Grafted groups need a relax before dynamics. Run <b>Minimise</b> first, because a freshly grafted group can sit close to its neighbours.</div>
 </section>
@@ -217,7 +217,7 @@ dialog img{max-width:96vw;max-height:94vh;display:block;border-radius:6px;cursor
   </ol>
   <div class="note">CAPS checks the force field. PCFF's main table gives epoxide ring angles general values (104.5–111°), about 108 kcal/mol of strain per ENR epoxide, and the Force field step says so. For epoxidised rubber, GAFF (cx/op) describes the ring properly.</div>
   <figure><button type="button" aria-label="Enlarge"><img src="img/16_react.jpg" alt="React page after crosslinking PCFF polyethylene" loading="lazy"></button>
-    <figcaption><b>React.</b> Ten PCFF polyethylene chains crosslinked between chains to one link per chain. The live view keeps each chain's colour and circles the links. Network: 5 of 5 links, DC 3.33 %, PCFF re-assigned.</figcaption></figure>
+    <figcaption><b>React.</b> Sulfur vulcanization of a natural-rubber cell (8 chains × 20 units, GAFF2) with 20 H–S–S–H donors: 8 of 8 links between chains, all disulfide bridges, DC 10 %. The live view circles the links; the link map shows which units each bridge joins.</figcaption></figure>
 </section>
 
 <section id="p-surface">
@@ -276,7 +276,7 @@ dialog img{max-width:96vw;max-height:94vh;display:block;border-radius:6px;cursor
 <section id="f-start">
   <h2>Start</h2>
   <figure><button type="button" aria-label="Enlarge"><img src="img/01_start.jpg" alt="Start page" loading="lazy"></button>
-    <figcaption><b>Start.</b> Type a SMILES, file path or module name; pick a builder; reopen recent work; follow a guided example.</figcaption></figure>
+    <figcaption><b>Start.</b> Type a SMILES, file path or module name; pick a builder; open a project or a sample; follow a guided example.</figcaption></figure>
   <ul>
     <li>The search box accepts a SMILES, a file path or a page name.</li>
     <li>The six tiles open the main builders: Molecule, Polymer, Crystal, Amorphous cell, Surface or interface, and Solvated system.</li>
@@ -288,7 +288,7 @@ dialog img{max-width:96vw;max-height:94vh;display:block;border-radius:6px;cursor
 <section id="f-studio">
   <h2>Studio</h2>
   <figure><button type="button" aria-label="Enlarge"><img src="img/02_studio.jpg" alt="Studio view with the polystyrene melt" loading="lazy"></button>
-    <figcaption><b>Studio.</b> 3D view, project tree, properties, inspector and analysis tabs.</figcaption></figure>
+    <figcaption><b>Studio.</b> A minimised polystyrene cell (4,820 atoms, OPLS-AA 2024) with its layers, properties, checks and the intermolecular C–C g(r).</figcaption></figure>
   <ul>
     <li><b>Toolbar:</b> select, lasso, move, rotate, draw bonds, cut, add H, rings, element picker, measure, charts, pin, save, layers, links, search, history, visibility, colour and projection. The last button is full-screen view, which has its own Cell and Wrap toggles.</li>
     <li><b>Right panel:</b> the Atom, Molecule, View and File tabs, plus Validation. <span class="ui">All checks…</span> lists every file check.</li>
@@ -300,7 +300,7 @@ dialog img{max-width:96vw;max-height:94vh;display:block;border-radius:6px;cursor
 <section id="f-molecule">
   <h2>Molecule builder</h2>
   <figure><button type="button" aria-label="Enlarge"><img src="img/03_molecule.jpg" alt="Molecule builder" loading="lazy"></button>
-    <figcaption><b>Build › Molecule.</b> Draw or type SMILES; CAPS builds 3D coordinates.</figcaption></figure>
+    <figcaption><b>Build › Molecule.</b> The accelerator CBS from its SMILES: the sketch, the 3D structure and five GAFF2 conformers.</figcaption></figure>
   <p>Use it for monomers, curatives, solvents, plasticisers and small additives. Then send the molecule to Packing to fill a box, or to Polymer as a repeat unit.</p>
 </section>
 
@@ -326,7 +326,7 @@ dialog img{max-width:96vw;max-height:94vh;display:block;border-radius:6px;cursor
 <section id="f-grow">
   <h2>Polymer cell (CAPS Grow)</h2>
   <figure><button type="button" aria-label="Enlarge"><img src="img/05_grow.jpg" alt="Polymer cell page after growing" loading="lazy"></button>
-    <figcaption><b>Polymer cell.</b> Components, force field, cell settings and the live growth view.</figcaption></figure>
+    <figcaption><b>Polymer cell.</b> 10 polystyrene chains × 30 units grown at 0.90 g/cm³, OPLS-AA 2024 assigned, with the growth counters.</figcaption></figure>
   <ul>
     <li><b>Components:</b> each polymer with its chains, DP and dispersity Đ. <span class="ui">Choose polymer…</span> adds another one.</li>
     <li><b>Force field:</b> choose it here, and it is assigned when growing finishes. <span class="ui">Compare all force fields</span> shows which force fields cover the polymer.</li>
@@ -339,7 +339,7 @@ dialog img{max-width:96vw;max-height:94vh;display:block;border-radius:6px;cursor
 <section id="f-field">
   <h2>Force field</h2>
   <figure><button type="button" aria-label="Enlarge"><img src="img/06_field.jpg" alt="Force field typing report" loading="lazy"></button>
-    <figcaption><b>Force field · typing report</b> for the grown PCFF cell: 4,820 atoms typed, 0 missing terms. The panel on the right lists the other force fields that also describe the structure completely. </figcaption></figure>
+    <figcaption><b>Force field · typing report</b> for the grown cell with OPLS-AA 2024: 4,820 atoms typed, 0 missing terms, each atom with the rule that typed it. The panel on the right lists the other force fields that also describe the structure completely.</figcaption></figure>
   <ul>
     <li>Choose the force field and the charges, then press <span class="ui">Assign · retype all</span>. The chips above the table show typed, untyped, missing terms, estimated terms and net charge.</li>
     <li>Click a row, or an atom in 3D, to see the rule that matched and the other rules it also matched. You can override the type by hand.</li>
@@ -351,8 +351,8 @@ dialog img{max-width:96vw;max-height:94vh;display:block;border-radius:6px;cursor
 <section id="f-pack">
   <h2>Packing and Blend</h2>
   <div class="grid2">
-    <figure><button type="button" aria-label="Enlarge"><img src="img/10_pack.jpg" alt="Packing page" loading="lazy"></button><figcaption><b>Packing.</b> Fill a box, or the space around the current structure, with molecules.</figcaption></figure>
-    <figure><button type="button" aria-label="Enlarge"><img src="img/11_blend.jpg" alt="Blend builder" loading="lazy"></button><figcaption><b>Blend.</b> Several polymers grown together in one cell.</figcaption></figure>
+    <figure><button type="button" aria-label="Enlarge"><img src="img/10_pack.jpg" alt="Packing page" loading="lazy"></button><figcaption><b>Packing.</b> 12 S₈ rings and 4 CBS molecules packed into the free space of a natural-rubber cell, every distance at least 2 Å.</figcaption></figure>
+    <figure><button type="button" aria-label="Enlarge"><img src="img/11_blend.jpg" alt="Blend builder" loading="lazy"></button><figcaption><b>Blend.</b> Natural rubber and cis-polybutadiene, 70:30 by weight, grown together in one cell (2,904 atoms).</figcaption></figure>
   </div>
   <p>Use Packing for solvents, gases, curatives and fillers, and when adding small molecules to a grown cell (<i>Pack into › Around the current structure</i>).</p>
 </section>
@@ -361,7 +361,7 @@ dialog img{max-width:96vw;max-height:94vh;display:block;border-radius:6px;cursor
   <h2>Crystal and Surface</h2>
   <div class="grid2">
     <figure><button type="button" aria-label="Enlarge"><img src="img/14_crystal.jpg" alt="Crystal builder" loading="lazy"></button><figcaption><b>Crystal.</b> Space group, lattice, CIF import and supercells.</figcaption></figure>
-    <figure><button type="button" aria-label="Enlarge"><img src="img/15_surface.jpg" alt="Surface builder with quartz" loading="lazy"></button><figcaption><b>Surface.</b> Cleave a crystal, choose the termination, add vacuum or grow a film.</figcaption></figure>
+    <figure><button type="button" aria-label="Enlarge"><img src="img/15_surface.jpg" alt="Surface builder with quartz" loading="lazy"></button><figcaption><b>Surface.</b> A hydroxylated α-quartz (001) slab with a cis-polyisoprene film grown on it.</figcaption></figure>
   </div>
   <p><b>Saving a crystal or slab.</b> In the Studio's File buttons, or <span class="ui">File › Save as</span>:</p>
   <ul>
@@ -374,7 +374,7 @@ dialog img{max-width:96vw;max-height:94vh;display:block;border-radius:6px;cursor
 <section id="f-nano">
   <h2>Nanostructure</h2>
   <figure><button type="button" aria-label="Enlarge"><img src="img/12_nano_sheet.jpg" alt="Nanostructure builder" loading="lazy"></button>
-    <figcaption><b>Build › Nanostructure.</b> Sheet, Nanotube, Particle or Pore; functional groups; polymer matrix.</figcaption></figure>
+    <figcaption><b>Build › Nanostructure.</b> A graphene sheet with carboxyl groups grafted on 5 % of its sites.</figcaption></figure>
   <ul>
     <li><b>Sheet:</b> graphene or h-BN, with width in x and y and a number of layers (AB-stacked, 3.35 Å apart). Periodic in the plane, or a flake with H edges.</li>
     <li><b>Nanotube:</b> chirality and length. <b>Particle:</b> shape and size; the surface relax is optional and not offered for metals. <b>Pore:</b> a pore with an optional united-atom fluid.</li>
@@ -386,7 +386,7 @@ dialog img{max-width:96vw;max-height:94vh;display:block;border-radius:6px;cursor
 <section id="f-solv">
   <h2>Solvation</h2>
   <figure><button type="button" aria-label="Enlarge"><img src="img/21_solvation.jpg" alt="Solvation builder" loading="lazy"></button>
-    <figcaption><b>Build › Solvation.</b> Box, solvent model and ions around a solute.</figcaption></figure>
+    <figcaption><b>Build › Solvation.</b> A PEO chain in TIP4P/2005 water with 0.15 mol/L NaCl (9,206 atoms); the water is ghosted.</figcaption></figure>
 </section>
 
 <section id="f-cg">
@@ -406,14 +406,14 @@ dialog img{max-width:96vw;max-height:94vh;display:block;border-radius:6px;cursor
 <section id="f-relax">
   <h2>Minimise</h2>
   <figure><button type="button" aria-label="Enlarge"><img src="img/07_relax.jpg" alt="Minimise page after a run" loading="lazy"></button>
-    <figcaption><b>Minimise.</b> Energy minimisation with an optional compression to a target density.</figcaption></figure>
+    <figcaption><b>Minimise.</b> L-BFGS on the grown cell, compressed from 0.90 to 1.05 g/cm³, with the energy and largest-force curves.</figcaption></figure>
   <p>The reported |F|max counts free atoms only. Atoms you pinned or held fixed are not included.</p>
 </section>
 
 <section id="f-eq">
   <h2>Equilibrate</h2>
   <figure><button type="button" aria-label="Enlarge"><img src="img/09_equilibrate.jpg" alt="Equilibrate page" loading="lazy"></button>
-    <figcaption><b>Equilibrate.</b> Published protocols, then production blocks until converged. Density, energy and Rg are plotted live.</figcaption></figure>
+    <figcaption><b>Equilibrate.</b> The 21-step protocol, shortened for the picture, then production blocks: density, energy and Rg drawn as they run.</figcaption></figure>
   <ul>
     <li>The Protocol dropdown lists published schemes, such as Larsen et al. 21-step (2011): 21 stages, 1,560 ps. Set T final, T max, P final and a time multiplier.</li>
     <li><span class="ui">Production blocks until converged</span> adds blocks until density, energy and Rg stop drifting, up to the maximum number of blocks.</li>
@@ -424,7 +424,7 @@ dialog img{max-width:96vw;max-height:94vh;display:block;border-radius:6px;cursor
 <section id="f-md">
   <h2>Dynamics</h2>
   <figure><button type="button" aria-label="Enlarge"><img src="img/08_dynamics.jpg" alt="Dynamics page" loading="lazy"></button>
-    <figcaption><b>Dynamics.</b> NVE, NVT or NPT, with steps, time step, thermostat, barostat and constraints. Snapshots are shown live.</figcaption></figure>
+    <figcaption><b>Dynamics.</b> 2,000 steps of NPT at 300 K: temperature and density as they ran, and the run report.</figcaption></figure>
 </section>
 
 <section id="f-react">
@@ -436,7 +436,7 @@ dialog img{max-width:96vw;max-height:94vh;display:block;border-radius:6px;cursor
   <h2>Analyze</h2>
   <div class="grid2">
     <figure><button type="button" aria-label="Enlarge"><img src="img/18_analyze.jpg" alt="Diffusion analysis" loading="lazy"></button><figcaption><b>Diffusion.</b> Einstein MSD with a fit-window check and the Yeh–Hummer box-size correction.</figcaption></figure>
-    <figure><button type="button" aria-label="Enlarge"><img src="img/22_glass.jpg" alt="Glass transition" loading="lazy"></button><figcaption><b>Glass transition.</b> Cooling scan and Tg fit.</figcaption></figure>
+    <figure><button type="button" aria-label="Enlarge"><img src="img/22_glass.jpg" alt="Glass transition" loading="lazy"></button><figcaption><b>Glass transition.</b> A short demonstration cooling scan of a polyethylene cell and its two-line fit; a Tg to quote needs much longer holds.</figcaption></figure>
   </div>
   <p>Other analyses include density, g(r), chain statistics, free volume, interface profiles, moduli from tensile runs (x, y, z or averaged), orientation and scattering. Each one exports CSV.</p>
 </section>
@@ -444,7 +444,7 @@ dialog img{max-width:96vw;max-height:94vh;display:block;border-radius:6px;cursor
 <section id="f-export">
   <h2>Export</h2>
   <figure><button type="button" aria-label="Enlarge"><img src="img/19_export.jpg" alt="Export page" loading="lazy"></button>
-    <figcaption><b>Export.</b> The PCFF polystyrene cell: every check is green, and the LAMMPS data and input files are ready. GROMACS is refused for class II and the reason is shown.</figcaption></figure>
+    <figcaption><b>Export.</b> The OPLS-AA 2024 polystyrene cell: every check is green, and the LAMMPS and GROMACS files are ready to write.</figcaption></figure>
   <ul>
     <li><b>LAMMPS:</b> the force field's own styles (or hybrid), electrostatics, cut-off, k-space accuracy and units. The run protocol covers T, P, time step, steps, minimise first and bond constraints.</li>
     <li><b>Checked before writing:</b> CAPS lists anything that would stop the deck running. For example, if no force field is assigned, it offers <span class="ui">Open the Force field step</span>.</li>
@@ -456,8 +456,8 @@ dialog img{max-width:96vw;max-height:94vh;display:block;border-radius:6px;cursor
 <section id="f-jobs">
   <h2>Jobs and project</h2>
   <div class="grid2">
-    <figure><button type="button" aria-label="Enlarge"><img src="img/23_jobs.jpg" alt="Jobs page" loading="lazy"></button><figcaption><b>Jobs.</b> Running and finished runs, local or on a remote host.</figcaption></figure>
-    <figure><button type="button" aria-label="Enlarge"><img src="img/20_project.jpg" alt="Project page" loading="lazy"></button><figcaption><b>Project.</b> Every structure in the folder, with a Methods section written from provenance.</figcaption></figure>
+    <figure><button type="button" aria-label="Enlarge"><img src="img/23_jobs.jpg" alt="Jobs page" loading="lazy"></button><figcaption><b>Jobs.</b> Grow, Relax and an NPT run, finished; the run selected with its curves, log and provenance.</figcaption></figure>
+    <figure><button type="button" aria-label="Enlarge"><img src="img/20_project.jpg" alt="Project page" loading="lazy"></button><figcaption><b>Project.</b> Three recipe runs in one folder, the results table and a Methods section written from provenance.</figcaption></figure>
   </div>
   <p>The Project page drafts a Methods paragraph and BibTeX from each structure's provenance: every builder, force field and protocol you used, with its citation.</p>
 </section>
