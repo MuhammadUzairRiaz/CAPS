@@ -416,6 +416,7 @@ public partial class MainViewModel
                 if ((string?)p["name"] is { Length: > 0 } n && !DftProfiles.Contains(n)) DftProfiles.Add(n);
         if (_jobStructure.Length == 0 && HasSlab) JobStructure = SlabPath;
         if (_jobOut.Length == 0) JobOut = Path.Combine(DftRoot, "structures", "case");
+        LoadDftCrystals();
         LoadProfileText();
         UpdateMesh();
         SetModule(77);
@@ -511,6 +512,65 @@ public partial class MainViewModel
         var r = await Dft("vasp-set", a);
         if (r == null) return;
         DftStatus = $"VASP set written to {_jobOut} · submit: cd {_jobOut} && sbatch job.slurm";
+    }
+
+    // ---------------------------------------------------------------- crystals: relaxation chain and phono3py (module 77)
+    public static readonly string[] DftDimensionalities = ["3D crystal", "2D sheet (vacuum along c)"];
+    public static readonly string[] DftP3Modes = ["auto (random above 3000 supercells)", "full set", "random + symfc", "both (full/ and random/)"];
+    /// <summary>The crystals of data/crystals the chain can start from (polymer crystals first); "" = the structure file above.</summary>
+    public ObservableCollection<string> DftCrystals { get; } = new();
+    private int _dftCrystal, _dftDim, _dftP3Mode;
+    private string _dftAccount = "", _dftCrystalText = "";
+    public int DftCrystalIndex { get => _dftCrystal; set => Set(ref _dftCrystal, value); }
+    public int DftDim { get => _dftDim; set => Set(ref _dftDim, value); }
+    public int DftP3Mode { get => _dftP3Mode; set => Set(ref _dftP3Mode, value); }
+    public string DftAccount { get => _dftAccount; set => Set(ref _dftAccount, value ?? ""); }
+    public string DftCrystalText { get => _dftCrystalText; private set => Set(ref _dftCrystalText, value); }
+
+    private void LoadDftCrystals()
+    {
+        if (DftCrystals.Count > 0 || DftDataDir.Length == 0) return;
+        DftCrystals.Add("(the structure file above)");
+        try
+        {
+            var cat = JsonNode.Parse(File.ReadAllText(Path.Combine(DftDataDir, "crystals", "catalogue.json")))!["crystals"]!.AsArray().OfType<JsonObject>().ToList();
+            foreach (var e in cat.Where(e => (string?)e["kind"] == "polymer").Concat(cat.Where(e => (string?)e["kind"] != "polymer")))
+                DftCrystals.Add((string?)e["id"] ?? "");
+        }
+        catch (Exception e) { DftStatus = "crystals: " + e.Message; }
+        _dftCrystal = DftCrystals.Count > 1 ? 1 : 0;
+        Raise(nameof(DftCrystalIndex));
+    }
+
+    /// <summary>The crystal workflows through the command layer: "relax" (caps vasp-relax), "estimate" and "setup" (caps phono3py).</summary>
+    public async Task DftCrystal(string action)
+    {
+        LoadDftCrystals();
+        var input = _dftCrystal > 0 && _dftCrystal < DftCrystals.Count ? DftCrystals[_dftCrystal] : _jobStructure;
+        if (input.Length == 0) { DftStatus = "Choose a crystal or a structure file"; return; }
+        var baseDir = _jobOut.TrimEnd('/', '\\');
+        var a = new JsonObject { ["dimensionality"] = _dftDim == 1 ? "2d" : "3d", ["profile"] = DftProfile };
+        if (_dftAccount.Length > 0) a["account"] = _dftAccount;
+        if (PotcarDir.Length > 0) a["pp_dir"] = PotcarDir;
+        JsonObject? r;
+        if (action == "relax")
+        {
+            a["inputs"] = new JsonArray(input);
+            a["out"] = baseDir + "_relax";
+            r = await Dft("vasp-relax", a);
+        }
+        else
+        {
+            // a relaxation folder written before is the better start (its POSCAR-unitcell and relax4's ENCUT)
+            var relaxed = baseDir + "_relax";
+            a["inputs"] = new JsonArray(action == "setup" ? "setup" : "estimate", Directory.Exists(relaxed) ? relaxed : input);
+            a["mode"] = _dftP3Mode switch { 1 => "full", 2 => "random", 3 => "both", _ => "auto" };
+            if (action == "setup") a["out"] = baseDir + "_kappa";
+            r = await Dft("phono3py", a);
+        }
+        if (r == null) return;
+        DftCrystalText = (string?)r["text"] ?? "";
+        DftStatus = action == "estimate" ? "Estimate only: nothing written" : $"Written: {(action == "relax" ? baseDir + "_relax" : baseDir + "_kappa")} (README / job.slurm say how to submit)";
     }
 
     /// <summary>The project's long-term storage: <root>/.store holds the path; jobs then create their stage folders there.</summary>

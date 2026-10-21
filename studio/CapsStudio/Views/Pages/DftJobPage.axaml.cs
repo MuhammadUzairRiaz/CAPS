@@ -11,6 +11,9 @@ public partial class DftJobPage : PageBase
 
     private async void OnPreview(object? s, RoutedEventArgs e) => await Vm.PreviewJob();
     private async void OnWrite(object? s, RoutedEventArgs e) => await Vm.WriteJob();
+    private async void OnRelaxChain(object? s, RoutedEventArgs e) => await Vm.DftCrystal("relax");
+    private async void OnP3Estimate(object? s, RoutedEventArgs e) => await Vm.DftCrystal("estimate");
+    private async void OnP3Setup(object? s, RoutedEventArgs e) => await Vm.DftCrystal("setup");
     private async void OnCopyCli(object? s, RoutedEventArgs e) { if (TopLevel.GetTopLevel(this)?.Clipboard is { } c) await c.SetTextAsync(Vm.DftCli); }
     private async void OnStructure(object? s, RoutedEventArgs e)
     {

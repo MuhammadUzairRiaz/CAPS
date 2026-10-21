@@ -110,6 +110,24 @@
           </Border>
           <Border Classes="pcard">
             <StackPanel Spacing="8">
+              <TextBlock Text="Crystal: relaxation chain and thermal conductivity" FontSize="13.5" FontWeight="SemiBold" />
+              <TextBlock Classes="dim" FontSize="11" TextWrapping="Wrap" Text="relax1 … relax4 (about 2 × and 3 × ENMAX, ISIF 3 3 4 2) then phono3py: displacements, fc3 / fc2 arrays, check, forces, force constants, κ. The case folder gets _relax and _kappa." />
+              <StackPanel Spacing="3"><TextBlock Text="Crystal" Classes="label" /><ComboBox ItemsSource="{Binding DftCrystals}" SelectedIndex="{Binding DftCrystalIndex}" HorizontalAlignment="Stretch" /></StackPanel>
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                <StackPanel Spacing="3"><TextBlock Text="Dimensionality" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.DftDimensionalities}" SelectedIndex="{Binding DftDim}" HorizontalAlignment="Stretch" ToolTip.Tip="2D: the cell relaxes in plane only, k, supercells and q-mesh are 1 along c, a polar sheet gets the dipole correction" /></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="3"><TextBlock Text="phono3py displacements" Classes="label" /><ComboBox ItemsSource="{x:Static vm:MainViewModel.DftP3Modes}" SelectedIndex="{Binding DftP3Mode}" HorizontalAlignment="Stretch" /></StackPanel>
+              </Grid>
+              <StackPanel Spacing="3"><TextBlock Text="Slurm account" Classes="label" /><TextBox Text="{Binding DftAccount}" Classes="mono" FontSize="11.5" /></StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <Button Classes="small" Content="Relaxation chain" Click="OnRelaxChain" IsEnabled="{Binding DftIdle}" />
+                <Button Classes="small" Content="Estimate κ cost" Click="OnP3Estimate" IsEnabled="{Binding DftIdle}" />
+                <Button Classes="small" Content="phono3py set" Click="OnP3Setup" IsEnabled="{Binding DftIdle}" />
+              </StackPanel>
+              <SelectableTextBlock Text="{Binding DftCrystalText}" Classes="mono" FontSize="11" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
               <TextBlock Text="POTCAR" FontSize="13.5" FontWeight="SemiBold" />
               <DockPanel><Button DockPanel.Dock="Right" Classes="small" Content="PAW folder…" Click="OnPaw" /><TextBlock Text="{Binding PotcarDir}" Classes="mono dim" FontSize="11" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" /></DockPanel>
               <TextBlock Classes="dim" FontSize="11" TextWrapping="Wrap" Text="Your licensed potpaw_PBE folder: CAPS assembles each POTCAR from it in the POSCAR's species order and checks the order by the TITEL lines. POTCARs are never shipped or uploaded. Without it, make_potcar.sh in every folder does the same on the cluster. The dataset per element: data/dft/potcar_map.json." />

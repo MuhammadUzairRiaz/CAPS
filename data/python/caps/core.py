@@ -1344,14 +1344,17 @@ def water_models() -> list:
 
 def dft(command: str, *inputs: str, **options) -> dict:
     """The DFT surface & adsorption workbench, the same commands as `caps <command>` and the Studio's DFT pages:
-    sheet, sites, terminate, validate, adsorb-dft, vasp-set, vasp-conv, vasp-scan, vasp-derived, vasp-jobs, vasp-check,
-    vasp-progress, vasp-health, vasp-bind, vasp-analyze. Positional arguments are the command's inputs, keyword options
+    sheet, sites, terminate, validate, adsorb-dft, vasp-set, vasp-relax, phono3py, vasp-conv, vasp-scan, vasp-derived,
+    vasp-jobs, vasp-check, vasp-progress, vasp-health, vasp-bind, vasp-analyze. Positional arguments are the command's inputs, keyword options
     its --flags (supercell="5x5", from_relaxed=True, o="slab.vasp"). Returns the JSON report (with "command", the
     equivalent command line). dft_help(command) has every option, its default and why.
 
         caps.dft("sheet", preset="Ti3C2", o="Ti3C2.vasp")
         caps.dft("terminate", "Ti3C2.vasp", top="O:0.5,OH:0.25,F:0.25", supercell="3x3", seed=1, o="mixed.vasp")
-        caps.dft("adsorb-dft", "CONTCAR", from_relaxed=True, supercell="5x5", out="adsorption/Ti3C2_OH_NBR")"""
+        caps.dft("adsorb-dft", "CONTCAR", from_relaxed=True, supercell="5x5", out="adsorption/Ti3C2_OH_NBR")
+        caps.dft("vasp-relax", "pe-orthorhombic", out="PE_relax", dimensionality="3d", account="p_thermo_frc")
+        caps.dft("phono3py", "setup", "PE_relax", mode="both", out="PE_kappa")
+        caps.dft("phono3py", "analyze", "PE_kappa/full")"""
     args = dict(options)
     args["inputs"] = [str(x) for x in inputs]
     return _json_call(library().caps_dft_run, _enc(command), _enc(json.dumps(args)), _enc(str(_data_dir())))

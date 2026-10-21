@@ -70,6 +70,7 @@ add_library(caps_core STATIC
   src/slab2d.cpp
   src/adsorb_dft.cpp
   src/vasp_set.cpp
+  src/phono3py.cpp
   src/vasp_out.cpp
   src/dft_analysis.cpp
   src/dft_commands.cpp

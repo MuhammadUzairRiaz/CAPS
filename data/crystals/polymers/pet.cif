@@ -1,0 +1,46 @@
+# Poly(ethylene terephthalate), triclinic: R. de P. Daubeny, C. W. Bunn & C. J. Brown, Proc. R. Soc. Lond. A 226, 531 (1954), doi:10.1098/rspa.1954.0273
+# space group P-1 (c near the chain axis) (No. 2), Z = 1 C10H8O4 per cell; cell p. 531 and p. 533; density p. 536; Table 1 p. 538 (heavy atoms)
+# hydrogens: none in the paper; placed by tools/make_polymer_crystals.py (CH2, CHar; C-H 1.09 A sp3, 1.08 A sp2, N-H 1.01 A, tetrahedral / in-plane angles)
+# written in P1 with every atom of the paper's cell; 1.4574 g/cm3, shortest contacts beyond 1-3: H...H 2.42 A, H...X 2.31 A, X...X 2.63 A
+data_pet
+_chemical_name_common 'Poly(ethylene terephthalate), triclinic'
+_symmetry_space_group_name_H-M 'P 1'
+_symmetry_Int_Tables_number 1
+_cell_length_a 4.56
+_cell_length_b 5.94
+_cell_length_c 10.75
+_cell_angle_alpha 98.5
+_cell_angle_beta 118
+_cell_angle_gamma 112
+_cell_volume 218.9520
+loop_
+_symmetry_equiv_pos_as_xyz
+'x,y,z'
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+C1 C 0.000000 0.922000 0.371000
+C2 C 0.000000 0.078000 0.629000
+C3 C 0.000000 0.819000 0.237000
+C4 C 0.000000 0.181000 0.763000
+C5 C 0.100000 0.170000 0.438000
+C6 C 0.900000 0.830000 0.562000
+C7 C 0.883000 0.743000 0.433000
+C8 C 0.117000 0.257000 0.567000
+C9 C 0.045000 0.915000 0.040000
+C10 C 0.955000 0.085000 0.960000
+O1 O 0.902000 0.585000 0.170000
+O2 O 0.098000 0.415000 0.830000
+O3 O 0.052000 0.000000 0.175000
+O4 O 0.948000 0.000000 0.825000
+H1 H 0.170788 0.308337 0.387809
+H2 H 0.829212 0.691663 0.612191
+H3 H 0.779638 0.536469 0.378263
+H4 H 0.220362 0.463531 0.621737
+H5 H 0.324741 0.942206 0.072110
+H6 H 0.823420 0.707800 0.967637
+H7 H 0.176580 0.292200 0.032363
+H8 H 0.675259 0.057794 0.927890

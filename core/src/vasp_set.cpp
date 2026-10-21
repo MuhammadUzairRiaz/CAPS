@@ -14,6 +14,7 @@
 #include <stdexcept>
 
 #include "caps/elements.hpp"
+#include "caps/phono3py.hpp"
 #include "caps/slab2d.hpp"
 #include "caps/vasp_out.hpp"
 
@@ -756,6 +757,331 @@ std::string write_aimd_set(const System& at, const std::string& out, const VaspS
   if (!o.pp_dir.empty()) assemble_potcar(species_of(at), o.pp_dir, potcar_map(o.data_dir), join(out, "POTCAR"));
   return out;
 }
+
+// ---------------------------------------------------------------- bulk crystals: the relaxation chain
+std::map<std::string, double> enmax_table(const std::string& data_dir) {
+  std::map<std::string, double> m;
+  const Json j = read_json_file(data_dir + "/dft/enmax.json");
+  for (const auto& [k, v] : j["enmax"].members()) m[k] = v.number();
+  return m;
+}
+
+std::array<int, 3> kmesh_bulk(const System& s, double kdens, bool two_d) {
+  return {std::max(1, int(std::ceil(kdens / norm(s.cell.a) - 1e-9))), std::max(1, int(std::ceil(kdens / norm(s.cell.b) - 1e-9))),
+          two_d ? 1 : std::max(1, int(std::ceil(kdens / norm(s.cell.c) - 1e-9)))};
+}
+std::string kpoints_bulk_text(const System& s, double kdens, const std::string& comment, bool two_d) {
+  const auto k = kmesh_bulk(s, kdens, two_d);
+  return (comment.empty() ? "CAPS Gamma-centred mesh, N_i = ceil(" + fmt("%g", kdens) + " A / |a_i|)" + std::string(two_d ? ", 1 along the vacuum" : "") : comment) +
+         "\n0\nGamma\n  " + std::to_string(k[0]) + "  " +
+         std::to_string(k[1]) + "  " + std::to_string(k[2]) + "\n  0  0  0\n";
+}
+
+DimensionalityHint dimensionality_hint(const System& s) {
+  DimensionalityHint h;
+  const Vec3 n = cross(s.cell.a, s.cell.b);
+  const double height = std::fabs(dot(s.cell.c, n)) / norm(n);
+  std::vector<double> z;
+  for (const auto& a : s.atoms) { double f = s.cell.to_fractional(a.pos)[2]; z.push_back((f - std::floor(f)) * height); }
+  std::sort(z.begin(), z.end());
+  double gap = z.empty() ? height : z.front() + height - z.back();
+  for (size_t i = 1; i < z.size(); ++i) gap = std::max(gap, z[i] - z[i - 1]);
+  h.gap = gap;
+  h.guess = gap >= 8.0 ? "2d" : "3d";
+  return h;
+}
+
+bool polar_along_c(const System& s) {
+  for (const auto& op : crystal_operations(s, 0.01))
+    if (op.R[2][2] == -1 && op.R[2][0] == 0 && op.R[2][1] == 0) return false;
+  return true;
+}
+
+std::string resolve_dimensionality(const System& s, const std::string& chosen0, std::vector<std::string>* notes) {
+  std::string chosen = chosen0;
+  std::transform(chosen.begin(), chosen.end(), chosen.begin(), [](unsigned char c) { return char(std::tolower(c)); });
+  if (chosen == "2" ) chosen = "2d";
+  if (chosen == "3" ) chosen = "3d";
+  if (!chosen.empty() && chosen != "2d" && chosen != "3d") throw std::invalid_argument("--dimensionality is 2d or 3d, not " + chosen0);
+  const auto h = dimensionality_hint(s);
+  auto note = [&](const std::string& t) { if (notes) notes->push_back(t); };
+  if (chosen.empty()) {
+    if (h.guess == "2d")
+      throw std::invalid_argument("the structure has a vacuum gap of " + fmt("%.1f", h.gap) + " Å along c: it looks like a 2D sheet. Choose --dimensionality 2d "
+                                  "(in-plane cell relaxation, k and supercell 1 along c, dipole correction when polar) or --dimensionality 3d");
+    return "3d";
+  }
+  if (chosen == "3d") {
+    if (h.guess == "2d") note("--dimensionality 3d as chosen, although the structure has a vacuum gap of " + fmt("%.1f", h.gap) + " Å along c (a 2D sheet?)");
+    return "3d";
+  }
+  const double ac = std::acos(dot(s.cell.a, s.cell.c) / (norm(s.cell.a) * norm(s.cell.c))) * 180 / M_PI;
+  const double bc = std::acos(dot(s.cell.b, s.cell.c) / (norm(s.cell.b) * norm(s.cell.c))) * 180 / M_PI;
+  if (std::fabs(ac - 90) > 0.5 || std::fabs(bc - 90) > 0.5)
+    throw std::invalid_argument("--dimensionality 2d needs the vacuum axis c perpendicular to a and b (angles " + fmt("%.2f", ac) + ", " + fmt("%.2f", bc) + " deg)");
+  if (h.gap < 10.0) throw std::invalid_argument("--dimensionality 2d: the vacuum gap along c is " + fmt("%.1f", h.gap) + " Å; at least 10 Å (15 Å recommended)");
+  if (h.gap < 15.0) note("vacuum " + fmt("%.1f", h.gap) + " Å along c: 15 Å or more is recommended for a 2D sheet");
+  return "2d";
+}
+
+std::vector<RelaxStep> relax_schedule(double enmax, const RelaxChainOptions& o) {
+  static const char* names[] = {"relax1", "relax2", "relax3", "relax4"};
+  static const int isif[] = {3, 3, 4, 2};
+  std::vector<RelaxStep> out;
+  if (!o.encuts.empty()) {
+    if (o.encuts.size() != 4) throw std::invalid_argument("--encuts needs four values (relax1 … relax4), e.g. 900,1350,900,900");
+    for (int k = 0; k < 4; ++k) out.push_back({names[k], o.encuts[size_t(k)], isif[k]});
+    return out;
+  }
+  if (o.factors.size() != 2) throw std::invalid_argument("--encut-factors needs two values (relax1, relax2), e.g. 2,3");
+  if (enmax <= 0) throw std::invalid_argument("no ENMAX: give --pp-dir (the POTCARs' ENMAX) or --encuts");
+  auto up10 = [](double e) { return 10.0 * std::ceil(e / 10.0 - 1e-9); };
+  const double e1 = up10(o.factors[0] * enmax), e2 = up10(o.factors[1] * enmax);
+  for (int k = 0; k < 4; ++k) out.push_back({names[k], k == 1 ? e2 : e1, isif[k]});
+  return out;
+}
+
+std::vector<IncarLine> relax_incar_lines(const RelaxStep& st, int n, const RelaxChainOptions& o, const ClusterRule& par) {
+  std::vector<IncarLine> L;
+  auto add = [&](const std::string& k, const std::string& v, const std::string& why) { L.push_back({k, v, why}); };
+  const std::string role = st.isif == 3 ? (st.name == "relax1" ? "initial relaxation: cell shape, volume and ions" : "detailed relaxation at the higher cutoff: cell and ions")
+                         : st.isif == 4 ? "precise relaxation: ions and cell shape at fixed volume" : "precise relaxation: ions only, cell fixed";
+  add("ISTART", "0", "new run: no WAVECAR");
+  add("ICHARG", "2", "charge density from atomic charges");
+  add("ENCUT", fmt("%g", st.encut), st.name == "relax2" ? "about 3 × ENMAX: the detailed step (guide ch. 5)" : "about 2 × ENMAX (guide ch. 5): well above 1.3 × ENMAX, no Pulay stress");
+  add("PREC", "Accurate", incar_why("PREC"));
+  add("ALGO", "Normal", incar_why("ALGO"));
+  add("GGA", "PE", incar_why("GGA"));
+  if (o.ivdw) add("IVDW", std::to_string(o.ivdw), "12: DFT-D3 with Becke–Johnson damping; polymer crystals are held together by dispersion");
+  add("LASPH", ".TRUE.", incar_why("LASPH"));
+  add("EDIFF", o.ediff, "electronic convergence of each ionic step");
+  add("NELM", "120", incar_why("NELM"));
+  add("ISMEAR", "0", "0 (Gaussian): an insulator");
+  add("SIGMA", "0.05", incar_why("SIGMA"));
+  add("IBRION", "2", "conjugate gradient for the ions");
+  add("ISIF", std::to_string(st.isif), role);
+  if (o.two_d && st.isif >= 3)
+    add("LATTICE_CONSTRAINTS", ".TRUE. .TRUE. .FALSE.", "2D: a and b relax, the vacuum axis c stays (VASP >= 6.4.3 with IBRION 2, >= 6.5.1 with ISIF 4; a bug before 6.5.0: VASP wiki)");
+  add("NSW", std::to_string(o.nsw), "ionic steps per attempt (the job continues from CONTCAR up to three times)");
+  add("EDIFFG", o.ediffg, "stop when every force is below 0.01 eV/Å");
+  add("LREAL", n <= 40 ? ".FALSE." : "Auto", n <= 40 ? "exact projection for a small cell" : "real-space projection for a large cell");
+  add("NCORE", std::to_string(par.ncore), incar_why("NCORE"));
+  add("KPAR", std::to_string(par.kpar), incar_why("KPAR"));
+  add("LWAVE", ".FALSE.", "no WAVECAR (large; the home quota is 50 GB)");
+  add("LCHARG", ".FALSE.", "no CHGCAR");
+  if (o.dipole_z >= 0) {
+    add("IDIPOL", "3", "polar sheet: dipole correction along z");
+    add("LDIPOL", ".TRUE.", "the corrected potential, so forces and the relaxed geometry carry it (not only the energy)");
+    add("DIPOL", "0.5 0.5 " + fmt("%.4f", o.dipole_z), "the centre of the atoms (fractional)");
+  }
+  return L;
+}
+
+namespace {
+// awk: two POSCAR/CONTCAR files → cell lengths, volume change and the largest atomic displacement (minimum image)
+const char* kCompareAwk =
+    "compare() {   # $1 before, $2 after: cell lengths, volume, largest atomic displacement\n"
+    "  awk -v F1=\"$1\" -v F2=\"$2\" '\n"
+    "  function rd(f, P,    n, l, x, i, j, k, s, nat, cart, d) {\n"
+    "    n = 0; while ((getline l < f) > 0) L[++n] = l; close(f)\n"
+    "    split(L[2], x, \" \"); s = x[1]\n"
+    "    for (i = 1; i <= 3; i++) { split(L[2 + i], x, \" \"); for (j = 1; j <= 3; j++) P[i, j] = x[j] * s }\n"
+    "    k = (L[6] ~ /[A-Za-z]/) ? 7 : 6; nat = 0; split(L[k], x, \" \"); for (i in x) nat += x[i]\n"
+    "    k++; if (L[k] ~ /^[ \\t]*[sS]/) k++\n"
+    "    cart = (L[k] ~ /^[ \\t]*[cCkK]/); k++\n"
+    "    d = P[1,1]*(P[2,2]*P[3,3]-P[2,3]*P[3,2]) - P[1,2]*(P[2,1]*P[3,3]-P[2,3]*P[3,1]) + P[1,3]*(P[2,1]*P[3,2]-P[2,2]*P[3,1])\n"
+    "    P[\"V\"] = (d < 0 ? -d : d); P[\"n\"] = nat\n"
+    "    for (i = 1; i <= nat; i++) {\n"
+    "      split(L[k + i - 1], x, \" \"); if (cart) for (j = 1; j <= 3; j++) x[j] *= s   # Cartesian positions are scaled too\n"
+    "      if (cart) {   # r = f A  ->  f = r A^-1 (cofactors)\n"
+    "        P[i, \"f1\"] = (x[1]*(P[2,2]*P[3,3]-P[2,3]*P[3,2]) - x[2]*(P[2,1]*P[3,3]-P[2,3]*P[3,1]) + x[3]*(P[2,1]*P[3,2]-P[2,2]*P[3,1])) / d\n"
+    "        P[i, \"f2\"] = (-x[1]*(P[1,2]*P[3,3]-P[1,3]*P[3,2]) + x[2]*(P[1,1]*P[3,3]-P[1,3]*P[3,1]) - x[3]*(P[1,1]*P[3,2]-P[1,2]*P[3,1])) / d\n"
+    "        P[i, \"f3\"] = (x[1]*(P[1,2]*P[2,3]-P[1,3]*P[2,2]) - x[2]*(P[1,1]*P[2,3]-P[1,3]*P[2,1]) + x[3]*(P[1,1]*P[2,2]-P[1,2]*P[2,1])) / d\n"
+    "      } else { P[i, \"f1\"] = x[1]; P[i, \"f2\"] = x[2]; P[i, \"f3\"] = x[3] }\n"
+    "    }\n"
+    "    delete L\n"
+    "  }\n"
+    "  function len(P, i) { return sqrt(P[i,1]^2 + P[i,2]^2 + P[i,3]^2) }\n"
+    "  function rnd(x) { return x >= 0 ? int(x + 0.5) : -int(-x + 0.5) }\n"
+    "  BEGIN {\n"
+    "    rd(F1, A); rd(F2, B); big = 0; at = 0\n"
+    "    for (i = 1; i <= A[\"n\"] && i <= B[\"n\"]; i++) {\n"
+    "      for (j = 1; j <= 3; j++) { df[j] = B[i, \"f\" j] - A[i, \"f\" j]; df[j] -= rnd(df[j]) }\n"
+    "      r = 0; for (j = 1; j <= 3; j++) { c = df[1]*B[1,j] + df[2]*B[2,j] + df[3]*B[3,j]; r += c * c }\n"
+    "      if (sqrt(r) > big) { big = sqrt(r); at = i }\n"
+    "    }\n"
+    "    printf \"   cell a b c %.4f %.4f %.4f -> %.4f %.4f %.4f A, volume %.2f -> %.2f A3 (%+.2f %%), largest atomic shift %.4f A (atom %d)\\n\", \\\n"
+    "      len(A,1), len(A,2), len(A,3), len(B,1), len(B,2), len(B,3), A[\"V\"], B[\"V\"], 100 * (B[\"V\"] - A[\"V\"]) / A[\"V\"], big, at\n"
+    "  }'\n"
+    "}\n";
+}  // namespace
+
+std::string relax_chain_script(const ClusterProfile& p, const std::string& name, const std::vector<RelaxStep>& steps, int atoms) {
+  const ClusterRule r = parallel_rule(p, atoms, false);
+  std::string st;
+  for (const auto& s : steps) st += (st.empty() ? "" : " ") + s.name;
+  std::string j = sbatch_head(p, name.substr(0, 40), r.ranks, r.time);
+  j += "## Written by CAPS (caps vasp-relax, profile " + p.name + "): the four-step relaxation of the group VASP guide (ch. 5).\n"
+       "## The steps run in order in a scratch workspace; each step's CONTCAR becomes the next step's POSCAR unchanged.\n"
+       "## A step that does not reach the required accuracy is continued from its CONTCAR (up to three attempts);\n"
+       "## if it still fails, the chain stops. Re-submitting resumes: finished steps (file DONE) are skipped.\n";
+  j += "STEPS=\"" + st + "\"\n\nexport OMP_NUM_THREADS=1\n";
+  if (!p.modules.empty()) j += "module purge\nmodule load " + p.modules + "\n";
+  j += workspace_block(p, "relax");
+  j += std::string("\n") + kCompareAwk;
+  j += "\nprev=\"\"\n"
+       "for st in $STEPS; do\n"
+       "  cd \"$CASE\"\n"
+       "  if [ -f \"$st/DONE\" ]; then echo \"== $st already done\"; prev=$st; continue; fi\n"
+       "  link_stage \"$st\"\n"
+       "  if [ -s \"$st/CONTCAR\" ]; then src=$st/CONTCAR               # resume an unfinished step\n"
+       "  elif [ -n \"$prev\" ]; then src=$prev/CONTCAR                 # the previous step's CONTCAR, unchanged\n"
+       "  else src=POSCAR; fi\n"
+       "  [ -f \"$st/POSCAR.start\" ] || cp \"$src\" \"$st/POSCAR.start\"\n"
+       "  cp \"$src\" \"$st/POSCAR\"\n"
+       "  cp KPOINTS POTCAR \"$st/\"\n"
+       "  mkdir -p \"${WSDIR:?}/${st:?}\"\n"
+       "  cp \"$st/INCAR\" \"$st/KPOINTS\" \"$st/POTCAR\" \"$st/POSCAR\" \"$WSDIR/$st/\"\n"
+       "  cd \"$WSDIR/$st\"\n"
+       "  for attempt in 1 2 3; do\n"
+       "    echo \"== $st  start $(date)  ENCUT $(awk '/^ENCUT/ {print $3}' INCAR) eV, ISIF $(awk '/^ISIF/ {print $3}' INCAR)$( [ $attempt -gt 1 ] && echo \"  (attempt $attempt, from the last geometry)\")\"\n"
+       "    ${CAPS_SRUN:-srun} " + p.vasp + " > OUT\n"
+       "    grep -qs \"reached required accuracy\" OUT OUTCAR && break\n"
+       "    [ -s CONTCAR ] && cp CONTCAR POSCAR                      # continue from the last geometry\n"
+       "    cp OUTCAR OUTCAR.attempt$attempt 2> /dev/null\n"
+       "  done\n"
+       "  rm -f WAVECAR CHG CHGCAR XDATCAR PROCAR DOSCAR EIGENVAL vaspout.h5   # large, never used (50 GB home quota)\n"
+       "  cp -r ./* \"$CASE/$st/\"\n"
+       "  cd \"$CASE/$st\"\n"
+       "  if ! grep -qs \"reached required accuracy\" OUT OUTCAR; then\n"
+       "    echo \"== $st did NOT reach the required accuracy after 3 attempts: the chain stops here (see $st/OUT)\"\n";
+  if (!p.ws_release.empty()) j += "    " + p.ws_release + "\n";
+  j += "    exit 1\n"
+       "  fi\n"
+       "  touch DONE\n"
+       "  echo \"== $st done  $(grep F= OSZICAR | tail -1)\"\n"
+       "  compare POSCAR.start CONTCAR\n"
+       "  prev=$st\n"
+       "done\n"
+       "cd \"$CASE\"\n"
+       "cp \"$prev/CONTCAR\" POSCAR-unitcell\n"
+       "echo \"== chain finished: POSCAR-unitcell is $prev/CONTCAR (the start of caps phono3py setup)\"\n"
+       "compare POSCAR POSCAR-unitcell\n";
+  if (!p.ws_release.empty()) j += p.ws_release + "\n";
+  return j;
+}
+
+RelaxChainResult write_relax_chain(const System& s, const std::string& dir, const RelaxChainOptions& o0) {
+  if (!s.cell.valid()) throw std::invalid_argument("vasp-relax needs a periodic crystal cell");
+  RelaxChainResult r;
+  RelaxChainOptions o = o0;
+  r.dimensionality = resolve_dimensionality(s, o.dimensionality, &r.notes);
+  o.two_d = r.dimensionality == "2d";
+  r.vacuum = dimensionality_hint(s).gap;
+  if (o.two_d) {
+    r.polar = polar_along_c(s);
+    if (o.dipole == "on" || (o.dipole == "auto" && r.polar)) {
+      double zmin = 1e300, zmax = -1e300;
+      for (const auto& a : s.atoms) { const double f = s.cell.to_fractional(a.pos)[2]; zmin = std::min(zmin, f), zmax = std::max(zmax, f); }
+      o.dipole_z = 0.5 * (zmin + zmax);
+    }
+    r.notes.push_back(std::string("2D sheet: in-plane relaxation (LATTICE_CONSTRAINTS), k 1 along c, ") + (r.polar ? "polar along z" : "not polar") +
+                      (o.dipole_z >= 0 ? ": dipole correction on" : ": no dipole correction"));
+  }
+  fs::create_directories(dir);
+  r.dir = dir;
+  const int n = int(s.atoms.size());
+  const auto species = species_of(s);
+  write_vasp_poscar(s, join(dir, "POSCAR"), formula_ordered(s, species) + " CAPS " + o.label);
+  r.files.push_back("POSCAR");
+  const auto map = potcar_map(o.data_dir);
+  if (!o.pp_dir.empty()) {
+    const auto p = assemble_potcar(species, o.pp_dir, map, join(dir, "POTCAR"));
+    r.files.push_back("POTCAR");
+    for (double e : p.enmax) r.enmax = std::max(r.enmax, e);
+    r.enmax_source = "POTCAR (" + o.pp_dir + ")";
+  } else if (o.encuts.empty()) {
+    const auto t = enmax_table(o.data_dir);
+    std::string worst;
+    for (const auto& el : species) {
+      const auto it = t.find(el);
+      if (it == t.end()) throw std::invalid_argument("no ENMAX for " + el + " in data/dft/enmax.json: give --pp-dir or --encuts");
+      if (it->second > r.enmax) r.enmax = it->second, worst = el;
+    }
+    r.enmax_source = "data/dft/enmax.json (standard PBE PAW " + worst + ")";
+    r.notes.push_back("ENMAX " + fmt("%g", r.enmax) + " eV from data/dft/enmax.json; with --pp-dir the POTCARs' own ENMAX is used");
+  }
+  r.steps = relax_schedule(r.enmax, o);
+  const auto prof0 = cluster_profile(o.data_dir, o.profile);
+  ClusterProfile prof = prof0;
+  if (!o.account.empty()) prof.account = o.account;
+  r.parallel = parallel_rule(prof, n, false);
+  for (const auto& st : r.steps) {
+    fs::create_directories(join(dir, st.name));
+    spit(join(join(dir, st.name), "INCAR"), incar_text(o.label + " " + st.name, relax_incar_lines(st, n, o, r.parallel)));
+    r.files.push_back(st.name + "/INCAR");
+  }
+  r.kpoints = kmesh_bulk(s, o.kdens, o.two_d);
+  spit(join(dir, "KPOINTS"), kpoints_bulk_text(s, o.kdens, "", o.two_d));
+  spit(join(dir, "job.slurm"), relax_chain_script(prof, o.label, r.steps, n));
+  spit(join(dir, "make_potcar.sh"), make_potcar_script(map));
+  make_exec(join(dir, "make_potcar.sh"));
+  r.files.insert(r.files.end(), {"KPOINTS", "job.slurm", "make_potcar.sh"});
+  if (prof.account.empty()) r.notes.push_back("no account in profile " + prof.name + ": give --account (or put the profile with it in ~/CAPS/dft-clusters.json)");
+  Json c = Json::object();
+  c["label"] = o.label, c["atoms"] = n, c["enmax"] = r.enmax, c["enmax_source"] = r.enmax_source, c["kdens"] = o.kdens;
+  Json st = Json::array();
+  for (const auto& x : r.steps) { Json e = Json::object(); e["name"] = x.name, e["encut"] = x.encut, e["isif"] = x.isif; st.push_back(e); }
+  c["steps"] = st;
+  Json k = Json::array();
+  for (int x : r.kpoints) k.push_back(x);
+  c["kpoints"] = k;
+  c["profile"] = prof.name;
+  c["dimensionality"] = r.dimensionality, c["polar"] = r.polar, c["vacuum"] = r.vacuum, c["dipole"] = o.dipole_z >= 0;
+  spit(join(dir, "chain.json"), c.dump(1));
+  r.files.push_back("chain.json");
+  return r;
+}
+
+Json relax_chain_report(const std::string& dir) {
+  Json out = Json::object();
+  Json rows = Json::array();
+  auto cell_json = [](const System& s) {
+    Json c = Json::array();
+    c.push_back(norm(s.cell.a)), c.push_back(norm(s.cell.b)), c.push_back(norm(s.cell.c));
+    return c;
+  };
+  bool all = true;
+  for (const char* name : {"relax1", "relax2", "relax3", "relax4"}) {
+    const std::string d = join(dir, name);
+    Json r = Json::object();
+    r["step"] = name;
+    r["done"] = fs::exists(join(d, "DONE"));
+    const auto o = read_outcar(join(d, "OUTCAR"));
+    r["converged"] = o.relaxed;
+    if (!o.e0.empty()) r["E0"] = o.e0.back(), r["ionic_steps"] = int(o.e0.size());
+    if (!o.fmax.empty()) r["fmax"] = o.fmax.back();
+    const std::string start = fs::exists(join(d, "POSCAR.start")) ? join(d, "POSCAR.start") : join(d, "POSCAR");
+    if (fs::exists(start) && fs::exists(join(d, "CONTCAR")) && fs::file_size(join(d, "CONTCAR")) > 0) {
+      const System a = read_vasp_poscar(start), b = read_vasp_poscar(join(d, "CONTCAR"));
+      r["cell_before"] = cell_json(a), r["cell_after"] = cell_json(b);
+      r["volume_change_percent"] = 100 * (b.cell.volume() - a.cell.volume()) / a.cell.volume();
+      double big = 0;
+      for (size_t i = 0; i < std::min(a.atoms.size(), b.atoms.size()); ++i) {
+        Vec3 df = b.cell.to_fractional(b.atoms[i].pos) - a.cell.to_fractional(a.atoms[i].pos);
+        for (auto& x : df) x -= std::round(x);
+        big = std::max(big, norm(b.cell.to_cartesian(df) - b.cell.to_cartesian({0, 0, 0})));
+      }
+      r["max_displacement"] = big;
+    }
+    all = all && r["done"].boolean();
+    rows.push_back(r);
+  }
+  out["steps"] = rows;
+  out["finished"] = all && fs::exists(join(dir, "POSCAR-unitcell"));
+  return out;
+}
+
 
 // ---------------------------------------------------------------- job tools
 std::vector<std::string> submittable(const std::vector<std::string>& dirs, const std::vector<std::string>& queued) {

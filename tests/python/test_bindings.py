@@ -683,6 +683,11 @@ _te = caps.dft("terminate", _os.path.join(_dd, "Ti3C2.vasp"), top="OH", o=_os.pa
 _va = caps.dft("validate", _os.path.join(_dd, "Ti3C2_OH.vasp"), expect="Ti3C2O2H2")
 check(_sh["formula"] == "Ti3C2" and _te["formula"] == "Ti3C2O2H2" and _va["ok"] and "--seed" in caps.dft_help("terminate") and _te["command"].startswith("caps terminate"),
       f"DFT workbench: {_sh['formula']} → {_te['formula']} · validate {_va['ok']}")
+# polymer crystals: the VASP relaxation chain and the phono3py estimate (the guide's PE: 15 fc2 supercells)
+_rl = caps.dft("vasp-relax", "pe-orthorhombic", out=_os.path.join(_dd, "pe_relax"), dimensionality="3d")
+_p3 = caps.dft("phono3py", "estimate", "pe-orthorhombic", mode="full")
+check([s["encut"] for s in _rl["chain"]["steps"]] == [800, 1200, 800, 800] and _p3["plans"][0]["fc2_supercells"] == 15,
+      f"vasp-relax / phono3py: {[s['encut'] for s in _rl['chain']['steps']]} · {_p3['plans'][0]['fc3_supercells']} fc3 supercells")
 # a polymer typed in the recipe can be exported without assigning again, and carries the charges its files hold
 _op = caps.polymer("[*]OCCCCOC(=O)CCC(=O)[*]", dp=2, chains=1, forcefield="oplsaa2024", seed=1)
 check(_op.forcefield.startswith("OPLS-AA 2024"), "polymer(forcefield=…) keeps its force field")
