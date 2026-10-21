@@ -40,6 +40,25 @@
    ],
    "gamma": {"ranks": 32, "kpar": 1, "ncore": 8, "time": "24:00:00"},
    "hang": [{"max_atoms": 20, "seconds": 600}, {"max_atoms": 100, "seconds": 1200}, {"max_atoms": 0, "seconds": 1800}]
+  },
+  {
+   "name": "tud-barnard",
+   "about": "TU Dresden Barnard (ZIH): 104-core nodes, workspaces on horse, the modules of the group VASP guide (May 2026). Give your project account with --account (or put this profile with it into ~/CAPS/dft-clusters.json).",
+   "scheduler": "slurm",
+   "account": "",
+   "cores_per_node": 104,
+   "mem_per_cpu": 4000,
+   "licenses": "",
+   "modules": "release/25.06 GCC/13.3.0 OpenMPI/5.0.3 VASP/6.5.1",
+   "vasp": "vasp_std",
+   "workspace": {"allocate": "ws_allocate -F horse $WS 7", "find": "ws_find -F horse $WS", "release": "ws_release -F horse $WS"},
+   "parallel": [
+    {"max_atoms": 30,  "ranks": 26,  "kpar": 2, "ncore": 13, "time": "08:00:00"},
+    {"max_atoms": 200, "ranks": 52,  "kpar": 2, "ncore": 26, "time": "24:00:00"},
+    {"max_atoms": 0,   "ranks": 104, "kpar": 2, "ncore": 26, "time": "48:00:00"}
+   ],
+   "gamma": {"ranks": 52, "kpar": 1, "ncore": 13, "time": "24:00:00"},
+   "hang": [{"max_atoms": 30, "seconds": 900}, {"max_atoms": 200, "seconds": 1800}, {"max_atoms": 0, "seconds": 3600}]
   }
  ]
 }
