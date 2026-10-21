@@ -1394,11 +1394,11 @@ internal static class SelfTest
             vm.SetModule(8);
         }
 
-        // Semicrystalline stack: a small PE lamella (2 × 3 cells, 1.5 nm) with a 2.5 nm amorphous layer; then thermal
+        // Semicrystalline stack: a small PE lamella (3 × 5 cells, 1.5 nm) with a 2.5 nm amorphous layer; then thermal
         // conductivity refuses to run until 2D or 3D is chosen, and a 3D Green–Kubo check of 100 steps runs
         {
             vm.OpenSemicrystalline();
-            vm.ScNx = 2; vm.ScNy = 3; vm.ScCrystal = 1.5m; vm.ScAmorphous = 2.5m;
+            vm.ScNx = 3; vm.ScNy = 5; vm.ScCrystal = 1.5m; vm.ScAmorphous = 2.5m;   // 22 × 25 Å: twice the 10 Å cut-off across
             vm.BuildSemicrystalline().GetAwaiter().GetResult();
             Check(!vm.ScHasError && vm.IsSemicrystalline && vm.ScSummary.Contains("loops") && vm.ScRho.Length > 0 && vm.Document!.Provenance().Contains("build.semicrystalline"),
                   $"semicrystalline stack: {vm.ScSummary.Split('\n')[0]} · {vm.ScError}");
