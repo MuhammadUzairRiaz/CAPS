@@ -181,8 +181,10 @@ public sealed partial class MainViewModel
             Enabled = () => _doc != null, Run = CloseDocument });
         AddCommand(new PaletteCommand { Title = "Reset view", Id = "view.reset", Icon = "rotate", Shortcut = "R", Section = "View",
             Enabled = () => _doc != null, Run = ResetView });
-        AddCommand(new PaletteCommand { Title = "Check for updates", Id = "app.update", Icon = "download", Section = "Settings",
-            Keywords = "update new version release download changelog upgrade", Run = () => _ = CheckForUpdates() });
+        AddCommand(new PaletteCommand { Title = "Check for updates now", Id = "app.update", Icon = "download", Section = "Settings",
+            Keywords = "update new version release download changelog upgrade latest", Run = () => _ = CheckForUpdates(manual: true) });
+        AddCommand(new PaletteCommand { Title = "What's new", Id = "app.whatsnew", Icon = "wand", Section = "Settings",
+            Keywords = "whats new release notes highlights changelog changes update", Run = OpenWhatsNew });
         AddCommand(new PaletteCommand { Title = "Bond rules", Id = "edit.bond rules", Icon = "bond", Section = "Edit",
                                         Keywords = "bonds perceive cut-off distance histogram ionic never rule set rebond", Run = OpenRules });
         AddCommand(new PaletteCommand { Title = "Brush to select", Id = "select.brush", Icon = "chart", Section = "Selection",

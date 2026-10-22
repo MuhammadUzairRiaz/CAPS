@@ -207,7 +207,9 @@ public partial class MainWindow
         menu.Add(Top("Help",
             Page("Theory manual…", 41),
             Page("Studio tour", 92),
-            Cmd("Check for updates…", "app.update")));
+            Sep(),
+            Cmd("What's new…", "app.whatsnew"),
+            Cmd("Check for updates now", "app.update")));
         return menu;
     }
 

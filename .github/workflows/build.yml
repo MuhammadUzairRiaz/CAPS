@@ -158,10 +158,16 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           path: dist
           merge-multiple: true
+      - name: Checksums and release manifest
+        # release.json is what installed Studios read to offer this release (Help › Check for updates now)
+        run: |
+          (cd dist && sha256sum CAPS-* caps-studio_* > SHA256SUMS.txt)
+          python3 tools/release/make_release_json.py -o dist/release.json --sums dist/SHA256SUMS.txt
       - name: GitHub release
         env:
           GH_TOKEN: ${{ github.token }}

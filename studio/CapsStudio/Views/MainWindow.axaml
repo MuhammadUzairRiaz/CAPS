@@ -78,6 +78,9 @@
   <!-- the menu bar in the window on Windows and Linux (macOS shows it in the system menu bar) -->
   <NativeMenuBar DockPanel.Dock="Top" x:Name="MenuBarHost" />
   <LayoutTransformControl x:Name="ScaleRoot">
+  <DockPanel>
+  <!-- a newer CAPS is out (Help › Check for updates now; once a day by itself) -->
+  <pages:UpdateBanner DockPanel.Dock="Top" IsVisible="{Binding UpdateBannerOpen}" />
   <Grid RowDefinitions="44,Auto,*,26">
 
     <!-- Top bar (design/generator/lib.py topbar): logo, document tabs, command palette, compute -->
@@ -2946,8 +2949,8 @@
       <pages:BlendPage Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" IsVisible="{Binding IsBlend}" />
       <!-- Export image / movie (design/boards/ExportDialog) -->
       <pages:ExportDialog x:Name="ExportDlg" Grid.Column="0" Grid.ColumnSpan="3" Grid.RowSpan="2" ZIndex="21" IsVisible="{Binding ExportDialogOpen}" />
-      <!-- Update available (design/boards/UpdateDialog) -->
-      <pages:UpdateDialog Grid.Column="0" Grid.ColumnSpan="3" Grid.RowSpan="2" ZIndex="22" IsVisible="{Binding UpdateOpen}" />
+      <!-- What's new: this build's highlights after an update, or a newer release's from the update banner -->
+      <pages:WhatsNewPanel Grid.Column="0" Grid.ColumnSpan="3" Grid.RowSpan="2" ZIndex="22" IsVisible="{Binding WhatsNewOpen}" />
       <!-- Import (design/boards/ImportDialog): files without a topology -->
       <pages:ImportDialog Grid.Column="0" Grid.ColumnSpan="3" Grid.RowSpan="2" ZIndex="21" IsVisible="{Binding ImportOpen}" />
       <!-- Element picker (design/boards/ElementPicker): the periodic table, the element for new atoms -->
@@ -4013,6 +4016,7 @@
     <!-- First-run tour (design/boards/FirstRunTour) -->
     <local:TourOverlay x:Name="Tour" Grid.RowSpan="4" ZIndex="40" IsVisible="{Binding TourOpen}" />
   </Grid>
+  </DockPanel>
   </LayoutTransformControl>
   </DockPanel>
 </Window>

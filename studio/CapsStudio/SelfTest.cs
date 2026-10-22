@@ -3680,23 +3680,95 @@ internal static class SelfTest
             Check(n1 == "Export image or movie" && n2 == "Interactions & checks" && n3 == "Reset the view", $"accessible names: {n1} | {n2} | {n3}");
         }
 
-        // Update available: a local feed with a newer release opens the dialog, results-altering notes first
+        // Update notices (no network: the self-test may not reach it, and a local manifest file stands in for GitHub's)
         {
-            var feed = Path.Combine(outDir, "caps-selftest-release.json");
-            File.WriteAllText(feed, new System.Text.Json.Nodes.JsonObject
+            static string Manifest(string version, string commit, string date) => new System.Text.Json.Nodes.JsonObject
             {
-                ["tag_name"] = "v9.9.0", ["html_url"] = "https://github.com/MuhammadUzairRiaz/CAPS/releases/tag/v9.9.0",
-                ["body"] = "## New\n- Trajectory export to XTC\n## Changes that can alter results\n- PME tolerance 1e-5 → 1e-6\n## Fixed\n- A fix",
-            }.ToJsonString());
+                ["format"] = "caps-release/1", ["version"] = version, ["commit"] = commit, ["date"] = date, ["title"] = "Test update",
+                ["highlights"] = new System.Text.Json.Nodes.JsonArray(
+                    new System.Text.Json.Nodes.JsonObject { ["title"] = "Semicrystalline stacks", ["detail"] = "Lamellar cells.", ["page"] = "semicrystalline" },
+                    new System.Text.Json.Nodes.JsonObject { ["title"] = "Thermal conductivity", ["page"] = "module.open thermal" },
+                    new System.Text.Json.Nodes.JsonObject { ["title"] = "A line without a page" },
+                    new System.Text.Json.Nodes.JsonObject { ["title"] = "A page that does not exist", ["page"] = "nosuchpage" }),
+                ["notes_url"] = "https://github.com/MuhammadUzairRiaz/CAPS/releases/latest",
+                ["assets"] = new System.Text.Json.Nodes.JsonObject
+                {
+                    ["macos-arm64"] = new System.Text.Json.Nodes.JsonObject { ["file"] = $"CAPS-{version}-macos-arm64.dmg" },
+                    ["windows-x64"] = new System.Text.Json.Nodes.JsonObject { ["file"] = $"CAPS-{version}-windows-x64-setup.exe" },
+                    ["windows-x64-portable"] = new System.Text.Json.Nodes.JsonObject { ["file"] = $"CAPS-{version}-windows-x64-portable.zip" },
+                    ["linux-x86_64"] = new System.Text.Json.Nodes.JsonObject { ["file"] = $"CAPS-{version}-linux-x86_64.AppImage" },
+                },
+            }.ToJsonString();
+            var local = new BuildIdentity("0.1.0", "96e9eb9a50", "2026-10-21T10:00:00+02:00");
+            // the decision: the version first, then (equal versions) the commit and its date
+            var m020 = ReleaseManifest.Parse(Manifest("0.2.0", "a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9", "2026-01-01T00:00:00Z"));
+            var newer = ReleaseManifest.Parse(Manifest("0.1.0", "765dc9f3a1b2c3d4e5f60718293a4b5c6d7e8f90", "2026-10-22T09:14:03Z"));
+            var same = ReleaseManifest.Parse(Manifest("0.1.0", "96e9eb9a50ffffffffffffffffffffffffffffff", "2026-10-22T09:14:03Z"));
+            var older = ReleaseManifest.Parse(Manifest("0.1.0", "765dc9f3a1b2c3d4e5f60718293a4b5c6d7e8f90", "2026-10-20T09:00:00Z"));
+            var lower = ReleaseManifest.Parse(Manifest("0.0.9", "765dc9f3a1b2c3d4e5f60718293a4b5c6d7e8f90", "2027-01-01T00:00:00Z"));
+            var verdicts = new[] { UpdateRules.Decide(local, m020), UpdateRules.Decide(local, newer), UpdateRules.Decide(local, same),
+                                   UpdateRules.Decide(local, older), UpdateRules.Decide(local, lower) };
+            var bad = 0;
+            foreach (var j in new[] { "{}", "not json", "{\"format\":\"caps-release/1\",\"version\":\"0.1.0\"}", "{\"tag_name\":\"v0.1.0\"}" })
+                try { ReleaseManifest.Parse(j); } catch (InvalidDataException) { bad++; }
+            Check(verdicts.SequenceEqual(new[] { UpdateVerdict.Update, UpdateVerdict.Update, UpdateVerdict.Current, UpdateVerdict.LocalNewer, UpdateVerdict.LocalNewer })
+                  && bad == 4 && newer.Highlights.Count == 4 && newer.Assets.Count == 4 && UpdateRules.CompareVersions("0.2.0-rc1", "0.2.0") < 0,
+                  $"update rules: 0.2.0 / later commit / same / earlier / 0.0.9 → {string.Join(", ", verdicts)}; {bad} of 4 other files refused");
+            Check(UpdateRules.Disabled("1") && UpdateRules.Disabled("yes") && !UpdateRules.Disabled("0") && !UpdateRules.Disabled("")
+                  && UpdateRules.DownloadUrl(newer, "windows-x64-portable").EndsWith("CAPS-0.1.0-windows-x64-portable.zip")
+                  && UpdateRules.DownloadUrl(newer, "linux-x86_64-deb").EndsWith(".AppImage") && UpdateRules.DownloadUrl(newer, "macos-x86_64") == newer.NotesUrl
+                  && !UpdateRules.NetworkAllowed,
+                  $"update opt-out and downloads: CAPS_NO_UPDATE_CHECK=1 turns it off; this Mac's file {UpdateRules.DownloadUrl(newer, UpdateRules.PlatformKey())}; no network in the self-test");
+
+            // the banner from a local manifest: shown for a newer release, hidden by Later, by Skip (remembered), shown again on request
+            var feed = Path.Combine(outDir, "caps-selftest-release.json");
+            File.WriteAllText(feed, Manifest("0.1.0", "765dc9f3a1b2c3d4e5f60718293a4b5c6d7e8f90", "2026-10-22T09:14:03Z"));
             Environment.SetEnvironmentVariable("CAPS_UPDATE_FEED", feed);
-            vm.CheckForUpdates().GetAwaiter().GetResult();
-            var first = vm.UpdateSections.FirstOrDefault();
-            var ok = vm.UpdateOpen && vm.UpdateVersion == "9.9.0" && vm.UpdateSections.Count == 3 && first!.AltersResults && first.Items[0].StartsWith("PME");
-            vm.CloseUpdate();
-            File.WriteAllText(feed, "{\"tag_name\":\"v0.0.1\",\"body\":\"\"}");
-            vm.CheckForUpdates().GetAwaiter().GetResult();
+            vm.SetThisBuildForTest(local);
+            vm.CheckForUpdates(manual: false).GetAwaiter().GetResult();
+            var shown = vm.UpdateBannerOpen && vm.UpdateBannerText == "CAPS update available · 22 Oct 2026 · Test update";
+            vm.UpdateLater();
+            vm.CheckForUpdates(manual: false).GetAwaiter().GetResult();
+            var later = !vm.UpdateBannerOpen;
+            vm.CheckForUpdates(manual: true).GetAwaiter().GetResult();
+            var again = vm.UpdateBannerOpen;
+            vm.SkipThisUpdate();
+            var remembered = AppSettings.Load().SkippedUpdateCommit == "765dc9f3a1b2c3d4e5f60718293a4b5c6d7e8f90";
+            vm.ApplyRelease(newer, manual: false);
+            var skipped = !vm.UpdateBannerOpen;
+            var twoNine = vm.ApplyRelease(m020, manual: false) == UpdateVerdict.Update && vm.UpdateBannerOpen && vm.UpdateBannerText.Contains("version 0.2.0");
+            vm.UpdateLater();
+            File.WriteAllText(feed, Manifest("0.1.0", "96e9eb9a50ffffffffffffffffffffffffffffff", "2026-10-22T09:14:03Z"));
+            vm.CheckForUpdates(manual: true).GetAwaiter().GetResult();
+            var latest = !vm.UpdateBannerOpen && vm.UpdateText.StartsWith("You have the latest CAPS");
+            Environment.SetEnvironmentVariable("CAPS_NO_UPDATE_CHECK", "1");
+            vm.CheckForUpdates(manual: true).GetAwaiter().GetResult();
+            var off = vm.UpdateText.Contains("CAPS_NO_UPDATE_CHECK");
+            Environment.SetEnvironmentVariable("CAPS_NO_UPDATE_CHECK", null);
             Environment.SetEnvironmentVariable("CAPS_UPDATE_FEED", null);
-            Check(ok && !vm.UpdateOpen && vm.UpdateText.Contains("latest"), $"update: {vm.UpdateTitle} · {vm.UpdateSections.Count} sections · then {vm.UpdateText}");
+            Check(shown && later && again && remembered && skipped && twoNine && latest && off,
+                  $"update banner: shown {shown} ({vm.UpdateBannerText}), Later {later}, on request {again}, skip remembered {remembered} and kept {skipped}, " +
+                  $"0.2.0 offered {twoNine}, latest {latest}, opt-out {off}");
+
+            // What's new: after an update (bundled manifest, another commit than the last seen) with Open for each page
+            vm.SetBundledReleaseForTest(newer);
+            vm.Settings.LastSeenCommit = "96e9eb9a50"; vm.Settings.TourDone = true;
+            var opened = vm.MaybeShowWhatsNewAfterUpdate();
+            var items = vm.WhatsNewItems.ToList();
+            var content = opened && vm.WhatsNewOpen && !vm.WhatsNewRemote && items.Count == 4 && items[0].Title == "Semicrystalline stacks" && items[0].Detail == "Lamellar cells."
+                          && items[0].CanOpen && items[0].Command == "module.open semicrystalline" && items[1].CanOpen && !items[2].CanOpen && !items[3].CanOpen
+                          && vm.WhatsNewSubtitle.StartsWith("Test update · 22 Oct 2026") && vm.Settings.LastSeenCommit == newer.Commit;
+            vm.OpenWhatsNewItem(items[0]);
+            var went = !vm.WhatsNewOpen && vm.IsSemicrystalline;
+            var once = !vm.MaybeShowWhatsNewAfterUpdate();
+            vm.ShowWhatsNew(m020, remote: true);
+            var remote = vm.WhatsNewRemote && vm.WhatsNewTitle == "A newer CAPS is ready" && vm.WhatsNewSubtitle.Contains("version 0.2.0 (you have 0.1.0)") && vm.WhatsNewItems.All(i => !i.CanOpen);
+            vm.CloseWhatsNew();
+            vm.SetBundledReleaseForTest(null);
+            vm.SetThisBuildForTest(null);
+            vm.SetModule(8);
+            Check(content && went && once && remote,
+                  $"What's new: {items.Count} highlights ({string.Join(" | ", items.Select(i => i.Title + (i.CanOpen ? " [Open]" : "")))}), Open went to its page {went}, shown once {once}, remote {remote}");
         }
 
         // Start › From a recipe: a small polyethylene recipe runs, exports beside itself and opens as the document

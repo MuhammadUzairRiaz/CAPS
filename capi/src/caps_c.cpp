@@ -11900,6 +11900,7 @@ extern "C" int32_t caps_build_info(char* json, int32_t cap) {
   caps::Json j = caps::Json::object();
   j["version"] = std::string(caps::version_string());
   j["commit"] = std::string(caps::commit_string());
+  j["date"] = std::string(caps::commit_date_string());   // the commit's date: the update check compares it with a release's
   j["ml_engine"] = caps::ml_engine_available();   // CAPS ML (libtorch) built in: completion of missing terms is offered
   return report_out(j.dump(0), json, cap);
 }

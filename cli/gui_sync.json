@@ -1281,6 +1281,13 @@
     "--lammps-input": "Views/Pages/ThermalPage.axaml|Write LAMMPS inputs",
     "--long": "cli: quiets the note that a run is longer than a short local check"
    }
+  },
+  "--check-update": {
+   "status": "gui",
+   "studio": "Help › Check for updates now; the update banner; Settings › Files › Updates",
+   "where": "ViewModels/MainViewModel.Update.cs|CheckForUpdates(",
+   "capi": [],
+   "options": {}
   }
  },
  "hidden_options": {

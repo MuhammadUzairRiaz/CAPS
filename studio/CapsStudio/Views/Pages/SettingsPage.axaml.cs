@@ -152,5 +152,6 @@ public partial class SettingsPage : PageBase
         if (s is ComboBox c && c.SelectedIndex >= 0) { Vm.ApplyHostPreset(c.SelectedIndex); c.SelectedIndex = -1; }
     }
     private void OnColourVision(object? s, RoutedEventArgs e) => Vm.OpenColourVision();
-    private async void OnCheckUpdates(object? s, RoutedEventArgs e) => await Vm.CheckForUpdates();
+    private async void OnCheckUpdates(object? s, RoutedEventArgs e) => await Vm.CheckForUpdates(manual: true);
+    private void OnWhatsNew(object? s, RoutedEventArgs e) => Vm.OpenWhatsNew();
 }

@@ -503,12 +503,15 @@
             </Grid>
             <StackPanel Spacing="8">
               <TextBlock Text="Updates" Classes="h2" />
+              <CheckBox Classes="toggle" IsChecked="{Binding SetCheckUpdates}" IsEnabled="{Binding !UpdateChecksDisabledByEnv}"
+                        Content="Check for updates (once a day, after the window opens)" MaxWidth="620" HorizontalAlignment="Left" />
               <StackPanel Orientation="Horizontal" Spacing="12">
-                <Button Classes="small" Content="Check for updates" Click="OnCheckUpdates" IsEnabled="{Binding !UpdateChecking}" />
+                <Button Classes="small" Content="Check now" Click="OnCheckUpdates" IsEnabled="{Binding !UpdateChecking}" />
+                <Button Classes="small" Content="What's new" Click="OnWhatsNew" />
                 <TextBlock Text="{Binding UpdateText}" Classes="muted" FontSize="12" VerticalAlignment="Center" />
               </StackPanel>
               <TextBlock Classes="dim" TextWrapping="Wrap" MaxWidth="560" HorizontalAlignment="Left"
-                         Text="CAPS looks for a new release only when you ask (the project's GitHub releases); it never installs anything by itself." />
+                         Text="The check reads one public file, release.json of the latest CAPS release on GitHub, and sends nothing about you or this computer. It never installs anything by itself: Download opens the installer in your browser. CAPS_NO_UPDATE_CHECK=1 turns it off for good (for offline and portable installs)." />
             </StackPanel>
           </StackPanel>
         </Panel>

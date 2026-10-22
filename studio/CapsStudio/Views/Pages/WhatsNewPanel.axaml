@@ -1,0 +1,72 @@
+<!-- What's new: the highlights of a CAPS release, each with Open for the page that shows it. After an update it lists
+     this build's own highlights (bundled data/release.json); from the update banner it lists the release on offer, with
+     Download and Skip. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.WhatsNewPanel" x:DataType="vm:MainViewModel">
+  <Panel>
+    <Border Background="#B307080A" PointerPressed="OnBackdrop" />
+    <Border Width="620" MaxHeight="660" CornerRadius="12" BorderThickness="1" BorderBrush="{DynamicResource LineB}" Background="{DynamicResource Bg1B}"
+            HorizontalAlignment="Center" VerticalAlignment="Center" ClipToBounds="True" BoxShadow="0 20 60 0 #60000000">
+      <DockPanel>
+        <Border DockPanel.Dock="Top" Padding="22,20,18,14" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+          <DockPanel>
+            <Button DockPanel.Dock="Right" Classes="tool" Click="OnClose" ToolTip.Tip="Close (Esc)" VerticalAlignment="Top"><v:Icon Kind="close" Size="16" /></Button>
+            <Border Width="42" Height="42" CornerRadius="21" Background="{DynamicResource SelBgB}" Margin="0,0,14,0" VerticalAlignment="Top">
+              <v:Icon Kind="wand" Size="19" Foreground="{DynamicResource AccB}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <StackPanel Spacing="4" VerticalAlignment="Center">
+              <TextBlock Text="{Binding WhatsNewTitle}" FontSize="17" FontWeight="SemiBold" />
+              <TextBlock Text="{Binding WhatsNewSubtitle}" Classes="muted" FontSize="12.5" TextWrapping="Wrap" />
+            </StackPanel>
+          </DockPanel>
+        </Border>
+        <Border DockPanel.Dock="Bottom" Padding="22,12" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+          <DockPanel>
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8">
+              <Button Classes="link" Content="Skip this update" Click="OnSkip" IsVisible="{Binding WhatsNewRemote}" VerticalAlignment="Center" Foreground="{DynamicResource MutedB}"
+                      ToolTip.Tip="Do not offer this release again" />
+              <Button Content="Later" Click="OnClose" IsVisible="{Binding WhatsNewRemote}" />
+              <Button Classes="primary" Click="OnDownload" IsVisible="{Binding WhatsNewRemote}" ToolTip.Tip="{Binding UpdateDownloadUrl}">
+                <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="download" Size="14" VerticalAlignment="Center" /><TextBlock Text="Download" VerticalAlignment="Center" /></StackPanel>
+              </Button>
+              <Button Classes="primary" Content="Close" Click="OnClose" IsVisible="{Binding !WhatsNewRemote}" />
+            </StackPanel>
+            <Button Classes="link" Click="OnNotes" VerticalAlignment="Center" HorizontalAlignment="Left" ToolTip.Tip="{Binding UpdateNotesUrl}">Full release notes</Button>
+          </DockPanel>
+        </Border>
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+          <StackPanel Margin="22,14,22,18" Spacing="12">
+            <ItemsControl ItemsSource="{Binding WhatsNewItems}">
+              <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="2" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:WhatsNewItem">
+                  <Border Padding="0,9" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+                    <Grid ColumnDefinitions="18,*,Auto">
+                      <Ellipse Width="7" Height="7" Fill="{DynamicResource AccB}" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="1,6,0,0" />
+                      <StackPanel Grid.Column="1" Spacing="3" Margin="0,0,14,0">
+                        <TextBlock Text="{Binding Title}" FontSize="13.5" FontWeight="SemiBold" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding Detail}" IsVisible="{Binding HasDetail}" FontSize="12.5" LineHeight="18" TextWrapping="Wrap"
+                                   Foreground="{DynamicResource MutedB}" />
+                      </StackPanel>
+                      <Button Grid.Column="2" Classes="small" IsVisible="{Binding CanOpen}" Click="OnOpenItem" Tag="{Binding}" VerticalAlignment="Top"
+                              ToolTip.Tip="Go to the page">
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                          <TextBlock Text="Open" VerticalAlignment="Center" />
+                          <v:Icon Kind="chevr" Size="12" VerticalAlignment="Center" />
+                        </StackPanel>
+                      </Button>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Border Padding="14,10" CornerRadius="8" Background="{DynamicResource Bg2B}" IsVisible="{Binding HasWhatsNewNote}">
+              <TextBlock TextWrapping="Wrap" FontSize="12" LineHeight="18" Foreground="{DynamicResource MutedB}" Text="{Binding WhatsNewNote}" />
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </DockPanel>
+    </Border>
+  </Panel>
+</p:PageBase>
