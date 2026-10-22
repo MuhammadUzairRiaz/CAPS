@@ -96,6 +96,34 @@ internal static class Screenshot
                 if (kv[1] == "ads") { vm.OpenAdsorbDft(); vm.AdsSlab = vm.SlabPath; Wait(vm.BuildAdsorptionSet()); }
                 if (kv[1] == "job") { vm.OpenDftJob(); vm.JobStructure = vm.SlabPath; Wait(vm.PreviewJob()); }
             }
+            if (kv[0] == "semi")   // semi=NX,NY,CRYSTAL_NM,AMORPHOUS_NM: Build › Semicrystalline stack, built and relaxed (PE, OPLS-AA 2024)
+            {
+                var vm = w.ViewModel;
+                var g = kv[1].Split(',').Select(x => decimal.Parse(x, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+                vm.SetModule(81);
+                (vm.ScNx, vm.ScNy, vm.ScCrystal, vm.ScAmorphous) = (g[0], g[1], g[2], g[3]);
+                var t = vm.BuildSemicrystalline();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+                for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
+            if (kv[0] == "thermal")   // thermal=3d|2d: Modules › Thermal conductivity on the open structure, the dimensionality chosen
+            {
+                w.ViewModel.SetModule(82);
+                w.ViewModel.ThDim = kv[1] == "2d" ? 1 : 0;
+                for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
+            if (kv[0] == "dftcrystal")   // dftcrystal=ID: the VASP set designer's crystal card with that library crystal, phono3py estimated
+            {
+                var vm = w.ViewModel;
+                vm.DftRoot = Path.Combine(OperatingSystem.IsWindows() ? Path.GetTempPath() : "/tmp", "caps-dft");
+                vm.OpenDftJob();
+                for (int k = 0; k < 10; ++k) Dispatcher.UIThread.RunJobs();
+                var i = vm.DftCrystals.IndexOf(kv[1]);
+                if (i >= 0) vm.DftCrystalIndex = i;
+                var t = vm.DftCrystal("estimate");
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); }
+                for (int k = 0; k < 40; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
             if (kv[0] == "cgflow")   // cgflow=map|bonded|nonbonded|build|equil|analyse: the coarse-grain workflow on a small grown PBS cell, shown at that stage
             {
                 var vm = w.ViewModel;
