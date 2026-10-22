@@ -1,5 +1,6 @@
 add_library(caps_core STATIC
   src/live.cpp
+  src/update.cpp
   src/mlpot.cpp
   src/ffcomplete.cpp
   src/cluster_job.cpp
@@ -152,6 +153,11 @@ if(NOT CAPS_COMMIT)
                   OUTPUT_VARIABLE CAPS_GIT_COMMIT OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET RESULT_VARIABLE CAPS_GIT_RESULT)
   if(CAPS_GIT_RESULT EQUAL 0 AND CAPS_GIT_COMMIT)
     set(CAPS_COMMIT_VALUE ${CAPS_GIT_COMMIT})
+    if(NOT CAPS_COMMIT_DATE)
+      # the commit's date (strict ISO 8601): the update check compares it with a release's
+      execute_process(COMMAND git show -s --format=%cI HEAD WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+                      OUTPUT_VARIABLE CAPS_COMMIT_DATE OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+    endif()
     foreach(f HEAD logs/HEAD)
       if(EXISTS ${PROJECT_SOURCE_DIR}/.git/${f})
         set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${PROJECT_SOURCE_DIR}/.git/${f})
@@ -163,7 +169,11 @@ if(NOT CAPS_COMMIT)
 else()
   set(CAPS_COMMIT_VALUE ${CAPS_COMMIT})
 endif()
-target_compile_definitions(caps_core PRIVATE CAPS_VERSION_STRING="${PROJECT_VERSION}" CAPS_COMMIT_STRING="${CAPS_COMMIT_VALUE}")
+if(NOT CAPS_COMMIT_DATE)
+  set(CAPS_COMMIT_DATE unknown)   # -DCAPS_COMMIT_DATE=2026-10-22T09:00:00Z for a source archive
+endif()
+target_compile_definitions(caps_core PRIVATE CAPS_VERSION_STRING="${PROJECT_VERSION}" CAPS_COMMIT_STRING="${CAPS_COMMIT_VALUE}"
+                                             CAPS_COMMIT_DATE_STRING="${CAPS_COMMIT_DATE}")
 if(NOT MSVC)
   target_compile_options(caps_core PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wall -Wextra -Wpedantic>)
 endif()

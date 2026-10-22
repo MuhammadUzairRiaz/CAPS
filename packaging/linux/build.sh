@@ -36,6 +36,8 @@ cp "$WORK/native/cli/caps" "$APP/"
 mkdir -p "$APP/data"
 cp -R "$ROOT/data/." "$APP/data/"   # every data folder
 find "$APP/data" -name "__pycache__" -type d -prune -exec rm -rf {} +
+# this build's release manifest (version, commit, date, highlights): What's new after an update, offline
+python3 "$ROOT/tools/release/make_release_json.py" -o "$APP/data/release.json"
 cp -R "$ROOT/licenses" "$APP/licenses"
 cp "$ROOT/LICENSE" "$APP/LICENSE"
 cp -R "$ROOT/samples" "$APP/"

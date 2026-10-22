@@ -76,6 +76,13 @@ public sealed class AppSettings
     public List<SavedQueryData> SavedQueries { get; set; } = SavedQueryData.Defaults();   // Select by query (SmartSelect)
     /// <summary>The first-run tour was finished or skipped.</summary>
     public bool TourDone { get; set; }
+    /// <summary>Updates: look for a newer CAPS once a day (Settings › Files); when it last looked (ISO 8601, UTC) and the
+    /// manifest it found; a release the user chose to skip (its commit); the build whose What's new was last shown.</summary>
+    public bool CheckUpdates { get; set; } = true;
+    public string LastUpdateCheck { get; set; } = "";
+    public string LatestRelease { get; set; } = "";
+    public string SkippedUpdateCommit { get; set; } = "";
+    public string LastSeenCommit { get; set; } = "";
     /// <summary>Keys the user gave palette commands: command id → gesture ("Meta+Shift+G").</summary>
     public Dictionary<string, string> Shortcuts { get; set; } = new();
     /// <summary>Pane sizes the user dragged or hid (Panes): grid key → each track's size ("300|*|child:230").</summary>

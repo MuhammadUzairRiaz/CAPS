@@ -1346,7 +1346,7 @@ int32_t caps_cg_run(const char* command, const char* args_json, const char* data
 int32_t caps_cg_help(const char* command, char* out, int32_t cap);
 
 /* Cluster jobs (ABI 67, caps/cluster_job.hpp; the host side is the caps job command): the build's version and commit
-   {"version", "commit", "ml_engine" (v71: as caps_ml_available)}; the built-in job script for a scheduler ("slurm", "pbs", "direct") with its {placeholders}; the
+   {"version", "commit", "date" (the commit's ISO 8601 date, for the update check), "ml_engine" (v71: as caps_ml_available)}; the built-in job script for a scheduler ("slurm", "pbs", "direct") with its {placeholders}; the
    generic host presets [{"key", "profile": {…host.json keys…}}]. Each returns the length written (-1 on error). */
 int32_t caps_build_info(char* json, int32_t cap);
 int32_t caps_job_template(const char* scheduler, char* text, int32_t cap);

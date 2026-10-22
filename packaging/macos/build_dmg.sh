@@ -51,6 +51,8 @@ mkdir -p "$APP/Contents/Resources/data"
 # every data folder (force fields, typing, polymers, crystals, reactions, manual, python …): a new one is never left out
 cp -R "$ROOT/data/." "$APP/Contents/Resources/data/"
 find "$APP/Contents/Resources/data" -name "__pycache__" -type d -prune -exec rm -rf {} +
+# this build's release manifest (version, commit, date, highlights): What's new after an update, offline
+python3 "$ROOT/tools/release/make_release_json.py" -o "$APP/Contents/Resources/data/release.json"
 cp -R "$ROOT/licenses" "$APP/Contents/Resources/licenses"
 cp "$ROOT/LICENSE" "$APP/Contents/Resources/LICENSE"
 cp -R "$ROOT/samples" "$APP/Contents/Resources/"

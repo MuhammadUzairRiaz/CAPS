@@ -19,11 +19,15 @@
 #ifndef CAPS_COMMIT_STRING
 #define CAPS_COMMIT_STRING "unknown"
 #endif
+#ifndef CAPS_COMMIT_DATE_STRING
+#define CAPS_COMMIT_DATE_STRING "unknown"
+#endif
 
 namespace caps {
 
 const char* version_string() { return CAPS_VERSION_STRING; }
 const char* commit_string() { return CAPS_COMMIT_STRING; }
+const char* commit_date_string() { return CAPS_COMMIT_DATE_STRING; }
 
 namespace {
 int positive_int(const char* s) {

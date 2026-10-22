@@ -119,6 +119,8 @@ public partial class MainWindow : Window
         _vm.LoadLastSession();
         Closing += (_, _) => { _vm.SaveOnClose(); SaveWindowPlace(); };   // the project (or the session's tree) comes back next time
         Opened += (_, _) => PlaceWindow();
+        // What's new after an update, then the daily update check: once the window is up, in the background
+        Opened += (_, _) => Avalonia.Threading.DispatcherTimer.RunOnce(_vm.StartupUpdateTasks, TimeSpan.FromSeconds(2));
         AddWindowCommands();
         _vm.InitProtocol();
         _vm.LoadReactionSet();
@@ -1025,7 +1027,7 @@ public partial class MainWindow : Window
             }
         }
         if (_vm.QueryOpen && e.Key == Key.Escape) { _vm.QueryOpen = false; ViewHost.Focus(); e.Handled = true; return; }
-        if (_vm.UpdateOpen && e.Key == Key.Escape) { _vm.CloseUpdate(); e.Handled = true; return; }
+        if (_vm.WhatsNewOpen && e.Key == Key.Escape) { _vm.CloseWhatsNew(); e.Handled = true; return; }
         if (_vm.ImportOpen && e.Key == Key.Escape) { _vm.CloseImport(); e.Handled = true; return; }
         if (_vm.ExportDialogOpen && e.Key == Key.Escape) { _vm.CancelExport(); _vm.ExportDialogOpen = false; e.Handled = true; return; }
         if (e.Key == Key.E && e.KeyModifiers == (OperatingSystem.IsMacOS() ? KeyModifiers.Meta : KeyModifiers.Control) && _vm.HasDocument) { _vm.OpenExportDialog(); e.Handled = true; return; }

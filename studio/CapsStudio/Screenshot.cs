@@ -544,9 +544,15 @@ internal static class Screenshot
                 Console.WriteLine($"unnamed buttons: {un.Count}");
                 foreach (var b in un.Take(40)) Console.WriteLine($"  {b.GetType().Name} {b.Name} {(b.Content as Avalonia.Controls.Control)?.GetType().Name} classes={string.Join(".", b.Classes)}");
             }
-            if (kv[0] == "update")   // update=1: check for updates (set CAPS_UPDATE_FEED to a local release JSON)
+            if (kv[0] == "whatsnew")   // whatsnew=FILE: What's new as after an update to the release.json FILE; whatsnew=remote: the banner's What's new
             {
-                var t = w.ViewModel.CheckForUpdates();
+                if (kv[1] == "remote") w.ViewModel.OpenRemoteWhatsNew();
+                else if (ViewModels.ReleaseManifest.TryLoad(kv[1]) is { } m) w.ViewModel.ShowWhatsNew(m, remote: false);
+                for (int k = 0; k < 20; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+            }
+            if (kv[0] == "update")   // update=1: check for updates against CAPS_UPDATE_FEED (a local release.json; never the network here)
+            {
+                var t = w.ViewModel.CheckForUpdates(manual: true);
                 while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); }
                 for (int k = 0; k < 20; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
             }

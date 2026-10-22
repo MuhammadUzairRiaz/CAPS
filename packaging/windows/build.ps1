@@ -26,6 +26,12 @@ New-Item -ItemType Directory -Force "$App\data" | Out-Null
 # every data folder (a new one is never left out), without Python caches
 Get-ChildItem "$Root\data" -Directory | ForEach-Object { Copy-Item -Recurse $_.FullName "$App\data" }
 Get-ChildItem "$App\data" -Recurse -Directory -Filter "__pycache__" | Remove-Item -Recurse -Force
+# this build's release manifest (version, commit, date, highlights): What's new after an update, offline
+$Py = @("py", "python3", "python") | ForEach-Object { Get-Command $_ -CommandType Application -ErrorAction SilentlyContinue } | Select-Object -First 1
+if (-not $Py) { throw "Python 3 is needed to write data\release.json (winget install Python.Python.3.12)" }
+$PyArgs = if ($Py.Name -like "py*.exe" -and $Py.Name -notlike "python*") { @("-3") } else { @() }
+& $Py.Source @PyArgs "$Root\tools\release\make_release_json.py" -o "$App\data\release.json"
+if ($LASTEXITCODE -ne 0) { throw "make_release_json.py failed" }
 Copy-Item -Recurse "$Root\licenses" "$App\licenses"
 Copy-Item "$Root\LICENSE" "$App\LICENSE"
 Copy-Item -Recurse "$Root\samples" $App

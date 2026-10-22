@@ -1,0 +1,40 @@
+{
+ "about": "What is new in the next release, as the Studio shows it after an update and in its update banner. tools/release/make_release_json.py copies this into release.json. Keep it to a handful of lines a user can act on; page is a Studio page (the palette's module name, e.g. semicrystalline, or a command id such as module.open thermal). The full changelog stays in tools/docs/src/whatsnew.md.",
+ "title": "October 2026 update",
+ "highlights": [
+  {
+   "title": "Semicrystalline stacks",
+   "detail": "Build lamellar cells: a crystal lamella from the polymer crystal library and an amorphous layer of loops, bridges and tails in the fractions you ask for, with crystallinity, density and P2 profiles reported.",
+   "page": "semicrystalline"
+  },
+  {
+   "title": "Thermal conductivity by MD",
+   "detail": "Green-Kubo from the heat-flux autocorrelation, or reverse NEMD. You say whether the material is a 3D bulk or a 2D sheet; LAMMPS inputs cover the long runs on a cluster.",
+   "page": "thermal"
+  },
+  {
+   "title": "Polymer crystals for DFT",
+   "detail": "Unit cells of PE, iPP, PEO, PVDF, POM, the nylons, PET, PLLA, natural rubber and PTFE from their structure papers, a four-step VASP relaxation chain, and phono3py sets with a cost estimate before anything is submitted.",
+   "page": "vasp"
+  },
+  {
+   "title": "Figures ready for a journal",
+   "detail": "Every plot saves as a one- or two-column figure (vector PDF or SVG, or 300 dpi PNG) in one consistent look, and copies its data as CSV.",
+   "page": "figure"
+  },
+  {
+   "title": "Force fields from their original sources",
+   "detail": "Every library file is built from its paper, supporting information or the authors' own distribution, and says where its numbers came from. Waters, gases, Martini 2, SDK and L-OPLS are new.",
+   "page": "field"
+  },
+  {
+   "title": "Missing parameters filled by CAPS ML",
+   "detail": "When a force field lacks a torsion, bend or bond, CAPS can fit it to relaxed scans with its own model and marks every such term in the files it writes.",
+   "page": "field"
+  },
+  {
+   "title": "Update notices",
+   "detail": "CAPS Studio now tells you when a newer CAPS is out and shows what changed after you update. Settings has the switch."
+  }
+ ]
+}

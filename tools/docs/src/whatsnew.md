@@ -60,6 +60,7 @@ CAPS now carries its own machine-learned potential (CAPS MACE v1, trained on wB9
 - "Copy as command" on the Relax, Dynamics, Equilibrate, React, glass transition, tensile and force-field pages gives the `caps` command that does the same thing.
 - The full-screen viewer draws on the GPU, as the main view does: about 2.5 ms per frame on a 14,000-atom blend, where it took 69 ms before.
 - A clean install no longer offers force fields it does not ship.
+- CAPS Studio tells you when a newer CAPS is out: once a day it reads the latest release's `release.json` from GitHub (nothing about you is sent) and shows a banner with What's new, Download, Later and Skip this update. After an update it shows what is new, with a button to each page. Settings › Files has the switch, Help has Check for updates now, `CAPS_NO_UPDATE_CHECK=1` turns it off, and `caps --check-update` does the same from the command line.
 
 ### Faster runs
 

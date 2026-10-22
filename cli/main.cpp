@@ -58,6 +58,7 @@
 #include "caps/render.hpp"
 #include "caps/ffcomplete.hpp"
 #include "caps/mlpot.hpp"
+#include "caps/update.hpp"
 #include "caps/provenance.hpp"
 #include "caps/recipe.hpp"
 #include "caps/semicrystal.hpp"
@@ -197,6 +198,7 @@ bool file_charges(const System& s) {
 int usage() {
   std::cerr << "caps 0.1.0\n"
                "usage:\n"
+               "  caps --version | --check-update   this build; whether a newer CAPS release is out (exit 0 no, 1 yes, 2 cannot tell)\n"
                "  caps info    FILE [--topology DATA]\n"
                "  caps render  FILE -o OUT.png|OUT.svg [--topology DATA] [--frame N] [--size WxH]\n"
                "               [--bg dark|white|transparent] [--colour molecule|element|type|distance]\n"
@@ -1475,12 +1477,43 @@ std::string resume_line(const std::string& head, const std::string& input, const
   return line;
 }
 
+// caps --check-update: the manifest of the latest release (one GET, nothing sent), compared with this build.
+// Exit 0: this build is the latest or newer; 1: a newer release is out; 2: cannot tell (offline, turned off, no manifest).
+int check_update_main() {
+  const auto local = this_build();
+  std::printf("this build:     CAPS %s · commit %s · %s\n", local.version.c_str(), local.commit.c_str(), local.date.c_str());
+  if (update_checks_disabled()) {
+    std::printf("update check:   off (CAPS_NO_UPDATE_CHECK is set)\n");
+    return 2;
+  }
+  ReleaseManifest m;
+  try {
+    m = parse_release_manifest(fetch_release_manifest(update_feed()));
+  } catch (const std::exception& e) {
+    std::fprintf(stderr, "caps: could not check for updates: %s\n", e.what());
+    return 2;
+  }
+  std::printf("latest release: CAPS %s · commit %s · %s%s%s\n", m.version.c_str(), m.commit.substr(0, 10).c_str(), m.date.c_str(),
+              m.title.empty() ? "" : " · ", m.title.c_str());
+  const auto v = decide_update(local, m);
+  switch (v) {
+    case UpdateVerdict::Update:
+      std::printf("update:         a newer CAPS is out · %s\n", download_url(m, platform_key()).c_str());
+      for (const auto& h : m.highlights) std::printf("  - %s\n", h.title.c_str());
+      return 1;
+    case UpdateVerdict::Current: std::printf("update:         none, this is the latest CAPS\n"); return 0;
+    case UpdateVerdict::LocalNewer: std::printf("update:         none, this build is newer than the latest release\n"); return 0;
+    default: std::printf("update:         cannot tell (this build's date is unknown)\n"); return 2;
+  }
+}
+
 int main(int argc, char** argv) {
   if (argc == 2 && (std::string(argv[1]) == "--version" || std::string(argv[1]) == "version")) {
     // "caps 0.1.0 (commit a1b2c3d4e5)": the Studio compares it with its own before running jobs on a host
     std::printf("caps %s (commit %s)\n", version_string(), commit_string());
     return 0;
   }
+  if (argc == 2 && std::string(argv[1]) == "--check-update") return check_update_main();
   if (argc >= 2 && std::string(argv[1]) == "job") return job_main(argc, argv);
   if (argc >= 2 && is_dft_command(argv[1])) return dft_main(argv[1], argc, argv);
   if (argc >= 2 && is_cg_command(argv[1])) return cg_main(argv[1], argc, argv);

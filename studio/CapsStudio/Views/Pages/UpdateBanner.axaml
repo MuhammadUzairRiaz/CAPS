@@ -1,0 +1,32 @@
+<!-- Update banner: a strip above the window's content when a newer CAPS is out. It never blocks: What's new shows the
+     release's highlights, Download opens this machine's installer in the browser, Later hides it until the next start,
+     Skip this update remembers the release and stops offering it. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.UpdateBanner" x:DataType="vm:MainViewModel">
+  <Border Background="{DynamicResource Bg2B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+    <DockPanel Height="40">
+      <Border DockPanel.Dock="Left" Width="3" Background="{DynamicResource AccB}" />
+      <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6" Margin="0,0,12,0" VerticalAlignment="Center">
+        <Button Classes="small" Click="OnWhatsNew" ToolTip.Tip="What changed in this release">What's new</Button>
+        <Button Classes="small primary" Click="OnDownload" ToolTip.Tip="{Binding UpdateDownloadUrl}">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <v:Icon Kind="download" Size="13" VerticalAlignment="Center" />
+            <TextBlock Text="Download" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+        <Button Classes="small" Click="OnLater" ToolTip.Tip="Hide until CAPS Studio starts again">Later</Button>
+        <Button Classes="link" Click="OnSkip" ToolTip.Tip="Do not offer this release again (Help › Check for updates now still shows it)"
+                VerticalAlignment="Center" Margin="4,0,0,0" Foreground="{DynamicResource MutedB}">Skip this update</Button>
+      </StackPanel>
+      <StackPanel Orientation="Horizontal" Spacing="10" Margin="14,0,12,0" VerticalAlignment="Center">
+        <Border Width="22" Height="22" CornerRadius="11" Background="{DynamicResource SelBgB}" VerticalAlignment="Center">
+          <v:Icon Kind="download" Size="13" Foreground="{DynamicResource AccB}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Border>
+        <TextBlock VerticalAlignment="Center" FontSize="12.5" TextTrimming="CharacterEllipsis">
+          <Run Text="{Binding UpdateBannerLead}" FontWeight="SemiBold" /><Run Text="{Binding UpdateBannerDetail}" Foreground="{DynamicResource MutedB}" />
+        </TextBlock>
+      </StackPanel>
+    </DockPanel>
+  </Border>
+</p:PageBase>
