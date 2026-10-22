@@ -534,7 +534,7 @@ usage: python3 analyze_kappa.py kappa-mXXX.hdf5 [--out kappa_extract] [--ts 300 
 Writes into --out: kappa_summary.json (temperatures, the kappa tensor xx yy zz yz xz xy per temperature, the mesh and the
 weight sum) and modes_T<T>.csv per temperature: frequency (THz), weight, mode kappa xx yy zz yz xz xy (W/m/K, summed over
 the irreducible q-points and bands and divided by the weight sum they give kappa), gamma (THz), group velocity (THz*A).
-Needs h5py and numpy (as phono3py itself); --plot needs matplotlib.
+Needs h5py and numpy (as phono3py itself); --plot needs matplotlib and writes each figure as PNG (300 dpi) and PDF.
 """
 import argparse, json, os, sys
 
@@ -582,30 +582,129 @@ def main():
         plot(a.out, summary)
 
 
+# the journal look of every figure CAPS writes (caps.plotstyle.RC; this script runs where CAPS is not installed)
+RC = {
+    'font.family': 'sans-serif',
+    'font.sans-serif': ['Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans'],
+    'font.size': 8.0,
+    'axes.labelsize': 8.0,
+    'axes.titlesize': 8.0,
+    'xtick.labelsize': 7.5,
+    'ytick.labelsize': 7.5,
+    'legend.fontsize': 7.5,
+    'mathtext.default': 'regular',
+    'mathtext.fontset': 'custom',
+    'mathtext.rm': 'sans',
+    'mathtext.it': 'sans:italic',
+    'mathtext.bf': 'sans:bold',
+    'axes.linewidth': 0.6,
+    'axes.edgecolor': 'black',
+    'axes.labelcolor': 'black',
+    'axes.grid': False,
+    'axes.unicode_minus': True,
+    'axes.formatter.use_mathtext': True,
+    'axes.formatter.limits': [-3, 4],
+    'axes.labelpad': 3.0,
+    'xtick.direction': 'in',
+    'ytick.direction': 'in',
+    'xtick.top': True,
+    'ytick.right': True,
+    'xtick.minor.visible': True,
+    'ytick.minor.visible': True,
+    'xtick.major.size': 3.5,
+    'ytick.major.size': 3.5,
+    'xtick.minor.size': 2.0,
+    'ytick.minor.size': 2.0,
+    'xtick.major.width': 0.6,
+    'ytick.major.width': 0.6,
+    'xtick.minor.width': 0.45,
+    'ytick.minor.width': 0.45,
+    'xtick.major.pad': 3.0,
+    'ytick.major.pad': 3.0,
+    'xtick.color': 'black',
+    'ytick.color': 'black',
+    'lines.linewidth': 1.0,
+    'lines.markersize': 3.0,
+    'lines.markeredgewidth': 0.6,
+    'errorbar.capsize': 1.5,
+    'legend.frameon': False,
+    'legend.handlelength': 1.8,
+    'legend.borderaxespad': 0.4,
+    'legend.labelspacing': 0.3,
+    'figure.dpi': 150,
+    'figure.facecolor': 'white',
+    'axes.facecolor': 'white',
+    'savefig.dpi': 300,
+    'savefig.facecolor': 'white',
+    'savefig.bbox': 'tight',
+    'savefig.pad_inches': 0.02,
+    'pdf.fonttype': 42,
+    'ps.fonttype': 42,
+    'svg.fonttype': 'none',
+}
+COLOURS = ['#0072B2', '#D55E00', '#009E73', '#CC79A7', '#E69F00', '#56B4E9', '#000000', '#F0E442']
+SINGLE, DOUBLE = 3.35, 7.0
+
+
 def plot(out, s):
+    """kappa_T.png/.pdf: the diagonal of kappa against T (one column wide); modes_T<T>.png/.pdf for each temperature
+    (the page wide): cumulative kappa, lifetimes and mean free paths of the modes against frequency, every mode drawn."""
     import matplotlib
     matplotlib.use("Agg")
+    from cycler import cycler
+    rc = dict(RC)
+    rc["axes.prop_cycle"] = cycler(color=COLOURS)
+    matplotlib.rcParams.update(rc)
     import matplotlib.pyplot as plt
+
+    def save(fig, stem):
+        fig.savefig(os.path.join(out, stem + ".png"), dpi=300)
+        fig.savefig(os.path.join(out, stem + ".pdf"))
+        plt.close(fig)
+
+    kap = "$\\mathit{\\kappa}$ / W m$^{\u22121}$ K$^{\u22121}$"
+    comps = [("xx", "-", "o"), ("yy", "--", "s"), ("zz", "-.", "^")]
+    T = np.array(s["temperatures"])
     k = np.array(s["kappa"])
-    fig, ax = plt.subplots()
-    for c, lab in enumerate(["xx", "yy", "zz"]):
-        ax.plot(s["temperatures"], k[:, c], "o-", label=lab)
-    ax.set_xlabel("T (K)"); ax.set_ylabel("kappa (W/m/K)"); ax.legend(); fig.savefig(os.path.join(out, "kappa_T.png"), dpi=150)
+    fig, ax = plt.subplots(figsize=(SINGLE, 0.75 * SINGLE))
+    many = len(T) > 150
+    for c, (lab, ls, mk) in enumerate(comps):
+        ax.plot(T, k[:, c], ls=ls, color=COLOURS[c], marker=None if many else mk, mfc="white", label="$\\mathit{\\kappa}_{\\mathit{%s}}$" % lab)
+    ax.set_xlabel("$\\mathit{T}$ / K")
+    ax.set_ylabel(kap)
+    if len(T) > 1 and T.min() > 0 and T.max() / T.min() >= 10 and k[:, :3].min() > 0:
+        ax.set_xscale("log"); ax.set_yscale("log")   # kappa ~ 1/T over a decade or more: straight on log-log axes
+    else:
+        ax.set_ylim(bottom=0)
+    ax.legend()
+    save(fig, "kappa_T")
     for name in s["modes"]:
         d = np.loadtxt(os.path.join(out, name), delimiter=",", skiprows=1)
         if d.ndim == 1:
             d = d[None, :]
         f, kk, g, v = d[:, 0], d[:, 2:5], d[:, 8], d[:, 9:12]
-        tau = np.where(g > 0, 1.0 / (4 * np.pi * np.where(g > 0, g, 1)), 0.0)
-        mfp = np.linalg.norm(v, axis=1) * tau / 10.0   # nm
+        ok = g > 0
+        tau = 1.0 / (4 * np.pi * g[ok])                    # ps, from the linewidth gamma (THz)
+        mfp = np.linalg.norm(v[ok], axis=1) * tau / 10.0   # nm (THz*A * ps = A)
         o = np.argsort(f)
-        fig, ax = plt.subplots(1, 3, figsize=(14, 4))
-        for c, lab in enumerate(["xx", "yy", "zz"]):
-            ax[0].plot(f[o], np.cumsum(kk[o, c]), label=lab)
-        ax[0].set_xlabel("frequency (THz)"); ax[0].set_ylabel("cumulative kappa (W/m/K)"); ax[0].legend()
-        ax[1].scatter(f, tau, s=2); ax[1].set_yscale("log"); ax[1].set_xlabel("frequency (THz)"); ax[1].set_ylabel("lifetime (ps)")
-        ax[2].scatter(f, mfp, s=2); ax[2].set_yscale("log"); ax[2].set_xlabel("frequency (THz)"); ax[2].set_ylabel("mean free path (nm)")
-        fig.tight_layout(); fig.savefig(os.path.join(out, name.replace(".csv", ".png")), dpi=150)
+        fig, ax = plt.subplots(1, 3, figsize=(DOUBLE, 0.34 * DOUBLE))
+        for c, (lab, ls, _) in enumerate(comps):
+            ax[0].plot(f[o], np.cumsum(kk[o, c]), ls=ls, color=COLOURS[c], drawstyle="steps-post", label="$\\mathit{\\kappa}_{\\mathit{%s}}$" % lab)
+        ax[0].set_xlabel("frequency / THz"); ax[0].set_ylabel("cumulative " + kap)
+        ax[0].legend(title="$\\mathit{T}$ = %g K" % float(name[len("modes_T"):-len(".csv")]), title_fontsize=7.5, alignment="left")
+        ax[0].set_ylim(bottom=min(0, float(np.cumsum(kk[o, :3], axis=0).min())))
+        for a, y, yl in ((ax[1], tau, "$\\mathit{\\tau}$ / ps"), (ax[2], mfp, "mean free path $\\mathit{\\Lambda}$ / nm")):
+            if len(y) <= 150:   # few modes: open markers that read at print size
+                a.plot(f[ok], y, ls="none", marker="o", ms=3, mfc="white", mew=0.7, color=COLOURS[0])
+            else:    # one dot per mode, rasterised so the PDF stays small
+                a.scatter(f[ok], y, s=2.5, lw=0, color=COLOURS[0], alpha=0.6, rasterized=True)
+            if len(y) and y.min() > 0:
+                a.set_yscale("log")
+            a.set_xlabel("frequency / THz"); a.set_ylabel(yl)
+        for a, letter in zip(ax, "abc"):
+            a.text(-0.24, 1.0, "(" + letter + ")", transform=a.transAxes, fontweight="bold", va="bottom")
+        fig.tight_layout(w_pad=1.2)
+        save(fig, name[:-len(".csv")])
 
 
 if __name__ == "__main__":

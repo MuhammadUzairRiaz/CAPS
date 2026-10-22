@@ -75,11 +75,75 @@ public sealed record SciFigure
     public string Empty { get; init; } = "no data";
 }
 
+/// <summary>The colours, type and line weights a figure is drawn with: the Studio's theme on screen, or Paper for print
+/// (black on white, Okabe and Ito's colours, 8 pt type, 0.6 pt frame and ticks, 1 pt lines, no legend frame), the same
+/// look as the figures CAPS writes from Python (caps.plotstyle).</summary>
+public sealed class SciStyle
+{
+    public bool Print { get; init; }
+    public bool Light { get; init; }
+    public Color Ink { get; init; }
+    public Color Soft { get; init; }
+    public Color Bg { get; init; }
+    public Color Rule { get; init; }
+    public string[] Palette { get; init; } = [];
+    public FontFamily Font { get; init; } = FontFamily.Default;
+    /// <summary>Print: the axis titles' size in points (tick labels and the legend half a point smaller).</summary>
+    public double BasePt { get; init; } = 8;
+
+    // Okabe & Ito's colour-blind safe set, lightened on the dark theme so every colour reads on the background
+    internal static readonly string[] DarkPalette = ["#5AB4E5", "#F0A030", "#3CC49A", "#E07CB4", "#E8DA5A", "#F07050"];
+    internal static readonly string[] LightPalette = ["#0072B2", "#D55E00", "#009E73", "#CC79A7", "#B8860B", "#E69F00"];
+    // print: the order of caps.plotstyle.COLOURS (blue, vermillion, bluish green, reddish purple, orange, sky blue)
+    internal static readonly string[] PaperPalette = ["#0072B2", "#D55E00", "#009E73", "#CC79A7", "#E69F00", "#56B4E9"];
+
+    /// <summary>The Studio's theme now (dark Graphite or light Paper).</summary>
+    public static SciStyle Screen()
+    {
+        var light = Application.Current?.ActualThemeVariant == ThemeVariant.Light;
+        static Color C(string key, Color fallback) => Tokens.Brush(key) is ISolidColorBrush b ? b.Color : fallback;
+        return new SciStyle
+        {
+            Light = light, Ink = C("TextB", light ? Colors.Black : Colors.White), Soft = C("MutedB", Colors.Gray), Bg = C("Bg1B", light ? Colors.White : Colors.Black),
+            Rule = C("LineB", Colors.Gray), Palette = light ? LightPalette : DarkPalette, Font = Tokens.Sans,
+        };
+    }
+
+    /// <summary>Print: black on white in Arial (the PDF and SVG writers fall back to Liberation Sans or IBM Plex Sans).</summary>
+    public static readonly SciStyle Paper = new()
+    {
+        Print = true, Light = true, Ink = Colors.Black, Soft = Color.Parse("#4D4D4D"), Bg = Colors.White, Rule = Color.Parse("#B3B3B3"),
+        Palette = PaperPalette, Font = new FontFamily("Arial"),
+    };
+
+    public Color Colour(int k) => k < 0 ? Ink : Color.Parse(Palette[k % Palette.Length]);
+}
+
+/// <summary>Where a figure is drawn: the screen (an Avalonia drawing context), an SVG document or a PDF page. Coordinates
+/// run right and down from the top left; text is placed by the top left of its line box (ascent above the baseline).</summary>
+internal interface ISciSink
+{
+    void Line(Point a, Point b, Color c, double alpha, double w, double[]? dash = null, bool round = false);
+    void Rect(Rect r, Color? fill, double fillAlpha, Color? stroke, double w, double[]? dash = null);
+    /// <summary>Polylines (one per piece), optionally closed and filled.</summary>
+    void Path(IReadOnlyList<IReadOnlyList<Point>> pieces, bool closed, Color? fill, double fillAlpha, Color? stroke, double w, double[]? dash, bool round);
+    void Circle(Point c, double r, Color? fill, Color? stroke, double w);
+    void Text(string s, Point topLeft, double size, bool italic, bool bold, Color c);
+    /// <summary>The advance width of the text at that size.</summary>
+    double Measure(string s, double size, bool italic, bool bold);
+    /// <summary>The line box height and the baseline below its top, for text of that size.</summary>
+    (double Height, double Ascent) Metrics(double size);
+    void PushClip(Rect r);
+    void PushTransform(Matrix m);
+    void Pop();
+}
+
 /// <summary>Draws a SciFigure the way a journal figure looks: a closed frame, inward major and minor ticks on all four
 /// sides, round tick values, axis titles as "quantity / unit" (the y title turned), a legend in the emptiest corner,
 /// markers with error bars, in the colours of the current theme. Compact draws the small version on a result card.
 /// A long series (a live monitor's thousands of rows) is drawn through its extremes per pixel column, so a redraw stays
-/// cheap however long the run.</summary>
+/// cheap however long the run. The same drawing writes the figure for print (SciExport: SVG, vector PDF, PNG) in the
+/// Paper style at a journal column's size.</summary>
 public sealed class SciPlot : Control
 {
     public static readonly StyledProperty<SciFigure?> FigureProperty = AvaloniaProperty.Register<SciPlot, SciFigure?>(nameof(Figure));
@@ -97,6 +161,8 @@ public sealed class SciPlot : Control
 
     static SciPlot() => AffectsRender<SciPlot>(FigureProperty, CompactProperty, EmptyTextProperty);
 
+    public SciPlot() => SciExport.AttachMenu(this);
+
     private Rect _frame;
     private Func<double, double>? _xinv, _yinv;
     private Point? _b0, _b1;
@@ -104,6 +170,7 @@ public sealed class SciPlot : Control
     protected override void OnPointerPressed(Avalonia.Input.PointerPressedEventArgs e)
     {
         base.OnPointerPressed(e);
+        if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
         var p = e.GetPosition(this);
         if (_xinv == null || !_frame.Contains(p)) return;
         if (!Brushable) { Clicked?.Invoke(_xinv(p.X)); return; }
@@ -132,14 +199,7 @@ public sealed class SciPlot : Control
     public void ClearBrush() { _b0 = _b1 = null; InvalidateVisual(); }
 
     // ------------------------------------------------------------------ colours
-    private static bool Light => Application.Current?.ActualThemeVariant == ThemeVariant.Light;
-    // Okabe & Ito's colour-blind safe set, lightened on the dark theme so every colour reads on the background
-    private static readonly string[] DarkPalette = ["#5AB4E5", "#F0A030", "#3CC49A", "#E07CB4", "#E8DA5A", "#F07050"];
-    private static readonly string[] LightPalette = ["#0072B2", "#D55E00", "#009E73", "#CC79A7", "#B8860B", "#E69F00"];
-    private static IBrush Ink => Tokens.Brush("TextB");
-    private static IBrush Soft => Tokens.Brush("MutedB");
-    internal static IBrush Colour(int k) => k < 0 ? Ink : new SolidColorBrush(Color.Parse((Light ? LightPalette : DarkPalette)[k % DarkPalette.Length]));
-    private static Color ColourC(int k) => k < 0 ? ((Ink as ISolidColorBrush)?.Color ?? Colors.White) : Color.Parse((Light ? LightPalette : DarkPalette)[k % DarkPalette.Length]);
+    internal static IBrush Colour(int k) => new SolidColorBrush(SciStyle.Screen().Colour(k));
     // viridis at five stops (van der Walt & Smith, matplotlib 2015)
     private static readonly Color[] Viridis = [Color.FromRgb(68, 1, 84), Color.FromRgb(59, 82, 139), Color.FromRgb(33, 145, 140), Color.FromRgb(94, 201, 98), Color.FromRgb(253, 231, 37)];
     private static Color Ramp(double t)
@@ -181,9 +241,7 @@ public sealed class SciPlot : Control
         var n = (int)Math.Round(e);
         if (n == 0) return "1";
         if (n == 1) return "10";
-        const string sup = "⁰¹²³⁴⁵⁶⁷⁸⁹";
-        var s = Math.Abs(n).ToString(CultureInfo.InvariantCulture);
-        return "10" + (n < 0 ? "⁻" : "") + string.Concat(s.Select(c => sup[c - '0']));
+        return "10^{" + (n < 0 ? "−" : "") + Math.Abs(n).ToString(CultureInfo.InvariantCulture) + "}";
     }
 
     private static double NiceStep(double span, int target)
@@ -266,7 +324,11 @@ public sealed class SciPlot : Control
     // ------------------------------------------------------------------ text with a small markup
     private sealed record Run(string Text, bool Italic, int Shift);   // Shift: −1 subscript, +1 superscript
 
-    private static List<Run> Parse(string s)
+    private const string SupChars = "⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺", SupPlain = "0123456789−+", SubChars = "₀₁₂₃₄₅₆₇₈₉₋₊", SubPlain = "0123456789−+";
+
+    /// <summary>The markup as runs. Unicode super- and subscript digits (cm⁻³, CH₂) become raised or lowered runs of plain
+    /// digits in the same font, as typeset text has them (raise false keeps them as they are, for Plain).</summary>
+    private static List<Run> Parse(string s, bool raise = true)
     {
         var runs = new List<Run>();
         var italic = false;
@@ -275,6 +337,17 @@ public sealed class SciPlot : Control
         for (var i = 0; i < s.Length; ++i)
         {
             var c = s[i];
+            if (raise && (SupChars.Contains(c) || SubChars.Contains(c)))
+            {
+                Flush();
+                var sup = SupChars.Contains(c);
+                var (from, to) = sup ? (SupChars, SupPlain) : (SubChars, SubPlain);
+                var sb = new System.Text.StringBuilder();
+                while (i < s.Length && from.IndexOf(s[i]) is var k and >= 0) { sb.Append(to[k]); ++i; }
+                --i;
+                runs.Add(new Run(sb.ToString(), false, sup ? 1 : -1));
+                continue;
+            }
             if (c == '*') { Flush(); italic = !italic; continue; }
             if ((c == '_' || c == '^') && i + 1 < s.Length && s[i + 1] == '{')
             {
@@ -294,37 +367,35 @@ public sealed class SciPlot : Control
     }
 
     /// <summary>The text a title shows, without its markup (for checks and tooltips).</summary>
-    public static string Plain(string s) => string.Concat(Parse(s).Select(r => r.Text));
+    public static string Plain(string s) => string.Concat(Parse(s, false).Select(r => r.Text));
 
-    private sealed record Laid(FormattedText Ft, double Dx, double Dy);
+    private sealed record Laid(string Text, double Size, bool Italic, double Dx, double Dy);
 
     /// <summary>The markup laid out from (0, 0) (top left of the line box); returns the pieces, the width and the height.</summary>
-    private static (List<Laid> Parts, double W, double H) Layout(string s, double size, IBrush brush, FontWeight weight = FontWeight.Normal)
+    private static (List<Laid> Parts, double W, double H) Layout(ISciSink g, string s, double size, bool bold)
     {
         var parts = new List<Laid>();
-        double x = 0, h = 0;
+        double x = 0, h = size * 1.25;
+        var asc = g.Metrics(size).Ascent;
         foreach (var r in Parse(s))
         {
             var sz = r.Shift == 0 ? size : size * 0.72;
-            var tf = new Typeface(Tokens.Sans, r.Italic ? FontStyle.Italic : FontStyle.Normal, weight);
-            var ft = new FormattedText(r.Text, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, tf, sz, brush);
-            var dy = r.Shift == 0 ? 0 : r.Shift < 0 ? size * 0.42 : -size * 0.12;
-            parts.Add(new Laid(ft, x, dy));
-            x += ft.WidthIncludingTrailingWhitespace + (r.Italic ? size * 0.06 : 0);
-            h = Math.Max(h, size * 1.25);
+            // a sub- or superscript sits on a baseline moved down 0.25 em or up 0.38 em
+            var dy = asc - g.Metrics(sz).Ascent + (r.Shift == 0 ? 0 : r.Shift < 0 ? size * 0.22 : -size * 0.36);
+            parts.Add(new Laid(r.Text, sz, r.Italic, x, dy));
+            x += g.Measure(r.Text, sz, r.Italic, bold) + (r.Italic ? size * 0.06 : 0);
         }
         return (parts, x, h);
     }
 
-    private static void DrawRich(DrawingContext ctx, string s, double size, IBrush brush, Point at, double alignX = 0, double alignY = 0, FontWeight weight = FontWeight.Normal)
+    private static void DrawRich(ISciSink g, string s, double size, Color c, Point at, double alignX = 0, double alignY = 0, bool bold = false)
     {
-        var (parts, w, h) = Layout(s, size, brush, weight);
+        var (parts, w, h) = Layout(g, s, size, bold);
         var o = new Point(at.X - w * alignX, at.Y - h * alignY);
-        foreach (var p in parts) ctx.DrawText(p.Ft, new Point(o.X + p.Dx, o.Y + p.Dy));
+        foreach (var p in parts) g.Text(p.Text, new Point(o.X + p.Dx, o.Y + p.Dy), p.Size, p.Italic, bold, c);
     }
 
-    [ThreadStatic] private static bool _estimate;   // no font system (the headless self-test): widths from the character count
-    private static double RichWidth(string s, double size) => _estimate ? 0.56 * size * Plain(s).Length : Layout(s, size, Brushes.White).W;
+    private static double RichWidth(ISciSink g, string s, double size) => Layout(g, s, size, false).W;
 
     // ------------------------------------------------------------------ layout: axes and margins for a size
     private sealed class Frame
@@ -333,7 +404,8 @@ public sealed class SciPlot : Control
         public Axis? Y2, Z;
         public double L, R, T, B, W, H;
         public double FTick, FLabel, FLegend, TickLen, Gap;
-        public bool Compact;
+        public double FrameW, TickW, LineScale, MarkerR, MarkerW, Cap;
+        public bool Compact, Print;
         public double PX(double v) => X.Map(v, L, L + W);
         public double PY(double v) => Y.Map(v, T + H, T);
         public double PY2(double v) => Y2!.Map(v, T + H, T);
@@ -341,21 +413,24 @@ public sealed class SciPlot : Control
 
     private static bool Ok(SciFigure fig, double x, double y, bool right) => double.IsFinite(x) && double.IsFinite(y) && (!fig.XLog || x > 0) && (right || !fig.YLog || y > 0);
 
-    /// <summary>The axes and margins of a figure drawn at this size (null: nothing to draw).</summary>
-    private static Frame? Compute(SciFigure fig, Size size, bool compact)
+    /// <summary>The axes and margins of a figure drawn at this size (null: nothing to draw). Print sizes are in points.</summary>
+    private static Frame? Compute(ISciSink g, SciFigure fig, Size size, bool compact, bool print, double basePt = 8)
     {
         var small = !compact && size.Height < 175;
         var tiny = !compact && size.Height < 140;   // a monitor squeezed into a third of a column
-        var f = new Frame
-        {
-            Compact = compact,
-            FTick = compact || tiny ? 9.5 : small ? 10.5 : 11.5,
-            FLabel = compact || tiny ? 10.5 : small ? 11.5 : 13,
-            FLegend = compact || tiny ? 9 : small ? 10 : 11,
-            TickLen = compact || tiny ? 4.0 : small ? 5.0 : 6.0,
-            Gap = compact || tiny ? 3.0 : small ? 4.0 : 5.0,
-        };
-        if (fig.Heat is { } hm) return ComputeHeat(fig, hm, size, f);
+        var f = print
+            ? new Frame { Print = true, FTick = basePt - 0.5, FLabel = basePt, FLegend = basePt - 0.5, TickLen = 3.5, Gap = 3, FrameW = 0.6, TickW = 0.6, LineScale = 0.625, MarkerR = 1.7, MarkerW = 0.6, Cap = 1.5 }
+            : new Frame
+            {
+                Compact = compact,
+                FTick = compact || tiny ? 9.5 : small ? 10.5 : 11.5,
+                FLabel = compact || tiny ? 10.5 : small ? 11.5 : 13,
+                FLegend = compact || tiny ? 9 : small ? 10 : 11,
+                TickLen = compact || tiny ? 4.0 : small ? 5.0 : 6.0,
+                Gap = compact || tiny ? 3.0 : small ? 4.0 : 5.0,
+                FrameW = compact ? 0.9 : 1.1, TickW = compact ? 0.8 : 1.0, LineScale = 1, MarkerR = compact ? 2.3 : 3.4, MarkerW = compact ? 0.9 : 1.2, Cap = compact ? 2 : 3,
+            };
+        if (fig.Heat is { } hm) return ComputeHeat(g, fig, hm, size, f);
         var series = fig.Series.Where(s => s.X.Length > 0).ToArray();
         var left = new List<(double x, double y, double e)>();
         foreach (var s in series.Where(s => !s.Right))
@@ -384,16 +459,16 @@ public sealed class SciPlot : Control
             ylo = Math.Min(ylo, ry); yhi = Math.Max(yhi, ry);
         }
         if (fig.YBand is { } yb) { ylo = Math.Min(ylo, yb.Lo); yhi = Math.Max(yhi, yb.Hi); }
-        foreach (var g in fig.Guides)
-            if (double.IsFinite(g.Y) && (!fig.YLog || g.Y > 0))
+        foreach (var gd in fig.Guides)
+            if (double.IsFinite(gd.Y) && (!fig.YLog || gd.Y > 0))
             {
-                if (!fig.YLog && g.Y >= yhi) yhi = g.Y + 0.08 * (g.Y - Math.Min(ylo, g.Y));   // a target above the data stays off the frame
-                ylo = Math.Min(ylo, g.Y); yhi = Math.Max(yhi, g.Y);
+                if (!fig.YLog && gd.Y >= yhi) yhi = gd.Y + 0.08 * (gd.Y - Math.Min(ylo, gd.Y));   // a target above the data stays off the frame
+                ylo = Math.Min(ylo, gd.Y); yhi = Math.Max(yhi, gd.Y);
             }
         if (bars.Length > 0 && !fig.YLog) { ylo = Math.Min(ylo, 0); yhi = Math.Max(yhi, 0); }
         if (fig.YZero && !fig.YLog && ylo >= 0 && ylo < 0.3 * (yhi - ylo)) ylo = 0;
-        var nX = compact ? 4 : Math.Clamp((int)(size.Width / 110), 3, 8);
-        var nY = compact ? 4 : Math.Clamp((int)(size.Height / 60), 3, 7);
+        var nX = compact ? 4 : Math.Clamp((int)(size.Width / (print ? 55 : 110)), 3, 8);
+        var nY = compact ? 4 : Math.Clamp((int)(size.Height / (print ? 40 : 60)), 3, 7);
         var xpad = series.Any(s => s.Kind is SciKind.Markers or SciKind.LineMarkers) || fig.Points.Length > 0 ? 0.03 : 0;
         f.X = fig.Categories.Length > 0 ? Categorical(fig.Categories.Length)
             : fig.XLog ? Logarithmic(xlo, xhi, fig.XMin, fig.XMax) : Linear(xlo, xhi, nX, xpad, xpad, fig.XMin, fig.XMax, fig.XWhole ? 1 : 0);
@@ -402,26 +477,30 @@ public sealed class SciPlot : Control
         f.Y = fig.YLog ? Logarithmic(ylo, yhi, fig.YMin, fig.YMax) : Linear(ylo, yhi, nY, yFromZero ? 0 : 0.04, 0.04, fig.YMin ?? (yFromZero ? 0 : null), fig.YMax, fig.YWhole ? 1 : 0);
         f.Y2 = hasRight ? Linear(fig.Y2Min ?? rightPts.Min(p => p.Second), rightPts.Max(p => p.Second), nY, 0.04, 0.04, fig.Y2Min, null) : null;
 
-        var yTickW = f.Y.Major.Select(v => RichWidth(f.Y.Label(v), f.FTick)).DefaultIfEmpty(0).Max();
-        var y2TickW = f.Y2?.Major.Select(v => RichWidth(f.Y2.Label(v), f.FTick)).DefaultIfEmpty(0).Max() ?? 0;
-        f.L = 4 + f.FLabel * 1.3 + f.Gap + yTickW + f.Gap;
-        f.R = hasRight ? 4 + f.FLabel * 1.3 + f.Gap + y2TickW + f.Gap : compact ? 8 : 14;
-        f.T = compact ? 6.0 : 10.0;
-        f.B = f.Gap + f.FTick * 1.3 + f.Gap + f.FLabel * 1.35 + 2;
+        var yTickW = f.Y.Major.Select(v => RichWidth(g, f.Y.Label(v), f.FTick)).DefaultIfEmpty(0).Max();
+        var y2TickW = f.Y2?.Major.Select(v => RichWidth(g, f.Y2.Label(v), f.FTick)).DefaultIfEmpty(0).Max() ?? 0;
+        var edge = print ? 1.0 : 4.0;
+        f.L = edge + f.FLabel * 1.3 + f.Gap + yTickW + f.Gap;
+        f.R = hasRight ? edge + f.FLabel * 1.3 + f.Gap + y2TickW + f.Gap : compact ? 8 : print ? 6 : 14;
+        // the last x tick label is centred on the frame's right edge: room for its half ("2000" must not be cut)
+        if (!hasRight && f.X.Major.Count > 0 && Math.Abs(f.X.Major[^1] - f.X.Hi) < 1e-9 * Math.Max(1, Math.Abs(f.X.Hi)) + 1e-12)
+            f.R = Math.Max(f.R, RichWidth(g, f.X.Label(f.X.Major[^1]), f.FTick) / 2 + 1);
+        f.T = compact ? 6.0 : print ? 5.0 : 10.0;
+        f.B = f.Gap + f.FTick * 1.3 + f.Gap + f.FLabel * 1.35 + (print ? 1 : 2);
         f.W = size.Width - f.L - f.R;
         f.H = size.Height - f.T - f.B;
         return f.W < 40 || f.H < 30 ? null : f;
     }
 
-    private static Frame? ComputeHeat(SciFigure fig, SciHeat hm, Size size, Frame f)
+    private static Frame? ComputeHeat(ISciSink g, SciFigure fig, SciHeat hm, Size size, Frame f)
     {
         var xs = hm.X.Where(double.IsFinite).Distinct().OrderBy(v => v).ToArray();
         var ys = hm.Y.Where(double.IsFinite).Distinct().OrderBy(v => v).ToArray();
         if (xs.Length < 1 || ys.Length < 1) return null;
         double dx = xs.Length > 1 ? xs[1] - xs[0] : 1, dy = ys.Length > 1 ? ys[1] - ys[0] : 1;
         double x0 = xs[0] - dx / 2, x1 = xs[^1] + dx / 2, y0 = ys[0] - dy / 2, y1 = ys[^1] + dy / 2;
-        var nX = Math.Clamp((int)(size.Width / 120), 3, 7);
-        var nY = Math.Clamp((int)(size.Height / 60), 3, 7);
+        var nX = Math.Clamp((int)(size.Width / (f.Print ? 60 : 120)), 3, 7);
+        var nY = Math.Clamp((int)(size.Height / (f.Print ? 40 : 60)), 3, 7);
         f.X = Linear(x0, x1, nX, 0, 0, x0, x1);
         f.Y = Linear(y0, y1, nY, 0, 0, y0, y1);
         var fin = hm.Z.Where(double.IsFinite).ToArray();
@@ -429,16 +508,19 @@ public sealed class SciPlot : Control
         if (zmin >= 0 && zmin < 0.3 * (zmax - zmin)) zmin = 0;
         if (zmax - zmin < 1e-12) zmax = zmin + 1;
         f.Z = Linear(zmin, zmax, nY, 0, 0, zmin, zmax);
-        var yTickW = f.Y.Major.Select(v => RichWidth(f.Y.Label(v), f.FTick)).DefaultIfEmpty(0).Max();
-        var zTickW = f.Z.Major.Select(v => RichWidth(f.Z.Label(v), f.FTick)).DefaultIfEmpty(0).Max();
-        f.L = 4 + f.FLabel * 1.3 + f.Gap + yTickW + f.Gap;
-        f.R = 14 + 11 + f.Gap + zTickW + f.Gap + f.FLabel * 1.3 + 4;
-        f.T = 10;
+        var yTickW = f.Y.Major.Select(v => RichWidth(g, f.Y.Label(v), f.FTick)).DefaultIfEmpty(0).Max();
+        var zTickW = f.Z.Major.Select(v => RichWidth(g, f.Z.Label(v), f.FTick)).DefaultIfEmpty(0).Max();
+        var edge = f.Print ? 1.0 : 4.0;
+        f.L = edge + f.FLabel * 1.3 + f.Gap + yTickW + f.Gap;
+        f.R = (f.Print ? 6 : 14) + BarWidth(f) + f.Gap + zTickW + f.Gap + f.FLabel * 1.3 + edge;
+        f.T = f.Print ? 5 : 10;
         f.B = f.Gap + f.FTick * 1.3 + f.Gap + f.FLabel * 1.35 + 2;
         f.W = size.Width - f.L - f.R;
         f.H = size.Height - f.T - f.B;
         return f.W < 40 || f.H < 30 ? null : f;
     }
+
+    private static double BarWidth(Frame f) => f.Print ? 7 : 11;
 
     private static double MinSpacing(double[] x)
     {
@@ -452,10 +534,8 @@ public sealed class SciPlot : Control
     /// tick labels as drawn. The self-test reads these to check every figure's ticks are round.</summary>
     public static (double[] X, double[] Y, string[] XText, string[] YText)? Ticks(SciFigure fig, double width, double height, bool compact = false)
     {
-        Frame? f;
-        _estimate = Application.Current == null;   // the headless self-test runs without a font system
-        try { f = Compute(fig, new Size(width, height), compact); }
-        finally { _estimate = false; }
+        var g = new MeasureSink(Application.Current == null ? null : SciStyle.Screen().Font);   // the headless self-test has no font system: widths from the character count
+        var f = Compute(g, fig, new Size(width, height), compact, false);
         if (f == null) return null;
         return (f.X.Major.ToArray(), f.Y.Major.ToArray(), f.X.Major.Select(f.X.Label).ToArray(), f.Y.Major.Select(f.Y.Label).ToArray());
     }
@@ -465,47 +545,82 @@ public sealed class SciPlot : Control
     {
         var fig = Figure;
         var b = Bounds;
-        var f = fig == null ? null : Compute(fig, b.Size, Compact);
+        var st = SciStyle.Screen();
+        var g = new ScreenSink(ctx, st.Font);
+        var f = fig == null ? null : Compute(g, fig, b.Size, Compact, false);
         if (fig == null || f == null)
         {
             var text = fig?.Empty ?? EmptyText;
             _xinv = _yinv = null;
             if (text.Length == 0 || b.Width < 20 || b.Height < 14) return;
-            var ft = new FormattedText(text, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, new Typeface(Tokens.Sans), Compact ? 9.5 : 11.5, Soft);
-            ctx.DrawText(ft, new Point((b.Width - ft.Width) / 2, (b.Height - ft.Height) / 2));
+            var size = Compact ? 9.5 : 11.5;
+            var w = g.Measure(text, size, false, false);
+            g.Text(text, new Point((b.Width - w) / 2, (b.Height - g.Metrics(size).Height) / 2), size, false, false, st.Soft);
             return;
         }
-        var compact = f.Compact;
-        double L = f.L, T = f.T, w = f.W, h = f.H;
+        double L = f.L, T = f.T, fw = f.W, fh = f.H;
         var xa = f.X;
         var ya = f.Y;
-        _frame = new Rect(L, T, w, h);
-        _xinv = px => xa.Unmap(px, L, L + w);
-        _yinv = py => ya.Unmap(py, T + h, T);
-        var ink = Ink;
-        var tickPen = new Pen(ink, compact ? 0.8 : 1.0);
-        var bg = Tokens.Brush("Bg1B");
-        if (fig.Heat is { } hm) { RenderHeat(ctx, fig, hm, f, tickPen); DrawAxes(ctx, fig, f, tickPen, false); DrawBrush(ctx); return; }
+        _frame = new Rect(L, T, fw, fh);
+        _xinv = px => xa.Unmap(px, L, L + fw);
+        _yinv = py => ya.Unmap(py, T + fh, T);
+        Draw(g, fig, f, st);
+        if (_b0 is { } ba && _b1 is { } bb)
+        {
+            var r = new Rect(new Point(Math.Min(ba.X, bb.X), Math.Min(ba.Y, bb.Y)), new Point(Math.Max(ba.X, bb.X), Math.Max(ba.Y, bb.Y)));
+            g.Rect(r, st.Colour(0), 0.14, st.Colour(0), 1, [4, 3]);
+        }
+    }
+
+    /// <summary>The figure drawn into a sink at size (points for print); false when there is nothing to draw.</summary>
+    internal static bool DrawTo(ISciSink g, SciFigure fig, Size size, SciStyle st, bool compact = false)
+    {
+        var f = Compute(g, fig, size, compact, st.Print, st.BasePt);
+        if (f == null)
+        {
+            if (fig.Empty.Length > 0)
+            {
+                var sz = st.Print ? 8 : 11.5;
+                g.Text(fig.Empty, new Point((size.Width - g.Measure(fig.Empty, sz, false, false)) / 2, (size.Height - g.Metrics(sz).Height) / 2), sz, false, false, st.Soft);
+            }
+            return false;
+        }
+        Draw(g, fig, f, st);
+        return true;
+    }
+
+    private static readonly double[] Dash53 = [5, 3], Dash43 = [4, 3], Dash23 = [2, 3], Dash33 = [3, 3], Dot = [1, 2.5];
+    // dashes are in units of the line width (as Avalonia draws them), so a thinner print line keeps their proportions
+    private static double[] Scaled(double[] d, Frame f) => d;
+
+    private static void Draw(ISciSink g, SciFigure fig, Frame f, SciStyle st)
+    {
+        var compact = f.Compact;
+        double L = f.L, T = f.T, w = f.W, h = f.H;
+        var ya = f.Y;
+        var ink = st.Ink;
+        var light = st.Light;
+        if (fig.Heat is { } hm) { RenderHeat(g, hm, f, st); DrawAxes(g, fig, f, st, false); return; }
 
         var series = fig.Series.Where(s => s.X.Length > 0).ToArray();
         // shaded stages, x window and horizontal band under everything
         var keepOut = new List<Rect>();
-        foreach (var st in fig.Stages)
+        foreach (var stg in fig.Stages)
         {
-            var x0 = Math.Clamp(f.PX(st.From), L, L + w);
-            var x1 = Math.Clamp(f.PX(st.To), L, L + w);
+            var x0 = Math.Clamp(f.PX(stg.From), L, L + w);
+            var x1 = Math.Clamp(f.PX(stg.To), L, L + w);
             if (x1 <= x0) continue;
-            if (st.Shade) ctx.FillRectangle(new SolidColorBrush(ColourC(1), Light ? 0.08 : 0.10), new Rect(x0, T, x1 - x0, h));
-            var prev = Array.IndexOf(fig.Stages, st) is var si and > 0 ? fig.Stages[si - 1] : null;
-            if (x0 > L + 1 && prev != null && prev.Shade != st.Shade && x1 - x0 >= 12 && x0 - f.PX(prev.From) >= 12) ctx.DrawLine(new Pen(Soft, 0.8, new DashStyle([2, 3], 0)), new Point(x0, T), new Point(x0, T + h));
-            if (st.Label.Length > 0)
+            if (stg.Shade) g.Rect(new Rect(x0, T, x1 - x0, h), st.Colour(1), light ? 0.08 : 0.10, null, 0);
+            var prev = Array.IndexOf(fig.Stages, stg) is var si and > 0 ? fig.Stages[si - 1] : null;
+            if (x0 > L + 1 && prev != null && prev.Shade != stg.Shade && x1 - x0 >= 12 && x0 - f.PX(prev.From) >= 12) g.Line(new Point(x0, T), new Point(x0, T + h), st.Soft, 1, f.Print ? 0.5 : 0.8, Scaled(Dash23, f));
+            if (stg.Label.Length > 0)
             {
-                var lw = RichWidth(st.Label, f.FLegend * 0.92);
+                var lw = RichWidth(g, stg.Label, f.FLegend * 0.92);
                 var lx = (x0 + x1 - lw) / 2;
                 // a label that would crowd the one before it (two short stages side by side) is left out
                 if (lw + 6 < x1 - x0 && !keepOut.Any(k => lx < k.Right + 8 && lx + lw > k.Left - 8))
                 {
-                    DrawRich(ctx, st.Label, f.FLegend * 0.92, Soft, new Point((x0 + x1) / 2, T + f.TickLen + 2), 0.5, 0);
+                    DrawRich(g, stg.Label, f.FLegend * 0.92, st.Soft, new Point((x0 + x1) / 2, T + f.TickLen + 2), 0.5, 0);
                     keepOut.Add(new Rect((x0 + x1 - lw) / 2, T, lw, f.TickLen + 2 + f.FLegend * 1.2));
                 }
             }
@@ -514,160 +629,143 @@ public sealed class SciPlot : Control
         {
             var x0 = Math.Clamp(f.PX(xb.From), L, L + w);
             var x1 = Math.Clamp(f.PX(xb.To), L, L + w);
-            if (x1 > x0) ctx.FillRectangle(new SolidColorBrush(ColourC(0), Light ? 0.10 : 0.13), new Rect(x0, T, x1 - x0, h));
+            if (x1 > x0) g.Rect(new Rect(x0, T, x1 - x0, h), st.Colour(0), light ? 0.10 : 0.13, null, 0);
         }
         if (fig.YBand is { } band)
         {
             var y0 = Math.Clamp(f.PY(band.Hi), T, T + h);
             var y1 = Math.Clamp(f.PY(band.Lo), T, T + h);
-            ctx.FillRectangle(new SolidColorBrush(ColourC(1), Light ? 0.16 : 0.22), new Rect(L, y0, w, Math.Max(1, y1 - y0)));
-            ctx.DrawLine(new Pen(Colour(1), 1.2), new Point(L, (y0 + y1) / 2), new Point(L + w, (y0 + y1) / 2));
+            g.Rect(new Rect(L, y0, w, Math.Max(f.Print ? 0.3 : 1, y1 - y0)), st.Colour(1), light ? 0.16 : 0.22, null, 0);
+            g.Line(new Point(L, (y0 + y1) / 2), new Point(L + w, (y0 + y1) / 2), st.Colour(1), 1, 1.2 * f.LineScale);
         }
         if (fig.RefY is double rv && (!fig.YLog || rv > 0))
         {
             var py = f.PY(rv);
-            if (py >= T && py <= T + h) ctx.DrawLine(new Pen(Soft, 0.9, new DashStyle([4, 3], 0)), new Point(L, py), new Point(L + w, py));
+            if (py >= T && py <= T + h) g.Line(new Point(L, py), new Point(L + w, py), st.Soft, 1, f.Print ? 0.5 : 0.9, Scaled(Dash43, f));
         }
-        foreach (var g in fig.Guides)
+        foreach (var gd in fig.Guides)
         {
-            if (!double.IsFinite(g.Y) || (fig.YLog && g.Y <= 0)) continue;
-            var py = f.PY(g.Y);
+            if (!double.IsFinite(gd.Y) || (fig.YLog && gd.Y <= 0)) continue;
+            var py = f.PY(gd.Y);
             if (py < T - 0.5 || py > T + h + 0.5) continue;
-            ctx.DrawLine(new Pen(ink, compact ? 0.8 : 1.0, new DashStyle([5, 3], 0)), new Point(L, py), new Point(L + w, py));
+            g.Line(new Point(L, py), new Point(L + w, py), ink, 1, f.Print ? 0.6 : compact ? 0.8 : 1.0, Scaled(Dash53, f));
         }
 
         // data, clipped to the frame
         var drawn = new List<(SciSeries S, List<Point> Pts)>();
         var barSeries = series.Where(s => s.Kind == SciKind.Bars).ToList();
         var barW = barSeries.Count > 0 ? (fig.Categories.Length > 0 ? 1 : MinSpacing(barSeries.SelectMany(s => s.X).ToArray())) : 0;
-        using (ctx.PushClip(new Rect(L, T, w, h)))
+        g.PushClip(new Rect(L, T, w, h));
+        foreach (var s in series)
         {
-            foreach (var s in series)
+            var col = st.Colour(s.Colour);
+            var pts = new List<Point>();
+            var errs = new List<(Point Lo, Point Hi)>();
+            if (s.Kind == SciKind.Bars)
             {
-                var brush = Colour(s.Colour);
-                var pts = new List<Point>();
-                var errs = new List<(Point Lo, Point Hi)>();
-                if (s.Kind == SciKind.Bars)
-                {
-                    var k = barSeries.IndexOf(s);
-                    var gw = 0.78 * barW / barSeries.Count;
-                    var y0 = f.PY(ya.Log ? Math.Pow(10, ya.Lo) : Math.Clamp(0, ya.Lo, ya.Hi));
-                    for (var i = 0; i < Math.Min(s.X.Length, s.Y.Length); ++i)
-                    {
-                        if (!Ok(fig, s.X[i], s.Y[i], false)) continue;
-                        var xl = f.PX(s.X[i] - 0.39 * barW + k * gw) + 0.5;
-                        var xr = f.PX(s.X[i] - 0.39 * barW + (k + 1) * gw) - 0.5;
-                        var py = f.PY(s.Y[i]);
-                        var r = new Rect(new Point(xl, Math.Min(py, y0)), new Point(Math.Max(xl + 1, xr), Math.Max(py, y0)));
-                        ctx.FillRectangle(new SolidColorBrush(ColourC(s.Colour), Light ? 0.55 : 0.6), r);
-                        ctx.DrawRectangle(null, new Pen(brush, compact ? 0.8 : 1.0), r);
-                        pts.Add(new Point((xl + xr) / 2, py));
-                        pts.Add(new Point((xl + xr) / 2, (py + y0) / 2));
-                    }
-                    drawn.Add((s with { Kind = SciKind.Markers }, pts));
-                    continue;
-                }
-                var breaks = new HashSet<int>();   // a gap in the data (NaN) starts a new piece of line
+                var k = barSeries.IndexOf(s);
+                var gw = 0.78 * barW / barSeries.Count;
+                var y0 = f.PY(ya.Log ? Math.Pow(10, ya.Lo) : Math.Clamp(0, ya.Lo, ya.Hi));
                 for (var i = 0; i < Math.Min(s.X.Length, s.Y.Length); ++i)
                 {
-                    if (!Ok(fig, s.X[i], s.Y[i], s.Right)) { if (pts.Count > 0) breaks.Add(pts.Count); continue; }
-                    var px = f.PX(s.X[i]);
-                    var py = s.Right ? f.PY2(s.Y[i]) : f.PY(s.Y[i]);
-                    pts.Add(new Point(px, py));
-                    if (s.Err is { } er && i < er.Length && er[i] > 0 && double.IsFinite(er[i]) && !s.Right)
-                        errs.Add((new Point(px, f.PY(fig.YLog ? Math.Max(s.Y[i] - er[i], Math.Pow(10, ya.Lo)) : s.Y[i] - er[i])), new Point(px, f.PY(s.Y[i] + er[i]))));
+                    if (!Ok(fig, s.X[i], s.Y[i], false)) continue;
+                    var xl = f.PX(s.X[i] - 0.39 * barW + k * gw) + 0.5;
+                    var xr = f.PX(s.X[i] - 0.39 * barW + (k + 1) * gw) - 0.5;
+                    var py = f.PY(s.Y[i]);
+                    var r = new Rect(new Point(xl, Math.Min(py, y0)), new Point(Math.Max(xl + 1, xr), Math.Max(py, y0)));
+                    g.Rect(r, col, light ? 0.55 : 0.6, col, f.Print ? 0.6 : compact ? 0.8 : 1.0);
+                    pts.Add(new Point((xl + xr) / 2, py));
+                    pts.Add(new Point((xl + xr) / 2, (py + y0) / 2));
                 }
-                if (pts.Count == 0) continue;
-                var lw = compact ? Math.Max(1, s.Width * 0.75) : s.Width;
-                IPen? pen = s.Kind switch
+                drawn.Add((s with { Kind = SciKind.Markers }, pts));
+                continue;
+            }
+            var breaks = new List<int>();   // a gap in the data (NaN) starts a new piece of line
+            for (var i = 0; i < Math.Min(s.X.Length, s.Y.Length); ++i)
+            {
+                if (!Ok(fig, s.X[i], s.Y[i], s.Right)) { if (pts.Count > 0 && (breaks.Count == 0 || breaks[^1] != pts.Count)) breaks.Add(pts.Count); continue; }
+                var px = f.PX(s.X[i]);
+                var py = s.Right ? f.PY2(s.Y[i]) : f.PY(s.Y[i]);
+                pts.Add(new Point(px, py));
+                if (s.Err is { } er && i < er.Length && er[i] > 0 && double.IsFinite(er[i]) && !s.Right)
+                    errs.Add((new Point(px, f.PY(fig.YLog ? Math.Max(s.Y[i] - er[i], Math.Pow(10, ya.Lo)) : s.Y[i] - er[i])), new Point(px, f.PY(s.Y[i] + er[i]))));
+            }
+            if (pts.Count == 0) continue;
+            var lw = (compact ? Math.Max(1, s.Width * 0.75) : s.Width) * f.LineScale;
+            var line = s.Kind is SciKind.Line or SciKind.Dashed or SciKind.Dotted && breaks.Count == 0 ? Decimate(pts, w * (f.Print ? 4 : 1)) : pts;
+            drawn.Add((s, line));
+            if (s.Kind is not SciKind.Markers && line.Count > 1)
+            {
+                var dash = s.Kind switch { SciKind.Dashed => Scaled(Dash53, f), SciKind.Dotted => Scaled(Dot, f), _ => null };
+                if (s.Kind == SciKind.Steps)
                 {
-                    SciKind.Line or SciKind.LineMarkers or SciKind.Steps => new Pen(brush, lw, lineJoin: PenLineJoin.Round),
-                    SciKind.Dashed => new Pen(brush, lw, new DashStyle([5, 3], 0), lineCap: PenLineCap.Flat),
-                    SciKind.Dotted => new Pen(brush, lw, new DashStyle([1, 2.5], 0), lineCap: PenLineCap.Round),
-                    _ => null,
-                };
-                var line = s.Kind is SciKind.Line or SciKind.Dashed or SciKind.Dotted && breaks.Count == 0 ? Decimate(pts, w) : pts;
-                drawn.Add((s, line));
-                if (pen != null && line.Count > 1)
-                {
-                    var geo = new StreamGeometry();
-                    using (var g = geo.Open())
-                    {
-                        if (s.Kind == SciKind.Steps)
-                        {
-                            var half = (pts[1].X - pts[0].X) / 2;
-                            var baseY = f.PY(ya.Log ? Math.Pow(10, ya.Lo) : Math.Max(0, ya.Lo));
-                            g.BeginFigure(new Point(pts[0].X - half, baseY), s.Fill);
-                            foreach (var p in pts) { g.LineTo(new Point(p.X - half, p.Y)); g.LineTo(new Point(p.X + half, p.Y)); }
-                            g.LineTo(new Point(pts[^1].X + half, baseY));
-                            g.EndFigure(s.Fill);
-                        }
-                        else
-                        {
-                            g.BeginFigure(line[0], false);
-                            for (var i = 1; i < line.Count; ++i)
-                            {
-                                if (breaks.Contains(i)) { g.EndFigure(false); g.BeginFigure(line[i], false); }
-                                else g.LineTo(line[i]);
-                            }
-                            g.EndFigure(false);
-                        }
-                    }
-                    if (s.Fill) ctx.DrawGeometry(new SolidColorBrush(ColourC(s.Colour), Light ? 0.18 : 0.22), null, geo);
-                    ctx.DrawGeometry(null, pen, geo);
+                    var half = (pts[1].X - pts[0].X) / 2;
+                    var baseY = f.PY(ya.Log ? Math.Pow(10, ya.Lo) : Math.Max(0, ya.Lo));
+                    var path = new List<Point> { new(pts[0].X - half, baseY) };
+                    foreach (var p in pts) { path.Add(new Point(p.X - half, p.Y)); path.Add(new Point(p.X + half, p.Y)); }
+                    path.Add(new Point(pts[^1].X + half, baseY));
+                    if (s.Fill) g.Path([path], true, col, light ? 0.18 : 0.22, null, 0, null, false);
+                    g.Path([path], false, null, 0, col, lw, null, false);
                 }
-                if (s.Kind is SciKind.Markers or SciKind.LineMarkers)
+                else
                 {
-                    var ep = new Pen(brush, compact ? 0.8 : 1.0);
-                    var cap = compact ? 2.0 : 3.0;
-                    foreach (var (lo, hi) in errs)
-                    {
-                        ctx.DrawLine(ep, lo, hi);
-                        ctx.DrawLine(ep, new Point(lo.X - cap, lo.Y), new Point(lo.X + cap, lo.Y));
-                        ctx.DrawLine(ep, new Point(hi.X - cap, hi.Y), new Point(hi.X + cap, hi.Y));
-                    }
-                    var r = compact ? 2.3 : pts.Count > 80 ? 2.2 : 3.4;
-                    var stride = Math.Max(1, pts.Count / (compact ? 60 : 160));   // a dense curve keeps a readable marker spacing
-                    for (var i = 0; i < pts.Count; i += stride) Marker(ctx, pts[i], r, brush, s.Open, s.Square, bg, compact);
+                    var pieces = new List<IReadOnlyList<Point>>();
+                    var start = 0;
+                    foreach (var br in breaks.Append(line.Count)) { if (br - start > 1) pieces.Add(line.GetRange(start, br - start)); start = br; }
+                    if (s.Fill) g.Path(pieces, true, col, light ? 0.18 : 0.22, null, 0, null, false);
+                    g.Path(pieces, false, null, 0, col, lw, dash, s.Kind == SciKind.Dotted);
                 }
             }
-            foreach (var p in fig.Points)
+            if (s.Kind is SciKind.Markers or SciKind.LineMarkers)
             {
-                if (!Ok(fig, p.X, p.Y, false)) continue;
-                var pt = new Point(f.PX(p.X), f.PY(p.Y));
-                Marker(ctx, pt, compact ? 3 : 4.2, Colour(p.Colour), false, false, bg, compact);
-                if (p.Label.Length > 0)
+                var cap = f.Cap;
+                var ew = f.Print ? 0.6 : compact ? 0.8 : 1.0;
+                foreach (var (lo, hi) in errs)
                 {
-                    var lw = RichWidth(p.Label, f.FLegend);
-                    var right = pt.X + 7 + lw < L + w - 2;
-                    var up = pt.Y - f.FLegend * 1.4 > T + 2;
-                    var at = new Point(right ? pt.X + 7 : pt.X - 7, up ? pt.Y - 4 : pt.Y + 4);
-                    DrawRich(ctx, p.Label, f.FLegend, ink, at, right ? 0 : 1, up ? 1 : 0);
-                    keepOut.Add(new Rect(right ? at.X : at.X - lw, up ? at.Y - f.FLegend * 1.25 : at.Y, lw, f.FLegend * 1.25));
+                    g.Line(lo, hi, col, 1, ew);
+                    g.Line(new Point(lo.X - cap, lo.Y), new Point(lo.X + cap, lo.Y), col, 1, ew);
+                    g.Line(new Point(hi.X - cap, hi.Y), new Point(hi.X + cap, hi.Y), col, 1, ew);
                 }
-                drawn.Add((new SciSeries("", [], []) { Kind = SciKind.Markers }, [pt]));
+                var r = compact ? 2.3 : pts.Count > 80 ? f.MarkerR * 0.65 : f.MarkerR;
+                var stride = Math.Max(1, pts.Count / (compact ? 60 : 160));   // a dense curve keeps a readable marker spacing
+                for (var i = 0; i < pts.Count; i += stride) Marker(g, pts[i], r, col, s.Open, s.Square, st.Bg, f.MarkerW);
             }
         }
+        foreach (var p in fig.Points)
+        {
+            if (!Ok(fig, p.X, p.Y, false)) continue;
+            var pt = new Point(f.PX(p.X), f.PY(p.Y));
+            Marker(g, pt, compact ? 3 : f.MarkerR * 1.25, st.Colour(p.Colour), false, false, st.Bg, f.MarkerW);
+            if (p.Label.Length > 0)
+            {
+                var lw = RichWidth(g, p.Label, f.FLegend);
+                var right = pt.X + 7 + lw < L + w - 2;
+                var up = pt.Y - f.FLegend * 1.4 > T + 2;
+                var at = new Point(right ? pt.X + 7 : pt.X - 7, up ? pt.Y - 4 : pt.Y + 4);
+                DrawRich(g, p.Label, f.FLegend, ink, at, right ? 0 : 1, up ? 1 : 0);
+                keepOut.Add(new Rect(right ? at.X : at.X - lw, up ? at.Y - f.FLegend * 1.25 : at.Y, lw, f.FLegend * 1.25));
+            }
+            drawn.Add((new SciSeries("", [], []) { Kind = SciKind.Markers }, [pt]));
+        }
+        g.Pop();
         // vertical marks
         foreach (var m in fig.Marks)
         {
             if (!double.IsFinite(m.X) || (fig.XLog && m.X <= 0)) continue;
             var px = f.PX(m.X);
             if (px < L || px > L + w) continue;
-            ctx.DrawLine(new Pen(ink, compact ? 0.8 : 1.0, new DashStyle([3, 3], 0)), new Point(px, T), new Point(px, T + h));
+            g.Line(new Point(px, T), new Point(px, T + h), ink, 1, f.Print ? 0.6 : compact ? 0.8 : 1.0, Scaled(Dash33, f));
             if (m.Label.Length > 0)
             {
-                var lw = RichWidth(m.Label, f.FLegend);
+                var lw = RichWidth(g, m.Label, f.FLegend);
                 var right = px + 4 + lw < L + w - 2;
                 var top = T + f.TickLen + 1 + keepOut.Where(r => r.Top <= T + 1 && r.Left < (right ? px + 4 + lw : px) && r.Right > (right ? px : px - 4 - lw)).Select(r => r.Height).DefaultIfEmpty(0).Max();
-                DrawRich(ctx, m.Label, f.FLegend, ink, new Point(right ? px + 4 : px - 4, top), right ? 0 : 1, 0);
+                DrawRich(g, m.Label, f.FLegend, ink, new Point(right ? px + 4 : px - 4, top), right ? 0 : 1, 0);
                 keepOut.Add(new Rect(right ? px + 4 : px - 4 - lw, top, lw, f.FLegend * 1.25));
             }
         }
 
-        var hasRight = f.Y2 != null;
-        DrawAxes(ctx, fig, f, tickPen, hasRight);
-        DrawBrush(ctx);
+        DrawAxes(g, fig, f, st, f.Y2 != null);
         if (compact) return;   // a card's figure is too small for a legend: the card says what it shows
 
         // legend in the corner with the fewest data points under it
@@ -675,16 +773,16 @@ public sealed class SciPlot : Control
         var notes = fig.Notes.Where(n => n.Length > 0).ToArray();
         if (fig.YBand is { Label.Length: > 0 } ybl) entries = [.. entries, new SciSeries(ybl.Label, [], []) { Colour = 1, Kind = SciKind.Line, Width = 6 }];
         if (fig.XBand is { Label.Length: > 0 } xbl) entries = [.. entries, new SciSeries(xbl.Label, [], []) { Colour = 0, Kind = SciKind.Line, Width = 6 }];
-        foreach (var g in fig.Guides.Where(g => g.Label.Length > 0 && double.IsFinite(g.Y))) entries = [.. entries, new SciSeries(g.Label, [], []) { Colour = -1, Kind = SciKind.Dashed, Width = 1 }];   // a guide is named in the legend, not on its line
+        foreach (var gd in fig.Guides.Where(gd => gd.Label.Length > 0 && double.IsFinite(gd.Y))) entries = [.. entries, new SciSeries(gd.Label, [], []) { Colour = -1, Kind = SciKind.Dashed, Width = 1 }];   // a guide is named in the legend, not on its line
         if (entries.Length == 0 && notes.Length == 0) return;
-        var sample = 22.0;
-        var rowH = f.FLegend * 1.45;
-        var pad = 6.0;
-        var lw2 = Math.Max(entries.Select(e => sample + 5 + RichWidth(e.Name, f.FLegend)).DefaultIfEmpty(0).Max(), notes.Select(n => RichWidth(n, f.FLegend)).DefaultIfEmpty(0).Max());
+        var sample = f.Print ? 14.0 : 22.0;
+        var rowH = f.FLegend * (f.Print ? 1.3 : 1.45);
+        var pad = f.Print ? 2.0 : 6.0;
+        var lw2 = Math.Max(entries.Select(e => sample + 5 + RichWidth(g, e.Name, f.FLegend)).DefaultIfEmpty(0).Max(), notes.Select(n => RichWidth(g, n, f.FLegend)).DefaultIfEmpty(0).Max());
         var boxW = Math.Min(w - 8, lw2 + 2 * pad);
         var boxH = (entries.Length + notes.Length) * rowH + 2 * pad - (rowH - f.FLegend * 1.2);
         if (boxH > h - 8) return;
-        var inset = f.TickLen + 3;
+        var inset = f.TickLen + (f.Print ? 1.5 : 3);
         var corners = new[] { new Point(L + w - boxW - inset, T + inset), new Point(L + inset, T + inset), new Point(L + w - boxW - inset, T + h - boxH - inset), new Point(L + inset, T + h - boxH - inset) };
         // the points and the lines between them, every few pixels (a legend should not sit on a line either)
         var allPts = new List<Point>();
@@ -695,7 +793,7 @@ public sealed class SciPlot : Control
                 allPts.Add(pts[i]);
                 if (i == 0 || s.Kind == SciKind.Markers) continue;
                 var d = pts[i] - pts[i - 1];
-                var n = (int)Math.Min(40, Math.Sqrt(d.X * d.X + d.Y * d.Y) / 5);
+                var n = (int)Math.Min(40, Math.Sqrt(d.X * d.X + d.Y * d.Y) / (f.Print ? 2 : 5));
                 for (var k = 1; k < n; ++k) allPts.Add(pts[i - 1] + d * (k / (double)n));
             }
         }
@@ -707,46 +805,49 @@ public sealed class SciPlot : Control
         }
         var at0 = corners.OrderBy(Cost).First();
         var box = new Rect(at0, new Size(boxW, boxH));
-        ctx.FillRectangle(new SolidColorBrush((bg as ISolidColorBrush)?.Color ?? Colors.Black, 0.88), box);
-        ctx.DrawRectangle(null, new Pen(Tokens.Brush("LineB"), 0.8), box);
+        if (!f.Print)   // on screen a box keeps the legend readable over a dense monitor
+        {
+            g.Rect(box, st.Bg, 0.88, null, 0);
+            g.Rect(box, null, 0, st.Rule, 0.8);
+        }
+        else if (Cost(at0) > 0) g.Rect(box.Inflate(1), st.Bg, 0.85, null, 0);   // in print no frame; a light backing only where data run under it
         var y = box.Top + pad + f.FLegend * 0.6;
         foreach (var e in entries)
         {
             var x0 = box.Left + pad;
-            var brush = Colour(e.Colour);
+            var col = st.Colour(e.Colour);
             if (e.Width >= 5 || e.Kind == SciKind.Bars)
             {
-                var r = new Rect(x0 + (e.Kind == SciKind.Bars ? 5 : 0), y - f.FLegend * 0.38, e.Kind == SciKind.Bars ? sample - 10 : sample, f.FLegend * 0.76);
-                ctx.FillRectangle(new SolidColorBrush(ColourC(e.Colour), e.Kind == SciKind.Bars ? (Light ? 0.55 : 0.6) : Light ? 0.25 : 0.3), r);
-                if (e.Kind == SciKind.Bars) ctx.DrawRectangle(null, new Pen(brush, 1), r);
+                var r = new Rect(x0 + (e.Kind == SciKind.Bars ? sample * 0.22 : 0), y - f.FLegend * 0.38, e.Kind == SciKind.Bars ? sample * 0.56 : sample, f.FLegend * 0.76);
+                g.Rect(r, col, e.Kind == SciKind.Bars ? (light ? 0.55 : 0.6) : light ? 0.25 : 0.3, e.Kind == SciKind.Bars ? col : null, f.Print ? 0.6 : 1);
             }
             else if (e.Kind is SciKind.Line or SciKind.LineMarkers or SciKind.Steps or SciKind.Dashed or SciKind.Dotted)
             {
-                IPen pen = e.Kind == SciKind.Dashed ? new Pen(brush, Math.Min(2, e.Width), new DashStyle([5, 3], 0))
-                    : e.Kind == SciKind.Dotted ? new Pen(brush, Math.Min(2, e.Width), new DashStyle([1, 2.5], 0), lineCap: PenLineCap.Round)
-                    : new Pen(brush, Math.Min(2, e.Width));
-                ctx.DrawLine(pen, new Point(x0, y), new Point(x0 + sample, y));
+                var pw = Math.Min(2, e.Width) * f.LineScale;
+                var dash = e.Kind == SciKind.Dashed ? Scaled(Dash53, f) : e.Kind == SciKind.Dotted ? Scaled(Dot, f) : null;
+                g.Line(new Point(x0, y), new Point(x0 + sample, y), col, 1, pw, dash, e.Kind == SciKind.Dotted);
             }
-            if (e.Kind is SciKind.Markers or SciKind.LineMarkers) Marker(ctx, new Point(x0 + sample / 2, y), 3.2, brush, e.Open, e.Square, bg, false);
-            DrawRich(ctx, e.Name, f.FLegend, ink, new Point(x0 + sample + 5, y), 0, 0.5);
+            if (e.Kind is SciKind.Markers or SciKind.LineMarkers) Marker(g, new Point(x0 + sample / 2, y), f.Print ? f.MarkerR : 3.2, col, e.Open, e.Square, st.Bg, f.MarkerW);
+            DrawRich(g, e.Name, f.FLegend, ink, new Point(x0 + sample + (f.Print ? 3 : 5), y), 0, 0.5);
             y += rowH;
         }
-        foreach (var n in notes) { DrawRich(ctx, n, f.FLegend, ink, new Point(box.Left + pad, y), 0, 0.5); y += rowH; }
+        foreach (var n in notes) { DrawRich(g, n, f.FLegend, ink, new Point(box.Left + pad, y), 0, 0.5); y += rowH; }
     }
 
-    /// <summary>A long polyline kept to its first, lowest, highest and last point in each pixel column: the drawn line is
-    /// the same, the geometry stays a few thousand points.</summary>
+    /// <summary>A long polyline kept to its first, lowest, highest and last point in each column of the given resolution:
+    /// the drawn line is the same, the geometry stays a few thousand points.</summary>
     private static List<Point> Decimate(List<Point> pts, double width)
     {
         if (pts.Count < 4 * Math.Max(50, width)) return pts;
         for (var i = 1; i < pts.Count; ++i) if (pts[i].X < pts[i - 1].X) return pts;   // not along x: keep it whole
+        var scale = width / Math.Max(1e-9, pts[^1].X - pts[0].X + 1);
         var outp = new List<Point>((int)(4 * width) + 4);
         var i0 = 0;
         while (i0 < pts.Count)
         {
-            var col = Math.Floor(pts[i0].X);
+            var col = Math.Floor((pts[i0].X - pts[0].X) * scale);
             int lo = i0, hi = i0, i1 = i0;
-            while (i1 + 1 < pts.Count && Math.Floor(pts[i1 + 1].X) == col)
+            while (i1 + 1 < pts.Count && Math.Floor((pts[i1 + 1].X - pts[0].X) * scale) == col)
             {
                 i1++;
                 if (pts[i1].Y < pts[lo].Y) lo = i1;
@@ -761,118 +862,168 @@ public sealed class SciPlot : Control
         return outp;
     }
 
-    private void DrawBrush(DrawingContext ctx)
-    {
-        if (_b0 is not { } ba || _b1 is not { } bb) return;
-        var r = new Rect(new Point(Math.Min(ba.X, bb.X), Math.Min(ba.Y, bb.Y)), new Point(Math.Max(ba.X, bb.X), Math.Max(ba.Y, bb.Y)));
-        ctx.FillRectangle(new SolidColorBrush(ColourC(0), 0.14), r);
-        ctx.DrawRectangle(null, new Pen(Colour(0), 1, new DashStyle([4, 3], 0)), r);
-    }
-
     /// <summary>The frame, the inward ticks on all four sides (the right side carries the second axis when there is one), the
     /// tick labels and the axis titles.</summary>
-    private static void DrawAxes(DrawingContext ctx, SciFigure fig, Frame f, IPen tickPen, bool hasRight)
+    private static void DrawAxes(ISciSink g, SciFigure fig, Frame f, SciStyle st, bool hasRight)
     {
         double L = f.L, T = f.T, w = f.W, h = f.H, tickLen = f.TickLen, gap = f.Gap;
-        var ink = Ink;
+        var ink = st.Ink;
+        var tw = f.TickW;
         var xa = f.X;
         var ya = f.Y;
-        ctx.DrawRectangle(null, new Pen(ink, f.Compact ? 0.9 : 1.1), new Rect(L, T, w, h));
+        var minor = f.Print ? 2.0 / 3.5 : 0.55;   // minor ticks: 2 pt of the 3.5 pt majors in print
         foreach (var v in xa.Minor)
         {
             var px = f.PX(xa.Value(v));
             if (px < L - 0.5 || px > L + w + 0.5) continue;
-            ctx.DrawLine(tickPen, new Point(px, T + h), new Point(px, T + h - tickLen * 0.55));
-            ctx.DrawLine(tickPen, new Point(px, T), new Point(px, T + tickLen * 0.55));
+            g.Line(new Point(px, T + h), new Point(px, T + h - tickLen * minor), ink, 1, tw * (f.Print ? 0.75 : 1));
+            g.Line(new Point(px, T), new Point(px, T + tickLen * minor), ink, 1, tw * (f.Print ? 0.75 : 1));
         }
         // tick labels that would touch are thinned out (every second, third … label), never overlapped
         var xLabels = xa.Major.Select(v => (v, s: xa.Label(v))).ToArray();
-        var widest = xLabels.Select(p => RichWidth(p.s, f.FTick)).DefaultIfEmpty(0).Max();
+        var widest = xLabels.Select(p => RichWidth(g, p.s, f.FTick)).DefaultIfEmpty(0).Max();
         var spacing = xLabels.Length > 1 ? Math.Abs(f.PX(xa.Value(xLabels[1].v)) - f.PX(xa.Value(xLabels[0].v))) : w;
-        var every = Math.Max(1, (int)Math.Ceiling((widest + 6) / Math.Max(1, spacing)));
+        var every = Math.Max(1, (int)Math.Ceiling((widest + (f.Print ? 3 : 6)) / Math.Max(1, spacing)));
         for (var i = 0; i < xLabels.Length; ++i)
         {
             var px = f.PX(xa.Value(xLabels[i].v));
             if (px < L - 0.5 || px > L + w + 0.5) continue;
-            ctx.DrawLine(tickPen, new Point(px, T + h), new Point(px, T + h - tickLen));
-            ctx.DrawLine(tickPen, new Point(px, T), new Point(px, T + tickLen));
-            if (i % every == 0) DrawRich(ctx, xLabels[i].s, f.FTick, ink, new Point(px, T + h + gap), 0.5, 0);
+            g.Line(new Point(px, T + h), new Point(px, T + h - tickLen), ink, 1, tw);
+            g.Line(new Point(px, T), new Point(px, T + tickLen), ink, 1, tw);
+            if (i % every == 0) DrawRich(g, xLabels[i].s, f.FTick, ink, new Point(px, T + h + gap), 0.5, 0);
         }
         foreach (var v in ya.Minor)
         {
             var py = f.PY(ya.Value(v));
             if (py < T - 0.5 || py > T + h + 0.5) continue;
-            ctx.DrawLine(tickPen, new Point(L, py), new Point(L + tickLen * 0.55, py));
-            if (!hasRight && f.Z == null) ctx.DrawLine(tickPen, new Point(L + w, py), new Point(L + w - tickLen * 0.55, py));
+            g.Line(new Point(L, py), new Point(L + tickLen * minor, py), ink, 1, tw * (f.Print ? 0.75 : 1));
+            if (!hasRight && f.Z == null) g.Line(new Point(L + w, py), new Point(L + w - tickLen * minor, py), ink, 1, tw * (f.Print ? 0.75 : 1));
         }
         foreach (var v in ya.Major)
         {
             var py = f.PY(ya.Value(v));
             if (py < T - 0.5 || py > T + h + 0.5) continue;
-            ctx.DrawLine(tickPen, new Point(L, py), new Point(L + tickLen, py));
-            if (!hasRight && f.Z == null) ctx.DrawLine(tickPen, new Point(L + w, py), new Point(L + w - tickLen, py));
-            DrawRich(ctx, ya.Label(v), f.FTick, ink, new Point(L - gap, py), 1, 0.5);
+            g.Line(new Point(L, py), new Point(L + tickLen, py), ink, 1, tw);
+            if (!hasRight && f.Z == null) g.Line(new Point(L + w, py), new Point(L + w - tickLen, py), ink, 1, tw);
+            DrawRich(g, ya.Label(v), f.FTick, ink, new Point(L - gap, py), 1, 0.5);
         }
         if (f.Y2 is { } y2)
         {
-            foreach (var v in y2.Minor) { var py = f.PY2(v); if (py >= T - 0.5 && py <= T + h + 0.5) ctx.DrawLine(tickPen, new Point(L + w, py), new Point(L + w - tickLen * 0.55, py)); }
+            foreach (var v in y2.Minor) { var py = f.PY2(v); if (py >= T - 0.5 && py <= T + h + 0.5) g.Line(new Point(L + w, py), new Point(L + w - tickLen * minor, py), ink, 1, tw); }
             foreach (var v in y2.Major)
             {
                 var py = f.PY2(v);
                 if (py < T - 0.5 || py > T + h + 0.5) continue;
-                ctx.DrawLine(tickPen, new Point(L + w, py), new Point(L + w - tickLen, py));
-                DrawRich(ctx, y2.Label(v), f.FTick, ink, new Point(L + w + gap, py), 0, 0.5);
+                g.Line(new Point(L + w, py), new Point(L + w - tickLen, py), ink, 1, tw);
+                DrawRich(g, y2.Label(v), f.FTick, ink, new Point(L + w + gap, py), 0, 0.5);
             }
         }
-        DrawRich(ctx, fig.XLabel, f.FLabel, ink, new Point(L + w / 2, T + h + gap + f.FTick * 1.3 + gap), 0.5, 0);
-        var ytw = RichWidth(fig.YLabel, f.FLabel);
+        g.Rect(new Rect(L, T, w, h), null, 0, ink, f.FrameW);
+        DrawRich(g, fig.XLabel, f.FLabel, ink, new Point(L + w / 2, T + h + gap + f.FTick * 1.3 + gap), 0.5, 0);
+        var ytw = RichWidth(g, fig.YLabel, f.FLabel);
         var yc = Math.Clamp(T + h / 2, Math.Min(2 + ytw / 2, T + h), Math.Max(T + h + f.B - 2 - ytw / 2, 2 + ytw / 2));
-        using (ctx.PushTransform(Matrix.CreateRotation(-Math.PI / 2) * Matrix.CreateTranslation(4, yc)))
-            DrawRich(ctx, fig.YLabel, f.FLabel, ink, new Point(0, 0), 0.5, 0);
+        g.PushTransform(Matrix.CreateRotation(-Math.PI / 2) * Matrix.CreateTranslation(f.Print ? 1 : 4, yc));
+        DrawRich(g, fig.YLabel, f.FLabel, ink, new Point(0, 0), 0.5, 0);
+        g.Pop();
         if (f.Y2 != null && fig.Y2Label.Length > 0)
-            using (ctx.PushTransform(Matrix.CreateRotation(Math.PI / 2) * Matrix.CreateTranslation(L + w + f.R - 4, T + h / 2)))
-                DrawRich(ctx, fig.Y2Label, f.FLabel, ink, new Point(0, 0), 0.5, 0);
+        {
+            g.PushTransform(Matrix.CreateRotation(Math.PI / 2) * Matrix.CreateTranslation(L + w + f.R - (f.Print ? 1 : 4), T + h / 2));
+            DrawRich(g, fig.Y2Label, f.FLabel, ink, new Point(0, 0), 0.5, 0);
+            g.Pop();
+        }
     }
 
     /// <summary>The cells of a map and its colour bar (viridis) with its own ticks and title.</summary>
-    private static void RenderHeat(DrawingContext ctx, SciFigure fig, SciHeat hm, Frame f, IPen tickPen)
+    private static void RenderHeat(ISciSink g, SciHeat hm, Frame f, SciStyle st)
     {
         var xs = hm.X.Where(double.IsFinite).Distinct().OrderBy(v => v).ToArray();
         var ys = hm.Y.Where(double.IsFinite).Distinct().OrderBy(v => v).ToArray();
         double dx = xs.Length > 1 ? xs[1] - xs[0] : 1, dy = ys.Length > 1 ? ys[1] - ys[0] : 1;
         var z = f.Z!;
         double zmin = z.Lo, zmax = z.Hi;
-        using (ctx.PushClip(new Rect(f.L, f.T, f.W, f.H)))
-            for (var k = 0; k < hm.Z.Length && k < hm.X.Length && k < hm.Y.Length; ++k)
-            {
-                var r = new Rect(new Point(f.PX(hm.X[k] - dx / 2), f.PY(hm.Y[k] + dy / 2)), new Point(f.PX(hm.X[k] + dx / 2) + 0.5, f.PY(hm.Y[k] - dy / 2) + 0.5));
-                ctx.FillRectangle(new SolidColorBrush(Ramp((hm.Z[k] - zmin) / (zmax - zmin))), r);
-            }
-        var bx = f.L + f.W + 14;
-        const double bw = 11;
+        var seam = f.Print ? 0.05 : 0.5;   // cells overlap a little so no hairline shows between them
+        g.PushClip(new Rect(f.L, f.T, f.W, f.H));
+        for (var k = 0; k < hm.Z.Length && k < hm.X.Length && k < hm.Y.Length; ++k)
+        {
+            var r = new Rect(new Point(f.PX(hm.X[k] - dx / 2), f.PY(hm.Y[k] + dy / 2)), new Point(f.PX(hm.X[k] + dx / 2) + seam, f.PY(hm.Y[k] - dy / 2) + seam));
+            g.Rect(r, Ramp((hm.Z[k] - zmin) / (zmax - zmin)), 1, null, 0);
+        }
+        g.Pop();
+        var bx = f.L + f.W + (f.Print ? 6 : 14);
+        var bw = BarWidth(f);
         for (var k = 0; k < 64; ++k)
-            ctx.FillRectangle(new SolidColorBrush(Ramp(k / 63.0)), new Rect(bx, f.T + f.H - (k + 1) * f.H / 64, bw, f.H / 64 + 0.5));
-        ctx.DrawRectangle(null, new Pen(Ink, 1), new Rect(bx, f.T, bw, f.H));
+            g.Rect(new Rect(bx, f.T + f.H - (k + 1) * f.H / 64, bw, f.H / 64 + seam), Ramp(k / 63.0), 1, null, 0);
+        g.Rect(new Rect(bx, f.T, bw, f.H), null, 0, st.Ink, f.FrameW);
         double PZ(double v) => z.Map(v, f.T + f.H, f.T);
         foreach (var v in z.Major)
         {
             var py = PZ(v);
-            ctx.DrawLine(tickPen, new Point(bx + bw, py), new Point(bx + bw - 3, py));
-            DrawRich(ctx, z.Label(v), f.FTick, Ink, new Point(bx + bw + f.Gap, py), 0, 0.5);
+            g.Line(new Point(bx + bw, py), new Point(bx + bw - (f.Print ? 2 : 3), py), st.Ink, 1, f.TickW);
+            DrawRich(g, z.Label(v), f.FTick, st.Ink, new Point(bx + bw + f.Gap, py), 0, 0.5);
         }
         if (hm.ZLabel.Length > 0)
-            using (ctx.PushTransform(Matrix.CreateRotation(Math.PI / 2) * Matrix.CreateTranslation(f.L + f.W + f.R - 4, f.T + f.H / 2)))
-                DrawRich(ctx, hm.ZLabel, f.FLabel, Ink, new Point(0, 0), 0.5, 0);
+        {
+            g.PushTransform(Matrix.CreateRotation(Math.PI / 2) * Matrix.CreateTranslation(f.L + f.W + f.R - (f.Print ? 1 : 4), f.T + f.H / 2));
+            DrawRich(g, hm.ZLabel, f.FLabel, st.Ink, new Point(0, 0), 0.5, 0);
+            g.Pop();
+        }
     }
 
-    private static void Marker(DrawingContext ctx, Point p, double r, IBrush brush, bool open, bool square, IBrush bg, bool compact)
+    private static void Marker(ISciSink g, Point p, double r, Color c, bool open, bool square, Color bg, double pw)
     {
-        var pen = new Pen(brush, compact ? 0.9 : 1.2);
-        if (square)
-        {
-            var rect = new Rect(p.X - r, p.Y - r, 2 * r, 2 * r);
-            ctx.DrawRectangle(open ? bg : brush, pen, rect);
-        }
-        else ctx.DrawEllipse(open ? bg : brush, pen, p, r, r);
+        if (square) g.Rect(new Rect(p.X - r, p.Y - r, 2 * r, 2 * r), open ? bg : c, 1, c, pw);
+        else g.Circle(p, r, open ? bg : c, c, pw);
     }
+}
+
+/// <summary>Draws on the screen through Avalonia.</summary>
+internal sealed class ScreenSink(DrawingContext ctx, FontFamily font) : ISciSink
+{
+    private readonly Stack<DrawingContext.PushedState> _pushed = new();
+    private static IBrush B(Color c, double a = 1) => new SolidColorBrush(c, a);
+    private FormattedText Ft(string s, double size, bool italic, bool bold, Color c) =>
+        new(s, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, new Typeface(font, italic ? FontStyle.Italic : FontStyle.Normal, bold ? FontWeight.Bold : FontWeight.Normal), size, B(c));
+    private static DashStyle? D(double[]? d) => d == null ? null : new DashStyle(d, 0);
+
+    public void Line(Point a, Point b, Color c, double alpha, double w, double[]? dash = null, bool round = false) =>
+        ctx.DrawLine(new Pen(B(c, alpha), w, D(dash), lineCap: round ? PenLineCap.Round : PenLineCap.Flat), a, b);
+    public void Rect(Rect r, Color? fill, double fillAlpha, Color? stroke, double w, double[]? dash = null) =>
+        ctx.DrawRectangle(fill is { } f ? B(f, fillAlpha) : null, stroke is { } s ? new Pen(B(s), w, D(dash)) : null, r);
+    public void Path(IReadOnlyList<IReadOnlyList<Point>> pieces, bool closed, Color? fill, double fillAlpha, Color? stroke, double w, double[]? dash, bool round)
+    {
+        var geo = new StreamGeometry();
+        using (var g = geo.Open())
+            foreach (var p in pieces.Where(p => p.Count > 1))
+            {
+                g.BeginFigure(p[0], closed);
+                for (var i = 1; i < p.Count; ++i) g.LineTo(p[i]);
+                g.EndFigure(closed);
+            }
+        ctx.DrawGeometry(fill is { } f ? B(f, fillAlpha) : null,
+                         stroke is { } s ? new Pen(B(s), w, D(dash), lineCap: round ? PenLineCap.Round : PenLineCap.Flat, lineJoin: PenLineJoin.Round) : null, geo);
+    }
+    public void Circle(Point c, double r, Color? fill, Color? stroke, double w) => ctx.DrawEllipse(fill is { } f ? B(f) : null, stroke is { } s ? new Pen(B(s), w) : null, c, r, r);
+    public void Text(string s, Point topLeft, double size, bool italic, bool bold, Color c) => ctx.DrawText(Ft(s, size, italic, bold, c), topLeft);
+    public double Measure(string s, double size, bool italic, bool bold) => Ft(s, size, italic, bold, Colors.White).WidthIncludingTrailingWhitespace;
+    public (double Height, double Ascent) Metrics(double size) { var ft = Ft("0", size, false, false, Colors.White); return (ft.Height, ft.Baseline); }
+    public void PushClip(Rect r) => _pushed.Push(ctx.PushClip(r));
+    public void PushTransform(Matrix m) => _pushed.Push(ctx.PushTransform(m));
+    public void Pop() => _pushed.Pop().Dispose();
+}
+
+/// <summary>Measures only (layout for the self-test's tick checks): with a font when there is a font system, else from
+/// the character count.</summary>
+internal sealed class MeasureSink(FontFamily? font) : ISciSink
+{
+    public void Line(Point a, Point b, Color c, double alpha, double w, double[]? dash = null, bool round = false) { }
+    public void Rect(Rect r, Color? fill, double fillAlpha, Color? stroke, double w, double[]? dash = null) { }
+    public void Path(IReadOnlyList<IReadOnlyList<Point>> pieces, bool closed, Color? fill, double fillAlpha, Color? stroke, double w, double[]? dash, bool round) { }
+    public void Circle(Point c, double r, Color? fill, Color? stroke, double w) { }
+    public void Text(string s, Point topLeft, double size, bool italic, bool bold, Color c) { }
+    public double Measure(string s, double size, bool italic, bool bold) => font == null ? 0.56 * size * s.Length
+        : new FormattedText(s, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, new Typeface(font, italic ? FontStyle.Italic : FontStyle.Normal), size, Brushes.White).WidthIncludingTrailingWhitespace;
+    public (double Height, double Ascent) Metrics(double size) => (size * 1.25, size * 0.95);
+    public void PushClip(Rect r) { }
+    public void PushTransform(Matrix m) { }
+    public void Pop() { }
 }

@@ -11,7 +11,7 @@ render-frame guide in the view), one call per frame::
         canvas.text(24, canvas.height - 60, f"ρ = {rho:.3f} g/cm³", size=28, colour="#FFFFFF")
         rdf = data.tables.get("rdf")
         if rdf:
-            canvas.plot(rdf.column(0), rdf.column(1), box=(canvas.width - 520, 40, 480, 300), title="g(r)")
+            canvas.plot(rdf.column(0), rdf.column(1), box=(canvas.width - 520, 40, 480, 300), xlabel="r / Å", ylabel="g(r)")
 
 Coordinates are pixels of the output image, x to the right and y down from the top-left corner. data holds the frame
 (number, count), the title, the global attributes of the Visualize pipeline on that frame (Particles, Density,
@@ -96,16 +96,21 @@ class Canvas:
     def circle(self, x, y, r, fill=None, stroke=None, width=1.0):
         self.commands.append({"op": "circle", "x": float(x), "y": float(y), "r": float(r), "fill": fill, "stroke": stroke, "width": float(width)})
 
-    def plot(self, xs, ys, box, colour="#D98A1E", title="", xlabel="", ylabel="", background=True, marker=None):
-        """An inset line plot of ys against xs in box = (x, y, w, h), with its axes, ticks and title."""
+    def plot(self, xs, ys, box, colour=None, title="", xlabel="", ylabel="", background=True, marker=None, markers=None):
+        """An inset plot of ys against xs in box = (x, y, w, h), drawn the way the Studio's plots are: a closed frame,
+        inward major and minor ticks on all four sides at round values (1, 2, 2.5 or 5 times a power of ten), the axis
+        titles as "quantity / unit" (ylabel above the frame, as an inset has no room to turn it), every finite (x, y) drawn
+        as it is. A series of up to 150 points also gets an open circle on each point (markers=True/False to choose).
+        colour: Okabe and Ito's blue unless given; marker: a vertical line at that x (the current time, say)."""
         x0, y0, w, h = (float(v) for v in box)
         pts = [(float(a), float(b)) for a, b in zip(xs, ys) if math.isfinite(float(a)) and math.isfinite(float(b))]
         if background:
             self.rect(x0, y0, w, h, fill="#0B0D0FCC" if self.dark else "#FFFFFFCC", stroke=None, radius=6)
         if not pts:
             return
-        ml, mr, mt, mb = 46.0, 10.0, 24.0 if title else 10.0, 30.0 if xlabel else 22.0
-        px, py, pw, ph = x0 + ml, y0 + mt, max(1.0, w - ml - mr), max(1.0, h - mt - mb)
+        colour = colour or ("#56B4E9" if self.dark else "#0072B2")
+        fs = max(9.0, min(14.0, h / 22.0))            # tick labels; titles one size up
+        tick = max(3.0, fs * 0.45)
         lo_x, hi_x = min(p[0] for p in pts), max(p[0] for p in pts)
         lo_y, hi_y = min(p[1] for p in pts), max(p[1] for p in pts)
         if hi_x == lo_x:
@@ -114,41 +119,89 @@ class Canvas:
             lo_y, hi_y = lo_y - 0.5, hi_y + 0.5
         pad = 0.05 * (hi_y - lo_y)
         lo_y, hi_y = lo_y - pad, hi_y + pad
+        xstep, ystep = _step(lo_x, hi_x), _step(lo_y, hi_y)
+        # the axis ends on a minor tick, so the frame does not stop at an odd value
+        lo_x, hi_x = _snap(lo_x, hi_x, xstep)
+        lo_y, hi_y = _snap(lo_y, hi_y, ystep)
+        ylab_w = max(len(_fmt(t, ystep)) for t in _ticks(lo_y, hi_y, ystep)) * fs * 0.6
+        ml, mr = ylab_w + fs * 0.9 + 4, 10.0
+        mt = (fs * 1.3 if title else 4.0) + (fs * 1.4 if ylabel else 6.0)
+        mb = fs * 1.5 + (fs * 1.5 if xlabel else 2.0)
+        px, py, pw, ph = x0 + ml, y0 + mt, max(1.0, w - ml - mr), max(1.0, h - mt - mb)
         X = lambda v: px + (v - lo_x) / (hi_x - lo_x) * pw
         Y = lambda v: py + (1 - (v - lo_y) / (hi_y - lo_y)) * ph
-        muted = "#A5ABB1" if self.dark else "#5A6168"
-        self.rect(px, py, pw, ph, stroke=muted, width=1)
-        for t in _ticks(lo_x, hi_x):
-            self.line(X(t), py + ph, X(t), py + ph + 4, colour=muted, width=1)
-            self.text(X(t), py + ph + 5, _fmt(t), size=11, colour=muted, align="centre", mono=True)
-        for t in _ticks(lo_y, hi_y):
-            self.line(px - 4, Y(t), px, Y(t), colour=muted, width=1)
-            self.text(px - 6, Y(t) - 7, _fmt(t), size=11, colour=muted, align="right", mono=True)
-        self.polyline([(X(a), Y(b)) for a, b in pts], colour=colour, width=2)
-        if marker is not None:   # a marker at x = marker (the current time, say)
-            self.line(X(marker), py, X(marker), py + ph, colour=self.ink, width=1)
+        ink = self.ink
+        lw = max(1.0, fs / 11.0)
+        for t in _ticks(lo_x, hi_x, xstep / _minor(xstep)):
+            self.line(X(t), py + ph, X(t), py + ph - tick * 0.55, colour=ink, width=lw)
+            self.line(X(t), py, X(t), py + tick * 0.55, colour=ink, width=lw)
+        for t in _ticks(lo_y, hi_y, ystep / _minor(ystep)):
+            self.line(px, Y(t), px + tick * 0.55, Y(t), colour=ink, width=lw)
+            self.line(px + pw, Y(t), px + pw - tick * 0.55, Y(t), colour=ink, width=lw)
+        for t in _ticks(lo_x, hi_x, xstep):
+            self.line(X(t), py + ph, X(t), py + ph - tick, colour=ink, width=lw)
+            self.line(X(t), py, X(t), py + tick, colour=ink, width=lw)
+            self.text(X(t), py + ph + fs * 0.35, _fmt(t, xstep), size=fs, colour=ink, align="centre")
+        for t in _ticks(lo_y, hi_y, ystep):
+            self.line(px, Y(t), px + tick, Y(t), colour=ink, width=lw)
+            self.line(px + pw, Y(t), px + pw - tick, Y(t), colour=ink, width=lw)
+            self.text(px - fs * 0.4, Y(t) - fs * 0.62, _fmt(t, ystep), size=fs, colour=ink, align="right")
+        self.polyline([(X(a), Y(b)) for a, b in pts], colour=colour, width=max(1.5, fs / 7.0))
+        if markers if markers is not None else len(pts) <= 150:
+            r = max(2.5, fs * 0.28)
+            bg = "#0B0D0F" if self.dark else "#FFFFFF"
+            for a, b in pts:
+                self.circle(X(a), Y(b), r, fill=bg, stroke=colour, width=lw)
+        if marker is not None and lo_x <= marker <= hi_x:   # a vertical line at x = marker (the current time, say)
+            self.line(X(marker), py, X(marker), py + ph, colour=ink, width=lw)
+        self.rect(px, py, pw, ph, stroke=ink, width=lw)
         if title:
-            self.text(x0 + ml, y0 + 5, title, size=13, bold=True)
-        if xlabel:
-            self.text(px + pw / 2, y0 + h - 16, xlabel, size=11, colour=muted, align="centre")
+            self.text(x0 + 6, y0 + 3, title, size=fs + 1, bold=True)
         if ylabel:
-            self.text(x0 + 4, py - 16, ylabel, size=11, colour=muted)
+            self.text(px, py - fs * 1.45, ylabel, size=fs + 1)
+        if xlabel:
+            self.text(px + pw / 2, py + ph + fs * 1.55, xlabel, size=fs + 1, align="centre")
 
 
-def _ticks(lo, hi):
-    raw = (hi - lo) / 4
+def _step(lo, hi, target=4):
+    """A round major step (1, 2, 2.5 or 5 times a power of ten) giving about target intervals over [lo, hi]."""
+    raw = (hi - lo) / target
     mag = 10 ** math.floor(math.log10(raw))
     r = raw / mag
-    step = (1 if r < 1.5 else 2 if r < 3 else 5 if r < 7 else 10) * mag
-    t, out = math.ceil(lo / step) * step, []
+    return (1 if r < 1.5 else 2 if r < 2.25 else 2.5 if r < 3.5 else 5 if r < 7.5 else 10) * mag
+
+
+def _minor(step):
+    """Minor ticks per major step: 4 for a step of 2, else 5."""
+    f = step / 10 ** math.floor(math.log10(step))
+    return 4 if abs(f - 2) < 1e-9 else 5
+
+
+def _snap(lo, hi, step):
+    m = step / _minor(step)
+    return math.floor(lo / m + 1e-9) * m, math.ceil(hi / m - 1e-9) * m
+
+
+def _ticks(lo, hi, step=None):
+    step = step or _step(lo, hi)
+    t, out = math.ceil(lo / step - 1e-9) * step, []
     while t <= hi + 1e-9 * step:
-        out.append(0.0 if abs(t) < 1e-12 * step else t)
+        out.append(0.0 if abs(t) < 1e-9 * step else t)
         t += step
     return out
 
 
-def _fmt(v):
-    return f"{v:.4g}"
+def _fmt(v, step=None):
+    """A tick value with as many decimals as the step needs (0, 0.5, 1.0 …), a true minus sign."""
+    if step is None:
+        return f"{v:.4g}".replace("-", "\u2212")
+    a = abs(v)
+    if a and (a >= 1e5 or a < 1e-3):
+        return f"{v:.1e}".replace("-", "\u2212")
+    dec = 0
+    while dec < 6 and abs(step * 10 ** dec - round(step * 10 ** dec)) > 1e-6 * 10 ** dec:
+        dec += 1
+    return f"{v:.{dec}f}".replace("-", "\u2212")
 
 
 def main(argv):

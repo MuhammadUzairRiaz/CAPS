@@ -661,7 +661,7 @@ public partial class MainWindow : Window
         var fig = c.Figure ?? new SciFigure
         {
             XLabel = AnalyzeFigures.Title(c.XLabel), YLabel = AnalyzeFigures.Title(c.YLabel), XLog = c.LogLog, YLog = c.LogLog, RefY = c.RefY,
-            Series = [new SciSeries("", c.X, c.Y)],
+            Series = [new SciSeries("", c.X, c.Y) { Kind = PageFigures.Auto(c.X.Length) }],
         };
         if (_vm.Analyze.CurrentFit is { } fit && fit.Line.Length > 1)   // the fitted model over the curve (fitted on log10 of both axes for a log–log curve)
         {

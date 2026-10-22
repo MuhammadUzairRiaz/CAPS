@@ -623,7 +623,7 @@ System pack(const std::vector<PackItem>& items, const PackOptions& o, PackReport
         f = evaluate(v, &g, false);
         S.clear(); Y.clear(); rho.clear();
       }
-      if ((it & 15) == 0) emit("optimisation", loop, f, 0, 0);
+      if ((it & 15) == 0) emit("optimisation step", loop, f, 0, 0);   // inside a round: the penalty so far
     }
     rep.iterations += it;
     reanchor();

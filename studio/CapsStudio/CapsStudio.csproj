@@ -31,6 +31,8 @@
   <ItemGroup>
     <AvaloniaResource Include="Assets/caps_256.png" />
     <AvaloniaResource Include="Assets/Fonts/*.ttf" />
+    <!-- also as files: a figure's PDF embeds IBM Plex Sans when the system has neither Arial nor Liberation Sans -->
+    <None Include="Assets/Fonts/IBMPlexSans-Regular.ttf;Assets/Fonts/IBMPlexSans-Bold.ttf;Assets/Fonts/LICENSE.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <!-- Native core built by CMake (../../build/capi). Copied next to the app so P/Invoke finds it. -->

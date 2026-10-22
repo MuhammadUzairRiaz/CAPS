@@ -1052,8 +1052,20 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           ro.pushoff_cap = num(J, "pushoff_cap", 0);
           ro.pushoff_temperature = num(J, "pushoff_temperature", 300);
           ro.target_density = num(J, "target_density", 0);
+          int last_stage = -1, last_it = 0, total_it = 0;
           ro.progress = [&](const RelaxProgress& p) {
-            report(k, st, p.stage + " · |F|max " + g6(p.fmax), "running", p.stages ? double(p.stage_index) / p.stages : 0);
+            const double f = p.stages ? double(p.stage_index) / p.stages : 0;
+            report(k, st, p.stage + " · |F|max " + g6(p.fmax), "running", f);
+            if (o.live) {   // the Jobs monitor's curves: energy and largest force against the iterations so far
+              if (p.stage_index != last_stage) last_stage = p.stage_index, last_it = 0;
+              total_it += std::max(0, p.iteration - last_it);
+              last_it = p.iteration;
+              Json x = Json::object();
+              x["iteration"] = double(total_it);
+              if (std::isfinite(p.energy)) x["energy"] = p.energy;
+              if (p.fmax > 0 && std::isfinite(p.fmax)) x["fmax"] = p.fmax;
+              o.live->progress(st, k + 1, n, (k + f) / n, nullptr, x);
+            }
             return true;
           };
           RelaxReport rr;
@@ -1182,7 +1194,7 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
               throw RecipeError(2, "equilibrate: internal_target is \"ris-pe\" or an array of values indexed by n");
             }
           }
-          if (J.has("thermo_ps")) e.thermo_ps = std::max(1e-3, num(J, "thermo_ps", e.thermo_ps));
+          if (J.has("thermo_ps")) { const double t = num(J, "thermo_ps", e.thermo_ps); e.thermo_ps = t <= 0 ? 0.0 : std::max(1e-3, t); }   // 0: about 200 rows per stage
           if (num(J, "frame_ps", 0) > 0 && o.live && !o.frames_path.empty()) {
             if (!o.live->frames_open()) o.live->open_frames(o.frames_path, s, o.resume);
             e.frame_ps = num(J, "frame_ps", 10);
