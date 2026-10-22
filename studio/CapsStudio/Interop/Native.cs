@@ -978,9 +978,9 @@ public sealed class CapsDocument : IDisposable
     }
 
     /// <summary>Calls that do real work: one call into a large buffer, a second only when the answer did not fit.</summary>
-    private static string JsonCallOnce(Func<byte[]?, int, int> f)
+    private static string JsonCallOnce(Func<byte[]?, int, int> f, int first = 1 << 16)
     {
-        var buf = new byte[1 << 16];
+        var buf = new byte[first];
         var n = f(buf, buf.Length);
         if (n > buf.Length) { buf = new byte[n]; f(buf, buf.Length); }
         return System.Text.Encoding.UTF8.GetString(buf, 0, Math.Max(0, Math.Min(n, buf.Length) - 1));
@@ -2280,7 +2280,7 @@ public sealed class CapsDocument : IDisposable
     public void TorsionShow(int k) { using (Hold()) { Alive(); Check(Native.TorsionShow(H, k)); } }
     public int[]? DefaultTorsion() { var a = new int[4]; using (Hold()) { Alive(); return Native.DefaultTorsion(H, a) == 0 ? a : null; } }
     /// <summary>Per-frame series for the trajectory player (caps_trajectory_series), JSON.</summary>
-    public string TrajectorySeries(string options) { using (Hold()) { Alive(); return JsonCallOnce((b, c) => Native.TrajectorySeries(H, options, IntPtr.Zero, IntPtr.Zero, b, c)); } }
+    public string TrajectorySeries(string options) { using (Hold()) { Alive(); return JsonCallOnce((b, c) => Native.TrajectorySeries(H, options, IntPtr.Zero, IntPtr.Zero, b, c), 16 << 20); } }   // room for the log's rows: one pass, not two
     /// <summary>Positions shown averaged over `window` frames (1: off).</summary>
     public void SetSmoothing(int window) { using (Hold()) { Alive(); Native.SetSmoothing(H, window); } }
     /// <summary>Styles, colours, surfaces and polyhedra of the view (caps_set_appearance).</summary>

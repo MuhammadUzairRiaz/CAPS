@@ -302,10 +302,12 @@ public sealed partial class MainViewModel
     private string _rMem = "", _rTime = "";
     public string RemoteMem { get => _rMem.Length > 0 ? _rMem : RemoteHostNow?.MemPerCpu ?? ""; set { _rMem = (value ?? "").Trim(); Raise(); Raise(nameof(RemoteCommand)); } }
     public string RemoteTime { get => _rTime.Length > 0 ? _rTime : RemoteHostNow?.TimeLimit ?? ""; set { _rTime = (value ?? "").Trim(); Raise(); Raise(nameof(RemoteCommand)); } }
-    private double _rFramePs = 10, _rThermoPs = 1;
+    private double _rFramePs = 10, _rThermoPs;
     /// <summary>A frame of the run every this many ps on the host (0: none), for the live Structure view.</summary>
     public decimal RemoteFramePs { get => (decimal)_rFramePs; set { _rFramePs = (double)Math.Max(0, value); Raise(); } }
-    public decimal RemoteThermoPs { get => (decimal)_rThermoPs; set { _rThermoPs = (double)Math.Max(0.001m, value); Raise(); } }
+    /// <summary>A thermo row every this many ps on the host; 0 (the default) samples by run length: about 400 rows over an MD
+    /// run and about 200 per Equilibrate stage, so a short run's curves show its fluctuations, not straight lines.</summary>
+    public decimal RemoteThermoPs { get => (decimal)_rThermoPs; set { _rThermoPs = value <= 0 ? 0 : (double)Math.Max(0.001m, value); Raise(); } }
     private bool? _rKeep;
     public bool RemoteKeepWorkspace { get => _rKeep ?? RemoteHostNow?.KeepWorkspace ?? false; set { _rKeep = value; Raise(); Raise(nameof(RemoteCommand)); } }
     private RemoteHost? RemoteHostNow => RunWhereIndex > 0 && RunWhereIndex <= _settings.Hosts.Count ? _settings.Hosts[RunWhereIndex - 1] : null;
@@ -334,7 +336,10 @@ public sealed partial class MainViewModel
         if (recipe["md"] is JsonObject md)
         {
             if (_rFramePs > 0) md["frame_ps"] = _rFramePs;
-            md["thermo_every"] = Math.Max(1, (int)Math.Round(_rThermoPs * 1000 / Math.Max(0.1, (double?)md["dt"] ?? 1.0)));
+            var dt = Math.Max(0.1, (double?)md["dt"] ?? 1.0);
+            var steps = double.TryParse(md["steps"]?.ToJsonString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var ns) ? (long)ns : 0;
+            md["thermo_every"] = _rThermoPs > 0 ? Math.Max(1, (int)Math.Round(_rThermoPs * 1000 / dt))
+                : (int)Math.Clamp(steps / 400, 10, Math.Max(10, steps / 150));   // about 400 rows, never fewer than 150, at least 10 steps apart
         }
         if (recipe["equilibrate"] is JsonObject eq)
         {
@@ -442,22 +447,30 @@ public sealed partial class MainViewModel
         if (state == "pending" || state == "submitted") j.Status = "queued";
         else if (state == "running") j.Status = "running";
         j.AppendLive((string?)p["log"] ?? "", (string?)p["err"] ?? "");
-        // thermo from the progress lines: T and ρ against time (the two curve panels)
+        // the curves from the progress lines: T and ρ against time (MD, Equilibrate), or energy and the largest force
+        // against the iterations (a Relax stage); a job that moves from one kind of stage to the other starts new curves
         var any = false;
         if (p["progress"] is JsonArray lines)
             foreach (var l in lines.OfType<JsonObject>())
             {
                 if ((double?)l["fraction"] is { } f) j.Progress = f;
                 if ((int?)l["stages"] is > 0 and var n) { j.Stages = n; j.Stage = (int?)l["stage_index"] ?? 0; }
-                if (l["time_ps"] is null) continue;
-                var t = (double?)l["time_ps"] ?? 0;
-                if ((double?)l["T"] is { } temp) j.A.Add((t, temp));
-                if ((double?)l["rho"] is { } rho) j.B.Add((t, rho));
+                var md = l["time_ps"] is not null;
+                if (!md && l["iteration"] is null) continue;
+                var kind = md ? "Temperature" : "Energy";
+                if (j.CurveA != kind)
+                {
+                    j.A.Clear(); j.B.Clear();
+                    if (md) { j.CurveA = "Temperature"; j.AxisA = "temperature (K)"; j.CurveB = "Density"; j.AxisB = "density (g/cm³)"; j.AxisX = "time (ps)"; }
+                    else { j.CurveA = "Energy"; j.AxisA = "energy (kcal/mol)"; j.CurveB = "Largest force"; j.AxisB = "largest force (kcal/mol/Å)"; j.AxisX = "iteration"; }
+                }
+                var t = md ? (double?)l["time_ps"] ?? 0 : (double?)l["iteration"] ?? 0;
+                if ((double?)(md ? l["T"] : l["energy"]) is { } va) j.A.Add((t, va));
+                if ((double?)(md ? l["rho"] : l["fmax"]) is { } vb) j.B.Add((t, vb));
                 any = true;
             }
         if (any)
         {
-            if (j.CurveA.Length == 0) { j.CurveA = "Temperature"; j.AxisA = "temperature (K)"; j.CurveB = "Density"; j.AxisB = "density (g/cm³)"; j.AxisX = "time (ps)"; }
             if (j.A.Count > 20000) j.A.RemoveRange(0, j.A.Count - 20000);
             if (j.B.Count > 20000) j.B.RemoveRange(0, j.B.Count - 20000);
             j.CurvesChanged();

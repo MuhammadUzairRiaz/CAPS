@@ -91,7 +91,7 @@ public static class AnalyzeFigures
     private static SciFigure Generic(SeriesItem it) => new()
     {
         XLabel = Title(it.XLabel), YLabel = Title(it.YLabel), XLog = it.LogLog, YLog = it.LogLog, RefY = it.RefY,
-        Series = [S(it, "", it.X.Length <= 40 ? SciKind.LineMarkers : SciKind.Line)],
+        Series = [S(it, "", PageFigures.Auto(it.X.Length))],
     };
 
     /// <summary>Block means of a time series the way the core takes them (equal consecutive blocks, the tail left out).</summary>
@@ -116,7 +116,7 @@ public static class AnalyzeFigures
     private static SciFigure TimeSeries(ResultCard c, SeriesItem it, string unitText, int blocks)
     {
         var (bt, bm) = Blocks(it.X, it.Y, blocks);
-        var series = new List<SciSeries> { S(it, "per frame", SciKind.Line, -1) with { Width = 0.9 } };
+        var series = new List<SciSeries> { S(it, "per frame", PageFigures.Auto(it.X.Length), -1) with { Width = 0.9, Open = true } };
         if (bt.Length >= 2) series.Add(new SciSeries($"block means ({bt.Length} blocks)", bt, bm) { Kind = SciKind.Markers, Colour = 0, Square = true });
         var hasErr = double.IsFinite(c.Error) && c.Error > 0;
         return new SciFigure
@@ -228,7 +228,7 @@ public static class AnalyzeFigures
                 var com = raw[1];
                 var series = new List<SciSeries>
                 {
-                    S(atoms, "all atoms", SciKind.Line, 1),
+                    S(atoms, "all atoms", PageFigures.Auto(atoms.X.Length), 1) with { Square = true, Open = true },
                     S(com, "chain centres of mass", SciKind.LineMarkers, 0) with { Width = 1.4 },
                 };
                 // a guide ∝ t through the last decade of the centres' curve (slope 1 on log axes: diffusive)
@@ -262,7 +262,7 @@ public static class AnalyzeFigures
             case "relaxation" when raw.Count >= 1:
             {
                 var series = new List<SciSeries>();
-                for (var k = 0; k < raw.Count; ++k) series.Add(S(raw[k], raw[k].Label.Replace("P₂(t)", "*P*₂(*t*)").Replace("⟨R(t)·R(0)⟩/⟨R²⟩", "⟨**R**(*t*)·**R**(0)⟩/⟨*R*²⟩"), SciKind.Line, k));
+                for (var k = 0; k < raw.Count; ++k) series.Add(S(raw[k], raw[k].Label.Replace("P₂(t)", "*P*₂(*t*)").Replace("⟨R(t)·R(0)⟩/⟨R²⟩", "⟨**R**(*t*)·**R**(0)⟩/⟨*R*²⟩"), PageFigures.Auto(raw[k].X.Length), k) with { Square = k == 1, Open = k == 1 });
                 var tau = Extra(card, "segmental τ_KWW");
                 var beta = Extra(card, "segmental β");
                 if (double.IsFinite(tau) && double.IsFinite(beta) && beta > 0)
@@ -306,8 +306,8 @@ public static class AnalyzeFigures
                 break;
 
             case "vacf" when raw.Count >= 1:
-                Add(raw[0], raw[0].Label, Generic(raw[0]) with { RefY = 0, Series = [S(raw[0], "")] });
-                foreach (var r in raw.Skip(1)) Add(r, r.Label, Generic(r) with { Series = [S(r, "", SciKind.Line) with { Fill = false }], YZero = true });
+                Add(raw[0], raw[0].Label, Generic(raw[0]) with { RefY = 0, Series = [S(raw[0], "", PageFigures.Auto(raw[0].X.Length))] });
+                foreach (var r in raw.Skip(1)) Add(r, r.Label, Generic(r) with { Series = [S(r, "", PageFigures.Auto(r.X.Length)) with { Fill = false }], YZero = true });
                 break;
 
             default:
