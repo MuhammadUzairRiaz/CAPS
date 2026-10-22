@@ -347,7 +347,7 @@ std::string cg_equil_deck(const CgEquilOptions& o) {
                 "run ${ANNEAL}\nunfix md\n"
                 "fix md all nvt temp ${TA} ${T} $(100.0*dt)\nrun ${COOL}\nunfix md\n"
                 "fix md all npt temp ${T} ${T} $(100.0*dt) iso ${P} ${P} $(1000.0*dt)\nrun ${NPT}\n"
-                "write_data ${OUT}.data\n"
+                "write_data ${OUT}.data pair ij\n"
                 "# Optional, homopolymers with one bond type: double bridging (fix bond/swap) relaxes long chains faster; LAMMPS's\n"
                 "# restrictions for fix bond/swap apply (see its documentation) — not used here.\n",
                 o.T, o.P, o.anneal_T, o.dt, o.soft_max, static_cast<long long>(o.pushoff_steps), static_cast<long long>(o.pushoff_steps / 3), static_cast<long long>(o.anneal_steps),

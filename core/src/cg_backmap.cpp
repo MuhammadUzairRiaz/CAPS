@@ -448,10 +448,10 @@ std::string backmap_deck(const std::vector<std::string>& style, const BackmapDec
     ks_min = "kspace_style ewald " + (acc.empty() ? std::string("1.0e-4") : acc) + "\n";
   }
   d += "# --- 3 the full force field (the reference's pair style and coefficients)\n" + pick("pair_style") + "include pair_coeffs.in\n" + pick("pair_modify") + ks_min + pick("dielectric");
-  d += "minimize 1.0e-4 1.0e-6 5000 50000\nwrite_data ${OUT}.minimized.data\nreset_timestep 0\n";
+  d += "minimize 1.0e-4 1.0e-6 5000 50000\nwrite_data ${OUT}.minimized.data pair ij\nreset_timestep 0\n";
   if (ks_min != ks) d += ks + pick("kspace_modify");
   else d += pick("kspace_modify");
-  std::snprintf(b, sizeof b, "# --- 4 a short NPT\ntimestep %g\nfix md all npt temp ${T} ${T} 100.0 iso ${P} ${P} 1000.0\nrun ${NPT}\nwrite_data ${OUT}.data\n", o.dt);
+  std::snprintf(b, sizeof b, "# --- 4 a short NPT\ntimestep %g\nfix md all npt temp ${T} ${T} 100.0 iso ${P} ${P} 1000.0\nrun ${NPT}\nwrite_data ${OUT}.data pair ij\n", o.dt);
   d += b;
   return d;
 }

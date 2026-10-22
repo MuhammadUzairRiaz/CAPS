@@ -214,6 +214,19 @@ TEST(Thermal, GreenKuboLammpsInputPrintsKappaOnlyWhenTheCorrelationExists) {
   const std::string t = thermal_lammps_run(q);
   EXPECT_NE(t.find("thermo          ${d}\n"), std::string::npos);
   EXPECT_NE(t.find("run             2010000\n"), std::string::npos) << t;
+  EXPECT_NE(t.find("centroid/stress/atom NULL virial"), std::string::npos);
+  // with a kspace style LAMMPS refuses centroid/stress/atom on the kspace term: pair and bonded terms by centroid,
+  // the kspace virial by stress/atom, added into the flux that is correlated
+  q.kspace = true;
+  const std::string k = thermal_lammps_run(q);
+  EXPECT_EQ(k.find("centroid/stress/atom NULL virial"), std::string::npos);
+  EXPECT_NE(k.find("centroid/stress/atom NULL pair bond angle dihedral improper fix"), std::string::npos);
+  EXPECT_NE(k.find("compute         kstress all stress/atom NULL kspace"), std::string::npos);
+  EXPECT_NE(k.find("variable        Qz equal c_flux[3]+c_kflux[3]-c_kflux[6]"), std::string::npos);
+  EXPECT_NE(k.find("ave/correlate $s $p $d v_Qx v_Qy v_Qz"), std::string::npos);
+  // every i-j pair coefficient in the data files a next stage reads (a no-op for styles that write none)
+  EXPECT_NE(k.find("write_data      thermal_final.data pair ij"), std::string::npos);
+  EXPECT_NE(semicrystalline_lammps_run(SemicrystallineEquilibration{}).find("semicrystalline_equilibrated.data pair ij"), std::string::npos);
 }
 
 TEST(HeatFlux, PerAtomTermsSumToTheEvaluator) {

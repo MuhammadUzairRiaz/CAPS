@@ -1153,7 +1153,7 @@ std::string semicrystalline_lammps_run(const SemicrystallineEquilibration& q) {
     << " " << q.pressure << " 1000.0 z " << q.pressure << " " << q.pressure << " 1000.0 couple none\n"
     << "variable rho equal density\nfix rho all ave/time 100 100 10000 v_rho c_thermo_press file density.dat\n"
     << "run " << n2 << "\n"
-    << "write_data semicrystalline_equilibrated.data\n";
+    << "write_data semicrystalline_equilibrated.data pair ij\n";
   return o.str();
 }
 

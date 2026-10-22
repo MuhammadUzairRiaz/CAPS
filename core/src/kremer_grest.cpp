@@ -201,7 +201,7 @@ void write_kg_lammps(const System& s, const KgOptions& o, const std::string& ste
                 "# 2. Kremer-Grest: WCA repulsion (LJ cut at 2^(1/6) sigma, shifted); still limited for a while, then free\n"
                 "pair_style lj/cut %s\npair_modify shift yes\npair_coeff * * %s %s %s\n"
                 "run 2000\nunfix move\nfix move all nve\n"
-                "dump d all custom 10000 %s.lammpstrj id mol type xu yu zu\nrun %.0f\nwrite_data %s_equilibrated.data\n",
+                "dump d all custom 10000 %s.lammpstrj id mol type xu yu zu\nrun %.0f\nwrite_data %s_equilibrated.data pair ij\n",
                 head.c_str(), real ? "real" : "lj", data.c_str(), g(30.0 * ep / (sg * sg)).c_str(), g(1.5 * sg).c_str(), g(ep).c_str(), g(sg).c_str(), angle.c_str(),
                 g(2.0 * sg).c_str(), g(0.4 * sg).c_str(), g(0.01 * tu).c_str(), g(T).c_str(), (unsigned long long)(o.seed + 1), g(T).c_str(), g(T).c_str(), g(1.0 * tu).c_str(),
                 (unsigned long long)(o.seed + 2), g(rc).c_str(), g(60.0 * ep).c_str(), g(0.02 * sg).c_str(), pushoff_steps, g(rc).c_str(), g(ep).c_str(), g(sg).c_str(), g(rc).c_str(),

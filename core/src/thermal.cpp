@@ -630,18 +630,27 @@ std::string thermal_lammps_run(const ThermalLammps& q) {
   if (q.dimensionality == 2)
     o << "# 2D sheet (vacuum along z): no barostat here; an NPT stage before this would couple x and y only (x P P D y P P D)\n"
       << (q.kspace ? "kspace_modify   slab 3.0   # with boundary p p f set before read_data\n" : "");
-  if (q.kspace)
-    o << "# note: compute centroid/stress/atom does not take kspace terms (LAMMPS manual, Restrictions): with PPPM the flux below\n"
-         "# misses the long-range part; for kappa write the inputs with coul/dsf (CAPS's default electrostatics)\n";
   if (q.method == "gk") {
     const long s = std::max(1, q.sample_every), p = std::max(2L, std::lround(q.corr_ps * 1000 / q.dt / s));
     o << "# heat flux: kinetic + potential energy per atom, centroid virial (correct for angle, dihedral and improper terms)\n"
-      << "compute         ke all ke/atom\ncompute         pe all pe/atom\n"
-      << "compute         stress all centroid/stress/atom NULL virial\n"
-      << "compute         flux all heat/flux ke pe stress\n"
-      << "variable        Jx equal c_flux[1]/vol\nvariable        Jy equal c_flux[2]/vol\nvariable        Jz equal c_flux[3]/vol\n"
+      << "compute         ke all ke/atom\ncompute         pe all pe/atom\n";
+    if (!q.kspace)
+      o << "compute         stress all centroid/stress/atom NULL virial\n"
+        << "compute         flux all heat/flux ke pe stress\n"
+        << "variable        Qx equal c_flux[1]\nvariable        Qy equal c_flux[2]\nvariable        Qz equal c_flux[3]\n";
+    else   // no kspace style takes centroid/stress/atom (LAMMPS stops): the kspace virial from stress/atom (Heyes; Sirk for PPPM)
+      o << "# no kspace style takes compute centroid/stress/atom (LAMMPS stops): the centroid virial of the pair and bonded terms,\n"
+        << "# plus the kspace virial from compute stress/atom (Heyes for Ewald, Sirk et al. for PPPM; 6 more FFTs when sampled)\n"
+        << "compute         stress all centroid/stress/atom NULL pair bond angle dihedral improper fix\n"
+        << "compute         flux all heat/flux ke pe stress\n"
+        << "compute         kstress all stress/atom NULL kspace\n"
+        << "compute         kflux all heat/flux ke pe kstress\n"
+        << "# heat/flux gives the whole flux in [1-3] and its convective part in [4-6]: the kspace virial part is the difference\n"
+        << "variable        Qx equal c_flux[1]+c_kflux[1]-c_kflux[4]\nvariable        Qy equal c_flux[2]+c_kflux[2]-c_kflux[5]\n"
+        << "variable        Qz equal c_flux[3]+c_kflux[3]-c_kflux[6]\n";
+    o << "variable        Jx equal v_Qx/vol\nvariable        Jy equal v_Qy/vol\nvariable        Jz equal v_Qz/vol\n"
       << "variable        s equal " << s << "\nvariable        p equal " << p << "\nvariable        d equal $p*$s\n"
-      << "fix             JJ all ave/correlate $s $p $d c_flux[1] c_flux[2] c_flux[3] type auto file J0Jt.dat ave running\n"
+      << "fix             JJ all ave/correlate $s $p $d v_Qx v_Qy v_Qz type auto file J0Jt.dat ave running\n"
       << "# kappa = V/(kB T^2) * integral, with the flux per volume: (kcal/mol)/(A fs K) -> W/(m K)\n"
       << "variable        kB equal 0.0019872043\n"
       << "variable        conv equal 4184.0/6.02214076e23/1.0e-25\n"
@@ -669,7 +678,7 @@ std::string thermal_lammps_run(const ThermalLammps& q) {
       << "# the gradient from profile.mp (straight lines through both halves, leaving out the slabs next to the hot and cold ones)\n"
       << "print           \"exchanged energy (kcal/mol) $(f_mp) over " << nrun * q.dt << " fs\" file exchanged.txt\n";
   }
-  o << "write_data      thermal_final.data\n";
+  o << "write_data      thermal_final.data pair ij\n";
   return o.str();
 }
 
