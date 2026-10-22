@@ -64,8 +64,7 @@ struct SemicrystallineOptions {
   std::string reentry = "adjacent";
   double density = 0.855;          // g/cm³ of the amorphous layer (melt-like PE at 300 K, as Lu et al. 2018)
   uint64_t seed = 1;
-  bool united_atom = false;        // the atom budget counts carbons only (a united-atom force field folds the H later)
-  size_t max_atoms = 15000;        // the cell may not exceed this (all-atom: C and H; united atom: C)
+  bool united_atom = false;        // carbons only (a united-atom force field folds the H later)
   double contact = 3.0;            // Å, closest approach of non-bonded backbone carbons while growing
   int trials = 24;                 // torsion trials per growth step (dense near a closure)
   std::function<bool(const std::string& stage, double fraction)> progress;   // return false to cancel

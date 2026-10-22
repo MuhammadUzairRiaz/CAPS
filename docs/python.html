@@ -349,8 +349,8 @@ particle takes thiolate=&quot;C6&quot; | &quot;C12&quot; | &quot;C18&quot; | &qu
 &quot;pe-orthorhombic&quot;, Bunn 1939) or a unit-cell file; a crystal lamella of nx × ny × nc unit cells (nc from
 crystal_nm when 0) with straight stems along z, and an amorphous layer of amorphous_nm at density (g/cm³) holding
 loops, bridges and tails in those fractions (per segment); tags &quot;crystal&quot; and &quot;amorphous&quot;; .report holds the
-counts, length distributions, P2 crystallinity, profiles and stem tilt. united_atom counts carbons only against
-the 15,000-atom limit (assign oplsua2024 afterwards).</div></article>
+counts, length distributions, P2 crystallinity, profiles and stem tilt. united_atom builds carbons only
+(assign oplsua2024 afterwards).</div></article>
 <article class="api" id="build.smiles"><h3><span class="kind">builder</span><code>build.smiles(smiles: &#x27;str&#x27;, forcefield: &#x27;str&#x27; = &#x27;uff&#x27;, conformers: &#x27;int&#x27; = 1, seed: &#x27;int&#x27; = 1, rotor_search: &#x27;bool&#x27; = False, hydrogens: &#x27;str&#x27; = &#x27;add&#x27;) -&gt; &#x27;Document&#x27;</code></h3><div class="doc">A 3D molecule from SMILES (one frame per conformer, lowest first). rotor_search: each minimised conformer&#x27;s
 rotatable bonds tried at their staggered positions with the force field; hydrogens: &quot;add&quot; (from valences) or
 &quot;as_written&quot; (heavy atoms only, united-atom models).</div></article>

@@ -370,14 +370,6 @@ System build_semicrystalline(const SemicrystallineOptions& o, SemicrystallineRep
 
   // --- the amorphous layer: CH2 units at the target density
   const int M = int(std::lround(o.density * Lx * Ly * La / kAmuPerA3 / kMassCH2));
-  {
-    const size_t carbons = ncrys + size_t(M);
-    const size_t atoms = o.united_atom ? carbons : 3 * carbons + 2;   // + the chain ends' third hydrogens (≈ tails)
-    if (atoms > o.max_atoms)
-      throw std::invalid_argument("the cell would hold about " + std::to_string(atoms) + " atoms (" + std::to_string(ncrys) + " crystal and " + std::to_string(M) +
-                                  " amorphous CH2" + (o.united_atom ? "" : ", all atom") + "), above the limit of " + std::to_string(o.max_atoms) +
-                                  ": fewer lateral repeats, thinner layers" + (o.united_atom ? "" : ", or a united-atom force field (oplsua2024)"));
-  }
 
   std::mt19937_64 rng(o.seed);
   // --- segment counts: S segments with fractions f use 2N ends: S (2 − f_tail) = 2N

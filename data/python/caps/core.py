@@ -1914,8 +1914,8 @@ class build:
         "pe-orthorhombic", Bunn 1939) or a unit-cell file; a crystal lamella of nx × ny × nc unit cells (nc from
         crystal_nm when 0) with straight stems along z, and an amorphous layer of amorphous_nm at density (g/cm³) holding
         loops, bridges and tails in those fractions (per segment); tags "crystal" and "amorphous"; .report holds the
-        counts, length distributions, P2 crystallinity, profiles and stem tilt. united_atom counts carbons only against
-        the 15,000-atom limit (assign oplsua2024 afterwards)."""
+        counts, length distributions, P2 crystallinity, profiles and stem tilt. united_atom builds carbons only
+        (assign oplsua2024 afterwards)."""
         o = {"polymer": polymer, "nx": nx, "ny": ny, "nc": nc, "crystal_nm": crystal_nm, "amorphous_nm": amorphous_nm, "loops": loops,
              "bridges": bridges, "tails": tails, "reentry": reentry, "density": density, "seed": seed, "united_atom": united_atom, "relax": relax,
              "data_dir": str(_data_dir())}

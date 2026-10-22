@@ -199,10 +199,8 @@ TEST(Semicrystalline, CrystalMatchesTheUnitCell) {
   EXPECT_GT(rep.crystallinity_p2, rep.crystallinity_mass - 0.02);
 }
 
-TEST(Semicrystalline, AtomBudget) {
+TEST(Semicrystalline, UnreachableLayerRefused) {
   SemicrystallineOptions o = small_stack();
-  o.nx = 10, o.ny = 10, o.nc = 30, o.amorphous_nm = 6;
-  EXPECT_THROW(build_semicrystalline(o), std::invalid_argument);
   o.loops = 0, o.bridges = 1, o.tails = 0;
   o.nx = 2, o.ny = 2, o.nc = 4, o.amorphous_nm = 0.6;   // bridges cannot cross at this density in so thin a layer
   EXPECT_THROW(build_semicrystalline(o), std::invalid_argument);

@@ -379,7 +379,6 @@ Phono3pyPlan plan_phono3py(const System& unit, const Phono3pyOptions& o, const s
   }
   const int n3 = p.dim_fc3[0] * p.dim_fc3[1] * p.dim_fc3[2], n2 = p.dim_fc2[0] * p.dim_fc2[1] * p.dim_fc2[2];
   p.atoms_fc3 = p.atoms * n3, p.atoms_fc2 = p.atoms * n2;
-  if (p.atoms_fc3 > 15000 || p.atoms_fc2 > 15000) throw std::invalid_argument("supercells above 15,000 atoms: choose smaller --dim / --dim-fc2");
   p.full = count_displacements(unit, p.dim_fc3, p.dim_fc2, 1e-3, mode == "random" ? 0.0 : o.cutoff_pair);
   if (mode != "random" && o.cutoff_pair > 0) p.notes.push_back("pairs farther apart than " + fmt("%g", o.cutoff_pair) + " Å left out (--cutoff-pair)");
   p.mode = mode;
