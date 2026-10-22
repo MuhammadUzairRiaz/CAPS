@@ -22,7 +22,7 @@ internal static class SelfTest
         }
         Console.WriteLine($"info Python: {(MainViewModel.PythonAvailable ? MainViewModel.PythonExe : "none")}");
 
-        Check(Native.AbiVersion() == 72, "native ABI version 72");
+        Check(Native.AbiVersion() == 73, "native ABI version 73");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -3755,6 +3755,73 @@ internal static class SelfTest
                 (vm.Analyze.TgFromD, vm.Analyze.TgToD, vm.Analyze.TgStepD, vm.Analyze.TgPsD, vm.Analyze.EqPsD) = (gf0, gt0, gs0, gp0, ge0);
                 vm.GtReplicas = 1;
                 vm.SetModule(8);
+            }
+            // finished runs read back (a cluster job's files): an equilibration with and without its printed output, and two
+            // cooling replicas pooled on the Glass transition page
+            {
+                var inv = System.Globalization.CultureInfo.InvariantCulture;
+                var fr = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "caps_finished_runs");
+                if (System.IO.Directory.Exists(fr)) System.IO.Directory.Delete(fr, true);
+                var eqd = System.IO.Path.Combine(fr, "equil");
+                System.IO.Directory.CreateDirectory(eqd);
+                var csvText = new System.Text.StringBuilder("step,time_ps,stage,target_K,temperature_K,potential,kinetic,total,conserved,pressure_atm,pxx_atm,pyy_atm,pzz_atm,pxy_atm,pxz_atm,pyz_atm,lx_A,ly_A,lz_A,volume_A3,density_g_cm3\n");
+                var stages = new[] { "1 · heat", "2 · compress", "production block 1", "production block 2", "production block 3" };
+                var t = 0.0;
+                for (var si = 0; si < stages.Length; ++si)
+                    for (var k = 0; k < 10; ++k, t += 0.1)
+                    {
+                        var vol = si == 0 ? 1000.0 : 900.0 - (si == 1 ? 10 * k : 0) + (k % 2) * 0.5;
+                        csvText.Append(string.Format(inv, "{0},{1:F4},{2},300,300,{3:F4},10,20,20,1,1,1,1,0,0,0,10,10,10,{4:F2},{5:F5}\n",
+                                                     (long)Math.Round(t * 1000), t, stages[si], 100 + (k % 2) * 0.01, vol, 900 / vol));
+                    }
+                System.IO.File.WriteAllText(System.IO.Path.Combine(eqd, "equil.csv"), csvText.ToString());
+                System.IO.File.WriteAllText(System.IO.Path.Combine(eqd, "run.log"),
+                    "nvt 1 ps T 600                 # 1 · heat\nnpt 1 ps T 300 P 1 atm         # 2 · compress\n# total 2.0 ps\n" +
+                    "[ 1/5] 1 · heat                    0.00 ps  T   300.0 K  P 1 atm  ρ 0.9000  Epot 100.0\n" +
+                    "[ 5/5] production block 3          4.90 ps  T   300.0 K  P 1 atm  ρ 1.0000  Epot 100.0\n\n" +
+                    "stage                          ps     T/K     P/atm ρ/g·cm⁻³\n1 · heat 1.0 300 1 0.9\n" +
+                    "check density                    ok    change 0.001 (tolerance 0.005)  blocks: 1.0000 1.0010 1.0000\n" +
+                    "check potential energy per atom  ok    change 0.002 (tolerance 0.005)  blocks: 0.5000 0.5010 0.5000\n" +
+                    "check mean Rg                    ok    change 0.004 (tolerance 0.02)  blocks: 12.30 12.35 12.32\n" +
+                    "check internal distances         open  change 0.06 (tolerance 0.05)  blocks: 5.50 5.55 5.20\n" +
+                    "not converged after 3 production blocks of 1 ps (density ±0.5%)\nwrote nothing_here.data\n");
+                var eqMsg = vm.OpenFinishedEquilibrate([eqd]);
+                Check(vm.IsEquilibrate && vm.Thermo.Count == 50 && vm.EqStageBands.Length == 2 && vm.EqStageBands[0].Label == "NVT" && vm.EqStageBands[1].Label == "NPT" &&
+                      vm.EqCriteria.Count == 4 && vm.EqCriteria.Count(c => c.State == "pass") == 3 && vm.EqRgBlocks.Length == 3 && vm.EqDensityBlocks.Length == 3 &&
+                      vm.EqEnergyBlocks.Length == 0 && vm.EqText.Contains("npt 1 ps") && vm.EqShowsFinished && vm.EqCanDecide && vm.EqLog.Contains("check density"),
+                      $"finished equilibration with its output: {vm.Thermo.Count} rows · {vm.EqStageBands.Length} bands · {vm.EqCriteriaText} · {eqMsg}");
+                System.IO.File.Delete(System.IO.Path.Combine(eqd, "run.log"));
+                eqMsg = vm.OpenFinishedEquilibrate([System.IO.Path.Combine(eqd, "equil.csv")]);
+                Check(vm.Thermo.Count == 50 && vm.EqStageBands.Length == 2 && vm.EqStageBands[1].Label == "NPT" && vm.EqCriteria.Count == 1 && vm.EqCriteria[0].Title == "Density" &&
+                      vm.EqOpenedText.Contains("no log"), $"finished equilibration from its thermo log alone: {vm.EqCriteriaText} · {vm.EqOpenedText}");
+                // two cooling replicas as caps tg leaves them (OUT.tg-points.json), the second only as its csv folder
+                var tgDirs = new List<string>();
+                for (var r = 0; r < 2; ++r)
+                {
+                    var d = System.IO.Path.Combine(fr, $"tg{r + 1}");
+                    System.IO.Directory.CreateDirectory(System.IO.Path.Combine(d, "csv"));
+                    var tg0 = 380.0 + 20 * r;
+                    var pts = Enumerable.Range(0, 9).Select(k => 500.0 - 25 * k).Select((T, k) => (T, V: 1 + 3e-4 * (T - tg0) + 5e-4 * Math.Max(T - tg0, 0) + (k % 2 == 0 ? 1e-4 : -1e-4))).ToArray();
+                    if (r == 0)
+                        System.IO.File.WriteAllText(System.IO.Path.Combine(d, "out.tg-points.json"), new System.Text.Json.Nodes.JsonObject
+                        {
+                            ["points"] = new System.Text.Json.Nodes.JsonArray(pts.Select(p => (System.Text.Json.Nodes.JsonNode)new System.Text.Json.Nodes.JsonObject { ["T"] = p.T, ["density"] = 1 / p.V, ["specific_volume"] = p.V }).ToArray()),
+                        }.ToJsonString());
+                    else
+                        System.IO.File.WriteAllText(System.IO.Path.Combine(d, "csv", "tg_3.csv"), "# Glass transition Tg: density\nT (K),density (g/cm³)\n" +
+                                                    string.Concat(pts.Select(p => string.Format(inv, "{0},{1:G9}\n", p.T, 1 / p.V))));
+                    tgDirs.Add(d);
+                }
+                var gtMsg = vm.OpenFinishedGlass(tgDirs);
+                Check(vm.IsGlass && vm.GtPoints.Length == 9 && vm.GtErrors.Length == 9 && vm.GtLines is { } gl && gl.Replicas == 2 && gl.Tg > 360 && gl.Tg < 420 &&
+                      vm.GtTg.Caption.Contains("2 replicas") && vm.GtShowsFinished && vm.GtReplicas == 2 && (int)vm.Analyze.TgStepD == 25,
+                      $"finished cooling replicas pooled: {vm.GtTg.Value} ({vm.GtTg.Caption}) · {gtMsg}");
+                Check(vm.OpenFinishedGlass([System.IO.Path.Combine(fr, "nothing")]).StartsWith("Could not read", StringComparison.Ordinal), "finished cooling run: a missing folder is said, not thrown");
+                var doneJob = new Job { Id = "eq-t1", Kind = "Equilibrate", Module = 4, Title = "t", Document = "t", Status = "done", Remote = new RemoteRun { Host = "h", Local = eqd, Stem = "x" } };
+                Check(doneJob.CanShowOnPage && vm.CanShowJobOnPage(doneJob) && !new Job { Id = "md-t1", Kind = "Dynamics", Status = "done", Remote = new RemoteRun { Host = "h", Local = eqd } }.CanShowOnPage,
+                      "Jobs: a finished cluster Equilibrate or Glass job shows on its page");
+                vm.SetModule(8);
+                System.IO.Directory.Delete(fr, true);
             }
             // Jobs › Recipes: templates checked, a broken edit flagged, saved and duplicated with their hash, run with the hash in provenance
             {

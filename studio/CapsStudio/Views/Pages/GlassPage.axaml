@@ -12,6 +12,15 @@
     <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
       <DockPanel>
         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Button IsEnabled="{Binding Analyze.NotWorking}" ToolTip.Tip="Cooling scans that finished elsewhere (caps tg on a cluster): one run, or several replicas pooled as mean ± SD; fitted with the Tg settings on the left">
+            <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="folder" Size="14" VerticalAlignment="Center" /><TextBlock Text="Open finished runs…" VerticalAlignment="Center" /></StackPanel>
+            <Button.Flyout>
+              <MenuFlyout Placement="BottomEdgeAlignedRight">
+                <MenuItem Header="Run folders (one per replica)…" Click="OnOpenFinishedFolders" />
+                <MenuItem Header="Points files or tables (OUT.tg-points.json, csv)…" Click="OnOpenFinishedFiles" />
+              </MenuFlyout>
+            </Button.Flyout>
+          </Button>
           <Button Click="OnCopyCommand" IsEnabled="{Binding HasDocument}" ToolTip.Tip="The cooling scan as caps tg (temperatures, hold, precision; the recipe keeps every setting)"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="terminal" Size="14" VerticalAlignment="Center" /><TextBlock Text="Copy command" VerticalAlignment="Center" /></StackPanel></Button>
           <Button Click="OnRecipe" IsEnabled="{Binding HasDocument}" ToolTip.Tip="The cooling scan as a YAML recipe (caps run)"><StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="save" Size="14" VerticalAlignment="Center" /><TextBlock Text="Save as recipe" VerticalAlignment="Center" /></StackPanel></Button>
           <Button Click="OnQueue" IsEnabled="{Binding HasDocument}" ToolTip.Tip="Run after the current run ends (Jobs shows the queue); it uses this page's settings at its turn">
@@ -23,6 +32,13 @@
         <StackPanel Spacing="3">
           <TextBlock Text="Glass transition" FontSize="19" FontWeight="SemiBold" />
           <TextBlock Text="Stepwise NPT cooling, volume–temperature fit" FontSize="12.5" Foreground="{DynamicResource MutedB}" />
+          <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding GtShowsFinished}">
+            <Border Classes="chip" ToolTip.Tip="The points were read from runs that finished elsewhere (a cluster job), not run here">
+              <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="server" Size="13" VerticalAlignment="Center" /><TextBlock Text="{Binding GtOpenedText}" Foreground="{DynamicResource TextB}" /></StackPanel>
+            </Border>
+            <Button Classes="link" Content="Fit again with these settings" Click="OnRefit" FontSize="11.5" VerticalAlignment="Center"
+                    ToolTip.Tip="The same runs fitted with the property, fit and ranges as they are now on the left" />
+          </StackPanel>
         </StackPanel>
       </DockPanel>
     </Border>

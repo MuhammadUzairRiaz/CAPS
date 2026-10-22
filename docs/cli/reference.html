@@ -138,8 +138,8 @@ caps run     PIPELINE.yaml|json [--input &#x27;runs/*/X.lammpstrj&#x27;] [--fram
 <article class="cmd" id="tensile" data-name="tensile"><h3><code>caps tensile</code></h3>
 <div class="code" data-lang="synopsis"><pre><code>caps tensile DATA -o OUT.data [--axis x] [--rate 1e-3] [--strain 0.2] [--temp 300] [--fixed-lateral] [--precision mixed|double] [--ff FF.json [--overlay OV.json] [--charges MODE] [--complete ml]] [--csv DIR]</code></pre></div></article>
 <article class="cmd" id="tg" data-name="tg"><h3><code>caps tg</code></h3>
-<p>caps tg --fit TABLE.csv</p>
-<div class="code" data-lang="synopsis"><pre><code>caps tg DATA -o OUT.data [--from 500 --to 200 --step 20 --ps 100] [--precision mixed|double] [--ff FF.json [--overlay OV.json] [--charges MODE] [--complete ml]] [--csv DIR]   |   caps tg --fit TABLE.csv</code></pre></div></article>
+<p>caps tg --fit RUN [RUN ...] [--volume]</p>
+<div class="code" data-lang="synopsis"><pre><code>caps tg DATA -o OUT.data [--from 500 --to 200 --step 20 --ps 100] [--precision mixed|double] [--ff FF.json [--overlay OV.json] [--charges MODE] [--complete ml]] [--csv DIR]   |   caps tg --fit RUN [RUN ...] [--volume]</code></pre></div></article>
 <article class="cmd" id="elastic" data-name="elastic"><h3><code>caps elastic</code></h3>
 <div class="code" data-lang="synopsis"><pre><code>caps elastic FILE [--topology DATA] [--method strain|fluct|fluct-run] [--configs N] [--strain 1e-4] [--temp T] [--ps 100] [--ff FF.json] [--json OUT]</code></pre></div></article>
 <article class="cmd" id="pull" data-name="pull"><h3><code>caps pull</code></h3>

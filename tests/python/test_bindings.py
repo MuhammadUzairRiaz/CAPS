@@ -138,7 +138,20 @@ fit = caps.stereo(measured=st["model"]["pentads"])["fit"]
 check(abs(fit["bernoulli"]["pm"] - 0.7) < 1e-6 and abs(caps.stereo(dyads="mmrr")["chain"]["mm"] - 1 / 3) < 1e-9, "stereo: model, counts, fit")
 bp = caps.blend_phase(100, 200, -0.02, 15, t=300)
 check(abs(bp["tc"] - 433.9) < 0.1 and abs(bp["coexist"][0] - 0.0385) < 1e-4, "blend_phase")
-check(caps.solvent_chi(18.6, [{"name": "toluene", "v": 106.3, "delta": 18.2}])[0]["predicted"] == "solvent", "solvent_chi")
+with tempfile.TemporaryDirectory() as td:   # cooling scans that ran elsewhere: two replicas' points files, pooled
+    runs = []
+    for k, tg_true in enumerate((380.0, 400.0)):
+        pts = [{"T": T, "density": 1 / (1 + 3e-4 * (T - tg_true) + 5e-4 * max(T - tg_true, 0) + (1e-4 if i % 2 else -1e-4))}
+               for i, T in enumerate(range(500, 275, -25))]
+        runs.append(os.path.join(td, f"r{k + 1}.tg-points.json"))
+        with open(runs[-1], "w") as f:
+            json.dump({"points": pts}, f)
+    tf = caps.tg_fit(runs)
+    ids = [p["id"] for p in tf["properties"]]
+    pooled = tf["properties"][-1]
+    check(ids == ["tg_r1", "tg_r2", "tg"] and abs(pooled["value"] - (tf["properties"][0]["value"] + tf["properties"][1]["value"]) / 2) < 1e-6
+          and 370 < pooled["value"] < 410 and len(tf["scans"]) == 2, "tg_fit: replicas pooled")
+check(caps.solvent_chi(18.6,[{"name": "toluene", "v": 106.3, "delta": 18.2}])[0]["predicted"] == "solvent", "solvent_chi")
 check(caps.ewald_params(12, 1e-5, 1.2, edges=[45.3] * 3)["mesh"] == [40, 40, 40], "ewald_params")
 sbr = caps.polymer(["*CC=CC*", "*CC(*)c1ccccc1"], sequence="terminal", r1=1.35, r2=0.58, weights=[0.75, 0.25], chains=3, density=0.3,
                    lengths={"distribution": "schulz-zimm", "nn": 12, "pdi": 1.2, "seed": 4})
@@ -702,7 +715,7 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 72, "ABI 72")
+check(caps.abi_version() == 73, "ABI 73")
 
 # semicrystalline stack (ABI 72): a small PE lamella, its report read back from the frame; thermal conductivity needs 2D or 3D
 _sc = caps.build.semicrystalline(nx=2, ny=3, crystal_nm=2.5, amorphous_nm=2.5, relax=False)

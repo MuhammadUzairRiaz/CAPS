@@ -2,6 +2,8 @@
 #include <gtest/gtest.h>
 
 #include <cmath>
+#include <filesystem>
+#include <fstream>
 #include <memory>
 #include <random>
 #include <vector>
@@ -223,6 +225,63 @@ TEST(Mechanics, BilinearFitFindsHinge) {
   EXPECT_NEAR(f.slope_low, 2.0e-4, 0.3e-4);
   EXPECT_NEAR(f.slope_high, 5.5e-4, 0.3e-4);
   EXPECT_TRUE(f.note.empty()) << f.note;
+}
+
+// Finished scans read back (caps tg run elsewhere): the points file and the csv folder give the same points; the log
+// beside them that printed those points gives the schedule; replicas pool to the mean ± SD of their Tg.
+TEST(Mechanics, CoolingScansReadBackAndPooled) {
+  namespace fs = std::filesystem;
+  const fs::path root = fs::temp_directory_path() / "caps_tg_scans";
+  fs::remove_all(root);
+  const double tg_true[2] = {380, 400};
+  for (int r = 0; r < 2; ++r) {
+    const fs::path run = root / ("run" + std::to_string(r + 1));
+    fs::create_directories(run / "csv");
+    std::string pts = "{\"points\": [", table = "# Glass transition Tg: density\nT (K),density (g/cm³)\n", printed;
+    for (int k = 0; k < 9; ++k) {
+      const double T = 500 - 25 * k;
+      const double v = 1.0 + 3e-4 * (T - tg_true[r]) + 5e-4 * std::max(T - tg_true[r], 0.0) + (k % 2 ? 1e-4 : -1e-4);
+      char b[256];
+      std::snprintf(b, sizeof b, "%s{\"T\": %g, \"density\": %.10g, \"density_err\": 0.001, \"specific_volume\": %.10g, \"potential\": %g}", k ? "," : "", T,
+                    1 / v, v, 1000 + T);
+      pts += b;
+      std::snprintf(b, sizeof b, "%g,%.6g\n", T, 1 / v);
+      table += b;
+      std::snprintf(b, sizeof b, "  %6.1f K  %.5f ± 0.00100 g/cm³\n", T, 1 / v);
+      printed += b;
+    }
+    std::ofstream(run / "out.tg-points.json") << pts << "]}\n";
+    std::ofstream(run / "csv" / "tg_3.csv") << table;
+    std::ofstream(run / "csv" / "tg_2.csv") << "# Glass transition Tg: fit\nT (K),specific volume (cm³/g)\n300,9\n400,9\n";
+    std::ofstream(root / ("tg" + std::to_string(r + 1) + ".log"))
+        << "step 1 of 9: 500.0 K\n" << printed << "\nGlass transition Tg: " << tg_true[r] << " ± 1 K\n"
+        << "  method: stepwise cooling 500 → 300 K in 25 K steps of 100 ps after 50 ps at 500 K (NPT, 1 atm, stochastic cell rescaling); Tg = x\n";
+    std::ofstream(run / "cell.data") << "LAMMPS data\n\n100 atoms\n2 atom types\n";
+  }
+  const CoolingScan a = read_cooling_scan((root / "run1").string());
+  ASSERT_EQ(a.points.size(), 9u);
+  EXPECT_EQ(fs::path(a.source).filename(), "out.tg-points.json");
+  EXPECT_EQ(fs::path(a.log).filename(), "tg1.log");   // not tg2.log: its points differ
+  EXPECT_DOUBLE_EQ(a.hold_ps, 100);
+  EXPECT_DOUBLE_EQ(a.t_step, 25);
+  EXPECT_EQ(a.atoms, 100u);
+  const CoolingScan c = read_cooling_scan((root / "run1" / "csv").string());   // the density table, not the fit
+  ASSERT_EQ(c.points.size(), 9u);
+  EXPECT_NEAR(c.points[3].density, a.points[3].density, 1e-6);
+  EXPECT_EQ(fs::path(c.log).filename(), "tg1.log");
+  const auto one = fit_cooling_scans({a});
+  ASSERT_EQ(one.size(), 1u);
+  EXPECT_EQ(one[0].id, "tg");
+  EXPECT_NEAR(one[0].value, 380, 8);
+  const auto two = fit_cooling_scans({a, read_cooling_scan((root / "run2" / "out.tg-points.json").string())});
+  ASSERT_EQ(two.size(), 3u);
+  EXPECT_EQ(two[0].id, "tg_r1");
+  EXPECT_EQ(two[2].id, "tg");
+  EXPECT_NEAR(two[2].value, (two[0].value + two[1].value) / 2, 1e-9);
+  EXPECT_NEAR(two[2].error, std::fabs(two[0].value - two[1].value) / std::sqrt(2.0), 1e-9);
+  EXPECT_EQ(two[2].series.size(), 4u);   // mean, fit, density, SD
+  EXPECT_THROW(read_cooling_scan((root / "nothing").string()), std::runtime_error);
+  fs::remove_all(root);
 }
 
 // Uniaxial tension of a cold crystal along [100] with free lateral faces: E100 = (C11 − C12)(C11 + 2C12)/(C11 + C12),

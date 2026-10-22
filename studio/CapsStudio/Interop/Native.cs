@@ -523,6 +523,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_copolymer")] public static extern int Copolymer([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_stereo")] public static extern int Stereo([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_blend_phase")] public static extern int BlendPhase([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
+    [DllImport(Lib, EntryPoint = "caps_tg_fit")] public static extern int TgFit([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_solvent_chi")] public static extern int SolventChi([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_semicrystalline_build")] public static extern IntPtr SemicrystallineBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsProgress? progress, IntPtr user, byte[]? report, int cap);
     [DllImport(Lib, EntryPoint = "caps_semicrystalline_analyse")] public static extern int SemicrystallineAnalyse(IntPtr doc, byte[]? report, int cap);
@@ -990,6 +991,8 @@ public sealed class CapsDocument : IDisposable
     public static string Copolymer(string json) => JsonCallOnce((b, c) => Native.Copolymer(json, b, c));
     public static string Stereo(string json) => JsonCallOnce((b, c) => Native.Stereo(json, b, c));
     public static string BlendPhase(string json) => JsonCallOnce((b, c) => Native.BlendPhase(json, b, c));
+    /// <summary>Cooling scans that ran elsewhere read back and fitted (caps_tg_fit): {ok, scans, properties} or {ok: false, error}.</summary>
+    public static string TgFit(string json) => JsonCallOnce((b, c) => Native.TgFit(json, b, c));
     public static string SolventChi(string json) => JsonCallOnce((b, c) => Native.SolventChi(json, b, c));
     /// <summary>χ(T) from pair contacts (caps_chi_contacts): seconds per pair of small molecules; progress gets (stage, fraction), false cancels.</summary>
     public static string ChiContacts(string json, Func<string, double, bool>? progress = null)
