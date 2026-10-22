@@ -705,8 +705,10 @@ std::string job_live_dir(const std::string& dir, const Json& st) {
 }
 
 namespace {
-// bytes of a file from an offset (a file that shrank — rewritten — is read from the start); next: the new offset
-std::string read_from(const std::string& path, int64_t offset, size_t max_bytes, int64_t* next, int64_t* size_out) {
+// bytes of a file from an offset (a file that shrank, being rewritten, is read from the start); next: the new offset.
+// forward: a reader far behind gets the oldest unread bytes (every progress row reaches the plot, over several polls);
+// otherwise the newest part (a log, where only the tail matters)
+std::string read_from(const std::string& path, int64_t offset, size_t max_bytes, int64_t* next, int64_t* size_out, bool forward = false) {
   std::ifstream f(path, std::ios::binary);
   if (!f) { *next = offset; *size_out = -1; return ""; }
   f.seekg(0, std::ios::end);
@@ -714,11 +716,15 @@ std::string read_from(const std::string& path, int64_t offset, size_t max_bytes,
   *size_out = size;
   if (offset > size || offset < 0) offset = 0;
   int64_t start = offset;
-  if (size - start > int64_t(max_bytes)) start = size - int64_t(max_bytes);   // far behind: the newest part
-  std::string buf(size_t(size - start), '\0');
+  int64_t end = size;
+  if (size - start > int64_t(max_bytes)) {
+    if (forward) end = start + int64_t(max_bytes);
+    else start = size - int64_t(max_bytes);   // far behind: the newest part
+  }
+  std::string buf(size_t(end - start), '\0');
   f.seekg(start);
   if (!buf.empty()) f.read(&buf[0], int64_t(buf.size()));
-  *next = size;
+  *next = end;
   return buf;
 }
 }  // namespace
@@ -751,7 +757,7 @@ Json job_poll(const PollRequest& p, const std::string& squeue_line, const std::s
   int64_t next = 0, size = 0;
   out["log"] = read_from((fs::path(live) / str_or(st, "log", "run.log")).string(), p.log_offset, p.max_bytes, &next, &size);
   out["log_offset"] = double(next);
-  std::string prog = read_from((fs::path(live) / str_or(st, "progress", "progress.jsonl")).string(), p.progress_offset, p.max_bytes, &next, &size);
+  std::string prog = read_from((fs::path(live) / str_or(st, "progress", "progress.jsonl")).string(), p.progress_offset, std::max<size_t>(p.max_bytes, size_t(4) << 20), &next, &size, true);
   size_t used = 0;
   // a chunk cut at the front (far behind) starts inside a line: from the first newline
   if (p.progress_offset > 0 && size >= 0 && next - int64_t(prog.size()) > p.progress_offset) {

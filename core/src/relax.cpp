@@ -399,7 +399,7 @@ void relax_once(System& s, const RelaxOptions& o, RelaxReport* rep_out) {
     md.tau_t = 100.0;
     md.steps = std::max<int64_t>(1, int64_t(std::llround(o.pushoff_ramp_ps * 1000.0 / md.dt / segs)));
     md.frame_every = 0;
-    md.thermo_every = int(std::max<int64_t>(1, md.steps / 5));
+    md.thermo_every = int(std::max<int64_t>(1, md.steps / 40));   // 40 rows a segment: the live curve shows the MD, not a few straight segments
     md.fixed = o.fixed;
     md.energy = o.energy;
     md.energy.coulomb = false;
@@ -417,7 +417,7 @@ void relax_once(System& s, const RelaxOptions& o, RelaxReport* rep_out) {
         q.stage = nm;
         q.stage_index = k + 1;
         q.stages = segs;
-        q.iteration = int(row.step);
+        q.iteration = int(row.step - md.step_offset);   // steps within this segment, as a stage counts its iterations
         q.energy = row.potential;
         q.density = row.density;
         if (!o.progress(q)) throw RelaxCancelled();

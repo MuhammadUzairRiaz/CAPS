@@ -23,7 +23,7 @@ public partial class DpdPage : PageBase
                 this.FindControl<SciPlot>("Order")!.Figure = o.Length < 2 ? null : new SciFigure
                 {
                     XLabel = "step", YLabel = "*ψ*", YMin = 0, YZero = true, Empty = "",
-                    Series = [new SciSeries("", o.Select(p => p.X).ToArray(), o.Select(p => p.Y).ToArray()) { Kind = o.Length <= 40 ? SciKind.LineMarkers : SciKind.Line, Width = 1.3 }],
+                    Series = [new SciSeries("", o.Select(p => p.X).ToArray(), o.Select(p => p.Y).ToArray()) { Kind = ViewModels.PageFigures.Auto(o.Length), Width = 1.3 }],
                 };
                 var q = vm.DpdSq;
                 this.FindControl<SciPlot>("Sq")!.Figure = q.Length < 2 ? null : new SciFigure

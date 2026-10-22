@@ -82,6 +82,8 @@ public sealed partial class MainViewModel
     public string MechFooter => _doc == null ? "" : $"{Title} · {_doc.Summary().Atoms:N0} atoms";
     public event Action? MechCurveChanged;
     public (double X, double Y)[] MechCurve { get; private set; } = [];
+    /// <summary>The running mean (± 0.5 % strain) the yield is read from, drawn over the per-frame points.</summary>
+    public (double X, double Y)[] MechSmooth { get; private set; } = [];
     public (double X, double Y)[] MechFit { get; private set; } = [];
     public double MechFitTo => 2.0;   // % strain (core fit_strain 0.02)
     public bool MechHasCurve => MechCurve.Length > 1;
@@ -132,6 +134,7 @@ public sealed partial class MainViewModel
         // the curve: strain % against stress GPa, with the linear fit over the window
         var series = Analyze.Curves.FirstOrDefault(c => c.Property == tens?.Name && c.Label.Contains("smoothed"));
         MechCurve = series == null ? [] : series.X.Zip(series.Y, (x, y) => (x * 100, y / 1000)).ToArray();
+        MechSmooth = series is { OverlayX: { } ox, OverlayY: { } oy } ? ox.Zip(oy, (x, y) => (x * 100, y / 1000)).ToArray() : [];
         MechFit = double.IsNaN(E) || tens == null ? [] : [(0, 0), (MechFitTo * 1.5, E * MechFitTo * 1.5 / 100)];
         foreach (var n in new[] { nameof(MechHasCurve), nameof(MechCurveChip), nameof(MechNote), nameof(MechFooter) }) Raise(n);
         MechCurveChanged?.Invoke();

@@ -1286,7 +1286,7 @@ public sealed partial class MainViewModel : ObservableObject
                     if (st != lastStage) { lastStage = st; lastIt = 0; }
                     total += Math.Max(0, it - lastIt);
                     lastIt = it;
-                    lock (series) series.Add((total, e, Math.Max(f, 1e-6)));   // the figure draws it on a log axis
+                    lock (series) series.Add((total, e, f > 0 ? f : double.NaN));   // the figure draws it on a log axis; push-off MD rows have no force
                     if (sw.ElapsedMilliseconds - lastUi > 100)
                     {
                         lastUi = sw.ElapsedMilliseconds;
@@ -2472,31 +2472,49 @@ public sealed partial class MainViewModel : ObservableObject
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var inv = CultureInfo.InvariantCulture;
         var lastUi = 0L;
+        var rounds = new List<(double X, double Y)>();   // every finished round, kept on the worker; the page copies them
+        void Rounds()
+        {
+            lock (rounds) { PackCurve.Clear(); PackCurve.AddRange(rounds); }
+            PackCurveChanged?.Invoke();
+        }
         try
         {
             var (doc, report) = await Task.Run(() => CapsDocument.Pack(text, baseDir, (loop, loops, f, bad) =>
             {
-                if (sw.ElapsedMilliseconds - lastUi > 150)
+                // every finished round reaches the curve (the text line alone is throttled); steps inside a round
+                // (bad -1) and the compression's energies (bad -2) are text only
+                var point = loop > 0 && bad >= 0;
+                if (point)
+                    lock (rounds)
+                    {
+                        var pt = ((double)loop, f);   // a zero penalty (done) has no place on the log axis: the figure leaves it out
+                        if (rounds.Count > 0 && rounds[^1].X == loop) rounds[^1] = pt;   // the final check repeats the last round
+                        else rounds.Add(pt);
+                    }
+                if (point || sw.ElapsedMilliseconds - lastUi > 150)
                 {
                     lastUi = sw.ElapsedMilliseconds;
-                    var line = loop == 0 ? string.Format(inv, "placing molecules… {0:F1} s", sw.Elapsed.TotalSeconds)
-                        : string.Format(inv, "round {0} of at most {1} · penalty {2:G3} · {3} molecules in violation · {4:F1} s", loop, loops, f, bad, sw.Elapsed.TotalSeconds);
+                    var line = loop == 0 && bad >= -1 ? string.Format(inv, "placing molecules… {0:F1} s", sw.Elapsed.TotalSeconds)
+                        : bad == -2 ? string.Format(inv, "compressing to the target density: stage {0} of {1} · E {2:G4} kcal/mol · {3:F1} s", loop, loops, f, sw.Elapsed.TotalSeconds)
+                        : string.Format(inv, "round {0} of at most {1} · penalty {2:G3} · {3} · {4:F1} s", loop, loops, f,
+                                        bad >= 0 ? $"{bad} molecules in violation" : "optimising", sw.Elapsed.TotalSeconds);
                     Avalonia.Threading.Dispatcher.UIThread.Post(() =>
                     {
                         if (!_packing) return;
                         PackLog = line;
-                        if (loop > 0 && packStage == 0) SetPackStage(packStage = 1);
-                        if (loop > 0)
+                        if (loop > 0 && bad >= -1 && packStage == 0) SetPackStage(packStage = 1);
+                        if (point)
                         {
                             PackLoop = loop;
                             PackBad = bad;
-                            PackCurve.Add((loop, Math.Max(f, 1e-12)));   // drawn on a log axis
-                            PackCurveChanged?.Invoke();
+                            Rounds();
                         }
                     });
                 }
                 return !token.IsCancellationRequested;
             }, "packed"));
+            Rounds();   // every round, also those whose update had not been drawn yet
             SetPackStage(3);   // every stage done: the cell met the tolerance
             var s = doc.Summary();
             _packResult = doc;
