@@ -892,7 +892,7 @@ BondReactReport write_bond_react(const System& s0, const std::vector<ReactionTem
       out += "if \"$(step) >= " + std::to_string(o.max_steps) + "\" then \"jump SELF xl_stop\"\n";
       out += "jump            SELF xl_chunk\n";
       out += "label           xl_hit\n";
-      out += "write_data      " + stem + "_XL${tgt}.data\n";
+      out += "write_data      " + stem + "_XL${tgt}.data pair ij\n";
       out += "write_restart   " + stem + "_XL${tgt}.restart\n";
       out += "print           \"crosslink target ${tgt} % reached at step $(step): $(v_xl:%.2f) % ($(v_links:%.0f) links)\"\n";
       out += "next            tgt\n";
@@ -903,7 +903,7 @@ BondReactReport write_bond_react(const System& s0, const std::vector<ReactionTem
       out += "print           \"max_steps (" + std::to_string(o.max_steps) + ") reached at $(v_xl:%.2f) %: targets from ${tgt} % on not reached\"\n";
       out += "label           xl_done\n";
     }
-    out += "write_data      " + stem + "_reacted.data\n";
+    out += "write_data      " + stem + "_reacted.data pair ij\n";
     std::ofstream f(base + ".in");
     f << out;
     rep.files.push_back(base + ".in");

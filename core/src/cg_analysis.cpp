@@ -273,7 +273,7 @@ std::string tension_deck(const CgTensionDeck& d) {
                 "fix out all print ${PRINT} \"$(v_strain:%%.6f) $(v_sig:%%.4f) $(v_sbond:%%.4f) $(v_sangle:%%.4f) $(v_sdih:%%.4f) $(v_spair:%%.4f) $(v_ske:%%.4f) $(density:%%.5f)\" "
                 "file ${OUT}.stress_strain.dat title \"# strain sigma_MPa bond angle dihedral pair kinetic density\" screen no\n"
                 "dump frames all custom ${DUMP} ${OUT}.lammpstrj id mol type xu yu zu\ndump_modify frames sort id\n"
-                "log ${OUT}.log\nrun ${STEPS}\nwrite_data ${OUT}.data\n",
+                "log ${OUT}.log\nrun ${STEPS}\nwrite_data ${OUT}.data pair ij\n",
                 d.mode.c_str(), d.rate, d.max_strain, d.mode.c_str(), d.rate,
                 d.mode == "stress" ? "lateral axes at P (npt, x and y uncoupled)" : "volume held (x and y shrink with z)", d.T, d.P, d.dt, d.rate, nsteps, dump, pe, special,
                 d.mode == "stress" ? "fix md all npt temp ${T} ${T} $(100.0*dt) x ${P} ${P} $(1000.0*dt) y ${P} ${P} $(1000.0*dt) couple none\n"

@@ -1775,7 +1775,7 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
     out << b;   // the force tolerance 1e-6 kcal/mol/Å, in eV/Å in metal units
   }
   if (run.kind == K::Minimize) {
-    out << "\nwrite_data      minimized.data\n";
+    out << "\nwrite_data      minimized.data pair ij\n";
     return;
   }
   if (run.kind == K::Protocol) {
@@ -1824,7 +1824,7 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
       out << b << "run             ${n}\nunfix           stage\n";
     }
     if (capped && notes) notes->push_back("the push-off stages limit each step to 0.1 Å (fix nve/limit) with a Langevin thermostat; CAPS caps the Lennard-Jones force instead");
-    out << "\nwrite_data      after_protocol.data\nwrite_restart   after_protocol.restart\n";
+    out << "\nwrite_data      after_protocol.data pair ij\nwrite_restart   after_protocol.restart\n";
     if (run.production_ps > 0) {
       const auto& last = stages.back();
       const double T = last.t_end >= 0 ? last.t_end : last.t_start, P = last.ensemble == Ensemble::NPT ? last.pressure : run.pressure;
@@ -1841,7 +1841,7 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
       std::snprintf(b, sizeof b, "variable        n equal ceil(%.10g*${scale})\nrun             ${n}\n", run.production_ps * 1000.0 / dt_fs);
       out << b;
     }
-    out << "\nwrite_data      final.data\nwrite_restart   final.restart\n";
+    out << "\nwrite_data      final.data pair ij\nwrite_restart   final.restart\n";
     return;
   }
   const bool npt = run.kind == K::NPT;
@@ -1920,7 +1920,7 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
     std::snprintf(b, sizeof b, "dump            traj all custom %d traj.lammpstrj id mol type q xu yu zu\ndump_modify     traj sort id\nrun             %lld\n",
                   std::max(1, run.dump_every), static_cast<long long>(steps));
     out << b;
-    out << "\nwrite_data      final.data\nwrite_restart   final.restart\n";
+    out << "\nwrite_data      final.data pair ij\nwrite_restart   final.restart\n";
     return;
   }
   out << "\n# 2. " << (npt ? "NPT" : "NVT") << " molecular dynamics (Nosé–Hoover)\n";
@@ -1978,7 +1978,7 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
   std::snprintf(b, sizeof b, "dump            traj all custom %d traj.lammpstrj id mol type q xu yu zu\ndump_modify     traj sort id\nrun             %lld\n",
                 std::max(1, run.dump_every), static_cast<long long>(run.steps));
   out << b;
-  out << "\nwrite_data      final.data\nwrite_restart   final.restart\n";
+  out << "\nwrite_data      final.data pair ij\nwrite_restart   final.restart\n";
 }
 
 double lammps_timestep(const LammpsRun& run, const ForceField& ff) {

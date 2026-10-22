@@ -464,7 +464,7 @@ void write_cg_decks(const std::string& dir, int exclude, double T, double dt, in
          "if \"${ENS} == npt\" then \"fix md all npt temp ${T} ${T} $(100.0*dt) iso ${P} ${P} $(1000.0*dt)\" else \"fix md all nvt temp ${T} ${T} $(100.0*dt)\"\n"
          "thermo_style custom step temp press density pe ke etotal\nthermo 1000\n"
          "dump cg all custom ${DUMP} ${OUT}.lammpstrj id mol type xu yu zu\ndump_modify cg sort id\n"
-         "log ${OUT}.log\nrun ${STEPS}\nwrite_data ${OUT}.data\n";
+         "log ${OUT}.log\nrun ${STEPS}\nwrite_data ${OUT}.data pair ij\n";
     files.push_back(p);
   }
   {
