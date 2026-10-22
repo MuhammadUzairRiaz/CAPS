@@ -650,8 +650,9 @@ std::string thermal_lammps_run(const ThermalLammps& q) {
                                 : std::string("variable        V equal vol\n"))
       << "variable        scale equal ${conv}*${s}*${dt}/(${kB}*${T}*${T}*${V})\n"
       << "variable        kxx equal trap(f_JJ[3])*${scale}\nvariable        kyy equal trap(f_JJ[4])*${scale}\nvariable        kzz equal trap(f_JJ[5])*${scale}\n"
-      << "thermo_style    custom step temp pe etotal v_kxx v_kyy v_kzz\n"
-      << "run             " << nrun << "\n"
+      << "# f_JJ exists only every $d steps: thermo then too, and the run a whole number of windows\n"
+      << "thermo_style    custom step temp pe etotal v_kxx v_kyy v_kzz\nthermo          ${d}\n"
+      << "run             " << (nrun + p * s - 1) / (p * s) * (p * s) << "\n"
       << "variable        k equal (v_kxx+v_kyy+v_kzz)/3.0\n"
       << "print           \"kappa (W/m/K): x ${kxx} y ${kyy} z ${kzz} mean ${k}\" file kappa.txt\n";
   } else {
