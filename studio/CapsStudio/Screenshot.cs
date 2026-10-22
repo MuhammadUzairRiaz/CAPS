@@ -39,6 +39,7 @@ internal static class Screenshot
         }
         // Extra args (Field: ff=ID charges=N field=1 fieldpick=N fieldset=TYPE): pick=0,1,2  colour=3  style=4  module=0|1|2|3  grow=1  relax=1  mdsteps=N ensemble=0|1|2  md=1  eqprotocol=0|1|2 eqscale=X eq=1  tab=0..4  view=0|1  wrap=1
         (int Na, int Nb)? sheetCell = null;   // sheetcell=NAxNB (before dft=): the supercell of the terminated slab
+        string? openedStatus = null;          // eqload= / tgload=: what was opened, kept in the status bar over later hints
         foreach (var kv in args.Skip(3).Select(a => a.Split('=', 2)).Where(p => p.Length == 2))
         {
             if (kv[0] == "sheetcell") { var n = kv[1].Split('x').Select(int.Parse).ToArray(); sheetCell = (n[0], n.Length > 1 ? n[1] : n[0]); }
@@ -972,6 +973,16 @@ internal static class Screenshot
                 var t = w.ViewModel.RunEquilibrate();
                 while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
             }
+            // finished runs read back: eqload=PATH[,PATH…] (a run folder, or its thermo log, output and structure) on Equilibrate;
+            // tgload=PATH[,PATH…] (run folders or points files, one per replica) on Glass transition
+            if (kv[0] is "eqload" or "tgload")
+            {
+                var opened = kv[0] == "eqload" ? w.ViewModel.OpenFinishedEquilibrate(kv[1].Split(',')) : w.ViewModel.OpenFinishedGlass(kv[1].Split(','));
+                Console.WriteLine(kv[0] + ": " + opened);
+                // the page's first-run hints (1.5 s after it is first shown) go first; the status bar then says what was opened
+                for (int k = 0; k < 90; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+                w.ViewModel.Status = openedStatus = opened;
+            }
             if (kv[0] == "packexample") { w.ViewModel.SetModule(5); w.ViewModel.PackCountD = decimal.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture); w.RunPackExampleForTest(); }
             if (kv[0] == "pack")
             {
@@ -1137,6 +1148,8 @@ internal static class Screenshot
                 while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
             }
             if (kv[0] == "curve") w.ViewModel.Analyze.CurveIndex = int.Parse(kv[1]);
+            // curvefor=TEXT: the figure of the first property whose name holds TEXT (e.g. curvefor=Mean-square)
+            if (kv[0] == "curvefor") w.ViewModel.Analyze.CurveIndex = w.ViewModel.Analyze.Curves.ToList().FindIndex(c => c.Property.Contains(kv[1], StringComparison.OrdinalIgnoreCase));
             // analyzeexport=DIR writes the results (results.json among them); analyzeload=FILE shows a saved report without running
             if (kv[0] == "analyzeexport") w.ViewModel.Analyze.Export(kv[1]);
             if (kv[0] == "analyzeload") w.ViewModel.Analyze.Load(File.ReadAllText(kv[1]));
@@ -1173,6 +1186,7 @@ internal static class Screenshot
             if (kv[0] == "view") w.ViewModel.ViewBackgroundMode = int.Parse(kv[1]) == 1 ? 2 : 1;   // view=0 dark, 1 white (the theme when not given)
         }
         Pump();
+        if (openedStatus != null && w.ViewModel.Status != openedStatus) { w.ViewModel.Status = openedStatus; Pump(); }
         Console.WriteLine("status: " + w.ViewModel.Status);
         var frame = w.CaptureRenderedFrame();
         frame?.Save(output);

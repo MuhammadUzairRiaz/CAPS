@@ -29,7 +29,7 @@ if _sys.platform == "win32":
 
 from . import geometry, pipeline  # noqa: F401,E402
 from .core import (CapsError, Document, Provenance, abi_version, build_info, ml_available, forcefield_overlays, bibtex, build, cg, cg_help, dft, dft_help, map_trajectory, label_kinds, protocol_text, water_models, compare_provenance, current, hand_back, import_file, import_preview, library, methods,  # noqa: F401
-                   open, pack, blend, polymer, potentials, provenance_file, run, space_groups, chain_lengths, bead_templates, copolymer_model, stereo, blend_phase, solvent_chi,
+                   open, pack, blend, polymer, potentials, provenance_file, run, space_groups, chain_lengths, bead_templates, copolymer_model, stereo, blend_phase, solvent_chi, tg_fit,
                    ewald_params, chi_by_md, chi_by_contacts, reaction_templates, reaction_template, bond_react_template, reaction_library)
 from . import sweep  # noqa: F401,E402
 from .table import Table, table  # noqa: F401,E402
@@ -38,4 +38,4 @@ from .view import View  # noqa: F401,E402
 __version__ = "0.1.0"
 __all__ = ["geometry", "pipeline", "sweep", "label_kinds", "protocol_text", "water_models", "Document", "Provenance", "View", "Table", "open", "pack", "potentials", "current", "hand_back", "import_file", "import_preview", "build", "run", "polymer",
            "table", "library", "abi_version", "build_info", "ml_available", "forcefield_overlays", "space_groups", "provenance_file", "compare_provenance", "bibtex", "methods", "CapsError",
-           "chain_lengths", "bead_templates", "copolymer_model", "stereo", "blend_phase", "solvent_chi", "ewald_params", "chi_by_md", "chi_by_contacts", "reaction_templates", "reaction_template", "bond_react_template", "reaction_library"]
+           "chain_lengths", "bead_templates", "copolymer_model", "stereo", "blend_phase", "solvent_chi", "tg_fit", "ewald_params", "chi_by_md", "chi_by_contacts", "reaction_templates", "reaction_template", "bond_react_template", "reaction_library"]

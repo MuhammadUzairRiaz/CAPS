@@ -16,15 +16,30 @@ IMG="$ROOT/docs/manual/img"
 WORK="${SHOT_WORK:-$(mktemp -d -t caps-shots)}"
 mkdir -p "$WORK"
 
-# shot NAME FILE ARGS...: the Studio opened on FILE ("" for none), driven by ARGS, saved as NAME.jpg
+# shot NAME FILE ARGS...: the Studio opened on FILE ("" for none; TOPO=DATA for a trajectory's topology), driven by ARGS,
+# saved as NAME.jpg
 shot() {
   local name="$1" file="$2"; shift 2
   echo "== $name"
   # a fresh settings folder (jobs, recent files, built molecules) for each picture; the user's own are never touched
   rm -rf "$WORK/state-$name"; mkdir -p "$WORK/state-$name"
   CAPS_SETTINGS="$WORK/state-$name/settings.json" CAPS_RECENT_DIR="$WORK/state-$name/recent" \
-  dotnet "$DLL" --screenshot "$WORK/$name.png" "$file" "" "$@"
+  dotnet "$DLL" --screenshot "$WORK/$name.png" "$file" "${TOPO:-}" "$@"
   sips -s format jpeg -s formatOptions 85 "$WORK/$name.png" --out "$IMG/$name.jpg" >/dev/null
+}
+
+# Real runs of atactic polystyrene (10 chains x 30 units, 4,820 atoms, OPLS-AA 2024) on the Barnard HPC cluster, kept
+# outside the repository in $PS_RUNS (default $HOME/project/CAPS-builds/ps-barnard-runs):
+#   equil.csv, ps-equil.*.log, ps_eq.data  caps equilibrate ps_min.data --protocol larsen21 --dt 0.5 --tfinal 300 --tmax 600
+#                                          --until-converged --block 20 --log equil.csv -o ps_eq.data (its printed output: the .log)
+#   ps_300K.data, ps_300K.lammpstrj        2 ns NPT at 300 K and 1 atm from ps_eq.data, a frame every 10 ps
+#   tg600_1 .. tg600_3, *.log              caps tg 600 -> 300 K, three seeds (each folder: ps_tg.tg-points.json, csv/, ps_tg.data)
+# The pictures copy what they need to $DEMO and run from there, so no home-folder path shows in them.
+PS_RUNS="${PS_RUNS:-$HOME/project/CAPS-builds/ps-barnard-runs}"
+DEMO=/tmp/caps-demo
+ps_runs() {
+  if [ ! -d "$PS_RUNS" ]; then echo "$1 needs the polystyrene cluster runs in \$PS_RUNS ($PS_RUNS); skipped" >&2; return 1; fi
+  mkdir -p "$DEMO/$2"
 }
 
 # the polystyrene cell most pages start from: 10 atactic chains of 30 units grown at 0.90 g/cm3, OPLS-AA 2024 assigned
@@ -77,8 +92,16 @@ make() {
     07_relax) shot 07_relax "" "$PS" "relax=1" "wait=1000" ;;
     # 2,000 steps (2 ps) NPT at 300 K and 1 atm on the minimised cell, a frame every 250 steps: the curves and the report
     08_dynamics) shot 08_dynamics "" "$PS" "relax=1" "ensemble=2" "mdsteps=2000" "mdevery=250" "md=1" "wait=1500" "pagescroll=end" ;;
-    # the 21-step protocol at 0.002 of its published length (3.1 ps), then two 0.5 ps production blocks
-    09_equilibrate) shot 09_equilibrate "" "$PS" "relax=1" "eqprotocol=0" "eqscale=0.002" "equntil=1" "eqblock=0.5" "eqmax=2" "eq=1" "wait=1500" ;;
+    # the cluster equilibration opened as a finished run (thermo log, printed output, structure), scrolled to the criteria
+    09_equilibrate) ps_runs 09_equilibrate ps-equil || return 0
+      cp "$PS_RUNS"/equil.csv "$PS_RUNS"/ps-equil.*.log "$PS_RUNS"/ps_eq.data "$DEMO/ps-equil/"
+      (cd "$DEMO" && shot 09_equilibrate "" "wait=1500" "eqload=$DEMO/ps-equil" "pagescroll=1030") ;;
+    # Analyze on the 2 ns NPT run at 300 K (201 frames): what a glass this short supports, against experiment; no Tg (that
+    # would run a cooling here) and no D (the MSD is sub-diffusive)
+    18_analyze) ps_runs 18_analyze ps-300K || return 0
+      cp "$PS_RUNS"/ps_300K.data "$PS_RUNS"/ps_300K.lammpstrj "$DEMO/ps-300K/"
+      (cd "$DEMO" && TOPO="$DEMO/ps-300K/ps_300K.data" shot 18_analyze "$DEMO/ps-300K/ps_300K.lammpstrj" "wait=1500" \
+         "props=density,rdf,rg,cn,ced,delta,msd" "pair=1" "ref=ps-atactic" "analyze=1" "curvefor=Mean-square") ;;
     # sulfur S8 and the accelerator CBS packed into the free space of a natural-rubber cell
     10_pack) shot 10_pack "" "growcell=P056:gaff2-2.2.20-ambertools:8:20:0.6" "packinto=1" \
                "packmol=S1SSSSSSS1*12*sulfur_S8+C1CCC(CC1)NSc1nc2ccccc2s1*4*CBS" "pack=1" "wait=1500" ;;
@@ -96,10 +119,18 @@ make() {
     13_nano_matrix) shot 13_nano_matrix "" "nano=1" "nanomatrix=1" "nanobuild=1" "wrap=1" "wait=1500" ;;
     # a hydroxylated alpha-quartz (001) slab with a cis-polyisoprene film grown on it
     15_surface) shot 15_surface "" "surface=alpha-quartz" "surfbuild=1" "wrap=1" "wait=1500" ;;
-    # a short cooling scan of a polyethylene cell (6 chains x 30 units, OPLS-AA 2024): 400 to 200 K in 50 K steps (five,
-    # the fewest a two-line fit takes), 1 ps at each after 0.1 ps at 400 K, tau_P 100 fs, one replica (5,100 steps):
-    # it shows the page at work, not a converged Tg
-    22_glass) echo "22_glass and 18_analyze come from a polystyrene melt (ps_500K.data) that is not in the repository; run: CapsStudio.dll --screenshot 22_glass.png ps_500K.data \"\" analysis=glass:run" >&2 ;;
+    # the cluster cooling scans opened as finished runs, three seeds pooled (mean +/- SD); TG_RUNS names the run folders in
+    # $PS_RUNS (default the 600 -> 300 K rerun; TG_RUNS="tg1 tg2 tg3" for the earlier 500 -> 250 K scans)
+    22_glass) ps_runs 22_glass ps-tg || return 0
+      local runs="${TG_RUNS:-tg600_1 tg600_2 tg600_3}" paths="" r
+      for r in $runs; do
+        if [ ! -d "$PS_RUNS/$r" ]; then echo "22_glass: no $PS_RUNS/$r yet; skipped" >&2; return 0; fi
+        cp -R "$PS_RUNS/$r" "$DEMO/ps-tg/"
+        paths="${paths:+$paths,}$DEMO/ps-tg/$r"
+      done
+      cp "$PS_RUNS"/*.log "$DEMO/ps-tg/" 2>/dev/null || true   # the runs' printed output: their schedules
+      set -- $runs
+      (cd "$DEMO" && shot 22_glass "$DEMO/ps-tg/$1/ps_tg.data" "wait=2500" "tgload=$paths") ;;
     # the project page on that folder, the polystyrene cell picked: its results and the methods text from its provenance
     20_project) local P; P="$(project_folder)"; shot 20_project "$P/ps_cell.data" "project=-" "wait=1500" ;;
     # Jobs after a grown, minimised and simulated cell: the last run (2,000 steps NPT) selected with its log and provenance
@@ -117,6 +148,6 @@ make() {
   esac
 }
 
-if [ $# -eq 0 ]; then set -- 01_start 02_studio 03_molecule 04_polymer 04b_composition 05_grow 06_field 07_relax 08_dynamics 09_equilibrate 10_pack 11_blend 12_nano_sheet 13_nano_matrix 14_crystal 15_surface 16_react 17_cg 19_export 20_project 21_solvation 22_glass 23_jobs 27_dft_sheets; fi
+if [ $# -eq 0 ]; then set -- 01_start 02_studio 03_molecule 04_polymer 04b_composition 05_grow 06_field 07_relax 08_dynamics 09_equilibrate 10_pack 11_blend 12_nano_sheet 13_nano_matrix 14_crystal 15_surface 16_react 17_cg 18_analyze 19_export 20_project 21_solvation 22_glass 23_jobs 27_dft_sheets; fi
 for n in "$@"; do make "$n"; done
 echo "PNGs and work files in $WORK"

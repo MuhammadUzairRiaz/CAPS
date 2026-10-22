@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
+using System.Linq;
 using Avalonia.Platform.Storage;
 
 namespace CapsStudio.Views.Pages;
@@ -53,6 +54,25 @@ public partial class EquilibratePage : PageBase
             FileTypeFilter = [new FilePickerFileType("Two columns") { Patterns = ["*.csv", "*.dat", "*.txt", "*.tsv", "*.xvg"] }, FilePickerFileTypes.All],
         });
         if (files.Count > 0 && files[0].TryGetLocalPath() is { } path) Vm.LoadEqTarget(path);
+    }
+    private async void OnOpenFinishedFolder(object? s, RoutedEventArgs e)
+    {
+        if (Window == null) return;
+        var dirs = await Window.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions { Title = "The folder of a finished equilibration (thermo log, output, structure)", AllowMultiple = false });
+        var paths = dirs.Select(d => d.TryGetLocalPath()).OfType<string>().ToList();
+        if (paths.Count > 0) Vm.OpenFinishedEquilibrate(paths);
+    }
+    private async void OnOpenFinishedFiles(object? s, RoutedEventArgs e)
+    {
+        if (Window == null) return;
+        var files = await Window.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "A finished equilibration: its thermo log (caps equilibrate --log), and its printed output and structure if you have them",
+            AllowMultiple = true,
+            FileTypeFilter = [new FilePickerFileType("Thermo log, output, structure") { Patterns = ["*.csv", "*.log", "*.out", "*.txt", "*.data", "*.pdb", "*.gro", "*.xyz"] }, FilePickerFileTypes.All],
+        });
+        var paths = files.Select(f => f.TryGetLocalPath()).OfType<string>().ToList();
+        if (paths.Count > 0) Vm.OpenFinishedEquilibrate(paths);
     }
     private async void OnSaveTrajectory(object? s, RoutedEventArgs e) { if (Window != null) await Window.SaveTrajectoryAsync(); }
 }

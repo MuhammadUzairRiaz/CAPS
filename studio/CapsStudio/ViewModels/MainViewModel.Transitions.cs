@@ -95,6 +95,8 @@ public sealed partial class MainViewModel
         var runs = new List<(double Tg, double Err, double AlphaLow, double AlphaHigh, double Vtg, double SLow, double SHigh, double Rms, (double T, double V)[] Points)>();
         var seed0 = Analyze.MechSeed;
         var energy = Analyze.TgProperty == 1;
+        GtOpenedText = "";
+        _gtOpenedPaths = [];
         try
         {
             for (var r = 1; r <= _gtReplicas; ++r)

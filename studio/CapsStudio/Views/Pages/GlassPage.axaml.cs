@@ -1,3 +1,4 @@
+using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
@@ -48,5 +49,26 @@ public partial class GlassPage : PageBase
         System.IO.File.WriteAllText(p, Vm.GlassRecipe(src, ff));
         Vm.Status = $"Saved {System.IO.Path.GetFileName(p)}{(ff != null ? " and " + ff : "")} · caps run {System.IO.Path.GetFileName(p)}";
     }
+    private async void OnOpenFinishedFolders(object? s, RoutedEventArgs e)
+    {
+        var top = TopLevel.GetTopLevel(this);
+        if (top == null) return;
+        var dirs = await top.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions { Title = "Finished cooling runs: one folder per replica (caps tg -o OUT.data --csv csv)", AllowMultiple = true });
+        var paths = dirs.Select(d => d.TryGetLocalPath()).OfType<string>().ToList();
+        if (paths.Count > 0) Vm.OpenFinishedGlass(paths);
+    }
+    private async void OnOpenFinishedFiles(object? s, RoutedEventArgs e)
+    {
+        var top = TopLevel.GetTopLevel(this);
+        if (top == null) return;
+        var files = await top.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Finished cooling runs: their OUT.tg-points.json, properties files or tables (one per replica)", AllowMultiple = true,
+            FileTypeFilter = [new FilePickerFileType("Cooling points") { Patterns = ["*.json", "*.csv", "*.txt", "*.dat"] }, FilePickerFileTypes.All],
+        });
+        var paths = files.Select(f => f.TryGetLocalPath()).OfType<string>().ToList();
+        if (paths.Count > 0) Vm.OpenFinishedGlass(paths);
+    }
+    private void OnRefit(object? s, RoutedEventArgs e) => Vm.RefitFinishedGlass();
     private void OnQueue(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Vm.QueueGlass();
 }

@@ -117,6 +117,9 @@
             <Button x:Name="CancelHost" Click="OnCancelRemote" IsVisible="{Binding CanCancelRemote}" ToolTip.Tip="scancel / qdel on the host: the results so far come back">
               <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="stop" Size="15" VerticalAlignment="Center" /><TextBlock x:Name="CancelHostText" Text="Cancel on host" VerticalAlignment="Center" /></StackPanel>
             </Button>
+            <Button Click="OnShowOnPage" IsVisible="{Binding CanShowOnPage}" ToolTip.Tip="The run's curves, stages, criteria (Equilibrate) or its cooling points and Tg, replicas pooled (Glass transition), from the files the host sent back">
+              <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="chart" Size="15" VerticalAlignment="Center" /><TextBlock Text="Show on its page" VerticalAlignment="Center" /></StackPanel>
+            </Button>
             <Button Classes="primary" Click="OnOpenRemote" IsVisible="{Binding CanOpenRemote}" ToolTip.Tip="Open the structure the host sent back">
               <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="cube" Size="15" VerticalAlignment="Center" /><TextBlock Text="Open result" VerticalAlignment="Center" /></StackPanel>
             </Button>

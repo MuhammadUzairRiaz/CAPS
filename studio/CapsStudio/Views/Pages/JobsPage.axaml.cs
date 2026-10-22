@@ -173,6 +173,7 @@ public partial class JobsPage : PageBase
     private void OnPause(object? s, RoutedEventArgs e) => Vm.TogglePause();
     private async void OnCheckRemote(object? s, RoutedEventArgs e) => await Vm.RefreshJob(Vm.SelectedJob);
     private void OnOpenRemote(object? s, RoutedEventArgs e) => Vm.OpenRemoteResult(Vm.SelectedJob);
+    private void OnShowOnPage(object? s, RoutedEventArgs e) => Vm.ShowJobOnPage(Vm.SelectedJob);
     private void OnClear(object? s, RoutedEventArgs e) => Vm.ClearJobs();
     private void OnNew(object? s, RoutedEventArgs e) { if ((s as MenuItem)?.Tag is string t && int.TryParse(t, out var m)) Vm.SetModule(m); }
 
