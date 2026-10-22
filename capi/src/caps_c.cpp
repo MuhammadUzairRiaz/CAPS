@@ -11914,7 +11914,6 @@ extern "C" caps_doc* caps_semicrystalline_build(const char* options_json, caps_p
     o.density = j.num("density", 0.855);
     o.seed = uint64_t(j.num("seed", 1));
     o.united_atom = j.has("united_atom") && j["united_atom"].boolean();
-    o.max_atoms = size_t(j.num("max_atoms", 15000));
     if (progress) o.progress = [&](const std::string&, double f) { return progress(int32_t(1000 * std::min(1.0, f)), 1000, 0, user) == 0; };
     caps::SemicrystallineReport rep;
     caps::System s = caps::build_semicrystalline(o, &rep);

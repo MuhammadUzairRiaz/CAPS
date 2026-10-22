@@ -58,8 +58,7 @@ public sealed partial class MainViewModel
             var crys = stems * 2 * nc;
             var am = (double)_scDensity * a * (double)_scNx * b * (double)_scNy * (double)_scAmorphous * 10 / 1.66053906660 / 14.027;
             var atoms = (_scUnited ? 1 : 3) * (crys + am);
-            return string.Format(CultureInfo.InvariantCulture, "{0:0} stems · {1:0} cells along c · about {2:N0} atoms{3}", stems, nc, atoms,
-                atoms > 15000 ? " — above the 15,000-atom limit: fewer repeats, thinner layers or united atom" : "");
+            return string.Format(CultureInfo.InvariantCulture, "{0:0} stems · {1:0} cells along c · about {2:N0} atoms", stems, nc, atoms);
         }
     }
 
