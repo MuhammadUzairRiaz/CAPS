@@ -111,6 +111,10 @@ struct Phono3pyResult { std::vector<std::string> dirs; std::vector<Phono3pyPlan>
 // One set per mode (both: full/ and random/ below dir).
 Phono3pyResult write_phono3py_set(const System& unit, const std::string& dir, const Phono3pyOptions& o);
 
+// The references for a set (keys of the built-in bibliography): VASP, PAW, PBE and D3(BJ), phono3py, symfc unless every
+// displacement is computed (mode full), the direct LBTE solution for method lbte.
+std::vector<std::string> phono3py_cites(const std::string& mode, const std::string& method);
+
 // The displacement folders of a set (after run_step1.sh): done / failed / missing, and the array spec to rerun.
 Json phono3py_check(const std::string& dir);
 

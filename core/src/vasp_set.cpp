@@ -15,6 +15,7 @@
 
 #include "caps/elements.hpp"
 #include "caps/phono3py.hpp"
+#include "caps/provenance.hpp"
 #include "caps/slab2d.hpp"
 #include "caps/vasp_out.hpp"
 
@@ -1025,8 +1026,10 @@ RelaxChainResult write_relax_chain(const System& s, const std::string& dir, cons
   spit(join(dir, "KPOINTS"), kpoints_bulk_text(s, o.kdens, "", o.two_d));
   spit(join(dir, "job.slurm"), relax_chain_script(prof, o.label, r.steps, n));
   spit(join(dir, "make_potcar.sh"), make_potcar_script(map));
+  // VASP, PAW, PBE and D3(BJ), as the methods text of the provenance cites them
+  spit(join(dir, "references.bib"), bibtex({"kresse1996", "blochl1994", "kresse1999", "perdew1996", "grimme2010", "grimme2011"}));
   make_exec(join(dir, "make_potcar.sh"));
-  r.files.insert(r.files.end(), {"KPOINTS", "job.slurm", "make_potcar.sh"});
+  r.files.insert(r.files.end(), {"KPOINTS", "job.slurm", "make_potcar.sh", "references.bib"});
   if (prof.account.empty()) r.notes.push_back("no account in profile " + prof.name + ": give --account (or put the profile with it in ~/CAPS/dft-clusters.json)");
   Json c = Json::object();
   c["label"] = o.label, c["atoms"] = n, c["enmax"] = r.enmax, c["enmax_source"] = r.enmax_source, c["kdens"] = o.kdens;

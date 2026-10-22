@@ -13,6 +13,7 @@
 #include "caps/crystal.hpp"
 #include "caps/dft_commands.hpp"
 #include "caps/phono3py.hpp"
+#include "caps/provenance.hpp"
 #include "caps/recipe.hpp"
 #include "caps/slab2d.hpp"
 #include "caps/vasp_set.hpp"
@@ -385,6 +386,40 @@ TEST(Phono3py, CommandLayerAndRecipe) {
   EXPECT_TRUE(fs::exists(dir / "pe_relax" / "relax4" / "INCAR"));
   EXPECT_EQ(tag(slurp(dir / "pe_kappa" / "INCAR"), "ENCUT"), "900");
   EXPECT_NE(slurp(dir / "pe_kappa" / "run_step1.sh").find("--rd"), std::string::npos);
+}
+
+TEST(Phono3py, SetsCiteTheirMethods) {
+  // phono3py and VASP run on the cluster, not in CAPS; the folders CAPS writes and their methods text cite them
+  const auto dir = tmpdir("caps_p3_cite");
+  auto run = [&](const char* cmd, std::vector<std::string> inputs, const std::string& out, std::vector<std::pair<const char*, const char*>> extra) {
+    Json a = Json::object();
+    Json in = Json::array();
+    for (const auto& i : inputs) in.push_back(i);
+    a["inputs"] = in, a["out"] = (dir / out).string();
+    for (const auto& [k, v] : extra) a[k] = v;
+    return dft_run(cmd, a, kData);
+  };
+  run("vasp-relax", {"pe-orthorhombic"}, "relax", {{"dimensionality", "3d"}});
+  const std::string rb = slurp(dir / "relax" / "references.bib");
+  for (const char* k : {"kresse1996", "blochl1994", "kresse1999", "perdew1996", "grimme2010", "grimme2011"}) EXPECT_NE(rb.find(k), std::string::npos) << k;
+  std::vector<std::string> refs;
+  EXPECT_NE(methods_text(*read_manifest((dir / "relax" / "POSCAR").string()), &refs).find("relaxed with VASP"), std::string::npos);
+  EXPECT_EQ(refs.size(), 6u);
+  run("phono3py", {"setup", "pe-orthorhombic"}, "random", {{"mode", "random"}});
+  const std::string pr = slurp(dir / "random" / "references.bib");
+  EXPECT_NE(pr.find("togo2015"), std::string::npos);
+  EXPECT_NE(pr.find("togo2023"), std::string::npos);
+  EXPECT_NE(pr.find("seko2024"), std::string::npos);   // symfc fits the random displacements
+  EXPECT_EQ(pr.find("chaput2013"), std::string::npos);
+  EXPECT_NE(slurp(dir / "random" / "README.txt").find("Phys. Rev. B 91, 094306 (2015)"), std::string::npos);
+  run("phono3py", {"setup", "pe-orthorhombic"}, "full", {{"mode", "full"}, {"method", "lbte"}});
+  const std::string fb = slurp(dir / "full" / "references.bib");
+  EXPECT_EQ(fb.find("seko2024"), std::string::npos);
+  EXPECT_NE(fb.find("chaput2013"), std::string::npos);   // the direct solution of the LBTE
+  const std::string mt = methods_text(*read_manifest((dir / "full" / "POSCAR-unitcell").string()), &refs);
+  EXPECT_NE(mt.find("with phono3py"), std::string::npos) << mt;
+  EXPECT_NE(mt.find("solved directly"), std::string::npos) << mt;
+  EXPECT_EQ(refs.size(), 9u);
 }
 
 TEST(Phono3py, AnalyzeKappaPyOnSyntheticHdf5) {

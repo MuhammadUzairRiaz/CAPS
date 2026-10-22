@@ -14,6 +14,7 @@
 #include <unordered_map>
 
 #include "caps/elements.hpp"
+#include "caps/provenance.hpp"
 #include "caps/slab2d.hpp"
 #include "caps/vasp_out.hpp"
 #include "caps/vasp_set.hpp"
@@ -614,6 +615,13 @@ if __name__ == "__main__":
 
 }  // namespace
 
+std::vector<std::string> phono3py_cites(const std::string& mode, const std::string& method) {
+  std::vector<std::string> k = {"kresse1996", "blochl1994", "kresse1999", "perdew1996", "grimme2010", "grimme2011", "togo2015", "togo2023"};
+  if (mode != "full") k.push_back("seko2024");
+  if (method == "lbte") k.push_back("chaput2013");
+  return k;
+}
+
 Phono3pyResult write_phono3py_set(const System& unit0, const std::string& dir, const Phono3pyOptions& o) {
   Phono3pyResult res;
   const System unit = group_by_species(unit0, {"C", "N", "O", "F", "S", "Si", "Ti", "H"});
@@ -834,7 +842,12 @@ Phono3pyResult write_phono3py_set(const System& unit0, const std::string& dir, c
          "  sbatch run_step7.sh      kappa-m*.hdf5 (+ analyze_kappa.py)\n"
          "  ./cleanup.sh [--yes]     quota cleanup at any time\n"
          "  caps phono3py check DIR / caps phono3py analyze DIR on your machine\n"
-         "phono3py_env.sh says how phono3py is found (conda, version 3 or 4).\n");
+         "phono3py_env.sh says how phono3py is found (conda, version 3 or 4).\n\n"
+         "Cite (references.bib has the BibTeX): VASP, PAW, PBE and D3(BJ) as for the relaxation; phono3py (Togo, Chaput & Tanaka,\n"
+         "Phys. Rev. B 91, 094306 (2015); Togo, Chaput, Tadano & Tanaka, J. Phys.: Condens. Matter 35, 353001 (2023))" +
+         std::string(mode == "full" ? "" : ";\nsymfc for the random displacements (Seko & Togo, Phys. Rev. B 110, 214302 (2024))") +
+         std::string(o.method == "lbte" ? ";\nthe direct solution of the LBTE (Chaput, Phys. Rev. Lett. 110, 265506 (2013))" : "") + ".\n");
+    spit(join(d, "references.bib"), bibtex(phono3py_cites(mode, o.method)));
     res.dirs.push_back(d);
     res.plans.push_back(p);
   }
@@ -992,6 +1005,9 @@ Json analyze_kappa_extract(const std::string& ex, const std::string& out, int ch
   }
   res["temperatures"] = rows;
   res["out"] = out;
+  Json cite = Json::array();
+  for (const char* k : {"togo2015", "togo2023"}) cite.push_back(citation_text(k));
+  res["cite"] = cite;   // the set's references.bib adds VASP, PAW, PBE and, for its mode and method, symfc or the LBTE
   spit(join(out, "kappa_analysis.json"), res.dump(1));
   return res;
 }

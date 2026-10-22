@@ -118,6 +118,16 @@ const Cite kCites[] = {
     {"martyna1992", "@article{martyna1992,\n  author = {Martyna, G. J. and Klein, M. L. and Tuckerman, M.},\n  title = {{N}os{\\'e}--{H}oover chains: the canonical ensemble via continuous dynamics},\n  journal = {J. Chem. Phys.}, volume = {97}, pages = {2635--2643}, year = {1992}, doi = {10.1063/1.463940}\n}"},
     {"martyna1994", "@article{martyna1994,\n  author = {Martyna, G. J. and Tobias, D. J. and Klein, M. L.},\n  title = {Constant pressure molecular dynamics algorithms},\n  journal = {J. Chem. Phys.}, volume = {101}, pages = {4177--4189}, year = {1994}, doi = {10.1063/1.467468}\n}"},
     {"daivis1994", "@article{daivis1994,\n  author = {Daivis, P. J. and Evans, D. J.},\n  title = {Comparison of constant pressure and constant volume nonequilibrium simulations of sheared model decane},\n  journal = {J. Chem. Phys.}, volume = {100}, pages = {541--547}, year = {1994}, doi = {10.1063/1.466970}\n}"},
+    {"kresse1996", "@article{kresse1996,\n  author = {Kresse, G. and Furthm{\\\"u}ller, J.},\n  title = {Efficient iterative schemes for ab initio total-energy calculations using a plane-wave basis set},\n  journal = {Phys. Rev. B}, volume = {54}, pages = {11169--11186}, year = {1996}, doi = {10.1103/PhysRevB.54.11169}\n}"},
+    {"blochl1994", "@article{blochl1994,\n  author = {Bl{\\\"o}chl, P. E.},\n  title = {Projector augmented-wave method},\n  journal = {Phys. Rev. B}, volume = {50}, pages = {17953--17979}, year = {1994}, doi = {10.1103/PhysRevB.50.17953}\n}"},
+    {"kresse1999", "@article{kresse1999,\n  author = {Kresse, G. and Joubert, D.},\n  title = {From ultrasoft pseudopotentials to the projector augmented-wave method},\n  journal = {Phys. Rev. B}, volume = {59}, pages = {1758--1775}, year = {1999}, doi = {10.1103/PhysRevB.59.1758}\n}"},
+    {"perdew1996", "@article{perdew1996,\n  author = {Perdew, J. P. and Burke, K. and Ernzerhof, M.},\n  title = {Generalized gradient approximation made simple},\n  journal = {Phys. Rev. Lett.}, volume = {77}, pages = {3865--3868}, year = {1996}, doi = {10.1103/PhysRevLett.77.3865}\n}"},
+    {"grimme2010", "@article{grimme2010,\n  author = {Grimme, S. and Antony, J. and Ehrlich, S. and Krieg, H.},\n  title = {A consistent and accurate ab initio parametrization of density functional dispersion correction ({DFT-D}) for the 94 elements {H-Pu}},\n  journal = {J. Chem. Phys.}, volume = {132}, pages = {154104}, year = {2010}, doi = {10.1063/1.3382344}\n}"},
+    {"grimme2011", "@article{grimme2011,\n  author = {Grimme, S. and Ehrlich, S. and Goerigk, L.},\n  title = {Effect of the damping function in dispersion corrected density functional theory},\n  journal = {J. Comput. Chem.}, volume = {32}, pages = {1456--1465}, year = {2011}, doi = {10.1002/jcc.21759}\n}"},
+    {"togo2015", "@article{togo2015,\n  author = {Togo, A. and Chaput, L. and Tanaka, I.},\n  title = {Distributions of phonon lifetimes in {B}rillouin zones},\n  journal = {Phys. Rev. B}, volume = {91}, pages = {094306}, year = {2015}, doi = {10.1103/PhysRevB.91.094306}\n}"},
+    {"togo2023", "@article{togo2023,\n  author = {Togo, A. and Chaput, L. and Tadano, T. and Tanaka, I.},\n  title = {Implementation strategies in phonopy and phono3py},\n  journal = {J. Phys.: Condens. Matter}, volume = {35}, pages = {353001}, year = {2023}, doi = {10.1088/1361-648X/acd831}\n}"},
+    {"chaput2013", "@article{chaput2013,\n  author = {Chaput, L.},\n  title = {Direct solution to the linearized phonon {B}oltzmann equation},\n  journal = {Phys. Rev. Lett.}, volume = {110}, pages = {265506}, year = {2013}, doi = {10.1103/PhysRevLett.110.265506}\n}"},
+    {"seko2024", "@article{seko2024,\n  author = {Seko, A. and Togo, A.},\n  title = {Projector-based efficient estimation of force constants},\n  journal = {Phys. Rev. B}, volume = {110}, pages = {214302}, year = {2024}, doi = {10.1103/PhysRevB.110.214302}\n}"},
 };
 
 }  // namespace
@@ -399,6 +409,17 @@ std::string methods_text(const Manifest& m, std::vector<std::string>* refs, cons
       t = "The glass transition temperature was estimated from a stepwise NPT cooling scan from " + param(s, "from") + " to " + param(s, "to") + " in steps of " +
           param(s, "step") + ", holding " + param(s, "hold") + " at each temperature, by a two-line fit of the specific volume against temperature" +
           cite(only(s, {"soldera2006"})) + "; simulated cooling rates are many orders of magnitude faster than calorimetry, so Tg is expected above experiment.";
+    } else if (e == "dft.vasp_relax") {
+      t = "The unit cell was relaxed with VASP" + cite({"kresse1996"}) + " (projector augmented-wave method" + cite({"blochl1994", "kresse1999"}) + ", PBE functional" +
+          cite({"perdew1996"}) + ", D3 dispersion with Becke–Johnson damping" + cite({"grimme2010", "grimme2011"}) +
+          ") in four steps: the cell and atoms at about two and then three times the largest ENMAX, the cell shape and atoms, and the atoms alone" +
+          (param(s, "dimensionality") == "2d" ? ", the cell relaxed in plane only" : std::string()) + ".";
+    } else if (e == "dft.phono3py") {
+      const std::string md = param(s, "mode");
+      t = "Third- and second-order force constants were computed from VASP" + cite({"kresse1996"}) + " forces (projector augmented waves" + cite({"blochl1994", "kresse1999"}) +
+          ", PBE" + cite({"perdew1996"}) + " with D3(BJ) dispersion" + cite({"grimme2010", "grimme2011"}) + ") on displaced supercells with phono3py" + cite({"togo2015", "togo2023"}) +
+          (md == "full" ? std::string() : ", random displacements fitted with symfc" + cite({"seko2024"})) + ", and the lattice thermal conductivity from the phonon Boltzmann equation" +
+          (param(s, "method") == "lbte" ? " solved directly" + cite({"chaput2013"}) : " in the relaxation-time approximation" + cite({"togo2015"})) + ".";
     } else if (e == "equilibrate.larsen21") {
       t = "The cell was equilibrated with the 21-step compression–decompression protocol (P_max = " + param(s, "Pmax") + ")" + cite({"larsen2011"}) + ", " + param(s, "length") + " of dynamics in all.";
     } else if (e == "sorption.widom_gcmc") {
