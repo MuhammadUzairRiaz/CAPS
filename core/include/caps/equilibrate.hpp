@@ -66,7 +66,7 @@ struct EquilibrateOptions {
   std::vector<Stage> stages;
   DynamicsOptions md;           // dt, thermostat / barostat kinds and times, seed, energy options; per-stage fields are set
   double frame_ps = 10;         // record a frame this often (and at the end of each stage)
-  double thermo_ps = 0.5;
+  double thermo_ps = 0.5;       // a thermo row this often; 0: about 200 rows per stage (at least every 10 steps, at most every 0.5 ps)
   // After the stages: production NPT at the last stage's conditions in blocks, until the checks pass.
   bool until_converged = false;
   double block_ps = 20;

@@ -216,7 +216,7 @@ typedef struct {
   uint64_t seed;
   double cutoff;
   int32_t coulomb, tail, threads;
-  double frame_ps, thermo_ps;
+  double frame_ps, thermo_ps;              /* thermo_ps 0: about 200 rows per stage (every 10 steps to 0.5 ps) */
   int32_t until_converged;                 /* production NPT blocks after the stages until the checks pass */
   double block_ps;
   int32_t max_blocks;

@@ -2943,7 +2943,7 @@ int32_t caps_equilibrate(caps_doc* d, const char* protocol, const caps_equil_opt
     e.md.energy.mixed = o->precision != 1;   // as caps equilibrate --precision mixed|double
     e.md.hmr = std::max(0.0, o->hmr);
     if (o->frame_ps > 0) e.frame_ps = o->frame_ps;
-    if (o->thermo_ps > 0) e.thermo_ps = o->thermo_ps;
+    e.thermo_ps = std::max(0.0, o->thermo_ps);   // 0: automatic, about 200 rows per stage
     e.until_converged = o->until_converged != 0;
     if (o->block_ps > 0) e.block_ps = o->block_ps;
     if (o->max_blocks > 0) e.max_blocks = o->max_blocks;

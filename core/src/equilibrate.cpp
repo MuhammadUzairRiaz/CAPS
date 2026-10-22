@@ -222,7 +222,9 @@ void equilibrate(System& s, const EquilibrateOptions& o, EquilibrateReport* rep_
     d.energy.force_cap = st.force_cap;
     d.seed = seed;
     d.step_offset = offset;
-    d.thermo_every = std::max(1, int(std::lround(o.thermo_ps * 1000.0 / dt)));
+    // thermo_ps 0: the live curves sample each stage about 200 times, so a short stage shows its fluctuations too
+    const double tps = o.thermo_ps > 0 ? o.thermo_ps : std::clamp(st.ps / 200.0, 10.0 * dt / 1000.0, 0.5);
+    d.thermo_every = std::max(1, int(std::lround(tps * 1000.0 / dt)));
     d.frame_every = o.frame ? std::max(1, int(std::lround(o.frame_ps * 1000.0 / dt))) : 0;
     d.new_velocities = false;
     const size_t first = rep.thermo.size();
