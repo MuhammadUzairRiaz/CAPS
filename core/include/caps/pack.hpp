@@ -43,7 +43,7 @@ struct PackItem {
 };
 
 struct PackProgress {
-  std::string stage;            // "insertion", "optimisation", "verification", "compression"
+  std::string stage;            // "insertion", "optimisation step" (inside a round), "optimisation" (a round done), "verification", "compression"
   int loop = 0, loops = 0;
   double penalty = 0;
   double dmin = 0;              // smallest intermolecular distance so far, Å

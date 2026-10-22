@@ -39,7 +39,7 @@
             <Button Classes="small" Content="SVG" Click="OnSvg" ToolTip.Tip="Plots as vectors, the 3D panel as an image" />
             <Button Classes="small" Content="TIFF" Click="OnTiff" />
             <Button Classes="small" Content="PNG" Click="OnPng" />
-            <Button Classes="small primary" Click="OnPdf" ToolTip.Tip="The page as an image at the chosen dpi"><StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="download" Size="13" VerticalAlignment="Center" /><TextBlock Text="Export PDF" VerticalAlignment="Center" /></StackPanel></Button>
+            <Button Classes="small primary" Click="OnPdf" ToolTip.Tip="A vector PDF: plots as paths and text, fonts embedded; the 3D panel at the chosen dpi"><StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="download" Size="13" VerticalAlignment="Center" /><TextBlock Text="Export PDF" VerticalAlignment="Center" /></StackPanel></Button>
           </WrapPanel>
         </Border>
         <ScrollViewer>

@@ -247,7 +247,9 @@ int32_t caps_equilibrate(caps_doc* d, const char* protocol, const caps_equil_opt
    written; chains and <b²> are returned through the pointers when given. */
 int32_t caps_internal_distances(caps_doc* d, int32_t* n, double* ratio, int32_t cap, int32_t* chains, double* b2);
 
-/* Pack progress: (round, rounds, penalty, molecules in violation, user) -> non-zero cancels. */
+/* Pack progress: (round, rounds, penalty, molecules in violation, user) -> non-zero cancels. bad is -1 for a step
+   inside a round (the penalty so far) and -2 during the optional compression (loop: stage, loops: stages, penalty:
+   energy in kcal/mol); a finished round (and the final check) has bad >= 0. */
 typedef int32_t (*caps_pack_progress_fn)(int32_t loop, int32_t loops, double penalty, int32_t bad, void* user);
 
 /* Pack from packmol-format text (structure paths relative to base_dir). Returns a new document, or NULL when the

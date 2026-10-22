@@ -26,8 +26,12 @@ public static class PageFigures
 
     private static SciSeries S(string name, IReadOnlyList<(double X, double Y)> pts, SciKind kind = SciKind.Line, int colour = 0) =>
         SciSeries.Of(name, pts) with { Kind = kind, Colour = colour };
-    /// <summary>A curve with points while it is short (a run's first rows), a plain line once it is long.</summary>
-    private static SciKind Auto(int n) => n <= 30 ? SciKind.LineMarkers : SciKind.Line;
+    /// <summary>Up to this many samples a measured curve shows each sample as a point, so the reader sees where the data
+    /// are and that the line between two points is only a guide; above it the samples are dense enough to read as a curve.</summary>
+    public const int MarkerLimit = 150;
+    /// <summary>A measured curve with points while it has at most MarkerLimit samples (a short run, rounds, cycles, ionic
+    /// steps), a plain line once it is dense.</summary>
+    public static SciKind Auto(int n) => n <= MarkerLimit ? SciKind.LineMarkers : SciKind.Line;
     private static double[] Xs(IReadOnlyList<(double X, double Y)> p) => p.Select(q => q.X).ToArray();
 
     // ------------------------------------------------------------------ React
@@ -72,7 +76,7 @@ public static class PageFigures
     {
         var pts = rows.Where(r => double.IsFinite(y(r))).Select(r => (r.TimePs, y(r))).ToArray();
         var series = new List<SciSeries>();
-        if (pts.Length > 1) series.Add(S("", pts, SciKind.Line) with { Width = 1.2, Legend = false });
+        if (pts.Length > 1) series.Add(S("", pts, Auto(pts.Length)) with { Width = 1.2, Legend = false });
         if (blocks is { Length: > 0 } && pts.Length > 1) series.Add(S("block means", blocks, SciKind.Markers, 1) with { Square = true });
         // labelled stages: headroom above the curve, so the ensemble names sit over empty plot, not over the data
         double? top = null;
@@ -133,10 +137,16 @@ public static class PageFigures
     };
 
     // ------------------------------------------------------------------ Mechanics
-    public static SciFigure Mechanics((double X, double Y)[] curve, (double X, double Y)[] fit, double fitTo) => new()
+    /// <summary>The stress of every sampled frame as open points (the raw data), the ± 0.5 % strain running mean the
+    /// core reads the yield from as a line over them, and the linear fit dashed.</summary>
+    public static SciFigure Mechanics((double X, double Y)[] curve, (double X, double Y)[] fit, double fitTo, (double X, double Y)[]? smooth = null) => new()
     {
         XLabel = "engineering strain *ε* / %", YLabel = "true stress *σ* / GPa", XMin = 0, Empty = "",
-        Series = curve.Length > 1 ? [S("simulation", curve), .. fit.Length > 1 ? new[] { S("linear fit", fit, SciKind.Dashed, 1) } : []] : [],
+        Series = curve.Length > 1
+            ? [S("simulation, per frame", curve, SciKind.Markers, -1) with { Open = true },
+               .. smooth is { Length: > 1 } ? new[] { S("running mean, ± 0.5 % strain", smooth, SciKind.Line, 0) with { Width = 1.8 } } : [],
+               .. fit.Length > 1 ? new[] { S("linear fit", fit, SciKind.Dashed, 1) } : []]
+            : [],
         XBand = curve.Length > 1 ? (0, fitTo, "fit window") : null, RefY = 0,
     };
 
@@ -223,7 +233,9 @@ public static class PageFigures
             return new SciFigure
             {
                 XLabel = "correlation time *t* / ps", YLabel = "running *κ* / W m⁻¹ K⁻¹", XMin = 0, RefY = 0, Empty = "",
-                Series = curves.Select((c, k) => S(curves.Length > 1 ? names[k] : "", c, k == 0 ? SciKind.Line : k == 1 ? SciKind.Dashed : SciKind.Dotted, k)).Where(x => x.X.Length > 1).ToArray(),
+                // a short correlation window keeps its points (circle, square, open circle); a long one is three line styles
+                Series = curves.Select((c, k) => S(curves.Length > 1 ? names[k] : "", c, c.Length <= MarkerLimit ? SciKind.LineMarkers : k == 0 ? SciKind.Line : k == 1 ? SciKind.Dashed : SciKind.Dotted, k)
+                                                 with { Square = k == 1, Open = k == 2 }).Where(x => x.X.Length > 1).ToArray(),
             };
         }
         var slab = curves.Length > 0 ? curves[0] : [];
@@ -361,7 +373,7 @@ public static class PageFigures
     public static SciFigure Shifts(double[] sh) => new()
     {
         XLabel = "atom", YLabel = "shift / Å", XMin = 0, YMin = 0, Empty = "",
-        Series = sh.Length > 1 ? [new SciSeries("", sh.Select((_, i) => (double)(i + 1)).ToArray(), sh) { Kind = SciKind.Line, Width = 1.1, Legend = false }] : [],
+        Series = sh.Length > 1 ? [new SciSeries("", sh.Select((_, i) => (double)(i + 1)).ToArray(), sh) { Kind = Auto(sh.Length), Width = 1.1, Legend = false }] : [],
     };
 
     /// <summary>A pipeline table: a scatter of points, a series with its running mean over w rows, or a plain curve.</summary>
@@ -388,7 +400,9 @@ public static class PageFigures
     public static SciFigure Compare(string x, string y, (double X, double Y)[] a, (double X, double Y)[] b) => new()
     {
         XLabel = Title(x), YLabel = Title(y), Empty = "",
-        Series = [.. a.Length > 1 ? new[] { S("A", a) } : [], .. b.Length > 1 ? new[] { S("B", b, SciKind.Dashed, 1) } : []],
+        // sparse inputs keep their points (B open), dense ones are lines (B dashed)
+        Series = [.. a.Length > 1 ? new[] { S("A", a, Auto(a.Length)) } : [],
+                  .. b.Length > 1 ? new[] { S("B", b, b.Length <= MarkerLimit ? SciKind.LineMarkers : SciKind.Dashed, 1) with { Open = true } } : []],
     };
 
     // ------------------------------------------------------------------ Coarse-grained (the IBI, mapping and analysis pages)
@@ -435,13 +449,13 @@ public static class PageFigures
     public static SciFigure CgStress(IEnumerable<(string Name, (double X, double Y)[] Pts)> curves) => new()
     {
         XLabel = "engineering strain *ε*", YLabel = "*σ* / MPa", RefY = 0, XMin = 0, Empty = "analyse a stress_strain.dat (written by the tension decks' runs)",
-        Series = curves.Select((c, k) => S(c.Name, c.Pts, k == 0 ? SciKind.Line : SciKind.Dashed, k) with { Width = k == 0 ? 2 : 1.3 }).Where(s => s.X.Length > 1).ToArray(),
+        Series = curves.Select((c, k) => S(c.Name, c.Pts, k == 0 ? Auto(c.Pts.Length) : SciKind.Dashed, k) with { Width = k == 0 ? 1.6 : 1.3 }).Where(s => s.X.Length > 1).ToArray(),
     };
     /// <summary>The bead mean-square displacements g₁, g₂, g₃ on log–log axes (the table holds log₁₀ t).</summary>
     public static SciFigure CgDynamics(IEnumerable<(string Name, (double X, double Y)[] Pts)> curves) => new()
     {
         XLabel = "*t* / fs", YLabel = "*g*_{*i*}(*t*) / Å²", XLog = true, YLog = true, Empty = "run the dynamics of a CG trajectory",
-        Series = curves.Select((c, k) => new SciSeries(c.Name.Replace("g₁", "*g*₁").Replace("g₂", "*g*₂").Replace("g₃", "*g*₃"), c.Pts.Select(p => Math.Pow(10, p.X)).ToArray(), c.Pts.Select(p => p.Y).ToArray()) { Colour = k })
+        Series = curves.Select((c, k) => new SciSeries(c.Name.Replace("g₁", "*g*₁").Replace("g₂", "*g*₂").Replace("g₃", "*g*₃"), c.Pts.Select(p => Math.Pow(10, p.X)).ToArray(), c.Pts.Select(p => p.Y).ToArray()) { Colour = k, Kind = Auto(c.Pts.Length), Square = k == 1 })
             .Where(s => s.X.Length > 1).ToArray(),
     };
 

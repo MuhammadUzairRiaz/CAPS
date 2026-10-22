@@ -249,7 +249,7 @@ DpdReport run_dpd(const DpdOptions& o) {
   forces(v);
   std::vector<double> kts, ps;
   std::vector<Vec3> vt(nn);
-  const long every = std::max(1L, o.steps / 100);
+  const long every = std::max(1L, o.steps / 400);   // about 400 samples of the order parameter: its curve shows the fluctuations
   auto store_frame = [&](long step) {
     std::vector<Vec3> x(nn);
     for (int i = 0; i < n; ++i) x[size_t(i)] = r[size_t(i)] * o.rc_angstrom;

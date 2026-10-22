@@ -3086,7 +3086,11 @@ caps_doc* caps_pack(const char* text, const char* base_dir, int32_t threads, cap
     auto items = caps::parse_packmol_input(text ? text : "", base_dir ? base_dir : ".", o, &output);
     o.threads = threads;
     if (progress)
-      o.progress = [&](const caps::PackProgress& p) { return progress(p.loop, p.loops, p.penalty, p.bad, user) == 0; };
+      o.progress = [&](const caps::PackProgress& p) {
+        // bad −1: a step inside a round (the penalty so far); −2: the compression after packing (stage, stages, energy)
+        const int32_t bad = p.stage == "optimisation step" ? -1 : p.stage == "compression" ? -2 : p.bad;
+        return progress(p.loop, p.loops, p.penalty, bad, user) == 0;
+      };
     caps::System s = caps::pack(items, o, &rep);
     auto* d = new caps_doc;
     d->traj.topology = s;
@@ -8091,7 +8095,7 @@ extern "C" caps_doc* caps_solvate(caps_doc* solute, const char* options_json, ca
     caps::SolvateOptions o = solvate_options(caps::Json::parse(options_json && *options_json ? options_json : "{}"));
     if (progress)
       o.progress = [&](const caps::PackProgress& p) {
-        const int stage = p.stage == "insertion" ? 0 : p.stage == "optimisation" ? 1 : 2;
+        const int stage = p.stage == "insertion" ? 0 : p.stage.rfind("optimisation", 0) == 0 ? 1 : 2;
         return progress(stage, p.loop, p.loops, p.dmin, p.bad, user) == 0;
       };
     caps::System s;
@@ -8368,6 +8372,20 @@ extern "C" int32_t caps_trajectory_series(caps_doc* d, const char* options_json,
       }
     j["run_frames"] = runs;
     j["log_rows"] = double(so.log ? log.rows.size() : 0);
+    // the log itself, every thermo row (the per-frame table above keeps only the row nearest each frame): the plots draw
+    // a log column at the log's own resolution; past 100,000 rows every k-th row is kept
+    if (so.log && !log.rows.empty()) {
+      caps::Json lj = caps::Json::object(), lc = caps::Json::array(), lr = caps::Json::array();
+      for (const auto& c : log.columns) lc.push_back(c);
+      const size_t every = std::max<size_t>(1, (log.rows.size() + 99999) / 100000);
+      for (size_t r = 0; r < log.rows.size(); r += every) {
+        caps::Json row = caps::Json::array();
+        for (double v : log.rows[r]) row.push_back(std::isnan(v) ? caps::Json() : caps::Json(v));
+        lr.push_back(row);
+      }
+      lj["columns"] = lc, lj["rows"] = lr;
+      j["log"] = lj;
+    }
   } catch (const std::exception& e) {
     j = caps::Json::object();
     j["ok"] = false;

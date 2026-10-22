@@ -135,8 +135,19 @@ public sealed partial class MainViewModel
         if (_traj == null) return;
         var cols = _traj["columns"]!.AsArray().Select(x => x!.GetValue<string>()).ToList();
         var rows = _traj["rows"]!.AsArray();
+        // a column of the LAMMPS log is drawn from every thermo row (time from its step), not only the rows at frames
+        var logCols = _traj["log"]?["columns"]?.AsArray().Select(x => x!.GetValue<string>()).ToList();
+        var logRows = _traj["log"]?["rows"]?.AsArray();
+        var dtPs = (double)_trajDt / 1000.0;
         foreach (var p in TrajPlots)
         {
+            var lk = p.Series == null || logCols == null ? -1 : logCols.IndexOf(p.Series);
+            if (lk > 0 && logRows != null)
+            {
+                p.Points = logRows.Select(r => ((double?)r?[0] ?? double.NaN, (double?)r?[lk] ?? double.NaN)).Where(q => double.IsFinite(q.Item1) && double.IsFinite(q.Item2))
+                    .Select(q => (q.Item1 * dtPs, q.Item2)).ToArray();
+                continue;
+            }
             var k = p.Series == null ? -1 : cols.IndexOf(p.Series);
             p.Points = k < 0 ? [] : rows.Select(r => ((double?)r?[2] ?? 0, (double?)r?[k] ?? double.NaN)).Where(q => double.IsFinite(q.Item2)).ToArray();
         }

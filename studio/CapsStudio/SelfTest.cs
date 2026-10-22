@@ -2513,10 +2513,34 @@ internal static class SelfTest
             Views.FigureFiles.WritePdf(pdf, rgba, 40, 20, 72, 36);
             var tb = File.ReadAllBytes(tif);
             var pdfText = System.Text.Encoding.Latin1.GetString(File.ReadAllBytes(pdf));
-            Check(vm.IsComposer && sources >= 3 && thin && curve >= 1 && svg.StartsWith("<svg") && svg.Contains("<polyline") && svg.Contains("width=\"7in\"") &&
+            var vpdf = Path.Combine(outDir, "caps-selftest-figure-vector.pdf");
+            vm.Status = vm.ExportComposerPdf(vpdf);
+            var vtext = System.Text.Encoding.Latin1.GetString(File.ReadAllBytes(vpdf));
+            Check(vtext.StartsWith("%PDF-1.6") && vtext.Contains("/FontFile2") && vtext.Contains("/MediaBox [0 0 504 302.4]") && vtext.TrimEnd().EndsWith("%%EOF"),
+                  $"composer PDF is vector: fonts embedded {vtext.Contains("/FontFile2")} · {vtext.Length} bytes");
+            Check(vm.IsComposer && sources >= 3 && thin && curve >= 1 && svg.StartsWith("<svg") && svg.Contains("<path d=\"M") && svg.Contains("<text") && svg.Contains("width=\"7in\"") &&
                   tb[0] == 'I' && tb[2] == 42 && tb.Length == 8 + 2 + 12 * 12 + 4 + 6 + 16 + 40 * 20 * 3 && pdfText.StartsWith("%PDF-1.4") && pdfText.Contains("/MediaBox [0 0 72 36]") && pdfText.TrimEnd().EndsWith("%%EOF"),
                   $"composer: {sources} sources · {curve} curve panels · thin flagged {thin} · svg {svg.Length} chars · tiff {tb.Length} bytes");
             vm.SetModule(8);
+        }
+
+        // Save figure / Copy figure on every plot: one journal column (3.35 in), the Paper look (black frame, inward ticks,
+        // 8 pt), vector SVG and PDF with the fonts embedded as subsets, a 300 dpi PNG; the data behind it as CSV
+        {
+            var fig = PageFigures.ThermoTemperature(vm.Thermo.Count > 1 ? vm.Thermo : [], 300);
+            if (fig.Series.Length == 0) fig = PageFigures.RelaxEnergy(vm.RelaxEnergyCurve);   // the runs above: real rows either way
+            var svgP = Path.Combine(outDir, "caps-selftest-plot.svg");
+            var pdfP = Path.Combine(outDir, "caps-selftest-plot.pdf");
+            Views.SciExport.Save(fig, svgP, Views.SciExport.Single, 2.5);
+            Views.SciExport.Save(fig, pdfP, Views.SciExport.Single, 2.5);
+            var sv = File.ReadAllText(svgP);
+            var pd = System.Text.Encoding.Latin1.GetString(File.ReadAllBytes(pdfP));
+            var csv = Views.SciExport.ToCsv(fig);
+            var csvRows = csv.Split('\n').Count(l => l.Length > 0 && char.IsDigit(l[0]) || l.StartsWith('-'));
+            Check(sv.Contains("width=\"3.35in\"") && sv.Contains("font-size=\"8\"") && sv.Contains("font-size=\"7.5\"") && sv.Contains("stroke=\"#000000\"") && sv.Contains("#0072B2")
+                  && pd.StartsWith("%PDF-1.6") && pd.Contains("/MediaBox [0 0 241.2 180]") && (pd.Contains("/FontFile2") || !Views.PrintFonts.Available) && pd.Contains("/ToUnicode")
+                  && csvRows == fig.Series.Sum(x => x.X.Length),
+                  $"plot export: SVG {sv.Length} chars at 3.35 in, PDF {pd.Length} bytes (fonts {(Views.PrintFonts.Available ? "embedded" : "none found")}), CSV {csvRows} rows");
         }
 
         // Row 17: chain statistics, the density calculator, SASA, the cell editor, display units, the molecule inspector

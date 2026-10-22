@@ -14,8 +14,9 @@ namespace CapsStudio.ViewModels;
 public sealed record ComposerCheck(string Text, bool Ok);
 
 /// <summary>Export › Figure composer (design/boards/FigureComposer): panels a, b, c … laid out on a journal page — the 3D
-/// view or any curve already in the project — with line, colour and text settings checked at print size, exported as
-/// SVG (vector plots), PNG and TIFF at the chosen dpi, or PDF (the page as an image at that dpi).</summary>
+/// view or any curve already in the project, with line, colour and text settings checked at print size, the plots drawn
+/// as every print figure of CAPS is (SciPlot's Paper style), exported as vector SVG or vector PDF (the 3D panel as an
+/// image in both), or as PNG and TIFF at the chosen dpi.</summary>
 public partial class MainViewModel
 {
     public bool IsComposer => _module == 54;
@@ -23,9 +24,11 @@ public partial class MainViewModel
     private static readonly (double W, double H)[] PresetSizes = [(3.5, 2.6), (7.0, 4.2), (7.0, 9.0), (13.33, 7.5)];
     public static readonly string[] ComposerLayouts = ["1 × 1", "1 × 2", "2 × 1", "2 × 2", "1 × 3", "3 × 1"];
     private static readonly (int R, int C)[] LayoutShapes = [(1, 1), (1, 2), (2, 1), (2, 2), (1, 3), (3, 1)];
-    public static readonly string[] ComposerFonts = ["Arial", "IBM Plex Sans", "Times New Roman"];
-    public static readonly string[] ComposerColourNames = ["amber · v2", "blue · v2", "red · v2", "violet · v2", "green · v2", "ink"];
-    private static readonly string[] ComposerColourHex = ["#E8893A", "#3B7DD8", "#DE775D", "#9B7AD5", "#5FAF6E", "#1E2226"];
+    // the print figures are set in Arial (Liberation Sans or IBM Plex Sans where Arial is missing), in SVG, PDF and the images alike
+    public static readonly string[] ComposerFonts = ["Arial"];
+    // Okabe & Ito's colour-blind safe colours (the print palette of every CAPS figure) and black
+    public static readonly string[] ComposerColourNames = ["blue", "vermillion", "bluish green", "reddish purple", "orange", "sky blue", "black"];
+    private static readonly string[] ComposerColourHex = [.. SciStyle.PaperPalette, "#000000"];
 
     public FigureComposition Composition { get; } = new();
     public ObservableCollection<string> ComposerSources { get; } = new();
@@ -47,7 +50,7 @@ public partial class MainViewModel
     public int ComposerSource { get => _cmpSource[_cmpPanel]; set { _cmpSource[_cmpPanel] = Math.Max(0, value); RaiseComposer(); } }
     public int ComposerColour { get => _cmpColour[_cmpPanel]; set { _cmpColour[_cmpPanel] = Math.Clamp(value, 0, ComposerColourHex.Length - 1); RaiseComposer(); } }
     public decimal ComposerLine { get => (decimal)_cmpLine[_cmpPanel]; set { _cmpLine[_cmpPanel] = (double)Math.Clamp(value, 0.1m, 6m); RaiseComposer(); } }
-    public int ComposerFont { get => _cmpFont; set { if (Set(ref _cmpFont, Math.Clamp(value, 0, 2))) { Composition.Font = ComposerFonts[_cmpFont]; RaiseComposer(); } } }
+    public int ComposerFont { get => _cmpFont; set { if (Set(ref _cmpFont, Math.Clamp(value, 0, ComposerFonts.Length - 1))) { Composition.Font = ComposerFonts[_cmpFont]; RaiseComposer(); } } }
     public decimal ComposerFontPt { get => (decimal)Composition.FontPt; set { Composition.FontPt = (double)Math.Clamp(value, 4m, 24m); RaiseComposer(); } }
     public bool ComposerLabels { get => Composition.Labels; set { Composition.Labels = value; RaiseComposer(); } }
     public string ComposerSummary => $"{PanelCount} panel{(PanelCount == 1 ? "" : "s")} · {ComposerOutput} at {_cmpDpi} dpi";
@@ -123,6 +126,7 @@ public partial class MainViewModel
                     var rgba = new byte[w * h * 4];
                     _doc.Render(Camera, o, rgba);
                     p.View = ToBitmap(rgba, w, h);
+                    (p.ViewRgba, p.ViewW, p.ViewH) = (rgba, w, h);
                 }
                 catch { p.View = null; }
             }
@@ -130,21 +134,28 @@ public partial class MainViewModel
             {
                 p.Kind = "curve";
                 var what = src["Dynamics log · ".Length..];
-                p.Points = _thermo.Select(t => (t.TimePs, what == "temperature" ? t.Temperature : what == "density" ? t.Density : t.Potential)).ToArray();
-                (p.XLabel, p.YLabel) = ("time (ps)", what == "temperature" ? "T (K)" : what == "density" ? "ρ (g/cm³)" : "E (kcal/mol)");
+                p.Figure = what == "temperature" ? PageFigures.ThermoTemperature(_thermo, null) : what == "density" ? PageFigures.ThermoDensity(_thermo) : PageFigures.ThermoEnergy(_thermo);
             }
             else if (src.StartsWith("Bars · "))
             {
                 p.Kind = "bars";
                 var unit = Analyze.Results.Where(r => double.IsFinite(r.Value)).GroupBy(r => r.Unit).OrderByDescending(g => g.Count()).First();
-                p.Bars = unit.Select(r => (r.Name.Length > 12 ? r.Name[..12] : r.Name, r.Value)).ToArray();
-                p.YLabel = unit.Key;
+                var rows = unit.ToArray();
+                // each result with its standard error where it has one
+                p.Figure = new SciFigure
+                {
+                    Categories = rows.Select(r => r.Name.Length > 12 ? r.Name[..12] : r.Name).ToArray(), YLabel = PageFigures.Title("value (" + unit.Key + ")"), Empty = "",
+                    Series = [new SciSeries("", rows.Select((_, i) => (double)i).ToArray(), rows.Select(r => r.Value).ToArray()) { Kind = SciKind.Bars, Legend = false }],
+                };
             }
             else if (Analyze.Curves.FirstOrDefault(c => $"{c.Property} · {c.Label}" == src) is { } c)
             {
                 p.Kind = "curve";
-                p.Points = c.X.Zip(c.Y).Where(q => double.IsFinite(q.First) && double.IsFinite(q.Second)).ToArray();
-                (p.XLabel, p.YLabel, p.RefY) = (c.XLabel, c.YLabel, c.RefY);
+                p.Figure = c.Figure ?? new SciFigure
+                {
+                    XLabel = AnalyzeFigures.Title(c.XLabel), YLabel = AnalyzeFigures.Title(c.YLabel), XLog = c.LogLog, YLog = c.LogLog, RefY = c.RefY, Empty = "",
+                    Series = [new SciSeries("", c.X, c.Y) { Kind = PageFigures.Auto(c.X.Length), Legend = false }],
+                };
             }
             Composition.Panels.Add(p);
         }
@@ -186,9 +197,19 @@ public partial class MainViewModel
         return $"Wrote {Path.GetFileName(path)} · plots as vectors, the 3D panel as an image";
     }
 
-    /// <summary>PNG, TIFF or PDF of the page at the chosen dpi.</summary>
+    /// <summary>The page as a vector PDF: plots as paths and text with the fonts embedded, the 3D panel at the chosen dpi.</summary>
+    public string ExportComposerPdf(string path)
+    {
+        BuildPanels(_cmpDpi);
+        File.WriteAllBytes(path, Composition.ToPdf());
+        BuildPanels(null);
+        return $"Wrote {Path.GetFileName(path)} · vector PDF, {Composition.WidthIn.ToString("0.##", CultureInfo.InvariantCulture)} × {Composition.HeightIn.ToString("0.##", CultureInfo.InvariantCulture)} in, the 3D panel at {_cmpDpi} dpi";
+    }
+
+    /// <summary>PNG or TIFF of the page at the chosen dpi (a .pdf goes to the vector writer).</summary>
     public string ExportComposerRaster(string path)
     {
+        if (Path.GetExtension(path).Equals(".pdf", StringComparison.OrdinalIgnoreCase)) return ExportComposerPdf(path);
         BuildPanels(_cmpDpi);
         var (w, h) = ((int)Math.Round(Composition.WidthIn * _cmpDpi), (int)Math.Round(Composition.HeightIn * _cmpDpi));
         using var rtb = new RenderTargetBitmap(new Avalonia.PixelSize(w, h), new Avalonia.Vector(96, 96));
