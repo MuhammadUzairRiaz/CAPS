@@ -1368,7 +1368,7 @@
     },
     {
      "img": "22_glass.jpg",
-     "cap": "**Glass transition** on a polyethylene cell (6 chains × 30 units, OPLS-AA 2024, 1,092 atoms): a demonstration scan from 400 to 200 K in 50 K steps of 1 ps each, the specific volume at each temperature and the two-line fit, Tg 250 ± 18 K. A scan this short shows the page at work; a Tg to quote needs holds of nanoseconds and several replicas."
+     "cap": "**Glass transition** of the same atactic polystyrene cell (10 chains × 30 units, 4,820 atoms, OPLS-AA 2024), three cooling scans run on the Barnard HPC cluster and opened here with **Open finished runs…**: 1 ns at 600 K, then 600 to 300 K in 25 K steps held 1 ns each (2.5 × 10¹⁰ K/s), one seed per scan. The specific volume with the spread of the three scans, the glass and melt fits and Tg = 478 ± 18 K (mean ± SD). Simulated cooling is about eleven decades faster than DSC, so Tg sits well above the measured 373 K, and the break between the two branches is gentler than in experiment."
     }
    ],
    "steps": [
