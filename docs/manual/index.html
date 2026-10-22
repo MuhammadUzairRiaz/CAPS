@@ -413,11 +413,12 @@ dialog img{max-width:96vw;max-height:94vh;display:block;border-radius:6px;cursor
 <section id="f-eq">
   <h2>Equilibrate</h2>
   <figure><button type="button" aria-label="Enlarge"><img src="img/09_equilibrate.jpg" alt="Equilibrate page" loading="lazy"></button>
-    <figcaption><b>Equilibrate.</b> Published protocols, then production blocks until converged. Density, energy and Rg are plotted live.</figcaption></figure>
+    <figcaption><b>Equilibrate.</b> A run that finished on the Barnard HPC cluster, opened with <span class="ui">Open finished run…</span>: atactic polystyrene, 10 chains × 30 units (4,820 atoms, OPLS-AA 2024), the Larsen 21-step protocol at 0.5 fs (1,560 ps, NPT stages shaded) and three 20 ps production blocks. Density and potential energy with the block means, ⟨Rg⟩ per block, the four convergence criteria, all met, and C<sub>n</sub> of the final cell; final density 0.993 g/cm³.</figcaption></figure>
   <ul>
     <li>The Protocol dropdown lists published schemes, such as Larsen et al. 21-step (2011): 21 stages, 1,560 ps. Set T final, T max, P final and a time multiplier.</li>
     <li><span class="ui">Production blocks until converged</span> adds blocks until density, energy and Rg stop drifting, up to the maximum number of blocks.</li>
     <li><span class="ui">Keep the original</span> writes the result to a new structure.</li>
+    <li><span class="ui">Open finished run…</span> shows a <code>caps equilibrate</code> run done elsewhere, from its folder or from its thermo log (<code>--log</code>), printed output and structure: the same curves, stages, block means and criteria as a run started here. On Jobs, a finished cluster job has <span class="ui">Show on its page</span>.</li>
   </ul>
 </section>
 
@@ -435,10 +436,11 @@ dialog img{max-width:96vw;max-height:94vh;display:block;border-radius:6px;cursor
 <section id="f-analyze">
   <h2>Analyze</h2>
   <div class="grid2">
-    <figure><button type="button" aria-label="Enlarge"><img src="img/18_analyze.jpg" alt="Analyze: result cards and the cooling-curve figure" loading="lazy"></button><figcaption><b>Analyze.</b> A 3,220-atom polystyrene melt: result cards with their figures and the cooling curve with the glass and melt fits and Tg.</figcaption></figure>
+    <figure><button type="button" aria-label="Enlarge"><img src="img/18_analyze.jpg" alt="Analyze: result cards and the mean-square displacement figure" loading="lazy"></button><figcaption><b>Analyze.</b> 2 ns of NPT at 300 K run on the Barnard HPC cluster after that equilibration (4,820 atoms, 201 frames). Seven properties computed; in view the density card against atactic polystyrene in experiment (0.997 g/cm³, 4 % below 1.04–1.065 g/cm³; OPLS-AA glass densities are known to come out 3–8 % low), the C–C g(r), and the MSD of atoms and chain centres, nearly flat and far shallower than the ∝ t guide: the glass is sub-diffusive over 2 ns, so no diffusion coefficient is given.</figcaption></figure>
     <figure><button type="button" aria-label="Enlarge"><img src="img/22_glass.jpg" alt="Glass transition" loading="lazy"></button><figcaption><b>Glass transition.</b> Cooling scan and Tg fit.</figcaption></figure>
   </div>
   <p>Other analyses include density, g(r), chain statistics, free volume, interface profiles, moduli from tensile runs (x, y, z or averaged), orientation and scattering. Each one exports CSV.</p>
+  <p>On the Glass transition page, <span class="ui">Open finished runs…</span> reads cooling scans that ran elsewhere: <code>caps tg</code> run folders, their <code>OUT.tg-points.json</code> or their csv folders. Several are replicas and are pooled as mean ± SD with error bars, as the page pools its own; the command line does the same with <code>caps tg --fit RUN RUN …</code>.</p>
 </section>
 
 <section id="f-export">

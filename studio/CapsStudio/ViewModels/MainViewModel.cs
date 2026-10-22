@@ -1993,6 +1993,7 @@ public sealed partial class MainViewModel : ObservableObject
         var pin = target.Length > 0 ? System.Runtime.InteropServices.GCHandle.Alloc(target, System.Runtime.InteropServices.GCHandleType.Pinned) : default;
         if (pin.IsAllocated) { o.InternalTarget = pin.AddrOfPinnedObject(); o.InternalTargetN = target.Length; }
         _thermo.Clear();
+        EqOpenedText = "";
         ThermoChanged?.Invoke();
         EqLog = "Starting…";
         Status = $"Equilibrating {Title}: {Protocols[_eqProtocol]}…";

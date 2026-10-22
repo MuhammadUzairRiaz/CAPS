@@ -3,12 +3,20 @@
             xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
             x:Class="CapsStudio.Views.Pages.EquilibratePage" x:DataType="vm:MainViewModel">
   <Grid RowDefinitions="Auto,*" Margin="22,16,22,16" RowSpacing="16">
-    <Grid ColumnDefinitions="*,Auto">
+    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
       <StackPanel Spacing="3">
         <TextBlock Text="Equilibrate · convergence" Classes="title" />
         <TextBlock Classes="muted" TextWrapping="Wrap"><Run Text="Published protocols, then production blocks until density, energy and Rg stop drifting · " /><Run Text="{Binding ForceFieldLine}" /></TextBlock>
-        <v:StructurePicker ShowResultOption="True" Margin="0,8,0,0" HorizontalAlignment="Left" />
-        <v:RemoteRunPanel IsVisible="{Binding RunsRemote}" Margin="0,8,0,0" />
+      </StackPanel>
+      <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Spacing="8" Margin="0,8,0,0">
+        <StackPanel Orientation="Horizontal" Spacing="12">
+          <v:StructurePicker ShowResultOption="True" HorizontalAlignment="Left" />
+          <Border Classes="chip" VerticalAlignment="Center" IsVisible="{Binding EqShowsFinished}"
+                  ToolTip.Tip="{Binding EqOpenedFiles, StringFormat='Read from a run that finished elsewhere (a cluster job), not run here: {0}'}">
+            <StackPanel Orientation="Horizontal" Spacing="6"><v:Icon Kind="server" Size="13" VerticalAlignment="Center" /><TextBlock Text="{Binding EqOpenedText}" Foreground="{DynamicResource TextB}" /></StackPanel>
+          </Border>
+        </StackPanel>
+        <v:RemoteRunPanel IsVisible="{Binding RunsRemote}" />
       </StackPanel>
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
         <Border Classes="chip" Height="26" IsVisible="{Binding EqCriteriaText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
@@ -25,6 +33,15 @@
         </Button>
         <ComboBox ItemsSource="{Binding RunWhereChoices}" SelectedIndex="{Binding RunWhereIndex}" IsVisible="{Binding HasHosts}" MinWidth="150" VerticalAlignment="Center"
                   ToolTip.Tip="Where Run goes: this machine, or a host from Settings › Compute &amp; remote (the structure and a recipe of these settings go up; the result comes back to Jobs)" />
+        <Button IsEnabled="{Binding Idle}" ToolTip.Tip="A run that finished elsewhere (caps equilibrate on a cluster): its thermo log (--log), its printed output and the structure it wrote, shown here as a run of this page">
+          <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="folder" Size="15" VerticalAlignment="Center" /><TextBlock Text="Open finished run…" VerticalAlignment="Center" /></StackPanel>
+          <Button.Flyout>
+            <MenuFlyout Placement="BottomEdgeAlignedRight">
+              <MenuItem Header="The run's folder…" Click="OnOpenFinishedFolder" />
+              <MenuItem Header="Its files (thermo log, output, structure)…" Click="OnOpenFinishedFiles" />
+            </MenuFlyout>
+          </Button.Flyout>
+        </Button>
         <Button Click="OnCopyCommand" ToolTip.Tip="This run as the caps command line runs it: the same options, defaults and engine">
           <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="terminal" Size="16" VerticalAlignment="Center" /><TextBlock Text="Copy command" VerticalAlignment="Center" /></StackPanel>
         </Button>

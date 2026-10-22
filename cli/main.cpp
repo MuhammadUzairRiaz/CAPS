@@ -210,7 +210,7 @@ int usage() {
                "               interfaces (zprofile, adhesion, interaction, orientation): [--surface 1-3,7 (molecule ids; 1)] [--axis x|y|z (z)] [--zbin 0.5]\n"
                "  caps elastic FILE [--topology DATA] [--method strain|fluct|fluct-run] [--configs N] [--strain 1e-4] [--temp T] [--ps 100] [--ff FF.json] [--json OUT]\n"
                "  caps tensile DATA -o OUT.data [--axis x] [--rate 1e-3] [--strain 0.2] [--temp 300] [--fixed-lateral] [--precision mixed|double] [--ff FF.json [--overlay OV.json] [--charges MODE] [--complete ml]] [--csv DIR]\n"
-               "  caps tg DATA -o OUT.data [--from 500 --to 200 --step 20 --ps 100] [--precision mixed|double] [--ff FF.json [--overlay OV.json] [--charges MODE] [--complete ml]] [--csv DIR]   |   caps tg --fit TABLE.csv\n"
+               "  caps tg DATA -o OUT.data [--from 500 --to 200 --step 20 --ps 100] [--precision mixed|double] [--ff FF.json [--overlay OV.json] [--charges MODE] [--complete ml]] [--csv DIR]   |   caps tg --fit RUN [RUN ...] [--volume]\n"
                "  caps frames  FILE OUT.lammpstrj|dcd|xyz|pdb|gro|trr [--topology DATA] [--first N] [--last N] [--stride N]   (read thinned)\n"
                "  caps convert FILE OUT.data|xyz|pdb|mol2|car|gro|sdf|cif|vasp|POSCAR [--topology DATA]   (.car: with its .mdf)\n"
                "  caps edit    FILE --ops 'OP ARGS; OP ARGS …' | --ops-file OPS.txt -o OUT   edits in order, atoms numbered from 1:\n"
@@ -3128,35 +3128,23 @@ int main(int argc, char** argv) {
   if (cmd == "tg") {
     // caps tg DATA -o OUT.data [--from 500 --to 200 --step 20 --ps 100] [--dt 1] [--pressure 1] [--barostat crescale|berendsen]
     //         [--seed 1] [--new-velocities] [--ff ...] [--json] [--csv DIR]
-    // caps tg --fit TABLE.csv       two-line fit of an existing table (T, density or specific volume)
+    // caps tg --fit RUN [RUN ...]    two-line fit of finished scans (a run folder, OUT.tg-points.json, a csv folder or a table
+    //                               of T and density or specific volume); several are replicas: mean ± SD
     try {
       if (o.count("--fit")) {
-        std::ifstream f(o["--fit"]);
-        if (!f) throw std::runtime_error("cannot read " + o["--fit"]);
-        std::vector<double> T, y;
-        for (std::string line; std::getline(f, line);) {
-          if (line.empty() || line[0] == '#') continue;
-          for (char& c : line) if (c == ',' || c == ';' || c == '\t') c = ' ';
-          std::istringstream ls(line);
-          double a, b;
-          if (ls >> a >> b) { T.push_back(a); y.push_back(b); }
+        // one finished scan or several replicas (their folders, OUT.tg-points.json, csv folders or tables): each fitted, and
+        // replicas pooled as mean ± SD
+        std::vector<std::string> paths = {o["--fit"]};
+        paths.insert(paths.end(), pos.begin(), pos.end());
+        std::vector<CoolingScan> scans;
+        for (const auto& p : paths) scans.push_back(read_cooling_scan(p, o.count("--volume") > 0));
+        const auto props = fit_cooling_scans(scans);
+        for (size_t k = 0; k < scans.size(); ++k) {
+          const auto& sc = scans[k];
+          std::printf("%s: %zu temperatures %g to %g K%s%s\n", sc.source.c_str(), sc.points.size(), sc.points.front().temperature, sc.points.back().temperature,
+                      sc.log.empty() ? "" : (", schedule from " + sc.log).c_str(), sc.atoms ? (", " + std::to_string(sc.atoms) + " atoms").c_str() : "");
         }
-        const bool density = !y.empty() && y[0] > 0.5 && y[0] < 3 && !o.count("--volume");
-        CoolingResult r;
-        for (size_t i = 0; i < T.size(); ++i) {
-          CoolingPoint p;
-          p.temperature = T[i];
-          p.density = density ? y[i] : 1 / y[i];
-          p.specific_volume = density ? 1 / y[i] : y[i];
-          r.points.push_back(p);
-        }
-        std::vector<double> v;
-        for (const auto& p : r.points) v.push_back(p.specific_volume);
-        r.fit = fit_bilinear(T, v);
-        r.method = "two-line fit (free hinge) of specific volume against T from " + o["--fit"] + " (" + std::to_string(T.size()) + " points" +
-                   (density ? ", densities inverted" : "") + "), error by bootstrap";
-        if (!r.fit.note.empty()) r.notes.push_back(r.fit.note);
-        cli_report(cooling_properties(r), o);
+        cli_report(props, o);
         return 0;
       }
       if (pos.empty() || !o.count("-o")) return usage();

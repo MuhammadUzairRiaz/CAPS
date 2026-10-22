@@ -501,7 +501,9 @@ public sealed class SciPlot : Control
             if (st.Label.Length > 0)
             {
                 var lw = RichWidth(st.Label, f.FLegend * 0.92);
-                if (lw + 6 < x1 - x0)
+                var lx = (x0 + x1 - lw) / 2;
+                // a label that would crowd the one before it (two short stages side by side) is left out
+                if (lw + 6 < x1 - x0 && !keepOut.Any(k => lx < k.Right + 8 && lx + lw > k.Left - 8))
                 {
                     DrawRich(ctx, st.Label, f.FLegend * 0.92, Soft, new Point((x0 + x1) / 2, T + f.TickLen + 2), 0.5, 0);
                     keepOut.Add(new Rect((x0 + x1 - lw) / 2, T, lw, f.TickLen + 2 + f.FLegend * 1.2));

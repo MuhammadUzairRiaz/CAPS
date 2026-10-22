@@ -139,7 +139,8 @@
    "studio": "Analyze › Glass transition",
    "where": "Views/Pages/GlassPage.axaml|Run cooling",
    "capi": [
-    "caps_analyze_ex"
+    "caps_analyze_ex",
+    "caps_tg_fit"
    ],
    "options": {
     "--from": "page",
@@ -151,8 +152,9 @@
     "--overlay": "ViewModels/FieldViewModel.Sync.cs|FieldSetOverlays",
     "--charges": "page",
     "--csv": "page",
-    "--fit": "partial: the page fits its own scan (two lines, free hinge or ranges); fitting a CSV table written elsewhere is the command line's",
-    "--complete": "ViewModels/FieldViewModel.cs|CompleteMl"
+    "--fit": "Views/Pages/GlassPage.axaml|Open finished runs…",
+    "--complete": "ViewModels/FieldViewModel.cs|CompleteMl",
+    "--volume": "partial: the Studio reads a table's header (density or specific volume); a table without one is taken as density, and only the command line can say it is specific volume"
    }
   },
   "frames": {
@@ -1019,7 +1021,7 @@
     "--charges": "page",
     "--precision": "Views/Pages/DynamicsPage.axaml|MdDoublePrecision",
     "--overlay": "ViewModels/FieldViewModel.Sync.cs|FieldSetOverlays",
-    "--log": "partial: the thermo rows are kept with the run and exported from the plots; no CSV path option",
+    "--log": "partial: a run here keeps its rows with the run (exported from the plots, no CSV path option); a CSV written by --log on another machine opens on the page with Open finished run…",
     "--quiet": "cli: terminal output only",
     "--complete": "ViewModels/FieldViewModel.cs|CompleteMl"
    }

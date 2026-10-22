@@ -11265,6 +11265,38 @@ extern "C" int32_t caps_solvent_chi(const char* json, char* out, int32_t cap) {
   }
 }
 
+extern "C" int32_t caps_tg_fit(const char* json, char* out, int32_t cap) {
+  try {
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    std::vector<caps::CoolingScan> scans;
+    if (j.has("paths"))
+      for (const auto& p : j["paths"].items()) scans.push_back(caps::read_cooling_scan(p.str(), j.has("volume") && j["volume"].boolean()));
+    const auto props = caps::fit_cooling_scans(scans, int(j.num("property", 0)), int(j.num("fit", 0)), j.num("glassy_max", 0), j.num("rubbery_min", 0));
+    caps::Json r = caps::Json::object();
+    r["ok"] = true;
+    caps::Json list = caps::Json::array();
+    for (const auto& sc : scans) {
+      caps::Json o = caps::Json::object();
+      o["source"] = sc.source, o["log"] = sc.log, o["schedule"] = sc.schedule;
+      o["t_step"] = sc.t_step, o["hold_ps"] = sc.hold_ps, o["atoms"] = double(sc.atoms);
+      o["logged_tg"] = std::isfinite(sc.logged_tg) ? caps::Json(sc.logged_tg) : caps::Json();
+      caps::Json pts = caps::Json::array();
+      for (const auto& p : sc.points) {
+        caps::Json q = caps::Json::object();
+        q["T"] = p.temperature, q["density"] = p.density, q["density_err"] = p.density_err, q["specific_volume"] = p.specific_volume, q["potential"] = p.potential;
+        pts.push_back(std::move(q));
+      }
+      o["points"] = std::move(pts);
+      list.push_back(std::move(o));
+    }
+    r["scans"] = std::move(list);
+    r["properties"] = caps::Json::parse(caps::properties_json(props));
+    return report_out(r.dump(0), out, cap);
+  } catch (const std::exception& e) {
+    return json_error(e, out, cap);
+  }
+}
+
 extern "C" int32_t caps_ewald_params(caps_doc* d, const char* json, char* out, int32_t cap) {
   try {
     const caps::Json j = caps::Json::parse(json && *json ? json : "{}");

@@ -882,7 +882,7 @@
    "shots": [
     {
      "img": "09_equilibrate.jpg",
-     "cap": "**Equilibrate** on the minimised polystyrene cell: the Larsen 21-step protocol shortened to 0.002 of its published length (3.1 ps) and two 0.5 ps production blocks, with density, potential energy and ⟨Rg⟩ drawn as they run. 0 of 4 convergence criteria are met: a run this short cannot converge, and the page says so."
+     "cap": "**Equilibrate** showing a run that finished on the Barnard HPC cluster, opened here with [[Open finished run…]]: atactic polystyrene, 10 chains × 30 units (4,820 atoms, OPLS-AA 2024), grown and minimised, then `caps equilibrate --protocol larsen21 --dt 0.5 --tfinal 300 --tmax 600 --until-converged --block 20`. The 21-step protocol (1,560 ps, NPT stages shaded) and three 20 ps production blocks, 1,620 ps in all: density and potential energy with the block means, ⟨Rg⟩ per block, the four criteria, all met after the third block, and Cₙ along the backbones of the final cell. The final density is 0.993 g/cm³."
     }
    ],
    "steps": [
@@ -915,6 +915,13 @@
      "t": "Press Equilibrate",
      "d": [
       "Watch the plots and the **Criteria** panel. [[Accept now]] keeps the current state; [[Save trajectory…]] writes the frames."
+     ]
+    },
+    {
+     "t": "A run from a cluster",
+     "d": [
+      "[[Open finished run…]] reads a `caps equilibrate` run done elsewhere: its folder, or its thermo log (`--log`), its printed output and the structure it wrote. The curves, stages, block means, criteria and report appear as for a run started here, and the protocol and block length become the page's, so the **Extend** button carries on from it. Without the printed output, density and energy are checked from the thermo log and Rg is left out.",
+      "A finished Equilibrate job on the Jobs page has [[Show on its page]] for the same view of the files the host sent back."
      ]
     }
    ],
@@ -1357,7 +1364,7 @@
    "shots": [
     {
      "img": "18_analyze.jpg",
-     "cap": "**Analyze**: a 3,220-atom atactic polystyrene melt (OPLS-AA 2024, 500 K): the result cards with their figures and, beside them, the cooling curve with the glass and melt fits and Tg."
+     "cap": "**Analyze** on 2 ns of NPT at 300 K and 1 atm run on the Barnard HPC cluster after that equilibration (201 frames, one every 10 ps). Seven properties are computed: density, the C–C g(r), Rg, Cₙ and C∞, CED, δ and the MSD. In view: the density card against atactic polystyrene in experiment, 0.997 ± 0.002 g/cm³ or 4 % below the measured 1.04–1.065 g/cm³ (OPLS-AA glass densities are known to come out 3–8 % low), the C–C g(r), and the MSD of atoms and chain centres on log axes. Both stay nearly flat, far shallower than the ∝ t guide: over 2 ns the glass is sub-diffusive, so no diffusion coefficient is reported."
     },
     {
      "img": "22_glass.jpg",
@@ -1392,7 +1399,7 @@
     {
      "t": "Dedicated pages for the big ones",
      "d": [
-      "**Glass transition**: cooling from 500 K to 200 K in 20 K steps, 100 ps NPT each, Tg from a two-line fit ([[Run cooling]]).",
+      "**Glass transition**: cooling from 500 K to 200 K in 20 K steps, 100 ps NPT each, Tg from a two-line fit ([[Run cooling]]). [[Open finished runs…]] reads scans that ran elsewhere (`caps tg` folders, `OUT.tg-points.json` or its csv folder); several are replicas, pooled as mean ± SD with error bars, the same as `caps tg --fit RUN RUN …`.",
       "**Diffusion**: the MSD with its fit window and the Yeh–Hummer box-size correction.",
       "**Mechanics**: uniaxial tension and the stiffness matrix. All under **Modules › Analysis**."
      ]
