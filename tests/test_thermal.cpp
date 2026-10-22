@@ -206,6 +206,16 @@ TEST(Semicrystalline, UnreachableLayerRefused) {
   EXPECT_THROW(build_semicrystalline(o), std::invalid_argument);
 }
 
+TEST(Thermal, GreenKuboLammpsInputPrintsKappaOnlyWhenTheCorrelationExists) {
+  // fix ave/correlate gives f_JJ every p*s steps; a thermo line with trap(f_JJ) at any other step stops LAMMPS
+  // ("Fix in variable not computed at compatible time")
+  ThermalLammps q;
+  q.sample_every = 5, q.corr_ps = 10, q.ps = 2001.5;   // window 10,000 steps; 2,001,500 steps asked
+  const std::string t = thermal_lammps_run(q);
+  EXPECT_NE(t.find("thermo          ${d}\n"), std::string::npos);
+  EXPECT_NE(t.find("run             2010000\n"), std::string::npos) << t;
+}
+
 TEST(HeatFlux, PerAtomTermsSumToTheEvaluator) {
   // a small lamellar cell with GAFF (bonds, angles, torsions, LJ with 1-4 pairs, Gasteiger charges with DSF)
   SemicrystallineOptions o = small_stack();
