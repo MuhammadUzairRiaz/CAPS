@@ -232,13 +232,15 @@ void write_any(const System& s, const std::string& p, const std::string& comment
   else write_lammps_data(s, p);
 }
 
-void provenance(const std::string& path, const std::string& engine, const std::string& summary, const KeyValues& params, const std::string& rng = "") {
+void provenance(const std::string& path, const std::string& engine, const std::string& summary, const KeyValues& params, const std::string& rng = "",
+                const std::vector<std::string>& cites = {}) {
   Manifest m;
   ProvStep st;
   st.engine = engine;
   st.summary = summary;
   st.params = params;
   st.rng = rng;
+  st.cites = cites;
   st.time = now_iso();
   m.steps.push_back(st);
   try { write_manifest(m, path); } catch (...) {}
@@ -686,7 +688,8 @@ Json dft_run(const std::string& c, const Json& a, const std::string& data_dir) {
     j["notes"] = n;
     r["chain"] = j;
     r["text"] = t;
-    provenance((fs::path(out) / "POSCAR").string(), "dft.vasp_relax", "VASP relaxation chain " + o.label, {{"crystal", in[0]}, {"dimensionality", res.dimensionality}, {"profile", o.profile}});
+    provenance((fs::path(out) / "POSCAR").string(), "dft.vasp_relax", "VASP relaxation chain " + o.label, {{"crystal", in[0]}, {"dimensionality", res.dimensionality}, {"profile", o.profile}}, "",
+               {"kresse1996", "blochl1994", "kresse1999", "perdew1996", "grimme2010", "grimme2011"});
     return r;
   }
   if (c == "phono3py") {
@@ -786,7 +789,7 @@ Json dft_run(const std::string& c, const Json& a, const std::string& data_dir) {
       for (size_t k = 0; k < res.dirs.size(); ++k) { plans.push_back(res.plans[k].json()); dirs.push_back(res.dirs[k]); t += res.dirs[k] + ":\n" + res.plans[k].text(); }
       r["dirs"] = dirs;
       t += "next: sbatch run_dryrun.sh in each set (README.txt has the order)\n";
-      provenance((fs::path(res.dirs[0]) / "POSCAR-unitcell").string(), "dft.phono3py", "phono3py set " + o.label, {{"crystal", in[1]}, {"mode", o.mode}, {"profile", o.profile}});
+      provenance((fs::path(res.dirs[0]) / "POSCAR-unitcell").string(), "dft.phono3py", "phono3py set " + o.label, {{"crystal", in[1]}, {"mode", o.mode}, {"method", o.method}, {"profile", o.profile}}, "", phono3py_cites(o.mode, o.method));
     }
     r["plans"] = plans;
     r["text"] = t;
