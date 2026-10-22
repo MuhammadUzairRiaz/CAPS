@@ -74,9 +74,16 @@ public static class PageFigures
         var series = new List<SciSeries>();
         if (pts.Length > 1) series.Add(S("", pts, SciKind.Line) with { Width = 1.2, Legend = false });
         if (blocks is { Length: > 0 } && pts.Length > 1) series.Add(S("block means", blocks, SciKind.Markers, 1) with { Square = true });
+        // labelled stages: headroom above the curve, so the ensemble names sit over empty plot, not over the data
+        double? top = null;
+        if (stages is { Length: > 0 } && stages.Any(st => st.Label.Length > 0) && pts.Length > 1 && !fromZero)
+        {
+            var (lo, hi) = (pts.Min(p => p.Item2), pts.Max(p => p.Item2));
+            if (hi > lo) top = hi + 0.22 * (hi - lo);
+        }
         return new SciFigure
         {
-            XLabel = Time, YLabel = yLabel, Series = [.. series], Stages = stages == null ? [] : Stages(stages), YZero = fromZero,
+            XLabel = Time, YLabel = yLabel, Series = [.. series], Stages = stages == null ? [] : Stages(stages), YZero = fromZero, YMax = top,
             Guides = target is double t && double.IsFinite(t) ? [new SciGuide(t, targetLabel)] : [], Empty = "",
         };
     }

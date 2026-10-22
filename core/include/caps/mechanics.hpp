@@ -353,4 +353,23 @@ std::vector<Property> tensile_properties(const TensileResult& r);
 std::vector<Property> pull_properties(const PullResult& r, bool normal);
 std::vector<Property> cooling_properties(const CoolingResult& r);
 
+// A cooling scan that ran elsewhere (caps tg on a cluster), read back. PATH is the run's folder, its OUT.tg-points.json,
+// its --csv folder, a properties file (--json) or a table of T against density or specific volume (volume: the second
+// column is specific volume whatever its header says). The schedule comes from the run's log when one beside it (the
+// folder, its parent or the one above) printed the same points; the atom count from a LAMMPS data file in the folder.
+struct CoolingScan {
+  std::vector<CoolingPoint> points;   // in the order of the scan
+  std::string source, log;            // the files read (log: empty when none matched)
+  std::string schedule;               // the log's description of the cooling ("stepwise cooling 600 → 300 K in 25 K steps …")
+  double t_step = 0, hold_ps = 0;     // K and ps, from the log (0: not known)
+  double logged_tg = std::numeric_limits<double>::quiet_NaN();   // Tg the run itself reported
+  size_t atoms = 0;                   // 0: no structure beside the points
+};
+CoolingScan read_cooling_scan(const std::string& path, bool volume = false);
+// Tg of finished scans, each fitted as run_cooling fits its own (property 0 specific volume, 1 potential energy per atom;
+// fit 0 continuous two lines with the hinge free, 1 two ranges). One scan: the property "tg". Several (replicas that
+// differ in their seed): "tg_r1" … for each and "tg", their mean ± SD at matching temperatures.
+std::vector<Property> fit_cooling_scans(const std::vector<CoolingScan>& scans, int property = 0, int fit = 0, double glassy_max = 0,
+                                        double rubbery_min = 0);
+
 }  // namespace caps

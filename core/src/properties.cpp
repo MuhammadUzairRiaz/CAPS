@@ -697,6 +697,24 @@ Property msd_prop(const Dyn& d, const AnalyzeOptions& o, Property* diffusion) {
       }
     }
   }
+  // the regime over the second half of the lags, from the atoms (many more than molecules, so less noise): a slope well
+  // below 1 is caged motion (a glass, or a run too short for the chains to diffuse), and no diffusion coefficient can be
+  // read from the MSD
+  {
+    std::vector<double> lx, ly;
+    for (size_t l = std::max<size_t>(1, maxlag / 2); l <= maxlag; ++l)
+      if (ma[l] > 0 && d.t[l] > 0) lx.push_back(std::log(d.t[l])), ly.push_back(std::log(ma[l]));
+    const double beta = linfit(lx, ly).second;
+    if (std::isfinite(beta)) {
+      p.extra["atom MSD log-log slope, second half of the lags"] = beta;
+      if (beta < 0.9) {
+        char b[260];
+        std::snprintf(b, sizeof b, "sub-diffusive: the atom MSD grows as t^%.2f over the second half of the lags (1 is diffusion) and the chain centres move "
+                      "%.2g Å (rms) in %.4g ps; the chains are caged, so no diffusion coefficient follows from this run", beta, std::sqrt(std::max(0.0, mc.back())), d.t.back());
+        p.notes.push_back(b);
+      }
+    }
+  }
   p.series.push_back(std::move(sa));
   p.series.push_back(std::move(sc));
   if (sl.x.size() > 1) p.series.push_back(std::move(sl));

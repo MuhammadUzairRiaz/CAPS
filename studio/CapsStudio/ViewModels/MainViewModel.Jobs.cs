@@ -105,7 +105,7 @@ public sealed class Job : INotifyPropertyChanged
         {
             _status = value;
             foreach (var n in new[] { nameof(Status), nameof(IsRunning), nameof(IsQueued), nameof(IsFailed), nameof(IsDone), nameof(IsQuiet), nameof(StatusText), nameof(ShowPause), nameof(CanCancel),
-                                      nameof(CanCheckRemote), nameof(CanOpenRemote), nameof(Where), nameof(HasFix), nameof(CanCancelRemote), nameof(CanResumeRemote) }) Raise(n);
+                                      nameof(CanCheckRemote), nameof(CanOpenRemote), nameof(CanShowOnPage), nameof(Where), nameof(HasFix), nameof(CanCancelRemote), nameof(CanResumeRemote) }) Raise(n);
         }
     }
     public bool IsRunning => _status == "running";
@@ -172,6 +172,8 @@ public sealed class Job : INotifyPropertyChanged
     public string QueueText { get; private set; } = "";
     public void SetQueue(string text) { QueueText = text; Raise(nameof(QueueText)); }
     public bool CanOpenRemote => IsRemote && IsDone;
+    /// <summary>A finished cluster run of Equilibrate or Glass: its curves and results shown on that page (Show on its page).</summary>
+    public bool CanShowOnPage => IsRemote && IsDone && Kind is "Equilibrate" or "Glass";
     public string Duration => Ended is { } e ? Seconds(e - Started) : Seconds(DateTime.Now - Started) + " so far";
 
     private static string Seconds(TimeSpan t) => t.TotalSeconds < 90 ? $"{t.TotalSeconds:F1} s" : t.TotalMinutes < 90 ? $"{t.TotalMinutes:F1} min" : $"{t.TotalHours:F1} h";

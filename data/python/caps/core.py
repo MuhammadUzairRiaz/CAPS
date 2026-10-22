@@ -217,7 +217,7 @@ def _declare(L: C.CDLL) -> None:
         "caps_ml_available": ([], I), "caps_ff_complete": ([P, S, S, P, P, B, I], I), "caps_bond_react_export": ([P, S, S, S, B, I], I),
         "caps_bond_react_import": ([S, S, S, S, S, D, B, I], I), "caps_reaction_library": ([S, B, I], I), "caps_field_add_rule": ([P, S, S, S, S], I), "caps_energy_terms": ([P, B, I], I), "caps_field_set_mixing": ([P, S], I),
         "caps_insert_molecules": ([P, S, I, D, C.c_uint64, B, I], I),
-        "caps_blend_phase": ([S, B, I], I), "caps_solvent_chi": ([S, B, I], I), "caps_ewald_params": ([P, S, B, I], I),
+        "caps_blend_phase": ([S, B, I], I), "caps_tg_fit": ([S, B, I], I), "caps_solvent_chi": ([S, B, I], I), "caps_ewald_params": ([P, S, B, I], I),
     }
     for name, (args, res) in sig.items():
         f = getattr(L, name, None)
@@ -1984,6 +1984,22 @@ def blend_phase(na: float, nb: float, a: float, b: float, t: float = 300.0) -> d
     """Flory–Huggins binary blend with χ = a + b/T: {chi_c, phi_c, tc, chi_t, coexist, spinodal, binodal {phi, t},
     spinodal_curve {phi, t}}."""
     return _json_call(library().caps_blend_phase, _enc(json.dumps({"na": na, "nb": nb, "a": a, "b": b, "t": t})))
+
+
+def tg_fit(paths, prop: str = "volume", fit: str = "hinge", glassy_max: float = 0.0, rubbery_min: float = 0.0, volume: bool = False) -> dict:
+    """Tg of cooling scans that ran elsewhere (caps tg on a cluster), as caps tg --fit: paths is one run or several replicas,
+    each a run folder, its OUT.tg-points.json, its csv folder, a properties file or a table of T and density (volume=True:
+    specific volume). prop "volume" | "energy" (potential energy per atom), fit "hinge" | "ranges" (glassy_max,
+    rubbery_min in K). Returns {scans: [{source, log, schedule, t_step, hold_ps, atoms, logged_tg, points}], properties:
+    [tg] for one scan, [tg_r1, …, tg] for replicas (tg: mean ± SD)}."""
+    if isinstance(paths, (str, os.PathLike)):
+        paths = [paths]
+    r = _json_call(library().caps_tg_fit, _enc(json.dumps({"paths": [os.fspath(p) for p in paths], "property": 1 if prop == "energy" else 0,
+                                                            "fit": 1 if fit == "ranges" else 0, "glassy_max": glassy_max,
+                                                            "rubbery_min": rubbery_min, "volume": bool(volume)})))
+    if not r.get("ok", False):
+        raise CapsError(r.get("error", "tg_fit failed"))
+    return r
 
 
 def solvent_chi(delta_polymer: float, solvents: list, t: float = 298.15) -> list:
