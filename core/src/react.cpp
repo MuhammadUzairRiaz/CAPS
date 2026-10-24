@@ -202,6 +202,41 @@ const std::map<std::string, std::string>& builtins() {
        "break 1 2\n"
        "move 5 2\n"
        "sites 1 2 3   # one epoxide ring\n"},
+      {"transesterification_exchange",
+       "reaction transesterification_exchange   # ester + alcohol: the alcohol's oxygen takes the acyl group and the ester's oxygen\n"
+       "                                        # takes the alcohol's H (associative exchange in a vitrimer network: the β-hydroxy\n"
+       "                                        # esters of an acid-cured ENR or epoxy, a polyester's links, a cellulose OH). No\n"
+       "                                        # byproduct; the way back is the same reaction. Capture: Wick et al. 2025, OPLS-AA\n"
+       "atom 1 C degree=3 not_aromatic   # the ester's carbonyl carbon\n"
+       "atom 2 O degree=1 bonded 1       # its C=O\n"
+       "atom 3 O H=0 degree=2 bonded 1   # the ester oxygen: leaves the acyl group, becomes an alcohol's\n"
+       "atom 4 C degree=4 bonded 3       # its sp3 carbon\n"
+       "atom 5 O H=1 degree=2            # the alcohol oxygen: becomes the ester oxygen\n"
+       "atom 6 C degree=4 bonded 5       # its sp3 carbon (an alcohol, not an acid)\n"
+       "atom 7 H bonded 5\n"
+       "initiators 5 1\n"
+       "capture 4.25\n"
+       "probability 1.0\n"
+       "min_path 4   # not the ester's own β-hydroxyl\n"
+       "form 5 1\n"
+       "break 1 3\n"
+       "move 7 3\n"},
+      {"polysulfide_exchange",
+       "reaction polysulfide_exchange   # S–S metathesis of di- and polysulfide bridges (sulfur-cured rubber, disulfide vitrimers):\n"
+       "                                # two S–S bonds trade partners, Sx + Sy → Sx' + Sy', every sulfur kept. Capture: twice the\n"
+       "                                # S–S bond, as Singh et al. 2020 react disulfides\n"
+       "atom 1 S degree=2\n"
+       "atom 2 S degree=2 bonded 1\n"
+       "atom 3 S degree=2\n"
+       "atom 4 S degree=2 bonded 3\n"
+       "initiators 1 3\n"
+       "capture 4.12\n"
+       "probability 1.0\n"
+       "min_path 4   # two bridges, or two ends of a long one\n"
+       "form 1 3\n"
+       "form 2 4\n"
+       "break 1 2\n"
+       "break 3 4\n"},
   };
   return m;
 }

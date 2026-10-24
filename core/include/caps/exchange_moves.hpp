@@ -12,8 +12,15 @@
 //          residue r1 of B within the capture distance that has a valence left, and lets r0 go.
 //   Template  any exchange a React template describes (the schemes of data/reactions, data/exchange): its sites found by
 //          chemistry within the template's capture distance, its bonds broken and made as it says, accepted with the
-//          ratio of the matches before and after (the way back is the same template on the products). Templates that
-//          move a hydrogen to a new partner or delete atoms run in LAMMPS (fix bond/react) instead.
+//          ratio of the matches before and after (the way back is the same template on the products). A hydrogen the
+//          template moves goes onto its new partner at a covalent bond length, on the side it came from (as React places
+//          it), and needs the relaxation below. Types follow roles: the template matched the other way on the products
+//          names the atom that plays each role after the change, and it takes the type and charge of the atom that played
+//          the role before (the oxygen an ester leaves becomes an alcohol's; atoms outside the pattern are paired through
+//          their neighbours' roles). With ExchangeOptions::parameterize, types come from the run's own assignment of the
+//          product's neighbourhood instead (roles need not be equivalent: an ester moving from a tertiary carbon to a
+//          secondary one), and charges still follow roles. min_path 0, React's "different molecules", reads here as at least 4 bonds apart, so
+//          a network exchanges within itself. Templates that delete atoms run in LAMMPS (fix bond/react) instead.
 //   Bind   dissociative exchange (Diels–Alder, hindered ureas, reversible stickers): a site of A and a site of B (or two of
 //          A when B is empty) within the capture distance bond, each while it has a valence left, or a bond between them
 //          breaks; the binding constant K = exp(ε/k_B T) weighs bonded against free.
@@ -25,6 +32,13 @@
 // term and every exclusion a change touches lies among them, and the rest (pairs with other atoms, k-space sums, tail
 // corrections) is the same before and after. Force fields with many-body terms, hydrogen bonds or virtual sites use the
 // whole system's energy instead.
+//
+// Relaxed moves (relax_steps > 0; all-atom templates): a new bond made at the capture distance is stretched by 1 to 3 Å,
+// so its energy turns down nearly every move. With relax_steps, the atoms of the change, the atoms bonded to them and
+// their hydrogens relax by steepest descent after it, the rest held in place: every bonded term within three bonds of
+// them, and every atom within the cut-off of them, enters that energy. ΔU is then the relaxed energy against the energy
+// before, and an accepted move keeps the relaxed positions. This is the relaxed bond-exchange criterion of the
+// atomistic vitrimer studies (Yang et al. 2016, Wick et al. 2025), not exact detailed balance: the positions change.
 #pragma once
 #include <cstdint>
 #include <functional>
@@ -57,6 +71,16 @@ struct ExchangeOptions {
   int attempts = 1;                  // moves tried at each call
   uint64_t seed = 1;
   bool local = true;                 // ΔU from the atoms near the change (false: the whole system's energy)
+  int relax_steps = 0;               // > 0: relaxed moves (see above), this many steepest-descent steps; needed by templates that move a hydrogen
+  int relax_depth = 3;               // bonds from the change within which atoms relax (with the hydrogens on them)
+  // The run's force-field assignment. Each change's neighbourhood, six bonds deep with hydrogen caps on the cut bonds
+  // (none across a double or aromatic bond), is typed with it: the atoms within three bonds of the change take its types,
+  // and the terms of combinations of types the structure never had are learned (TopologyEditor::learn; polysulfides
+  // exchanging into a disulfide make the first C–S–S–C torsion). An assignment with an overlay or with CAPS ML
+  // completion (caps ff complete: a torsion the force field lacks fitted to the ML potential) fills what the force field
+  // itself has no term for. Null, or an assignment that fails: the change is turned down as one the force field cannot
+  // describe (the reason in ExchangeStats::note).
+  std::function<ForceField(const System&)> parameterize;
   std::vector<ReactionTemplate> templates;   // template: the exchanges to try (one picked at random each move)
 };
 
@@ -64,6 +88,9 @@ struct ExchangeStats {
   int64_t attempts = 0, accepted = 0;
   int64_t no_candidate = 0;          // tries with no partner within the capture distance
   int64_t unparameterised = 0;       // tries the force field could not describe (rejected)
+  int64_t relaxed = 0;               // tries whose ΔU came after a local relaxation
+  int64_t learned = 0;               // combinations of types learned from the force-field assignment
+  int64_t new_types = 0;             // types the assignment gave that the run's force field had for no atom before
   double energy = 0;                 // ΔU of the accepted moves, summed, kcal/mol
   bool local = true;                 // ΔU was local (false: the whole system's, because the force field needs it)
   std::string note;
@@ -79,6 +106,8 @@ class ExchangeEngine {
   // energy with the force field as it stands (needed when the energies are not local; may be null otherwise). Returns
   // true when a move was accepted.
   bool run(const std::vector<double>& x, const Cell& cell, double temperature, const std::function<double()>& potential);
+  // The same, and an accepted relaxed move writes its relaxed positions into x (relaxed moves need this form).
+  bool run(std::vector<double>& x, const Cell& cell, double temperature, const std::function<double()>& potential);
   // ΔU of a change (bonds broken and made) at x, without keeping it: local when the engine is, else from potential().
   double delta(const std::vector<TopologyEditor::Pair>& broken, const std::vector<TopologyEditor::Pair>& made, const std::vector<double>& x,
                const Cell& cell, const std::function<double()>& potential);
@@ -96,7 +125,12 @@ class ExchangeEngine {
   double apply(const std::vector<TopologyEditor::Pair>& broken, const std::vector<TopologyEditor::Pair>& made, const std::vector<double>& x,
                const Cell& cell, const std::function<double()>& potential);
   double distance(const std::vector<double>& x, const Cell& cell, uint32_t i, uint32_t j) const;
+  // ed_.change, learning the terms of new combinations of types first when it has to (o_.parameterize)
+  void edit(const std::vector<TopologyEditor::Pair>& broken, const std::vector<TopologyEditor::Pair>& made, const std::vector<TopologyEditor::Retype>& retype);
   double cluster_energy(const std::vector<uint32_t>& atoms, const std::vector<double>& x, const Cell& cell) const;
+  ForceField cluster_field(const std::vector<uint32_t>& atoms) const;   // the terms among these atoms, renumbered
+  double apply_relaxed(const std::vector<TopologyEditor::Pair>& broken, const std::vector<TopologyEditor::Pair>& made, const std::vector<double>& x,
+                       const Cell& cell);
 
   System& s_;
   ForceField& ff_;
@@ -107,6 +141,10 @@ class ExchangeEngine {
   std::mt19937_64 rng_;
   ExchangeStats st_;
   std::unique_ptr<ForceField> shell_;   // the force field without atoms and terms: the base of each cluster's
+  std::vector<double>* xw_ = nullptr;   // the run's positions, when they may change (run with a mutable x)
+  std::vector<TopologyEditor::Pair> moves_;   // the trial's moved hydrogens and their new partners
+  std::vector<TopologyEditor::Retype> retype_, unretype_;   // the trial's types following roles, and the way back
+  std::vector<std::pair<uint32_t, Vec3>> pending_;   // a relaxed trial's positions, written when it is accepted
 };
 
 // A DynamicsOptions::topology callback running an ExchangeEngine on the run's own structure and force field (made at the

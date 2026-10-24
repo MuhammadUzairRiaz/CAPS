@@ -1,8 +1,11 @@
 // CAPS Exchange, moves (see exchange_moves.hpp).
 #include "caps/exchange_moves.hpp"
 
+#include "caps/elements.hpp"
+
 #include <algorithm>
 #include <cmath>
+#include <map>
 #include <set>
 #include <stdexcept>
 #include <unordered_map>
@@ -45,9 +48,13 @@ ExchangeEngine::ExchangeEngine(System& s, ForceField& ff, const ExchangeOptions&
   }
   if (o.kind == ExchangeKind::Template) {
     if (o.templates.empty()) throw std::invalid_argument("exchange: template moves need a template");
-    for (const auto& t : o.templates)
-      if (!t.move.empty() || !t.remove.empty())
-        throw std::invalid_argument("exchange: template " + t.name + " moves a hydrogen or deletes atoms; run it in LAMMPS (caps exchange bond-react)");
+    for (const auto& t : o.templates) {
+      if (!t.remove.empty()) throw std::invalid_argument("exchange: template " + t.name + " deletes atoms; run it in LAMMPS (caps exchange bond-react)");
+      if (!t.move.empty() && o.relax_steps <= 0)
+        throw std::invalid_argument("exchange: template " + t.name + " moves a hydrogen, which needs relaxed moves (relax_steps > 0; --relax N)");
+    }
+    for (auto& t : o_.templates)
+      if (t.min_path <= 0) t.min_path = 4;   // any molecule, the network's own included
   } else if (o.group_a.empty()) {
     throw std::invalid_argument("exchange: group A is empty");
   }
@@ -61,6 +68,8 @@ ExchangeEngine::ExchangeEngine(System& s, ForceField& ff, const ExchangeOptions&
     st_.local = false;
     st_.note = "the force field has many-body terms, hydrogen bonds or virtual sites: every move is weighed with the whole system's energy";
   }
+  if (o.relax_steps > 0 && !st_.local)
+    throw std::invalid_argument("exchange: relaxed moves need local energies (" + (st_.note.empty() ? std::string("local is off") : st_.note) + ")");
   if (st_.local) {
     shell_ = std::make_unique<ForceField>(ff);
     auto& f = *shell_;
@@ -74,6 +83,119 @@ ExchangeEngine::ExchangeEngine(System& s, ForceField& ff, const ExchangeOptions&
 
 ExchangeEngine::~ExchangeEngine() = default;
 
+void ExchangeEngine::edit(const std::vector<Pair>& broken, const std::vector<Pair>& made, const std::vector<TopologyEditor::Retype>& retype) {
+  if (!o_.parameterize) {
+    ed_.change(broken, made, retype);
+    return;
+  }
+  // the neighbourhood after the change, six bonds deep, typed again by the run's force field; atoms within four bonds of
+  // the change have every neighbour in it, so their types and terms are the structure's own. The atoms within three bonds
+  // take those types (what a fresh assignment gives them: a secondary carbon that becomes an ester's stays a CH), and
+  // the terms of combinations the structure never had are learned from it
+  const size_t n = s_.atoms.size();
+  auto nb = ed_.neighbours();
+  for (const auto& p : broken) {
+    nb[p[0]].erase(std::remove(nb[p[0]].begin(), nb[p[0]].end(), p[1]), nb[p[0]].end());
+    nb[p[1]].erase(std::remove(nb[p[1]].begin(), nb[p[1]].end(), p[0]), nb[p[1]].end());
+  }
+  for (const auto& p : made) nb[p[0]].push_back(p[1]), nb[p[1]].push_back(p[0]);
+  std::vector<int> depth(n, -1);
+  std::vector<uint32_t> order;
+  for (const auto& v : {broken, made})
+    for (const auto& p : v)
+      for (uint32_t a : p)
+        if (depth[a] < 0) depth[a] = 0, order.push_back(a);
+  for (const auto& r : retype)
+    if (depth[r.atom] < 0) depth[r.atom] = 0, order.push_back(r.atom);
+  std::map<Pair, int> bond_order;
+  for (const auto& b : s_.bonds) bond_order[pair_of(b.i, b.j)] = b.order;
+  // past six bonds only through double and aromatic bonds: a cut between two unsaturated atoms would not type
+  for (size_t h = 0; h < order.size(); ++h) {
+    const uint32_t a = order[h];
+    for (uint32_t b : nb[a]) {
+      if (depth[b] >= 0) continue;
+      const auto it = bond_order.find(pair_of(a, b));
+      if (depth[a] < 6 || (it != bond_order.end() && it->second != 1)) depth[b] = depth[a] + 1, order.push_back(b);
+    }
+  }
+  std::unordered_map<uint32_t, uint32_t> id;
+  System frag;
+  frag.cell = s_.cell;
+  std::vector<char> complete;
+  for (uint32_t a : order) {
+    id[a] = uint32_t(frag.atoms.size());
+    frag.atoms.push_back(s_.atoms[a]);
+    complete.push_back(depth[a] <= 4);
+  }
+  for (uint32_t a : order)
+    for (uint32_t b : nb[a]) {
+      if (a < b && id.count(b)) {
+        const auto it = bond_order.find(pair_of(a, b));
+        frag.bonds.push_back({id[a], id[b], it != bond_order.end() ? it->second : 1});
+      } else if (!id.count(b)) {
+        // a cut bond: one hydrogen cap at 1.09 Å towards the atom left out, so the edge still types (as ff complete cuts)
+        Vec3 d = s_.atoms[b].pos - s_.atoms[a].pos;
+        if (s_.cell.valid()) d = s_.cell.minimum_image(d);
+        const double len = norm(d);
+        Atom h;
+        h.element = 1;
+        h.mol = s_.atoms[a].mol;
+        h.pos = s_.atoms[a].pos + (len > 1e-6 ? d * (1.09 / len) : Vec3{1.09, 0, 0});
+        frag.bonds.push_back({id[a], uint32_t(frag.atoms.size()), 1});
+        frag.atoms.push_back(h);
+        complete.push_back(0);
+      }
+    }
+  ForceField typed;
+  try {
+    typed = o_.parameterize(frag);
+  } catch (const std::exception& e) {
+    // the assignment could not type the neighbourhood (or fill what it lacks): the change stays one it cannot describe
+    if (st_.note.empty()) st_.note = std::string("terms for a new combination of types could not be learned: ") + e.what();
+    throw TopologyError(e.what());
+  }
+  // a type the run's force field has for no atom yet (an ester's tertiary carbon that becomes a tertiary alcohol's)
+  // joins it with its non-bonded parameters from the same assignment
+  std::map<std::string, int> ours;
+  for (size_t k = 0; k < ff_.type_names.size(); ++k) ours.emplace(ff_.type_names[k], int(k));
+  for (size_t k = 0; k < order.size(); ++k) {
+    if (depth[order[k]] > 3) continue;
+    const int fi = typed.type_index[k];
+    if (fi < 0 || size_t(fi) >= typed.type_names.size() || size_t(fi) >= typed.lj.size()) throw TopologyError("the run's assignment left an atom untyped");
+    const std::string& name = typed.type_names[fi];
+    if (ours.count(name)) continue;
+    if (!ff_.pair_override.empty() || !ff_.pair_func.empty() || (!ff_.lj14_types.empty() && size_t(fi) >= typed.lj14_types.size()))
+      throw TopologyError("the change makes type " + name + ", new to the run, and the force field gives pairs by type pair");
+    for (ForceField* f : {&ff_, shell_.get()}) {
+      if (!f) continue;
+      f->type_names.push_back(name);
+      f->lj.push_back(typed.lj[fi]);
+      if (!f->lj14_types.empty()) f->lj14_types.push_back(typed.lj14_types[fi]);
+      if (!f->type_part.empty()) f->type_part.push_back(f->type_part[size_t(ff_.type_index[order[k]])]);
+    }
+    ours.emplace(name, int(ff_.type_names.size()) - 1);
+    ++st_.new_types;
+  }
+  st_.learned += int64_t(ed_.learn(frag, typed, complete));
+  std::map<uint32_t, double> role_charge;   // charges follow roles, so the total stays
+  for (const auto& r : retype) role_charge[r.atom] = r.charge;
+  std::vector<TopologyEditor::Retype> rt;
+  unretype_.clear();
+  for (size_t k = 0; k < order.size(); ++k) {
+    const uint32_t a = order[k];
+    if (depth[a] > 3) continue;
+    const int fi = typed.type_index[id[a]];
+    const std::string name = fi >= 0 && size_t(fi) < typed.type_names.size() ? typed.type_names[fi] : std::string();
+    const auto it = ours.find(name);
+    const auto rc = role_charge.find(a);
+    const double q = rc != role_charge.end() ? rc->second : a < ff_.charge.size() ? ff_.charge[a] : 0.0;
+    if (it->second == ff_.type_index[a] && (ff_.charge.empty() || q == ff_.charge[a])) continue;
+    rt.push_back({a, it->second, name, q});
+    unretype_.push_back({a, ff_.type_index[a], a < ff_.atom_type.size() ? ff_.atom_type[a] : std::string(), a < ff_.charge.size() ? ff_.charge[a] : 0.0});
+  }
+  ed_.change(broken, made, rt);
+}
+
 double ExchangeEngine::distance(const std::vector<double>& x, const Cell& cell, uint32_t i, uint32_t j) const {
   Vec3 d{x[3 * j] - x[3 * i], x[3 * j + 1] - x[3 * i + 1], x[3 * j + 2] - x[3 * i + 2]};
   if (cell.valid()) d = cell.minimum_image(d);
@@ -81,11 +203,19 @@ double ExchangeEngine::distance(const std::vector<double>& x, const Cell& cell, 
 }
 
 double ExchangeEngine::cluster_energy(const std::vector<uint32_t>& atoms, const std::vector<double>& x, const Cell& cell) const {
+  const ForceField sub = cluster_field(atoms);
+  std::vector<double> xs;
+  for (uint32_t a : atoms) xs.insert(xs.end(), {x[3 * a], x[3 * a + 1], x[3 * a + 2]});
+  Evaluator ev(sub, eo_);
+  std::vector<double> f;
+  return ev.compute(xs, cell, f).total();
+}
+
+ForceField ExchangeEngine::cluster_field(const std::vector<uint32_t>& atoms) const {
   ForceField sub = *shell_;
   std::unordered_map<uint32_t, uint32_t> id;
   for (uint32_t k = 0; k < atoms.size(); ++k) id[atoms[k]] = k;
   auto in = [&](uint32_t a) { return id.count(a) > 0; };
-  std::vector<double> xs;
   for (uint32_t a : atoms) {
     if (!ff_.atom_type.empty()) sub.atom_type.push_back(ff_.atom_type[a]);
     if (ff_.why.size() == ff_.type_index.size()) sub.why.push_back(ff_.why[a]);
@@ -98,7 +228,6 @@ double ExchangeEngine::cluster_energy(const std::vector<uint32_t>& atoms, const 
         if (in(e)) ex.push_back(id[e]);
     std::sort(ex.begin(), ex.end());
     sub.excluded.push_back(std::move(ex));
-    xs.insert(xs.end(), {x[3 * a], x[3 * a + 1], x[3 * a + 2]});
   }
   // the terms with every atom in the cluster, renumbered
   auto keep2 = [&](const auto& from, auto& to) {
@@ -128,17 +257,102 @@ double ExchangeEngine::cluster_energy(const std::vector<uint32_t>& atoms, const 
     sub.pairs14.push_back({id[p[0]], id[p[1]]});
     if (per) sub.pairs14_lj.push_back(ff_.pairs14_lj[k]), sub.pairs14_coul.push_back(k < ff_.pairs14_coul.size() ? ff_.pairs14_coul[k] : ff_.coul14);
   }
-  Evaluator ev(sub, eo_);
-  std::vector<double> f;
-  return ev.compute(xs, cell, f).total();
+  return sub;
+}
+
+double ExchangeEngine::apply_relaxed(const std::vector<Pair>& broken, const std::vector<Pair>& made, const std::vector<double>& x, const Cell& cell) {
+  const auto& nb = ed_.neighbours();
+  const size_t n = s_.atoms.size();
+  // movable: the atoms of the change, the atoms bonded to them (before and after) and the hydrogens on those
+  std::set<uint32_t> mov;
+  for (const auto& p : broken) mov.insert(p[0]), mov.insert(p[1]);
+  for (const auto& p : made) mov.insert(p[0]), mov.insert(p[1]);
+  for (int d = 0; d < o_.relax_depth; ++d)
+    for (uint32_t a : std::vector<uint32_t>(mov.begin(), mov.end()))
+      for (uint32_t b : nb[a]) mov.insert(b);
+  for (uint32_t a : std::vector<uint32_t>(mov.begin(), mov.end()))
+    for (uint32_t b : nb[a])
+      if (s_.atoms[b].element == 1) mov.insert(b);
+  // held: every atom within three bonds of a movable one (each bonded term holding a movable atom), and every atom within
+  // the cut-off of one (its non-bonded partners)
+  std::set<uint32_t> seen = mov, front = mov;
+  for (int depth = 0; depth < 3; ++depth) {
+    std::set<uint32_t> next;
+    for (uint32_t a : front) {
+      for (uint32_t b : nb[a])
+        if (!seen.count(b)) next.insert(b);
+      for (const auto& p : made)
+        for (int k = 0; k < 2; ++k)
+          if (p[k] == a && !seen.count(p[1 - k])) next.insert(p[1 - k]);
+    }
+    for (uint32_t b : next) seen.insert(b);
+    front = std::move(next);
+  }
+  const double rc = (ff_.cutoff > 0 ? ff_.cutoff : eo_.cutoff) + 0.5;
+  for (uint32_t i = 0; i < n; ++i) {
+    if (seen.count(i)) continue;
+    for (uint32_t a : mov)
+      if (distance(x, cell, a, i) < rc) { seen.insert(i); break; }
+  }
+  const std::vector<uint32_t> atoms(seen.begin(), seen.end());
+  std::unordered_map<uint32_t, uint32_t> id;
+  std::vector<double> xs;
+  for (uint32_t k = 0; k < atoms.size(); ++k) id[atoms[k]] = k, xs.insert(xs.end(), {x[3 * atoms[k]], x[3 * atoms[k] + 1], x[3 * atoms[k] + 2]});
+  std::vector<char> movable(atoms.size(), 0);
+  for (uint32_t a : mov) movable[id.at(a)] = 1;
+  // steepest descent on the movable atoms, the step grown on success and halved on failure, at most 0.2 Å per step
+  auto relax = [&](const ForceField& sub, std::vector<double>& q) {
+    Evaluator ev(sub, eo_);
+    std::vector<double> f, ft, trial;
+    double e = ev.compute(q, cell, f).total(), step = 0.02;
+    for (int it = 0; it < o_.relax_steps; ++it) {
+      double fmax = 0;
+      for (size_t k = 0; k < atoms.size(); ++k)
+        if (movable[k]) fmax = std::max(fmax, std::sqrt(f[3 * k] * f[3 * k] + f[3 * k + 1] * f[3 * k + 1] + f[3 * k + 2] * f[3 * k + 2]));
+      if (fmax < 0.1) break;
+      trial = q;
+      const double s = std::min(step, 0.2) / fmax;
+      for (size_t k = 0; k < atoms.size(); ++k)
+        if (movable[k])
+          for (int c = 0; c < 3; ++c) trial[3 * k + c] += s * f[3 * k + c];
+      const double et = ev.compute(trial, cell, ft).total();
+      if (et < e) q.swap(trial), f.swap(ft), e = et, step *= 1.2;
+      else step *= 0.5;
+    }
+    return e;
+  };
+  // both sides relaxed alike, so ΔU compares two minima and not a minimum with a thermal state
+  std::vector<double> before = xs;
+  const double e0 = relax(cluster_field(atoms), before);
+  edit(broken, made, retype_);
+  // a moved hydrogen at a covalent bond length from its new partner, on the side it came from (React's placement)
+  for (const auto& [h, p] : moves_) {
+    const uint32_t hi = id.at(h), pi = id.at(p);
+    Vec3 d{xs[3 * hi] - xs[3 * pi], xs[3 * hi + 1] - xs[3 * pi + 1], xs[3 * hi + 2] - xs[3 * pi + 2]};
+    if (cell.valid()) d = cell.minimum_image(d);
+    double len = norm(d);
+    if (len < 1e-6) d = {1, 0, 0}, len = 1;
+    const double r0 = element(s_.atoms[h].element).covalent + element(s_.atoms[p].element).covalent;
+    for (int c = 0; c < 3; ++c) xs[3 * hi + c] = xs[3 * pi + c] + d[c] * (r0 / len);
+  }
+  const double e = relax(cluster_field(atoms), xs);
+  pending_.clear();
+  for (uint32_t a : mov) {
+    const uint32_t k = id.at(a);
+    pending_.push_back({a, Vec3{xs[3 * k], xs[3 * k + 1], xs[3 * k + 2]}});
+  }
+  ++st_.relaxed;
+  return e - e0;
 }
 
 double ExchangeEngine::apply(const std::vector<Pair>& broken, const std::vector<Pair>& made, const std::vector<double>& x, const Cell& cell,
                              const std::function<double()>& potential) {
+  pending_.clear();
+  if (o_.relax_steps > 0) return apply_relaxed(broken, made, x, cell);
   if (!st_.local) {
     if (!potential) throw std::invalid_argument("exchange: the whole system's energy is needed (no local energies for this force field)");
     const double e0 = potential();
-    ed_.change(broken, made);
+    edit(broken, made, retype_);
     return potential() - e0;
   }
   // the cluster: atoms within three bonds of the change, in the graph before it together with the bonds it makes
@@ -161,7 +375,7 @@ double ExchangeEngine::apply(const std::vector<Pair>& broken, const std::vector<
   }
   const std::vector<uint32_t> atoms(seen.begin(), seen.end());
   const double e0 = cluster_energy(atoms, x, cell);
-  ed_.change(broken, made);
+  edit(broken, made, retype_);
   return cluster_energy(atoms, x, cell) - e0;
 }
 
@@ -170,7 +384,8 @@ bool ExchangeEngine::decide(const std::vector<Pair>& broken, const std::vector<P
   double du;
   try {
     du = apply(broken, made, x, cell, potential);
-  } catch (const TopologyError&) {
+  } catch (const TopologyError& e) {
+    if (st_.note.empty()) st_.note = std::string("a change the force field cannot describe: ") + e.what();
     ++st_.unparameterised;
     return false;
   }
@@ -179,16 +394,24 @@ bool ExchangeEngine::decide(const std::vector<Pair>& broken, const std::vector<P
   if (std::uniform_real_distribution<double>(0, 1)(rng_) < acc) {
     ++st_.accepted;
     st_.energy += du;
+    if (!pending_.empty()) {
+      if (!xw_) throw std::logic_error("exchange: a relaxed move needs the run's positions to write to (run with a mutable x)");
+      for (const auto& [a, r] : pending_)
+        for (int c = 0; c < 3; ++c) (*xw_)[3 * a + c] = r[c];
+      pending_.clear();
+    }
     return true;
   }
-  ed_.change(made, broken);   // undone: the editor restores the broken bonds' own parameters
+  pending_.clear();
+  ed_.change(made, broken, unretype_);   // undone: the editor restores the broken bonds' own parameters
   return false;
 }
 
 double ExchangeEngine::delta(const std::vector<Pair>& broken, const std::vector<Pair>& made, const std::vector<double>& x, const Cell& cell,
                              const std::function<double()>& potential) {
   const double du = apply(broken, made, x, cell, potential);
-  ed_.change(made, broken);
+  ed_.change(made, broken, unretype_);
+  pending_.clear();
   return du;
 }
 
@@ -302,16 +525,64 @@ bool ExchangeEngine::try_template(const std::vector<double>& x, const Cell& cell
   std::vector<Pair> broken, made;
   for (const auto& b : t.brk) broken.push_back(pair_of(at(b.first), at(b.second)));
   for (const auto& f : t.form) made.push_back(pair_of(at(f.first), at(f.second)));
-  // the way back is the same template on the products: the ratio of the matches before and after
-  try {
-    ed_.change(broken, made);
-  } catch (const TopologyError&) {
-    ++st_.unparameterised;
-    return false;
+  // a moved hydrogen leaves every partner it has for its new one
+  moves_.clear();
+  for (const auto& [h, p] : t.move) {
+    const uint32_t hi = at(h), pi = at(p);
+    for (uint32_t q : ed_.neighbours()[hi])
+      if (q != pi) broken.push_back(pair_of(hi, q));
+    made.push_back(pair_of(hi, pi));
+    moves_.push_back({hi, pi});
   }
-  const double back = double(find_matches(s_, t).size());
-  ed_.change(made, broken);
-  if (!(back > 0)) { ++st_.no_candidate; return false; }
+  for (auto* v : {&broken, &made}) std::sort(v->begin(), v->end()), v->erase(std::unique(v->begin(), v->end()), v->end());
+  // the way back is the same template on the products: the ratio of the matches before and after
+  System prod = s_;
+  auto has = [](const std::vector<Pair>& v, uint32_t i, uint32_t j) { return std::find(v.begin(), v.end(), pair_of(i, j)) != v.end(); };
+  prod.bonds.erase(std::remove_if(prod.bonds.begin(), prod.bonds.end(), [&](const Bond& b) { return has(broken, b.i, b.j); }), prod.bonds.end());
+  for (const auto& p : made) prod.bonds.push_back({p[0], p[1], 1});
+  const auto backs = find_matches(prod, t);
+  if (backs.empty()) { ++st_.no_candidate; return false; }
+  // types follow roles: the back match that undoes this one names each role's atom after the change
+  std::set<Pair> heavy_broken;
+  for (const auto& b : t.brk) heavy_broken.insert(pair_of(at(b.first), at(b.second)));
+  std::vector<std::vector<uint32_t>> after(prod.atoms.size());
+  for (const auto& b : prod.bonds) after[b.i].push_back(b.j), after[b.j].push_back(b.i);
+  retype_.clear(), unretype_.clear();
+  for (const auto& r : backs) {
+    std::set<Pair> undo;
+    for (const auto& f : t.form) undo.insert(pair_of(r.atoms[size_t(std::find_if(t.atoms.begin(), t.atoms.end(), [&](const TemplateAtom& a) { return a.map == f.first; }) - t.atoms.begin())],
+                                                      r.atoms[size_t(std::find_if(t.atoms.begin(), t.atoms.end(), [&](const TemplateAtom& a) { return a.map == f.second; }) - t.atoms.begin())]));
+    if (undo != heavy_broken) continue;
+    std::map<uint32_t, uint32_t> from;   // atom after the change → the atom whose type and charge it takes
+    std::map<uint32_t, size_t> role_before, role_after;
+    for (size_t q = 0; q < m.atoms.size(); ++q) role_before[m.atoms[q]] = q, role_after[r.atoms[q]] = q;
+    for (size_t q = 0; q < m.atoms.size(); ++q) from[r.atoms[q]] = m.atoms[q];
+    // atoms that leave the pattern take the types of atoms that join it, paired through their neighbours' roles
+    std::vector<uint32_t> gained;
+    for (uint32_t b : r.atoms)
+      if (!role_before.count(b)) gained.push_back(b);
+    std::vector<char> used(gained.size(), 0);
+    for (uint32_t a : m.atoms) {
+      if (role_after.count(a)) continue;
+      for (size_t g = 0; g < gained.size() && !from.count(a); ++g) {
+        if (used[g] || s_.atoms[gained[g]].element != s_.atoms[a].element) continue;
+        bool linked = false;
+        for (uint32_t c : after[a])
+          if (const auto ra = role_after.find(c); ra != role_after.end())
+            for (uint32_t d : ed_.neighbours()[gained[g]]) linked = linked || d == m.atoms[ra->second];
+        if (linked) from[a] = gained[g], used[g] = 1;
+      }
+    }
+    for (const auto& [a, b] : from) {
+      if (a == b || (ff_.type_index[a] == ff_.type_index[b] && (ff_.charge.empty() || ff_.charge[a] == ff_.charge[b]))) continue;
+      auto snap = [&](uint32_t x, uint32_t as) {
+        return TopologyEditor::Retype{as, ff_.type_index[x], x < ff_.atom_type.size() ? ff_.atom_type[x] : std::string(), x < ff_.charge.size() ? ff_.charge[x] : 0.0};
+      };
+      retype_.push_back(snap(b, a)), unretype_.push_back(snap(a, a));
+    }
+    break;
+  }
+  const double back = double(backs.size());
   return decide(broken, made, std::log(double(matches.size()) / back), beta, x, cell, potential);
 }
 
@@ -376,7 +647,20 @@ bool ExchangeEngine::try_bind(const std::vector<double>& x, const Cell& cell, do
   return decide({pair_of(i, j)}, {}, std::log(qr / qf) - lk, beta, x, cell, potential);
 }
 
+bool ExchangeEngine::run(std::vector<double>& x, const Cell& cell, double temperature, const std::function<double()>& potential) {
+  xw_ = &x;
+  try {
+    const bool any = run(static_cast<const std::vector<double>&>(x), cell, temperature, potential);
+    xw_ = nullptr;
+    return any;
+  } catch (...) {
+    xw_ = nullptr;
+    throw;
+  }
+}
+
 bool ExchangeEngine::run(const std::vector<double>& x, const Cell& cell, double temperature, const std::function<double()>& potential) {
+  if (o_.relax_steps > 0 && xw_ != &x) throw std::invalid_argument("exchange: relaxed moves write positions: run them with a mutable x");
   if (!(temperature > 0)) throw std::invalid_argument("exchange: the temperature must be positive");
   const double beta = 1.0 / (kB * temperature);
   bool any = false;

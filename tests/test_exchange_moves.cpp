@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <fstream>
 #include <map>
+#include <set>
 #include <memory>
 #include <string>
 #include <vector>
@@ -459,4 +460,100 @@ TEST(ExchangeMoves, BondReactProbabilityFollowsArrhenius) {
   char want[64];
   std::snprintf(want, sizeof want, "prob %.4g ", arrhenius_probability(12.02, 350, 450));
   EXPECT_NE(deck.find(want), std::string::npos) << want;
+}
+
+namespace {
+
+// Two molecules from SMILES, the second offset from the first, in a 30 Å cell.
+System two_molecules(const std::string& a_smiles, const std::string& b_smiles, const Vec3& offset) {
+  System s;
+  uint32_t first = 0;
+  int mol = 1;
+  for (const auto& [smiles, shift] : {std::pair<std::string, Vec3>{a_smiles, Vec3{10, 10, 10}}, {b_smiles, Vec3{10, 10, 10} + offset}}) {
+    MolGraph g = parse_smiles(smiles);
+    add_hydrogens(g);
+    const System m = molecule_system(g, embed(g));
+    for (auto at : m.atoms) at.mol = mol, at.pos = at.pos + shift, s.atoms.push_back(at);
+    for (auto b : m.bonds) b.i += first, b.j += first, s.bonds.push_back(b);
+    first = uint32_t(s.atoms.size());
+    ++mol;
+  }
+  s.has_mol = true;
+  s.cell = box(30, 30, 30);
+  return s;
+}
+
+// Every hydrogen holds one bond, and no two atoms that are not bonded sit closer than 0.9 Å.
+void expect_sound(const System& s, const std::vector<double>& x) {
+  std::vector<int> deg(s.atoms.size(), 0);
+  std::set<std::pair<uint32_t, uint32_t>> bonded;
+  for (const auto& b : s.bonds) ++deg[b.i], ++deg[b.j], bonded.insert({std::min(b.i, b.j), std::max(b.i, b.j)});
+  for (size_t i = 0; i < s.atoms.size(); ++i)
+    if (s.atoms[i].element == 1) EXPECT_EQ(deg[i], 1) << "hydrogen " << i;
+  for (uint32_t i = 0; i < s.atoms.size(); ++i)
+    for (uint32_t j = i + 1; j < s.atoms.size(); ++j) {
+      if (bonded.count({i, j})) continue;
+      const Vec3 d{x[3 * j] - x[3 * i], x[3 * j + 1] - x[3 * i + 1], x[3 * j + 2] - x[3 * i + 2]};
+      EXPECT_GT(norm(d), 0.9) << i << " " << j;
+    }
+}
+
+}  // namespace
+
+// Relaxed template moves: the new S–S bonds made at the capture distance relax before the energy test, so the disulfide
+// metathesis that the raw ΔU turns down is accepted, and the run's positions take the relaxed geometry.
+TEST(ExchangeMoves, RelaxedTemplateMovesAreAccepted) {
+  System s = two_disulfides();
+  ForceField ff = assign_uff(s);
+  ExchangeOptions xo;
+  xo.kind = ExchangeKind::Template;
+  xo.templates = {disulfide_template()};
+  xo.templates[0].capture = 5.0;
+  xo.relax_steps = 300;
+  xo.seed = 2;
+  ExchangeEngine e(s, ff, xo, EnergyOptions{});
+  auto x = coords(s);
+  const auto x0 = x;
+  const auto cx = x;
+  EXPECT_THROW(e.run(cx, s.cell, 300, nullptr), std::invalid_argument);   // relaxed moves write positions
+  for (int k = 0; k < 40; ++k) e.run(x, s.cell, 300, nullptr);
+  EXPECT_EQ(e.stats().relaxed, e.stats().attempts - e.stats().no_candidate - e.stats().unparameterised);
+  EXPECT_GT(e.stats().accepted, 0);
+  EXPECT_NE(x, x0);
+  expect_sound(s, x);
+}
+
+// A template that moves a hydrogen (transesterification: the alcohol's H goes to the ester oxygen that leaves) needs
+// relaxed moves; with them, the hydrogen lands on its new partner, the atoms take the types of the roles they now play,
+// and the chemistry stays whole. Methyl acetate and methanol: the exchange gives the same two molecules back.
+TEST(ExchangeMoves, TemplateMovesAHydrogen) {
+  System s = two_molecules("CC(=O)OC", "CO", Vec3{0, 4.5, 0});
+  ForceField ff = assign_uff(s);
+  ExchangeOptions xo;
+  xo.kind = ExchangeKind::Template;
+  xo.templates = {template_from_scheme({"CC(=O)[O:1]C", "CC[OH:2]"}, {"CC(=O)[O:2]CC", "C[OH:1]"}, "transesterification")};
+  ASSERT_FALSE(xo.templates[0].move.empty());
+  xo.templates[0].capture = 6.0;
+  EXPECT_THROW(ExchangeEngine(s, ff, xo, EnergyOptions{}), std::invalid_argument);   // no relaxation: refused
+  xo.relax_steps = 400;
+  xo.seed = 5;
+  ExchangeEngine e(s, ff, xo, EnergyOptions{});
+  ASSERT_FALSE(find_matches(s, xo.templates[0]).empty());
+  auto x = coords(s);
+  for (int k = 0; k < 200; ++k) e.run(x, s.cell, 600, nullptr);
+  EXPECT_EQ(e.stats().relaxed, e.stats().attempts);
+  EXPECT_GT(e.stats().accepted, 0);
+  expect_sound(s, x);
+  int oh = 0;
+  for (const auto& b : s.bonds) oh += (s.atoms[b.i].element == 8 && s.atoms[b.j].element == 1) || (s.atoms[b.i].element == 1 && s.atoms[b.j].element == 8);
+  EXPECT_EQ(oh, 1);   // one alcohol
+  // types followed roles: the run's types are a fresh typing's of the structure as it now is
+  System now = s;
+  for (size_t i = 0; i < now.atoms.size(); ++i) now.atoms[i].pos = {x[3 * i], x[3 * i + 1], x[3 * i + 2]};
+  const ForceField fresh = assign_uff(now);
+  EXPECT_EQ(ff.atom_type, fresh.atom_type);
+  EXPECT_EQ(ff.bonds.size(), fresh.bonds.size());
+  EXPECT_EQ(ff.angles.size(), fresh.angles.size());
+  EXPECT_EQ(ff.dihedrals.size(), fresh.dihedrals.size());
+  EXPECT_EQ(ff.pairs14.size(), fresh.pairs14.size());
 }

@@ -47,7 +47,7 @@ struct ThermoRow {
 struct TopologyContext {
   System& system;
   ForceField& field;
-  const std::vector<double>& x;
+  std::vector<double>& x;           // a callback may move atoms (a relaxed exchange move); the run follows
   std::vector<double>& v;
   const Cell& cell;
   int64_t step;

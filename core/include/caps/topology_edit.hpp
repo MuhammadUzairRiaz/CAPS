@@ -50,12 +50,23 @@ class TopologyEditor {
   // terms, 1-4 pairs and exclusions set again. Throws TopologyError, with s and ff as they were, when the force field
   // cannot describe the result.
   void change(const std::vector<Pair>& broken, const std::vector<Pair>& made);
+  // The same with atoms retyped first (an exchange whose atoms trade roles: an ester oxygen that becomes an alcohol's):
+  // each takes its new type and charge, and every other bond of a retyped atom is made again from the table of its new
+  // types, with the angles, torsions and impropers through it.
+  struct Retype { uint32_t atom = 0; int type = 0; std::string name; double charge = 0; };
+  void change(const std::vector<Pair>& broken, const std::vector<Pair>& made, const std::vector<Retype>& retype);
   // a1–a2 and b1–b2 become a1–b2 and b1–a2; a1 and b1 each keep their own bond parameters.
   void swap(uint32_t a1, uint32_t a2, uint32_t b1, uint32_t b2);
   // The bond made between the types of `like.i` and `like.j` from now on (stickers whose types the structure has not bonded
   // yet; replaces the force field's own bond for those types). Its atoms only name the types.
   void define_bond(const BondTerm& like);
   void define_bond(const BondX& like);
+  // Terms by type learned from another structure typed by the same force field (a change's neighbourhood typed again: a
+  // combination of types the structure never had, such as C–S–S–C once polysulfides exchange into a disulfide). Only
+  // terms whose atoms are all marked complete (their neighbourhood whole in `frag`) are read, and only for type names
+  // this force field has; combinations already known stay as they are. Bonds, angles and torsions; impropers are not
+  // learned (a centre without one is counted in missing_impropers). Returns how many combinations were added.
+  size_t learn(const System& frag, const ForceField& f, const std::vector<char>& complete);
   // Changes done, and impropers that could not be placed (a new environment of a centre the force field had no improper
   // for; none placed there).
   size_t changes() const { return changes_; }
@@ -72,7 +83,9 @@ class TopologyEditor {
   struct ImproperPattern { int kind; std::array<int, 4> slot; TorsionTerm t{}; HarmonicTorsion h{}; InversionTerm v{}; };   // slot: −1 the centre, else a neighbour's type
   using ImproperKey = std::pair<int, std::vector<int>>;
 
-  void change_impl(const std::vector<Pair>& broken, const std::vector<Pair>& made, const std::map<Pair, BondParams>& hint);
+  // fresh: bonds made from the type table even when their own parameters are at hand (a retyped atom's)
+  void change_impl(const std::vector<Pair>& broken, const std::vector<Pair>& made, const std::map<Pair, BondParams>& hint,
+                   const std::set<Pair>& fresh = {});
   int type(uint32_t i) const { return ff_.type_index[i]; }
   Key2 key2(uint32_t i, uint32_t j) const;
   Key3 key3(uint32_t i, uint32_t j, uint32_t k) const;
