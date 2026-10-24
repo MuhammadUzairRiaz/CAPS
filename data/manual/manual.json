@@ -1081,6 +1081,50 @@
    "tex": "p_\\mathrm{acc} = e^{-E_a/k_\\mathrm{B}T}\\,\\min\\!\\left[1,\\ \\frac{q_\\mathrm{rev}}{q_\\mathrm{fwd}}\\,K^{\\pm 1}\\,e^{-\\Delta U/k_\\mathrm{B}T}\\right],\\qquad \\Delta U = U_\\mathrm{cluster}^\\mathrm{after} - U_\\mathrm{cluster}^\\mathrm{before}"
   },
   {
+   "id": "exchange-protocols",
+   "group": "Protocols",
+   "title": "Healing-test builders and exchange protocols",
+   "summary": "The structures a healing test starts from and the runs that measure bond exchange, all with the moves of the exchange page. Builders: a cut removes every bond crossing a plane (by the minimum image); a gap cuts and then moves the upper side away, lengthening the cell, for a weld; a crack removes the atoms within a sphere with their bonds; fragments are cuts at the mid-planes of chosen axes, the pieces a recycling run joins again. Protocols: a step strain stretches the cell along one axis at constant volume and follows the normal stress difference as exchange relaxes it, with a KWW fit; a Tv scan runs NPT at each temperature with exchange and fits a hinge to the specific volume, and an Arrhenius law to the time between accepted moves; a heal run counts the bonds bridging the two sides of a cut, and those crossing its plane, after each chunk of MD (at constant pressure to close a gap). Creep takes the same moves through the creep run's topology hook. Each run hands the force field the moves left to the next, so protocols chain.",
+   "equation": "σ(t) = σ_∥ − (σ_⊥1 + σ_⊥2)/2 ≈ σ₀ exp[−(t/τ)^β],   ⟨τ⟩ = (τ/β) Γ(1/β),   v(T) = v₀ + b_low min(T − T_v, 0) + b_high max(T − T_v, 0)",
+   "equation_note": "stress from the pressure tensor (atm × 0.101325 = MPa); the strain keeps the volume: the axis × (1 + ε), the other two × 1/√(1 + ε); the hinge is Tg in a network without exchange",
+   "symbols": [
+    [
+     "ε",
+     "step strain",
+     "—"
+    ],
+    [
+     "τ, β",
+     "KWW time and stretching exponent",
+     "ps, —"
+    ],
+    [
+     "T_v",
+     "hinge of the specific volume",
+     "K"
+    ],
+    [
+     "bridges",
+     "bonds joining atoms that started on opposite sides of the cut",
+     "bonds"
+    ]
+   ],
+   "when": "Self-healing, welding and recycling of vitrimer and rubber networks in CAPS: caps exchange cut, gap, crack or fragment builds the start; caps exchange heal-run, step-strain and tv run it with exchange (the options of caps exchange run, or --no-exchange for the permanent network); then caps exchange heal compares healed and intact pulls.",
+   "cites": [
+    "stukalin2013",
+    "ciarella2019",
+    "yang2016",
+    "perego2020",
+    "wick2025",
+    "chen2023"
+   ],
+   "source": "core/src/exchange_protocols.cpp (cut_bonds_across, open_gap, remove_sphere, fragment, step_strain, tv_scan, heal_run), core/src/mechanics.cpp (run_creep with CreepOptions::topology)",
+   "tested": "ExchangeProtocols.Builders (bond counts across a plane, gap, void, fragments), HealRunRebondsACut (bind moves rebond a cut bead-spring network), StepStrainAndTvScan (volume kept, tensile stress after the strain, one specific volume per temperature)",
+   "deviation": "MD strain rates and exchange rates are far above experiment; a short heal run counts bonds, not recovered strength, which needs the pulls of caps exchange heal; a Tv hinge needs five temperatures or more",
+   "engines": [],
+   "tex": "\\sigma(t) = \\sigma_\\parallel - \\tfrac12\\left(\\sigma_{\\perp 1} + \\sigma_{\\perp 2}\\right) \\approx \\sigma_0\\, e^{-(t/\\tau)^{\\beta}},\\qquad \\langle\\tau\\rangle = \\frac{\\tau}{\\beta}\\,\\Gamma\\!\\left(\\frac{1}{\\beta}\\right),\\qquad v(T) = v_0 + b_\\mathrm{low}\\min(T - T_v, 0) + b_\\mathrm{high}\\max(T - T_v, 0)"
+  },
+  {
    "id": "structure-factor",
    "group": "Analysis",
    "title": "Structure factors: S(q), X-ray and neutron",
@@ -2308,7 +2352,7 @@
      "bonds"
     ]
    ],
-   "when": "Gap, cut or crack healing and welding of vitrimer and rubber networks: count bridges while the run heals, then pull the healed and intact samples the same way (caps tensile) and compare (caps exchange heal, caps exchange bridges).",
+   "when": "Gap, cut or crack healing and welding of vitrimer and rubber networks: build the start (caps exchange cut, gap, crack, fragment), count bridges while it heals (caps exchange heal-run, or caps exchange bridges on any two frames), then pull the healed and intact samples the same way (caps tensile) and compare (caps exchange heal).",
    "cites": [
     "chen2023",
     "yuan2026",

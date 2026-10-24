@@ -829,9 +829,13 @@ examples:
              | caps exchange heal HEALED INTACT [--modulus-strain 0.03] [--at-strain E] [--up-to E]   [--json OUT] [--csv DIR]   (bond exchange and healing)
              | caps exchange list   |   caps exchange show CHEMISTRY   (exchange chemistries and their barriers, data/exchange)
              | caps exchange run DATA -o OUT [--chemistry ID] --kind swap|shift|bind [--sites SEL] [--partners SEL] [--labels chain|ends] [--capture 1.3]
-               [--barrier E] [--binding E] [--every 10] [--attempts 1] [--steps 10000] [--temp 300] [--dt 1] [--kg [--k-theta K] | --ff FF.json]
+               [--barrier E] [--binding E] [--valence N[,M]] [--every 10] [--attempts 1] [--steps 10000] [--temp 300] [--dt 1] [--kg [--k-theta K] | --ff FF.json]
              | caps exchange bond-react DATA -o STEM --chemistry ID [--temp 300] [--t-ref T] [--steps N] [--ff FF.json]   (LAMMPS fix bond/react)
-             | caps exchange bond-swap DATA -o STEM [--sites SEL] [--stickers | --both-ends] [--every 50] [--fraction 0.5] [--cutoff 1.3] [--seed 1] [--steps N] [--k-theta K]</code></pre></div></article>
+             | caps exchange bond-swap DATA -o STEM [--sites SEL] [--stickers | --both-ends] [--every 50] [--fraction 0.5] [--cutoff 1.3] [--seed 1] [--steps N] [--k-theta K]
+             | caps exchange cut|gap|crack|fragment DATA -o OUT [--axis z] [--plane 0.5] [--gap A] [--radius A [--centre x,y,z]] [--axes xyz]   (healing-test starts)
+             | caps exchange step-strain DATA --strain E --ps PS [--sample 10] | tv DATA --from T --to T --step T --ps PS [--pressure 1]
+             | caps exchange heal-run DATA --ps PS [--start START] [--axis z] [--plane 0.5] [--chunks 10] [--npt]
+               (with the moves and field options of run, or --no-exchange; [-o OUT] [--json OUT] [--csv DIR])</code></pre></div></article>
 <article class="cmd" id="ml" data-name="ml"><h3><code>caps ml</code></h3>
 <p>energy (eV) and forces (eV/A) of a molecule from CAPS&#x27;s</p>
 <div class="code" data-lang="synopsis"><pre><code>caps ml eval FILE [--model M.model] [--json OUT.json]   energy (eV) and forces (eV/A) of a molecule from CAPS&#x27;s

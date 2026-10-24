@@ -667,6 +667,8 @@ CreepResult run_creep(System& s, const CreepOptions& o) {
   CreepResult res;
   const double L0[3] = {norm(s.cell.a), norm(s.cell.b), norm(s.cell.c)};
   d.axis_pressure[o.axis] = -o.stress / kAtmMPa;   // tensile: negative pressure along the axis
+  d.topology_every = o.topology_every;   // bond exchange during the creep (not during the equilibration)
+  d.topology = o.topology;
   d.steps = nrun;
   d.step_offset = 0;
   d.thermo_every = std::max(1, o.sample_every);

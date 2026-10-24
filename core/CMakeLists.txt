@@ -30,6 +30,7 @@ add_library(caps_core STATIC
     src/topology_edit.cpp
     src/exchange_moves.cpp
     src/exchange_library.cpp
+    src/exchange_protocols.cpp
   src/grow.cpp
   src/semicrystal.cpp
   src/thermal.cpp

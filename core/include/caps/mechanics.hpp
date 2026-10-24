@@ -127,6 +127,9 @@ struct CreepOptions {
   uint64_t seed = 1;
   bool new_velocities = false;
   std::function<bool(const std::string& what, double fraction)> progress;
+  // bond exchange during the creep (vitrimers; caps/exchange_moves.hpp exchange_callback): as DynamicsOptions
+  int64_t topology_every = 0;
+  std::function<bool(TopologyContext&)> topology;
 };
 struct CreepResult {
   std::vector<double> t_ps, strain, lateral1, lateral2, temperature;
