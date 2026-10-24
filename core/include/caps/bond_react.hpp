@@ -33,6 +33,10 @@ struct BondReactOptions {
   // 3 Å and let diffusion bring groups together, where CAPS's cycles relax the whole cell and can reach further
   double rmax = 3.5;
   double temperature = 300;     // K
+  // Exchange chemistries (data/exchange): an Arrhenius barrier E_a (kcal/mol) scales each reaction's prob by
+  // exp(−E_a/R (1/T − 1/T_ref)), capped at 1, so prob is the template's at t_ref and smaller below it (Yang et al. 2016's
+  // acceptance). 0: no scaling. Exchange templates match their own products, so the exchange runs both ways.
+  double barrier = 0, t_ref = 0;   // kcal/mol, K
   int64_t steps = 100000;
   double timestep = 0;          // fs (0: the force field's own)
   double stabilization_xmax = 0.03;   // Å per step: nve/limit on the reacting atoms (stabilization yes)

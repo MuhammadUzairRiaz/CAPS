@@ -14,6 +14,10 @@
 #include "caps/field.hpp"
 #include "caps/kremer_grest.hpp"
 #include "caps/molecule.hpp"
+#include "caps/bond_react.hpp"
+#include "caps/exchange_library.hpp"
+#include "caps/react.hpp"
+#include "caps/uff.hpp"
 
 using namespace caps;
 
@@ -370,4 +374,89 @@ TEST(ExchangeMoves, BondSwapDeckForLammps) {
   EXPECT_NE(data2.find("\n6 1 2 "), std::string::npos);   // sticker: molecule ID 1, type 2
   EXPECT_NE(data2.find("\n2 2 1 "), std::string::npos);   // not a sticker: molecule ID 2, type 1
   EXPECT_NE(data2.find("16 angles"), std::string::npos);   // none across the sticker–sticker bond
+}
+
+namespace {
+
+// Two dimethyl disulfides side by side (S…S about 3.6 Å), UFF.
+System two_disulfides() {
+  MolGraph g = parse_smiles("CSSC");
+  add_hydrogens(g);
+  const System a = molecule_system(g, embed(g));
+  System s = a;
+  const uint32_t n = uint32_t(a.atoms.size());
+  for (auto& at : s.atoms) at.mol = 1, at.pos = at.pos + Vec3{10, 10, 10};
+  for (auto at : a.atoms) at.mol = 2, at.pos = at.pos + Vec3{10, 13.6, 10}, s.atoms.push_back(at);
+  for (auto b : a.bonds) b.i += n, b.j += n, s.bonds.push_back(b);
+  s.has_mol = true;
+  s.cell = box(30, 30, 30);
+  return s;
+}
+
+ReactionTemplate disulfide_template() {
+  return template_from_scheme({"C[S:1][S:2]CC", "CCC[S:3][S:4]CCC"}, {"C[S:1][S:4]CCC", "CC[S:2][S:3]CCC"}, "disulfide_metathesis");
+}
+
+}  // namespace
+
+// Template moves on an all-atom force field: the disulfide metathesis of the library found by chemistry, its local ΔU
+// the whole system's, rejected moves undone exactly, and every sulfur bonded to one sulfur and one carbon.
+TEST(ExchangeMoves, TemplateExchangeAllAtom) {
+  System s = two_disulfides();
+  ForceField ff = assign_uff(s);
+  ExchangeOptions xo;
+  xo.kind = ExchangeKind::Template;
+  xo.templates = {disulfide_template()};
+  xo.templates[0].capture = 5.0;
+  xo.seed = 2;
+  ExchangeEngine e(s, ff, xo, EnergyOptions{});
+  const auto x = coords(s);
+  ASSERT_FALSE(find_matches(s, xo.templates[0]).empty());
+  // S atoms: 1, 2 in the first molecule; the second molecule's are 1 + n, 2 + n
+  const uint32_t n = uint32_t(s.atoms.size() / 2);
+  auto whole = [&] { return whole_energy(ff, s, EnergyOptions{}); };
+  const double dl = e.delta({{1, 2}, {1 + n, 2 + n}}, {{1, 2 + n}, {2, 1 + n}}, x, s.cell, nullptr);
+  ExchangeOptions full = xo;
+  full.local = false;
+  ExchangeEngine g(s, ff, full, EnergyOptions{});
+  EXPECT_NEAR(dl, g.delta({{1, 2}, {1 + n, 2 + n}}, {{1, 2 + n}, {2, 1 + n}}, x, s.cell, whole), 1e-7 * (1 + std::fabs(dl)));
+  // moves at these positions: the sites are found and every change is one the force field describes; the new S–S bonds
+  // would be stretched by about 1.5 Å, so Metropolis turns them down and the bonds stay as they were
+  for (int k = 0; k < 40; ++k) e.run(x, s.cell, 300, nullptr);
+  EXPECT_EQ(e.stats().attempts, 40);
+  EXPECT_EQ(e.stats().no_candidate, 0);
+  EXPECT_EQ(e.stats().unparameterised, 0);
+  EXPECT_EQ(e.stats().accepted, 0);
+  EXPECT_NEAR(whole(), whole_energy(assign_uff(two_disulfides()), two_disulfides(), EnergyOptions{}), 1e-6);
+  for (uint32_t sa : {1u, 2u, 1 + n, 2 + n}) {
+    int sulfur = 0, carbon = 0;
+    for (const auto& b : s.bonds)
+      if (b.i == sa || b.j == sa) {
+        const uint32_t o = b.i == sa ? b.j : b.i;
+        sulfur += s.atoms[o].element == 16, carbon += s.atoms[o].element == 6;
+      }
+    EXPECT_EQ(sulfur, 1);
+    EXPECT_EQ(carbon, 1);
+  }
+}
+
+// The fix bond/react deck of an exchange: prob is the Arrhenius factor of the barrier at the run's temperature against t_ref.
+TEST(ExchangeMoves, BondReactProbabilityFollowsArrhenius) {
+  System s = two_disulfides();
+  BondReactOptions bo;
+  bo.temperature = 350;
+  bo.t_ref = 450;
+  bo.barrier = 12.02;
+  bo.steps = 1000;
+  const auto dir = std::filesystem::temp_directory_path() / "caps_exchange_react";
+  std::filesystem::create_directories(dir);
+  auto t = disulfide_template();
+  t.capture = 5.0;
+  const auto rep = write_bond_react(s, {t}, [](const System& x) { return std::make_shared<const ForceField>(assign_uff(x)); }, dir.string(), "dss", bo);
+  ASSERT_FALSE(rep.variants.empty());
+  std::ifstream in((dir / "dss.in").string());
+  const std::string deck((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+  char want[64];
+  std::snprintf(want, sizeof want, "prob %.4g ", arrhenius_probability(12.02, 350, 450));
+  EXPECT_NE(deck.find(want), std::string::npos) << want;
 }
