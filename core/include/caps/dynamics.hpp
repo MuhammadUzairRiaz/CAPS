@@ -40,6 +40,21 @@ struct ThermoRow {
   double wall_force[3] = {0, 0, 0};   // force of the other atoms on the moved group (move_group), kcal/mol/Å
 };
 
+// What a bond-exchange callback works on (DynamicsOptions::topology): the run's own structure (its bonds the run's topology;
+// positions copied in from the run for the callback to read) and force field, the positions and velocities, the cell, the
+// step and the thermostat's target temperature. potential() reloads the run's evaluators from `field` as it stands and
+// returns the potential energy at x (kcal/mol): a Metropolis test calls it before and after a trial change.
+struct TopologyContext {
+  System& system;
+  ForceField& field;
+  const std::vector<double>& x;
+  std::vector<double>& v;
+  const Cell& cell;
+  int64_t step;
+  double temperature;
+  std::function<double()> potential;
+};
+
 struct DynamicsOptions {
   // The force field to use (from CAPS Field); null: CAPS's built-in GAFF typing of C and H.
   std::shared_ptr<const ForceField> field;
@@ -124,6 +139,13 @@ struct DynamicsOptions {
   // Å/fs), cell and step (with step_offset) — so a run that fails or is stopped can continue from the last one.
   int64_t checkpoint_every = 0;
   std::function<void(const std::vector<double>& x, const std::vector<double>& v, const Cell&, int64_t step)> checkpoint;
+  // Bond exchange (vitrimers, dynamic covalent and reversible networks; caps/topology_edit.hpp): every topology_every
+  // steps (0: never), after the step's forces, the callback may break and make bonds in ctx.system and ctx.field (a
+  // TopologyEditor on them) or put in a force field assigned again to the changed structure (the same atoms), and returns
+  // true when it changed anything. The run then reloads its evaluators and forces; the energy the changes added is kept
+  // out of the conserved quantity (DynamicsReport::topology_energy). Not with bond constraints.
+  int64_t topology_every = 0;
+  std::function<bool(TopologyContext& ctx)> topology;
 };
 
 struct DynamicsReport {
@@ -132,6 +154,8 @@ struct DynamicsReport {
   double seconds = 0, ns_per_day = 0;
   int list_builds = 0;
   int threads = 0;                  // worker threads the run used
+  int64_t topology_changes = 0;     // callbacks that changed the topology (DynamicsOptions::topology)
+  double topology_energy = 0;       // potential energy those changes added, kcal/mol
   std::vector<std::string> notes;
 };
 
