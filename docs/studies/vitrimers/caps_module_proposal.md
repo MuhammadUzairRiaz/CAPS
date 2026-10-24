@@ -516,8 +516,63 @@ instead).
 Not in E6: a creep subcommand, the recipe stages (one recipe from build to healed pull), and a crack shaped as a
 notch rather than a void.
 
-Next: E7, the rubber vitrimers (ENR with a diacid, ENR on cellulose, sulfur-cured NR and SBR polysulfide, ENR/PBS through
-MAH).
+**E7 (rubber vitrimers) is built** (2026-10-24):
+
+What the four systems needed was all-atom exchange that works in a network, which E5 did not give: templates that move
+a hydrogen were refused, and a new bond made at the capture distance (1 to 3 Å too long) turned down almost every move.
+
+- Relaxed moves (`ExchangeOptions::relax_steps`, `relax_depth`; `--relax`, `--relax-depth`). The atoms within three
+  bonds of the change relax by steepest descent, before and after the change alike, with the rest of the cell held,
+  and ΔU compares the two minima. An accepted move keeps the relaxed positions, so `TopologyContext::x` is now writable.
+  Relaxing only one side would credit every move with the relaxation of the thermal state (about ½kT per degree of
+  freedom). On the ENR + disulfide diacid network with OPLS-AA 2024, ΔU fell from about 50 kcal/mol (depth 1, 200
+  steps) to about 7 (depth 3, 1000 steps), so depth 3 and 1000 steps are the defaults for template moves. A move costs
+  about 0.6 s there. Positions change, so this is a relaxed-energy criterion, as in Yang et al. 2016 and Wick et al.
+  2025, and not exact detailed balance.
+- Hydrogen moves: the H goes onto its new partner at a covalent bond length, on the side it came from, as React does.
+- Types after a change:
+  - with the run's own assignment (`ExchangeOptions::parameterize`; the CLI passes its `--ff`), the atoms within three
+    bonds of the change take the types it gives the product's neighbourhood (six bonds deep, H caps on cut bonds, never
+    cut across a double or aromatic bond). A type no atom had before (OPLS-AA's tertiary alcohol carbon once an ester
+    leaves a tertiary carbon) joins the force field;
+  - without one, types follow roles: the template matched the other way on the products names each role's new atom;
+  - charges follow roles either way, so the total charge stays.
+- Terms of type combinations the structure never had are learned from the same assignment (`TopologyEditor::learn`).
+  Polysulfide exchange makes the first C–S–S–C torsion. Where the force field itself has no term, `--complete ml` fits
+  it with CAPS ML on the neighbourhood. The fitted rule joins the run's force-field definition, so it is fitted once
+  per run. `--overlay` supplies terms fitted before.
+- Templates that work in a network (built in, named by the exchange library's new `template` field):
+  `transesterification_exchange` (ester + alcohol, capture 4.25 Å from Wick et al. 2025, not the ester's own β-OH) and
+  `polysulfide_exchange` (two S–S bonds trade partners, capture 4.12 Å). The library's schemes were model compounds
+  whose patterns required a methyl on the leaving oxygen.
+- min_path 0 (React's "different molecules") reads as at least 4 bonds apart in the exchange engine, so a network
+  exchanges within itself.
+
+The four systems, each checked in `RubberVitrimers.*` (UFF, frozen positions, every new combination learned, the types
+after the moves a fresh typing's):
+1. ENR + 4,4'-dithiodibutyric acid (a disulfide diacid): 11 crosslinks on ENR's model epoxide; transesterification
+   accepted; the crosslinks' disulfides found by polysulfide exchange.
+2. ENR on cellulose (glucose standing for the surface): acyl groups move from the rubber's β-hydroxy esters onto sugar
+   hydroxyls.
+3. Sulfur-cured NR (H–S4–H donors, eight S4 bridges): S–S metathesis accepted, the C–S–S–C torsion learned.
+4. ENR/PBS through maleic acid: PBS's ester links graft onto ENR's β-hydroxyls.
+
+On the command line, on grown chains (4 × 10 units) cured by React and relaxed, OPLS-AA 2024:
+- ENR-50 + the disulfide diacid, transesterification without the barrier: 2 of 200 moves accepted, none the force field
+  could not describe. With the library barrier (14.6 kcal/mol, exp(−E_a/kT) ≈ 8 × 10⁻⁸ at 450 K) none in 200, as
+  expected; real rates need the Arrhenius scaling of E5 or LAMMPS.
+- Sulfur-cured NR: every polysulfide move described. With a copy of OPLS-AA 2024 lacking the C–S–S–C torsion, 13 of
+  40 moves fail without ML, naming that torsion. With `--complete ml` (a build with the ML engine), CAPS ML fitted
+  CT-S-S-CT once in the run (CAPS MACE v1, RMS 0.33 kcal/mol) and no move failed after it; the run took 94 s. The fit
+  scans a freshly embedded copy of the neighbourhood's bond graph: from the run's own positions, with the new bond
+  still at the capture distance, the scan clashed and the fit was rejected. On diethyl disulfide, `caps ff complete`
+  gives V2 = −5.58 kcal/mol against OPLS-AA's own −7.41.
+
+Not in E7: SBR (the same sulfur chemistry, untested on SBR chains), a cellulose Iβ crystal surface (it needs the
+crystal's coordinates; glucose stands in), the aliphatic polysulfide barrier (CAPS QM still to run), steepest descent
+replaced by a faster minimiser, and runs long enough to measure relaxation times (cluster jobs).
+
+Next: E8, the Studio's Exchange page.
 
 ## 10. Chemistries the module covers
 

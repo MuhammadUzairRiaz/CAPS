@@ -8,6 +8,7 @@
 
 #include "caps/exchange_library.hpp"
 #include "caps/json.hpp"
+#include "caps/react.hpp"
 
 using namespace caps;
 
@@ -39,6 +40,7 @@ TEST(ExchangeLibrary, ChemistriesSchemesAndSources) {
   for (const auto& r : reactions["reactions"].items()) schemes.insert(r.text("id"));
   for (const auto& c : lib) {
     if (!c.scheme.empty()) EXPECT_TRUE(schemes.count(c.scheme)) << c.id << ": scheme " << c.scheme;
+    if (!c.template_name.empty()) EXPECT_NO_THROW(parse_templates(builtin_template(c.template_name))) << c.id << ": template " << c.template_name;
     EXPECT_TRUE(c.move == "swap" || c.move == "shift" || c.move == "bind" || c.move == "none") << c.id;
     for (const auto& b : c.barriers) {
       EXPECT_EQ(b.source.rfind("10.", 0), 0u) << c.id << ": source " << b.source;

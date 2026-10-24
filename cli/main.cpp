@@ -224,7 +224,7 @@ int usage() {
                "               | caps exchange heal HEALED INTACT [--modulus-strain 0.03] [--at-strain E] [--up-to E]   [--json OUT] [--csv DIR]   (bond exchange and healing)\n"
                "               | caps exchange list   |   caps exchange show CHEMISTRY   (exchange chemistries and their barriers, data/exchange)\n"
                "               | caps exchange run DATA -o OUT [--chemistry ID] --kind swap|shift|bind [--sites SEL] [--partners SEL] [--labels chain|ends] [--capture 1.3]\n"
-               "                 [--barrier E] [--binding E] [--valence N[,M]] [--every 10] [--attempts 1] [--steps 10000] [--temp 300] [--dt 1] [--kg [--k-theta K] | --ff FF.json]\n"
+               "                 [--barrier E] [--binding E] [--valence N[,M]] [--relax 1000 [--relax-depth 3]] [--every 10] [--attempts 1] [--steps 10000] [--temp 300] [--dt 1] [--kg [--k-theta K] | --ff FF.json]\n"
                "               | caps exchange bond-react DATA -o STEM --chemistry ID [--temp 300] [--t-ref T] [--steps N] [--ff FF.json]   (LAMMPS fix bond/react)\n"
                "               | caps exchange bond-swap DATA -o STEM [--sites SEL] [--stickers | --both-ends] [--every 50] [--fraction 0.5] [--cutoff 1.3] [--seed 1] [--steps N] [--k-theta K]\n"
                "               | caps exchange cut|gap|crack|fragment DATA -o OUT [--axis z] [--plane 0.5] [--gap A] [--radius A [--centre x,y,z]] [--axes xyz]   (healing-test starts)\n"
@@ -430,7 +430,7 @@ const std::set<std::string>& known_options() {
     "--tmax", "--to", "--tol", "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing", "--units",
     "--polymer", "--crystal", "--crystal-cells", "--amorphous", "--loops", "--bridges", "--tails", "--reentry", "--analyse",
     "--corr-ps", "--long", "--swap-every", "--transient", "--dimensionality", "--thickness",
-    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--chunks", "--valence", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
+    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
   return k;
 }
 
@@ -3347,8 +3347,9 @@ int main(int argc, char** argv) {
           if (!c.notes.empty()) std::printf("  note: %s\n", c.notes.c_str());
           return 0;
         }
-        // a chemistry's reaction template, from its scheme in data/reactions/library.json
+        // a chemistry's reaction template: its built-in network template, else from its scheme in data/reactions/library.json
         auto chemistry_template = [&](const ExchangeChemistry& c) {
+          if (!c.template_name.empty()) return parse_templates(builtin_template(c.template_name)).at(0);
           if (c.scheme.empty()) throw std::invalid_argument(c.id + " has no reaction scheme yet (see caps exchange show " + c.id + ")");
           for (const std::string& root : caps_roots()) {
             const std::string path = root + "/data/reactions/library.json";
@@ -3458,6 +3459,76 @@ int main(int argc, char** argv) {
           if (o.count("--capture")) xo.capture = std::stod(o["--capture"]);
           if (o.count("--barrier")) xo.barrier = std::stod(o["--barrier"]);
           if (o.count("--binding")) xo.binding = std::stod(o["--binding"]);
+          // relaxed moves: all-atom templates by default (a new bond made at the capture distance), else when asked
+          xo.relax_steps = o.count("--relax") ? std::stoi(o["--relax"]) : xo.kind == ExchangeKind::Template ? 1000 : 0;
+          if (o.count("--relax-depth")) xo.relax_depth = std::stoi(o["--relax-depth"]);
+          // new combinations of types: the run's own assignment types each change's neighbourhood, with --overlay and
+          // --complete ml filling the terms the force field lacks. One definition serves the whole run, so what CAPS ML
+          // fits joins it and is fitted once.
+          if (!kg && o.count("--ff")) {
+            std::shared_ptr<FFDef> def;
+            if (!is_uff(o["--ff"])) {
+              def = std::make_shared<FFDef>(load_forcefield(ff_path(o["--ff"])));
+              if (o.count("--overlay")) merge_overlays(*def, o["--overlay"]);
+              if (o.count("--typing")) load_typing(*def, o["--typing"]);
+              if (needs_prepare(*def) || def->typing.empty()) def = nullptr;   // united atoms, shells, types by name: as the run assigned
+            }
+            if (!def)
+              xo.parameterize = [&o](const System& f) {
+                System y = f;
+                return cli_forcefield(y, o, true);
+              };
+            else {
+              auto given_up = std::make_shared<std::set<std::string>>();   // gaps CAPS ML could not fit: not tried again
+              xo.parameterize = [&o, def, given_up](const System& f) {
+                System y = f;
+                const TypingResult tr = assign_types(y, *def);
+                if (tr.untyped) throw std::runtime_error(untyped_message(*def, y, tr.untyped, &tr.types));
+                auto assign = [&](ParamReport& rep) {
+                  std::vector<std::string> said;
+                  return parameterize_charges(y, *def, tr.types, file_charges(y) ? "keep" : "types", ff_path(o["--ff"]), &rep, true, &said);
+                };
+                ParamReport rep;
+                ForceField ff = assign(rep);
+                if (rep.missing.empty()) return ff;
+                const bool fresh = std::any_of(rep.missing.begin(), rep.missing.end(), [&](const std::string& m) { return !given_up->count(m); });
+                if (fresh && completion_asked(o)) {
+                  // CAPS ML scans from a clean geometry of the same bond graph: the run's positions hold the new bond at
+                  // the capture distance among crowded neighbours, and the scan's relaxations would clash
+                  System z = y;
+                  try {
+                    MolGraph g;
+                    for (const auto& a : y.atoms) {
+                      MolAtom m;
+                      m.element = a.element, m.bracket = true, m.hcount = 0, m.charge = 0;
+                      g.atoms.push_back(m);
+                    }
+                    for (const auto& b : y.bonds) {
+                      g.bonds.push_back({int(b.i), int(b.j), b.order, 0});
+                      if (b.order == 4) g.atoms[b.i].aromatic = g.atoms[b.j].aromatic = true;
+                    }
+                    g.heavy = int(g.atoms.size());
+                    const auto pos = embed(g);
+                    for (size_t k = 0; k < z.atoms.size(); ++k) z.atoms[k].pos = pos[k];
+                    z.cell = Cell{};
+                  } catch (const std::exception&) {
+                    z = y;   // no embedding: the run's own geometry
+                  }
+                  const MlFill fill = cli_complete_ml(z, *def, tr.types, o, ff_path(o["--ff"]), true);
+                  for (const auto& term : fill.fitted_terms) std::printf("CAPS ML, for an exchange: fitted %s\n", term.c_str());
+                  for (const auto& term : fill.left) std::printf("CAPS ML, for an exchange: could not fit %s\n", term.c_str());
+                  std::fflush(stdout);
+                  rep = ParamReport{};
+                  ff = assign(rep);
+                  if (rep.missing.empty()) return ff;
+                }
+                for (const auto& m : rep.missing) given_up->insert(m);
+                throw std::runtime_error(def->name + " has no parameters for " + rep.missing.front() +
+                                         (rep.missing.size() > 1 ? " and " + std::to_string(rep.missing.size() - 1) + " more" : std::string()) +
+                                         (completion_asked(o) ? "" : " (--complete ml fits them with CAPS ML)"));
+              };
+            }
+          }
           if (o.count("--valence")) {   // bonds a site can hold: N for both groups, or N,M for A and B (a bead in a chain holds two)
             const std::string v = o["--valence"];
             const size_t c = v.find(',');

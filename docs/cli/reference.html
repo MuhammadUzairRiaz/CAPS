@@ -829,7 +829,7 @@ examples:
              | caps exchange heal HEALED INTACT [--modulus-strain 0.03] [--at-strain E] [--up-to E]   [--json OUT] [--csv DIR]   (bond exchange and healing)
              | caps exchange list   |   caps exchange show CHEMISTRY   (exchange chemistries and their barriers, data/exchange)
              | caps exchange run DATA -o OUT [--chemistry ID] --kind swap|shift|bind [--sites SEL] [--partners SEL] [--labels chain|ends] [--capture 1.3]
-               [--barrier E] [--binding E] [--valence N[,M]] [--every 10] [--attempts 1] [--steps 10000] [--temp 300] [--dt 1] [--kg [--k-theta K] | --ff FF.json]
+               [--barrier E] [--binding E] [--valence N[,M]] [--relax 1000 [--relax-depth 3]] [--every 10] [--attempts 1] [--steps 10000] [--temp 300] [--dt 1] [--kg [--k-theta K] | --ff FF.json]
              | caps exchange bond-react DATA -o STEM --chemistry ID [--temp 300] [--t-ref T] [--steps N] [--ff FF.json]   (LAMMPS fix bond/react)
              | caps exchange bond-swap DATA -o STEM [--sites SEL] [--stickers | --both-ends] [--every 50] [--fraction 0.5] [--cutoff 1.3] [--seed 1] [--steps N] [--k-theta K]
              | caps exchange cut|gap|crack|fragment DATA -o OUT [--axis z] [--plane 0.5] [--gap A] [--radius A [--centre x,y,z]] [--axes xyz]   (healing-test starts)

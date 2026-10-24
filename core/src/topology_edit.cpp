@@ -191,6 +191,97 @@ TopologyEditor::TopologyEditor(System& s, ForceField& ff) : s_(s), ff_(ff), n_(s
 
 void TopologyEditor::change(const std::vector<Pair>& broken, const std::vector<Pair>& made) { change_impl(broken, made, {}); }
 
+size_t TopologyEditor::learn(const System& frag, const ForceField& f, const std::vector<char>& complete) {
+  const size_t m = frag.atoms.size();
+  if (f.type_index.size() != m || complete.size() != m) throw TopologyError("learn: the force field and the marks must be for the fragment's atoms");
+  std::map<std::string, int> ours;
+  for (size_t k = 0; k < ff_.type_names.size(); ++k) ours.emplace(ff_.type_names[k], int(k));
+  std::vector<int> ty(m, -1);   // each fragment atom's type here (−1: a type this force field does not have, or incomplete)
+  for (size_t a = 0; a < m; ++a) {
+    const int fi = f.type_index[a];
+    if (!complete[a] || fi < 0 || size_t(fi) >= f.type_names.size()) continue;
+    if (const auto it = ours.find(f.type_names[fi]); it != ours.end()) ty[a] = it->second;
+  }
+  std::vector<std::vector<uint32_t>> nb(m);
+  for (const auto& b : frag.bonds)
+    if (b.i < m && b.j < m && b.i != b.j) nb[b.i].push_back(b.j), nb[b.j].push_back(b.i);
+  for (auto& v : nb) std::sort(v.begin(), v.end()), v.erase(std::unique(v.begin(), v.end()), v.end());
+  auto ok = [&](std::initializer_list<uint32_t> a) {
+    for (uint32_t x : a)
+      if (x >= m || ty[x] < 0) return false;
+    return true;
+  };
+  auto k2 = [&](uint32_t i, uint32_t j) { return ty[i] < ty[j] ? Key2{ty[i], ty[j]} : Key2{ty[j], ty[i]}; };
+  auto k3 = [&](uint32_t i, uint32_t j, uint32_t k) { return ty[i] <= ty[k] ? Key3{ty[i], ty[j], ty[k]} : Key3{ty[k], ty[j], ty[i]}; };
+  auto k4 = [&](uint32_t i, uint32_t j, uint32_t k, uint32_t l) {
+    const Key4 a{ty[i], ty[j], ty[k], ty[l]}, b{ty[l], ty[k], ty[j], ty[i]};
+    return a < b ? a : b;
+  };
+  size_t added = 0;
+  auto bond = [&](uint32_t i, uint32_t j, const BondParams& q) {
+    if (!ok({i, j})) return;
+    bond_seen_.insert(k2(i, j));
+    added += bond_tab_.emplace(k2(i, j), q).second;
+  };
+  for (const auto& b : f.bonds) { BondParams q; q.kind = 0, q.b = b; bond(b.i, b.j, q); }
+  for (const auto& b : f.bonds_x) { BondParams q; q.kind = 1, q.x = b; bond(b.i, b.j, q); }
+  for (const auto& b : f.bonds2) { BondParams q; q.kind = 2, q.c = b; bond(b.i, b.j, q); }
+  std::map<std::array<uint32_t, 3>, AngleSet> by_triple;
+  for (const auto& a : f.angles) by_triple[triple_of(a.i, a.j, a.k)].h.push_back(a);
+  for (const auto& a : f.angles_x) by_triple[triple_of(a.i, a.j, a.k)].x.push_back(a);
+  for (const auto& u : f.urey_bradley)
+    for (auto& [tr, set] : by_triple)
+      if (pair_of(tr[0], tr[2]) == pair_of(u.i, u.k)) set.ub.push_back(u);
+  for (const auto& [tr, set] : by_triple)
+    if (ok({tr[0], tr[1], tr[2]})) added += angle_tab_.emplace(k3(tr[0], tr[1], tr[2]), set).second;
+  for (uint32_t j = 0; j < m; ++j)
+    for (size_t a = 0; a < nb[j].size(); ++a)
+      for (size_t b = a + 1; b < nb[j].size(); ++b)
+        if (ok({nb[j][a], j, nb[j][b]})) angle_seen_.insert(k3(nb[j][a], j, nb[j][b]));
+  std::map<std::array<uint32_t, 4>, std::vector<TorsionTerm>> by_quad;
+  for (const auto& d : f.dihedrals) by_quad[quad_of(d.i, d.j, d.k, d.l)].push_back(d);
+  for (const auto& [q, terms] : by_quad)
+    if (ok({q[0], q[1], q[2], q[3]})) added += dihedral_tab_.emplace(k4(q[0], q[1], q[2], q[3]), terms).second;
+  for (uint32_t j = 0; j < m; ++j)
+    for (uint32_t k : nb[j]) {
+      if (k < j) continue;
+      for (uint32_t i : nb[j])
+        for (uint32_t l : nb[k])
+          if (i != k && l != j && i != l && ok({i, j, k, l})) dihedral_seen_.insert(k4(i, j, k, l));
+    }
+  return added;
+}
+
+void TopologyEditor::change(const std::vector<Pair>& broken, const std::vector<Pair>& made, const std::vector<Retype>& retype) {
+  if (retype.empty()) return change_impl(broken, made, {});
+  std::set<Pair> b, m, fresh;
+  for (const auto& p : broken) b.insert(pair_of(p[0], p[1]));
+  for (const auto& p : made) m.insert(pair_of(p[0], p[1]));
+  for (const auto& r : retype) {
+    if (r.atom >= n_) throw TopologyError("retype: an atom the structure does not have");
+    if (r.type < 0 || size_t(r.type) >= ff_.type_names.size()) throw TopologyError("retype: a type the force field does not have");
+    for (uint32_t q : nb_[r.atom])
+      if (const Pair p = pair_of(r.atom, q); !b.count(p)) fresh.insert(p);
+  }
+  for (const auto& p : fresh) b.insert(p), m.insert(p);
+  struct Old { int type; std::string name; double charge; };
+  std::vector<Old> old;
+  auto set = [&](uint32_t a, int type, const std::string& name, double charge) {
+    ff_.type_index[a] = type;
+    if (a < ff_.atom_type.size()) ff_.atom_type[a] = name;
+    if (a < ff_.charge.size()) ff_.charge[a] = charge;
+  };
+  for (const auto& r : retype)
+    old.push_back({ff_.type_index[r.atom], r.atom < ff_.atom_type.size() ? ff_.atom_type[r.atom] : std::string(), r.atom < ff_.charge.size() ? ff_.charge[r.atom] : 0.0});
+  for (const auto& r : retype) set(r.atom, r.type, r.name, r.charge);
+  try {
+    change_impl(std::vector<Pair>(b.begin(), b.end()), std::vector<Pair>(m.begin(), m.end()), {}, fresh);
+  } catch (...) {
+    for (size_t k = retype.size(); k-- > 0;) set(retype[k].atom, old[k].type, old[k].name, old[k].charge);
+    throw;
+  }
+}
+
 void TopologyEditor::define_bond(const BondTerm& like) {
   if (like.i >= n_ || like.j >= n_) throw TopologyError("define_bond: its atoms must be atoms of the structure");
   BondParams q;
@@ -221,7 +312,8 @@ void TopologyEditor::swap(uint32_t a1, uint32_t a2, uint32_t b1, uint32_t b2) {
   change_impl({pair_of(a1, a2), pair_of(b1, b2)}, {pair_of(a1, b2), pair_of(b1, a2)}, hint);
 }
 
-void TopologyEditor::change_impl(const std::vector<Pair>& broken0, const std::vector<Pair>& made0, const std::map<Pair, BondParams>& hint) {
+void TopologyEditor::change_impl(const std::vector<Pair>& broken0, const std::vector<Pair>& made0, const std::map<Pair, BondParams>& hint,
+                                 const std::set<Pair>& fresh) {
   // ---- checks: nothing is changed until every new term is known
   if (!ff_.angles2.empty() || !ff_.dihedrals2.empty() || !ff_.impropers2.empty() || !ff_.cbt.empty())
     throw TopologyError("class II cross terms and combined bending-torsion terms are not rebuilt by a bond change: assign the force field again to the new structure");
@@ -269,7 +361,7 @@ void TopologyEditor::change_impl(const std::vector<Pair>& broken0, const std::ve
     BondParams q;
     bool known = false;
     if (const auto h = hint.find(p); h != hint.end()) q = h->second, known = true;
-    else if (const auto st = stash.find(p); st != stash.end()) q = st->second, known = true;
+    else if (const auto st = stash.find(p); !fresh.count(p) && st != stash.end()) q = st->second, known = true;
     else if (const auto t = bond_tab_.find(key2(p[0], p[1])); t != bond_tab_.end()) q = t->second, known = true;
     else if (bond_seen_.count(key2(p[0], p[1]))) q.kind = -1, known = true;   // these types are bonded without a term
     if (!known)

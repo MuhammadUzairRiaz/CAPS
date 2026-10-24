@@ -33,7 +33,7 @@ std::vector<ExchangeChemistry> load_exchange_library(const std::string& path) {
   for (const auto& e : j["chemistries"].items()) {
     ExchangeChemistry c;
     c.id = e.text("id"), c.name = e.text("name"), c.family = e.text("family"), c.mechanism = e.text("mechanism");
-    c.move = e.text("move"), c.scheme = text_of(e, "scheme"), c.notes = e.text("notes");
+    c.move = e.text("move"), c.scheme = text_of(e, "scheme"), c.template_name = text_of(e, "template"), c.notes = e.text("notes");
     for (const auto& b : e["barriers"].items()) {
       ExchangeBarrier x;
       x.value = text_of(b, "value");

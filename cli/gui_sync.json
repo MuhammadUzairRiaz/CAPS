@@ -217,7 +217,9 @@
     "--start": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
     "--npt": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
     "--chunks": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
-    "--valence": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)"
+    "--valence": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
+    "--relax": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
+    "--relax-depth": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)"
    }
   },
   "frames": {

@@ -1081,6 +1081,41 @@
    "tex": "p_\\mathrm{acc} = e^{-E_a/k_\\mathrm{B}T}\\,\\min\\!\\left[1,\\ \\frac{q_\\mathrm{rev}}{q_\\mathrm{fwd}}\\,K^{\\pm 1}\\,e^{-\\Delta U/k_\\mathrm{B}T}\\right],\\qquad \\Delta U = U_\\mathrm{cluster}^\\mathrm{after} - U_\\mathrm{cluster}^\\mathrm{before}"
   },
   {
+   "id": "exchange-all-atom",
+   "group": "Protocols",
+   "title": "All-atom exchange in rubber networks",
+   "summary": "Exchange moves on an all-atom network: the ester links of an acid-cured ENR, its esters on a cellulose surface, PBS grafted through maleic acid, and the polysulfide bridges of a sulfur cure. A template move (transesterification_exchange, polysulfide_exchange) makes its new bond at the capture distance, 1 to 3 Å longer than a bond, so the energy is taken after a local relaxation: the atoms within three bonds of the change relax by steepest descent with the rest of the cell held, before the change and after it alike, and ΔU compares the two minima. A hydrogen the template moves (the alcohol's H in transesterification) goes onto its new partner at a covalent bond length first. The atoms near the change take the types the run's own force-field assignment gives the product (a secondary carbon that becomes an ester's stays a CH), a type no atom had before joins the force field, and the terms of combinations of types the structure never had are learned from the same assignment. Where the force field itself lacks a term, the assignment with an overlay or with CAPS ML completion fills it: the missing torsion is fitted to CAPS's machine-learned potential once and used for the rest of the run. Charges follow the roles the atoms play, so the total charge stays.",
+   "equation": "ΔU = min U_after(x_shell) − min U_before(x_shell),   acc = exp(−E_a/k_B T) · min[1, (n_fwd/n_back) exp(−ΔU/k_B T)]",
+   "equation_note": "x_shell: the atoms within relax_depth bonds of the change (3 by default) and their hydrogens; every bonded term within three bonds of them and every atom within the cut-off enter U; n_fwd, n_back: the template's matches before and after the change",
+   "symbols": [
+    [
+     "ΔU",
+     "energy change between the relaxed states",
+     "kcal/mol"
+    ],
+    [
+     "E_a",
+     "barrier of the exchange chemistry",
+     "kcal/mol"
+    ],
+    [
+     "relax_depth",
+     "bonds from the change within which atoms relax",
+     "3"
+    ]
+   ],
+   "when": "caps exchange run DATA --kind template --chemistry transesterification (ENR + diacid, ENR on cellulose, ENR/PBS through maleic acid) or --chemistry polysulfide_rubber (sulfur-cured NR and SBR), with --ff FF.json for the run's assignment and --complete ml where the force field lacks terms; --relax and --relax-depth set the relaxation.",
+   "cites": [
+    "yang2016",
+    "wick2025"
+   ],
+   "source": "core/src/exchange_moves.cpp (ExchangeEngine::apply_relaxed, edit), core/src/topology_edit.cpp (TopologyEditor::learn, change with retyping), core/src/react.cpp (transesterification_exchange, polysulfide_exchange)",
+   "tested": "ExchangeMoves.RelaxedTemplateMovesAreAccepted, TemplateMovesAHydrogen (the types after the moves are a fresh typing's), RubberVitrimers.EnrDiacid, SulfurCuredNr (the first C–S–S–C torsion learned), EnrOnCellulose (acyl groups moved onto glucose hydroxyls), EnrPbsMaleate",
+   "deviation": "positions change, so the acceptance is a relaxed-energy criterion as in the atomistic vitrimer studies, not exact detailed balance; steepest descent leaves a few kcal/mol of strain in a crosslinked network (ENR + disulfide diacid, OPLS-AA 2024: ΔU about 7 kcal/mol at depth 3 and 1000 steps against 50 at depth 1 and 200)",
+   "engines": [],
+   "tex": "\\Delta U = \\min U_\\mathrm{after}(\\mathbf{x}_\\mathrm{shell}) - \\min U_\\mathrm{before}(\\mathbf{x}_\\mathrm{shell}),\\qquad p_\\mathrm{acc} = e^{-E_a/k_\\mathrm{B}T}\\,\\min\\!\\left[1,\\ \\frac{n_\\mathrm{fwd}}{n_\\mathrm{back}}\\,e^{-\\Delta U/k_\\mathrm{B}T}\\right]"
+  },
+  {
    "id": "exchange-protocols",
    "group": "Protocols",
    "title": "Healing-test builders and exchange protocols",

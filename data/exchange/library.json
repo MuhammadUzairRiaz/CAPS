@@ -1,7 +1,7 @@
 {
  "format": "caps-exchange",
  "format_version": 1,
- "about": "Exchange chemistries for CAPS Exchange (vitrimers, dynamic covalent and reversible networks): mechanism, the move the exchange engine uses (swap: two bonds trade partners; shift: a free group takes a bond from another; bind: bonds form and break alone), the reaction scheme in data/reactions/library.json, and every barrier or activation energy read in the literature with its source DOI, method and conditions. status: read (taken from the paper itself) or quoted (taken from a paper citing it; read the original before relying on it). default: the barrier an MD run uses unless told otherwise, only where a molecular barrier (quantum chemistry, or a value an MD study used) exists; experimental activation energies of flow or stress relaxation are listed but are not molecular barriers. Nothing here comes from another program's parameter files.",
+ "about": "Exchange chemistries for CAPS Exchange (vitrimers, dynamic covalent and reversible networks): mechanism, the move the exchange engine uses (swap: two bonds trade partners; shift: a free group takes a bond from another; bind: bonds form and break alone), the reaction scheme in data/reactions/library.json (a model compound's), the built-in React template a network runs in CAPS's own engine where it differs (template), and every barrier or activation energy read in the literature with its source DOI, method and conditions. status: read (taken from the paper itself) or quoted (taken from a paper citing it; read the original before relying on it). default: the barrier an MD run uses unless told otherwise, only where a molecular barrier (quantum chemistry, or a value an MD study used) exists; experimental activation energies of flow or stress relaxation are listed but are not molecular barriers. Nothing here comes from another program's parameter files.",
  "chemistries": [
   {
    "id": "transesterification",
@@ -10,6 +10,7 @@
    "mechanism": "associative",
    "move": "shift",
    "scheme": "transesterification",
+   "template": "transesterification_exchange",
    "barriers": [
     {
      "value": 14.6,
@@ -259,6 +260,7 @@
    "mechanism": "associative (radical step dissociative)",
    "move": "swap",
    "scheme": "disulfide_metathesis",
+   "template": "polysulfide_exchange",
    "barriers": [
     {
      "value": 12.02,
@@ -335,6 +337,7 @@
    "mechanism": "associative or dissociative",
    "move": "swap",
    "scheme": "disulfide_metathesis",
+   "template": "polysulfide_exchange",
    "barriers": [
     {
      "value": 100,

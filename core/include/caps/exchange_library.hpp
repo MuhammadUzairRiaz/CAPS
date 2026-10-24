@@ -18,6 +18,7 @@ struct ExchangeBarrier {
 
 struct ExchangeChemistry {
   std::string id, name, family, mechanism, move, scheme;   // move: swap | shift | bind | none; scheme: "" when none yet
+  std::string template_name;    // the built-in React template a network runs in CAPS's engine (its scheme is a model compound's)
   std::vector<ExchangeBarrier> barriers;
   double default_kcal_per_mol = std::numeric_limits<double>::quiet_NaN();   // the barrier a run uses (NaN: none)
   std::string default_why;
