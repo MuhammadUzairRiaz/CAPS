@@ -26,6 +26,7 @@ add_library(caps_core STATIC
     src/mechanics.cpp
     src/mech_props.cpp
     src/cooling_scan.cpp
+    src/exchange_analysis.cpp
   src/grow.cpp
   src/semicrystal.cpp
   src/thermal.cpp

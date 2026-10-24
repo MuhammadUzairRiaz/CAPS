@@ -14,6 +14,7 @@
 #include <string>
 
 #include "caps/probe.hpp"
+#include "caps/exchange_analysis.hpp"
 #include "caps/normal_modes.hpp"
 #include "caps/conformers.hpp"
 #include "caps/ibi.hpp"
@@ -11308,6 +11309,60 @@ extern "C" int32_t caps_tg_fit(const char* json, char* out, int32_t cap) {
       list.push_back(std::move(o));
     }
     r["scans"] = std::move(list);
+    r["properties"] = caps::Json::parse(caps::properties_json(props));
+    return report_out(r.dump(0), out, cap);
+  } catch (const std::exception& e) {
+    return json_error(e, out, cap);
+  }
+}
+
+extern "C" int32_t caps_exchange_analyze(const char* json, char* out, int32_t cap) {
+  try {
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    auto numbers = [](const caps::Json& a) {
+      std::vector<double> v;
+      for (const auto& x : a.items()) v.push_back(x.number());
+      return v;
+    };
+    const std::string op = j.text("op");
+    caps::Json r = caps::Json::object();
+    std::vector<caps::Property> props;
+    if (op == "arrhenius") {
+      const auto T = numbers(j["T"]), tau = numbers(j["tau"]);
+      const bool reduced = j.has("reduced") && j["reduced"].boolean();
+      props = caps::arrhenius_properties(caps::fit_arrhenius(T, tau, reduced, j.num("t_min", 0), j.num("t_max", 0)));
+      r["crossing"] = caps::Json();
+      if (j.has("tau_b")) {
+        const double tx = caps::crossing_temperature(T, tau, numbers(j["tau_b"]));
+        if (std::isfinite(tx)) r["crossing"] = tx;
+      }
+    } else if (op == "modulus") {
+      std::vector<std::array<double, 6>> p;
+      for (const auto& row : j["pressure"].items()) {
+        const auto v = numbers(row);
+        if (v.size() != 6) throw std::invalid_argument("modulus: each pressure sample is [xx, yy, zz, xy, xz, yz]");
+        p.push_back({v[0], v[1], v[2], v[3], v[4], v[5]});
+      }
+      caps::StressRelaxationOptions so;
+      so.volume = j.num("volume", 0), so.temperature = j.num("temperature", 0), so.dt_fs = j.num("dt_fs", 0);
+      so.fit_from_ps = j.num("fit_from_ps", so.fit_from_ps), so.g_inf = j.num("g_inf", 0), so.integrate_ps = j.num("integrate_ps", 0);
+      props = caps::stress_relaxation_properties(caps::stress_relaxation(p, so));
+    } else if (op == "memory") {
+      std::vector<std::vector<int64_t>> partners;
+      for (const auto& row : j["partners"].items()) {
+        std::vector<int64_t> f;
+        for (const auto& x : row.items()) f.push_back(x.number() < 0 ? -1 : int64_t(std::llround(x.number())));
+        partners.push_back(std::move(f));
+      }
+      props = caps::bond_memory_properties(caps::bond_memory(partners, j.num("frame_dt", 1)), j.text("unit", "ps"));
+    } else if (op == "heal") {
+      auto curve = [&](const char* k) { return caps::StressStrain{numbers(j[k]["strain"]), numbers(j[k]["stress"])}; };
+      props = caps::healing_properties(caps::healing_efficiency(curve("healed"), curve("intact"), j.num("modulus_strain", 0.03),
+                                                                j.num("at_strain", 0), j.num("up_to", 0)));
+    } else {
+      throw std::invalid_argument("op must be arrhenius, modulus, memory or heal");
+    }
+    r["ok"] = true;
     r["properties"] = caps::Json::parse(caps::properties_json(props));
     return report_out(r.dump(0), out, cap);
   } catch (const std::exception& e) {
