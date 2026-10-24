@@ -135,6 +135,9 @@ const Cite kCites[] = {
     {"yuan2026", "@article{yuan2026,\n  author = {Yuan, H. and Knight, A. and Jiang, L. and Huang, L.},\n  title = {Molecular insights into dynamic relaxation in vitrimers: transesterification-driven self-healing at the atomistic level},\n  journal = {Materials}, volume = {19}, pages = {3702}, year = {2026}, doi = {10.3390/ma19173702}\n}"},
     {"ciarella2019", "@article{ciarella2019,\n  author = {Ciarella, S. and Ellenbroek, W. G.},\n  title = {Swap-driven self-adhesion and healing of vitrimers},\n  journal = {Coatings}, volume = {9}, pages = {114}, year = {2019}, doi = {10.3390/coatings9020114}\n}"},
     {"stukalin2013", "@article{stukalin2013,\n  author = {Stukalin, E. B. and Cai, L.-H. and Kumar, N. A. and Leibler, L. and Rubinstein, M.},\n  title = {Self-healing of unentangled polymer networks with reversible bonds},\n  journal = {Macromolecules}, volume = {46}, pages = {7525--7541}, year = {2013}, doi = {10.1021/ma401111n}\n}"},
+    {"sides2004", "@article{sides2004,\n  author = {Sides, S. W. and Grest, G. S. and Stevens, M. J. and Plimpton, S. J.},\n  title = {Effect of end-tethered polymers on surface adhesion of glassy polymers},\n  journal = {J. Polym. Sci. B Polym. Phys.}, volume = {42}, pages = {199--208}, year = {2004}, doi = {10.1002/polb.10672}\n}"},
+    {"rao2024", "@article{rao2024,\n  author = {Rao, P. and Xia, X. and Ni, R.},\n  title = {A bond swap algorithm for simulating dynamically crosslinked polymers},\n  journal = {J. Chem. Phys.}, volume = {160}, pages = {061102}, year = {2024}, doi = {10.1063/5.0186553}\n}"},
+    {"wilcoxson2026", "@misc{wilcoxson2026,\n  author = {Wilcoxson, T. A. and Li, T. and Holoman, T. R. and Mitra, G. and Truskett, T. M. and Hocky, G. M.},\n  title = {Simulation and network assembly pipelines for dynamically bonded soft materials},\n  howpublished = {arXiv:2609.21204}, year = {2026}, doi = {10.48550/arXiv.2609.21204}\n}"},
 };
 
 }  // namespace

@@ -191,6 +191,20 @@ TopologyEditor::TopologyEditor(System& s, ForceField& ff) : s_(s), ff_(ff), n_(s
 
 void TopologyEditor::change(const std::vector<Pair>& broken, const std::vector<Pair>& made) { change_impl(broken, made, {}); }
 
+void TopologyEditor::define_bond(const BondTerm& like) {
+  if (like.i >= n_ || like.j >= n_) throw TopologyError("define_bond: its atoms must be atoms of the structure");
+  BondParams q;
+  q.kind = 0, q.b = like;
+  bond_tab_[key2(like.i, like.j)] = q;
+}
+
+void TopologyEditor::define_bond(const BondX& like) {
+  if (like.i >= n_ || like.j >= n_) throw TopologyError("define_bond: its atoms must be atoms of the structure");
+  BondParams q;
+  q.kind = 1, q.x = like;
+  bond_tab_[key2(like.i, like.j)] = q;
+}
+
 void TopologyEditor::swap(uint32_t a1, uint32_t a2, uint32_t b1, uint32_t b2) {
   if (!bonded(a1, a2) || !bonded(b1, b2)) throw TopologyError("a swap needs the bonds a1-a2 and b1-b2");
   std::map<Pair, BondParams> hint;

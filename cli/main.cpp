@@ -46,6 +46,8 @@
 #include "caps/properties.hpp"
 #include "caps/equilibrate.hpp"
 #include "caps/exchange_analysis.hpp"
+#include "caps/exchange_moves.hpp"
+#include "caps/kremer_grest.hpp"
 #include "caps/grow.hpp"
 #include "caps/io.hpp"
 #include "caps/martini3_molecules.hpp"
@@ -217,6 +219,9 @@ int usage() {
                "  caps exchange arrhenius TABLE [TABLE2] [--reduced] [--from T --to T]   |   caps exchange modulus PTENSOR --cell-volume A3 --temp K --dt FS [--fit PS] [--g-inf MPa] [--corr-ps PS]\n"
                "               | caps exchange memory PARTNERS --frame-ps PS   |   caps exchange bridges START NOW [--axis z] [--plane 0.5] [--bin 1]\n"
                "               | caps exchange heal HEALED INTACT [--modulus-strain 0.03] [--at-strain E] [--up-to E]   [--json OUT] [--csv DIR]   (bond exchange and healing)\n"
+               "               | caps exchange run DATA -o OUT --kind swap|shift|bind [--sites SEL] [--partners SEL] [--labels chain|ends] [--capture 1.3]\n"
+               "                 [--barrier E] [--binding E] [--every 10] [--attempts 1] [--steps 10000] [--temp 300] [--dt 1] [--kg [--k-theta K] | --ff FF.json]\n"
+               "               | caps exchange bond-swap DATA -o STEM [--sites SEL] [--stickers | --both-ends] [--every 50] [--fraction 0.5] [--cutoff 1.3] [--seed 1] [--steps N] [--k-theta K]\n"
                "  caps frames  FILE OUT.lammpstrj|dcd|xyz|pdb|gro|trr [--topology DATA] [--first N] [--last N] [--stride N]   (read thinned)\n"
                "  caps convert FILE OUT.data|xyz|pdb|mol2|car|gro|sdf|cif|vasp|POSCAR [--topology DATA]   (.car: with its .mdf)\n"
                "  caps edit    FILE --ops 'OP ARGS; OP ARGS …' | --ops-file OPS.txt -o OUT   edits in order, atoms numbered from 1:\n"
@@ -416,7 +421,7 @@ const std::set<std::string>& known_options() {
     "--tmax", "--to", "--tol", "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing", "--units",
     "--polymer", "--crystal", "--crystal-cells", "--amorphous", "--loops", "--bridges", "--tails", "--reentry", "--analyse",
     "--corr-ps", "--long", "--swap-every", "--transient", "--dimensionality", "--thickness",
-    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
+    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
   return k;
 }
 
@@ -448,7 +453,7 @@ bool is_cli_switch(const std::string& a) {
          a == "--until-converged" || a == "--print-protocol" || a == "--no-pbc" ||
          a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" || a == "--include-input" || a == "--primitive" || a == "--symmetrize" || a == "--find-symmetry" || a == "--groups" || a == "--neutralise" || a == "--no-ions" || a == "--solvents" || a == "--bibtex" || a == "--json" || a == "--deterministic" || a == "--vacuum" || a == "--methods" ||
          a == "--hybrid" || a == "--resume" || a == "--between-chains" || a == "--keep-byproducts" || a == "--auto-capture" ||
-         a == "--during-md" || a == "--remove-unreacted" || a == "--analyse" || a == "--long" || a == "--reduced";
+         a == "--during-md" || a == "--remove-unreacted" || a == "--analyse" || a == "--long" || a == "--reduced" || a == "--kg" || a == "--stickers" || a == "--both-ends";
 }
 
 std::map<std::string, std::string> parse(int argc, char** argv, int from, std::vector<std::string>& pos) {
@@ -799,6 +804,31 @@ void cli_report(const std::vector<Property>& props, std::map<std::string, std::s
       }
     std::printf("wrote curves to %s\n", o["--csv"].c_str());
   }
+}
+
+// Atoms by a selection: all, type:LABEL (a type label or number), or 1-based numbers and ranges (1-10,15).
+std::vector<uint32_t> cli_selection(const System& s, const std::string& sel) {
+  std::vector<uint32_t> out;
+  if (sel == "all") {
+    for (uint32_t i = 0; i < s.atoms.size(); ++i) out.push_back(i);
+    return out;
+  }
+  if (sel.rfind("type:", 0) == 0) {
+    const auto m = select_type(s, sel.substr(5));
+    for (uint32_t i = 0; i < m.size(); ++i)
+      if (m[i]) out.push_back(i);
+    if (out.empty()) throw std::invalid_argument("no atom has type " + sel.substr(5));
+    return out;
+  }
+  std::stringstream ss(sel);
+  std::string part;
+  while (std::getline(ss, part, ',')) {
+    const size_t dash = part.find('-');
+    const long a = std::stol(part.substr(0, dash)), b = dash == std::string::npos ? a : std::stol(part.substr(dash + 1));
+    if (a < 1 || b < a || size_t(b) > s.atoms.size()) throw std::invalid_argument("selection " + part + ": atoms are numbered 1 to " + std::to_string(s.atoms.size()));
+    for (long k = a; k <= b; ++k) out.push_back(uint32_t(k - 1));
+  }
+  return out;
 }
 
 // A table of numbers: one row per line, columns split by commas, semicolons, tabs or spaces; comment lines (#) and lines
@@ -3275,7 +3305,73 @@ int main(int argc, char** argv) {
                      at = o.count("--at-strain") ? std::stod(o["--at-strain"]) : 0, up = o.count("--up-to") ? std::stod(o["--up-to"]) : 0;
         props = healing_properties(healing_efficiency(curve(pos[1]), curve(pos[2]), ms, at, up));
       } else {
-        throw std::invalid_argument("caps exchange arrhenius | modulus | memory | bridges | heal");
+        if (sub == "run") {
+          // CAPS's own MD with exchange moves (caps/exchange_moves.hpp)
+          if (pos.size() < 2 || !o.count("-o")) return usage();
+          System s = load(pos[1], o);
+          KgOptions ko;
+          if (o.count("--k-theta")) ko.k_theta = std::stod(o["--k-theta"]);
+          const bool kg = o.count("--kg") > 0;
+          ForceField ff = kg ? kremer_grest_forcefield(s, ko) : cli_forcefield(s, o);
+          ExchangeOptions xo;
+          xo.kind = exchange_kind_from_string(o.count("--kind") ? o["--kind"] : "swap");
+          xo.group_a = cli_selection(s, o.count("--sites") ? o["--sites"] : "all");
+          if (o.count("--partners")) xo.group_b = cli_selection(s, o["--partners"]);
+          if (o.count("--labels")) {
+            if (o["--labels"] != "chain" && o["--labels"] != "ends") throw std::invalid_argument("--labels takes chain or ends");
+            xo.labels = chain_position_labels(s, o["--labels"] == "ends");
+          }
+          if (o.count("--capture")) xo.capture = std::stod(o["--capture"]);
+          if (o.count("--barrier")) xo.barrier = std::stod(o["--barrier"]);
+          if (o.count("--binding")) xo.binding = std::stod(o["--binding"]);
+          if (o.count("--attempts")) xo.attempts = std::stoi(o["--attempts"]);
+          if (o.count("--seed")) xo.seed = std::stoull(o["--seed"]);
+          DynamicsOptions d;
+          d.field = std::make_shared<ForceField>(ff);
+          d.steps = o.count("--steps") ? std::stoll(o["--steps"]) : 10000;
+          d.temperature = o.count("--temp") ? std::stod(o["--temp"]) : 300;
+          if (o.count("--dt")) d.dt = std::stod(o["--dt"]);
+          if (o.count("--seed")) d.seed = std::stoull(o["--seed"]);
+          if (o.count("--cutoff")) d.energy.cutoff = std::stod(o["--cutoff"]);
+          electrostatics(d.energy, o);
+          precision(d.energy, o);
+          if (o.count("--threads")) d.energy.threads = std::stoi(o["--threads"]);
+          d.topology_every = o.count("--every") ? std::stoll(o["--every"]) : 10;
+          auto st = std::make_shared<ExchangeStats>();
+          d.topology = exchange_callback(xo, d.energy, st);
+          DynamicsReport r;
+          run_dynamics(s, d, &r);
+          std::printf("%s moves every %lld steps: %lld tried, %lld accepted, %lld without a partner in reach, %lld the force field could not describe; "
+                      "%.6g kcal/mol added by the accepted moves%s\n",
+                      to_string(xo.kind), (long long)d.topology_every, (long long)st->attempts, (long long)st->accepted, (long long)st->no_candidate,
+                      (long long)st->unparameterised, st->energy, st->local ? " (local energies)" : " (whole-system energies)");
+          if (!st->note.empty()) std::printf("note: %s\n", st->note.c_str());
+          for (const auto& n : r.notes) std::printf("%s\n", n.c_str());
+          const ForceField after = kg ? kremer_grest_forcefield(s, ko) : cli_forcefield(s, o, true);
+          save_structure(s, after, d.energy, o["-o"]);
+          std::printf("wrote %s\n", o["-o"].c_str());
+          return 0;
+        }
+        if (sub == "bond-swap") {
+          // LAMMPS fix bond/swap for a Kremer–Grest system (write_kg_bond_swap)
+          if (pos.size() < 2 || !o.count("-o")) return usage();
+          const System s = load(pos[1], o);
+          KgOptions ko;
+          if (o.count("--k-theta")) ko.k_theta = std::stod(o["--k-theta"]);
+          BondSwapExport e;
+          if (o.count("--sites")) e.group = cli_selection(s, o["--sites"]);
+          e.stickers = o.count("--stickers") > 0;
+          e.from_both_ends = o.count("--both-ends") > 0;
+          if (o.count("--every")) e.every = std::stoi(o["--every"]);
+          if (o.count("--fraction")) e.fraction = std::stod(o["--fraction"]);
+          if (o.count("--cutoff")) e.cutoff = std::stod(o["--cutoff"]);
+          if (o.count("--seed")) e.seed = std::stoull(o["--seed"]);
+          if (o.count("--steps")) e.run_steps = std::stod(o["--steps"]);
+          write_kg_bond_swap(s, ko, e, o["-o"]);
+          std::printf("wrote %s.data and %s.in (fix bond/swap, %s mode)\n", o["-o"].c_str(), o["-o"].c_str(), e.stickers ? "sticker" : "chain");
+          return 0;
+        }
+        throw std::invalid_argument("caps exchange arrhenius | modulus | memory | bridges | heal | run | bond-swap");
       }
       cli_report(props, o);
       return 0;

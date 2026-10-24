@@ -52,6 +52,10 @@ class TopologyEditor {
   void change(const std::vector<Pair>& broken, const std::vector<Pair>& made);
   // a1–a2 and b1–b2 become a1–b2 and b1–a2; a1 and b1 each keep their own bond parameters.
   void swap(uint32_t a1, uint32_t a2, uint32_t b1, uint32_t b2);
+  // The bond made between the types of `like.i` and `like.j` from now on (stickers whose types the structure has not bonded
+  // yet; replaces the force field's own bond for those types). Its atoms only name the types.
+  void define_bond(const BondTerm& like);
+  void define_bond(const BondX& like);
   // Changes done, and impropers that could not be placed (a new environment of a centre the force field had no improper
   // for; none placed there).
   size_t changes() const { return changes_; }

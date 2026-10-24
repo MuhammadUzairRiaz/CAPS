@@ -1,7 +1,9 @@
 #include "caps/rng.hpp"
 #include "caps/kremer_grest.hpp"
+#include "caps/exchange_moves.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdio>
 #include <fstream>
@@ -204,6 +206,95 @@ void write_kg_lammps(const System& s, const KgOptions& o, const std::string& ste
                 g(2.0 * sg).c_str(), g(0.4 * sg).c_str(), g(0.01 * tu).c_str(), g(T).c_str(), (unsigned long long)(o.seed + 1), g(T).c_str(), g(T).c_str(), g(1.0 * tu).c_str(),
                 (unsigned long long)(o.seed + 2), g(rc).c_str(), g(60.0 * ep).c_str(), g(0.02 * sg).c_str(), pushoff_steps, g(rc).c_str(), g(ep).c_str(), g(sg).c_str(), g(rc).c_str(),
                 base.c_str(), run_steps, base.c_str());
+  f << b;
+}
+
+
+void write_kg_bond_swap(const System& s, const KgOptions& o, const BondSwapExport& e, const std::string& stem) {
+  const Cell& c = s.cell;
+  if (!c.valid() || c.a[1] != 0 || c.a[2] != 0 || c.b[0] != 0 || c.b[2] != 0 || c.c[0] != 0 || c.c[1] != 0)
+    throw std::invalid_argument("bond/swap export: an orthogonal periodic cell is needed");
+  if (e.every < 1 || !(e.fraction > 0 && e.fraction <= 1) || !(e.cutoff > 0)) throw std::invalid_argument("bond/swap export: every ≥ 1, 0 < fraction ≤ 1, cutoff > 0");
+  const size_t n = s.atoms.size();
+  std::vector<char> in(n, e.group.empty() ? 1 : 0);
+  for (uint32_t a : e.group) {
+    if (a >= n) throw std::invalid_argument("bond/swap export: the group names an atom the structure does not have");
+    in[a] = 1;
+  }
+  const KgUnits u = kg_units(o);
+  const bool real = u.eps > 0;
+  const double sg = real ? o.sigma : 1.0, ep = real ? u.eps : 1.0, ms = real ? o.bead_mass : 1.0, tu = real ? u.tau_fs : 1.0, T = real ? o.temperature : 1.0;
+  std::vector<int64_t> mol(n, 2);
+  if (e.stickers) {
+    for (size_t i = 0; i < n; ++i)
+      if (in[i]) mol[i] = 1;
+  } else {
+    mol = chain_position_labels(s, e.from_both_ends);
+    for (size_t i = 0; i < n; ++i)
+      if (mol[i] == 0) throw std::invalid_argument("bond/swap export: chain mode needs linear chains (atom " + std::to_string(i + 1) + " is not on one)");
+  }
+  // angles from the bond graph (none across a sticker–sticker bond in sticker mode)
+  std::vector<std::vector<uint32_t>> nb(n);
+  for (const auto& b : s.bonds) nb[b.i].push_back(b.j), nb[b.j].push_back(b.i);
+  auto sticker_bond = [&](uint32_t i, uint32_t j) { return e.stickers && in[i] && in[j]; };
+  std::vector<std::array<uint32_t, 3>> angles;
+  if (o.k_theta > 0)
+    for (uint32_t j = 0; j < n; ++j)
+      for (size_t a = 0; a < nb[j].size(); ++a)
+        for (size_t b = a + 1; b < nb[j].size(); ++b)
+          if (!sticker_bond(nb[j][a], j) && !sticker_bond(j, nb[j][b])) angles.push_back({nb[j][a], j, nb[j][b]});
+  char b[512];
+  {
+    std::ofstream f(stem + ".data");
+    if (!f) throw std::runtime_error("cannot write " + stem + ".data");
+    f << "Kremer-Grest system for fix bond/swap (CAPS" << (real ? ", units real" : ", reduced units") << "; molecule IDs: "
+      << (e.stickers ? "1 for every sticker" : "place along the chain") << ")\n\n";
+    f << n << " atoms\n" << s.bonds.size() << " bonds\n" << angles.size() << " angles\n2 atom types\n1 bond types\n1 angle types\n";
+    std::snprintf(b, sizeof b, "\n0 %.6f xlo xhi\n0 %.6f ylo yhi\n0 %.6f zlo zhi\n\nMasses\n\n1 %.6g\n2 %.6g\n\nAtoms # angle\n\n", c.a[0] * sg, c.b[1] * sg, c.c[2] * sg, ms, ms);
+    f << b;
+    for (size_t i = 0; i < n; ++i) {
+      const Vec3 w = c.wrap(s.atoms[i].pos) * sg;
+      const Vec3 f3 = c.to_fractional(s.atoms[i].pos);
+      std::snprintf(b, sizeof b, "%zu %lld %d %.6f %.6f %.6f %d %d %d\n", i + 1, (long long)mol[i], in[i] ? 2 : 1, w[0], w[1], w[2], int(std::floor(f3[0])),
+                    int(std::floor(f3[1])), int(std::floor(f3[2])));
+      f << b;
+    }
+    f << "\nBonds\n\n";
+    for (size_t k = 0; k < s.bonds.size(); ++k) f << k + 1 << " 1 " << s.bonds[k].i + 1 << " " << s.bonds[k].j + 1 << "\n";
+    if (!angles.empty()) {
+      f << "\nAngles\n\n";
+      for (size_t k = 0; k < angles.size(); ++k) f << k + 1 << " 1 " << angles[k][0] + 1 << " " << angles[k][1] + 1 << " " << angles[k][2] + 1 << "\n";
+    }
+  }
+  std::ofstream f(stem + ".in");
+  if (!f) throw std::runtime_error("cannot write " + stem + ".in");
+  const std::string data = stem.substr(stem.find_last_of("/\\") == std::string::npos ? 0 : stem.find_last_of("/\\") + 1) + ".data";
+  const std::string base = data.substr(0, data.size() - 5);
+  auto g = [&](double x) {
+    char num[64];
+    std::snprintf(num, sizeof num, "%.8g", x);
+    std::string r = num;
+    if (r.find_first_of(".e") == std::string::npos) r += ".0";
+    return r;
+  };
+  f << "# Bond exchange in a Kremer-Grest system, written by CAPS: LAMMPS fix bond/swap (MC package)\n"
+       "# Sides, Grest, Stevens & Plimpton, J. Polym. Sci. B 42, 199 (2004); Kremer & Grest, J. Chem. Phys. 92, 5057 (1990)\n"
+       "# a swap A1-A2 + B1-B2 -> A1-B2 + B1-A2 needs all four atoms in group exch, A1 and B1 with the same molecule ID, A2 and\n"
+       "# B2 likewise, and the four distances A1-A2, B1-B2, A1-B2, B1-A2 below the cutoff; Metropolis on pair, bond and angle energy\n";
+  if (e.stickers) f << "# sticker mode: every sticker has molecule ID 1; bonds stored on both atoms\nnewton on off\n";
+  else f << "# chain mode: molecule ID = place along the chain" << (e.from_both_ends ? ", counted from the nearer end" : "") << ", so swaps keep chain lengths\n";
+  f << "units " << (real ? "real" : "lj") << "\natom_style angle\nboundary p p p\nread_data " << data << "\n";
+  f << "bond_style fene\nbond_coeff 1 " << g(30.0 * ep / (sg * sg)) << " " << g(1.5 * sg) << " " << g(ep) << " " << g(sg) << "\nspecial_bonds fene\n";
+  f << "angle_style cosine\nangle_coeff 1 " << g(o.k_theta * ep) << "\n";
+  f << "pair_style lj/cut " << g(1.122462048309373 * sg) << "\npair_modify shift yes\npair_coeff * * " << g(ep) << " " << g(sg) << "\n";
+  f << "neighbor " << g(0.4 * sg) << " bin\nneigh_modify every 1 delay 0 check yes\ncomm_modify cutoff " << g(std::max(2.0, e.cutoff + 0.5) * sg) << "\n";
+  f << "group exch type 2\ntimestep " << g(0.01 * tu) << "\n";
+  f << "velocity all create " << g(T) << " " << (unsigned long long)(e.seed + 1) << " dist gaussian\n";
+  f << "fix move all nve\nfix lang all langevin " << g(T) << " " << g(T) << " " << g(1.0 * tu) << " " << (unsigned long long)(e.seed + 2) << "\n";
+  f << "fix swap exch bond/swap " << e.every << " " << g(e.fraction) << " " << g(e.cutoff * sg) << " " << (unsigned long long)(e.seed + 3) << "\n";
+  f << "thermo_style custom step temp pe ebond f_swap[1] f_swap[2]\nthermo 1000\n";
+  f << "dump d all custom 10000 " << base << "_swap.lammpstrj id mol type xu yu zu\n";
+  std::snprintf(b, sizeof b, "run %.0f\nwrite_data %s_swapped.data\n", e.run_steps, base.c_str());
   f << b;
 }
 
