@@ -1039,6 +1039,48 @@
    "tex": "\\text{21 stages: heat to } T_\\mathrm{max}, \\text{ cool to } T_\\mathrm{final}, \\text{ compress at } 0.02, 0.6, 1.0\\,P_\\mathrm{max} \\dots \\\\ \\text{decompress at } 0.5, 0.1, 0.01\\,P_\\mathrm{max}, \\text{ final NPT at } P_\\mathrm{final}"
   },
   {
+   "id": "exchange-moves",
+   "group": "Protocols",
+   "title": "Bond exchange moves during MD",
+   "summary": "Bonds that break and form while CAPS's own dynamics runs, for every exchange chemistry. Every few steps, Monte Carlo moves change the topology, and the force field follows from its own terms by type. Swap: two bonds trade partners, as LAMMPS fix bond/swap does (associative exchange; transesterification, disulfide metathesis, bead-spring vitrimers). Shift: a pivot hands a bond from one residue to another within reach, with a valence per residue (multivalent linkers, polysulfide sulfur). Bind: two sites bond or a bond breaks, weighed by a binding constant (dissociative exchange; Diels–Alder, stickers). Each move is Metropolis–Hastings with its proposal counts, so the topologies are sampled with their Boltzmann weights. A barrier slows every move alike without biasing them. The energy change is computed exactly from the atoms within three bonds of the change, which is all a change can affect. The energy the moves add is kept out of the conserved quantity.",
+   "equation": "acc = exp(−E_a/k_B T) · min[1, (q_rev/q_fwd) · K^(±1) · exp(−ΔU/k_B T)],   ΔU = U_cluster(after) − U_cluster(before)",
+   "equation_note": "q: the probability of proposing the move and its reverse (swap: the four ways of picking the same swap; shift: attackers before and after; bind: either site picked first); K = exp(ε/k_B T) for bind, + on binding and − on breaking",
+   "symbols": [
+    [
+     "E_a",
+     "barrier of the exchange chemistry",
+     "kcal/mol, 0 by default"
+    ],
+    [
+     "ε",
+     "binding free energy (bind)",
+     "kcal/mol"
+    ],
+    [
+     "capture",
+     "largest distance of a new bond",
+     "Å, 1.5 by default"
+    ],
+    [
+     "cluster",
+     "atoms within three bonds of the change, before and after",
+     "—"
+    ]
+   ],
+   "when": "Vitrimer and dynamic-network runs in CAPS (caps exchange run, or DynamicsOptions::topology with exchange_callback), and the LAMMPS deck for bead-spring systems (caps exchange bond-swap). Then stress relaxation, bond lifetimes and healing with caps exchange modulus, memory, bridges and heal.",
+   "cites": [
+    "sides2004",
+    "rao2024",
+    "wilcoxson2026",
+    "branhamferrari2026"
+   ],
+   "source": "core/src/exchange_moves.cpp (ExchangeEngine), core/src/topology_edit.cpp (TopologyEditor), core/src/kremer_grest.cpp (write_kg_bond_swap)",
+   "tested": "ExchangeMoves.SwapSamplesBoltzmannWeights and ShiftRespectsValencesAndSamplesBoltzmannWeights (frozen atoms: every topology with its Boltzmann weight to 0.015), BindSamplesThePartitionFunction (Z = 1 + 4K + 2K² of Wilcoxson et al.), LocalEnergyEqualsTheWholeSystems (DSF and PME, to 10⁻⁷), ChainLabelsKeepChainLengths, Topology.SwapsDuringNveKeepTheConservedQuantity",
+   "deviation": "LAMMPS bond/swap accepts on the Metropolis factor alone and tries one swap per processor and call; CAPS adds the proposal ratio (exact detailed balance) and tries as many moves as asked. Swap labels: like LAMMPS, a1/b1 and a2/b2 must share them.",
+   "engines": [],
+   "tex": "p_\\mathrm{acc} = e^{-E_a/k_\\mathrm{B}T}\\,\\min\\!\\left[1,\\ \\frac{q_\\mathrm{rev}}{q_\\mathrm{fwd}}\\,K^{\\pm 1}\\,e^{-\\Delta U/k_\\mathrm{B}T}\\right],\\qquad \\Delta U = U_\\mathrm{cluster}^\\mathrm{after} - U_\\mathrm{cluster}^\\mathrm{before}"
+  },
+  {
    "id": "structure-factor",
    "group": "Analysis",
    "title": "Structure factors: S(q), X-ray and neutron",

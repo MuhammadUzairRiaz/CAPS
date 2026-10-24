@@ -164,7 +164,7 @@
    "capi": [
     "caps_exchange_analyze"
    ],
-   "note": "analysis of bond-exchange (vitrimer) runs and healing tests: Arrhenius fits, G(t) and G'/G'' from pressure-tensor samples, bond lifetimes from partner tables, bonds across a cut, healing efficiencies; the Studio page comes with the exchange engine",
+   "note": "analysis of bond-exchange (vitrimer) runs and healing tests; CAPS's own MD with exchange moves (swap, shift, bind) and the LAMMPS fix bond/swap deck for Kremer-Grest systems; the Studio page comes with stage E8",
    "options": {
     "--reduced": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
     "--from": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
@@ -183,7 +183,25 @@
     "--at-strain": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
     "--up-to": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
     "--json": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
-    "--csv": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)"
+    "--csv": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
+    "--kind": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
+    "--sites": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
+    "--partners": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
+    "--labels": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
+    "--capture": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
+    "--barrier": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
+    "--binding": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
+    "--every": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
+    "--attempts": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
+    "--steps": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
+    "--seed": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
+    "--kg": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
+    "--k-theta": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
+    "--ff": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
+    "--stickers": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
+    "--both-ends": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
+    "--fraction": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
+    "--cutoff": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)"
    }
   },
   "frames": {

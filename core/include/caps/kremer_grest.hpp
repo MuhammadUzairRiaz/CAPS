@@ -9,6 +9,7 @@
 #pragma once
 #include <cstdint>
 #include <string>
+#include <vector>
 
 #include "caps/field.hpp"
 #include "caps/system.hpp"
@@ -53,5 +54,28 @@ ForceField kremer_grest_forcefield(const System& s, const KgOptions& o);
 // LAMMPS data (atom_style angle; bond type 1; angle type 1 when k_θ > 0) and an input deck: push-off with pair soft, then
 // the Kremer–Grest force field; `stem` gets .data and .in appended.
 void write_kg_lammps(const System& s, const KgOptions& o, const std::string& stem, double pushoff_steps = 20000, double run_steps = 100000);
+
+// Bond exchange in LAMMPS (fix bond/swap of the MC package; Sides et al., J. Polym. Sci. B 42, 199 (2004)) for a
+// Kremer–Grest system that is already equilibrated: the structure's own bonds and positions, FENE + WCA (+ cosine bending
+// on the angles of the bond graph), special_bonds fene (the 0 1 1 the fix needs), Langevin at T = 1 and the swaps. The
+// atoms that may swap get atom type 2 (the same bead) and form the group "exch". Molecule IDs decide which swaps LAMMPS
+// allows, so they are written for one of its two uses:
+//   chains (stickers = false): every atom may swap and the molecule ID is the bead's place along its chain (1 … N, or
+//     1 … N/2 … 1 with from_both_ends), so swaps keep chain lengths; CAPS's ExchangeEngine takes the same numbers as its
+//     labels (chain_position_labels)
+//   stickers: the group's atoms share molecule ID 1 (any two stickers may swap), the others 2; bonds between two stickers
+//     carry no angle (the manual asks for that) and the bonds are stored on both atoms (newton on off)
+// The fix's two outputs (swaps done, swaps tried) go into every thermo line.
+struct BondSwapExport {
+  std::vector<uint32_t> group;     // the atoms that may swap (empty: every atom)
+  bool stickers = false;
+  bool from_both_ends = false;
+  int every = 50;                  // steps between tries (Nevery)
+  double fraction = 0.5;           // fraction of the group's atoms considered at each try
+  double cutoff = 1.3;             // σ: every one of the four distances must be shorter
+  uint64_t seed = 1;
+  double run_steps = 100000;
+};
+void write_kg_bond_swap(const System& s, const KgOptions& o, const BondSwapExport& e, const std::string& stem);
 
 }  // namespace caps

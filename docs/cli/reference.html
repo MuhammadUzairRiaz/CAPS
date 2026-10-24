@@ -826,7 +826,10 @@ examples:
 <p>caps exchange modulus PTENSOR --cell-volume A3 --temp K --dt FS [--fit PS] [--g-inf MPa] [--corr-ps PS]</p>
 <div class="code" data-lang="synopsis"><pre><code>caps exchange arrhenius TABLE [TABLE2] [--reduced] [--from T --to T]   |   caps exchange modulus PTENSOR --cell-volume A3 --temp K --dt FS [--fit PS] [--g-inf MPa] [--corr-ps PS]
              | caps exchange memory PARTNERS --frame-ps PS   |   caps exchange bridges START NOW [--axis z] [--plane 0.5] [--bin 1]
-             | caps exchange heal HEALED INTACT [--modulus-strain 0.03] [--at-strain E] [--up-to E]   [--json OUT] [--csv DIR]   (bond exchange and healing)</code></pre></div></article>
+             | caps exchange heal HEALED INTACT [--modulus-strain 0.03] [--at-strain E] [--up-to E]   [--json OUT] [--csv DIR]   (bond exchange and healing)
+             | caps exchange run DATA -o OUT --kind swap|shift|bind [--sites SEL] [--partners SEL] [--labels chain|ends] [--capture 1.3]
+               [--barrier E] [--binding E] [--every 10] [--attempts 1] [--steps 10000] [--temp 300] [--dt 1] [--kg [--k-theta K] | --ff FF.json]
+             | caps exchange bond-swap DATA -o STEM [--sites SEL] [--stickers | --both-ends] [--every 50] [--fraction 0.5] [--cutoff 1.3] [--seed 1] [--steps N] [--k-theta K]</code></pre></div></article>
 <article class="cmd" id="ml" data-name="ml"><h3><code>caps ml</code></h3>
 <p>energy (eV) and forces (eV/A) of a molecule from CAPS&#x27;s</p>
 <div class="code" data-lang="synopsis"><pre><code>caps ml eval FILE [--model M.model] [--json OUT.json]   energy (eV) and forces (eV/A) of a molecule from CAPS&#x27;s

@@ -389,8 +389,35 @@ written from LAMMPS output by the user until CAPS's own engine exchanges bonds (
   - The callback can reassign the force field.
   - Constraints are refused.
 
-Next: E2, the exchange moves themselves (pair swap with a local energy difference instead of a full evaluation,
-multivalent swap with the Rao bias, bind/unbind) and the `fix bond/swap` export.
+**E2 (exchange moves) is built** (2026-10-24), in `core/include/caps/exchange_moves.hpp`, `core/src/exchange_moves.cpp`
+and `write_kg_bond_swap` in `core/src/kremer_grest.cpp`:
+
+- `ExchangeEngine` makes Metropolis–Hastings moves of three kinds. Each acceptance carries the proposal ratio, so
+  detailed balance holds:
+  - swap: two bonds trade partners, as LAMMPS fix bond/swap, including its molecule-ID rule (a1/b1 and a2/b2 share
+    labels; checked in the LAMMPS source);
+  - shift: a pivot moves a bond between residues, with residue valences (the multivalent case);
+  - bind/unbind: a binding constant K = exp(ε/k_B T).
+
+  A barrier E_a slows every move without biasing it.
+- ΔU comes from the atoms within three bonds of the change, before and after. It equals the whole system's ΔU, PME
+  included (checked to 10⁻⁷). Force fields with many-body terms, hydrogen bonds or virtual sites fall back to the whole
+  system's energy.
+- `exchange_callback` plugs the engine into `DynamicsOptions::topology`. `caps exchange run` runs it from the command
+  line.
+- `caps exchange bond-swap` writes the LAMMPS deck for a Kremer–Grest system in either of LAMMPS's two uses:
+  - chains: molecule ID = place along the chain;
+  - stickers: one molecule ID, `newton on off`, no angles across sticker bonds.
+- Tests (`ExchangeMoves.*`, 8):
+  - frozen-atom sampling reproduces the Boltzmann weights of every topology (swap, shift at valence 1 and 2);
+  - bind reproduces the four-site partition function Z = 1 + 4K + 2K² of Wilcoxson et al.;
+  - local ΔU equals the whole system's (DSF, PME, bead-spring);
+  - labels keep chain lengths, and without them lengths change;
+  - swaps run during MD;
+  - the LAMMPS deck has the right content.
+
+Next: E3, Sciortino's three-body swap potential and its virial in the CG evaluator (continuous swaps with no Monte Carlo),
+then E4, the exchange chemistry library.
 
 ## 10. Chemistries the module covers
 
