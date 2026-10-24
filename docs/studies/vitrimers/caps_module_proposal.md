@@ -319,3 +319,47 @@ Local runs stay at 5,000 steps or fewer. Longer runs go to the cluster as jobs, 
 
 E0 should come first. It is useful on its own, since G(t), Arrhenius and Tv apply to any network CAPS builds today, and it
 carries no risk. E1 is the one change to the engine's design that everything else depends on.
+
+## 8. Rubber composites to study
+
+These are the systems the module is for, in order. Each stays under 15,000 atoms all-atom; bead-spring models take the
+long-time behaviour.
+
+1. **ENR crosslinked with a diacid (transesterification).** The beta-hydroxy esters formed when an acid opens the ENR
+   epoxide exchange with free OH. CAPS already makes this link (`enr_acid_ester`, `epoxy_acid`). With a disulfide diacid
+   (the chemistry of Imbernon et al. 2015, paywalled) the network carries two exchange chemistries. First targets: Tg,
+   G(t) and the Arrhenius energy of stress relaxation, against experimental trends.
+2. **ENR vitrimer on a fibre surface.** A fibre surface carrying OH or ester groups (cellulose or natural fibre, PET cord)
+   can bond into the ENR network by the same exchange. Interface welding (bridges, B(z)) and pull-out work before and after
+   healing with `caps pull`. Which fibre to model is the user's choice and still open.
+3. **Sulfur-cured NR and SBR (polysulfide exchange).** S-S bridges swap when hot. Stress relaxation and crack healing
+   compared for mono-, di- and polysulfide crosslinks, using the existing sulfur cure and sulfur census. The exchange
+   barrier of aliphatic polysulfides is not in any paper read here; it needs a CAPS QM calculation on model compounds.
+4. **ENR/PBS through MAH.** The ester links made through MAH can swap; whether exchange makes the blend more compatible
+   (phase stability as in Rispo Constantinou et al. 2026) and how strong the ENR/PBS interface becomes.
+
+Imine polyisoprene (Arbe et al. 2023) and boronic-ester elastomers (Danikas et al. 2026) serve as experimental checks only.
+
+## 9. Status
+
+**E0 (analysis) is built** (2026-10-24), in `core/include/caps/exchange_analysis.hpp` and `core/src/exchange_analysis.cpp`:
+
+- `fit_arrhenius`, `crossing_temperature`: Ea with standard errors (kJ/mol or reduced units), and the temperature where
+  two relaxation times cross.
+- `MultiTauCorrelator`, `stress_relaxation`, `dynamic_moduli`, `fit_kww`: G(t) from pressure-tensor samples, G'(ω) and
+  G''(ω) by the exact piecewise-linear transform, the Green–Kubo integral to G's first zero, KWW fits.
+- `bond_memory`, `fit_two_step`: partner autocorrelation, its 1/e time, KWW and the two-step form of Branham-Ferrari et
+  al.; partner changes between frames.
+- `interface_bonds`, `sides_from_positions`: bridges across a cut and B(z), periodic.
+- `healing_efficiency`: toughness, peak-stress, modulus and stress-at-strain ratios, each named.
+
+It is reachable as `caps exchange arrhenius | modulus | memory | bridges | heal`, as the C API entry
+`caps_exchange_analyze` (ABI 74) and as Python `caps.exchange(op, ...)`. Unit tests: `Exchange.*` in
+`tests/test_exchange.cpp` (10 tests on exact or analytic answers). The theory pages have four new entries
+(`arrhenius-exchange`, `stress-relaxation-gk`, `bond-memory`, `healing-efficiency`).
+
+Not in E0, by design: Tv from the thermal-expansion hinge uses the existing `fit_bilinear` (`caps tg --fit` on a volume
+scan with exchange on). The Studio page waits for E8. The partner tables that `caps exchange memory` reads have to be
+written from LAMMPS output by the user until CAPS's own engine exchanges bonds (E1, E2).
+
+Next: E1, mutable topology in the MD engine.

@@ -715,7 +715,17 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 73, "ABI 73")
+check(caps.abi_version() == 74, "ABI 74")
+
+# bond exchange analysis (ABI 74): an exact Arrhenius line gives its Ea, healing ratios follow their definitions
+import math
+_R = 8.314462618e-3
+_T = [300.0, 325.0, 350.0, 375.0, 400.0]
+_ar = caps.exchange("arrhenius", T=_T, tau=[1e-3 * math.exp(80 / (_R * t)) for t in _T])
+check(abs(_ar["properties"][0]["value"] - 80) < 1e-6, "exchange arrhenius: Ea")
+_ex = caps.exchange("heal", healed={"strain": [0, 0.05], "stress": [0, 4]}, intact={"strain": [0, 0.1], "stress": [0, 10]}, modulus_strain=0.1)
+check(abs(_ex["properties"][0]["value"] - 20) < 1e-9 and abs(_ex["properties"][0]["extra"]["peak-stress ratio (%)"] - 40) < 1e-9, "exchange heal: toughness and peak ratios")
+print("ok   exchange: Arrhenius and healing efficiency")
 
 # semicrystalline stack (ABI 72): a small PE lamella, its report read back from the frame; thermal conductivity needs 2D or 3D
 _sc = caps.build.semicrystalline(nx=2, ny=3, crystal_nm=2.5, amorphous_nm=2.5, relax=False)

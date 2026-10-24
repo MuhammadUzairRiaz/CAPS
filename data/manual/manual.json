@@ -2140,6 +2140,147 @@
    "tex": "J(t) = \\frac{\\varepsilon(t)}{\\sigma},\\qquad \\varepsilon(t) = \\frac{L(t)}{L_0} - 1,\\qquad P_{kk} \\to -\\sigma"
   },
   {
+   "id": "arrhenius-exchange",
+   "group": "Analysis",
+   "title": "Activation energy of exchange and relaxation",
+   "summary": "Relaxation times measured at several temperatures (bond lifetimes, exchange times, stress relaxation times, or a table from experiment) fitted as a straight line of ln τ against 1/T. The slope gives the activation energy with its standard error and the intercept the prefactor; reduced Lennard-Jones runs give it in units of ε. Two sets of times at the same temperatures also give the temperature where they cross: in a vitrimer, where the exchange time overtakes the segmental time and bond relaxation turns from Arrhenius to diffusion-limited.",
+   "equation": "ln τ = ln τ₀ + E_a/(R T);   T× where ln τ_a − ln τ_b = 0 (linear in 1/T between neighbouring temperatures)",
+   "equation_note": "least squares in 1/T; the crossing as in Branham-Ferrari et al. 2026",
+   "symbols": [
+    [
+     "τ",
+     "relaxation or exchange time",
+     "any unit"
+    ],
+    [
+     "E_a",
+     "activation energy",
+     "kJ/mol (ε in reduced units)"
+    ],
+    [
+     "T×",
+     "crossing temperature",
+     "K"
+    ]
+   ],
+   "when": "Exchange chemistry from a temperature series: the bond lifetime of a vitrimer model against T, stress relaxation times from experiment for comparison, the temperature where bond exchange and segmental motion trade places (caps exchange arrhenius).",
+   "cites": [
+    "branhamferrari2026"
+   ],
+   "source": "core/src/exchange_analysis.cpp (fit_arrhenius, crossing_temperature)",
+   "tested": "Exchange.ArrheniusRecoversTheActivationEnergy (an exact line: Ea to 10⁻⁸ kJ/mol), Exchange.CrossingTemperatureOfTwoArrheniusLines",
+   "deviation": "the standard errors assume independent points of equal variance; no weighting by the uncertainty of each τ",
+   "engines": [],
+   "tex": "\\ln\\tau = \\ln\\tau_0 + \\frac{E_a}{RT},\\qquad \\ln\\tau_a(T_\\times) = \\ln\\tau_b(T_\\times)"
+  },
+  {
+   "id": "stress-relaxation-gk",
+   "group": "Analysis",
+   "title": "Stress relaxation modulus G(t) and G′, G″",
+   "summary": "The shear stress relaxation modulus of an equilibrium run from its pressure-tensor fluctuations: the autocorrelation of the traceless symmetric pressure tensor, as for the Green–Kubo viscosity, but kept as a curve. A multi-tau correlator holds lags from one sample to a tenth of the run at a fixed cost per sample, each level fed with averages of the level below. G′(ω) and G″(ω) follow from the exact transform of G(t) taken as piecewise linear between the lags, with the equilibrium modulus of a solid network after the last lag. A stretched exponential (KWW) is fitted to the decay after the vibrational drop, and the integral of G to its first zero crossing gives the viscosity.",
+   "equation": "G(t) = V/(10 k_B T) Σ_αβ ⟨P°_αβ(0) P°_αβ(t)⟩;   G*(ω) = G(0) + [G_∞ − G(t_N)] e^(−iωt_N) + Σ_k s_k (e^(−iωt_k) − e^(−iωt_k+1))/(iω)",
+   "equation_note": "multi-tau correlator with p = 16 lags per level and m = 2 (Ramírez et al. 2010); s_k the slope of G between lags k and k+1",
+   "symbols": [
+    [
+     "P°",
+     "traceless symmetric pressure tensor (fluctuations about its mean)",
+     "atm"
+    ],
+    [
+     "G_∞",
+     "modulus after the last lag",
+     "0 for a liquid; the equilibrium modulus of a network, MPa"
+    ],
+    [
+     "s_k",
+     "slope of G(t) between lags",
+     "MPa/ps"
+    ]
+   ],
+   "when": "Stress relaxation of vitrimer and rubber networks from an NVT run with or without bond exchange: G(t) and its terminal decay, G′ and G″ against frequency, a KWW time; from LAMMPS output (fix ave/time of pxx … pyz in units real) with caps exchange modulus.",
+   "cites": [
+    "ramirez2010",
+    "daivis1994"
+   ],
+   "source": "core/src/exchange_analysis.cpp (MultiTauCorrelator, stress_relaxation, dynamic_moduli)",
+   "tested": "Exchange.StressRelaxationModulusUnitsAndDecay (Ornstein–Uhlenbeck shear stresses: G(0) within 3 %, τ and the integral), Exchange.MultiTauCorrelatorOfAnExponentialSignal, Exchange.DynamicModuliOfAMaxwellModel (G′, G″ of a Maxwell model to 2 × 10⁻⁴)",
+   "deviation": "higher correlator levels correlate block averages, which smooths the curve at lags near their block size; one run, no replicas",
+   "engines": [],
+   "tex": "G(t) = \\frac{V}{10\\,k_\\mathrm{B}T}\\sum_{\\alpha\\beta}\\left\\langle P^\\circ_{\\alpha\\beta}(0)\\,P^\\circ_{\\alpha\\beta}(t)\\right\\rangle,\\qquad G^*(\\omega) = G(0) + \\left[G_\\infty - G(t_N)\\right]e^{-i\\omega t_N} + \\sum_k s_k\\,\\frac{e^{-i\\omega t_k} - e^{-i\\omega t_{k+1}}}{i\\omega}"
+  },
+  {
+   "id": "bond-memory",
+   "group": "Analysis",
+   "title": "Bond lifetime from partner autocorrelation",
+   "summary": "How long exchangeable groups keep their partners: over all time origins, the fraction of sites bonded at the origin that are bonded to the same partner a time t later. Its 1/e time is the bond lifetime, with a KWW fit. When exchange is fast and returns to the old partner are likely, the curve falls in two steps, fitted by the form of Branham-Ferrari et al. (an exponential first step to one half, then a stretched decay as diffusion carries the partners apart). Partner changes between consecutive frames give a second, frame-limited estimate.",
+   "equation": "c(t) = Σ_origins Σ_i [p_i(t₀) ≥ 0 ∧ p_i(t₀ + t) = p_i(t₀)] / Σ_origins Σ_i [p_i(t₀) ≥ 0];   f(t) = ½[1 + e^(−t/τ)] exp[−(t/τ_d)^β]",
+   "equation_note": "p_i the partner of site i (−1 free); the two-step form is Eq. 3 of Branham-Ferrari et al. 2026, fitted by Nelder–Mead",
+   "symbols": [
+    [
+     "c(t)",
+     "fraction of sites still with their partner",
+     "—"
+    ],
+    [
+     "τ",
+     "first step: returns to the old partner",
+     "time of the frames"
+    ],
+    [
+     "τ_d, β",
+     "stretched decay as partners separate",
+     "—"
+    ]
+   ],
+   "when": "The exchange rate of a vitrimer run (CAPS's own, or LAMMPS bond/swap or bond/react output reduced to partner tables), its temperature dependence with the Arrhenius fit, and the check of whether bond relaxation is set by the reaction or by diffusion (caps exchange memory).",
+   "cites": [
+    "branhamferrari2026"
+   ],
+   "source": "core/src/exchange_analysis.cpp (bond_memory, fit_two_step, fit_kww)",
+   "tested": "Exchange.BondMemoryCountsPartnersAndChanges (a fixed and an alternating partner exactly; independent exchange at a fixed rate gives its 1/e time and β = 1), Exchange.TwoStepFitRecoversItsParameters",
+   "deviation": "a site that leaves its partner and returns to it between two frames counts as never having left; events between frames are missed by the change count",
+   "engines": [],
+   "tex": "c(t) = \\frac{\\sum_{t_0}\\sum_i [\\,p_i(t_0)\\ge 0 \\wedge p_i(t_0+t) = p_i(t_0)\\,]}{\\sum_{t_0}\\sum_i [\\,p_i(t_0)\\ge 0\\,]},\\qquad f(t) = \\tfrac12\\left[1 + e^{-t/\\tau}\\right]\\exp\\!\\left[-\\left(t/\\tau_d\\right)^{\\beta}\\right]"
+  },
+  {
+   "id": "healing-efficiency",
+   "group": "Analysis",
+   "title": "Healing efficiency and bonds across a cut",
+   "summary": "How far a cut, cracked or welded sample has recovered. Two kinds of measure: bonds across the interface (bonds joining atoms that started on opposite sides of the cut, and the number of bonds crossing each plane along the normal, B(z), by the minimum image), and ratios of the healed sample's stress–strain curve to the intact one's. The ratios differ between papers, so CAPS gives each by name: the toughness ratio (areas under the curves), the peak-stress ratio, the initial modulus ratio and the stress at a chosen strain.",
+   "equation": "η_toughness = ∫σ_healed dε / ∫σ_intact dε,   η_peak = σ_max,healed / σ_max,intact,   η_E = E_healed / E_intact,   η_ε* = σ_healed(ε*) / σ_intact(ε*)",
+   "equation_note": "areas by the trapezoid rule to each curve's end (or to a common strain); E from a straight-line fit up to a set strain",
+   "symbols": [
+    [
+     "η",
+     "healing efficiency",
+     "%"
+    ],
+    [
+     "ε*",
+     "strain the stresses are compared at",
+     "—"
+    ],
+    [
+     "B(z)",
+     "bonds crossing the plane at z",
+     "bonds"
+    ]
+   ],
+   "when": "Gap, cut or crack healing and welding of vitrimer and rubber networks: count bridges while the run heals, then pull the healed and intact samples the same way (caps tensile) and compare (caps exchange heal, caps exchange bridges).",
+   "cites": [
+    "chen2023",
+    "yuan2026",
+    "wick2025",
+    "ciarella2019",
+    "stukalin2013"
+   ],
+   "source": "core/src/exchange_analysis.cpp (interface_bonds, healing_efficiency)",
+   "tested": "Exchange.HealingEfficiencyDefinitions (straight-line curves with known areas and slopes), Exchange.InterfaceBondsAndCrossingProfile (bonds across a cut and across the periodic boundary)",
+   "deviation": "the four ratios answer different questions and are not interchangeable; MD strain rates are far above experiment",
+   "engines": [],
+   "tex": "\\eta_\\mathrm{tough} = \\frac{\\int\\sigma_\\mathrm{healed}\\,\\mathrm{d}\\varepsilon}{\\int\\sigma_\\mathrm{intact}\\,\\mathrm{d}\\varepsilon},\\qquad \\eta_\\mathrm{peak} = \\frac{\\sigma^\\mathrm{max}_\\mathrm{healed}}{\\sigma^\\mathrm{max}_\\mathrm{intact}},\\qquad \\eta_E = \\frac{E_\\mathrm{healed}}{E_\\mathrm{intact}}"
+  },
+  {
    "group": "Barostats",
    "source": "core/src/dynamics.cpp",
    "engines": [

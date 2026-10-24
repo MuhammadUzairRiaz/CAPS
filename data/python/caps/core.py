@@ -217,7 +217,7 @@ def _declare(L: C.CDLL) -> None:
         "caps_ml_available": ([], I), "caps_ff_complete": ([P, S, S, P, P, B, I], I), "caps_bond_react_export": ([P, S, S, S, B, I], I),
         "caps_bond_react_import": ([S, S, S, S, S, D, B, I], I), "caps_reaction_library": ([S, B, I], I), "caps_field_add_rule": ([P, S, S, S, S], I), "caps_energy_terms": ([P, B, I], I), "caps_field_set_mixing": ([P, S], I),
         "caps_insert_molecules": ([P, S, I, D, C.c_uint64, B, I], I),
-        "caps_blend_phase": ([S, B, I], I), "caps_tg_fit": ([S, B, I], I), "caps_solvent_chi": ([S, B, I], I), "caps_ewald_params": ([P, S, B, I], I),
+        "caps_blend_phase": ([S, B, I], I), "caps_tg_fit": ([S, B, I], I), "caps_exchange_analyze": ([S, B, I], I), "caps_solvent_chi": ([S, B, I], I), "caps_ewald_params": ([P, S, B, I], I),
     }
     for name, (args, res) in sig.items():
         f = getattr(L, name, None)
@@ -2001,6 +2001,18 @@ def tg_fit(paths, prop: str = "volume", fit: str = "hinge", glassy_max: float = 
         raise CapsError(r.get("error", "tg_fit failed"))
     return r
 
+
+def exchange(op: str, **data) -> dict:
+    """Analysis of networks whose bonds exchange (vitrimers) and of healing tests, as caps exchange. op and its data:
+    "arrhenius": T, tau (lists), tau_b (optional, the same temperatures: where the two cross), reduced, t_min, t_max;
+    "modulus": pressure (samples [xx, yy, zz, xy, xz, yz] in atm), volume (Å³), temperature (K), dt_fs, fit_from_ps,
+    g_inf (MPa), integrate_ps; "memory": partners (per frame, the partner id of each site, −1 free), frame_dt, unit;
+    "heal": healed and intact ({strain: [...], stress: [...]}), modulus_strain, at_strain, up_to.
+    Returns {properties: [...]} as analyze (arrhenius also {crossing}: the temperature, or None)."""
+    r = _json_call(library().caps_exchange_analyze, _enc(json.dumps({"op": op, **data})))
+    if not r.get("ok", False):
+        raise CapsError(r.get("error", "exchange failed"))
+    return r
 
 def solvent_chi(delta_polymer: float, solvents: list, t: float = 298.15) -> list:
     """Hildebrand χ ≈ V(δs − δp)²/RT + 0.34 for [{name, v (cm³/mol), delta (MPa½)}]: [{name, chi, predicted}]. It ignores

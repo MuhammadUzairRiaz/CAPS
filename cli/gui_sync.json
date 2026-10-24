@@ -157,6 +157,35 @@
     "--volume": "partial: the Studio reads a table's header (density or specific volume); a table without one is taken as density, and only the command line can say it is specific volume"
    }
   },
+  "exchange": {
+   "status": "cli",
+   "studio": "—",
+   "where": "",
+   "capi": [
+    "caps_exchange_analyze"
+   ],
+   "note": "analysis of bond-exchange (vitrimer) runs and healing tests: Arrhenius fits, G(t) and G'/G'' from pressure-tensor samples, bond lifetimes from partner tables, bonds across a cut, healing efficiencies; the Studio page comes with the exchange engine",
+   "options": {
+    "--reduced": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
+    "--from": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
+    "--to": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
+    "--cell-volume": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
+    "--temp": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
+    "--dt": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
+    "--fit": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
+    "--g-inf": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
+    "--corr-ps": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
+    "--frame-ps": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
+    "--axis": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
+    "--plane": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
+    "--bin": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
+    "--modulus-strain": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
+    "--at-strain": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
+    "--up-to": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
+    "--json": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
+    "--csv": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)"
+   }
+  },
   "frames": {
    "status": "gui",
    "studio": "Studio › Trajectory (save frames)",

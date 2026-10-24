@@ -45,6 +45,7 @@
 #include "caps/nano.hpp"
 #include "caps/properties.hpp"
 #include "caps/equilibrate.hpp"
+#include "caps/exchange_analysis.hpp"
 #include "caps/grow.hpp"
 #include "caps/io.hpp"
 #include "caps/martini3_molecules.hpp"
@@ -213,6 +214,9 @@ int usage() {
                "  caps elastic FILE [--topology DATA] [--method strain|fluct|fluct-run] [--configs N] [--strain 1e-4] [--temp T] [--ps 100] [--ff FF.json] [--json OUT]\n"
                "  caps tensile DATA -o OUT.data [--axis x] [--rate 1e-3] [--strain 0.2] [--temp 300] [--fixed-lateral] [--precision mixed|double] [--ff FF.json [--overlay OV.json] [--charges MODE] [--complete ml]] [--csv DIR]\n"
                "  caps tg DATA -o OUT.data [--from 500 --to 200 --step 20 --ps 100] [--precision mixed|double] [--ff FF.json [--overlay OV.json] [--charges MODE] [--complete ml]] [--csv DIR]   |   caps tg --fit RUN [RUN ...] [--volume]\n"
+               "  caps exchange arrhenius TABLE [TABLE2] [--reduced] [--from T --to T]   |   caps exchange modulus PTENSOR --cell-volume A3 --temp K --dt FS [--fit PS] [--g-inf MPa] [--corr-ps PS]\n"
+               "               | caps exchange memory PARTNERS --frame-ps PS   |   caps exchange bridges START NOW [--axis z] [--plane 0.5] [--bin 1]\n"
+               "               | caps exchange heal HEALED INTACT [--modulus-strain 0.03] [--at-strain E] [--up-to E]   [--json OUT] [--csv DIR]   (bond exchange and healing)\n"
                "  caps frames  FILE OUT.lammpstrj|dcd|xyz|pdb|gro|trr [--topology DATA] [--first N] [--last N] [--stride N]   (read thinned)\n"
                "  caps convert FILE OUT.data|xyz|pdb|mol2|car|gro|sdf|cif|vasp|POSCAR [--topology DATA]   (.car: with its .mdf)\n"
                "  caps edit    FILE --ops 'OP ARGS; OP ARGS …' | --ops-file OPS.txt -o OUT   edits in order, atoms numbered from 1:\n"
@@ -412,7 +416,7 @@ const std::set<std::string>& known_options() {
     "--tmax", "--to", "--tol", "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing", "--units",
     "--polymer", "--crystal", "--crystal-cells", "--amorphous", "--loops", "--bridges", "--tails", "--reentry", "--analyse",
     "--corr-ps", "--long", "--swap-every", "--transient", "--dimensionality", "--thickness",
-    "--until-converged", "--vacuum", "--viscosity", "--volume", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
+    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
   return k;
 }
 
@@ -444,7 +448,7 @@ bool is_cli_switch(const std::string& a) {
          a == "--until-converged" || a == "--print-protocol" || a == "--no-pbc" ||
          a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" || a == "--include-input" || a == "--primitive" || a == "--symmetrize" || a == "--find-symmetry" || a == "--groups" || a == "--neutralise" || a == "--no-ions" || a == "--solvents" || a == "--bibtex" || a == "--json" || a == "--deterministic" || a == "--vacuum" || a == "--methods" ||
          a == "--hybrid" || a == "--resume" || a == "--between-chains" || a == "--keep-byproducts" || a == "--auto-capture" ||
-         a == "--during-md" || a == "--remove-unreacted" || a == "--analyse" || a == "--long";
+         a == "--during-md" || a == "--remove-unreacted" || a == "--analyse" || a == "--long" || a == "--reduced";
 }
 
 std::map<std::string, std::string> parse(int argc, char** argv, int from, std::vector<std::string>& pos) {
@@ -795,6 +799,33 @@ void cli_report(const std::vector<Property>& props, std::map<std::string, std::s
       }
     std::printf("wrote curves to %s\n", o["--csv"].c_str());
   }
+}
+
+// A table of numbers: one row per line, columns split by commas, semicolons, tabs or spaces; comment lines (#) and lines
+// that are not all numbers (a header) are skipped.
+std::vector<std::vector<double>> read_number_table(const std::string& path) {
+  std::ifstream f(path);
+  if (!f) throw std::runtime_error("cannot open " + path);
+  std::vector<std::vector<double>> rows;
+  std::string line;
+  while (std::getline(f, line)) {
+    if (line.empty() || line[0] == '#') continue;
+    for (char& c : line)
+      if (c == ',' || c == ';' || c == '\t' || c == '\r') c = ' ';
+    std::istringstream in(line);
+    std::vector<double> r;
+    std::string w;
+    bool numbers = true;
+    while (in >> w) {
+      char* end = nullptr;
+      const double v = std::strtod(w.c_str(), &end);
+      if (end == w.c_str() || *end) { numbers = false; break; }
+      r.push_back(v);
+    }
+    if (numbers && !r.empty()) rows.push_back(std::move(r));
+  }
+  if (rows.empty()) throw std::runtime_error(path + ": no rows of numbers");
+  return rows;
 }
 
 int axis_of(const std::string& a) {
@@ -3155,6 +3186,101 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps pull: %s\n", e.what());
+      return 1;
+    }
+  }
+  if (cmd == "exchange") {
+    // caps exchange arrhenius TABLE [TABLE2] [--reduced] [--from T --to T]
+    //     Ea from relaxation times (columns T τ); a second table of times at the same temperatures: where the two cross
+    // caps exchange modulus PTENSOR --cell-volume Å³ --temp K --dt FS [--fit PS] [--g-inf MPa] [--corr-ps PS]
+    //     G(t), G'(ω), G''(ω) from pressure-tensor samples, atm, the last six columns xx yy zz xy xz yz (LAMMPS
+    //     fix ave/time of pxx pyy pzz pxy pxz pyz in units real)
+    // caps exchange memory PARTNERS --frame-ps PS
+    //     bond lifetime: a row per frame, a column per exchangeable site, the partner's id (−1: free)
+    // caps exchange bridges START NOW [--axis z] [--plane 0.5] [--bin 1]
+    //     bonds across a cut: sides from START's positions, bonds and positions from NOW (the same atoms)
+    // caps exchange heal HEALED INTACT [--modulus-strain 0.03] [--at-strain E] [--up-to E]
+    //     healing efficiency from two stress–strain tables (strain as a fraction, stress)
+    try {
+      if (pos.empty()) return usage();
+      const std::string sub = pos[0];
+      std::vector<Property> props;
+      auto column = [](const std::vector<std::vector<double>>& t, size_t c, const std::string& path) {
+        std::vector<double> v;
+        for (const auto& r : t) {
+          if (r.size() <= c) throw std::invalid_argument(path + ": a row has fewer than " + std::to_string(c + 1) + " columns");
+          v.push_back(r[c]);
+        }
+        return v;
+      };
+      if (sub == "arrhenius") {
+        if (pos.size() < 2) return usage();
+        const auto t1 = read_number_table(pos[1]);
+        const auto T = column(t1, 0, pos[1]), tau = column(t1, 1, pos[1]);
+        const bool reduced = o.count("--reduced") > 0;
+        const double tmin = o.count("--from") ? std::stod(o["--from"]) : 0, tmax = o.count("--to") ? std::stod(o["--to"]) : 0;
+        props = arrhenius_properties(fit_arrhenius(T, tau, reduced, tmin, tmax), "τ");
+        if (pos.size() > 2) {
+          const auto t2 = read_number_table(pos[2]);
+          const auto T2 = column(t2, 0, pos[2]), tau2 = column(t2, 1, pos[2]);
+          auto p2 = arrhenius_properties(fit_arrhenius(T2, tau2, reduced, tmin, tmax), "τ₂");
+          p2[0].id = "arrhenius_2";
+          if (T2 != T) throw std::invalid_argument("the two tables must list the same temperatures in the same order");
+          const double tx = crossing_temperature(T, tau, tau2);
+          if (std::isfinite(tx)) props[0].extra["temperature where τ and τ₂ cross"] = tx;
+          else props[0].notes.push_back("τ and τ₂ do not cross over these temperatures");
+          props.push_back(p2[0]);
+        }
+      } else if (sub == "modulus") {
+        if (pos.size() < 2) return usage();
+        if (!o.count("--cell-volume") || !o.count("--temp") || !o.count("--dt"))
+          throw std::invalid_argument("modulus needs --cell-volume (Å³), --temp (K) and --dt (fs between samples)");
+        const auto t = read_number_table(pos[1]);
+        std::vector<std::array<double, 6>> p;
+        for (const auto& r : t) {
+          if (r.size() < 6) throw std::invalid_argument(pos[1] + ": a row has fewer than six columns (xx yy zz xy xz yz)");
+          const size_t k = r.size() - 6;
+          p.push_back({r[k], r[k + 1], r[k + 2], r[k + 3], r[k + 4], r[k + 5]});
+        }
+        StressRelaxationOptions so;
+        so.volume = std::stod(o["--cell-volume"]), so.temperature = std::stod(o["--temp"]), so.dt_fs = std::stod(o["--dt"]);
+        if (o.count("--fit")) so.fit_from_ps = std::stod(o["--fit"]);
+        if (o.count("--g-inf")) so.g_inf = std::stod(o["--g-inf"]);
+        if (o.count("--corr-ps")) so.integrate_ps = std::stod(o["--corr-ps"]);
+        props = stress_relaxation_properties(stress_relaxation(p, so));
+      } else if (sub == "memory") {
+        if (pos.size() < 2) return usage();
+        if (!o.count("--frame-ps")) throw std::invalid_argument("memory needs --frame-ps (time between the rows)");
+        std::vector<std::vector<int64_t>> partners;
+        for (const auto& r : read_number_table(pos[1])) {
+          std::vector<int64_t> f;
+          for (double v : r) f.push_back(v < 0 ? -1 : int64_t(std::llround(v)));
+          partners.push_back(std::move(f));
+        }
+        props = bond_memory_properties(bond_memory(partners, std::stod(o["--frame-ps"])), "ps");
+      } else if (sub == "bridges") {
+        if (pos.size() < 3) return usage();
+        const System start = load(pos[1], o), now = load(pos[2], o);
+        if (start.atoms.size() != now.atoms.size()) throw std::invalid_argument("START and NOW must hold the same atoms");
+        const int axis = o.count("--axis") ? axis_of(o["--axis"]) : 2;
+        const double plane = o.count("--plane") ? std::stod(o["--plane"]) : 0.5, bin = o.count("--bin") ? std::stod(o["--bin"]) : 1.0;
+        props = interface_properties(interface_bonds(now, sides_from_positions(start, axis, plane), axis, plane, bin), axis);
+      } else if (sub == "heal") {
+        if (pos.size() < 3) return usage();
+        auto curve = [&](const std::string& path) {
+          const auto t = read_number_table(path);
+          return StressStrain{column(t, 0, path), column(t, 1, path)};
+        };
+        const double ms = o.count("--modulus-strain") ? std::stod(o["--modulus-strain"]) : 0.03,
+                     at = o.count("--at-strain") ? std::stod(o["--at-strain"]) : 0, up = o.count("--up-to") ? std::stod(o["--up-to"]) : 0;
+        props = healing_properties(healing_efficiency(curve(pos[1]), curve(pos[2]), ms, at, up));
+      } else {
+        throw std::invalid_argument("caps exchange arrhenius | modulus | memory | bridges | heal");
+      }
+      cli_report(props, o);
+      return 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps exchange: %s\n", e.what());
       return 1;
     }
   }
