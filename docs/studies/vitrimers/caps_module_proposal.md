@@ -488,7 +488,36 @@ Not in E5: moving hydrogens within CAPS's own engine (a local relaxation after t
 constraint of the map file (its syntax is still to be checked against the full manual page; prob scaling is used
 instead).
 
-Next: E6, the protocols (step strain, Tv scan, creep, heal, weld, recycle) and the cut, gap, crack and fragment builders.
+**E6 (healing and welding) is built** (2026-10-24):
+
+- Builders in `core/exchange_protocols`, each also a `caps exchange` subcommand that writes a structure:
+  - `cut_bonds_across` (`cut`) removes every bond crossing a plane, by the minimum image;
+  - `open_gap` (`gap`) cuts, then moves the upper side by a set distance and lengthens the cell (a weld start);
+  - `remove_sphere` (`crack`) removes the atoms within a radius with their bonds (a void or crack tip);
+  - `fragment` (`fragment`) cuts at the mid-plane of each chosen axis (the pieces of a recycling run).
+  A builder drops the bonded terms and force field a file carried, since they no longer match the bonds.
+- Protocols, each running the moves of `caps exchange run` (or none with `--no-exchange`):
+  - `step_strain` (`step-strain`): a volume-keeping uniaxial step, then NVT. σ(t) is the normal stress difference from
+    the pressure tensor, with a KWW fit (Yang et al. 2016 hold a step strain the same way);
+  - `tv_scan` (`tv`): C-rescale NPT at each temperature. It fits a two-line hinge to the specific volume (Tv, or Tg
+    without exchange; Perego and Khabaz 2020) and an Arrhenius law to the time between accepted moves;
+  - `heal_run` (`heal-run`): MD in chunks, with bridges and bonds crossing the plane after each. `--npt` closes a
+    gap; weld and recycle are heal runs on a gap or on fragments;
+  - creep: `CreepOptions::topology` passes the moves into `run_creep` for the creep stage only, not the equilibration.
+    There is no CLI for creep yet.
+- Runs chain: `DynamicsReport::field` returns the force field the moves left, and the next run starts from it.
+- `--valence N[,M]` is new on every exchange run. Bind moves on chains need 2, because a bead in a chain already holds
+  two bonds. Before this option the CLI could not rebond cut chain ends.
+- Tests (`ExchangeProtocols.*`, 3): builder bond and atom counts; bind moves rebond a cut bead-spring network
+  (bridges > 0); the strain keeps the volume and gives tensile stress; one specific volume per temperature.
+- CLI smoke test on a 192-bead grid: a cut heals with 3 bridges in 0.5 ps at T* = 1. A 2 Å gap does not close in that
+  time; welding needs longer runs than a local check allows.
+
+Not in E6: a creep subcommand, the recipe stages (one recipe from build to healed pull), and a crack shaped as a
+notch rather than a void.
+
+Next: E7, the rubber vitrimers (ENR with a diacid, ENR on cellulose, sulfur-cured NR and SBR polysulfide, ENR/PBS through
+MAH).
 
 ## 10. Chemistries the module covers
 

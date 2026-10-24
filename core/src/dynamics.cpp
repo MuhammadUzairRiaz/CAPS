@@ -725,6 +725,7 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
   rep.ns_per_day = rep.seconds > 0 ? o.steps * dt * 1e-6 / rep.seconds * 86400 : 0;
   rep.list_builds = ev.list_builds();
   rep.topology_energy = topo_energy;
+  if (rep.topology_changes > 0) rep.field = std::make_shared<const ForceField>(ff);
   rep.threads = ev.threads();
   char b[256];
   std::snprintf(b, sizeof b, "%lld steps of %.2f fs (%.1f ps) in %.1f s · %.2f ns/day · %d neighbour-list builds · %d threads",

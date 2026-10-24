@@ -156,6 +156,7 @@ struct DynamicsReport {
   int threads = 0;                  // worker threads the run used
   int64_t topology_changes = 0;     // callbacks that changed the topology (DynamicsOptions::topology)
   double topology_energy = 0;       // potential energy those changes added, kcal/mol
+  std::shared_ptr<const ForceField> field;   // the run's force field at the end, when bond exchange changed it (else null)
   std::vector<std::string> notes;
 };
 
