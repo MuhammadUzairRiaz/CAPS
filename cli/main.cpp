@@ -47,6 +47,7 @@
 #include "caps/equilibrate.hpp"
 #include "caps/exchange_analysis.hpp"
 #include "caps/exchange_moves.hpp"
+#include "caps/exchange_library.hpp"
 #include "caps/kremer_grest.hpp"
 #include "caps/grow.hpp"
 #include "caps/io.hpp"
@@ -219,7 +220,8 @@ int usage() {
                "  caps exchange arrhenius TABLE [TABLE2] [--reduced] [--from T --to T]   |   caps exchange modulus PTENSOR --cell-volume A3 --temp K --dt FS [--fit PS] [--g-inf MPa] [--corr-ps PS]\n"
                "               | caps exchange memory PARTNERS --frame-ps PS   |   caps exchange bridges START NOW [--axis z] [--plane 0.5] [--bin 1]\n"
                "               | caps exchange heal HEALED INTACT [--modulus-strain 0.03] [--at-strain E] [--up-to E]   [--json OUT] [--csv DIR]   (bond exchange and healing)\n"
-               "               | caps exchange run DATA -o OUT --kind swap|shift|bind [--sites SEL] [--partners SEL] [--labels chain|ends] [--capture 1.3]\n"
+               "               | caps exchange list   |   caps exchange show CHEMISTRY   (exchange chemistries and their barriers, data/exchange)\n"
+               "               | caps exchange run DATA -o OUT [--chemistry ID] --kind swap|shift|bind [--sites SEL] [--partners SEL] [--labels chain|ends] [--capture 1.3]\n"
                "                 [--barrier E] [--binding E] [--every 10] [--attempts 1] [--steps 10000] [--temp 300] [--dt 1] [--kg [--k-theta K] | --ff FF.json]\n"
                "               | caps exchange bond-swap DATA -o STEM [--sites SEL] [--stickers | --both-ends] [--every 50] [--fraction 0.5] [--cutoff 1.3] [--seed 1] [--steps N] [--k-theta K]\n"
                "  caps frames  FILE OUT.lammpstrj|dcd|xyz|pdb|gro|trr [--topology DATA] [--first N] [--last N] [--stride N]   (read thinned)\n"
@@ -421,7 +423,7 @@ const std::set<std::string>& known_options() {
     "--tmax", "--to", "--tol", "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing", "--units",
     "--polymer", "--crystal", "--crystal-cells", "--amorphous", "--loops", "--bridges", "--tails", "--reentry", "--analyse",
     "--corr-ps", "--long", "--swap-every", "--transient", "--dimensionality", "--thickness",
-    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
+    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
   return k;
 }
 
@@ -3305,6 +3307,39 @@ int main(int argc, char** argv) {
                      at = o.count("--at-strain") ? std::stod(o["--at-strain"]) : 0, up = o.count("--up-to") ? std::stod(o["--up-to"]) : 0;
         props = healing_properties(healing_efficiency(curve(pos[1]), curve(pos[2]), ms, at, up));
       } else {
+        auto exchange_lib = [] {
+          for (const std::string& root : caps_roots())
+            if (!root.empty() && std::filesystem::exists(root + "/data/exchange/library.json")) return load_exchange_library(root + "/data/exchange/library.json");
+          throw std::runtime_error("the exchange library (data/exchange/library.json) was not found");
+        };
+        if (sub == "list") {
+          const auto lib = exchange_lib();
+          std::printf("%-26s %-13s %-6s %-22s %s\n", "id", "mechanism", "move", "scheme", "default barrier (kcal/mol) and sources");
+          for (const auto& c : lib) {
+            char bar[64] = "none";
+            if (std::isfinite(c.default_kcal_per_mol)) std::snprintf(bar, sizeof bar, "%.4g", c.default_kcal_per_mol);
+            std::printf("%-26s %-13s %-6s %-22s %s, %zu value%s from the literature\n", c.id.c_str(), c.mechanism.substr(0, 13).c_str(), c.move.c_str(),
+                        c.scheme.empty() ? "(none yet)" : c.scheme.c_str(), bar, c.barriers.size(), c.barriers.size() == 1 ? "" : "s");
+          }
+          return 0;
+        }
+        if (sub == "show") {
+          if (pos.size() < 2) return usage();
+          const auto lib = exchange_lib();
+          const auto& c = find_exchange_chemistry(lib, pos[1]);
+          std::printf("%s (%s)\n  family: %s\n  mechanism: %s; move: %s; scheme: %s\n", c.name.c_str(), c.id.c_str(), c.family.c_str(), c.mechanism.c_str(),
+                      c.move.c_str(), c.scheme.empty() ? "none yet" : c.scheme.c_str());
+          for (const auto& b : c.barriers)
+            std::printf("  %s %s: %s; %s%s%s [%s, doi:%s]%s%s\n", b.value.c_str(), b.unit.c_str(), b.kind.c_str(), b.method.c_str(), b.conditions.empty() ? "" : "; ",
+                        b.conditions.c_str(), b.status.c_str(), b.source.c_str(), b.note.empty() ? "" : "\n    note: ", b.note.c_str());
+          if (std::isfinite(c.default_kcal_per_mol)) std::printf("  default barrier: %.4g kcal/mol (%s)\n", c.default_kcal_per_mol, c.default_why.c_str());
+          else std::printf("  default barrier: none (no molecular barrier read yet)\n");
+          if (std::isfinite(c.capture_angstrom)) std::printf("  capture: %s %.4g A [doi:%s]\n", c.capture_pair.c_str(), c.capture_angstrom, c.capture_source.c_str());
+          for (const auto& x : c.systems) std::printf("  system: %s\n", x.c_str());
+          for (const auto& x : c.to_read) std::printf("  to read: %s\n", x.c_str());
+          if (!c.notes.empty()) std::printf("  note: %s\n", c.notes.c_str());
+          return 0;
+        }
         if (sub == "run") {
           // CAPS's own MD with exchange moves (caps/exchange_moves.hpp)
           if (pos.size() < 2 || !o.count("-o")) return usage();
@@ -3314,7 +3349,12 @@ int main(int argc, char** argv) {
           const bool kg = o.count("--kg") > 0;
           ForceField ff = kg ? kremer_grest_forcefield(s, ko) : cli_forcefield(s, o);
           ExchangeOptions xo;
-          xo.kind = exchange_kind_from_string(o.count("--kind") ? o["--kind"] : "swap");
+          if (o.count("--chemistry")) {
+            const auto lib = exchange_lib();
+            xo = exchange_options_for(find_exchange_chemistry(lib, o["--chemistry"]));
+            std::printf("chemistry %s: %s moves, barrier %.4g kcal/mol, capture %.4g A\n", o["--chemistry"].c_str(), to_string(xo.kind), xo.barrier, xo.capture);
+          }
+          if (o.count("--kind") || !o.count("--chemistry")) xo.kind = exchange_kind_from_string(o.count("--kind") ? o["--kind"] : "swap");
           xo.group_a = cli_selection(s, o.count("--sites") ? o["--sites"] : "all");
           if (o.count("--partners")) xo.group_b = cli_selection(s, o["--partners"]);
           if (o.count("--labels")) {

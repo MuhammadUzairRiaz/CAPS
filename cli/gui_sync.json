@@ -201,7 +201,8 @@
     "--stickers": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
     "--both-ends": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
     "--fraction": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
-    "--cutoff": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)"
+    "--cutoff": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)",
+    "--chemistry": "cli: the Exchange page comes with stage E8 (docs/studies/vitrimers/caps_module_proposal.md)"
    }
   },
   "frames": {

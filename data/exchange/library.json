@@ -1,0 +1,723 @@
+{
+ "format": "caps-exchange",
+ "format_version": 1,
+ "about": "Exchange chemistries for CAPS Exchange (vitrimers, dynamic covalent and reversible networks): mechanism, the move the exchange engine uses (swap: two bonds trade partners; shift: a free group takes a bond from another; bind: bonds form and break alone), the reaction scheme in data/reactions/library.json, and every barrier or activation energy read in the literature with its source DOI, method and conditions. status: read (taken from the paper itself) or quoted (taken from a paper citing it; read the original before relying on it). default: the barrier an MD run uses unless told otherwise, only where a molecular barrier (quantum chemistry, or a value an MD study used) exists; experimental activation energies of flow or stress relaxation are listed but are not molecular barriers. Nothing here comes from another program's parameter files.",
+ "chemistries": [
+  {
+   "id": "transesterification",
+   "name": "Transesterification (beta-hydroxy ester)",
+   "family": "esters",
+   "mechanism": "associative",
+   "move": "shift",
+   "scheme": "transesterification",
+   "barriers": [
+    {
+     "value": 14.6,
+     "unit": "kcal/mol",
+     "kcal_per_mol": 14.6,
+     "kind": "DFT barrier",
+     "method": "DFT, bifunctional catalysts",
+     "conditions": "",
+     "source": "10.1021/acs.jpcb.0c10403",
+     "status": "quoted",
+     "note": "the value Zheng, Varshney and Vashisth 2025 (10.1021/acs.macromol.5c00501) take from Bhusal et al. 2021; which catalyst it belongs to is still to be read"
+    },
+    {
+     "value": 68.18,
+     "unit": "kJ/mol",
+     "kcal_per_mol": 16.2954,
+     "kind": "MD model input",
+     "method": "Arrhenius acceptance of exchange (PCFF, DGEBA + tricarballylic acid)",
+     "conditions": "normalised to 1 at 450 K",
+     "source": "10.1039/c5ra26128g",
+     "status": "read",
+     "note": "the paper does not say where the value comes from"
+    },
+    {
+     "value": 67.67,
+     "unit": "kJ/mol",
+     "kcal_per_mol": 16.1735,
+     "kind": "MD result",
+     "method": "Arrhenius of stress relaxation at 420 and 450 K",
+     "conditions": "",
+     "source": "10.1039/c5ra26128g",
+     "status": "read"
+    }
+   ],
+   "default": {
+    "barrier_kcal_per_mol": 14.6,
+    "from": 0,
+    "why": "the DFT barrier an accelerated-ReaxFF vitrimer study used; check Bhusal et al. 2021 for the catalyst"
+   },
+   "capture": {
+    "pair": "O(alcohol)...C(ester)",
+    "value": 4.25,
+    "unit": "Å",
+    "source": "10.1002/pol.20240616",
+    "note": "OPLS-AA, the minimum of the longer O-C / H-O distance distribution"
+   },
+   "systems": [
+    "epoxy-acid and epoxy-anhydride vitrimers (Zn, TBD)",
+    "ENR + dicarboxylic acid",
+    "polyester vitrimers",
+    "ENR/PBS through MAH"
+   ],
+   "to_read": [
+    "10.1021/acs.jpcb.0c10403"
+   ],
+   "notes": ""
+  },
+  {
+   "id": "transcarbamoylation",
+   "name": "Transcarbamoylation (urethane exchange)",
+   "family": "urethanes",
+   "mechanism": "associative",
+   "move": "shift",
+   "scheme": "carbamate_exchange",
+   "barriers": [
+    {
+     "value": "35.5 to 70.7",
+     "unit": "kJ/mol",
+     "kind": "DFT barrier",
+     "method": "DFT; 35.5 at a 90 degree OCNC torsion, 70.7 relaxed",
+     "conditions": "",
+     "source": "10.1002/advs.202302816",
+     "status": "quoted",
+     "note": "Fortman et al., as the Li et al. 2023 review quotes them"
+    }
+   ],
+   "default": {
+    "barrier_kcal_per_mol": 16.9,
+    "from": 0,
+    "why": "the relaxed value (70.7 kJ/mol) of the range the review quotes; read Fortman et al. first"
+   },
+   "capture": null,
+   "systems": [
+    "polyurethane vitrimers"
+   ],
+   "to_read": [
+    "Fortman et al. (DOI to find from the Li et al. 2023 reference list)"
+   ],
+   "notes": ""
+  },
+  {
+   "id": "vinylogous_urethane",
+   "name": "Vinylogous urethane transamination",
+   "family": "vinylogous urethanes and ureas",
+   "mechanism": "associative",
+   "move": "shift",
+   "scheme": "vu_transamination",
+   "barriers": [
+    {
+     "value": 14.3,
+     "unit": "kcal/mol",
+     "kcal_per_mol": 14.3,
+     "kind": "DFT barrier (electronic, TS1)",
+     "method": "wB97XD/6-311++G(2df,2p)//6-31+G(d), PCM benzene, protic path",
+     "conditions": "n-butyl VU + benzylamine",
+     "source": "10.1002/pol.20220099",
+     "status": "read",
+     "note": "dG of the same step 9.29 kcal/mol; the paper compares with an experimental 14.1 +/- 1.4 kcal/mol (Denissen et al. 2015)"
+    },
+    {
+     "value": 33.99,
+     "unit": "kcal/mol",
+     "kcal_per_mol": 33.99,
+     "kind": "DFT barrier (electronic, TS1)",
+     "method": "same, aprotic (basic) path",
+     "conditions": "",
+     "source": "10.1002/pol.20220099",
+     "status": "read"
+    },
+    {
+     "value": 19.93,
+     "unit": "kcal/mol",
+     "kcal_per_mol": 19.93,
+     "kind": "DFT barrier (electronic, TS1)",
+     "method": "same, with B(CF3)3",
+     "conditions": "",
+     "source": "10.1002/pol.20220099",
+     "status": "read"
+    }
+   ],
+   "default": {
+    "barrier_kcal_per_mol": 14.3,
+    "from": 0,
+    "why": "protic (neutral or acidic) conditions, the paper's match to experiment"
+   },
+   "capture": null,
+   "systems": [
+    "VU elastomers",
+    "PDMS-VU vitrimers"
+   ],
+   "to_read": [],
+   "notes": "minus signs were lost in the text extraction of the paper: check signed intermediate energies in the PDF"
+  },
+  {
+   "id": "vinylogous_urea",
+   "name": "Vinylogous urea transamination",
+   "family": "vinylogous urethanes and ureas",
+   "mechanism": "associative",
+   "move": "shift",
+   "scheme": "vu_transamination",
+   "barriers": [
+    {
+     "value": 12.97,
+     "unit": "kcal/mol",
+     "kcal_per_mol": 12.97,
+     "kind": "DFT barrier (electronic, TS3)",
+     "method": "wB97XD, PCM benzene",
+     "conditions": "",
+     "source": "10.1002/pol.20220099",
+     "status": "read",
+     "note": "experimental 12.92 kcal/mol (Denissen 2018) as the paper quotes it"
+    }
+   ],
+   "default": {
+    "barrier_kcal_per_mol": 12.97,
+    "from": 0,
+    "why": "the rate-limiting step of the urea path"
+   },
+   "capture": null,
+   "systems": [
+    "vinylogous urea vitrimers"
+   ],
+   "to_read": [],
+   "notes": "the scheme is the urethane one; the urea differs in X = NH"
+  },
+  {
+   "id": "transimination",
+   "name": "Transimination (imine + amine)",
+   "family": "imines",
+   "mechanism": "associative",
+   "move": "shift",
+   "scheme": "transimination",
+   "barriers": [
+    {
+     "value": 66,
+     "unit": "kJ/mol",
+     "kcal_per_mol": 15.7744,
+     "kind": "experimental flow activation energy",
+     "method": "zero-shear viscosity, Arrhenius",
+     "conditions": "imine polyisoprene 2k-vit, +/- 20",
+     "source": "10.1021/acsmacrolett.3c00586",
+     "status": "read"
+    },
+    {
+     "value": 79,
+     "unit": "kJ/mol",
+     "kcal_per_mol": 18.8815,
+     "kind": "experimental flow activation energy",
+     "method": "zero-shear viscosity, Arrhenius",
+     "conditions": "imine polyisoprene 6k-vit, +/- 7",
+     "source": "10.1021/acsmacrolett.3c00586",
+     "status": "read"
+    },
+    {
+     "value": "48 to 86",
+     "unit": "kJ/mol",
+     "kind": "experimental rheological activation energies",
+     "method": "compilation",
+     "conditions": "imine vitrimers",
+     "source": "10.1021/acs.macromol.6c00582",
+     "status": "quoted"
+    }
+   ],
+   "default": null,
+   "capture": null,
+   "systems": [
+    "imine polyisoprene (NR-like)",
+    "imine PS and PPG networks"
+   ],
+   "to_read": [
+    "10.1021/acs.macromol.3c01377"
+   ],
+   "notes": "no molecular barrier read yet; the ML free-energy profile of Sun et al. 2023 is paywalled"
+  },
+  {
+   "id": "imine_metathesis",
+   "name": "Imine metathesis",
+   "family": "imines",
+   "mechanism": "associative",
+   "move": "swap",
+   "scheme": "imine_metathesis",
+   "barriers": [],
+   "default": null,
+   "capture": null,
+   "systems": [
+    "amine-free polyimines"
+   ],
+   "to_read": [
+    "10.1021/acs.macromol.3c01377"
+   ],
+   "notes": ""
+  },
+  {
+   "id": "disulfide_aromatic",
+   "name": "Aromatic disulfide exchange",
+   "family": "disulfides",
+   "mechanism": "associative (radical step dissociative)",
+   "move": "swap",
+   "scheme": "disulfide_metathesis",
+   "barriers": [
+    {
+     "value": 12.02,
+     "unit": "kcal/mol",
+     "kcal_per_mol": 12.02,
+     "kind": "DFT barrier (dG)",
+     "method": "wB97XD/6-311++G(2df,2p)//6-31+G(d,p), gas phase, radical (2+1)",
+     "conditions": "IP polyurethane fragment",
+     "source": "10.3389/fmats.2022.859482",
+     "status": "read"
+    },
+    {
+     "value": "150 to 180",
+     "unit": "kJ/mol",
+     "kind": "DFT path barriers",
+     "method": "B3LYP/6-31+G(d), GRRM20",
+     "conditions": "4-aminophenyl disulfide",
+     "source": "10.3390/polym18070861",
+     "status": "read",
+     "note": "a different pathway and reference from Irigoyen 2022: about three times higher"
+    },
+    {
+     "value": 48,
+     "unit": "kJ/mol",
+     "kcal_per_mol": 11.4723,
+     "kind": "experimental stress-relaxation activation energy",
+     "method": "1/e times, 60 to 90 C",
+     "conditions": "DGEBA + 2,2'-dithiodibenzoic acid",
+     "source": "10.1039/d6ra00851h",
+     "status": "read",
+     "note": "the printed fit gives 39.6 and the end points about 46 kJ/mol"
+    }
+   ],
+   "default": {
+    "barrier_kcal_per_mol": 12.02,
+    "from": 0,
+    "why": "the DFT exchange barrier of the radical path; the two DFT values disagree, so a CAPS QM check is due"
+   },
+   "capture": {
+    "pair": "S...S",
+    "value": 4.12,
+    "unit": "Å",
+    "source": "10.1016/j.cplett.2020.137966",
+    "note": "twice the S-S bond, CVFF fix bond/react"
+   },
+   "systems": [
+    "DGEBA + aminophenyl disulfide epoxies",
+    "disulfide polyurethanes",
+    "carbon-fibre disulfide composites"
+   ],
+   "to_read": [],
+   "notes": ""
+  },
+  {
+   "id": "thiol_disulfide",
+   "name": "Thiol-disulfide exchange",
+   "family": "disulfides",
+   "mechanism": "associative",
+   "move": "shift",
+   "scheme": "thiol_disulfide",
+   "barriers": [],
+   "default": null,
+   "capture": null,
+   "systems": [
+    "thiol-rich disulfide networks"
+   ],
+   "to_read": [],
+   "notes": "no barrier read yet"
+  },
+  {
+   "id": "polysulfide_rubber",
+   "name": "Polysulfide exchange in sulfur-cured rubber",
+   "family": "disulfides",
+   "mechanism": "associative or dissociative",
+   "move": "swap",
+   "scheme": "disulfide_metathesis",
+   "barriers": [
+    {
+     "value": 100,
+     "unit": "kJ/mol",
+     "kcal_per_mol": 23.9006,
+     "kind": "experimental stress-relaxation activation energy",
+     "method": "near-Maxwellian relaxation of polysulfide rubber",
+     "conditions": "Thiokol rubbers",
+     "source": "10.1021/acs.macromol.6c00582",
+     "status": "quoted",
+     "note": "Stern and Tobolsky 1946, as Ricarte 2026 recalls it"
+    },
+    {
+     "value": 58.19,
+     "unit": "kcal/mol",
+     "kcal_per_mol": 58.19,
+     "kind": "DFT S-S bond dissociation energy (not a barrier)",
+     "method": "wB97XD",
+     "conditions": "dialkyl disulfide, open conformation",
+     "source": "10.3389/fmats.2022.859482",
+     "status": "read"
+    },
+    {
+     "value": 63.13,
+     "unit": "kcal/mol",
+     "kcal_per_mol": 63.13,
+     "kind": "DFT S-S bond dissociation energy (not a barrier)",
+     "method": "wB97XD",
+     "conditions": "dialkyl disulfide, closed conformation",
+     "source": "10.3389/fmats.2022.859482",
+     "status": "read"
+    }
+   ],
+   "default": null,
+   "capture": null,
+   "systems": [
+    "sulfur-cured NR and SBR",
+    "polysulfide rubbers",
+    "ENR with a disulfide diacid"
+   ],
+   "to_read": [
+    "10.1039/c5py00459d"
+   ],
+   "notes": "the exchange barrier of aliphatic polysulfides is to be computed with CAPS's QM path"
+  },
+  {
+   "id": "sulfenamide",
+   "name": "Sulfenamide (BiTEMPS) exchange",
+   "family": "disulfides",
+   "mechanism": "dissociative",
+   "move": "bind",
+   "scheme": null,
+   "barriers": [
+    {
+     "value": "16 to 18",
+     "unit": "kcal/mol",
+     "kind": "DFT barrier",
+     "method": "radical exchange",
+     "conditions": "",
+     "source": "10.3389/fmats.2022.859482",
+     "status": "quoted",
+     "note": "Ruiperez et al. 2018 as Irigoyen 2022 quotes it"
+    }
+   ],
+   "default": null,
+   "capture": null,
+   "systems": [
+    "BiTEMPS methacrylate networks"
+   ],
+   "to_read": [
+    "Ruiperez et al. 2018 (DOI to find)"
+   ],
+   "notes": ""
+  },
+  {
+   "id": "diselenide",
+   "name": "Diselenide exchange",
+   "family": "diselenides",
+   "mechanism": "associative (radical)",
+   "move": "swap",
+   "scheme": null,
+   "barriers": [],
+   "default": null,
+   "capture": null,
+   "systems": [
+    "diselenide polyurethanes"
+   ],
+   "to_read": [],
+   "notes": "no barrier read yet"
+  },
+  {
+   "id": "boronic_ester",
+   "name": "Boronic ester (dioxaborinane) metathesis",
+   "family": "boronic esters",
+   "mechanism": "associative",
+   "move": "swap",
+   "scheme": null,
+   "barriers": [
+    {
+     "value": 17.68,
+     "unit": "kcal/mol",
+     "kcal_per_mol": 17.68,
+     "kind": "DFT barrier (dG, rate-limiting)",
+     "method": "wB97XD/6-311++G(2df,2p)//6-31+G(d)",
+     "conditions": "methanol-mediated",
+     "source": "10.1039/d3py01047c",
+     "status": "read"
+    },
+    {
+     "value": 29.15,
+     "unit": "kcal/mol",
+     "kcal_per_mol": 29.15,
+     "kind": "DFT barrier (dG)",
+     "method": "same",
+     "conditions": "direct [2+2] metathesis",
+     "source": "10.1039/d3py01047c",
+     "status": "read"
+    },
+    {
+     "value": "18 to 50",
+     "unit": "kJ/mol",
+     "kind": "experimental rheological activation energies",
+     "method": "compilation",
+     "conditions": "boronic ester vitrimers",
+     "source": "10.1021/acs.macromol.6c00582",
+     "status": "quoted"
+    }
+   ],
+   "default": {
+    "barrier_kcal_per_mol": 17.68,
+    "from": 0,
+    "why": "with a nucleophile (free OH, methanol, water) in reach; 29.15 kcal/mol without"
+   },
+   "capture": null,
+   "systems": [
+    "poly(butyl acrylate) networks",
+    "PB and PDMS boronic ester vitrimers"
+   ],
+   "to_read": [],
+   "notes": "no scheme yet: a ring-to-ring exchange to write and check"
+  },
+  {
+   "id": "dioxaborolane",
+   "name": "Dioxaborolane metathesis",
+   "family": "boronic esters",
+   "mechanism": "associative",
+   "move": "swap",
+   "scheme": null,
+   "barriers": [
+    {
+     "value": "80 to 94",
+     "unit": "kJ/mol",
+     "kind": "experimental activation energy",
+     "method": "shift factors and viscosity",
+     "conditions": "elastomeric PBMA vitrimers, Tg 293 to 303 K",
+     "source": "10.1021/acs.macromol.6c01360",
+     "status": "read"
+    }
+   ],
+   "default": null,
+   "capture": null,
+   "systems": [
+    "PBMA, PS, PE dioxaborolane vitrimers"
+   ],
+   "to_read": [],
+   "notes": ""
+  },
+  {
+   "id": "siloxane",
+   "name": "Siloxane equilibration (silanolate)",
+   "family": "silicones",
+   "mechanism": "associative",
+   "move": "swap",
+   "scheme": null,
+   "barriers": [],
+   "default": null,
+   "capture": null,
+   "systems": [
+    "PDMS vitrimers",
+    "silicone rubber"
+   ],
+   "to_read": [],
+   "notes": "no barrier read yet; no scheme (anionic intermediate)"
+  },
+  {
+   "id": "sulfonium_transalkylation",
+   "name": "Sulfonium transalkylation",
+   "family": "sulfonium salts",
+   "mechanism": "associative",
+   "move": "swap",
+   "scheme": null,
+   "barriers": [
+    {
+     "value": 123,
+     "unit": "kJ/mol",
+     "kcal_per_mol": 29.3977,
+     "kind": "experimental flow activation energy",
+     "method": "KWW stress relaxation, Arrhenius",
+     "conditions": "poly(thioether) networks, 130 to 180 C",
+     "source": "10.26434/chemrxiv.15008540/v1",
+     "status": "read",
+     "note": "Du Prez's uncatalysed value 113 kJ/mol quoted beside it"
+    }
+   ],
+   "default": null,
+   "capture": null,
+   "systems": [
+    "poly(thioether) sulfonium vitrimers"
+   ],
+   "to_read": [],
+   "notes": "no scheme yet (charged sites)"
+  },
+  {
+   "id": "enamine_isocyanide",
+   "name": "Enamine exchange (isocyanide polyacrylates)",
+   "family": "enamines",
+   "mechanism": "associative",
+   "move": "shift",
+   "scheme": null,
+   "barriers": [
+    {
+     "value": 108.2,
+     "unit": "kJ/mol",
+     "kcal_per_mol": 25.8604,
+     "kind": "experimental activation energy",
+     "method": "dielectric spectroscopy of bond exchange",
+     "conditions": "PMA with diisocyanobutane",
+     "source": "10.1021/jacs.5c22502",
+     "status": "read"
+    }
+   ],
+   "default": null,
+   "capture": null,
+   "systems": [
+    "polyacrylate vitrimers"
+   ],
+   "to_read": [],
+   "notes": ""
+  },
+  {
+   "id": "acetal",
+   "name": "Acetal and N,O-acetal exchange",
+   "family": "acetals",
+   "mechanism": "associative",
+   "move": "shift",
+   "scheme": null,
+   "barriers": [],
+   "default": null,
+   "capture": null,
+   "systems": [
+    "bio-based CANs"
+   ],
+   "to_read": [],
+   "notes": "no barrier read yet"
+  },
+  {
+   "id": "diels_alder",
+   "name": "Diels-Alder (furan-maleimide)",
+   "family": "cycloadditions",
+   "mechanism": "dissociative",
+   "move": "bind",
+   "scheme": null,
+   "barriers": [],
+   "default": null,
+   "capture": null,
+   "systems": [
+    "DA self-healing networks"
+   ],
+   "to_read": [
+    "10.1021/acs.jpca.4c05470"
+   ],
+   "notes": "the retro-DA ReaxFF study is paywalled"
+  },
+  {
+   "id": "hindered_urea",
+   "name": "Hindered urea",
+   "family": "ureas",
+   "mechanism": "dissociative",
+   "move": "bind",
+   "scheme": null,
+   "barriers": [],
+   "default": null,
+   "capture": null,
+   "systems": [
+    "reversible polyureas"
+   ],
+   "to_read": [],
+   "notes": "no barrier read yet"
+  },
+  {
+   "id": "thiol_michael",
+   "name": "Thiol-Michael (reversible)",
+   "family": "thiol adducts",
+   "mechanism": "dissociative",
+   "move": "bind",
+   "scheme": null,
+   "barriers": [],
+   "default": null,
+   "capture": null,
+   "systems": [
+    "reversible acrylates"
+   ],
+   "to_read": [],
+   "notes": "no barrier read yet"
+  },
+  {
+   "id": "hydrogen_bond",
+   "name": "Hydrogen-bond networks (physical)",
+   "family": "physical",
+   "mechanism": "physical",
+   "move": "none",
+   "scheme": null,
+   "barriers": [],
+   "default": null,
+   "capture": null,
+   "systems": [
+    "NR with MAn-ATA groups (Chen et al. 2023, COMPASS)"
+   ],
+   "to_read": [],
+   "notes": "no topology change: the force field's own hydrogen bonds"
+  },
+  {
+   "id": "bead_spring_swap",
+   "name": "Bead-spring bond swap (Kremer-Grest)",
+   "family": "coarse-grained models",
+   "mechanism": "associative",
+   "move": "swap",
+   "scheme": null,
+   "barriers": [
+    {
+     "value": 3.24,
+     "unit": "epsilon",
+     "kind": "barrier from geometry",
+     "method": "2 E_LJ(l) + 2 E_FENE(l) minimised, FENE K = 30, R0 = 1.5, sigma_LJ = 1",
+     "conditions": "reduced units",
+     "source": "10.1038/s41567-026-03468-0",
+     "status": "read"
+    }
+   ],
+   "default": {
+    "barrier_epsilon": 3.24,
+    "from": 0,
+    "why": "the model's own swap barrier; MC swaps need no extra barrier"
+   },
+   "capture": {
+    "pair": "bead...bead",
+    "value": 1.5,
+    "unit": "sigma",
+    "source": "10.1038/s41567-026-03468-0",
+    "note": "swap attempts between exchangeable beads within 1.5 sigma"
+   },
+   "systems": [
+    "telechelic and star bead-spring vitrimers"
+   ],
+   "to_read": [],
+   "notes": ""
+  },
+  {
+   "id": "three_body_swap",
+   "name": "Three-body swap potential (Sciortino)",
+   "family": "coarse-grained models",
+   "mechanism": "associative",
+   "move": "none",
+   "scheme": null,
+   "barriers": [
+    {
+     "value": "epsilon (lambda - 1)",
+     "unit": "energy",
+     "kind": "barrier of the model",
+     "method": "three-body potential",
+     "conditions": "",
+     "source": "10.1140/epje/i2017-11496-5",
+     "status": "read",
+     "note": "as Ciarella et al. 2018 write it; ForceField::swap3"
+    }
+   ],
+   "default": null,
+   "capture": null,
+   "systems": [
+    "star and telechelic vitrimer models"
+   ],
+   "to_read": [],
+   "notes": "exchange through the potential itself, no moves"
+  }
+ ]
+}

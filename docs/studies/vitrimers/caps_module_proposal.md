@@ -434,7 +434,41 @@ and `write_kg_bond_swap` in `core/src/kremer_grest.cpp`:
 Not in E3: a command-line or Studio way to set up the model (sites and pairs are set on the force field from C++ for
 now), and a builder for star or telechelic networks; both belong with E6 and E8.
 
-Next: E4, the exchange chemistry library.
+**E4 (exchange chemistry library) is built** (2026-10-24):
+
+- `data/exchange/library.json` (format caps-exchange) holds 23 chemistries:
+  - every family of section 10 (esters, urethanes, vinylogous urethanes and ureas, imines, disulfides and polysulfides,
+    sulfenamides, diselenides, boronic esters and dioxaborolanes, siloxanes, sulfonium salts, enamines, acetals,
+    Diels–Alder, hindered ureas, thiol-Michael, hydrogen-bond networks);
+  - the two coarse-grained models.
+
+  Each entry gives:
+  - mechanism, the engine's move and its reaction scheme;
+  - every barrier or activation energy read, with DOI, method, conditions and status (read, or quoted from a citing
+    paper);
+  - a default barrier, only where a molecular barrier exists;
+  - the all-atom capture distance where a paper gives one;
+  - what to read next.
+- Five exchange schemes were added to `data/reactions/library.json`: disulfide metathesis, thiol-disulfide exchange,
+  transimination, imine metathesis and vinylogous urethane transamination. Each passes the library's
+  run-on-model-compounds test.
+- `core/exchange_library` loads the library; `exchange_options_for` turns a chemistry into engine settings, and
+  `arrhenius_probability` gives the exchange probability relative to a reference temperature, for E5's LAMMPS prob.
+- On the command line: `caps exchange list`, `caps exchange show ID` and `caps exchange run --chemistry ID`.
+- Tests (`ExchangeLibrary.*`, 3):
+  - families present, schemes exist, every barrier sourced, unit conversions consistent;
+  - engine settings per chemistry;
+  - Yang et al.'s 27 % at 420 K against 450 K.
+
+Gaps the library shows openly:
+- No barrier read yet for imine metathesis, thiol-disulfide exchange, diselenides, siloxanes, acetals, Diels–Alder,
+  hindered ureas or thiol-Michael.
+- Experimental values only for imines, dioxaborolanes, sulfonium salts and enamines.
+- Quoted, not read, for transesterification (Bhusal 2021), transcarbamoylation (Fortman) and sulfenamides.
+- The aliphatic polysulfide barrier of sulfur-cured rubber is to be computed with CAPS's QM path.
+
+Next: E5, all-atom exchange (template moves in CAPS's engine, fix bond/react exchange export with the Arrhenius
+probability).
 
 ## 10. Chemistries the module covers
 

@@ -2151,6 +2151,191 @@
     }
    ],
    "note": ""
+  },
+  {
+   "id": "disulfide_metathesis",
+   "name": "Disulfide metathesis",
+   "category": "Dynamic exchange (vitrimers)",
+   "description": "Two disulfides trade halves: the exchange behind disulfide vitrimers, self-healing disulfide epoxies and polyurethanes, and the stress relaxation of polysulfide and sulfur-cured rubbers.",
+   "reactants": [
+    {
+     "label": "disulfide",
+     "smiles": "C[S:1][S:2]CC"
+    },
+    {
+     "label": "disulfide",
+     "smiles": "CCC[S:3][S:4]CCC"
+    }
+   ],
+   "products": [
+    {
+     "label": "mixed disulfide",
+     "smiles": "C[S:1][S:4]CCC"
+    },
+    {
+     "label": "mixed disulfide",
+     "smiles": "CC[S:2][S:3]CCC"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "keeps its methyl, takes the other disulfide's second sulfur"
+    },
+    {
+     "map": ":2",
+     "role": "keeps its ethyl, takes the other disulfide's first sulfur"
+    }
+   ],
+   "note": "radical (2+1) or ionic pathways; see data/exchange/library.json for barriers"
+  },
+  {
+   "id": "thiol_disulfide",
+   "name": "Thiol-disulfide exchange",
+   "category": "Dynamic exchange (vitrimers)",
+   "description": "A thiol attacks a disulfide and frees the other thiol: base-catalysed exchange in disulfide networks and thiol-rich rubbers.",
+   "reactants": [
+    {
+     "label": "disulfide",
+     "smiles": "C[S:1][S:2]C"
+    },
+    {
+     "label": "thiol",
+     "smiles": "CC[SH:3]"
+    }
+   ],
+   "products": [
+    {
+     "label": "new disulfide",
+     "smiles": "C[S:1][S:3]CC"
+    },
+    {
+     "label": "freed thiol",
+     "smiles": "C[SH:2]"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":3",
+     "role": "the attacking thiol sulfur"
+    },
+    {
+     "map": ":2",
+     "role": "the leaving sulfur, freed as a thiol"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "transimination",
+   "name": "Transimination (imine + amine)",
+   "category": "Dynamic exchange (vitrimers)",
+   "description": "A free amine takes the place of an imine's nitrogen: the associative exchange of imine vitrimers, catalysed by excess amine.",
+   "reactants": [
+    {
+     "label": "imine",
+     "smiles": "CC=[N:1]C"
+    },
+    {
+     "label": "amine",
+     "smiles": "CC[NH2:2]"
+    }
+   ],
+   "products": [
+    {
+     "label": "new imine",
+     "smiles": "CC=[N:2]CC"
+    },
+    {
+     "label": "freed amine",
+     "smiles": "C[NH2:1]"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":2",
+     "role": "the incoming amine nitrogen, the new C=N"
+    },
+    {
+     "map": ":1",
+     "role": "the old imine nitrogen, freed as an amine"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "imine_metathesis",
+   "name": "Imine metathesis",
+   "category": "Dynamic exchange (vitrimers)",
+   "description": "Two imines trade partners across their C=N bonds: the amine-free exchange of polyimine networks.",
+   "reactants": [
+    {
+     "label": "imine",
+     "smiles": "C[CH:1]=[N:2]C"
+    },
+    {
+     "label": "imine",
+     "smiles": "CC[CH:3]=[N:4]CC"
+    }
+   ],
+   "products": [
+    {
+     "label": "new imine",
+     "smiles": "C[CH:1]=[N:4]CC"
+    },
+    {
+     "label": "new imine",
+     "smiles": "CC[CH:3]=[N:2]C"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":1",
+     "role": "the first imine carbon, takes the second imine's nitrogen"
+    },
+    {
+     "map": ":3",
+     "role": "the second imine carbon, takes the first imine's nitrogen"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "id": "vu_transamination",
+   "name": "Vinylogous urethane transamination",
+   "category": "Dynamic exchange (vitrimers)",
+   "description": "A free amine replaces the amine of a vinylogous urethane (a beta-amino crotonate): the exchange of VU vitrimers and elastomers.",
+   "reactants": [
+    {
+     "label": "vinylogous urethane",
+     "smiles": "CCOC(=O)C=C(C)[NH:1]C"
+    },
+    {
+     "label": "amine",
+     "smiles": "CC[NH2:2]"
+    }
+   ],
+   "products": [
+    {
+     "label": "new vinylogous urethane",
+     "smiles": "CCOC(=O)C=C(C)[NH:2]CC"
+    },
+    {
+     "label": "freed amine",
+     "smiles": "C[NH2:1]"
+    }
+   ],
+   "tags": [
+    {
+     "map": ":2",
+     "role": "the incoming amine nitrogen"
+    },
+    {
+     "map": ":1",
+     "role": "the old amine nitrogen, freed"
+    }
+   ],
+   "note": ""
   }
  ]
 }
