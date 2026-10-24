@@ -105,7 +105,7 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
   if (o.field && o.field->atom_type.size() != n)
     throw FieldError("the assigned force field is for " + std::to_string(o.field->atom_type.size()) + " atoms, the structure has " +
                      std::to_string(n));
-  const ForceField ff = o.field ? *o.field : default_forcefield(s);
+  ForceField ff = o.field ? *o.field : default_forcefield(s);   // the run's own copy: bond exchange may change it
   for (const auto& note : ff.notes) rep.notes.push_back(note);
   // r-RESPA (Tuckerman, Berne & Martyna 1992): the non-bonded forces every step, the bonded ones respa times per step
   const int respa = std::max(1, o.respa);
@@ -173,6 +173,7 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
   if (!cset.c.empty()) rep.notes.push_back(o.constraint_algorithm == ConstraintAlgorithm::Lincs ? "constraint solver: LINCS (order 4) for positions, RATTLE for velocities"
                                                                                                    : "constraint solver: SHAKE for positions, RATTLE for velocities");
   const size_t ncons = cset.c.size();
+  if (o.topology && o.topology_every > 0 && ncons) throw std::invalid_argument("bond exchange runs without bond constraints");
   ConstraintSolver cons(std::move(cset), m, s.cell, 1e-8, 1000, o.constraint_algorithm);
   // with held atoms momentum is not conserved: every free coordinate counts
   const double ndof = (nheld || npart ? 3.0 * double(n - nheld) - double(npart) : 3.0 * n - 3.0) - double(ncons);
@@ -313,6 +314,7 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
     return t;
   };
   EnergyTerms et = compute();
+  double topo_energy = 0;   // potential energy added by changes of topology (kept out of the conserved quantity)
   double bath = 0;   // energy taken out of the system by the thermostat and barostat, kcal/mol
   // Nosé–Hoover chains (LAMMPS fix nh): the particles' chain eta and the barostat's chain etap, three each; omega_dot the
   // logarithmic strain rate of the volume (isotropic: one value for all three axes)
@@ -367,6 +369,7 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
       r.conserved = r.total + e;
     } else
       r.conserved = r.total + bath + (o.barostat != Barostat::None ? o.pressure * r.volume / kAtm : 0.0);
+    r.conserved -= topo_energy;
     r.pull_force = pull_f;
     r.pull_disp = pull_x;
     for (int k = 0; k < 3; ++k) r.wall_force[k] = wall_f[k];
@@ -666,6 +669,33 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
       if (ncons) constraint_virial();
     }
 
+    if (o.topology && o.topology_every > 0 && step % o.topology_every == 0) {
+      // bond exchange: the callback works on the run's structure and force field; the evaluators follow what it changed
+      for (size_t i = 0; i < n; ++i) s.atoms[i].pos = {x[3 * i], x[3 * i + 1], x[3 * i + 2]};
+      auto potential = [&] {
+        if (ff.atom_type.size() != n) throw FieldError("bond exchange: the force field put in is for another number of atoms");
+        ev.reload();
+        if (ev_fast) ev_fast->reload();
+        ev.energies(true);
+        std::vector<double> fp;
+        double u = ev.compute(x, cell, fp).total();
+        if (ev_fast) {
+          const EnergyTerms tb = ev_fast->compute(x, cell, fp);
+          u += tb.bond + tb.angle + tb.dihedral + tb.improper;
+        }
+        return u;
+      };
+      const double u0 = potential();   // with every pair energy (a step without a thermo row may skip them)
+      TopologyContext ctx{s, ff, x, v, cell, step + o.step_offset, target_t(step), potential};
+      if (o.topology(ctx)) {
+        topo_energy += potential() - u0;
+        et = compute();
+        ++rep.topology_changes;
+      } else {
+        ev.reload();   // a trial that was undone may have left the evaluators on a trial field
+        if (ev_fast) ev_fast->reload();
+      }
+    }
     if (o.each_step) o.each_step(et, x, cell, step + o.step_offset);
     if (o.after_step) o.after_step(x, v, cell, step + o.step_offset);
     if (step % std::max(1, o.thermo_every) == 0 || step == o.steps) emit(step);
@@ -694,6 +724,7 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
   rep.steps = o.steps;
   rep.ns_per_day = rep.seconds > 0 ? o.steps * dt * 1e-6 / rep.seconds * 86400 : 0;
   rep.list_builds = ev.list_builds();
+  rep.topology_energy = topo_energy;
   rep.threads = ev.threads();
   char b[256];
   std::snprintf(b, sizeof b, "%lld steps of %.2f fs (%.1f ps) in %.1f s · %.2f ns/day · %d neighbour-list builds · %d threads",

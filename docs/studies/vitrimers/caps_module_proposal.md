@@ -331,7 +331,8 @@ long-time behaviour.
    G(t) and the Arrhenius energy of stress relaxation, against experimental trends.
 2. **ENR vitrimer on a fibre surface.** A fibre surface carrying OH or ester groups (cellulose or natural fibre, PET cord)
    can bond into the ENR network by the same exchange. Interface welding (bridges, B(z)) and pull-out work before and after
-   healing with `caps pull`. Which fibre to model is the user's choice and still open.
+   healing with `caps pull`. The user's composites use cellulose / natural fibres (decided 2026-10-24), so the
+   surface is cellulose: its hydroxyls take part in transesterification with the ENR network's beta-hydroxy esters.
 3. **Sulfur-cured NR and SBR (polysulfide exchange).** S-S bridges swap when hot. Stress relaxation and crack healing
    compared for mono-, di- and polysulfide crosslinks, using the existing sulfur cure and sulfur census. The exchange
    barrier of aliphatic polysulfides is not in any paper read here; it needs a CAPS QM calculation on model compounds.
@@ -362,4 +363,56 @@ Not in E0, by design: Tv from the thermal-expansion hinge uses the existing `fit
 scan with exchange on). The Studio page waits for E8. The partner tables that `caps exchange memory` reads have to be
 written from LAMMPS output by the user until CAPS's own engine exchanges bonds (E1, E2).
 
-Next: E1, mutable topology in the MD engine.
+**E1 (mutable topology) is built** (2026-10-24), in `core/include/caps/topology_edit.hpp`, `core/src/topology_edit.cpp`,
+`Evaluator::reload()` and `DynamicsOptions::topology`:
+
+- `TopologyEditor` breaks and makes any bonds in one change (a swap of partners, or bonds broken or made alone) and
+  rebuilds the force field around them from the force field's own terms by type: bonds (harmonic, FENE and the other
+  extended forms, class II quartic), angles with Urey–Bradley terms, proper torsions, impropers (Fourier, harmonic,
+  inversion), 1-4 pairs with their own scales, and exclusions by the rule the force field used (1-2 only for
+  `special_bonds fene`, 1-2/1-3/1-4 for all-atom force fields). A change the tables cannot describe throws and leaves the
+  structure and the force field as they were.
+- `Evaluator::reload()` takes a force field changed in place.
+- `DynamicsOptions::topology` calls a callback every `topology_every` steps with the run's own structure and force
+  field. The callback may edit them, or put in a force field assigned again to the changed structure (the route for
+  chemistry the tables cannot describe: new atom types, class II cross terms). `ctx.potential()` gives the energy for a
+  Metropolis test. The energy the changes add is kept out of the conserved quantity.
+- Tests (`Topology.*`, 6):
+  - A swap of groups between two butanes and between two toluenes gives the same terms, exclusions, 1-4 pairs and
+    energies, to 10⁻⁸, as GAFF assigned to the new structure from scratch. The same holds for Kremer–Grest chains with
+    bending.
+  - An impossible change leaves everything untouched.
+  - Breaking a bond and making it again restores the energy.
+  - NVE with 29 accepted Metropolis swaps (58 kcal/mol moved): the conserved quantity jitters 0.52 kcal/mol from row to
+    row against 0.48 without swaps.
+  - Rejected swaps restore the energy to 10⁻⁹.
+  - The callback can reassign the force field.
+  - Constraints are refused.
+
+Next: E2, the exchange moves themselves (pair swap with a local energy difference instead of a full evaluation,
+multivalent swap with the Rao bias, bind/unbind) and the `fix bond/swap` export.
+
+## 10. Chemistries the module covers
+
+The user asked (2026-10-24) for every vitrimer and self-healing chemistry, not only the rubber systems of section 8.
+Every family below maps onto the same three operations of the E1 editor, so the engine is common to all of them and the
+chemistry lives in the exchange library (E4):
+
+| Family | Mechanism | Change in the editor | Example systems | Barrier source (section 3.1 or to find) |
+|---|---|---|---|---|
+| Transesterification (beta-hydroxy ester, with Zn, TBD or self-catalysed) | associative | swap (alkoxy groups between esters, through a free OH) | epoxy-acid and epoxy-anhydride vitrimers, ENR + diacid, polyester vitrimers | Bhusal 2021 (14.6 kcal/mol); Yang 2016 (68.18 kJ/mol) |
+| Transcarbamoylation (urethane exchange) | associative or dissociative | swap, or break then make | polyurethane vitrimers | to find (Li 2023 review quotes Fortman's 35.5 to 70.7 kJ/mol) |
+| Transamination of vinylogous urethanes and ureas | associative | swap | VU elastomers, PDMS-VU | Hamzehlou 2022 |
+| Transimination and imine metathesis | associative | swap | imine polyisoprene (NR-like), imine PS and PPG | experimental Ea (Arbe 2023); ML barrier Sun 2023 (paywalled) |
+| Disulfide and polysulfide exchange (metathesis, radical 2+1, thiol-disulfide) | associative (radical step dissociative) | swap, or break then make | aromatic disulfide epoxies, sulfur-cured NR and SBR, disulfide PU | Irigoyen 2022; aliphatic barrier to compute |
+| Diselenide exchange | associative (radical) | swap | diselenide PU | to find |
+| Boronic ester and dioxaborolane metathesis | associative | swap | PBA, PBMA, PB, PDMS vitrimers | Teotonico 2024; Danikas 2026 (experimental) |
+| Siloxane equilibration (silanolate) | associative | swap | PDMS vitrimers, silicone rubber | to find |
+| Transalkylation (sulfonium, triazolium) | associative | swap | poly(thioether) vitrimers | Garcia Villatoro 2026 (experimental 123 kJ/mol) |
+| Acetal and N,O-acetal exchange | associative | swap | bio-based CANs | to find |
+| Diels–Alder (furan–maleimide) | dissociative | break, then make | DA self-healing networks | Vermeersch 2024 ReaxFF (paywalled) |
+| Hindered urea and thiol-Michael | dissociative | break, then make | reversible PU and acrylates | to find |
+| Hydrogen bonds, metal–ligand, ionic clusters | physical | none (force field), or bind/unbind stickers | Chen 2023 NR H-bond network, ionomers | force field only |
+
+The rows marked "to find" need a paper read, or a CAPS QM calculation, before they go into the library. No value is
+copied from another program's parameter files.

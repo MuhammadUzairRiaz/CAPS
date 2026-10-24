@@ -281,6 +281,20 @@ ForceField assign_gaff(const System& s) {
 
 Evaluator::Evaluator(const ForceField& ff, const EnergyOptions& o)
     : ff_(ff), opt_(o), pool_(std::make_unique<ThreadPool>(o.threads > 0 ? o.threads : default_threads())) {
+  setup();
+}
+
+void Evaluator::reload() {
+  // everything taken from the force field again; the threads and the options stay
+  excl_.clear();
+  eps14_.clear();
+  s614_.clear();
+  built_ = false, cl_built_ = false, cl_coef_ = false, cl_pruned_ = false, frozen_ = false;
+  setup();
+}
+
+void Evaluator::setup() {
+  const ForceField& ff = ff_;
   if (ff.cutoff > 0) opt_.cutoff = ff.cutoff;
   if (ff.lj_shift) opt_.tail = false;   // Martini 3: shifted at the cut-off, no tail correction
   if (ff.lj_fsw) {   // CHARMM: switched to zero at the cut-off, no tail correction

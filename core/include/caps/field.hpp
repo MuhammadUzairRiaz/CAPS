@@ -309,8 +309,13 @@ class Evaluator {
   void freeze_pairs(const std::vector<double>& x, const Cell& cell);
   void unfreeze() { frozen_ = false; }
   size_t pairs() const { return pj_.size(); }
+  // The force field this evaluator reads was changed in place (bonds swapped, broken or made, types, charges, bonded
+  // terms or exclusions; the atom count stays): everything taken from it is set up again and the pair list rebuilt at
+  // the next call. Bond-exchange moves call it after each change of topology (caps/topology_edit.hpp).
+  void reload();
 
  private:
+  void setup();
   EnergyTerms compute_placed(const std::vector<double>& x, const Cell& cell, std::vector<double>& f);
   std::vector<double> xv_;           // positions with the virtual sites placed
   void build(const std::vector<double>& x, const Cell& cell);
