@@ -47,7 +47,7 @@ ExchangeEngine::ExchangeEngine(System& s, ForceField& ff, const ExchangeOptions&
   if (o.valence_a < 1 || o.valence_b < 1) throw std::invalid_argument("exchange: valences start at 1");
   eo_.threads = 1, eo_.mixed = false, eo_.alchemical = nullptr, eo_.parts = 3;
   st_.local = o.local;
-  if (o.local && (ff.sw.on || ff.manybody.on() || ff.hbond.on() || !ff.vsites.empty())) {
+  if (o.local && (ff.sw.on || ff.swap3.on() || ff.manybody.on() || ff.hbond.on() || !ff.vsites.empty())) {
     st_.local = false;
     st_.note = "the force field has many-body terms, hydrogen bonds or virtual sites: every move is weighed with the whole system's energy";
   }

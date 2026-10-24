@@ -107,6 +107,30 @@ struct StillingerWeber {
   std::vector<char> atom;   // per atom: takes part
 };
 
+// Sciortino's swap model for vitrimers and other associative networks (F. Sciortino, Eur. Phys. J. E 40, 3 (2017); as
+// written by Ciarella, Sciortino & Ellenbroek, Phys. Rev. Lett. 121, 058003 (2018), Eqs. 1–3). Reactive sites of
+// complementary classes attract by a generalised Lennard-Jones pair, v(r) = 4ε[(σ/r)^n − (σ/r)^m] below rc (20-10 in the
+// papers), and every site i with two partners j, k within reach adds the three-body term λ ε v̂(r_ij) v̂(r_ik), with
+// v̂ = 1 inside the pair's minimum r_min = 2^{1/(n−m)} σ and −v(r)/ε beyond it. The three-body term cancels the second
+// bond a site would gain, so a partner swaps through a triplet at a barrier of about ε(λ − 1) and no site keeps two
+// partners. Bonds are not listed: they are where the pair is. Sites and pairs are found by their own cell list (their
+// reach may exceed the force field's cut-off); the pairs the force field excludes (bonded) take no part. The site
+// classes' own pair interaction (WCA, say) stays as the types give it: switch it off with pair_override when the model
+// wants only the swap attraction between sites.
+struct SwapModel {
+  struct Pair {
+    int a = 1, b = 2;             // the site classes that react (a == b: sites of one class react with each other)
+    double eps = 1, sigma = 1;    // kcal/mol, Å
+    double rc = 2.5;              // cut-off, Å (2.5 σ in the papers)
+    double lambda = 1;            // three-body scale; barrier ≈ ε(λ − 1)
+    int n = 20, m = 10;
+    bool shift = false;           // v shifted to zero at rc (the papers: unshifted)
+  };
+  std::vector<int> site;          // per atom: its class (1, 2, …), 0 for none
+  std::vector<Pair> pairs;
+  bool on() const { return !pairs.empty() && !site.empty(); }
+};
+
 // A literature many-body potential that LAMMPS reads from its own file (Tersoff, Stillinger–Weber, Vashishta, EAM …),
 // for some atom types: a crystal or filler in a polymer. CAPS does not evaluate it: in CAPS the pairs among its types
 // carry nothing (runs hold those atoms still), the LAMMPS export overlays the style on the other pair terms and reads the
@@ -181,6 +205,7 @@ struct ForceField {
   bool per_pair14() const { return !pairs14_lj.empty(); }
   std::vector<std::vector<uint32_t>> excluded;   // per atom, sorted: 1-2, 1-3 and 1-4 partners, left out of the pair list
   StillingerWeber sw;                         // many-body term (mW water); counted in the vdW energy
+  SwapModel swap3;                            // Sciortino's swap model (vitrimers); counted in the vdW energy
   ManyBodyFile manybody;                      // a literature many-body potential for some types (LAMMPS only)
   double lj14 = 0.5, coul14 = 1.0 / 1.2;
   bool keep13 = false;                        // 1-3 pairs interact in full (MARTINI: special_bonds 0 1 1)

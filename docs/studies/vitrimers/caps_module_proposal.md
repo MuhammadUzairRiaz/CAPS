@@ -416,8 +416,25 @@ and `write_kg_bond_swap` in `core/src/kremer_grest.cpp`:
   - swaps run during MD;
   - the LAMMPS deck has the right content.
 
-Next: E3, Sciortino's three-body swap potential and its virial in the CG evaluator (continuous swaps with no Monte Carlo),
-then E4, the exchange chemistry library.
+**E3 (three-body swap potential) is built** (2026-10-24), as `SwapModel` (`ForceField::swap3`) and
+`swap_model_terms` in `core/src/field.cpp`:
+
+- Sciortino's potential as Ciarella et al. 2018 write it, with a shift option:
+  - a generalised Lennard-Jones pair (20-10 by default) between complementary site classes;
+  - the three-body term λ ε v̂ v̂ on every site with two partners.
+- Sites are found by their own cell list. Bonded pairs are excluded. Each distance gets its virial term, so stress
+  and G(t) include the triplets.
+- Tests (`SwapModel.*`, 4):
+  - the barrier ε(λ − 1) comes out exactly;
+  - forces match finite differences, and the virial matches stretch and shear strain derivatives;
+  - the cell-list sums equal a direct reference over 200 sites;
+  - exclusions are honoured and a too-small cell is refused;
+  - NVE with pairs forming and swapping conserves energy.
+
+Not in E3: a command-line or Studio way to set up the model (sites and pairs are set on the force field from C++ for
+now), and a builder for star or telechelic networks; both belong with E6 and E8.
+
+Next: E4, the exchange chemistry library.
 
 ## 10. Chemistries the module covers
 

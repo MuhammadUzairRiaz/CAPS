@@ -138,6 +138,8 @@ const Cite kCites[] = {
     {"sides2004", "@article{sides2004,\n  author = {Sides, S. W. and Grest, G. S. and Stevens, M. J. and Plimpton, S. J.},\n  title = {Effect of end-tethered polymers on surface adhesion of glassy polymers},\n  journal = {J. Polym. Sci. B Polym. Phys.}, volume = {42}, pages = {199--208}, year = {2004}, doi = {10.1002/polb.10672}\n}"},
     {"rao2024", "@article{rao2024,\n  author = {Rao, P. and Xia, X. and Ni, R.},\n  title = {A bond swap algorithm for simulating dynamically crosslinked polymers},\n  journal = {J. Chem. Phys.}, volume = {160}, pages = {061102}, year = {2024}, doi = {10.1063/5.0186553}\n}"},
     {"wilcoxson2026", "@misc{wilcoxson2026,\n  author = {Wilcoxson, T. A. and Li, T. and Holoman, T. R. and Mitra, G. and Truskett, T. M. and Hocky, G. M.},\n  title = {Simulation and network assembly pipelines for dynamically bonded soft materials},\n  howpublished = {arXiv:2609.21204}, year = {2026}, doi = {10.48550/arXiv.2609.21204}\n}"},
+    {"sciortino2017", "@article{sciortino2017,\n  author = {Sciortino, F.},\n  title = {Three-body potential for simulating bond swaps in molecular dynamics},\n  journal = {Eur. Phys. J. E}, volume = {40}, pages = {3}, year = {2017}, doi = {10.1140/epje/i2017-11496-5}\n}"},
+    {"ciarella2018", "@article{ciarella2018,\n  author = {Ciarella, S. and Sciortino, F. and Ellenbroek, W. G.},\n  title = {Dynamics of vitrimers: defects as a highway to stress relaxation},\n  journal = {Phys. Rev. Lett.}, volume = {121}, pages = {058003}, year = {2018}, doi = {10.1103/PhysRevLett.121.058003}\n}"},
 };
 
 }  // namespace
