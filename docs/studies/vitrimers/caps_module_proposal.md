@@ -467,8 +467,28 @@ Gaps the library shows openly:
 - Quoted, not read, for transesterification (Bhusal 2021), transcarbamoylation (Fortman) and sulfenamides.
 - The aliphatic polysulfide barrier of sulfur-cured rubber is to be computed with CAPS's QM path.
 
-Next: E5, all-atom exchange (template moves in CAPS's engine, fix bond/react exchange export with the Arrhenius
-probability).
+**E5 (all-atom exchange) is built** (2026-10-24):
+
+- A template move (`ExchangeKind::Template`) in CAPS's own engine:
+  - the sites come from any reaction scheme of the library, found by chemistry;
+  - the bonds are broken and made through the TopologyEditor, with a local ΔU;
+  - acceptance uses the ratio of matches before and after (the way back is the same template on the products).
+- Templates that move a hydrogen to a new partner or delete atoms are refused in CAPS's engine. Positions would have to
+  move too, so these run in LAMMPS instead: transesterification, transimination, VU and carbamate exchange.
+- `BondReactOptions::barrier` and `t_ref` scale every reaction's prob by exp(−E_a/R (1/T − 1/T_ref)), capped at 1.
+  `caps exchange bond-react DATA -o STEM --chemistry ID [--temp T --t-ref T]` writes the fix bond/react deck of a library
+  chemistry. Exchange templates match their own products, so the exchange runs both ways.
+- `caps exchange run --kind template --chemistry ID` runs the template move in CAPS.
+- Tests:
+  - `ExchangeMoves.TemplateExchangeAllAtom`: disulfide metathesis on UFF dimethyl disulfides. The local ΔU equals the
+    whole system's, rejected moves are undone exactly, and the sulfurs keep one S and one C.
+  - `ExchangeMoves.BondReactProbabilityFollowsArrhenius`: the deck's prob is the Arrhenius factor.
+
+Not in E5: moving hydrogens within CAPS's own engine (a local relaxation after the change), and the bond/react Arrhenius
+constraint of the map file (its syntax is still to be checked against the full manual page; prob scaling is used
+instead).
+
+Next: E6, the protocols (step strain, Tv scan, creep, heal, weld, recycle) and the cut, gap, crack and fragment builders.
 
 ## 10. Chemistries the module covers
 

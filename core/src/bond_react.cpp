@@ -747,7 +747,9 @@ BondReactReport write_bond_react(const System& s0, const std::vector<ReactionTem
     molecule_lines.push_back("molecule        " + var.name + "_pre " + fn);
     molecule_lines.push_back("molecule        " + var.name + "_post " + fp);
     const size_t k = size_t(var.site.reaction);
-    const double prob = t.probability * (wmax > 0 ? o.weights[k] / wmax : 1.0);
+    // exchange chemistries: the rate at the run's temperature relative to t_ref, exp(−E_a/R (1/T − 1/T_ref)), capped at 1
+    const double arr = o.barrier > 0 && o.t_ref > 0 ? std::min(1.0, std::exp(-o.barrier / 1.98720425864083e-3 * (1.0 / o.temperature - 1.0 / o.t_ref))) : 1.0;
+    const double prob = t.probability * (wmax > 0 ? o.weights[k] / wmax : 1.0) * arr;
     const double rmax = o.rmax > 0 ? std::min(o.rmax, t.capture) : t.capture;
     std::string rm;
     char b[512];

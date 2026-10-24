@@ -48,6 +48,7 @@
 #include "caps/exchange_analysis.hpp"
 #include "caps/exchange_moves.hpp"
 #include "caps/exchange_library.hpp"
+#include "caps/bond_react.hpp"
 #include "caps/kremer_grest.hpp"
 #include "caps/grow.hpp"
 #include "caps/io.hpp"
@@ -223,6 +224,7 @@ int usage() {
                "               | caps exchange list   |   caps exchange show CHEMISTRY   (exchange chemistries and their barriers, data/exchange)\n"
                "               | caps exchange run DATA -o OUT [--chemistry ID] --kind swap|shift|bind [--sites SEL] [--partners SEL] [--labels chain|ends] [--capture 1.3]\n"
                "                 [--barrier E] [--binding E] [--every 10] [--attempts 1] [--steps 10000] [--temp 300] [--dt 1] [--kg [--k-theta K] | --ff FF.json]\n"
+               "               | caps exchange bond-react DATA -o STEM --chemistry ID [--temp 300] [--t-ref T] [--steps N] [--ff FF.json]   (LAMMPS fix bond/react)\n"
                "               | caps exchange bond-swap DATA -o STEM [--sites SEL] [--stickers | --both-ends] [--every 50] [--fraction 0.5] [--cutoff 1.3] [--seed 1] [--steps N] [--k-theta K]\n"
                "  caps frames  FILE OUT.lammpstrj|dcd|xyz|pdb|gro|trr [--topology DATA] [--first N] [--last N] [--stride N]   (read thinned)\n"
                "  caps convert FILE OUT.data|xyz|pdb|mol2|car|gro|sdf|cif|vasp|POSCAR [--topology DATA]   (.car: with its .mdf)\n"
@@ -423,7 +425,7 @@ const std::set<std::string>& known_options() {
     "--tmax", "--to", "--tol", "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing", "--units",
     "--polymer", "--crystal", "--crystal-cells", "--amorphous", "--loops", "--bridges", "--tails", "--reentry", "--analyse",
     "--corr-ps", "--long", "--swap-every", "--transient", "--dimensionality", "--thickness",
-    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
+    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
   return k;
 }
 
@@ -3340,6 +3342,54 @@ int main(int argc, char** argv) {
           if (!c.notes.empty()) std::printf("  note: %s\n", c.notes.c_str());
           return 0;
         }
+        // a chemistry's reaction template, from its scheme in data/reactions/library.json
+        auto chemistry_template = [&](const ExchangeChemistry& c) {
+          if (c.scheme.empty()) throw std::invalid_argument(c.id + " has no reaction scheme yet (see caps exchange show " + c.id + ")");
+          for (const std::string& root : caps_roots()) {
+            const std::string path = root + "/data/reactions/library.json";
+            if (root.empty() || !std::filesystem::exists(path)) continue;
+            std::ifstream in(path);
+            std::stringstream ss;
+            ss << in.rdbuf();
+            const Json lib = Json::parse(ss.str());
+            for (const auto& e : lib["reactions"].items()) {
+              if (e.text("id") != c.scheme) continue;
+              std::vector<std::string> rs, ps;
+              for (const auto& r : e["reactants"].items()) rs.push_back(r.text("smiles"));
+              for (const auto& p : e["products"].items()) ps.push_back(p.text("smiles"));
+              return template_from_scheme(rs, ps, c.scheme);
+            }
+          }
+          throw std::runtime_error("scheme " + c.scheme + " not found in data/reactions/library.json");
+        };
+        if (sub == "bond-react") {
+          // LAMMPS fix bond/react for an exchange chemistry, its prob scaled by the Arrhenius factor of its barrier
+          if (pos.size() < 2 || !o.count("-o") || !o.count("--chemistry")) return usage();
+          System s = load(pos[1], o);
+          const auto lib = exchange_lib();
+          const auto& c = find_exchange_chemistry(lib, o["--chemistry"]);
+          const ReactionTemplate t = chemistry_template(c);
+          BondReactOptions bo;
+          if (o.count("--temp")) bo.temperature = std::stod(o["--temp"]);
+          if (o.count("--steps")) bo.steps = std::stoll(o["--steps"]);
+          if (o.count("--seed")) bo.seed = std::stoull(o["--seed"]);
+          if (o.count("--t-ref")) {
+            bo.t_ref = std::stod(o["--t-ref"]);
+            if (!std::isfinite(c.default_kcal_per_mol)) throw std::invalid_argument(c.id + " has no default barrier: --t-ref has nothing to scale");
+            bo.barrier = c.default_kcal_per_mol;
+          }
+          auto field = [&](const System& x) {
+            System y = x;
+            return std::make_shared<const ForceField>(cli_forcefield(y, o, true));
+          };
+          const std::filesystem::path stem(o["-o"]);
+          const auto rep = write_bond_react(s, {t}, field, stem.has_parent_path() ? stem.parent_path().string() : ".", stem.filename().string(), bo);
+          std::printf("%s: %zu template variant%s; prob scaled by %.4g (barrier %.4g kcal/mol, %g K against %g K)\n", c.id.c_str(), rep.variants.size(),
+                      rep.variants.size() == 1 ? "" : "s",
+                      bo.barrier > 0 ? arrhenius_probability(bo.barrier, bo.temperature, bo.t_ref) : 1.0, bo.barrier, bo.temperature, bo.t_ref);
+          for (const auto& f : rep.files) std::printf("wrote %s\n", f.c_str());
+          return 0;
+        }
         if (sub == "run") {
           // CAPS's own MD with exchange moves (caps/exchange_moves.hpp)
           if (pos.size() < 2 || !o.count("-o")) return usage();
@@ -3355,7 +3405,12 @@ int main(int argc, char** argv) {
             std::printf("chemistry %s: %s moves, barrier %.4g kcal/mol, capture %.4g A\n", o["--chemistry"].c_str(), to_string(xo.kind), xo.barrier, xo.capture);
           }
           if (o.count("--kind") || !o.count("--chemistry")) xo.kind = exchange_kind_from_string(o.count("--kind") ? o["--kind"] : "swap");
-          xo.group_a = cli_selection(s, o.count("--sites") ? o["--sites"] : "all");
+          if (xo.kind == ExchangeKind::Template) {
+            if (!o.count("--chemistry")) throw std::invalid_argument("--kind template takes its template from --chemistry");
+            const auto lib = exchange_lib();
+            xo.templates = {chemistry_template(find_exchange_chemistry(lib, o["--chemistry"]))};
+          }
+          if (xo.kind != ExchangeKind::Template || o.count("--sites")) xo.group_a = cli_selection(s, o.count("--sites") ? o["--sites"] : "all");
           if (o.count("--partners")) xo.group_b = cli_selection(s, o["--partners"]);
           if (o.count("--labels")) {
             if (o["--labels"] != "chain" && o["--labels"] != "ends") throw std::invalid_argument("--labels takes chain or ends");

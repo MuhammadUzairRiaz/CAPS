@@ -10,6 +10,10 @@
 //   Shift  associative exchange with valences (addition–elimination; multivalent linkers, polysulfide sulfur, the
 //          pivot–residue model of Rao, Xia & Ni 2024): a pivot of group A bonded to a residue r0 of group B takes a
 //          residue r1 of B within the capture distance that has a valence left, and lets r0 go.
+//   Template  any exchange a React template describes (the schemes of data/reactions, data/exchange): its sites found by
+//          chemistry within the template's capture distance, its bonds broken and made as it says, accepted with the
+//          ratio of the matches before and after (the way back is the same template on the products). Templates that
+//          move a hydrogen to a new partner or delete atoms run in LAMMPS (fix bond/react) instead.
 //   Bind   dissociative exchange (Diels–Alder, hindered ureas, reversible stickers): a site of A and a site of B (or two of
 //          A when B is empty) within the capture distance bond, each while it has a valence left, or a bond between them
 //          breaks; the binding constant K = exp(ε/k_B T) weighs bonded against free.
@@ -31,13 +35,14 @@
 
 #include "caps/dynamics.hpp"
 #include "caps/field.hpp"
+#include "caps/react.hpp"
 #include "caps/system.hpp"
 #include "caps/topology_edit.hpp"
 
 namespace caps {
 
-enum class ExchangeKind { Swap, Shift, Bind };
-ExchangeKind exchange_kind_from_string(const std::string& s);   // "swap" | "shift" | "bind"
+enum class ExchangeKind { Swap, Shift, Bind, Template };
+ExchangeKind exchange_kind_from_string(const std::string& s);   // "swap" | "shift" | "bind" | "template"
 const char* to_string(ExchangeKind k);
 
 struct ExchangeOptions {
@@ -52,6 +57,7 @@ struct ExchangeOptions {
   int attempts = 1;                  // moves tried at each call
   uint64_t seed = 1;
   bool local = true;                 // ΔU from the atoms near the change (false: the whole system's energy)
+  std::vector<ReactionTemplate> templates;   // template: the exchanges to try (one picked at random each move)
 };
 
 struct ExchangeStats {
@@ -82,6 +88,7 @@ class ExchangeEngine {
  private:
   bool try_swap(const std::vector<double>& x, const Cell& cell, double beta, const std::function<double()>& potential);
   bool try_shift(const std::vector<double>& x, const Cell& cell, double beta, const std::function<double()>& potential);
+  bool try_template(const std::vector<double>& x, const Cell& cell, double beta, const std::function<double()>& potential);
   bool try_bind(const std::vector<double>& x, const Cell& cell, double beta, const std::function<double()>& potential);
   bool decide(const std::vector<TopologyEditor::Pair>& broken, const std::vector<TopologyEditor::Pair>& made, double log_ratio, double beta,
               const std::vector<double>& x, const Cell& cell, const std::function<double()>& potential);

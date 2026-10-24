@@ -22,10 +22,13 @@ ExchangeKind exchange_kind_from_string(const std::string& s) {
   if (s == "swap") return ExchangeKind::Swap;
   if (s == "shift") return ExchangeKind::Shift;
   if (s == "bind") return ExchangeKind::Bind;
-  throw std::invalid_argument("exchange kind must be swap, shift or bind (not '" + s + "')");
+  if (s == "template") return ExchangeKind::Template;
+  throw std::invalid_argument("exchange kind must be swap, shift, bind or template (not '" + s + "')");
 }
 
-const char* to_string(ExchangeKind k) { return k == ExchangeKind::Swap ? "swap" : k == ExchangeKind::Shift ? "shift" : "bind"; }
+const char* to_string(ExchangeKind k) {
+  return k == ExchangeKind::Swap ? "swap" : k == ExchangeKind::Shift ? "shift" : k == ExchangeKind::Bind ? "bind" : "template";
+}
 
 ExchangeEngine::ExchangeEngine(System& s, ForceField& ff, const ExchangeOptions& o, const EnergyOptions& eo)
     : s_(s), ff_(ff), o_(o), eo_(eo), ed_(s, ff), rng_(o.seed) {
@@ -40,7 +43,14 @@ ExchangeEngine::ExchangeEngine(System& s, ForceField& ff, const ExchangeOptions&
     if (in_a_[b]) throw std::invalid_argument("exchange: an atom cannot be in both groups");
     in_b_[b] = 1;
   }
-  if (o.group_a.empty()) throw std::invalid_argument("exchange: group A is empty");
+  if (o.kind == ExchangeKind::Template) {
+    if (o.templates.empty()) throw std::invalid_argument("exchange: template moves need a template");
+    for (const auto& t : o.templates)
+      if (!t.move.empty() || !t.remove.empty())
+        throw std::invalid_argument("exchange: template " + t.name + " moves a hydrogen or deletes atoms; run it in LAMMPS (caps exchange bond-react)");
+  } else if (o.group_a.empty()) {
+    throw std::invalid_argument("exchange: group A is empty");
+  }
   if (o.kind == ExchangeKind::Shift && o.group_b.empty()) throw std::invalid_argument("exchange: a shift needs residues (group B)");
   if (!o.labels.empty() && o.labels.size() != n) throw std::invalid_argument("exchange: one label per atom");
   if (!(o.capture > 0)) throw std::invalid_argument("exchange: the capture distance must be positive");
@@ -275,6 +285,36 @@ bool ExchangeEngine::try_shift(const std::vector<double>& x, const Cell& cell, d
   return decide({pair_of(p, r0)}, {pair_of(p, r1)}, std::log(double(att.size()) / back), beta, x, cell, potential);
 }
 
+bool ExchangeEngine::try_template(const std::vector<double>& x, const Cell& cell, double beta, const std::function<double()>& potential) {
+  ++st_.attempts;
+  auto u = [&] { return std::uniform_real_distribution<double>(0, 1)(rng_); };
+  const auto& t = o_.templates[std::min(o_.templates.size() - 1, size_t(u() * double(o_.templates.size())))];
+  // the matches at the run's positions (the structure's positions are the run's: the dynamics callback copies them in)
+  for (size_t i = 0; i < s_.atoms.size(); ++i) s_.atoms[i].pos = {x[3 * i], x[3 * i + 1], x[3 * i + 2]};
+  const auto matches = find_matches(s_, t);
+  if (matches.empty()) { ++st_.no_candidate; return false; }
+  const auto& m = matches[std::min(matches.size() - 1, size_t(u() * double(matches.size())))];
+  auto at = [&](int map) {
+    for (size_t q = 0; q < t.atoms.size(); ++q)
+      if (t.atoms[q].map == map) return m.atoms[q];
+    throw std::invalid_argument("exchange: template " + t.name + " names map atom " + std::to_string(map) + " it does not have");
+  };
+  std::vector<Pair> broken, made;
+  for (const auto& b : t.brk) broken.push_back(pair_of(at(b.first), at(b.second)));
+  for (const auto& f : t.form) made.push_back(pair_of(at(f.first), at(f.second)));
+  // the way back is the same template on the products: the ratio of the matches before and after
+  try {
+    ed_.change(broken, made);
+  } catch (const TopologyError&) {
+    ++st_.unparameterised;
+    return false;
+  }
+  const double back = double(find_matches(s_, t).size());
+  ed_.change(made, broken);
+  if (!(back > 0)) { ++st_.no_candidate; return false; }
+  return decide(broken, made, std::log(double(matches.size()) / back), beta, x, cell, potential);
+}
+
 bool ExchangeEngine::try_bind(const std::vector<double>& x, const Cell& cell, double beta, const std::function<double()>& potential) {
   ++st_.attempts;
   auto u = [&] { return std::uniform_real_distribution<double>(0, 1)(rng_); };
@@ -341,9 +381,10 @@ bool ExchangeEngine::run(const std::vector<double>& x, const Cell& cell, double 
   const double beta = 1.0 / (kB * temperature);
   bool any = false;
   for (int t = 0; t < o_.attempts; ++t) {
-    const bool kept = o_.kind == ExchangeKind::Swap    ? try_swap(x, cell, beta, potential)
-                      : o_.kind == ExchangeKind::Shift ? try_shift(x, cell, beta, potential)
-                                                       : try_bind(x, cell, beta, potential);
+    const bool kept = o_.kind == ExchangeKind::Swap       ? try_swap(x, cell, beta, potential)
+                      : o_.kind == ExchangeKind::Shift    ? try_shift(x, cell, beta, potential)
+                      : o_.kind == ExchangeKind::Template ? try_template(x, cell, beta, potential)
+                                                          : try_bind(x, cell, beta, potential);
     any = any || kept;
   }
   return any;
