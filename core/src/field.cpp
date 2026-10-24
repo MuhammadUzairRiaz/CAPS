@@ -284,6 +284,143 @@ Evaluator::Evaluator(const ForceField& ff, const EnergyOptions& o)
   setup();
 }
 
+namespace {
+
+// Sciortino's swap model (SwapModel): the generalised Lennard-Jones pair of every two complementary sites within its
+// cut-off, then the three-body term of every site with two partners within reach. Energies go to e.vdw, forces to f (atom
+// order), and each term's forces along its distances to the virial: a potential of distances r_p has the virial tensor
+// −Σ_p (∂U/∂r_p) d_p d_pᵀ / r_p (Ciarella, Sciortino & Ellenbroek 2018, appendix B).
+void swap_model_terms(const ForceField& ff, const std::vector<double>& x, const Cell& cell, std::vector<double>& f, EnergyTerms& e) {
+  const SwapModel& S = ff.swap3;
+  const size_t n = S.site.size();
+  int maxc = 0;
+  for (int c : S.site) maxc = std::max(maxc, c);
+  for (const auto& p : S.pairs) maxc = std::max(maxc, std::max(p.a, p.b));
+  const size_t M = size_t(maxc) + 1;
+  struct Par { double eps, sg, rc, rc2, lam, rmin, vshift; int n, m; };
+  std::vector<Par> par;
+  std::vector<int> pidx(M * M, -1);
+  double maxrc = 0;
+  auto raw = [](const Par& q, double r, double& dvdr) {
+    const double sn = std::pow(q.sg / r, q.n), sm = std::pow(q.sg / r, q.m);
+    dvdr = 4 * q.eps * (-q.n * sn + q.m * sm) / r;
+    return 4 * q.eps * (sn - sm);
+  };
+  for (const auto& p : S.pairs) {
+    if (p.n <= p.m || p.eps <= 0 || p.sigma <= 0 || p.rc <= 0) throw FieldError("swap model: needs n > m and positive ε, σ and cut-off");
+    Par q{p.eps, p.sigma, p.rc, p.rc * p.rc, p.lambda, p.sigma * std::pow(2.0, 1.0 / (p.n - p.m)), 0, p.n, p.m};
+    if (q.rmin >= q.rc) throw FieldError("swap model: the pair's minimum lies beyond its cut-off");
+    double d;
+    if (p.shift) q.vshift = raw(q, p.rc, d);
+    pidx[size_t(p.a) * M + size_t(p.b)] = pidx[size_t(p.b) * M + size_t(p.a)] = int(par.size());
+    par.push_back(q);
+    maxrc = std::max(maxrc, p.rc);
+  }
+  std::vector<uint32_t> sites;
+  for (uint32_t i = 0; i < n; ++i)
+    if (S.site[i] > 0) sites.push_back(i);
+  auto pos = [&](uint32_t i) { return Vec3{x[3 * i], x[3 * i + 1], x[3 * i + 2]}; };
+  auto excluded = [&](uint32_t i, uint32_t j) {
+    return i < ff.excluded.size() && std::binary_search(ff.excluded[i].begin(), ff.excluded[i].end(), j);
+  };
+  struct Nb { uint32_t j; Vec3 d; double r; int p; };
+  std::vector<std::vector<Nb>> nbs(n);
+  double esum = 0;
+  auto push = [&](uint32_t i, const Vec3& fv) { f[3 * i] += fv[0]; f[3 * i + 1] += fv[1]; f[3 * i + 2] += fv[2]; };
+  auto vir = [&](const Vec3& d, const Vec3& fv) {
+    e.virial += dot(d, fv);
+    e.w[0] += d[0] * fv[0]; e.w[1] += d[1] * fv[1]; e.w[2] += d[2] * fv[2];
+    e.w[3] += 0.5 * (d[0] * fv[1] + d[1] * fv[0]); e.w[4] += 0.5 * (d[0] * fv[2] + d[2] * fv[0]); e.w[5] += 0.5 * (d[1] * fv[2] + d[2] * fv[1]);
+  };
+  // the pair term, and each site's partners for the three-body term
+  auto pair = [&](uint32_t i, uint32_t j) {
+    const int k = pidx[size_t(S.site[i]) * M + size_t(S.site[j])];
+    if (k < 0 || excluded(i, j)) return;
+    const Par& q = par[k];
+    Vec3 d = pos(j) - pos(i);
+    if (cell.valid()) d = cell.minimum_image(d);
+    const double r2 = dot(d, d);
+    if (r2 >= q.rc2 || r2 <= 0) return;
+    const double r = std::sqrt(r2);
+    double dvdr;
+    esum += raw(q, r, dvdr) - q.vshift;
+    const Vec3 fj = d * (-dvdr / r);
+    push(j, fj);
+    push(i, fj * -1.0);
+    vir(d, fj);
+    nbs[i].push_back({j, d, r, k});
+    nbs[j].push_back({i, d * -1.0, r, k});
+  };
+  bool binned = false;
+  if (cell.valid()) {
+    double th[3];
+    const Vec3 na = cross(cell.b, cell.c), nb = cross(cell.c, cell.a), nc = cross(cell.a, cell.b);
+    th[0] = cell.volume() / norm(na), th[1] = cell.volume() / norm(nb), th[2] = cell.volume() / norm(nc);
+    for (double t : th)
+      if (t < 2 * maxrc) throw FieldError("swap model: its cut-off must be under half the cell's thickness");
+    int nbin[3];
+    for (int k = 0; k < 3; ++k) nbin[k] = std::max(1, int(th[k] / maxrc));
+    if (nbin[0] >= 3 && nbin[1] >= 3 && nbin[2] >= 3) {
+      binned = true;
+      const size_t nb3 = size_t(nbin[0]) * nbin[1] * nbin[2];
+      std::vector<std::vector<uint32_t>> bin(nb3);
+      std::vector<std::array<int, 3>> where(n);
+      for (uint32_t i : sites) {
+        Vec3 fr = cell.to_fractional(pos(i));
+        std::array<int, 3> b3;
+        for (int k = 0; k < 3; ++k) {
+          const double u = fr[k] - std::floor(fr[k]);
+          b3[k] = std::min(nbin[k] - 1, int(u * nbin[k]));
+        }
+        where[i] = b3;
+        bin[(size_t(b3[0]) * nbin[1] + b3[1]) * nbin[2] + b3[2]].push_back(i);
+      }
+      for (uint32_t i : sites)
+        for (int dx = -1; dx <= 1; ++dx)
+          for (int dy = -1; dy <= 1; ++dy)
+            for (int dz = -1; dz <= 1; ++dz) {
+              const int bx = (where[i][0] + dx + nbin[0]) % nbin[0], by = (where[i][1] + dy + nbin[1]) % nbin[1], bz = (where[i][2] + dz + nbin[2]) % nbin[2];
+              for (uint32_t j : bin[(size_t(bx) * nbin[1] + by) * nbin[2] + bz])
+                if (j > i) pair(i, j);
+            }
+    }
+  }
+  if (!binned)
+    for (size_t a = 0; a < sites.size(); ++a)
+      for (size_t b = a + 1; b < sites.size(); ++b) pair(sites[a], sites[b]);
+  // the three-body term: λ ε v̂(r_ij) v̂(r_ik) for every two partners j, k of a site i
+  auto hat = [&](const Par& q, double r, double& dh) {
+    if (r <= q.rmin) { dh = 0; return 1.0; }
+    double dvdr;
+    const double v = raw(q, r, dvdr) - q.vshift;
+    dh = -dvdr / q.eps;
+    return -v / q.eps;
+  };
+  for (uint32_t i = 0; i < n; ++i) {
+    const auto& L = nbs[i];
+    for (size_t a1 = 0; a1 < L.size(); ++a1)
+      for (size_t a2 = a1 + 1; a2 < L.size(); ++a2) {
+        const Nb& J = L[a1];
+        const Nb& K = L[a2];
+        const Par& pj = par[J.p];
+        const Par& pk = par[K.p];
+        const double c = std::sqrt(pj.lam * pk.lam) * std::sqrt(pj.eps * pk.eps);
+        double dhj, dhk;
+        const double hj = hat(pj, J.r, dhj), hk = hat(pk, K.r, dhk);
+        esum += c * hj * hk;
+        const Vec3 fj = J.d * (-c * dhj * hk / J.r), fk = K.d * (-c * hj * dhk / K.r);
+        push(J.j, fj);
+        push(K.j, fk);
+        push(i, (fj + fk) * -1.0);
+        vir(J.d, fj);
+        vir(K.d, fk);
+      }
+  }
+  e.vdw += esum;
+}
+
+}  // namespace
+
 void Evaluator::reload() {
   // everything taken from the force field again; the threads and the options stay
   excl_.clear();
@@ -303,6 +440,7 @@ void Evaluator::setup() {
   }
   // a relative permittivity εr (MARTINI 15, SDK 80) divides every Coulomb term: charges scaled by 1/√εr throughout
   if (ff.dielectric <= 0) throw FieldError("the relative permittivity must be positive");
+  if (ff.swap3.on() && ff.swap3.site.size() != ff.type_index.size()) throw FieldError("swap model: one site class per atom (0 for none)");
   qeff_ = ff.charge;
   if (ff.dielectric != 1)
     for (auto& c : qeff_) c /= std::sqrt(ff.dielectric);
@@ -2280,6 +2418,7 @@ EnergyTerms Evaluator::compute_placed(const std::vector<double>& x, const Cell& 
     }
     e.vdw += esw;
   }
+  if (ff_.swap3.on()) swap_model_terms(ff_, x, cell, f, e);
   if (pme) {
     // reciprocal part (Fortran), self energy −β/√π Σq², and the neutralising background −π Q²/(2Vβ²) for a net charge
     const PmeGrid grid = pme_grid(cell, beta, opt_.pme_spacing, opt_.pme_order);
