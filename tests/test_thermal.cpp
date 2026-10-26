@@ -206,6 +206,26 @@ TEST(Semicrystalline, UnreachableLayerRefused) {
   EXPECT_THROW(build_semicrystalline(o), std::invalid_argument);
 }
 
+TEST(Semicrystalline, AtomClassesMatchTheSegments) {
+  const System s = build_semicrystalline(small_stack());
+  const SemicrystallineReport a = analyse_semicrystalline(s);
+  ASSERT_EQ(a.atom_class.size(), s.atoms.size());
+  auto sum = [](const std::vector<int>& v) { return std::accumulate(v.begin(), v.end(), 0); };
+  int carbons[5] = {0, 0, 0, 0, 0};
+  for (size_t i = 0; i < s.atoms.size(); ++i)
+    if (s.atoms[i].element == 6) ++carbons[a.atom_class[i]];
+  EXPECT_EQ(carbons[SemicrystallineReport::kLoop], sum(a.loop_units));
+  EXPECT_EQ(carbons[SemicrystallineReport::kBridge], sum(a.bridge_units));
+  EXPECT_EQ(carbons[SemicrystallineReport::kTail], sum(a.tail_units));
+  EXPECT_EQ(carbons[SemicrystallineReport::kNone], 0);
+  EXPECT_GT(carbons[SemicrystallineReport::kStem], 0);
+  // every hydrogen as its carbon
+  for (const auto& b : s.bonds) {
+    const bool hi = s.atoms[b.i].element == 1, hj = s.atoms[b.j].element == 1;
+    if (hi != hj) EXPECT_EQ(a.atom_class[b.i], a.atom_class[b.j]);
+  }
+}
+
 TEST(Thermal, GreenKuboLammpsInputPrintsKappaOnlyWhenTheCorrelationExists) {
   // fix ave/correlate gives f_JJ every p*s steps; a thermo line with trap(f_JJ) at any other step stops LAMMPS
   // ("Fix in variable not computed at compatible time")

@@ -996,6 +996,7 @@ SemicrystallineReport analyse_semicrystalline(const System& s, double p2_cut, in
     return d >= 0 ? 1 : -1;
   };
   std::vector<double> tilts;
+  R.atom_class.assign(n, SemicrystallineReport::kNone);
   for (size_t c = 0; c < chains.size(); ++c) {
     const size_t m = chains[c].size();
     // stems: crystalline runs of at least min_stem atoms whose ends lie on both sides of the middle plane
@@ -1018,6 +1019,16 @@ SemicrystallineReport analyse_semicrystalline(const System& s, double p2_cut, in
     }
     R.stems += int(runs.size());
     if (runs.empty()) continue;
+    auto mark = [&](size_t lo, size_t hi, int8_t k) {   // chain positions lo..hi inclusive
+      for (size_t q = lo; q <= hi && q < m; ++q) R.atom_class[chains[c][q]] = k;
+    };
+    if (runs.front().lo > 0) mark(0, runs.front().lo - 1, SemicrystallineReport::kTail);
+    if (runs.back().hi + 1 < m) mark(runs.back().hi + 1, m - 1, SemicrystallineReport::kTail);
+    for (size_t r = 0; r < runs.size(); ++r) {
+      mark(runs[r].lo, runs[r].hi, SemicrystallineReport::kStem);
+      if (r + 1 < runs.size() && runs[r + 1].lo > runs[r].hi + 1)
+        mark(runs[r].hi + 1, runs[r + 1].lo - 1, runs[r].f_hi == runs[r + 1].f_lo ? SemicrystallineReport::kLoop : SemicrystallineReport::kBridge);
+    }
     R.tails += 2;
     R.tail_units.push_back(int(runs.front().lo));
     R.tail_units.push_back(int(m - 1 - runs.back().hi));
@@ -1035,6 +1046,13 @@ SemicrystallineReport analyse_semicrystalline(const System& s, double p2_cut, in
       }
     }
     R.chain_units.push_back(int(m));
+  }
+  // every other atom (hydrogens) as the classified atom it is bonded to
+  for (const auto& bd : s.bonds) {
+    int8_t& ci = R.atom_class[bd.i];
+    int8_t& cj = R.atom_class[bd.j];
+    if (ci == SemicrystallineReport::kNone && s.atoms[bd.i].element != 6) ci = cj;
+    else if (cj == SemicrystallineReport::kNone && s.atoms[bd.j].element != 6) cj = ci;
   }
   if (!tilts.empty()) {
     double mt = 0, q = 0;

@@ -302,7 +302,8 @@ int usage() {
                "               [--amorphous 4 (nm)] [--loops 0.5 --bridges 0.2 --tails 0.3] [--reentry adjacent|random] [--density 0.855]\n"
                "               [--seed 1] [--ff oplsaa2024|oplsua2024] [--no-relax] [--report R.json] [--lammps-input IN.lmp] [--gromacs STEM]\n"
                "               a lamellar stack: crystalline stems, loops, bridges and tails in the amorphous layer (groups crystal, amorphous)\n"
-               "  caps semicrystalline FILE --analyse [--report R.json]   loops, bridges, tails, P2 crystallinity, profiles of any frame\n"
+               "  caps semicrystalline FILE --analyse [--report R.json] [--labels L.txt]   loops, bridges, tails, P2 crystallinity, profiles\n"
+               "               of any frame; --labels: each atom's id and class (stem, loop, bridge, tail, none; hydrogens as their carbon)\n"
                "  caps grow    -o OUT.data|OUT.pdb|OUT.xyz [--chains 10] [--dp 8] [--density 0.5 | --box 33]\n"
                "               [--tacticity atactic|isotactic|syndiotactic] [--seed 1] [--trans] [--scale 1.0]\n"
                "               [--units '*CC(*)c1ccccc1,*CC(*)(C)C(=O)OC' --sequence homopolymer|alternating|block|random|shuffled|gradient|pattern\n"
@@ -415,7 +416,7 @@ const std::set<std::string>& known_options() {
     "--hold", "--hybrid", "--include-input", "--input", "--insert", "--inter", "--ions", "--itp", "--iterations",
     "--json", "--kspace", "--kspace-accuracy", "--lammps-cutoff", "--units", "--lammps-input", "--lammps-run", "--moltemplate",
     "--lammps-style", "--last", "--layers", "--length", "--list", "--list-templates", "--log", "--lx", "--ly", "--m",
-    "--lookahead", "--martini", "--max-blocks", "--max-torsions", "--moves", "--max-strain", "--md-ps", "--method", "--methods", "--model", "--molecule-size",
+    "--labels", "--lookahead", "--martini", "--max-blocks", "--max-torsions", "--moves", "--max-strain", "--md-ps", "--method", "--methods", "--model", "--molecule-size",
     "--molecules", "--n", "--names", "--neutralise", "--new-velocities", "--no-cell", "--wrap",
     "--no-coulomb", "--no-ions", "--no-orthogonal", "--no-pbc", "--no-pushoff", "--no-relax",
     "--no-tail", "--normal", "--out", "--overlay", "--padding", "--pair", "--particles",
@@ -1680,6 +1681,19 @@ int main(int argc, char** argv) {
         const SemicrystallineReport r = analyse_semicrystalline(s);
         std::printf("%s", semicrystalline_summary(r).c_str());
         if (o.count("--report")) write_report(r, o["--report"]);
+        if (o.count("--labels")) {
+          std::ofstream f(o["--labels"]);
+          if (!f) throw std::runtime_error("cannot write " + o["--labels"]);
+          static const char* names[] = {"none", "stem", "loop", "bridge", "tail"};
+          size_t count[5] = {0, 0, 0, 0, 0};
+          f << "# CAPS semicrystalline labels of " << pos[0] << ": atom id (as in the file) and class; hydrogens as their carbon\n";
+          for (size_t i = 0; i < s.atoms.size(); ++i) {
+            const int k = r.atom_class[i];
+            ++count[k];
+            f << (s.atoms[i].id ? s.atoms[i].id : int64_t(i + 1)) << " " << names[k] << "\n";
+          }
+          std::printf("wrote %s (stem %zu, loop %zu, bridge %zu, tail %zu, none %zu atoms)\n", o["--labels"].c_str(), count[1], count[2], count[3], count[4], count[0]);
+        }
         return 0;
       }
       if (!o.count("-o")) return usage();
