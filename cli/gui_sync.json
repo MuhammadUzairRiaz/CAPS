@@ -1318,7 +1318,8 @@
     "--report": "partial: the report is shown on the page; the JSON file from the command line",
     "--lammps-input": "partial: Export writes LAMMPS files; the equilibration input with the tethered crystal from the command line",
     "--gromacs": "partial: Export writes GROMACS files; the index of the groups from the command line",
-    "--analyse": "Views/Pages/SemicrystallinePage.axaml|Report of the open cell"
+    "--analyse": "Views/Pages/SemicrystallinePage.axaml|Report of the open cell",
+    "--labels": "partial: the page colours the open cell by phase; the per-atom class file for scripts (heat-flux groups) from the command line"
    }
   },
   "thermal": {
