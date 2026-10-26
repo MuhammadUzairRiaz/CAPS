@@ -52,7 +52,8 @@ void keep_atoms(System& s, const std::vector<char>& keep) {
 }
 
 // One run with the protocol's settings and exchange moves; the force field the moves left becomes the protocol's.
-DynamicsReport run(System& s, ProtocolOptions& o, DynamicsOptions d, ExchangeStats& total) {
+// [f0, f1]: the part of the whole protocol this run is, for the progress
+DynamicsReport run(System& s, ProtocolOptions& o, DynamicsOptions d, ExchangeStats& total, double f0 = 0, double f1 = 1) {
   d.field = o.field;
   d.energy = o.energy;
   d.dt = o.dt;
@@ -66,11 +67,23 @@ DynamicsReport run(System& s, ProtocolOptions& o, DynamicsOptions d, ExchangeSta
     d.topology_every = o.exchange_every;
     d.topology = exchange_callback(m, o.energy, st);
   }
+  if (o.progress) {
+    auto own = d.progress;
+    const int64_t steps = std::max<int64_t>(1, d.steps);
+    d.progress = [own, st, &o, &total, f0, f1, steps](const ThermoRow& row) {
+      if (own && !own(row)) return false;
+      ExchangeStats so_far = total;
+      so_far.attempts += st->attempts, so_far.accepted += st->accepted, so_far.no_candidate += st->no_candidate;
+      so_far.unparameterised += st->unparameterised, so_far.relaxed += st->relaxed, so_far.energy += st->energy;
+      return o.progress(f0 + (f1 - f0) * double(row.step) / double(steps), so_far);
+    };
+  }
   DynamicsReport r;
   run_dynamics(s, d, &r);
   if (r.field) o.field = r.field;
   total.attempts += st->attempts, total.accepted += st->accepted, total.no_candidate += st->no_candidate;
   total.unparameterised += st->unparameterised, total.energy += st->energy;
+  total.relaxed += st->relaxed, total.learned += st->learned, total.new_types += st->new_types;
   total.local = st->local;
   if (!st->note.empty()) total.note = st->note;
   return r;
@@ -156,7 +169,9 @@ TvScanResult tv_scan(System& s, ProtocolOptions& o, double t_from, double t_to, 
   TvScanResult r;
   ExchangeStats total;
   const double dir = t_to >= t_from ? 1.0 : -1.0;
-  for (double T = t_from; dir * (t_to - T) >= -1e-9; T += dir * t_step) {
+  const int temps = int(std::floor(std::fabs(t_to - t_from) / t_step + 1e-9)) + 1;
+  int k = 0;
+  for (double T = t_from; dir * (t_to - T) >= -1e-9; T += dir * t_step, ++k) {
     DynamicsOptions d;
     d.temperature = T;
     d.barostat = Barostat::CRescale;
@@ -169,7 +184,7 @@ TvScanResult tv_scan(System& s, ProtocolOptions& o, double t_from, double t_to, 
       return true;
     };
     const int64_t before = total.accepted;
-    run(s, o, d, total);
+    run(s, o, d, total, double(k) / temps, double(k + 1) / temps);
     double rho = 0;
     for (double x : dens) rho += x / double(dens.size());
     r.T.push_back(T);
@@ -194,7 +209,7 @@ HealResult heal_run(System& s, ProtocolOptions& o, const std::vector<int8_t>& si
     d.steps = steps_for(ps / chunks, o.dt);
     d.thermo_every = int(std::max<int64_t>(1, d.steps));
     if (o.npt) d.barostat = Barostat::CRescale, d.pressure = o.pressure;
-    run(s, o, d, r.stats);
+    run(s, o, d, r.stats, double(c) / chunks, double(c + 1) / chunks);
     t += ps / chunks;
     const auto ib = interface_bonds(s, side, axis, plane, 1.0);
     r.t_ps.push_back(t), r.bridges.push_back(double(ib.bridges)), r.crossing.push_back(double(ib.crossing_plane));

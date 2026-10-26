@@ -1120,7 +1120,7 @@
    "group": "Protocols",
    "title": "Healing-test builders and exchange protocols",
    "summary": "The structures a healing test starts from and the runs that measure bond exchange, all with the moves of the exchange page. Builders: a cut removes every bond crossing a plane (by the minimum image); a gap cuts and then moves the upper side away, lengthening the cell, for a weld; a crack removes the atoms within a sphere with their bonds; fragments are cuts at the mid-planes of chosen axes, the pieces a recycling run joins again. Protocols: a step strain stretches the cell along one axis at constant volume and follows the normal stress difference as exchange relaxes it, with a KWW fit; a Tv scan runs NPT at each temperature with exchange and fits a hinge to the specific volume, and an Arrhenius law to the time between accepted moves; a heal run counts the bonds bridging the two sides of a cut, and those crossing its plane, after each chunk of MD (at constant pressure to close a gap). Creep takes the same moves through the creep run's topology hook. Each run hands the force field the moves left to the next, so protocols chain.",
-   "equation": "σ(t) = σ_∥ − (σ_⊥1 + σ_⊥2)/2 ≈ σ₀ exp[−(t/τ)^β],   ⟨τ⟩ = (τ/β) Γ(1/β),   v(T) = v₀ + b_low min(T − T_v, 0) + b_high max(T − T_v, 0)",
+   "equation": "σ(t) = σ_ax − (σ_t1 + σ_t2)/2 ≈ σ₀ exp[−(t/τ)^β],   ⟨τ⟩ = (τ/β) Γ(1/β),   v(T) = v₀ + b_low min(T − T_v, 0) + b_high max(T − T_v, 0)",
    "equation_note": "stress from the pressure tensor (atm × 0.101325 = MPa); the strain keeps the volume: the axis × (1 + ε), the other two × 1/√(1 + ε); the hinge is Tg in a network without exchange",
    "symbols": [
     [
@@ -1142,6 +1142,11 @@
      "bridges",
      "bonds joining atoms that started on opposite sides of the cut",
      "bonds"
+    ],
+    [
+     "σ_ax, σ_t1, σ_t2",
+     "normal stress along the strained axis and across it",
+     "MPa"
     ]
    ],
    "when": "Self-healing, welding and recycling of vitrimer and rubber networks in CAPS: caps exchange cut, gap, crack or fragment builds the start; caps exchange heal-run, step-strain and tv run it with exchange (the options of caps exchange run, or --no-exchange for the permanent network); then caps exchange heal compares healed and intact pulls.",
@@ -1157,7 +1162,7 @@
    "tested": "ExchangeProtocols.Builders (bond counts across a plane, gap, void, fragments), HealRunRebondsACut (bind moves rebond a cut bead-spring network), StepStrainAndTvScan (volume kept, tensile stress after the strain, one specific volume per temperature)",
    "deviation": "MD strain rates and exchange rates are far above experiment; a short heal run counts bonds, not recovered strength, which needs the pulls of caps exchange heal; a Tv hinge needs five temperatures or more",
    "engines": [],
-   "tex": "\\sigma(t) = \\sigma_\\parallel - \\tfrac12\\left(\\sigma_{\\perp 1} + \\sigma_{\\perp 2}\\right) \\approx \\sigma_0\\, e^{-(t/\\tau)^{\\beta}},\\qquad \\langle\\tau\\rangle = \\frac{\\tau}{\\beta}\\,\\Gamma\\!\\left(\\frac{1}{\\beta}\\right),\\qquad v(T) = v_0 + b_\\mathrm{low}\\min(T - T_v, 0) + b_\\mathrm{high}\\max(T - T_v, 0)"
+   "tex": "\\sigma(t) = \\sigma_\\mathrm{ax} - \\tfrac12\\left(\\sigma_{\\mathrm{t}1} + \\sigma_{\\mathrm{t}2}\\right) \\approx \\sigma_0\\, e^{-(t/\\tau)^{\\beta}},\\qquad \\langle\\tau\\rangle = \\frac{\\tau}{\\beta}\\,\\Gamma\\!\\left(\\frac{1}{\\beta}\\right),\\qquad v(T) = v_0 + b_\\mathrm{low}\\min(T - T_v, 0) + b_\\mathrm{high}\\max(T - T_v, 0)"
   },
   {
    "id": "structure-factor",
@@ -2361,7 +2366,7 @@
    "tested": "Exchange.BondMemoryCountsPartnersAndChanges (a fixed and an alternating partner exactly; independent exchange at a fixed rate gives its 1/e time and β = 1), Exchange.TwoStepFitRecoversItsParameters",
    "deviation": "a site that leaves its partner and returns to it between two frames counts as never having left; events between frames are missed by the change count",
    "engines": [],
-   "tex": "c(t) = \\frac{\\sum_{t_0}\\sum_i [\\,p_i(t_0)\\ge 0 \\wedge p_i(t_0+t) = p_i(t_0)\\,]}{\\sum_{t_0}\\sum_i [\\,p_i(t_0)\\ge 0\\,]},\\qquad f(t) = \\tfrac12\\left[1 + e^{-t/\\tau}\\right]\\exp\\!\\left[-\\left(t/\\tau_d\\right)^{\\beta}\\right]"
+   "tex": "c(t) = \\frac{\\sum_{t_0}\\sum_i [\\,p_i(t_0)\\ge 0 \\text{ and } p_i(t_0+t) = p_i(t_0)\\,]}{\\sum_{t_0}\\sum_i [\\,p_i(t_0)\\ge 0\\,]},\\qquad f(t) = \\tfrac12\\left[1 + e^{-t/\\tau}\\right]\\exp\\!\\left[-\\left(t/\\tau_d\\right)^{\\beta}\\right]"
   },
   {
    "id": "healing-efficiency",
@@ -3441,7 +3446,7 @@
    "tested": "SwapModel.BarrierIsEpsilonTimesLambdaMinusOne (exact), ForcesVirialAndSumsMatchTheEnergy (finite differences of energy for forces and for stretch and shear strains; a direct sum over 200 sites to 10⁻⁹), ExclusionsAndCellSize, NveConservesEnergy",
    "deviation": "with several pair types a triplet takes the geometric means of its two pairs' λ and ε (the papers use one pair type); LAMMPS has no such pair style, so CAPS runs the model itself (the papers used HOOMD-blue)",
    "engines": [],
-   "tex": "V_3 = \\lambda\\varepsilon \\sum_i \\sum_{j<k} \\hat v(r_{ij})\\,\\hat v(r_{ik}),\\qquad \\hat v(r) = \\begin{cases} 1 & r \\le r_\\mathrm{min} \\\\ -v(r)/\\varepsilon & r > r_\\mathrm{min} \\end{cases},\\qquad v(r) = 4\\varepsilon\\left[\\left(\\tfrac{\\sigma}{r}\\right)^{20} - \\left(\\tfrac{\\sigma}{r}\\right)^{10}\\right]"
+   "tex": "V_3 = \\lambda\\varepsilon \\sum_i \\sum_{j<k} \\hat v(r_{ij})\\,\\hat v(r_{ik}),\\qquad \\hat v(r) = 1 \\quad (r \\le r_\\mathrm{min}),\\quad \\hat v(r) = -v(r)/\\varepsilon \\quad (r > r_\\mathrm{min}),\\qquad v(r) = 4\\varepsilon\\left[\\left(\\tfrac{\\sigma}{r}\\right)^{20} - \\left(\\tfrac{\\sigma}{r}\\right)^{10}\\right]"
   },
   {
    "id": "termination-height",

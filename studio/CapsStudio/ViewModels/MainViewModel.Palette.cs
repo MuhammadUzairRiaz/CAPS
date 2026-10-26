@@ -156,6 +156,7 @@ public sealed partial class MainViewModel
             ("Mesoscale DPD", 72, "grow", "dpd dissipative particle dynamics mesoscale coarse block copolymer microphase lamellae micelle blend morphology chi"),
             ("Semicrystalline stack", 81, "grow", "semicrystalline lamella lamellar stack crystal amorphous loops bridges tails polyethylene interphase crystallinity"),
             ("Thermal conductivity", 82, "chart", "thermal conductivity kappa heat flux green kubo nemd muller-plathe 2d sheet 3d bulk"),
+            ("Bond exchange", 83, "react", "bond exchange vitrimer self-healing healing weld recycle transesterification disulfide polysulfide dynamic covalent network swap step strain relaxation tv topology freezing"),
             ("Sorption", 71, "chart", "sorption gas uptake solubility henry widom gcmc isotherm permeability co2 methane nitrogen water rubber barrier"),
             ("Adsorption locator", 70, "layers", "adsorption adsorbate substrate surface binding site simulated annealing monte carlo filler gas coupling agent sizing"),
             ("File checks", 17, "check", "problems warnings validation report file errors"),

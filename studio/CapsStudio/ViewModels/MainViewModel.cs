@@ -575,6 +575,7 @@ public sealed partial class MainViewModel : ObservableObject
         [80] = v => v.OpenCgw(),
         [81] = v => v.OpenSemicrystalline(),
         [82] = v => v.OpenThermal(),
+        [83] = v => v.OpenExchange(),
     };
 
     public void SetModule(int m, [System.Runtime.CompilerServices.CallerMemberName] string caller = "")
@@ -644,7 +645,7 @@ public sealed partial class MainViewModel : ObservableObject
         Raise(nameof(IsAdsorption));
         Raise(nameof(IsSorption));
         Raise(nameof(IsDpd));
-        Raise(nameof(IsSemicrystalline)); Raise(nameof(IsThermal));
+        Raise(nameof(IsSemicrystalline)); Raise(nameof(IsThermal)); Raise(nameof(IsExchange));
         Raise(nameof(IsReader));
         Raise(nameof(IsStudy));
         Raise(nameof(IsSheets)); Raise(nameof(IsAdsorbDft)); Raise(nameof(IsDftJob)); Raise(nameof(IsDftRuns)); Raise(nameof(IsDftResults)); Raise(nameof(IsCgw));
@@ -765,7 +766,7 @@ public sealed partial class MainViewModel : ObservableObject
     public bool Growing { get => _growing; private set { if (Set(ref _growing, value)) { Raise(nameof(NotGrowing)); RaiseBusy(); } } }
     public bool NotGrowing => !_growing;
     /// <summary>No build or minimisation is running (the document can be replaced or edited).</summary>
-    public bool Idle => !_growing && !_relaxing && !_mdRunning && !_eqRunning && !_packing && !_reacting && !_analyzing && !_adsRunning && !_sorbRunning && !_dpdRunning;
+    public bool Idle => !_growing && !_relaxing && !_mdRunning && !_eqRunning && !_packing && !_reacting && !_analyzing && !_adsRunning && !_sorbRunning && !_dpdRunning && !_exRunning;
     /// <summary>The core is working on the open document (Relax or Dynamics): no rendering or edits until it is done.</summary>
     public bool Busy => _relaxing || _mdRunning || _eqRunning || _reacting || _analyzing || _recipeRunning || _adsRunning || _sorbRunning || _dpdRunning;
     private bool _analyzing;

@@ -527,6 +527,10 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_solvent_chi")] public static extern int SolventChi([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_semicrystalline_build")] public static extern IntPtr SemicrystallineBuild([MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsProgress? progress, IntPtr user, byte[]? report, int cap);
     [DllImport(Lib, EntryPoint = "caps_semicrystalline_analyse")] public static extern int SemicrystallineAnalyse(IntPtr doc, byte[]? report, int cap);
+    [DllImport(Lib, EntryPoint = "caps_exchange_library")] public static extern int ExchangeLibrary([MarshalAs(UnmanagedType.LPUTF8Str)] string path, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_exchange_build")] public static extern int ExchangeBuild(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
+    [DllImport(Lib, EntryPoint = "caps_exchange_run")] public static extern int ExchangeRun(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsAnalyzeProgress? progress, IntPtr user, byte[]? outJson, int cap);
+    [DllImport(Lib, EntryPoint = "caps_exchange_analyze")] public static extern int ExchangeAnalyze([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_thermal")] public static extern int Thermal(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsProgress? progress, IntPtr user, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_thermal_lammps")] public static extern int ThermalLammps(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, [MarshalAs(UnmanagedType.LPUTF8Str)] string path, byte[]? outText, int cap);
     [DllImport(Lib, EntryPoint = "caps_dpd")] public static extern IntPtr Dpd([MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsAnalyzeProgress? progress, IntPtr user, byte[]? outJson, int cap);
@@ -1278,6 +1282,37 @@ public sealed class CapsDocument : IDisposable
             GC.KeepAlive(cb);
             if (n < 0) throw new InvalidOperationException(Native.LastError());
             return System.Text.Encoding.UTF8.GetString(buf, 0, Math.Min(n, buf.Length) - 1);
+        }
+    }
+
+    /// <summary>The exchange chemistries of data/exchange/library.json (caps_exchange_library): JSON {ok, chemistries}.</summary>
+    public static string ExchangeLibrary(string path) => JsonCallOnce((b, c) => Native.ExchangeLibrary(path, b, c), 1 << 18);
+
+    /// <summary>Bond-exchange analysis without a structure (caps_exchange_analyze: arrhenius, modulus, memory, heal).</summary>
+    public static string ExchangeAnalyze(string json) => JsonCallOnce((b, c) => Native.ExchangeAnalyze(json, b, c));
+
+    /// <summary>A healing test's start on this structure, in place (caps_exchange_build: cut, gap, crack, fragment).</summary>
+    public string ExchangeBuild(string json)
+    {
+        using (Hold())
+        {
+            Alive();
+            return JsonCallOnce((b, c) => Native.ExchangeBuild(H, json, b, c));
+        }
+    }
+
+    /// <summary>Bond exchange on this structure, in place (caps_exchange_run: run, step_strain, tv, heal_run); progress gets
+    /// "A accepted of T tried" and the fraction done, false stops the run. The JSON report.</summary>
+    public string ExchangeRun(string json, Func<string, double, bool>? progress)
+    {
+        CapsAnalyzeProgress? cb = progress == null ? null : (w, f, _) => progress(Marshal.PtrToStringUTF8(w) ?? "", f) ? 0 : 1;
+        using (Hold())
+        {
+            Alive();
+            var buf = new byte[1 << 24];   // one call: a second would run the simulation again
+            var n = Native.ExchangeRun(H, json, cb, IntPtr.Zero, buf, buf.Length);
+            GC.KeepAlive(cb);
+            return System.Text.Encoding.UTF8.GetString(buf, 0, Math.Max(0, Math.Min(n, buf.Length) - 1));
         }
     }
 

@@ -103,3 +103,20 @@ TEST(ExchangeProtocols, StepStrainAndTvScan) {
   EXPECT_DOUBLE_EQ(t.T.back(), 600);
   for (double v : t.specific_volume) EXPECT_GT(v, 0);
 }
+
+// An error in a worker thread comes back to the caller: a FENE bond stretched past R0, evaluated on four threads, throws
+// FieldError (it used to end the process).
+TEST(ExchangeProtocols, WorkerErrorsComeBackToTheCaller) {
+  System s = chains(4, 12);
+  KgOptions ko;
+  const ForceField ff = kremer_grest_forcefield(s, ko);
+  s.atoms[1].pos[0] += 2.0;   // its bonds to atoms 0 and 2 past R0 = 1.5 Å
+  std::vector<double> x, f;
+  for (const auto& a : s.atoms) x.insert(x.end(), {a.pos[0], a.pos[1], a.pos[2]});
+  for (int threads : {1, 4}) {
+    EnergyOptions eo;
+    eo.threads = threads;
+    Evaluator ev(ff, eo);
+    EXPECT_THROW(ev.compute(x, s.cell, f), FieldError) << threads << " threads";
+  }
+}

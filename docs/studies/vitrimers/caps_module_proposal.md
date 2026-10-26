@@ -572,7 +572,47 @@ Not in E7: SBR (the same sulfur chemistry, untested on SBR chains), a cellulose 
 crystal's coordinates; glucose stands in), the aliphatic polysulfide barrier (CAPS QM still to run), steepest descent
 replaced by a faster minimiser, and runs long enough to measure relaxation times (cluster jobs).
 
-Next: E8, the Studio's Exchange page.
+**E8 (the Studio's Exchange page) is built** (2026-10-26). Modules › Bond exchange (vitrimers, healing), also in
+the palette:
+
+- Chemistry picker: every chemistry of the library, with its mechanism, move or template, default barrier and why, and
+  each barrier in the literature with its DOI and whether it was read or quoted. Picking one sets the move, barrier
+  and capture; each can be changed.
+- Moves: swap, shift, bind or template, with capture, barrier, tries and interval, the binding energy and bonds per site
+  for bind, relaxation steps for templates, only the selected atoms, or no moves (the network as it is, for reference).
+- Protocols: exchange during MD, step strain (axis, strain, hold), Tv scan, and healing a cut (plane, checks, constant
+  pressure). The page shows the MD steps a protocol takes before it runs.
+- Live counter: accepted, tried, acceptance and the type combinations learned, updated at every thermo row, with the
+  accepted moves plotted against time as they come.
+- Plots: G(t) = σ(t)/ε on log axes with the KWW fit; specific volume and exchange rate against temperature with the
+  hinge and the Arrhenius energy; bonds bridging the cut and crossing the plane against time; a healed against an intact
+  stress–strain table with the healing ratios.
+- Healing-test starts (cut, gap, crack, fragments) applied to the open structure, after which the force field is
+  assigned again.
+- Copy as command gives the same run as `caps exchange`.
+
+Underneath:
+- C API 75: `caps_exchange_library`, `caps_exchange_build`, and `caps_exchange_run`, which runs in place with progress
+  and stopping. After a run the Field assignment is run again on the new bonds, as after React. During a run the
+  document's own assignment types each change's neighbourhood, with its CAPS ML completion when the assignment asks for
+  it, and a torsion ML fits joins the assignment's ML rules. Python has the same calls (`caps.exchange_library`,
+  `Document.exchange_build`, `Document.exchange_run`).
+- `embed_system` (molecule.hpp): a fresh geometry of a bond graph, shared by the CLI and the C API for ML fits.
+- A fix found on the way: an exception thrown in a worker thread of the force evaluation (a FENE bond stretched past
+  R0) ended the process. `ThreadPool::run` now carries the first one back to the caller, who gets a FieldError. Test
+  `ExchangeProtocols.WorkerErrorsComeBackToTheCaller`.
+- Three manual equations used LaTeX commands the Studio's equation view does not have (`\begin{cases}`, `\parallel`,
+  `\wedge`); they are rewritten with ones it has.
+
+Checked: the Studio self-test runs the page on a Kremer–Grest melt (the library with its sources, 400 swaps during MD,
+a cut and a heal run with bind moves, a step strain, a three-temperature Tv scan); the Python bindings run swaps, a cut
+and a heal run; 657 of 657 C++ and Python tests pass.
+
+Not in E8: a creep protocol on the page, the LAMMPS decks (bond-swap, bond-react) and the analysis of LAMMPS output
+tables, which stay on the command line, and plots of a run's bond lifetimes.
+
+The module's eight stages are built. What remains is listed under each stage, and the rubber systems still need runs
+long enough to measure relaxation, which belong on the cluster.
 
 ## 10. Chemistries the module covers
 

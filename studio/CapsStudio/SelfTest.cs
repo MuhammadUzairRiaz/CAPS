@@ -22,7 +22,7 @@ internal static class SelfTest
         }
         Console.WriteLine($"info Python: {(MainViewModel.PythonAvailable ? MainViewModel.PythonExe : "none")}");
 
-        Check(Native.AbiVersion() == 74, "native ABI version 74");
+        Check(Native.AbiVersion() == 75, "native ABI version 75");
         var dir = args.Length > 0 ? args[0] : "samples";
         var outDir = args.Length > 1 ? args[1] : Path.GetTempPath();
         AppSettings.Override = Path.Combine(outDir, "caps-selftest-settings.json");
@@ -1780,6 +1780,32 @@ internal static class SelfTest
                 vm.CgChains = c0 + 7; vm.CgBeads = b0 + 3;
                 vm.EditProjectItem(kgItem);
                 Check(vm.CgChains == c0 && vm.CgBeads == b0 && vm.IsCg, $"edit a CG melt: {vm.CgChains} chains × {vm.CgBeads} beads (were {c0} × {b0}) · {vm.Status}");
+            }
+            // Bond exchange on the melt, pushed off first: the library with its sources, swaps during a short run counted as
+            // they come, a cut across x, and bind moves (two bonds a bead) that bridge it again
+            {
+                vm.Relax().GetAwaiter().GetResult();
+                vm.OpenExchange();
+                var lib = vm.ExChemistries.Count >= 20 && vm.ExChemistry?.Id == "transesterification" && vm.ExChemistry.Barriers.Any(b => b.Source.StartsWith("doi:10.", StringComparison.Ordinal));
+                vm.ExChemistry = vm.ExChemistries.First(c => c.Id == "bead_spring_swap");
+                vm.ExKind = 0; vm.ExCapture = 1.3m; vm.ExBarrier = 0; vm.ExT = 503.2m; vm.ExDt = 0.25m; vm.ExSteps = 400; vm.ExEvery = 10; vm.ExAttempts = 10;
+                vm.ExProtocol = 0;
+                vm.RunExchange().GetAwaiter().GetResult();
+                var ran = !vm.ExHasError && vm.ExTried == 400 && vm.ExCurveKind == "run" && vm.ExCurve.Length > 0 && vm.Document!.Provenance().Contains("exchange.run");
+                var tried = vm.ExTried;
+                vm.ExCut = 0; vm.ExAxis = 0; vm.ExPlane = 0.5m;
+                vm.BuildExchangeStart();
+                vm.ExKind = 2; vm.ExValence = 2; vm.ExBinding = 30; vm.ExAttempts = 20; vm.ExPs = 0.1m; vm.ExChunks = 2;
+                vm.RunExchange().GetAwaiter().GetResult();
+                var healed = !vm.ExHasError && vm.ExProtocol == 3 && vm.ExCurveKind == "heal_run" && vm.ExCurve.Length == 2;
+                // a step strain held 0.05 ps gives G(t) points; a Tv scan of three temperatures gives three specific volumes
+                vm.ExKind = 0; vm.ExProtocol = 1; vm.ExAxis = 0; vm.ExStrain = 0.05m; vm.ExPs = 0.05m;
+                vm.RunExchange().GetAwaiter().GetResult();
+                var strained = !vm.ExHasError && vm.ExCurveKind == "step_strain" && vm.ExCurve.Length > 1;
+                vm.ExProtocol = 2; vm.ExTFrom = 450; vm.ExTTo = 550; vm.ExTStep = 50; vm.ExPsPerT = 0.02m;
+                vm.RunExchange().GetAwaiter().GetResult();
+                var scanned = !vm.ExHasError && vm.ExCurveKind == "tv" && vm.ExCurve.Length == 3 && vm.ExCurve.All(p => p.Y > 0);
+                Check(lib && ran && healed && strained && scanned, $"bond exchange: library {lib} · {tried} swaps tried · heal run {healed} · step strain {strained} · Tv scan {scanned} · {vm.ExError}");
             }
             // reduced units: backmapping is refused (no lengths in Å); mapped to styrene units: 16 atoms a bead, GAFF2 typed
             vm.CgBackmapUnit = vm.CgBackmapPolymers.FindIndex(p => p.Name == "Polystyrene");
