@@ -23,7 +23,7 @@ import sys
 from pathlib import Path
 from typing import Any, Iterable, Optional
 
-__all__ = ["Document", "Provenance", "open", "build", "run", "polymer", "library", "abi_version", "CapsError", "dft", "dft_help"]
+__all__ = ["Document", "Provenance", "open", "build", "run", "polymer", "library", "abi_version", "exchange_library", "CapsError", "dft", "dft_help"]
 
 
 class CapsError(RuntimeError):
@@ -217,7 +217,7 @@ def _declare(L: C.CDLL) -> None:
         "caps_ml_available": ([], I), "caps_ff_complete": ([P, S, S, P, P, B, I], I), "caps_bond_react_export": ([P, S, S, S, B, I], I),
         "caps_bond_react_import": ([S, S, S, S, S, D, B, I], I), "caps_reaction_library": ([S, B, I], I), "caps_field_add_rule": ([P, S, S, S, S], I), "caps_energy_terms": ([P, B, I], I), "caps_field_set_mixing": ([P, S], I),
         "caps_insert_molecules": ([P, S, I, D, C.c_uint64, B, I], I),
-        "caps_blend_phase": ([S, B, I], I), "caps_tg_fit": ([S, B, I], I), "caps_exchange_analyze": ([S, B, I], I), "caps_solvent_chi": ([S, B, I], I), "caps_ewald_params": ([P, S, B, I], I),
+        "caps_blend_phase": ([S, B, I], I), "caps_tg_fit": ([S, B, I], I), "caps_exchange_analyze": ([S, B, I], I), "caps_exchange_library": ([S, B, I], I), "caps_exchange_build": ([P, S, B, I], I), "caps_solvent_chi": ([S, B, I], I), "caps_ewald_params": ([P, S, B, I], I),
     }
     for name, (args, res) in sig.items():
         f = getattr(L, name, None)
@@ -2013,6 +2013,63 @@ def exchange(op: str, **data) -> dict:
     if not r.get("ok", False):
         raise CapsError(r.get("error", "exchange failed"))
     return r
+
+def exchange_library(path: str = "") -> list:
+    """The exchange chemistries (data/exchange/library.json): id, name, family, mechanism, move, scheme, template,
+    default_kcal and default_why, capture, and every barrier read in the literature (value, unit, kcal, kind, method,
+    conditions, source DOI, status read or quoted)."""
+    p = path or str(_data_dir() / "exchange" / "library.json")
+    r = _json_call(lambda buf, n: library().caps_exchange_library(_enc(p), buf, n))
+    if not r.get("ok", False):
+        raise CapsError(r.get("error", "exchange library failed"))
+    return r["chemistries"]
+
+
+def _exchange_build(self, op: str, axis: str = "z", plane: float = 0.5, gap: float = 3.0, radius: float = 3.0, centre=None,
+                    axes: str = "xyz") -> dict:
+    """A healing test's start, in place: op "cut" (bonds across the plane removed), "gap" (cut, and the faces gap Å apart),
+    "crack" (atoms within radius Å of centre, default the cell centre, removed) or "fragment" (cuts at the mid-plane of
+    each of axes). The force-field assignment is run again on the new bonds. Returns {summary, bonds_cut | atoms_removed,
+    field_after}."""
+    o = {"op": op, "axis": axis, "plane": float(plane), "gap": float(gap), "radius": float(radius), "axes": axes}
+    if centre is not None:
+        o["centre"] = [float(c) for c in centre]
+    r = _json_call(lambda buf, n: library().caps_exchange_build(self._h, _enc(json.dumps(o)), buf, n))
+    if not r.get("ok", False):
+        raise CapsError(r.get("error", "exchange build failed"))
+    return r
+
+
+def _exchange_run(self, protocol: str = "run", chemistry: str = "", progress=None, **options) -> dict:
+    """Bond exchange on the structure, in place, with its assigned force field: protocol "run" (MD with exchange moves:
+    steps), "step_strain" (axis, strain, ps: σ(t), G(t) = σ/ε and a KWW fit), "tv" (t_from, t_to, t_step, ps_per_step:
+    specific volume and its hinge, the exchange rate and its Arrhenius fit) or "heal_run" (axis, plane, ps, chunks, npt:
+    bonds bridging a cut). chemistry: an id of exchange_library() (its move, barrier, capture and template); options as
+    caps exchange run: kind, sites, partners, labels, capture, barrier, binding, valence_a, valence_b, attempts, every,
+    relax, relax_depth, temperature, dt, seed, exchange (False: the network as it is). progress(stage, fraction) gets
+    "A accepted of T tried"; return False to stop. Returns the report (stats and the protocol's series)."""
+    o = dict(options)
+    o["protocol"] = protocol
+    if chemistry:
+        o["chemistry"] = chemistry
+        o.setdefault("library", str(_data_dir() / "exchange" / "library.json"))
+        o.setdefault("reactions", str(_data_dir() / "reactions" / "library.json"))
+    f = library().caps_exchange_run
+    stage_fn = C.CFUNCTYPE(C.c_int32, C.c_char_p, C.c_double, C.c_void_p)
+    f.argtypes = [C.c_void_p, C.c_char_p, stage_fn, C.c_void_p, C.c_char_p, C.c_int32]
+    f.restype = C.c_int32
+    cb = stage_fn(lambda s, fr, u: 0 if progress is None or progress(s.decode(), fr) is not False else 1)
+    buf = C.create_string_buffer(1 << 24)
+    f(self._h, _enc(json.dumps(o)), cb, None, buf, len(buf))
+    r = json.loads(buf.value.decode())
+    if not r.get("ok"):
+        raise CapsError(r.get("error", "exchange run failed"))
+    return r
+
+
+Document.exchange_build = _exchange_build
+Document.exchange_run = _exchange_run
+
 
 def solvent_chi(delta_polymer: float, solvents: list, t: float = 298.15) -> list:
     """Hildebrand χ ≈ V(δs − δp)²/RT + 0.34 for [{name, v (cm³/mol), delta (MPa½)}]: [{name, chi, predicted}]. It ignores

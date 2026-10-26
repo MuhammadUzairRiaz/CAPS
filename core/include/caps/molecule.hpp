@@ -134,5 +134,9 @@ bool minimise_molecule(const MolGraph& g, const std::shared_ptr<const ForceField
                        double* energy = nullptr, std::string* why = nullptr);
 // The graph as a System (element, bonds with orders, molecule 1, names like C1 H9) at the given positions.
 System molecule_system(const MolGraph& g, const std::vector<Vec3>& pos);
+// The structure with fresh 3D coordinates for its bond graph (every hydrogen already an atom; bond order 4 aromatic; no
+// cell): a clean geometry of a fragment cut from a network, for a scan that would clash at the network's positions.
+// Throws std::runtime_error when no embedding meets the constraints.
+System embed_system(const System& s, const EmbedOptions& o = {});
 
 }  // namespace caps

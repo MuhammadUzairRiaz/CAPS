@@ -1,0 +1,212 @@
+<!-- CAPS Studio › Modules › Bond exchange: vitrimers and self-healing networks. A chemistry from the library (its move,
+     barrier and capture; every barrier with its source), the moves, a protocol (exchange during MD, step strain with
+     G(t), Tv scan, healing a cut), the cuts a healing test starts from, the accepted moves counted as they come, and the
+     healing efficiency of a healed against an intact pull. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.ExchangePage" x:DataType="vm:MainViewModel" Background="{DynamicResource Bg0B}">
+  <p:PageBase.Styles>
+    <Style Selector="Border.pcard"><Setter Property="Background" Value="{DynamicResource Bg1B}" /><Setter Property="BorderBrush" Value="{DynamicResource LineB}" />
+      <Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="10" /><Setter Property="Padding" Value="16,14" /></Style>
+  </p:PageBase.Styles>
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Padding="22,14" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <v:SeedPicker DataContext="{Binding ExSeed}" ShowLabel="False" VerticalAlignment="Center" Margin="0,0,10,0" />
+          <Button Content="Copy as command" Click="OnCopyCommand" ToolTip.Tip="The same run as caps exchange runs it" />
+          <Button Content="Stop" Click="OnCancel" IsVisible="{Binding ExRunning}" />
+          <Button Classes="primary" Click="OnRun" IsEnabled="{Binding Idle}">
+            <StackPanel Orientation="Horizontal" Spacing="7"><v:Icon Kind="play" Size="14" VerticalAlignment="Center" /><TextBlock Text="Run" VerticalAlignment="Center" /></StackPanel>
+          </Button>
+        </StackPanel>
+        <StackPanel Spacing="3">
+          <TextBlock Text="Bond exchange · vitrimers and self-healing networks" FontSize="19" FontWeight="SemiBold" />
+          <TextBlock Text="Bonds that trade partners as the network moves: stress relaxation, Tv and healing" FontSize="12.5" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+    <Border DockPanel.Dock="Bottom" Height="28" Padding="22,0" Background="{DynamicResource Bg1B}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,1,0,0">
+      <TextBlock Text="{Binding ExProgress}" FontSize="11.5" Foreground="{DynamicResource MutedB}" VerticalAlignment="Center" />
+    </Border>
+    <Grid v:Panes.Split="True" ColumnDefinitions="380,*" ColumnSpacing="14" Margin="22,18">
+      <ScrollViewer>
+        <StackPanel Spacing="14">
+          <!-- the chemistry -->
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <TextBlock Text="Chemistry" FontSize="13.5" FontWeight="SemiBold" />
+              <ComboBox ItemsSource="{Binding ExChemistries}" SelectedItem="{Binding ExChemistry}" HorizontalAlignment="Stretch" MaxDropDownHeight="420" />
+              <TextBlock Text="{Binding ExChemSummary}" Classes="dim" TextWrapping="Wrap" />
+              <TextBlock Text="{Binding ExChemistry.BarrierWhy}" Classes="dim" TextWrapping="Wrap" FontStyle="Italic" IsVisible="{Binding ExChemHasBarrier}" />
+              <TextBlock Text="Barriers in the literature" Classes="label" Margin="0,4,0,0" />
+              <ItemsControl ItemsSource="{Binding ExChemistry.Barriers}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:ExchangeBarrierRow">
+                    <Grid ColumnDefinitions="96,*" ColumnSpacing="8" Margin="0,0,0,6">
+                      <StackPanel>
+                        <TextBlock Text="{Binding Value}" Classes="mono" FontSize="12.5" />
+                        <TextBlock Text="{Binding Status}" FontSize="10.5" Foreground="{DynamicResource MutedB}"
+                                   ToolTip.Tip="read: taken from the paper itself · quoted: taken from a paper citing it (read the original before relying on it)" />
+                      </StackPanel>
+                      <StackPanel Grid.Column="1">
+                        <TextBlock Text="{Binding What}" TextWrapping="Wrap" FontSize="12" />
+                        <SelectableTextBlock Text="{Binding Source}" Classes="mono" FontSize="11" Foreground="{DynamicResource MutedB}" />
+                      </StackPanel>
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock Text="{Binding ExChemistry.CaptureNote, StringFormat='capture: {0}'}" Classes="dim" TextWrapping="Wrap"
+                         IsVisible="{Binding ExChemistry.CaptureNote, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+              <TextBlock Text="{Binding ExChemistry.Notes}" Classes="dim" TextWrapping="Wrap"
+                         IsVisible="{Binding ExChemistry.Notes, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            </StackPanel>
+          </Border>
+          <!-- the moves -->
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <DockPanel>
+                <CheckBox DockPanel.Dock="Right" Content="No moves" IsChecked="{Binding ExNoMoves}" ToolTip.Tip="The network as it is: the reference for the same protocol with exchange" />
+                <TextBlock Text="Moves" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+              </DockPanel>
+              <ComboBox ItemsSource="{x:Static vm:MainViewModel.ExKinds}" SelectedIndex="{Binding ExKind}" HorizontalAlignment="Stretch" IsEnabled="{Binding !ExNoMoves}" />
+              <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="4" IsEnabled="{Binding !ExNoMoves}">
+                <TextBlock Text="Capture Å" Classes="label" /><TextBlock Grid.Column="1" Text="Barrier kcal/mol" Classes="label" /><TextBlock Grid.Column="2" Text="Tries / every" Classes="label" />
+                <NumericUpDown Grid.Row="1" Value="{Binding ExCapture}" Increment="0.05" FormatString="0.00" ToolTip.Tip="The longest distance at which a new bond forms" />
+                <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding ExBarrier}" Increment="0.5" FormatString="0.##"
+                               ToolTip.Tip="E_a: every move is accepted with exp(−E_a/kT) on top of its energy test, which slows exchange without biasing it" />
+                <Grid Grid.Row="1" Grid.Column="2" ColumnDefinitions="*,*" ColumnSpacing="4">
+                  <NumericUpDown Value="{Binding ExAttempts}" Minimum="1" FormatString="0" ShowButtonSpinner="False" ToolTip.Tip="Moves tried each time" />
+                  <NumericUpDown Grid.Column="1" Value="{Binding ExEvery}" Minimum="1" FormatString="0" ShowButtonSpinner="False" ToolTip.Tip="MD steps between tries" />
+                </Grid>
+                <TextBlock Grid.Row="2" Text="Binding kcal/mol" Classes="label" IsVisible="{Binding ExIsBind}" />
+                <TextBlock Grid.Row="2" Grid.Column="1" Text="Bonds per site" Classes="label" IsVisible="{Binding ExIsBind}" />
+                <TextBlock Grid.Row="2" Grid.Column="2" Text="Relaxation steps" Classes="label" IsVisible="{Binding ExIsTemplate}" />
+                <NumericUpDown Grid.Row="3" Value="{Binding ExBinding}" Increment="1" FormatString="0.#" IsVisible="{Binding ExIsBind}"
+                               ToolTip.Tip="ε: K = exp(ε/kT) weighs bonded against free" />
+                <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding ExValence}" Minimum="1" FormatString="0" IsVisible="{Binding ExIsBind}"
+                               ToolTip.Tip="Bonds a site may hold: 2 for a bead in a chain, so cut ends can bond again" />
+                <NumericUpDown Grid.Row="3" Grid.Column="2" Value="{Binding ExRelax}" Minimum="0" Increment="100" FormatString="0" IsVisible="{Binding ExIsTemplate}"
+                               ToolTip.Tip="Steepest-descent steps for the atoms within three bonds of a change, before and after it alike: the new bond is made at the capture distance" />
+              </Grid>
+              <CheckBox Content="Only the selected atoms exchange" IsChecked="{Binding ExUseSelection}" IsEnabled="{Binding !ExIsTemplate}"
+                        ToolTip.Tip="Template moves find their sites by chemistry; the other moves use the selection, or every atom" />
+            </StackPanel>
+          </Border>
+          <!-- the protocol -->
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <TextBlock Text="Protocol" FontSize="13.5" FontWeight="SemiBold" />
+              <ComboBox ItemsSource="{x:Static vm:MainViewModel.ExProtocols}" SelectedIndex="{Binding ExProtocol}" HorizontalAlignment="Stretch" />
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="4">
+                <TextBlock Text="Temperature K" Classes="label" /><TextBlock Grid.Column="1" Text="Time step fs" Classes="label" />
+                <NumericUpDown Grid.Row="1" Value="{Binding ExT}" Increment="10" FormatString="0.#" />
+                <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding ExDt}" Increment="0.25" FormatString="0.###" />
+              </Grid>
+              <StackPanel Spacing="4" IsVisible="{Binding ExIsRun}">
+                <TextBlock Text="MD steps" Classes="label" />
+                <NumericUpDown Value="{Binding ExSteps}" Increment="1000" FormatString="0" />
+              </StackPanel>
+              <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="4" IsVisible="{Binding ExIsStrain}">
+                <TextBlock Text="Axis" Classes="label" /><TextBlock Grid.Column="1" Text="Strain" Classes="label" /><TextBlock Grid.Column="2" Text="Hold ps" Classes="label" />
+                <ComboBox Grid.Row="1" ItemsSource="{x:Static vm:MainViewModel.ExAxes}" SelectedIndex="{Binding ExAxis}" HorizontalAlignment="Stretch" />
+                <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding ExStrain}" Increment="0.01" FormatString="0.###" ToolTip.Tip="Volume kept: the axis × (1 + ε), the other two × 1/√(1 + ε)" />
+                <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding ExPs}" Increment="1" FormatString="0.###" />
+              </Grid>
+              <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="4" IsVisible="{Binding ExIsTv}">
+                <TextBlock Text="From K" Classes="label" /><TextBlock Grid.Column="1" Text="To K" Classes="label" /><TextBlock Grid.Column="2" Text="Step K" Classes="label" /><TextBlock Grid.Column="3" Text="ps each" Classes="label" />
+                <NumericUpDown Grid.Row="1" Value="{Binding ExTFrom}" FormatString="0" ShowButtonSpinner="False" />
+                <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding ExTTo}" FormatString="0" ShowButtonSpinner="False" />
+                <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding ExTStep}" FormatString="0" ShowButtonSpinner="False" />
+                <NumericUpDown Grid.Row="1" Grid.Column="3" Value="{Binding ExPsPerT}" FormatString="0.###" ShowButtonSpinner="False" />
+              </Grid>
+              <StackPanel Spacing="6" IsVisible="{Binding ExIsHeal}">
+                <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="4">
+                  <TextBlock Text="Axis" Classes="label" /><TextBlock Grid.Column="1" Text="Plane" Classes="label" /><TextBlock Grid.Column="2" Text="ps" Classes="label" /><TextBlock Grid.Column="3" Text="Checks" Classes="label" />
+                  <ComboBox Grid.Row="1" ItemsSource="{x:Static vm:MainViewModel.ExAxes}" SelectedIndex="{Binding ExAxis}" HorizontalAlignment="Stretch" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding ExPlane}" Increment="0.05" FormatString="0.00" ShowButtonSpinner="False" ToolTip.Tip="Where the cut is, as a fraction of the cell" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding ExPs}" FormatString="0.###" ShowButtonSpinner="False" />
+                  <NumericUpDown Grid.Row="1" Grid.Column="3" Value="{Binding ExChunks}" FormatString="0" ShowButtonSpinner="False" ToolTip.Tip="How often the bridges are counted" />
+                </Grid>
+                <CheckBox Content="Hold the pressure (a gap closes)" IsChecked="{Binding ExNpt}" />
+                <TextBlock Classes="dim" TextWrapping="Wrap" Text="Bridges: bonds joining atoms that started on the two sides of the plane, from the positions the run starts from." />
+              </StackPanel>
+              <TextBlock Text="{Binding ExStepsHere}" Classes="dim" />
+            </StackPanel>
+          </Border>
+          <!-- a healing test's start -->
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <TextBlock Text="Start a healing test" FontSize="13.5" FontWeight="SemiBold" />
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <ComboBox ItemsSource="{x:Static vm:MainViewModel.ExCuts}" SelectedIndex="{Binding ExCut}" HorizontalAlignment="Stretch" />
+                <Button Grid.Column="1" Content="Apply to the structure" Click="OnCut" IsEnabled="{Binding Idle}" />
+              </Grid>
+              <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="4">
+                <TextBlock Text="Axis" Classes="label" IsVisible="{Binding ExCutHasPlane}" /><TextBlock Grid.Column="1" Text="Plane" Classes="label" IsVisible="{Binding ExCutHasPlane}" />
+                <TextBlock Grid.Column="2" Text="Gap Å" Classes="label" IsVisible="{Binding ExCutIsGap}" />
+                <TextBlock Grid.Column="2" Text="Radius Å" Classes="label" IsVisible="{Binding ExCutIsCrack}" />
+                <ComboBox Grid.Row="1" ItemsSource="{x:Static vm:MainViewModel.ExAxes}" SelectedIndex="{Binding ExAxis}" HorizontalAlignment="Stretch" IsVisible="{Binding ExCutHasPlane}" />
+                <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding ExPlane}" Increment="0.05" FormatString="0.00" IsVisible="{Binding ExCutHasPlane}" />
+                <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding ExGap}" Increment="0.5" FormatString="0.#" IsVisible="{Binding ExCutIsGap}" />
+                <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding ExRadius}" Increment="0.5" FormatString="0.#" IsVisible="{Binding ExCutIsCrack}" ToolTip.Tip="Atoms within this distance of the cell centre go, with their bonds" />
+              </Grid>
+              <TextBlock Classes="dim" TextWrapping="Wrap" Text="Cut: every bond across the plane removed. Gap: the same, then the upper side moved away (a weld). Crack: a void at the cell centre. Fragments: cuts at the three mid-planes, the pieces a recycling run joins again. The force field is assigned again to the new bonds." />
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard" IsVisible="{Binding ExHasError}">
+            <TextBlock Text="{Binding ExError}" TextWrapping="Wrap" Foreground="{DynamicResource ErrB}" />
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+      <Grid Grid.Column="1" RowDefinitions="Auto,*" RowSpacing="14">
+        <!-- the live counter -->
+        <Border Classes="pcard">
+          <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto" RowSpacing="4">
+            <TextBlock Text="Accepted" Classes="label" /><TextBlock Grid.Column="1" Text="Tried" Classes="label" /><TextBlock Grid.Column="2" Text="Acceptance" Classes="label" />
+            <TextBlock Grid.Column="3" Text="Force field" Classes="label" />
+            <TextBlock Grid.Row="1" Text="{Binding ExAccepted}" Classes="mono" FontSize="22" />
+            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding ExTried}" Classes="mono" FontSize="22" />
+            <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding ExRatio}" Classes="mono" FontSize="22" />
+            <TextBlock Grid.Row="1" Grid.Column="3" Text="{Binding ExLearned}" Classes="mono" FontSize="13" VerticalAlignment="Center" TextWrapping="Wrap"
+                       ToolTip.Tip="Combinations of types the moves made, learned from the assignment (with CAPS ML where it lacks a term), and types new to the run" />
+          </Grid>
+        </Border>
+        <ScrollViewer Grid.Row="1">
+          <StackPanel Spacing="14">
+            <Border Classes="pcard">
+              <StackPanel Spacing="8">
+                <TextBlock Text="Accepted moves during the run" FontSize="13.5" FontWeight="SemiBold" />
+                <v:SciPlot x:Name="Live" Height="180" />
+              </StackPanel>
+            </Border>
+            <Border Classes="pcard">
+              <StackPanel Spacing="8">
+                <TextBlock x:Name="CurveTitle" Text="The protocol's result" FontSize="13.5" FontWeight="SemiBold" />
+                <v:SciPlot x:Name="Curve" Height="230" />
+                <SelectableTextBlock Text="{Binding ExResult}" Classes="mono" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding ExFieldAfter}" Classes="dim" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+            <Border Classes="pcard">
+              <StackPanel Spacing="8">
+                <TextBlock Text="Healing efficiency" FontSize="13.5" FontWeight="SemiBold" />
+                <TextBlock Classes="dim" TextWrapping="Wrap" Text="Pull the healed and the intact sample the same way (Tensile), then compare the two stress–strain tables: toughness, peak stress, modulus and stress at a strain, each a different question." />
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="6">
+                  <TextBlock Text="{Binding ExHealedName}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                  <Button Grid.Column="1" Classes="small" Content="Choose…" Click="OnHealed" />
+                  <TextBlock Grid.Row="1" Text="{Binding ExIntactName}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                  <Button Grid.Row="1" Grid.Column="1" Classes="small" Content="Choose…" Click="OnIntact" />
+                </Grid>
+                <Button Content="Compare" Click="OnCompare" HorizontalAlignment="Left" />
+                <v:SciPlot x:Name="Heal" Height="200" />
+                <SelectableTextBlock Text="{Binding ExHealText}" Classes="mono" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </Grid>
+    </Grid>
+  </DockPanel>
+</p:PageBase>

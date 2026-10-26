@@ -13,6 +13,7 @@
 //   creep        run_creep (caps/mechanics.hpp) takes the same moves through CreepOptions::topology
 #pragma once
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <vector>
 
@@ -42,6 +43,8 @@ struct ProtocolOptions {
   ExchangeOptions moves;
   int64_t exchange_every = 10;
   uint64_t seed = 1;
+  // At each thermo row: how far the whole protocol is (0 to 1) and the moves so far; false stops it (DynamicsCancelled)
+  std::function<bool(double fraction, const ExchangeStats& so_far)> progress;
 };
 
 struct StepStrainResult {

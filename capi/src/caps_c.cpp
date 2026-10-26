@@ -15,6 +15,9 @@
 
 #include "caps/probe.hpp"
 #include "caps/exchange_analysis.hpp"
+#include "caps/exchange_library.hpp"
+#include "caps/exchange_moves.hpp"
+#include "caps/exchange_protocols.hpp"
 #include "caps/normal_modes.hpp"
 #include "caps/conformers.hpp"
 #include "caps/ibi.hpp"
@@ -12096,4 +12099,366 @@ extern "C" int32_t caps_thermal_lammps(caps_doc* d, const char* options_json, co
     std::ofstream(in, std::ios::app) << caps::thermal_lammps_run(q);
     return report_out("wrote " + in + " and " + data, out, cap);
   });
+}
+
+// ---------------------------------------------------------------- CAPS Exchange in the Studio (ABI 75)
+
+namespace {
+
+// The structure after an exchange step as the document's one frame; the Field assignment follows the new bonds (run
+// again on them, as after React). Returns the force field after it, for the report.
+std::string exchange_install(caps_doc* d, const caps::System& s) {
+  caps::Trajectory out;
+  out.topology = s;
+  std::vector<caps::Vec3> p;
+  for (const auto& a : s.atoms) p.push_back(a.pos);
+  out.positions.push_back(std::move(p));
+  out.cells.push_back(s.cell);
+  out.timesteps.push_back(0);
+  std::unique_ptr<FieldState> kept = d->field && d->field->ff_path != "file" ? std::make_unique<FieldState>(*d->field) : nullptr;
+  d->field.reset();
+  d->traj = std::move(out);
+  d->current = 0;
+  refresh(d);
+  if (!kept) return "none (assign one in the Force field step)";
+  kept->overrides.clear();
+  kept->file_types.clear();
+  kept->file_charges.clear();
+  d->field = std::move(kept);
+  std::string after;
+  try {
+    field_run(d);
+    after = ff_label(d) + (d->field->complete ? "" : " · incomplete: see the Force field step");
+  } catch (const std::exception& e) {
+    after = std::string("could not re-assign: ") + e.what();
+    d->field.reset();
+  }
+  refresh(d);
+  return after;
+}
+
+// The document's Field assignment as an exchange run's typing of a change's neighbourhood (ExchangeOptions::parameterize):
+// the same force field, imported and filled rules, and CAPS ML completion when the assignment asks for it. A torsion ML
+// fits joins the assignment's own ML rules, so the assignment after the run has it without fitting again. Null for an
+// assignment by groups, a model's own force field or the file's.
+std::function<caps::ForceField(const caps::System&)> exchange_parameterize(caps_doc* d) {
+  if (!d->field || !d->field->groups.empty() || !d->field->model.empty() || d->field->ff_path == "file") return {};
+  FieldState* F = d->field.get();
+  if (caps::is_uff(F->ff_path)) return [](const caps::System& y) { return caps::assign_uff(y); };
+  auto def = std::make_shared<caps::FFDef>(F->base);
+  def->zero_ring3_torsions = def->zero_ring3_torsions || F->zero_ring3_torsions;
+  caps::prepend_fill(*def, F->fill);
+  caps::merge_forcefield(*def, F->extra);
+  if (!F->ml.bonds.empty() || !F->ml.angles.empty() || !F->ml.dihedrals.empty()) caps::merge_forcefield(*def, F->ml);
+  if (def->typing.empty()) return {};
+  const bool ml = F->complete_ml;
+  const std::string model = !F->ml_model.empty() ? F->ml_model : caps::find_ml_model({F->ff_path});
+  auto tried = std::make_shared<std::set<std::string>>();
+  return [def, ml, model, tried, F](const caps::System& y) {
+    const caps::TypingResult tr = caps::assign_types(y, *def);
+    if (tr.untyped) throw std::runtime_error(std::to_string(tr.untyped) + " atoms of the change's neighbourhood are not typed by " + def->name);
+    caps::ParamReport rep;
+    caps::ForceField ff = caps::parameterize(y, *def, tr.types, "keep", &rep, true);
+    if (rep.missing.empty()) return ff;
+    const bool fresh = std::any_of(rep.missing.begin(), rep.missing.end(), [&](const std::string& m) { return !tried->count(m); });
+    if (fresh && ml && caps::ml_engine_available()) {
+      caps::System z = y;
+      try {
+        z = caps::embed_system(y);   // a clean geometry: the run's has the new bond at the capture distance
+      } catch (const std::exception&) {
+      }
+      caps::CompleteOptions co;
+      co.model = model;
+      try {
+        const caps::MlFill f = caps::fill_missing_with_ml(z, *def, tr.types, co);
+        for (const auto* src : {&f.report.overlay.bonds, &f.report.overlay.angles, &f.report.overlay.dihedrals}) {
+          auto& dst = src == &f.report.overlay.bonds ? F->ml.bonds : src == &f.report.overlay.angles ? F->ml.angles : F->ml.dihedrals;
+          dst.insert(dst.end(), src->begin(), src->end());
+        }
+        F->ml.name = "CAPS ML";
+        F->ml_fitted.insert(F->ml_fitted.end(), f.fitted_terms.begin(), f.fitted_terms.end());
+      } catch (const std::exception&) {
+      }
+      rep = caps::ParamReport{};
+      ff = caps::parameterize(y, *def, tr.types, "keep", &rep, true);
+      if (rep.missing.empty()) return ff;
+    }
+    for (const auto& m : rep.missing) tried->insert(m);
+    throw std::runtime_error(def->name + " has no parameters for " + rep.missing.front() + (ml ? "" : " (Fill missing terms with CAPS ML in the Force field step)"));
+  };
+}
+
+// The moves of a request: the chemistry's (its move, barrier, capture and template) from the exchange library, then what
+// the request says itself.
+caps::ExchangeOptions exchange_moves_from(const caps::Json& j, const caps::System& s) {
+  caps::ExchangeOptions xo;
+  const std::string chem = j.text("chemistry");
+  if (!chem.empty()) {
+    if (j.text("library").empty()) throw std::invalid_argument("a chemistry needs the exchange library's path (library)");
+    const auto lib = caps::load_exchange_library(j.text("library"));
+    const auto& c = caps::find_exchange_chemistry(lib, chem);
+    try {
+      xo = caps::exchange_options_for(c);
+    } catch (const std::invalid_argument&) {   // physical bonds, the three-body potential: the request's move
+    }
+    if (!c.template_name.empty()) {
+      xo.templates = caps::parse_templates(caps::builtin_template(c.template_name));
+    } else if (!c.scheme.empty() && !j.text("reactions").empty()) {
+      std::ifstream in(j.text("reactions"));
+      std::stringstream ss;
+      ss << in.rdbuf();
+      const caps::Json rl = caps::Json::parse(ss.str());
+      for (const auto& e : rl["reactions"].items()) {
+        if (e.text("id") != c.scheme) continue;
+        std::vector<std::string> rs, ps;
+        for (const auto& r : e["reactants"].items()) rs.push_back(r.text("smiles"));
+        for (const auto& q : e["products"].items()) ps.push_back(q.text("smiles"));
+        xo.templates = {caps::template_from_scheme(rs, ps, c.scheme)};
+      }
+    }
+  }
+  if (j.has("kind") && !j.text("kind").empty()) xo.kind = caps::exchange_kind_from_string(j.text("kind"));
+  if (xo.kind == caps::ExchangeKind::Template && xo.templates.empty()) throw std::invalid_argument("template moves need a chemistry with a template");
+  auto ids = [&](const char* k) {
+    std::vector<uint32_t> v;
+    for (const auto& x : j[k].items())
+      if (x.number() >= 0 && size_t(x.number()) < s.atoms.size()) v.push_back(uint32_t(x.number()));
+    return v;
+  };
+  xo.group_a.clear(), xo.group_b.clear();
+  if (j.has("sites") && j["sites"].is_array() && !j["sites"].items().empty()) xo.group_a = ids("sites");
+  else if (xo.kind != caps::ExchangeKind::Template)
+    for (uint32_t i = 0; i < s.atoms.size(); ++i) xo.group_a.push_back(i);
+  if (j.has("partners") && j["partners"].is_array()) xo.group_b = ids("partners");
+  const std::string labels = j.text("labels");
+  if (labels == "chain" || labels == "ends") xo.labels = caps::chain_position_labels(s, labels == "ends");
+  if (j.has("capture")) xo.capture = j.num("capture", xo.capture);
+  if (j.has("barrier")) xo.barrier = j.num("barrier", xo.barrier);
+  xo.binding = j.num("binding", xo.binding);
+  xo.valence_a = int(j.num("valence_a", xo.valence_a)), xo.valence_b = int(j.num("valence_b", xo.valence_b));
+  xo.attempts = std::max(1, int(j.num("attempts", xo.attempts)));
+  xo.seed = uint64_t(j.num("seed", 1));
+  xo.relax_steps = int(j.num("relax", xo.kind == caps::ExchangeKind::Template ? 1000 : 0));
+  xo.relax_depth = int(j.num("relax_depth", xo.relax_depth));
+  return xo;
+}
+
+void stats_json(caps::Json& r, const caps::ExchangeStats& st, caps::ExchangeKind kind) {
+  caps::Json o = caps::Json::object();
+  o["kind"] = std::string(caps::to_string(kind));
+  o["attempts"] = double(st.attempts), o["accepted"] = double(st.accepted), o["no_candidate"] = double(st.no_candidate);
+  o["unparameterised"] = double(st.unparameterised), o["relaxed"] = double(st.relaxed), o["learned"] = double(st.learned);
+  o["new_types"] = double(st.new_types), o["energy"] = st.energy, o["local"] = st.local, o["note"] = st.note;
+  r["stats"] = std::move(o);
+}
+
+caps::Json numbers_json(const std::vector<double>& v) {
+  caps::Json a = caps::Json::array();
+  for (double x : v) a.push_back(std::isfinite(x) ? caps::Json(x) : caps::Json());
+  return a;
+}
+
+int axis_from(const caps::Json& j) {
+  const std::string a = j.text("axis", "z");
+  return a == "x" || a == "0" ? 0 : a == "y" || a == "1" ? 1 : 2;
+}
+
+}  // namespace
+
+extern "C" int32_t caps_exchange_library(const char* path, char* out, int32_t cap) {
+  try {
+    const auto lib = caps::load_exchange_library(path ? path : "");
+    caps::Json list = caps::Json::array();
+    for (const auto& c : lib) {
+      caps::Json o = caps::Json::object();
+      o["id"] = c.id, o["name"] = c.name, o["family"] = c.family, o["mechanism"] = c.mechanism, o["move"] = c.move;
+      o["scheme"] = c.scheme, o["template"] = c.template_name, o["notes"] = c.notes, o["default_why"] = c.default_why;
+      o["default_kcal"] = std::isfinite(c.default_kcal_per_mol) ? caps::Json(c.default_kcal_per_mol) : caps::Json();
+      o["capture"] = std::isfinite(c.capture_angstrom) ? caps::Json(c.capture_angstrom) : caps::Json();
+      o["capture_pair"] = c.capture_pair, o["capture_source"] = c.capture_source;
+      caps::Json bs = caps::Json::array();
+      for (const auto& b : c.barriers) {
+        caps::Json q = caps::Json::object();
+        q["value"] = b.value, q["unit"] = b.unit, q["kind"] = b.kind, q["method"] = b.method, q["conditions"] = b.conditions;
+        q["source"] = b.source, q["status"] = b.status, q["note"] = b.note;
+        q["kcal"] = std::isfinite(b.kcal_per_mol) ? caps::Json(b.kcal_per_mol) : caps::Json();
+        bs.push_back(std::move(q));
+      }
+      o["barriers"] = std::move(bs);
+      caps::Json sy = caps::Json::array(), tr = caps::Json::array();
+      for (const auto& x : c.systems) sy.push_back(x);
+      for (const auto& x : c.to_read) tr.push_back(x);
+      o["systems"] = std::move(sy), o["to_read"] = std::move(tr);
+      list.push_back(std::move(o));
+    }
+    caps::Json r = caps::Json::object();
+    r["ok"] = true;
+    r["chemistries"] = std::move(list);
+    return report_out(r.dump(0), out, cap);
+  } catch (const std::exception& e) {
+    return json_error(e, out, cap);
+  }
+}
+
+extern "C" int32_t caps_exchange_build(caps_doc* d, const char* json, char* out, int32_t cap) {
+  try {
+    if (!d) throw std::invalid_argument("no structure");
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    caps::System s = d->traj.frame(d->current);
+    if (!s.unwrapped) caps::make_molecules_whole(s);
+    const std::string op = j.text("op");
+    const int axis = axis_from(j);
+    const double plane = j.num("plane", 0.5);
+    caps::Json r = caps::Json::object();
+    std::string what;
+    if (op == "cut" || op == "gap") {
+      const size_t n = caps::cut_bonds_across(s, axis, plane);
+      r["bonds_cut"] = double(n);
+      what = std::to_string(n) + " bonds cut across the plane at " + g6(plane) + " of the cell";
+      if (op == "gap") {
+        caps::open_gap(s, axis, plane, j.num("gap", 3.0));
+        what += ", the faces " + g6(j.num("gap", 3.0)) + " Å apart";
+      }
+    } else if (op == "crack") {
+      caps::Vec3 c = s.cell.valid() ? s.cell.to_cartesian({0.5, 0.5, 0.5}) : caps::Vec3{0, 0, 0};
+      if (j.has("centre") && j["centre"].is_array() && j["centre"].items().size() == 3)
+        for (int k = 0; k < 3; ++k) c[k] = j["centre"].items()[size_t(k)].number();
+      const size_t n = caps::remove_sphere(s, c, j.num("radius", 3.0));
+      r["atoms_removed"] = double(n);
+      what = std::to_string(n) + " atoms removed within " + g6(j.num("radius", 3.0)) + " Å of the cell centre";
+    } else if (op == "fragment") {
+      std::vector<int> axes;
+      for (char a : j.text("axes", "xyz")) axes.push_back(a == 'x' ? 0 : a == 'y' ? 1 : 2);
+      const size_t n = caps::fragment(s, axes);
+      r["bonds_cut"] = double(n);
+      what = std::to_string(n) + " bonds cut at the mid-planes";
+    } else {
+      throw std::invalid_argument("op: cut, gap, crack or fragment");
+    }
+    caps::KeyValues pr = {{"result", what}};
+    prov_step(d, "exchange." + op, op == "crack" ? "A void cut out for a healing test" : op == "fragment" ? "The network cut into pieces (recycling)" : "A cut for a healing test",
+              std::move(pr), "", {op == "fragment" ? "wick2025" : "stukalin2013"});
+    r["field_after"] = exchange_install(d, s);
+    r["ok"] = true;
+    r["summary"] = what;
+    return report_out(r.dump(0), out, cap);
+  } catch (const std::exception& e) {
+    return json_error(e, out, cap);
+  }
+}
+
+extern "C" int32_t caps_exchange_run(caps_doc* d, const char* json, caps_stage_fn progress, void* user, char* out, int32_t cap) {
+  try {
+    if (!d) throw std::invalid_argument("no structure");
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    const std::string protocol = j.text("protocol", "run");
+    caps::System s = d->traj.frame(d->current);
+    if (d->current + 1 != d->traj.frames()) s.velocities.clear();
+    if (!s.unwrapped) caps::make_molecules_whole(s);
+    const auto field = field_for_run(d);
+    caps::EnergyOptions eo = elec();
+    if (j.num("cutoff", 0) > 0) eo.cutoff = j.num("cutoff", 0);
+    eo.threads = int(j.num("threads", 0));
+    const bool exchange = !j.has("exchange") || j["exchange"].boolean();
+    caps::ExchangeOptions xo = exchange_moves_from(j, s);
+    xo.parameterize = exchange_parameterize(d);
+    const double temperature = j.num("temperature", 300), dt = j.num("dt", 1.0);
+    const int64_t every = std::max<int64_t>(1, int64_t(j.num("every", 10)));
+    const uint64_t seed = uint64_t(j.num("seed", 1));
+    caps::Json r = caps::Json::object();
+    caps::ExchangeStats stats;
+    bool cancelled = false;
+    char stage[160];
+    auto tell = [&](double f, const caps::ExchangeStats& so) {
+      if (!progress) return true;
+      std::snprintf(stage, sizeof stage, "%lld accepted of %lld tried", (long long)so.accepted, (long long)so.attempts);
+      cancelled = progress(stage, f, user) != 0;
+      return !cancelled;
+    };
+    const int axis = axis_from(j);
+    std::string summary;
+    if (protocol == "run") {
+      caps::DynamicsOptions m;
+      m.field = field;
+      m.steps = std::max<int64_t>(1, int64_t(j.num("steps", 5000)));
+      m.temperature = temperature, m.dt = dt, m.seed = seed, m.energy = eo;
+      if (j.num("tau_t", 0) > 0) m.tau_t = j.num("tau_t", 0);
+      m.thermo_every = int(std::max<int64_t>(1, m.steps / 200));
+      auto st = std::make_shared<caps::ExchangeStats>();
+      if (exchange) {
+        m.topology_every = every;
+        m.topology = caps::exchange_callback(xo, eo, st);
+      }
+      caps::Json swaps = caps::Json::array();
+      m.progress = [&](const caps::ThermoRow& row) {
+        caps::Json p = caps::Json::array();
+        p.push_back(row.time_ps), p.push_back(double(st->accepted)), p.push_back(double(st->attempts));
+        swaps.push_back(std::move(p));
+        return tell(double(row.step) / double(m.steps), *st);
+      };
+      m.each_step = live_hook(d, s, m.dt);
+      caps::DynamicsReport rep;
+      caps::run_dynamics(s, m, &rep);
+      stats = *st;
+      r["swaps"] = std::move(swaps);
+      summary = g6(dt * double(m.steps) / 1000.0) + " ps at " + g6(temperature) + " K";
+    } else {
+      caps::ProtocolOptions po;
+      po.field = field, po.energy = eo, po.temperature = temperature, po.dt = dt, po.seed = seed;
+      if (j.num("tau_t", 0) > 0) po.tau_t = j.num("tau_t", 0);
+      po.pressure = j.num("pressure", 1.0);
+      po.exchange = exchange, po.moves = xo, po.exchange_every = every;
+      po.progress = tell;
+      if (protocol == "step_strain") {
+        const double strain = j.num("strain", 0.05);
+        const auto sr = caps::step_strain(s, po, axis, strain, j.num("ps", 10), int(j.num("sample_every", 10)));
+        stats = sr.stats;
+        r["t"] = numbers_json(sr.t_ps), r["stress"] = numbers_json(sr.stress);
+        std::vector<double> g;
+        for (double x : sr.stress) g.push_back(x / strain);   // the relaxation modulus G(t) = σ(t) / ε
+        r["g"] = numbers_json(g);
+        r["strain"] = strain;
+        r["kww_tau"] = std::isfinite(sr.kww_tau) ? caps::Json(sr.kww_tau) : caps::Json();
+        r["kww_beta"] = std::isfinite(sr.kww_beta) ? caps::Json(sr.kww_beta) : caps::Json();
+        r["kww_mean"] = std::isfinite(sr.kww_mean) ? caps::Json(sr.kww_mean) : caps::Json();
+        summary = "step strain " + g6(strain) + ", held " + g6(j.num("ps", 10)) + " ps at " + g6(temperature) + " K";
+      } else if (protocol == "tv") {
+        const auto tr = caps::tv_scan(s, po, j.num("t_from", 300), j.num("t_to", 500), j.num("t_step", 50), j.num("ps_per_step", 10));
+        r["T"] = numbers_json(tr.T), r["v"] = numbers_json(tr.specific_volume), r["rate"] = numbers_json(tr.accepted_per_ps);
+        r["tv"] = tr.fit.ok ? caps::Json(tr.fit.tg) : caps::Json();
+        r["tv_err"] = tr.fit.ok ? caps::Json(tr.fit.tg_err) : caps::Json();
+        r["tv_note"] = tr.fit.note;
+        r["ea"] = tr.rate.ok ? caps::Json(tr.rate.ea) : caps::Json();
+        r["ea_err"] = tr.rate.ok ? caps::Json(tr.rate.ea_err) : caps::Json();
+        summary = "Tv scan " + g6(j.num("t_from", 300)) + " to " + g6(j.num("t_to", 500)) + " K";
+      } else if (protocol == "heal_run") {
+        const double plane = j.num("plane", 0.5);
+        po.npt = j.has("npt") && j["npt"].boolean();
+        const auto hr = caps::heal_run(s, po, caps::sides_from_positions(s, axis, plane), axis, plane, j.num("ps", 10), std::max(1, int(j.num("chunks", 10))));
+        stats = hr.stats;
+        r["t"] = numbers_json(hr.t_ps), r["bridges"] = numbers_json(hr.bridges), r["crossing"] = numbers_json(hr.crossing);
+        summary = "heal run " + g6(j.num("ps", 10)) + " ps at " + g6(temperature) + " K" + (po.npt ? " (constant pressure)" : "");
+      } else {
+        throw std::invalid_argument("protocol: run, step_strain, tv or heal_run");
+      }
+    }
+    if (cancelled) throw std::runtime_error("stopped");
+    stats_json(r, stats, xo.kind);
+    caps::KeyValues pr = {{"protocol", summary},
+                          {"moves", exchange ? std::string(caps::to_string(xo.kind)) + " every " + std::to_string(every) + " steps, " + std::to_string(stats.accepted) + " accepted of " + std::to_string(stats.attempts) : "none (the network as it is)"},
+                          {"force field", ff_label(d)}};
+    if (exchange && !j.text("chemistry").empty()) pr.push_back({"chemistry", j.text("chemistry") + " · barrier " + g6(xo.barrier) + " kcal/mol"});
+    std::vector<std::string> cites = {"sides2004"};
+    if (xo.relax_steps > 0) cites.push_back("yang2016"), cites.push_back("wick2025");
+    if (protocol == "tv") cites.push_back("perego2020");
+    if (protocol == "heal_run") cites.push_back("stukalin2013"), cites.push_back("ciarella2019");
+    prov_step(d, "exchange." + protocol, "Bond exchange: " + summary, std::move(pr), seeded(seed), std::move(cites));
+    r["field_after"] = exchange_install(d, s);
+    r["ok"] = true;
+    r["protocol"] = protocol;
+    r["summary"] = summary;
+    return report_out(r.dump(0), out, cap);
+  } catch (const std::exception& e) {
+    return json_error(e, out, cap);
+  }
 }

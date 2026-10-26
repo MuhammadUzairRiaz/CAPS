@@ -587,6 +587,27 @@ std::vector<int> chirality_check(const MolGraph& g, const std::vector<Vec3>& pos
   return out;
 }
 
+System embed_system(const System& s, const EmbedOptions& o) {
+  MolGraph g;
+  for (const auto& a : s.atoms) {
+    MolAtom m;
+    m.element = a.element, m.bracket = true, m.hcount = 0;
+    g.atoms.push_back(m);
+  }
+  for (const auto& b : s.bonds) {
+    if (b.i >= s.atoms.size() || b.j >= s.atoms.size() || b.i == b.j) continue;
+    g.bonds.push_back({int(b.i), int(b.j), b.order, 0});
+    if (b.order == 4) g.atoms[b.i].aromatic = g.atoms[b.j].aromatic = true;
+  }
+  g.heavy = int(g.atoms.size());
+  const auto pos = embed(g, o);
+  System z = s;
+  for (size_t k = 0; k < z.atoms.size(); ++k) z.atoms[k].pos = pos[k];
+  z.cell = Cell{};
+  z.velocities.clear();
+  return z;
+}
+
 std::vector<Vec3> embed(const MolGraph& g, const EmbedOptions& o) {
   if (g.atoms.empty()) throw std::runtime_error("nothing to embed");
   const Model M = make_model(g);

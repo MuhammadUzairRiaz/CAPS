@@ -715,7 +715,7 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 74, "ABI 74")
+check(caps.abi_version() == 75, "ABI 75")
 
 # bond exchange analysis (ABI 74): an exact Arrhenius line gives its Ea, healing ratios follow their definitions
 import math
@@ -726,6 +726,24 @@ check(abs(_ar["properties"][0]["value"] - 80) < 1e-6, "exchange arrhenius: Ea")
 _ex = caps.exchange("heal", healed={"strain": [0, 0.05], "stress": [0, 4]}, intact={"strain": [0, 0.1], "stress": [0, 10]}, modulus_strain=0.1)
 check(abs(_ex["properties"][0]["value"] - 20) < 1e-9 and abs(_ex["properties"][0]["extra"]["peak-stress ratio (%)"] - 40) < 1e-9, "exchange heal: toughness and peak ratios")
 print("ok   exchange: Arrhenius and healing efficiency")
+
+# bond exchange on a document (ABI 75): the library with its templates; swaps on a bead-spring melt, counted as they
+# come; a cut, then bind moves that bridge it again
+_lib = {c["id"]: c for c in caps.exchange_library()}
+check(_lib["transesterification"]["template"] == "transesterification_exchange" and _lib["transesterification"]["barriers"][0]["source"].startswith("10."),
+      "exchange_library: templates and sources")
+_kx = caps.build.kremer_grest(chains=6, beads=16)
+_kx.relax()   # pushed off first, as before any run
+_seen = []
+_rx = _kx.exchange_run("run", kind="swap", capture=1.3, attempts=10, steps=300, temperature=503.2, dt=0.25, tau_t=25,
+                       progress=lambda s, f: _seen.append(s) or True)
+check(_rx["stats"]["attempts"] == 300 and len(_rx["swaps"]) > 0 and _seen and "accepted of" in _seen[-1],
+      f"exchange_run: {_rx['stats']['accepted']} of {_rx['stats']['attempts']} swaps, {len(_seen)} progress calls")
+_cx = _kx.exchange_build("cut", axis="x")
+_hx = _kx.exchange_run("heal_run", kind="bind", valence_a=2, binding=30, capture=1.3, attempts=20, ps=0.1, chunks=2, axis="x",
+                       temperature=503.2, dt=0.25, tau_t=25)
+check(_cx["bonds_cut"] > 0 and len(_hx["bridges"]) == 2, f"exchange_build cut {_cx['bonds_cut']} bonds; heal run bridges {_hx['bridges']}")
+print("ok   exchange on a document: library, swaps counted live, cut and heal run")
 
 # semicrystalline stack (ABI 72): a small PE lamella, its report read back from the frame; thermal conductivity needs 2D or 3D
 _sc = caps.build.semicrystalline(nx=2, ny=3, crystal_nm=2.5, amorphous_nm=2.5, relax=False)

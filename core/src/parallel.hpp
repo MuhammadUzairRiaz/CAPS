@@ -5,6 +5,7 @@
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
+#include <exception>
 #include <functional>
 #include <mutex>
 #include <thread>
@@ -36,6 +37,8 @@ class ThreadPool {
   // Every worker is called once per run, so per-worker buffers can be reset inside f.
   // An MD step makes a dozen runs a few hundred µs apart: workers spin a short while for the next one before they
   // sleep, and the caller spins for the last worker, so a run costs no system call while the work keeps coming.
+  // An exception thrown in any slice (a FENE bond stretched past R0) is rethrown here, in the caller, once every worker
+  // has finished: a worker thread never lets one escape (that would end the process).
   void run(size_t count, const std::function<void(int, size_t, size_t)>& f) {
     if (n_ == 1) { f(0, 0, count); return; }   // otherwise every worker is called, possibly with an empty range
     job_ = &f;
@@ -55,6 +58,11 @@ class ThreadPool {
       done_.wait(l, [this] { return pending_.load(std::memory_order_acquire) == 0; });
     }
     job_ = nullptr;
+    if (err_) {
+      std::exception_ptr e = err_;
+      err_ = nullptr;
+      std::rethrow_exception(e);
+    }
   }
 
   // Runs f(slice, begin, end) over [0, count) cut into `slices` fixed slices, each taken by whichever worker is free (a
@@ -88,7 +96,12 @@ class ThreadPool {
   }
   void slice(int t) {
     const size_t b = count_ * t / n_, e = count_ * (t + 1) / n_;
-    (*job_)(t, b, e);
+    try {
+      (*job_)(t, b, e);
+    } catch (...) {
+      std::lock_guard<std::mutex> l(err_m_);
+      if (!err_) err_ = std::current_exception();
+    }
   }
   void loop(int t) {
     size_t seen = 0;
@@ -121,6 +134,8 @@ class ThreadPool {
   std::atomic<int> pending_{0};
   int sleepers_ = 0;
   bool stop_ = false;
+  std::mutex err_m_;
+  std::exception_ptr err_;   // the first exception a slice threw in this run
 };
 
 // Default worker count: set_max_threads, else a cluster job's CAPS_THREADS or SLURM_CPUS_PER_TASK, else performance cores

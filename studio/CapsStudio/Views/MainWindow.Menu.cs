@@ -169,6 +169,7 @@ public partial class MainWindow
             Page("Torsion scan…", 33),
             Page("Mesoscale (DPD)…", 72),
             Page("Thermal conductivity…", 82),
+            Page("Bond exchange (vitrimers, healing)…", 83),
             Sep(),
             Sub("Analysis",
                 Page("Properties…", 1),

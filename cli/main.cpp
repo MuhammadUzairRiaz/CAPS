@@ -3497,20 +3497,7 @@ int main(int argc, char** argv) {
                   // the capture distance among crowded neighbours, and the scan's relaxations would clash
                   System z = y;
                   try {
-                    MolGraph g;
-                    for (const auto& a : y.atoms) {
-                      MolAtom m;
-                      m.element = a.element, m.bracket = true, m.hcount = 0, m.charge = 0;
-                      g.atoms.push_back(m);
-                    }
-                    for (const auto& b : y.bonds) {
-                      g.bonds.push_back({int(b.i), int(b.j), b.order, 0});
-                      if (b.order == 4) g.atoms[b.i].aromatic = g.atoms[b.j].aromatic = true;
-                    }
-                    g.heavy = int(g.atoms.size());
-                    const auto pos = embed(g);
-                    for (size_t k = 0; k < z.atoms.size(); ++k) z.atoms[k].pos = pos[k];
-                    z.cell = Cell{};
+                    z = embed_system(y);
                   } catch (const std::exception&) {
                     z = y;   // no embedding: the run's own geometry
                   }
