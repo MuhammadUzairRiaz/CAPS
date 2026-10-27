@@ -27,11 +27,18 @@ New-Item -ItemType Directory -Force "$App\data" | Out-Null
 Get-ChildItem "$Root\data" -Directory | ForEach-Object { Copy-Item -Recurse $_.FullName "$App\data" }
 Get-ChildItem "$App\data" -Recurse -Directory -Filter "__pycache__" | Remove-Item -Recurse -Force
 # this build's release manifest (version, commit, date, highlights): What's new after an update, offline
-$Py = @("py", "python3", "python") | ForEach-Object { Get-Command $_ -CommandType Application -ErrorAction SilentlyContinue } | Select-Object -First 1
-if (-not $Py) { throw "Python 3 is needed to write data\release.json (winget install Python.Python.3.12)" }
-$PyArgs = if ($Py.Name -like "py*.exe" -and $Py.Name -notlike "python*") { @("-3") } else { @() }
-& $Py.Source @PyArgs "$Root\tools\release\make_release_json.py" -o "$App\data\release.json"
-if ($LASTEXITCODE -ne 0) { throw "make_release_json.py failed" }
+# (CAPS_RELEASE_JSON: one already written for this commit, e.g. by WSL's Python on a machine without a Windows one)
+if ($env:CAPS_RELEASE_JSON -and (Test-Path $env:CAPS_RELEASE_JSON)) {
+  Copy-Item $env:CAPS_RELEASE_JSON "$App\data\release.json"
+} else {
+  # the Microsoft Store placeholders in WindowsApps are not Python and do not start from a script
+  $Py = @("py", "python3", "python") | ForEach-Object { Get-Command $_ -CommandType Application -All -ErrorAction SilentlyContinue } |
+    Where-Object { $_.Source -notlike "*\WindowsApps\*" } | Select-Object -First 1
+  if (-not $Py) { throw "Python 3 is needed to write data\release.json (winget install Python.Python.3.12), or set CAPS_RELEASE_JSON" }
+  $PyArgs = if ($Py.Name -like "py*.exe" -and $Py.Name -notlike "python*") { @("-3") } else { @() }
+  & $Py.Source @PyArgs "$Root\tools\release\make_release_json.py" -o "$App\data\release.json"
+  if ($LASTEXITCODE -ne 0) { throw "make_release_json.py failed" }
+}
 Copy-Item -Recurse "$Root\licenses" "$App\licenses"
 Copy-Item "$Root\LICENSE" "$App\LICENSE"
 Copy-Item -Recurse "$Root\samples" $App
