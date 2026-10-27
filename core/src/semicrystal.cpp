@@ -997,6 +997,8 @@ SemicrystallineReport analyse_semicrystalline(const System& s, double p2_cut, in
   };
   std::vector<double> tilts;
   R.atom_class.assign(n, SemicrystallineReport::kNone);
+  R.atom_segment.assign(n, -1);
+  int32_t nseg = 0;
   for (size_t c = 0; c < chains.size(); ++c) {
     const size_t m = chains[c].size();
     // stems: crystalline runs of at least min_stem atoms whose ends lie on both sides of the middle plane
@@ -1019,8 +1021,9 @@ SemicrystallineReport analyse_semicrystalline(const System& s, double p2_cut, in
     }
     R.stems += int(runs.size());
     if (runs.empty()) continue;
-    auto mark = [&](size_t lo, size_t hi, int8_t k) {   // chain positions lo..hi inclusive
-      for (size_t q = lo; q <= hi && q < m; ++q) R.atom_class[chains[c][q]] = k;
+    auto mark = [&](size_t lo, size_t hi, int8_t k) {   // chain positions lo..hi inclusive, one new segment
+      for (size_t q = lo; q <= hi && q < m; ++q) R.atom_class[chains[c][q]] = k, R.atom_segment[chains[c][q]] = nseg;
+      ++nseg;
     };
     if (runs.front().lo > 0) mark(0, runs.front().lo - 1, SemicrystallineReport::kTail);
     if (runs.back().hi + 1 < m) mark(runs.back().hi + 1, m - 1, SemicrystallineReport::kTail);
@@ -1051,8 +1054,8 @@ SemicrystallineReport analyse_semicrystalline(const System& s, double p2_cut, in
   for (const auto& bd : s.bonds) {
     int8_t& ci = R.atom_class[bd.i];
     int8_t& cj = R.atom_class[bd.j];
-    if (ci == SemicrystallineReport::kNone && s.atoms[bd.i].element != 6) ci = cj;
-    else if (cj == SemicrystallineReport::kNone && s.atoms[bd.j].element != 6) cj = ci;
+    if (ci == SemicrystallineReport::kNone && s.atoms[bd.i].element != 6) ci = cj, R.atom_segment[bd.i] = R.atom_segment[bd.j];
+    else if (cj == SemicrystallineReport::kNone && s.atoms[bd.j].element != 6) cj = ci, R.atom_segment[bd.j] = R.atom_segment[bd.i];
   }
   if (!tilts.empty()) {
     double mt = 0, q = 0;

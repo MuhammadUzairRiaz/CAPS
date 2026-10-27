@@ -222,8 +222,25 @@ TEST(Semicrystalline, AtomClassesMatchTheSegments) {
   // every hydrogen as its carbon
   for (const auto& b : s.bonds) {
     const bool hi = s.atoms[b.i].element == 1, hj = s.atoms[b.j].element == 1;
-    if (hi != hj) EXPECT_EQ(a.atom_class[b.i], a.atom_class[b.j]);
+    if (hi != hj) {
+      EXPECT_EQ(a.atom_class[b.i], a.atom_class[b.j]);
+      EXPECT_EQ(a.atom_segment[b.i], a.atom_segment[b.j]);
+    }
   }
+  // segments: one class each; the bridge segments are the report's bridges, with their lengths in carbons
+  std::map<int32_t, std::pair<int8_t, int>> seg;   // id -> class, carbons
+  for (size_t i = 0; i < s.atoms.size(); ++i) {
+    ASSERT_GE(a.atom_segment[i], 0);
+    auto [it, fresh] = seg.try_emplace(a.atom_segment[i], a.atom_class[i], 0);
+    EXPECT_EQ(it->second.first, a.atom_class[i]);
+    if (s.atoms[i].element == 6) ++it->second.second;
+  }
+  std::vector<int> bridges;
+  for (const auto& [id, v] : seg)
+    if (v.first == SemicrystallineReport::kBridge) bridges.push_back(v.second);
+  std::vector<int> want = a.bridge_units;
+  std::sort(bridges.begin(), bridges.end()), std::sort(want.begin(), want.end());
+  EXPECT_EQ(bridges, want);
 }
 
 TEST(Thermal, GreenKuboLammpsInputPrintsKappaOnlyWhenTheCorrelationExists) {
