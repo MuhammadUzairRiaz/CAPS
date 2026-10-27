@@ -303,7 +303,7 @@ int usage() {
                "               [--seed 1] [--ff oplsaa2024|oplsua2024] [--no-relax] [--report R.json] [--lammps-input IN.lmp] [--gromacs STEM]\n"
                "               a lamellar stack: crystalline stems, loops, bridges and tails in the amorphous layer (groups crystal, amorphous)\n"
                "  caps semicrystalline FILE --analyse [--report R.json] [--labels L.txt]   loops, bridges, tails, P2 crystallinity, profiles\n"
-               "               of any frame; --labels: each atom's id and class (stem, loop, bridge, tail, none; hydrogens as their carbon)\n"
+               "               of any frame; --labels: each atom's id, class (stem, loop, bridge, tail, none) and segment (hydrogens as their carbon)\n"
                "  caps grow    -o OUT.data|OUT.pdb|OUT.xyz [--chains 10] [--dp 8] [--density 0.5 | --box 33]\n"
                "               [--tacticity atactic|isotactic|syndiotactic] [--seed 1] [--trans] [--scale 1.0]\n"
                "               [--units '*CC(*)c1ccccc1,*CC(*)(C)C(=O)OC' --sequence homopolymer|alternating|block|random|shuffled|gradient|pattern\n"
@@ -1686,11 +1686,11 @@ int main(int argc, char** argv) {
           if (!f) throw std::runtime_error("cannot write " + o["--labels"]);
           static const char* names[] = {"none", "stem", "loop", "bridge", "tail"};
           size_t count[5] = {0, 0, 0, 0, 0};
-          f << "# CAPS semicrystalline labels of " << pos[0] << ": atom id (as in the file) and class; hydrogens as their carbon\n";
+          f << "# CAPS semicrystalline labels of " << pos[0] << ": atom id (as in the file), class, segment (0-based, -1 none); hydrogens as their carbon\n";
           for (size_t i = 0; i < s.atoms.size(); ++i) {
             const int k = r.atom_class[i];
             ++count[k];
-            f << (s.atoms[i].id ? s.atoms[i].id : int64_t(i + 1)) << " " << names[k] << "\n";
+            f << (s.atoms[i].id ? s.atoms[i].id : int64_t(i + 1)) << " " << names[k] << " " << r.atom_segment[i] << "\n";
           }
           std::printf("wrote %s (stem %zu, loop %zu, bridge %zu, tail %zu, none %zu atoms)\n", o["--labels"].c_str(), count[1], count[2], count[3], count[4], count[0]);
         }

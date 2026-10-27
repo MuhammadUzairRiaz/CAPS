@@ -94,6 +94,7 @@ struct SemicrystallineReport {
   // carbon it is bonded to (hydrogens): kNone (a chain without a stem, or not a chain), kStem, kLoop, kBridge, kTail
   enum AtomClass : int8_t { kNone = 0, kStem = 1, kLoop = 2, kBridge = 3, kTail = 4 };
   std::vector<int8_t> atom_class;
+  std::vector<int32_t> atom_segment;   // the segment (stem, loop, bridge or tail) each atom belongs to, 0-based; −1 none
 };
 
 // Builds the lamellar cell: crystal from the unit cell (stems along z), amorphous segments grown from the stems' ends
