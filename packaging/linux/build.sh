@@ -127,5 +127,6 @@ chmod 0755 "$DEB/opt/caps/CapsStudio" "$DEB/opt/caps/caps"
 dpkg-deb --root-owner-group --build "$DEB" "$OUT/caps-studio_${VERSION}_${DEBARCH}.deb" > /dev/null
 
 echo "== tarball"
-tar -C "$WORK" -czf "$OUT/CAPS-$VERSION-linux-$ARCH.tar.gz" --transform "s,^app,CAPS-$VERSION," app
+# owned by root in the archive, not by the account that built it
+tar -C "$WORK" -czf "$OUT/CAPS-$VERSION-linux-$ARCH.tar.gz" --owner=0 --group=0 --numeric-owner --transform "s,^app,CAPS-$VERSION," app
 ls -la "$OUT"
