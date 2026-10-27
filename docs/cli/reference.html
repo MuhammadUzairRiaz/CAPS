@@ -904,7 +904,7 @@ options (default · why):
 
 examples:
   caps phono3py estimate pe-orthorhombic
-  caps phono3py setup PE_relax --mode both --out PE_kappa --account p_thermo_frc
+  caps phono3py setup PE_relax --mode both --out PE_kappa --account p_yourproject
   caps phono3py check PE_kappa/full
   caps phono3py analyze PE_kappa/full</code></pre></div></article>
 <article class="cmd" id="semicrystalline" data-name="semicrystalline"><h3><code>caps semicrystalline</code></h3>
@@ -912,7 +912,8 @@ examples:
              [--amorphous 4 (nm)] [--loops 0.5 --bridges 0.2 --tails 0.3] [--reentry adjacent|random] [--density 0.855]
              [--seed 1] [--ff oplsaa2024|oplsua2024] [--no-relax] [--report R.json] [--lammps-input IN.lmp] [--gromacs STEM]
              a lamellar stack: crystalline stems, loops, bridges and tails in the amorphous layer (groups crystal, amorphous)
-caps semicrystalline FILE --analyse [--report R.json]   loops, bridges, tails, P2 crystallinity, profiles of any frame</code></pre></div></article>
+caps semicrystalline FILE --analyse [--report R.json] [--labels L.txt]   loops, bridges, tails, P2 crystallinity, profiles
+             of any frame; --labels: each atom&#x27;s id, class (stem, loop, bridge, tail, none) and segment (hydrogens as their carbon)</code></pre></div></article>
 <article class="cmd" id="thermal" data-name="thermal"><h3><code>caps thermal</code></h3>
 <div class="code" data-lang="synopsis"><pre><code>caps thermal FILE --dimensionality 3d|2d [--method gk|nemd] [--temp 300] [--eq-ps 10] [--ps 100] [--dt 1] [--every 5]
              [--corr-ps 5] [--axis x|y|z] [--layers 20] [--swap-every 100] [--transient 0.3] [--thickness 3.35] [--seed 1]
@@ -951,7 +952,7 @@ options (default · why):
       machine-readable output
 
 examples:
-  caps vasp-relax pe-orthorhombic --out PE_relax --account p_thermo_frc
+  caps vasp-relax pe-orthorhombic --out PE_relax --account p_yourproject
   caps vasp-relax sheet.vasp --dimensionality 2d --out sheet_relax
   caps vasp-relax report PE_relax</code></pre></div></article>
 </section>

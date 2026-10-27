@@ -1,7 +1,7 @@
 #!/bin/bash
 # CAPS MACE v1 on Alpha (one A100): the first-round training set (whole environments held out in test.xyz).
 # EPOCHS and NAME come from the job script, so the dry run and the training run the same command.
-source /data/horse/ws/muri912g-caps-ml/env.sh
+source /data/horse/ws/USER-caps-ml/env.sh
 cd $WS/mace_v1
 date +%T
 mace_run_train --name $NAME --model MACE --train_file train.xyz --valid_fraction 0.05 --test_file test.xyz \

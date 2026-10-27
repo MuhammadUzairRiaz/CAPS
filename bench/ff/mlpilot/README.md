@@ -3,7 +3,7 @@
 20 census fragments with 54 conformers at wB97M-D3(BJ)/def2-TZVPPD, energies and forces:
 GPU4PySCF 1.8.1 on Alpha (one A100 per task) against ORCA 6.0.1 on Barnard (8 cores, RIJCOSX, DefGrid3).
 Files: make_pilot.py, run_gpu4pyscf.py + alpha_pilot.sbatch, orca_inputs.py, compare.py; the numbers are in
-pilot/compare.md. Inputs, outputs, caches and logs ran in the horse workspace /data/horse/ws/muri912g-caps-ml.
+pilot/compare.md. Inputs, outputs, caches and logs ran in the horse workspace /data/horse/ws/USER-caps-ml.
 
 ## Result
 

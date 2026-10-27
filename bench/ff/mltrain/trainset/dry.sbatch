@@ -5,7 +5,7 @@
 # Resubmitting continues where a task stopped.
 #   cd $WS/trainset && sbatch alpha_trainset.sbatch
 #SBATCH --job-name=caps-ml-dry
-#SBATCH --account=p_thermo_frc
+#SBATCH --account=p_yourproject
 #SBATCH --partition=capella
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
@@ -14,9 +14,9 @@
 #SBATCH --mem=110G
 #SBATCH --time=02:00:00
 #SBATCH --array=0
-#SBATCH --output=/data/horse/ws/muri912g-caps-ml/logs/dry-%A.out
+#SBATCH --output=/data/horse/ws/USER-caps-ml/logs/dry-%A.out
 
-source /data/horse/ws/muri912g-caps-ml/env-capella.sh
+source /data/horse/ws/USER-caps-ml/env-capella.sh
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 cd $WS/trainset
 mapfile -t ENVS < tasks/dry.txt

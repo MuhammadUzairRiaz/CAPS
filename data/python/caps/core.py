@@ -1352,7 +1352,7 @@ def dft(command: str, *inputs: str, **options) -> dict:
         caps.dft("sheet", preset="Ti3C2", o="Ti3C2.vasp")
         caps.dft("terminate", "Ti3C2.vasp", top="O:0.5,OH:0.25,F:0.25", supercell="3x3", seed=1, o="mixed.vasp")
         caps.dft("adsorb-dft", "CONTCAR", from_relaxed=True, supercell="5x5", out="adsorption/Ti3C2_OH_NBR")
-        caps.dft("vasp-relax", "pe-orthorhombic", out="PE_relax", dimensionality="3d", account="p_thermo_frc")
+        caps.dft("vasp-relax", "pe-orthorhombic", out="PE_relax", dimensionality="3d", account="p_yourproject")
         caps.dft("phono3py", "setup", "PE_relax", mode="both", out="PE_kappa")
         caps.dft("phono3py", "analyze", "PE_kappa/full")"""
     args = dict(options)

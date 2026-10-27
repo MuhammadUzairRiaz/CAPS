@@ -1,5 +1,5 @@
 {
- "ff": "/Users/uzair/project/CAPS/.claude/worktrees/ff-open-sources/data/forcefields/oplsaa2024.json",
+ "ff": "data/forcefields/oplsaa2024.json",
  "engine": "orca",
  "level": "DLPNO-CCSD(T)/cc-pVTZ (TightPNO)//wB97X-D3/def2-TZVP",
  "level_key": "dlpno",

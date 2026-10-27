@@ -83,4 +83,4 @@ HC-CY-CT-NT: zero (the heavy-atom torsions about this bond carry the profile; CY
 HC-CY-CT-OS: zero (the heavy-atom torsions about this bond carry the profile; CY-CY-CT-OS)
 HC-CO-CT-OH: zero (the heavy-atom torsions about this bond carry the profile; HC-CO-CT-OH)
 HC-CO-CT-OS: zero (the heavy-atom torsions about this bond carry the profile; HC-CO-CT-OS)
-wrote /private/tmp/claude-501/-Users-uzair-project-CAPS/833d0897-67f5-4603-829a-bb0e1d900513/scratchpad/dlpno-lib/dlpno_fit9.json: 74 torsions (caps ff apply --overlay /private/tmp/claude-501/-Users-uzair-project-CAPS/833d0897-67f5-4603-829a-bb0e1d900513/scratchpad/dlpno-lib/dlpno_fit9.json)
+wrote /tmp/dlpno-lib/dlpno_fit9.json: 74 torsions (caps ff apply --overlay /tmp/dlpno-lib/dlpno_fit9.json)

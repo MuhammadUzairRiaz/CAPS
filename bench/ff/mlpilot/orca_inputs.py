@@ -14,7 +14,7 @@ import json, os, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 arg = lambda k, d=None: sys.argv[sys.argv.index(k) + 1] if k in sys.argv else d
-WS = "/data/horse/ws/muri912g-caps-ml"
+WS = "/data/horse/ws/USER-caps-ml"
 
 SBATCH = """#!/bin/bash
 # The ORCA half of the pilot on Barnard; inputs, scratch, results and logs all in the horse workspace.

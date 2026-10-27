@@ -882,7 +882,7 @@
    "shots": [
     {
      "img": "09_equilibrate.jpg",
-     "cap": "**Equilibrate** showing a run that finished on the Barnard HPC cluster, opened here with [[Open finished run…]]: atactic polystyrene, 10 chains × 30 units (4,820 atoms, OPLS-AA 2024), grown and minimised, then `caps equilibrate --protocol larsen21 --dt 0.5 --tfinal 300 --tmax 600 --until-converged --block 20`. The 21-step protocol (1,560 ps, NPT stages shaded) and three 20 ps production blocks, 1,620 ps in all: density and potential energy with the block means, ⟨Rg⟩ per block, the four criteria, all met after the third block, and Cₙ along the backbones of the final cell. The final density is 0.993 g/cm³."
+     "cap": "**Equilibrate** showing a run that finished on an HPC cluster, opened here with [[Open finished run…]]: atactic polystyrene, 10 chains × 30 units (4,820 atoms, OPLS-AA 2024), grown and minimised, then `caps equilibrate --protocol larsen21 --dt 0.5 --tfinal 300 --tmax 600 --until-converged --block 20`. The 21-step protocol (1,560 ps, NPT stages shaded) and three 20 ps production blocks, 1,620 ps in all: density and potential energy with the block means, ⟨Rg⟩ per block, the four criteria, all met after the third block, and Cₙ along the backbones of the final cell. The final density is 0.993 g/cm³."
     }
    ],
    "steps": [
@@ -1364,11 +1364,11 @@
    "shots": [
     {
      "img": "18_analyze.jpg",
-     "cap": "**Analyze** on 2 ns of NPT at 300 K and 1 atm run on the Barnard HPC cluster after that equilibration (201 frames, one every 10 ps). Seven properties are computed: density, the C–C g(r), Rg, Cₙ and C∞, CED, δ and the MSD. In view: the density card against atactic polystyrene in experiment, 0.997 ± 0.002 g/cm³ or 4 % below the measured 1.04–1.065 g/cm³ (OPLS-AA glass densities are known to come out 3–8 % low), the C–C g(r), and the MSD of atoms and chain centres on log axes. Both stay nearly flat, far shallower than the ∝ t guide: over 2 ns the glass is sub-diffusive, so no diffusion coefficient is reported."
+     "cap": "**Analyze** on 2 ns of NPT at 300 K and 1 atm run on an HPC cluster after that equilibration (201 frames, one every 10 ps). Seven properties are computed: density, the C–C g(r), Rg, Cₙ and C∞, CED, δ and the MSD. In view: the density card against atactic polystyrene in experiment, 0.997 ± 0.002 g/cm³ or 4 % below the measured 1.04–1.065 g/cm³ (OPLS-AA glass densities are known to come out 3–8 % low), the C–C g(r), and the MSD of atoms and chain centres on log axes. Both stay nearly flat, far shallower than the ∝ t guide: over 2 ns the glass is sub-diffusive, so no diffusion coefficient is reported."
     },
     {
      "img": "22_glass.jpg",
-     "cap": "**Glass transition** of the same atactic polystyrene cell (10 chains × 30 units, 4,820 atoms, OPLS-AA 2024), three cooling scans run on the Barnard HPC cluster and opened here with **Open finished runs…**: 1 ns at 600 K, then 600 to 300 K in 25 K steps held 1 ns each (2.5 × 10¹⁰ K/s), one seed per scan. The specific volume with the spread of the three scans, the glass and melt fits and Tg = 478 ± 18 K (mean ± SD). Simulated cooling is about eleven decades faster than DSC, so Tg sits well above the measured 373 K, and the break between the two branches is gentler than in experiment."
+     "cap": "**Glass transition** of the same atactic polystyrene cell (10 chains × 30 units, 4,820 atoms, OPLS-AA 2024), three cooling scans run on an HPC cluster and opened here with **Open finished runs…**: 1 ns at 600 K, then 600 to 300 K in 25 K steps held 1 ns each (2.5 × 10¹⁰ K/s), one seed per scan. The specific volume with the spread of the three scans, the glass and melt fits and Tg = 478 ± 18 K (mean ± SD). Simulated cooling is about eleven decades faster than DSC, so Tg sits well above the measured 373 K, and the break between the two branches is gentler than in experiment."
     }
    ],
    "steps": [
