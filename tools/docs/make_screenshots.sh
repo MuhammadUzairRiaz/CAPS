@@ -28,7 +28,7 @@ shot() {
   sips -s format jpeg -s formatOptions 85 "$WORK/$name.png" --out "$IMG/$name.jpg" >/dev/null
 }
 
-# Real runs of atactic polystyrene (10 chains x 30 units, 4,820 atoms, OPLS-AA 2024) on the Barnard HPC cluster, kept
+# Real runs of atactic polystyrene (10 chains x 30 units, 4,820 atoms, OPLS-AA 2024) on an HPC cluster, kept
 # outside the repository in $PS_RUNS (default $HOME/project/CAPS-builds/ps-barnard-runs):
 #   equil.csv, ps-equil.*.log, ps_eq.data  caps equilibrate ps_min.data --protocol larsen21 --dt 0.5 --tfinal 300 --tmax 600
 #                                          --until-converged --block 20 --log equil.csv -o ps_eq.data (its printed output: the .log)

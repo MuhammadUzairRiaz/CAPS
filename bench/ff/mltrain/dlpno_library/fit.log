@@ -72,5 +72,5 @@ OH-C-CT-OS (joint, 1 scans, ridge 0.001): V = [1.4008, 2.4903, -0.1372, -0.644];
 OH-CT-C-OS (joint, 1 scans, ridge 0.001): V = [0.6666, -1.1426, 2.1589, -2.1952]; RMS OH-CT-C-OS 0.46
 OS-C-CT-OS (joint, 1 scans, ridge 0.001): V = [0.7494, 1.9341, 0.8823, -0.8161]; RMS OS-C-CT-OS 0.58
 HC-CY-CT-NT: zero (the heavy-atom torsions about this bond carry the profile; CY-CY-CT-NT)
-wrote /private/tmp/claude-501/-Users-uzair-project-CAPS/833d0897-67f5-4603-829a-bb0e1d900513/scratchpad/dlpno-lib/dlpno_fit.json: 71 torsions (caps ff apply --overlay /private/tmp/claude-501/-Users-uzair-project-CAPS/833d0897-67f5-4603-829a-bb0e1d900513/scratchpad/dlpno-lib/dlpno_fit.json)
+wrote /tmp/dlpno-lib/dlpno_fit.json: 71 torsions (caps ff apply --overlay /tmp/dlpno-lib/dlpno_fit.json)
 /opt/homebrew/Caskroom/miniconda/base/envs/research/bin/python -m  fit       50.90s user 10.86s system 114% cpu 53.739 total

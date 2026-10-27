@@ -249,6 +249,10 @@ internal static class Screenshot
             if (kv[0] == "exportpage")   // exportpage=1: Export for the open structure, its checks run
             {
                 w.ViewModel.OpenExportCenter();
+                // the website picture shows ~ for the home folder, never the account name of the machine it was taken on
+                var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                if (home.Length > 1 && w.ViewModel.EngineFolder.StartsWith(home))
+                    w.ViewModel.EngineFolder = "~" + w.ViewModel.EngineFolder[home.Length..];
                 w.ViewModel.RefreshEnginesNow();
                 for (int k = 0; k < 60; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
             }
