@@ -115,7 +115,7 @@ Version: $VERSION
 Section: science
 Priority: optional
 Architecture: $DEBARCH
-Depends: libc6 (>= 2.35), libstdc++6, zlib1g, libfontconfig1, libice6, libsm6, libx11-6, libicu70 | libicu72 | libicu74 | libicu76 | libicu77 | libicu78 | libicu80 | libicu-dev
+Depends: libc6 (>= 2.28), libstdc++6, zlib1g, libfontconfig1, libice6, libsm6, libx11-6, libicu70 | libicu72 | libicu74 | libicu76 | libicu77 | libicu78 | libicu80 | libicu-dev
 Maintainer: Muhammad Uzair Riaz <274318895+MuhammadUzairRiaz@users.noreply.github.com>
 Homepage: https://github.com/MuhammadUzairRiaz/CAPS
 Description: CAPS Studio - build, simulate and analyse amorphous polymer cells
