@@ -27,7 +27,9 @@ public static class PythonLocator
     private static IEnumerable<string> Candidates()
     {
         var win = OperatingSystem.IsWindows();
-        var names = win ? new[] { "python.exe", "python3.exe" } : new[] { "python3", "python" };
+        // a newer python3.X beside an old python3 (RHEL/Alma 8: python3 is 3.6, python3.11 a package)
+        var names = win ? new[] { "python.exe", "python3.exe" }
+                        : new[] { "python3", "python", "python3.13", "python3.12", "python3.11", "python3.10", "python3.9", "python3.8" };
         foreach (var dir in (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
         {
             if (win && dir.Contains("WindowsApps", StringComparison.OrdinalIgnoreCase)) continue;   // the Store placeholders
@@ -73,7 +75,8 @@ public static class PythonLocator
                 if (!seen.Add(c) || !File.Exists(c)) continue;
                 // macOS: /usr/bin/python3 is a stub that offers to install the developer tools when they are missing
                 if (OperatingSystem.IsMacOS() && c == "/usr/bin/python3" && !Directory.Exists("/Library/Developer/CommandLineTools") && !Directory.Exists("/Applications/Xcode.app")) continue;
-                if (Run(c, "-c \"import sys; print(sys.version_info[0])\"")?.Trim() == "3") return c;
+                // 3.8 or newer: the caps package needs 3.7 (postponed annotations); RHEL 8's /usr/bin/python3 is 3.6
+                if (Run(c, "-c \"import sys; print(sys.version_info >= (3, 8))\"")?.Trim() == "True") return c;
             }
             catch { /* the next one */ }
         }
