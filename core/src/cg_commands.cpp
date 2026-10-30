@@ -95,7 +95,9 @@ const std::vector<Cmd>& table() {
         {"pairs", "", "ibi-step / fit: the pairs.json of the current tables"},
         {"bonded", "", "ibi-start / ibi-run: the bonded folder (bonded.in, bonded.json)"},
         {"rc", "15", "ibi-start: the tables' cut-off (Å)"},
-        {"ramp", "0.1", "ibi-*: the pressure correction's size, A = −ramp kT sign(ΔP) min(1, 0.0003|ΔP|/bar) (0: off)"},
+        {"pcorr", "virial", "ibi-*: the pressure correction ΔU = A (1 − r/rc): virial (A from the pressure error and the virial) | ramp (fixed size) | off"},
+        {"gain", "0.5", "ibi-* --pcorr virial: the fraction of the pressure error removed per iteration"},
+        {"ramp", "0.1", "ibi-* --pcorr ramp: A = −ramp kT sign(ΔP) min(1, 0.0003|ΔP|/bar) (0: off)"},
         {"iterations", "3", "ibi-run: iterations with CAPS's engine"},
         {"steps", "2000", "ibi-run: steps per iteration (CAPS's engine; keep runs short on a laptop) / the decks' production steps"},
         {"dt", "10", "time step of the runs (fs)"},
@@ -608,7 +610,11 @@ void cgfit_nonbonded(const std::string& mode, const Json& a, const std::vector<s
     CgIbiOptions io;
     io.alpha = N(a, "alpha", 0.2);
     io.ramp = N(a, "ramp", 0.1);
-    io.pressure_correction = io.ramp > 0;
+    io.gain = N(a, "gain", 0.5);
+    io.pressure_method = S(a, "pcorr", "virial");
+    if (io.pressure_method != "virial" && io.pressure_method != "ramp" && io.pressure_method != "off")
+      throw std::invalid_argument("--pcorr is virial, ramp or off");
+    io.pressure_correction = io.pressure_method != "off" && (io.pressure_method == "virial" ? io.gain > 0 : io.ramp > 0);
     const std::string dir = S(a, "o", "ibi");
     if (mode == "ibi-step") {
       if (S(a, "pairs").empty()) throw std::invalid_argument("ibi-step needs --pairs (the pairs.json the runs used)");
@@ -619,7 +625,7 @@ void cgfit_nonbonded(const std::string& mode, const Json& a, const std::vector<s
         const int si = acc.add_system(sys[k].t, 1, stem_of_map(sys[k].map));
         cg_frames(sys[k], size_t(std::max(1.0, N(a, "stride", 1))), [&](const std::vector<Vec3>& q, const Cell& c) { acc.add_frame(si, q, c); });
         if (sys[k].logs.empty()) {
-          if (io.pressure_correction) throw std::invalid_argument(stem_of_map(sys[k].map) + ": give its LAMMPS log after its dump (for the pressure), or --ramp 0");
+          if (io.pressure_correction) throw std::invalid_argument(stem_of_map(sys[k].map) + ": give its LAMMPS log after its dump (for the pressure), or --pcorr off");
           press.push_back(tg.pressure[k]);
         } else press.push_back(log_mean(sys[k].logs.back(), "Press"));
       }
@@ -628,7 +634,7 @@ void cgfit_nonbonded(const std::string& mode, const Json& a, const std::vector<s
       CgIbiStepReport rep;
       const CgPairSet next = ibi_step(cur, tg, cur_rdf, press, io, &rep);
       for (const auto& f : write_pairs(next, types, dir)) files.push_back(f);
-      std::snprintf(b, sizeof b, "IBI iteration %d → %d · largest residual %.4f · pressure ramp A = %.4f kcal/mol\n", cur.iteration, next.iteration, rep.residual, rep.ramp_A);
+      std::snprintf(b, sizeof b, "IBI iteration %d → %d · largest residual %.4f · pressure correction A = %.4f kcal/mol\n", cur.iteration, next.iteration, rep.residual, rep.ramp_A);
       t << b;
       for (size_t k = 0; k < sys.size(); ++k) { std::snprintf(b, sizeof b, "  %s: P = %.0f atm (target %.0f)\n", tg.systems[k].c_str(), press[k], tg.pressure[k]); t << b; }
       Json pr = Json::array();
@@ -680,7 +686,7 @@ void cgfit_nonbonded(const std::string& mode, const Json& a, const std::vector<s
         }
         CgIbiStepReport rep;
         p = ibi_step(p, tg, cur_rdf, press, io, &rep);
-        std::snprintf(b, sizeof b, "iteration %d: largest residual %.4f · ramp %.4f kcal/mol · P", p.iteration, rep.residual, rep.ramp_A);
+        std::snprintf(b, sizeof b, "iteration %d: largest residual %.4f · pressure correction A = %.4f kcal/mol · P", p.iteration, rep.residual, rep.ramp_A);
         t << b;
         for (double x : press) { std::snprintf(b, sizeof b, " %.0f", x); t << b; }
         t << " atm\n";

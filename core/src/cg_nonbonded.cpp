@@ -18,6 +18,7 @@ namespace caps {
 namespace {
 constexpr double kB = 0.0019872067;   // kcal/(mol K)
 constexpr double kPi = 3.14159265358979323846;
+constexpr double kAtm = 68568.415;   // kcal/(mol·Å³) → atm
 
 std::vector<double> smooth_open(const std::vector<double>& y, double s) {
   if (s <= 0) return y;
@@ -189,6 +190,7 @@ std::vector<CgRdf> CgRdfAccumulator::rdf(int si) const {
       R.g.assign(nbin, 0.0);
       if (s.frames > 0 && R.ideal_pairs > 0) {
         const double Vm = s.volume / double(s.frames);
+        R.volume = Vm;
         for (size_t b = 0; b < nuse; ++b) {
           const double r0 = double(b) * o_.dr, r1 = r0 + o_.dr, shell = 4.0 / 3.0 * kPi * (r1 * r1 * r1 - r0 * r0 * r0);
           R.g[b] = s.h[k][b] / double(s.frames) / (R.ideal_pairs * shell / Vm);
@@ -244,6 +246,7 @@ Json cg_targets_json(const CgTargets& t) {
       p["key"] = R.key;
       p["frames"] = double(R.frames);
       p["ideal_pairs"] = R.ideal_pairs;
+      p["volume"] = R.volume;
       p["g"] = arr(R.g);
       p["counts"] = arr(R.counts);
       pairs.push_back(p);
@@ -270,6 +273,7 @@ CgTargets cg_targets_from_json(const Json& j) {
       R.key = p["key"].str();
       R.frames = long(p.num("frames", 0));
       R.ideal_pairs = p.num("ideal_pairs", 0);
+      R.volume = p.num("volume", 0);
       R.g = vec(p["g"]);
       R.counts = vec(p["counts"]);
       v.push_back(std::move(R));
@@ -445,13 +449,37 @@ CgPairSet ibi_step(const CgPairSet& cur, const CgTargets& t, const std::vector<s
   CgIbiStepReport rep = ibi_compare(t, current, pressure);
   CgPairSet next = cur;
   ++next.iteration;
-  // the pressure correction: the weighted mean error (atm → bar)
+  // the pressure correction from the weighted mean error
   double A = 0;
   if (o.pressure_correction && pressure.size() == t.rdf.size()) {
     double dp = 0, ws = 0;
     for (size_t s = 0; s < pressure.size(); ++s) dp += t.weights[s] * (pressure[s] - t.pressure[s]), ws += t.weights[s];
-    dp = ws > 0 ? dp / ws * 1.01325 : 0;
-    A = -o.ramp * kT * (dp > 0 ? 1 : dp < 0 ? -1 : 0) * std::min(1.0, 0.0003 * std::fabs(dp));
+    dp = ws > 0 ? dp / ws : 0;   // atm
+    // virial: dP/dA = 4π/(3 V² r_c) Σ_ij N_ij ∫₀^r_c r³ g_ij dr from the CG runs' g(r), per system, weighted as dp
+    double dPdA = 0;
+    bool resolved = o.pressure_method == "virial";
+    if (resolved) {
+      const double h = t.r.size() > 1 ? t.r[1] - t.r[0] : 0;
+      for (size_t s = 0; s < current.size(); ++s) {
+        double sum = 0, V = 0;
+        for (const auto& R : current[s]) {
+          if (R.volume <= 0 || R.ideal_pairs <= 0) continue;
+          V = R.volume;
+          double m = 0;
+          for (size_t b = 0; b < t.r.size() && b < R.g.size(); ++b)
+            if (t.r[b] <= next.rc) m += t.r[b] * t.r[b] * t.r[b] * R.g[b] * h;
+          sum += R.ideal_pairs * m;
+        }
+        if (V <= 0) { resolved = false; break; }
+        dPdA += t.weights[s] * 4 * kPi / (3 * V * V * next.rc) * sum * kAtm;
+      }
+      dPdA = ws > 0 ? dPdA / ws : 0;
+    }
+    if (resolved && dPdA > 0) A = std::clamp(-o.gain * dp / dPdA, -kT, kT);
+    else {
+      const double bar = dp * 1.01325;
+      A = -o.ramp * kT * (bar > 0 ? 1 : bar < 0 ? -1 : 0) * std::min(1.0, 0.0003 * std::fabs(bar));
+    }
   }
   rep.ramp_A = A;
   for (auto& tab : next.pairs) {

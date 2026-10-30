@@ -12,6 +12,7 @@
 using namespace caps;
 
 namespace {
+constexpr double kPi_test = 3.14159265358979323846;
 const std::string kCrystals = std::string(CAPS_SOURCE_DIR) + "/data/crystals/";
 std::vector<int> degrees(const System& s) {
   std::vector<int> d(s.atoms.size(), 0);
@@ -102,6 +103,41 @@ TEST(Nano, FillerInARubberMatrix) {
   spec.dp = 6;
   const System c = embed_filler(tube, spec, fo, &fr);
   EXPECT_NEAR(norm(c.cell.c), norm(tube.cell.c), 1e-9);
+}
+
+// A wide nanotube: the chains grow around it, none in its hollow core, and the core is not counted as room for the matrix.
+TEST(Nano, WideNanotubeKeepsItsCoreEmpty) {
+  NanotubeOptions to;
+  to.n = to.m = 20;   // d ≈ 27 Å
+  to.length = 10;
+  const System tube = nanotube(to);
+  ChainSpec spec;
+  spec.units = {{"cis-1,4-isoprene", "*C/C=C(/C)C*"}};
+  spec.dp = 8;
+  FillerMatrixOptions fo;
+  fo.chains = 8;
+  fo.density = 0.6;
+  fo.keep_axis = {false, false, true};
+  FillerReport fr;
+  const System s = embed_filler(tube, spec, fo, &fr);
+  const size_t nt = tube.atoms.size();
+  double cx = 0, cy = 0, rin = 1e300;
+  for (size_t i = 0; i < nt; ++i) cx += s.atoms[i].pos[0] / double(nt), cy += s.atoms[i].pos[1] / double(nt);
+  for (size_t i = 0; i < nt; ++i) rin = std::min(rin, std::hypot(s.atoms[i].pos[0] - cx, s.atoms[i].pos[1] - cy));
+  EXPECT_GT(rin, 12.0);
+  size_t inside = 0;
+  for (size_t i = nt; i < s.atoms.size(); ++i) {
+    double dx = s.atoms[i].pos[0] - cx, dy = s.atoms[i].pos[1] - cy;
+    dx -= fr.cell[0] * std::round(dx / fr.cell[0]), dy -= fr.cell[1] * std::round(dy / fr.cell[1]);
+    inside += std::hypot(dx, dy) < rin;
+  }
+  EXPECT_EQ(inside, 0u);
+  EXPECT_TRUE(std::any_of(fr.notes.begin(), fr.notes.end(), [](const std::string& n) { return n.find("hollow core") != std::string::npos; }));
+  // the matrix density over the room it can use (the cell less the tube and its core) is the one asked for
+  double mm = 0;
+  for (size_t i = nt; i < s.atoms.size(); ++i) mm += s.mass_of(s.atoms[i]);
+  const double room = fr.cell[0] * fr.cell[1] * fr.cell[2] - occupied_volume(tube) - kPi_test * std::pow(rin - 1.7, 2) * fr.cell[2];
+  EXPECT_NEAR(mm / (0.602214076 * room), fo.density, 0.1 * fo.density);
 }
 
 TEST(Nano, SilicaFibreInRubberAndPullOut) {

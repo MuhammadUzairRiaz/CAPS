@@ -104,6 +104,21 @@ TEST(CgNonbonded, UpdateDirectionAndPressureRamp) {
   EXPECT_LT(rep.ramp_A, 0);
   EXPECT_LT(p2.pairs[0].U[i5], p0.pairs[0].U[i5]);
   EXPECT_NEAR(p2.pairs[0].U.back(), 0, 1e-12);
+  // the virial amplitude: with the run's volume known, A removes gain × ΔP to first order,
+  // ΔP = A · 4π/(3 V² r_c) · N_ij ∫ r³ g dr (kcal/mol/Å³ → atm)
+  CgRdf V = R;
+  V.volume = 30000;
+  o.pressure_method = "virial", o.gain = 0.5;
+  ibi_step(p0, t, {{V}}, {2000}, o, &rep);
+  double m = 0;
+  for (size_t k = 0; k < t.r.size(); ++k) if (t.r[k] <= p0.rc) m += t.r[k] * t.r[k] * t.r[k] * V.g[k] * 0.05;
+  const double dPdA = 4 * 3.14159265358979323846 / (3 * V.volume * V.volume * p0.rc) * V.ideal_pairs * m * 68568.415;
+  EXPECT_NEAR(rep.ramp_A, std::max(-kT, -0.5 * 1999 / dPdA), 1e-9);
+  EXPECT_LT(rep.ramp_A, 0);
+  // the fixed-size ramp of the paper is still there
+  o.pressure_method = "ramp";
+  ibi_step(p0, t, {{V}}, {2000}, o, &rep);
+  EXPECT_NEAR(rep.ramp_A, -0.1 * kT * std::min(1.0, 0.0003 * 1999 * 1.01325), 1e-12);
 }
 
 TEST(CgNonbonded, FitsRecoverKnownParameters) {
