@@ -32,7 +32,16 @@ internal static partial class Program
     public static AppBuilder BuildAvaloniaApp() =>
         AppBuilder.Configure<App>().UsePlatformDetect().WithCapsFonts().LogToTrace()
             // macOS: the compositor on OpenGL, so the GPU 3D view (GlMolView) shares its context
-            .With(new AvaloniaNativePlatformOptions { RenderingMode = [AvaloniaNativeRenderingMode.OpenGl, AvaloniaNativeRenderingMode.Software] });
+            .With(new AvaloniaNativePlatformOptions { RenderingMode = [AvaloniaNativeRenderingMode.OpenGl, AvaloniaNativeRenderingMode.Software] })
+            // Linux (X11, and Wayland through Xwayland): Avalonia asks for OpenGL 4.0, then 3.2. A driver that stops at 3.3
+            // (Mesa's r600, older Intel) then hands over a 3.2 context, below the GPU view's 3.3, and the view fell back to
+            // the CPU renderer (3.7 frames/s full screen on a Radeon HD 4650). 3.3 is asked for before 3.2.
+            .With(new X11PlatformOptions
+            {
+                GlProfiles = [new Avalonia.OpenGL.GlVersion(Avalonia.OpenGL.GlProfileType.OpenGL, 4, 0), new Avalonia.OpenGL.GlVersion(Avalonia.OpenGL.GlProfileType.OpenGL, 3, 3),
+                              new Avalonia.OpenGL.GlVersion(Avalonia.OpenGL.GlProfileType.OpenGL, 3, 2), new Avalonia.OpenGL.GlVersion(Avalonia.OpenGL.GlProfileType.OpenGLES, 3, 0),
+                              new Avalonia.OpenGL.GlVersion(Avalonia.OpenGL.GlProfileType.OpenGLES, 2, 0)]
+            });
 
     /// <summary>IBM Plex Sans (and Mono) from the app's assets as the default family: the design system's type.</summary>
     public static AppBuilder WithCapsFonts(this AppBuilder b) =>
