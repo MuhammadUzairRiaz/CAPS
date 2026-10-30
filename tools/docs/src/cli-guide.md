@@ -51,7 +51,7 @@ Commands print a short report and the files they wrote. `--json` (recipes, coars
 
 ## Which command for what
 
-Each command links to its full entry in the [command reference](reference.html), which is generated from the program itself.
+Each command links to its full entry in the [command reference](reference.html).
 
 <!-- COMMAND TABLES -->
 
