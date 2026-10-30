@@ -1332,6 +1332,8 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
   const bool sphere = o.sphere_radius > 0;
   const Vec3 sc{o.sphere_centre[0], o.sphere_centre[1], o.sphere_centre[2]};
   const Vec3 axis_c{0.5 * Lv[0], 0.5 * Lv[1], 0};
+  const bool core = o.core_radius > 0;
+  const Vec3 core_c{o.core_centre[0], o.core_centre[1], 0};
   auto region = [&](const Vec3& p) {
     double m = film ? std::min(p[2] - z_lo, z_hi - p[2]) : 1e9;
     if (sphere) {
@@ -1342,6 +1344,10 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
       Vec3 d = cell.mi(p - axis_c);
       const double r = std::hypot(d[0], d[1]);
       m = std::min(m, o.cylinder_outside ? r - R : R - r);
+    }
+    if (core) {   // outside the hollow core
+      Vec3 d = cell.mi(p - core_c);
+      m = std::min(m, std::hypot(d[0], d[1]) - o.core_radius);
     }
     return m;
   };
@@ -1568,11 +1574,11 @@ System grow_chains_once(const ChainSpec& spec, const GrowOptions& o, GrowReport*
     Vec3 s{U(rng) * Lv[0], U(rng) * Lv[1], film ? z_lo + 1 + U(rng) * std::max(0.0, z_hi - z_lo - 2) : U(rng) * Lv[2]};
     auto draw_start = [&] {
       Vec3 q{U(rng) * Lv[0], U(rng) * Lv[1], film ? z_lo + 1 + U(rng) * std::max(0.0, z_hi - z_lo - 2) : U(rng) * Lv[2]};
-      for (int tries = 0; (sphere || cyl) && region(q) < 1.0 && tries < 1000; ++tries)   // a start inside the allowed region
+      for (int tries = 0; (sphere || cyl || core) && region(q) < 1.0 && tries < 1000; ++tries)   // a start inside the allowed region
         q = {U(rng) * Lv[0], U(rng) * Lv[1], film ? z_lo + 1 + U(rng) * std::max(0.0, z_hi - z_lo - 2) : U(rng) * Lv[2]};
       return q;
     };
-    for (int tries = 0; (sphere || cyl) && region(s) < 1.0 && tries < 1000; ++tries)   // a start inside the allowed region
+    for (int tries = 0; (sphere || cyl || core) && region(s) < 1.0 && tries < 1000; ++tries)   // a start inside the allowed region
       s = {U(rng) * Lv[0], U(rng) * Lv[1], film ? z_lo + 1 + U(rng) * std::max(0.0, z_hi - z_lo - 2) : U(rng) * Lv[2]};
     // in a crowded cell, the roomiest of a few start points (the nearest atom farthest away): a chain started in a gap
     // fails less at its first units; the first point with 3 Å of room is taken as it is

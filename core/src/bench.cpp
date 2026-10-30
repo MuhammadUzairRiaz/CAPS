@@ -826,6 +826,19 @@ void t15(BenchTable& t, const BenchOptions& o) {
   const int iters = o.quick ? 4 : 20;
   CgEngineOptions it = eo;
   it.new_velocities = false, it.steps = o.quick ? 1000 : 5000, it.equilibrate = o.quick ? 500 : 1000;
+  // the noise floor: the reference model itself, run as long as one iteration, against the target
+  double floor_err = 0;
+  {
+    step(o, "T15", "the reference model again", 0.02);
+    const CgEngineRun run = run_cg_engine(r0.last, cg_forcefield(top, types, mass, ref), it);
+    CgRdfAccumulator a2(types, po);
+    const int s2 = a2.add_system(top);
+    for (size_t f = 0; f < run.frames.size(); ++f) a2.add_frame(s2, run.frames[f], run.cells[f]);
+    floor_err = 100 * std::sqrt(ibi_compare(tg, {a2.rdf(s2)}, {run.pressure}).residual);
+    char e[32], d[32];
+    std::snprintf(e, sizeof e, "%.2f", floor_err), std::snprintf(d, sizeof d, "%.0f", std::fabs(run.pressure - r0.pressure));
+    t.rows.push_back({{"reference model", e, d, "info"}, "info"});
+  }
   double err = 0, dp = 0;
   for (int k = 0; k < iters; ++k) {
     step(o, "T15", "IBI iteration " + std::to_string(k + 1), double(k + 1) / (iters + 1));
@@ -839,11 +852,11 @@ void t15(BenchTable& t, const BenchOptions& o) {
     char e[32], d[32];
     std::snprintf(e, sizeof e, "%.2f", err), std::snprintf(d, sizeof d, "%.0f", dp);
     const bool last = k + 1 == iters;
-    const bool ok = err < 1.0 && dp < 50;
+    const bool ok = err < std::max(1.0, 1.25 * floor_err) && dp < 50;
     t.rows.push_back({{std::to_string(k + 1), e, d, last ? (ok ? "pass" : o.quick ? "info" : "fail") : "info"}, last ? (ok ? "pass" : o.quick ? "info" : "fail") : "info"});
     cur = run.last;
   }
-  t.note = "Target: the per-pair g(r) of a fluid with known Lennard-Jones pairs (" + std::to_string(n) + " beads, 300 K, CAPS's engine); IBI from −kT ln g with the pressure ramp; RDF error = √(∫(g − g_t)² dr / ∫ g_t² dr), the largest over the pairs. Pass: below 1 % with |ΔP| < 50 atm at the last iteration" +
+  t.note = "Target: the per-pair g(r) of a fluid with known Lennard-Jones pairs (" + std::to_string(n) + " beads, 300 K, CAPS's engine); IBI from −kT ln g with the virial pressure correction; RDF error = √(∫(g − g_t)² dr / ∫ g_t² dr), the largest over the pairs. The reference model's own row is its rerun as long as one iteration: the sampling noise any model shows against the target. Pass: at the last iteration an RDF error within 1.25 times that (or below 1 %) with |ΔP| < 50 atm" +
            std::string(o.quick ? " (quick: 4 short iterations, informative only)" : "") + ".";
 }
 

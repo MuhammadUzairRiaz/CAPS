@@ -7,10 +7,14 @@
 //                cut-off), refined from CG runs: U ← U + α k_B T ln(g_CG / g_target) (Reith, Pütz & Müller-Plathe,
 //                J. Comput. Chem. 24, 1624 (2003)). Several systems are fitted jointly: a pair that occurs in several
 //                (B–B in PBS, PBSA and PBAT) gets the average of their corrections weighted by each system's statistics
-//                at that distance and its weight, so one table set serves them all. The pressure correction of the same
-//                paper, ΔU = A (1 − r/r_c) with A = −0.1 k_B T sign(ΔP) min(1, 0.0003 |ΔP| / bar), uses the weighted mean
-//                pressure error of the systems. Convergence per pair: ∫(g_CG − g_target)² dr / ∫ g_target² dr and the
-//                largest |g_CG − g_target|.
+//                at that distance and its weight, so one table set serves them all. The pressure correction is a linear
+//                ramp ΔU = A (1 − r/r_c) on every pair. By default A comes from the virial: to first order (g held fixed)
+//                the ramp shifts the pressure by ΔP = A · 4π/(3 V² r_c) · Σ_ij N_ij ∫₀^r_c r³ g_ij(r) dr (N_ij the pair
+//                counts, V the cell volume), so A = −gain · (P_CG − P_target) over that factor, capped at k_B T. The
+//                paper's fixed-size ramp, A = −0.1 k_B T sign(ΔP) min(1, 0.0003 |ΔP| / bar), is kept as "ramp": in a
+//                dense fluid it is far smaller than the pressure error needs and IBI's own update undoes it. Both use
+//                the weighted mean pressure error of the systems. Convergence per pair: ∫(g_CG − g_target)² dr /
+//                ∫ g_target² dr and the largest |g_CG − g_target|.
 //   analytic     a table fitted by LJ 12-6, LJ 9-6 (class2), Morse or Mie(n, m) over its well and the repulsion up to
 //                a few k_B T (Levenberg–Marquardt), for models that must transfer beyond the state point
 //   calibration  a fitted set scaled to a target density (all σ by one factor) and a target T_g (all ε by one factor), the
@@ -44,6 +48,7 @@ struct CgRdf {
   std::vector<double> g, counts;    // per bin: g(r) and the raw pair count (all frames)
   double ideal_pairs = 0;           // N_i N_j (or N_i (N_i − 1)/2) per frame
   long frames = 0;
+  double volume = 0;                // Å³, the mean cell volume over the frames
 };
 
 class CgRdfAccumulator {
@@ -103,7 +108,9 @@ struct CgIbiOptions {
   double table_dr = 0.05;                // Å
   double smooth = 1;                     // Gaussian smoothing of each update, σ in bins
   bool pressure_correction = true;
-  double ramp = 0.1;                     // A = −ramp k_B T sign(ΔP) min(1, 0.0003 |ΔP|/bar)
+  std::string pressure_method = "virial";   // "virial" (A from the pressure error and the virial) | "ramp" (fixed size)
+  double gain = 0.5;                     // virial: the fraction of the pressure error removed per iteration
+  double ramp = 0.1;                     // ramp: A = −ramp k_B T sign(ΔP) min(1, 0.0003 |ΔP|/bar)
 };
 // The start: −k_B T ln g of the targets pooled over the systems (weighted by their statistics).
 CgPairSet ibi_start(const CgTargets& t, const CgIbiOptions& o);

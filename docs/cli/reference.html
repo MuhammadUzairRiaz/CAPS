@@ -294,8 +294,12 @@ options (default · why):
       ibi-start / ibi-run: the bonded folder (bonded.in, bonded.json)
   --rc  [15]
       ibi-start: the tables&#x27; cut-off (Å)
+  --pcorr  [virial]
+      ibi-*: the pressure correction ΔU = A (1 − r/rc): virial (A from the pressure error and the virial) | ramp (fixed size) | off
+  --gain  [0.5]
+      ibi-* --pcorr virial: the fraction of the pressure error removed per iteration
   --ramp  [0.1]
-      ibi-*: the pressure correction&#x27;s size, A = −ramp kT sign(ΔP) min(1, 0.0003|ΔP|/bar) (0: off)
+      ibi-* --pcorr ramp: A = −ramp kT sign(ΔP) min(1, 0.0003|ΔP|/bar) (0: off)
   --iterations  [3]
       ibi-run: iterations with CAPS&#x27;s engine
   --steps  [2000]

@@ -592,15 +592,30 @@ System embed_filler(const System& filler, const ChainSpec& spec, const FillerMat
   mchain /= 8;
   const double vm = o.chains * mchain / (o.density * 0.602214076);
   const double vf = occupied_volume(filler);
-  double fixed = 1;
-  for (int k = 0; k < 3; ++k)
-    if (o.keep_axis[size_t(k)]) fixed *= fl[size_t(k)];
-  const double free_len = std::pow((vm + vf) / fixed, 1.0 / (3 - kept));
-  std::array<double, 3> L;
   // extent of the filler along the free axes: the cell must leave room for chains around it
   Vec3 lo{1e300, 1e300, 1e300}, hi{-1e300, -1e300, -1e300};
   for (const auto& a : filler.atoms)
     for (int k = 0; k < 3; ++k) lo[k] = std::min(lo[k], a.pos[k]), hi[k] = std::max(hi[k], a.pos[k]);
+  // a hollow filler periodic along z (a nanotube): the empty core inside its innermost wall is no room for the matrix,
+  // and no chain may grow into it. Its radius: the nearest filler atom to the axis through the centre of the x, y extent
+  double core_r = 0, core_vol = 0;
+  if (!o.keep_axis[0] && !o.keep_axis[1] && o.keep_axis[2]) {
+    double rmin = 1e300, vdw = 0;
+    for (const auto& a : filler.atoms) {
+      const double r = std::hypot(a.pos[0] - 0.5 * (lo[0] + hi[0]), a.pos[1] - 0.5 * (lo[1] + hi[1]));
+      if (r < rmin) rmin = r, vdw = element(a.element).vdw;
+    }
+    if (rmin > 1.5) {
+      core_r = rmin;
+      const double open = std::max(0.0, rmin - vdw);   // inside the wall's van der Waals spheres (those are in vf)
+      core_vol = kPi * open * open * fl[2];
+    }
+  }
+  double fixed = 1;
+  for (int k = 0; k < 3; ++k)
+    if (o.keep_axis[size_t(k)]) fixed *= fl[size_t(k)];
+  const double free_len = std::pow((vm + vf + core_vol) / fixed, 1.0 / (3 - kept));
+  std::array<double, 3> L;
   FillerReport R;
   std::string widened;
   for (int k = 0; k < 3; ++k) {
@@ -613,7 +628,7 @@ System embed_filler(const System& filler, const ChainSpec& spec, const FillerMat
     }
   }
   if (!widened.empty()) {
-    const double room = L[0] * L[1] * L[2] - vf;
+    const double room = L[0] * L[1] * L[2] - vf - core_vol;
     const int want = int(std::ceil(room * o.density * 0.602214076 / mchain));
     R.notes.push_back("the cell was widened along " + widened + " to fit the filler, so the matrix is below " + std::to_string(o.density).substr(0, 4) +
                       " g/cm³: about " + std::to_string(want) + " chains would fill it");
@@ -633,6 +648,10 @@ System embed_filler(const System& filler, const ChainSpec& spec, const FillerMat
   g.chains = o.chains;
   g.z_lo = g.z_hi = 0;
   g.auto_scale = true;
+  if (core_r > 0) {
+    g.core_radius = core_r;
+    g.core_centre = {0.5 * L[0], 0.5 * L[1]};
+  }
   GrowReport gr;
   System s = grow_chains(spec, g, &gr);
   double mf = 0, mt = 0;
@@ -650,6 +669,10 @@ System embed_filler(const System& filler, const ChainSpec& spec, const FillerMat
   std::snprintf(b, sizeof b, "filler %.1f %% by mass, %.1f %% by volume · cell %.2f × %.2f × %.2f Å · %.3f g/cm³ overall", 100 * R.filler_mass_fraction,
                 100 * R.filler_volume_fraction, L[0], L[1], L[2], R.density);
   R.notes.insert(R.notes.begin(), b);
+  if (core_r > 0) {
+    std::snprintf(b, sizeof b, "the filler's hollow core (radius %.2f Å to its innermost atoms, %.0f Å³ empty) kept free of chains", core_r, core_vol);
+    R.notes.push_back(b);
+  }
   for (const auto& n : gr.notes) R.notes.push_back(n);
   s.title = "CAPS composite: " + (filler.title.empty() ? std::string("filler") : filler.title) + " + " + std::to_string(o.chains) + " chains";
   s.notes = R.notes;

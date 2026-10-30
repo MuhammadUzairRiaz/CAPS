@@ -60,6 +60,10 @@ struct GrowOptions {
   double slab_thickness = 0, slab_vacuum = 0;
   double cylinder_radius = 0, cylinder_length = 0;
   bool cylinder_outside = false;
+  // a hollow core kept empty (embed_filler: the inside of a nanotube along z): when core_radius > 0 no chain atom comes
+  // nearer than core_radius to the line along z through core_centre (x, y; minimum image). Works with a given cell.
+  double core_radius = 0;
+  std::array<double, 2> core_centre{0, 0};
   // Growth method (grow_chains): 0 best of the trials by contact margin (roomy but stretched chains); 1 Rosenbluth: a
   // trial drawn with probability ∝ exp(−E/kT), E soft-sphere overlap + torsion energy (after Theodorou & Suter 1985);
   // 2 Rosenbluth with UFF Lennard-Jones between atoms (by element, cut at 6 Å) + the same torsion energy
