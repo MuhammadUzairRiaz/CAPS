@@ -39,6 +39,8 @@ public partial class MainViewModel
     public string UpdateBannerLead => _bannerText.Split(" · ")[0];
     public string UpdateBannerDetail => _bannerText.Length > UpdateBannerLead.Length ? _bannerText[UpdateBannerLead.Length..] : "";
     public ReleaseManifest? RemoteRelease => _remoteRelease;
+    /// <summary>Help › Report a problem: the window opens the email (ProblemReport) and copies the report.</summary>
+    public event Action? ReportProblemRequested;
     public string UpdateDownloadUrl => _remoteRelease == null ? UpdateRules.ReleasesPage : UpdateRules.DownloadUrl(_remoteRelease, UpdateRules.PlatformKey());
     public string UpdateNotesUrl => (_whatsNewRemote ? _remoteRelease : BundledRelease ?? _remoteRelease)?.NotesUrl is { Length: > 0 } u ? u : UpdateRules.ReleasesPage;
 

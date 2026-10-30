@@ -186,6 +186,8 @@ public sealed partial class MainViewModel
             Keywords = "update new version release download changelog upgrade latest", Run = () => _ = CheckForUpdates(manual: true) });
         AddCommand(new PaletteCommand { Title = "What's new", Id = "app.whatsnew", Icon = "wand", Section = "Settings",
             Keywords = "whats new release notes highlights changelog changes update", Run = OpenWhatsNew });
+        AddCommand(new PaletteCommand { Title = "Report a problem", Id = "app.report", Icon = "file", Section = "Settings",
+            Keywords = "report problem bug error crash support email help contact developer", Run = () => ReportProblemRequested?.Invoke() });
         AddCommand(new PaletteCommand { Title = "Bond rules", Id = "edit.bond rules", Icon = "bond", Section = "Edit",
                                         Keywords = "bonds perceive cut-off distance histogram ionic never rule set rebond", Run = OpenRules });
         AddCommand(new PaletteCommand { Title = "Brush to select", Id = "select.brush", Icon = "chart", Section = "Selection",

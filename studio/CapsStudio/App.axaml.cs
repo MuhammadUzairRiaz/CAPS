@@ -43,7 +43,7 @@ public partial class App : Application
             {
                 var where = CrashLog.Write(e.Exception);
                 e.Handled = true;
-                if (_main is MainWindow mw) mw.ViewModel.Status = $"Something went wrong ({e.Exception.GetType().Name}: {e.Exception.Message}) · CAPS kept running · details in {where}";
+                if (_main is MainWindow mw) mw.ViewModel.Status = $"Something went wrong ({e.Exception.GetType().Name}: {e.Exception.Message}) · CAPS kept running · details in {where} · Help › Report a problem sends them to {ProblemReport.Email}";
             };
             AppDomain.CurrentDomain.UnhandledException += (_, e) => { if (e.ExceptionObject is Exception x) CrashLog.Write(x); };
             TaskScheduler.UnobservedTaskException += (_, e) => { CrashLog.Write(e.Exception); e.SetObserved(); };
@@ -81,5 +81,19 @@ public static class CrashLog
             return path;
         }
         catch { return "(no log: the folder is not writable)"; }
+    }
+
+    /// <summary>The newest entry of crash.log ("" when there is none), for a problem report.</summary>
+    public static string Newest()
+    {
+        try
+        {
+            var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CAPS", "logs", "crash.log");
+            if (!File.Exists(path)) return "";
+            var text = File.ReadAllText(path);
+            var at = text.LastIndexOf("---- ", StringComparison.Ordinal);
+            return (at >= 0 ? text[at..] : text).Trim();
+        }
+        catch { return ""; }
     }
 }
