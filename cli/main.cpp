@@ -19,6 +19,9 @@
 #include <string>
 #include <thread>
 #include <vector>
+#if !defined(_WIN32)
+#include <sys/utsname.h>
+#endif
 
 #include "caps/amber.hpp"
 #include "caps/config.hpp"
@@ -1578,7 +1581,85 @@ int check_update_main() {
   }
 }
 
+// ---- problem reports: the newest failed command in the CAPS logs folder, beside the Studio's crash.log (macOS
+// ~/Library/Application Support/CAPS/logs, Linux $XDG_DATA_HOME or ~/.local/share/CAPS/logs, Windows
+// %LOCALAPPDATA%\CAPS\logs); caps report prints it with the version and system for support@caps-studio.org
+constexpr const char* kSupportEmail = "support@caps-studio.org";
+
+std::filesystem::path caps_log_dir() {
+  auto env = [](const char* k) { const char* v = std::getenv(k); return std::string(v ? v : ""); };
+#if defined(_WIN32)
+  return std::filesystem::path(env("LOCALAPPDATA")) / "CAPS" / "logs";
+#elif defined(__APPLE__)
+  return std::filesystem::path(env("HOME")) / "Library" / "Application Support" / "CAPS" / "logs";
+#else
+  const auto xdg = env("XDG_DATA_HOME");
+  return (xdg.empty() ? std::filesystem::path(env("HOME")) / ".local" / "share" : std::filesystem::path(xdg)) / "CAPS" / "logs";
+#endif
+}
+
+void log_cli_error(int argc, char** argv, const std::string& what) {
+  try {
+    const auto dir = caps_log_dir();
+    std::filesystem::create_directories(dir);
+    std::ofstream f(dir / "cli-error.log", std::ios::trunc);
+    const auto now = std::time(nullptr);
+    char when[32];
+    std::strftime(when, sizeof when, "%Y-%m-%d %H:%M:%S", std::localtime(&now));
+    f << "---- " << when << " · caps " << version_string() << " (commit " << commit_string() << ")\n$";
+    for (int i = 0; i < argc; ++i) f << ' ' << argv[i];
+    f << "\ncaps: " << what << "\n";
+  } catch (...) {}
+}
+
+std::string system_description() {
+#if defined(_WIN32)
+  return "Windows";
+#else
+  struct utsname u {};
+  if (uname(&u) != 0) return "unknown";
+  return std::string(u.sysname) + " " + u.release + " " + u.machine;
+#endif
+}
+
+std::string url_escape(const std::string& s) {
+  std::string o;
+  char b[4];
+  for (unsigned char c : s) {
+    if (std::isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') o += char(c);
+    else { std::snprintf(b, sizeof b, "%%%02X", c); o += b; }
+  }
+  return o;
+}
+
+int report_main(int argc, char** argv) {
+  const bool email = argc >= 3 && std::string(argv[2]) == "--email";
+  std::ostringstream r;
+  r << "What I was doing when it happened:\n\n\n---- CAPS (filled in by caps report)\n"
+    << "caps " << version_string() << " · commit " << commit_string() << "\nSystem " << system_description() << "\n";
+  std::ifstream last(caps_log_dir() / "cli-error.log");
+  if (last) r << "\n---- the last command that failed\n" << std::string(std::istreambuf_iterator<char>(last), {});
+  const std::string text = r.str();
+  std::printf("%s\nSend this to %s (caps report --email opens it in your mail program).\n", text.c_str(), kSupportEmail);
+  if (!email) return 0;
+  const std::string url = std::string("mailto:") + kSupportEmail + "?subject=" + url_escape(std::string("CAPS problem report (caps ") +
+                          version_string() + ")") + "&body=" + url_escape(text.substr(0, 1600));
+#if defined(_WIN32)
+  const std::string open = "start \"\" \"" + url + "\"";
+#elif defined(__APPLE__)
+  const std::string open = "open '" + url + "'";
+#else
+  const std::string open = "xdg-open '" + url + "' >/dev/null 2>&1";
+#endif
+  if (std::system(open.c_str()) != 0) {
+    std::fprintf(stderr, "caps: no mail program opened; copy the report above into an email to %s\n", kSupportEmail);
+    return 1;
+  }
+  return 0;
+}
+
 int main(int argc, char** argv) {
+  if (argc >= 2 && std::string(argv[1]) == "report") return report_main(argc, argv);
   if (argc == 2 && (std::string(argv[1]) == "--version" || std::string(argv[1]) == "version")) {
     // "caps 0.1.0 (commit a1b2c3d4e5)": the Studio compares it with its own before running jobs on a host
     std::printf("caps %s (commit %s)\n", version_string(), commit_string());
@@ -4674,6 +4755,11 @@ int main(int argc, char** argv) {
     return usage();
   } catch (const std::exception& e) {
     std::fprintf(stderr, "caps: %s\n", e.what());
+    // a wrong argument is the user's to fix; anything else may be a bug in CAPS, so it is kept for caps report
+    if (!dynamic_cast<const std::invalid_argument*>(&e)) {
+      log_cli_error(argc, argv, e.what());
+      std::fprintf(stderr, "caps: if this looks like a bug in CAPS, `caps report --email` sends the details to %s\n", kSupportEmail);
+    }
     return 1;
   }
 }

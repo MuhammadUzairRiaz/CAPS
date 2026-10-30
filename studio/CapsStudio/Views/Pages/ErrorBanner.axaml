@@ -1,0 +1,23 @@
+<!-- Error banner: a strip above the window's content when CAPS caught an error it did not expect. The session goes on;
+     Send report opens an email to support@caps-studio.org with the details (Help › Report a problem), Dismiss hides it. -->
+<p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
+            x:Class="CapsStudio.Views.Pages.ErrorBanner" x:DataType="vm:MainViewModel">
+  <Border Background="{DynamicResource ErrBgB}" BorderBrush="{DynamicResource LineB}" BorderThickness="0,0,0,1">
+    <DockPanel Height="40">
+      <Border DockPanel.Dock="Left" Width="3" Background="{DynamicResource ErrB}" />
+      <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6" Margin="0,0,12,0" VerticalAlignment="Center">
+        <Button Classes="small primary" Click="OnSend" ToolTip.Tip="An email to support@caps-studio.org with what went wrong; you see it before it is sent">Send report</Button>
+        <Button Classes="small" Click="OnDismiss">Dismiss</Button>
+      </StackPanel>
+      <StackPanel Orientation="Horizontal" Spacing="10" Margin="14,0,12,0" VerticalAlignment="Center">
+        <Border Width="22" Height="22" CornerRadius="11" Background="{DynamicResource Bg2B}" VerticalAlignment="Center">
+          <TextBlock Text="!" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource ErrB}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Border>
+        <TextBlock VerticalAlignment="Center" FontSize="12.5" TextTrimming="CharacterEllipsis">
+          <Run Text="Something went wrong; CAPS kept running. " FontWeight="SemiBold" /><Run Text="{Binding ErrorBannerDetail}" Foreground="{DynamicResource MutedB}" />
+        </TextBlock>
+      </StackPanel>
+    </DockPanel>
+  </Border>
+</p:PageBase>

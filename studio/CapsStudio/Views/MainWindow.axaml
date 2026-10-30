@@ -81,6 +81,7 @@
   <DockPanel>
   <!-- a newer CAPS is out (Help › Check for updates now; once a day by itself) -->
   <pages:UpdateBanner DockPanel.Dock="Top" IsVisible="{Binding UpdateBannerOpen}" />
+  <pages:ErrorBanner DockPanel.Dock="Top" IsVisible="{Binding ErrorBannerOpen}" />
   <Grid RowDefinitions="44,Auto,*,26">
 
     <!-- Top bar (design/generator/lib.py topbar): logo, document tabs, command palette, compute -->

@@ -246,6 +246,8 @@ internal static class Screenshot
                 while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); }
                 Console.WriteLine("rxinsert: " + w.ViewModel.Status);
             }
+            if (kv[0] == "errorbanner")   // errorbanner=1: the bar shown after an error CAPS caught, with Send report
+                w.ViewModel.ShowError(new InvalidOperationException("Sequence contains no elements"));
             if (kv[0] == "exportpage")   // exportpage=1: Export for the open structure, its checks run
             {
                 w.ViewModel.OpenExportCenter();

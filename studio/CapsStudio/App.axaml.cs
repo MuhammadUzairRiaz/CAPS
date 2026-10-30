@@ -43,7 +43,11 @@ public partial class App : Application
             {
                 var where = CrashLog.Write(e.Exception);
                 e.Handled = true;
-                if (_main is MainWindow mw) mw.ViewModel.Status = $"Something went wrong ({e.Exception.GetType().Name}: {e.Exception.Message}) · CAPS kept running · details in {where} · Help › Report a problem sends them to {ProblemReport.Email}";
+                if (_main is MainWindow mw)
+                {
+                    mw.ViewModel.Status = $"Something went wrong ({e.Exception.GetType().Name}: {e.Exception.Message}) · CAPS kept running · details in {where}";
+                    mw.ViewModel.ShowError(e.Exception);
+                }
             };
             AppDomain.CurrentDomain.UnhandledException += (_, e) => { if (e.ExceptionObject is Exception x) CrashLog.Write(x); };
             TaskScheduler.UnobservedTaskException += (_, e) => { CrashLog.Write(e.Exception); e.SetObserved(); };
