@@ -1276,6 +1276,7 @@ internal static class SelfTest
                 var results = new List<string>();
                 foreach (var (name, text) in scripts)
                 {
+                    if (!MainViewModel.PythonAvailable) break;   // no interpreter: PyCheck below reports the skip
                     var file = Path.Combine(outDir, $"caps-selftest-{name}.py");
                     var body = System.Text.RegularExpressions.Regex.Replace(text, @"caps\.open\([^\n]*\)", $"caps.open(\"{pySaved.Replace('\\', '/')}\")");   // forward slashes: a Windows backslash is an escape in Python
                     File.WriteAllText(file, body);
@@ -3804,8 +3805,12 @@ internal static class SelfTest
             var asked = false;
             Action ask = () => asked = true;
             vm.ReportProblemRequested += ask;
+            vm.ShowError(new InvalidOperationException("a test error"));
+            var banner = vm.ErrorBannerOpen && vm.ErrorBannerDetail.Contains("a test error") && vm.ErrorBannerDetail.Contains(ProblemReport.Email);
             var ran = vm.RunCommand("app.report");
             vm.ReportProblemRequested -= ask;
+            vm.ErrorBannerOpen = false;
+            ran &= banner;
             Check(text.Contains("Core ") && text.Contains("commit") && text.Contains("System ") && mail.StartsWith("mailto:" + ProblemReport.Email)
                   && mail.Length < 6000 && ran && asked,
                   $"problem report: {text.Split('\n').Length} lines, the email link {mail.Length} chars, the command ran {ran && asked}");
@@ -4746,6 +4751,9 @@ internal static class SelfTest
             var code = nbj["cells"]!.AsArray().Where(c => (string?)c!["cell_type"] == "code").Select(c => (string)c!["source"]!).ToList();
             var script = Path.Combine(outDir, "caps-notebook-check.py");
             File.WriteAllText(script, string.Join("\n\n", code.Where(c => !c.Contains("doc.view"))) + "\nprint('NOTEBOOK OK', doc.summary()['atoms'])\n");
+            if (!MainViewModel.PythonAvailable) PyCheck(false, "notebook: no interpreter");   // reported as a skip
+            else
+            {
             var psi = new System.Diagnostics.ProcessStartInfo(MainViewModel.PythonExe, $"\"{script}\"") { RedirectStandardOutput = true, RedirectStandardError = true };
             var run = System.Diagnostics.Process.Start(psi)!;
             var stdout = run.StandardOutput.ReadToEnd();
@@ -4753,6 +4761,7 @@ internal static class SelfTest
             run.WaitForExit(120000);
             PyCheck(code.Count == 4 && run.ExitCode == 0 && stdout.Contains("NOTEBOOK OK 1300"),
                   $"notebook: {Path.GetFileName(nbPath)} · {code.Count} code cells · runs: {(run.ExitCode == 0 ? "yes" : stderr.Split('\n').LastOrDefault(l => l.Length > 0))}");
+            }
             try { File.Delete(nbPath); } catch { }
         }
         {
