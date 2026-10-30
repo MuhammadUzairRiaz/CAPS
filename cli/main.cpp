@@ -208,6 +208,7 @@ int usage() {
   std::cerr << "caps 0.1.0\n"
                "usage:\n"
                "  caps --version | --check-update   this build; whether a newer CAPS release is out (exit 0 no, 1 yes, 2 cannot tell)\n"
+               "  caps report  [--email]                a problem report for support@caps-studio.org (version, system, the last failed command)\n"
                "  caps info    FILE [--topology DATA]\n"
                "  caps render  FILE -o OUT.png|OUT.svg [--topology DATA] [--frame N] [--size WxH]\n"
                "               [--bg dark|white|transparent] [--colour molecule|element|type|distance]\n"
@@ -419,7 +420,7 @@ const std::set<std::string>& known_options() {
     "--hold", "--hybrid", "--include-input", "--input", "--insert", "--inter", "--ions", "--itp", "--iterations",
     "--json", "--kspace", "--kspace-accuracy", "--lammps-cutoff", "--units", "--lammps-input", "--lammps-run", "--moltemplate",
     "--lammps-style", "--last", "--layers", "--length", "--list", "--list-templates", "--log", "--lx", "--ly", "--m",
-    "--labels", "--lookahead", "--martini", "--max-blocks", "--max-torsions", "--moves", "--max-strain", "--md-ps", "--method", "--methods", "--model", "--molecule-size",
+    "--labels", "--email", "--lookahead", "--martini", "--max-blocks", "--max-torsions", "--moves", "--max-strain", "--md-ps", "--method", "--methods", "--model", "--molecule-size",
     "--molecules", "--n", "--names", "--neutralise", "--new-velocities", "--no-cell", "--wrap",
     "--no-coulomb", "--no-ions", "--no-orthogonal", "--no-pbc", "--no-pushoff", "--no-relax",
     "--no-tail", "--normal", "--out", "--overlay", "--padding", "--pair", "--particles",

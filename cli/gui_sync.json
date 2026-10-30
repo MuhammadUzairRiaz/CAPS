@@ -1357,6 +1357,15 @@
    "where": "ViewModels/MainViewModel.Update.cs|CheckForUpdates(",
    "capi": [],
    "options": {}
+  },
+  "report": {
+   "status": "gui",
+   "studio": "Help › Report a problem; Send report on the bar shown after an error",
+   "where": "ViewModels/MainViewModel.Palette.cs|app.report",
+   "capi": [],
+   "options": {
+    "--email": "Views/MainWindow.axaml.cs|ProblemReport.Mailto"
+   }
   }
  },
  "hidden_options": {
