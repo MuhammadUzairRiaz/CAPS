@@ -41,7 +41,33 @@ internal static partial class Program
                 GlProfiles = [new Avalonia.OpenGL.GlVersion(Avalonia.OpenGL.GlProfileType.OpenGL, 4, 0), new Avalonia.OpenGL.GlVersion(Avalonia.OpenGL.GlProfileType.OpenGL, 3, 3),
                               new Avalonia.OpenGL.GlVersion(Avalonia.OpenGL.GlProfileType.OpenGL, 3, 2), new Avalonia.OpenGL.GlVersion(Avalonia.OpenGL.GlProfileType.OpenGLES, 3, 0),
                               new Avalonia.OpenGL.GlVersion(Avalonia.OpenGL.GlProfileType.OpenGLES, 2, 0)]
-            });
+            })
+            .With(Win32Options());
+
+    /// <summary>Windows: Avalonia's defaults (ANGLE on Direct3D 11, WinUI composition), with OpenGL 3.3 asked for when WGL is
+    /// used. CAPS_WIN_RENDER (angle, wgl) and CAPS_WIN_COMPOSITION (winui, dcomp, lowlatency, redirect) choose others, to
+    /// measure the view's frame rate on a machine (--viewbench); the user never needs them.</summary>
+    private static Win32PlatformOptions Win32Options()
+    {
+        var o = new Win32PlatformOptions
+        {
+            WglProfiles = [new Avalonia.OpenGL.GlVersion(Avalonia.OpenGL.GlProfileType.OpenGL, 4, 0), new Avalonia.OpenGL.GlVersion(Avalonia.OpenGL.GlProfileType.OpenGL, 3, 3),
+                           new Avalonia.OpenGL.GlVersion(Avalonia.OpenGL.GlProfileType.OpenGL, 3, 2)]
+        };
+        var render = Environment.GetEnvironmentVariable("CAPS_WIN_RENDER")?.ToLowerInvariant();
+        if (render == "wgl") o.RenderingMode = [Win32RenderingMode.Wgl, Win32RenderingMode.AngleEgl, Win32RenderingMode.Software];
+        else if (render == "angle") o.RenderingMode = [Win32RenderingMode.AngleEgl, Win32RenderingMode.Software];
+        Win32CompositionMode? mode = Environment.GetEnvironmentVariable("CAPS_WIN_COMPOSITION")?.ToLowerInvariant() switch
+        {
+            "winui" => Win32CompositionMode.WinUIComposition,
+            "dcomp" => Win32CompositionMode.DirectComposition,
+            "lowlatency" => Win32CompositionMode.LowLatencyDxgiSwapChain,
+            "redirect" => Win32CompositionMode.RedirectionSurface,
+            _ => null
+        };
+        if (mode is { } m) o.CompositionMode = [m, Win32CompositionMode.RedirectionSurface];
+        return o;
+    }
 
     /// <summary>IBM Plex Sans (and Mono) from the app's assets as the default family: the design system's type.</summary>
     public static AppBuilder WithCapsFonts(this AppBuilder b) =>
