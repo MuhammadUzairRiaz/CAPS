@@ -142,6 +142,7 @@ public partial class MainWindow : Window
         KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.S, KeyModifiers.Meta | KeyModifiers.Shift), Command = copyCommand });
         KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.S, KeyModifiers.Control | KeyModifiers.Shift), Command = copyCommand });
         _vm.RenderRequested += RequestRender;
+        _vm.ReportProblemRequested += () => _ = ReportProblem();
         InitSelectionBar();
         _vm.CompareStatesChanged += () =>
         {
@@ -678,6 +679,17 @@ public partial class MainWindow : Window
     private async void OnFieldClear(object? s, RoutedEventArgs e) { if (!_vm.Busy) await _vm.Field.Clear(); }
     private async void OnFieldUseFile(object? s, RoutedEventArgs e) { if (!_vm.Busy) await _vm.Field.UseFileForceField(); }
     private async void OnFieldCompleteModel(object? s, RoutedEventArgs e) { if (!_vm.Busy) await _vm.Field.CompleteWithModel(_vm.DocumentPath); }
+    // Help › Report a problem: the report on the clipboard (whole), then an email to support in the user's mail program
+    private async Task ReportProblem()
+    {
+        var text = ProblemReport.Text();
+        try { if (Clipboard != null) await Clipboard.SetTextAsync(text); } catch { }
+        var opened = false;
+        try { if (Launcher is { } l) opened = await l.LaunchUriAsync(ProblemReport.Mailto(text)); } catch { }
+        _vm.Status = opened
+            ? $"An email to {ProblemReport.Email} is open in your mail program, with the report (also on the clipboard): say what you were doing and send it"
+            : $"No mail program opened: the report is on the clipboard; paste it into an email to {ProblemReport.Email}";
+    }
     private async void OnCopyTensileCommand(object? s, RoutedEventArgs e)
     {
         if (Clipboard != null) await Clipboard.SetTextAsync(_vm.TensileCommand());

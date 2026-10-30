@@ -210,7 +210,9 @@ public partial class MainWindow
             Page("Studio tour", 92),
             Sep(),
             Cmd("What's new…", "app.whatsnew"),
-            Cmd("Check for updates now", "app.update")));
+            Cmd("Check for updates now", "app.update"),
+            Sep(),
+            Cmd("Report a problem…", "app.report")));
         return menu;
     }
 

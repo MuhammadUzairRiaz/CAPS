@@ -3797,6 +3797,20 @@ internal static class SelfTest
                   $"What's new: {items.Count} highlights ({string.Join(" | ", items.Select(i => i.Title + (i.CanOpen ? " [Open]" : "")))}), Open went to its page {went}, shown once {once}, remote {remote}");
         }
 
+        // Help › Report a problem: the version, commit and system filled in, an email to support short enough for every mail program
+        {
+            var text = ProblemReport.Text();
+            var mail = ProblemReport.Mailto(text + new string('x', 5000)).AbsoluteUri;
+            var asked = false;
+            Action ask = () => asked = true;
+            vm.ReportProblemRequested += ask;
+            var ran = vm.RunCommand("app.report");
+            vm.ReportProblemRequested -= ask;
+            Check(text.Contains("Core ") && text.Contains("commit") && text.Contains("System ") && mail.StartsWith("mailto:" + ProblemReport.Email)
+                  && mail.Length < 6000 && ran && asked,
+                  $"problem report: {text.Split('\n').Length} lines, the email link {mail.Length} chars, the command ran {ran && asked}");
+        }
+
         // Start › From a recipe: a small polyethylene recipe runs, exports beside itself and opens as the document
         {
             var rdir = Path.Combine(outDir, "caps-selftest-recipe");
