@@ -43,6 +43,10 @@ cp "$ROOT/LICENSE" "$APP/LICENSE"
 cp -R "$ROOT/samples" "$APP/"
 find "$APP" -maxdepth 1 -name "*.pdb" -delete
 strip "$APP/caps" "$APP/libcaps.so" 2>/dev/null || true
+# modes set here, not left to the build machine: dotnet publish copies some native libraries as 0744 from its package
+# cache, and every user of an installed CAPS must read everything and run what the owner can run
+chmod -R u+rwX,go+rX,go-w "$APP"
+find "$APP" -type f -perm -u+x -exec chmod a+x {} +
 if [ -n "${CAPS_TORCH_DIR:-}" ]; then
   # libtorch's libraries (and the OpenMP runtime the CPU build ships with) beside caps and libcaps, found through $ORIGIN
   for lib in "$CAPS_TORCH_DIR"/lib/libtorch.so "$CAPS_TORCH_DIR"/lib/libtorch_cpu.so "$CAPS_TORCH_DIR"/lib/libc10.so "$CAPS_TORCH_DIR"/lib/libgomp*.so*; do
