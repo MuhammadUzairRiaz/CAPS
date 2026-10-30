@@ -34,7 +34,7 @@ internal static class ViewBench
             if (!w.BenchReady(false)) { Console.WriteLine("viewbench: the structure did not open"); quit(); return; }
             await Task.Delay(1000);
             var gl = w.BenchGl;
-            Console.WriteLine($"viewbench: {w.ViewModel.Document!.Summary().Atoms} atoms · main view GPU {(gl.Ready ? "on · " + gl.Status : "off")}");
+            Console.WriteLine($"viewbench: {w.ViewModel.Document!.Summary().Atoms} atoms · main view GPU {(gl.Ready ? "on · " : "off · ") + gl.Status}");
 
             // the main view
             var main = new List<double>();
