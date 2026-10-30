@@ -41,6 +41,16 @@ public partial class MainViewModel
     public ReleaseManifest? RemoteRelease => _remoteRelease;
     /// <summary>Help › Report a problem: the window opens the email (ProblemReport) and copies the report.</summary>
     public event Action? ReportProblemRequested;
+    // the error banner: an error CAPS caught and kept running past, with Send report (app.report) and Dismiss
+    private bool _errorBannerOpen;
+    private string _errorBannerDetail = "";
+    public bool ErrorBannerOpen { get => _errorBannerOpen; set => Set(ref _errorBannerOpen, value); }
+    public string ErrorBannerDetail { get => _errorBannerDetail; private set => Set(ref _errorBannerDetail, value); }
+    public void ShowError(Exception x)
+    {
+        ErrorBannerDetail = $"{x.GetType().Name}: {x.Message} · Send report emails it to {ProblemReport.Email}";
+        ErrorBannerOpen = true;
+    }
     public string UpdateDownloadUrl => _remoteRelease == null ? UpdateRules.ReleasesPage : UpdateRules.DownloadUrl(_remoteRelease, UpdateRules.PlatformKey());
     public string UpdateNotesUrl => (_whatsNewRemote ? _remoteRelease : BundledRelease ?? _remoteRelease)?.NotesUrl is { Length: > 0 } u ? u : UpdateRules.ReleasesPage;
 
