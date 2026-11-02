@@ -2663,7 +2663,7 @@
    ],
    "when": "Semicrystalline fibres and matrices in a composite (PE, PP, PVDF, nylons, PET, PLA, strain-crystallised natural rubber): the starting cell for MD of the crystal-amorphous interphase, its stiffness, thermal conductivity or yield.",
    "tested": "tests/test_thermal.cpp Semicrystalline.* and SemicrystallinePolymers.* (each of the 14 library crystals: crystal at the library density, every atom in a stem, loop, bridge or tail, every atom typed by the polymer's force field, bonds near their lengths, stem tilt as the cell's)",
-   "deviation": "the thicknesses and fractions of the polymers other than PE are PE's (Olsson, in 't Veld & Andreasson 2018): no lamellar-stack MD with loops, bridges and tails was found for them; the amorphous densities other than PE's are commonly quoted values not yet checked against a primary source. A few closures in stiff chains (PET) are left strained for the relaxation",
+   "deviation": "the thicknesses and fractions of the polymers other than PE are PE's (Olsson, in 't Veld & Andreasson 2018): no lamellar-stack MD with loops, bridges and tails was found for them. The amorphous densities are room-temperature values from the Wunderlich data reviews (J. Phys. Chem. Ref. Data 1981 and 1983) or from the paper that measured them (PET, PLLA, natural rubber); the PVDF, PEO, POM and PTFE values in those reviews come from handbooks, not from a measurement the review names. A few closures in stiff chains (PET) are left strained for the relaxation",
    "tex": "S\\,(2 - f_t) = 2N,\\qquad P_2 = \\left\\langle \\tfrac{1}{2}\\left(3\\cos^2\\theta - 1\\right)\\right\\rangle"
   },
   {

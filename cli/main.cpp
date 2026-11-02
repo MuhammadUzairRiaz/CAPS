@@ -304,7 +304,7 @@ int usage() {
                "  caps blend   --components SMILES1,SMILES2 [--weights 0.5,0.5] [--chains 8] [--dp 20] [--density 0.5] [--slabs | --droplet] -o OUT\n"
                "  caps semicrystalline -o OUT.data [--polymer pe|pvdf-beta|ipp-alpha|nylon6-alpha|pet|...|CELL.cif | --polymer list]\n"
                "               [--repeats 4,6] [--crystal 7.6 (nm) | --crystal-cells 30] [--amorphous 7.6 (nm)] [--loops 0.35 --bridges 0.1 --tails 0.55]\n"
-               "               [--reentry adjacent|random] [--density 0.855] [--seed 1] [--ff auto|oplsaa2024|pcff|compass|oplsua2024] [--no-relax]\n"
+               "               [--reentry adjacent|random] [--density 0.852] [--seed 1] [--ff auto|oplsaa2024|pcff|compass|oplsua2024] [--no-relax]\n"
                "               [--report R.json] [--lammps-input IN.lmp] [--gromacs STEM]   a lamellar stack of any library crystal: stems, loops,\n"
                "               bridges and tails grown from the crystal's repeat unit (groups crystal, amorphous); defaults and force field per polymer\n"
                "  caps semicrystalline FILE --analyse [--report R.json] [--labels L.txt]   loops, bridges, tails, P2 crystallinity, profiles\n"

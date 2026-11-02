@@ -1504,7 +1504,7 @@ internal static class SelfTest
             var listed = MainViewModel.ScPolymers.Length;
             var pv = Array.FindIndex(MainViewModel.ScPolymers, p => p.Id == "pvdf-beta");
             vm.ScPolymerIndex = pv;
-            var filled = vm.ScDensity == 1.68m && vm.ScFfText.Contains("PCFF");
+            var filled = vm.ScDensity == 1.672m && vm.ScFfText.Contains("PCFF");
             vm.ScNx = 2; vm.ScNy = 3; vm.ScCrystal = 1.5m; vm.ScAmorphous = 2.5m; vm.ScRelax = false;
             vm.BuildSemicrystalline().GetAwaiter().GetResult();
             Check(listed >= 14 && pv >= 0 && filled && !vm.ScHasError && vm.Title.Contains("vinylidene") && vm.Document!.Summary().Atoms > 0,
