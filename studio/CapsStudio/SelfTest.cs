@@ -1499,6 +1499,17 @@ internal static class SelfTest
             vm.ThDim = 0; vm.ThEq = 0.02m; vm.ThPs = 0.1m; vm.ThCorr = 0.02m;
             vm.RunThermal().GetAwaiter().GetResult();
             Check(refused && !vm.ThHasError && vm.ThResult.Contains("Green–Kubo") && vm.ThCurves.Length == 3, $"thermal conductivity: refused without 2D/3D {refused} · {vm.ThResult} · {vm.ThError}");
+            // another crystal of the list: PVDF β fills its own defaults and force field (PCFF), its chains grown from CH2-CF2
+            vm.OpenSemicrystalline();
+            var listed = MainViewModel.ScPolymers.Length;
+            var pv = Array.FindIndex(MainViewModel.ScPolymers, p => p.Id == "pvdf-beta");
+            vm.ScPolymerIndex = pv;
+            var filled = vm.ScDensity == 1.68m && vm.ScFfText.Contains("PCFF");
+            vm.ScNx = 2; vm.ScNy = 3; vm.ScCrystal = 1.5m; vm.ScAmorphous = 2.5m; vm.ScRelax = false;
+            vm.BuildSemicrystalline().GetAwaiter().GetResult();
+            Check(listed >= 14 && pv >= 0 && filled && !vm.ScHasError && vm.Title.Contains("vinylidene") && vm.Document!.Summary().Atoms > 0,
+                  $"semicrystalline PVDF β: {listed} crystals listed · defaults filled {filled} · {vm.Title} · {vm.ScError}");
+            vm.ScPolymerIndex = 0; vm.ScRelax = true;
             vm.SetModule(8);
         }
 

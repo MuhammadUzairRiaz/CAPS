@@ -1,5 +1,6 @@
-<!-- CAPS Studio › Build › Semicrystalline stack: a crystal lamella of straight stems along z and an amorphous layer of loops,
-     bridges and tails (caps semicrystalline); the cell coloured by its crystal and amorphous groups, the topology report,
+<!-- CAPS Studio › Build › Semicrystalline stack: a crystal lamella of any crystal the builder lists (PE, PVDF, iPP, PEO, POM,
+     nylons, PET, PLLA, natural rubber, PTFE) and an amorphous layer of loops, bridges and tails grown from the crystal's repeat
+     unit (caps semicrystalline); the cell coloured by its crystal and amorphous groups, the topology report,
      the density and order profiles along the stack normal and the bridge lengths. -->
 <p:PageBase xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
             xmlns:vm="using:CapsStudio.ViewModels" xmlns:v="using:CapsStudio.Views" xmlns:p="using:CapsStudio.Views.Pages"
@@ -21,7 +22,7 @@
         </StackPanel>
         <StackPanel Spacing="3">
           <TextBlock Text="Semicrystalline stack · lamellae" FontSize="19" FontWeight="SemiBold" />
-          <TextBlock Text="Straight crystalline stems in a lamella; loops, bridges and tails in the amorphous layer between it and its periodic image" FontSize="12.5" Foreground="{DynamicResource MutedB}" />
+          <TextBlock Text="Crystalline stems in a lamella; loops, bridges and tails grown from the crystal's repeat unit in the amorphous layer between it and its periodic image" FontSize="12.5" Foreground="{DynamicResource MutedB}" />
         </StackPanel>
       </DockPanel>
     </Border>
@@ -34,9 +35,12 @@
           <Border Classes="pcard">
             <StackPanel Spacing="8">
               <TextBlock Text="Crystal" FontSize="13.5" FontWeight="SemiBold" />
-              <TextBlock Classes="dim" TextWrapping="Wrap" Text="Polyethylene, orthorhombic Pnam (Bunn 1939): a 7.40, b 4.93, c 2.534 Å, two stems per cell, stems along z" />
+              <ComboBox ItemsSource="{x:Static vm:MainViewModel.ScPolymers}" SelectedIndex="{Binding ScPolymerIndex}" HorizontalAlignment="Stretch"
+                        ToolTip.Tip="The crystals the builder takes (data/crystals/polymers/semicrystalline.json); choosing one fills in its defaults" />
+              <TextBlock Classes="dim" TextWrapping="Wrap" Text="{Binding ScCrystalText}" />
               <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="4">
                 <TextBlock Text="Cells along a" Classes="label" /><TextBlock Grid.Column="1" Text="Cells along b" Classes="label" /><TextBlock Grid.Column="2" Text="Lamella · nm" Classes="label" />
+                <!-- a and b: the cell's edges across the chains (relabelled when the file's chains run along a or b) -->
                 <NumericUpDown Grid.Row="1" Value="{Binding ScNx}" Minimum="1" Maximum="20" FormatString="0" />
                 <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding ScNy}" Minimum="1" Maximum="20" FormatString="0" />
                 <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding ScCrystal}" Minimum="0.5" Maximum="50" Increment="0.5" FormatString="0.0#" />
@@ -49,7 +53,7 @@
               <Grid ColumnDefinitions="*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="4">
                 <TextBlock Text="Thickness · nm" Classes="label" /><TextBlock Grid.Column="1" Text="Density · g/cm³" Classes="label" />
                 <NumericUpDown Grid.Row="1" Value="{Binding ScAmorphous}" Minimum="0.5" Maximum="50" Increment="0.5" FormatString="0.0#" />
-                <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding ScDensity}" Minimum="0.3" Maximum="1.2" Increment="0.01" FormatString="0.000" />
+                <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding ScDensity}" Minimum="0.3" Maximum="3" Increment="0.01" FormatString="0.000" />
               </Grid>
               <TextBlock Text="Segments (fractions; a loop or bridge takes two stem ends, a tail one)" Classes="label" />
               <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="4">
@@ -59,7 +63,10 @@
                 <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding ScTails}" Minimum="0" Maximum="1" Increment="0.05" FormatString="0.00" />
               </Grid>
               <ComboBox ItemsSource="{x:Static vm:MainViewModel.ScReentries}" SelectedIndex="{Binding ScReentry}" HorizontalAlignment="Stretch" />
-              <CheckBox Content="United atom (count carbons only; assign oplsua2024 in Force field)" IsChecked="{Binding ScUnited}" />
+              <CheckBox Content="United atom (count heavy atoms only; assign oplsua2024 in Force field)" IsChecked="{Binding ScUnited}" />
+              <TextBlock Text="Force field" Classes="label" />
+              <ComboBox ItemsSource="{x:Static vm:MainViewModel.ScForcefields}" SelectedIndex="{Binding ScFf}" HorizontalAlignment="Stretch" />
+              <TextBlock Text="{Binding ScFfText}" Classes="dim" TextWrapping="Wrap" />
               <CheckBox Content="Relax: push-off with the crystal held, then minimise" IsChecked="{Binding ScRelax}" />
               <TextBlock Text="{Binding ScEstimate}" Classes="dim" TextWrapping="Wrap" />
             </StackPanel>
