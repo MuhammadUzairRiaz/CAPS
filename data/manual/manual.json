@@ -2625,6 +2625,48 @@
    "tex": "N = \\operatorname{round}(\\sigma A),\\qquad \\sigma_{\\mathrm{achieved}} = \\frac{N}{A}"
   },
   {
+   "group": "Growth",
+   "source": "core/src/semicrystal.cpp",
+   "engines": [],
+   "cites": [],
+   "id": "semicrystalline",
+   "title": "Semicrystalline lamellar stacks",
+   "summary": "A crystal lamella cut from a cell of the polymer crystal library (PE, PVDF, iPP, PEO, POM, nylon 6 and 66, PET, PLLA, natural rubber, PTFE), with an amorphous layer between it and its periodic image holding loops, bridges and tails. The stems run along the crystal's c, the fold surfaces are its ab plane and the stack normal is z, so a monoclinic or triclinic cell gives stems that lean by the angle between c and z. The amorphous segments are grown from the crystal's own repeat unit: the shortest period of its chain (CH2 for PE, CH2-CF2 for PVDF, the whole repeat of nylon 6), each backbone atom with the crystal's bond length, angle and side atoms in its local frame, so the stereochemistry is the crystal's (isotactic iPP, L-lactide). Torsions are held in rings, amides, esters and C=C, take two states between trigonal atoms and come from a trans-gauche set elsewhere. A loop or bridge closes in phase with the stem it enters, and for a chain with a direction (nylon 6, iPP, PLLA, natural rubber) it joins two stems that point opposite ways along the chain. Tails end at an sp3-sp3 bond, capped with H. The force field is chosen per polymer (OPLS-AA 2024 or PCFF, the one that types every atom of the cell).",
+   "equation": "S (2 − f_t) = 2N,  P2 = ⟨(3 cos²θ − 1)/2⟩",
+   "equation_note": "N stems have 2N ends; a loop or bridge takes two, a tail one. θ is the angle between a backbone chord r(i+w) − r(i−w) and the stems' direction; w is 1 for a zig-zag and 2 to 5 for a helix, whichever lines the stems up best",
+   "symbols": [
+    [
+     "S",
+     "amorphous segments (loops, bridges, tails)",
+     "—"
+    ],
+    [
+     "f_t",
+     "fraction of the segments that are tails",
+     "—"
+    ],
+    [
+     "N",
+     "stems in the lamella",
+     "—"
+    ],
+    [
+     "P2",
+     "chain order parameter of a backbone atom",
+     "—"
+    ],
+    [
+     "θ",
+     "angle of the chord to the stems",
+     "°"
+    ]
+   ],
+   "when": "Semicrystalline fibres and matrices in a composite (PE, PP, PVDF, nylons, PET, PLA, strain-crystallised natural rubber): the starting cell for MD of the crystal-amorphous interphase, its stiffness, thermal conductivity or yield.",
+   "tested": "tests/test_thermal.cpp Semicrystalline.* and SemicrystallinePolymers.* (each of the 14 library crystals: crystal at the library density, every atom in a stem, loop, bridge or tail, every atom typed by the polymer's force field, bonds near their lengths, stem tilt as the cell's)",
+   "deviation": "the thicknesses and fractions of the polymers other than PE are PE's (Olsson, in 't Veld & Andreasson 2018): no lamellar-stack MD with loops, bridges and tails was found for them; the amorphous densities other than PE's are commonly quoted values not yet checked against a primary source. A few closures in stiff chains (PET) are left strained for the relaxation",
+   "tex": "S\\,(2 - f_t) = 2N,\\qquad P_2 = \\left\\langle \\tfrac{1}{2}\\left(3\\cos^2\\theta - 1\\right)\\right\\rangle"
+  },
+  {
    "group": "Integrators",
    "source": "core/src/lammps_data.cpp",
    "engines": [

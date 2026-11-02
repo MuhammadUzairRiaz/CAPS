@@ -915,12 +915,13 @@ examples:
 <p>a problem report for support@caps-studio.org (version, system, the last failed command)</p>
 <div class="code" data-lang="synopsis"><pre><code>caps report  [--email]                a problem report for support@caps-studio.org (version, system, the last failed command)</code></pre></div></article>
 <article class="cmd" id="semicrystalline" data-name="semicrystalline"><h3><code>caps semicrystalline</code></h3>
-<div class="code" data-lang="synopsis"><pre><code>caps semicrystalline -o OUT.data [--polymer pe|pe-orthorhombic|CELL.cif] [--repeats 4,6] [--crystal 5 (nm) | --crystal-cells 20]
-             [--amorphous 4 (nm)] [--loops 0.5 --bridges 0.2 --tails 0.3] [--reentry adjacent|random] [--density 0.855]
-             [--seed 1] [--ff oplsaa2024|oplsua2024] [--no-relax] [--report R.json] [--lammps-input IN.lmp] [--gromacs STEM]
-             a lamellar stack: crystalline stems, loops, bridges and tails in the amorphous layer (groups crystal, amorphous)
+<div class="code" data-lang="synopsis"><pre><code>caps semicrystalline -o OUT.data [--polymer pe|pvdf-beta|ipp-alpha|nylon6-alpha|pet|...|CELL.cif | --polymer list]
+             [--repeats 4,6] [--crystal 7.6 (nm) | --crystal-cells 30] [--amorphous 7.6 (nm)] [--loops 0.35 --bridges 0.1 --tails 0.55]
+             [--reentry adjacent|random] [--density 0.855] [--seed 1] [--ff auto|oplsaa2024|pcff|compass|oplsua2024] [--no-relax]
+             [--report R.json] [--lammps-input IN.lmp] [--gromacs STEM]   a lamellar stack of any library crystal: stems, loops,
+             bridges and tails grown from the crystal&#x27;s repeat unit (groups crystal, amorphous); defaults and force field per polymer
 caps semicrystalline FILE --analyse [--report R.json] [--labels L.txt]   loops, bridges, tails, P2 crystallinity, profiles
-             of any frame; --labels: each atom&#x27;s id, class (stem, loop, bridge, tail, none) and segment (hydrogens as their carbon)</code></pre></div></article>
+             of any frame; --labels: each atom&#x27;s id, class (stem, loop, bridge, tail, none) and segment (side atoms as their backbone atom)</code></pre></div></article>
 <article class="cmd" id="thermal" data-name="thermal"><h3><code>caps thermal</code></h3>
 <div class="code" data-lang="synopsis"><pre><code>caps thermal FILE --dimensionality 3d|2d [--method gk|nemd] [--temp 300] [--eq-ps 10] [--ps 100] [--dt 1] [--every 5]
              [--corr-ps 5] [--axis x|y|z] [--layers 20] [--swap-every 100] [--transient 0.3] [--thickness 3.35] [--seed 1]
