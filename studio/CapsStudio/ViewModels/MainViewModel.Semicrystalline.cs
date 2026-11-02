@@ -71,7 +71,7 @@ public sealed partial class MainViewModel
     }
     public static readonly string[] ScForcefields = ["The polymer's own (automatic)", "OPLS-AA 2024", "PCFF", "COMPASS", "None (built-in GAFF / UFF for the relaxation)"];
     private int _scPolymer, _scFf;
-    private decimal _scNx = 4, _scNy = 6, _scCrystal = 7.6m, _scAmorphous = 7.6m, _scLoops = 0.35m, _scBridges = 0.10m, _scTails = 0.55m, _scDensity = 0.855m;
+    private decimal _scNx = 4, _scNy = 6, _scCrystal = 7.6m, _scAmorphous = 7.6m, _scLoops = 0.35m, _scBridges = 0.10m, _scTails = 0.55m, _scDensity = 0.852m;
     private int _scReentry;
     private bool _scUnited, _scRelax = true, _scRunning;
     private string _scError = "", _scProgress = "", _scSummary = "", _scNotes = "";

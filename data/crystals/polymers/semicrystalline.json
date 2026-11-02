@@ -1,6 +1,6 @@
 {
  "format": "caps-semicrystalline-defaults",
- "about": "Defaults of caps semicrystalline for each crystal of the polymer crystal library (polymers.json) the lamellar builder takes. Lamella and amorphous thicknesses and the loop, bridge and tail fractions follow the one all-atom study that reports them for PE with OPLS-AA: Olsson, in 't Veld & Andreasson, Polymer 153, 305 (2018), doi:10.1016/j.polymer.2018.07.075 (30 c-cells of crystal and of amorphous layer, 7.6 nm each; of the amorphous sites about 10 % bridges, 35 % loops, 55 % tails). Published lamellar-stack MD with loops, bridges and tails exists for PE (Kim, Locker & Rutledge, Macromolecules 47, 2515 (2014), doi:10.1021/ma402297a; Kumar et al., Macromolecules 50, 1206 (2017), doi:10.1021/acs.macromol.6b02458; Lu et al., J. Appl. Phys. 123, 015107 (2018), doi:10.1063/1.5006889; Atiq et al., J. Phys. Chem. B 128, 2799 (2024), doi:10.1021/acs.jpcb.3c07705, PCFF) and for iPP by interphase Monte Carlo (Kuppa, in 't Veld & Rutledge, Macromolecules 40, 5187 (2007), doi:10.1021/ma0703958); for the other polymers none was found, so their thicknesses and fractions are PE's, to be set from the polymer's own long period. The force field is the one of OPLS-AA 2024, PCFF and COMPASS that types and parameterises the built cell completely and that the literature uses for the polymer (OPLS-AA for PE, Olsson 2018; PCFF for PE, Atiq 2024); COMPASS as shipped lacks fluorine and amide types and some POM and PLLA terms. Lateral repeats give about 3 nm by 3 nm. DOIs checked on Crossref.",
+ "about": "Defaults of caps semicrystalline for each crystal of the polymer crystal library (polymers.json) the lamellar builder takes. Lamella and amorphous thicknesses and the loop, bridge and tail fractions follow the one all-atom study that reports them for PE with OPLS-AA: Olsson, in 't Veld & Andreasson, Polymer 153, 305 (2018), doi:10.1016/j.polymer.2018.07.075 (30 c-cells of crystal and of amorphous layer, 7.6 nm each; of the amorphous sites about 10 % bridges, 35 % loops, 55 % tails). Published lamellar-stack MD with loops, bridges and tails exists for PE (Kim, Locker & Rutledge, Macromolecules 47, 2515 (2014), doi:10.1021/ma402297a; Kumar et al., Macromolecules 50, 1206 (2017), doi:10.1021/acs.macromol.6b02458; Lu et al., J. Appl. Phys. 123, 015107 (2018), doi:10.1063/1.5006889; Atiq et al., J. Phys. Chem. B 128, 2799 (2024), doi:10.1021/acs.jpcb.3c07705, PCFF) and for iPP by interphase Monte Carlo (Kuppa, in 't Veld & Rutledge, Macromolecules 40, 5187 (2007), doi:10.1021/ma0703958); for the other polymers none was found, so their thicknesses and fractions are PE's, to be set from the polymer's own long period. The force field is the one of OPLS-AA 2024, PCFF and COMPASS that types and parameterises the built cell completely and that the literature uses for the polymer (OPLS-AA for PE, Olsson 2018; PCFF for PE, Atiq 2024); COMPASS as shipped lacks fluorine and amide types and some POM and PLLA terms. Lateral repeats give about 3 nm by 3 nm. The amorphous densities are room-temperature values from the Wunderlich data reviews or the paper that measured them, each named with its entry. DOIs checked on Crossref.",
  "polymers": [
   {
    "id": "pe-orthorhombic",
@@ -14,8 +14,8 @@
    "loops": 0.35,
    "bridges": 0.1,
    "tails": 0.55,
-   "density": 0.855,
-   "density_source": "Lu et al., J. Appl. Phys. 123, 015107 (2018), doi:10.1063/1.5006889 (melt-like PE at 300 K, the experimental value they use)"
+   "density": 0.852,
+   "density_source": "Gaur & Wunderlich, J. Phys. Chem. Ref. Data 10, 119 (1981), doi:10.1063/1.555636 (0.8519 at 298 K, from crystallinity and copolymer extrapolations; Wunderlich & Czornyj, Macromolecules 10, 906 (1977), doi:10.1021/ma60059a006)"
   },
   {
    "id": "pe-monoclinic",
@@ -29,8 +29,8 @@
    "loops": 0.35,
    "bridges": 0.1,
    "tails": 0.55,
-   "density": 0.855,
-   "density_source": "Lu et al., J. Appl. Phys. 123, 015107 (2018), doi:10.1063/1.5006889 (melt-like PE at 300 K, the experimental value they use)"
+   "density": 0.852,
+   "density_source": "Gaur & Wunderlich, J. Phys. Chem. Ref. Data 10, 119 (1981), doi:10.1063/1.555636 (0.8519 at 298 K, from crystallinity and copolymer extrapolations; Wunderlich & Czornyj, Macromolecules 10, 906 (1977), doi:10.1021/ma60059a006)"
   },
   {
    "id": "pvdf-beta",
@@ -44,8 +44,8 @@
    "loops": 0.35,
    "bridges": 0.1,
    "tails": 0.55,
-   "density": 1.68,
-   "density_source": "a commonly quoted room-temperature amorphous density, not yet checked against a primary source"
+   "density": 1.672,
+   "density_source": "Gaur, Wunderlich & Wunderlich, J. Phys. Chem. Ref. Data 12, 29 (1983), doi:10.1063/1.555677, Table 1 (1.672; the review takes it from the Polymer Handbook)"
   },
   {
    "id": "pvdf-alpha",
@@ -59,8 +59,8 @@
    "loops": 0.35,
    "bridges": 0.1,
    "tails": 0.55,
-   "density": 1.68,
-   "density_source": "a commonly quoted room-temperature amorphous density, not yet checked against a primary source"
+   "density": 1.672,
+   "density_source": "Gaur, Wunderlich & Wunderlich, J. Phys. Chem. Ref. Data 12, 29 (1983), doi:10.1063/1.555677, Table 1 (1.672; the review takes it from the Polymer Handbook)"
   },
   {
    "id": "ipp-alpha",
@@ -75,7 +75,7 @@
    "bridges": 0.1,
    "tails": 0.55,
    "density": 0.855,
-   "density_source": "a commonly quoted room-temperature amorphous density, not yet checked against a primary source"
+   "density_source": "Wilski, Kunststoffe 54, 10 and 90 (1964), 0.8554, as given by Gaur & Wunderlich, J. Phys. Chem. Ref. Data 10, 1051 (1981), doi:10.1063/1.555650"
   },
   {
    "id": "peo",
@@ -89,8 +89,8 @@
    "loops": 0.35,
    "bridges": 0.1,
    "tails": 0.55,
-   "density": 1.12,
-   "density_source": "a commonly quoted room-temperature amorphous density, not yet checked against a primary source"
+   "density": 1.13,
+   "density_source": "Gaur & Wunderlich, J. Phys. Chem. Ref. Data 10, 1001 (1981), doi:10.1063/1.555649, Table 1 (1.13; the review takes it from the Polymer Handbook)"
   },
   {
    "id": "pom-orthorhombic",
@@ -105,7 +105,7 @@
    "bridges": 0.1,
    "tails": 0.55,
    "density": 1.25,
-   "density_source": "a commonly quoted room-temperature amorphous density, not yet checked against a primary source"
+   "density_source": "Gaur & Wunderlich, J. Phys. Chem. Ref. Data 10, 1001 (1981), doi:10.1063/1.555649, Table 1 (1.25; the review takes it from the Polymer Handbook)"
   },
   {
    "id": "nylon6-alpha",
@@ -119,8 +119,8 @@
    "loops": 0.35,
    "bridges": 0.1,
    "tails": 0.55,
-   "density": 1.08,
-   "density_source": "a commonly quoted room-temperature amorphous density, not yet checked against a primary source"
+   "density": 1.09,
+   "density_source": "Gaur, Lau, Wunderlich & Wunderlich, J. Phys. Chem. Ref. Data 12, 65 (1983), doi:10.1063/1.555678, Table 1 (1.090; Illers & Haberkorn, Makromol. Chem. 142, 31 (1971), doi:10.1002/macp.1971.021420103 give 1.091 to 1.110 by crystal form)"
   },
   {
    "id": "nylon66-alpha",
@@ -134,8 +134,8 @@
    "loops": 0.35,
    "bridges": 0.1,
    "tails": 0.55,
-   "density": 1.07,
-   "density_source": "a commonly quoted room-temperature amorphous density, not yet checked against a primary source"
+   "density": 1.091,
+   "density_source": "Gaur, Lau, Wunderlich & Wunderlich, J. Phys. Chem. Ref. Data 12, 65 (1983), doi:10.1063/1.555678, Table 1 (1.091)"
   },
   {
    "id": "pet",
@@ -150,7 +150,7 @@
    "bridges": 0.1,
    "tails": 0.55,
    "density": 1.335,
-   "density_source": "a commonly quoted room-temperature amorphous density, not yet checked against a primary source"
+   "density_source": "Daubeny, Bunn & Brown, Proc. R. Soc. A 226, 531 (1954), doi:10.1098/rspa.1954.0273 (entirely amorphous material, 1.335)"
   },
   {
    "id": "plla-alpha",
@@ -164,8 +164,8 @@
    "loops": 0.35,
    "bridges": 0.1,
    "tails": 0.55,
-   "density": 1.25,
-   "density_source": "a commonly quoted room-temperature amorphous density, not yet checked against a primary source"
+   "density": 1.248,
+   "density_source": "Fischer, Sterzel & Wegner, Kolloid-Z. Z. Polym. 251, 980 (1973), doi:10.1007/bf01498927 (1.248)"
   },
   {
    "id": "natural-rubber",
@@ -179,8 +179,8 @@
    "loops": 0.35,
    "bridges": 0.1,
    "tails": 0.55,
-   "density": 0.91,
-   "density_source": "a commonly quoted room-temperature amorphous density, not yet checked against a primary source"
+   "density": 0.913,
+   "density_source": "Wood & Martin, J. Res. Natl. Bur. Stand. 68A, 259 (1964), doi:10.6028/jres.068a.022 (specific volume 1.0951 cm3/g of unvulcanised rubber at 25 C and zero pressure)"
   },
   {
    "id": "ptfe-iv",
@@ -195,7 +195,7 @@
    "bridges": 0.1,
    "tails": 0.55,
    "density": 2.0,
-   "density_source": "a commonly quoted room-temperature amorphous density, not yet checked against a primary source"
+   "density_source": "Gaur, Wunderlich & Wunderlich, J. Phys. Chem. Ref. Data 12, 29 (1983), doi:10.1063/1.555677, Table 1 (2.000; the review takes it from Wunderlich's Macromolecular Physics and the Polymer Handbook)"
   },
   {
    "id": "ptfe-ii",
@@ -210,7 +210,7 @@
    "bridges": 0.1,
    "tails": 0.55,
    "density": 2.0,
-   "density_source": "a commonly quoted room-temperature amorphous density, not yet checked against a primary source"
+   "density_source": "Gaur, Wunderlich & Wunderlich, J. Phys. Chem. Ref. Data 12, 29 (1983), doi:10.1063/1.555677, Table 1 (2.000; the review takes it from Wunderlich's Macromolecular Physics and the Polymer Handbook)"
   }
  ]
 }

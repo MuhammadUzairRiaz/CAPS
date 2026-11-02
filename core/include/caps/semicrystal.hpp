@@ -57,7 +57,7 @@ std::vector<CrystalStem> find_stems(const System& cell, double bond_tolerance = 
 struct SemicrystallinePolymer {
   std::string id, name, forcefield, density_source;
   int nx = 4, ny = 6;
-  double crystal_nm = 7.6, amorphous_nm = 7.6, loops = 0.35, bridges = 0.10, tails = 0.55, density = 0.855;
+  double crystal_nm = 7.6, amorphous_nm = 7.6, loops = 0.35, bridges = 0.10, tails = 0.55, density = 0.852;
 };
 std::vector<SemicrystallinePolymer> semicrystalline_polymers(const std::string& data_dir);
 // One of them by its id or short name (pe = pe-orthorhombic); false when the library does not list it (a CIF file).
@@ -75,7 +75,7 @@ struct SemicrystallineOptions {
   // where a loop re-enters its face: "adjacent" (mostly a neighbouring stem: 70 % of loops at the nearest free stems,
   // the rest anywhere on the face) or "random" (anywhere on the face: the switchboard model)
   std::string reentry = "adjacent";
-  double density = 0.855;          // g/cm³ of the amorphous layer (melt-like PE at 300 K, as Lu et al. 2018)
+  double density = 0.852;          // g/cm³ of the amorphous layer (amorphous PE at 298 K, Gaur & Wunderlich 1981)
   uint64_t seed = 1;
   bool united_atom = false;        // count heavy atoms only (a united-atom force field folds the H later)
   double contact = 3.0;            // Å, closest approach of non-bonded heavy atoms while growing
