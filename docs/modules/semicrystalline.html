@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Semicrystalline stack · CAPS Studio</title>
+<meta name="description" content="Cut a lamella from a polymer crystal of the library and grow the amorphous layer between it and its periodic image from the crystal&#x27;s own repeat unit: loops, bridges and tails in the fractions you ask for, at the amorphous density, relaxed with the polymer&#x27;s force field.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="icon" type="image/svg+xml" href="../assets/caps.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/caps_32.png">
+<link rel="apple-touch-icon" href="../assets/caps_256.png">
+<link rel="stylesheet" href="../assets/site.css?v=c2a81f6c45">
+
+<script defer src="../assets/site.js?v=c2a81f6c45"></script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="../index.html" title="CAPS · Chain Assembly and Packing Suite"><svg class="mark" viewBox="0 0 30 30" aria-hidden="true"><path d="M15 2 L26.3 8.5 L26.3 21.5 L15 28 L3.7 21.5 L3.7 8.5 Z" fill="none" stroke="var(--accent)" stroke-width="2"/><path d="M15 9.5 V11.7 M19.8 17.8 L17.9 16.7 M10.2 17.8 L12.1 16.7" stroke="currentColor" stroke-width="1.4"/><circle cx="15" cy="15" r="3.4" fill="var(--accent)"/><circle cx="15" cy="7.5" r="2" fill="currentColor"/><circle cx="21.5" cy="18.8" r="2" fill="currentColor"/><circle cx="8.5" cy="18.8" r="2" fill="currentColor"/></svg><span class="brand-name"><b>CAPS</b><small>Chain Assembly and Packing Suite</small></span></a>
+  <button class="menu" aria-expanded="false" aria-controls="nav">Menu</button>
+  <nav id="nav" class="links"><a href="../index.html">Home</a><a href="../modules/index.html" aria-current="page">Modules</a><a href="../cli/index.html">CLI guide</a><a href="../cli/reference.html">Command reference</a><a href="../tutorials/index.html">Tutorials</a><a href="../theory/index.html">Theory</a><a href="../python.html">Python</a><a href="../manual/index.html">Studio tour</a><a href="../whatsnew.html">What's new</a><a href="https://github.com/MuhammadUzairRiaz/CAPS">GitHub</a></nav>
+</header>
+<div class="doc">
+<nav class="toc" aria-label="On this page"><h2>Modules</h2><h3 class="stage-h"><i class="dot st-start"></i>Get started</h3><a href="start.html">Start</a><a href="studio.html">Studio</a><h3 class="stage-h"><i class="dot st-build"></i>Build</h3><a href="molecule.html">Molecule builder</a><a href="polymer.html">Polymer builder</a><a href="polymer-cell.html">Polymer cell</a><a href="blend.html">Blend</a><a href="packing.html">Packing</a><a href="solvation.html">Solvation</a><a href="crystal.html">Crystal</a><a href="surface.html">Surface &amp; interface</a><a href="nanostructure.html">Nanostructure</a><a href="semicrystalline.html" aria-current="page" class="on">Semicrystalline stack</a><h3 class="stage-h"><i class="dot st-prepare"></i>Prepare</h3><a href="force-field.html">Force field</a><a href="minimise.html">Minimise</a><a href="equilibrate.html">Equilibrate</a><h3 class="stage-h"><i class="dot st-run"></i>Run</h3><a href="dynamics.html">Dynamics</a><a href="coarse-grained.html">Coarse-grained</a><a href="dpd.html">DPD</a><a href="adsorption.html">Adsorption &amp; sorption</a><a href="dft.html">DFT workbench</a><h3 class="stage-h"><i class="dot st-react"></i>React</h3><a href="react.html">React</a><h3 class="stage-h"><i class="dot st-out"></i>Analyse &amp; export</h3><a href="analyze.html">Analyze</a><a href="export.html">Export</a><a href="jobs.html">Jobs</a><a href="project.html">Project &amp; methods</a></nav>
+<main>
+<header class="mod-hero"><p class="eyebrow"><i class="dot st-build"></i>Build · module 12</p><h1>Semicrystalline stack</h1><p class="lede">Cut a lamella from a polymer crystal of the library and grow the amorphous layer between it and its periodic image from the crystal's own repeat unit: loops, bridges and tails in the fractions you ask for, at the amorphous density, relaxed with the polymer's force field.</p><p class="where"><b>Open it</b> <span class="ui">Build</span><i>›</i><span class="ui">Semicrystalline stack</span></p><dl class="io"><div><dt>You start with</dt><dd>A crystal from the list (or, on the command line, a CIF of another polymer crystal).</dd></div><div><dt>You get</dt><dd>A lamellar cell with the groups crystal and amorphous, its force field assigned, and a report: segment counts and lengths, crystallinity from the chain order parameter, density and order profiles along the stack, stem tilt.</dd></div></dl></header>
+
+<h2 id="steps">Step by step</h2><ol class="stepper"><li><div><h3>Choose the crystal</h3><p>Pick it from the list. Its defaults fill in: cells across the chains, lamella and amorphous thickness, segment fractions and amorphous density, and the force field (OPLS-AA 2024 or PCFF, whichever types every atom of that polymer's cell).</p></div></li><li><div><h3>Set the layers</h3><p>Lamella and amorphous thickness in nm, the fractions of loops, bridges and tails, adjacent or random re-entry. Cells whose c is not normal to ab (PET, nylon 66, PEO) give stems that lean; the report gives the angle.</p></div></li><li><div><h3>Press Build stack</h3><p>The view colours the crystal and amorphous groups. <span class="ui">Report of the open cell</span> reads the same counts from any frame after MD.</p></div></li><li><div><h3>Equilibrate on a cluster</h3><p><code>caps semicrystalline --lammps-input</code> writes NVT with the crystal tethered, then NPT with each axis on its own.</p></div></li></ol>
+<h2 id="scripted">The same without the Studio</h2><p class="muted">Every Studio page calls the same core as the <code>caps</code> command and the <code>caps</code> Python package, so a step you clicked can be repeated in a script.</p>
+<div class="tabs" role="tablist"><button role="tab" type="button" aria-selected="true" data-tab="0">Command line</button></div>
+<div class="tabpanel" data-panel="0"><div class="code" data-lang="shell"><pre><code>caps semicrystalline --polymer list
+caps semicrystalline --polymer nylon6-alpha -o nylon6.data \
+    --lammps-input nylon6.in</code></pre></div></div>
+<h2 id="next">Where to go next</h2><div class="cards next"><a class="card shot-card" href="force-field.html"><img src="../manual/img/06_field.jpg" alt="" loading="lazy" width="1440" height="900"><span class="num"><i class="dot st-prepare"></i>Prepare</span><b>Force field</b><span>Type every atom from SMARTS rules, set charges, fill any missing term and give each part of a composite its own force field.</span></a><a class="card shot-card" href="minimise.html"><img src="../manual/img/07_relax.jpg" alt="" loading="lazy" width="1440" height="900"><span class="num"><i class="dot st-prepare"></i>Prepare</span><b>Minimise</b><span>Remove close contacts, compress a low-density cell to its target and relax the box.</span></a></div>
+<nav class="pager"><a href="nanostructure.html"><small>Previous</small>Nanostructure</a><a class="next" href="force-field.html"><small>Next</small>Force field</a></nav>
+</main>
+</div>
+<footer class="foot"><span>CAPS 0.1.0</span><a href="https://github.com/MuhammadUzairRiaz/CAPS">github.com/MuhammadUzairRiaz/CAPS</a></footer>
+</body>
+</html>

@@ -4,12 +4,23 @@ eyebrow: Releases · changelog
 lede: What changed in CAPS, newest first. Every force field CAPS ships is now built from its original paper or official distribution, CAPS can fill missing parameters with its own machine-learned model, and the Studio and the command line do the same things the same way.
 ---
 
+## November 2026 update (version 0.1.0)
+
+### Semicrystalline stacks beyond polyethylene
+
+- `caps semicrystalline` now builds lamellar stacks of every crystal in the polymer crystal library: orthorhombic and monoclinic PE, PVDF β and α, iPP α, PEO, POM, nylon 6 and nylon 66, PET, PLLA α, natural rubber and PTFE (phases IV and II). `--polymer list` shows them with their defaults.
+- The amorphous segments are grown from the crystal's own repeat unit, not from CH2: the shortest period of the chain, with the crystal's bond lengths, angles and side atoms, so isotactic iPP stays isotactic and PLLA stays L. Torsions are held in rings, amides, esters and C=C. Loops and bridges close in phase with the stem they enter. For chains with a direction (nylon 6, iPP, PLLA, natural rubber) they join stems that point opposite ways. Tails end at an sp3-sp3 bond, capped with H.
+- Monoclinic and triclinic cells are built in their own sheared geometry: the fold surfaces are the cell's ab plane, and stems lean by the angle between c and the stack normal (36° for PET, 42° for nylon 66). Cells whose chains run along a or b (monoclinic PE, nylon 6) are relabelled.
+- Each polymer has a default force field, the one of OPLS-AA 2024 and PCFF that types every atom of its cell: OPLS-AA 2024 for PE, PEO, POM and natural rubber, PCFF for the others. `--ff` still picks another. The defaults for thickness and segment fractions follow Olsson, in 't Veld and Andreasson (Polymer 153, 305 (2018)), the all-atom PE study that reports them. No lamellar-stack MD was found for the other polymers, so they start from PE's values; set them from your polymer's long period.
+- `--analyse` and `--labels` work on any backbone: the longest path through each molecule's heavy atoms, with the order-parameter chord matched to a zig-zag or a helix. Side atoms take their backbone atom's class.
+- In the Studio, **Build › Semicrystalline stack** lists these crystals, fills in each one's defaults and assigns its force field to the built cell. In Python, `build.semicrystalline("nylon6-alpha", forcefield="auto")` and `semicrystalline_polymers()`.
+
 ## October 2026 update (version 0.1.0)
 
 ### Semicrystalline stacks and thermal conductivity
 
 - `caps semicrystalline` builds the lamellar cells the papers on semicrystalline polyethylene simulate: a lamella of straight stems along z from the polymer crystal library (orthorhombic PE from Bunn 1939), and an amorphous layer between it and its periodic image holding loops, bridges and tails in the fractions you ask for, at the amorphous density. Every stem runs through the lamella, every chain ends in two tails, and none closes on itself. The cell carries the groups `crystal` and `amorphous`. A report gives the counts, the length of each segment, the crystallinity from the chain order parameter P2, the density and P2 profiles along the stack and the stem tilt; `--analyse` reads the same from any frame after MD. `--lammps-input` writes the cluster equilibration with the crystal tethered first. A united-atom force field (`--ff oplsua2024`) builds carbons only, for thicker layers at the same cost.
-- Stems are found in any cell of the polymer crystal library, straight or helical (iPP, PEO, POM, PVDF, the nylons, PET, PLLA, natural rubber). The amorphous layers are grown for polyethylene so far.
+- Stems are found in any cell of the polymer crystal library, straight or helical (iPP, PEO, POM, PVDF, the nylons, PET, PLLA, natural rubber).
 - `caps thermal` computes the thermal conductivity by MD: Green–Kubo from the heat-flux autocorrelation, with the centroid form of the flux for angles, torsions and impropers, or reverse NEMD (Müller-Plathe). You say whether the material is 3D (bulk) or 2D (a sheet with vacuum along z; κ over an effective thickness and the sheet conductance); CAPS does not guess. On one frame the flux equals LAMMPS's `compute heat/flux` on `compute centroid/stress/atom`. On the Lennard-Jones liquid both methods agree with the published values. `--lammps-input` writes the long run for a cluster.
 - In the Studio: **Build › Semicrystalline stack** and **Modules › Thermal conductivity**; in Python `build.semicrystalline()` and `Document.thermal()`; in recipes `build: { semicrystalline: … }` and a `thermal:` stage.
 

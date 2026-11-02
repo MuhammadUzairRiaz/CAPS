@@ -715,6 +715,51 @@
    ]
   },
   {
+   "slug": "semicrystalline",
+   "title": "Semicrystalline stack",
+   "stage": "build",
+   "where": [
+    "Build",
+    "Semicrystalline stack"
+   ],
+   "card": "Crystal lamellae with amorphous layers of loops, bridges and tails, for PE, PVDF, iPP, PEO, POM, nylons, PET, PLLA, natural rubber and PTFE.",
+   "lede": "Cut a lamella from a polymer crystal of the library and grow the amorphous layer between it and its periodic image from the crystal's own repeat unit: loops, bridges and tails in the fractions you ask for, at the amorphous density, relaxed with the polymer's force field.",
+   "input": "A crystal from the list (or, on the command line, a CIF of another polymer crystal).",
+   "output": "A lamellar cell with the groups crystal and amorphous, its force field assigned, and a report: segment counts and lengths, crystallinity from the chain order parameter, density and order profiles along the stack, stem tilt.",
+   "shots": [],
+   "steps": [
+    {
+     "t": "Choose the crystal",
+     "d": [
+      "Pick it from the list. Its defaults fill in: cells across the chains, lamella and amorphous thickness, segment fractions and amorphous density, and the force field (OPLS-AA 2024 or PCFF, whichever types every atom of that polymer's cell)."
+     ]
+    },
+    {
+     "t": "Set the layers",
+     "d": [
+      "Lamella and amorphous thickness in nm, the fractions of loops, bridges and tails, adjacent or random re-entry. Cells whose c is not normal to ab (PET, nylon 66, PEO) give stems that lean; the report gives the angle."
+     ]
+    },
+    {
+     "t": "Press Build stack",
+     "d": [
+      "The view colours the crystal and amorphous groups. [[Report of the open cell]] reads the same counts from any frame after MD."
+     ]
+    },
+    {
+     "t": "Equilibrate on a cluster",
+     "d": [
+      "`caps semicrystalline --lammps-input` writes NVT with the crystal tethered, then NPT with each axis on its own."
+     ]
+    }
+   ],
+   "cli": "caps semicrystalline --polymer list\ncaps semicrystalline --polymer nylon6-alpha -o nylon6.data \\\n    --lammps-input nylon6.in",
+   "next": [
+    "force-field",
+    "minimise"
+   ]
+  },
+  {
    "slug": "force-field",
    "title": "Force field",
    "stage": "prepare",
