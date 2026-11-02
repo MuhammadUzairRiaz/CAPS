@@ -1,13 +1,16 @@
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text.Json.Nodes;
 using CapsStudio.Interop;
 
 namespace CapsStudio.ViewModels;
 
-/// <summary>Build › Semicrystalline stack (core semicrystal.hpp; caps semicrystalline): a crystal lamella of straight stems
-/// and an amorphous layer of loops, bridges and tails, grown at the amorphous density; the report (counts, lengths,
-/// crystallinity, tilt, density and P2 profiles) and the view coloured by the crystal and amorphous groups.
+/// <summary>Build › Semicrystalline stack (core semicrystal.hpp; caps semicrystalline): a crystal lamella of the polymer
+/// crystal library's cells (the ones data/crystals/polymers/semicrystalline.json lists) and an amorphous layer of loops,
+/// bridges and tails grown from the crystal's repeat unit at the amorphous density, relaxed with the polymer's force
+/// field; the report (counts, lengths, crystallinity, tilt, density and P2 profiles) and the view coloured by the crystal
+/// and amorphous groups.
 /// Modules › Thermal conductivity (core thermal.hpp; caps thermal): Green–Kubo or reverse NEMD on the open structure,
 /// 2D or 3D said by the user, and the LAMMPS inputs for the long run on a cluster.</summary>
 public sealed partial class MainViewModel
@@ -18,11 +21,90 @@ public sealed partial class MainViewModel
     public void OpenThermal() => SetModule(82);
 
     // ---- the builder
-    private decimal _scNx = 4, _scNy = 6, _scCrystal = 5, _scAmorphous = 4, _scLoops = 0.5m, _scBridges = 0.2m, _scTails = 0.3m, _scDensity = 0.855m;
+    /// <summary>A crystal the builder takes, with its defaults (semicrystalline.json) and its cell (polymers.json).</summary>
+    public sealed record ScPolymer(string Id, string Name, string Source, string Forcefield, int Nx, int Ny, double Crystal, double Amorphous,
+                                   double Loops, double Bridges, double Tails, double Density, string DensitySource,
+                                   double Area, double Height, double AtomsPerCell, double MassPerAtom)
+    {
+        public override string ToString() => Name;
+    }
+    private static ScPolymer[]? _scPolymers;
+    /// <summary>The crystals that build (data/crystals/polymers/semicrystalline.json), PE first.</summary>
+    public static ScPolymer[] ScPolymers => _scPolymers ??= LoadScPolymers();
+    private static ScPolymer[] LoadScPolymers()
+    {
+        try
+        {
+            if (Paths.Data is not { } d) return [];
+            var dir = Path.Combine(d, "crystals", "polymers");
+            var lib = JsonNode.Parse(File.ReadAllText(Path.Combine(dir, "polymers.json")))!["crystals"]!.AsArray();
+            var def = JsonNode.Parse(File.ReadAllText(Path.Combine(dir, "semicrystalline.json")))!["polymers"]!.AsArray();
+            var list = new List<ScPolymer>();
+            foreach (var e in def)
+            {
+                var id = (string)e!["id"]!;
+                var c = lib.FirstOrDefault(x => (string?)x!["id"] == id);
+                if (c == null) continue;
+                var cell = c["cell"]!;
+                double G(string k) => cell[k]!.GetValue<double>();
+                double a = G("a"), b = G("b"), cc = G("c");
+                double ca = Math.Cos(G("alpha") * Math.PI / 180), cb = Math.Cos(G("beta") * Math.PI / 180), cg = Math.Cos(G("gamma") * Math.PI / 180);
+                var vol = a * b * cc * Math.Sqrt(1 - ca * ca - cb * cb - cg * cg + 2 * ca * cb * cg);
+                // the face across the chains: the two edges other than the chain axis
+                var axis = (string?)c["chain_axis"] ?? "c";
+                var area = axis switch
+                {
+                    "a" => b * cc * Math.Sqrt(1 - ca * ca),
+                    "b" => a * cc * Math.Sqrt(1 - cb * cb),
+                    _ => a * b * Math.Sqrt(1 - cg * cg),
+                };
+                var atoms = c["atoms"]!.GetValue<double>();
+                var mass = c["density"]!.GetValue<double>() * vol / 1.66053906660;
+                var rep = e["repeats"]!.AsArray();
+                list.Add(new ScPolymer(id, (string)c["name"]!, (string?)c["source"] ?? "", (string)e["forcefield"]!, rep[0]!.GetValue<int>(), rep[1]!.GetValue<int>(),
+                    e["crystal_nm"]!.GetValue<double>(), e["amorphous_nm"]!.GetValue<double>(), e["loops"]!.GetValue<double>(), e["bridges"]!.GetValue<double>(),
+                    e["tails"]!.GetValue<double>(), e["density"]!.GetValue<double>(), (string?)e["density_source"] ?? "", area, vol / area, atoms, mass / atoms));
+            }
+            return list.ToArray();
+        }
+        catch { return []; }
+    }
+    public static readonly string[] ScForcefields = ["The polymer's own (automatic)", "OPLS-AA 2024", "PCFF", "COMPASS", "None (built-in GAFF / UFF for the relaxation)"];
+    private int _scPolymer, _scFf;
+    private decimal _scNx = 4, _scNy = 6, _scCrystal = 7.6m, _scAmorphous = 7.6m, _scLoops = 0.35m, _scBridges = 0.10m, _scTails = 0.55m, _scDensity = 0.855m;
     private int _scReentry;
     private bool _scUnited, _scRelax = true, _scRunning;
     private string _scError = "", _scProgress = "", _scSummary = "", _scNotes = "";
     public static readonly string[] ScReentries = ["Adjacent re-entry (mostly neighbouring stems)", "Random re-entry (switchboard)"];
+    /// <summary>The crystal: choosing one fills its defaults (lateral repeats, thicknesses, fractions, density).</summary>
+    public int ScPolymerIndex
+    {
+        get => _scPolymer;
+        set
+        {
+            if (!Set(ref _scPolymer, Math.Clamp(value, 0, Math.Max(0, ScPolymers.Length - 1)))) return;
+            if (ScPolymers.Length > 0)
+            {
+                var p = ScPolymers[_scPolymer];
+                ScNx = p.Nx; ScNy = p.Ny; ScCrystal = (decimal)p.Crystal; ScAmorphous = (decimal)p.Amorphous;
+                ScLoops = (decimal)p.Loops; ScBridges = (decimal)p.Bridges; ScTails = (decimal)p.Tails; ScDensity = (decimal)p.Density;
+            }
+            Raise(nameof(ScCrystalText)); Raise(nameof(ScEstimate)); Raise(nameof(ScFfText));
+        }
+    }
+    private ScPolymer? ScCurrent => ScPolymers.Length > 0 ? ScPolymers[Math.Clamp(_scPolymer, 0, ScPolymers.Length - 1)] : null;
+    public string ScCrystalText => ScCurrent is { } p ? $"{p.Source}\nAmorphous density: {p.DensitySource}" : "The polymer crystal library (data/crystals/polymers) was not found";
+    public int ScFf { get => _scFf; set { if (Set(ref _scFf, Math.Clamp(value, 0, ScForcefields.Length - 1))) Raise(nameof(ScFfText)); } }
+    /// <summary>The library id of the chosen force field, or "" for none.</summary>
+    private string ScFfId => _scFf switch { 0 => ScCurrent?.Forcefield ?? "", 1 => "oplsaa2024", 2 => "pcff", 3 => "compass", _ => "" };
+    public string ScFfText => ScFfId switch
+    {
+        "" => "The relaxation uses the built-in GAFF / UFF; assign a force field on the Force field page afterwards",
+        var f => $"Relaxed and assigned with {FfName(f)}" + (_scFf == 0 ? " (chosen for this polymer: it types every atom of the cell)" : ""),
+    };
+    private static string FfName(string id) => id switch { "oplsaa2024" => "OPLS-AA 2024", "pcff" => "PCFF", "compass" => "COMPASS", _ => id };
+    private static string? FfFile(string id) => id.Length == 0 || Paths.Data is not { } d ? null
+        : Path.Combine(d, "forcefields", (id switch { "pcff" => "pcff-frc", "compass" => "compass-frc", _ => id }) + ".json");
     public decimal ScNx { get => _scNx; set { if (Set(ref _scNx, Math.Clamp(Math.Round(value), 1, 20))) Raise(nameof(ScEstimate)); } }
     public decimal ScNy { get => _scNy; set { if (Set(ref _scNy, Math.Clamp(Math.Round(value), 1, 20))) Raise(nameof(ScEstimate)); } }
     public decimal ScCrystal { get => _scCrystal; set { if (Set(ref _scCrystal, Math.Clamp(value, 0.5m, 50))) Raise(nameof(ScEstimate)); } }
@@ -30,7 +112,7 @@ public sealed partial class MainViewModel
     public decimal ScLoops { get => _scLoops; set => Set(ref _scLoops, Math.Clamp(value, 0, 1)); }
     public decimal ScBridges { get => _scBridges; set => Set(ref _scBridges, Math.Clamp(value, 0, 1)); }
     public decimal ScTails { get => _scTails; set => Set(ref _scTails, Math.Clamp(value, 0, 1)); }
-    public decimal ScDensity { get => _scDensity; set { if (Set(ref _scDensity, Math.Clamp(value, 0.3m, 1.2m))) Raise(nameof(ScEstimate)); } }
+    public decimal ScDensity { get => _scDensity; set { if (Set(ref _scDensity, Math.Clamp(value, 0.3m, 3m))) Raise(nameof(ScEstimate)); } }
     public int ScReentry { get => _scReentry; set => Set(ref _scReentry, Math.Clamp(value, 0, 1)); }
     public bool ScUnited { get => _scUnited; set { if (Set(ref _scUnited, value)) Raise(nameof(ScEstimate)); } }
     public bool ScRelax { get => _scRelax; set => Set(ref _scRelax, value); }
@@ -47,18 +129,19 @@ public sealed partial class MainViewModel
     public (double X, double Y)[] ScBridgeHist { get; private set; } = [];
     public event Action? ScChanged;
 
-    /// <summary>The atoms the cell will hold, before it is built (PE: 3 atoms per CH2 all-atom, 1 united atom).</summary>
+    /// <summary>The atoms the cell will hold, before it is built (from the crystal's cell and the amorphous density).</summary>
     public string ScEstimate
     {
         get
         {
-            const double a = 7.40, b = 4.93, c = 2.534;
-            var nc = Math.Max(2, Math.Round((double)_scCrystal * 10 / c));
-            var stems = 2 * (double)_scNx * (double)_scNy;
-            var crys = stems * 2 * nc;
-            var am = (double)_scDensity * a * (double)_scNx * b * (double)_scNy * (double)_scAmorphous * 10 / 1.66053906660 / 14.027;
-            var atoms = (_scUnited ? 1 : 3) * (crys + am);
-            return string.Format(CultureInfo.InvariantCulture, "{0:0} stems · {1:0} cells along c · about {2:N0} atoms", stems, nc, atoms);
+            if (ScCurrent is not { } p) return "";
+            var nc = Math.Max(2, Math.Round((double)_scCrystal * 10 / p.Height));
+            var cells = (double)_scNx * (double)_scNy;
+            var crys = cells * nc * p.AtomsPerCell;
+            var am = (double)_scDensity * cells * p.Area * (double)_scAmorphous * 10 / 1.66053906660 / p.MassPerAtom;
+            var atoms = crys + am;
+            if (_scUnited) atoms *= 0.4;   // heavy atoms only: about two in five for these polymers
+            return string.Format(CultureInfo.InvariantCulture, "{0:0} cells along the chains · about {1:N0} atoms", nc, atoms);
         }
     }
 
@@ -66,19 +149,24 @@ public sealed partial class MainViewModel
     {
         if (!Idle) return;
         var inv = CultureInfo.InvariantCulture;
+        var poly = ScCurrent;
+        var ffId = ScFfId;
+        var ffFile = FfFile(ffId);
         var json = new JsonObject
         {
-            ["polymer"] = "pe", ["data_dir"] = Paths.Data ?? "", ["nx"] = (int)_scNx, ["ny"] = (int)_scNy, ["crystal_nm"] = (double)_scCrystal, ["amorphous_nm"] = (double)_scAmorphous,
+            ["polymer"] = poly?.Id ?? "pe", ["data_dir"] = Paths.Data ?? "", ["nx"] = (int)_scNx, ["ny"] = (int)_scNy, ["crystal_nm"] = (double)_scCrystal, ["amorphous_nm"] = (double)_scAmorphous,
             ["loops"] = (double)_scLoops, ["bridges"] = (double)_scBridges, ["tails"] = (double)_scTails, ["reentry"] = _scReentry == 0 ? "adjacent" : "random",
             ["density"] = (double)_scDensity, ["seed"] = ScSeed.Take(), ["united_atom"] = _scUnited, ["relax"] = _scRelax,
-        }.ToJsonString();
+        };
+        if (ffFile != null && !_scUnited) json["forcefield"] = ffFile;
+        var text = json.ToJsonString();
         ScRunning = true;
         ScError = "";
         Status = "Building the lamellar stack…";
         try
         {
-            var title = $"PE lamellar stack {(int)_scNx}×{(int)_scNy}";
-            var (doc, rep) = await Task.Run(() => CapsDocument.Semicrystalline(json, f =>
+            var title = $"{poly?.Name ?? "PE"} lamellar stack {(int)_scNx}×{(int)_scNy}";
+            var (doc, rep) = await Task.Run(() => CapsDocument.Semicrystalline(text, f =>
             {
                 Avalonia.Threading.Dispatcher.UIThread.Post(() => ScProgress = $"growing the amorphous layer · {f * 100:0} %");
                 return true;
@@ -89,6 +177,10 @@ public sealed partial class MainViewModel
             SetModule(81);
             ShowScReport(rep);
             ColourByPhase();
+            // the cell carries the force field it was relaxed with (the Force field page shows it; exports use it)
+            if (ffFile != null && !_scUnited)
+                try { doc.FieldAssign(ffFile, null, 0); }
+                catch (Exception fe) { ScNotes += " · " + FfName(ffId) + " not assigned: " + fe.Message; }
             Status = "Semicrystalline stack built: " + ScSummary.Split('\n')[0];
         }
         catch (Exception e) { ScError = e.Message; Status = "Semicrystalline: " + e.Message; }
@@ -113,7 +205,7 @@ public sealed partial class MainViewModel
         double Mean(double[] v) => v.Length > 0 ? v.Average() : 0;
         ScSummary = string.Format(inv,
             "{0:N0} atoms · {1:0} stems · {2:0} chains\n{3:0} loops ({4:0} %) · {5:0} bridges ({6:0} %) · {7:0} tails ({8:0} %)\n" +
-            "mean CH2: loops {9:0.0} · bridges {10:0.0} · tails {11:0.0}\ncrystallinity {12:0.000} (P2 > {13:0.00}) · {14:0.000} by mass · stem tilt {15:0.0} ± {16:0.0}°\n" +
+            "mean backbone atoms: loops {9:0.0} · bridges {10:0.0} · tails {11:0.0}\ncrystallinity {12:0.000} (P2 > {13:0.00}) · {14:0.000} by mass · stem tilt {15:0.0} ± {16:0.0}°\n" +
             "density {17:0.000} g/cm³ · amorphous layer {18:0.000} g/cm³",
             D("atoms"), D("stems"), D("chains"), D("loops"), 100 * D("loops") / segs, D("bridges"), 100 * D("bridges") / segs, D("tails"), 100 * D("tails") / segs,
             Mean(A("loop_units")), Mean(A("bridge_units")), Mean(A("tail_units")), D("crystallinity_p2"), D("p2_cut"), D("crystallinity_mass"), D("tilt_deg"), D("tilt_sd"),
