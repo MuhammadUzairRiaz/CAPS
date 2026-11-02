@@ -11984,22 +11984,40 @@ extern "C" caps_doc* caps_semicrystalline_build(const char* options_json, caps_p
     caps::SemicrystallineOptions o;
     o.polymer = j.text("polymer", "pe");
     o.data_dir = j.text("data_dir", "");
-    o.nx = int(j.num("nx", 4)), o.ny = int(j.num("ny", 6)), o.nc = int(j.num("nc", 0));
-    o.crystal_nm = j.num("crystal_nm", 5.0), o.amorphous_nm = j.num("amorphous_nm", 4.0);
-    o.loops = j.num("loops", 0.5), o.bridges = j.num("bridges", 0.2), o.tails = j.num("tails", 0.3);
+    // what the options leave out: the crystal's defaults (crystals/polymers/semicrystalline.json), else the builder's
+    caps::SemicrystallinePolymer def;
+    if (caps::semicrystalline_polymer(o.polymer, o.data_dir, &def)) {
+      o.nx = def.nx, o.ny = def.ny, o.crystal_nm = def.crystal_nm, o.amorphous_nm = def.amorphous_nm;
+      o.loops = def.loops, o.bridges = def.bridges, o.tails = def.tails, o.density = def.density;
+    }
+    o.nx = int(j.num("nx", o.nx)), o.ny = int(j.num("ny", o.ny)), o.nc = int(j.num("nc", 0));
+    o.crystal_nm = j.num("crystal_nm", o.crystal_nm), o.amorphous_nm = j.num("amorphous_nm", o.amorphous_nm);
+    o.loops = j.num("loops", o.loops), o.bridges = j.num("bridges", o.bridges), o.tails = j.num("tails", o.tails);
     o.reentry = j.text("reentry", "adjacent");
-    o.density = j.num("density", 0.855);
+    o.density = j.num("density", o.density);
     o.seed = uint64_t(j.num("seed", 1));
     o.united_atom = j.has("united_atom") && j["united_atom"].boolean();
     if (progress) o.progress = [&](const std::string&, double f) { return progress(int32_t(1000 * std::min(1.0, f)), 1000, 0, user) == 0; };
     caps::SemicrystallineReport rep;
     caps::System s = caps::build_semicrystalline(o, &rep);
     if (!j.has("relax") || j["relax"].boolean()) {
-      caps::relax_semicrystalline(s, nullptr, elec(), 1.0);
+      // with the force field given (a library file: OPLS-AA 2024, PCFF, COMPASS), else the built-in GAFF / UFF
+      std::shared_ptr<const caps::ForceField> field;
+      std::string fname = "the built-in GAFF / UFF";
+      const std::string ffp = j.text("forcefield", "");
+      if (!ffp.empty()) {
+        const caps::FFDef fd = caps::load_forcefield(ffp);
+        const caps::TypingResult tr = caps::assign_types(s, fd);
+        if (tr.untyped) throw std::runtime_error(std::to_string(tr.untyped) + " atoms of the built cell match no type of " + fd.name);
+        caps::ParamReport pr;
+        field = std::make_shared<const caps::ForceField>(caps::parameterize_charges(s, fd, tr.types, "types", ffp, &pr, false));
+        fname = fd.name;
+      }
+      caps::relax_semicrystalline(s, field, elec(), 1.0);
       const caps::SemicrystallineReport a = caps::analyse_semicrystalline(s);
       rep.crystallinity_p2 = a.crystallinity_p2, rep.tilt_deg = a.tilt_deg, rep.tilt_sd = a.tilt_sd;
       rep.z = a.z, rep.rho = a.rho, rep.p2 = a.p2;
-      rep.notes.push_back("relaxed with the built-in GAFF: push-off with the crystal held, then everything minimised");
+      rep.notes.push_back("relaxed with " + fname + ": push-off with the crystal held, then everything minimised");
     }
     caps_doc* d = doc_of(s);
     prov_step(d, "build.semicrystalline", "lamellar stack of " + o.polymer + ": " + std::to_string(rep.stems) + " stems, " + std::to_string(rep.loops) + " loops, " +

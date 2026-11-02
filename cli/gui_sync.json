@@ -1302,7 +1302,7 @@
     "caps_semicrystalline_analyse"
    ],
    "options": {
-    "--polymer": "partial: the Studio builds polyethylene (Bunn's cell); other unit cells from the command line",
+    "--polymer": "partial: the page lists the library crystals the builder takes (semicrystalline.json); a CIF file of another cell from the command line",
     "--repeats": "page",
     "--crystal": "page",
     "--crystal-cells": "partial: the page sets the lamella in nm (the cells along c follow)",
@@ -1313,7 +1313,7 @@
     "--reentry": "page",
     "--density": "page",
     "--seed": "page",
-    "--ff": "partial: the force field is assigned on the Force field page after the build (united atom: the check box counts carbons)",
+    "--ff": "Views/Pages/SemicrystallinePage.axaml|Force field",
     "--no-relax": "Views/Pages/SemicrystallinePage.axaml|Relax: push-off with the crystal held",
     "--report": "partial: the report is shown on the page; the JSON file from the command line",
     "--lammps-input": "partial: Export writes LAMMPS files; the equilibration input with the tethered crystal from the command line",
