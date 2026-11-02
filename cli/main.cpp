@@ -114,6 +114,13 @@ std::filesystem::path executable_dir() {
   return (ec ? fs::path(p) : c).parent_path();
 }
 
+// Whether a path exists, false when it cannot be looked at: the last root is the source folder of the build, which an
+// installed copy on another computer may not be allowed to read (status() would throw "Permission denied")
+bool exists_here(const std::string& p) {
+  std::error_code ec;
+  return std::filesystem::exists(p, ec);
+}
+
 const std::vector<std::string>& caps_roots() {
   static const std::vector<std::string> roots = [] {
     std::vector<std::string> r;
@@ -145,7 +152,7 @@ std::string catalogue_alias(const std::string& root, const std::string& lower) {
       for (const auto& a : e["aliases"].items()) {
         std::string x = a.str();
         for (auto& c : x) c = char(std::tolower((unsigned char)c));
-        if (x == lower && std::filesystem::exists(root + "/data/forcefields/" + e["file"].str())) return e["file"].str();
+        if (x == lower && exists_here(root + "/data/forcefields/" + e["file"].str())) return e["file"].str();
       }
     }
   } catch (const std::exception&) {}
@@ -154,7 +161,7 @@ std::string catalogue_alias(const std::string& root, const std::string& lower) {
 
 // A force field by path, or by its library name (pcff, compass, gaff2, oplsaa2024 …) from data/forcefields.
 std::string ff_path(const std::string& s0) {
-  if (s0.empty() || std::filesystem::exists(s0)) return s0;
+  if (s0.empty() || exists_here(s0)) return s0;
   // the short names of the libraries rebuilt from their own sources (as caps.core._forcefield_path in Python)
   static const std::map<std::string, std::string> alias = {
       {"gaff2", "gaff2-2.2.20-ambertools"}, {"gaff", "gaff-1.81-ambertools"}, {"opls", "oplsaa2024"}, {"pcff", "pcff-frc"},
@@ -180,7 +187,7 @@ std::string ff_path(const std::string& s0) {
   for (const std::string& s : tries)
     for (const auto& root : caps_roots())
       for (const std::string& name : {s, s + ".json"})
-        if (std::filesystem::exists(root + "/data/forcefields/" + name)) {
+        if (exists_here(root + "/data/forcefields/" + name)) {
           if (s != s0 && fb != fallback.end()) {   // say which one a short name with a fallback took (once)
             static std::set<std::string> said;
             if (said.insert(lower).second)
@@ -526,7 +533,7 @@ std::string cli_ml_model(std::map<std::string, std::string>& o, const std::strin
   std::string m = o.count("--model") ? o["--model"] : find_ml_model({ffpath});
   if (m.empty())
     for (const auto& r : caps_roots())
-      if (!r.empty() && std::filesystem::exists(r + "/data/ml/caps-mace-v1.model")) { m = r + "/data/ml/caps-mace-v1.model"; break; }
+      if (!r.empty() && exists_here(r + "/data/ml/caps-mace-v1.model")) { m = r + "/data/ml/caps-mace-v1.model"; break; }
   return resolve_ml_model(m, {ffpath});
 }
 
@@ -706,7 +713,7 @@ int cli_recipe(const Json& r, const std::string& file, std::map<std::string, std
   if (o.count("--seed")) ro.seed = std::stoll(o["--seed"]);
   if (o.count("--threads")) ro.threads = std::stoi(o["--threads"]);
   for (const std::string& root : caps_roots())
-    if (!root.empty() && std::filesystem::exists(root + "/data/forcefields/catalogue.json")) { ro.forcefield_dir = root + "/data/forcefields"; break; }
+    if (!root.empty() && exists_here(root + "/data/forcefields/catalogue.json")) { ro.forcefield_dir = root + "/data/forcefields"; break; }
   const bool json = o.count("--json") > 0, tty = isatty(fileno(stdout));
   auto esc = [](const std::string& x) { return Json(x).dump(0); };
   // live files (a cluster job): thermo rows, progress lines, frames of the stages that ask for them
@@ -948,7 +955,7 @@ static int dft_main(const std::string& cmd, int argc, char** argv) {
   }
   std::string data;
   for (const std::string& root : caps_roots())
-    if (!root.empty() && std::filesystem::exists(root + "/data/sheets/sheets.json")) { data = root + "/data"; break; }
+    if (!root.empty() && exists_here(root + "/data/sheets/sheets.json")) { data = root + "/data"; break; }
   if (data.empty()) { std::fprintf(stderr, "caps: data/sheets not found (set CAPS_HOME)\n"); return 2; }
   try {
     const Json r = dft_run(cmd, dft_args_from_cli(pos, flags), data);
@@ -1520,7 +1527,7 @@ static int cg_main(const std::string& cmd, int argc, char** argv) {
   }
   std::string data;
   for (const std::string& root : caps_roots())
-    if (!root.empty() && std::filesystem::exists(root + "/data/cg/mapping_rules.json")) { data = root + "/data"; break; }
+    if (!root.empty() && exists_here(root + "/data/cg/mapping_rules.json")) { data = root + "/data"; break; }
   if (data.empty()) { std::fprintf(stderr, "caps: data/cg not found (set CAPS_HOME)\n"); return 2; }
   try {
     const Json r = cg_run(cmd, dft_args_from_cli(pos, flags), data);
@@ -1782,7 +1789,7 @@ int main(int argc, char** argv) {
       SemicrystallineOptions so;
       if (o.count("--polymer")) so.polymer = o["--polymer"];
       for (const auto& root : caps_roots())   // the polymer crystal library
-        if (std::filesystem::exists(root + "/data/crystals/polymers/polymers.json")) { so.data_dir = root + "/data"; break; }
+        if (exists_here(root + "/data/crystals/polymers/polymers.json")) { so.data_dir = root + "/data"; break; }
       if (so.polymer == "list") {   // the crystals the builder takes, with their defaults
         for (const auto& p : semicrystalline_polymers(so.data_dir))
           std::printf("%-18s %-48s %-11s %d,%d  crystal %.1f nm, amorphous %.1f nm, %.3f g/cm³\n", p.id.c_str(), p.name.c_str(), p.forcefield.c_str(), p.nx, p.ny,
@@ -2459,7 +2466,7 @@ int main(int argc, char** argv) {
       // the shipped data (caps_roots)
       auto find = [](const std::string& rel, const std::string& probe) {
         for (const auto& r : caps_roots())
-          if (std::filesystem::exists(r + "/" + rel + "/" + probe)) return r + "/" + rel;
+          if (exists_here(r + "/" + rel + "/" + probe)) return r + "/" + rel;
         return rel;
       };
       b.samples = o.count("--samples") ? o["--samples"] : find("samples", "ps_melt.data");
@@ -2571,7 +2578,7 @@ int main(int argc, char** argv) {
       if (pos.empty() || !o.count("-o")) return usage();
       std::string mdir;
       for (const std::string& root : caps_roots())
-        if (!root.empty() && std::filesystem::exists(root + "/data/martini/martini3-small-molecules.json")) { mdir = root + "/data/martini"; break; }
+        if (!root.empty() && exists_here(root + "/data/martini/martini3-small-molecules.json")) { mdir = root + "/data/martini"; break; }
       if (mdir.empty()) throw std::runtime_error("data/martini/martini3-small-molecules.json not found (set CAPS_HOME)");
       if (o.count("--martini") && o["--martini"] != "3") throw std::runtime_error("only Martini 3 small molecules are mapped (--martini 3)");
       const System aa = load(pos[0], o);
@@ -2759,7 +2766,7 @@ int main(int argc, char** argv) {
         // page lists the same, caps_forcefield_overlays)
         std::string dir;
         for (const auto& r : caps_roots())
-          if (!r.empty() && std::filesystem::exists(r + "/data/forcefields/catalogue.json")) { dir = r + "/data/forcefields"; break; }
+          if (!r.empty() && exists_here(r + "/data/forcefields/catalogue.json")) { dir = r + "/data/forcefields"; break; }
         if (dir.empty()) throw std::runtime_error("data/forcefields not found");
         const std::string base = pos.size() > 1 ? pos[1] : "";
         int n = 0;
@@ -3432,7 +3439,7 @@ int main(int argc, char** argv) {
       } else {
         auto exchange_lib = [] {
           for (const std::string& root : caps_roots())
-            if (!root.empty() && std::filesystem::exists(root + "/data/exchange/library.json")) return load_exchange_library(root + "/data/exchange/library.json");
+            if (!root.empty() && exists_here(root + "/data/exchange/library.json")) return load_exchange_library(root + "/data/exchange/library.json");
           throw std::runtime_error("the exchange library (data/exchange/library.json) was not found");
         };
         if (sub == "list") {
@@ -3469,7 +3476,7 @@ int main(int argc, char** argv) {
           if (c.scheme.empty()) throw std::invalid_argument(c.id + " has no reaction scheme yet (see caps exchange show " + c.id + ")");
           for (const std::string& root : caps_roots()) {
             const std::string path = root + "/data/reactions/library.json";
-            if (root.empty() || !std::filesystem::exists(path)) continue;
+            if (root.empty() || !exists_here(path)) continue;
             std::ifstream in(path);
             std::stringstream ss;
             ss << in.rdbuf();
