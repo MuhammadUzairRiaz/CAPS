@@ -1,0 +1,216 @@
+{
+ "format": "caps-semicrystalline-defaults",
+ "about": "Defaults of caps semicrystalline for each crystal of the polymer crystal library (polymers.json) the lamellar builder takes. Lamella and amorphous thicknesses and the loop, bridge and tail fractions follow the one all-atom study that reports them for PE with OPLS-AA: Olsson, in 't Veld & Andreasson, Polymer 153, 305 (2018), doi:10.1016/j.polymer.2018.07.075 (30 c-cells of crystal and of amorphous layer, 7.6 nm each; of the amorphous sites about 10 % bridges, 35 % loops, 55 % tails). Published lamellar-stack MD with loops, bridges and tails exists for PE (Kim, Locker & Rutledge, Macromolecules 47, 2515 (2014), doi:10.1021/ma402297a; Kumar et al., Macromolecules 50, 1206 (2017), doi:10.1021/acs.macromol.6b02458; Lu et al., J. Appl. Phys. 123, 015107 (2018), doi:10.1063/1.5006889; Atiq et al., J. Phys. Chem. B 128, 2799 (2024), doi:10.1021/acs.jpcb.3c07705, PCFF) and for iPP by interphase Monte Carlo (Kuppa, in 't Veld & Rutledge, Macromolecules 40, 5187 (2007), doi:10.1021/ma0703958); for the other polymers none was found, so their thicknesses and fractions are PE's, to be set from the polymer's own long period. The force field is the one of OPLS-AA 2024, PCFF and COMPASS that types and parameterises the built cell completely and that the literature uses for the polymer (OPLS-AA for PE, Olsson 2018; PCFF for PE, Atiq 2024); COMPASS as shipped lacks fluorine and amide types and some POM and PLLA terms. Lateral repeats give about 3 nm by 3 nm. DOIs checked on Crossref.",
+ "polymers": [
+  {
+   "id": "pe-orthorhombic",
+   "forcefield": "oplsaa2024",
+   "repeats": [
+    4,
+    6
+   ],
+   "crystal_nm": 7.6,
+   "amorphous_nm": 7.6,
+   "loops": 0.35,
+   "bridges": 0.1,
+   "tails": 0.55,
+   "density": 0.855,
+   "density_source": "Lu et al., J. Appl. Phys. 123, 015107 (2018), doi:10.1063/1.5006889 (melt-like PE at 300 K, the experimental value they use)"
+  },
+  {
+   "id": "pe-monoclinic",
+   "forcefield": "oplsaa2024",
+   "repeats": [
+    7,
+    4
+   ],
+   "crystal_nm": 7.6,
+   "amorphous_nm": 7.6,
+   "loops": 0.35,
+   "bridges": 0.1,
+   "tails": 0.55,
+   "density": 0.855,
+   "density_source": "Lu et al., J. Appl. Phys. 123, 015107 (2018), doi:10.1063/1.5006889 (melt-like PE at 300 K, the experimental value they use)"
+  },
+  {
+   "id": "pvdf-beta",
+   "forcefield": "pcff",
+   "repeats": [
+    4,
+    7
+   ],
+   "crystal_nm": 7.6,
+   "amorphous_nm": 7.6,
+   "loops": 0.35,
+   "bridges": 0.1,
+   "tails": 0.55,
+   "density": 1.68,
+   "density_source": "a commonly quoted room-temperature amorphous density, not yet checked against a primary source"
+  },
+  {
+   "id": "pvdf-alpha",
+   "forcefield": "pcff",
+   "repeats": [
+    6,
+    3
+   ],
+   "crystal_nm": 7.6,
+   "amorphous_nm": 7.6,
+   "loops": 0.35,
+   "bridges": 0.1,
+   "tails": 0.55,
+   "density": 1.68,
+   "density_source": "a commonly quoted room-temperature amorphous density, not yet checked against a primary source"
+  },
+  {
+   "id": "ipp-alpha",
+   "forcefield": "pcff",
+   "repeats": [
+    5,
+    2
+   ],
+   "crystal_nm": 7.6,
+   "amorphous_nm": 7.6,
+   "loops": 0.35,
+   "bridges": 0.1,
+   "tails": 0.55,
+   "density": 0.855,
+   "density_source": "a commonly quoted room-temperature amorphous density, not yet checked against a primary source"
+  },
+  {
+   "id": "peo",
+   "forcefield": "oplsaa2024",
+   "repeats": [
+    4,
+    2
+   ],
+   "crystal_nm": 7.6,
+   "amorphous_nm": 7.6,
+   "loops": 0.35,
+   "bridges": 0.1,
+   "tails": 0.55,
+   "density": 1.12,
+   "density_source": "a commonly quoted room-temperature amorphous density, not yet checked against a primary source"
+  },
+  {
+   "id": "pom-orthorhombic",
+   "forcefield": "oplsaa2024",
+   "repeats": [
+    7,
+    4
+   ],
+   "crystal_nm": 7.6,
+   "amorphous_nm": 7.6,
+   "loops": 0.35,
+   "bridges": 0.1,
+   "tails": 0.55,
+   "density": 1.25,
+   "density_source": "a commonly quoted room-temperature amorphous density, not yet checked against a primary source"
+  },
+  {
+   "id": "nylon6-alpha",
+   "forcefield": "pcff",
+   "repeats": [
+    4,
+    3
+   ],
+   "crystal_nm": 7.6,
+   "amorphous_nm": 7.6,
+   "loops": 0.35,
+   "bridges": 0.1,
+   "tails": 0.55,
+   "density": 1.08,
+   "density_source": "a commonly quoted room-temperature amorphous density, not yet checked against a primary source"
+  },
+  {
+   "id": "nylon66-alpha",
+   "forcefield": "pcff",
+   "repeats": [
+    7,
+    6
+   ],
+   "crystal_nm": 7.6,
+   "amorphous_nm": 7.6,
+   "loops": 0.35,
+   "bridges": 0.1,
+   "tails": 0.55,
+   "density": 1.07,
+   "density_source": "a commonly quoted room-temperature amorphous density, not yet checked against a primary source"
+  },
+  {
+   "id": "pet",
+   "forcefield": "pcff",
+   "repeats": [
+    7,
+    5
+   ],
+   "crystal_nm": 7.6,
+   "amorphous_nm": 7.6,
+   "loops": 0.35,
+   "bridges": 0.1,
+   "tails": 0.55,
+   "density": 1.335,
+   "density_source": "a commonly quoted room-temperature amorphous density, not yet checked against a primary source"
+  },
+  {
+   "id": "plla-alpha",
+   "forcefield": "pcff",
+   "repeats": [
+    3,
+    5
+   ],
+   "crystal_nm": 7.6,
+   "amorphous_nm": 7.6,
+   "loops": 0.35,
+   "bridges": 0.1,
+   "tails": 0.55,
+   "density": 1.25,
+   "density_source": "a commonly quoted room-temperature amorphous density, not yet checked against a primary source"
+  },
+  {
+   "id": "natural-rubber",
+   "forcefield": "oplsaa2024",
+   "repeats": [
+    3,
+    4
+   ],
+   "crystal_nm": 7.6,
+   "amorphous_nm": 7.6,
+   "loops": 0.35,
+   "bridges": 0.1,
+   "tails": 0.55,
+   "density": 0.91,
+   "density_source": "a commonly quoted room-temperature amorphous density, not yet checked against a primary source"
+  },
+  {
+   "id": "ptfe-iv",
+   "forcefield": "pcff",
+   "repeats": [
+    6,
+    6
+   ],
+   "crystal_nm": 7.6,
+   "amorphous_nm": 7.6,
+   "loops": 0.35,
+   "bridges": 0.1,
+   "tails": 0.55,
+   "density": 2.0,
+   "density_source": "a commonly quoted room-temperature amorphous density, not yet checked against a primary source"
+  },
+  {
+   "id": "ptfe-ii",
+   "forcefield": "pcff",
+   "repeats": [
+    6,
+    6
+   ],
+   "crystal_nm": 7.6,
+   "amorphous_nm": 7.6,
+   "loops": 0.35,
+   "bridges": 0.1,
+   "tails": 0.55,
+   "density": 2.0,
+   "density_source": "a commonly quoted room-temperature amorphous density, not yet checked against a primary source"
+  }
+ ]
+}

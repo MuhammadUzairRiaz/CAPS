@@ -10,8 +10,13 @@
 #include <set>
 #include <string>
 #include <cstdlib>
+#include <fstream>
+#include <sstream>
 
+#include "caps/ffdef.hpp"
 #include "caps/field.hpp"
+#include "caps/json.hpp"
+#include "caps/typing.hpp"
 #include "caps/semicrystal.hpp"
 #include "caps/tags.hpp"
 #include "caps/thermal.hpp"
@@ -433,13 +438,101 @@ TEST(Semicrystalline, StemsOfTheLibrarysOtherCrystals) {
       EXPECT_EQ(s.lattice_axis, w.axis) << w.id;
     }
   }
-  // the builder grows polymethylene amorphous layers only so far: a helical iPP stack is refused with the reason
-  SemicrystallineOptions o = small_stack();
-  o.polymer = "ipp-alpha";
-  try {
-    build_semicrystalline(o);
-    ADD_FAILURE() << "iPP built";
-  } catch (const std::invalid_argument& e) {
-    EXPECT_NE(std::string(e.what()).find("helical"), std::string::npos) << e.what();
+}
+
+// Every crystal the builder lists (data/crystals/polymers/semicrystalline.json): a small stack from each, with the
+// crystal at the library's density, every atom in a segment class, valid chemistry (the polymer's force field types
+// every atom), bonds near their lengths, chains joined in phase with their repeat unit and the stems kept straight.
+class SemicrystallinePolymers : public ::testing::TestWithParam<std::string> {};
+
+TEST_P(SemicrystallinePolymers, BuildsFromTheCrystalsRepeatUnit) {
+  const std::string dir = std::string(CAPS_SOURCE_DIR) + "/data";
+  SemicrystallinePolymer def;
+  ASSERT_TRUE(semicrystalline_polymer(GetParam(), dir, &def));
+  SemicrystallineOptions o;
+  o.polymer = GetParam(), o.data_dir = dir;
+  o.nx = std::max(2, (def.nx + 1) / 2), o.ny = std::max(2, (def.ny + 1) / 2);
+  o.crystal_nm = 3, o.amorphous_nm = 3.5, o.density = def.density, o.seed = 3;
+  o.loops = 0.4, o.bridges = 0.2, o.tails = 0.4;
+  SemicrystallineReport rep;
+  const System s = build_semicrystalline(o, &rep);
+  // the crystal: the library's density (polymers.json, from the paper's cell)
+  std::ifstream in(dir + "/crystals/polymers/polymers.json");
+  std::stringstream ss;
+  ss << in.rdbuf();
+  double lib = 0;
+  const Json cat = Json::parse(ss.str());
+  for (const auto& e : cat["crystals"].items()) if (e.text("id") == def.id) lib = e.num("density", 0);
+  ASSERT_GT(lib, 0);
+  EXPECT_NEAR(rep.crystal_density, lib, 2e-3) << GetParam();
+  EXPECT_NEAR(rep.amorphous_density, o.density, 0.05 * o.density) << GetParam();
+  // every atom in a class as built: crystal atoms in stems, every amorphous atom in a loop, bridge or tail; and the
+  // order-parameter analysis of the cell finds most stems and puts nearly every atom in a class too
+  ASSERT_EQ(rep.atom_class.size(), s.atoms.size());
+  const SemicrystallineReport a = analyse_semicrystalline(s);
+  ASSERT_EQ(a.atom_class.size(), s.atoms.size());
+  const int ct = tag_index(s, "crystal"), am = tag_index(s, "amorphous");
+  size_t amorphous = 0, none = 0;
+  for (size_t i = 0; i < s.atoms.size(); ++i) {
+    const bool c = (s.atoms[i].tags >> ct) & 1u, m = (s.atoms[i].tags >> am) & 1u;
+    EXPECT_NE(c, m);
+    amorphous += m;
+    if (c) EXPECT_EQ(rep.atom_class[i], SemicrystallineReport::kStem) << GetParam() << " atom " << i;
+    else EXPECT_TRUE(rep.atom_class[i] >= SemicrystallineReport::kLoop && rep.atom_class[i] <= SemicrystallineReport::kTail) << GetParam() << " atom " << i;
+    EXPECT_GE(rep.atom_segment[i], 0);
+    none += a.atom_class[i] == SemicrystallineReport::kNone;
   }
+  EXPECT_GT(amorphous, 0u);
+  EXPECT_GE(a.stems, rep.stems * 3 / 4) << GetParam();
+  EXPECT_LT(double(none), 0.25 * double(s.atoms.size())) << GetParam() << ": atoms the analysis puts in no segment";
+  EXPECT_EQ(rep.tails, 2 * rep.chains);
+  EXPECT_EQ(2 * rep.loops + 2 * rep.bridges + rep.tails, 2 * rep.stems);
+  // chemistry: the polymer's own force field types every atom (valences, rings, end groups)
+  const FFDef ff = load_forcefield(dir + "/forcefields/" + (def.forcefield == "pcff" ? std::string("pcff-frc") : def.forcefield == "compass" ? std::string("compass-frc") : def.forcefield) + ".json");
+  const TypingResult tr = assign_types(s, ff);
+  EXPECT_EQ(tr.untyped, 0) << GetParam();
+  // bonds near their lengths as grown (a few strained closures are left for the relaxation)
+  size_t bad = 0;
+  for (const auto& b : s.bonds) {
+    const double d = norm(s.cell.minimum_image(s.atoms[b.j].pos - s.atoms[b.i].pos));
+    bad += d < 0.85 || d > 1.9;
+  }
+  EXPECT_LE(bad, size_t(rep.loops + rep.bridges)) << GetParam();
+  // the stems lean as the crystal's c does
+  EXPECT_NEAR(a.tilt_deg, rep.cell_tilt_deg, 6.0) << GetParam();
+}
+
+INSTANTIATE_TEST_SUITE_P(Library, SemicrystallinePolymers,
+                         ::testing::Values("pe-orthorhombic", "pe-monoclinic", "pvdf-beta", "pvdf-alpha", "ipp-alpha", "peo", "pom-orthorhombic", "nylon6-alpha",
+                                           "nylon66-alpha", "pet", "plla-alpha", "natural-rubber", "ptfe-iv", "ptfe-ii"),
+                         [](const auto& info) {
+                           std::string n = info.param;
+                           for (auto& c : n) if (!std::isalnum((unsigned char)c)) c = '_';
+                           return n;
+                         });
+
+TEST(Semicrystalline, ChainDirectionDecidesThePairing) {
+  // nylon 6's chains have a direction (NH-CO-(CH2)5), PVDF's not: loops and bridges of nylon 6 join stems that point
+  // opposite ways along the chain, so every chain runs in step with its repeat unit (the builder checks it) and the
+  // report says the chain is directed
+  const std::string dir = std::string(CAPS_SOURCE_DIR) + "/data";
+  SemicrystallineOptions o;
+  o.data_dir = dir, o.nx = 2, o.ny = 2, o.crystal_nm = 3, o.amorphous_nm = 3.5, o.seed = 5;
+  o.polymer = "nylon6-alpha", o.density = 1.08;
+  SemicrystallineReport r;
+  build_semicrystalline(o, &r);
+  EXPECT_TRUE(r.polar);
+  EXPECT_EQ(r.repeat_period, 7);   // N, C(=O) and five CH2
+  o.polymer = "pvdf-beta", o.density = 1.68;
+  build_semicrystalline(o, &r);
+  EXPECT_FALSE(r.polar);
+  EXPECT_EQ(r.repeat_period, 2);   // CH2-CF2
+  o.polymer = "pe";
+  o.density = 0.855;
+  build_semicrystalline(o, &r);
+  EXPECT_EQ(r.repeat_period, 1);
+  o.polymer = "ipp-alpha";
+  build_semicrystalline(o, &r);
+  EXPECT_TRUE(r.polar);   // isotactic: up and down stems
+  EXPECT_EQ(r.repeat_period, 2);
 }

@@ -43,6 +43,7 @@ PolymerCrystalCell polymer_crystal_cell(const std::string& id_or_path, const std
 struct CrystalStem {
   std::vector<uint32_t> atoms;      // atoms of the stem in one unit cell
   std::vector<uint32_t> backbone;   // backbone atoms in one cell, ordered along the axis
+  std::vector<std::array<int, 3>> image;   // each backbone atom's cell image along the path (pos + image · cell, unwrapped)
   Vec3 axis{0, 0, 1};               // unit vector of the stem's translation
   int lattice_axis = -1;            // the cell edge the chain repeats along: 0 a, 1 b, 2 c (−1: not a chain)
   std::string formula;              // of one cell's repeat ("C2H4")
@@ -50,22 +51,34 @@ struct CrystalStem {
 };
 std::vector<CrystalStem> find_stems(const System& cell, double bond_tolerance = 0.45);
 
+// The builder's defaults for a crystal of the library (data_dir/crystals/polymers/semicrystalline.json): the force field
+// (one of OPLS-AA 2024, PCFF, COMPASS that types the built cell), lateral repeats, thicknesses, segment fractions and the
+// amorphous density with where it comes from. Only the crystals listed there are known to build.
+struct SemicrystallinePolymer {
+  std::string id, name, forcefield, density_source;
+  int nx = 4, ny = 6;
+  double crystal_nm = 7.6, amorphous_nm = 7.6, loops = 0.35, bridges = 0.10, tails = 0.55, density = 0.855;
+};
+std::vector<SemicrystallinePolymer> semicrystalline_polymers(const std::string& data_dir);
+// One of them by its id or short name (pe = pe-orthorhombic); false when the library does not list it (a CIF file).
+bool semicrystalline_polymer(const std::string& id, const std::string& data_dir, SemicrystallinePolymer* out);
+
 struct SemicrystallineOptions {
   std::string polymer = "pe";      // a library id (pe = pe-orthorhombic) or a structure file of the unit cell
   std::string data_dir;            // CAPS's data folder (holds crystals/polymers)
-  int nx = 4, ny = 6;              // lateral repeats of the unit cell (a, b)
+  int nx = 4, ny = 6;              // lateral repeats of the unit cell (a, b; after relabelling so the chains run along c)
   int nc = 0;                      // cells along c in a lamella; 0: from crystal_nm
-  double crystal_nm = 5.0;         // lamella thickness (used when nc == 0)
-  double amorphous_nm = 4.0;       // amorphous layer thickness
+  double crystal_nm = 7.6;         // lamella thickness (used when nc == 0)
+  double amorphous_nm = 7.6;       // amorphous layer thickness
   // target fractions of the amorphous segments (normalised); a loop or bridge takes two stem ends, a tail one
-  double loops = 0.5, bridges = 0.2, tails = 0.3;
+  double loops = 0.35, bridges = 0.10, tails = 0.55;
   // where a loop re-enters its face: "adjacent" (mostly a neighbouring stem: 70 % of loops at the nearest free stems,
   // the rest anywhere on the face) or "random" (anywhere on the face: the switchboard model)
   std::string reentry = "adjacent";
   double density = 0.855;          // g/cm³ of the amorphous layer (melt-like PE at 300 K, as Lu et al. 2018)
   uint64_t seed = 1;
-  bool united_atom = false;        // carbons only (a united-atom force field folds the H later)
-  double contact = 3.0;            // Å, closest approach of non-bonded backbone carbons while growing
+  bool united_atom = false;        // count heavy atoms only (a united-atom force field folds the H later)
+  double contact = 3.0;            // Å, closest approach of non-bonded heavy atoms while growing
   int trials = 24;                 // torsion trials per growth step (dense near a closure)
   std::function<bool(const std::string& stage, double fraction)> progress;   // return false to cancel
 };
@@ -75,8 +88,14 @@ struct SemicrystallineReport {
   int nx = 0, ny = 0, nc = 0;
   int stems = 0, chains = 0;
   int loops = 0, bridges = 0, tails = 0;
+  std::string polymer;             // the crystal's name (builder)
+  int repeat_period = 0;           // backbone atoms in the repeat the amorphous segments are grown from (1 for PE)
+  bool polar = false;              // the chain has a direction (nylon 6, iPP, PLLA, natural rubber): loops and bridges
+                                   // join stems that point opposite ways along the chain
+  double cell_tilt_deg = 0;        // angle of the crystal's c (the stems) to the stack normal
+  double crystal_density = 0;      // g/cm³ of the lamella's atoms over its volume (the crystal's own density)
   int loops_top = 0, loops_bottom = 0, tails_top = 0, tails_bottom = 0;
-  std::vector<int> bridge_units, loop_units, tail_units;   // backbone atoms (CH2 units) of each segment
+  std::vector<int> bridge_units, loop_units, tail_units;   // backbone atoms of each segment
   std::vector<int> chain_units;                              // backbone atoms per chain
   double lx = 0, ly = 0, lz = 0;                             // cell edges, Å
   double crystal_thickness = 0, amorphous_thickness = 0;     // Å
@@ -90,18 +109,26 @@ struct SemicrystallineReport {
   double worst_contact = 0;        // closest non-bonded backbone pair as grown, Å
   int eased_steps = 0, strained_closures = 0;
   std::vector<std::string> notes;
-  // analyse_semicrystalline only: each atom's class, the backbone carbons by their segment and every other atom as the
-  // carbon it is bonded to (hydrogens): kNone (a chain without a stem, or not a chain), kStem, kLoop, kBridge, kTail
+  // each atom's class, the backbone atoms by their segment and every side atom as the backbone atom it hangs from:
+  // kNone (a chain without a stem, or not a chain), kStem, kLoop, kBridge, kTail; the builder's from its own topology
+  // (stems numbered first, then the segments), analyse_semicrystalline's from the order parameter
   enum AtomClass : int8_t { kNone = 0, kStem = 1, kLoop = 2, kBridge = 3, kTail = 4 };
   std::vector<int8_t> atom_class;
   std::vector<int32_t> atom_segment;   // the segment (stem, loop, bridge or tail) each atom belongs to, 0-based; −1 none
 };
 
-// Builds the lamellar cell: crystal from the unit cell (stems along z), amorphous segments grown from the stems' ends
-// at the amorphous density, avoiding the crystal and each other (carbons; hydrogens added after), each closing as a
-// loop, a bridge or a tail in the requested fractions. Atoms carry the tags "crystal" and "amorphous", molecule ids per
-// chain; positions wrapped in the cell. Throws std::invalid_argument for options it cannot meet (atom budget, a
-// density too low for the topology, a cell whose stems are not polymethylene) and std::runtime_error when cancelled.
+// Builds the lamellar cell: crystal from the unit cell (stems along c, the fold surfaces the ab plane, the stack normal
+// z: a monoclinic or triclinic cell gives leaning stems and a cell oblique in xy), amorphous segments grown from the
+// stems' ends at the amorphous density, each closing as a loop, a bridge or a tail in the requested fractions.
+// The segments are grown from the crystal's own repeat unit: the shortest period of its chain (CH2 for PE, CH2-CF2 for
+// PVDF, the whole repeat of nylon 6), each backbone atom with the crystal's bond, angle and side atoms in its local
+// frame (so the stereochemistry is the crystal's: isotactic iPP, L-lactide), the torsions sampled by bond kind (held
+// in rings, amides, esters and C=C; trans-gauche for sp3 bonds, with a share at the crystal's value for helices). A loop
+// or bridge closes in phase with the stem it enters; in a chain with a direction (nylon 6, iPP, PLLA, natural rubber)
+// it joins stems that point opposite ways along the chain. Tails end at an sp3-sp3 bond, capped with H. Atoms carry the
+// tags "crystal" and "amorphous", molecule ids per chain; positions wrapped in the cell. Throws std::invalid_argument
+// for options it cannot meet (a density too low for the topology, stems of different repeat units) and
+// std::runtime_error when cancelled.
 System build_semicrystalline(const SemicrystallineOptions& o, SemicrystallineReport* report = nullptr);
 
 // Push-off and minimisation of a built cell: the crystal held while the amorphous layer is pushed apart (LJ force cap
@@ -109,11 +136,12 @@ System build_semicrystalline(const SemicrystallineOptions& o, SemicrystallineRep
 void relax_semicrystalline(System& s, std::shared_ptr<const ForceField> field, const EnergyOptions& e, double fmax = 1.0,
                            std::function<bool(const std::string&, double)> progress = {});
 
-// The topology and structure of a lamellar cell from one frame (stack normal z, one lamella per cell): backbone
-// carbons with at most two carbon neighbours, a backbone atom crystalline when the P2 of its chord (r_{i+1} − r_{i−1})
-// against the stems' mean direction, averaged over ±3 neighbours, exceeds p2_cut; stems are runs of at least
-// min_stem crystalline atoms that cross the lamella's middle plane; the segments between stems are loops (both ends at
-// one face), bridges (one end at each) or tails. bins: density / P2 profile bins along z.
+// The topology and structure of a lamellar cell from one frame (stack normal z, one lamella per cell): each molecule's
+// backbone is the longest path through its heavy atoms; a backbone atom is crystalline when the P2 of its chord against
+// the stems' direction (r_{i+w} − r_{i−w}: w 1 for a zig-zag, 3 or 5 for a helix, whichever finds the stems), averaged
+// over ±3 neighbours, exceeds p2_cut; stems are runs of at least min_stem crystalline atoms that cross the lamella's
+// middle plane; the segments between stems are loops (both ends at one face), bridges (one end at each) or tails; side
+// atoms take their backbone atom's class. bins: density / P2 profile bins along z.
 SemicrystallineReport analyse_semicrystalline(const System& s, double p2_cut = 0.75, int min_stem = 8, int bins = 60);
 
 // The report as JSON (counts, fractions, distributions, profiles).
