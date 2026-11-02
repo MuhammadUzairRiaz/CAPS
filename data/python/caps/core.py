@@ -473,6 +473,11 @@ def _catalogue_alias(lib: Path, ff: str) -> Optional[str]:
     return None
 
 
+def semicrystalline_polymers() -> list:
+    """The polymer crystals caps semicrystalline builds, with their defaults (data/crystals/polymers/semicrystalline.json)."""
+    return json.loads((Path(_data_dir()) / "crystals" / "polymers" / "semicrystalline.json").read_text())["polymers"]
+
+
 def _forcefield_path(ff: str) -> str:
     if ff.lower() == "uff" or os.path.exists(ff):
         return ff if ff.lower() != "uff" else "uff"
@@ -1907,18 +1912,29 @@ class build:
         return d
 
     @staticmethod
-    def semicrystalline(polymer: str = "pe", nx: int = 4, ny: int = 6, crystal_nm: float = 5.0, amorphous_nm: float = 4.0, nc: int = 0,
-                        loops: float = 0.5, bridges: float = 0.2, tails: float = 0.3, reentry: str = "adjacent", density: float = 0.855,
-                        seed: int = 1, united_atom: bool = False, relax: bool = True) -> Document:
+    def semicrystalline(polymer: str = "pe", nx: Optional[int] = None, ny: Optional[int] = None, crystal_nm: Optional[float] = None,
+                        amorphous_nm: Optional[float] = None, nc: int = 0, loops: Optional[float] = None, bridges: Optional[float] = None,
+                        tails: Optional[float] = None, reentry: str = "adjacent", density: Optional[float] = None, seed: int = 1,
+                        united_atom: bool = False, relax: bool = True, forcefield: Optional[str] = None) -> Document:
         """A semicrystalline lamellar stack (as caps semicrystalline): polymer a polymer crystal library id ("pe" =
-        "pe-orthorhombic", Bunn 1939) or a unit-cell file; a crystal lamella of nx × ny × nc unit cells (nc from
-        crystal_nm when 0) with straight stems along z, and an amorphous layer of amorphous_nm at density (g/cm³) holding
-        loops, bridges and tails in those fractions (per segment); tags "crystal" and "amorphous"; .report holds the
-        counts, length distributions, P2 crystallinity, profiles and stem tilt. united_atom builds carbons only
-        (assign oplsua2024 afterwards)."""
-        o = {"polymer": polymer, "nx": nx, "ny": ny, "nc": nc, "crystal_nm": crystal_nm, "amorphous_nm": amorphous_nm, "loops": loops,
-             "bridges": bridges, "tails": tails, "reentry": reentry, "density": density, "seed": seed, "united_atom": united_atom, "relax": relax,
-             "data_dir": str(_data_dir())}
+        "pe-orthorhombic", "pvdf-beta", "ipp-alpha", "nylon6-alpha", "pet", ...; semicrystalline_polymers() lists them)
+        or a unit-cell file; a crystal lamella of nx × ny × nc unit cells (nc from crystal_nm when 0), stems along c, and an
+        amorphous layer of amorphous_nm at density (g/cm³) holding loops, bridges and tails in those fractions (per
+        segment), grown from the crystal's own repeat unit; tags "crystal" and "amorphous"; .report holds the counts, length
+        distributions, P2 crystallinity, profiles and stem tilt. Options left as None take the crystal's defaults
+        (data/crystals/polymers/semicrystalline.json). forcefield: the relaxation's force field, "auto" for the crystal's
+        own (OPLS-AA 2024, PCFF or COMPASS), else the built-in GAFF / UFF. united_atom counts heavy atoms only."""
+        o = {"polymer": polymer, "nc": nc, "reentry": reentry, "seed": seed, "united_atom": united_atom, "relax": relax, "data_dir": str(_data_dir())}
+        for k, v in (("nx", nx), ("ny", ny), ("crystal_nm", crystal_nm), ("amorphous_nm", amorphous_nm), ("loops", loops), ("bridges", bridges),
+                     ("tails", tails), ("density", density)):
+            if v is not None:
+                o[k] = v
+        if forcefield == "auto":
+            forcefield = next((p["forcefield"] for p in semicrystalline_polymers() if p["id"] in (polymer, "pe-orthorhombic" if polymer == "pe" else polymer)), None)
+            if forcefield is None:
+                raise CapsError(f"forcefield auto: {polymer} is not in the semicrystalline list")
+        if forcefield:
+            o["forcefield"] = _forcefield_path(forcefield)
         rep = C.create_string_buffer(1 << 20)
         h = library().caps_semicrystalline_build(_enc(json.dumps(o)), None, None, rep, len(rep))
         if not h:

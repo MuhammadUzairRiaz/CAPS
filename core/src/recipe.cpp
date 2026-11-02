@@ -183,7 +183,7 @@ RecipeCheck check_recipe(const Json& r) {
         } else if (J.has("semicrystalline")) {
           const Json& C = J["semicrystalline"];
           info.summary = "semicrystalline " + text(C, "polymer", "pe") + " · " + g6(num(C, "nx", 4)) + " × " + g6(num(C, "ny", 6)) + " cells · lamella " +
-                         g6(num(C, "crystal_nm", 5)) + " nm · amorphous " + g6(num(C, "amorphous_nm", 4)) + " nm";
+                         g6(num(C, "crystal_nm", 7.6)) + " nm · amorphous " + g6(num(C, "amorphous_nm", 7.6)) + " nm";
         } else if (J.has("nano")) {
           info.summary = "nano " + text(J["nano"], "kind", "tube");
         } else if (J.has("solvate")) {
@@ -798,11 +798,13 @@ RecipeResult run_recipe(const Json& r, const RecipeOptions& o) {
           so.polymer = text(C, "polymer", "pe");
           if (!o.forcefield_dir.empty()) so.data_dir = std::filesystem::absolute(o.forcefield_dir).parent_path().string();
           if (std::filesystem::exists(path_of(so.polymer))) so.polymer = path_of(so.polymer);
-          so.nx = int(num(C, "nx", 4)), so.ny = int(num(C, "ny", 6)), so.nc = int(num(C, "nc", 0));
-          so.crystal_nm = num(C, "crystal_nm", 5), so.amorphous_nm = num(C, "amorphous_nm", 4);
-          so.loops = num(C, "loops", 0.5), so.bridges = num(C, "bridges", 0.2), so.tails = num(C, "tails", 0.3);
+          SemicrystallinePolymer def;   // what the recipe leaves out: the crystal's defaults (semicrystalline.json)
+          semicrystalline_polymer(so.polymer, so.data_dir, &def);
+          so.nx = int(num(C, "nx", def.nx)), so.ny = int(num(C, "ny", def.ny)), so.nc = int(num(C, "nc", 0));
+          so.crystal_nm = num(C, "crystal_nm", def.crystal_nm), so.amorphous_nm = num(C, "amorphous_nm", def.amorphous_nm);
+          so.loops = num(C, "loops", def.loops), so.bridges = num(C, "bridges", def.bridges), so.tails = num(C, "tails", def.tails);
           so.reentry = text(C, "reentry", "adjacent");
-          so.density = num(C, "density", 0.855);
+          so.density = num(C, "density", def.density);
           so.united_atom = flag(C, "united_atom", false);
           so.seed = seed_of(C);
           SemicrystallineReport sr;

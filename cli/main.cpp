@@ -302,12 +302,13 @@ int usage() {
                "  caps pull    FILE [--normal | --axis x|y|z] [--distance 10] [--rate 5] [--spring 10] [--temp 300] [--surface 1] [--csv OUT]\n"
                "               pull-out / debonding of a film from a held surface: interfacial shear strength, work of separation\n"
                "  caps blend   --components SMILES1,SMILES2 [--weights 0.5,0.5] [--chains 8] [--dp 20] [--density 0.5] [--slabs | --droplet] -o OUT\n"
-               "  caps semicrystalline -o OUT.data [--polymer pe|pe-orthorhombic|CELL.cif] [--repeats 4,6] [--crystal 5 (nm) | --crystal-cells 20]\n"
-               "               [--amorphous 4 (nm)] [--loops 0.5 --bridges 0.2 --tails 0.3] [--reentry adjacent|random] [--density 0.855]\n"
-               "               [--seed 1] [--ff oplsaa2024|oplsua2024] [--no-relax] [--report R.json] [--lammps-input IN.lmp] [--gromacs STEM]\n"
-               "               a lamellar stack: crystalline stems, loops, bridges and tails in the amorphous layer (groups crystal, amorphous)\n"
+               "  caps semicrystalline -o OUT.data [--polymer pe|pvdf-beta|ipp-alpha|nylon6-alpha|pet|...|CELL.cif | --polymer list]\n"
+               "               [--repeats 4,6] [--crystal 7.6 (nm) | --crystal-cells 30] [--amorphous 7.6 (nm)] [--loops 0.35 --bridges 0.1 --tails 0.55]\n"
+               "               [--reentry adjacent|random] [--density 0.855] [--seed 1] [--ff auto|oplsaa2024|pcff|compass|oplsua2024] [--no-relax]\n"
+               "               [--report R.json] [--lammps-input IN.lmp] [--gromacs STEM]   a lamellar stack of any library crystal: stems, loops,\n"
+               "               bridges and tails grown from the crystal's repeat unit (groups crystal, amorphous); defaults and force field per polymer\n"
                "  caps semicrystalline FILE --analyse [--report R.json] [--labels L.txt]   loops, bridges, tails, P2 crystallinity, profiles\n"
-               "               of any frame; --labels: each atom's id, class (stem, loop, bridge, tail, none) and segment (hydrogens as their carbon)\n"
+               "               of any frame; --labels: each atom's id, class (stem, loop, bridge, tail, none) and segment (side atoms as their backbone atom)\n"
                "  caps grow    -o OUT.data|OUT.pdb|OUT.xyz [--chains 10] [--dp 8] [--density 0.5 | --box 33]\n"
                "               [--tacticity atactic|isotactic|syndiotactic] [--seed 1] [--trans] [--scale 1.0]\n"
                "               [--units '*CC(*)c1ccccc1,*CC(*)(C)C(=O)OC' --sequence homopolymer|alternating|block|random|shuffled|gradient|pattern\n"
@@ -1768,7 +1769,7 @@ int main(int argc, char** argv) {
           if (!f) throw std::runtime_error("cannot write " + o["--labels"]);
           static const char* names[] = {"none", "stem", "loop", "bridge", "tail"};
           size_t count[5] = {0, 0, 0, 0, 0};
-          f << "# CAPS semicrystalline labels of " << pos[0] << ": atom id (as in the file), class, segment (0-based, -1 none); hydrogens as their carbon\n";
+          f << "# CAPS semicrystalline labels of " << pos[0] << ": atom id (as in the file), class, segment (0-based, -1 none); side atoms as their backbone atom\n";
           for (size_t i = 0; i < s.atoms.size(); ++i) {
             const int k = r.atom_class[i];
             ++count[k];
@@ -1778,11 +1779,24 @@ int main(int argc, char** argv) {
         }
         return 0;
       }
-      if (!o.count("-o")) return usage();
       SemicrystallineOptions so;
       if (o.count("--polymer")) so.polymer = o["--polymer"];
       for (const auto& root : caps_roots())   // the polymer crystal library
         if (std::filesystem::exists(root + "/data/crystals/polymers/polymers.json")) { so.data_dir = root + "/data"; break; }
+      if (so.polymer == "list") {   // the crystals the builder takes, with their defaults
+        for (const auto& p : semicrystalline_polymers(so.data_dir))
+          std::printf("%-18s %-48s %-11s %d,%d  crystal %.1f nm, amorphous %.1f nm, %.3f g/cm³\n", p.id.c_str(), p.name.c_str(), p.forcefield.c_str(), p.nx, p.ny,
+                      p.crystal_nm, p.amorphous_nm, p.density);
+        return 0;
+      }
+      if (!o.count("-o")) return usage();
+      // the crystal's defaults (semicrystalline.json), each overridden by its option
+      SemicrystallinePolymer def;
+      const bool known = semicrystalline_polymer(so.polymer, so.data_dir, &def);
+      if (known) {
+        so.nx = def.nx, so.ny = def.ny, so.crystal_nm = def.crystal_nm, so.amorphous_nm = def.amorphous_nm;
+        so.loops = def.loops, so.bridges = def.bridges, so.tails = def.tails, so.density = def.density;
+      }
       if (o.count("--repeats")) {
         const auto v = split(o["--repeats"]);
         so.nx = std::stoi(v.at(0)), so.ny = v.size() > 1 ? std::stoi(v[1]) : so.nx;
@@ -1797,6 +1811,12 @@ int main(int argc, char** argv) {
       if (o.count("--density")) so.density = std::stod(o["--density"]);
       if (o.count("--seed")) so.seed = std::stoull(o["--seed"]);
       const bool quiet = o.count("--quiet");
+      // --ff auto (the default for a library crystal): the force field semicrystalline.json names for it
+      if ((!o.count("--ff") && known) || (o.count("--ff") && o["--ff"] == "auto")) {
+        if (!known) throw std::invalid_argument("--ff auto: " + so.polymer + " is not in the library's list (caps semicrystalline --polymer list); give --ff");
+        o["--ff"] = def.forcefield;
+        if (!quiet) std::printf("force field for %s: %s (data/crystals/polymers/semicrystalline.json; --ff for another)\n", def.id.c_str(), def.forcefield.c_str());
+      }
       if (o.count("--ff") && !std::filesystem::exists(o["--ff"] + ".json") && !is_uff(o["--ff"])) {
         try { so.united_atom = load_forcefield(ff_path(o["--ff"])).united_atom; } catch (const std::exception&) {}
       }
