@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 
+#include "caps/elements.hpp"
 #include "caps/json.hpp"
 #include "caps/polymer.hpp"
 
@@ -27,8 +28,8 @@ ChainSpec units_spec(const std::vector<std::string>& smiles, int dp, Sequence se
   return c;
 }
 
-// Closest distance between atoms more than `hops` bonds apart (minimum image, orthorhombic cell), by a cell list.
-double closest_nonbonded(const System& s, int hops = 3) {
+// Closest distance between atoms more than three bonds apart (minimum image, orthorhombic cell), by a cell list.
+double closest_nonbonded(const System& s) {
   const size_t n = s.atoms.size();
   std::vector<std::vector<uint32_t>> nb(n);
   for (const auto& b : s.bonds) nb[b.i].push_back(b.j), nb[b.j].push_back(b.i);
@@ -43,7 +44,7 @@ double closest_nonbonded(const System& s, int hops = 3) {
   for (uint32_t i = 0; i < n; ++i) {
     std::vector<uint32_t> fr{i};
     mark[i] = int(i);
-    for (int d = 0; d < hops; ++d) {
+    for (int d = 0; d < 3; ++d) {
       std::vector<uint32_t> nx;
       for (uint32_t u : fr)
         for (uint32_t w : nb[u])
@@ -97,6 +98,39 @@ void expect_cell(const System& s, const ChainSpec& c, int chains, double density
   EXPECT_GE(closest_nonbonded(s), contact) << what;
 }
 
+// Worst (distance − limit) over pairs more than three bonds apart, at the grower's own full limits: 0.88 × the sum of
+// the van der Waals radii less 0.08 Å per hydrogen (H–H 1.95, C–H 2.47, C–C 2.99 Å), 85 % for pairs four bonds apart,
+// 90 % where an end-cap hydrogen (the last two atoms of each chain) is one of the two. Minimum image, orthorhombic cell.
+double worst_margin_at_full_limits(const System& s) {
+  const size_t n = s.atoms.size();
+  std::vector<char> cap(n, 0);
+  for (size_t i = 1; i < n; ++i)
+    if (i + 1 == n || s.atoms[i + 1].mol != s.atoms[i].mol) cap[i] = cap[i - 1] = 1;
+  std::vector<std::vector<uint32_t>> nb(n);
+  for (const auto& b : s.bonds) nb[b.i].push_back(b.j), nb[b.j].push_back(b.i);
+  const double L[3] = {s.cell.a[0], s.cell.b[1], s.cell.c[2]};
+  double worst = 1e9;
+  std::vector<int> d(n, -1);
+  for (uint32_t i = 0; i < n; ++i) {
+    std::fill(d.begin(), d.end(), -1);
+    d[i] = 0;
+    std::vector<uint32_t> q{i};
+    for (size_t h = 0; h < q.size(); ++h)
+      if (d[q[h]] < 4)
+        for (uint32_t w : nb[q[h]])
+          if (d[w] < 0) d[w] = d[q[h]] + 1, q.push_back(w);
+    for (uint32_t j = i + 1; j < n; ++j) {
+      if (d[j] >= 0 && d[j] <= 3) continue;
+      Vec3 r = s.atoms[j].pos - s.atoms[i].pos;
+      for (int k = 0; k < 3; ++k) r[k] -= L[k] * std::round(r[k] / L[k]);
+      const int zi = s.atoms[i].element, zj = s.atoms[j].element;
+      const double lim = 0.88 * (element(zi).vdw + element(zj).vdw) - 0.08 * ((zi == 1) + (zj == 1));
+      worst = std::min(worst, norm(r) - lim * (d[j] == 4 ? 0.85 : 1.0) * (cap[i] || cap[j] ? 0.9 : 1.0));
+    }
+  }
+  return worst;
+}
+
 }  // namespace
 
 // A PE melt above its real density: chains stuck in the crowd ease their own contact limits (not below 0.4) and the
@@ -114,17 +148,20 @@ TEST(GrowRobust, DenseMeltWithEasedLimits) {
   EXPECT_GE(rep.min_scale, 0.4 - 1e-9);
   EXPECT_GE(rep.worst_margin, o.accept - 1e-9);   // against the limits each unit was placed at
 
-  GrowOptions f;
-  f.chains = 4;
-  f.density = 0.4;
-  GrowReport fr;
-  const System fixed = grow_chains(units_spec({"*CC*"}, 30), f, &fr);
-  EXPECT_EQ(fr.eased_steps, 0);
-  EXPECT_DOUBLE_EQ(fr.min_scale, 1.0);
-  EXPECT_GE(fr.worst_margin, f.accept - 1e-9);
-  // H–H 2.0 Å at full limits less the accepted 0.05; 1-5 pairs (four bonds apart) are held to 85 % of the limit
-  EXPECT_GE(closest_nonbonded(fixed, 4), 1.9);
-  EXPECT_GE(closest_nonbonded(fixed), 0.85 * 2.0 - 0.05);
+  // several seeds: one growth path can pass or fail on rounding alone (each platform's maths library takes its own)
+  for (uint64_t seed = 1; seed <= 10; ++seed) {
+    GrowOptions f;
+    f.chains = 4;
+    f.density = 0.4;
+    f.seed = seed;
+    GrowReport fr;
+    const System fixed = grow_chains(units_spec({"*CC*"}, 30), f, &fr);
+    EXPECT_EQ(fr.eased_steps, 0) << "seed " << seed;
+    EXPECT_DOUBLE_EQ(fr.min_scale, 1.0) << "seed " << seed;
+    EXPECT_GE(fr.worst_margin, f.accept - 1e-9) << "seed " << seed;
+    // the cell as written, end caps included, against the full limits: within the accepted 0.05 Å
+    EXPECT_GE(worst_margin_at_full_limits(fixed), f.accept - 1e-9) << "seed " << seed;
+  }
 }
 
 // Many short chains, one unit, one long chain: the start points and the first units are the hard part
