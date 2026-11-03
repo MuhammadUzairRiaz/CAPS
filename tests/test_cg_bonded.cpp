@@ -206,5 +206,7 @@ TEST(CgBonded, WeightsFilesAndRefinement) {
   const CgBondedResult fixed = refine_bonded(step, wrong, 1.0, &res);
   EXPECT_NEAR(fixed.bonds[0].x0, 5.0, 0.06);
   EXPECT_GT(res["bond A-B"], 0.1);
+  // (Windows cannot remove a folder while a file in it is open)
+  in.close(), bj.close();
   std::filesystem::remove_all(dir);
 }

@@ -27,8 +27,8 @@ ChainSpec units_spec(const std::vector<std::string>& smiles, int dp, Sequence se
   return c;
 }
 
-// Closest distance between atoms more than three bonds apart (minimum image, orthorhombic cell), by a cell list.
-double closest_nonbonded(const System& s) {
+// Closest distance between atoms more than `hops` bonds apart (minimum image, orthorhombic cell), by a cell list.
+double closest_nonbonded(const System& s, int hops = 3) {
   const size_t n = s.atoms.size();
   std::vector<std::vector<uint32_t>> nb(n);
   for (const auto& b : s.bonds) nb[b.i].push_back(b.j), nb[b.j].push_back(b.i);
@@ -43,7 +43,7 @@ double closest_nonbonded(const System& s) {
   for (uint32_t i = 0; i < n; ++i) {
     std::vector<uint32_t> fr{i};
     mark[i] = int(i);
-    for (int d = 0; d < 3; ++d) {
+    for (int d = 0; d < hops; ++d) {
       std::vector<uint32_t> nx;
       for (uint32_t u : fr)
         for (uint32_t w : nb[u])
@@ -122,7 +122,9 @@ TEST(GrowRobust, DenseMeltWithEasedLimits) {
   EXPECT_EQ(fr.eased_steps, 0);
   EXPECT_DOUBLE_EQ(fr.min_scale, 1.0);
   EXPECT_GE(fr.worst_margin, f.accept - 1e-9);
-  EXPECT_GE(closest_nonbonded(fixed), 1.9);   // H–H 2.0 Å at full limits, less the accepted 0.05
+  // H–H 2.0 Å at full limits less the accepted 0.05; 1-5 pairs (four bonds apart) are held to 85 % of the limit
+  EXPECT_GE(closest_nonbonded(fixed, 4), 1.9);
+  EXPECT_GE(closest_nonbonded(fixed), 0.85 * 2.0 - 0.05);
 }
 
 // Many short chains, one unit, one long chain: the start points and the first units are the hard part

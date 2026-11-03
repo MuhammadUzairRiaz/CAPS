@@ -132,5 +132,7 @@ TEST(CgBuild, SequencesLengthsAndFiles) {
   const std::string deck = cg_equil_deck({});
   EXPECT_NE(deck.find("fix push all adapt 1 pair soft a * * v_A"), std::string::npos);
   EXPECT_NE(deck.find("include ${PAIR}/pair.in"), std::string::npos);
+  // (Windows cannot remove a folder while a file in it is open)
+  mf.close();
   std::filesystem::remove_all(dir);
 }

@@ -211,5 +211,7 @@ TEST(CgRules, StreamingDumpShuffledAndWrapped) {
   ASSERT_EQ(got.size(), m.beads());
   for (size_t b = 0; b < m.beads(); ++b) EXPECT_LT(norm(c.minimum_image(got[b] - want[b])), 2e-3);   // the same beads (4 decimals)
   for (const auto& [x, y] : m.bonds) EXPECT_LT(norm(got[size_t(y)] - got[size_t(x)]), 10.0) << "chains whole along their bonds";
+  // (Windows cannot remove a folder while a file in it is open)
+  f.close();
   std::filesystem::remove_all(dir);
 }

@@ -16,6 +16,7 @@
 #include "caps/ffdef.hpp"
 #include "caps/field.hpp"
 #include "caps/json.hpp"
+#include "caps/rng.hpp"
 #include "caps/typing.hpp"
 #include "caps/semicrystal.hpp"
 #include "caps/tags.hpp"
@@ -310,8 +311,9 @@ TEST(HeatFlux, PerAtomTermsSumToTheEvaluator) {
 
 TEST(HeatFlux, GreenKuboOfAKnownProcess) {
   // AR(1) samples q_{t+1} = a q_t + noise: autocorrelation σ² a^k, trapezoid integral Δt σ² (1 + a) / (2 (1 − a))
+  // caps::Normal, not std::normal_distribution: the same samples on every platform (each C++ library has its own)
   std::mt19937_64 g(5);
-  std::normal_distribution<double> nd(0, 1);
+  caps::Normal<double> nd(0, 1);
   const double a = 0.9, sig2 = 1 / (1 - a * a);
   const size_t n = 400000;
   std::vector<Vec3> q(n);
