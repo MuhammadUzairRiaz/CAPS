@@ -62,6 +62,8 @@ TEST(CgAnalysis, Z1ConfigAndPaths) {
   const CgChainPaths q = paths_from_positions(t, pos, after, c);
   EXPECT_NEAR(q.lpp[0], 2 * std::sqrt(9.0 + 4.0), 1e-9);
   EXPECT_NEAR(q.r2[0], 36, 1e-9);
+  // (Windows cannot remove a folder while a file in it is open)
+  in.close();
   std::filesystem::remove_all(dir);
 }
 

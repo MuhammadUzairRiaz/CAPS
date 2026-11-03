@@ -216,8 +216,8 @@ TEST(ClusterJob, PollReadsWhatIsNew) {
   EXPECT_DOUBLE_EQ(r["eta_s"].number(), 1800);
   EXPECT_EQ(r["err"].str(), "warning: x\n");
   // the next look: only the new log bytes, and the progress line finished since
-  std::ofstream(scratch / "run.log", std::ios::app) << "step 300\n";
-  std::ofstream(scratch / "progress.jsonl", std::ios::app) << "00,\"fraction\":0.5}\n";
+  std::ofstream(scratch / "run.log", std::ios::app | std::ios::binary) << "step 300\n";   // binary: \n, not Windows' \r\n
+  std::ofstream(scratch / "progress.jsonl", std::ios::app | std::ios::binary) << "00,\"fraction\":0.5}\n";
   p.log_offset = int64_t(r["log_offset"].number());
   p.progress_offset = int64_t(r["progress_offset"].number());
   r = job_poll(p, "RUNNING|None|00:20:00|01:00:00|n1", "");

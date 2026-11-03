@@ -1158,6 +1158,7 @@ TEST(React, BondReactMaleicAcidTwoStepsRunsInLammps) {
   std::ifstream in(dir + "/ma.in");
   std::stringstream ss;
   ss << in.rdbuf();
+  in.close();   // (Windows cannot remove a folder while a file in it is open)
   EXPECT_NE(ss.str().find("$(3.5+v_rmax_add) < 4"), std::string::npos);
   EXPECT_EQ(ss.str().find("${rmax_add} < 4"), std::string::npos);
   EXPECT_NE(ss.str().find("Rmax now"), std::string::npos);
@@ -1181,6 +1182,7 @@ TEST(React, BondReactMaleicAcidTwoStepsRunsInLammps) {
     std::ifstream lg(dl + "/check.log");
     std::stringstream ls;
     ls << lg.rdbuf();
+    lg.close();
     const std::string log = ls.str();
     if (log.find("Unrecognized fix style 'bond/react'") != std::string::npos || (log.find("ERROR") != std::string::npos && log.find("molmap") != std::string::npos)) {
       GTEST_LOG_(INFO) << "this LAMMPS lacks REACTER or reset_mol_ids molmap: not run";
