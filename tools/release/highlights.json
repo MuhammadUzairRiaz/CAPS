@@ -1,6 +1,6 @@
 {
  "about": "What is new in the next release, as the Studio shows it after an update and in its update banner. tools/release/make_release_json.py copies this into release.json. Keep it to a handful of lines a user can act on; page is a Studio page (the palette's module name, e.g. semicrystalline, or a command id such as module.open thermal). The full changelog stays in tools/docs/src/whatsnew.md.",
- "title": "October 2026 update",
+ "title": "November 2026 update",
  "highlights": [
   {
    "title": "Semicrystalline stacks",
