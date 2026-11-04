@@ -81,6 +81,7 @@ add_library(caps_core STATIC
   src/phonons.cpp
   src/ddft.cpp
   src/crystalfit.cpp
+  src/habit.cpp
   src/vasp_out.cpp
   src/dft_analysis.cpp
   src/dft_commands.cpp

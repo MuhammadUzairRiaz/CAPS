@@ -325,6 +325,28 @@ internal static class Screenshot
                 for (int k = 0; k < 60; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
                 Console.WriteLine("fields: " + vm.Status + (vm.FieldHasError ? " · error " + vm.FieldError : "") + " · " + vm.FieldNote);
             }
+            if (kv[0] == "habit")   // habit=FF|MAXINDEX|ENERGIES(0/1)|MODEL: Builders › Crystal's crystal shape of the open crystal, awaited
+            {
+                var vm = w.ViewModel;
+                var f = kv[1].Split('|');
+                if (f[0].Length > 0)
+                {
+                    var k = vm.Field.Library.ToList().FindIndex(x => x.Id == f[0]);
+                    if (k >= 0) vm.Field.FfIndex = k;
+                    var a = vm.Field.Assign();
+                    while (!a.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(10); }
+                }
+                vm.OpenCrystal();
+                if (f.Length > 1) vm.HabitMaxIndex = decimal.Parse(f[1], System.Globalization.CultureInfo.InvariantCulture);
+                if (f.Length > 2 && f[2] == "1") vm.HabitEnergies = vm.HabitSurface = true;
+                var t = vm.RunHabit();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+                if (f.Length > 3) vm.HabitModel = int.Parse(f[3]);
+                for (int q = 0; q < 40; ++q) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+                foreach (var sv in w.GetVisualDescendants().OfType<Avalonia.Controls.ScrollViewer>()) if (sv.IsEffectivelyVisible) sv.ScrollToEnd();
+                for (int q = 0; q < 20; ++q) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+                Console.WriteLine("habit: " + vm.Status + (vm.HabitHasError ? " · error " + vm.HabitError : "") + "\n" + vm.HabitTable + "\n" + vm.HabitShapeText + "\n" + vm.HabitNote);
+            }
             if (kv[0] == "fit")   // fit=FF|N,M|TARGETS: Force field › fit to crystal data with that force field, parameters N, M of the list ticked, targets ';'-separated, awaited; the page scrolled to the card
             {
                 var vm = w.ViewModel;

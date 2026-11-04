@@ -265,6 +265,36 @@
                 </StackPanel>
               </Border>
 
+              <Border Classes="section" Padding="16,14">
+                <StackPanel Spacing="8">
+                  <DockPanel>
+                    <Button DockPanel.Dock="Right" Classes="small" Content="Find the shape" Click="OnHabit" IsEnabled="{Binding HasDocument}"
+                            ToolTip.Tip="The open crystal's faces and its shape: by interplanar spacing, and with the assigned force field by attachment and surface energies" />
+                    <TextBlock Text="CRYSTAL SHAPE" Classes="h3" VerticalAlignment="Center" />
+                  </DockPanel>
+                  <TextBlock Classes="dim" TextWrapping="Wrap" Text="Which faces a filler crystal shows and the particle shape it grows into: the faces the polymer meets." />
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <NumericUpDown Value="{Binding HabitMaxIndex}" Minimum="1" Maximum="6" Increment="1" FormatString="hkl ≤ 0" Width="96" ShowButtonSpinner="False"
+                                   ToolTip.Tip="Faces with |h|, |k|, |l| up to this" />
+                    <CheckBox Content="Attachment energies" IsChecked="{Binding HabitEnergies}" ToolTip.Tip="The growth shape: each face's slice energy against the bulk, with the force field of the Force field page" />
+                    <CheckBox Content="Surface energies" IsChecked="{Binding HabitSurface}" ToolTip.Tip="The equilibrium shape: unrelaxed surface energies of slabs" />
+                  </StackPanel>
+                  <TextBlock Text="{Binding HabitError}" Classes="err" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding HabitHasError}" />
+                  <StackPanel Spacing="6" IsVisible="{Binding HabitHas}">
+                    <ComboBox ItemsSource="{x:Static vm:MainViewModel.HabitModels}" SelectedIndex="{Binding HabitModel}" HorizontalAlignment="Stretch" />
+                    <v:HabitView x:Name="Habit" Height="220" />
+                    <TextBlock Text="{Binding HabitShapeText}" Classes="dim" FontSize="12" />
+                    <TextBlock Text="{Binding HabitTable}" Classes="mono" FontSize="11" />
+                    <TextBlock Text="{Binding HabitNote}" Classes="dim" FontSize="11.5" TextWrapping="Wrap" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <NumericUpDown Value="{Binding HabitRadius}" Minimum="5" Maximum="100" Increment="5" FormatString="R 0 Å" Width="90" ShowButtonSpinner="False"
+                                     ToolTip.Tip="Distance from the centre to the farthest corner of the particle" />
+                      <Button Classes="small" Content="Build particle" Click="OnHabitParticle" ToolTip.Tip="A particle of the crystal in the shape shown, as a new structure (whole molecules and ions)" />
+                    </StackPanel>
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+
               <Border Padding="16,12">
                 <StackPanel Spacing="6">
                   <TextBlock Text="{Binding CrystalError}" Classes="err" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding CrystalHasError}" />

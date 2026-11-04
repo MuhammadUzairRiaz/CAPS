@@ -42,6 +42,7 @@
 #include "caps/powder.hpp"
 #include "caps/phonons.hpp"
 #include "caps/crystalfit.hpp"
+#include "caps/habit.hpp"
 #include "caps/ddft.hpp"
 #include "caps/dlpoly.hpp"
 #include "caps/dynamics.hpp"
@@ -12362,6 +12363,61 @@ extern "C" int32_t caps_phonons(caps_doc* d, const char* json, caps_stage_fn pro
     r["sound"] = std::move(snd), r["min_wavenumber"] = res.min_wavenumber, r["imaginary"] = double(res.imaginary), r["max_force"] = res.max_force;
     r["relax_steps"] = double(res.relax_steps), r["relax_shift"] = res.relax_shift, r["forcefield"] = res.field, r["notes"] = std::move(nt);
     r["supercell"] = arr({double(res.supercell[0]), double(res.supercell[1]), double(res.supercell[2])});
+  } catch (const std::exception& e) {
+    r = caps::Json::object();
+    r["ok"] = false;
+    r["error"] = std::string(e.what());
+  }
+  return report_out(r.dump(0), out, cap);
+}
+
+// v80 crystal habit of the open crystal (habit.hpp)
+extern "C" int32_t caps_habit(caps_doc* d, const char* json, caps_stage_fn progress, void* user, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    if (!d) throw std::invalid_argument("no document");
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    const caps::System s = d->traj.frames() ? d->traj.frame(d->current) : d->traj.topology;
+    caps::HabitOptions o;
+    o.max_index = int(j.num("max_index", 3));
+    o.min_d = j.num("min_d", 0);
+    o.forms = int(j.num("forms", 12));
+    o.attachment = j.has("attachment") && j["attachment"].boolean();
+    o.surface = j.has("surface") && j["surface"].boolean();
+    o.vacuum = j.num("vacuum", 0);
+    if (o.attachment || o.surface) {
+      o.energy = elec();
+      o.energy.cutoff = j.num("cutoff", 10);
+      o.energy.tail = false;
+      o.energy.threads = int(j.num("threads", 0));
+      if (j.text("electrostatics", "pme") != "dsf") o.energy.electrostatics = caps::EnergyOptions::Electrostatics::PME;
+      o.field_for = [&](const caps::System& x) { return field_for_extended(d, x); };
+    }
+    bool cancelled = false;
+    if (progress) o.progress = [&](const std::string& w, double f) { cancelled = progress(w.c_str(), f, user) != 0; return !cancelled; };
+    const caps::HabitResult res = caps::crystal_habit(s, o);
+    r = caps::habit_json(res);
+    // a particle in one of the shapes, written to a file
+    if (j.has("particle") && j["particle"].is_object()) {
+      const caps::Json& p = j["particle"];
+      std::vector<caps::Vec3> n;
+      std::vector<double> dist;
+      caps::habit_planes(s, res, p.text("model", "bfdh"), n, dist);
+      const caps::System part = caps::carve_particle(s, n, dist, p.num("radius", 20));
+      const std::string path = p.text("path");
+      if (path.empty()) throw std::invalid_argument("particle: a path to write it to");
+      caps::write_pdb(part, path);
+      caps::Json x = caps::Json::object();
+      x["path"] = path, x["atoms"] = double(part.atoms.size());
+      r["particle"] = x;
+    }
+    caps::KeyValues pr = {{"faces", "|h|, |k|, |l| ≤ " + std::to_string(o.max_index) + " (" + std::to_string(res.faces.size()) + " forms)"},
+                          {"space group", res.space_group},
+                          {"energies", o.attachment || o.surface ? std::string(o.attachment ? "attachment" : "") + (o.attachment && o.surface ? " and " : "") +
+                                                                       (o.surface ? "surface" : "")
+                                                                 : "none"}};
+    prov_step(d, "analysis.habit", "Crystal habit: BFDH, attachment and surface energies, Wulff shapes", std::move(pr));
+    r["ok"] = true;
   } catch (const std::exception& e) {
     r = caps::Json::object();
     r["ok"] = false;

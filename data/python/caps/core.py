@@ -1429,6 +1429,33 @@ def _fit_crystal(self, parameters, targets=(), relaxed: bool = True, formula_uni
 Document.fit_terms = _fit_terms
 Document.fit_crystal = _fit_crystal
 
+def _habit(self, max_index: int = 3, attachment: bool = False, surface: bool = False, forms: int = 12, min_d: float = 0.0,
+           cutoff: float = 10.0, electrostatics: str = "pme", particle=None) -> dict:
+    """Crystal habit of this crystal (current frame): faces ranked by effective spacing d_eff (BFDH, extinctions from the
+    space group), optionally attachment energies (growth shape) and surface energies (equilibrium shape) with the assigned
+    force field for the `forms` largest-d forms, and the Wulff shapes. particle=(model, radius_Å, path) also writes a
+    particle carved in that shape as PDB. Returns {space_group, faces, shapes, notes, particle, ...}."""
+    o = {"max_index": int(max_index), "attachment": bool(attachment), "surface": bool(surface), "forms": int(forms), "min_d": float(min_d),
+         "cutoff": float(cutoff), "electrostatics": electrostatics}
+    if particle is not None:
+        model, radius, path = particle
+        o["particle"] = {"model": model, "radius": float(radius), "path": str(path)}
+    f = library().caps_habit
+    f.argtypes = [C.c_void_p, C.c_char_p, C.c_void_p, C.c_void_p, C.c_char_p, C.c_int32]
+    f.restype = C.c_int32
+    buf = C.create_string_buffer(1 << 22)
+    n = f(self._h, _enc(json.dumps(o)), None, None, buf, len(buf))
+    if n > len(buf):
+        buf = C.create_string_buffer(int(n))
+        f(self._h, _enc(json.dumps(o)), None, None, buf, len(buf))
+    r = json.loads(buf.value.decode())
+    if not r.get("ok"):
+        raise CapsError(r.get("error", "habit failed"))
+    return r
+
+
+Document.habit = _habit
+
 def density_fields(molecules, chi=None, grid=(32, 32, 32), bond: float = 1.1543, kappa: float = 10.0, noise: float = 75.0, dt: float = 0.02,
                    steps: int = 2000, frame_every: int = 100, seed: int = 1) -> dict:
     """Density-field dynamics of Gaussian chains (no structure needed): molecules [(name, sequence such as "A8B8", fraction), …],

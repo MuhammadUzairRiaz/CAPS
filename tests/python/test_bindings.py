@@ -665,6 +665,13 @@ _C = {o["what"]: o["final"] for o in _fr["observations"]}
 check(abs(_fr["structures"][0]["final"][0] - 4.2112) < 1e-5 and abs(_fr["parameters"][0]["final"] - _fc["parameters"][0]["final"]) < 1e-3
       and abs(_C["C12"] - _C["C44"]) < 1e-3 * _C["C11"],
       f"MgO fit: A {_fr['parameters'][0]['final']:.3f} (relaxed) {_fc['parameters'][0]['final']:.3f} (conventional) kcal/mol, C11 {_C['C11']:.1f} C12 {_C['C12']:.1f} C44 {_C['C44']:.1f} GPa")
+# crystal habit of periclase with the Catlow shell model: {111} polar (no energy), the growth and equilibrium shapes cubes of {100}
+_hb = _mg.habit(max_index=2, attachment=True, surface=True, forms=4)
+_h100 = [f for f in _hb["faces"] if sorted(map(abs, f["hkl"])) == [0, 0, 1]][0]
+_h111 = [f for f in _hb["faces"] if sorted(map(abs, f["hkl"])) == [1, 1, 1]][0]
+check(_hb["space_group"].replace(" ", "") == "Fm-3m" and _h111["e_att"] is None and "polar" in _h111["note"] and abs(_h100["area_growth"] - 1) < 1e-9
+      and abs(_hb["shapes"]["equilibrium"]["aspect"] - 1) < 1e-9 and _h100["gamma"] > 0,
+      f"MgO habit: E_att(100) {_h100['e_att']:.2f} kcal/mol, gamma(100) {_h100['gamma']:.3f} J/m2 (unrelaxed), a {{100}} cube")
 # density fields of a symmetric diblock (2D): microphase separation starts at about the RPA spacing (4.1 grid spacings)
 _df = caps.density_fields([("AB", "A4B4", 1.0)], {"AB": 1.93}, grid=(32, 32, 1), kappa=20, noise=200, dt=0.01, steps=300, frame_every=100)
 check(_df["types"] == ["A", "B"] and _df["order"][-1][0] > _df["order"][1][0] and 3.4 < _df["spacing"][-1] < 4.8 and len(_df["last"][0]) == 1024,
@@ -752,7 +759,7 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 79, "ABI 79")
+check(caps.abi_version() == 80, "ABI 80")
 
 # bond exchange analysis (ABI 74): an exact Arrhenius line gives its Ea, healing ratios follow their definitions
 import math

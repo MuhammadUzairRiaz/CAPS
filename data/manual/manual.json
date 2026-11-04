@@ -3127,6 +3127,50 @@
    ]
   },
   {
+   "id": "crystal-habit",
+   "group": "Analysis",
+   "title": "Crystal habit: BFDH, attachment energy, Wulff shapes",
+   "summary": "Which faces a crystal shows and the shape it takes. Faces (hkl) up to a largest index are grouped into forms by the crystal's point group and ranked by their effective interplanar spacing: d_hkl of the first order n(hkl) that the space group does not extinguish (an operation with h·R = h and h·t not an integer: lattice centring, screw axes, glide planes), so fcc's {100} counts at a/2. With a force field, the attachment energy of each form is the energy of a growth unit (a molecule, or an ion with its shell) in the bulk less its energy in one slice of thickness d_eff alone, both unrelaxed so intramolecular energy cancels; among the cuts between units the one with the lowest |E_att| is taken. The surface energy is that of an unrelaxed slab several slices thick. Slabs are built on the plane's own two-dimensional lattice with whole units and vacuum along the normal; bonds are carried with their lattice images, so chains along short axes stay whole. A slice with a dipole along its normal (a polar face) or a net charge gets no energy, nor does a face that would cut a covalent chain or network: a polymer crystal's faces parallel to its chains get energies and its shapes are prisms open along the chains (their sides are reported). The shapes are Wulff constructions with distances 1/d_eff (BFDH), |E_att| (growth) or γ (equilibrium); a particle can be carved in any of them, whole units whose centres lie inside.",
+   "equation": "d_eff = d_hkl / n,  n = min{n : F(nh, nk, nl) ≠ 0 by symmetry};  E_att = E_latt − E_slice;  γ = (E_slab − N e_bulk) / 2A;  shape = ∩_i {x : n_i·x ≤ h_i},  h_i ∝ 1/d_eff, |E_att| or γ",
+   "equation_note": "Donnay & Harker 1937; Hartman & Perdok 1955; Hartman & Bennema 1980; Wulff 1901",
+   "tex": "d_{\\mathrm{eff}} = \\frac{d_{hkl}}{n}, \\quad n = \\min\\{n : (nh, nk, nl)\\ \\text{not extinguished}\\} \\qquad E_{\\mathrm{att}} = E_{\\mathrm{latt}} - E_{\\mathrm{slice}} \\\\ \\gamma = \\frac{E_{\\mathrm{slab}} - N e_{\\mathrm{bulk}}}{2A} \\qquad \\Omega = \\bigcap_i \\{\\mathbf{x} : \\mathbf{n}_i\\cdot\\mathbf{x} \\le h_i\\}, \\quad h_i \\propto \\frac{1}{d_{\\mathrm{eff}}},\\ |E_{\\mathrm{att}}|\\ \\text{or}\\ \\gamma",
+   "symbols": [
+    [
+     "d_hkl, d_eff",
+     "interplanar spacing and effective spacing",
+     "Å"
+    ],
+    [
+     "E_att, E_slice",
+     "attachment and slice energy per growth unit",
+     "kcal/mol"
+    ],
+    [
+     "γ",
+     "surface energy (unrelaxed)",
+     "J/m²"
+    ],
+    [
+     "n_i, h_i",
+     "unit normal of a face and its distance from the centre",
+     "—"
+    ]
+   ],
+   "when": "The particle shape of a filler (ZnO, CaCO3, MgO, TiO2, sulphur, a stearate) and the faces the rubber meets, so adsorption and interface models start from the right facets; the lateral faces of polymer crystals (the {110}/{100} lozenge of PE lamellae); a particle of the crystal in its habit for a composite model.",
+   "cites": [
+    "donnay1937",
+    "hartman1955",
+    "hartman1980",
+    "wulff1901"
+   ],
+   "source": "core/src/habit.cpp (crystal_habit, wulff_shape, carve_particle)",
+   "tested": "Habit.BfdhFccWithExtinctions (fcc Fm-3m from its conventional cell: 192 operations, {111} at a/√3 first, {100} and {110} at half their spacings, multiplicities 8, 6, 12); Habit.WulffTruncatedCube (a cube truncated by {111}: square and triangle areas and the volume equal geometry to 1e-9, 24 vertices, 14 facets); Habit.SimpleCubicBrokenBonds (nearest-neighbour bonds u only: E_latt = 3u, E_att of {100}, {110}, {111} = u, 2u, 3u and γ = −u/2a², −u/√2a², −√3u/2a² exactly); Habit.ParticleCube (125 lattice points); periclase with the Catlow shell model: {111} polar, growth and equilibrium shapes {100} cubes, γ(100) 1.20 J/m² unrelaxed; orthorhombic PE with OPLS-AA 2024: faces cutting the chains flagged, growth habit {110} 79 % and {100} 21 % of the prism's sides",
+   "deviation": "static and unrelaxed (no surface relaxation, no solvent or temperature); one slice per face, the cut with the lowest |E_att|; polar faces (Tasker type 3) are not reconstructed; the forms beyond the first few by d_eff are left out of the energy-based shapes",
+   "engines": [
+    "analysis.habit"
+   ]
+  },
+  {
    "id": "density-fields",
    "group": "Analysis",
    "title": "Density fields: dynamic mean-field theory of Gaussian chains",

@@ -1472,6 +1472,33 @@
     "--no-coulomb": "cli: fits without electrostatics",
     "--quiet": "cli: no progress line"
    }
+  },
+  "habit": {
+   "status": "gui",
+   "studio": "Builders › Crystal › Crystal shape",
+   "where": "Views/Pages/CrystalPage.axaml|CRYSTAL SHAPE",
+   "capi": [
+    "caps_habit"
+   ],
+   "options": {
+    "--ff": "partial: the Studio uses the force field assigned on the Force field page",
+    "--max-index": "Views/Pages/CrystalPage.axaml|hkl ≤ 0",
+    "--attachment": "Views/Pages/CrystalPage.axaml|Attachment energies",
+    "--surface-energy": "Views/Pages/CrystalPage.axaml|Surface energies",
+    "--particle": "Views/Pages/CrystalPage.axaml|Build particle",
+    "--model": "partial: the shape chosen in the card's list",
+    "--out": "partial: the Studio opens the particle as a new structure",
+    "--min-d": "cli: the page keeps every face up to the largest index",
+    "--forms": "cli: the page computes energies for the 12 forms of largest spacing",
+    "--shape-obj": "cli: the shape as an OBJ mesh",
+    "--vacuum": "cli: the page takes twice the cut-off plus 10 Å",
+    "--cutoff": "partial: the Studio uses the Minimise page's cut-off, at most 12 Å",
+    "--pme": "partial: slabs use Ewald sums",
+    "--no-coulomb": "cli: energies without electrostatics",
+    "--json": "partial: the Studio shows the result on the card",
+    "--topology": "page",
+    "--quiet": "cli: no progress line"
+   }
   }
  },
  "hidden_options": {

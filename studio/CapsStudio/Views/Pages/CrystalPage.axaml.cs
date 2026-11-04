@@ -16,6 +16,8 @@ public partial class CrystalPage : PageBase
         {
             if (DataContext is not MainViewModel vm) return;
             vm.CrystalViewChanged += () => { var fresh = preview.Document == null; preview.Document = vm.CrystalDoc; if (fresh) preview.Reset(); };
+            var habit = this.FindControl<HabitView>("Habit")!;
+            vm.HabitChanged += () => { var h = vm.HabitShape; habit.Set(h.V, h.F, h.Form, h.Labels); };
         };
     }
 
@@ -60,4 +62,6 @@ public partial class CrystalPage : PageBase
     private void OnCluster(object? s, RoutedEventArgs e) => Vm.CutCluster();
     private void OnDefects(object? s, RoutedEventArgs e) => Vm.MakeDefects();
     private void OnNanowire(object? s, RoutedEventArgs e) => Vm.MakeNanowire();
+    private async void OnHabit(object? s, RoutedEventArgs e) => await Vm.RunHabit();
+    private async void OnHabitParticle(object? s, RoutedEventArgs e) => await Vm.HabitParticle();
 }

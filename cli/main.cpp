@@ -76,6 +76,7 @@
 #include "caps/powder.hpp"
 #include "caps/phonons.hpp"
 #include "caps/crystalfit.hpp"
+#include "caps/habit.hpp"
 #include "caps/ddft.hpp"
 #include "caps/yaml.hpp"
 #ifdef _WIN32
@@ -338,6 +339,8 @@ int usage() {
                "               [--ff FF] [--no-coulomb]   configurational-bias regrowth of chain ends (Siepmann & Frenkel)\n"
                "  caps fields --molecules 'A8B8:1; A8:0.5' [--chi AB=1.9] [--grid 32,32,32 (nz 1: 2D)] [--bond 1.1543] [--kappa 10] [--noise 75] [--dt 0.02]\n"
                "               [--steps 2000] [--every 100] [--seed 1] [--vtk OUT.vtk] [--csv OUT.csv]   density-field dynamics of Gaussian chains (blends, block copolymers)\n"
+               "  caps habit CRYSTAL [--ff FF.json] [--max-index 3] [--min-d Å] [--attachment] [--surface-energy] [--forms 12] [--particle RADIUS_Å --model bfdh|growth|equilibrium --out P.pdb]\n"
+               "             [--shape-obj SHAPE.obj] [--json OUT]   crystal habit: BFDH faces, attachment and surface energies, Wulff shapes, a particle in that shape\n"
                "  caps fit SPEC.json [--ff FF.json] [--relaxed | --conventional] [--iterations 50] [--out FITTED.json] [--json REPORT.json]\n"
                "               force-field parameters fitted to crystal structures, lattice energies and elastic constants (the spec lists them)\n"
                "  caps phonons CRYSTAL [--ff FF.json] [--cutoff Å] [--supercell n1,n2,n3] [--mesh m1,m2,m3] [--path 'G 0 0 0; X 0.5 0 0; …'] [--displacement 0.01]\n"
@@ -457,7 +460,7 @@ const std::set<std::string>& known_options() {
     "--tmax", "--to", "--tol", "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing", "--units",
     "--polymer", "--crystal", "--crystal-cells", "--amorphous", "--loops", "--bridges", "--tails", "--reentry", "--analyse",
     "--corr-ps", "--long", "--swap-every", "--transient", "--dimensionality", "--thickness",
-    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--relaxed", "--conventional", "--chi", "--molecules", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
+    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
   return k;
 }
 
@@ -490,7 +493,7 @@ bool is_cli_switch(const std::string& a) {
          a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" || a == "--include-input" || a == "--primitive" || a == "--symmetrize" || a == "--find-symmetry" || a == "--groups" || a == "--neutralise" || a == "--no-ions" || a == "--solvents" || a == "--bibtex" || a == "--json" || a == "--deterministic" || a == "--vacuum" || a == "--methods" ||
          a == "--hybrid" || a == "--resume" || a == "--between-chains" || a == "--keep-byproducts" || a == "--auto-capture" ||
          a == "--during-md" || a == "--remove-unreacted" || a == "--analyse" || a == "--long" || a == "--reduced" || a == "--kg" || a == "--stickers" || a == "--both-ends" || a == "--no-exchange" || a == "--npt" ||
-         a == "--no-kalpha2" || a == "--neutron" || a == "--polarised" || a == "--relaxed" || a == "--conventional";
+         a == "--no-kalpha2" || a == "--neutron" || a == "--polarised" || a == "--relaxed" || a == "--conventional" || a == "--attachment" || a == "--surface-energy";
 }
 
 std::map<std::string, std::string> parse(int argc, char** argv, int from, std::vector<std::string>& pos) {
@@ -4092,6 +4095,86 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps phonons: %s\n", e.what());
+      return 1;
+    }
+  }
+  if (cmd == "habit") {
+    try {
+      if (pos.empty()) return usage();
+      Trajectory t = open_file(pos[0], o.count("--topology") ? o["--topology"] : "");
+      System s0 = t.frames() ? t.frame(0) : t.topology;
+      const bool quiet = o.count("--quiet");
+      HabitOptions ho;
+      if (o.count("--max-index")) ho.max_index = std::stoi(o["--max-index"]);
+      if (o.count("--min-d")) ho.min_d = std::stod(o["--min-d"]);
+      if (o.count("--forms")) ho.forms = std::stoi(o["--forms"]);
+      if (o.count("--vacuum")) ho.vacuum = std::stod(o["--vacuum"]);
+      ho.attachment = o.count("--attachment");
+      ho.surface = o.count("--surface-energy");
+      if (ho.attachment || ho.surface) {
+        (void)cli_forcefield(s0, o, quiet);   // the structure as the force field describes it (shells, ionic bonds)
+        ho.energy.cutoff = o.count("--cutoff") ? std::stod(o["--cutoff"]) : 10.0;
+        ho.energy.tail = false;
+        ho.energy.electrostatics = EnergyOptions::Electrostatics::PME;   // slabs of ionic crystals need Ewald sums
+        electrostatics(ho.energy, o);
+        ho.energy.coulomb = !o.count("--no-coulomb");
+        ho.field_for = [o](const System& x) mutable { System c = x; return cli_forcefield(c, o, true); };
+      }
+      if (!quiet)
+        ho.progress = [&](const std::string& w, double f) { std::fprintf(stderr, "\r%-30s %3.0f %%", w.c_str(), 100 * f); return true; };
+      const HabitResult r = crystal_habit(s0, ho);
+      if (!quiet) std::fprintf(stderr, "\r%-40s\r", "");
+      std::printf("%s (%d operations) · %d growth units per cell", r.space_group.c_str(), r.operations, r.units);
+      if (std::isfinite(r.e_latt)) std::printf(" · bulk energy %.4f kcal/mol per unit", r.e_latt);
+      std::printf("\n%5s %-10s %5s %9s %9s %12s %12s %10s %8s %8s %8s\n", "rank", "form", "faces", "d (Å)", "d_eff", "E_att", "E_slice", "γ (J/m²)", "BFDH", "growth", "equil.");
+      auto num = [](double v, const char* f) { char b[32]; if (std::isfinite(v)) std::snprintf(b, sizeof b, f, v); else std::snprintf(b, sizeof b, "-"); return std::string(b); };
+      for (const auto& f : r.faces) {
+        if (f.rank > 20 && f.area_bfdh == 0 && f.area_growth == 0 && f.area_equilibrium == 0) continue;
+        char hk[32];
+        std::snprintf(hk, sizeof hk, "{%d %d %d}", f.hkl[0], f.hkl[1], f.hkl[2]);
+        std::printf("%5d %-10s %5zu %9.4f %9.4f %12s %12s %10s %7.1f%% %7.1f%% %7.1f%%%s%s\n", f.rank, hk, f.members.size(), f.d, f.d_eff, num(f.e_att, "%.4f").c_str(),
+                    num(f.e_slice, "%.4f").c_str(), num(f.gamma, "%.4f").c_str(), 100 * f.area_bfdh, 100 * f.area_growth, 100 * f.area_equilibrium,
+                    f.note.empty() ? "" : "  ", f.note.c_str());
+      }
+      auto shape_line = [](const char* n, const WulffShape& w) {
+        if (w.ok()) std::printf("%s shape: %zu facets, aspect ratio %.2f\n", n, w.facets.size(), w.aspect);
+      };
+      shape_line("BFDH", r.bfdh), shape_line("growth (attachment energy)", r.growth), shape_line("equilibrium (surface energy)", r.equilibrium);
+      for (const auto& n : r.notes) std::printf("%s\n", n.c_str());
+      const std::string model = o.count("--model") ? o["--model"] : (r.growth.ok() ? "growth" : "bfdh");
+      if (o.count("--shape-obj")) {
+        std::vector<Vec3> n;
+        std::vector<double> d;
+        habit_planes(s0, r, model, n, d);
+        const WulffShape w = wulff_shape(n, d);
+        if (!w.ok()) throw std::runtime_error("the " + model + " shape is not available");
+        std::ofstream obj(o["--shape-obj"]);
+        obj << "# CAPS " << model << " shape of " << pos[0] << "\n";
+        for (const auto& v : w.vertices) obj << "v " << v[0] << " " << v[1] << " " << v[2] << "\n";
+        for (const auto& f : w.facets) {
+          obj << "f";
+          for (int id : f) obj << " " << id + 1;
+          obj << "\n";
+        }
+        std::printf("wrote %s (%s shape)\n", o["--shape-obj"].c_str(), model.c_str());
+      }
+      if (o.count("--particle")) {
+        std::vector<Vec3> n;
+        std::vector<double> d;
+        habit_planes(s0, r, model, n, d);
+        const System p = carve_particle(s0, n, d, std::stod(o["--particle"]));
+        const std::string out = o.count("--out") ? o["--out"] : "particle.pdb";
+        write_structure_file(p, out);
+        std::printf("wrote %s: a %s-shaped particle of %zu atoms, radius %s Å\n", out.c_str(), model.c_str(), p.atoms.size(), o["--particle"].c_str());
+      }
+      if (o.count("--json") && o["--json"] != "1") {
+        const Json j = habit_json(r);
+        std::ofstream(o["--json"]) << j.dump(1) << "\n";
+        std::printf("wrote %s\n", o["--json"].c_str());
+      }
+      return 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps habit: %s\n", e.what());
       return 1;
     }
   }

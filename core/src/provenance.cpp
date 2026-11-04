@@ -85,6 +85,10 @@ const Cite kCites[] = {
     {"horn1987", "@article{horn1987,\n  author = {Horn, B. K. P.},\n  title = {Closed-form solution of absolute orientation using unit quaternions},\n  journal = {Journal of the Optical Society of America A}, volume = {4}, pages = {629--642}, year = {1987}, doi = {10.1364/JOSAA.4.000629}\n}"},
     {"thompson1987", "@article{thompson1987,\n  author = {Thompson, P. and Cox, D. E. and Hastings, J. B.},\n  title = {Rietveld refinement of {D}ebye--{S}cherrer synchrotron {X}-ray data from {Al$_2$O$_3$}},\n  journal = {J. Appl. Cryst.}, volume = {20}, pages = {79--83}, year = {1987}, doi = {10.1107/S0021889887087090}\n}"},
     {"dollase1986", "@article{dollase1986,\n  author = {Dollase, W. A.},\n  title = {Correction of intensities for preferred orientation in powder diffractometry: application of the {M}arch model},\n  journal = {J. Appl. Cryst.}, volume = {19}, pages = {267--272}, year = {1986}, doi = {10.1107/S0021889886089458}\n}"},
+    {"donnay1937", "@article{donnay1937,\n  author = {Donnay, J. D. H. and Harker, D.},\n  title = {A new law of crystal morphology extending the law of {B}ravais},\n  journal = {Am. Mineral.}, volume = {22}, pages = {446--467}, year = {1937}\n}"},
+    {"hartman1955", "@article{hartman1955,\n  author = {Hartman, P. and Perdok, W. G.},\n  title = {On the relations between structure and morphology of crystals. {I}},\n  journal = {Acta Cryst.}, volume = {8}, pages = {49--52}, year = {1955}, doi = {10.1107/S0365110X55000121}\n}"},
+    {"hartman1980", "@article{hartman1980,\n  author = {Hartman, P. and Bennema, P.},\n  title = {The attachment energy as a habit controlling factor},\n  journal = {J. Cryst. Growth}, volume = {49}, pages = {145--156}, year = {1980}, doi = {10.1016/0022-0248(80)90075-5}\n}"},
+    {"wulff1901", "@article{wulff1901,\n  author = {Wulff, G.},\n  title = {Zur {F}rage der {G}eschwindigkeit des {W}achsthums und der {A}ufl{\\\"o}sung der {K}rystallfl{\\\"a}chen},\n  journal = {Z. Kristallogr.}, volume = {34}, pages = {449--530}, year = {1901}, doi = {10.1524/zkri.1901.34.1.449}\n}"},
     {"gale1996", "@article{gale1996,\n  author = {Gale, J. D.},\n  title = {Empirical potential derivation for ionic materials},\n  journal = {Philos. Mag. B}, volume = {73}, pages = {3--19}, year = {1996}, doi = {10.1080/13642819608239107}\n}"},
     {"marquardt1963", "@article{marquardt1963,\n  author = {Marquardt, D. W.},\n  title = {An algorithm for least-squares estimation of nonlinear parameters},\n  journal = {J. Soc. Ind. Appl. Math.}, volume = {11}, pages = {431--441}, year = {1963}, doi = {10.1137/0111030}\n}"},
     {"caglioti1958", "@article{caglioti1958,\n  author = {Caglioti, G. and Paoletti, A. and Ricci, F. P.},\n  title = {Choice of collimators for a crystal spectrometer for neutron diffraction},\n  journal = {Nucl. Instrum.}, volume = {3}, pages = {223--228}, year = {1958}, doi = {10.1016/0369-643X(58)90029-X}\n}"},
@@ -450,6 +454,10 @@ std::string methods_text(const Manifest& m, std::vector<std::string>* refs, cons
       t = "The powder diffraction pattern (" + param(s, "radiation") + ", " + param(s, "range") + ") was computed from the cell's reciprocal lattice (" +
           param(s, "reflections") + ") with " + param(s, "peaks") + " peak shapes" + cite({"thompson1987", "caglioti1958"}) +
           (param(s, "orientation").empty() ? std::string() : " and March–Dollase preferred orientation" + cite({"dollase1986"})) + ".";
+    } else if (e == "analysis.habit") {
+      t = "The crystal's faces (" + param(s, "faces") + ", " + param(s, "space group") + ") were ranked by their effective interplanar spacings" + cite({"donnay1937"}) +
+          (param(s, "energies") == "none" ? std::string() : ", with attachment and surface energies" + cite({"hartman1955", "hartman1980"})) +
+          ", and the habit drawn by the Wulff construction" + cite({"wulff1901"}) + ".";
     } else if (e == "forcefield.crystal_fit") {
       t = "Force-field parameters (" + param(s, "parameters") + ") were fitted to " + param(s, "structures") + " by " + param(s, "mode") + " fitting" + cite({"gale1996"}) +
           ", the weighted sum of squares (" + param(s, "sum of squares") + ") minimised by the Levenberg–Marquardt method" + cite({"marquardt1963"}) + ".";
