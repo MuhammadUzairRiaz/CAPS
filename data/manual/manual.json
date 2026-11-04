@@ -3070,6 +3070,60 @@
    ]
   },
   {
+   "id": "density-fields",
+   "group": "Analysis",
+   "title": "Density fields: dynamic mean-field theory of Gaussian chains",
+   "summary": "Polymer blends and block copolymers as volume-fraction fields on a periodic grid (two- or three-dimensional), the mesoscale method of Fraaije and co-workers. Molecules are Gaussian chains of beads (a sequence such as A8B8); an external potential per bead type gives their densities through the chain propagators, with the bond kernel exp(−q²a²/6) applied by FFT and each step rescaled so strong fields do not underflow. The free energy adds Flory–Huggins χ between types (smoothed by the same kernel) and a Helfand compressibility; the chemical potentials drive conserved Langevin diffusion with local mobility, finite volumes on the cell faces (mass exact) and conserved noise. At each step the potentials are found again for the new densities by Newton steps with the chains' RPA response matrix; the stiff compressibility term is taken implicitly in Fourier space, so its fast mode sets no time-step limit. Results: the fields over time, the order parameter of each type, the χ and compressibility energies and the spacing of the strongest wave.",
+   "equation": "q_s = w_s (K ⋆ q_{s−1}),   θ_s ∝ q_s q†_s / w_s,   μ_I = −U_I + Σ_J χ_IJ (K ⋆ θ_J) + κ_H (Σθ − 1),   ∂θ_I/∂τ = ∇·(θ_I ∇μ_I) + ∇·ζ_I,   δθ_I = −Σ_J R_IJ(q) δU_J",
+   "equation_note": "Fraaije 1993; Fraaije et al. 1997; Maurits & Fraaije 1997",
+   "tex": "q_s = w_s\\,(K \\star q_{s-1}),\\quad \\hat K(q) = e^{-q^2a^2/6},\\quad \\theta_s \\propto \\frac{q_s\\,q^\\dagger_s}{w_s},\\quad w_s = e^{-U_{t(s)}} \\\\ \\mu_I = -U_I + \\sum_J \\chi_{IJ}\\,(K\\star\\theta_J) + \\kappa_H\\Big(\\sum_J \\theta_J - 1\\Big), \\qquad \\frac{\\partial\\theta_I}{\\partial\\tau} = \\nabla\\cdot(\\theta_I\\nabla\\mu_I) + \\nabla\\cdot\\zeta_I \\\\ \\delta\\theta_I = -\\sum_J R_{IJ}(q)\\,\\delta U_J, \\qquad R_{IJ}(q) = \\sum_m \\frac{f_m}{N_m}\\sum_{s\\in I,\\,s'\\in J} \\hat K(q)^{|s-s'|}",
+   "symbols": [
+    [
+     "θ_I",
+     "volume fraction of bead type I",
+     "—"
+    ],
+    [
+     "U_I",
+     "external potential",
+     "kT"
+    ],
+    [
+     "a",
+     "bond length",
+     "grid spacings"
+    ],
+    [
+     "κ_H",
+     "Helfand compressibility",
+     "kT"
+    ],
+    [
+     "τ",
+     "time M kT t / h²",
+     "—"
+    ],
+    [
+     "Ω",
+     "noise parameter (beads per cell)",
+     "—"
+    ],
+    [
+     "R(q)",
+     "the chains' RPA response matrix",
+     "—"
+    ]
+   ],
+   "when": "Morphologies of rubber blends (NR/BR, SBR/BR) and thermoplastic elastomers (SBS, SIS) over hundreds of nanometres, larger and smoother than DPD; how χ and the block lengths set lamellae, cylinders or droplets and their spacing.",
+   "cites": [],
+   "source": "core/src/ddft.cpp (ddft_run)",
+   "tested": "Ddft.ChainResponseIsTheDebyeSum (a weak cosine potential on an A8 melt: δθ = −6.603664 × 10⁻⁴ against the discrete Debye sum's −6.603665 × 10⁻⁴); Ddft.BlendSpinodal (A8 + B8, χ_s = 0.2825 from the RPA at the box's longest wave: at 0.7 χ_s the ripple falls 80×, at 3 χ_s it grows 470×); Ddft.DiblockLamellaeAtTheRpaSpacing (A4B4 at 1.6 χ_s: lamellae start at 3.88 grid spacings against the RPA 2π/q* = 4.09)",
+   "deviation": "explicit time steps apart from the compressibility (small grids, chains up to about 20 beads); no shear, confinement masks or electrostatics; interfaces narrower than a grid spacing (a/√(6χ) < 0.35) diverge",
+   "engines": [
+    "ddft"
+   ]
+  },
+  {
    "group": "Analysis",
    "source": "core/src/sorption.cpp",
    "engines": [],

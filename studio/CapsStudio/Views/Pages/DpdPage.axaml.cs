@@ -17,6 +17,17 @@ public partial class DpdPage : PageBase
         {
             if (DataContext is not MainViewModel vm || vm == _hooked) return;
             _hooked = vm;
+            vm.FieldsChanged += () =>
+            {
+                var (x, y, z, ty) = vm.FieldSlice;
+                this.FindControl<SciPlot>("FieldMap")!.Figure = x.Length == 0 ? null : ViewModels.PageFigures.Heat("x (grid)", "y (grid)", "θ_" + ty, x, y, z);
+                var o = vm.FieldOrder;
+                this.FindControl<SciPlot>("FieldOrder")!.Figure = o.Length < 2 ? null : new SciFigure
+                {
+                    XLabel = "*τ*", YLabel = "⟨(θ − θ̄)²⟩", YZero = true, Empty = "",
+                    Series = [new SciSeries("", o.Select(p => p.X).ToArray(), o.Select(p => p.Y).ToArray()) { Kind = SciKind.Line, Width = 1.2 }],
+                };
+            };
             vm.DpdChanged += () =>
             {
                 var o = vm.DpdOrderSeries;
@@ -62,4 +73,5 @@ public partial class DpdPage : PageBase
     private void OnAddChi(object? s, RoutedEventArgs e) => Vm.AddDpdChi();
     private void OnRemoveSpecies(object? s, RoutedEventArgs e) { if ((s as Control)?.DataContext is DpdSpeciesRow r) Vm.RemoveDpdSpecies(r); }
     private void OnRemoveChi(object? s, RoutedEventArgs e) { if ((s as Control)?.DataContext is DpdChiRow r) Vm.RemoveDpdChi(r); }
+    private async void OnFields(object? s, Avalonia.Interactivity.RoutedEventArgs e) => await Vm.RunFields();
 }

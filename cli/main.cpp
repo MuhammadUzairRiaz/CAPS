@@ -75,6 +75,7 @@
 #include "caps/thermal.hpp"
 #include "caps/powder.hpp"
 #include "caps/phonons.hpp"
+#include "caps/ddft.hpp"
 #include "caps/yaml.hpp"
 #ifdef _WIN32
 #include <io.h>
@@ -334,6 +335,8 @@ int usage() {
                "               without --cutoff (relax, md, equilibrate): the force field's own cut-off, else 10 Å\n"
                "  caps cbmc    FILE -o OUT.data [--moves 1000] [--trials 8] [--max-torsions 4] [--temp 300] [--cutoff 9] [--seed 1]\n"
                "               [--ff FF] [--no-coulomb]   configurational-bias regrowth of chain ends (Siepmann & Frenkel)\n"
+               "  caps fields --molecules 'A8B8:1; A8:0.5' [--chi AB=1.9] [--grid 32,32,32 (nz 1: 2D)] [--bond 1.1543] [--kappa 10] [--noise 75] [--dt 0.02]\n"
+               "               [--steps 2000] [--every 100] [--seed 1] [--vtk OUT.vtk] [--csv OUT.csv]   density-field dynamics of Gaussian chains (blends, block copolymers)\n"
                "  caps phonons CRYSTAL [--ff FF.json] [--cutoff Å] [--supercell n1,n2,n3] [--mesh m1,m2,m3] [--path 'G 0 0 0; X 0.5 0 0; …'] [--displacement 0.01]\n"
                "               [--sigma 5 (cm⁻¹)] [--temps 100,300] [--csv STEM] [--json OUT]   force-field phonons: dispersion, DOS, harmonic thermodynamics, sound speeds\n"
                "  caps powder FILE [--topology DATA] [--anode Cu|Mo|Co|Fe|Cr|Ag | --wavelength Å] [--no-kalpha2] [--neutron] [--two-theta 5:90] [--step 0.02]\n"
@@ -451,7 +454,7 @@ const std::set<std::string>& known_options() {
     "--tmax", "--to", "--tol", "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing", "--units",
     "--polymer", "--crystal", "--crystal-cells", "--amorphous", "--loops", "--bridges", "--tails", "--reentry", "--analyse",
     "--corr-ps", "--long", "--swap-every", "--transient", "--dimensionality", "--thickness",
-    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
+    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--chi", "--molecules", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
   return k;
 }
 
@@ -3897,6 +3900,90 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps tg: %s\n", e.what());
+      return 1;
+    }
+  }
+  if (cmd == "fields") {
+    // caps fields --molecules 'A4B4:1; A8:0.5' [--chi AB=1.9,AC=0.5] [--grid 32,32,32] [--bond 1.1543] [--kappa 10] [--noise 75]
+    //             [--dt 0.02] [--steps 2000] [--every 100] [--seed 1] [--vtk OUT.vtk] [--csv OUT.csv] [--json OUT.json]
+    try {
+      if (!o.count("--molecules")) throw std::invalid_argument("--molecules 'SEQUENCE:fraction; …' (e.g. 'A8B8:1')");
+      DdftOptions d;
+      {
+        std::stringstream ss(o["--molecules"]);
+        std::string item;
+        while (std::getline(ss, item, ';')) {
+          item.erase(0, item.find_first_not_of(" \t"));
+          item.erase(item.find_last_not_of(" \t") + 1);
+          if (item.empty()) continue;
+          const auto c = item.find(':');
+          const std::string seq = item.substr(0, c);
+          d.molecules.push_back({seq, seq, c == std::string::npos ? 1.0 : std::stod(item.substr(c + 1))});
+        }
+      }
+      if (o.count("--chi")) {
+        std::stringstream ss(o["--chi"]);
+        std::string item;
+        while (std::getline(ss, item, ',')) {
+          const auto e = item.find('=');
+          if (e == std::string::npos) throw std::invalid_argument("--chi AB=1.9,AC=0.5");
+          d.chi[item.substr(0, e)] = std::stod(item.substr(e + 1));
+        }
+      }
+      if (o.count("--grid")) {
+        std::string s = o["--grid"];
+        for (auto& ch : s) if (ch == 'x' || ch == ':') ch = ',';
+        std::stringstream ss(s);
+        std::string x;
+        for (int k = 0; k < 3 && std::getline(ss, x, ','); ++k) d.grid[size_t(k)] = std::stoi(x);
+      }
+      if (o.count("--bond")) d.bond = std::stod(o["--bond"]);
+      if (o.count("--kappa")) d.kappa = std::stod(o["--kappa"]);
+      if (o.count("--noise")) d.noise = std::stod(o["--noise"]);
+      if (o.count("--dt")) d.dt = std::stod(o["--dt"]);
+      if (o.count("--steps")) d.steps = std::stoi(o["--steps"]);
+      if (o.count("--every")) d.frame_every = std::stoi(o["--every"]);
+      if (o.count("--seed")) d.seed = std::stoull(o["--seed"]);
+      const bool quiet = o.count("--quiet");
+      if (!quiet) d.progress = [&](double f) { std::fprintf(stderr, "\rdensity fields %3.0f %%", 100 * f); return true; };
+      const DdftResult r = ddft_run(d);
+      if (!quiet) std::fprintf(stderr, "\r%-30s\r", "");
+      for (const auto& n : r.notes) std::printf("%s\n", n.c_str());
+      std::printf("%10s", "τ");
+      for (const auto& ty : r.types) std::printf("  order(%s)", ty.c_str());
+      std::printf("  %12s %10s\n", "χ energy", "spacing");
+      for (size_t i = 0; i < r.times.size(); ++i) {
+        std::printf("%10.3f", r.times[i]);
+        for (double v : r.order[i]) std::printf("  %10.4g", v);
+        std::printf("  %12.5g %10.3f\n", r.interaction[i], r.dominant_spacing[i]);
+      }
+      if (o.count("--csv")) {
+        std::ofstream f(o["--csv"]);
+        f << "tau";
+        for (const auto& ty : r.types) f << ",order_" << ty;
+        f << ",interaction,compressibility,spacing\n";
+        for (size_t i = 0; i < r.times.size(); ++i) {
+          f << r.times[i];
+          for (double v : r.order[i]) f << "," << v;
+          f << "," << r.interaction[i] << "," << r.compressibility[i] << "," << r.dominant_spacing[i] << "\n";
+        }
+        std::printf("wrote %s\n", o["--csv"].c_str());
+      }
+      if (o.count("--vtk") && !r.frames.empty()) {   // legacy VTK structured points, one scalar field per bead type (ParaView)
+        std::ofstream f(o["--vtk"]);
+        const size_t M = size_t(r.grid[0]) * size_t(r.grid[1]) * size_t(r.grid[2]);
+        f << "# vtk DataFile Version 3.0\nCAPS density fields at tau " << r.times.back() << "\nASCII\nDATASET STRUCTURED_POINTS\n";
+        f << "DIMENSIONS " << r.grid[0] << " " << r.grid[1] << " " << r.grid[2] << "\nORIGIN 0 0 0\nSPACING 1 1 1\nPOINT_DATA " << M << "\n";
+        for (size_t t = 0; t < r.types.size(); ++t) {
+          f << "SCALARS theta_" << r.types[t] << " float 1\nLOOKUP_TABLE default\n";
+          for (size_t c = 0; c < M; ++c) f << r.frames.back()[t * M + c] << (c % 8 == 7 ? "\n" : " ");
+          f << "\n";
+        }
+        std::printf("wrote %s\n", o["--vtk"].c_str());
+      }
+      return 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps fields: %s\n", e.what());
       return 1;
     }
   }

@@ -1365,6 +1365,30 @@ def _phonons(self, cutoff: float = 10.0, supercell=None, mesh=None, path=None, d
 Document.phonons = _phonons
 
 
+def density_fields(molecules, chi=None, grid=(32, 32, 32), bond: float = 1.1543, kappa: float = 10.0, noise: float = 75.0, dt: float = 0.02,
+                   steps: int = 2000, frame_every: int = 100, seed: int = 1) -> dict:
+    """Density-field dynamics of Gaussian chains (no structure needed): molecules [(name, sequence such as "A8B8", fraction), …],
+    chi {"AB": χ}, a periodic grid (nz = 1: two-dimensional), the Helfand compressibility kappa, the noise parameter Ω (0
+    none), the time step and steps. Returns {types, grid, times, order, interaction, compressibility, spacing, slices (the
+    mid-plane of each type per frame), last (the final fields), notes}."""
+    o = {"molecules": [{"name": n, "sequence": s, "fraction": float(f)} for n, s, f in molecules], "chi": {k: float(v) for k, v in (chi or {}).items()},
+         "grid": [int(x) for x in grid], "bond": float(bond), "kappa": float(kappa), "noise": float(noise), "dt": float(dt), "steps": int(steps),
+         "frame_every": int(frame_every), "seed": int(seed)}
+    f = library().caps_ddft
+    f.argtypes = [C.c_char_p, C.c_void_p, C.c_void_p, C.c_char_p, C.c_int32]
+    f.restype = C.c_int32
+    cells = int(grid[0]) * int(grid[1]) * int(grid[2])
+    buf = C.create_string_buffer((1 << 20) + 32 * cells * 4 + 32 * int(grid[0]) * int(grid[1]) * 4 * (int(steps) // max(1, int(frame_every)) + 2))
+    n = f(_enc(json.dumps(o)), None, None, buf, len(buf))
+    if n > len(buf):
+        buf = C.create_string_buffer(int(n))
+        f(_enc(json.dumps(o)), None, None, buf, len(buf))
+    r = json.loads(buf.value.decode())
+    if not r.get("ok"):
+        raise CapsError(r.get("error", "density fields failed"))
+    return r
+
+
 def _adsorption(self, adsorbates, cycles: int = 3, steps: int = 20000, t_high: float = 1e4, t_low: float = 100.0, region: str = "cell",
                 cutoff: float = 12.0, coulomb: bool = True, keep: int = 10, seed: int = 1) -> dict:
     """Adsorption locator: adsorbates [(smiles, count), …] added after the structure and placed by Monte Carlo simulated

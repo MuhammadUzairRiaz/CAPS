@@ -79,6 +79,7 @@ add_library(caps_core STATIC
   src/vasp_set.cpp
   src/phono3py.cpp
   src/phonons.cpp
+  src/ddft.cpp
   src/vasp_out.cpp
   src/dft_analysis.cpp
   src/dft_commands.cpp

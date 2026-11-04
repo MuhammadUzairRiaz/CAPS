@@ -1427,6 +1427,30 @@
     "--no-coulomb": "partial: the Studio follows the Minimise page's electrostatics",
     "--quiet": "cli: no progress line"
    }
+  },
+  "fields": {
+   "status": "gui",
+   "studio": "Polymer cell › Mesoscale (DPD) › As density fields",
+   "where": "Views/Pages/DpdPage.axaml|As density fields",
+   "capi": [
+    "caps_ddft"
+   ],
+   "options": {
+    "--molecules": "page",
+    "--chi": "page",
+    "--grid": "partial: the page offers 2D 64² and 128², 3D 32³ and 48³",
+    "--steps": "page",
+    "--noise": "page",
+    "--bond": "cli: the page uses a = 1.1543",
+    "--kappa": "cli: the page uses κ_H = 20",
+    "--dt": "cli: the page steps Δτ 0.01",
+    "--every": "cli: the page keeps about 30 frames",
+    "--seed": "cli: the Studio's runs start from seed 1",
+    "--vtk": "cli: the final fields as VTK for ParaView",
+    "--csv": "cli: the time series as CSV",
+    "--json": "partial: the Studio shows the result on the page",
+    "--quiet": "cli: no progress line"
+   }
   }
  },
  "hidden_options": {

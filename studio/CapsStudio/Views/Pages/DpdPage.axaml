@@ -94,6 +94,27 @@
               </Grid>
             </StackPanel>
           </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <DockPanel>
+                <Button DockPanel.Dock="Right" Classes="primary" Click="OnFields" IsEnabled="{Binding Idle}" Content="Fields"
+                        ToolTip.Tip="The same molecules and χ as density fields of Gaussian chains on a grid (dynamic mean-field density functional): larger, smoother morphologies" />
+                <TextBlock Text="As density fields" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+              </DockPanel>
+              <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="4">
+                <TextBlock Text="Grid" Classes="label" /><TextBlock Grid.Column="1" Text="Steps (Δτ 0.01)" Classes="label" /><TextBlock Grid.Column="2" Text="Noise Ω" Classes="label" />
+                <ComboBox Grid.Row="1" ItemsSource="{x:Static vm:MainViewModel.FieldGrids}" SelectedIndex="{Binding FieldGrid}" HorizontalAlignment="Stretch" />
+                <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding FieldSteps}" Minimum="10" Increment="1000" FormatString="0" />
+                <NumericUpDown Grid.Row="1" Grid.Column="2" Value="{Binding FieldNoise}" Minimum="0" Increment="25" FormatString="0"
+                               ToolTip.Tip="Beads per grid cell: larger is quieter; 0 starts from a tiny ripple with no noise after" />
+              </Grid>
+              <TextBlock Classes="dim" TextWrapping="Wrap" Text="Each bead is a Gaussian sub-chain of about one grid spacing: keep χ per bead pair near 1 or below (the interface a/√(6χ) must span a grid cell), and chains of 20 beads or fewer on these grids." />
+              <TextBlock Text="{Binding FieldError}" Foreground="{DynamicResource ErrB}" TextWrapping="Wrap" IsVisible="{Binding FieldHasError}" />
+              <v:SciPlot x:Name="FieldMap" Height="300" IsVisible="{Binding FieldHas}" />
+              <v:SciPlot x:Name="FieldOrder" Height="140" IsVisible="{Binding FieldHas}" />
+              <TextBlock Text="{Binding FieldNote}" Classes="dim" TextWrapping="Wrap" IsVisible="{Binding FieldHas}" />
+            </StackPanel>
+          </Border>
           <Border Classes="pcard" IsVisible="{Binding DpdHasError}">
             <TextBlock Text="{Binding DpdError}" TextWrapping="Wrap" Foreground="{DynamicResource ErrB}" />
           </Border>

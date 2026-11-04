@@ -313,6 +313,18 @@ internal static class Screenshot
                     string.Join("; ", vm.SorbRows.Select(r => $"{r.Pressure} kPa {r.Loading} ({r.MolKg} mol/kg, {r.Heat} kcal/mol)")) + " · " + vm.SorbNote +
                     (vm.SorbHasIg ? " · alone: " + vm.SorbIg : "") + (vm.SorbHasHeld ? $" · held: U {vm.SorbHeldE}, E_ads {vm.SorbHeldAds}, {vm.SorbHeldSplit}, {vm.SorbHeldNote}" : ""));
             }
+            if (kv[0] == "fields")   // fields=GRIDINDEX|STEPS: the DPD page's molecules as density fields, awaited
+            {
+                var vm = w.ViewModel;
+                var f = kv[1].Split('|');
+                vm.OpenDpd();
+                vm.FieldGrid = int.Parse(f[0]);
+                if (f.Length > 1) vm.FieldSteps = decimal.Parse(f[1], System.Globalization.CultureInfo.InvariantCulture);
+                var t = vm.RunFields();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+                for (int k = 0; k < 60; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+                Console.WriteLine("fields: " + vm.Status + (vm.FieldHasError ? " · error " + vm.FieldError : "") + " · " + vm.FieldNote);
+            }
             if (kv[0] == "phonons")   // phonons=FF: the Thermal page's lattice vibrations of the open crystal with that force field, awaited
             {
                 var vm = w.ViewModel;

@@ -41,6 +41,7 @@
 #include "caps/sorption.hpp"
 #include "caps/powder.hpp"
 #include "caps/phonons.hpp"
+#include "caps/ddft.hpp"
 #include "caps/dlpoly.hpp"
 #include "caps/dynamics.hpp"
 #include "caps/superpose.hpp"
@@ -12339,6 +12340,62 @@ extern "C" int32_t caps_phonons(caps_doc* d, const char* json, caps_stage_fn pro
     r["sound"] = std::move(snd), r["min_wavenumber"] = res.min_wavenumber, r["imaginary"] = double(res.imaginary), r["max_force"] = res.max_force;
     r["relax_steps"] = double(res.relax_steps), r["relax_shift"] = res.relax_shift, r["forcefield"] = res.field, r["notes"] = std::move(nt);
     r["supercell"] = arr({double(res.supercell[0]), double(res.supercell[1]), double(res.supercell[2])});
+  } catch (const std::exception& e) {
+    r = caps::Json::object();
+    r["ok"] = false;
+    r["error"] = std::string(e.what());
+  }
+  return report_out(r.dump(0), out, cap);
+}
+
+extern "C" int32_t caps_ddft(const char* json, caps_stage_fn progress, void* user, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    caps::DdftOptions o;
+    if (j.has("molecules") && j["molecules"].is_array())
+      for (const auto& m : j["molecules"].items()) o.molecules.push_back({m.text("name", ""), m.text("sequence", ""), m.num("fraction", 1.0)});
+    if (j.has("chi") && j["chi"].kind() == caps::Json::Object)
+      for (const auto& [k, v] : j["chi"].members()) o.chi[k] = v.number();
+    if (j.has("grid") && j["grid"].is_array() && j["grid"].items().size() == 3)
+      for (size_t q = 0; q < 3; ++q) o.grid[q] = int(j["grid"].items()[q].number());
+    o.bond = j.num("bond", 1.1543), o.kappa = j.num("kappa", 10), o.noise = j.num("noise", 75), o.dt = j.num("dt", 0.02);
+    o.steps = int(j.num("steps", 2000)), o.frame_every = int(j.num("frame_every", 100)), o.seed = uint64_t(j.num("seed", 1));
+    bool cancelled = false;
+    if (progress) o.progress = [&](double f) { cancelled = progress("density fields", f, user) != 0; return !cancelled; };
+    const caps::DdftResult res = caps::ddft_run(o);
+    if (cancelled) throw std::runtime_error("density fields cancelled");
+    auto arr = [](const std::vector<double>& v) { caps::Json a = caps::Json::array(); for (double x : v) a.push_back(x); return a; };
+    const int nx = res.grid[0], ny = res.grid[1], nz = res.grid[2];
+    const size_t M = size_t(nx) * size_t(ny) * size_t(nz), nt = res.types.size();
+    // per frame and type: the mid-plane z = n_z/2 (x fastest); the last frame in full
+    caps::Json slices = caps::Json::array();
+    for (const auto& f : res.frames) {
+      caps::Json fr = caps::Json::array();
+      for (size_t t = 0; t < nt; ++t) {
+        caps::Json s = caps::Json::array();
+        const size_t k = size_t(nz / 2);
+        for (int jj = 0; jj < ny; ++jj)
+          for (int i = 0; i < nx; ++i) s.push_back(double(f[t * M + size_t(i) + size_t(nx) * (size_t(jj) + size_t(ny) * k)]));
+        fr.push_back(std::move(s));
+      }
+      slices.push_back(std::move(fr));
+    }
+    caps::Json last = caps::Json::array();
+    if (!res.frames.empty())
+      for (size_t t = 0; t < nt; ++t) {
+        caps::Json s = caps::Json::array();
+        for (size_t c = 0; c < M; ++c) s.push_back(double(res.frames.back()[t * M + c]));
+        last.push_back(std::move(s));
+      }
+    caps::Json types = caps::Json::array(), ord = caps::Json::array(), nt_ = caps::Json::array();
+    for (const auto& x : res.types) types.push_back(x);
+    for (const auto& x : res.order) ord.push_back(arr(x));
+    for (const auto& n : res.notes) nt_.push_back(n);
+    r["ok"] = true;
+    r["types"] = std::move(types), r["grid"] = arr({double(nx), double(ny), double(nz)}), r["times"] = arr(res.times), r["order"] = std::move(ord);
+    r["interaction"] = arr(res.interaction), r["compressibility"] = arr(res.compressibility), r["spacing"] = arr(res.dominant_spacing);
+    r["slices"] = std::move(slices), r["last"] = std::move(last), r["seconds"] = res.seconds, r["notes"] = std::move(nt_);
   } catch (const std::exception& e) {
     r = caps::Json::object();
     r["ok"] = false;
