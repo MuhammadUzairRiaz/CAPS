@@ -84,6 +84,7 @@ add_library(caps_core STATIC
   src/habit.cpp
   src/qspr.cpp
   src/refine.cpp
+  src/dielectric.cpp
   src/vasp_out.cpp
   src/dft_analysis.cpp
   src/dft_commands.cpp

@@ -45,6 +45,7 @@
 #include "caps/habit.hpp"
 #include "caps/qspr.hpp"
 #include "caps/refine.hpp"
+#include "caps/dielectric.hpp"
 #include "caps/ddft.hpp"
 #include "caps/dlpoly.hpp"
 #include "caps/dynamics.hpp"
@@ -12365,6 +12366,59 @@ extern "C" int32_t caps_phonons(caps_doc* d, const char* json, caps_stage_fn pro
     r["sound"] = std::move(snd), r["min_wavenumber"] = res.min_wavenumber, r["imaginary"] = double(res.imaginary), r["max_force"] = res.max_force;
     r["relax_steps"] = double(res.relax_steps), r["relax_shift"] = res.relax_shift, r["forcefield"] = res.field, r["notes"] = std::move(nt);
     r["supercell"] = arr({double(res.supercell[0]), double(res.supercell[1]), double(res.supercell[2])});
+  } catch (const std::exception& e) {
+    r = caps::Json::object();
+    r["ok"] = false;
+    r["error"] = std::string(e.what());
+  }
+  return report_out(r.dump(0), out, cap);
+}
+
+namespace {
+caps::Json dielectric_json(const caps::DielectricResult& r) {
+  auto arr = [](const auto& v) { caps::Json a = caps::Json::array(); for (double x : v) a.push_back(std::isfinite(x) ? caps::Json(x) : caps::Json(nullptr)); return a; };
+  auto mat = [&](const auto& m) { caps::Json a = caps::Json::array(); for (const auto& row : m) a.push_back(arr(row)); return a; };
+  caps::Json j = caps::Json::object(), refl = caps::Json::array(), er = caps::Json::array(), ei = caps::Json::array(), ax = caps::Json::array(), nt = caps::Json::array();
+  for (int k = 0; k < 3; ++k) refl.push_back(arr(r.reflectivity[k])), er.push_back(arr(r.eps_re[k])), ei.push_back(arr(r.eps_im[k])), ax.push_back(arr(r.axes[size_t(k)]));
+  for (const auto& n : r.notes) nt.push_back(n);
+  j["eps0"] = mat(r.eps0), j["epsinf"] = mat(r.epsinf), j["eps0_principal"] = arr(r.eps0_principal), j["epsinf_principal"] = arr(r.epsinf_principal);
+  j["refractive"] = arr(r.refractive), j["e"] = mat(r.e), j["d"] = mat(r.d), j["piezo"] = r.piezo, j["C"] = mat(r.C), j["modes"] = arr(r.modes);
+  j["w"] = arr(r.w), j["reflectivity"] = refl, j["eps_re"] = er, j["eps_im"] = ei, j["axes"] = ax, j["cell"] = arr(r.cell), j["volume"] = r.volume;
+  j["max_force"] = r.max_force, j["shells"] = r.shells, j["notes"] = nt;
+  return j;
+}
+}  // namespace
+
+// v83 dielectric, piezoelectric and optical response of the open crystal (dielectric.hpp)
+extern "C" int32_t caps_dielectric(caps_doc* d, const char* json, caps_stage_fn progress, void* user, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    if (!d) throw std::invalid_argument("no document");
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    const caps::System s = d->traj.frames() ? d->traj.frame(d->current) : d->traj.topology;
+    caps::DielectricOptions o;
+    o.energy = elec();
+    o.energy.cutoff = j.num("cutoff", 10);
+    o.energy.tail = false;
+    if (j.text("electrostatics", "pme") != "dsf") o.energy.electrostatics = caps::EnergyOptions::Electrostatics::PME;
+    o.relax = !(j.has("relax") && !j["relax"].boolean());
+    o.relax_cell = !(j.has("relax_cell") && !j["relax_cell"].boolean());
+    o.piezo = !(j.has("piezo") && !j["piezo"].boolean());
+    o.damping = j.num("damping", 10), o.w_max = j.num("w_max", 0), o.points = int(j.num("points", 400));
+    if (d->field) {
+      std::set<std::string> shell_types;
+      for (const auto& [core, sh] : d->field->base.shells) shell_types.insert(sh);
+      for (size_t i = 0; i < s.atoms.size(); ++i) o.shell.push_back(i < d->field->types.size() && shell_types.count(d->field->types[i]) ? 1 : 0);
+    }
+    o.field_for = [&](const caps::System& sup) { return field_for_extended(d, sup); };
+    bool cancelled = false;
+    if (progress) o.progress = [&](const std::string& w, double f) { cancelled = progress(w.c_str(), f, user) != 0; return !cancelled; };
+    const caps::DielectricResult res = caps::crystal_dielectric(s, o);
+    r = dielectric_json(res);
+    caps::KeyValues pr = {{"force field", d->field ? d->field->base.name : std::string("built-in")}, {"shells", res.shells ? "yes" : "no"},
+                          {"ε⁰", g6(res.eps0_principal[0]) + ", " + g6(res.eps0_principal[1]) + ", " + g6(res.eps0_principal[2])}};
+    prov_step(d, "analysis.dielectric", "Dielectric, piezoelectric and optical response from the lattice's second derivatives", std::move(pr));
+    r["ok"] = true;
   } catch (const std::exception& e) {
     r = caps::Json::object();
     r["ok"] = false;

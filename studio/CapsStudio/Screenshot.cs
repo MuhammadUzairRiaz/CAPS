@@ -325,6 +325,22 @@ internal static class Screenshot
                 for (int k = 0; k < 60; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
                 Console.WriteLine("fields: " + vm.Status + (vm.FieldHasError ? " · error " + vm.FieldError : "") + " · " + vm.FieldNote);
             }
+            if (kv[0] == "dielectric")   // dielectric=FF: the Thermal page's dielectric response of the open crystal with that force field, awaited
+            {
+                var vm = w.ViewModel;
+                if (kv[1].Length > 0)
+                {
+                    var k = vm.Field.Library.ToList().FindIndex(x => x.Id == kv[1]);
+                    if (k >= 0) vm.Field.FfIndex = k;
+                    var a = vm.Field.Assign();
+                    while (!a.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(10); }
+                }
+                vm.OpenThermal();
+                var t = vm.RunDielectric();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+                for (int q = 0; q < 40; ++q) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+                Console.WriteLine("dielectric: " + vm.Status + (vm.DlHasError ? " · error " + vm.DlError : "") + "\n" + vm.DlText);
+            }
             if (kv[0] == "refine")   // refine=DATA|pawley: Analyze › Scattering, the measured pattern (2θ) loaded and refined with the open crystal, awaited
             {
                 var vm = w.ViewModel;

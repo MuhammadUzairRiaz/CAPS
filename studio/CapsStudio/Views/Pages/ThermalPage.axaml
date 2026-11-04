@@ -101,6 +101,20 @@
           </Border>
           <Border Classes="pcard">
             <StackPanel Spacing="8">
+              <DockPanel>
+                <Button DockPanel.Dock="Right" Classes="primary" Click="OnDielectric" IsEnabled="{Binding HasDocument}" Content="Dielectric"
+                        ToolTip.Tip="The crystal's dielectric tensors, refractive indices, piezoelectric constants and reflectivity from its force field's lattice dynamics (shells for the electrons)" />
+                <TextBlock Text="Dielectric and piezoelectric response" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+              </DockPanel>
+              <TextBlock Classes="dim" TextWrapping="Wrap" Text="For a filler or polymer crystal in a sensing rubber (ZnO, BaTiO3, β-PVDF): how it polarises in a field and under strain, and how it reflects infrared light. Shell models give the electrons' part (ε^∞, refractive index)." />
+              <TextBlock Text="{Binding DlError}" Foreground="{DynamicResource ErrB}" TextWrapping="Wrap" IsVisible="{Binding DlHasError}" />
+              <TextBlock Text="{Binding DlText}" Classes="mono" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding DlHas}" />
+              <v:SciPlot x:Name="Reflect" Height="200" IsVisible="{Binding DlHas}" />
+              <TextBlock Text="{Binding DlNote}" Classes="dim" TextWrapping="Wrap" IsVisible="{Binding DlHas}" />
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
               <TextBlock x:Name="CurveTitle" Text="Running integral κ(t) (x solid, y dashed, z dotted) or the slab temperatures" FontSize="13.5" FontWeight="SemiBold" />
               <v:SciPlot x:Name="Curve" Height="220" />
             </StackPanel>

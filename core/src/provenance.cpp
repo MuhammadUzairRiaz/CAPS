@@ -108,6 +108,8 @@ const Cite kCites[] = {
     {"pawley1981", "@article{pawley1981,\n  author = {Pawley, G. S.},\n  title = {Unit-cell refinement from powder diffraction scans},\n  journal = {J. Appl. Cryst.}, volume = {14}, pages = {357--361}, year = {1981}, doi = {10.1107/S0021889881009618}\n}"},
     {"rietveld1969", "@article{rietveld1969,\n  author = {Rietveld, H. M.},\n  title = {A profile refinement method for nuclear and magnetic structures},\n  journal = {J. Appl. Cryst.}, volume = {2}, pages = {65--71}, year = {1969}, doi = {10.1107/S0021889869006558}\n}"},
     {"hill1987", "@article{hill1987,\n  author = {Hill, R. J. and Howard, C. J.},\n  title = {Quantitative phase analysis from neutron powder diffraction data using the {R}ietveld method},\n  journal = {J. Appl. Cryst.}, volume = {20}, pages = {467--474}, year = {1987}, doi = {10.1107/S0021889887086199}\n}"},
+    {"gale2003", "@article{gale2003,\n  author = {Gale, J. D. and Rohl, A. L.},\n  title = {The {G}eneral {U}tility {L}attice {P}rogram ({GULP})},\n  journal = {Mol. Simul.}, volume = {29}, pages = {291--341}, year = {2003}, doi = {10.1080/0892702031000104887}\n}"},
+    {"lyddane1941", "@article{lyddane1941,\n  author = {Lyddane, R. H. and Sachs, R. G. and Teller, E.},\n  title = {On the polar vibrations of alkali halides},\n  journal = {Phys. Rev.}, volume = {59}, pages = {673--676}, year = {1941}, doi = {10.1103/PhysRev.59.673}\n}"},
     {"ramirez2004", "@article{ramirez2004,\n  author = {Ram{\\'\\i}rez, R. and L{\\'o}pez-Ciudad, T. and Kumar P, P. and Marx, D.},\n  title = {Quantum corrections to classical time-correlation functions: hydrogen bonding and anharmonic floppy modes},\n  journal = {J. Chem. Phys.}, volume = {121}, pages = {3973--3983}, year = {2004}, doi = {10.1063/1.1774986}\n}"},
     {"donnay1937", "@article{donnay1937,\n  author = {Donnay, J. D. H. and Harker, D.},\n  title = {A new law of crystal morphology extending the law of {B}ravais},\n  journal = {Am. Mineral.}, volume = {22}, pages = {446--467}, year = {1937}\n}"},
     {"hartman1955", "@article{hartman1955,\n  author = {Hartman, P. and Perdok, W. G.},\n  title = {On the relations between structure and morphology of crystals. {I}},\n  journal = {Acta Cryst.}, volume = {8}, pages = {49--52}, year = {1955}, doi = {10.1107/S0365110X55000121}\n}"},
@@ -478,6 +480,9 @@ std::string methods_text(const Manifest& m, std::vector<std::string>* refs, cons
       t = "The powder diffraction pattern (" + param(s, "radiation") + ", " + param(s, "range") + ") was computed from the cell's reciprocal lattice (" +
           param(s, "reflections") + ") with " + param(s, "peaks") + " peak shapes" + cite({"thompson1987", "caglioti1958"}) +
           (param(s, "orientation").empty() ? std::string() : " and March–Dollase preferred orientation" + cite({"dollase1986"})) + ".";
+    } else if (e == "analysis.dielectric") {
+      t = "The static and high-frequency dielectric tensors, the piezoelectric constants and the reflectivity were computed from the second derivatives of the relaxed lattice" +
+          cite({"gale2003"}) + " (ε⁰ principal values " + param(s, "ε⁰") + ").";
     } else if (e == "analysis.refine") {
       t = "The measured powder pattern (" + param(s, "data") + ") was refined by " + (param(s, "mode") == "pawley" ? std::string("the Pawley method") + cite({"pawley1981"})
                                                                                                                 : std::string("the Rietveld method") + cite({"rietveld1969"})) +

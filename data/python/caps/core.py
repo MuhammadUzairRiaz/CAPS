@@ -1535,6 +1535,29 @@ def _refine(self, data: str, mode: str = "rietveld", phases=(), anode: str = "Cu
 
 Document.refine = _refine
 
+def _dielectric(self, cutoff: float = 10.0, relax: bool = True, relax_cell: bool = True, piezo: bool = True, damping: float = 10.0,
+                w_max: float = 0.0, points: int = 400) -> dict:
+    """Dielectric response of the crystal (current frame, the assigned force field): static and high-frequency tensors,
+    refractive indices (shell models), proper piezoelectric e (C/m²) and d (pC/N), the Γ modes and the reflectivity
+    with damping (cm⁻¹). Returns {eps0, epsinf, eps0_principal, refractive, e, d, modes, w, reflectivity, notes, ...}."""
+    o = {"cutoff": float(cutoff), "relax": bool(relax), "relax_cell": bool(relax_cell), "piezo": bool(piezo), "damping": float(damping),
+         "w_max": float(w_max), "points": int(points)}
+    f = library().caps_dielectric
+    f.argtypes = [C.c_void_p, C.c_char_p, C.c_void_p, C.c_void_p, C.c_char_p, C.c_int32]
+    f.restype = C.c_int32
+    buf = C.create_string_buffer(1 << 22)
+    n = f(self._h, _enc(json.dumps(o)), None, None, buf, len(buf))
+    if n > len(buf):
+        buf = C.create_string_buffer(int(n))
+        f(self._h, _enc(json.dumps(o)), None, None, buf, len(buf))
+    r = json.loads(buf.value.decode())
+    if not r.get("ok"):
+        raise CapsError(r.get("error", "dielectric failed"))
+    return r
+
+
+Document.dielectric = _dielectric
+
 def density_fields(molecules, chi=None, grid=(32, 32, 32), bond: float = 1.1543, kappa: float = 10.0, noise: float = 75.0, dt: float = 0.02,
                    steps: int = 2000, frame_every: int = 100, seed: int = 1) -> dict:
     """Density-field dynamics of Gaussian chains (no structure needed): molecules [(name, sequence such as "A8B8", fraction), …],

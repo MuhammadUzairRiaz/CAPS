@@ -3316,6 +3316,53 @@
    ]
   },
   {
+   "id": "crystal-dielectric",
+   "group": "Analysis",
+   "title": "Dielectric, piezoelectric and optical response of a crystal",
+   "summary": "From the relaxed crystal and its force field's second derivatives at k = 0: the force constants K of the cell's particles (cores and shells) by central differences of the forces with the periodic copies moving together, Ewald sums with conducting boundaries giving the transverse response. The static dielectric tensor sums q_i q_j K⁺ over every particle, the high-frequency tensor over the shells with the cores held (1 for rigid ions), and the refractive indices are the square roots of its principal values. The proper piezoelectric constants of the relaxed ions follow from the forces a homogeneous strain puts on the particles at fixed fractional coordinates (the internal-strain tensor Θ): the particles move by K⁺Θ per unit strain and carry their charges with them; d = e S with the relaxed-ion compliance. With the shells condensed out, the zone-centre modes of the cores and their oscillator strengths give ε(ω) with a damping γ and the normal-incidence reflectivity along the principal axes. The crystal is relaxed first (cell at zero stress, then Newton steps on the particles).",
+   "equation": "ε⁰_αβ = δ_αβ + (1/ε₀V) Σ_ij q_i q_j (K⁺)_iα,jβ;  e_αj = (1/V) Σ_i q_i (K⁺Θ)_iα,j;  d = e S;  ε(ω) = ε^∞ + Σ_m S_m ω_m²/(ω_m² − ω² − iγω);  R = |(√ε − 1)/(√ε + 1)|²",
+   "equation_note": "Gale & Rohl 2003; Lyddane, Sachs & Teller 1941 for the one-oscillator check",
+   "tex": "\\varepsilon^{0}_{\\alpha\\beta} = \\delta_{\\alpha\\beta} + \\frac{1}{\\varepsilon_0 V}\\sum_{ij} q_i q_j\\,(K^{+})_{i\\alpha,j\\beta}, \\qquad e_{\\alpha j} = \\frac{1}{V}\\sum_i q_i\\,(K^{+}\\Theta)_{i\\alpha,j}, \\qquad d = e\\,S \\\\ \\varepsilon(\\omega) = \\varepsilon^{\\infty} + \\sum_m \\frac{S_m\\,\\omega_m^2}{\\omega_m^2 - \\omega^2 - i\\gamma\\omega}, \\qquad R = \\left|\\frac{\\sqrt{\\varepsilon} - 1}{\\sqrt{\\varepsilon} + 1}\\right|^2",
+   "symbols": [
+    [
+     "K",
+     "force constants of the cell's particles (copies together)",
+     "kcal/mol/Å²"
+    ],
+    [
+     "Θ",
+     "forces per unit homogeneous strain",
+     "kcal/mol/Å"
+    ],
+    [
+     "e, d",
+     "proper piezoelectric stress and strain constants",
+     "C/m², pC/N"
+    ],
+    [
+     "S_m, ω_m",
+     "oscillator strength and frequency of mode m",
+     "—, cm⁻¹"
+    ],
+    [
+     "γ",
+     "damping",
+     "cm⁻¹"
+    ]
+   ],
+   "when": "Fillers and polymer crystals in sensing or dielectric rubbers (ZnO, BaTiO3, β-PVDF, TiO2): how strongly they polarise, which strains make a charge, the refractive index a shell model predicts, and the infrared reflectivity band.",
+   "cites": [
+    "gale2003",
+    "lyddane1941"
+   ],
+   "source": "core/src/dielectric.cpp (crystal_dielectric)",
+   "tested": "Dielectric.RockSaltIsOneOscillator (rigid-ion rock salt: ε⁰ equal to 1 + q²/(ε₀Vμω_TO²) with ω_TO from the phonon module to 3e-5; the condensed modes at the phonon module's TO; ε(0) = ε⁰; ε^∞ = 1; e = 0); Dielectric.ShellModelHighFrequencyLimit (a shelled anion: ε(ω) far above the modes equals ε^∞, ε(0) equals ε⁰); Dielectric.ZincBlendePiezoelectricByDirectStrain (e14 = e25 = e36 = 0.7529 C/m² from the internal strain equal to the polarisation of the ions relaxed under a 0.2 % shear to 1e-5; e11 = 0); periclase with the Catlow shell model: ε⁰ 9.81, ε^∞ 2.94, n 1.716",
+   "deviation": "harmonic and static (0 K); fixed charges: no charge transfer or electronic polarisation beyond the shells; the reflectivity's damping is chosen, not computed",
+   "engines": [
+    "analysis.dielectric"
+   ]
+  },
+  {
    "id": "crystal-habit",
    "group": "Analysis",
    "title": "Crystal habit: BFDH, attachment energy, Wulff shapes",

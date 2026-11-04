@@ -35,6 +35,15 @@ public partial class ThermalPage : PageBase
                     XLabel = "*ν̃* / cm⁻¹", YLabel = "states / cm⁻¹ per cell", YZero = true, YMin = 0, Series = [.. series], Empty = "",
                 };
             };
+            vm.DielectricChanged += () =>
+            {
+                var (w, refl) = vm.DlReflectivity;
+                this.FindControl<SciPlot>("Reflect")!.Figure = w.Length == 0 ? null : new SciFigure
+                {
+                    XLabel = "*ν̃* / cm⁻¹", YLabel = "reflectivity *R*", YMin = 0, Empty = "",
+                    Series = refl.Select((r, i) => new SciSeries($"along principal axis {i + 1}", w, r) { Kind = SciKind.Line, Colour = i, Width = 1.2 }).ToArray(),
+                };
+            };
             vm.ThChanged += () =>
             {
                 this.FindControl<SciPlot>("Curve")!.Figure = ViewModels.PageFigures.Thermal(vm.ThCurves, vm.ThGreenKubo);
@@ -43,6 +52,7 @@ public partial class ThermalPage : PageBase
     }
 
     private async void OnRun(object? s, RoutedEventArgs e) => await Vm.RunThermal();
+    private async void OnDielectric(object? s, RoutedEventArgs e) => await Vm.RunDielectric();
     private async void OnPhonons(object? s, RoutedEventArgs e) => await Vm.RunPhonons();
 
     private async void OnLammps(object? s, RoutedEventArgs e)

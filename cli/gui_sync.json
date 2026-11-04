@@ -1552,6 +1552,28 @@
     "--json": "partial: the page shows the result",
     "--topology": "page"
    }
+  },
+  "dielectric": {
+   "status": "gui",
+   "studio": "Thermal conductivity › Dielectric and piezoelectric response",
+   "where": "Views/Pages/ThermalPage.axaml|Dielectric and piezoelectric response",
+   "capi": [
+    "caps_dielectric"
+   ],
+   "options": {
+    "--ff": "partial: the Studio uses the force field assigned on the Force field page",
+    "--cutoff": "partial: the Studio uses the Minimise page's cut-off, at most 12 Å",
+    "--no-relax": "cli: the page relaxes first",
+    "--fixed-cell": "cli: the page relaxes the cell too",
+    "--no-piezo": "cli: the page computes the piezoelectric constants",
+    "--damping": "cli: the page damps the oscillators by 10 cm⁻¹",
+    "--csv": "partial: the page plots the reflectivity",
+    "--json": "partial: the page shows the result",
+    "--pme": "partial: the Studio uses Ewald sums",
+    "--topology": "page",
+    "--quiet": "cli: no progress line",
+    "--no-coulomb": "cli: without electrostatics"
+   }
   }
  },
  "hidden_options": {

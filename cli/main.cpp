@@ -79,6 +79,7 @@
 #include "caps/habit.hpp"
 #include "caps/qspr.hpp"
 #include "caps/refine.hpp"
+#include "caps/dielectric.hpp"
 #include "caps/ddft.hpp"
 #include "caps/yaml.hpp"
 #ifdef _WIN32
@@ -342,6 +343,8 @@ int usage() {
                "               [--ff FF] [--no-coulomb]   configurational-bias regrowth of chain ends (Siepmann & Frenkel)\n"
                "  caps fields --molecules 'A8B8:1; A8:0.5' [--chi AB=1.9] [--grid 32,32,32 (nz 1: 2D)] [--bond 1.1543] [--kappa 10] [--noise 75] [--dt 0.02]\n"
                "               [--steps 2000] [--every 100] [--seed 1] [--vtk OUT.vtk] [--csv OUT.csv]   density-field dynamics of Gaussian chains (blends, block copolymers)\n"
+               "  caps dielectric CRYSTAL [--ff FF.json] [--cutoff 10] [--no-relax] [--fixed-cell] [--no-piezo] [--damping 10] [--csv STEM] [--json OUT]\n"
+               "              dielectric tensors (static, high-frequency), refractive indices, piezoelectric e and d, reflectivity\n"
                "  caps refine DATA.xy CRYSTAL [CRYSTAL …] [--pawley] [--anode Cu | --wavelength Å] [--neutron] [--background 6] [--two-theta 10,90]\n"
                "              [--refine U,W,Y,zero] [--b-iso] [--preferred h,k,l] [--iterations 50] [--csv OUT] [--json OUT]   Rietveld or Pawley fit of a measured pattern\n"
                "  caps qspr descriptors [FILE ...] [--smiles 'CCO;CC(C)O'] [--csv OUT]   molecular descriptors (graph, shape, charged surface areas)\n"
@@ -470,7 +473,7 @@ const std::set<std::string>& known_options() {
     "--tmax", "--to", "--tol", "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing", "--units",
     "--polymer", "--crystal", "--crystal-cells", "--amorphous", "--loops", "--bridges", "--tails", "--reentry", "--analyse",
     "--corr-ps", "--long", "--swap-every", "--transient", "--dimensionality", "--thickness",
-    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--pawley", "--b-iso", "--background", "--refine", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
+    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--fixed-cell", "--no-piezo", "--damping", "--pawley", "--b-iso", "--background", "--refine", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
   return k;
 }
 
@@ -503,7 +506,7 @@ bool is_cli_switch(const std::string& a) {
          a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" || a == "--include-input" || a == "--primitive" || a == "--symmetrize" || a == "--find-symmetry" || a == "--groups" || a == "--neutralise" || a == "--no-ions" || a == "--solvents" || a == "--bibtex" || a == "--json" || a == "--deterministic" || a == "--vacuum" || a == "--methods" ||
          a == "--hybrid" || a == "--resume" || a == "--between-chains" || a == "--keep-byproducts" || a == "--auto-capture" ||
          a == "--during-md" || a == "--remove-unreacted" || a == "--analyse" || a == "--long" || a == "--reduced" || a == "--kg" || a == "--stickers" || a == "--both-ends" || a == "--no-exchange" || a == "--npt" ||
-         a == "--no-kalpha2" || a == "--neutron" || a == "--polarised" || a == "--relaxed" || a == "--conventional" || a == "--attachment" || a == "--surface-energy" || a == "--stepwise" || a == "--squares" || a == "--products" || a == "--no-scale" || a == "--pawley" || a == "--b-iso";
+         a == "--no-kalpha2" || a == "--neutron" || a == "--polarised" || a == "--relaxed" || a == "--conventional" || a == "--attachment" || a == "--surface-energy" || a == "--stepwise" || a == "--squares" || a == "--products" || a == "--no-scale" || a == "--pawley" || a == "--b-iso" || a == "--fixed-cell" || a == "--no-piezo";
 }
 
 std::map<std::string, std::string> parse(int argc, char** argv, int from, std::vector<std::string>& pos) {
@@ -4105,6 +4108,82 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps phonons: %s\n", e.what());
+      return 1;
+    }
+  }
+  if (cmd == "dielectric") {
+    try {
+      if (pos.empty()) return usage();
+      Trajectory t = open_file(pos[0], o.count("--topology") ? o["--topology"] : "");
+      System s0 = t.frames() ? t.frame(0) : t.topology;
+      const bool quiet = o.count("--quiet");
+      (void)cli_forcefield(s0, o, quiet);   // shells added for a shell model
+      DielectricOptions dop;
+      dop.energy.cutoff = o.count("--cutoff") ? std::stod(o["--cutoff"]) : 10.0;
+      dop.energy.tail = false;
+      dop.energy.electrostatics = EnergyOptions::Electrostatics::PME;
+      electrostatics(dop.energy, o);
+      dop.relax = !o.count("--no-relax");
+      dop.relax_cell = !o.count("--fixed-cell");
+      dop.piezo = !o.count("--no-piezo");
+      if (o.count("--damping")) dop.damping = std::stod(o["--damping"]);
+      if (o.count("--ff") && !is_uff(o["--ff"])) {
+        try {
+          const FFDef def = load_forcefield(ff_path(o["--ff"]));
+          std::set<std::string> sh;
+          for (const auto& [c, x] : def.shells) sh.insert(x);
+          for (const auto& a : s0.atoms) dop.shell.push_back(sh.count(a.name) ? 1 : 0);
+        } catch (const std::exception&) {
+        }
+      }
+      dop.field_for = [o](const System& x) mutable { System c = x; return cli_forcefield(c, o, true); };
+      if (!quiet) dop.progress = [&](const std::string& w, double f) { std::fprintf(stderr, "\r%-30s %3.0f %%", w.c_str(), 100 * f); return true; };
+      const DielectricResult r = crystal_dielectric(s0, dop);
+      if (!quiet) std::fprintf(stderr, "\r%-40s\r", "");
+      auto m3 = [](const char* n, const Mat3x3& m) {
+        std::printf("%s\n", n);
+        for (const auto& row : m) std::printf("  %10.4f %10.4f %10.4f\n", row[0], row[1], row[2]);
+      };
+      std::printf("cell a b c %.5f %.5f %.5f Å, angles %.3f %.3f %.3f° (%s), largest force %.1e kcal/mol/Å\n", r.cell[0], r.cell[1], r.cell[2], r.cell[3], r.cell[4], r.cell[5],
+                  dop.relax ? (dop.relax_cell ? "relaxed" : "atoms relaxed in the cell") : "as given", r.max_force);
+      m3("static dielectric tensor ε⁰", r.eps0);
+      m3("high-frequency dielectric tensor ε^∞", r.epsinf);
+      std::printf("principal values: ε⁰ %.4f %.4f %.4f · ε^∞ %.4f %.4f %.4f", r.eps0_principal[0], r.eps0_principal[1], r.eps0_principal[2], r.epsinf_principal[0],
+                  r.epsinf_principal[1], r.epsinf_principal[2]);
+      if (r.shells) std::printf(" · refractive indices %.4f %.4f %.4f", r.refractive[0], r.refractive[1], r.refractive[2]);
+      std::printf("\nΓ modes (cm⁻¹):");
+      for (double w : r.modes) std::printf(" %.1f", w);
+      std::printf("\n");
+      if (r.piezo) {
+        std::printf("piezoelectric e (C/m²), columns xx yy zz yz xz xy\n");
+        for (const auto& row : r.e) std::printf("  %9.5f %9.5f %9.5f %9.5f %9.5f %9.5f\n", row[0], row[1], row[2], row[3], row[4], row[5]);
+        std::printf("piezoelectric d (pC/N)\n");
+        for (const auto& row : r.d) std::printf("  %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f\n", row[0], row[1], row[2], row[3], row[4], row[5]);
+      }
+      for (const auto& n : r.notes) std::printf("%s\n", n.c_str());
+      if (o.count("--csv")) {
+        std::ofstream f(o["--csv"] + "_reflectivity.csv");
+        f << "wavenumber_cm-1,R1,R2,R3,eps_re1,eps_im1,eps_re2,eps_im2,eps_re3,eps_im3\n";
+        for (size_t i = 0; i < r.w.size(); ++i) {
+          f << r.w[i];
+          for (int k = 0; k < 3; ++k) f << "," << r.reflectivity[k][i];
+          for (int k = 0; k < 3; ++k) f << "," << r.eps_re[k][i] << "," << r.eps_im[k][i];
+          f << "\n";
+        }
+        std::printf("wrote %s_reflectivity.csv\n", o["--csv"].c_str());
+      }
+      if (o.count("--json") && o["--json"] != "1") {
+        Json j = Json::object();
+        auto arr = [](const auto& v) { Json a = Json::array(); for (double x : v) a.push_back(Json(x)); return a; };
+        Json e0 = Json::array(), ei = Json::array(), ee = Json::array(), dd = Json::array();
+        for (int k = 0; k < 3; ++k) e0.push_back(arr(r.eps0[size_t(k)])), ei.push_back(arr(r.epsinf[size_t(k)])), ee.push_back(arr(r.e[size_t(k)])), dd.push_back(arr(r.d[size_t(k)]));
+        j["eps0"] = e0, j["epsinf"] = ei, j["e"] = ee, j["d"] = dd, j["modes"] = arr(r.modes), j["refractive"] = arr(r.refractive);
+        std::ofstream(o["--json"]) << j.dump(1) << "\n";
+        std::printf("wrote %s\n", o["--json"].c_str());
+      }
+      return 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps dielectric: %s\n", e.what());
       return 1;
     }
   }
