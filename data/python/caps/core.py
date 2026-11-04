@@ -1593,6 +1593,38 @@ def solve_structure(data: str, molecule: str, cell, space_group: str = "P 1", wa
     return _index_call({"op": "solve", "data": str(data), "molecule": str(molecule), "cell": [float(x) for x in cell], "space_group": space_group,
                         "wavelength": float(wavelength), "steps": int(steps), "restarts": int(restarts), "seed": int(seed), "path": str(path)})
 
+def _set_restraints(self, text: str) -> int:
+    """Restraints of every kind for minimise, md, equilibrate and the LAMMPS / GROMACS exports, in text form with atoms
+    from 1: "distance 1 2 3.0 20; angle 1 2 3 100:110; torsion 1 2 3 4 180 50; position 1-40 5 axes z radius 0.5"
+    (E = ½ k Δ², zero between LO:HI; k kcal/mol/Å² or /rad²; "ramp KEND" changes k over a run). "" clears them.
+    Returns how many were set."""
+    f = library().caps_set_restraint_text
+    f.argtypes = [C.c_void_p, C.c_char_p, C.c_char_p, C.c_int32]
+    f.restype = C.c_int32
+    buf = C.create_string_buffer(1 << 14)
+    n = f(self._h, _enc(text or ""), buf, len(buf))
+    if n < 0:
+        raise CapsError(json.loads(buf.value.decode()).get("error", "restraints refused"))
+    return int(n)
+
+
+def _restraints(self) -> dict:
+    """The restraints set, with each one's value now (Å or degrees) and energy (kcal/mol): {text, energy, restraints}."""
+    f = library().caps_restraint_report
+    f.argtypes = [C.c_void_p, C.c_char_p, C.c_int32]
+    f.restype = C.c_int32
+    buf = C.create_string_buffer(1 << 20)
+    n = f(self._h, buf, len(buf))
+    if n > len(buf):
+        buf = C.create_string_buffer(int(n))
+        f(self._h, buf, len(buf))
+    return json.loads(buf.value.decode())
+
+
+Document.set_restraints = _set_restraints
+Document.restraints = _restraints
+
+
 def _zmelt(self, temperatures, steps: int = 10000, dt: float = 1.0, bisect: int = 0, cutoff: float = 10.0, sample_every: int = 20,
            melt_order: float = 0.3, seed: int = 1) -> dict:
     """Melting point of the crystal (current frame, the assigned force field) by the Z method: one NVE run from the perfect

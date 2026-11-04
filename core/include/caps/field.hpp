@@ -304,7 +304,8 @@ struct EnergyTerms {
   double virial = 0;             // Σ r·f, kcal/mol
   double w[6] = {0, 0, 0, 0, 0, 0};   // virial tensor Σ r_a f_b (symmetrised), xx yy zz xy xz yz; trace = virial
   double dudl_lj = 0, dudl_coul = 0;  // ∂U/∂λ of the alchemical pairs (EnergyOptions::alchemical), kcal/mol
-  double total() const { return bond + angle + dihedral + improper + vdw + coulomb; }
+  double restraint = 0;          // restraints added by a run (caps/restraints.hpp), kcal/mol
+  double total() const { return bond + angle + dihedral + improper + vdw + coulomb + restraint; }
 };
 
 // Energy and forces for a force field over a periodic cell. The neighbour list is rebuilt when an atom has moved

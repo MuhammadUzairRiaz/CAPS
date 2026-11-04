@@ -1117,6 +1117,21 @@ internal static class Screenshot
                 w.ViewModel.Pick(int.Parse(ij[1]), true);
                 w.ViewModel.AddMeasuredRestraint();
             }
+            if (kv[0] == "runrestraints")   // runrestraints=TEXT ('|' for new lines) or sel:I,J[,K[,L]] (picked, from 0): Relax page › restraints in every run
+            {
+                var vm = w.ViewModel;
+                vm.SetModule(2);
+                if (kv[1].StartsWith("sel:"))
+                {
+                    var ij = kv[1][4..].Split(',').Select(int.Parse).ToArray();
+                    vm.Pick(ij[0]);
+                    foreach (var q in ij.Skip(1)) vm.Pick(q, true);
+                    vm.RestrainSelectionForRuns();
+                }
+                else { vm.RunRestraintText = kv[1].Replace('|', '\n'); vm.ApplyRunRestraints(); }
+                for (int q = 0; q < 30; ++q) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+                Console.WriteLine("runrestraints: " + vm.Status + (vm.RunRestraintHasError ? " · error " + vm.RunRestraintError : "") + "\n" + vm.RunRestraintText + "\n" + vm.RunRestraintReport);
+            }
             if (kv[0] == "pipeline")   // pipeline=POLYMER_ID:FF_ID[:export] — grow a library polymer with that force field chosen in Grow
             {
                 var vm = w.ViewModel;

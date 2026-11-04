@@ -579,6 +579,8 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_set_held_molecule")] public static extern void SetHeldMolecule(IntPtr doc, long mol);
     [DllImport(Lib, EntryPoint = "caps_set_restraints")] public static extern int SetRestraints(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json);
     [DllImport(Lib, EntryPoint = "caps_held_molecule")] public static extern long HeldMolecule(IntPtr doc);
+    [DllImport(Lib, EntryPoint = "caps_set_restraint_text")] public static extern int SetRestraintText(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string text, byte[]? outJson, int cap);
+    [DllImport(Lib, EntryPoint = "caps_restraint_report")] public static extern int RestraintReport(IntPtr doc, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_set_fixed_atoms")] public static extern int SetFixedAtoms(IntPtr doc, int[]? atoms, int n);
     [DllImport(Lib, EntryPoint = "caps_set_rigid_molecules")] public static extern int SetRigidMolecules(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string ranges);
     [DllImport(Lib, EntryPoint = "caps_enumerate_analogs")] public static extern int EnumerateAnalogs([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? text, int cap);
@@ -1362,6 +1364,20 @@ public sealed class CapsDocument : IDisposable
     public int SetRestraints(string json) { using (Hold()) { var n = Native.SetRestraints(H, json); if (n < 0) throw new InvalidOperationException(Native.LastError()); return n; } }
     public long HeldMolecule() { using (Hold()) return Native.HeldMolecule(H); }
     /// <summary>Atoms held in place besides the held molecule (frame indices); an empty list clears them.</summary>
+    /// <summary>Restraints of every kind in text form (caps_set_restraint_text): the count, or −1 and the reason.</summary>
+    public (int Count, string Error) SetRestraintText(string text)
+    {
+        using (Hold())
+        {
+            var buf = new byte[1 << 14];
+            var n = Native.SetRestraintText(H, text, buf, buf.Length);
+            var js = System.Text.Encoding.UTF8.GetString(buf, 0, Math.Max(0, Array.IndexOf(buf, (byte)0)));
+            var err = n < 0 ? (string?)System.Text.Json.Nodes.JsonNode.Parse(js)?["error"] ?? "refused" : "";
+            return (n, err);
+        }
+    }
+    /// <summary>The restraints with their values and energies now (caps_restraint_report), JSON.</summary>
+    public string RestraintReport() { using (Hold()) return JsonCallOnce((b, c) => Native.RestraintReport(H, b, c)); }
     public int SetFixedAtoms(IReadOnlyCollection<int> atoms) { using (Hold()) { var a = atoms.ToArray(); return Native.SetFixedAtoms(H, a, a.Length); } }
     public int SetRigidMolecules(string ranges) { using (Hold()) { var n = Native.SetRigidMolecules(H, ranges); if (n < 0) throw new InvalidOperationException(Native.LastError()); return n; } }
     public long[] FrameTimesteps() { using (Hold()) { var n = Native.FrameTimesteps(H, null, 0); var a = new long[Math.Max(0, n)]; if (n > 0) Native.FrameTimesteps(H, a, n); return a; } }

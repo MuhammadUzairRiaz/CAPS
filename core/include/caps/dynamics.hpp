@@ -9,6 +9,7 @@
 
 #include "caps/constraints.hpp"
 #include "caps/field.hpp"
+#include "caps/restraints.hpp"
 #include "caps/system.hpp"
 
 namespace caps {
@@ -38,6 +39,7 @@ struct ThermoRow {
   double pull_force = 0;              // spring force along the pull direction, kcal/mol/Å
   double pull_disp = 0;               // displacement of the pulled group's centre along it, Å
   double wall_force[3] = {0, 0, 0};   // force of the other atoms on the moved group (move_group), kcal/mol/Å
+  double restraint = 0;               // energy of the restraints, kcal/mol (in potential)
 };
 
 // What a bond-exchange callback works on (DynamicsOptions::topology): the run's own structure (its bonds the run's topology;
@@ -120,6 +122,9 @@ struct DynamicsOptions {
   // velocities are peculiar (the flow taken off) and the thermostat acts on them. NVT only; the stress P_xy of the thermo
   // rows gives the viscosity η = −⟨P_xy⟩ / shear_rate.
   double shear_rate = 0;
+  // Restraints (caps/restraints.hpp): their energy is part of the potential (and of the conserved quantity unless a
+  // force constant ramps), their forces of the internal ones join the virial; k → k_end over this run.
+  std::vector<Restraint> restraints;
   uint64_t seed = 1;
   int thermo_every = 100;           // steps between thermo rows
   int64_t step_offset = 0;          // added to reported steps and times (runs chained into a protocol)

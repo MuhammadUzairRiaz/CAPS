@@ -16,6 +16,7 @@
 #include <set>
 #include <sstream>
 
+#include "caps/restraints.hpp"
 #include "caps/tags.hpp"
 #include "caps/analysis.hpp"
 #include "caps/elements.hpp"
@@ -1744,6 +1745,7 @@ void write_lammps_input(const System& s, const ForceField& ff0, const EnergyOpti
     out << "\n# rigid bodies: each of these molecules moves as one body (fix rigid below); pairs inside a body are not computed\n"
         << "group           rigid molecule " << lammps_ranges(rigid) << "\n"
         << "neigh_modify    exclude molecule/intra rigid\n";
+  if (!st.restraints.empty()) out << lammps_restraint_lines(st.restraints, s, metal ? 1.0 / 23.060549 : 1.0, notes);
   if (held_mol > 0)
     out << "\n# molecule " << held_mol << " (the surface or filler) held in place, as in CAPS: no velocity, no force\n"
         << "group           held molecule " << held_mol << "\n"

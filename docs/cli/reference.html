@@ -98,6 +98,9 @@ caps ff apply FILE --ff FF.json [-o OUT.data [--lammps-input OUT.in [--lammps-ru
              [--density 1.05] [--step 0.06] [--box-relax] [--pressure 1] [--no-pushoff] [--cutoff Å]
              [--no-coulomb] [--ff FF.json [--overlay OV.json[,MORE.json]] [--charges auto|types|gasteiger|keep|qeq|increments] [--complete ml]] [--quiet]
              (.data output carries the force field for LAMMPS)
+             --restraints &#x27;distance 1 2 3.0 20; angle 1 2 3 109.5; torsion 1 2 3 4 60:90 50; position 1-40 5 axes z radius 0.5&#x27;
+             or a file of them (relax, md, equilibrate; ff apply writes them into the LAMMPS and GROMACS files): ½ k Δ², flat between
+             LO:HI, atoms from 1, k kcal/mol/Å² or /rad² (defaults 10 and 50), &#x27;ramp KEND&#x27; to change k over a run
              without --ff (relax, md, equilibrate, field): the force field a data file CAPS wrote holds (its coefficients,
              charges and 1-4 weights; refused when CAPS cannot rebuild it from the file), else GAFF (C and H) or UFF;
              without --cutoff (relax, md, equilibrate): the force field&#x27;s own cut-off, else 10 Å</code></pre></div></article>

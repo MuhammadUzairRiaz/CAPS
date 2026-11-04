@@ -8,6 +8,7 @@
 
 #include "caps/constraints.hpp"
 #include "caps/field.hpp"
+#include "caps/restraints.hpp"
 #include "caps/system.hpp"
 
 namespace caps {
@@ -43,6 +44,8 @@ struct RelaxOptions {
   // backbone torsion trans or gauche, set a side group's orientation while the rest relaxes.
   struct DihedralRestraint { uint32_t i = 0, j = 0, k = 0, l = 0; double phi0 = 180, kphi = 50; };
   std::vector<DihedralRestraint> dihedral_restraints;
+  // Restraints of every kind (caps/restraints.hpp: ½ k Δ², flat-bottomed), as dynamics takes them
+  std::vector<caps::Restraint> restraint_terms;
 
   // Soft push-off before minimising (Auhl et al., J. Chem. Phys. 119, 12718 (2003)): LJ forces capped, the cap raised
   // stage by stage. Needed after Grow with a contact scale below 1, or for any structure with overlaps.
@@ -161,6 +164,9 @@ struct LammpsStyle {
   // rigid, pairs inside a body excluded, fix rigid/nvt/small molecule; the others integrate on their own, and an NPT
   // barostat dilates only them). CAPS's own runs have no rigid bodies.
   std::vector<int64_t> rigid_mols;
+  // Restraints written as fix restrain and fix spring/self after the groups (caps/restraints.hpp; what LAMMPS cannot
+  // express is left out, in the notes)
+  std::vector<caps::Restraint> restraints;
   // Four-site water (TIP4P family): set by the writers when they leave the M sites out; LAMMPS's tip4p styles place
   // them d_OM (qdist, Å) along the bisector from the O of type o_type, with its H type, O–H bond and H–O–H angle types
   double tip4p_qdist = 0;
@@ -249,7 +255,10 @@ std::string lammps_shake_fix(const System& s, const ForceField& ff, const Energy
 // whole) and STEM.mdp (a single-point run with the matching cut-offs, tail and electrostatics). Returns notes where
 // GROMACS cannot compute exactly the same (DSF becomes PME; no cell). Throws FieldError for forms GROMACS lacks (class
 // II, inversions, 9-6 or Buckingham pairs).
-std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& stem);
+// Restraints (caps/restraints.hpp) go in [ intermolecular_interactions ] and per molecule [ position_restraints ], the
+// anchors in STEM_ref.gro.
+std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& stem,
+                                       const std::vector<caps::Restraint>& restraints = {});
 // Charges at six decimals, each molecule's total kept (the rounding left over on its atom of largest |q|), as the
 // LAMMPS and GROMACS writers put them in their files; mol: each atom's molecule
 std::vector<double> charges_six_decimals(const std::vector<double>& q, const std::vector<int64_t>& mol);

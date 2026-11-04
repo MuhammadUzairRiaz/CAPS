@@ -1215,6 +1215,7 @@ public sealed partial class MainViewModel : ObservableObject
     }
     private void SyncFixed()
     {
+        SyncRunRestraints();
         try { _mdRigid = _doc?.RigidMolecules() ?? ""; } catch { _mdRigid = ""; }
         Raise(nameof(MdRigid));
         MdRigidNote = _mdRigid.Length == 0 ? "" : "rigid in LAMMPS (fix rigid/nvt/small); CAPS's own run moves their atoms freely";

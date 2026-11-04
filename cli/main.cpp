@@ -83,6 +83,7 @@
 #include "caps/powder_index.hpp"
 #include "caps/sqs.hpp"
 #include "caps/zmethod.hpp"
+#include "caps/restraints.hpp"
 #include "caps/ddft.hpp"
 #include "caps/yaml.hpp"
 #ifdef _WIN32
@@ -339,6 +340,9 @@ int usage() {
                "               [--density 1.05] [--step 0.06] [--box-relax] [--pressure 1] [--no-pushoff] [--cutoff Å]\n"
                "               [--no-coulomb] [--ff FF.json [--overlay OV.json[,MORE.json]] [--charges auto|types|gasteiger|keep|qeq|increments] [--complete ml]] [--quiet]\n"
                "               (.data output carries the force field for LAMMPS)\n"
+               "               --restraints 'distance 1 2 3.0 20; angle 1 2 3 109.5; torsion 1 2 3 4 60:90 50; position 1-40 5 axes z radius 0.5'\n"
+               "               or a file of them (relax, md, equilibrate; ff apply writes them into the LAMMPS and GROMACS files): ½ k Δ², flat between\n"
+               "               LO:HI, atoms from 1, k kcal/mol/Å² or /rad² (defaults 10 and 50), 'ramp KEND' to change k over a run\n"
                "               without --ff (relax, md, equilibrate, field): the force field a data file CAPS wrote holds (its coefficients,\n"
                "               charges and 1-4 weights; refused when CAPS cannot rebuild it from the file), else GAFF (C and H) or UFF;\n"
                "               without --cutoff (relax, md, equilibrate): the force field's own cut-off, else 10 Å\n"
@@ -486,7 +490,7 @@ const std::set<std::string>& known_options() {
     "--tmax", "--to", "--tol", "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing", "--units",
     "--polymer", "--crystal", "--crystal-cells", "--amorphous", "--loops", "--bridges", "--tails", "--reentry", "--analyse",
     "--corr-ps", "--long", "--swap-every", "--transient", "--dimensionality", "--thickness",
-    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--shells", "--restarts", "--max-configurations", "--write", "--bisect", "--sample-every", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--tolerance", "--systems", "--max-length", "--unindexed", "--lines", "--space-group", "--cell", "--fixed-cell", "--no-piezo", "--damping", "--pawley", "--b-iso", "--background", "--refine", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
+    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--shells", "--restraints", "--restarts", "--max-configurations", "--write", "--bisect", "--sample-every", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--tolerance", "--systems", "--max-length", "--unindexed", "--lines", "--space-group", "--cell", "--fixed-cell", "--no-piezo", "--damping", "--pawley", "--b-iso", "--background", "--refine", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
   return k;
 }
 
@@ -616,6 +620,25 @@ ProvStep ml_prov_step(const MlFill& f, const std::string& model) {
 
 // The force field for commands that take --ff FF.json [--typing RULES] [--charges MODE]: typed by the force field's
 // rules (or the atom names in the file); without --ff the built-in GAFF of C and H.
+// --restraints 'distance 1 2 3.0 20; position 1-10 5' or a file of them (relax, md, equilibrate, ff apply's exports)
+std::vector<Restraint> cli_restraints(const System& s, std::map<std::string, std::string>& o, bool quiet) {
+  if (!o.count("--restraints")) return {};
+  std::string text = o["--restraints"];
+  if (std::ifstream f(text); f && text.find(' ') == std::string::npos) {
+    std::stringstream ss;
+    ss << f.rdbuf();
+    text = ss.str();
+  }
+  auto rs = parse_restraints(text, s);
+  if (!quiet) {
+    std::vector<double> x;
+    for (const auto& a : s.atoms) x.insert(x.end(), a.pos.begin(), a.pos.end());
+    std::vector<double> f(x.size(), 0.0);
+    std::printf("%zu restraint(s), %.4f kcal/mol at the start\n", rs.size(), add_restraint_forces(rs, x, s.cell, f).energy);
+  }
+  return rs;
+}
+
 ForceField cli_forcefield(System& s0, std::map<std::string, std::string>& o, bool quiet = false) {
   // a force field written whole for this structure (the Studio's structure.ff.json, caps/ffio.hpp): used as it is
   if (o.count("--ff") && std::filesystem::exists(o["--ff"])) {
@@ -3116,6 +3139,7 @@ int main(int argc, char** argv) {
           if (o.count("--kspace-accuracy")) ls.kspace_accuracy = std::stod(o["--kspace-accuracy"]);
           if (o.count("--lammps-cutoff")) ls.cutoff = std::stod(o["--lammps-cutoff"]);
           if (o.count("--units")) ls.units = o["--units"];
+          ls.restraints = cli_restraints(s, o, true);
           write_lammps_data_ff(s, f, eo, o["-o"], !with_in, ls);
           std::printf("wrote %s\n", o["-o"].c_str());
           if (with_in) {   // the LAMMPS commands that reproduce this energy with the data file
@@ -3144,7 +3168,7 @@ int main(int argc, char** argv) {
         }
         if (o.count("--gromacs")) {   // STEM.top, STEM.gro and STEM.mdp with the same force field
           for (size_t i = 0; i < s.atoms.size(); ++i) s.atoms[i].charge = f.charge[i];
-          for (const auto& n : write_gromacs(s, f, eo, o["--gromacs"])) std::printf("gromacs: %s\n", n.c_str());
+          for (const auto& n : write_gromacs(s, f, eo, o["--gromacs"], cli_restraints(s, o, true))) std::printf("gromacs: %s\n", n.c_str());
           std::printf("wrote %s.top, %s.gro and %s.mdp\n", o["--gromacs"].c_str(), o["--gromacs"].c_str(), o["--gromacs"].c_str());
         }
         if (o.count("--amber")) {   // STEM.prmtop and STEM.inpcrd with the same force field (AMBER, OpenMM, ParmEd)
@@ -5390,6 +5414,7 @@ int main(int argc, char** argv) {
       electrostatics(r.energy, o);
       r.field = std::make_shared<ForceField>(cli_forcefield(s, o, o.count("--quiet") > 0));
       run_cutoff(r.energy, *r.field, o, o.count("--quiet") > 0);
+      r.restraint_terms = cli_restraints(s, o, o.count("--quiet") > 0);
       if (o.count("--fix-mol")) {   // hold one molecule in place (the substrate of an interface is molecule 1)
         const int64_t m = std::stoll(o["--fix-mol"]);
         r.fixed.assign(s.atoms.size(), 0);
@@ -5556,6 +5581,7 @@ int main(int argc, char** argv) {
       if (o.count("--constraint-solver")) d.constraint_algorithm = constraint_algorithm_from_string(o["--constraint-solver"]);
       if (o.count("--hmr")) d.hmr = std::stod(o["--hmr"]);
       if (o.count("--seed")) d.seed = std::stoull(o["--seed"]);
+      d.restraints = cli_restraints(s, o, o.count("--quiet") > 0);
       if (o.count("--thermo")) d.thermo_every = std::stoi(o["--thermo"]);
       if (o.count("--every")) d.frame_every = std::stoi(o["--every"]);
       if (o.count("--skin")) d.energy.skin = std::stod(o["--skin"]);
@@ -5707,6 +5733,7 @@ int main(int argc, char** argv) {
       }
       if (!o.count("-o")) return usage();
       if (o.count("--dt")) e.md.dt = std::stod(o["--dt"]);
+      e.md.restraints = cli_restraints(s, o, o.count("--quiet") > 0);
       if (o.count("--thermostat")) e.md.thermostat = thermostat_from_string(o["--thermostat"]);
       if (o.count("--barostat")) e.md.barostat = barostat_from_string(o["--barostat"]);
       if (o.count("--tau-t")) e.md.tau_t = std::stod(o["--tau-t"]);   // as the Studio's Equilibrate (caps_equil_opts.tau_t / tau_p)

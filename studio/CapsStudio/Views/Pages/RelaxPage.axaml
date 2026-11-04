@@ -141,7 +141,7 @@
               <StackPanel Spacing="6">
                 <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
                   <v:Icon Kind="ruler" Size="14" Foreground="{DynamicResource AccB}" VerticalAlignment="Center" />
-                  <TextBlock Grid.Column="1" Text="Restraints" FontWeight="SemiBold" VerticalAlignment="Center" ToolTip.Tip="k (r − r₀)² for a pair, k (φ − φ₀)² for a dihedral, added to the energy that is minimised" />
+                  <TextBlock Grid.Column="1" Text="Restraints" FontWeight="SemiBold" VerticalAlignment="Center" ToolTip.Tip="k (r − r₀)² for a pair, k (φ − φ₀)² for a dihedral, added to the energy that is minimised (Relax only; the restraints in every run are on the right)" />
                   <Button Grid.Column="2" Classes="small" Content="Add measured" Click="OnAddRestraint" IsEnabled="{Binding CanAddRestraint}"
                           ToolTip.Tip="Shift-click two atoms (a distance) or four (a dihedral) in the view, then add: held at the target while minimising" ToolTip.ShowOnDisabled="True" />
                 </Grid>
@@ -211,6 +211,21 @@
               <CheckBox Content="y" IsChecked="{Binding FixedY}" />
               <CheckBox Content="z" IsChecked="{Binding FixedZ}" />
             </StackPanel>
+            <TextBlock Text="Restraints in every run" FontWeight="SemiBold" Margin="0,6,0,0" TextWrapping="Wrap"
+                       ToolTip.Tip="½ k Δ² on distances, angles, torsions and positions, flat between bounds: in Relax, Dynamics, Equilibrate and the LAMMPS and GROMACS files" />
+            <TextBlock Classes="dim" FontSize="11" TextWrapping="Wrap" Text="Relax, Dynamics, Equilibrate and the LAMMPS and GROMACS files" />
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                <Button Classes="small" Content="From selection" Click="OnRestrainForRuns"
+                        ToolTip.Tip="Two selected atoms hold their distance, three their angle, four their torsion at the present value; any other number stay near where they are" />
+                <Button Classes="small" Content="Apply" Click="OnApplyRunRestraints" ToolTip.Tip="Use the list below in Relax, Dynamics and Equilibrate and in the LAMMPS and GROMACS files" />
+              </StackPanel>
+            </Grid>
+            <TextBox Text="{Binding RunRestraintText}" AcceptsReturn="True" TextWrapping="NoWrap" MinHeight="54" FontFamily="{DynamicResource Mono}" FontSize="12"
+                     Watermark="distance 1 2 3.0 20&#10;torsion 1 2 3 4 60:90 50&#10;position 1-40 5 axes z radius 0.5"
+                     ToolTip.Tip="One per line, atoms from 1: a value or LO:HI (flat between), then k (kcal/mol/Å² or per rad²); 'ramp K' releases over a run; positions take axes and a radius" />
+            <TextBlock Text="{Binding RunRestraintError}" Classes="err" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding RunRestraintHasError}" />
+            <TextBlock Text="{Binding RunRestraintReport}" Classes="mono" FontSize="11" TextWrapping="Wrap" IsVisible="{Binding HasRunRestraints}" />
             <TextBlock Text="The criterion that stopped each stage goes into the report." Classes="dim" TextWrapping="Wrap" />
           </StackPanel>
         </Grid>

@@ -28,6 +28,7 @@
 #include <set>
 #include <sstream>
 
+#include "caps/restraints.hpp"
 #include "caps/elements.hpp"
 #include "caps/relax.hpp"
 
@@ -271,8 +272,9 @@ std::string gromacs_mdp(const System& s, const ForceField& ff, const EnergyOptio
   return m.str();
 }
 
-std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& stem) {
-  const std::vector<std::string> notes = gromacs_notes(s, ff, e);
+std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, const EnergyOptions& e, const std::string& stem,
+                                       const std::vector<Restraint>& restraints) {
+  std::vector<std::string> notes = gromacs_notes(s, ff, e);
   const size_t n = s.atoms.size();
 
   const int nt = int(ff.type_names.size());
@@ -570,6 +572,7 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
         o << l->tail << "\n";
       }
     }
+    if (!restraints.empty()) o << gromacs_position_restraints(restraints, s0, s1 - 1, nullptr);   // restrained copies become their own type
     return o.str();
   };
   std::vector<std::string> kinds;              // molecule-type bodies
@@ -603,10 +606,29 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
   sysname.erase(0, sysname.find_first_not_of(' '));
   top << "\n[ system ]\n" << (sysname.empty() ? std::string("CAPS") : sysname) << "\n\n[ molecules ]\n; name  count\n";
   for (const auto& r : runs) top << kname[size_t(r.first)] << "  " << r.second << "\n";
+  bool posres = false;
+  if (!restraints.empty()) {
+    top << gromacs_intermolecular_restraints(restraints, &notes);
+    (void)gromacs_position_restraints(restraints, 0, uint32_t(n), &notes);
+    for (const auto& r : restraints) posres = posres || r.kind == Restraint::Kind::Position;
+    if (!contiguous)
+      for (const auto& r : restraints)
+        if (r.kind == Restraint::Kind::Position) { notes.push_back("position restraints sit in the one molecule type of the whole system"); break; }
+  }
   top.close();
 
-  // coordinates: nm, 8 decimals (GROMACS reads the precision from the first line)
-  std::ofstream gro(stem + ".gro");
+  // coordinates: nm, 8 decimals (GROMACS reads the precision from the first line); with position restraints also
+  // STEM_ref.gro, the same with each restrained atom at its anchor (grompp -r)
+  std::vector<Vec3> anchors(n);
+  bool any_anchor = false;
+  for (const auto& r : restraints)
+    if (r.kind == Restraint::Kind::Position && r.atoms[0] < n) anchors[r.atoms[0]] = r.anchor, any_anchor = true;
+  std::vector<char> anchored(n, 0);
+  for (const auto& r : restraints)
+    if (r.kind == Restraint::Kind::Position && r.atoms[0] < n) anchored[r.atoms[0]] = 1;
+  for (int pass = 0; pass < (any_anchor ? 2 : 1); ++pass) {
+  const bool ref = pass == 1;
+  std::ofstream gro(stem + (ref ? "_ref.gro" : ".gro"));
   if (!gro) throw std::runtime_error("cannot write " + stem + ".gro");
   gro << title << "\n" << n << "\n";
   Vec3 lo{1e30, 1e30, 1e30}, hi{-1e30, -1e30, -1e30};
@@ -632,7 +654,9 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
     const std::string& an = aname[i];
     // with periodic molecules GROMACS takes every term at its nearest image: atoms folded into the cell, where single
     // precision loses least (a network made whole can reach several cell lengths)
-    const Vec3 p = periodic_mol ? s.cell.wrap(pos[i] + s.cell.origin) - s.cell.origin : pos[i] + shift;
+    // an anchor goes to the image nearest its atom, as written
+    const Vec3 at = ref && anchored[i] ? pos[i] + (s.cell.valid() ? s.cell.minimum_image(anchors[i] - s.atoms[i].pos) : anchors[i] - s.atoms[i].pos) : pos[i];
+    const Vec3 p = periodic_mol ? s.cell.wrap(at + s.cell.origin) - s.cell.origin : at + shift;
     std::snprintf(b, sizeof b, "%5ld%-5s%5s%5ld%13.8f%13.8f%13.8f\n", res, rn.c_str(), an.c_str(), long((i + 1) % 100000), p[0] / 10, p[1] / 10, p[2] / 10);
     gro << b;
   }
@@ -644,6 +668,8 @@ std::vector<std::string> write_gromacs(const System& s, const ForceField& ff, co
   }
   gro << "\n";
   gro.close();
+  }
+  if (posres) notes.push_back("position restraints: run grompp with -r " + std::filesystem::path(stem + "_ref.gro").filename().string() + " (the anchors)");
 
   // run parameters: a single-point evaluation; the Studio replaces the run section with the ensemble
   std::ofstream mdp(stem + ".mdp");

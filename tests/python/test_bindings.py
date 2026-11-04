@@ -771,7 +771,7 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 86, "ABI 86")
+check(caps.abi_version() == 87, "ABI 87")
 
 # substitutional disorder (ABI 85): one Au in copper's conventional cell is one orbit of 4; an SQS of Cu3Au keeps x
 _cu = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "copper.cif"))
@@ -786,6 +786,17 @@ try:
 except caps.CapsError as _e:
     check("twice the cut-off" in str(_e), f"zmelt: {_e}")
 print("ok   zmelt: a cell narrower than twice the cut-off is refused")
+# restraints (ABI 87): set in text form, reported with their values; a bad item is refused with its reason
+check(_cu.set_restraints("distance 1 2 3.0 20; position 3 5 axes z") == 2, "restraints: two set")
+_rr = _cu.restraints()
+check(abs(_rr["restraints"][0]["value"] - 3.6149 / 2 ** 0.5) < 1e-4 and _rr["energy"] > 0, f"restraints: {_rr['restraints'][0]}")
+try:
+    _cu.set_restraints("distance 1 99 3.0")
+    check(False, "restraints: atom 99 must be refused")
+except caps.CapsError as _e:
+    check("outside" in str(_e), f"restraints: {_e}")
+check(_cu.set_restraints("") == 0, "restraints: cleared")
+print("ok   restraints: text form, values, refusal")
 
 # bond exchange analysis (ABI 74): an exact Arrhenius line gives its Ea, healing ratios follow their definitions
 import math

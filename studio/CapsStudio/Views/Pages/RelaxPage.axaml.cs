@@ -37,5 +37,7 @@ public partial class RelaxPage : PageBase
     }
     private void OnQueue(object? s, RoutedEventArgs e) => Vm.QueueRelax();
     private void OnHoldSelection(object? s, RoutedEventArgs e) => Vm.HoldSelection();
+    private void OnRestrainForRuns(object? s, RoutedEventArgs e) => Vm.RestrainSelectionForRuns();
+    private void OnApplyRunRestraints(object? s, RoutedEventArgs e) => Vm.ApplyRunRestraints();
     private void OnFreeAtoms(object? s, RoutedEventArgs e) => Vm.FreeFixedAtoms();
 }

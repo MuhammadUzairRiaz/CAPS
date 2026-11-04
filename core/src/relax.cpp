@@ -104,6 +104,7 @@ RelaxStage minimise(Evaluator& ev, std::vector<double>& x, const Cell& cell, con
         out[3 * dr.l + c] -= dE * gl[c];
       }
     }
+    if (!o.restraint_terms.empty()) en += add_restraint_forces(o.restraint_terms, p, cell, out).energy;
     for (size_t i = 0; i < o.fixed.size() && 3 * i + 2 < out.size(); ++i)   // held atoms (or coordinates) feel no force and do not move
       if (o.fixed[i])
         for (int k = 0; k < 3; ++k)

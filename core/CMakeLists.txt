@@ -88,6 +88,7 @@ add_library(caps_core STATIC
   src/powder_index.cpp
   src/sqs.cpp
   src/zmethod.cpp
+  src/restraints.cpp
   src/vasp_out.cpp
   src/dft_analysis.cpp
   src/dft_commands.cpp

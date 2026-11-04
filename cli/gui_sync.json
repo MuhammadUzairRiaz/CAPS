@@ -989,7 +989,8 @@
     "--charges": "page",
     "--overlay": "ViewModels/FieldViewModel.Sync.cs|FieldSetOverlays",
     "--quiet": "cli: terminal output only",
-    "--complete": "ViewModels/FieldViewModel.cs|CompleteMl"
+    "--complete": "ViewModels/FieldViewModel.cs|CompleteMl",
+    "--restraints": "Views/Pages/RelaxPage.axaml|Restraints in every run"
    }
   },
   "cbmc": {
@@ -1049,7 +1050,8 @@
     "--checkpoint": "partial: kept in the document (caps_checkpoint), not as a file",
     "--progress-file": "cli: progress lines for batch jobs; the Studio follows them on a cluster (Jobs)",
     "--resume": "Views/Pages/DynamicsPage.axaml|MdContinueLabel",
-    "--complete": "ViewModels/FieldViewModel.cs|CompleteMl"
+    "--complete": "ViewModels/FieldViewModel.cs|CompleteMl",
+    "--restraints": "partial: set on the Minimise page, they act in Dynamics too"
    }
   },
   "equilibrate": {
@@ -1093,7 +1095,8 @@
     "--overlay": "ViewModels/FieldViewModel.Sync.cs|FieldSetOverlays",
     "--log": "partial: a run here keeps its rows with the run (exported from the plots, no CSV path option); a CSV written by --log on another machine opens on the page with Open finished run…",
     "--quiet": "cli: terminal output only",
-    "--complete": "ViewModels/FieldViewModel.cs|CompleteMl"
+    "--complete": "ViewModels/FieldViewModel.cs|CompleteMl",
+    "--restraints": "partial: set on the Minimise page, they act in Equilibrate too"
    }
   },
   "chains": {
@@ -1281,7 +1284,8 @@
     "--overlay": "ViewModels/FieldViewModel.Sync.cs|FieldSetOverlays",
     "--moltemplate": "partial: the Export center writes LAMMPS, GROMACS and DL_POLY; moltemplate output is the command line's",
     "--complete": "ViewModels/FieldViewModel.cs|CompleteMl",
-    "--model": "partial: the Studio uses CAPS's model where the core finds it (find_ml_model: beside the force-field library, CAPS_HOME, the app)"
+    "--model": "partial: the Studio uses CAPS's model where the core finds it (find_ml_model: beside the force-field library, CAPS_HOME, the app)",
+    "--restraints": "partial: the Export center writes the restraints set on the Minimise page"
    }
   },
   "ff overlays": {

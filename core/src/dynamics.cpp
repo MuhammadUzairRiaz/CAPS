@@ -286,6 +286,12 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
     ev.energies(o.each_step || cur_step % std::max(1, o.thermo_every) == 0 || cur_step == o.steps);
     EnergyTerms t = ev.compute(x, cell, respa > 1 ? f_slow : f);
     auto& F = respa > 1 ? f_slow : f;
+    if (!o.restraints.empty()) {
+      const RestraintTerms rt = add_restraint_forces(o.restraints, x, cell, F, o.steps > 0 ? double(cur_step) / double(o.steps) : 0.0);
+      t.restraint = rt.energy;
+      t.virial += rt.virial;
+      for (int c = 0; c < 6; ++c) t.w[c] += rt.w[c];
+    }
     if (!movers.empty()) {   // the force on the moved group, before it is held
       wall_f = {0, 0, 0};
       for (uint32_t i : movers)
@@ -339,6 +345,7 @@ void run_dynamics(System& s, const DynamicsOptions& o, DynamicsReport* rep_out) 
     r.kinetic = kinetic_energy(v, m);
     r.temperature = 2 * r.kinetic / (ndof * kB);
     r.potential = et.total();
+    r.restraint = et.restraint;
     r.total = r.potential + r.kinetic;
     r.volume = cell.valid() ? cell.volume() : 0;
     r.density = density();

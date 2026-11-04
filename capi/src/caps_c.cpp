@@ -48,6 +48,7 @@
 #include "caps/dielectric.hpp"
 #include "caps/powder_index.hpp"
 #include "caps/sqs.hpp"
+#include "caps/restraints.hpp"
 #include "caps/zmethod.hpp"
 #include "caps/ddft.hpp"
 #include "caps/dlpoly.hpp"
@@ -219,6 +220,7 @@ struct caps_doc {
   std::vector<int64_t> rigid_mols;     // v62: molecules written as rigid bodies in LAMMPS inputs
   std::vector<caps::RelaxOptions::Restraint> restraints;   // distance restraints for caps_relax
   std::vector<caps::RelaxOptions::DihedralRestraint> dihedral_restraints;   // and dihedral ones
+  std::vector<caps::Restraint> restraint_set;   // v87: restraints of every kind for minimisation, MD and the exports
   std::unique_ptr<caps::Pipeline> pipeline;        // caps_pipeline_set: steps run on every shown frame
   std::unique_ptr<caps::PipelineState> pstate;     // its result for the current frame
   // results cached per frame (design/boards/PipelineSteps "results cached per frame"): kept while the pipeline and the
@@ -1591,6 +1593,7 @@ caps_doc* caps_shadow(caps_doc* d) {
     sd->rigid_mols = d->rigid_mols;
     sd->restraints = d->restraints;
     sd->dihedral_restraints = d->dihedral_restraints;
+    sd->restraint_set = d->restraint_set;
     sd->analysis = d->analysis;
     sd->eq_checks = d->eq_checks;
     if (d->field) sd->field = std::make_unique<FieldState>(*d->field);
@@ -1860,6 +1863,7 @@ int32_t caps_lammps_input(caps_doc* d, const char* data_name, char* text, int32_
     caps::LammpsStyle style;
     style.groups = lammps_groups(d, d->frame);
     style.rigid_mols = d->rigid_mols;
+    style.restraints = d->restraint_set;
     caps::write_lammps_input(d->frame, ff, elec(), data_name && *data_name ? data_name : "system.data", tmp.string(), d->held_mol, false, {}, style);
     std::ifstream in(tmp);
     std::string s((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
@@ -1887,7 +1891,7 @@ int32_t caps_gromacs(caps_doc* d, const char* stem, char* text, int32_t cap) {
     else ff = default_ff(d->frame);
     std::string out;
     std::vector<std::string> notes;
-    notes = stem && *stem ? caps::write_gromacs(d->frame, ff, elec(), stem) : caps::gromacs_notes(d->frame, ff, elec());
+    notes = stem && *stem ? caps::write_gromacs(d->frame, ff, elec(), stem, d->restraint_set) : caps::gromacs_notes(d->frame, ff, elec());
     if (stem && *stem) { if (auto w = write_gromacs_freeze(d, d->frame, stem); !w.empty()) notes.push_back(w); }
     else if (!(stem && *stem) && !fixed_mask(d, d->frame).empty()) notes.push_back("the held atoms go into STEM.ndx as a freeze group when the files are written");
     for (const auto& n : notes) out += "; note: " + n + "\n";
@@ -2096,6 +2100,7 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
       ls.component_groups = !tnames.empty();
       if (!tnames.empty()) notes.push_back(caps::Json("LAMMPS: atom types split by component (" + std::to_string(tnames.size()) + " groups, numbered in their order), each group a LAMMPS group by type"));
       ls.rigid_mols = d->rigid_mols;
+      if (s.atoms.size() == d->frame.atoms.size()) ls.restraints = d->restraint_set;
       if (!d->rigid_mols.empty()) notes.push_back(caps::Json("LAMMPS: " + std::to_string(d->rigid_mols.size()) + " molecule(s) move as rigid bodies (fix rigid/nvt/small)"));
       caps::write_lammps_data_ff(s, lff, e, base + ".data", false, ls);
       caps::write_lammps_input(s, lff, e, stem + ".data", base + ".in", d->held_mol, true, run, ls, &lnotes);
@@ -2133,7 +2138,8 @@ extern "C" int32_t caps_export_engines(caps_doc* d, const char* dir, const char*
     std::string gromacs_error;
     if (gromacs && kg_model) gromacs_error = "Kremer–Grest's FENE bond with its WCA core has no GROMACS form (GROMACS's FENE bond carries no repulsive core, and a bonded pair's WCA cannot be cut off in [ pairs ]): export to LAMMPS";
     else if (gromacs) try {
-      for (const auto& n : caps::write_gromacs(s, ff, e, base)) notes.push_back("GROMACS: " + n);
+      for (const auto& n : caps::write_gromacs(s, ff, e, base, s.atoms.size() == d->frame.atoms.size() ? d->restraint_set : std::vector<caps::Restraint>{}))
+        notes.push_back("GROMACS: " + n);
       if (auto w = write_gromacs_freeze(d, s, base); !w.empty()) notes.push_back("GROMACS: " + w);
       if (run.constraints == caps::ConstraintMode::HBonds && (run.kind == caps::LammpsRun::Kind::NVT || run.kind == caps::LammpsRun::Kind::NPT)) {
         const auto nb = s.neighbours();
@@ -2870,6 +2876,7 @@ int32_t caps_relax(caps_doc* d, const caps_relax_opts* o, caps_relax_progress_fn
     if (o->box_axes & 7)
       for (int k = 0; k < 3; ++k) r.box_axes[k] = (o->box_axes >> k) & 1;
     r.dihedral_restraints = d->dihedral_restraints;
+    r.restraint_terms = d->restraint_set;
     r.pressure = o->pressure;
     if (o->cutoff > 0) r.energy.cutoff = o->cutoff;
     r.energy.coulomb = o->coulomb != 0;
@@ -2961,6 +2968,7 @@ int32_t caps_md(caps_doc* d, const caps_md_opts* o, caps_md_progress_fn progress
   return guard([&] {
     caps::DynamicsOptions m;
     m.field = field_for_run(d);
+    m.restraints = d->restraint_set;
     if (o->dt > 0) m.dt = o->dt;
     m.steps = std::max<int64_t>(0, o->steps);
     m.temperature = o->temperature;
@@ -3133,6 +3141,7 @@ int32_t caps_equilibrate(caps_doc* d, const char* protocol, const caps_equil_opt
   return guard([&] {
     caps::EquilibrateOptions e;
     e.md.field = field_for_run(d);
+    e.md.restraints = d->restraint_set;
     e.stages = caps::parse_protocol(protocol ? protocol : "");
     if (o->dt > 0) e.md.dt = o->dt;
     e.md.thermostat = o->thermostat == 2 ? caps::Thermostat::Langevin : o->thermostat == 3 ? caps::Thermostat::NoseHoover : caps::Thermostat::Bussi;
@@ -7280,6 +7289,7 @@ extern "C" caps_doc* caps_frame_copy(caps_doc* d) {
     c->fixed_atoms = d->fixed_atoms;
     c->fixed_axes = d->fixed_axes;
     c->rigid_mols = d->rigid_mols;
+    c->restraint_set = d->restraint_set;
     return c;
   } catch (const std::exception& e) {
     g_error = e.what();
@@ -7889,6 +7899,37 @@ extern "C" int32_t caps_file_checks(caps_doc* d, char* json, int32_t cap) {
     g_error = e.what();
     return -1;
   }
+}
+
+// v87 restraints of every kind (restraints.hpp) in their text form, atoms from 1; "" clears them. Returns how many
+// (−1 with the reason in out as JSON {ok, error}).
+extern "C" int32_t caps_set_restraint_text(caps_doc* d, const char* text, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  int32_t n = -1;
+  try {
+    if (!d) throw std::invalid_argument("no document");
+    d->restraint_set = caps::parse_restraints(text ? text : "", d->frame);
+    n = int32_t(d->restraint_set.size());
+    r["ok"] = true, r["count"] = double(n);
+  } catch (const std::exception& e) {
+    r["ok"] = false, r["error"] = std::string(e.what());
+  }
+  report_out(r.dump(0), out, cap);
+  return n;
+}
+
+// v87 the restraints with each one's value and energy in the current frame: JSON {text, energy, restraints [...]}
+extern "C" int32_t caps_restraint_report(caps_doc* d, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  if (d) {
+    std::vector<double> x;
+    for (const auto& a : d->frame.atoms) x.insert(x.end(), a.pos.begin(), a.pos.end());
+    r["text"] = caps::restraints_text(d->restraint_set);
+    r["restraints"] = caps::restraints_json(d->restraint_set, &x, &d->frame.cell);
+    std::vector<double> f(x.size(), 0.0);
+    r["energy"] = caps::add_restraint_forces(d->restraint_set, x, d->frame.cell, f).energy;
+  }
+  return report_out(r.dump(0), out, cap);
 }
 
 extern "C" int32_t caps_set_restraints(caps_doc* d, const char* json) {
@@ -11672,6 +11713,7 @@ extern "C" caps_doc* caps_doc_copy(caps_doc* src) {
     d->fixed_atoms = src->fixed_atoms;
     d->fixed_axes = src->fixed_axes;
     d->rigid_mols = src->rigid_mols;
+    d->restraint_set = src->restraint_set;
     return d;
   } catch (const std::exception& e) {
     g_error = e.what();
