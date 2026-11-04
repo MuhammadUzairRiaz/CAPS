@@ -78,6 +78,7 @@
 #include "caps/crystalfit.hpp"
 #include "caps/habit.hpp"
 #include "caps/qspr.hpp"
+#include "caps/refine.hpp"
 #include "caps/ddft.hpp"
 #include "caps/yaml.hpp"
 #ifdef _WIN32
@@ -341,6 +342,8 @@ int usage() {
                "               [--ff FF] [--no-coulomb]   configurational-bias regrowth of chain ends (Siepmann & Frenkel)\n"
                "  caps fields --molecules 'A8B8:1; A8:0.5' [--chi AB=1.9] [--grid 32,32,32 (nz 1: 2D)] [--bond 1.1543] [--kappa 10] [--noise 75] [--dt 0.02]\n"
                "               [--steps 2000] [--every 100] [--seed 1] [--vtk OUT.vtk] [--csv OUT.csv]   density-field dynamics of Gaussian chains (blends, block copolymers)\n"
+               "  caps refine DATA.xy CRYSTAL [CRYSTAL …] [--pawley] [--anode Cu | --wavelength Å] [--neutron] [--background 6] [--two-theta 10,90]\n"
+               "              [--refine U,W,Y,zero] [--b-iso] [--preferred h,k,l] [--iterations 50] [--csv OUT] [--json OUT]   Rietveld or Pawley fit of a measured pattern\n"
                "  caps qspr descriptors [FILE ...] [--smiles 'CCO;CC(C)O'] [--csv OUT]   molecular descriptors (graph, shape, charged surface areas)\n"
                "  caps qspr model TABLE.csv --y COL [--x A,B,…] [--method mlr|pls|gfa|nn] [--stepwise --squares --products] [--components N] [--hidden 4]\n"
                "                  [--folds K] [--randomise N] [--seed 1] [--json OUT]   a model of y with cross-validation, y-randomisation and outliers\n"
@@ -467,7 +470,7 @@ const std::set<std::string>& known_options() {
     "--tmax", "--to", "--tol", "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing", "--units",
     "--polymer", "--crystal", "--crystal-cells", "--amorphous", "--loops", "--bridges", "--tails", "--reentry", "--analyse",
     "--corr-ps", "--long", "--swap-every", "--transient", "--dimensionality", "--thickness",
-    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
+    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--pawley", "--b-iso", "--background", "--refine", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
   return k;
 }
 
@@ -500,7 +503,7 @@ bool is_cli_switch(const std::string& a) {
          a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" || a == "--include-input" || a == "--primitive" || a == "--symmetrize" || a == "--find-symmetry" || a == "--groups" || a == "--neutralise" || a == "--no-ions" || a == "--solvents" || a == "--bibtex" || a == "--json" || a == "--deterministic" || a == "--vacuum" || a == "--methods" ||
          a == "--hybrid" || a == "--resume" || a == "--between-chains" || a == "--keep-byproducts" || a == "--auto-capture" ||
          a == "--during-md" || a == "--remove-unreacted" || a == "--analyse" || a == "--long" || a == "--reduced" || a == "--kg" || a == "--stickers" || a == "--both-ends" || a == "--no-exchange" || a == "--npt" ||
-         a == "--no-kalpha2" || a == "--neutron" || a == "--polarised" || a == "--relaxed" || a == "--conventional" || a == "--attachment" || a == "--surface-energy" || a == "--stepwise" || a == "--squares" || a == "--products" || a == "--no-scale";
+         a == "--no-kalpha2" || a == "--neutron" || a == "--polarised" || a == "--relaxed" || a == "--conventional" || a == "--attachment" || a == "--surface-energy" || a == "--stepwise" || a == "--squares" || a == "--products" || a == "--no-scale" || a == "--pawley" || a == "--b-iso";
 }
 
 std::map<std::string, std::string> parse(int argc, char** argv, int from, std::vector<std::string>& pos) {
@@ -4102,6 +4105,83 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps phonons: %s\n", e.what());
+      return 1;
+    }
+  }
+  if (cmd == "refine") {
+    try {
+      if (pos.size() < 2) return usage();
+      const MeasuredPattern data = read_pattern(pos[0]);
+      std::vector<RefinePhase> phases;
+      for (size_t k = 1; k < pos.size(); ++k) {
+        RefinePhase p;
+        p.name = std::filesystem::path(pos[k]).stem().string();
+        Trajectory t = open_file(pos[k], "");
+        p.cell = t.frames() ? t.frame(0) : t.topology;
+        p.b_iso = o.count("--b-iso");
+        if (o.count("--preferred")) {
+          std::string v = o["--preferred"];
+          for (auto& c : v) if (c == ',') c = ' ';
+          std::istringstream is(v);
+          is >> p.preferred[0] >> p.preferred[1] >> p.preferred[2];
+          p.march = true;
+        }
+        phases.push_back(p);
+      }
+      RefineOptions ro;
+      ro.mode = o.count("--pawley") ? "pawley" : "rietveld";
+      if (o.count("--neutron")) ro.radiation = "neutron";
+      if (o.count("--anode")) ro.anode = o["--anode"];
+      if (o.count("--wavelength")) ro.wavelength = std::stod(o["--wavelength"]);
+      if (o.count("--background")) ro.background = std::stoi(o["--background"]);
+      if (o.count("--iterations")) ro.iterations = std::stoi(o["--iterations"]);
+      if (o.count("--two-theta")) {
+        std::string v = o["--two-theta"];
+        for (auto& c : v) if (c == ',' || c == ':') c = ' ';
+        std::istringstream is(v);
+        is >> ro.two_theta_min >> ro.two_theta_max;
+      }
+      if (o.count("--refine")) {
+        ro.refine_U = ro.refine_V = ro.refine_W = ro.refine_X = ro.refine_Y = ro.refine_zero = false;
+        std::stringstream ss(o["--refine"]);
+        std::string w;
+        while (std::getline(ss, w, ',')) {
+          if (w == "U") ro.refine_U = true;
+          else if (w == "V") ro.refine_V = true;
+          else if (w == "W") ro.refine_W = true;
+          else if (w == "X") ro.refine_X = true;
+          else if (w == "Y") ro.refine_Y = true;
+          else if (w == "zero") ro.refine_zero = true;
+          else throw std::invalid_argument("--refine: U V W X Y zero");
+        }
+      }
+      const RefineResult r = refine_pattern(data, phases, ro);
+      std::printf("%s · Rp %.4f · Rwp %.4f · Rexp %.4f · χ² %.3f · %d iterations, %d parameters\n", ro.mode.c_str(), r.rp, r.rwp, r.rexp, r.chi2, r.iterations, r.parameters);
+      for (const auto& p : r.phases) {
+        std::printf("%s: a b c %.5f %.5f %.5f Å (± %.1e %.1e %.1e), angles %.3f %.3f %.3f°, V %.3f Å³", p.name.c_str(), p.lattice[0], p.lattice[1], p.lattice[2],
+                    p.lattice_esd[0], p.lattice_esd[1], p.lattice_esd[2], p.lattice[3], p.lattice[4], p.lattice[5], p.volume);
+        if (ro.mode == "rietveld") std::printf(", scale %.5g, weight fraction %.4f, B %.3f Å²", p.scale, p.weight_fraction, p.b);
+        std::printf("\n");
+      }
+      std::printf("profile: U %.5g V %.5g W %.5g X %.5g Y %.5g zero %.5f°", r.U, r.V, r.W, r.X, r.Y, r.zero);
+      if (r.size > 0) std::printf(" · crystallite size %.0f Å (Scherrer, from Y)", r.size);
+      if (r.strain > 0) std::printf(" · microstrain %.2e (from X)", r.strain);
+      std::printf("\n");
+      for (const auto& n : r.notes) std::printf("%s\n", n.c_str());
+      if (o.count("--csv")) {
+        std::ofstream f(o["--csv"]);
+        f << "two_theta,y_obs,y_calc,difference,background\n";
+        for (size_t i = 0; i < r.two_theta.size(); ++i)
+          f << r.two_theta[i] << "," << r.y_obs[i] << "," << r.y_calc[i] << "," << r.y_obs[i] - r.y_calc[i] << "," << r.background[i] << "\n";
+        std::printf("wrote %s\n", o["--csv"].c_str());
+      }
+      if (o.count("--json") && o["--json"] != "1") {
+        std::ofstream(o["--json"]) << refine_json(r).dump(1) << "\n";
+        std::printf("wrote %s\n", o["--json"].c_str());
+      }
+      return 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps refine: %s\n", e.what());
       return 1;
     }
   }

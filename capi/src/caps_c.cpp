@@ -44,6 +44,7 @@
 #include "caps/crystalfit.hpp"
 #include "caps/habit.hpp"
 #include "caps/qspr.hpp"
+#include "caps/refine.hpp"
 #include "caps/ddft.hpp"
 #include "caps/dlpoly.hpp"
 #include "caps/dynamics.hpp"
@@ -12364,6 +12365,78 @@ extern "C" int32_t caps_phonons(caps_doc* d, const char* json, caps_stage_fn pro
     r["sound"] = std::move(snd), r["min_wavenumber"] = res.min_wavenumber, r["imaginary"] = double(res.imaginary), r["max_force"] = res.max_force;
     r["relax_steps"] = double(res.relax_steps), r["relax_shift"] = res.relax_shift, r["forcefield"] = res.field, r["notes"] = std::move(nt);
     r["supercell"] = arr({double(res.supercell[0]), double(res.supercell[1]), double(res.supercell[2])});
+  } catch (const std::exception& e) {
+    r = caps::Json::object();
+    r["ok"] = false;
+    r["error"] = std::string(e.what());
+  }
+  return report_out(r.dump(0), out, cap);
+}
+
+// v82 whole-pattern refinement of a measured powder pattern (refine.hpp): the open crystal and any other phases' files
+extern "C" int32_t caps_refine(caps_doc* d, const char* json, caps_stage_fn progress, void* user, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    const caps::MeasuredPattern data = caps::read_pattern(j.text("data"));
+    std::vector<caps::RefinePhase> phases;
+    auto flags = [&](caps::RefinePhase& p) {
+      p.lattice = !(j.has("lattice") && !j["lattice"].boolean());
+      p.b_iso = j.has("b_iso") && j["b_iso"].boolean();
+      if (j.has("preferred") && j["preferred"].is_array() && j["preferred"].items().size() == 3) {
+        for (size_t q = 0; q < 3; ++q) p.preferred[q] = int(j["preferred"].items()[q].number());
+        p.march = true;
+      }
+    };
+    if (d && !(j.has("use_document") && !j["use_document"].boolean())) {
+      caps::RefinePhase p;
+      p.name = j.text("name", "open structure");
+      p.cell = d->traj.frames() ? d->traj.frame(d->current) : d->traj.topology;
+      flags(p);
+      phases.push_back(p);
+    }
+    if (j.has("phases") && j["phases"].is_array())
+      for (const auto& f : j["phases"].items()) {
+        caps::RefinePhase p;
+        p.name = std::filesystem::path(f.str()).stem().string();
+        const caps::Trajectory t = caps::open_file(f.str(), "");
+        p.cell = t.frames() ? t.frame(0) : t.topology;
+        flags(p);
+        phases.push_back(p);
+      }
+    caps::RefineOptions o;
+    o.mode = j.text("mode", "rietveld");
+    o.radiation = j.text("radiation", "xray");
+    o.anode = j.text("anode", "Cu");
+    o.wavelength = j.num("wavelength", 0);
+    o.kalpha2 = !(j.has("kalpha2") && !j["kalpha2"].boolean());
+    o.monochromator_2theta = j.num("monochromator", 0);
+    o.polarised = j.has("polarised") && j["polarised"].boolean();
+    o.background = int(j.num("background", 6));
+    o.U = j.num("U", 0), o.V = j.num("V", 0), o.W = j.num("W", 0.01), o.X = j.num("X", 0), o.Y = j.num("Y", 0.02), o.zero = j.num("zero", 0);
+    if (j.has("refine") && j["refine"].is_array()) {
+      o.refine_U = o.refine_V = o.refine_W = o.refine_X = o.refine_Y = o.refine_zero = false;
+      for (const auto& x : j["refine"].items()) {
+        const std::string k = x.str();
+        if (k == "U") o.refine_U = true;
+        else if (k == "V") o.refine_V = true;
+        else if (k == "W") o.refine_W = true;
+        else if (k == "X") o.refine_X = true;
+        else if (k == "Y") o.refine_Y = true;
+        else if (k == "zero") o.refine_zero = true;
+      }
+    }
+    o.two_theta_min = j.num("two_theta_min", 0), o.two_theta_max = j.num("two_theta_max", 0);
+    o.iterations = int(j.num("iterations", 50));
+    bool cancelled = false;
+    if (progress) o.progress = [&](const std::string& w, double f) { cancelled = progress(w.c_str(), f, user) != 0; return !cancelled; };
+    const caps::RefineResult res = caps::refine_pattern(data, phases, o);
+    r = caps::refine_json(res);
+    if (d) {
+      caps::KeyValues pr = {{"mode", o.mode}, {"data", j.text("data")}, {"phases", std::to_string(phases.size())}, {"Rwp", g6(res.rwp)}};
+      prov_step(d, "analysis.refine", "Whole-pattern refinement of a measured powder pattern", std::move(pr));
+    }
+    r["ok"] = true;
   } catch (const std::exception& e) {
     r = caps::Json::object();
     r["ok"] = false;

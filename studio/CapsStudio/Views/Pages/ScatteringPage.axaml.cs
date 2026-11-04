@@ -20,7 +20,7 @@ public partial class ScatteringPage : PageBase
             vm.ScatterChanged += () =>
             {
                 this.FindControl<SciPlot>("Plot")!.Figure = vm.PowderView
-                    ? ViewModels.PageFigures.Powder(vm.PowderCurve, vm.PowderExperiment)
+                    ? vm.RefineHas ? ViewModels.PageFigures.Refinement(vm.RefineFit.Obs, vm.RefineFit.Calc, vm.RefineFit.Diff) : ViewModels.PageFigures.Powder(vm.PowderCurve, vm.PowderExperiment)
                     : ViewModels.PageFigures.Scattering(vm.ScatterXray ? vm.ScatterXrayCurve : [], vm.ScatterNeutron ? vm.ScatterNeutronCurve : [], vm.ScatterExperiment);
             };
         };
@@ -28,6 +28,7 @@ public partial class ScatteringPage : PageBase
 
     private async void OnRun(object? s, RoutedEventArgs e) => await Vm.RunScattering();
     private async void OnPowder(object? s, RoutedEventArgs e) => await Vm.RunPowder();
+    private async void OnRefine(object? s, RoutedEventArgs e) => await Vm.RunRefine();
     private void OnCancel(object? s, RoutedEventArgs e) => Vm.Analyze.Cancel();
     private void OnClearExperiment(object? s, RoutedEventArgs e) => Vm.ClearExperiment();
 

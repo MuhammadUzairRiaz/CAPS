@@ -167,6 +167,14 @@ public static class PageFigures
     }
 
     /// <summary>A powder pattern I(2θ) (strongest 100) with a measured one over it.</summary>
+    /// <summary>A refinement: the measured points, the calculated pattern and the difference below them.</summary>
+    public static SciFigure Refinement((double X, double Y)[] obs, (double X, double Y)[] calc, (double X, double Y)[] diff) => new()
+    {
+        XLabel = "2*θ* / °", YLabel = "counts", Empty = "",
+        Series = [S("measured", obs, obs.Length > 120 ? SciKind.Dotted : SciKind.Markers, -1) with { Open = true, Width = 1.2 }, S("calculated", calc, SciKind.Line, 0),
+                  S("measured − calculated", diff, SciKind.Line, 2) with { Width = 1 }],
+    };
+
     public static SciFigure Powder((double X, double Y)[] pattern, (double X, double Y)[] experiment)
     {
         var s = new List<SciSeries>();

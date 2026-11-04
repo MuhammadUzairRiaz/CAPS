@@ -440,6 +440,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_png_text")] public static extern int PngText([MarshalAs(UnmanagedType.LPUTF8Str)] string path, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_export_movie")] public static extern int ExportMovie(IntPtr doc, in CapsCamera cam, in CapsRenderOpts opt, [MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, CapsSeriesProgress? progress, IntPtr user);
     [DllImport(Lib, EntryPoint = "caps_provenance")] public static extern int Provenance(IntPtr doc, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_refine")] public static extern int Refine(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsAnalyzeProgress? progress, IntPtr user, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_qspr")] public static extern int Qspr([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_provenance_file")] public static extern int ProvenanceFile([MarshalAs(UnmanagedType.LPUTF8Str)] string path, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_provenance_compare")] public static extern int ProvenanceCompare([MarshalAs(UnmanagedType.LPUTF8Str)] string a, [MarshalAs(UnmanagedType.LPUTF8Str)] string b, byte[]? json, int cap);
@@ -2274,6 +2275,21 @@ public sealed class CapsDocument : IDisposable
         if (n > buf.Length) { buf = new byte[n]; n = Native.Ddft(json, cb, IntPtr.Zero, buf, buf.Length); }
         GC.KeepAlive(cb);
         return System.Text.Encoding.UTF8.GetString(buf, 0, Math.Max(0, Math.Min(n, buf.Length) - 1));
+    }
+
+    /// <summary>Rietveld or Pawley refinement of a measured pattern with this structure (caps_refine); JSON.</summary>
+    public string Refine(string json, Func<string, double, bool>? progress = null)
+    {
+        using (Hold(longRun: true))
+        {
+            Alive();
+            CapsAnalyzeProgress? cb = progress == null ? null : (w, f, _) => progress(Marshal.PtrToStringUTF8(w) ?? "", f) ? 0 : 1;
+            var buf = new byte[1 << 23];
+            var n = Native.Refine(H, json, cb, IntPtr.Zero, buf, buf.Length);
+            if (n > buf.Length) { buf = new byte[n]; n = Native.Refine(H, json, cb, IntPtr.Zero, buf, buf.Length); }
+            GC.KeepAlive(cb);
+            return System.Text.Encoding.UTF8.GetString(buf, 0, Math.Max(0, Math.Min(n, buf.Length) - 1));
+        }
     }
 
     /// <summary>The crystal habit of this structure (caps_habit): faces, energies, Wulff shapes; JSON. The document is not changed.</summary>

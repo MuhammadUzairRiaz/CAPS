@@ -325,6 +325,19 @@ internal static class Screenshot
                 for (int k = 0; k < 60; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
                 Console.WriteLine("fields: " + vm.Status + (vm.FieldHasError ? " · error " + vm.FieldError : "") + " · " + vm.FieldNote);
             }
+            if (kv[0] == "refine")   // refine=DATA|pawley: Analyze › Scattering, the measured pattern (2θ) loaded and refined with the open crystal, awaited
+            {
+                var vm = w.ViewModel;
+                var f = kv[1].Split('|');
+                vm.OpenScattering();
+                Console.WriteLine("load: " + (vm.LoadExperiment(f[0]) ?? "ok"));
+                vm.PowderView = true;
+                vm.RefinePawley = f.Length > 1 && f[1] == "pawley";
+                var t = vm.RunRefine();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+                for (int q = 0; q < 40; ++q) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+                Console.WriteLine("refine: " + vm.Status + (vm.RefineHasError ? " · error " + vm.RefineError : "") + "\n" + vm.RefineText);
+            }
             if (kv[0] == "studymodel")   // studymodel=CSV|MODE|Y|COLS: Study with a CSV table, the statistics mode, y (Up) column and ticked columns, awaited
             {
                 var vm = w.ViewModel;

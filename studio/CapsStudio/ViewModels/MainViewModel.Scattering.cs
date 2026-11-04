@@ -189,13 +189,14 @@ public sealed partial class MainViewModel
         var src = BeamSources[Math.Min(_xraySource, BeamSources.Length - 1)];
         var lambda = src.Lambda;
         _expRaw = pts.Select(p => twoTheta ? (4 * Math.PI * Math.Sin(p.Item1 * Math.PI / 360) / lambda, p.Item2) : p).OrderBy(p => p.Item1).ToArray();
+        ExperimentPath = twoTheta ? path : "";   // a pattern in 2θ can be refined against (MainViewModel.Refine.cs)
         ExperimentName = Path.GetFileName(path) + (twoTheta ? $" · 2θ with {XraySources[_xraySource].Name}" : " · q");
         ScaleExperiment();
         ScatterChanged?.Invoke();
         return null;
     }
 
-    public void ClearExperiment() { _expRaw = []; ScatterExperiment = []; ExperimentName = ""; ScatterChanged?.Invoke(); }
+    public void ClearExperiment() { _expRaw = []; ScatterExperiment = []; ExperimentName = ""; ExperimentPath = ""; ScatterChanged?.Invoke(); }
 
     private void ScaleExperiment()
     {

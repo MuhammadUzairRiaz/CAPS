@@ -3228,6 +3228,50 @@
    ]
   },
   {
+   "id": "powder-refinement",
+   "group": "Analysis",
+   "title": "Fitting a measured powder pattern (Rietveld, Pawley)",
+   "summary": "A measured powder pattern (2θ, counts, and σ when given) is fitted with the calculated patterns of one or more crystal phases. The calculation is the powder pattern of the same physics as CAPS's own: reflections of the cell's reciprocal lattice, Cromer–Mann form factors (or neutron lengths) with a per-phase isotropic B, Lorentz–polarisation, March–Dollase orientation, the Kα doublet and Thompson–Cox–Hastings pseudo-Voigt peaks whose widths follow U, V, W (Gaussian) and X, Y (Lorentzian). Reflection groups (vectors of equal |G|) keep their structure factors while the lattice changes, so the lattice is refined with the cell's equalities kept (a cubic cell stays cubic, right angles stay right). In a Rietveld fit the intensities come from each phase's structure and its scale; in a Pawley fit every reflection group has its own non-negative intensity and no structure is needed. The linear parameters (scales, intensities and a Chebyshev background) are solved exactly at every trial of the nonlinear ones (zero shift, lattice, widths, B, March r), which Levenberg–Marquardt refines. Weight fractions of several phases follow Hill and Howard from the scales, the cells' masses and volumes. Atom positions, occupancies and rigid-body parameters are not refined; an energy-restrained Rietveld variant is not given (no published method to check it against was found).",
+   "equation": "y_c(2θ) = b(2θ) + Σ_p S_p Σ_hkl m |F_hkl|² LP P_MD Ω(2θ − 2θ_hkl);  S = Σ w_i (y_i − y_c,i)²;  R_wp = √(S/Σ w y²);  W_p = S_p (ZMV)_p / Σ S_i (ZMV)_i",
+   "equation_note": "Rietveld 1969; Pawley 1981; Thompson, Cox & Hastings 1987; Hill & Howard 1987",
+   "tex": "y_c(2\\theta_i) = b(2\\theta_i) + \\sum_p S_p \\sum_{hkl} m\\,|F_{hkl}|^2\\,\\mathrm{LP}\\,P_{\\mathrm{MD}}\\,\\Omega(2\\theta_i - 2\\theta_{hkl}) \\\\ S = \\sum_i w_i\\,(y_i - y_{c,i})^2, \\qquad R_{wp} = \\sqrt{\\frac{S}{\\sum_i w_i y_i^2}}, \\qquad W_p = \\frac{S_p (ZMV)_p}{\\sum_i S_i (ZMV)_i}",
+   "symbols": [
+    [
+     "S_p",
+     "scale factor of phase p",
+     "—"
+    ],
+    [
+     "Ω",
+     "Thompson–Cox–Hastings pseudo-Voigt (area 1)",
+     "1/°"
+    ],
+    [
+     "w_i",
+     "weight 1/σ² (1/y for counts)",
+     "—"
+    ],
+    [
+     "ZM, V",
+     "cell mass and volume",
+     "g/mol, Å³"
+    ]
+   ],
+   "when": "Checking a model crystal against a measured pattern of a fibre, a filled rubber or a filler (ZnO, CaCO3, silica-free crystalline fillers); the cell and crystallite size of a sample (Pawley); the weight fractions of the crystalline phases in a mixture (Rietveld).",
+   "cites": [
+    "rietveld1969",
+    "pawley1981",
+    "thompson1987",
+    "hill1987"
+   ],
+   "source": "core/src/refine.cpp (refine_pattern, calculated_pattern)",
+   "tested": "Refine.ForwardModelIsThePowderPattern (copper: the refinement's pattern equals powder.hpp's to 1e-4 of the strongest peak); Refine.RietveldRecoversSyntheticCopper (lattice 3.6175 Å, zero 0.03°, W, Y recovered to 1e-6 from 0.1 % and 100 % off, a sloping background added); Refine.PawleyRecoversIntensities (the (111)/(200) intensity ratio equal to the structure's); Refine.QuantitativePhaseAnalysis (copper + rock salt made at 30 / 70 wt % come back as 0.300000 / 0.700000)",
+   "deviation": "no peak asymmetry, absorption, surface roughness or anomalous dispersion; positions, occupancies and anisotropic displacements not refined; U is kept ≥ 0 unless V is refined with it",
+   "engines": [
+    "analysis.refine"
+   ]
+  },
+  {
    "id": "phonons",
    "group": "Analysis",
    "title": "Phonons of a crystal with its force field",

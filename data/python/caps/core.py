@@ -1507,6 +1507,34 @@ def discriminant(rows, classes) -> dict:
     predicted, predicted_loo, accuracy, accuracy_loo}."""
     return _qspr({"op": "lda", "rows": [[float(v) for v in r] for r in rows], "classes": [str(c) for c in classes]})
 
+def _refine(self, data: str, mode: str = "rietveld", phases=(), anode: str = "Cu", wavelength: float = 0.0, radiation: str = "xray",
+            background: int = 6, refine=("U", "W", "Y", "zero"), b_iso: bool = False, preferred=None, two_theta=None, iterations: int = 50,
+            use_document: bool = True) -> dict:
+    """Rietveld (or Pawley) refinement of the measured pattern in `data` (2θ intensity [σ]) with this structure as a phase
+    (unless use_document is False) and the structures in `phases` (files). Returns {rwp, rp, chi2, phases [{lattice,
+    weight_fraction, ...}], two_theta, y_obs, y_calc, background, ...}."""
+    o = {"data": str(data), "mode": mode, "phases": [str(p) for p in phases], "anode": anode, "wavelength": float(wavelength), "radiation": radiation,
+         "background": int(background), "refine": list(refine), "b_iso": bool(b_iso), "iterations": int(iterations), "use_document": bool(use_document)}
+    if preferred is not None:
+        o["preferred"] = [int(x) for x in preferred]
+    if two_theta is not None:
+        o["two_theta_min"], o["two_theta_max"] = float(two_theta[0]), float(two_theta[1])
+    f = library().caps_refine
+    f.argtypes = [C.c_void_p, C.c_char_p, C.c_void_p, C.c_void_p, C.c_char_p, C.c_int32]
+    f.restype = C.c_int32
+    buf = C.create_string_buffer(1 << 23)
+    n = f(self._h, _enc(json.dumps(o)), None, None, buf, len(buf))
+    if n > len(buf):
+        buf = C.create_string_buffer(int(n))
+        f(self._h, _enc(json.dumps(o)), None, None, buf, len(buf))
+    r = json.loads(buf.value.decode())
+    if not r.get("ok"):
+        raise CapsError(r.get("error", "refinement failed"))
+    return r
+
+
+Document.refine = _refine
+
 def density_fields(molecules, chi=None, grid=(32, 32, 32), bond: float = 1.1543, kappa: float = 10.0, noise: float = 75.0, dt: float = 0.02,
                    steps: int = 2000, frame_every: int = 100, seed: int = 1) -> dict:
     """Density-field dynamics of Gaussian chains (no structure needed): molecules [(name, sequence such as "A8B8", fraction), …],

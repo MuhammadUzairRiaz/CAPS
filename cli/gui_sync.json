@@ -1529,6 +1529,29 @@
     "--json": "partial: the page shows the result",
     "--quiet": "cli: no per-structure lines"
    }
+  },
+  "refine": {
+   "status": "gui",
+   "studio": "Analyze › Scattering › Powder pattern › Refine against it",
+   "where": "Views/Pages/ScatteringPage.axaml|Refine against it",
+   "capi": [
+    "caps_refine"
+   ],
+   "options": {
+    "--pawley": "Views/Pages/ScatteringPage.axaml|Pawley (free intensities)",
+    "--anode": "page",
+    "--wavelength": "cli: the page takes an anode's Kα lines",
+    "--neutron": "cli: the page refines X-ray patterns",
+    "--background": "cli: the page uses six Chebyshev terms",
+    "--two-theta": "page",
+    "--refine": "cli: the page refines U, W, Y and the zero shift",
+    "--b-iso": "cli: the page keeps B at 0",
+    "--preferred": "cli: the page assumes random orientation",
+    "--iterations": "cli: the page allows 50",
+    "--csv": "partial: the page plots measured, calculated and difference",
+    "--json": "partial: the page shows the result",
+    "--topology": "page"
+   }
   }
  },
  "hidden_options": {

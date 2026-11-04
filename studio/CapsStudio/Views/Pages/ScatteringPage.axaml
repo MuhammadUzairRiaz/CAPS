@@ -118,6 +118,16 @@
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
               <TextBlock Text="{Binding PowText}" FontSize="11.5" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" IsVisible="{Binding PowderView}" />
+              <StackPanel Spacing="6" IsVisible="{Binding CanRefine}">
+                <DockPanel>
+                  <Button DockPanel.Dock="Right" Click="OnRefine" Content="Refine against it" IsEnabled="{Binding HasDocument}"
+                          ToolTip.Tip="Fit the measured pattern (loaded in 2θ) with the open crystal: the lattice, zero shift, peak widths, background and scale" />
+                  <CheckBox Content="Pawley (free intensities)" IsChecked="{Binding RefinePawley}"
+                            ToolTip.Tip="Each reflection's intensity free: the cell and the peak shapes without the structure's intensities" />
+                </DockPanel>
+                <TextBlock Text="{Binding RefineError}" Foreground="{DynamicResource ErrB}" TextWrapping="Wrap" IsVisible="{Binding RefineHasError}" />
+                <TextBlock Text="{Binding RefineText}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" IsVisible="{Binding RefineHas}" />
+              </StackPanel>
             </StackPanel>
           </Border>
           <Border Classes="pcard">

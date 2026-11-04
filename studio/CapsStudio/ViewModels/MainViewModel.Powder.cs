@@ -75,6 +75,7 @@ public sealed partial class MainViewModel
         var doc = _doc!;
         PowderRunning = true;
         PowError = "";
+        RefineHas = false;   // a new pattern replaces the last refinement on the plot
         Status = "Powder pattern…";
         try
         {
