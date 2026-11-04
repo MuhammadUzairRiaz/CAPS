@@ -1275,7 +1275,7 @@
    "card": "Find the lowest-energy places a molecule sits on a surface, and gas uptake isotherms by Widom insertion and GCMC.",
    "lede": "Two Monte Carlo tools on a fixed substrate: the adsorption locator places molecules on a surface or in a pore by simulated annealing; sorption computes solubility, Henry constants and isotherms.",
    "input": "A substrate (slab, crystal, pore or polymer cell) with a force field, and the adsorbate as SMILES.",
-   "output": "Adsorption energies and the lowest configurations; or Widom solubility and a GCMC isotherm.",
+   "output": "Adsorption energies and the lowest configurations; or Widom solubility, a GCMC isotherm and, at a held loading, binding energies.",
    "shots": [
     {
      "img": "25_adsorption.jpg",
@@ -1317,9 +1317,16 @@
       "**Modules › Analysis › Sorption (gas uptake)…**: pick the sorbate (CO₂, CH₄, N₂, O₂, H₂O, He, H₂ or a SMILES) or a mixture, T, Widom insertions and the GCMC pressures, then [[Compute]].",
       "You get the solubility coefficient, Henry constant, the isotherm (mol/kg, cm³(STP)/cm³, q_st), selectivities for a mixture, and a map of where the sorbate sits."
      ]
+    },
+    {
+     "t": "Bending molecules and a held loading",
+     "d": [
+      "Tick [[Bend at rotatable bonds]] for oils, plasticisers, curatives or solvents: the molecule is grown in piece by piece at its rotatable bonds (configurational bias, the trial count beside it), so its uptake counts every conformation it can take.",
+      "Under **Held loading**, give the molecules per cell to load exactly that many and let them settle: the loaded cell's energy, the adsorption energy per molecule and a histogram of how strongly each molecule is bound. [[Keep the loaded cell as the structure]] makes the host with its molecules the open structure (the last frame is the lowest energy met)."
+     ]
     }
    ],
-   "python": "import caps\n\nslab = caps.open(\"slab.data\")\nslab.field.assign(\"pcff\")\nres = slab.adsorption([(\"O=C=O\", 4)], region=\"above\")\nprint(res[\"adsorption_energy\"])\n\ncell = caps.open(\"polymer.data\")\ncell.field.assign(\"pcff\")\niso = cell.sorption(\"O=C=O\", pressures_kpa=(10, 100, 1000))",
+   "python": "import caps\n\nslab = caps.open(\"slab.data\")\nslab.field.assign(\"pcff\")\nres = slab.adsorption([(\"O=C=O\", 4)], region=\"above\")\nprint(res[\"adsorption_energy\"])\n\ncell = caps.open(\"polymer.data\")\ncell.field.assign(\"pcff\")\niso = cell.sorption(\"O=C=O\", pressures_kpa=(10, 100, 1000))\n\n# a bending sorbate, 3 molecules held in the cell and kept as the structure\nheld = cell.sorption(\"CCCCCC\", flexible=True, fixed_loading=3, keep_configuration=True)\nprint(held[\"fixed\"][\"adsorption_energy\"])",
    "next": [
     "analyze"
    ]

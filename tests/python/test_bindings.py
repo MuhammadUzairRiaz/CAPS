@@ -640,6 +640,14 @@ _mx = caps.open(os.path.join(samples, "ps_melt.data")).sorption(pressures_kpa=[1
 _mp = _mx["isotherm"][0]
 check(len(_mx["species"]) == 2 and len(_mp["species_loading"]) == 2 and abs(sum(_mp["species_loading"]) - _mp["loading"]) < 1e-6 and _mp["selectivity"][0] == 1,
       f"mixture sorption: CO2 {_mp['species_loading'][0]:.2f} + N2 {_mp['species_loading'][1]:.2f} per cell, S(N2/CO2) {_mp['selectivity'][1]:.2f}")
+# flexible sorbates (configurational bias) and a fixed loading kept as the frame: n-butane in the PS melt
+_fx = caps.open(os.path.join(samples, "ps_melt.data"))
+_fxa = _fx.summary()["atoms"]
+_fr = _fx.sorption("CCCC", pressures_kpa=[], insertions=500, steps=2000, flexible=True, trials=4, ig_samples=2000, fixed_loading=3, keep_configuration=True)
+check(_fr["species"][0]["rotatable"] == 3 and _fr["species"][0]["w_ig"] > 0 and _fr["fixed"]["loaded"] == 3 and _fr.get("kept")
+      and _fx.summary()["atoms"] == _fxa + 3 * 14 and _fx.summary()["frames"] == 2,
+      f"flexible butane: {_fr['species'][0]['rotatable']} rotatable bonds, W_IG {_fr['species'][0]['w_ig']:.3g} · fixed loading 3 kept "
+      f"({_fx.summary()['atoms']} atoms, E_ads {_fr['fixed']['adsorption_energy']:.2f} kcal/mol)")
 with tempfile.TemporaryDirectory() as _tmp:
     _te = caps.open(os.path.join(samples, "ps_melt.data"))
     _te.field.assign("gaff2")

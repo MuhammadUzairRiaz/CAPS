@@ -293,7 +293,7 @@ internal static class Screenshot
                 for (int k = 0; k < 80; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
                 Console.WriteLine("adsorb: " + vm.Status + (vm.AdsHasError ? " · error " + vm.AdsError : "") + " · " + vm.AdsSplit + " · " + vm.AdsNote);
             }
-            if (kv[0] == "sorb")   // sorb=SMILES|PRESSURES (kPa, comma-separated)|INSERTIONS|STEPS: Sorption in the open structure, awaited
+            if (kv[0] == "sorb")   // sorb=SMILES|PRESSURES (kPa, comma-separated)|INSERTIONS|STEPS[|BEND 0/1|HELD N|KEEP 0/1]: Sorption in the open structure, awaited
             {
                 var vm = w.ViewModel;
                 var inv = System.Globalization.CultureInfo.InvariantCulture;
@@ -303,11 +303,15 @@ internal static class Screenshot
                 if (f.Length > 1) vm.SorbPressures = f[1].Replace(',', ' ');
                 if (f.Length > 2) vm.SorbInsertD = decimal.Parse(f[2], inv);
                 if (f.Length > 3) vm.SorbStepsD = decimal.Parse(f[3], inv);
+                if (f.Length > 4) vm.SorbFlex = f[4] == "1";
+                if (f.Length > 5) vm.SorbHeldD = decimal.Parse(f[5], inv);
+                if (f.Length > 6) vm.SorbKeep = f[6] == "1";
                 var t = vm.RunSorption();
                 while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
                 for (int k = 0; k < 80; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
                 Console.WriteLine("sorb: " + vm.Status + (vm.SorbHasError ? " · error " + vm.SorbError : "") + $" · W {vm.SorbW} · mu_ex {vm.SorbMu} · K_H {vm.SorbHenry} · S {vm.SorbS} · " +
-                    string.Join("; ", vm.SorbRows.Select(r => $"{r.Pressure} kPa {r.Loading} ({r.MolKg} mol/kg, {r.Heat} kcal/mol)")) + " · " + vm.SorbNote);
+                    string.Join("; ", vm.SorbRows.Select(r => $"{r.Pressure} kPa {r.Loading} ({r.MolKg} mol/kg, {r.Heat} kcal/mol)")) + " · " + vm.SorbNote +
+                    (vm.SorbHasIg ? " · alone: " + vm.SorbIg : "") + (vm.SorbHasHeld ? $" · held: U {vm.SorbHeldE}, E_ads {vm.SorbHeldAds}, {vm.SorbHeldSplit}, {vm.SorbHeldNote}" : ""));
             }
             if (kv[0] == "figure")   // figure=BG: Export › Figure with that background selected
             {

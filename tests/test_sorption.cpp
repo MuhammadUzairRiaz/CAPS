@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <random>
 
+#include "caps/molecule.hpp"
 #include "caps/pairmodel.hpp"
 #include "caps/sorption.hpp"
 
@@ -353,4 +354,170 @@ TEST(Sorption, TrappeN2AgainstNistBenchmark) {
   const double got = r.isotherm.at(0).loading / 216000.0 / 6.02214076e23 * 1e27;   // mol/L
   std::printf("GCMC at f = %.1f kPa: %.4f ± %.4f mol/L (NIST 1.0)\n", f_kpa, got, r.isotherm[0].loading_error / 216000.0 / 6.02214076e23 * 1e27);
   EXPECT_NEAR(got, 1.0, 0.03);
+}
+
+// ---- flexible sorbates (configurational bias)
+namespace {
+// eight host atoms on a 6 Å lattice in a 12 Å cell (room for a butane), then all-atom butane (the template). Butane's
+// own atoms: types 1 (C) and 2 (H) with the given ε; one torsion term on the C–C–C–C dihedral, u(φ) = v1 [1 + cos φ] +
+// v3 [1 + cos 3φ], nothing else within the molecule (ε = 0 there makes the intramolecular pairs vanish).
+struct FlexHost {
+  System s;
+  ForceField ff;
+  int first = 0;
+  uint32_t c[4] = {0, 0, 0, 0};
+};
+FlexHost make_flex(double eps_host, double eps_c, double eps_h, double v1, double v3) {
+  FlexHost h;
+  h.s.cell.a = {12, 0, 0}, h.s.cell.b = {0, 12, 0}, h.s.cell.c = {0, 0, 12};
+  for (int i = 0; i < 2; ++i)
+    for (int j = 0; j < 2; ++j)
+      for (int k = 0; k < 2; ++k) {
+        Atom a;
+        a.element = 6;
+        a.pos = {6.0 * i, 6.0 * j, 6.0 * k};
+        h.s.atoms.push_back(a);
+        h.ff.type_index.push_back(0);
+      }
+  h.first = int(h.s.atoms.size());
+  const auto b = build_molecule("CCCC");
+  const System& m = b.system;
+  for (const auto& a : m.atoms) {
+    Atom x = a;
+    x.pos = a.pos + Vec3{3, 3, 3};
+    h.s.atoms.push_back(x);
+    h.ff.type_index.push_back(a.element == 6 ? 1 : 2);
+  }
+  for (auto bd : m.bonds) bd.i += uint32_t(h.first), bd.j += uint32_t(h.first), h.s.bonds.push_back(bd);
+  h.ff.lj = {{eps_host, 3.0}, {eps_c, 3.4}, {eps_h, 2.5}};
+  h.ff.type_names = {"X", "C", "H"};
+  h.ff.charge.assign(h.s.atoms.size(), 0.0);
+  h.ff.mass.assign(h.s.atoms.size(), 12.011);
+  h.ff.name = "test flexible";
+  // the carbon chain in bond order
+  std::vector<uint32_t> cs;
+  for (size_t i = size_t(h.first); i < h.s.atoms.size(); ++i) if (h.s.atoms[i].element == 6) cs.push_back(uint32_t(i));
+  auto bonded = [&](uint32_t x, uint32_t y) {
+    for (const auto& bd : h.s.bonds) if ((bd.i == x && bd.j == y) || (bd.i == y && bd.j == x)) return true;
+    return false;
+  };
+  std::sort(cs.begin(), cs.end());
+  do {
+    if (bonded(cs[0], cs[1]) && bonded(cs[1], cs[2]) && bonded(cs[2], cs[3])) break;
+  } while (std::next_permutation(cs.begin(), cs.end()));
+  for (int k = 0; k < 4; ++k) h.c[k] = cs[size_t(k)];
+  if (v1 != 0) h.ff.dihedrals.push_back({h.c[0], h.c[1], h.c[2], h.c[3], v1, 1, 0.0});
+  if (v3 != 0) h.ff.dihedrals.push_back({h.c[0], h.c[1], h.c[2], h.c[3], v3, 3, 0.0});
+  return h;
+}
+// the exact isolated-molecule averages over a uniform dihedral: Z = (1/2π)∫ e^(−βu) dφ and ⟨u⟩
+std::pair<double, double> torsion_exact(double v1, double v3, double T) {
+  const double beta = 1 / (0.0019872043 * T);
+  double z = 0, zu = 0;
+  const int G = 200000;
+  for (int i = 0; i < G; ++i) {
+    const double phi = 2 * 3.14159265358979323846 * (i + 0.5) / G;
+    const double u = v1 * (1 + std::cos(phi)) + v3 * (1 + std::cos(3 * phi));
+    z += std::exp(-beta * u), zu += u * std::exp(-beta * u);
+  }
+  return {z / G, zu / z};
+}
+}  // namespace
+
+// The isolated molecule: its Rosenbluth weight averages to (1/2π)∫ e^(−βu) dφ and its weighted energy to the Boltzmann
+// ⟨u⟩; in a host that does not interact, ⟨W⟩ / ⟨W_IG⟩ = 1 (no excess chemical potential), whatever the torsions
+TEST(Sorption, FlexibleIsolatedMoleculeIsExact) {
+  const double v1 = 1.2, v3 = 1.6, T = 300;
+  FlexHost h = make_flex(0.0, 0.0, 0.0, v1, v3);
+  SorptionOptions o;
+  o.template_first_atom = h.first;
+  o.flexible = true;
+  o.trials = 6;
+  o.ig_samples = 200000;
+  o.insertions = 100000;
+  o.cutoff = 5.9;
+  o.coulomb = false;
+  const auto r = sorption(h.s, h.ff, o);
+  const auto [z, u] = torsion_exact(v1, v3, T);
+  ASSERT_EQ(r.species.size(), 1u);
+  std::printf("butane: %d rotatable · W_IG %.5f ± %.5f (exact %.5f) · <u> %.4f (exact %.4f) · W/W_IG %.4f ± %.4f\n", r.species[0].rotatable,
+              r.species[0].w_ig, r.species[0].w_ig_error, z, r.species[0].u_intra_gas, u, r.widom_w, r.widom_error);
+  EXPECT_EQ(r.species[0].rotatable, 3);   // the C–C bond and the two methyl rotors
+  EXPECT_NEAR(r.species[0].w_ig, z, 0.01 * z);
+  EXPECT_NEAR(r.species[0].u_intra_gas, u, 0.02);
+  EXPECT_NEAR(r.widom_w, 1.0, 0.02);
+  EXPECT_NEAR(r.mu_ex, 0.0, 0.015);
+}
+
+// Fixed loading, one molecule, no host: canonical Monte Carlo with regrowths and twists samples the torsion's
+// Boltzmann distribution, so ⟨U⟩ is the exact ⟨u⟩ and the adsorption energy is zero
+TEST(Sorption, FixedLoadingSamplesTheTorsionExactly) {
+  const double v1 = 1.2, v3 = 1.6, T = 300;
+  FlexHost h = make_flex(0.0, 0.0, 0.0, v1, v3);
+  SorptionOptions o;
+  o.template_first_atom = h.first;
+  o.flexible = true;
+  o.insertions = 0;
+  o.ig_samples = 100000;
+  o.cutoff = 5.9;
+  o.coulomb = false;
+  o.fixed_loading = {1};
+  o.steps = 400000;
+  const auto r = sorption(h.s, h.ff, o);
+  const auto [z, u] = torsion_exact(v1, v3, T);
+  ASSERT_TRUE(r.fixed_ran);
+  const auto& F = r.fixed;
+  std::printf("fixed loading: <U> %.4f ± %.4f (exact %.4f) · E_ads %.4f · acc regrow %.2f twist %.2f\n", F.energy, F.energy_error, u, F.adsorption_energy,
+              F.acceptance_regrow, F.acceptance_twist);
+  EXPECT_EQ(F.loaded, 1);
+  EXPECT_NEAR(F.intramolecular, u, 0.03);
+  EXPECT_NEAR(F.energy, F.intramolecular, 1e-9);
+  EXPECT_NEAR(F.adsorption_energy, 0.0, 0.04);
+  EXPECT_GT(F.acceptance_regrow, 0.1);
+  EXPECT_GT(F.acceptance_twist, 0.1);
+}
+
+// In a host that binds it, the flexible molecule's low-pressure GCMC loading is the Henry-law value p V ⟨W⟩ / (kT ⟨W_IG⟩)
+// from Widom: insertion and deletion by configurational bias balance the growth's own weights
+TEST(Sorption, FlexibleGcmcMatchesWidomHenry) {
+  FlexHost h = make_flex(0.15, 0.09, 0.03, 1.2, 1.6);
+  SorptionOptions o;
+  o.template_first_atom = h.first;
+  o.flexible = true;
+  o.insertions = 200000;
+  o.ig_samples = 100000;
+  o.cutoff = 5.9;
+  o.coulomb = false;
+  const double V = 1728e-30, kT = 1.380649e-23 * 300;
+  const auto w = sorption(h.s, h.ff, o);
+  ASSERT_GT(w.widom_w, 0.0);
+  const double p = 0.1 / (V / kT * w.widom_w) / 1000;   // kPa for ⟨N⟩ ≈ 0.1 by Henry's law (pairs of sorbates rare)
+  o.insertions = 0;
+  o.pressures_kpa = {p};
+  o.steps = 600000;
+  const auto r = sorption(h.s, h.ff, o);
+  const double henry = p * 1000 * V / kT * w.widom_w;
+  std::printf("flexible: W/W_IG %.4g ± %.2g · GCMC N %.4f ± %.4f vs Henry %.4f · acc ins %.3f del %.3f regrow %.2f twist %.2f\n", w.widom_w, w.widom_error,
+              r.isotherm[0].loading, r.isotherm[0].loading_error, henry, r.isotherm[0].acceptance_insert, r.isotherm[0].acceptance_delete,
+              r.isotherm[0].acceptance_regrow, r.isotherm[0].acceptance_twist);
+  EXPECT_NEAR(r.isotherm[0].loading, henry, 0.1 * henry);
+}
+
+// A flexible ideal gas (no host, no pair energies, only the torsion): insertion by growth and deletion by retracing,
+// each weighted by W / ⟨W_IG⟩, leave ⟨N⟩ = βpV exactly
+TEST(Sorption, FlexibleIdealGasIsExact) {
+  FlexHost h = make_flex(0.0, 0.0, 0.0, 1.2, 1.6);
+  SorptionOptions o;
+  o.template_first_atom = h.first;
+  o.flexible = true;
+  o.insertions = 0;
+  o.ig_samples = 200000;
+  o.cutoff = 5.9;
+  o.coulomb = false;
+  const double V = 1728e-30, kT = 1.380649e-23 * 300;
+  o.pressures_kpa = {5 * kT / V / 1000};   // ⟨N⟩ = 5
+  o.steps = 600000;
+  const auto r = sorption(h.s, h.ff, o);
+  std::printf("flexible ideal gas: N %.3f ± %.3f (5)\n", r.isotherm[0].loading, r.isotherm[0].loading_error);
+  EXPECT_NEAR(r.isotherm[0].loading, 5.0, 0.15);
 }

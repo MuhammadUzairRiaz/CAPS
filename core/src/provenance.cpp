@@ -438,7 +438,9 @@ std::string methods_text(const Manifest& m, std::vector<std::string>* refs, cons
       t = "The cell was equilibrated with the 21-step compression–decompression protocol (P_max = " + param(s, "Pmax") + ")" + cite({"larsen2011"}) + ", " + param(s, "length") + " of dynamics in all.";
     } else if (e == "sorption.widom_gcmc") {
       t = "The sorption of " + param(s, "sorbate") + " at " + param(s, "temperature") + " was computed by test-particle insertion" + cite({"widom1963"}) +
-          " (" + param(s, "Widom") + ") and grand-canonical Monte Carlo" + cite({"frenkel2002"}) + " (" + param(s, "GCMC") + ") in the fixed host.";
+          " (" + param(s, "Widom") + ") and grand-canonical Monte Carlo" + cite({"frenkel2002"}) + " (" + param(s, "GCMC") + ") in the fixed host" +
+          (param(s, "flexible").empty() ? std::string() : ", the sorbate's " + param(s, "flexible") + cite({"siepmann1992", "rosenbluth1955"})) +
+          (param(s, "fixed loading").empty() ? std::string() : "; canonical Monte Carlo at a fixed loading (" + param(s, "fixed loading") + ")") + ".";
     } else if (e == "adsorption.locator") {
       t = "Adsorption configurations were searched by Monte Carlo simulated annealing" + cite({"kirkpatrick1983"}) + " of rigid adsorbates on the fixed substrate (" +
           param(s, "annealing") + "); the lowest adsorption energy was " + param(s, "adsorption energy") + ".";

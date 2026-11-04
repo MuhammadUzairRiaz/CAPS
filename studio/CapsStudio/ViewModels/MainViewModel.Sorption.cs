@@ -78,6 +78,39 @@ public sealed partial class MainViewModel
     public string SorbHenry { get => _sorbHenry; private set => Set(ref _sorbHenry, value); }
     public string SorbS { get => _sorbS; private set => Set(ref _sorbS, value); }
     public event Action? SorptionChanged;
+    // ---- bendable sorbates (configurational bias) and a held loading (canonical Monte Carlo at N molecules)
+    private bool _sorbFlex, _sorbKeep;
+    private int _sorbTrials = 8, _sorbHeld;
+    public bool SorbFlex { get => _sorbFlex; set => Set(ref _sorbFlex, value); }
+    public decimal SorbTrialsD { get => _sorbTrials; set => Set(ref _sorbTrials, (int)Math.Clamp(value, 1, 64)); }
+    public decimal SorbHeldD { get => _sorbHeld; set { if (Set(ref _sorbHeld, (int)Math.Clamp(value, 0, 100_000))) Raise(nameof(SorbHeldOn)); } }
+    public bool SorbHeldOn => _sorbHeld > 0;
+    public bool SorbKeep { get => _sorbKeep; set => Set(ref _sorbKeep, value); }
+    private string _sorbIg = "", _sorbHeldE = "—", _sorbHeldAds = "—", _sorbHeldSplit = "", _sorbHeldNote = "";
+    /// <summary>The isolated molecule's Rosenbluth weight and torsional energy (bendable sorbates only).</summary>
+    public string SorbIg { get => _sorbIg; private set { if (Set(ref _sorbIg, value)) Raise(nameof(SorbHasIg)); } }
+    public bool SorbHasIg => _sorbIg.Length > 0;
+    public string SorbHeldE { get => _sorbHeldE; private set => Set(ref _sorbHeldE, value); }
+    public string SorbHeldAds { get => _sorbHeldAds; private set => Set(ref _sorbHeldAds, value); }
+    public string SorbHeldSplit { get => _sorbHeldSplit; private set => Set(ref _sorbHeldSplit, value); }
+    public string SorbHeldNote { get => _sorbHeldNote; private set => Set(ref _sorbHeldNote, value); }
+    private bool _sorbHasHeld;
+    public bool SorbHasHeld { get => _sorbHasHeld; private set => Set(ref _sorbHasHeld, value); }
+    /// <summary>Single molecules' binding energies at the held loading: (bin centre, count).</summary>
+    public (double X, double Y)[] SorbHeldHist { get; private set; } = [];
+    /// <summary>The held loading per gas: N split by the mole fractions (at least one of each gas when N allows).</summary>
+    public static int[] SorbHeldSplitCounts(int n, IReadOnlyList<double> y)
+    {
+        var t = y.Sum();
+        var c = y.Select(v => t > 0 ? (int)Math.Round(n * v / t) : 0).ToArray();
+        var diff = n - c.Sum();
+        for (var i = 0; diff != 0 && c.Length > 0; i = (i + 1) % c.Length)
+        {
+            if (diff > 0) { c[i]++; diff--; }
+            else if (c[i] > 0) { c[i]--; diff++; }
+        }
+        return c;
+    }
 
     public void OpenSorption() => SetModule(71);
     public void CancelSorption() => _sorbCts?.Cancel();
@@ -92,8 +125,9 @@ public sealed partial class MainViewModel
         {
             ["sorbate"] = _sorbate.Trim(), ["temperature"] = _sorbT, ["insertions"] = _sorbInsert, ["pressures_kpa"] = pressures,
             ["steps"] = _sorbSteps, ["cutoff"] = Math.Min(12.0, _relaxCutoff), ["coulomb"] = _relaxCoulomb, ["seed"] = SorbSeed.Take(),
-            ["map_grid"] = _sorbMapOn ? 24 : 0,
+            ["map_grid"] = _sorbMapOn ? 24 : 0, ["flexible"] = _sorbFlex, ["trials"] = _sorbTrials,
         };
+        if (_sorbHeld > 0) { jo["fixed_loading"] = _sorbHeld; jo["keep_configuration"] = _sorbKeep; }
         if (_sorbMix)
         {
             var (gases, err) = ParseSorbMixture(_sorbMixText);
@@ -101,7 +135,14 @@ public sealed partial class MainViewModel
             var mix = new JsonArray();
             foreach (var (smi, y) in gases) mix.Add(new JsonObject { ["smiles"] = smi, ["fraction"] = y });
             jo["mixture"] = mix;
+            if (_sorbHeld > 0)
+            {
+                var counts = new JsonArray();
+                foreach (var c in SorbHeldSplitCounts(_sorbHeld, gases.Select(g => g.Y).ToList())) counts.Add(c);
+                jo["fixed_loading"] = counts;
+            }
         }
+        if (_sorbHeld > 0 && _sorbKeep) PrepareRunTarget("loaded");
         var json = jo.ToJsonString();
         var doc = _doc!;
         var cellA = doc.Summary();
@@ -165,6 +206,28 @@ public sealed partial class MainViewModel
                 SorbSpeciesTitle = lastPt == null ? "Gases (Widom)" : $"Gases at {((double?)lastPt["pressure_kpa"] ?? 0).ToString("0.##", inv)} kPa · selectivity over {(string?)spj[0]!["smiles"]}";
             }
             Raise(nameof(SorbHasSpecies)); Raise(nameof(SorbSpeciesTitle));
+            // the isolated molecule (bendable sorbates): its Rosenbluth weight, the reference of every μ and isotherm
+            var flexRows = (r["species"] as JsonArray)?.Where(x => ((double?)x?["rotatable"] ?? 0) > 0).ToList() ?? [];
+            SorbIg = flexRows.Count == 0 ? "" : string.Join(" · ", flexRows.Select(x => string.Format(inv, "{0}: {1:0} rotatable bonds, ⟨W⟩ alone {2:0.###E+0} ± {3:0.#E+0}, torsional energy {4:0.00} kcal/mol",
+                (string?)x!["smiles"], (double?)x["rotatable"] ?? 0, (double?)x["w_ig"] ?? 0, (double?)x["w_ig_error"] ?? 0, (double?)x["u_intra_gas"] ?? 0)));
+            // the held loading
+            SorbHasHeld = r["fixed"] is JsonObject;
+            SorbHeldHist = [];
+            if (r["fixed"] is JsonObject fx)
+            {
+                double F(string k) => (double?)fx[k] ?? 0;
+                SorbHeldE = $"{F("energy").ToString("0.00", inv)} ± {F("energy_error").ToString("0.00", inv)} kcal/mol";
+                SorbHeldAds = F("adsorption_energy").ToString("0.00", inv) + " kcal/mol per molecule";
+                SorbHeldSplit = string.Format(inv, "with the host {0:0.00} · between sorbates {1:0.00} · within the molecules {2:0.00} kcal/mol · lowest met {3:0.00}",
+                    F("host_sorbate"), F("sorbate_sorbate"), F("intramolecular"), F("lowest_energy"));
+                if (fx["hist_edges"] is JsonArray he && fx["hist_counts"] is JsonArray hc && he.Count == hc.Count + 1)
+                    SorbHeldHist = hc.Select((c, i) => (((double?)he[i] ?? 0) / 2 + ((double?)he[i + 1] ?? 0) / 2, (double?)c ?? 0)).ToArray();
+                SorbHeldNote = string.Format(inv, "{0:0} of {1:0} molecules loaded · accepted: shifts {2:0} %, turns {3:0} %", F("loaded"), F("requested"),
+                    100 * F("acceptance_translate"), 100 * F("acceptance_rotate")) +
+                    (F("acceptance_regrow") > 0 || F("acceptance_twist") > 0 ? string.Format(inv, ", regrowths {0:0} %, twists {1:0} %", 100 * F("acceptance_regrow"), 100 * F("acceptance_twist")) : "") +
+                    (r["kept"]?.GetValue<bool>() == true ? " · the loaded cell is now the structure (the last frame: the lowest energy met)" : "");
+            }
+            if (r["kept"]?.GetValue<bool>() == true) AfterRun(doc, " · loaded");
             SorbNote = string.Join(" · ", ((JsonArray)r["notes"]!).Select(x => (string?)x ?? "")) + " · " + ((string?)r["forcefield"] ?? "");
             Status = $"Sorption of {(_sorbMix ? "the mixture" : _sorbate)}: S {SorbS}" + (SorbRows.Count > 0 ? $" · {SorbRows.Count} isotherm points" : "");
             SorptionChanged?.Invoke();

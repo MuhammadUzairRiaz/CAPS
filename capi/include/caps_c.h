@@ -423,7 +423,14 @@ int32_t caps_adsorption(caps_doc* d, const char* json, caps_stage_fn progress, v
    steps, cutoff, coulomb, seed}; the structure is the fixed host (typed with its Field assignment plus the sorbate, else
    the built-in force field); the document is not changed. → {ok, error, widom_w, widom_error, mu_ex, henry_mol_kg_kpa,
    solubility (cm³(STP)/(cm³ atm)), host_mass, volume, forcefield, isotherm: [{pressure_kpa, loading (per cell),
-   loading_error, mol_per_kg, cm3stp_per_cm3, heat (kcal/mol), acceptance_insert, acceptance_delete}], notes}. */
+   loading_error, mol_per_kg, cm3stp_per_cm3, heat (kcal/mol), acceptance_insert, acceptance_delete}], notes}.
+   Flexible sorbates and fixed loading (JSON keys only): flexible (rotatable bonds grown by configurational bias), trials,
+   ig_samples, twist_max_deg; fixed_loading (molecules, or one per gas of a mixture: canonical MC at that loading),
+   loading_attempts, keep_configuration (the document becomes the host with the loaded molecules: the end state, then
+   the lowest-energy one, shown). Adds species[].{rotatable, w_ig, w_ig_error, u_intra_gas}, isotherm[].{acceptance_regrow,
+   acceptance_twist} and fixed {molecules, requested, loaded, energy, energy_error, host_sorbate, sorbate_sorbate,
+   intramolecular, adsorption_energy (per molecule), lowest_energy, hist_edges, hist_counts (single molecules' binding
+   energies), acceptance_translate|rotate|regrow|twist, map}, kept. */
 int32_t caps_sorption(caps_doc* d, const char* json, caps_stage_fn progress, void* user, char* out, int32_t cap);
 /* DPD (v34, dpd.hpp): JSON {species: [{name, sequence ("AAAAABBBBB"), count}], density, chi: {"AB": χ}, a: {"AB": a_ij},
    gamma, dt, bond_k, steps, equilibration, frame_every, rc_angstrom, seed} → a new document with the frames (beads as

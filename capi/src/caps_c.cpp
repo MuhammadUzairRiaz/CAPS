@@ -2576,6 +2576,23 @@ extern "C" int32_t caps_sorption(caps_doc* d, const char* json, caps_stage_fn pr
     o.coulomb = !(j.has("coulomb") && j["coulomb"].kind() == caps::Json::Bool && !j["coulomb"].boolean());
     o.seed = uint64_t(j.num("seed", 1));
     o.map_grid = int(j.num("map_grid", 0));   // v62: sorbate density maps (C7)
+    // flexible sorbates (configurational bias) and fixed loading (canonical MC): JSON keys, no ABI change
+    o.flexible = j.has("flexible") && j["flexible"].kind() == caps::Json::Bool && j["flexible"].boolean();
+    o.trials = int(j.num("trials", 8));
+    o.ig_samples = int(j.num("ig_samples", 20000));
+    o.twist_max_deg = j.num("twist_max_deg", 45);
+    if (j.has("fixed_loading")) {   // one number (a pure gas) or one per gas of the mixture
+      if (j["fixed_loading"].is_array())
+        for (const auto& x : j["fixed_loading"].items()) o.fixed_loading.push_back(std::max(0, int(x.number())));
+      else
+        o.fixed_loading.push_back(std::max(0, int(j.num("fixed_loading", 0))));
+      if (o.fixed_loading.size() != smiles.size()) throw std::invalid_argument("give one fixed loading per gas");
+      bool any = false;
+      for (int v : o.fixed_loading) any = any || v > 0;
+      if (!any) o.fixed_loading.clear();
+    }
+    o.loading_attempts = int(j.num("loading_attempts", 100000));
+    const bool keep_cfg = j.has("keep_configuration") && j["keep_configuration"].kind() == caps::Json::Bool && j["keep_configuration"].boolean();
     bool cancelled = false;
     if (progress) o.progress = [&](const std::string& st, double f) { cancelled = progress(st.c_str(), f, user) != 0; return !cancelled; };
     auto rep = caps::sorption(s, ff, o);
@@ -2588,8 +2605,79 @@ extern "C" int32_t caps_sorption(caps_doc* d, const char* json, caps_stage_fn pr
                           {"Widom", std::to_string(o.insertions) + " insertions · S " + g6(rep.solubility) + " cm³(STP)/(cm³ atm)"},
                           {"GCMC", std::to_string(o.pressures_kpa.size()) + " pressures × " + std::to_string(o.steps) + " steps"},
                           {"force field", ff.name}};
+    if (o.flexible) {
+      int rot = 0;
+      for (const auto& w : rep.species) rot += w.rotatable;
+      pr.push_back({"flexible", std::to_string(rot) + " rotatable bonds by configurational bias, " + std::to_string(o.trials) + " trials per step"});
+    }
+    if (rep.fixed_ran) pr.push_back({"fixed loading", std::to_string(rep.fixed.loaded) + " molecules × " + std::to_string(o.steps) + " canonical steps"});
+    std::vector<std::string> cites = {"widom1963", "frenkel2002"};
+    if (o.flexible) cites.push_back("siepmann1992");
+    // the loaded cell kept as the document: the host and the molecules, the end state then the lowest-energy one (shown)
+    if (keep_cfg && rep.fixed_ran && rep.fixed.loaded > 0) {
+      const size_t nh = host.atoms.size();
+      caps::System top = host;
+      top.velocities.clear();
+      int nm = 0;
+      const auto comp = host.molecules(&nm);
+      if (!top.has_mol) {
+        for (size_t i = 0; i < nh; ++i) top.atoms[i].mol = int64_t(comp[i]) + 1;
+        top.has_mol = true;
+      }
+      int64_t next_mol = 0;
+      for (const auto& a : top.atoms) next_mol = std::max(next_mol, a.mol);
+      // species of each kept molecule, in the engine's order (species by species as loaded)
+      std::vector<size_t> sp_of;
+      for (size_t k = 0; k < rep.fixed.molecules.size(); ++k) for (int c = 0; c < rep.fixed.molecules[k]; ++c) sp_of.push_back(k);
+      auto tpl_range = [&](size_t k) {
+        const size_t a = size_t(starts[k]), b = k + 1 < starts.size() ? size_t(starts[k + 1]) : s.atoms.size();
+        return std::make_pair(a, b);
+      };
+      // the molecules in the engine's order: species by species as loaded (no deletions at a fixed loading)
+      for (size_t mi = 0; mi < rep.fixed.molecules_end.size() && mi < sp_of.size(); ++mi) {
+        const auto [a, b] = tpl_range(sp_of[mi]);
+        const uint32_t off = uint32_t(top.atoms.size());
+        ++next_mol;
+        for (size_t i = a; i < b; ++i) {
+          caps::Atom at = s.atoms[i];
+          at.mol = next_mol;
+          top.atoms.push_back(at);
+        }
+        for (const auto& bd : s.bonds)
+          if (bd.i >= a && bd.i < b && bd.j >= a && bd.j < b) {
+            caps::Bond nb = bd;
+            nb.i = uint32_t(bd.i - a) + off, nb.j = uint32_t(bd.j - a) + off;
+            top.bonds.push_back(nb);
+          }
+      }
+      caps::Trajectory t;
+      t.topology = top;
+      auto frame_of = [&](const std::vector<std::vector<caps::Vec3>>& ms) {
+        std::vector<caps::Vec3> p;
+        for (size_t i = 0; i < nh; ++i) p.push_back(host.atoms[i].pos);
+        for (size_t mi = 0; mi < ms.size() && mi < sp_of.size(); ++mi) for (const auto& q : ms[mi]) p.push_back(q);
+        return p;
+      };
+      for (const auto* ms : {&rep.fixed.molecules_end, &rep.fixed.lowest}) {
+        auto p = frame_of(*ms);
+        if (p.size() != top.atoms.size()) continue;
+        t.positions.push_back(std::move(p)), t.cells.push_back(host.cell), t.timesteps.push_back(int64_t(t.timesteps.size()));
+      }
+      if (!t.positions.empty()) {
+        for (size_t i = 0; i < top.atoms.size(); ++i) t.topology.atoms[i].pos = t.positions.back()[i];
+        t.topology.notes = rep.notes;
+        d->traj = std::move(t);
+        d->current = d->traj.frames() - 1;
+        refresh(d);
+        if (d->field) {   // the assignment now over the sorbates too (a file's or a model's force field describes the host only)
+          if (d->field->ff_path == "file" || !d->field->model.empty()) d->field.reset();
+          else field_run(d);
+        }
+        r["kept"] = true;
+      }
+    }
     prov_step(d, "sorption.widom_gcmc", "Sorption by test-particle insertion and grand-canonical Monte Carlo", std::move(pr), seeded(o.seed),
-              {"widom1963", "frenkel2002"}, energy_approx(o.cutoff, o.coulomb, false, 1));
+              std::move(cites), energy_approx(o.cutoff, o.coulomb, false, 1));
     r["ok"] = true;
     r["widom_w"] = rep.widom_w, r["widom_error"] = rep.widom_error, r["mu_ex"] = rep.mu_ex;
     r["henry_mol_kg_kpa"] = rep.henry_mol_kg_kpa, r["solubility"] = rep.solubility;
@@ -2602,6 +2690,7 @@ extern "C" int32_t caps_sorption(caps_doc* d, const char* json, caps_stage_fn pr
       auto arr = [](const std::vector<double>& v) { caps::Json a = caps::Json::array(); for (double q : v) a.push_back(q); return a; };
       x["species_loading"] = arr(p.species_loading), x["species_error"] = arr(p.species_error), x["species_mol_per_kg"] = arr(p.species_mol_per_kg);
       x["species_heat"] = arr(p.species_heat), x["selectivity"] = arr(p.selectivity);
+      x["acceptance_regrow"] = p.acceptance_regrow, x["acceptance_twist"] = p.acceptance_twist;
       if (!p.density.empty()) {   // the density map: grid points along a, b, c and the values (per Å³), a slowest
         caps::Json m = caps::Json::object(), v = caps::Json::array();
         for (float q : p.density) v.push_back(double(q));
@@ -2619,9 +2708,31 @@ extern "C" int32_t caps_sorption(caps_doc* d, const char* json, caps_stage_fn pr
       x["smiles"] = k < smiles.size() ? smiles[k] : std::string();
       x["fraction"] = w.fraction, x["widom_w"] = w.widom_w, x["widom_error"] = w.widom_error, x["mu_ex"] = w.mu_ex;
       x["henry_mol_kg_kpa"] = w.henry_mol_kg_kpa, x["solubility"] = w.solubility;
+      x["rotatable"] = double(w.rotatable), x["w_ig"] = w.w_ig, x["w_ig_error"] = w.w_ig_error, x["u_intra_gas"] = w.u_intra_gas;
       sp.push_back(std::move(x));
     }
     r["species"] = std::move(sp);
+    if (rep.fixed_ran) {
+      const auto& F = rep.fixed;
+      caps::Json f = caps::Json::object(), mol = caps::Json::array(), he = caps::Json::array(), hc = caps::Json::array();
+      for (int v : F.molecules) mol.push_back(double(v));
+      for (double v : F.hist_edges) he.push_back(v);
+      for (double v : F.hist_counts) hc.push_back(v);
+      f["molecules"] = std::move(mol), f["requested"] = double(F.requested), f["loaded"] = double(F.loaded);
+      f["energy"] = F.energy, f["energy_error"] = F.energy_error, f["host_sorbate"] = F.host_sorbate, f["sorbate_sorbate"] = F.sorbate_sorbate;
+      f["intramolecular"] = F.intramolecular, f["adsorption_energy"] = F.adsorption_energy, f["lowest_energy"] = F.lowest_energy;
+      f["hist_edges"] = std::move(he), f["hist_counts"] = std::move(hc);
+      f["acceptance_translate"] = F.acceptance_translate, f["acceptance_rotate"] = F.acceptance_rotate;
+      f["acceptance_regrow"] = F.acceptance_regrow, f["acceptance_twist"] = F.acceptance_twist;
+      if (!F.density.empty()) {
+        caps::Json m = caps::Json::object(), v = caps::Json::array();
+        for (float q : F.density) v.push_back(double(q));
+        m["grid"] = double(F.grid);
+        m["density"] = std::move(v);
+        f["map"] = std::move(m);
+      }
+      r["fixed"] = std::move(f);
+    }
     caps::Json nt = caps::Json::array();
     for (const auto& x : rep.notes) nt.push_back(x);
     r["notes"] = std::move(nt);

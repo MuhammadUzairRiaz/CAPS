@@ -29,6 +29,12 @@ public partial class SorptionPage : PageBase
                 {
                     XLabel = "*p* / kPa", YLabel = "uptake / mol kg⁻¹", Series = series, YMin = 0, YZero = true, XMin = 0, Empty = "",
                 };
+                var h = vm.SorbHeldHist;
+                this.FindControl<SciPlot>("Held")!.Figure = h.Length < 2 ? null : new SciFigure
+                {
+                    XLabel = "*E*_bind / kcal mol⁻¹", YLabel = "count", YMin = 0, YZero = true, Empty = "",
+                    Series = [new SciSeries("", h.Select(p => p.X).ToArray(), h.Select(p => p.Y).ToArray()) { Kind = SciKind.Steps, Fill = true, Width = 1.2 }],
+                };
             };
             vm.SorptionMapChanged += () =>
             {

@@ -41,7 +41,13 @@
                 <TextBox Text="{Binding SorbMixText}" Classes="mono" AcceptsReturn="True" MinHeight="64" Watermark="one gas per line: SMILES  mole fraction" />
                 <TextBlock Text="{Binding SorbMixHint}" Classes="mono" FontSize="11" TextWrapping="Wrap" />
               </StackPanel>
-              <TextBlock Classes="dim" TextWrapping="Wrap" Text="A rigid molecule typed with the structure's force field (the Field assignment, else the built-in one). The structure is the host: a polymer or rubber cell, a filler, a porous crystal — held fixed." />
+              <Grid ColumnDefinitions="*,Auto,90" ColumnSpacing="8">
+                <CheckBox Content="Bend at rotatable bonds" IsChecked="{Binding SorbFlex}"
+                          ToolTip.Tip="The molecule is cut at its rotatable bonds and grown in piece by piece, each piece at several trial angles weighted by its energy (configurational bias). Bond lengths, angles and rings keep the built shape. For oils, plasticisers, curatives and solvents." />
+                <TextBlock Grid.Column="1" Text="trials" Classes="label" VerticalAlignment="Center" IsVisible="{Binding SorbFlex}" />
+                <NumericUpDown Grid.Column="2" Value="{Binding SorbTrialsD}" Minimum="1" Maximum="64" Increment="2" FormatString="0" IsVisible="{Binding SorbFlex}" />
+              </Grid>
+              <TextBlock Classes="dim" TextWrapping="Wrap" Text="Typed with the structure's force field (the Field assignment, else the built-in one); rigid unless it bends. The structure is the host: a polymer or rubber cell, a filler, a porous crystal — held fixed." />
             </StackPanel>
           </Border>
           <Border Classes="pcard">
@@ -61,6 +67,18 @@
               <TextBlock Classes="dim" TextWrapping="Wrap" Text="Widom: random places and orientations of one molecule, ⟨e^(−βΔU)⟩ (Widom 1963). GCMC: insertions, deletions, moves and rotations at an ideal-gas reservoir's pressure (Frenkel &amp; Smit 2002); the first quarter of each run equilibrates." />
             </StackPanel>
           </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
+              <TextBlock Text="Held loading" FontSize="13.5" FontWeight="SemiBold" />
+              <Grid ColumnDefinitions="*,110" ColumnSpacing="10">
+                <TextBlock Text="Molecules per cell (0: off)" Classes="label" VerticalAlignment="Center" />
+                <NumericUpDown Grid.Column="1" Value="{Binding SorbHeldD}" Minimum="0" Increment="1" FormatString="0" />
+              </Grid>
+              <CheckBox Content="Keep the loaded cell as the structure" IsChecked="{Binding SorbKeep}" IsEnabled="{Binding SorbHeldOn}"
+                        ToolTip.Tip="The host with the molecules becomes the open structure: its end state and, last, the lowest-energy arrangement met (undo with ⌘Z)" />
+              <TextBlock Classes="dim" TextWrapping="Wrap" Text="Exactly this many molecules (shared out by the mole fractions for a mixture), moved, turned and regrown by Monte Carlo for the steps above: where they sit, how strongly each one is bound and what the loaded cell's energy is. A mixture's gases follow its mole fractions." />
+            </StackPanel>
+          </Border>
           <Border Classes="pcard" IsVisible="{Binding SorbHasError}">
             <TextBlock Text="{Binding SorbError}" TextWrapping="Wrap" Foreground="{DynamicResource ErrB}" />
           </Border>
@@ -77,6 +95,8 @@
                 <TextBlock Grid.Row="2" Text="Excess chemical potential" Classes="label" /><TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SorbMu}" Classes="mono" />
                 <TextBlock Grid.Row="3" Text="⟨e^(−βΔU)⟩" Classes="label" /><TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding SorbW}" Classes="mono" />
               </Grid>
+              <TextBlock Text="{Binding SorbIg}" Classes="dim" TextWrapping="Wrap" IsVisible="{Binding SorbHasIg}"
+                         ToolTip.Tip="A bending molecule's insertions are weighed against the same growth with nothing around it: μ_ex = −kT ln(⟨W⟩ / ⟨W⟩ alone)" />
             </StackPanel>
           </Border>
           <Border Classes="pcard">
@@ -120,6 +140,21 @@
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
               <TextBlock Classes="dim" TextWrapping="Wrap" Text="Selectivity (x_i/x_1)/(y_i/y_1): the adsorbed phase's share against the gas's. S from Widom is each gas alone at infinite dilution; the loadings are the competition at that pressure. Q_st per gas from the multicomponent fluctuations (kcal/mol). The isotherm plot draws the gases' mol/kg." />
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard" IsVisible="{Binding SorbHasHeld}">
+            <StackPanel Spacing="8">
+              <TextBlock Text="At the held loading" FontSize="13.5" FontWeight="SemiBold" />
+              <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" RowSpacing="6">
+                <TextBlock Text="Energy of the loaded cell" Classes="label" /><TextBlock Grid.Column="1" Text="{Binding SorbHeldE}" Classes="mono" />
+                <TextBlock Grid.Row="1" Text="Adsorption energy" Classes="label"
+                           ToolTip.Tip="(⟨U⟩ − the molecules' own torsional energy in the gas) / N: negative means bound" />
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SorbHeldAds}" Classes="mono" />
+              </Grid>
+              <TextBlock Text="{Binding SorbHeldSplit}" Classes="dim" TextWrapping="Wrap" />
+              <v:SciPlot x:Name="Held" Height="200" />
+              <TextBlock Text="How strongly single molecules are held: each one's energy with the host and the other molecules, sampled over the run" Classes="dim" TextWrapping="Wrap" />
+              <TextBlock Text="{Binding SorbHeldNote}" Classes="dim" TextWrapping="Wrap" />
             </StackPanel>
           </Border>
           <Border Classes="pcard" IsVisible="{Binding SorbHasMap}">

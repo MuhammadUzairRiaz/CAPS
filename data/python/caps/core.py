@@ -1270,19 +1270,27 @@ Document.conformers = _conformers
 
 
 def _sorption(self, sorbate: str = "O=C=O", pressures_kpa=(), temperature: float = 300.0, insertions: int = 100000, steps: int = 200000,
-              mixture=None, map_grid: int = 0, cutoff: float = 12.0, coulomb: bool = True, seed: int = 1) -> dict:
+              mixture=None, map_grid: int = 0, cutoff: float = 12.0, coulomb: bool = True, seed: int = 1, flexible: bool = False,
+              trials: int = 8, ig_samples: int = 20000, fixed_loading=None, keep_configuration: bool = False) -> dict:
     """Sorption of a gas in the frame held fixed: Widom insertion (excess chemical potential, Henry constant, solubility)
     and GCMC at each pressure (kPa). mixture: [(smiles, mole fraction), …] for an ideal gas mixture (each species at
-    y_i p; per-species loadings, isosteric heats and selectivities over the first). Returns {widom_w, mu_ex, henry_mol_kg_kpa,
-    solubility, species: [...], isotherm: [{pressure_kpa, loading, species_loading, selectivity, heat, ...}], notes}."""
+    y_i p; per-species loadings, isosteric heats and selectivities over the first). flexible: rotatable bonds grown by
+    configurational bias (trials per step; the isolated molecule's weight from ig_samples growths). fixed_loading:
+    molecules (or one count per gas): canonical Monte Carlo at that loading, reported under "fixed" (energies, adsorption
+    energy per molecule, binding-energy histogram); keep_configuration: the frame becomes the host with those molecules.
+    Returns {widom_w, mu_ex, henry_mol_kg_kpa, solubility, species: [...], isotherm: [{pressure_kpa, loading,
+    species_loading, selectivity, heat, ...}], fixed, notes}."""
     o = {"sorbate": sorbate, "pressures_kpa": [float(x) for x in pressures_kpa], "temperature": float(temperature), "insertions": int(insertions),
-         "steps": int(steps), "map_grid": int(map_grid), "cutoff": float(cutoff), "coulomb": bool(coulomb), "seed": int(seed)}
+         "steps": int(steps), "map_grid": int(map_grid), "cutoff": float(cutoff), "coulomb": bool(coulomb), "seed": int(seed),
+         "flexible": bool(flexible), "trials": int(trials), "ig_samples": int(ig_samples), "keep_configuration": bool(keep_configuration)}
     if mixture:
         o["mixture"] = [{"smiles": m, "fraction": float(y)} for m, y in mixture]
+    if fixed_loading is not None:
+        o["fixed_loading"] = [int(x) for x in fixed_loading] if isinstance(fixed_loading, (list, tuple)) else int(fixed_loading)
     f = library().caps_sorption
     f.argtypes = [C.c_void_p, C.c_char_p, C.c_void_p, C.c_void_p, C.c_char_p, C.c_int32]
     f.restype = C.c_int32
-    buf = C.create_string_buffer((1 << 22) + len(o["pressures_kpa"]) * int(map_grid) ** 3 * 24)
+    buf = C.create_string_buffer((1 << 22) + (len(o["pressures_kpa"]) + 1) * int(map_grid) ** 3 * 24)
     f(self._h, _enc(json.dumps(o)), None, None, buf, len(buf))
     r = json.loads(buf.value.decode())
     if not r.get("ok"):
