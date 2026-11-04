@@ -440,6 +440,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_png_text")] public static extern int PngText([MarshalAs(UnmanagedType.LPUTF8Str)] string path, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_export_movie")] public static extern int ExportMovie(IntPtr doc, in CapsCamera cam, in CapsRenderOpts opt, [MarshalAs(UnmanagedType.LPUTF8Str)] string path, [MarshalAs(UnmanagedType.LPUTF8Str)] string options, CapsSeriesProgress? progress, IntPtr user);
     [DllImport(Lib, EntryPoint = "caps_provenance")] public static extern int Provenance(IntPtr doc, byte[]? json, int cap);
+    [DllImport(Lib, EntryPoint = "caps_qspr")] public static extern int Qspr([MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_provenance_file")] public static extern int ProvenanceFile([MarshalAs(UnmanagedType.LPUTF8Str)] string path, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_provenance_compare")] public static extern int ProvenanceCompare([MarshalAs(UnmanagedType.LPUTF8Str)] string a, [MarshalAs(UnmanagedType.LPUTF8Str)] string b, byte[]? json, int cap);
     [DllImport(Lib, EntryPoint = "caps_provenance_bibtex")] public static extern int ProvenanceBibtex([MarshalAs(UnmanagedType.LPUTF8Str)] string manifest, byte[]? text, int cap);
@@ -874,6 +875,8 @@ public sealed class CapsDocument : IDisposable
     }
 
     /// <summary>A file's saved provenance (its .provenance.json), JSON with ok.</summary>
+    /// <summary>Descriptors, models, clusters and discriminant analysis (caps_qspr), JSON with ok.</summary>
+    public static string Qspr(string json) => Sized((b, c) => Native.Qspr(json, b, c));
     public static string ProvenanceFile(string path) => Sized((b, c) => Native.ProvenanceFile(path, b, c));
     public static string ProvenanceCompare(string a, string b) => Sized((x, c) => Native.ProvenanceCompare(a, b, x, c));
     public static string ProvenanceBibtex(string manifest) => Sized((b, c) => Native.ProvenanceBibtex(manifest, b, c));

@@ -82,6 +82,7 @@ add_library(caps_core STATIC
   src/ddft.cpp
   src/crystalfit.cpp
   src/habit.cpp
+  src/qspr.cpp
   src/vasp_out.cpp
   src/dft_analysis.cpp
   src/dft_commands.cpp

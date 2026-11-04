@@ -77,6 +77,7 @@
 #include "caps/phonons.hpp"
 #include "caps/crystalfit.hpp"
 #include "caps/habit.hpp"
+#include "caps/qspr.hpp"
 #include "caps/ddft.hpp"
 #include "caps/yaml.hpp"
 #ifdef _WIN32
@@ -340,6 +341,11 @@ int usage() {
                "               [--ff FF] [--no-coulomb]   configurational-bias regrowth of chain ends (Siepmann & Frenkel)\n"
                "  caps fields --molecules 'A8B8:1; A8:0.5' [--chi AB=1.9] [--grid 32,32,32 (nz 1: 2D)] [--bond 1.1543] [--kappa 10] [--noise 75] [--dt 0.02]\n"
                "               [--steps 2000] [--every 100] [--seed 1] [--vtk OUT.vtk] [--csv OUT.csv]   density-field dynamics of Gaussian chains (blends, block copolymers)\n"
+               "  caps qspr descriptors [FILE ...] [--smiles 'CCO;CC(C)O'] [--csv OUT]   molecular descriptors (graph, shape, charged surface areas)\n"
+               "  caps qspr model TABLE.csv --y COL [--x A,B,…] [--method mlr|pls|gfa|nn] [--stepwise --squares --products] [--components N] [--hidden 4]\n"
+               "                  [--folds K] [--randomise N] [--seed 1] [--json OUT]   a model of y with cross-validation, y-randomisation and outliers\n"
+               "  caps qspr cluster TABLE.csv [--x …] [--method ward|average|complete|single|kmeans] [--k 3] [--no-scale]   clusters of the rows\n"
+               "  caps qspr lda TABLE.csv --class COL [--x …]   Fisher's discriminant analysis of the rows' classes\n"
                "  caps habit CRYSTAL [--ff FF.json] [--max-index 3] [--min-d Å] [--attachment] [--surface-energy] [--forms 12] [--particle RADIUS_Å --model bfdh|growth|equilibrium --out P.pdb]\n"
                "             [--shape-obj SHAPE.obj] [--json OUT]   crystal habit: BFDH faces, attachment and surface energies, Wulff shapes, a particle in that shape\n"
                "  caps fit SPEC.json [--ff FF.json] [--relaxed | --conventional] [--iterations 50] [--out FITTED.json] [--json REPORT.json]\n"
@@ -461,7 +467,7 @@ const std::set<std::string>& known_options() {
     "--tmax", "--to", "--tol", "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing", "--units",
     "--polymer", "--crystal", "--crystal-cells", "--amorphous", "--loops", "--bridges", "--tails", "--reentry", "--analyse",
     "--corr-ps", "--long", "--swap-every", "--transient", "--dimensionality", "--thickness",
-    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
+    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
   return k;
 }
 
@@ -494,7 +500,7 @@ bool is_cli_switch(const std::string& a) {
          a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" || a == "--include-input" || a == "--primitive" || a == "--symmetrize" || a == "--find-symmetry" || a == "--groups" || a == "--neutralise" || a == "--no-ions" || a == "--solvents" || a == "--bibtex" || a == "--json" || a == "--deterministic" || a == "--vacuum" || a == "--methods" ||
          a == "--hybrid" || a == "--resume" || a == "--between-chains" || a == "--keep-byproducts" || a == "--auto-capture" ||
          a == "--during-md" || a == "--remove-unreacted" || a == "--analyse" || a == "--long" || a == "--reduced" || a == "--kg" || a == "--stickers" || a == "--both-ends" || a == "--no-exchange" || a == "--npt" ||
-         a == "--no-kalpha2" || a == "--neutron" || a == "--polarised" || a == "--relaxed" || a == "--conventional" || a == "--attachment" || a == "--surface-energy";
+         a == "--no-kalpha2" || a == "--neutron" || a == "--polarised" || a == "--relaxed" || a == "--conventional" || a == "--attachment" || a == "--surface-energy" || a == "--stepwise" || a == "--squares" || a == "--products" || a == "--no-scale";
 }
 
 std::map<std::string, std::string> parse(int argc, char** argv, int from, std::vector<std::string>& pos) {
@@ -4096,6 +4102,223 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps phonons: %s\n", e.what());
+      return 1;
+    }
+  }
+  if (cmd == "qspr") {
+    try {
+      if (pos.empty()) return usage();
+      const std::string op = pos[0];
+      // a CSV table: header names, then rows; numeric cells as numbers, the rest kept as text
+      struct Table {
+        std::vector<std::string> names;
+        std::vector<std::vector<std::string>> cells;
+      };
+      auto read_csv = [](const std::string& path) {
+        std::ifstream in(path);
+        if (!in) throw std::runtime_error("cannot read " + path);
+        Table t;
+        std::string line;
+        auto split = [](const std::string& l) {
+          std::vector<std::string> v;
+          std::string cur;
+          bool q = false;
+          for (char c : l) {
+            if (c == '"') q = !q;
+            else if (c == ',' && !q) v.push_back(cur), cur.clear();
+            else if (c != '\r') cur += c;
+          }
+          v.push_back(cur);
+          return v;
+        };
+        if (!std::getline(in, line)) throw std::runtime_error(path + " is empty");
+        t.names = split(line);
+        while (std::getline(in, line))
+          if (!line.empty()) t.cells.push_back(split(line));
+        return t;
+      };
+      auto column = [](const Table& t, const std::string& name) {
+        for (size_t c = 0; c < t.names.size(); ++c)
+          if (t.names[c] == name) return c;
+        throw std::invalid_argument("no column '" + name + "'");
+      };
+      auto numeric = [](const std::string& x, double& v) {
+        try {
+          size_t k = 0;
+          v = std::stod(x, &k);
+          return k == x.size();
+        } catch (...) {
+          return false;
+        }
+      };
+      // the x columns: the given ones, else every numeric column other than the excluded
+      auto xcols = [&](const Table& t, const std::vector<size_t>& exclude) {
+        std::vector<size_t> c;
+        if (o.count("--x")) {
+          std::stringstream ss(o["--x"]);
+          std::string w;
+          while (std::getline(ss, w, ',')) c.push_back(column(t, w));
+          return c;
+        }
+        for (size_t k = 0; k < t.names.size(); ++k) {
+          if (std::find(exclude.begin(), exclude.end(), k) != exclude.end()) continue;
+          bool num = !t.cells.empty();
+          double v;
+          for (const auto& r : t.cells) num = num && k < r.size() && numeric(r[k], v);
+          if (num) c.push_back(k);
+        }
+        return c;
+      };
+      auto value = [&](const Table& t, size_t r, size_t c) {
+        double v;
+        if (c >= t.cells[r].size() || !numeric(t.cells[r][c], v)) throw std::invalid_argument("row " + std::to_string(r + 1) + ", column " + t.names[c] + ": not a number");
+        return v;
+      };
+      if (op == "descriptors") {
+        std::vector<std::pair<std::string, System>> mols;
+        for (size_t k = 1; k < pos.size(); ++k) {
+          Trajectory t = open_file(pos[k], "");
+          System s = t.frames() ? t.frame(0) : t.topology;
+          s.cell = Cell{};
+          mols.push_back({pos[k], s});
+        }
+        if (o.count("--smiles")) {
+          std::stringstream ss(o["--smiles"]);
+          std::string w;
+          while (std::getline(ss, w, ';'))
+            if (!w.empty()) mols.push_back({w, build_molecule(w).system});
+        }
+        if (mols.empty()) throw std::invalid_argument("give structure files or --smiles");
+        std::vector<std::vector<Descriptor>> all;
+        for (auto& [name, s] : mols) {
+          std::string used;
+          all.push_back(molecular_descriptors(s, &used));
+          if (!o.count("--quiet")) std::printf("%s: %zu atoms, charges %s\n", name.c_str(), s.atoms.size(), used.c_str());
+        }
+        auto num = [](double v) { char b[40]; std::snprintf(b, sizeof b, "%.6g", v); return std::isfinite(v) ? std::string(b) : std::string(""); };
+        if (o.count("--csv")) {
+          std::ofstream f(o["--csv"]);
+          f << "structure";
+          for (const auto& d : all[0]) f << "," << d.name;
+          f << "\n";
+          for (size_t m = 0; m < all.size(); ++m) {
+            f << "\"" << mols[m].first << "\"";
+            for (const auto& d : all[m]) f << "," << num(d.value);
+            f << "\n";
+          }
+          std::printf("wrote %s (%zu structures, %zu descriptors)\n", o["--csv"].c_str(), all.size(), all[0].size());
+        } else {
+          for (size_t k = 0; k < all[0].size(); ++k) {
+            std::printf("%-20s", all[0][k].name.c_str());
+            for (const auto& a : all) std::printf(" %14s", num(a[k].value).c_str());
+            std::printf("  %s%s%s\n", all[0][k].unit.c_str(), all[0][k].unit.empty() ? "" : "  ", all[0][k].what.c_str());
+          }
+        }
+        std::printf("AlogP and molar refractivity are not given: their atom-type tables are not in CAPS\n");
+        return 0;
+      }
+      if (pos.size() < 2) return usage();
+      const Table t = read_csv(pos[1]);
+      if (t.cells.size() < 3) throw std::invalid_argument("three rows or more");
+      if (op == "model") {
+        if (!o.count("--y")) throw std::invalid_argument("--y COL");
+        const size_t yc = column(t, o["--y"]);
+        const auto xc = xcols(t, {yc});
+        if (xc.empty()) throw std::invalid_argument("no numeric x columns");
+        std::vector<double> y;
+        std::vector<std::vector<double>> x(xc.size());
+        std::vector<std::string> names;
+        for (size_t c : xc) names.push_back(t.names[c]);
+        for (size_t r = 0; r < t.cells.size(); ++r) {
+          y.push_back(value(t, r, yc));
+          for (size_t k = 0; k < xc.size(); ++k) x[k].push_back(value(t, r, xc[k]));
+        }
+        ModelOptions mo;
+        if (o.count("--method")) mo.method = o["--method"];
+        mo.stepwise = o.count("--stepwise"), mo.squares = o.count("--squares"), mo.products = o.count("--products");
+        if (o.count("--components")) mo.components = std::stoi(o["--components"]);
+        if (o.count("--folds")) mo.folds = std::stoi(o["--folds"]);
+        if (o.count("--randomise")) mo.randomise = std::stoi(o["--randomise"]);
+        if (o.count("--hidden")) mo.nn_hidden = std::stoi(o["--hidden"]);
+        if (o.count("--seed")) mo.seed = std::stoull(o["--seed"]);
+        const ModelResult r = fit_model(y, x, names, mo);
+        std::printf("%s of %s on %zu columns, %zu rows\n%s\n", mo.method.c_str(), o["--y"].c_str(), names.size(), y.size(), r.equation.c_str());
+        if (!r.terms.empty() && mo.method != "nn") {
+          std::printf("%-28s %14s %12s\n", "term", "coefficient", "std. error");
+          for (const auto& tm : r.terms) std::printf("%-28s %14.6g %12s\n", tm.name.c_str(), tm.coef, std::isfinite(tm.se) ? std::to_string(tm.se).c_str() : "-");
+        }
+        std::printf("R² %.4f · adjusted R² %s · RMSE %.4g", r.r2, std::isfinite(r.r2_adj) ? std::to_string(r.r2_adj).c_str() : "-", r.rmse);
+        if (std::isfinite(r.q2)) std::printf(" · q² %.4f · RMSE(CV) %.4g", r.q2, r.rmse_cv);
+        if (std::isfinite(r.lof)) std::printf(" · LOF %.4g", r.lof);
+        std::printf("\n");
+        if (!r.q2_by_components.empty()) {
+          std::printf("q² by PLS components:");
+          for (double v : r.q2_by_components) std::printf(" %.4f", v);
+          std::printf("\n");
+        }
+        for (const auto& [e, l] : r.gfa_models) std::printf("  GFA model (LOF %.4g): %s\n", l, e.c_str());
+        if (!r.cooks.empty()) {
+          std::vector<size_t> idx(r.cooks.size());
+          std::iota(idx.begin(), idx.end(), 0);
+          std::sort(idx.begin(), idx.end(), [&](size_t a, size_t b) { return r.cooks[a] > r.cooks[b]; });
+          std::printf("most influential rows (Cook's distance, leverage, standardised residual):");
+          for (size_t k = 0; k < std::min<size_t>(3, idx.size()); ++k)
+            std::printf(" %zu (%.3g, %.3g, %.3g)", idx[k] + 1, r.cooks[idx[k]], r.leverage[idx[k]], r.std_residual[idx[k]]);
+          std::printf("\n");
+        }
+        for (const auto& n : r.notes) std::printf("%s\n", n.c_str());
+        if (o.count("--json") && o["--json"] != "1") {
+          std::ofstream(o["--json"]) << model_json(r).dump(1) << "\n";
+          std::printf("wrote %s\n", o["--json"].c_str());
+        }
+        return 0;
+      }
+      if (op == "cluster" || op == "lda") {
+        std::vector<size_t> ex;
+        if (op == "lda") {
+          if (!o.count("--class")) throw std::invalid_argument("--class COL");
+          ex.push_back(column(t, o["--class"]));
+        }
+        const auto xc = xcols(t, ex);
+        if (xc.empty()) throw std::invalid_argument("no numeric columns");
+        std::vector<std::vector<double>> rows;
+        for (size_t r = 0; r < t.cells.size(); ++r) {
+          std::vector<double> v;
+          for (size_t c : xc) v.push_back(value(t, r, c));
+          rows.push_back(v);
+        }
+        auto label = [&](size_t r) { return t.cells[r].empty() ? std::to_string(r + 1) : t.cells[r][0]; };
+        if (op == "cluster") {
+          const std::string m = o.count("--method") ? o["--method"] : "ward";
+          const int k = o.count("--k") ? std::stoi(o["--k"]) : 3;
+          const RowClusters c = cluster_rows(rows, m, k, !o.count("--no-scale"));
+          std::printf("%s clustering of %zu rows on %zu columns into %d (within sum of squares %.4g, %s columns)\n", m.c_str(), rows.size(), xc.size(), k, c.within_ss,
+                      o.count("--no-scale") ? "raw" : "autoscaled");
+          for (int q = 0; q < k; ++q) {
+            std::printf("cluster %d:", q + 1);
+            for (size_t r = 0; r < rows.size(); ++r) if (c.label[r] == q) std::printf(" %s", label(r).c_str());
+            std::printf("\n");
+          }
+          return 0;
+        }
+        std::vector<std::string> cls;
+        for (size_t r = 0; r < t.cells.size(); ++r) cls.push_back(t.cells[r][ex[0]]);
+        const DiscriminantResult d = discriminant(rows, cls);
+        std::printf("discriminant analysis of %zu rows, %zu classes, %zu columns: %.1f %% right on the rows, %.1f %% left out one at a time\n", rows.size(), d.classes.size(),
+                    xc.size(), 100 * d.accuracy, 100 * d.accuracy_loo);
+        for (size_t f = 0; f < d.directions.size(); ++f) {
+          std::printf("function %zu (eigenvalue %.4g):", f + 1, d.eigenvalues[f]);
+          for (size_t k = 0; k < xc.size(); ++k) std::printf(" %+.4g·%s", d.directions[f][k], t.names[xc[k]].c_str());
+          std::printf("\n");
+        }
+        for (size_t r = 0; r < rows.size(); ++r)
+          if (d.predicted_loo[r] != int(std::find(d.classes.begin(), d.classes.end(), cls[r]) - d.classes.begin()))
+            std::printf("row %s (%s) taken for %s when left out\n", label(r).c_str(), cls[r].c_str(), d.classes[size_t(d.predicted_loo[r])].c_str());
+        return 0;
+      }
+      throw std::invalid_argument("qspr: descriptors, model, cluster or lda");
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps qspr: %s\n", e.what());
       return 1;
     }
   }

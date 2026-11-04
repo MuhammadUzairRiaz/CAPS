@@ -1456,6 +1456,57 @@ def _habit(self, max_index: int = 3, attachment: bool = False, surface: bool = F
 
 Document.habit = _habit
 
+def _qspr(o: dict) -> dict:
+    f = library().caps_qspr
+    f.argtypes = [C.c_char_p, C.c_char_p, C.c_int32]
+    f.restype = C.c_int32
+    buf = C.create_string_buffer(1 << 22)
+    n = f(_enc(json.dumps(o)), buf, len(buf))
+    if n > len(buf):
+        buf = C.create_string_buffer(int(n))
+        f(_enc(json.dumps(o)), buf, len(buf))
+    r = json.loads(buf.value.decode())
+    if not r.get("ok"):
+        raise CapsError(r.get("error", "qspr failed"))
+    return r
+
+
+def descriptors(smiles=(), files=()) -> list:
+    """Molecular descriptors (graph indices, shape, charged partial surface areas) of each SMILES and each structure file,
+    every one taken as one molecule: [{source, charges, descriptors: {name: value}}]. Charges: the file's own, else
+    Gasteiger-Marsili."""
+    r = _qspr({"op": "descriptors", "smiles": list(smiles), "files": [str(f) for f in files]})
+    out = []
+    for row in r["rows"]:
+        if "error" in row:
+            out.append({"source": row["source"], "error": row["error"]})
+        else:
+            out.append({"source": row["source"], "charges": row["charges"], "descriptors": {d["name"]: d["value"] for d in row["descriptors"]}})
+    return out
+
+
+def qspr_model(y, x: dict, method: str = "mlr", stepwise: bool = False, squares: bool = False, products: bool = False, components: int = 0,
+               folds: int = 0, randomise: int = 0, hidden: int = 4, seed: int = 1) -> dict:
+    """A model of y on the columns x ({name: values}): mlr (optionally AIC stepwise with squares and products), pls (components
+    by cross-validation when 0), gfa (genetic function approximation) or nn (one hidden layer). folds > 1 cross-validates
+    (folds >= rows: leave-one-out); randomise repeats the whole fit on shuffled y. Returns {equation, terms, r2, q2, ...}."""
+    names = list(x.keys())
+    return _qspr({"op": "model", "y": [float(v) for v in y], "x": [[float(v) for v in x[n]] for n in names], "names": names, "method": method,
+                  "stepwise": bool(stepwise), "squares": bool(squares), "products": bool(products), "components": int(components),
+                  "folds": int(folds), "randomise": int(randomise), "hidden": int(hidden), "seed": int(seed)})
+
+
+def cluster_rows(rows, k: int = 2, method: str = "ward", scale: bool = True, seed: int = 1) -> dict:
+    """Clusters of rows (each a list of numbers): hierarchical (single, complete, average, ward) cut at k, or kmeans.
+    Returns {labels, merges, centroids, within_ss}."""
+    return _qspr({"op": "cluster", "rows": [[float(v) for v in r] for r in rows], "k": int(k), "method": method, "scale": bool(scale), "seed": int(seed)})
+
+
+def discriminant(rows, classes) -> dict:
+    """Fisher's linear discriminant analysis of rows (lists of numbers) in classes: {classes, directions, eigenvalues,
+    predicted, predicted_loo, accuracy, accuracy_loo}."""
+    return _qspr({"op": "lda", "rows": [[float(v) for v in r] for r in rows], "classes": [str(c) for c in classes]})
+
 def density_fields(molecules, chi=None, grid=(32, 32, 32), bond: float = 1.1543, kappa: float = 10.0, noise: float = 75.0, dt: float = 0.02,
                    steps: int = 2000, frame_every: int = 100, seed: int = 1) -> dict:
     """Density-field dynamics of Gaussian chains (no structure needed): molecules [(name, sequence such as "A8B8", fraction), …],

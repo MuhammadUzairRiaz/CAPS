@@ -325,6 +325,19 @@ internal static class Screenshot
                 for (int k = 0; k < 60; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
                 Console.WriteLine("fields: " + vm.Status + (vm.FieldHasError ? " · error " + vm.FieldError : "") + " · " + vm.FieldNote);
             }
+            if (kv[0] == "studymodel")   // studymodel=CSV|MODE|Y|COLS: Study with a CSV table, the statistics mode, y (Up) column and ticked columns, awaited
+            {
+                var vm = w.ViewModel;
+                var f = kv[1].Split('|');
+                vm.OpenStudy();
+                Console.WriteLine("study: " + vm.StudyLoad(f[0]));
+                if (f.Length > 2) vm.StudyY = vm.StudyColumnNames.ToList().IndexOf(f[2]);
+                if (f.Length > 3) foreach (var p in vm.StudyPicks) p.On = f[3].Split(',').Contains(p.Name);
+                vm.StudyMode = int.Parse(f[1]);
+                for (int q = 0; q < 400 && vm.StudyStatsText.Contains("computing"); ++q) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(25); }
+                for (int q = 0; q < 30; ++q) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+                Console.WriteLine("studymodel:\n" + vm.StudyStatsText);
+            }
             if (kv[0] == "habit")   // habit=FF|MAXINDEX|ENERGIES(0/1)|MODEL: Builders › Crystal's crystal shape of the open crystal, awaited
             {
                 var vm = w.ViewModel;

@@ -2010,6 +2010,112 @@
    "engines": []
   },
   {
+   "id": "molecular-descriptors",
+   "group": "Analysis",
+   "title": "Molecular descriptors",
+   "summary": "Numbers that describe a molecule for structure–property models, from its bonds (hydrogens explicit, the hydrogen-suppressed graph for the indices), its 3D shape and its charges. Graph indices: Wiener's sum of topological distances; the Zagreb indices; Randić's connectivity index and its Kier–Hall extensions over paths of orders 0–3, plain and with valence deltas δv = (Z_v − h)/(Z − Z_v − 1); Kier's shape indices κ1–κ3; Balaban's distance-sum index J; path counts, rings, aromatic atoms, Lipinski's hydrogen-bond donors (hydrogens on N and O) and acceptors (N and O), rotatable bonds. Shape: van der Waals volume (Bondi radii on a 0.1 Å grid) and area, the principal moments and radius of gyration, and Rohrbaugh and Jurs's shadow areas on the three principal planes with their ratios to the enclosing rectangles. Charges: Stanton and Jurs's charged partial surface areas (PPSA, PNSA, DPSA, FPSA, FNSA, WPSA, WNSA 1–3) from the solvent-accessible area of each atom and the structure's own charges, else Gasteiger–Marsili. AlogP and molar refractivity are not given: their atom-type tables are not in CAPS.",
+   "equation": "W = ½ Σ d_ij;  ᵐχ = Σ_paths Π δ^(−½);  δv = (Z_v − h)/(Z − Z_v − 1);  κ1 = A(A−1)²/P1²;  J = q/(μ+1) Σ_bonds (s_i s_j)^(−½);  PPSA3 = Σ_(q>0) q_i A_i",
+   "equation_note": "Wiener 1947; Gutman & Trinajstić 1972; Randić 1975; Kier & Hall 1976; Kier 1985, 1986; Balaban 1982; Rohrbaugh & Jurs 1987; Stanton & Jurs 1990",
+   "tex": "W = \\tfrac{1}{2}\\sum_{i,j} d_{ij}, \\qquad {}^{m}\\chi = \\sum_{\\text{paths}}\\prod_{i} \\delta_i^{-1/2}, \\qquad \\delta_i^{v} = \\frac{Z_i^{v} - h_i}{Z_i - Z_i^{v} - 1} \\\\ {}^{1}\\kappa = \\frac{A(A-1)^2}{P_1^2}, \\qquad J = \\frac{q}{\\mu + 1}\\sum_{\\text{bonds}} (s_i s_j)^{-1/2}, \\qquad \\mathrm{PPSA3} = \\sum_{q_i > 0} q_i A_i",
+   "symbols": [
+    [
+     "d_ij",
+     "topological distance (bonds) between heavy atoms",
+     "—"
+    ],
+    [
+     "δ, δv",
+     "heavy neighbours; valence delta",
+     "—"
+    ],
+    [
+     "A, P_m",
+     "heavy atoms; paths of length m",
+     "—"
+    ],
+    [
+     "s_i, q, μ",
+     "distance sum; bonds; rings",
+     "—"
+    ],
+    [
+     "A_i, q_i",
+     "solvent-accessible area and charge of atom i",
+     "Å², e"
+    ]
+   ],
+   "when": "Columns for a study table of repeat units, curatives, accelerators, plasticisers and coupling agents, ahead of a model of Tg, solubility or cure rate.",
+   "cites": [
+    "wiener1947",
+    "gutman1972",
+    "randic1975",
+    "kier1976",
+    "kier1985",
+    "kier1986",
+    "balaban1982",
+    "lipinski1997",
+    "rohrbaugh1987",
+    "stanton1990"
+   ],
+   "source": "core/src/qspr.cpp (molecular_descriptors)",
+   "tested": "Qspr.GraphIndicesArePublishedValues (Wiener's hexanes 35, 32, 31, 28, 29; n-hexane M1 18, M2 16, 1χ 2.9142, κ 6, 5, 16/3, Balaban J 2.3391; ethanol 1χv 1.0233 and 0χv; chloromethane 0χv with δv(Cl) = 7/9); Qspr.SphereVolumeAndShadow (a single atom: the sphere's volume and area, its shadow π/4 of the square)",
+   "deviation": "the structure is taken as one molecule; formal charges do not change δv; volume and shadows on grids (0.1 Å and 0.05 Å); E-state keys, chirality counts, AlogP and molar refractivity not given",
+   "engines": []
+  },
+  {
+   "id": "qspr-models",
+   "group": "Analysis",
+   "title": "Structure–property models, clusters and classes",
+   "summary": "Models of one column of a study table (y) on others. Multiple linear regression, optionally stepwise by Akaike's information criterion over the columns, their squares and their products; partial least squares (PLS1 by NIPALS on autoscaled columns, the number of components the one with the highest cross-validated q²); genetic function approximation, a genetic search over sums of linear, spline ⟨x − t⟩₊, ⟨t − x⟩₊ and quadratic terms with knots at data values, scored by Friedman's lack of fit; and a neural network of one tanh hidden layer trained by back-propagated gradients (L-BFGS, weight decay, several starts). Each model is cross-validated (k-fold or leave-one-out: q² = 1 − PRESS/SS with the model's form refitted in each fold) and checked by y-randomisation, the whole fit, selection included, repeated on shuffled y. Linear models report leverage, standardised residuals and Cook's distance for every row. Rows can be clustered (hierarchical by the Lance–Williams update: single, complete, average or Ward linkage; or k-means) and classes separated by Fisher's linear discriminant analysis, checked by leaving each row out.",
+   "equation": "q² = 1 − Σ(y − ŷ_cv)² / Σ(y − ȳ)²;  AIC = n ln(SSE/n) + 2k;  LOF = LSE / (1 − (c + d p)/M)²;  D_i = e_i² h_ii / (p s² (1 − h_ii)²);  Ward: Δ = n_a n_b/(n_a + n_b) |c_a − c_b|²",
+   "equation_note": "Akaike 1974; Wold et al. 2001; Rogers & Hopfinger 1994; Rumelhart et al. 1986; Rücker et al. 2007; Cook 1977; Lance & Williams 1967; Ward 1963; Lloyd 1982; Fisher 1936",
+   "tex": "q^2 = 1 - \\frac{\\sum_i (y_i - \\hat y_{i,\\mathrm{cv}})^2}{\\sum_i (y_i - \\bar y)^2}, \\qquad \\mathrm{AIC} = n\\ln\\frac{\\mathrm{SSE}}{n} + 2k, \\qquad \\mathrm{LOF} = \\frac{\\mathrm{LSE}}{\\left(1 - \\frac{c + d\\,p}{M}\\right)^2} \\\\ D_i = \\frac{e_i^2}{p\\,s^2}\\,\\frac{h_{ii}}{(1 - h_{ii})^2}, \\qquad \\Delta_{\\mathrm{Ward}} = \\frac{n_a n_b}{n_a + n_b}\\,\\lVert \\mathbf{c}_a - \\mathbf{c}_b \\rVert^2",
+   "symbols": [
+    [
+     "q²",
+     "cross-validated coefficient of determination",
+     "—"
+    ],
+    [
+     "k, p",
+     "parameters of a model",
+     "—"
+    ],
+    [
+     "c, d, M",
+     "GFA basis functions, smoothing, rows",
+     "—"
+    ],
+    [
+     "h_ii",
+     "leverage of row i",
+     "—"
+    ],
+    [
+     "c_a",
+     "centroid of cluster a",
+     "—"
+    ]
+   ],
+   "when": "Screening many candidates in a study table (Tg, density or solubility parameter against descriptors of repeat units; cure rate against accelerator descriptors); grouping simulated systems; telling which descriptors separate good from poor coupling agents.",
+   "cites": [
+    "akaike1974",
+    "wold2001",
+    "rogers1994",
+    "rumelhart1986",
+    "rucker2007",
+    "cook1977",
+    "lance1967",
+    "ward1963",
+    "lloyd1982",
+    "fisher1936"
+   ],
+   "source": "core/src/qspr.cpp (fit_model, cluster_rows, discriminant)",
+   "tested": "Qspr.LinearModelsAndDiagnostics (an exact plane recovered; PLS with every component equals OLS to 1e-9; leave-one-out PRESS equals Σ (e/(1 − h))²; Cook's distances equal the deletion changes to 1e-10); Qspr.StepwiseAndRandomisation (the one real column kept; shuffled R² at most 0.31 against 0.9999); Qspr.GfaHingeAndNetwork (GFA finds y = 3⟨x − 0.5⟩₊ exactly; a 6-unit network fits sin 2x with R² > 0.999); Qspr.ClusteringAndDiscriminant (Ward merges at 0.5, 0.5, 100 for 0, 1, 10, 11; k-means agrees; Fisher's direction equal to S_W⁻¹(μ₁ − μ₂))",
+   "deviation": "cross-validation keeps the terms that stepwise and GFA selected on all rows (optimistic q²; y-randomisation repeats the selection); folds are interleaved, not shuffled; the network's predictions depend on its seed",
+   "engines": []
+  },
+  {
    "group": "Analysis",
    "source": "core/src/properties.cpp",
    "engines": [],

@@ -133,7 +133,13 @@
                 <SelectableTextBlock Text="{Binding StudyStatsText}" Classes="mono" FontSize="11" />
               </ScrollViewer>
               <Button Content="Add PC1 and PC2 as columns" Click="OnScores" IsVisible="{Binding StudyIsPca}" />
-              <TextBlock Classes="dim" TextWrapping="Wrap" Text="Regression: y is the chart's Up column, the ticked columns predict it (least squares with an intercept; t = coefficient / standard error). Components: of the ticked columns, standardised. Rows missing a value in a chosen column are left out." />
+              <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding StudyIsCluster}">
+                <TextBlock Text="Clusters" Classes="dim" VerticalAlignment="Center" />
+                <NumericUpDown Value="{Binding StudyK}" Minimum="2" Maximum="20" Increment="1" FormatString="0" Width="70" ShowButtonSpinner="False" />
+              </StackPanel>
+              <Button Content="Add descriptors of the rows' structures" Click="OnDescriptors"
+                      ToolTip.Tip="Graph indices (Wiener, χ, κ, Balaban J), H-bond counts, van der Waals volume and area, charged partial surface areas of each row's structure, as columns" />
+              <TextBlock Classes="dim" TextWrapping="Wrap" Text="Regression: y is the chart's Up column, the ticked columns predict it (least squares with an intercept; t = coefficient / standard error). Components: of the ticked columns, standardised. The models below the line report q² by cross-validation (leave-one-out up to 30 rows, else 10-fold) and ten fits on shuffled y. Rows missing a value in a chosen column are left out." />
             </StackPanel>
           </Border>
         </StackPanel>

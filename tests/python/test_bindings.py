@@ -672,6 +672,13 @@ _h111 = [f for f in _hb["faces"] if sorted(map(abs, f["hkl"])) == [1, 1, 1]][0]
 check(_hb["space_group"].replace(" ", "") == "Fm-3m" and _h111["e_att"] is None and "polar" in _h111["note"] and abs(_h100["area_growth"] - 1) < 1e-9
       and abs(_hb["shapes"]["equilibrium"]["aspect"] - 1) < 1e-9 and _h100["gamma"] > 0,
       f"MgO habit: E_att(100) {_h100['e_att']:.2f} kcal/mol, gamma(100) {_h100['gamma']:.3f} J/m2 (unrelaxed), a {{100}} cube")
+# structure-property models: Wiener's n-hexane (35), an exact plane fitted, Ward's two groups
+_ds = caps.descriptors(smiles=["CCCCCC", "CCO"])
+_qm = caps.qspr_model([1 + 2 * a - 3 * b for a, b in zip([0.1, 0.5, 0.9, 0.3, 0.7], [0.2, 0.8, 0.4, 0.6, 0.1])],
+                      {"a": [0.1, 0.5, 0.9, 0.3, 0.7], "b": [0.2, 0.8, 0.4, 0.6, 0.1]}, folds=5)
+_cl = caps.cluster_rows([[0], [1], [10], [11]], k=2, scale=False)
+check(_ds[0]["descriptors"]["W"] == 35 and abs(_qm["terms"][1]["coef"] - 2) < 1e-9 and abs(_qm["q2"] - 1) < 1e-9 and _cl["labels"][0] == _cl["labels"][1] != _cl["labels"][2],
+      f"qspr: W(hexane) {_ds[0]['descriptors']['W']:.0f}, 1chiv(ethanol) {_ds[1]['descriptors']['1chiv']:.4f}, plane q2 {_qm['q2']:.6f}, Ward merges {[m[2] for m in _cl['merges']]}")
 # density fields of a symmetric diblock (2D): microphase separation starts at about the RPA spacing (4.1 grid spacings)
 _df = caps.density_fields([("AB", "A4B4", 1.0)], {"AB": 1.93}, grid=(32, 32, 1), kappa=20, noise=200, dt=0.01, steps=300, frame_every=100)
 check(_df["types"] == ["A", "B"] and _df["order"][-1][0] > _df["order"][1][0] and 3.4 < _df["spacing"][-1] < 4.8 and len(_df["last"][0]) == 1024,
@@ -759,7 +766,7 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 80, "ABI 80")
+check(caps.abi_version() == 81, "ABI 81")
 
 # bond exchange analysis (ABI 74): an exact Arrhenius line gives its Ea, healing ratios follow their definitions
 import math

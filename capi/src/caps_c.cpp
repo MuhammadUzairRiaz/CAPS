@@ -43,6 +43,7 @@
 #include "caps/phonons.hpp"
 #include "caps/crystalfit.hpp"
 #include "caps/habit.hpp"
+#include "caps/qspr.hpp"
 #include "caps/ddft.hpp"
 #include "caps/dlpoly.hpp"
 #include "caps/dynamics.hpp"
@@ -12363,6 +12364,125 @@ extern "C" int32_t caps_phonons(caps_doc* d, const char* json, caps_stage_fn pro
     r["sound"] = std::move(snd), r["min_wavenumber"] = res.min_wavenumber, r["imaginary"] = double(res.imaginary), r["max_force"] = res.max_force;
     r["relax_steps"] = double(res.relax_steps), r["relax_shift"] = res.relax_shift, r["forcefield"] = res.field, r["notes"] = std::move(nt);
     r["supercell"] = arr({double(res.supercell[0]), double(res.supercell[1]), double(res.supercell[2])});
+  } catch (const std::exception& e) {
+    r = caps::Json::object();
+    r["ok"] = false;
+    r["error"] = std::string(e.what());
+  }
+  return report_out(r.dump(0), out, cap);
+}
+
+// v81 structure–property models (qspr.hpp), no document
+extern "C" int32_t caps_qspr(const char* json, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    const std::string op = j.text("op");
+    auto nums = [](const caps::Json& a) {
+      std::vector<double> v;
+      if (a.is_array())
+        for (const auto& x : a.items()) v.push_back(x.is_number() ? x.number() : std::numeric_limits<double>::quiet_NaN());
+      return v;
+    };
+    auto table = [&](const char* key) {
+      std::vector<std::vector<double>> t;
+      if (j.has(key) && j[key].is_array())
+        for (const auto& row : j[key].items()) t.push_back(nums(row));
+      return t;
+    };
+    if (op == "descriptors") {
+      // one structure per file or SMILES, each taken as one molecule
+      caps::Json rows = caps::Json::array();
+      auto one = [&](const caps::System& s, const std::string& what) {
+        caps::Json x = caps::Json::object();
+        try {
+          std::string used;
+          x["descriptors"] = caps::descriptors_json(caps::molecular_descriptors(s, &used));
+          x["charges"] = used;
+        } catch (const std::exception& e) {
+          x["error"] = std::string(e.what());
+        }
+        x["source"] = what;
+        rows.push_back(x);
+      };
+      if (j.has("files") && j["files"].is_array())
+        for (const auto& f : j["files"].items()) {
+          try {
+            const caps::Trajectory t = caps::open_file(f.str(), "");
+            caps::System s = t.frames() ? t.frame(0) : t.topology;
+            s.cell = caps::Cell{};
+            one(s, f.str());
+          } catch (const std::exception& e) {
+            caps::Json x = caps::Json::object();
+            x["source"] = f.str(), x["error"] = std::string(e.what());
+            rows.push_back(x);
+          }
+        }
+      if (j.has("smiles") && j["smiles"].is_array())
+        for (const auto& sm : j["smiles"].items()) {
+          try {
+            one(caps::build_molecule(sm.str()).system, sm.str());
+          } catch (const std::exception& e) {
+            caps::Json x = caps::Json::object();
+            x["source"] = sm.str(), x["error"] = std::string(e.what());
+            rows.push_back(x);
+          }
+        }
+      r["rows"] = rows;
+    } else if (op == "model") {
+      caps::ModelOptions o;
+      o.method = j.text("method", "mlr");
+      o.stepwise = j.has("stepwise") && j["stepwise"].boolean();
+      o.squares = j.has("squares") && j["squares"].boolean();
+      o.products = j.has("products") && j["products"].boolean();
+      o.components = int(j.num("components", 0));
+      o.folds = int(j.num("folds", 0));
+      o.randomise = int(j.num("randomise", 0));
+      o.nn_hidden = int(j.num("hidden", 4));
+      o.gfa_generations = int(j.num("generations", 3000));
+      o.gfa_max_terms = int(j.num("max_terms", 6));
+      o.seed = uint64_t(j.num("seed", 1));
+      std::vector<std::string> names;
+      if (j.has("names") && j["names"].is_array())
+        for (const auto& n : j["names"].items()) names.push_back(n.str());
+      r = caps::model_json(caps::fit_model(nums(j["y"]), table("x"), names, o));
+    } else if (op == "cluster") {
+      const caps::RowClusters c = caps::cluster_rows(table("rows"), j.text("method", "ward"), int(j.num("k", 2)),
+                                                       !(j.has("scale") && !j["scale"].boolean()), uint64_t(j.num("seed", 1)));
+      caps::Json lab = caps::Json::array(), mg = caps::Json::array(), ce = caps::Json::array();
+      for (int l : c.label) lab.push_back(caps::Json(l));
+      for (const auto& m : c.merges) {
+        caps::Json x = caps::Json::array();
+        for (double v : m) x.push_back(v);
+        mg.push_back(x);
+      }
+      for (const auto& cc : c.centroids) {
+        caps::Json x = caps::Json::array();
+        for (double v : cc) x.push_back(v);
+        ce.push_back(x);
+      }
+      r["labels"] = lab, r["merges"] = mg, r["centroids"] = ce, r["within_ss"] = c.within_ss;
+    } else if (op == "lda") {
+      std::vector<std::string> cls;
+      if (j.has("classes") && j["classes"].is_array())
+        for (const auto& c : j["classes"].items()) cls.push_back(c.is_string() ? c.str() : caps::Json(c).dump(0));
+      const caps::DiscriminantResult d = caps::discriminant(table("rows"), cls);
+      caps::Json cl = caps::Json::array(), dirs = caps::Json::array(), ev = caps::Json::array(), pr = caps::Json::array(), pl = caps::Json::array();
+      for (const auto& c : d.classes) cl.push_back(c);
+      for (const auto& v : d.directions) {
+        caps::Json x = caps::Json::array();
+        for (double q : v) x.push_back(q);
+        dirs.push_back(x);
+      }
+      for (double e : d.eigenvalues) ev.push_back(e);
+      for (int p : d.predicted) pr.push_back(caps::Json(p));
+      for (int p : d.predicted_loo) pl.push_back(caps::Json(p));
+      r["classes"] = cl, r["directions"] = dirs, r["eigenvalues"] = ev, r["predicted"] = pr, r["predicted_loo"] = pl;
+      r["accuracy"] = d.accuracy, r["accuracy_loo"] = d.accuracy_loo;
+    } else {
+      throw std::invalid_argument("qspr op '" + op + "': descriptors, model, cluster or lda");
+    }
+    r["ok"] = true;
   } catch (const std::exception& e) {
     r = caps::Json::object();
     r["ok"] = false;

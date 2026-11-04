@@ -30,6 +30,7 @@ public partial class StudyPage : PageBase
     private void OnAddBatch(object? s, RoutedEventArgs e) => Vm.Status = Vm.StudyAddBatch();
     private void OnAddReader(object? s, RoutedEventArgs e) => Vm.Status = Vm.StudyAddReader();
     private void OnScores(object? s, RoutedEventArgs e) => Vm.Status = Vm.StudyAddScores();
+    private async void OnDescriptors(object? s, RoutedEventArgs e) => await Vm.StudyAddDescriptors();
     private void OnRemoveColumn(object? s, RoutedEventArgs e) { if ((s as Control)?.DataContext is StudyColumn c) Vm.StudyRemoveColumn(c); }
     private void OnRemoveRow(object? s, RoutedEventArgs e) { if ((s as Control)?.DataContext is StudyRow r) Vm.StudyRemoveRow(r); }
     private void OnOpenRow(object? s, RoutedEventArgs e) { if ((s as Control)?.DataContext is StudyRow r) Vm.StudyOpenRow(r); }

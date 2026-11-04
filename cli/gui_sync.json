@@ -1501,6 +1501,34 @@
     "--topology": "page",
     "--quiet": "cli: no progress line"
    }
+  },
+  "qspr": {
+   "status": "gui",
+   "studio": "Analyze › Study table › Statistics",
+   "where": "ViewModels/MainViewModel.StudyModels.cs|StudyModelRun",
+   "capi": [
+    "caps_qspr"
+   ],
+   "options": {
+    "--smiles": "cli: the Study page takes descriptors of its rows' structure files",
+    "--csv": "partial: the Study page adds the descriptors as columns",
+    "--y": "page",
+    "--x": "page",
+    "--method": "page",
+    "--stepwise": "page",
+    "--squares": "page",
+    "--products": "page",
+    "--components": "cli: the page chooses PLS components by cross-validation",
+    "--folds": "partial: the page takes leave-one-out up to 30 rows, else 10-fold",
+    "--randomise": "partial: the page shuffles y ten times",
+    "--hidden": "cli: the page's network has 4 hidden units",
+    "--seed": "cli: the page's seed is 1",
+    "--k": "page",
+    "--class": "partial: the page takes the Up column as the classes",
+    "--no-scale": "cli: the page autoscales",
+    "--json": "partial: the page shows the result",
+    "--quiet": "cli: no per-structure lines"
+   }
   }
  },
  "hidden_options": {

@@ -242,8 +242,10 @@ public sealed partial class MainViewModel
     public int StudyX { get => _studyX; set { if (Set(ref _studyX, Math.Max(0, value))) StudyPlot(); } }
     public int StudyY { get => _studyY; set { if (Set(ref _studyY, Math.Max(0, value))) StudyPlot(); } }
     public int StudyFit { get => _studyFit; set { if (Set(ref _studyFit, Math.Clamp(value, 0, CurveFit.Models.Length - 1))) StudyPlot(); } }
-    public static readonly string[] StudyModes = ["Describe each column", "Correlations (Pearson r)", "Regression: y on the ticked columns", "Principal components of the ticked columns"];
-    public int StudyMode { get => _studyMode; set { if (Set(ref _studyMode, Math.Clamp(value, 0, 3))) { Raise(nameof(StudyIsPca)); StudyStatsRun(); } } }
+    public static readonly string[] StudyModes = ["Describe each column", "Correlations (Pearson r)", "Regression: y on the ticked columns", "Principal components of the ticked columns",
+        "Stepwise regression (AIC; squares and products)", "PLS regression (components by cross-validation)", "Genetic function approximation (GFA)",
+        "Neural network (one hidden layer)", "Clusters of the rows (Ward) on the ticked columns", "Discriminant analysis: the Up column as classes"];
+    public int StudyMode { get => _studyMode; set { if (Set(ref _studyMode, Math.Clamp(value, 0, StudyModes.Length - 1))) { Raise(nameof(StudyIsPca)); Raise(nameof(StudyIsCluster)); StudyStatsRun(); } } }
     public bool StudyIsPca => _studyMode == 3;
     public string StudyStatsText { get => _studyStats; private set => Set(ref _studyStats, value); }
     public string StudyError { get => _studyError; private set { if (Set(ref _studyError, value ?? "")) Raise(nameof(StudyHasError)); } }
@@ -464,6 +466,9 @@ public sealed partial class MainViewModel
                                  $"\nR² {StudyStats.N(r.R2)} · adjusted R² {StudyStats.N(r.AdjR2)} · RMSE {StudyStats.N(r.Rmse)}";
                     break;
                 }
+                case >= 4:
+                    StudyModelRun(cols, ticked);
+                    break;
                 case 3:
                 {
                     if (ticked.Count < 2) { StudyStatsText = "Tick two columns or more for the components"; break; }
