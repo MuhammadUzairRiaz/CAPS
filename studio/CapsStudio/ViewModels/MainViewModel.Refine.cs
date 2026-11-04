@@ -19,6 +19,39 @@ public sealed partial class MainViewModel
     public string RefineText { get => _refText; private set => Set(ref _refText, value); }
     public string RefineError { get => _refError; private set { if (Set(ref _refError, value)) Raise(nameof(RefineHasError)); } }
     public bool RefineHasError => _refError.Length > 0;
+    private string _idxText = "";
+    public string IndexText { get => _idxText; private set { if (Set(ref _idxText, value)) Raise(nameof(IndexHas)); } }
+    public bool IndexHas => _idxText.Length > 0;
+
+    /// <summary>The cells that index the measured pattern's lines (successive dichotomy, by M20).</summary>
+    public async Task RunIndex()
+    {
+        if (_expPath.Length == 0 || !Idle) return;
+        var lam = new[] { 1.54056, 0.70930, 1.78896, 1.93604, 2.28970, 0.559421 }[Math.Clamp(_powAnode, 0, 5)];
+        var json = new JsonObject { ["data"] = _expPath, ["wavelength"] = lam, ["max_length"] = 15 }.ToJsonString();
+        RefineRunning = true;
+        RefineError = "";
+        Status = "Indexing…";
+        try
+        {
+            var r = JsonNode.Parse(await Task.Run(() => CapsStudio.Interop.CapsDocument.Index(json)))!;
+            if (r["ok"]?.GetValue<bool>() != true) { RefineError = (string?)r["error"] ?? "indexing failed"; return; }
+            var inv = CultureInfo.InvariantCulture;
+            var sols = (JsonArray)r["solutions"]!;
+            var sb = new StringBuilder($"{((JsonArray)r["lines"]!).Count} lines · ");
+            if (sols.Count == 0) sb.Append("no cell indexes them (try a larger tolerance or more unindexed lines from the command line)");
+            foreach (var x in sols.Take(5))
+            {
+                var c = ((JsonArray)x!["cell"]!).Select(v => (double?)v ?? 0).ToArray();
+                sb.AppendLine().Append(string.Format(inv, "{0,-12} {1:0.0000} {2:0.0000} {3:0.0000} Å {4:0.00} {5:0.00} {6:0.00}° · M20 {7:0.0}", (string?)x["system"], c[0], c[1], c[2], c[3], c[4], c[5], (double?)x["M20"] ?? 0));
+            }
+            IndexText = sb.ToString();
+            Status = sols.Count > 0 ? $"Indexed: {(string?)sols[0]!["system"]}" : "Indexing: no cell";
+        }
+        catch (Exception e) { RefineError = e.Message; }
+        finally { RefineRunning = false; }
+    }
+
     public ((double X, double Y)[] Obs, (double X, double Y)[] Calc, (double X, double Y)[] Diff) RefineFit { get; private set; } = ([], [], []);
 
     public async Task RunRefine()

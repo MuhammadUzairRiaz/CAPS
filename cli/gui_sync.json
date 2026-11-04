@@ -1574,6 +1574,38 @@
     "--quiet": "cli: no progress line",
     "--no-coulomb": "cli: without electrostatics"
    }
+  },
+  "index": {
+   "status": "gui",
+   "studio": "Analyze › Scattering › Powder pattern › Index it",
+   "where": "Views/Pages/ScatteringPage.axaml|Index it",
+   "capi": [
+    "caps_index"
+   ],
+   "options": {
+    "--wavelength": "partial: the page takes the anode's Kα1",
+    "--tolerance": "cli: the page uses 0.03° 2θ",
+    "--systems": "cli: the page searches every system",
+    "--max-length": "cli: the page searches cells up to 15 Å",
+    "--lines": "cli: the page uses the first 20 lines",
+    "--unindexed": "cli: the page indexes every line",
+    "--json": "partial: the page lists the cells"
+   }
+  },
+  "solve": {
+   "status": "cli",
+   "studio": "—",
+   "where": "",
+   "note": "direct-space solution needs a cell, a space group and a molecule together: the command line and Python (caps.solve_structure); the Studio indexes the pattern (Index it)",
+   "options": {
+    "--cell": "cli: structure solution runs from the command line and Python",
+    "--space-group": "cli: structure solution runs from the command line and Python",
+    "--wavelength": "cli: structure solution runs from the command line and Python",
+    "--steps": "cli: structure solution runs from the command line and Python",
+    "--seed": "cli: structure solution runs from the command line and Python",
+    "--out": "cli: structure solution runs from the command line and Python",
+    "--quiet": "cli: structure solution runs from the command line and Python"
+   }
   }
  },
  "hidden_options": {

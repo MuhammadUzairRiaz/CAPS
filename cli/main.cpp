@@ -80,6 +80,7 @@
 #include "caps/qspr.hpp"
 #include "caps/refine.hpp"
 #include "caps/dielectric.hpp"
+#include "caps/powder_index.hpp"
 #include "caps/ddft.hpp"
 #include "caps/yaml.hpp"
 #ifdef _WIN32
@@ -343,6 +344,10 @@ int usage() {
                "               [--ff FF] [--no-coulomb]   configurational-bias regrowth of chain ends (Siepmann & Frenkel)\n"
                "  caps fields --molecules 'A8B8:1; A8:0.5' [--chi AB=1.9] [--grid 32,32,32 (nz 1: 2D)] [--bond 1.1543] [--kappa 10] [--noise 75] [--dt 0.02]\n"
                "               [--steps 2000] [--every 100] [--seed 1] [--vtk OUT.vtk] [--csv OUT.csv]   density-field dynamics of Gaussian chains (blends, block copolymers)\n"
+               "  caps index DATA.xy [--wavelength 1.54056] [--tolerance 0.03] [--systems cubic,tetragonal,hexagonal,orthorhombic,monoclinic] [--max-length 20]\n"
+               "             [--lines 20] [--unindexed 0] [--json OUT]   cells that index the pattern's lines (successive dichotomy), by M20\n"
+               "  caps solve DATA.xy MOLECULE --cell a,b,c,al,be,ga --space-group 'P 21/c' [--wavelength Å] [--steps 6000] [--seed 1] -o CRYSTAL.cif\n"
+               "             a molecular crystal found by simulated annealing against the pattern (direct space)\n"
                "  caps dielectric CRYSTAL [--ff FF.json] [--cutoff 10] [--no-relax] [--fixed-cell] [--no-piezo] [--damping 10] [--csv STEM] [--json OUT]\n"
                "              dielectric tensors (static, high-frequency), refractive indices, piezoelectric e and d, reflectivity\n"
                "  caps refine DATA.xy CRYSTAL [CRYSTAL …] [--pawley] [--anode Cu | --wavelength Å] [--neutron] [--background 6] [--two-theta 10,90]\n"
@@ -473,7 +478,7 @@ const std::set<std::string>& known_options() {
     "--tmax", "--to", "--tol", "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing", "--units",
     "--polymer", "--crystal", "--crystal-cells", "--amorphous", "--loops", "--bridges", "--tails", "--reentry", "--analyse",
     "--corr-ps", "--long", "--swap-every", "--transient", "--dimensionality", "--thickness",
-    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--fixed-cell", "--no-piezo", "--damping", "--pawley", "--b-iso", "--background", "--refine", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
+    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--tolerance", "--systems", "--max-length", "--unindexed", "--lines", "--space-group", "--cell", "--fixed-cell", "--no-piezo", "--damping", "--pawley", "--b-iso", "--background", "--refine", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
   return k;
 }
 
@@ -4108,6 +4113,81 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps phonons: %s\n", e.what());
+      return 1;
+    }
+  }
+  if (cmd == "index") {
+    try {
+      if (pos.empty()) return usage();
+      const MeasuredPattern d = read_pattern(pos[0]);
+      IndexOptions io;
+      if (o.count("--wavelength")) io.wavelength = std::stod(o["--wavelength"]);
+      if (o.count("--tolerance")) io.tolerance = std::stod(o["--tolerance"]);
+      if (o.count("--max-length")) io.max_length = std::stod(o["--max-length"]);
+      if (o.count("--lines")) io.lines = std::stoi(o["--lines"]);
+      if (o.count("--unindexed")) io.unindexed = std::stoi(o["--unindexed"]);
+      if (o.count("--systems")) {
+        io.systems.clear();
+        std::stringstream ss(o["--systems"]);
+        std::string w;
+        while (std::getline(ss, w, ',')) io.systems.push_back(w);
+      }
+      PeakOptions po;
+      po.lambda1 = io.wavelength;
+      const auto pk = find_peaks(d, po);
+      std::vector<double> tt;
+      for (const auto& p : pk) tt.push_back(p.two_theta);
+      std::printf("%zu peaks:", tt.size());
+      for (size_t k = 0; k < tt.size() && k < 30; ++k) std::printf(" %.3f", tt[k]);
+      std::printf("\n");
+      const IndexResult r = index_pattern(tt, io);
+      std::printf("%-13s %9s %9s %9s %8s %8s %8s %9s %8s %8s %s\n", "system", "a", "b", "c", "alpha", "beta", "gamma", "V", "M20", "F_N", "indexed");
+      for (const auto& s2 : r.solutions)
+        std::printf("%-13s %9.4f %9.4f %9.4f %8.3f %8.3f %8.3f %9.2f %8.1f %8.1f %d/%zu\n", s2.system.c_str(), s2.cell[0], s2.cell[1], s2.cell[2], s2.cell[3], s2.cell[4], s2.cell[5],
+                    s2.volume, s2.M20, s2.FN, s2.indexed, r.lines.size());
+      if (!r.solutions.empty()) {
+        const auto& b = r.solutions[0];
+        std::printf("the best cell's lines (2θ obs, calc, hkl):\n");
+        for (size_t i = 0; i < b.hkl.size(); ++i)
+          std::printf("  %8.3f %8.3f  %d %d %d\n", b.two_theta_obs[i], b.two_theta_calc[i], b.hkl[i][0], b.hkl[i][1], b.hkl[i][2]);
+      }
+      for (const auto& n : r.notes) std::printf("%s\n", n.c_str());
+      std::printf("%.1f s\n", r.seconds);
+      return r.solutions.empty() ? 2 : 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps index: %s\n", e.what());
+      return 1;
+    }
+  }
+  if (cmd == "solve") {
+    try {
+      if (pos.size() < 2 || !o.count("--cell")) return usage();
+      const MeasuredPattern d = read_pattern(pos[0]);
+      Trajectory t = open_file(pos[1], "");
+      System mol = t.frames() ? t.frame(0) : t.topology;
+      std::array<double, 6> cp{};
+      {
+        std::string v = o["--cell"];
+        for (auto& c : v) if (c == ',') c = ' ';
+        std::istringstream is(v);
+        for (auto& x : cp) if (!(is >> x)) throw std::invalid_argument("--cell a,b,c,alpha,beta,gamma");
+      }
+      SolveOptions so;
+      if (o.count("--space-group")) so.space_group = o["--space-group"];
+      if (o.count("--wavelength")) so.refine.wavelength = std::stod(o["--wavelength"]);
+      if (o.count("--steps")) so.steps = std::stoi(o["--steps"]);
+      if (o.count("--seed")) so.seed = std::stoull(o["--seed"]);
+      if (!o.count("--quiet")) so.progress = [&](const std::string& w, double f) { std::fprintf(stderr, "\r%-20s %3.0f %%", w.c_str(), 100 * f); return true; };
+      const SolveResult r = solve_structure(d, mol, cp, so);
+      if (!o.count("--quiet")) std::fprintf(stderr, "\r%-30s\r", "");
+      std::printf("Rwp %.4f after %d moves (%d accepted, %d torsions)\n", r.rwp, r.steps, r.accepted, r.torsions);
+      for (const auto& n : r.notes) std::printf("%s\n", n.c_str());
+      const std::string out = o.count("-o") ? o["-o"] : (o.count("--out") ? o["--out"] : "solved.cif");
+      write_structure_file(r.crystal, out);
+      std::printf("wrote %s (%zu atoms)\n", out.c_str(), r.crystal.atoms.size());
+      return 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps solve: %s\n", e.what());
       return 1;
     }
   }

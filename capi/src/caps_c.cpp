@@ -46,6 +46,7 @@
 #include "caps/qspr.hpp"
 #include "caps/refine.hpp"
 #include "caps/dielectric.hpp"
+#include "caps/powder_index.hpp"
 #include "caps/ddft.hpp"
 #include "caps/dlpoly.hpp"
 #include "caps/dynamics.hpp"
@@ -12388,6 +12389,67 @@ caps::Json dielectric_json(const caps::DielectricResult& r) {
   return j;
 }
 }  // namespace
+
+// v84 powder indexing and direct-space solution (powder_index.hpp), no document
+extern "C" int32_t caps_index(const char* json, caps_stage_fn progress, void* user, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    const caps::MeasuredPattern d = caps::read_pattern(j.text("data"));
+    bool cancelled = false;
+    auto prog = [&](const std::string& w, double f) { if (progress) cancelled = progress(w.c_str(), f, user) != 0; return !cancelled; };
+    if (j.text("op", "index") == "solve") {
+      const caps::Trajectory t = caps::open_file(j.text("molecule"), "");
+      const caps::System mol = t.frames() ? t.frame(0) : t.topology;
+      std::array<double, 6> cp{};
+      if (!j.has("cell") || !j["cell"].is_array() || j["cell"].items().size() != 6) throw std::invalid_argument("solve: cell [a, b, c, alpha, beta, gamma]");
+      for (size_t k = 0; k < 6; ++k) cp[k] = j["cell"].items()[k].number();
+      caps::SolveOptions so;
+      so.space_group = j.text("space_group", "P 1");
+      so.refine.wavelength = j.num("wavelength", 1.54056);
+      so.steps = int(j.num("steps", 6000)), so.restarts = int(j.num("restarts", 2)), so.seed = uint64_t(j.num("seed", 1));
+      so.progress = prog;
+      const caps::SolveResult res = caps::solve_structure(d, mol, cp, so);
+      if (j.text("path").size()) caps::write_cif(res.crystal, j.text("path"));
+      r["rwp"] = res.rwp, r["steps"] = double(res.steps), r["accepted"] = double(res.accepted), r["torsions"] = double(res.torsions), r["path"] = j.text("path");
+    } else {
+      caps::IndexOptions io;
+      io.wavelength = j.num("wavelength", 1.54056), io.tolerance = j.num("tolerance", 0.03), io.max_length = j.num("max_length", 20);
+      io.lines = int(j.num("lines", 20)), io.unindexed = int(j.num("unindexed", 0));
+      if (j.has("systems") && j["systems"].is_array()) {
+        io.systems.clear();
+        for (const auto& x : j["systems"].items()) io.systems.push_back(x.str());
+      }
+      io.progress = prog;
+      caps::PeakOptions po;
+      po.lambda1 = io.wavelength;
+      std::vector<double> tt;
+      for (const auto& p : caps::find_peaks(d, po)) tt.push_back(p.two_theta);
+      const caps::IndexResult res = caps::index_pattern(tt, io);
+      auto arr = [](const auto& v) { caps::Json a = caps::Json::array(); for (double x : v) a.push_back(x); return a; };
+      caps::Json sols = caps::Json::array(), nt = caps::Json::array();
+      for (const auto& s2 : res.solutions) {
+        caps::Json x = caps::Json::object(), hk = caps::Json::array();
+        for (const auto& h : s2.hkl) {
+          caps::Json t3 = caps::Json::array();
+          for (int q : h) t3.push_back(caps::Json(q));
+          hk.push_back(t3);
+        }
+        x["system"] = s2.system, x["cell"] = arr(s2.cell), x["volume"] = s2.volume, x["M20"] = s2.M20, x["FN"] = s2.FN, x["indexed"] = double(s2.indexed);
+        x["hkl"] = hk, x["two_theta_obs"] = arr(s2.two_theta_obs), x["two_theta_calc"] = arr(s2.two_theta_calc);
+        sols.push_back(x);
+      }
+      for (const auto& n : res.notes) nt.push_back(n);
+      r["lines"] = arr(res.lines), r["solutions"] = sols, r["notes"] = nt, r["seconds"] = res.seconds;
+    }
+    r["ok"] = true;
+  } catch (const std::exception& e) {
+    r = caps::Json::object();
+    r["ok"] = false;
+    r["error"] = std::string(e.what());
+  }
+  return report_out(r.dump(0), out, cap);
+}
 
 // v83 dielectric, piezoelectric and optical response of the open crystal (dielectric.hpp)
 extern "C" int32_t caps_dielectric(caps_doc* d, const char* json, caps_stage_fn progress, void* user, char* out, int32_t cap) {

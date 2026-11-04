@@ -771,7 +771,7 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 83, "ABI 83")
+check(caps.abi_version() == 84, "ABI 84")
 
 # bond exchange analysis (ABI 74): an exact Arrhenius line gives its Ea, healing ratios follow their definitions
 import math

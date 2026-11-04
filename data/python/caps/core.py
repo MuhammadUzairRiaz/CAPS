@@ -1558,6 +1558,41 @@ def _dielectric(self, cutoff: float = 10.0, relax: bool = True, relax_cell: bool
 
 Document.dielectric = _dielectric
 
+def _index_call(o: dict) -> dict:
+    f = library().caps_index
+    f.argtypes = [C.c_char_p, C.c_void_p, C.c_void_p, C.c_char_p, C.c_int32]
+    f.restype = C.c_int32
+    buf = C.create_string_buffer(1 << 22)
+    n = f(_enc(json.dumps(o)), None, None, buf, len(buf))
+    if n > len(buf):
+        buf = C.create_string_buffer(int(n))
+        f(_enc(json.dumps(o)), None, None, buf, len(buf))
+    r = json.loads(buf.value.decode())
+    if not r.get("ok"):
+        raise CapsError(r.get("error", "index failed"))
+    return r
+
+
+def index_pattern(data: str, wavelength: float = 1.54056, tolerance: float = 0.03, systems=None, max_length: float = 20.0, lines: int = 20,
+                  unindexed: int = 0) -> dict:
+    """Cells that index a measured powder pattern (2θ intensity file): its peaks found, then successive dichotomy over cubic to
+    monoclinic cells, ranked by de Wolff's M20 (F_N beside it). Returns {lines, solutions [{system, cell, volume, M20, FN,
+    hkl, ...}], notes}."""
+    o = {"op": "index", "data": str(data), "wavelength": float(wavelength), "tolerance": float(tolerance), "max_length": float(max_length),
+         "lines": int(lines), "unindexed": int(unindexed)}
+    if systems is not None:
+        o["systems"] = list(systems)
+    return _index_call(o)
+
+
+def solve_structure(data: str, molecule: str, cell, space_group: str = "P 1", wavelength: float = 1.54056, steps: int = 6000,
+                    restarts: int = 2, seed: int = 1, path: str = "") -> dict:
+    """A molecular crystal found in direct space: the molecule (a structure file) placed, turned and its torsions set by
+    simulated annealing against the pattern in the cell (a, b, c, alpha, beta, gamma) and space group; the result written as
+    CIF to path. Returns {rwp, steps, accepted, torsions, path}."""
+    return _index_call({"op": "solve", "data": str(data), "molecule": str(molecule), "cell": [float(x) for x in cell], "space_group": space_group,
+                        "wavelength": float(wavelength), "steps": int(steps), "restarts": int(restarts), "seed": int(seed), "path": str(path)})
+
 def density_fields(molecules, chi=None, grid=(32, 32, 32), bond: float = 1.1543, kappa: float = 10.0, noise: float = 75.0, dt: float = 0.02,
                    steps: int = 2000, frame_every: int = 100, seed: int = 1) -> dict:
     """Density-field dynamics of Gaussian chains (no structure needed): molecules [(name, sequence such as "A8B8", fraction), …],

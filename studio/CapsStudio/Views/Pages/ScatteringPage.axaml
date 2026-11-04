@@ -127,6 +127,9 @@
                 </DockPanel>
                 <TextBlock Text="{Binding RefineError}" Foreground="{DynamicResource ErrB}" TextWrapping="Wrap" IsVisible="{Binding RefineHasError}" />
                 <TextBlock Text="{Binding RefineText}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" IsVisible="{Binding RefineHas}" />
+                <Button Click="OnIndex" Content="Index it" HorizontalAlignment="Left"
+                        ToolTip.Tip="The cells whose reflections fall on the measured pattern's lines (its peaks found, Kα2 dropped), best M20 first" />
+                <TextBlock Text="{Binding IndexText}" Classes="mono" FontSize="11.5" TextWrapping="Wrap" IsVisible="{Binding IndexHas}" />
               </StackPanel>
             </StackPanel>
           </Border>
