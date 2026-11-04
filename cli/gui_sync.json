@@ -1451,6 +1451,27 @@
     "--json": "partial: the Studio shows the result on the page",
     "--quiet": "cli: no progress line"
    }
+  },
+  "fit": {
+   "status": "gui",
+   "studio": "Force field › Fit to crystal data",
+   "where": "Views/MainWindow.axaml|Fit to crystal data",
+   "capi": [
+    "caps_fit_terms",
+    "caps_fit_crystal"
+   ],
+   "options": {
+    "--ff": "partial: the Studio fits the force field assigned on the Force field page",
+    "--relaxed": "Views/MainWindow.axaml|Relax the crystal at every step",
+    "--conventional": "Views/MainWindow.axaml|Relax the crystal at every step",
+    "--iterations": "cli: the Studio allows 50",
+    "--out": "Views/MainWindow.axaml|Save force field…",
+    "--json": "partial: the Studio shows the result on the card",
+    "--cutoff": "partial: the Studio uses the Minimise page's cut-off, at most 12 Å",
+    "--pme": "partial: the fit uses Ewald sums unless the spec says dsf",
+    "--no-coulomb": "cli: fits without electrostatics",
+    "--quiet": "cli: no progress line"
+   }
   }
  },
  "hidden_options": {

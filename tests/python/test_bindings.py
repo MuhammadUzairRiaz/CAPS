@@ -653,6 +653,18 @@ _pe2.field.assign("oplsaa2024")
 _ph = _pe2.phonons(temperatures=[300], path_points=30)
 check(_ph["max_force"] < 1e-2 and _ph["imaginary"] == 0 and max(_ph["sound"][2]) > 2 * max(_ph["sound"][0]) and len(_ph["bands"][0]) == 72,
       f"PE phonons: chain-axis LA {max(_ph['sound'][2]):.0f} m/s, lateral {max(_ph['sound'][0]):.0f} m/s, Cv(300 K) {_ph['Cv'][0]:.1f} cal/mol/K per cell")
+# force-field fitting to a crystal: the Catlow MgO shell model's Mg-O A refitted to the observed periclase cell (relaxed and
+# conventional fitting agree; rock salt has no free coordinates), C12 = C44 (Cauchy) as pair potentials with shells must give
+_mg = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "periclase.cif"))
+_mg.field.assign("catlow1976-mgo")
+_mt = _mg.fit_terms()
+check(any(t["kind"] == "pair" and sorted(t["types"]) == ["Mg_c76m1", "O_c76m1s"] and t["names"] == ["A", "rho", "C"] for t in _mt), "fittable terms list the Mg-O Buckingham pair")
+_fr = _mg.fit_crystal([("pair", ["Mg_c76m1", "O_c76m1s"], "A")], [("C11", 0, 0), ("C12", 0, 0), ("C44", 0, 0)], formula_units=4)
+_fc = _mg.fit_crystal([("pair", ["Mg_c76m1", "O_c76m1s"], "A")], relaxed=False, formula_units=4)
+_C = {o["what"]: o["final"] for o in _fr["observations"]}
+check(abs(_fr["structures"][0]["final"][0] - 4.2112) < 1e-5 and abs(_fr["parameters"][0]["final"] - _fc["parameters"][0]["final"]) < 1e-3
+      and abs(_C["C12"] - _C["C44"]) < 1e-3 * _C["C11"],
+      f"MgO fit: A {_fr['parameters'][0]['final']:.3f} (relaxed) {_fc['parameters'][0]['final']:.3f} (conventional) kcal/mol, C11 {_C['C11']:.1f} C12 {_C['C12']:.1f} C44 {_C['C44']:.1f} GPa")
 # density fields of a symmetric diblock (2D): microphase separation starts at about the RPA spacing (4.1 grid spacings)
 _df = caps.density_fields([("AB", "A4B4", 1.0)], {"AB": 1.93}, grid=(32, 32, 1), kappa=20, noise=200, dt=0.01, steps=300, frame_every=100)
 check(_df["types"] == ["A", "B"] and _df["order"][-1][0] > _df["order"][1][0] and 3.4 < _df["spacing"][-1] < 4.8 and len(_df["last"][0]) == 1024,
@@ -740,7 +752,7 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 78, "ABI 78")
+check(caps.abi_version() == 79, "ABI 79")
 
 # bond exchange analysis (ABI 74): an exact Arrhenius line gives its Ea, healing ratios follow their definitions
 import math

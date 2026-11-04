@@ -41,6 +41,7 @@
 #include "caps/sorption.hpp"
 #include "caps/powder.hpp"
 #include "caps/phonons.hpp"
+#include "caps/crystalfit.hpp"
 #include "caps/ddft.hpp"
 #include "caps/dlpoly.hpp"
 #include "caps/dynamics.hpp"
@@ -1111,7 +1112,10 @@ void field_run(caps_doc* d) {
   // the physics check: charges taken from the force field's own types must leave the structure at its formal charge
   // (OPLS-AA's group charges balance group by group; bond increments always do). A mismatch means a group was typed
   // only partly, so the assignment is incomplete, as a missing parameter would make it.
-  if (F.ff && F.charges == "types" && !uff) {
+  // Ionic models (shells, unbonded ions, only their own bonds kept) are left out: formal charges are perceived from covalent
+  // bonding, which reads a bare Mg as +2 but an O core bonded to its shell as neutral (periclase: +8 e per cell).
+  const bool ionic = !def.shells.empty() || def.keep_defined_bonds || !def.unbonded_types.empty();
+  if (F.ff && F.charges == "types" && !uff && !ionic) {
     double net = 0;
     for (double q : F.ff->charge) net += q;
     int formal = 0;
@@ -2356,14 +2360,32 @@ caps::ForceField field_for_extended(caps_doc* d, const caps::System& s) {
   // the force field a file carried (a CAPS data file's coefficients, an AMBER prmtop) or a model built with the structure
   // describes those atoms only: with molecules added the whole takes the built-in force field, as with no assignment
   if (d->field->ff_path == "file" || !d->field->model.empty()) return default_ff(s);
+  // an ionic model (shells, only its own bonds kept, unbonded types): a supercell's bonds were perceived again by distance,
+  // so the structure is prepared again as the assignment prepared the cell (shells already there stay; bonds the model
+  // has no term for are dropped)
+  const caps::FFDef& b = d->field->base;
+  if (!b.shells.empty() || b.keep_defined_bonds || !b.unbonded_types.empty()) {
+    caps::System p = s;
+    std::string ch = "keep";
+    caps::prepare_for_forcefield(p, b, ch);
+    if (p.atoms.size() == s.atoms.size()) {
+      std::unique_ptr<caps_doc> t(doc_of_system(p, d, "scratch", "", {}));
+      t->field = std::make_unique<FieldState>(*d->field);
+      field_run(t.get());
+      if (t->field->complete && t->field->ff) return *t->field->ff;
+    }
+  }
   std::unique_ptr<caps_doc> t(doc_of_system(s, d, "scratch", "", {}));
   t->field = std::make_unique<FieldState>(*d->field);
   field_run(t.get());
   if (!t->field->complete || !t->field->ff) {
     int untyped = 0;
     for (const auto& x : t->field->types) untyped += x.empty();
+    std::string which;
+    for (size_t k = 0; k < t->field->rep.missing.size() && k < 3; ++k) which += (k ? "; " : ": ") + t->field->rep.missing[k];
     throw std::invalid_argument(d->field->base.name + " does not describe the added molecules (" + std::to_string(untyped) + " atoms untyped, " +
-                                std::to_string(t->field->rep.missing.size()) + " parameters missing): choose a force field that covers them in Field, or clear the assignment");
+                                std::to_string(t->field->rep.missing.size()) + " parameters missing" + which +
+                                "): choose a force field that covers them in Field, or clear the assignment");
   }
   return *t->field->ff;
 }
@@ -12340,6 +12362,87 @@ extern "C" int32_t caps_phonons(caps_doc* d, const char* json, caps_stage_fn pro
     r["sound"] = std::move(snd), r["min_wavenumber"] = res.min_wavenumber, r["imaginary"] = double(res.imaginary), r["max_force"] = res.max_force;
     r["relax_steps"] = double(res.relax_steps), r["relax_shift"] = res.relax_shift, r["forcefield"] = res.field, r["notes"] = std::move(nt);
     r["supercell"] = arr({double(res.supercell[0]), double(res.supercell[1]), double(res.supercell[2])});
+  } catch (const std::exception& e) {
+    r = caps::Json::object();
+    r["ok"] = false;
+    r["error"] = std::string(e.what());
+  }
+  return report_out(r.dump(0), out, cap);
+}
+
+// v79 force-field fitting to the open crystal (crystalfit.hpp)
+extern "C" int32_t caps_fit_terms(caps_doc* d, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    if (!d) throw std::invalid_argument("no document");
+    if (!d->field || !d->field->ff) throw std::invalid_argument("assign a force field first (Force field)");
+    r["ok"] = true;
+    r["terms"] = caps::fittable_terms(*d->field->ff);
+    r["forcefield"] = d->field->base.name;
+  } catch (const std::exception& e) {
+    r = caps::Json::object();
+    r["ok"] = false;
+    r["error"] = std::string(e.what());
+  }
+  return report_out(r.dump(0), out, cap);
+}
+
+extern "C" int32_t caps_fit_crystal(caps_doc* d, const char* json, caps_stage_fn progress, void* user, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    if (!d) throw std::invalid_argument("no document");
+    if (!d->field || !d->field->ff) throw std::invalid_argument("assign a force field first (Force field)");
+    if (!d->field->groups.empty()) throw std::invalid_argument("the force field is assigned by group: fit one force field at a time");
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    const caps::System s = d->traj.frames() ? d->traj.frame(d->current) : d->traj.topology;
+    caps::FitOptions o;
+    caps::fit_options_from_json(j, o);
+    o.energy = elec();
+    o.energy.cutoff = j.num("cutoff", 10);
+    o.energy.tail = false;
+    o.energy.threads = int(j.num("threads", 0));
+    if (j.text("electrostatics", "pme") != "dsf") o.energy.electrostatics = caps::EnergyOptions::Electrostatics::PME;
+    caps::FitStructure fs;
+    fs.name = j.text("name", "crystal");
+    fs.cell = s;
+    fs.formula_units = j.num("formula_units", 1);
+    if (j.has("fit_structure")) fs.fit_structure = j["fit_structure"].boolean();
+    std::set<std::string> shell_types;
+    for (const auto& [core, sh] : d->field->base.shells) shell_types.insert(sh);
+    for (size_t i = 0; i < s.atoms.size(); ++i)
+      fs.shell.push_back(i < d->field->types.size() && shell_types.count(d->field->types[i]) ? 1 : 0);
+    fs.field_for = [&](const caps::System& sup) { return field_for_extended(d, sup); };
+    o.structures.push_back(fs);
+    bool cancelled = false;
+    if (progress) o.progress = [&](const std::string& w, double f) { cancelled = progress(w.c_str(), f, user) != 0; return !cancelled; };
+    const caps::FitResult res = caps::fit_to_crystals(o);
+    r = caps::fit_result_json(res);
+    // the fitted values into the assignment (the document's force field) and / or a file
+    caps::FFDef fitted = d->field->base;
+    caps::Json applied = caps::Json::array();
+    for (const auto& n : caps::apply_fitted_terms(fitted, res.terms)) applied.push_back(n);
+    r["written"] = applied;
+    if (j.text("save", "").size()) {
+      caps::FFDef out_def = fitted;
+      out_def.name += " (fitted)";
+      caps::save_forcefield(out_def, j.text("save"));
+      r["saved"] = j.text("save");
+    }
+    if (j.has("apply") && j["apply"].boolean() && !o.parameters.empty()) {
+      d->field->base = fitted;
+      field_run(d);
+      refresh(d);
+      r["applied"] = true;
+    }
+    std::string names;
+    for (const auto& n : res.names) names += (names.empty() ? "" : ", ") + n;
+    caps::KeyValues pr = {{"parameters", names.empty() ? "none" : names},
+                          {"structures", "the open crystal (" + std::to_string(s.atoms.size()) + " atoms)"},
+                          {"mode", o.relaxed ? "relaxed" : "conventional"},
+                          {"sum of squares", g6(res.ss_initial) + " → " + g6(res.ss_final)},
+                          {"force field", d->field->base.name}};
+    prov_step(d, "forcefield.crystal_fit", "Force-field parameters fitted to crystal data", std::move(pr));
+    r["ok"] = true;
   } catch (const std::exception& e) {
     r = caps::Json::object();
     r["ok"] = false;

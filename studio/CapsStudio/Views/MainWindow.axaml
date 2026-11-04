@@ -3476,7 +3476,7 @@
         <Grid RowDefinitions="*,Auto">
         <!-- the page scrolls when the window is short; the table keeps a working height (FitFieldBody) -->
         <ScrollViewer x:Name="FieldScroll" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-        <Grid RowDefinitions="Auto,Auto,Auto" Margin="22,16,22,0">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto" Margin="22,16,22,0">
           <!-- header -->
           <Grid x:Name="FieldHead" RowDefinitions="Auto,Auto" RowSpacing="10">
             <StackPanel Spacing="3">
@@ -3921,6 +3921,54 @@
               </Border>
             </Grid>
           </Grid>
+          <!-- fitting the assigned force field's parameters to the open crystal -->
+          <Border Grid.Row="3" x:Name="FitCard" Classes="pcard" Margin="0,0,0,16">
+            <StackPanel Spacing="8">
+              <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6">
+                  <Button Click="OnFitFind" IsEnabled="{Binding HasDocument}" Content="Find parameters"
+                          ToolTip.Tip="List the pair, bond and charge parameters of the assigned force field that act in this crystal" />
+                  <Button Classes="primary" Click="OnFitRun" IsEnabled="{Binding HasDocument}" Content="Fit"
+                          ToolTip.Tip="Refine the ticked parameters by least squares; with none ticked, the crystal is only evaluated" />
+                </StackPanel>
+                <TextBlock Text="Fit to crystal data" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+              </DockPanel>
+              <TextBlock Classes="dim" TextWrapping="Wrap" Text="Tune a filler's potentials (CaCO3, silica, ZnO, a Buckingham or shell model) so the open crystal keeps its measured cell, lattice energy and stiffness. The observed structure is always a target; add others below." />
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
+                <StackPanel Spacing="4">
+                  <TextBlock Text="PARAMETERS TO FIT" Classes="h3" />
+                  <ScrollViewer MaxHeight="190" VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding FitParams}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:FitParamItem">
+                          <CheckBox IsChecked="{Binding Selected}"><TextBlock Text="{Binding Label}" FontSize="12" /></CheckBox>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </ScrollViewer>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="6">
+                  <TextBlock Text="TARGETS" Classes="h3" />
+                  <TextBox Text="{Binding FitTargets}" AcceptsReturn="True" Height="96" Classes="mono" FontSize="12"
+                           Watermark="one per line: what value [weight] [unit]&#10;C11 297&#10;bulk 160 0.01&#10;energy -941.2 eV"
+                           ToolTip.Tip="a b c (Å), alpha beta gamma (°), volume (Å³ per cell), energy (per formula unit; kcal/mol, kJ/mol or eV), C11 … C66, bulk, shear (GPa). The weight multiplies the squared difference (default 1); 0 only reports the value" />
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="Formula units per cell" VerticalAlignment="Center" Classes="dim" />
+                    <TextBox Text="{Binding FitFormulaUnits}" Width="60" />
+                  </StackPanel>
+                  <CheckBox IsChecked="{Binding FitRelaxed}" Content="Relax the crystal at every step"
+                            ToolTip.Tip="On: the cell and atoms are relaxed for each trial set and their positions fitted to the observed ones. Off: the forces and stresses of the observed structure are fitted to zero (faster, but it weighs a soft direction as much as a stiff one)" />
+                </StackPanel>
+              </Grid>
+              <TextBlock Text="{Binding FitError}" Foreground="{DynamicResource ErrB}" TextWrapping="Wrap" IsVisible="{Binding FitHasError}" />
+              <TextBlock Text="{Binding FitResult}" Classes="mono" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding FitHas}" />
+              <TextBlock Text="{Binding FitNote}" Classes="dim" TextWrapping="Wrap" IsVisible="{Binding FitHas}" />
+              <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding FitHas}">
+                <Button Click="OnFitKeep" Content="Keep the fitted values" ToolTip.Tip="Write the fitted parameters into this structure's assignment" />
+                <Button Click="OnFitSave" Content="Save force field…" ToolTip.Tip="Write the force field with the fitted parameters to a file" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
         </Grid>
         </ScrollViewer>
 

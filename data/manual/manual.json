@@ -1848,6 +1848,63 @@
    "tex": "\\epsilon_{ab} = \\sqrt{\\epsilon_a\\epsilon_b}\\ \\text{ or }\\ \\frac{\\epsilon_a + \\epsilon_b}{2}, \\qquad \\sigma_{ab} = \\frac{\\sigma_a + \\sigma_b}{2}\\ \\text{ or }\\ \\sqrt{\\sigma_a\\sigma_b} \\\\ \\text{sixth power:}\\ \\ \\sigma_{ab} = \\left(\\frac{\\sigma_a^6 + \\sigma_b^6}{2}\\right)^{1/6}, \\qquad \\epsilon_{ab} = \\frac{2\\sqrt{\\epsilon_a\\epsilon_b}\\,\\sigma_a^3\\sigma_b^3}{\\sigma_a^6 + \\sigma_b^6}"
   },
   {
+   "id": "crystal-fit",
+   "group": "Force fields",
+   "title": "Fitting a force field to crystal data",
+   "summary": "Pair, bond and charge parameters of the assigned force field are refined so that a crystal (a filler, a mineral, a polymer crystal) keeps its observed structure and reproduces its lattice energy and elastic constants. Each crystal is evaluated in its periodic copies: a supercell at least twice the cut-off wide whose copies move together, so a small cell still sees every neighbour within the cut-off. Shells, whose positions are not observed, are relaxed in every evaluation. In conventional fitting the observed structure should be a stationary point, and its residual forces and stresses are fitted to zero. In relaxed fitting the cell and atoms are relaxed for each trial set (L-BFGS over the atoms and the six symmetric strains, the strain gradient −W F⁻ᵀ from the virial tensor) and the relaxed cell lengths, angles and coordinates are fitted to the observed ones; this weighs a soft direction by how far it moves the structure, not by its small gradient. Elastic constants are central differences of the stress over ± strain with the ions relaxed; bulk and shear moduli are their Hill averages. The weighted sum of squares is minimised by Levenberg–Marquardt with a forward-difference Jacobian, and standard errors come from s²(JᵀJ)⁻¹ when there are more observations than parameters. The fitted values can go into the assignment or into a force-field file (an explicit rule of the same types is updated, otherwise a rule for exactly those types is appended).",
+   "equation": "S = Σ_i w_i (y_i^calc(p) − y_i^obs)²,   (JᵀJ + λ diag JᵀJ) δp = −Jᵀ r,   σ = −W/V,   ∂E/∂F = −W F⁻ᵀ,   C_IJ = [σ_I(+ε_J) − σ_I(−ε_J)] / 2ε,   s_k = √(s² [(JᵀJ)⁻¹]_kk), s² = S/(m − n)",
+   "equation_note": "Gale 1996 (conventional and relaxed fitting); Marquardt 1963",
+   "tex": "S(\\mathbf{p}) = \\sum_i w_i\\left[y_i^{\\mathrm{calc}}(\\mathbf{p}) - y_i^{\\mathrm{obs}}\\right]^2, \\qquad \\left(J^{\\mathsf T}J + \\lambda\\,\\mathrm{diag}\\,J^{\\mathsf T}J\\right)\\delta\\mathbf{p} = -J^{\\mathsf T}\\mathbf{r} \\\\ \\boldsymbol{\\sigma} = -\\frac{W}{V}, \\qquad \\frac{\\partial E}{\\partial F} = -W F^{-\\mathsf T}, \\qquad C_{IJ} = \\frac{\\sigma_I(+\\varepsilon_J) - \\sigma_I(-\\varepsilon_J)}{2\\varepsilon}, \\qquad s_k = \\sqrt{\\frac{S}{m-n}\\left[(J^{\\mathsf T}J)^{-1}\\right]_{kk}}",
+   "symbols": [
+    [
+     "w_i",
+     "weight of observable i (1/σ² for meaningful errors)",
+     "1/unit²"
+    ],
+    [
+     "J",
+     "Jacobian ∂r_i/∂p_k of the weighted residuals r_i = √w_i (y_i^calc − y_i^obs)",
+     "—"
+    ],
+    [
+     "λ",
+     "Levenberg–Marquardt damping",
+     "—"
+    ],
+    [
+     "W",
+     "virial tensor Σ r_a f_b",
+     "kcal/mol"
+    ],
+    [
+     "F",
+     "deformation gradient I + ε of the cell",
+     "—"
+    ],
+    [
+     "C_IJ",
+     "elastic constant (Voigt, engineering shear)",
+     "GPa"
+    ],
+    [
+     "m, n",
+     "number of residuals and of parameters",
+     "—"
+    ]
+   ],
+   "when": "Filler potentials (CaCO3, silica, ZnO, clays, a Buckingham or shell-model set from a paper) that must hold the measured lattice and stiffness before they meet a polymer; refitting one pair after a cross-term or charge change; checking what a published set gives for a crystal it was not fitted to (no parameters ticked: the crystal is only evaluated).",
+   "cites": [
+    "gale1996",
+    "marquardt1963"
+   ],
+   "source": "core/src/crystalfit.cpp (fit_to_crystals, apply_fitted_terms)",
+   "tested": "CrystalFit.StressIsTheStrainDerivative (a sheared rock salt with an ion off its site, Ewald sums: σ_xx −3.855336 and σ_xy 0.518951 GPa from the virial equal the energy's strain derivatives to all printed digits); CrystalFit.LennardJonesFccIsExact (relaxed fcc argon: a = 5.276400 Å and C11 4.10134, C12 = C44 2.33486 GPa equal the analytic lattice sums); CrystalFit.RelaxedFitRecoversLennardJones (ε and σ back to 4 × 10⁻⁷ from 15 % and 4 % off); CrystalFit.ConventionalFitRecoversBuckingham (Buckingham A back to 4 × 10⁻⁶ from 20 % off, the stress to 10⁻¹⁰ GPa); CrystalFit.BalancedChargeAndWriteBack; Catlow MgO shell model on periclase: the Mg–O A refitted to the observed cell is the same by relaxed and conventional fitting (26267.918 kcal/mol), and C12 = C44 as pair potentials with shells must give",
+   "deviation": "static (0 K, no zero-point or thermal expansion: fit to low-temperature data); no vibrational frequencies, dielectric or piezoelectric constants as targets; no breathing shells or many-body terms among the fitted parameters; the Ewald grid is refined to 0.5 Å for a fit so nearby cells are compared consistently",
+   "engines": [
+    "forcefield.crystal_fit"
+   ]
+  },
+  {
    "group": "Analysis",
    "source": "core/src/properties.cpp",
    "engines": [],

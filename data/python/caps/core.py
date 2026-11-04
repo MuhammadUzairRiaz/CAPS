@@ -1365,6 +1365,70 @@ def _phonons(self, cutoff: float = 10.0, supercell=None, mesh=None, path=None, d
 Document.phonons = _phonons
 
 
+def _fit_terms(self) -> list:
+    """The force-field terms one can fit on this structure (its assigned force field): [{kind, types, style, names, values}]."""
+    f = library().caps_fit_terms
+    f.argtypes = [C.c_void_p, C.c_char_p, C.c_int32]
+    f.restype = C.c_int32
+    buf = C.create_string_buffer(1 << 20)
+    n = f(self._h, buf, len(buf))
+    if n > len(buf):
+        buf = C.create_string_buffer(int(n))
+        f(self._h, buf, len(buf))
+    r = json.loads(buf.value.decode())
+    if not r.get("ok"):
+        raise CapsError(r.get("error", "no terms"))
+    return r["terms"]
+
+
+def _fit_crystal(self, parameters, targets=(), relaxed: bool = True, formula_units: float = 1.0, fit_structure: bool = True,
+                 weights=None, iterations: int = 50, cutoff: float = 10.0, electrostatics: str = "pme", apply: bool = False,
+                 save: str = "") -> dict:
+    """Fits force-field parameters to this crystal (current frame, the assigned force field): parameters [(kind, types, name)
+    or dicts with lower, upper, balance], targets [(kind, value[, weight[, unit]])] with kind a b c alpha beta gamma volume
+    energy C11 ... C66 bulk shear (energy per formula unit; unit kcal/mol, kJ/mol or eV). relaxed: the structure is relaxed at
+    each step and its cell and coordinates fitted to the observed ones; else its forces and stresses are fitted to zero.
+    apply writes the fitted values into the assignment; save writes the fitted force field to a file. Returns {parameters,
+    observations, structures, terms, ss_initial, ss_final, notes, ...}."""
+    ps = []
+    for p in parameters:
+        if isinstance(p, dict):
+            ps.append(p)
+        else:
+            kind, types, name = p
+            ps.append({"kind": kind, "types": [types] if isinstance(types, str) else list(types), "name": name})
+    ts = []
+    for t in targets:
+        if isinstance(t, dict):
+            ts.append(t)
+            continue
+        d = {"kind": t[0], "value": float(t[1])}
+        if len(t) > 2:
+            d["weight"] = float(t[2])
+        if len(t) > 3:
+            d["unit"] = t[3]
+        ts.append(d)
+    o = {"parameters": ps, "targets": ts, "relaxed": bool(relaxed), "formula_units": float(formula_units), "fit_structure": bool(fit_structure),
+         "iterations": int(iterations), "cutoff": float(cutoff), "electrostatics": electrostatics, "apply": bool(apply), "save": save}
+    if weights:
+        o["weights"] = {k: float(v) for k, v in weights.items()}
+    f = library().caps_fit_crystal
+    f.argtypes = [C.c_void_p, C.c_char_p, C.c_void_p, C.c_void_p, C.c_char_p, C.c_int32]
+    f.restype = C.c_int32
+    buf = C.create_string_buffer(1 << 22)
+    n = f(self._h, _enc(json.dumps(o)), None, None, buf, len(buf))
+    if n > len(buf):
+        buf = C.create_string_buffer(int(n))
+        f(self._h, _enc(json.dumps(o)), None, None, buf, len(buf))
+    r = json.loads(buf.value.decode())
+    if not r.get("ok"):
+        raise CapsError(r.get("error", "fit failed"))
+    return r
+
+
+Document.fit_terms = _fit_terms
+Document.fit_crystal = _fit_crystal
+
 def density_fields(molecules, chi=None, grid=(32, 32, 32), bond: float = 1.1543, kappa: float = 10.0, noise: float = 75.0, dt: float = 0.02,
                    steps: int = 2000, frame_every: int = 100, seed: int = 1) -> dict:
     """Density-field dynamics of Gaussian chains (no structure needed): molecules [(name, sequence such as "A8B8", fraction), …],

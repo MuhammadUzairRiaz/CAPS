@@ -435,6 +435,19 @@ public partial class MainWindow : Window
     private void OnModulePack(object? s, RoutedEventArgs e) => _vm.SetModule(5);
     private void OnModuleReact(object? s, RoutedEventArgs e) => _vm.SetModule(6);
     private void OnModuleField(object? s, RoutedEventArgs e) => _vm.SetModule(7);
+    private void OnFitFind(object? s, RoutedEventArgs e) => _vm.LoadFitTerms();
+    private async void OnFitRun(object? s, RoutedEventArgs e) => await _vm.RunFit();
+    private async void OnFitKeep(object? s, RoutedEventArgs e) => await _vm.KeepFit();
+    private async void OnFitSave(object? s, RoutedEventArgs e)
+    {
+        var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = "Save the fitted force field",
+            SuggestedFileName = "fitted.json",
+            FileTypeChoices = [new FilePickerFileType("CAPS force field") { Patterns = ["*.json"] }],
+        });
+        if (file?.TryGetLocalPath() is { } path) await _vm.KeepFit(path);
+    }
     private void OnModuleStudio(object? s, RoutedEventArgs e) => _vm.SetModule(8);
     private void OnModuleBuild(object? s, RoutedEventArgs e) => _vm.SetModule(13);
     private void OnExportCenter(object? s, RoutedEventArgs e) => _vm.OpenExportCenter();

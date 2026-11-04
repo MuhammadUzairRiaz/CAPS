@@ -75,6 +75,7 @@
 #include "caps/thermal.hpp"
 #include "caps/powder.hpp"
 #include "caps/phonons.hpp"
+#include "caps/crystalfit.hpp"
 #include "caps/ddft.hpp"
 #include "caps/yaml.hpp"
 #ifdef _WIN32
@@ -337,6 +338,8 @@ int usage() {
                "               [--ff FF] [--no-coulomb]   configurational-bias regrowth of chain ends (Siepmann & Frenkel)\n"
                "  caps fields --molecules 'A8B8:1; A8:0.5' [--chi AB=1.9] [--grid 32,32,32 (nz 1: 2D)] [--bond 1.1543] [--kappa 10] [--noise 75] [--dt 0.02]\n"
                "               [--steps 2000] [--every 100] [--seed 1] [--vtk OUT.vtk] [--csv OUT.csv]   density-field dynamics of Gaussian chains (blends, block copolymers)\n"
+               "  caps fit SPEC.json [--ff FF.json] [--relaxed | --conventional] [--iterations 50] [--out FITTED.json] [--json REPORT.json]\n"
+               "               force-field parameters fitted to crystal structures, lattice energies and elastic constants (the spec lists them)\n"
                "  caps phonons CRYSTAL [--ff FF.json] [--cutoff Å] [--supercell n1,n2,n3] [--mesh m1,m2,m3] [--path 'G 0 0 0; X 0.5 0 0; …'] [--displacement 0.01]\n"
                "               [--sigma 5 (cm⁻¹)] [--temps 100,300] [--csv STEM] [--json OUT]   force-field phonons: dispersion, DOS, harmonic thermodynamics, sound speeds\n"
                "  caps powder FILE [--topology DATA] [--anode Cu|Mo|Co|Fe|Cr|Ag | --wavelength Å] [--no-kalpha2] [--neutron] [--two-theta 5:90] [--step 0.02]\n"
@@ -454,7 +457,7 @@ const std::set<std::string>& known_options() {
     "--tmax", "--to", "--tol", "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing", "--units",
     "--polymer", "--crystal", "--crystal-cells", "--amorphous", "--loops", "--bridges", "--tails", "--reentry", "--analyse",
     "--corr-ps", "--long", "--swap-every", "--transient", "--dimensionality", "--thickness",
-    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--chi", "--molecules", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
+    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--relaxed", "--conventional", "--chi", "--molecules", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
   return k;
 }
 
@@ -487,7 +490,7 @@ bool is_cli_switch(const std::string& a) {
          a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" || a == "--include-input" || a == "--primitive" || a == "--symmetrize" || a == "--find-symmetry" || a == "--groups" || a == "--neutralise" || a == "--no-ions" || a == "--solvents" || a == "--bibtex" || a == "--json" || a == "--deterministic" || a == "--vacuum" || a == "--methods" ||
          a == "--hybrid" || a == "--resume" || a == "--between-chains" || a == "--keep-byproducts" || a == "--auto-capture" ||
          a == "--during-md" || a == "--remove-unreacted" || a == "--analyse" || a == "--long" || a == "--reduced" || a == "--kg" || a == "--stickers" || a == "--both-ends" || a == "--no-exchange" || a == "--npt" ||
-         a == "--no-kalpha2" || a == "--neutron" || a == "--polarised";
+         a == "--no-kalpha2" || a == "--neutron" || a == "--polarised" || a == "--relaxed" || a == "--conventional";
 }
 
 std::map<std::string, std::string> parse(int argc, char** argv, int from, std::vector<std::string>& pos) {
@@ -4089,6 +4092,101 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps phonons: %s\n", e.what());
+      return 1;
+    }
+  }
+  if (cmd == "fit") {
+    // caps fit SPEC.json [--ff FF.json] [--relaxed | --conventional] [--iterations N] [--out FITTED.json] [--json REPORT.json]
+    // SPEC: {"forcefield": "catlow1976-mgo.json", "structures": [{"file": "MgO.cif", "name": "MgO", "formula_units": 4}],
+    //        "parameters": [{"kind": "pair", "types": ["Mg", "O"], "name": "A"}], "targets": [{"structure": 0, "kind": "C11", "value": 297}],
+    //        "relaxed": true, "cutoff": 10, "electrostatics": "pme", "weights": {...}}
+    try {
+      if (pos.empty()) return usage();
+      std::ifstream in(pos[0]);
+      if (!in) throw std::runtime_error("cannot read " + pos[0]);
+      std::stringstream ss;
+      ss << in.rdbuf();
+      const Json spec = Json::parse(ss.str());
+      const std::filesystem::path base = std::filesystem::path(pos[0]).parent_path();
+      auto near = [&](const std::string& f) {   // a file named in the spec: beside the spec unless found as given
+        if (f.empty() || std::filesystem::exists(f)) return f;
+        const auto q = base / f;
+        return std::filesystem::exists(q) ? q.string() : f;
+      };
+      const bool quiet = o.count("--quiet");
+      if (!o.count("--ff") && spec.has("forcefield")) o["--ff"] = near(spec["forcefield"].str());
+      if (!o.count("--ff")) throw std::invalid_argument("fit: give the force field (--ff, or \"forcefield\" in the spec)");
+      FitOptions fo;
+      fit_options_from_json(spec, fo);
+      if (o.count("--relaxed")) fo.relaxed = true;
+      if (o.count("--conventional")) fo.relaxed = false;
+      if (o.count("--iterations")) fo.iterations = std::stoi(o["--iterations"]);
+      fo.energy.cutoff = o.count("--cutoff") ? std::stod(o["--cutoff"]) : spec.num("cutoff", 10.0);
+      fo.energy.tail = false;
+      // ionic crystals need Ewald sums: PME unless the spec says dsf
+      fo.energy.electrostatics = spec.text("electrostatics", "pme") == "dsf" ? EnergyOptions::Electrostatics::DSF : EnergyOptions::Electrostatics::PME;
+      electrostatics(fo.energy, o);
+      fo.energy.coulomb = !o.count("--no-coulomb");
+      FFDef def = load_forcefield(ff_path(o["--ff"]));
+      std::set<std::string> shell_types;
+      for (const auto& [core, sh] : def.shells) shell_types.insert(sh);
+      if (!spec.has("structures") || !spec["structures"].is_array() || spec["structures"].items().empty())
+        throw std::invalid_argument("fit: the spec lists no structures");
+      for (const auto& js : spec["structures"].items()) {
+        FitStructure fs;
+        const std::string file = near(js.text("file"));
+        Trajectory t = open_file(file, "");
+        System s0 = t.frames() ? t.frame(0) : t.topology;
+        if (!quiet) std::printf("%s: ", file.c_str());
+        (void)cli_forcefield(s0, o, quiet);   // the structure as the force field describes it (shells added)
+        fs.name = js.text("name", std::filesystem::path(file).stem().string());
+        fs.cell = s0;
+        fs.formula_units = js.num("formula_units", 1);
+        if (js.has("fit_structure")) fs.fit_structure = js["fit_structure"].boolean();
+        if (js.has("supercell") && js["supercell"].is_array() && js["supercell"].items().size() == 3)
+          for (size_t q = 0; q < 3; ++q) fs.supercell[q] = int(js["supercell"].items()[q].number());
+        for (const auto& a : s0.atoms) fs.shell.push_back(shell_types.count(a.name) ? 1 : 0);
+        fs.field_for = [o](const System& sup) mutable { System c = sup; return cli_forcefield(c, o, true); };
+        fo.structures.push_back(fs);
+      }
+      if (!quiet)
+        fo.progress = [&](const std::string& w, double f) { std::fprintf(stderr, "\r%-30s %3.0f %%", w.c_str(), 100 * f); return true; };
+      const FitResult r = fit_to_crystals(fo);
+      if (!quiet) std::fprintf(stderr, "\r%-40s\r", "");
+      std::printf("%s fitting: S %.6g -> %.6g after %d iterations (%s), %d evaluations, %.1f s\n", fo.relaxed ? "relaxed" : "conventional", r.ss_initial, r.ss_final,
+                  r.iterations, r.stopped_by.c_str(), r.evaluations, r.seconds);
+      std::printf("%-34s %14s %14s %12s\n", "parameter", "start", "fitted", "std. error");
+      for (size_t k = 0; k < r.names.size(); ++k)
+        std::printf("%-34s %14.6f %14.6f %12s\n", r.names[k].c_str(), r.initial[k], r.final[k],
+                    std::isfinite(r.error[k]) ? std::to_string(r.error[k]).c_str() : "-");
+      if (!r.observations.empty()) {
+        std::printf("%-22s %12s %12s %12s  %s\n", "observable", "target", "start", "fitted", "unit");
+        for (const auto& ob : r.observations)
+          std::printf("%-22s %12.5f %12.5f %12.5f  %s\n", (r.structures[ob.structure].name + " " + ob.what).c_str(), ob.target, ob.initial, ob.final, ob.unit.c_str());
+      }
+      for (const auto& st : r.structures) {
+        std::printf("%s (supercell %d x %d x %d, %zu atoms): a b c %.5f %.5f %.5f Å, angles %.3f %.3f %.3f° (observed %.5f %.5f %.5f, %.3f %.3f %.3f)\n", st.name.c_str(),
+                    st.supercell[0], st.supercell[1], st.supercell[2], st.supercell_atoms, st.final[0], st.final[1], st.final[2], st.final[3], st.final[4], st.final[5],
+                    st.observed[0], st.observed[1], st.observed[2], st.observed[3], st.observed[4], st.observed[5]);
+        if (fo.relaxed) std::printf("  RMS shift of the atoms from observed %.4f Å (start %.4f)\n", st.shift_final, st.shift_initial);
+        else std::printf("  largest force at the observed structure %.4g kcal/mol/Å (start %.4g); stress xx %.4g GPa\n", st.force_final, st.force_initial, st.stress_final[0]);
+        std::printf("  lattice energy %.4f kcal/mol per formula unit\n", st.energy_final);
+      }
+      for (const auto& n : r.notes) std::printf("%s\n", n.c_str());
+      if (o.count("--out")) {
+        FFDef out = def;
+        for (const auto& n : apply_fitted_terms(out, r.terms)) std::printf("%s\n", n.c_str());
+        out.name += " (fitted)";
+        save_forcefield(out, o["--out"]);
+        std::printf("wrote %s\n", o["--out"].c_str());
+      }
+      if (o.count("--json") && o["--json"] != "1") {
+        std::ofstream(o["--json"]) << fit_result_json(r).dump(1) << "\n";
+        std::printf("wrote %s\n", o["--json"].c_str());
+      }
+      return 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps fit: %s\n", e.what());
       return 1;
     }
   }
