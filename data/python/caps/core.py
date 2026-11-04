@@ -1334,6 +1334,37 @@ def _powder(self, anode: str = "Cu", wavelength: float = 0.0, two_theta=(5.0, 90
 Document.powder = _powder
 
 
+def _phonons(self, cutoff: float = 10.0, supercell=None, mesh=None, path=None, displacement: float = 0.01, relax: bool = True,
+             sigma: float = 5.0, temperatures=(100, 200, 298.15, 300, 400, 500), path_points: int = 120) -> dict:
+    """Force-field phonons of the crystal (current frame): the atoms relaxed in the supercell's periodic copies, force
+    constants by ±displacement, the dispersion along path [(label, (f1, f2, f3)), …] (default Γ X S Y Γ Z R), the DOS per
+    element on a mesh, harmonic ZPE, U, F, S and Cv per cell at each temperature, and sound speeds along a*, b*, c*.
+    Returns {path_x, bands, tick_x, tick_labels, dos_w, dos, pdos, T, zpe, U, F, S, Cv, sound, notes, ...}."""
+    o = {"cutoff": float(cutoff), "displacement": float(displacement), "relax": bool(relax), "sigma": float(sigma),
+         "temperatures": [float(x) for x in temperatures], "path_points": int(path_points)}
+    if supercell is not None:
+        o["supercell"] = [int(x) for x in supercell]
+    if mesh is not None:
+        o["mesh"] = [int(x) for x in mesh]
+    if path is not None:
+        o["path"] = [{"label": lab, "k": [float(x) for x in k]} for lab, k in path]
+    f = library().caps_phonons
+    f.argtypes = [C.c_void_p, C.c_char_p, C.c_void_p, C.c_void_p, C.c_char_p, C.c_int32]
+    f.restype = C.c_int32
+    buf = C.create_string_buffer(1 << 24)
+    n = f(self._h, _enc(json.dumps(o)), None, None, buf, len(buf))
+    if n > len(buf):   # a very large cell: once more with room for all of it
+        buf = C.create_string_buffer(int(n))
+        f(self._h, _enc(json.dumps(o)), None, None, buf, len(buf))
+    r = json.loads(buf.value.decode())
+    if not r.get("ok"):
+        raise CapsError(r.get("error", "phonons failed"))
+    return r
+
+
+Document.phonons = _phonons
+
+
 def _adsorption(self, adsorbates, cycles: int = 3, steps: int = 20000, t_high: float = 1e4, t_low: float = 100.0, region: str = "cell",
                 cutoff: float = 12.0, coulomb: bool = True, keep: int = 10, seed: int = 1) -> dict:
     """Adsorption locator: adsorbates [(smiles, count), …] added after the structure and placed by Monte Carlo simulated

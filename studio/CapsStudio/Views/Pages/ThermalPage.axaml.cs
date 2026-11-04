@@ -18,6 +18,23 @@ public partial class ThermalPage : PageBase
         {
             if (DataContext is not MainViewModel vm || vm == _hooked) return;
             _hooked = vm;
+            vm.PhononsChanged += () =>
+            {
+                var (x, bands, ticks) = vm.PhDispersion;
+                this.FindControl<SciPlot>("Bands")!.Figure = bands.Length == 0 ? null : new SciFigure
+                {
+                    XLabel = "wave vector along the path / Å⁻¹", YLabel = "*ν̃* / cm⁻¹", Empty = "",
+                    Series = bands.Select(b => new SciSeries("", x, b) { Kind = SciKind.Line, Colour = 0, Width = 1.0 }).ToArray(),
+                    Marks = ticks.Select(tk => new SciMark(tk.X, tk.Label)).ToArray(), XMin = x.FirstOrDefault(), XMax = x.LastOrDefault(),
+                };
+                var (w, dos, parts) = vm.PhDos;
+                var series = new List<SciSeries> { new("total", w, dos) { Kind = SciKind.Line, Colour = -1, Width = 1.2 } };
+                if (parts.Length > 1) series.AddRange(parts.Select((p, i) => new SciSeries(p.Label, w, p.Y) { Kind = SciKind.Line, Colour = i, Width = 1.0 }));
+                this.FindControl<SciPlot>("Dos")!.Figure = w.Length == 0 ? null : new SciFigure
+                {
+                    XLabel = "*ν̃* / cm⁻¹", YLabel = "states / cm⁻¹ per cell", YZero = true, YMin = 0, Series = [.. series], Empty = "",
+                };
+            };
             vm.ThChanged += () =>
             {
                 this.FindControl<SciPlot>("Curve")!.Figure = ViewModels.PageFigures.Thermal(vm.ThCurves, vm.ThGreenKubo);
@@ -26,6 +43,7 @@ public partial class ThermalPage : PageBase
     }
 
     private async void OnRun(object? s, RoutedEventArgs e) => await Vm.RunThermal();
+    private async void OnPhonons(object? s, RoutedEventArgs e) => await Vm.RunPhonons();
 
     private async void OnLammps(object? s, RoutedEventArgs e)
     {

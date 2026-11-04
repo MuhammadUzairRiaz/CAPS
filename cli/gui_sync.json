@@ -1404,6 +1404,29 @@
     "--json": "partial: the Studio shows the result on the page",
     "--threads": "partial: the Studio uses the threads set in Settings"
    }
+  },
+  "phonons": {
+   "status": "gui",
+   "studio": "Thermal conductivity › Lattice vibrations",
+   "where": "Views/Pages/ThermalPage.axaml|Lattice vibrations",
+   "capi": [
+    "caps_phonons"
+   ],
+   "options": {
+    "--topology": "page",
+    "--ff": "partial: the Studio uses the force field assigned on the Force field page",
+    "--cutoff": "partial: the Studio uses the Minimise page's cut-off, at most 12 Å",
+    "--supercell": "cli: the page sizes the supercell from the cut-off",
+    "--mesh": "cli: the page takes the automatic mesh",
+    "--path": "cli: the page draws Γ X S Y Γ Z R",
+    "--displacement": "cli: the page displaces 0.01 Å",
+    "--sigma": "cli: the page broadens the DOS by 5 cm⁻¹",
+    "--temps": "partial: the page reports 100, 298.15 and 500 K",
+    "--csv": "cli: bands and DOS as CSV files",
+    "--json": "partial: the Studio shows the result on the page",
+    "--no-coulomb": "partial: the Studio follows the Minimise page's electrostatics",
+    "--quiet": "cli: no progress line"
+   }
   }
  },
  "hidden_options": {

@@ -313,6 +313,22 @@ internal static class Screenshot
                     string.Join("; ", vm.SorbRows.Select(r => $"{r.Pressure} kPa {r.Loading} ({r.MolKg} mol/kg, {r.Heat} kcal/mol)")) + " · " + vm.SorbNote +
                     (vm.SorbHasIg ? " · alone: " + vm.SorbIg : "") + (vm.SorbHasHeld ? $" · held: U {vm.SorbHeldE}, E_ads {vm.SorbHeldAds}, {vm.SorbHeldSplit}, {vm.SorbHeldNote}" : ""));
             }
+            if (kv[0] == "phonons")   // phonons=FF: the Thermal page's lattice vibrations of the open crystal with that force field, awaited
+            {
+                var vm = w.ViewModel;
+                if (kv[1].Length > 0)
+                {
+                    var k = vm.Field.Library.ToList().FindIndex(x => x.Id == kv[1]);
+                    if (k >= 0) vm.Field.FfIndex = k;
+                    var a = vm.Field.Assign();
+                    while (!a.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(10); }
+                }
+                vm.OpenThermal();
+                var t = vm.RunPhonons();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+                for (int k = 0; k < 60; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+                Console.WriteLine("phonons: " + vm.Status + (vm.PhHasError ? " · error " + vm.PhError : "") + " · " + vm.PhSound.Replace('\n', ' ') + " · " + vm.PhSummary.Replace('\n', ' ') + " · " + vm.PhNote);
+            }
             if (kv[0] == "powder")   // powder=ANODE|FROM|TO|SIZE_NM: Analyze › Scattering's powder pattern of the open structure, awaited
             {
                 var vm = w.ViewModel;

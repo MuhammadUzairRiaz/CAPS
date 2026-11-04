@@ -3026,6 +3026,50 @@
    ]
   },
   {
+   "id": "phonons",
+   "group": "Analysis",
+   "title": "Phonons of a crystal with its force field",
+   "summary": "Lattice dynamics of a crystal (a polymer crystal, a filler) with the assigned force field. The cell is repeated until each width is at least twice the cut-off; its atoms are first relaxed in that supercell's periodic copies (a cell narrower than twice the cut-off cannot be relaxed alone: it sees one image of each neighbour), by FIRE on the cell's own coordinates with each atom's force averaged over its copies. Each atom of the cell is then displaced ±h along x, y and z and the forces on the whole supercell give the force constants; the acoustic sum rule fixes the self terms. Each pair takes its nearest supercell image(s), equal ones sharing the weight. The dynamical matrix at any k is diagonalised for the dispersion along a path (Γ X S Y Γ Z R of the cell's reciprocal axes, or your own) and over a Γ-centred mesh for the density of states (per element from the eigenvectors), the harmonic thermodynamics per cell, and the sound speeds from the acoustic slopes along a*, b* and c*.",
+   "equation": "Φ_aα,Jβ = −∂F_Jβ/∂u_aα,   D_aα,bβ(k) = Σ_J∈b w Φ_aα,Jβ e^(ik·(r_J + L − r_a)) / √(m_a m_b),   D e = ω² e,   F = Σ_k,ν [ħω/2 + kT ln(1 − e^(−ħω/kT))],   C_v = Σ k x² eˣ/(eˣ − 1)²,   v = dω/dk",
+   "equation_note": "Born & Huang 1954; the supercell finite-displacement method",
+   "tex": "\\Phi_{a\\alpha,J\\beta} = -\\frac{\\partial F_{J\\beta}}{\\partial u_{a\\alpha}}, \\qquad D_{a\\alpha,b\\beta}(\\mathbf{k}) = \\sum_{J\\in b} w\\,\\frac{\\Phi_{a\\alpha,J\\beta}\\,e^{i\\mathbf{k}\\cdot(\\mathbf{r}_J + \\mathbf{L} - \\mathbf{r}_a)}}{\\sqrt{m_a m_b}}, \\qquad D\\,\\mathbf{e} = \\omega^2\\mathbf{e} \\\\ F = \\sum_{\\mathbf{k},\\nu}\\left[\\frac{\\hbar\\omega}{2} + kT\\ln\\left(1 - e^{-\\hbar\\omega/kT}\\right)\\right], \\qquad C_v = \\sum_{\\mathbf{k},\\nu} k\\,\\frac{x^2 e^x}{(e^x - 1)^2},\\; x = \\frac{\\hbar\\omega}{kT}, \\qquad v = \\frac{d\\omega}{dk}",
+   "symbols": [
+    [
+     "Φ",
+     "force constant between atom a of the cell and supercell atom J",
+     "kcal/mol/Å²"
+    ],
+    [
+     "w",
+     "1 / the number of equally near images",
+     "—"
+    ],
+    [
+     "D(k)",
+     "dynamical matrix",
+     "kcal/mol/Å²/(g/mol)"
+    ],
+    [
+     "ω, ν̃",
+     "angular frequency; wavenumber ν̃ = ω/2πc",
+     "—, cm⁻¹"
+    ],
+    [
+     "v",
+     "sound speed",
+     "m/s"
+    ]
+   ],
+   "when": "The chain-axis stiffness and sound speed of polymer crystals in fibres (PE, iPP, PA6, cellulose Iβ), vibrational spectra and heat capacity of crystals and fillers, checking that a crystal sits at a minimum of its force field (no imaginary modes).",
+   "cites": [],
+   "source": "core/src/phonons.cpp (phonons)",
+   "tested": "Phonons.LennardJonesArgonIsExact (primitive fcc argon, cut LJ: every band on the path equal to the analytic lattice sum within 9 × 10⁻⁵, the DOS integrating to 3 modes per cell, C_v → 3k at 3000 K, sound speeds equal to the analytic slopes, 890 and 1880 m/s along a*); Phonons.RelaxesInTheCopiesAndFoldsX (the conventional cell with one atom pushed 0.05 Å relaxes back, and its Γ modes equal the primitive Γ and X modes, 46.60 … 68.24 cm⁻¹); orthorhombic PE doubled along c with OPLS-AA 2024: no unstable modes after relaxation, chain-axis longitudinal sound speed 14.5 km/s (210 GPa at 1.0 g/cm³)",
+   "deviation": "harmonic (no thermal expansion or phonon–phonon scattering); the cell is not relaxed, only the atoms; a dense eigensolver (3N × 3N per k-point)",
+   "engines": [
+    "analysis.phonons"
+   ]
+  },
+  {
    "group": "Analysis",
    "source": "core/src/sorption.cpp",
    "engines": [],

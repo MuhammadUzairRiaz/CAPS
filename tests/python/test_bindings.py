@@ -645,6 +645,14 @@ _pw = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "poly
 _p110 = [p for p in _pw["peaks"] if sorted(map(abs, (p["h"], p["k"], p["l"]))) == [0, 1, 1] and p["l"] == 0][0]
 check(abs(_p110["two_theta"] - 21.64) < 0.05 and _pw["peaks"][0] is not None and _p110["intensity"] == 100 and len(_pw["two_theta"]) == len(_pw["intensity"]),
       f"powder pattern of PE: (110) at {_p110['two_theta']:.2f}° 2θ, {_pw['reflections']} reflections")
+# force-field phonons of orthorhombic PE (doubled along the chain): relaxed in the supercell, no unstable modes, the
+# chain axis the stiffest direction
+_pe2 = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "polymers", "pe-orthorhombic.cif"))
+_pe2.edit(op="supercell", n=[1, 1, 2])
+_pe2.field.assign("oplsaa2024")
+_ph = _pe2.phonons(temperatures=[300], path_points=30)
+check(_ph["max_force"] < 1e-2 and _ph["imaginary"] == 0 and max(_ph["sound"][2]) > 2 * max(_ph["sound"][0]) and len(_ph["bands"][0]) == 72,
+      f"PE phonons: chain-axis LA {max(_ph['sound'][2]):.0f} m/s, lateral {max(_ph['sound'][0]):.0f} m/s, Cv(300 K) {_ph['Cv'][0]:.1f} cal/mol/K per cell")
 # flexible sorbates (configurational bias) and a fixed loading kept as the frame: n-butane in the PS melt
 _fx = caps.open(os.path.join(samples, "ps_melt.data"))
 _fxa = _fx.summary()["atoms"]
@@ -728,7 +736,7 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 76, "ABI 76")
+check(caps.abi_version() == 77, "ABI 77")
 
 # bond exchange analysis (ABI 74): an exact Arrhenius line gives its Ea, healing ratios follow their definitions
 import math

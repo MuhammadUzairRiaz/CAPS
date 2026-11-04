@@ -74,6 +74,7 @@
 #include "caps/tags.hpp"
 #include "caps/thermal.hpp"
 #include "caps/powder.hpp"
+#include "caps/phonons.hpp"
 #include "caps/yaml.hpp"
 #ifdef _WIN32
 #include <io.h>
@@ -333,6 +334,8 @@ int usage() {
                "               without --cutoff (relax, md, equilibrate): the force field's own cut-off, else 10 Å\n"
                "  caps cbmc    FILE -o OUT.data [--moves 1000] [--trials 8] [--max-torsions 4] [--temp 300] [--cutoff 9] [--seed 1]\n"
                "               [--ff FF] [--no-coulomb]   configurational-bias regrowth of chain ends (Siepmann & Frenkel)\n"
+               "  caps phonons CRYSTAL [--ff FF.json] [--cutoff Å] [--supercell n1,n2,n3] [--mesh m1,m2,m3] [--path 'G 0 0 0; X 0.5 0 0; …'] [--displacement 0.01]\n"
+               "               [--sigma 5 (cm⁻¹)] [--temps 100,300] [--csv STEM] [--json OUT]   force-field phonons: dispersion, DOS, harmonic thermodynamics, sound speeds\n"
                "  caps powder FILE [--topology DATA] [--anode Cu|Mo|Co|Fe|Cr|Ag | --wavelength Å] [--no-kalpha2] [--neutron] [--two-theta 5:90] [--step 0.02]\n"
                "               [--profile tch|pseudo-voigt|gaussian|lorentzian] [--uvw U,V,W] [--xy X,Y] [--size Å | --size-abc La,Lb,Lc] [--strain ε] [--biso B]\n"
                "               [--preferred h,k,l --march r] [--zero °] [--monochromator 2θ°] [--polarised] [--first N --last N --stride N] [--peaks 20] [--csv OUT] [--json OUT]\n"
@@ -448,7 +451,7 @@ const std::set<std::string>& known_options() {
     "--tmax", "--to", "--tol", "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing", "--units",
     "--polymer", "--crystal", "--crystal-cells", "--amorphous", "--loops", "--bridges", "--tails", "--reentry", "--analyse",
     "--corr-ps", "--long", "--swap-every", "--transient", "--dimensionality", "--thickness",
-    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
+    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
   return k;
 }
 
@@ -3894,6 +3897,111 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps tg: %s\n", e.what());
+      return 1;
+    }
+  }
+  if (cmd == "phonons") {
+    // caps phonons CRYSTAL [--ff FF.json ...] [--cutoff Å] [--supercell n1,n2,n3] [--mesh m1,m2,m3] [--path 'G 0 0 0; X 0.5 0 0; ...']
+    //              [--displacement 0.01] [--sigma 5] [--temps 100,300] [--csv STEM] [--json OUT]
+    try {
+      if (pos.empty()) return usage();
+      Trajectory t = open_file(pos[0], o.count("--topology") ? o["--topology"] : "");
+      System s0 = t.frames() ? t.frame(0) : t.topology;
+      const bool quiet = o.count("--quiet");
+      const ForceField ff0 = cli_forcefield(s0, o, quiet);
+      PhononOptions po;
+      if (o.count("--cutoff")) po.energy.cutoff = std::stod(o["--cutoff"]);
+      run_cutoff(po.energy, ff0, o, quiet);
+      electrostatics(po.energy, o);
+      po.energy.coulomb = !o.count("--no-coulomb");
+      po.field_for = [&](const System& sup) { System c = sup; return cli_forcefield(c, o, true); };
+      auto ints = [&](const std::string& key) {
+        std::array<int, 3> v{0, 0, 0};
+        std::string s = o[key];
+        for (auto& ch : s) if (ch == ':' || ch == 'x') ch = ',';
+        size_t at = 0;
+        for (int k = 0; k < 3; ++k) {
+          const size_t c = s.find(',', at);
+          v[size_t(k)] = std::stoi(s.substr(at, c == std::string::npos ? std::string::npos : c - at));
+          if (c == std::string::npos && k < 2) throw std::invalid_argument(key + ": three numbers, comma-separated");
+          at = c + 1;
+        }
+        return v;
+      };
+      if (o.count("--supercell")) po.supercell = ints("--supercell");
+      if (o.count("--mesh")) po.mesh = ints("--mesh");
+      if (o.count("--displacement")) po.step = std::stod(o["--displacement"]);
+      if (o.count("--sigma")) po.dos_sigma = std::stod(o["--sigma"]);
+      if (o.count("--temps")) {
+        po.temperatures.clear();
+        std::stringstream ss(o["--temps"]);
+        std::string x;
+        while (std::getline(ss, x, ',')) po.temperatures.push_back(std::stod(x));
+      }
+      if (o.count("--path")) {   // 'LABEL f1 f2 f3; LABEL f1 f2 f3; …'
+        std::stringstream ss(o["--path"]);
+        std::string seg;
+        while (std::getline(ss, seg, ';')) {
+          std::stringstream one(seg);
+          std::string lab;
+          std::array<double, 3> f{};
+          if (!(one >> lab >> f[0] >> f[1] >> f[2])) throw std::invalid_argument("--path: 'LABEL f1 f2 f3; …' in fractions of the reciprocal axes");
+          po.labels.push_back(lab == "G" ? "Γ" : lab), po.path.push_back(f);
+        }
+      }
+      if (!quiet)
+        po.progress = [&](const std::string& w, double f) { std::fprintf(stderr, "\r%-30s %3.0f %%", w.c_str(), 100 * f); return true; };
+      const PhononResult r = phonons(s0, po);
+      if (!quiet) std::fprintf(stderr, "\r%-40s\r", "");
+      for (const auto& n : r.notes) std::printf("%s\n", n.c_str());
+      std::printf("lowest wavenumber %.1f cm⁻¹ · highest %.1f cm⁻¹ · largest force at the reference %.3g kcal/mol/Å\n", r.min_wavenumber,
+                  r.dos_w.empty() ? 0.0 : r.dos_w.back(), r.max_force);
+      const char* ax[3] = {"a*", "b*", "c*"};
+      for (int d = 0; d < 3; ++d)
+        std::printf("sound speeds along %s: %.0f %.0f %.0f m/s\n", ax[d], r.sound[size_t(d)][0], r.sound[size_t(d)][1], r.sound[size_t(d)][2]);
+      std::printf("%8s %12s %12s %12s %12s %12s   (per cell)\n", "T (K)", "ZPE", "U", "F", "S", "Cv");
+      for (size_t i = 0; i < r.T.size(); ++i)
+        std::printf("%8.2f %12.4f %12.4f %12.4f %12.4f %12.4f\n", r.T[i], r.zpe[i], r.U[i], r.F[i], r.S[i], r.Cv[i]);
+      std::printf("%8s %12s %12s %12s %12s %12s\n", "", "kcal/mol", "kcal/mol", "kcal/mol", "cal/mol/K", "cal/mol/K");
+      if (o.count("--csv")) {
+        const std::string stem = o["--csv"];
+        std::ofstream b(stem + "_bands.csv");
+        b << "k_path_inv_angstrom";
+        for (size_t j = 0; j < (r.bands.empty() ? 0 : r.bands[0].size()); ++j) b << ",band" << j + 1 << "_cm-1";
+        b << "\n";
+        for (size_t i = 0; i < r.bands.size(); ++i) {
+          b << r.path_x[i];
+          for (double v : r.bands[i]) b << "," << v;
+          b << "\n";
+        }
+        std::ofstream d(stem + "_dos.csv");
+        d << "wavenumber_cm-1,dos";
+        for (const auto& l : r.pdos_labels) d << "," << l;
+        d << "\n";
+        for (size_t i = 0; i < r.dos_w.size(); ++i) {
+          d << r.dos_w[i] << "," << r.dos[i];
+          for (const auto& p : r.pdos) d << "," << p[i];
+          d << "\n";
+        }
+        std::printf("wrote %s_bands.csv and %s_dos.csv\n", stem.c_str(), stem.c_str());
+      }
+      if (o.count("--json")) {
+        Json j = Json::object();
+        auto arr = [](const std::vector<double>& v) { Json a = Json::array(); for (double x : v) a.push_back(Json(x)); return a; };
+        Json bands = Json::array(), ticks = Json::array(), snd = Json::array(), pd = Json::array();
+        for (const auto& b : r.bands) bands.push_back(arr(b));
+        for (const auto& l : r.tick_labels) ticks.push_back(Json(l));
+        for (const auto& row : r.sound) snd.push_back(arr({row[0], row[1], row[2]}));
+        for (const auto& p : r.pdos) pd.push_back(arr(p));
+        j["path_x"] = arr(r.path_x), j["bands"] = bands, j["tick_x"] = arr(r.tick_x), j["tick_labels"] = ticks;
+        j["dos_w"] = arr(r.dos_w), j["dos"] = arr(r.dos), j["pdos"] = pd, j["T"] = arr(r.T), j["zpe"] = arr(r.zpe), j["U"] = arr(r.U), j["F"] = arr(r.F);
+        j["S"] = arr(r.S), j["Cv"] = arr(r.Cv), j["sound"] = snd, j["min_wavenumber"] = Json(r.min_wavenumber);
+        std::ofstream(o["--json"]) << j.dump(1) << "\n";
+        std::printf("wrote %s\n", o["--json"].c_str());
+      }
+      return 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps phonons: %s\n", e.what());
       return 1;
     }
   }

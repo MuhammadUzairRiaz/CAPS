@@ -40,6 +40,7 @@
 #include "caps/molecule.hpp"
 #include "caps/sorption.hpp"
 #include "caps/powder.hpp"
+#include "caps/phonons.hpp"
 #include "caps/dlpoly.hpp"
 #include "caps/dynamics.hpp"
 #include "caps/superpose.hpp"
@@ -12280,6 +12281,70 @@ extern "C" int32_t caps_thermal(caps_doc* d, const char* options_json, caps_prog
     k["summary"] = caps::thermal_summary(r);
     return report_out(k.dump(0), out, cap);
   });
+}
+
+extern "C" int32_t caps_phonons(caps_doc* d, const char* json, caps_stage_fn progress, void* user, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    if (!d) throw std::invalid_argument("no document");
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    caps::System s = d->traj.frames() ? d->traj.frame(d->current) : d->traj.topology;
+    caps::PhononOptions o;
+    o.energy = elec();
+    o.energy.cutoff = j.num("cutoff", 10);
+    o.energy.threads = int(j.num("threads", 0));
+    o.field_for = [&](const caps::System& sup) { return field_for_extended(d, sup); };
+    auto three = [&](const char* k, std::array<int, 3>& v) {
+      if (j.has(k) && j[k].is_array() && j[k].items().size() == 3)
+        for (size_t q = 0; q < 3; ++q) v[q] = int(j[k].items()[q].number());
+    };
+    three("supercell", o.supercell);
+    three("mesh", o.mesh);
+    o.step = j.num("displacement", 0.01);
+    o.relax = !(j.has("relax") && j["relax"].kind() == caps::Json::Bool && !j["relax"].boolean());
+    o.relax_ftol = j.num("relax_ftol", 1e-3);
+    o.dos_sigma = j.num("sigma", 5);
+    o.path_points = int(j.num("path_points", 120));
+    if (j.has("temperatures") && j["temperatures"].is_array()) {
+      o.temperatures.clear();
+      for (const auto& x : j["temperatures"].items()) o.temperatures.push_back(x.number());
+    }
+    if (j.has("path") && j["path"].is_array())   // [{label, k: [f1, f2, f3]}, …]
+      for (const auto& pnt : j["path"].items()) {
+        std::array<double, 3> f{0, 0, 0};
+        if (pnt.has("k") && pnt["k"].is_array() && pnt["k"].items().size() == 3)
+          for (size_t q = 0; q < 3; ++q) f[q] = pnt["k"].items()[q].number();
+        o.path.push_back(f), o.labels.push_back(pnt.text("label", ""));
+      }
+    bool cancelled = false;
+    if (progress) o.progress = [&](const std::string& w, double f) { cancelled = progress(w.c_str(), f, user) != 0; return !cancelled; };
+    const caps::PhononResult res = caps::phonons(s, o);
+    caps::KeyValues pr = {{"supercell", std::to_string(res.supercell[0]) + " × " + std::to_string(res.supercell[1]) + " × " + std::to_string(res.supercell[2]) +
+                                            " (" + std::to_string(res.supercell_atoms) + " atoms), ±" + g6(o.step) + " Å"},
+                          {"mesh", std::to_string(res.mesh[0]) + " × " + std::to_string(res.mesh[1]) + " × " + std::to_string(res.mesh[2])},
+                          {"force field", res.field}};
+    prov_step(d, "analysis.phonons", "Force-field phonons from supercell force constants", std::move(pr));
+    auto arr = [](const std::vector<double>& v) { caps::Json a = caps::Json::array(); for (double x : v) a.push_back(x); return a; };
+    caps::Json bands = caps::Json::array(), labels = caps::Json::array(), pd = caps::Json::array(), pl = caps::Json::array(), snd = caps::Json::array(), nt = caps::Json::array();
+    for (const auto& b : res.bands) bands.push_back(arr(b));
+    for (const auto& l : res.tick_labels) labels.push_back(l);
+    for (const auto& p : res.pdos) pd.push_back(arr(p));
+    for (const auto& l : res.pdos_labels) pl.push_back(l);
+    for (const auto& row : res.sound) snd.push_back(arr({row[0], row[1], row[2]}));
+    for (const auto& n : res.notes) nt.push_back(n);
+    r["ok"] = true;
+    r["path_x"] = arr(res.path_x), r["bands"] = std::move(bands), r["tick_x"] = arr(res.tick_x), r["tick_labels"] = std::move(labels);
+    r["dos_w"] = arr(res.dos_w), r["dos"] = arr(res.dos), r["pdos"] = std::move(pd), r["pdos_labels"] = std::move(pl);
+    r["T"] = arr(res.T), r["zpe"] = arr(res.zpe), r["U"] = arr(res.U), r["F"] = arr(res.F), r["S"] = arr(res.S), r["Cv"] = arr(res.Cv);
+    r["sound"] = std::move(snd), r["min_wavenumber"] = res.min_wavenumber, r["imaginary"] = double(res.imaginary), r["max_force"] = res.max_force;
+    r["relax_steps"] = double(res.relax_steps), r["relax_shift"] = res.relax_shift, r["forcefield"] = res.field, r["notes"] = std::move(nt);
+    r["supercell"] = arr({double(res.supercell[0]), double(res.supercell[1]), double(res.supercell[2])});
+  } catch (const std::exception& e) {
+    r = caps::Json::object();
+    r["ok"] = false;
+    r["error"] = std::string(e.what());
+  }
+  return report_out(r.dump(0), out, cap);
 }
 
 extern "C" int32_t caps_thermal_lammps(caps_doc* d, const char* options_json, const char* path, char* out, int32_t cap) {

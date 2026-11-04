@@ -83,6 +83,24 @@
           </Border>
           <Border Classes="pcard">
             <StackPanel Spacing="8">
+              <DockPanel>
+                <Button DockPanel.Dock="Right" Classes="primary" Click="OnPhonons" IsEnabled="{Binding HasDocument}" Content="Vibrations"
+                        ToolTip.Tip="Phonons of the open crystal with its force field: the atoms relaxed in a supercell, force constants by small displacements" />
+                <TextBlock Text="Lattice vibrations" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+              </DockPanel>
+              <TextBlock Classes="dim" TextWrapping="Wrap" Text="For a crystal (a polymer crystal, a filler): how its atoms vibrate across the Brillouin zone. The acoustic branches' slopes are the sound speeds — along the chain axis, the fibre's stiffness — and the modes give the heat capacity and entropy." />
+              <TextBlock Text="{Binding PhError}" Foreground="{DynamicResource ErrB}" TextWrapping="Wrap" IsVisible="{Binding PhHasError}" />
+              <v:SciPlot x:Name="Bands" Height="240" IsVisible="{Binding PhHas}" />
+              <v:SciPlot x:Name="Dos" Height="170" IsVisible="{Binding PhHas}" />
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="14" IsVisible="{Binding PhHas}">
+                <StackPanel Spacing="4"><TextBlock Text="SOUND SPEEDS (ACOUSTIC BRANCHES)" Classes="h3" /><TextBlock Text="{Binding PhSound}" Classes="mono" FontSize="12" /></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="HARMONIC" Classes="h3" /><TextBlock Text="{Binding PhSummary}" Classes="mono" FontSize="12" TextWrapping="Wrap" /></StackPanel>
+              </Grid>
+              <TextBlock Text="{Binding PhNote}" Classes="dim" TextWrapping="Wrap" IsVisible="{Binding PhHas}" />
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
               <TextBlock x:Name="CurveTitle" Text="Running integral κ(t) (x solid, y dashed, z dotted) or the slab temperatures" FontSize="13.5" FontWeight="SemiBold" />
               <v:SciPlot x:Name="Curve" Height="220" />
             </StackPanel>
