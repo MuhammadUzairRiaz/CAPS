@@ -59,7 +59,7 @@ public sealed partial class MainViewModel
     public decimal ScatterPlotTo { get => _scatterPlotTo; set { if (Set(ref _scatterPlotTo, Math.Clamp(value, 1, 40))) FillScattering(); } }
     public string XrayChip => BeamLabel + " (" + BeamSources[Math.Min(_xraySource, BeamSources.Length - 1)].Name + ")";
     public string NeutronChip => "neutron · " + IsotopePatterns[_isotope].ToLowerInvariant();
-    public string ScatterTitle => "I(q) · " + (_doc != null ? Title : "no structure");
+    public string ScatterTitle => (_powderView ? "Powder pattern · " : "I(q) · ") + (_doc != null ? Title : "no structure");
     private string _scatterText = "", _expName = "";
     public string ScatterText { get => _scatterText; private set => Set(ref _scatterText, value); }
     public string ExperimentName { get => _expName; private set { if (Set(ref _expName, value)) Raise(nameof(HasExperiment)); } }

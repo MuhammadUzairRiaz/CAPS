@@ -83,6 +83,9 @@ const Cite kCites[] = {
     {"anderson1963", "@article{anderson1963,\n  author = {Anderson, O. L.},\n  title = {A simplified method for calculating the Debye temperature from elastic constants},\n  journal = {Journal of Physics and Chemistry of Solids}, volume = {24}, pages = {909--917}, year = {1963}, doi = {10.1016/0022-3697(63)90067-2}\n}"},
     {"miller1980", "@article{miller1980,\n  author = {Miller, W. H. and Handy, N. C. and Adams, J. E.},\n  title = {Reaction path {H}amiltonian for polyatomic molecules},\n  journal = {The Journal of Chemical Physics}, volume = {72}, pages = {99--112}, year = {1980}, doi = {10.1063/1.438959}\n}"},
     {"horn1987", "@article{horn1987,\n  author = {Horn, B. K. P.},\n  title = {Closed-form solution of absolute orientation using unit quaternions},\n  journal = {Journal of the Optical Society of America A}, volume = {4}, pages = {629--642}, year = {1987}, doi = {10.1364/JOSAA.4.000629}\n}"},
+    {"thompson1987", "@article{thompson1987,\n  author = {Thompson, P. and Cox, D. E. and Hastings, J. B.},\n  title = {Rietveld refinement of {D}ebye--{S}cherrer synchrotron {X}-ray data from {Al$_2$O$_3$}},\n  journal = {J. Appl. Cryst.}, volume = {20}, pages = {79--83}, year = {1987}, doi = {10.1107/S0021889887087090}\n}"},
+    {"dollase1986", "@article{dollase1986,\n  author = {Dollase, W. A.},\n  title = {Correction of intensities for preferred orientation in powder diffractometry: application of the {M}arch model},\n  journal = {J. Appl. Cryst.}, volume = {19}, pages = {267--272}, year = {1986}, doi = {10.1107/S0021889886089458}\n}"},
+    {"caglioti1958", "@article{caglioti1958,\n  author = {Caglioti, G. and Paoletti, A. and Ricci, F. P.},\n  title = {Choice of collimators for a crystal spectrometer for neutron diffraction},\n  journal = {Nucl. Instrum.}, volume = {3}, pages = {223--228}, year = {1958}, doi = {10.1016/0369-643X(58)90029-X}\n}"},
     {"ruland1961", "@article{ruland1961,\n  author = {Ruland, W.},\n  title = {X-ray determination of crystallinity and diffuse disorder scattering},\n  journal = {Acta Crystallographica}, volume = {14}, pages = {1180--1185}, year = {1961}, doi = {10.1107/S0365110X61003429}\n}"},
     {"hermans1948", "@article{hermans1948,\n  author = {Hermans, P. H. and Weidinger, A.},\n  title = {Quantitative {X}-ray investigations on the crystallinity of cellulose fibers. {A} background analysis},\n  journal = {Journal of Applied Physics}, volume = {19}, pages = {491--506}, year = {1948}, doi = {10.1063/1.1698162}\n}"},
     {"evans1984", "@article{evans1984,\n  author = {Evans, D. J. and Morriss, G. P.},\n  title = {Nonlinear-response theory for steady planar {C}ouette flow},\n  journal = {Physical Review A}, volume = {30}, pages = {1528--1530}, year = {1984}, doi = {10.1103/PhysRevA.30.1528}\n}"},
@@ -441,6 +444,10 @@ std::string methods_text(const Manifest& m, std::vector<std::string>* refs, cons
           " (" + param(s, "Widom") + ") and grand-canonical Monte Carlo" + cite({"frenkel2002"}) + " (" + param(s, "GCMC") + ") in the fixed host" +
           (param(s, "flexible").empty() ? std::string() : ", the sorbate's " + param(s, "flexible") + cite({"siepmann1992", "rosenbluth1955"})) +
           (param(s, "fixed loading").empty() ? std::string() : "; canonical Monte Carlo at a fixed loading (" + param(s, "fixed loading") + ")") + ".";
+    } else if (e == "analysis.powder") {
+      t = "The powder diffraction pattern (" + param(s, "radiation") + ", " + param(s, "range") + ") was computed from the cell's reciprocal lattice (" +
+          param(s, "reflections") + ") with " + param(s, "peaks") + " peak shapes" + cite({"thompson1987", "caglioti1958"}) +
+          (param(s, "orientation").empty() ? std::string() : " and March–Dollase preferred orientation" + cite({"dollase1986"})) + ".";
     } else if (e == "adsorption.locator") {
       t = "Adsorption configurations were searched by Monte Carlo simulated annealing" + cite({"kirkpatrick1983"}) + " of rigid adsorbates on the fixed substrate (" +
           param(s, "annealing") + "); the lowest adsorption energy was " + param(s, "adsorption energy") + ".";

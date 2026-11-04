@@ -640,6 +640,11 @@ _mx = caps.open(os.path.join(samples, "ps_melt.data")).sorption(pressures_kpa=[1
 _mp = _mx["isotherm"][0]
 check(len(_mx["species"]) == 2 and len(_mp["species_loading"]) == 2 and abs(sum(_mp["species_loading"]) - _mp["loading"]) < 1e-6 and _mp["selectivity"][0] == 1,
       f"mixture sorption: CO2 {_mp['species_loading'][0]:.2f} + N2 {_mp['species_loading'][1]:.2f} per cell, S(N2/CO2) {_mp['selectivity'][1]:.2f}")
+# the powder pattern of orthorhombic PE: (110) and (200) at Bragg's angles, (110) the strongest
+_pw = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "polymers", "pe-orthorhombic.cif")).powder(two_theta=(10, 30))
+_p110 = [p for p in _pw["peaks"] if sorted(map(abs, (p["h"], p["k"], p["l"]))) == [0, 1, 1] and p["l"] == 0][0]
+check(abs(_p110["two_theta"] - 21.64) < 0.05 and _pw["peaks"][0] is not None and _p110["intensity"] == 100 and len(_pw["two_theta"]) == len(_pw["intensity"]),
+      f"powder pattern of PE: (110) at {_p110['two_theta']:.2f}° 2θ, {_pw['reflections']} reflections")
 # flexible sorbates (configurational bias) and a fixed loading kept as the frame: n-butane in the PS melt
 _fx = caps.open(os.path.join(samples, "ps_melt.data"))
 _fxa = _fx.summary()["atoms"]
@@ -723,7 +728,7 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 75, "ABI 75")
+check(caps.abi_version() == 76, "ABI 76")
 
 # bond exchange analysis (ABI 74): an exact Arrhenius line gives its Ea, healing ratios follow their definitions
 import math

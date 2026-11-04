@@ -82,6 +82,7 @@ add_library(caps_core STATIC
   src/dft_analysis.cpp
   src/dft_commands.cpp
   src/sorption.cpp
+  src/powder.cpp
   src/functionalize.cpp
   src/layers.cpp
   src/pipeline_outputs.cpp

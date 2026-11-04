@@ -2958,6 +2958,74 @@
    "tex": "X_c = \\frac{\\sum_{\\mathrm{cryst}} A_k}{\\sum_{\\mathrm{cryst}} A_k + \\sum_{\\mathrm{halo}} A_k},\\qquad A_k = \\sqrt{2\\pi}\\,h_k\\,\\sigma_k"
   },
   {
+   "id": "powder",
+   "group": "Analysis",
+   "title": "Powder pattern: reflections and I(2θ)",
+   "summary": "The diffraction pattern a powder of the cell gives on a laboratory diffractometer or with neutrons, from the cell's reciprocal lattice. Every vector G = h b₁ + k b₂ + l b₃ up to 4π sin θ_max/λ gets its structure factor from the atoms' Cromer–Mann form factors (or coherent neutron lengths) with a temperature factor e^(−Bs²); |F|² is averaged over the frames, so an MD run brings its own thermal damping and diffuse scattering. Vectors of equal |G| make one reflection, their number its multiplicity; absences follow from F. Each line of the source (Kα1, and Kα2 at half its intensity) places the reflection by Bragg's law; its integrated intensity is m|F|² times the Lorentz–polarisation factor (with a monochromator's angle) and, for an oriented sample, the March–Dollase factor of each vector. Peaks are pseudo-Voigt functions of area one: the Gaussian width from the instrument (Caglioti U, V, W) and microstrain 4ε tan θ, the Lorentzian width from Kλ/(L cos θ) (Scherrer; one crystallite size or one per cell axis) and X tan θ + Y/cos θ, combined by Thompson, Cox and Hastings; a Gaussian, a Lorentzian or a fixed-η pseudo-Voigt can be chosen instead. Works on a crystal's unit cell and on any periodic MD cell; a measured pattern can be drawn over it.",
+   "equation": "F(G) = Σ_j f_j(s) e^(−Bs²) e^(iG·r_j),   λ|G| = 4π sin θ,   I = m |F|² LP P_MD,   LP = (1 + cos²2θ_m cos²2θ) / ((1 + cos²2θ_m) sin²θ cos θ),   P_MD = (r² cos²α + sin²α / r)^(−3/2),   H_G² = U tan²θ + V tan θ + W + (4ε tan θ)²,   H_L = X tan θ + Y / cos θ + Kλ / (L cos θ)",
+   "equation_note": "Thompson, Cox & Hastings 1987; Caglioti, Paoletti & Ricci 1958; Dollase 1986; Scherrer 1918",
+   "tex": "F(\\mathbf{G}) = \\sum_j f_j(s)\\,e^{-Bs^2}\\,e^{i\\mathbf{G}\\cdot\\mathbf{r}_j}, \\qquad \\lambda|\\mathbf{G}| = 4\\pi\\sin\\theta, \\qquad I = m\\,\\overline{|F|^2}\\;LP\\;P_\\mathrm{MD} \\\\ LP = \\frac{1 + \\cos^2 2\\theta_m \\cos^2 2\\theta}{(1 + \\cos^2 2\\theta_m)\\,\\sin^2\\theta\\cos\\theta}, \\qquad P_\\mathrm{MD} = \\left(r^2\\cos^2\\alpha + \\frac{\\sin^2\\alpha}{r}\\right)^{-3/2} \\\\ H_G^2 = U\\tan^2\\theta + V\\tan\\theta + W + (4\\varepsilon\\tan\\theta)^2, \\qquad H_L = X\\tan\\theta + \\frac{Y}{\\cos\\theta} + \\frac{K\\lambda}{L\\cos\\theta}",
+   "symbols": [
+    [
+     "G",
+     "reciprocal-lattice vector of the cell",
+     "Å⁻¹"
+    ],
+    [
+     "s",
+     "sin θ / λ = |G|/4π",
+     "Å⁻¹"
+    ],
+    [
+     "B",
+     "temperature factor",
+     "Å²"
+    ],
+    [
+     "m",
+     "multiplicity (vectors of equal |G|)",
+     "—"
+    ],
+    [
+     "θ_m",
+     "monochromator Bragg angle",
+     "°"
+    ],
+    [
+     "r, α",
+     "March–Dollase parameter; angle between G and the preferred direction",
+     "—, °"
+    ],
+    [
+     "U, V, W, X, Y",
+     "instrument widths (Gaussian, Lorentzian)",
+     "°², °"
+    ],
+    [
+     "L, K",
+     "crystallite size along G; Scherrer constant (0.9)",
+     "Å, —"
+    ],
+    [
+     "ε",
+     "microstrain",
+     "—"
+    ]
+   ],
+   "when": "Compare a built crystal or a semicrystalline cell with WAXD: polymer crystals (PE, iPP, PA6, β-PVDF, cellulose Iβ in fibres), strain-induced crystallisation in natural rubber, filler phases (ZnO, CaCO₃). Crystallite size and strain give the peak widths of small lamellae; preferred orientation the texture of a drawn fibre or a rolled film.",
+   "cites": [
+    "caglioti1958",
+    "dollase1986",
+    "thompson1987"
+   ],
+   "source": "core/src/powder.cpp (powder_pattern)",
+   "tested": "Powder.FccCopperIsExact (fcc Cu: 111, 200, 220, 311, 222, 400 at Bragg's angles with multiplicities 8, 6, 12, 24, 8, 6, the mixed-parity reflections absent, every intensity m|4f|²LP to 10⁻⁹); Powder.RockSaltAlternates (NaCl I(111)/I(200) 0.08140 against the analytic (f_Na − f_Cl)² / (f_Na + f_Cl)² ratio); Powder.DoubletAndScherrerWidth (Cu 111 FWHM equal to Kλ/(L cos θ); Kα2/Kα1 heights 0.503); Powder.MarchDollaseFactor ((001)/(100) raised by r^(−4.5) exactly); Powder.ThermalFramesMatchDebyeWaller (40 frames of Cu displaced by σ = 0.09 Å against the still crystal with B = 8π²σ²: (200)/(444) 0.4566 and 0.4566); orthorhombic PE from the crystal library: (110) at 21.64° and (200) at 24.03° 2θ (Cu Kα), I(200)/I(110) 0.38",
+   "deviation": "no axial-divergence asymmetry, absorption, anomalous dispersion or background; the Kα wavelengths as pymatgen's table; one global temperature factor (or the frames' own motion)",
+   "engines": [
+    "analysis.powder"
+   ]
+  },
+  {
    "group": "Analysis",
    "source": "core/src/sorption.cpp",
    "engines": [],

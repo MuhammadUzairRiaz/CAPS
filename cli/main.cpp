@@ -73,6 +73,7 @@
 #include "caps/semicrystal.hpp"
 #include "caps/tags.hpp"
 #include "caps/thermal.hpp"
+#include "caps/powder.hpp"
 #include "caps/yaml.hpp"
 #ifdef _WIN32
 #include <io.h>
@@ -332,6 +333,10 @@ int usage() {
                "               without --cutoff (relax, md, equilibrate): the force field's own cut-off, else 10 Å\n"
                "  caps cbmc    FILE -o OUT.data [--moves 1000] [--trials 8] [--max-torsions 4] [--temp 300] [--cutoff 9] [--seed 1]\n"
                "               [--ff FF] [--no-coulomb]   configurational-bias regrowth of chain ends (Siepmann & Frenkel)\n"
+               "  caps powder FILE [--topology DATA] [--anode Cu|Mo|Co|Fe|Cr|Ag | --wavelength Å] [--no-kalpha2] [--neutron] [--two-theta 5:90] [--step 0.02]\n"
+               "               [--profile tch|pseudo-voigt|gaussian|lorentzian] [--uvw U,V,W] [--xy X,Y] [--size Å | --size-abc La,Lb,Lc] [--strain ε] [--biso B]\n"
+               "               [--preferred h,k,l --march r] [--zero °] [--monochromator 2θ°] [--polarised] [--first N --last N --stride N] [--peaks 20] [--csv OUT] [--json OUT]\n"
+               "               the powder pattern of the cell (its reciprocal lattice, frames averaged): reflections with hkl, d, 2θ, multiplicity, |F|, I\n"
                "  caps thermal FILE --dimensionality 3d|2d [--method gk|nemd] [--temp 300] [--eq-ps 10] [--ps 100] [--dt 1] [--every 5]\n"
                "               [--corr-ps 5] [--axis x|y|z] [--layers 20] [--swap-every 100] [--transient 0.3] [--thickness 3.35] [--seed 1]\n"
                "               [--ff FF] [--json OUT.json] [--lammps-input IN.lmp]   thermal conductivity by MD: Green-Kubo (heat-flux\n"
@@ -443,7 +448,7 @@ const std::set<std::string>& known_options() {
     "--tmax", "--to", "--tol", "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing", "--units",
     "--polymer", "--crystal", "--crystal-cells", "--amorphous", "--loops", "--bridges", "--tails", "--reentry", "--analyse",
     "--corr-ps", "--long", "--swap-every", "--transient", "--dimensionality", "--thickness",
-    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
+    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
   return k;
 }
 
@@ -475,7 +480,8 @@ bool is_cli_switch(const std::string& a) {
          a == "--until-converged" || a == "--print-protocol" || a == "--no-pbc" ||
          a == "--no-relax" || a == "--list-templates" || a == "--list" || a == "--allow-missing" || a == "--no-tail" || a == "--explain" || a == "--names" || a == "--fixed-lateral" || a == "--volume" || a == "--quick" || a == "--all" || a == "--pme" || a == "--no-orthogonal" || a == "--passivate" || a == "--auto-scale" || a == "--finite" || a == "--flake" || a == "--normal" || a == "--slabs" || a == "--droplet" || a == "--include-input" || a == "--primitive" || a == "--symmetrize" || a == "--find-symmetry" || a == "--groups" || a == "--neutralise" || a == "--no-ions" || a == "--solvents" || a == "--bibtex" || a == "--json" || a == "--deterministic" || a == "--vacuum" || a == "--methods" ||
          a == "--hybrid" || a == "--resume" || a == "--between-chains" || a == "--keep-byproducts" || a == "--auto-capture" ||
-         a == "--during-md" || a == "--remove-unreacted" || a == "--analyse" || a == "--long" || a == "--reduced" || a == "--kg" || a == "--stickers" || a == "--both-ends" || a == "--no-exchange" || a == "--npt";
+         a == "--during-md" || a == "--remove-unreacted" || a == "--analyse" || a == "--long" || a == "--reduced" || a == "--kg" || a == "--stickers" || a == "--both-ends" || a == "--no-exchange" || a == "--npt" ||
+         a == "--no-kalpha2" || a == "--neutron" || a == "--polarised";
 }
 
 std::map<std::string, std::string> parse(int argc, char** argv, int from, std::vector<std::string>& pos) {
@@ -3888,6 +3894,103 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps tg: %s\n", e.what());
+      return 1;
+    }
+  }
+  if (cmd == "powder") {
+    // caps powder FILE [--topology DATA] [--first N --last N --stride N] [--anode Cu | --wavelength Å] [--no-kalpha2] [--neutron]
+    //             [--two-theta 5:90] [--step 0.02] [--profile tch|pseudo-voigt|gaussian|lorentzian] [--uvw U,V,W] [--xy X,Y] [--eta 0.5]
+    //             [--size Å | --size-abc La,Lb,Lc] [--strain ε] [--biso B] [--preferred h,k,l --march r] [--zero °] [--monochromator 2θ°]
+    //             [--polarised] [--peaks N] [--csv OUT.csv] [--json OUT.json]
+    try {
+      if (pos.empty()) return usage();
+      OpenProgress rd;
+      if (o.count("--first")) rd.frames.first = size_t(std::max(0L, std::stol(o["--first"])));
+      if (o.count("--last") && std::stol(o["--last"]) >= 0) rd.frames.last = size_t(std::stol(o["--last"]));
+      if (o.count("--stride")) rd.frames.stride = size_t(std::max(1L, std::stol(o["--stride"])));
+      Trajectory t = open_file(pos[0], o.count("--topology") ? o["--topology"] : "", rd);
+      if (t.frames_read == 0 && !rd.frames.all()) t.select(rd.frames);
+      PowderOptions po;
+      auto pair = [&](const std::string& key, double& a, double& b) {
+        const std::string v = o[key];
+        const auto c = v.find_first_of(":,");
+        if (c == std::string::npos) throw std::invalid_argument(key + " A:B");
+        a = std::stod(v.substr(0, c)), b = std::stod(v.substr(c + 1));
+      };
+      auto list = [&](const std::string& key, size_t n) {
+        std::vector<double> v;
+        std::string s = o[key];
+        for (auto& ch : s) if (ch == ':') ch = ',';
+        size_t at = 0;
+        while (at <= s.size()) {
+          const size_t c = s.find(',', at);
+          v.push_back(std::stod(s.substr(at, c == std::string::npos ? std::string::npos : c - at)));
+          if (c == std::string::npos) break;
+          at = c + 1;
+        }
+        if (v.size() != n) throw std::invalid_argument(key + ": " + std::to_string(n) + " numbers, comma-separated");
+        return v;
+      };
+      if (o.count("--anode")) po.anode = o["--anode"];
+      if (o.count("--wavelength")) po.wavelength = std::stod(o["--wavelength"]);
+      if (o.count("--no-kalpha2")) po.kalpha2 = false;
+      if (o.count("--neutron")) po.radiation = "neutron";
+      if (o.count("--two-theta")) pair("--two-theta", po.two_theta_min, po.two_theta_max);
+      if (o.count("--step")) po.step = std::stod(o["--step"]);
+      if (o.count("--profile")) po.profile = o["--profile"];
+      if (o.count("--uvw")) { const auto v = list("--uvw", 3); po.U = v[0], po.V = v[1], po.W = v[2]; }
+      if (o.count("--xy")) { const auto v = list("--xy", 2); po.X = v[0], po.Y = v[1]; }
+      if (o.count("--eta")) po.eta = std::stod(o["--eta"]);
+      if (o.count("--size")) po.size = std::stod(o["--size"]);
+      if (o.count("--size-abc")) { const auto v = list("--size-abc", 3); po.size_abc = {v[0], v[1], v[2]}; }
+      if (o.count("--scherrer-k")) po.scherrer_k = std::stod(o["--scherrer-k"]);
+      if (o.count("--strain")) po.strain = std::stod(o["--strain"]);
+      if (o.count("--biso")) po.b_iso = std::stod(o["--biso"]);
+      if (o.count("--preferred")) { const auto v = list("--preferred", 3); po.preferred = {int(v[0]), int(v[1]), int(v[2])}; }
+      if (o.count("--march")) po.march_r = std::stod(o["--march"]);
+      if (o.count("--zero")) po.zero_shift = std::stod(o["--zero"]);
+      if (o.count("--monochromator")) po.monochromator_2theta = std::stod(o["--monochromator"]);
+      if (o.count("--polarised")) po.polarised = true;
+      if (o.count("--threads")) po.threads = std::stoi(o["--threads"]);
+      const int show = o.count("--peaks") ? std::stoi(o["--peaks"]) : 20;
+      std::vector<size_t> fr;
+      for (size_t k = 0; k < std::max<size_t>(1, t.frames()); ++k) fr.push_back(k);
+      const PowderReport r = powder_pattern(t, fr, po);
+      for (const auto& n : r.notes) std::printf("%s\n", n.c_str());
+      std::printf("%5s %4s %4s %4s %9s %9s %5s %10s %7s %7s\n", "#", "h", "k", "l", "d (Å)", "2θ (°)", "m", "|F|", "I", "FWHM");
+      for (size_t i = 0; i < r.peaks.size() && int(i) < show; ++i) {
+        const auto& p = r.peaks[i];
+        std::printf("%5zu %4d %4d %4d %9.4f %9.3f %5d %10.3f %7.2f %7.3f\n", i + 1, p.h, p.k, p.l, p.d, p.two_theta, p.multiplicity, p.f, p.intensity, p.fwhm);
+      }
+      if (o.count("--csv")) {
+        std::ofstream f(o["--csv"]);
+        f << "two_theta_deg,q_inv_angstrom,intensity\n";
+        for (size_t i = 0; i < r.two_theta.size(); ++i) f << r.two_theta[i] << "," << r.q[i] << "," << r.intensity[i] << "\n";
+        const std::string pk = std::filesystem::path(o["--csv"]).replace_extension("").string() + "_peaks.csv";
+        std::ofstream g(pk);
+        g << "h,k,l,d_angstrom,two_theta_deg,q_inv_angstrom,multiplicity,F,intensity,fwhm_deg\n";
+        for (const auto& p : r.peaks)
+          g << p.h << "," << p.k << "," << p.l << "," << p.d << "," << p.two_theta << "," << p.q << "," << p.multiplicity << "," << p.f << "," << p.intensity << "," << p.fwhm << "\n";
+        std::printf("wrote %s and %s\n", o["--csv"].c_str(), pk.c_str());
+      }
+      if (o.count("--json")) {
+        Json j = Json::object(), pk = Json::array(), x = Json::array(), y = Json::array(), lam = Json::array(), nt = Json::array();
+        for (const auto& p : r.peaks) {
+          Json e = Json::object();
+          e["h"] = Json(double(p.h)), e["k"] = Json(double(p.k)), e["l"] = Json(double(p.l)), e["d"] = Json(p.d), e["two_theta"] = Json(p.two_theta);
+          e["q"] = Json(p.q), e["multiplicity"] = Json(double(p.multiplicity)), e["F"] = Json(p.f), e["intensity"] = Json(p.intensity), e["fwhm"] = Json(p.fwhm);
+          pk.push_back(e);
+        }
+        for (size_t i = 0; i < r.two_theta.size(); ++i) x.push_back(Json(r.two_theta[i])), y.push_back(Json(r.intensity[i]));
+        for (double v : r.wavelengths) lam.push_back(Json(v));
+        for (const auto& n : r.notes) nt.push_back(Json(n));
+        j["peaks"] = pk, j["two_theta"] = x, j["intensity"] = y, j["wavelengths"] = lam, j["notes"] = nt, j["frames"] = Json(double(r.frames));
+        std::ofstream(o["--json"]) << j.dump(1) << "\n";
+        std::printf("wrote %s\n", o["--json"].c_str());
+      }
+      return 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps powder: %s\n", e.what());
       return 1;
     }
   }

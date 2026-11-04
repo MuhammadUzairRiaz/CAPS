@@ -1301,6 +1301,39 @@ def _sorption(self, sorbate: str = "O=C=O", pressures_kpa=(), temperature: float
 Document.sorption = _sorption
 
 
+def _powder(self, anode: str = "Cu", wavelength: float = 0.0, two_theta=(5.0, 90.0), step: float = 0.02, radiation: str = "xray",
+            kalpha2: bool = True, profile: str = "tch", uvw=(0.0, 0.0, 0.0025), xy=(0.0, 0.0), size: float = 0.0, size_abc=None,
+            strain: float = 0.0, b_iso: float = 0.0, preferred=None, march_r: float = 1.0, zero_shift: float = 0.0,
+            monochromator: float = 0.0, polarised: bool = False, frames="current", max_peaks: int = 200) -> dict:
+    """Powder diffraction pattern of the cell from its reciprocal lattice: reflections (h k l, d, 2θ, multiplicity, |F|,
+    intensity, FWHM) and I(2θ) with the Kα doublet, Lorentz–polarisation, Thompson–Cox–Hastings peaks (Caglioti U V W,
+    Lorentzian X Y), Scherrer size (Å) and microstrain broadening, a temperature factor B (Å²) and March–Dollase
+    preferred orientation along preferred=(h, k, l) with march_r. frames: "current", "all" (|F|² averaged) or indices.
+    Returns {peaks, two_theta, q, intensity, wavelengths, reflections, frames, notes}."""
+    o = {"anode": anode, "wavelength": float(wavelength), "two_theta_min": float(two_theta[0]), "two_theta_max": float(two_theta[1]),
+         "step": float(step), "radiation": radiation, "kalpha2": bool(kalpha2), "profile": profile, "U": float(uvw[0]), "V": float(uvw[1]),
+         "W": float(uvw[2]), "X": float(xy[0]), "Y": float(xy[1]), "size": float(size), "strain": float(strain), "b_iso": float(b_iso),
+         "march_r": float(march_r), "zero_shift": float(zero_shift), "monochromator": float(monochromator), "polarised": bool(polarised),
+         "frames": list(frames) if isinstance(frames, (list, tuple)) else frames, "max_peaks": int(max_peaks)}
+    if size_abc is not None:
+        o["size_abc"] = [float(x) for x in size_abc]
+    if preferred is not None:
+        o["preferred"] = [int(x) for x in preferred]
+    f = library().caps_powder
+    f.argtypes = [C.c_void_p, C.c_char_p, C.c_void_p, C.c_void_p, C.c_char_p, C.c_int32]
+    f.restype = C.c_int32
+    n_pts = int((o["two_theta_max"] - o["two_theta_min"]) / max(1e-6, o["step"])) + 2
+    buf = C.create_string_buffer((1 << 20) + n_pts * 80 + int(max_peaks) * 300)
+    f(self._h, _enc(json.dumps(o)), None, None, buf, len(buf))
+    r = json.loads(buf.value.decode())
+    if not r.get("ok"):
+        raise CapsError(r.get("error", "powder pattern failed"))
+    return r
+
+
+Document.powder = _powder
+
+
 def _adsorption(self, adsorbates, cycles: int = 3, steps: int = 20000, t_high: float = 1e4, t_low: float = 100.0, region: str = "cell",
                 cutoff: float = 12.0, coulomb: bool = True, keep: int = 10, seed: int = 1) -> dict:
     """Adsorption locator: adsorbates [(smiles, count), …] added after the structure and placed by Monte Carlo simulated

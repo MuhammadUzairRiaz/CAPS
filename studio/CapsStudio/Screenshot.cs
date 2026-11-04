@@ -313,6 +313,21 @@ internal static class Screenshot
                     string.Join("; ", vm.SorbRows.Select(r => $"{r.Pressure} kPa {r.Loading} ({r.MolKg} mol/kg, {r.Heat} kcal/mol)")) + " · " + vm.SorbNote +
                     (vm.SorbHasIg ? " · alone: " + vm.SorbIg : "") + (vm.SorbHasHeld ? $" · held: U {vm.SorbHeldE}, E_ads {vm.SorbHeldAds}, {vm.SorbHeldSplit}, {vm.SorbHeldNote}" : ""));
             }
+            if (kv[0] == "powder")   // powder=ANODE|FROM|TO|SIZE_NM: Analyze › Scattering's powder pattern of the open structure, awaited
+            {
+                var vm = w.ViewModel;
+                var inv = System.Globalization.CultureInfo.InvariantCulture;
+                var f = kv[1].Split('|');
+                vm.OpenScattering();
+                vm.PowAnode = Math.Max(0, Array.IndexOf(ViewModels.MainViewModel.PowderAnodes, f[0] + " Kα"));
+                if (f.Length > 1) vm.PowFromD = decimal.Parse(f[1], inv);
+                if (f.Length > 2) vm.PowToD = decimal.Parse(f[2], inv);
+                if (f.Length > 3) vm.PowSizeD = decimal.Parse(f[3], inv);
+                var t = vm.RunPowder();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+                for (int k = 0; k < 60; ++k) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+                Console.WriteLine("powder: " + vm.Status + (vm.PowHasError ? " · error " + vm.PowError : "") + " · " + string.Join("; ", vm.PowderRows.Take(6).Select(r => $"({r.Hkl}) {r.TwoTheta}° I {r.I}")) + " · " + vm.PowText);
+            }
             if (kv[0] == "figure")   // figure=BG: Export › Figure with that background selected
             {
                 w.ViewModel.OpenFigure();

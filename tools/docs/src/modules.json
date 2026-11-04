@@ -1453,7 +1453,8 @@
      "d": [
       "**Glass transition**: cooling from 500 K to 200 K in 20 K steps, 100 ps NPT each, Tg from a two-line fit ([[Run cooling]]). [[Open finished runs…]] reads scans that ran elsewhere (`caps tg` folders, `OUT.tg-points.json` or its csv folder); several are replicas, pooled as mean ± SD with error bars, the same as `caps tg --fit RUN RUN …`.",
       "**Diffusion**: the MSD with its fit window and the Yeh–Hummer box-size correction.",
-      "**Mechanics**: uniaxial tension and the stiffness matrix. All under **Modules › Analysis**."
+      "**Mechanics**: uniaxial tension and the stiffness matrix. All under **Modules › Analysis**.",
+      "**Scattering** › [[Powder pattern 2θ]]: the cell's reflections (h k l, d, 2θ, multiplicity, intensity) and I(2θ) for a Cu, Mo, Co, Fe, Cr or Ag tube with the Kα2 line, crystallite size, strain, a temperature factor and preferred orientation, over a measured pattern."
      ]
     }
    ],

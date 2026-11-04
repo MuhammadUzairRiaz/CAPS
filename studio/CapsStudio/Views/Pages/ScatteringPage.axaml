@@ -31,14 +31,20 @@
     <Grid v:Panes.Split="True" ColumnDefinitions="*,400" ColumnSpacing="14" Margin="22,18">
       <Border Classes="pcard">
         <DockPanel>
-          <TextBlock DockPanel.Dock="Top" Text="{Binding ScatterTitle}" FontSize="13.5" FontWeight="SemiBold" Margin="0,0,0,10" />
+          <DockPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="4">
+              <ToggleButton Content="Total scattering I(q)" IsChecked="{Binding QView}" ToolTip.Tip="The amorphous halo and local order: the reciprocal-lattice sum with the g(r) transform above it" />
+              <ToggleButton Content="Powder pattern 2θ" IsChecked="{Binding PowderView}" ToolTip.Tip="The cell's reflections as a diffractometer records them: Kα doublet, peak shapes, size and strain" />
+            </StackPanel>
+            <TextBlock Text="{Binding ScatterTitle}" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+          </DockPanel>
           <StackPanel DockPanel.Dock="Bottom" Spacing="10" Margin="0,10,0,0">
-            <WrapPanel>
+            <WrapPanel IsVisible="{Binding QView}">
               <Border Classes="chip" Margin="0,0,6,0" IsVisible="{Binding ScatterXray}"><StackPanel Orientation="Horizontal" Spacing="6"><Ellipse Width="7" Height="7" Fill="{DynamicResource AccB}" VerticalAlignment="Center" /><TextBlock Text="{Binding XrayChip}" /></StackPanel></Border>
               <Border Classes="chip" Margin="0,0,6,0" IsVisible="{Binding ScatterNeutron}"><StackPanel Orientation="Horizontal" Spacing="6"><Ellipse Width="7" Height="7" Fill="{DynamicResource SelB}" VerticalAlignment="Center" /><TextBlock Text="{Binding NeutronChip}" /></StackPanel></Border>
               <Border Classes="chip" Margin="0,0,6,0" IsVisible="{Binding HasExperiment}"><StackPanel Orientation="Horizontal" Spacing="6"><TextBlock Text="···" Foreground="{DynamicResource MutedB}" /><TextBlock Text="{Binding ExperimentName}" /><Button Classes="tool" Padding="2" MinHeight="14" Height="16" Click="OnClearExperiment"><v:Icon Kind="close" Size="10" /></Button></StackPanel></Border>
             </WrapPanel>
-            <TextBlock Text="{Binding ScatterText}" FontSize="12" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" LineHeight="18" />
+            <TextBlock Text="{Binding ScatterText}" FontSize="12" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" LineHeight="18" IsVisible="{Binding QView}" />
           </StackPanel>
           <v:SciPlot x:Name="Plot" />
         </DockPanel>
@@ -61,6 +67,57 @@
                 <CheckBox Content="{Binding BeamLabel}" IsChecked="{Binding ScatterXray}" />
                 <CheckBox Content="Neutron" IsChecked="{Binding ScatterNeutron}" />
               </StackPanel>
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="10">
+              <DockPanel>
+                <Button DockPanel.Dock="Right" Classes="primary" Click="OnPowder" IsEnabled="{Binding HasDocument}" Content="Pattern" />
+                <TextBlock Text="Powder pattern" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+              </DockPanel>
+              <TextBlock Text="Every reflection of the cell (h k l, d, 2θ, multiplicity, |F|), broadened as a diffractometer and the crystallites would broaden it" FontSize="12" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" />
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                <ComboBox ItemsSource="{x:Static vm:MainViewModel.PowderAnodes}" SelectedIndex="{Binding PowAnode}" HorizontalAlignment="Stretch" />
+                <CheckBox Grid.Column="1" Content="Kα2" IsChecked="{Binding PowKa2}" ToolTip.Tip="The Kα2 line at half Kα1's intensity" />
+              </Grid>
+              <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+                <StackPanel Spacing="6"><TextBlock Text="2θ from · °" Classes="label" /><NumericUpDown Value="{Binding PowFromD}" Minimum="0.5" Maximum="170" Increment="5" FormatString="0.#" ShowButtonSpinner="False" /></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="to · °" Classes="label" /><NumericUpDown Value="{Binding PowToD}" Minimum="1" Maximum="175" Increment="5" FormatString="0.#" ShowButtonSpinner="False" /></StackPanel>
+                <StackPanel Grid.Column="2" Spacing="6"><TextBlock Text="Instrument W · °²" Classes="label" /><NumericUpDown Value="{Binding PowWD}" Minimum="0" Maximum="1" Increment="0.001" FormatString="0.####" ShowButtonSpinner="False"
+                  ToolTip.Tip="The instrument's own Gaussian width, FWHM² = W (0.0025: 0.05°)" /></StackPanel>
+              </Grid>
+              <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+                <StackPanel Spacing="6"><TextBlock Text="Crystallite · nm" Classes="label" /><NumericUpDown Value="{Binding PowSizeD}" Minimum="0" Maximum="10000" Increment="5" FormatString="0.#" ShowButtonSpinner="False"
+                  ToolTip.Tip="Scherrer broadening Kλ/(L cos θ), K 0.9; 0: none (lamellar crystals of a rubber or PE: 5–20 nm)" /></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="Strain · %" Classes="label" /><NumericUpDown Value="{Binding PowStrainD}" Minimum="0" Maximum="10" Increment="0.05" FormatString="0.###" ShowButtonSpinner="False"
+                  ToolTip.Tip="Microstrain broadening 4ε tan θ" /></StackPanel>
+                <StackPanel Grid.Column="2" Spacing="6"><TextBlock Text="B · Å²" Classes="label" /><NumericUpDown Value="{Binding PowBD}" Minimum="0" Maximum="50" Increment="0.5" FormatString="0.##" ShowButtonSpinner="False"
+                  ToolTip.Tip="Temperature factor e^(−B s²) on every atom; averaging an MD run's frames brings its own thermal damping instead" /></StackPanel>
+              </Grid>
+              <ComboBox ItemsSource="{x:Static vm:MainViewModel.PowderProfiles}" SelectedIndex="{Binding PowProfile}" HorizontalAlignment="Stretch" />
+              <Grid ColumnDefinitions="*,90" ColumnSpacing="10">
+                <StackPanel Spacing="6"><TextBlock Text="Oriented along h k l (blank: random)" Classes="label" /><TextBox Text="{Binding PowPreferred}" Classes="mono" Watermark="e.g. 0 0 1"
+                  ToolTip.Tip="Preferred orientation (March–Dollase): r below 1 for plates lying on these planes, above 1 for needles along them; a drawn fibre or a rolled film" /></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="r" Classes="label" /><NumericUpDown Value="{Binding PowRD}" Minimum="0.05" Maximum="20" Increment="0.1" FormatString="0.##" ShowButtonSpinner="False" /></StackPanel>
+              </Grid>
+              <CheckBox Content="Average the trajectory's frames" IsChecked="{Binding PowAllFrames}" ToolTip.Tip="|F|² over every frame: the thermal motion damps the reflections and adds diffuse scattering" />
+              <TextBlock Text="{Binding PowError}" Foreground="{DynamicResource ErrB}" TextWrapping="Wrap" IsVisible="{Binding PowHasError}" />
+              <Grid ColumnDefinitions="1.3*,*,*,0.6*,*" IsVisible="{Binding PowderView}">
+                <TextBlock Text="H K L" Classes="h3" /><TextBlock Grid.Column="1" Text="D (Å)" Classes="h3" /><TextBlock Grid.Column="2" Text="2Θ (°)" Classes="h3" />
+                <TextBlock Grid.Column="3" Text="M" Classes="h3" /><TextBlock Grid.Column="4" Text="I" Classes="h3" HorizontalAlignment="Right" />
+              </Grid>
+              <ItemsControl ItemsSource="{Binding PowderRows}" IsVisible="{Binding PowderView}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:PowderRow">
+                    <Grid ColumnDefinitions="1.3*,*,*,0.6*,*" Margin="0,2">
+                      <TextBlock Text="{Binding Hkl}" Classes="mono" FontSize="12" /><TextBlock Grid.Column="1" Text="{Binding D}" Classes="mono" FontSize="12" />
+                      <TextBlock Grid.Column="2" Text="{Binding TwoTheta}" Classes="mono" FontSize="12" /><TextBlock Grid.Column="3" Text="{Binding M}" Classes="mono" FontSize="12" />
+                      <TextBlock Grid.Column="4" Text="{Binding I}" Classes="mono" FontSize="12" HorizontalAlignment="Right" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock Text="{Binding PowText}" FontSize="11.5" Foreground="{DynamicResource MutedB}" TextWrapping="Wrap" IsVisible="{Binding PowderView}" />
             </StackPanel>
           </Border>
           <Border Classes="pcard">

@@ -19,12 +19,15 @@ public partial class ScatteringPage : PageBase
             _hooked = vm;
             vm.ScatterChanged += () =>
             {
-                this.FindControl<SciPlot>("Plot")!.Figure = ViewModels.PageFigures.Scattering(vm.ScatterXray ? vm.ScatterXrayCurve : [], vm.ScatterNeutron ? vm.ScatterNeutronCurve : [], vm.ScatterExperiment);
+                this.FindControl<SciPlot>("Plot")!.Figure = vm.PowderView
+                    ? ViewModels.PageFigures.Powder(vm.PowderCurve, vm.PowderExperiment)
+                    : ViewModels.PageFigures.Scattering(vm.ScatterXray ? vm.ScatterXrayCurve : [], vm.ScatterNeutron ? vm.ScatterNeutronCurve : [], vm.ScatterExperiment);
             };
         };
     }
 
     private async void OnRun(object? s, RoutedEventArgs e) => await Vm.RunScattering();
+    private async void OnPowder(object? s, RoutedEventArgs e) => await Vm.RunPowder();
     private void OnCancel(object? s, RoutedEventArgs e) => Vm.Analyze.Cancel();
     private void OnClearExperiment(object? s, RoutedEventArgs e) => Vm.ClearExperiment();
 

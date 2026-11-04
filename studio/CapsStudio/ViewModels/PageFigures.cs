@@ -166,6 +166,15 @@ public static class PageFigures
         return new SciFigure { XLabel = "*q* / Å⁻¹", YLabel = "*I*(*q*) / arb. units", YZero = true, Series = [.. s], Empty = "" };
     }
 
+    /// <summary>A powder pattern I(2θ) (strongest 100) with a measured one over it.</summary>
+    public static SciFigure Powder((double X, double Y)[] pattern, (double X, double Y)[] experiment)
+    {
+        var s = new List<SciSeries>();
+        if (pattern.Length > 1) s.Add(S("simulated", pattern, SciKind.Line, 0));
+        if (experiment.Length > 1 && s.Count > 0) s.Add(S("experiment", experiment, experiment.Length > 120 ? SciKind.Dotted : SciKind.Markers, -1) with { Open = true, Width = 1.4 });
+        return new SciFigure { XLabel = "2*θ* / °", YLabel = "intensity (strongest 100)", YZero = true, YMin = 0, Series = [.. s], Empty = "Press Pattern" };
+    }
+
     // ------------------------------------------------------------------ Free volume, chain statistics, charges, histograms
     /// <summary>A histogram (bin centres) drawn as filled steps from zero.</summary>
     public static SciFigure Histogram((double X, double Y)[] h, string x, string y) => new()

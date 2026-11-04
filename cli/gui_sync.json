@@ -1366,6 +1366,44 @@
    "options": {
     "--email": "Views/MainWindow.axaml.cs|ProblemReport.Mailto"
    }
+  },
+  "powder": {
+   "status": "gui",
+   "studio": "Analyze › Scattering › Powder pattern 2θ",
+   "where": "Views/Pages/ScatteringPage.axaml|Powder pattern",
+   "capi": [
+    "caps_powder"
+   ],
+   "options": {
+    "--topology": "page",
+    "--first": "partial: the page takes the current frame or averages all of them",
+    "--last": "partial: the page takes the current frame or averages all of them",
+    "--stride": "partial: the page takes the current frame or averages all of them",
+    "--anode": "page",
+    "--no-kalpha2": "page",
+    "--two-theta": "page",
+    "--size": "page",
+    "--strain": "page",
+    "--biso": "page",
+    "--preferred": "page",
+    "--march": "page",
+    "--profile": "partial: the page offers the Thompson–Cox–Hastings pseudo-Voigt, Gaussian and Lorentzian (no fixed-η pseudo-Voigt)",
+    "--uvw": "partial: the page sets W (the instrument's own width); U and V stay 0",
+    "--wavelength": "cli: a wavelength other than the six anodes' Kα lines",
+    "--neutron": "cli: the page draws X-ray patterns",
+    "--step": "cli: the page samples every 0.02°",
+    "--xy": "cli: Lorentzian instrument widths",
+    "--eta": "cli: a fixed pseudo-Voigt mixing",
+    "--size-abc": "cli: one crystallite size per cell axis",
+    "--scherrer-k": "cli: the page uses K = 0.9",
+    "--zero": "cli: a 2θ zero shift",
+    "--monochromator": "cli: a monochromator's angle in the polarisation factor",
+    "--polarised": "cli: a polarised synchrotron beam",
+    "--peaks": "partial: the page lists the 16 strongest reflections",
+    "--csv": "cli: pattern and reflections as CSV files",
+    "--json": "partial: the Studio shows the result on the page",
+    "--threads": "partial: the Studio uses the threads set in Settings"
+   }
   }
  },
  "hidden_options": {

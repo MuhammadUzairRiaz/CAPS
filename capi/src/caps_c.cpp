@@ -39,6 +39,7 @@
 #include "caps/manybody.hpp"
 #include "caps/molecule.hpp"
 #include "caps/sorption.hpp"
+#include "caps/powder.hpp"
 #include "caps/dlpoly.hpp"
 #include "caps/dynamics.hpp"
 #include "caps/superpose.hpp"
@@ -2736,6 +2737,80 @@ extern "C" int32_t caps_sorption(caps_doc* d, const char* json, caps_stage_fn pr
     caps::Json nt = caps::Json::array();
     for (const auto& x : rep.notes) nt.push_back(x);
     r["notes"] = std::move(nt);
+  } catch (const std::exception& e) {
+    r = caps::Json::object();
+    r["ok"] = false;
+    r["error"] = std::string(e.what());
+  }
+  return report_out(r.dump(0), out, cap);
+}
+
+extern "C" int32_t caps_powder(caps_doc* d, const char* json, caps_stage_fn progress, void* user, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    if (!d) throw std::invalid_argument("no document");
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    caps::PowderOptions o;
+    o.radiation = j.text("radiation", "xray");
+    o.anode = j.text("anode", "Cu");
+    o.wavelength = j.num("wavelength", 0);
+    auto flag = [&](const char* k, bool def) { return j.has(k) && j[k].kind() == caps::Json::Bool ? j[k].boolean() : def; };
+    o.kalpha2 = flag("kalpha2", true);
+    o.ka2_ratio = j.num("ka2_ratio", 0.5);
+    o.monochromator_2theta = j.num("monochromator", 0);
+    o.polarised = flag("polarised", false);
+    o.two_theta_min = j.num("two_theta_min", 5), o.two_theta_max = j.num("two_theta_max", 90), o.step = j.num("step", 0.02);
+    o.profile = j.text("profile", "tch");
+    o.U = j.num("U", 0), o.V = j.num("V", 0), o.W = j.num("W", 0.0025), o.X = j.num("X", 0), o.Y = j.num("Y", 0), o.eta = j.num("eta", 0.5);
+    o.size = j.num("size", 0), o.scherrer_k = j.num("scherrer_k", 0.9), o.strain = j.num("strain", 0), o.b_iso = j.num("b_iso", 0);
+    if (j.has("size_abc") && j["size_abc"].is_array() && j["size_abc"].items().size() == 3)
+      for (size_t k = 0; k < 3; ++k) o.size_abc[k] = j["size_abc"].items()[k].number();
+    if (j.has("preferred") && j["preferred"].is_array() && j["preferred"].items().size() == 3)
+      for (size_t k = 0; k < 3; ++k) o.preferred[k] = int(j["preferred"].items()[k].number());
+    o.march_r = j.num("march_r", 1), o.zero_shift = j.num("zero_shift", 0), o.max_peaks = int(j.num("max_peaks", 200));
+    // frames: "current" (default), "all", or indices
+    std::vector<size_t> fr;
+    const size_t nf = std::max<size_t>(1, d->traj.frames());
+    if (j.has("frames") && j["frames"].is_array()) {
+      for (const auto& x : j["frames"].items()) if (x.number() >= 0 && size_t(x.number()) < nf) fr.push_back(size_t(x.number()));
+    } else if (j.text("frames", "current") == "all") {
+      for (size_t k = 0; k < nf; ++k) fr.push_back(k);
+    } else
+      fr.push_back(std::min(d->current, nf - 1));
+    bool cancelled = false;
+    if (progress) o.progress = [&](double f) { cancelled = progress("powder pattern", f, user) != 0; return !cancelled; };
+    caps::PowderReport rep;
+    if (d->traj.frames() == 0) {   // a document of one structure held as its topology
+      caps::Trajectory one;
+      one.topology = d->traj.topology;
+      rep = caps::powder_pattern(one, {}, o);
+    } else
+      rep = caps::powder_pattern(d->traj, fr, o);
+    if (cancelled) throw std::runtime_error("powder pattern cancelled");
+    std::string lam;
+    for (size_t k = 0; k < rep.wavelengths.size(); ++k) lam += (k ? " + " : "") + g6(rep.wavelengths[k]) + " Å";
+    caps::KeyValues pr = {{"radiation", (o.radiation == "neutron" ? "neutrons, λ " : "X-ray, λ ") + lam},
+                          {"range", g6(o.two_theta_min) + "–" + g6(o.two_theta_max) + "° 2θ"},
+                          {"reflections", std::to_string(rep.reflections) + " reflections, " + std::to_string(rep.frames) + " frames"},
+                          {"peaks", o.profile}};
+    if (o.preferred[0] || o.preferred[1] || o.preferred[2])
+      pr.push_back({"orientation", std::to_string(o.preferred[0]) + " " + std::to_string(o.preferred[1]) + " " + std::to_string(o.preferred[2]) + ", r " + g6(o.march_r)});
+    std::vector<std::string> cites = {"thompson1987", "caglioti1958"};
+    if (o.preferred[0] || o.preferred[1] || o.preferred[2]) cites.push_back("dollase1986");
+    prov_step(d, "analysis.powder", "Powder diffraction pattern from the reciprocal lattice", std::move(pr), "", std::move(cites));
+    r["ok"] = true;
+    caps::Json pk = caps::Json::array(), x = caps::Json::array(), y = caps::Json::array(), q = caps::Json::array(), lw = caps::Json::array(), nt = caps::Json::array();
+    for (const auto& p : rep.peaks) {
+      caps::Json e = caps::Json::object();
+      e["h"] = double(p.h), e["k"] = double(p.k), e["l"] = double(p.l), e["multiplicity"] = double(p.multiplicity);
+      e["d"] = p.d, e["q"] = p.q, e["two_theta"] = p.two_theta, e["F"] = p.f, e["intensity"] = p.intensity, e["fwhm"] = p.fwhm;
+      pk.push_back(std::move(e));
+    }
+    for (size_t i = 0; i < rep.two_theta.size(); ++i) x.push_back(rep.two_theta[i]), y.push_back(rep.intensity[i]), q.push_back(rep.q[i]);
+    for (double v : rep.wavelengths) lw.push_back(v);
+    for (const auto& n : rep.notes) nt.push_back(n);
+    r["peaks"] = std::move(pk), r["two_theta"] = std::move(x), r["intensity"] = std::move(y), r["q"] = std::move(q), r["wavelengths"] = std::move(lw);
+    r["reflections"] = double(rep.reflections), r["frames"] = double(rep.frames), r["seconds"] = rep.seconds, r["notes"] = std::move(nt);
   } catch (const std::exception& e) {
     r = caps::Json::object();
     r["ok"] = false;
