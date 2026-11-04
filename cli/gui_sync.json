@@ -1643,6 +1643,30 @@
     "--write": "partial: the page writes the arrangements and opens the one picked",
     "--topology": "page"
    }
+  },
+  "zmelt": {
+   "status": "gui",
+   "studio": "Thermal conductivity › Melting point (Z method)",
+   "where": "Views/Pages/ThermalPage.axaml|Melting point (Z method)",
+   "capi": [
+    "caps_zmelt"
+   ],
+   "options": {
+    "--temps": "page",
+    "--steps": "page",
+    "--dt": "page",
+    "--bisect": "page",
+    "--ff": "partial: the Studio uses the force field assigned on the Force field page",
+    "--cutoff": "partial: the Studio uses the Minimise page's cut-off, at most 12 Å",
+    "--sample-every": "cli: the page samples every 20 steps",
+    "--seed": "cli: the page uses seed 1",
+    "--csv": "partial: the page plots T against E and lists the runs",
+    "--json": "partial: the page shows the result",
+    "--pme": "partial: the Studio uses its electrostatics setting",
+    "--topology": "page",
+    "--quiet": "cli: no progress line",
+    "--no-coulomb": "cli: without electrostatics"
+   }
   }
  },
  "hidden_options": {

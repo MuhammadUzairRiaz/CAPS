@@ -87,6 +87,7 @@ add_library(caps_core STATIC
   src/dielectric.cpp
   src/powder_index.cpp
   src/sqs.cpp
+  src/zmethod.cpp
   src/vasp_out.cpp
   src/dft_analysis.cpp
   src/dft_commands.cpp

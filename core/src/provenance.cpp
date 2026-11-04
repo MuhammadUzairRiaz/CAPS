@@ -108,6 +108,7 @@ const Cite kCites[] = {
     {"pawley1981", "@article{pawley1981,\n  author = {Pawley, G. S.},\n  title = {Unit-cell refinement from powder diffraction scans},\n  journal = {J. Appl. Cryst.}, volume = {14}, pages = {357--361}, year = {1981}, doi = {10.1107/S0021889881009618}\n}"},
     {"rietveld1969", "@article{rietveld1969,\n  author = {Rietveld, H. M.},\n  title = {A profile refinement method for nuclear and magnetic structures},\n  journal = {J. Appl. Cryst.}, volume = {2}, pages = {65--71}, year = {1969}, doi = {10.1107/S0021889869006558}\n}"},
     {"hill1987", "@article{hill1987,\n  author = {Hill, R. J. and Howard, C. J.},\n  title = {Quantitative phase analysis from neutron powder diffraction data using the {R}ietveld method},\n  journal = {J. Appl. Cryst.}, volume = {20}, pages = {467--474}, year = {1987}, doi = {10.1107/S0021889887086199}\n}"},
+    {"belonoshko2006", "@article{belonoshko2006,\n  author = {Belonoshko, A. B. and Skorodumova, N. V. and Rosengren, A. and Johansson, B.},\n  title = {Melting and critical superheating},\n  journal = {Phys. Rev. B}, volume = {73}, pages = {012201}, year = {2006}, doi = {10.1103/PhysRevB.73.012201}\n}"},
     {"zunger1990", "@article{zunger1990,\n  author = {Zunger, A. and Wei, S.-H. and Ferreira, L. G. and Bernard, J. E.},\n  title = {Special quasirandom structures},\n  journal = {Phys. Rev. Lett.}, volume = {65}, pages = {353--356}, year = {1990}, doi = {10.1103/PhysRevLett.65.353}\n}"},
     {"gale2003", "@article{gale2003,\n  author = {Gale, J. D. and Rohl, A. L.},\n  title = {The {G}eneral {U}tility {L}attice {P}rogram ({GULP})},\n  journal = {Mol. Simul.}, volume = {29}, pages = {291--341}, year = {2003}, doi = {10.1080/0892702031000104887}\n}"},
     {"lyddane1941", "@article{lyddane1941,\n  author = {Lyddane, R. H. and Sachs, R. G. and Teller, E.},\n  title = {On the polar vibrations of alkali halides},\n  journal = {Phys. Rev.}, volume = {59}, pages = {673--676}, year = {1941}, doi = {10.1103/PhysRev.59.673}\n}"},
@@ -494,6 +495,10 @@ std::string methods_text(const Manifest& m, std::vector<std::string>* refs, cons
                                                                                                                 : std::string("the Rietveld method") + cite({"rietveld1969"})) +
           " with Thompson–Cox–Hastings peaks" + cite({"thompson1987"}) + " (R_wp " + param(s, "Rwp") + ")" +
           (param(s, "phases") != "1" && param(s, "mode") != "pawley" ? ", phase fractions from the scale factors" + cite({"hill1987"}) : std::string()) + ".";
+    } else if (e == "analysis.zmelt") {
+      t = "The melting temperature was estimated by the Z method" + cite({"belonoshko2006"}) + ": " + param(s, "runs") + " NVE runs (" + param(s, "steps") +
+          ") from the perfect crystal at rising total energy, melting detected by the loss of Bragg order, gave a superheating limit of " + param(s, "T_LS") +
+          " and a melting temperature of " + param(s, "T_m") + ".";
     } else if (e == "build.sqs") {
       t = "Substitutional disorder on the " + param(s, "sublattice") + " sublattice (" + param(s, "substituted") + ") was represented by a special quasirandom structure" +
           cite({"zunger1990"}) + ", its pair correlations over the first " + param(s, "shells") + " shells matched to those of the random alloy by simulated annealing of site swaps" +

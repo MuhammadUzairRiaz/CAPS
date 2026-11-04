@@ -82,6 +82,7 @@
 #include "caps/dielectric.hpp"
 #include "caps/powder_index.hpp"
 #include "caps/sqs.hpp"
+#include "caps/zmethod.hpp"
 #include "caps/ddft.hpp"
 #include "caps/yaml.hpp"
 #ifdef _WIN32
@@ -349,6 +350,8 @@ int usage() {
                "             [--lines 20] [--unindexed 0] [--json OUT]   cells that index the pattern's lines (successive dichotomy), by M20\n"
                "  caps solve DATA.xy MOLECULE --cell a,b,c,al,be,ga --space-group 'P 21/c' [--wavelength Å] [--steps 6000] [--seed 1] -o CRYSTAL.cif\n"
                "             a molecular crystal found by simulated annealing against the pattern (direct space)\n"
+               "  caps zmelt CRYSTAL --temps 100,200,300,400 [--ff FF] [--steps 10000] [--dt 1] [--bisect 3] [--cutoff 10] [--sample-every 20]\n"
+               "              [--csv OUT] [--json OUT]   melting point by the Z method: NVE runs from the perfect crystal (Belonoshko et al.)\n"
                "  caps sqs CRYSTAL --from Cu --to Au [--fraction 0.5] [--supercell 2,2,2] [--shells 3] [--steps 20000] [--restarts 4] [--seed 1] -o OUT.cif\n"
                "              special quasirandom structure: the random alloy's pair correlations on the first shells (Zunger et al.)\n"
                "  caps enumerate CRYSTAL --from Cu --to Au [--count 1] [--supercell 2,2,2] [--max-configurations 200000] [--write DIR]\n"
@@ -483,7 +486,7 @@ const std::set<std::string>& known_options() {
     "--tmax", "--to", "--tol", "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing", "--units",
     "--polymer", "--crystal", "--crystal-cells", "--amorphous", "--loops", "--bridges", "--tails", "--reentry", "--analyse",
     "--corr-ps", "--long", "--swap-every", "--transient", "--dimensionality", "--thickness",
-    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--shells", "--restarts", "--max-configurations", "--write", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--tolerance", "--systems", "--max-length", "--unindexed", "--lines", "--space-group", "--cell", "--fixed-cell", "--no-piezo", "--damping", "--pawley", "--b-iso", "--background", "--refine", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
+    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--shells", "--restarts", "--max-configurations", "--write", "--bisect", "--sample-every", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--tolerance", "--systems", "--max-length", "--unindexed", "--lines", "--space-group", "--cell", "--fixed-cell", "--no-piezo", "--damping", "--pawley", "--b-iso", "--background", "--refine", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
   return k;
 }
 
@@ -4193,6 +4196,52 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps solve: %s\n", e.what());
+      return 1;
+    }
+  }
+  if (cmd == "zmelt") {
+    try {
+      if (pos.empty() || !o.count("--temps")) return usage();
+      Trajectory t = open_file(pos[0], o.count("--topology") ? o["--topology"] : "");
+      System s0 = t.frames() ? t.frame(0) : t.topology;
+      if (s0.atoms.size() > 15000) throw std::invalid_argument("the cell has " + std::to_string(s0.atoms.size()) + " atoms (at most 15000)");
+      const bool quiet = o.count("--quiet");
+      ZMethodOptions zo;
+      zo.field = std::make_shared<ForceField>(cli_forcefield(s0, o, quiet));
+      zo.energy.cutoff = o.count("--cutoff") ? std::stod(o["--cutoff"]) : 10.0;
+      zo.energy.tail = false;   // a constant at the crystal's volume; off as in the Studio, the pair shifted at the cut-off
+      electrostatics(zo.energy, o);
+      {
+        std::stringstream ss(o["--temps"]);
+        std::string x;
+        while (std::getline(ss, x, ',')) zo.temperatures.push_back(std::stod(x));
+      }
+      if (o.count("--steps")) zo.steps = std::stoll(o["--steps"]);
+      if (o.count("--dt")) zo.dt = std::stod(o["--dt"]);
+      if (o.count("--bisect")) zo.bisect = std::stoi(o["--bisect"]);
+      if (o.count("--sample-every")) zo.sample_every = std::stoi(o["--sample-every"]);
+      if (o.count("--seed")) zo.seed = std::stoull(o["--seed"]);
+      if (!quiet) zo.progress = [&](const std::string& w, double f) { std::fprintf(stderr, "\r%-36s %3.0f %%", w.c_str(), 100 * f); return true; };
+      const ZResult r = z_method(s0, zo);
+      if (!quiet) std::fprintf(stderr, "\r%-44s\r", "");
+      std::printf("order parameter on %zu reciprocal vectors, |G| %.4f 1/Å, perfect cell %.4f\n", r.g.size(), std::sqrt(r.g[0][0] * r.g[0][0] + r.g[0][1] * r.g[0][1] + r.g[0][2] * r.g[0][2]), r.order0);
+      std::printf("%8s %14s %9s %8s %10s %7s %8s  state\n", "T0 (K)", "E (kcal/mol/at)", "T (K)", "±", "P (atm)", "order", "MSD Å²");
+      for (const auto& p : r.points)
+        std::printf("%8.1f %14.6f %9.2f %8.2f %10.0f %7.3f %8.2f  %s\n", p.t0, p.energy, p.temperature, p.temperature_sd, p.pressure, p.order, p.msd, p.melted ? "melted" : "crystal");
+      for (const auto& n : r.notes) std::printf("%s\n", n.c_str());
+      if (o.count("--csv")) {
+        std::ofstream f(o["--csv"]);
+        f << "t0_K,energy_kcal_mol_atom,temperature_K,temperature_sd_K,pressure_atm,order,msd_A2,melted\n";
+        for (const auto& p : r.points) f << p.t0 << "," << p.energy << "," << p.temperature << "," << p.temperature_sd << "," << p.pressure << "," << p.order << "," << p.msd << "," << (p.melted ? 1 : 0) << "\n";
+        std::printf("wrote %s\n", o["--csv"].c_str());
+      }
+      if (o.count("--json") && o["--json"] != "1") {
+        std::ofstream(o["--json"]) << z_method_json(r).dump(1) << "\n";
+        std::printf("wrote %s\n", o["--json"].c_str());
+      }
+      return 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps zmelt: %s\n", e.what());
       return 1;
     }
   }

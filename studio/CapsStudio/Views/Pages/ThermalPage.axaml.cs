@@ -44,6 +44,20 @@ public partial class ThermalPage : PageBase
                     Series = refl.Select((r, i) => new SciSeries($"along principal axis {i + 1}", w, r) { Kind = SciKind.Line, Colour = i, Width = 1.2 }).ToArray(),
                 };
             };
+            vm.ZmeltChanged += () =>
+            {
+                var (e, t, m, tm, tls) = vm.ZmCurve;
+                var series = new List<SciSeries> { new("runs", e, t) { Kind = SciKind.Line, Colour = -1, Width = 1.0 } };
+                var ce = e.Where((_, i) => !m[i]).ToArray(); var ct = t.Where((_, i) => !m[i]).ToArray();
+                var le = e.Where((_, i) => m[i]).ToArray(); var lt = t.Where((_, i) => m[i]).ToArray();
+                if (ce.Length > 0) series.Add(new SciSeries("crystal", ce, ct) { Kind = SciKind.Markers, Colour = 0 });
+                if (le.Length > 0) series.Add(new SciSeries("melted", le, lt) { Kind = SciKind.Markers, Colour = 1, Square = true });
+                if (tm > 0 && e.Length > 1) series.Add(new SciSeries("T_m", [e.Min(), e.Max()], [tm, tm]) { Kind = SciKind.Dashed, Colour = 1, Width = 1.0 });
+                this.FindControl<SciPlot>("Zcurve")!.Figure = e.Length == 0 ? null : new SciFigure
+                {
+                    XLabel = "*E* / kcal mol⁻¹ per atom", YLabel = "*T* / K", Series = [.. series], Empty = "",
+                };
+            };
             vm.ThChanged += () =>
             {
                 this.FindControl<SciPlot>("Curve")!.Figure = ViewModels.PageFigures.Thermal(vm.ThCurves, vm.ThGreenKubo);
@@ -53,6 +67,7 @@ public partial class ThermalPage : PageBase
 
     private async void OnRun(object? s, RoutedEventArgs e) => await Vm.RunThermal();
     private async void OnDielectric(object? s, RoutedEventArgs e) => await Vm.RunDielectric();
+    private async void OnZmelt(object? s, RoutedEventArgs e) => await Vm.RunZmelt();
     private async void OnPhonons(object? s, RoutedEventArgs e) => await Vm.RunPhonons();
 
     private async void OnLammps(object? s, RoutedEventArgs e)

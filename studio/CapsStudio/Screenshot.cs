@@ -341,6 +341,30 @@ internal static class Screenshot
                 for (int q = 0; q < 40; ++q) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
                 Console.WriteLine("dielectric: " + vm.Status + (vm.DlHasError ? " · error " + vm.DlError : "") + "\n" + vm.DlText);
             }
+            if (kv[0] == "zmelt")   // zmelt=FF|TEMPS (space-separated)|STEPS|DT|BISECT: the Thermal page's Z-method melting of the open crystal, awaited
+            {
+                var vm = w.ViewModel;
+                var f = kv[1].Split('|');
+                if (f[0].Length > 0)
+                {
+                    var k = vm.Field.Library.ToList().FindIndex(x => x.Id == f[0]);
+                    if (k >= 0) vm.Field.FfIndex = k;
+                    var a = vm.Field.Assign();
+                    while (!a.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(10); }
+                }
+                vm.OpenThermal();
+                var inv = System.Globalization.CultureInfo.InvariantCulture;
+                if (f.Length > 1) vm.ZmTemperatures = f[1];
+                if (f.Length > 2) vm.ZmSteps = decimal.Parse(f[2], inv);
+                if (f.Length > 3) vm.ZmDt = decimal.Parse(f[3], inv);
+                if (f.Length > 4) vm.ZmBisect = decimal.Parse(f[4], inv);
+                var t = vm.RunZmelt();
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+                for (int q = 0; q < 40; ++q) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+                foreach (var sv in w.GetVisualDescendants().OfType<Avalonia.Controls.ScrollViewer>()) if (sv.IsEffectivelyVisible) sv.ScrollToEnd();
+                for (int q = 0; q < 20; ++q) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+                Console.WriteLine("zmelt: " + vm.Status + (vm.ZmHasError ? " · error " + vm.ZmError : "") + "\n" + vm.ZmText + "\n" + vm.ZmNote);
+            }
             if (kv[0] == "refine")   // refine=DATA|pawley: Analyze › Scattering, the measured pattern (2θ) loaded and refined with the open crystal, awaited
             {
                 var vm = w.ViewModel;

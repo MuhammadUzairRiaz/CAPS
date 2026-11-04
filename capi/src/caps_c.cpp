@@ -48,6 +48,7 @@
 #include "caps/dielectric.hpp"
 #include "caps/powder_index.hpp"
 #include "caps/sqs.hpp"
+#include "caps/zmethod.hpp"
 #include "caps/ddft.hpp"
 #include "caps/dlpoly.hpp"
 #include "caps/dynamics.hpp"
@@ -12443,6 +12444,38 @@ extern "C" int32_t caps_index(const char* json, caps_stage_fn progress, void* us
       for (const auto& n : res.notes) nt.push_back(n);
       r["lines"] = arr(res.lines), r["solutions"] = sols, r["notes"] = nt, r["seconds"] = res.seconds;
     }
+    r["ok"] = true;
+  } catch (const std::exception& e) {
+    r = caps::Json::object();
+    r["ok"] = false;
+    r["error"] = std::string(e.what());
+  }
+  return report_out(r.dump(0), out, cap);
+}
+
+// v86 melting point of the open crystal by the Z method (zmethod.hpp): NVE runs with the Field assignment
+extern "C" int32_t caps_zmelt(caps_doc* d, const char* json, caps_stage_fn progress, void* user, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    if (!d) throw std::invalid_argument("no document");
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    const caps::System s = d->traj.frames() ? d->traj.frame(d->current) : d->traj.topology;
+    caps::ZMethodOptions o;
+    o.field = field_for_run(d);
+    o.energy.cutoff = j.num("cutoff", 10);
+    o.energy = elec(o.energy);
+    o.energy.tail = false;
+    if (j.has("temperatures") && j["temperatures"].is_array())
+      for (const auto& t : j["temperatures"].items()) o.temperatures.push_back(t.number());
+    o.steps = int64_t(j.num("steps", 10000)), o.dt = j.num("dt", 1), o.bisect = int(j.num("bisect", 0));
+    o.sample_every = int(j.num("sample_every", 20)), o.melt_order = j.num("melt_order", 0.3), o.seed = uint64_t(j.num("seed", 1));
+    bool cancelled = false;
+    if (progress) o.progress = [&](const std::string& w, double f) { cancelled = progress(w.c_str(), f, user) != 0; return !cancelled; };
+    const caps::ZResult res = caps::z_method(s, o);
+    r = caps::z_method_json(res);
+    caps::KeyValues pr = {{"force field", d->field ? d->field->base.name : std::string("built-in")}, {"runs", std::to_string(res.points.size())},
+                          {"steps", std::to_string(o.steps) + " × " + g6(o.dt) + " fs"}, {"T_m", g6(res.t_melt) + " K"}, {"T_LS", g6(res.t_superheat) + " K"}};
+    prov_step(d, "analysis.zmelt", "Melting point by the Z method: NVE runs from the perfect crystal", std::move(pr));
     r["ok"] = true;
   } catch (const std::exception& e) {
     r = caps::Json::object();

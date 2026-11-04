@@ -3407,6 +3407,57 @@
    ]
   },
   {
+   "id": "z-method-melting",
+   "group": "Protocols",
+   "title": "Melting point by the Z method",
+   "summary": "Each run starts from the perfect crystal at rest, gives the atoms Maxwell–Boltzmann velocities at a starting temperature T0 and integrates at constant energy and volume (no thermostat, no barostat). In a harmonic crystal the energy then shares itself equally between kinetic and potential, so the run settles near T0/2; its total energy E is fixed by T0. Plotted against E, the mean temperature of the second half of each run rises along the crystal branch until the crystal can no longer hold: the first energy at which it melts puts the run onto the liquid branch at a lower temperature, because the latent heat comes out of the kinetic energy. The highest crystal point is the critical superheating limit (E_LS, T_LS); the temperature of the lowest-energy melted run is the melting temperature T_m at that volume. Melting is detected from the crystal's own Bragg order: ρ(G) = |Σ_j exp(iG·r_j)|/N over the star of reciprocal vectors (d ≥ 2 Å) where the perfect cell's order is largest, as a fraction of its starting value; it stays near the Debye–Waller factor in a crystal and falls to about N^(−1/2) in a liquid. A run whose order over its last fifth is below 0.3 has melted. Bisection runs between the last crystal start and the first melted start narrow the energy step around the bottom of the Z. The cell must be at least twice the cut-off wide.",
+   "equation": "T(E) on the crystal branch up to (E_LS, T_LS);  T_m = T(E_LS⁺);  ρ(G) = |Σ_j exp(i G·r_j)| / N;  ⟨T⟩ → T0/2 (harmonic)",
+   "equation_note": "Belonoshko, Skorodumova, Rosengren & Johansson 2006",
+   "tex": "T_m = \\lim_{E \\to E_{LS}^{+}} T(E), \\qquad \\rho(\\mathbf{G}) = \\frac{1}{N} \\left| \\sum_{j=1}^{N} e^{\\,i \\mathbf{G}\\cdot\\mathbf{r}_j} \\right|, \\qquad \\langle T \\rangle \\xrightarrow{\\text{harmonic}} \\frac{T_0}{2}",
+   "symbols": [
+    [
+     "E",
+     "total energy per atom of a run (fixed)",
+     "kcal/mol"
+    ],
+    [
+     "T0",
+     "starting temperature of the velocities",
+     "K"
+    ],
+    [
+     "E_LS, T_LS",
+     "critical superheating limit: the hottest crystal run",
+     "kcal/mol, K"
+    ],
+    [
+     "T_m",
+     "melting temperature at the crystal's volume",
+     "K"
+    ],
+    [
+     "G",
+     "reciprocal vectors of the cell's strongest low-order reflection",
+     "1/Å"
+    ],
+    [
+     "ρ(G)",
+     "Bragg order parameter",
+     "—"
+    ]
+   ],
+   "when": "A first melting point of an inorganic filler, a salt or a small-molecule crystal (an antioxidant, a curative) with a given force field, without building a solid–liquid interface. Polymer crystals melt over a range and superheat strongly; a heating scan or a two-phase run is more reliable for them.",
+   "cites": [
+    "belonoshko2006"
+   ],
+   "source": "core/src/zmethod.cpp (z_method)",
+   "tested": "ZMethod.HarmonicLimitHalvesTheTemperature (256 Lennard-Jones argon atoms from rest at T0 = 10 K settle at 5.04 K, the order on the four {111} vectors stays 0.99, drift 5e-6 kcal/mol per atom); ZMethod.LennardJonesCrystalTracesAZ (ρ* = 0.95, eleven runs of 4000 steps with four bisections: the crystal branch rises to T_LS 170 K, the first melted run sits at 156 K with order 0.14)",
+   "deviation": "constant volume only (the melting point belongs to the crystal's density, not to zero pressure); short runs overestimate T_LS because melting near the limit needs a long waiting time; a melted run with order between 0.3 and the crystal's may be one caught while melting",
+   "engines": [
+    "analysis.zmelt"
+   ]
+  },
+  {
    "id": "crystal-habit",
    "group": "Analysis",
    "title": "Crystal habit: BFDH, attachment energy, Wulff shapes",

@@ -771,7 +771,7 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 85, "ABI 85")
+check(caps.abi_version() == 86, "ABI 86")
 
 # substitutional disorder (ABI 85): one Au in copper's conventional cell is one orbit of 4; an SQS of Cu3Au keeps x
 _cu = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "copper.cif"))
@@ -780,6 +780,12 @@ check(_en["multiplicity"] == [4] and _en["total"] == 4, f"enumerate: {_en['multi
 _sq = _cu.sqs("Cu", "Au", fraction=0.25)
 check(_sq["substituted"] == 1 and abs(_sq["target"] - 0.25) < 1e-12, f"sqs: {_sq['substituted']}")
 print("ok   disorder: enumeration orbits, SQS composition")
+try:
+    _cu.zmelt([300], steps=100)
+    check(False, "zmelt: a 3.6 Å cell must be refused")
+except caps.CapsError as _e:
+    check("twice the cut-off" in str(_e), f"zmelt: {_e}")
+print("ok   zmelt: a cell narrower than twice the cut-off is refused")
 
 # bond exchange analysis (ABI 74): an exact Arrhenius line gives its Ea, healing ratios follow their definitions
 import math

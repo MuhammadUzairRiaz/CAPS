@@ -115,6 +115,27 @@
           </Border>
           <Border Classes="pcard">
             <StackPanel Spacing="8">
+              <DockPanel>
+                <Button DockPanel.Dock="Right" Classes="primary" Click="OnZmelt" IsEnabled="{Binding HasDocument}" Content="Melt it"
+                        ToolTip.Tip="One constant-energy run per starting temperature from the perfect crystal; the bottom of the Z the runs draw is the melting point" />
+                <TextBlock Text="Melting point (Z method)" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+              </DockPanel>
+              <TextBlock Classes="dim" TextWrapping="Wrap" Text="For an inorganic filler, a salt or a small-molecule crystal at its own volume: heated from rest, the crystal superheats and then drops back to its melting point once it melts. The cell must be twice the cut-off wide. Polymer crystals melt more reliably in a heating scan." />
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBox Text="{Binding ZmTemperatures}" Width="200" Watermark="starting T, K" ToolTip.Tip="Starting temperatures in K: the crystal settles near half of each; reach about twice the expected melting point" />
+                <NumericUpDown Value="{Binding ZmSteps}" Minimum="500" Increment="1000" FormatString="0 steps" Width="110" ShowButtonSpinner="False" ToolTip.Tip="Steps of each run: melting near the limit takes time" />
+                <NumericUpDown Value="{Binding ZmDt}" Minimum="0.1" Maximum="10" Increment="0.5" FormatString="0.0 fs" Width="70" ShowButtonSpinner="False" />
+                <NumericUpDown Value="{Binding ZmBisect}" Minimum="0" Maximum="8" Increment="1" FormatString="0 extra" Width="80" ShowButtonSpinner="False"
+                               ToolTip.Tip="Runs added between the last crystal and the first melted start, to find the bottom of the Z" />
+              </StackPanel>
+              <TextBlock Text="{Binding ZmError}" Foreground="{DynamicResource ErrB}" TextWrapping="Wrap" IsVisible="{Binding ZmHasError}" />
+              <v:SciPlot x:Name="Zcurve" Height="220" IsVisible="{Binding ZmHas}" />
+              <TextBlock Text="{Binding ZmText}" Classes="mono" FontSize="12" IsVisible="{Binding ZmHas}" />
+              <TextBlock Text="{Binding ZmNote}" Classes="dim" TextWrapping="Wrap" IsVisible="{Binding ZmHas}" />
+            </StackPanel>
+          </Border>
+          <Border Classes="pcard">
+            <StackPanel Spacing="8">
               <TextBlock x:Name="CurveTitle" Text="Running integral κ(t) (x solid, y dashed, z dotted) or the slab temperatures" FontSize="13.5" FontWeight="SemiBold" />
               <v:SciPlot x:Name="Curve" Height="220" />
             </StackPanel>

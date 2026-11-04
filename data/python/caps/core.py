@@ -1593,6 +1593,30 @@ def solve_structure(data: str, molecule: str, cell, space_group: str = "P 1", wa
     return _index_call({"op": "solve", "data": str(data), "molecule": str(molecule), "cell": [float(x) for x in cell], "space_group": space_group,
                         "wavelength": float(wavelength), "steps": int(steps), "restarts": int(restarts), "seed": int(seed), "path": str(path)})
 
+def _zmelt(self, temperatures, steps: int = 10000, dt: float = 1.0, bisect: int = 0, cutoff: float = 10.0, sample_every: int = 20,
+           melt_order: float = 0.3, seed: int = 1) -> dict:
+    """Melting point of the crystal (current frame, the assigned force field) by the Z method: one NVE run from the perfect
+    crystal per starting temperature, `bisect` more between the last crystal and the first melted start. Returns
+    {points [{t0, energy, temperature, pressure, order, msd, melted, ...}] by energy, t_melt, t_superheat, notes, ...}."""
+    o = {"temperatures": [float(t) for t in temperatures], "steps": int(steps), "dt": float(dt), "bisect": int(bisect), "cutoff": float(cutoff),
+         "sample_every": int(sample_every), "melt_order": float(melt_order), "seed": int(seed)}
+    f = library().caps_zmelt
+    f.argtypes = [C.c_void_p, C.c_char_p, C.c_void_p, C.c_void_p, C.c_char_p, C.c_int32]
+    f.restype = C.c_int32
+    buf = C.create_string_buffer(1 << 22)
+    n = f(self._h, _enc(json.dumps(o)), None, None, buf, len(buf))
+    if n > len(buf):
+        buf = C.create_string_buffer(int(n))
+        f(self._h, _enc(json.dumps(o)), None, None, buf, len(buf))
+    r = json.loads(buf.value.decode())
+    if not r.get("ok"):
+        raise CapsError(r.get("error", "Z method failed"))
+    return r
+
+
+Document.zmelt = _zmelt
+
+
 def _disorder_call(self, o: dict) -> dict:
     f = library().caps_disorder
     f.argtypes = [C.c_void_p, C.c_char_p, C.c_char_p, C.c_int32]
