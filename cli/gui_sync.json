@@ -92,7 +92,9 @@
     "--temp": "page",
     "--surface": "page",
     "--axis": "page",
-    "--zbin": "page"
+    "--zbin": "page",
+    "--ir-max-ps": "cli: the Studio correlates over 2 ps (or half the frames' span)",
+    "--ir-max-wavenumber": "cli: the Studio shows up to 4000 cm⁻¹"
    }
   },
   "elastic": {

@@ -77,6 +77,10 @@ struct AnalyzeOptions {
   // elastic constants from stress fluctuations (cij_fluct) and the Yeh–Hummer correction: the temperature of the run
   // the frames come from
   double temperature = 0;       // K
+  // IR spectrum (ir): the longest correlation time, ps (0: 2 ps, or half the frames' span when shorter) and the highest
+  // wavenumber shown, cm⁻¹
+  double ir_max_ps = 0;
+  double ir_max_wavenumber = 4000;
   // response functions from fluctuations (fluct): the pressure of the NPT run the frames come from
   double pressure = 1.0;        // atm
   // interfaces: bin width of the density profile along z (Å); a molecule left out of the chain analyses (the substrate)

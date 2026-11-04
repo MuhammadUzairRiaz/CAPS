@@ -1971,6 +1971,45 @@
    "tex": "C(\\tau) = \\langle \\mathbf v(0)\\cdot\\mathbf v(\\tau)\\rangle,\\qquad D = \\tfrac13\\int_0^\\infty C(\\tau)\\,d\\tau,\\qquad g(\\tilde\\nu) \\propto \\int w(\\tau)\\,\\frac{C_m(\\tau)}{C_m(0)}\\cos(2\\pi c\\tilde\\nu\\tau)\\,d\\tau"
   },
   {
+   "id": "infrared",
+   "group": "Analysis",
+   "title": "Infrared spectrum from the dipole",
+   "summary": "The infrared absorption of a trajectory from the time correlation of the cell's dipole derivative Ṁ = Σ q_i v_i: with the frames' velocities when they carry them, else from differences of the dipole between frames (each atom followed through the periodic cell), whose own filter [sin(ωΔt/2)/(ωΔt/2)]² is divided out of the spectrum. The correlation is averaged over every frame as a time origin up to 2 ps (or half the frames' span), Hann-windowed and cosine-transformed. The classical correlation is turned into a quantum lineshape by a correction factor: the harmonic factor, which gives the classical-looking expression below, and for comparison the standard and Schofield factors; at high wavenumbers they differ by large factors, which is why measured and simulated intensities of stretching bands are compared with care. The strongest band is reported with the integrated absorption, the resolution and the highest wavenumber the frame spacing allows.",
+   "equation": "α(ω)n(ω) = β/(6 c V ε₀) · F(βħω) ∫ cos(ωt) ⟨Ṁ(0)·Ṁ(t)⟩ dt,  F = 1 (harmonic), 2 tanh(x/2)/x (standard), 2 sinh(x/2)/x (Schofield)",
+   "equation_note": "Ramírez, López-Ciudad, Kumar & Marx 2004 (quantum correction factors)",
+   "tex": "\\alpha(\\omega)\\,n(\\omega) = \\frac{\\beta}{6 c V \\varepsilon_0}\\,F(\\beta\\hbar\\omega)\\int_{-\\infty}^{\\infty}\\cos(\\omega t)\\,\\langle\\dot{\\mathbf{M}}(0)\\cdot\\dot{\\mathbf{M}}(t)\\rangle\\,dt, \\qquad \\dot{\\mathbf{M}} = \\sum_i q_i\\mathbf{v}_i \\\\ F_{\\mathrm{HA}} = 1, \\qquad F_{\\mathrm{std}} = \\frac{2\\tanh(x/2)}{x}, \\qquad F_{\\mathrm{Sc}} = \\frac{2\\sinh(x/2)}{x}, \\qquad x = \\beta\\hbar\\omega",
+   "symbols": [
+    [
+     "α n",
+     "absorption coefficient times refractive index",
+     "cm⁻¹"
+    ],
+    [
+     "Ṁ",
+     "time derivative of the cell's dipole",
+     "e·Å/ps"
+    ],
+    [
+     "V",
+     "cell volume",
+     "Å³"
+    ],
+    [
+     "F",
+     "quantum correction relative to the harmonic factor",
+     "—"
+    ]
+   ],
+   "when": "Following chemistry against FTIR: crosslink formation, silane coupling on fillers, hydrogen bonding of hydroxyl and amide groups, carbonyl shifts in blends; with a reactive or polarisable model the intensities, with fixed charges the band positions.",
+   "cites": [
+    "ramirez2004"
+   ],
+   "source": "core/src/properties.cpp (ir_prop)",
+   "tested": "Infrared.OscillatingDipoleSumRule (a ±e pair oscillating at 1500 cm⁻¹: the band at 1500.00 cm⁻¹ and its area equal to the classical sum rule ∫αn dω = πβ⟨Ṁ²⟩/6cVε₀ within 1 × 10⁻⁴, from velocities and from dipole differences alike); Infrared.QuantumCorrectionFactors (the standard and Schofield spectra are the harmonic one times their factors to 1e-12)",
+   "deviation": "fixed-charge force fields give no charge flow, so intensities are only qualitative; classical nuclei; frames must be evenly spaced and close enough for the bands of interest (C–H stretches need ≤ 5 fs)",
+   "engines": []
+  },
+  {
    "group": "Analysis",
    "source": "core/src/properties.cpp",
    "engines": [],

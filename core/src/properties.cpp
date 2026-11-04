@@ -1820,6 +1820,124 @@ Property vacf_prop(const Trajectory& t, const std::vector<size_t>& fr, const std
   return p;
 }
 
+// ---------------------------------------------------------------- infrared spectrum from the dipole's time derivative
+
+// The quantum correction relative to the harmonic factor (Ramírez et al., J. Chem. Phys. 121, 3973 (2004)), x = βħω:
+// harmonic Q = x / (1 − e^(−x)) (F = 1), standard Q = 2 / (1 + e^(−x)) (F = 2 tanh(x/2) / x), Schofield Q = e^(x/2)
+// (F = 2 sinh(x/2) / x).
+double ir_correction(const std::string& kind, double x) {
+  if (x < 1e-8) return 1.0;
+  if (kind == "standard") return 2 * std::tanh(x / 2) / x;
+  if (kind == "schofield") return 2 * std::sinh(x / 2) / x;
+  return 1.0;
+}
+
+Property ir_prop(const Trajectory& t, const std::vector<size_t>& fr, const std::vector<double>& times, const AnalyzeOptions& o) {
+  Property p{"ir", "Infrared spectrum", "cm⁻¹",
+             "α(ν̃)n(ν̃) = β/(6cVε₀) · F · ∫ cos(ωt) ⟨Ṁ(0)·Ṁ(t)⟩ dt with Ṁ = Σ q_i v_i (Hann window), the classical correlation corrected "
+             "by the harmonic factor (and the standard and Schofield factors, Ramírez et al. 2004); value: the strongest band",
+             NaN, NaN, {}, {}, {}};
+  const System& top = t.topology;
+  const size_t n = top.atoms.size();
+  bool charged = false;
+  for (const auto& a : top.atoms) charged = charged || std::fabs(a.charge) > 1e-9;
+  if (!charged) { p.notes.push_back("needs partial charges (assign a force field in Field)"); return p; }
+  if (!top.cell.valid()) { p.notes.push_back("needs a periodic cell (the spectrum is per volume)"); return p; }
+  if (o.temperature <= 0) { p.notes.push_back("give the temperature of the run the frames come from"); return p; }
+  if (fr.size() < 8) { p.notes.push_back("needs many closely spaced frames (≤ 5 fs apart for C–H stretches)"); return p; }
+  const double dt = (times.back() - times.front()) / double(times.size() - 1);   // ps, assumed even
+  if (!(dt > 0)) { p.notes.push_back("the frames carry no times: give the frame spacing"); return p; }
+  for (size_t k = 1; k < times.size(); ++k)
+    if (std::fabs(times[k] - times[k - 1] - dt) > 1e-3 * dt) { p.notes.push_back("the frames are not evenly spaced in time: choose an evenly spaced range"); return p; }
+  // Ṁ (e·Å/ps): from the velocities when every frame has them, else differences of M between frames (M from positions
+  // followed continuously: each atom moved by the minimum image of its step), whose spectrum is then divided by the
+  // difference's own filter [sin(ωΔt/2)/(ωΔt/2)]²
+  bool vel = true;
+  for (size_t k : fr) vel = vel && k < t.velocities.size() && t.velocities[k].size() == n;
+  std::vector<Vec3> Md;
+  double vsum = 0;
+  if (vel) {
+    for (size_t k : fr) {
+      Vec3 m{0, 0, 0};
+      for (size_t i = 0; i < n; ++i) m = m + t.velocities[k][i] * (top.atoms[i].charge * 1000.0);   // Å/fs → Å/ps
+      Md.push_back(m);
+      vsum += t.frame(k).cell.volume();
+    }
+  } else {
+    std::vector<Vec3> x;
+    std::vector<Vec3> M;
+    for (size_t q = 0; q < fr.size(); ++q) {
+      const System s = t.frame(fr[q]);
+      vsum += s.cell.volume();
+      if (q == 0) {
+        System w = s;
+        if (!w.unwrapped) make_molecules_whole(w);
+        for (const auto& a : w.atoms) x.push_back(a.pos);
+      } else {
+        for (size_t i = 0; i < n; ++i) x[i] = x[i] + s.cell.minimum_image(s.atoms[i].pos - x[i]);
+      }
+      Vec3 m{0, 0, 0};
+      for (size_t i = 0; i < n; ++i) m = m + x[i] * top.atoms[i].charge;
+      M.push_back(m);
+    }
+    for (size_t q = 1; q < M.size(); ++q) Md.push_back((M[q] - M[q - 1]) * (1.0 / dt));
+    p.notes.push_back("no velocities in the frames: Ṁ from differences of the dipole between frames, the spectrum corrected for the difference's filter");
+  }
+  const double V = vsum / double(fr.size()) * 1e-30;   // m³
+  const size_t nf = Md.size();
+  size_t lags = std::min(nf / 2, size_t((o.ir_max_ps > 0 ? o.ir_max_ps : 2.0) / dt) + 1);
+  std::vector<double> c(lags, 0.0);
+  for (size_t l = 0; l < lags; ++l) {
+    double sum = 0;
+    for (size_t a = 0; a + l < nf; ++a) sum += dot(Md[a], Md[a + l]);
+    c[l] = sum / double(nf - l);
+  }
+  Series sa{"⟨Ṁ(0)·Ṁ(t)⟩/⟨Ṁ²⟩", "t (ps)", "C(t)/C(0)", {}, {}};
+  for (size_t l = 0; l < lags; ++l) sa.x.push_back(double(l) * dt), sa.y.push_back(c[0] > 0 ? c[l] / c[0] : 0);
+  // SI: e·Å/ps = 1.602176634e-19 · 1e-10 / 1e-12 C·m/s; the transform 2 Σ w C cos(ωt) Δt in s
+  constexpr double kE = 1.602176634e-19, kEps0 = 8.8541878128e-12, kKB = 1.380649e-23, kHbar = 1.054571817e-34, kCm = 2.99792458e8;
+  const double unit = (kE * 1e-10 / 1e-12) * (kE * 1e-10 / 1e-12);
+  const double beta = 1 / (kKB * o.temperature);
+  const double nyq = 1.0 / (2.0 * kCm * 100 * dt * 1e-12);   // cm⁻¹
+  const double top_nu = std::min(nyq, o.ir_max_wavenumber > 0 ? o.ir_max_wavenumber : nyq);
+  const double res = 1.0 / (kCm * 100 * double(lags) * dt * 1e-12);   // cm⁻¹
+  const int npts = std::max(1200, int(std::ceil(4 * top_nu / res)));
+  Series sh{"α n, harmonic correction", "ν̃ (cm⁻¹)", "α(ν̃)n(ν̃) (cm⁻¹)", {}, {}}, ss{"α n, standard correction", "ν̃ (cm⁻¹)", "α(ν̃)n(ν̃) (cm⁻¹)", {}, {}},
+      sc{"α n, Schofield correction", "ν̃ (cm⁻¹)", "α(ν̃)n(ν̃) (cm⁻¹)", {}, {}};
+  double best = -1, best_nu = NaN, area = 0, prev = 0;
+  for (int k = 0; k <= npts; ++k) {
+    const double nu = top_nu * k / npts;                 // cm⁻¹
+    const double w = 2 * kPi * kCm * 100 * nu;            // rad/s
+    double g = 0;
+    for (size_t l = 0; l < lags; ++l) {
+      const double win = 0.5 * (1 + std::cos(kPi * double(l) / double(lags)));
+      g += (l == 0 ? 1.0 : 2.0) * win * c[l] * std::cos(w * double(l) * dt * 1e-12);
+    }
+    g *= dt * 1e-12 * unit;                               // (C·m/s)²·s
+    if (!vel && k > 0) {
+      const double h = w * dt * 1e-12 / 2, f = std::sin(h) / h;
+      g /= f * f;
+    }
+    const double an = beta / (6 * kCm * V * kEps0) * g / 100;   // cm⁻¹
+    const double x = beta * kHbar * w;
+    sh.x.push_back(nu), sh.y.push_back(an);
+    ss.x.push_back(nu), ss.y.push_back(an * ir_correction("standard", x));
+    sc.x.push_back(nu), sc.y.push_back(an * ir_correction("schofield", x));
+    if (an > best && nu > 50) best = an, best_nu = nu;
+    if (k > 0) area += 0.5 * (an + prev) * top_nu / npts;
+    prev = an;
+  }
+  p.value = best_nu;
+  p.extra["integrated α n (cm⁻²)"] = area;
+  p.extra["frame spacing (fs)"] = dt * 1000.0;
+  p.extra["highest wavenumber (cm⁻¹)"] = nyq;
+  p.extra["resolution (cm⁻¹)"] = res;
+  p.series.push_back(sh), p.series.push_back(ss), p.series.push_back(sc), p.series.push_back(sa);
+  if (dt * 1000.0 > 5.0) p.notes.push_back("frames " + std::to_string(int(dt * 1000.0 + 0.5)) + " fs apart: bands above " + std::to_string(int(nyq)) + " cm⁻¹ fold back (C–H stretches need ≤ 5 fs)");
+  p.notes.push_back("fixed charges: the intensities miss the charge flow of real vibrations; band positions follow the force field");
+  return p;
+}
+
 // ---------------------------------------------------------------- hydrogen bonds
 
 Property hbond_prop(const Trajectory& t, const std::vector<size_t>& fr, const std::vector<double>& times, const AnalyzeOptions& o) {
@@ -2331,7 +2449,7 @@ std::vector<double> frame_times(const Trajectory& t, const AnalyzeOptions& o) {
 std::vector<Property> analyze(const Trajectory& t, const std::vector<std::string>& ids, const AnalyzeOptions& o) {
   static const std::set<std::string> known = {"density", "rdf", "sq", "xray", "electron", "neutron", "rg", "ree", "cn", "persistence", "msd", "diffusion",
                                               "relaxation", "ced", "delta", "ffv", "psd", "cij_fluct", "zprofile", "adhesion", "interaction", "orientation", "crosslinks",
-                                              "entanglements", "conformation", "vacf", "hbonds", "vanhove", "p2r", "dielectric", "fluct", "modes"};
+                                              "entanglements", "conformation", "vacf", "hbonds", "vanhove", "p2r", "dielectric", "fluct", "modes", "ir"};
   for (const auto& id : ids)
     if (!known.count(id)) throw std::invalid_argument("unknown property '" + id + "'");
   const auto fr = analysis_frames(t, o);
@@ -2375,6 +2493,7 @@ std::vector<Property> analyze(const Trajectory& t, const std::vector<std::string
     if (want("vacf")) out.push_back(vacf_prop(t, fr, times, o));
     if (want("hbonds")) out.push_back(hbond_prop(t, fr, times, o));
     if (want("dielectric")) out.push_back(dielectric_prop(t, fr, times, o));
+    if (want("ir")) out.push_back(ir_prop(t, fr, times, o));
     if (want("fluct")) out.push_back(fluct_prop(t, fr, times, o));
     if (want("modes")) out.push_back(modes_prop(t, fr, o));
     if (want("ree") || want("cn") || want("persistence") || want("orientation")) {
