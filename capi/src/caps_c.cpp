@@ -47,6 +47,7 @@
 #include "caps/refine.hpp"
 #include "caps/dielectric.hpp"
 #include "caps/powder_index.hpp"
+#include "caps/sqs.hpp"
 #include "caps/ddft.hpp"
 #include "caps/dlpoly.hpp"
 #include "caps/dynamics.hpp"
@@ -12441,6 +12442,69 @@ extern "C" int32_t caps_index(const char* json, caps_stage_fn progress, void* us
       }
       for (const auto& n : res.notes) nt.push_back(n);
       r["lines"] = arr(res.lines), r["solutions"] = sols, r["notes"] = nt, r["seconds"] = res.seconds;
+    }
+    r["ok"] = true;
+  } catch (const std::exception& e) {
+    r = caps::Json::object();
+    r["ok"] = false;
+    r["error"] = std::string(e.what());
+  }
+  return report_out(r.dump(0), out, cap);
+}
+
+// v85 substitutional disorder of the open crystal (sqs.hpp): a special quasirandom structure or the symmetry-distinct
+// occupations, written to files
+extern "C" int32_t caps_disorder(caps_doc* d, const char* json, char* out, int32_t cap) {
+  caps::Json r = caps::Json::object();
+  try {
+    if (!d) throw std::invalid_argument("no document");
+    const caps::Json j = caps::Json::parse(json && *json ? json : "{}");
+    const caps::System s = d->traj.frames() ? d->traj.frame(d->current) : d->traj.topology;
+    auto z_of = [&](const char* key) {
+      const std::string t = j.text(key);
+      const int z = caps::element_from_symbol(t);
+      if (!z) throw std::invalid_argument(std::string(key) + ": an element symbol, not '" + t + "'");
+      return z;
+    };
+    const int from = z_of("from"), to = z_of("to");
+    const std::string op = j.text("op", "sqs");
+    caps::KeyValues pr;
+    if (op == "sqs") {
+      caps::SqsOptions o;
+      o.from = from, o.to = to, o.fraction = j.num("fraction", 0.5), o.shells = int(j.num("shells", 3));
+      o.steps = int(j.num("steps", 20000)), o.restarts = int(j.num("restarts", 4)), o.seed = uint64_t(j.num("seed", 1));
+      const caps::SqsResult res = caps::special_quasirandom(s, o);
+      r = caps::sqs_json(res);
+      const std::string path = j.text("path");
+      if (!path.empty()) caps::write_disordered(res.structure, path), r["path"] = path;
+      pr = {{"sublattice", std::string(caps::element(from).symbol) + " (" + std::to_string(res.sites) + " sites)"},
+            {"substituted", std::to_string(res.substituted) + " " + caps::element(to).symbol},
+            {"shells", std::to_string(res.correlation.size())}, {"objective", g6(res.objective)}};
+      prov_step(d, "build.sqs", "Special quasirandom structure by annealing site swaps", std::move(pr));
+    } else if (op == "enumerate") {
+      caps::EnumOptions o;
+      o.from = from, o.to = to, o.count = int(j.num("count", 1)), o.max_configurations = size_t(j.num("max", 200000));
+      o.tolerance = j.num("tolerance", 0.1);
+      const caps::EnumResult res = caps::enumerate_occupations(s, o);
+      r = caps::enumeration_json(res);
+      const std::string dir = j.text("directory");
+      if (!dir.empty()) {
+        std::filesystem::create_directories(dir);
+        const size_t limit = std::min(res.configurations.size(), size_t(j.num("write", 200)));
+        caps::Json files = caps::Json::array();
+        for (size_t k = 0; k < limit; ++k) {
+          const std::string f = (std::filesystem::path(dir) / ("config_" + std::to_string(k + 1) + ".cif")).string();
+          caps::write_cif(caps::occupied(s, res, k, to), f);
+          files.push_back(f);
+        }
+        r["files"] = files;
+      }
+      pr = {{"sublattice", std::string(caps::element(from).symbol) + " (" + std::to_string(res.sites.size()) + " sites)"},
+            {"substituted", std::to_string(o.count) + " " + caps::element(to).symbol},
+            {"distinct", std::to_string(res.configurations.size()) + " of " + std::to_string(res.total)}, {"operations", std::to_string(res.operations)}};
+      prov_step(d, "build.enumerate", "Symmetry-distinct occupations of a sublattice", std::move(pr));
+    } else {
+      throw std::invalid_argument("op: sqs or enumerate");
     }
     r["ok"] = true;
   } catch (const std::exception& e) {

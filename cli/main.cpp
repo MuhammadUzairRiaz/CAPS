@@ -81,6 +81,7 @@
 #include "caps/refine.hpp"
 #include "caps/dielectric.hpp"
 #include "caps/powder_index.hpp"
+#include "caps/sqs.hpp"
 #include "caps/ddft.hpp"
 #include "caps/yaml.hpp"
 #ifdef _WIN32
@@ -348,6 +349,10 @@ int usage() {
                "             [--lines 20] [--unindexed 0] [--json OUT]   cells that index the pattern's lines (successive dichotomy), by M20\n"
                "  caps solve DATA.xy MOLECULE --cell a,b,c,al,be,ga --space-group 'P 21/c' [--wavelength Å] [--steps 6000] [--seed 1] -o CRYSTAL.cif\n"
                "             a molecular crystal found by simulated annealing against the pattern (direct space)\n"
+               "  caps sqs CRYSTAL --from Cu --to Au [--fraction 0.5] [--supercell 2,2,2] [--shells 3] [--steps 20000] [--restarts 4] [--seed 1] -o OUT.cif\n"
+               "              special quasirandom structure: the random alloy's pair correlations on the first shells (Zunger et al.)\n"
+               "  caps enumerate CRYSTAL --from Cu --to Au [--count 1] [--supercell 2,2,2] [--max-configurations 200000] [--write DIR]\n"
+               "              the symmetry-distinct occupations of a sublattice by COUNT substituents, with orbit sizes\n"
                "  caps dielectric CRYSTAL [--ff FF.json] [--cutoff 10] [--no-relax] [--fixed-cell] [--no-piezo] [--damping 10] [--csv STEM] [--json OUT]\n"
                "              dielectric tensors (static, high-frequency), refractive indices, piezoelectric e and d, reflectivity\n"
                "  caps refine DATA.xy CRYSTAL [CRYSTAL …] [--pawley] [--anode Cu | --wavelength Å] [--neutron] [--background 6] [--two-theta 10,90]\n"
@@ -478,7 +483,7 @@ const std::set<std::string>& known_options() {
     "--tmax", "--to", "--tol", "--tolerance", "--topology", "--trans", "--trials", "--types", "--typing", "--units",
     "--polymer", "--crystal", "--crystal-cells", "--amorphous", "--loops", "--bridges", "--tails", "--reentry", "--analyse",
     "--corr-ps", "--long", "--swap-every", "--transient", "--dimensionality", "--thickness",
-    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--tolerance", "--systems", "--max-length", "--unindexed", "--lines", "--space-group", "--cell", "--fixed-cell", "--no-piezo", "--damping", "--pawley", "--b-iso", "--background", "--refine", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
+    "--until-converged", "--vacuum", "--viscosity", "--volume", "--cell-volume", "--reduced", "--kind", "--chemistry", "--t-ref", "--barrier", "--binding", "--attempts", "--partners", "--labels", "--kg", "--k-theta", "--stickers", "--both-ends", "--fraction", "--shells", "--restarts", "--max-configurations", "--write", "--axes", "--sample", "--no-exchange", "--start", "--npt", "--anode", "--wavelength", "--no-kalpha2", "--neutron", "--two-theta", "--profile", "--uvw", "--xy", "--eta", "--size-abc", "--scherrer-k", "--biso", "--preferred", "--march", "--zero", "--monochromator", "--polarised", "--peaks", "--mesh", "--path", "--displacement", "--sigma", "--temps", "--tolerance", "--systems", "--max-length", "--unindexed", "--lines", "--space-group", "--cell", "--fixed-cell", "--no-piezo", "--damping", "--pawley", "--b-iso", "--background", "--refine", "--smiles", "--y", "--x", "--stepwise", "--squares", "--products", "--folds", "--randomise", "--k", "--class", "--no-scale", "--hidden", "--ir-max-ps", "--ir-max-wavenumber", "--relaxed", "--conventional", "--max-index", "--forms", "--attachment", "--surface-energy", "--particle", "--shape-obj", "--min-d", "--chi", "--molecules", "--grid", "--bond", "--kappa", "--noise", "--vtk", "--chunks", "--valence", "--relax", "--relax-depth", "--g-inf", "--plane", "--bin", "--modulus-strain", "--at-strain", "--up-to", "--wall", "--weights", "--width", "--yaw", "--zbin", "--zoom"};
   return k;
 }
 
@@ -4188,6 +4193,66 @@ int main(int argc, char** argv) {
       return 0;
     } catch (const std::exception& e) {
       std::fprintf(stderr, "caps solve: %s\n", e.what());
+      return 1;
+    }
+  }
+  if (cmd == "sqs" || cmd == "enumerate") {
+    try {
+      if (pos.empty() || !o.count("--from") || !o.count("--to")) return usage();
+      Trajectory t = open_file(pos[0], o.count("--topology") ? o["--topology"] : "");
+      System s0 = t.frames() ? t.frame(0) : t.topology;
+      if (o.count("--supercell")) {
+        std::string v = o["--supercell"];
+        for (auto& c : v) if (c == 'x' || c == 'X') c = ',';
+        int n[3] = {1, 1, 1};
+        if (std::sscanf(v.c_str(), "%d,%d,%d", &n[0], &n[1], &n[2]) != 3 || n[0] < 1 || n[1] < 1 || n[2] < 1) throw std::invalid_argument("--supercell: na,nb,nc");
+        s0 = supercell(s0, n[0], n[1], n[2]);
+      }
+      if (s0.atoms.size() > 15000) throw std::invalid_argument("the cell has " + std::to_string(s0.atoms.size()) + " atoms (at most 15000)");
+      const int from = element_from_symbol(o["--from"]), to = element_from_symbol(o["--to"]);
+      if (!from || !to) throw std::invalid_argument("--from and --to: element symbols");
+      if (cmd == "sqs") {
+        if (!o.count("-o")) return usage();
+        SqsOptions so;
+        so.from = from, so.to = to;
+        if (o.count("--fraction")) so.fraction = std::stod(o["--fraction"]);
+        if (o.count("--shells")) so.shells = std::stoi(o["--shells"]);
+        if (o.count("--steps")) so.steps = std::stoi(o["--steps"]);
+        if (o.count("--restarts")) so.restarts = std::stoi(o["--restarts"]);
+        if (o.count("--seed")) so.seed = std::stoull(o["--seed"]);
+        const SqsResult r = special_quasirandom(s0, so);
+        std::printf("%d of %d %s sites take %s (x = %.4f); target (1 - 2x)^2 = %.4f\n", r.substituted, r.sites, element(from).symbol, element(to).symbol,
+                    double(r.substituted) / r.sites, r.target);
+        std::printf("shell  distance (Å)  correlation\n");
+        for (size_t m = 0; m < r.correlation.size(); ++m) std::printf("%5zu  %12.5f  %11.5f\n", m + 1, r.shell_distance[m], r.correlation[m]);
+        std::printf("objective %.6f\n", r.objective);
+        write_disordered(r.structure, o["-o"]);
+        std::printf("wrote %s\n", o["-o"].c_str());
+      } else {
+        EnumOptions eo;
+        eo.from = from, eo.to = to;
+        if (o.count("--count")) eo.count = std::stoi(o["--count"]);
+        if (o.count("--max-configurations")) eo.max_configurations = size_t(std::stoull(o["--max-configurations"]));
+        if (o.count("--tolerance")) eo.tolerance = std::stod(o["--tolerance"]);
+        const EnumResult r = enumerate_occupations(s0, eo);
+        std::printf("%zu occupations of %zu %s sites by %d %s: %zu symmetry-distinct (%d operations)\n", r.total, r.sites.size(), element(from).symbol, eo.count,
+                    element(to).symbol, r.configurations.size(), r.operations);
+        std::printf("config  multiplicity  sites\n");
+        for (size_t k = 0; k < r.configurations.size(); ++k) {
+          std::printf("%6zu  %12zu ", k + 1, r.multiplicity[k]);
+          for (int x : r.configurations[k]) std::printf(" %u", r.sites[size_t(x)] + 1);
+          std::printf("\n");
+        }
+        if (o.count("--write")) {
+          std::filesystem::create_directories(o["--write"]);
+          for (size_t k = 0; k < r.configurations.size(); ++k)
+            write_cif(occupied(s0, r, k, to), (std::filesystem::path(o["--write"]) / ("config_" + std::to_string(k + 1) + ".cif")).string());
+          std::printf("wrote %zu CIF files to %s\n", r.configurations.size(), o["--write"].c_str());
+        }
+      }
+      return 0;
+    } catch (const std::exception& e) {
+      std::fprintf(stderr, "caps %s: %s\n", cmd.c_str(), e.what());
       return 1;
     }
   }

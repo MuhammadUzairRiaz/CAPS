@@ -295,6 +295,36 @@
                 </StackPanel>
               </Border>
 
+              <Border Classes="section" Padding="16,14">
+                <StackPanel Spacing="8">
+                  <TextBlock Text="SUBSTITUTIONAL DISORDER" Classes="h3" />
+                  <TextBlock Classes="dim" TextWrapping="Wrap" Text="Mixed occupancy on one element's sites, in the open cell (make the supercell first): a quasirandom alloy, or every distinct way a few substituents can sit." />
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBox Text="{Binding DisorderFrom}" Watermark="sites of (Cu)" Width="96" ToolTip.Tip="The element whose sites are shared" />
+                    <TextBlock Text="→" VerticalAlignment="Center" />
+                    <TextBox Text="{Binding DisorderTo}" Watermark="taken by (Au)" Width="96" ToolTip.Tip="The element that takes some of them" />
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <NumericUpDown Value="{Binding DisorderPercent}" Minimum="1" Maximum="99" Increment="5" FormatString="0 '%'" Width="80" ShowButtonSpinner="False"
+                                   ToolTip.Tip="Share of the sites the second element takes" />
+                    <Button Classes="small" Content="Quasirandom alloy" Click="OnSqs" IsEnabled="{Binding HasDocument}"
+                            ToolTip.Tip="The arrangement whose near-neighbour pair statistics match a random alloy, opened as a new structure" />
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <NumericUpDown Value="{Binding DisorderCount}" Minimum="1" Maximum="12" Increment="1" FormatString="0 atoms" Width="80" ShowButtonSpinner="False"
+                                   ToolTip.Tip="How many sites the second element takes" />
+                    <Button Classes="small" Content="Distinct arrangements" Click="OnEnumerate" IsEnabled="{Binding HasDocument}"
+                            ToolTip.Tip="Every arrangement up to the cell's symmetry, with how many equivalent copies each has" />
+                  </StackPanel>
+                  <TextBlock Text="{Binding DisorderError}" Classes="err" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding DisorderHasError}" />
+                  <TextBlock Text="{Binding DisorderText}" Classes="mono" FontSize="11" IsVisible="{Binding DisorderHasText}" />
+                  <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding DisorderHasFiles}">
+                    <NumericUpDown Value="{Binding DisorderPick}" Minimum="1" Increment="1" FormatString="'#'0" Width="70" ShowButtonSpinner="False" />
+                    <Button Classes="small" Content="Open arrangement" Click="OnOpenArrangement" ToolTip.Tip="The arrangement of that number as a new structure" />
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+
               <Border Padding="16,12">
                 <StackPanel Spacing="6">
                   <TextBlock Text="{Binding CrystalError}" Classes="err" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding CrystalHasError}" />

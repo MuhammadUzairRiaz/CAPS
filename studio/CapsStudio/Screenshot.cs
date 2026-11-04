@@ -389,6 +389,24 @@ internal static class Screenshot
                 for (int q = 0; q < 20; ++q) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
                 Console.WriteLine("habit: " + vm.Status + (vm.HabitHasError ? " · error " + vm.HabitError : "") + "\n" + vm.HabitTable + "\n" + vm.HabitShapeText + "\n" + vm.HabitNote);
             }
+            if (kv[0] == "disorder")   // disorder=FROM|TO|sqs:PERCENT or enum:COUNT: Builders › Crystal's substitutional disorder of the open crystal, awaited
+            {
+                var vm = w.ViewModel;
+                var f = kv[1].Split('|');
+                vm.OpenCrystal();
+                vm.DisorderFrom = f[0];
+                vm.DisorderTo = f[1];
+                var m = f[2].Split(':');
+                Task t;
+                if (m[0] == "sqs") { vm.DisorderPercent = decimal.Parse(m[1], System.Globalization.CultureInfo.InvariantCulture); t = vm.RunSqs(); }
+                else { vm.DisorderCount = decimal.Parse(m[1], System.Globalization.CultureInfo.InvariantCulture); t = vm.RunEnumerate(); }
+                while (!t.IsCompleted) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+                if (m[0] != "sqs") vm.OpenCrystal();
+                for (int q = 0; q < 40; ++q) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+                foreach (var sv in w.GetVisualDescendants().OfType<Avalonia.Controls.ScrollViewer>()) if (sv.IsEffectivelyVisible) sv.ScrollToEnd();
+                for (int q = 0; q < 20; ++q) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(25); }
+                Console.WriteLine("disorder: " + vm.Status + (vm.DisorderHasError ? " · error " + vm.DisorderError : "") + "\n" + vm.DisorderText);
+            }
             if (kv[0] == "fit")   // fit=FF|N,M|TARGETS: Force field › fit to crystal data with that force field, parameters N, M of the list ticked, targets ';'-separated, awaited; the page scrolled to the card
             {
                 var vm = w.ViewModel;

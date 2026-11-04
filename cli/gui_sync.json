@@ -1606,6 +1606,43 @@
     "--out": "cli: structure solution runs from the command line and Python",
     "--quiet": "cli: structure solution runs from the command line and Python"
    }
+  },
+  "sqs": {
+   "status": "gui",
+   "studio": "Builders › Crystal › Substitutional disorder › Quasirandom alloy",
+   "where": "Views/Pages/CrystalPage.axaml|Quasirandom alloy",
+   "capi": [
+    "caps_disorder"
+   ],
+   "options": {
+    "--from": "page",
+    "--to": "page",
+    "--fraction": "page",
+    "--supercell": "partial: the page works on the open cell; the Crystal builder makes the supercell",
+    "--shells": "cli: the page matches the first 3 shells",
+    "--steps": "cli: the page anneals 20000 swaps",
+    "--restarts": "cli: the page makes 4 starts",
+    "--seed": "cli: the page uses seed 1",
+    "--topology": "page"
+   }
+  },
+  "enumerate": {
+   "status": "gui",
+   "studio": "Builders › Crystal › Substitutional disorder › Distinct arrangements",
+   "where": "Views/Pages/CrystalPage.axaml|Distinct arrangements",
+   "capi": [
+    "caps_disorder"
+   ],
+   "options": {
+    "--from": "page",
+    "--to": "page",
+    "--count": "page",
+    "--supercell": "partial: the page works on the open cell; the Crystal builder makes the supercell",
+    "--max-configurations": "cli: the page refuses more than 200000 arrangements",
+    "--tolerance": "cli: the page matches sites within 0.1 Å",
+    "--write": "partial: the page writes the arrangements and opens the one picked",
+    "--topology": "page"
+   }
   }
  },
  "hidden_options": {

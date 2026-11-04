@@ -3451,6 +3451,59 @@
    ]
   },
   {
+   "id": "substitutional-disorder",
+   "group": "Growth",
+   "title": "Substitutional disorder: quasirandom structures and distinct arrangements",
+   "summary": "A fraction x of the sites of one element in a periodic cell (usually a supercell made first) take another element; site i carries σ_i = +1 for the original element and −1 for the substituent. Pair shells m are the distinct distances between sites of that sublattice (minimum image), and Π_m is the mean of σ_iσ_j over the pairs of shell m. A truly random alloy has Π_m = (1 − 2x)² on every shell. The special quasirandom structure is the arrangement in the cell whose first shells come closest to that: the weighted sum of |Π_m − (1 − 2x)²| (weight 1/m) is minimised by simulated annealing of swaps between unlike sites, from several random starts, each swap updating the shell sums from the two sites' neighbours only. For a few substituents the arrangements can instead be listed in full: every set of k sites out of n is mapped by each symmetry operation of the cell (the integer rotations of the cell basis that keep its metric, combined with each translation that sends every atom onto an atom of its element), the lexicographically smallest image is kept as the representative, and the orbit sizes, which add up to C(n, k), are the arrangements' weights in a configurational average.",
+   "equation": "Π_m = (1/N_m) Σ_(i<j ∈ m) σ_i σ_j;  Π_m(random) = (1 − 2x)²;  f = Σ_m |Π_m − (1 − 2x)²| / m;  Σ_orbits g = C(n, k)",
+   "equation_note": "Zunger, Wei, Ferreira & Bernard 1990; Kirkpatrick et al. 1983",
+   "tex": "\\Pi_m = \\frac{1}{N_m} \\sum_{(i<j) \\in m} \\sigma_i \\sigma_j, \\qquad \\Pi_m^{\\mathrm{random}} = (1 - 2x)^2, \\qquad f = \\sum_{m=1}^{M} \\frac{1}{m}\\,\\left|\\Pi_m - (1 - 2x)^2\\right| \\\\ \\sum_{\\mathrm{orbits}} g = \\binom{n}{k}",
+   "symbols": [
+    [
+     "σ_i",
+     "occupation of site i: +1 original element, −1 substituent",
+     "—"
+    ],
+    [
+     "N_m",
+     "pairs of sites in shell m",
+     "—"
+    ],
+    [
+     "x",
+     "fraction of the sites substituted",
+     "—"
+    ],
+    [
+     "M",
+     "shells matched",
+     "—"
+    ],
+    [
+     "g",
+     "orbit size: arrangements equivalent by symmetry",
+     "—"
+    ],
+    [
+     "n, k",
+     "sites of the sublattice, substituents",
+     "—"
+    ]
+   ],
+   "when": "Mixed-cation fillers and pigments (solid solutions such as Zn/Mg oxides), doped crystals and alloy contacts in a composite: a disordered phase modelled by one ordered cell whose short-range order is that of the random alloy, or every inequivalent placement of a few dopants with its weight.",
+   "cites": [
+    "zunger1990",
+    "kirkpatrick1983"
+   ],
+   "source": "core/src/sqs.cpp (special_quasirandom, enumerate_occupations)",
+   "tested": "Sqs.FccConventionalOrbits (one and two substituents in copper's 4-site cell: one orbit each, of 4 and 6); Sqs.FccSupercellPairOrbits (two substituents in the 32-site 2 × 2 × 2 cell: the five separation classes, orbits 192, 48, 192, 48, 16 = C(32, 2), 1536 operations; three substituents add up to C(32, 3) = 4960); Sqs.FccHalfAlloy (x = ½: Π₁ = Π₂ = 0 exactly, Π₁ recounted from the returned structure)",
+   "deviation": "pair correlations only (no triplets or larger clusters); one sublattice at a time and no vacancies; the enumeration works on the cell given, not over all supercells of a size, and refuses more than 200000 arrangements",
+   "engines": [
+    "build.sqs",
+    "build.enumerate"
+   ]
+  },
+  {
    "id": "density-fields",
    "group": "Analysis",
    "title": "Density fields: dynamic mean-field theory of Gaussian chains",

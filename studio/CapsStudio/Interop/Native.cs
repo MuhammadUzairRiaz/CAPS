@@ -539,6 +539,7 @@ internal static class Native
     [DllImport(Lib, EntryPoint = "caps_thermal_lammps")] public static extern int ThermalLammps(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, [MarshalAs(UnmanagedType.LPUTF8Str)] string path, byte[]? outText, int cap);
     [DllImport(Lib, EntryPoint = "caps_dpd")] public static extern IntPtr Dpd([MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsAnalyzeProgress? progress, IntPtr user, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_ddft")] public static extern int Ddft([MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsAnalyzeProgress? progress, IntPtr user, byte[]? outJson, int cap);
+    [DllImport(Lib, EntryPoint = "caps_disorder")] public static extern int Disorder(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_habit")] public static extern int Habit(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsAnalyzeProgress? progress, IntPtr user, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_fit_terms")] public static extern int FitTerms(IntPtr doc, byte[]? outJson, int cap);
     [DllImport(Lib, EntryPoint = "caps_fit_crystal")] public static extern int FitCrystal(IntPtr doc, [MarshalAs(UnmanagedType.LPUTF8Str)] string json, CapsAnalyzeProgress? progress, IntPtr user, byte[]? outJson, int cap);
@@ -2307,6 +2308,20 @@ public sealed class CapsDocument : IDisposable
             var n = Native.Refine(H, json, cb, IntPtr.Zero, buf, buf.Length);
             if (n > buf.Length) { buf = new byte[n]; n = Native.Refine(H, json, cb, IntPtr.Zero, buf, buf.Length); }
             GC.KeepAlive(cb);
+            return System.Text.Encoding.UTF8.GetString(buf, 0, Math.Max(0, Math.Min(n, buf.Length) - 1));
+        }
+    }
+
+    /// <summary>Substitutional disorder of this structure (caps_disorder): a quasirandom structure or the distinct occupations,
+    /// written to files; JSON. The document is not changed.</summary>
+    public string Disorder(string json)
+    {
+        using (Hold(longRun: true))
+        {
+            Alive();
+            var buf = new byte[1 << 20];
+            var n = Native.Disorder(H, json, buf, buf.Length);
+            if (n > buf.Length) { buf = new byte[n]; n = Native.Disorder(H, json, buf, buf.Length); }
             return System.Text.Encoding.UTF8.GetString(buf, 0, Math.Max(0, Math.Min(n, buf.Length) - 1));
         }
     }

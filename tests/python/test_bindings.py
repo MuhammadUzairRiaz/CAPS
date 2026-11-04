@@ -771,7 +771,15 @@ check(max(abs(_op.atom(i)["charge"] - _op2.atom(i)["charge"]) for i in range(_op
 print("ok   polymer(forcefield=oplsaa2024): export, charges identical by both routes")
 
 # chemistry-aware coarse-graining: the ester cut gives diol and diacid beads; cgmap writes data, map and types
-check(caps.abi_version() == 84, "ABI 84")
+check(caps.abi_version() == 85, "ABI 85")
+
+# substitutional disorder (ABI 85): one Au in copper's conventional cell is one orbit of 4; an SQS of Cu3Au keeps x
+_cu = caps.open(os.path.join(os.path.dirname(samples), "data", "crystals", "copper.cif"))
+_en = _cu.enumerate_occupations("Cu", "Au", count=1)
+check(_en["multiplicity"] == [4] and _en["total"] == 4, f"enumerate: {_en['multiplicity']}")
+_sq = _cu.sqs("Cu", "Au", fraction=0.25)
+check(_sq["substituted"] == 1 and abs(_sq["target"] - 0.25) < 1e-12, f"sqs: {_sq['substituted']}")
+print("ok   disorder: enumeration orbits, SQS composition")
 
 # bond exchange analysis (ABI 74): an exact Arrhenius line gives its Ea, healing ratios follow their definitions
 import math

@@ -1593,6 +1593,40 @@ def solve_structure(data: str, molecule: str, cell, space_group: str = "P 1", wa
     return _index_call({"op": "solve", "data": str(data), "molecule": str(molecule), "cell": [float(x) for x in cell], "space_group": space_group,
                         "wavelength": float(wavelength), "steps": int(steps), "restarts": int(restarts), "seed": int(seed), "path": str(path)})
 
+def _disorder_call(self, o: dict) -> dict:
+    f = library().caps_disorder
+    f.argtypes = [C.c_void_p, C.c_char_p, C.c_char_p, C.c_int32]
+    f.restype = C.c_int32
+    buf = C.create_string_buffer(1 << 20)
+    n = f(self._h, _enc(json.dumps(o)), buf, len(buf))
+    if n > len(buf):
+        buf = C.create_string_buffer(int(n))
+        f(self._h, _enc(json.dumps(o)), buf, len(buf))
+    r = json.loads(buf.value.decode())
+    if not r.get("ok"):
+        raise CapsError(r.get("error", "disorder failed"))
+    return r
+
+
+def _sqs(self, frm: str, to: str, fraction: float = 0.5, path: str = "", shells: int = 3, steps: int = 20000, restarts: int = 4, seed: int = 1) -> dict:
+    """Special quasirandom structure on the sites of element `frm` in the current frame (make the supercell first): a
+    fraction of them take `to`, arranged so the pair correlations of the first shells match the random alloy's (1 - 2x)^2.
+    Written to `path` (.cif, .vasp or POSCAR, else PDB) when given. Returns {shell_distance, correlation, target, objective,
+    sites, substituted, notes, path}."""
+    return _disorder_call(self, {"op": "sqs", "from": frm, "to": to, "fraction": float(fraction), "path": path, "shells": int(shells),
+                                 "steps": int(steps), "restarts": int(restarts), "seed": int(seed)})
+
+
+def _enumerate_occupations(self, frm: str, to: str, count: int = 1, directory: str = "", max_configurations: int = 200000) -> dict:
+    """The symmetry-distinct ways `count` sites of element `frm` take `to` in the current frame, one per orbit of the cell's
+    symmetry operations, with the orbit sizes (they sum to C(n, count)); CIF files written to `directory` when given.
+    Returns {configurations, multiplicity, sites, operations, total, notes, files}."""
+    return _disorder_call(self, {"op": "enumerate", "from": frm, "to": to, "count": int(count), "directory": directory, "max": int(max_configurations)})
+
+
+Document.sqs = _sqs
+Document.enumerate_occupations = _enumerate_occupations
+
 def density_fields(molecules, chi=None, grid=(32, 32, 32), bond: float = 1.1543, kappa: float = 10.0, noise: float = 75.0, dt: float = 0.02,
                    steps: int = 2000, frame_every: int = 100, seed: int = 1) -> dict:
     """Density-field dynamics of Gaussian chains (no structure needed): molecules [(name, sequence such as "A8B8", fraction), …],
